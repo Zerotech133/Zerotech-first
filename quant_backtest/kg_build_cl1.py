@@ -40,6 +40,7 @@ sys.path.insert(0, HERE)
 
 import kg_schema as S
 import tdx_read as tdxr
+import linreg  # X3 血缘登记（best-effort，不阻断）
 
 POOL_F = os.path.join(HERE, "data", "chanlun_pool.jsonl")
 YOUZI_F = os.path.join(HERE, "data", "youzi_registry.parquet")
@@ -245,6 +246,7 @@ def build_volume():
 
 # ── 主流程 ────────────────────────────────────────────────────
 def build(dryrun=False):
+    _jr = linreg.JobRun("kg_daily_sync", "cl1_sync").__enter__()  # X3 血缘
     print("=== CL-1 盘面事件入图 %s ===" % datetime.now().strftime("%F %T"))
 
     print("[1/4] 游资词表…")
@@ -267,11 +269,23 @@ def build(dryrun=False):
 
     if dryrun:
         print("DRYRUN 结束，未写库。")
+        _jr.__exit__(None, None, None)  # X3 血缘
         return
 
     from kg_client import KgClient
     cli = KgClient()
     cli.ensure_schema()
+    # X3 血缘边：三段产物各自登记（输入→输出，写图前落账）
+    _jr.edge("neo4j:HotMoney", "parquet:tdx/ts_top_inst", transform="regex_match")
+    _jr.edge("neo4j:Seat", "parquet:tdx/ts_top_inst", transform="regex_match")
+    _jr.edge("neo4j:OCCUPIES", "parquet:youzi_registry", transform="regex_match")
+    _jr.edge("neo4j:TRADED_ON", "parquet:tdx/ts_top_inst", transform="agg")
+    _jr.edge("neo4j:MarketEvent", "jsonl:chanlun_pool", transform="chanlun")
+    _jr.edge("neo4j:HAS_STRUCTURE", "jsonl:chanlun_pool")
+    _jr.edge("neo4j:MarketEvent", "parquet:tdx/ts_daily", transform="vol_ratio")
+    _jr.edge("neo4j:HAS_VOL_EVENT", "parquet:tdx/ts_daily")
+    _jr.rows_written = (len(hm) + len(seats) + len(occ) + len(traded)
+                        + len(ev1) + len(e1) + len(ev2) + len(e2))  # X3 血缘
     print("[落库] …")
     cli.upsert_nodes(S.LBL_HOTMONEY, ["name"], hm)
     cli.upsert_nodes(S.LBL_SEAT, ["name"], seats)
@@ -287,6 +301,7 @@ def build(dryrun=False):
     print("  全部落库完成")
     cli.close()
     print("=== CL-1 完成 ===")
+    _jr.__exit__(None, None, None)  # X3 血缘
 
 
 # ── 抽检 ──────────────────────────────────────────────────────

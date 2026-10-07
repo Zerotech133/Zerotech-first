@@ -31,6 +31,7 @@ import pandas as pd
 import kg_schema as S
 import tdx_read as tdxr
 from kg_client import KgClient
+import linreg  # X3 血缘登记（best-effort，不阻断）
 
 WIN = 60          # 特征窗口（交易日）
 TOP_CAND = 20     # 欧氏预筛每票候选数
@@ -180,6 +181,7 @@ def calc(verbose=True):
 
 
 def main():
+    _jr = linreg.JobRun("kg_daily_sync", "sim_k").__enter__()  # X3 血缘
     dry = "--dryrun" in sys.argv
     print("[sim_k] K线形态相似重算（60日对数路径 欧氏预筛+带宽DTW）")
     edge_rows, stats = calc()
@@ -190,6 +192,7 @@ def main():
             print("    %s -> %s dist=%.3f corr=%.2f win=%s~%s"
                   % (r["src"], r["dst"], r["dist"], r["corr"],
                      r["win_start"], r["win_end"]))
+        _jr.__exit__(None, None, None)  # X3 血缘
         return
     cli = KgClient()
     try:
@@ -198,6 +201,10 @@ def main():
     finally:
         cli.close()
     print("  写回 SIMILAR_K %d 边" % n)
+    # X3 血缘：60 日对数路径 DTW 相似 → SIMILAR_K 边
+    _jr.edge("neo4j:SIMILAR_K", "parquet:tdx/ts_daily", transform="dtw")  # X3
+    _jr.rows_written = n  # X3
+    _jr.__exit__(None, None, None)  # X3 血缘
 
 
 if __name__ == "__main__":

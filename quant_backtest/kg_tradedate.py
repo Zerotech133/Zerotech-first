@@ -23,6 +23,7 @@ from datetime import datetime
 
 import kg_schema as S
 from kg_client import KgClient
+import linreg  # X3 血缘登记（best-effort，不阻断）
 
 SOURCE = "graph_dates"
 
@@ -38,6 +39,7 @@ def _dow(yyyymmdd):
 
 
 def sync(cli):
+    _jr = linreg.JobRun("kg_daily_sync", "tradedate").__enter__()  # X3 血缘
     ts = _now()
     with cli._session() as s:
         # 市场事实口径：行情/榜单事件的日期才是交易日（news 周末也有）
@@ -84,7 +86,14 @@ def sync(cli):
                     d=d, ve=S.VALID_END_OPEN, src=SOURCE, ts=ts).consume()
 
     # 对账输出
+    # X3 血缘：图自洽日历 → TradeDate/NEXT_TRADE_DAY/ON_DATE
+    _jr.edge("neo4j:TradeDate", "neo4j:MarketEvent", transform="cal")  # X3
+    _jr.edge("neo4j:TradeDate", "neo4j:TRADED_ON")  # X3
+    _jr.edge("neo4j:NEXT_TRADE_DAY", "neo4j:TradeDate")  # X3
+    _jr.edge("neo4j:ON_DATE", "neo4j:TradeDate")  # X3
+    _jr.rows_written = len(ds) + len(nxt)  # X3
     stat(cli)
+    _jr.__exit__(None, None, None)  # X3 血缘
 
 
 def stat(cli):

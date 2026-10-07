@@ -23,6 +23,7 @@ import pandas as pd
 import kg_schema as S
 import tdx_read as tdxr
 from kg_client import KgClient
+import linreg  # X3 血缘登记（best-effort，不阻断）
 
 
 def _now():
@@ -110,6 +111,7 @@ def calc(verbose=True):
 
 
 def main():
+    _jr = linreg.JobRun("kg_daily_sync", "seat_winrate").__enter__()  # X3 血缘
     print("[seat_winrate] 席位历史胜率重算（上榜净买×次日收益）")
     seat_rows, hm_rows, stats = calc()
     cli = KgClient()
@@ -120,6 +122,11 @@ def main():
         cli.close()
     print("  写回 Seat %d · HotMoney %d" % (n1, n2))
     print("  " + stats)
+    # X3 血缘：上榜净买×次日收益 → 胜率属性回写
+    _jr.edge("neo4j:TRADED_ON.win_rate", "neo4j:TRADED_ON", transform="winrate")  # X3
+    _jr.edge("neo4j:TRADED_ON.win_rate", "parquet:tdx/ts_daily", transform="winrate")  # X3
+    _jr.rows_written = n1 + n2  # X3
+    _jr.__exit__(None, None, None)  # X3 血缘
 
 
 if __name__ == "__main__":

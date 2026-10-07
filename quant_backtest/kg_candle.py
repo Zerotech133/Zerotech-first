@@ -39,6 +39,7 @@ sys.path.insert(0, HERE)
 
 import kg_schema as S
 import tdx_read as tdxr
+import linreg  # X3 血缘登记（best-effort，不阻断）
 
 MINS_DIR = os.path.join(HERE, "data", "tushare", "stk_mins")
 
@@ -279,6 +280,7 @@ def probe(cli, tc, date):
 
 def sync(cli, date=None):
     """每日保鲜：指定日（默认今日）增量。"""
+    _jr = linreg.JobRun("kg_daily_sync", "candle_sync").__enter__()  # X3 血缘
     date = date or datetime.now().strftime("%Y%m%d")
     ym = date[:6]
     name_map = _names(cli)
@@ -316,6 +318,11 @@ def sync(cli, date=None):
         cli.upsert_nodes(S.LBL_TECHNIQUE, ["name"], _tech_nodes())
         cli.upsert_edge(S.LBL_MARKET_EVENT, "evt_id", S.LBL_TECHNIQUE,
                         "name", S.REL_USES_TECH, _tech_edges(evs))
+        # X3 血缘：输入分钟库 → 输出盘口事件/手法边
+        _jr.edge("neo4j:HAS_CANDLE", "parquet:stk_mins", transform="candle_detect")  # X3
+        _jr.edge("neo4j:Technique", "parquet:stk_mins")  # X3
+        _jr.rows_written = len(evs) + len(edges)  # X3
+    _jr.__exit__(None, None, None)  # X3 血缘
 
 
 def main():

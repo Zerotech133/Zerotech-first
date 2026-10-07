@@ -46,6 +46,7 @@ sys.path.insert(0, HERE)
 
 import kg_schema as S                    # noqa: E402
 from kg_client import KgClient           # noqa: E402
+import linreg                            # noqa: E402  X3 血缘登记（best-effort，不阻断）
 
 TS_DIR = os.path.join(HERE, "data", "tushare")
 MINS_DIR = os.path.join(HERE, "data", "tushare", "stk_mins")
@@ -278,6 +279,7 @@ def _pull_one(api, params, path, cap=1000):
 
 def sync(cli, date=None):
     """每日保鲜：拉当日 limit + 最新报告期 holders/holdernumber 入图。"""
+    _jr = linreg.JobRun("kg_daily_sync", "bclass_sync").__enter__()  # X3 血缘
     date = date or datetime.now().strftime("%Y%m%d")
     _pull_one("limit_list_d", {"trade_date": date},
               os.path.join(TS_DIR, "limit_list_d", "d_%s.parquet" % date))
@@ -287,6 +289,7 @@ def sync(cli, date=None):
         cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
         cli.upsert_edge(S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT,
                         "evt_id", S.REL_HAS_LIMIT, edges)
+    _jr.edge("neo4j:HAS_LIMIT", "parquet:limit_list_d", transform="agg")  # X3 血缘
 
     # 最新报告期（当季/上季可能未出数：两期都试，文件存在跳过）
     y, mo = int(date[:4]), int(date[4:6])
@@ -310,6 +313,8 @@ def sync(cli, date=None):
         cli.upsert_nodes(S.LBL_ORGANIZATION, ["name"], orgs)
         cli.upsert_edge(S.LBL_ORGANIZATION, "name", S.LBL_SECURITY,
                         "ts_code", S.REL_HOLDS, hedges)
+    _jr.edge("neo4j:Organization", "parquet:top10_floatholders")  # X3 血缘
+    _jr.edge("neo4j:HOLDS", "parquet:top10_floatholders", transform="agg")  # X3 血缘
 
     # holdernumber：ann_date 拉当日新披露，merge 回 per_code 文件
     import tushare_sync as TS
@@ -328,12 +333,17 @@ def sync(cli, date=None):
         print("  holdernumber 当日披露 %d 行 / %d 标的"
               % (len(nd), nd["ts_code"].nunique()))
     _holder_feat()
+    _jr.edge("parquet:holder_feat", "parquet:stk_holdernumber", transform="feat")  # X3 血缘
 
     # cyq_perf：当日筹码分片 + 特征重刷（0 行也落片防重拉）
     _pull_one("cyq_perf", {"trade_date": date},
               os.path.join(TS_DIR, "cyq_perf", "d_%s.parquet" % date),
               cap=6000)
     _cyq_feat()
+    # X3 血缘：特征落盘边 + 运行收尾
+    _jr.edge("parquet:cyq_feat", "parquet:cyq_perf", transform="feat")  # X3 血缘
+    _jr.rows_written = len(evs) + len(edges) + len(orgs) + len(hedges)  # X3 血缘
+    _jr.__exit__(None, None, None)  # X3 血缘
 
 
 def main():

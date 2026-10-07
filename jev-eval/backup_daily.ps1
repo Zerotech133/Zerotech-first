@@ -1,5 +1,7 @@
 # =====================================================================
 # backup_daily.ps1 - AI workstation daily backup (hardened)
+# v7 (OPS-1008b): quant_db.sql.gz added to encryption targets + plaintext
+# residue guard. See $EncryptTargets comment block below.
 # 4 postgres dumps + 8 archives, gzip verify, AES-256-CBC+HMAC-SHA256
 # encryption of sensitive dumps, mirror to D:\backups_mirror, keep-4
 # retention (OPS-1008, count-based; see section 5).
@@ -24,7 +26,10 @@ $MirrorRoot  = "D:\backups_mirror"
 $QuantSrc    = "D:\" + [char]0x7F20 + [char]0x8BBA + [char]0x9009 + [char]0x80A1 + "+" + [char]0x76EF + [char]0x76D8
 $KeepCount   = 4
 $AesKeyFile  = Join-Path $env:USERPROFILE ".backup_aes_key"
-$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","webui_data.tar.gz")
+$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","quant_db.sql.gz","webui_data.tar.gz")
+# OPS-1008b (v7): quant_db.sql.gz was missing from $EncryptTargets, so it
+# was never encrypted and stayed as plaintext in the backup set + mirror.
+# Added to targets; plus a post-ENC plaintext-residue guard after the loop.
 # OPS-1007: dify stack decommissioned (containers removed) - drop dify_db
 # from encryption targets along with the 3 dify backup items below.
 
@@ -273,6 +278,12 @@ foreach ($name in $EncryptTargets) {
         LogFail ("ENC " + $name + " " + $_.Exception.Message)
     }
 }
+
+# ---------------- 3b. plaintext residue guard (OPS-1008b, v7) ----------------
+# Any *.sql.gz left unencrypted after the ENC pass means a whitelist gap or
+# a failed ENC - count it as failure (alert fires, exit 1). Never auto-delete.
+$PlainLeft = @(Get-ChildItem $DayDir -Filter "*.sql.gz" -File -ErrorAction SilentlyContinue)
+foreach ($pf in $PlainLeft) { LogFail ("PLAINTEXT residue " + $pf.Name + " (not encrypted)") }
 
 # ---------------- 4. mirror to D ----------------
 try {

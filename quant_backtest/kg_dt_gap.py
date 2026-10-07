@@ -42,6 +42,7 @@ import pandas as pd
 import kg_schema as S
 import tdx_read as tdxr
 from kg_client import KgClient
+import linreg  # X3 血缘登记（best-effort，不阻断）
 
 # ── 量化席位词表 v1（市场高共识，regex 匹配 ts_top_inst.exalter）──
 QUANT_SEATS = (
@@ -188,6 +189,7 @@ def calc(verbose=True):
 
 
 def main():
+    _jr = linreg.JobRun("kg_daily_sync", "dt_gap").__enter__()  # X3 血缘
     ap = argparse.ArgumentParser()
     ap.add_argument("--dryrun", action="store_true")
     a = ap.parse_args()
@@ -196,6 +198,7 @@ def main():
     if a.dryrun:
         print("  dryrun：跳过写库")
         print("  " + stats)
+        _jr.__exit__(None, None, None)  # X3 血缘
         return
     cli = KgClient()
     try:
@@ -224,6 +227,10 @@ def main():
     print("  写入 MarketEvent %d / HAS_TOPGAP 边 %d（图内现存 %d）"
           % (n1, n2, n))
     print("  " + stats)
+    # X3 血缘：榜后差额穿透 → HAS_TOPGAP 边
+    _jr.edge("neo4j:HAS_TOPGAP", "parquet:ts_top_list", transform="penetration")  # X3
+    _jr.rows_written = n1 + n2  # X3
+    _jr.__exit__(None, None, None)  # X3 血缘
 
 
 if __name__ == "__main__":
