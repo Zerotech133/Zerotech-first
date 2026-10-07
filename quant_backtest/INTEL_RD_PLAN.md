@@ -5920,3 +5920,22 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - 环境：paddlepaddle CPU + paddleocr，Python 3.11
 - 样图：研报/公告 PDF 渲染页（pypdf 数字文本为真值）≥10 张，含表格页
 - 精度门槛：正文字符命中率（2-gram overlap）≥90%，表格页人眼可读（列结构不乱）
+
+### D. M1 验收结果（10-07 20:2x，PASS）
+- **正文**：9 样图（巨潮公告 4 类：投资者关系/董事会决议/股权激励摘要/收购摘要）mean dice2=0.979（6 页满分 1.000，最差 0.887），门槛 0.90 通过；CPU 26-69s/页
+- **表格**：PPStructureV3 还原 2 张表（财务三年对比 + 公司信息键值表）行列结构完整、长数字精确到分（如营收 1,129,306,703.36）——人工核通过
+- **环境坑五连（全部已解）**：①pip 装 Paddle 需 --user（沙箱拦 Program Files exe 替换）②PADDLE_PDX_CACHE_HOME/MODELSCOPE_CACHE/PYTHONPYCACHEPREFIX 须重定向 C:\Temp（沙箱拦 home 目录）③enable_mkldnn=False（paddle 3.3 oneDNN ConvertPirAttribute bug）④paddleocr[doc-parser] 扩展补齐 PPStructureV3 依赖⑤结果取 table_res_list[].pred_html / save_to_markdown（无 markdown 键）
+- **M1 发现**：dfcfw 研报 PDF 直链被 EO_Bot JS 挑战拦（requests 得 988B 反爬脚本）——report_fetch 未来扩量风险，样本改走巨潮（cninfo query API+static 直链无挑战；<em> 高亮标签需剥掉再匹配）
+- 产出：k266_m1_prep.py（备样）/ k266_m1_ocr.py（验收）/ data/k266_m1/{samples 9,truth,ocr_out eval_result.json}
+
+### E. M2 验收（10-07 晚，registry + 三入口）— PASS
+
+- **产出**：`k266_doc_ingest.py`（inbox 摄取守护：pending/done/reject 三态 + sha256 去重 + pypdf 数字文本优先/PDF<50 字符转 PyMuPDF 渲染 OCR 上限 8 页 + PNG OCR，`--once/--loop` 双模式）；`k266_clip_watch.py`（剪贴板 3s 轮询 → clip_*.png，内存帧比对防重复）；门户端点 `/kg/doc/upload`（portal_api.py：_MUTATION_POSTS 纳管 + query name 白名单 png/jpg/jpeg/pdf + 安全方位清洗 + 落 up_*.png）
+- **端到端实测**（5 场景全绿）：
+  1. 门户 POST 上传 168KB PNG → `up_20261007_201445_ir_activity_p1.png` 落 pending，负测 .txt → 400（本机脚本须带 X-Portal-Token，无 token → 403 闸门生效）
+  2. 投递目录 drop 2 张 → OCR 642c（奥普光电董事会决议）/375c（华汇智能投资者关系）
+  3. 同内容二次投递 → DUP → reject（sha256 判重先到先得）
+  4. fitz 生成带文本层 PDF → pdf 路径 103c 精确还原（未触发 OCR）
+  5. Clipboard::SetImage → clip_watch 2s 落盘 → 摄取 src=clip，OCR 540c
+- **registry.jsonl 4 条**（src: drop×3 + clip×1，up 件被 DUP 判重收 reject）；doc_texts.jsonl 同步
+- **遗留**：门户页面上传按钮 UI 未做（API 已可用，页面待 M4 词云页一并设计）；clip_watch 常驻方式（计划任务 vs 手动）待定

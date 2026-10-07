@@ -82,6 +82,7 @@ _MUTATION_POSTS = frozenset((
     "/api/sub_test",
     "/api/recv_add",
     "/kg/canvas_edit",
+    "/kg/doc/upload",
     "/api/chanlun/card/feedback",
     "/api/chanlun/pool/push",
     "/api/portfolio_set",
@@ -20161,6 +20162,32 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             if path == "/feishu/event":
                 # K250 飞书事件回调（卡按钮点击 / url_verification 握手）
                 self._api_feishu_event(raw)
+                return
+            if path == "/kg/doc/upload":
+                # K266 M2 文档上传入口：body=文件字节，query name=文件名。
+                # 后缀白名单 png/jpg/jpeg/pdf；落 inbox/docs/pending/
+                # up_<时间戳>_<安全名>，由 k266_doc_ingest.py 统一摄取
+                # （sha256 去重 → pypdf/OCR 文本化 → doc_texts.jsonl）。
+                from urllib.parse import parse_qs as _pqu
+                qs = _pqu(self.path.split("?", 1)[1]) \
+                    if "?" in self.path else {}
+                name = (qs.get("name") or [""])[0].strip()
+                name = re.sub(r"[^\w.\-\u4e00-\u9fff]", "_", name)[:80]
+                if not name:
+                    self._json({"error": "缺 name 参数"}, 400)
+                    return
+                if not name.lower().endswith((".png", ".jpg", ".jpeg", ".pdf")):
+                    self._json({"error": "仅支持 png/jpg/jpeg/pdf"}, 400)
+                    return
+                if not raw:
+                    self._json({"error": "空文件"}, 400)
+                    return
+                pend = os.path.join(STATION, "inbox", "docs", "pending")
+                os.makedirs(pend, exist_ok=True)
+                fn = "up_%s_%s" % (time.strftime("%Y%m%d_%H%M%S"), name)
+                with open(os.path.join(pend, fn), "wb") as f:
+                    f.write(raw)
+                self._json({"ok": True, "saved": fn, "size": len(raw)})
                 return
             if path == "/api/chanlun/label/save":
                 try:
