@@ -1069,7 +1069,7 @@ P3 ✅ 已上线。**KG-GAP 落地计划全部完成**：P1 ✅✅、P2-①②�
 - **判例两条**——①**大屏类高频轮询页的数据源只读「落盘锚」不读「运行时态」**：schtasks 查询/parquet 扫描在 60s 轮询下会把工具页变成负载源——json 内嵌 ts/任务日志尾行/jsonl 尾行三件套已覆盖全部健康面，重查询留给低频页（/bridge、N1Check）；②**双大屏并存期改造要先锁定生产入口**：8080 nginx `location = /screen` 精确匹配指向静态版，8091:8091 直连才是动态版——「改了没变化」类客诉先 curl 生产入口看返回体特征（本批 K56-B4 判例①的姊妹篇）。
 - **观察项**：今晚夜链首跑后 pulse 面板将首次显示全绿八项（TushareSync 23:30 exit=0 数字码/统一日报 03:00 exit=0）；缠论 05:50 扫描后 first_seen/tail15/当日信号自然滚动。
 
-## K58 🔄 A股日线深历史回填：daily+adj_factor 1990→2023 双表按日（2026-10-04 午，用户「先跑一次 A 股日线深历史补全」）
+## K58 ✅ A股日线深历史回填：daily+adj_factor 1990→2023 双表按日（2026-10-04 午，用户「先跑一次 A 股日线深历史补全」）
 > 触发：数仓全景扫描（79 表 stats 级全扫，合计 10.1GB/1.5 亿行）发现 A 股日线底座 ts_daily 仅 2023-07-31 起 3 年——深历史「未建仓」（alias note 原文），回测区间受限。
 
 - **方案**：新建 [ts_daily_deep.py](file:///e:/老田的AI助手/quant_backtest/ts_daily_deep.py) 按交易日逐日拉 tushare `daily`+`adj_factor`（**复权因子为回测刚需**，ts_daily 无此列），单日全市场一页（6000 cap，1994 实测 187 行/2005 1345 行/2023 5062 行），落 `data/tushare/{daily,adj_factor}/d_*.parquet`（by_date 布局），**止于 2023-07-30**（ts_daily 起点前一日，零重叠）；幂等 skip-if-exists 断点续跑，ts_call 限频自动退避。
