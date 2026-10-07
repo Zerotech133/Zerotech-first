@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>板块强弱对照 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<!--
+  strong 产线专项页（D2 第 11 领域卡 · 门户层）
+  数据源：reports/strong_latest.json（strong_scan 产出，不在 webroot）
+  数据管道约定（与 ops/health_check.py 写 portal/data/health.json 同款）：
+    strong_scan / health_check 收尾时将 reports/strong_latest.json
+    拷贝为 portal/data/strong_latest.json（webroot 内），本页才可 fetch 到。
+    页面仅做降级态，不内置拷贝逻辑。
+  验收调试：本页支持 ?demo=1 强制渲染内置样例数据（不写盘、不进仓库）。
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 26px 56px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: 1080px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 17px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: 1080px; margin: 0 auto; }
+  .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  /* ── 顶部体检行 ── */
+  .vitals { margin-top: 24px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-m); padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; font-size: 12.5px; color: var(--text-dim); font-family: Consolas, "Microsoft YaHei", monospace; }
+  .vitals b { color: var(--text); font-weight: 600; }
+  .vitals .spacer { flex: 1; }
+  .refresh { display: inline-flex; align-items: center; gap: 7px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font-size: 12px; color: var(--text); font-family: "Segoe UI", "Microsoft YaHei", sans-serif; cursor: pointer; transition: border-color .2s ease; }
+  .refresh:hover { border-color: var(--link); }
+  .refresh:disabled { opacity: .55; cursor: default; }
+  .tag { font-size: 10px; padding: 2px 9px; border-radius: 999px; border: 1px dashed var(--border); color: var(--text-dim); font-weight: 400; }
+  .tag.warn { color: var(--color-warn); border-color: var(--color-warn); }
+
+  .sec { margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .sec-title { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); }
+  .sec-sub { font-size: 11px; color: var(--text-dim); letter-spacing: .5px; }
+
+  /* ── 个股卡 ── */
+  .stock-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); }
+  .scard { display: flex; flex-direction: column; gap: 8px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; transition: border-color .2s ease; min-height: 148px; }
+  .scard:hover { border-color: var(--link); }
+  .scard .row1 { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .scard .code { font-family: Consolas, monospace; font-size: 15px; font-weight: 700; color: var(--text); }
+  .scard .name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .scard .block-tag { font-size: 10.5px; padding: 2px 9px; border-radius: 999px; background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-dim); margin-left: auto; }
+  .scard .ex-row { display: flex; align-items: baseline; gap: 8px; }
+  .scard .ex-label { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
+  .scard .ex-val { font-family: Consolas, "Courier New", monospace; font-size: 26px; font-weight: 700; color: var(--color-up); line-height: 1.15; }
+  .scard .reasons { font-size: 11.5px; color: var(--gray-6); line-height: 1.7; }
+
+  /* 逆板块强势：灰色调观察名单 */
+  .scard.watch { border-style: dashed; }
+  .scard.watch .ex-val { color: var(--text); }
+  .scard.watch:hover { border-color: var(--text-dim); }
+  .watch-note { margin-top: 12px; font-size: 11.5px; color: var(--text-dim); }
+  .watch-note b { color: var(--gray-6); font-weight: 600; }
+
+  /* ── 状态面板：加载中 / 空态 / 失败 ── */
+  .statebox { margin-top: 28px; background: var(--bg-surface); border: 1px solid var(--border); border-left: 3px solid var(--link); border-radius: 10px; padding: 18px 22px; font-size: 12.5px; color: var(--gray-6); line-height: 1.8; }
+  .statebox b { color: var(--text); }
+  .statebox.err { border-left-color: var(--color-err); }
+  .statebox a { cursor: pointer; }
+
+  @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div><h1>板块强弱对照</h1><small>STRONG · 强于板块领涨识别</small></div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <nav class="topnav">
+    <a class="pill" href="/">🏠 首页</a>
+    <a class="pill" href="/quant">📈 量化股票</a>
+    <span class="pill on">📊 强弱对照</span>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <a class="pill" href="/creator">🎬 创作</a>
+    <a class="pill" href="/dev.html">💻 开发</a>
+    <a class="pill" href="/ops">⚙ 系统</a>
+  </nav>
+
+  <main>
+    <!-- 顶部体检行：数据时间 / 陈旧度 / 扫描量 / 刷新 -->
+    <div class="vitals">
+      <span>数据时间 <b id="v-ts">—</b></span>
+      <span id="v-stale"></span>
+      <span>扫描板块 <b id="v-blocks">—</b></span>
+      <span>扫描个股 <b id="v-stocks">—</b></span>
+      <span>名单 <b id="v-total">—</b></span>
+      <span class="spacer"></span>
+      <button class="refresh" id="btn-refresh" type="button">↻ 手动刷新</button>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 🚀 板块领涨</div>
+        <span class="sec-sub">超额 ≥ +10pp 且板块成员 ≥ 5 · 强信号</span>
+      </div>
+      <div class="stock-grid" id="grid-strong"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 👁 逆板块强势 · 观察名单</div>
+        <span class="sec-sub">超额先行 · 人工复核</span>
+      </div>
+      <div class="stock-grid" id="grid-watch"></div>
+      <div class="watch-note">此处为<b>超额先行</b>信号：个股跑赢所属板块但尚不构成「板块领涨」，仅入观察名单，<b>人工复核</b>后再决定是否立案。</div>
+    </div>
+
+    <!-- 加载中 / 空态 / 失败态（JS 控制） -->
+    <div class="statebox" id="state" style="display:none"></div>
+  </main>
+
+<script>
+  'use strict';
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const STALE_H = 26;   // 与 dev.html 同款陈旧度阈值（每日盘后产出，26h 未更新视为陈旧）
+  const DATA_URL = '/data/strong_latest.json';
+
+  function tick() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  // ── 状态面板 ──
+  function showState(kind, msg) {
+    const el = document.getElementById('state');
+    el.style.display = '';
+    el.className = 'statebox' + (kind === 'err' ? ' err' : '');
+    el.innerHTML = msg;
+  }
+  function hideState() { document.getElementById('state').style.display = 'none'; }
+
+  // ── 内置样例数据（?demo=1 验收调试用，结构与真实产出一致）──
+  const DEMO = {
+    ts: '2026-02-13 15:05 北京',
+    blocks_scanned: 86,
+    stocks_scanned: 4210,
+    list: [
+      { code: '600519', name: '贵州茅台', block: '白酒', ex250: 14.2, tag: '板块领涨', reasons: ['250日超额 +14.2pp ≥ +10pp', '板块成员 12 只 ≥ 5', '个股日线多头'] },
+      { code: '300750', name: '宁德时代', block: '电池', ex250: 11.8, tag: '板块领涨', reasons: ['250日超额 +11.8pp ≥ +10pp', '板块成员 9 只 ≥ 5', '个股日线多头'] },
+      { code: '002594', name: '比亚迪', block: '整车', ex250: 8.6, tag: '逆板块强势', reasons: ['250日超额 +8.6pp：跑赢板块但未达 +10pp 门槛', '板块处于弱势段'] },
+      { code: '601899', name: '紫金矿业', block: '有色', ex250: 6.3, tag: '逆板块强势', reasons: ['250日超额 +6.3pp：超额先行，待人工复核'] }
+    ]
+  };
+
+  // ── 渲染 ──
+  function stockCard(it, watch) {
+    const ex = (it.ex250 == null) ? '—' : ((it.ex250 >= 0 ? '+' : '') + Number(it.ex250).toFixed(1) + 'pp');
+    const reasons = (it.reasons || []).map(r => '· ' + esc(r)).join('<br>');
+    return '<div class="scard' + (watch ? ' watch' : '') + '">' +
+      '<div class="row1"><span class="code">' + esc(it.code) + '</span>' +
+      '<span class="name">' + esc(it.name) + '</span>' +
+      '<span class="block-tag">' + esc(it.block || '未归板块') + '</span></div>' +
+      '<div class="ex-row"><span class="ex-label">250日超额</span>' +
+      '<span class="ex-val num">' + esc(ex) + '</span>' +
+      (watch ? '<span class="tag">待复核</span>' : '') + '</div>' +
+      '<div class="reasons">' + reasons + '</div>' +
+    '</div>';
+  }
+
+  function render(d) {
+    hideState();
+    // 体检行
+    document.getElementById('v-ts').textContent = d.ts || '—';
+    document.getElementById('v-blocks').textContent = d.blocks_scanned ?? '—';
+    document.getElementById('v-stocks').textContent = d.stocks_scanned ?? '—';
+    const list = Array.isArray(d.list) ? d.list : [];
+    document.getElementById('v-total').textContent = list.length + ' 只';
+    const tsMs = d.ts ? new Date(String(d.ts).replace('北京', '')).getTime() : NaN;
+    if (!isNaN(tsMs)) {
+      const ageH = (Date.now() - tsMs) / 36e5;
+      if (ageH > STALE_H) {
+        document.getElementById('v-stale').innerHTML =
+          '<span class="tag warn">陈旧 ' + ageH.toFixed(0) + 'h · 待下次扫描</span>';
+      }
+    }
+
+    // 分区
+    const strong = list.filter(x => x.tag === '板块领涨');
+    const watch  = list.filter(x => x.tag !== '板块领涨');
+    document.getElementById('grid-strong').innerHTML =
+      strong.length ? strong.map(x => stockCard(x, false)).join('') : '';
+    document.getElementById('grid-watch').innerHTML =
+      watch.length ? watch.map(x => stockCard(x, true)).join('') : '';
+
+    // 空态
+    if (list.length === 0) {
+      showState('info', '<b>本期名单为空</b>：扫描已完成（板块 ' + esc(d.blocks_scanned ?? '—') +
+        ' · 个股 ' + esc(d.stocks_scanned ?? '—') + '），但当前没有个股同时满足领涨/观察条件。属正常状态，待下一期扫描。');
+    } else {
+      if (strong.length === 0) {
+        document.getElementById('grid-strong').innerHTML =
+          '<div class="sec-sub">本期无「板块领涨」个股。</div>';
+      }
+      if (watch.length === 0) {
+        document.getElementById('grid-watch').innerHTML =
+          '<div class="sec-sub">本期观察名单为空。</div>';
+      }
+    }
+  }
+
+  // ── 加载 ──
+  async function load() {
+    const btn = document.getElementById('btn-refresh');
+    btn.disabled = true;
+    // 数据管道：reports/strong_latest.json 由 strong_scan / health_check 收尾时
+    // 拷贝为 portal/data/strong_latest.json（webroot）；本页只读 webroot 副本。
+    try {
+      const r = await fetch(DATA_URL + '?ts=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      render(await r.json());
+    } catch (e) {
+      // 失败态：数据副本尚未落盘或加载失败
+      const demo = new URLSearchParams(location.search).get('demo') === '1';
+      showState('err',
+        '<b>数据不可用</b>（' + esc(e.message) + '）：portal/data/strong_latest.json 尚未生成。' +
+        '该文件由 strong_scan / health_check 收尾时从 reports/strong_latest.json 同步，待首次扫描后自动出现。' +
+        (demo ? '<br>当前为 <b>?demo=1</b> 演示模式。' :
+                '<br><a id="lnk-demo">查看演示数据（?demo=1）→</a>'));
+      const lnk = document.getElementById('lnk-demo');
+      if (lnk) lnk.onclick = () => { render(DEMO); };
+      if (demo) render(DEMO);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById('btn-refresh').addEventListener('click', load);
+  load();
+  setInterval(load, 300000);  // 5 分钟自动刷新
+</script>
+</body>
+</html>
