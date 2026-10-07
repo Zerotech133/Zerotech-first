@@ -95,6 +95,17 @@ _MUTATION_POSTS = frozenset((
     "/api/batch-backtest",
 ))
 
+# C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
+# POST 待遇纳入鉴权。此前局域网攻击者可直接 GET 触发数据同步/预警推送/
+# 个股分析子进程（资源滥用 + 伪造飞书推送）。本机判定链复用既有机制：
+# 回环直连 8091 或本机浏览器（X-Real-IP=127.0.0.1）直接放行，页面使用
+# 不受影响；局域网来源须带 X-Portal-Token（与 POST 同一 token）。
+_ACTION_GETS = frozenset((
+    "/api/data/sync",    # 手动触发数据同步（data_sync_start 起后台子进程）
+    "/api/alert/push",   # 手动触发飞书预警推送（data_sync_start("alertpush")）
+    "/sa/start",         # 个股分析任务启动（起后台分析子进程）
+))
+
 # ===== P0-5 静默吞错落盘（2026-10-08 全检修复）=====
 # 背景：全检报告 P0-5——258 处 `except Exception` 多为 pass，数据读取失败
 # 被静默兜底，故障态看起来像正常态。本批先把最高频的 20 处读取/DB 兜底层
@@ -20235,6 +20246,15 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        # C1a：GET 动作端点鉴权闸门（与写端点同规则）。本机（回环直连/
+        # 本机浏览器）放行；反代+局域网须 X-Portal-Token，缺失/不匹配
+        # 返回 403，防止匿名 GET 触发后台子进程与飞书推送。
+        if path in _ACTION_GETS and not self._check_portal_token():
+            self._json({"error": "forbidden: 缺失或不匹配的 X-Portal-Token"
+                        "（本机浏览器经门户页面操作直接放行；脚本调用请带"
+                        " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
+                        " 或 C:\\Temp\\portal_api_token）"}, 403)
+            return
         if path == "/":
             # 根路径引导：8091 是 API+页面后端，首页在 nginx 8080——
             # 直接访问 8091/ 曾得 404 白页误判「网络不通」，302 到真首页
