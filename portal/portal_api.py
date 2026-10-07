@@ -641,7 +641,8 @@ DOMAIN_NAV_GROUPS = {
         ("🚦 实盘跟踪", (
             ("🚦 信号", "/bt-signals", "signals"),
             ("💼 持仓", "/bt-positions", "positions"),
-            ("📄 报告", "/bt-report", "report"))),
+            ("📄 报告", "/bt-report", "report"),
+            ("🎯 卖点研判", "/sellpoint", "sellpoint"))),
         ("🧰 研究与数据", (
             ("🎯 选股中心", "/bt", "bt"),
             ("🌾 期货量化", "/fut", "fut"),
