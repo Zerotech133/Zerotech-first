@@ -52,7 +52,10 @@ function Clear-ViteCache {
 }
 
 function Start-Api {
-  Start-Process $Py -ArgumentList '-m','uvicorn','zhice_os_v2.api.main:app','--host','0.0.0.0','--port','8102' -WorkingDirectory $Code -WindowStyle Hidden -RedirectStandardOutput "$ApiLog.out" -RedirectStandardError "$ApiLog.err"
+  # P0-1：绑回环（全检报告发现B）。消费方仅本机探测(zhice.ps1:170)与 nginx 经
+  # host.docker.internal 的 /probe/zhice（Docker Desktop 回环转发，与 8091 同款已验证）。
+  # 若未来有局域网设备需直连 8102，须改经 nginx 反代并过鉴权，勿直接放开绑定。
+  Start-Process $Py -ArgumentList '-m','uvicorn','zhice_os_v2.api.main:app','--host','127.0.0.1','--port','8102' -WorkingDirectory $Code -WindowStyle Hidden -RedirectStandardOutput "$ApiLog.out" -RedirectStandardError "$ApiLog.err"
 }
 function Start-Scheduler {
   # K93：US 日线源 yfinance（query*.finance.yahoo.com）裸连被 DNS 污染
@@ -237,7 +240,9 @@ switch ($Action) {
         $sch | ForEach-Object { taskkill /PID $_.ProcessId /T /F 2>$null | Out-Null }
         Start-Sleep 2
         $fixed += 'scheduler-restart(假死)'
-      } elseif ($alive -eq 'degraded') {
+      } elseif ($alive -is [string]) {
+        # 全检报告发现C：$true -eq 'degraded' 会因类型强转误判为 True，
+        # 正常巡检被误标 degraded；改为判型，仅探测器真的返回字符串态时才落标记。
         Add-Content $WatchdogLog "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [degraded] scheduler 假死探测自身故障（db/psql 异常），本轮保守跳过判定"
       }
     }
