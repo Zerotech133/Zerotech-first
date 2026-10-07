@@ -166,12 +166,19 @@ def main():
 
     lead_rows = [h for h in all_hits if h["tag"] == "板块领涨"]
     obs_rows = [h for h in all_hits if h["tag"] == "逆板块强势"]
+    # S4 收口桥接：items/list 平铺全量（每行含 tag+reasons），三方消费对齐——
+    # strong_card.py 消费 items（别名容错）、portal/strong.html 消费 list、
+    # lead/observe 保留为分列速览（历史兼容）。
+    items = [{"ts": h["ts"], "code": h["code"], "name": h["name"],
+              "block": h["block"], "ex250": h["ex250"], "tag": h["tag"],
+              "reasons": h["reasons"]} for h in all_hits]
     summary = {
         "date": today_str(), "ts": now_iso(),
         "blocks_total": len(pool), "blocks_scanned": n_scanned,
         "blocks_skipped": skipped, "stocks_evaluated": n_eval_total[0],
         "per_block_cap": int(a.limit),
         "counts": {"板块领涨": len(lead_rows), "逆板块强势": len(obs_rows)},
+        "items": items, "list": items,
         "lead": [{"code": h["code"], "name": h["name"],
                   "block": h["block"], "ex250": h["ex250"]}
                  for h in lead_rows],
@@ -193,6 +200,16 @@ def main():
                 f.write(json.dumps(h, ensure_ascii=False) + "\n")
         with open(latest_fp, "w", encoding="utf-8") as f:
             json.dump(summary, f, ensure_ascii=False, indent=2)
+        # S4 数据管道：同步 webroot 副本（portal/strong.html 静态读取，
+        # 对齐 ops/health_check.py → portal/data/health.json 模式）
+        try:
+            pub = os.path.join(os.path.dirname(HERE), "portal", "data")
+            os.makedirs(pub, exist_ok=True)
+            with open(os.path.join(pub, "strong_latest.json"), "w",
+                      encoding="utf-8") as f:
+                json.dump(summary, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print("webroot 副本落盘失败(不影响本体): %s" % str(e)[:100])
         print("落盘 %s（%d 行）+ %s" % (list_fp, len(all_hits), latest_fp))
     print("汇总：板块 %d/%d（跳过 %d），个股评估 %d，"
           "板块领涨 %d，逆板块强势 %d"
