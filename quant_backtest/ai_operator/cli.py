@@ -67,6 +67,11 @@ def _parser():
     calendar = commands.add_parser("capture-calendar", help="只读接收显式逐日交易日历并校验覆盖")
     calendar.add_argument("--input", required=True)
 
+    for name, description in (("calendar-reference", "从官方正文独立生成日历推导参考"),
+                              ("calendar-compare", "只读对照官方参考与接收日历")):
+        command = commands.add_parser(name, help=description)
+        command.add_argument("--input", required=True)
+
     source_inputs = commands.add_parser("source-inputs", help="将来源和日历快照对齐为审计标签输入")
     source_inputs.add_argument("--input", required=True)
 
@@ -77,7 +82,9 @@ def _parser():
                               ("capture-history", "只读查看按时点可用的接收链"),
                               ("source-review", "登记与库内快照绑定的来源证据审核"),
                               ("review-gate", "只读核对证据缺口与待人审状态"),
-                              ("journal-outcome", "从库内接收记录生成审计标签")):
+                              ("journal-outcome", "从库内接收记录生成审计标签"),
+                              ("human-review", "提交人工审核声明，认证未配置时拒绝"),
+                              ("review-history", "只读回放具体来源审核的人工状态与资格缺口")):
         command = commands.add_parser(name, help=description)
         command.add_argument("--input", required=True)
         command.add_argument("--db", required=True)
@@ -94,6 +101,12 @@ def _existing_database(path):
 
 
 def _read_input(path):
+    with Path(path).open("rb") as source:
+        raw = source.read(8 * 1024 * 1024 + 1)
+    return _decode_input(raw)
+
+
+def _decode_input(raw):
     def object_pairs(pairs):
         result = {}
         for key, value in pairs:
@@ -105,8 +118,6 @@ def _read_input(path):
     def invalid_constant(value):
         raise ValueError(f"JSON 不允许非有限数：{value}")
 
-    with Path(path).open("rb") as source:
-        raw = source.read(8 * 1024 * 1024 + 1)
     if len(raw) > 8 * 1024 * 1024:
         raise ValueError("JSON 输入超过 8 MiB 限额")
     try:
@@ -192,6 +203,19 @@ def main(argv=None):
             value = _request_object(_read_input(args.input), ("snapshot", "calendar_capture"))
             _emit(snapshot_for_outcomes(**value))
             return 0
+        if args.command == "calendar-reference":
+            from .calendar_reference import build_calendar_reference
+
+            value = _request_object(_read_input(args.input),
+                                    ("documents", "coverage_start", "coverage_end"))
+            _emit(build_calendar_reference(**value))
+            return 0
+        if args.command == "calendar-compare":
+            from .calendar_reference import compare_calendar_reference
+
+            value = _request_object(_read_input(args.input), ("reference", "calendar_capture"))
+            _emit(compare_calendar_reference(**value))
+            return 0
         if args.command == "captured-outcome":
             from .source_inputs import label_captured_decision
 
@@ -199,6 +223,24 @@ def main(argv=None):
                                     ("snapshot", "calendar_capture", "pack", "decision", "evaluated_at"),
                                     ("horizons",))
             _emit(label_captured_decision(**value))
+            return 0
+        if args.command == "human-review":
+            from .memory import open_store
+
+            _request_object(_read_input(args.input), ("statement", "proof"))
+            _existing_database(args.db)
+            with open_store(args.db, readonly=True):
+                pass
+            # 认证必须由可信应用接线，JSON请求不能安装验证器或自填授权。
+            raise ValueError("人工审核认证适配器未配置，拒绝批准、拒绝或撤销登记")
+        if args.command == "review-history":
+            from .memory import open_store
+            from .review_history import assess_human_review_history
+
+            value = _request_object(_read_input(args.input), ("capture_event_id", "review_event_id", "as_of"))
+            _existing_database(args.db)
+            with open_store(args.db, readonly=True) as store:
+                _emit(assess_human_review_history(store, **value))
             return 0
         if args.command in {"capture-journal", "source-review"}:
             from .memory import open_store

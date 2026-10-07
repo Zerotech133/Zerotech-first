@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "batch": 6,
+  "ok": true,
+  "verified_at": "2026-10-07T12:07:37.001418+00:00",
+  "audit_database": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-07\\new-chat-2\\outputs\\第六批真实文件验收\\目标目录复验\\audit-3df66bd540624ef5a8b6a0401053f087.sqlite",
+  "commands": [
+    {
+      "command": "init",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "capture-journal",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "capture-journal",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "capture-history",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "source-review",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "review-gate",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "human-review",
+      "exit_code": 2,
+      "expected_exit_code": 2
+    },
+    {
+      "command": "review-history",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "journal-outcome",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "command": "export",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    }
+  ],
+  "capture_chain_length": 2,
+  "capture_event_ids": [
+    "042cd836447a9821a37cddb8ffb331567a798bc6e777c2eda639843438e5cfe7",
+    "f4c8e0c8e6447bb2f59a26b48f48a03b6a6ba4b38569892891476f43cd0bd937"
+  ],
+  "stream_id": "ba818d087fd5b3d890cc2b10f7c1353c22252bcaec7e42e2a7f992899da6d368",
+  "bars": 300,
+  "review_event_id": "e6f7eae2f88cbc1ca14eb6d1dbdcc6bc8a6773958b138b46f016e7e3a0d4755e",
+  "review_status": "needs_evidence",
+  "gate_status": "blocked_missing_evidence",
+  "checks": [
+    {
+      "name": "supplier_identity",
+      "reason": "缺少声明证据文档",
+      "status": "missing"
+    },
+    {
+      "name": "price_basis",
+      "reason": "缺少声明证据文档",
+      "status": "missing"
+    },
+    {
+      "name": "revision",
+      "reason": "缺少声明证据文档",
+      "status": "missing"
+    },
+    {
+      "name": "official_calendar",
+      "reason": "缺少声明证据文档",
+      "status": "missing"
+    }
+  ],
+  "human_status": "pending",
+  "human_gate_status": "blocked_missing_evidence",
+  "human_review_expected_exit": 2,
+  "human_review_event_created": false,
+  "identity_adapter_deployed": false,
+  "training_eligible": false,
+  "audit_labels": [
+    "audit_only",
+    "audit_only"
+  ],
+  "exported_events": 3,
+  "pending_events_after_export": 0,
+  "source_hashes_before": {
+    "E:\\老田的AI助手\\quant_backtest\\data\\ashare\\000001_SH.parquet": "2aedd9b3c2922058831932ace36393bd405ec86948b49ee8a6d081828e660d48",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0000.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0001.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0002.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0003.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0004.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0005.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0006.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0007.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0008.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0009.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0010.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill.parquet": "0572d79010820906d53518679912c150d487db8e0ea631f91dae88a2968b6d69",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill_neg.parquet": "110ce5ddcbea3784744311a490897685af5ac9b7aa31b912a4f410efeb68550e"
+  },
+  "source_hashes_after": {
+    "E:\\老田的AI助手\\quant_backtest\\data\\ashare\\000001_SH.parquet": "2aedd9b3c2922058831932ace36393bd405ec86948b49ee8a6d081828e660d48",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0000.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0001.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0002.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0003.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0004.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0005.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0006.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0007.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0008.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0009.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0010.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill.parquet": "0572d79010820906d53518679912c150d487db8e0ea631f91dae88a2968b6d69",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill_neg.parquet": "110ce5ddcbea3784744311a490897685af5ac9b7aa31b912a4f410efeb68550e"
+  },
+  "source_files_unchanged": true,
+  "eligible": false,
+  "production_eligible": false,
+  "supplier_verified": false,
+  "historical_availability_verified": false,
+  "model_training_started": false,
+  "trading_started": false,
+  "limitations": [
+    "当前存量行情截至2026-04-01，不是实时行情",
+    "代码候选不证明历史下载执行",
+    "没有供应商、价格口径、修订和独立官方日历完整凭据",
+    "声明URL不是下载证明或签名",
+    "人工身份认证适配器未部署，CLI人工登记保持关闭",
+    "状态机夹具不认证真实来源，未提供trusted开关"
+  ]
+}
