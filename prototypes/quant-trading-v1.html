@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>量化交易模块 · UI 原型 · 老田的市场</title>
+<style>
+  :root {
+    --bg: #0B0E14; --bg-soft: #11151F; --card: #151A26; --card-hover: #1A2030;
+    --border: rgba(255,255,255,.07); --border-hover: rgba(129,140,248,.45);
+    --text: #E5E9F0; --text-2: #9CA3B5; --text-3: #6B7280;
+    --accent: #818CF8; --accent-2: #A78BFA; --accent-soft: rgba(129,140,248,.12);
+    --up: #34D399; --down: #F87171; --warn: #FBBF24; --gold: #F0B429;
+    --grad: linear-gradient(135deg,#6366F1 0%,#8B5CF6 60%,#A78BFA 100%);
+    --shadow: 0 8px 28px rgba(0,0,0,.35);
+  }
+  html[data-theme="light"] {
+    --bg: #F6F7FB; --bg-soft: #EEF0F6; --card: #FFFFFF; --card-hover: #FAFBFF;
+    --border: rgba(15,23,42,.08); --border-hover: rgba(99,102,241,.5);
+    --text: #0F172A; --text-2: #4B5563; --text-3: #9CA3AF;
+    --accent-soft: rgba(99,102,241,.1);
+    --shadow: 0 6px 20px rgba(15,23,42,.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'PingFang SC','Microsoft YaHei','Segoe UI',sans-serif; min-height:100vh; }
+
+  .topbar { display:flex; align-items:center; gap:14px; padding:14px 28px; background:var(--bg-soft); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+  .logo-badge { width:34px; height:34px; border-radius:9px; background:var(--grad); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:17px; box-shadow:0 2px 10px rgba(129,140,248,.4); }
+  .brand { font-size:16px; font-weight:700; }
+  .brand small { color:var(--text-3); font-weight:400; margin-left:8px; font-size:12px; }
+  .spacer { flex:1; }
+  .chip { font-size:12px; color:var(--text-2); background:var(--card); border:1px solid var(--border); padding:5px 12px; border-radius:99px; }
+  .chip.live { color:var(--down); border-color:rgba(248,113,113,.4); }
+  .toggle { cursor:pointer; border:1px solid var(--border); background:var(--card); color:var(--text-2); border-radius:99px; padding:5px 12px; font-size:12px; }
+  .toggle:hover { border-color:var(--border-hover); color:var(--accent); }
+
+  .layout { max-width:1560px; margin:0 auto; padding:24px 28px 48px; display:flex; flex-direction:column; gap:20px; }
+
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; }
+  .card-title { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card-title h3 { font-size:14px; font-weight:600; display:flex; gap:8px; align-items:center; }
+  .dot { width:7px; height:7px; border-radius:50%; }
+  .link { font-size:12px; color:var(--accent); text-decoration:none; }
+  .link:hover { text-decoration:underline; }
+  .btn { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:7px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--text-2); cursor:pointer; transition:.15s; }
+  .btn:hover { border-color:var(--border-hover); color:var(--accent); }
+  .btn.primary { background:var(--grad); border:none; color:#fff; font-weight:600; }
+  .btn.primary:hover { opacity:.9; color:#fff; }
+
+  /* ===== 行情条 ===== */
+  .ticker { display:flex; gap:12px; overflow-x:auto; padding-bottom:2px; }
+  .ticker::-webkit-scrollbar { display:none; }
+  .tk { flex-shrink:0; min-width:150px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 16px; transition:.2s; cursor:pointer; }
+  .tk:hover { border-color:var(--border-hover); transform:translateY(-2px); }
+  .tk.sel { border-color:var(--accent); background:var(--accent-soft); }
+  .tk .n { font-size:12px; color:var(--text-2); display:flex; justify-content:space-between; }
+  .tk .p { font-size:18px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .tk .c { font-size:11px; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .up { color:var(--up); } .down { color:var(--down); }
+
+  /* ===== 主区：K线 + 侧栏 ===== */
+  .main { display:grid; grid-template-columns:1fr 360px; gap:20px; }
+  @media (max-width:1180px){ .main{ grid-template-columns:1fr; } }
+
+  /* 股票头 */
+  .stock-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .stock-icon { width:38px; height:38px; border-radius:11px; background:var(--accent-soft); color:var(--accent); font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .stock-name { font-size:17px; font-weight:700; }
+  .stock-code { font-size:12px; color:var(--text-3); font-variant-numeric:tabular-nums; }
+  .price { font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; margin-left:8px; }
+  .chg { font-size:13px; font-weight:600; padding:3px 10px; border-radius:8px; }
+  .chg.up { background:rgba(52,211,153,.12); } .chg.down { background:rgba(248,113,113,.12); }
+
+  /* K线占位（CSS 模拟） */
+  .chart { position:relative; height:320px; margin-top:16px; border:1px solid var(--border); border-radius:14px; background:var(--bg-soft); overflow:hidden; }
+  .grid-lines { position:absolute; inset:0; background-image:repeating-linear-gradient(to top, transparent 0 79px, var(--border) 79px 80px), repeating-linear-gradient(to right, transparent 0 79px, var(--border) 79px 80px); }
+  .kline { position:absolute; bottom:24px; left:0; right:80px; height:240px; display:flex; align-items:flex-end; gap:10px; padding:0 20px; }
+  .kl { flex:1; position:relative; border-radius:2px; min-width:6px; }
+  .kl.up { background:rgba(52,211,153,.85); box-shadow:0 -8px 0 0 rgba(52,211,153,.55); }
+  .kl.down { background:rgba(248,113,113,.85); box-shadow:0 8px 0 0 rgba(248,113,113,.55); }
+  .ma { position:absolute; inset:0; pointer-events:none; }
+  .ma5 { stroke:var(--accent); stroke-width:1.5; fill:none; }
+  .ma20 { stroke:var(--gold); stroke-width:1.5; fill:none; }
+  .signal-marker { position:absolute; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; box-shadow:0 0 12px rgba(52,211,153,.6); }
+  .signal-buy { background:var(--up); bottom:6px; }
+  .chan-box { position:absolute; border:1.5px dashed var(--accent-2); border-radius:6px; opacity:.7; }
+
+  .chart-legend { display:flex; gap:16px; margin-top:10px; font-size:11px; color:var(--text-3); padding:0 4px; }
+  .chart-legend span { display:flex; gap:5px; align-items:center; }
+  .lg-line { width:14px; height:2px; border-radius:2px; }
+
+  /* 三路信号 */
+  .signals3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:16px; }
+  .sig { border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--bg-soft); }
+  .sig .h { display:flex; justify-content:space-between; font-size:11px; color:var(--text-3); margin-bottom:8px; }
+  .sig .v { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .sig .bar { height:4px; border-radius:99px; background:var(--border); margin-top:8px; overflow:hidden; }
+  .sig .bar i { display:block; height:100%; border-radius:99px; }
+  .score-big { display:flex; align-items:baseline; gap:6px; margin-top:2px; }
+  .score-num { font-size:30px; font-weight:800; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  /* 右栏 */
+  .side { display:flex; flex-direction:column; gap:20px; }
+
+  /* 操作面板 */
+  .trade-panel label { font-size:11px; color:var(--text-3); display:block; margin:10px 0 5px; }
+  .trade-panel input, .trade-panel select { width:100%; background:var(--bg-soft); border:1px solid var(--border); border-radius:9px; color:var(--text); padding:8px 10px; font-size:13px; outline:none; font-family:inherit; }
+  .trade-panel input:focus, .trade-panel select:focus { border-color:var(--border-hover); }
+  .quick-amt { display:flex; gap:8px; margin-top:6px; }
+  .quick-amt button { flex:1; font-size:11px; padding:5px 0; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text-2); cursor:pointer; }
+  .quick-amt button:hover { border-color:var(--border-hover); color:var(--accent); }
+  .risk-row { display:flex; justify-content:space-between; font-size:11px; color:var(--text-3); margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); }
+  .risk-row b { color:var(--text); font-variant-numeric:tabular-nums; }
+
+  /* 持仓表 */
+  table { width:100%; border-collapse:collapse; }
+  th { font-size:11px; color:var(--text-3); text-align:right; font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border); }
+  th:first-child, td:first-child { text-align:left; }
+  td { font-size:13px; padding:10px 8px; text-align:right; border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; }
+  tr:last-child td { border-bottom:none; }
+  tbody tr:hover { background:var(--card-hover); }
+  .pos-name { display:flex; align-items:center; gap:8px; }
+  .pos-icon { width:26px; height:26px; border-radius:7px; font-size:11px; display:flex; align-items:center; justify-content:center; background:var(--accent-soft); color:var(--accent); font-weight:700; }
+  .badge { font-size:10px; padding:2px 8px; border-radius:99px; }
+  .badge.hold { color:var(--up); background:rgba(52,211,153,.12); }
+  .badge.watch { color:var(--gold); background:rgba(240,180,41,.12); }
+  .tag { font-size:10px; padding:2px 8px; border-radius:99px; border:1px solid var(--border); color:var(--text-3); }
+
+  /* 自选池 */
+  .watch-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+  .w-item { border:1px solid var(--border); border-radius:10px; padding:9px 12px; background:var(--bg-soft); cursor:pointer; transition:.15s; }
+  .w-item:hover { border-color:var(--border-hover); }
+  .w-item .n { font-size:12px; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
+  .w-item .s { font-size:10px; color:var(--text-3); margin-top:3px; display:flex; justify-content:space-between; }
+
+  /* 信号时间线 */
+  .tl { position:relative; padding-left:20px; }
+  .tl::before { content:''; position:absolute; left:5px; top:6px; bottom:6px; width:1.5px; background:var(--border); }
+  .tl-item { position:relative; padding:8px 0 8px 6px; }
+  .tl-item::before { content:''; position:absolute; left:-19px; top:14px; width:9px; height:9px; border-radius:50%; background:var(--card); border:2px solid var(--text-3); }
+  .tl-item.buy::before { border-color:var(--up); background:rgba(52,211,153,.25); }
+  .tl-item.sell::before { border-color:var(--down); background:rgba(248,113,113,.25); }
+  .tl-t { font-size:12px; font-weight:600; display:flex; gap:8px; align-items:center; }
+  .tl-d { font-size:11px; color:var(--text-2); margin-top:2px; line-height:1.5; }
+  .tl-time { font-size:10px; color:var(--text-3); margin-top:2px; }
+
+  footer { text-align:center; padding:20px; font-size:11px; color:var(--text-3); }
+  .prototype-note { position:fixed; bottom:16px; right:16px; background:var(--card); border:1px solid var(--border); padding:8px 14px; border-radius:10px; font-size:11px; color:var(--text-3); box-shadow:var(--shadow); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo-badge">田</div>
+  <div class="brand">老田的市场<small>量化交易模块</small></div>
+  <div class="spacer"></div>
+  <div class="chip live">● 实时盯盘中 · 9:30-15:00</div>
+  <div class="chip">📅 2026-09-20 周日</div>
+  <button class="toggle" onclick="const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';this.textContent=h.dataset.theme==='dark'?'☀ 亮色':'🌙 暗色'">☀ 亮色</button>
+</header>
+
+<div class="layout">
+
+  <!-- ===== 自选池行情条 ===== -->
+  <section>
+    <div class="card-title" style="margin-bottom:10px">
+      <h3><span class="dot" style="background:var(--gold)"></span>自选池 · 实时行情</h3>
+      <div><span class="chip" style="margin-right:8px">30 只 · 每 3s 刷新</span><a class="link" href="#">管理自选 →</a></div>
+    </div>
+    <div class="ticker">
+      <div class="tk sel"><div class="n">平安银行 <span class="tag">持仓</span></div><div class="p">11.86</div><div class="c up">+1.28% +0.15</div></div>
+      <div class="tk"><div class="n">招商银行 <span class="tag">持仓</span></div><div class="p">42.15</div><div class="c down">-0.35% -0.15</div></div>
+      <div class="tk"><div class="n">东方财富 <span class="tag">持仓</span></div><div class="p">18.42</div><div class="c up">+2.71% +0.49</div></div>
+      <div class="tk"><div class="n">长江电力</div><div class="p">28.90</div><div class="c up">+0.42% +0.12</div></div>
+      <div class="tk"><div class="n">中国神华</div><div class="p">38.60</div><div class="c up">+0.89% +0.34</div></div>
+      <div class="tk"><div class="n">美丽生态</div><div class="p">3.12</div><div class="c up">+0.97% +0.03</div></div>
+      <div class="tk"><div class="n">深粮控股</div><div class="p">7.85</div><div class="c down">-0.38% -0.03</div></div>
+      <div class="tk"><div class="n">深华发A</div><div class="p">9.44</div><div class="c up">+1.07% +0.10</div></div>
+    </div>
+  </section>
+
+  <!-- ===== 主区 ===== -->
+  <div class="main">
+    <!-- 左：个股分析 -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <section class="card">
+        <div class="card-title" style="margin-bottom:12px">
+          <div class="stock-head">
+            <div class="stock-icon">PA</div>
+            <div><div class="stock-name">平安银行</div><div class="stock-code">000001 · 银行 · 深主板</div></div>
+            <span class="price up">11.86</span>
+            <span class="chg up">+1.28% +0.15</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn">日线</button>
+            <button class="btn">30分</button>
+            <button class="btn">60分</button>
+          </div>
+        </div>
+
+        <!-- K线区（CSS 模拟，标注缠论中枢+买卖点） -->
+        <div class="chart">
+          <div class="grid-lines"></div>
+          <!-- 缠论中枢框 -->
+          <div class="chan-box" style="left:26%; right:38%; top:38%; height:26%"></div>
+          <div class="chan-box" style="left:52%; right:16%; top:30%; height:24%"></div>
+          <div class="kline">
+            <i class="kl down" style="height:38%"></i><i class="kl down" style="height:32%"></i><i class="kl up" style="height:45%"></i><i class="kl up" style="height:52%"></i><i class="kl up" style="height:48%"></i><i class="kl down" style="height:44%"></i><i class="kl up" style="height:58%"></i><i class="kl up" style="height:66%"></i><i class="kl down" style="height:60%"></i><i class="kl up" style="height:70%"></i><i class="kl down" style="height:64%"></i><i class="kl up" style="height:78%"></i><i class="kl up" style="height:88%"></i><i class="kl down" style="height:82%"></i><i class="kl up" style="height:94%"></i><i class="kl up" style="height:100%"></i>
+          </div>
+          <!-- 三买信号标记 -->
+          <div class="signal-marker signal-buy" style="left:68%; bottom:16px;">B</div>
+          <svg class="ma" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path class="ma5" d="M0,72 C15,68 28,55 42,52 S70,38 85,30 S95,20 100,12"/>
+            <path class="ma20" d="M0,80 C20,76 35,68 50,62 S75,52 88,44 S96,36 100,30"/>
+          </svg>
+          <div style="position:absolute; top:10px; right:12px; font-size:10px; color:var(--text-3); background:var(--card); padding:3px 8px; border-radius:6px; border:1px solid var(--border)">三买结构确认 · 2 日前</div>
+        </div>
+        <div class="chart-legend">
+          <span><i class="lg-line" style="background:#818CF8"></i>MA5</span>
+          <span><i class="lg-line" style="background:#F0B429"></i>MA20</span>
+          <span><i class="lg-line" style="border:1.5px dashed #A78BFA; background:none; height:8px; border-radius:3px"></i>缠论中枢</span>
+          <span><i class="lg-line" style="background:var(--up); border-radius:50%"></i>买入信号</span>
+        </div>
+
+        <!-- 三路信号融合 -->
+        <div class="signals3">
+          <div class="sig">
+            <div class="h"><span>缠论结构</span><span class="up">看多</span></div>
+            <div class="v">三买成立 <small style="font-size:11px;color:var(--text-3)">0.35</small></div>
+            <div class="bar"><i style="width:78%;background:var(--up)"></i></div>
+          </div>
+          <div class="sig">
+            <div class="h"><span>模型预测</span><span class="up">看多</span></div>
+            <div class="v">XGBoost <small style="font-size:11px;color:var(--text-3)">0.15</small></div>
+            <div class="bar"><i style="width:64%;background:var(--accent)"></i></div>
+          </div>
+          <div class="sig">
+            <div class="h"><span>LB 低位突破</span><span class="up">已突破</span></div>
+            <div class="v">量价配合 <small style="font-size:11px;color:var(--text-3)">0.5</small></div>
+            <div class="bar"><i style="width:85%;background:var(--gold)"></i></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:12px 16px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--border)">
+          <div>
+            <div style="font-size:11px;color:var(--text-3)">三路融合综合评分（权重 0.35 / 0.15 / 0.5）</div>
+            <div class="score-big"><span class="score-num">86</span><span style="font-size:12px;color:var(--up);font-weight:600">▲ 强烈买入信号</span></div>
+          </div>
+          <div style="text-align:right;font-size:11px;color:var(--text-3);line-height:1.7">
+            目标价 <b style="color:var(--text)">12.80</b>（+7.9%）<br>
+            止损价 <b style="color:var(--down)">11.20</b>（-5.6%）
+          </div>
+        </div>
+      </section>
+
+      <!-- 持仓表 -->
+      <section class="card">
+        <div class="card-title">
+          <h3><span class="dot" style="background:var(--up)"></span>持仓监控 <span class="chip" style="margin-left:6px">3 持仓 · 2 自选关注</span></h3>
+          <a class="link" href="#">交易记录 →</a>
+        </div>
+        <table>
+          <thead><tr><th>标的</th><th>成本</th><th>现价</th><th>盈亏</th><th>仓位</th><th>持仓信号</th><th>缠论状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div class="pos-name"><div class="pos-icon">PA</div><div>平安银行<div class="stock-code">000001</div></div></div></td>
+              <td>11.20</td><td>11.86</td>
+              <td class="up"><b>+5.89%</b><br><small>+6600</small></td>
+              <td>28%</td>
+              <td><span class="badge hold">● 持有</span></td>
+              <td><span class="tag">三买结构</span></td>
+              <td><a class="link" href="#">详情</a></td>
+            </tr>
+            <tr>
+              <td><div class="pos-name"><div class="pos-icon">ZS</div><div>招商银行<div class="stock-code">600036</div></div></div></td>
+              <td>42.80</td><td>42.15</td>
+              <td class="down"><b>-1.52%</b><br><small>-3120</small></td>
+              <td>18%</td>
+              <td><span class="badge hold">● 持有</span></td>
+              <td><span class="tag">中枢震荡</span></td>
+              <td><a class="link" href="#">详情</a></td>
+            </tr>
+            <tr>
+              <td><div class="pos-name"><div class="pos-icon">DF</div><div>东方财富<div class="stock-code">300059</div></div></div></td>
+              <td>17.60</td><td>18.42</td>
+              <td class="up"><b>+4.66%</b><br><small>+4960</small></td>
+              <td>22%</td>
+              <td><span class="badge watch">◐ 减仓预警</span></td>
+              <td><span class="tag">顶背离迹象</span></td>
+              <td><a class="link" href="#">详情</a></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="display:flex;justify-content:space-between;margin-top:14px;padding:12px 16px;border-radius:12px;background:var(--bg-soft);font-size:12px">
+          <span style="color:var(--text-3)">总市值 <b style="color:var(--text)">218,400</b> · 可用资金 <b style="color:var(--text)">58,600</b></span>
+          <span class="up">今日盈亏 <b>+8,440 (+4.02%)</b></span>
+        </div>
+      </section>
+
+      <!-- 自选池网格 -->
+      <section class="card">
+        <div class="card-title">
+          <h3><span class="dot" style="background:var(--gold)"></span>自选池（30 只 · 显示前 8）</h3>
+          <a class="link" href="#">查看全部 →</a>
+        </div>
+        <div class="watch-grid">
+          <div class="w-item"><div class="n">长江电力 <span class="tag">临近LB</span></div><div class="s"><span>600900</span><span class="up">+0.42%</span></div></div>
+          <div class="w-item"><div class="n">中国神华 <span class="tag">高分红</span></div><div class="s"><span>601088</span><span class="up">+0.89%</span></div></div>
+          <div class="w-item"><div class="n">美丽生态 <span class="tag">scan</span></div><div class="s"><span>000010</span><span class="up">+0.97%</span></div></div>
+          <div class="w-item"><div class="n">深粮控股 <span class="tag">scan</span></div><div class="s"><span>000019</span><span class="down">-0.38%</span></div></div>
+          <div class="w-item"><div class="n">深华发A <span class="tag">scan</span></div><div class="s"><span>000020</span><span class="up">+1.07%</span></div></div>
+          <div class="w-item"><div class="n">深科技 <span class="tag">scan</span></div><div class="s"><span>000021</span><span class="up">+0.55%</span></div></div>
+          <div class="w-item"><div class="n">飞亚达 <span class="tag">scan</span></div><div class="s"><span>000026</span><span class="down">-0.21%</span></div></div>
+          <div class="w-item"><div class="n">宝奥股份 <span class="tag">scan</span></div><div class="s"><span>000030</span><span class="up">+0.31%</span></div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 右栏 -->
+    <div class="side">
+      <!-- 快速交易面板 -->
+      <section class="card trade-panel">
+        <div class="card-title"><h3><span class="dot" style="background:var(--accent)"></span>快速交易</h3><span class="tag">模拟盘</span></div>
+        <label>操作</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn primary" style="flex:1;justify-content:center">买入 B</button>
+          <button class="btn" style="flex:1;justify-content:center;color:var(--down);border-color:rgba(248,113,113,.35)">卖出 S</button>
+        </div>
+        <label>价格（现价 11.86）</label>
+        <input value="11.86" />
+        <label>数量</label>
+        <input value="5600" />
+        <div class="quick-amt">
+          <button>1/4 仓</button><button>1/2 仓</button><button>3/4 仓</button><button>全仓</button>
+        </div>
+        <div class="risk-row">
+          <span>预估金额 <b>66,416</b></span>
+          <span>仓位占比 <b>31%</b></span>
+        </div>
+        <div class="risk-row" style="border-top:none;padding-top:4px">
+          <span>止损 11.20 <b style="color:var(--down)">-5.6%</b></span>
+          <span>止盈 12.80 <b style="color:var(--up)">+7.9%</b></span>
+        </div>
+      </section>
+
+      <!-- 今日信号时间线 -->
+      <section class="card">
+        <div class="card-title"><h3><span class="dot" style="background:var(--down)"></span>信号时间线</h3><span class="chip">今日 5 条</span></div>
+        <div class="tl">
+          <div class="tl-item buy">
+            <div class="tl-t">买入信号 · 平安银行 <span class="tag">三买</span></div>
+            <div class="tl-d">三路融合 86 分 · 缠论三买 + LB 突破 + 模型看多，权重一致性 83%</div>
+            <div class="tl-time">14:21 · strategy-engine</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-t">盯盘预警 · 东方财富</div>
+            <div class="tl-d">30 分钟顶背离迹象，MACD 红柱缩短，建议关注减仓时机</div>
+            <div class="tl-time">13:47 · watchdog</div>
+          </div>
+          <div class="tl-item buy">
+            <div class="tl-t">买入信号 · 长江电力 <span class="tag">底分型</span></div>
+            <div class="tl-d">日底分型成立 + LB 临近突破，综合 81 分</div>
+            <div class="tl-time">11:05 · strategy-engine</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-t">扫描完成 · 全市场</div>
+            <div class="tl-d">5232 只扫描完毕，命中 3 只写入自选池，耗时 4 分 12 秒</div>
+            <div class="tl-time">10:18 · scanner</div>
+          </div>
+          <div class="tl-item sell">
+            <div class="tl-t">卖出信号 · 招商银行 <span class="tag">二卖</span></div>
+            <div class="tl-d">缠论二卖结构 + 量能萎缩，综合 74 分（未达执行阈值 80）</div>
+            <div class="tl-time">09:52 · strategy-engine</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 策略参数 -->
+      <section class="card">
+        <div class="card-title"><h3><span class="dot" style="background:var(--accent-2)"></span>策略参数</h3><a class="link" href="#">编辑 →</a></div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">融合权重</span><b>0.35 / 0.15 / 0.5</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">执行阈值</span><b>综合分 ≥ 80</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">单票仓位上限</span><b>30%</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">止损线</span><b style="color:var(--down)">-6%</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">盯盘频率</span><b>3 秒 / 次</b></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">扫描时间</span><b>每日 15:30</b></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer>老田的市场 · 量化交易模块 UI 原型 v1 · 与驾驶舱同风格（暗/亮双主题）</footer>
+</div>
+
+<div class="prototype-note">🎨 UI 原型 · 静态展示 · 点击主题切换体验</div>
+
+</body>
+</html>

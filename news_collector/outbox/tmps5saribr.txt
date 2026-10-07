@@ -1,0 +1,8 @@
+🛰 FutQuant 晨报哨兵 · 2026-10-05（收尾 10:27）
+四步 exit: scan=0 backtest=0 walkforward=0 cn_fut=0 ✅ 全绿
+产物 fut_scan: ✅
+产物 fut_backtest: ✅
+产物 fut_strat: ✅
+产物 fut_walkforward: ✅
+F3 矩阵: 14 品种（错 0）· 跑赢 B&H 5 · 最佳 NG=F rsi（WF0.67） 超额 +138.3%
+明早无人值守首轮=本哨兵首个正式班次

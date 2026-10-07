@@ -1,0 +1,60 @@
+.historyRecord{
+  .icons{
+    margin: 10px 0;
+    display: flex;
+    .iconsColor{
+      color:#5192f5;
+    }
+    i,span{
+      margin: 0 8px;
+      cursor: pointer;
+    }
+  }
+  .ant-form{
+    margin-left: 20px;
+    margin-bottom: 20px;
+  }
+  .ant-spin-nested-loading{
+    height: calc(100% - 200px);
+    .ant-spin-container{
+      height: 100%;
+    }
+  }
+  .ant-list{
+    margin: 10px;
+    width: 455px;
+    overflow-y: scroll;
+    height: 100%;
+
+    .ant-list-item{
+      padding: 5px 10px;
+      >span{
+        margin: 0 5px;
+        display: inline-block;
+      }
+      .icon{
+        width: 10px;
+      }
+      .name{
+        width: 240px;
+        word-break: break-all;
+        cursor: pointer;
+
+      }
+      .time{
+        width: 80px;
+        display: inline-block;
+      }
+      .anticon-close{
+        cursor: pointer;
+      }
+    }
+  }
+  .ant-pagination{
+    display: flex;
+    flex-wrap: wrap;
+    height: 80px;
+    margin: 16px;
+    justify-content: flex-end;
+  }
+}

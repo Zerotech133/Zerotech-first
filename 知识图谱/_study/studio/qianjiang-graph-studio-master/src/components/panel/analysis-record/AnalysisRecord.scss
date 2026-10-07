@@ -1,0 +1,70 @@
+.analysisRecord{
+  .icons{
+    padding-left: 20px;
+    margin: 10px 0;
+    display: flex;
+    .iconsColor{
+      color:#5192f5;
+    }
+    i,span{
+      margin: 0 10px;
+      cursor: pointer;
+    }
+  }
+  .ant-form{
+    margin-left: 20px;
+    .ant-form-item{
+      margin-bottom: 24px;
+    }
+  }
+  .ant-spin-nested-loading{
+    .ant-spin-container{
+      height: 100%;
+    }
+  }
+  .ant-list{
+    margin: 10px;
+    width: 455px;
+    overflow-y: scroll;
+    height: 100%;
+    .ant-list-item{
+      padding: 5px 10px;
+      >span{
+        margin: 0 5px; 
+        display: inline-block;
+      }
+      .icon{
+        width: 10px;
+      }
+      .name{
+        width: 240px;
+        word-break: break-all;
+        cursor: pointer;
+        
+      }
+      .time{
+        width: 80px;
+        display: inline-block;
+      }
+      .anticon-close{
+        cursor: pointer;
+      }
+    }
+  }
+  .ant-pagination{
+    display: flex;
+    flex-wrap: wrap;
+    height: 80px;
+    margin: 0 16px;
+    margin-top: 10px;
+    justify-content: flex-end;
+  }
+  .ant-table {
+    .ant-table-container {
+      border-bottom: 1px solid #e2e5eb;
+      .ant-table-tbody > tr:last-child > td {
+        border-bottom: none;
+      }
+    }
+  }
+}

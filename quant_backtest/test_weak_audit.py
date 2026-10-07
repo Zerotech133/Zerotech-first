@@ -1,0 +1,144 @@
+# -*- coding: utf-8 -*-
+"""weak_track_audit（§13）审计判定与推送验证（K35-x · 可重复跑）。
+
+T1 干净 A 类：五项全过（归档/档案实物齐+任务已停）
+T2 字段缺失：缺结案时间行 → 字段缺失:ts
+T3 归档缺失：声明的 closed jsonl 不在 reports/
+T4 档案缺失：open 有但 weak_review_<c6>_<open>.md 缺
+T5 B 类全对：新案行+任务 Ready（滚动重启）→ 不报任务未停
+T6 任务未停：A 类任务 Ready → 报
+T7 B 类新案缺：B 类无新案行+任务 Ready → 双 issue
+T8 空目录 []；T9 真实 CLI 空态 rc=0
+
+隔离：T1-T8 monkeypatch cases/reports 目录与任务表；全部 PASS 退出码 0。
+"""
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import weak_track_audit as wa      # noqa: E402
+
+PY = r"C:\Program Files\Python311\python.exe"
+TMP = os.path.join(tempfile.gettempdir(), "weak_audit_test")
+CASES = os.path.join(TMP, "cases")
+REP = os.path.join(TMP, "rep")
+fails = []
+
+
+def check(name, cond, detail=""):
+    print("%s %s%s" % ("PASS" if cond else "FAIL", name,
+                       "｜" + detail if detail and not cond else ""))
+    if not cond:
+        fails.append(name)
+
+
+CHG_LINE = ("- 区间涨跌：10.0 → 10.5（+5.0%）｜"
+            "超额250：-10pp → -5pp（+5pp·收敛）\n")   # 无变量不进 % 模板
+
+
+def put_close(c6, close_ymd, open_ymd, title, extra="", tail=""):
+    """fake 结案 md（extra 追加头部尾、tail 追加文件尾）。"""
+    dash = "%s-%s-%s" % (close_ymd[:4], close_ymd[4:6], close_ymd[6:])
+    code = c6 + (".SH" if c6.startswith("6") else ".SZ")
+    txt = (("# 结案报告 · %s（%s）\n\n"
+            "- 结案时间：%s 21:00\n"
+            "- 状态流：weak_track_%s.closed_%s.jsonl（已归档）\n"
+            "- 案例档案：weak_review_%s_%s.md\n"
+            "%s"
+            "- 触发：共 1 次（时间线：无）\n%s%s")
+           % (code, title, dash, c6, close_ymd, c6, open_ymd,
+              CHG_LINE, extra, tail))
+    open(os.path.join(CASES, "weak_close_%s_%s.md" % (c6, close_ymd)),
+         "w", encoding="utf-8").write(txt)
+
+
+def put_arch(c6, ymd):
+    open(os.path.join(REP, "weak_track_%s.closed_%s.jsonl" % (c6, ymd)),
+         "w", encoding="utf-8").write('{"code":"x","ts":"2026-09-01"}\n')
+
+
+def put_review(c6, ymd):
+    open(os.path.join(CASES, "weak_review_%s_%s.md" % (c6, ymd)),
+         "w", encoding="utf-8").write("# 档案\n| 标的 | x |\n")
+
+
+def main():
+    for d in (TMP, CASES, REP):
+        shutil.rmtree(d, ignore_errors=True)
+        os.makedirs(d)
+
+    # T1 干净 A 类：实物齐 + 任务表空（已停）
+    put_close("301216", "20260901", "20260801", "情景A兑现·修复")
+    put_arch("301216", "20260901")
+    put_review("301216", "20260801")
+    # T2 字段缺失：缺结案时间行（ts 空）
+    code = "000333.SZ"
+    open(os.path.join(CASES, "weak_close_000333_20260905.md"),
+         "w", encoding="utf-8").write(
+        ("# 结案报告 · %s（情景A兑现·修复）\n\n"
+         "- 状态流：weak_track_000333.closed_20260905.jsonl（已归档）\n"
+         "- 案例档案：weak_review_000333_20260820.md\n"
+         "%s"
+         "- 触发：共 1 次（时间线：无）\n") % (code, CHG_LINE))
+    put_arch("000333", "20260905")
+    put_review("000333", "20260820")
+    # T3 归档缺失：声明归档但不放实物
+    put_close("600519", "20260910", "20260820", "情景B立案·另起新案",
+              tail="🔄 新案已建：weak_track_600519.jsonl（新案模板已生成：x）\n")
+    put_review("600519", "20260820")
+    # T4 档案缺失：open 有但无档案实物（归档实物在）
+    put_close("000006", "20260915", "20260901", "利空实证·转专项")
+    put_arch("000006", "20260915")
+    # T7 B 类新案缺：无新案行 + 任务 Ready
+    put_close("000002", "20260920", "20260901", "情景B立案·另起新案")
+    put_arch("000002", "20260920")
+    put_review("000002", "20260901")
+
+    TM = {"WeakTrack600519": "Ready",      # T5 B 类滚动重启 → 合法
+          "WeakTrack000002": "Ready"}      # T7 B 类无新案 → 双 issue
+    res = wa.audit_cases(CASES, REP, task_map=TM)
+    check("T0 共 5 例", len(res) == 5, str(len(res)))
+    g = lambda c6: next(c for c in res if c["c6"] == c6)
+    check("T1 干净 A 类", g("301216")["issues"] == [], str(g("301216")["issues"]))
+    check("T2 字段缺失 ts", g("000333")["issues"] == ["字段缺失:ts"],
+          str(g("000333")["issues"]))
+    check("T3 归档缺失", "归档缺失" in g("600519")["issues"])
+    check("T5 B 类滚动不报任务未停",
+          "任务未停" not in g("600519")["issues"]
+          and "B 类新案缺" not in g("600519")["issues"])
+    check("T4 档案缺失", g("000006")["issues"] == ["档案缺失"])
+    check("T7 B 类双 issue", g("000002")["issues"]
+          == ["B 类新案缺", "任务未停"], str(g("000002")["issues"]))
+    # T6 任务未停（A 类 + Ready）
+    res2 = wa.audit_cases(CASES, REP, task_map={"WeakTrack301216": "Ready"})
+    check("T6 A 类任务未停",
+          "任务未停" in next(c for c in res2 if c["c6"] == "301216")["issues"])
+    f = wa.audit_fields(res)
+    check("T0 计数 5/4", (f["n"], f["n_bad"]) == (5, 4))
+    check("T0 明细含修复", "Disable 每日任务" in f["detail"]
+          and "命令块⑨" in f["detail"])
+    msg = wa.build_audit(f)
+    check("T0 文案头", "WEAK AUDIT" in msg and "异常 4 例" in msg)
+    check("T8 空目录", wa.audit_cases(os.path.join(TMP, "empty"),
+                                      os.path.join(TMP, "empty"),
+                                      task_map={}) == [])
+
+    # T9：真实 CLI（当前 0 结案 → 空态提示 rc=0）
+    r = subprocess.run(
+        [PY, "-X", "utf8", os.path.join(HERE, "weak_track_audit.py")],
+        capture_output=True, text=True, encoding="utf-8", timeout=120)
+    check("T9 CLI rc=0", r.returncode == 0, r.stdout[-200:] + r.stderr[-200:])
+    check("T9 空态提示", "暂无已结案案例" in r.stdout or "AUDIT" in r.stdout)
+
+    shutil.rmtree(TMP, ignore_errors=True)
+    print("\n%s（%d 项失败）" % ("ALL PASS" if not fails else "FAILED: %s" % fails,
+                               len(fails)))
+    return 1 if fails else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,19 @@
+# §9 结案报告推送文案模板（weak_track_close.py 渲染；# 开头行不会推送）
+# 可用占位符：{code} {name} {ctype} {note} {first} {last} {n} {px0} {px1}
+#              {chg} {ex0} {ex1} {exd} {ntrig} {trig_last} {trig_hist}
+#              {rev} {arch} {ncase} {ts}
+#   {name}      标的名称（案例档案 §0 提取，拿不到为空）
+#   {ctype}     结案类型表述（A=情景A兑现/B=情景B立案/C=利空实证转专项）
+#   {chg}       跟踪区间涨跌幅（如 -8.9%；拿不到为 —）
+#   {exd}       超额250变化+方向（如 +6.2pp·收敛/转正/走扩）
+#   {trig_last} 最近一次触发明细（无触发则「无」）
+#   {trig_hist} 触发时间线（最近 3 条，MM-DD 前缀）
+#   {rev}       案例档案文件名（weak_cases 下最新 weak_review_*）
+#   {arch}      归档后状态流文件名
+#   {ncase}     B 类滚动新案行（非空时自动追加为最后一行，模板无需写）
+🏁 [WEAK TRACK CLOSE] {code} {name} 结案（{ctype}）
+立案 {first} → 结案 {last}（跟踪 {n}）
+现价 {px0} → {px1}（{chg}）｜超额250 {ex0} → {ex1}（{exd}）
+复评触发 {ntrig} 次｜时间线：{trig_hist}
+结论：{note}
+档案 {rev}｜任务已停用（可 Enable 重启）｜状态流已归档 {arch}

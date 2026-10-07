@@ -1,0 +1,64 @@
+# ===== 数据与运行产物（由 backups/ 定时备份体系覆盖，不进版本控制）=====
+backups/
+dify/
+dify-backup/
+llamacpp_35b/
+knowledge_docs/
+菜鸟/
+reports/
+
+**/__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+*.db
+*.db-journal
+*.db-wal
+*.shm
+*.sqlite
+*.sqlite3
+
+# 量化产线数据与产出
+quant_backtest/data/
+quant_backtest/logs/
+quant_backtest/outbox/
+quant_backtest/reports/
+quant_backtest/assets/
+quant_backtest/*.jsonl
+
+# 情报采集数据
+news_collector/*.db
+news_collector/data/
+jev-eval/data/
+
+# 门户运行产物
+portal/data/
+portal/static/uploads/
+
+# 第三方二进制
+tools/ffmpeg-9.0.2-essentials_build/
+tools/out/
+
+# ===== 密钥与环境（绝不入库）=====
+.env
+.env.*
+!*.env.example
+*_key.txt
+*webhook*.txt
+.lark-cli/
+
+# ===== 系统杂物 =====
+*.manifest.json
+*.bak
+*.bak_*
+_tmp_*
+*.tmp
+desktop.ini
+Thumbs.db
+~$*
+.mcp.json
+
+# 密钥载体（不入库）
+jev-eval/jev-gate.env.ps1
+quantdinger/backend.env
+quantdinger/backend.env.orig

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内容创作 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 26px 56px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: 1080px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 17px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: 1080px; margin: 0 auto; }
+  .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  .sec { margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .sec-title { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); }
+  .sec-note { font-size: 11px; color: var(--text-dim); font-family: Consolas, monospace; }
+
+  .panel-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px 17px; min-height: 110px; }
+  .panel-head { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .badge { font-size: 11px; padding: 2px 10px; border-radius: 999px; font-family: Consolas, monospace; }
+  .badge.ok  { background: var(--color-dn-bg); color: var(--color-ok); border: 1px solid #1f4d2b; }
+  .badge.warn{ background: rgba(210,153,34,.12); color: var(--color-warn); border: 1px solid rgba(210,153,34,.3); }
+
+  .hero {
+    display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    margin-top: 22px;
+  }
+  .hcard { display: flex; flex-direction: column; gap: 9px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px 17px; text-decoration: none; color: var(--text); transition: border-color .2s ease, transform .2s ease; min-height: 150px; }
+  .hcard:hover { border-color: var(--link); transform: translateY(-3px); }
+  .hcard .ic { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; font-size: 22px; background: var(--bg-surface); border: 1px solid var(--border); }
+  .hcard .t { font-size: 16px; font-weight: 700; margin-top: 8px; }
+  .hcard .d { font-size: 12px; color: var(--gray-6); line-height: 1.65; }
+  .hcard .ms { font-size: 11.5px; color: var(--text-dim); font-family: Consolas, "Microsoft YaHei", monospace; }
+  .hcard .ms b { color: var(--text); }
+  .hcard .foot { margin-top: auto; padding-top: 10px; border-top: 1px dashed var(--border-weak); display: flex; justify-content: space-between; font-size: 12px; }
+  .hcard .enter { color: var(--link); font-weight: 600; }
+
+  @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div><h1>内容创作</h1><small>CREATOR DOMAIN</small></div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <nav class="topnav">
+    <a class="pill" href="/">🏠 首页</a>
+    <a class="pill" href="/quant">📈 量化股票</a>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <span class="pill on">🎬 创作</span>
+    <a class="pill" href="/dev">💻 开发</a>
+    <a class="pill" href="/ops">⚙ 系统</a>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <a class="hcard" href="/gzh">
+        <div class="ic">📝</div>
+        <div class="t">公众号草稿库</div>
+        <div class="d">每日 09:30 自动选题撰文，草稿 → 审阅 → 发布三态管理。</div>
+        <div class="ms">草稿 <b id="c-draft">—</b> 篇 · 已发 <b id="c-pub">—</b> 篇</div>
+        <div class="foot"><span class="dim">写作产线</span><span class="enter">打开草稿库 →</span></div>
+      </a>
+      <a class="hcard" href="/vd">
+        <div class="ic">🎞</div>
+        <div class="t">短视频成片库</div>
+        <div class="d">video_make.py 产线：分镜脚本 → 配音合成 → 成片与字幕，一站归档。</div>
+        <div class="ms">成片 <b id="c-video">—</b> 条</div>
+        <div class="foot"><span class="dim">视频产线</span><span class="enter">打开成片库 →</span></div>
+      </a>
+      <a class="hcard" href="/vd#record">
+        <div class="ic">🎙</div>
+        <div class="t">录一段</div>
+        <div class="d">口播灵感速录：把今天的市场观点录下来，交给产线剪成短视频——录完即走。</div>
+        <div class="ms">入口在成片库 · 素材直通产线</div>
+        <div class="foot"><span class="dim">速录通道</span><span class="enter">去录一段 →</span></div>
+      </a>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 内容产线实时</div>
+        <div class="sec-note" id="c-ts">30s 刷新</div>
+      </div>
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head">📝 公众号 <span class="badge ok" id="gzh-badge">—</span> <a href="/gzh" style="color:var(--link);text-decoration:none;font-size:12px">📚 草稿库</a></div>
+          <div id="gzh-body" style="font-size:13px;line-height:1.7"><div class="dim">加载中…</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">🎬 短视频 <span class="badge ok" id="vid-badge">—</span> <a href="/vd" style="color:var(--link);text-decoration:none;font-size:12px">🎞 成片库</a></div>
+          <div id="vid-body" style="font-size:13px;line-height:1.7"><div class="dim">加载中…</div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function tick() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  async function loadCreator() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 45000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const gz = d.gz || {}, vd = d.video || {};
+
+      const drafts = gz.drafts || [];
+      document.getElementById('c-draft').textContent = drafts.length;
+      document.getElementById('c-pub').textContent = drafts.filter(x => x.status === 'published').length;
+      const gzhBadge = document.getElementById('gzh-badge'), gzhBody = document.getElementById('gzh-body');
+      if (!drafts.length) {
+        gzhBadge.textContent = '待首稿'; gzhBadge.className = 'badge warn';
+        gzhBody.innerHTML = '<div class="dim">暂无草稿（每日 09:30 自动生成）</div>';
+      } else {
+        const st = drafts.filter(x => x.status === 'published').length;
+        gzhBadge.textContent = '草稿 ' + drafts.length + (st ? ' · 已发 ' + st : '');
+        gzhBadge.className = 'badge ok';
+        const ST_COLOR = { draft: 'var(--text-dim)', reviewed: 'var(--color-warn)', published: 'var(--color-up)' };
+        gzhBody.innerHTML = drafts.map(x =>
+          '<div style="display:flex;justify-content:space-between;gap:8px">' +
+          '<span>' + esc(x.title || x.id) +
+          ' <span class="dim" style="font-size:11px">' + esc(x.col || '') + ' ' + esc((x.ts || '').slice(5)) + '</span></span>' +
+          '<span style="font-size:11px;color:' + (ST_COLOR[x.status] || 'var(--text-dim)') + '">' +
+          ({draft:'草稿',reviewed:'已审',published:'已发'}[x.status] || x.status) + '</span></div>'
+        ).join('');
+      }
+
+      const videos = vd.videos || [];
+      document.getElementById('c-video').textContent = videos.length;
+      const vidBadge = document.getElementById('vid-badge'), vidBody = document.getElementById('vid-body');
+      if (!videos.length) {
+        vidBadge.textContent = '待首条'; vidBadge.className = 'badge warn';
+        vidBody.innerHTML = '<div class="dim">暂无成片（手动运行 video_make.py）</div>';
+      } else {
+        vidBadge.textContent = '成片 ' + videos.length;
+        vidBadge.className = 'badge ok';
+        vidBody.innerHTML = videos.map(x =>
+          '<div style="display:flex;justify-content:space-between;gap:8px">' +
+          '<span>' + esc(x.title || x.id) +
+          ' <span class="dim" style="font-size:11px">' + esc(x.ts || '').slice(5) + '</span></span>' +
+          '<span class="dim" style="font-size:11px;white-space:nowrap">' +
+          esc(x.duration) + 's · ' + esc(x.scenes) + '镜 · ' + esc(x.size_mb) + 'MB</span></div>'
+        ).join('');
+      }
+    } catch {}
+  }
+  loadCreator();
+  setInterval(loadCreator, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+type=ai_workstation_backup_failed
+stamp=2026-09-25_CARDTEST2
+failed_count=2
+backup_log=E:\老田的AI助手\backups\2026-09-25_CARDTEST2\backup.log
+note=CARD DRILL 2 - BOM flag, Chinese path check

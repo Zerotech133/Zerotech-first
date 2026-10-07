@@ -1,0 +1,30 @@
+# Final Action template for a SYSTEM scheduled task that executes script
+# source stored in the registry (zero file-dependency, ghost-sync proof).
+#
+# 1) Store source: split UTF-8 source at a fixed cut, base64 each part into
+#    HKLM:\SOFTWARE\<AppName>\Deploy string values part1 / part2.
+# 2) Configure the task action with the command below. ALL ARGUMENT TEXT MUST
+#    BE ASCII - locate Chinese directories by in-process enumeration.
+# 3) Task principal: SYSTEM, RunLevel Highest; run daily; battery limits off.
+
+$inner = 'try {
+  $b = Get-ItemProperty HKLM:\SOFTWARE\<AppName>\Deploy
+  $s = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($b.part1.Trim()) + [Convert]::FromBase64String($b.part2.Trim()))
+  $root = (Get-ChildItem E:\ -Directory | Where-Object { Test-Path (Join-Path $_.FullName ''<marker-dir>\<marker-file>'') } | Select-Object -First 1).FullName
+  [IO.File]::WriteAllText((Join-Path $root ''<rel>\script.ps1''), $s)
+} catch { (''ERR '' + $_.Exception.Message) | Out-File C:\diag.log -Append -Encoding ascii }
+. ([ScriptBlock]::Create($s)) *> C:\run.log'
+
+$arg = '-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -Command "' + ($inner -replace "`r?`n", ' ') + '"'
+$a = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arg
+Set-ScheduledTask -TaskName '<task-name>' -Action $a | Out-Null
+
+# Script header must include the in-memory fallback ($PSScriptRoot is null):
+#   if ($PSScriptRoot) { $BaseDir = Split-Path -Parent $PSScriptRoot }
+#   else { $BaseDir = (Get-ChildItem E:\ -Directory |
+#       Where-Object { Test-Path (Join-Path $_.FullName '<marker-dir>\<marker-file>') } |
+#       Select-Object -First 1).FullName }
+#
+# Verification:
+#   Get-ScheduledTaskInfo -TaskName '<task-name>'   # LastTaskResult 0
+#   docker run --rm -v E:\:/e -v C:\:/c alpine sh -c 'tail -20 /c/run.log; ls -lt /e/*/<rel>/'

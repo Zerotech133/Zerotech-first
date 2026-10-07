@@ -1,0 +1,18 @@
+.container {
+  padding: 20px 30px;
+  height: 100%;
+  background-color: #fff;
+  .header {
+    position: relative;
+    .btn {
+      position: absolute;
+      right: 0;
+    }
+  }
+  #Scatter {
+    margin-top: 2%;
+    margin-left: 2%;
+    width: 100%;
+    height: 100%;
+  }
+}

@@ -1,0 +1,183 @@
+# -*- coding: utf-8 -*-
+"""批量导出美股/港股/加密 K 线到本地 parquet（zhice-db → data/us|hk|crypto/*.parquet）。
+
+设计原则（对齐项目纪律）：
+· 增量导出：已有 parquet 且数据未过期（最新 trade_date == 数据库最新）→ 跳过；
+· 批量查询：load_bars 每次最多 200 只，分批循环；
+· 字段对齐 A 股：ts_code/trade_date/close/open/high/low/volume/amount/pre_close/pct_chg；
+· 文件名：US 用 ticker（AAPL.parquet），HK 用 5 位数字（00700.parquet），
+  CRYPTO 斜杠转下划线（BTC_USDT.parquet）；
+· 零修改数据库，纯只读导出。
+
+运行：cd quant_backtest && python export_us_hk.py [--market US|HK|CRYPTO] [--batch 200] [--force]
+"""
+import argparse
+import json
+import os
+import sys
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+
+import pandas as pd
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import data_loader as dl          # noqa: E402
+
+
+def _align_schema(df, symbol, market):
+    """对齐 A 股 parquet 字段：ts_code/trade_date/close/open/high/low/
+    volume/amount/pre_close/pct_chg。"""
+    if market == "HK":
+        ts_code = symbol.zfill(5)            # 00001 → 00700
+    else:
+        ts_code = symbol                     # AAPL / BTC/USDT（保持斜杠格式）
+    out = pd.DataFrame({
+        "ts_code": ts_code,
+        "trade_date": df.index.strftime("%Y%m%d"),
+        "close": df["close"],
+        "open": df["open"],
+        "high": df["high"],
+        "low": df["low"],
+        "volume": df["volume"],
+        "amount": df.get("turnover", df["volume"]),  # db turnover 即成交额
+        "pre_close": df["pre_close"],
+    })
+    out["pct_chg"] = (out["close"] / out["pre_close"] - 1).round(4) * 100
+    return out
+
+
+def _fname(out_dir, symbol):
+    return out_dir / ("%s.parquet"
+                      % symbol.replace("/", "_").replace(".", "_"))
+
+
+def _topup_symbol(market, symbol, fn, db_max):
+    """已有 parquet 但落后于库 → 增量拉缺口并与旧文件合并覆盖写。"""
+    old = pd.read_parquet(fn)
+    old_max = str(old["trade_date"].max()).replace("-", "")[:8]
+    if old_max >= db_max:
+        return "skip"
+    frames = dl.load_bars(market, [symbol],
+                          start=(pd.to_datetime(old_max)
+                                 + pd.Timedelta(days=1)
+                                 ).strftime("%Y%m%d"))
+    df = frames.get(symbol)
+    if df is None or df.empty:
+        return "skip"                      # 库也无新增（罕见：db_max 全市场口径）
+    out = _align_schema(df, symbol, market)
+    merged = (pd.concat([old, out], ignore_index=True)
+                .drop_duplicates(subset=["trade_date"], keep="last")
+                .sort_values("trade_date"))
+    merged.to_parquet(fn, index=False)
+    return "upd"
+
+
+def export_market(market, batch=200, force=False):
+    """导出指定市场全部标的到 data/{market}/（目录不存在自动创建）。"""
+    out_dir = Path(HERE) / "data" / market.lower()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    symbols = dl.available_symbols(market)
+    print("%s: %d 只标的待导出" % (market, len(symbols)))
+    ok, skip, fail, upd = 0, 0, 0, 0
+    t0 = time.time()
+    for i in range(0, len(symbols), batch):
+        batch_syms = symbols[i:i + batch]
+        # 增量比对：已有文件按每只标的最新交易日与库比对（K229 增量口径）
+        todo, topup = [], []
+        if force:
+            todo = batch_syms
+        else:
+            fresh = [s for s in batch_syms
+                     if not _fname(out_dir, s).exists()]
+            todo = fresh
+            have = [s for s in batch_syms if s not in todo]
+            if have:
+                try:
+                    db_max = dl.latest_dates(market, have)
+                except Exception as e:
+                    print("  latest_dates 失败(本批按过期处理): %s" % str(e)[:80])
+                    db_max = {}
+                for s in have:
+                    m = db_max.get(s)
+                    if not m:
+                        skip += 1          # 库无数据，无从增量
+                        continue
+                    try:
+                        topup.append((s, m))
+                    except Exception:
+                        skip += 1
+        for s, m in topup:
+            try:
+                r = _topup_symbol(market, s, _fname(out_dir, s), m)
+                if r == "upd":
+                    upd += 1
+                else:
+                    skip += 1
+            except Exception as e:
+                print("  %s 增量失败: %s" % (s, e))
+                fail += 1
+        if not todo:
+            continue
+        try:
+            frames = dl.load_bars(market, todo)
+        except Exception as e:
+            print("  batch %d-%d 失败: %s" % (i, i + len(todo), e))
+            fail += len(todo)
+            continue
+        for s, df in frames.items():
+            if df is None or df.empty:
+                fail += 1
+                continue
+            try:
+                out = _align_schema(df, s, market)
+                out.to_parquet(_fname(out_dir, s), index=False)
+                ok += 1
+            except Exception as e:
+                print("  %s 写盘失败: %s" % (s, e))
+                fail += 1
+        if (i // batch) % 10 == 0:
+            print("  进度 %d/%d，new=%d upd=%d skip=%d fail=%d"
+                  % (i, len(symbols), ok, upd, skip, fail))
+    print("%s 完成: new=%d upd=%d skip=%d fail=%d 耗时 %.1fs"
+          % (market, ok, upd, skip, fail, time.time() - t0))
+
+
+def write_active(market, window_days=10):
+    """写活跃标的清单 data/{mkt}/_active.json（近 N 自然日有新K线）。
+    供 chanlun_scan 裁剪 universe（US 5920 只里 ~5374 只是历史僵尸，
+    全量白扫 ~40s；清单后只扫活跃 ~500 只）。清单缺失时 scan 回退全量。"""
+    out_dir = Path(HERE) / "data" / market.lower()
+    try:
+        symbols = dl.available_symbols(market)
+        fresh = dl.latest_dates(market, symbols)
+        cutoff = (datetime.now() - timedelta(days=window_days)).strftime("%Y%m%d")
+        active = sorted(s for s, d in fresh.items() if d >= cutoff)
+        meta = {
+            "market": market,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "cutoff": cutoff,
+            "window_days": window_days,
+            "active": active,
+        }
+        tmp = out_dir / "_active.json.tmp"
+        tmp.write_text(json.dumps(meta, ensure_ascii=False, indent=1),
+                       encoding="utf-8")
+        tmp.replace(out_dir / "_active.json")   # 原子替换
+        print("%s active list: %d/%d (cutoff %s)"
+              % (market, len(active), len(symbols), cutoff))
+        return len(active)
+    except Exception as e:
+        print("%s write_active skip: %s" % (market, e))
+        return -1
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--market", default="US", choices=["US", "HK", "CRYPTO"])
+    ap.add_argument("--batch", type=int, default=200)
+    ap.add_argument("--force", action="store_true")
+    args = ap.parse_args()
+    export_market(args.market, args.batch, args.force)
+    write_active(args.market)

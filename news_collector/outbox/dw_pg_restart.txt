@@ -1,0 +1,1 @@
+[DockerWatchdog v2.4] PG-Robot（飞书群 @bot 查数 daemon）异常（被禁或进程退出），已自动恢复。时间: 2026-10-07 11:37:27。若在维护请忽略；频繁出现请查 p_g_robot.py 进程与 lark-cli event consume 链。

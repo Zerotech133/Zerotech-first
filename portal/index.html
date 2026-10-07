@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>老田的 AI 工作站 · 个人 OS</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 0 26px 48px; }
+
+  /* ── 头部 ─────────────────────────────── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 48px 14px; max-width: 1080px; margin: 0 auto;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--blu-600), var(--pur-500));
+    display: grid; place-items: center;
+    font-size: 20px; font-weight: 800; color: #fff;
+  }
+  .brand h1 { font-size: 17px; font-weight: 700; letter-spacing: .5px; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+
+  /* ── 顶栏导航：首页 + 五领域 ────────────── */
+  .topnav {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    padding: 10px 48px 0; max-width: 1080px; margin: 0 auto;
+  }
+  .pill {
+    display: inline-block; padding: 7px 15px;
+    border: 1px solid var(--border); border-radius: 999px;
+    color: var(--text-dim); text-decoration: none; font-size: 13px;
+    background: var(--bg-surface);
+    transition: border-color .2s ease, color .2s ease;
+  }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  /* ── K44 数据大屏横幅入口 ─────────────── */
+  .screen-banner {
+    display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
+    margin-top: 22px; padding: 15px 22px;
+    background: linear-gradient(120deg, var(--bg-raised), var(--bg-surface) 65%);
+    border: 1px solid var(--border); border-radius: 14px;
+    text-decoration: none; color: var(--text);
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .screen-banner:hover { border-color: var(--link); transform: translateY(-2px); }
+  .screen-banner .ic {
+    width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 21px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+  }
+  .screen-banner .t { font-size: 15px; font-weight: 700; }
+  .screen-banner .s { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .screen-banner .enter { margin-left: auto; font-size: 12.5px; color: var(--link); font-weight: 600; }
+  .screen-banner:hover .enter { text-decoration: underline; }
+
+  /* ── 领域入口板 ───────────────────────── */
+  .board {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(316px, 1fr));
+    margin-top: 22px;
+  }
+  .dm {
+    position: relative;
+    display: flex; flex-direction: column; gap: 9px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px 17px;
+    text-decoration: none; color: var(--text);
+    transition: border-color .2s ease, transform .2s ease;
+    min-height: 176px;
+  }
+  .dm:hover { border-color: var(--link); transform: translateY(-3px); }
+  .dm .head { display: flex; align-items: center; gap: 13px; }
+  .dm .ic {
+    width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 23px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+  }
+  .dm .t { font-size: 16.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .dm .s { font-size: 11px; color: var(--text-dim); margin-top: 3px; letter-spacing: .5px; }
+  .dm .desc { font-size: 12px; color: var(--gray-6); line-height: 1.65; }
+  .dm .ms {
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+    font-size: 11.5px; color: var(--text-dim);
+    font-family: Consolas, "Microsoft YaHei", monospace;
+  }
+  .dm .ms b { color: var(--text); font-weight: 600; }
+  .dm .foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border-weak);
+  }
+  .dm .st { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-dim); }
+  .dm .enter { font-size: 12.5px; color: var(--link); font-weight: 600; }
+  .dm:hover .enter { text-decoration: underline; }
+  .dm.soon { border-style: dashed; }
+  .dm.soon .enter { color: var(--text-dim); }
+  .tag-soon {
+    font-size: 10px; padding: 2px 9px; border-radius: 999px;
+    border: 1px dashed var(--border); color: var(--text-dim); font-weight: 400;
+  }
+
+  /* ── 状态点 ────────────────────────────── */
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok); animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
+  .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); animation: none; }
+  .dot.unknown { background: var(--color-warn); box-shadow: 0 0 8px var(--color-warn); }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  /* ── 底部状态条 ───────────────────────── */
+  .statusbar {
+    margin-top: 34px; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 22px;
+    display: flex; flex-wrap: wrap; gap: 22px; align-items: center; justify-content: center;
+    font-family: Consolas, monospace; font-size: 11.5px; color: var(--text-dim);
+  }
+  .statusbar b { color: var(--text); font-weight: 600; }
+  .statusbar .sep { opacity: .25; }
+
+  @media (max-width: 640px) {
+    header { padding: 16px 20px 8px; }
+    .topnav { padding: 8px 20px 0; }
+    main { padding: 0 14px 36px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div>
+        <h1>老田的 AI 工作站</h1>
+        <small>PERSONAL OS · LOCAL</small>
+      </div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <nav class="topnav">
+    <span class="pill on">🏠 首页</span>
+    <a class="pill" href="/quant">📈 量化股票</a>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <a class="pill" href="/creator">🎬 创作</a>
+    <a class="pill" href="/dev">💻 开发</a>
+    <a class="pill" href="/ops">⚙ 系统</a>
+  </nav>
+
+  <main>
+    <!-- K44 数据大屏：首页直达横幅 -->
+    <a class="screen-banner" href="/screen">
+      <div class="ic">📺</div>
+      <div>
+        <div class="t">量化策略数据大屏</div>
+        <div class="s">策略选股 · A股/美股/港股/加密 · 行业细分 · 模拟建仓 · 账本成绩</div>
+      </div>
+      <span class="enter">进入大屏 →</span>
+    </a>
+
+    <div class="board">
+      <!-- ① 量化股票：主领域 -->
+      <a class="dm" href="/quant">
+        <div class="head">
+          <div class="ic">📈</div>
+          <div><div class="t">量化股票</div><div class="s">策略资产 · 选股 · 回测 · 盘前</div></div>
+        </div>
+        <div class="desc">十条策略产品线（实盘/影子/支撑）、缠论与九维信号、weak 案例跟踪、共振机会与量化中心。</div>
+        <div class="ms">
+          <span>盘面 <b id="q-verdict">—</b></span>
+          <span>策略 <b id="q-strat">—</b></span>
+          <span>在案 <b id="q-weak">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot" id="q-dot"></span><span id="q-note">连接中…</span></span>
+          <span class="enter">进入专项 →</span>
+        </div>
+      </a>
+
+      <!-- ② 情报中枢 -->
+      <a class="dm" href="/intel">
+        <div class="head">
+          <div class="ic">🕵</div>
+          <div><div class="t">情报中枢</div><div class="s">新闻流 · JEV 判断 · 知识图谱</div></div>
+        </div>
+        <div class="desc">四源情报采集、多空仪表、JEV 复核判断、游资图谱与 AI 晨报复盘。</div>
+        <div class="ms">
+          <span>今日 <b id="i-news">—</b></span>
+          <span>利多 <b id="i-bull">—</b></span>
+          <span>利空 <b id="i-bear">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot" id="i-dot"></span><span id="i-note">连接中…</span></span>
+          <span class="enter">进入专项 →</span>
+        </div>
+      </a>
+
+      <!-- ③ 内容创作 -->
+      <a class="dm" href="/creator">
+        <div class="head">
+          <div class="ic">🎬</div>
+          <div><div class="t">内容创作</div><div class="s">公众号 · 短视频 · 录一段</div></div>
+        </div>
+        <div class="desc">公众号草稿库、短视频成片库与「录一段」产线——策略认知的内容出口。</div>
+        <div class="ms">
+          <span>草稿 <b id="c-draft">—</b></span>
+          <span>成片 <b id="c-video">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot"></span><span>创作产线</span></span>
+          <span class="enter">进入专项 →</span>
+        </div>
+      </a>
+
+      <!-- ④ 开发者：预留领域 -->
+      <a class="dm soon" href="/dev">
+        <div class="head">
+          <div class="ic">💻</div>
+          <div><div class="t">开发者 <span class="tag-soon">规划中</span></div><div class="s">敲代码 · 工程 · 自动化</div></div>
+        </div>
+        <div class="desc">为「敲代码」预留的领域位：脚本工厂、Copilot 工作台、工程看板——OS 扩展就从这里长出来。</div>
+        <div class="ms">
+          <span>Dify <b id="d-dify">—</b></span>
+          <span>WebUI <b id="d-webui">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot unknown"></span><span>基建已在线</span></span>
+          <span class="enter">查看规划 →</span>
+        </div>
+      </a>
+
+      <!-- ⑤ 系统运维 -->
+      <a class="dm" href="/ops">
+        <div class="head">
+          <div class="ic">⚙</div>
+          <div><div class="t">系统运维</div><div class="s">任务 · 备份 · 告警 · 容器</div></div>
+        </div>
+        <div class="desc">OS 控制台全量：计划任务矩阵、备份与磁盘、告警收件箱、容器矩阵与关键端口探活。</div>
+        <div class="ms">
+          <span>任务 <b id="o-tasks">—</b></span>
+          <span>容器 <b id="o-cont">—</b></span>
+          <span>告警 <b id="o-alerts">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot" id="o-dot"></span><span id="o-note">连接中…</span></span>
+          <span class="enter">进入专项 →</span>
+        </div>
+      </a>
+
+      <!-- ⑥ 更多领域：预留 -->
+      <a class="dm soon" href="/dev#more">
+        <div class="head">
+          <div class="ic">➕</div>
+          <div><div class="t">更多领域 <span class="tag-soon">预留位</span></div><div class="s">整其他的部分</div></div>
+        </div>
+        <div class="desc">OS 不止量化：下一个领域（生活 / 交易执行 / 知识管理…）上线时，从这块位置接入。</div>
+        <div class="foot">
+          <span class="st"><span class="dim">位置已留好</span></span>
+          <span class="enter">扩展说明 →</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="statusbar">
+      <span>⚡ 本地模型 <b id="m-ollama">--</b></span><span class="sep">│</span>
+      <span>🗄 备份 <b>每日 03:00 · 保留 14 天</b></span><span class="sep">│</span>
+      <span>📡 系统时间 <b id="m-date">----</b></span>
+    </div>
+  </main>
+
+<script>
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // 时钟
+  function tick() {
+    const n = new Date();
+    document.getElementById('clock').textContent =
+      n.toLocaleTimeString('zh-CN', { hour12: false });
+    document.getElementById('m-date').textContent =
+      n.toLocaleDateString('zh-CN') + ' ' + n.toLocaleTimeString('zh-CN', { hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  // ── 盘面 / 情报微指标（/api/brief）──
+  async function loadBrief() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const f = d.fin || {}, n = d.intel || {};
+      document.getElementById('q-verdict').textContent = String(f.verdict || '—').split('（')[0];
+      document.getElementById('i-news').textContent = (n.today ?? 0) + ' 条';
+      document.getElementById('i-bull').textContent = n.bull ?? 0;
+      document.getElementById('i-bear').textContent = n.bear ?? 0;
+      document.getElementById('q-note').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只';
+      // 图谱源红点判例（K8）：断流转红、滞后转黄
+      const kg = d.kg || {};
+      const idot = document.getElementById('i-dot'), inote = document.getElementById('i-note');
+      if (kg.stale > 0) {
+        inote.textContent = '图谱源断流 ' + kg.stale + ' 表';
+        idot.className = 'dot off';
+      } else if (kg.catalog_stale) {
+        inote.textContent = 'catalog 滞后 ' + (kg.catalog_age_days ?? '?') + ' 天';
+        idot.className = 'dot unknown';
+      } else inote.textContent = '利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0);
+    } catch {}
+  }
+  loadBrief();
+  setInterval(loadBrief, 60000);
+
+  // ── 策略 / 在案微指标（/api/strategies 注册表）──
+  async function loadStrategies() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/strategies', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const items = d.strategies || [];
+      const nL = items.filter(s => s.status === 'live').length;
+      const nS = items.filter(s => s.status === 'shadow').length;
+      document.getElementById('q-strat').textContent = items.length + ' 条';
+      const wk = items.find(s => s.id === 'weak');
+      const wm = wk && wk.metrics && wk.metrics.find(m => m.k === '在案');
+      if (wm) document.getElementById('q-weak').textContent = wm.v;
+    } catch {}
+  }
+  loadStrategies();
+  setInterval(loadStrategies, 120000);
+
+  // ── 内容 / 系统微指标（/api/overview）──
+  async function loadOverview() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 45000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const gz = d.gz || {}, vd = d.video || {};
+      document.getElementById('c-draft').textContent = (gz.drafts || []).length + ' 篇';
+      document.getElementById('c-video').textContent = (vd.videos || []).length + ' 条';
+      const tasksOk = (d.tasks || []).filter(t => String(t.last) === '0').length;
+      const tasksBad = (d.tasks || []).filter(t => String(t.last) !== '0' && String(t.last) !== '267011').length;
+      const al = d.alerts || {};
+      let run = 0, tot = 0;
+      Object.values(d.containers || {}).forEach(v => { run += v.running; tot += v.total; });
+      document.getElementById('o-tasks').textContent = tasksOk + '/' + (d.tasks || []).length;
+      document.getElementById('o-cont').textContent = run + '/' + tot;
+      document.getElementById('o-alerts').textContent = al.pending ?? 0;
+      const odot = document.getElementById('o-dot'), onote = document.getElementById('o-note');
+      if (tasksBad === 0) { odot.className = 'dot'; onote.textContent = '全绿'; }
+      else { odot.className = 'dot off'; onote.textContent = tasksBad + ' 项异常'; }
+    } catch {}
+  }
+  loadOverview();
+  setInterval(loadOverview, 30000);
+
+  // ── 开发卡探活（Dify / WebUI）──
+  async function probe(key, url) {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(t);
+      document.getElementById(key).textContent = (r.status !== 502 && r.status !== 504) ? '在线' : '离线';
+    } catch { document.getElementById(key).textContent = '离线'; }
+  }
+  probe('d-dify', '/probe/dify');
+  probe('d-webui', '/probe/webui');
+  setInterval(() => { probe('d-dify', '/probe/dify'); probe('d-webui', '/probe/webui'); }, 30000);
+
+  // Ollama 模型计数
+  async function countModels() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 3000);
+      const r = await fetch('http://localhost:11434/api/tags', { signal: ctl.signal, cache: 'no-store' });
+      const j = await r.json();
+      document.getElementById('m-ollama').textContent = j.models.length + ' 个';
+    } catch { document.getElementById('m-ollama').textContent = '就绪'; }
+  }
+  countModels();
+</script>
+</body>
+</html>

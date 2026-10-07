@@ -1,0 +1,6 @@
+# §16 任务群健康守护文案模板（weak_track_health.py）
+# 改本文件即改推送格式，不动代码；# 开头行渲染时剔除。
+# 占位符：n/ts/detail
+🚨 [WEAK HEALTH] 任务群健康守护（§16）
+异常任务 {n} 个｜{ts}
+{detail}

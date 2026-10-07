@@ -1,0 +1,44 @@
+.process-library-tree {
+  .tree-item{
+    width: 100%;
+    // padding-right: 20px;
+
+    .icon{
+      position: absolute;
+      right: 0;
+      min-width: 24px;
+    }
+    .node-selected{
+      background-color: #bae7ff;
+    }
+    .text{
+      display: inline-block;
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+  
+  :global {
+    .ant-tree .ant-tree-node-content-wrapper{
+      // position: static;
+      width: 100%;
+    }
+    .ant-tree-draggable-icon,.ant-tree-switcher-noop{
+      display: none;
+    }
+     
+    .ant-tree .ant-tree-treenode{
+      width: 225px;
+    }
+    .ant-tree-list-holder-inner{
+      // padding-right: 30px;
+    }
+    .ant-tree-title >div{
+      width: calc(100% - 15px);
+    }
+  }
+  
+}
+

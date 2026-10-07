@@ -1,0 +1,83 @@
+{
+ "subscriptions": [
+  {
+   "id": "sub_batch_daily",
+   "name": "每日选股批次",
+   "kind": "daily_batch",
+   "when": [
+    "intraday",
+    "eod"
+   ],
+   "receivers": [
+    "个人",
+    "家人群"
+   ],
+   "enabled": true,
+   "note": "当日选股买入/观察名单 + 批次回测后验（K238 数据源）"
+  },
+  {
+   "id": "sub_alert_daily",
+   "name": "预警信号",
+   "kind": "alert_signal",
+   "when": [
+    "intraday",
+    "eod"
+   ],
+   "receivers": [
+    "个人",
+    "家人群"
+   ],
+   "enabled": true,
+   "note": "缠论/九维/共振等五路预警；盘中仅推变化，盘后推全量"
+  },
+  {
+   "id": "sub_quote_watch",
+   "name": "自选股异动",
+   "kind": "quote_move",
+   "when": [
+    "intraday"
+   ],
+   "receivers": [
+    "个人"
+   ],
+   "enabled": true,
+   "note": "自选股涨跌幅超阈（±3%）触发"
+  },
+  {
+   "id": "sub_report_000993",
+   "name": "闽东电力 分析师报告",
+   "kind": "stock_report",
+   "when": [
+    "eod"
+   ],
+   "params": {
+    "code": "sz000993"
+   },
+   "receivers": [
+    "个人"
+   ],
+   "enabled": false,
+   "note": "个股报告订阅（示例，默认关闭；门户可开启）"
+  },
+  {
+   "id": "sub_bp_000993",
+   "name": "闽东电力 买点提醒",
+   "kind": "buy_point",
+   "when": [
+    "intraday",
+    "eod"
+   ],
+   "params": {
+    "code": "sz000993",
+    "trigger_px": 17.0,
+    "trigger_kind": "pullback_hold",
+    "trigger_label": "回踩不破"
+   },
+   "receivers": [
+    "个人"
+   ],
+   "enabled": true,
+   "note": "飞书卡一键订阅（K250）；触发位 17.00 回踩不破"
+  }
+ ]
+}

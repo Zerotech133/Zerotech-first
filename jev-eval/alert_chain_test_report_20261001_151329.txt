@@ -1,0 +1,4 @@
+﻿[OK] L1 channel: ALERT_OK_OPENAPI
+[OK] L2 forward: flag archived + log SENT line (fwRC=0)
+[OK] L3 task "AI工作站告警转发" State=Ready LastResult=0 LastRun=10/01/2026 14:57:02
+ALERT CHAIN TEST ALL PASS

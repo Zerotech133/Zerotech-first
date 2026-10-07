@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang='zh-CN'><head><meta charset=utf-8'><title>公司本体全景 · 图谱探索</title><link rel='stylesheet' href='/static/tokens.css'>
+<style>
+body{background:#0d1117;color:#e6edf3;font-family:-apple-system,
+'Segoe UI','Microsoft YaHei',sans-serif;max-width:1200px;margin:0 auto;
+padding:22px 16px}
+h1{font-size:22px;margin:2px 0 0}
+a{color:#58a6ff;text-decoration:none}
+.dim{color:#8b949e;font-size:12px;line-height:1.7}
+.sec{border:1px solid #30363d;border-radius:12px;padding:15px 17px;
+background:#0f141c;margin-top:14px}
+.sec h2{font-size:15px;margin:0 0 4px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td,th{padding:8px 10px;border-bottom:1px solid #21262d;text-align:left}
+th{color:#8b949e;font-weight:500;font-size:12px}
+.gates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.gate{border:1px solid #30363d;border-radius:10px;padding:12px 13px;
+background:#161b22;display:block;color:#e6edf3}
+.g-on{border-color:#2ea043}.g-off{border-color:#f85149}
+.tp{display:inline-block;margin:4px 6px 0 0;padding:7px 13px;
+border:1px solid #30363d;border-radius:16px;font-size:12.5px;
+background:#161b22}
+.doc{display:inline-block;margin:7px 12px 0 0;font-size:13.5px}
+/* 可折叠区块 */
+details.sec{padding:0;overflow:hidden}
+details.sec>summary{cursor:pointer;padding:13px 17px;list-style:none;
+display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;user-select:none}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::before{content:"\25B6";font-size:10px;color:#8b949e;
+transition:transform .15s;flex:none;margin-top:2px}
+details.sec[open]>summary::before{transform:rotate(90deg)}
+details.sec>summary h2{display:inline;font-size:15px}
+details.sec>.sec-body{padding:0 17px 15px;border-top:1px solid #21262d}
+/* 双列网格 */
+@media(min-width:960px){.duo{display:grid;grid-template-columns:1fr 1fr;
+gap:14px;align-items:start}}
+/* 吸顶表头 */
+	table.sticky th{position:sticky;top:0;background:#0f141c;z-index:1}
+	/* 策略动态卡（B 区：注册表驱动，新增策略零改） */
+	.sstat{display:block;border:1px solid #30363d;border-radius:10px;
+	padding:11px 13px;background:#161b22;color:#e6edf3}
+	.sstat:hover{border-color:#58a6ff}
+	.sstat .st{font-size:12px;color:#8b949e;margin-bottom:3px}
+	.sstat .sv{font-size:17px;font-weight:700;line-height:1.3}
+	.sstat .su{font-size:11px;color:#8b949e;margin-top:4px}
+	/* 中式红涨绿跌（2026-10-01 全站统一） */
+	.up{color:var(--color-up,#f85149)}.dn{color:var(--color-down,#3fb950)}.mu{color:#d29922}
+	/* 分组 pill 导航 */
+	.navgrp{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+	.navgrp .gl{font-size:11px;color:#8b949e;padding:6px 0}
+	/* 长页切割 Tab（U3）：一屏一任务 */
+	.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;
+	position:sticky;top:0;background:#0d1117;z-index:5;padding:6px 0 0}
+	.tabs button{background:#161b22;border:1px solid #30363d;
+	border-radius:10px 10px 0 0;color:#8b949e;font-size:13px;
+	padding:8px 16px;cursor:pointer;font-family:inherit}
+	.tabs button:hover{color:#e6edf3;border-color:#58a6ff}
+	.tabs button.on{background:#0f141c;color:#e6edf3;font-weight:600}
+	.tabc{display:none}
+	.tabc.on{display:block}
+	/* U4-C 表头排序指示 */
+	th.sortable{cursor:pointer;user-select:none}
+	th.sortable:hover{color:#58a6ff}
+	th[data-sc='a']:after{content:' 91';font-size:10px;color:#58a6ff}
+	th[data-sc='d']:after{content:' 93';font-size:10px;color:#58a6ff}
+	/* U4-D 窄屏表格横滚（桌面 overflow 保持默认，不破坏 sticky 吸顶） */
+	.tblx{overflow-x:visible}
+	@media(max-width:820px){.tblx{overflow-x:auto;
+	-webkit-overflow-scrolling:touch}}
+	/* U4-F 返回顶部 */
+	#_topbtn{position:fixed;right:18px;bottom:18px;width:42px;height:42px;
+	border-radius:50%;border:1px solid #30363d;background:#161b22;
+	color:#8b949e;font-size:15px;cursor:pointer;display:none;z-index:99;
+	box-shadow:0 2px 10px rgba(0,0,0,.4)}
+	#_topbtn.show{display:block}
+	#_topbtn:hover{color:#e6edf3;border-color:#58a6ff}
+	</style>
+	<script>
+	window._tab=function(btn,id){var w=btn.closest('.tabwrap');
+	w.querySelectorAll('.tabs button').forEach(function(b){
+	b.classList.toggle('on',b===btn);});
+	w.querySelectorAll('.tabc').forEach(function(c){
+	c.classList.toggle('on',c.id===id);});
+	try{window.dispatchEvent(new Event('resize'));}catch(e){}
+	/* U4-B：Tab 状态入 hash（replaceState 不污染后退栈，保留 G6 的 g=） */
+	try{var h=(location.hash||'').replace(/^#/,'')
+	.replace(/tab=[^&]*/g,'').replace(/&+/g,'&')
+	.replace(/^&|&$/g,'');
+	history.replaceState(null,'',h?'#'+h+'&tab='+id:'#tab='+id);
+	}catch(e){}};
+	window._tabTo=function(id){var c=document.getElementById(id);
+	if(!c||c.classList.contains('on'))return;
+	var w=c.closest('.tabwrap');if(!w)return;
+	var btns=w.querySelectorAll('.tabs button');
+	for(var i=0;i<btns.length;i++){var oc=btns[i].getAttribute('onclick')||'';
+	if(oc.indexOf("'"+id+"'")>=0){btns[i].click();return;}}};
+	/* U4 通用初始化：hash 恢复 Tab / 表头排序 / 表格横滚包裹 / 返回顶部 */
+	window._u4init=function(){
+	try{var m=/(?:^|&)tab=([^&]+)/.exec((location.hash||'').replace(/^#/,''));
+	if(m&&window._tabTo)window._tabTo(decodeURIComponent(m[1]));}catch(e){}
+	try{var ts=document.querySelectorAll('table');
+	for(var i=0;i<ts.length;i++){var t=ts[i];
+	if(t.parentNode.className==='tblx')continue;
+	var w=document.createElement('div');w.className='tblx';
+	t.parentNode.insertBefore(w,t);w.appendChild(t);}}catch(e){}
+	try{var ts=document.querySelectorAll('table');
+	for(var i=0;i<ts.length;i++){var t=ts[i],r0=t.rows[0];
+	if(!r0||!r0.cells.length||r0.cells[0].tagName!=='TH')continue;
+	var bad=0;
+	for(var j=0;j<r0.cells.length;j++)
+	if((r0.cells[j].colSpan||1)>1)bad=1;
+	if(bad)continue;
+	for(var j=0;j<r0.cells.length;j++){var th=r0.cells[j];
+	th.className=(th.className?th.className+' ':'')+'sortable';
+	th.title='点击排序';
+	th.addEventListener('click',function(){
+	var th=this,tb=th.closest('table');
+	var ti=Array.prototype.indexOf.call(th.parentNode.cells,th);
+	var asc=!(tb.getAttribute('data-sci')==String(ti)
+	&&tb.getAttribute('data-sc')==='a');
+	var rows=[];
+	for(var r=1;r<tb.rows.length;r++)rows.push(tb.rows[r]);
+	var val=function(row){
+	var s=(row.cells[ti]?row.cells[ti].textContent:'').trim()
+	.replace(/[,，\s%+−–—-]/g,'');
+	var u=/亿/.test(s)?1e8:(/万/.test(s)?1e4:1);
+	s=s.replace(/亿|万/g,'');
+	var n=parseFloat(s);
+	return{n:isNaN(n)?null:n*u,s:s};};
+	rows.sort(function(a,b){var x=val(a),y=val(b);
+	if(x.n!==null&&y.n!==null)return asc?x.n-y.n:y.n-x.n;
+	return asc?x.s.localeCompare(y.s,'zh')
+	:y.s.localeCompare(x.s,'zh');});
+	var host=tb.tBodies[0]||tb;
+	for(var k=0;k<rows.length;k++)host.appendChild(rows[k]);
+	tb.setAttribute('data-sci',ti);
+	tb.setAttribute('data-sc',asc?'a':'d');
+	var h0=tb.rows[0];
+	for(var q=0;q<h0.cells.length;q++)
+	h0.cells[q].removeAttribute('data-sc');
+	th.setAttribute('data-sc',asc?'a':'d');});}
+	}}catch(e){}
+	try{if(!document.getElementById('_topbtn')){
+	var b=document.createElement('button');
+	b.id='_topbtn';b.type='button';b.title='返回顶部';
+	b.appendChild(document.createTextNode('▲'));
+	b.onclick=function(){window.scrollTo({top:0,behavior:'smooth'});};
+	document.body.appendChild(b);
+	window.addEventListener('scroll',function(){
+	b.className=(window.scrollY||document.documentElement.scrollTop)
+	>600?'show':'';},{passive:true});}}catch(e){}};
+	document.addEventListener('DOMContentLoaded',window._u4init);
+	</script><style>
+.tl{position:relative;margin:12px 0 0;padding-left:20px}
+.tl::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;
+width:2px;background:#30363d}
+.ti{position:relative;margin:0 0 13px}
+.ti::before{content:'';position:absolute;left:-19px;top:7px;width:8px;
+height:8px;border-radius:50%;background:#58a6ff}
+.bdg{display:inline-block;padding:1.5px 9px;border-radius:10px;
+font-size:11px;font-weight:600;margin-right:6px}
+.bdg.g{background:#2d1416;color:#f85149;border:1px solid #5a2326}
+.bdg.b{background:#0d1d33;color:#58a6ff;border:1px solid #1f3a5f}
+.bdg.r{background:#12261e;color:#3fb950;border:1px solid #1f4d2b}
+.bdg.e{background:#2d1416;color:#f85149;border:1px solid #5a2326}
+.bdg.y{background:#2a2111;color:#d29922;border:1px solid #4d3a13}
+.bdg.n{background:#161b22;color:#8b949e;border:1px solid #30363d}
+.hb{height:10px;border-radius:5px;background:#1f6feb;display:inline-block;
+vertical-align:middle}
+.src{border-left:2px solid #30363d;margin:4px 0 0 10px;padding:2px 0 2px 12px;
+font-size:12px;color:#8b949e}
+.kfind{padding:8px 12px;background:#161b22;border:1px solid #30363d;
+border-radius:8px;color:#e6edf3;font-size:13.5px;width:250px}
+.kfbtn{padding:8px 14px;background:#1f6feb;border:none;border-radius:8px;
+color:#fff;font-size:13.5px;cursor:pointer}
+</style></head><body><div style='display:flex;flex-direction:column;gap:7px;margin:0 0 18px'><div style='display:flex;gap:8px;flex-wrap:wrap'><a href='/' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>🏠 首页</a><a href='/fin' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>🏦 金融</a><span style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22;color:#e6edf3;border-color:#58a6ff;font-weight:600'>🕵️ 情报</span><a href='/gzh' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>⚡ 效率</a><a href='/sys-health' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>⚙️ 系统</a></div><a href='/intel' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>🏠 情报驾驶舱</a><a href='/bt-jev' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>⚖️ JEV 判断</a><a href='/bt-brief' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>🤖 AI 晨报</a><span style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22;color:#e6edf3;border-color:#58a6ff;font-weight:600'>🕸 图谱探索</span><a href='/kg/map' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>💰 游资地图</a><a href='/kg/shadow' style='display:inline-block;padding:6px 13px;border:1px solid #30363d;border-radius:16px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22'>👁 影子面板</a></div><div class='sec'><h2>🏢 公司本体全景</h2><div class='dn'>未找到标的 999999.SH</div><form action='/kg/company' method='get' style='display:flex;gap:8px;margin-top:10px'><input class='kfind' name='c' placeholder='ts_code，如 600519.SH'><button class='kfbtn'>🏢 打开全景</button></form></div></body></html>

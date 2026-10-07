@@ -1,0 +1,362 @@
+{
+ "portal_url": "http://192.168.0.3:8080/",
+ "doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/PVPFdRERyoSKU4x5yG0cVqllnAe",
+ "watch_keywords": [
+  "美联储",
+  "降息",
+  "加息",
+  "非农",
+  "CPI",
+  "关税",
+  "证监会",
+  "央行",
+  "比特币",
+  "黄金",
+  "原油",
+  "人民币",
+  "半导体",
+  "芯片",
+  "人工智能",
+  "算力",
+  "英伟达",
+  "OpenAI",
+  "国家队",
+  "中央汇金",
+  "社保基金",
+  "北向资金",
+  "两融",
+  "政治局会议",
+  "国务院",
+  "财政政策",
+  "货币宽松",
+  "印花税",
+  "新能源",
+  "军工",
+  "医药",
+  "地产",
+  "白酒",
+  "稀土",
+  "机器人",
+  "Federal Reserve",
+  "FOMC",
+  "OPEC+",
+  "rate cut",
+  "Rate Cut",
+  "rate hike",
+  "Rate Hike",
+  "tariff",
+  "Tariff",
+  "Bitcoin ETF",
+  "bitcoin ETF",
+  "stablecoin",
+  "Stablecoin"
+ ],
+ "watch_stocks": [],
+ "watchlist": [
+  {
+   "code": "sz301047",
+   "name": "义翘神州",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300684",
+   "name": "中石科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603580",
+   "name": "艾艾精工",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz301234",
+   "name": "五洲医疗",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688112",
+   "name": "鼎阳科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300489",
+   "name": "光智科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688046",
+   "name": "药康生物",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh600641",
+   "name": "先导基电",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603268",
+   "name": "松发股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz301520",
+   "name": "万邦医药",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz000993",
+   "name": "闽东电力",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688600",
+   "name": "皖仪科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300464",
+   "name": "星徽股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688536",
+   "name": "思瑞浦",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz301046",
+   "name": "能辉科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603995",
+   "name": "甬金股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688025",
+   "name": "杰普特",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh688004",
+   "name": "博汇科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz000782",
+   "name": "恒申新材",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300151",
+   "name": "昌红科技",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh600400",
+   "name": "红豆股份",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sz300688",
+   "name": "创业黑马",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603120",
+   "name": "肯特催化",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "sh603175",
+   "name": "超颖电子",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "bj920028",
+   "name": "新恒泰",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_sndk",
+   "name": "闪迪",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_be",
+   "name": "Bloom Energy",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_pltr",
+   "name": "Palantir",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_tsm",
+   "name": "台积电",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_tsla",
+   "name": "特斯拉",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_lite",
+   "name": "Lumentum",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_mrvl",
+   "name": "迈威尔",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_nbis",
+   "name": "Nebius",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_panw",
+   "name": "派拓网络",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "gb_nvda",
+   "name": "英伟达",
+   "aliases": [],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "BTC/USDT",
+   "name": "比特币",
+   "aliases": [
+    "BTC"
+   ],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "ETH/USDT",
+   "name": "以太坊",
+   "aliases": [
+    "ETH"
+   ],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  },
+  {
+   "code": "SOL/USDT",
+   "name": "Solana",
+   "aliases": [
+    "SOL"
+   ],
+   "added": "2026-10-05",
+   "note": "0930盘后入选"
+  }
+ ],
+ "push_max_per_run": 6,
+ "collect_page_size": 30,
+ "digest_hour": 8,
+ "ai_model": "qwen3.5:9b",
+ "ai_window_hours": 14,
+ "ai_max_news": 50,
+ "review_hour": 15,
+ "review_window_hours": 7,
+ "digest_sections": {
+  "wallstreetcn": "🌍 全球财经",
+  "sina": "🇨🇳 市场要闻",
+  "eastmoney": "⚡ 7x24 快讯"
+ },
+ "quote_alert_pct": 3.0,
+ "quote_alert_cooldown_min": 30,
+ "quote_keep_days": 30,
+ "jev_doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/QEfJdArZdo0oN2x2tRDcDxhUnQg",
+ "jev_base_url": "https://fcnfiqjbtb8d.feishu.cn/base/MQdLb1eNJadskWs9w8OcHQCYnze",
+ "jev_base_token": "MQdLb1eNJadskWs9w8OcHQCYnze",
+ "sa_table_id": "tblu9YmZsDixWKAV",
+ "sa_form_url": "https://fcnfiqjbtb8d.feishu.cn/share/base/shrcn1DYIJUysvzTRQdvNwKPMiq",
+ "push_targets": [
+  {
+   "name": "个人",
+   "type": "open_id",
+   "id": "ou_50a95455c7dffec1090ade400886d0d4"
+  },
+  {
+   "name": "家人群",
+   "type": "chat_id",
+   "id": "oc_6b97bee8b5340e071d0fc10cc6c8569f"
+  }
+ ]
+}

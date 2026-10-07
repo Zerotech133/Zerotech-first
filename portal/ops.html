@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统运维 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+  main { max-width: 1180px; margin: 0 auto; padding: 0 26px 56px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: 1180px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 17px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: 1180px; margin: 0 auto; }
+  .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  .sec { margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .sec-title { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); }
+  .sec-note { font-size: 11px; color: var(--text-dim); font-family: Consolas, monospace; }
+
+  .con-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px 17px; min-height: 110px; }
+  .panel-head { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+  .tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .tbl th { text-align: left; color: var(--text-dim); font-weight: 500; font-size: 10.5px; padding: 4px 6px; border-bottom: 1px solid var(--border-weak); }
+  .tbl td { padding: 6px; border-bottom: 1px dashed var(--border-weak); }
+  .tbl tr:last-child td { border-bottom: none; }
+
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-family: Consolas, monospace; white-space: nowrap; }
+  .chip.ok   { background: var(--color-dn-bg); color: var(--color-ok); border: 1px solid #1f4d2b; }
+  .chip.bad  { background: var(--color-up-bg); color: var(--color-err); border: 1px solid #5a2326; }
+  .chip.warn { background: rgba(210,153,34,.12); color: var(--color-warn); border: 1px solid rgba(210,153,34,.3); }
+
+  .kv { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; padding: 5px 0; }
+  .kv b { font-family: Consolas, monospace; font-weight: 600; }
+
+  .bar-row { margin: 8px 0 4px; }
+  .bar-row .lbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); font-family: Consolas, monospace; margin-bottom: 4px; }
+  .bar { height: 6px; border-radius: 3px; background: var(--bg-raised); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--link), var(--color-ok)); }
+
+  .badge { font-size: 11px; padding: 2px 10px; border-radius: 999px; font-family: Consolas, monospace; }
+  .badge.ok  { background: var(--color-dn-bg); color: var(--color-ok); border: 1px solid #1f4d2b; }
+  .badge.bad { background: var(--color-up-bg); color: var(--color-err); border: 1px solid #5a2326; animation: pulse 1.6s ease-in-out infinite; }
+  .badge.warn{ background: rgba(210,153,34,.12); color: var(--color-warn); border: 1px solid rgba(210,153,34,.3); }
+
+  .alist { font-size: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .arow { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .arow .t { color: var(--text-dim); font-family: Consolas, monospace; font-size: 11px; flex-shrink: 0; }
+
+  .dklist { display: flex; flex-direction: column; gap: 9px; font-size: 12px; }
+  .dkrow { display: flex; align-items: center; gap: 10px; }
+  .dkrow .nm { min-width: 132px; }
+  .dkrow .ct { font-family: Consolas, monospace; color: var(--text-dim); }
+  .dkrow .ex { color: var(--color-err); font-size: 11px; }
+
+  .svc-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-weak); }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok); animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
+  .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); animation: none; }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  .statusbar { margin-top: 34px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 22px; display: flex; flex-wrap: wrap; gap: 22px; align-items: center; justify-content: center; font-family: Consolas, monospace; font-size: 11.5px; color: var(--text-dim); }
+  .statusbar b { color: var(--text); font-weight: 600; }
+  .statusbar .sep { opacity: .25; }
+
+  @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div><h1>系统运维</h1><small>OPS DOMAIN</small></div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <nav class="topnav">
+    <a class="pill" href="/">🏠 首页</a>
+    <a class="pill" href="/quant">📈 量化股票</a>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <a class="pill" href="/creator">🎬 创作</a>
+    <a class="pill" href="/dev">💻 开发</a>
+    <span class="pill on">⚙ 系统</span>
+  </nav>
+
+  <main>
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-head">
+        <div class="sec-title">◤ OS 控制台</div>
+        <div class="sec-note" id="con-note">连接中…</div>
+      </div>
+      <div class="con-grid">
+        <div class="panel">
+          <div class="panel-head">⚙ 内核服务 · 计划任务 <a href="/sys-health" style="color:var(--link);text-decoration:none;font-size:12px">🖥 自检 →</a></div>
+          <table class="tbl" id="t-tasks">
+            <thead><tr><th>任务</th><th>状态</th><th>上次</th><th>下次运行</th></tr></thead>
+            <tbody><tr><td colspan="4" class="dim">加载中…</td></tr></tbody>
+          </table>
+          <div class="svc-row" id="svc-row"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">🗄 备份与磁盘</div>
+          <div class="kv" id="bk-latest"><span class="dim">最新备份</span><b>—</b></div>
+          <div class="kv" id="bk-failed"><span class="dim">备份结果</span><b>—</b></div>
+          <div class="kv" id="bk-mirror"><span class="dim">异地镜像 D:</span><b>—</b></div>
+          <div id="disks"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">🚨 告警收件箱 <span class="badge ok" id="al-pend">0 待处理</span></div>
+          <div class="alist" id="al-list"><div class="dim">加载中…</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">📦 容器矩阵 <span class="dim" id="dk-sum" style="font-size:11px"></span></div>
+          <div class="dklist" id="dk-list"><div class="dim">加载中…</div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">📰 新闻采集管道 <span class="badge ok" id="nw-badge">—</span></div>
+          <div class="kv" id="nw-last"><span class="dim">最近采集</span><b>—</b></div>
+          <div class="kv" id="nw-count"><span class="dim">24h / 累计入库</span><b>—</b></div>
+          <div class="kv" id="nw-push"><span class="dim">上次即时推送</span><b>—</b></div>
+          <div id="nw-src" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+          <div id="nw-ai" style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--border-weak)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span>⚡ 本地模型 <b id="m-ollama">--</b></span><span class="sep">│</span>
+      <span>🗄 备份 <b>每日 03:00 · 保留 14 天</b></span><span class="sep">│</span>
+      <span>🤖 模型库 <b>qwen3.5 · bge-m3 …</b></span><span class="sep">│</span>
+      <span>📡 系统时间 <b id="m-date">----</b></span>
+    </div>
+  </main>
+
+<script>
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function tick() {
+    const n = new Date();
+    document.getElementById('clock').textContent = n.toLocaleTimeString('zh-CN', { hour12: false });
+    document.getElementById('m-date').textContent =
+      n.toLocaleDateString('zh-CN') + ' ' + n.toLocaleTimeString('zh-CN', { hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  const TASK_SHORT = { 'AI工作站每日备份':'每日备份', 'AI工作站告警转发':'告警转发',
+                       'JevFOCUS首期报告':'JevFOCUS 报告', 'ZhiceWatchdog':'看门狗',
+                       '金融新闻采集':'新闻采集 15min', '金融新闻日报':'新闻日报 08:30',
+                       '金融新闻AI晨报':'AI晨报 08:00', '金融新闻收盘复盘':'收盘复盘 15:30',
+                       '自选股行情快照':'行情快照 5min',
+                       '公众号选题撰文':'公众号 09:30',
+                       '金融量化每日扫描':'量化扫描 16:00',
+                       '金融量化季度调参':'季度调参 季首' };
+
+  async function loadConsole() {
+    const note = document.getElementById('con-note');
+    try {
+      const ctl = new AbortController();
+      const tm = setTimeout(() => ctl.abort(), 45000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(tm);
+      if (!r.ok) throw 0;
+      const d = await r.json();
+      note.textContent = '数据时间 ' + d.ts + ' · 30s 自动刷新';
+
+      // 计划任务表
+      const tb = document.querySelector('#t-tasks tbody');
+      tb.innerHTML = '';
+      (d.tasks || []).forEach(t => {
+        const ok = String(t.last) === '0';
+        const notRun = String(t.last) === '267011';
+        const ready = String(t.state).toLowerCase() === 'ready';
+        const next = (t.next || '').replace(/\//g, '-') || '—';
+        tb.insertAdjacentHTML('beforeend',
+          '<tr><td>' + esc(TASK_SHORT[t.name] || t.name) + '</td>' +
+          '<td><span class="chip ' + (ready ? 'ok' : 'warn') + '">' + esc(t.state) + '</span></td>' +
+          '<td><span class="chip ' + (ok ? 'ok' : (notRun ? 'warn' : 'bad')) + '">' +
+          (ok ? '0 ✓' : (notRun ? '待首发' : esc(t.last))) + '</span></td>' +
+          '<td class="dim" style="font-family:Consolas,monospace">' + esc(next) + '</td></tr>');
+      });
+      if (!tb.children.length) tb.innerHTML = '<tr><td colspan="4" class="dim">无任务数据</td></tr>';
+
+      // 关键端口
+      document.getElementById('svc-row').innerHTML = (d.services || []).map(s =>
+        '<span class="chip ' + (s.ok ? 'ok' : 'bad') + '">' + esc(s.name) + ' ' + s.port + (s.ok ? '' : ' ✗') + '</span>'
+      ).join('');
+
+      // 备份与磁盘
+      const bk = d.backups || {};
+      document.getElementById('bk-latest').innerHTML =
+        '<span class="dim">最新备份</span><b>' + esc(bk.latest || '—') + '</b>';
+      const f = bk.failed;
+      document.getElementById('bk-failed').innerHTML =
+        '<span class="dim">备份结果</span><b style="color:' +
+        (f === '0' ? 'var(--color-ok)' : (f == null ? 'var(--text-dim)' : 'var(--color-err)')) + '">' +
+        (f == null ? '—' : (f === '0' ? 'failed=0 ✓' : 'failed=' + esc(f) + ' ✗')) + '</b>';
+      document.getElementById('bk-mirror').innerHTML =
+        '<span class="dim">异地镜像 D:</span><b style="color:' + (bk.mirror ? 'var(--color-ok)' : 'var(--color-err)') + '">' +
+        (bk.mirror ? '已挂载 ✓' : '不可用 ✗') + '</b>';
+      const dk = document.getElementById('disks');
+      dk.innerHTML = '';
+      Object.entries(d.disks || {}).forEach(([k, v]) => {
+        const pct = Math.max(2, Math.round(v.free_gb / v.total_gb * 100));
+        dk.insertAdjacentHTML('beforeend',
+          '<div class="bar-row"><div class="lbl"><span>' + k + ': 盘</span>' +
+          '<span>剩余 ' + v.free_gb + ' / ' + v.total_gb + ' GB</span></div>' +
+          '<div class="bar"><i style="width:' + pct + '%"></i></div></div>');
+      });
+
+      // 告警收件箱
+      const al = d.alerts || {};
+      const pend = document.getElementById('al-pend');
+      pend.textContent = al.pending + ' 待处理';
+      pend.className = 'badge ' + (al.pending > 0 ? 'bad' : 'ok');
+      const list = document.getElementById('al-list');
+      list.innerHTML = '';
+      (al.acks || []).slice().reverse().forEach(a => {
+        list.insertAdjacentHTML('beforeend',
+          '<div class="arow"><span class="t">' + esc(a.ts) + '</span>' +
+          '<span class="chip ' + (a.action === 'ack' ? 'ok' : 'warn') + '">' + esc(a.action) + '</span>' +
+          '<span>' + esc(a.id) + '</span></div>');
+      });
+      if (!list.children.length) list.innerHTML = '<div class="dim">暂无告警确认记录</div>';
+      if (al.sent) list.insertAdjacentHTML('beforeend',
+        '<div class="dim" style="margin-top:4px">累计发送告警 ' + al.sent + ' 条</div>');
+
+      // 新闻采集
+      const nw = d.news || {};
+      const nb = document.getElementById('nw-badge');
+      nb.textContent = nw.ok === true ? '运行中 ✓' : (nw.ok === false ? '异常 ✗' : '未知');
+      nb.className = 'badge ' + (nw.ok === true ? 'ok' : (nw.ok === false ? 'bad' : 'warn'));
+      document.getElementById('nw-last').innerHTML =
+        '<span class="dim">最近采集</span><b>' + esc(nw.last_collect || '—') + '</b>';
+      document.getElementById('nw-count').innerHTML =
+        '<span class="dim">24h / 累计入库</span><b>' + esc(nw.news_24h ?? '—') + ' / ' + esc(nw.news_total ?? '—') + ' 条</b>';
+      document.getElementById('nw-push').innerHTML =
+        '<span class="dim">上次即时推送</span><b>' + esc(nw.push_last_run ?? '—') + ' 条</b>';
+      const SRC_NAME = { wallstreetcn: '华尔街见闻', sina: '新浪财经', eastmoney: '东方财富' };
+      document.getElementById('nw-src').innerHTML = Object.entries(nw.sources || {}).map(([k, v]) =>
+        '<span class="chip ' + (v.ok ? 'ok' : 'bad') + '">' + (SRC_NAME[k] || k) + ' +' + (v.new || 0) + '</span>'
+      ).join('') || '<span class="dim" style="font-size:12px">暂无数据</span>';
+
+      // AI 晨报 / 收盘复盘
+      const aiBox = document.getElementById('nw-ai');
+      const aiRow = (icon, label, r) => {
+        if (!r || !r.ts) return '<div class="dim" style="font-size:12px">' + icon + ' ' + label + '尚未生成</div>';
+        let html = '<div class="kv"><span class="dim">' + icon + ' ' + label + ' ' + esc((r.ts || '').slice(11)) +
+          ' · ' + esc(r.news_count ?? '?') + '条/' + esc(r.market_count ?? '?') + '行情</span>' +
+          '<span class="chip ' + (r.ok ? 'ok' : 'warn') + '">' + (r.ok ? '模型 ✓' : '降级') + '</span></div>' +
+          '<div style="font-size:12px;color:var(--gray-6);line-height:1.6;margin:2px 0 ' +
+          (r.sectors ? '4' : '8') + 'px">' + esc(r.headline || '—') + '</div>';
+        if (r.sectors) {
+          const s = r.sectors, tot2 = s.total || 1;
+          const upW = Math.round((s.up || 0) * 100 / tot2);
+          const pctTxt = (v) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+          html += '<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;margin:2px 0 5px">' +
+            '<div style="width:' + upW + '%;background:var(--color-up)"></div>' +
+            '<div style="flex:1;background:var(--color-dn)"></div></div>' +
+            '<div style="font-size:11px;line-height:1.9;margin-bottom:8px">' +
+            (s.top || []).slice(0, 3).map(x =>
+              '<span class="chip" style="color:var(--color-up)">▲ ' + esc(x.name) + ' ' + pctTxt(x.pct) + '%</span>').join('') +
+            (s.bottom || []).slice(0, 3).map(x =>
+              '<span class="chip" style="color:var(--color-dn)">▼ ' + esc(x.name) + ' ' + pctTxt(x.pct) + '%</span>').join('') +
+            '</div>';
+        }
+        return html;
+      };
+      aiBox.innerHTML = aiRow('🤖', '晨报', nw.ai) + aiRow('📊', '复盘', nw.review);
+
+      // 容器矩阵
+      const dkl = document.getElementById('dk-list');
+      dkl.innerHTML = '';
+      let runAll = 0, totAll = 0;
+      Object.entries(d.containers || {}).forEach(([g, v]) => {
+        runAll += v.running; totAll += v.total;
+        dkl.insertAdjacentHTML('beforeend',
+          '<div class="dkrow"><span class="dot' + (v.running === v.total ? '' : ' off') + '" style="animation:none"></span>' +
+          '<span class="nm">' + esc(g) + '</span><span class="ct">' + v.running + '/' + v.total + '</span>' +
+          (v.exited && v.exited.length
+            ? '<span class="ex" title="' + esc(v.exited.join(', ')) + '">✗ ' + v.exited.length + ' 挂</span>' : '') +
+          '</div>');
+      });
+      document.getElementById('dk-sum').textContent = totAll ? (runAll + '/' + totAll + ' 在线') : '';
+      if (!dkl.children.length) dkl.innerHTML = '<div class="dim">无容器数据</div>';
+    } catch (e) {
+      note.textContent = '控制台服务离线 · 检查「AI工作站门户API」任务';
+    }
+  }
+  loadConsole();
+  setInterval(loadConsole, 30000);
+
+  async function countModels() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 3000);
+      const r = await fetch('http://localhost:11434/api/tags', { signal: ctl.signal, cache: 'no-store' });
+      const j = await r.json();
+      document.getElementById('m-ollama').textContent = j.models.length + ' 个';
+    } catch { document.getElementById('m-ollama').textContent = '就绪'; }
+  }
+  countModels();
+</script>
+</body>
+</html>

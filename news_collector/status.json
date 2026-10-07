@@ -1,0 +1,46 @@
+{
+ "last_collect": "2026-10-07 13:15",
+ "last_ok": true,
+ "new_last_run": 17,
+ "push_last_run": 2,
+ "news_24h": 936,
+ "news_total": 18591,
+ "sources": {
+  "sina": {
+   "ok": true,
+   "got": 30,
+   "new": 10
+  },
+  "eastmoney": {
+   "ok": true,
+   "got": 30,
+   "new": 1
+  },
+  "wallstreetcn": {
+   "ok": true,
+   "got": 30,
+   "new": 2
+  },
+  "announcement": {
+   "ok": true,
+   "got": 30,
+   "new": 0
+  },
+  "survey": {
+   "ok": true,
+   "got": 4,
+   "new": 0
+  },
+  "report": {
+   "ok": true,
+   "got": 30,
+   "new": 0
+  },
+  "world": {
+   "ok": true,
+   "got": 30,
+   "new": 4
+  }
+ },
+ "updated": "2026-10-07 13:15"
+}

@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据大屏 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+         background: var(--bg-page); color: var(--text); min-height: 100vh;
+         overflow-x: auto; }
+  .num { font-family: Consolas, "Courier New", monospace; }
+
+  /* ── 顶栏 ─────────────────────────────── */
+  .top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+         padding: 14px 26px 12px; border-bottom: 1px solid var(--border);
+         background: linear-gradient(180deg, var(--bg-raised), var(--bg-surface)); }
+  .top h1 { font-size: 21px; font-weight: 800; letter-spacing: 2px;
+            background: linear-gradient(90deg, var(--link), var(--pur-500));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; white-space: nowrap; }
+  .top .sub { color: var(--text-dim); font-size: 12px; }
+  .clock { margin-left: auto; font-family: Consolas, monospace;
+           color: var(--link); font-size: 15px; white-space: nowrap; }
+  .crumb a { color: var(--text-dim); font-size: 12px; text-decoration: none; }
+  .crumb a:hover { color: var(--link); }
+  .crumb span { color: var(--text-dim); font-size: 11px; margin: 0 4px; }
+
+  /* 环境灯（可点击 = 市场切换 tab） */
+  .envbar { display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 26px;
+            border-bottom: 1px solid var(--border-weak);
+            background: var(--bg-surface); align-items: center; }
+  .env { display: flex; align-items: center; gap: 8px; padding: 5px 13px;
+         border: 1px solid var(--border); border-radius: var(--r-pill);
+         background: var(--bg-raised); font-size: 12px; cursor: pointer;
+         transition: border-color .15s, background .15s; }
+  .env:hover { border-color: var(--link); }
+  .env.sel { border-color: var(--link);
+             background: rgba(88,166,255,.12); }
+  .env b { font-size: 13px; }
+  .env .sc { font-family: Consolas, monospace; font-weight: 700; }
+  .env .cnt { font-family: Consolas, monospace; font-size: 10.5px;
+              color: var(--text-dim); background: var(--bg-surface);
+              border: 1px solid var(--border-weak); border-radius: var(--r-pill);
+              padding: 0 6px; }
+  .env .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .dot.on  { background: var(--color-ok);  box-shadow: 0 0 8px var(--color-ok); }
+  .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); }
+  .env small { color: var(--text-dim); max-width: 320px; overflow: hidden;
+               text-overflow: ellipsis; white-space: nowrap; }
+  .envlab { font-size: 11px; color: var(--text-dim); margin-right: 2px; }
+
+  /* ── 主网格 ───────────────────────────── */
+  .grid { display: grid; gap: 14px; padding: 14px 26px 26px;
+          grid-template-columns: 25% 1fr 30%;
+          grid-template-rows: auto auto; min-width: 1180px; }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border);
+           border-radius: var(--r-m); padding: 13px 15px; display: flex;
+           flex-direction: column; min-height: 200px; min-width: 0; }
+  .phead { display: flex; align-items: baseline; justify-content: space-between;
+           gap: 8px; margin-bottom: 9px; }
+  .phead .t { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; }
+  .phead .n { font-size: 10.5px; color: var(--text-dim); font-family: Consolas, monospace; }
+  .chart { flex: 1; min-height: 190px; }
+
+  /* 策略效果卡 */
+  .strats { display: grid; gap: 9px;
+            grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
+  .scard { border: 1px solid var(--border); border-radius: var(--r-s);
+           background: var(--bg-raised); padding: 10px 12px; min-width: 0; }
+  .scard .r1 { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+  .scard .nm { font-size: 13px; font-weight: 700; }
+  .scard .bdg { font-size: 10px; padding: 1px 8px; border: 1px solid var(--border);
+                border-radius: var(--r-pill); color: var(--text-dim); margin-left: auto; }
+  .scard .r2 { display: flex; gap: 14px; font-size: 11px; color: var(--text-dim);
+               flex-wrap: wrap; }
+  .scard .r2 b { color: var(--text); font-family: Consolas, monospace; }
+  .pos { color: var(--color-up) !important; } .neg { color: var(--color-dn) !important; }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: var(--text-dim); font-weight: 600; font-size: 10.5px;
+       padding: 4px 7px; border-bottom: 1px solid var(--border-weak);
+       position: sticky; top: 0; background: var(--bg-surface); z-index: 1;
+       white-space: nowrap; }
+  td { padding: 4.5px 7px; border-bottom: 1px solid var(--border-weak);
+       white-space: nowrap; }
+  tr:hover td { background: var(--bg-raised); }
+  .scroll { flex: 1; overflow: auto; min-height: 0; }
+  .mkt { font-size: 10px; padding: 1px 7px; border-radius: var(--r-pill);
+         border: 1px solid var(--border); }
+  .mkt.CN { color: var(--org-400); border-color: rgba(255,166,87,.4); }
+  .mkt.US { color: var(--blu-500); border-color: rgba(88,166,255,.4); }
+  .mkt.HK { color: var(--pur-500); border-color: rgba(163,113,247,.4); }
+  .mkt.CRYPTO { color: var(--ylw-500); border-color: rgba(210,153,34,.4); }
+
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); text-decoration: none; }
+  .empty { color: var(--text-dim); font-size: 12px; padding: 18px; text-align: center; }
+
+  /* K45 模拟建仓配置：卡内按钮 + 弹窗 */
+  .scard .r3 { display: flex; margin-top: 8px; }
+  .cfgBtn { font-size: 10.5px; padding: 3px 10px; border: 1px solid var(--border);
+            border-radius: var(--r-pill); background: var(--bg-surface);
+            color: var(--text-dim); cursor: pointer; transition: all .15s; }
+  .cfgBtn:hover { color: var(--link); border-color: var(--link); }
+  .cfgMask { position: fixed; inset: 0; background: rgba(0,0,0,.6);
+             display: none; align-items: center; justify-content: center;
+             z-index: 99; overflow-y: auto; }
+  .cfgMask.on { display: flex; }
+  .cfgBox { width: 380px; max-width: 94vw; max-height: 92vh; overflow-y: auto;
+            background: var(--bg-surface); border: 1px solid var(--border);
+            border-radius: var(--r-m); padding: 18px 20px; margin: 20px 0; }
+  .cfgBox h3 { margin: 0 0 4px; font-size: 15px; }
+  .cfgBox .hint { font-size: 11px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6; }
+  .cfgBox label { display: block; font-size: 11px; color: var(--text-dim); margin: 10px 0 4px; }
+  .cfgBox input { width: 100%; box-sizing: border-box; padding: 7px 10px;
+                  background: var(--bg-raised); border: 1px solid var(--border);
+                  border-radius: var(--r-s); color: var(--text);
+                  font-family: Consolas, monospace; font-size: 13px; }
+  .cfgBox input:focus { outline: none; border-color: var(--link); }
+  .cfgActs { display: flex; gap: 10px; margin-top: 18px; align-items: center; }
+  .cfgActs button { flex: 1; padding: 8px 0; border-radius: var(--r-s); cursor: pointer;
+                    font-size: 12.5px; border: 1px solid var(--border);
+                    background: var(--bg-raised); color: var(--text-dim); }
+  .cfgActs .ok { background: var(--link); border-color: var(--link); color: #fff; }
+  .cfgActs .ok:disabled { opacity: .5; cursor: wait; }
+  #cfgMsg { font-size: 11.5px; line-height: 1.6; }
+  .r3 { gap: 8px; }
+  .r3 .undoBtn { border-color: var(--color-err); }
+  /* K50 持仓行手动平仓按钮 */
+  .xBtn { font-size: 11px; padding: 1px 7px; border: 1px solid rgba(244,63,94,.35);
+          border-radius: var(--r-pill); background: transparent;
+          color: #fb7185; cursor: pointer; line-height: 1.6; }
+  .xBtn:hover { background: rgba(244,63,94,.15); border-color: #fb7185; }
+  /* 撤销结果浮动提示（卡片级直撤入口） */
+  #pfToast { position: fixed; top: 14px; right: 14px; z-index: 199;
+             max-width: 340px; background: var(--bg-raised);
+             border: 1px solid var(--border); border-left: 3px solid var(--link);
+             border-radius: var(--r-s); padding: 10px 14px; font-size: 12px;
+             line-height: 1.6; box-shadow: 0 4px 18px rgba(0,0,0,.45);
+             display: none; }
+  #pfToast.err { border-left-color: var(--color-err); }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>📺 量化策略数据大屏</h1>
+  <div class="sub">策略选股 · 四市场 · 模拟建仓 · 账本成绩 · <span id="freshBadge" style="color:var(--text-dim)">数据锚 —</span></div>
+  <div class="crumb"><a href="/">🏠 首页</a><span>›</span><a href="/quant">量化股票</a><span>›</span><span style="color:var(--text-dim);opacity:.6">v52 复盘补全</span></div>
+  <button class="cfgBtn" id="gUndo" onclick="undoFromCard('')"
+          style="margin-left:auto">↩ 撤销上一笔配置</button>
+  <div class="clock num" id="clock">--:--:--</div>
+</div>
+<!-- 自诊断横幅：静态默认显示（不依赖 JS）——黄色=JS 未执行/自检中，绿=功能正常，红=异常 -->
+<div id="diagBar" style="display:block;background:rgba(245,158,11,.10);
+     border:1px solid #f59e0b;color:#f59e0b;border-radius:var(--r-s);
+     padding:8px 14px;font-size:12px;margin:8px 0">
+  ⏳ 页面自检中…（若长时间停留在此行，或右上角时钟不走，说明浏览器 JS 未执行——请反馈您的浏览器型号）
+</div>
+
+<div class="envbar" id="envbar"></div>
+
+<!-- K59 预警态势带：整卡即超级导航（点击下钻详情页） -->
+<style>
+.tbar{display:flex;gap:10px;margin:10px 0 4px;flex-wrap:wrap}
+.tcard{flex:1 1 150px;min-width:150px;background:#161b22;border:1px solid #30363d;
+       border-radius:10px;padding:10px 12px;cursor:pointer;position:relative;
+       transition:border-color .15s, box-shadow .15s}
+.tcard:hover{border-color:#58a6ff;box-shadow:0 0 0 1px #58a6ff55}
+.tcard .go{position:absolute;top:9px;right:11px;color:#8b949e;font-size:12px}
+.tcard .tk{font-size:12px;color:#8b949e}
+.tcard .tv{font-size:19px;font-weight:700;margin:2px 0;color:#e6edf3}
+.tcard .tv.pos{color:#f85149}.tcard .tv.neg{color:#3fb950}
+.tcard .ts{font-size:11px;color:#8b949e}
+.tcard.big{flex:2.4 1 320px}
+.six{display:flex;gap:4px;margin-top:7px}
+.sg{flex:1;text-align:center;border-radius:4px;padding:3px 0 2px;background:#21262d}
+.sg i{display:block;font-style:normal;color:#8b949e;font-size:10px;line-height:1.2}
+.sg b{font-size:11px;color:#e6edf3}
+.sg.pos b{color:#f85149}.sg.neg b{color:#3fb950}
+.navrow{cursor:pointer}
+.navrow:hover td{background:#1c2128}
+/* K60 罗盘迷你卡 + 组合总览 chips + 态势带强化 */
+.tbar.mini .tcard{padding:7px 10px;min-width:118px}
+.tbar.mini .tv{font-size:14px;margin:1px 0}
+.tbar.mini .ts{font-size:10px}
+.tbar.mini .tk{font-size:11px}
+.tcard.big .tv{font-size:24px}
+.tcard.big .six .sg{padding:4px 0 3px}
+.astats{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.astat{flex:1 1 30%;background:#21262d;border-radius:6px;padding:6px 8px;text-align:center}
+.astat i{display:block;font-style:normal;font-size:10px;color:#8b949e}
+.astat b{font-size:15px}
+.astat b.pos{color:#f85149}.astat b.neg{color:#3fb950}
+.opsrow{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.opschip{display:inline-flex;align-items:center;gap:4px;background:#21262d;
+         border-radius:6px;padding:3px 8px;font-size:11px;color:#c9d1d9}
+.opschip .op{cursor:pointer;color:#58a6ff;font-style:normal;font-weight:600}
+.opschip .op:hover{color:#79c0ff}
+.opschip .op.del{color:#fb7185}
+.panel{transition:border-color .15s}
+.panel:hover{border-color:#444c56}
+/* K63 投委会管理带：分布 chips 横排 + 指令票卡警示边 */
+.astats.crow .astat{flex:0 1 auto;min-width:96px;padding:6px 12px}
+.astat b.warn{color:#e3b341}
+.astat b.bad{color:#f85149}
+.tcard.warn{border-color:#f85149;background:#2d1517}
+.tcard.warn .tv{color:#f85149}
+.tcard.tight{border-color:#e3b341}
+.tbar.mini .tcard{cursor:pointer}
+</style>
+<div id="threatBar" class="tbar"></div>
+
+<!-- K64 态势感知带：服务灯 + 数据新鲜度 + 下一班倒计时（一眼看清地基） -->
+<div id="opsBar" class="tbar mini"></div>
+
+<!-- K60 选股罗盘：原五面板收纳为迷你卡行（关键数字 + 下钻） -->
+<div id="compassBar" class="tbar mini"></div>
+
+<!-- K60 主战场：当日买卖点主导，右列预警速览 + 缠论尾15 -->
+<div class="grid" style="grid-template-columns: 2fr 1fr">
+  <div class="panel">
+    <div class="phead"><div class="t">⚡ 当日买卖点预警</div>
+      <div class="n"><a href="/screen-sig" style="color:#58a6ff">全屏 »</a>
+        &nbsp;·&nbsp;<span id="sigDay">检出日 —</span></div></div>
+    <div class="scroll" id="sigScroll" style="max-height:300px"><table id="sigTbl"></table></div>
+  </div>
+  <div>
+    <div class="panel">
+      <div class="phead"><div class="t">🚨 今日预警速览</div><div class="n">五路预警 · 增量 Δ</div></div>
+      <div class="scroll" style="max-height:264px"><table id="alertTbl"></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- K66 缠论池 × Jev 判断 合并面板（预警区正下方，左右分栏） -->
+<div class="panel" style="margin-top:10px">
+  <div class="phead">
+    <div class="t">🧭 缠论池 · 最新 15 票　×　🧠 Jev · AI 判断</div>
+    <div class="n"><a href="/bt-chanlun" style="color:#58a6ff">缠论 »</a>
+      &nbsp;·&nbsp;<span id="jevTs">—</span><span id="bearBadge"></span></div>
+  </div>
+  <div id="bearBar" style="display:none; margin:0 0 8px; padding:6px 10px; border:1px solid rgba(210,153,34,.45); border-radius:8px; background:rgba(210,153,34,.08); font-size:12.5px; line-height:1.6"></div>
+  <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap">
+    <div style="flex:1.5; min-width:420px">
+      <div class="scroll" style="max-height:280px"><table id="f15Tbl"></table></div>
+    </div>
+    <div style="flex:1; min-width:300px; border-left:1px solid #30363d; padding-left:14px">
+      <div id="jevStats" class="astats"></div>
+      <div id="jevScopes" class="opsrow"></div>
+      <div class="scroll" id="briefBox" style="max-height:196px;font-size:11.5px;line-height:1.7;white-space:pre-wrap;color:#c9d1d9;margin-top:4px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- K60 资产与健康：组合总览（净值迷你图）+ 持仓速览（带操作）+ 每日流水 -->
+<div class="grid" style="grid-template-columns: 1.15fr 1.55fr 1fr; margin-top:10px">
+  <div class="panel">
+    <div class="phead"><div class="t">💼 组合总览</div><div class="n" id="acctNote"></div></div>
+    <div id="acctStats" class="astats"></div>
+    <div id="acctOps" class="opsrow"></div>
+    <div class="chart" id="chNav" style="min-height:128px"></div>
+  </div>
+  <div class="panel">
+    <div class="phead"><div class="t">📋 持仓速览</div><div class="n" id="pfTs"></div></div>
+    <div class="scroll" style="max-height:264px"><table id="pfTbl"></table></div>
+    <div class="phead" style="margin-top:4px"><div class="t">🚪 最近平仓</div><div class="n" id="closeStats">择时择势自动离场</div></div>
+    <div class="scroll" style="max-height:150px"><table id="closeTbl"></table></div>
+  </div>
+  <div class="panel">
+    <div class="phead"><div class="t">🕐 每日更新流水</div><div class="n">夜链 23:30 → 晨链 07:10</div></div>
+    <div class="scroll" style="max-height:430px"><table id="pulseTbl"></table></div>
+  </div>
+</div>
+
+<!-- K65 财经快讯：全宽 + 市场筛选（A股 默认，避免非 A 股内容穿插主屏） -->
+<div class="panel" style="margin-top:10px">
+  <div class="phead"><div class="t">📰 财经快讯 · 24h 命中</div>
+    <div class="n" id="newsNote">—</div></div>
+  <div class="opsrow" id="newsChips" style="margin:4px 0 2px"></div>
+  <div class="scroll" id="newsScroll" style="max-height:300px"><table id="newsTbl"></table></div>
+</div>
+
+<!-- K63 投研团队管理带：指令分布 chips + 持仓指令票卡（影子建议链可视化） -->
+<div class="panel" style="margin-top:10px">
+  <div class="phead"><div class="t">🏛 投研团队管理 · 影子建议链</div>
+    <div class="n"><a href="/council" style="color:#58a6ff">留痕页 /council »</a></div></div>
+  <div id="councilDist" class="astats"></div>
+  <div id="councilHold" class="tbar mini" style="margin-top:6px"></div>
+</div>
+
+<script>
+"use strict";
+/* K44 数据大屏：fetch /api/screen（60s 缓存服务端 + 60s 前端轮询）
+   配色读 tokens 语义层：中式红涨绿跌（--color-up 红 / --color-dn 绿） */
+var C = { up: "#f85149", dn: "#3fb950", dim: "#8b949e", txt: "#e6edf3",
+          link: "#58a6ff", grid: "#21262d", org: "#ffa657",
+          pur: "#a371f7", ylw: "#d29922", blu: "#58a6ff" };
+var MKT = { CN: "A 股", US: "美股", HK: "港股", CRYPTO: "加密" };
+/* K67 多市场独立大屏：/screen?mkt=CN|US|HK|CRYPTO|ALL（可分屏各放一个） */
+var _QM = (location.search.match(/mkt=([A-Z]+)/) || [])[1] || "CN";
+if (["ALL", "CN", "US", "HK", "CRYPTO"].indexOf(_QM) < 0) _QM = "CN";
+var FMKT = _QM;            // 市场视图由 URL 决定，页面即该市场专属大屏
+var _NF = { CN: "A股", US: "美股", HK: "港股", CRYPTO: "加密", ALL: "全部" };
+var NEWS_FILTER_INIT = _NF[_QM] || "全部";
+document.title = "数据大屏 · " + (MKT[_QM] || "全部市场") + " · 老田的 AI 工作站";
+window.addEventListener("DOMContentLoaded", function () {
+  var h1 = document.querySelector("h1");
+  if (h1) h1.textContent = "📺 量化策略数据大屏 · " + (MKT[_QM] || "全部市场");
+});
+var SID = { qpzm: "青萍之末", sig4: "四策略", chanlun: "缠论", "9dim": "九维" };
+var ch = {};
+var DATA = null;          // 最近一次 /api/screen 数据
+var ACCF = "";            // K52-D 平仓复盘账户筛选（""=全部）
+
+function mkFilter(x) {
+  return FMKT === "ALL" || (x || {}).market === FMKT || x === FMKT;
+}
+
+function fmtPct(v, dig) {
+  if (v === null || v === undefined) return "—";
+  return (v > 0 ? "+" : "") + (v * 100).toFixed(dig === undefined ? 2 : dig) + "%";
+}
+function cls(v) { return v > 0 ? "pos" : v < 0 ? "neg" : ""; }
+function mk(id) {
+  if (!ch[id]) ch[id] = echarts.init(document.getElementById(id), null,
+                                     { renderer: "canvas" });
+  return ch[id];
+}
+function baseOpt() {
+  return { textStyle: { color: C.dim, fontFamily: "Consolas, Microsoft YaHei" },
+           tooltip: { backgroundColor: "#161b22", borderColor: "#30363d",
+                      textStyle: { color: C.txt } } };
+}
+
+/* 顶栏时钟 + K64 下一班倒计时（每秒） */
+function tick() {
+  var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+  document.getElementById("clock").textContent =
+    d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
+    " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  tickNextRun();
+}
+setInterval(tick, 1000); tick();
+
+/* 市场环境灯 = 切换 tab（点选市场，全屏按市场过滤） */
+function renderEnvs(envs) {
+  var cnt = {};
+  ((DATA && DATA.strategies) || []).forEach(function (s) {
+    Object.keys(s.by_market || {}).forEach(function (m) {
+      cnt[m] = (cnt[m] || 0) + (s.by_market[m] || 0);
+    });
+  });
+  var h = '<span class="envlab">市场切换</span>' +
+      '<div class="env' + (FMKT === "ALL" ? " sel" : "") + '" onclick="setMkt(\'ALL\')">' +
+      '<b>🌐 全部</b><span class="cnt">' +
+      Object.keys(cnt).reduce(function (a, k) { return a + cnt[k]; }, 0) + "</span></div>";
+  (envs || []).forEach(function (e) {
+    h += '<div class="env' + (FMKT === e.market ? " sel" : "") +
+         '" onclick="setMkt(\'' + e.market + '\')">' +
+         '<span class="dot ' + (e.safe ? "on" : "off") + '"></span><b>' +
+         (MKT[e.market] || e.market) + '</b><span class="sc">' + e.score +
+         '</span><span class="cnt">' + (cnt[e.market] || 0) + " 只</span>" +
+         '<small title="' + (e.state || "") + '">' + (e.state || "") + "</small></div>";
+  });
+  document.getElementById("envbar").innerHTML = h ||
+      '<div class="empty">环境数据待产线刷新</div>';
+}
+/* K67 市场切换卡 = 跳转到对应市场的独立大屏（/screen?mkt=…，可多屏各放一个） */
+function setMkt(m) { location.href = "/screen?mkt=" + m; }
+
+/* 净值曲线（多子账户，K54 份额净值 ps 口径：申赎不跳变，含母基金虚线） */
+function renderNav(accounts, fof) {
+  var opt = baseOpt();
+  opt.legend = { top: 0, textStyle: { color: C.dim } };
+  opt.grid = { left: 58, right: 16, top: 32, bottom: 26 };
+  opt.tooltip = { trigger: "axis", backgroundColor: "#161b22",
+                  borderColor: "#30363d", textStyle: { color: C.txt } };
+  opt.xAxis = { type: "category", boundaryGap: false,
+                axisLine: { lineStyle: { color: C.grid } }, data: [] };
+  opt.yAxis = { type: "value", scale: true,
+                splitLine: { lineStyle: { color: C.grid } },
+                axisLabel: { formatter: function (v) { return v.toFixed(3); } } };
+  var days = [], sers = [], colors = [C.link, C.ylw, C.org, C.pur];
+  Object.keys(accounts || {}).forEach(function (sid, i) {
+    var curve = accounts[sid].curve_ps || [];
+    if (!curve.length) return;
+    curve.forEach(function (c) { if (days.indexOf(c[0]) < 0) days.push(c[0]); });
+    sers.push({ name: accounts[sid].name, type: "line", smooth: true,
+                color: colors[i % colors.length], showSymbol: true,
+                symbolSize: 5, lineWidth: 2,
+                data: [] });
+  });
+  if (fof && fof.curve_ps && fof.curve_ps.length) {
+    fof.curve_ps.forEach(function (c) { if (days.indexOf(c[0]) < 0) days.push(c[0]); });
+    sers.push({ name: "🏦 母基金", type: "line", smooth: true, color: "#e6edf3",
+                lineStyle: { type: "dashed", width: 2 }, showSymbol: true,
+                symbolSize: 4, data: [] });
+  }
+  days.sort();
+  opt.xAxis.data = days;
+  sers.forEach(function (s) {
+    var m = {}, cv;
+    if (s.name === "🏦 母基金") cv = fof.curve_ps;
+    else {
+      var sidK = Object.keys(accounts).filter(function (k) {
+        return accounts[k].name === s.name; })[0];
+      cv = (accounts[sidK] || {}).curve_ps || [];
+    }
+    cv.forEach(function (c) { m[c[0]] = c[1]; });
+    s.data = days.map(function (d) { return m[d] || null; });
+  });
+  opt.series = sers;
+  mk("chNav").setOption(opt, true);
+}
+
+/* K54-B4 三级回撤墙徽标（1🟡警戒/2🔒熔断停建/3🔴深回撤会诊） */
+function ddBadge(a) {
+  var meta = { 1: ["🟡 回撤", "#fbbf24"], 2: ["🔒 熔断", "#fbbf24"],
+               3: ["🔴 深回撤", "#fb7185"] }[a.dd_lv];
+  return '<span class="bdg" style="border-color:rgba(245,158,11,.5);color:' +
+         meta[1] + '" title="净值距峰值回撤 ' + (a.drawdown || 0) +
+         '%（🟡≥5 警戒 / 🔒≥10 停建新仓 / 🔴≥15 减仓会诊）">' + meta[0] +
+         (a.drawdown || 0) + "%</span>";
+}
+
+/* 虚拟账户持仓表（市场过滤；账户标注资金规模 + 持有天数 + K50 手动平仓✕） */
+function renderPf(portfolio) {
+  var acc = (portfolio || {}).accounts || {}, h = "", n = 0;
+  h = "<tr><th>账户</th><th>市场</th><th>标的</th><th>成本</th><th>现价</th><th>持有</th><th>浮盈</th><th>操作</th></tr>";
+  Object.keys(acc).forEach(function (sid) {
+    (acc[sid].open || []).forEach(function (p) {
+      if (!mkFilter(p)) return;
+      n++;
+      h += "<tr><td>" + acc[sid].icon + " " + acc[sid].name +
+           ' <span class="dim">' + (acc[sid].capital / 10000).toFixed(0) + '万</span></td>' +
+           "<td><span class='mkt " + p.market + "'>" + (MKT[p.market] || p.market) +
+           "</span></td><td>" + p.name + ' <span class="dim num">' + p.code +
+           "</span></td><td class='num'>" + p.entry_px.toFixed(2) +
+           "</td><td class='num'>" + p.last_px.toFixed(2) +
+           "</td><td class='num'>" + (p.hold_days || 0) + '日<span class="dim">/' +
+           ((portfolio || {}).hold_max || 20) + '</span></td>' +
+           "<td class='num " + cls(p.pnl_pct) + "'>" +
+           fmtPct(p.pnl_pct / 100) + "</td>" +
+           '<td nowrap><button class="xBtn" style="border-color:rgba(16,185,129,.35)' +
+           '" title="按现价加仓（规模=持仓市值×比例）" onclick="adjModal(\'' +
+           sid + "','" + p.code + "','" + (p.name || "").replace(/'/g, "") +
+           '\',\'add\')">➕</button> <button class="xBtn" title="卖出持仓数量比例' +
+           '（100%=全平）" onclick="adjModal(\'' + sid + "','" + p.code + "','" +
+           (p.name || "").replace(/'/g, "") + '\',\'trim\')">➖</button> <button' +
+           ' class="xBtn" title="手动平仓该标的" onclick="closePos(\'' +
+           sid + "','" + p.code + '\')">✕</button></td></tr>';
+    });
+  });
+  document.getElementById("pfTbl").innerHTML = n ? h :
+      '<tr><td colspan="8" class="empty">该市场暂无模拟持仓</td></tr>';
+  document.getElementById("pfTs").textContent =
+      "共 " + n + " 笔 · " + ((portfolio || {}).ts || "");
+}
+
+/* K50-D 手动平仓：code=null 清仓；按源快照最新价成交 */
+function closePos(sid, code) {
+  var all = !code;
+  var nm = SID[sid] || sid;
+  if (all && !confirm("确认清仓 " + nm + " 全部持仓？按最新价成交，现金回收。")) return;
+  if (!all && !confirm("确认手动平仓 " + nm + " · " + code + "？")) return;
+  var t = document.getElementById("pfToast");
+  t.className = ""; t.style.display = "block";
+  t.innerHTML = (all ? "🗑 正在清仓 " : "✕ 正在平仓 ") + nm + "…（按最新价成交）";
+  fetch("/api/portfolio_close", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(all ? { sid: sid, code: "all" } : { sid: sid, code: code })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.ok) { t.className = "err"; t.innerHTML = "✗ " + (d.error || "平仓失败"); }
+    else {
+      var s = d.account || {};
+      t.innerHTML = "✓ 已平仓 <b>" + nm + "</b>" + (all ? "（清仓）" : " · " + code) +
+          "<br><span class='dim'>" + (d.run_tail || []).join(" · ") +
+          "</span><br><span class='dim'>现金 " + ((s.cash || 0) / 10000).toFixed(0) +
+          "万 · 剩余持仓 " + (s.n_open || 0) + " 笔</span>";
+      refresh();
+    }
+  }).catch(function (e) {
+    t.className = "err"; t.innerHTML = "✗ 网络错误 " + e;
+  });
+  clearTimeout(window.__pfToastT);
+  window.__pfToastT = setTimeout(function () { t.style.display = "none"; }, 8000);
+}
+
+/* 最近平仓流水（四规则：环境闸门/信号翻空/离池/持有到期）+ 账户级合计统计 */
+function renderClosed(portfolio) {
+  var acc = (portfolio || {}).accounts || {}, rows = [];
+  var nTot = 0, winsTot = 0, pnlW = 0, holdW = 0;
+  var cats = {};                          // K51-B 平仓原因归类汇总
+  Object.keys(acc).forEach(function (sid) {
+    if (ACCF && sid !== ACCF) return;     // K52-D 按账户筛选
+    var a = acc[sid], n = a.n_closed || 0;
+    nTot += n;
+    winsTot += Math.round((a.win_rate || 0) * n);
+    pnlW += (a.closed_avg_pnl || 0) * n;
+    holdW += (a.avg_hold || 0) * n;
+    Object.keys(a.close_reasons || {}).forEach(function (k) {
+      cats[k] = (cats[k] || 0) + a.close_reasons[k].n;
+    });
+    (a.closed_recent || []).forEach(function (c) {
+      rows.push({ icon: a.icon, sid: sid, c: c });
+    });
+  });
+  var catOrder = ["止损", "止盈", "闸门", "翻空", "离池", "到期", "手动", "跟随源", "其他"];
+  var chips = Object.keys(cats).sort(function (x, y) {
+    return catOrder.indexOf(x) - catOrder.indexOf(y);
+  }).map(function (k) {
+    return k + " <b>" + cats[k] + "</b>";
+  }).join(" · ");
+  var accChips = "<span class='dim'>账户 </span>" +
+    [''].concat(Object.keys(acc)).map(function (sid) {   // 全部 + 四账户
+      var on = ACCF === sid;
+      return "<span style='cursor:pointer;padding:0 7px;border-radius:9px;" +
+          (on ? "background:rgba(59,130,246,.35)" : "opacity:.55") +
+          "' onclick=\"ACCF='" + sid + "';renderClosed(DATA.portfolio)\">" +
+          (sid ? (acc[sid].icon || sid) : "全部") + "</span>";
+    }).join("");
+  var st = document.getElementById("closeStats");
+  if (st) st.innerHTML = (nTot || ACCF ? accChips + "<br>" : "") + (nTot ?
+      "累计 <b>" + nTot + "</b> 笔 · 胜率 <b>" + fmtPct(winsTot / nTot) +
+      "</b> · 均收 <b class='" + ((pnlW / nTot) >= 0 ? "pos" : "neg") + "'>" +
+      fmtPct(pnlW / nTot / 100) + "</b> · 均持 <b>" +
+      (holdW / nTot).toFixed(1) + "</b> 日<br><span class='dim'>" +
+      (chips || "") + ' · <a href="/api/portfolio_csv' +
+      (ACCF ? "?sid=" + ACCF : "") + '" style="text-decoration:' +
+      'underline">📊 导出明细 CSV</a></span>' : "择时择势自动离场");
+  rows.sort(function (a, b) { return (b.c.exit_date || "").localeCompare(a.c.exit_date || ""); });
+  rows = rows.filter(function (r) { return mkFilter(r.c); });
+  var h = "<tr><th>标的</th><th>市场</th><th>原因</th><th>盈亏</th><th>出场日</th></tr>";
+  rows.slice(0, 15).forEach(function (r) {
+    h += "<tr><td>" + r.icon + " " + r.c.name + "</td><td><span class='mkt " +
+         r.c.market + "'>" + (MKT[r.c.market] || r.c.market) +
+         "</span></td><td>" + (r.c.reason || "") +
+         "</td><td class='num " + cls(r.c.pnl_pct) + "'>" +
+         fmtPct((r.c.pnl_pct || 0) / 100) + "</td><td class='num dim'>" +
+         (r.c.exit_date || "") + "</td></tr>";
+  });
+  if (!rows.length)
+    h += '<tr><td colspan="5" class="empty">暂无平仓记录（持仓由四规则自动离场）</td></tr>';
+  document.getElementById("closeTbl").innerHTML = h;
+}
+
+/* ── K57 数据源 v2：每日流水 / 预警增量 / 缠论尾15票 / 当日买卖点 ── */
+function sigCls(t) {
+  t = String(t || "");
+  return t.indexOf("买") >= 0 ? "up" : t.indexOf("卖") >= 0 ? "dn" : "";
+}
+
+function renderPulse(pulse) {
+  var h = "<tr><th>任务</th><th>时点</th><th>状态</th><th>距今</th><th>锚点</th></tr>";
+  (pulse || []).forEach(function (p) {
+    var ic = !p.ok ? "❌" : (p.fresh ? "✅" : "🟡");
+    var ago = p.ago ? ("<span style='color:" + (p.fresh ? "#3fb950" : "#e3b341") +
+                       "'>" + p.ago + "</span>") : "—";
+    h += "<tr><td>" + p.name + '<div class="dim">' + (p.sub || "") + "</div></td>" +
+         '<td class="num dim">' + p.when + "</td><td>" + ic + "</td>" +
+         '<td class="num dim">' + ago + "</td>" +
+         '<td class="num dim">' + (p.ts || "—") + "</td></tr>";
+  });
+  if (!(pulse || []).length)
+    h += '<tr><td colspan="5" class="empty">暂无流水数据</td></tr>';
+  document.getElementById("pulseTbl").innerHTML = h;
+}
+
+/* K59 预警态势带：整卡下钻超级导航。偏空=绿 偏多=红（中式红涨绿跌） */
+function biasCls(v) {
+  return /多/.test(v) && !/空/.test(v) ? "pos" :
+         (/空/.test(v) ? "neg" : "");
+}
+function renderThreat(alerts, pulse) {
+  var cards = "";
+  (alerts || []).forEach(function (a) {
+    var six = "";
+    if (a.six) {
+      six = '<div class="six">' + a.six.map(function (d) {
+        var st = (d.v == null) ? "" : (d.v > 0 ? "pos" : d.v < 0 ? "neg" : "");
+        var lab = (d.v == null) ? ("×" + (d.n || 0))
+                                : ((d.v > 0 ? "+" : "") + d.v);
+        return '<div class="sg ' + st + '" title="' + d.k + ' ' + lab +
+               '"><i>' + d.k.slice(0, 2) + "</i><b>" + lab + "</b></div>";
+      }).join("") + "</div>";
+    }
+    var d = (a.delta == null || a.delta === "") ? "" :
+        '<b class="' + cls(a.delta) + '">' + (a.delta > 0 ? "+" : "") +
+        a.delta + "</b>";
+    cards += '<div class="tcard' + (a.six ? " big" : "") +
+             '" onclick="location.href=\'' + (a.href || "/") + '\'">' +
+             '<span class="go">↗</span><div class="tk">' + a.name +
+             (d ? " " + d : "") + "</div>" +
+             '<div class="tv ' + (a.six ? biasCls(a.value) : "") + '">' +
+             a.value + "</div>" +
+             '<div class="ts">' + (a.sub || "") + "</div>" + six + "</div>";
+  });
+  if (pulse && pulse.length) {
+    var ok = pulse.filter(function (p) { return p.ok; }).length;
+    cards += '<div class="tcard" onclick="location.href=\'/bt-data-health\'">' +
+             '<span class="go">↗</span><div class="tk">数据链健康</div>' +
+             '<div class="tv ' + (ok === pulse.length ? "pos" : "") + '">' +
+             ok + "/" + pulse.length + "</div>" +
+             '<div class="ts">夜链 23:30 → 晨链 07:10 · 数据仓</div></div>';
+  }
+  document.getElementById("threatBar").innerHTML = cards;
+}
+
+function renderAlerts(alerts) {
+  var h = "<tr><th>预警</th><th>数值</th><th>Δ</th><th></th></tr>";
+  (alerts || []).forEach(function (a) {
+    var d = (a.delta == null || a.delta === "") ? "—" :
+        '<b class="' + cls(a.delta) + '">' + (a.delta > 0 ? "+" : "") + a.delta + "</b>";
+    h += '<tr class="navrow" onclick="location.href=\'' +
+         (a.href || "/") + '\'"><td>' + a.name +
+         '<div class="dim">' + (a.sub || "") + "</div></td>" +
+         '<td class="num"><b>' + a.value + "</b></td><td class='num'>" + d +
+         "</td><td class='dim'>›</td></tr>";
+  });
+  if (!(alerts || []).length)
+    h += '<tr><td colspan="4" class="empty">暂无预警</td></tr>';
+  document.getElementById("alertTbl").innerHTML = h;
+}
+
+function renderF15(rows) {
+  var h = "<tr><th>级别</th><th>标的</th><th>周期</th><th>价</th><th>NPV</th></tr>";
+  rows = (rows || []).filter(mkFilter);
+  rows.forEach(function (r) {
+    h += '<tr class="navrow" onclick="location.href=\'/bt-linkage?code=' +
+         encodeURIComponent(r.code || "") + '\'">' +
+         "<td><b class='" + sigCls(r.type) + "'>" + r.type + "</b></td>" +
+         "<td>" + r.name + ' <span class="dim num">' + r.code + "</span></td>" +
+         '<td class="num dim">' + (r.period || "—") + "</td>" +
+         '<td class="num">' + (r.px == null ? "—" : r.px) + "</td>" +
+         '<td class="num">' + (r.npv == null ? "—" : r.npv) + "</td></tr>";
+  });
+  if (!(rows || []).length)
+    h += '<tr><td colspan="5" class="empty">缠论池为空</td></tr>';
+  document.getElementById("f15Tbl").innerHTML = h;
+}
+
+function renderSig(rows, day) {
+  document.getElementById("sigDay").textContent = "检出日 " + (day || "—");
+  var h = "<tr><th>级别</th><th>标的</th><th>周期</th><th>信号时间</th><th>价</th></tr>";
+  rows = (rows || []).filter(mkFilter);
+  rows = rows.slice().sort(function (a, b) {
+    return String(b.type).localeCompare(String(a.type));   /* 卖级排前 */
+  }).slice(0, 20);                                          /* K60 主面板 */
+  rows.forEach(function (r) {
+    var strong = (String(r.type) === "1卖" || Number(r.tbe) >= 80);
+    h += '<tr class="navrow"' + (strong ? ' style="box-shadow:inset 2px 0 0 #f59e0b"' : "") +
+         ' onclick="location.href=\'/bt-linkage?code=' +
+         encodeURIComponent(r.code || "") + '\'">' +
+         "<td><b class='" + sigCls(r.type) + "'>" + (strong ? "⚡" : "") +
+         r.type + "</b></td>" +
+         "<td>" + r.name + ' <span class="dim num">' + r.code + "</span></td>" +
+         '<td class="num dim">' + (r.period || "—") + "</td>" +
+         '<td class="num dim">' + (r.dt || "—") + "</td>" +
+         '<td class="num">' + (r.px == null ? "—" : r.px) + "</td></tr>";
+  });
+  if (!rows.length)
+    h += '<tr><td colspan="5" class="empty">当日无新信号</td></tr>';
+  document.getElementById("sigTbl").innerHTML = h;
+}
+
+function renderFresh(f) {
+  var el = document.getElementById("freshBadge");
+  if (!el) return;
+  if (!f) { el.textContent = "数据锚 · 预热中"; el.style.color = "var(--text-dim)"; return; }
+  el.textContent = "数据锚 " + f.ok + "/" + f.total + " 新鲜";
+  el.style.color = (f.ok === f.total) ? "#3fb950" : (f.ok ? "#f59e0b" : "#f85149");
+}
+
+/* ── 利空风险提示（回测 v2：偏空 T+1 跑输市场 ~0.5pp；只提示不拦截）── */
+function renderBear(rows) {
+  var badge = document.getElementById("bearBadge");
+  var bar = document.getElementById("bearBar");
+  if (!badge || !bar) return;
+  rows = rows || [];
+  if (!rows.length) { badge.textContent = ""; bar.style.display = "none"; return; }
+  badge.innerHTML = "&nbsp;·&nbsp;<a href='/bt-chanlun-pool' style='color:#d29922'>⚠️ 利空 " +
+                    rows.length + "</a>";
+  var h = "";
+  rows.slice(0, 4).forEach(function (r) {
+    h += "<div>⚠️ <b style='color:#d29922'>" + String(r.ts || "").slice(5, 10) +
+         "</b> <a href='/bt/stock?c=" + encodeURIComponent(r.code || "") +
+         "' style='color:#58a6ff'>" + (r.name || r.code) + "</a> " +
+         "<span class='dim'>" + (r.title || "") + "</span> " +
+         "<span style='color:#d29922'>置信" + r.conf + "%</span></div>";
+  });
+  if (rows.length > 4)
+    h += "<div class='dim'>…共 " + rows.length +
+         " 条 · <a href='/bt-chanlun-pool' style='color:#58a6ff'>预警池看全部 »</a></div>";
+  bar.innerHTML = h;
+  bar.style.display = "block";
+}
+
+/* ── K64 态势感知带：服务灯 + 数据新鲜度 + 下一班倒计时 ── */
+var SCHED = [["03:00", "统一日报"], ["05:50", "缠论扫描"], ["06:20", "KG体检"],
+             ["06:40", "九维扫描"], ["07:10", "预警推送"], ["16:05", "预警推送"],
+             ["23:30", "TushareSync"], ["23:35", "RPS共振"], ["23:50", "虚拟账户"]];
+function nextSched() {
+  var n = new Date(), best = null;
+  SCHED.forEach(function (s) {
+    var p = s[0].split(":");
+    var d = new Date(n.getFullYear(), n.getMonth(), n.getDate(), +p[0], +p[1], 0);
+    if (d <= n) d.setDate(d.getDate() + 1);
+    if (!best || d < best.d) best = { d: d, name: s[1], at: s[0] };
+  });
+  return best;
+}
+function fmtCountdown(ms) {
+  var s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600),
+      m = Math.floor((s % 3600) / 60), ss = s % 60,
+      p = function (x) { return (x < 10 ? "0" : "") + x; };
+  return (h > 0 ? h + ":" + p(m) : m) + ":" + p(ss);
+}
+function agoHours(v) {
+  if (!v) return 999;
+  var n = parseFloat(v) || 0;
+  return v.indexOf("天") >= 0 ? n * 24 : v.indexOf("时") >= 0 ? n : n / 60;
+}
+function renderOps(svc, meta, fresh, pulse) {
+  var cards = "";
+  (svc || []).forEach(function (v) {
+    cards += '<div class="tcard" style="' + (v.ok ? "" :
+             "border-color:#f85149;background:#2d1517;") +
+             '" onclick="location.href=\'/sys-health\'">' +
+             '<span class="go">↗</span><div class="tk">' + v.name + "</div>" +
+             '<div class="tv" style="font-size:14px;color:' +
+             (v.ok ? "#3fb950" : "#f85149") + '">' +
+             (v.ok ? "✓ 在线" : "✗ 下线") + "</div>" +
+             '<div class="ts">' + (v.ok ? "探活正常" : "点击查看") + "</div></div>";
+  });
+  var fq = pulse ? pulse.filter(function (p) { return p.ok; }).length : 0,
+      ft = pulse ? pulse.length : 0;
+  var allOk = fresh && fresh.ok === fresh.total && fq === ft;
+  cards += '<div class="tcard" onclick="location.href=\'/bt-data-health\'">' +
+           '<span class="go">↗</span><div class="tk">数据新鲜度</div>' +
+           '<div class="tv" style="font-size:14px;color:' +
+           (allOk ? "#3fb950" : "#e3b341") + '">' +
+           (fresh ? fresh.ok + "/" + fresh.total : "—") + " 新鲜</div>" +
+           '<div class="ts">' + (fq + "/" + ft) + " 任务健康</div></div>";
+  var m = meta || {};
+  cards += '<div class="tcard" style="flex:1.6 1 200px">' +
+           '<div class="tk">最近更新</div>' +
+           '<div class="tv" style="font-size:14px;color:' +
+           (m.last_ago && agoHours(m.last_ago) < 28 ? "#3fb950" : "#e3b341") +
+           '">' + (m.last_ago || "—") + "前</div>" +
+           '<div class="ts" title="' + (m.last_ts || "") + '">' +
+           (m.last_task || "—") + "</div></div>";
+  cards += '<div class="tcard" style="flex:1.6 1 200px">' +
+           '<div class="tk">下一班</div>' +
+           '<div class="tv" style="font-size:14px;color:#58a6ff" id="nextRun">—</div>' +
+           '<div class="ts" id="nextRunName">调度倒计时</div></div>';
+  document.getElementById("opsBar").innerHTML = cards;
+  tickNextRun();
+}
+function tickNextRun() {
+  var el = document.getElementById("nextRun");
+  if (!el) return;
+  var b = nextSched();
+  el.textContent = b.name + " " + b.at + " · " + fmtCountdown(b.d - new Date());
+  var nm = document.getElementById("nextRunName");
+  if (nm) nm.textContent = "数据更新倒计时 · 每日 " + SCHED.length + " 班";
+}
+
+/* ── K64 信号面板自动滚动（2.5s 一行，到底回顶，悬停暂停） ── */
+var SIG_TIMER = null;
+function autoScrollSig() {
+  var el = document.getElementById("sigScroll");
+  if (!el) return;
+  if (SIG_TIMER) clearInterval(SIG_TIMER);
+  var pause = false;
+  el.onmouseenter = function () { pause = true; };
+  el.onmouseleave = function () { pause = false; };
+  SIG_TIMER = setInterval(function () {
+    if (pause || el.scrollHeight <= el.clientHeight) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) el.scrollTop = 0;
+    else el.scrollTop += 36;
+  }, 2500);
+}
+
+/* ── K65 财经快讯 + Jev 判断 ── */
+function esc(s) {
+  return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+var NEWS_TIMER = null, NEWS_ROWS = [], NEWS_FILTER = NEWS_FILTER_INIT;
+var NEWS_MKTS = ["A股", "美股", "港股", "加密", "商品", "宏观", "其他"];
+function mktOf(n) {
+  var s = n.scope || "";
+  return NEWS_MKTS.indexOf(s) >= 0 ? s : "其他";
+}
+function renderNews(rows, st) {
+  NEWS_ROWS = rows || [];
+  var cnt = {};
+  NEWS_ROWS.forEach(function (n) { cnt[mktOf(n)] = (cnt[mktOf(n)] || 0) + 1; });
+  var chips = '<span class="opschip" data-m="全部">全部 ' +
+      NEWS_ROWS.length + "</span>";
+  NEWS_MKTS.forEach(function (m) {
+    if (cnt[m]) chips += '<span class="opschip" data-m="' + m + '">' +
+        m + " " + cnt[m] + "</span>";
+  });
+  var box = document.getElementById("newsChips");
+  box.innerHTML = chips;
+  [].forEach.call(box.children, function (el) {
+    el.style.cursor = "pointer";
+    el.onclick = function () { NEWS_FILTER = el.getAttribute("data-m"); drawNews(); };
+  });
+  drawNews();
+  var el = document.getElementById("newsScroll");
+  if (el) {
+    if (NEWS_TIMER) clearInterval(NEWS_TIMER);
+    var pause = false;
+    el.onmouseenter = function () { pause = true; };
+    el.onmouseleave = function () { pause = false; };
+    NEWS_TIMER = setInterval(function () {
+      if (pause || el.scrollHeight <= el.clientHeight) return;
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) el.scrollTop = 0;
+      else el.scrollTop += 36;
+    }, 3000);
+  }
+}
+function drawNews() {
+  var rows = NEWS_ROWS;
+  if (NEWS_FILTER !== "全部")
+    rows = rows.filter(function (n) { return mktOf(n) === NEWS_FILTER; });
+  var box = document.getElementById("newsChips");
+  [].forEach.call(box.children, function (el) {
+    el.style.borderColor = el.getAttribute("data-m") === NEWS_FILTER
+        ? "#58a6ff" : "";
+    el.style.color = el.getAttribute("data-m") === NEWS_FILTER
+        ? "#58a6ff" : "";
+  });
+  var h = "<tr><th>时间</th><th>来源</th><th>Jev</th><th>标题</th></tr>";
+  rows.forEach(function (n) {
+    var bc = n.bias === "利多" ? "pos" : n.bias === "利空" ? "neg" : "";
+    var badge = n.bias
+        ? "<b class='" + bc + "'>" + esc(n.bias) +
+          (n.scope ? "·" + esc(n.scope) : "") + "</b>" : "<span class='dim'>—</span>";
+    var tip = esc((n.reason || "") + (n.conf != null ? "（置信 " + n.conf + "）" : ""));
+    h += "<tr title=\"" + tip + "\"><td class='num dim'>" +
+         esc((n.ts || "").slice(5)) + "</td><td class='dim'>" + esc(n.source) +
+         "</td><td>" + badge + "</td><td style='white-space:normal'>" +
+         esc(n.title) + "</td></tr>";
+  });
+  if (!rows.length)
+    h += '<tr><td colspan="4" class="empty">该市场近 24h 暂无命中快讯</td></tr>';
+  document.getElementById("newsTbl").innerHTML = h;
+  document.getElementById("newsNote").textContent = NEWS_FILTER +
+      " 视图 · 共 " + rows.length + " 条";
+}
+function renderJev(st, brief) {
+  var s3 = "";
+  if (st) {
+    [["利多", st.bull, "#f85149"], ["利空", st.bear, "#3fb950"],
+     ["中性", st.neutral, "#8b949e"]].forEach(function (x) {
+      s3 += '<div class="astat"><i>' + x[0] + "</i><b style='color:" +
+            x[2] + "'>" + x[1] + "</b></div>";
+    });
+    var sc = (st.scopes || []).map(function (x) {
+      return '<span class="opschip">' + esc(x[0]) + " ×" + x[1] + "</span>";
+    }).join("");
+    document.getElementById("jevScopes").innerHTML = sc;
+  }
+  document.getElementById("jevStats").innerHTML = s3 ||
+      '<div class="empty">暂无判断数据</div>';
+  var b = brief || {};
+  document.getElementById("jevTs").textContent =
+      b.ts ? "AI 晨报 " + b.ts : "—";
+  var txt = (b.brief || "暂无 AI 晨报（每日 08:00 生成）");
+  var i1 = txt.indexOf("【对A股"), i2 = txt.indexOf("【今日重点");
+  if (i2 > 0) txt = txt.slice(0, i2);
+  else if (i1 > 0) txt = txt.slice(0, i1);
+  document.getElementById("briefBox").textContent = txt;
+}
+
+/* K60 选股罗盘：原五面板（策略图/行业图/策略效果/选股明细/收益榜/账本）
+   收纳为迷你卡行——关键数字 + 下钻，态势屏只留态势。 */
+function renderCompass() {
+  var pool = (DATA.strategies || []).filter(function (s) {
+    return s.id !== "chanlun"; });
+  var count = function (s) { return FMKT === "ALL" ? (s.n || 0) :
+      ((s.by_market || {})[FMKT] || 0); };
+  var nPool = pool.reduce(function (a, s) { return a + count(s); }, 0);
+  var top = pool.slice().sort(function (x, y) {
+    return count(y) - count(x); })[0] || {};
+  var ind = (DATA.industry || [])[0] || {};
+  var pd = (DATA.pick_detail || []).filter(mkFilter);
+  var maxHit = pd.reduce(function (a, d) {
+    return Math.max(a, d.n_hit || 0); }, 0);
+  var acc = ((DATA.portfolio || {}).accounts) || {};
+  var champ = Object.keys(acc).map(function (k) { return acc[k]; })
+      .sort(function (x, y) { return (y.ret || 0) - (x.ret || 0); })[0] || {};
+  var fof = (DATA.portfolio || {}).fof;
+  var b4 = (DATA.books || {}).sig4 || {},
+      bc = (DATA.books || {}).chanlun || {};
+  var co = DATA.council || {};   /* K61 投委会锚 */
+  var cards = [
+    { k: "策略在池", v: nPool + " 只",
+      s: (nPool ? (top.name || "—") : "暂无选股") + " · RPS " + (DATA.rps_ts || ""), h: "/quant" }];
+  if (FMKT === "CN" || FMKT === "ALL") cards.push(
+    { k: "行业榜首", v: ind.name || "—",
+      s: "九维全维池 " + (ind.n != null ? ind.n : "—") + " 家", h: "/bt-sectors" });
+  cards = cards.concat([
+    { k: "最新选股", v: pd.length + " 只",
+      s: "最高命中 " + maxHit + " 策略", h: "/strategies" },
+    { k: "🏛 投委会", v: "影子 " + (co.shadow_n || 0) + "/" + (co.shadow_need || 30),
+      s: (co.d || "—") + " 立案 " + (co.n_prop || 0) + " · 需注意 " +
+        (co.n_watch || 0) + (co.n_warn ? " · ⚠预警 " + co.n_warn : "") +
+        ((co.styles && (co.styles["激进"] || co.styles["稳健"]))
+          ? " · 桶 " + (co.styles["激进"] || 0) + "/" + (co.styles["稳健"] || 0)
+          : "") +
+        (co.gate ? " · " + co.gate : ""), h: "/council" },
+    { k: "收益冠军", v: champ.name ? ((champ.icon || "") + " " + champ.name) : "—",
+      s: champ.ret != null ? "累计 " + fmtPct(champ.ret / 100) +
+        " · SR " + (champ.sharpe == null ? "—" : champ.sharpe.toFixed(2)) : "",
+      h: "/bt-positions", cls: cls(champ.ret) },
+    { k: "母基金", v: fof ? fmtPct(fof.ret / 100) : "—",
+      s: fof ? "SR " + (fof.sharpe == null ? "—" : fof.sharpe.toFixed(2)) +
+        " · MaxDD " + (fof.maxdd_pct == null ? "—" :
+                        fof.maxdd_pct.toFixed(1)) + "%" : "四账户份额加权",
+      h: "/bt-positions", cls: fof ? cls(fof.ret) : "" },
+    { k: "账本战绩", v: (b4.n_open || 0) + "+" + (bc.n_open || 0) + " 仓",
+      s: "四策略胜率 " + (b4.win_rate != null ? fmtPct(b4.win_rate) : "—") +
+        " · 缠论 " + (bc.recent_win_rate != null ?
+                       fmtPct(bc.recent_win_rate) : "—"), h: "/bt-signals" }
+  ]);
+  var h = "";
+  cards.forEach(function (c) {
+    h += '<div class="tcard" onclick="location.href=\'' + c.h + '\'">' +
+         '<span class="go">↗</span><div class="tk">' + c.k + "</div>" +
+         '<div class="tv ' + (c.cls || "") + '">' + c.v + "</div>" +
+         '<div class="ts">' + (c.s || "") + "</div></div>";
+  });
+  document.getElementById("compassBar").innerHTML = h;
+}
+
+/* K60 组合总览 chips：总资产/持仓/胜率 + 母基金累计 */
+function renderAcctStats() {
+  var acc = ((DATA.portfolio || {}).accounts) || {};
+  var nav = 0, nOpen = 0, nClosed = 0, wins = 0;
+  Object.keys(acc).forEach(function (k) {
+    var a = acc[k];
+    nav += a.nav || 0; nOpen += a.n_open || 0;
+    nClosed += a.n_closed || 0; wins += (a.win_rate || 0) * (a.n_closed || 0);
+  });
+  var wr = nClosed ? wins / nClosed / 100 : null;
+  var fof = (DATA.portfolio || {}).fof;
+  var h = '<div class="astat"><i>总资产</i><b>' + (nav / 10000).toFixed(0) +
+          "万</b></div>" +
+          '<div class="astat"><i>持仓 ' + nOpen + " · 平仓 " + nClosed +
+          '</i><b>' + (wr == null ? "—" :
+          '<span class="' + (wr >= 0.5 ? "pos" : "neg") + '">' +
+          (wr * 100).toFixed(0) + "%</span>") + "</b></div>" +
+          '<div class="astat"><i>母基金累计</i><b class="' +
+          (fof ? cls(fof.ret) : "") + '">' +
+          (fof ? fmtPct(fof.ret / 100) : "—") + "</b></div>";
+  /* K60 操作条：stratCards 收纳后，K50 四操作入口迁入总览卡 */
+  var ops = "";
+  Object.keys(acc).forEach(function (sid) {
+    var a = acc[sid];
+    ops += '<span class="opschip">' + (a.icon || "") + " " + a.name +
+        ' <b class="op" title="建仓设定：资金/阈值/熔断" onclick="cfgModal(\'' +
+        sid + '\')">⚙</b>' +
+        '<b class="op" title="手动建仓" onclick="openModal(\'' +
+        sid + '\')">➕</b>' +
+        '<b class="op" title="撤销最近一次建仓" onclick="undoFromCard(\'' +
+        sid + '\')">↩</b>' +
+        '<b class="op del" title="清仓该账户" onclick="closePos(\'' +
+        sid + '\')">🗑</b></span>';
+  });
+  document.getElementById("acctOps").innerHTML = ops;
+  document.getElementById("acctStats").innerHTML = h;
+}
+
+/* K63 投研团队管理带：指令分布 chips + 持仓指令票卡（影子建议链）
+   K64：待确认队列 chip + 票卡带投票结论/仓位系数 */
+function renderCouncilPanel() {
+  var elD = document.getElementById("councilDist"),
+      elH = document.getElementById("councilHold");
+  if (!elD || !elH) return;
+  var co = DATA.council || {},
+      d = co.dist || {}, hold = co.hold || [];
+  if (!co.d) {
+    elD.innerHTML = '<div class="astat"><i>状态</i><b>暂无留痕</b></div>';
+    elH.innerHTML = "";
+    return;
+  }
+  var chips = [["平仓预警", "bad"], ["减仓预警", "bad"],
+               ["收紧盯盘", "warn"], ["持有观察", ""]];
+  var h = chips.map(function (c) {
+    return '<div class="astat"><i>' + c[0] + '</i><b class="' + c[1] +
+           '">' + (d[c[0]] || 0) + "</b></div>";
+  }).join("") +
+      '<div class="astat"><i>待确认</i><b class="' +
+      (co.n_pend ? "warn" : "") + '">' + (co.n_pend || 0) +
+      "</b></div>" +
+      '<div class="astat"><i>影子转正</i><b>' + (co.shadow_n || 0) + "/" +
+      (co.shadow_need || 30) + "</b></div>" +
+      '<div class="astat"><i>桶 激/稳</i><b>' +
+      ((co.styles || {})["激进"] || 0) + "/" +
+      ((co.styles || {})["稳健"] || 0) + "</b></div>" +
+      '<div class="astat"><i>口径</i><b style="font-size:11px">' +
+      "持仓∩立案 · " + (co.d || "") + "</b></div>";
+  elD.innerHTML = h;
+  elH.innerHTML = hold.length ? hold.map(function (x) {
+    var cls2 = (x.act === "平仓预警" || x.act === "减仓预警")
+      ? " warn" : x.act === "收紧盯盘" ? " tight" : "";
+    return "<div class='tcard" + cls2 +
+      "' onclick=\"location.href='/council'\">" +
+      "<div class='tk'>" + (x.code || "") + " " + (x.name || "") +
+      " · " + (x.sid || "") + "</div>" +
+      "<div class='tv'>" + (x.act || "—") +
+      (x.k != null ? " ×" + x.k.toFixed(1) : "") + "</div>" +
+      "<div class='ts'>票" + (x.vote || x.verdict || "—") + " · " +
+      (x.style || "稳健") +
+      "桶 · 净多空 " + (x.net != null
+        ? (x.net > 0 ? "+" : "") + x.net : "?") + " · " + (x.d || "") +
+      "</div></div>";
+  }).join("") : "<div class='ts' style='padding:6px 2px'>" +
+    "当前持仓无立案留痕（每票建仓当晚 23:50 自动辩论入池）</div>";
+}
+
+function renderAll() {
+  if (!DATA) return;
+  renderEnvs(DATA.envs);
+  renderThreat(DATA.alerts, DATA.pulse);
+  renderCompass();
+  renderNav(DATA.portfolio && DATA.portfolio.accounts,
+            DATA.portfolio && DATA.portfolio.fof);
+  renderAcctStats();
+  renderCouncilPanel();
+  renderPf(DATA.portfolio);
+  renderClosed(DATA.portfolio);
+  renderPulse(DATA.pulse);
+  renderAlerts(DATA.alerts);
+  renderF15(DATA.fifteen);
+  renderSig(DATA.signals, DATA.sig_day);
+  renderFresh(DATA.fresh);
+  renderOps(DATA.ops, DATA.ops_meta, DATA.fresh, DATA.pulse);
+  autoScrollSig();
+  renderNews(DATA.news, DATA.news_stats);
+  renderJev(DATA.news_stats, DATA.news_brief);
+  renderBear(DATA.bear_pool);
+  document.getElementById("acctNote").textContent =
+      "净值 ps 口径（申赎不跳变） · 每日 23:50 模拟建仓";
+}
+
+function refresh() {
+  fetch("/api/screen").then(function (r) { return r.json(); }).then(function (d) {
+    DATA = d;
+    renderAll();
+  }).catch(function () {
+    document.getElementById("envbar").innerHTML =
+        '<div class="empty">数据拉取失败，60s 后重试</div>';
+  });
+}
+refresh();
+setInterval(refresh, 60000);
+window.addEventListener("resize", function () {
+  Object.keys(ch).forEach(function (k) { ch[k].resize(); });
+});
+
+/* ── K45 模拟建仓配置弹窗：起始资金 + 建仓起始日 ── */
+var CFG_SID = "", CFG_BUSY = false, CFG_INIT = {};
+function cfgModal(sid) {
+  var a = (DATA.portfolio || {}).accounts || {};
+  var ac = a[sid];
+  if (!ac) return;
+  CFG_SID = sid;
+  CFG_BUSY = false;
+  CFG_INIT = { cap: Math.round((ac.capital || 1000000) / 10000),
+               sd: ac.start_date || "",
+               tp: ac.take_profit_pct == null ? 15 : ac.take_profit_pct,
+               sl: ac.stop_loss_pct == null ? 8 : ac.stop_loss_pct,
+               dd: ac.max_drawdown_pct == null ? 10 : ac.max_drawdown_pct,
+               mp: ac.max_pos || 20 };
+  document.getElementById("cfgTitle").innerHTML =
+      (ac.icon || "") + " " + ac.name + " · 模拟建仓设定";
+  document.getElementById("cfgCap").value = CFG_INIT.cap;
+  document.getElementById("cfgDate").value = CFG_INIT.sd;
+  document.getElementById("cfgTP").value = CFG_INIT.tp;
+  document.getElementById("cfgSL").value = CFG_INIT.sl;
+  document.getElementById("cfgDD").value = CFG_INIT.dd;
+  document.getElementById("cfgMP").value = CFG_INIT.mp;
+  document.getElementById("cfgMsg").innerHTML = "";
+  _cfgLock(false);
+  document.getElementById("cfgMask").classList.add("on");
+}
+function closeCfg() {
+  document.getElementById("cfgMask").classList.remove("on");
+}
+/* 提交/撤销进行中禁用全部按钮（防重入/防连点重放） */
+function _cfgLock(on) {
+  CFG_BUSY = on;
+  ["cfgOk", "cfgUndo"].forEach(function (id) {
+    var b = document.getElementById(id);
+    if (b) b.disabled = on;
+  });
+}
+/* K46 撤销上一笔配置变更（弹栈恢复，连续撤销沿历史回退） */
+function undoCfg() {
+  if (CFG_BUSY) return;
+  var msg = document.getElementById("cfgMsg");
+  _cfgLock(true);
+  msg.innerHTML = '<span class="dim">正在撤销上一笔配置并跑批生效…（约数秒）</span>';
+  fetch("/api/portfolio_undo", { method: "POST" })
+  .then(function (r) { return r.json(); }).then(function (d) {
+    _cfgLock(false);
+    if (!d.ok) {
+      msg.innerHTML = '<span class="neg">✗ ' + (d.error || "撤销失败") + "</span>";
+      return;
+    }
+    var s = d.account || {}, nm = SID[d.sid] || d.sid;
+    msg.innerHTML = '<span class="pos">↩ 已回滚 ' + nm + "：" +
+        (d.restored || []).join(" · ") + "</span><br>" +
+        '<span class="dim">撤销的是 ' + (d.undo_ts || "") + " 那笔 · 现金 " +
+        ((s.cash || 0) / 10000).toFixed(0) + "万 · 持仓 " + (s.n_open || 0) +
+        " 笔 · 还可撤销 " + (d.n_left || 0) + " 笔</span>";
+    var ac = (DATA.portfolio || {}).accounts || {};
+    if (ac[d.sid]) {                    // 弹窗回显与基准同步为撤销后值
+      CFG_INIT.cap = Math.round((s.capital || 1000000) / 10000);
+      document.getElementById("cfgCap").value = CFG_INIT.cap;
+    }
+    refresh();
+  }).catch(function (e) {
+    _cfgLock(false);
+    msg.innerHTML = '<span class="neg">✗ 网络错误 ' + e + "</span>";
+  });
+}
+/* 卡片级直撤入口：不进弹窗，直接撤销最近一笔配置变更，结果 toast 提示 */
+function undoFromCard(sid) {
+  if (CFG_BUSY) return;
+  var t = document.getElementById("pfToast");
+  _cfgLock(true);
+  t.className = ""; t.style.display = "block";
+  t.innerHTML = "↩ 正在撤销上一笔配置并跑批生效…（约数秒）";
+  fetch("/api/portfolio_undo", { method: "POST" })
+  .then(function (r) { return r.json(); }).then(function (d) {
+    _cfgLock(false);
+    if (!d.ok) {
+      t.className = "err";
+      t.innerHTML = "✗ " + (d.error || "撤销失败");
+    } else {
+      var s = d.account || {}, nm = SID[d.sid] || d.sid;
+      t.innerHTML = "↩ 已回滚 <b>" + nm + "</b>：" +
+          (d.restored || []).join(" · ") + "<br><span class='dim'>现金 " +
+          ((s.cash || 0) / 10000).toFixed(0) + "万 · 持仓 " + (s.n_open || 0) +
+          " 笔 · 还可撤销 " + (d.n_left || 0) + " 笔</span>";
+    }
+    refresh();
+  }).catch(function (e) {
+    _cfgLock(false);
+    t.className = "err";
+    t.innerHTML = "✗ 网络错误 " + e;
+  });
+  clearTimeout(window.__pfToastT);
+  window.__pfToastT = setTimeout(function () {
+    t.style.display = "none";
+  }, 8000);
+}
+function submitCfg() {
+  if (CFG_BUSY) return;
+  var capWan = parseInt(document.getElementById("cfgCap").value, 10);
+  var sd = document.getElementById("cfgDate").value.trim();
+  var tp = parseFloat(document.getElementById("cfgTP").value);
+  var sl = parseFloat(document.getElementById("cfgSL").value);
+  var dd = parseFloat(document.getElementById("cfgDD").value);
+  var mp = parseInt(document.getElementById("cfgMP").value, 10);
+  var msg = document.getElementById("cfgMsg");
+  if (!(capWan >= 1 && capWan <= 10000)) {
+    msg.innerHTML = '<span class="neg">资金需在 1 万 ~ 1 亿之间（整数万元）</span>';
+    return;
+  }
+  if (sd && !/^\d{4}-\d{2}-\d{2}$/.test(sd)) {
+    msg.innerHTML = '<span class="neg">日期格式：YYYY-MM-DD，或留空=立即</span>';
+    return;
+  }
+  var bad = [[tp, "止盈"], [sl, "止损"], [dd, "熔断"]].filter(function (x) {
+    return !(x[0] >= 0 && x[0] <= 50);
+  });
+  if (bad.length) {
+    msg.innerHTML = '<span class="neg">' + bad.map(function (x) {
+      return x[1]; }).join("/") + ' 需在 0 ~ 50 之间（0=停用）</span>';
+    return;
+  }
+  if (!(mp >= 1 && mp <= 50)) {
+    msg.innerHTML = '<span class="neg">持仓上限需在 1 ~ 50 之间</span>';
+    return;
+  }
+  var body = { sid: CFG_SID };          // 只提交相对打开时的变化字段
+  if (capWan !== CFG_INIT.cap) body.capital = capWan * 10000;
+  if (sd !== CFG_INIT.sd) body.start_date = sd;
+  if (tp !== CFG_INIT.tp) body.take_profit_pct = tp;
+  if (sl !== CFG_INIT.sl) body.stop_loss_pct = sl;
+  if (dd !== CFG_INIT.dd) body.max_drawdown_pct = dd;
+  if (mp !== CFG_INIT.mp) body.max_pos = mp;
+  if (!body.capital && !body.start_date &&
+      body.take_profit_pct === undefined && body.stop_loss_pct === undefined &&
+      body.max_drawdown_pct === undefined && body.max_pos === undefined) {
+    msg.innerHTML = '<span class="dim">无变更（资金/日期/阈值与当前配置一致）</span>';
+    return;
+  }
+  _cfgLock(true);
+  msg.innerHTML = '<span class="dim">正在写入配置并跑批生效…（约数秒）</span>';
+  fetch("/api/portfolio_set", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    _cfgLock(false);
+    if (!d.ok) {
+      msg.innerHTML = '<span class="neg">✗ ' + (d.error || "失败") + "</span>";
+      return;
+    }
+    var s = d.account || {};
+    var line = (d.changed || []).join(" · ") || "无变更";
+    msg.innerHTML = '<span class="pos">✓ 已生效：' + line + "</span><br>" +
+        '<span class="dim">现金 ' + ((s.cash || 0) / 10000).toFixed(0) +
+        "万 · 净值 " + ((s.nav || 0) / 10000).toFixed(1) + "万 · 持仓 " +
+        (s.n_open || 0) + " 笔</span>";
+    CFG_INIT.cap = capWan;              // 成功后基准同步，可继续连改
+    CFG_INIT.sd = sd;
+    CFG_INIT.tp = tp;
+    CFG_INIT.sl = sl;
+    CFG_INIT.dd = dd;
+    CFG_INIT.mp = mp;
+    refresh();                       // 立即刷新大屏（后端缓存已清）
+  }).catch(function (e) {
+    _cfgLock(false);
+    msg.innerHTML = '<span class="neg">✗ 网络错误 ' + e + "</span>";
+  });
+}
+/* ── K51-A 加减仓弹窗：➕ 加仓（规模=市值×比例）/ ➖ 减仓（数量×比例）── */
+var ADJ = { sid: "", code: "", name: "", act: "add", busy: false };
+function adjModal(sid, code, name, act) {
+  ADJ = { sid: sid, code: code, name: name, act: act, busy: false };
+  document.getElementById("adjTitle").innerHTML = (act === "add" ? "➕ 加仓 " : "➖ 减仓 ") +
+      name + ' <span class="dim num" style="font-size:12px">' + code + "</span>";
+  document.getElementById("adjPct").value = 50;
+  document.getElementById("adjMsg").innerHTML = act === "add" ?
+      '<span class="dim">按源快照现价买入，规模 = 当前持仓市值 × 比例</span>' :
+      '<span class="dim">按现价卖出持仓数量的比例；100% = 全部平仓</span>';
+  document.getElementById("adjMask").classList.add("on");
+  document.getElementById("adjPct").focus();
+}
+function closeAdj() { document.getElementById("adjMask").classList.remove("on"); }
+function submitAdj() {
+  if (ADJ.busy) return;
+  var pct = parseFloat(document.getElementById("adjPct").value);
+  var msg = document.getElementById("adjMsg");
+  if (!(pct >= 1 && pct <= 100)) {
+    msg.innerHTML = '<span class="neg">比例需在 1 ~ 100 之间（%）</span>';
+    return;
+  }
+  ADJ.busy = true;
+  msg.innerHTML = '<span class="dim">正在' + (ADJ.act === "add" ? "加仓" : "减仓") +
+      "…（按最新价成交）</span>";
+  fetch("/api/portfolio_adjust", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sid: ADJ.sid, code: ADJ.code, act: ADJ.act, pct: pct })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    ADJ.busy = false;
+    if (!d.ok) { msg.innerHTML = '<span class="neg">✗ ' + (d.error || "失败") + "</span>"; return; }
+    var s = d.account || {};
+    msg.innerHTML = '<span class="pos">✓ 已' + (ADJ.act === "add" ? "加仓" : "减仓") +
+        " " + pct + "%</span><br><span class='dim'>" + (d.run_tail || []).join(" · ") +
+        "</span><br><span class='dim'>现金 " + ((s.cash || 0) / 10000).toFixed(0) +
+        "万 · 持仓 " + (s.n_open || 0) + " 笔</span>";
+    refresh();
+  }).catch(function (e) {
+    ADJ.busy = false;
+    msg.innerHTML = '<span class="neg">✗ 网络错误 ' + e + "</span>";
+  });
+}
+/* ── K51-D 手动建仓弹窗：任意策略池内标的按当前价入仓 ── */
+var OPN = { sid: "", busy: false };
+function openModal(sid) {
+  OPN = { sid: sid, busy: false };
+  var ac = ((DATA.portfolio || {}).accounts || {})[sid] || {};
+  var eq = Math.round(((ac.capital || 1000000) / (ac.max_pos || 20)) / 10000 * 10) / 10;
+  document.getElementById("openTitle").innerHTML = "➕ 手动建仓 · " +
+      (ac.icon || "") + " " + (ac.name || sid);
+  document.getElementById("openCode").value = "";
+  document.getElementById("openAmt").value = eq;
+  document.getElementById("openMsg").innerHTML = '<span class="dim">标的代码需在' +
+      "任一策略源快照中（如 000915.SZ / SOL/USDT / GOOG / 00700）；金额默认等权 " +
+      eq + " 万</span>";
+  document.getElementById("openMask").classList.add("on");
+  document.getElementById("openCode").focus();
+}
+function closeOpen() { document.getElementById("openMask").classList.remove("on"); }
+function openSuggest() {      /* K52-D 标的联想：防抖 300ms 拉搜索端点 */
+  clearTimeout(OPN.qTimer);
+  OPN.qTimer = setTimeout(function () {
+    var q = document.getElementById("openCode").value.trim();
+    if (q.length < 2) { document.getElementById("mktList").innerHTML = ""; return; }
+    fetch("/api/portfolio_market?q=" + encodeURIComponent(q))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j.ok) return;
+        document.getElementById("mktList").innerHTML =
+          (j.items || []).map(function (x) {
+            return '<option value="' + x.code + '">' +
+                (x.name || "?") + " · " + (x.market || "?") +
+                " · " + x.px + "</option>";
+          }).join("");
+      }).catch(function () {});
+  }, 300);
+}
+function submitOpen() {
+  if (OPN.busy) return;
+  var code = document.getElementById("openCode").value.trim();
+  var amt = parseFloat(document.getElementById("openAmt").value);
+  var msg = document.getElementById("openMsg");
+  if (!code) { msg.innerHTML = '<span class="neg">请输入标的代码</span>'; return; }
+  if (!(amt >= 0.1 && amt <= 1000)) {
+    msg.innerHTML = '<span class="neg">金额需在 0.1 万 ~ 1000 万之间</span>';
+    return;
+  }
+  OPN.busy = true;
+  msg.innerHTML = '<span class="dim">正在按当前价建仓 ' + code + "…</span>";
+  fetch("/api/portfolio_open", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sid: OPN.sid, code: code, amount: Math.round(amt * 10000) })
+  }).then(function (r) { return r.json(); }).then(function (d) {
+    OPN.busy = false;
+    if (!d.ok) { msg.innerHTML = '<span class="neg">✗ ' + (d.error || "失败") + "</span>"; return; }
+    var s = d.account || {};
+    msg.innerHTML = '<span class="pos">✓ 已建仓 ' + code + "</span><br>" +
+        "<span class='dim'>" + (d.run_tail || []).join(" · ") +
+        "</span><br><span class='dim'>现金 " + ((s.cash || 0) / 10000).toFixed(0) +
+        "万 · 持仓 " + (s.n_open || 0) + " 笔</span>";
+    refresh();
+  }).catch(function (e) {
+    OPN.busy = false;
+    msg.innerHTML = '<span class="neg">✗ 网络错误 ' + e + "</span>";
+  });
+}
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") { closeCfg(); closeAdj(); closeOpen(); }
+});
+
+/* ── 自诊断：加载后检测撤销功能完整性，顶部横幅反馈 ── */
+(function () {
+  var _diagTries = 0;
+  function runDiag() {
+    /* K67 账户操作条由 /api/screen 数据渲染，数据未回先等待（≤30s）防误报 */
+    if ((!window.DATA || !window.DATA.portfolio) && _diagTries++ < 15) {
+      setTimeout(runDiag, 2000);
+      return;
+    }
+    var issues = [], nCard = 0;
+    try {
+      nCard = document.querySelectorAll("#acctOps .op").length;
+      if (!document.getElementById("cfgUndo")) issues.push("弹窗撤销按钮缺失");
+      if (typeof undoFromCard !== "function") issues.push("undoFromCard 函数缺失");
+      if (!document.getElementById("pfToast")) issues.push("结果提示容器缺失");
+      if (!document.getElementById("gUndo")) issues.push("顶栏全局按钮缺失");
+      var cards = document.querySelectorAll("#acctOps .op[onclick^='cfgModal']").length;
+      if (cards === 0) issues.push("账户操作条缺失（renderAcctStats 未执行）");
+      else if (nCard === 0) issues.push("操作条按钮缺失");
+    } catch (e) { issues.push("检测脚本异常: " + e); }
+    var bar = document.getElementById("diagBar");
+    if (!bar) return;
+    if (issues.length) {
+      bar.style.cssText = "display:block;background:rgba(244,63,94,.12);" +
+        "border:1px solid var(--color-err);color:var(--color-err);" +
+        "border-radius:var(--r-s);padding:8px 14px;font-size:12px;margin:8px 0";
+      bar.innerHTML = "⚠ 撤销功能异常：" + issues.join("；") +
+          ' —— 请按 F12 打开 Console 截图红色报错反馈';
+    } else {
+      bar.style.cssText = "display:block;background:rgba(16,185,129,.10);" +
+        "border:1px solid var(--color-ok);color:var(--color-ok);" +
+        "border-radius:var(--r-s);padding:8px 14px;font-size:12px;margin:8px 0";
+      bar.innerHTML = "✓ 撤销功能正常 —— 入口：顶栏「↩ 撤销上一笔配置」· 账户操作条按钮 ×" +
+          nCard + " · 「⚙ 模拟建仓」弹窗内按钮";
+      setTimeout(function () { bar.style.display = "none"; }, 6000);
+    }
+  }
+  function _diagGo() { setTimeout(runDiag, 1800); }
+  if (document.readyState === "complete") _diagGo();
+  else window.addEventListener("load", _diagGo);
+  setTimeout(runDiag, 8000);            // 兜底：bfcache 恢复/异常路径也至少跑一次
+})();
+</script>
+
+<!-- 撤销结果浮动提示（卡片级直撤入口） -->
+<div id="pfToast"></div>
+<!-- K45 模拟建仓配置弹窗（遮罩点击关闭） -->
+<div class="cfgMask" id="cfgMask" onclick="if(event.target===this)closeCfg()">
+  <div class="cfgBox">
+    <h3 id="cfgTitle">模拟建仓设定</h3>
+    <div class="hint">起始资金变更即时平滑注资/撤资（不动持仓，账本留痕）。
+      建仓起始日留空=立即；设未来日期则到日才开始建新仓（已有持仓不受影响，照常择时平仓）。</div>
+    <label>起始资金（万元，1 ~ 10000）</label>
+    <input type="number" id="cfgCap" min="1" max="10000" step="1">
+    <label>建仓起始日（YYYY-MM-DD，留空=立即）</label>
+    <input type="text" id="cfgDate" placeholder="如 2026-11-01；留空 = 立即"
+           maxlength="10" autocomplete="off">
+    <label>止盈 / 止损阈值（% 相对成本价，0 = 停用该规则）</label>
+    <div style="display:flex;gap:8px">
+      <input type="number" id="cfgTP" min="0" max="50" step="0.5"
+             style="flex:1" placeholder="止盈 15">
+      <input type="number" id="cfgSL" min="0" max="50" step="0.5"
+             style="flex:1" placeholder="止损 8">
+    </div>
+    <label>回撤熔断（% 净值距峰值，0 = 停用）/ 持仓数上限</label>
+    <div style="display:flex;gap:8px">
+      <input type="number" id="cfgDD" min="0" max="50" step="0.5"
+             style="flex:1" placeholder="熔断 10">
+      <input type="number" id="cfgMP" min="1" max="50" step="1"
+             style="flex:1" placeholder="持仓上限 20">
+    </div>
+    <div class="cfgActs">
+      <button onclick="closeCfg()">取 消</button>
+      <button id="cfgUndo" onclick="undoCfg()">↩ 撤销上一笔</button>
+      <button class="ok" id="cfgOk" onclick="submitCfg()">保存并生效</button>
+    </div>
+    <div id="cfgMsg" style="margin-top:10px"></div>
+  </div>
+</div>
+<!-- K51-A 加减仓弹窗（遮罩点击关闭） -->
+<div class="cfgMask" id="adjMask" onclick="if(event.target===this)closeAdj()">
+  <div class="cfgBox">
+    <h3 id="adjTitle">加减仓</h3>
+    <label>操作比例（%，1 ~ 100）</label>
+    <input type="number" id="adjPct" min="1" max="100" step="5">
+    <div class="cfgActs">
+      <button onclick="closeAdj()">取 消</button>
+      <button class="ok" onclick="submitAdj()">确认执行</button>
+    </div>
+    <div id="adjMsg" style="margin-top:10px"></div>
+  </div>
+</div>
+<!-- K51-D 手动建仓弹窗（遮罩点击关闭） -->
+<div class="cfgMask" id="openMask" onclick="if(event.target===this)closeOpen()">
+  <div class="cfgBox">
+    <h3 id="openTitle">手动建仓</h3>
+    <label>标的代码（输入≥2字符自动联想，需在任一策略源快照中）</label>
+    <input type="text" id="openCode" placeholder="如 000915.SZ / SOL/USDT / GOOG / 00700"
+           maxlength="16" autocomplete="off" list="mktList" oninput="openSuggest()">
+    <datalist id="mktList"></datalist>
+    <label>建仓金额（万元，0.1 ~ 1000；默认等权）</label>
+    <input type="number" id="openAmt" min="0.1" max="1000" step="0.1">
+    <div class="cfgActs">
+      <button onclick="closeOpen()">取 消</button>
+      <button class="ok" onclick="submitOpen()">确认建仓</button>
+    </div>
+    <div id="openMsg" style="margin-top:10px"></div>
+  </div>
+</div>
+</body>
+</html>

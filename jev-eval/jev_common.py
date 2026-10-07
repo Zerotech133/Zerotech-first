@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""jev_common — Jev 网关四件套公共库（P1-1/P1-2/P1-6/P1-7）。
+
+抽出四文件重复实现的基础设施：
+  结构化日志   log(msg, level=, **fields) → 单行 JSON（含 ts/level/mod/trace_id）
+  trace_id     new_trace() 上下文管理器；log 自动携带（P1-2）
+  原子写       atomic_write_text（tempfile + os.replace）
+  重试         with_retry（指数退避）
+  优雅退出     install_stop() → {"flag": bool}（SIGTERM/SIGINT 置位）
+  DB 直连      db_rows / db_execute（psycopg2 参数化查询，P1-7）：
+               连接进程内缓存、失联自动重连一次；psycopg2 缺失或直连不可达时
+               自动降级 docker exec psql（含 %s → :'pN' 变量绑定转换），四件套不停摆
+  lark-cli     lark_env() / lark_cli_json()（统一信封 {"ok": true} 判定）
+  指标         start_metrics(port) / 公共 Counter（P1-6，prometheus_client 可选）
+"""
+from __future__ import annotations
+
+import contextlib
+import json
+import os
+import signal
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import urllib.request
+import uuid
+from contextvars import ContextVar
+from datetime import datetime
+from pathlib import Path
+
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+# ── 结构化日志 + trace_id（P1-2） ──────────────────────────
+_MOD = {"name": ""}
+_TRACE: ContextVar = ContextVar("jev_trace", default="")
+
+
+def set_module(name: str) -> None:
+    """每进程启动时调用一次，日志 mod 字段用（gate/review/qdbridge/card）。"""
+    _MOD["name"] = name
+
+
+def trace_id() -> str:
+    return _TRACE.get()
+
+
+@contextlib.contextmanager
+def new_trace(prefix: str = "t"):
+    """开启新 trace：块内所有 log 自动携带 trace_id，跨日志行可串联一次处理。"""
+    tid = f"{prefix}-{uuid.uuid4().hex[:8]}"
+    tok = _TRACE.set(tid)
+    try:
+        yield tid
+    finally:
+        _TRACE.reset(tok)
+
+
+def log(msg: str, level: str = "info", **fields) -> None:
+    rec = {"ts": datetime.now().isoformat(timespec="milliseconds"),
+           "level": level, "mod": _MOD["name"], "msg": msg}
+    if _TRACE.get():
+        rec["trace_id"] = _TRACE.get()
+    rec.update(fields)
+    print(json.dumps(rec, ensure_ascii=False), flush=True)
+
+
+# ── 原子写 / 重试 / 优雅退出（原四文件逐份复制，P1-1 收敛） ──
+def atomic_write_text(path: Path, data: str) -> None:
+    """原子写入：临时文件 + os.replace，防中途崩溃导致 JSON 损坏。"""
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def with_retry(fn, *, retries: int = 3, base_sec: float = 2.0, label: str = ""):
+    """指数退避重试（retries=3 → 等 0/2/4 秒）。最后一次抛原异常。"""
+    last: Exception | None = None
+    for i in range(retries):
+        try:
+            return fn()
+        except Exception as e:  # noqa: BLE001
+            last = e
+            if i < retries - 1:
+                wait = base_sec * (2 ** i)
+                log(f"{label}重试 {i + 1}/{retries - 1}（{wait:.0f}s）: {str(e)[:80]}",
+                    level="warn")
+                time.sleep(wait)
+    assert last is not None
+    raise last
+
+
+def install_stop() -> dict:
+    """注册 SIGTERM/SIGINT：置位返回的 stop["flag"]，由各主循环本轮完成后退出。"""
+    stop = {"flag": False}
+
+    def _on(signum, _frame) -> None:
+        stop["flag"] = True
+        log(f"收到信号 {signum}，本轮完成后退出", level="warn")
+
+    signal.signal(signal.SIGTERM, _on)
+    signal.signal(signal.SIGINT, _on)
+    return stop
+
+
+# ── Prometheus 指标（P1-6，prometheus_client 可选依赖） ─────
+class _NoOp:  # noqa: D401
+    """prometheus_client 缺失时的 no-op 占位。"""
+
+    def labels(self, *a, **k):
+        return self
+
+    def inc(self, *a, **k):
+        pass
+
+
+NOOP = _NoOp()
+
+try:
+    from prometheus_client import Counter, start_http_server
+    METRICS = True
+    C_DB = Counter("jev_db_queries_total", "DB 查询次数", ["mod", "ok"])
+    C_JEV = Counter("jev_calls_total", "Jev API 调用次数", ["mod", "ok"])
+    C_LARK = Counter("jev_lark_total", "飞书 lark-cli 调用次数", ["mod", "kind", "ok"])
+except ImportError:  # 未安装时降级为 no-op，主流程不受影响
+    METRICS = False
+    C_DB = C_JEV = C_LARK = NOOP
+
+
+def start_metrics(port: int) -> bool:
+    """在 127.0.0.1:port 起 /metrics 端点（仅本机抓取）。未装 prometheus_client 则跳过。"""
+    if not METRICS:
+        log("prometheus_client 未安装，指标端点关闭", level="warn")
+        return False
+    start_http_server(port, addr="127.0.0.1")
+    log("指标端点已启动", port=port)
+    return True
+
+
+# ── DB 直连（P1-7）：psycopg2 参数化，降级 docker exec psql ──
+DB_DSN = {
+    "host": os.environ.get("ZHICE_PG_HOST", "127.0.0.1"),
+    "port": int(os.environ.get("ZHICE_PG_PORT", "5432")),
+    "user": os.environ.get("ZHICE_PG_USER", "zhice"),
+    "password": os.environ.get("ZHICE_PG_PASSWORD", "zhice_pass"),
+    "dbname": os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),
+}
+PG_CONTAINER = os.environ.get("ZHICE_PG_CONTAINER", "zhice-db")
+
+_conn = {"c": None, "mode": ""}  # mode: "" 未定 / "direct" / "docker"
+
+
+def _get_conn():
+    """进程内缓存连接；首次连接成功后记住模式，失败自动重连一次。"""
+    import psycopg2
+    if _conn["c"] is None or _conn["c"].closed:
+        _conn["c"] = psycopg2.connect(**DB_DSN)
+        _conn["c"].autocommit = True  # 单语句读写，无需事务块
+        _conn["mode"] = "direct"
+    return _conn["c"]
+
+
+def _pg_ok(labels_mod: str) -> None:
+    C_DB.labels(_MOD["name"] or labels_mod, "1").inc()
+
+
+def _pg_fail(labels_mod: str) -> None:
+    C_DB.labels(_MOD["name"] or labels_mod, "0").inc()
+
+
+def _docker_psql_rows(sql: str, params) -> list[tuple]:
+    """降级通道：docker exec psql。%s 占位符转 :'pN' 变量绑定（psql 负责转义）。
+    list/tuple/set 参数转为 {a,b} 数组字面量以配合 ANY(%s)。"""
+    args: list = ["docker", "exec", "-i", PG_CONTAINER, "psql",
+                  "-U", DB_DSN["user"], "-d", DB_DSN["dbname"],
+                  "-A", "-t", "-F", "\x1f", "-v", "ON_ERROR_STOP=1"]
+
+    def _fmt(v):
+        if isinstance(v, (list, tuple, set)):
+            return "{" + ",".join(str(x) for x in v) + "}"
+        return str(v)
+
+    params = list(params or [])
+    parts = sql.split("%s")
+    if len(parts) - 1 != len(params):
+        raise ValueError("占位符数量与参数数量不一致")
+    sql2 = parts[0]
+    for i, v in enumerate(params):
+        sql2 += f":'p{i}'" + parts[i + 1]
+        args += ["-v", f"p{i}={_fmt(v)}"]
+    out = subprocess.run(args, input=sql2, capture_output=True, text=True, timeout=20,
+                         encoding="utf-8", errors="replace")
+    if out.returncode != 0:
+        raise RuntimeError(f"psql 失败: {out.stderr.strip()[:200]}")
+    return [tuple(l.split("\x1f")) for l in out.stdout.strip().splitlines() if l]
+
+
+def db_rows(sql: str, params=None) -> list[tuple]:
+    """参数化 SELECT，返回 list[tuple]（真实类型，非字符串）。
+
+    直连失败或 psycopg2 缺失 → 自动降级 docker exec psql（结果全为字符串）。
+    """
+    try:
+        try:
+            c = _get_conn()
+            with c.cursor() as cur:
+                cur.execute(sql, params)
+                rows = cur.fetchall()
+            _pg_ok("")
+            return rows
+        except Exception as e:  # noqa: BLE001
+            if _conn["mode"] == "direct":  # 已建立过的连接失联 → 重连一次再判死
+                try:
+                    _conn["c"] = None  # 丢弃可能僵死的连接对象
+                    with _get_conn().cursor() as cur:
+                        cur.execute(sql, params)
+                        rows = cur.fetchall()
+                    _pg_ok("")
+                    return rows
+                except Exception:  # noqa: BLE001
+                    pass
+            raise e
+    except Exception as e:  # noqa: BLE001
+        _pg_fail("")
+        if isinstance(e, ImportError):
+            pass
+        else:
+            log(f"DB 直连失败，降级 docker psql: {str(e)[:100]}", level="warn")
+        return _docker_psql_rows(sql, params)
+
+
+def db_execute(sql: str, params=None) -> int:
+    """参数化 UPDATE/DELETE，返回影响行数（含降级路径）。"""
+    sql = sql.strip().rstrip(";") + " RETURNING 1"
+    rows = db_rows(sql, params)
+    return len(rows)
+
+
+def db_run(sql: str, params=None) -> None:
+    """执行 DDL/任意语句（不追加 RETURNING，CREATE/ALTER 等必须走此入口）。
+    直连 autocommit 即时生效；降级 docker psql 以 ON_ERROR_STOP 校验。"""
+    try:
+        c = _get_conn()
+        with c.cursor() as cur:
+            cur.execute(sql, params)
+        _pg_ok("")
+        return
+    except Exception as e:  # noqa: BLE001
+        _pg_fail("")
+        if isinstance(e, ImportError):
+            pass
+        else:
+            log(f"DB 直连失败，降级 docker psql: {str(e)[:100]}", level="warn")
+    _docker_psql_rows(sql, params)  # DDL 无结果集 → []；失败抛 RuntimeError
+
+
+# ── lark-cli 子进程封装（统一信封判定 + 环境注入） ──────────
+# 缓存 (到期ts, tenant_access_token, app_id, app_secret)
+_TAT_CACHE: "tuple[float, str, str, str] | None" = None
+_TAT_LOCK = threading.Lock()
+
+
+def _load_bot_creds() -> "tuple[str, str, str] | None":
+    """静态 app 凭证 + tenant_access_token（缓存获取，惰性刷新，余量 600s）。
+
+    lark-cli 1.0.5 判例：凭证由宿主进程外部注入，独立进程（计划任务/
+    watchdog 拉起）无凭证可用——读 ~/.lark-cli/config.json 静态 app 凭证
+    自换 TAT。返回 (tat, app_id, app_secret)；换不到时返回 None，
+    lark_env 不注入（宿主环境有凭证时仍走原逻辑）。"""
+    global _TAT_CACHE
+    with _TAT_LOCK:
+        if _TAT_CACHE and _TAT_CACHE[0] > time.time():
+            return _TAT_CACHE[1], _TAT_CACHE[2], _TAT_CACHE[3]
+    cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
+    try:
+        with open(cfg, encoding="utf-8") as f:
+            apps = json.load(f).get("apps") or []
+        app_id, app_secret = apps[0]["appId"], apps[0]["appSecret"]
+        body = json.dumps({"app_id": app_id,
+                           "app_secret": app_secret}).encode("utf-8")
+        req = urllib.request.Request(
+            "https://open.feishu.cn/open-apis/auth/v3/"
+            "tenant_access_token/internal",
+            data=body, headers={"Content-Type": "application/json"})
+        tok = json.loads(urllib.request.urlopen(req, timeout=15).
+                         read().decode("utf-8")).get("tenant_access_token")
+        if tok:
+            _TAT_CACHE = (time.time() + 7200 - 600, tok,
+                          app_id, app_secret)  # 有效期~7200s
+            return tok, app_id, app_secret
+    except Exception:
+        pass
+    return None
+
+
+def lark_env() -> dict:
+    """四件套注入（p_g_robot._bot_env 已验证模式）。
+
+    lark-cli 1.0.5 的 event consume 等子进程要完成 bot 身份握手，
+    需要 APP_ID/APP_SECRET/TENANT_ACCESS_TOKEN 三者齐全 +
+    USER_ACCESS_TOKEN=""（置空强制 bot 身份），缺一不可。"""
+    env = {**os.environ,
+           "LARKSUITE_CLI_NO_UPDATE_NOTIFIER": "1",
+           "LARKSUITE_CLI_NO_SKILLS_NOTIFIER": "1"}
+    creds = _load_bot_creds()
+    if creds:
+        tat, app_id, app_secret = creds
+        env["LARKSUITE_CLI_APP_ID"] = app_id
+        env["LARKSUITE_CLI_APP_SECRET"] = app_secret
+        env["LARKSUITE_CLI_TENANT_ACCESS_TOKEN"] = tat
+        env["LARKSUITE_CLI_USER_ACCESS_TOKEN"] = ""   # 强制 bot 身份
+    return env
+
+
+def lark_cli_json(args: list[str], *, timeout: int = 20, kind: str = "api",
+                  retries: int = 1) -> dict:
+    """调 lark-cli 并解析 stdout JSON（lark-cli 统一信封：成功 {"ok": true}）。
+
+    信封 ok!=true 或进程失败 → 抛 RuntimeError（调用方自行决定重试策略）。
+    """
+    last_err = ""
+    for i in range(max(1, retries)):
+        result = subprocess.run(
+            ["lark-cli", *args], capture_output=True, text=True,
+            encoding="utf-8", errors="replace", env=lark_env(), timeout=timeout)
+        if result.returncode != 0:
+            last_err = f"lark-cli 退出码 {result.returncode}: {result.stderr.strip()[:150]}"
+        else:
+            try:
+                payload = json.loads(result.stdout)
+            except Exception:  # noqa: BLE001
+                last_err = f"lark-cli 输出非 JSON: {result.stdout.strip()[:150]}"
+            else:
+                if payload.get("ok") is True:
+                    C_LARK.labels(_MOD["name"], kind, "1").inc()
+                    return payload
+                last_err = f"飞书拒绝: {result.stdout.strip()[:150]}"
+        C_LARK.labels(_MOD["name"], kind, "0").inc()
+        if i < retries - 1:
+            time.sleep(2 * (i + 1))
+    raise RuntimeError(last_err)

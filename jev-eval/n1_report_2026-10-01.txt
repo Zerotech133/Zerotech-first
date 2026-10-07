@@ -1,0 +1,11 @@
+﻿[OK] backup set 2026-10-01_1259 files=13 MB=1866.6
+[OK] backup.log DONE failed=0
+[OK] quant_code files=1756 (baseline 1756, holiday drift ~0)
+[OK] v5 key guard silent (normal path)
+[OK] offsite task RC=0 LastRun=10/01/2026 14:35:14
+[OK] offsite log: [20261001_143514] OK set=2026-10-01_1259 files=13 bytes=1957289562
+[OK] OneDrive set 2026-10-01_1259 files=13
+[OK] OneDrive sets=2 (prune to 2 works)
+[OK] alert queue empty
+[OK] no ENGINE_DOWN event pending
+N1 ALL PASS

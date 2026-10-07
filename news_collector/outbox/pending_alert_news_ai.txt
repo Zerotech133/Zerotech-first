@@ -1,0 +1,1 @@
+[QUANT ALERT] task failed: news_ai exit=C:\Temp\news_ai_err.log 2026-10-04 08:00:16

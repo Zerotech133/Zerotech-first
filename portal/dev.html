@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开发者 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 26px 56px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: 1080px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 17px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: 1080px; margin: 0 auto; }
+  .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  .sec { margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .sec-title { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); }
+
+  .plan-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(258px, 1fr)); }
+  .pcard { display: flex; flex-direction: column; gap: 8px; background: var(--bg-raised); border: 1px dashed var(--border); border-radius: 12px; padding: 17px 19px; text-decoration: none; color: var(--text); transition: border-color .2s ease; min-height: 148px; }
+  .pcard:hover { border-color: var(--link); border-style: solid; }
+  .pcard .ic { font-size: 21px; }
+  .pcard .t { font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pcard .d { font-size: 12px; color: var(--gray-6); line-height: 1.65; }
+  .tag { font-size: 10px; padding: 2px 9px; border-radius: 999px; border: 1px dashed var(--border); color: var(--text-dim); font-weight: 400; }
+
+  .note {
+    margin-top: 24px; background: var(--bg-surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--link); border-radius: 10px; padding: 16px 20px;
+    font-size: 12.5px; color: var(--gray-6); line-height: 1.8;
+  }
+  .note b { color: var(--text); }
+
+  .dock { display: flex; flex-wrap: wrap; gap: 9px; }
+  .tool { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; font-size: 12.5px; color: var(--text); text-decoration: none; transition: border-color .2s ease; }
+  .tool:hover { border-color: var(--link); }
+  .tool .sub { color: var(--text-dim); font-size: 10.5px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok); flex-shrink: 0; }
+  .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); }
+
+  @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div><h1>开发者</h1><small>DEV DOMAIN · 规划中</small></div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <nav class="topnav">
+    <a class="pill" href="/">🏠 首页</a>
+    <a class="pill" href="/quant">📈 量化股票</a>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <a class="pill" href="/creator">🎬 创作</a>
+    <span class="pill on">💻 开发</span>
+    <a class="pill" href="/ops">⚙ 系统</a>
+  </nav>
+
+  <main>
+    <div class="note" id="more">
+      这个领域为<b>「敲代码」</b>预留。OS 的扩展原则很简单：一个新领域 = 一张入口卡（首页）+ 一个专项页（这里）+ 它自己的产线与注册表。
+      量化股票是这个模式的第一块拼图，<b>第二个领域从这里接入</b>——位置已留好，来了就长。
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 规划位 · 即将上线</div></div>
+      <div class="plan-grid">
+        <div class="pcard">
+          <span class="ic">🧰</span>
+          <div class="t">脚本工厂 <span class="tag">规划</span></div>
+          <div class="d">常用脚本一键跑：数据清洗、批量改文件、定时小工具——说完需求就出脚本。</div>
+        </div>
+        <div class="pcard">
+          <span class="ic">🤝</span>
+          <div class="t">Copilot 工作台 <span class="tag">规划</span></div>
+          <div class="d">与 AI 结对的固定工位：项目上下文常驻、改动留痕、成果直接入库。</div>
+        </div>
+        <div class="pcard">
+          <span class="ic">📡</span>
+          <div class="t">工程看板 <span class="tag">规划</span></div>
+          <div class="d">仓库活动、构建状态、部署记录一块屏——像盯盘一样盯工程。</div>
+        </div>
+        <div class="pcard">
+          <span class="ic">🧪</span>
+          <div class="t">实验沙盒 <span class="tag">规划</span></div>
+          <div class="d">新想法先在沙盒里跑通，再决定要不要升级成产线——失败零成本。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 已在线的开发基建</div></div>
+      <div class="dock">
+        <a class="tool" href="http://localhost" target="_blank" rel="noopener" data-check="dify">🧠 Dify <span class="sub">RAG·工作流</span> <span class="dot"></span></a>
+        <a class="tool" href="http://localhost:3000" target="_blank" rel="noopener" data-check="webui">💬 WebUI <span class="sub">本地对话</span> <span class="dot"></span></a>
+      </div>
+    </div>
+  </main>
+
+<script>
+  function tick() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  async function probe(key, url) {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(t);
+      const el = document.querySelector('.tool[data-check="' + key + '"] .dot');
+      if (el) el.className = 'dot' + (r.status !== 502 && r.status !== 504 ? '' : ' off');
+    } catch {
+      const el = document.querySelector('.tool[data-check="' + key + '"] .dot');
+      if (el) el.className = 'dot off';
+    }
+  }
+  probe('dify', '/probe/dify');
+  probe('webui', '/probe/webui');
+  setInterval(() => { probe('dify', '/probe/dify'); probe('webui', '/probe/webui'); }, 30000);
+</script>
+</body>
+</html>

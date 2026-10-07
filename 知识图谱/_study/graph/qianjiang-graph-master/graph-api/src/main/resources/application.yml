@@ -1,0 +1,79 @@
+qianjiang:
+  file:
+    baseDir: D://qianjiang-graph-file
+    spaceDataDir: ${qianjiang.file.baseDir}/space-data
+
+  engine:
+    spacePersistenceEnable: true
+
+  logPath: /home/qianjiangGraph/logs
+
+# PageHelper
+pagehelper:
+  helperDialect: mysql
+  reasonable: true
+  supportMethodsArguments: true
+  params: count=countSql
+
+
+spring:
+  devtools:
+    restart:
+      enabled: true
+
+  datasource:
+      druid:
+        initialSize: 5
+        minIdle: 10
+        maxActive: 150
+        maxWait: 60000
+        timeBetweenEvictionRunsMillis: 10000
+        minEvictableIdleTimeMillis: 100000
+        maxEvictableIdleTimeMillis: 900000
+        validationQuery: SELECT 1
+        testWhileIdle: true
+        testOnBorrow: false
+        testOnReturn: false
+        wall:
+          multi-statement-allow: true
+          strict-syntax-check: false
+  mvc:
+    async:
+      request-timeout: 3600s
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  task:
+    execution:
+      thread-name-prefix: commonThreadPoolTaskExecutor-
+      pool:
+        core-size: 10
+        max-size: 20
+        queue-capacity: 100
+        keep-alive: 300s
+    scheduling:
+      pool:
+        size: 5
+      thread-name-prefix: scheduledThreadPoolTaskExecutor-
+  jackson:
+    time-zone: GMT+8
+
+# mybatis plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    use-generated-keys: true
+  type-aliases-package: com.qianjiangsoft.**.domain
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  global-config:
+    db-config:
+      update-strategy: not_null
+      select-strategy: not_empty
+
+server:
+  tomcat:
+    max-http-form-post-size: 0
+  shutdown: graceful

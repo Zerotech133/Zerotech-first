@@ -1,0 +1,20 @@
+.defineModal{
+  .ant-modal-content{
+    height: 100%;
+    .ant-card-body{
+      height: calc(100% - 150px);
+      text-align: center;
+    }
+    .ant-collapse-header{
+      >div{
+        display: none;
+      }
+    }
+    .ant-form-item{
+      margin-bottom: 0;
+    }
+    .ant-collapse-header, .ant-collapse-content-box{
+      padding-left: 0;
+    }
+  }
+}

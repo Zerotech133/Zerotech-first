@@ -1,0 +1,13 @@
+
+.schema{
+  height: 100%;
+  .ant-card-body{
+    height: calc(100% - 64px);
+    >div{
+      height: 100%;
+    }
+    .create-text{
+      margin-left: 10px;
+    }
+  }
+}

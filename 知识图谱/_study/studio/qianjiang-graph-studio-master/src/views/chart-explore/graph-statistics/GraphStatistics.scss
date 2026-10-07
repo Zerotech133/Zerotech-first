@@ -1,0 +1,36 @@
+.graph-statistics{
+  .ant-form{
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    .ant-form-item-control-input-content{
+      display: flex;
+    }
+    .ant-form-item:nth-of-type(n+2):nth-of-type(-n+5){
+      margin-bottom: 0;
+    }
+    
+    .ant-form-item-label{
+      width: 70px;
+    }
+  }
+  svg{
+    font-size: 18px;
+  }
+  .line{
+    width: 90px;
+    height: 9px;
+    border-bottom: 1px solid #5192f5
+  }
+  .ant-table-thead{
+    .ant-table-cell{
+      color: #5192f5;
+    }
+  }
+  .ant-modal-footer{
+    text-align: center;
+    .ant-btn{
+      margin-right: 12px;
+    }
+  }
+}

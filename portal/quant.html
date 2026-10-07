@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>量化股票 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+  main { max-width: 1180px; margin: 0 auto; padding: 0 26px 56px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: 1180px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 17px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: 1180px; margin: 0 auto; }
+  .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  .sec { margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .sec-title { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); }
+  .sec-note { font-size: 11px; color: var(--text-dim); font-family: Consolas, monospace; }
+
+  .kpi-strip { display: grid; gap: 1px; grid-template-columns: repeat(4, 1fr); background: var(--border-weak); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .kpi { background: var(--bg-surface); padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .kpi .lb { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
+  .kpi .vl { font-size: 19px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .sb { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi a { text-decoration: none; color: inherit; }
+
+  .strat-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); }
+  .scard { position: relative; display: flex; flex-direction: column; gap: 5px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; text-decoration: none; color: var(--text); transition: border-color .2s ease, transform .2s ease; }
+  .scard:hover { border-color: var(--link); transform: translateY(-2px); }
+  .scard .top { display: flex; align-items: center; gap: 7px; }
+  .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sdot.live   { background: var(--color-ok);  box-shadow: 0 0 8px var(--color-ok); }
+  .sdot.shadow { background: var(--color-warn); box-shadow: 0 0 8px var(--color-warn); animation: pulse 2.2s ease-in-out infinite; }
+  .sdot.tool   { background: var(--link); }
+  .sdot.paused { background: var(--text-dim); }
+  .scard .nm { font-size: 13.5px; font-weight: 700; }
+  .scard .bdg { font-size: 10px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); margin-left: auto; flex-shrink: 0; }
+  .scard .tg { font-size: 11px; color: var(--text-dim); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; }
+  .scard .m1 { font-size: 11px; color: var(--link); font-family: Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scard .go { position: absolute; right: 12px; bottom: 11px; font-size: 11px; color: var(--text-dim); }
+  .scard:hover .go { color: var(--link); }
+
+  .dock { display: flex; flex-wrap: wrap; gap: 9px; }
+  .tool { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; font-size: 12.5px; color: var(--text); text-decoration: none; transition: border-color .2s ease; }
+  .tool:hover { border-color: var(--link); }
+  .tool .sub { color: var(--text-dim); font-size: 10.5px; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok); animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
+  .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); animation: none; }
+  .dot.unknown { background: var(--color-warn); box-shadow: 0 0 8px var(--color-warn); }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  .panel-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px 17px; min-height: 110px; }
+  .panel-head { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .badge { font-size: 11px; padding: 2px 10px; border-radius: 999px; font-family: Consolas, monospace; }
+  .badge.ok  { background: var(--color-dn-bg); color: var(--color-ok); border: 1px solid #1f4d2b; }
+  .badge.bad { background: var(--color-up-bg); color: var(--color-err); border: 1px solid #5a2326; }
+  .badge.warn{ background: rgba(210,153,34,.12); color: var(--color-warn); border: 1px solid rgba(210,153,34,.3); }
+
+  .alerts { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-surface); overflow: hidden; }
+  .alerts .arow { display: flex; align-items: baseline; gap: 14px; padding: 11px 18px; border-top: 1px solid var(--border-weak); text-decoration: none; color: var(--text); transition: background .15s ease; }
+  .alerts .arow:first-child { border-top: none; }
+  .alerts .arow:hover { background: var(--bg-raised); }
+  .alerts .an { width: 128px; flex-shrink: 0; font-size: 13px; font-weight: 600; }
+  .alerts .av { font-size: 17px; font-weight: 700; font-family: Consolas, "Courier New", monospace; white-space: nowrap; }
+  .alerts .delta { font-size: 11.5px; font-family: Consolas, monospace; flex-shrink: 0; }
+  .alerts .delta.up { color: var(--color-up); }
+  .alerts .delta.dn { color: var(--color-dn); }
+  .alerts .ad { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .alerts .ago { margin-left: auto; color: var(--text-dim); font-size: 12px; flex-shrink: 0; }
+  .alerts .arow:hover .ago { color: var(--link); }
+
+  .toc { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-surface); padding: 6px 18px; }
+  .trow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 12px; padding: 9px 0; border-top: 1px solid var(--border-weak); font-size: 12.5px; }
+  .trow:first-child { border-top: none; }
+  .trow .tg2 { width: 128px; flex-shrink: 0; font-weight: 700; font-size: 12px; color: var(--text-dim); }
+  .trow a { color: var(--link); text-decoration: none; }
+  .trow a:hover { text-decoration: underline; }
+
+  @media (max-width: 960px) { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div><h1>量化股票</h1><small>QUANT DOMAIN</small></div>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+  </header>
+
+  <nav class="topnav">
+    <a class="pill" href="/">🏠 首页</a>
+    <span class="pill on">📈 量化股票</span>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <a class="pill" href="/creator">🎬 创作</a>
+    <a class="pill" href="/dev">💻 开发</a>
+    <a class="pill" href="/ops">⚙ 系统</a>
+  </nav>
+
+  <main>
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-head">
+        <div class="sec-title">◤ 今日预警速览</div>
+        <div class="sec-note" id="al-ts">加载中…</div>
+      </div>
+      <div class="alerts" id="al-list">
+        <div class="arow" style="cursor:default"><span class="dim" style="font-size:12px">加载中…</span></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 量化驾驶舱</div>
+        <div class="sec-note" id="kpi-ts">加载中…</div>
+      </div>
+      <div class="kpi-strip">
+        <div class="kpi"><span class="lb">盘面倾向</span><span class="vl" id="k-verdict">—</span><span class="sb" id="k-verdict-sub">共振机会 — 只</span></div>
+        <div class="kpi"><span class="lb">策略资产</span><a href="/strategies" style="text-decoration:none;color:inherit"><span class="vl num" id="k-strat">—</span><span class="sb" id="k-strat-sub">策略中心 →</span></a></div>
+        <div class="kpi"><span class="lb">在案跟踪</span><a href="/bt-weak" style="text-decoration:none;color:inherit"><span class="vl num" id="k-weak">—</span><span class="sb">weak 产线 · 案例库 →</span></a></div>
+        <div class="kpi"><span class="lb">今日情报</span><a href="/intel" style="text-decoration:none;color:inherit"><span class="vl num" id="k-news">—</span><span class="sb" id="k-news-sub">—</span></a></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 策略资产组合</div>
+        <a class="sec-note" href="/strategies" style="text-decoration:none">记分卡全景 →</a>
+      </div>
+      <div class="strat-grid" id="strat-grid">
+        <div class="scard" style="cursor:default"><div class="top"><span class="dim" style="font-size:12px">加载中…</span></div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 页面目录</div><div class="sec-note">K39 · 结果优先，过程页收纳于此 · 与顶部「☰ 域内导航」同源</div></div>
+      <div class="toc">
+        <div class="trow"><span class="tg2">🌅 盘前与驾驶</span>
+          <a href="/premarket">盘前作战</a><a href="/fin">金融导航</a><a href="/sa">个股分析</a><a href="/nl">查数</a>
+        </div>
+        <div class="trow"><span class="tg2">🎖 策略资产</span>
+          <a href="/strategies">策略中心</a><a href="/bt-qpzm">青萍之末</a><a href="/bt-chanlun">缠论</a><a href="/bt-chanlun-pool">预警池</a><a href="/bt-linkage">三线联动</a><a href="/bt-weak">弱于板块</a><a href="/bt-9dim">九维</a><a href="/bt-cross">共振</a>
+        </div>
+        <div class="trow"><span class="tg2">🚦 实盘跟踪</span>
+          <a href="/bt-signals">信号</a><a href="/bt-positions">持仓</a><a href="/bt-report">报告</a>
+        </div>
+        <div class="trow"><span class="tg2">🧰 研究与数据</span>
+          <a href="/bt">量化中心</a><a href="/bt-opt">寻优</a><a href="/bt-sectors">板块</a><a href="/bt-data-health">数据仓</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 行情与回测</div><div class="sec-note" id="bt-ts">数据 30s 刷新</div></div>
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head">⭐ 自选行情 <span class="badge ok" id="qt-badge">—</span></div>
+          <div id="qt-list" style="display:flex;flex-direction:column;gap:8px"><div class="dim">加载中…</div></div>
+          <div class="dim" id="qt-note" style="font-size:11px;margin-top:10px;font-family:Consolas,monospace"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">📈 量化回测 <span class="badge ok" id="bt-badge">—</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 10px;margin-bottom:8px;font-size:11px">
+            <a href="/bt-report"  style="color:var(--link);text-decoration:none">📄 报告</a>
+            <a href="/bt-signals" style="color:var(--link);text-decoration:none">🚦 信号</a>
+            <a href="/bt-positions" style="color:var(--link);text-decoration:none">💼 持仓</a>
+            <a href="/bt-opt"     style="color:var(--link);text-decoration:none">📊 榜单</a>
+            <a href="/bt-sectors" style="color:var(--link);text-decoration:none">🔥 板块</a>
+          </div>
+          <div id="bt-body" style="font-size:13px;line-height:1.7"><div class="dim">加载中…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 量化工具坞 · 外部系统</div><div class="sec-note">独立部署 · 30s 探活</div></div>
+      <div class="dock">
+        <a class="tool" href="http://localhost:4100" target="_blank" rel="noopener" data-check="quant">📈 缠论量化 <span class="sub">NewQuant v2</span> <span class="dot unknown"></span></a>
+        <a class="tool" href="http://localhost:5175" id="zhice-link" target="_blank" rel="noopener" data-check="zhice">🤖 智策 OS v2 <span class="sub">四市场</span> <span class="dot unknown"></span></a>
+        <a class="tool" href="http://localhost:8888" target="_blank" rel="noopener" data-check="qd">🎯 QuantDinger <span class="sub">回测·执行</span> <span class="dot unknown"></span></a>
+      </div>
+    </div>
+  </main>
+
+<script>
+  document.getElementById('zhice-link').href = location.protocol + '//' + location.hostname + ':5175';
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function tick() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  const ST_CN = { live: '实盘', shadow: '影子', tool: '支撑', paused: '暂停' };
+  async function loadStrategies() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/strategies', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw 0;
+      const d = await r.json();
+      const items = d.strategies || [];
+      document.getElementById('strat-grid').innerHTML = items.map(s => {
+        const href = s.href || s.ext || '/strategies';
+        const ext = s.ext && !s.href ? ' target="_blank" rel="noopener"' : '';
+        const m1 = (s.metrics && s.metrics[0]) ? (s.metrics[0].k + ' ' + s.metrics[0].v) : '';
+        return "<a class='scard' href='" + esc(href) + "'" + ext + ">" +
+          "<div class='top'><span class='sdot " + esc(s.status) + "'></span>" +
+          "<span class='nm'>" + esc(s.name) + "</span>" +
+          "<span class='bdg'>" + esc(s.badge || '') + "·" + (ST_CN[s.status] || s.status) + "</span></div>" +
+          "<div class='tg'>" + esc(s.tagline || '') + "</div>" +
+          (m1 ? "<div class='m1'>" + esc(m1) + "</div>" : '') +
+          "<span class='go'>→</span></a>";
+      }).join('') || "<div class='scard' style='cursor:default'><span class='dim' style='font-size:12px'>注册表为空（portal/strategies.json）</span></div>";
+      const nL = items.filter(s => s.status === 'live').length;
+      const nS = items.filter(s => s.status === 'shadow').length;
+      document.getElementById('k-strat').textContent = items.length + ' 条';
+      document.getElementById('k-strat-sub').textContent = '实盘 ' + nL + ' · 影子 ' + nS + ' · 策略中心 →';
+      const wk = items.find(s => s.id === 'weak');
+      const wm = wk && wk.metrics && wk.metrics.find(m => m.k === '在案');
+      if (wm) document.getElementById('k-weak').textContent = wm.v;
+    } catch (e) {
+      document.getElementById('strat-grid').innerHTML =
+        "<div class='scard' style='cursor:default'><span class='dim' style='font-size:12px'>策略中心服务离线</span></div>";
+    }
+  }
+  loadStrategies();
+  setInterval(loadStrategies, 120000);
+
+  async function loadAlerts() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 10000);
+      const r = await fetch('/api/alerts', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      document.getElementById('al-ts').textContent = '快照 ' + (d.ts || '');
+      const items = d.alerts || [];
+      document.getElementById('al-list').innerHTML = items.map(a => {
+        let dl = '';
+        if (a.delta != null && a.delta !== 0) {
+          dl = "<span class='delta " + (a.delta > 0 ? 'up' : 'dn') + "'>" +
+               (a.delta > 0 ? '↗' : '↘') + Math.abs(a.delta) + "</span>";
+        }
+        return "<a class='arow' href='" + esc(a.href || '#') + "'>" +
+          "<span class='an'>" + esc(a.name) + "</span>" +
+          "<span class='av'>" + esc(a.value) + "</span>" + dl +
+          "<span class='ad'>" + esc(a.sub || '') + "</span>" +
+          "<span class='ago'>→</span></a>";
+      }).join('') || "<div class='arow' style='cursor:default'><span class='dim' style='font-size:12px'>暂无预警数据（各产线快照未生成）</span></div>";
+    } catch {}
+  }
+  loadAlerts();
+  setInterval(loadAlerts, 120000);
+
+  async function loadBrief() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      document.getElementById('kpi-ts').textContent = '数据 ' + (d.ts || '');
+      const f = d.fin || {}, n = d.intel || {};
+      document.getElementById('k-verdict').textContent = String(f.verdict || '—').split('（')[0];
+      document.getElementById('k-verdict-sub').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只';
+      document.getElementById('k-news').textContent = (n.today ?? 0) + ' 条';
+      document.getElementById('k-news-sub').textContent = '利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0);
+    } catch {}
+  }
+  loadBrief();
+  setInterval(loadBrief, 60000);
+
+  async function loadOverview() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 45000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+
+      // 自选股实时行情
+      const qt = d.quotes || {};
+      const qb = document.getElementById('qt-badge');
+      qb.textContent = qt.ok === true ? '盘中 5min' : (qt.ok === false ? '源异常 ✗' : '—');
+      qb.className = 'badge ' + (qt.ok === true ? 'ok' : (qt.ok === false ? 'bad' : 'warn'));
+      const ql = document.getElementById('qt-list');
+      const items = qt.items || [];
+      ql.innerHTML = items.map(q => {
+        const up = (q.pct ?? 0) > 0, flat = q.pct == null || q.pct === 0;
+        const col = flat ? 'var(--text-dim)' : (up ? 'var(--color-up)' : 'var(--color-dn)');
+        const pctTxt = q.pct == null ? '停牌' : ((up ? '▲' : (q.pct < 0 ? '▼' : ' ')) + ' ' + Math.abs(q.pct).toFixed(2) + '%');
+        const price = q.price == null ? '—' : Number(q.price).toFixed(q.dec ?? 2);
+        return '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px">' +
+          '<span>' + esc(q.name) + ' <span class="dim" style="font-size:10.5px;font-family:Consolas,monospace">' + esc(q.code) + '</span></span>' +
+          '<span style="font-family:Consolas,monospace"><b>' + price + '</b> ' +
+          '<span style="color:' + col + ';font-size:12px">' + pctTxt + '</span></span></div>';
+      }).join('') || '<div class="dim">watchlist 为空（在 news_config.json 配置）</div>';
+      document.getElementById('qt-note').textContent =
+        items.length ? ('更新 ' + esc(qt.updated || '') + ' · 异动阈值 ±' + esc(qt.alert_threshold ?? '—') + '%') : '';
+
+      // 量化回测
+      const bt = d.backtest;
+      const btBody = document.getElementById('bt-body');
+      const btBadge = document.getElementById('bt-badge');
+      if (!bt) {
+        btBody.innerHTML = '<div class="dim">暂无回测结果（运行 runner.py 触发）</div>';
+        btBadge.textContent = '待运行'; btBadge.className = 'badge warn';
+      } else if (bt.mode === 'scan') {
+        btBadge.textContent = '扫描 · ' + (bt.results ? bt.results.length : 0) + ' 只';
+        btBadge.className = 'badge ok';
+        btBody.innerHTML = '<div class="dim" style="font-size:11px">' + esc(bt.ts || '') +
+          ' · 策略 ' + esc(bt.strategy || '') + ' · 市场 ' + esc(bt.market || '') + '</div>' +
+          (bt.results || []).map((r, i) => {
+            const up = (r.total_return ?? 0) >= 0;
+            const col = up ? 'var(--color-up)' : 'var(--color-dn)';
+            return '<div style="display:flex;justify-content:space-between;font-size:12px">' +
+              '<span>' + (i + 1) + '. ' + (r.market ? '<span class="dim" style="font-size:10px">[' + esc(r.market) + ']</span> ' : '') + esc(r.name || r.symbol) + '</span>' +
+              '<span style="font-family:Consolas,monospace">夏普' + (r.sharpe ?? 0).toFixed(2) +
+              ' <span style="color:' + col + '">' + ((r.total_return ?? 0) * 100).toFixed(1) + '%</span></span></div>';
+          }).join('');
+      } else {
+        btBadge.textContent = esc(bt.strategy || '') + ' · ' + esc((bt.symbol || '').split('.')[0]);
+        btBadge.className = 'badge ok';
+        const ret = (bt.total_return ?? 0) * 100;
+        const col = ret >= 0 ? 'var(--color-up)' : 'var(--color-dn)';
+        btBody.innerHTML =
+          '<div class="dim" style="font-size:11px">' + esc(bt.ts || '') + ' · ' + esc(bt.window || '') + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;margin-top:4px">' +
+          '<span>总收益 <b style="color:' + col + '">' + ret.toFixed(2) + '%</b></span>' +
+          '<span>年化 ' + ((bt.cagr ?? 0) * 100).toFixed(2) + '%</span>' +
+          '<span>夏普 ' + (bt.sharpe ?? 0).toFixed(2) + '</span>' +
+          '<span>最大回撤 ' + ((bt.max_drawdown ?? 0) * 100).toFixed(2) + '%</span>' +
+          '<span>胜率 ' + ((bt.win_rate ?? 0) * 100).toFixed(1) + '%</span>' +
+          '<span>交易 ' + (bt.trades ?? 0) + ' 次</span></div>' +
+          '<div class="dim" style="font-size:11px;margin-top:4px">基准(持有) ' + ((bt.benchmark_return ?? 0) * 100).toFixed(2) + '%</div>';
+      }
+    } catch {}
+  }
+  loadOverview();
+  setInterval(loadOverview, 30000);
+
+  // 工具坞探活
+  const CHECKS = { quant: '/probe/quant', zhice: '/probe/zhice', qd: '/probe/quantdinger' };
+  function setProbe(key, ok) {
+    const el = document.querySelector('.tool[data-check="' + key + '"] .dot');
+    if (el) el.className = 'dot' + (ok ? '' : ' off');
+  }
+  async function probe(key, url) {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(t);
+      setProbe(key, r.status !== 502 && r.status !== 504);
+    } catch { setProbe(key, false); }
+  }
+  Object.entries(CHECKS).forEach(([k, c]) => probe(k, c));
+  setInterval(() => Object.entries(CHECKS).forEach(([k, c]) => probe(k, c)), 30000);
+</script>
+</body>
+</html>

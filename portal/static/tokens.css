@@ -1,0 +1,59 @@
+/* ============================================================
+   AI 工作站门户 · 全站 Design Tokens（单一事实源）
+   ------------------------------------------------------------
+   基底：GitHub Dark（与 SSR 页家族一致）
+   语义约定（用户拍板 2026-10-01）：
+     涨跌色 = 中式：涨/多/买/利多 = 红，跌/空/卖/利空 = 绿
+     状态色 = 国际惯例：成功/在线 = 绿，故障/警示 = 红（与涨跌无关）
+   引用方式：<link rel="stylesheet" href="/static/tokens.css">
+   新页面/图表主题一律读语义层，禁止再硬编码 hex。
+   ============================================================ */
+
+:root {
+  /* ── primitive 色阶（GitHub Dark）── */
+  --gray-0:  #0d1117;   /* 页面底 */
+  --gray-1:  #0f141c;   /* 区块底 */
+  --gray-2:  #161b22;   /* 卡片/控件底 */
+  --gray-3:  #21262d;   /* 控件描边(强) */
+  --gray-4:  #30363d;   /* 常规描边 */
+  --gray-5:  #8b949e;   /* 次要文字 */
+  --gray-6:  #c9d1d9;   /* 常规文字(降级) */
+  --gray-7:  #e6edf3;   /* 主文字 */
+  --red-500: #f85149;
+  --grn-500: #3fb950;
+  --ylw-500: #d29922;
+  --blu-500: #58a6ff;
+  --blu-600: #1f6feb;
+  --grn-600: #2ea043;
+  --pur-500: #a371f7;
+  --org-400: #ffa657;
+
+  /* ── semantic：涨跌（中式红涨绿跌）── */
+  --color-up:    var(--red-500);   /* 涨 / 多 / 买入 / 利多 / 正收益 */
+  --color-up-bg: #2d1416;
+  --color-up-bd: #5a2326;
+  --color-dn:    var(--grn-500);   /* 跌 / 空 / 卖出 / 利空 / 负收益 */
+  --color-dn-bg: #12261e;
+  --color-dn-bd: #1f4d2b;
+
+  /* ── semantic：状态（成功/故障，与涨跌无关）── */
+  --color-ok:    var(--grn-500);
+  --color-err:   var(--red-500);
+  --color-warn:  var(--ylw-500);
+
+  /* ── semantic：界面 ── */
+  --bg-page:    var(--gray-0);
+  --bg-surface: var(--gray-1);
+  --bg-raised:  var(--gray-2);
+  --border:       var(--gray-4);
+  --border-weak:  var(--gray-3);
+  --text:         var(--gray-7);
+  --text-dim:     var(--gray-5);
+  --link:         var(--blu-500);
+  --accent:       var(--blu-600);
+
+  /* ── semantic：字号/间距/圆角 ── */
+  --fs-xs: 11px;  --fs-s: 12.5px;  --fs-m: 13.5px;  --fs-l: 15px;  --fs-xl: 22px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --r-s: 6px; --r-m: 10px; --r-l: 14px; --r-pill: 16px;
+}

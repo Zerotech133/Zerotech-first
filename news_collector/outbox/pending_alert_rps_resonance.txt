@@ -1,0 +1,7 @@
+[QUANT ALERT] task failed: rps_resonance exit=1 2026-10-05 17:08:23
+--- log tail ---
+FULL CRYPTO 37 syms env=75 safe=True top1=NEAR
+RPS A股 5551 stocks, env=30 safe=False
+PAGES hub+4 markets, res=58, top1=五洲医疗
+STRAT pages x4
+CARD True

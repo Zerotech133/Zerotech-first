@@ -1,0 +1,16 @@
+
+.spaceEdit{
+  height: 100%;
+  .ant-card{
+    height: 100%;
+    .ant-card-body{
+      height: calc(100% - 64px);
+      >div{
+        height: 100%;
+      }
+    }
+  }
+  .ant-space-item:nth-child(3){
+    text-align: right;
+  }
+}

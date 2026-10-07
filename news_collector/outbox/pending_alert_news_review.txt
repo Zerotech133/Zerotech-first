@@ -1,0 +1,1 @@
+[QUANT ALERT] task failed: news_review exit=C:\Temp\news_review_err.log 2026-10-02 15:30:21

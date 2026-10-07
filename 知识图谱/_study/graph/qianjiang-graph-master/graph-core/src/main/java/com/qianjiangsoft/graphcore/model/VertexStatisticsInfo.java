@@ -1,0 +1,24 @@
+package com.qianjiangsoft.graphcore.model;
+
+import lombok.Data;
+
+/**
+ * @author marshallwu
+ * @date 2022/2/24 11:46
+ */
+
+@Data
+public class VertexStatisticsInfo {
+
+    Long outDegree;
+    Long inDegree;
+    Long allDegree;
+
+    Long inCount;
+    Long outCount;
+    Long allCount;
+
+    Double inStrength;
+    Double outStrength;
+    Double allStrength;
+}

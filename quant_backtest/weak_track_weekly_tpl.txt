@@ -1,0 +1,13 @@
+# §15 周报聚合推送文案模板（weak_track_weekly.py）
+# 改本文件即改推送格式，不动代码；# 开头行渲染时剔除。
+# 空条件块（act_detail/recent/extra）输出前统一压缩连续空行。
+# 占位符：n_open/n_open_bad/n_closed/n_closed_bad/green/trend/ts/
+#         new_open/closed_week/rows_week/trig_week/act_detail/recent/
+#         verdict/extra
+📋 [WEAK WEEKLY] weak 产线周报（§15）
+在案 {n_open} 案（巡检异常 {n_open_bad}）｜已结案 {n_closed} 例（审计异常 {n_closed_bad}）｜较上周：{trend}｜{ts}
+本周动态：新立案 {new_open}｜结案 {closed_week}｜跟踪打点 {rows_week} 行｜触发 {trig_week} 次
+{act_detail}
+{recent}
+{verdict}
+{extra}

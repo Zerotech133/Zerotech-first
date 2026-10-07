@@ -1,0 +1,11 @@
+# §11 复盘学习层推送文案模板（weak_track_learn.py）
+# 改本文件即改推送格式，不动代码；# 开头行渲染时剔除。
+# 占位符：n/na/nb/nc/a_rate/first_ts/last_ts/gate/ndays/dur_avg/dur_min/
+#   dur_max/d1/d2/d3/trig_a/trig_bc/ex_fix/ex_tagged/fix_a/tag_a/ntrig_avg/
+#   lessons(经验条目块)/detail(明细块)/ts
+🧠 [WEAK LEARN] 案例库复盘学习（§11）
+样本：{n} 例（{first_ts} ~ {last_ts}）｜规律门槛 {gate}
+经验条目：
+{lessons}
+明细（最新 5 条）：
+{detail}

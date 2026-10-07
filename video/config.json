@@ -1,0 +1,15 @@
+{
+  "brand": "老田 AI 财经",
+  "voice_hint": "Huihui",
+  "voice_rate": 10,
+  "resolution": "1080x1920",
+  "fps": 30,
+  "bg_color": "0x10121a",
+  "accent_color": "0x07c160",
+  "material_hours": 12,
+  "material_limit": 40,
+  "model": "qwen3:8b-8k",
+  "scene_count": 6,
+  "gap_sec": 0.35,
+  "push": true
+}

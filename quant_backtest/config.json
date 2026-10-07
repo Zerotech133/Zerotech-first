@@ -1,0 +1,142 @@
+{
+ "db": {
+  "host": "127.0.0.1",
+  "port": 5432,
+  "user": "zhice",
+  "password": "zhice_pass",
+  "dbname": "zhice_os_v2",
+  "container": "zhice-db"
+ },
+ "trade": {
+  "init_cash": 1000000,
+  "cost_bps": 3,
+  "slippage_bps": 1
+ },
+ "feishu": {
+  "push": true
+ },
+ "chanlun": {
+  "push_1sell_tbe": true
+ },
+ "report": {
+  "trades_shown": 8,
+  "portal_url": "http://192.168.0.3:8080/",
+  "pos_alert_pct": 0.03,
+  "pos_alert_cooldown_min": 30,
+  "doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/QIcedHBRLozCWYxSa9ocBYgfnTf",
+  "premarket_doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/RxITdNTYvopjIZxEI93caaTZnYg",
+  "afterhours_doc_url": "https://fcnfiqjbtb8d.feishu.cn/docx/SRSldhZjooLl6uxIukBcAkoPnBe"
+ },
+ "opt_grids": {
+  "trend_follow": {
+   "n": [
+    10,
+    20,
+    30,
+    60
+   ],
+   "slope_lookback": [
+    3,
+    5
+   ]
+  },
+  "ma_cross": {
+   "fast": [
+    3,
+    5,
+    8
+   ],
+   "slow": [
+    10,
+    20,
+    30
+   ]
+  },
+  "boll_breakout": {
+   "period": [
+    10,
+    20,
+    30
+   ],
+   "k": [
+    1.5,
+    2,
+    2.5
+   ]
+  },
+  "rsi_reversal": {
+   "period": [
+    6,
+    14
+   ],
+   "oversold": [
+    25,
+    30
+   ],
+   "overbought": [
+    65,
+    75
+   ]
+  }
+ },
+ "daily_scan": {
+  "strategy": "trend_follow",
+  "lookback_days": 365,
+  "push": true,
+  "top_reports": 5
+ },
+ "strategies": {
+  "ma_cross": {
+   "fast": 8,
+   "slow": 20
+  },
+  "rsi_reversal": {
+   "period": 6,
+   "oversold": 30,
+   "overbought": 65
+  },
+  "boll_breakout": {
+   "period": 20,
+   "k": 1.5
+  },
+  "trend_follow": {
+   "n": 20,
+   "slope_lookback": 3
+  }
+ },
+ "pos_card": {
+  "title": "🎯 持仓异动提醒",
+  "subtitle": "量化信号实战（纸面）",
+  "template": "orange",
+  "show_qr": false,
+  "columns": [
+   {
+    "label": "触发",
+    "value": "alerts",
+    "color": "orange-50"
+   },
+   {
+    "label": "持仓中",
+    "value": "open",
+    "color": "grey-50"
+   },
+   {
+    "label": "24h预警词",
+    "value": "kw",
+    "color": "red-50"
+   }
+  ],
+  "buttons": [
+   {
+    "label": "📄 详情文档",
+    "url": "https://fcnfiqjbtb8d.feishu.cn/docx/QIcedHBRLozCWYxSa9ocBYgfnTf",
+    "type": "primary_filled"
+   },
+   {
+    "label": "📈 东财行情",
+    "url": "https://wap.eastmoney.com/",
+    "type": "default"
+   }
+  ]
+ }
+}

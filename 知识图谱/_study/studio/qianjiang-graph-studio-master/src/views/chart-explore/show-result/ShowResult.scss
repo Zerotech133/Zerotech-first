@@ -1,0 +1,26 @@
+.search-return{
+  .ant-table{
+    .ant-table-thead{
+      .ant-table-cell{
+        color: #5192f5;
+      }
+    }
+    .ant-table-tbody{
+      svg{
+        font-size: 20px;
+      }
+    }
+    .line{
+      width: 90px;
+      height: 9px;
+      border-bottom: 1px solid #5192f5
+    }
+  }
+  .ant-modal-footer{
+    text-align: center;
+    .ant-btn{
+      margin-right: 12px;
+    }
+    
+  }
+}

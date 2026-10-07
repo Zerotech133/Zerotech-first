@@ -1,0 +1,86 @@
+.controlWrap {
+  position: fixed;
+  left: 30px;
+  top: 72px;
+  background: #fff;
+  border-radius: 4px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+
+  .controlItem {
+    padding: 0;
+    width: 32px;
+    border: none;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    line-height: 14px;
+    img{
+      width: 14px;
+    }
+    div:first-child{
+      img,i,svg{
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+      }
+    }
+    div:last-child{
+      font-size: 12px;
+    }
+  }
+
+  :global {
+    .graphin-components-toolbar {
+      border: 1px solid #efefef;
+      border-radius: 20px;
+      padding: 0 10px;
+    }
+    .graphin-components-toolbar-content {
+      box-shadow: none;
+      margin-bottom: 0;
+    }
+  }
+  .type{
+    display: flex;
+    align-items: center;
+    margin-right: 6px;
+    .text{
+      width: 24px;
+      background-color: rgb(81,146,245);
+      color: white;
+      height: 48px;
+      font-size: 12px;
+      padding: 0 4px 0 6px;
+      line-height: 24px;
+      border-radius: 2px;
+    }
+    .arrow{
+      height: 8px;
+      border-right:0px;
+      border-top:6px solid white;  /* 注意颜色的变化 */
+      border-bottom:6px solid white;
+      border-left:6px solid rgb(81,146,245);
+    
+    }
+  }
+  .separator{
+    height: 24px;
+    display:flex;
+    width:50px;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+  }
+}
+
+.layoutSetting {
+  :global {
+    .ant-radio-wrapper {
+      display: block;
+      height: 30px;
+      line-height: 30px;
+    }
+  }
+}

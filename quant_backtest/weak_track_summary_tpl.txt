@@ -1,0 +1,14 @@
+# §10 案例库结案汇总推送文案模板（weak_track_summary.py 渲染；# 开头行不会推送）
+# 可用占位符：{n} {na} {nb} {nc} {first_ts} {last_ts} {chg_avg} {chg_best}
+#              {chg_worst} {ex_fix} {ex_tagged} {ntrig} {ntrig_avg} {detail} {ts}
+#   {na/nb/nc}   A 修复 / B 滚动 / C 专项 结案数
+#   {chg_*}      已结案案例区间涨跌幅（均/最好/最差，%）
+#   {ex_fix}     超额修复数（收敛或转正）/{ex_tagged} 有标签案例数
+#   {detail}     明细列表（每案一行，最新 8 条，模板无需写占位行）
+📊 [WEAK SUMMARY] 案例库结案汇总（§10）
+范围：{first_ts} ~ {last_ts}｜已结案 {n} 例
+类型分布：A 修复 {na}｜B 滚动 {nb}｜C 专项 {nc}
+区间涨跌：均 {chg_avg}｜最好 {chg_best}｜最差 {chg_worst}
+超额修复：{ex_fix}/{ex_tagged}（收敛或转正）｜触发合计 {ntrig} 次（均 {ntrig_avg}）
+——明细——
+{detail}

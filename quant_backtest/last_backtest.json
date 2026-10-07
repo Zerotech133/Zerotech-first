@@ -1,0 +1,388 @@
+{
+ "ts": "2026-10-07 01:47",
+ "strategy": "trend_follow",
+ "market": "ALL",
+ "mode": "scan",
+ "results": [
+  {
+   "market": "US",
+   "symbol": "PANW",
+   "name": "派拓网络",
+   "sharpe": 3.313,
+   "total_return": 1.0017,
+   "max_drawdown": -0.192,
+   "win_rate": 0.5699,
+   "benchmark_return": 1.5789
+  },
+  {
+   "market": "CRYPTO",
+   "symbol": "SOL/USDT",
+   "name": "Solana",
+   "sharpe": 2.393,
+   "total_return": 0.424,
+   "max_drawdown": -0.1174,
+   "win_rate": 0.55,
+   "benchmark_return": 0.6944
+  },
+  {
+   "market": "CN",
+   "symbol": "300489.SZ",
+   "name": "光智科技",
+   "sharpe": 2.295,
+   "total_return": 2.3129,
+   "max_drawdown": -0.4061,
+   "win_rate": 0.5217,
+   "benchmark_return": 5.0197
+  },
+  {
+   "market": "US",
+   "symbol": "MRVL",
+   "name": "迈威尔",
+   "sharpe": 2.207,
+   "total_return": 1.109,
+   "max_drawdown": -0.3306,
+   "win_rate": 0.5926,
+   "benchmark_return": 1.6272
+  },
+  {
+   "market": "CN",
+   "symbol": "603268.SH",
+   "name": "松发股份",
+   "sharpe": 2.058,
+   "total_return": 1.1868,
+   "max_drawdown": -0.2328,
+   "win_rate": 0.5652,
+   "benchmark_return": 3.5664
+  },
+  {
+   "market": "US",
+   "symbol": "SNDK",
+   "name": "闪迪",
+   "sharpe": 1.814,
+   "total_return": 0.8424,
+   "max_drawdown": -0.3278,
+   "win_rate": 0.5227,
+   "benchmark_return": 1.3127
+  },
+  {
+   "market": "CN",
+   "symbol": "300464.SZ",
+   "name": "星徽股份",
+   "sharpe": 1.556,
+   "total_return": 0.7392,
+   "max_drawdown": -0.1735,
+   "win_rate": 0.5652,
+   "benchmark_return": 0.2038
+  },
+  {
+   "market": "CRYPTO",
+   "symbol": "BTC/USDT",
+   "name": "比特币",
+   "sharpe": 1.533,
+   "total_return": 0.1738,
+   "max_drawdown": -0.078,
+   "win_rate": 0.4643,
+   "benchmark_return": 0.302
+  },
+  {
+   "market": "CN",
+   "symbol": "301234.SZ",
+   "name": "五洲医疗",
+   "sharpe": 1.483,
+   "total_return": 0.8855,
+   "max_drawdown": -0.1968,
+   "win_rate": 0.5435,
+   "benchmark_return": NaN
+  },
+  {
+   "market": "CN",
+   "symbol": "688046.SH",
+   "name": "药康生物",
+   "sharpe": 1.367,
+   "total_return": 0.7546,
+   "max_drawdown": -0.2383,
+   "win_rate": 0.5,
+   "benchmark_return": 1.1508
+  },
+  {
+   "market": "CN",
+   "symbol": "000993.SZ",
+   "name": "闽东电力",
+   "sharpe": 1.35,
+   "total_return": 0.7192,
+   "max_drawdown": -0.3019,
+   "win_rate": 0.5189,
+   "benchmark_return": 0.7107
+  },
+  {
+   "market": "CN",
+   "symbol": "688536.SH",
+   "name": "思瑞浦",
+   "sharpe": 1.249,
+   "total_return": 0.554,
+   "max_drawdown": -0.2426,
+   "win_rate": 0.5372,
+   "benchmark_return": 0.9107
+  },
+  {
+   "market": "CN",
+   "symbol": "000782.SZ",
+   "name": "恒申新材",
+   "sharpe": 1.227,
+   "total_return": 0.3823,
+   "max_drawdown": -0.1724,
+   "win_rate": 0.5104,
+   "benchmark_return": 0.3545
+  },
+  {
+   "market": "CN",
+   "symbol": "301047.SZ",
+   "name": "义翘神州",
+   "sharpe": 1.223,
+   "total_return": 0.5442,
+   "max_drawdown": -0.2411,
+   "win_rate": 0.4886,
+   "benchmark_return": 1.1527
+  },
+  {
+   "market": "CN",
+   "symbol": "600641.SH",
+   "name": "先导基电",
+   "sharpe": 1.185,
+   "total_return": 0.5086,
+   "max_drawdown": -0.3366,
+   "win_rate": 0.4953,
+   "benchmark_return": 1.3019
+  },
+  {
+   "market": "CN",
+   "symbol": "688112.SH",
+   "name": "鼎阳科技",
+   "sharpe": 0.978,
+   "total_return": 0.445,
+   "max_drawdown": -0.3267,
+   "win_rate": 0.5152,
+   "benchmark_return": 1.5038
+  },
+  {
+   "market": "US",
+   "symbol": "BE",
+   "name": "Bloom Energy",
+   "sharpe": 0.937,
+   "total_return": 0.2565,
+   "max_drawdown": -0.4403,
+   "win_rate": 0.4925,
+   "benchmark_return": 1.2188
+  },
+  {
+   "market": "CRYPTO",
+   "symbol": "ETH/USDT",
+   "name": "以太坊",
+   "sharpe": 0.919,
+   "total_return": 0.1052,
+   "max_drawdown": -0.0776,
+   "win_rate": 0.5658,
+   "benchmark_return": 0.5619
+  },
+  {
+   "market": "US",
+   "symbol": "TSLA",
+   "name": "特斯拉",
+   "sharpe": 0.916,
+   "total_return": 0.1232,
+   "max_drawdown": -0.1371,
+   "win_rate": 0.541,
+   "benchmark_return": 0.0765
+  },
+  {
+   "market": "CN",
+   "symbol": "920028.BJ",
+   "name": "新恒泰",
+   "sharpe": 0.498,
+   "total_return": 0.0684,
+   "max_drawdown": -0.2309,
+   "win_rate": 0.475,
+   "benchmark_return": -0.33
+  },
+  {
+   "market": "CN",
+   "symbol": "301520.SZ",
+   "name": "万邦医药",
+   "sharpe": 0.452,
+   "total_return": 0.0738,
+   "max_drawdown": -0.3869,
+   "win_rate": 0.4842,
+   "benchmark_return": 0.712
+  },
+  {
+   "market": "US",
+   "symbol": "TSM",
+   "name": "台积电",
+   "sharpe": 0.399,
+   "total_return": 0.0405,
+   "max_drawdown": -0.2302,
+   "win_rate": 0.55,
+   "benchmark_return": 0.4215
+  },
+  {
+   "market": "CN",
+   "symbol": "301046.SZ",
+   "name": "能辉科技",
+   "sharpe": 0.337,
+   "total_return": 0.0566,
+   "max_drawdown": -0.4,
+   "win_rate": 0.47,
+   "benchmark_return": 0.2329
+  },
+  {
+   "market": "CN",
+   "symbol": "600400.SH",
+   "name": "红豆股份",
+   "sharpe": 0.278,
+   "total_return": 0.0383,
+   "max_drawdown": -0.1639,
+   "win_rate": 0.5,
+   "benchmark_return": 0.1585
+  },
+  {
+   "market": "CN",
+   "symbol": "688600.SH",
+   "name": "皖仪科技",
+   "sharpe": 0.192,
+   "total_return": 0.0079,
+   "max_drawdown": -0.2681,
+   "win_rate": 0.4862,
+   "benchmark_return": 0.5467
+  },
+  {
+   "market": "CN",
+   "symbol": "300684.SZ",
+   "name": "中石科技",
+   "sharpe": 0.012,
+   "total_return": -0.1728,
+   "max_drawdown": -0.3518,
+   "win_rate": 0.4603,
+   "benchmark_return": 1.6685
+  },
+  {
+   "market": "US",
+   "symbol": "NBIS",
+   "name": "Nebius",
+   "sharpe": -0.039,
+   "total_return": -0.1448,
+   "max_drawdown": -0.5338,
+   "win_rate": 0.3889,
+   "benchmark_return": 1.2486
+  },
+  {
+   "market": "CN",
+   "symbol": "300151.SZ",
+   "name": "昌红科技",
+   "sharpe": -0.141,
+   "total_return": -0.1283,
+   "max_drawdown": -0.346,
+   "win_rate": 0.438,
+   "benchmark_return": 0.3697
+  },
+  {
+   "market": "CN",
+   "symbol": "688025.SH",
+   "name": "杰普特",
+   "sharpe": -0.272,
+   "total_return": -0.3012,
+   "max_drawdown": -0.5843,
+   "win_rate": 0.4262,
+   "benchmark_return": 2.0662
+  },
+  {
+   "market": "CN",
+   "symbol": "603580.SH",
+   "name": "艾艾精工",
+   "sharpe": -0.282,
+   "total_return": -1.0,
+   "max_drawdown": -1.0,
+   "win_rate": 0.5071,
+   "benchmark_return": NaN
+  },
+  {
+   "market": "CN",
+   "symbol": "603995.SH",
+   "name": "甬金股份",
+   "sharpe": -0.295,
+   "total_return": -0.095,
+   "max_drawdown": -0.1573,
+   "win_rate": 0.4655,
+   "benchmark_return": 0.4257
+  },
+  {
+   "market": "CN",
+   "symbol": "603120.SH",
+   "name": "肯特催化",
+   "sharpe": -0.45,
+   "total_return": -0.222,
+   "max_drawdown": -0.4295,
+   "win_rate": 0.4105,
+   "benchmark_return": 0.3634
+  },
+  {
+   "market": "US",
+   "symbol": "NVDA",
+   "name": "英伟达",
+   "sharpe": -0.475,
+   "total_return": -0.0787,
+   "max_drawdown": -0.2948,
+   "win_rate": 0.4605,
+   "benchmark_return": 0.3508
+  },
+  {
+   "market": "US",
+   "symbol": "LITE",
+   "name": "Lumentum",
+   "sharpe": -0.605,
+   "total_return": -0.2198,
+   "max_drawdown": -0.3649,
+   "win_rate": 0.4643,
+   "benchmark_return": 0.461
+  },
+  {
+   "market": "CN",
+   "symbol": "603175.SH",
+   "name": "超颖电子",
+   "sharpe": -0.624,
+   "total_return": -0.2691,
+   "max_drawdown": -0.4316,
+   "win_rate": 0.4242,
+   "benchmark_return": 0.229
+  },
+  {
+   "market": "CN",
+   "symbol": "300688.SZ",
+   "name": "创业黑马",
+   "sharpe": -0.651,
+   "total_return": -0.2148,
+   "max_drawdown": -0.3157,
+   "win_rate": 0.4483,
+   "benchmark_return": 0.0563
+  },
+  {
+   "market": "CN",
+   "symbol": "688004.SH",
+   "name": "博汇科技",
+   "sharpe": -0.942,
+   "total_return": -0.2832,
+   "max_drawdown": -0.2873,
+   "win_rate": 0.5,
+   "benchmark_return": 0.0624
+  },
+  {
+   "market": "US",
+   "symbol": "PLTR",
+   "name": "Palantir",
+   "sharpe": -1.139,
+   "total_return": -0.2,
+   "max_drawdown": -0.3381,
+   "win_rate": 0.4444,
+   "benchmark_return": 0.3003
+  }
+ ]
+}

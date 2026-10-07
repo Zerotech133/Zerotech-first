@@ -1,0 +1,487 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Jev 告警降噪网关（P1）：轮询 zhice v2_alert 的 OPEN 告警 → Jev 判紧急度/方向 → 达标推企业微信。
+
+设计原则（零侵入）：
+  - 只读 v2_alert 表（psql 直查，不依赖 zhice venv/ORM），不改 zhice 任何代码；
+  - Jev 不可用 → 降级为"只推 CRITICAL"，绝不阻塞也绝不误推；
+  - 已处理告警入 DB 表 jev_gate_seen（alert_id 主键，幂等），重启/换机不重推；
+  --once 单轮模式（配计划任务/手动验证），--loop 常驻轮询。
+
+评测依据（2026-09-21，30题×3遍）：noul/choice 100%，score 75% →
+紧急度用 noul 二分（非 score 三档），方向用 choice。
+
+环境变量：
+  JEV_API_KEY        TypeSafe key（必需）
+  ALERT_WEBHOOK_URL  企业微信群机器人 webhook（未配置则只打印不推送）
+  JEV_BASE_URL       默认 https://api.typesafe.ai/v1
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+import time
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+import jev_common as jc
+from jev_common import (C_JEV, db_execute, db_rows, db_run, install_stop, log,
+                        new_trace, set_module, with_retry)
+
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+HERE = Path(__file__).parent
+SEEN_FILE = HERE / "gate_seen.json"  # 旧版本地 seen，启动时一次性迁入 DB 后留档改名
+# P2-3 阈值可配置化：环境变量覆盖（jev-gate.env.ps1），默认值=评测校准值
+POLL_SEC = int(os.environ.get("GATE_POLL_SEC", "60"))
+MAX_ALERT_AGE_MIN = int(os.environ.get("GATE_MAX_ALERT_AGE_MIN", "120"))  # 只看 N 分钟内新告警
+URGENT_THRESHOLD = float(os.environ.get("GATE_URGENT_THRESHOLD", "0.8"))  # noul P ≥ 阈值才推
+
+API_KEY = os.environ.get("JEV_API_KEY", "")
+BASE_URL = os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
+LARK_ALERT_OPEN_ID = os.environ.get("LARK_ALERT_OPEN_ID", "")
+METRICS_PORT = 9101  # P1-6 Prometheus /metrics 端点
+NOTIFY_CHANNEL = "jev_new_alert"  # P2-1 事件驱动通道（v2_alert INSERT 触发）
+
+
+# 优雅退出（P1-1：收敛到 jev_common）；计划任务强杀或 Ctrl-C 时置位，本轮完成后退出。
+# seen 已入 DB（每条即时持久化），无需 atexit 兜底 flush。
+_STOP = install_stop()
+
+
+# ── 数据库：psycopg2 直连参数化查询（P1-7，失败自动降级 docker exec） ──
+def fetch_open_alerts() -> list[dict]:
+    """查 MAX_ALERT_AGE_MIN 内的 OPEN 告警，返回 [{alert_id, level, title, message}]。"""
+    rows = db_rows(
+        "SELECT alert_id, level, title, coalesce(message,'') FROM v2_alert "
+        "WHERE status='OPEN' AND created_at > now() - make_interval(mins => %s) "
+        "ORDER BY id DESC LIMIT 50",
+        (MAX_ALERT_AGE_MIN,))
+    return [{"alert_id": r[0], "level": r[1], "title": r[2], "message": r[3]}
+            for r in rows]
+
+
+# ── Jev 判定 ────────────────────────────────────────────────
+def jev_ask(state: str, questions: dict) -> dict:
+    """单次 Jev 调用，返回 answers 字典。失败抛异常。
+    含 3 次指数退避重试（2/4 秒），缓解短暂网络抖动导致的整轮跳过。"""
+    body = {"model": "jev-latest", "state": state, "questions": questions}
+
+    def _call() -> dict:
+        req = urllib.request.Request(
+            BASE_URL + "/systemone",
+            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json; charset=utf-8",
+                     "Authorization": f"Bearer {API_KEY}"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read()).get("answers", {})
+
+    try:
+        ans = with_retry(_call, retries=3, base_sec=2.0, label="jev ")
+        C_JEV.labels("gate", "1").inc()
+        return ans
+    except Exception:
+        C_JEV.labels("gate", "0").inc()
+        raise
+
+
+def judge(alert: dict) -> dict | None:
+    """一道告警的完整判定：紧急度（noul）+ 类别（choice）。失败返回 None。"""
+    state = f"[{alert['level']}] {alert['title']}\n{alert['message']}"
+    questions = {
+        "is_urgent": {
+            "type": "noul",
+            "instructions": "这条告警需要人工立即关注（数据缺失/执行失败/风控触发等），"
+                            "而非例行提示或可延后处理的信息。",
+        },
+        "category": {
+            "type": "choice",
+            "instructions": "这条告警属于以下哪一类？",
+            "criteria": {
+                "risk": "风控/止损/暴露超限——交易执行层面",
+                "data": "行情/数据采集异常——数据质量层面",
+                "sys": "系统/工作流故障——运行层面",
+                "info": "例行提示/统计汇总——无需行动",
+            },
+        },
+    }
+    ans = jev_ask(state, questions)
+    urgent_p = ans.get("is_urgent", {}).get("noul", 0.0)
+    cat = ans.get("category", {}).get("choice", "unknown")
+    cat_p = (ans.get("category", {}).get("probabilities") or {}).get(cat, 0.0)
+    return {"urgent_p": urgent_p, "category": cat, "category_p": cat_p}
+
+
+# ── 推送 ────────────────────────────────────────────────────
+_EMOJI = {"CRITICAL": "🚨", "WARN": "⚠️", "INFO": "ℹ️"}
+_CAT_LABEL = {"risk": "交易风控", "data": "数据质量", "sys": "系统运行", "info": "例行", "unknown": "未分类"}
+
+
+_LARK_COLOR = {
+    "CRITICAL": ("red", "red-50", "🚨"),
+    "WARN": ("yellow", "yellow-50", "⚠️"),
+    "INFO": ("blue", "blue-50", "ℹ️"),
+}
+
+
+def _build_alert_card(alert: dict, verdict: dict) -> dict:
+    """构造飞书告警交互卡片 JSON（Card 2.0）。"""
+    level = alert.get("level", "INFO")
+    template, bg_color, emoji = _LARK_COLOR.get(level, _LARK_COLOR["INFO"])
+    cat = verdict.get("category", "unknown")
+    cat_label = _CAT_LABEL.get(cat, cat)
+    urgent_p = verdict.get("urgent_p", 0.0)
+    alert_id = alert.get("alert_id", "")
+    title = alert.get("title", "")
+    message = alert.get("message", "")[:300]
+
+    def _metric_col(label: str, value: str) -> dict:
+        return {
+            "tag": "column", "width": "weighted", "weight": 1,
+            "background_style": bg_color,
+            "padding": "12px", "vertical_spacing": "2px",
+            "elements": [
+                {"tag": "markdown", "text_size": "notation",
+                 "content": f"<font color='grey'>{label}</font>"},
+                {"tag": "markdown", "text_size": "heading-2", "content": value},
+            ],
+        }
+
+    return {
+        "schema": "2.0",
+        "config": {"update_multi": True, "width_mode": "default"},
+        "header": {
+            "title": {"tag": "plain_text", "content": f"{emoji} 告警通知 · {level}"},
+            "subtitle": {"tag": "plain_text",
+                         "content": f"智策 OS v2 · Jev 网关 · {cat_label}"},
+            "template": template,
+        },
+        "body": {
+            "direction": "vertical",
+            "padding": "12px 12px 20px 12px",
+            "vertical_spacing": "12px",
+            "elements": [
+                # 指标卡块
+                {
+                    "tag": "column_set",
+                    "flex_mode": "none",
+                    "horizontal_spacing": "8px",
+                    "margin": "0px",
+                    "columns": [
+                        _metric_col("紧急度", f"{urgent_p:.2f}"),
+                        _metric_col("类别", cat_label),
+                        _metric_col("级别", level),
+                    ],
+                },
+                # 告警正文
+                {
+                    "tag": "markdown",
+                    "content": f"**{title}**\n\n{message}",
+                    "margin": "0px",
+                },
+                # 操作按钮
+                {
+                    "tag": "column_set",
+                    "flex_mode": "none",
+                    "horizontal_spacing": "8px",
+                    "columns": [
+                        {"tag": "column", "width": "weighted", "weight": 1,
+                         "elements": [
+                             {"tag": "button",
+                              "text": {"tag": "plain_text", "content": "✓ 已处理"},
+                              "type": "primary_filled", "width": "fill", "size": "medium",
+                              "behaviors": [{"type": "callback",
+                                             "value": {"action": "ack", "alert_id": alert_id}}]}]},
+                        {"tag": "column", "width": "weighted", "weight": 1,
+                         "elements": [
+                             {"tag": "button",
+                              "text": {"tag": "plain_text", "content": "忽略"},
+                              "type": "default", "width": "fill", "size": "medium",
+                              "behaviors": [{"type": "callback",
+                                             "value": {"action": "ignore", "alert_id": alert_id}}]}]},
+                    ],
+                },
+            ],
+        },
+    }
+
+
+def push_feishu(alert: dict, verdict: dict) -> bool:
+    """飞书交互卡片推送（lark-cli bot 身份），3 次指数退避重试。未配置 open_id 返回 False。"""
+    if not LARK_ALERT_OPEN_ID:
+        return False
+
+    card_json = json.dumps(_build_alert_card(alert, verdict), ensure_ascii=False)
+
+    def _send() -> bool:
+        jc.lark_cli_json(
+            ["im", "+messages-send", "--as", "bot",
+             "--user-id", LARK_ALERT_OPEN_ID,
+             "--msg-type", "interactive", "--content", card_json],
+            timeout=20, kind="push")
+        return True
+
+    try:
+        return with_retry(_send, retries=3, base_sec=2.0, label="推送")
+    except Exception as e:  # noqa: BLE001
+        log(f"飞书推送最终失败: {str(e)[:200]}", level="error")
+        return False
+
+
+# ── 推送死信：失败审计 + 有界重试 ────────────────────────────
+DEAD_LETTER = HERE / "push_dead_letter.jsonl"
+MAX_PUSH_ATTEMPTS = 5  # 连续 N 轮推送失败后放弃（防无限循环；重启进程计数归零可重试）
+
+_PUSH_FAILS: dict = {}  # alert_id → 连续失败轮数（仅内存）
+
+
+def _append_dead_letter(alert: dict, verdict: dict, reason: str, final: bool) -> None:
+    rec = {"ts": datetime.now().isoformat(timespec="seconds"),
+           "alert_id": alert["alert_id"], "level": alert["level"],
+           "title": alert["title"], "verdict": verdict,
+           "reason": reason, "final": final}
+    try:
+        with DEAD_LETTER.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:  # noqa: BLE001
+        log(f"死信写入失败: {e}")
+
+
+def _push_with_dlq(alert: dict, verdict: dict) -> bool:
+    """推送包装（P1-4）。返回 True=已送达或已达放弃上限（调用方标 seen）；
+    False=本轮失败但应保留待下轮重试（调用方不标 seen）。全程留死信审计。"""
+    aid = alert["alert_id"]
+    if push_feishu(alert, verdict):
+        _PUSH_FAILS.pop(aid, None)
+        return True
+    n = _PUSH_FAILS.get(aid, 0) + 1
+    if n >= MAX_PUSH_ATTEMPTS:
+        _append_dead_letter(alert, verdict, f"attempt {n}", final=True)
+        log(f"{aid} 连续 {n} 轮推送失败，放弃（死信已记终态）")
+        _PUSH_FAILS.pop(aid, None)
+        return True
+    _PUSH_FAILS[aid] = n
+    _append_dead_letter(alert, verdict, f"attempt {n}", final=False)
+    log(f"{aid} 推送失败（{n}/{MAX_PUSH_ATTEMPTS}），下轮重试")
+    return False
+
+
+# ── 状态持久化（seen 入库：重启/换机/多实例均不重推）────────
+SEEN_RETENTION_DAYS = 7  # 覆盖最大告警窗口（默认 120min）的充分余量
+
+_seen_ready = False
+
+
+def ensure_seen_table() -> bool:
+    """幂等建 jev_gate_seen 表 + 清理过期行 + 一次性迁移旧 gate_seen.json。"""
+    global _seen_ready
+    if _seen_ready:
+        return True
+    try:
+        db_run(
+            "CREATE TABLE IF NOT EXISTS jev_gate_seen ("
+            "alert_id varchar(64) PRIMARY KEY, "
+            "seen_at timestamptz NOT NULL DEFAULT now())")
+        db_execute("DELETE FROM jev_gate_seen WHERE seen_at < now() - make_interval(days => %s)",
+                   (SEEN_RETENTION_DAYS,))
+        # 一次性迁移本地 JSON（老版本遗留），成功后改名留档
+        if SEEN_FILE.exists():
+            try:
+                old = json.loads(SEEN_FILE.read_text(encoding="utf-8"))
+                migrated = 0
+                for aid in old if isinstance(old, list) else []:
+                    if isinstance(aid, str) and 0 < len(aid) <= 64:
+                        db_execute("INSERT INTO jev_gate_seen(alert_id) VALUES (%s) "
+                                   "ON CONFLICT DO NOTHING", (aid,))
+                        migrated += 1
+                SEEN_FILE.rename(SEEN_FILE.with_suffix(".json.imported"))
+                log(f"seen 本地 JSON 迁移入库完成：{migrated} 条（留档 gate_seen.json.imported）")
+            except Exception as e:  # noqa: BLE001
+                log(f"seen JSON 迁移失败（继续用 DB）", err=str(e)[:120], level="warn")
+        _seen_ready = True
+        return True
+    except Exception as e:  # noqa: BLE001
+        log(f"jev_gate_seen 建表失败", err=str(e)[:150], level="error")
+        return False
+
+
+def load_seen() -> set:
+    """从 DB 加载已处理 alert_id 集合（表已按保留期清理，全量读取）。"""
+    rows = db_rows("SELECT alert_id FROM jev_gate_seen")
+    return {r[0] for r in rows}
+
+
+def mark_seen(alert_id: str) -> None:
+    """单条即时持久化（幂等，主键冲突忽略）。失败抛异常 → 调用方不吞。"""
+    db_execute("INSERT INTO jev_gate_seen(alert_id) VALUES (%s) ON CONFLICT DO NOTHING",
+               (alert_id,))
+
+
+# ── 主循环 ──────────────────────────────────────────────────
+def _handle_alert(a: dict, dry: bool) -> None:
+    """单告警处理链路（P1-2：调用方以 new_trace 包裹，日志全程携带同一 trace_id）。"""
+    # CRITICAL 直推不过 Jev（评测结论：兜底通道不能依赖外部模型）
+    if a["level"] == "CRITICAL":
+        log("CRITICAL 直推", alert_id=a["alert_id"], title=a["title"][:40])
+        if not dry and not _push_with_dlq(a, {"urgent_p": 1.0, "category": "sys", "category_p": 1.0}):
+            return  # 推送失败：不标 seen，下轮重试（P1-4）
+        mark_seen(a["alert_id"])
+        return
+
+    verdict = None
+    if API_KEY and not dry:
+        try:
+            verdict = judge(a)
+        except Exception as e:  # noqa: BLE001
+            log(f"Jev 失败（跳过本轮）", alert_id=a["alert_id"], err=str(e)[:120],
+                level="warn")
+            return  # 不标 seen，下轮重试
+    elif dry:
+        verdict = {"urgent_p": -1, "category": "dry", "category_p": 0}
+
+    if verdict is None:
+        # 无 key：保守起见不推，等配置
+        log("无 Jev key，跳过", alert_id=a["alert_id"], level=a["level"],
+            title=a["title"][:40])
+        mark_seen(a["alert_id"])
+        return
+
+    if verdict["urgent_p"] >= URGENT_THRESHOLD:
+        log("推送", alert_id=a["alert_id"], urgent_p=round(verdict["urgent_p"], 2),
+            category=verdict["category"], title=a["title"][:40])
+        if not dry and not _push_with_dlq(a, verdict):
+            return  # 推送失败：不标 seen，下轮重试（P1-4）
+    else:
+        log("抑制", alert_id=a["alert_id"], urgent_p=round(verdict["urgent_p"], 2),
+            title=a["title"][:40])
+    mark_seen(a["alert_id"])
+
+
+def run_once(dry: bool = False) -> None:
+    if not ensure_seen_table():
+        return  # 表建不起来 = DB 不可用，本轮放弃（fetch 同样会失败）
+    seen = load_seen()
+    alerts = fetch_open_alerts()
+    fresh = [a for a in alerts if a["alert_id"] not in seen]
+    if not fresh:
+        log(f"无新告警（OPEN 总数 {len(alerts)}，2h 窗口）")
+        return
+
+    for a in fresh:
+        if _STOP["flag"]:
+            break  # 收到退出信号，立即跳出（已处理的 seen 均已即时入库）
+        with new_trace("gate"):  # 单告警链路串联：判定→推送→落盘
+            try:
+                _handle_alert(a, dry)
+            except Exception as e:  # noqa: BLE001
+                log(f"单告警处理异常（不标 seen，下轮重试）", alert_id=a["alert_id"],
+                    err=str(e)[:150], level="error")
+
+
+# ── P2-1 事件驱动：LISTEN/NOTIFY 秒级感知新告警，轮询兜底 ──
+def ensure_notify_trigger() -> bool:
+    """幂等建 NOTIFY 触发器（v2_alert INSERT → pg_notify），DB 重建后启动自愈。"""
+    ddl = f"""
+CREATE OR REPLACE FUNCTION jev_alert_notify() RETURNS trigger AS $fn$
+BEGIN
+  PERFORM pg_notify('{NOTIFY_CHANNEL}', NEW.alert_id);
+  RETURN NEW;
+END $fn$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_jev_alert_notify ON v2_alert;
+CREATE TRIGGER trg_jev_alert_notify AFTER INSERT ON v2_alert
+FOR EACH ROW EXECUTE FUNCTION jev_alert_notify();
+"""
+    try:
+        import psycopg2
+        c = psycopg2.connect(**jc.DB_DSN)
+        c.autocommit = True
+        with c.cursor() as cur:
+            cur.execute(ddl)
+        c.close()
+        return True
+    except Exception as e:  # noqa: BLE001
+        log(f"触发器建立失败（退回纯轮询）: {str(e)[:100]}", level="warn")
+        return False
+
+
+def _listen_conn():
+    """独立 LISTEN 连接（select 独占等待，不可与查询连接复用）。"""
+    import psycopg2
+    c = psycopg2.connect(**jc.DB_DSN)
+    c.autocommit = True
+    with c.cursor() as cur:
+        cur.execute(f"LISTEN {NOTIFY_CHANNEL}")
+    return c
+
+
+def poll_loop() -> None:
+    """纯轮询兜底模式（psycopg2 不可用 / trigger 建立失败时）。"""
+    while not _STOP["flag"]:
+        try:
+            run_once()
+        except Exception as e:  # noqa: BLE001
+            log(f"轮询异常: {e}", level="error")
+        for _ in range(POLL_SEC):
+            if _STOP["flag"]:
+                return
+            time.sleep(1)
+
+
+def event_loop() -> None:
+    """NOTIFY 驱动 + 周期兜底轮询；断连自动重建 LISTEN 连接。"""
+    import select as _select
+    while not _STOP["flag"]:
+        try:
+            c = _listen_conn()
+        except Exception as e:  # noqa: BLE001
+            log(f"LISTEN 建连失败，退回纯轮询: {str(e)[:100]}", level="warn")
+            poll_loop()
+            return
+        log(f"事件驱动模式 LISTEN={NOTIFY_CHANNEL}（{POLL_SEC}s 轮询兜底）")
+        try:
+            while not _STOP["flag"]:
+                fired = _select.select([c], [], [], POLL_SEC)[0]
+                if fired:
+                    c.poll()
+                    n = 0
+                    while c.notifies:
+                        c.notifies.pop(0)
+                        n += 1
+                    if n:
+                        log(f"NOTIFY 新告警通知 {n} 条")
+                try:
+                    run_once()  # 有通知立刻跑；超时（无通知）兜底跑一轮
+                except Exception as e:  # noqa: BLE001
+                    log(f"轮询异常: {e}", level="error")
+        except Exception as e:  # noqa: BLE001
+            log(f"LISTEN 连接断开，5s 后重建: {str(e)[:100]}", level="warn")
+            time.sleep(5)
+
+
+def main() -> None:
+    set_module("gate")
+    args = sys.argv[1:]
+    if "--once" in args or "--dry" in args:
+        run_once(dry="--dry" in args)
+        return
+    if not API_KEY:
+        sys.exit("缺少 JEV_API_KEY（或用 --dry 先看链路）")
+    jc.start_metrics(METRICS_PORT)
+    mode = "事件驱动" if ensure_notify_trigger() else "纯轮询"
+    log(f"网关启动 模式={mode} 轮询={POLL_SEC}s 阈值={URGENT_THRESHOLD} "
+        f"metrics=127.0.0.1:{METRICS_PORT} "
+        f"飞书推送={'已配置' if LARK_ALERT_OPEN_ID else '未配置(仅日志)'}")
+    if mode == "事件驱动":
+        event_loop()
+    else:
+        poll_loop()
+    log("网关退出")
+
+
+if __name__ == "__main__":
+    main()

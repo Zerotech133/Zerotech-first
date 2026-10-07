@@ -1,0 +1,50 @@
+.combos{
+  .ant-modal-footer {
+    text-align: center;
+    .ant-btn {
+      margin-right: 12px;
+    }
+  }
+  
+  .ant-form {
+    .ant-form-item {
+      margin-bottom: 0;
+      min-height: 56px;
+    }
+  }
+  .redStart div label::before{
+    display: inline-block;
+    margin-right: 4px;
+    color: #ff4d4f;
+    font-size: 14px;
+    font-family: SimSun, sans-serif;
+    line-height: 1;
+    content: '*';
+  }
+  
+  // 修改集合
+  .popover {
+      position: absolute;
+      z-index: 2;
+  }
+  .cover {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  .swatch{
+    padding: 5px;
+    background-color: #fff;
+    display: inline-block;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .1);
+    cursor: pointer
+     
+  }
+  .color{
+    width:36px;
+    border-radius:2px;
+    height:14px
+  }
+}

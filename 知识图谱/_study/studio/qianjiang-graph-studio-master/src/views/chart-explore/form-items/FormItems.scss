@@ -1,0 +1,9 @@
+
+.strength-item, .count-item{
+  .ant-form-item-control-input-content{
+    display: flex;
+    .ant-form-item{
+      margin-bottom: 0;
+    }
+  }
+}

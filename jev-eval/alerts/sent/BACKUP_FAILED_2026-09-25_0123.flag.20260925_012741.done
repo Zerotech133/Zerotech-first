@@ -1,0 +1,4 @@
+type=ai_workstation_backup_failed
+stamp=2026-09-25_0123
+failed_count=1
+backup_log=E:\???AI??\backups\2026-09-25_0123\backup.log

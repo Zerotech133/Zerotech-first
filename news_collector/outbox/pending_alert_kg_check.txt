@@ -1,0 +1,4 @@
+[QUANT ALERT] task failed: kg_check exit=1 2026-10-05 11:23:28
+--- log tail ---
+coverage_lag: ['盘面量能 20260930 距今 5d', '盘口事件 20260930 距今 5d', 'DRIVE 传导 20260930 距今 5d', '龙虎榜席位 20260930 距今 5d']
+source_fresh: ['ts_margin_detail: lag=6d budget=5d (xtcloud)', 'ts_moneyflow_hsgt: lag=6d budget=5d (xtcloud)', 'ts_ths_daily: lag=6d budget=5d (xtcloud)', 'shibor_lpr: lag=46d budget=45d (tushare)']

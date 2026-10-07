@@ -1,0 +1,13 @@
+build-deploy-dev:
+  stage: build
+  script:
+    - mvn install -DskipTests=true
+    - systemctl stop qianjiang-graph
+    - cp ./graph-api/target/qianjiang-graph.jar /home/qianjiangGraph/java/qianjiang-graph.jar
+    - chmod +x /home/qianjiangGraph/java/qianjiang-graph.jar
+    - systemctl start qianjiang-graph
+  only:
+    - master
+  tags:
+    - dev
+
