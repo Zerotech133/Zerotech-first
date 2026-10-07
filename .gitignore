@@ -68,4 +68,10 @@ news_collector/outbox/
 news_collector/quote_alert_state.json
 news_collector/quotes_status.json
 news_collector/status.json
+news_collector/ai_review.json
+news_collector/sectors.json
+news_collector/assets/jev_chart.png
+jev-eval/review_data/
 quant_backtest/pos_alert_state.json
+quant_backtest/last_backtest.json
+quant_backtest/positions.json

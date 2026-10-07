@@ -1,1 +1,0 @@
-[QUANT ALERT] task failed: portal_api exit=-1 2026-10-07 11:33:58

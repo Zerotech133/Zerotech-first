@@ -1,1 +1,0 @@
-[DockerWatchdog] 门户健康守护：任务「AI工作站门户API」未在运行（python 已退出），已自动拉起。时间: 2026-10-07 09:37:15。若正在维护门户请忽略；频繁出现请查 C:\Temp\portal_api_task.log 定位杀进程来源。
