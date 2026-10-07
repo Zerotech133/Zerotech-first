@@ -7,7 +7,7 @@
 · 单文件抽样读 1 只 parquet 验证行数和字段（pyarrow.parquet）；
 · news.db 用 sqlite3 读表结构 + MIN(ts)/MAX(ts) + GROUP BY source；
 · 策略产物清单硬编码已知文件名，读 os.path.getmtime；
-· gaps 列表由代码硬编码已知缺口，后续新缺口手动追加。
+· data_integrity 增加真实键覆盖、日历缺口、空字段与读取探针。
 
 产物消费（全部只读）：
 · K 线    quant_backtest/data/ashare/*.parquet
@@ -282,6 +282,22 @@ def _scan_tushare():
 
 
 _FCACHE = {"t": 0, "d": None}
+_ICACHE = {"t": 0, "d": None}
+
+
+def _scan_integrity():
+    """物理完整度及真实查询，600s 缓存；失败必须显式返回。"""
+    if _ICACHE["d"] and time.time() - _ICACHE["t"] < 600:
+        return _ICACHE["d"]
+    try:
+        from data_integrity import scan_integrity
+        out = scan_integrity(DATA)
+    except Exception as exc:
+        out = {"fail_count": 1, "warn_count": 0, "metrics": [
+            {"name": "integrity_scan", "status": "FAIL", "value": 0,
+             "details": {"error": str(exc)}}]}
+    _ICACHE["t"], _ICACHE["d"] = time.time(), out
+    return out
 
 
 def _lag_open_days(live, today):
@@ -341,14 +357,14 @@ def _scan_freshness():
             if lag is None:
                 lag = (datetime.strptime(today, "%Y%m%d")
                        - datetime.strptime(str(live)[:8], "%Y%m%d")).days
-        if snap and str(live)[:8] > str(snap)[:8]:
-            status = "SNAP"
-        elif lag <= 1:
-            status = "OK"
-        elif lag <= 3:
-            status = "WARN"
-        else:
+        if lag > 3:
             status = "STALE"
+        elif lag > 1:
+            status = "WARN"
+        elif snap and str(live)[:8] > str(snap)[:8]:
+            status = "SNAP"
+        else:
+            status = "OK"
         return {"table": alias, "live": live, "snap": snap,
                 "lag_days": lag, "ready": ready, "status": status}
 
@@ -373,6 +389,7 @@ def scan_warehouse():
     tdx = _scan_tdx()
     tush = _scan_tushare()
     fresh = _scan_freshness()
+    integrity = _scan_integrity()
     artifacts = _scan_artifacts()
 
     groups = []
@@ -418,6 +435,16 @@ def scan_warehouse():
     groups.append({"name": "新鲜度监控", "kind": "freshness", "rows": f_rows,
                    "note": ("异常 %d 表（STALE/FAIL）" % n_bad) if n_bad
                    else "核心表全部 OK"})
+    integrity_rows = []
+    for metric in integrity["metrics"]:
+        details = metric["details"]
+        summary = json.dumps(details.get("_summary", details), ensure_ascii=False, separators=(",", ":"))
+        integrity_rows.append({"asset": metric["name"], "rows": str(metric["value"]),
+                               "latest": integrity.get("expected_latest"), "size_mb": None,
+                               "age_hours": None, "extra": metric["status"] + " " + summary[:180]})
+    groups.append({"name": "数据完整度", "kind": "integrity", "rows": integrity_rows,
+                   "note": "异常 %d 项 · 待核实 %d 项；完整键差与查询结果见 integrity.metrics"
+                           % (integrity["fail_count"], integrity["warn_count"])})
     # 2. 本地 K 线仓
     mk_cn = {"cn": "A股", "us": "美股", "hk": "港股", "crypto": "加密"}
     k_rows = []
@@ -469,10 +496,14 @@ def scan_warehouse():
     kpi = {"n_tables": n_tables, "total_mb": round(total_mb, 1),
            "tdx_sync": "%d/%d" % (tdx["sync_done"], tdx["sync_total"]),
            "tushare_sync": "%d/%d" % (tush["sync_done"], tush["sync_total"]),
-           "fresh_bad": n_bad, "freshest": freshest}
+           "fresh_bad": n_bad, "freshest": freshest,
+           "integrity_bad": integrity["fail_count"], "integrity_warn": integrity["warn_count"]}
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
            "kpi": kpi, "groups": groups,
-           "gaps": _build_gaps(kline, news)}
+           "integrity": integrity,
+           "gaps": _build_gaps(kline, news) + [
+               "%s %s: %s" % (m["status"], m["name"], m["value"])
+               for m in integrity["metrics"] if m["status"] in ("FAIL", "WARN")]}
     _WCACHE["t"], _WCACHE["d"] = time.time(), out
     return out
 

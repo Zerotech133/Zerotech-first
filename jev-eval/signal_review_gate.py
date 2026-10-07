@@ -559,11 +559,68 @@ def run_report() -> None:
         diff = (sum(x["ret_nd"] for x in pass_) / len(pass_)) - \
                (sum(x["ret_nd"] for x in rej) / len(rej))
         print(f"\n放行-否决 收益差: {diff:+.2%}")
+    # JEV 毕业三条件（老田 2026-10-07 晚 B3 面谈拍板，riskguard-jev-calib-brief §五 #4）：
+    # ① FOCUS-PASS 收益差 ≥+1% 且持续 2 周（连续两份周报达标，人工核对）
+    # ② FOCUS 样本 n≥300   ③ REJECT 样本 n≥30（均按已回填 ret_nd 口径）
+    # 纪律：REJECT 触发率不因凑样本放宽（否决阈值不得下调）。
     if focus and pass_:
         diff = (sum(x["ret_nd"] for x in focus) / len(focus)) - \
                (sum(x["ret_nd"] for x in pass_) / len(pass_))
         print(f"FOCUS-PASS 收益差: {diff:+.2%}")
-    print("判读：FOCUS-PASS 差值显著为正（>1%）且 FOCUS 样本≥30 → 阶段 2 可期；否则继续影子观察")
+        def _mkt(x):
+            tc = str(x.get("ts_code") or "")
+            if tc.endswith((".SH", ".SZ", ".BJ")) or x.get("market") == "CN":
+                return "CN"
+            if "/USDT" in tc:
+                return "CRYPTO"
+            return x.get("market") or "?"
+        n_rej = len(groups.get("REJECT", []))
+        print(f"毕业① 收益差≥+1%: {'✓' if diff >= 0.01 else '✗'}"
+              "（持续性需连续两份周报达标）")
+        print(f"毕业② FOCUS n≥300: {'✓' if len(focus) >= 300 else '✗'}"
+              f"（当前 {len(focus)}）")
+        # 毕业③口径（2026-10-07 晚拍板，brief §八 #1）：原「REJECT n≥30」攒样
+        # 需 ≈464 交易日实质不可达（触发率 0.11%，news_risk 语义猎极端尾部）
+        # → 改「高危组负收益验证」：news_p≥0.5 且 CN（news 通道有效域）的
+        # 已回填样本 n≥10 且均值 < PASS 同域均值。REJECT 生产阈值 0.70 不动
+        # （「触发率不放宽」拍板仍有效，仅毕业考核换证据口径）。
+        hi = [x for rs in groups.values() for x in rs
+              if _mkt(x) == "CN" and (x.get("news_p") or 0) >= 0.5]
+        cn_pass = [x for x in pass_ if _mkt(x) == "CN"]
+        hi_avg = (sum(x["ret_nd"] for x in hi) / len(hi)) if hi else None
+        cp_avg = (sum(x["ret_nd"] for x in cn_pass) / len(cn_pass)) \
+            if cn_pass else None
+        ok3 = len(hi) >= 10 and cp_avg is not None and hi_avg < cp_avg
+        h = f"{hi_avg:+.2%}" if hi_avg is not None else "-"
+        c = f"{cp_avg:+.2%}" if cp_avg is not None else "-"
+        print(f"毕业③ 高危组负收益验证: {'✓' if ok3 else '✗'}"
+              f"（news_p≥0.5 CN n={len(hi)} 均 {h} vs CN-PASS 均 {c}；"
+              f"REJECT 生产 n={n_rej} 照旧拦截）")
+        print("三条件齐 → 阶段 2 放行评审；缺任一 → 继续影子观察")
+        # 分市场拆解（2026-10-07 晚研究发现辛普森悖论，brief §7.2：混合口径
+        # +1.95pp 主要由市场构成贡献——PASS 含 CN 大跌票而 FOCUS CN=0，
+        # 同市场域仅 +0.67pp。条件①判读以同市场域口径为准，10-08 回补重验）
+        print("分市场拆解（PASS vs FOCUS 均值N日收益）：")
+        for m in ("CN", "CRYPTO", "US", "HK"):
+            pm = [x for x in pass_ if _mkt(x) == m]
+            fm = [x for x in focus if _mkt(x) == m]
+            if not pm and not fm:
+                continue
+            ps = (f"{sum(x['ret_nd'] for x in pm)/len(pm):+.2%}"
+                  if pm else "  -  ")
+            fs = (f"{sum(x['ret_nd'] for x in fm)/len(fm):+.2%}"
+                  if fm else "  -  ")
+            print(f"  {m:<7} PASS {len(pm):>3} {ps} | "
+                  f"FOCUS {len(fm):>3} {fs}")
+        pe = [x for x in pass_ if _mkt(x) != "CN"]
+        fe = [x for x in focus if _mkt(x) != "CN"]
+        if pe and fe:
+            dd = (sum(x["ret_nd"] for x in fe) / len(fe)) - \
+                 (sum(x["ret_nd"] for x in pe) / len(pe))
+            print(f"  同市场域(剔CN) FOCUS-PASS: {dd:+.2%}"
+                  "（毕业①以此口径为准）")
+    else:
+        print("判读：FOCUS/PASS 组数据不足，继续影子观察")
 
 
 def main() -> None:

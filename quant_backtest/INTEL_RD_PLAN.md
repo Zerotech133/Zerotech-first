@@ -5939,3 +5939,27 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
   5. Clipboard::SetImage → clip_watch 2s 落盘 → 摄取 src=clip，OCR 540c
 - **registry.jsonl 4 条**（src: drop×3 + clip×1，up 件被 DUP 判重收 reject）；doc_texts.jsonl 同步
 - **遗留**：门户页面上传按钮 UI 未做（API 已可用，页面待 M4 词云页一并设计）；clip_watch 常驻方式（计划任务 vs 手动）待定
+
+### K266 补记（10-07 晚）
+- **dfcfw 反爬突破**：EO_Bot 升级 TLS 指纹挑战（requests 裸/UA/Referer/全头组 4 组合全 988B <script>），实证解法 curl_cffi impersonate=chrome131 一发直通；reportapi.eastmoney.com JSON 列表接口无反爬。_pdf_text 已切换 curl_cffi，K265 Phase 2 与研报扩量阻塞解除。
+- **M5 提前落地**：k266_services.ps1 自愈（clip_watch 单实例拉起 + ingest 幂等单扫），计划任务 K266-DocServices 每 5 分钟。
+- **复盘修正**：ChanlunScanNotify RC=3 = OPS-1009 消失窗口瞬时伤（已自愈）；K58 标题补 ✅。
+
+### K266 补记四（10-08 凌晨，OPS-1008 备份链危机与修复 + M4 测试件排除）
+- **危机链复盘**：发现 k266_docs 不在 `$QSubdirs` 备份范围 → 修 ps1 连踩三层视图（用户态 PS 读不到 SYSTEM 写的文件、VM 层 Read 失联、docker 实锤磁盘真身被幽灵同步冲掉）→ **重大失误：`Set-ItemProperty -Value $null` 不报错写空串，把注册表 part1/part2 清空**（PS 非终止错误继续执行的典型陷阱）→ 从 `D:\backups_mirror\2026-10-07_1114\jev_eval.tar.gz` 解出 14957 字节旧版复原。教训：**注册表写入前后必须回读断言非空**。
+- **补丁 v1 阴沟翻船（全角标点幽灵）**：替换串里逗号是全角「，」，与源码 ASCII 逗号视觉不可辨 → regex 0 命中（防御断言拦截未误写）。定位法：hex dump 对比（27 73 65... 前缀逐字节比对）+ `String.Contains` 旁证。**跨行手写替换串一律 hex 校验或纯 ASCII 构建（`[char]39` 拼引号）**。
+- **0037 死锁事件**：手动触发备份，zhice_db dump 17s 冲到恰好 100MB 骤停——容器侧 pg_dump/gzip 已死、宿主 docker.exe 僵死、`$p.WaitForExit()` 无超时永等，全链挂死会挡掉 03:00 正式调度。处置：Stop-ScheduledTask（连带杀动作树）+ 清半成品目录 + **补丁 v2：`WaitForExit(900000)` 超时 Kill 兜底**（15053 字节，双补丁俱在注册表源）。
+- **0048 验证场全链闭环**：zhice 424MB dump 成功（死锁未复现=偶发竞态）；打包→GZIP 校验→AES 加密→D 盘镜像→14d PRUNE→ALERT flag 全正常；**tar -tzf 实证 quant_data.tar.gz 含 k266_docs 全部 5 条目**。DONE failed=2 属预期（见下）。
+- **遗留拍板项**：`quantdinger-db`、`newquantsystem_v2-postgres-1` 两库容器昨 15:47 **同时被人手动 stop**（exit=0 + unless-stopped 不重启 = 手动操作特征）→ quant_db/qd_db dump FAIL 属预期、ALERT flag 是正确行为。是否重启容器待用户拍板，未擅动。
+- **M4 测试件排除**：`_kg_doc_page` 加 name 过滤（dup_test.png/make_test.pdf 展示层排除，影子数据保留）+ 门户重启验证（HTML 0 引用、DOCS JSON 正常）。ann_board_p1.png（奥普光电真实公告）与 2 条 clip 剪报保留。
+
+### K266 补记三（10-08 凌晨，K265 b4 入图 + 方向审计工具）
+- **b4 入图 63 条**：0.95 带 97 条全量人审（AI 自审 34 剔除：反向 11/牵强 12/同类 3/事实错 3/杂糅 2/类型错 2/自否 1），噪声率 35%（b4 段概念对偏应用类判定更难 vs b3 25%）；剔除清单 `data/semantica/k265_b4_exclude.txt`；图内 LLM 语义边 303→**366**（SUPPLIES 258+DRIVES 108）。b5（from 6300）已启动 1.9s/对。
+- **方向审计工具 `k265_dir_audit.py`**：治"src/buyer 字段自洽但整体反向"（b4 坏因之首，`_fix_dir` 盲区）——从 reason 角色句式（`X（B）作为需求方，向…（A）采购`/`（A）作为供应商`/`被…（A）采购`/`销售给（A）`）反推 supplier 侧与 ext.src 比对。影子 pv2 全量 1558 正判：**10 FLAG / 9 真（精度 90%）**，其中 9 条在 0.85 带（未入图）→ 未来回捞入图的预清洗清单。三版迭代防误报：`需要B提供`≠`B向A供应`（动词只留供应/供货/销售/交付/输送）+ 单标注须句首主语。铁证一条：`区块链×液冷服务器` 是 `[dir-fix]` 翻转后反而反（自检翻转方向也可错）。
+- **图内回扫受限于 reason 截断**：入图 `reason[:120]` 截掉角色句式 + pv1 reason 无 A/B 标注 → 信号覆盖仅 9/366（9/9 全过零证伪）。commit 截断已放宽 [:200]。教训：**入图属性别截太狠，审计信号在句尾**。
+- **b4 stats 口径修正**：`ok:false`=无关系负判定（非错误）——三分类后 b4 真错 **0**/2000；`k265_phase1_commit.py` 入图计数改 `counters.contains_updates` + node-miss 报告（本轮实测 63/63 零 miss）。
+
+### K266 补记二（10-07 深夜，M3/M4 落地）
+- **研报扩量 100 篇零失败**：`k266_seed_reports.py`（reportapi qType=1 beginTime=2026-09-20 拉列表 → curl_cffi 下 `pdf.dfcfw.com/pdf/H3_{infoCode}_1.pdf`，0.8s 节流）→ pending/rp_*.pdf 全量摄取；doc_texts 105 条（4 测试 + 100 研报 + clip），registry 105=105 双向零差零重。
+- **M3 结构化影子（已收官 105/105 ok 零 ERR）**：`k266_m3_structure.py`——schema：doc_type/companies/events 五元组(主体/客体/动作/方向/依据)/direction/direction_why/key_numbers/tags（词云词源）；qwen3.5:9b think:false，text[:6000] 截断。**根因战果：首轮 27 条 ERR（25.7%）非并发抢占，实为 ollama 默认 num_ctx=4096 被 6000 字 prompt 挤满、输出剩 ~76 token 撞 length 墙截断无闭合 JSON** → `options:{num_ctx:16384}` 一发全通（诊断法：看 done_reason=length + prompt_eval_count）。坑另两枚：①幂等 done 集含 ERR 行（重补须先删 raw_ok=False 行）②偶发空输出三重试（`"{" in last` 判据）。统计战果：研报 79/其他 22；中性 59·利好 44·利空 1；tags 575 词种 Top=行业周报8·大模型7；事件 188 条均值 1.8/篇；公司榜宁德时代7·天齐锂业5。验收工具 `k266_m3_report.py`（`--sample 10` 人审 seed=7，抽样方向判定人工核全对）。
+- **M4 词云三跳页面（已上线）**：`/kg/doc`（portal_api.py `_kg_doc_page`）——wordcloud base64 内嵌（simhei 880x420 autumn 暗底）+ 热词 chips + 文档卡片 + events ⤴ 画布；chips 附 ⤴ 图谱直达。**路由踩坑：/kg/csearch/ 是 JSON API 非画布、/kg/?kind=lookup 404（尾斜杠），正确画布入口 `/kg?q={w}`**，chips/events 两处跳转已统一修正。tags 聚合去空格归一化（"AI 算力"→"AI算力"）。坑：SYSTEM 服务进程看不到 %APPDATA% user-site 的 wordcloud（pip.ini 全局重定向 user-site）→ 手动拷贝包到 Python311 系统 site。

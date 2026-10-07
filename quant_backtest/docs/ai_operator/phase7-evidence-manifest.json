@@ -1,0 +1,2294 @@
+{
+  "schema_version": 1,
+  "batch": 7,
+  "generated_at_utc": "2026-10-07T13:00:35.749Z",
+  "target": {
+    "exchange": "SSE",
+    "start": "2025-01-02",
+    "end": "2026-04-01",
+    "inclusive_natural_days": 455
+  },
+  "archives": [
+    {
+      "receipt_file": "search_first_mainboard.receipt.json",
+      "requested_url": "https://www.bing.com/search?q=site%3Asse.com.cn+%E4%B8%BB%E6%9D%BF+%E9%A6%96%E6%89%B9+2023%E5%B9%B44%E6%9C%8810%E6%97%A5",
+      "started_at_utc": "2026-10-07T12:34:23.951Z",
+      "completed_at_utc": "2026-10-07T12:34:24.678Z",
+      "final_url": "https://cn.bing.com/search?q=site%3Asse.com.cn+%E4%B8%BB%E6%9D%BF+%E9%A6%96%E6%89%B9+2023%E5%B9%B44%E6%9C%8810%E6%97%A5",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "search_first_mainboard.raw.html",
+      "size_bytes": 101423,
+      "sha256": "5d67985abbb9f9d00ba3fb3b7a67a3bdd65523545d852ac707fc17be99630152",
+      "headers": {
+        "accept-ch": "Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version",
+        "cache-control": "private, max-age=0",
+        "content-security-policy": "script-src https: 'strict-dynamic' 'report-sample' 'wasm-unsafe-eval' 'nonce-dNTDvkhj+YveB0sros+5BZCdAhfnG9BD9UrwhzJcRfo='; base-uri 'self';",
+        "content-type": "text/html; charset=utf-8",
+        "date": "Wed, 07 Oct 2026 12:34:48 GMT",
+        "expires": "Wed, 07 Oct 2026 12:33:48 GMT",
+        "p3p": "CP=\"NON UNI COM NAV STA LOC CURa DEVa PSAa PSDa OUR IND\"",
+        "permissions-policy": "unload=()",
+        "set-cookie": "_SS=SID=212B22A00DCD69D00F83354B0C1F681D; domain=.bing.com; path=/",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "transfer-encoding": "chunked",
+        "useragentreductionoptout": "A7kgTC5xdZ2WIVGZEfb1hUoNuvjzOZX3VIV/BA6C18kQOOF50Q0D3oWoAm49k3BQImkujKILc7JmPysWk3CSjwUAAACMeyJvcmlnaW4iOiJodHRwczovL3d3dy5iaW5nLmNvbTo0NDMiLCJmZWF0dXJlIjoiU2VuZEZ1bGxVc2VyQWdlbnRBZnRlclJlZHVjdGlvbiIsImV4cGlyeSI6MTY4NDg4NjM5OSwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=",
+        "vary": "User-Agent,Accept-Encoding",
+        "x-cache": "CONFIG_NOCACHE",
+        "x-display-context": "full",
+        "x-eventid": "6ac63c6838e54764ad012ba741e1ea86",
+        "x-msedge-ref": "Ref A: 90491E1372DC4D07B538646D36F66B93 Ref B: BJ1EDGE1013 Ref C: 2026-10-07T12:34:48Z"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "search_first_mainboard_baidu.receipt.json",
+      "requested_url": "https://www.baidu.com/s?wd=%E4%B8%8A%E4%BA%A4%E6%89%80%20%E9%A6%96%E6%89%B9%20%E6%B3%A8%E5%86%8C%E5%88%B6%20%E4%B8%BB%E6%9D%BF%202023%E5%B9%B44%E6%9C%8810%E6%97%A5",
+      "started_at_utc": "2026-10-07T12:35:06.756Z",
+      "completed_at_utc": "2026-10-07T12:35:06.990Z",
+      "final_url": "https://www.baidu.com/s?wd=%E4%B8%8A%E4%BA%A4%E6%89%80%20%E9%A6%96%E6%89%B9%20%E6%B3%A8%E5%86%8C%E5%88%B6%20%E4%B8%BB%E6%9D%BF%202023%E5%B9%B44%E6%9C%8810%E6%97%A5",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "search_first_mainboard_baidu.raw.html",
+      "size_bytes": 227,
+      "sha256": "08934b47d81ff4a2f66b104ab19de1d9904e3c5e64a5eda26585d5351937aefc",
+      "headers": {
+        "accept-ranges": "bytes",
+        "bdpagetype": "3",
+        "bdqid": "0xdc6e1cb4005641a2",
+        "cache-control": "no-cache",
+        "connection": "keep-alive",
+        "content-length": "227",
+        "content-security-policy": "frame-ancestors 'self' https://chat.baidu.com http://mirror-chat.baidu.com https://fj-chat.baidu.com https://hba-chat.baidu.com https://hbe-chat.baidu.com https://njjs-chat.baidu.com https://nj-chat.baidu.com https://hna-chat.baidu.com https://hnb-chat.baidu.com http://debug.baidu-int.com https://sai.baidu.com https://mcpstore.baidu.com https://mcpserver.baidu.com https://www.mcpworld.com https://platform-openai.now.baidu.com;",
+        "content-type": "text/html; charset=utf-8",
+        "date": "Wed, 07 Oct 2026 12:35:31 GMT",
+        "pragma": "no-cache",
+        "server": "BWS/1.1",
+        "set-cookie": "BAIDUID_BFESS=96A4E6250E6233CC8DD4981081C4C139:FG=1; Path=/; Domain=baidu.com; Max-Age=31536000; Secure; SameSite=None",
+        "strict-transport-security": "max-age=0",
+        "traceid": "1791376531053164237815883664495207661986",
+        "x-hit-search-bff": "1",
+        "x-ua-compatible": "IE=Edge,chrome=1",
+        "x-xss-protection": "1;mode=block"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "search_trading_rules.receipt.json",
+      "requested_url": "https://www.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94",
+      "started_at_utc": "2026-10-07T12:23:07.869Z",
+      "completed_at_utc": "2026-10-07T12:23:08.622Z",
+      "final_url": "https://cn.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "search_trading_rules.raw.html",
+      "size_bytes": 107218,
+      "sha256": "6f32f4e17ae04bf53cc00b08a03ba8b16bfc23076e9cebb761b26f50e3066e08",
+      "headers": {
+        "accept-ch": "Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Full-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version",
+        "cache-control": "private, max-age=0",
+        "content-security-policy": "script-src https: 'strict-dynamic' 'report-sample' 'wasm-unsafe-eval' 'nonce-JomFKeswTp5D7P6AjkAISveO0ms0EjUK99LZE7xQiFM='; base-uri 'self';",
+        "content-type": "text/html; charset=utf-8",
+        "date": "Wed, 07 Oct 2026 12:23:31 GMT",
+        "expires": "Wed, 07 Oct 2026 12:22:32 GMT",
+        "p3p": "CP=\"NON UNI COM NAV STA LOC CURa DEVa PSAa PSDa OUR IND\"",
+        "permissions-policy": "unload=()",
+        "set-cookie": "_SS=SID=341710557AFE6BEF282507BE7BBD6AF8; domain=.bing.com; path=/",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "transfer-encoding": "chunked",
+        "useragentreductionoptout": "A7kgTC5xdZ2WIVGZEfb1hUoNuvjzOZX3VIV/BA6C18kQOOF50Q0D3oWoAm49k3BQImkujKILc7JmPysWk3CSjwUAAACMeyJvcmlnaW4iOiJodHRwczovL3d3dy5iaW5nLmNvbTo0NDMiLCJmZWF0dXJlIjoiU2VuZEZ1bGxVc2VyQWdlbnRBZnRlclJlZHVjdGlvbiIsImV4cGlyeSI6MTY4NDg4NjM5OSwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=",
+        "vary": "User-Agent,Accept-Encoding",
+        "x-cache": "CONFIG_NOCACHE",
+        "x-display-context": "full",
+        "x-eventid": "6ac639c47c7547d3ae01fcaecf0a7374",
+        "x-msedge-ref": "Ref A: 7B9A38029D2347A58AFE01569B7E31BA Ref B: BJ1EDGE0422 Ref C: 2026-10-07T12:23:32Z"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_closed_list.receipt.json",
+      "requested_url": "https://www.sse.com.cn/disclosure/dealinstruc/closed/list/",
+      "started_at_utc": "2026-10-07T12:23:06.331Z",
+      "completed_at_utc": "2026-10-07T12:23:07.484Z",
+      "final_url": "https://www.sse.com.cn/disclosure/dealinstruc/closed/list/",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_closed_list.raw.html",
+      "size_bytes": 32897,
+      "sha256": "3c7a7ef0947899f8f141152414701f82abd4b27359da77eb99d392ae319b0666",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:23:31 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_closed_list_page2.receipt.json",
+      "requested_url": "https://www.sse.com.cn/disclosure/dealinstruc/closed/list/s_list_2.shtml",
+      "started_at_utc": "2026-10-07T12:38:10.531Z",
+      "completed_at_utc": "2026-10-07T12:38:12.033Z",
+      "final_url": "https://www.sse.com.cn/disclosure/dealinstruc/closed/list/s_list_2.shtml",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_closed_list_page2.raw.html",
+      "size_bytes": 6538,
+      "sha256": "0c27ff32bdb37924ff2725e37be8ec81f5ffce70c2c623233ec4b6ec9bbc9f75",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:38:35 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_full.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/sse_full.js?v=3.8.1_20260901",
+      "started_at_utc": "2026-10-07T12:34:15.738Z",
+      "completed_at_utc": "2026-10-07T12:34:18.050Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/sse_full.js?v=3.8.1_20260901",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_full.raw.js",
+      "size_bytes": 377125,
+      "sha256": "7a8a29c5c6a1074c60302109db9fb3a92eb3a67171b8beadd3e1ec87514c781c",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "377125",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:34:40 GMT",
+        "etag": "\"6a9fbf78-5c125\"",
+        "last-modified": "Tue, 08 Sep 2026 07:55:36 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_general_announcements.receipt.json",
+      "requested_url": "https://www.sse.com.cn/disclosure/announcement/general/",
+      "started_at_utc": "2026-10-07T12:25:38.642Z",
+      "completed_at_utc": "2026-10-07T12:25:40.290Z",
+      "final_url": "https://www.sse.com.cn/disclosure/announcement/general/",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_general_announcements.raw.html",
+      "size_bytes": 35923,
+      "sha256": "91fdbb9e47402d4f3944e7e4e89d40953271949728efd8b190fb2dc589321187",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:26:03 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_general_page50.receipt.json",
+      "requested_url": "https://www.sse.com.cn/disclosure/announcement/general/s_list_50.shtml",
+      "started_at_utc": "2026-10-07T12:38:15.457Z",
+      "completed_at_utc": "2026-10-07T12:38:17.529Z",
+      "final_url": "https://www.sse.com.cn/disclosure/announcement/general/s_list_50.shtml",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_general_page50.raw.html",
+      "size_bytes": 9490,
+      "sha256": "16bb6f38da38070b1001f4d29819e2486c2cc333b4a2d59ef7e31c90a828d7f0",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:38:41 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_main_2021.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/app/main_2021.js",
+      "started_at_utc": "2026-10-07T12:35:41.452Z",
+      "completed_at_utc": "2026-10-07T12:35:42.728Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/app/main_2021.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_main_2021.raw.js",
+      "size_bytes": 5083,
+      "sha256": "c7c1438a3cb3405e9f431e4c745415b3c95c707dd502555bab6bc2c7ee45a0e6",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "5083",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:36:06 GMT",
+        "etag": "\"6a915af3-13db\"",
+        "last-modified": "Fri, 28 Aug 2026 09:54:59 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_others.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/others.js",
+      "started_at_utc": "2026-10-07T12:36:35.821Z",
+      "completed_at_utc": "2026-10-07T12:36:37.101Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/others.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_others.raw.js",
+      "size_bytes": 4208,
+      "sha256": "c866d0db525bb4cd7decc59d00698a33b2b58896cc4f39c70b31f8bfa33034af",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "4208",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:37:00 GMT",
+        "etag": "\"685e3923-1070\"",
+        "last-modified": "Fri, 27 Jun 2025 06:24:35 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_page_list.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/common/page_list.js",
+      "started_at_utc": "2026-10-07T12:31:43.675Z",
+      "completed_at_utc": "2026-10-07T12:31:44.935Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/common/page_list.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_page_list.raw.js",
+      "size_bytes": 943,
+      "sha256": "0318605469c5929b18943f70b3047a242bc4f9ee325741e89fe9b391e9624e7c",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "943",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:32:08 GMT",
+        "etag": "\"685e394e-3af\"",
+        "last-modified": "Fri, 27 Jun 2025 06:25:18 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_page_list_category.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/common/page_list_category.js",
+      "started_at_utc": "2026-10-07T12:37:07.487Z",
+      "completed_at_utc": "2026-10-07T12:37:08.960Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/common/page_list_category.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_page_list_category.raw.js",
+      "size_bytes": 23283,
+      "sha256": "88b102c398da843bbb0bd029bd6eeb8779b73aebaf62c4303368bb0af4f9d581",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "23283",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:37:32 GMT",
+        "etag": "\"685e3953-5af3\"",
+        "last-modified": "Fri, 27 Jun 2025 06:25:23 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_page_list_render.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/common/page_list_render.js",
+      "started_at_utc": "2026-10-07T12:36:00.320Z",
+      "completed_at_utc": "2026-10-07T12:36:01.613Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/common/page_list_render.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_page_list_render.raw.js",
+      "size_bytes": 4604,
+      "sha256": "b23e9d3284d493709c44d3dd60789724d554a965d022ff673f1f3e02dcb0a259",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "4604",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:36:25 GMT",
+        "etag": "\"685e3953-11fc\"",
+        "last-modified": "Fri, 27 Jun 2025 06:25:23 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_popularize_2021.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/app/popularize_2021.js",
+      "started_at_utc": "2026-10-07T12:37:27.863Z",
+      "completed_at_utc": "2026-10-07T12:37:29.398Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/app/popularize_2021.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_popularize_2021.raw.js",
+      "size_bytes": 67714,
+      "sha256": "c5a3e613983295e003740b74392305fa4f80d587735a3c2406bfe3ad637450e8",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "67714",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:37:52 GMT",
+        "etag": "\"6a86c5ca-10882\"",
+        "last-modified": "Thu, 20 Aug 2026 09:15:54 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_repealed_rules.receipt.json",
+      "requested_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/",
+      "started_at_utc": "2026-10-07T12:26:27.846Z",
+      "completed_at_utc": "2026-10-07T12:26:29.897Z",
+      "final_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_repealed_rules.raw.html",
+      "size_bytes": 140429,
+      "sha256": "c69da9a33922fe4111812a3f6fc50b7e3e2591839f8976e162915efc47e27107",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:26:53 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_rules_overview.receipt.json",
+      "requested_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/",
+      "started_at_utc": "2026-10-07T12:23:04.361Z",
+      "completed_at_utc": "2026-10-07T12:23:06.008Z",
+      "final_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_rules_overview.raw.html",
+      "size_bytes": 28513,
+      "sha256": "a609a358264ff921c23c2fbca1cdc15f5df6aeba27aa6687bf4522672869cc69",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:23:29 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_rules_tablemap.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/sselawsrules_tablemap.js",
+      "started_at_utc": "2026-10-07T12:25:36.780Z",
+      "completed_at_utc": "2026-10-07T12:25:38.126Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/sselawsrules_tablemap.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_rules_tablemap.raw.js",
+      "size_bytes": 14851,
+      "sha256": "bb89b7b292bb463614f28febff7652dfa6fdb4da6627971c0b227a062c3d998e",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "14851",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:26:01 GMT",
+        "etag": "\"6954f279-3a03\"",
+        "last-modified": "Wed, 31 Dec 2025 09:52:57 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_search_2022.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/home/search/sse_search_2022.js?v=3.7.7",
+      "started_at_utc": "2026-10-07T12:38:37.034Z",
+      "completed_at_utc": "2026-10-07T12:38:38.668Z",
+      "final_url": "https://www.sse.com.cn/xhtml/home/search/sse_search_2022.js?v=3.7.7",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_search_2022.raw.js",
+      "size_bytes": 125847,
+      "sha256": "3c439491a36e5558525533c8523b6157409fbc1207d4a21e6f797186ad2cec20",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "125847",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:39:01 GMT",
+        "etag": "\"6a4772a9-1eb97\"",
+        "last-modified": "Fri, 03 Jul 2026 08:28:25 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_search_common.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/home/2021public/querySearch/search_common_2021.js",
+      "started_at_utc": "2026-10-07T12:37:35.115Z",
+      "completed_at_utc": "2026-10-07T12:37:36.629Z",
+      "final_url": "https://www.sse.com.cn/xhtml/home/2021public/querySearch/search_common_2021.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_search_common.raw.js",
+      "size_bytes": 63991,
+      "sha256": "5e30aa03c402eecc759de04b4b683548355a144861bc8cc814018150c6a6070e",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "63991",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:38:00 GMT",
+        "etag": "\"6a915af2-f9f7\"",
+        "last-modified": "Fri, 28 Aug 2026 09:54:58 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_search_first_mainboard.receipt.json",
+      "requested_url": "https://www.sse.com.cn/home/search/index.shtml?webswd=%E9%A6%96%E6%89%B9%E4%B8%BB%E6%9D%BF",
+      "started_at_utc": "2026-10-07T12:38:22.177Z",
+      "completed_at_utc": "2026-10-07T12:38:23.817Z",
+      "final_url": "https://www.sse.com.cn/home/search/index.shtml?webswd=%E9%A6%96%E6%89%B9%E4%B8%BB%E6%9D%BF",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_search_first_mainboard.raw.html",
+      "size_bytes": 49894,
+      "sha256": "c7f901d4f54c56d5b54e0cccf379e9d5ea99bf7f69264cf5185689bf07c8bcb9",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:38:47 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_trading_rules_2023.receipt.json",
+      "requested_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/c_20250612_10824490.shtml",
+      "started_at_utc": "2026-10-07T12:27:40.753Z",
+      "completed_at_utc": "2026-10-07T12:27:42.433Z",
+      "final_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/c_20250612_10824490.shtml",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_trading_rules_2023.raw.html",
+      "size_bytes": 35712,
+      "sha256": "0a634408b2842a6cba4f4686d6013716aa5bf5cddf547139945d0eb7c6d9a27c",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:28:05 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_trading_rules_2023_attachment.receipt.json",
+      "requested_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/10824490/files/dcbe58edb194451d93f19b1f7dd8fb4c.docx",
+      "started_at_utc": "2026-10-07T12:31:33.456Z",
+      "completed_at_utc": "2026-10-07T12:31:35.013Z",
+      "final_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/10824490/files/dcbe58edb194451d93f19b1f7dd8fb4c.docx",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_trading_rules_2023_attachment.raw.docx",
+      "size_bytes": 51948,
+      "sha256": "7aa2319f6dcf597be1e86b3b69d7c2ad0e6acb2a5d0cc6be48a01af602fded40",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "51948",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "date": "Wed, 07 Oct 2026 12:31:58 GMT",
+        "etag": "\"6a4b1916-caec\"",
+        "last-modified": "Mon, 06 Jul 2026 02:55:18 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_trading_rules_2023_deferred.receipt.json",
+      "requested_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/10824490/files/3f0cc77bae0543c795a42731398bc8e0.docx",
+      "started_at_utc": "2026-10-07T12:31:38.555Z",
+      "completed_at_utc": "2026-10-07T12:31:40.084Z",
+      "final_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/10824490/files/3f0cc77bae0543c795a42731398bc8e0.docx",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_trading_rules_2023_deferred.raw.docx",
+      "size_bytes": 17995,
+      "sha256": "13cd6f14fdc5b8ecb5fad1876c6ecb05bf6c163d5217a2f2d687029ffa5bf4e2",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "17995",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "date": "Wed, 07 Oct 2026 12:32:03 GMT",
+        "etag": "\"6a4b1916-464b\"",
+        "last-modified": "Mon, 06 Jul 2026 02:55:18 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_trading_rules_2026.receipt.json",
+      "requested_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/trade/universal/c/c_20260424_10816492.shtml",
+      "started_at_utc": "2026-10-07T12:26:29.717Z",
+      "completed_at_utc": "2026-10-07T12:26:31.150Z",
+      "final_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/trade/universal/c/c_20260424_10816492.shtml",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_trading_rules_2026.raw.html",
+      "size_bytes": 34823,
+      "sha256": "cd3365ac6d36b137c7da57fa40459fe317bd8c534f3349ca1eff8bef93548494",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:26:54 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_trading_universal.receipt.json",
+      "requested_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/trade/universal/",
+      "started_at_utc": "2026-10-07T12:25:36.721Z",
+      "completed_at_utc": "2026-10-07T12:25:38.494Z",
+      "final_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/trade/universal/",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_trading_universal.raw.html",
+      "size_bytes": 30720,
+      "sha256": "27d54162de7638d004e4fd27a6fc55900aab0fc2a886e5dcdf06996daa96e095",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 12:26:02 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    },
+    {
+      "receipt_file": "sse_utils_2021.receipt.json",
+      "requested_url": "https://www.sse.com.cn/xhtml/js/app/sse_utils_2021.js",
+      "started_at_utc": "2026-10-07T12:36:57.707Z",
+      "completed_at_utc": "2026-10-07T12:36:59.038Z",
+      "final_url": "https://www.sse.com.cn/xhtml/js/app/sse_utils_2021.js",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_utils_2021.raw.js",
+      "size_bytes": 2201,
+      "sha256": "8f9e77d4500c9b66620e5ebf4740446f0b4fa6862eb312d92b144c7c2de30831",
+      "headers": {
+        "accept-ranges": "bytes",
+        "connection": "keep-alive",
+        "content-length": "2201",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "application/javascript",
+        "date": "Wed, 07 Oct 2026 12:37:22 GMT",
+        "etag": "\"685e3953-899\"",
+        "last-modified": "Fri, 27 Jun 2025 06:25:23 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true
+    }
+  ],
+  "inherited": [
+    {
+      "source_batch": 6,
+      "source_directory": "../../ai_operator_phase6/evidence",
+      "receipt_file": "sse_2025_annual.receipt.json",
+      "requested_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20241223_10767108.shtml",
+      "started_at_utc": "2026-10-07T11:37:21.682Z",
+      "completed_at_utc": "2026-10-07T11:37:23.270Z",
+      "final_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20241223_10767108.shtml",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_2025_annual.raw.html",
+      "size_bytes": 28979,
+      "sha256": "b88e5777d868192c156b85f7514fafcba8638a8bcec0cd80190b2e67769f5fff",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 11:37:46 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true,
+      "inherited_without_new_fetch": true
+    },
+    {
+      "source_batch": 6,
+      "source_directory": "../../ai_operator_phase6/evidence",
+      "receipt_file": "sse_2026_annual.receipt.json",
+      "requested_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20251222_10802507.shtml",
+      "started_at_utc": "2026-10-07T11:37:21.700Z",
+      "completed_at_utc": "2026-10-07T11:37:23.199Z",
+      "final_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20251222_10802507.shtml",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_2026_annual.raw.html",
+      "size_bytes": 29251,
+      "sha256": "4e260b815ce1309175ed994e6490a4ccd51b998a5f92bcdc41cec00fc6823dc7",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 11:37:46 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true,
+      "inherited_without_new_fetch": true
+    },
+    {
+      "source_batch": 6,
+      "source_directory": "../../ai_operator_phase6/evidence",
+      "receipt_file": "sse_2026_spring.receipt.json",
+      "requested_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20260205_10808618.shtml",
+      "started_at_utc": "2026-10-07T11:36:40.520Z",
+      "completed_at_utc": "2026-10-07T11:36:41.915Z",
+      "final_url": "https://www.sse.com.cn/disclosure/announcement/general/c/c_20260205_10808618.shtml",
+      "status_code": 200,
+      "success": true,
+      "transport_error": null,
+      "raw_file": "sse_2026_spring.raw.html",
+      "size_bytes": 27935,
+      "sha256": "0e05934820bcd89e88165e7725d14c9b5463ca7ad24b049a9b1aef5fcd44085e",
+      "headers": {
+        "connection": "keep-alive",
+        "content-security-policy": "style-src 'self' https://*.sseinfo.com https://*.sse.com.cn  https://yunhq.sse.com.cn:32042 'unsafe-inline'; script-src 'self' https://*.sseinfo.com https://*.sse.com.cn https://yunhq.sse.com.cn:32042  'unsafe-inline' 'unsafe-eval';worker-src www.sse.com.cn play.szs.nagasoft.cn blob:;  frame-ancestors *.sse.com.cn *.sseinfo.com ",
+        "content-type": "text/html",
+        "date": "Wed, 07 Oct 2026 11:37:05 GMT",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "nginx",
+        "transfer-encoding": "chunked",
+        "vary": "Accept-Encoding, Accept-Encoding, Accept-Encoding",
+        "x-download-options": "noopen",
+        "x-permitted-cross-domain-policies": "none",
+        "x-xss-protection": "1"
+      },
+      "client": "Node.js fetch; TLS certificate validation enabled; no authentication",
+      "historical_availability_verified": false,
+      "archive_bytes_verified": true,
+      "inherited_without_new_fetch": true
+    }
+  ],
+  "derived": [
+    {
+      "metadata_file": "search_first_mainboard.extracted.json",
+      "metadata_sha256": "80311a4fc2605691897e467886b869a8c58a225caa96cf6be85be8eba41d585e",
+      "source_raw_file": "search_first_mainboard.raw.html",
+      "source_sha256": "5d67985abbb9f9d00ba3fb3b7a67a3bdd65523545d852ac707fc17be99630152",
+      "derived_not_original": true,
+      "text": "site:sse.com.cn 主板 首批 2023年4月10日 - 搜索自适应缩放跳至内容辅助功能反馈\n手机版国内版国际版\n网页\n图片\n视频\n学术\n词典\n地图\n航班约 129,000 个结果在新选项卡中打开链接时间不限\nbaidu.comhttps://baike.baidu.com › item › 主板\n主板（电脑机箱主板）_百度百科\n主板，也叫母板，安装在计算机主机箱内，是计算机最基本也是最重要的部件之一，在整个计算机系统中扮演着举足轻重的角色。 主 …\nzol.com.cnhttps://detail.zol.com.cn › motherboard\n【主板】主板报价及图片大全-ZOL中关村在线\n1 天前 · 微星A520M-A PRO 主芯片组:AMD A520 CPU插槽:Socket AM4 内存类型:2×DDR4 DIMM USB接口:基于芯片组： 6×USB3.2 …\n169e.comhttps://www.169e.com › motherboard\n主板天梯图 2026 - 最新主板性能排行榜 | 主板芯片组对比\n12 小时之前 · 2026年最新主板天梯图，涵盖Intel、AMD平台主板芯片组性能排行榜。Z890、X870E、B860、B850、Z790等主板性能 …\nasus.com.cnhttps://www.asus.com.cn › motherboards-components › motherboards\n主板 - 全系列｜ASUS 中国\n长征系列 华硕 Expedition长征系列主板专为不间断运行而设计，支持 Lightning Boot 闪电启动功能，可加快 BIOS 启动。 Expedition …\nzhihu.comhttps://zhuanlan.zhihu.com\n2026年 618主板推荐及选购攻略 - 知乎\n2026年5月26日 · 这篇文章每月都会更新，可以收藏，如果对您有帮助，希望能点个赞支持一下~ @Gyusang 也可以关注一波618装机 …\nyjjy.clubhttps://yjjy.club › ladder › board.html\n主板天梯图 | 硬件纪元\n榜单覆盖华硕、微星、技嘉、华擎四大品牌，页面上方的品牌筛选可分别查看华硕主板天梯图、微星主板天梯图、技嘉主板天梯图与 …\nasus.com.cnhttps://www.asus.com.cn › motherboards-components › ...\nIntel｜主板｜ASUS 中国\n在 ASUS 「Intel」的 主板 / 配件 产品列表中，您可依商品特色、规格或是价格，筛选出最合适您的主板 / 配件 ，并查看详细产品资 …\ngigabyte.cnhttps://www.gigabyte.cn › Motherboard › All-Series\nGAMING | 主板 - GIGABYTE 技嘉科技\nUltra Turbo 模式 : 解锁隐藏性能 D5 黑科技 : AI D5黑科技创造更强内存性能 支持CQ-DIMM内存 支持 Intel® Core™ Ultra处理器 …\nasrock.comhttps://www.asrock.com › mb › index.cn.asp\n华擎科技 > 主板 - ASRock\n主板认证 重置筛选条件 + 分类 水神 幻影电竞 工作站 创世者 太极 钢铁传奇 匠心 Challenger LiveMixer 超频方程式 附件 + 插槽 Intel …\npeidiannao.comhttps://peidiannao.com › products › motherboard\n主板价格与参数 - 配电脑\n查看最新主板价格、芯片组、接口规格及CPU/内存兼容性信息，支持Intel、AMD平台对比，帮助你完成装机选购。 ASL翔升 EVGA …\n为回应符合本地法律要求的通知，部分搜索结果未予显示。有关详细信息，请参阅此处。\n分页\n1\n2\n3\n下一页\n增值电信业务经营许可证：合字B2-20090007\n京ICP备10036305号-7\n京公网安备11010802047360号\n隐私\n条款全部24 小时内一周内一个月内去年",
+      "links": [
+        {
+          "href": "#",
+          "title": null,
+          "text": "跳至内容",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn+%E4%B8%BB%E6%9D%BF+%E9%A6%96%E6%89%B9+2023%E5%B9%B44%E6%9C%8810%E6%97%A5"
+        },
+        {
+          "href": "#",
+          "title": null,
+          "text": "辅助功能反馈",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn+%E4%B8%BB%E6%9D%BF+%E9%A6%96%E6%89%B9+2023%E5%B9%B44%E6%9C%8810%E6%97%A5"
+        },
+        {
+          "href": "/?FORM=Z9FD1",
+          "title": null,
+          "text": "",
+          "url": "https://cn.bing.com/?FORM=Z9FD1"
+        },
+        {
+          "href": null,
+          "title": null,
+          "text": "",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn+%E4%B8%BB%E6%9D%BF+%E9%A6%96%E6%89%B9+2023%E5%B9%B44%E6%9C%8810%E6%97%A5"
+        },
+        {
+          "href": "javascript:void(0)",
+          "title": null,
+          "text": "",
+          "url": "javascript:void(0)"
+        },
+        {
+          "href": "javascript:void(0)",
+          "title": null,
+          "text": "",
+          "url": "javascript:void(0)"
+        },
+        {
+          "href": "#",
+          "title": null,
+          "text": "手机版",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn+%E4%B8%BB%E6%9D%BF+%E9%A6%96%E6%89%B9+2023%E5%B9%B44%E6%9C%8810%E6%97%A5"
+        },
+        {
+          "href": "/?scope=web&FORM=HDRSC1",
+          "title": null,
+          "text": "网页",
+          "url": "https://cn.bing.com/?scope=web&FORM=HDRSC1"
+        },
+        {
+          "href": "/images/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC2",
+          "title": null,
+          "text": "图片",
+          "url": "https://cn.bing.com/images/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC2"
+        },
+        {
+          "href": "/videos/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC3",
+          "title": null,
+          "text": "视频",
+          "url": "https://cn.bing.com/videos/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC3"
+        },
+        {
+          "href": "/academic/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC4",
+          "title": null,
+          "text": "学术",
+          "url": "https://cn.bing.com/academic/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC4"
+        },
+        {
+          "href": "/dict/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC6",
+          "title": null,
+          "text": "词典",
+          "url": "https://cn.bing.com/dict/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC6"
+        },
+        {
+          "href": "/maps?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC7",
+          "title": null,
+          "text": "地图",
+          "url": "https://cn.bing.com/maps?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=HDRSC7"
+        },
+        {
+          "href": "/travel/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&m=flights&FORM=FBSCOP",
+          "title": null,
+          "text": "航班",
+          "url": "https://cn.bing.com/travel/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&m=flights&FORM=FBSCOP"
+        },
+        {
+          "href": "javascript:",
+          "title": null,
+          "text": "时间不限",
+          "url": "javascript:"
+        },
+        {
+          "href": "https://baike.baidu.com/item/%E4%B8%BB%E6%9D%BF/104636",
+          "title": null,
+          "text": "baidu.comhttps://baike.baidu.com › item › 主板",
+          "url": "https://baike.baidu.com/item/%E4%B8%BB%E6%9D%BF/104636"
+        },
+        {
+          "href": "https://baike.baidu.com/item/%E4%B8%BB%E6%9D%BF/104636",
+          "title": null,
+          "text": "主板（电脑机箱主板）_百度百科",
+          "url": "https://baike.baidu.com/item/%E4%B8%BB%E6%9D%BF/104636"
+        },
+        {
+          "href": "https://detail.zol.com.cn/motherboard/",
+          "title": null,
+          "text": "zol.com.cnhttps://detail.zol.com.cn › motherboard",
+          "url": "https://detail.zol.com.cn/motherboard/"
+        },
+        {
+          "href": "https://detail.zol.com.cn/motherboard/",
+          "title": null,
+          "text": "【主板】主板报价及图片大全-ZOL中关村在线",
+          "url": "https://detail.zol.com.cn/motherboard/"
+        },
+        {
+          "href": "https://www.169e.com/motherboard/",
+          "title": null,
+          "text": "169e.comhttps://www.169e.com › motherboard",
+          "url": "https://www.169e.com/motherboard/"
+        },
+        {
+          "href": "https://www.169e.com/motherboard/",
+          "title": null,
+          "text": "主板天梯图 2026 - 最新主板性能排行榜 | 主板芯片组对比",
+          "url": "https://www.169e.com/motherboard/"
+        },
+        {
+          "href": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/",
+          "title": null,
+          "text": "asus.com.cnhttps://www.asus.com.cn › motherboards-components › motherboards",
+          "url": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/"
+        },
+        {
+          "href": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/",
+          "title": null,
+          "text": "主板 - 全系列｜ASUS 中国",
+          "url": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/"
+        },
+        {
+          "href": "https://zhuanlan.zhihu.com/p/344503535",
+          "title": null,
+          "text": "zhihu.comhttps://zhuanlan.zhihu.com",
+          "url": "https://zhuanlan.zhihu.com/p/344503535"
+        },
+        {
+          "href": "https://zhuanlan.zhihu.com/p/344503535",
+          "title": null,
+          "text": "2026年 618主板推荐及选购攻略 - 知乎",
+          "url": "https://zhuanlan.zhihu.com/p/344503535"
+        },
+        {
+          "href": "https://yjjy.club/ladder/board.html",
+          "title": null,
+          "text": "yjjy.clubhttps://yjjy.club › ladder › board.html",
+          "url": "https://yjjy.club/ladder/board.html"
+        },
+        {
+          "href": "https://yjjy.club/ladder/board.html",
+          "title": null,
+          "text": "主板天梯图 | 硬件纪元",
+          "url": "https://yjjy.club/ladder/board.html"
+        },
+        {
+          "href": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/filter?Category=Intel",
+          "title": null,
+          "text": "asus.com.cnhttps://www.asus.com.cn › motherboards-components › ...",
+          "url": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/filter?Category=Intel"
+        },
+        {
+          "href": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/filter?Category=Intel",
+          "title": null,
+          "text": "Intel｜主板｜ASUS 中国",
+          "url": "https://www.asus.com.cn/motherboards-components/motherboards/all-series/filter?Category=Intel"
+        },
+        {
+          "href": "https://www.gigabyte.cn/Motherboard/All-Series?fid=2556,2557",
+          "title": null,
+          "text": "gigabyte.cnhttps://www.gigabyte.cn › Motherboard › All-Series",
+          "url": "https://www.gigabyte.cn/Motherboard/All-Series?fid=2556,2557"
+        },
+        {
+          "href": "https://www.gigabyte.cn/Motherboard/All-Series?fid=2556,2557",
+          "title": null,
+          "text": "GAMING | 主板 - GIGABYTE 技嘉科技",
+          "url": "https://www.gigabyte.cn/Motherboard/All-Series?fid=2556,2557"
+        },
+        {
+          "href": "https://www.asrock.com/mb/index.cn.asp",
+          "title": null,
+          "text": "asrock.comhttps://www.asrock.com › mb › index.cn.asp",
+          "url": "https://www.asrock.com/mb/index.cn.asp"
+        },
+        {
+          "href": "https://www.asrock.com/mb/index.cn.asp",
+          "title": null,
+          "text": "华擎科技 > 主板 - ASRock",
+          "url": "https://www.asrock.com/mb/index.cn.asp"
+        },
+        {
+          "href": "https://peidiannao.com/products/motherboard",
+          "title": null,
+          "text": "peidiannao.comhttps://peidiannao.com › products › motherboard",
+          "url": "https://peidiannao.com/products/motherboard"
+        },
+        {
+          "href": "https://peidiannao.com/products/motherboard",
+          "title": null,
+          "text": "主板价格与参数 - 配电脑",
+          "url": "https://peidiannao.com/products/motherboard"
+        },
+        {
+          "href": "http://go.microsoft.com/fwlink/?LinkID=617350",
+          "title": null,
+          "text": "此处",
+          "url": "http://go.microsoft.com/fwlink/?LinkID=617350"
+        },
+        {
+          "href": null,
+          "title": null,
+          "text": "1",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn+%E4%B8%BB%E6%9D%BF+%E9%A6%96%E6%89%B9+2023%E5%B9%B44%E6%9C%8810%E6%97%A5"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FPIG=D1B7B447E29742A28DD4E24BAD49734A&first=11&FORM=PERE",
+          "title": null,
+          "text": "2",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FPIG=D1B7B447E29742A28DD4E24BAD49734A&first=11&FORM=PERE"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FPIG=D1B7B447E29742A28DD4E24BAD49734A&first=21&FORM=PERE1",
+          "title": null,
+          "text": "3",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FPIG=D1B7B447E29742A28DD4E24BAD49734A&first=21&FORM=PERE1"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FPIG=D1B7B447E29742A28DD4E24BAD49734A&first=11&FORM=PORE",
+          "title": "下一页",
+          "text": "下一页",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FPIG=D1B7B447E29742A28DD4E24BAD49734A&first=11&FORM=PORE"
+        },
+        {
+          "href": "https://dxzhgl.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyereport.jsp?num=caf04fa4-bd8a-4d9e-80b6-2aa1b86c1509&type=yreport",
+          "title": null,
+          "text": "增值电信业务经营许可证：合字B2-20090007",
+          "url": "https://dxzhgl.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyereport.jsp?num=caf04fa4-bd8a-4d9e-80b6-2aa1b86c1509&type=yreport"
+        },
+        {
+          "href": "https://beian.miit.gov.cn",
+          "title": null,
+          "text": "京ICP备10036305号-7",
+          "url": "https://beian.miit.gov.cn"
+        },
+        {
+          "href": "https://beian.mps.gov.cn/#/query/webSearch?code=11010802047360",
+          "title": null,
+          "text": "京公网安备11010802047360号",
+          "url": "https://beian.mps.gov.cn/#/query/webSearch?code=11010802047360"
+        },
+        {
+          "href": "http://go.microsoft.com/fwlink/?LinkId=521839",
+          "title": null,
+          "text": "隐私",
+          "url": "http://go.microsoft.com/fwlink/?LinkId=521839"
+        },
+        {
+          "href": "http://go.microsoft.com/fwlink/?LinkID=246338",
+          "title": null,
+          "text": "条款",
+          "url": "http://go.microsoft.com/fwlink/?LinkID=246338"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=000017&qpvt=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5",
+          "title": null,
+          "text": "全部",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&FORM=000017&qpvt=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez1%22&FORM=000017",
+          "title": null,
+          "text": "24 小时内",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez1%22&FORM=000017"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez2%22&FORM=000017",
+          "title": null,
+          "text": "一周内",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez2%22&FORM=000017"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez3%22&FORM=000017",
+          "title": null,
+          "text": "一个月内",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez3%22&FORM=000017"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez5_20368_20733%22&FORM=000017",
+          "title": null,
+          "text": "去年",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%b8%bb%e6%9d%bf+%e9%a6%96%e6%89%b9+2023%e5%b9%b44%e6%9c%8810%e6%97%a5&filters=ex1%3a%22ez5_20368_20733%22&FORM=000017"
+        }
+      ]
+    },
+    {
+      "metadata_file": "search_first_mainboard_baidu.extracted.json",
+      "metadata_sha256": "4e90a4a762ea703f9f7bb83ee80158532b9e1b55b68aa932ae4d9a3aaadfd4fa",
+      "source_raw_file": "search_first_mainboard_baidu.raw.html",
+      "source_sha256": "08934b47d81ff4a2f66b104ab19de1d9904e3c5e64a5eda26585d5351937aefc",
+      "derived_not_original": true,
+      "text": "",
+      "links": []
+    },
+    {
+      "metadata_file": "search_trading_rules.extracted.json",
+      "metadata_sha256": "103159a69b3dea8f15743681063ca326681048fc03838a828d725b194eed1130",
+      "source_raw_file": "search_trading_rules.raw.html",
+      "source_sha256": "6f32f4e17ae04bf53cc00b08a03ba8b16bfc23076e9cebb761b26f50e3066e08",
+      "derived_not_original": true,
+      "text": "site:sse.com.cn 交易规则 2023 每周一至周五 - 搜索自适应缩放跳至内容辅助功能反馈\n手机版国内版国际版\n网页\n图片\n视频\n学术\n词典\n地图\n航班约 160,000 个结果在新选项卡中打开链接时间不限\njiaoyimao.comhttps://www.jiaoyimao.com\n交易猫_阿里巴巴灵犀互娱旗下_专业安全的游戏交易平台\n12 小时之前 · 交易猫，阿里巴巴旗下灵犀互娱的一款专业安全的游戏交易平台，提供网游交易、手游交易、账号估值、手游账号、装 …\npzds.comhttps://www.pzds.com\n首页 • 盼之账号\n盼之账号游戏账号交易平台是国内主流游戏交易平台之一，平台覆盖全品类游戏，海量游戏账号，提供游戏买卖、账号代售、游戏充 …\ndd373.comhttps://www.dd373.com\nDD373.com-嘟嘟网络游戏交易平台-游戏币、游戏账号、装备 ...\n12 小时之前 · 无货超时赔付 资金保障，交易更放心 安全保障 防盗措施，保障交易安全 专业团队 高效专业引导完成交易 7×24小时客 …\nbaidu.comhttps://baike.baidu.com › item › 交易\n交易（物品或服务的交换活动）_百度百科\n指通过协商达成共识后实施的物品所有权或服务提供权的转移行为。 基础要素包含交易主体、交易对象与交换媒介，其中媒介从原始 …\n7881.comhttps://www.7881.com\n7881.com-专业的网络游戏交易平台 (游戏币交易、金币交易 ...\n5 天之前 · 7881游戏交易平台-为您提供专业的游戏币交易、金币交易、账号交易、装备交易、道具交易、点卡点券交易、游戏租号， …\npxb7.comhttps://www.pxb7.com\n螃蟹账号_游戏账号交易代售平台_卖号|买号|游戏币|点券|装备 ...\n螃蟹游戏服务网是国内安全、权威、服务完善的大型网络游戏账号交易代售平台，提供游戏账号交易、手游交易、道具交易、账号买 …\njiaoyimao.comhttps://www.jiaoyimao.com › duanyou.html\n网游交易平台_网游账号交易|装备道具|代充代练_交易猫端游交易\n诚信服务 用户协议 隐私权协议 儿童个人信息保护规则 免责声明 7*24小时服务 行业倡议书 交易保障 寄售交易 支付宝交易 投诉与建议 …\nbaidu.comhttps://baike.baidu.com › item › 交易\n交易（金融学概念）_百度百科\n交易是机构单位之间根据协议让渡所有权或使用权形成新资产或负债的金融流量。 其范围涵盖金融衍生品交易、非货币性资产交换等 …\njiaoyiyou.comhttps://www.jiaoyiyou.com\n交易游-游戏账号交易平台|游戏账号代售|账号估价|找回包赔\n2026年9月28日 · 交易游交易平台是国内正规、专业、安全的游戏账号交易平台，为广大用户提供网络游戏账号交易、手游账号交易、 …\ngmmsj.comhttps://www.gmmsj.com › dy › selectgame.shtml\n网游交易|G买卖\nG买卖，盛趣游戏官方授权端游交易平台，为游戏玩家提供安全可靠、方便快捷的游戏账号、装备、道具、游戏币、低价盛趣游戏点券 …\n为回应符合本地法律要求的通知，部分搜索结果未予显示。有关详细信息，请参阅此处。\n分页\n1\n2\n3\n4\n下一页© 2026 Microsoft\n增值电信业务经营许可证：合字B2-20090007\n京ICP备10036305号-7\n京公网安备11010802047360号\n隐私声明和 Cookie\n法律声明\n广告\n帮助\n反馈全部24 小时内一周内一个月内去年",
+      "links": [
+        {
+          "href": "#",
+          "title": null,
+          "text": "跳至内容",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94"
+        },
+        {
+          "href": "#",
+          "title": null,
+          "text": "辅助功能反馈",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94"
+        },
+        {
+          "href": "/?FORM=Z9FD1",
+          "title": null,
+          "text": "",
+          "url": "https://cn.bing.com/?FORM=Z9FD1"
+        },
+        {
+          "href": null,
+          "title": null,
+          "text": "",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94"
+        },
+        {
+          "href": "javascript:void(0)",
+          "title": null,
+          "text": "",
+          "url": "javascript:void(0)"
+        },
+        {
+          "href": "javascript:void(0)",
+          "title": null,
+          "text": "",
+          "url": "javascript:void(0)"
+        },
+        {
+          "href": "#",
+          "title": null,
+          "text": "手机版",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94"
+        },
+        {
+          "href": "/?scope=web&FORM=HDRSC1",
+          "title": null,
+          "text": "网页",
+          "url": "https://cn.bing.com/?scope=web&FORM=HDRSC1"
+        },
+        {
+          "href": "/images/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC2",
+          "title": null,
+          "text": "图片",
+          "url": "https://cn.bing.com/images/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC2"
+        },
+        {
+          "href": "/videos/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC3",
+          "title": null,
+          "text": "视频",
+          "url": "https://cn.bing.com/videos/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC3"
+        },
+        {
+          "href": "/academic/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC4",
+          "title": null,
+          "text": "学术",
+          "url": "https://cn.bing.com/academic/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC4"
+        },
+        {
+          "href": "/dict/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC6",
+          "title": null,
+          "text": "词典",
+          "url": "https://cn.bing.com/dict/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC6"
+        },
+        {
+          "href": "/maps?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC7",
+          "title": null,
+          "text": "地图",
+          "url": "https://cn.bing.com/maps?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=HDRSC7"
+        },
+        {
+          "href": "/travel/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&m=flights&FORM=FBSCOP",
+          "title": null,
+          "text": "航班",
+          "url": "https://cn.bing.com/travel/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&m=flights&FORM=FBSCOP"
+        },
+        {
+          "href": "javascript:",
+          "title": null,
+          "text": "时间不限",
+          "url": "javascript:"
+        },
+        {
+          "href": "https://www.jiaoyimao.com/",
+          "title": null,
+          "text": "jiaoyimao.comhttps://www.jiaoyimao.com",
+          "url": "https://www.jiaoyimao.com/"
+        },
+        {
+          "href": "https://www.jiaoyimao.com/",
+          "title": null,
+          "text": "交易猫_阿里巴巴灵犀互娱旗下_专业安全的游戏交易平台",
+          "url": "https://www.jiaoyimao.com/"
+        },
+        {
+          "href": "https://www.pzds.com/",
+          "title": null,
+          "text": "pzds.comhttps://www.pzds.com",
+          "url": "https://www.pzds.com/"
+        },
+        {
+          "href": "https://www.pzds.com/",
+          "title": null,
+          "text": "首页 • 盼之账号",
+          "url": "https://www.pzds.com/"
+        },
+        {
+          "href": "https://www.dd373.com/",
+          "title": null,
+          "text": "dd373.comhttps://www.dd373.com",
+          "url": "https://www.dd373.com/"
+        },
+        {
+          "href": "https://www.dd373.com/",
+          "title": null,
+          "text": "DD373.com-嘟嘟网络游戏交易平台-游戏币、游戏账号、装备 ...",
+          "url": "https://www.dd373.com/"
+        },
+        {
+          "href": "https://baike.baidu.com/item/%e4%ba%a4%e6%98%93/32757",
+          "title": null,
+          "text": "baidu.comhttps://baike.baidu.com › item › 交易",
+          "url": "https://baike.baidu.com/item/%e4%ba%a4%e6%98%93/32757"
+        },
+        {
+          "href": "https://baike.baidu.com/item/%e4%ba%a4%e6%98%93/32757",
+          "title": null,
+          "text": "交易（物品或服务的交换活动）_百度百科",
+          "url": "https://baike.baidu.com/item/%e4%ba%a4%e6%98%93/32757"
+        },
+        {
+          "href": "https://www.7881.com/",
+          "title": null,
+          "text": "7881.comhttps://www.7881.com",
+          "url": "https://www.7881.com/"
+        },
+        {
+          "href": "https://www.7881.com/",
+          "title": null,
+          "text": "7881.com-专业的网络游戏交易平台 (游戏币交易、金币交易 ...",
+          "url": "https://www.7881.com/"
+        },
+        {
+          "href": "https://www.pxb7.com/",
+          "title": null,
+          "text": "pxb7.comhttps://www.pxb7.com",
+          "url": "https://www.pxb7.com/"
+        },
+        {
+          "href": "https://www.pxb7.com/",
+          "title": null,
+          "text": "螃蟹账号_游戏账号交易代售平台_卖号|买号|游戏币|点券|装备 ...",
+          "url": "https://www.pxb7.com/"
+        },
+        {
+          "href": "https://www.jiaoyimao.com/duanyou.html",
+          "title": null,
+          "text": "jiaoyimao.comhttps://www.jiaoyimao.com › duanyou.html",
+          "url": "https://www.jiaoyimao.com/duanyou.html"
+        },
+        {
+          "href": "https://www.jiaoyimao.com/duanyou.html",
+          "title": null,
+          "text": "网游交易平台_网游账号交易|装备道具|代充代练_交易猫端游交易",
+          "url": "https://www.jiaoyimao.com/duanyou.html"
+        },
+        {
+          "href": "https://baike.baidu.com/item/%E4%BA%A4%E6%98%93/51101294",
+          "title": null,
+          "text": "baidu.comhttps://baike.baidu.com › item › 交易",
+          "url": "https://baike.baidu.com/item/%E4%BA%A4%E6%98%93/51101294"
+        },
+        {
+          "href": "https://baike.baidu.com/item/%E4%BA%A4%E6%98%93/51101294",
+          "title": null,
+          "text": "交易（金融学概念）_百度百科",
+          "url": "https://baike.baidu.com/item/%E4%BA%A4%E6%98%93/51101294"
+        },
+        {
+          "href": "https://www.jiaoyiyou.com/",
+          "title": null,
+          "text": "jiaoyiyou.comhttps://www.jiaoyiyou.com",
+          "url": "https://www.jiaoyiyou.com/"
+        },
+        {
+          "href": "https://www.jiaoyiyou.com/",
+          "title": null,
+          "text": "交易游-游戏账号交易平台|游戏账号代售|账号估价|找回包赔",
+          "url": "https://www.jiaoyiyou.com/"
+        },
+        {
+          "href": "https://www.gmmsj.com/dy/selectgame.shtml",
+          "title": null,
+          "text": "gmmsj.comhttps://www.gmmsj.com › dy › selectgame.shtml",
+          "url": "https://www.gmmsj.com/dy/selectgame.shtml"
+        },
+        {
+          "href": "https://www.gmmsj.com/dy/selectgame.shtml",
+          "title": null,
+          "text": "网游交易|G买卖",
+          "url": "https://www.gmmsj.com/dy/selectgame.shtml"
+        },
+        {
+          "href": "http://go.microsoft.com/fwlink/?LinkID=617350",
+          "title": null,
+          "text": "此处",
+          "url": "http://go.microsoft.com/fwlink/?LinkID=617350"
+        },
+        {
+          "href": null,
+          "title": null,
+          "text": "1",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=11&FORM=PERE",
+          "title": null,
+          "text": "2",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=11&FORM=PERE"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=21&FORM=PERE1",
+          "title": null,
+          "text": "3",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=21&FORM=PERE1"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=31&FORM=PERE2",
+          "title": null,
+          "text": "4",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=31&FORM=PERE2"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=11&FORM=PORE",
+          "title": "下一页",
+          "text": "下一页",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FPIG=239A9DCBE1184008B6D7A790ACCBFD51&first=11&FORM=PORE"
+        },
+        {
+          "href": "https://dxzhgl.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyereport.jsp?num=caf04fa4-bd8a-4d9e-80b6-2aa1b86c1509&type=yreport",
+          "title": null,
+          "text": "增值电信业务经营许可证：合字B2-20090007",
+          "url": "https://dxzhgl.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyereport.jsp?num=caf04fa4-bd8a-4d9e-80b6-2aa1b86c1509&type=yreport"
+        },
+        {
+          "href": "https://beian.miit.gov.cn",
+          "title": null,
+          "text": "京ICP备10036305号-7",
+          "url": "https://beian.miit.gov.cn"
+        },
+        {
+          "href": "https://beian.mps.gov.cn/#/query/webSearch?code=11010802047360",
+          "title": null,
+          "text": "京公网安备11010802047360号",
+          "url": "https://beian.mps.gov.cn/#/query/webSearch?code=11010802047360"
+        },
+        {
+          "href": "http://go.microsoft.com/fwlink/?LinkId=521839",
+          "title": null,
+          "text": "隐私声明和 Cookie",
+          "url": "http://go.microsoft.com/fwlink/?LinkId=521839"
+        },
+        {
+          "href": "http://go.microsoft.com/fwlink/?LinkID=246338",
+          "title": null,
+          "text": "法律声明",
+          "url": "http://go.microsoft.com/fwlink/?LinkID=246338"
+        },
+        {
+          "href": "https://go.microsoft.com/fwlink/?linkid=868922",
+          "title": null,
+          "text": "广告",
+          "url": "https://go.microsoft.com/fwlink/?linkid=868922"
+        },
+        {
+          "href": "https://support.microsoft.com/topic/82d20721-2d6f-4012-a13d-d1910ccf203f&clcid=0x04",
+          "title": null,
+          "text": "帮助",
+          "url": "https://support.microsoft.com/topic/82d20721-2d6f-4012-a13d-d1910ccf203f&clcid=0x04"
+        },
+        {
+          "href": "#",
+          "title": null,
+          "text": "反馈",
+          "url": "https://cn.bing.com/search?q=site%3Asse.com.cn%20%E4%BA%A4%E6%98%93%E8%A7%84%E5%88%99%202023%20%E6%AF%8F%E5%91%A8%E4%B8%80%E8%87%B3%E5%91%A8%E4%BA%94"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=000017&qpvt=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94",
+          "title": null,
+          "text": "全部",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&FORM=000017&qpvt=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez1%22&FORM=000017",
+          "title": null,
+          "text": "24 小时内",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez1%22&FORM=000017"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez2%22&FORM=000017",
+          "title": null,
+          "text": "一周内",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez2%22&FORM=000017"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez3%22&FORM=000017",
+          "title": null,
+          "text": "一个月内",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez3%22&FORM=000017"
+        },
+        {
+          "href": "/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez5_20368_20733%22&FORM=000017",
+          "title": null,
+          "text": "去年",
+          "url": "https://cn.bing.com/search?q=site%3asse.com.cn+%e4%ba%a4%e6%98%93%e8%a7%84%e5%88%99+2023+%e6%af%8f%e5%91%a8%e4%b8%80%e8%87%b3%e5%91%a8%e4%ba%94&filters=ex1%3a%22ez5_20368_20733%22&FORM=000017"
+        }
+      ]
+    },
+    {
+      "metadata_file": "sse_rules_overview.extracted.json",
+      "metadata_sha256": "7538ff1ca9802bd0898f47e4eb5d8dd2256e5c88b96558aa9e1213723e5ddd69",
+      "source_raw_file": "sse_rules_overview.raw.html",
+      "source_sha256": "a609a358264ff921c23c2fbca1cdc15f5df6aeba27aa6687bf4522672869cc69",
+      "derived_not_original": true,
+      "text": "规则总览 | 上海证券交易所\n上海证券交易所服务热线：400-8888-400\nAPP下载\n微博微信\nEnglish繁\n一网通办“三开门”专栏\n简中EN\n一网通办\n“三开门”专栏\n用户入口\n投资者\n会员机构\n拟上市公司\n债券机构\n上市公司\n基金公司\n高效办成一件事\n股票投资一件事\n债券发行上市一件事\n期权投资一件事\nREITs发行上市一件事\n企业上市一件事\n服务预约一件事\n信息披露一件事\n一网通办移动端\n上交所APP\"通办\"栏目\n- 欢迎扫码安装 -\n展开导航菜单\n上交所发布\n上交所移动App\n上交所业务规则导览\n树状导览\n图表导览\n联系我们\n网站地图\n相关链接\n法律声明\n注册商标\n个人信息保护告知书\n官方微博\n官方微信\nAPP下载\n党建\n党建动态\n学习园地\n图文播报\n发行上市\n审核公告通知\n审核信息披露\n审核项目动态\n关于上市审核中心\n科创战略\n披露\n交易提示\n上交所公告\n上市公司信息\n融资融券信息\n基金信息\n公募REITs信息\n交易信息披露\n债券信息\n股票期权信息\n监管\n上市公司监管\n发行上市审核监管\n债券监管\n交易监管\n会员及其他交易参与人监管\n自律管理复核\n自律监管与市场服务事项\n诉求受理中心\n数据\n股票数据\n债券数据\n基金数据\n公募REITs数据\n其他数据\n行情信息\n上证系列指数\n中证系列指数\n中华系列指数\n产品\n股票与存托凭证\n基金\n债券\n股票期权\n公募REITs\n服务\n企业上市服务\nIPO业务专栏\n沪港通\n绿色证券专栏\n交易服务\n交易技术支持专区\n收费及代收税费\n投资者服务\n上市公司服务\n路演服务\n技术服务\n信息服务\n培训服务\n司法服务\n规则\n法律法规\n部门规章\n本所业务规则\n本所业务指南与流程\n公开征求意见\n制度规则汇编\n关于\n本所介绍\n媒体中心\n国际交流与合作\n招聘信息\n联系我们\n研究\n社会责任\n公益慈善\n中国证券博物馆\n刊物\n400投资者服务热线： 400-8888-400\n上海证券交易所官网现已支持 IPV6\n©上海证券交易所版权所有 2020\n沪ICP备05004045号-2\n沪公网安备 31011502016333号",
+      "links": [
+        {
+          "href": "/home/app/update/",
+          "title": null,
+          "text": "APP下载",
+          "url": "https://www.sse.com.cn/home/app/update/"
+        },
+        {
+          "href": "/home/weixin/",
+          "title": null,
+          "text": "微博微信",
+          "url": "https://www.sse.com.cn/home/weixin/"
+        },
+        {
+          "href": "http://english.sse.com.cn/",
+          "title": null,
+          "text": "English",
+          "url": "http://english.sse.com.cn/"
+        },
+        {
+          "href": "http://big5.sse.com.cn/site/cht/www.sse.com.cn/",
+          "title": null,
+          "text": "繁",
+          "url": "http://big5.sse.com.cn/site/cht/www.sse.com.cn/"
+        },
+        {
+          "href": "//one.sse.com.cn/",
+          "title": null,
+          "text": "一网通办",
+          "url": "https://one.sse.com.cn/"
+        },
+        {
+          "href": "//www.sse.com.cn/transparency/home/",
+          "title": null,
+          "text": "“三开门”专栏",
+          "url": "https://www.sse.com.cn/transparency/home/"
+        },
+        {
+          "href": "//english.sse.com.cn/",
+          "title": null,
+          "text": "简中EN",
+          "url": "https://english.sse.com.cn/"
+        },
+        {
+          "href": "/",
+          "title": null,
+          "text": "",
+          "url": "https://www.sse.com.cn/"
+        },
+        {
+          "href": "https://one.sse.com.cn/",
+          "title": null,
+          "text": "一网通办",
+          "url": "https://one.sse.com.cn/"
+        },
+        {
+          "href": "/transparency/home/",
+          "title": null,
+          "text": "“三开门”专栏",
+          "url": "https://www.sse.com.cn/transparency/home/"
+        },
+        {
+          "href": "//one.sse.com.cn/investor/",
+          "title": null,
+          "text": "投资者",
+          "url": "https://one.sse.com.cn/investor/"
+        },
+        {
+          "href": "//one.sse.com.cn/member/",
+          "title": null,
+          "text": "会员机构",
+          "url": "https://one.sse.com.cn/member/"
+        },
+        {
+          "href": "//one.sse.com.cn/to-be-listed/",
+          "title": null,
+          "text": "拟上市公司",
+          "url": "https://one.sse.com.cn/to-be-listed/"
+        },
+        {
+          "href": "//one.sse.com.cn/bond/",
+          "title": null,
+          "text": "债券机构",
+          "url": "https://one.sse.com.cn/bond/"
+        },
+        {
+          "href": "//one.sse.com.cn/list/",
+          "title": null,
+          "text": "上市公司",
+          "url": "https://one.sse.com.cn/list/"
+        },
+        {
+          "href": "//one.sse.com.cn/fund/",
+          "title": null,
+          "text": "基金公司",
+          "url": "https://one.sse.com.cn/fund/"
+        },
+        {
+          "href": "//one.sse.com.cn/onething/gptz/",
+          "title": null,
+          "text": "股票投资一件事",
+          "url": "https://one.sse.com.cn/onething/gptz/"
+        },
+        {
+          "href": "//one.sse.com.cn/onething/zqfx/",
+          "title": null,
+          "text": "债券发行上市一件事",
+          "url": "https://one.sse.com.cn/onething/zqfx/"
+        },
+        {
+          "href": "//one.sse.com.cn/onething/qqtz/",
+          "title": null,
+          "text": "期权投资一件事",
+          "url": "https://one.sse.com.cn/onething/qqtz/"
+        },
+        {
+          "href": "//one.sse.com.cn/onething/reits/",
+          "title": null,
+          "text": "REITs发行上市一件事",
+          "url": "https://one.sse.com.cn/onething/reits/"
+        },
+        {
+          "href": "//one.sse.com.cn/onething/qyss/",
+          "title": null,
+          "text": "企业上市一件事",
+          "url": "https://one.sse.com.cn/onething/qyss/"
+        },
+        {
+          "href": "//one.sse.com.cn/onething/fwyy/",
+          "title": null,
+          "text": "服务预约一件事",
+          "url": "https://one.sse.com.cn/onething/fwyy/"
+        },
+        {
+          "href": "//one.sse.com.cn/onething/xxpl/",
+          "title": null,
+          "text": "信息披露一件事",
+          "url": "https://one.sse.com.cn/onething/xxpl/"
+        },
+        {
+          "href": "/lawandrules/sselawsrules2025/overview/c/10778726/files/ddfc82e93a85496bb075175d9a8d811d.pdf",
+          "title": null,
+          "text": "",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/c/10778726/files/ddfc82e93a85496bb075175d9a8d811d.pdf"
+        },
+        {
+          "href": "/lawandrules/sselawsrules2025/overview/c/10778726/files/3f32d9d46a3643bf9d349d6d6941ec3f.pdf",
+          "title": null,
+          "text": "",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/c/10778726/files/3f32d9d46a3643bf9d349d6d6941ec3f.pdf"
+        },
+        {
+          "href": "/aboutus/contactus/",
+          "title": "",
+          "text": "联系我们",
+          "url": "https://www.sse.com.cn/aboutus/contactus/"
+        },
+        {
+          "href": "/home/map/",
+          "title": "",
+          "text": "网站地图",
+          "url": "https://www.sse.com.cn/home/map/"
+        },
+        {
+          "href": "/home/links/",
+          "title": "",
+          "text": "相关链接",
+          "url": "https://www.sse.com.cn/home/links/"
+        },
+        {
+          "href": "/home/legal/",
+          "title": "",
+          "text": "法律声明",
+          "url": "https://www.sse.com.cn/home/legal/"
+        },
+        {
+          "href": "/aboutus/sseintroduction/trademark/",
+          "title": "",
+          "text": "注册商标",
+          "url": "https://www.sse.com.cn/aboutus/sseintroduction/trademark/"
+        },
+        {
+          "href": "/home/grxxbhs/",
+          "title": "",
+          "text": "个人信息保护告知书",
+          "url": "https://www.sse.com.cn/home/grxxbhs/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "党建",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/cpc/news/",
+          "title": "",
+          "text": "党建动态",
+          "url": "https://www.sse.com.cn/cpc/news/"
+        },
+        {
+          "href": "/cpc/study/",
+          "title": "",
+          "text": "学习园地",
+          "url": "https://www.sse.com.cn/cpc/study/"
+        },
+        {
+          "href": "/cpc/pic/",
+          "title": "",
+          "text": "图文播报",
+          "url": "https://www.sse.com.cn/cpc/pic/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "发行上市",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/listing/announcement/notification/",
+          "title": "",
+          "text": "审核公告通知",
+          "url": "https://www.sse.com.cn/listing/announcement/notification/"
+        },
+        {
+          "href": "/listing/disclosure/ipo/",
+          "title": "",
+          "text": "审核信息披露",
+          "url": "https://www.sse.com.cn/listing/disclosure/ipo/"
+        },
+        {
+          "href": "/listing/renewal/ipo/",
+          "title": "",
+          "text": "审核项目动态",
+          "url": "https://www.sse.com.cn/listing/renewal/ipo/"
+        },
+        {
+          "href": "/listing/aboutus/home/",
+          "title": "",
+          "text": "关于上市审核中心",
+          "url": "https://www.sse.com.cn/listing/aboutus/home/"
+        },
+        {
+          "href": "/listing/strategy/",
+          "title": "",
+          "text": "科创战略",
+          "url": "https://www.sse.com.cn/listing/strategy/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "披露",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/disclosure/dealinstruc/suspension/stock/",
+          "title": "",
+          "text": "交易提示",
+          "url": "https://www.sse.com.cn/disclosure/dealinstruc/suspension/stock/"
+        },
+        {
+          "href": "/disclosure/announcement/general/",
+          "title": "",
+          "text": "上交所公告",
+          "url": "https://www.sse.com.cn/disclosure/announcement/general/"
+        },
+        {
+          "href": "/disclosure/listedinfo/announcement/",
+          "title": "",
+          "text": "上市公司信息",
+          "url": "https://www.sse.com.cn/disclosure/listedinfo/announcement/"
+        },
+        {
+          "href": "/disclosure/magin/announcement/",
+          "title": "",
+          "text": "融资融券信息",
+          "url": "https://www.sse.com.cn/disclosure/magin/announcement/"
+        },
+        {
+          "href": "/disclosure/fund/announcement/",
+          "title": "",
+          "text": "基金信息",
+          "url": "https://www.sse.com.cn/disclosure/fund/announcement/"
+        },
+        {
+          "href": "/reits/announcements/info/",
+          "title": "",
+          "text": "公募REITs信息",
+          "url": "https://www.sse.com.cn/reits/announcements/info/"
+        },
+        {
+          "href": "/disclosure/diclosure/public/dailydata/",
+          "title": "",
+          "text": "交易信息披露",
+          "url": "https://www.sse.com.cn/disclosure/diclosure/public/dailydata/"
+        },
+        {
+          "href": "/disclosure/bond/announcement/bookentry/",
+          "title": "",
+          "text": "债券信息",
+          "url": "https://www.sse.com.cn/disclosure/bond/announcement/bookentry/"
+        },
+        {
+          "href": "/disclosure/optioninfo/update/",
+          "title": "",
+          "text": "股票期权信息",
+          "url": "https://www.sse.com.cn/disclosure/optioninfo/update/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "监管",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/regulation/supervision/dynamic/",
+          "title": "",
+          "text": "上市公司监管",
+          "url": "https://www.sse.com.cn/regulation/supervision/dynamic/"
+        },
+        {
+          "href": "/regulation/listing/measures/",
+          "title": "",
+          "text": "发行上市审核监管",
+          "url": "https://www.sse.com.cn/regulation/listing/measures/"
+        },
+        {
+          "href": "/regulation/bonds/jgdt/",
+          "title": "",
+          "text": "债券监管",
+          "url": "https://www.sse.com.cn/regulation/bonds/jgdt/"
+        },
+        {
+          "href": "/regulation/trading/dynamic/",
+          "title": "",
+          "text": "交易监管",
+          "url": "https://www.sse.com.cn/regulation/trading/dynamic/"
+        },
+        {
+          "href": "/regulation/members/measures/",
+          "title": "",
+          "text": "会员及其他交易参与人监管",
+          "url": "https://www.sse.com.cn/regulation/members/measures/"
+        },
+        {
+          "href": "/regulation/review/",
+          "title": "",
+          "text": "自律管理复核",
+          "url": "https://www.sse.com.cn/regulation/review/"
+        },
+        {
+          "href": "/regulation/ma/",
+          "title": "",
+          "text": "自律监管与市场服务事项",
+          "url": "https://www.sse.com.cn/regulation/ma/"
+        },
+        {
+          "href": "/home/sqslzxnew/sqslzxnewsy/",
+          "title": "",
+          "text": "诉求受理中心",
+          "url": "https://www.sse.com.cn/home/sqslzxnew/sqslzxnewsy/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "数据",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/market/stockdata/statistic/",
+          "title": "",
+          "text": "股票数据",
+          "url": "https://www.sse.com.cn/market/stockdata/statistic/"
+        },
+        {
+          "href": "/market/bonddata/overview/day/",
+          "title": "",
+          "text": "债券数据",
+          "url": "https://www.sse.com.cn/market/bonddata/overview/day/"
+        },
+        {
+          "href": "/market/funddata/overview/day/",
+          "title": "",
+          "text": "基金数据",
+          "url": "https://www.sse.com.cn/market/funddata/overview/day/"
+        },
+        {
+          "href": "/market/reits/overview/day/",
+          "title": "",
+          "text": "公募REITs数据",
+          "url": "https://www.sse.com.cn/market/reits/overview/day/"
+        },
+        {
+          "href": "/market/othersdata/margin/sum/",
+          "title": "",
+          "text": "其他数据",
+          "url": "https://www.sse.com.cn/market/othersdata/margin/sum/"
+        },
+        {
+          "href": "/market/price/trends/",
+          "title": "",
+          "text": "行情信息",
+          "url": "https://www.sse.com.cn/market/price/trends/"
+        },
+        {
+          "href": "/market/sseindex/overview/",
+          "title": "",
+          "text": "上证系列指数",
+          "url": "https://www.sse.com.cn/market/sseindex/overview/"
+        },
+        {
+          "href": "http://www.csindex.com.cn/zh-CN/indices/index",
+          "title": "",
+          "text": "中证系列指数",
+          "url": "http://www.csindex.com.cn/zh-CN/indices/index"
+        },
+        {
+          "href": "https://www.cesc.com/sc/index.html",
+          "title": "",
+          "text": "中华系列指数",
+          "url": "https://www.cesc.com/sc/index.html"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "产品",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/assortment/stock/home/",
+          "title": "",
+          "text": "股票与存托凭证",
+          "url": "https://www.sse.com.cn/assortment/stock/home/"
+        },
+        {
+          "href": "/assortment/fund/home/",
+          "title": "",
+          "text": "基金",
+          "url": "https://www.sse.com.cn/assortment/fund/home/"
+        },
+        {
+          "href": "/assortment/bonds/home/",
+          "title": "",
+          "text": "债券",
+          "url": "https://www.sse.com.cn/assortment/bonds/home/"
+        },
+        {
+          "href": "/assortment/options/home/",
+          "title": "",
+          "text": "股票期权",
+          "url": "https://www.sse.com.cn/assortment/options/home/"
+        },
+        {
+          "href": "/reits/home/",
+          "title": "",
+          "text": "公募REITs",
+          "url": "https://www.sse.com.cn/reits/home/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "服务",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/services/listingwithsse/home/",
+          "title": "企业上市服务",
+          "text": "企业上市服务",
+          "url": "https://www.sse.com.cn/services/listingwithsse/home/"
+        },
+        {
+          "href": "/ipo/home/",
+          "title": "",
+          "text": "IPO业务专栏",
+          "url": "https://www.sse.com.cn/ipo/home/"
+        },
+        {
+          "href": "/services/hkexsc/home/",
+          "title": "",
+          "text": "沪港通",
+          "url": "https://www.sse.com.cn/services/hkexsc/home/"
+        },
+        {
+          "href": "/services/greensecurities/home/",
+          "title": "",
+          "text": "绿色证券专栏",
+          "url": "https://www.sse.com.cn/services/greensecurities/home/"
+        },
+        {
+          "href": "/services/tradingservice/process/",
+          "title": "",
+          "text": "交易服务",
+          "url": "https://www.sse.com.cn/services/tradingservice/process/"
+        },
+        {
+          "href": "/services/tradingtech/notice/",
+          "title": "",
+          "text": "交易技术支持专区",
+          "url": "https://www.sse.com.cn/services/tradingtech/notice/"
+        },
+        {
+          "href": "/services/tradingservice/charge/ssecharge/",
+          "title": "",
+          "text": "收费及代收税费",
+          "url": "https://www.sse.com.cn/services/tradingservice/charge/ssecharge/"
+        },
+        {
+          "href": "/services/investors/designatedtxn/",
+          "title": "",
+          "text": "投资者服务",
+          "url": "https://www.sse.com.cn/services/investors/designatedtxn/"
+        },
+        {
+          "href": "/services/listing/xyzr/",
+          "title": "",
+          "text": "上市公司服务",
+          "url": "https://www.sse.com.cn/services/listing/xyzr/"
+        },
+        {
+          "href": "//roadshow.sseinfo.com/",
+          "title": "",
+          "text": "路演服务",
+          "url": "https://roadshow.sseinfo.com/"
+        },
+        {
+          "href": "/home/biz/cnsca/",
+          "title": "",
+          "text": "技术服务",
+          "url": "https://www.sse.com.cn/home/biz/cnsca/"
+        },
+        {
+          "href": "/services/information/delisting/",
+          "title": "",
+          "text": "信息服务",
+          "url": "https://www.sse.com.cn/services/information/delisting/"
+        },
+        {
+          "href": "//pujiang.sse.com.cn/",
+          "title": "",
+          "text": "培训服务",
+          "url": "https://pujiang.sse.com.cn/"
+        },
+        {
+          "href": "/services/judicia/",
+          "title": "",
+          "text": "司法服务",
+          "url": "https://www.sse.com.cn/services/judicia/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "规则",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/lawandrules/rules/law/securities/",
+          "title": "",
+          "text": "法律法规",
+          "url": "https://www.sse.com.cn/lawandrules/rules/law/securities/"
+        },
+        {
+          "href": "/lawandrules/regulations/csrcorder/",
+          "title": "",
+          "text": "部门规章",
+          "url": "https://www.sse.com.cn/lawandrules/regulations/csrcorder/"
+        },
+        {
+          "href": "/lawandrules/sselawsrules2025/overview/",
+          "title": "",
+          "text": "本所业务规则",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/lawandrules/guide/latest/",
+          "title": "本所业务指南与流程",
+          "text": "本所业务指南与流程",
+          "url": "https://www.sse.com.cn/lawandrules/guide/latest/"
+        },
+        {
+          "href": "/lawandrules/publicadvice/",
+          "title": "",
+          "text": "公开征求意见",
+          "url": "https://www.sse.com.cn/lawandrules/publicadvice/"
+        },
+        {
+          "href": "/lawandrules/assemble/",
+          "title": "",
+          "text": "制度规则汇编",
+          "url": "https://www.sse.com.cn/lawandrules/assemble/"
+        },
+        {
+          "href": null,
+          "title": "",
+          "text": "关于",
+          "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/overview/"
+        },
+        {
+          "href": "/aboutus/sseintroduction/introduction/",
+          "title": "",
+          "text": "本所介绍",
+          "url": "https://www.sse.com.cn/aboutus/sseintroduction/introduction/"
+        },
+        {
+          "href": "/aboutus/mediacenter/hotandd/",
+          "title": "",
+          "text": "媒体中心",
+          "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/"
+        },
+        {
+          "href": "/aboutus/cooperation/siccce/info/",
+          "title": "",
+          "text": "国际交流与合作",
+          "url": "https://www.sse.com.cn/aboutus/cooperation/siccce/info/"
+        },
+        {
+          "href": "/aboutus/recruitment/sse/",
+          "title": "",
+          "text": "招聘信息",
+          "url": "https://www.sse.com.cn/aboutus/recruitment/sse/"
+        },
+        {
+          "href": "/aboutus/contactus/",
+          "title": "",
+          "text": "联系我们",
+          "url": "https://www.sse.com.cn/aboutus/contactus/"
+        },
+        {
+          "href": "/aboutus/research/latest/",
+          "title": "",
+          "text": "研究",
+          "url": "https://www.sse.com.cn/aboutus/research/latest/"
+        },
+        {
+          "href": "/aboutus/socialresponsibility/",
+          "title": "",
+          "text": "社会责任",
+          "url": "https://www.sse.com.cn/aboutus/socialresponsibility/"
+        },
+        {
+          "href": "//foundation.sse.com.cn/",
+          "title": "",
+          "text": "公益慈善",
+          "url": "https://foundation.sse.com.cn/"
+        },
+        {
+          "href": "//csm.sse.com.cn/",
+          "title": "",
+          "text": "中国证券博物馆",
+          "url": "https://csm.sse.com.cn/"
+        },
+        {
+          "href": "/aboutus/publication/monthly/overview/",
+          "title": "",
+          "text": "刊物",
+          "url": "https://www.sse.com.cn/aboutus/publication/monthly/overview/"
+        },
+        {
+          "href": "https://beian.miit.gov.cn/",
+          "title": null,
+          "text": "沪ICP备05004045号-2",
+          "url": "https://beian.miit.gov.cn/"
+        },
+        {
+          "href": "http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31011502016333",
+          "title": null,
+          "text": "沪公网安备 31011502016333号",
+          "url": "http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31011502016333"
+        },
+        {
+          "href": "https://bszs.conac.cn/sitename?method=show&id=273B49C66A3F20DDE06310291AACA667",
+          "title": null,
+          "text": "",
+          "url": "https://bszs.conac.cn/sitename?method=show&id=273B49C66A3F20DDE06310291AACA667"
+        }
+      ]
+    },
+    {
+      "metadata_file": "sse_trading_rules_2023_attachment.extracted.json",
+      "metadata_sha256": "6ec02e56e1440152902759e2ca2a68f28c4b60242b1d13a29e2478507d225d48",
+      "derived_not_original": true,
+      "evidence_type": "docx_extracted_text",
+      "original_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/10824490/files/dcbe58edb194451d93f19b1f7dd8fb4c.docx",
+      "original_file": "sse_trading_rules_2023_attachment.raw.docx",
+      "original_sha256": "7aa2319f6dcf597be1e86b3b69d7c2ad0e6acb2a5d0cc6be48a01af602fded40",
+      "receipt_sha256_matches": true,
+      "xml_member": "word/document.xml",
+      "xml_sha256": "f98db2612c9f14b8e19b3a21677b7656bfdf4d1ce7ddcc505f1e97d91789adc3",
+      "extractor": "Python stdlib zipfile + xml.etree.ElementTree; ordered w:p / w:t text",
+      "text_file": "sse_trading_rules_2023_attachment.extracted.txt",
+      "text_sha256": "f50b3ecd78fa37a3d8ca514579ab8410bdac9fac1e3bffc1da5e9166a16ecce1",
+      "wrapper_file": "sse_trading_rules_2023_attachment.extracted.html",
+      "wrapper_sha256": "233c90647a0e37e4c489533b9bb84c2f02f59be25a4ee412a8ac0e6d272f7aba",
+      "paragraph_count": 503
+    },
+    {
+      "metadata_file": "sse_trading_rules_2023_deferred.extracted.json",
+      "metadata_sha256": "c655a8781fc49190559b16a45bceddb3e2456db6fc5eb66bae644fe0cc423c38",
+      "derived_not_original": true,
+      "evidence_type": "docx_extracted_text",
+      "original_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/10824490/files/3f0cc77bae0543c795a42731398bc8e0.docx",
+      "original_file": "sse_trading_rules_2023_deferred.raw.docx",
+      "original_sha256": "13cd6f14fdc5b8ecb5fad1876c6ecb05bf6c163d5217a2f2d687029ffa5bf4e2",
+      "receipt_sha256_matches": true,
+      "xml_member": "word/document.xml",
+      "xml_sha256": "6fe3808f1c8d64edc78cc71add12e1a24bc82d21ab0a0910ae7eb743a21b78d0",
+      "extractor": "Python stdlib zipfile + xml.etree.ElementTree; ordered w:p / w:t text",
+      "text_file": "sse_trading_rules_2023_deferred.extracted.txt",
+      "text_sha256": "83004911ba17f4b10314c7a4a1dd1dbba151903b6082515e8bce9f9f4c286aee",
+      "wrapper_file": "sse_trading_rules_2023_deferred.extracted.html",
+      "wrapper_sha256": "218cc976e6b405dc936510128fe590ff90c4e1fe72a6683f4ea6ab1a7db6e6c5",
+      "paragraph_count": 45
+    }
+  ],
+  "summary": {
+    "http_success_count": 26,
+    "failed_count": 0,
+    "inherited_count": 3,
+    "all_saved_raw_hashes_verified": true
+  },
+  "limitations": [
+    "当前下载不证明目标期间历史可得性",
+    "未完成目标期间通用公告历史全集检索",
+    "2023规则生效所绑定的首只注册制主板上市首日尚缺归档官方佐证",
+    "真实性和生产资格未认证"
+  ]
+}

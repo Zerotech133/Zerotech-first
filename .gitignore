@@ -85,3 +85,10 @@ inbox/
 
 # 系统杂物补充（B3 滚动 2026-10-07 晚）
 *.bak-*
+
+# 定时入库体系排除项（2026-10-08，portal 统揽板块运维）
+portal/.workbuddy/
+portal/logs/
+portal/picks_public/
+portal/.wbapp_*.genie
+jev-eval/alerts/*.flag

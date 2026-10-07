@@ -19869,7 +19869,9 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         for did, s in shadow.items():
             if not s.get("raw_ok"):
                 continue
-            tags = [t for t in s.get("tags", []) if t]
+            if str(s.get("name", "")) in ("dup_test.png", "make_test.pdf"):
+                continue  # OPS-1008: 排除人工测试件（仅展示层，影子数据保留）
+            tags = [t.replace(" ", "").replace("\u3000", "") for t in s.get("tags", []) if t.strip()]
             freq.update(tags)
             cards.append({
                 "id": did, "name": s.get("name", ""), "src": s.get("src", ""),
@@ -19900,8 +19902,12 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         import html as _html
         chips_html = "".join(
             "<span class='chip wc' data-w='%s' onclick=\"flt('%s')\">%s"
-            "<i>%d</i></span>"
-            % (_html.escape(w), _html.escape(w), _html.escape(w), freq[w])
+            "<i>%d</i><a href='/kg?q=%s' target='_blank' "
+            "onclick=\"event.stopPropagation()\" "
+            "style='color:#d2a8ff;margin-left:4px;text-decoration:none'"
+            " title='图谱画布搜索'>⤴</a></span>"
+            % (_html.escape(w), _html.escape(w), _html.escape(w), freq[w],
+               _html.escape(w))
             for w in top_words)
         wc_html = ("<img src='data:image/png;base64,%s' "
                    "style='max-width:100%%;border-radius:8px'>" % wc_b64
@@ -19962,7 +19968,7 @@ function render(list){
       <span class='chip ${d.dir==='利好'?'b':d.dir==='利空'?'s':'n'}'>${esc(d.dir)}</span>
       <span class='chip n'>${esc(d.type)}</span>
       ${d.tags.map(t=>`<span class='chip n'>${esc(t)}</span>`).join(' ')}
-      ${d.events.map(e=>`<div class='ev'>${esc(e.subject||'')} <b>${esc(e.rel||'')}</b> ${esc(e.object||'')} ${e.amount? '['+esc(e.amount)+']':''} <a href="/kg/?kind=lookup&q=${encodeURIComponent(e.subject||e.object||'')}" target="_blank">⤴图谱</a></div>`).join('')}
+      ${d.events.map(e=>`<div class='ev'>${esc(e.subject||'')} <b>${esc(e.rel||'')}</b> ${esc(e.object||'')} ${e.amount? '['+esc(e.amount)+']':''} <a href="/kg?q=${encodeURIComponent(e.subject||e.object||'')}" target="_blank">⤴图谱</a></div>`).join('')}
     </div>`).join('');
 }
 let cur = null;

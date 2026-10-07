@@ -41,14 +41,18 @@ CACHE_DIR = os.path.join(HERE, "data", "nlmulti")
 SPECIALISTS = {
     "quant_judge": {
         "desc": "缠论结构槽位/信号先例/预警池/模拟账本",
-        "tools": ["tgraph_slots", "tgraph_eval", "tgraph_left_tail", "tgraph_fps",
+        "tools": ["stock_info", "tgraph_slots", "tgraph_eval",
+                  "tgraph_left_tail", "tgraph_fps",
                   "signal_precedents", "signal_enrich", "pool_rows",
                   "paper_positions"],
         "system": "你是缠论量化研判 specialist，只用提供的工具查结构/先例/账本数据，"
                   "不得编造任何数字。\n"
                   "规则：\n"
                   "· 用户没提趋势背驰/趋✓时，绝对不要传 tbe 参数\n"
+                  "· sub_q 含 6 位股票代码时先调 stock_info(code) 拿名称与池内"
+                  "信号概况；查该股信号明细用 pool_rows(code=...)，不要全池扫描\n"
                   "· sig_type 不确定时先查 pool_rows 确认该股信号类型\n"
+                  "· 工具没返回股票名称时答案只写代码，绝不猜名称\n"
                   "· 拿到足够事实后直接给中文答案（≤200字，引用具体数字），"
                   "不要再调用工具",
     },
@@ -63,21 +67,37 @@ SPECIALISTS = {
                   "related_events(query)；个股事件多空摘要用 event_summary(code)\n"
                   "· sub_q 含 6 位股票代码时，绝对用 events_for_stock(code) 查该股"
                   "事件，不要用 recent_events（那是全市场事件，不含个股）\n"
+                  "· 工具没返回股票名称时答案只写代码，绝不编造名称\n"
+                  "· recent_events 是全市场新闻：新闻里出现的公司名与所查代码"
+                  "无关（如问 300419 时新闻里出现'新思科技'不代表 300419 是"
+                  "新思科技）；绝不把全市场新闻里的公司名当作所查股票名称\n"
                   "· 拿到足够事实后直接给中文答案（≤200字，引用具体事件标题"
                   "与偏性），不要再调用工具",
     },
     "data_lookup": {
         "desc": "数据中台读层/表新鲜度/可用性/全仓健康",
-        "tools": ["datamart_read", "datamart_latest", "datamart_ready",
-                  "data_health"],
+        "tools": ["stock_info", "datamart_read", "datamart_latest",
+                  "datamart_ready", "data_health"],
         "system": "你是数据查数 specialist，只用提供的工具读数据中台，不得编造。\n"
                   "规则：\n"
                   "· table 参数是表名（如 ts_daily/news/notice/chanlun_pool），"
                   "不是股票代码\n"
+                  "· 查个股名称/最新行情/池内信号：先调 stock_info(code)，"
+                  "股票名称以它返回为准，绝不编造\n"
+                  "· 用户给股票名称时：先调 stock_info(code=名称) 反查代码"
+                  "（池内映射）；code=None 时若有把握可给候选码再调 "
+                  "stock_info(候选码) 核对（注意现名≠曾用名，需标注），"
+                  "核对不上明说无法确认，绝不硬猜代码\n"
+                  "· datamart_read 的 codes 传 6 位裸码，"
+                  "系统自动补后缀；不要自己加 .SH/.SZ\n"
+                  "· stock_info 返回 code=null 时禁止就此回答：必须立即再调 "
+                  "stock_info(code=你最可能的候选码) 核对一轮，用返回的行情"
+                  "数字作答（现名≠曾用名需标注）\n"
+                  "· fields 只传真实存在的列（trade_date/close/pct_chg/vol/"
+                  "amount 等）；price/name/turnover_rate 不存在，不要传\n"
+                  "· 用户没指定时间区间就不要猜年份，不传 start/end 即查最近\n"
                   "· datamart_ready/datamart_latest 需具体表名，不支持通配符 *\n"
                   "· 用户问'有哪些表'或'表可用'时，用 data_health 看全仓状态\n"
-                  "· 查股票行情用 datamart_read(table='ts_daily', "
-                  "codes=['688411.SH'])\n"
                   "· 拿到足够事实后直接给中文答案（≤200字，引用具体表名/日期/"
                   "行数），不要再调用工具",
     },
@@ -91,6 +111,12 @@ ROUTER_SYSTEM = """你是任务分发 agent。把用户问句拆成子任务，�
 - data_lookup：数据中台读层/表新鲜度/可用性/全仓健康
 
 规则：
+· 用户问句是 6 位纯数字（股票代码，如 "600000"）= 查该股全景：三个
+  specialist 都要派（data_lookup 查名称行情、quant_judge 查池内信号、
+  event_face 查事件）
+· 用户问句含股票名称（非代码）时：你若有把握知道对应候选代码，把它写进
+  相关 sub_q，格式如"某某股份（候选代码 123456，需用 stock_info 核对现名）"；
+  无把握就只传名称，绝不把无把握的码写成确定事实
 · 无关 specialist 不要列入
 · 一个 specialist 可承接多个子任务（合并成一个 sub_q）
 · sub_q 必须是中文完整问句，能独立被 specialist 理解
@@ -101,6 +127,10 @@ SYNTH_SYSTEM = """你是综合 agent。下面是用户原问句和各 specialist
 综合成一份连贯中文答案：
 · ≤400字
 · 引用具体数字/事件标题
+· 股票名称只能引用 specialist 结果里工具返回的名称；没有名称就只写代码，
+  绝不编造名称，也不要调和两个不同的名称
+· 股票代码必须来自工具返回；模型记忆产生的候选码只能写成"可能是 XXX，
+  请核实"，绝不写成确定事实（含"正确代码为 X"这类断言）
 · 不要编造、不要重复 specialist 的元叙述（如"工具返回"）
 · 如果某 specialist 没有相关信息，不要提它
 · 直接给答案，不要前言"""

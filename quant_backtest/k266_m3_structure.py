@@ -40,11 +40,18 @@ def load_done():
 
 def ask_ollama(text, timeout=180):
     body = {"model": MODEL, "think": False, "stream": False,
+            "options": {"num_ctx": 16384},   # 默认 4096 会被 6000 字 prompt 挤满, 输出撞 length 墙
             "messages": [{"role": "user",
                           "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:6000]}]}
-    r = requests.post(OLLAMA, json=body, timeout=timeout)
-    r.raise_for_status()
-    return r.json()["message"]["content"]
+    last = ""
+    for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
+        r = requests.post(OLLAMA, json=body, timeout=timeout)
+        r.raise_for_status()
+        last = r.json()["message"]["content"]
+        if "{" in last:
+            return last
+        time.sleep(2)
+    return last
 
 
 def parse_json(raw):

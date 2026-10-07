@@ -264,14 +264,20 @@ def block_bars(block_code, period, limit=500):
     ts = pd.to_datetime(df["trade_date"].astype(str).str.slice(0, 10)
                         + " " + df["trade_time"].astype(str))
     df = df.assign(dt=ts).set_index("dt").sort_index()
+    # 量能缺失必须保留为未知，记录具体分钟供下游资格检查。
+    df["vol_missing_minutes"] = [i.strftime("%Y-%m-%d %H:%M") if pd.isna(v) else None
+                                 for i, v in df["vol"].items()]
     rule = "5min" if period == "5m" else "30min"
-    agg = df[["open", "high", "low", "close", "vol"]].resample(
+    agg = df[["open", "high", "low", "close", "vol", "vol_missing_minutes"]].resample(
         rule, label="right", closed="right").agg(
         {"open": "first", "high": "max", "low": "min", "close": "last",
-         "vol": "sum"}).dropna(subset=["close"])
+         "vol": lambda s: s.sum(min_count=len(s)),
+         "vol_missing_minutes": lambda s: [v for v in s if pd.notna(v)]}).dropna(subset=["close"])
     agg = agg.tail(int(limit))
     return [{"dt": i.strftime("%Y-%m-%d %H:%M"), "close": float(r["close"]),
-             "vol": float(r["vol"] or 0)} for i, r in agg.iterrows()]
+             "vol": None if pd.isna(r["vol"]) else float(r["vol"]),
+             "vol_complete": not bool(r["vol_missing_minutes"]),
+             "vol_missing_minutes": r["vol_missing_minutes"]} for i, r in agg.iterrows()]
 
 
 def min_local_max_date():

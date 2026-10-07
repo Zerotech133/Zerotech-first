@@ -16,6 +16,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +32,55 @@ def _norm_code(code):
         suf = "SH" if s[0] == "6" else "BJ" if s[0] in "48" else "SZ"
         return "%s.%s" % (s, suf)
     return s
+
+
+_NAME_MAP = None   # 进程内缓存：code(带后缀) → 股票名称（chanlun_pool.jsonl）
+
+
+def _name_map():
+    """加载池内 code→name 映射（全池首次加载后进程内复用）。"""
+    global _NAME_MAP
+    if _NAME_MAP is None:
+        m = {}
+        path = os.path.join(HERE, "data", "chanlun_pool.jsonl")
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        r = json.loads(line)
+                    except Exception:
+                        continue
+                    c, n = r.get("code"), r.get("name")
+                    if c and n:
+                        m[str(c).upper()] = n
+        _NAME_MAP = m
+    return _NAME_MAP
+
+
+def _fix_codes(codes):
+    """codes 参数归一（防 300419.SH 型后缀错配致 n=0）：
+    str/逗号分隔串 → list；后缀纠错仅限首位即可判定的情形（3开头只在深市、
+    6开头只在沪市；0开头沪市存在指数如 000001.SH，不动）；6 位裸码补后缀。"""
+    if codes is None:
+        return None
+    if isinstance(codes, str):
+        codes = re.split(r"[,;，、\s]+", codes)
+    out = []
+    for c in codes or []:
+        s = str(c).strip().upper()
+        if not s:
+            continue
+        if "." in s:
+            head, suf = s.split(".", 1)
+            if len(head) == 6 and head.isdigit() and suf in ("SH", "SZ", "BJ"):
+                if head[0] == "3":
+                    s = "%s.SZ" % head
+                elif head[0] == "6":
+                    s = "%s.SH" % head
+        else:
+            s = _norm_code(s)
+        out.append(s)
+    return out
 
 
 def _jsonable(v):
@@ -178,9 +228,9 @@ def recent_events(n=8, days=7):
 @tool
 def datamart_read(table, start=None, end=None, codes=None, fields=None,
                   limit=0):
-    """读层统一入口：真源命中即止+别名降级+日期/代码归一。"""
+    """读层统一入口：真源命中即止+别名降级+日期/代码归一（codes 自动纠后缀）。"""
     import datamart as dm
-    df = dm.read(table, start=start, end=end, codes=codes,
+    df = dm.read(table, start=start, end=end, codes=_fix_codes(codes),
                  fields=fields, limit=limit)
     return {"n": len(df), "rows": df.to_dict("records")}
 
@@ -211,9 +261,10 @@ def data_health():
 
 # ── ⑥ 缠论池/账本（纯文件读，不 import chanlun_scan） ─────────
 @tool
-def pool_rows(sig_type=None, tbe=None, limit=50):
-    """预警池行（可按类型/tbe 过滤，dt 降序截 limit）。"""
+def pool_rows(sig_type=None, tbe=None, code=None, limit=50):
+    """预警池行（可按类型/tbe/code 过滤，dt 降序截 limit）。"""
     path = os.path.join(HERE, "data", "chanlun_pool.jsonl")
+    wc = str(code).strip().split(".")[0] if code else None
     if not os.path.exists(path):
         return {"n": 0, "rows": []}
     out = []
@@ -227,9 +278,65 @@ def pool_rows(sig_type=None, tbe=None, limit=50):
                 continue
             if tbe is not None and r.get("tbe") != tbe:
                 continue
+            if wc and not str(r.get("code") or "").startswith(wc):
+                continue
             out.append(r)
     out.sort(key=lambda r: r.get("dt") or "", reverse=True)
     return {"n": len(out), "rows": out[:limit]}
+
+
+@tool
+def stock_info(code):
+    """股票身份卡：名称（池内映射）+ 最新行情（ts_daily 尾3行）+ 池内信号。
+    用户给 6 位代码查个股时必须先调此工具（防编造名称）；
+    也支持中文名称入参（池内反查代码，防猜码）。"""
+    s = str(code or "").strip()
+    c = _norm_code(s)
+    name_hits = []
+    if not (len(c.split(".")[0]) == 6 and c.split(".")[0].isdigit()):
+        nm = _name_map()
+        name_hits = sorted(k for k, v in nm.items() if v == s or s in v)
+        if not name_hits:
+            return {"name_q": s, "code": None,
+                    "hint": "池内无此名称映射（注意股票可能已改名，如曾用名）。"
+                            "你必须立即再调一次 stock_info(code=你最可能的候选码) "
+                            "核对：返回的现名/行情可佐证则明确标注'现名 X"
+                            "（或曾用名%s）'并引用行情数字；核对不上才明说无法"
+                            "确认，绝不硬猜" % s}
+        c = name_hits[0]
+    out = {"code": c, "name": _name_map().get(c)}
+    if len(name_hits) > 1:
+        out["name_candidates"] = ["%s %s" % (k, _name_map()[k])
+                                  for k in name_hits]
+    sigs = []
+    path = os.path.join(HERE, "data", "chanlun_pool.jsonl")
+    wc = c.split(".")[0]
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except Exception:
+                    continue
+                if str(r.get("code") or "").startswith(wc):
+                    sigs.append({k: r[k] for k in
+                                 ("dt", "type", "tbe", "trend", "entry_px")
+                                 if r.get(k) is not None})
+    sigs.sort(key=lambda r: r.get("dt") or "", reverse=True)
+    out["pool_signals_n"] = len(sigs)
+    out["pool_signals_recent"] = sigs[:5]
+    try:
+        import datamart as dm
+        df = dm.read("ts_daily", codes=[c])
+        if len(df) and "trade_date" in df.columns:
+            df = df.sort_values("trade_date")
+        keep = [k for k in ("trade_date", "close", "pct_chg",
+                            "vol", "amount") if k in df.columns]
+        out["ts_rows_n"] = len(df)
+        out["latest"] = df[keep].tail(3).to_dict("records") if len(df) else []
+    except Exception as e:
+        out["latest_err"] = "%s: %s" % (type(e).__name__, str(e)[:120])
+    return out
 
 
 @tool
@@ -267,7 +374,11 @@ TOOLS = {
     "datamart_latest": (datamart_latest, "表最新日期", {"table": "表/别名"}),
     "datamart_ready": (datamart_ready, "表可用性", {"table": "表/别名"}),
     "data_health":    (data_health,    "全仓健康扫描", {}),
-    "pool_rows":      (pool_rows,      "预警池查询", {"sig_type": "信号类型", "tbe": "布尔", "limit": "条数"}),
+    "pool_rows":      (pool_rows,      "预警池查询",
+                          {"sig_type": "信号类型", "tbe": "布尔",
+                           "code": "股票代码", "limit": "条数"}),
+    "stock_info":     (stock_info,     "股票身份卡(名称+最新行情+池内信号；名称可反查代码)",
+                          {"code": "6位股票代码或中文名称"}),
     "paper_positions": (paper_positions, "模拟账本", {}),
 }
 

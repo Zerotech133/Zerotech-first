@@ -98,16 +98,20 @@ def main():
 
     # 幂等入图（MERGE 按 (a,rel,b) 去重，SET 覆盖属性）
     sess = cli._session()
-    n = 0
+    n = miss = 0
     for src, dst, e, ov in kept:
         q = ("MATCH (a:Concept {name:$s}), (b:Concept {name:$d}) "
              "MERGE (a)-[r:%s]->(b) "
              "SET r.source='concept_llm_v1', r.conf=$conf, "
              "r.reason=$reason, r.overlap=$ov, r.batch=$batch" % e["edge"])
-        sess.run(q, s=src, d=dst, conf=e.get("conf"),
-                 reason=(e.get("reason") or "")[:120], ov=ov, batch=batch)
-        n += 1
-    print(f"[4] committed {n} directional edges (batch={batch})")
+        summ = sess.run(q, s=src, d=dst, conf=e.get("conf"),
+                        reason=(e.get("reason") or "")[:200], ov=ov, batch=batch).consume()   # 120→200 保住 reason 角色句式供方向审计
+        if summ.counters.contains_updates:
+            n += 1
+        else:
+            miss += 1   # MATCH 未命中（概念节点缺失），静默跳过
+    print(f"[4] committed {n} directional edges (batch={batch}), "
+          f"skipped-node-miss={miss}")
 
     # 入图总量 + 抽验
     chk = ("MATCH ()-[r]->() WHERE r.source='concept_llm_v1' "

@@ -22,6 +22,8 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
+from news_time import parse_full_time, parse_news_time
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "news.db")
 CFG_PATH = os.path.join(HERE, "news_config.json")
@@ -110,7 +112,7 @@ def fetch_wallstreetcn(size):
         text = (it.get("content_text") or "").strip()
         if not text:
             continue
-        ts = datetime.fromtimestamp(int(it["display_time"]), CST).strftime("%m-%d %H:%M")
+        ts = datetime.fromtimestamp(int(it["display_time"]), CST).strftime("%Y-%m-%d %H:%M")
         out.append({"id": "wsc:%s" % it.get("id"),
                     "ts": ts, "title": text[:80], "content": text[:300]})
     return out
@@ -131,7 +133,7 @@ def fetch_announcement(size):
         nm = (codes[0].get("short_name") or "") if codes else ""
         nd = it.get("notice_date") or ""
         out.append({"id": "ann:%s" % it.get("art_code"),
-                    "ts": nd[5:16] if len(nd) >= 16 else nd[:10],
+                    "ts": nd[:16],
                     "title": ("[%s %s] %s" % (code, nm, title))[:80],
                     "content": title[:300]})
     return out
@@ -158,7 +160,7 @@ def fetch_survey(size):
         org = (it.get("ORG_NAME") or "").strip()
         nd = it.get("NOTICE_DATE") or ""
         out.append({"id": "survey:%s" % key,
-                    "ts": (nd[5:10] + " 09:00") if len(nd) >= 10 else nd,
+                    "ts": nd[:16],
                     "title": ("[%s %s] 机构调研：%s" % (code, nm, org))[:80],
                     "content": ("机构 %s 于 %s 调研 %s（%s）" % (
                         org, key.split("|")[1], nm,
@@ -189,7 +191,7 @@ def fetch_report(size):
                         if qtype == 0 else (it.get("industryName") or ""))
                 pd_ = it.get("publishDate") or ""
                 out.append({"id": "report:%s" % it.get("infoCode"),
-                            "ts": pd_[5:16] if len(pd_) >= 16 else pd_[:10],
+                            "ts": pd_[:16],
                             "title": ("[%s·%s] %s" % (tag, org, title))[:80],
                             "content": ("%s：%s" % (subj, title))[:300]})
         except Exception:
@@ -246,16 +248,18 @@ def fetch_world(size):
                         dt = parsedate_to_datetime(pd)
                         if dt.tzinfo is None:
                             dt = dt.replace(tzinfo=timezone.utc)
-                        ts = dt.astimezone(CST).strftime("%m-%d %H:%M")
+                        ts = dt.astimezone(CST).strftime("%Y-%m-%d %H:%M")
                     except Exception:
-                        pass  # 豁免（C2批2）：pubDate 坏值→回落当前时间，单条容错
+                        dt = parse_full_time(pd)  # Atom 使用 ISO 8601 时间。
+                        if dt is not None:
+                            ts = dt.strftime("%Y-%m-%d %H:%M")
                 desc = strip_html(
                     it.findtext("description") or it.findtext(atom + "summary")
                     or it.findtext(atom + "content") or "")
                 hid = hashlib.md5(("%s|%s" % (name, guid))
                                   .encode("utf-8")).hexdigest()[:16]
                 out.append({"id": "world:%s:%s" % (name.lower(), hid),
-                            "ts": ts or now_cst().strftime("%m-%d %H:%M"),
+                            "ts": ts,
                             "title": ("[%s] %s" % (name, title))[:80],
                             "content": desc[:300]})
                 got += 1
@@ -305,11 +309,17 @@ def insert_items(db, items, source):
     """插入并返回真正新入库的条目（rowcount 判定，不做位置假设）"""
     fresh = []
     for it in items:
+        available = now_cst()
+        event = parse_news_time(it.get("ts"), reference=available, source=source)
+        if event is None:
+            log("unresolved news timestamp id=%s source=%s" % (it["id"], source))
+            continue
+        normalized = dict(it, ts=event.strftime("%Y-%m-%d %H:%M"))
         c = db.execute("INSERT OR IGNORE INTO news(id,source,ts,title,content,created_at) VALUES(?,?,?,?,?,?)",
-                       (it["id"], source, it["ts"], it["title"], it["content"],
-                        now_cst().strftime("%Y-%m-%d %H:%M")))
+                       (normalized["id"], source, normalized["ts"], normalized["title"], normalized["content"],
+                        available.strftime("%Y-%m-%d %H:%M")))
         if c.rowcount > 0:
-            fresh.append(dict(it, source=source))
+            fresh.append(dict(normalized, source=source))
     db.commit()
     return fresh
 

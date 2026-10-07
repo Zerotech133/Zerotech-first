@@ -23,12 +23,9 @@ $MirrorRoot  = "D:\backups_mirror"
 $QuantSrc    = "D:\" + [char]0x7F20 + [char]0x8BBA + [char]0x9009 + [char]0x80A1 + "+" + [char]0x76EF + [char]0x76D8
 $KeepDays    = 14
 $AesKeyFile  = Join-Path $env:USERPROFILE ".backup_aes_key"
-$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","webui_data.tar.gz","quant_db.sql.gz")
+$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","webui_data.tar.gz")
 # OPS-1007: dify stack decommissioned (containers removed) - drop dify_db
 # from encryption targets along with the 3 dify backup items below.
-# B4: quant_db.sql.gz added (quant_system main DB holds positions/orders -
-# sensitive). Mirror needs no change: step 4 copies the whole DayDir AFTER
-# encryption, so D:\backups_mirror gets the .enc automatically.
 
 $stamp   = Get-Date -Format "yyyy-MM-dd_HHmm"
 $DayDir  = Join-Path $BackupRoot $stamp
@@ -143,7 +140,10 @@ function Save-DockerStream([string]$container, [string]$shCmd, [string]$dest) {
     if (Test-Path $dest) { Remove-Item $dest -Force }
     $errF = Join-Path $env:TEMP "bk_stderr.txt"
     $p = Start-Process -FilePath "docker" -ArgumentList @("exec", $container, "sh", "-c", ('"' + $shCmd + '"')) -RedirectStandardOutput $dest -RedirectStandardError $errF -WindowStyle Hidden -PassThru
-    $p.WaitForExit()
+    if (-not $p.WaitForExit(900000)) {
+        try { $p.Kill() } catch {}
+        return $false
+    }
     if (-not (Test-Path $dest)) { return $false }
     return ((Get-Item $dest).Length -gt 0)
 }
@@ -189,7 +189,7 @@ Backup-Db "quantdinger-db" "quantdinger" "quantdinger" "qd_db.sql.gz"
 # state assets only; raw vendor dirs (ashare/tdx/tushare/us ~10.7GB) are
 # rebuildable via API pulls and excluded from the daily set.
 $QDataDir    = Join-Path $BaseDir 'quant_backtest\data'
-$QSubdirs = @('semantica','archive','graph_check','distill','nlmulti','nlquery','features','neo4j','crypto')
+$QSubdirs = @('semantica','k266_docs','archive','graph_check','distill','nlmulti','nlquery','features','neo4j','crypto')
 $QNames   = @()
 foreach ($sd in $QSubdirs) { if (Test-Path (Join-Path $QDataDir $sd)) { $QNames += $sd } }
 $QFiles = @()

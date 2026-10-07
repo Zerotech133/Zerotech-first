@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>老田的 AI 工作站 · 个人 OS</title>
 <link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -159,7 +160,7 @@
     <a class="pill" href="/quant">📈 量化股票</a>
     <a class="pill" href="/intel">🕵 情报</a>
     <a class="pill" href="/creator">🎬 创作</a>
-    <a class="pill" href="/dev">💻 开发</a>
+    <a class="pill" href="/dev.html">💻 开发</a>
     <a class="pill" href="/ops">⚙ 系统</a>
   </nav>
 
@@ -175,6 +176,23 @@
     </a>
 
     <div class="board">
+      <!-- ⓪ AI 对话：首页直达入口（/nl 自然语言查数页） -->
+      <a class="dm" href="/nl">
+        <div class="head">
+          <div class="ic">🤖</div>
+          <div><div class="t">AI 对话</div><div class="s">自然语言查数 · 一句话直达</div></div>
+        </div>
+        <div class="desc">用大白话问数：盘面多空、策略表现、个股信号、情报与系统状态，一句话直达结果。</div>
+        <div class="ms">
+          <span>通道 <b>/nl</b></span>
+          <span>查询 <b>/api/nlquery</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot"></span><span>问答入口</span></span>
+          <span class="enter">开始对话 →</span>
+        </div>
+      </a>
+
       <!-- ① 量化股票：主领域 -->
       <a class="dm" href="/quant">
         <div class="head">
@@ -192,6 +210,24 @@
           <span class="enter">进入专项 →</span>
         </div>
       </a>
+
+      <!-- ①b 板块强弱对照（D2 第 11 领域卡 · strong 产线） -->
+<a class="dm" href="/strong.html">
+  <div class="head">
+    <div class="ic">📊</div>
+    <div><div class="t">板块强弱对照</div><div class="s">strong 领涨识别 · D2 第 11 卡</div></div>
+  </div>
+  <div class="desc">强弱两只眼：weak 找弱势立案、strong 找领涨确认，板块轮动从名单迁移浮现。</div>
+  <div class="ms">
+    <span>超额阈值 <b>+10pp</b></span>
+    <span>板块门槛 <b>≥5 只</b></span>
+    <span>领涨 <b id="s-strong">—</b></span>
+  </div>
+  <div class="foot">
+    <span class="st"><span class="dot" id="s-dot"></span><span id="s-note">数据源 reports</span></span>
+    <span class="enter">进入专项 →</span>
+  </div>
+</a>
 
       <!-- ② 情报中枢 -->
       <a class="dm" href="/intel">
@@ -228,20 +264,19 @@
         </div>
       </a>
 
-      <!-- ④ 开发者：预留领域 -->
-      <a class="dm soon" href="/dev">
+      <!-- ④ 开发者：基建状态板已上线（D4） -->
+      <a class="dm" href="/dev.html">
         <div class="head">
           <div class="ic">💻</div>
-          <div><div class="t">开发者 <span class="tag-soon">规划中</span></div><div class="s">敲代码 · 工程 · 自动化</div></div>
+          <div><div class="t">开发者 <span class="tag-soon">状态板已上线</span></div><div class="s">敲代码 · 工程 · 自动化</div></div>
         </div>
-        <div class="desc">为「敲代码」预留的领域位：脚本工厂、Copilot 工作台、工程看板——OS 扩展就从这里长出来。</div>
+        <div class="desc">基建状态板：服务探活、容器、计划任务面与每日体检问题清单——像盯盘一样盯工程。脚本工厂、Copilot 工作台规划中。</div>
         <div class="ms">
-          <span>Dify <b id="d-dify">—</b></span>
-          <span>WebUI <b id="d-webui">—</b></span>
+          <span>体检 <b id="d-health">—</b></span>
         </div>
         <div class="foot">
-          <span class="st"><span class="dot unknown"></span><span>基建已在线</span></span>
-          <span class="enter">查看规划 →</span>
+          <span class="st"><span class="dot" id="d-hdot"></span><span id="d-hnote">连接中…</span></span>
+          <span class="enter">查看状态板 →</span>
         </div>
       </a>
 
@@ -264,7 +299,7 @@
       </a>
 
       <!-- ⑥ 更多领域：预留 -->
-      <a class="dm soon" href="/dev#more">
+      <a class="dm soon" href="/dev.html#more">
         <div class="head">
           <div class="ic">➕</div>
           <div><div class="t">更多领域 <span class="tag-soon">预留位</span></div><div class="s">整其他的部分</div></div>
@@ -373,19 +408,52 @@
   loadOverview();
   setInterval(loadOverview, 30000);
 
-  // ── 开发卡探活（Dify / WebUI）──
-  async function probe(key, url) {
+  // ── 开发卡：每日体检快照驱动（D4 基建状态板）──
+  async function loadDevHealth() {
+    const note = document.getElementById('d-hnote'), dot = document.getElementById('d-hdot'),
+          tsEl = document.getElementById('d-health');
     try {
       const ctl = new AbortController();
-      const t = setTimeout(() => ctl.abort(), 6000);
-      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
-      clearTimeout(t);
-      document.getElementById(key).textContent = (r.status !== 502 && r.status !== 504) ? '在线' : '离线';
-    } catch { document.getElementById(key).textContent = '离线'; }
+      setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch('/data/health.json?ts=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const h = await r.json();
+      if (tsEl) tsEl.textContent = String(h.ts || '—').slice(5, 10);
+      const iss = (h.issues || []).length, svcs = h.services || {};
+      const down = Object.values(svcs).filter(v => !v).length;
+      if (note) note.textContent = down ? (down + ' 服务异常') : (iss ? (iss + ' 项待办') : '全绿');
+      if (dot) dot.className = 'dot' + (down ? ' off' : '');
+    } catch {
+      if (note) note.textContent = '体检数据未生成';
+      if (dot) dot.className = 'dot unknown';
+    }
   }
-  probe('d-dify', '/probe/dify');
-  probe('d-webui', '/probe/webui');
-  setInterval(() => { probe('d-dify', '/probe/dify'); probe('d-webui', '/probe/webui'); }, 30000);
+  loadDevHealth();
+  setInterval(loadDevHealth, 300000);
+
+  // ── strong 卡微指标（D2 第 11 卡，片段注释口径）──
+  async function loadStrong() {
+    const el = document.getElementById('s-strong'), dot = document.getElementById('s-dot'),
+          note = document.getElementById('s-note');
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch('/data/strong_latest.json?ts=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const h = await r.json();
+      const items = h.items || h.list || [];
+      const lead = items.filter(x => x.tag === '板块领涨').length;
+      if (el) el.textContent = lead ? (lead + ' 只') : '0';
+      if (dot) dot.className = 'dot';
+      if (note) note.textContent = '体检 ' + String(h.date || h.ts || '').slice(4, 6) + '/' + String(h.date || '').slice(6, 8);
+    } catch {
+      if (el) el.textContent = '—';
+      if (dot) dot.className = 'dot unknown';
+      if (note) note.textContent = '数据未生成';
+    }
+  }
+  loadStrong();
+  setInterval(loadStrong, 300000);
 
   // Ollama 模型计数
   async function countModels() {

@@ -14,6 +14,8 @@ import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 
+from news_time import parse_full_time, parse_news_time
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -35,25 +37,33 @@ C_BULL, C_BEAR, C_NEUT, C_GRID = "#3fb950", "#f85149", "#8b949e", "#e3e5e8"
 
 def load(hours=24 * 7):
     db = sqlite3.connect(DB)
-    rows = db.execute(
-        "SELECT ts, title, jev, source FROM news WHERE jev IS NOT NULL "
-        "AND jev!='' ORDER BY ts DESC LIMIT 3000").fetchall()
-    db.close()
+    try:
+        rows = db.execute(
+            "SELECT ts, title, jev, source, created_at FROM news WHERE jev IS NOT NULL "
+            "AND jev!=''").fetchall()
+    finally:
+        db.close()
     now = datetime.now(CST)
     out = []
-    for ts, title, jev, source in rows:
+    for ts, title, jev, source, created_at in rows:
         try:
             j = json.loads(jev)
-            t = datetime.strptime(ts, "%Y-%m-%d %H:%M").replace(tzinfo=CST)
+            t = parse_full_time(created_at)
+            event_t = parse_news_time(ts, reference=created_at, source=source)
+            if t is None or event_t is None or not isinstance(j, dict):
+                continue
+            conf = float(j.get("conf") or 0)
         except Exception:
             continue  # 豁免（C2批2）：jev/时间戳坏行跳过，正常容错
-        if now - t > timedelta(hours=hours):
+        if not timedelta(0) <= now - t <= timedelta(hours=hours):
             continue
-        out.append({"t": t, "title": title or "", "bias": j.get("bias", "?"),
-                    "conf": float(j.get("conf") or 0),
+        out.append({"t": t, "event_t": event_t, "available_t": t,
+                    "title": title or "", "bias": j.get("bias", "?"),
+                    "conf": conf,
                     "scope": j.get("scope") or "?",
                     "reason": str(j.get("reason") or "")[:60],
                     "source": source or ""})
+    out.sort(key=lambda item: item["t"], reverse=True)
     return now, out
 
 

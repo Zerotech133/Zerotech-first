@@ -8,7 +8,7 @@
 
 自动探测（零迁移）：
 - layout 按文件名推断：part_NNNN→part、d_YYYYMMDD→by_date、
-  <code>_<YYYYMM>→by_code_month、其余→by_code
+  p_YYYYMMDD→by_period、<code>_<YYYYMM>→by_code_month、其余→by_code
 - schema 取首个 parquet 的列；done 取仓库 _manifest.json；新鲜度按布局算
 - priority/desc/date_col/code_col 特例用 TABLE_DEFS 声明，其余给默认
 
@@ -48,8 +48,10 @@ TABLE_DEFS = {
     "anns_d":          {"date_col": "ann_date", "freq": "D",
                         "desc": "公告（按日分片，tushare 兜底源）"},
     "trade_cal":       {"date_col": "cal_date", "code_col": None,
+                        "primary_key": ["exchange", "cal_date"],
                         "desc": "交易日历（SSE 全量）"},
-    "stock_basic":     {"desc": "A股基础信息（tushare）"},
+    "stock_basic":     {"primary_key": ["ts_code"],
+                        "desc": "A股基础信息（tushare）"},
     "stock_company":   {"code_col": "ts_code", "freq": "Q",
                         "desc": "A股上市公司详情（经营范围/高管/员工，图谱公司实体源）"},
     "income":          {"code_col": "ts_code", "date_col": "end_date", "freq": "Q",
@@ -98,13 +100,22 @@ TABLE_DEFS = {
     "npr":             {"date_col": "pubtime", "freq": "D",
                         "desc": "停复牌（tushare，事件驱动节奏）"},
     "research_report": {"desc": "研报（tushare 兜底源）"},
+    "top10_holders":   {"layout": "by_period", "date_col": "ann_date",
+                        "primary_key": ["ts_code", "ann_date", "end_date",
+                                        "holder_name", "holder_type"],
+                        "freq": "Q", "desc": "十大股东（报告期分片，公告日查询）"},
+    "top10_floatholders": {"layout": "by_period", "date_col": "ann_date",
+                          "primary_key": ["ts_code", "ann_date", "end_date",
+                                          "holder_name", "holder_type"],
+                          "freq": "Q", "desc": "十大流通股东（报告期分片）"},
     "top_list":        {"date_col": "trade_date", "freq": "D",
                         "desc": "龙虎榜每日明细（tushare 兜底源）"},
     "irm_qa_sh":       {"freq": "D", "desc": "互动易问答-沪（逐码）"},
     "irm_qa_sz":       {"freq": "D", "desc": "互动易问答-深（逐码）"},
     # ── tdx 仓（仅 desc；其余与 tdx_read 口径一致）──
     "ts_daily":        {"freq": "D", "desc": "A股日线行情（xtcloud，真源）"},
-    "ts_stock_basic":  {"desc": "A股基础信息（xtcloud，真源）"},
+    "ts_stock_basic":  {"primary_key": ["ts_code"],
+                        "desc": "A股基础信息（xtcloud，真源）"},
     "ts_daily_basic":  {"freq": "D", "desc": "A股每日指标（xtcloud）"},
     "ts_hk_daily":     {"freq": "D", "desc": "港股日线（xtcloud，真源）"},
     "ts_index_daily":  {"freq": "D", "desc": "指数日线（xtcloud）"},
@@ -125,12 +136,26 @@ TABLE_DEFS = {
                          "desc": "通达信板块日线"},
     "tdx_sector_def":  {"desc": "通达信板块定义"},
     "tdx_sector_member": {"desc": "通达信板块成分"},
-    "tdx_sector_min":  {"date_col": "trade_time", "freq": "1min",
+    "tdx_sector_min":  {"date_col": "trade_date", "code_col": "code",
+                        "primary_key": ["code", "trade_date", "trade_time"],
+                        "freq": "1min",
                         "desc": "通达信板块分钟线"},
+    "tdx_sector_min_tail": {"date_col": "trade_date", "code_col": "code",
+                            "primary_key": ["code", "trade_date", "trade_time"],
+                            "freq": "1min", "desc": "通达信板块分钟线增量尾部"},
     "us_legacy":       {"source": "legacy", "priority": 2, "deprecated": True,
                         "freq": "D", "manifest": None,
                         "desc": "旧美股日线（逐股单文件，待 us_daily 收口后废弃）"},
 }
+
+# 财报主键保留同报告期的报表类型及披露版本；不存在的列在扫描时剔除。
+for _tbl in ("income", "balancesheet", "cashflow", "fina_indicator"):
+    for _name in (_tbl, "ts_" + _tbl):
+        TABLE_DEFS.setdefault(_name, {})["primary_key"] = [
+            "ts_code", "end_date", "ann_date", "f_ann_date", "report_type",
+            "comp_type", "end_type", "update_flag"]
+for _tbl in ("anns_d", "research_report", "news", "major_news", "npr"):
+    TABLE_DEFS[_tbl]["primary_key"] = []
 
 # §5.3 逻辑别名（resolves 按真源优先级排序）
 ALIASES = {
@@ -140,6 +165,7 @@ ALIASES = {
                             "零重叠 concat，read() 按(code,date)去重"},
     "stock_basic": {"resolves": ["ts_stock_basic", "stock_basic"],
                     "primary": "ts_stock_basic",
+                    "merge_key": ["ts_code"],
                     "note": "xtcloud 优先，tushare 补深度"},
     "hk_daily":    {"resolves": ["ts_hk_daily"],
                     "note": "tushare hk_daily 未建仓，仅 xtcloud"},
@@ -148,9 +174,13 @@ ALIASES = {
                     "note": "tushare 收口前降级旧美股（done 联动自动切换）"},
     "notice":      {"resolves": ["stock_notice", "anns_d"],
                     "primary": "stock_notice",
+                    "merge_key": [],
+                    "merge_mode": "fallback",
                     "note": "公告：tdx 优先，tushare 补深度"},
     "report":      {"resolves": ["stock_report", "research_report"],
                     "primary": "stock_report",
+                    "merge_key": [],
+                    "merge_mode": "fallback",
                     "note": "研报：tdx 优先，tushare 补深度"},
     "news":        {"resolves": ["stock_news"],
                     "note": "JEV news.db 独立通道，读层 v1 未路由"},
@@ -161,12 +191,16 @@ ALIASES = {
     "margin":      {"resolves": ["ts_margin_detail"],
                     "note": "融资融券明细（xtcloud）"},
     "income":      {"resolves": ["income", "ts_income"],
+                    "merge_key": ["ts_code", "end_date"],
                     "note": "A股利润表：tushare 全字段优先，xtcloud 有限字段降级"},
     "balancesheet":{"resolves": ["balancesheet", "ts_balancesheet"],
+                    "merge_key": ["ts_code", "end_date"],
                     "note": "A股资产负债表：tushare 全字段优先，xtcloud 降级"},
     "cashflow":    {"resolves": ["cashflow", "ts_cashflow"],
+                    "merge_key": ["ts_code", "end_date"],
                     "note": "A股现金流量表：tushare 全字段优先，xtcloud 降级"},
     "fina_indicator":{"resolves": ["fina_indicator", "ts_fina_indicator"],
+                      "merge_key": ["ts_code", "end_date"],
                       "note": "A股财务指标：tushare 全字段优先，xtcloud 降级"},
 }
 
@@ -178,6 +212,9 @@ def _infer_layout(files):
     for f in files:
         if re.fullmatch(r"d_\d{8}\.parquet", f):
             return "by_date"
+    for f in files:
+        if re.fullmatch(r"p_\d{8}\.parquet", f):
+            return "by_period"
     for f in files:
         if re.search(r"_\d{6}\.parquet$", f):
             return "by_code_month"
@@ -311,8 +348,19 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     schema, freshness = [], None
     if files:
         try:
-            schema = list(pd.read_parquet(
-                os.path.join(store, files[0])).columns)
+            from pyarrow.parquet import ParquetFile
+            schema = ParquetFile(os.path.join(store, files[0])).schema_arrow.names
+            declared = set(d.get("primary_key") or [])
+            if declared - set(schema):
+                # 首分片可能缺明细身份列，仅扫 footer 补齐表级 schema。
+                for filename in files[1:]:
+                    try:
+                        names = ParquetFile(os.path.join(store, filename)).schema_arrow.names
+                    except Exception:
+                        continue
+                    schema.extend(c for c in names if c not in schema)
+                    if declared.issubset(schema):
+                        break
         except Exception:
             schema = []
     dcol, ccol = _dcol(tbl, layout), _ccol(tbl)
@@ -327,9 +375,11 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     freshness = _freshness(store, layout, dcol, files)
     ent = mf.get(tbl) or {}
     done = bool(ent.get("done")) if ent else bool(files)
+    primary_key = d.get("primary_key", [c for c in (ccol, dcol) if c])
     return {
         "source": source, "store": store.replace("\\", "/"), "layout": layout,
         "schema": schema, "date_col": dcol, "code_col": ccol,
+        "primary_key": [c for c in primary_key if c in schema],
         "freq": d.get("freq", "D"),
         "priority": d.get("priority", 1),
         "manifest": (None if d.get("manifest", "unset") is None
@@ -368,6 +418,7 @@ def _scan_sqlite(mf):
             "source": "xtcloud", "store": INFO_DB.replace("\\", "/"),
             "layout": "sqlite", "schema": [], "date_col": dcol[t],
             "code_col": "ts_code", "freq": "D", "priority": 1,
+            "primary_key": [],
             "manifest": WAREHOUSES[0][2].replace("\\", "/"),
             "freshness": fresh.get(t), "rows": ent.get("rows"),
             "files": 0, "done": bool(ent.get("done")),

@@ -6,7 +6,7 @@
     · table 可为物理表名或别名（data/catalog.json aliases）
     · 路由：别名 → 真源优先级候选 → 跳过未就绪 → 按 layout 分派读取
     · 归一：代码列→ts_code、日期列→YYYYMMDD（分钟表 trade_time 保留原样）
-    · 跨源合并按 (ts_code, date) 去重，priority 小者（真源）优先
+    · 跨源补齐缺键，优先源覆盖；物理表按 catalog primary_key 保留明细
   latest(table)  本地最新日期（新鲜度探测）
   ready(table)   别名/物理表是否至少一个候选可读
   columns(table) 归一化 schema
@@ -17,6 +17,7 @@
   by_code       <code>.parquet 逐文件（6 位前缀代码自动通配）
   by_code_month <code>_<YYYYMM>.parquet 按 codes×月份命中
   by_date       d_YYYYMMDD.parquet 按日分片
+  by_period     p_YYYYMMDD.parquet 按报告期分片，查询按数据日期列
   sqlite        tdx 信息库三表委托 tdx_read.read_info（参数化 SQL）
 
 done 纪律：manifest done=false 或缺失的表拒绝读（防读到不完整数据），
@@ -24,6 +25,7 @@ done 纪律：manifest done=false 或缺失的表拒绝读（防读到不完整�
 """
 import glob
 import json
+import logging
 import os
 import re
 import time
@@ -36,6 +38,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG = os.path.join(HERE, "data", "catalog.json")
 
 _cat_cache = {"mtime": None, "data": None}
+_LOG = logging.getLogger(__name__)
 
 
 def _catalog():
@@ -151,30 +154,88 @@ def _read_columns(e, fields):
     if not schema or not fields:
         return None
     key = {c for c in (e.get("code_col"), e.get("date_col")) if c}
+    key.update(e.get("primary_key") or [])
+    key.update(c for c in ("ts_code", "con_code", "code", "symbol") if c in schema)
     want = set(fields)
     keep = [c for c in schema if c in key or c in want]
+    # catalog 的抽样 schema 不应屏蔽后续分片新增的请求列。
+    keep.extend(c for c in fields if c not in keep)
+    keep.extend(c for c in key if c not in keep)
     return keep or None
 
 
-def _concat_pq(paths, cols=None):
-    """多文件合并读；列下推失败（schema 漂移/列缺失）自动回退全列读。
-    线程池并发（IO 密集，多码/多月回测场景提速明显）。"""
+def _parquet_filters(pf, dcol, ccol, start, end, codes):
+    """字符串日期/代码谓词下推；未知日期形态保守留给读后过滤。"""
+    import pyarrow as pa
+    schema = pf.schema_arrow
+    common = []
+    if dcol in schema.names and (start is not None or end is not None):
+        j = schema.names.index(dcol)
+        formats = set()
+        dtype = schema.field(dcol).type
+        if pa.types.is_string(dtype) or pa.types.is_large_string(dtype):
+            for i in range(pf.metadata.num_row_groups):
+                st = pf.metadata.row_group(i).column(j).statistics
+                if st is None or not st.has_min_max:
+                    formats.add(None)
+                    continue
+                for v in (st.min, st.max):
+                    v = str(v)
+                    formats.add("compact" if re.fullmatch(r"\d{8}", v) else
+                                "dashed" if re.match(r"^\d{4}-\d{2}-\d{2}(?:$|[ T])", v) else None)
+        if formats == {"compact"}:
+            if start is not None:
+                common.append((dcol, ">=", _norm_day(start)))
+            if end is not None:
+                common.append((dcol, "<=", _norm_day(end)))
+        elif formats == {"dashed"}:
+            from datetime import datetime, timedelta
+            if start is not None:
+                day = datetime.strptime(_norm_day(start), "%Y%m%d")
+                common.append((dcol, ">=", day.strftime("%Y-%m-%d")))
+            if end is not None:
+                day_after = datetime.strptime(_norm_day(end), "%Y%m%d") + timedelta(days=1)
+                common.append((dcol, "<", day_after.strftime("%Y-%m-%d")))
+    exact, prefix = _code_candidates(codes)
+    branches = []
+    # 与 tdx_read 的多代码列匹配保持一致（例如指数及其 con_code 成分）。
+    for col in dict.fromkeys((ccol, "ts_code", "con_code", "code", "symbol")):
+        if col not in schema.names:
+            continue
+        dtype = schema.field(col).type
+        if not (pa.types.is_string(dtype) or pa.types.is_large_string(dtype)):
+            continue
+        if exact:
+            branches.append(common + [(col, "in", [str(c) for c in exact])])
+        for c in prefix or []:
+            branches.append(common + [(col, ">=", c), (col, "<=", c + "~")])
+    if branches:
+        return branches
+    return common or None
+
+
+def _concat_pq(paths, cols=None, dcol=None, ccol=None, start=None, end=None, codes=None):
+    """多文件限列、限行读取；schema 漂移时仅选当前文件存在的请求列。"""
     if not paths:
         return pd.DataFrame()
 
-    def _one(p, c):
+    def _one(p):
         try:
-            return pd.read_parquet(p, columns=c)
+            from pyarrow.parquet import ParquetFile
+            pf = ParquetFile(p)
+            c = ([name for name in cols if name in pf.schema_arrow.names]
+                 if cols is not None else None)
+            filters = _parquet_filters(pf, dcol, ccol, start, end, codes)
+            try:
+                return pd.read_parquet(p, columns=c, filters=filters)
+            except Exception:
+                return pd.read_parquet(p, columns=c)
         except Exception:
             return None
 
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=8) as ex:
-        if cols:
-            dfl = list(ex.map(lambda p: _one(p, cols), paths))
-            if all(d is not None for d in dfl):
-                return pd.concat(dfl, ignore_index=True)
-        dfl = list(ex.map(lambda p: _one(p, None), paths))
+        dfl = list(ex.map(_one, dict.fromkeys(paths)))
     dfl = [d for d in dfl if d is not None]
     return pd.concat(dfl, ignore_index=True) if dfl else pd.DataFrame()
 
@@ -207,8 +268,9 @@ def _part_stats_days(p, dcol):
         return None
 
 
-def _read_part(store, dcol, ccol, start, end, codes, fields, cols=None):
-    parts = sorted(glob.glob(os.path.join(store, "part_*.parquet")))
+def _read_part(store, dcol, ccol, start, end, codes, fields, cols=None,
+               pattern="part_*.parquet"):
+    parts = sorted(glob.glob(os.path.join(store, pattern)))
     if not parts:
         return pd.DataFrame()
     # 分片剪枝：row-group 统计零数据读；任一分片统计缺失则放弃剪枝全读
@@ -227,14 +289,13 @@ def _read_part(store, dcol, ccol, start, end, codes, fields, cols=None):
             if e0 and mn > e0:
                 continue
             kept.append(p)
-        if kept:
-            parts = kept
-    df = _concat_pq(parts, cols)
+        parts = kept
+    df = _concat_pq(parts, cols, dcol, ccol, start, end, codes)
     if dcol and dcol in df.columns and (start is not None or end is not None):
-        s = df[dcol].astype(str).str[:8]
+        s = df[dcol].astype(str).str[:10].str.replace("-", "", regex=False).str[:8]
         if start is not None:
             df = df[s >= _norm_day(start)]
-            s = df[dcol].astype(str).str[:8]
+            s = df[dcol].astype(str).str[:10].str.replace("-", "", regex=False).str[:8]
         if end is not None:
             df = df[s <= _norm_day(end)]
     df = tdxr._apply_code_filter(df, None, codes)
@@ -244,6 +305,16 @@ def _read_part(store, dcol, ccol, start, end, codes, fields, cols=None):
     return df.reset_index(drop=True)
 
 
+def _read_by_period(store, dcol, ccol, start, end, codes, fields, cols=None):
+    # 文件名是报告期，不能按公告日请求直接裁剪文件名。
+    return _read_part(store, dcol, ccol, start, end, codes, fields, cols,
+                      pattern="p_*.parquet")
+
+
+def _filename_code(code):
+    return str(code).replace(".", "_").replace("/", "_")
+
+
 def _read_by_code(store, dcol, ccol, start, end, codes, fields, cols=None):
     exact, prefix = _code_candidates(codes)
     if exact is None and prefix is None:
@@ -251,27 +322,24 @@ def _read_by_code(store, dcol, ccol, start, end, codes, fields, cols=None):
     else:
         files = []
         for c in exact or []:
-            f = os.path.join(store, "%s.parquet" % c)
-            if not os.path.exists(f) and "/" in c:
-                # crypto 等代码含 /：文件名用 _ 替代（BTC/USDT→BTC_USDT）
-                alt = os.path.join(store, "%s.parquet" % c.replace("/", "_"))
-                if os.path.exists(alt):
-                    f = alt
-            if os.path.exists(f):
-                files.append(f)
+            for stem in dict.fromkeys((str(c), _filename_code(c))):
+                f = os.path.join(store, "%s.parquet" % stem)
+                if os.path.exists(f):
+                    files.append(f)
         for c in prefix or []:
             files.extend(sorted(glob.glob(
                 os.path.join(store, "%s*.parquet" % c))))
     if not files:
         return pd.DataFrame()
-    df = _concat_pq(files, cols)
+    df = _concat_pq(files, cols, dcol, ccol, start, end, codes)
     if dcol and dcol in df.columns and (start is not None or end is not None):
-        s = df[dcol].astype(str).str[:8]
+        s = df[dcol].astype(str).str[:10].str.replace("-", "", regex=False).str[:8]
         if start is not None:
             df = df[s >= _norm_day(start)]
-            s = df[dcol].astype(str).str[:8]
+            s = df[dcol].astype(str).str[:10].str.replace("-", "", regex=False).str[:8]
         if end is not None:
             df = df[s <= _norm_day(end)]
+    df = tdxr._apply_code_filter(df, None, codes)
     df = _pick_fields(df, fields, ccol, dcol)
     if dcol and dcol in df.columns:
         df = df.sort_values(dcol)
@@ -323,7 +391,7 @@ def _read_by_code_month(store, dcol, ccol, start, end, codes, fields, cols=None)
                 files.extend(sorted(glob.glob(
                     os.path.join(store, "%s_*.parquet" % c))))
         for c in exact or []:
-            st = str(c).replace(".", "_")
+            st = _filename_code(c)
             if months:
                 for ym in months:
                     f = os.path.join(store, "%s_%s.parquet" % (st, ym))
@@ -334,7 +402,7 @@ def _read_by_code_month(store, dcol, ccol, start, end, codes, fields, cols=None)
                     os.path.join(store, "%s_??????.parquet" % st))))
     if not files:
         return pd.DataFrame()
-    df = _concat_pq(files, cols)
+    df = _concat_pq(files, cols, dcol, ccol, start, end, codes)
     if dcol and dcol in df.columns and (start is not None or end is not None):
         s = df[dcol].astype(str).str[:10].str.replace("-", "", regex=False)
         s = s.str[:8]
@@ -344,6 +412,7 @@ def _read_by_code_month(store, dcol, ccol, start, end, codes, fields, cols=None)
             s = s.str[:8]
         if end is not None:
             df = df[s <= _norm_day(end)]
+    df = tdxr._apply_code_filter(df, None, codes)
     df = _pick_fields(df, fields, ccol, dcol)
     if dcol and dcol in df.columns:
         df = df.sort_values(dcol)
@@ -365,7 +434,7 @@ def _read_by_date(store, dcol, ccol, start, end, codes, fields, cols=None):
         files.append(f)
     if not files:
         return pd.DataFrame()
-    df = _concat_pq(files, cols)
+    df = _concat_pq(files, cols, dcol, ccol, start, end, codes)
     df = tdxr._apply_code_filter(df, None, codes)
     return _pick_fields(df, fields, ccol, dcol)
 
@@ -377,7 +446,8 @@ def _read_sqlite(tbl, start, end, codes, limit):
 
 
 _READERS = {"part": _read_part, "by_code": _read_by_code,
-            "by_code_month": _read_by_code_month, "by_date": _read_by_date}
+            "by_code_month": _read_by_code_month, "by_date": _read_by_date,
+            "by_period": _read_by_period}
 
 
 def _read_one(tbl, start, end, codes, fields, limit):
@@ -387,12 +457,16 @@ def _read_one(tbl, start, end, codes, fields, limit):
     fn = _READERS.get(e.get("layout"))
     if fn is None:
         return pd.DataFrame()
+    if fields:
+        filter_cols = [c for c in ("ts_code", "con_code", "code", "symbol")
+                       if c in (e.get("schema") or [])]
+        fields = list(dict.fromkeys(list(fields) + (e.get("primary_key") or []) + filter_cols))
     return fn(e.get("store"), e.get("date_col"), e.get("code_col"),
               start, end, codes, fields, _read_columns(e, fields))
 
 
 def _normalize(df, entries):
-    """代码列→ts_code；日期列→YYYYMMDD（trade_time 保留）；按 (code,date) 去重。"""
+    """代码和日期归一；明细按声明主键去重，空主键表示保留事件行。"""
     if df is None or df.empty:
         return pd.DataFrame()
     df = df.copy()
@@ -407,10 +481,19 @@ def _normalize(df, entries):
     dcol = next((e.get("date_col") for e in entries
                  if e.get("date_col") and e.get("date_col") in df.columns),
                 None)
-    key = [c for c in ("ts_code", dcol) if c and c in df.columns]
-    if key:
-        df = df.drop_duplicates(subset=key, keep="first")
+    e = entries[0] if entries else {}
+    declared = e.get("primary_key", [] if e.get("layout") == "sqlite" else None)
+    if declared is not None:
+        key = ["ts_code" if c == e.get("code_col") else c for c in declared]
+        # 明细身份列缺失时不能缩减成粗键，否则会静默吞行。
+        if any(c not in df.columns for c in key):
+            key = []
     else:
+        key = [c for c in ("ts_code", dcol) if c and c in df.columns]
+    if key:
+        complete = df[key].notna().all(axis=1)
+        df = df[~df.duplicated(subset=key, keep="first") | ~complete]
+    elif declared is None:
         df = df.drop_duplicates(keep="first")
     cols = ["ts_code"] + ([dcol] if dcol else []) + \
         [c for c in df.columns if c not in ("ts_code", dcol)]
@@ -420,22 +503,55 @@ def _normalize(df, entries):
 def read(table, start=None, end=None, codes=None, fields=None, limit=None):
     """统一读。table 可为物理表名或别名；空结果返回空 DataFrame。"""
     got, entries = [], []
+    alias = _catalog().get("aliases", {}).get(table) or {}
+    merge_key = alias.get("merge_key")
+    seen = None
     for t in _resolve(table):
         if not _ready_one(t):
             continue
         try:
-            df = _read_one(t, start, end, codes, fields, limit)
+            internal_fields = fields
+            if fields and merge_key:
+                internal_fields = list(dict.fromkeys(list(fields) + merge_key))
+            df = _read_one(t, start, end, codes, internal_fields, limit)
         except Exception:
             continue
         if df is not None and not df.empty:
+            entry = _catalog()["tables"][t]
+            df = _normalize(df, [entry])
+            if merge_key is None:
+                merge_key = entry.get("primary_key")
+                if merge_key is None:
+                    merge_key = [c for c in ("ts_code", entry.get("date_col")) if c]
+            if merge_key:
+                merge_key = ["ts_code" if c == entry.get("code_col") else c
+                             for c in merge_key]
+            if merge_key and all(c in df.columns for c in merge_key):
+                keys = pd.MultiIndex.from_frame(df[merge_key])
+                complete = df[merge_key].notna().all(axis=1)
+                if seen is not None:
+                    df = df[~keys.isin(seen) | ~complete]
+                complete_keys = keys[complete].unique()
+                seen = (complete_keys if seen is None else
+                        seen.union(complete_keys, sort=False))
+            elif merge_key:
+                _LOG.warning("跨源合并缺少主键列，保留原行：table=%s source=%s missing=%s",
+                             table, t, [c for c in merge_key if c not in df.columns])
+            if df.empty:
+                continue
             got.append(df)
-            entries.append(_catalog()["tables"][t])
-        if got:                                # 真源命中即止（不做全量合并扫盘）
-            break
+            entries.append(entry)
+            if alias.get("merge_mode") == "fallback":
+                break
     if not got:
         return pd.DataFrame()
     df = got[0] if len(got) == 1 else pd.concat(got, ignore_index=True)
-    out = _normalize(df, entries)
+    out = df
+    dcol = next((e.get("date_col") for e in entries
+                 if e.get("date_col") in out.columns), None)
+    if dcol:
+        out = out.sort_values(dcol, kind="stable")
+    out = _pick_fields(out, fields, "ts_code", dcol).reset_index(drop=True)
     if limit is not None and not out.empty:
         out = out.head(limit)
     return out
@@ -478,8 +594,9 @@ def _compute_latest(e):
                 return None
             df = pd.read_parquet(cand[0], columns=[dcol])
             return _d8(df[dcol]) if not df.empty else None
-        if layout in ("by_code", "part"):
-            pat = "part_*.parquet" if layout == "part" else "*.parquet"
+        if layout in ("by_code", "part", "by_period"):
+            pat = {"part": "part_*.parquet", "by_period": "p_*.parquet"}.get(
+                layout, "*.parquet")
             fs = glob.glob(os.path.join(store, pat))
             if not fs:
                 return None
