@@ -438,8 +438,10 @@ def main():
                 "⚖️ JEV 新闻判断图表 · 累计 %d 条 · 24h %d 条 · %s\n"
                 "（随晨报/复盘自动推送 · 不构成投资建议）"
                 % (len(items), day_n, now.strftime("%m-%d %H:%M")))
-    except Exception:
-        pass  # 留待批3（C2批2）：企微渠道异常；本模块 Popen 分离运行无落盘通道，需先建 logger
+    except Exception as e:
+        # C2批3: 接 print 观测通道（news_ai Popen 已重定向本模块 stdout 落盘）；
+        # send_wecom 内部已自捕获并 print WECOM_FAIL/WECOM_SKIP，此处只兜 import 失败等编程错误
+        print("JEV_CHART wecom ERR %s" % str(e)[:100])
     print("JEV_CHART pushed" if ok else "JEV_CHART PUSH_FAIL")
 
 

@@ -725,10 +725,14 @@ def run(mode, dry):
         except Exception as e:
             log("doc_board refresh ERR %s" % str(e)[:100])
         try:  # 外网图表卡（后台跑，不阻塞晨报链路）
+            # C2批3: 子进程 print 原先无通道全丢（含 JEV_CHART pushed/WECOM_FAIL），
+            # 统一重定向 C:\Temp\news_jev_chart_out.log（对齐 alert_push 等启动器惯例）
+            _jc_log = open(r"C:\Temp\news_jev_chart_out.log", "ab")
             subprocess.Popen(
                 [sys.executable,
                  os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               "news_jev_chart.py")],
+                stdout=_jc_log, stderr=subprocess.STDOUT,
                 creationflags=0x08000000)  # CREATE_NO_WINDOW
         except Exception as e:
             log("news_jev_chart 启动失败，本期图表不更新: %s" % str(e)[:100])  # C2批2
