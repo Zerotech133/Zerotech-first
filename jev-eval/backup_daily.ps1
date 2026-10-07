@@ -1,7 +1,8 @@
 # =====================================================================
 # backup_daily.ps1 - AI workstation daily backup (hardened)
 # 4 postgres dumps + 8 archives, gzip verify, AES-256-CBC+HMAC-SHA256
-# encryption of sensitive dumps, mirror to D:\backups_mirror, 14d retention.
+# encryption of sensitive dumps, mirror to D:\backups_mirror, keep-4
+# retention (OPS-1008, count-based; see section 5).
 # OPS-0930d: added quant_data.tar.gz (quant knowledge state assets) and
 # neo4j_kg.tar.gz (neo4j-kg graph volume). Raw vendor dirs stay excluded.
 # OPS-1001: added quant_code.tar.gz (workspace code tree, whitelist).
@@ -21,7 +22,7 @@ $BackupRoot  = Join-Path $BaseDir "backups"
 $MirrorRoot  = "D:\backups_mirror"
 # quant source tree root on D: (Chinese dir name via char codes)
 $QuantSrc    = "D:\" + [char]0x7F20 + [char]0x8BBA + [char]0x9009 + [char]0x80A1 + "+" + [char]0x76EF + [char]0x76D8
-$KeepDays    = 14
+$KeepCount   = 4
 $AesKeyFile  = Join-Path $env:USERPROFILE ".backup_aes_key"
 $EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","webui_data.tar.gz")
 # OPS-1007: dify stack decommissioned (containers removed) - drop dify_db
@@ -284,17 +285,19 @@ try {
     LogFail "MIRROR"
 }
 
-# ---------------- 5. retention: prune older than KeepDays ----------------
+# ---------------- 5. retention: keep newest KeepCount backup sets ----------------
+# OPS-1008: age-based 14d prune let backup sets pile up (~35GB) because
+# burst manual runs create 3-4 same-day sets. Count-based cap bounds total
+# size regardless of run frequency: sort by stamp desc, keep first N.
+$KeepCount2 = $KeepCount
 foreach ($root in @($BackupRoot, $MirrorRoot)) {
     if (-not (Test-Path $root)) { continue }
-    foreach ($d in @(Get-ChildItem $root -Directory)) {
-        if ($d.Name -match '^(\d{4})-(\d{2})-(\d{2})_') {
-            $day = Get-Date $d.Name.Substring(0, 10)
-            if (((Get-Date) - $day).TotalDays -gt $KeepDays) {
-                Remove-Item $d.FullName -Recurse -Force
-                Log ("PRUNE " + $root + "\" + $d.Name)
-            }
-        }
+    $sets = @(Get-ChildItem $root -Directory |
+        Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}_' } |
+        Sort-Object Name -Descending)
+    foreach ($d in ($sets | Select-Object -Skip $KeepCount2)) {
+        Remove-Item $d.FullName -Recurse -Force
+        Log ("PRUNE " + $root + "\" + $d.Name)
     }
 }
 
