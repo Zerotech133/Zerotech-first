@@ -3,6 +3,7 @@
 import argparse
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 from pathlib import Path
 
@@ -193,6 +194,65 @@ def _probes(reader, metrics):
         execute("query_" + table, query)
 
 
+def _stock_list_dates(root):
+    dates, sources, invalid = {}, [], 0
+    for path in _parts(root, "tushare", "stock_basic") + _parts(root, "tdx", "ts_stock_basic"):
+        sources.append({"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
+        for frame in _frames([path], ["ts_code", "list_date"]):
+            if not {"ts_code", "list_date"}.issubset(frame.columns):
+                continue
+            for code, raw in frame[["ts_code", "list_date"]].itertuples(index=False, name=None):
+                if pd.isna(code) or pd.isna(raw):
+                    continue
+                value = str(raw).strip()
+                normalized = None
+                for fmt in ("%Y%m%d", "%Y-%m-%d"):
+                    try:
+                        parsed = datetime.strptime(value, fmt)
+                        if parsed.strftime(fmt) == value:
+                            normalized = parsed.strftime("%Y%m%d")
+                            break
+                    except ValueError:
+                        pass
+                if normalized is None:
+                    invalid += 1
+                    continue
+                code = str(code)
+                dates[code] = min(dates.get(code, normalized), normalized)
+    return dates, sources, invalid
+
+
+def _margin_coverage(root, keys, counts, recent, latest):
+    reference_day = max(recent, key=lambda day: (len(keys.get(day, set())), day)) if recent else None
+    reference = keys.get(reference_day, set())
+    listed, sources, invalid = _stock_list_dates(root)
+    coverage, violations = {}, []
+    for day in recent:
+        actual = keys.get(day, set())
+        raw_missing = reference - actual
+        excluded = sorted(code for code in raw_missing if code in listed and day < listed[code])
+        missing = sorted(raw_missing - set(excluded))
+        prelisting_present = sorted(code for code in actual if code in listed and day < listed[code])
+        violations.extend({"ts_code": code, "trade_date": day, "list_date": listed[code]} for code in prelisting_present)
+        coverage[day] = {"rows": counts.get(day, 0), "unique_codes": len(actual),
+            "reference_unique_codes": len(reference), "raw_count": max(0, len(reference) - len(actual)),
+            "raw_set": len(raw_missing), "prelisting_excluded_count": len(excluded), "missing_count": len(missing),
+            "raw_missing": sorted(raw_missing), "historical_extra": sorted(actual - reference),
+            "prelisting_excluded": [{"ts_code": code, "list_date": listed[code]} for code in excluded],
+            "unknown_list_date_missing": sorted(code for code in raw_missing if code not in listed),
+            "missing": missing, "prelisting_present": prelisting_present}
+    total = sum(row["missing_count"] for row in coverage.values())
+    coverage["_summary"] = {"value_unit": "近期参考集合排除已证上市前日期后的缺键总数",
+        "reference_date": reference_day, "reference_unique_codes": len(reference),
+        "latest_unique_codes": len(keys.get(latest, set())), "latest_missing_count": coverage.get(latest, {}).get("missing_count", 0),
+        "raw_count": sum(row["raw_count"] for row in coverage.values()),
+        "raw_set": sum(row["raw_set"] for row in coverage.values()),
+        "prelisting_excluded_count": sum(row["prelisting_excluded_count"] for row in coverage.values()),
+        "prelisting_present": violations, "list_date_sources": sources, "invalid_list_date_rows": invalid,
+        "policy": "近期最大股票集合；平手取最新日；仅有效最早上市日期晚于目标日可排除；未知不豁免；任何未解释缺键或上市前记录均FAIL"}
+    return coverage, total, bool(total or violations or not reference)
+
+
 def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
     root = Path(data_root or HERE / "data")
     now = datetime.now(timezone(timedelta(hours=8)))
@@ -234,7 +294,11 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
                                     "reference_unique_codes": base,
                                     "latest_unique_codes": len(keys.get(latest, set())),
                                     "latest_missing_count": max(0, base - len(keys.get(latest, set())))}
-            _metric(metrics, name + "_daily_coverage", "FAIL" if bad or not base else "OK", missing_count, coverage)
+            if name == "ts_margin_detail":
+                coverage, missing_count, failed = _margin_coverage(root, keys, counts, recent, latest)
+            else:
+                failed = bool(bad or not base)
+            _metric(metrics, name + "_daily_coverage", "FAIL" if failed else "OK", missing_count, coverage)
         except Exception as exc:
             _metric(metrics, name + "_scan", "FAIL", 0, {"error": str(exc)})
     if "ts_daily" in tables and "ts_daily_basic" in tables:

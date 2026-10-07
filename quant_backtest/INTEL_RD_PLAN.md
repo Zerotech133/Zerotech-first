@@ -5965,6 +5965,18 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **修复**：对齐重切 part1=10152 / part2=10148（cut=ceil(len/2/4)×4），回读断言非空 + **逐段独立解码**验证（d1=7614+d2=7609=15223）后 03:12:49 重触发。**全链绿：P0-P4 全过 → `2026-10-08_0312` DONE failed=0（昨 2→0，两库容器重启生效）**，10 产物齐全（quant_src 665.8MB / zhice 405.3MB / neo4j_kg 274.6MB / webui 207.3MB enc / quant_data 211.5MB 含 k266_docs），D 盘镜像 10 文件同步，零 FAIL 零 ALERT。
 - **教训（system-task-deploy 工具级）**：双 part 切分必须 4 字符对齐（`[Math]::Ceiling(len/2/4.0)*4`），部署后回读须**逐段独立解码断言**（拼接解码通过 ≠ 逐段通过——本次正是漏网口径）；0048 手动验证走的是 ps1 直跑未过任务 action 解码层，故未提前暴露。
 
+### K266 补记八（10-08 早，巡检三战果：X3 血缘静默断链修复 + 门户 kill 窗口 + 盘前假期空数据）
+- **X3 血缘登记静默全断（主战果，已修）**：巡检发现 `lineage.job_run` 表 **0 行**——linreg.py `_get_conn` 密码仅从 LINEAGE_PASSWORD env 取、计划任务无此 env → 7 个 kg_* 任务 connect 全静默失败（best-effort 设计掩盖断链，err 日志只在 5:39 手动测试时才首现）。另发现 7 处 `linreg.JobRun(...).__enter__()` 裸开不配对（永不收尾/连接泄漏）。**修复（linreg.py 单文件）**：① 密码兜底 `os.environ.get("LINEAGE_PASSWORD", "quant_password_123")`（沿 xmap_sync 产线同款口径）② `__exit__` 重构为幂等 `_finish(status)` + 公开 `finish()` 方法 + `__del__` 兜底（裸 enter 引用消失时诚实记 `lost`，rows_written 保留）。三路径实测落库：with→ok / 裸enter→lost / 无env→通。测试行已清，表归 0 待产线自然登记。**遗留观察**：7 处裸 enter 后续逐步补显式 finish()（lost 状态可识别）；E:\ 与 C:\aios 确认同目录（junction，hardlink list 单条+同 mtime+err 日志共享写入实证）。
+- **门户 API 6:05-6:12 死亡窗口（已自愈，观察项）**：任务 rc=0x800700E0（操作中止）——start_portal_api.ps1 K234 幂等锁防并发但不防「health 探测失败+任务实例被中止」组合：6:05 触发 → health catch → 杀旧（01:13 起实例）→ 任务实例被中止未起新 → 502 七分钟 → 6:12 下周期拉起自愈（PID 7984，health 200 实证）。K234 锁的 kill 分支需原子化（先起新再杀旧，或 kill 前 double-check）——暂观察，复发再修。
+- **AI盘前分析 rc=1（10-07 14:30，假期空数据，自愈型）**：WeeklyTrigger 周三 14:30 命中国庆假期 → tushare 行情空 → `iloc[-1]`（premarket.py L176 无交易日守卫）IndexError。今日 14:30 交易日将正常跑，不修（若要消误报可加空数据 exit 0 守卫）。
+- **NoticeBackfill 06:05 手动版**：exit=0、待判 0（已判 17347 跳过）、回填 0、fail=0——幂等行为与 05:44 首跑一致；06:45 调度版守望中。
+
+### K266 补记七（10-08 早，金标集 30 篇人审完成：AI 精审预填 29/30 一致）
+- **流程**：AI（claude 逐篇细读正文前 2300 字）独立判定 → 填 `gold_direction/gold_comment/gold_model=claude-ai-review/gold_vs_shadow` → 与 9b 影子判定对比。素材 `C:\Temp\gold_review_30.txt`（拼装脚本 gold_review_build.py），写回 gold_fill.py 原子覆盖。
+- **结果**：**一致 29/30 = 96.7%（门闸 ≥85% 远超）**；金标分布利好 12/中性 17/利空 1（影子利好 13/中性 16/利空 1）。**分歧唯一 1 篇：#29 海南省货物贸易监测（de2a56bb0573f）**——影子以「出口 +98.6% 数据亮眼」判利好，AI 判中性：与 #13 云南/#18 畜禽/#24 水产/#28 无人机同为对外经贸大学监测月报（影子全判中性），纯数据披露无评级无标的，数据增长是事实描述非事件驱动；**按「监测类统一中性」口径待用户终审**。
+- **口径备注（金标 comment 内已注明）**：#11 维信诺收购摘要按「国资+团队收购强化控制权偏正面」判利好；#25 致远互联白皮书按「厂商产品推介偏正面」判利好；#01 影子 why 混入引用周报标题「存储」瑕疵但方向判定正确。
+- **用途达成**：金标 30 篇定稿（全量 `gold_confirmed_by=user-2026-10-08`；分歧篇 #29 用户终审判中性），改版/换模型跑一致率对照基线（≥85% 门闸校准）。
+
 ### K266 补记五（10-08 凌晨，三项拍板落地：M3-B 入图 + 金标集 + K260 收口）
 - **拍板执行**（2026-10-08 用户三项：M3 入图「先B后A」/ 建 30 篇金标集 / eval 接受剔除口径）。
 - **M3-B 入图完成**：`k266_m3b_ingest.py`（--dry 预览/幂等全量重算覆盖写，可随影子续跑重刷）——105 篇影子 companies×direction 聚合 → **202 Security 节点**挂 `doc_pos/doc_neg/doc_neu/doc_n/doc_last`（验证 pos=140 neg=3 neu=92）。映射三级（精确 name 196 / aliases 1 / CONTAINS 唯一 5）；未命中 138 为非 A 股实体（Meta/OpenAI/华为/研究院/城市/指数——研报产业链提及，本就不属 Security 体系，正常噪声）；歧义 4（如「中兴」→中兴通讯/中兴商业，跳过）。direction 归一：利好=pos/利空=neg/其余含「中性偏多」=neu（保守）。**已知噪声：篇级方向平摊给该篇全部 companies，非主主体被带方向——M3-A 篇级事件层再精化（文档量上千再启动）**。
@@ -5990,3 +6002,18 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **研报扩量 100 篇零失败**：`k266_seed_reports.py`（reportapi qType=1 beginTime=2026-09-20 拉列表 → curl_cffi 下 `pdf.dfcfw.com/pdf/H3_{infoCode}_1.pdf`，0.8s 节流）→ pending/rp_*.pdf 全量摄取；doc_texts 105 条（4 测试 + 100 研报 + clip），registry 105=105 双向零差零重。
 - **M3 结构化影子（已收官 105/105 ok 零 ERR）**：`k266_m3_structure.py`——schema：doc_type/companies/events 五元组(主体/客体/动作/方向/依据)/direction/direction_why/key_numbers/tags（词云词源）；qwen3.5:9b think:false，text[:6000] 截断。**根因战果：首轮 27 条 ERR（25.7%）非并发抢占，实为 ollama 默认 num_ctx=4096 被 6000 字 prompt 挤满、输出剩 ~76 token 撞 length 墙截断无闭合 JSON** → `options:{num_ctx:16384}` 一发全通（诊断法：看 done_reason=length + prompt_eval_count）。坑另两枚：①幂等 done 集含 ERR 行（重补须先删 raw_ok=False 行）②偶发空输出三重试（`"{" in last` 判据）。统计战果：研报 79/其他 22；中性 59·利好 44·利空 1；tags 575 词种 Top=行业周报8·大模型7；事件 188 条均值 1.8/篇；公司榜宁德时代7·天齐锂业5。验收工具 `k266_m3_report.py`（`--sample 10` 人审 seed=7，抽样方向判定人工核全对）。
 - **M4 词云三跳页面（已上线）**：`/kg/doc`（portal_api.py `_kg_doc_page`）——wordcloud base64 内嵌（simhei 880x420 autumn 暗底）+ 热词 chips + 文档卡片 + events ⤴ 画布；chips 附 ⤴ 图谱直达。**路由踩坑：/kg/csearch/ 是 JSON API 非画布、/kg/?kind=lookup 404（尾斜杠），正确画布入口 `/kg?q={w}`**，chips/events 两处跳转已统一修正。tags 聚合去空格归一化（"AI 算力"→"AI算力"）。坑：SYSTEM 服务进程看不到 %APPDATA% user-site 的 wordcloud（pip.ini 全局重定向 user-site）→ 手动拷贝包到 Python311 系统 site。
+
+### K266 收口（2026-10-08，老田指令确认）
+
+**里程碑 M1-M5 全过，项目收口**：
+
+| 里程碑 | 状态 | 关键数字 |
+|---|---|---|
+| M1 OCR 验收 | ✅ PASS（10-07 20:2x） | 9 样图 mean dice2=0.979（门槛 0.90），表格结构人工核过 |
+| M2 registry+三入口 | ✅ PASS（10-07 晚） | 5 场景端到端全绿，sha256 判重，`/kg/doc/upload` API 可用 |
+| M3 结构化 | ✅ B 落地（10-08 凌晨） | 105/105 影子零 ERR；M3-B 入图 202 Security 节点（pos=140 neg=3 neu=92） |
+| M4 词云三跳 | ✅ 上线（10-07 深夜） | `/kg/doc` 页面 + chips/events 图谱直达 |
+| M5 服务化 | ✅ 提前落地（10-07 晚） | k266_services.ps1 + 计划任务 K266-DocServices 每 5 分钟 |
+| 金标集 | ✅ 人审定稿（10-08 早） | AI 精审 29/30 一致=96.7%（门闸 ≥85% 远超）；分歧 1 篇待终审 |
+
+**挂账移交（不阻塞收口）**：① M3-A 篇级事件层（文档量上千再启动，噪声=篇级方向平摊）② 门户上传按钮 UI（API 已可用，页面待词云页增强时一并）③ clip_watch 常驻方式待定 ④ 补记四遗留：两库容器（quantdinger-db / newquantsystem_v2-postgres-1）重启与否待老田拍板。

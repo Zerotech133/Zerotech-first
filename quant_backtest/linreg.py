@@ -41,9 +41,9 @@ def _get_conn():
     dsn = os.environ.get("LINEAGE_DSN")
     if not dsn:
         dsn = _DEFAULT_DSN
-        pwd = os.environ.get("LINEAGE_PASSWORD")
-        if pwd:
-            dsn += " password=" + pwd
+        # 密码兜底沿 xmap_sync.py 产线同款口径（计划任务无 env 时静默断链修复）
+        dsn += " password=" + os.environ.get(
+            "LINEAGE_PASSWORD", "quant_password_123")
     return psycopg2.connect(dsn, connect_timeout=5)
 
 
@@ -106,18 +106,38 @@ class JobRun:
         return self
 
     def __exit__(self, et, ev, tb):
-        if self._conn:
-            status = "fail" if et else "ok"
-            self._silent("update_job_run", self._q,
-                "UPDATE lineage.job_run SET status=%s, ended_at=now(), "
-                "rows_written=%s, detail=COALESCE(%s, detail) WHERE id=%s",
-                (status, self.rows_written,
-                 json.dumps(self.detail, ensure_ascii=False) if self.detail else None,
-                 self.id),
-            )
-            self._silent("close", self._conn.close)
-            self._conn = None
+        self._finish("fail" if et else "ok")
         return False  # 永不吞业务异常
+
+    def finish(self, status="ok", rows_written=None, detail=None):
+        """显式收尾：裸 __enter__() 用法的调用方在函数末尾调用。"""
+        if rows_written is not None:
+            self.rows_written = rows_written
+        if detail is not None:
+            self.detail = detail
+        return self._finish(status)
+
+    def _finish(self, status):
+        """幂等收尾：update 状态 + 关连接（_conn 置 None 后重入直接返回）。"""
+        if not self._conn:
+            return None
+        self._silent("update_job_run", self._q,
+            "UPDATE lineage.job_run SET status=%s, ended_at=now(), "
+            "rows_written=%s, detail=COALESCE(%s, detail) WHERE id=%s",
+            (status, self.rows_written,
+             json.dumps(self.detail, ensure_ascii=False) if self.detail else None,
+             self.id),
+        )
+        self._silent("close", self._conn.close)
+        self._conn = None
+
+    def __del__(self):
+        # 兜底：7 个 kg_* 裸 __enter__() 不配对收尾，引用消失时诚实记 lost
+        try:
+            if self._conn:
+                self._finish("lost")
+        except Exception:
+            pass
 
     def _open(self):
         self._conn = _get_conn()

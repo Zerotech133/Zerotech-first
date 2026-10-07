@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 from datetime import datetime
 import data_integrity as integrity_module
+import pytest
 
 from data_integrity import scan_integrity
 
@@ -206,3 +207,78 @@ def test_intraday_checks_use_last_completed_session(tmp_path, monkeypatch):
     assert report["expected_latest"] == "20260930"
     Clock.hour = 10
     assert scan_integrity(tmp_path, today="20260930", run_probes=False)["expected_latest"] == "20260930"
+
+
+def test_margin_earliest_date_from_all_local_parts_and_roots(tmp_path):
+    put(tmp_path, "stock_basic", [{"ts_code": "NEW.SZ", "list_date": "20260929"}], "tushare")
+    path = tmp_path / "tushare/stock_basic/part_0001.parquet"
+    pd.DataFrame([{"ts_code": "NEW.SZ", "list_date": "20260928"}]).to_parquet(path, index=False)
+    put(tmp_path, "ts_stock_basic", [{"ts_code": "NEW.SZ", "list_date": "2026-09-24"}])
+    dates, sources, invalid = integrity_module._stock_list_dates(tmp_path)
+    assert dates == {"NEW.SZ": "20260924"}
+    assert len(sources) == 3 and invalid == 0
+    keys = {"20260924": {"OLD.SH"}, "20260929": {"OLD.SH", "NEW.SZ"}}
+    details, value, failed = integrity_module._margin_coverage(tmp_path, keys, {d: len(v) for d, v in keys.items()}, sorted(keys), "20260929")
+    assert failed and value == 1
+    assert details["20260924"]["missing"] == ["NEW.SZ"]
+
+
+@pytest.mark.parametrize("date", [None, "", "20260230", "20261301", "2026092", "unknown"])
+def test_margin_unknown_invalid_dates_cannot_exempt_missing(tmp_path, date):
+    put(tmp_path, "stock_basic", [{"ts_code": "NEW.SZ", "list_date": date}], "tushare")
+    keys = {"20260924": {"OLD.SH"}, "20260929": {"OLD.SH", "NEW.SZ"}}
+    details, value, failed = integrity_module._margin_coverage(tmp_path, keys, {d: len(v) for d, v in keys.items()}, sorted(keys), "20260929")
+    assert failed and value == 1
+    assert details["20260924"]["unknown_list_date_missing"] == ["NEW.SZ"]
+
+
+def test_margin_equal_counts_extra_cannot_hide_missing_and_latest_tie(tmp_path):
+    keys = {"20260924": {"OLD.SH", "EXTRA.SH"}, "20260929": {"OLD.SH", "NEW.SZ"}}
+    details, value, failed = integrity_module._margin_coverage(tmp_path, keys, {d: 2 for d in keys}, sorted(keys), "20260929")
+    assert value == 1 and failed
+    assert details["_summary"]["reference_date"] == "20260929"
+    assert details["_summary"]["raw_count"] == 0 and details["_summary"]["raw_set"] == 1
+    assert details["20260924"]["historical_extra"] == ["EXTRA.SH"]
+
+
+def test_margin_prelisting_present_fails_even_without_missing(tmp_path):
+    put(tmp_path, "stock_basic", [{"ts_code": "NEW.SZ", "list_date": "20260929"}], "tushare")
+    keys = {"20260924": {"NEW.SZ"}, "20260929": {"NEW.SZ"}}
+    details, value, failed = integrity_module._margin_coverage(tmp_path, keys, {d: 1 for d in keys}, sorted(keys), "20260929")
+    assert failed and value == 0
+    assert details["_summary"]["prelisting_present"] == [{"ts_code": "NEW.SZ", "trade_date": "20260924", "list_date": "20260929"}]
+
+
+def test_margin_prelisting_excluded_but_small_real_gap_still_fails(tmp_path):
+    fixture(tmp_path)
+    codes = {"C%03d.SH" % i for i in range(20)}
+    put(tmp_path, "ts_stock_basic", [{"ts_code": code, "list_date": "19900101"} for code in codes] +
+        [{"ts_code": "NEW.SZ", "list_date": "20260929"}])
+    days = ["20260924", "20260928", "20260929", "20260930"]
+    keys = {day: codes | ({"NEW.SZ"} if day >= "20260929" else set()) for day in days}
+    keys["20260930"] = keys["20260930"] - {"C000.SH"}
+    put(tmp_path, "ts_margin_detail", [{"ts_code": code, "trade_date": day, "rzye": 1., "rzrqye": 1.} for day, members in keys.items() for code in members])
+    entry = metric(scan_integrity(tmp_path, today="20261007", run_probes=False), "ts_margin_detail_daily_coverage")
+    assert entry["status"] == "FAIL" and entry["value"] == 1
+    assert entry["details"]["_summary"]["raw_set"] == 3
+    assert entry["details"]["_summary"]["prelisting_excluded_count"] == 2
+
+
+def test_verified_17_codes_158_prelisting_keys_use_only_project_stock_dates(tmp_path):
+    root = tmp_path
+    expected = {"301686.SZ": "20260922", "301689.SZ": "20260910", "301699.SZ": "20260909", "301716.SZ": "20260929",
+        "601091.SH": "20260917", "603448.SH": "20260907", "688801.SH": "20260911", "688837.SH": "20260916",
+        "920025.BJ": "20260923", "920071.BJ": "20260903", "920201.BJ": "20260924", "920202.BJ": "20260929",
+        "920229.BJ": "20260922", "920268.BJ": "20260909", "920269.BJ": "20260907", "920289.BJ": "20260904", "920298.BJ": "20260916"}
+    days = ["20260902", "20260903", "20260904", "20260907", "20260908", "20260909", "20260910", "20260911",
+        "20260914", "20260915", "20260916", "20260917", "20260918", "20260921", "20260922", "20260923", "20260924", "20260928", "20260929"]
+    rows = [{"ts_code": code, "list_date": listed} for code, listed in expected.items()]
+    put(root, "stock_basic", rows[:8], "tushare")
+    put(root, "ts_stock_basic", rows[8:])
+    dates, sources, _ = integrity_module._stock_list_dates(root)
+    assert {code: dates[code] for code in expected} == expected
+    keys = {day: {"OLD.SH"} | {code for code, listed in expected.items() if day >= listed} for day in days}
+    details, value, failed = integrity_module._margin_coverage(root, keys, {day: len(codes) for day, codes in keys.items()}, days, "20260929")
+    assert len(expected) == 17 and details["_summary"]["prelisting_excluded_count"] == 158
+    assert value == 0 and not failed
+    assert all(str(root) in row["path"] for row in sources)

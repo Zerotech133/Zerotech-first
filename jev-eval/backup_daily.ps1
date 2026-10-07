@@ -1,7 +1,5 @@
 # =====================================================================
 # backup_daily.ps1 - AI workstation daily backup (hardened)
-# v7 (OPS-1008b): quant_db.sql.gz added to encryption targets + plaintext
-# residue guard. See $EncryptTargets comment block below.
 # 4 postgres dumps + 8 archives, gzip verify, AES-256-CBC+HMAC-SHA256
 # encryption of sensitive dumps, mirror to D:\backups_mirror, keep-4
 # retention (OPS-1008, count-based; see section 5).
@@ -27,9 +25,6 @@ $QuantSrc    = "D:\" + [char]0x7F20 + [char]0x8BBA + [char]0x9009 + [char]0x80A1
 $KeepCount   = 4
 $AesKeyFile  = Join-Path $env:USERPROFILE ".backup_aes_key"
 $EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","quant_db.sql.gz","webui_data.tar.gz")
-# OPS-1008b (v7): quant_db.sql.gz was missing from $EncryptTargets, so it
-# was never encrypted and stayed as plaintext in the backup set + mirror.
-# Added to targets; plus a post-ENC plaintext-residue guard after the loop.
 # OPS-1007: dify stack decommissioned (containers removed) - drop dify_db
 # from encryption targets along with the 3 dify backup items below.
 
@@ -143,13 +138,23 @@ function Test-Gzip([string]$path) {
 
 # ---------------- docker stream -> file (binary safe) ----------------
 function Save-DockerStream([string]$container, [string]$shCmd, [string]$dest) {
+    # OPS-1010 root fix (v8): land dump INSIDE container, docker cp out.
+    # Old host-side stream wedged dead when docker.exe hung (OPS-1008 0037).
+    # playbook #3: docker exec exitcode unreliable - gate on dest file only.
     if (Test-Path $dest) { Remove-Item $dest -Force }
     $errF = Join-Path $env:TEMP "bk_stderr.txt"
-    $p = Start-Process -FilePath "docker" -ArgumentList @("exec", $container, "sh", "-c", ('"' + $shCmd + '"')) -RedirectStandardOutput $dest -RedirectStandardError $errF -WindowStyle Hidden -PassThru
+    $tmpCont = "/tmp/bk_" + $stamp + "_" + [IO.Path]::GetFileName($dest)
+    $p = Start-Process -FilePath "docker" -ArgumentList @("exec", $container, "sh", "-c", ('"' + $shCmd + " > " + $tmpCont + '"')) -RedirectStandardError $errF -WindowStyle Hidden -PassThru
     if (-not $p.WaitForExit(900000)) {
         try { $p.Kill() } catch {}
+        try { & docker exec $container rm -f $tmpCont 2>$null } catch {}
         return $false
     }
+    $p2 = Start-Process -FilePath "docker" -ArgumentList @("cp", ($container + ":" + $tmpCont), $dest) -RedirectStandardError $errF -WindowStyle Hidden -PassThru
+    $cpOk = $p2.WaitForExit(600000)
+    if (-not $cpOk) { try { $p2.Kill() } catch {} }
+    try { & docker exec $container rm -f $tmpCont 2>$null } catch {}
+    if (-not $cpOk) { return $false }
     if (-not (Test-Path $dest)) { return $false }
     return ((Get-Item $dest).Length -gt 0)
 }
@@ -279,7 +284,7 @@ foreach ($name in $EncryptTargets) {
     }
 }
 
-# ---------------- 3b. plaintext residue guard (OPS-1008b, v7) ----------------
+# ---------------- 3b. plaintext residue guard (OPS-1008b) ----------------
 # Any *.sql.gz left unencrypted after the ENC pass means a whitelist gap or
 # a failed ENC - count it as failure (alert fires, exit 1). Never auto-delete.
 $PlainLeft = @(Get-ChildItem $DayDir -Filter "*.sql.gz" -File -ErrorAction SilentlyContinue)
