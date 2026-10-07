@@ -33,11 +33,15 @@ END = "20240101"
 
 
 def _token():
+    # P0-4：优先环境变量 TUSHARE_TOKEN，读不到再落回 .env（兼容）。
+    tok = os.environ.get("TUSHARE_TOKEN", "").strip()
+    if tok:
+        return tok
     with open(ENV, encoding="utf-8") as f:
         for ln in f:
             if ln.startswith("TUSHARE_TOKEN="):
                 return ln.split("=", 1)[1].strip()
-    raise SystemExit("TUSHARE_TOKEN not found in %s" % ENV)
+    raise SystemExit("TUSHARE_TOKEN not found (env / %s)" % ENV)
 
 
 def ts_index_daily(code, start, end, retry=4):

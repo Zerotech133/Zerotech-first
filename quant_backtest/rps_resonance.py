@@ -188,6 +188,10 @@ def _bt_agg(sn):
 
 # ── tushare ────────────────────────────────────────────────
 def _token():
+    """P0-4：优先环境变量 TUSHARE_TOKEN，读不到再落回 QP_ENV .env（兼容）。"""
+    tok = os.environ.get("TUSHARE_TOKEN", "").strip()
+    if tok:
+        return tok
     try:
         with open(QP_ENV, encoding="utf-8") as f:
             for line in f:

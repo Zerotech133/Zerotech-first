@@ -36,7 +36,10 @@ COLS = ["trade_date", "open", "close", "high", "low", "vol", "amount"]
 
 
 def _token():
-    """从 .env 解析 TUSHARE_TOKEN（只读该变量，不做其他事）。"""
+    """P0-4：优先环境变量 TUSHARE_TOKEN，读不到再落回 .env（兼容，只读该变量）。"""
+    tok = os.environ.get("TUSHARE_TOKEN", "").strip()
+    if tok:
+        return tok
     try:
         with open(ENV_PATH, encoding="utf-8") as f:
             for ln in f:
