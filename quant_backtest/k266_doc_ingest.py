@@ -95,6 +95,8 @@ def process(path, src, tables=False):
     try:
         if ext == ".pdf":
             text, how = pdf_text(path)
+            # pypdf 偶发孤立代理对（数学字母区残半），落盘前清洗
+            text = text.encode("utf-8", "ignore").decode("utf-8")
         elif ext in IMG_EXT:
             text, how = ocr_image(path), "ocr"
         else:

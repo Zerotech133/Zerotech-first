@@ -19830,6 +19830,168 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
             "{nav}", pill_nav("kgcanvas"))
         self._html(body)
 
+    def _kg_doc_page(self, qs=None):
+        """K266 M4 文档智能中心：词云三跳（词→文档→事件→图谱实体）+ 上传入口。
+
+        URL：/kg/doc
+        数据：data/k266_docs/doc_texts.jsonl + structure_shadow.jsonl（M2/M3 产出）。
+        上传：POST /kg/doc/upload?name=xxx（M2 端点），落 inbox/pending 由
+              K266-DocServices 计划任务（5 分钟）自动摄取识别。
+        """
+        import base64 as _b64
+        import collections as _collections
+        _docs_dir = _os.path.join(_os.path.dirname(_os.path.dirname(
+            _os.path.abspath(__file__))), "quant_backtest", "data", "k266_docs")
+        _texts_fp = _os.path.join(_docs_dir, "doc_texts.jsonl")
+        _shadow_fp = _os.path.join(_docs_dir, "structure_shadow.jsonl")
+        texts, shadow = {}, {}
+        try:
+            with open(_texts_fp, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        r = json.loads(line)
+                        texts[r.get("doc_id")] = r
+                    except Exception:
+                        pass
+        except OSError:
+            pass
+        try:
+            with open(_shadow_fp, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        r = json.loads(line)
+                        shadow[r.get("doc_id")] = r
+                    except Exception:
+                        pass
+        except OSError:
+            pass
+        cards, freq = [], _collections.Counter()
+        for did, s in shadow.items():
+            if not s.get("raw_ok"):
+                continue
+            tags = [t for t in s.get("tags", []) if t]
+            freq.update(tags)
+            cards.append({
+                "id": did, "name": s.get("name", ""), "src": s.get("src", ""),
+                "type": s.get("doc_type", "其他"),
+                "dir": s.get("direction", "中性"),
+                "title": s.get("title_guess", "")[:40],
+                "why": s.get("direction_why", "")[:40],
+                "companies": s.get("companies", [])[:6],
+                "tags": tags, "events": s.get("events", [])[:5],
+                "chars": (texts.get(did) or {}).get("text_chars", 0),
+            })
+        cards.sort(key=lambda c: -c["chars"])
+        wc_b64 = ""
+        if freq:
+            try:
+                from wordcloud import WordCloud as _WC
+                img = _WC(font_path=r"C:\Windows\Fonts\simhei.ttf", width=880,
+                          height=420, background_color="#0d1117",
+                          colormap="autumn", max_words=120,
+                          prefer_horizontal=0.95).generate_from_frequencies(
+                              dict(freq)).to_image()
+                _buf = __import__("io").BytesIO()
+                img.save(_buf, format="PNG")
+                wc_b64 = _b64.b64encode(_buf.getvalue()).decode()
+            except Exception as _e:
+                pass
+        top_words = [w for w, _ in freq.most_common(40)]
+        import html as _html
+        chips_html = "".join(
+            "<span class='chip wc' data-w='%s' onclick=\"flt('%s')\">%s"
+            "<i>%d</i></span>"
+            % (_html.escape(w), _html.escape(w), _html.escape(w), freq[w])
+            for w in top_words)
+        wc_html = ("<img src='data:image/png;base64,%s' "
+                   "style='max-width:100%%;border-radius:8px'>" % wc_b64
+                   if wc_b64 else "<div class='empty'>词云待生成（尚无影子数据）</div>")
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>文档智能中心 · K266</title>{css}{nav}<style>
+.dc{max-width:1180px;margin:0 auto;padding:0 10px}
+.dgrid{display:grid;grid-template-columns:400px 1fr;gap:14px;margin-top:12px}
+@media(max-width:900px){.dgrid{grid-template-columns:1fr}}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px}
+.wchips{margin-top:10px;line-height:2.1}
+.chip.wc{cursor:pointer;background:#161b22;color:#e6edf3}
+.chip.wc i{font-style:normal;color:#8b949e;font-size:10.5px;margin-left:3px}
+.chip.wc.on{background:#1f3a1f;color:#7ee787}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;
+padding:10px 12px;margin-bottom:9px}
+.card .nm{color:#58a6ff;font-size:13px;word-break:break-all}
+.card .tg{color:#e6edf3;font-size:14px;font-weight:600;margin:4px 0}
+.meta{font-size:11.5px;color:#8b949e}
+.chip.b{background:#1f3a1f;color:#7ee787}.chip.s{background:#3a1f1f;color:#ffa198}
+.chip.n{background:#161b22;color:#8b949e;border:1px solid #30363d}
+.ev{font-size:12px;color:#c9d1d9;margin-top:5px;padding-left:8px;
+border-left:2px solid #30363d}
+.ev a{color:#d2a8ff;text-decoration:none}
+.upbar{display:flex;gap:10px;align-items:center;margin:12px 0}
+.upbar input[type=file]{display:none}
+.upbar button{background:#238636;border:none;color:#fff;border-radius:8px;
+padding:8px 16px;font-size:13px;cursor:pointer}
+.upbar button.alt{background:#30363d}
+#upmsg{font-size:12px;color:#8b949e}
+.empty{color:#8b949e;font-size:13px;padding:30px;text-align:center}
+h3{font-size:14px;color:#e6edf3;margin:2px 0 8px}
+</style></head><body><div class='dc'>
+<div class='upbar'>
+ <button onclick="document.getElementById('upf').click()">📤 上传公告/研报</button>
+ <input type='file' id='upf' accept='.png,.jpg,.jpeg,.pdf,.bmp,.webp' multiple>
+ <button class='alt' onclick="location.reload()">🔄 刷新</button>
+ <span id='upmsg'>支持 PNG/JPG/PDF 多选；识别约 1-5 分钟（K266-DocServices 自动摄取）</span>
+</div>
+<div class='dgrid'>
+ <div class='panel'><h3>热词词云（点击右侧词过滤文档）</h3>{wc}
+  <div class='wchips'>{chips}</div></div>
+ <div class='panel'><h3>文档影子 <span class='meta' id='cnt'></span></h3>
+  <div id='cards'></div></div>
+</div></div>
+<script>
+const DOCS = {docs_json};
+const box = document.getElementById('cards');
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function render(list){
+  document.getElementById('cnt').textContent = list.length + ' / ' + DOCS.length;
+  if (!list.length) {box.innerHTML = '<div class="empty">无匹配文档</div>'; return}
+  box.innerHTML = list.map(d => `
+    <div class='card'>
+      <div class='nm'>${esc(d.name)} <span class='meta'>${esc(d.src)} · ${d.chars}字</span></div>
+      <div class='tg'>${esc(d.title)}</div>
+      <span class='chip ${d.dir==='利好'?'b':d.dir==='利空'?'s':'n'}'>${esc(d.dir)}</span>
+      <span class='chip n'>${esc(d.type)}</span>
+      ${d.tags.map(t=>`<span class='chip n'>${esc(t)}</span>`).join(' ')}
+      ${d.events.map(e=>`<div class='ev'>${esc(e.subject||'')} <b>${esc(e.rel||'')}</b> ${esc(e.object||'')} ${e.amount? '['+esc(e.amount)+']':''} <a href="/kg/?kind=lookup&q=${encodeURIComponent(e.subject||e.object||'')}" target="_blank">⤴图谱</a></div>`).join('')}
+    </div>`).join('');
+}
+let cur = null;
+function flt(w){
+  if (cur === w) w = null;
+  cur = w;
+  document.querySelectorAll('.chip.wc').forEach(c=>c.classList.toggle('on', c.dataset.w===w));
+  render(w ? DOCS.filter(d=>d.tags.includes(w)) : DOCS);
+}
+document.getElementById('upf').onchange = async (e) => {
+  const msg = document.getElementById('upmsg');
+  for (const file of e.target.files) {
+    msg.textContent = '上传中: ' + file.name;
+    try {
+      const r = await fetch('/kg/doc/upload?name=' + encodeURIComponent(file.name),
+        {method:'POST', body: file});
+      const j = await r.json();
+      msg.textContent = (j.ok ? '✅ ' : '❌ ') + (j.saved || j.error || '');
+    } catch(err) { msg.textContent = '❌ ' + err }
+  }
+  e.target.value = '';
+}
+render(DOCS);
+</script></body></html>""".replace("{css}", self._KG_CSS).replace(
+            "{nav}", pill_nav("kgcanvas")).replace(
+            "{wc}", wc_html).replace("{chips}", chips_html).replace(
+            "{docs_json}", json.dumps(cards, ensure_ascii=False))
+        self._html(body)
+
     def _kg_battle_page(self):
         """K262 作战地图：个股事件·信号·资金·股价时序画布 + 批量体检。
 
@@ -20575,6 +20737,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/kg/battle":
             # K262 作战地图（时序画布+批量体检）
             self._kg_battle_page()
+        elif path == "/kg/doc":
+            # K266 M4 文档智能中心（词云三跳+上传）
+            self._kg_doc_page(qs)
         elif path == "/static/g6.min.js":
             # K234 G6 本地静态（零 CDN 依赖）
             import os as _os6
