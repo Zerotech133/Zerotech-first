@@ -92,7 +92,17 @@ def check_docker():
 
 # 0=成功 267009=0x41301运行中 267011=0x41303尚未跑 267014=0x41306被终止
 # 2147946720=0x800710E0 周期重入被拒（门户API常驻任务，无害）
-_BENIGN_RC = {0, 267009, 267011, 267014, 2147946720}
+# 2147943467=0x8007042B ERROR_PROCESS_ABORTED：A5 良性豁免——系统关机/重启时
+#   运行中的计划任务被被动终止留下的结果码，语义=「上次是被动终止」而非业务故障。
+#   定性依据：docs/runbooks/2026-10-07_subpusheod-rc1排查与处置.md §5——10-06 停机
+#   与 ChanlunRefill / RtdxRtMinPull / _sentinelEOD / _sentinelKgTdx / Git for
+#   Windows Updater 五任务同码时间吻合（含长时等待哨兵进程被杀）。豁免按 rc 码
+#   而非按任务名（Git Updater 等系统自带任务不宜点名）。
+_BENIGN_RC = {0, 267009, 267011, 267014, 2147946720, 2147943467}
+# A5: 命中后仍保留可见性的良性码子集——不进 bad、不触发 exit 1，
+# 但在 issues 记一条 [info] 级（区别于静默豁免的 0/0x41301 等）。
+_BENIGN_RC_INFO = {2147943467}
+_BENIGN_RC_INFO_NOTE = "关机被动终止(0x8007042B)，非业务故障，定性见 runbook 2026-10-07 §5"
 # 系统自带噪音任务（OneDrive 更新器等，与本站无关）
 _IGNORE_NAME = ("OneDrive",)
 
@@ -107,7 +117,7 @@ def check_tasks():
         lines = [l.strip() for l in (r.stdout or "").splitlines() if "|" in l]
     except Exception:
         return {"total": 0, "bad": [{"name": "查询失败", "rc": -1}]}
-    total, bad = 0, []
+    total, bad, benign = 0, [], []
     for line in lines:
         total += 1
         try:
@@ -124,7 +134,9 @@ def check_tasks():
             rc = "unknown"  # P1-4: 查询不到结果码显式标注 unknown，不按健康处理
         if rc == "unknown" or rc not in _BENIGN_RC:
             bad.append({"name": name.strip(), "rc": rc})
-    return {"total": total, "bad": bad}
+        elif rc in _BENIGN_RC_INFO:
+            benign.append({"name": name.strip(), "rc": rc})  # A5: 良性但保可见性
+    return {"total": total, "bad": bad, "benign": benign}
 
 
 def _rc_str(rc):
@@ -172,6 +184,10 @@ def run():
             issues.append("任务 %s RC=unknown（结果码未获取，需人工确认）" % b["name"])
         else:
             issues.append("任务 %s RC=0x%X" % (b["name"], b["rc"] & 0xFFFFFFFF))
+    # A5: 良性豁免任务保留 info 级可见性（不触发 exit 1，见 main 的 [info] 过滤）
+    for bn in result["tasks"].get("benign", []):
+        issues.append("[info] 任务 %s RC=%s（%s）" % (
+            bn["name"], _rc_str(bn["rc"]), _BENIGN_RC_INFO_NOTE))
 
     result["data"] = check_data()
     result["issues"] = issues
@@ -200,12 +216,17 @@ def main():
     print("  计划任务 total=%d 异常=%d" % (h["tasks"]["total"], len(h["tasks"]["bad"])))
     for b in h["tasks"]["bad"]:
         print("    ✗ %s RC=%s" % (b["name"], _rc_str(b["rc"])))
+    for bn in h["tasks"].get("benign", []):
+        print("    ~ %s RC=%s（良性豁免）" % (bn["name"], _rc_str(bn["rc"])))
     d = h["data"]
     print("  数据: 24h新闻=%s 板块=%s 待买/持/平=%d/%d/%d 快照=%s" % (
         d["news_24h"], d["sectors_count"], d["pending"], d["open"],
         d["closed"], d["latest_snapshot"]))
-    if h["issues"]:
-        print("!! 发现 %d 个异常" % len(h["issues"]))
+    # A5: [info] 级 issues 仅作可见性，不计入异常数、不触发 exit 1
+    real_issues = [i for i in h["issues"] if not i.startswith("[info] ")]
+    if real_issues:
+        print("!! 发现 %d 个异常（另有 %d 条 info）" % (
+            len(real_issues), len(h["issues"]) - len(real_issues)))
         sys.exit(1)
     print("全绿")
 
