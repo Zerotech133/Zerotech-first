@@ -62,3 +62,10 @@ Thumbs.db
 jev-eval/jev-gate.env.ps1
 quantdinger/backend.env
 quantdinger/backend.env.orig
+
+# 运行时状态文件（B3：翻腾假M治理，磁盘文件保留）
+news_collector/outbox/
+news_collector/quote_alert_state.json
+news_collector/quotes_status.json
+news_collector/status.json
+quant_backtest/pos_alert_state.json
