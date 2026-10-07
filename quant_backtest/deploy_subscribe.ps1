@@ -8,6 +8,18 @@
 # All runtime paths go through C:\aios junction (-> E: workspace) = 100% ASCII.
 # Re-runnable: unregisters existing task first. Run as Administrator.
 #
+# A3 hardening (2026-10-07, runbook: docs/runbooks/2026-10-07_subpusheod-rc1):
+#   SubPushEod rc=1 root cause = intermittent cmd.exe launch-stage failure
+#   (0x80070001, Python never started; not a subscribe.py bug). Two fixes:
+#   1. Action-level retry: "cmd /c python ... || python ..." - if the first
+#      launch/run fails, the command re-executes immediately in the same cmd.
+#      Duplicate-push risk is bounded by subscribe_state daily cap (3/sub).
+#   2. RestartOnFailure tightened to PT5M x3 (was PT10M x2) so task-layer
+#      failures retry sooner.
+# NOTE: editing this file does NOT re-register the tasks. To apply, run as
+#   Administrator:  powershell -ExecutionPolicy Bypass -File C:\aios\quant_backtest\deploy_subscribe.ps1
+#   then verify:     schtasks /Query /TN SubPushEod /V /FO LIST
+#
 # Two tasks:
 #   SubPushIntraday : every 30 min, 09:00-15:00 Beijing (01:00-07:00 UTC),
 #                     intraday scan -> push only changed subscriptions.
@@ -58,14 +70,14 @@ $triggerXml
     <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
     <RestartOnFailure>
-      <Interval>PT10M</Interval>
-      <Count>2</Count>
+      <Interval>PT5M</Interval>
+      <Count>3</Count>
     </RestartOnFailure>
   </Settings>
   <Actions Context="Author">
     <Exec>
       <Command>cmd.exe</Command>
-      <Arguments>/c ""$pyPath" -X utf8 "$pyScript" $extraArgs &gt;&gt; "$logDir\subscribe_task.out" 2&gt;&amp;1"</Arguments>
+      <Arguments>/c ""$pyPath" -X utf8 "$pyScript" $extraArgs &gt;&gt; "$logDir\subscribe_task.out" 2&gt;&amp;1 || "$pyPath" -X utf8 "$pyScript" $extraArgs &gt;&gt; "$logDir\subscribe_task.out" 2&gt;&amp;1"</Arguments>
       <WorkingDirectory>$workDir</WorkingDirectory>
     </Exec>
   </Actions>
