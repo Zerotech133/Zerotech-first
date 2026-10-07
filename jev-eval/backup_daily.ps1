@@ -23,9 +23,12 @@ $MirrorRoot  = "D:\backups_mirror"
 $QuantSrc    = "D:\" + [char]0x7F20 + [char]0x8BBA + [char]0x9009 + [char]0x80A1 + "+" + [char]0x76EF + [char]0x76D8
 $KeepDays    = 14
 $AesKeyFile  = Join-Path $env:USERPROFILE ".backup_aes_key"
-$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","webui_data.tar.gz")
+$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","webui_data.tar.gz","quant_db.sql.gz")
 # OPS-1007: dify stack decommissioned (containers removed) - drop dify_db
 # from encryption targets along with the 3 dify backup items below.
+# B4: quant_db.sql.gz added (quant_system main DB holds positions/orders -
+# sensitive). Mirror needs no change: step 4 copies the whole DayDir AFTER
+# encryption, so D:\backups_mirror gets the .enc automatically.
 
 $stamp   = Get-Date -Format "yyyy-MM-dd_HHmm"
 $DayDir  = Join-Path $BackupRoot $stamp
