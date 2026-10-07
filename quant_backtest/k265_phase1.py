@@ -46,14 +46,45 @@ def _sanitize(s):
         raise
 
 
+def _fix_dir(d):
+    """v2 方向矛盾自检（b3 抽样发现"方向反"是 0.95 带主要噪声）。
+
+    buyer=LLM 对"谁掏钱采购"的独立事实判断，比 src/dst 推理更可靠：
+    - SUPPLIES 正确方向下 buyer 必须==dst（买方是下游）
+    - DRIVES 正确方向下 buyer 必须==src（需求方带动供给方）
+    矛盾时信任 buyer 翻转方向，reason 加 [dir-fix] 审计标记，conf×0.9。
+    旧记录（无 buyer 字段）不受影响。
+    """
+    if not (d and d.get("ok") and d.get("buyer") in ("A", "B")
+            and d.get("src") in ("A", "B")):
+        return d
+    src, dst, buyer, edge = d["src"], d.get("dst"), d["buyer"], d.get("edge")
+    if ((edge == "SUPPLIES" and buyer == src and dst != src)
+            or (edge == "DRIVES" and buyer == dst and src != dst)):
+        d["src"], d["dst"] = dst, src
+        d["reason"] = "[dir-fix]" + (d.get("reason") or "")
+        d["conf"] = round((d.get("conf") or 0) * 0.9, 2)
+    return d
+
+
 def llm_pair(a, mb, b, ma):
     p = f"""概念A：{a}（成分股示例：{mb}）
 概念B：{b}（成分股示例：{ma}）
 判断 A/B 两个概念板块是否存在产业链方向关系。只输出JSON：
-{{"ok": true, "edge": "SUPPLIES|DRIVES", "src": "A或B", "dst": "A或B", "conf": 0.0, "reason": "一句话"}}
-edge 语义：SUPPLIES=src 概念向 dst 概念供应核心产品/材料/服务（src是上游，
-仅限直接供料/供件/供核心设备，生态支撑类不算）；DRIVES=src 概念的需求或发展
-显著带动 dst 概念景气（如 算力→IDC/电力）。
+{{"ok": true, "edge": "SUPPLIES|DRIVES", "src": "A或B", "dst": "A或B", "buyer": "A或B", "conf": 0.0, "reason": "一句话"}}
+
+edge 语义（方向必须严格按钱流/物流方向）：
+- SUPPLIES=src 向 dst 供应核心产品/材料/设备/服务。判定法：谁把东西卖给谁？
+  收钱交货的一方（上游卖方）是 src；掏钱采购的一方（下游买方）是 buyer=dst。
+  仅限直接供料/供件/供核心设备，生态支撑/战略赋能/需求带动不算。
+- DRIVES=src 的需求或产业发展显著带动 dst 景气（买方扩产带动上游，如 算力→电力）。
+
+方向正例：盐湖提锂 SUPPLIES 锂电池（锂原料卖给电池厂）；算力 SUPPLIES AI应用（AI公司掏钱买算力）。
+方向反例（禁止）：锂电池 SUPPLIES 盐湖提锂（电池厂是买方不是卖方）；
+AI应用 SUPPLIES 算力（AI应用不卖算力；正确是 算力 SUPPLIES AI应用，或 AI应用 DRIVES 算力）。
+
+buyer 字段=掏钱采购的一方：SUPPLIES 时=dst；DRIVES 时=src。
+
 仅平行板块、纯资金/风格关联或无明确产业传导：{{"ok": false, "reason": "一句话"}}"""
     try:
         r = requests.post(
@@ -66,7 +97,7 @@ edge 语义：SUPPLIES=src 概念向 dst 概念供应核心产品/材料/服务�
                                {"role": "user", "content": p}]},
             timeout=120)
         r.raise_for_status()
-        return _sanitize(r.json()["message"]["content"])
+        return _fix_dir(_sanitize(r.json()["message"]["content"]))
     except Exception as e:
         return {"ok": False, "reason": f"llm_error:{type(e).__name__}"}
 
@@ -117,7 +148,7 @@ def main():
         for i, (a, b, ov) in enumerate(batch, 1):
             ext = llm_pair(a, ", ".join(sorted(keep[a])[:5]),
                            b, ", ".join(sorted(keep[b])[:5]))
-            rec = {"a": a, "b": b, "overlap": ov, "ext": ext}
+            rec = {"a": a, "b": b, "overlap": ov, "ext": ext, "pv": 2}
             out.append(rec)
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             f.flush()
