@@ -256,6 +256,17 @@ def run():
 
     with open(os.path.join(HERE, "health_latest.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
+
+    # D4（研发计划v3）：同步一份给门户「基建状态板」（portal/dev.html 经
+    # webroot 静态读取）。webroot=portal/ 整目录对外，health_latest.json
+    # 本体留 ops/ 不外泄；data/health.json 内容与本体一致（已核无敏感词）。
+    try:
+        pub = os.path.join(os.path.dirname(HERE), "portal", "data")
+        os.makedirs(pub, exist_ok=True)
+        with open(os.path.join(pub, "health.json"), "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=1)
+    except Exception as e:
+        print("health.json 副本落盘失败(不影响本体): %s" % str(e)[:100])
     return result
 
 
