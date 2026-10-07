@@ -9,11 +9,13 @@ agent_auto_commit.py — 各 Agent 代码定时强制入库（portal 统揽板�
 
 行为：
   1. git add -A
-  2. 无暂存改动 → 记"空跑"状态，退出 0
-  3. 有改动 → git commit -m "auto: 各Agent代码定时入库快照 ..."（遇 index.lock 重试 3 次）
-  4. 状态落 portal/logs/agent_commit_status.json（供自动化读取汇报），日志追加 portal/logs/auto_commit.log
+  2. 膨胀守卫：新增文件数/总字节/单文件超阈值 → 拒绝本次入库（unstage，
+     工作区文件不动），状态记 BLOAT_GUARD，防止运行时产物击穿 .gitignore
+  3. 无暂存改动 → 记"空跑"状态，退出 0
+  4. 有改动 → git commit -m "auto: 各Agent代码定时入库快照 ..."（遇 index.lock 重试 3 次）
+  5. 状态落 portal/logs/agent_commit_status.json（供自动化读取汇报），日志追加 portal/logs/auto_commit.log
 
-退出码：0 = 成功或空跑；2 = 提交失败（重试耗尽）
+退出码：0 = 成功/空跑/守卫拦截；2 = 提交失败（重试耗尽）
 """
 import json
 import subprocess
@@ -27,6 +29,11 @@ LOG_DIR = REPO / "portal" / "logs"
 STATUS_FILE = LOG_DIR / "agent_commit_status.json"
 LOG_FILE = LOG_DIR / "auto_commit.log"
 LOCK_WAIT_RETRY, LOCK_WAIT_SEC = 3, 10
+
+# ---- 膨胀守卫阈值（2026-10-08）：防大文件/大批量新文件击穿快照库 ----
+BLOAT_MAX_NEW_FILES = 300   # 单次提交新增文件数上限
+BLOAT_MAX_TOTAL_MB = 50     # 单次提交新增文件总字节上限
+BLOAT_MAX_SINGLE_MB = 20    # 单个新增文件体积上限
 
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -54,6 +61,35 @@ def commit_with_retry(msg: str) -> subprocess.CompletedProcess:
     return last
 
 
+def staged_new_files() -> list:
+    out = git("diff", "--cached", "--name-status").stdout
+    return [line.split("\t")[-1] for line in out.splitlines() if line.startswith("A\t")]
+
+
+def bloat_reason() -> str:
+    """新增文件超过任一阈值则返回拦截原因，否则返回空串。"""
+    new_files = staged_new_files()
+    if not new_files:
+        return ""
+    sizes, total = [], 0
+    for f in new_files:
+        try:
+            sz = (REPO / f).stat().st_size
+        except OSError:
+            sz = 0
+        total += sz
+        sizes.append((sz, f))
+    sizes.sort(reverse=True)
+    top = "; ".join(f"{f}({s / 1048576:.1f}MB)" for s, f in sizes[:5])
+    if (len(new_files) > BLOAT_MAX_NEW_FILES
+            or total > BLOAT_MAX_TOTAL_MB * 1048576
+            or sizes[0][0] > BLOAT_MAX_SINGLE_MB * 1048576):
+        return (f"新增文件数={len(new_files)} 总量={total / 1048576:.1f}MB "
+                f"超阈值(>{BLOAT_MAX_NEW_FILES}个 或 总量>{BLOAT_MAX_TOTAL_MB}MB "
+                f"或 单文件>{BLOAT_MAX_SINGLE_MB}MB) top5: {top}")
+    return ""
+
+
 def main() -> int:
     now = datetime.now()
     ts = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -72,6 +108,14 @@ def main() -> int:
             return finish(status)
 
         git("add", "-A")  # 强制全收（.gitignore 已挡数据/日志/快照）
+
+        bloat = bloat_reason()
+        if bloat:
+            git("reset", "-q")  # 退暂存；工作区文件不动，等人工甄别
+            status.update(ok=True, committed=False, detail=f"BLOAT_GUARD: {bloat}")
+            print(f"[{ts}] SKIP {status['detail']}")
+            return finish(status)
+
         staged = git("diff", "--cached", "--stat", check=False).stdout.strip().splitlines()
         stat_line = staged[-1].strip() if staged else ""
 
