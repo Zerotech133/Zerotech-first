@@ -16,8 +16,14 @@ $GateLog  = "$env:TEMP\zhice-jev-gate.log"
 $WatchdogLog = "$env:TEMP\zhice-watchdog.log"
 
 function Get-Procs {
+  # M3（原 P2-4）：进程识别收紧——裸 'zhice' 子串会误杀命令行里恰好含 zhice 的
+  # 无关进程（如编辑器/终端打开 zhice*.txt、别的项目路径）。改为锚定本站实际标识：
+  #   zhice_os_v2   uvicorn/scheduler 等组件的模块名（-m zhice_os_v2.*）
+  #   zhice[-_]os[-_]v2  安装目录 E:\zhice-os-v2-*（vite/node 命令行内含该路径）
+  #   zhice\.ps1    本脚本自身拉起的子进程
+  # 另保留 Jev 四件套脚本名（其路径 E:\老田的AI助手\jev-eval\ 不含 zhice）。
   Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='node.exe'" |
-    Where-Object { $_.CommandLine -match 'zhice|jev_gate|jev_qd_bridge|signal_review_gate|lark_card_handler' }
+    Where-Object { $_.CommandLine -match 'zhice[-_]os[-_]v2|zhice\.ps1|jev_gate|jev_qd_bridge|signal_review_gate|lark_card_handler' }
 }
 
 function Wait-DbReady([int]$Sec = 30) {
@@ -66,13 +72,18 @@ function Test-SchedulerAlive {
   # K96：scheduler 假死探测。进程存活≠调度在跑——10-03 04:10~10-04 18:07 进程在而
   # job 全停（CRYPTO hourly 断供 14h，watchdog 进程级检测零发现）。改按业务产出水位判：
   # CRYPTO bar_daily 每小时全量 upsert（37 标的 created_at 恒刷新），max(created_at)
-  # 距今超 90min（hourly + 容差）判假死。查询失败/空值 fail-open 返回真——探测自身
-  # 故障不误杀（误重启丢挂起态 vs 漏报整站停摆，两害取其轻），进程级检测仍兜底。
+  # 距今超 90min（hourly + 容差）判假死。
+  # P1-4 fail-explicit：返回三态——
+  #   $true      正常（含水 prophets 查询正常但水位新鲜）
+  #   $false     假死实锤（watchdog 据此树杀重启）
+  #   'degraded' 探测器自身故障（db 未起 / psql 异常 / 查询结果非数值）——
+  #              本轮保守不判定不误杀（沿用 fail-open 决策），但由调用方显式落盘
+  #              degraded 标记，消除「探测器坏了整体看起来正常」的失明态。
   try {
     $ts = docker exec zhice-db psql -U zhice -d zhice_os_v2 -t -A -c "SELECT extract(epoch from max(created_at)) FROM v2_bar_daily WHERE market='CRYPTO'" 2>$null
-    if (-not ($ts -match '^\d+(\.\d+)?$')) { return $true }
+    if (-not ($ts -match '^\d+(\.\d+)?$')) { return 'degraded' }
     return (([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - [double]$ts) -lt 5400)
-  } catch { return $true }
+  } catch { return 'degraded' }
 }
 
 function Start-Frontend {
@@ -218,11 +229,17 @@ switch ($Action) {
     Set-Location $Code
     # K96 假死探测：scheduler 进程在但产出水位停滞 → 树杀，交由下方「缺失拉起」重启
     # （新进程+新连接池；startup job 会立即补跑全市场 fetch_daily，幂等无害）。
+    # P1-4：探测自身故障（degraded）不误杀，但显式落盘标记留痕。
     $sch = Get-Procs | Where-Object { $_.CommandLine -match 'scheduler' }
-    if ($sch -and -not (Test-SchedulerAlive)) {
-      $sch | ForEach-Object { taskkill /PID $_.ProcessId /T /F 2>$null | Out-Null }
-      Start-Sleep 2
-      $fixed += 'scheduler-restart(假死)'
+    if ($sch) {
+      $alive = Test-SchedulerAlive
+      if ($alive -eq $false) {
+        $sch | ForEach-Object { taskkill /PID $_.ProcessId /T /F 2>$null | Out-Null }
+        Start-Sleep 2
+        $fixed += 'scheduler-restart(假死)'
+      } elseif ($alive -eq 'degraded') {
+        Add-Content $WatchdogLog "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [degraded] scheduler 假死探测自身故障（db/psql 异常），本轮保守跳过判定"
+      }
     }
     if (-not (Get-Procs | Where-Object { $_.CommandLine -match 'uvicorn' }))  { Start-Api;        $fixed += 'api' }
     if (-not (Get-Procs | Where-Object { $_.CommandLine -match 'scheduler' })) { Start-Scheduler;  $fixed += 'scheduler' }
