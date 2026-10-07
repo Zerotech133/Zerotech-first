@@ -20816,8 +20816,16 @@ document.getElementById('sf').addEventListener('submit',function(ev){
 
 if __name__ == "__main__":
     try:
-        # 0.0.0.0：ai-portal 容器 nginx 经 host.docker.internal 反代本机 8091
-        srv = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+        # P0-1a（2026-10-08 全检修复）：绑定收紧为 127.0.0.1。
+        # 原 0.0.0.0 使局域网任意设备可直连 8091 调全部写端点（与 SYSTEM
+        # 计划任务叠加构成 LAN→SYSTEM 提权链）。收绑定后局域网只能经
+        # ai-portal nginx(8080) 反代进入；Docker Desktop 的
+        # host.docker.internal 由用户态代理转发，宿主机侧仍落在 127.0.0.1，
+        # 故 nginx.conf 无需改动反代目标（nginx.conf 中已注明此机制）。
+        # 生效需重启 portal API；重启后验证：
+        #   docker exec ai-portal curl -s -o /dev/null -w '%{http_code}' \
+        #     http://host.docker.internal:8091/health   # 期望 200
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     except OSError:
         raise SystemExit(0)  # 已有实例在跑，静默退场（计划任务重复触发场景）
 
