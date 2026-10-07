@@ -160,9 +160,7 @@ def get_containers():
         except Exception:
             continue
         name = c.get("Names", "")
-        if name.startswith(("docker-", "dify-")):
-            g = "Dify 平台"
-        elif name.startswith("quantdinger"):
+        if name.startswith("quantdinger"):
             g = "QuantDinger"
         elif name.startswith("newquantsystem"):
             g = "NewQuantSystem v2"
