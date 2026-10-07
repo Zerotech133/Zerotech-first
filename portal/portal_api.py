@@ -19892,6 +19892,7 @@ padding:12px;margin-top:10px;font-size:13px;color:#e6edf3;display:none}
 <span style="color:#2ea043">● 舆论乐观</span>　顶部K线带 · 拖动平移 ·
 点圆点看详情 · 词云点词反查原帖</div>
 <div class=rules id=rules></div>
+<div id=records></div>
 <div id=cards></div>
 <div class=leg id=lsw style='margin-top:6px'></div>
 <canvas id=tlc width=1100 height=270></canvas>
@@ -19917,7 +19918,34 @@ document.getElementById('qcode').value=c||cs||'';
 if(c){fetch('/kg/timeline/'+encodeURIComponent(c)+'?days='+d)
  .then(function(r){return r.json()}).then(draw)}
 else if(cs){fetch('/kg/batch/'+encodeURIComponent(cs)+'?days='+d)
- .then(function(r){return r.json()}).then(drawBatch)}}
+ .then(function(r){return r.json()}).then(drawBatch)}
+loadRecords()}
+function loadRecords(){var el=document.getElementById('records');
+fetch('/kg/records/x').then(function(r){return r.json()}).then(function(d){
+if(!d.ok){el.innerHTML="<div class=dim style='color:#ffa198'>战绩层加载失败："+
+ d.error+"</div>";return}
+var h="<h2 style='margin-top:20px'>📊 四层战绩 <span class=dim style='font-size:12px'>as of "+
+ d.as_of+"</span></h2>";
+d.layers.forEach(function(L){
+h+="<div style='margin-top:12px;background:#161b22;border:1px solid #30363d;"+
+"border-radius:10px;padding:12px'><div style='font-weight:600'>"+L.layer+
+(L.note?" <span class=dim style='font-weight:400;font-size:11.5px'>"+L.note+"</span>":"")+"</div>";
+if(L.error){h+="<div style='color:#ffa198;font-size:12.5px;margin-top:6px'>⚠ "+
+ L.error+"</div></div>";return}
+h+="<table style='font-size:12.5px;border-collapse:collapse;margin-top:6px'>"+
+"<tr class=dim><th align=left style='padding:2px 12px 2px 0'>组</th>"+
+"<th align=right style='padding:2px 12px'>n</th>"+
+"<th align=right style='padding:2px 12px'>胜率%</th>"+
+"<th align=right style='padding:2px 12px'>均收%</th></tr>";
+L.rows.forEach(function(r){var av=r.avg_pct,ac=av==null?'#8b949e':
+ (av>=0?'#7ee787':'#ffa198');
+h+="<tr><td style='padding:2px 12px 2px 0'>"+r.group+"</td>"+
+"<td align=right>"+r.n+"</td><td align=right>"+(r.win==null?'—':r.win)+
+"</td><td align=right style='color:"+ac+"'>"+(av==null?'—':av)+"</td></tr>";
+if(r.extra)h+="<tr class=dim><td colspan=4 style='font-size:11px;padding:0 0 5px'>"+
+r.extra+"</td></tr>"});
+h+="</table></div>"});
+el.innerHTML=h}).catch(function(){})}
 function draw(d){if(!d.ok){alert(d.error);return}DATA=d;DATES=[];
 var seen={};d.layers.forEach(function(l){if(!seen[l.date]){seen[l.date]=1;DATES.push(l.date)}});
 DATES.sort();
@@ -20602,6 +20630,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                  "/kg/company360/", "/kg/csearch/", "/kg/cexpand/", "/kg/chist/",
                  "/kg/cask/",
                  "/kg/timeline/", "/kg/batch/",   # K262 作战地图
+                 "/kg/records/",                   # K262 战绩层（四源聚合）
                  "/kg/guba/",                      # K263 股吧舆论
                  "/kg/gx/",                        # K261 L2 图分析
                  "/kg/chist/")):

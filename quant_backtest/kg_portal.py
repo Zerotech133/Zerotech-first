@@ -1947,6 +1947,162 @@ def battle_batch(codes, days=120):
             "items": items}
 
 
+# ── K262 战绩层：四源聚合（单位统一 pct）─────────────────
+def _agg_rets(rets):
+    """rets(list[pct]) → {n, win, avg}；空组 win/avg=None。"""
+    if not rets:
+        return {"n": 0, "win": None, "avg": None}
+    return {"n": len(rets),
+            "win": round(100.0 * sum(1 for r in rets if r > 0) / len(rets), 1),
+            "avg": round(sum(rets) / len(rets), 2)}
+
+
+def _records_chanlun(here):
+    """层1 缠论池：模拟持有 N 日的类型×侧别×复合战绩（pct）。"""
+    p = os.path.join(here, "data", "chanlun_pool_eval_cache.json")
+    d = json.load(open(p, encoding="utf-8"))
+    rows = []
+    for t in ("1买", "2买", "3买", "1卖", "2卖", "3卖"):
+        it = (d.get("types") or {}).get(t) or {}
+        a = it.get("all") or {}
+        if not a.get("n"):
+            continue
+        extra = []
+        for s, sv in sorted((it.get("sides") or {}).items()):
+            if sv and sv.get("n", 0) >= 10:      # 影子纪律：n<10 不展示
+                extra.append("%s n%d w%.1f a%+.2f"
+                             % (s, sv["n"], sv["win"], sv["avg"]))
+        for c in it.get("comp") or []:
+            st = c.get("stats")
+            if st and st.get("n", 0) >= 30:
+                extra.append("%s n%d w%.1f a%+.2f"
+                             % (c.get("name") or c.get("id"), st["n"],
+                                st["win"], st["avg"]))
+        rows.append({"group": t, "n": a["n"], "win": a.get("win"),
+                     "avg_pct": a.get("avg"),
+                     "extra": (" · ".join(extra)[:300] or None)})
+    return {"layer": "缠论池(模拟)",
+            "note": "持有 %s 日 · 池 %s 只 · 生成 %s"
+                    % (d.get("hold_days"), d.get("n_pool"),
+                       (d.get("generated_at") or "")[:10]),
+            "rows": rows}
+
+
+def _records_sellpoint(here):
+    """层2 卖点锦标赛：bias 回填按 agent×type 聚合（real_ret pct）。"""
+    agg, bytype = {}, {}
+    with open(os.path.join(here, "data", "sellpoint_bias.jsonl"),
+              encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            r = json.loads(line)
+            if r.get("real_ret") is None:
+                continue
+            ag = r.get("agent_name") or "?"
+            v = float(r["real_ret"])
+            agg.setdefault(ag, []).append(v)
+            bytype.setdefault((ag, r.get("type") or "?"), []).append(v)
+    rows = []
+    for ag, rets in sorted(agg.items()):
+        st = _agg_rets(rets)
+        tp = ["%s n%d w%s a%s" % (t, s2["n"], s2["win"], s2["avg"])
+              for (a2, t), tr in sorted(bytype.items()) if a2 == ag
+              for s2 in [_agg_rets(tr)]]
+        rows.append({"group": ag, "n": st["n"], "win": st["win"],
+                     "avg_pct": st["avg"],
+                     "extra": (" · ".join(tp)[:300] or None)})
+    return {"layer": "卖点锦标赛(2-agent)",
+            "note": "已回填 real_ret 的卖点卡按 agent 聚合（负值=卖出规避亏损）",
+            "rows": rows}
+
+
+def _records_jev(here):
+    """层3 JEV 复核门：影子三元组按 decision 聚合（ret_nd×100 → pct）。"""
+    p = os.path.normpath(os.path.join(here, "..", "jev-eval",
+                                      "review_data", "triples.jsonl"))
+    agg = {}
+    with open(p, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            r = json.loads(line)
+            if r.get("status") != "reviewed" or r.get("ret_nd") is None:
+                continue
+            agg.setdefault(r.get("decision") or "?", []) \
+               .append(float(r["ret_nd"]) * 100.0)
+    rows = [{"group": dec, "n": s["n"], "win": s["win"], "avg_pct": s["avg"],
+             "extra": None}
+            for dec, rets in sorted(agg.items()) for s in [_agg_rets(rets)]]
+    note = "影子模式（只标注不拦截）· ret_nd×100 统一口径"
+    fa, pa = agg.get("FOCUS"), agg.get("PASS")
+    if fa and pa:
+        diff = sum(fa) / len(fa) - sum(pa) / len(pa)
+        note += " · FOCUS−PASS 收益差 %+.2f pct (n=%d/%d)" \
+                % (diff, len(fa), len(fa) + len(pa))
+    return {"layer": "JEV复核门(影子)", "note": note, "rows": rows}
+
+
+def _records_riskguard(here):
+    """层4 RiskGuard：影子账本按 rule_id 聚合（pass/影子拦截计数）。"""
+    base = os.path.normpath(os.path.join(here, "..", "..",
+                                         "KGStockAnalysis"))
+    agg = {}
+    with open(os.path.join(base, "riskguard_ledger", "ledger.jsonl"),
+              encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            r = json.loads(line)
+            a = agg.setdefault(r.get("rule_id") or "?",
+                               {"pass": 0, "block": 0, "ts": ""})
+            if "block" in (r.get("action") or ""):
+                a["block"] += 1
+            else:
+                a["pass"] += 1
+            if (r.get("ts") or "") > a["ts"]:
+                a["ts"] = r.get("ts") or ""
+    rows = [{"group": rid, "n": a["pass"] + a["block"], "win": None,
+             "avg_pct": None,
+             "extra": "pass %d · 影子拦截 %d · 最新 %s"
+                      % (a["pass"], a["block"], a["ts"][:16])}
+            for rid, a in sorted(agg.items())]
+    note = "影子账本（只记录不拦截）"
+    try:
+        with open(os.path.join(base, "params.yaml"), encoding="utf-8") as f:
+            m = re.search(r"^\s*riskguard_vol_mult:\s*([0-9.]+)",
+                          f.read(), re.M)
+        if m:
+            note += " · R2 已拍板毕业 vol_mult=%s" % m.group(1)
+    except Exception:
+        pass
+    return {"layer": "RiskGuard(影子)", "note": note, "rows": rows}
+
+
+def battle_records():
+    """K262 作战地图·战绩层：缠论池/卖点锦标赛/JEV/RiskGuard 四源聚合。
+
+    单位统一 pct；逐源 try/except（缺数据出 error 行不拖垮整层）。
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    layers = []
+    for name, fn in (("缠论池(模拟)", _records_chanlun),
+                     ("卖点锦标赛(2-agent)", _records_sellpoint),
+                     ("JEV复核门(影子)", _records_jev),
+                     ("RiskGuard(影子)", _records_riskguard)):
+        try:
+            layers.append(fn(here))
+        except Exception as e:
+            layers.append({"layer": name, "error": str(e)[:120],
+                           "rows": []})
+    return {"ok": True,
+            "as_of": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "layers": layers}
+
+
 # ── 统一入口（门户路由调这里）─────────────────────────────
 def api(kind, arg=None, days=None, per=None):
     try:
@@ -2021,6 +2177,9 @@ def api(kind, arg=None, days=None, per=None):
             # arg = "code1,code2,..."（数据集导入批量体检）
             return battle_batch((arg or "").split(","),
                                 int(days or 120))
+        if kind == "records":
+            # K262 战绩层：缠论池/卖点/JEV/RiskGuard 四源聚合
+            return battle_records()
         if kind == "cask":
             return canvas_ask(arg or "")
         return {"ok": False, "error": "未知 kind %s" % kind}
