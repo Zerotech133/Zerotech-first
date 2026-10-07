@@ -36,6 +36,31 @@ OUT_DIR = os.path.join(os.path.dirname(HERE), "reports")
 
 from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
 
+TRIG_EX_TH = -5     # §6 触发1 阈值：250 日超额收敛至 -5pp 以内
+
+
+def stood_on(px, pivot):
+    """关键位判定：现价是否站上关键位（>=，边界相等=站上）。
+
+    对应 §4 三线表「已站上/未站上」与「破关键位」口径：px < pivot
+    即跌破关键位。
+    """
+    return px >= pivot
+
+
+def trig_ex_converge(ex, th=TRIG_EX_TH):
+    """§6 复评触发1：250 日超额收敛至 th 以内（>=，边界相等=触发）。
+
+    ex=None（超额不可算）不触发。
+    """
+    return ex is not None and ex >= th
+
+
+def trig_pool_new_sig(detect_date, since):
+    """§6 复评触发2：池内新信号——detect_date 严格大于 since 才算新
+    （边界相等=since 当日已有，不算新）。"""
+    return str(detect_date or "") > str(since or "")
+
 
 def _closes(bars):
     return [float(b.get("close", b.get("c"))) for b in bars]
@@ -132,7 +157,7 @@ def main():
         ma20 = sum(b5c[-20:]) / 20
         print("  [5m] 个股 %.2f vs 站位 %.2f：%s｜板块 %.2f vs 5m MA20 %.2f：%s"
               % (s5c[-1], pivots[min(1, len(pivots) - 1)],
-                 "已站上" if s5c[-1] >= pivots[min(1, len(pivots) - 1)]
+                 "已站上" if stood_on(s5c[-1], pivots[min(1, len(pivots) - 1)])
                  else "未站上", b5c[-1], ma20,
                  "已站上" if b5c[-1] >= ma20 else "未站上"))
 
@@ -146,7 +171,7 @@ def main():
 
     # --- D. §6 三触发 ---
     print("\n=== D. §6 复评触发判定 ===")
-    if ex is not None and ex >= -5:
+    if trig_ex_converge(ex):
         trig.append("超额收敛至 %+.1fpp（≥-5pp，触发1）" % ex)
     new_sig = []
     if os.path.exists(POOL):
@@ -159,14 +184,15 @@ def main():
                 except Exception:
                     continue
                 if str(q.get("code", "")).startswith(code.split(".")[0]) \
-                        and str(q.get("detect_date", "")) > a.since:
+                        and trig_pool_new_sig(q.get("detect_date", ""),
+                                              a.since):
                     new_sig.append("%s %s@%s" % (q.get("detect_date"),
                                                  q.get("type"),
                                                  q.get("price")))
     if new_sig:
         trig.append("池内新信号：%s（触发2）" % "; ".join(new_sig))
     print("  触发1（超额收敛≥-5pp）：%s" % (
-        "命中 %+.1fpp" % ex if (ex is not None and ex >= -5) else
+        "命中 %+.1fpp" % ex if trig_ex_converge(ex) else
         ("未命中（%+.1fpp）" % ex if ex is not None else "超额不可算")))
     print("  触发2（池内新信号，detect>%s）：%s" % (
         a.since, "；".join(new_sig) if new_sig else "无"))
