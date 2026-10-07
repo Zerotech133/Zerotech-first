@@ -113,12 +113,34 @@ _ACTION_GETS = frozenset((
 # 只加日志不改兜底逻辑；其余 200+ 处后续分批跟进。
 _ERROR_LOG = r"C:\Temp\portal_api_error.log"
 
+# C6b（研发计划 v2）：日志按大小单代轮转阈值——access/error 两处同款
+_ERROR_LOG_MAX = 50 * 1024 * 1024   # 50MB
+_ACCESS_LOG = r"C:\Temp\portal_api_access.log"
+
+
+def _log_rotate(fp):
+    """C6b 日志轮转：fp 超 50MB → 先删旧 .1 → 当前改名为 .1（单代轮转，
+    保留最近两段历史，防止 C:\Temp 被无限增长日志吃满磁盘）。
+    每次写入前调用；stat/remove/rename 任一失败都静默放过，绝不阻断
+    业务或日志写入本身。返回 True 表示发生了轮转。"""
+    try:
+        if os.path.getsize(fp) <= _ERROR_LOG_MAX:
+            return False
+        bak = fp + ".1"
+        if os.path.exists(bak):
+            os.remove(bak)
+        os.replace(fp, bak)
+        return True
+    except OSError:
+        return False
+
 
 def log_exc(context):
     """把当前异常栈追加写入 C:\Temp\portal_api_error.log（与 access log
     同款追加写；自身失败绝不阻断业务，保持静默）。仅在 except 块内调用。"""
     import traceback
     try:
+        _log_rotate(_ERROR_LOG)   # C6b：写前超限轮转
         with open(_ERROR_LOG, "a", encoding="utf-8", errors="ignore") as f:
             f.write("[%s] %s\n%s\n" % (
                 time.strftime("%Y-%m-%d %H:%M:%S"), context,
@@ -4668,11 +4690,13 @@ resize();hi();"""
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
-        # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求
+        # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
+        # C6b：写前按大小轮转（>50MB → .1），防止无限增长吃满磁盘
         if "/favicon" in fmt:
             return
         try:
-            with open(r"C:\Temp\portal_api_access.log", "a",
+            _log_rotate(_ACCESS_LOG)
+            with open(_ACCESS_LOG, "a",
                       encoding="utf-8", errors="ignore") as f:
                 f.write("%s %s %s\n" % (
                     time.strftime("%Y-%m-%d %H:%M:%S"),
