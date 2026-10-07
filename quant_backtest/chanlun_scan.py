@@ -620,15 +620,24 @@ def scan_all():
 def _pool_dual_write_sqlite(new_rows):
     """双写期：新信号同步写入 SQLite（INSERT OR IGNORE）。
 
+    仅 CN 市场行入 SQLite：db 层的镜像表是 CN 池专属（quant.db
+    chanlun_pool，与 test_sqlite_migration 对账口径一致），US/HK 行的
+    主源是各自市场 JSONL（chanlun_pool_us/_hk.jsonl）。历史缺陷：市场
+    切换只重绑 JSONL 文件链，双写仍打 CN 库 → 2026-10-07 对账发现
+    38 条 US 行漂移入库（已清）。此处按 market 过滤收口，防复发。
     best-effort：失败只打印警告，不影响 JSONL 主流程。
     """
+    cn_rows = [r for r in new_rows if r.get("market", "CN") == "CN"]
+    if not cn_rows:
+        return
     try:
         import db as _db
         conn = _db.get_conn()
         try:
-            n = _db.pool_insert_batch(conn, new_rows)
+            n = _db.pool_insert_batch(conn, cn_rows)
             conn.commit()
-            print("sqlite dual-write: %d/%d inserted" % (n, len(new_rows)))
+            print("sqlite dual-write: %d/%d inserted"
+                  % (n, len(cn_rows)))
         finally:
             conn.close()
     except Exception as e:
