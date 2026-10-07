@@ -78,3 +78,7 @@ quant_backtest/last_backtest.json
 quant_backtest/positions.json
 news_collector/outbox/alert_push_last.json
 news_collector/logs/
+ops/health_latest.json
+
+# 系统杂物补充（B3 滚动 2026-10-07 晚）
+*.bak-*
