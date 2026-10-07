@@ -11,6 +11,7 @@
 """
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -41,10 +42,16 @@ def now_cst():
 
 
 def normalize_code(code):
-    """纯数字补市场前缀：6→sh，0/3→sz，4/8→bj；已有前缀原样返回（小写）。"""
+    """纯数字补市场前缀：6→sh，0/3→sz，4/8→bj；已有前缀原样返回（小写）。
+    2026-10-07 修复：`603995.SH` 后缀格式此前原样透传，导致
+    resolve_watchlist 误判 US/CRYPTO、新浪 hq key 查不到（quote 全 null）。
+    现归一为 sh/sz/bj 前缀，与门户 portal_report 的 _ts_code 口径对齐。"""
     c = str(code).strip().lower()
     if c.startswith(("sh", "sz", "bj", "rt_hk", "gb_")):
         return c
+    m = re.match(r"^(\d{6})\.(sh|sz|bj)$", c)
+    if m:
+        return m.group(2) + m.group(1)
     if c.isdigit() and len(c) == 6:
         return {"6": "sh", "5": "sh", "0": "sz", "3": "sz",
                 "4": "bj", "8": "bj"}.get(c[0], "sz") + c
@@ -94,6 +101,9 @@ def parse_one(code, f):
 
 
 def fetch_quotes(codes):
+    # 2026-10-07 修复：入口归一（`603995.SH`→`sh603995`），否则新浪 hq key
+    # 永远匹配不上（响应 key 为 sh/sz/bj 前缀格式）。normalize 幂等，无害。
+    codes = [normalize_code(c) for c in codes]
     r = requests.get(URL % ",".join(codes), headers=HEADERS, timeout=12)
     r.raise_for_status()
     r.encoding = "gbk"

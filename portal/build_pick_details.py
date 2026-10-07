@@ -37,12 +37,13 @@ def make_portal():
 
 
 def main():
-    tier = shard = None
+    tier = shard = stale = None
     argv = sys.argv[1:]
     if "--tier" in argv:
         tier = argv[argv.index("--tier") + 1]
     if "--shard" in argv:
         shard = argv[argv.index("--shard") + 1]
+    stale = "--stale" in argv
 
     doc = json.load(open(PICKS, encoding="utf-8"))
     rows = doc.get("stocks") or []
@@ -65,8 +66,14 @@ def main():
             try:
                 old = json.load(open(fp, encoding="utf-8"))
                 if (old.get("ts") or "").startswith(today):
-                    skip += 1
-                    continue
+                    # --stale：只重抓行情/K线维度残缺的当日文件
+                    if stale and not (old.get("quote") is None
+                                      or old.get("has_bars") is not True):
+                        skip += 1
+                        continue
+                    if not stale:
+                        skip += 1
+                        continue
             except Exception:  # noqa: BLE001
                 pass
         try:
