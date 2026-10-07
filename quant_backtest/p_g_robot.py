@@ -6,9 +6,14 @@
     strict_mode 下 bot 身份不可用。已设机器级 LARKSUITE_CLI_APP_SECRET，
     脚本启动时换 TAT（POST /auth/v3/tenant_access_token/internal），
     设全 4 个 bus daemon 环境变量后 bot 身份可用，event consume 走通。
+  · 凭据（W2 出码，2026-10-04）：APP_ID/APP_SECRET 只从环境变量
+    LARKSUITE_CLI_APP_ID / LARKSUITE_CLI_APP_SECRET 读取（机器级已配），
+    缺失即 RuntimeError fail-closed；源码零凭据字面量。
+  · 启动自愈（2026-10-07 自产线分支回移）：TAT 初始化 10×60s 重试，
+    覆盖开机早期本机代理（127.0.0.1:7890）未就绪的 WinError 10061。
   · 事件流：lark-cli event consume im.message.receive_v1 --as bot 子进程
     stdout NDJSON 一行一条，blocking 读取。子进程崩溃 5s 重启。
-  · 触发：event mentions 含 app bot open_id（ou_6bbb99fcfa7a5b1049f0cf19f64462ae）
+  · 触发：event mentions 含 app bot open_id（ou_6bbb99fcfa7a5b1049f0cf19f64462ae，2026-10-07 以本 app 身份发 @ 实证回绑）
     的群消息 -> 提取问句（content 已预渲染为"@机器人名 问句"，去@名字）
   · 查数：单 worker 线程池异步调 multi_agent.answer(q)
     （Ollama 单卡并发 OOM 风险；multi_agent 自带当日缓存命中秒回）
@@ -39,19 +44,32 @@ sys.path.insert(0, HERE)
 
 # 复用 send_feishu 的 lark-cli 定位
 LARK_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
-BOT_OPEN_ID = "ou_6bbb99fcfa7a5b1049f0cf19f64462ae"   # bot/v3/info 返回的真实 open_id
+
+_APP_CREDS = None
 
 
-def _load_creds():
-    """app 凭证读 ~/.lark-cli/config.json（send_feishu/backup_alert 同款），
-    不硬编码进代码——泄露面收敛到用户目录一处。"""
-    cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
-    with open(cfg, encoding="utf-8") as f:
-        apps = json.load(f).get("apps") or []
-    return apps[0]["appId"], apps[0]["appSecret"]
+def app_creds():
+    """飞书应用凭据（fail-closed，进程内缓存一次）：只从环境变量读取。
 
+    W2 凭据出码（2026-10-04）：原硬编码 APP_ID/APP_SECRET 已从源码
+    清除（泄露面见 docs/planning/credential-inventory-2026-09-30.md #2，
+    轮换走 commercial-remediation-runbook）。任一变量缺失/空白即抛
+    RuntimeError("feishu_cred_missing:<VAR,...>")，绝不回退默认值。
+    错误信息只含变量名，不含取值。
+    """
+    global _APP_CREDS
+    if _APP_CREDS is None:
+        app_id = os.environ.get("LARKSUITE_CLI_APP_ID", "").strip()
+        app_secret = os.environ.get("LARKSUITE_CLI_APP_SECRET", "").strip()
+        missing = [name for name, value in (
+            ("LARKSUITE_CLI_APP_ID", app_id),
+            ("LARKSUITE_CLI_APP_SECRET", app_secret)) if not value]
+        if missing:
+            raise RuntimeError("feishu_cred_missing:" + ",".join(missing))
+        _APP_CREDS = (app_id, app_secret)
+    return _APP_CREDS
 
-APP_ID, APP_SECRET = _load_creds()
+BOT_OPEN_ID = os.environ.get("PG_BOT_OPEN_ID", "ou_6bbb99fcfa7a5b1049f0cf19f64462ae")   # 默认=本 app（cli_aa3e4f1b58f85cdd）视角 bot open_id（2026-10-07 mention 回绑实证）；open_id 为 app 维度，换绑 app 时设 PG_BOT_OPEN_ID 覆盖，勿跨用他 app 所得 id
 
 # 防滥用
 RATE_LIMIT_S = 60      # 每 sender_id 每 N 秒 1 次
@@ -100,11 +118,15 @@ def find_lark_cli():
 # ── TAT 管理 ───────────────────────────────────────────────
 def _get_tat():
     """换 tenant_access_token。POST /auth/v3/tenant_access_token/internal。"""
-    body = json.dumps({"app_id": APP_ID, "app_secret": APP_SECRET}).encode("utf-8")
+    app_id, app_secret = app_creds()
+    body = json.dumps({"app_id": app_id, "app_secret": app_secret}).encode("utf-8")
     req = Request("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
                   data=body, headers={"Content-Type": "application/json"})
     d = json.loads(urlopen(req, timeout=15).read().decode("utf-8"))
-    assert d.get("code") == 0, "TAT fail: %s" % d
+    # 显式校验（不用 assert：python -O 下 assert 失效属 fail-open）
+    if d.get("code") != 0:
+        raise RuntimeError("tat_fail: %s"
+                           % json.dumps(d, ensure_ascii=False)[:200])
     return d["tenant_access_token"]
 
 
@@ -129,9 +151,10 @@ def _get_cur_tat():
 
 def _bot_env():
     """event consume 子进程环境（4 环境变量全设，bot 身份）。"""
+    app_id, app_secret = app_creds()
     env = dict(os.environ)
-    env["LARKSUITE_CLI_APP_ID"] = APP_ID
-    env["LARKSUITE_CLI_APP_SECRET"] = APP_SECRET
+    env["LARKSUITE_CLI_APP_ID"] = app_id
+    env["LARKSUITE_CLI_APP_SECRET"] = app_secret
     env["LARKSUITE_CLI_TENANT_ACCESS_TOKEN"] = _get_cur_tat() or ""
     env["LARKSUITE_CLI_USER_ACCESS_TOKEN"] = ""
     return env
@@ -300,7 +323,8 @@ def main():
         print("ERROR lark-cli.exe not found under %s" % LARK_ROOT)
         sys.exit(1)
 
-    chat_whitelist = set(c.strip() for c in a.chat_id.split(",") if c.strip())
+    chat_ids = a.chat_id or os.environ.get("PG_ROBOT_CHAT_IDS", "")   # CLI --chat-id 优先，回落环境变量（2026-10-07 env 化）
+    chat_whitelist = set(c.strip() for c in chat_ids.split(",") if c.strip())
 
     _log("lark-cli: %s" % exe)
     _log("chat_whitelist: %s" % chat_whitelist)

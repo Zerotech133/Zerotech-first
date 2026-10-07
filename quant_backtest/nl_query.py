@@ -32,11 +32,18 @@ import time
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# 2026-10-07 A/B 全量合并为单一权威版：kg_paths 仅 KGStockAnalysis 侧存在，
+# quant_backtest 产线无此模块 → ImportError 回落 HERE/data（两侧行为均不变）
+try:
+    import kg_paths  # noqa: E402  单一数据库指针
+    _data_root = kg_paths.get_data_root()
+except ImportError:
+    _data_root = os.path.join(HERE, "data")
 sys.path.insert(0, HERE)
 
-CACHE_DIR = os.path.join(HERE, "data", "nlquery")
-OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-MODEL = "qwen3:8b-8k"
+CACHE_DIR = os.path.join(_data_root, "nlquery")
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434/api/chat")   # 2026-10-07 env 化；注意值需含 /api/chat 路径
+MODEL = "qwen3.5:9b"   # 2026-10-07 修正：qwen3:8b-8k 已不在本机 Ollama（已升级 qwen3.5 系）致 /api/chat 404；9b 含 tools 能力，与 kg_* 系列同源实测可用
 TIMEOUT = 180          # 单请求秒数（含上一轮工具执行后的下一轮生成）
 MAX_ROUNDS = 3         # 带 tools 的 FC 轮数上限
 TOOL_MSG_MAX = 1200    # 回喂模型的单工具结果截断字符数（8k 上下文保护）
