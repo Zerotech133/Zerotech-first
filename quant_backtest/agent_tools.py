@@ -35,6 +35,7 @@ def _norm_code(code):
 
 
 _NAME_MAP = None   # 进程内缓存：code(带后缀) → 股票名称（chanlun_pool.jsonl）
+_STOCK_NAMES = None  # 进程内缓存：全市场名称映射（data/stock_names.json）
 
 
 def _name_map():
@@ -55,6 +56,40 @@ def _name_map():
                         m[str(c).upper()] = n
         _NAME_MAP = m
     return _NAME_MAP
+
+
+def _stock_names():
+    """全市场名称映射（现用名+曾用名，fetch_stock_names.py 生成）。
+
+    结构：code2name / name2code / alias_of（曾用名→现用名）。
+    json 缺失时回落 datamart stock_basic 动态建现用名映射（无曾用名，
+    保证映射表未生成时机器人仍具备基本反查能力）。"""
+    global _STOCK_NAMES
+    if _STOCK_NAMES is None:
+        sn = {}
+        path = os.path.join(HERE, "data", "stock_names.json")
+        if os.path.exists(path):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    sn = json.load(f)
+            except Exception:
+                sn = {}
+        if not sn.get("name2code"):
+            try:
+                import datamart as dm
+                df = dm.read("stock_basic")
+                c2n, n2c = {}, {}
+                for c, n in zip(df["ts_code"].astype(str).str.upper(),
+                                df["name"].astype(str).str.strip()):
+                    if c and n and n.lower() != "nan":
+                        c2n[c] = n
+                        n2c.setdefault(n, c)
+                sn = {"code2name": c2n, "name2code": n2c,
+                      "alias_of": {}}
+            except Exception:
+                sn = {}
+        _STOCK_NAMES = sn
+    return _STOCK_NAMES
 
 
 def _fix_codes(codes):
@@ -287,24 +322,32 @@ def pool_rows(sig_type=None, tbe=None, code=None, limit=50):
 
 @tool
 def stock_info(code):
-    """股票身份卡：名称（池内映射）+ 最新行情（ts_daily 尾3行）+ 池内信号。
-    用户给 6 位代码查个股时必须先调此工具（防编造名称）；
-    也支持中文名称入参（池内反查代码，防猜码）。"""
+    """股票身份卡：名称（全市场映射，含曾用名）+ 最新行情（ts_daily 尾3行）
+    + 池内信号。用户给 6 位代码查个股时必须先调此工具（防编造名称）；
+    也支持中文名称入参（全市场反查代码，防猜码）。"""
     s = str(code or "").strip()
     c = _norm_code(s)
     name_hits = []
     if not (len(c.split(".")[0]) == 6 and c.split(".")[0].isdigit()):
-        nm = _name_map()
-        name_hits = sorted(k for k, v in nm.items() if v == s or s in v)
-        if not name_hits:
-            return {"name_q": s, "code": None,
-                    "hint": "池内无此名称映射（注意股票可能已改名，如曾用名）。"
-                            "你必须立即再调一次 stock_info(code=你最可能的候选码) "
-                            "核对：返回的现名/行情可佐证则明确标注'现名 X"
-                            "（或曾用名%s）'并引用行情数字；核对不上才明说无法"
-                            "确认，绝不硬猜" % s}
-        c = name_hits[0]
-    out = {"code": c, "name": _name_map().get(c)}
+        sn = _stock_names()
+        hit = (sn.get("name2code") or {}).get(s)
+        if hit:
+            c = hit
+        else:
+            nm = _name_map()
+            name_hits = sorted(k for k, v in nm.items()
+                               if v == s or s in v)
+            if not name_hits:
+                return {"name_q": s, "code": None,
+                        "hint": "全市场名称映射（含曾用名）无此名称，"
+                                "无法反查代码。答案里明说无法确认，"
+                                "绝不硬猜代码"}
+            c = name_hits[0]
+    sn = _stock_names()
+    out = {"code": c, "name": _name_map().get(c)
+           or (sn.get("code2name") or {}).get(c)}
+    if s in (sn.get("alias_of") or {}):
+        out["name_note"] = "曾用名 %s，现名 %s" % (s, out.get("name"))
     if len(name_hits) > 1:
         out["name_candidates"] = ["%s %s" % (k, _name_map()[k])
                                   for k in name_hits]
@@ -377,8 +420,8 @@ TOOLS = {
     "pool_rows":      (pool_rows,      "预警池查询",
                           {"sig_type": "信号类型", "tbe": "布尔",
                            "code": "股票代码", "limit": "条数"}),
-    "stock_info":     (stock_info,     "股票身份卡(名称+最新行情+池内信号；名称可反查代码)",
-                          {"code": "6位股票代码或中文名称"}),
+    "stock_info":     (stock_info,     "股票身份卡(名称+最新行情+池内信号；中文名称可反查代码，支持曾用名如改名前旧称)",
+                          {"code": "6位股票代码或中文名称(含曾用名)"}),
     "paper_positions": (paper_positions, "模拟账本", {}),
 }
 

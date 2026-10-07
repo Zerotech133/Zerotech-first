@@ -1,2 +1,5 @@
-[ENGINE_DOWN_20261007_1237]
-Docker engine down for 2 consecutive probes (~60 min at v2 5-min cadence ~10 min). Auto-relaunch (DockerDesktopLaunch) fired. If still down after next probe: check Welcome-page hang / WSL state / job-object kill. fail_count=2
+[BACKUP_FAILED_2026-10-08_0048]
+type=ai_workstation_backup_failed
+stamp=2026-10-08_0048
+failed_count=2
+backup_log=E:\老田的AI助手\backups\2026-10-08_0048\backup.log
