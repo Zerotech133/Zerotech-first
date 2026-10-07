@@ -23,13 +23,7 @@ SNAP = os.path.join(DATA, "nine_dim_scores.json")
 HIST = os.path.join(DATA, "nine_dim_history.jsonl")
 
 
-def _norm(code):
-    c = code.strip().upper()
-    if "." in c:
-        return c
-    if c.startswith(("6", "9")):
-        return c + ".SH"
-    return c + ".SZ"
+from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
 
 
 def _ind_of(code):

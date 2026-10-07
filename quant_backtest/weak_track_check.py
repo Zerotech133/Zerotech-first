@@ -33,11 +33,7 @@ DEF_PIVOTS = "16.12,16.80,17.93"      # 万凯：左侧低点/站稳位/中枢�
 DEF_SINCE = "2026-10-02"              # 立案日
 
 
-def _norm(code):
-    c = code.strip().upper()
-    if "." in c:
-        return c
-    return c + (".SH" if c.startswith(("6", "9")) else ".SZ")
+from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
 
 
 def _closes(bars):

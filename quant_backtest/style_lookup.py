@@ -31,11 +31,7 @@ EQ_BLOCK = "880008"      # 全Ａ等权
 IDX = "000001.SH"        # 上证（加权）
 
 
-def _norm(code):
-    c = code.strip().upper()
-    if "." in c:
-        return c
-    return c + (".SH" if c.startswith(("6", "9")) else ".SZ")
+from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
 
 
 def _r(bars, days):

@@ -138,11 +138,7 @@ def build_close(rows, ctype, note, arch, ncase=""):
             ).format(**f) + (("\n" + ncase) if ncase else "")
 
 
-def _norm(code):
-    c = code.strip().upper()
-    if "." in c:
-        return c
-    return c + (".SH" if c.startswith(("6", "9")) else ".SZ")
+from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
 
 
 def write_archive(f, msg, rows, arch):

@@ -25,11 +25,7 @@ BLANK = os.path.join(HERE, "weak_review_blank.md")
 OUT_DIR = os.path.join(os.path.dirname(HERE), "reports", "weak_cases")
 
 
-def _norm(code):
-    c = code.strip().upper()
-    if "." in c:
-        return c
-    return c + (".SH" if c.startswith(("6", "9")) else ".SZ")
+from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
 
 
 def render(code, name, pivots):
