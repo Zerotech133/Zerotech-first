@@ -35,7 +35,7 @@ except Exception as e:
         try:
             body_txt = e.read().decode("utf-8")
         except Exception:
-            pass
+            pass  # 豁免（C2批2）：错误响应体提取失败无碍，外层已打印 WEBHOOK_TEST_ERR 并 exit 1
     print("WEBHOOK_TEST_ERR", str(e)[:200])
     print(body_txt)
     sys.exit(1)

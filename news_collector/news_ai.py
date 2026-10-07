@@ -152,7 +152,7 @@ def _jev_key():
             or re.search(r'JEV_API_KEY\s*=\s*"([^"]+)"', txt)
         return m.group(1) if m else ""
     except Exception:
-        return ""
+        return ""  # 豁免（C2批2）：与"未配置 key"同一出口，jev_judge_one 侧按无 key 跳过
 
 
 def jev_judge_one(title, stocks, timeout=15):
@@ -198,7 +198,7 @@ def jev_reason(title, bias_cn, scope_cn, timeout=20):
                   encoding="utf-8") as f:
             model = (json.load(f) or {}).get("ai_model") or ""
     except Exception:
-        pass
+        pass  # 豁免（C2批2）：配置缺省→环境变量/默认模型兜底，常态容错
     if not model:
         model = os.environ.get("OLLAMA_MODEL", "qwen3:8b-8k")
     try:
@@ -213,7 +213,7 @@ def jev_reason(title, bias_cn, scope_cn, timeout=20):
         r.raise_for_status()
         return r.json()["message"]["content"].strip().replace("\n", " ")[:60]
     except Exception:
-        return ""
+        return ""  # 豁免（C2批2）：docstring 声明——Ollama 判断依据失败返回空串不阻塞
 
 
 def jev_judge_batch(items):
@@ -238,14 +238,15 @@ def jev_summary(db, hours=24):
         rows = db.execute(
             "SELECT jev FROM news WHERE jev IS NOT NULL AND jev!='' "
             "AND created_at>=?", (since,)).fetchall()
-    except Exception:
+    except Exception as e:
+        log("jev_summary 查询失败，JEV 分布降级为空: %s" % str(e)[:100])  # C2批2
         return ""
     bias_cnt, scope_cnt = {}, {}
     for (j,) in rows:
         try:
             d = json.loads(j)
         except Exception:
-            continue
+            continue  # 豁免（C2批2）：单条 jev 坏行跳过，不影响分布统计
         bias_cnt[d.get("bias", "?")] = bias_cnt.get(d.get("bias", "?"), 0) + 1
         sc = d.get("scope") or "?"
         scope_cnt[sc] = scope_cnt.get(sc, 0) + 1
@@ -270,14 +271,14 @@ def _bias_of(j):
     try:
         return json.loads(j).get("bias", "?")
     except Exception:
-        return "?"
+        return "?"  # 豁免（C2批2）：坏值按未知计，统计口径声明式兜底
 
 
 def _scope_of(j):
     try:
         return json.loads(j).get("scope") or "?"
     except Exception:
-        return "?"
+        return "?"  # 豁免（C2批2）：坏值按未知计，统计口径声明式兜底
 
 
 MODES = {
@@ -308,7 +309,7 @@ def _f(v):
     try:
         return float(v)
     except (TypeError, ValueError):
-        return None
+        return None  # 豁免（C2批2）：解析兜底，调用方按缺失值处理
 
 
 def _pct(price, prev):
@@ -591,11 +592,11 @@ def run(mode, dry):
     try:
         db.execute("ALTER TABLE news ADD COLUMN stocks TEXT")
     except sqlite3.OperationalError:
-        pass
+        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
     try:
         db.execute("ALTER TABLE news ADD COLUMN jev TEXT")
     except sqlite3.OperationalError:
-        pass
+        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
 
     try:
         from quote_snapshot import normalize_code
@@ -631,8 +632,8 @@ def run(mode, dry):
                            "count": len(sectors),
                            "up": sum(1 for s in sectors if s["pct"] > 0),
                            "items": sectors}, f, ensure_ascii=False)
-        except Exception:
-            pass
+        except Exception as e:
+            log("sectors.json 落盘失败（/bt-sectors 页将 stale）: %s" % str(e)[:100])  # C2批2
 
     news_items = fetch_news(db, window, limit)
     news_text = format_news(news_items) if news_items else "（时间窗内暂无新闻）"
@@ -729,8 +730,8 @@ def run(mode, dry):
                  os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               "news_jev_chart.py")],
                 creationflags=0x08000000)  # CREATE_NO_WINDOW
-        except Exception:
-            pass
+        except Exception as e:
+            log("news_jev_chart 启动失败，本期图表不更新: %s" % str(e)[:100])  # C2批2
         try:  # 微信渠道：晨报/复盘 markdown 摘要（未配置自动跳过）
             import send_wecom
             md = "**%s · %s**\n" % (
@@ -740,8 +741,9 @@ def run(mode, dry):
                 md += "JEV 判断：%s\n" % jev_text
             md += "\n" + brief[:1500]
             send_wecom.send_markdown(md)
-        except Exception:
-            pass
+        except Exception as e:
+            log("wecom 摘要推送失败（未配置走 send_wecom 内部跳过，异常即真失败）: %s"
+                % str(e)[:100])  # C2批2
 
     headline = ""
     for ln in brief.splitlines():

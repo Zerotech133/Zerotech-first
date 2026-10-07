@@ -78,6 +78,7 @@ def _qr_key(portal_url):
         from card_assets import ensure_qr_image_key
         return ensure_qr_image_key(portal_url)
     except Exception:
+        # 豁免（C2批2）：docstring 声明——二维码上传失败自动省略（可选组件降级）
         return None
 
 

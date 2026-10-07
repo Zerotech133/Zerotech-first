@@ -110,7 +110,7 @@ def main(argv=None):
             try:
                 os.unlink(norm_log)
             except OSError:
-                pass
+                pass  # 豁免（C2批2）：临时错误日志清理兜底，发送结果已落 alert_send.log
     try:
         action = handle_send_result(pending_path(task), task, ok, reason)
     except Exception as e:  # 改名失败不吞发送事实

@@ -318,8 +318,8 @@ def analyze(q, rid=None):
                 from send_feishu import send_text
                 send_text("⚠️ 个股分析失败\n%s\n\n可直接输入代码再试，"
                           "如 TSLA / 600519 / 00700" % msg)
-            except Exception:
-                pass
+            except Exception as e2:
+                log("失败反馈推送 FAIL %s" % str(e2)[:100])  # C2批2
             return False
         name, bias, strength = d["name"], d["bias"], d["strength"]
         px_s, stat_s, out = d["px"], d["stat"], d["outlook"]
@@ -346,8 +346,8 @@ def analyze(q, rid=None):
         try:
             from send_feishu import send_text
             send_text("⚠️ 个股分析异常：%s\n%s" % (q, str(ex)[:150]))
-        except Exception:
-            pass
+        except Exception as e2:
+            log("异常反馈推送 FAIL %s" % str(e2)[:100])  # C2批2
         return False
 
 
@@ -359,7 +359,9 @@ def _recent_done(rid, minutes=30):
     同一 rid 30 分钟内不再处理。"""
     try:
         st = json.load(open(STATE, encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        log("sa_state.json 读取失败，30 分钟去重失效（可能重复分析一次）: %s"
+            % str(e)[:100])  # C2批2
         return False
     ts = st.get(rid)
     if not ts:
@@ -370,7 +372,7 @@ def _recent_done(rid, minutes=30):
                 tzinfo=now_cst().tzinfo)
         ) < timedelta(minutes=minutes)
     except Exception:
-        return False
+        return False  # 豁免（C2批2）：时间戳坏值→去重失效一次，容错
 
 
 def _mark_done(rid):
@@ -407,7 +409,7 @@ def _list_rows(out="sa_poll.ndjson"):
                 try:
                     j = json.loads(ln)
                 except Exception:
-                    continue
+                    continue  # 豁免（C2批2）：ndjson 坏行跳过，正常容错
                 rid = j.get("record_id")
                 if not rid:
                     continue
@@ -416,7 +418,7 @@ def _list_rows(out="sa_poll.ndjson"):
                              st[0] if isinstance(st, list) and st
                              else str(st or ""))
     except OSError:
-        pass
+        pass  # 豁免（C2批2）：副本文件未生成属常态（首次运行前）
     return rows
 
 
@@ -491,7 +493,7 @@ def _poll_lock():
         os.close(fd)
         return True
     except OSError:
-        return True  # 锁不可用时不阻塞业务
+        return True  # 豁免（C2批2）：docstring 声明——锁不可用时不阻塞业务
 
 
 def main():
@@ -509,7 +511,7 @@ def main():
             try:
                 os.remove(os.path.join(HERE, "logs", "sa_poll.lock"))
             except OSError:
-                pass
+                pass  # 豁免（C2批2）：锁文件清理兜底，过期锁 600s 自愈
     else:
         print(__doc__)
 

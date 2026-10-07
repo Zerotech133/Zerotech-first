@@ -21,7 +21,7 @@ def _cfg():
         with open(CFG_PATH, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
-        return {}
+        return {}  # 豁免（C2批2）：配置缺失→默认 doc id，refresh 返回值由调用方记录
 
 
 def _latest_report(db, table):
@@ -30,7 +30,7 @@ def _latest_report(db, table):
             "SELECT date, ts, model, ok, markets, brief FROM %s "
             "ORDER BY date DESC LIMIT 1" % table).fetchone()
     except Exception:
-        return None
+        return None  # 豁免（C2批2）：板块降级为空，文档刷新主流程不受阻
 
 
 def _recent_hits(db, limit=20):
@@ -47,7 +47,7 @@ def _recent_hits(db, limit=20):
             "WHERE created_at>=? AND (hit=1 OR (stocks IS NOT NULL AND stocks!='')) "
             "ORDER BY created_at DESC LIMIT ?", (since, limit)).fetchall()
     except Exception:
-        return []
+        return []  # 豁免（C2批2）：命中快照板块降级为空，文档刷新主流程不受阻
     out = []
     for r in rows:
         try:
@@ -132,12 +132,12 @@ def refresh():
         out = (r.stdout or "")
         return '"ok": true' in out or '"ok":true' in out
     except Exception:
-        return False
+        return False  # 豁免（C2批2）：失败随返回值上抛，调用方（daily_report/news_ai）已有日志
     finally:
         try:
             os.remove(tmp)
         except OSError:
-            pass
+            pass  # 豁免（C2批2）：临时文件清理兜底
 
 
 if __name__ == "__main__":

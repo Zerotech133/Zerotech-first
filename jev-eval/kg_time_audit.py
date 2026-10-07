@@ -12,7 +12,7 @@ def q(cy, **kw):
     try:
         return KP._q(cy, **kw)
     except Exception as e:
-        return [{"ERR": str(e)[:120]}]
+        return [{"ERR": str(e)[:120]}]  # 豁免（C2批2）：一次性审计脚本，错误以 ERR 字段并入结果打印
 
 
 print("== ① 关系类型 × 时间属性覆盖 ==")

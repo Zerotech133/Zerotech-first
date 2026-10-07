@@ -69,7 +69,9 @@ def load_ignored() -> set:
     if IGNORE_FILE.exists():
         try:
             return set(json.loads(IGNORE_FILE.read_text(encoding="utf-8")))
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
+            log(f"ignored.jsonl 解析失败，忽略集清零（已忽略告警会重复弹卡）: {str(e)[:80]}",
+                level="warn")  # C2批2
             return set()
     return set()
 
@@ -128,7 +130,7 @@ def _mutate_card(card_content: str, status_text: str, template: str,
     try:
         card = json.loads(card_content)
     except Exception:  # noqa: BLE001
-        return None
+        return None  # 豁免（C2批2）：调用方 update_card 已落日志（card_content 解析失败）
     if "header" in card:
         card["header"]["template"] = template
     elements = card.get("body", {}).get("elements", [])
@@ -152,7 +154,7 @@ def _update_card_api(token: str, card_json: str) -> str:
             timeout=15, kind="card_update")
         return ""
     except Exception as e:  # noqa: BLE001
-        return str(e)[:200]
+        return str(e)[:200]  # 豁免（C2批2）：错误信息随返回值上抛，update_card 重试链已有日志
 
 
 def update_card(token: str, card_content: str, status_text: str,
@@ -209,7 +211,7 @@ def flush_pending() -> None:
         try:
             rec = json.loads(line)
         except Exception:  # noqa: BLE001
-            continue  # 损坏行直接丢弃
+            continue  # 豁免（C2批2）：outbox 损坏行直接丢弃，正常容错
         if update_card(rec["token"], rec["card_content"], rec["status_text"],
                        rec["template"], rec["operator_id"]):
             n_ok += 1
@@ -231,6 +233,8 @@ def handle_event(event: dict) -> None:
     try:
         action_value = json.loads(action_value_str)
     except Exception:  # noqa: BLE001
+        log(f"action_value 非 JSON，事件丢弃（操作者点击无响应风险）: "
+            f"{str(action_value_str)[:80]}", level="warn")  # C2批2
         return
 
     action = action_value.get("action", "")
@@ -305,7 +309,7 @@ def _looks_like_event(line: str) -> dict | None:
     try:
         obj = json.loads(line)
     except Exception:  # noqa: BLE001
-        return None
+        return None  # 豁免（C2批2）：stderr 合并流中非 JSON 诊断行过滤，预期控制流
     if isinstance(obj, dict) and ("action_tag" in obj or "token" in obj):
         return obj
     return None
@@ -347,7 +351,7 @@ def main() -> int:
         try:
             line = q.get(timeout=max(0.1, deadline - time.time()))
         except queue.Empty:
-            break
+            break  # 豁免（C2批2）：等待超时即正常出口（ready 标记超时在外层判定）
         if line is None:
             log(f"lark-cli 提前退出（code={proc.poll()}），启动失败")
             return 1
@@ -360,7 +364,7 @@ def main() -> int:
         try:
             proc.kill()
         except OSError:
-            pass
+            pass  # 豁免（C2批2）：kill 失败仅因进程已自行退出
         return 1
 
     jc.start_metrics(METRICS_PORT)  # P1-6：ready 后再开指标端点（启动失败不留孤儿端口）
@@ -397,7 +401,7 @@ def main() -> int:
         if proc.stdin is not None:
             proc.stdin.close()
     except Exception:  # noqa: BLE001
-        pass
+        pass  # 豁免（C2批2）：优雅关闭阶段 stdin 关闭失败无碍（进程即将终止）
     try:
         proc.wait(timeout=10)
     except Exception:  # noqa: BLE001

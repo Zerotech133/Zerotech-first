@@ -89,7 +89,8 @@ def _watch_names():
     try:
         with open(CFG, encoding="utf-8") as f:
             wl = json.load(f).get("watchlist", []) or []
-    except Exception:
+    except Exception as e:
+        print("BT watchlist cfg read err %s" % str(e)[:100])  # C2批2 吞错落盘（配置损坏将静默跑空回测）
         return out
     for w in wl:
         code = str(w.get("code") or "").strip().lower()
@@ -137,7 +138,7 @@ def _load_samples():
         try:
             j = json.loads(jev)
         except Exception:
-            continue
+            continue  # 豁免（C2批2）：jev 坏行跳过，正常容错
         bias = j.get("bias")
         conf = j.get("conf")
         if bias not in SCORE or not isinstance(conf, (int, float)):
@@ -203,7 +204,7 @@ def _daily_panel(start, end):
         try:
             c = float(df["close"].iat[i])
         except Exception:
-            continue
+            continue  # 豁免（C2批2）：行情坏值行跳过，正常容错
         close.setdefault(code, {})[d8] = c
         r = None
         if has_pct:

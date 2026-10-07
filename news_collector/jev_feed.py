@@ -62,7 +62,8 @@ def load_watermark():
         return {}
     try:
         return json.loads(row[0]).get("wm", {})
-    except Exception:
+    except Exception as e:
+        news_ai.log("jev_feed: runs.detail 解析失败，feed 降级为空: %s" % str(e)[:100])  # C2批2
         return {}
 
 

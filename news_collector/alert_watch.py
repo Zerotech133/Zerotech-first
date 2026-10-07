@@ -41,7 +41,8 @@ def _load_state():
     try:
         with open(STATE_PATH, encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        print("ALERT_WATCH_WARN state load err %s" % str(e)[:100])  # C2批2 吞错落盘（状态损坏会重复告警）
         return {}
 
 

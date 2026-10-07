@@ -29,7 +29,7 @@ def _j(path):
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
-        return None
+        return None  # 豁免（C2批2）：数据文件缺失/损坏属常态，各 block 按 None 降级跳过
 
 
 def _green(v, fmt="%+.2f%%"):
@@ -53,7 +53,7 @@ def _health_block():
         if not h:
             return None
     except Exception:
-        return None
+        return None  # 豁免（C2批2）：docstring 声明——health 缺啥跳啥（健康块降级不阻断日报）
     svcs = h.get("services") or {}
     n_ok = sum(1 for v in svcs.values() if v)
     dk = h.get("docker") or {}
@@ -174,8 +174,8 @@ def main():
         try:  # 同步刷新飞书简报文档（失败静默）
             import news_doc_board
             news_doc_board.refresh()
-        except Exception:
-            pass
+        except Exception as e:
+            print("doc_board refresh err %s" % str(e)[:100])  # C2批2 吞错落盘
     else:  # 文本兜底
         import subprocess
         txt = "\n\n".join(blocks) + "\n—— " + footer

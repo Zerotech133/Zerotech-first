@@ -141,7 +141,7 @@ def load_app_creds():
         if apps:
             return apps[0].get('appId'), apps[0].get('appSecret')
     except Exception:
-        pass
+        pass  # 豁免（C2批2）：lark-cli 凭证文件缺失属常态（计划任务无注入），返回 None 走外部兜底
     return None, None
 
 
@@ -276,7 +276,7 @@ def main():
     try:
         ok = json.loads(r.stdout).get("ok") is True
     except Exception:
-        pass
+        pass  # 豁免（C2批2）：stdout 非 JSON → ok=False，错误内容随 ALERT_FAIL 打印，未掩盖
     if ok:
         print("ALERT_OK")
         sys.exit(0)

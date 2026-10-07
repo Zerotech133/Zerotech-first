@@ -133,6 +133,7 @@ def qd_call(method: str, path: str, payload: dict | None = None) -> dict:
                     err_msg = err_body
                 return {"code": -e.code, "msg": err_msg[:200]}
             except Exception:  # noqa: BLE001
+                # 豁免（C2批2）：错误码与信息随返回值上抛给调用方，非静默
                 return {"code": -e.code, "msg": f"HTTP {e.code}"}
     return {"code": -401, "msg": "401 重试后仍失败"}
 
@@ -155,8 +156,9 @@ def load_pushed() -> set[str]:
     if QD_PUSHED.exists():
         try:
             return set(json.loads(QD_PUSHED.read_text(encoding="utf-8")))
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as e:  # noqa: BLE001
+            log(f"qd_pushed.jsonl 解析失败，去重集清零（有重复推送风险）: {str(e)[:80]}",
+                level="warn")  # C2批2
     return set()
 
 
@@ -169,8 +171,9 @@ def load_failed() -> set[str]:
     if QD_FAILED.exists():
         try:
             return set(json.loads(QD_FAILED.read_text(encoding="utf-8")))
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as e:  # noqa: BLE001
+            log(f"qd_failed.jsonl 解析失败，永久跳过集清零（400 标的将重试）: {str(e)[:80]}",
+                level="warn")  # C2批2
     return set()
 
 
@@ -194,7 +197,7 @@ def sync_focus_to_qd() -> None:
         try:
             rec = json.loads(line)
         except Exception:  # noqa: BLE001
-            continue
+            continue  # 豁免（C2批2）：triples 坏行跳过，正常容错
         if rec.get("decision") not in SYNC_DECISIONS:
             continue
         if rec.get("market") == "CN":
@@ -318,7 +321,7 @@ def load_known_decisions() -> dict[str, dict]:
         try:
             rec = json.loads(line)
         except Exception:  # noqa: BLE001
-            continue
+            continue  # 豁免（C2批2）：triples 坏行跳过，正常容错
         if rec.get("ts_code"):
             known[rec["ts_code"]] = rec   # 顺序读，后者覆盖 → 最新
     return known
@@ -343,7 +346,7 @@ def review_qd_watchlist(force: bool = False) -> None:
                 rec = json.loads(line)
                 last[f"{rec.get('market','')}:{rec.get('symbol','')}"] = rec.get("ts", "")
             except Exception:  # noqa: BLE001
-                pass
+                pass  # 豁免（C2批2）：review 坏行跳过，仅影响 24h 去重
     now = datetime.now()
     n_new, n_skip, n_err = 0, 0, 0
     with QD_REVIEW.open("a", encoding="utf-8") as f:

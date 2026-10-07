@@ -80,7 +80,7 @@ def atomic_write_text(path: Path, data: str) -> None:
         try:
             os.unlink(tmp)
         except OSError:
-            pass
+            pass  # 豁免（C2批2）：临时文件清理兜底，原异常随后 raise 不丢
         raise
 
 
@@ -229,7 +229,7 @@ def db_rows(sql: str, params=None) -> list[tuple]:
                     _pg_ok("")
                     return rows
                 except Exception:  # noqa: BLE001
-                    pass
+                    pass  # 豁免（C2批2）：重试失败后 raise e 上抛，外层统一 log 降级
             raise e
     except Exception as e:  # noqa: BLE001
         _pg_fail("")
@@ -299,8 +299,9 @@ def _load_bot_creds() -> "tuple[str, str, str] | None":
             _TAT_CACHE = (time.time() + 7200 - 600, tok,
                           app_id, app_secret)  # 有效期~7200s
             return tok, app_id, app_secret
-    except Exception:
-        pass
+    except Exception as e:
+        log(f"tenant_access_token 获取失败（config 缺失或 HTTP 异常），"
+            f"bot 凭证注入降级: {str(e)[:100]}", level="warn")  # C2批2
     return None
 
 

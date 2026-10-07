@@ -39,7 +39,8 @@ def _fallback_alerts():
         sys.path.insert(0, os.path.join(STATION, "portal"))
         import portal_api
         return portal_api.build_alerts()
-    except Exception:
+    except Exception as e:
+        print("fallback build_alerts err %s" % str(e)[:100])  # C2批2 吞错落盘
         return None
 
 
@@ -48,7 +49,8 @@ def _cfg():
         with open(os.path.join(HERE, "news_config.json"),
                   encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        print("cfg read err %s" % str(e)[:100])  # C2批2 吞错落盘（配置损坏会静默改推送目标）
         return {}
 
 
@@ -80,12 +82,13 @@ def fetch_index():
             try:
                 prev, cur, amt = float(f[2]), float(f[3]), float(f[9])
             except ValueError:
-                continue
+                continue  # 豁免（C2批2）：行情行数值坏段跳过，正常容错
             if cur > 0 and prev > 0:
                 out[c] = {"name": f[0], "pct": round((cur - prev) / prev * 100, 2),
                           "amount_yi": amt / 1e8}
         return out or None
     except Exception:
+        # 豁免（C2批2）：docstring 声明——大盘层缺项不阻断五路推送（fetch_index 失败静默返回 None）
         return None
 
 
@@ -184,8 +187,8 @@ def _save_last(ok, morning, res, targets_res):
                                "ok": bool(ok),
                                "n": len(res.get("alerts") or []),
                                "targets": targets_res})
-    except Exception:
-        pass
+    except Exception as e:
+        print("save_last err %s" % str(e)[:100])  # C2批2 吞错落盘（状态落盘失败 /intel 卡数据源将 stale）
 
 
 def main():

@@ -51,5 +51,5 @@ def atomic_write_json(path, obj, indent=None):
         try:
             os.unlink(tmp)
         except OSError:
-            pass
+            pass  # 豁免（C2批2）：临时文件清理兜底，原异常随后 raise 不丢
         raise

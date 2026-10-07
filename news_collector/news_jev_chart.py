@@ -46,7 +46,7 @@ def load(hours=24 * 7):
             j = json.loads(jev)
             t = datetime.strptime(ts, "%Y-%m-%d %H:%M").replace(tzinfo=CST)
         except Exception:
-            continue
+            continue  # 豁免（C2批2）：jev/时间戳坏行跳过，正常容错
         if now - t > timedelta(hours=hours):
             continue
         out.append({"t": t, "title": title or "", "bias": j.get("bias", "?"),
@@ -174,7 +174,7 @@ def upload_key():
                 return key
         return None
     except Exception:
-        return None
+        return None  # 豁免（C2批2）：图片上传失败自动省略（卡片无图推送），长尾留待批3
 
 
 def _lark(args, timeout=90):
@@ -352,12 +352,12 @@ def refresh_doc(now, items):
             capture_output=True, text=True, timeout=120, cwd=HERE)
         return doc
     except Exception:
-        return None
+        return None  # 豁免（C2批2）：文档刷新失败仅缺下钻链接，主卡片仍推送，长尾留待批3
     finally:
         try:
             os.remove(tmp)
         except OSError:
-            pass
+            pass  # 豁免（C2批2）：临时文件清理兜底
 
 
 def _card_btns(doc_url, base_url):
@@ -439,7 +439,7 @@ def main():
                 "（随晨报/复盘自动推送 · 不构成投资建议）"
                 % (len(items), day_n, now.strftime("%m-%d %H:%M")))
     except Exception:
-        pass
+        pass  # 留待批3（C2批2）：企微渠道异常；本模块 Popen 分离运行无落盘通道，需先建 logger
     print("JEV_CHART pushed" if ok else "JEV_CHART PUSH_FAIL")
 
 

@@ -44,7 +44,7 @@ def _load_app_creds():
         if apps:
             return apps[0].get("appId"), apps[0].get("appSecret")
     except Exception:
-        pass
+        pass  # 豁免（C2批2）：凭证文件缺失→(None,None)，调用方以 SEND_FAIL no app creds 呈现
     return None, None
 
 
@@ -81,7 +81,7 @@ def _send_openapi(content, msg_type, receive_id=None, receive_id_type="open_id")
             resp = json.loads(r2.read().decode("utf-8"))
         return resp.get("code") == 0, ("openapi code=%s" % resp.get("code"))
     except Exception as e:
-        return False, ("openapi err " + str(e))[:150]
+        return False, ("openapi err " + str(e))[:150]  # 豁免（C2批2）：错误随返回值上抛，调用方打印 SEND_FAIL
 
 
 def send_content_to(receive_id, receive_id_type, content, msg_type):

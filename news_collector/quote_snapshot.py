@@ -55,7 +55,7 @@ def _f(v):
     try:
         return float(v)
     except (TypeError, ValueError):
-        return None
+        return None  # 豁免（C2批2）：解析兜底，调用方按缺失值处理
 
 
 def _pct(price, prev, limit=25.0):
@@ -196,7 +196,7 @@ def main():
                             tzinfo=CST) < timedelta(minutes=cooldown_min):
                         continue
                 except Exception:
-                    pass
+                    pass  # 豁免（C2批2）：冷却时间戳坏值→去重失效可能重发一次，不漏告警
             alerts.append(q)
             state.setdefault(q["code"], {})[direction] = stamp
 

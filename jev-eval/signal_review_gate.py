@@ -264,8 +264,9 @@ def regime_ok_today() -> float:
             cache = json.loads(REGIME_CACHE.read_text(encoding="utf-8"))
             if cache.get("date") == key:
                 return float(cache.get("regime_p", 1.0))
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as e:  # noqa: BLE001
+            log(f"regime.json 缓存解析失败，忽略缓存重新计算: {str(e)[:80]}",
+                level="warn")  # C2批2
     p = 1.0
     if API_KEY:
         try:
@@ -365,7 +366,9 @@ def load_seen() -> set:
     if SEEN_FILE.exists():
         try:
             return set(json.loads(SEEN_FILE.read_text(encoding="utf-8")))
-        except Exception:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001
+            log(f"seen.json 解析失败，已复核集清零（候选将重复复核）: {str(e)[:80]}",
+                level="warn")  # C2批2
             return set()
     return set()
 

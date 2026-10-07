@@ -193,7 +193,7 @@ def fetch_report(size):
                             "title": ("[%s·%s] %s" % (tag, org, title))[:80],
                             "content": ("%s：%s" % (subj, title))[:300]})
         except Exception:
-            continue
+            continue  # 豁免（C2批2）：研报单条解析坏条跳过，正常容错
     return out
 
 
@@ -248,7 +248,7 @@ def fetch_world(size):
                             dt = dt.replace(tzinfo=timezone.utc)
                         ts = dt.astimezone(CST).strftime("%m-%d %H:%M")
                     except Exception:
-                        pass
+                        pass  # 豁免（C2批2）：pubDate 坏值→回落当前时间，单条容错
                 desc = strip_html(
                     it.findtext("description") or it.findtext(atom + "summary")
                     or it.findtext(atom + "content") or "")
@@ -262,7 +262,7 @@ def fetch_world(size):
                 if got >= per:
                     break
         except Exception:
-            continue
+            continue  # 豁免（C2批2）：docstring 声明——单源失败自动跳过
         if len(out) >= size:
             break
     return out
@@ -291,12 +291,12 @@ def init_db():
     try:
         db.execute("ALTER TABLE news ADD COLUMN stocks TEXT")
     except sqlite3.OperationalError:
-        pass
+        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
     # JEV 市场影响判断结果 JSON（bias/conf/scope，速报推送时写入）
     try:
         db.execute("ALTER TABLE news ADD COLUMN jev TEXT")
     except sqlite3.OperationalError:
-        pass
+        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
     db.commit()
     return db
 

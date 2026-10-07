@@ -109,7 +109,8 @@ def anns_asof(ts_code: str, pool_date: str) -> list[str] | None:
                         end_date=end.strftime("%Y%m%d"), src="沪深京")
         return (df["title"].astype(str).tolist()
                 if df is not None and "title" in df else [])[:15]
-    except Exception:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001
+        log(f"anns_d 拉取失败 ts_code={ts_code} pool_date={pool_date}: {str(e)[:100]}")  # C2批2
         return None
 
 
