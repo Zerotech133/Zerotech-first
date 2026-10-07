@@ -166,6 +166,7 @@ def run(cmd, timeout=30):
                            creationflags=NO_WINDOW)
         return r.stdout.decode("utf-8", "replace")
     except Exception:
+        log_exc("run() 子进程失败: %s" % (cmd[:2] if isinstance(cmd, list) else cmd))  # C2批1
         return ""
 
 
@@ -177,7 +178,7 @@ def tcp_ok(port, t=0.5):
             s.close()
             return True
         except Exception:
-            continue
+            continue  # 豁免（C2批1）：双栈探测逐栈尝试，::1 失败切 127.0.0.1 属正常
     return False
 
 
@@ -191,7 +192,7 @@ def get_containers():
         try:
             c = json.loads(line)
         except Exception:
-            continue
+            continue  # 豁免（C2批1）：docker ps 输出坏行跳过，正常容错
         name = c.get("Names", "")
         if name.startswith("quantdinger"):
             g = "QuantDinger"
@@ -230,7 +231,7 @@ def get_tasks():
             try:
                 tasks.append(json.loads(line))
             except Exception:
-                pass
+                pass  # 豁免（C2批1）：schtasks 输出坏行跳过，正常容错
     return tasks
 
 
@@ -250,7 +251,7 @@ def get_backups():
                 if done:
                     res["failed"] = done[-1].split("failed=")[-1].strip()
     except Exception:
-        pass
+        log_exc("get_backups:备份目录读取")  # C2批1
     return res
 
 
@@ -259,7 +260,7 @@ def get_alerts():
     try:
         res["pending"] = len(glob.glob(os.path.join(JEV, "alerts", "*.flag")))
     except Exception:
-        pass
+        log_exc("get_alerts:alerts 目录 glob")  # C2批1
     p = os.path.join(JEV, "backup_card_acks.jsonl")
     if os.path.exists(p):
         with open(p, "r", encoding="utf-8", errors="replace") as f:
@@ -271,7 +272,7 @@ def get_alerts():
                                     "id": j.get("alert_id", ""),
                                     "action": j.get("action", "")})
             except Exception:
-                pass
+                pass  # 豁免（C2批1）：ack 行坏行跳过，正常容错
     fl = os.path.join(JEV, "alerts", "forward.log")
     if os.path.exists(fl):
         with open(fl, "r", encoding="utf-8", errors="replace") as f:
@@ -287,7 +288,7 @@ def get_disks():
             out[letter[0]] = {"free_gb": round(u.free / 2 ** 30, 1),
                               "total_gb": round(u.total / 2 ** 30, 1)}
         except Exception:
-            pass
+            pass  # 豁免（C2批1）：盘符可能不存在（无 D 盘等），属常态
     return out
 
 
@@ -305,19 +306,19 @@ def get_news():
                "sources": s.get("sources", {}),
                "updated": s.get("updated", "")}
     except Exception:
-        pass
+        log_exc("get_news:news_collector/status.json")  # C2批1
     try:
         with open(os.path.join(STATION, "news_collector", "ai_brief.json"),
                   "r", encoding="utf-8") as f:
             res["ai"] = json.load(f)
     except Exception:
-        res["ai"] = None
+        res["ai"] = None  # 豁免（C2批1）：AI 晨报未生成属常态，缺文件≠故障
     try:
         with open(os.path.join(STATION, "news_collector", "ai_review.json"),
                   "r", encoding="utf-8") as f:
             res["review"] = json.load(f)
     except Exception:
-        res["review"] = None
+        res["review"] = None  # 豁免（C2批1）：AI 复盘未生成属常态
     return res
 
 
@@ -327,6 +328,7 @@ def get_quotes():
                   "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
+        # 豁免（C2批1）：quotes_status.json 未生成属常态（首次运行前）
         return {"ok": None, "items": []}
 
 
@@ -336,6 +338,7 @@ def get_backtest():
                   "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
+        log_exc("get_backtest:last_backtest.json")  # C2批1
         return None
 
 
@@ -346,6 +349,7 @@ def get_gzh():
             items = json.load(f)
         return {"drafts": items[:8]}
     except Exception:
+        log_exc("get_gzh:gzh/drafts/index.json")  # C2批1
         return {"drafts": []}
 
 
@@ -356,6 +360,7 @@ def get_video():
             items = json.load(f)
         return {"videos": items[:8]}
     except Exception:
+        log_exc("get_video:video/output/index.json")  # C2批1
         return {"videos": []}
 
 
@@ -416,6 +421,7 @@ def fut_page_html():
             with open(c[-1], encoding="utf-8") as f:
                 return c[-1], _json.load(f)
         except Exception:
+            log_exc("fut_page:_latest 快照解析 %s" % c[-1])  # C2批1
             return c[-1], None
 
     scan_p, scan = _latest("fut_scan_*.json")
@@ -574,7 +580,7 @@ def fut_page_html():
                 with open(wfp, encoding="utf-8") as f:
                     _json.load(f)
             except Exception as e:
-                _err = repr(e)
+                _err = repr(e)  # 豁免（C2批1）：err 已回显页面 dim 文案，非静默
         parts.append(
             "<div class='sec'><h2>③ 策略稳健性汇总</h2><div class='dim'>"
             "fut_walkforward 快照未生成（wfp=%s err=%s）：手跑 "
@@ -1132,6 +1138,7 @@ def _bt_custom_start(rec):
                         str(rec.get("hold") or "5,10,20").split(",")
                         if x.strip()})
     except Exception:
+        # 豁免（C2批1）：hold 参数解析失败回默认值，控制流非数据吞错
         holds = [5, 10, 20]
     holds = [h for h in holds if 1 <= h <= 250] or [5, 10, 20]
     if not codes:
@@ -1205,6 +1212,7 @@ def _alerts_last_jsonl(fp):
         last = last.strip()
         return json.loads(last) if last else None
     except Exception:
+        # 豁免（C2批1）：口径即「末行可解析才计入」（weak 在案口径注释）
         return None
 
 
@@ -1358,7 +1366,7 @@ def build_alerts():
                         "delta": (_nb(last) - _nb(days[-2]))
                         if len(days) > 1 else None})
     except Exception:
-        pass
+        log_exc("build_alerts:chanlun_pool.jsonl")  # C2批1
     # ③ 九维警报池（nine_dim_scores.json：n_alert 阈值入池数）
     snap = _read_json(os.path.join(QBT_DIR, "data", "nine_dim_scores.json"))
     if snap:
@@ -1380,7 +1388,7 @@ def build_alerts():
                     "sub": "扫描→建案→跟踪→复评→结案",
                     "href": "/bt-weak", "delta": None})
     except Exception:
-        pass
+        log_exc("build_alerts:weak_track 在案统计")  # C2批1
     # ⑤ 共振做多（cross_poll.build_cross 内置 60s 缓存；口径=共振页 longs）
     try:
         if QBT_DIR not in sys.path:
@@ -1394,7 +1402,7 @@ def build_alerts():
                     "sub": "多策略信号共振 · 买入级",
                     "href": "/bt-cross", "delta": None})
     except Exception:
-        pass
+        log_exc("build_alerts:cross_poll 共振")  # C2批1
     # ⑥ 投委会（K61：最近跑批夜三会计数 + 影子转正进度，态势带卡；
     #    K62：管理预警计数 + 风格分桶分布上屏；K64d：待确认队列计数）
     try:
@@ -1417,7 +1425,7 @@ def build_alerts():
                             warn, pend, sty_s),
                         "href": "/council", "delta": None})
     except Exception:
-        pass
+        log_exc("build_alerts:council_stats")  # C2批1
     return {"ts": time.strftime("%Y-%m-%d %H:%M"), "alerts": out}
 
 
@@ -1597,7 +1605,7 @@ def build_screen():
                            "state": st.get("state"),
                            "hits": [h.get("sid") for h in st.get("hits") or []]})
     except Exception:
-        pass
+        log_exc("_screen_page:cross_poll 聚合")  # C2批1
     out["strategies"] = strategies
     out["pick_detail"] = sorted(detail, key=lambda x: -x["n_hit"])[:80]
 
@@ -1656,7 +1664,7 @@ def build_screen():
             try:
                 m = pm.compute([{"d": c["d"], "nav": _cps(c)} for c in curve])
             except Exception:
-                pass
+                log_exc("_screen_page:perf_metrics.compute")  # C2批1
         # K51-B 平仓原因归类统计 + 平均持有交易日
         cats = {}
         for c in closed:
@@ -1759,10 +1767,12 @@ def build_screen():
     try:
         out["pulse"] = build_daily_pulse()
     except Exception:
+        log_exc("_screen_page:build_daily_pulse")  # C2批1
         out["pulse"] = []
     try:
         out["alerts"] = (build_alerts().get("alerts") or [])
     except Exception:
+        log_exc("_screen_page:build_alerts")  # C2批1
         out["alerts"] = []
     try:
         pool_path = os.path.join(QBT_DIR, "data", "chanlun_pool.jsonl")
@@ -1793,6 +1803,7 @@ def build_screen():
         out["signals"] = [_sig(r) for r in today_rows[:60]]
         out["fifteen"] = [_sig(r) for r in reversed(rows[-15:])]
     except Exception:
+        log_exc("_screen_page:chanlun_pool 当日信号")  # C2批1
         out["sig_day"] = ""
         out["signals"] = []
         out["fifteen"] = []
@@ -1802,6 +1813,7 @@ def build_screen():
         out["fresh"] = ({"ok": sum(1 for r in rs if r.get("status") == "ok"),
                          "total": len(rs)} if rs else None)
     except Exception:
+        log_exc("_screen_page:freshness 新鲜度")  # C2批1
         out["fresh"] = None
 
     # ── 态势感知 ops：① 服务实时探活（60s 缓存内只探一轮）
@@ -1833,6 +1845,7 @@ def build_screen():
     try:
         out["ops"] = [{"name": n, "ok": ok} for n, ok in _probe_ops()]
     except Exception:
+        log_exc("_screen_page:ops 服务探活")  # C2批1
         out["ops"] = []
     try:
         import datetime as _dt
@@ -1861,6 +1874,7 @@ def build_screen():
                 "last_ago": _pulse_ago(s0),
                 "server_now": _dt.datetime.now().strftime("%H:%M:%S")}
     except Exception:
+        log_exc("_screen_page:ops_meta 最近任务锚")  # C2批1
         out["ops_meta"] = None
 
     # ── K65 财经快讯 + Jev 判断：news_collector/news.db 只读
@@ -1918,6 +1932,7 @@ def build_screen():
             pass
         _con.close()
     except Exception:
+        log_exc("_screen_page:news.db 快讯/晨报")  # C2批1
         out["news"] = []
         out["news_stats"] = None
         out.setdefault("news_brief", None)
@@ -1947,6 +1962,7 @@ def build_screen():
         if cn_map:
             out["bear_pool"] = _pool_bear_news(cn_map)
     except Exception:
+        log_exc("_screen_page:bear_pool 利空警示")  # C2批1
         out["bear_pool"] = []
 
     # ── K61 投委会锚（罗盘迷你卡消费；态势带第⑥路走 alerts 同源）
@@ -1965,6 +1981,7 @@ def build_screen():
             co["dist"][h["act"]] = co["dist"].get(h["act"], 0) + 1
         out["council"] = co
     except Exception:
+        log_exc("_screen_page:council 投委会锚")  # C2批1
         out["council"] = None
 
     _screen_cache.update(t=now, d=out)
@@ -3294,10 +3311,10 @@ def _news_db():
                                       "conf": d.get("conf", 0),
                                       "scope_cn": d.get("scope_cn", "")})
             except Exception:
-                pass
+                log_exc("_news_db:recent 行解析")  # C2批1
         db.close()
     except Exception:
-        pass
+        log_exc("_news_db:news.db 连接/统计")  # C2批1
     return out
 
 
@@ -3380,6 +3397,7 @@ def _sa_hist_read(n=8):
             lines = [x for x in f.read().splitlines() if x.strip()]
         return [json.loads(x) for x in lines[-n:]][::-1]
     except Exception:
+        log_exc("_sa_hist_read:sa_history.jsonl")  # C2批1
         return []
 
 
@@ -3455,6 +3473,7 @@ def _bt_jev_news(name, aliases, hours=24 * 7):
             (since,)).fetchall()
         db.close()
     except Exception:
+        log_exc("_bt_jev_news:news.db 查询")  # C2批1
         return out
     for ts, title, j in rows:
         if not title or not any(k in title for k in kws):
@@ -3512,6 +3531,7 @@ def _pool_bear_news(codes_names, days=5, min_conf=0.75, limit=12):
             "ORDER BY id DESC LIMIT 4000", (since,)).fetchall()
         db.close()
     except Exception:
+        log_exc("_pool_bear_news:news.db 查询")  # C2批1
         return out
     for ca, title, stocks, jev in rows:
         if not title:
@@ -3628,6 +3648,7 @@ def _kline_data(q, n=250):
                 bars = df.sort_index()
                 break
     except Exception:
+        log_exc("_kline_data:load_bars 日线加载 %s/%s" % (name, code))  # C2批1
         bars = []
     if bars is None or not len(bars):
         return {"ok": False, "err": "无日线数据（%s · %s）" % (name, code)}
@@ -3775,7 +3796,7 @@ def _kline_data(q, n=250):
                   "sub": g.get("sub", "")}
                  for g in cmm["signals"]]
     except Exception:
-        pass
+        log_exc("_kline_data:缠论多级别结构")  # C2批1
     # K172 P2 15 形态识别 + 信号日共振映射（四市场纯 OHLC 规则，
     # chanlun_pattern 自研引擎；ptmap 仅含结构信号日出现的形态）
     pats, ptmap = [], {}
@@ -3786,7 +3807,7 @@ def _kline_data(q, n=250):
         pats = _pdt(pbars)
         ptmap = _pres(pats, [g["d"] for g in sigs])
     except Exception:
-        pass
+        log_exc("_kline_data:chanlun_pattern 形态识别")  # C2批1
     return {"ok": True, "name": name, "code": code,
             "bars": out, "marks": marks, "news": news,
             "bis": bis, "pivots": pivots,
@@ -5451,6 +5472,7 @@ gap:14px;align-items:start}}
             import cross_poll as _CP
             cross = _CP.build_cross() or {}
         except Exception:
+            log_exc("_fin 策略动态:cross_poll")  # C2批1
             cross = {}
         n_per = cross.get("n_per", {})
         stocks = cross.get("stocks", [])
@@ -5911,6 +5933,7 @@ gap:14px;align-items:start}}
                 with open(hp, encoding="utf-8") as f:
                     hist = [json.loads(l) for l in f if l.strip()][-15:]
             except Exception:
+                log_exc("九维页:history 读取 %s" % hp)  # C2批1
                 hist = []
         rows = snap.get("rows", [])
         env = snap.get("env") or {}
@@ -6551,6 +6574,7 @@ gap:14px;align-items:start}}
         try:
             fr = data_freshness()
         except Exception as ex:
+            log_exc("_data_health_page:freshness")  # C2批1
             fr = {"expect": None, "rows": [], "err": str(ex)}
         fr_rows = []
         for x in fr.get("rows") or []:
@@ -20135,6 +20159,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_kg_label_save(rec))
@@ -20164,6 +20190,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 if QBT_DIR not in sys.path:
@@ -20184,6 +20212,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_kg_card_fb_save(rec))
@@ -20192,6 +20222,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_chanlun_pool_push(rec))
@@ -20200,6 +20232,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_portfolio_set(rec))
@@ -20211,6 +20245,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_portfolio_close(rec))
@@ -20219,6 +20255,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_portfolio_adjust(rec))
@@ -20227,6 +20265,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_portfolio_open(rec))
@@ -20235,6 +20275,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_council_confirm(rec))
@@ -20243,6 +20285,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_council_simrun(rec))
@@ -20251,6 +20295,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_debate_say(rec))
@@ -20259,6 +20305,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
+                    # 豁免（C2批1）：显式 400 回客户端，非静默吞错；不落盘
+                    # 防止攻击者用畸形 body 刷错误日志
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_bt_custom_start(rec))
@@ -20789,6 +20837,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._json(research_for_stock(
                     _rc, force=_rf, read_only=not _rf))
             except Exception as _re3:
+                log_exc("GET /api/research")  # C2批1
                 self._json({"ok": False, "err": str(_re3)[:200]}, 500)
         elif path == "/api/nlquery":
             # P-E 多 agent 自然语言查数：默认读当日缓存；force=1 现算（10-30s）
@@ -20819,6 +20868,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             try:
                 self._json(_ma_answer(_q, force=_nf, read_only=not _nf))
             except Exception as _nle:
+                log_exc("GET /api/nlquery")  # C2批1
                 self._json({"ok": False, "err": str(_nle)[:200]}, 500)
         elif path == "/nl":
             # P-E 自然语言查数页：输入问句 → multi_agent 多 agent 答案
@@ -20892,6 +20942,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     _uqk((qp.get("c") or [""])[0]).strip()[:24],
                     (qp.get("n") or ["250"])[0]))
             except Exception as ex:
+                log_exc("GET /api/kline")  # C2批1
                 self._json({"ok": False, "err": str(ex)[:120]}, 500)
         elif path == "/api/kline_qy":
             # K200 季/年线 JSON（深历史 datamart 两段拼接 + 服务端聚合结构；
@@ -20902,6 +20953,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._json(_kline_qy(
                     _uqkq((qp.get("c") or [""])[0]).strip()[:24]))
             except Exception as ex:
+                log_exc("GET /api/kline_qy")  # C2批1
                 self._json({"ok": False, "err": str(ex)[:120]}, 500)
         elif path == "/api/analyst-report":
             # K244 青萍之末分析师报告（事实聚合 + LLM 大白话，异步用）
@@ -20916,12 +20968,14 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     (qp.get("d") or [""])[0],
                     (qp.get("x") or [""])[0]))
             except Exception as ex:
+                log_exc("GET /api/chips")  # C2批1
                 self._json({"ok": False, "err": str(ex)[:120]}, 500)
         elif path == "/api/bridge/summary":
             # K56-B1 驾驶舱聚合（五仪数据一次拉齐，只读）
             try:
                 self._json(bridge_summary())
             except Exception as ex:
+                log_exc("GET /api/bridge/summary")  # C2批1
                 self._json({"error": str(ex)}, 500)
         elif path == "/api/bridge/table_preview":
             # K56 数据穿透：白名单表最新 n 行（驾驶舱/数据仓 🔍 展开）
@@ -20938,6 +20992,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             try:
                 self._json(data_freshness())
             except Exception as ex:
+                log_exc("GET /api/data/freshness")  # C2批1
                 self._json({"error": str(ex)}, 500)
         elif path == "/api/data/sync":
             # 手动触发同步（数据仓页按钮）：?src=tdx|tushare|kg|catalog
@@ -20972,6 +21027,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 with open(_sp, "r", encoding="utf-8") as _sf:
                     self._html(_sf.read())
             except Exception:
+                log_exc("GET /screen 文件版读取失败，兜底内嵌渲染")  # C2批1
                 self._screen_page()
         elif path == "/screen-sig":
             # K64 当日买卖点全量页（大屏预警面板"全屏 »"下钻）
@@ -21043,6 +21099,7 @@ if __name__ == "__main__":
             data_freshness()
             print("[warmup] freshness ok", flush=True)
         except Exception as ex:
+            log_exc("warmup:freshness 预热失败")  # C2批1
             print("[warmup] freshness fail:", ex, flush=True)
 
     threading.Thread(target=_warm_freshness, daemon=True).start()
