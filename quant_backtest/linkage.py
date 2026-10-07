@@ -122,6 +122,94 @@ def resolve_block(code, block=None, block_name=None):
     return None
 
 
+# ---------------------------------------------------------------- 板块成员
+_INDUSTRY_IDX = None
+_RESOLVE_CACHE = {}
+_MEMBERS_CACHE = {}
+
+
+def _seg_pri(kv):
+    seg = kv[1]["seg"]
+    return SEG_PRI.index(seg) if seg in SEG_PRI else len(SEG_PRI)
+
+
+def _industry_index():
+    """{行业名: 板块code}，SEG_PRI 优先级一次构建（懒加载缓存）。"""
+    global _INDUSTRY_IDX
+    if _INDUSTRY_IDX is None:
+        idx = {}
+        for bc, d in sorted(sector_defs().items(), key=_seg_pri):
+            if d["seg"] in SEG_PRI:
+                idx.setdefault(d["name"], bc)
+        _INDUSTRY_IDX = idx
+    return _INDUSTRY_IDX
+
+
+def resolve_industry_block(industry):
+    """个股 industry 名 → 板块 code（与 resolve_block 同源同优先级）。
+
+    resolve_block 是「个股 code 反查」，本函数是「行业名直查」——
+    匹配逻辑一致（别名 → 精确名 → SEG_PRI 包含匹配），供批量
+    成员归组用，避免逐股走 resolve_block 的全表扫描。
+    """
+    if not industry:
+        return None
+    if industry in _RESOLVE_CACHE:
+        return _RESOLVE_CACHE[industry]
+    w = INDUSTRY_ALIAS.get(industry, industry)
+    idx = _industry_index()
+    bc = idx.get(w)
+    if not bc:
+        for c, d in sorted(sector_defs().items(), key=_seg_pri):
+            if d["seg"] in SEG_PRI and len(w) >= 2 and (
+                    w in d["name"] or d["name"] in w):
+                bc = c
+                break
+    _RESOLVE_CACHE[industry] = bc
+    return bc
+
+
+def block_members(block):
+    """板块成员清单（strong 阶段2a 全池扫描用）。
+
+    口径：TDX 880xxx 行业板块无成分股清单文件，成员归属以
+    ts_stock_basic.industry（resolve_block 的同源归属字段）经
+    resolve_industry_block 归组——每只个股归属唯一板块，与单股
+    resolve_block 完全同口径。返回 [{code,name,industry}]
+    （code 归一为 600519.SH 形式）；板块不在定义表返回 []。
+    """
+    b = str(block).split(".")[0]
+    if b in _MEMBERS_CACHE:
+        return _MEMBERS_CACHE[b]
+    if b not in sector_defs():
+        return []
+    from codes import normalize_code
+    import tdx_read as tdxr
+    try:
+        df = tdxr.read_all("ts_stock_basic",
+                           columns=["ts_code", "name", "industry"])
+    except Exception:
+        return []
+    out = []
+    for _, r in df.iterrows():
+        ind = str(r["industry"] or "") or None
+        if resolve_industry_block(ind) == b:
+            c = normalize_code(r["ts_code"])
+            if c:
+                out.append({"code": c, "name": str(r["name"] or ""),
+                            "industry": str(r["industry"] or "")})
+    _MEMBERS_CACHE[b] = out
+    return out
+
+
+def block_member_count(block):
+    """板块成员数（strong_track.block_quorum 门槛输入；无数据 → None）。"""
+    b = str(block).split(".")[0]
+    if b not in sector_defs():
+        return None
+    return len(block_members(b))
+
+
 # ---------------------------------------------------------------- 板块K线
 def _read_parquet_code(tbl_dir, code, columns=None):
     """按 code 列下推过滤读全部分片（含尾巴仓），返回合并 df 或空。"""
