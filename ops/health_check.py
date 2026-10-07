@@ -48,7 +48,10 @@ def _tcp_ok(port, timeout=3):
 
 def _jev_py_ok():
     """Jev 四件套解释器巡检：在跑的必须全为产线 3.11（双 Python 治理护栏，
-    防裸 python 调用静默回归到 PATH 的用户 3.12）。"""
+    防裸 python 调用静默回归到 PATH 的用户 3.12）。
+
+    P1-4 fail-explicit：巡检自身故障不再静默返回 True（假绿），
+    改为返回显式 "checker-error" 状态，由上层落盘标注、不中断其他检查。"""
     try:
         r = subprocess.run(
             ["powershell", "-NoProfile", "-Command",
@@ -60,7 +63,7 @@ def _jev_py_ok():
                  if l.strip().lower().endswith("python.exe")]
         return bool(paths) and all("Python311" in p for p in paths)
     except Exception:
-        return True  # 巡检自身故障不误报
+        return "checker-error"  # P1-4: 巡检自身故障显式标注（fail-explicit）
 
 
 def check_services():
@@ -118,10 +121,17 @@ def check_tasks():
         try:
             rc = int(rc_s.strip())
         except (ValueError, AttributeError):
-            rc = 0  # 查询不到结果码按未知处理为正常
-        if rc not in _BENIGN_RC:
+            rc = "unknown"  # P1-4: 查询不到结果码显式标注 unknown，不按健康处理
+        if rc == "unknown" or rc not in _BENIGN_RC:
             bad.append({"name": name.strip(), "rc": rc})
     return {"total": total, "bad": bad}
+
+
+def _rc_str(rc):
+    """统一格式化任务结果码（兼容 unknown 字符串态）。"""
+    if rc == "unknown":
+        return "unknown"
+    return "0x%X" % (rc & 0xFFFFFFFF)
 
 
 def check_data():
@@ -147,7 +157,9 @@ def run():
 
     result["services"] = check_services()
     for name, ok in result["services"].items():
-        if not ok:
+        if ok == "checker-error":
+            issues.append("检查器故障(degraded): %s" % name)
+        elif not ok:
             issues.append("服务下线: %s" % name)
 
     result["docker"] = check_docker()
@@ -156,7 +168,10 @@ def run():
 
     result["tasks"] = check_tasks()
     for b in result["tasks"]["bad"]:
-        issues.append("任务 %s RC=0x%X" % (b["name"], b["rc"] & 0xFFFFFFFF))
+        if b["rc"] == "unknown":
+            issues.append("任务 %s RC=unknown（结果码未获取，需人工确认）" % b["name"])
+        else:
+            issues.append("任务 %s RC=0x%X" % (b["name"], b["rc"] & 0xFFFFFFFF))
 
     result["data"] = check_data()
     result["issues"] = issues
@@ -173,12 +188,18 @@ def main():
         return
     print("== OS 系统自检 %s ==" % h["ts"])
     for name, ok in h["services"].items():
-        print("  服务 %-14s %s" % (name, "✓" if ok else "✗ 下线"))
+        if ok == "checker-error":
+            mark = "? checker-error"
+        elif ok:
+            mark = "✓"
+        else:
+            mark = "✗ 下线"
+        print("  服务 %-14s %s" % (name, mark))
     dk = h["docker"] or {}
     print("  容器 total=%s ai_portal=%s" % (dk.get("total", "?"), dk.get("ai_portal")))
     print("  计划任务 total=%d 异常=%d" % (h["tasks"]["total"], len(h["tasks"]["bad"])))
     for b in h["tasks"]["bad"]:
-        print("    ✗ %s RC=0x%X" % (b["name"], b["rc"] & 0xFFFFFFFF))
+        print("    ✗ %s RC=%s" % (b["name"], _rc_str(b["rc"])))
     d = h["data"]
     print("  数据: 24h新闻=%s 板块=%s 待买/持/平=%d/%d/%d 快照=%s" % (
         d["news_24h"], d["sectors_count"], d["pending"], d["open"],
