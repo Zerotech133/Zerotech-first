@@ -110,24 +110,32 @@ _IGNORE_NAME = ("OneDrive",)
 def check_tasks():
     ps = ("Get-ScheduledTask | Where-Object { $_.TaskPath -notlike '\\Microsoft*' } | "
           "ForEach-Object { $i = $_ | Get-ScheduledTaskInfo -ErrorAction SilentlyContinue; "
-          "'{0}|{1}|{2}' -f $_.TaskName, $_.State, $i.LastTaskResult }")
+          "'{0}|{1}|{2}|{3}' -f $_.TaskName, $_.State, $i.LastTaskResult, "
+          "$i.LastRunTime.ToString('yyyy-MM-dd HH:mm') }")
     try:
         r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
                            capture_output=True, text=True, timeout=60)
         lines = [l.strip() for l in (r.stdout or "").splitlines() if "|" in l]
     except Exception:
-        return {"total": 0, "bad": [{"name": "查询失败", "rc": -1}]}
-    total, bad, benign = 0, [], []
+        return {"total": 0, "bad": [{"name": "查询失败", "rc": -1}],
+                "benign": [], "stale": []}
+    total, bad, benign, stale = 0, [], [], []
+    now = datetime.now()
     for line in lines:
         total += 1
         try:
-            name, state, rc_s = line.split("|", 2)
+            name, state, rc_s, last_s = line.split("|", 3)
         except ValueError:
-            continue
+            continue  # 格式异常行跳过（正常输出恒为 4 段）
         if state.strip() == "Disabled":
             continue
         if name.strip().startswith(_IGNORE_NAME):
             continue
+        # C5: 每日类任务陈旧度（在 rc 判定之前——「跑了失败」由 rc 报，
+        # 「没跑」由陈旧度报，两者可并存）
+        if name.strip() in _DAILY_TASKS:
+            if _is_stale(last_s, _log_mtime_ts(name.strip()), now):
+                stale.append(name.strip())
         try:
             rc = int(rc_s.strip())
         except (ValueError, AttributeError):
@@ -136,7 +144,7 @@ def check_tasks():
             bad.append({"name": name.strip(), "rc": rc})
         elif rc in _BENIGN_RC_INFO:
             benign.append({"name": name.strip(), "rc": rc})  # A5: 良性但保可见性
-    return {"total": total, "bad": bad, "benign": benign}
+    return {"total": total, "bad": bad, "benign": benign, "stale": stale}
 
 
 def _rc_str(rc):
@@ -144,6 +152,56 @@ def _rc_str(rc):
     if rc == "unknown":
         return "unknown"
     return "0x%X" % (rc & 0xFFFFFFFF)
+
+
+# ---------- C5 任务陈旧度：区分「没跑」与「跑了失败」 ----------
+# 阈值 26h = 每日任务错过一个完整调度日 + 2h 余量（runbook 2026-10-07 §4.3）。
+_STALE_MAX_HOURS = 26
+# 每日/EOD 类任务白名单（只对这些任务查陈旧度，避免一次性任务
+# 如 RtdxRtMinPull 完成后长期未跑被误报）。值 = 该任务日志文件路径
+# （None = 未登记日志，仅靠 LastRunTime 数据源）。发现新每日任务时在此登记。
+_DAILY_TASKS = {
+    "SubPushEod": os.path.join(STATION, "quant_backtest", "logs", "subscribe_task.out"),
+    "MorningReport": None,
+    "TushareSync": r"C:\Temp\tushare_sync_out.log",
+    "ChanlunRefill": None,
+    "RpsDaily": None,
+    "WeakDailyHealth": None,
+    "AI工作站每日备份": None,
+}
+
+
+def _last_run_ts(last_s):
+    """数据源①：LastRunTime（check_tasks 的 PowerShell 查询附带，yyyy-MM-dd HH:mm）。
+    说明：本开发沙箱拦截 Get-ScheduledTask 无法实机验证读取，但产线每日 03:00
+    同一管道读 LastTaskResult 正常，同一 CimInstance 会话取 LastRunTime 风险低。"""
+    try:
+        return datetime.strptime(last_s.strip(), "%Y-%m-%d %H:%M")
+    except (ValueError, AttributeError):
+        return None
+
+
+def _log_mtime_ts(name):
+    """数据源②：任务日志文件 mtime 兜底（LastRunTime 读不到时使用，
+    仅对 _DAILY_TASKS 里登记了日志路径的任务生效）。"""
+    log = _DAILY_TASKS.get(name)
+    if not log:
+        return None
+    try:
+        return datetime.fromtimestamp(os.path.getmtime(log))
+    except OSError:
+        return None
+
+
+def _is_stale(last_s, log_ts, now):
+    """陈旧判定。防炸：两个数据源均不可得 → 跳过不报（陈旧度检查自身
+    故障不产生误报）；LastRunTime 为 MinValue(0001 年) 视为从未跑 → stale。"""
+    ts = _last_run_ts(last_s) or log_ts
+    if ts is None:
+        return False
+    if ts.year < 2000:
+        return True
+    return (now - ts).total_seconds() > _STALE_MAX_HOURS * 3600
 
 
 def check_data():
@@ -188,6 +246,10 @@ def run():
     for bn in result["tasks"].get("benign", []):
         issues.append("[info] 任务 %s RC=%s（%s）" % (
             bn["name"], _rc_str(bn["rc"]), _BENIGN_RC_INFO_NOTE))
+    # C5: 陈旧度——「没跑」与「跑了失败」区分（后者由 rc 上报，前者在此）
+    for s in result["tasks"].get("stale", []):
+        issues.append("任务陈旧: %s 超过 %dh 未跑（没跑≠失败，需查调度/停机）" % (
+            s, _STALE_MAX_HOURS))
 
     result["data"] = check_data()
     result["issues"] = issues
@@ -218,6 +280,8 @@ def main():
         print("    ✗ %s RC=%s" % (b["name"], _rc_str(b["rc"])))
     for bn in h["tasks"].get("benign", []):
         print("    ~ %s RC=%s（良性豁免）" % (bn["name"], _rc_str(bn["rc"])))
+    for s in h["tasks"].get("stale", []):
+        print("    ⏰ %s 超 %dh 未跑（陈旧）" % (s, _STALE_MAX_HOURS))
     d = h["data"]
     print("  数据: 24h新闻=%s 板块=%s 待买/持/平=%d/%d/%d 快照=%s" % (
         d["news_24h"], d["sectors_count"], d["pending"], d["open"],
