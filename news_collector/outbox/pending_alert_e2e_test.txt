@@ -1,3 +1,0 @@
-[QUANT ALERT] task failed: e2e_test exit=1 2026-09-30 23:07:32
---- log tail ---
-﻿Traceback (most recent call last):

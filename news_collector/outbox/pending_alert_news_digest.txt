@@ -1,1 +1,0 @@
-[QUANT ALERT] task failed: news_digest exit=C:\Temp\news_digest_err.log 2026-10-04 08:30:03

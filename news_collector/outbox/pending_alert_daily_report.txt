@@ -1,1 +1,0 @@
-[QUANT ALERT] task failed: daily_report exit=C:\Temp\daily_report_err.log 2026-10-04 08:49:38

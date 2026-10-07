@@ -1,1 +1,0 @@
-[DockerWatchdog] Docker 引擎连续 2 次探测失败，已触发 DockerDesktopLaunch 自动拉起。时间: 2026-10-07 12:37:28，fail_count=2

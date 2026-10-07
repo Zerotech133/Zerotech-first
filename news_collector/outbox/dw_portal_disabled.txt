@@ -1,1 +1,0 @@
-[DockerWatchdog] 守护发现计划任务「AI工作站门户API」被禁用，已自动恢复（Enable+Start）。时间: 2026-10-05 05:57:52。若为有意停用（维护/迁移），请先禁用 DockerWatchdog 任务，否则 5 分钟内会被再次拉起。

@@ -1,1 +1,0 @@
-[QUANT ALERT] task failed: gzh_writer exit=C:\Temp\gzh_err.log 2026-10-02 09:30:25

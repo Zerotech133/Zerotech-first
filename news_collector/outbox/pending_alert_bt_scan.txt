@@ -1,1 +1,0 @@
-[QUANT ALERT] task failed: bt_scan exit=C:\Temp\bt_scan_err.log 2026-10-03 16:00:09
