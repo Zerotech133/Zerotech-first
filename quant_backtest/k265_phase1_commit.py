@@ -57,6 +57,16 @@ def main():
     frm = arg("--from", 0, int)
     cnt = arg("--count", 10 ** 9, int)
     min_conf = arg("--min-conf", 0.8, float)
+    # b3 起：人审排除清单（每行 src|dst，映射后方向；b3 抽样剔除
+    # 方向反/无直接链/DRIVES 混入条目），优先于品牌过滤
+    excl_file = arg("--exclude-file", "", str)
+    excl_set = set()
+    if excl_file:
+        for ln in open(excl_file, encoding="utf-8"):
+            ln = ln.strip()
+            if ln and not ln.startswith("#"):
+                excl_set.add(tuple(p.strip() for p in ln.split("|")))
+        print(f"[0] manual exclude: {len(excl_set)} pairs")
 
     cli = KgClient(retry=1, retry_wait=1)
     brands = build_brands(cli)
@@ -69,18 +79,22 @@ def main():
     print(f"[2] batch slice [{frm}:{frm+cnt}] rows={len(rows)} ok={len(ok)} "
           f"conf>={min_conf}={len(conf_ok)}")
 
-    dropped, kept = [], []
+    dropped, mdropped, kept = [], [], []
     for r in conf_ok:
         e = r["ext"]
         src = r["a"] if e.get("src") == "A" else r["b"]
         dst = r["b"] if e.get("src") == "A" else r["a"]
+        if (src, dst) in excl_set:
+            mdropped.append((src, dst))
+            continue
         if e.get("edge") == "SUPPLIES" and is_brand_concept(src, brands):
             dropped.append((src, dst))
             continue
         kept.append((src, dst, e, r["overlap"]))
-    print(f"[3] brand-filter dropped={len(dropped)} kept={len(kept)}")
-    for s, d in dropped[:8]:
-        print(f"    drop: {s} -X-> {d}")
+    print(f"[3] manual-dropped={len(mdropped)} brand-dropped={len(dropped)} "
+          f"kept={len(kept)}")
+    for s, d in mdropped:
+        print(f"    mdrop: {s} -X-> {d}")
 
     # 幂等入图（MERGE 按 (a,rel,b) 去重，SET 覆盖属性）
     sess = cli._session()
