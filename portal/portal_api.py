@@ -8,6 +8,7 @@
 退出码约定：端口被占用（已有实例）→ 静默 exit 0，配合计划任务重复触发自愈。
 """
 import glob
+import hmac
 import http.server
 import json
 import os
@@ -35,6 +36,64 @@ CACHE_TTL = 20
 # 插话后该秒数内进详情页显示横幅；可用环境变量 DEBATE_RECENT_SEC 覆盖
 DEBATE_RECENT_SEC = int(os.environ.get("DEBATE_RECENT_SEC") or 600)
 NO_WINDOW = 0x08000000  # CREATE_NO_WINDOW
+
+# ===== P0-1b 写端点共享 token 鉴权（2026-10-08 全检修复）=====
+# 威胁模型：8091 已绑 127.0.0.1（P0-1a），局域网攻击者只能经 ai-portal
+# nginx(8080) 反代进入。nginx 统一注入 X-Portal-Proxy: 1 标记「来自反代」，
+# 并以 X-Real-IP 传真实客户端 IP（nginx 覆写，客户端不可伪造）：
+#   - 本机直连 8091（无标记）→ 本机可信域，放行（本机等价于能读 token 文件）
+#   - 经反代且 X-Real-IP=127.0.0.1 → 本机浏览器，放行且页面注入 token
+#   - 经反代且 X-Real-IP=局域网 → 变更类 POST 必须带匹配的 X-Portal-Token
+# token 来源：环境变量 PORTAL_API_TOKEN 优先；否则 C:\Temp\portal_api_token
+# （不落 portal/ 下——该目录整挂为 nginx web root，落盘即等于局域网可直接
+# GET 下载，鉴权形同虚设）；两者皆无则首次自动生成 64 位 hex 落盘。
+_PORTAL_TOKEN_FILE = r"C:\Temp\portal_api_token"
+
+
+def _portal_token():
+    tok = (os.environ.get("PORTAL_API_TOKEN") or "").strip()
+    if not tok:
+        try:
+            with open(_PORTAL_TOKEN_FILE, "r", encoding="utf-8") as f:
+                tok = f.read().strip()
+        except OSError:
+            tok = ""
+    if not tok:
+        import secrets
+        tok = secrets.token_hex(32)
+        try:
+            with open(_PORTAL_TOKEN_FILE, "w", encoding="utf-8") as f:
+                f.write(tok)
+        except OSError:
+            pass  # 落盘失败则仅本次进程内存可用，下次启动重新生成
+    return tok
+
+
+_PORTAL_TOKEN = _portal_token()
+
+# 变更类 POST 端点（逐一对照 do_POST 路由表；/feishu/event 为飞书回调，
+# 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
+_MUTATION_POSTS = frozenset((
+    "/chanlun-anno",
+    "/api/chanlun/label/save",
+    "/api/report_push",
+    "/api/sub_toggle",
+    "/api/sub_del",
+    "/api/sub_test",
+    "/api/recv_add",
+    "/kg/canvas_edit",
+    "/api/chanlun/card/feedback",
+    "/api/chanlun/pool/push",
+    "/api/portfolio_set",
+    "/api/portfolio_undo",
+    "/api/portfolio_close",
+    "/api/portfolio_adjust",
+    "/api/portfolio_open",
+    "/api/council/confirm",
+    "/api/council/simrun",
+    "/api/debate/say",
+    "/api/batch-backtest",
+))
 
 _lock = threading.Lock()
 _cache = {"t": 0.0, "data": None}
@@ -4579,6 +4638,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
         except Exception:
             pass
 
+    def _is_local_req(self):
+        """P0-1b：请求是否来自本机可信域（判定规则见模块头注释）。"""
+        if not (self.headers.get("X-Portal-Proxy") or "").strip():
+            return True   # 无反代标记 = 本机直连 8091（已绑回环）
+        rip = (self.headers.get("X-Real-IP") or "").strip()
+        return rip in ("127.0.0.1", "::1")
+
+    def _check_portal_token(self):
+        """P0-1b：变更类 POST 鉴权。本机放行；反代+局域网须 token 常量比对。"""
+        if self._is_local_req():
+            return True
+        got = (self.headers.get("X-Portal-Token") or "").strip()
+        return bool(got) and hmac.compare_digest(got, _PORTAL_TOKEN)
+
+    def _token_tag(self):
+        """P0-1b 前端联动：仅对本机来源页面注入 token + fetch 拦截，
+        页面 JS 发 POST 自动带 X-Portal-Token；局域网来源页面不注入，
+        攻击者从页面拿不到 token（token 不经局域网分发）。"""
+        if not self._is_local_req():
+            return ""
+        return (
+            '<script>window.__PORTAL_TOKEN=%s;</script>'
+            '<script>(function(){var T=window.__PORTAL_TOKEN||"";'
+            'if(!T)return;var of=window.fetch;'
+            'window.fetch=function(u,o){o=o||{};o.headers=o.headers||{};'
+            'if((o.method||"GET").toUpperCase()==="POST"'
+            '&&!o.headers["X-Portal-Token"])o.headers["X-Portal-Token"]=T;'
+            'return of.call(this,u,o);};})();</script>'
+            % json.dumps(_PORTAL_TOKEN))
+
     def _json(self, obj, code=200):
         # NaN/Inf 递归清洗→null：Python json.dumps 默认输出 NaN 字面量（非标准
         # JSON），浏览器 JSON.parse 直接 SyntaxError→前端渲染链全断（2026-10-06
@@ -4602,6 +4691,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _html(self, body):
         b = body.encode("utf-8")
         b += _BTSEL_TAG.encode("utf-8")   # K255 勾选回测 JS（幂等守卫 window.__k255bt）
+        b += self._token_tag().encode("utf-8")  # P0-1b 本机页面注入 token fetch 拦截
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
@@ -10927,8 +11017,9 @@ transition:.3s;z-index:9}
         用 AES-256-CBC 解密（key=sha256(encrypt_key)，IV=密文前 16 字节）。
         未配置 encrypt_key 时明文直取。
 
-        安全：本机回调仅局域网可达（A 方案「先做本地形态」，K250 决策），
-        故不加签名强校验；仅做 URL 白名单式的最小校验（可选）。
+        安全：P0-1b（2026-10-08）起——配置了 Encrypt Key 则强制
+        X-Lark-Signature 验签；未配置则保持现状并在访问日志打 warning。
+        叠加 8091 已绑 127.0.0.1（P0-1a），局域网伪造须经 nginx，风险降级。
         """
         import hashlib
         import base64
@@ -10938,6 +11029,26 @@ transition:.3s;z-index:9}
         except Exception:
             self._json({"code": 0}, 200)
             return
+
+        # ── 验签（P0-1b 配套，2026-10-08：飞书回调不走 portal token）──
+        # 配置了 Encrypt Key → 强制 X-Lark-Signature 校验（飞书 v2 事件签名：
+        # sha256(timestamp + nonce + encrypt_key + 原始 body)）；
+        # 未配置 → 无共享密钥无法验签，保持现状，但在访问日志打 warning 留痕。
+        _ek = self._feishu_encrypt_key()
+        if _ek:
+            _ts = (self.headers.get("X-Lark-Request-Timestamp") or "").strip()
+            _nc = (self.headers.get("X-Lark-Request-Nonce") or "").strip()
+            _sig = (self.headers.get("X-Lark-Signature") or "").strip()
+            _calc = hashlib.sha256((_ts + _nc + _ek
+                                    + raw.decode("utf-8", "replace"))
+                                   .encode("utf-8")).hexdigest()
+            if not _sig or not hmac.compare_digest(_sig, _calc):
+                self._json({"code": 0, "msg": "invalid signature"}, 403)
+                return
+        else:
+            self.log_message(
+                "WARNING feishu/event FEISHU_ENCRYPT_KEY 未配置，回调未验签"
+                "（叠加 8091 绑回环后局域网须经 nginx 才可达，风险已降级）")
 
         # ── 解密（如启用）────────────────────────────────
         if body.get("encrypt"):
@@ -19934,6 +20045,14 @@ document.getElementById('sf').addEventListener('submit',function(ev){
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
+        # P0-1b：变更类 POST 鉴权闸门（本机放行；局域网须 X-Portal-Token）。
+        # /feishu/event 不在 _MUTATION_POSTS，单独走验签（_api_feishu_event）。
+        if path in _MUTATION_POSTS and not self._check_portal_token():
+            self._json({"error": "forbidden: 缺失或不匹配的 X-Portal-Token"
+                        "（本机浏览器经门户页面操作会自动携带；脚本调用请带"
+                        " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
+                        " 或 C:\\Temp\\portal_api_token）"}, 403)
+            return
         try:
             if path == "/chanlun-anno":
                 # K77 缠论图手工标注增删（body 已在 _chanlun_anno 读）
