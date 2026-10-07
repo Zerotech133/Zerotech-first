@@ -7,24 +7,32 @@
 import json
 import os
 import subprocess
+import threading
 
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_CFG = json.load(open(os.path.join(HERE, "config.json"), encoding="utf-8"))["db"]
 
-_conn = {"c": None}
+# P1-1：模块级单连接被 ThreadingHTTPServer 多线程并发使用（非线程安全，
+# 会出现协议错乱/连接假死）。改为 threading.local() 每线程独立连接，
+# 范式对齐 chanlun_data.py（查询间连接隔离）。
+_tls = threading.local()
 
 
 def _direct_conn():
     import psycopg2
-    if _conn["c"] is None or _conn["c"].closed:
-        _conn["c"] = psycopg2.connect(
+    c = getattr(_tls, "conn", None)
+    if c is not None and c.closed:
+        c = None
+    if c is None:
+        c = psycopg2.connect(
             host=DB_CFG["host"], port=DB_CFG["port"],
             user=DB_CFG["user"], password=DB_CFG["password"],
             dbname=DB_CFG["dbname"])
-        _conn["c"].autocommit = True
-    return _conn["c"]
+        c.autocommit = True
+        _tls.conn = c
+    return c
 
 
 def _query_direct(sql, params):
