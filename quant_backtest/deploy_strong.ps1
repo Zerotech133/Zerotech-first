@@ -12,6 +12,9 @@
 #     card push only runs after a successful scan; log redirect appends to
 #     logs\strong_task.out. Duplicate-push risk is bounded by
 #     strong_state.json daily cap (same stock max 1 push per day).
+# Prewarm baseline (2026-10-07 full-pool --limit 10): 599 blocks walked,
+#   105 passed quorum, 999 stocks, ~13 min. limit=20 (~2000 fetches)
+#   projected ~26 min -> ExecutionTimeLimit raised PT30M -> PT60M.
 # Re-runnable: unregisters existing task first. Run as Administrator.
 #
 # NOTE: this script is DELIVERED, NOT executed by automation (schtasks is
@@ -66,7 +69,7 @@ $xml = @"
     <Hidden>false</Hidden>
     <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
     <WakeToRun>false</WakeToRun>
-    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+    <ExecutionTimeLimit>PT60M</ExecutionTimeLimit>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
     <RestartOnFailure>
       <Interval>PT5M</Interval>
