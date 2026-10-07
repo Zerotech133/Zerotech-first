@@ -66,6 +66,14 @@ METRICS_PORT = 9102  # P1-6 Prometheus /metrics 端点
 N_OUTCOME_DAYS = 5          # 校准用 N 日收益窗口
 LOOKBACK_POOLS = 3          # 每次最多看最近 3 个候选池
 ANN_LOOKBACK_DAYS = 14      # 公告回看窗口
+# P1-1（A3 2026-10-07）：回填覆盖率守卫阈值 + 告警收件人（jev-gate.env.ps1 注入）
+COVERAGE_MIN = float(os.environ.get("JEV_BACKFILL_COVERAGE_MIN", "0.5"))
+LARK_ALERT_OPEN_ID = os.environ.get("LARK_ALERT_OPEN_ID", "")
+# P2-2（A3 2026-10-07）：影子决策阈值 env 化（默认=历史值，影子期行为不变）
+REJECT_NEWS_P = float(os.environ.get("REVIEW_NEWS_THRESHOLD", "0.7"))
+REJECT_CROWD_P = float(os.environ.get("REVIEW_CROWD_THRESHOLD", "0.7"))
+FOCUS_QUALITY_P = float(os.environ.get("REVIEW_FOCUS_THRESHOLD", "0.7"))
+WATCH_OVERLAP_P = float(os.environ.get("REVIEW_WATCH_THRESHOLD", "0.7"))
 
 # 优雅退出 / 原子写 / 重试 / 日志（P1-1：收敛到 jev_common）
 _STOP = install_stop()
@@ -92,7 +100,8 @@ def fetch_recent_pools() -> list[dict]:
     """最近 LOOKBACK_POOLS 个候选池（pool_date 降序）。"""
     rows = psql(
         "SELECT pool_id, pool_date, pool_type, candidate_count FROM v2_candidate_pool "
-        "ORDER BY pool_date DESC, id DESC LIMIT %d" % LOOKBACK_POOLS
+        "ORDER BY pool_date DESC, id DESC LIMIT %s",
+        (LOOKBACK_POOLS,)
     )
     return [{"pool_id": r[0], "pool_date": r[1], "pool_type": r[2], "count": r[3]}
             for r in rows if len(r) == 4]
@@ -330,22 +339,23 @@ def review_candidate(cand: dict, held: list[str], regime_p: float) -> dict:
     crowd = ans.get("crowding", {}).get("choice", "unknown")
     crowd_p = (ans.get("crowding", {}).get("probabilities") or {}).get(crowd, 0.0)
 
-    # 影子决策（阈值硬编码——学 buberlo：策略在代码里，不在提示词里）
+    # 影子决策（阈值 env 化 P2-2——学 buberlo：策略在代码/配置里，不在提示词里）
     # 影子期不拦截任何东西，decision 仅供校准对照。
     # 影子决策 v2（2026-09-22 回放反转，依据 replay-20260922-030434.jsonl 1633 样本）：
     # 旧规则 PASS -基线 = -0.57%，因 quality/regime 判定与 5 日收益负相关。
     # 数据真相：quality=low 组 +2.92%（最强组）、hot -1.54%（否决有效）、news 高分略差。
     # 新规则：low=临界信号加分（FOCUS），hot/news 高置信否决，regime 不做门（反向），
-    # overlap 降为标注（样本内未验证）。阈值仍在代码，影子期继续验证。
-    if news_p >= 0.7:
+    # overlap 降为标注（样本内未验证）。阈值仍在配置，影子期继续验证。
+    # 2026-10-07 实时三元组首验：FOCUS-PASS 收益差 +1.95%（n=194/235），v2 方向成立。
+    if news_p >= REJECT_NEWS_P:
         decision, why = "REJECT", f"news_risk={news_p:.2f}"
-    elif crowd == "hot" and crowd_p >= 0.7:
+    elif crowd == "hot" and crowd_p >= REJECT_CROWD_P:
         decision, why = "REJECT", f"crowding=hot({crowd_p:.2f})"
-    elif quality == "low" and quality_p >= 0.7:
+    elif quality == "low" and quality_p >= FOCUS_QUALITY_P:
         decision, why = "FOCUS", f"quality=low({quality_p:.2f}) 临界信号加分"
     elif quality == "low":
         decision, why = "FOCUS", f"quality=low({quality_p:.2f})"
-    elif overlap_p >= 0.7:
+    elif overlap_p >= WATCH_OVERLAP_P:
         decision, why = "WATCH", f"overlap={overlap_p:.2f} 概念集中标注"
     else:
         decision, why = "PASS", "regular"
@@ -458,8 +468,8 @@ def run_backfill() -> int:
         rows = psql(
             "SELECT trade_date, close FROM v2_bar_daily "
             "WHERE symbol = %s AND market = %s AND trade_date >= %s "
-            "ORDER BY trade_date ASC LIMIT %d" % (N_OUTCOME_DAYS + 1),
-            (r["ts_code"], mkt, pd_))
+            "ORDER BY trade_date ASC LIMIT %s",
+            (r["ts_code"], mkt, pd_, N_OUTCOME_DAYS + 1))
         if len(rows) < N_OUTCOME_DAYS + 1:
             pending += 1
             out.append(line)
@@ -474,6 +484,47 @@ def run_backfill() -> int:
     atomic_write_text(TRIPLES, "\n".join(out) + "\n")
     log(f"回填 {filled} 条，未到期 {pending} 条")
     return filled
+
+
+def coverage_guard() -> float:
+    """P1-1 覆盖率守卫：到期记录中已回填占比 < COVERAGE_MIN → 飞书提醒。
+
+    分母=已满 N_OUTCOME_DAYS 窗口的 reviewed 记录（含 bar 断档未回填——这正是要暴露的欠账）。
+    """
+    if not TRIPLES.exists():
+        return 1.0
+    cutoff = date.today() - timedelta(days=N_OUTCOME_DAYS)
+    due = filled = 0
+    for line in TRIPLES.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+        except Exception:  # noqa: BLE001
+            continue
+        if r.get("status") != "reviewed" or not r.get("pool_date"):
+            continue
+        if date.fromisoformat(r["pool_date"]) > cutoff:
+            continue
+        due += 1
+        if r.get("ret_nd") is not None:
+            filled += 1
+    pct = filled / due if due else 1.0
+    log(f"回填覆盖率 {filled}/{due} = {pct:.1%}（阈值 {COVERAGE_MIN:.0%}）")
+    if due and pct < COVERAGE_MIN and LARK_ALERT_OPEN_ID:
+        try:
+            jc.lark_cli_json(
+                ["im", "+messages-send", "--as", "bot",
+                 "--user-id", LARK_ALERT_OPEN_ID,
+                 "--msg-type", "text",
+                 "--content", json.dumps({"text": (
+                     f"[Jev复核门] 回填覆盖率告警：{filled}/{due} = {pct:.0%}"
+                     f"（阈值 {COVERAGE_MIN:.0%}）。到期未回填多为 bar 断档，"
+                     f"请核查 v2_bar_daily 数据源覆盖。")}, ensure_ascii=False)],
+                timeout=20, kind="push")
+        except Exception as e:  # noqa: BLE001
+            log(f"覆盖率告警推送失败: {str(e)[:150]}", level="warn")
+    return pct
 
 
 def run_report() -> None:
@@ -520,6 +571,7 @@ def main() -> None:
     args = sys.argv[1:]
     if "--backfill" in args:
         run_backfill()
+        coverage_guard()
     elif "--report" in args:
         run_report()
     elif "--loop" in args:
@@ -539,6 +591,7 @@ def main() -> None:
                 last_backfill = today
                 try:
                     run_backfill()
+                    coverage_guard()
                 except Exception as e:  # noqa: BLE001
                     log(f"自动回填异常: {e}")
             # 分段 sleep 以便信号到达时能尽快退出

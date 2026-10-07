@@ -57,12 +57,15 @@ def log(msg: str) -> None:
 
 # ── as-of 数据组装（防未来函数） ────────────────────────────
 def fetch_pools(market: str | None, max_pools: int) -> list[dict]:
-    where = f"pool_date <= '{REPLAY_END}'" + (f" AND market='{market}'" if market else "")
-    rows = psql(
-        "SELECT pool_id, pool_date, market FROM v2_candidate_pool "
-        f"WHERE {where} AND candidate_count > 0 "
-        "ORDER BY pool_date ASC, id ASC LIMIT %d" % max_pools
-    )
+    sql = ("SELECT pool_id, pool_date, market FROM v2_candidate_pool "
+           "WHERE pool_date <= %s AND candidate_count > 0 ")
+    params: list = [REPLAY_END]
+    if market:
+        sql += "AND market = %s "
+        params.append(market)
+    sql += "ORDER BY pool_date ASC, id ASC LIMIT %s"
+    params.append(max_pools)
+    rows = psql(sql, tuple(params))
     return [{"pool_id": r[0], "pool_date": r[1], "market": r[2]}
             for r in rows if len(r) == 3]
 
@@ -71,7 +74,8 @@ def fetch_cands(pool_id: str) -> list[dict]:
     rows = psql(
         "SELECT candidate_id, ts_code, market, coalesce(candidate_score,0), "
         "coalesce(candidate_reason,'') FROM v2_candidate_asset "
-        f"WHERE pool_id='{pool_id}' ORDER BY candidate_score DESC NULLS LAST LIMIT 20"
+        "WHERE pool_id = %s ORDER BY candidate_score DESC NULLS LAST LIMIT 20",
+        (pool_id,)
     )
     return [{"candidate_id": r[0], "ts_code": r[1], "market": r[2],
              "score": float(r[3] or 0), "reason": r[4]} for r in rows if len(r) == 5]
@@ -81,8 +85,9 @@ def fetch_held_asof(pool_date: str) -> list[str]:
     """pool_date 当日未平仓持仓（模拟时点持仓）。"""
     rows = psql(
         "SELECT DISTINCT ts_code FROM v2_position "
-        f"WHERE market='CN' AND opened_at::date <= '{pool_date}' "
-        f"AND (closed_at IS NULL OR closed_at::date > '{pool_date}')"
+        "WHERE market='CN' AND opened_at::date <= %s "
+        "AND (closed_at IS NULL OR closed_at::date > %s)",
+        (pool_date, pool_date)
     )
     return [r[0] for r in rows if r]
 
@@ -91,7 +96,8 @@ def fetch_concepts_sym(ts_code: str) -> list[str]:
     rows = psql(
         "SELECT c.concept_name FROM v2_concept_membership m "
         "JOIN v2_concept c ON c.id=m.concept_id "
-        f"WHERE m.symbol='{ts_code}' LIMIT 10"
+        "WHERE m.symbol = %s LIMIT 10",
+        (ts_code,)
     )
     return [r[0] for r in rows if r]
 
@@ -126,7 +132,8 @@ def regime_asof(pool_date: str) -> float:
         idx = psql(
             "SELECT trade_date, close FROM v2_bar_daily "
             "WHERE symbol IN ('000001.SH','sh000001') AND market='CN' "
-            f"AND trade_date < '{pool_date}' ORDER BY trade_date DESC LIMIT 5"
+            "AND trade_date < %s ORDER BY trade_date DESC LIMIT 5",
+            (pool_date,)
         )
         if idx:
             txt = "; ".join(f"{r[0]} 收盘 {float(r[1]):.0f}" for r in idx)

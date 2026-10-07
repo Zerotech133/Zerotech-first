@@ -12,7 +12,10 @@ $JevPy = "C:\Program Files\Python311\python.exe"   # Jev 四件套产线解释�
 $ApiLog  = "$env:TEMP\zhice-api.log"
 $SchedLog = "$env:TEMP\zhice-scheduler.log"
 $FeLog    = "$env:TEMP\zhice-frontend.log"
-$GateLog  = "$env:TEMP\zhice-jev-gate.log"
+# P1-2（A3 2026-10-07）：Jev 进程 stdout/stderr 重定向固定到 logs 目录（此前 $env:TEMP
+# 在计划任务上下文不可预测，且 PS 5.1 重定向为 UTF-16）。日常日志以 Python 侧
+# JEV_LOG_DIR 双写的 <mod>.log（UTF-8 JSON）为准，此处仅作崩溃 traceback 兜底。
+$GateLog  = 'C:\aios\jev-eval\logs\jev-proc'
 $WatchdogLog = "$env:TEMP\zhice-watchdog.log"
 
 function Get-Procs {

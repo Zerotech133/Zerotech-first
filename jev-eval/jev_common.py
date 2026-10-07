@@ -37,6 +37,9 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
 # ── 结构化日志 + trace_id（P1-2） ──────────────────────────
 _MOD = {"name": ""}
 _TRACE: ContextVar = ContextVar("jev_trace", default="")
+# P1-2 根治（A3 2026-10-07）：JEV_LOG_DIR 存在时 log() 双写文件（UTF-8 JSON 单行），
+# stdout 去向不再依赖拉起方式（计划任务 %TEMP% 不可预测 / PS 5.1 重定向 UTF-16 坑）。
+_LOG_DIR = os.environ.get("JEV_LOG_DIR", "")
 
 
 def set_module(name: str) -> None:
@@ -65,7 +68,15 @@ def log(msg: str, level: str = "info", **fields) -> None:
     if _TRACE.get():
         rec["trace_id"] = _TRACE.get()
     rec.update(fields)
-    print(json.dumps(rec, ensure_ascii=False), flush=True)
+    line = json.dumps(rec, ensure_ascii=False)
+    print(line, flush=True)
+    if _LOG_DIR:
+        try:  # 每条独立 open/append/close：轮转/外部读取友好，日志量小性能无虞
+            with open(os.path.join(_LOG_DIR, f"{_MOD['name'] or 'jev'}.log"),
+                      "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+        except OSError:
+            pass  # 落盘失败不阻断主流程（stdout 仍有输出）
 
 
 # ── 原子写 / 重试 / 优雅退出（原四文件逐份复制，P1-1 收敛） ──

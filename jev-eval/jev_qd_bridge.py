@@ -56,7 +56,9 @@ QD_PASSWORD = os.environ.get("QD_PASSWORD", "")  # 凭据移到 .env.local，空
 # zhice market → QD market（CN 无对应，跳过）
 MARKET_MAP = {"HK": "HKStock", "US": "USStock", "CRYPTO": "Crypto"}
 SYNC_DECISIONS = ("FOCUS",)               # 正向同步的判定集合
-REVIEW_KEEP_THRESHOLD = 0.35              # 反向复核：keep_p 低于此值 → flag 警示
+# P2-2（A3 2026-10-07）：阈值 env 化（默认=历史值，影子期行为不变；调优改 jev-gate.env.ps1）
+REVIEW_KEEP_THRESHOLD = float(os.environ.get("QD_REVIEW_KEEP_THRESHOLD", "0.35"))  # keep_p 低于此值 → flag 警示
+QD_CROWD_THRESHOLD = float(os.environ.get("QD_CROWD_THRESHOLD", "0.7"))  # crowding=hot 置信达此值 → flag 警示
 METRICS_PORT = 9103                       # P1-6 Prometheus /metrics 端点
 
 _token_cache = {"token": "", "exp": 0.0}
@@ -391,9 +393,9 @@ def review_qd_watchlist(force: bool = False) -> None:
                     "keep_p": keep_p,
                     "crowding": crowd,
                     "crowding_p": crowd_p,
-                    # 阈值硬编码于代码（影子期仅标注）
+                    # 阈值 env 化（P2-2）：QD_REVIEW_KEEP_THRESHOLD / QD_CROWD_THRESHOLD
                     "flag": "WARN" if (keep_p < REVIEW_KEEP_THRESHOLD
-                                       or (crowd == "hot" and crowd_p >= 0.7)) else "OK",
+                                       or (crowd == "hot" and crowd_p >= QD_CROWD_THRESHOLD)) else "OK",
                 })
                 n_new += 1
                 log(f"  {key}: keep={keep_p:.2f} crowd={crowd}({crowd_p:.2f}) "
