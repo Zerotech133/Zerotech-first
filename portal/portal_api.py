@@ -115,6 +115,14 @@ def log_exc(context):
     except Exception:
         pass
 
+# ===== P1-7 nlquery force=1 频控（2026-10-08 全检修复）=====
+# force=1 关闭只读保护、直接触发 multi_agent LLM 现算（10-30s 任务），
+# 未鉴权场景可被无限刷（LLM DoS + prompt injection 攻击面）。
+# 简易内存频控：每 IP 每分钟 ≤3 次，超限 429。纯标准库、进程内计数
+# （重启清零；多线程下计数近似准确，频控场景足够）。
+_NLQ_FORCE_MAX_PER_MIN = 3
+_NLQ_FORCE_HITS = {}   # ip -> [timestamp, ...]
+
 _lock = threading.Lock()
 _cache = {"t": 0.0, "data": None}
 
@@ -20752,6 +20760,19 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._json({"ok": False, "err": "missing q"}, 400)
                 return
             _nf = (qp_nl.get("force") or ["0"])[0] == "1"
+            # P1-7：force=1 频控（每 IP 每分钟 ≤3 次，超限 429）
+            if _nf:
+                _ip = self.client_address[0]
+                _now = time.time()
+                _hits = [t for t in _NLQ_FORCE_HITS.get(_ip, [])
+                         if _now - t < 60]
+                if len(_hits) >= _NLQ_FORCE_MAX_PER_MIN:
+                    self._json({"ok": False, "err": "force=1 触发频控："
+                                "每 IP 每分钟最多 %d 次，请稍后再试"
+                                % _NLQ_FORCE_MAX_PER_MIN}, 429)
+                    return
+                _hits.append(_now)
+                _NLQ_FORCE_HITS[_ip] = _hits
             try:
                 self._json(_ma_answer(_q, force=_nf, read_only=not _nf))
             except Exception as _nle:
