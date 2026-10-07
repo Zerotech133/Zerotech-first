@@ -35,7 +35,6 @@ if (-not (Test-Path $pyPath))   { throw "python not found: $pyPath" }
 if (-not (Test-Path $pyScript)) { throw "script not found: $pyScript" }
 if (-not (Test-Path $logDir))   { New-Item -Path $logDir -ItemType Directory -Force | Out-Null }
 
-$escScript  = [System.Security.SecurityElement]::Escape($pyScript)
 $escIntra   = [System.Security.SecurityElement]::Escape(
     'K245 subscription push: intraday scan every 30min (Beijing 09:00-15:00), push only changed, per-sub daily cap 3.')
 $escEod     = [System.Security.SecurityElement]::Escape(
