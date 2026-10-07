@@ -67,21 +67,26 @@ def main():
           f"(total {time.time()-t0:.0f}s)")
 
     # ---- 表格页结构化（人眼核，不计分） ----
+    # 正确用法：结果为 LayoutParsingResultV2，表格在 table_res_list[].pred_html
+    # （无 markdown 键；save_to_markdown 可整页导出）
     try:
         from paddleocr import PPStructureV3
-        pp = PPStructureV3(enable_mkldnn=False)
+        pp = PPStructureV3(enable_mkldnn=False,
+                           use_chart_recognition=False,
+                           use_formula_recognition=False,
+                           use_seal_recognition=False)
         r = pp.predict(os.path.join(ROOT, "samples", TABLE_PAGE))
         res = r[0]
-        md = (res.get("markdown", {}).get("markdown_texts")
-              if hasattr(res, "get") else None)
-        md = md or getattr(getattr(res, "markdown", None),
-                           "markdown_texts", "")
-        with open(os.path.join(OUT, "structure",
-                               TABLE_PAGE + ".md"), "w",
-                  encoding="utf-8") as f:
-            f.write(str(md))
-        print(f"[table] {TABLE_PAGE} -> structure/*.md "
-              f"({len(str(md))} chars) 供人眼核")
+        tables = res.get("table_res_list") or []
+        for i, t in enumerate(tables):
+            html = (t.get("pred_html") or "")
+            fn = os.path.join(OUT, "structure",
+                              TABLE_PAGE + f"_table{i}.html")
+            with open(fn, "w", encoding="utf-8") as f:
+                f.write(html)
+            print(f"[table] {TABLE_PAGE}#{i}: {len(html)}c html -> {fn}")
+        res.save_to_markdown(os.path.join(OUT, "structure"))
+        print(f"[table] {TABLE_PAGE}: {len(tables)} tables + markdown saved")
     except Exception as e:
         print(f"[table] PPStructureV3 failed: {type(e).__name__}: {e}")
 
