@@ -1,0 +1,63 @@
+{
+  "ok": true,
+  "tests": {
+    "total": 192,
+    "passed": 190,
+    "skipped": 2,
+    "failed": 0,
+    "phase3_passed": 53,
+    "elapsed_seconds": 21.592,
+    "skip_reason": "Windows 符号链接创建权限不足",
+    "command": "python -B -m unittest discover -s tests_ai_operator"
+  },
+  "verified_at": "2026-10-07T09:17:39.004704+00:00",
+  "operator_root": "E:\\老田的AI助手\\quant_backtest",
+  "input_type": "engineering_fixture_not_market_data",
+  "calendar_sessions": 90,
+  "label_cases": {
+    "matured": 20,
+    "pending_early": 2,
+    "audit_only_unknown": 2,
+    "pending_missing_bar": 2
+  },
+  "summary": {
+    "split_hash": "791c525025f686f03221687372eb8404496c565c4f97dac4495df4a4298b6ec9",
+    "partitions": {
+      "train": {
+        "n": 1,
+        "mean_target": 0.04761904761904767,
+        "positive_rate": 1.0
+      },
+      "validation": {
+        "n": 1,
+        "mean_target": 0.04347826086956519,
+        "positive_rate": 1.0
+      },
+      "test": {
+        "n": 2,
+        "mean_target": 0.03759961566721304,
+        "positive_rate": 1.0
+      }
+    },
+    "excluded_by_reason": {
+      "embargo": 2,
+      "group_overlap": 1,
+      "immature": 1,
+      "outside_window": 1,
+      "purge_train": 1,
+      "purge_validation": 1
+    },
+    "production_eligible": false
+  },
+  "input_hash": "fa660495e7255112b2fbb6ca509017942238698c38a4a870626dda04362bb435",
+  "input_order_independent": true,
+  "source_hashes": {
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill.parquet": "0572d79010820906d53518679912c150d487db8e0ea631f91dae88a2968b6d69",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill_neg.parquet": "110ce5ddcbea3784744311a490897685af5ac9b7aa31b912a4f410efeb68550e"
+  },
+  "source_hashes_unchanged": true,
+  "artifact_dir": "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-07\\new-chat-2\\outputs\\第三批工程夹具",
+  "model_trained": false,
+  "historical_profitability_verified": false,
+  "production_eligible": false
+}

@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "batch": 4,
+  "ok": true,
+  "verified_at": "2026-10-07T09:45:53.921012+00:00",
+  "commands": [
+    {
+      "command": "capture-source",
+      "exit_code": 0
+    },
+    {
+      "command": "capture-calendar",
+      "exit_code": 0
+    },
+    {
+      "command": "source-inputs",
+      "exit_code": 0
+    },
+    {
+      "command": "captured-outcome",
+      "exit_code": 0
+    }
+  ],
+  "snapshot_id": "9718b45451d6b0fdb28125468765e1e272e6845e1dc33447864b6ff5dd7f134a",
+  "received_at": "2026-10-07T09:45:51.323067+00:00",
+  "bars": 300,
+  "calendar_capture_id": "65074ed779687c3fdd7ab596b7c44c37430188f464e374cc48a1966e9320d2d1",
+  "calendar_version": "ed9a2ec1947e4d318a8db6e77406a6c0a991978cea0a6fb84ae866234409af6f",
+  "calendar_days": 455,
+  "open_sessions": 300,
+  "calendar_source_files": 11,
+  "coverage_start": "2025-01-02",
+  "coverage_end": "2026-04-01",
+  "audit_labels": [
+    "audit_only",
+    "audit_only"
+  ],
+  "source_hashes_before": {
+    "E:\\老田的AI助手\\quant_backtest\\data\\ashare\\000001_SH.parquet": "2aedd9b3c2922058831932ace36393bd405ec86948b49ee8a6d081828e660d48",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0000.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0001.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0002.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0003.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0004.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0005.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0006.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0007.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0008.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0009.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0010.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill.parquet": "0572d79010820906d53518679912c150d487db8e0ea631f91dae88a2968b6d69",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill_neg.parquet": "110ce5ddcbea3784744311a490897685af5ac9b7aa31b912a4f410efeb68550e"
+  },
+  "source_hashes_after": {
+    "E:\\老田的AI助手\\quant_backtest\\data\\ashare\\000001_SH.parquet": "2aedd9b3c2922058831932ace36393bd405ec86948b49ee8a6d081828e660d48",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0000.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0001.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0002.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0003.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0004.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0005.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0006.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0007.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0008.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0009.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\tushare\\trade_cal\\part_0010.parquet": "8cea0f82b3273004cbf80438a550f4d01c66e0a08583ca1f549cb7b3fd8b2f20",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill.parquet": "0572d79010820906d53518679912c150d487db8e0ea631f91dae88a2968b6d69",
+    "E:\\老田的AI助手\\quant_backtest\\data\\distill\\kg_distill_neg.parquet": "110ce5ddcbea3784744311a490897685af5ac9b7aa31b912a4f410efeb68550e"
+  },
+  "source_files_unchanged": true,
+  "production_eligible": false,
+  "supplier_verified": false,
+  "historical_availability_verified": false,
+  "model_training_started": false,
+  "trading_started": false,
+  "limitations": [
+    "当前系统接收不证明历史可用",
+    "内容哈希不是供应商签名",
+    "价格口径和修订为显式未审核声明",
+    "当前日历不证明过去决策时已知该版本",
+    "原始云端规则包仍待取得核验"
+  ]
+}

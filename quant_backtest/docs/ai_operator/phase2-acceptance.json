@@ -1,0 +1,61 @@
+{
+  "ok": true,
+  "verified_at": "2026-10-07T08:47:15.188730+00:00",
+  "operator_root": "E:\\老田的AI助手\\quant_backtest",
+  "sample": {
+    "path": "E:\\老田的AI助手\\quant_backtest\\data\\ashare\\000001_SH.parquet",
+    "rows_used": 120,
+    "provenance_status": "unverified",
+    "close_time_policy": "CN 日线 15:00 推导，仅工程验收",
+    "availability_policy": "逐条实测本次接收时间，不补造历史时间"
+  },
+  "source_hashes": {
+    "E:\\老田的AI助手\\quant_backtest\\data\\ashare\\000001_SH.parquet": "2aedd9b3c2922058831932ace36393bd405ec86948b49ee8a6d081828e660d48",
+    "E:\\老田的AI助手\\quant_backtest\\chanlun_bi.py": "540942001ceada27ad5eae3392eed047cf5c6d0c2062a6979de8d2ebea8ac2a3",
+    "E:\\老田的AI助手\\quant_backtest\\chanlun_fractal.py": "7d71ce9df9bc5492fef497b80e1918f1ac39dd8051e2601cbd3078f40565eb04",
+    "E:\\老田的AI助手\\quant_backtest\\chanlun_data.py": "be38218dba5e4e01e93921e19e7d6d87f81b9dc1f41f3dbc9777c427d4fa7757"
+  },
+  "source_hashes_unchanged": true,
+  "replay": {
+    "snapshots": 120,
+    "prefix_60_equal": true,
+    "direct_matches": true,
+    "elapsed_seconds": 0.148822,
+    "last_structure_counts": {
+      "fractals": 43,
+      "bis": 8,
+      "segments": 1,
+      "pivots": 2,
+      "signals": 3
+    },
+    "added": 74,
+    "withdrawn": 17
+  },
+  "shadow": {
+    "idempotent": true,
+    "snapshot": {
+      "events": 2,
+      "events_by_kind": {
+        "shadow.decision": 1,
+        "shadow.fact_pack": 1
+      },
+      "events_by_environment": {
+        "shadow": 2
+      },
+      "lessons": 0,
+      "recallable_lessons": 0,
+      "import_errors": 0,
+      "pending_events": 2
+    },
+    "export": {
+      "exported": 2,
+      "pending": 0,
+      "path": "C:\\Users\\Administrator\\AppData\\Local\\Temp\\tmpk_jz7du0\\export\\events.jsonl",
+      "acknowledged": 2
+    },
+    "exported_events": 2,
+    "execution_allowed": false
+  },
+  "historical_profitability_verified": false,
+  "production_eligible": false
+}
