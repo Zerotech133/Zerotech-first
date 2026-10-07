@@ -919,7 +919,15 @@ class TestStockOverview(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     class _DF(list):
-        """假 K 线：len(df)>=55 即可通过引擎门槛。"""
+        """假 K 线：len(df)>=55 即可通过引擎门槛。
+
+        K235 公告后验/量能事件块用 df.columns 探测字段（portal_api
+        12602/12636 两处在 try 块外），假 df 需声明 columns 才能走到
+        「字段缺失 → 整块安全跳过」分支（生产语义：无该列即跳过）。
+        """
+        @property
+        def columns(self):
+            return []   # 假 df 无 close/volume 列 → K235 块跳过
 
     def _render(self, qs="c=600519.SH", quote=None, rps=None,
                 sig4="ok", items=None, cross=None, resolve="hit"):
@@ -990,8 +998,10 @@ class TestStockOverview(unittest.TestCase):
             self.assertIn(href, h)          # 矩阵卡 → 本页锚点闭环
 
     def test_quote_render_and_colors(self):
+        # high/low 用数值：portal _fv 只格式化 int/float，字符串渲染为
+        # 「—」（K235 前该断言被 df.columns 崩溃掩盖）
         h = self._render(quote={"price": "1452.00", "pct": 1.5,
-                                "high": "1460", "low": "1440",
+                                "high": 1460, "low": 1440,
                                 "ts": "09-27"})
         self.assertIn("1452.00", h)
         self.assertIn("class='buy'", h)     # A股口径涨红跌绿：+ → .buy(红)
