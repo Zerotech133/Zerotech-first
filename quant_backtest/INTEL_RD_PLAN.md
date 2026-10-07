@@ -5960,6 +5960,11 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **M5 提前落地**：k266_services.ps1 自愈（clip_watch 单实例拉起 + ingest 幂等单扫），计划任务 K266-DocServices 每 5 分钟。
 - **复盘修正**：ChanlunScanNotify RC=3 = OPS-1009 消失窗口瞬时伤（已自愈）；K58 标题补 ✅。
 
+### K266 补记六（10-08 03:00，注册表 base64 切分未对齐事故 + 0312 重跑全绿 failed=0）
+- **事故**：03:00:01 任务正常触发但链未起——`C:\bk_out.log` 停在 `ERR …FromBase64String`。诊断：注册表 part1/part2 各 10150 字符（**恰为全长/2 中点切分，10150%4=2 未对齐 4 字符组**，part1 尾无 `=` padding 实锤流内切断），任务 action 逐段独立解码必炸。**内容本身完好**：拼接全长 20300%4=0 解码得 15223 字符 = 磁盘文件长度，v2 补丁（WaitForExit(900000)）与 k266_docs（$QSubdirs 修复）双标记俱在——纯切分 bug，非数据损坏。
+- **修复**：对齐重切 part1=10152 / part2=10148（cut=ceil(len/2/4)×4），回读断言非空 + **逐段独立解码**验证（d1=7614+d2=7609=15223）后 03:12:49 重触发。**全链绿：P0-P4 全过 → `2026-10-08_0312` DONE failed=0（昨 2→0，两库容器重启生效）**，10 产物齐全（quant_src 665.8MB / zhice 405.3MB / neo4j_kg 274.6MB / webui 207.3MB enc / quant_data 211.5MB 含 k266_docs），D 盘镜像 10 文件同步，零 FAIL 零 ALERT。
+- **教训（system-task-deploy 工具级）**：双 part 切分必须 4 字符对齐（`[Math]::Ceiling(len/2/4.0)*4`），部署后回读须**逐段独立解码断言**（拼接解码通过 ≠ 逐段通过——本次正是漏网口径）；0048 手动验证走的是 ps1 直跑未过任务 action 解码层，故未提前暴露。
+
 ### K266 补记五（10-08 凌晨，三项拍板落地：M3-B 入图 + 金标集 + K260 收口）
 - **拍板执行**（2026-10-08 用户三项：M3 入图「先B后A」/ 建 30 篇金标集 / eval 接受剔除口径）。
 - **M3-B 入图完成**：`k266_m3b_ingest.py`（--dry 预览/幂等全量重算覆盖写，可随影子续跑重刷）——105 篇影子 companies×direction 聚合 → **202 Security 节点**挂 `doc_pos/doc_neg/doc_neu/doc_n/doc_last`（验证 pos=140 neg=3 neu=92）。映射三级（精确 name 196 / aliases 1 / CONTAINS 唯一 5）；未命中 138 为非 A 股实体（Meta/OpenAI/华为/研究院/城市/指数——研报产业链提及，本就不属 Security 体系，正常噪声）；歧义 4（如「中兴」→中兴通讯/中兴商业，跳过）。direction 归一：利好=pos/利空=neg/其余含「中性偏多」=neu（保守）。**已知噪声：篇级方向平摊给该篇全部 companies，非主主体被带方向——M3-A 篇级事件层再精化（文档量上千再启动）**。
