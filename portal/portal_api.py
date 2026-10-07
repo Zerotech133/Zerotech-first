@@ -95,6 +95,26 @@ _MUTATION_POSTS = frozenset((
     "/api/batch-backtest",
 ))
 
+# ===== P0-5 静默吞错落盘（2026-10-08 全检修复）=====
+# 背景：全检报告 P0-5——258 处 `except Exception` 多为 pass，数据读取失败
+# 被静默兜底，故障态看起来像正常态。本批先把最高频的 20 处读取/DB 兜底层
+# （bridge_summary 12 + bridge_decisions 7 + _news_db 1）接入落盘日志，
+# 只加日志不改兜底逻辑；其余 200+ 处后续分批跟进。
+_ERROR_LOG = r"C:\Temp\portal_api_error.log"
+
+
+def log_exc(context):
+    """把当前异常栈追加写入 C:\Temp\portal_api_error.log（与 access log
+    同款追加写；自身失败绝不阻断业务，保持静默）。仅在 except 块内调用。"""
+    import traceback
+    try:
+        with open(_ERROR_LOG, "a", encoding="utf-8", errors="ignore") as f:
+            f.write("[%s] %s\n%s\n" % (
+                time.strftime("%Y-%m-%d %H:%M:%S"), context,
+                traceback.format_exc()))
+    except Exception:
+        pass
+
 _lock = threading.Lock()
 _cache = {"t": 0.0, "data": None}
 
@@ -2739,7 +2759,7 @@ def bridge_summary():
         else:
             out["warming"] = True
     except Exception:
-        pass
+        log_exc("bridge_summary:freshness")   # P0-5
     # 体检快照：六服务灯 + bad 任务 + 弱案例统计（pending/open/closed）
     try:
         with open(os.path.join(STATION, "ops", "health_latest.json"),
@@ -2751,7 +2771,7 @@ def bridge_summary():
         out["weak"] = h.get("data") or {}
         out["health_ts"] = h.get("ts") or ""
     except Exception:
-        pass
+        log_exc("bridge_summary:health_latest.json")   # P0-5
     # 六源采集状态（news_collector/status.json：last_ok + 每源 ok/new）
     try:
         with open(os.path.join(STATION, "news_collector", "status.json"),
@@ -2765,7 +2785,7 @@ def bridge_summary():
                             "new": (v or {}).get("new")}
                         for k, v in (cs.get("sources") or {}).items()}}
     except Exception:
-        pass
+        log_exc("bridge_summary:collectors(status.json)")   # P0-5
     # 运行仪表：投委会当日运行段（council_run.log ===== today ===== 块）
     try:
         seg, cur = [], None
@@ -2782,7 +2802,7 @@ def bridge_summary():
                     cur.append(ls)
         out["runs"] = seg
     except Exception:
-        pass
+        log_exc("bridge_summary:council_run.log")   # P0-5
     # 运行仪表：跑批当日摘要行（PORTFOLIO nav 行，尾部 8 行）
     try:
         po = os.path.join(QBT_DIR, "logs", "portfolio_task.out")
@@ -2792,7 +2812,7 @@ def bridge_summary():
                 out["runs"] = [x.strip() for x in f
                                if x.strip().startswith("PORTFOLIO")][-8:] + out["runs"]
     except Exception:
-        pass
+        log_exc("bridge_summary:portfolio_task.out")   # P0-5
     # 图台账：缠论池尾 15 票 + 当日扫描计数（first_seen 以当日开头）
     try:
         tail = []
@@ -2802,13 +2822,14 @@ def bridge_summary():
                 try:
                     r = json.loads(line)
                 except Exception:
+                    log_exc("bridge_summary:chanlun_pool.jsonl 行解析")   # P0-5
                     continue
                 if str(r.get("first_seen") or "").startswith(today):
                     out["chanlun_today"] += 1
                 tail.append(r)
         out["graphs"] = tail[-15:][::-1]
     except Exception:
-        pass
+        log_exc("bridge_summary:chanlun_pool.jsonl")   # P0-5
     # 预警仪：九维警报池（band 为字符串 alert/alert2，按 code 去重取
     # 最新；history 未生成时回退九维快照 scores.json 同口径行）
     try:
@@ -2820,6 +2841,7 @@ def bridge_summary():
                     try:
                         r = json.loads(line)
                     except Exception:
+                        log_exc("bridge_summary:nine_dim_history 行解析")   # P0-5
                         continue
                     if r.get("band") in ("alert", "alert2") \
                             or r.get("pool_type") == "alert":
@@ -2838,7 +2860,7 @@ def bridge_summary():
         out["nine_list"] = sorted(last.values(),
                                   key=lambda x: -(x.get("score") or 0))[:10]
     except Exception:
-        pass
+        log_exc("bridge_summary:nine_dim")   # P0-5
     # 预警仪：盯盘会需注意（council_watch 最新 5 条 watch）
     try:
         wl = []
@@ -2848,6 +2870,7 @@ def bridge_summary():
                 try:
                     r = json.loads(line)
                 except Exception:
+                    log_exc("bridge_summary:council_watch 行解析")   # P0-5
                     continue
                 if r.get("type") == "watch":
                     wl.append(r)
@@ -2857,7 +2880,7 @@ def bridge_summary():
             if str((r.get("judge") or {}).get("level") or "") == "需注意")
         out["watch_list"] = wl[-5:][::-1]
     except Exception:
-        pass
+        log_exc("bridge_summary:council_watch")   # P0-5
     # 账户态势：4 模拟盘 nav/持仓
     try:
         with open(os.path.join(QBT_DIR, "reports", "portfolio.json"),
@@ -2870,7 +2893,7 @@ def bridge_summary():
                 "capital": a.get("capital", 0), "nav": a.get("nav"),
                 "ps": a.get("ps"), "pnl_pct": a.get("pnl_pct")})
     except Exception:
-        pass
+        log_exc("bridge_summary:portfolio.json 账户")   # P0-5
     # 汇总：分级横幅（红=必须处理 黄=知晓 绿=安心）
     reds = [r.get("table") for r in out["freshness"]
             if r.get("status") == "empty"]
@@ -2901,9 +2924,9 @@ def bridge_decisions():
                 try:
                     out["props"].append(json.loads(line))
                 except Exception:
-                    pass
+                    log_exc("bridge_decisions:council_proposals 行解析")   # P0-5
     except Exception:
-        pass
+        log_exc("bridge_decisions:council_proposals.jsonl")   # P0-5
     out["props"] = out["props"][-20:][::-1]
     try:
         with open(os.path.join(QBT_DIR, "reports",
@@ -2912,11 +2935,12 @@ def bridge_decisions():
                 try:
                     r = json.loads(line)
                 except Exception:
+                    log_exc("bridge_decisions:council_watch 行解析")   # P0-5
                     continue
                 if r.get("type") == "watch":
                     out["watches"].append(r)
     except Exception:
-        pass
+        log_exc("bridge_decisions:council_watch.jsonl")   # P0-5
     out["watches"] = out["watches"][-20:][::-1]
     try:
         with open(os.path.join(QBT_DIR, "reports",
@@ -2926,9 +2950,9 @@ def bridge_decisions():
                 try:
                     out["reviews"].append(json.loads(line))
                 except Exception:
-                    pass
+                    log_exc("bridge_decisions:council_reviews 行解析")   # P0-5
     except Exception:
-        pass
+        log_exc("bridge_decisions:council_reviews.jsonl")   # P0-5
     out["reviews"] = out["reviews"][-10:][::-1]
     try:
         with open(os.path.join(QBT_DIR, "reports",
@@ -2940,7 +2964,7 @@ def bridge_decisions():
         out["by_dissent"] = st.get("by_dissent") or []
         out["shadow_updated"] = st.get("updated") or ""
     except Exception:
-        pass
+        log_exc("bridge_decisions:council_shadow_stats.json")   # P0-5
     return out
 
 
@@ -3218,7 +3242,7 @@ def _news_db():
                 b = json.loads(j).get("bias", "neutral")
                 out["dist"][b] = out["dist"].get(b, 0) + 1
             except Exception:
-                pass
+                log_exc("_news_db:jev 分布行解析")   # P0-5
         for ts, title, j in db.execute(
                 "SELECT ts, title, jev FROM news WHERE jev IS NOT NULL "
                 "ORDER BY id DESC LIMIT 12"):
