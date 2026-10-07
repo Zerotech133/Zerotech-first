@@ -11183,7 +11183,12 @@ transition:.3s;z-index:9}
         self._json({"code": 0}, 200)
 
     def _feishu_encrypt_key(self):
-        """读飞书 Encrypt Key（~/.lark-cli/config.json 或 env）。"""
+        """读飞书 Encrypt Key（~/.lark-cli/config.json 或 env）。
+
+        A4（2026-10-07）：回调验签应用与推送应用解耦——apps 数组里取
+        **第一个带 encryptKey 的应用**（推送 bot apps[0] 无 key 不受影响，
+        新建回调应用 apps[1] 携带 key 生效）。
+        """
         ek = os.environ.get("FEISHU_ENCRYPT_KEY")
         if ek:
             return ek
@@ -11192,8 +11197,10 @@ transition:.3s;z-index:9}
                                "config.json")
             with open(cfg, encoding="utf-8") as f:
                 apps = json.load(f).get("apps") or []
-            if apps:
-                return apps[0].get("encryptKey") or apps[0].get("encrypt_key")
+            for a in apps:
+                k = a.get("encryptKey") or a.get("encrypt_key")
+                if k and k != "EMPTY":
+                    return k
         except Exception:
             pass
         return None
