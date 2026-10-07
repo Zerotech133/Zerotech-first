@@ -47,13 +47,14 @@ def load_texts():
 
 def _pdf_text(url, timeout=20):
     """下载 PDF 并抽文本；返回 (text, pages) 或抛异常。
-    dfcfw 偶发软限流返回防爬 HTML（<script），校验 %PDF 头并重试一次。"""
-    import requests
+    2026-10-07: dfcfw EO_Bot 升级 TLS 指纹挑战（requests 全头组仍 988B <script>），
+    实证解法 curl_cffi impersonate=chrome131（K266 反爬实验）。"""
+    from curl_cffi import requests as creq
     from pypdf import PdfReader
     content = b""
     for attempt in (1, 2):
-        r = requests.get(url, timeout=timeout, headers={
-            "User-Agent": UA, "Referer": "https://data.eastmoney.com/"})
+        r = creq.get(url, timeout=timeout, impersonate="chrome131",
+                     headers={"Referer": "https://data.eastmoney.com/"})
         r.raise_for_status()
         if r.content[:4] == b"%PDF":
             content = r.content
