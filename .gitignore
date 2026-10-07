@@ -73,6 +73,7 @@ news_collector/sectors.json
 news_collector/assets/jev_chart.png
 jev-eval/review_data/
 quant_backtest/pos_alert_state.json
+quant_backtest/strong_state.json
 quant_backtest/last_backtest.json
 quant_backtest/positions.json
 news_collector/outbox/alert_push_last.json
