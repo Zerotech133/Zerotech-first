@@ -19,7 +19,9 @@ NEWS = os.path.join(os.path.dirname(HERE), "news_collector")
 sys.path.insert(0, NEWS)
 from send_feishu import _load_app_creds, USER_ID  # noqa: E402
 
-PORTAL_BASE = "http://127.0.0.1:8080"  # 内网门户（与 nginx 一致）
+# 卡片按钮的 URL 在飞书客户端（手机/外部设备）打开 → 必须用跨设备可达地址。
+# 127.0.0.1 只有服务器本机浏览器可用（2026-10-07 实测改用 Tailscale 地址）。
+PORTAL_BASE = "http://100.110.192.72:8080"  # Tailscale 隧道（nginx 8080 全接口监听）
 
 
 def _fmt_quote(facts):
