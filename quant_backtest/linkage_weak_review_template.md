@@ -153,7 +153,7 @@ Select-String 301216 e:\老田的AI助手\quant_backtest\data\chanlun_pool.jsonl
 & "C:\Program Files\Python311\python.exe" -X utf8 e:\老田的AI助手\quant_backtest\style_lookup.py 301216
 
 # ⑦ 跟踪监测（§4/§6）：三线关键位+趋势+超额+复评触发判定（WeakTrackCheck 每日 15:30 自动跑）
-& "C:\Program Files\Python311\python.exe" -X utf8 e:\老田的AI助手\quant_backtest\weak_track_check.py 301216
+& "C:\Program Files\Python311\python.exe" -X utf8 e:\老田的AI助手\quant_backtest\weak_track_check.py 301216 --pivots 16.12,16.80,17.93 --since 2026-10-02
 
 # 查逐日跟踪状态流（渲染表格，--tail 30 可调回看行数）
 & "C:\Program Files\Python311\python.exe" -X utf8 e:\老田的AI助手\quant_backtest\weak_track_view.py 301216

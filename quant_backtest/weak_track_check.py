@@ -14,8 +14,11 @@
 退出码：0=正常跟踪 / 1=触发复评（接 alert_fail.py 推送）。
 
 用法:
-  python weak_track_check.py                       # 默认 301216 全参数
+  python weak_track_check.py 301216 --pivots 16.12,16.80,17.93 --since 2026-10-02
   python weak_track_check.py 600519.SH --pivots 1500,1600 --since 2026-10-02
+
+注意（P1-3）：--pivots / --since 为个案参数（来自 start_weak_track.ps1
+显式传参），不再提供默认值——新案例忘传参直接报错退出，防止静默跑错案例。
 """
 import argparse
 import json
@@ -29,8 +32,6 @@ import linkage
 
 POOL = os.path.join(HERE, "data", "chanlun_pool.jsonl")
 OUT_DIR = os.path.join(os.path.dirname(HERE), "reports")
-DEF_PIVOTS = "16.12,16.80,17.93"      # 万凯：左侧低点/站稳位/中枢高点
-DEF_SINCE = "2026-10-02"              # 立案日
 
 
 from codes import normalize_code as _norm  # noqa: E402  P1-2 统一代码归一（北交所 8/4/92 开头 → .BJ）
@@ -74,8 +75,10 @@ def block_daily_bc(bc, refresh=True):
 def main():
     ap = argparse.ArgumentParser(description="弱于板块案例跟踪监测")
     ap.add_argument("code", nargs="?", default="301216")
-    ap.add_argument("--pivots", default=DEF_PIVOTS, help="个股关键位,逗号分隔")
-    ap.add_argument("--since", default=DEF_SINCE, help="立案日(池信号扫描起点)")
+    # P1-3：个案参数必填（唯一自动化调用方 start_weak_track.ps1 恒显式传参，
+    # 已核对计划任务注册链 WeakTrackCheck → start_weak_track.ps1）。
+    ap.add_argument("--pivots", required=True, help="个股关键位,逗号分隔（个案参数，必填）")
+    ap.add_argument("--since", required=True, help="立案日(池信号扫描起点，个案参数，必填)")
     ap.add_argument("--no-refresh", action="store_true")
     a = ap.parse_args()
     code = _norm(a.code)
