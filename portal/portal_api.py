@@ -671,6 +671,7 @@ DOMAIN_NAV_GROUPS = {
         ("🚦 实盘跟踪", (
             ("🚦 信号", "/bt-signals", "signals"),
             ("💼 持仓", "/bt-positions", "positions"),
+            ("🧾 模拟仓", "/paper", "paper"),
             ("📄 报告", "/bt-report", "report"),
             ("🎯 卖点研判", "/sellpoint", "sellpoint"))),
         ("🧰 研究与数据", (
@@ -719,7 +720,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "opt": "quant", "sectors": "quant", "cases": "quant",
                 "linkage": "quant", "council": "quant", "sim": "quant",
                 "debate": "quant", "bridge": "quant", "fut": "quant",
-                "sellpoint": "quant",
+                "sellpoint": "quant", "paper": "quant",
                 "intel": "intel",
                 "jev": "intel", "brief": "intel", "kg": "intel",
                 "kgcanvas": "intel", "kgask": "intel",
@@ -20922,6 +20923,19 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "verified": False,
                             "error": repr(_e)}, 500)
+        elif path == "/api/paper_status":
+            # K-STOCK 模拟仓只读投影（2026-10-09 前端规划 P2）：
+            # 数据层 k_stock/paper/portal_status.py（纯标准库 sqlite ro，零 pandas），
+            # CLI 自测 python k_stock/paper/portal_status.py。
+            import sys as _sysp
+            _ksdir = r"E:\老田的AI助手\k_stock"
+            if _ksdir not in _sysp.path:
+                _sysp.path.insert(0, _ksdir)
+            try:
+                from paper.portal_status import status as _paper
+                self._json(_paper())
+            except Exception as _e:  # 数据层异常也如实暴露（fail loud）
+                self._json({"ok": False, "error": repr(_e)}, 500)
         elif path.startswith("/static/"):
             # KG-V1 静态资源（白名单）：本地 echarts / 全站 tokens.css
             fn = path.split("/", 2)[2]
@@ -21255,6 +21269,88 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             self._html_file(os.path.join(STATION, "quant_backtest",
                                          "reports", "opt.html"),
                             nav_key="opt")
+        elif path in ("/qd", "/qd/"):
+            # K-STOCK-022 量子双刀 · 选股中心（研究预览页）：读 qd_scanner.py
+            # 产的缓存 JSON 渲染；无缓存/过期则后台拉起 venv 扫描（stdout 落文件）。
+            # 纯展示层：只读特征湖扫描缓存，零影子链路触碰；显著标注研究态未回测。
+            import html as _h_qd
+            import subprocess as _sp
+            e_qd = _h_qd.escape
+            cache_p = os.path.join(ROOT, "portal", "qd_scan_cache.json")
+            log_p = os.path.join(ROOT, "portal", "qd_scan.log")
+            snap_qd = _read_json(cache_p) if os.path.exists(cache_p) else None
+            VENV_PY = ("C:/Users/Administrator/.workbuddy/binaries/python/"
+                       "envs/default/Scripts/python.exe")
+            SCAN_PY = os.path.join(ROOT, "portal", "qd_scanner.py")
+            if snap_qd is None:
+                # 首次：后台拉起扫描（venv 解释器；stdout/stderr 落文件，长跑纪律）
+                if not os.path.exists(log_p) or time.time() - os.path.getmtime(log_p) > 1800:
+                    with open(log_p, "ab") as lf:
+                        _sp.Popen([VENV_PY, SCAN_PY], stdout=lf, stderr=lf,
+                                  stdin=_sp.DEVNULL,
+                                  creationflags=0x00000008 | 0x00000200)
+                body_qd = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                           "<meta http-equiv='refresh' content='30'>"
+                           "<title>量子双刀 · 研究预览</title>" + self._COCKPIT_CSS
+                           + "</head><body>" + pill_nav("qd")
+                           + "<h1>⚔ 量子双刀 · 选股中心（研究预览）</h1>"
+                           "<div style='border:1px solid #d29922;border-radius:8px;"
+                           "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
+                           "⚠ 研究态：策略未回测验证（T-20261009-009 结论前不构成选股依据）</div>"
+                           "<div class='dim'>全市场首次扫描进行中（约 3-5 分钟），"
+                           "页面每 30 秒自动刷新 · 扫描日志 " + e_qd(log_p) + "</div>"
+                           "</body></html>")
+                self._html(body_qd)
+                return
+            REG_CN = {"trend_up": "趋势上行", "trend_down": "趋势下行",
+                      "rotation": "轮动", "range": "震荡"}
+            rg = snap_qd.get("regime_now", {})
+
+            def _row_qd(r):
+                recent = "、".join(r.get("recent_signals", [])[-3:]) or "—"
+                return ("<tr><td><b>%s</b></td><td>%s</td><td>%s</td><td>%s</td>"
+                        "</tr>" % (e_qd(r["code"]), e_qd(str(r.get("close", "—"))),
+                                   e_qd(REG_CN.get(r.get("regime"), r.get("regime", "?"))),
+                                   e_qd(recent)))
+            now_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_now", [])) or \
+                "<tr><td colspan=4 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
+            rec_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_recent", [])[:50]) or \
+                "<tr><td colspan=4 class='dim'>近 5 日无信号</td></tr>"
+            rg_txt = " · ".join("%s %d" % (REG_CN.get(k, k), v) for k, v in sorted(rg.items()))
+            body_qd = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                       "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                       "<title>量子双刀 · 研究预览</title>" + self._COCKPIT_CSS
+                       + "</head><body>" + pill_nav("qd")
+                       + "<h1>⚔ 量子双刀 · 选股中心（研究预览）</h1>"
+                       "<div style='border:1px solid #d29922;border-radius:8px;"
+                       "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
+                       "⚠ 研究态：策略未回测验证（strict 八重过滤 · T-20261009-009 回测结论"
+                       "前不构成选股依据 · 不构成投资建议）</div>"
+                       "<div class='dim'>扫描快照 %s · 耗时 %ss · 覆盖 %d 只（跳过 %d）"
+                       " · 当日市况分布：%s</div>"
+                       "<h2 style='font-size:16px;margin-top:18px'>📌 当日信号（%d）</h2>"
+                       "<table style='border-collapse:collapse;min-width:420px'>"
+                       "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
+                       "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
+                       + now_rows + "</table>"
+                       "<h2 style='font-size:16px;margin-top:18px'>🕘 近 5 日曾有信号（%d，"
+                       "当日已不触发）</h2>"
+                       "<table style='border-collapse:collapse;min-width:420px'>"
+                       "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
+                       "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
+                       + rec_rows + "</table>"
+                       "<div class='dim' style='margin-top:16px'>策略口径：连续双日十字星"
+                       "（实体/振幅≤0.30）+ MACD 多头 + 八重 AND 过滤（振幅变化率/价格带/"
+                       "两日小涨/20日成交额&gt;30亿/MA24≥MA54 多头/乖离受限/MACD/Regime 非"
+                       "趋势下行一票否决）· 刷新扫描：运行 portal/qd_scanner.py（venv）"
+                       "</div></body></html>"
+                       % (e_qd(str(snap_qd.get("ts", "—"))),
+                          e_qd(str(snap_qd.get("elapsed_s", "?"))),
+                          snap_qd.get("scanned", 0), snap_qd.get("skipped", 0),
+                          e_qd(rg_txt or "—"),
+                          len(snap_qd.get("signals_now", [])),
+                          len(snap_qd.get("signals_recent", []))))
+            self._html(body_qd)
         elif path == "/bt-news":
             self._bt_news(qs)
         elif path == "/bt":
