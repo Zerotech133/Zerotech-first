@@ -5,9 +5,10 @@
   "chief": {
     "agent_id": "A0",
     "role_profile": "chief_of_staff",
-    "llm_binding": "ollama/qwen3.5:35b",
+    "llm_binding": "ollama/qwen3.5:9b",
+    "binding_note": "35b 于 2026-10-08 20:57 实测：本机显存不足溢出 CPU，2x300s 超时未完成单次判读（EXIT=2）——实时场景不可用，硬件扩容后再评估；9b 判读质量已验证（命中倒戈/假收敛/全HOLD 三要点）",
     "status": "skeleton",
-    "skeleton_note": "v0.1 骨架已立（agent_platform/a0_agent.py 判读能力，live 9b 验证通过）；automation 接入与 35b 全链验证待拍板"
+    "skeleton_note": "v0.1 骨架已立（agent_platform/a0_agent.py 判读能力，live 9b 验证通过）；automation 接入待拍板"
   },
   "departments": [
     {
