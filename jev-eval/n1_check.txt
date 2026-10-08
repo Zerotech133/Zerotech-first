@@ -1,4 +1,4 @@
-# N1Check v1.3 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline)
+# N1Check v1.4 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence)
 # Checks:
 #  (1) today's backup set: DONE failed=0 + mirror files>=$MinFiles + quant_code files count
 #  (2) v5 key guard normal path: no BACKUP_KEY_LOST flag anywhere
@@ -23,6 +23,13 @@ foreach ($d in (Get-ChildItem 'E:\' -Directory)) {
 }
 if (-not $BaseDir) { return }
 $alertsDir = Join-Path $BaseDir 'jev-eval\alerts'
+# --- 0. backup_daily.ps1 disk presence (v1.4 / OPS-1013) ---
+# 10-08 the script vanished from disk twice silently; N1 only checked backup
+# SET integrity, never the script itself. Registry auto-restores at next 03:00
+# run, so this shortens detection time rather than preventing loss.
+$bdScript = Join-Path $BaseDir 'jev-eval\backup_daily.ps1'
+if (Test-Path $bdScript) { Report ('[OK] backup_daily.ps1 on disk ' + ((Get-Item $bdScript).Length) + 'B') }
+else { Fail 'backup_daily.ps1 MISSING from disk (registry will auto-restore at next 03:00 run)' }
 function Report($s) { $script:report += $s }
 function Fail($s) { $script:fail++; $script:report += ('[FAIL] ' + $s) }
 
