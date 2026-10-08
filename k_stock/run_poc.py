@@ -43,19 +43,44 @@ def run_one(stock: str, context: str = "", mock: bool = False, auto: bool = Fals
     return result
 
 
-def load_guard(threshold_s: float = 6.0) -> tuple[float, float]:
+def _competitor_note() -> str:
+    """中止归因：探测竞争推理服务（llama-server 等）是否满载（>1GB≈模型驻留推理态）。
+    背景：10-08 实锤第三方私起 llama-server（监听 54199，非 K259 的 8030 入口）
+    满载 8.22GB 时与 Ollama 互相踩踏，idle 时自动卸载回 263MB。"""
+    try:
+        import subprocess
+        out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"],
+                             capture_output=True).stdout.decode("gbk", errors="replace")
+        for line in out.splitlines():
+            if "llama-server" in line.lower():
+                parts = line.split('","')
+                if len(parts) >= 5:
+                    mem_kb = int(parts[4].replace(',', '').replace('"', '').replace(" K", "").strip())
+                    mem_gb = mem_kb / 1024 / 1024
+                    if mem_gb > 1.0:
+                        return (f"竞争者定位：llama-server.exe 满载 {mem_gb:.2f}GB（推理态，"
+                                f"与 Ollama 踩踏主因）——请确认归属后关闭或错峰。")
+                    return f"竞争者在册但 idle（{mem_gb * 1024:.0f}MB，已卸载）——负载另有来源。"
+        return ""
+    except Exception:
+        return ""
+
+
+def load_guard(threshold_s: float = 6.0, retries: int = 2, cooldown_s: float = 180.0) -> tuple[float, float]:
     """两段式负载守卫（2026-10-08 修正）：
     第 1 探针 = 冷启动预热（Ollama keep_alive 默认 5m 过期即卸载模型，重载 70s+，不计判定）；
-    第 2 探针 = 热态真实推理速度，超阈值判定负载挤压，中止跑批。
+    第 2 探针 = 热态真实推理速度，超阈值判定负载挤压 → 冷却 cooldown_s 后重探，
+    最多 retries 次（负载是波动的：18:05 实测 18.0s→18:15 回落；第三方 llama-server
+    等竞争者有 idle 自动卸载机制，满载→冷却→回落后即可放行）。全重试仍超 → 由调用方中止。
     阈值 6s（标定曲线，10-08 实证）：热态 2s→5/5 全绿 | 8.8s→3/5（T2/N1 崩）|
     10.8s→1/5（T1/N1 合法 JSON 前缀截断=生成流中途夭折）。S1 判据要有效数据，
     宁缺毋滥；空闲基线 ~2s，6s 有 3 倍余量。
-    返回 (冷耗时, 热耗时)。守卫顺带完成预热，一举两得。"""
+    返回 (冷耗时, 最终热耗时)。守卫顺带完成预热，一举两得。"""
     import time
     import urllib.request
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    t_cold = t_warm = 0.0
-    for i in range(2):
+
+    def _probe() -> float:
         t0 = time.time()
         body = json.dumps({"model": "qwen3.5:9b", "stream": False, "keep_alive": 1800,
                            "messages": [{"role": "user", "content": "回复两个字：正常"}]}).encode()
@@ -63,10 +88,17 @@ def load_guard(threshold_s: float = 6.0) -> tuple[float, float]:
             "http://127.0.0.1:11434/api/chat", data=body,
             headers={"Content-Type": "application/json"}), timeout=300).read())
         _ = d["message"]["content"]
-        if i == 0:
-            t_cold = time.time() - t0
-        else:
-            t_warm = time.time() - t0
+        return time.time() - t0
+
+    t_cold = _probe()                       # 预热，不计判定
+    t_warm = _probe()
+    attempt = 0
+    while t_warm > threshold_s and attempt < retries:
+        attempt += 1
+        print(f"[guard] 热态 {t_warm:.1f}s 超阈（第 {attempt}/{retries} 次）——"
+              f"冷却 {cooldown_s:.0f}s 后重探（等竞争者 idle 卸载）…", flush=True)
+        time.sleep(cooldown_s)
+        t_warm = _probe()
     return t_cold, t_warm
 
 
@@ -99,10 +131,13 @@ def main():
     if not args.mock and not args.no_guard:
         try:
             t_cold, t_warm = load_guard()
-            print(f"[guard] 冷启动 {t_cold:.1f}s（预热，不计判定）| 热态推理 {t_warm:.1f}s", flush=True)
+            print(f"[guard] 冷启动 {t_cold:.1f}s（预热，不计判定）| 热态推理 {t_warm:.1f}s"
+                  f"（含冷却重探，最多 2 次×180s）", flush=True)
             if t_warm > 6.0:
-                print(f"[guard] 热态超 6s——系统负载挤压推理（标定：2s 全绿/8.8s 半崩/10.8s 仅 1 节点存活），中止。"
-                      f"建议换时段（收盘后低峰/清晨）或降低系统负载后重试。", flush=True)
+                culprit = _competitor_note()
+                print(f"[guard] 热态超 6s（含重试）——系统负载挤压推理"
+                      f"（标定：2s 全绿/8.8s 半崩/10.8s 仅 1 节点存活），中止。{culprit}"
+                      f"建议换时段（清晨 07:05 自动化窗口）或关闭竞争推理服务后重试。", flush=True)
                 sys.exit(3)
         except Exception as e:
             print(f"[guard] Ollama 不可达: {e}", flush=True)
