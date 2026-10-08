@@ -30,10 +30,16 @@ if ($out) { $out | Out-File 'C:\Temp\k266_ingest.log' -Append -Encoding utf8 }
 Log "ingest --once rc=$rc $($out -join ' | ')"
 
 # --- 3) M3 结构化（幂等：只判新增 doc；Ollama qwen3.5:9b → tags 入 structure_shadow） ---
-# 仅当本扫有新增（输出含 "OK d"）才跑，空转不占 Ollama
+# 仅当本扫有新增（输出含 "OK d"）才跑，空转不占 Ollama；单实例守卫防并发重判
 if ("$out" -match 'OK d') {
-    $m3 = & python -X utf8 "$root\quant_backtest\k266_m3_structure.py" 2>&1
-    $rc3 = $LASTEXITCODE
-    if ($m3) { $m3 | Out-File 'C:\Temp\k266_m3.log' -Append -Encoding utf8 }
-    Log ("m3 rc=$rc3 last=" + (($m3 | Select-Object -Last 1)))
+    $m3run = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |
+        Where-Object { $_.CommandLine -match 'k266_m3_structure' }
+    if ($m3run) {
+        Log "m3: 已在跑 PID=$($m3run.ProcessId -join ',')，本轮跳过"
+    } else {
+        $m3 = & python -X utf8 "$root\quant_backtest\k266_m3_structure.py" 2>&1
+        $rc3 = $LASTEXITCODE
+        if ($m3) { $m3 | Out-File 'C:\Temp\k266_m3.log' -Append -Encoding utf8 }
+        Log ("m3 rc=$rc3 last=" + (($m3 | Select-Object -Last 1)))
+    }
 }

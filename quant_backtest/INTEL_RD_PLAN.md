@@ -5639,6 +5639,14 @@ K256（未启动）· 候选：QPZM 生产参数 walk-forward 化（K253 排期�
 - ③ kg_build_m2 重建（10-08 00:xx 实跑：upsert 5610 / 元属性 9708）：H1 实质组去重事件 **715 > 96 基线**，DRIVE 实质边 1064，三新组在场（回购增持186/股东减持102/股权激励73/对外投资66/分红派息64/诉讼冻结62/资产重组34/股权转让32/监管处罚29…）；
 - ④ notice_llm.parquet mtime 10-07 已随日链推进（断口愈合），10-08 晨 06:45 NoticeBackfill 首跑再复核。
 
+### H-2. 语义边检查收口（10-08 中午，老田指令「检查图谱侧 K260 语义边是否需要重写」三轮深查）
+- **修复三层闭环**（10-08 上午）：k260 抽检预检发现三类过宽关键词（向下修正/问询函/摘牌）→ `event_graph.py` RULES 删三词（30 条重放 7 修复/23 零误伤）→ events.jsonl 精准重算 175 条（监管处罚→None×101、退市风险→None×36、业绩预亏→None×35 全清零、退市风险→资产收购×3；残留真值 监管处罚52+退市风险67）→ 图谱 Event 节点重跑 kg_build_p3_evt 幂等同步（175 待修→0，三错类 294→119，INVOLVES 边 20732 零影响）。
+- **语义边判定（不需要重写）**：①INVOLVES 边不带 tag/bias（仅时序属性），重算零影响；②**SUPPORTS/CONTRADICTS 系论证边**（正图 5106=Event起点+IntelItem起点 / EXP 影子 2544）边属性携带 tag/bias/mevt_ids 快照——三错类 557 条（正图 373/影子 184），其中 IntelItem 起点 185 条中 119 条源头 AN 在 175 变更集（对照非三错类 2363 条仅 2 相交）；**判定不重写**：边系 Z2→Z3 校准历史产物（uncalibrated=true、calibrated_at 固定 09-30），tag 是当时证据快照历史保真非现状缓存；消费方零依赖边 tag（kg_brief 仅 EXISTS）；证据锚点 Event 节点已修。
+- **警示登记**：**任何按 SUPPORTS/CONTRADICTS 边 tag 聚合的分析，须知悉 557 条三错类快照系旧规则错标所建**（10-08 前校准产物），以 Event/IntelItem 节点现状为准；验证载体 `_k260_graph_sync_check.py` / `_k260_corr_edges_check.py`（quant_backtest，只读可复跑）。
+- cypher 判例：CALL 子查询内 `LIMIT 1`+聚合 count 惰性截断严重失真（CONTRADICTS 报 178 实为 4785）——计数必须独立查询。
+- **BUG-1 修复补记（10-08 中午，专项整理发现）**：重算只改 tag/bias 未清 reason/conf——144 条 tag=None 但 reason 残留「规则命中:旧tag」+conf=0.7、另 3 条退市风险→资产收购流转 reason 旧值；修复=精准锚定 175 变更集照 `_seed_notice` 语义归一（None→reason=""/conf=None，流转→reason=新tag/conf=0.7），行数 40561 铁律，重跑 p3 同步图谱；复验 jsonl 残留 0/0/0 + 图谱残留 0 + 三错类 119 保持——**四层闭环终态**（RULES→jsonl tag→jsonl reason/conf→图谱全字段）。审计器 `_k260_field_audit.py` 留档。增量链无回滚风险已证（`id in seen: continue` 跳过语义）。
+- **第三处残留排查收口（10-08 13:00，快速授权深挖「防第三处残留」）**：grep 全消费方发现 `E:\KGDataRoot\semantica\events.jsonl` 第二活档嫌疑（KGStockAnalysis 侧 `kg_paths.get_data_root()` 指向）→ 实查为**死档**：35905 行、三错类 278 旧错标、10-05 停更；调度链（ops\start_kg_sync.ps1，今晨 06:27 kg_sync OK 实证活链）工作目录 `C:\aios\quant_backtest` 经 junction realpath=**E 盘正本**（samefile=True 实证），**活链数据源=正本无回滚**——明晨链跑=修复后 RULES+修复态 jsonl+id 跳过语义三保险；且重算锚定「tag∈三错类」303 条全集已覆盖 06:27 链可能写入的旧标行。**警示：KGDataRoot 死档含 278 旧错标封存，未来若重启 KGStockAnalysis 侧链/kg_paths 指针会 resurrect 旧数据——重启前须先重放修复**。PS 判例+1：junction 的 PS `Target` 属性显示字符串不可信（显示历史中结名且中文路径内联传参乱码），**junction 真指向以 python `os.path.realpath` 为准**。
+
 ## K261 🆕 立项（未启动）：图谱能力框架 —— 实体链接通用化 + 图分析算法层 + 布局插件化（10-07，用户「未来的数据体量很大，需要通过知识图谱解决实体链接…基于知识图谱的能力框架完成整个系统的任意分析，而不是写死一个知识图谱」）
 
 ### A. 用户愿景（原话锚点）

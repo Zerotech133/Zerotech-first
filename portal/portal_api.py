@@ -19882,23 +19882,42 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
                 "why": s.get("direction_why", "")[:40],
                 "companies": s.get("companies", [])[:6],
                 "tags": tags, "events": s.get("events", [])[:5],
+                "ts": s.get("ts", ""),
                 "chars": (texts.get(did) or {}).get("text_chars", 0),
             })
-        cards.sort(key=lambda c: -c["chars"])
+        # K266-B 适配：新闻单条（src=news）按时间置顶，文档按字数
+        _news_cards = sorted([c for c in cards if c.get("src") == "news"],
+                             key=lambda c: c.get("ts", ""), reverse=True)
+        _doc_cards = sorted([c for c in cards if c.get("src") != "news"],
+                            key=lambda c: -c["chars"])
+        cards = _news_cards + _doc_cards
         wc_b64 = ""
         if freq:
+            # 词云图缓存（K266-B 性能项）：shadow mtime+词种数未变则复用，免每次重渲染
+            _cls = type(self)
+            _ck = None
             try:
-                from wordcloud import WordCloud as _WC
-                img = _WC(font_path=r"C:\Windows\Fonts\simhei.ttf", width=880,
-                          height=420, background_color="#0d1117",
-                          colormap="autumn", max_words=120,
-                          prefer_horizontal=0.95).generate_from_frequencies(
-                              dict(freq)).to_image()
-                _buf = __import__("io").BytesIO()
-                img.save(_buf, format="PNG")
-                wc_b64 = _b64.b64encode(_buf.getvalue()).decode()
-            except Exception as _e:
+                _ck = (_os.path.getmtime(_shadow_fp), len(freq))
+            except OSError:
                 pass
+            _cached = getattr(_cls, "_wc_cache", None)
+            if _ck and _cached and _cached[0] == _ck:
+                wc_b64 = _cached[1]
+            if not wc_b64:
+                try:
+                    from wordcloud import WordCloud as _WC
+                    img = _WC(font_path=r"C:\Windows\Fonts\simhei.ttf", width=880,
+                              height=420, background_color="#0d1117",
+                              colormap="autumn", max_words=120,
+                              prefer_horizontal=0.95).generate_from_frequencies(
+                                  dict(freq)).to_image()
+                    _buf = __import__("io").BytesIO()
+                    img.save(_buf, format="PNG")
+                    wc_b64 = _b64.b64encode(_buf.getvalue()).decode()
+                    if _ck:
+                        _cls._wc_cache = (_ck, wc_b64)
+                except Exception as _e:
+                    pass
         top_words = [w for w, _ in freq.most_common(40)]
         import html as _html
         chips_html = "".join(
@@ -19924,6 +19943,8 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
 .chip.wc{cursor:pointer;background:#161b22;color:#e6edf3}
 .chip.wc i{font-style:normal;color:#8b949e;font-size:10.5px;margin-left:3px}
 .chip.wc.on{background:#1f3a1f;color:#7ee787}
+.chip.srcf{cursor:pointer}
+.chip.srcf.on{background:#1f3a1f;color:#7ee787}
 .card{background:#161b22;border:1px solid #30363d;border-radius:10px;
 padding:10px 12px;margin-bottom:9px}
 .card .nm{color:#58a6ff;font-size:13px;word-break:break-all}
@@ -19945,14 +19966,19 @@ h3{font-size:14px;color:#e6edf3;margin:2px 0 8px}
 </style></head><body><div class='dc'>
 <div class='upbar'>
  <button onclick="document.getElementById('upf').click()">📤 上传公告/研报</button>
- <input type='file' id='upf' accept='.png,.jpg,.jpeg,.pdf,.bmp,.webp' multiple>
+ <input type='file' id='upf' accept='.png,.jpg,.jpeg,.pdf,.bmp,.webp,.txt,.md' multiple>
  <button class='alt' onclick="location.reload()">🔄 刷新</button>
- <span id='upmsg'>支持 PNG/JPG/PDF 多选；识别约 1-5 分钟（K266-DocServices 自动摄取）</span>
+ <span id='upmsg'>支持 PNG/JPG/PDF/TXT/MD 多选；识别约 1-5 分钟（K266-DocServices 自动摄取）</span>
 </div>
 <div class='dgrid'>
  <div class='panel'><h3>热词词云（点击右侧词过滤文档）</h3>{wc}
   <div class='wchips'>{chips}</div></div>
- <div class='panel'><h3>文档影子 <span class='meta' id='cnt'></span></h3>
+ <div class='panel'><h3>文档影子 <span class='meta' id='cnt'></span>
+  <span style='float:right'>
+   <span class='chip n srcf on' data-f='all' onclick="srcflt('all')">全部</span>
+   <span class='chip n srcf' data-f='news' onclick="srcflt('news')">新闻</span>
+   <span class='chip n srcf' data-f='doc' onclick="srcflt('doc')">文档</span>
+  </span></h3>
   <div id='cards'></div></div>
 </div></div>
 <script>
@@ -19961,23 +19987,35 @@ const box = document.getElementById('cards');
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function render(list){
   document.getElementById('cnt').textContent = list.length + ' / ' + DOCS.length;
-  if (!list.length) {box.innerHTML = '<div class="empty">无匹配文档</div>'; return}
-  box.innerHTML = list.map(d => `
+  const part = list.slice(0, shown);
+  if (!part.length) {box.innerHTML = '<div class="empty">无匹配文档</div>'; return}
+  let html = part.map(d => `
     <div class='card'>
-      <div class='nm'>${esc(d.name)} <span class='meta'>${esc(d.src)} · ${d.chars}字</span></div>
+      <div class='nm'>${esc(d.name)} <span class='meta'>${esc(d.src)} · ${d.chars}字${d.ts?' · '+esc(d.ts):''}</span></div>
       <div class='tg'>${esc(d.title)}</div>
       <span class='chip ${d.dir==='利好'?'b':d.dir==='利空'?'s':'n'}'>${esc(d.dir)}</span>
       <span class='chip n'>${esc(d.type)}</span>
       ${d.tags.map(t=>`<span class='chip n'>${esc(t)}</span>`).join(' ')}
       ${d.events.map(e=>`<div class='ev'>${esc(e.subject||'')} <b>${esc(e.rel||'')}</b> ${esc(e.object||'')} ${e.amount? '['+esc(e.amount)+']':''} <a href="/kg?q=${encodeURIComponent(e.subject||e.object||'')}" target="_blank">⤴图谱</a></div>`).join('')}
     </div>`).join('');
+  if (list.length > shown) html += `<div style='text-align:center;margin:6px 0'><button class='chip n' style='cursor:pointer' onclick='more()'>显示更多（${shown}/${list.length}）</button></div>`;
+  box.innerHTML = html;
 }
-let cur = null;
+let cur = null, srcmode = 'all', shown = 200;
+function baseList(){
+  return DOCS.filter(d => srcmode==='all' ? true : (srcmode==='news' ? d.src==='news' : d.src!=='news'));
+}
+function srcflt(m){
+  srcmode = m; shown = 200;
+  document.querySelectorAll('.chip.srcf').forEach(c=>c.classList.toggle('on', c.dataset.f===m));
+  flt(cur);
+}
+function more(){ shown += 200; flt(cur); }
 function flt(w){
   if (cur === w) w = null;
   cur = w;
   document.querySelectorAll('.chip.wc').forEach(c=>c.classList.toggle('on', c.dataset.w===w));
-  render(w ? DOCS.filter(d=>d.tags.includes(w)) : DOCS);
+  render(w ? baseList().filter(d=>d.tags.includes(w)) : baseList());
 }
 document.getElementById('upf').onchange = async (e) => {
   const msg = document.getElementById('upmsg');
@@ -20373,8 +20411,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 if not name:
                     self._json({"error": "缺 name 参数"}, 400)
                     return
-                if not name.lower().endswith((".png", ".jpg", ".jpeg", ".pdf")):
-                    self._json({"error": "仅支持 png/jpg/jpeg/pdf"}, 400)
+                if not name.lower().endswith(
+                        (".png", ".jpg", ".jpeg", ".pdf", ".txt", ".md")):
+                    self._json({"error": "仅支持 png/jpg/jpeg/pdf/txt/md"}, 400)
                     return
                 if not raw:
                     self._json({"error": "空文件"}, 400)

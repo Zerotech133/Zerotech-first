@@ -1,0 +1,83 @@
+# AlertChainTest v1 - Feishu alert chain self-test (on-demand, agent dot-sourced)
+# Layers:
+#  L1 channel : backup_alert.py direct text send (no flag) -> expect ALERT_OK*
+#  L2 forward : write ALERT_CHAIN_TEST flag -> run alert_forward.ps1 in a CHILD
+#               process (it calls exit) -> expect flag gone + sent/*.done +
+#               "SENT" line in forward.log
+#  L3 task    : scheduled forward task present and Ready
+# Side effect: L1 and L2 each push ONE real test message to Feishu (expected).
+# Guard: if other pending flags exist, L2 is skipped (they will be forwarded
+#        by the regular 30min cycle anyway); a failed L2 removes its own test
+#        flag so the 30min cycle never re-sends a test message.
+# Report  : jev-eval\alert_chain_test_report_<ts>.txt (never writes a .flag,
+#           so a broken chain cannot trigger the chain itself)
+$ErrorActionPreference = 'Continue'
+$fail = 0
+$report = @()
+function Report($s) { $script:report += $s }
+function Fail($s) { $script:fail++; $script:report += ('[FAIL] ' + $s) }
+
+$BaseDir = $null
+foreach ($d in (Get-ChildItem 'E:\' -Directory)) {
+    if (Test-Path (Join-Path $d.FullName 'jev-eval\backup_alert.py')) { $BaseDir = $d.FullName; break }
+}
+if (-not $BaseDir) { Write-Output '[FAIL] BaseDir not found'; return }
+$jev       = Join-Path $BaseDir 'jev-eval'
+$AlertPy   = Join-Path $jev 'backup_alert.py'
+$fwPs1     = Join-Path $jev 'alert_forward.ps1'
+$alertsDir = Join-Path $jev 'alerts'
+$sentDir   = Join-Path $alertsDir 'sent'
+$fwLog     = Join-Path $alertsDir 'forward.log'
+$pyExe = 'C:\Program Files\Python311\python.exe'
+$ts = Get-Date -Format 'yyyyMMdd_HHmmss'
+
+# --- L1: channel direct (text, no flag) ---
+$l1 = 'ALERT_CHAIN_TEST L1 channel direct ' + $ts + ' (no action needed)'
+$out = & $pyExe $AlertPy $l1 2>&1 | Out-String
+if ($LASTEXITCODE -eq 0 -and $out -match 'ALERT_OK') {
+    Report ('[OK] L1 channel: ' + (($out.Trim() -split "`r?`n")[-1]))
+} else {
+    Fail ('L1 channel RC=' + $LASTEXITCODE + ' out=' + $out.Trim())
+}
+
+# --- L2: forward end-to-end ---
+$others = @(Get-ChildItem $alertsDir -Filter '*.flag' -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -notlike 'ALERT_CHAIN_TEST_*' })
+if (-not (Test-Path $fwPs1)) {
+    Fail 'alert_forward.ps1 not found'
+} elseif ($others.Count -gt 0) {
+    Report ('[WARN] L2 skipped: other pending flags (' + (($others | Select-Object -First 3 | ForEach-Object { $_.Name }) -join ',') + ') - rerun after queue drains')
+} else {
+    $flagName = 'ALERT_CHAIN_TEST_' + $ts + '.flag'
+    $flagPath = Join-Path $alertsDir $flagName
+    ('Alert chain E2E test ' + $ts + '. If you see this message, flag->forward->Feishu works. No action needed.') |
+        Set-Content -LiteralPath $flagPath -Encoding UTF8
+    $fwOut = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $fwPs1 2>&1 | Out-String
+    $fwRc = $LASTEXITCODE
+    Start-Sleep -Seconds 1
+    $gone = -not (Test-Path $flagPath)
+    $done = @(Get-ChildItem $sentDir -Filter ($flagName + '*') -File -ErrorAction SilentlyContinue)
+    $sentLine = if (Test-Path $fwLog) { @(Get-Content $fwLog -Tail 10 | Where-Object { $_ -match ('SENT ' + $flagName) }) } else { @() }
+    if ($gone -and $done.Count -eq 1 -and $sentLine.Count -gt 0) {
+        Report ('[OK] L2 forward: flag archived + log SENT line (fwRC=' + $fwRc + ')')
+    } else {
+        Fail ('L2 forward: gone=' + $gone + ' doneCount=' + $done.Count + ' logSENT=' + ($sentLine.Count -gt 0) + ' fwRC=' + $fwRc + ' fwOut=' + $fwOut.Trim())
+        if (Test-Path $flagPath) { Remove-Item -LiteralPath $flagPath -Force }
+    }
+}
+
+# --- L3: scheduled forward task ---
+$task = Get-ScheduledTask | Where-Object {
+    @($_.Actions | Where-Object { $_.Arguments -match 'alert_forward' }).Count -gt 0
+}
+if ($task) {
+    $ti = $task | Get-ScheduledTaskInfo
+    Report ('[OK] L3 task "' + $task.TaskName + '" State=' + $task.State + ' LastResult=' + $ti.LastTaskResult + ' LastRun=' + $ti.LastRunTime)
+} else { Fail 'L3 forward scheduled task not found' }
+
+# --- summary ---
+if ($fail -eq 0) { $report += 'ALERT CHAIN TEST ALL PASS' } else { $report += ('ALERT CHAIN TEST FAILURES=' + $fail) }
+$rf = Join-Path $jev ('alert_chain_test_report_' + $ts + '.txt')
+$report | Out-File $rf -Encoding UTF8
+$report
+Write-Output ('REPORT=' + $rf)
