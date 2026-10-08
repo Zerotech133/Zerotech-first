@@ -107,12 +107,12 @@ def main():
             parsed = parse_json(ask_ollama(text))
             out = {"doc_id": did, "name": name, "src": rec.get("src"),
                    "kind": rec.get("kind"), "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "pv": 1, "raw_ok": True, **parsed}
+                   "pv": 1, "raw_ok": True, "chars": len(text), **parsed}
             flag = ""
         except Exception as e:
             out = {"doc_id": did, "name": name, "src": rec.get("src"),
                    "kind": rec.get("kind"), "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                   "pv": 1, "raw_ok": False, "err": f"{type(e).__name__}: {str(e)[:120]}"}
+                   "pv": 1, "raw_ok": False, "chars": len(text), "err": f"{type(e).__name__}: {str(e)[:120]}"}
             parsed, flag = {}, " ERR"
         with open(SHADOW, "a", encoding="utf-8") as fo:
             fo.write(json.dumps(out, ensure_ascii=False) + "\n")

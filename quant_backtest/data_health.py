@@ -301,17 +301,28 @@ def _scan_integrity():
 
 
 def _lag_open_days(live, today):
-    """live→today 的滞后交易日数（trade_cal is_open 口径，免周末误报）。
+    """(live, today] 内 SSE 开市自然日数，免周末及多交易所重复误报。
     日历/未来日期返回 0；读层不可用返回 None（调用方退回自然日）。"""
     try:
+        live, today = str(live)[:8], str(today)[:8]
+        datetime.strptime(live, "%Y%m%d")
+        datetime.strptime(today, "%Y%m%d")
+        if live >= today:
+            return 0
         import datamart as dm
-        df = dm.read("trade_cal", start=str(live)[:8], end=today)
-        if df is None or df.empty or "is_open" not in df.columns:
+        df = dm.read("trade_cal", start=live, end=today)
+        if df is None or df.empty or not {
+                "exchange", "cal_date", "is_open"}.issubset(df.columns):
             return None
-        vals = df["is_open"].tolist()
-        n_open = sum(1 for v in vals
-                     if str(v).strip() in ("1", "1.0", "True"))
-        return n_open - 1                     # 含 live 当日，扣掉
+        sse = df[df["exchange"].astype(str).str.strip() == "SSE"]
+        if sse.empty:
+            return None
+        # 排除 live 当日，而非假定该日必定开市再减一。
+        days = {str(day)[:8] for day, opened in
+                sse[["cal_date", "is_open"]].itertuples(index=False, name=None)
+                if live < str(day)[:8] <= today
+                and str(opened).strip() in ("1", "1.0", "True")}
+        return len(days)
     except Exception:
         return None
 
@@ -389,6 +400,17 @@ def scan_warehouse():
     tdx = _scan_tdx()
     tush = _scan_tushare()
     fresh = _scan_freshness()
+    if not isinstance(fresh, dict):
+        fresh = {}
+    fresh_error = fresh.get("error") or (
+        "未取得新鲜度扫描结果" if not fresh.get("tables") else None)
+    if fresh_error:
+        # 添加独立失败记录，不修改扫描器返回的缓存对象。
+        fresh = {"error": str(fresh_error), "tables": list(
+            fresh.get("tables") or []) + [{
+                "table": "freshness_scan", "live": None, "snap": None,
+                "lag_days": None, "ready": False, "status": "FAIL",
+                "error": str(fresh_error)}]}
     integrity = _scan_integrity()
     artifacts = _scan_artifacts()
 
@@ -426,14 +448,15 @@ def scan_warehouse():
                        if t["lag_days"] is not None else "—",
                "latest": t["live"] or "—",
                "size_mb": None, "age_hours": None,
-               "extra": "%s 快照%s%s" % (
+               "extra": ("FAIL " + t["error"]) if t.get("error") else "%s 快照%s%s" % (
                    st_cn.get(t["status"], t["status"]), t["snap"] or "—",
                    "" if t["ready"] else " · 未就绪")}
               for t in fresh.get("tables", [])]
     n_bad = sum(1 for t in fresh.get("tables", [])
                 if t["status"] in ("STALE", "FAIL"))
     groups.append({"name": "新鲜度监控", "kind": "freshness", "rows": f_rows,
-                   "note": ("异常 %d 表（STALE/FAIL）" % n_bad) if n_bad
+                   "note": ("新鲜度扫描失败：%s" % fresh_error) if fresh_error else
+                   ("异常 %d 表（STALE/FAIL）" % n_bad) if n_bad
                    else "核心表全部 OK"})
     integrity_rows = []
     for metric in integrity["metrics"]:
@@ -501,7 +524,8 @@ def scan_warehouse():
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
            "kpi": kpi, "groups": groups,
            "integrity": integrity,
-           "gaps": _build_gaps(kline, news) + [
+           "gaps": _build_gaps(kline, news) + (
+               ["FAIL freshness_scan: %s" % fresh_error] if fresh_error else []) + [
                "%s %s: %s" % (m["status"], m["name"], m["value"])
                for m in integrity["metrics"] if m["status"] in ("FAIL", "WARN")]}
     _WCACHE["t"], _WCACHE["d"] = time.time(), out

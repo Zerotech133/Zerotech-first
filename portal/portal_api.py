@@ -2670,6 +2670,98 @@ DATA_SYNC_CMDS = {
 }
 
 
+_HEALTH_CACHE = {"data": None, "ts": 0, "refreshing": False, "error": None}
+_HEALTH_LOCK = threading.Lock()
+_KG_HEALTH_CACHE = {"data": None, "ts": 0, "refreshing": False, "error": None}
+_KG_HEALTH_LOCK = threading.Lock()
+_FRESH_BG_LOCK = threading.Lock()
+_FRESH_BG_ERROR = None
+
+
+def data_health_bg(ttl_sec=60):
+    """返回只读扫描快照；首次或过期扫描由单个后台线程执行。"""
+    with _HEALTH_LOCK:
+        if (_HEALTH_CACHE["data"] is not None
+                and time.monotonic() - _HEALTH_CACHE["ts"] < ttl_sec):
+            return dict(_HEALTH_CACHE)
+        if _HEALTH_CACHE["refreshing"]:
+            return dict(_HEALTH_CACHE)
+        _HEALTH_CACHE["refreshing"] = True
+        snapshot = dict(_HEALTH_CACHE)
+
+    def refresh():
+        try:
+            if QBT_DIR not in sys.path:
+                sys.path.insert(0, QBT_DIR)
+            import data_health
+            report = data_health.scan_warehouse()
+            if (not isinstance(report, dict)
+                    or not {"kpi", "groups", "gaps", "generated_at"}.issubset(report)
+                    or not isinstance(report["kpi"], dict)
+                    or not {"n_tables", "total_mb", "tdx_sync", "freshest"}.issubset(report["kpi"])
+                    or not isinstance(report["groups"], list)
+                    or not isinstance(report["gaps"], list)):
+                raise ValueError("数据仓扫描结果不完整")
+            with _HEALTH_LOCK:
+                _HEALTH_CACHE.update(data=report, ts=time.monotonic(), error=None)
+        except Exception as exc:
+            with _HEALTH_LOCK:
+                _HEALTH_CACHE["error"] = str(exc)
+        finally:
+            with _HEALTH_LOCK:
+                _HEALTH_CACHE["refreshing"] = False
+
+    try:
+        threading.Thread(target=refresh, daemon=True).start()
+    except Exception as exc:
+        with _HEALTH_LOCK:
+            _HEALTH_CACHE.update(refreshing=False, error=str(exc))
+            return dict(_HEALTH_CACHE)
+    return snapshot
+
+
+def data_health_kg_bg(ttl_sec=300):
+    """图谱侧卡独立后台刷新，成功或失败均缓存，避免阻塞及重复重试。"""
+    with _KG_HEALTH_LOCK:
+        if (_KG_HEALTH_CACHE["refreshing"] or
+                _KG_HEALTH_CACHE["ts"] and time.monotonic() - _KG_HEALTH_CACHE["ts"] < ttl_sec):
+            return dict(_KG_HEALTH_CACHE)
+        _KG_HEALTH_CACHE["refreshing"] = True
+        snapshot = dict(_KG_HEALTH_CACHE)
+
+    def refresh():
+        try:
+            if QBT_DIR not in sys.path:
+                sys.path.insert(0, QBT_DIR)
+            import kg_portal
+            stats = kg_portal.api("stats")
+            if not isinstance(stats, dict) or not stats.get("ok"):
+                raise ValueError(stats.get("error", "图谱核验失败") if isinstance(stats, dict)
+                                 else "图谱统计结果不完整")
+            if not all(isinstance(stats.get(key), dict) for key in
+                       ("nodes", "edges", "freshness", "hm_tags")):
+                raise ValueError("图谱统计结果不完整")
+            distill = kg_portal.api("distill")
+            data = {"stats": stats, "distill": distill if isinstance(distill, dict) else {"ok": False},
+                    "coverage": len(kg_portal.candle_coverage())}
+            with _KG_HEALTH_LOCK:
+                _KG_HEALTH_CACHE.update(data=data, error=None)
+        except (Exception, SystemExit) as exc:
+            with _KG_HEALTH_LOCK:
+                _KG_HEALTH_CACHE["error"] = str(exc)
+        finally:
+            with _KG_HEALTH_LOCK:
+                _KG_HEALTH_CACHE.update(ts=time.monotonic(), refreshing=False)
+
+    try:
+        threading.Thread(target=refresh, daemon=True).start()
+    except Exception as exc:
+        with _KG_HEALTH_LOCK:
+            _KG_HEALTH_CACHE.update(ts=time.monotonic(), refreshing=False, error=str(exc))
+            return dict(_KG_HEALTH_CACHE)
+    return snapshot
+
+
 def data_freshness(ttl_sec=300):
     """核心表时点校对（复用 quant_backtest/datamart.freshness_report）。
 
@@ -2679,16 +2771,14 @@ def data_freshness(ttl_sec=300):
     if QBT_DIR not in _sy.path:
         _sy.path.insert(0, QBT_DIR)
     import datamart as _dm
-    return _dm.freshness_report(ttl_sec=ttl_sec)
+    with _FRESH_BG_LOCK:
+        return _dm.freshness_report(ttl_sec=ttl_sec)
 
 
 def _freshness_warmup():
     """K56-B1 启动预热：后台线程算一次 freshness（冷算 ~100s），
     驾驶舱/数据仓首个访问者不再等冷启动。"""
-    try:
-        data_freshness(1800)
-    except Exception:
-        pass
+    data_freshness_bg(ttl_sec=1800)
 
 
 def data_freshness_bg(ttl_sec=1800):
@@ -2703,13 +2793,26 @@ def data_freshness_bg(ttl_sec=1800):
     c = _dm._fresh_cache
     if c["data"] is not None and _tt.time() - c["ts"] < ttl_sec:
         return c["data"]
-    if c["data"] is not None:
-        _th.Thread(target=lambda: _dm.freshness_report(ttl_sec=ttl_sec),
-                   daemon=True).start()
-        return c["data"]
-    _th.Thread(target=lambda: _dm.freshness_report(ttl_sec=ttl_sec),
-               daemon=True).start()
-    return None
+    if _FRESH_BG_LOCK.acquire(blocking=False):
+        def refresh():
+            global _FRESH_BG_ERROR
+            try:
+                _dm.freshness_report(ttl_sec=ttl_sec)
+                _FRESH_BG_ERROR = None
+            except Exception as exc:
+                _FRESH_BG_ERROR = str(exc)
+                log_exc("data_freshness_bg")
+            finally:
+                _FRESH_BG_LOCK.release()
+        try:
+            _th.Thread(target=refresh, daemon=True).start()
+        except Exception:
+            _FRESH_BG_LOCK.release()
+            raise
+    if c["data"] is None:
+        return None
+    return dict(c["data"], cache_stale=True, refreshing=_FRESH_BG_LOCK.locked(),
+                refresh_error=_FRESH_BG_ERROR)
 
 
 import os as _os
@@ -6484,16 +6587,25 @@ gap:14px;align-items:start}}
         import html as _h
         import sys as _sy
         e = _h.escape
-        if QBT_DIR not in _sy.path:
-            _sy.path.insert(0, QBT_DIR)
-        try:
-            import data_health as _DH
-            d = _DH.scan_warehouse()
-        except Exception as ex:
-            self._html("<body>%s<h1>📊 数据仓</h1>"
-                       "<div class='dim'>扫描器异常：%s</div></body>"
-                       % (pill_nav("data-health"), e(str(ex))))
+        state = data_health_bg()
+        d = state["data"]
+        if d is None:
+            message = ("扫描器异常：" + state["error"] if state["error"]
+                       else "核验中，尚无完整扫描结果。")
+            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                       "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                       "<meta http-equiv='refresh' content='10'><title>数据仓</title>"
+                       + self._COCKPIT_CSS + "</head><body>"
+                       + pill_nav("data-health") + "<h1>📊 数据仓</h1>"
+                       + "<div class='dim'>%s</div></body></html>" % e(message))
             return
+        scan_notice = ""
+        if state["refreshing"] or state["error"]:
+            message = ("重新核验中；当前显示上次扫描结果。" if state["refreshing"]
+                       else "刷新失败；当前显示上次扫描结果。")
+            if state["error"]:
+                message += " " + state["error"]
+            scan_notice = "<div class='dim'>%s</div>" % e(message)
 
         # 顶部 KPI：一屏总览（表数/总大小/同步进度/最新心跳）
         k = d["kpi"]
@@ -6574,10 +6686,19 @@ gap:14px;align-items:start}}
         # 数据时点校对（datamart.freshness_report 服务端渲染）：
         # 回答"数据停在几号 / 应到几号 / 滞后几天"
         try:
-            fr = data_freshness()
+            fr = data_freshness_bg(ttl_sec=300)
+            if fr is None:
+                fr = {"expect": None, "rows": [], "err": _FRESH_BG_ERROR or "核验中"}
         except Exception as ex:
             log_exc("_data_health_page:freshness")  # C2批1
             fr = {"expect": None, "rows": [], "err": str(ex)}
+        fresh_notice = ""
+        if fr.get("cache_stale"):
+            message = ("时点重新核验中；当前为上次结果。" if fr.get("refreshing")
+                       else "时点刷新失败；当前为上次结果。")
+            if fr.get("refresh_error"):
+                message += " " + fr["refresh_error"]
+            fresh_notice = "<div class='dim'>%s</div>" % e(message)
         fr_rows = []
         for x in fr.get("rows") or []:
             st = x["status"]
@@ -6597,6 +6718,7 @@ gap:14px;align-items:start}}
                    _tp_row(x["table"])))
         fresh_html = (
             "<div class='sec'><h2>⏱ 数据时点校对</h2>"
+            + fresh_notice +
             "<div class='dim'>期望更新日 = %s（最近已收盘 A 股交易日）· "
             "滞后按交易日计 · 跨市场日期先向下映射到 A 股日历</div>"
             "<table><tr><th>表</th><th>分组</th><th>状态</th>"
@@ -6649,13 +6771,20 @@ function _dsync(src, label){
             "等待任务…（点击按钮后此处滚动显示日志尾部）</pre>" + btn_js +
             "</div>")
 
-        # M3-W5 图谱时点卡（kg_portal.stats 纯查询；Neo4j 未启动时降级提示）
+        # 图谱统计也可能很慢，完整页渲染只消费后台快照。
         try:
-            import kg_portal as _KP
-            _ks = _KP.api("stats")
+            kg_state = data_health_kg_bg()
         except Exception as ex:
-            _ks = {"ok": False, "error": "%s: %s"
-                   % (type(ex).__name__, ex)[:120]}
+            kg_state = {"data": None, "refreshing": False, "error": str(ex)}
+        kg_snapshot = kg_state["data"]
+        _ks = kg_snapshot["stats"] if kg_snapshot is not None else {"ok": False}
+        kg_notice = ""
+        if kg_snapshot is not None and (kg_state["refreshing"] or kg_state["error"]):
+            message = ("图谱重新核验中；当前为上次结果。" if kg_state["refreshing"]
+                       else "图谱刷新失败；当前为上次结果。")
+            if kg_state["error"]:
+                message += " " + kg_state["error"]
+            kg_notice = "<div class='dim'>%s</div>" % e(message)
         if _ks.get("ok"):
             import datetime as _dtm
 
@@ -6667,10 +6796,7 @@ function _dsync(src, label){
                     return None
             _kn, _ke = _ks["nodes"], _ks["edges"]
             _kf, _kt = _ks["freshness"], _ks["hm_tags"]
-            try:
-                _di = _KP.api("distill")
-            except Exception:
-                _di = {"ok": False}
+            _di = kg_snapshot["distill"]
             if _di.get("ok"):
                 _v = _di.get("verdict", {})
                 _di_row = ("蒸馏样本", _di["n"],
@@ -6695,7 +6821,7 @@ function _dsync(src, label){
                      _kf.get("me"), _kg_age(_kf.get("me"))),
                     ("盘口事件（分时）", _ke.get("HAS_CANDLE", 0),
                      "覆盖 %d 标的（分钟库·非全市场）"
-                     % len(_KP.candle_coverage()),
+                     % kg_snapshot["coverage"],
                      _kf.get("cd"), _kg_age(_kf.get("cd"))),
                     ("外部事件传导", _ke.get("DRIVE", 0),
                      "事件流 %d" % _kn.get("Event", 0),
@@ -6707,6 +6833,7 @@ function _dsync(src, label){
                     _di_row))
             kg_html = (
                 "<div class='sec'><h2>🕸 知识图谱时点</h2>"
+                + kg_notice +
                 "<table><tr><th>资产</th><th>规模</th><th>构成</th>"
                 "<th>最新时点</th></tr>%s</table>"
                 "<div class='dim' style='margin-top:4px'>影子标注：跟随确认 "
@@ -6716,9 +6843,10 @@ function _dsync(src, label){
                 % (_kg_rows, _kt.get("follow_confirm", 0),
                    _kt.get("lure_warn", 0)))
         else:
+            message = "图谱核验中" if kg_state["refreshing"] else (
+                "图谱核验失败：" + (kg_state["error"] or "未取得有效结果"))
             kg_html = ("<div class='sec'><h2>🕸 知识图谱时点</h2>"
-                       "<div class='dn'>Neo4j 不可达：%s</div></div>"
-                       % e(_ks.get("error", "")))
+                       "<div class='dim'>%s</div></div>" % e(message))
 
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,"
@@ -6732,6 +6860,7 @@ function _dsync(src, label){
                 + "<h1>📊 数据仓 · 全部资产</h1><div class='dim'>一屏看清"
                 "所有数据资产 · 新鲜度 ≤26h 绿 / ≤72h 黄 / 更久红"
                 " · 扫描于 %s</div>" % e(d["generated_at"])
+                + scan_notice
                 + "<div class='sec'><h2>🧮 总览</h2>" + kpis + "</div>"
                 + fresh_html
                 + kg_html
@@ -19883,7 +20012,7 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
                 "companies": s.get("companies", [])[:6],
                 "tags": tags, "events": s.get("events", [])[:5],
                 "ts": s.get("ts", ""),
-                "chars": (texts.get(did) or {}).get("text_chars", 0),
+                "chars": s.get("chars") or (texts.get(did) or {}).get("text_chars", 0),
             })
         # K266-B 适配：新闻单条（src=news）按时间置顶，文档按字数
         _news_cards = sorted([c for c in cards if c.get("src") == "news"],
@@ -21384,7 +21513,7 @@ if __name__ == "__main__":
         # 预热数据时点（15 表现算 ~25-45s）：避免重启后首个用户请求
         # 撞上冷算，超过 nginx /api/ 40s 代理超时
         try:
-            data_freshness()
+            _freshness_warmup()
             print("[warmup] freshness ok", flush=True)
         except Exception as ex:
             log_exc("warmup:freshness 预热失败")  # C2批1

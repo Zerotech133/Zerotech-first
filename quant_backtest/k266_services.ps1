@@ -37,9 +37,11 @@ if ("$out" -match 'OK d') {
     if ($m3run) {
         Log "m3: 已在跑 PID=$($m3run.ProcessId -join ',')，本轮跳过"
     } else {
-        $m3 = & python -X utf8 "$root\quant_backtest\k266_m3_structure.py" 2>&1
-        $rc3 = $LASTEXITCODE
-        if ($m3) { $m3 | Out-File 'C:\Temp\k266_m3.log' -Append -Encoding utf8 }
-        Log ("m3 rc=$rc3 last=" + (($m3 | Select-Object -Last 1)))
+        # 异步拉起（同 clip_watch 模式）：M3 补积压可达数十分钟，同步等待会阻塞
+        # 本 tick 的后续环节并吞掉 12:06-12:46 全部调度窗（12-08 实测 46 分钟）
+        Start-Process -FilePath python -ArgumentList '-X','utf8',"$root\quant_backtest\k266_m3_structure.py" `
+            -WorkingDirectory "$root\quant_backtest" -WindowStyle Hidden `
+            -RedirectStandardOutput 'C:\Temp\k266_m3.log' -RedirectStandardError 'C:\Temp\k266_m3_err.log'
+        Log "m3: 异步拉起（进度见影子增长，结束见 k266_m3.log）"
     }
 }

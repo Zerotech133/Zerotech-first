@@ -420,23 +420,9 @@ def _read_by_code_month(store, dcol, ccol, start, end, codes, fields, cols=None)
 
 
 def _read_by_date(store, dcol, ccol, start, end, codes, fields, cols=None):
-    st = _norm_day(start) if start is not None else None
-    ed = _norm_day(end) if end is not None else None
-    files = []
-    for f in sorted(glob.glob(os.path.join(store, "d_*.parquet"))):
-        m = os.path.basename(f)[2:10]
-        if not m.isdigit():
-            continue
-        if st and m < st:
-            continue
-        if ed and m > ed:
-            continue
-        files.append(f)
-    if not files:
-        return pd.DataFrame()
-    df = _concat_pq(files, cols, dcol, ccol, start, end, codes)
-    df = tdxr._apply_code_filter(df, None, codes)
-    return _pick_fields(df, fields, ccol, dcol)
+    # 日文件也可能含补采日期；按实际日期统计剪枝，并保留读后过滤。
+    return _read_part(store, dcol, ccol, start, end, codes, fields, cols,
+                      pattern="d_*.parquet")
 
 
 def _read_sqlite(tbl, start, end, codes, limit):
@@ -575,10 +561,19 @@ def _compute_latest(e):
         return None
     try:
         if layout == "by_date":
-            ds = [m.group(1) for f in
-                  glob.glob(os.path.join(store, "d_*.parquet"))
-                  for m in [re.search(r"d_(\d{8})", os.path.basename(f))] if m]
-            return max(ds) if ds else None
+            dated = sorted(f for f in glob.glob(os.path.join(store, "d_*.parquet"))
+                           if re.search(r"d_(\d{8})", os.path.basename(f)))
+            vals = []
+            # 补采可能写入旧文件，文件名顺序不能代表实际日期水位。
+            for f in reversed(dated):
+                try:
+                    df = pd.read_parquet(f, columns=[dcol])
+                except Exception:
+                    continue
+                v = _d8(df[dcol])
+                if v:
+                    vals.append(v)
+            return max(vals) if vals else None
         if layout == "by_code_month":
             fs = glob.glob(os.path.join(store, "*.parquet"))
             yms = set()
@@ -588,12 +583,21 @@ def _compute_latest(e):
                     yms.add(m.group(1))
             if not yms:
                 return None
-            newest = "%s_%s.parquet" % ("*", max(yms))
-            cand = sorted(glob.glob(os.path.join(store, newest)))
-            if not cand:
-                return None
-            df = pd.read_parquet(cand[0], columns=[dcol])
-            return _d8(df[dcol]) if not df.empty else None
+            # 同月各代码水位不同，取全月实际最大日期；空月回退更早月份。
+            for ym in sorted(yms, reverse=True):
+                cand = sorted(glob.glob(os.path.join(store, "*_%s.parquet" % ym)))
+                vals = []
+                for f in cand:
+                    try:
+                        df = pd.read_parquet(f, columns=[dcol])
+                    except Exception:
+                        continue
+                    v = _d8(df[dcol])
+                    if v:
+                        vals.append(v)
+                if vals:
+                    return max(vals)
+            return None
         if layout in ("by_code", "part", "by_period"):
             pat = {"part": "part_*.parquet", "by_period": "p_*.parquet"}.get(
                 layout, "*.parquet")

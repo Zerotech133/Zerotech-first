@@ -349,6 +349,7 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         minute_days = set()
         minute_codes, minute_counts, minute_nulls = defaultdict(set), defaultdict(int), defaultdict(int)
+        minute_keys, minute_key_rows = defaultdict(set), defaultdict(int)
         total = 0
         for table in ["tdx_sector_min", "tdx_sector_min_tail"]:
             paths = _parts(root, "tdx", table)
@@ -375,15 +376,34 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
                 for day, group in frame.groupby("trade_date"):
                     minute_counts[day] += len(group)
                     minute_codes[day].update(group.loc[~_null(group.code), "code"].astype(str))
+                    # 按日期保留代码/时刻键，合并主仓、尾仓及批次；空键另由必填检查报错。
+                    valid_keys = ~(_null(group.code) | _null(group.trade_date) | _null(group.trade_time))
+                    keyed = group.loc[valid_keys, ["code", "trade_time"]].astype(str)
+                    minute_key_rows[day] += len(keyed)
+                    minute_keys[day].update(keyed.itertuples(index=False, name=None))
         missing = [d for d in calendar if minute_days and min(minute_days) <= d <= latest and d not in minute_days]
         _metric(metrics, "sector_minute_calendar_gaps", "FAIL" if missing or not minute_days else "OK", len(missing),
                 {"rows": total, "missing_days": missing, "first": min(minute_days) if minute_days else None,
                  "last": max(minute_days) if minute_days else None})
         base = len(sector_def) or max((len(v) for v in minute_codes.values()), default=0)
         details = {d: {"rows": minute_counts[d], "unique_codes": len(minute_codes[d]), "reference_unique_codes": base,
-                       "missing": sorted(sector_def - minute_codes[d]) if sector_def else []} for d in recent}
+                       "missing": sorted(sector_def - minute_codes[d]) if sector_def else [],
+                       "missing_count": len(sector_def - minute_codes[d]) if sector_def else max(0, base - len(minute_codes[d]))}
+                   for d in recent}
         severe = any(v["unique_codes"] < .9 * base for v in details.values()) if base else True
-        _metric(metrics, "sector_minute_daily_coverage", "FAIL" if severe else "OK", base, details)
+        missing_count = sum(v["missing_count"] for v in details.values())
+        failed = bool(missing_count) if sector_def else severe
+        details["_summary"] = {"value_unit": "近期分钟代码日期断面的缺键总数",
+                               "reference_source": "sector_definition" if sector_def else "recent_max_unique_count",
+                               "reference_unique_codes": base,
+                               "latest_unique_codes": len(minute_codes[latest]),
+                               "latest_missing_count": details.get(latest, {}).get("missing_count", 0),
+                               "policy": "定义明确的任何缺键均FAIL；无定义保留近期数量参考及90%阈值，不推定历史资格"}
+        _metric(metrics, "sector_minute_daily_coverage", "FAIL" if failed else "OK", missing_count, details)
+        duplicates = {day: minute_key_rows[day] - len(minute_keys[day]) for day in minute_key_rows
+                      if minute_key_rows[day] != len(minute_keys[day])}
+        duplicate_rows = sum(duplicates.values())
+        _metric(metrics, "sector_minute_duplicate_keys", "FAIL" if duplicate_rows else "OK", duplicate_rows, duplicates)
         _metric(metrics, "sector_minute_required_nulls", "FAIL" if any(minute_nulls.values()) else "OK",
                 sum(minute_nulls.values()), dict(minute_nulls))
     except Exception as exc:
