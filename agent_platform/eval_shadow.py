@@ -82,6 +82,7 @@ def main():
     for r in done:
         per_symbol_latest[r["symbol"]] = r  # 每票取最近一次决策
     scores, confs, rets = [], [], []
+    detail = []  # 逐票明细（K-STOCK-014：评估日可读性）
     for sym, r in per_symbol_latest.items():
         if r.get("score") is None or not r.get("price_at_decision"):
             continue
@@ -91,8 +92,17 @@ def main():
             scores.append(r["score"])
             confs.append(r.get("confidence") or 0)
             rets.append(ret)
+            detail.append((sym, r.get("name", ""), r["score"], r.get("confidence") or 0,
+                           r["price_at_decision"], now, ret, r.get("recommendation", "?")))
         except Exception as e:  # noqa: BLE001
             print("  [warn] %s 后验价获取失败: %s" % (sym, e))
+    if detail:
+        print("  逐票明细（按后验收益降序）:")
+        print("  %-8s %-8s %-5s %-5s %-10s %-10s %-8s %s" % (
+            "票", "名称", "score", "conf", "决策价", "现价", "后验%", "决策"))
+        for sym, name, sc, cf, px0, px1, rt, rec in sorted(detail, key=lambda d: -d[6]):
+            print("  %-8s %-8s %-5s %-5s %-10s %-10s %+8.2f %s" % (
+                sym, name[:8], sc, "%.2f" % cf, px0, px1, rt, rec))
     rho_s = spearman(scores, rets) if scores else None
     rho_c = spearman(confs, rets) if confs else None
     j2 = rho_s is not None and rho_s > 0
