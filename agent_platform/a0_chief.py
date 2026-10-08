@@ -6,6 +6,7 @@
 严重度：failed → P0（需立即推送，通道待接）；degraded → P1；仅集中度观察 → P2 进日报。
 """
 import json
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -14,6 +15,24 @@ BASE = Path(__file__).parent
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"
 SHADOW_DAYS = 5
+# 复用已验证推送链（K-PUSH）：OpenAPI 静态凭证直连+lark-cli 回退，10-08 实测双 SEND_OK
+PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
+PYTHON = sys.executable
+
+
+def push_to_feishu(md_path):
+    """日报文件推飞书（text 通道）；返回 (ok, output)。P0 事件由调用方强制推送。"""
+    try:
+        r = subprocess.run(
+            [PYTHON, str(PUSH_SCRIPT), str(md_path)],
+            capture_output=True, text=True, encoding="utf-8", timeout=60)
+        out = (r.stdout or r.stderr or "").strip()
+        ok = r.returncode == 0 and "SEND_OK" in out
+        print("[A0] 飞书推送：%s" % out.splitlines()[-1] if out else "[A0] 飞书推送：无输出")
+        return ok, out
+    except Exception as e:  # noqa: BLE001
+        print("[A0] 飞书推送异常：%s" % e)
+        return False, str(e)
 
 
 def load_today(today):
@@ -132,12 +151,18 @@ def build(today):
 
 
 def main():
+    push = "--push" in sys.argv
     today = datetime.now().strftime("%Y-%m-%d")
     report, p0 = build(today)
     out = BASE / "data" / "shadow" / ("daily_report_%s.md" % today)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(report, encoding="utf-8")
     print("[A0] 日报已生成：%s%s" % (out, "  [P0!]" if p0 else ""))
+    # 推送策略：--push 显式推送；P0 存在时无论开关强制推（K-ORG-001 事件通道语义）
+    if push or p0:
+        ok, _ = push_to_feishu(out)
+        if p0 and not ok:
+            print("[A0] 警告：P0 事件但推送失败，需人工介入检查飞书链路")
     print(report)
 
 
