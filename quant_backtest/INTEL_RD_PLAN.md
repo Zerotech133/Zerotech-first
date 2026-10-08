@@ -1,6 +1,11 @@
 # N4 量化情报体系 · 开发计划与实施路径
 （v1 2026-09 骨架版 → **v2 2026-09-28 完整版**：M1 收口后，整合全部研究成果扩为工作包级计划。与 KG_FINAL/VERIFY/RETRO/CLOSEOUT 四部曲配套）
 
+> **里程碑口径声明（2026-10-08 评审 P0）**
+> 本计划的 M1-M5 即 **KG 图谱情报线**，本文档统一写作 **KG-M1~KG-M5**（正文中未加前缀的 M× 默认指 KG 线，历史小节标题保持原样以省改动量）。
+> `docs/ai_operator/overall-progress.md` 的 M0-M6 属 **ai_operator 审计线**（P 系口径），与本计划同名编号互不指涉——本线 KG-M4=概念层已完成 ≠ 审计线 M4=独立 paper 未开发。
+> 数字纪律：凡规模声称标「值@时点 + 现值来源指针」，历史快照不冒充现状（2026-10-08 实核修订已回填下表）。
+
 ## 〇、总纲（情报学视角的一句话）
 
 K线与量能是市场参与者博弈留下的**痕迹（证据）**；缠论结构（笔/中枢/三买/背驰）是从痕迹中识别的**博弈事件**；知识图谱负责把痕迹、结构、资金主体、产业事件统一为**五元实体（人/地/物/组织/事）+ 带时序与情报元属性的边**；最终产出可解释的**证据图谱**，作为蒸馏数据集，让 AI 学会"看懂结构 + 理解博弈 + 沿图谱做因果传导"。
@@ -15,7 +20,7 @@ K线与量能是市场参与者博弈留下的**痕迹（证据）**；缠论结
 ### L1 数据底座（单底座单读层）
 | 资产 | 规模 | 状态 |
 |------|------|------|
-| catalog 统一目录 | 71 表 / 4 数据源 | ✅ freshness 时点校对 |
+| catalog 统一目录 | 71 表 / 4 数据源 @09-28 立项快照 → **2026-10-08 实核 83 表**（xtcloud 31 + tushare 50 + legacy 1 + crypto 1）/ 4 数据源吻合；现值见 data/catalog.json | ✅ freshness 时点校对 |
 | 行情 | ts_daily(至今) / us / hk / crypto / index_global 20 指数 | ✅ 每日自动 |
 | 资金 | ts_moneyflow / ts_margin_detail / **ts_top_inst 席位明细 3 年（42.7 万行）** | ✅ 席位归因已入图（CL-1）|
 | 财报 | income/balancesheet/cashflow/fina_indicator 各 5569 | ✅ 已收口 |
@@ -25,16 +30,16 @@ K线与量能是市场参与者博弈留下的**痕迹（证据）**；缠论结
 ### L2 知识资产
 | 资产 | 规模 | 状态 |
 |------|------|------|
-| Neo4j 时序图谱 | 113208 节点 / 288763 边 / 12 类节点 12 类边 | ✅ validStart/End 铁律 |
+| Neo4j 时序图谱 | 113208 节点 / 288763 边 @09-28 快照 → **2026-10-08 实核 ≈93 万节点 / 46 类边型**（MarketEvent 67.7 万为增长大头）；现值见门户 /kg/stats 与 data/graph_check/latest.json | ✅ validStart/End 铁律（⚠ graph_check 现报 8 个新边型未入 schema 白名单，待注册） |
 | 事件流 | Event 23766 + INVOLVES 17598（bull/bear）| ✅ 每日四步链保鲜 |
 | 盘面事件 | MarketEvent 55524（缠论 9426 + 量能 46098）| ✅ CL-1 入图（**保鲜待接**）|
-| 游资席位 | HotMoney 19 / Seat 78 / OCCUPIES 78 / TRADED_ON 72074 | ✅ CL-1（19/19 全命中）|
+| 游资席位 | HotMoney 19 / Seat 78 / OCCUPIES 78 / TRADED_ON 72074 @09-28 快照 → **2026-10-08 实核 21 / 247**；现值见 /kg/stats | ✅ CL-1（19/19 全命中）|
 | 图特征 | 8 维 × 5903 标的（kg_features.parquet）| ✅ 每日重算 |
 | Semantica 0.7.0 | 双时态模型同构已验证（valid_from/until ↔ validStart/End，多一根 transaction 轴不冲突）| 🔓 只读引擎可用，未接入 |
 | 缠论信号 | chanlun_scan 工程化 + 影子评估流程 | ✅ 已入图 |
 
 ### L3 应用与展示
-九维选股（已注入 kg 特征+事件统计）/ 门户 8080（数据仓页+手动更新）/ 6 个计划任务自动化 + 三层自愈。
+九维选股（已注入 kg 特征+事件统计）/ 门户 8080（数据仓页+手动更新）/ 计划任务自动化：立项时 6 个 → **2026-10-08 实核 98 个非微软任务**（C:\Windows\System32\Tasks 清点，AI工作站系15+Weak系11+Chanlun系6 等）+ 三层自愈（DockerWatchdog/FeishuBotWatchdog/ZhiceWatchdog 等）。
 
 ## 二、目标架构（五层）
 
@@ -5965,6 +5970,21 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **修复**：对齐重切 part1=10152 / part2=10148（cut=ceil(len/2/4)×4），回读断言非空 + **逐段独立解码**验证（d1=7614+d2=7609=15223）后 03:12:49 重触发。**全链绿：P0-P4 全过 → `2026-10-08_0312` DONE failed=0（昨 2→0，两库容器重启生效）**，10 产物齐全（quant_src 665.8MB / zhice 405.3MB / neo4j_kg 274.6MB / webui 207.3MB enc / quant_data 211.5MB 含 k266_docs），D 盘镜像 10 文件同步，零 FAIL 零 ALERT。
 - **教训（system-task-deploy 工具级）**：双 part 切分必须 4 字符对齐（`[Math]::Ceiling(len/2/4.0)*4`），部署后回读须**逐段独立解码断言**（拼接解码通过 ≠ 逐段通过——本次正是漏网口径）；0048 手动验证走的是 ps1 直跑未过任务 action 解码层，故未提前暴露。
 
+### K266 补记十一（10-08 晨，P2 两项落地：清除者悬案布控 + premarket 双门禁）
+- **P2-1 布控四件套（抓现行，等待触发）**：① **蜜罐天然就位**——查任务 action 全文实锤其内嵌 `[IO.File]::WriteAllText(...jev-eval\backup_daily.ps1, $s)`：0647 任务跑时已把注册表 v8 全文写回磁盘（16380B，mtime=06:47:28）——磁盘副本即活蜜罐（注册表才是任务真源，文件消失也会自动复活）。② **auditpol 对象访问审计开**（File System + Registry 子类 Success+Failure；中文系统子类名乱码不可用，**GUID 必须 PS 引号包裹**——`/subcategory:"{0CCE921D-...}"`，裸大括号被 PS 解析为 scriptblock 报 0x57）。③ **SACL 双挂**：蜜罐文件 + `HKLM\BackupDeploy` 键各挂 Everyone FullControl Success,Failure（`Get-Acl -Audit` 读 / `Set-Acl` 写）。④ **BkWarden 快照守望任务**（5 分钟 SYSTEM）：基线 `16380|10920|10920`，异常判定（文件<1000B 或 part<100）即 dump Security 4656-4663/4657 事件全文+进程快照到 `C:\Temp\bk_warden_alerts\` 并 alert_fail 推送；正常长度变化（03:00 任务写回）仅记 info。**e2e 验证**：测试文件挂 SACL→删除→Security 4663 立现「路径+删除进程名」——真清除者动手必留名。
+- **P2-2 premarket 双门禁（10-07 14:30 rc=1 误报根治）**：根因=原 K97 门禁只查**次日**开市，假期最后一天（10-07 休市、10-08 开市）放行后**当日**行情全空 → `iloc[-1]` 家族 IndexError。修复：`_next_open()` 重构出 `_cal_open(day)`（fail-open 语义保留），main 改双门禁「今日 AND 次日」都开市才产报。单测：10-01/10-07 假期 False、10-08/10-09 True、09-30 节前 True、19990101 日历内元旦 False；今日 14:30 双 True 正常放行。
+
+### K266 补记十（10-08 早，P1 整改三项收口：K234b 门户防误杀 + finish 统一 + 0645 回收）
+- **P1-2 门户 K234b（start_portal_api.ps1）**：6:05-6:12 死亡窗口根因链 = health **单次**瞬时探测失败 → 误杀健康实例 → 起新中途任务实例被中止（0x800700E0）→ 502。「先起新再杀旧」不可行（新旧抢 8091 端口），改 **kill 前 double-check**：探测 3 次（3s 间隔）任一 200 即 skip exit 0——只有真死服务才进 kill 分支（彼时清孤儿是安全 no-op）。`&` 前台阻塞结构保留（任务实例生命周期=python 生命周期，job 树语义与 K98 告警链路不动）。验证：PSParser 0 错 + 实跑 skip exit=0（07:07:27 日志行）。kill 分支不在线验证（不杀生产门户），自然触发观察。
+- **P1-3 X3 收尾统一（7 文件 9 调用点）**：kg_bclass/kg_build_cl1(×2)/kg_candle/kg_dt_gap(×2)/kg_seat_winrate/kg_sim_k(×2)/kg_tradedate 的 `_jr.__exit__(None,None,None)` 全部换显式 `_jr.finish("ok")`（linreg 公开 API，rows_written=None 不覆盖已设值）；异常路径仍靠 `__del__` 记 lost（rows 保留）。py_compile 7 文件 rc=0；E:\=C:\aios junction 即产线生效，**18:10 KG-Cl1Sync 首验**（lineage.job_run 期待 ok 行首现）。
+- **NoticeBackfill 06:45 调度版回收 GREEN**：06:45:01 触发 rc=0（10 秒：待判 0/回填 0/fail=0，17347 已判跳过——与 06:05 手动版幂等一致）；Next 10/9 06:45。out 中文乱码为 PS 显示层已知问题，链路无损。顺查 JEVBackfill-Hourly 06:57 rc=0x41301=运行中，正常。
+
+### K266 补记九（10-08 早，OPS-1010 备份根治版 v8 部署 + 0647 全链验证 GREEN）
+- **v8 根治内容**（Save-DockerStream 重写）：dump **容器内落盘**（`sh -c "pg_dump|gzip > /tmp/bk_xxx"`）→ `docker cp` 拷出 → rm 容器临时文件——替代宿主流式重定向（OPS-1008 0037 docker.exe 僵死即挂死的死锁族根治）；超时 900s Kill 兜底保留；**门闸只认 dest 存在+大小+下游 Test-Gzip，不用 rc**（playbook #3 三度实证：Start-Process 下 docker exec `.ExitCode` 恒 null）。配套 3 补丁：`$EncryptTargets` +quant_db.sql.gz（修 0312 明文残留 23148B bug）、3b 明文残留守卫（ENC 后扫 `*.sql.gz` 记 FAIL 不自删）、头注释（部署器 patch4 因 patch2 先注入 OPS-1010 标记被跳过，装饰性无碍）。
+- **部署路径周折（两度绕行）**：① 磁盘 `jev-eval\backup_daily.ps1` 遭**内容特征静默清除**（E:\ 与 C:\Temp 双双「写入成功→Access denied 锁定→消失」，无害 18KB 对照组正常读写；Defender Get-MpThreatDetection 空、无 1116/1117 事件、无第三方 AV——**清除者身份悬案挂起**）；② 注册表 part1/part2 再度被清空（0312 部署断言过后某刻变空串，疑同源守护）。**终案零落盘部署**（`C:\Temp\bk_patch_deploy.py`）：tarfile 内存读 `D:\backups_mirror\2026-10-08_0312\jev_eval.tar.gz` 内 v6 源（15223 字符，v2/k266 双标记断言）→ 内存打补丁 → 4 对齐切分（p1=p2=10920 均 %4=0）→ winreg 写回 → **逐段独立解码回读断言** + 三标记检查（v8func/quantDbEnc/plainGuard）ALL GREEN。
+- **0647 手动触发全链验证（15 分钟 DONE failed=0）**：P2 读出 16380 字符=v8 ✓；4 dump 走 v8 全 OK（quant_db 3s/zhice/qd/webui）+ 9 归档全过；GZIP 12/12；**ENC 4/4 含 quant_db.sql.gz.enc 25824B（首入白名单）**；无 PLAINTEXT residue 告警（守卫在位未触发）；MIRROR D 盘 10 产物齐全 + keep-4 PRUNE 正常（E/D 双删 10-07_0300）；**明文 sql.gz 残留 E 工作目录 0 / D 镜像 0**。任务名 `AI工作站每日备份`（root 下，非 *ackup* 模糊匹配曾漏找）。
+- **今晚 03:00 首个正式调度跑**；若 GREEN 则 OPS-1008/1010 系列收口。观察项：v8 单函数实测 quant_system 库 25779B ≈ 产线 23148B 同量级（库小属正常）。
+
 ### K266 补记八（10-08 早，巡检三战果：X3 血缘静默断链修复 + 门户 kill 窗口 + 盘前假期空数据）
 - **X3 血缘登记静默全断（主战果，已修）**：巡检发现 `lineage.job_run` 表 **0 行**——linreg.py `_get_conn` 密码仅从 LINEAGE_PASSWORD env 取、计划任务无此 env → 7 个 kg_* 任务 connect 全静默失败（best-effort 设计掩盖断链，err 日志只在 5:39 手动测试时才首现）。另发现 7 处 `linreg.JobRun(...).__enter__()` 裸开不配对（永不收尾/连接泄漏）。**修复（linreg.py 单文件）**：① 密码兜底 `os.environ.get("LINEAGE_PASSWORD", "quant_password_123")`（沿 xmap_sync 产线同款口径）② `__exit__` 重构为幂等 `_finish(status)` + 公开 `finish()` 方法 + `__del__` 兜底（裸 enter 引用消失时诚实记 `lost`，rows_written 保留）。三路径实测落库：with→ok / 裸enter→lost / 无env→通。测试行已清，表归 0 待产线自然登记。**遗留观察**：7 处裸 enter 后续逐步补显式 finish()（lost 状态可识别）；E:\ 与 C:\aios 确认同目录（junction，hardlink list 单条+同 mtime+err 日志共享写入实证）。
 - **门户 API 6:05-6:12 死亡窗口（已自愈，观察项）**：任务 rc=0x800700E0（操作中止）——start_portal_api.ps1 K234 幂等锁防并发但不防「health 探测失败+任务实例被中止」组合：6:05 触发 → health catch → 杀旧（01:13 起实例）→ 任务实例被中止未起新 → 502 七分钟 → 6:12 下周期拉起自愈（PID 7984，health 200 实证）。K234 锁的 kill 分支需原子化（先起新再杀旧，或 kill 前 double-check）——暂观察，复发再修。
@@ -6016,4 +6036,4 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 | M5 服务化 | ✅ 提前落地（10-07 晚） | k266_services.ps1 + 计划任务 K266-DocServices 每 5 分钟 |
 | 金标集 | ✅ 人审定稿（10-08 早） | AI 精审 29/30 一致=96.7%（门闸 ≥85% 远超）；分歧 1 篇待终审 |
 
-**挂账移交（不阻塞收口）**：① M3-A 篇级事件层（文档量上千再启动，噪声=篇级方向平摊）② 门户上传按钮 UI（API 已可用，页面待词云页增强时一并）③ clip_watch 常驻方式待定 ④ 补记四遗留：两库容器（quantdinger-db / newquantsystem_v2-postgres-1）重启与否待老田拍板。
+**挂账移交（不阻塞收口）**：① M3-A 篇级事件层（文档量上千再启动，噪声=篇级方向平摊）② ~~门户上传按钮 UI~~ **已完成（10-08 核验）**：`/kg/doc` 线上页面已含 upbar 上传条（`📤 上传公告/研报` + PNG/JPG/PDF 多选 + fetch POST `/kg/doc/upload` + ✅/❌ 状态反馈），实测 200 且按钮在——M2 遗留行过时，按钮在 M4 词云页落地时一并上线 ③ clip_watch 常驻方式待定 ④ 补记四遗留：两库容器（quantdinger-db / newquantsystem_v2-postgres-1）重启与否待老田拍板。*性能观察项：/kg/doc 首访冷渲染 >10s（wordcloud 生成 + 全量 jsonl 读），内网个人门户可接受。*
