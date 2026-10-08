@@ -1,0 +1,4 @@
+# 运行时数据不入库（checkpoint/trace/记忆均为本地运行产物）
+data/
+__pycache__/
+*.pyc
