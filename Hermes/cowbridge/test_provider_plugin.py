@@ -160,6 +160,11 @@ def main() -> int:
     prov3.sync_turn("flip user", "flip asst")
     check("10c 翻转断言后写路径零落盘",
           len(read_jsonl(mirror)) == n_m and len(read_jsonl(applied_f)) == n_a)
+    # 10d/10e 复审整改（2026-10-08）：断言触发后提示词不谎报激活、不暴露必败工具
+    spb3 = prov3.system_prompt_block()
+    check("10d 断言后提示词不谎报激活", "已禁用" in spb3 and "已激活" not in spb3, spb3)
+    check("10e 断言后工具 schema 为空", prov3.get_tool_schemas() == [],
+          str(prov3.get_tool_schemas())[:80])
 
     # 11) 审计 P2-1 limit 边界：0/负数/超大/非法 → 夹逼 [1,50]，0/非法回退 5
     big = [{"side": "cow", "file": f"daily/d{i}.md", "tier": "mid",

@@ -9,6 +9,9 @@
 
 token 形态（_common.py::_verify_auth_token 源码对齐）：
   hex(ts) + "." + hmac_sha256(key=web_password, msg=hex(ts))，30 天有效。
+
+凭据纪律（2026-10-08 复审整改）：口令运行时从 CowAgent/config.json 读取，
+不硬编码入脚本（旧口令曾硬编码于此并随 63ab598 入 git 历史，已轮换作废）。
 """
 import hashlib
 import hmac
@@ -16,10 +19,19 @@ import json
 import time
 import urllib.error
 import urllib.request as rq
+from pathlib import Path
 
 BASE = "http://127.0.0.1:9899"
-PWD = "cow-06df5d04f5d0"          # 与 CowAgent/config.json web_password 一致
+_COW_CONFIG = Path(r"E:\老田的AI助手\CowAgent\config.json")
 opener = rq.build_opener(rq.ProxyHandler({}))   # 直连绕系统代理
+
+
+def _load_password() -> str:
+    cfg = json.loads(_COW_CONFIG.read_text(encoding="utf-8"))
+    pwd = str(cfg.get("web_password") or "")
+    if not pwd:
+        raise SystemExit("config.json web_password 为空——服务当前免认证，冒烟前提不成立")
+    return pwd
 
 
 def make_token(pwd: str, ts: int | None = None) -> str:
@@ -52,12 +64,13 @@ def get_health():
 
 
 def main() -> int:
+    pwd = _load_password()
     results = []
 
     results.append(("1 health 免认证=200", get_health(), lambda r: r[0] == 200))
     results.append(("2 /message 无凭据=401", post_message(None),
                     lambda r: r[0] == 401))
-    results.append(("3 /message 正确 token≠401", post_message(make_token(PWD)),
+    results.append(("3 /message 正确 token≠401", post_message(make_token(pwd)),
                     lambda r: r[0] != 401))
     results.append(("4 /message 错误 token=401",
                     post_message(make_token("wrong-password")),

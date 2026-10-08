@@ -82,3 +82,5 @@ C:\Users\Administrator\.hermes\plugins\cowbridge\   ← 用户级插件目录（
 | 读侧数据源 | （成稿时认知）MEMORY.md + daily | 实际主数据源 = long-term/index.db（chunks tier=long + messages 会话转录 tier=dialog），根部 MEMORY.md 常为空模板 | v0.1.1 实测修订（K273） |
 
 结论：影子模式（默认）下读写正确率判据不受上述差异影响——判据所测的 prefetch 注入一致性、on_memory_write 镜像一一对应、sync_turn 零丢 turn，在「留痕即真相」口径下成立。**两处「生产写未实现」条目是转正前置硬门槛**：v0.3 补齐真实现并另行过测后，方可翻转 cowbridge.json（误翻转会被 initialize 断言拒绝，实例硬只读，不会假成功）。
+
+**⚠️ v0.3 转正必改点（2026-10-08 复审补充）**：补齐生产写真实现时，须**同步删除插件壳 `initialize()` 里的防误翻转断言**（否则合法生产配置会被误拒、provider 硬只读），并同步更新本节两处「生产写未实现」行。断言位置：`~/.hermes/plugins/cowbridge/__init__.py` initialize 内「v0.3 转正必改点」注释处；回归护栏：test_provider_plugin.py 第 10 节三断言（raise/_disabled/零落盘）届时一并删除。
