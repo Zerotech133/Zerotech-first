@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 BASE = Path(__file__).parent
+sys.path.insert(0, str(BASE / "engine"))
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"
 SHADOW_DAYS = 5
@@ -182,6 +183,22 @@ def build(today):
     else:
         lines.append("- 影子期满：运行 eval_shadow.py 出三判据结论（J1 无人干预 / J2 秩相关 / J3 lineage）。")
     lines.append("- A0 日报通道：飞书已通（17:35 automation 定时 --push；P0 强制即时推）；A0 点评骨架 a0_agent.py 已立（automation 接入待拍板）。")
+    lines.append("")
+    lines.append("## 五、任务单看板（未闭环）")
+    lines.append("")
+    try:
+        from tasks import TaskStore  # noqa: E402  engine/tasks.py（K-ORG-011）
+        open_tasks = [t for t in TaskStore(BASE / "data" / "org" / "tasks").ls()
+                      if t["status"] not in ("done", "cancelled", "rejected")]
+        if open_tasks:
+            for t in open_tasks:
+                lines.append("- [%s] `%s` %s（→%s · %s）" % (
+                    t["severity"], t["task_id"], t["title"][:42],
+                    t["assigned_dept"], t["status"]))
+        else:
+            lines.append("无未闭环任务单。")
+    except Exception as e:  # noqa: BLE001
+        lines.append("- [warn] 任务单读取失败：%s" % e)
     lines.append("")
     lines.append("---")
     lines.append("*A0 总管聚合 · 数据源 shadow_ledger.jsonl + checkpoints.db（只读）· %s*" % datetime.now().strftime("%H:%M"))
