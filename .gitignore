@@ -111,3 +111,6 @@ jev-eval/replay/
 
 # ===== Hermes（K273 自 D:\Hermes 搬入：第三方 webui+运行时态，不进版本控制）=====
 Hermes/
+
+# ===== D 盘项目能力归档（K274：第三方/存量源码+文件量大，不进版本控制）=====
+projects-archive/
