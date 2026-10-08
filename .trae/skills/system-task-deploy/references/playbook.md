@@ -12,6 +12,7 @@ $s = [Text.Encoding]::UTF8.GetString($bytes)
 
 - 语法校验：`$null = [ScriptBlock]::Create($s)`，编译通过即语法 OK
 - 中文路径文件不要用 `ParseFile`/`-File` 校验（FileReadError / 访问被拒绝），内存 ScriptBlock 编译不受影响
+- **变更三步一条龙（2026-10-08 K269 起，v9 起强制）**：任何对 backup_daily.ps1 的改动必须「**改磁盘 → 推注册表 → 提交 git**」三步全做、按序完成。只推注册表不提交 git = git 审计线漂移（2026-10-08 审计发现的根因）。源码头部必须携带 `VERSION:` 行，三源核对只需 grep 该行（v9=2026-10-08）。
 
 ## 2. 任务 Action 最终形态要点
 
@@ -90,7 +91,7 @@ $s = [Text.Encoding]::UTF8.GetString($bytes)
 
 - 诊断任务（如 bk_deploy/bk_diag）用完立即 `Unregister-ScheduledTask -Confirm:$false`
 - C:\bk_* 临时文件用完删除；运行期日志（如 C:\bk_out.log）可保留
-- 沙箱删真实磁盘文件可能删不掉时，用 docker alpine 挂载后 `rm -rf`
+- 沙箱删真实磁盘文件可能删不掉时，用 docker alpine 挂载后 `rm -rf` ——**范围收窄（2026-10-08 K269，强制）**：仅限清理备份产出目录（`backups\<时间戳>\`、`backups_mirror\<时间戳>\`）、%TEMP% 临时产物、容器内 `/tmp/bk_*`；**明文禁止触碰任何 `*.ps1`/`*.py` 脚本文件**（尤其 backup_daily.ps1——注册表虽有权威源可自动重建，但抹除会触发「消失→虚惊→auto 快照把删除态提交入库」循环，10-08 两次删除事件即此）
 - 测试产生的缺陷备份目录要在 E: 和镜像 D: 双端清理
 - 调试调用会真实触发外部副作用（如 lark-cli 发飞书消息），汇报时必须告知用户
 

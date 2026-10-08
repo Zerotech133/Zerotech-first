@@ -12,6 +12,12 @@
 # HKLM:\SOFTWARE\AIStation\BackupDeploy (part1+part2, utf8 base64) and
 # dot-sources it via ScriptBlock - no on-disk execution needed.
 # Manual restore of .enc: dot-source then Unprotect-File <src> <dst>
+# AUTHORITY (v9 rule, K269): the registry key is the source of truth.
+# This on-disk copy is a runtime mirror (rewritten daily by the task);
+# git is the audit record. To change this script: edit disk -> push
+# registry -> commit git. All three, every time - pushing registry
+# without committing git caused the git drift found on 2026-10-08.
+# VERSION: v9 2026-10-08
 # =====================================================================
 $ErrorActionPreference = "Continue"
 
