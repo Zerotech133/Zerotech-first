@@ -125,6 +125,8 @@
 
 ### P1（短期，本周内）
 
+> **执行状态（10-08 11:4x）**：P1-1 ✅ 已执行（b95617a，两容器 127.0.0.1 绑定，外卡绑定零残留；dev-assistant 实核为 WEBUI_AUTH=false 免登录直用——决策保留鉴权现状挂拍板项，部署记录 docs/ops/2026-10-08_K270P1_暴露面收敛部署记录.md）；P1-2 ✅ 已执行（055081a，14 用例全绿，测试网立竿见影抓出 stats 5 边型漏网≈31 万条边并补齐）；P1-3 用户物理动作 / P1-4 归属会话动作维持原计划。
+
 1. **暴露面收敛（1 小时级，收益最高）**：ai-portal 与 dev-assistant 端口映射改 `127.0.0.1:8080:80` / `127.0.0.1:3000:8080`（docker-compose 或重建容器）；如确有局域网访问需求（手机看盘等），保留 8080 但给 nginx 加 basic auth，Open WebUI 关闭开放注册（环境变量 `ENABLE_SIGNUP=false`）。
 2. **测试网补建（2 小时级）**：为 kg_schema（常量清单断言：41 边型可见、INVOLVES 单次）、kg_client.stats（mock driver 返回结构断言）、kg_source_rating.trade_days_lag（4 个已知用例固化）补最小冒烟测试文件 test_kg_schema_smoke.py；event_graph 补 RULES 词表黄金用例（「向下修正」不再中 bear、「问询函」不再中处罚）。**本次审查已顺手修复 2 项存量失败**（qpzm fixture 列契约、ui_drilldown integrity 分组适配，见 §3.7）。
 3. **未提交改动处置（归属会话动作）**：K266 线三文件+event_graph 修复建议今日内提交（尤其 event_graph RULES 已影响生产判断）；K269 两份文档直接入库；调试残留自行清理。
