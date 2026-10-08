@@ -343,7 +343,7 @@ def sync(cli, date=None):
     # X3 血缘：特征落盘边 + 运行收尾
     _jr.edge("parquet:cyq_feat", "parquet:cyq_perf", transform="feat")  # X3 血缘
     _jr.rows_written = len(evs) + len(edges) + len(orgs) + len(hedges)  # X3 血缘
-    _jr.__exit__(None, None, None)  # X3 血缘
+    _jr.finish("ok")  # X3 血缘（显式收尾，异常路径靠 __del__ 记 lost）
 
 
 def main():

@@ -126,7 +126,7 @@ def main():
     _jr.edge("neo4j:TRADED_ON.win_rate", "neo4j:TRADED_ON", transform="winrate")  # X3
     _jr.edge("neo4j:TRADED_ON.win_rate", "parquet:tdx/ts_daily", transform="winrate")  # X3
     _jr.rows_written = n1 + n2  # X3
-    _jr.__exit__(None, None, None)  # X3 血缘
+    _jr.finish("ok")  # X3 血缘（显式收尾，异常路径靠 __del__ 记 lost）
 
 
 if __name__ == "__main__":

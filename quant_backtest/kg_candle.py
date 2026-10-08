@@ -322,7 +322,7 @@ def sync(cli, date=None):
         _jr.edge("neo4j:HAS_CANDLE", "parquet:stk_mins", transform="candle_detect")  # X3
         _jr.edge("neo4j:Technique", "parquet:stk_mins")  # X3
         _jr.rows_written = len(evs) + len(edges)  # X3
-    _jr.__exit__(None, None, None)  # X3 血缘
+    _jr.finish("ok")  # X3 血缘（显式收尾，异常路径靠 __del__ 记 lost）
 
 
 def main():

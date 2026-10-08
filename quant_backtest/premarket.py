@@ -1927,11 +1927,9 @@ def push_card(data, doc_url=None):
     print("PUSH", ok)
 
 
-def _next_open():
-    """K97：次日是否 A 股交易日（盘前战报服务于次日开盘）。
-    任务层周几门禁管不到周中节假日——10-01/10-02 国庆休市日照跑照推。
-    trade_cal 读失败 fail-open 返回 True（判例同 K96：日历防线自身
-    故障不拦正常跑）。"""
+def _cal_open(day):
+    """day(yyyymmdd) 是否 A 股开市日；日历读不到 fail-open 返回 True
+    （判例同 K96：日历防线自身故障不拦正常跑）。"""
     try:
         import glob
         import pandas as pd
@@ -1939,11 +1937,17 @@ def _next_open():
             HERE, "data", "tushare", "trade_cal", "*.parquet")))
         cal = pd.concat([pd.read_parquet(f) for f in files]).drop_duplicates(
             subset=["cal_date"])
-        tmr = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
-        r = cal[cal["cal_date"] == tmr]
+        r = cal[cal["cal_date"] == day]
         return True if r.empty else bool(int(r.iloc[0]["is_open"]) == 1)
     except Exception:
         return True
+
+
+def _next_open():
+    """K97：次日是否 A 股交易日（盘前战报服务于次日开盘）。
+    任务层周几门禁管不到周中节假日——10-01/10-02 国庆休市日照跑照推。"""
+    tmr = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+    return _cal_open(tmr)
 
 
 def main():
@@ -1952,8 +1956,12 @@ def main():
     ap.add_argument("--force", action="store_true",
                     help="跳过次日交易日门禁（手动验证用）")
     a = ap.parse_args()
-    if not a.force and not _next_open():
-        print("PREMARKET skip：次日非 A 股交易日（休市，不产报不推送）")
+    # K266 P2-2：双门禁（今日+次日开市）。原只查次日——假期最后一天
+    # （次日开市、当日休市）放行后当日行情全空，iloc[-1] 家族 IndexError
+    # rc=1 误报（10-07 14:30 判例）。当日休市→行情必然缺失，干净 skip。
+    today = datetime.now().strftime("%Y%m%d")
+    if not a.force and not (_cal_open(today) and _next_open()):
+        print("PREMARKET skip：今日或次日非 A 股交易日（休市，不产报不推送）")
         return
     run(push=a.push)
 

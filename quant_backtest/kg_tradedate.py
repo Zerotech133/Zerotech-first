@@ -93,7 +93,7 @@ def sync(cli):
     _jr.edge("neo4j:ON_DATE", "neo4j:TradeDate")  # X3
     _jr.rows_written = len(ds) + len(nxt)  # X3
     stat(cli)
-    _jr.__exit__(None, None, None)  # X3 血缘
+    _jr.finish("ok")  # X3 血缘（显式收尾）
 
 
 def stat(cli):

@@ -353,6 +353,63 @@ def push_message(text):
     return out.startswith("SEND_OK")
 
 
+# --- K266 桥接：新新闻批次落 txt → inbox/docs/pending（词云管线自动摄取） ---
+K266_PENDING = r"e:\老田的AI助手\inbox\docs\pending"
+K266_STATE = os.path.join(HERE, "k266_state.json")
+K266_BATCH_CHARS = 5000  # 单批字符预算（M3 结构化截断 6000 字，留余量防丢条）
+
+
+def export_k266(db, cfg):
+    """新新闻 → 批次 txt 落 K266 inbox/pending（ingest→M3 tags→/kg/doc 词云）。
+
+    水位线 k266_state.json 记 last_rowid，幂等；首跑只记水位不回灌历史。
+    单条 content 截 500 字；返回写入文件数；异常由调用方豁免。
+    """
+    if cfg.get("k266_export") is False:
+        return 0
+    st = {}
+    try:
+        with open(K266_STATE, encoding="utf-8") as f:
+            st = json.load(f)
+    except Exception:
+        st = {}
+    if "last_rowid" not in st:  # 首跑：对齐当前水位，只导此后新新闻
+        last = db.execute("SELECT MAX(rowid) FROM news").fetchone()[0] or 0
+    else:
+        last = int(st["last_rowid"])
+    rows = db.execute(
+        "SELECT rowid, ts, source, title, content FROM news "
+        "WHERE rowid > ? ORDER BY rowid", (last,)).fetchall()
+    files, batch, cur = 0, [], 0
+
+    def _flush():
+        nonlocal files, batch, cur
+        if not batch:
+            return
+        files += 1
+        fp = os.path.join(K266_PENDING, "news_%s_%d.txt"
+                          % (now_cst().strftime("%Y%m%d_%H%M%S"), files))
+        os.makedirs(K266_PENDING, exist_ok=True)
+        with open(fp, "w", encoding="utf-8") as f:
+            f.write("\n".join(batch))
+        batch, cur = [], 0
+
+    for rid, ts, src, title, content in rows:
+        item = "[%s][%s] %s\n%s" % (ts, src, title or "", (content or "")[:500])
+        if batch and cur + len(item) > K266_BATCH_CHARS:
+            _flush()
+        batch.append(item)
+        cur += len(item)
+        last = rid
+    _flush()
+    tmp = K266_STATE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"last_rowid": last,
+                   "updated": now_cst().strftime("%Y-%m-%d %H:%M")}, f)
+    os.replace(tmp, K266_STATE)
+    return files
+
+
 def main():
     dry = "--dry" in sys.argv
     cfg = json.load(open(CFG_PATH, encoding="utf-8"))
@@ -477,6 +534,13 @@ def main():
     write_status(last_collect=now_cst().strftime("%Y-%m-%d %H:%M"),
                  last_ok=bool(ok), new_last_run=new_total, push_last_run=push_count,
                  news_24h=row[0], news_total=total, sources=source_status)
+    # K266 桥接：新新闻批次落 pending，词云管线 5 分钟内自动摄取（豁免：不阻采集）
+    try:
+        n_k266 = export_k266(db, cfg)
+        if n_k266:
+            log("k266 export %d file(s) -> inbox/docs/pending" % n_k266)
+    except Exception as e:
+        log("k266 export FAIL %s" % str(e)[:120])
     db.close()
     log("collect done ok=%s new=%d hits=%d pushed=%d" % (ok, new_total, len(hits), push_count))
     print("COLLECT %s new=%d hits=%d pushed=%d" % (ok, new_total, len(hits), push_count))

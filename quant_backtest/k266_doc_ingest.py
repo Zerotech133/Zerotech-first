@@ -5,8 +5,10 @@
   - 投递目录：手动丢文件
   - 门户上传：POST /kg/doc/upload（portal 写入 pending）
   - 剪贴板：k266_clip_watch.py 落图到 pending
+  - 新闻桥接：news_collector.export_k266 批次落 news_*.txt
 状态机：pending → (done|reject)/，registry.jsonl 记 doc_id/sha256/status。
-文本化策略：PDF 先 pypdf 数字文本，空则 PyMuPDF 渲染+OCR；图片直接 OCR。
+文本化策略：PDF 先 pypdf 数字文本，空则 PyMuPDF 渲染+OCR；图片直接 OCR；
+           .txt/.md 直读全文（kind=txt，供新闻批次零成本入管线）。
 用法：python k266_doc_ingest.py --once | --loop [间隔秒]  [--tables]
 
 环境（沙箱内运行必备，M1 解法）：
@@ -97,6 +99,9 @@ def process(path, src, tables=False):
             text, how = pdf_text(path)
             # pypdf 偶发孤立代理对（数学字母区残半），落盘前清洗
             text = text.encode("utf-8", "ignore").decode("utf-8")
+        elif ext in {".txt", ".md"}:
+            text = open(path, encoding="utf-8", errors="ignore").read().strip()
+            how = "txt"
         elif ext in IMG_EXT:
             text, how = ocr_image(path), "ocr"
         else:
@@ -138,6 +143,8 @@ def scan_once(tables=False):
             src = "clip"
         elif os.path.basename(p).startswith("up_"):
             src = "portal"
+        elif os.path.basename(p).startswith("news_"):
+            src = "news"
         if process(p, src, tables):
             n += 1
     return n

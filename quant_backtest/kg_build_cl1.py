@@ -269,7 +269,7 @@ def build(dryrun=False):
 
     if dryrun:
         print("DRYRUN 结束，未写库。")
-        _jr.__exit__(None, None, None)  # X3 血缘
+        _jr.finish("ok")  # X3 血缘（显式收尾）
         return
 
     from kg_client import KgClient
@@ -301,7 +301,7 @@ def build(dryrun=False):
     print("  全部落库完成")
     cli.close()
     print("=== CL-1 完成 ===")
-    _jr.__exit__(None, None, None)  # X3 血缘
+    _jr.finish("ok")  # X3 血缘（显式收尾）
 
 
 # ── 抽检 ──────────────────────────────────────────────────────

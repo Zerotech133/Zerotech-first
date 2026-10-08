@@ -92,3 +92,10 @@ portal/logs/
 portal/picks_public/
 portal/.wbapp_*.genie
 jev-eval/alerts/*.flag
+
+# 补漏（2026-10-08 WorkBuddy融合巡检追加：媒体/归档/未知输入目录）
+video/
+in/
+*.7z
+*.rar
+*.zip

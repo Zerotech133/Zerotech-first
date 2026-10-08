@@ -9,15 +9,24 @@ $log = 'C:\Temp\portal_api_task.log'
 # unconditionally Stop-Process'd ALL portal_api pythons first - killing the
 # LIVE serving instance as an "orphan". Concurrent triggers = bounce war =
 # user-facing 502 windows. With the lock, every concurrent trigger is a no-op.
-try {
-    $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8091/health' `
-        -TimeoutSec 5 -UseBasicParsing
-    if ($r.StatusCode -eq 200) {
-        ('skip: 8091 already serving ' + (Get-Date -Format s)) |
-            Out-File $log -Append -Encoding utf8
-        exit 0
-    }
-} catch { }
+# K234b (10-08): probe up to 3x (3s apart) before declaring death. The
+# 6:05-6:12 outage chain started with ONE transient probe failure -> healthy
+# instance killed -> new one aborted mid-start (0x800700E0) -> 502 for 7 min.
+# Never kill on a single failed probe; only a truly dead service enters the
+# kill branch below (and there killing orphans is a safe no-op).
+$h = 0
+for ($i = 0; $i -lt 3; $i++) {
+    try {
+        $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8091/health' `
+            -TimeoutSec 5 -UseBasicParsing
+        if ($r.StatusCode -eq 200) { $h = 1; break }
+    } catch { Start-Sleep -Seconds 3 }
+}
+if ($h -eq 1) {
+    ('skip: 8091 already serving ' + (Get-Date -Format s)) |
+        Out-File $log -Append -Encoding utf8
+    exit 0
+}
 try {
     # task Stop cannot kill the child; clear orphans first
     # K186: WQL server-side filter (was full Win32Process enum - K132 hang root)

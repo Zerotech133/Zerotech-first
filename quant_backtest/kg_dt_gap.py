@@ -198,7 +198,7 @@ def main():
     if a.dryrun:
         print("  dryrun：跳过写库")
         print("  " + stats)
-        _jr.__exit__(None, None, None)  # X3 血缘
+        _jr.finish("ok")  # X3 血缘（显式收尾）
         return
     cli = KgClient()
     try:
@@ -230,7 +230,7 @@ def main():
     # X3 血缘：榜后差额穿透 → HAS_TOPGAP 边
     _jr.edge("neo4j:HAS_TOPGAP", "parquet:ts_top_list", transform="penetration")  # X3
     _jr.rows_written = n1 + n2  # X3
-    _jr.__exit__(None, None, None)  # X3 血缘
+    _jr.finish("ok")  # X3 血缘（显式收尾）
 
 
 if __name__ == "__main__":
