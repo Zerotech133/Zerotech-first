@@ -60,12 +60,22 @@ def _write_json(path, obj):
 
 
 def _scan_done():
-    """15:35 主跑收尾标志：eval 缓存 generated_at ≥ 今日 15:30。"""
+    """15:35 主跑收尾标志：eval 缓存 generated_at ≥ 今日 15:30（本地）。
+
+    K267 时区修复：chanlun_scan 写入的是 UTC ISO 串（实测 '2026-10-07T22:40:34Z'），
+    旧实现按本地字符串切片比较 → 日期/时刻双双错位，轮询必然超时 exit 3
+    （每日必复发，根因见 docs/ops/2026-10-08_盘前分析与缠论任务根因排查.md）。
+    现解析为 aware 时间转本地再比较；无时区的旧格式串保留原切片逻辑兼容。"""
     try:
         with open(EVAL, encoding="utf-8") as f:
             gen = (json.load(f).get("generated_at") or "")
-        today = _today_dashed()
-        return gen.startswith(today) and gen[11:16] >= CUTOFF, gen
+        gen_dt = datetime.fromisoformat(gen.replace("Z", "+00:00"))
+        if gen_dt.tzinfo is None:  # 旧格式：无时区，视为本地时间字符串
+            return gen.startswith(_today_dashed()) and gen[11:16] >= CUTOFF, gen
+        gen_local = gen_dt.astimezone().replace(tzinfo=None)  # 转本地 naive
+        cutoff = datetime.strptime("%s %s" % (_today_dashed(), CUTOFF),
+                                   "%Y-%m-%d %H:%M")
+        return gen_local >= cutoff, gen
     except Exception:
         return False, ""
 
