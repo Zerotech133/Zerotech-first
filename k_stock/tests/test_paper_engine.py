@@ -287,6 +287,44 @@ def test_mark_and_curve(tmp_path):
     assert e.verify()["ok"]
 
 
+def test_positions_snapshot(tmp_path):
+    e = _mk_engine(tmp_path)
+    e.buy("600519.SH", 100)
+    e.mark("2026-10-09")
+    con = e.con
+    rows = con.execute(
+        "SELECT * FROM positions_snapshot WHERE date='2026-10-09'").fetchall()
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["stock"] == "600519.SH" and r["qty"] == 100
+    assert r["available"] == 0                    # T+1 冻结
+    assert r["market_value"] == pytest.approx(100 * r["last"])
+    # 同日重跑覆盖（先加仓再 mark → 该日仍 1 行且数量更新；加仓超单票限用 force）
+    e.market = _mk_market(extra_tail=True)
+    e.buy("600519.SH", 100, force=True)
+    e.mark("2026-10-09")
+    n = con.execute("SELECT COUNT(*) FROM positions_snapshot WHERE date='2026-10-09'").fetchone()[0]
+    assert n == 1
+    q = con.execute("SELECT qty FROM positions_snapshot WHERE date='2026-10-09'").fetchone()[0]
+    assert q == 200
+    # 部分卖出：第二手买在 last_td(20261010) 被 T+1 冻结，可卖仅首手 100 股
+    e.sell("600519.SH")
+    e.mark("2026-10-10")
+    r10 = con.execute(
+        "SELECT qty FROM positions_snapshot WHERE date='2026-10-10'").fetchone()
+    assert r10 is not None and r10["qty"] == 100   # 剩一手
+    # 湖再进一日（T+1 解锁）→ 清仓 → 该日明细为空
+    mkt = _mk_market(extra_tail=True)
+    mkt.bars["600519.SH"].append(
+        _bar("20261013", open_=1255.0, pre_close=1258.0, close=1255.0))
+    e.market = mkt
+    e.sell("600519.SH")
+    e.mark("2026-10-13")
+    n2 = con.execute("SELECT COUNT(*) FROM positions_snapshot WHERE date='2026-10-13'").fetchone()[0]
+    assert n2 == 0
+    assert e.verify()["ok"]
+
+
 # ---------- settle 正常路径不误伤 ----------
 
 def test_settle_normal_path_not_blocked(tmp_path):

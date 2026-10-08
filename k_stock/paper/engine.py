@@ -91,6 +91,17 @@ CREATE TABLE IF NOT EXISTS equity_marks(
   verify_ok INTEGER NOT NULL,
   ts TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS positions_snapshot(
+  date TEXT NOT NULL,              -- 快照自然日（与 equity_marks.date 同键）
+  stock TEXT NOT NULL,
+  qty INTEGER NOT NULL,
+  avg_cost REAL NOT NULL,
+  last REAL NOT NULL,              -- 快照时点最近收盘价
+  market_value REAL NOT NULL,
+  pnl REAL NOT NULL,
+  available INTEGER NOT NULL,
+  PRIMARY KEY(date, stock)
+);
 """
 
 
@@ -557,6 +568,14 @@ class PaperEngine:
             "pending=excluded.pending,verify_ok=excluded.verify_ok,ts=excluded.ts",
             (day, eq["total"], eq["cash"], eq["market_value"], eq["pos_pct"],
              int(pend), int(v["ok"]), _now()))
+        # 持仓明细快照（前端展示用：行情依赖数据在快照时点固化，portal 零 pandas 依赖）
+        self.con.execute("DELETE FROM positions_snapshot WHERE date=?", (day,))
+        for p in eq["positions"]:
+            self.con.execute(
+                "INSERT INTO positions_snapshot(date,stock,qty,avg_cost,last,market_value,pnl,available) "
+                "VALUES(?,?,?,?,?,?,?,?)",
+                (day, p["stock"], p["qty"], p["avg_cost"], p["last"],
+                 p["market_value"], p["pnl"], p["available"]))
         self.con.commit()
         return {"date": day, "total": eq["total"], "pos_pct": eq["pos_pct"],
                 "pending": int(pend), "verify_ok": v["ok"]}
