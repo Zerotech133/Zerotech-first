@@ -13,6 +13,7 @@ reports/
 *.log
 *.db
 *.db-journal
+*.db.bak
 *.db-wal
 *.shm
 *.sqlite

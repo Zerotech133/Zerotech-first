@@ -43,8 +43,10 @@ python k_stock/paper/cli.py reset --cash 1000000 --yes  # 清账重开（危险�
 ```
 settle        # 撮昨日 pending（按当日开盘价，湖已更新）
 exec --newest # 落今日新决策 pending（按决策当日开盘，湖明日才有该 bar）
-mark          # 记当日权益快照（S1 判据链证据，curve 可看）
+mark          # 记当日权益快照（S1 判据链证据，curve 可看）+ 账本备份 paper.db.bak
 ```
+
+账本灾备：`*.db` 不入 git 也不在 B4 备份链，`mark` 每日顺带复制 `paper.db.bak`（保留最近一份，gitignore 已覆盖）。
 
 幂等：AI 单 ref=`{run文件名}#{股票}` 唯一索引，同 run 重跑零重复。
 注意：cancelled（不足一手/无可卖）不复活——次日产新 run 文件自然重判。

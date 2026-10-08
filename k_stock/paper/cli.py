@@ -152,6 +152,14 @@ def cmd_mark(args) -> int:
     ok = "✅" if r["verify_ok"] else "❌"
     print(f"{ok} 快照 {r['date']}: 总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
           f"待撮合 {r['pending']}")
+    # 账本轻量灾备：*.db 不入 git 也不在 B4 备份链，mark 成功后保留最近一份副本
+    try:
+        import shutil
+        bak = Path(str(e.db_path) + ".bak")
+        shutil.copy2(e.db_path, bak)
+        print(f"💾 账本已备份 -> {bak.name}")
+    except Exception as ex:  # 备份失败不阻塞主流程
+        print(f"⚠️ 账本备份失败（不影响快照）: {ex}", file=sys.stderr)
     return 0
 
 
