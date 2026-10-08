@@ -45,11 +45,11 @@ def build_messages(node: dict[str, Any], stock: str, context: str,
     deps = node.get("parent_node_keys") or []
     if deps:
         dep_txt = json.dumps({k: outputs.get(k, {}) for k in deps},
-                             ensure_ascii=False, default=str)[:3000]
+                             ensure_ascii=False, default=str)[:2000]
         user_parts.append(f"上游结论：\n{dep_txt}")
     if node.get("is_debate_node") and opponent_last:
         user_parts.append(
-            f"【辩论第 {round_no} 轮】你的辩论对手上一轮观点：\n{opponent_last[:1500]}\n"
+            f"【辩论第 {round_no} 轮】你的辩论对手上一轮观点：\n{opponent_last[:800]}\n"
             "请直接回应对方论据：坚持或修正你的立场，给出新论据。")
     return [{"role": "system", "content": system},
             {"role": "user", "content": "\n".join(user_parts)}]

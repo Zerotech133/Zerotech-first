@@ -1,0 +1,172 @@
+[
+  {
+    "outputs": {
+      "T1": {
+        "degraded": true
+      },
+      "T2": {
+        "degraded": true
+      },
+      "F1": {
+        "stance": "NEUTRAL",
+        "confidence": 0.6,
+        "key_points": [
+          "股价位于短期均线上方，显示技术面支撑",
+          "近5日量能平稳，流动性充足",
+          "行业金融科技优势提供长期韧性"
+        ],
+        "risks": [
+          "缺乏财务数据验证盈利质量",
+          "宏观经济波动影响信贷需求",
+          "利率政策变化可能压缩净息差"
+        ]
+      },
+      "N1": {
+        "degraded": true
+      },
+      "D1": {
+        "degraded": true
+      }
+    },
+    "raw": {
+      "T1": "{\"degraded\": true}",
+      "T2": "{\"degraded\": true}",
+      "F1": "```json\n{\n  \"stance\": \"NEUTRAL\",\n  \"confidence\": 0.6,\n  \"key_points\": [\n    \"股价位于短期均线上方，显示技术面支撑\",\n    \"近5日量能平稳，流动性充足\",\n    \"行业金融科技优势提供长期韧性\"\n  ],\n  \"risks\": [\n    \"缺乏财务数据验证盈利质量\",\n    \"宏观经济波动影响信贷需求\",\n    \"利率政策变化可能压缩净息差\"\n  ]\n}\n```",
+      "N1": "{\"degraded\": true}",
+      "D1": "{\"degraded\": true}"
+    },
+    "trace": [
+      {
+        "event": "node_retry",
+        "node": "T1",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:44:40"
+      },
+      {
+        "event": "node_retry",
+        "node": "T1",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:46:25"
+      },
+      {
+        "event": "node_retry",
+        "node": "T1",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T16:47:50"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:49:15"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:50:35"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T16:52:00"
+      },
+      {
+        "event": "debate_converged",
+        "round": 1,
+        "pair": [
+          "T1",
+          "T2"
+        ],
+        "sim": 1.0,
+        "ts": "2026-10-08T16:52:00"
+      },
+      {
+        "event": "debate_done",
+        "pair": [
+          "T1",
+          "T2"
+        ],
+        "rounds": 1,
+        "ts": "2026-10-08T16:52:00"
+      },
+      {
+        "event": "node_done",
+        "node": "F1",
+        "analysis_type": "fundamental",
+        "ts": "2026-10-08T16:52:45"
+      },
+      {
+        "event": "node_retry",
+        "node": "N1",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:53:35"
+      },
+      {
+        "event": "node_retry",
+        "node": "N1",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:55:00"
+      },
+      {
+        "event": "node_retry",
+        "node": "N1",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T16:56:30"
+      },
+      {
+        "event": "node_done",
+        "node": "N1",
+        "analysis_type": "news_event",
+        "ts": "2026-10-08T16:56:30"
+      },
+      {
+        "event": "node_retry",
+        "node": "D1",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:57:59"
+      },
+      {
+        "event": "node_retry",
+        "node": "D1",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:59:29"
+      },
+      {
+        "event": "node_retry",
+        "node": "D1",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T17:00:50"
+      },
+      {
+        "event": "node_done",
+        "node": "D1",
+        "analysis_type": "final_decision",
+        "ts": "2026-10-08T17:00:50"
+      }
+    ],
+    "degraded": [
+      "T1",
+      "T2",
+      "N1",
+      "D1"
+    ],
+    "stock": "000001.SZ 平安银行",
+    "asof": "2026-10-08T17:00:50",
+    "mock": false,
+    "auto_context": true
+  }
+]

@@ -6142,3 +6142,11 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **自测 5/5 绿**（0.09s：similarity/分波/环检测/mock 全链/降级路径）。
 - **真跑实证**（600519 贵州茅台，qwen3.5:9b）：首跑 T2/D1 空输出降级 → 根因=Ollama response_format 兼容性 → 去掉该参数靠提示词约束+空输出纳入重试 → 复跑**五节点零降级**：T1 BULL0.75「放量=机构承接」⇄ T2 BEAR0.68「假突破派发嫌疑」辩论 2 轮真实交锋 → D1=BUY conf0.73 目标区间 1750-1950 综合双方，lineage 全留痕（data/poc_*.json）。
 - **S1 剩余**：D0 正式数据接入（N1=jev 流/F1=Tushare，当前手工 context）→ D1-D5 无人干预连续跑+秩相关对照（对照脚本 S2 挂）。单股全链 ~7 分钟（批量 watchlist 需错峰或并发调优）。
+
+## K-STOCK ✅ D0 正式数据接入完成（2026-10-08 17:10，datafeed+守卫+调度三件套）
+- **三路 context 真数据**（`kstock/datafeed.py`，Python311+pandas 生产解释器）：tech=特征湖 parquet 5596 只（MA 结构/动量/量能比/波动）；news=news.db stocks 匹配（9 源近 3 日）；funda=日线衍生素（60 日高低点/量能 CV/成交额亿元——**修正 tushare amount 千元单位 bug**）。真财务待 Tushare token（.env.local 仅 XT_DATA_KEY，挂账）。
+- **run_poc 升级**：--auto（三路自动拼）/ --watchlist N（监控池成交额 TopN）/ 负载守卫。
+- **🔴 负载守卫（新发明）**：跑批前短推理探针（qwen3.5:9b「回复两个字」），>15s 即 exit 3 中止——**依据**：16:41/17:00 两次手工跑 4/5 节点降级，探针实测负载高峰短推理 40-42s（空闲 ~2s），CPU 推理被系统负载挤死；守卫实测正确拦截（40.4s→中止）。链路代码无问题（上午低峰 3 次真跑 2 次全绿）。
+- **修复**：Ollama response_format 空输出 → 去参数；timeout 120→300s；重试退避 2s+4s；辩论对手降级提前收敛；prompt 瘦身（上游 3000→2000/对手 1500→800）。orchestrator 测试 5/5 绿。
+- **调度**：每日 16:30 automation id=58dd6940（watchlist 5 股+eval_rank 累计+降级超半明确汇报）——明日首跑（守卫在岗）。
+- **观察点**：16:30 automation 今日首跑未留产物（疑撞负载失败，其会话汇报未见）——明日起守卫会给出明确中止原因，S1 判据计数从首个完整跑批日起算。

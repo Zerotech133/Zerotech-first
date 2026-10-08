@@ -1,0 +1,178 @@
+[
+  {
+    "outputs": {
+      "T1": {
+        "degraded": true,
+        "raw": "{\n  \"stance\": \"BULL\",\n  \"confidence\": 0.82,\n  \"key_points\": ["
+      },
+      "T2": {
+        "degraded": true
+      },
+      "F1": {
+        "stance": "NEUTRAL",
+        "confidence": 0.55,
+        "key_points": [
+          "技术面短期强势（收盘价高于MA5/MA20），近5日涨幅1.6%显示反弹动能",
+          "量能稳定（变异系数0.24）且日均成交额10亿+，流动性充足支撑交易活跃度",
+          "缺乏财务数据验证ROE/不良率等核心指标，基本面判断受限"
+        ],
+        "risks": [
+          "银行业受宏观经济周期影响显著，潜在坏账风险未量化",
+          "无新闻事件驱动可能隐含信息不对称风险",
+          "估值水平缺失PE/PB数据导致安全边际评估不足"
+        ]
+      },
+      "N1": {
+        "degraded": true
+      },
+      "D1": {
+        "degraded": true
+      }
+    },
+    "raw": {
+      "T1": "{\n  \"stance\": \"BULL\",\n  \"confidence\": 0.82,\n  \"key_points\": [",
+      "T2": "{\"degraded\": true}",
+      "F1": "```json\n{\n  \"stance\": \"NEUTRAL\",\n  \"confidence\": 0.55,\n  \"key_points\": [\n    \"技术面短期强势（收盘价高于MA5/MA20），近5日涨幅1.6%显示反弹动能\",\n    \"量能稳定（变异系数0.24）且日均成交额10亿+，流动性充足支撑交易活跃度\",\n    \"缺乏财务数据验证ROE/不良率等核心指标，基本面判断受限\"\n  ],\n  \"risks\": [\n    \"银行业受宏观经济周期影响显著，潜在坏账风险未量化\",\n    \"无新闻事件驱动可能隐含信息不对称风险\",\n    \"估值水平缺失PE/PB数据导致安全边际评估不足\"\n  ]\n}\n```",
+      "N1": "{\"degraded\": true}",
+      "D1": "{\"degraded\": true}"
+    },
+    "trace": [
+      {
+        "event": "node_retry",
+        "node": "T1",
+        "attempt": 1,
+        "err": "primary 与 fallback 均不可达",
+        "ts": "2026-10-08T16:17:52"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:20:06"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:21:39"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T16:23:17"
+      },
+      {
+        "event": "node_retry",
+        "node": "T1",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:24:41"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:27:52"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:29:27"
+      },
+      {
+        "event": "node_retry",
+        "node": "T2",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T16:31:19"
+      },
+      {
+        "event": "debate_done",
+        "pair": [
+          "T1",
+          "T2"
+        ],
+        "rounds": 2,
+        "ts": "2026-10-08T16:31:19"
+      },
+      {
+        "event": "node_done",
+        "node": "F1",
+        "analysis_type": "fundamental",
+        "ts": "2026-10-08T16:32:37"
+      },
+      {
+        "event": "node_retry",
+        "node": "N1",
+        "attempt": 1,
+        "err": "primary 与 fallback 均不可达",
+        "ts": "2026-10-08T16:33:21"
+      },
+      {
+        "event": "node_retry",
+        "node": "N1",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:35:02"
+      },
+      {
+        "event": "node_retry",
+        "node": "N1",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T16:36:40"
+      },
+      {
+        "event": "node_done",
+        "node": "N1",
+        "analysis_type": "news_event",
+        "ts": "2026-10-08T16:36:40"
+      },
+      {
+        "event": "node_retry",
+        "node": "D1",
+        "attempt": 1,
+        "err": "空输出",
+        "ts": "2026-10-08T16:38:06"
+      },
+      {
+        "event": "node_retry",
+        "node": "D1",
+        "attempt": 2,
+        "err": "空输出",
+        "ts": "2026-10-08T16:39:38"
+      },
+      {
+        "event": "node_retry",
+        "node": "D1",
+        "attempt": 3,
+        "err": "空输出",
+        "ts": "2026-10-08T16:41:10"
+      },
+      {
+        "event": "node_done",
+        "node": "D1",
+        "analysis_type": "final_decision",
+        "ts": "2026-10-08T16:41:10"
+      }
+    ],
+    "degraded": [
+      "T2",
+      "T2",
+      "T1:parse",
+      "N1",
+      "D1"
+    ],
+    "stock": "000001.SZ 平安银行",
+    "asof": "2026-10-08T16:41:10",
+    "mock": false,
+    "auto_context": true
+  }
+]

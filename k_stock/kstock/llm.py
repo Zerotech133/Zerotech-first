@@ -15,7 +15,7 @@ class LLMUnavailable(Exception):
 
 class LLMClient:
     def __init__(self, primary="http://127.0.0.1:8098", fallback="http://127.0.0.1:11434",
-                 model_fallback="qwen3.5:9b", timeout=120, mock=False):
+                 model_fallback="qwen3.5:9b", timeout=300, mock=False):
         self.primary = primary.rstrip("/")
         self.fallback = fallback.rstrip("/")
         self.model_fallback = model_fallback

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
@@ -121,11 +122,21 @@ class Orchestrator:
         a, b = self.nodes[a_key], self.nodes[b_key]
         msg_a = msg_b = ""
         rounds = int(a.get("max_debate_rounds") or 2)
+        rd = 0
         for rd in range(1, rounds + 1):
             msg_a = self._call(a, stock, context, outputs, opponent_last=msg_b,
                                round_no=rd, raw_out=raw_outputs, degraded=degraded)
+            # 对手已降级则不再向其追问（无意义辩论），提前收敛
+            if '"degraded": true' in msg_b and rd > 1:
+                self.trace.append({"event": "debate_aborted", "round": rd,
+                                   "why": f"{b_key} degraded", "ts": datetime.now().isoformat(timespec="seconds")})
+                break
             msg_b = self._call(b, stock, context, outputs, opponent_last=msg_a,
                                round_no=rd, raw_out=raw_outputs, degraded=degraded)
+            if '"degraded": true' in msg_a and rd > 1:
+                self.trace.append({"event": "debate_aborted", "round": rd,
+                                   "why": f"{a_key} degraded", "ts": datetime.now().isoformat(timespec="seconds")})
+                break
             if similarity(msg_a, msg_b) >= self.converge_threshold:
                 self.trace.append({"event": "debate_converged", "round": rd,
                                    "pair": [a_key, b_key], "sim": round(similarity(msg_a, msg_b), 3),
@@ -134,7 +145,7 @@ class Orchestrator:
         outputs[a_key] = self._parse(msg_a, degraded, a_key)
         outputs[b_key] = self._parse(msg_b, degraded, b_key)
         self.trace.append({"event": "debate_done", "pair": [a_key, b_key],
-                           "rounds": rd, "ts": datetime.now().isoformat(timespec="seconds")})
+                           "rounds": max(rd, 1), "ts": datetime.now().isoformat(timespec="seconds")})
 
     # ----- 单节点执行：重试 2 次 → 降级 -----
     def _single(self, node, stock, context, outputs, raw_outputs, degraded):
@@ -153,7 +164,7 @@ class Orchestrator:
         for i in range(attempts + 1):
             try:
                 text, provider = self.chat(msgs)
-                if text and text.strip():  # 空输出（Ollama 偶发）视同失败重试
+                if text and text.strip():  # 空输出（Ollama 负载下偶发）视同失败重试
                     if raw_out is not None:
                         raw_out[node["node_key"]] = text
                     return text
@@ -162,6 +173,8 @@ class Orchestrator:
                 self.trace.append({"event": "node_retry", "node": node["node_key"],
                                    "attempt": i + 1, "err": str(e)[:120],
                                    "ts": datetime.now().isoformat(timespec="seconds")})
+                if i < attempts:
+                    time.sleep(2 + 2 * i)  # 退避：负载高峰连发空输出时给 Ollama 喘息
         # 全败：降级输出（不阻塞全链）
         if degraded is not None:
             degraded.append(node["node_key"])

@@ -46,14 +46,17 @@ $PY = "C:\Program Files\Python311\python.exe"
 
 ## 已知限制（S1 范围外）
 
-- N1/F1 输入 context 为手工文本（S2 接 jev 新闻流+Tushare 财务）
+- N1/F1 输入由 datafeed 自动生成（行情 parquet+news.db 真数据）；**财务报表字段待 Tushare token**（.env.local 仅有 XT_DATA_KEY），F1 以量价衍生素代理
 - 六维评分未接入（S2，scoring.py 已备解析器）
 - A1 投资建议节点并入 D1 前置（S2 拆出）
-- GLM 8098 当前拒连（挂账 K275-F4；Ollama 路径已可用）
+- GLM 8098 当前拒连（挂账；Ollama qwen3.5:9b 现役）
 - 相似度用词面 Jaccard（S2 换 bge-m3 向量）
+- **Ollama CPU 推理对系统负载极敏感**（10-08 实测：空闲短推理 ~2s，负载高峰 42s→长 context 大量超时空输出）。runner 已内置**负载守卫**（短推理>15s 即 exit 3 中止跑批），automation 挂守卫后换低峰重试
+- 系统高负载时段（约 16:30-17:00 观测到）避免跑批；收盘后 18:00+ 更稳
 
 ## 状态
 
-- [x] D0 破土（2026-10-08）：骨架+5 测试绿+mock 全链+Ollama 真跑验证
-- [ ] D0 正式：数据接入（N1=jev 流/F1=Tushare）
-- [ ] D1-D5：无人干预连续跑+秩相关对照
+- [x] D0 破土（2026-10-08 午）：骨架+5 测试绿+mock 全链+Ollama 真跑验证（600519 辩论 2 轮→BUY 0.73）
+- [x] D0 正式数据接入（2026-10-08 晚）：datafeed 三路 context（特征湖 parquet+news.db）+run_poc --auto/--watchlist+eval_rank 秩相关对照+负载守卫+每日 16:30 automation（id=58dd6940）
+- [ ] D1-D5：无人干预连续跑（明日 16:30 automation 首跑，守卫在岗）+秩相关对照
+- [ ] F1 真财务接入（等 Tushare token）
