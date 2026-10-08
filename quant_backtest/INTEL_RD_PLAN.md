@@ -6135,3 +6135,10 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **F2（已处置）**：上午清理行动的回滚备份 cleanup_backup_20261008 8.29G 滞留 Temp→挪 `D:\cleanup_backup_20261008`（回滚语义保留）。
 - **F3（挂拍板）**：quantdinger-backend **0.0.0.0:15000 全网卡暴露**（12 点 docker start 拉起后出现，K270 收敛时未运行故漏扫；容器端口创建时固定，改绑需重建）。等老田拍板保留或 127.0.0.1 重建。
 - **v6 要点**：P0=明早 B4 v9 验收→A6 正式 Go；K-STOCK S1 PoC 启动（D0 建议 10-09）。时间窗=10-13 strong 复盘、10-14 RiskGuard S3 闸门、10-15 Hermes.old 清除、10-20 shibor_lpr 复核。等用户=菜鸟两凭据（X1/X2 解锁）、15000 拍板、PoC 时间点。
+
+## K-STOCK ✅ S1 PoC D0 破土（2026-10-08 15:40，v6 P0 主攻提前启动，骨架+真跑全绿）
+- **物料盘清**：ai_team_role DDL 全字段（node_key/parent_node_keys/is_parallel/debate_partner_key/max_debate_rounds）；stock_weight_factor 6 维 24 因子（WEIGHT/PENALTY，阈值在 factor_name）；ai_chat_role 1036 人设（S2 提取）。GLM 8098 **拒连**（台账"已恢复"失实，挂账）→ Ollama 11434 qwen3.5:35b/9b/4b 在线，PoC 现役 9b。
+- **交付**（`k_stock/`，README 线卡）：`orchestrator.py` 四机制 Python 重实现（拓扑分波/并行屏障/辩论链相似度>0.8 收敛/节点降级三态）+ `nodes.py` 五节点 JSON 契约 + `llm.py`（GLM→Ollama→mock 降级）+ `scoring.py` 因子解析器（S2 挂点）+ `run_poc.py`（单股/--batch）+ config/team_poc.json。
+- **自测 5/5 绿**（0.09s：similarity/分波/环检测/mock 全链/降级路径）。
+- **真跑实证**（600519 贵州茅台，qwen3.5:9b）：首跑 T2/D1 空输出降级 → 根因=Ollama response_format 兼容性 → 去掉该参数靠提示词约束+空输出纳入重试 → 复跑**五节点零降级**：T1 BULL0.75「放量=机构承接」⇄ T2 BEAR0.68「假突破派发嫌疑」辩论 2 轮真实交锋 → D1=BUY conf0.73 目标区间 1750-1950 综合双方，lineage 全留痕（data/poc_*.json）。
+- **S1 剩余**：D0 正式数据接入（N1=jev 流/F1=Tushare，当前手工 context）→ D1-D5 无人干预连续跑+秩相关对照（对照脚本 S2 挂）。单股全链 ~7 分钟（批量 watchlist 需错峰或并发调优）。
