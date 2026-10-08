@@ -5,14 +5,41 @@
 用法: python alert_fail.py <task> <exit_code> [log_path]
 复用 news_collector/send_feishu.py 发送（与 chanlun_scan._push_feishu_text 同口径），
 消息附日志尾 5 行便于定位。发送失败仅打印不抛错（告警器不能反噬任务 rc）。
+
+K268（2026-10-08）：掉电击杀标注——本机近 7 天数十次 AC 掉电，Windows 计划任务
+默认"用电池时停止任务"（StopIfGoingOnBatteries）会在掉电瞬间批量杀运行中任务
+（动作码 0x8007050B，任务码 0x8007042B），导致同分钟多条"任务失败"独立误报。
+发送前查 System 日志近 10 分钟 Kernel-Power EID=105(AcOnline=false)：
+命中则消息头加"[疑似掉电击杀·电池策略]"标注并附佐证——不抑制告警，只归类语义。
+查询失败按无掉电处理（诊断不能反噬告警）。五个受害任务电池策略已关闭
+（CryptoSync/ChanlunScanUS/JEVBackfill-Hourly/RtdxRtMinPull/_sentinelEOD）。
 """
 import os
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
+
+
+def recent_power_loss(window_min=10):
+    """近 N 分钟内 AC 掉电事件数（Kernel-Power EID=105 且 AcOnline=false）。
+
+    独立佐证"任务失败=环境击杀"。任何异常返回 0（告警器不能因诊断挂掉）。
+    """
+    try:
+        since = (datetime.utcnow() - timedelta(minutes=window_min)).strftime(
+            "%Y-%m-%dT%H:%M:%S")
+        q = ("*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and EventID=105"
+             " and TimeCreated[@SystemTime>='%s.000Z']]]" % since)
+        r = subprocess.run(
+            ["wevtutil", "qe", "System", "/q:" + q, "/f:xml", "/rd:true", "/c:10"],
+            capture_output=True, timeout=20)
+        out = r.stdout.decode("utf-8", "replace")
+        return out.count("AcOnline'>false")
+    except Exception:
+        return 0
 
 
 def alert(task, code, log=""):
@@ -27,6 +54,11 @@ def alert(task, code, log=""):
                 msg += "\n--- log tail ---\n" + "".join(tail).rstrip()
         except Exception:
             pass
+    n = recent_power_loss()
+    if n:
+        msg = ("[疑似掉电击杀·电池策略] 近10分钟 AC 掉电事件 %d 条，"
+               "Windows 默认'用电池时停止任务'会批量终止运行中任务(0x8007050B)，"
+               "非任务自身故障；供电恢复后下个触发器自动重跑。\n%s" % (n, msg))
     tmp = os.path.join(NEWS_DIR, "outbox", "pending_alert_%s.txt" % task)
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     with open(tmp, "w", encoding="utf-8") as f:
