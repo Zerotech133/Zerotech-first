@@ -52,6 +52,7 @@ def norm_tags(tags):
 
 def load_done():
     done = set()
+    err_cnt = {}
     if os.path.exists(SHADOW):
         with open(SHADOW, encoding="utf-8") as f:
             for line in f:
@@ -59,8 +60,15 @@ def load_done():
                     rec = json.loads(line)
                     if rec.get("raw_ok"):  # ERR 记录不算已判，下轮自动重试
                         done.add(rec["doc_id"])
+                    else:
+                        err_cnt[rec["doc_id"]] = err_cnt.get(rec["doc_id"], 0) + 1
                 except Exception:
                     pass
+    # 钉子户防御：ERR≥3（如超长条目独占 GPU 也判不完）视为放弃，防每轮
+    # 空转 600s 看门狗超时（2026-10-08 i11 三连败实测）
+    for did, n in err_cnt.items():
+        if n >= 3:
+            done.add(did)
     return done
 
 
@@ -82,23 +90,30 @@ def split_news_items(text):
     return [t for t in (s.strip() for s in items) if t]
 
 
-def ask_ollama(text, timeout=180, hard_deadline=600):
+def ask_ollama(text, timeout=280, hard_deadline=600):
     """三试重试 + 硬超时看门狗。
 
-    requests 的 timeout 是"字节间隔"超时：Ollama 慢流式（GPU 被抢占时
-    逐 token 滴流）会不断重置计时器，单条可挂数小时且进程存活、调度器
-    不会拉起新实例（2026-10-08 实测 17:03 起挂死 18h）。故整条调用
-    放工作线程跑，join 超过 hard_deadline 即放弃 → judge 落 ERR 下一条。
+    requests 的 timeout 语义：stream=False 时是"整个生成完成"的时限（首字节=
+    完整响应）。GPU 被抢占/长文档下生成可超时（2026-10-08 实测 17:03 起挂死
+    18h）。故整条调用放工作线程跑，join 超过 hard_deadline 即放弃 → judge 落
+    ERR 下一条；abort 事件通知 worker 在重试检查点自行退出，防僵尸请求继续
+    占 Ollama 推理槽挤压后续条目（并发 16k ctx 会把层挤到 CPU，全体变慢）。
     """
     import threading
     box = {}
+    abort = threading.Event()
 
     def _worker():
         body = {"model": MODEL, "think": False, "stream": False,
-                "options": {"num_ctx": 16384},   # 默认 4096 会被 6000 字 prompt 挤满
+                # num_ctx 8192：16384 的 KV cache 挤显存会把权重层压到 CPU
+                # （ollama ps 显示 12%/88%），5000 字长文单条 >600s 判不完；
+                # 配 2500 字截断（tags/doc_type 靠标题导语，正文细节非关键）
+                "options": {"num_ctx": 8192},
                 "messages": [{"role": "user",
-                              "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:6000]}]}
+                              "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:2500]}]}
         for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
+            if abort.is_set():
+                return                  # 看门狗已放弃，勿再发起新请求
             try:
                 r = requests.post(OLLAMA, json=body, timeout=timeout)
                 r.raise_for_status()
@@ -107,6 +122,8 @@ def ask_ollama(text, timeout=180, hard_deadline=600):
                     return
             except Exception as e:
                 box["last"] = str(e)[:120]
+            if abort.is_set():
+                return
             time.sleep(2)
         box.setdefault("last", "")
 
@@ -114,6 +131,7 @@ def ask_ollama(text, timeout=180, hard_deadline=600):
     t.start()
     t.join(hard_deadline)
     if t.is_alive():
+        abort.set()     # 当前阻塞中的请求 ≤timeout 内自行退出，不再 3 连击
         raise TimeoutError("ollama hard timeout %ss（慢流/队列饿死）" % hard_deadline)
     return box.get("last", "")
 
