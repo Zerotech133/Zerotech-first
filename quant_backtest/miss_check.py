@@ -47,6 +47,12 @@ REGISTRY = {
     # 手动守候才撞见；CainiaoPull 明晚首跑（R4 数据链）
     "CainiaoPull":       {"expect": "19:00", "since": "2026-10-09"},
     "JevReviewBackfill": {"expect": "20:30", "since": "2026-10-07"},
+    # 10-09 补：晨间三连（06:20/06:30/06:40）原全不在册——恰处夜间睡眠
+    # 窗口尾段，被静默吃掉将无人报（JEV 前车）；三任务已同批加
+    # StartWhenAvailable，本册兜底「唤醒后也没补跑」的最后情形
+    "KgDailySync":         {"expect": "06:20", "since": "2026-10-09"},
+    "StrongEod":           {"expect": "06:30", "since": "2026-10-09"},
+    "K260RegressionDaily": {"expect": "06:40", "since": "2026-10-09"},
 }
 
 
