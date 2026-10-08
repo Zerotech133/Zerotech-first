@@ -41,6 +41,7 @@ def main():
     c = d.get("counts") or {}
     t1 = [s for s in stocks if s.get("tier") == "T1"]
     t2 = [s for s in stocks if s.get("tier") == "T2"]
+    crowd = [s for s in stocks if s.get("tier") == "CROWD"]
 
     # 多策略命中样本（n_hit>=3），带命中理由
     multi = sorted([s for s in t1 if (s.get("n_hit") or 0) >= 3],
@@ -64,11 +65,15 @@ def main():
     sections = [
         ("🔥 T1 策略共振 %d 只（多策略同日命中）" % len(t1), layer_md(t1)),
         ("💎 T2 高价值 %d 只" % len(t2), layer_md(t2)),
+        ("⚠️ 拥挤警报 %d 只（K33：高分=拥挤非买入，回避/降仓）" % len(crowd),
+         layer_md(crowd) if crowd else "今日无 alert 级拥挤票（mid/low band 不计入警报层）"),
         ("⭐ 多策略命中样本 TOP（≥3 策略，带理由）",
          "\n".join(sample_lines) if sample_lines else "（今日无 ≥3 策略命中）"),
         ("📖 分层口径",
          "**T1 共振** 多策略同日命中（核心观察池）\n"
          "**T2 高价值** 单策略但分值/信号强度高\n"
+         "**⚠️ 拥挤警报** 九维 alert 级高分票——K33 实证高分=拥挤非买入，"
+         "回避标记（2026-10-08 修正：band 票不再抬进 T2）\n"
          "**T3 单策略** 其余 %d 只（门户可查）\n"
          "基准：%s" % (c.get("T3_single") or 0,
                        (d.get("trade_basis") or "")[:40])),
@@ -84,11 +89,12 @@ def main():
         "body": {"elements": ([
             {"tag": "markdown", "content":
                 "**全池 %d 只** ｜ T1 共振 **%d** ｜ T2 高价值 **%d** ｜ "
-                "T3 单策略 %d\n基准 %s\n详情例：605100 华丰股份 "
+                "⚠ 拥挤警报 %d ｜ T3 单策略 %d\n基准 %s\n详情例：605100 华丰股份 "
                 "（前一条下钻卡，判定：%s）"
                 % (c.get("total") or len(stocks),
                    c.get("T1_resonance") or len(t1),
                    c.get("T2_high_value") or len(t2),
+                   c.get("crowd_alert") or 0,
                    c.get("T3_single") or 0,
                    (d.get("trade_basis") or "")[:30],
                    verdict or "-")},

@@ -184,6 +184,8 @@ def load_cross(stocks):
 
 
 def tier_of(e):
+    # K33 复盘（2026-10-08 产品评审 P0）：九维高分=拥挤警报而非买入信号，
+    # band 票不再抬进 T2；alert 级入独立 CROWD 警报层（回避标记），其余落 T3。
     hits = len({s["s"] for s in e["sources"]} - {"cross"})
     if hits >= 2 or (e["sources"] and any(s["s"] == "cross" for s in e["sources"])):
         return "T1"
@@ -193,11 +195,11 @@ def tier_of(e):
         return "T2"
     if "strong" in ss and any(t == "板块领涨" for t in tags):
         return "T2"
-    if "ninedim" in ss and any(s.get("band") and s.get("band") != "na"
-                               for s in e["sources"]):
-        return "T2"
     if "qpzm" in ss and any((s.get("score") or 0) >= 80 for s in e["sources"]):
         return "T2"
+    if "ninedim" in ss and any(s.get("band") in ("alert", "alert2")
+                               for s in e["sources"]):
+        return "CROWD"
     return "T3"
 
 
@@ -221,7 +223,7 @@ def main():
         e["n_hit"] = len({s["s"] for s in e["sources"]} - {"cross"})
         e["tier"] = tier_of(e)
         out_rows.append(e)
-    order = {"T1": 0, "T2": 1, "T3": 2}
+    order = {"T1": 0, "T2": 1, "CROWD": 2, "T3": 3}
     out_rows.sort(key=lambda x: (order[x["tier"]], -x["n_hit"], x["code"]))
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -235,15 +237,17 @@ def main():
             "T1_resonance": sum(1 for r in out_rows if r["tier"] == "T1"),
             "T2_high_value": sum(1 for r in out_rows if r["tier"] == "T2"),
             "T3_single": sum(1 for r in out_rows if r["tier"] == "T3"),
+            "crowd_alert": sum(1 for r in out_rows if r["tier"] == "CROWD"),
         },
         "stocks": out_rows,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, indent=1)
-    print("todays_picks: total=%d T1=%d T2=%d T3=%d -> %s"
+    print("todays_picks: total=%d T1=%d T2=%d CROWD=%d T3=%d -> %s"
           % (doc["counts"]["total"], doc["counts"]["T1_resonance"],
-             doc["counts"]["T2_high_value"], doc["counts"]["T3_single"], OUT))
+             doc["counts"]["T2_high_value"], doc["counts"]["crowd_alert"],
+             doc["counts"]["T3_single"], OUT))
     for sid, m in metas.items():
         print("  %-8s ok=%s n=%s %s" % (sid, m.get("ok"), m.get("n"),
                                         (m.get("err") or "")[:60]))
