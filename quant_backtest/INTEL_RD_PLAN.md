@@ -41,7 +41,7 @@ K线与量能是市场参与者博弈留下的**痕迹（证据）**；缠论结
 | 缠论信号 | chanlun_scan 工程化 + 影子评估流程 | ✅ 已入图 |
 
 ### L3 应用与展示
-九维选股（已注入 kg 特征+事件统计）/ 门户 8080（数据仓页+手动更新）/ 计划任务自动化：立项时 6 个 → **2026-10-08 实核 98 个非微软任务**（C:\Windows\System32\Tasks 清点，AI工作站系15+Weak系11+Chanlun系6 等）+ 三层自愈（DockerWatchdog/FeishuBotWatchdog/ZhiceWatchdog 等）。
+九维选股（已注入 kg 特征+事件统计）/ 门户 8080（数据仓页+手动更新）/ 计划任务自动化：立项时 6 个 → **2026-10-08 09:42 实核 105 个非微软任务**（Get-ScheduledTask 全量导出审计：66 正常 + 22 无脚本引用 + 10 最近失败 + 6 触发被拒 + 2 脚本缺失均已禁用 + 3 禁用 + 6 孤儿脚本候选；报告 deliverables/sched-task-audit-2026-10-08.md）+ 三层自愈（DockerWatchdog/FeishuBotWatchdog/ZhiceWatchdog 等）。
 
 ## 二、目标架构（五层）
 

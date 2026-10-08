@@ -1,0 +1,1660 @@
+{
+ "summary": {
+  "total": 105,
+  "ok": 66,
+  "no_script": 22,
+  "script_missing": 2,
+  "lastrun_failed": 10,
+  "trigger_refused": 6,
+  "disabled": 3,
+  "orphans": 6,
+  "ts": "2026-10-08 09:42:50"
+ },
+ "tasks": [
+  {
+   "task": "AIColAudit",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\col_audit_task.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:10:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:10:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "AI个股分析轮询",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "e:\\老田的AI助手\\news_collector\\stock_analyze.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:36:29",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:41:28",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "AI工作站35b研判服务",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [
+    "E:\\老田的AI助手\\llamacpp_35b\\launch_35b.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-06 04:41:34",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "AI工作站N1晨检",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 07:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 07:30:00",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "AI工作站Ollama服务",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "登录",
+   "scripts": [
+    "E:\\老田的AI助手\\ollama_service\\serve_wrapper.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 07:01:24",
+   "last_result": 4294967295,
+   "next_run": "",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "AI工作站告警转发",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日,登录",
+   "scripts": [
+    "E:\\老田的AI助手\\jev-eval\\alert_forward.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:33:16",
+   "last_result": 2147946720,
+   "next_run": "2026-10-08 09:50:00",
+   "cats": [
+    "TRIGGER_REFUSED"
+   ]
+  },
+  {
+   "task": "AI工作站异地同步",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 04:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 04:30:00",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "AI工作站引擎探活",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 09:33:16",
+   "last_result": 2147946720,
+   "next_run": "2026-10-08 09:48:42",
+   "cats": [
+    "TRIGGER_REFUSED"
+   ]
+  },
+  {
+   "task": "AI工作站持仓异动监控",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_quant_watch.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:33:16",
+   "last_result": 2147946720,
+   "next_run": "2026-10-08 09:48:26",
+   "cats": [
+    "TRIGGER_REFUSED"
+   ]
+  },
+  {
+   "task": "AI工作站每日备份",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 06:47:27",
+   "last_result": 0,
+   "next_run": "2026-10-09 03:00:00",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "AI工作站统一日报",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\news_collector\\start_daily_report.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 03:00:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 03:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "AI工作站门户API",
+   "path": "\\",
+   "state": "Running",
+   "trigger": "开机,每日",
+   "scripts": [
+    "C:\\aios\\portal\\start_portal_api.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:40:01",
+   "last_result": 2147946720,
+   "next_run": "2026-10-08 09:45:00",
+   "cats": [
+    "TRIGGER_REFUSED"
+   ]
+  },
+  {
+   "task": "AI工作站预警推送",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\老田的AI助手\\news_collector\\alert_push.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 16:05:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 16:05:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "AI工作站预警推送晨",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\老田的AI助手\\news_collector\\alert_push.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 07:10:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 07:10:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "AI工作站预警监听",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "E:\\老田的AI助手\\news_collector\\alert_watch.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 10:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "AI盘前分析",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 14:30:00",
+   "last_result": 1,
+   "next_run": "2026-10-08 14:30:00",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "AI盘后复盘",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 09:33:16",
+   "last_result": 2147946720,
+   "next_run": "2026-10-09 09:10:00",
+   "cats": [
+    "TRIGGER_REFUSED"
+   ]
+  },
+  {
+   "task": "AI量化RPS共振",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 23:35:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 23:35:00",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "AI量化模拟建仓",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 23:50:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 23:50:00",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "BkWarden",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "C:\\Temp\\bk_warden.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:37:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:42:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "ChanlunRefill",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_chanlun_scan.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "ChanlunSample",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\Temp\\chanlun_sample_wrapper.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:00:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "ChanlunScan",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_chanlun_scan.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 15:35:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 15:35:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "ChanlunScanHK",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_chanlun_scan_hk.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 17:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 17:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "ChanlunScanNotify",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\scan_notify.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 15:41:01",
+   "last_result": 3,
+   "next_run": "2026-10-08 15:41:00",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "ChanlunScanUS",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_chanlun_scan_us.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:00:01",
+   "last_result": 2147943467,
+   "next_run": "2026-10-09 09:00:00",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "CryptoSync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_crypto_sync.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 08:10:01",
+   "last_result": 2147943467,
+   "next_run": "2026-10-09 08:10:00",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "DockerDesktopLaunch",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 12:37:29",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "DockerWatchdog",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "开机,定时",
+   "scripts": [
+    "C:\\Temp\\docker_watchdog_last.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:37:13",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:42:12",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "FeishuBotWatchdog",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "E:\\\\老田的AI助手\\\\portal\\\\start_feishu_bot.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:40:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:45:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "FutQuant",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_fut_daily.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 09:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "FutQuantNotify",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_futquant_notify.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 01:47:07",
+   "last_result": 2147946720,
+   "next_run": "",
+   "cats": [
+    "TRIGGER_REFUSED"
+   ]
+  },
+  {
+   "task": "Git for Windows Updater",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 06:29:32",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:29:31",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "GoldShadow",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_gold_shadow.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 18:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 18:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "GubaCrawl",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\老田的AI助手\\quant_backtest\\start_guba_crawl.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 17:50:00",
+   "last_result": 0,
+   "next_run": "2026-10-08 17:50:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "JEVBackfill-Hourly",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "C:\\jev_backfill_task.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 08:57:36",
+   "last_result": 2147943467,
+   "next_run": "2026-10-08 09:57:35",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "JevEvalMonthly",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\jev-eval\\run_eval.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 20:27:16",
+   "last_result": 0,
+   "next_run": "2026-11-06 09:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "JevFOCUS首期报告",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "E:\\老田的AI助手\\jev-eval\\remind_report.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-09-29 02:35:00",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "JevReviewBackfill",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\jev-eval\\run_backfill.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 20:30:00",
+   "last_result": 0,
+   "next_run": "2026-10-08 20:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "K266-DocServices",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "E:\\老田的AI助手\\quant_backtest\\k266_services.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:41:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:46:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "K33ShadowCheck",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_k33_shadow.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-02 16:06:31",
+   "last_result": 0,
+   "next_run": "2026-10-09 08:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "KG-Cl1Sync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_cl1_sync.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 18:10:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 18:10:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "KG-TdxSync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\KGStockAnalysis\\ops\\kg_tdx_sync_launcher.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 17:40:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 17:40:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "KG-TushareSync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\KGStockAnalysis\\ops\\kg_tushare_sync_launcher.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 00:10:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 00:10:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "KgDailySync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_kg_sync.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:20:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:20:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "KgDigest",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_kg_digest.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 07:42:07",
+   "last_result": 0,
+   "next_run": "2026-10-09 07:40:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "KgExtractShadow",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_kg_extract_shadow.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:50:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:50:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "KgResonanceNotify",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_resonance_notify.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 08:05:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 08:05:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "MicrosoftEdgeUpdateTaskMachineCore{D7272775-FE9D-4F95-9699-56AD01BD450F}",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "登录,每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 19:44:02",
+   "last_result": 0,
+   "next_run": "2026-10-08 19:44:01",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "MicrosoftEdgeUpdateTaskMachineUA{C3B339CC-AC5E-4FFE-AB65-410EE81B2EE9}",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 09:27:16",
+   "last_result": 0,
+   "next_run": "2026-10-08 10:14:01",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "MissCheck",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_miss_check.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 21:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 21:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "MorningReport",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_morning_report.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 07:00:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 07:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "NamechangeSync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_namechange.ps1"
+   ],
+   "missing": [],
+   "last_run": "1999-11-30 00:00:00",
+   "last_result": 267011,
+   "next_run": "2026-10-11 06:20:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "NineDimScan",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_nine_dim.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:40:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:40:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "NoticeBackfill",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\老田的AI助手\\quant_backtest\\start_notice_backfill.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:45:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:45:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "OneDrive Reporting Task-S-1-5-21-235612444-2096941894-2179544483-500",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 08:25:48",
+   "last_result": 0,
+   "next_run": "2026-10-09 08:25:47",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "OneDrive Standalone Update Task-S-1-5-21-235612444-2096941894-2179544483-500",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [],
+   "missing": [],
+   "last_run": "1999-11-30 00:00:00",
+   "last_result": 267011,
+   "next_run": "2026-10-09 09:07:54",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "OneDrive Startup Task-S-1-5-21-235612444-2096941894-2179544483-500",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "登录",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 01:47:47",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "OpenClaw Gateway",
+   "path": "\\",
+   "state": "Disabled",
+   "trigger": "登录",
+   "scripts": [
+    "C:\\Users\\Administrator\\.openclaw\\gateway.cmd"
+   ],
+   "missing": [
+    "C:\\Users\\Administrator\\.openclaw\\gateway.cmd"
+   ],
+   "last_run": "2026-09-24 17:18:44",
+   "last_result": 1,
+   "next_run": "",
+   "cats": [
+    "DISABLED",
+    "SCRIPT_MISSING",
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "Optimize Push Notification Data File-S-1-5-21-235612444-2096941894-2179544483-500",
+   "path": "\\",
+   "state": "Disabled",
+   "trigger": "空闲",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-03-01 01:59:16",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "DISABLED"
+   ]
+  },
+  {
+   "task": "PG-Robot",
+   "path": "\\",
+   "state": "Running",
+   "trigger": "登录",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\p_g_robot.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 01:12:37",
+   "last_result": 267009,
+   "next_run": "",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "PostHolidayCheck",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_post_holiday.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 08:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 08:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "PytestWeekly",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 20:47:58",
+   "last_result": 0,
+   "next_run": "2026-10-10 09:00:00",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "RiskGuardR3Weekly",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "E:\\KGStockAnalysis\\riskguard_r3_weekly.ps1"
+   ],
+   "missing": [],
+   "last_run": "1999-11-30 00:00:00",
+   "last_result": 267011,
+   "next_run": "2026-10-10 06:40:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "RiskGuardShadowDaily",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\KGStockAnalysis\\riskguard_shadow_daily.ps1"
+   ],
+   "missing": [],
+   "last_run": "1999-11-30 00:00:00",
+   "last_result": 267011,
+   "next_run": "2026-10-08 19:10:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "RpsDaily",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_rps_daily.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 16:05:00",
+   "last_result": 0,
+   "next_run": "2026-10-08 16:05:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "RtdxRtMinPull",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_tdx_rtmin.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-05 18:45:00",
+   "last_result": 2147943467,
+   "next_run": "",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "SellPointAI",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "E:\\老田的AI助手\\quant_backtest\\sellpoint_ai.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 15:52:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 15:52:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "StockCorrBacktest",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\news_collector\\start_sentiment_bt.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 20:35:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 20:35:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "StrongEod",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\strong_scan.py",
+    "C:\\aios\\quant_backtest\\strong_card.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 20:48:20",
+   "last_result": 0,
+   "next_run": "2026-10-08 15:45:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "SubPushEod",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\subscribe.py"
+   ],
+   "missing": [],
+   "last_run": "1999-11-30 00:00:00",
+   "last_result": 267011,
+   "next_run": "2026-10-08 15:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "SubPushIntraday",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\subscribe.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 10:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "TbeStats",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_tbe_stats.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 06:45:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 06:45:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "TdxSync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_tdx_sync.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 17:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 17:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "TriplesOutcomeBackfill",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_triples_backfill.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 15:35:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 15:35:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "TushareSync",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 23:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 23:30:00",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "WeakDailyHealth",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\weak_track_health.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 15:55:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 15:55:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakMonthlyArchive",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\weak_track_archive.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-03 03:35:27",
+   "last_result": 0,
+   "next_run": "2026-11-01 08:50:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakMonthlyGuide",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\weak_track_guide.py"
+   ],
+   "missing": [],
+   "last_run": "1999-11-30 00:00:00",
+   "last_result": 267011,
+   "next_run": "2026-11-01 08:20:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakMonthlyLearn",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\weak_track_learn.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-03 03:15:39",
+   "last_result": 0,
+   "next_run": "2026-11-01 08:40:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakMonthlyReview",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\weak_monthly_review.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 20:48:09",
+   "last_result": 0,
+   "next_run": "2026-11-01 09:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakMonthlySummary",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\weak_track_summary.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-02 22:16:19",
+   "last_result": 0,
+   "next_run": "2026-11-01 08:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakScan",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_weak_scan.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-05 15:35:00",
+   "last_result": 0,
+   "next_run": "2026-10-12 15:35:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakTrackCheck",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_weak_track.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 15:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 15:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WeakWeeklyReport",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\weak_track_weekly.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-05 15:50:00",
+   "last_result": 0,
+   "next_run": "2026-10-12 15:50:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "WpsUpdateLogonTask_Administrator",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "登录",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 01:59:47",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "WpsUpdateTask_Administrator",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 09:37:57",
+   "last_result": 0,
+   "next_run": "2026-10-08 10:37:56",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "WpsWakeWnsLogonTask",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "登录",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 01:38:46",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "ZhiceWatchdog",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "e:\\老田的AI助手\\zhice.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:38:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:43:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "_sentinelEOD",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [
+    "C:\\Temp\\sentinel_eod.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-05 14:16:19",
+   "last_result": 2147943467,
+   "next_run": "",
+   "cats": [
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "公众号选题撰文",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\gzh\\gzh_writer.py"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 09:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "自选股行情快照",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\news_collector\\start_quote.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:37:17",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:45:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "量化前戏-FastAPI-Server",
+   "path": "\\",
+   "state": "Disabled",
+   "trigger": "登录",
+   "scripts": [
+    "c:\\Users\\Administrator\\WorkBuddy\\20260324114946\\quant-foreplay\\scripts\\autostart_server.bat"
+   ],
+   "missing": [
+    "c:\\Users\\Administrator\\WorkBuddy\\20260324114946\\quant-foreplay\\scripts\\autostart_server.bat"
+   ],
+   "last_run": "2026-09-24 17:18:44",
+   "last_result": 1,
+   "next_run": "",
+   "cats": [
+    "DISABLED",
+    "SCRIPT_MISSING",
+    "LASTRUN_FAILED"
+   ]
+  },
+  {
+   "task": "量化盘前作战计划",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_quant_morning.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 14:15:00",
+   "last_result": 0,
+   "next_run": "2026-10-08 14:15:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "金融新闻AI晨报",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\news_collector\\start_news_ai.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 08:00:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 08:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "金融新闻收盘复盘",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每周",
+   "scripts": [
+    "C:\\aios\\news_collector\\start_news_review.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 15:30:00",
+   "last_result": 0,
+   "next_run": "2026-10-08 15:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "金融新闻日报",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\news_collector\\start_news_digest.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 08:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-09 08:30:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "金融新闻采集",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日,登录",
+   "scripts": [
+    "C:\\aios\\news_collector\\start_news_collect.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-08 09:30:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:45:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "金融量化季度调参",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "无触发器",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_quant_retune.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-01 10:00:00",
+   "last_result": 0,
+   "next_run": "2027-01-01 10:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "金融量化每日扫描",
+   "path": "\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [
+    "C:\\aios\\quant_backtest\\start_bt_scan.ps1"
+   ],
+   "missing": [],
+   "last_run": "2026-10-07 16:00:01",
+   "last_result": 0,
+   "next_run": "2026-10-08 16:00:00",
+   "cats": [
+    "OK"
+   ]
+  },
+  {
+   "task": "GoogleUpdaterTaskSystem156.0.8067.0{9A7E719E-3674-4683-BB45-0F0EB94E60DA}",
+   "path": "\\GoogleSystem\\GoogleUpdater\\",
+   "state": "Ready",
+   "trigger": "登录,每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 08:47:55",
+   "last_result": 0,
+   "next_run": "2026-10-08 09:47:54",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "RunPlatformExperienceHelperOnUnlock",
+   "path": "\\GoogleUserPEH\\",
+   "state": "Ready",
+   "trigger": "SessionStateChange",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 09:28:11",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "RunPlatformExperienceHelper_Daily",
+   "path": "\\GoogleUserPEH\\",
+   "state": "Ready",
+   "trigger": "每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-07 11:22:55",
+   "last_result": 0,
+   "next_run": "2026-10-08 11:23:42",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "RunPlatformExperienceHelper_Metrics",
+   "path": "\\GoogleUserPEH\\",
+   "state": "Ready",
+   "trigger": "定时",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-07-09 11:20:31",
+   "last_result": 0,
+   "next_run": "",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  },
+  {
+   "task": "QuarkUpdaterTaskUser1.0.0.21{DBA216F7-2C04-4216-B37F-38504C049690}",
+   "path": "\\QuarkUpdaterUser\\QuarkUpdater\\",
+   "state": "Ready",
+   "trigger": "登录,每日",
+   "scripts": [],
+   "missing": [],
+   "last_run": "2026-10-08 09:01:10",
+   "last_result": 0,
+   "next_run": "2026-10-08 10:01:08",
+   "cats": [
+    "NO_SCRIPT"
+   ]
+  }
+ ],
+ "orphans": [
+  "E:\\老田的AI助手\\portal\\register_feishu_watchdog_task.py",
+  "E:\\老田的AI助手\\portal\\start_portal_nginx.ps1",
+  "E:\\老田的AI助手\\portal\\sync_publish.py",
+  "E:\\老田的AI助手\\quant_backtest\\k266_clip_watch.py",
+  "E:\\老田的AI助手\\quant_backtest\\test_weak_watch.py",
+  "E:\\老田的AI助手\\quant_backtest\\weak_track_watch.py"
+ ]
+}
