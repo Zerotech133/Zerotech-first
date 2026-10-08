@@ -110,6 +110,32 @@ def main():
         "PASS" if j2 else "WAIT/FAIL", None if rho_s is None else round(rho_s, 3),
         None if rho_c is None else round(rho_c, 3), len(scores)))
 
+    # 分组判读（K-STOCK-017，B9 定性落地）：坚守/倒戈两组分别算 conf-vs-ret——
+    # 倒戈票的低 conf 语义已变（角色自弃拉低），混算会污染整体 rho 解读
+    try:
+        conn2 = sqlite3.connect(str(DB), check_same_thread=False)
+        groups = {"坚守": ([], []), "倒戈": ([], [])}
+        for sym, r in per_symbol_latest.items():
+            row = conn2.execute(
+                "SELECT output FROM traces WHERE run_id=? AND agent_id='T1' AND phase='debate_final'",
+                (r["run_id"],)).fetchone()
+            head = (row[0] if row else "")[:40]
+            g = "倒戈" if "看空" in head else "坚守"
+            if r.get("price_at_decision"):
+                try:
+                    now = quote_snapshot(sym)["price"]
+                    groups[g][0].append(r.get("confidence") or 0)
+                    groups[g][1].append((now / r["price_at_decision"] - 1) * 100)
+                except Exception:  # noqa: BLE001
+                    pass
+        conn2.close()
+        for g, (gs, gr) in groups.items():
+            rho_g = spearman(gs, gr) if len(gs) >= 3 else None
+            print("  [%s组] n=%d conf-vs-ret rho=%s" % (
+                g, len(gs), "n<3 不计算" if rho_g is None else round(rho_g, 3)))
+    except Exception as e:  # noqa: BLE001
+        print("  [warn] 分组判读失败: %s" % e)
+
     if DB.exists() and done:
         conn = sqlite3.connect(str(DB), check_same_thread=False)
         traced = sum(
