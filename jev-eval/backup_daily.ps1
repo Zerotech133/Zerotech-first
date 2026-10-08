@@ -24,7 +24,7 @@ $MirrorRoot  = "D:\backups_mirror"
 $QuantSrc    = "D:\" + [char]0x7F20 + [char]0x8BBA + [char]0x9009 + [char]0x80A1 + "+" + [char]0x76EF + [char]0x76D8
 $KeepCount   = 4
 $AesKeyFile  = Join-Path $env:USERPROFILE ".backup_aes_key"
-$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","webui_data.tar.gz")
+$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","quant_db.sql.gz","webui_data.tar.gz")
 # OPS-1007: dify stack decommissioned (containers removed) - drop dify_db
 # from encryption targets along with the 3 dify backup items below.
 
@@ -123,6 +123,8 @@ function Unprotect-File([string]$src, [string]$dst) {
 function Test-Gzip([string]$path) {
     $fs = $null; $gz = $null
     try {
+        # OPS-1011: 0-byte file passes empty GZipStream read -> false OK. Reject first.
+        if ((Get-Item -LiteralPath $path -ErrorAction Stop).Length -eq 0) { return $false }
         $fs = [IO.File]::OpenRead($path)
         $gz = New-Object IO.Compression.GZipStream($fs, [IO.Compression.CompressionMode]::Decompress)
         $buf = New-Object byte[] 65536
@@ -138,15 +140,27 @@ function Test-Gzip([string]$path) {
 
 # ---------------- docker stream -> file (binary safe) ----------------
 function Save-DockerStream([string]$container, [string]$shCmd, [string]$dest) {
+    # OPS-1010 root fix (v8): land dump INSIDE container, docker cp out.
+    # Old host-side stream wedged dead when docker.exe hung (OPS-1008 0037).
+    # playbook #3: docker exec exitcode unreliable - gate on dest file only.
     if (Test-Path $dest) { Remove-Item $dest -Force }
     $errF = Join-Path $env:TEMP "bk_stderr.txt"
-    $p = Start-Process -FilePath "docker" -ArgumentList @("exec", $container, "sh", "-c", ('"' + $shCmd + '"')) -RedirectStandardOutput $dest -RedirectStandardError $errF -WindowStyle Hidden -PassThru
+    $tmpCont = "/tmp/bk_" + $stamp + "_" + [IO.Path]::GetFileName($dest)
+    $p = Start-Process -FilePath "docker" -ArgumentList @("exec", $container, "sh", "-c", ('"' + $shCmd + " > " + $tmpCont + '"')) -RedirectStandardError $errF -WindowStyle Hidden -PassThru
     if (-not $p.WaitForExit(900000)) {
         try { $p.Kill() } catch {}
+        try { & docker exec $container rm -f $tmpCont 2>$null } catch {}
         return $false
     }
+    $p2 = Start-Process -FilePath "docker" -ArgumentList @("cp", ($container + ":" + $tmpCont), $dest) -RedirectStandardError $errF -WindowStyle Hidden -PassThru
+    $cpOk = $p2.WaitForExit(600000)
+    if (-not $cpOk) { try { $p2.Kill() } catch {} }
+    try { & docker exec $container rm -f $tmpCont 2>$null } catch {}
+    # OPS-1011: never leave a dest behind on failure (0-byte residue trap, OPS-1008 0048).
+    if (-not $cpOk) { Remove-Item $dest -Force -ErrorAction SilentlyContinue; return $false }
     if (-not (Test-Path $dest)) { return $false }
-    return ((Get-Item $dest).Length -gt 0)
+    if ((Get-Item $dest).Length -eq 0) { Remove-Item $dest -Force -ErrorAction SilentlyContinue; return $false }
+    return $true
 }
 
 function Backup-Db([string]$container, [string]$user, [string]$db, [string]$name) {
@@ -273,6 +287,12 @@ foreach ($name in $EncryptTargets) {
         LogFail ("ENC " + $name + " " + $_.Exception.Message)
     }
 }
+
+# ---------------- 3b. plaintext residue guard (OPS-1008b) ----------------
+# Any *.sql.gz left unencrypted after the ENC pass means a whitelist gap or
+# a failed ENC - count it as failure (alert fires, exit 1). Never auto-delete.
+$PlainLeft = @(Get-ChildItem $DayDir -Filter "*.sql.gz" -File -ErrorAction SilentlyContinue)
+foreach ($pf in $PlainLeft) { LogFail ("PLAINTEXT residue " + $pf.Name + " (not encrypted)") }
 
 # ---------------- 4. mirror to D ----------------
 try {
