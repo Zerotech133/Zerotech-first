@@ -6020,6 +6020,12 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
   3. 入图口径（人审后）：`(s:Security)-[r:DOC_EVENT {dir, ts, src_doc, rel}]->(o)`，方向取**事件级** direction（替代 M3-B 篇级 doc_pos/neg/neu 的粗平摊，M3-B 保留作文档级视图）；
   4. 验收门闸：抽样 30 事件人审主体/方向正确率 ≥85%（对齐金标 30 篇口径）；
   5. 启动判据：影子记录上千（10-08 新闻单条化后当日即破千，M3-A 可即时启动）。
+- **B 案首次质量抽检**（seed=20261008，18 条单条新闻人审）：direction **17/18≈94%**（对齐金标 96.7% 口径，B 案粒度达标）；2 观察项：①商品期货涨跌口径不一致（「低硫燃料油涨10%」→中性 vs 「燃料油涨7%」→利好——期货涨价方向本就依赖公司持仓方向，M3-A 放量时收紧 prompt：期货/汇率类仅对明确点名受益公司才给方向）②events 偶有牵强（伊朗-合作->美国）。词云场景不受影响。
+- **M3-A 影子层正式落盘**：`k266_m3a_events.py`（去 --dry 实跑）——493 影子展开 531 events → 端点映射（exact 78/alias 1/contains 15/ambig 23/miss 785/empty 160，主体客体两侧合计）→ 1h 聚窗去重 → **event_shadow.jsonl 519 条**；**双端命中 Security 仅 1**（--dry 时 385 聚窗双端 0）——证实新闻事件主体多为宏观/商品/人物（华为/谷歌/ICC 级非 A 股对）；单边命中 52+ 为挂属性候选。`--commit` 入图留人审后（当前数据量不足，暂缓）。
+- **M3-B 图谱重刷（含新闻热度）**：幂等全量重算——493 影子（107 docs + 386 news items）去重公司名 711 → 三级映射（exact 377/alias 2/contains 14/ambig 7/miss 311）→ **390 Security 节点**（旧 105 篇时代 202 节点 pos=140 neg=3 neu=92 → 现 **pos=384 neg=71 neu=149**），doc_last 同步更新。
+- **词云 mtime 缓存上线**：`_kg_doc_page` 类级缓存（shadow mtime + 词种数双键）——第二次请求 **128ms**（原每次全量重渲染 >10s）；shadow 变更自动失效重渲染，门户重启生效。
+- **并发重判教训（第二次）**：计划任务 M3 与手动 M3 在守卫生效前窗口并发判同批 → 39 条重复影子（前次 48），按 doc_id 去重 532→493；**StopCommand 只杀 shell 不杀子 python**，残留 M3 需 `Stop-Process -Id` 直杀。ps1 守卫部署后每 tick 正常拦截（服务日志可证）。
+- **收尾终验（10-08 中午）**：影子 493 条（107 docs + 386 news items）err=0 dups=0，两条历史 ERR 已重判成功；/kg/doc 200 全要素在位（srcflt pills / baseList 限流 / 词云图）；全链路收官：新闻采集(15min) → 单条结构化 → 词云/图谱/事件三层消费，全自动零人工。
 
 ### K266 补记五（10-08 凌晨，三项拍板落地：M3-B 入图 + 金标集 + K260 收口）
 - **拍板执行**（2026-10-08 用户三项：M3 入图「先B后A」/ 建 30 篇金标集 / eval 接受剔除口径）。
@@ -6060,4 +6066,15 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 | M5 服务化 | ✅ 提前落地（10-07 晚） | k266_services.ps1 + 计划任务 K266-DocServices 每 5 分钟 |
 | 金标集 | ✅ 人审定稿（10-08 早） | AI 精审 29/30 一致=96.7%（门闸 ≥85% 远超）；分歧 1 篇待终审 |
 
-**挂账移交（不阻塞收口）**：① M3-A 篇级事件层（~~文档量上千再启动~~ **预研方案已出，见补记六；10-08 单条化后影子即破千，可启动**）② ~~门户上传按钮 UI~~ **已完成（10-08 核验）**：`/kg/doc` 线上页面已含 upbar 上传条（`📤 上传公告/研报` + PNG/JPG/PDF 多选 + fetch POST `/kg/doc/upload` + ✅/❌ 状态反馈），实测 200 且按钮在——M2 遗留行过时，按钮在 M4 词云页落地时一并上线 ③ ~~clip_watch 常驻方式待定~~ **已定夺（10-08）**：维持 k266_services.ps1 保活模式（单实例检查 + pythonw 拉起，在岗验证通过）④ 补记四遗留：两库容器（quantdinger-db / newquantsystem_v2-postgres-1）重启与否待老田拍板。*性能观察项：/kg/doc 首访冷渲染 >10s（wordcloud 生成 + 全量 jsonl 读），内网个人门户可接受。*
+**挂账移交（不阻塞收口）**：① M3-A 篇级事件层（~~文档量上千再启动~~ ~~预研方案已出，见补记六~~ **影子层已落盘（10-08）：event_shadow.jsonl 519 条、双端命中仅 1（新闻事件多为宏观/商品/人物），入图 --commit 留人审后，待文档研报事件放量**）② ~~门户上传按钮 UI~~ **已完成（10-08 核验）**：`/kg/doc` 线上页面已含 upbar 上传条（`📤 上传公告/研报` + PNG/JPG/PDF/TXT/MD 多选 + fetch POST `/kg/doc/upload` + ✅/❌ 状态反馈），实测 200 且按钮在——M2 遗留行过时，按钮在 M4 词云页落地时一并上线 ③ ~~clip_watch 常驻方式待定~~ **已定夺（10-08）**：维持 k266_services.ps1 保活模式（单实例检查 + pythonw 拉起，在岗验证通过）④ ~~补记四遗留：两库容器重启与否待老田拍板~~ **已恢复（10-08）：quantdinger-db / newquantsystem_v2-postgres-1 均 Up healthy，备份链恢复 ALERT 消除；quantdinger 应用层 9 容器（老田拍板）已 `docker start` 拉起，全 10 容器 Up healthy（compose start 被一次性 migration 依赖挡住，绕过直启，schema 昨已就绪无需重迁移）**。*性能观察项：~~/kg/doc 首访冷渲染 >10s~~ 词云 mtime 缓存上线（10-08）：二次请求 128ms，shadow 变更自动失效重渲染；冷渲染仅在 shadow 更新后首访出现。*
+
+## K272 ✅ CowAgent↔Hermes 记忆桥影子模式 v0.1（2026-10-08，用户「CowAgent 三层记忆 → Hermes 执行记忆的读写接口打通（影子运行→人审→入生产纪律）」）
+
+**主线一（超级助理纵深）第一步落地**。契约源码级核实：CowAgent 三层（上下文/daily 天级/MEMORY.md 长期，SQLite+FTS5+向量混合检索，Deep Dream 蒸馏，workspace=~/cow）vs Hermes 双文件（$HERMES_HOME/memory/{MEMORY.md,USER.md}，BuiltinMemoryProvider + MemoryProvider 插件 ABC、mem0/supermemory 先例、外部 provider 上限 1）。两侧均为 Markdown `## 小节` 形态 ⇒ 桥=小节级搬运 + sha1_12 去重 + provenance 注释（`cow:{file} sha1:xx tier:long|mid`），零格式转换。
+
+- **`D:\Hermes\cowbridge\cowbridge.py`（v0.1，纯标准库约 270 行）**：split_sections / read_hermes_memory / read_cow_memory / export_hermes_to_cow（candidates.jsonl + daily 样例）/ import_cow_to_hermes（MEMORY.increment.md）/ selftest / report 四命令。
+- **影子纪律落实**：写入只落 `cowbridge/shadow/`（to-cowagent/ + to-hermes/ + review-*.md），两侧生产记忆零接触。
+- **selftest PASS**：import 合成 workspace 4/4 小节全进（provenance/tier 在位、幂等复验过）；export 真实 Hermes 12 条有效小节全产出。
+- **开发坑**：split_sections 把 H1 标题归 `(preamble)` 小节致首版断言 4≠6——修法=加 `_is_struct_noise()` 过滤纯标题 preamble（修语义非凑数字），有实质内容的 preamble（USER.md 主题行）保留人审可判。
+- **人审三项拍板项**（详见 docs/ops/2026-10-08_K272）：①Hermes 12 条哪些进 CowAgent 长期（建议「工作约定/沟通风格」进、「待实现功能」不进）②increment 放行口径（当前为合成验证数据，CowAgent 部署后重跑 import-cow 出真实候选）③v0.2 生产写路由形态——直写 MEMORY.md 增量 vs **正规形态=MemoryProvider 第三插件**（与 mem0/supermemory 互斥，外部 provider 上限 1）。
+- **挂账**：CowAgent 实际部署（~/cow 未建）；cowbridge 入库方式（D:\Hermes 非 git）；v0.2 待拍板。回滚=删 shadow/ 即净，零生产影响。
