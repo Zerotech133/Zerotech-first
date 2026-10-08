@@ -85,6 +85,12 @@ def main():
             check("负向拓扑拦截", False, "不互指竟然通过！")
         except TopologyError:
             check("负向拓扑拦截", True)
+
+        # 断点续跑：同 run_id 重跑 → 全部 resumed 且决策一致（checkpoint 不重算）
+        r2 = interp.run("600519", run_id=result["run_id"])
+        check("断点续跑全 resumed", set(r2["status"].values()) == {"resumed"},
+              "status=%s" % r2["status"])
+        check("续跑决策一致", r2["decision"] == result["decision"])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

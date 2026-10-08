@@ -94,18 +94,30 @@ class Interpreter:
 
         try:
             for level in sorted(layers):
+                states = self.cp.get_run_states(run_id)  # 断点续跑：查已 checkpoint 节点
                 nodes = layers[level]
                 done_pairs = set()
                 jobs = []
                 for n in nodes:
                     if n.get("is_debate_node"):
                         pk = n["debate_partner_key"]
+                        if n["node_key"] in states and pk in states:
+                            st = states[n["node_key"]]
+                            merged = st.get("merged") or st.get("output", "")
+                            for k in (n["node_key"], pk):
+                                ctx["statements"][k] = merged
+                                ctx["status"][k] = "resumed"
+                            done_pairs.update([n["node_key"], pk])
+                            continue
                         if pk in done_pairs:
                             continue
-                        done_pairs.add(n["node_key"])
-                        done_pairs.add(pk)
+                        done_pairs.update([n["node_key"], pk])
                         jobs.append(("debate", n, self.team.by_node[pk]))
                     else:
+                        if n["node_key"] in states:
+                            ctx["statements"][n["node_key"]] = states[n["node_key"]].get("output", "")
+                            ctx["status"][n["node_key"]] = "resumed"
+                            continue
                         jobs.append(("single", n, None))
 
                 with ThreadPoolExecutor(max_workers=max(len(jobs), 1)) as ex:

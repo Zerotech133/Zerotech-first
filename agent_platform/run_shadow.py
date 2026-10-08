@@ -78,25 +78,31 @@ def main():
         if already_done(today, symbol):
             print("[skip] %s 今日已入账" % symbol)
             continue
-        try:
-            data_ctx = make_context(symbol)
-            t0 = time.time()
-            result = interp.run(symbol, data_ctx=data_ctx)
-            dec = parse_decision(result["decision"]) or {}
-            price = quote_snapshot(symbol)["price"]
-            row = {
-                "date": today, "ts": time.time(), "symbol": symbol,
-                "name": data_ctx.get("name", ""), "status": "done",
-                "run_id": result["run_id"], "price_at_decision": price,
-                "recommendation": dec.get("recommendation"),
-                "confidence": dec.get("confidence"),
-                "score": dec.get("score"), "target_range": dec.get("target_price_range"),
-                "degraded": any(v != "normal" for v in result["status"].values()),
-                "latency_s": round(time.time() - t0, 1),
-            }
-        except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
-            row = {"date": today, "ts": time.time(), "symbol": symbol,
-                   "status": "failed", "error": str(e)[:200]}
+        row = None
+        for attempt in (1, 2):  # 脚本内重试一次（Ollama 偶发超时；幂等不受影响，done 才跳过）
+            try:
+                data_ctx = make_context(symbol)
+                t0 = time.time()
+                result = interp.run(symbol, data_ctx=data_ctx)
+                dec = parse_decision(result["decision"]) or {}
+                price = quote_snapshot(symbol)["price"]
+                row = {
+                    "date": today, "ts": time.time(), "symbol": symbol,
+                    "name": data_ctx.get("name", ""), "status": "done",
+                    "run_id": result["run_id"], "price_at_decision": price,
+                    "recommendation": dec.get("recommendation"),
+                    "confidence": dec.get("confidence"),
+                    "score": dec.get("score"), "target_range": dec.get("target_price_range"),
+                    "degraded": any(v != "normal" for v in result["status"].values()),
+                    "latency_s": round(time.time() - t0, 1),
+                }
+                break
+            except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
+                row = {"date": today, "ts": time.time(), "symbol": symbol,
+                       "status": "failed", "error": str(e)[:200]}
+                if attempt == 1:
+                    print("[retry] %s 首次失败，3s 后重试：%s" % (symbol, str(e)[:100]))
+                    time.sleep(3)
         with open(LEDGER, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
         print("[%s] %s %s %s" % (row["status"], symbol, row.get("recommendation", ""),
