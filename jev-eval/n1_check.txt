@@ -1,4 +1,4 @@
-# N1Check v1.4 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence)
+# N1Check v1.5 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog)
 # Checks:
 #  (1) today's backup set: DONE failed=0 + mirror files>=$MinFiles + quant_code files count
 #  (2) v5 key guard normal path: no BACKUP_KEY_LOST flag anywhere
@@ -7,6 +7,7 @@
 #  (5) no ENGINE_DOWN event pending
 #  (6) nightly trio first-run (OPS-1004): TushareSync exit= line numeric/fresh/0
 #      + RPS resonance & daily report task RC=0 + daily exit= line
+#  (7) jev judgment backlog (K-NEWS-001): latest P2 left= line fresh & <= threshold
 # FAIL -> N1_CHECK_FAIL flag (alert forwarder pushes to Feishu) + report file.
 $ErrorActionPreference = 'Continue'
 $day = (Get-Date).ToString('yyyy-MM-dd')
@@ -145,6 +146,42 @@ if ($tsTask -and $tsTask.State -eq 'Running') {
 Check-NightTask 'AI量化RPS共振'
 Check-NightTask 'AI工作站统一日报'
 Check-ExitLine 'daily' 'C:\Temp\daily_report_task.log'
+
+# --- 7. jev judgment backlog (v1.5 / K-NEWS-001, 2026-10-08 lockout lesson) ---
+# Signal = latest "P2 exit=N ... left=M" line in C:\jev_backfill_task.log
+# (written by the hourly JEVBackfill-Hourly wrapper). A hung instance emits
+# no new P2 line, so the staleness check is what catches the 0x800710E0
+# lockout chain (08:57 hang: host killed by ExecutionTimeLimit, python
+# orphaned, IgnoreNew refused every later trigger). Backlog threshold is
+# deliberately loose: daytime collector inserts new rows continuously, so
+# left routinely oscillates; FAIL only on clear runaway.
+$MaxJevLeft = 150
+$JevLog = 'C:\jev_backfill_task.log'
+$JevStaleH = 12
+if (-not (Test-Path $JevLog)) {
+    Fail ('jev: ' + $JevLog + ' missing (JEVBackfill-Hourly never ran?)')
+} else {
+    $jlast = @(Get-Content $JevLog -ErrorAction SilentlyContinue |
+        Where-Object { $_ -match 'P2 exit=' }) | Select-Object -Last 1
+    if (-not $jlast) { Fail 'jev: no P2 line ever in jev_backfill_task.log' }
+    elseif ($jlast -match '^\[([\d\- :]+)\] P2 exit=(\d+)') {
+        $jtsText = $Matches[1]; $jcode = $Matches[2]
+        $jts = [datetime]::MinValue
+        $jok = [datetime]::TryParseExact($jtsText, 'MM-dd HH:mm:ss', $null,
+            [System.Globalization.DateTimeStyles]::None, [ref]$jts)
+        if ($jok) { $jts = $jts.AddYears((Get-Date).Year - $jts.Year) }  # log line has no year
+        if (-not $jok) { Fail ('jev: P2 timestamp unparsable: ' + $jlast) }
+        elseif ($jts -lt (Get-Date).AddHours(-$JevStaleH)) {
+            Fail ('jev: P2 line STALE (last=' + $jtsText + ', >' + $JevStaleH + 'h) - instance hung or task dead (0x800710E0 chain)')
+        } elseif ($jcode -ne '0') {
+            Fail ('jev: backfill exit=' + $jcode + ' (see ' + $JevLog + ')')
+        } elseif ($jlast -match 'left=(\d+)') {
+            $jleft = [int]$Matches[1]
+            if ($jleft -gt $MaxJevLeft) { Fail ('jev: backlog left=' + $jleft + ' > ' + $MaxJevLeft + ' (cloud outage or loop stuck)') }
+            else { Report ('[OK] jev backlog left=' + $jleft + ' (' + $jtsText + ')') }
+        } else { Report ('[WARN] jev P2 line has no left= value: ' + $jlast) }
+    } else { Fail ('jev: unparsable P2 line: ' + $jlast) }
+}
 
 # --- summary ---
 if ($fail -eq 0) { $report += 'N1 ALL PASS' } else { $report += ('N1 FAILURES=' + $fail) }
