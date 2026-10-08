@@ -17,6 +17,15 @@
       "agents": ["T1", "T2", "N1", "F1", "D1"],
       "teams": ["alpha"],
       "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板）"
+    },
+    {
+      "dept": "dev",
+      "name": "研发部",
+      "lead": null,
+      "status": "planned",
+      "charter": "拉代码·优化代码·训练模型（K-ORG-001 P2 扩编，待投研部影子验收后启动）",
+      "agents": [],
+      "source": "K-ORG-001 组织设计预留"
     }
   ],
   "reporting": {

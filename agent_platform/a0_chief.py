@@ -152,6 +152,10 @@ def build(today):
 
 def main():
     push = "--push" in sys.argv
+    global LEDGER
+    if "--ledger" in sys.argv:  # P0 演练通道：注入临时假账本，不碰真账本
+        LEDGER = Path(sys.argv[sys.argv.index("--ledger") + 1])
+        print("[A0] 演练模式：账本=%s" % LEDGER)
     today = datetime.now().strftime("%Y-%m-%d")
     report, p0 = build(today)
     out = BASE / "data" / "shadow" / ("daily_report_%s.md" % today)
