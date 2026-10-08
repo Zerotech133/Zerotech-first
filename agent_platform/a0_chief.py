@@ -3,7 +3,7 @@
 
 纪律：影子期间决策链路冻结——本模块【只读】账本与 trace，不触碰任何决策组件。
 输出：data/shadow/daily_report_YYYY-MM-DD.md（四段格式对齐 K-ORG-001 §4 日报契约）
-严重度：failed → P0（需立即推送，通道待接）；degraded → P1；仅集中度观察 → P2 进日报。
+严重度：failed → P0（立即推送：17:35 automation 带 --push / run_shadow 失败即时告警 K-STOCK-013）；degraded → P1；仅集中度观察 → P2 进日报。
 """
 import json
 import subprocess
@@ -133,7 +133,6 @@ def build(today):
     lines.append("")
     lines.append("## 二、异常与风险")
     lines.append("")
-    alerts = []
     if p0:
         lines.append("**[P0] %d 笔影子决策 failed（需立即处置）**：" % p0)
         for r in failed:
@@ -141,7 +140,7 @@ def build(today):
     if p1:
         lines.append("**[P1] %d 笔链路降级**：%s" % (
             p1, "、".join(r["symbol"] for r in degraded)))
-    if not alerts and not p0 and not p1:
+    if not p0 and not p1:
         lines.append("今日无异常（0×P0，0×P1）——链路健康，降级率 0%。")
     lines.append("")
     lines.append("## 三、观察项（A0 判读）")
@@ -182,7 +181,7 @@ def build(today):
         lines.append("- 影子继续：明日 17:10 自动运行（剩 %d 个交易日），决策链路冻结不改；" % remain)
     else:
         lines.append("- 影子期满：运行 eval_shadow.py 出三判据结论（J1 无人干预 / J2 秩相关 / J3 lineage）。")
-    lines.append("- A0 日报通道：本地文件已通，飞书/微信推送待老田拍板后接入 SubPush 链。")
+    lines.append("- A0 日报通道：飞书已通（17:35 automation 定时 --push；P0 强制即时推）；A0 点评骨架 a0_agent.py 已立（automation 接入待拍板）。")
     lines.append("")
     lines.append("---")
     lines.append("*A0 总管聚合 · 数据源 shadow_ledger.jsonl + checkpoints.db（只读）· %s*" % datetime.now().strftime("%H:%M"))
