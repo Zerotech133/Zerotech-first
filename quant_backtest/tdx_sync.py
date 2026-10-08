@@ -111,8 +111,12 @@ def _date_col_of(tbl):
             "ts_index_weight": "trade_date"}.get(tbl, "trade_date")
 
 
-def sync_parquet_table(tbl, meta, m):
+def sync_parquet_table(tbl, meta, m, missing_keys=None):
     """分页拉全量 → 分片 parquet；done 后重跑按最新日期增量续拉。"""
+    if missing_keys is not None:
+        if tbl != "tdx_sector_daily":
+            raise ValueError("显式补缺仅支持通达信板块日线")
+        return _sync_sector_missing(missing_keys, m)
     date_col = _date_col_of(tbl)
     total = meta.get("rows", 0)
     st = m.setdefault(tbl, {"offset": 0, "part": 0, "rows": 0, "done": False})
@@ -333,7 +337,25 @@ def main():
     ap.add_argument("--tables", default="")
     ap.add_argument("--include-rtmin", action="store_true")
     ap.add_argument("--status", action="store_true")
+    ap.add_argument("--missing-keys-json")
+    ap.add_argument("--backfill-receipt")
     a = ap.parse_args()
+    if a.missing_keys_json:
+        if not a.backfill_receipt or a.all or a.status or a.include_rtmin or a.tables not in ('', 'tdx_sector_daily'):
+            ap.error('显式补缺需回执路径，且不能混用其他任务')
+        keys = _parse_missing_keys(a.missing_keys_json)
+        audit = {'requested_keys': sorted(keys), 'rejected': []}
+        m = _load_manifest()
+        try:
+            added = _sync_sector_missing(keys, m, audit=audit)
+        except Exception as error:
+            audit['error'] = str(error)
+            _write_backfill_receipt(a.backfill_receipt, audit, None)
+            raise
+        _write_backfill_receipt(a.backfill_receipt, audit, added)
+        return
+    if a.backfill_receipt:
+        ap.error('回执参数需与显式缺键JSON一起使用')
     os.makedirs(OUT, exist_ok=True)
     if a.status:
         status()
@@ -364,6 +386,237 @@ def main():
             print("[%s] ERROR %s (进度已存，重跑续传)" % (tbl, e))
     print("ALL DONE. manifest=%s" % MANIFEST)
 
+
+
+def _parse_missing_keys(path):
+    import json
+    from datetime import datetime
+    with open(path, encoding='utf-8') as handle:
+        values = json.load(handle)
+    if not isinstance(values, list) or not 1 <= len(values) <= 128:
+        raise ValueError('缺键JSON必须为1至128项数组')
+    keys = set()
+    for value in values:
+        if not isinstance(value, dict) or set(value) != {'code', 'trade_date'}:
+            raise ValueError('每项必须仅含code/trade_date')
+        code, day = value['code'], value['trade_date']
+        if not isinstance(code, str) or len(code) != 6 or not code.isdigit() or not code.startswith(('880', '881')):
+            raise ValueError('无效通达信板块代码')
+        if not isinstance(day, str) or len(day) != 8 or datetime.strptime(day, '%Y%m%d').strftime('%Y%m%d') != day:
+            raise ValueError('无效交易日')
+        if (code, day) in keys:
+            raise ValueError('缺键JSON有重复键')
+        keys.add((code, day))
+    return keys
+
+
+def _row_rejection(row):
+    import math
+    fields = ('open', 'high', 'low', 'close', 'vol', 'amount')
+    if any(field not in row for field in fields):
+        return 'six_fields_missing'
+    for field in fields:
+        value = row[field]
+        if value is None:
+            return 'six_fields_unknown'
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            return 'six_fields_nonfinite_or_nonnumeric'
+    if row['vol'] < 0 or row['amount'] < 0:
+        return 'negative_volume_or_amount'
+    if min(row[f] for f in ('open', 'high', 'low', 'close')) <= 0:
+        return 'nonpositive_price'
+    if row['low'] > min(row['open'], row['close']) or row['high'] < max(row['open'], row['close']):
+        return 'ohlc_range_invalid'
+    return None
+
+
+def _write_backfill_receipt(path, audit, added):
+    import json
+    import math
+    def safe(value):
+        if isinstance(value, float) and not math.isfinite(value):
+            return {'raw_nonfinite': repr(value)}
+        if isinstance(value, dict):
+            return {k: safe(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [safe(v) for v in value]
+        return value
+    audit['added'] = added
+    audit['qualification'] = '仅六字段合同；源身份与相邻控制另行验收'
+    with open(path, 'w', encoding='utf-8') as handle:
+        json.dump(safe(audit), handle, ensure_ascii=False, indent=2, allow_nan=False)
+
+def _sector_store_snapshot():
+    """仅读目录/元数据与manifest指纹；作为串行补缺的变化检测。"""
+    import hashlib
+    import re
+    import pyarrow.parquet as pq
+    files = []
+    rows = 0
+    next_part = 0
+    for path in sorted(glob.glob(os.path.join(OUT, 'tdx_sector_daily', 'part_*.parquet'))):
+        stat = os.stat(path)
+        files.append((path, stat.st_size, stat.st_mtime_ns))
+        rows += pq.ParquetFile(path).metadata.num_rows
+        match = re.fullmatch(r'part_(\d+)\.parquet', os.path.basename(path))
+        if not match:
+            raise RuntimeError('仓分片名称不合约')
+        next_part = max(next_part, int(match.group(1)) + 1)
+    with open(MANIFEST, 'rb') as handle:
+        manifest_sha = hashlib.sha256(handle.read()).hexdigest()
+    return {'files': files, 'rows': rows, 'next_part': next_part, 'manifest_sha256': manifest_sha}
+
+
+def _validate_sector_store(m, snapshot):
+    import json
+    st = m.get('tdx_sector_daily')
+    if not st or type(st.get('rows')) is not int or st['rows'] != snapshot['rows']:
+        raise RuntimeError('仓物理行数与manifest不一致，先核对再补缺')
+    if type(st.get('part')) is not int or st['part'] < 0:
+        raise RuntimeError('仓manifest分片序号无效')
+    with open(MANIFEST, encoding='utf-8') as handle:
+        if json.load(handle) != m:
+            raise RuntimeError('仓manifest与调用方状态不一致，停止补缺')
+
+
+def _commit_sector_missing(staged, m, audit, snapshot):
+    """临时片验收、排他发布；manifest提交失败时回滚本次新片。"""
+    import copy
+    import hashlib
+    import json
+    import uuid
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    if _sector_store_snapshot() != snapshot:
+        raise RuntimeError('仓在读取源后发生变化，停止补缺')
+    _validate_sector_store(m, snapshot)
+    st = m['tdx_sector_daily']
+    index = max(st.get('part', 0), snapshot['next_part'])
+    final = _part_path('tdx_sector_daily', index)
+    temporary = final + '.' + uuid.uuid4().hex + '.tmp'
+    schema = pa.schema([(name, pa.large_string()) for name in ('code', 'trade_date')]
+        + [(name, pa.float64()) for name in ('open', 'high', 'low', 'close', 'vol', 'amount')]
+        + [(name, pa.large_string()) for name in ('_fetched_at', 'actual_received_at',
+             'source_provider', 'source_endpoint', 'source_request_parameters', 'source_response_json_sha256')])
+    table = pa.Table.from_pylist(staged, schema=schema)
+    published = False
+    digest = None
+    proposed = copy.deepcopy(m)
+    proposed['tdx_sector_daily']['part'] = index + 1
+    proposed['tdx_sector_daily']['rows'] = snapshot['rows'] + len(staged)
+    try:
+        pq.write_table(table, temporary)
+        if pq.ParquetFile(temporary).metadata.num_rows != len(staged) or not pq.ParquetFile(temporary).schema_arrow.equals(schema):
+            raise RuntimeError('新片临时文件验收失败')
+        with open(temporary, 'r+b') as handle:
+            os.fsync(handle.fileno())
+        with open(temporary, 'rb') as handle:
+            digest = hashlib.sha256(handle.read()).hexdigest()
+        if _sector_store_snapshot() != snapshot:
+            raise RuntimeError('仓在临时片准备期间发生变化，停止补缺')
+        # NTFS硬链接具有目标已存在时失败的语义，不覆盖现有片。
+        os.link(temporary, final)
+        published = True
+        after_publish = _sector_store_snapshot()
+        if (after_publish['manifest_sha256'] != snapshot['manifest_sha256'] or
+            [f for f in after_publish['files'] if f[0] != final] != snapshot['files'] or
+            after_publish['rows'] - len(staged) != snapshot['rows']):
+            raise RuntimeError('仓在新片发布期间发生变化，停止补缺')
+        _save_manifest(proposed)
+    except Exception as error:
+        with open(MANIFEST, encoding='utf-8') as handle:
+            disk_manifest = json.load(handle)
+        if published and disk_manifest == proposed:
+            m.clear()
+            m.update(proposed)
+            audit['commit'] = {'part': final, 'part_sha256': digest, 'added': len(staged),
+                               'rows_after': proposed['tdx_sector_daily']['rows'],
+                               'manifest_acknowledgement_error': str(error)}
+            return len(staged)
+        if published:
+            with open(final, 'rb') as handle:
+                still_owned = hashlib.sha256(handle.read()).hexdigest() == digest
+            if still_owned:
+                os.remove(final)
+        raise
+    finally:
+        if os.path.exists(temporary):
+            os.remove(temporary)
+    m.clear()
+    m.update(proposed)
+    audit['commit'] = {'part': final, 'part_sha256': digest, 'added': len(staged),
+                       'rows_after': proposed['tdx_sector_daily']['rows']}
+    return len(staged)
+
+
+def _existing_sector_keys(keys):
+    """只读现有键列；任何分片读取失败均中止，避免误当不存在。"""
+    requested = set(keys)
+    found = set()
+    for part in glob.glob(os.path.join(OUT, 'tdx_sector_daily', 'part_*.parquet')):
+        frame = pd.read_parquet(part, columns=['code', 'trade_date'])
+        found.update((str(c), str(d)) for c, d in frame.itertuples(index=False, name=None)
+                     if (str(c), str(d)) in requested)
+    return found
+
+
+def _sync_sector_missing(keys, m, audit=None):
+    """每缺键仅一次小请求，先核响应合同；过滤失效立即中止。"""
+    from datetime import datetime, timezone
+    import hashlib
+    import json
+    requested = {(str(c), str(d)) for c, d in keys}
+    if len(requested) > 128:
+        raise ValueError('显式缺键最多128项')
+    for c, d in requested:
+        if len(c) != 6 or not c.isdigit() or not c.startswith(('880', '881')):
+            raise ValueError('无效通达信板块代码')
+        if datetime.strptime(d, '%Y%m%d').strftime('%Y%m%d') != d:
+            raise ValueError('无效日期')
+    snapshot = _sector_store_snapshot()
+    _validate_sector_store(m, snapshot)
+    pending = requested - _existing_sector_keys(requested)
+    audit = audit if audit is not None else {}
+    audit.setdefault('rejected', [])
+    staged = []
+    required = {'code', 'trade_date'}
+    for code, day in sorted(pending):
+        reply = _get('/api/data/table/tdx_sector_daily', {
+            'code': code, 'start_date': day, 'end_date': day, 'limit': 2, 'offset': 0})
+        received_at = datetime.now(timezone.utc).isoformat()
+        rows, cols = reply.get('rows'), reply.get('columns')
+        total = reply.get('total')
+        if not isinstance(rows, list) or not isinstance(cols, list) or len(cols) != len(set(cols)):
+            raise ValueError('响应行列合同不完整')
+        if not isinstance(total, int) or isinstance(total, bool) or total != len(rows) or total > 1:
+            raise ValueError('过滤失效/重复键/分页响应：不继续扫全市场')
+        if not rows:
+            continue
+        if not required <= set(cols) or len(rows[0]) != len(cols):
+            raise ValueError('响应字段合同不完整')
+        row = dict(zip(cols, rows[0]))
+        if (str(row['code']), str(row['trade_date'])) != (code, day):
+            raise ValueError('响应代码日期与显式缺键不匹配')
+        reason = _row_rejection(row)
+        if reason is None and row.get('_fetched_at') is not None and not isinstance(row['_fetched_at'], str):
+            reason = 'source_timestamp_invalid'
+        if reason:
+            audit['rejected'].append({'code': code, 'trade_date': day, 'reason': reason,
+                'source_row': row})
+            continue
+        row.setdefault('_fetched_at', None)
+        row['actual_received_at'] = received_at
+        row['source_provider'] = 'tdx-trading-table'
+        row['source_endpoint'] = '/api/data/table/tdx_sector_daily'
+        row['source_request_parameters'] = json.dumps({'code': code, 'start_date': day, 'end_date': day, 'limit': 2, 'offset': 0}, sort_keys=True)
+        row['source_response_json_sha256'] = hashlib.sha256(json.dumps(reply, sort_keys=True, ensure_ascii=False, allow_nan=False).encode('utf-8')).hexdigest()
+        staged.append(row)
+    # 写前再次排除已有键，保留原片与旧价格，原量额NULL不转换为0。
+    existing = _existing_sector_keys(requested)
+    staged = [r for r in staged if (str(r['code']), str(r['trade_date'])) not in existing]
+    if not staged:
+        return 0
+    return _commit_sector_missing(staged, m, audit, snapshot)
 
 if __name__ == "__main__":
     main()

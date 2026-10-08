@@ -294,42 +294,190 @@ def min_local_max_date():
     return hi
 
 
+def _tail_snapshot():
+    """仅读目录stat与小型manifest，不增加尾巴全表读取。"""
+    path = os.path.join(TDX, '_manifest.json')
+    body = None
+    if os.path.exists(path):
+        with open(path, 'rb') as handle:
+            body = handle.read()
+    parts = []
+    for part in sorted(glob.glob(os.path.join(SEC_MIN_TAIL, 'part_*.parquet'))):
+        stat = os.stat(part)
+        parts.append((part, stat.st_size, stat.st_mtime_ns))
+    return body, parts
+
+
+def _commit_min_tail(new, fp, snapshot, provenance):
+    """临时片+清单提交；失败时恢复已有尾片，保留恢复证据字段。"""
+    import uuid
+    import hashlib
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    if _tail_snapshot() != snapshot:
+        raise RuntimeError('尾巴仓或清单已变化，停止刷新')
+    fields = ['code', 'trade_date', 'trade_time', 'open', 'high', 'low', 'close',
+              'vol', 'amount', 'up_count', 'down_count', '_fetched_at']
+    exists = os.path.exists(fp)
+    if exists:
+        previous = pq.ParquetFile(fp)
+        schema = previous.schema_arrow
+        group_size = previous.metadata.row_group(0).num_rows if previous.metadata.num_row_groups else 1048576
+        old_rows = previous.metadata.num_rows
+        previous.close()
+    else:
+        schema = pa.schema([(c, pa.large_string()) for c in fields[:3]]
+            + [(c, pa.float64()) for c in fields[3:9]]
+            + [(c, pa.int64()) for c in fields[9:11]] + [('_fetched_at', pa.large_string())])
+        group_size, old_rows = 1048576, 0
+    if set(schema.names) != set(fields):
+        raise ValueError('尾片现有schema与12字段合同不一致')
+    state = json.loads(snapshot[0].decode('utf-8')) if snapshot[0] is not None else {}
+    entry = state.setdefault('tdx_sector_min_tail', {})
+    physical_rows = sum(pq.ParquetFile(path).metadata.num_rows for path, _, _ in snapshot[1])
+    entry['rows'] = physical_rows - old_rows + len(new)
+    entry['part'] = max([int(os.path.basename(p).split('_')[1].split('.')[0]) + 1 for p, _, _ in snapshot[1]] + [1])
+    entry.setdefault('done', True)
+    entry['last_refresh'] = provenance
+    manifest_body = json.dumps(state, ensure_ascii=False, indent=1).encode('utf-8')
+    token = uuid.uuid4().hex
+    temporary, backup = fp + '.' + token + '.tmp', fp + '.' + token + '.bak'
+    manifest = os.path.join(TDX, '_manifest.json')
+    manifest_tmp = manifest + '.' + token + '.tmp'
+    published, completed = False, False
+    preserve_backup = False
+    def file_sha(path):
+        digest = hashlib.sha256()
+        with open(path, 'rb') as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b''):
+                digest.update(block)
+        return digest.hexdigest()
+    try:
+        new.to_parquet(temporary, index=False, schema=schema, row_group_size=group_size)
+        check = pq.ParquetFile(temporary)
+        if check.metadata.num_rows != len(new) or not check.schema_arrow.equals(schema):
+            raise RuntimeError('临时尾片行数/schema验收失败')
+        check.close()
+        with open(temporary, 'r+b') as handle:
+            os.fsync(handle.fileno())
+        owned_sha = file_sha(temporary)
+        owned_stat = os.stat(temporary)
+        with open(manifest_tmp, 'xb') as handle:
+            handle.write(manifest_body)
+            handle.flush()
+            os.fsync(handle.fileno())
+        if _tail_snapshot() != snapshot:
+            raise RuntimeError('尾巴仓或清单在准备期间变化，停止刷新')
+        if exists:
+            os.link(fp, backup)
+        os.replace(temporary, fp)
+        published = True
+        after = _tail_snapshot()
+        if (after[0] != snapshot[0] or [p for p in after[1] if p[0] != fp] != [p for p in snapshot[1] if p[0] != fp]):
+            raise RuntimeError('发布后其他尾片或清单发生变化，停止刷新')
+        final_stat = os.stat(fp)
+        if (final_stat.st_size, final_stat.st_mtime_ns) != (owned_stat.st_size, owned_stat.st_mtime_ns):
+            raise RuntimeError('发布后自有尾片发生变化，停止刷新')
+        os.replace(manifest_tmp, manifest)
+        completed = True
+    except Exception:
+        if published and os.path.exists(manifest):
+            with open(manifest, 'rb') as handle:
+                completed = handle.read() == manifest_body
+        if published and not completed:
+            if not os.path.exists(fp) or file_sha(fp) != owned_sha:
+                preserve_backup = exists
+                raise RuntimeError('尾片在提交失败后已变化；保留备份，不覆盖其他写入器')
+            try:
+                if exists:
+                    os.replace(backup, fp)
+                else:
+                    os.remove(fp)
+            except Exception as rollback_error:
+                preserve_backup = exists
+                raise RuntimeError('尾片恢复失败；保留备份供核对') from rollback_error
+        if not completed:
+            raise
+    finally:
+        for path in (temporary, manifest_tmp, backup):
+            if path == backup and preserve_backup:
+                continue
+            if os.path.exists(path):
+                os.remove(path)
+
+
 def refresh_min_tail(quiet=False):
-    """远端日期过滤增量补 tdx_sector_min 尾巴（幂等）。"""
+    """远端日期过滤增量补尾巴，成功后同步维护物理清单。"""
+    import hashlib
+    from datetime import datetime, timedelta, timezone
     hi = min_local_max_date()
     if not hi:
-        return {"ok": False, "error": "本地无 tdx_sector_min 基线"}
-    start = str(int(hi[:8]) + 1)  # YYYYMMDD+1（跨月末由远端空集自然消化）
-    rows, offset = [], 0
+        return {'ok': False, 'error': '本地无 tdx_sector_min 基线'}
+    start = (datetime.strptime(hi[:8], '%Y%m%d') + timedelta(days=1)).strftime('%Y%m%d')
+    snapshot = _tail_snapshot()
+    fields = {'code', 'trade_date', 'trade_time', 'open', 'high', 'low', 'close',
+              'vol', 'amount', 'up_count', 'down_count', '_fetched_at'}
+    unique, offset, declared, columns = {}, 0, None, None
+    page_hashes = []
     while True:
-        url = ("%s?limit=%d&offset=%d&start_date=%s" %
-               (REMOTE, PAGE, offset, start))
-        with urllib.request.urlopen(url, timeout=60) as r:
-            d = json.loads(r.read().decode("utf-8"))
-        got = d.get("rows", [])
+        url = '%s?limit=%d&offset=%d&start_date=%s' % (REMOTE, PAGE, offset, start)
+        with urllib.request.urlopen(url, timeout=60) as response:
+            body = response.read()
+        received = datetime.now(timezone.utc).isoformat()
+        data = json.loads(body.decode('utf-8'))
+        got, cols, total = data.get('rows'), data.get('columns'), data.get('total')
+        if not isinstance(got, list) or not isinstance(cols, list) or len(cols) != len(set(cols)) or set(cols) != fields:
+            raise ValueError('分页12字段合同无效')
+        if type(total) is not int or total < 0 or len(got) > PAGE or offset + len(got) > total:
+            raise ValueError('分页total/行数合同无效')
+        if declared is None:
+            declared, columns = total, cols
+        elif total != declared or cols != columns:
+            raise ValueError('分页total或列在拉取期间变化')
+        page_hashes.append(hashlib.sha256(body).hexdigest())
         if not got:
+            if offset != declared:
+                raise ValueError('分页未完成即返回空集')
             break
-        rows.extend(dict(zip(d["columns"], x)) for x in got)
+        for values in got:
+            if not isinstance(values, list) or len(values) != len(cols):
+                raise ValueError('分页行宽不合约')
+            row = dict(zip(cols, values))
+            code, day, minute = row['code'], row['trade_date'], row['trade_time']
+            if not isinstance(code, str) or len(code) != 6 or not code.isdigit() or not code.startswith(('880', '881')):
+                raise ValueError('板块代码无效')
+            if not isinstance(day, str) or datetime.strptime(day, '%Y%m%d').strftime('%Y%m%d') != day or day < start:
+                raise ValueError('日期过滤失效或日期无效')
+            if not isinstance(minute, str) or datetime.strptime(minute, '%H:%M').strftime('%H:%M') != minute:
+                raise ValueError('分钟标识无效')
+            key = code, day, minute
+            if key in unique and json.dumps(unique[key], sort_keys=True) != json.dumps(row, sort_keys=True):
+                raise ValueError('同分钟键返回冲突，拒绝覆盖')
+            unique.setdefault(key, row)
         offset += len(got)
-        total = d.get("total") or 0
-        if total and offset >= total:
+        if offset == declared:
             break
         time.sleep(0.15)
-    if not rows:
-        return {"ok": True, "from": start, "rows": 0, "note": "无新数据"}
+    if not unique:
+        return {'ok': True, 'from': start, 'rows': 0, 'note': '无新数据'}
     os.makedirs(SEC_MIN_TAIL, exist_ok=True)
-    fp = os.path.join(SEC_MIN_TAIL, "part_0000.parquet")
-    new = pd.DataFrame(rows)
+    fp = os.path.join(SEC_MIN_TAIL, 'part_0000.parquet')
+    new = pd.DataFrame(list(unique.values()))
     if os.path.exists(fp):
         old = pd.read_parquet(fp)
+        if old.duplicated(subset=['code', 'trade_date', 'trade_time']).any():
+            raise ValueError('已有尾片存在重复键，不自动清洗旧片')
+        key_columns = ['code', 'trade_date', 'trade_time']
+        if not old[key_columns].merge(new[key_columns], on=key_columns, how='inner').empty:
+            raise ValueError('旧尾片与新供给存在三键重叠，停止刷新')
         new = pd.concat([old, new], ignore_index=True)
-    new = new.drop_duplicates(subset=["code", "trade_date", "trade_time"],
-                              keep="last")
-    new.to_parquet(fp, index=False)
+    provenance = {'provider': 'TDX-Trading', 'endpoint': REMOTE, 'start_date': start,
+        'received_rows': offset, 'unique_received_rows': len(unique), 'actual_received_at': received,
+        'response_body_sha256': page_hashes}
+    _commit_min_tail(new, fp, snapshot, provenance)
     if not quiet:
-        print("tail +%d rows (%s → %s)" % (
-            len(rows), start, str(new["trade_date"].astype(str).max())))
-    return {"ok": True, "from": start, "rows": len(rows)}
+        print('tail +%d rows (%s → %s)' % (offset, start, str(new['trade_date'].astype(str).max())))
+    return {'ok': True, 'from': start, 'rows': offset}
 
 
 # ---------------------------------------------------------------- 对齐归一

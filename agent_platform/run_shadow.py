@@ -12,6 +12,7 @@
 """
 import json
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -29,6 +30,36 @@ from tools import make_context, quote_snapshot  # noqa: E402
 BASKET = ["600519", "000858", "601318", "300750", "600036"]  # 茅台/五粮液/平安/宁德/招行
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 REC_SCORE = {"STRONG_BUY": 2, "BUY": 1, "HOLD": 0, "SELL": -1, "STRONG_SELL": -2}
+# failed 即时告警（K-STOCK-013）：复用已验证推送链；P0 语义=不等 17:35 日报
+PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
+ALERT_STATE = BASE / "data" / "shadow" / "p0_alert_state.json"
+
+
+def push_failed_alert(failed_rows, today):
+    """篮子跑完有 failed 时立即推飞书简讯；同日只推一次（节流）。任何异常不中断主流程。"""
+    if not failed_rows:
+        return
+    try:
+        st = json.loads(ALERT_STATE.read_text(encoding="utf-8")) if ALERT_STATE.exists() else {}
+        if st.get("date") == today and st.get("pushed"):
+            print("[alert] 今日 failed 告警已推过（节流），跳过")
+            return
+        lines = ["**[P0] 影子运行 %d 笔失败（需处置）**" % len(failed_rows)]
+        for r in failed_rows:
+            lines.append("- %s：%s" % (r["symbol"], r.get("error", "?")[:100]))
+        tmp = BASE / "data" / "shadow" / "_p0_alert_tmp.md"
+        tmp.write_text("\n".join(lines), encoding="utf-8")
+        r = subprocess.run(
+            [sys.executable, str(PUSH_SCRIPT), str(tmp)],
+            capture_output=True, text=True, encoding="utf-8", timeout=60)
+        out = (r.stdout or r.stderr or "").strip()
+        ok = r.returncode == 0 and "SEND_OK" in out
+        print("[alert] failed 即时告警推送：%s" % (out.splitlines()[-1] if out else "无输出"))
+        tmp.unlink(missing_ok=True)
+        if ok:
+            ALERT_STATE.write_text(json.dumps({"date": today, "pushed": True}), encoding="utf-8")
+    except Exception as e:  # noqa: BLE001
+        print("[alert] 告警推送异常（不中断主流程）：%s" % e)
 
 
 def parse_decision(text):
@@ -74,6 +105,7 @@ def main():
     interp = Interpreter(team, llm, memory, cp)
 
     summary = []
+    failed_rows = []
     for symbol in BASKET:
         if already_done(today, symbol):
             print("[skip] %s 今日已入账" % symbol)
@@ -108,8 +140,11 @@ def main():
         print("[%s] %s %s %s" % (row["status"], symbol, row.get("recommendation", ""),
                                  row.get("run_id", row.get("error", ""))))
         summary.append(row["status"])
+        if row["status"] == "failed":
+            failed_rows.append(row)
 
     print("shadow day %s done: %s" % (today, dict((s, summary.count(s)) for s in set(summary))))
+    push_failed_alert(failed_rows, today)
 
 
 if __name__ == "__main__":

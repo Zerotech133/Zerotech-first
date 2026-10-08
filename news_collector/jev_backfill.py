@@ -90,6 +90,17 @@ def main():
     if not rows:
         print("BACKFILL done: no pending")
         return
+    # Ollama 错峰锁：与 M3 结构化批处理互斥（wait_s≈M3 单条看门狗上限+余量；
+    # 正常退出/异常走 atexit 释放，强杀靠锁模块 20 分钟陈旧回收）
+    _root = os.path.dirname(HERE)
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
+    import atexit
+    import ollama_lock
+    atexit.register(ollama_lock.release)
+    if not ollama_lock.acquire("jev_backfill", wait_s=660):
+        print("BACKFILL skip: ollama 锁被 M3 持有超 660s，本轮让位（小时轮自愈）")
+        return
     items = []
     for nid, title, stocks in rows:
         try:
@@ -110,6 +121,7 @@ def main():
                        (json.dumps(j, ensure_ascii=False), nid))
         db.commit()
         judged += len(judges)
+        ollama_lock.heartbeat()
     left = db.execute(
         "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''").fetchone()[0]
     alerted = 0

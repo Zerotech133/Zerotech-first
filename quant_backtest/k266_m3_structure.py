@@ -25,7 +25,29 @@ PROMPT = """你是金融文档结构化引擎。输入一篇文档文本（公�
  "tags": ["3-8个主题词，两到四字，用于词云，如:算力,液冷,海外扩产"]
 }
 规则：只依据文本，不推测；events 最多 6 条；只输出 JSON，不要其他文字。
-新闻/快讯（单条 [时间][来源] 标题 或多条合辑）→ doc_type=新闻，tags 概括该条主题（合辑则汇总全批热词）。"""
+新闻/快讯（单条 [时间][来源] 标题 或多条合辑）→ doc_type=新闻，tags 概括该条主题（合辑则汇总全批热词）。
+用词规范：同一主题只用规范词——算力(不用AI算力/智算)、人工智能(不用AI)、机器人(不用人形/工业机器人)、新能源(不用清洁能源)、涨停(不用触及涨停/涨停潮)、燃料油(不用低硫燃料油)。"""
+
+# K266 热词规范词表（门户 /kg/doc 展示端 import 同一份，改这里两端生效）：
+# 只并真同义/明确变体，不并"股价下跌"类主题+方向复合词（防方向词虚胖）。
+# 2026-10-08 按全量影子数据（2942 词/4767 计数）核定；新变体按数据补录。
+TAG_ALIAS = {
+    "AI算力": "算力", "智算": "算力", "AI": "人工智能",
+    "人形机器人": "机器人", "工业机器人": "机器人",
+    "清洁能源": "新能源", "触及涨停": "涨停", "涨停潮": "涨停",
+    "低硫燃料油": "燃料油",
+}
+
+
+def norm_tags(tags):
+    """tags 同义归一：变体并到规范词，去空串，归一后去重防同文档重复计数。"""
+    out, seen = [], set()
+    for t in tags:
+        t = TAG_ALIAS.get(t, t)
+        if t and t not in seen:
+            seen.add(t)
+            out.append(t)
+    return out
 
 
 def load_done():
@@ -60,20 +82,40 @@ def split_news_items(text):
     return [t for t in (s.strip() for s in items) if t]
 
 
-def ask_ollama(text, timeout=180):
-    body = {"model": MODEL, "think": False, "stream": False,
-            "options": {"num_ctx": 16384},   # 默认 4096 会被 6000 字 prompt 挤满, 输出撞 length 墙
-            "messages": [{"role": "user",
-                          "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:6000]}]}
-    last = ""
-    for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
-        r = requests.post(OLLAMA, json=body, timeout=timeout)
-        r.raise_for_status()
-        last = r.json()["message"]["content"]
-        if "{" in last:
-            return last
-        time.sleep(2)
-    return last
+def ask_ollama(text, timeout=180, hard_deadline=600):
+    """三试重试 + 硬超时看门狗。
+
+    requests 的 timeout 是"字节间隔"超时：Ollama 慢流式（GPU 被抢占时
+    逐 token 滴流）会不断重置计时器，单条可挂数小时且进程存活、调度器
+    不会拉起新实例（2026-10-08 实测 17:03 起挂死 18h）。故整条调用
+    放工作线程跑，join 超过 hard_deadline 即放弃 → judge 落 ERR 下一条。
+    """
+    import threading
+    box = {}
+
+    def _worker():
+        body = {"model": MODEL, "think": False, "stream": False,
+                "options": {"num_ctx": 16384},   # 默认 4096 会被 6000 字 prompt 挤满
+                "messages": [{"role": "user",
+                              "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:6000]}]}
+        for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
+            try:
+                r = requests.post(OLLAMA, json=body, timeout=timeout)
+                r.raise_for_status()
+                box["last"] = r.json()["message"]["content"]
+                if "{" in box["last"]:
+                    return
+            except Exception as e:
+                box["last"] = str(e)[:120]
+            time.sleep(2)
+        box.setdefault("last", "")
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    t.join(hard_deadline)
+    if t.is_alive():
+        raise TimeoutError("ollama hard timeout %ss（慢流/队列饿死）" % hard_deadline)
+    return box.get("last", "")
 
 
 def parse_json(raw):
@@ -97,6 +139,17 @@ def main():
     limit = 10 ** 9
     if "--limit" in sys.argv:
         limit = int(sys.argv[sys.argv.index("--limit") + 1])
+    # Ollama 错峰锁：与 news 域 JEV 回填互斥（wait_s 覆盖其 1800s deadline 上限；
+    # 正常退出/异常走 atexit 释放，强杀靠锁模块 20 分钟陈旧回收）
+    _root = os.path.dirname(BASE)
+    if _root not in sys.path:
+        sys.path.insert(0, _root)
+    import atexit
+    import ollama_lock
+    atexit.register(ollama_lock.release)
+    if not ollama_lock.acquire("k266_m3", wait_s=1900):
+        print("ollama busy: JEV 回填持锁超 1900s，本轮让位（调度 5 分钟自愈）")
+        return
     done = load_done()
     n_ok = n_err = 0
 
@@ -105,6 +158,7 @@ def main():
         nonlocal n_ok, n_err
         try:
             parsed = parse_json(ask_ollama(text))
+            parsed["tags"] = norm_tags(parsed.get("tags", []))  # 源头归一，展示端兜底
             out = {"doc_id": did, "name": name, "src": rec.get("src"),
                    "kind": rec.get("kind"), "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                    "pv": 1, "raw_ok": True, "chars": len(text), **parsed}
@@ -124,6 +178,7 @@ def main():
         print(f"[{n_ok + n_err}] {did} {str(name)[:28]}{flag} "
               f"{p.get('doc_type', '')} {p.get('direction', '')} "
               f"tags={','.join(p.get('tags', [])[:5])}", flush=True)
+        ollama_lock.heartbeat()
 
     with open(TEXTS, encoding="utf-8") as f:
         for line in f:

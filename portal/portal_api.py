@@ -19979,19 +19979,10 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         import collections as _collections
         _docs_dir = _os.path.join(_os.path.dirname(_os.path.dirname(
             _os.path.abspath(__file__))), "quant_backtest", "data", "k266_docs")
-        _texts_fp = _os.path.join(_docs_dir, "doc_texts.jsonl")
         _shadow_fp = _os.path.join(_docs_dir, "structure_shadow.jsonl")
-        texts, shadow = {}, {}
-        try:
-            with open(_texts_fp, encoding="utf-8") as f:
-                for line in f:
-                    try:
-                        r = json.loads(line)
-                        texts[r.get("doc_id")] = r
-                    except Exception:
-                        pass
-        except OSError:
-            pass
+        # 性能：不再全量加载 doc_texts.jsonl（含全文，4MB+ 且随新闻批次无限增长）。
+        # chars 用 shadow 自带值——judge() 恒写 chars，实测 1148 条 0 缺失。
+        shadow = {}
         try:
             with open(_shadow_fp, encoding="utf-8") as f:
                 for line in f:
@@ -20004,12 +19995,11 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
             pass
         cards, freq = [], _collections.Counter()
         # K266-B 热词归一：LLM tags 同义变体并到规范词（词云/词片/文档过滤三处同源）。
-        # 保守口径：只并真同义/明确变体，不并"股价下跌"类主题+方向复合词（防方向词虚胖）。
-        # 2026-10-08 按全量影子数据（2942 词/4767 计数）核定。
-        _alias = {"AI算力": "算力", "智算": "算力", "AI": "人工智能",
-                  "人形机器人": "机器人", "工业机器人": "机器人",
-                  "清洁能源": "新能源", "触及涨停": "涨停", "涨停潮": "涨停",
-                  "低硫燃料油": "燃料油"}
+        # 词表与 M3 生成端共用一份（k266_m3_structure.TAG_ALIAS），改一处两端生效；
+        # M3 已源头归一，此处兜底历史影子行。保守口径：只并真同义，不并方向复合词。
+        if QBT_DIR not in sys.path:
+            sys.path.insert(0, QBT_DIR)
+        from k266_m3_structure import TAG_ALIAS as _alias
         for did, s in shadow.items():
             if not s.get("raw_ok"):
                 continue
@@ -20032,7 +20022,7 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
                 "companies": s.get("companies", [])[:6],
                 "tags": tags, "events": s.get("events", [])[:5],
                 "ts": s.get("ts", ""),
-                "chars": s.get("chars") or (texts.get(did) or {}).get("text_chars", 0),
+                "chars": s.get("chars") or 0,
             })
         # K266-B 适配：新闻单条（src=news）按时间置顶，文档按字数
         _news_cards = sorted([c for c in cards if c.get("src") == "news"],
