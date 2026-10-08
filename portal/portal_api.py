@@ -21361,6 +21361,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             e = _h_bt.escape
             snap = _read_json(os.path.join(REPORTS_DIR,
                                            "rps_latest.json")) or {}
+            # K-STOCK-022b：双刀卡片动态统计（读 /qd/ 同源扫描缓存，缺省空）
+            qd_snap = _read_json(os.path.join(ROOT, "qd_scan_cache.json"))
             res = snap.get("res", [])
 
             def _act(r):
@@ -21391,8 +21393,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                       "多级别结构信号 · 三类买卖点 · 预警池 · 关键位标注"
                       "专项", "结构信号每日盘后生成"),
                 _card("/qd/", "#3fb950", "⚔", "量子双刀 · 选股中心",
-                      "Scanner→Screener→Signal 三阶段流水线 · 订单/经纪/"
-                      "状态机（容器部署）", "独立产线 · 门户内跳转"),
+                      "双日十字星+MACD 多头 · 八重过滤+Regime 分层"
+                      "（研究态：T-009 回测验证中）",
+                      "当日信号 %d · 近5日 %d" % (
+                          len((qd_snap or {}).get("signals_now", [])),
+                          len((qd_snap or {}).get("signals_recent", [])))),
             ])
             body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                     "<meta name='viewport' content='width=device-width,"
