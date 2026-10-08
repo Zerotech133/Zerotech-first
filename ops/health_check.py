@@ -66,6 +66,20 @@ def _jev_py_ok():
         return "checker-error"  # P1-4: 巡检自身故障显式标注（fail-explicit）
 
 
+def check_junction():
+    """K267 治理（方案B加固 2026-10-08）：C:\aios 必须是指向工作站的 junction。
+
+    C:\aios 为 NTFS junction（fsutil Tag 0xa0000003，约 2026-09-11 建），
+    指向 E:\老田的AI助手——C 盘全部脚本路径依赖它。E 盘换盘符/移盘/
+    junction 误删 → C 盘脚本批量静默瘫痪，巡检需分钟级发现。
+    依据: docs/ops/2026-10-08_Jev双副本治理方案.md 方案B第2步。"""
+    try:
+        real = os.path.realpath("C:/aios")
+        return real.lower() == STATION.lower()
+    except OSError:
+        return False
+
+
 def check_services():
     return {
         "门户API(8091)": _http_ok("http://127.0.0.1:8091/health") or _tcp_ok(8091),
@@ -235,6 +249,11 @@ def run():
             issues.append("检查器故障(degraded): %s" % name)
         elif not ok:
             issues.append("服务下线: %s" % name)
+
+    result["junction_c_aios"] = check_junction()
+    if not result["junction_c_aios"]:
+        issues.append("C:\\aios junction 失效: 应指向工作站根目录，"
+                      "C 盘全部脚本路径将批量瘫痪（治理方案B第2步）")
 
     result["docker"] = check_docker()
     if result["docker"] and not result["docker"].get("ai_portal"):

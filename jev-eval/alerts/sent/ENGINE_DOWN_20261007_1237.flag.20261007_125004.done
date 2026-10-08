@@ -1,1 +1,0 @@
-﻿Docker engine down for 2 consecutive probes (~60 min at v2 5-min cadence ~10 min). Auto-relaunch (DockerDesktopLaunch) fired. If still down after next probe: check Welcome-page hang / WSL state / job-object kill. fail_count=2

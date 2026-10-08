@@ -1,5 +1,0 @@
-type=ai_workstation_backup_failed
-stamp=2026-09-24_TEST
-failed_count=1
-backup_log=E:\backups\TEST\backup.log
-note=TEST - alert chain validation (flag -> forwarder -> feishu)

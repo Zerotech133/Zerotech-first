@@ -99,3 +99,12 @@ in/
 *.7z
 *.rar
 *.zip
+
+# ===== jev-eval 运行态补充（2026-10-08 副本治理方案B第3a步）=====
+jev-eval/alerts/sent/
+jev-eval/n1_report_*.txt
+jev-eval/push_dead_letter.jsonl
+jev-eval/backup_card_acks.jsonl
+jev-eval/jev_gate.err
+jev-eval/gate_seen.json*
+jev-eval/replay/
