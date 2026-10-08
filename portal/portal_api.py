@@ -21309,15 +21309,20 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                                 for k, v in sorted(rg.items()))
 
             def _row_qd(r):
+                # 对齐青萍之末/缠论池行：代码列下钻个股全景页（_bt_stock_page）
                 recent = "、".join(r.get("recent_signals", [])[-3:]) or "—"
-                return ("<tr><td><b>%s</b></td><td>%s</td><td>%s</td><td class='dim'>%s</td>"
-                        "</tr>" % (e_qd(r["code"]), e_qd(str(r.get("close", "—"))),
-                                   e_qd(REG_CN.get(r.get("regime"), r.get("regime", "?"))),
-                                   e_qd(recent)))
+                code_lk = ("<a href='/bt/stock?c=%s'><b>%s</b></a>"
+                           % (e_qd(r["code"]), e_qd(r["code"])))
+                nm = r.get("name") or ""
+                return ("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                        "<td class='dim'>%s</td></tr>"
+                        % (code_lk, e_qd(nm), e_qd(str(r.get("close", "—"))),
+                           e_qd(REG_CN.get(r.get("regime"), r.get("regime", "?"))),
+                           e_qd(recent)))
             now_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_now", [])) or \
-                "<tr><td colspan=4 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
+                "<tr><td colspan=5 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
             rec_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_recent", [])[:50]) or \
-                "<tr><td colspan=4 class='dim'>近 5 日无信号</td></tr>"
+                "<tr><td colspan=5 class='dim'>近 5 日无信号</td></tr>"
 
             # ── 管线步骤表（对齐缠论 ①-⑫ 规格：模块/入口/字段/状态）──
             _OK = "<span style='color:#3fb950'>✅ 引擎已实现</span>"
@@ -21390,15 +21395,17 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                        + tools_qd + cards_qd
                        + "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
                        "📌 当日信号（%d）</h2>"
-                       "<table style='border-collapse:collapse;min-width:420px'>"
-                       "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
-                       "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
+                       "<table style='border-collapse:collapse;min-width:520px'>"
+                       "<tr class='dim'><td align=left>代码</td><td align=left>名称</td>"
+                       "<td align=left>收盘</td><td align=left>市况</td>"
+                       "<td align=left>近5日信号日</td></tr>"
                        "%s</table></div>"
                        "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
                        "🕘 近 5 日曾有信号（%d，当日已不触发）</h2>"
-                       "<table style='border-collapse:collapse;min-width:420px'>"
-                       "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
-                       "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
+                       "<table style='border-collapse:collapse;min-width:520px'>"
+                       "<tr class='dim'><td align=left>代码</td><td align=left>名称</td>"
+                       "<td align=left>收盘</td><td align=left>市况</td>"
+                       "<td align=left>近5日信号日</td></tr>"
                        "%s</table></div>"
                        "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
                        "⚙ 策略管线（八重 AND · 全链单测 23/23）</h2>"
@@ -21628,6 +21635,18 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/bt/subscribe":
             # K245 订阅推送管理页（订阅清单 + 接收人 + 试推）
             self._subscribe_page(qs)
+        elif path == "/paper":
+            # K-STOCK 模拟仓占位页（前端 paper.html 未产出；数据层
+            # /api/paper_status 已就绪）——消除导航 404（K-STOCK-024）
+            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                       "<title>模拟仓 · 建设中</title>" + self._COCKPIT_CSS
+                       + "</head><body>" + pill_nav("paper")
+                       + "<h1>🧾 模拟仓（K-STOCK 线）</h1><div class='sec'>"
+                       "建设中：前端面板规划产出中，数据层已就绪"
+                       "（/api/paper_status · k_stock/paper 纯标准库只读层）。</div>"
+                       "<div class='dim' style='margin-top:10px'>"
+                       "先看：<a href='/bt-positions'>💼 持仓</a> · "
+                       "<a href='/bt'>🎯 选股中心</a></div></body></html>")
         elif path == "/bt/stock":
             # 个股全景页（行情+策略信号+共振分解+JEV下钻+AI展望）
             self._bt_stock_page(qs)

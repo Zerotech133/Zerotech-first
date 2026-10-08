@@ -4,7 +4,10 @@
 新闻批次（src=news，C案合批）：按 [时间][来源] 标题 头切单条，多条合组一次判
 （K266-W7 吞吐：新闻 ingest 速率 ≥ 逐判速率，实测积压 1300+ 条；合批摊薄每条
 重复的 prompt 重评估），组失败/缺项逐条回退单判；doc_id=批次id+i序号，幂等不变。
+防串组闸门：批判实体未命中本条原文但整串命中同批邻条 → 该条降级单判重判。
+rel 枚举白名单：落影子前 events.rel 归一（变体映射+白名单外落'其他'）。
 用法: python k266_m3_structure.py [--limit N]（默认全量，幂等跳过已判 doc_id）"""
+import difflib
 import json, os, re, sys, time
 import requests
 
@@ -20,7 +23,7 @@ PROMPT = """你是金融文档结构化引擎。输入一篇文档文本（公�
  "doc_type": "新闻|投关记录|董事会决议|股权激励|收购摘要|业绩公告|研报|其他",
  "title_guess": "文档标题或主题，≤30字",
  "companies": ["提及的上市公司简称或全称，最多8个"],
- "events": [{"subject":"主体方","rel":"供应|客户|合作|投资|收购|减持|增持|担保|中标|投产|业绩|其他","object":"客体方或产品","date":"YYYY-MM-DD或空","amount":"金额/数量原文或空"}],
+ "events": [{"subject":"主体方","rel":"供应|合作|投资|收购|减持|增持|回购|融资|质押|担保|中标|投产|业绩|裁决|其他","object":"客体方或产品","date":"YYYY-MM-DD或空","amount":"金额/数量原文或空"}],
  "direction": "利好|利空|中性",
  "direction_why": "判断理由，≤40字",
  "key_numbers": [{"value":"原文数字","context":"数字含义，≤10字"}],
@@ -50,6 +53,91 @@ def norm_tags(tags):
             seen.add(t)
             out.append(t)
     return out
+
+
+# rel 枚举白名单（K266-W7 人审结论加固）：与 PROMPT 同步维护。模型实际会
+# 游离出 150+ 变体（全量影子统计），落影子前统一归一，防图谱边类型脏。
+REL_WHITELIST = {
+    "供应", "合作", "投资", "收购", "减持", "增持", "回购", "融资",
+    "质押", "担保", "中标", "投产", "业绩", "裁决", "其他",
+}
+
+REL_ALIAS = {
+    # 资本类
+    "并购": "投资", "被投资": "投资", "跟投": "投资", "增资": "融资",
+    "增发": "融资", "IPO": "融资", "发行": "融资", "发行股份": "融资",
+    "发行可转债": "融资", "募集配套资金": "融资", "赎回": "回购",
+    "解押": "质押", "拟减持": "减持",
+    # 供应链类
+    "订单": "供应", "获得订单": "供应", "采购": "供应", "交付": "供应",
+    "出口": "供应", "进口": "供应", "进出口": "供应",
+    # 合作类
+    "客户": "合作", "研发": "合作", "合作研发": "合作", "合资": "合作",
+    # 裁决/监管类
+    "处罚": "裁决", "制裁": "裁决", "制裁调整": "裁决", "调查": "裁决",
+    "诉讼": "裁决", "管制": "裁决", "警告": "裁决", "垄断": "裁决",
+    "监管": "裁决", "监管批准": "裁决",
+    # 业绩/评价类
+    "评级": "业绩", "评级调整": "业绩", "目标": "业绩", "指引": "业绩",
+    "预测": "业绩", "收入预测": "业绩", "收入": "业绩", "营收": "业绩",
+    "分红": "业绩", "数据统计": "业绩",
+}
+
+
+# 市场表现类概念词：rel 是具体公司动作但 object 是这类词 → 实为"股价波动"
+# 事件而非公司动作（人审实锤：减持→股市表现 / 业绩→市场反应），落其他。
+_CONCEPT_OBJ = re.compile(r"股价|市场份额|市场表现|市场反应|市场走势|股市|异动|涨跌")
+
+
+def norm_events(evs):
+    """events rel 归一：白名单直过、同义变体映射、其余落'其他'
+    （'股价波动/政策发布/任职'等非公司动作类 & 模型乱用一律入其他桶）。
+    只管 rel 槽位，subject/object/date/amount 不动。非 dict 元素剔除。"""
+    out = []
+    for ev in evs:
+        if not isinstance(ev, dict):
+            continue
+        rel = str(ev.get("rel") or "").strip()
+        if not rel:
+            rel = "其他"
+        rel = REL_ALIAS.get(rel, rel)
+        if rel not in REL_WHITELIST:
+            rel = "其他"
+        if rel != "其他" and _CONCEPT_OBJ.search(str(ev.get("object") or "")):
+            rel = "其他"
+        ev["rel"] = rel
+        out.append(ev)
+    return out
+
+
+# 防串组闸门用：泛词/概念词不参与闸门（邻条命中属正常，不构成串组证据）
+GENERIC_ENTS = {
+    "公司", "董事会", "监事会", "股东大会", "中国", "证监会", "上交所", "深交所",
+    "股权", "股份", "股票", "债券", "可转债", "员工持股", "未知", "未知主体", "无",
+    "自身股票", "股票市场", "营收", "利润", "净利润", "高管变动", "监管争议",
+    "资金募集", "榜单发布", "政治竞选", "第三季度财报", "退休", "增持", "回购",
+}
+
+
+def cross_gate(p, item, sib_text):
+    """防串组闸门（K266-W7 人审结论加固）：判定实体不在本条原文（精确或
+    模糊≥2字命中）但整串出现在同批邻条 → 疑似串组，返回触发实体名，否则 None。
+    实锤案例：companies 串入邻条公告主体（智度股份）、events.object 串入邻条
+    标题（北洋瑞恒部分股权）。短词泛词不参与，防误触发白缴单判。"""
+    ents = [str(c) for c in (p.get("companies") or [])]
+    for ev in p.get("events") or []:
+        if isinstance(ev, dict):
+            ents += [ev.get("subject"), ev.get("object")]
+    for e in ents:
+        e = (e or "").strip()
+        if len(e) < 3 or e in GENERIC_ENTS:
+            continue
+        own = e in item or difflib.SequenceMatcher(
+            None, e, item, autojunk=False).find_longest_match(
+            0, len(e), 0, len(item)).size >= 2
+        if not own and e in sib_text:
+            return e
+    return None
 
 
 def load_done():
@@ -280,6 +368,7 @@ def main():
         try:
             parsed = parse_json(ask_ollama(text))
             parsed["tags"] = norm_tags(parsed.get("tags", []))  # 源头归一，展示端兜底
+            parsed["events"] = norm_events(parsed.get("events", []))
             out = {"doc_id": did, "name": name, "src": rec.get("src"),
                    "kind": rec.get("kind"), "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                    "pv": 1, "raw_ok": True, "chars": len(text), **parsed}
@@ -319,7 +408,14 @@ def main():
                 judge(did_i, name_i, rec, item)
                 continue
             p.pop("n", None)
+            g = cross_gate(p, item, "".join(
+                it[3] for j, it in enumerate(items, 1) if j != i))
+            if g:
+                print(f"[gate] {did_i} 疑似串组({g})→单判", flush=True)
+                judge(did_i, name_i, rec, item)
+                continue
             p["tags"] = norm_tags(p.get("tags", []))   # 源头归一，与单判同口径
+            p["events"] = norm_events(p.get("events", []))
             out = {"doc_id": did_i, "name": name_i, "src": rec.get("src"),
                    "kind": rec.get("kind"),
                    "ts": time.strftime("%Y-%m-%d %H:%M:%S"),

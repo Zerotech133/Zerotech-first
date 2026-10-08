@@ -24,6 +24,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
 from quant_double_knife import quant_double_knife  # noqa: E402
+from tools import quote_snapshot  # noqa: E402  信号票拉名称（K-STOCK-024）
 
 ASHARE = ROOT / "quant_backtest" / "data" / "ashare"
 CACHE = Path(__file__).parent / "qd_scan_cache.json"
@@ -87,6 +88,13 @@ def main():
         "regime_now": regime_now,
         "disclaimer": "研究态：未回测验证（T-20261009-009 结论前不构成选股依据）",
     }
+    # 信号票补名称（对齐青萍之末/缠论池行展示；仅信号票逐个拉快照，量小）
+    for info in sig_now + recent:
+        try:
+            # norm_symbol 不认带点后缀（600887.SZ→sh600887. 坏 URL），先剥
+            info["name"] = quote_snapshot(info["code"].split(".")[0])["name"]
+        except Exception:
+            info["name"] = ""
     CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
     print("[done] 扫描 %d 只（跳过 %d）：当日信号 %d，近 %d 日有信号 %d，耗时 %.0fs → %s"
           % (cache["scanned"], skipped, len(sig_now), args.recent_window,

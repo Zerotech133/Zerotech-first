@@ -56,6 +56,11 @@ for r in secs:
         alias_map[a] = r["n"]
 
 
+# contains 级品类词证券黑名单（K266-W7 入图人审发现：证券名本身是品类词，
+# 描述短语包含它即误配——"人形机器人零组件"≠机器人(新松)）。exact/alias 不受限。
+GENERIC_SEC = {"机器人", "航天电子"}
+
+
 def to_sec(name):
     """raw 名称 → (Security 名或 None, 命中方式)"""
     name = (name or "").strip()
@@ -67,12 +72,20 @@ def to_sec(name):
         return alias_map[name], "alias"
     hits = [n for n in names if name in n or n in name]
     if len(hits) == 1:
-        return hits[0], "contains"
+        n = hits[0]
+        # contains 三重闸：品类词证券 + 短词(<4字，如"火电"⊂烽火电子) + 并列清单
+        # （如"陕西电器研究所、…集团"整串只该配其一，宁缺毋滥）
+        if n in GENERIC_SEC:
+            return None, "generic"
+        if len(name) < 4 or any(ch in name for ch in "、；;"):
+            return None, "fuzzy"
+        return n, "contains"
     return None, ("ambig" if hits else "miss")
 
 
 # 3) 映射 + 1h 聚窗去重 → 影子事件
-st = {"exact": 0, "alias": 0, "contains": 0, "ambig": 0, "miss": 0, "empty": 0}
+st = {"exact": 0, "alias": 0, "contains": 0, "ambig": 0, "miss": 0, "empty": 0,
+      "generic": 0, "fuzzy": 0}
 buckets = {}
 for ts, r, e in events:
     s_raw, o_raw = (e.get("subject") or "").strip(), (e.get("object") or "").strip()
