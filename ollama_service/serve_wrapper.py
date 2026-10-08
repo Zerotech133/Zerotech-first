@@ -2,6 +2,8 @@
 """Ollama 服务托管 wrapper（计划任务载体用）。
 作用：注入 OLLAMA_MODELS（计划任务 SYSTEM 载体读不到 User 级变量）后阻塞运行 ollama serve。
 已活则直接退出（防重复拉起）。
+K267（2026-10-08）：补日志落盘——原实现只有 print，计划任务 Exec 无重定向，
+日志全丢（根因排查 E4，见 docs/ops/2026-10-08_Ollama任务根因排查.md）。
 """
 import os
 import sys
@@ -10,17 +12,30 @@ import urllib.request
 
 OLLAMA = r"C:/Users/Administrator/AppData/Local/Programs/Ollama/ollama.exe"
 MODELS = r"D:/ollama-models/models"
+LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wrapper.log")
+
+
+def _log(msg):
+    """stdout + 追加落盘双写；落盘失败不影响托管主流程。"""
+    line = "[%s] %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg)
+    print(line, flush=True)
+    try:
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except OSError:
+        pass
+
 
 op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 try:
     op.open("http://127.0.0.1:11434/api/tags", timeout=3)
-    print("ALREADY ALIVE")
+    _log("ALREADY ALIVE")
     time.sleep(2)
     sys.exit(0)
 except Exception:
     pass
 
 os.environ["OLLAMA_MODELS"] = MODELS  # os.system 继承进程环境，必须写 os.environ
-print("starting ollama serve, OLLAMA_MODELS=%s" % MODELS, flush=True)
+_log("starting ollama serve, OLLAMA_MODELS=%s" % MODELS)
 rc = os.system('"%s" serve' % OLLAMA)  # 阻塞托管，任务常驻
-print("serve exited rc=%s" % rc, flush=True)
+_log("serve exited rc=%s" % rc)
