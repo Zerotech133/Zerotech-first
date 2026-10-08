@@ -193,9 +193,9 @@ def decide(news_p, overlap_p, quality, quality_p, crowd, crowd_p, regime_p):
 def outcome_5d(ts_code: str, market: str, pool_date: str) -> dict | None:
     rows = psql(
         "SELECT trade_date, close FROM v2_bar_daily "
-        f"WHERE symbol='{ts_code}' AND market='{market}' "
-        f"AND trade_date >= '{pool_date}' ORDER BY trade_date ASC LIMIT %d"
-        % (N_OUTCOME_DAYS + 1))
+        "WHERE symbol = %s AND market = %s "
+        "AND trade_date >= %s ORDER BY trade_date ASC LIMIT %s",
+        (ts_code, market, pool_date, N_OUTCOME_DAYS + 1))
     if len(rows) < N_OUTCOME_DAYS + 1:
         return None
     entry, exit_ = float(rows[0][1]), float(rows[N_OUTCOME_DAYS][1])
