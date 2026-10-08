@@ -91,6 +91,24 @@ def main():
     else:
         print("    （无推送记录——影子期内属正常）")
 
+    # 3.5 任务单看板统计（K-ORG-014）
+    print("\n[3.5] 任务单：")
+    try:
+        sys.path.insert(0, str(BASE / "engine"))
+        from tasks import TaskStore  # noqa: E402
+        all_t = TaskStore(BASE / "data" / "org" / "tasks").ls()
+        by_status = {}
+        for t in all_t:
+            by_status[t["status"]] = by_status.get(t["status"], 0) + 1
+        print("    合计 %d 单：%s" % (len(all_t),
+              " / ".join("%s=%d" % (k, v) for k, v in sorted(by_status.items())) or "空"))
+        for t in all_t:
+            if t["status"] == "blocked":
+                print("    **[blocked]** %s %s：%s" % (t["task_id"], t["title"][:30],
+                                                      (t.get("closure_note") or "")[:60]))
+    except Exception as e:  # noqa: BLE001
+        print("    [warn] 任务单读取失败：%s" % e)
+
     # 4. 日报/点评文件
     print("\n[4] 产出文件：")
     for f, label in ((SHADOW / ("daily_report_%s.md" % d), "日报"),
