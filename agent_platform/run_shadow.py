@@ -88,6 +88,30 @@ def already_done(today, symbol):
     return False
 
 
+def open_failed_task(failed_rows, today, store=None):
+    """failed 自动开单给研发部（K-ORG-013 / P2-3）：P0 直入 doing；同日同因节流。异常不中断主流程。
+    store 参数供测试注入临时库（默认真库）。"""
+    if not failed_rows:
+        return None
+    try:
+        from tasks import TaskStore  # noqa: E402  engine path 已在顶部注入
+        ts = store or TaskStore(BASE / "data" / "org" / "tasks")
+        title = "影子运行 failed 处置（%s）" % today
+        dup = [t for t in ts.ls(dept="dev") if t["title"] == title]
+        if dup:
+            print("[task] 当日 failed 开单已存在（%s），跳过" % dup[0]["task_id"])
+            return dup[0]["task_id"]
+        body = "\n".join("- %s：%s" % (r["symbol"], r.get("error", "?")[:120])
+                         for r in failed_rows)
+        tid = ts.open("dev", title, body, "P0",
+                      opened_by="system/monitor", p0=True)
+        print("[task] failed 自动开单：%s（P0 直入 doing，待研发部处置）" % tid)
+        return tid
+    except Exception as e:  # noqa: BLE001
+        print("[task] 自动开单异常（不中断主流程）：%s" % e)
+        return None
+
+
 def main():
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     if not sys.stdout.isatty():
@@ -145,6 +169,7 @@ def main():
 
     print("shadow day %s done: %s" % (today, dict((s, summary.count(s)) for s in set(summary))))
     push_failed_alert(failed_rows, today)
+    open_failed_task(failed_rows, today)
 
 
 if __name__ == "__main__":
