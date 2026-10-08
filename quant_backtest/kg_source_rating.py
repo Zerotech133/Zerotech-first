@@ -161,6 +161,34 @@ def _days_since(fresh):
         return None
 
 
+def trade_days_lag(fresh, today=None):
+    """fresh(YYYYMMDD) → 距今滞后**交易日**数（trade_cal is_open 口径）。
+
+    K268 补遗（2026-10-08）：国庆假期断流 8-16 自然日被 D 档 budget=5 误报
+    为断流——长假只涨自然日不涨交易日，lag 应按交易日度量。
+    口径同 data_health._lag_open_days 先例（含 fresh 当日扣掉），
+    复用 datamart._recent_trade_days()（90+40 天窗口，1h 缓存）。
+    日历不可用/区间无样本/非 8 位日期返回 None（调用方退回自然日）。
+    月/季/年频档不适用本函数（YYYYMM 月末近似在假期内有误差，且大预算
+    对假期不敏感，保持自然日）。
+    """
+    f = str(fresh or "")
+    if len(f) != 8 or not f.isdigit():
+        return None
+    try:
+        import datamart as dm
+        days = dm._recent_trade_days()
+        if not days:
+            return None
+        to = today or datetime.now().strftime("%Y%m%d")
+        inside = [d for d in days if f <= d <= to]
+        if not inside:
+            return None
+        return len(inside) - 1
+    except Exception:
+        return None
+
+
 def stale_tables():
     """catalog → 超期表列表 [{table, source, freshness, lag_days, budget, note}]。
 
@@ -205,10 +233,17 @@ def stale_tables():
         lag = _days_since(fresh)
         if lag is None:
             continue
+        note = basis
+        # K268 补遗：仅短预算档（D=5d）走交易日口径——假期断流≠故障；
+        # M/Q 档大预算对假期不敏感且 YYYYMM 月末近似不适配交易日口径
+        if budget <= 7:
+            tl = trade_days_lag(fresh)
+            if tl is not None:
+                lag, note = tl, basis + "+tradeday"
         if lag > budget:
             out.append({"table": t, "source": m.get("source"),
                         "freshness": fresh, "lag_days": lag,
-                        "budget": budget, "note": basis})
+                        "budget": budget, "note": note})
     return out
 
 

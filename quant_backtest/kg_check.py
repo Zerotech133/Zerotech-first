@@ -118,22 +118,34 @@ def run():
             cov[t] = {"max": d, "cn": INTRADAY_NOTE.get(t, t)}
 
         # ⑥b 滞后告警（OPS-0930b：HAS_STRUCTURE 断 13 天而检查器
-        # 始终 ok=True 的教训——coverage 日期必须升级为失败条件）。
-        # 分档：每日链高频边 >4 自然日即断流；HAS_STRUCTURE 信号
-        # 确认滞后设计上限 9 交易日，放宽到 14 自然日；SERVES_AS
-        # 为任职区间语义（max 可为未来日期），不适用。
+        #    始终 ok=True 的教训——coverage 日期必须升级为失败条件）。
+        #    分档：每日链高频边 >4 交易日即断流；HAS_STRUCTURE 信号
+        #    确认滞后设计上限 9 交易日，放宽到 14；SERVES_AS
+        #    为任职区间语义（max 可为未来日期），不适用。
+        #    K268 补遗（2026-10-08）：lag 按交易日度量（trade_cal 口径，
+        #    国庆 8 自然日仅涨 1-2 交易日不再误报；日历不可用退自然日，
+        #    budget 数字不变，方向仅放宽）。
         LAG_BUDGET = {"HAS_STRUCTURE": 14}
         lag_bad = []
+        try:
+            from kg_source_rating import trade_days_lag as _tdlag
+        except Exception:
+            _tdlag = None
         for t, c in cov.items():
             if t == "SERVES_AS" or not c["max"]:
                 continue
             try:
-                lag = (datetime.now()
+                nat = (datetime.now()
                        - datetime.strptime(c["max"], "%Y%m%d")).days
             except ValueError:
                 continue          # 非常规日期格式（如 ISO）跳过
+            lag = _tdlag(c["max"]) if _tdlag else None
+            basis = "tradeday" if lag is not None else "natural"
+            if lag is None:
+                lag = nat
             if lag > LAG_BUDGET.get(t, 4):
-                lag_bad.append("%s %s 距今 %dd" % (c["cn"], c["max"], lag))
+                lag_bad.append("%s %s 距今 %dd(%s)"
+                               % (c["cn"], c["max"], lag, basis))
         issues["coverage_lag"] = {"ok": not lag_bad, "detail": lag_bad}
     cli.close()
 
