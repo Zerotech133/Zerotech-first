@@ -150,10 +150,14 @@ class KgClient:
                 print("  节点 %-15s %d" % (lbl, r["c"]))
             for rel in [S.REL_OF_COMPANY, S.REL_INDUSTRY_OF, S.REL_AREA_OF,
                         S.REL_SERVES_AS, S.REL_SW_L1_OF, S.REL_PRODUCES,
-                        S.REL_CORRELATES, S.REL_INVOLVES,
+                        S.REL_CORRELATES, S.REL_BENCHMARK_OF,
+                        S.REL_INVOLVES,
                         S.REL_OCCUPIES, S.REL_TRADED_ON,
                         S.REL_HAS_STRUCTURE, S.REL_HAS_VOL_EVENT,
                         S.REL_HAS_CANDLE,
+                        # K270 补齐（测试网抓漏）：B 类名单/相似/持股五边型
+                        S.REL_HAS_LIMIT, S.REL_HAS_TOPGAP,
+                        S.REL_HOLDS, S.REL_SIMILAR_K,
                         S.REL_DRIVE, S.REL_BELONGS_TO, S.REL_REQUIRES,
                         S.REL_MAPS_TO,
                         # 情报层边（K218 仪表扩容：形态/传导/集团/共识）
