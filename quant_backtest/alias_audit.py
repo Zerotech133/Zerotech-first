@@ -49,8 +49,12 @@ LLM_PROMPT = ("判断两个词在金融资讯词云场景是否为同一主题�
 def ask_llm(cand, base, timeout=30):
     """本地 Ollama 判同义：YES/NO/ERR。"""
     import requests
+    # num_ctx 必须 4096：本机 Ollama 非默认 ctx 值病态（2048 实测挂死 45s+，
+    # 与 M3 的 8192/16384 毒药同族，唯一健康值 4096——2026-10-08 对照实验：
+    # ctx2048 超时 / ctx4096+think:False 0.2s 返回）。think:False 抑制 qwen3.5
+    # 思考链（否则 num_predict 全被 thinking 吃掉，content 恒空）。
     body = {"model": "qwen3.5:9b", "think": False, "stream": False,
-            "options": {"num_ctx": 2048, "num_predict": 8},
+            "options": {"num_ctx": 4096, "num_predict": 8},
             "messages": [{"role": "user",
                           "content": LLM_PROMPT % (cand, base)}]}
     try:
@@ -174,7 +178,8 @@ def build_report(use_llm=True):
         lines += audit_domain("K263 股吧词云", guba_freq(), WORD_ALIAS,
                               use_llm, lock_ok)
         lines.append("处置：人工终审（LLM 有误判可能）→ "
-                     "k266_m3_structure.py TAG_ALIAS / guba_sentiment.py WORD_ALIAS")
+                     "股吧 WORD_ALIAS 在 portal /kg/lexicon 页在线补录；"
+                     "文档 TAG_ALIAS 改 k266_m3_structure.py")
         return "\n".join(lines)
     finally:
         if lock_ok:

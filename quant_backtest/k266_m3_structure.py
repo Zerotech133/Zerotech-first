@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """K266 M3 文档结构化影子管线：doc_texts.jsonl → qwen3.5:9b → structure_shadow.jsonl
 影子纪律：只落影子不挂图/不进生产，人审抽样后再定入图口径。
-新闻批次（src=news，B案）：按 [时间][来源] 标题 头切单条逐判，doc_id=批次id+i序号。
+新闻批次（src=news，C案合批）：按 [时间][来源] 标题 头切单条，多条合组一次判
+（K266-W7 吞吐：新闻 ingest 速率 ≥ 逐判速率，实测积压 1300+ 条；合批摊薄每条
+重复的 prompt 重评估），组失败/缺项逐条回退单判；doc_id=批次id+i序号，幂等不变。
 用法: python k266_m3_structure.py [--limit N]（默认全量，幂等跳过已判 doc_id）"""
 import json, os, re, sys, time
 import requests
@@ -90,7 +92,30 @@ def split_news_items(text):
     return [t for t in (s.strip() for s in items) if t]
 
 
-def ask_ollama(text, timeout=280, hard_deadline=600):
+# ── K266-W7 新闻合批判定 ──────────────────────────────────────────────
+# 实测（2026-10-08 23:30 探针，8 条真实待判）：单判 5.5s/条，每条重复评估
+# ~650tok PROMPT 是纯开销；合批一次出 JSON 数组，探针实测 ~70-80tok/s 生成。
+# 输出预算按探针：单条实际 ~250tok（模型沿用基础 schema 带 key_numbers，
+# 不强省——销量/回购金额等确有价值）；K=6 → 输出 ~1500tok + prompt 800tok
+# + 组正文 ~1000tok ≈ 3300 < num_ctx 4096 ✓（K=8 实测 1800 截断翻车）。
+# 解析带截断兜底：num_predict 仍不够时只丢尾部截断条目（回退单判），不废整组。
+# 影子记录带 batched:true 供人审抽样区分口径。
+BATCH_K = 6
+BATCH_CHAR_CAP = 1100
+BATCH_ITEM_TRUNC = 400
+BATCH_PROMPT = PROMPT + """
+
+=== 新闻合批模式 ===
+输入是 N 条编号新闻（每条以 [n] 行开头，n=1..N），逐条独立判定，互不混串。
+输出严格 JSON 数组（不要其他文字），第 n 个元素对应第 n 条新闻：
+[{"n":1,"doc_type":"新闻","title_guess":"...","companies":["..."],"events":[...],"direction":"...","direction_why":"...","key_numbers":[...],"tags":["..."]},
+ {"n":2,"doc_type":"新闻",...}, ...]
+规则：doc_type 恒为 "新闻"；events 每条新闻最多 2 条、companies 最多 5 个、
+key_numbers 最多 2 条；title_guess/direction_why ≤25字；tags 3-5 个。"""
+
+
+def ask_ollama(text, prompt=PROMPT, num_predict=600, trunc=1200,
+               timeout=280, hard_deadline=600):
     """三试重试 + 硬超时看门狗。
 
     requests 的 timeout 语义：stream=False 时是"整个生成完成"的时限（首字节=
@@ -98,6 +123,7 @@ def ask_ollama(text, timeout=280, hard_deadline=600):
     18h）。故整条调用放工作线程跑，join 超过 hard_deadline 即放弃 → judge 落
     ERR 下一条；abort 事件通知 worker 在重试检查点自行退出，防僵尸请求继续
     占 Ollama 推理槽挤压后续条目（并发 16k ctx 会把层挤到 CPU，全体变慢）。
+    合批调用传 BATCH_PROMPT/更大 num_predict/trunc（K266-W7）。
     """
     import threading
     box = {}
@@ -107,12 +133,12 @@ def ask_ollama(text, timeout=280, hard_deadline=600):
         body = {"model": MODEL, "think": False, "stream": False,
                 # num_ctx 4096：本机 8192/16384 的 runner 已病态（同文本 4096
                 # 实测 3-5s，8192 卡死 240s+，2026-10-08 对照实验）。4096 装不下
-                # 超长文，配 1200 字截断（新闻 tags 靠标题导语足够）；若日后
+                # 超长文，配截断（新闻 tags 靠标题导语足够）；若日后
                 # Ollama 服务重启修复大 ctx，可再调大截断。num_predict 防病态
                 # 长生成。
-                "options": {"num_ctx": 4096, "num_predict": 600},
+                "options": {"num_ctx": 4096, "num_predict": num_predict},
                 "messages": [{"role": "user",
-                              "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:1200]}]}
+                              "content": prompt + "\n\n=== 文档文本（截断）===\n" + text[:trunc]}]}
         for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
             if abort.is_set():
                 return                  # 看门狗已放弃，勿再发起新请求
@@ -153,6 +179,81 @@ def parse_json(raw):
     obj.setdefault("doc_type", "其他")
     obj.setdefault("direction", "中性")
     return obj
+
+
+def _scan_json_objects(s):
+    """扫出字符串内所有顶层完整 {...} 的原文切片（字符串态感知，容忍尾截断）。"""
+    objs, depth, start, instr, esc = [], 0, None, False, False
+    for i, ch in enumerate(s):
+        if instr:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                instr = False
+            continue
+        if ch == '"':
+            instr = True
+        elif ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start is not None:
+                objs.append(s[start:i + 1])
+                start = None
+            elif depth < 0:
+                break
+    return objs
+
+
+def parse_json_array(raw):
+    """合批输出解析：按 n 对齐成 {n: obj}。
+
+    路径①剥围栏取最外层 [...] 直接 loads；失败（num_predict 尾截断/
+    夹杂噪声）走路径②——逐个扫出完整对象解析，尾部残缺条目自然丢弃，
+    对应新闻由调用方回退单判补上，宁慢勿错。整体无对齐项时抛错（整组回退）。
+    """
+    t = re.sub(r"```(?:json)?|```", "", raw).strip()
+    arr = None
+    m = re.search(r"\[[\s\S]*\]", t)
+    if m:
+        try:
+            v = json.loads(m.group(0))
+            arr = v if isinstance(v, list) else None
+        except ValueError:
+            arr = None
+    if arr is None:
+        arr = []
+        for obj_src in _scan_json_objects(t):
+            try:
+                obj = json.loads(obj_src)
+                if isinstance(obj, dict):
+                    arr.append(obj)
+            except ValueError:
+                pass
+    out = {}
+    for obj in arr:
+        if not isinstance(obj, dict):
+            continue
+        try:
+            n = int(obj.get("n"))
+        except (TypeError, ValueError):
+            continue
+        if not 1 <= n <= 99:
+            continue
+        for k, dflt in (("companies", []), ("events", []), ("tags", []),
+                        ("key_numbers", [])):
+            if not isinstance(obj.get(k), list):
+                obj[k] = dflt
+        obj.setdefault("doc_type", "新闻")
+        obj.setdefault("direction", "中性")
+        out[n] = obj
+    if not out:
+        raise ValueError("no aligned items")
+    return out
 
 
 def main():
@@ -200,6 +301,51 @@ def main():
               f"tags={','.join(p.get('tags', [])[:5])}", flush=True)
         ollama_lock.heartbeat()
 
+    def judge_news_batch(items):
+        """合批判一组新闻（K266-W7）：一次 LLM 出 JSON 数组逐条落影子；
+        组失败/模型漏项逐条回退单判（ERR 纪律与单判完全一致）。"""
+        nonlocal n_ok, n_err
+        try:
+            batch_text = "\n".join("[%d] %s" % (i, it[3][:BATCH_ITEM_TRUNC])
+                                   for i, it in enumerate(items, 1))
+            by_n = parse_json_array(
+                ask_ollama(batch_text, prompt=BATCH_PROMPT, num_predict=1700,
+                           trunc=BATCH_CHAR_CAP + BATCH_ITEM_TRUNC + 64))
+        except Exception:
+            by_n = {}      # 组级失败：整组回退，不落 ERR（回退单判自会记）
+        for i, (did_i, name_i, rec, item) in enumerate(items, 1):
+            p = by_n.get(i)
+            if not p:
+                judge(did_i, name_i, rec, item)
+                continue
+            p.pop("n", None)
+            p["tags"] = norm_tags(p.get("tags", []))   # 源头归一，与单判同口径
+            out = {"doc_id": did_i, "name": name_i, "src": rec.get("src"),
+                   "kind": rec.get("kind"),
+                   "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                   "pv": 1, "raw_ok": True, "chars": len(item),
+                   "batched": True, **p}
+            with open(SHADOW, "a", encoding="utf-8") as fo:
+                fo.write(json.dumps(out, ensure_ascii=False) + "\n")
+            n_ok += 1
+            print(f"[{n_ok + n_err}] {did_i} {str(name_i)[:28]} "
+                  f"{p.get('direction', '')} tags={','.join(p.get('tags', [])[:5])}"
+                  f" (batch{len(items)})", flush=True)
+            ollama_lock.heartbeat()
+
+    # 合批缓冲：攒够 BATCH_K 条或 BATCH_CHAR_CAP 字即冲一组（跨批次文件混组
+    # 无妨——每条自带 doc_id/name；极限 1100+最长一条 414 字，trunc 预算已留）
+    news_buf, news_chars = [], 0
+
+    def flush_news():
+        nonlocal news_chars
+        if not news_buf:
+            return
+        items = news_buf[:]
+        news_buf.clear()
+        news_chars = 0
+        judge_news_batch(items)
+
     with open(TEXTS, encoding="utf-8") as f:
         for line in f:
             if n_ok + n_err >= limit:
@@ -211,7 +357,8 @@ def main():
             did = rec.get("doc_id")
             if not did or did in done or rec.get("status") != "ok":
                 continue
-            # 新闻批次（B案）：切单条逐判，doc_id=批次id+i序号；批次级不落影子（防 tags 双计）
+            # 新闻批次（C案合批）：切单条入缓冲，攒组一次判；批次级不落影子
+            # （防 tags 双计）；doc_id=批次id+i序号，幂等口径不变
             if rec.get("src") == "news" or str(rec.get("name", "")).startswith("news_"):
                 for idx, item in enumerate(split_news_items(rec.get("text", "")), 1):
                     if n_ok + n_err >= limit:
@@ -219,9 +366,14 @@ def main():
                     did_i = f"{did}i{idx:02d}"
                     if did_i in done:
                         continue
-                    judge(did_i, "%s#%02d" % (rec.get("name", ""), idx), rec, item)
+                    news_buf.append((did_i, "%s#%02d" % (rec.get("name", ""), idx),
+                                     rec, item))
+                    news_chars += len(item)
+                    if len(news_buf) >= BATCH_K or news_chars >= BATCH_CHAR_CAP:
+                        flush_news()
                 continue
             judge(did, rec.get("name"), rec, rec.get("text", ""))
+    flush_news()   # 收尾残组
     print(f"done ok={n_ok} err={n_err} shadow={SHADOW}")
 
 

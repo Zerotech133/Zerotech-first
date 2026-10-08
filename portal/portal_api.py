@@ -20218,6 +20218,7 @@ render(DOCS);
         _panic = "\n".join(_gs.PANIC_WORDS)
         _hope = "\n".join(_gs.HOPE_WORDS)
         _alias = "\n".join("%s=%s" % kv for kv in _gs.WORD_ALIAS.items())
+        _stop = "\n".join(sorted(_gs.STOP))
         body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>股吧词表维护 · K263</title>{css}{nav}<style>
@@ -20247,27 +20248,32 @@ padding:8px 20px;font-size:13px;cursor:pointer}
 <div class='panel' style='margin-top:14px'><h3>同义归并 WORD_ALIAS
 （{n_alias} 组，每行 变体=规范词；只并真同义，不并组合词/上下位词）</h3>
  <textarea id='alias' style='min-height:120px'>{alias}</textarea></div>
+<div class='panel' style='margin-top:14px'><h3>停用词 STOP（{n_stop} 个，
+一行一词；通用虚词+机构财务话语：关于/万元/同比/点评…。整帖机构噪声
+由 NOISE_PAT 剔除，此处管散落词）</h3>
+ <textarea id='stop' style='min-height:120px'>{stop}</textarea></div>
 <div class='sv'><button onclick='save()'>💾 保存</button><span id='msg'>
 本页保存后：股吧词云/情绪打分即时生效；文档词云 TAG_ALIAS 不在此页
 （k266_m3_structure.py）。</span></div>
-<div class='dim'>只读参考：STOP 停用词 {n_stop} 个 · 事件契合 TAG_WORDS
-{n_tag} 组（这两组请编辑 guba_sentiment.py）</div>
+<div class='dim'>只读参考：事件契合 TAG_WORDS {n_tag} 组
+（编辑 guba_sentiment.py）</div>
 </div>
 <script>
 function lines(id){return document.getElementById(id).value.split('\\n')
  .map(s=>s.trim()).filter(Boolean)}
 function save(){
- var panic=lines('panic'), hope=lines('hope'), alias={};
+ var panic=lines('panic'), hope=lines('hope'), stop=lines('stop'), alias={};
  lines('alias').forEach(l=>{var i=l.indexOf('=');
   if(i>0){var k=l.slice(0,i).trim(),v=l.slice(i+1).trim();
    if(k&&v&&k!==v)alias[k]=v}});
  if(!panic.length||!hope.length){alert('情绪词表不可为空');return}
+ if(!stop.length){alert('停用词表不可为空');return}
  var msg=document.getElementById('msg');
  msg.textContent='保存中…';
  fetch('/kg/lexicon/save',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({panic:panic,hope:hope,word_alias:alias})})
+  body:JSON.stringify({panic:panic,hope:hope,stop:stop,word_alias:alias})})
  .then(r=>r.json()).then(d=>{msg.textContent=d.ok?
-  '✅ 已保存：恐慌 '+d.panic+' · 乐观 '+d.hope+' · 归并 '+d.alias+' 组（热生效）':
+  '✅ 已保存：恐慌 '+d.panic+' · 乐观 '+d.hope+' · 归并 '+d.alias+' 组 · 停用 '+d.stop+'（热生效）':
   '❌ '+(d.error||'保存失败')})
  .catch(e=>{msg.textContent='❌ '+e});
 }
@@ -20276,6 +20282,7 @@ function save(){
             "{panic}", _html.escape(_panic)).replace(
             "{hope}", _html.escape(_hope)).replace(
             "{alias}", _html.escape(_alias)).replace(
+            "{stop}", _html.escape(_stop)).replace(
             "{n_panic}", str(len(_gs.PANIC_WORDS))).replace(
             "{n_hope}", str(len(_gs.HOPE_WORDS))).replace(
             "{n_alias}", str(len(_gs.WORD_ALIAS))).replace(
@@ -20688,15 +20695,18 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                                 if str(w).strip()})
                 hope = sorted({str(w).strip() for w in rec.get("hope", [])
                                if str(w).strip()})
+                # stop 可选：不传保持现值；传了则全量替换（空表拒绝）
+                stop = sorted({str(w).strip() for w in rec.get("stop", _gs.STOP)
+                               if str(w).strip()})
                 alias = {}
                 for k, v in (rec.get("word_alias") or {}).items():
                     k, v = str(k).strip(), str(v).strip()
                     if k and v and k != v:
                         alias[k] = v
-                if not panic or not hope:
-                    self._json({"error": "情绪词表不可为空"}, 400)
+                if not panic or not hope or not stop:
+                    self._json({"error": "情绪词/停用词表不可为空"}, 400)
                     return
-                out = {"stop": sorted(_gs.STOP), "panic": panic, "hope": hope,
+                out = {"stop": stop, "panic": panic, "hope": hope,
                        "tag_words": _gs.TAG_WORDS, "word_alias": alias}
                 fp = _gs._LEX_FP
                 tmp = fp + ".tmp"
@@ -20705,7 +20715,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     json.dump(out, f, ensure_ascii=False, indent=1)
                 os.replace(tmp, fp)
                 self._json({"ok": True, "panic": len(panic),
-                            "hope": len(hope), "alias": len(alias)})
+                            "hope": len(hope), "alias": len(alias),
+                            "stop": len(stop)})
                 return
             if path == "/api/chanlun/label/save":
                 try:
