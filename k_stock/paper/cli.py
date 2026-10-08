@@ -146,6 +146,31 @@ def cmd_verify(args) -> int:
     return 0 if v["ok"] else 1
 
 
+def cmd_mark(args) -> int:
+    e = _engine(args)
+    r = e.mark()
+    ok = "✅" if r["verify_ok"] else "❌"
+    print(f"{ok} 快照 {r['date']}: 总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
+          f"待撮合 {r['pending']}")
+    return 0
+
+
+def cmd_curve(args) -> int:
+    e = _engine(args)
+    rows = e.curve()
+    if not rows:
+        print("（无快照，跑 paper.py mark 生成）")
+        return 0
+    base = rows[0]["total"] or 1.0
+    print(f"权益曲线（{len(rows)} 日，基线 {base:,.2f}）:")
+    for r in rows:
+        chg = (r["total"] / base - 1) * 100
+        ok = "✅" if r["verify_ok"] else "❌"
+        print(f"  {r['date']}  总资产 {r['total']:>12,.2f}  累计 {chg:+.2f}%  "
+              f"仓位 {r['pos_pct']:>5.1%}  待撮合 {r['pending']}  {ok}")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="paper", description="K-STOCK 模拟仓（纸面交易账本）")
     ap.add_argument("--db", default=None, help="账本 SQLite 路径（默认 k_stock/data/paper.db）")
@@ -193,6 +218,12 @@ def main(argv=None) -> int:
 
     p = sub.add_parser("verify", help="资金链对账")
     p.set_defaults(fn=cmd_verify)
+
+    p = sub.add_parser("mark", help="记录当日权益快照（automation 每日收尾调用）")
+    p.set_defaults(fn=cmd_mark)
+
+    p = sub.add_parser("curve", help="查看权益曲线（历史快照）")
+    p.set_defaults(fn=cmd_curve)
 
     args = ap.parse_args(argv)
     try:

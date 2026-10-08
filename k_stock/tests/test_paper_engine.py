@@ -264,6 +264,29 @@ def test_plan_date_prediction_and_settle_realign(tmp_path):
     assert e.verify()["ok"]
 
 
+# ---------- 权益日快照 ----------
+
+def test_mark_and_curve(tmp_path):
+    e = _mk_engine(tmp_path)
+    e.buy("600519.SH", 100)                       # ≈12.52 万
+    m1 = e.mark("2026-10-09")
+    assert m1["verify_ok"] and m1["pending"] == 0
+    # 同日重跑覆盖（幂等）
+    e.mark("2026-10-09")
+    # 次日快照
+    e.market = _mk_market(extra_tail=True)
+    e.sell("600519.SH")                           # 清仓，现金回升
+    m2 = e.mark("2026-10-10")
+    assert m2["pos_pct"] == 0.0
+    curve = e.curve()
+    assert len(curve) == 2                        # 同日覆盖后仍是 2 行
+    assert curve[0]["date"] == "2026-10-09" and curve[1]["date"] == "2026-10-10"
+    # 清仓后 total == 现金（空仓），且不等于首日 total（中间有真实买卖盈亏与费用）
+    assert curve[1]["total"] == pytest.approx(curve[1]["cash"])
+    assert abs(curve[1]["total"] - curve[0]["total"]) > 1.0
+    assert e.verify()["ok"]
+
+
 # ---------- settle 正常路径不误伤 ----------
 
 def test_settle_normal_path_not_blocked(tmp_path):

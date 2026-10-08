@@ -81,6 +81,16 @@ CREATE TABLE IF NOT EXISTS ledger(
   cash_after REAL NOT NULL,
   order_id INTEGER
 );
+CREATE TABLE IF NOT EXISTS equity_marks(
+  date TEXT PRIMARY KEY,           -- 自然日 YYYY-MM-DD（同日重跑覆盖）
+  total REAL NOT NULL,
+  cash REAL NOT NULL,
+  market_value REAL NOT NULL,
+  pos_pct REAL NOT NULL,
+  pending INTEGER NOT NULL,
+  verify_ok INTEGER NOT NULL,
+  ts TEXT NOT NULL
+);
 """
 
 
@@ -529,3 +539,29 @@ class PaperEngine:
                 pos_ok = False
         return {"ok": ok_cash and pos_ok, "cash": acc["cash"], "ledger_sum": expect,
                 "positions_consistent": pos_ok}
+
+    # ---------------- 权益日快照（S1 判据链证据） ----------------
+
+    def mark(self, day: str | None = None) -> dict:
+        """记录当日权益快照（同日重跑覆盖）。供 automation 每日收尾调用。"""
+        eq = self.equity()
+        v = self.verify()
+        day = day or datetime.now().strftime("%Y-%m-%d")
+        pend = self.con.execute(
+            "SELECT COUNT(*) FROM orders WHERE status='pending'").fetchone()[0]
+        self.con.execute(
+            "INSERT INTO equity_marks(date,total,cash,market_value,pos_pct,pending,verify_ok,ts) "
+            "VALUES(?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(date) DO UPDATE SET total=excluded.total,cash=excluded.cash,"
+            "market_value=excluded.market_value,pos_pct=excluded.pos_pct,"
+            "pending=excluded.pending,verify_ok=excluded.verify_ok,ts=excluded.ts",
+            (day, eq["total"], eq["cash"], eq["market_value"], eq["pos_pct"],
+             int(pend), int(v["ok"]), _now()))
+        self.con.commit()
+        return {"date": day, "total": eq["total"], "pos_pct": eq["pos_pct"],
+                "pending": int(pend), "verify_ok": v["ok"]}
+
+    def curve(self) -> list[dict]:
+        rows = self.con.execute(
+            "SELECT * FROM equity_marks ORDER BY date").fetchall()
+        return [dict(r) for r in rows]
