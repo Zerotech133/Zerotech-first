@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """K-STOCK S1 PoC · LLM 客户端
 
-优先级：GLM 8098（预留，当前拒连）→ Ollama 11434（现役 qwen3.5:9b）→ mock（测试/降级）。
+优先级：GLM 8098（宿主=盯盘机器人 ai_os 网关，K274 已删、源码归档 projects-archive/盯盘机器人/ai_os/，
+       恢复=S2 决策点：归档重部署或改 GLM 官方 API）→ Ollama 11434（现役 qwen3.5:9b，keep_alive 1800）→ mock（测试/降级）。
 接口 OpenAI 兼容 /v1/chat/completions，标准库实现零依赖。
 降级三态：primary 失败→fallback；全失败→raise LLMUnavailable（编排器转 mock 或跳过）。
 """

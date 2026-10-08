@@ -43,10 +43,13 @@ def run_one(stock: str, context: str = "", mock: bool = False, auto: bool = Fals
     return result
 
 
-def load_guard(threshold_s: float = 15.0) -> tuple[float, float]:
+def load_guard(threshold_s: float = 6.0) -> tuple[float, float]:
     """两段式负载守卫（2026-10-08 修正）：
     第 1 探针 = 冷启动预热（Ollama keep_alive 默认 5m 过期即卸载模型，重载 70s+，不计判定）；
     第 2 探针 = 热态真实推理速度，超阈值判定负载挤压，中止跑批。
+    阈值 6s（标定曲线，10-08 实证）：热态 2s→5/5 全绿 | 8.8s→3/5（T2/N1 崩）|
+    10.8s→1/5（T1/N1 合法 JSON 前缀截断=生成流中途夭折）。S1 判据要有效数据，
+    宁缺毋滥；空闲基线 ~2s，6s 有 3 倍余量。
     返回 (冷耗时, 热耗时)。守卫顺带完成预热，一举两得。"""
     import time
     import urllib.request
@@ -97,9 +100,9 @@ def main():
         try:
             t_cold, t_warm = load_guard()
             print(f"[guard] 冷启动 {t_cold:.1f}s（预热，不计判定）| 热态推理 {t_warm:.1f}s", flush=True)
-            if t_warm > 15.0:
-                print(f"[guard] 热态超 15s——系统负载挤压推理，跑批必大量降级，中止。"
-                      f"建议换时段（收盘后低峰）或降低系统负载后重试。", flush=True)
+            if t_warm > 6.0:
+                print(f"[guard] 热态超 6s——系统负载挤压推理（标定：2s 全绿/8.8s 半崩/10.8s 仅 1 节点存活），中止。"
+                      f"建议换时段（收盘后低峰/清晨）或降低系统负载后重试。", flush=True)
                 sys.exit(3)
         except Exception as e:
             print(f"[guard] Ollama 不可达: {e}", flush=True)
