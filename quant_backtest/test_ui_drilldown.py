@@ -1209,14 +1209,17 @@ class TestDataHealth(unittest.TestCase):
                  "tables": [{"table": "daily", "live": "20260927",
                              "snap": "20260926", "lag_days": 0,
                              "ready": True, "status": "OK"}]}), \
-             mock.patch("data_health._scan_artifacts", return_value=[]):
+             mock.patch("data_health._scan_artifacts", return_value=[]), \
+             mock.patch("data_health._scan_integrity", return_value={
+                 "metrics": [], "fail_count": 0, "warn_count": 0,
+                 "expected_latest": "—"}):
             d = _dh.scan_warehouse()
         _dh._WCACHE["t"], _dh._WCACHE["d"] = 0, None   # 还原缓存
         for k in ("generated_at", "kpi", "groups", "gaps"):
             self.assertIn(k, d)
-        self.assertEqual(len(d["groups"]), 6)   # TDX/Tushare/新鲜度/K线/新闻/产物
+        self.assertEqual(len(d["groups"]), 7)   # TDX/Tushare/新鲜度/数据完整度/K线/新闻/产物（integrity@9aabecb）
         self.assertEqual([g["kind"] for g in d["groups"]],
-                         ["tdx", "tushare", "freshness",
+                         ["tdx", "tushare", "freshness", "integrity",
                           "kline", "news", "artifact"])
         self.assertEqual(d["kpi"]["tdx_sync"], "1/2")
         tdx_g = d["groups"][0]

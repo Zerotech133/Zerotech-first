@@ -214,7 +214,12 @@ def test_load_wide_eligibility(tmpdir):
     for name, n in (("600001_SH", 300), ("000002_SZ", 30)):
         pd.DataFrame({
             "trade_date": [str(20230101 + i) for i in range(n)],
-            "open": np.full(n, 10.0), "close": np.arange(n, dtype=float) + 5,
+            "open": np.full(n, 10.0),
+            # K254 列契约：load_wide 要求 high/pre_close；pre_close=close 前值
+            # → 后复权因子链 ratio=1，chg250 断言数学不变
+            "high": np.arange(n, dtype=float) + 5,
+            "close": np.arange(n, dtype=float) + 5,
+            "pre_close": np.arange(n, dtype=float) + 4,
         }).to_parquet(os.path.join(d, name + ".parquet"))
     with open(os.path.join(d, "_names.json"), "w") as f:
         json.dump({}, f)     # 应被忽略
