@@ -32,7 +32,7 @@ K线与量能是市场参与者博弈留下的**痕迹（证据）**；缠论结
 ### L2 知识资产
 | 资产 | 规模 | 状态 |
 |------|------|------|
-| Neo4j 时序图谱 | 113208 节点 / 288763 边 @09-28 快照 → **2026-10-08 实核 ≈93 万节点 / 46 类边型**（MarketEvent 67.7 万为增长大头）；现值见门户 /kg/stats 与 data/graph_check/latest.json | ✅ validStart/End 铁律（⚠ graph_check 现报 8 个新边型未入 schema 白名单，待注册） |
+| Neo4j 时序图谱 | 113208 节点 / 288763 边 @09-28 快照 → **2026-10-08 08:56 实核 147.5 万节点 / 420.7 万边 / 41 边型·44 端点组合**（data/graph_check/latest.json snapshot，含 MarketEvent 67.7 万与 KGStockAnalysis 情报线边族）；现值见门户 /kg/stats | ✅ validStart/End 铁律；drift 已清零@10-08（graph_check 8 个新组合定性：7 个 K190/K201 边型本已注册，SUPPLIES/DRIVES 已补注册 kg_schema.py@10-08；⚠ 跨项目边族未合流：KGStockAnalysis 写入器 kg_intel_link/kg_corroborate/kg_ann_history_link 等 9 边型 ≈98.5 万条共用本图，schema 分居对方项目——挂 K264） |
 | 事件流 | Event 23766 + INVOLVES 17598（bull/bear）| ✅ 每日四步链保鲜 |
 | 盘面事件 | MarketEvent 55524（缠论 9426 + 量能 46098）| ✅ CL-1 入图（**保鲜待接**）|
 | 游资席位 | HotMoney 19 / Seat 78 / OCCUPIES 78 / TRADED_ON 72074 @09-28 快照 → **2026-10-08 实核 21 / 247**；现值见 /kg/stats | ✅ CL-1（19/19 全命中）|

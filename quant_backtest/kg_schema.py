@@ -72,6 +72,8 @@ REL_SUB_OF = "SUB_OF"               # Segment -[SUB_OF]-> Segment 二级子环�
 REL_SUPPLIES_TO = "SUPPLIES_TO"     # Company -[SUPPLIES_TO {evidence,chain}]-> Segment 供货关系（K201-C，证据溯源）
 LBL_COMMENTATOR = "Commentator"     # 信息源/分析主体（K201-D：四派分析师/评论员，情报本体评估层）
 REL_ASSESSED = "ASSESSED"           # Commentator -[ASSESSED {verdict,stars,theme,date}]-> Security 派系评估（K201-D）
+REL_SUPPLIES = "SUPPLIES"           # Concept -[SUPPLIES {conf,reason,overlap,batch}]-> Concept 概念级供应链方向（K265-P1，source=concept_llm_v1 整体回滚键；src=上游卖方，品牌概念禁作 src）
+REL_DRIVES = "DRIVES"               # Concept -[DRIVES {conf,reason,overlap,batch}]-> Concept 需求带动（K265-P1，source=concept_llm_v1；qwen 判向+buyer 自检+人审抽样，conf≥0.95 入图）
 
 # ── 时序默认值 ────────────────────────────────────────────────
 VALID_END_OPEN = "9999-12-31"       # 在市/有效 → 开区间末端

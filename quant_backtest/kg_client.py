@@ -159,7 +159,9 @@ class KgClient:
                         # 情报层边（K218 仪表扩容：形态/传导/集团/共识）
                         S.REL_HAS_PATTERN, S.REL_USES_TECH, S.REL_ON_DATE,
                         S.REL_CONDUCTION, S.REL_SUB_OF, S.REL_SUPPLIES_TO,
-                        S.REL_IN_GROUP, S.REL_ASSESSED]:
+                        S.REL_IN_GROUP, S.REL_ASSESSED,
+                        # 概念级语义边（K265-P1：LLM 供应链/需求带动）
+                        S.REL_SUPPLIES, S.REL_DRIVES]:
                 r = s.run(
                     "MATCH ()-[r:%s]->() RETURN count(r) AS c" % rel).single()
                 print("  边   %-15s %d" % (rel, r["c"]))
