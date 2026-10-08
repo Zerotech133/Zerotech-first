@@ -24,6 +24,7 @@ SHADOW = BASE / "data" / "shadow"
 LEDGER = SHADOW / "shadow_ledger.jsonl"
 LOG = SHADOW / "last_run.log"
 ALERT = SHADOW / "p0_alert_state.json"
+PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
 
 EXPECTED = [
     ("07:05", "k_stock PoC 每日无人干预跑（本地团队线，守卫在岗）"),
@@ -39,6 +40,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", default=(datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d"),
                     help="核对目标日（默认昨天）")
+    ap.add_argument("--push", action="store_true", help="简报推飞书（晨检 automation 用）")
     args = ap.parse_args()
     d = args.date
 
@@ -103,6 +105,32 @@ def main():
         capture_output=True, text=True, encoding="utf-8", timeout=120)
     for ln in (r.stdout or "").splitlines():
         print("    " + ln)
+
+    # --push：压缩简报推飞书（影子期晨检 automation，K-STOCK-016）
+    if args.push:
+        j_lines = [ln.strip() for ln in (r.stdout or "").splitlines()
+                   if ln.strip().startswith(("[J1", "[J2", "[J3", "影子评估结论"))]
+        brief = ["**影子晨检简报 %s**" % d,
+                 "账本：%d done / %d failed / %d 降级" % (len(done), len(failed), len(deg))]
+        for rr in done:
+            brief.append("- %s %s conf=%s" % (rr["symbol"], rr.get("recommendation", "?"),
+                                              rr.get("confidence", "?")))
+        for rr in failed:
+            brief.append("- **[FAILED]** %s：%s" % (rr["symbol"], rr.get("error", "?")[:80]))
+        if not rows:
+            brief.append("- **[警示]** 该日无入账行（若为交易日需排查影子 automation）")
+        brief += ["- " + x for x in j_lines]
+        try:
+            tmp = SHADOW / "_morning_brief_tmp.md"
+            tmp.write_text("\n".join(brief), encoding="utf-8")
+            pr = subprocess.run(
+                [sys.executable, str(PUSH_SCRIPT), str(tmp)],
+                capture_output=True, text=True, encoding="utf-8", timeout=60)
+            out = (pr.stdout or pr.stderr or "").strip()
+            print("\n[push] 晨检简报：%s" % (out.splitlines()[-1] if out else "无输出"))
+            tmp.unlink(missing_ok=True)
+        except Exception as e:  # noqa: BLE001
+            print("\n[push] 推送异常：%s" % e)
 
     print("\n[6] 今日 automation 预期时刻表：")
     for t, name in EXPECTED:
