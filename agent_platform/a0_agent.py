@@ -35,12 +35,14 @@ MOCK_REVIEW = (
 
 
 def chief_model():
-    """从 org.json 读 chief 的 llm_binding（缺省 ollama/qwen3.5:35b）"""
+    """从 org.json 读 chief 的 llm_binding（缺省 ollama/qwen3.5:9b）。
+    审计修正（K-STOCK-021b）：兜底原为 35b，但 35b 已实测证伪（本机显存不足必超时，
+    K-ORG-008）——兜底必须指向已验证可用档。"""
     try:
         org = json.loads(ORG.read_text(encoding="utf-8"))
-        return org.get("chief", {}).get("llm_binding", "ollama/qwen3.5:35b").split("/")[-1]
+        return org.get("chief", {}).get("llm_binding", "ollama/qwen3.5:9b").split("/")[-1]
     except Exception:  # noqa: BLE001
-        return "qwen3.5:35b"
+        return "qwen3.5:9b"
 
 
 def main():
