@@ -56,3 +56,18 @@
 
 - **sentinel 族（_sentinelEOD / _sentinelKgTdx / ChanlunRefill / RtdxRtMinPull / Git Updater）rc=0x8007042B**：= 0x42B(1067) ERROR_PROCESS_ABORTED「进程意外终止」。`C:\Temp\sentinel_eod.py` 为一次性哨兵（内部 sleep 等到 15:06/15:31 再验收），这类长时等待进程在**关机/重启时被系统杀掉**即留下该码——10-06 停机与全部此码任务时间吻合。**语义=「上次是被动终止」，非业务故障**；属可接受噪音，建议后续加入 health_check 的 _BENIGN_RC 或按「开机首查豁免」处理。
 - **公众号选题撰文 rc=1**：事件日志实证 10-07 09:30 该任务与 SubPushEod 同码失败（0x80070001/LastTaskResult=1）——与 SubPushEod 同一动作层间歇性问题，处置随 §4 一并观察。
+
+---
+
+## 6. 追记（2026-10-08 10:22，WorkBuddy 主控会话）：§4 处置全项闭环
+
+| §4 动作 | 状态 | 证据 |
+|---|---|---|
+| §4.1 受控复现 | ✅ 完成 | 10:22 `Start-ScheduledTask` 触发，**rc=0x0**；日志尾 `SUBSCRIBE_OK mode=eod subs=3 ok=1` + SEND_OK；熔断正常（`sub_batch_daily=capped`/`sub_bp_000993=capped`，每日 3 次保护生效，未重复轰炸） |
+| §4.2 动作层加固 | ✅ 已落地（WS3/本地团队 10-07 14:59，提交 `7d0ca88`） | 现网 XML 实证：动作串含 `\|\|` 失败重试链、RestartOnFailure=PT5M×3、StartBoundary=10-05T07:30Z（UTC 绝对时刻，北京 15:30 正确） |
+| §4.3 health_check 陈旧度 | ✅ 已落地（C5 批次） | `ops/health_check.py`：`_STALE_MAX_HOURS=26` + `_DAILY_TASKS` 白名单（SubPushEod 登记日志路径）+ LastRunTime/日志 mtime 双源 + 1999 哨兵识别「从未跑」 |
+| §4.4 开机可达性 | 用户侧决策项 | 维持原状（停机日 EOD 顺延至开机补发） |
+
+**「bot token 缺失」澄清（10-08 上午巡检遗留定性修正）**：10-05 日志中的 `SEND_FAIL no tenant token` / `no access token available for bot` 为**旧态**——10-08 实测凭证链路健康：SubPushIntraday（同为 SYSTEM 任务、同款 `send_feishu.py`）当日 10:00 连续 `SEND_OK`，EOD 补跑亦 `SEND_OK`。无需处置。
+
+**遗留观察点（唯一）**：重注册后任务实例 LastRunTime 曾为 1999 哨兵（0x41303「从未运行」）——10-07 15:30 触发点未被命中（注册时点与首触发日关系存疑）。**今天 15:30 为首次自然定时触发**：若 10-09 晨检 LastRunTime 仍停在 10-08 10:22（手动触发值）而非 15:30，则触发器层仍有问题需再查；若为 15:30 则全链路彻底闭环，0x41303 状态自然消失。
