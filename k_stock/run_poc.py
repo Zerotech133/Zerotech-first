@@ -43,21 +43,28 @@ def run_one(stock: str, context: str = "", mock: bool = False, auto: bool = Fals
     return result
 
 
-def load_guard(threshold_s: float = 15.0) -> float:
-    """负载守卫：短推理探针。返回耗时；超阈值说明系统负载挤压 CPU 推理，
-    跑批必大量降级（2026-10-08 实测：负载高峰短推理 42s vs 空闲 2s）。
-    返回耗时，调用方决定是否中止。"""
+def load_guard(threshold_s: float = 15.0) -> tuple[float, float]:
+    """两段式负载守卫（2026-10-08 修正）：
+    第 1 探针 = 冷启动预热（Ollama keep_alive 默认 5m 过期即卸载模型，重载 70s+，不计判定）；
+    第 2 探针 = 热态真实推理速度，超阈值判定负载挤压，中止跑批。
+    返回 (冷耗时, 热耗时)。守卫顺带完成预热，一举两得。"""
     import time
     import urllib.request
-    t0 = time.time()
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    body = json.dumps({"model": "qwen3.5:9b", "stream": False,
-                       "messages": [{"role": "user", "content": "回复两个字：正常"}]}).encode()
-    d = json.loads(op.open(urllib.request.Request(
-        "http://127.0.0.1:11434/api/chat", data=body,
-        headers={"Content-Type": "application/json"}), timeout=120).read())
-    _ = d["message"]["content"]
-    return time.time() - t0
+    t_cold = t_warm = 0.0
+    for i in range(2):
+        t0 = time.time()
+        body = json.dumps({"model": "qwen3.5:9b", "stream": False, "keep_alive": 1800,
+                           "messages": [{"role": "user", "content": "回复两个字：正常"}]}).encode()
+        d = json.loads(op.open(urllib.request.Request(
+            "http://127.0.0.1:11434/api/chat", data=body,
+            headers={"Content-Type": "application/json"}), timeout=300).read())
+        _ = d["message"]["content"]
+        if i == 0:
+            t_cold = time.time() - t0
+        else:
+            t_warm = time.time() - t0
+    return t_cold, t_warm
 
 
 def main():
@@ -88,10 +95,10 @@ def main():
 
     if not args.mock and not args.no_guard:
         try:
-            dt = load_guard()
-            print(f"[guard] Ollama 短推理 {dt:.1f}s", flush=True)
-            if dt > 15.0:
-                print(f"[guard] 超过 15s 阈值——系统负载挤压推理，跑批必大量降级，中止。"
+            t_cold, t_warm = load_guard()
+            print(f"[guard] 冷启动 {t_cold:.1f}s（预热，不计判定）| 热态推理 {t_warm:.1f}s", flush=True)
+            if t_warm > 15.0:
+                print(f"[guard] 热态超 15s——系统负载挤压推理，跑批必大量降级，中止。"
                       f"建议换时段（收盘后低峰）或降低系统负载后重试。", flush=True)
                 sys.exit(3)
         except Exception as e:

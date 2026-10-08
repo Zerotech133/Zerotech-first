@@ -44,6 +44,7 @@ class LLMClient:
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": False,
+            "keep_alive": 1800,  # 30 分钟保活：默认 5m 过期即卸载，重载 6GB 冷启动 70s+
         }
         # 注：Ollama 对 response_format json_object 兼容性不稳（qwen3.5 实测偶发空输出），
         # JSON 约束靠 system 提示词 + orchestrator._parse 正则兜底，不用 response_format。
