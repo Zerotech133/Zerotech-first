@@ -108,3 +108,6 @@ jev-eval/backup_card_acks.jsonl
 jev-eval/jev_gate.err
 jev-eval/gate_seen.json*
 jev-eval/replay/
+
+# ===== Hermes（K273 自 D:\Hermes 搬入：第三方 webui+运行时态，不进版本控制）=====
+Hermes/

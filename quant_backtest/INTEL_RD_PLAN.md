@@ -5646,6 +5646,7 @@ K256（未启动）· 候选：QPZM 生产参数 walk-forward 化（K253 排期�
 - cypher 判例：CALL 子查询内 `LIMIT 1`+聚合 count 惰性截断严重失真（CONTRADICTS 报 178 实为 4785）——计数必须独立查询。
 - **BUG-1 修复补记（10-08 中午，专项整理发现）**：重算只改 tag/bias 未清 reason/conf——144 条 tag=None 但 reason 残留「规则命中:旧tag」+conf=0.7、另 3 条退市风险→资产收购流转 reason 旧值；修复=精准锚定 175 变更集照 `_seed_notice` 语义归一（None→reason=""/conf=None，流转→reason=新tag/conf=0.7），行数 40561 铁律，重跑 p3 同步图谱；复验 jsonl 残留 0/0/0 + 图谱残留 0 + 三错类 119 保持——**四层闭环终态**（RULES→jsonl tag→jsonl reason/conf→图谱全字段）。审计器 `_k260_field_audit.py` 留档。增量链无回滚风险已证（`id in seen: continue` 跳过语义）。
 - **第三处残留排查收口（10-08 13:00，快速授权深挖「防第三处残留」）**：grep 全消费方发现 `E:\KGDataRoot\semantica\events.jsonl` 第二活档嫌疑（KGStockAnalysis 侧 `kg_paths.get_data_root()` 指向）→ 实查为**死档**：35905 行、三错类 278 旧错标、10-05 停更；调度链（ops\start_kg_sync.ps1，今晨 06:27 kg_sync OK 实证活链）工作目录 `C:\aios\quant_backtest` 经 junction realpath=**E 盘正本**（samefile=True 实证），**活链数据源=正本无回滚**——明晨链跑=修复后 RULES+修复态 jsonl+id 跳过语义三保险；且重算锚定「tag∈三错类」303 条全集已覆盖 06:27 链可能写入的旧标行。**警示：KGDataRoot 死档含 278 旧错标封存，未来若重启 KGStockAnalysis 侧链/kg_paths 指针会 resurrect 旧数据——重启前须先重放修复**。PS 判例+1：junction 的 PS `Target` 属性显示字符串不可信（显示历史中结名且中文路径内联传参乱码），**junction 真指向以 python `os.path.realpath` 为准**。
+- **K260 audit 终局（10-08 14:45，老田指令「处理 7 条 CSV 判定」→ Trae-CN 按建议代填）**：v2 CSV 判定列 30/30 落地——快速组 16 条 R（机器一致）+ 已修复组 7 条「修」（引擎定性）+ 存疑组 7 条按建议 R×2（天微电子/趣睡科技）L×3（东兴证券/赣锋锂业/华宏科技）X×2（常青科技/中科环保）。**定量结论：修复后规则轴胜 25/30（83%，含修复 7）、LLM 轴胜 3/30（10%）、双输 2/30（发转债类目缺失，宁 None）**——两轴结构性结论终版实证：tag 轴规则强（修错后）、LLM 价值在 bias 轴保守策略（3 胜全在 neutral/bull 视角）、类目空白宁 None 不错判。**K260 整体 🟢 收口**（判定系代填，老田可复核改判 v2 CSV 留档）。
 
 ## K261 🆕 立项（未启动）：图谱能力框架 —— 实体链接通用化 + 图分析算法层 + 布局插件化（10-07，用户「未来的数据体量很大，需要通过知识图谱解决实体链接…基于知识图谱的能力框架完成整个系统的任意分析，而不是写死一个知识图谱」）
 
@@ -6026,6 +6027,7 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **词云 mtime 缓存上线**：`_kg_doc_page` 类级缓存（shadow mtime + 词种数双键）——第二次请求 **128ms**（原每次全量重渲染 >10s）；shadow 变更自动失效重渲染，门户重启生效。
 - **并发重判教训（第二次）**：计划任务 M3 与手动 M3 在守卫生效前窗口并发判同批 → 39 条重复影子（前次 48），按 doc_id 去重 532→493；**StopCommand 只杀 shell 不杀子 python**，残留 M3 需 `Stop-Process -Id` 直杀。ps1 守卫部署后每 tick 正常拦截（服务日志可证）。
 - **收尾终验（10-08 中午）**：影子 493 条（107 docs + 386 news items）err=0 dups=0，两条历史 ERR 已重判成功；/kg/doc 200 全要素在位（srcflt pills / baseList 限流 / 词云图）；全链路收官：新闻采集(15min) → 单条结构化 → 词云/图谱/事件三层消费，全自动零人工。
+- **无人值守实证（10-08 12:01-12:17）**：手动 M3 退出后，计划任务 tick 自动拉起新实例（PID 11744）补判积压批次——影子 493→542（22s/条，含 2 条偶发 ERR 待下轮自动重判），守卫/触发/ERR 重试三机制在零人工下实战验证通过；12 容器全 healthy（quantdinger 应用层 9 容器经老田拍板 `docker start` 拉起，compose start 被一次性 migration 依赖挡住故绕过直启）。
 
 ### K266 补记五（10-08 凌晨，三项拍板落地：M3-B 入图 + 金标集 + K260 收口）
 - **拍板执行**（2026-10-08 用户三项：M3 入图「先B后A」/ 建 30 篇金标集 / eval 接受剔除口径）。
@@ -6078,3 +6080,13 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **开发坑**：split_sections 把 H1 标题归 `(preamble)` 小节致首版断言 4≠6——修法=加 `_is_struct_noise()` 过滤纯标题 preamble（修语义非凑数字），有实质内容的 preamble（USER.md 主题行）保留人审可判。
 - **人审三项拍板项**（详见 docs/ops/2026-10-08_K272）：①Hermes 12 条哪些进 CowAgent 长期（建议「工作约定/沟通风格」进、「待实现功能」不进）②increment 放行口径（当前为合成验证数据，CowAgent 部署后重跑 import-cow 出真实候选）③v0.2 生产写路由形态——直写 MEMORY.md 增量 vs **正规形态=MemoryProvider 第三插件**（与 mem0/supermemory 互斥，外部 provider 上限 1）。
 - **挂账**：CowAgent 实际部署（~/cow 未建）；cowbridge 入库方式（D:\Hermes 非 git）；v0.2 待拍板。回滚=删 shadow/ 即净，零生产影响。
+
+## K273 ✅ D:\Hermes 搬迁 E 盘主仓（2026-10-08 中午，用户「散落项目是否都应搬 E 盘」→ 拍板先搬 Hermes 试点、重量级逐个评估）
+
+**散落资产收敛第一批**。侦察：D:\Hermes 167.93MB/6152 文件；硬编码引用仅 5 文件；webui-state 零关键绝对路径；全机计划任务引用 D:\Hermes 仅 HermesWebUI-Guard 1 个。执行 11 步全序列：任务定义备份 → robocopy 全量（24 文件错误 5 拒绝，**100% 集中于 p0-baseline 旧基线含 .env/auth.json 旧凭据，受限 ACL 是刻意保护——决策不搬防凭据扩散面扩大**）→ 停服（杀前 CIM 辨认）→ 改引用 4 处（start_hermes_bg.py×3 + conftest×1；文档同步带尾反斜杠精确替换避开 `D:\HermesData` 误伤）→ .gitignore 收编 `Hermes/` → **Set-ScheduledTask 只换 Action（触发器/电池策略原样）**→ 触发验证 → 旧目录改名 `D:\Hermes.old_20261008` 观察期。
+
+- **终验**：改名后 /health 200（零旧路径依赖实锤）；文件数 6128=6128 diff=0；cowbridge 新路径 selftest PASS（BRIDGE_DIR=__file__ 自动跟随）。
+- **谜题解开**：server.py venv 主进程会 spawn 系统 Python311 子进程跑 server（K271 时代"系统 python 进程"来源）——上游内部行为非异常。
+- **重量级项目搬迁模板沉淀**（试点全流程）：侦察引用面→备份任务定义→robocopy→失败定性→停服改引用→Set-ScheduledTask 换 Action→触发验证→旧目录改名观察期。
+- **新发现**：`D:\老田的AI助手`（252MB，2026-03-27 冻结旧版含美林时钟引擎）与 E 盘主仓**同名不同内容**——混淆源挂账待归档；D 盘散落台账：盯盘机器人 934MB/量子双刀 2.4GB/青萍之末 2.5+3.1GB/sol土狗 170MB/CowAgent 14MB。
+- 挂账：旧副本归档拍板；重量级项目逐个评估；CowAgent 克隆去留；观察期至 10-15 后旧目录回收站删除（p0-baseline 随目录保留）。
