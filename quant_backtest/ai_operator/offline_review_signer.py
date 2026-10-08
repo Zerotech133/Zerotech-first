@@ -93,7 +93,7 @@ def _restrict_private_permissions(descriptor):
 
 def _delete_open_private(descriptor):
     if os.name != "nt":
-        return
+        return True
     import ctypes
     from ctypes import wintypes as wt
     import msvcrt
@@ -102,7 +102,14 @@ def _delete_open_private(descriptor):
     kernel.SetFileInformationByHandle.argtypes = [wt.HANDLE, ctypes.c_int, wt.LPVOID, wt.DWORD]
     disposition = ctypes.c_ubyte(1)
     # 只标记本次独占创建的原对象删除；不按可被替换的路径清理。
-    kernel.SetFileInformationByHandle(msvcrt.get_osfhandle(descriptor), 4, ctypes.byref(disposition), 1)
+    # 2026-10-08 评审修复：返回值必须核验。此前静默吞掉失败——受限环境
+    # （EDR 拦截 change-disposition，实测 error 5）下私钥残留且无任何告警。
+    try:
+        handle = msvcrt.get_osfhandle(descriptor)
+    except OSError:
+        return False  # 句柄已失效（如被第三方关闭）：按路径清理被设计禁止
+    return bool(kernel.SetFileInformationByHandle(
+        handle, 4, ctypes.byref(disposition), 1))
 
 
 def _open_new(path, *, private):
@@ -138,7 +145,11 @@ def _write_new(path, raw, *, private=False):
             os.fsync(output.fileno())
         except BaseException:
             if private:
-                _delete_open_private(output.fileno())
+                if not _delete_open_private(output.fileno()):
+                    # 私钥残留告警（不抛错：不掩盖原始失败，也不误伤防 TOCTOU 语义）
+                    print("[offline-signer] 警告：私钥删除标记被环境拒绝，"
+                          "句柄关闭后 %s 可能残留，请人工核查" % path,
+                          file=sys.stderr)
             raise
 
 
