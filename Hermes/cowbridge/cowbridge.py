@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
-"""cowbridge — CowAgent 三层记忆 ↔ Hermes 执行记忆 桥接器（影子模式 v0.1）。
+"""cowbridge — CowAgent 三层记忆 ↔ Hermes 执行记忆 桥接器（影子模式 v0.1.1）。
 
 K272 主线一：记忆层打通。两侧记忆均为 Markdown 小节形态（## header + 内容），
 桥=小节级搬运 + provenance 标注 + 内容哈希去重。
+
+v0.1.1（K273 实测适配）：
+  - CowAgent 读取对齐真实存储：根部 MEMORY.md + memory/long-term/index.db
+    （chunks source='memory' 记忆单元 + messages 会话转录 tier=dialog）
+  - 噪音过滤增强：纯模板 preamble（标题+斜体+分隔线）不入候选
+  - 双层去重：Cow 侧同 sha1 合并；影子增量文件 sha1 回读（重跑 new=0）
 
 影子纪律（K270 整改确立）：
   - 所有写入只落 shadow/，两侧生产记忆文件零接触
@@ -40,6 +46,8 @@ SHADOW = BRIDGE_DIR / "shadow"
 
 _SEC_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 _TITLE_LINE = re.compile(r"^#{1,6}\s+.*$", re.MULTILINE)   # Markdown 标题行
+_ITALIC_LINE = re.compile(r"^\*[^*]+\*$", re.MULTILINE)    # 整行斜体（模板说明）
+_HR_LINE = re.compile(r"^ {0,3}(?:-{3,}|\*{3,}|_{3,})\s*$", re.MULTILINE)  # 分隔线
 PREAMBLE = "(preamble)"
 
 
@@ -48,12 +56,15 @@ def sha1_12(text: str) -> str:
 
 
 def _is_struct_noise(it: dict) -> bool:
-    """纯标题 preamble（剔除标题行后无实质内容）＝结构噪音，非记忆单元。
+    """纯结构 preamble（剔除标题/整行斜体/分隔线后无实质内容）＝模板噪音。
 
-    每个带 H1 的文件都会产出一条，放进人审材料只会制造噪音；
-    有实质内容的 preamble（如 USER.md 的主题描述行）保留，人审可判。
+    MEMORY.md 模板的斜体说明行属此类（K273 实测泄漏）；
+    有实质内容的 preamble（如 USER.md 的「用户偏好与画像记录」文本行）保留。
     """
-    return it["header"] == PREAMBLE and not _TITLE_LINE.sub("", it["body"]).strip()
+    stripped = _TITLE_LINE.sub("", it["body"])
+    stripped = _ITALIC_LINE.sub("", stripped)
+    stripped = _HR_LINE.sub("", stripped)
+    return it["header"] == PREAMBLE and not stripped.strip()
 
 
 def split_sections(md_text: str) -> list[tuple[str, str]]:
@@ -89,21 +100,80 @@ def read_hermes_memory() -> list[dict]:
     return items
 
 
-def read_cow_memory(cow_root: Path | None = None) -> list[dict]:
-    """CowAgent 三层记忆（只读）：MEMORY.md（长期）+ daily/*.md（天级）。
+def _read_cow_indexdb(root: Path) -> list[dict]:
+    """CowAgent 长期库 index.db（只读 URI 防写锁）：
 
-    短期上下文在会话内，不跨进程——不在桥的范围。
+    - chunks 表 source='memory' 的记忆单元（按小节切）
+    - messages 表对话记录（按 session 聚合为转录节，tier=dialog）
+
+    实测结构（K273 冒烟）：根部 MEMORY.md 长期为空模板时，真实数据源是本库。
     """
-    root = (cow_root or COW_WORKSPACE) / "memory"
+    import sqlite3
+
+    db = root / "memory" / "long-term" / "index.db"
+    if not db.exists():
+        return []
     items = []
-    mem_md = root / "MEMORY.md"
-    if mem_md.exists():
-        for header, body in split_sections(mem_md.read_text(encoding="utf-8")):
+    con = sqlite3.connect(f"file:{db.as_posix()}?mode=ro", uri=True)
+    try:
+        for _cid, _source, path, text in con.execute(
+            "SELECT id, source, path, text FROM chunks WHERE source='memory'"
+        ):
+            if not (text or "").strip():
+                continue
+            for header, body in split_sections(text):
+                items.append({
+                    "side": "cow", "file": f"indexdb:{path}", "tier": "long",
+                    "header": header, "body": body,
+                    "sha1": sha1_12(header + "\n" + body),
+                })
+        rows = con.execute(
+            "SELECT session_id, seq, role, content FROM messages ORDER BY session_id, seq"
+        ).fetchall()
+        by_sess: dict[str, list[tuple[str, str]]] = {}
+        for session_id, _seq, role, content in rows:
+            try:
+                parts = json.loads(content)
+                text = "\n".join(
+                    p.get("text", "") for p in parts if isinstance(p, dict)
+                )
+            except Exception:
+                text = str(content)
+            if text.strip():
+                by_sess.setdefault(session_id, []).append((role, text))
+        for session_id, msgs in by_sess.items():
+            trans = "\n".join(
+                f"{'用户' if r == 'user' else 'Cow'}: {t}" for r, t in msgs
+            )[:4000]
+            header = f"会话 {session_id}"
             items.append({
-                "side": "cow", "file": "MEMORY.md", "tier": "long",
-                "header": header, "body": body,
-                "sha1": sha1_12(header + "\n" + body),
+                "side": "cow", "file": f"indexdb:sessions/{session_id}",
+                "tier": "dialog", "header": header, "body": trans,
+                "sha1": sha1_12(header + "\n" + trans),
             })
+    finally:
+        con.close()
+    return items
+
+
+def read_cow_memory(cow_root: Path | None = None) -> list[dict]:
+    """CowAgent 三层记忆（只读）。
+
+    v0.1.1 实测路径（K273）：长期 = 根部 MEMORY.md（不在 memory/ 下）+ index.db；
+    天级 daily/*.md 保留兼容；短期上下文在会话内，不跨进程——不在桥的范围。
+    """
+    base = cow_root or COW_WORKSPACE
+    root = base / "memory"
+    items = []
+    # 根部 MEMORY.md（实测实际位置）+ 旧契约路径（兼容）
+    for mem_md in (base / "MEMORY.md", root / "MEMORY.md"):
+        if mem_md.exists():
+            for header, body in split_sections(mem_md.read_text(encoding="utf-8")):
+                items.append({
+                    "side": "cow", "file": "MEMORY.md", "tier": "long",
+                    "header": header, "body": body,
+                    "sha1": sha1_12(header + "\n" + body),
+                })
     for daily in sorted(root.glob("daily/*.md")):
         for header, body in split_sections(daily.read_text(encoding="utf-8")):
             items.append({
@@ -111,6 +181,7 @@ def read_cow_memory(cow_root: Path | None = None) -> list[dict]:
                 "header": header, "body": body,
                 "sha1": sha1_12(header + "\n" + body),
             })
+    items.extend(_read_cow_indexdb(base))
     return items
 
 
@@ -148,9 +219,17 @@ def import_cow_to_hermes(cow_root: Path | None = None) -> dict:
     """CowAgent → Hermes 候选：生成 MEMORY.increment.md（影子，不碰生产）。"""
     out_dir = SHADOW / "to-hermes"
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Hermes 已有小节去重
+    # Hermes 已有小节去重 + 影子增量已导出去重（重跑不重复候选）
     seen = {i["sha1"] for i in read_hermes_memory()}
-    cow_items = [i for i in read_cow_memory(cow_root) if not _is_struct_noise(i)]
+    inc_path = out_dir / "MEMORY.increment.md"
+    if inc_path.exists():
+        seen.update(re.findall(r"sha1:([0-9a-f]{12})", inc_path.read_text(encoding="utf-8")))
+    cow_items, cow_seen = [], set()
+    for i in read_cow_memory(cow_root):
+        if _is_struct_noise(i) or i["sha1"] in cow_seen:
+            continue
+        cow_seen.add(i["sha1"])
+        cow_items.append(i)
     blocks, n_new = [], 0
     for it in cow_items:
         if it["sha1"] in seen:
@@ -195,9 +274,9 @@ def selftest() -> int:
     assert "provenance: cow:daily/2026-10-08.md" in inc
     assert "tier:long" in inc and "tier:mid" in inc
 
-    # 2) 幂等：同源再跑一次 → new 回落为与去重集一致
+    # 2) 幂等：同源再跑一次 → 已导出 sha1 全部回落，new=0（真幂等）
     r1b = import_cow_to_hermes(cow_root=fx)
-    assert r1b["new"] == r1["new"], f"幂等破坏: {r1} vs {r1b}"
+    assert r1b["new"] == 0, f"幂等破坏: {r1} vs {r1b}"
 
     # 3) export 方向：真实 Hermes → 候选 jsonl + daily 样例
     r2 = export_hermes_to_cow(cow_root=fx)
