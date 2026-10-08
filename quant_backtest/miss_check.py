@@ -43,19 +43,35 @@ REGISTRY = {
     "CryptoSync":        {"expect": "08:10", "since": "2026-09-20"},
     "KG-TdxSync":        {"expect": "17:40", "since": "2026-09-01"},
     "KG-Cl1Sync":        {"expect": "18:10", "since": "2026-10-05"},
+    # 10-08 补：JEV 20:30 曾被睡眠窗口静默吃掉，哨兵底册原缺此项——
+    # 手动守候才撞见；CainiaoPull 明晚首跑（R4 数据链）
+    "CainiaoPull":       {"expect": "19:00", "since": "2026-10-09"},
+    "JevReviewBackfill": {"expect": "20:30", "since": "2026-10-07"},
 }
 
 
 def _task_last_run(name):
-    """schtasks /v 实测 Last Run Time → datetime 或 None（从未运行）。"""
+    """schtasks /v 实测 Last Run Time → datetime 或 None（从未运行）。
+
+    10-08 修（两晚 9/9 never 根因）：任务环境下 schtasks 输出中文本地化
+    标签（「上次运行时间:」）且字节为 UTF-8，mbcs 解码即乱码、英文
+    regex 永不命中 → bytes 捕获 + utf-8/mbcs 双解 + 中英双 regex。
+    """
     try:
         p = subprocess.run(
             ["schtasks", "/query", "/tn", name, "/v", "/fo", "list"],
-            capture_output=True, text=True, encoding="mbcs", timeout=20)
-        m = re.search(r"Last Run Time:\s*(\S+ \S+)", p.stdout or "")
-        if not m or m.group(1).startswith("1999/"):
-            return None
-        return datetime.strptime(m.group(1), "%Y/%m/%d %H:%M:%S")
+            capture_output=True, timeout=20)
+        for enc in ("utf-8", "mbcs"):
+            out = p.stdout.decode(enc, errors="replace")
+            m = (re.search(r"Last Run Time:\s*(\S+ \S+)", out)
+                 or re.search(r"上次运行时间:\s*(\S+ \S+)", out))
+            if m and not m.group(1).startswith("1999/"):
+                try:
+                    return datetime.strptime(
+                        m.group(1), "%Y/%m/%d %H:%M:%S")
+                except ValueError:
+                    continue
+        return None
     except Exception:
         return None
 

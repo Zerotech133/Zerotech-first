@@ -119,3 +119,6 @@ Hermes/cowbridge/__pycache__/
 
 # ===== D 盘项目能力归档（K274：第三方/存量源码+文件量大，不进版本控制）=====
 projects-archive/
+
+# ===== CowAgent（K275/V6-6：第三方开源克隆 zhayujie/CowAgent + venv 运行态，不进版本控制）=====
+CowAgent/

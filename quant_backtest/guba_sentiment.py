@@ -69,6 +69,43 @@ WORD_ALIAS = {
     "涨停板": "涨停",
 }
 
+# K263-W7 词表外置：data/lexicon.json（portal /kg/lexicon 维护页写入）。
+# json 键存在则覆盖内置默认（py 内值仅为出厂兜底，json 是唯一编辑源）；
+# mtime 变更时懒加载——portal 长跑进程改词表免重启，短跑脚本（alias_audit
+# 等）进程每次 import 自动取新值。保存端写全量快照。
+_LEX_FP = os.path.join(HERE, "data", "lexicon.json")
+_LEX_MTIME = -1.0
+
+
+def _apply_lexicon(force=False):
+    """词表热加载：lexicon.json mtime 变了就覆盖对应全局词表。"""
+    global STOP, PANIC_WORDS, HOPE_WORDS, TAG_WORDS, WORD_ALIAS, _LEX_MTIME
+    try:
+        m = os.path.getmtime(_LEX_FP)
+    except OSError:
+        return
+    if not force and m == _LEX_MTIME:
+        return
+    try:
+        with open(_LEX_FP, encoding="utf-8") as f:
+            d = json.load(f)
+        if isinstance(d.get("stop"), list):
+            STOP = set(d["stop"])
+        if isinstance(d.get("panic"), list):
+            PANIC_WORDS = list(d["panic"])
+        if isinstance(d.get("hope"), list):
+            HOPE_WORDS = list(d["hope"])
+        if isinstance(d.get("tag_words"), dict):
+            TAG_WORDS = dict(d["tag_words"])
+        if isinstance(d.get("word_alias"), dict):
+            WORD_ALIAS = dict(d["word_alias"])
+        _LEX_MTIME = m
+    except (OSError, ValueError):
+        pass
+
+
+_apply_lexicon(force=True)
+
 
 def _code6(tc):
     c = str(tc or "").strip().lower()
@@ -113,6 +150,7 @@ def guba_summary(tc, days=30, top_n=40, word=None):
     K263 二期②：word 非空 → 词反查模式，返回含该词的帖子列表
     （标题子串命中，最新在前，上限 50）。
     """
+    _apply_lexicon()          # 词表热加载（portal 维护页改完免重启生效）
     posts = _load_posts(tc, days)
     if not posts:
         return {"ok": False, "error": "无采集数据（先跑 guba_crawl.py）",

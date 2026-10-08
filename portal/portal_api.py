@@ -83,6 +83,7 @@ _MUTATION_POSTS = frozenset((
     "/api/recv_add",
     "/kg/canvas_edit",
     "/kg/doc/upload",
+    "/kg/lexicon/save",
     "/api/chanlun/card/feedback",
     "/api/chanlun/pool/push",
     "/api/portfolio_set",
@@ -19975,7 +19976,6 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         上传：POST /kg/doc/upload?name=xxx（M2 端点），落 inbox/pending 由
               K266-DocServices 计划任务（5 分钟）自动摄取识别。
         """
-        import base64 as _b64
         import collections as _collections
         _docs_dir = _os.path.join(_os.path.dirname(_os.path.dirname(
             _os.path.abspath(__file__))), "quant_backtest", "data", "k266_docs")
@@ -19993,6 +19993,24 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
                         pass
         except OSError:
             pass
+        # 时间窗（K266-W5，?days=7/30）：只统计近 N 日影子行（ts=judge 时刻，
+        # 新闻/文档当日采集当日判，近似入库时间成立）；默认全部。窗口同时作用于
+        # 词云与文档列表，保持"点词过滤文档"两侧口径一致。ts 恒为
+        # YYYY-MM-DD HH:MM:SS，cutoff 直接字典序比较。
+        _days = None
+        if qs:
+            from urllib.parse import parse_qs as _pqd
+            try:
+                _d = int((_pqd(qs).get("days") or [""])[0])
+            except (ValueError, TypeError):
+                _d = None
+            if _d in (7, 30):
+                _days = _d
+        _cutoff = ""
+        if _days:
+            import datetime as _dt
+            _cutoff = (_dt.datetime.now() - _dt.timedelta(
+                days=_days)).strftime("%Y-%m-%d %H:%M:%S")
         cards, freq = [], _collections.Counter()
         # K266-B 热词归一：LLM tags 同义变体并到规范词（词云/词片/文档过滤三处同源）。
         # 词表与 M3 生成端共用一份（k266_m3_structure.TAG_ALIAS），改一处两端生效；
@@ -20003,6 +20021,8 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         for did, s in shadow.items():
             if not s.get("raw_ok"):
                 continue
+            if _cutoff and str(s.get("ts", "")) < _cutoff:
+                continue  # 时间窗外：词云与文档列表同口径剔除
             if str(s.get("name", "")) in ("dup_test.png", "make_test.pdf"):
                 continue  # OPS-1008: 排除人工测试件（仅展示层，影子数据保留）
             _raw = [x.replace(" ", "").replace("\u3000", "")
@@ -20030,45 +20050,21 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         _doc_cards = sorted([c for c in cards if c.get("src") != "news"],
                             key=lambda c: -c["chars"])
         cards = _news_cards + _doc_cards
-        wc_b64, wc_err = "", ""
-        if freq:
-            # 词云图缓存（K266-B 性能项）：shadow mtime+freq 指纹未变则复用，免每次重渲染
-            _cls = type(self)
-            _ck = None
-            try:
-                # key 用 freq 内容指纹而非词种数：词不同而种数巧合相同时防误复用
-                _ck = (_os.path.getmtime(_shadow_fp),
-                       hash(tuple(sorted(freq.items()))))
-            except OSError:
-                pass
-            _cached = getattr(_cls, "_wc_cache", None)
-            if _ck and _cached and _cached[0] == _ck:
-                wc_b64 = _cached[1]
-            if not wc_b64:
-                try:
-                    from wordcloud import WordCloud as _WC
-                    # 字体候选：simhei 主选，msyh/simsun 兜底；全缺则显式报错走红字分支
-                    _font = next((p for p in (r"C:\Windows\Fonts\simhei.ttf",
-                                              r"C:\Windows\Fonts\msyh.ttc",
-                                              r"C:\Windows\Fonts\msyh.ttf",
-                                              r"C:\Windows\Fonts\simsun.ttc")
-                                  if _os.path.exists(p)), None)
-                    if not _font:
-                        raise OSError("未找到中文字体（simhei/msyh/simsun）")
-                    img = _WC(font_path=_font, width=880,
-                              height=420, background_color="#0d1117",
-                              colormap="autumn", max_words=120,
-                              prefer_horizontal=0.95).generate_from_frequencies(
-                                  dict(freq)).to_image()
-                    _buf = __import__("io").BytesIO()
-                    img.save(_buf, format="PNG")
-                    wc_b64 = _b64.b64encode(_buf.getvalue()).decode()
-                    if _ck:
-                        _cls._wc_cache = (_ck, wc_b64)
-                except Exception as _e:
-                    # 不静默：渲染失败原因带到页面空态，避免误判为"无影子数据"
-                    wc_err = "%s: %s" % (type(_e).__name__, str(_e)[:160])
+        # K266-W6 词云渲染统一：PNG（wordcloud 库首次渲染慢/不可点/需缓存）
+        # 退役，换股吧侧同款 CSS 字号加权词云——零渲染开销（缓存逻辑一并
+        # 删除）、点词直接调 flt() 过滤文档、与 /kg/battle 股吧词云同构。
+        # 字号公式与股吧侧一致（sqrt 压缩长尾）。
         top_words = [w for w, _ in freq.most_common(40)]
+        # 时间窗切换 chips：href 整页跳转（服务端按窗重渲染，词云/列表/缓存
+        # 全套跟随），当前窗高亮；仿右侧 srcflt 前端过滤是另一路，此处必须
+        # 服务端切（freq 在 Python 侧算）
+        _wins = ((None, "/kg/doc", "全部"),
+                 (7, "/kg/doc?days=7", "近7日"),
+                 (30, "/kg/doc?days=30", "近30日"))
+        win_html = "".join(
+            "<a class='chip n srcf%s' href='%s'>%s</a>"
+            % (" on" if _days == d else "", _h, _lb)
+            for d, _h, _lb in _wins)
         import html as _html
         chips_html = "".join(
             "<span class='chip wc' data-w='%s' onclick=\"flt('%s')\">%s"
@@ -20079,14 +20075,22 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
             % (_html.escape(w), _html.escape(w), _html.escape(w), freq[w],
                _html.escape(w))
             for w in top_words)
-        if wc_b64:
-            wc_html = ("<img src='data:image/png;base64,%s' "
-                       "style='max-width:100%%;border-radius:8px'>" % wc_b64)
-        elif wc_err:
-            wc_html = ("<div class='empty' style='color:#f85149'>"
-                       "词云渲染失败：%s<br>排查：wordcloud 库安装 / "
-                       "字体 simhei/msyh（C:\\Windows\\Fonts）</div>"
-                       % _html.escape(wc_err))
+        if freq:
+            _mx = freq[top_words[0]]
+            wc_html = "".join(
+                "<span class='wword' data-w='%s' onclick=\"flt('%s')\" "
+                "title='%d 次 · 点击过滤文档' style='font-size:%dpx;color:%s;"
+                "margin:2px 6px;cursor:pointer;display:inline-block'>%s"
+                "<i style='font-style:normal;color:#8b949e;font-size:10px'> %d"
+                "</i></span>"
+                % (_html.escape(w), _html.escape(w), freq[w],
+                   12 + round(20 * (freq[w] / _mx) ** 0.5),
+                   "#79c0ff" if len(w) > 3 else "#e6edf3",
+                   _html.escape(w), freq[w])
+                for w in top_words)
+            wc_html = ("<div style='background:#0d1117;border:1px solid "
+                       "#30363d;border-radius:10px;padding:14px;"
+                       "line-height:2'>" + wc_html + "</div>")
         else:
             wc_html = "<div class='empty'>词云待生成（尚无影子数据）</div>"
         body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
@@ -20100,8 +20104,10 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
 .chip.wc{cursor:pointer;background:#161b22;color:#e6edf3}
 .chip.wc i{font-style:normal;color:#8b949e;font-size:10.5px;margin-left:3px}
 .chip.wc.on{background:#1f3a1f;color:#7ee787}
+.wword.on{background:#1f3a1f;outline:1px solid #7ee787;border-radius:4px}
 .chip.srcf{cursor:pointer}
 .chip.srcf.on{background:#1f3a1f;color:#7ee787}
+a.chip.srcf{text-decoration:none}
 .card{background:#161b22;border:1px solid #30363d;border-radius:10px;
 padding:10px 12px;margin-bottom:9px}
 .card .nm{color:#58a6ff;font-size:13px;word-break:break-all}
@@ -20128,7 +20134,7 @@ h3{font-size:14px;color:#e6edf3;margin:2px 0 8px}
  <span id='upmsg'>支持 PNG/JPG/PDF/TXT/MD 多选；识别约 1-5 分钟（K266-DocServices 自动摄取）</span>
 </div>
 <div class='dgrid'>
- <div class='panel'><h3>热词词云（点击右侧词过滤文档）</h3>{wc}
+ <div class='panel'><h3>热词词云（点击词过滤文档）<span style='float:right'>{win}</span></h3>{wc}
   <div class='wchips'>{chips}</div></div>
  <div class='panel'><h3>文档影子 <span class='meta' id='cnt'></span>
   <span style='float:right'>
@@ -20172,6 +20178,7 @@ function flt(w){
   if (cur === w) w = null;
   cur = w;
   document.querySelectorAll('.chip.wc').forEach(c=>c.classList.toggle('on', c.dataset.w===w));
+  document.querySelectorAll('.wword').forEach(c=>c.classList.toggle('on', c.dataset.w===w));
   render(w ? baseList().filter(d=>d.tags.includes(w)) : baseList());
 }
 document.getElementById('upf').onchange = async (e) => {
@@ -20191,7 +20198,89 @@ render(DOCS);
 </script></body></html>""".replace("{css}", self._KG_CSS).replace(
             "{nav}", pill_nav("kgcanvas")).replace(
             "{wc}", wc_html).replace("{chips}", chips_html).replace(
-            "{docs_json}", json.dumps(cards, ensure_ascii=False))
+            "{docs_json}", json.dumps(cards, ensure_ascii=False)).replace(
+            "{win}", win_html)
+        self._html(body)
+
+    def _kg_lexicon_page(self):
+        """K263-W7 股吧词表维护：情绪词/同义归并在线编辑。
+
+        保存到 quant_backtest/data/lexicon.json，guba_sentiment 按 mtime
+        懒加载热生效（portal 长跑进程免重启）。同义归并候选来源：alias_audit
+        周报（LLM 核准后人工终审，在此补录）。STOP/TAG_WORDS 两组本页只读
+        （编辑场景少，仍走 guba_sentiment.py）。
+        """
+        import html as _html
+        if QBT_DIR not in sys.path:
+            sys.path.insert(0, QBT_DIR)
+        import guba_sentiment as _gs
+        _gs._apply_lexicon(force=True)   # 取当前生效值（含 json 覆盖）
+        _panic = "\n".join(_gs.PANIC_WORDS)
+        _hope = "\n".join(_gs.HOPE_WORDS)
+        _alias = "\n".join("%s=%s" % kv for kv in _gs.WORD_ALIAS.items())
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>股吧词表维护 · K263</title>{css}{nav}<style>
+.lx{max-width:1180px;margin:0 auto;padding:0 10px}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+@media(max-width:900px){.lgrid{grid-template-columns:1fr}}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px}
+h3{font-size:14px;color:#e6edf3;margin:2px 0 8px}
+textarea{width:100%;min-height:180px;background:#0d1117;color:#e6edf3;
+border:1px solid #30363d;border-radius:8px;padding:10px;font-size:13px;
+line-height:1.8;font-family:inherit;box-sizing:border-box}
+.sv{display:flex;gap:10px;align-items:center;margin:14px 0}
+.sv button{background:#238636;border:none;color:#fff;border-radius:8px;
+padding:8px 20px;font-size:13px;cursor:pointer}
+#msg{font-size:12.5px;color:#8b949e}
+.dim{color:#8b949e;font-size:12.5px}
+</style></head><body><div class='lx'>
+<h1 style='font-size:19px'>📚 股吧词表维护 · K263</h1>
+<div class='dim'>情绪词 / 同义归并在线编辑 → data/lexicon.json（guba_sentiment
+按 mtime 懒加载，保存即热生效）。同义归并候选来自 alias_audit 周报人工终审。</div>
+<div class='lgrid'>
+ <div class='panel'><h3>恐慌词（{n_panic} 个，一行一词）</h3>
+  <textarea id='panic'>{panic}</textarea></div>
+ <div class='panel'><h3>乐观词（{n_hope} 个，一行一词）</h3>
+  <textarea id='hope'>{hope}</textarea></div>
+</div>
+<div class='panel' style='margin-top:14px'><h3>同义归并 WORD_ALIAS
+（{n_alias} 组，每行 变体=规范词；只并真同义，不并组合词/上下位词）</h3>
+ <textarea id='alias' style='min-height:120px'>{alias}</textarea></div>
+<div class='sv'><button onclick='save()'>💾 保存</button><span id='msg'>
+本页保存后：股吧词云/情绪打分即时生效；文档词云 TAG_ALIAS 不在此页
+（k266_m3_structure.py）。</span></div>
+<div class='dim'>只读参考：STOP 停用词 {n_stop} 个 · 事件契合 TAG_WORDS
+{n_tag} 组（这两组请编辑 guba_sentiment.py）</div>
+</div>
+<script>
+function lines(id){return document.getElementById(id).value.split('\\n')
+ .map(s=>s.trim()).filter(Boolean)}
+function save(){
+ var panic=lines('panic'), hope=lines('hope'), alias={};
+ lines('alias').forEach(l=>{var i=l.indexOf('=');
+  if(i>0){var k=l.slice(0,i).trim(),v=l.slice(i+1).trim();
+   if(k&&v&&k!==v)alias[k]=v}});
+ if(!panic.length||!hope.length){alert('情绪词表不可为空');return}
+ var msg=document.getElementById('msg');
+ msg.textContent='保存中…';
+ fetch('/kg/lexicon/save',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({panic:panic,hope:hope,word_alias:alias})})
+ .then(r=>r.json()).then(d=>{msg.textContent=d.ok?
+  '✅ 已保存：恐慌 '+d.panic+' · 乐观 '+d.hope+' · 归并 '+d.alias+' 组（热生效）':
+  '❌ '+(d.error||'保存失败')})
+ .catch(e=>{msg.textContent='❌ '+e});
+}
+</script></body></html>""".replace("{css}", self._KG_CSS).replace(
+            "{nav}", pill_nav("kgcanvas")).replace(
+            "{panic}", _html.escape(_panic)).replace(
+            "{hope}", _html.escape(_hope)).replace(
+            "{alias}", _html.escape(_alias)).replace(
+            "{n_panic}", str(len(_gs.PANIC_WORDS))).replace(
+            "{n_hope}", str(len(_gs.HOPE_WORDS))).replace(
+            "{n_alias}", str(len(_gs.WORD_ALIAS))).replace(
+            "{n_stop}", str(len(_gs.STOP))).replace(
+            "{n_tag}", str(len(_gs.TAG_WORDS)))
         self._html(body)
 
     def _kg_battle_page(self):
@@ -20582,6 +20671,42 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     f.write(raw)
                 self._json({"ok": True, "saved": fn, "size": len(raw)})
                 return
+            if path == "/kg/lexicon/save":
+                # K263-W7 词表保存：三组可编辑（panic/hope/word_alias），
+                # stop/tag_words 保持现值（页面只读）；原子写 lexicon.json，
+                # guba_sentiment mtime 懒加载热生效
+                if QBT_DIR not in sys.path:
+                    sys.path.insert(0, QBT_DIR)
+                import guba_sentiment as _gs
+                _gs._apply_lexicon(force=True)
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"error": "bad json"}, 400)
+                    return
+                panic = sorted({str(w).strip() for w in rec.get("panic", [])
+                                if str(w).strip()})
+                hope = sorted({str(w).strip() for w in rec.get("hope", [])
+                               if str(w).strip()})
+                alias = {}
+                for k, v in (rec.get("word_alias") or {}).items():
+                    k, v = str(k).strip(), str(v).strip()
+                    if k and v and k != v:
+                        alias[k] = v
+                if not panic or not hope:
+                    self._json({"error": "情绪词表不可为空"}, 400)
+                    return
+                out = {"stop": sorted(_gs.STOP), "panic": panic, "hope": hope,
+                       "tag_words": _gs.TAG_WORDS, "word_alias": alias}
+                fp = _gs._LEX_FP
+                tmp = fp + ".tmp"
+                os.makedirs(os.path.dirname(fp), exist_ok=True)
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(out, f, ensure_ascii=False, indent=1)
+                os.replace(tmp, fp)
+                self._json({"ok": True, "panic": len(panic),
+                            "hope": len(hope), "alias": len(alias)})
+                return
             if path == "/api/chanlun/label/save":
                 try:
                     rec = json.loads(raw.decode("utf-8"))
@@ -20957,6 +21082,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/kg/doc":
             # K266 M4 文档智能中心（词云三跳+上传）
             self._kg_doc_page(qs)
+        elif path == "/kg/lexicon":
+            # K263-W7 股吧词表维护（情绪词/同义归并 → lexicon.json 热生效）
+            self._kg_lexicon_page()
         elif path == "/static/g6.min.js":
             # K234 G6 本地静态（零 CDN 依赖）
             import os as _os6

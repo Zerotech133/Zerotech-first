@@ -105,12 +105,14 @@ def ask_ollama(text, timeout=280, hard_deadline=600):
 
     def _worker():
         body = {"model": MODEL, "think": False, "stream": False,
-                # num_ctx 8192：16384 的 KV cache 挤显存会把权重层压到 CPU
-                # （ollama ps 显示 12%/88%），5000 字长文单条 >600s 判不完；
-                # 配 2500 字截断（tags/doc_type 靠标题导语，正文细节非关键）
-                "options": {"num_ctx": 8192},
+                # num_ctx 4096：本机 8192/16384 的 runner 已病态（同文本 4096
+                # 实测 3-5s，8192 卡死 240s+，2026-10-08 对照实验）。4096 装不下
+                # 超长文，配 1200 字截断（新闻 tags 靠标题导语足够）；若日后
+                # Ollama 服务重启修复大 ctx，可再调大截断。num_predict 防病态
+                # 长生成。
+                "options": {"num_ctx": 4096, "num_predict": 600},
                 "messages": [{"role": "user",
-                              "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:2500]}]}
+                              "content": PROMPT + "\n\n=== 文档文本（截断）===\n" + text[:1200]}]}
         for attempt in (1, 2, 3):   # 并发抢占下偶发空输出/无 JSON，三试
             if abort.is_set():
                 return                  # 看门狗已放弃，勿再发起新请求

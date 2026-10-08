@@ -20,6 +20,10 @@
 熔断：当日已扫描（reports/strong_latest.json date = 今天）直接跳过，
 --force 强制重扫（名单文件当日覆盖写，幂等）。
 
+守卫（10-08 加）：扫描前 freshness_guard 三层校验——个股锚×3 vs 板块
+锚交叉同日 + zhice CN 全量水位 ≥5000；未过 exit 3 拦截（防「date=今日
+但数据=T-1/半T-1」静默名单）。
+
 用法:
   python strong_scan.py                    # 全板块池扫描（当日熔断）
   python strong_scan.py --block 881019     # 单板块调试
@@ -41,6 +45,48 @@ from strong_track import (MIN_BLOCK_MEMBERS, STRONG_EX_TH,  # noqa: E402
 POOL_SEGS = ("industry881", "industry_l1", "old_industry")
 PER_BLOCK_CAP = 20          # 单板块逐股评估默认上限（控制取数代价）
 REPORTS = os.path.join(HERE, "reports")
+GUARD_SAMPLE = ("600519.SH", "000001.SZ", "300750.SZ")  # 个股锚抽样（主流票）
+GUARD_BLOCK = "881019"      # 板块锚（行业881 池内示例板块）
+GUARD_MIN_CN = 5000         # zhice CN 全量水位阈（实测全市场≈5557，90% 折）
+
+
+def freshness_guard():
+    """K268 数据新鲜度守卫：个股锚 vs 板块锚交叉同日校验。
+
+    个股日线主源 zhice 全市场全量靠凌晨 01:30~05:30 浮动补齐（傍晚仅
+    零星成功），板块仓 tdx_sector_daily 每日 17:30 更新——两侧应同指
+    上一交易日。个股滞后于板块 = 凌晨补数未完成/失败，此时出名单即
+    「date=今日但数据=T-1」静默错误（10-08 14:55 StrongEod 15:45 错时
+    同模式教训），拦截退出交人工处置。
+
+    返回 (ok, msg)；ok=False 时 msg 为锚差异详情。
+    """
+    import chanlun_data
+    import linkage
+    blk = linkage.block_bars(GUARD_BLOCK, "1d", limit=3)
+    if not blk:
+        return False, "板块锚 %s 无K线（tdx_sector_daily 空？）" % GUARD_BLOCK
+    blk_d = str(blk[-1]["dt"])[:10]
+    for c in GUARD_SAMPLE:
+        r = chanlun_data.load_kline(c, "1d", limit=3)
+        if not r.get("ok") or not r.get("bars"):
+            return False, "个股锚 %s 无K线（%s）" % (c, r.get("error", ""))
+        d = str(r["bars"][-1]["dt"])[:10]
+        if d != blk_d:
+            return False, "个股锚 %s=%s（%s）≠ 板块锚 %s=%s" % (
+                c, d, r.get("source"), GUARD_BLOCK, blk_d)
+    # 全量水位：抽样票可能恰在「零星成功」名单（权重票优先）而全池仍
+    # T-1（10-08 21:31 实测前车），计数校验拦「部分补齐」的半 T-1 名单
+    rows = chanlun_data._db_query(
+        "SELECT count(*) FROM v2_bar_daily WHERE market='CN' AND trade_date=%s",
+        [blk_d])
+    n_cn = int(rows[0][0]) if rows else 0
+    if n_cn < GUARD_MIN_CN:
+        return False, ("zhice CN %s bar 计数 %d < 阈 %d"
+                       "（全量未补齐，名单将半 T-1）"
+                       % (blk_d, n_cn, GUARD_MIN_CN))
+    return True, "锚一致 %s + CN 计数 %d ≥ %d（个股抽样×%d + 板块 %s）" % (
+        blk_d, n_cn, GUARD_MIN_CN, len(GUARD_SAMPLE), GUARD_BLOCK)
 
 
 def now_iso():
@@ -129,6 +175,13 @@ def main():
                 return 0
         except Exception:
             pass  # 汇总文件损坏视为未扫，继续
+
+    ok_g, msg = freshness_guard()
+    if not ok_g:
+        print("[守卫] 数据新鲜度未过：%s —— 拦截退出（防 T-1 静默名单）"
+              % msg, flush=True)
+        return 3
+    print("[守卫] %s" % msg, flush=True)
 
     import linkage
     pool = block_pool()
