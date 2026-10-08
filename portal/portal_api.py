@@ -21276,12 +21276,12 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             import html as _h_qd
             import subprocess as _sp
             e_qd = _h_qd.escape
-            cache_p = os.path.join(ROOT, "portal", "qd_scan_cache.json")
-            log_p = os.path.join(ROOT, "portal", "qd_scan.log")
+            cache_p = os.path.join(ROOT, "qd_scan_cache.json")
+            log_p = os.path.join(ROOT, "qd_scan.log")
             snap_qd = _read_json(cache_p) if os.path.exists(cache_p) else None
             VENV_PY = ("C:/Users/Administrator/.workbuddy/binaries/python/"
                        "envs/default/Scripts/python.exe")
-            SCAN_PY = os.path.join(ROOT, "portal", "qd_scanner.py")
+            SCAN_PY = os.path.join(ROOT, "qd_scanner.py")
             if snap_qd is None:
                 # 首次：后台拉起扫描（venv 解释器；stdout/stderr 落文件，长跑纪律）
                 if not os.path.exists(log_p) or time.time() - os.path.getmtime(log_p) > 1800:
@@ -21332,13 +21332,13 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                        "<table style='border-collapse:collapse;min-width:420px'>"
                        "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
                        "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
-                       + now_rows + "</table>"
+                       "%s</table>"
                        "<h2 style='font-size:16px;margin-top:18px'>🕘 近 5 日曾有信号（%d，"
                        "当日已不触发）</h2>"
                        "<table style='border-collapse:collapse;min-width:420px'>"
                        "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
                        "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
-                       + rec_rows + "</table>"
+                       "%s</table>"
                        "<div class='dim' style='margin-top:16px'>策略口径：连续双日十字星"
                        "（实体/振幅≤0.30）+ MACD 多头 + 八重 AND 过滤（振幅变化率/价格带/"
                        "两日小涨/20日成交额&gt;30亿/MA24≥MA54 多头/乖离受限/MACD/Regime 非"
@@ -21348,8 +21348,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                           e_qd(str(snap_qd.get("elapsed_s", "?"))),
                           snap_qd.get("scanned", 0), snap_qd.get("skipped", 0),
                           e_qd(rg_txt or "—"),
-                          len(snap_qd.get("signals_now", [])),
-                          len(snap_qd.get("signals_recent", []))))
+                          len(snap_qd.get("signals_now", [])), now_rows,
+                          len(snap_qd.get("signals_recent", [])), rec_rows))
             self._html(body_qd)
         elif path == "/bt-news":
             self._bt_news(qs)
