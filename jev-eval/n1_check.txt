@@ -23,15 +23,17 @@ foreach ($d in (Get-ChildItem 'E:\' -Directory)) {
 }
 if (-not $BaseDir) { return }
 $alertsDir = Join-Path $BaseDir 'jev-eval\alerts'
+function Report($s) { $script:report += $s }
+function Fail($s) { $script:fail++; $script:report += ('[FAIL] ' + $s) }
+
 # --- 0. backup_daily.ps1 disk presence (v1.4 / OPS-1013) ---
 # 10-08 the script vanished from disk twice silently; N1 only checked backup
 # SET integrity, never the script itself. Registry auto-restores at next 03:00
 # run, so this shortens detection time rather than preventing loss.
+# NOTE: must stay AFTER Report/Fail definitions (PS functions are order-sensitive).
 $bdScript = Join-Path $BaseDir 'jev-eval\backup_daily.ps1'
 if (Test-Path $bdScript) { Report ('[OK] backup_daily.ps1 on disk ' + ((Get-Item $bdScript).Length) + 'B') }
 else { Fail 'backup_daily.ps1 MISSING from disk (registry will auto-restore at next 03:00 run)' }
-function Report($s) { $script:report += $s }
-function Fail($s) { $script:fail++; $script:report += ('[FAIL] ' + $s) }
 
 # --- 1. today's backup set ---
 $set = Get-ChildItem 'D:\backups_mirror' -Directory -ErrorAction SilentlyContinue |
