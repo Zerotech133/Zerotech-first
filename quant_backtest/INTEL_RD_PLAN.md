@@ -6150,3 +6150,12 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **修复**：Ollama response_format 空输出 → 去参数；timeout 120→300s；重试退避 2s+4s；辩论对手降级提前收敛；prompt 瘦身（上游 3000→2000/对手 1500→800）。orchestrator 测试 5/5 绿。
 - **调度**：每日 16:30 automation id=58dd6940（watchlist 5 股+eval_rank 累计+降级超半明确汇报）——明日首跑（守卫在岗）。
 - **观察点**：16:30 automation 今日首跑未留产物（疑撞负载失败，其会话汇报未见）——明日起守卫会给出明确中止原因，S1 判据计数从首个完整跑批日起算。
+
+## V6-5 ✅ Hermes 记忆层读写接口 v0.2 Provider 落地（2026-10-08 晚，K272 三拍板+插件激活）
+- **拍板四项全落**（AskUserQuestion，老田批复）：① v0.2 形态=**Provider 插件**（对齐 mem0/supermemory 先例，独占外部 provider 名额当前无损失）；② H→C **价值口径**（工作约定/沟通风格进候选，项目内部清单不搬）；③ C→H **规则自动放行**（provenance+非重复+非天级流水自动过，凭据/密钥类黑名单人审）；④ cowbridge **主仓豁免纳管**（.gitignore 陷阱：`Hermes/` 目录级排除下 `!` 豁免无效，改 `Hermes/*` + `!Hermes/cowbridge/`，shadow/ 仍排除）。
+- **源码侦察**（逐行）：`agent/memory_provider.py` ABC 281 行（生命周期 7 方法+可选钩子含 **on_memory_write 镜像内置写入**）；`plugins/memory/__init__.py` 发现机制（$HERMES_HOME/plugins/ 用户级、__init__.py 前 8192 字符启发式、register(ctx)/子类双装载、memory.provider 配置激活、外部 provider 上限 1）。
+- **交付**：设计稿 `Hermes/cowbridge/DESIGN_v0.2_provider.md`（两形态对比/生命周期映射表）；插件 `~/.hermes/plugins/cowbridge/{__init__.py,plugin.yaml}`（薄壳+register 模式，逻辑单一事实源在 E 盘桥本体，importlib 动态加载失败降级只读壳）；自测 `test_provider_plugin.py` **16/16 PASS**（发现/装载/prefetch 往返/工具调用/影子留痕/cron 上下文零写入防线）。
+- **激活**：config.yaml `memory.provider: cowbridge`；加载链 config→discover→实例→shadow=True 全通；**影子纪律保持**——读侧正常工作，写钩子全降级 shadow/ 留痕，两侧生产记忆零接触。
+- **转正判据起算 2026-10-08**：读写正确率 100% 连续 3 日 → 达标翻 `cowbridge.json` 生产写开关（不改代码）。每日影子交换 automation id=b0152f34（09:10）保人审材料新鲜。
+- **勘误**：K272 文档 4 处 `D:/Hermes/cowbridge` → `E:/老田的AI助手/Hermes/cowbridge`（K273 搬迁后事实修正，入库挂账同步更新）。
+- **顺带落库**：K-STOCK 冷加载修复（llm.py keep_alive:1800 + run_poc.py 两段式守卫：第 1 探针预热不计判定/第 2 探针热态>15s 中止；实测正确拦截 16.5s 边缘负载）——提交 f8ea018。
