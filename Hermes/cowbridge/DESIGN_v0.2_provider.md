@@ -65,3 +65,20 @@ C:\Users\Administrator\.hermes\plugins\cowbridge\   ← 用户级插件目录（
 ## 六、回滚
 
 删 `C:\Users\Administrator\.hermes\plugins\cowbridge\` + config.yaml 移除 `memory.provider` 行 = 完全回滚。生产记忆文件全程只受影子纪律保护（v0.2 影子模式下同样零接触）。
+
+## 七、实现差异（2026-10-08 全量审计 P1-4 补记）
+
+本稿为设计目标；v0.2.1 实测实现与下列条目存在差异——**以本节为准**：
+
+| ABC 方法 | 本稿设计 | v0.2.1 实际实现 | 定性 |
+|---|---|---|---|
+| `is_available` | ~/cow/memory/ 存在 且 桥本体可加载 | 仅查桥本体文件存在（快路径，不加载、不查 Cow 目录） | 有意简化 |
+| `queue_prefetch` | 优先 index.db FTS5，退词面粗筛 | 纯词面粗筛（read_cow_memory 全量+关键词打分），未用 FTS5 | 简化，挂账 v0.3 |
+| `sync_turn` | 入队→后台小节化提候选→生产写 Cow | 影子=留痕；生产=入队但无消费者（shutdown 丢弃前如实日志） | ⚠️ **生产写未实现**（v0.3 挂账；initialize 有防误翻转断言兜底） |
+| `on_memory_write` | 小节化+去重→Cow 候选；生产写 daily 层 | 影子=mirror 留痕；生产分支仅换名留痕（applied.jsonl），不触 Cow workspace | ⚠️ **生产写未实现**（同上） |
+| `on_session_end` | 会话末批量提取候选 | 仅留痕计数，不提取 | 简化，挂账 v0.3 |
+| `on_pre_compress` | 压缩丢弃前抢救性提取 | 恒返回 ""（防注入面扩大，有意关闭） | 有意简化 |
+| 工具参数 | query + tier 可选 | query + limit（无 tier 过滤；limit 夹逼 [1,50]，非法回退 5） | 简化 |
+| 读侧数据源 | （成稿时认知）MEMORY.md + daily | 实际主数据源 = long-term/index.db（chunks tier=long + messages 会话转录 tier=dialog），根部 MEMORY.md 常为空模板 | v0.1.1 实测修订（K273） |
+
+结论：影子模式（默认）下读写正确率判据不受上述差异影响——判据所测的 prefetch 注入一致性、on_memory_write 镜像一一对应、sync_turn 零丢 turn，在「留痕即真相」口径下成立。**两处「生产写未实现」条目是转正前置硬门槛**：v0.3 补齐真实现并另行过测后，方可翻转 cowbridge.json（误翻转会被 initialize 断言拒绝，实例硬只读，不会假成功）。

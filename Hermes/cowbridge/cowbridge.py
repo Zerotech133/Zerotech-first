@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
-"""cowbridge — CowAgent 三层记忆 ↔ Hermes 执行记忆 桥接器（影子模式 v0.1.1）。
+"""cowbridge — CowAgent 三层记忆 ↔ Hermes 执行记忆 桥接器（影子模式 v0.1.2）。
 
 K272 主线一：记忆层打通。两侧记忆均为 Markdown 小节形态（## header + 内容），
 桥=小节级搬运 + provenance 标注 + 内容哈希去重。
+
+v0.1.2（2026-10-08 审计整改）：
+  - selftest 补 index.db 主路径 fixture（审计 P1-2）：合成 chunks/messages
+    最小 schema，断言 tier=long 记忆单元与 tier=dialog 会话转录均入候选
+  - 头注释契约对齐 v0.1.1 真实结构（审计 P2-3）
 
 v0.1.1（K273 实测适配）：
   - CowAgent 读取对齐真实存储：根部 MEMORY.md + memory/long-term/index.db
@@ -16,15 +21,18 @@ v0.1.1（K273 实测适配）：
   - to-hermes/    = CowAgent 记忆 → Hermes 增量（MEMORY.increment.md）
   - review-*.md   = 人审对照报告；人审拍板后才允许接生产写（后续版本）
 
-契约（源码级核实）：
-  - CowAgent: workspace/memory/{MEMORY.md, daily 或小节流, long-term/index.db}
-    （agent/memory/{config,storage,summarizer}.py + common/state_dir.py，
-    默认 workspace=~/cow；MEMORY.md 注入系统提示词须精炼）
+契约（源码级核实，v0.1.1 实测修订）：
+  - CowAgent: ~/cow 下根部 MEMORY.md（长期层，实测常为空模板，K273）+
+    memory/long-term/index.db（chunks source='memory' 记忆单元 tier=long +
+    messages 会话转录 tier=dialog——K273 起的主数据源）+
+    memory/daily/*.md（兼容保留）
+    （agent/memory/{config,storage,summarizer}.py + common/state_dir.py；
+    MEMORY.md 注入系统提示词须精炼）
   - Hermes: $HERMES_HOME/memory/{MEMORY.md, USER.md}（BuiltinMemoryProvider，
     双文件+字符上限）
 
 用法：
-  python cowbridge.py selftest              # 合成样本全链路自测
+  python cowbridge.py selftest              # 合成样本（含 index.db fixture）全链路自测
   python cowbridge.py export-hermes         # 真实 Hermes → CowAgent 候选
   python cowbridge.py import-cow            # CowAgent → Hermes 候选（需源）
   python cowbridge.py report                # 人审对照报告
@@ -249,8 +257,41 @@ def import_cow_to_hermes(cow_root: Path | None = None) -> dict:
 
 # ── 自测与人审 ───────────────────────────────────────────────
 
+def _make_indexdb_fixture(db_path: Path) -> None:
+    """合成 CowAgent index.db（审计 P1-2：主路径补单测，2026-10-08）。
+
+    只造桥读取所依赖的最小 schema：chunks(id, source, path, text) +
+    messages(session_id, seq, role, content)。sessions 表与 chunks_fts
+    （FTS5 虚表）桥不读取，fixture 省略。
+    """
+    import sqlite3
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(str(db_path))
+    try:
+        con.executescript(
+            "CREATE TABLE chunks (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "source TEXT, path TEXT, text TEXT);\n"
+            "CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "session_id TEXT, seq INTEGER, role TEXT, content TEXT);")
+        con.execute(
+            "INSERT INTO chunks(source, path, text) VALUES ('memory', ?, ?)",
+            ("MEMORY.md", "## 桥上约定\n- fixture 记忆单元（indexdb 直读）"))
+        for seq, (role, text) in enumerate([
+            ("user", "(fixture) 把日报口径定成值@日期"),
+            ("assistant", "(fixture) 好的，已记录"),
+        ]):
+            con.execute(
+                "INSERT INTO messages(session_id, seq, role, content) "
+                "VALUES (?, ?, ?, ?)",
+                ("fixture_s1", seq, role, json.dumps(
+                    [{"type": "text", "text": text}], ensure_ascii=False)))
+        con.commit()
+    finally:
+        con.close()
+
+
 def selftest() -> int:
-    """合成 CowAgent workspace + 真实 Hermes 侧全链路。"""
+    """合成 CowAgent workspace（含 index.db fixture）+ 真实 Hermes 侧全链路。"""
     import shutil
     fx = SHADOW / "fixtures" / "cow-workspace"
     if fx.parent.exists():
@@ -264,15 +305,27 @@ def selftest() -> int:
         "# Daily\n\n## 10-08 晨会\n- 拍板暴露面收敛\n\n## 10-08 午后\n- K272 影子桥开工\n",
         encoding="utf-8")
 
-    # 1) import 方向：合成 cow → increment
+    # 0) index.db 主路径（审计 P1-2）：合成库直读——记忆单元 + 会话转录
+    _make_indexdb_fixture(fx / "memory" / "long-term" / "index.db")
+    idx = [i for i in read_cow_memory(cow_root=fx)
+           if i["file"].startswith("indexdb:")]
+    assert any(i["tier"] == "long" and i["header"] == "桥上约定" for i in idx), idx
+    dlg = next(i for i in idx if i["tier"] == "dialog"
+               and i["file"] == "indexdb:sessions/fixture_s1")
+    assert "用户: (fixture) 把日报口径" in dlg["body"], dlg
+    assert "Cow: (fixture) 好的" in dlg["body"], dlg
+
+    # 1) import 方向：合成 cow（MEMORY.md + daily + index.db）→ increment
     r1 = import_cow_to_hermes(cow_root=fx)
     inc = (SHADOW / "to-hermes" / "MEMORY.increment.md").read_text(encoding="utf-8")
-    # 有效候选小节 = 2 小节 × 2 文件 = 4（纯标题 preamble 已排除）
-    assert r1["cow_total"] == 4, r1
-    assert r1["new"] == 4, r1
+    # 有效候选小节 = MEMORY.md 2 + daily 2 + indexdb long 1 + indexdb dialog 1 = 6
+    assert r1["cow_total"] == 6, r1
+    assert r1["new"] == 6, r1
     assert "(preamble)" not in inc, "纯标题 preamble 不应出现在候选里"
     assert "provenance: cow:daily/2026-10-08.md" in inc
-    assert "tier:long" in inc and "tier:mid" in inc
+    assert "provenance: cow:indexdb:sessions/fixture_s1" in inc, \
+        "index.db 会话转录应入候选"
+    assert "tier:long" in inc and "tier:mid" in inc and "tier:dialog" in inc
 
     # 2) 幂等：同源再跑一次 → 已导出 sha1 全部回落，new=0（真幂等）
     r1b = import_cow_to_hermes(cow_root=fx)
@@ -284,7 +337,8 @@ def selftest() -> int:
     jl = (SHADOW / "to-cowagent" / "candidates.jsonl").read_text(encoding="utf-8")
     assert all(json.loads(l)["sha1"] for l in jl.splitlines() if l.strip())
 
-    print(f"[selftest] PASS import cow_total={r1['cow_total']} new={r1['new']} "
+    print(f"[selftest] PASS indexdb_items={len(idx)} "
+          f"import cow_total={r1['cow_total']} new={r1['new']} "
           f"| export hermes_total={r2['total']} new={r2['new']} dup={r2['dup']}")
     return 0
 

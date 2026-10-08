@@ -10,6 +10,7 @@
   4 is_available    5 initialize+context 防线  6 system_prompt_block
   7 prefetch 往返   8 工具 schema+调用   9 影子留痕（memory_write/turn/session_end）
  10 register(ctx)  11 shutdown
+ 10 审计P1-1 翻转断言（raise+硬只读+零落盘）  11 审计P2-1 limit 边界  12 审计P2-2 工具描述
 """
 from __future__ import annotations
 
@@ -137,8 +138,44 @@ def main() -> int:
     prov2.sync_turn("cron user", "cron asst")
     check("9b cron 上下文零写入", len(read_jsonl(mirror)) == n0)
 
-    # 10) 生产模式配置翻转后：写路径走 applied 留痕（不触生产文件——allow_write 仍 false 时留 mirror）
+    # 10) 审计 P1-1 翻转断言：shadow_mode=false + allow_write_cow=true 但生产写
+    #     未实现 → initialize 必须 raise，且实例硬只读（写路径零落盘）
     prov.shutdown()
+    prov3 = load_memory_provider("cowbridge")
+    prov3._cfg["shadow_mode"] = False
+    prov3._cfg["allow_write_cow"] = True
+    raised = False
+    try:
+        prov3.initialize("flip-session", hermes_home=str(user_plugin.parent),
+                         agent_context="primary")
+    except RuntimeError:
+        raised = True
+    check("10 翻转断言 raise(RuntimeError)", raised,
+          "未 raise——防误翻转断言失效！")
+    check("10b 断言触发后 _disabled=True",
+          getattr(prov3, "_disabled", False) is True)
+    applied_f = SHADOW / "to-cowagent" / "memory_write_applied.jsonl"
+    n_m, n_a = len(read_jsonl(mirror)), len(read_jsonl(applied_f))
+    prov3.on_memory_write("add", "memory", "翻转后污染测试")
+    prov3.sync_turn("flip user", "flip asst")
+    check("10c 翻转断言后写路径零落盘",
+          len(read_jsonl(mirror)) == n_m and len(read_jsonl(applied_f)) == n_a)
+
+    # 11) 审计 P2-1 limit 边界：0/负数/超大/非法 → 夹逼 [1,50]，0/非法回退 5
+    big = [{"side": "cow", "file": f"daily/d{i}.md", "tier": "mid",
+            "header": f"条目{i}", "body": "台账 关键词", "sha1": f"{i:012d}"}
+           for i in range(60)]
+    prov._bridge.read_cow_memory = lambda cow_root=None: big
+    for raw, expect in [(0, 5), (-3, 1), (999, 50), (2, 2), ("abc", 5)]:
+        o = json.loads(prov.handle_tool_call(
+            "cow_memory_search", {"query": "台账", "limit": raw}))
+        check(f"P2-1 limit={raw!r} → {expect} 条", o["count"] == expect,
+              f"got {o['count']}")
+
+    # 12) 审计 P2-2 工具描述对齐真实数据源（index.db / tier=dialog）
+    desc = prov.get_tool_schemas()[0]["description"]
+    check("P2-2 描述含 index.db+tier=dialog",
+          "index.db" in desc and "tier=dialog" in desc, desc)
 
     print(f"== PASS {len(PASS)} / FAIL {len(FAIL)} ==")
     if FAIL:
