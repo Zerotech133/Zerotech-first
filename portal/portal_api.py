@@ -702,6 +702,7 @@ DOMAIN_NAV_GROUPS = {
     "dev": ((None, (("💻 开发者专项", "/dev", "dev"),)),),
     "ops": ((None, (
         ("🎛 OS 控制台", "/ops", "opshome"),
+        ("🛡 审计状态", "/audit", "audit"),
         ("🖥 系统自检", "/sys-health", "sys"))),),
 }
 SECTION_PAGES = {k: [it for _, its in groups for it in its]
@@ -725,7 +726,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "kgbattle": "intel",
                 "kgflow": "intel", "kglabel": "intel", "kgcard": "intel",
                 "gzh": "creator", "vd": "creator",
-                "sys": "ops"}
+                "sys": "ops", "audit": "ops"}
 
 _PILL = ("display:inline-block;padding:6px 13px;border:1px solid #30363d;"
          "border-radius:16px;color:#58a6ff;text-decoration:none;"
@@ -20575,6 +20576,20 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             self._json(data)
         elif path == "/health":
             self._json({"ok": True, "ts": time.strftime("%Y-%m-%d %H:%M:%S")})
+        elif path == "/api/audit_status":
+            # M6 最小接线（2026-10-08 定位拍板 C 混合态）：审计线状态面，
+            # 只读、无鉴权、全体 unverified（拍板原文，鉴权/对账/调度缓行）。
+            # 数据层 quant_backtest/ai_operator/portal_status.py（docs 台账投影，
+            # CLI 可自测 python -m ai_operator.portal_status）。
+            import sys as _sysa
+            if QBT_DIR not in _sysa.path:
+                _sysa.path.insert(0, QBT_DIR)
+            try:
+                from ai_operator.portal_status import status as _aud
+                self._json(_aud())
+            except Exception as _e:  # 数据层异常也如实暴露（fail loud）
+                self._json({"ok": False, "verified": False,
+                            "error": repr(_e)}, 500)
         elif path.startswith("/static/"):
             # KG-V1 静态资源（白名单）：本地 echarts / 全站 tokens.css
             fn = path.split("/", 2)[2]

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>审计线状态 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<!--
+  审计线状态页（ai_operator M6 最小接线 · 2026-10-08 定位拍板 C 混合态）
+  数据源：/api/audit_status（数据层 quant_backtest/ai_operator/portal_status.py，
+          docs/ai_operator/overall-progress.md 与 docs/positioning-decision.md 的投影）
+  边界（拍板原文）：只读、无鉴权、全体条目标 unverified；
+  鉴权/每日对账/持久调度等企业级要求缓行。
+  纪律：页面不硬编码业务数字，全部动态渲染防两处漂移。
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
+  .dim { color: var(--text-dim); }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 26px 56px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: 1080px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 17px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: 1080px; margin: 0 auto; }
+  .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+  /* ── unverified 横幅 ── */
+  .banner { margin-top: 22px; background: rgba(210,153,34,.12); border: 1px solid rgba(210,153,34,.45); border-radius: var(--r-m); padding: 13px 18px; font-size: 13px; line-height: 1.65; color: var(--text); }
+  .banner b { color: #d29922; }
+  /* ── 卡片 ── */
+  .card { margin-top: 14px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-m); padding: 16px 20px; }
+  .card h2 { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .card .src { font-size: 11px; color: var(--text-dim); margin-top: 10px; font-family: Consolas, monospace; word-break: break-all; }
+  /* ── 测试资产大数字 ── */
+  .big { display: flex; gap: 12px; flex-wrap: wrap; }
+  .big .b { flex: 1 1 120px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--r-m); padding: 12px 14px; text-align: center; }
+  .big .b .v { font-family: Consolas, monospace; font-size: 26px; font-weight: 700; }
+  .big .b .k { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; }
+  .pass { color: #3fb950; } .skip { color: #d29922; } .fail { color: #f85149; }
+  .note { font-size: 12px; color: var(--text-dim); line-height: 1.7; margin-top: 10px; }
+  /* ── M0-M6 表 ── */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; text-align: left; line-height: 1.6; }
+  th { color: var(--text-dim); font-weight: 600; font-size: 11.5px; white-space: nowrap; }
+  td.stage { font-family: Consolas, "Microsoft YaHei", monospace; font-weight: 700; white-space: nowrap; }
+  tr.m6 td { background: rgba(88,166,255,.07); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; margin-left: 6px; vertical-align: 1px; }
+  .tag.wired { background: rgba(63,185,80,.15); color: #3fb950; border: 1px solid rgba(63,185,80,.4); }
+  .tag.frozen { background: rgba(210,153,34,.12); color: #d29922; border: 1px solid rgba(210,153,34,.4); }
+  /* ── 清单 ── */
+  .list { list-style: none; }
+  .list li { padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 13px; line-height: 1.6; display: flex; gap: 9px; align-items: baseline; }
+  .list li:last-child { border-bottom: none; }
+  .mk { font-family: Consolas, monospace; font-weight: 700; flex-shrink: 0; }
+  .mk.no { color: #f85149; } .mk.trigger { color: var(--link); }
+  .stage-badge { font-size: 10.5px; color: var(--text-dim); font-family: Consolas, monospace; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; flex-shrink: 0; }
+  .err { margin-top: 22px; background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.45); border-radius: var(--r-m); padding: 14px 18px; font-size: 13px; color: #f85149; font-family: Consolas, monospace; word-break: break-all; }
+  footer { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--text-dim); line-height: 1.8; }
+  footer code { font-family: Consolas, monospace; color: var(--link); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">🛡</div>
+    <div><h1>审计线状态</h1><small>AI OPERATOR · M6 MINIMAL WIRE</small></div>
+  </div>
+  <div class="clock num" id="clock"></div>
+</header>
+<nav class="topnav">
+  <a class="pill" href="/">🏠 首页</a>
+  <a class="pill" href="/ops">🎛 OS 控制台</a>
+  <a class="pill on" href="/audit">🛡 审计状态</a>
+  <a class="pill" href="/kg">🕸 图谱探索</a>
+</nav>
+<main>
+  <div id="banner"></div>
+  <div id="content"></div>
+  <div id="err" class="err" style="display:none"></div>
+  <footer>
+    数据源：<code>/api/audit_status</code> ←
+    <code>quant_backtest/ai_operator/portal_status.py</code>（docs 台账投影，改动以文档为准）<br>
+    事实源：<code>docs/ai_operator/overall-progress.md</code>（进度唯一台账） ·
+    <code>docs/positioning-decision.md</code>（定位决议单一事实源）
+  </footer>
+</main>
+<script>
+function fmtClock() {
+  var d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', {hour12: false});
+}
+setInterval(fmtClock, 1000); fmtClock();
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+function render(d) {
+  // unverified 横幅（拍板核心：全体 unverified 如实呈现）
+  document.getElementById('banner').innerHTML =
+    '<div class="banner"><b>⚠ ' + (d.verified ? '部分条目已认证' : '全体条目 unverified') +
+    '：</b>' + esc(d.banner.replace(/^全体条目 unverified：/, '')) + '</div>';
+
+  var h = '';
+  // 决议卡
+  h += '<div class="card"><h2>📐 定位决议</h2>'
+    + '<div style="font-size:13px;line-height:1.75">' + esc(d.decision.summary) + '</div>'
+    + '<div style="font-size:12.5px;margin-top:8px"><b>' + esc(d.decision.mode) + '</b>'
+    + '<span class="tag frozen">冻结为可复活资产</span></div>'
+    + '<div class="src">决议单一事实源：' + esc(d.decision.doc) + '</div></div>';
+
+  // 七批测试资产
+  var t = d.test_assets;
+  h += '<div class="card"><h2>🧪 七批测试资产（冻结保持绿色可回归）</h2><div class="big">'
+    + '<div class="b"><div class="v num pass">' + t.passed + '</div><div class="k">通过</div></div>'
+    + '<div class="b"><div class="v num skip">' + t.skipped + '</div><div class="k">跳过</div></div>'
+    + '<div class="b"><div class="v num ' + (t.failed ? 'fail' : 'pass') + '">' + t.failed + '</div><div class="k">失败</div></div>'
+    + '<div class="b"><div class="v num">' + t.collected + '</div><div class="k">收集</div></div>'
+    + '<div class="b"><div class="v num">' + t.subtests_passed + '</div><div class="k">subtests</div></div>'
+    + '</div><div class="note">'
+    + esc(t.env) + ' · ' + esc(t.as_of) + ' · ' + t.duration_s + 's 退出 0<br>'
+    + esc(t.skip_reason) + '<br>' + esc(t.baseline_note)
+    + '</div><div class="src">日志：' + esc(t.log) + '</div></div>';
+
+  // M0-M6 里程碑
+  h += '<div class="card"><h2>📋 里程碑 M0-M6（审计线，与 KG 线 KG-M1~M5 互不指涉）</h2>'
+    + '<div style="overflow-x:auto"><table><tr><th>阶段</th><th>已交付</th><th>尚未完成</th></tr>';
+  d.milestones.forEach(function(m, i) {
+    var isM6 = m.stage.indexOf('M6') === 0;
+    h += '<tr' + (isM6 ? ' class="m6"' : '') + '><td class="stage">' + esc(m.stage)
+      + (isM6 ? '<span class="tag wired">已接线·最小</span><span class="tag frozen">企业级缓行</span>' : '')
+      + '</td><td>' + esc(m.delivered) + '</td><td class="dim">' + esc(m.pending) + '</td></tr>';
+  });
+  h += '</table></div><div class="src">来源：' + esc(d.sources.progress) + '</div></div>';
+
+  // 认证挂账
+  h += '<div class="card"><h2>🔒 认证保留条件（挂账不销，等待复活触发）</h2><ul class="list">';
+  d.auth_conditions.forEach(function(c) {
+    h += '<li><span class="mk no">' + (c.done ? '✓' : '✗') + '</span>'
+      + '<span class="stage-badge">' + esc(c.stage) + '</span><span>' + esc(c.item) + '</span></li>';
+  });
+  h += '</ul><div class="src">来源：' + esc(d.sources.decision) + ' §2</div></div>';
+
+  // 复活触发
+  h += '<div class="card"><h2>🔥 平台复活触发条件（满足其一起评 M6 全集）</h2><ul class="list">';
+  d.revival_triggers.forEach(function(r, i) {
+    h += '<li><span class="mk trigger">T' + (i + 1) + '</span><span>' + esc(r) + '</span></li>';
+  });
+  h += '</ul><div class="src">来源：' + esc(d.sources.decision) + ' §4</div></div>';
+
+  document.getElementById('content').innerHTML = h;
+}
+
+fetch('/api/audit_status').then(function(r) {
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}).then(function(d) {
+  if (!d.ok) throw new Error(d.error || '数据层 ok=false');
+  render(d);
+}).catch(function(e) {
+  var el = document.getElementById('err');
+  el.style.display = 'block';
+  el.textContent = '状态面加载失败：' + e.message + '（数据层 ai_operator/portal_status.py 或 8091 未启动）';
+});
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@
 ### 2. 审计线（ai_operator M0-M6）：冻结为可复活资产
 - **冻结扩批**：不再启动第八批增量，七批 439 测试资产保持绿色可回归（最新实核：438 通过/1 跳过/0 失败 @2026-10-08）
 - **M6 只做最小接线**：审计状态页进门户（哪怕全体标注 unverified），让七批资产可见；鉴权/每日对账/持久调度等企业级要求全部缓行
+  - 执行记录：**已于 2026-10-08 落地**——`portal/audit.html`（静态壳，unverified 横幅+M0-M6 表+挂账清单+复活触发）+ `portal_api.py /api/audit_status`（数据层 `quant_backtest/ai_operator/portal_status.py`，docs 台账投影）+ nginx `/audit` 路由 + ops 域导航入口；CLI 自测 `python -m ai_operator.portal_status`；8080/audit 实测 200。
 - **前置条件不再递增**：私钥登记、2023 首日佐证、临时停市全集等认证保留条件挂账不销，等待复活触发
 
 ### 3. K262-K266 五立项去留（按个人价值）
