@@ -21,6 +21,9 @@ from tools import quote_snapshot  # noqa: E402
 
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"
+# 审计修正（K-STOCK-021）：J1 分母须用篮子全集——原从 done 行收集 symbols，
+# 从未成功的票不进分母 → 某票整期全挂时 J1 仍 PASS（自我引用漏洞）
+N_BASKET = 5  # 与 run_shadow.BASKET 一致（不直接 import：顶部拉起 Interpreter/LLM 重依赖）
 
 
 def load_ledger():
@@ -74,9 +77,11 @@ def main():
     print("影子账本：done=%d failed=%d 交易日=%d 票数=%d" % (len(done), len(failed), len(days), len(symbols)))
     print("交易日:", ", ".join(days))
 
-    j1 = len(days) >= args.min_days and len(done) >= len(days) * max(len(symbols), 1) * 0.9
-    print("[J1 无人干预] %s（done 覆盖率 %.0f%%）" % (
-        "PASS" if j1 else "WAIT/PENDING", 100 * len(done) / max(len(done) + len(failed), 1)))
+    j1 = len(days) >= args.min_days and len(done) >= len(days) * N_BASKET * 0.9
+    coverage = 100 * len(done) / max(len(days) * N_BASKET, 1)  # 真覆盖率: done/(篮子×交易日)
+    done_share = 100 * len(done) / max(len(done) + len(failed), 1)  # done 占比（原打印误标为覆盖率）
+    print("[J1 无人干预] %s（篮子覆盖率 %.0f%%, done 占比 %.0f%%）" % (
+        "PASS" if j1 else "WAIT/PENDING", coverage, done_share))
 
     per_symbol_latest = {}
     for r in done:
@@ -120,7 +125,11 @@ def main():
                 "SELECT output FROM traces WHERE run_id=? AND agent_id='T1' AND phase='debate_final'",
                 (r["run_id"],)).fetchone()
             head = (row[0] if row else "")[:40]
-            g = "倒戈" if "看空" in head else "坚守"
+            # 审计修正（K-STOCK-021）：与 a0_chief.debate_health 统一为 first-match——
+            # 原判 "看空" in head 会把「我方看多，反驳对方看空论点」误判为倒戈
+            import re as _re
+            m = _re.search(r"看多|看空", head)
+            g = "倒戈" if (m and m.group(0) == "看空") else "坚守"
             if r.get("price_at_decision"):
                 try:
                     now = quote_snapshot(sym)["price"]

@@ -116,17 +116,25 @@ def main():
         print("    %s：%s" % (label, "存在（%s）" % datetime.fromtimestamp(
             f.stat().st_mtime).strftime("%H:%M") if f.exists() else "缺失"))
 
-    # 5. 三判据快照（复用 eval_shadow CLI，联网取现价）
+    # 5. 三判据快照（复用 eval_shadow CLI，联网取现价；审计修正 K-STOCK-021：
+    #    eval 超时/异常不得崩掉整个晨检——否则 --push 简报也发不出）
     print("\n[5] 三判据快照：")
-    r = subprocess.run(
-        [sys.executable, str(BASE / "eval_shadow.py"), "--min-days", "1"],
-        capture_output=True, text=True, encoding="utf-8", timeout=120)
-    for ln in (r.stdout or "").splitlines():
-        print("    " + ln)
+    r = None
+    try:
+        r = subprocess.run(
+            [sys.executable, str(BASE / "eval_shadow.py"), "--min-days", "1"],
+            capture_output=True, text=True, encoding="utf-8", timeout=120)
+        for ln in (r.stdout or "").splitlines():
+            print("    " + ln)
+        if r.returncode != 0:
+            print("    [warn] eval_shadow 非零退出 %s：%s" % (r.returncode, (r.stderr or "")[:120]))
+    except Exception as e:  # noqa: BLE001
+        print("    [warn] 三判据快照失败（不影响后续项）：%s" % e)
 
     # --push：压缩简报推飞书（影子期晨检 automation，K-STOCK-016）
     if args.push:
-        j_lines = [ln.strip() for ln in (r.stdout or "").splitlines()
+        eval_out = (r.stdout or "") if r is not None else ""
+        j_lines = [ln.strip() for ln in eval_out.splitlines()
                    if ln.strip().startswith(("[J1", "[J2", "[J3", "影子评估结论"))]
         brief = ["**影子晨检简报 %s**" % d,
                  "账本：%d done / %d failed / %d 降级" % (len(done), len(failed), len(deg))]
