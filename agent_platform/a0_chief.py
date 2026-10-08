@@ -77,6 +77,31 @@ def debate_stats(run_id):
         return 0, None
 
 
+def debate_health(run_id):
+    """单票辩论健康三指标（K-ORG-005 倒戈观测，Day0 基线报告定性）：T1/T2 final 立场 + 末轮相似度。"""
+    import re
+    import sqlite3
+    out = {"t1": "?", "t2": "?", "sim_last": None}
+    try:
+        conn = sqlite3.connect(str(DB), check_same_thread=False)
+        for agent, key in (("T1", "t1"), ("T2", "t2")):
+            row = conn.execute(
+                "SELECT output FROM traces WHERE run_id=? AND agent_id=? AND phase='debate_final'",
+                (run_id, agent)).fetchone()
+            if row:
+                m = re.search(r"看多|看空", (row[0] or "")[:40])
+                out[key] = m.group(0) if m else "?"
+        row = conn.execute(
+            "SELECT similarity FROM traces WHERE run_id=? AND phase='debate_rebuttal' "
+            "AND similarity IS NOT NULL ORDER BY ts DESC LIMIT 1", (run_id,)).fetchone()
+        if row:
+            out["sim_last"] = row[0]
+        conn.close()
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
 def build(today):
     done, failed = load_today(today)
     day_n = shadow_progress()
@@ -126,15 +151,29 @@ def build(today):
                      "秩相关判据将依赖 confidence 备用排序。")
     if done:
         rounds_list, sims = [], []
+        defected, sim_warn = [], []
         for r in done:
             n, s = debate_stats(r.get("run_id", ""))
             rounds_list.append(n)
             if s is not None:
                 sims.append(s)
+            h = debate_health(r.get("run_id", ""))
+            if h["t1"] == "看空":
+                defected.append("%s(T1转空)" % r["symbol"])
+            if h["t2"] == "看多":
+                defected.append("%s(T2转多)" % r["symbol"])
+            if h["sim_last"] is not None and h["sim_last"] >= 0.7:
+                sim_warn.append("%s(%.2f)" % (r["symbol"], h["sim_last"]))
         if rounds_list:
             lines.append("- 辩论轮次（rebuttal 轮数/票）：%s；平均末轮相似度 %s" % (
                 "、".join(str(n // 2) for n in rounds_list),
                 ("%.2f" % (sum(sims) / len(sims))) if sims else "无"))
+        if defected:
+            lines.append("- **[P2] 立场漂移（倒戈）**：%s——角色放弃本方立场，辩论质量受损"
+                         "（Day0 基线已定性该模式，prompt 校准影子期满后执行）。" % "、".join(defected))
+        if sim_warn:
+            lines.append("- **[P2] 相似度警戒**：%s——末轮 sim≥0.7 逼近 0.8 收敛阈值，"
+                         "存在立场塌缩被误判为共识的风险。" % "、".join(sim_warn))
     lines.append("")
     lines.append("## 四、明日计划")
     lines.append("")
