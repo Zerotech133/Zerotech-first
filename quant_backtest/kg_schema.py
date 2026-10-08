@@ -75,6 +75,24 @@ REL_ASSESSED = "ASSESSED"           # Commentator -[ASSESSED {verdict,stars,them
 REL_SUPPLIES = "SUPPLIES"           # Concept -[SUPPLIES {conf,reason,overlap,batch}]-> Concept 概念级供应链方向（K265-P1，source=concept_llm_v1 整体回滚键；src=上游卖方，品牌概念禁作 src）
 REL_DRIVES = "DRIVES"               # Concept -[DRIVES {conf,reason,overlap,batch}]-> Concept 需求带动（K265-P1，source=concept_llm_v1；qwen 判向+buyer 自检+人审抽样，conf≥0.95 入图）
 
+# ── K264 跨项目共图收录（2026-10-08）────────────────────────
+# 情报线边族（写入器在 E:\KGStockAnalysis：kg_ann_history_link/kg_corroborate_edges/
+# kg_annotation 等）——图内实核 ≈100.5 万条，本侧此前零注册（检查器/统计不可见）。
+# 双版本为设计：EXP_ 前缀=实验/候选域，无前缀=转正域（kg_annotation.py 的
+# rel[4:] 去前缀映射即两域桥）。保鲜检查按域分治：情报线 lag 由 KGStockAnalysis
+# 侧 kg_check 负责，本侧 COVERAGE_EDGES 不纳入（节奏不同避免误报）。
+# KGStockAnalysis 侧 schema 同样缺这 10 个（同病），其补注册挂对方项目线。
+REL_INVOLVES = "INVOLVES"           # Security -[INVOLVES]-> Event 公告事件（自家缺口补注册！kg_build_p3_evt/kg_build_m2 写入，validStart=事件日，方向勿写反；COVERAGE_EDGES 消费方）
+REL_MENTIONS = "MENTIONS"           # IntelItem -[MENTIONS]-> Security 情报提及标的（无前缀转正版，4 source）
+REL_REPORTED_BY = "REPORTED_BY"     # IntelItem -[REPORTED_BY]-> Source 情报溯源（无前缀版，2 source）
+REL_SUPPORTS = "SUPPORTS"           # IntelItem/Event -[SUPPORTS]-> Hypothesis 印证（Z2 印证表 d=True 分支）
+REL_CONTRADICTS = "CONTRADICTS"     # IntelItem/Event -[CONTRADICTS]-> Hypothesis 反证（d=False 分支）
+REL_EXP_MENTIONS = "EXP_MENTIONS"           # EXP_IntelItem -[EXP_MENTIONS]-> EXP_Security 情报提及（实验域，46.9 万条，4 source）
+REL_EXP_REPORTED_BY = "EXP_REPORTED_BY"     # EXP_IntelItem -[EXP_REPORTED_BY]-> EXP_Source 情报溯源（实验域，48.6 万条）
+REL_EXP_SUPPORTS = "EXP_SUPPORTS"           # EXP_IntelItem -[EXP_SUPPORTS]-> EXP_Hypothesis 印证候选（实验域）
+REL_EXP_CONTRADICTS = "EXP_CONTRADICTS"     # EXP_IntelItem -[EXP_CONTRADICTS]-> EXP_Hypothesis 反证候选（实验域）
+REL_EXP_ASSESSES = "EXP_ASSESSES"           # EXP_Assessment -[EXP_ASSESSES]-> EXP_Hypothesis 评估挂假设（实验域；注意与 REL_ASSESSED 派系评估不同语义）
+
 # ── 时序默认值 ────────────────────────────────────────────────
 VALID_END_OPEN = "9999-12-31"       # 在市/有效 → 开区间末端
 SOURCE_SEED = "stock_basic+stock_company+sw_classify_l1"

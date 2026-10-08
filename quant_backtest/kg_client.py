@@ -150,7 +150,7 @@ class KgClient:
                 print("  节点 %-15s %d" % (lbl, r["c"]))
             for rel in [S.REL_OF_COMPANY, S.REL_INDUSTRY_OF, S.REL_AREA_OF,
                         S.REL_SERVES_AS, S.REL_SW_L1_OF, S.REL_PRODUCES,
-                        S.REL_CORRELATES, "INVOLVES",
+                        S.REL_CORRELATES, S.REL_INVOLVES,
                         S.REL_OCCUPIES, S.REL_TRADED_ON,
                         S.REL_HAS_STRUCTURE, S.REL_HAS_VOL_EVENT,
                         S.REL_HAS_CANDLE,
@@ -161,7 +161,14 @@ class KgClient:
                         S.REL_CONDUCTION, S.REL_SUB_OF, S.REL_SUPPLIES_TO,
                         S.REL_IN_GROUP, S.REL_ASSESSED,
                         # 概念级语义边（K265-P1：LLM 供应链/需求带动）
-                        S.REL_SUPPLIES, S.REL_DRIVES]:
+                        S.REL_SUPPLIES, S.REL_DRIVES,
+                        # 情报线边族（K264 跨项目收录：写入器在 KGStockAnalysis，
+                        # 双版本设计 EXP_=实验域/无前缀=转正域，≈100.5 万条）
+                        S.REL_MENTIONS, S.REL_REPORTED_BY,
+                        S.REL_SUPPORTS, S.REL_CONTRADICTS,
+                        S.REL_EXP_MENTIONS, S.REL_EXP_REPORTED_BY,
+                        S.REL_EXP_SUPPORTS, S.REL_EXP_CONTRADICTS,
+                        S.REL_EXP_ASSESSES]:
                 r = s.run(
                     "MATCH ()-[r:%s]->() RETURN count(r) AS c" % rel).single()
                 print("  边   %-15s %d" % (rel, r["c"]))

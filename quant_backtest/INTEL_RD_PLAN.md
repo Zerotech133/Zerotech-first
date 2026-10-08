@@ -32,7 +32,7 @@ K线与量能是市场参与者博弈留下的**痕迹（证据）**；缠论结
 ### L2 知识资产
 | 资产 | 规模 | 状态 |
 |------|------|------|
-| Neo4j 时序图谱 | 113208 节点 / 288763 边 @09-28 快照 → **2026-10-08 08:56 实核 147.5 万节点 / 420.7 万边 / 41 边型·44 端点组合**（data/graph_check/latest.json snapshot，含 MarketEvent 67.7 万与 KGStockAnalysis 情报线边族）；现值见门户 /kg/stats | ✅ validStart/End 铁律；drift 已清零@10-08（graph_check 8 个新组合定性：7 个 K190/K201 边型本已注册，SUPPLIES/DRIVES 已补注册 kg_schema.py@10-08；⚠ 跨项目边族未合流：KGStockAnalysis 写入器 kg_intel_link/kg_corroborate/kg_ann_history_link 等 9 边型 ≈98.5 万条共用本图，schema 分居对方项目——挂 K264） |
+| Neo4j 时序图谱 | 113208 节点 / 288763 边 @09-28 快照 → **2026-10-08 08:56 实核 147.5 万节点 / 420.7 万边 / 41 边型·44 端点组合**（data/graph_check/latest.json snapshot，含 MarketEvent 67.7 万与 KGStockAnalysis 情报线边族）；现值见门户 /kg/stats | ✅ validStart/End 铁律；drift 已清零@10-08（graph_check 8 个新组合定性：7 个 K190/K201 边型本已注册，SUPPLIES/DRIVES 已补注册 kg_schema.py@10-08）；**跨项目边族已合流（K264 收录落地@10-08）**：实核未注册 10 边型 ≈100.5 万条（五族语义 REPORTED_BY/MENTIONS/SUPPORTS/CONTRADICTS/ASSESSES × EXP_ 实验域/无前缀转正域双版本，kg_annotation rel[4:] 去前缀即两域桥）+ 自家 INVOLVES 缺口（COVERAGE_EDGES 消费却从未注册，kg_client stats 一直用字面量）——11 边型全量补注册 kg_schema.py，kg_client stats 边清单同步（字面量收敛为常量，41 边型 stats 全可见）；KGStockAnalysis 侧零改动（其 schema 同缺 10 个，补注册挂对方项目线）；保鲜按域分治（情报线 lag 归对方 kg_check，本侧 COVERAGE_EDGES 不扩） |
 | 事件流 | Event 23766 + INVOLVES 17598（bull/bear）| ✅ 每日四步链保鲜 |
 | 盘面事件 | MarketEvent 55524（缠论 9426 + 量能 46098）| ✅ CL-1 入图（**保鲜待接**）|
 | 游资席位 | HotMoney 19 / Seat 78 / OCCUPIES 78 / TRADED_ON 72074 @09-28 快照 → **2026-10-08 实核 21 / 247**；现值见 /kg/stats | ✅ CL-1（19/19 全命中）|
@@ -5999,6 +5999,20 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 - **口径备注（金标 comment 内已注明）**：#11 维信诺收购摘要按「国资+团队收购强化控制权偏正面」判利好；#25 致远互联白皮书按「厂商产品推介偏正面」判利好；#01 影子 why 混入引用周报标题「存储」瑕疵但方向判定正确。
 - **用途达成**：金标 30 篇定稿（全量 `gold_confirmed_by=user-2026-10-08`；分歧篇 #29 用户终审判中性），改版/换模型跑一致率对照基线（≥85% 门闸校准）。
 
+### K266 补记六（10-08 上午，新闻桥接 + B 案单条抽取 + 门户适配）
+- **新闻→词云桥接（方案1 落地）**：`news_collector.py` 增 `export_k266()`（rowid 水位线幂等、单批 ≤5000 字防 6000 截断、首跑只建水位不回灌），新闻落 `inbox/docs/pending/news_*.txt` → K266-DocServices 5 分钟自动摄取（`k266_doc_ingest.py` 增 .txt/.md 直读 + `news_` 前缀识别 src=news）→ ps1 补 M3 环节（ingest 有新增才跑，单实例守卫）。全链路延迟 5-10 分钟，词云自此随新闻实时刷新。
+- **A 案**：M3 prompt doc_type 枚举增「新闻」+ 识别规则（`[时间][来源] 标题` 格式单条或合辑）。
+- **B 案（单条抽取）**：M3 增 `split_news_items()` 按 `[时间][来源]` 头切批次 → 单条逐判，`doc_id=批次id+i序号`（如 `dc0a6f9c7e6afi03`），批次级不落影子防 tags 双计。粒度从「一批 20 条混一组 tags」→「每条独立 doc_type/direction/events/tags」，词云词频按条累计更准。旧批次全量重切完成（含并发重判产生的 48 条重复，已按 doc_id 去重）。
+- **ERR 自动重试修复**：`load_done` 原把 raw_ok=False 也算已判 → 失败单条永不重试；改为只收 raw_ok=True，ERR 下轮自动补判（曾出现 2 条 ERR 已清理重判）。
+- **门户 /kg/doc 适配**：新闻单条按 ts 置顶（文档仍按字数）；来源筛选 pills（全部/新闻/文档）；卡片限流 200+「显示更多」；上传白名单扩 txt/md（accept/提示语/端点三处对齐，E2E 实测 up_*.txt 落 pending 成功）。门户重启两次加载新代码（junction C:\aios 同文件）。
+- **clip_watch 常驻定夺**：维持 ps1 保活模式（每 5 分钟单实例检查，pythonw 无窗拉起）——在岗 PID 37520 自 10-07 21:11，验证通过，不再另建常驻机制。
+- **M3-A 篇级事件层预研（B 案直接解锁，启动门槛即到）**：
+  1. 数据基础已变：events 五元组现已按**单条新闻**产出（subject/rel/object/direction/amount），不再受篇级平摊噪声影响；
+  2. 方案：新 `k266_m3a_events.py` 读 structure_shadow 单条 events → `event_shadow.jsonl`（影子层）——主体/客体经三级映射（精确 name→aliases→CONTAINS 唯一，复用 M3-B 映射器）解析为 Security；**双端都命中 Security 才候选入图**，单边命中降级挂事件属性；同人同客体同方向聚窗去重（如 1 小时内同事件多条新闻）；
+  3. 入图口径（人审后）：`(s:Security)-[r:DOC_EVENT {dir, ts, src_doc, rel}]->(o)`，方向取**事件级** direction（替代 M3-B 篇级 doc_pos/neg/neu 的粗平摊，M3-B 保留作文档级视图）；
+  4. 验收门闸：抽样 30 事件人审主体/方向正确率 ≥85%（对齐金标 30 篇口径）；
+  5. 启动判据：影子记录上千（10-08 新闻单条化后当日即破千，M3-A 可即时启动）。
+
 ### K266 补记五（10-08 凌晨，三项拍板落地：M3-B 入图 + 金标集 + K260 收口）
 - **拍板执行**（2026-10-08 用户三项：M3 入图「先B后A」/ 建 30 篇金标集 / eval 接受剔除口径）。
 - **M3-B 入图完成**：`k266_m3b_ingest.py`（--dry 预览/幂等全量重算覆盖写，可随影子续跑重刷）——105 篇影子 companies×direction 聚合 → **202 Security 节点**挂 `doc_pos/doc_neg/doc_neu/doc_n/doc_last`（验证 pos=140 neg=3 neu=92）。映射三级（精确 name 196 / aliases 1 / CONTAINS 唯一 5）；未命中 138 为非 A 股实体（Meta/OpenAI/华为/研究院/城市/指数——研报产业链提及，本就不属 Security 体系，正常噪声）；歧义 4（如「中兴」→中兴通讯/中兴商业，跳过）。direction 归一：利好=pos/利空=neg/其余含「中性偏多」=neu（保守）。**已知噪声：篇级方向平摊给该篇全部 companies，非主主体被带方向——M3-A 篇级事件层再精化（文档量上千再启动）**。
@@ -6038,4 +6052,4 @@ K264 补齐概念侧密度后，方向性语义边是最后硬伤：REQUIRES 仅
 | M5 服务化 | ✅ 提前落地（10-07 晚） | k266_services.ps1 + 计划任务 K266-DocServices 每 5 分钟 |
 | 金标集 | ✅ 人审定稿（10-08 早） | AI 精审 29/30 一致=96.7%（门闸 ≥85% 远超）；分歧 1 篇待终审 |
 
-**挂账移交（不阻塞收口）**：① M3-A 篇级事件层（文档量上千再启动，噪声=篇级方向平摊）② ~~门户上传按钮 UI~~ **已完成（10-08 核验）**：`/kg/doc` 线上页面已含 upbar 上传条（`📤 上传公告/研报` + PNG/JPG/PDF 多选 + fetch POST `/kg/doc/upload` + ✅/❌ 状态反馈），实测 200 且按钮在——M2 遗留行过时，按钮在 M4 词云页落地时一并上线 ③ clip_watch 常驻方式待定 ④ 补记四遗留：两库容器（quantdinger-db / newquantsystem_v2-postgres-1）重启与否待老田拍板。*性能观察项：/kg/doc 首访冷渲染 >10s（wordcloud 生成 + 全量 jsonl 读），内网个人门户可接受。*
+**挂账移交（不阻塞收口）**：① M3-A 篇级事件层（~~文档量上千再启动~~ **预研方案已出，见补记六；10-08 单条化后影子即破千，可启动**）② ~~门户上传按钮 UI~~ **已完成（10-08 核验）**：`/kg/doc` 线上页面已含 upbar 上传条（`📤 上传公告/研报` + PNG/JPG/PDF 多选 + fetch POST `/kg/doc/upload` + ✅/❌ 状态反馈），实测 200 且按钮在——M2 遗留行过时，按钮在 M4 词云页落地时一并上线 ③ ~~clip_watch 常驻方式待定~~ **已定夺（10-08）**：维持 k266_services.ps1 保活模式（单实例检查 + pythonw 拉起，在岗验证通过）④ 补记四遗留：两库容器（quantdinger-db / newquantsystem_v2-postgres-1）重启与否待老田拍板。*性能观察项：/kg/doc 首访冷渲染 >10s（wordcloud 生成 + 全量 jsonl 读），内网个人门户可接受。*
