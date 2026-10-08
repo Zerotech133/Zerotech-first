@@ -84,10 +84,10 @@ class Interpreter:
         self.cp = checkpointer
 
     # ---------- 主流程 ----------
-    def run(self, stock, run_id=None):
+    def run(self, stock, run_id=None, data_ctx=None):
         run_id = run_id or uuid.uuid4().hex[:12]
         self.cp.start_run(run_id, stock)
-        ctx = {"stock": stock, "statements": {}, "status": {}}
+        ctx = {"stock": stock, "statements": {}, "status": {}, "data": data_ctx or {}}
         layers = {}
         for a in self.team.agents:
             layers.setdefault(a["level"], []).append(a)
@@ -144,9 +144,12 @@ class Interpreter:
 
     def _build_user(self, node, ctx, extra=""):
         base = "标的：%s\n分析类型：%s\n" % (ctx["stock"], node["analysis_type"])
+        data = (ctx.get("data") or {}).get(node["analysis_type"], "")
+        if data:
+            base += "\n[数据]\n%s\n" % data
         if extra:
             base += "\n对方观点：\n%s\n" % extra
-        return base + "\n请给出简要分析结论（3 句以内）。"
+        return base + "\n请基于以上数据给出简要分析结论（3 句以内，引用具体数据）。"
 
     # ---------- 单节点 ----------
     def _single(self, node, ctx, run_id):

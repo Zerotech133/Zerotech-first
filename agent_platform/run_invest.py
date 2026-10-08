@@ -38,8 +38,18 @@ def main():
     memory = MemoryStore(Path(args.data) / "memory", grants_by_agent=grants, enforce=True)
     cp = Checkpointer(Path(args.data) / "checkpoints.db")
 
+    data_ctx = None
+    if args.live:
+        try:
+            sys.path.insert(0, str(BASE / "engine"))
+            from tools import make_context
+            data_ctx = make_context(args.stock)
+            print("[data] 数据上下文就绪：%s" % data_ctx.get("name", args.stock))
+        except Exception as e:  # noqa: BLE001
+            print("[data] 数据获取失败，转空数据模式：%s" % e)
+
     interp = Interpreter(team, llm, memory, cp)
-    result = interp.run(args.stock)
+    result = interp.run(args.stock, data_ctx=data_ctx)
 
     print("=" * 62)
     print("投研部运行简报  run_id=%s  stock=%s" % (result["run_id"], result["stock"]))

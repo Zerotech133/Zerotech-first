@@ -35,7 +35,9 @@ def similarity(a, b):
 
 
 class OllamaLLM:
-    def __init__(self, host="http://127.0.0.1:11434", timeout=90, retries=1):
+    def __init__(self, host="http://127.0.0.1:11434", timeout=300, retries=1):
+        # timeout=300：解释器层内并行多路请求会在 Ollama 排队（实测 9b 冷加载 34s，
+        # 3 路并行排队最坏 3×生成时长），90s 级超时会全军覆没（2026-10-08 live 首跑教训）
         self.host = host.rstrip("/")
         self.timeout = timeout
         self.retries = retries
@@ -49,7 +51,8 @@ class OllamaLLM:
                 {"role": "user", "content": user},
             ],
             "stream": False,
-            "options": {"temperature": 0.4},
+            "think": False,  # qwen3.5 思考模型：必须关思考（实测 400 token 全被 thinking 吃掉，content 为空）
+            "options": {"temperature": 0.4, "num_predict": 400},
         }
         last = None
         for _ in range(self.retries + 1):
