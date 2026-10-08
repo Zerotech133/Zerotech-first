@@ -21305,10 +21305,12 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             REG_CN = {"trend_up": "趋势上行", "trend_down": "趋势下行",
                       "rotation": "轮动", "range": "震荡"}
             rg = snap_qd.get("regime_now", {})
+            rg_txt = " · ".join("%s %d" % (REG_CN.get(k, k), v)
+                                for k, v in sorted(rg.items()))
 
             def _row_qd(r):
                 recent = "、".join(r.get("recent_signals", [])[-3:]) or "—"
-                return ("<tr><td><b>%s</b></td><td>%s</td><td>%s</td><td>%s</td>"
+                return ("<tr><td><b>%s</b></td><td>%s</td><td>%s</td><td class='dim'>%s</td>"
                         "</tr>" % (e_qd(r["code"]), e_qd(str(r.get("close", "—"))),
                                    e_qd(REG_CN.get(r.get("regime"), r.get("regime", "?"))),
                                    e_qd(recent)))
@@ -21316,40 +21318,102 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 "<tr><td colspan=4 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
             rec_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_recent", [])[:50]) or \
                 "<tr><td colspan=4 class='dim'>近 5 日无信号</td></tr>"
-            rg_txt = " · ".join("%s %d" % (REG_CN.get(k, k), v) for k, v in sorted(rg.items()))
+
+            # ── 管线步骤表（对齐缠论 ①-⑫ 规格：模块/入口/字段/状态）──
+            _OK = "<span style='color:#3fb950'>✅ 引擎已实现</span>"
+            _RDY = "<span style='color:#3fb950'>✅ 引擎就绪</span>"
+            _SH = "<span style='color:#d29922'>🧪 研究态</span>"
+            steps_qd = "".join(
+                "<tr><td><b>%s</b></td><td class='dim'>%s</td><td class='dim'>%s</td><td>%s</td></tr>"
+                % (m, tool, fld, stt) for m, tool, fld, stt in [
+                    ("① 连续双日十字星", "实体/振幅比≤0.30 且上下影齐全",
+                     "cross_star_2d", _OK + "（合成序列单测验证）"),
+                    ("② MACD 多头", "dif≥dea 且 dif&gt;0", "macd_ok", _OK),
+                    ("③ 振幅变化率受限", "|range−前日range|/前日range≤0.30",
+                     "range_ok", _OK),
+                    ("④ 价格带+实体方向", "6-200 元且 close≥open",
+                     "price_ok", _OK),
+                    ("⑤ 两日小涨约束", "连续两日涨幅各≤3%（strict）",
+                     "price_ok", _OK),
+                    ("⑥ 流动性门槛", "20 日成交额&gt;30 亿（特征湖 amount 千元口径 3e6）",
+                     "amount_ok", _OK),
+                    ("⑦ 均线多头排列", "MA24≥MA54 且 close≥两者",
+                     "ma_stack_ok", _OK),
+                    ("⑧ 乖离受限", "close≤MA24×1.20 / MA54×1.30",
+                     "ma_distance_ok", _OK),
+                    ("⑨ Regime 四市况分层", "TSI 趋势 60%+突破率 40% → 四市况，"
+                     "趋势下行一票否决", "regime_ok / regime_label", _OK),
+                    ("⑩ 5 分钟入场确认", "突破/量比≥0.9/VWAP≤2.5%/开盘强度，至少过二",
+                     "confirm_double_knife_entry", _RDY + "（接线待 T-20261009-008）"),
+                    ("⑪ strict/relaxed 双版本", "阈值双档对照研究法",
+                     "PROFILE_CONFIG", _SH + "（真实回测待 T-009）"),
+                    ("⑫ 真实回测验证", "特征湖 amt 千元口径 · 分 regime 结论",
+                     "任务 T-20261009-009", _SH + "（P1 · 限 10-25）"),
+                ])
+            tools_qd = "".join(
+                "<a class='tp' href='%s'>%s</a>" % (href, lb) for lb, href in [
+                    ("🌊 青萍之末工作台", "/bt-qpzm"),
+                    ("🧭 缠论工作台", "/bt-chanlun"),
+                    ("🎯 产线总目录", "/bt"),
+                    ("🚦 策略中心", "/strategies")])
+            cards_qd = (
+                "<div style='display:grid;grid-template-columns:repeat(auto-fit,"
+                "minmax(200px,1fr));gap:10px;margin:14px 0'>"
+                "<div style='border:1px solid #3fb950;border-radius:10px;"
+                "background:#161b22;padding:12px 14px'><div class='dim' "
+                "style='font-size:12px'>当日信号</div><div style='font-size:24px;"
+                "font-weight:700;color:#3fb950'>%d</div></div>"
+                "<div style='border:1px solid #d29922;border-radius:10px;"
+                "background:#161b22;padding:12px 14px'><div class='dim' "
+                "style='font-size:12px'>近 5 日曾有信号</div><div style='font-size:24px;"
+                "font-weight:700;color:#d29922'>%d</div></div>"
+                "<div style='border:1px solid #30363d;border-radius:10px;"
+                "background:#161b22;padding:12px 14px'><div class='dim' "
+                "style='font-size:12px'>全市场扫描覆盖</div><div style='font-size:24px;"
+                "font-weight:700'>%d 只</div></div>"
+                "<div style='border:1px solid #30363d;border-radius:10px;"
+                "background:#161b22;padding:12px 14px'><div class='dim' "
+                "style='font-size:12px'>当日市况分布</div><div style='font-size:13px;"
+                "line-height:1.8'>%s</div></div></div>"
+                % (len(snap_qd.get("signals_now", [])),
+                   len(snap_qd.get("signals_recent", [])),
+                   snap_qd.get("scanned", 0), e_qd(rg_txt or "—")))
             body_qd = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-                       "<title>量子双刀 · 研究预览</title>" + self._COCKPIT_CSS
+                       "<title>量子双刀 · 选股中心</title>" + self._COCKPIT_CSS
                        + "</head><body>" + pill_nav("qd")
-                       + "<h1>⚔ 量子双刀 · 选股中心（研究预览）</h1>"
+                       + "<h1>⚔ 量子双刀 · 选股中心</h1>"
                        "<div style='border:1px solid #d29922;border-radius:8px;"
                        "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
-                       "⚠ 研究态：策略未回测验证（strict 八重过滤 · T-20261009-009 回测结论"
-                       "前不构成选股依据 · 不构成投资建议）</div>"
-                       "<div class='dim'>扫描快照 %s · 耗时 %ss · 覆盖 %d 只（跳过 %d）"
-                       " · 当日市况分布：%s</div>"
-                       "<h2 style='font-size:16px;margin-top:18px'>📌 当日信号（%d）</h2>"
+                       "⚠ 研究态：策略未回测验证（T-20261009-009 结论前不构成选股依据 · "
+                       "不构成投资建议）· 已注册策略中心（shadow）</div>"
+                       + tools_qd + cards_qd
+                       + "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
+                       "📌 当日信号（%d）</h2>"
                        "<table style='border-collapse:collapse;min-width:420px'>"
                        "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
                        "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
-                       "%s</table>"
-                       "<h2 style='font-size:16px;margin-top:18px'>🕘 近 5 日曾有信号（%d，"
-                       "当日已不触发）</h2>"
+                       "%s</table></div>"
+                       "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
+                       "🕘 近 5 日曾有信号（%d，当日已不触发）</h2>"
                        "<table style='border-collapse:collapse;min-width:420px'>"
                        "<tr class='dim'><td align=left>代码</td><td align=left>收盘</td>"
                        "<td align=left>市况</td><td align=left>近5日信号日</td></tr>"
-                       "%s</table>"
-                       "<div class='dim' style='margin-top:16px'>策略口径：连续双日十字星"
-                       "（实体/振幅≤0.30）+ MACD 多头 + 八重 AND 过滤（振幅变化率/价格带/"
-                       "两日小涨/20日成交额&gt;30亿/MA24≥MA54 多头/乖离受限/MACD/Regime 非"
-                       "趋势下行一票否决）· 刷新扫描：运行 portal/qd_scanner.py（venv）"
+                       "%s</table></div>"
+                       "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
+                       "⚙ 策略管线（八重 AND · 全链单测 23/23）</h2>"
+                       "<table style='border-collapse:collapse;min-width:640px'>"
+                       "<tr class='dim'><td align=left>模块</td><td align=left>口径</td>"
+                       "<td align=left>字段</td><td align=left>状态</td></tr>"
+                       "%s</table></div>"
+                       "<div class='dim' style='margin-top:14px'>数据源：特征湖 parquet "
+                       "（tushare 口径 amount=千元，与引擎阈值直接吻合）· 扫描节奏：每日 "
+                       "17:50 automation（venv 子进程）· 手动刷新：运行 portal/qd_scanner.py"
+                       " · 策略源自 projects-archive 量子双刀产线（K-STOCK-018 移植）"
                        "</div></body></html>"
-                       % (e_qd(str(snap_qd.get("ts", "—"))),
-                          e_qd(str(snap_qd.get("elapsed_s", "?"))),
-                          snap_qd.get("scanned", 0), snap_qd.get("skipped", 0),
-                          e_qd(rg_txt or "—"),
-                          len(snap_qd.get("signals_now", [])), now_rows,
-                          len(snap_qd.get("signals_recent", [])), rec_rows))
+                       % (len(snap_qd.get("signals_now", [])), now_rows,
+                          len(snap_qd.get("signals_recent", [])), rec_rows,
+                          steps_qd))
             self._html(body_qd)
         elif path == "/bt-news":
             self._bt_news(qs)
