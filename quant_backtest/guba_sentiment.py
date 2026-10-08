@@ -32,7 +32,7 @@ STOP = set("""的 了 是 在 我 你 他 她 它 们 和 与 及 或 就 都 �
 # 情绪词表（启发式，非全量情感词典——够用优先）
 PANIC_WORDS = ["跑路", "出逃", "割肉", "完了", "暴跌", "崩盘", "垃圾",
                "退市", "索赔", "跌停", "血亏", "套牢", "傻眼", "雷了",
-               "闪崩", "跳水", "绝望", "清仓", "避险", "跳水"]
+               "闪崩", "跳水", "绝望", "清仓", "避险"]
 HOPE_WORDS = ["涨停", "大涨", "起飞", "满仓", "加仓", "抄底", "翻倍",
               "牛市", "利好", "突破", "新高", "启动", "爆发", "龙头",
               "中签", "分红"]
@@ -56,6 +56,17 @@ TAG_WORDS = {
     "股权转让": ["转让", "受让"],
     "合作协议": ["合作", "签约"],
     "政府补助": ["补助", "补贴"],
+}
+
+
+# 词云同义归一（口径同 K266 热词归一）：只并真同义变体，不并组合词/方向词。
+# 计数与词反查同源：反查时规范词自动扩展变体子串命中。
+# 2026-10-08 按全量数据（61 股 90 日 4383 词）核定。
+WORD_ALIAS = {
+    "房地产": "地产",
+    "投资人": "投资者",
+    "国庆节": "国庆",
+    "涨停板": "涨停",
 }
 
 
@@ -107,7 +118,10 @@ def guba_summary(tc, days=30, top_n=40, word=None):
         return {"ok": False, "error": "无采集数据（先跑 guba_crawl.py）",
                 "code": tc}
     if word:
-        hits = [r for r in posts if word in str(r.get("title") or "")][:50]
+        # 词反查：规范词自动扩展变体（点"地产"能搜回标题写"房地产"的帖）
+        variants = [word] + [k for k, v in WORD_ALIAS.items() if v == word]
+        hits = [r for r in posts
+                if any(v in str(r.get("title") or "") for v in variants)][:50]
         return {"ok": True, "code": tc, "word": word, "n": len(hits),
                 "posts": [{"ts": (r.get("ts") or "")[:10],
                            "title": r.get("title"),
@@ -120,7 +134,7 @@ def guba_summary(tc, days=30, top_n=40, word=None):
     day_posts = {}      # date → [(title, bb)]
     for r in posts:
         toks = _tokens(r["title"])
-        wf.update(toks)
+        wf.update(WORD_ALIAS.get(w, w) for w in toks)
         d = (r.get("ts") or "")[:10]
         day_posts.setdefault(d, []).append((r["title"], r.get("bb")))
     # 每日情绪：恐慌/乐观词命中 + bb 多空票

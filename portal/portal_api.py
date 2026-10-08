@@ -8465,6 +8465,13 @@ function ckPush(i){
             if hot:
                 inner = ("<span style='color:#f85149;font-weight:600'>"
                          "%s 🚨</span>" % t)
+            if t in ("2买", "3买"):
+                # K267 复评 10-08 老田拍板 A：日线 20 天口径负期望信号族
+                # ——徽章追加 ⚠（悬停战绩），入池/研究链不动
+                inner += (" <span style='color:#d29922'"
+                          " title='负期望信号族：日线20天 win 38%/32%，"
+                          "avg −2.3%/−5.3%（10-08 复评）——仅研究参考'"
+                          ">⚠</span>")
             # 下钻：点信号类型 → 缠论样本面板（同类型战绩/重放）；
             # 样本面板为 CN 口径，US/HK 徽章不带链接
             if mkt != "CN":
@@ -19996,12 +20003,25 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         except OSError:
             pass
         cards, freq = [], _collections.Counter()
+        # K266-B 热词归一：LLM tags 同义变体并到规范词（词云/词片/文档过滤三处同源）。
+        # 保守口径：只并真同义/明确变体，不并"股价下跌"类主题+方向复合词（防方向词虚胖）。
+        # 2026-10-08 按全量影子数据（2942 词/4767 计数）核定。
+        _alias = {"AI算力": "算力", "智算": "算力", "AI": "人工智能",
+                  "人形机器人": "机器人", "工业机器人": "机器人",
+                  "清洁能源": "新能源", "触及涨停": "涨停", "涨停潮": "涨停",
+                  "低硫燃料油": "燃料油"}
         for did, s in shadow.items():
             if not s.get("raw_ok"):
                 continue
             if str(s.get("name", "")) in ("dup_test.png", "make_test.pdf"):
                 continue  # OPS-1008: 排除人工测试件（仅展示层，影子数据保留）
-            tags = [t.replace(" ", "").replace("\u3000", "") for t in s.get("tags", []) if t.strip()]
+            _raw = [x.replace(" ", "").replace("\u3000", "")
+                    for x in s.get("tags", []) if x.strip()]
+            tags, _seen = [], set()
+            for _t in (_alias.get(x, x) for x in _raw):
+                if _t not in _seen:   # 归一后同文档变体去重，防重复计数
+                    _seen.add(_t)
+                    tags.append(_t)
             freq.update(tags)
             cards.append({
                 "id": did, "name": s.get("name", ""), "src": s.get("src", ""),
@@ -20020,13 +20040,15 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         _doc_cards = sorted([c for c in cards if c.get("src") != "news"],
                             key=lambda c: -c["chars"])
         cards = _news_cards + _doc_cards
-        wc_b64 = ""
+        wc_b64, wc_err = "", ""
         if freq:
-            # 词云图缓存（K266-B 性能项）：shadow mtime+词种数未变则复用，免每次重渲染
+            # 词云图缓存（K266-B 性能项）：shadow mtime+freq 指纹未变则复用，免每次重渲染
             _cls = type(self)
             _ck = None
             try:
-                _ck = (_os.path.getmtime(_shadow_fp), len(freq))
+                # key 用 freq 内容指纹而非词种数：词不同而种数巧合相同时防误复用
+                _ck = (_os.path.getmtime(_shadow_fp),
+                       hash(tuple(sorted(freq.items()))))
             except OSError:
                 pass
             _cached = getattr(_cls, "_wc_cache", None)
@@ -20035,7 +20057,15 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
             if not wc_b64:
                 try:
                     from wordcloud import WordCloud as _WC
-                    img = _WC(font_path=r"C:\Windows\Fonts\simhei.ttf", width=880,
+                    # 字体候选：simhei 主选，msyh/simsun 兜底；全缺则显式报错走红字分支
+                    _font = next((p for p in (r"C:\Windows\Fonts\simhei.ttf",
+                                              r"C:\Windows\Fonts\msyh.ttc",
+                                              r"C:\Windows\Fonts\msyh.ttf",
+                                              r"C:\Windows\Fonts\simsun.ttc")
+                                  if _os.path.exists(p)), None)
+                    if not _font:
+                        raise OSError("未找到中文字体（simhei/msyh/simsun）")
+                    img = _WC(font_path=_font, width=880,
                               height=420, background_color="#0d1117",
                               colormap="autumn", max_words=120,
                               prefer_horizontal=0.95).generate_from_frequencies(
@@ -20046,7 +20076,8 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
                     if _ck:
                         _cls._wc_cache = (_ck, wc_b64)
                 except Exception as _e:
-                    pass
+                    # 不静默：渲染失败原因带到页面空态，避免误判为"无影子数据"
+                    wc_err = "%s: %s" % (type(_e).__name__, str(_e)[:160])
         top_words = [w for w, _ in freq.most_common(40)]
         import html as _html
         chips_html = "".join(
@@ -20058,9 +20089,16 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
             % (_html.escape(w), _html.escape(w), _html.escape(w), freq[w],
                _html.escape(w))
             for w in top_words)
-        wc_html = ("<img src='data:image/png;base64,%s' "
-                   "style='max-width:100%%;border-radius:8px'>" % wc_b64
-                   if wc_b64 else "<div class='empty'>词云待生成（尚无影子数据）</div>")
+        if wc_b64:
+            wc_html = ("<img src='data:image/png;base64,%s' "
+                       "style='max-width:100%%;border-radius:8px'>" % wc_b64)
+        elif wc_err:
+            wc_html = ("<div class='empty' style='color:#f85149'>"
+                       "词云渲染失败：%s<br>排查：wordcloud 库安装 / "
+                       "字体 simhei/msyh（C:\\Windows\\Fonts）</div>"
+                       % _html.escape(wc_err))
+        else:
+            wc_html = "<div class='empty'>词云待生成（尚无影子数据）</div>"
         body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>文档智能中心 · K266</title>{css}{nav}<style>
@@ -20319,7 +20357,7 @@ fetch('/kg/guba/'+encodeURIComponent(code)+'?days=60')
   "'>"+(e.dir=='bull'?'利多':'利空')+"</td><td>"+(e.matched?
   "<span style='color:#7ee787'>✓ 命中 "+e.hit_words.join('/')+"</span>":
   "<span class=dim>—</span>")+"</td></tr>"});
- el.innerHTML="<h2 style='margin-top:18px'>🗣 股吧舆论（近30日 "+g.n_posts+
+ el.innerHTML="<h2 style='margin-top:18px'>🗣 股吧舆论（近60日 "+g.n_posts+
  " 帖）</h2><div class=dim>词云重心 · 每日恐慌(红)/乐观(绿) · 事件契合"+
  (g.event_match_rate!=null?("率 "+Math.round(100*g.event_match_rate)+"%"):"")+
  "</div><div style='background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px;margin-top:8px;line-height:2'>"+wcl+"</div>"+

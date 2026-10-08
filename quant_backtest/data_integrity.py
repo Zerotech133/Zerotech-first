@@ -4,8 +4,11 @@ import argparse
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 import hashlib
+from html import unescape
 import json
 from pathlib import Path
+import re
+from urllib.parse import urlparse
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -222,16 +225,73 @@ def _stock_list_dates(root):
     return dates, sources, invalid
 
 
+def _margin_detail_delistings(root):
+    """仅使用已核验调出首日及官方明细范围证据，不推定后续历史资格。"""
+    folder = root / "integrity"
+    path = folder / "margin_detail_eligibility.json"
+    if not path.exists():
+        return {}, []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != 1 or not isinstance(payload.get("records"), list):
+        raise ValueError("融资明细资格证据版本或记录无效")
+    exclusions, evidence = {}, []
+    scope = "明细信息中仅包含当前融资融券标的证券的相关数据，汇总信息中包含被调出标的证券范围的证券的余额余量相关数据。"
+    for row in payload["records"]:
+        code, day = row.get("ts_code", ""), row.get("effective_date", "")
+        if not re.fullmatch(r"6\d{5}\.SH", code):
+            raise ValueError("融资调出资格股票身份无效")
+        if not re.fullmatch(r"\d{8}", day) or datetime.strptime(day, "%Y%m%d").strftime("%Y%m%d") != day:
+            raise ValueError("融资调出日期无效")
+        if row.get("valid_dates") != [day]:
+            raise ValueError("融资调出资格仅限已核验生效首日")
+        if datetime.fromisoformat(row["available_at"]).tzinfo is None:
+            raise ValueError("融资调出资格采集时间缺少时区")
+        sources = row.get("sources", [])
+        if len(sources) != 2 or {s.get("kind") for s in sources} != {"removal", "detail_scope"}:
+            raise ValueError("融资资格缺少官方调出公告或明细范围原件")
+        for source in sources:
+            url = urlparse(source["url"])
+            if url.scheme != "https" or url.netloc != "www.sse.com.cn":
+                raise ValueError("融资资格来源必须为上交所官方域名")
+            prefix = "/disclosure/magin/announcement/ssereport/" if source["kind"] == "removal" else "/market/othersdata/margin/detail/"
+            if not url.path.startswith(prefix):
+                raise ValueError("融资资格来源页面类型不符")
+            raw_path = (folder / source["file"]).resolve()
+            if not raw_path.is_relative_to(folder.resolve()):
+                raise ValueError("融资资格原件路径越界")
+            raw = raw_path.read_bytes()
+            if hashlib.sha256(raw).hexdigest() != source["sha256"]:
+                raise ValueError("融资资格原件SHA256不符")
+            text = re.sub(r"\s+", "", unescape(re.sub(r"<[^>]*>", "", raw.decode("utf-8"))))
+            excerpt = re.sub(r"\s+", "", source.get("excerpt", ""))
+            if not excerpt or excerpt not in text:
+                raise ValueError("融资资格摘录不在原件中")
+            if source["kind"] == "removal":
+                effective = "%d年%d月%d日" % (int(day[:4]), int(day[4:6]), int(day[6:]))
+                if ("证券代码：" + code[:6] not in excerpt or effective not in excerpt
+                        or "本所于" + effective + "起将以上证券调出融资融券标的证券名单" not in excerpt):
+                    raise ValueError("融资公告未证明该股票于目标日调出")
+            elif excerpt != scope:
+                raise ValueError("融资官方范围未明确调出证券仅计入汇总")
+        if code in exclusions.get(day, set()):
+            raise ValueError("融资资格证据重复")
+        exclusions.setdefault(day, set()).add(code)
+        evidence.append(row)
+    return exclusions, evidence
+
+
 def _margin_coverage(root, keys, counts, recent, latest):
     reference_day = max(recent, key=lambda day: (len(keys.get(day, set())), day)) if recent else None
     reference = keys.get(reference_day, set())
     listed, sources, invalid = _stock_list_dates(root)
+    delistings, delisting_sources = _margin_detail_delistings(root)
     coverage, violations = {}, []
     for day in recent:
         actual = keys.get(day, set())
         raw_missing = reference - actual
         excluded = sorted(code for code in raw_missing if code in listed and day < listed[code])
-        missing = sorted(raw_missing - set(excluded))
+        delisted = sorted((raw_missing - set(excluded)) & delistings.get(day, set()))
+        missing = sorted(raw_missing - set(excluded) - set(delisted))
         prelisting_present = sorted(code for code in actual if code in listed and day < listed[code])
         violations.extend({"ts_code": code, "trade_date": day, "list_date": listed[code]} for code in prelisting_present)
         coverage[day] = {"rows": counts.get(day, 0), "unique_codes": len(actual),
@@ -239,17 +299,20 @@ def _margin_coverage(root, keys, counts, recent, latest):
             "raw_set": len(raw_missing), "prelisting_excluded_count": len(excluded), "missing_count": len(missing),
             "raw_missing": sorted(raw_missing), "historical_extra": sorted(actual - reference),
             "prelisting_excluded": [{"ts_code": code, "list_date": listed[code]} for code in excluded],
+            "delisted_excluded": delisted, "delisted_excluded_count": len(delisted),
             "unknown_list_date_missing": sorted(code for code in raw_missing if code not in listed),
             "missing": missing, "prelisting_present": prelisting_present}
     total = sum(row["missing_count"] for row in coverage.values())
-    coverage["_summary"] = {"value_unit": "近期参考集合排除已证上市前日期后的缺键总数",
+    coverage["_summary"] = {"value_unit": "近期参考集合排除已证上市前及官方调出首日后的明细缺键总数",
         "reference_date": reference_day, "reference_unique_codes": len(reference),
         "latest_unique_codes": len(keys.get(latest, set())), "latest_missing_count": coverage.get(latest, {}).get("missing_count", 0),
         "raw_count": sum(row["raw_count"] for row in coverage.values()),
         "raw_set": sum(row["raw_set"] for row in coverage.values()),
         "prelisting_excluded_count": sum(row["prelisting_excluded_count"] for row in coverage.values()),
+        "delisted_excluded_count": sum(row["delisted_excluded_count"] for row in coverage.values()),
+        "delisting_sources": delisting_sources,
         "prelisting_present": violations, "list_date_sources": sources, "invalid_list_date_rows": invalid,
-        "policy": "近期最大股票集合；平手取最新日；仅有效最早上市日期晚于目标日可排除；未知不豁免；任何未解释缺键或上市前记录均FAIL"}
+        "policy": "近期最大股票集合；平手取最新日；排除已证上市前及有官方调出公告和明细范围原件的生效首日；保留原缺键和实际行；不推定后续日期；未知不豁免；任何未解释缺键或上市前记录均FAIL"}
     return coverage, total, bool(total or violations or not reference)
 
 

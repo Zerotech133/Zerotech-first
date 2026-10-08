@@ -115,6 +115,10 @@ def _summary(rows):
              "今日新入池 %d 条：%s" % (
                  n, " / ".join("%s×%d" % (t, dist[t]) for t in TYPES
                                if t in dist) or "—")]
+    # K267 复评 10-08 老田拍板 A：负期望信号族警示行（有新信号才附）
+    if any(t in dist for t in ("2买", "3买")):
+        lines.append("⚠ 2买/3买 日线20天口径负期望（win 38%/32%，"
+                     "avg −2.3%/−5.3%，10-08 复评）——仅研究参考")
     if pt_rows:
         lines.append("形✓ 形态共振 %d 条（K175 首日积累）：" % len(pt_rows))
         for r in pt_rows[:10]:

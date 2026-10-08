@@ -1,0 +1,63 @@
+{
+  "team_id": 9001,
+  "title": "K-STOCK S1 PoC 最小闭环（T1/T2 辩论 + N1 + F1 + D1；A1 并入 D1 前置汇总于 S2 接入）",
+  "nodes": [
+    {
+      "node_key": "T1",
+      "title": "技术面·激进多头",
+      "role_id": 1,
+      "analysis_type": "market_technical",
+      "node_key": "T1",
+      "parent_node_keys": [],
+      "is_parallel": true,
+      "wait_all_complete": true,
+      "is_debate_node": true,
+      "debate_partner_key": "T2",
+      "max_debate_rounds": 2,
+      "persona": "你是激进多头技术面分析师，擅长从量价结构中发现进攻机会，倾向给出多头论据，但不忽视关键风险。"
+    },
+    {
+      "node_key": "T2",
+      "title": "技术面·保守空头",
+      "role_id": 2,
+      "analysis_type": "market_technical",
+      "parent_node_keys": [],
+      "is_parallel": true,
+      "wait_all_complete": true,
+      "is_debate_node": true,
+      "debate_partner_key": "T1",
+      "max_debate_rounds": 2,
+      "persona": "你是保守空头技术面分析师，擅长识别顶部结构与资金撤离信号，倾向给出空头论据，但尊重明确的多头证据。"
+    },
+    {
+      "node_key": "N1",
+      "title": "新闻事件/情绪面",
+      "role_id": 3,
+      "analysis_type": "news_event",
+      "parent_node_keys": [],
+      "is_parallel": true,
+      "wait_all_complete": true,
+      "is_debate_node": false
+    },
+    {
+      "node_key": "F1",
+      "title": "基本面",
+      "role_id": 4,
+      "analysis_type": "fundamental",
+      "parent_node_keys": [],
+      "is_parallel": true,
+      "wait_all_complete": true,
+      "is_debate_node": false
+    },
+    {
+      "node_key": "D1",
+      "title": "最终决策",
+      "role_id": 5,
+      "analysis_type": "final_decision",
+      "parent_node_keys": ["T1", "T2", "N1", "F1"],
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "is_debate_node": false
+    }
+  ]
+}

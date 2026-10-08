@@ -1,0 +1,101 @@
+[
+  {
+    "outputs": {
+      "T1": {
+        "action": "BUY",
+        "confidence": 0.55,
+        "target_price_low": 10.0,
+        "target_price_high": 12.0,
+        "risk_level": "MEDIUM",
+        "reason": "多空辩论后多头占优",
+        "stock": "600519.SH"
+      },
+      "T2": {
+        "action": "BUY",
+        "confidence": 0.55,
+        "target_price_low": 10.0,
+        "target_price_high": 12.0,
+        "risk_level": "MEDIUM",
+        "reason": "多空辩论后多头占优",
+        "stock": "600519.SH"
+      },
+      "F1": {
+        "action": "BUY",
+        "confidence": 0.55,
+        "target_price_low": 10.0,
+        "target_price_high": 12.0,
+        "risk_level": "MEDIUM",
+        "reason": "多空辩论后多头占优",
+        "stock": "600519.SH"
+      },
+      "N1": {
+        "action": "BUY",
+        "confidence": 0.55,
+        "target_price_low": 10.0,
+        "target_price_high": 12.0,
+        "risk_level": "MEDIUM",
+        "reason": "多空辩论后多头占优",
+        "stock": "600519.SH"
+      },
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.55,
+        "target_price_low": 10.0,
+        "target_price_high": 12.0,
+        "risk_level": "MEDIUM",
+        "reason": "多空辩论后多头占优",
+        "stock": "600519.SH"
+      }
+    },
+    "raw": {
+      "T1": "{\"action\": \"BUY\", \"confidence\": 0.55, \"target_price_low\": 10.0, \"target_price_high\": 12.0, \"risk_level\": \"MEDIUM\", \"reason\": \"多空辩论后多头占优\", \"stock\": \"600519.SH\"}",
+      "T2": "{\"action\": \"BUY\", \"confidence\": 0.55, \"target_price_low\": 10.0, \"target_price_high\": 12.0, \"risk_level\": \"MEDIUM\", \"reason\": \"多空辩论后多头占优\", \"stock\": \"600519.SH\"}",
+      "F1": "{\"action\": \"BUY\", \"confidence\": 0.55, \"target_price_low\": 10.0, \"target_price_high\": 12.0, \"risk_level\": \"MEDIUM\", \"reason\": \"多空辩论后多头占优\", \"stock\": \"600519.SH\"}",
+      "N1": "{\"action\": \"BUY\", \"confidence\": 0.55, \"target_price_low\": 10.0, \"target_price_high\": 12.0, \"risk_level\": \"MEDIUM\", \"reason\": \"多空辩论后多头占优\", \"stock\": \"600519.SH\"}",
+      "D1": "{\"action\": \"BUY\", \"confidence\": 0.55, \"target_price_low\": 10.0, \"target_price_high\": 12.0, \"risk_level\": \"MEDIUM\", \"reason\": \"多空辩论后多头占优\", \"stock\": \"600519.SH\"}"
+    },
+    "trace": [
+      {
+        "event": "debate_converged",
+        "round": 1,
+        "pair": [
+          "T1",
+          "T2"
+        ],
+        "sim": 1.0,
+        "ts": "2026-10-08T15:19:24"
+      },
+      {
+        "event": "debate_done",
+        "pair": [
+          "T1",
+          "T2"
+        ],
+        "rounds": 1,
+        "ts": "2026-10-08T15:19:24"
+      },
+      {
+        "event": "node_done",
+        "node": "F1",
+        "analysis_type": "fundamental",
+        "ts": "2026-10-08T15:19:24"
+      },
+      {
+        "event": "node_done",
+        "node": "N1",
+        "analysis_type": "news_event",
+        "ts": "2026-10-08T15:19:24"
+      },
+      {
+        "event": "node_done",
+        "node": "D1",
+        "analysis_type": "final_decision",
+        "ts": "2026-10-08T15:19:24"
+      }
+    ],
+    "degraded": [],
+    "stock": "600519.SH 贵州茅台",
+    "asof": "2026-10-08T15:19:24",
+    "mock": true
+  }
+]
