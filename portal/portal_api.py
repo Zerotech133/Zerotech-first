@@ -6587,7 +6587,7 @@ gap:14px;align-items:start}}
     # ── 数据仓健康盘点（只读扫描，不改任何数据文件） ──
     def _data_health_page(self):
         import html as _h
-        import sys as _sy
+        from warehouse_dashboard import render_dashboard
         e = _h.escape
         state = data_health_bg()
         d = state["data"]
@@ -6601,89 +6601,12 @@ gap:14px;align-items:start}}
                        + pill_nav("data-health") + "<h1>📊 数据仓</h1>"
                        + "<div class='dim'>%s</div></body></html>" % e(message))
             return
-        scan_notice = ""
-        if state["refreshing"] or state["error"]:
-            message = ("重新核验中；当前显示上次扫描结果。" if state["refreshing"]
-                       else "刷新失败；当前显示上次扫描结果。")
-            if state["error"]:
-                message += " " + state["error"]
-            scan_notice = "<div class='dim'>%s</div>" % e(message)
-
-        # 顶部 KPI：一屏总览（表数/总大小/同步进度/最新心跳）
-        k = d["kpi"]
-        kpis = (
-            "<div class='grid'>"
-            "<div class='kpi'><div class='l'>数据资产表</div>"
-            "<div class='v'>%d</div></div>"
-            "<div class='kpi'><div class='l'>总大小</div>"
-            "<div class='v'>%.0f MB</div></div>"
-            "<div class='kpi'><div class='l'>TDX 同步</div>"
-            "<div class='v'>%s</div></div>"
-            "<div class='kpi'><div class='l'>最新更新</div>"
-            "<div class='v up'>%s</div></div>"
-            "<div class='kpi'><div class='l'>扫描时间</div>"
-            "<div class='v' style='font-size:12px'>%s</div></div>"
-            "</div>" % (k["n_tables"], k["total_mb"], e(k["tdx_sync"]),
-                        e(k["freshest"]), e(d["generated_at"])))
-        # K176：列对账 KPI 卡（读 source_col_audit 的 json 报告，
-        # 在 % 格式化之外追加——零转义风险）
-        _caf = None
-        try:
-            with open(os.path.join(QBT_DIR, "reports", "col_audit.json"),
-                      encoding="utf-8") as _f:
-                _caf = len(json.load(_f).get("fails") or [])
-        except Exception:
-            pass
-        if _caf is None:
-            _cal = "<span style='color:#8b949e'>未跑</span>"
-        elif _caf:
-            _cal = ("<span style='color:#f85149'>%d 项</span>" % _caf)
-        else:
-            _cal = "<span style='color:#3fb950'>✓ 全绿</span>"
-        kpis += ("<a href='/col-audit' style='text-decoration:none'>"
-                 "<div class='kpi'><div class='l'>列对账</div>"
-                 "<div class='v'>%s</div></div></a>" % _cal)
-
-        # 新鲜度色点：≤26h 绿 / ≤72h 黄 / 更久红 / 未知灰
+        # 文件时点色点只表示新鲜度，不代表完整度。
         def _dot(age):
             if age is None:
-                return "<span style='color:#8b949e'>●</span>"
-            c = "#3fb950" if age <= 26 else "#d29922" if age <= 72 \
-                else "#f85149"
-            return "<span style='color:%s' title='%.0fh 前'>●</span>" % (c,
-                                                                         age)
-
-        # 四组资产清单：资产 | 规模 | 最新 | 大小 | 状态
-        secs = []
-        for g in d["groups"]:
-            tr = []
-            for r in g["rows"]:
-                asset = e(r["asset"])
-                if r.get("url"):
-                    asset = "<a href='%s'>%s</a>" % (r["url"], asset)
-                tr.append(
-                    "<tr><td>%s</td><td>%s</td><td class='dim'>%s</td>"
-                    "<td>%s</td><td>%s%s</td></tr>"
-                    % (asset, e(r.get("rows") or "—"),
-                       e(r.get("latest") or "—"),
-                       e(("%.1f MB" % r["size_mb"]) if r.get("size_mb")
-                         else "—"),
-                       _dot(r.get("age_hours")),
-                       ("　<span class='dim'>%s</span>" % e(r["extra"]))
-                       if r.get("extra") else ""))
-            note = ("<div class='dim' style='margin:2px 0 6px'>%s</div>"
-                    % e(g["note"])) if g.get("note") else ""
-            secs.append(
-                "<div class='sec'><h2>📦 %s</h2>%s<table>"
-                "<tr><th>资产</th><th>规模</th><th>最新</th><th>大小</th>"
-                "<th>状态</th></tr>%s</table></div>"
-                % (e(g["name"]), note, "".join(tr)))
-
-        # 缺口清单
-        gaps_html = "".join(
-            "<div style='padding:6px 0;border-bottom:1px dashed #21262d'>"
-            "<span style='color:#f85149'>⚠</span> %s</div>" % e(g)
-            for g in d["gaps"]) or "<div class='dim'>暂无已知缺口</div>"
+                return "<span style='color:var(--text-dim)'>●</span>"
+            color = "var(--color-ok)" if age <= 26 else "var(--color-warn)" if age <= 72 else "var(--color-err)"
+            return "<span style='color:%s' title='%.0fh 前'>●</span>" % (color, age)
 
         # 数据时点校对（datamart.freshness_report 服务端渲染）：
         # 回答"数据停在几号 / 应到几号 / 滞后几天"
@@ -6704,9 +6627,9 @@ gap:14px;align-items:start}}
         fr_rows = []
         for x in fr.get("rows") or []:
             st = x["status"]
-            col = ("#3fb950" if st == "ok" else
-                   "#8b949e" if st in ("nocal",) else
-                   "#d29922" if st.startswith("lag-") else "#f85149")
+            col = ("var(--color-ok)" if st == "ok" else
+                   "var(--text-dim)" if st in ("nocal",) else
+                   "var(--color-warn)" if st.startswith("lag-") else "var(--color-err)")
             lag_txt = "—" if x["lag"] is None else \
                 ("%d 交易日" % x["lag"] if x["lag"] else "0")
             fr_rows.append(
@@ -6728,50 +6651,6 @@ gap:14px;align-items:start}}
             % (e(fr.get("expect") or ("日历不可用：" + fr.get("err", ""))
                  if fr.get("err") else fr.get("expect") or "未知"),
                "".join(fr_rows)))
-
-        # 手动更新按钮排（tdx/tushare/图谱链/catalog 校对）：确认→触发→轮询
-        btn_js = """
-<script>
-function _dsync(src, label){
-  if(!confirm('手动运行 ' + label + '？\\n与每日计划任务相同入口，单实例运行。')) return;
-  var st = document.getElementById('dstat-' + src);
-  st.textContent = '启动中…'; st.style.color = '#d29922';
-  fetch('/api/data/sync?src=' + src).then(r => r.json()).then(j => {
-    if(j.error){ st.textContent = '❌ ' + j.error; st.style.color = '#f85149'; return; }
-    var n = 0;
-    var t = setInterval(function(){
-      fetch('/api/data/job?src=' + src).then(r => r.json()).then(s => {
-        n++;
-        if(s.running){ st.textContent = '⏳ 运行中 (pid ' + (j.pid||'') + ')…';
-                       st.style.color = '#d29922'; }
-        else{ clearInterval(t);
-              st.textContent = (s.exit === 0 ? '✅ 完成' : '❌ exit=' + s.exit);
-              st.style.color = (s.exit === 0 ? '#3fb950' : '#f85149'); }
-        var lg = document.getElementById('dlog');
-        if(s.tail) lg.textContent = s.tail, lg.scrollTop = lg.scrollHeight;
-      });
-    }, 4000);
-  });
-}
-</script>"""
-        btns_html = (
-            "<div class='sec'><h2>🔧 手动更新 / 校对</h2>"
-            "<div class='dim'>计划任务之外的即时补偿入口（如盘中补拉、"
-            "数据缺口修复后重建目录）。单实例：运行中重复点击会被拒绝。</div>"
-            "<div style='display:flex;gap:10px;flex-wrap:wrap;margin:10px 0'>"
-            "<button onclick=\"_dsync('tdx','TDX 同步')\">TDX 行情增量</button>"
-            "<span id='dstat-tdx' class='dim'></span>"
-            "<button onclick=\"_dsync('tushare','Tushare 增量')\">Tushare 增量</button>"
-            "<span id='dstat-tushare' class='dim'></span>"
-            "<button onclick=\"_dsync('kg','图谱四步链')\">图谱四步链</button>"
-            "<span id='dstat-kg' class='dim'></span>"
-            "<button onclick=\"_dsync('catalog','catalog 重建')\">catalog 重建校对</button>"
-            "<span id='dstat-catalog' class='dim'></span>"
-            "</div><pre id='dlog' style='background:#0d1117;border:1px solid "
-            "#30363d;border-radius:6px;padding:10px;max-height:220px;"
-            "overflow:auto;font-size:11px;color:#8b949e;white-space:pre-wrap'>"
-            "等待任务…（点击按钮后此处滚动显示日志尾部）</pre>" + btn_js +
-            "</div>")
 
         # 图谱统计也可能很慢，完整页渲染只消费后台快照。
         try:
@@ -6850,31 +6729,10 @@ function _dsync(src, label){
             kg_html = ("<div class='sec'><h2>🕸 知识图谱时点</h2>"
                        "<div class='dim'>%s</div></div>" % e(message))
 
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
-                "<meta name='viewport' content='width=device-width,"
-                "initial-scale=1'><title>数据仓</title>"
-                + self._COCKPIT_CSS
-                + "<style>button{background:#21262d;border:1px solid "
-                "#30363d;color:#58a6ff;border-radius:6px;padding:7px 14px;"
-                "font-size:12.5px;cursor:pointer}button:hover{border-color:"
-                "#58a6ff}</style></head><body>"
-                + pill_nav("data-health")
-                + "<h1>📊 数据仓 · 全部资产</h1><div class='dim'>一屏看清"
-                "所有数据资产 · 新鲜度 ≤26h 绿 / ≤72h 黄 / 更久红"
-                " · 扫描于 %s</div>" % e(d["generated_at"])
-                + scan_notice
-                + "<div class='sec'><h2>🧮 总览</h2>" + kpis + "</div>"
-                + fresh_html
-                + kg_html
-                + btns_html
-                + "".join(secs)
-                + "<div class='sec'><h2>⚠️ 缺口清单</h2>" + gaps_html
-                + "</div>"
-                + _TP_JS
-                + "<div class='dim' style='margin-top:20px'>口径：只读扫描"
-                "60s 缓存 · TDX 仓每日 17:00 后增量同步 · 新鲜度按文件"
-                "mtime · 点时点表 🔍 穿透看表内数据</div></body></html>")
-        self._html(body)
+        self._html(render_dashboard(
+            d, state, freshness_html=fresh_html, graph_html=kg_html,
+            nav=pill_nav("data-health"), base_css=self._COCKPIT_CSS,
+            preview_js=_TP_JS))
 
     # ── K56-B4 数据大屏 /screen：四市场穿透视图（此前只有 /api/screen
     #    数据源、页面 404——导航「📺 数据大屏」按钮常年空指，本批补齐）──
@@ -21282,6 +21140,13 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             VENV_PY = ("C:/Users/Administrator/.workbuddy/binaries/python/"
                        "envs/default/Scripts/python.exe")
             SCAN_PY = os.path.join(ROOT, "qd_scanner.py")
+            # K-STOCK-026：/qd/ 专属精简导航——老田要求不出现策略中心/
+            # 青萍之末/缠论等交叉产线工作台（图谱工具走正文 tools_qd），
+            # 故不复用 pill_nav("qd") 的全站下拉
+            nav_qd = ("<a href='/' style='%s'>🏠 首页</a>"
+                      "<span style='color:#8b949e;font-size:11px'>›</span>"
+                      "<span style='%s'>⚔ 量子双刀</span>"
+                      % (_PILL, _PILL_ON))
             if snap_qd is None:
                 # 首次：后台拉起扫描（venv 解释器；stdout/stderr 落文件，长跑纪律）
                 if not os.path.exists(log_p) or time.time() - os.path.getmtime(log_p) > 1800:
@@ -21292,7 +21157,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 body_qd = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                            "<meta http-equiv='refresh' content='30'>"
                            "<title>量子双刀 · 研究预览</title>" + self._COCKPIT_CSS
-                           + "</head><body>" + pill_nav("qd")
+                           + "</head><body>" + nav_qd
                            + "<h1>⚔ 量子双刀 · 选股中心（研究预览）</h1>"
                            "<div style='border:1px solid #d29922;border-radius:8px;"
                            "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
@@ -21309,20 +21174,35 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                                 for k, v in sorted(rg.items()))
 
             def _row_qd(r):
-                # 对齐青萍之末/缠论池行：代码列下钻个股全景页（_bt_stock_page）
+                # K-STOCK-026：8 列增强行——代码下钻/名称/收盘(涨跌%)/市值/
+                # 换手/市况/技术状态/信号日（涨跌红涨绿跌中国惯例）
                 recent = "、".join(r.get("recent_signals", [])[-3:]) or "—"
                 code_lk = ("<a href='/bt/stock?c=%s'><b>%s</b></a>"
                            % (e_qd(r["code"]), e_qd(r["code"])))
-                nm = r.get("name") or ""
-                return ("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                chg = r.get("change_pct")
+                if chg is None or chg == "":
+                    chg_txt = "—"
+                else:
+                    col = "#f85149" if float(chg) >= 0 else "#3fb950"
+                    chg_txt = "<b style='color:%s'>%+.2f%%</b>" % (col, float(chg))
+                cap = r.get("mktcap_yi")
+                cap_txt = ("%.0f亿" % float(cap)) if cap not in (None, "") else "—"
+                to = r.get("turnover_pct")
+                to_txt = ("%.2f%%" % float(to)) if to not in (None, "") else "—"
+                tech = r.get("tech") or "—"
+                nm = r.get("name") or "—"
+                return ("<tr><td>%s</td><td>%s</td><td>%s <span class='dim'>(%s)</span>"
+                        "</td><td>%s</td><td class='dim'>%s</td><td>%s</td>"
+                        "<td class='dim' style='max-width:240px'>%s</td>"
                         "<td class='dim'>%s</td></tr>"
-                        % (code_lk, e_qd(nm), e_qd(str(r.get("close", "—"))),
+                        % (code_lk, e_qd(nm), e_qd(str(r.get("close", "—"))), chg_txt,
+                           e_qd(cap_txt), e_qd(to_txt),
                            e_qd(REG_CN.get(r.get("regime"), r.get("regime", "?"))),
-                           e_qd(recent)))
+                           e_qd(tech), e_qd(recent)))
             now_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_now", [])) or \
-                "<tr><td colspan=5 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
+                "<tr><td colspan=8 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
             rec_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_recent", [])[:50]) or \
-                "<tr><td colspan=5 class='dim'>近 5 日无信号</td></tr>"
+                "<tr><td colspan=8 class='dim'>近 5 日无信号</td></tr>"
             # 尾盘候选表（K-STOCK-025：14:40 盘中实时 bar 复核 → 14:55 执行窗口）
             tail_ls = snap_qd.get("tail_signals", []) or []
             tail_rows = "".join(
@@ -21369,10 +21249,10 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 ])
             tools_qd = "".join(
                 "<a class='tp' href='%s'>%s</a>" % (href, lb) for lb, href in [
-                    ("🌊 青萍之末工作台", "/bt-qpzm"),
-                    ("🧭 缠论工作台", "/bt-chanlun"),
-                    ("🎯 产线总目录", "/bt"),
-                    ("🚦 策略中心", "/strategies")])
+                    ("🕸 图谱探索", "/kg"),
+                    ("💰 游资地图", "/kg/map"),
+                    ("🗺 作战地图", "/kg/battle"),
+                    ("💬 图谱问答", "/kg/ask")])
             cards_qd = (
                 "<div style='display:grid;grid-template-columns:repeat(auto-fit,"
                 "minmax(200px,1fr));gap:10px;margin:14px 0'>"
@@ -21398,7 +21278,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             body_qd = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
                        "<title>量子双刀 · 选股中心</title>" + self._COCKPIT_CSS
-                       + "</head><body>" + pill_nav("qd")
+                       + "</head><body>" + nav_qd
                        + "<h1>⚔ 量子双刀 · 选股中心</h1>"
                        "<div style='border:1px solid #d29922;border-radius:8px;"
                        "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
@@ -21413,15 +21293,17 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                        "📌 当日信号（%d）</h2>"
                        "<table style='border-collapse:collapse;min-width:520px'>"
                        "<tr class='dim'><td align=left>代码</td><td align=left>名称</td>"
-                       "<td align=left>收盘</td><td align=left>市况</td>"
-                       "<td align=left>近5日信号日</td></tr>"
+                       "<td align=left>收盘(涨跌)</td><td align=left>市值</td>"
+                       "<td align=left>换手</td><td align=left>市况</td>"
+                       "<td align=left>技术状态</td><td align=left>近5日信号日</td></tr>"
                        "%s</table></div>"
                        "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
                        "🕘 近 5 日曾有信号（%d，当日已不触发）</h2>"
                        "<table style='border-collapse:collapse;min-width:520px'>"
                        "<tr class='dim'><td align=left>代码</td><td align=left>名称</td>"
-                       "<td align=left>收盘</td><td align=left>市况</td>"
-                       "<td align=left>近5日信号日</td></tr>"
+                       "<td align=left>收盘(涨跌)</td><td align=left>市值</td>"
+                       "<td align=left>换手</td><td align=left>市况</td>"
+                       "<td align=left>技术状态</td><td align=left>近5日信号日</td></tr>"
                        "%s</table></div>"
                        "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
                        "⚙ 策略管线（八重 AND · 全链单测 23/23）</h2>"

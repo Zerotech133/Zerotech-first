@@ -24,7 +24,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
 from quant_double_knife import quant_double_knife  # noqa: E402
-from tools import quote_snapshot  # noqa: E402  信号票拉名称（K-STOCK-024）
+from tools import quote_snapshot, make_context  # noqa: E402
 
 ASHARE = ROOT / "quant_backtest" / "data" / "ashare"
 CACHE = Path(__file__).parent / "qd_scan_cache.json"
@@ -160,13 +160,40 @@ def main():
         "tail_note": tail_note,
         "disclaimer": "研究态：未回测验证（T-20261009-009 结论前不构成选股依据）",
     }
-    # 信号票补名称（对齐青萍之末/缠论池行展示；仅信号票逐个拉快照，量小）
+    # 信号票补详情（K-STOCK-026 老田反馈：名称/涨跌/市值/换手）
     for info in sig_now + recent:
         try:
             # norm_symbol 不认带点后缀（600887.SZ→sh600887. 坏 URL），先剥
-            info["name"] = quote_snapshot(info["code"].split(".")[0])["name"]
+            plain = info["code"].split(".")[0]
+            q = quote_snapshot(plain)
+            info["name"] = q["name"]
+            info["change_pct"] = q["change_pct"]
+            info["turnover_pct"] = q["turnover_pct"]
+            info["mktcap_yi"] = q["mktcap_yi"]
         except Exception:
-            info["name"] = ""
+            info["name"] = info.get("name", "")
+    # 当日信号票加技术状态摘要（近5日票不拉，省请求）
+    for info in sig_now:
+        try:
+            ctx = make_context(info["code"].split(".")[0])
+            mt = ctx.get("market_technical", "")
+            import re as _re
+            arr = _re.search(r"(多头排列|空头排列|纠缠)", mt)
+            c5 = _re.search(r"近5日涨跌 ([+\-]?[\d.]+)%", mt)
+            vr = _re.search(r"量比\(对5日均量\) ([\d.]+)", mt)
+            p20 = _re.search(r"现价距20日高点 ([+\-]?[\d.]+)%", mt)
+            parts = []
+            if arr:
+                parts.append(arr.group(1))
+            if c5:
+                parts.append("近5日%s%%" % c5.group(1))
+            if vr:
+                parts.append("量比%s" % vr.group(1))
+            if p20:
+                parts.append("距20日高%s%%" % p20.group(1))
+            info["tech"] = " · ".join(parts)
+        except Exception:
+            info["tech"] = ""
 
     CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
     print("[done] 扫描 %d 只（跳过 %d）：当日信号 %d，近 %d 日有信号 %d，"

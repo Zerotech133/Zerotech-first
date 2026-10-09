@@ -1,6 +1,6 @@
 {
- "ts": "2026-10-09 03:30:30",
- "elapsed_s": 112.5,
+ "ts": "2026-10-09 09:37:29",
+ "elapsed_s": 114.2,
  "scanned": 5524,
  "skipped": 71,
  "signals_now": [
@@ -13,7 +13,12 @@
     "20261008"
    ],
    "n_recent": 1,
-   "name": "大连圣亚"
+   "star_yesterday": true,
+   "name": "大连圣亚",
+   "change_pct": -2.96,
+   "turnover_pct": 1.7,
+   "mktcap_yi": 62.0,
+   "tech": "多头排列 · 近5日-3.12% · 量比0.17 · 距20日高-4.56%"
   },
   {
    "code": "600887.SH",
@@ -24,7 +29,12 @@
     "20261008"
    ],
    "n_recent": 1,
-   "name": "伊利股份"
+   "star_yesterday": true,
+   "name": "伊利股份",
+   "change_pct": 0.62,
+   "turnover_pct": 0.07,
+   "mktcap_yi": 1738.8,
+   "tech": "多头排列 · 近5日2.19% · 量比0.12 · 距20日高0.0%"
   }
  ],
  "signals_recent": [
@@ -39,7 +49,11 @@
     "20260924"
    ],
    "n_recent": 1,
-   "name": "宏润建设"
+   "star_yesterday": true,
+   "name": "宏润建设",
+   "change_pct": -0.33,
+   "turnover_pct": 0.22,
+   "mktcap_yi": 113.5
   },
   {
    "code": "002246.SZ",
@@ -53,7 +67,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "北化股份"
+   "star_yesterday": false,
+   "name": "北化股份",
+   "change_pct": -1.92,
+   "turnover_pct": 0.48,
+   "mktcap_yi": 132.0
   },
   {
    "code": "002286.SZ",
@@ -64,7 +82,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "保龄宝"
+   "star_yesterday": true,
+   "name": "保龄宝",
+   "change_pct": -1.89,
+   "turnover_pct": 0.53,
+   "mktcap_yi": 31.5
   },
   {
    "code": "002728.SZ",
@@ -76,7 +98,11 @@
     "20260929"
    ],
    "n_recent": 1,
-   "name": "特一药业"
+   "star_yesterday": true,
+   "name": "特一药业",
+   "change_pct": -0.7,
+   "turnover_pct": 1.03,
+   "mktcap_yi": 50.7
   },
   {
    "code": "002787.SZ",
@@ -89,7 +115,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": ""
+   "star_yesterday": false,
+   "name": "华源控股",
+   "change_pct": -2.32,
+   "turnover_pct": 0.37,
+   "mktcap_yi": 79.7
   },
   {
    "code": "300016.SZ",
@@ -100,7 +130,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "北陆药业"
+   "star_yesterday": false,
+   "name": "北陆药业",
+   "change_pct": -3.05,
+   "turnover_pct": 0.72,
+   "mktcap_yi": 51.8
   },
   {
    "code": "300061.SZ",
@@ -111,7 +145,11 @@
     "20260929"
    ],
    "n_recent": 1,
-   "name": "旗天科技"
+   "star_yesterday": true,
+   "name": "旗天科技",
+   "change_pct": -0.91,
+   "turnover_pct": 0.57,
+   "mktcap_yi": 43.2
   },
   {
    "code": "300358.SZ",
@@ -123,7 +161,11 @@
     "20260928"
    ],
    "n_recent": 1,
-   "name": "楚天科技"
+   "star_yesterday": false,
+   "name": "楚天科技",
+   "change_pct": -2.34,
+   "turnover_pct": 0.66,
+   "mktcap_yi": 65.6
   },
   {
    "code": "300369.SZ",
@@ -135,7 +177,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "绿盟科技"
+   "star_yesterday": false,
+   "name": "绿盟科技",
+   "change_pct": 0.46,
+   "turnover_pct": 1.04,
+   "mktcap_yi": 70.8
   },
   {
    "code": "300931.SZ",
@@ -146,7 +192,11 @@
     "20260929"
    ],
    "n_recent": 1,
-   "name": "通用电梯"
+   "star_yesterday": false,
+   "name": "通用电梯",
+   "change_pct": -4.22,
+   "turnover_pct": 1.21,
+   "mktcap_yi": 43.0
   },
   {
    "code": "301060.SZ",
@@ -158,7 +208,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "兰卫医学"
+   "star_yesterday": false,
+   "name": "兰卫医学",
+   "change_pct": -2.88,
+   "turnover_pct": 0.63,
+   "mktcap_yi": 44.5
   },
   {
    "code": "600640.SH",
@@ -170,7 +224,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "国脉文化"
+   "star_yesterday": false,
+   "name": "国脉文化",
+   "change_pct": 1.38,
+   "turnover_pct": 0.32,
+   "mktcap_yi": 98.5
   },
   {
    "code": "601985.SH",
@@ -182,7 +240,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "中国核电"
+   "star_yesterday": false,
+   "name": "中国核电",
+   "change_pct": 0.22,
+   "turnover_pct": 0.06,
+   "mktcap_yi": 1890.2
   },
   {
    "code": "603179.SH",
@@ -194,7 +256,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "新泉股份"
+   "star_yesterday": false,
+   "name": "新泉股份",
+   "change_pct": -3.07,
+   "turnover_pct": 0.27,
+   "mktcap_yi": 267.3
   },
   {
    "code": "603507.SH",
@@ -208,7 +274,11 @@
     "20260929"
    ],
    "n_recent": 1,
-   "name": "振江股份"
+   "star_yesterday": true,
+   "name": "振江股份",
+   "change_pct": -1.93,
+   "turnover_pct": 0.57,
+   "mktcap_yi": 64.2
   },
   {
    "code": "603580.SH",
@@ -219,7 +289,11 @@
     "20260928"
    ],
    "n_recent": 1,
-   "name": "艾艾精工"
+   "star_yesterday": true,
+   "name": "艾艾精工",
+   "change_pct": -2.35,
+   "turnover_pct": 0.55,
+   "mktcap_yi": 92.7
   },
   {
    "code": "688319.SH",
@@ -230,7 +304,11 @@
     "20260930"
    ],
    "n_recent": 1,
-   "name": "欧林生物"
+   "star_yesterday": false,
+   "name": "欧林生物",
+   "change_pct": -1.98,
+   "turnover_pct": 0.15,
+   "mktcap_yi": 118.7
   },
   {
    "code": "688383.SH",
@@ -242,7 +320,11 @@
     "20260924"
    ],
    "n_recent": 1,
-   "name": "新益昌"
+   "star_yesterday": false,
+   "name": "新益昌",
+   "change_pct": -5.28,
+   "turnover_pct": 0.43,
+   "mktcap_yi": 114.8
   }
  ],
  "regime_now": {
@@ -251,5 +333,10 @@
   "rotation": 288,
   "trend_up": 34
  },
+ "star_pool_n": 1673,
+ "intraday_mode": false,
+ "tail_signals": [],
+ "tail_checked": 0,
+ "tail_note": "",
  "disclaimer": "研究态：未回测验证（T-20261009-009 结论前不构成选股依据）"
 }
