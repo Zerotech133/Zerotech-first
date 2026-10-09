@@ -28,6 +28,10 @@ from market import ParquetMarket                # noqa: E402
 DATA_DIR = HERE.parent / "data"
 DEFAULT_DB = DATA_DIR / "paper.db"
 
+# US 账本默认止损距离（K-STOCK-045c G2）：青萍信号不带止损参数、档案体系不覆盖 US
+# 账本——保守默认档 8% 成本锚定（与训练档案 stop_dist_pct 同语义）；档案化留二期
+US_STOP_DIST = 0.08
+
 
 def _engine(args) -> PaperEngine:
     db = Path(args.db) if args.db else DEFAULT_DB
@@ -178,6 +182,20 @@ def cmd_settle(args) -> int:
                 print(f"  ⚠️ refresh 失败: {w}")
             if not args.dry_run:
                 _print_eq(e_us)
+            # G2（K-STOCK-045c）：成交后自动挂默认止损（成本锚定 8%；已有止损不覆盖——
+            # 同 trainee auto_stops 口径）。pending 未成交不挂（无成本锚）。
+            stops_set = []
+            for aid2, e2 in us["engines"]:
+                for pos in e2.positions(aid2):
+                    if pos.get("stop_price") is not None:
+                        continue
+                    stop = round(pos["avg_cost"] * (1 - US_STOP_DIST), 2)
+                    if not args.dry_run:
+                        e2.set_stop(pos["stock"], stop, account_id=aid2)
+                    stops_set.append(f"{aid2}:{pos['stock']}@{stop}")
+            if stops_set:
+                print(f"  🛡️ US 默认止损已挂 {len(stops_set)} 笔（-{US_STOP_DIST:.0%} 成本锚定）: "
+                      + ", ".join(stops_set))
     return 0
 
 
@@ -281,11 +299,27 @@ def cmd_stops(args) -> int:
     rows = e.stops()
     if not rows:
         print("（无已设止损）")
-        return 0
-    print(f"已设止损 {len(rows)} 笔:")
-    for r in rows:
-        d = f"{r['distance_pct']:+.2f}%" if r["distance_pct"] is not None else "-"
-        print(f"  {r['stock']}  {r['qty']} 股  止损 {r['stop_price']}  现价 {r['last']}  距离 {d}")
+    else:
+        print(f"已设止损 {len(rows)} 笔:")
+        for r in rows:
+            d = f"{r['distance_pct']:+.2f}%" if r["distance_pct"] is not None else "-"
+            print(f"  {r['stock']}  {r['qty']} 股  止损 {r['stop_price']}  现价 {r['last']}  距离 {d}")
+    # US 账本止损展示（045c G2；轻量：不 refresh，用现有缓存）
+    us = _us_pass(args, do_refresh=False)
+    if us:
+        for aid, e_us in us["engines"]:
+            try:
+                rows2 = e_us.stops(account_id=aid)
+            except Exception as ex:  # noqa: BLE001
+                print(f"⚠️ US {aid} stops 查询失败: {ex}")
+                continue
+            if not rows2:
+                print(f"US {aid}: （无已设止损）")
+                continue
+            print(f"US {aid} 已设止损 {len(rows2)} 笔:")
+            for r in rows2:
+                d = f"{r['distance_pct']:+.2f}%" if r["distance_pct"] is not None else "-"
+                print(f"  {r['stock']}  {r['qty']} 股  止损 {r['stop_price']}  现价 {r['last']}  距离 {d}")
     return 0
 
 
@@ -299,6 +333,21 @@ def cmd_check_stops(args) -> int:
         print(f"  🛑 {t['stock']}: {t['why']}")
     for w in r["watch"]:
         print(f"  👀 {w['stock']}: 收盘 {w['close']} ≥ 止损 {w['stop']}")
+    # US 账本止损检查（045c G2）：触发判定要最新收盘 → do_refresh=True（独立跑也安全）
+    us = _us_pass(args)
+    if us:
+        for aid, e_us in us["engines"]:
+            try:
+                r2 = e_us.check_stops(dry_run=args.dry_run, account_id=aid)
+            except Exception as ex:  # noqa: BLE001
+                print(f"⚠️ US {aid} 止损检查失败（不阻塞主链）: {ex}")
+                continue
+            print(f"{tag}US {aid} 止损检查: 触发 {len([t for t in r2['triggered'] if t.get('status')])} "
+                  f"/ 观察 {len(r2['watch'])}")
+            for t in r2["triggered"]:
+                print(f"  🛑 {t['stock']}: {t['why']}")
+            for w in r2["watch"]:
+                print(f"  👀 {w['stock']}: 收盘 {w['close']} ≥ 止损 {w['stop']}")
     return 0
 
 
