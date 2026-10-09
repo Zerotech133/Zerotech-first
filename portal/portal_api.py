@@ -756,6 +756,16 @@ _TAB_JS = ("<script>function _tabSw(t,i,n){for(var j=0;j<n;j++){"
            "</script>")
 
 
+def _back_link_html():
+    """K-STOCK-036 统一返回键单链接（模块级：pill_nav 与各产线页共用。
+    有浏览历史 → history.back() 回真实来源页；无历史兜底 /portal 门户）"""
+    return ("<a href='/portal' onclick=\"if(history.length>1){"
+            "history.back();return false;}\" style='display:"
+            "inline-block;padding:6px 14px;border:1px solid #30363d;"
+            "border-radius:16px;color:#58a6ff;text-decoration:none;"
+            "font-size:12.5px;background:#161b22'>← 返回</a>")
+
+
 def _tabs_html(tid, tabs, checked=0):
     """K-STOCK-030 通用 Tab 页组件（选股中心长页治理：市场维度点右侧
     Tab 切换，不再竖排全量展开）。tabs=[(label, content_html)]。
@@ -1134,7 +1144,8 @@ def pill_nav(page=None):
             "justify-content:space-between;gap:10px;flex-wrap:wrap;"
             "margin:0 0 18px'>"
             "<div style='display:flex;align-items:center;gap:7px;"
-            "flex-wrap:wrap'>%s</div>%s</div>" % (crumb, dd))
+            "flex-wrap:wrap'>%s%s</div>%s</div>"
+            % (_back_link_html(), crumb, dd))
 
 
 # ── 板块驾驶舱数据 helpers ─────────────────────────────
@@ -5991,6 +6002,8 @@ gap:14px;align-items:start}}
                 ("<span style='%s'>%s</span>" % (_PILL_ON, lb)) if key == cur
                 else ("<a href='%s' style='%s'>%s</a>" % (href, _PILL, lb))
                 for lb, href, key in _SUBS)
+            # K-STOCK-036：返回键置前 + 页面级联动导航条
+            nav = self._back_link_html() + nav
             # 注意：title 走纯拼接不进 % 模板（% 与 + 混用坑第四次变体）
             return ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                     "<meta name='viewport' content='width=device-width,"
@@ -11994,17 +12007,16 @@ transition:.3s;z-index:9}
             body.append("</table></div>")
         self._html("".join(body))
 
+    def _back_link_html(self):
+        """统一返回键（Handler 侧别名，委托模块级实现——个股页等
+        既有调用点不改）。"""
+        return _back_link_html()
+
     def _back_bar_html(self):
-        """K-STOCK-029 统一返回键（选股中心全产线下钻页共用）：
-        有浏览历史 → history.back() 回真实来源页（/qd/、/bt-qpzm、
-        /bt-chanlun 及未来任何产线池页）；直接开 URL 无历史 → href
-        兜底回 /bt 选股中心总目录。新产线详情页一律复用本组件。"""
-        return ("<div style='margin:0 0 10px'>"
-                "<a href='/bt' onclick=\"if(history.length>1){history.back();"
-                "return false;}\" style='display:inline-block;padding:6px 14px;"
-                "border:1px solid #30363d;border-radius:16px;color:#58a6ff;"
-                "text-decoration:none;font-size:12.5px;background:#161b22'>"
-                "← 返回</a></div>")
+        """统一返回条（个股全景页等用）：_back_link_html 包容器。
+        兜底已从 /bt 升级为 /portal（K-STOCK-035 门户架构）。"""
+        return ("<div style='margin:0 0 10px'>" + self._back_link_html()
+                + "</div>")
 
     def _bt_stock_page(self, qs):
         """个股全景页：行情 + 4策略信号 + 共振分解 + JEV下钻 + AI展望。"""
@@ -20264,8 +20276,8 @@ if(sub=='path'){var hh=d.hops==null?'不连通':'<b>'+d.hops+'</b> 跳'
  +(d['六度内']?' <span style=color:#3fb950>✓六度内</span>':'');
 r.innerHTML=hh+'<div style="margin-top:6px;line-height:1.9">'
 +d.nodes.map(function(n,i){return "<span class=chip style='cursor:pointer' "
- +"onclick=\"document.getElementById('qi').value='"+n+"';"
- +"document.getElementById('sf').dispatchEvent(new Event('submit'))\">"
+ +"onclick=\\"document.getElementById('qi').value='"+n+"';"
+ +"document.getElementById('sf').dispatchEvent(new Event('submit'))\\">"
  +n+"</span>"+(i<d.nodes.length-1?" <span class=dim>→</span>":"")}).join('')
  +"</div><div class=dim style=margin-top:4px>"+d.rels.join(' → ')+"</div>";}
 if(sub=='shared'){var hh=d.n+" 共同邻居";

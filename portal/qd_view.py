@@ -28,8 +28,15 @@ _PILL = ("display:inline-block;padding:6px 13px;border:1px solid #30363d;"
 _PILL_ON = _PILL + ";color:#e6edf3;border-color:#58a6ff;font-weight:600"
 
 # /qd/ 专属精简导航——老田要求不出现策略中心/青萍之末/缠论等交叉产线
-# 工作台（图谱工具走正文工具链），故不复用 pill_nav 全站下拉
-NAV_QD = ("<a href='/' style='%s'>🏠 首页</a>"
+# 工作台（图谱工具走正文工具链），故不复用 pill_nav 全站下拉。
+# K-STOCK-036：补统一返回键（history.back 兜底 /portal 门户）
+_BACK = ("<a href='/portal' onclick=\"if(history.length>1){"
+         "history.back();return false;}\" style='display:inline-block;"
+         "padding:6px 14px;border:1px solid #30363d;border-radius:16px;"
+         "color:#58a6ff;text-decoration:none;font-size:12.5px;"
+         "background:#161b22'>← 返回</a>")
+NAV_QD = (_BACK
+          + "<a href='/' style='%s'>🏠 首页</a>"
           "<span style='color:#8b949e;font-size:11px'>›</span>"
           "<span style='%s'>⚔ 量子双刀</span>" % (_PILL, _PILL_ON))
 
