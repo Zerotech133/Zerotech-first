@@ -203,6 +203,37 @@ def tier_of(e):
     return "T3"
 
 
+def _backfill_quotes(stocks):
+    """A股 close/pct_chg 回填：从 tdx_read 行情湖最新日一次取全市场。
+
+    六策略源里仅 weak 带 pct_chg，其余 null → 列表页涨跌幅大面积「—」。
+    湖不可达/无 pandas 时整体降级（保持 null，页面已有占位显示），不拖垮聚合。
+    返回 (基准日YYYYMMDD, 回填数)。
+    """
+    try:
+        sys.path.insert(0, QB)
+        from tdx_read import read_day, latest_date  # noqa: E402
+        day = latest_date("ts_daily")
+        if not day:
+            return None, 0
+        df = read_day("ts_daily", day, columns=["ts_code", "close", "pct_chg"])
+        q = {r.ts_code: (float(r.close), float(r.pct_chg))
+             for r in df.itertuples() if r.ts_code}
+        n = 0
+        for c, e in stocks.items():
+            hit = q.get(c)
+            if hit and e.get("close") is None:
+                e["close"], e["pct_chg"] = hit[0], hit[1]
+                n += 1
+            elif hit and e.get("pct_chg") is None:
+                e["pct_chg"] = hit[1]
+                n += 1
+        return day, n
+    except Exception as ex:  # noqa: BLE001 — 回填失败降级不拖垮
+        print("[backfill] 行情回填降级：%s" % str(ex)[:80])
+        return None, 0
+
+
 def main():
     stocks = {}
     metas = {}
@@ -227,10 +258,18 @@ def main():
     out_rows.sort(key=lambda x: (order[x["tier"]], -x["n_hit"], x["code"]))
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    basis_day, n_backfill = _backfill_quotes(stocks)
+    # 基准日动态推导：行情湖最新日（硬编码 2026-10-07 时代已废——每天跑也是旧文案）
+    if basis_day:
+        basis_s = "%s-%s-%s" % (basis_day[:4], basis_day[4:6], basis_day[6:])
+        trade_basis = "%s 收盘（行情湖 ts_daily 最新可得交易日）" % basis_s
+    else:
+        basis_s = None
+        trade_basis = "行情湖不可达，涨跌幅以策略源自带为准"
     doc = {
         "generated_at": now,
-        "scan_run_date": "2026-10-07",
-        "trade_basis": "2026-09-30 收盘（国庆休市，当日强制扫描基于最新可得数据）",
+        "scan_run_date": basis_s or now[:10],
+        "trade_basis": trade_basis,
         "strategies": metas,
         "counts": {
             "total": len(out_rows),
@@ -248,10 +287,17 @@ def main():
           % (doc["counts"]["total"], doc["counts"]["T1_resonance"],
              doc["counts"]["T2_high_value"], doc["counts"]["crowd_alert"],
              doc["counts"]["T3_single"], OUT))
+    print("  行情回填：基准 %s，回填 %d 只" % (basis_day or "无", n_backfill))
     for sid, m in metas.items():
         print("  %-8s ok=%s n=%s %s" % (sid, m.get("ok"), m.get("n"),
                                         (m.get("err") or "")[:60]))
 
 
 if __name__ == "__main__":
+    # argparse 化：此前无参解析，--help 会直接触发真实聚合写盘（副作用 bug）
+    import argparse
+    _ap = argparse.ArgumentParser(
+        description="聚合六策略选股产物 → portal/data/todays_picks.json"
+                    "（个股详情见 build_pick_details.py）")
+    _ap.parse_args()
     main()

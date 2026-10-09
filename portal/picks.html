@@ -182,6 +182,11 @@
     <button class="fbtn" data-t="T3">T3 单策略</button>
     <span class="fsep"></span>
     <span id="mfilters" style="display:contents"></span>
+    <span class="fsep"></span>
+    <button class="fbtn on" data-s="tier">层优先</button>
+    <button class="fbtn" data-s="hit">命中数↓</button>
+    <button class="fbtn" data-s="pct">涨跌幅↓</button>
+    <span class="fsep"></span>
     <button class="fbtn"><input id="q" placeholder="搜索代码/名称"></button>
   </div>
   <div class="lhead">
@@ -195,7 +200,7 @@
   <div class="foot" id="foot"></div>
 </main>
 <script>
-let DATA=null, FILTER_T="", FILTER_M="", Q="", LIMIT=120;
+let DATA=null, FILTER_T="", FILTER_M="", Q="", LIMIT=120, SORT="tier";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function tick(){ $("#clock").textContent=new Date().toLocaleString("zh-CN",{hour12:false}); }
@@ -372,7 +377,10 @@ function matchRows(){
   if(Q){ const q=Q.toLowerCase();
     rows=rows.filter(r=>(r.code||"").toLowerCase().includes(q)||
       (marketOf(r.code).bare||"").toLowerCase().includes(q)||(r.name||"").includes(Q)); }
-  return rows;
+  const tv={T1:0,T2:1,CROWD:2,T3:3};
+  const sv={tier:r=>tv[r.tier]??9, hit:r=>-(r.n_hit||0), pct:r=>-(+r.pct_chg||-9999)};
+  return rows.slice().sort((a,b)=>(sv[SORT](a)-sv[SORT](b))||
+    ((b.n_hit||0)-(a.n_hit||0)));
 }
 function renderList(){
   const rows=matchRows();
@@ -390,15 +398,30 @@ function renderList(){
     </div>`;}).join("");
   $("#more").style.display=rows.length>LIMIT?"block":"none";
   $("#more").textContent=`展开更多（剩余 ${rows.length-LIMIT}）↓`;
-  document.querySelectorAll(".lrow").forEach(el=>
-    el.addEventListener("click",()=>pickDetail(el.dataset.code,el)));
+}
+/* 事件委托：列表点击只绑一次（此前每轮 renderList 全量重绑 580 行监听器） */
+function bindListOnce(){
+  $("#list").addEventListener("click",e=>{
+    const el=e.target.closest(".lrow");
+    if(el)pickDetail(el.dataset.code,el);
+  });
 }
 function bindFilters(){
   document.querySelectorAll(".fbtn[data-t]").forEach(b=>b.addEventListener("click",()=>{
     document.querySelectorAll(".fbtn[data-t]").forEach(x=>x.classList.remove("on"));
     b.classList.add("on"); FILTER_T=b.dataset.t; LIMIT=120; renderList();
   }));
-  $("#q").addEventListener("input",e=>{ Q=e.target.value.trim(); LIMIT=120; renderList(); });
+  /* 排序切换（默认层→命中数→涨跌幅） */
+  document.querySelectorAll(".fbtn[data-s]").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".fbtn[data-s]").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); SORT=b.dataset.s; LIMIT=120; renderList();
+  }));
+  /* 搜索防抖 200ms：580 行全量重排不再每键触发 */
+  let _qt=null;
+  $("#q").addEventListener("input",e=>{
+    clearTimeout(_qt);
+    _qt=setTimeout(()=>{ Q=e.target.value.trim(); LIMIT=120; renderList(); },200);
+  });
   $("#more").addEventListener("click",()=>{ LIMIT+=200; renderList(); });
 }
 
@@ -526,7 +549,7 @@ async function pickDetail(code, el){
   d.innerHTML=html;
 }
 
-function render(data){ DATA=data; renderVitals(); renderMkt(); bindFilters(); renderList(); }
+function render(data){ DATA=data; renderVitals(); renderMkt(); bindFilters(); bindListOnce(); renderList(); }
 
 async function boot(){
   if(new URLSearchParams(location.search).get("demo")==="1"){
