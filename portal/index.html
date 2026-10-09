@@ -117,6 +117,15 @@
     border: 1px dashed var(--border); color: var(--text-dim); font-weight: 400;
   }
 
+  .dm .dot.academy-dot { animation: none; box-shadow: none; }
+  .dm .head > div:last-child { min-width: 0; }
+  .dm .t { flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    .board { grid-template-columns: minmax(0, 1fr); }
+    header { gap: 12px; flex-wrap: wrap; }
+    .dm .foot { gap: 10px; flex-wrap: wrap; }
+  }
+
   /* ── 状态点 ────────────────────────────── */
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok); animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
   .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); animation: none; }
@@ -162,6 +171,7 @@
     <a class="pill" href="/creator">🎬 创作</a>
     <a class="pill" href="/dev.html">💻 开发</a>
     <a class="pill" href="/ops">⚙ 系统</a>
+    <a class="pill" href="/academy.html">🎓 智能体学院</a>
   </nav>
 
   <main>
@@ -176,6 +186,24 @@
     </a>
 
     <div class="board">
+      <!-- 智能体学院：仅交互原型，真实训练与交易未开放 -->
+      <a class="dm" href="/academy.html">
+        <div class="head">
+          <div class="ic" aria-hidden="true">🎓</div>
+          <div><div class="t">智能体学院 <span class="tag-soon">交互原型</span></div><div class="s">AI 教 AI · 独立评测 · 能力交付</div></div>
+        </div>
+        <div class="desc">接入不同类型的 AI，探索教学、能力包与服务市场。支持激进、稳健、保守敏感度及中立方向偏好。</div>
+        <div class="ms">
+          <span>交流 <b>AI 与 AI</b></span>
+          <span>市场 <b>未上架</b></span>
+          <span>训练 <b>未开放</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot unknown academy-dot"></span><span>训练、模拟成交、交易关闭</span></span>
+          <span class="enter">查看学院 →</span>
+        </div>
+      </a>
+
       <!-- ⓪ AI 对话：首页直达入口（/nl 自然语言查数页） -->
       <a class="dm" href="/nl">
         <div class="head">

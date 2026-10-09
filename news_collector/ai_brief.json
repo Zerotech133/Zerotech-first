@@ -1,11 +1,11 @@
 {
  "kind": "brief",
- "date": "2026-10-08",
- "ts": "2026-10-08 08:00",
+ "date": "2026-10-09",
+ "ts": "2026-10-09 08:00",
  "model": "qwen3.5:9b",
  "ok": true,
- "pushed": true,
+ "pushed": false,
  "news_count": 50,
- "market_count": 46,
- "headline": "1. 科技主线分化 — 英伟达等美股科技股回调，国内 AI 板块研报称趋势上行但需警惕高位波动。"
+ "market_count": 0,
+ "headline": "科技巨头营收不及预期引发美股重挫，A 股半导体受情绪压制，但行业长期景气度与产能扩张逻辑未变。"
 }

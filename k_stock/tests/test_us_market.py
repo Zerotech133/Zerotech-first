@@ -190,6 +190,38 @@ def test_us_ledger_settle_e2e(tmpdir):
     eng.con.close()                                                 # 释放 db（TemporaryDirectory 清理需要）
 
 
+def test_fetch_yf_parse(tmpdir, monkeypatch):
+    """045d G1：_fetch_yf 解析逻辑（fake DataFrame duck-typing，不联网）。"""
+    import types
+
+    class _Row(dict):
+        pass
+
+    class _DF:
+        empty = False
+        @staticmethod
+        def iterrows():
+            yield "2026-10-07 00:00:00-04:00", _Row(
+                Open=335.0, High=341.0, Low=334.0, Close=338.0, Volume=35e6)
+            yield "2026-10-08 00:00:00-04:00", _Row(
+                Open=336.81, High=341.57, Low=335.9, Close=340.42, Volume=35332449)
+
+    fake_yf = types.SimpleNamespace(Ticker=lambda s: types.SimpleNamespace(
+        history=lambda period, auto_adjust: _DF()))
+    monkeypatch.setattr(um, "fetch_daily", um.fetch_daily, raising=False)
+    import importlib
+    real_yf = importlib.import_module("yfinance") if False else None
+    monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
+    rows = um._fetch_yf("gb_aapl")
+    assert len(rows) == 2
+    assert rows[0]["date"] == "2026-10-07" and rows[-1]["close"] == 340.42
+    # 双源降级：主源抛→备源接管
+    monkeypatch.setattr(um, "_fetch_sina",
+                        lambda s: (_ for _ in ()).throw(RuntimeError("挂")))
+    rows2 = um.fetch_daily("aapl")
+    assert rows2[-1]["close"] == 340.42
+
+
 if __name__ == "__main__":
     import contextlib
     import io

@@ -88,6 +88,39 @@ def _fetch_sina(sym: str) -> list[dict]:
     return out
 
 
+def _fetch_yf(sym: str) -> list[dict]:
+    """备源 yfinance（K-STOCK-045d G1）：auto_adjust=False 拿未复权原始价——
+    与新浪同口径，走同一 split_adjust 拆股修复，两源缓存字节级可比对。"""
+    import yfinance as yf  # 惰性：主源健康时零开销（import 约 2s）
+    df = yf.Ticker(sym.upper()).history(period="max", auto_adjust=False)
+    if df is None or df.empty:
+        raise RuntimeError(f"yfinance {sym} 无数据（限流或代码不存在）")
+    out = []
+    for idx, row in df.iterrows():
+        try:
+            out.append({"date": str(idx)[:10],
+                        "open": float(row["Open"]), "high": float(row["High"]),
+                        "low": float(row["Low"]), "close": float(row["Close"]),
+                        "volume": float(row["Volume"])})
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not out:
+        raise RuntimeError(f"yfinance {sym} 无有效日线行")
+    return out
+
+
+def fetch_daily(sym: str) -> list[dict]:
+    """主源新浪 → 失败自动降级 yfinance 备源（045d G1：消单点）。
+    两源同为未复权原始价，下游 split_adjust 无差别。"""
+    try:
+        return _fetch_sina(sym)
+    except Exception as sina_err:  # noqa: BLE001
+        try:
+            return _fetch_yf(sym)
+        except Exception as yf_err:  # noqa: BLE001
+            raise RuntimeError(f"双源均失败 {sym}: 新浪={sina_err} | yfinance={yf_err}") from yf_err
+
+
 def _split_ratio(prev_close: float, cur_close: float) -> int:
     """断裂日拆股比例推断：1=非拆股（普通波动）；n=回溯把历史价 ÷n。"""
     if prev_close <= 0 or cur_close <= 0:
@@ -115,9 +148,9 @@ def cache_path(symbol: str, us_dir: Path | str | None = None) -> Path:
 
 
 def refresh(symbol: str, us_dir: Path | str | None = None) -> Path:
-    """拉取→复权→写 CSV（含 pre_close=前日 close）。返回缓存路径。"""
+    """拉取（主源→备源自动切换）→复权→写 CSV（含 pre_close=前日 close）。返回缓存路径。"""
     sym = sina_symbol(symbol)
-    rows = split_adjust(_fetch_sina(sym))
+    rows = split_adjust(fetch_daily(sym))
     out = cache_path(sym, us_dir)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".csv.tmp")

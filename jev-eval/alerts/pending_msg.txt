@@ -1,18 +1,2 @@
-[N1_CHECK_FAIL_20261008_0730]
-[OK] backup set 2026-10-08_0647 files=10 MB=1809.6
-[FAIL] mirror files=10, expected >=13
-[OK] backup.log DONE failed=0
-[OK] quant_code files=3781 (baseline 1756, holiday drift ~0)
-[OK] v5 key guard silent (normal path)
-[OK] offsite task RC=0 LastRun=10/08/2026 04:30:01
-[OK] offsite log: [20261008_043001] OK set=2026-10-08_0312 files=10 bytes=1885787452
-[OK] OneDrive set 2026-10-08_0312 files=10
-[FAIL] OneDrive set files=10, expected >=13
-[OK] OneDrive sets=2 (prune to 2 works)
-[OK] alert queue empty
-[OK] no ENGINE_DOWN event pending
-[OK] tushare_sync exit line: tushare_sync exit=0 2026-10-08T01:00:35
-[OK] AI量化RPS共振 RC=0 LastRun=10/07/2026 23:35:01
-[OK] AI工作站统一日报 RC=0 LastRun=10/08/2026 03:00:01
-[OK] daily exit line: daily exit=0 2026-10-08T03:00:07
-N1 FAILURES=2
+[BACKUP_KEY_LOST_2026-10-09_1403]
+FATAL: AES key file missing but .enc archives exist. Do NOT let backup run with a new key - restore key from offline paper copy first. keyfile=C:\Users\Administrator\.backup_aes_key sample_enc=D:\backups_mirror\2026-10-08_0048\webui_data.tar.gz.enc

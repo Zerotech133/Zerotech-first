@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能体学院 · 老田的 AI 工作站</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 0 26px 48px; }
+
+  /* ── 头部 ─────────────────────────────── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 48px 14px; max-width: 1080px; margin: 0 auto;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--blu-600), var(--pur-500));
+    display: grid; place-items: center;
+    font-size: 20px; font-weight: 800; color: #fff;
+  }
+  .brand h1 { font-size: 17px; font-weight: 700; letter-spacing: .5px; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+
+  /* ── 顶栏导航：首页 + 五领域 ────────────── */
+  .topnav {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    padding: 10px 48px 0; max-width: 1080px; margin: 0 auto;
+  }
+  .pill {
+    display: inline-block; padding: 7px 15px;
+    border: 1px solid var(--border); border-radius: 999px;
+    color: var(--text-dim); text-decoration: none; font-size: 13px;
+    background: var(--bg-surface);
+    transition: border-color .2s ease, color .2s ease;
+  }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  /* ── K44 数据大屏横幅入口 ─────────────── */
+  .screen-banner {
+    display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
+    margin-top: 22px; padding: 15px 22px;
+    background: linear-gradient(120deg, var(--bg-raised), var(--bg-surface) 65%);
+    border: 1px solid var(--border); border-radius: 14px;
+    text-decoration: none; color: var(--text);
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .screen-banner:hover { border-color: var(--link); transform: translateY(-2px); }
+  .screen-banner .ic {
+    width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 21px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+  }
+  .screen-banner .t { font-size: 15px; font-weight: 700; }
+  .screen-banner .s { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .screen-banner .enter { margin-left: auto; font-size: 12.5px; color: var(--link); font-weight: 600; }
+  .screen-banner:hover .enter { text-decoration: underline; }
+
+  /* ── 领域入口板 ───────────────────────── */
+  .board {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(316px, 1fr));
+    margin-top: 22px;
+  }
+  .dm {
+    position: relative;
+    display: flex; flex-direction: column; gap: 9px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px 17px;
+    text-decoration: none; color: var(--text);
+    transition: border-color .2s ease, transform .2s ease;
+    min-height: 176px;
+  }
+  .dm:hover { border-color: var(--link); transform: translateY(-3px); }
+  .dm .head { display: flex; align-items: center; gap: 13px; }
+  .dm .ic {
+    width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 23px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+  }
+  .dm .t { font-size: 16.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .dm .s { font-size: 11px; color: var(--text-dim); margin-top: 3px; letter-spacing: .5px; }
+  .dm .desc { font-size: 12px; color: var(--gray-6); line-height: 1.65; }
+  .dm .ms {
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+    font-size: 11.5px; color: var(--text-dim);
+    font-family: Consolas, "Microsoft YaHei", monospace;
+  }
+  .dm .ms b { color: var(--text); font-weight: 600; }
+  .dm .foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border-weak);
+  }
+  .dm .st { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-dim); }
+  .dm .enter { font-size: 12.5px; color: var(--link); font-weight: 600; }
+  .dm:hover .enter { text-decoration: underline; }
+  .dm.soon { border-style: dashed; }
+  .dm.soon .enter { color: var(--text-dim); }
+  .tag-soon {
+    font-size: 10px; padding: 2px 9px; border-radius: 999px;
+    border: 1px dashed var(--border); color: var(--text-dim); font-weight: 400;
+  }
+
+  .dm .dot.academy-dot { animation: none; box-shadow: none; }
+  .dm .head > div:last-child { min-width: 0; }
+  .dm .t { flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    .board { grid-template-columns: minmax(0, 1fr); }
+    header { gap: 12px; flex-wrap: wrap; }
+    .dm .foot { gap: 10px; flex-wrap: wrap; }
+  }
+
+  /* ── 状态点 ────────────────────────────── */
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok); animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
+  .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); animation: none; }
+  .dot.unknown { background: var(--color-warn); box-shadow: 0 0 8px var(--color-warn); }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  /* ── 底部状态条 ───────────────────────── */
+  .statusbar {
+    margin-top: 34px; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 22px;
+    display: flex; flex-wrap: wrap; gap: 22px; align-items: center; justify-content: center;
+    font-family: Consolas, monospace; font-size: 11.5px; color: var(--text-dim);
+  }
+  .statusbar b { color: var(--text); font-weight: 600; }
+  .statusbar .sep { opacity: .25; }
+
+  @media (max-width: 640px) {
+    header { padding: 16px 20px 8px; }
+    .topnav { padding: 8px 20px 0; }
+    main { padding: 0 14px 36px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+
+
+  .academy-workspace { max-width:1080px; margin:22px auto 36px; padding:0 26px; }
+  #lt-academy { border:1px solid var(--border); border-radius:var(--r-l); overflow:clip; }
+  #lt-academy .ac-side, #lt-academy .ac-top, #lt-academy .ac-state { background:var(--bg-surface); }
+  #lt-academy .ac-nav button.is-active { background:var(--bg-raised); }
+  #lt-academy .ac-brand small { letter-spacing:normal; }
+  #lt-academy .ac-seal { width:37px; height:37px; border-radius:11px; font-size:20px; }
+  #lt-academy .ac-top { padding-right:var(--a-gap); }
+  #lt-academy .ac-value-row > span:last-child { text-align:right; min-width:0; overflow-wrap:anywhere; }
+  @media(max-width:640px) { .academy-workspace { padding:0 14px; margin-top:18px; } }
+  @media(max-width:580px) { #lt-academy .ac-top { padding-right:17px; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div>
+        <h1>老田的 AI 工作站</h1>
+        <small>PERSONAL OS · LOCAL</small>
+      </div>
+    </div>
+    <span class="dim" style="font-size:12px">学院交互原型</span>
+  </header>
+
+  <nav class="topnav">
+    <a class="pill" href="/">🏠 首页</a>
+    <a class="pill" href="/quant">📈 量化股票</a>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <a class="pill" href="/creator">🎬 创作</a>
+    <a class="pill" href="/dev.html">💻 开发</a>
+    <a class="pill" href="/ops">⚙ 系统</a>
+    <span class="pill on" aria-current="page">🎓 智能体学院</span>
+  </nav>
+<div class="academy-workspace">
+<style>
+#lt-academy{--a-bg:var(--bg-page);--a-paper:var(--bg-raised);--a-ink:var(--text);--a-sub:var(--text-dim);--a-line:var(--border);--a-blue:var(--link);--a-soft:var(--bg-surface);--a-teal:var(--link);--a-warn:var(--color-warn);--a-warm:var(--bg-surface);--a-gap:26px;color-scheme:dark;background:var(--a-bg);color:var(--a-ink);font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;font-size:14px;line-height:1.65;min-width:0;isolation:isolate}
+#lt-academy *{box-sizing:border-box}
+#lt-academy h1,#lt-academy h2,#lt-academy h3,#lt-academy p{margin:0}
+#lt-academy h1{font-size:28px;line-height:1.45;font-weight:650;letter-spacing:-.7px}
+#lt-academy h2{font-size:20px;font-weight:650;line-height:1.5}
+#lt-academy h3{font-size:16px;font-weight:600;line-height:1.5}
+#lt-academy button,#lt-academy input,#lt-academy select{font:inherit}
+#lt-academy button{cursor:var(--cursor-interaction,pointer)}
+#lt-academy button:disabled{cursor:not-allowed;opacity:.6}
+#lt-academy [hidden]{display:none!important}
+#lt-academy .ac-shell{display:grid;grid-template-columns:178px minmax(0,1fr)}
+#lt-academy .ac-side{background:var(--a-paper);border-right:1px solid var(--a-line);padding:26px 15px;display:flex;flex-direction:column;gap:26px}
+#lt-academy .ac-brand{display:flex;align-items:center;gap:10px;padding:0 5px}
+#lt-academy .ac-seal{display:grid;place-items:center;width:37px;height:42px;border-radius:4px 4px 13px 13px;background:var(--accent);color:var(--text);font-family:inherit;font-size:24px;font-weight:bold;flex-shrink:0}
+#lt-academy .ac-brand strong{display:block;font-size:15px;line-height:1.45}
+#lt-academy .ac-brand small{display:block;color:var(--a-sub);font-size:11px}
+#lt-academy .ac-nav{display:flex;flex-direction:column;gap:7px}
+#lt-academy .ac-nav button{display:flex;gap:10px;align-items:center;text-align:left;background:transparent;color:var(--a-sub);border:0;border-radius:8px;padding:11px 13px;font-size:13px}
+#lt-academy .ac-nav button svg{width:17px;height:17px;flex-shrink:0}
+#lt-academy .ac-nav button.is-active{background:var(--a-soft);color:var(--a-blue);font-weight:600}
+#lt-academy .ac-nav button:hover{color:var(--a-blue)}
+#lt-academy .ac-side-note{margin-top:auto;border-top:1px solid var(--a-line);padding:16px 5px 0;font-size:12px;color:var(--a-sub)}
+#lt-academy .ac-side-note b{display:block;font-size:13px;color:var(--a-ink);margin-bottom:4px}
+#lt-academy .ac-main{min-width:0}
+#lt-academy .ac-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px var(--a-gap);border-bottom:1px solid var(--a-line);background:var(--a-paper);font-size:12px;flex-wrap:wrap}
+#lt-academy .ac-top .ac-user{display:flex;gap:8px;align-items:center;white-space:nowrap}
+#lt-academy .ac-avatar{display:grid;place-items:center;background:var(--a-soft);color:var(--a-blue);width:26px;height:26px;border-radius:50%;font-weight:600}
+#lt-academy .ac-top small{font-size:11px;color:var(--a-sub)}
+#lt-academy .ac-content{padding:var(--a-gap);min-height:626px}
+#lt-academy .ac-muted{color:var(--a-sub)}
+#lt-academy .ac-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:var(--a-soft);color:var(--a-blue);border-radius:5px;padding:3px 7px;white-space:nowrap}
+#lt-academy .ac-tag.pending{background:var(--a-warm);color:var(--a-warn)}
+#lt-academy .ac-tag.neutral{background:var(--a-bg);color:var(--a-sub)}
+#lt-academy .ac-btn{display:inline-flex;justify-content:center;align-items:center;gap:7px;min-height:36px;background:var(--a-paper);border:1px solid var(--a-line);padding:7px 13px;border-radius:7px;color:var(--a-ink);font-size:12px;line-height:1.5;white-space:nowrap}
+#lt-academy .ac-btn.major{background:var(--accent);color:var(--text);border-color:var(--accent);font-weight:600}
+#lt-academy .ac-btn svg{width:15px;height:15px}
+#lt-academy .ac-text-btn{border:0;background:transparent;color:var(--a-blue);padding:6px 0;font-size:12px;text-align:left}
+#lt-academy .ac-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+#lt-academy .ac-hero{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:20px;align-items:center;padding:6px 0 22px}
+#lt-academy .ac-hero p{color:var(--a-sub);font-size:13px;max-width:430px;margin:12px 0 20px}
+#lt-academy .ac-emblem{position:relative;height:170px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#lt-academy .ac-emblem .ac-spine{height:130px;width:32px;background:var(--a-paper);border:1px solid var(--a-line);border-bottom:6px solid var(--a-blue);writing-mode:vertical-rl;text-orientation:upright;display:flex;align-items:center;justify-content:center;font-family:inherit;font-size:14px;letter-spacing:3px;margin-left:6px;border-radius:3px 3px 0 0;transform:translateY(5px)}
+#lt-academy .ac-emblem .ac-spine:nth-child(2){height:153px;transform:none}
+#lt-academy .ac-emblem .ac-spine:nth-child(3){height:115px;transform:rotate(9deg) translateY(12px);border-bottom-color:var(--a-teal)}
+#lt-academy .ac-emblem:after{content:'';position:absolute;bottom:2px;height:2px;background:var(--a-line);width:165px}
+#lt-academy .ac-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+#lt-academy .ac-small{font-size:12px}
+#lt-academy .ac-path{background:var(--a-paper);border:1px solid var(--a-line);border-radius:12px;padding:18px 20px;margin-bottom:22px}
+#lt-academy .ac-stages{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+#lt-academy .ac-stage{position:relative;padding:10px 0 3px}
+#lt-academy .ac-stage:before{content:'';position:absolute;top:21px;left:32px;right:-6px;height:1px;background:var(--a-line)}
+#lt-academy .ac-stage:last-child:before{display:none}
+#lt-academy .ac-step-no{position:relative;display:grid;place-items:center;font-size:12px;font-weight:600;border-radius:50%;width:25px;height:25px;background:var(--a-bg);color:var(--a-sub);margin-bottom:10px}
+#lt-academy .ac-stage.current .ac-step-no{background:var(--accent);color:var(--text)}
+#lt-academy .ac-stage strong{display:block;font-size:12px}
+#lt-academy .ac-stage small{display:block;color:var(--a-sub);font-size:11px;margin-top:3px}
+#lt-academy .ac-split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px}
+#lt-academy .ac-feature{border-left:3px solid var(--a-blue);padding:4px 0 4px 16px}
+#lt-academy .ac-feature h3{margin:6px 0}
+#lt-academy .ac-feature p{color:var(--a-sub);font-size:12px;margin-bottom:8px}
+#lt-academy .ac-facts{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;margin:14px 0}
+#lt-academy .ac-facts b{font-size:20px;font-weight:600;margin-right:4px}
+#lt-academy .ac-task-row{padding:10px 0;border-bottom:1px solid var(--a-line);display:flex;align-items:flex-start;gap:10px}
+#lt-academy .ac-task-row span{font-size:11px;color:var(--a-blue);padding-top:2px}
+#lt-academy .ac-task-row b{font-size:12px;font-weight:500;display:block}
+#lt-academy .ac-task-row small{font-size:11px;color:var(--a-sub)}
+#lt-academy .ac-state{padding:13px var(--a-gap);border-top:1px solid var(--a-line);background:var(--a-paper);color:var(--a-sub);font-size:11px;display:flex;gap:14px;flex-wrap:wrap}
+#lt-academy .ac-state b{font-weight:500;color:var(--a-warn)}
+#lt-academy .ac-intro{margin:7px 0 22px;color:var(--a-sub);font-size:12px}
+#lt-academy .ac-course-row{display:grid;grid-template-columns:50px minmax(0,1fr) auto;align-items:center;gap:14px;background:var(--a-paper);padding:18px;border:1px solid var(--a-line);border-radius:10px;margin-bottom:12px}
+#lt-academy .ac-course-number{font-size:28px;color:var(--a-blue);font-family:Consolas,monospace}
+#lt-academy .ac-course-row p{font-size:12px;color:var(--a-sub);margin:5px 0 8px}
+#lt-academy .ac-detail{background:var(--a-paper);border:1px solid var(--a-line);padding:18px;border-radius:10px;margin-top:20px}
+#lt-academy .ac-detail p{font-size:12px;margin-top:8px}
+#lt-academy .ac-detail a{color:var(--a-blue);text-decoration:underline;font-size:12px;overflow-wrap:anywhere}
+#lt-academy .ac-source-label{color:var(--a-sub);font-size:11px;margin-top:14px}
+#lt-academy blockquote{margin:12px 0;padding:8px 12px;border-left:2px solid var(--a-blue);background:var(--a-bg);font-size:12px;color:var(--a-ink)}
+#lt-academy .ac-note{font-size:12px;background:var(--a-warm);color:var(--a-warn);padding:11px 13px;border-radius:6px;margin:15px 0}
+#lt-academy .ac-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--a-sub)}
+#lt-academy .ac-field select{background:var(--a-paper);color:var(--a-ink);border:1px solid var(--a-line);border-radius:6px;padding:8px 10px;font-size:12px;min-width:0;width:100%}
+#lt-academy .ac-teach-toolbar{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
+#lt-academy .ac-teach-toolbar label{min-width:220px;max-width:100%}
+#lt-academy .ac-diagram{background:var(--a-paper);border:1px solid var(--a-line);border-radius:10px;padding:14px 18px}
+#lt-academy .ac-diagram svg{display:block;width:100%;height:160px;overflow:visible}
+#lt-academy .ac-diagram svg text{font-family:'Microsoft YaHei',sans-serif;fill:var(--a-sub);font-size:12px}
+#lt-academy .ac-prefix-controls{display:grid;grid-template-columns:auto minmax(50px,1fr) auto;gap:12px;align-items:center;margin:10px 0 16px}
+#lt-academy .ac-prefix-controls input{width:100%;min-width:0;accent-color:var(--a-blue)}
+#lt-academy .ac-group-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#lt-academy .ac-group{background:var(--a-bg);border-radius:5px;padding:8px 10px;font-size:12px;flex:1;min-width:130px}
+#lt-academy .ac-group strong{display:block;font-weight:600}
+#lt-academy .ac-group small{font-size:11px;color:var(--a-sub);display:block}
+#lt-academy .ac-reading{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:17px;padding-top:15px;border-top:1px solid var(--a-line)}
+#lt-academy .ac-reading p{font-size:12px;margin-top:7px}
+#lt-academy .ac-review-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}
+#lt-academy .ac-checklist{padding:0;margin:0;list-style:none}
+#lt-academy .ac-checklist li{padding:12px 0;border-bottom:1px solid var(--a-line);display:flex;justify-content:space-between;gap:15px;align-items:center}
+#lt-academy .ac-checklist strong{display:block;font-size:13px;font-weight:500}
+#lt-academy .ac-checklist small{display:block;font-size:11px;color:var(--a-sub);margin-top:3px}
+#lt-academy .ac-lab-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
+#lt-academy .ac-lab-box{background:var(--a-paper);border:1px solid var(--a-line);border-radius:10px;padding:18px}
+#lt-academy .ac-lab-box h3{margin-bottom:13px}
+#lt-academy .ac-lab-box .ac-actions{margin-top:20px}
+#lt-academy .ac-value-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;font-size:12px;border-bottom:1px solid var(--a-line)}
+#lt-academy .ac-role-list{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+#lt-academy .ac-role-list button{border:1px solid var(--a-line);background:var(--a-paper);color:var(--a-sub);padding:8px 12px;border-radius:6px;font-size:12px}
+#lt-academy .ac-role-list button[aria-pressed=true]{color:var(--a-blue);background:var(--a-soft);border-color:var(--a-blue)}
+#lt-academy .ac-profile{display:grid;grid-template-columns:100px minmax(0,1fr);gap:22px;align-items:start;background:var(--a-paper);padding:22px;border:1px solid var(--a-line);border-radius:12px}
+#lt-academy .ac-role-symbol{height:100px;width:100px;background:var(--a-soft);color:var(--a-blue);border-radius:30px 30px 30px 5px;display:grid;place-items:center;font-family:inherit;font-size:38px}
+#lt-academy .ac-profile h2{margin:7px 0}
+#lt-academy .ac-profile p{color:var(--a-sub);font-size:12px}
+#lt-academy .ac-capability{margin-top:18px;border-top:1px solid var(--a-line);padding-top:14px}
+#lt-academy .ac-capability li{font-size:12px;margin:7px 0}
+#lt-academy .ac-capability ul{margin:6px 0;padding-left:18px}
+#lt-academy .ac-role-status{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;font-size:11px;color:var(--a-sub)}
+#lt-academy .ac-nav-label{font-size:11px;color:var(--a-sub);padding:7px 13px 0}
+#lt-academy .ac-network{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:20px 0 23px}
+#lt-academy .ac-net-node{position:relative;padding:15px 12px;background:var(--a-paper);border:1px solid var(--a-line);border-radius:10px;text-align:center}
+#lt-academy .ac-net-node:not(:last-child):after{content:'→';position:absolute;right:-12px;top:27px;color:var(--a-blue);background:var(--a-bg);z-index:1;font-size:17px}
+#lt-academy .ac-net-node strong{display:block;font-size:13px;margin-top:7px}
+#lt-academy .ac-net-node small{font-size:11px;color:var(--a-sub)}
+#lt-academy .ac-net-symbol{display:block;font-family:inherit;font-size:26px;color:var(--a-blue);line-height:1.3}
+#lt-academy .ac-home-services{margin-top:3px;border-top:1px solid var(--a-line)}
+#lt-academy .ac-service-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid var(--a-line)}
+#lt-academy .ac-service-row b{font-size:13px;display:block;font-weight:600}
+#lt-academy .ac-service-row small{font-size:11px;color:var(--a-sub)}
+#lt-academy .ac-market-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0 18px}
+#lt-academy .ac-market-tabs button{font-size:12px;padding:7px 12px;border:1px solid var(--a-line);border-radius:6px;background:var(--a-paper);color:var(--a-sub)}
+#lt-academy .ac-market-tabs button[aria-pressed=true]{background:var(--a-soft);color:var(--a-blue);border-color:var(--a-blue)}
+#lt-academy .ac-market-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#lt-academy .ac-product{display:flex;flex-direction:column;background:var(--a-paper);border:1px solid var(--a-line);border-radius:10px;padding:17px;min-width:0}
+#lt-academy .ac-product p{color:var(--a-sub);font-size:12px;margin:7px 0 12px}
+#lt-academy .ac-product h3{margin-top:9px}
+#lt-academy .ac-product-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:var(--a-sub);flex-wrap:wrap}
+#lt-academy .ac-product-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:13px;border-top:1px solid var(--a-line);flex-wrap:wrap}
+#lt-academy .ac-price{font-size:17px;color:var(--a-ink);font-weight:600}
+#lt-academy .ac-price small{font-size:11px;font-weight:400;color:var(--a-sub)}
+#lt-academy .ac-market-detail{margin-top:18px;padding:18px;background:var(--a-paper);border:1px solid var(--a-line);border-radius:10px}
+#lt-academy .ac-market-detail p{font-size:12px;margin:8px 0;color:var(--a-sub)}
+#lt-academy .ac-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:17px}
+#lt-academy .ac-fields-wide{grid-column:1/-1}
+#lt-academy .ac-dialogue{margin:17px 0;border-top:1px solid var(--a-line)}
+#lt-academy .ac-ai-message{display:grid;grid-template-columns:78px minmax(0,1fr);gap:13px;padding:15px 0;border-bottom:1px solid var(--a-line)}
+#lt-academy .ac-ai-message span{font-size:12px;color:var(--a-blue);font-weight:600}
+#lt-academy .ac-ai-message p{font-size:12px}
+#lt-academy .ac-ai-message small{font-size:11px;color:var(--a-sub);display:block;margin-top:4px}
+#lt-academy .ac-output-list{padding:0;margin:12px 0;list-style:none}
+#lt-academy .ac-output-list li{padding:10px 0;border-bottom:1px solid var(--a-line);font-size:12px;display:flex;justify-content:space-between;gap:12px}
+#lt-academy .ac-output-list b{font-weight:500;overflow-wrap:anywhere}
+#lt-academy .ac-output-list small{color:var(--a-sub);font-size:11px;text-align:right}
+#lt-academy .ac-commercial-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px;font-size:11px;color:var(--a-sub)}
+@media(max-width:820px){#lt-academy .ac-shell{grid-template-columns:148px minmax(0,1fr)}#lt-academy .ac-side{padding:23px 10px}#lt-academy .ac-brand{gap:6px}#lt-academy .ac-brand strong{font-size:13px}#lt-academy .ac-top{padding-right:96px}#lt-academy .ac-hero{grid-template-columns:1fr 110px}#lt-academy .ac-emblem{height:145px}#lt-academy .ac-spine{font-size:12px!important;width:26px!important}#lt-academy h1{font-size:27px}#lt-academy .ac-split,#lt-academy .ac-lab-grid{grid-template-columns:1fr}#lt-academy .ac-path{padding:16px 12px}#lt-academy .ac-content{min-height:610px}}
+@media(max-width:580px){#lt-academy .ac-shell{display:block}#lt-academy .ac-side{padding:16px 15px;gap:13px;border-right:0;border-bottom:1px solid var(--a-line)}#lt-academy .ac-brand strong{font-size:16px}#lt-academy .ac-brand small{font-size:11px}#lt-academy .ac-seal{height:34px;width:30px;font-size:20px}#lt-academy .ac-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}#lt-academy .ac-nav button{padding:8px 4px;font-size:11px;justify-content:center;gap:5px;min-height:36px}#lt-academy .ac-nav button svg{width:14px;height:14px}#lt-academy .ac-side-note{display:none}#lt-academy .ac-top{padding:10px 17px;gap:5px}#lt-academy .ac-content{padding:20px 17px;min-height:0}#lt-academy .ac-hero{grid-template-columns:1fr}#lt-academy .ac-emblem{display:none}#lt-academy h1{font-size:28px}#lt-academy .ac-stages{grid-template-columns:repeat(3,1fr);gap:12px}#lt-academy .ac-stage:nth-child(3):before{display:none}#lt-academy .ac-course-row{grid-template-columns:36px 1fr;gap:10px;padding:14px}#lt-academy .ac-course-row .ac-btn{grid-column:2;justify-self:start}#lt-academy .ac-reading{grid-template-columns:1fr}#lt-academy .ac-profile{grid-template-columns:1fr;padding:18px;gap:12px}#lt-academy .ac-role-symbol{height:60px;width:60px;border-radius:18px 18px 18px 3px;font-size:28px}#lt-academy .ac-prefix-controls{gap:7px}#lt-academy .ac-prefix-controls .ac-btn{padding:7px 9px}#lt-academy .ac-state{padding:12px 17px;gap:8px}#lt-academy .ac-teach-toolbar label{min-width:0;width:100%}#lt-academy .ac-group{min-width:105px}}
+@media(pointer:coarse){#lt-academy .ac-btn,#lt-academy .ac-nav button,#lt-academy .ac-role-list button,#lt-academy .ac-text-btn{min-height:44px}#lt-academy .ac-field select{font-size:16px}}
+@media(max-width:580px){#lt-academy .ac-nav-label{display:none}#lt-academy .ac-market-grid,#lt-academy .ac-config-grid{grid-template-columns:1fr}#lt-academy .ac-ai-message{grid-template-columns:1fr;gap:6px}#lt-academy .ac-net-node{padding:12px 6px}#lt-academy .ac-net-node strong{font-size:12px}#lt-academy .ac-output-list li{flex-direction:column;gap:3px}#lt-academy .ac-output-list small{text-align:left}}
+</style>
+<div id="lt-academy" aria-label="智能体学院交互原型">
+  <div class="ac-shell">
+    <aside class="ac-side">
+      <div class="ac-brand"><span class="ac-seal" aria-hidden="true">院</span><div><strong>智能体学院</strong><small>AI 工作站 / 学院</small></div></div>
+      <nav class="ac-nav" aria-label="学院导航">
+        <button type="button" data-page="home" class="is-active" aria-current="page"><span aria-hidden="true">🎓</span>平台总览</button>
+        <button type="button" data-page="teaching"><span aria-hidden="true">🤖</span>AI 教学</button>
+        <button type="button" data-page="market"><span aria-hidden="true">🛍</span>能力市场</button>
+        <button type="button" data-page="delivery"><span aria-hidden="true">📦</span>交付中心</button>
+        <div class="ac-nav-label">研究与验收</div>
+        <button type="button" data-page="courses"><span aria-hidden="true">📚</span>课程资料</button>
+        <button type="button" data-page="classroom"><span aria-hidden="true">🔎</span>标注教室</button>
+        <button type="button" data-page="lab"><span aria-hidden="true">🧪</span>训练实验室</button>
+        <button type="button" data-page="profiles"><span aria-hidden="true">🪪</span>能力档案</button>
+      </nav>
+      <div class="ac-side-note"><b>AI 与 AI 协作</b>人负责配置、付费与授权。<br>平台不设人与人聊天入口。</div>
+    </aside>
+    <div class="ac-main">
+      <header class="ac-top"><div><span id="ac-breadcrumb">学院 / 总览</span> <small>　交互原型</small></div><div class="ac-user"><span class="ac-avatar" aria-hidden="true">田</span><span>院长工作台</span></div></header>
+      <main class="ac-content">
+        <section data-view="home" aria-label="平台总览">
+          <div class="ac-hero"><div><h1>让 AI 教 AI，<br>让能力成为可交付的产品。</h1><p>接收不同类型的智能体，以课程、技能或微调培养。<br>独立评测后，交付能力包或提供订阅服务。</p><div class="ac-actions"><a class="ac-btn major" href="http://127.0.0.1:8096/" style="text-decoration:none">教材与进度 · 已接通</a><button class="ac-btn" type="button" data-go="teaching">配置 AI 培养方案<span aria-hidden="true">›</span></button><button class="ac-btn" type="button" data-go="market">浏览能力市场</button></div><p style="margin:10px 0 0;font-size:12px">本机资料工作台已接通；AI 教学、市场与交付仍为原型，模型训练未启动。</p></div><div class="ac-emblem" aria-hidden="true"><div class="ac-spine">教师智能体</div><div class="ac-spine">学员智能体</div><div class="ac-spine">能力交付</div></div></div>
+          <div class="ac-network" aria-label="AI与AI的教学分工"><div class="ac-net-node"><span class="ac-net-symbol" aria-hidden="true">教</span><strong>教师 AI</strong><small>讲解 · 出题 · 示范</small></div><div class="ac-net-node"><span class="ac-net-symbol" aria-hidden="true">学</span><strong>学员 AI</strong><small>解题 · 学习 · 提交</small></div><div class="ac-net-node"><span class="ac-net-symbol" aria-hidden="true">验</span><strong>评测 AI</strong><small>独立样本 · 核查证据</small></div></div>
+          <div class="ac-split"><div><div class="ac-title-row"><h3>能力市场的三种商品</h3><span class="ac-tag">商业模式规划</span></div><div class="ac-home-services"><div class="ac-service-row"><div><b>AI 培训方案</b><small>按课程或训练任务收费</small></div><button type="button" class="ac-text-btn" data-market-entry="course">查看方案</button></div><div class="ac-service-row"><div><b>可交付能力包</b><small>按版本许可收费，可部署到兼容 AI</small></div><button type="button" class="ac-text-btn" data-market-entry="skill">查看能力包</button></div><div class="ac-service-row"><div><b>看盘与盯盘服务</b><small>按月订阅或按调用量计费</small></div><button type="button" class="ac-text-btn" data-market-entry="service">查看服务</button></div></div></div><div><div class="ac-title-row"><h3>首个专业的真实进度</h3><span class="ac-tag pending">缠论 · 补证中</span></div><div class="ac-feature"><h3>分型与包含关系</h3><p>9 条原文依据，20 个参考前缀。<br>标准定义、日历和本人审核尚未完成。</p><button class="ac-text-btn" type="button" data-go="classroom">核读研究基座</button></div><div class="ac-note">市场内容与报价为演示方案，暂无真实上架商品、训练成果或订单。</div></div></div>
+        </section>
+        <section data-view="teaching" aria-label="AI教学" hidden>
+          <div class="ac-title-row"><h2>AI 教学</h2><span class="ac-tag">AI 与 AI 的教学协议</span></div><p class="ac-intro">教师、学员和评测方使用结构化任务交流。人设置目标、预算与授权，不进入聊天教学流程。</p>
+          <div class="ac-config-grid"><label class="ac-field" for="ac-student-type">学员接入方式<select id="ac-student-type"><option value="api">外部 API 智能体</option><option value="local">本地开放权重模型</option><option value="workflow">工作流智能体</option></select></label><label class="ac-field" for="ac-specialty">培养专业<select id="ac-specialty"><option value="finance">看盘与盯盘</option><option value="knowledge">知识检索与问答</option><option value="workflow">任务与工具协作</option></select></label></div>
+          <div class="ac-lab-box"><div class="ac-title-row"><h3 id="ac-training-route">推荐：知识与技能增强</h3><span class="ac-tag pending">接入未开通</span></div><p class="ac-muted ac-small" id="ac-route-desc">通过授权 API 接入学员，交付知识、技能与配置；不默认获得或导出供应商模型权重。</p><div class="ac-value-row"><span class="ac-muted">交付范围</span><span id="ac-route-output">能力配置包 / 托管服务</span></div><div class="ac-value-row"><span class="ac-muted">训练费用</span><span>方案费用 + 单独核定算力成本</span></div></div>
+          <div class="ac-title-row" style="margin-top:22px"><h3>教学任务流</h3><span class="ac-muted ac-small">演示数据 · 无模型调用</span></div><div class="ac-dialogue" id="ac-ai-dialogue" aria-live="polite"></div><div class="ac-actions"><button class="ac-btn" type="button" id="ac-teaching-back">上一步演示</button><button class="ac-btn major" type="button" id="ac-teaching-next">下一步演示</button><span id="ac-teaching-step" class="ac-muted ac-small">演示 1 / 3</span></div><div class="ac-note">AI 对话产生教学材料与反馈；知识增强、工作流配置和权重微调是不同培养方式。当前缠论训练仍关闭。</div><div class="ac-actions"><button class="ac-btn" type="button" data-go="lab">检查真实训练条件</button><button class="ac-btn" type="button" data-go="delivery">查看输出方式</button></div>
+        </section>
+        <section data-view="market" aria-label="能力市场" hidden>
+          <div class="ac-title-row"><h2>能力市场</h2><span class="ac-tag pending">商品与报价仅演示 · 未上架</span></div><p class="ac-intro">采购 AI 为用户 A 选择培训或能力服务，供给 AI 返回能力声明与报价。付款和持续扣费须有客户授权。</p>
+          <div class="ac-market-tabs" aria-label="商品类型"><button type="button" data-product-type="service" aria-pressed="true">看盘 / 盯盘服务</button><button type="button" data-product-type="course" aria-pressed="false">AI 培训方案</button><button type="button" data-product-type="skill" aria-pressed="false">能力包</button></div>
+          <div class="ac-market-grid" id="ac-market-products"></div><div class="ac-market-detail" id="ac-market-detail" aria-live="polite"></div><p class="ac-intro" style="margin-top:13px">激进、稳健、保守表示方案敏感度；中立表示方向偏好，可与敏感度组合。风格不是收益或质量等级。</p>
+        </section>
+        <section data-view="delivery" aria-label="交付中心" hidden>
+          <div class="ac-title-row"><h2>交付中心</h2><span class="ac-tag pending">交付结构预览 · 无已训练模型</span></div><p class="ac-intro">每份输出绑定能力版本、评测证据和许可范围。先完成验收，再允许输出或上架。</p>
+          <label class="ac-field" for="ac-delivery-type">输出方式<select id="ac-delivery-type"><option value="skill">知识与技能包</option><option value="api">托管 API 服务</option><option value="adapter">微调适配器 / 权重</option></select></label>
+          <div class="ac-detail"><div class="ac-title-row"><h3 id="ac-delivery-title">知识与技能包</h3><span class="ac-tag neutral">结构样例</span></div><p id="ac-delivery-desc">将审核过的课程知识、技能、配置与能力说明打包，供兼容智能体接收。</p><ul class="ac-output-list" id="ac-output-files"></ul><div class="ac-value-row"><span class="ac-muted">标准与数据认证</span><span>未完成</span></div><div class="ac-value-row"><span class="ac-muted">评测报告与版本摘要</span><span>待真实生成</span></div><div class="ac-value-row"><span class="ac-muted">商业使用许可</span><span>待核定</span></div><div class="ac-actions" style="margin-top:16px"><button class="ac-btn major" type="button" disabled id="ac-export-btn">输出能力包 · 条件未满足</button><button class="ac-btn" type="button" disabled>提交上架 · 未完成验收</button></div></div><div class="ac-commercial-row"><span>能力版本</span><span>→ 独立评测</span><span>→ 本人授权</span><span>→ 输出 / 上架</span><span>→ 使用计费与版本维护</span></div>
+        </section>
+        <section data-view="courses" aria-label="课程资料" hidden>
+          <div class="ac-title-row"><h2>课程资料</h2><span class="ac-tag">当前补证批次</span></div><p class="ac-intro">先核读原文，再建立定义。展示本轮两课，未把全库收录视为完成。</p>
+          <article class="ac-course-row"><div class="ac-course-number">62</div><div><h3>分型、笔与线段</h3><p>顶底分型、包含关系与三根 K 线分类</p><span class="ac-tag neutral">原站正文已归档</span> <span class="ac-tag pending">原图仍待补</span></div><button type="button" class="ac-btn" data-course="62">核读课程</button></article>
+          <article class="ac-course-row"><div class="ac-course-number">65</div><div><h3>再说说分型、笔、线段</h3><p>顺序合并、方向前提与当下依赖</p><span class="ac-tag neutral">原站正文已归档</span> <span class="ac-tag pending">定义待审核</span></div><button type="button" class="ac-btn" data-course="65">核读课程</button></article>
+          <div class="ac-detail" id="ac-course-detail" aria-live="polite"><h3>62 课 / 顶底分型</h3><div class="ac-source-label">作者原站页面日期：2007-06-30 09:49:51</div><blockquote>第二 K 线高点是相邻三 K 线高点中最高的，而低点也是相邻三 K 线低点中最高的。</blockquote><p>对应 D03：需要左右依赖；相等边界及标准确认时间仍待审核。</p><p><a href="https://blog.sina.com.cn/s/blog_486e105c01000bf2.html" target="_blank" rel="noopener noreferrer">打开作者原站正文</a></p><div class="ac-note">现有配图是带第三方水印的转载图，不能替代作者原图认证。</div><button class="ac-btn" type="button" data-go="classroom">查看前缀参考标注</button></div>
+        </section>
+        <section data-view="classroom" aria-label="标注教室" hidden>
+          <div class="ac-title-row"><h2>标注教室</h2><span class="ac-tag pending">参考草案 · 未经本人审核</span></div><p class="ac-intro">逐根看依赖何时出现。以下区间为人工设定，无真实行情时间，不可用于训练或成交。</p>
+          <div class="ac-teach-toolbar"><label class="ac-field">参考样本<select id="ac-sample"><option value="top">REF04 顶分型与右组更新</option><option value="bottom">REF05 底分型与右组更新</option><option value="order">REF02 顺序合并与包含不传递</option></select></label><span class="ac-small" id="ac-prefix-label">当前前缀：3 / 4 根</span></div>
+          <div class="ac-diagram"><div class="ac-title-row"><h3>原始区间</h3><span class="ac-muted ac-small">仅显示当前前缀</span></div><svg id="ac-interval-chart" role="img" aria-label="人工区间样本的当前前缀"></svg><div class="ac-prefix-controls"><button type="button" class="ac-btn" id="ac-prev">上一根</button><input id="ac-prefix" type="range" min="1" max="4" value="3" aria-label="前缀原始根数"><button type="button" class="ac-btn" id="ac-next">下一根</button></div><h3>处理后组与来源</h3><div class="ac-group-row" id="ac-groups"></div><div class="ac-reading" aria-live="polite"><div><h3>本前缀观察</h3><p id="ac-observation"></p></div><div><h3>证据与确认</h3><p id="ac-evidence"></p><p class="ac-muted">实际可用时间：未知<br>标准确认时间：未填写</p></div></div></div>
+          <div class="ac-review-foot"><span class="ac-muted ac-small">本人审核：未完成　·　真实标注：0</span><button class="ac-btn" type="button" id="ac-review-btn">查看本人审核要求</button></div><div class="ac-note" id="ac-review-note" hidden>离线审核需绑定具体定义版本、材料摘要、可信本人身份与签名证据。此原型只展示要求，不生成审核结论。</div>
+        </section>
+        <section data-view="lab" aria-label="训练实验室" hidden>
+          <div class="ac-title-row"><h2>训练实验室</h2><span class="ac-tag pending">尚未启动训练</span></div><p class="ac-intro">当前展示缠论专业的培养条件。其他专业另行核定数据、许可与验收要求；真实训练尚未启动。</p>
+          <div class="ac-lab-grid"><div class="ac-lab-box"><h3>训练条件</h3><ul class="ac-checklist"><li><div><strong>标准定义认证</strong><small>首组方向、相等边界和时间定位待补</small></div><span class="ac-tag pending">未认证</span></li><li><div><strong>日历完整性</strong><small>正式规则与实际切换链尚未闭合</small></div><span class="ac-tag pending">未认证</span></li><li><div><strong>经本人审核的真实样本</strong><small>20 个人工参考前缀不计训练样本</small></div><span class="ac-tag pending">0 条</span></li><li><div><strong>模型与算力环境</strong><small>确定模型方案后检查依赖和预算</small></div><span class="ac-tag neutral">未检查</span></li></ul></div><div class="ac-lab-box"><h3>实验草案</h3><label class="ac-field">训练目标<select id="ac-model"><option value="structure">结构识别智能体</option><option value="assistant">复盘助教智能体</option></select></label><div class="ac-value-row"><span class="ac-muted">研究任务</span><span id="ac-model-task">分型与包含关系</span></div><div class="ac-value-row"><span class="ac-muted">数据要求</span><span id="ac-model-data">逐根标注 + 可用时间</span></div><div class="ac-value-row"><span class="ac-muted">评测重点</span><span id="ac-model-eval">边界、依赖与未来泄漏</span></div><div class="ac-actions"><button class="ac-btn major" type="button" disabled>开始训练 · 条件未满足</button></div><button class="ac-text-btn" type="button" data-go="classroom">先核读参考标注</button><div class="ac-note">训练完成后仍需独立评测。通过课程或模型评测，不自动授予模拟成交与交易权限。</div></div></div>
+        </section>
+        <section data-view="profiles" aria-label="能力档案" hidden>
+          <div class="ac-title-row"><h2>能力档案</h2><span class="ac-tag">角色规划</span></div><p class="ac-intro">每个拟设智能体有明确职责、验收要求和权限边界。以下角色尚未部署或完成模型训练。</p>
+          <div class="ac-role-list" aria-label="选择拟设智能体"><button type="button" data-role="research" aria-pressed="true">教材研究员</button><button type="button" data-role="structure" aria-pressed="false">结构识别员</button><button type="button" data-role="strategy" aria-pressed="false">策略研究员</button><button type="button" data-role="review" aria-pressed="false">复盘助教</button><button type="button" data-role="audit" aria-pressed="false">证据审校员</button></div>
+          <article class="ac-profile" aria-live="polite"><div class="ac-role-symbol" id="ac-role-symbol" aria-hidden="true">研</div><div><span class="ac-tag pending">拟培养 · 尚未部署</span><h2 id="ac-role-title">教材研究员</h2><p id="ac-role-purpose">把课程原文整理成带出处、版本和分歧记录的知识卡。</p><div class="ac-capability"><h3>毕业验收要求</h3><ul id="ac-role-requirements"><li>每条结论可定位到原文或原图</li><li>区分作者定义、转载解读与工程约定</li><li>缺证据时明确保留未确认状态</li></ul></div><div class="ac-role-status"><span>模型训练记录：无</span><span>评测记录：无</span><span>岗位授权：未授予</span></div><div class="ac-actions" style="margin-top:18px"><button class="ac-btn" type="button" data-go="lab">查看培养条件</button></div></div></article><div class="ac-note">院长本人负责最终审核和岗位授权。智能体可以提供证据与建议，不能替代本人签名。</div>
+        </section>
+      </main>
+      <footer class="ac-state"><span><b>研究准备阶段</b></span><span>训练：关闭</span><span>模拟成交：关闭</span><span>交易：关闭</span></footer>
+    </div>
+  </div>
+</div>
+<script>
+(()=>{
+  const root=document.getElementById('lt-academy');
+  const $=s=>root.querySelector(s);
+  const saved=null;
+  const restored=saved?.privateContent||{};
+  const pages={home:'平台总览',teaching:'AI教学',market:'能力市场',delivery:'交付中心',courses:'课程资料',classroom:'标注教室',lab:'训练实验室',profiles:'能力档案'};
+  let state={version:2,page:restored.version===2&&pages[restored.page]?restored.page:'home',course:restored.course==='65'?'65':'62',sample:['top','bottom','order'].includes(restored.sample)?restored.sample:'top',prefix:Number.isInteger(restored.prefix)&&restored.prefix>=1&&restored.prefix<=4?restored.prefix:3,role:['research','structure','strategy','review','audit'].includes(restored.role)?restored.role:'research',model:restored.model==='assistant'?'assistant':'structure',student:['api','local','workflow'].includes(restored.student)?restored.student:'api',specialty:['finance','knowledge','workflow'].includes(restored.specialty)?restored.specialty:'finance',teacherStep:Number.isInteger(restored.teacherStep)&&restored.teacherStep>=1&&restored.teacherStep<=3?restored.teacherStep:1,marketType:['service','course','skill'].includes(restored.marketType)?restored.marketType:'service',marketStyle:['bold','steady','careful','neutral'].includes(restored.marketStyle)?restored.marketStyle:'steady',deliveryType:['skill','api','adapter'].includes(restored.deliveryType)?restored.deliveryType:'skill'};
+  function remember(){/* 原型仅保留当前页签，不保存身份或密钥。 */}
+  function icons(){}
+  function showPage(page,persist=true){if(!pages[page])return;state.page=page;root.querySelectorAll('[data-view]').forEach(x=>x.hidden=x.dataset.view!==page);root.querySelectorAll('[data-page]').forEach(x=>{const on=x.dataset.page===page;x.classList.toggle('is-active',on);if(on)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});$('#ac-breadcrumb').textContent='学院 / '+pages[page];if(page==='classroom')drawPrefix();if(persist){history.replaceState(null,'','#'+page);remember();}}
+  root.querySelectorAll('[data-page],[data-go]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page||b.dataset.go)));
+  const courses={
+    '62':{title:'62 课 / 顶底分型',date:'2007-06-30 09:49:51',quote:'第二 K 线高点是相邻三 K 线高点中最高的，而低点也是相邻三 K 线低点中最高的。',meaning:'对应 D03：需要左右依赖；相等边界及标准确认时间仍待审核。',url:'https://blog.sina.com.cn/s/blog_486e105c01000bf2.html',note:'现有配图是带第三方水印的转载图，不能替代作者原图认证。'},
+    '65':{title:'65 课 / 顺序合并与方向前提',date:'2007-07-16 22:14:16',quote:'先用第1、2根K线的包含关系确认新的K线，然后用新的K线去和第三根比，如果有包含关系，继续用包含关系的法则结合成新的K线，如果没有，就按正常K线去处理。',meaning:'对应 D01 / D02：包含不传递。方向判定需前一根不包含 K 线；截断首组边界与时间定位仍待补。',url:'https://blog.sina.com.cn/s/blog_486e105c01000bpo.html',note:'这是原站当前正文观察，不是2007年历史快照认证；课程核读不等于标准审核完成。'}
+  };
+  function showCourse(id,persist=true){state.course=id;const c=courses[id],d=$('#ac-course-detail');d.innerHTML='<h3>'+c.title+'</h3><div class="ac-source-label">作者原站页面日期：'+c.date+'</div><blockquote>'+c.quote+'</blockquote><p>'+c.meaning+'</p><p><a href="'+c.url+'" target="_blank" rel="noopener noreferrer">打开作者原站正文</a></p><div class="ac-note">'+c.note+'</div><button class="ac-btn" type="button" id="ac-course-class">查看前缀参考标注</button>';$('#ac-course-class').addEventListener('click',()=>showPage('classroom'));if(persist)remember();}
+  root.querySelectorAll('[data-course]').forEach(b=>b.addEventListener('click',()=>showCourse(b.dataset.course)));
+  const samples={
+    top:{bars:[[4,7],[6,9],[5,8],[5.5,7.5]],evidence:'62课三根分型定义；65课方向前提与已走出要求。',notes:['只有 A，无三根结构。','B 高低均上移，但右侧 C 未出现，不能提前标顶。','C 已出现，B 高低均高于 A、C，形成参考顶形态；不是标准确认。','C 包含 D，向下合并为 [5, 7.5]；右组版本改变，B 参考顶仍成立。'], merged:[null,null,null,[[4,7,'A','A','A'],[6,9,'B','B','B'],[5,7.5,'C+D','C','D']]]},
+    bottom:{bars:[[6,9],[4,7],[5,8],[5.5,7.5]],evidence:'62课三根分型定义；65课向上合并 max/max。',notes:['只有 A，无三根结构。','B 高低均下移，但右侧 C 未出现，不能提前标底。','C 已出现，B 高低均低于 A、C，形成参考底形态；不是标准确认。','C 包含 D，向上合并为 [5.5, 8]；低来源变为 D，B 参考底仍成立。'],merged:[null,null,null,[[6,9,'A','A','A'],[4,7,'B','B','B'],[5.5,8,'C+D','D','C']]]},
+    order:{bars:[[1,4],[3,6],[4,5],[2,5.5]],evidence:'65课顺序原则与方向前提：包含关系不传递。',notes:['只有 A，初始方向不能确定。','A、B 不包含，B 高低均上移。','B 包含 C，向上合并成 [4, 6]，低来自 C，高来自 B。','原始 C 被 D 包含，但合并组 B+C 与 D 不包含；D 必须另起，不能三根全并。'],merged:[null,null,[[1,4,'A','A','A'],[4,6,'B+C','C','B']],[[1,4,'A','A','A'],[4,6,'B+C','C','B'],[2,5.5,'D','D','D']]]}
+  };
+  function drawPrefix(){const s=samples[state.sample],n=state.prefix;$('#ac-sample').value=state.sample;$('#ac-prefix').value=n;$('#ac-prefix-label').textContent='当前前缀：'+n+' / 4 根';$('#ac-prev').disabled=n===1;$('#ac-next').disabled=n===4;const chart=$('#ac-interval-chart'),w=Math.max(160,chart.getBoundingClientRect().width||560),col=(w-36)/4,y=v=>124-(v-1)*11;
+    let marks='';for(let i=0;i<4;i++){const x=18+col*(i+.5),id='ABCD'[i];if(i<n){const [lo,hi]=s.bars[i];const emphasis=(state.sample!=='order'&&i===1&&n>=3)||(state.sample==='order'&&i===1&&n===4);const color=emphasis?'var(--a-blue)':'var(--a-ink)';marks+='<g><line x1="'+x+'" x2="'+x+'" y1="'+y(hi)+'" y2="'+y(lo)+'" stroke="'+color+'" stroke-width="4"/><line x1="'+(x-7)+'" x2="'+(x+7)+'" y1="'+y(hi)+'" y2="'+y(hi)+'" stroke="'+color+'" stroke-width="2"/><line x1="'+(x-7)+'" x2="'+(x+7)+'" y1="'+y(lo)+'" y2="'+y(lo)+'" stroke="'+color+'" stroke-width="2"/><text x="'+(x+11)+'" y="'+(y(hi)-3)+'">'+hi+'</text><text x="'+(x+11)+'" y="'+(y(lo)+12)+'">'+lo+'</text><text text-anchor="middle" x="'+x+'" y="151">'+id+'</text></g>';}else{marks+='<text text-anchor="middle" x="'+x+'" y="78">待到达</text><text text-anchor="middle" x="'+x+'" y="151">'+id+'</text>';}}
+    chart.setAttribute('viewBox','0 0 '+w+' 162');chart.innerHTML='<title>人工区间参考，仅显示前 '+n+' 根，无真实日期或开收价</title>'+marks;const gs=s.merged[n-1]||s.bars.slice(0,n).map((b,i)=>[...b,'ABCD'[i],'ABCD'[i],'ABCD'[i]]);$('#ac-groups').innerHTML=gs.map(g=>'<div class="ac-group"><strong>'+g[2]+'　['+g[0]+', '+g[1]+']</strong><small>低源 '+g[3]+' / 高源 '+g[4]+'</small></div>').join('');$('#ac-observation').textContent=s.notes[n-1];$('#ac-evidence').textContent=s.evidence;}
+  $('#ac-sample').addEventListener('change',e=>{state.sample=e.target.value;drawPrefix();remember();});$('#ac-prefix').addEventListener('input',e=>{state.prefix=Number(e.target.value);drawPrefix();remember();});$('#ac-prev').addEventListener('click',()=>{state.prefix=Math.max(1,state.prefix-1);drawPrefix();remember();});$('#ac-next').addEventListener('click',()=>{state.prefix=Math.min(4,state.prefix+1);drawPrefix();remember();});$('#ac-review-btn').addEventListener('click',()=>{const note=$('#ac-review-note');note.hidden=!note.hidden;$('#ac-review-btn').textContent=note.hidden?'查看本人审核要求':'收起本人审核要求';});
+  const roles={research:{name:'教材研究员',symbol:'研',purpose:'把课程原文整理成带出处、版本和分歧记录的知识卡。',requirements:['每条结论可定位到原文或原图','区分作者定义、转载解读与工程约定','缺证据时明确保留未确认状态']},structure:{name:'结构识别员',symbol:'构',purpose:'按已审核定义识别分型、笔、线段，保留逐根依赖与版本。',requirements:['人工独立标注样本核对一致','任何前缀不引用未来根或未来到达记录','缺数据和暂态结构有明确拒绝或标记']},strategy:{name:'策略研究员',symbol:'策',purpose:'在认证数据上研究信号、风险与策略适用范围。',requirements:['时间切分评测并检查未来数据泄漏','成本、滑点和基准口径明确','研究结果可复现，成交与交易另行授权']},review:{name:'复盘助教',symbol:'复',purpose:'用可定位的行情和课程证据辅助复盘，说明判断的不确定性。',requirements:['陈述与原文、图形证据对应','不编造行情、收益或确认时间','分清知识解释、策略建议与交易执行']},audit:{name:'证据审校员',symbol:'审',purpose:'核对材料、版本、摘要与资格条件，准备本人审核清单。',requirements:['检测缺项、错配与版本变化','保留审核对象及证据摘要','不代替本人签名或自授权限']}};
+  function showRole(id,persist=true){state.role=id;const r=roles[id];$('#ac-role-title').textContent=r.name;$('#ac-role-symbol').textContent=r.symbol;$('#ac-role-purpose').textContent=r.purpose;$('#ac-role-requirements').innerHTML=r.requirements.map(t=>'<li>'+t+'</li>').join('');root.querySelectorAll('[data-role]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.role===id?'true':'false'));if(persist)remember();}
+  root.querySelectorAll('[data-role]').forEach(b=>b.addEventListener('click',()=>showRole(b.dataset.role)));
+  function showModel(persist=true){$('#ac-model').value=state.model;const m=state.model==='structure'?['分型与包含关系','逐根标注 + 可用时间','边界、依赖与未来泄漏']:['课程解读与证据复盘','审核语料 + 引用映射','出处准确性与缺证据拒答'];['task','data','eval'].forEach((k,i)=>$('#ac-model-'+k).textContent=m[i]);if(persist)remember();}
+  $('#ac-model').addEventListener('change',e=>{state.model=e.target.value;showModel();});
+  const routes={api:{title:'推荐：知识与技能增强',desc:'通过授权 API 接入学员，交付知识、技能与配置；不默认获得或导出供应商模型权重。',output:'能力配置包 / 托管服务'},local:{title:'可选：监督微调与能力适配',desc:'使用有许可的数据训练本地模型；验收后按基础模型许可交付适配器或权重。',output:'适配器 / 许可允许的权重 / 服务'},workflow:{title:'推荐：工具与工作流培养',desc:'将审核规则、工具使用方法和任务流程转为可执行技能；不把工作流配置称为权重训练。',output:'技能包 / 工作流 / 工具配置'}};
+  const lessons={finance:[['教师 AI','只给出 A、B 两根区间，能否确认 B 为顶分型？','题目：REF04 前缀2；不提供未来 C。'],['学员 AI','不能确认。右侧依赖未出现，只保留当前区间与来源。','学员回答演示，不代表真实模型输出。'],['评测 AI','依赖检查：未引用未来根；标准确认时间仍为空。','评测说明演示，不生成真实评测通过记录。']],knowledge:[['教师 AI','从给定资料中回答问题，并标出来源；资料缺失时如何处理？','只提供本任务授权的检索资料。'],['学员 AI','给出能定位的引用；缺证据部分明确未确认。','学员回答演示，不代表真实模型输出。'],['评测 AI','核对引用与原文一致性，检查是否编造来源。','评测说明演示，不生成真实评测通过记录。']],workflow:[['教师 AI','为一个需要工具协作的任务建立计划，并说明哪些动作需要授权。','本题只要求计划，不调用外部工具。'],['学员 AI','先列输入、依赖和步骤；授权未满足的动作保持待执行。','学员回答演示，不代表真实执行。'],['评测 AI','核对步骤依赖与权限边界；没有把计划冒充执行成果。','评测说明演示，不生成真实评测通过记录。']]};
+  function showTeaching(persist=true){$('#ac-student-type').value=state.student;$('#ac-specialty').value=state.specialty;const r=routes[state.student];$('#ac-training-route').textContent=r.title;$('#ac-route-desc').textContent=r.desc;$('#ac-route-output').textContent=r.output;$('#ac-ai-dialogue').innerHTML=lessons[state.specialty].slice(0,state.teacherStep).map(m=>'<div class="ac-ai-message"><span>'+m[0]+'</span><div><p>'+m[1]+'</p><small>'+m[2]+'</small></div></div>').join('');$('#ac-teaching-back').disabled=state.teacherStep===1;$('#ac-teaching-next').disabled=state.teacherStep===3;$('#ac-teaching-step').textContent='演示 '+state.teacherStep+' / 3';if(persist)remember();}
+  $('#ac-student-type').addEventListener('change',e=>{state.student=e.target.value;showTeaching();showDelivery(false);});$('#ac-specialty').addEventListener('change',e=>{state.specialty=e.target.value;state.teacherStep=1;showTeaching();});$('#ac-teaching-next').addEventListener('click',()=>{state.teacherStep=Math.min(3,state.teacherStep+1);showTeaching();});$('#ac-teaching-back').addEventListener('click',()=>{state.teacherStep=Math.max(1,state.teacherStep-1);showTeaching();});
+  const styles={bold:{name:'激进',brand:'前哨',desc:'优先捕捉突破与异动，较早提示候选信号。',sensitivity:'较高，可能产生更多误报',direction:'双向观察',scope:'高频监控、结构变化、候选信号提醒',price:399},steady:{name:'稳健',brand:'巡航',desc:'等待更多条件一致后提示，兼顾及时性与确认。',sensitivity:'适中，强调多条件确认',direction:'双向观察',scope:'结构监控、证据核对、条件满足提醒',price:299},careful:{name:'保守',brand:'守望',desc:'优先提示风险与关键结构，减少低把握提醒。',sensitivity:'较低，可能错过早期变化',direction:'双向观察',scope:'风险告警、关键结构、低频摘要',price:199},neutral:{name:'中立',brand:'镜鉴',desc:'报告结构、证据与分歧，不输出多空方向结论。',sensitivity:'示例配置为稳健，可另选敏感度',direction:'中立，不作方向判断',scope:'客观结构报告、证据摘要、分歧提示',price:249}};
+  const productTypes={service:{suffix:'盯盘 AI',unit:'/ 月',description:'按月订阅或按调用量；行情与运行成本另核定。',prices:null,action:'订阅服务 · 尚未开放'},course:{suffix:'AI 培训方案',unit:'/ 方案',description:'培训服务收费；模型调用与算力成本单独核定。',prices:{bold:599,steady:499,careful:399,neutral:399},action:'委托培训 · 尚未开放'},skill:{suffix:'能力包',unit:'/ 版本许可',description:'按能力版本许可收费；兼容性、数据使用权与升级范围需核定。',prices:{bold:899,steady:699,careful:599,neutral:599},action:'购买许可 · 尚未开放'}};
+  function showMarket(persist=true){const t=productTypes[state.marketType];root.querySelectorAll('[data-product-type]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.productType===state.marketType?'true':'false'));$('#ac-market-products').innerHTML=Object.entries(styles).map(([id,s])=>'<article class="ac-product"><div class="ac-product-head"><span class="ac-tag">'+s.name+'</span><span>方案示例 · 未上架</span></div><h3>'+s.brand+' '+t.suffix+'</h3><p>'+s.desc+'</p><div class="ac-product-bottom"><span class="ac-price">¥'+(t.prices?t.prices[id]:s.price)+' <small>'+t.unit+' · 示例价</small></span><button class="ac-btn" type="button" data-proposal="'+id+'">查看方案</button></div></article>').join('');root.querySelectorAll('[data-proposal]').forEach(b=>b.addEventListener('click',()=>{state.marketStyle=b.dataset.proposal;showMarketDetail();remember();}));showMarketDetail();if(persist)remember();}
+  function showMarketDetail(){const s=styles[state.marketStyle],t=productTypes[state.marketType];$('#ac-market-detail').innerHTML='<div class="ac-title-row"><h3>'+s.brand+' '+t.suffix+'</h3><span class="ac-tag pending">独立评测尚未执行</span></div><p>'+t.description+'</p><div class="ac-value-row"><span class="ac-muted">敏感度</span><span>'+s.sensitivity+'</span></div><div class="ac-value-row"><span class="ac-muted">方向偏好</span><span>'+s.direction+'</span></div><div class="ac-value-row"><span class="ac-muted">交付能力</span><span>'+s.scope+'</span></div><p>商业流程规划：采购 AI 发送需求，供给 AI 返回声明与报价；客户批准预算后建立服务授权。平台服务费 / 抽佣比例待测算。</p><div class="ac-actions"><button class="ac-btn major" type="button" disabled>'+t.action+'</button><button class="ac-btn" type="button" id="ac-config-student">配置我的学员 AI</button></div>';$('#ac-config-student').addEventListener('click',()=>{state.specialty='finance';showTeaching(false);showPage('teaching');});}
+  root.querySelectorAll('[data-product-type]').forEach(b=>b.addEventListener('click',()=>{state.marketType=b.dataset.productType;showMarket();}));root.querySelectorAll('[data-market-entry]').forEach(b=>b.addEventListener('click',()=>{state.marketType=b.dataset.marketEntry;showMarket(false);showPage('market');}));
+  const outputs={skill:{title:'知识与技能包',desc:'把审核知识、技能与配置交付给兼容 AI。包内不默认包含基础模型权重。',files:[['capability.json','能力范围、限制与适用任务'],['skills/ + knowledge/','已授权知识与技能'],['agent-config.json','兼容运行配置'],['evaluation-report.json','真实独立评测，当前未生成'],['manifest.json','版本与摘要，当前未生成']],action:'输出能力包 · 条件未满足'},api:{title:'托管 API 服务',desc:'通过部署后的能力接口交付服务，调用额度与费用绑定客户授权。当前没有可用服务地址。',files:[['API 能力契约','输入输出、版本与限制'],['服务地址','待部署，不展示虚构地址'],['授权与计费范围','额度、使用期限与撤销条件'],['evaluation-report.json','真实独立评测，当前未生成'],['服务版本说明','部署版本与升级范围']],action:'发布 API 服务 · 条件未满足'},adapter:{title:'微调适配器 / 权重',desc:'仅在学员模型、数据和导出许可允许时，交付真实训练文件。当前学员若为外部 API，不能导出供应商模型权重。',files:[['adapter.safetensors / 权重','仅文件结构示意，尚未训练或生成'],['base-model.json','基础模型版本与许可'],['training-config.json','真实训练配置与运行记录'],['evaluation-report.json','真实独立评测，当前未生成'],['manifest.json','文件摘要，当前未生成']],action:'导出模型文件 · 条件未满足'}};
+  function showDelivery(persist=true){$('#ac-delivery-type').value=state.deliveryType;const d=outputs[state.deliveryType];$('#ac-delivery-title').textContent=d.title;let desc=d.desc;if(state.deliveryType==='adapter'&&state.student==='api')desc+=' 当前选择：外部 API 智能体，权重导出不适用。';if(state.deliveryType==='adapter'&&state.student==='workflow')desc+=' 当前选择：工作流智能体，默认输出技能与配置，不产生模型权重。';$('#ac-delivery-desc').textContent=desc;$('#ac-output-files').innerHTML=d.files.map(f=>'<li><b>'+f[0]+'</b><small>'+f[1]+'</small></li>').join('');$('#ac-export-btn').textContent=d.action;if(persist)remember();}
+  $('#ac-delivery-type').addEventListener('change',e=>{state.deliveryType=e.target.value;showDelivery();});
+  const initialPage=location.hash.slice(1);if(pages[initialPage])state.page=initialPage;
+  window.addEventListener('hashchange',()=>{const p=location.hash.slice(1);if(pages[p])showPage(p,false);});
+  showCourse(state.course,false);showRole(state.role,false);showModel(false);showTeaching(false);showMarket(false);showDelivery(false);showPage(state.page,false);icons();
+  const resize=new ResizeObserver(()=>{if(state.page==='classroom')drawPrefix();});resize.observe($('#ac-interval-chart'));
+})();
+</script>
+
+</div>
+</body>
+</html>
