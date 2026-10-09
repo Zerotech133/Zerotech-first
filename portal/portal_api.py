@@ -744,6 +744,17 @@ _PILL = ("display:inline-block;padding:6px 13px;border:1px solid #30363d;"
          "font-size:12.5px;background:#161b22")
 _PILL_ON = _PILL + ";color:#e6edf3;border-color:#58a6ff;font-weight:600"
 
+# K-STOCK-037 全站超级助手浮动图标（非 _COCKPIT_CSS 页的内联版）
+_HERMES_FAB_HTML = ("<a id='_hermesfab' href='http://127.0.0.1:8787' "
+                    "target='_blank' rel='noopener' "
+                    "title='超级助手：对话即调度全部 AI 岗位' "
+                    "style='position:fixed;right:18px;bottom:70px;width:46px;"
+                    "height:46px;border-radius:50%;background:#1f6feb;"
+                    "border:2px solid #58a6ff;font-size:22px;line-height:42px;"
+                    "text-align:center;z-index:100;cursor:pointer;"
+                    "user-select:none;text-decoration:none;"
+                    "box-shadow:0 2px 12px rgba(31,111,235,.45)'>🦸</a>")
+
 _TABBTN = ("padding:5px 14px;border:1px solid #30363d;border-radius:14px;"
            "background:#161b22;color:#58a6ff;font-size:12.5px;cursor:pointer")
 
@@ -5324,7 +5335,7 @@ gap:14px;align-items:start}}
 	var f=document.createElement('a');
 	f.id='_hermesfab';f.href='http://127.0.0.1:8787';f.target='_blank';
 	f.rel='noopener';f.title='超级助手：对话即调度全部 AI 岗位';
-	f.appendChild(document.createTextNode('\uD83E\uDDB8'));
+	f.appendChild(document.createTextNode('\U0001F9B8'));
 	document.body.appendChild(f);}}catch(e){}};
 	document.addEventListener('DOMContentLoaded',window._u4init);
 	</script>"""
@@ -5468,7 +5479,7 @@ gap:14px;align-items:start}}
             "<body style='background:var(--bg-page);color:var(--text);"
             "font-family:\"Segoe UI\",\"Microsoft YaHei\",system-ui,sans-serif;"
             "margin:0;padding:20px 22px 40px;max-width:1180px'>"
-            + nav +
+            + nav + _HERMES_FAB_HTML +
             "<div style='display:flex;align-items:baseline;gap:14px;"
             "flex-wrap:wrap'><div style='font-size:22px;font-weight:800'>"
             "🎖 策略资产中心</div>"
@@ -6387,12 +6398,16 @@ gap:14px;align-items:start}}
                 face[_a.get("id", "")] = _a
         team_map = {}
         for _d in org.get("departments", []):
-            for _tn in (_d.get("teams") or []):
+            _dk = _d.get("dept", "")
+            _tj = {}
+            for _cand in [_dk] + list(_d.get("teams") or []):
                 _tj = _read_json(os.path.join(
                     STATION, "agent_platform", "registry",
-                    "team_%s.json" % _tn)) or {}
+                    "team_%s.json" % _cand)) or {}
                 if _tj:
-                    team_map[_d.get("dept", "")] = _tj
+                    break
+            if _tj:
+                team_map[_dk] = _tj
 
         def _agent_card(ag):
             fid = face.get(ag.get("agent_id", ""), {}) or {}

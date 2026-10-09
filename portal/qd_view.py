@@ -147,12 +147,24 @@ def _tail_rows(snap, base=None):
     return 0, ("<tr><td colspan=8 class='dim'>%s</td></tr>" % e(empty))
 
 
+# K-STOCK-037 全站超级助手浮动图标（qd 页独立 CSS，不走 _COCKPIT_CSS）
+FAB_HERMES = ("<a id='_hermesfab' href='http://127.0.0.1:8787' "
+              "target='_blank' rel='noopener' "
+              "title='超级助手：对话即调度全部 AI 岗位' "
+              "style='position:fixed;right:18px;bottom:70px;width:46px;"
+              "height:46px;border-radius:50%;background:#1f6feb;"
+              "border:2px solid #58a6ff;font-size:22px;line-height:42px;"
+              "text-align:center;z-index:100;cursor:pointer;"
+              "user-select:none;text-decoration:none;"
+              "box-shadow:0 2px 12px rgba(31,111,235,.45)'>\U0001F9B8</a>")
+
+
 def render_placeholder(log_path, css):
     """无缓存占位页：30s 自刷新，等后台扫描产出缓存"""
     return ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta http-equiv='refresh' content='30'>"
             "<title>量子双刀 · 研究预览</title>" + css
-            + "</head><body>" + NAV_QD
+            + "</head><body>" + NAV_QD + FAB_HERMES
             + "<h1>⚔ 量子双刀 · 选股中心（研究预览）</h1>"
             "<div style='border:1px solid #d29922;border-radius:8px;"
             "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
@@ -201,7 +213,7 @@ def render_workspace(snap, css, base=None):
     return ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<title>量子双刀 · 选股中心</title>" + css
-            + "</head><body>" + NAV_QD
+            + "</head><body>" + NAV_QD + FAB_HERMES
             + "<h1>⚔ 量子双刀 · 选股中心</h1>"
             "<div style='border:1px solid #d29922;border-radius:8px;"
             "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
