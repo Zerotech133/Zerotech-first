@@ -735,6 +735,40 @@ _PILL = ("display:inline-block;padding:6px 13px;border:1px solid #30363d;"
          "font-size:12.5px;background:#161b22")
 _PILL_ON = _PILL + ";color:#e6edf3;border-color:#58a6ff;font-weight:600"
 
+_TABBTN = ("padding:5px 14px;border:1px solid #30363d;border-radius:14px;"
+           "background:#161b22;color:#58a6ff;font-size:12.5px;cursor:pointer")
+
+_TAB_JS = ("<script>function _tabSw(t,i,n){for(var j=0;j<n;j++){"
+           "document.getElementById(t+'-b'+j).style.background='#161b22';"
+           "document.getElementById(t+'-b'+j).style.color='#58a6ff';"
+           "document.getElementById(t+'-p'+j).style.display='none';}"
+           "document.getElementById(t+'-b'+i).style.background='#58a6ff';"
+           "document.getElementById(t+'-b'+i).style.color='#fff';"
+           "document.getElementById(t+'-p'+i).style.display='block';}"
+           "</script>")
+
+
+def _tabs_html(tid, tabs, checked=0):
+    """K-STOCK-030 通用 Tab 页组件（选股中心长页治理：市场维度点右侧
+    Tab 切换，不再竖排全量展开）。tabs=[(label, content_html)]。
+    无 JS 降级：noscript 时展开全部（style 由 JS 首次切换才生效，
+    初始 pane 用内联 display 控制默认只显示 checked 页）。"""
+    n = len(tabs)
+    btns, panes = [], []
+    for i, (lb, ct) in enumerate(tabs):
+        on = (i == checked)
+        btns.append("<button id='%s-b%d' onclick=\"_tabSw('%s',%d,%d)\" "
+                    "style='%s%s'>%s</button>"
+                    % (tid, i, tid, i, n, _TABBTN,
+                       ";background:#58a6ff;color:#fff" if on else "",
+                       lb))
+        panes.append("<div id='%s-p%d' style='display:%s'>%s</div>"
+                     % (tid, i, "block" if on else "none", ct))
+    return (_TAB_JS
+            + "<div style='display:flex;gap:6px;flex-wrap:wrap;margin:8px 0'>"
+            + "".join(btns) + "</div>"
+            + "".join(panes))
+
 
 def sellpoint_page_html():
     """K208 SellPoint AI 卖点研判面板（影子信息层）。
@@ -5735,6 +5769,52 @@ gap:14px;align-items:start}}
                 "（四法门共振 · 自量化中心迁入 · 与市场分域页同源）"
                 "</span></h2>" + style + body + "</div>")
 
+    def _hub_market_tabs(self):
+        """K-STOCK-030 长页治理：hub 四市场模块段（4 张 .module 卡竖排
+        + 跨市场RPS/策略库尾区）切成 Tab——点右侧市场切换不滚动。
+        按市场标签锚点切分（加密卡与尾区在同一切分段，锚点法才切得开）。"""
+        import re as _re_m
+        try:
+            hub = open(os.path.join(STATION, "quant_backtest", "reports",
+                                    "bt_hub.html"), encoding="utf-8").read()
+        except OSError:
+            return ""
+        p0 = hub.find("<h2>四市场模块")
+        p1 = hub.find("</body>")
+        if p0 < 0:
+            return ""
+        body = hub[p0:p1 if p1 > p0 else len(hub)]
+        # 样式（去全局 body 样式防污染）
+        s0, s1 = hub.find("<style"), hub.find("</style>")
+        style = ""
+        if 0 <= s0 < s1:
+            style = _re_m.sub(r"body\{[^}]*\}", "", hub[s0:s1 + 8])
+        anchors = [("🇨🇳 A股", "<b>🇨🇳 A股 模块</b>"),
+                   ("🇺🇸 美股", "<b>🇺🇸 美股 模块</b>"),
+                   ("🇭🇰 港股", "<b>🇭🇰 港股 模块</b>"),
+                   ("🪙 加密", "<b>🪙 加密 模块</b>")]
+        # 锚点定位；缺任一市场则整体降级为原竖排块
+        pos = []
+        for lb, a in anchors:
+            i = body.find(a)
+            if i < 0:
+                return ("<div class='sec'><h2>🎯 选股中心 · 四市场模块"
+                        "</span></h2>" + style + body + "</div>")
+            pos.append(i)
+        tail_i = body.find("跨市场 RPS 最强")
+        sec_head = body[:min(pos)]
+        tabs = []
+        for k, (lb, _) in enumerate(anchors):
+            end = pos[k + 1] if k + 1 < len(anchors) else (
+                tail_i if tail_i > pos[k] else len(body))
+            tabs.append((lb, body[pos[k]:end]))
+        rest = body[tail_i:] if tail_i > pos[-1] else ""
+        head = ("<div class='sec'><h2>🎯 选股中心 · 四市场模块"
+                "<span class='dim' style='font-weight:400;font-size:12px'>"
+                "（四法门共振 · 自量化中心迁入 · 点市场标签切换）"
+                "</span></h2>" + style)
+        return head + _tabs_html("hubmkt", tabs) + rest + "</div>"
+
     def _qpzm_page(self):
         import html as _h
         e = _h.escape
@@ -5812,13 +5892,19 @@ gap:14px;align-items:start}}
                "</td></tr>")) if res else "<div class='dim'>暂无快照</div>"
 
         # ③ 全市场 RPS 强势榜（策略的选股漏斗出口）
+        # K-STOCK-030：四市场竖排改 Tab 切换（长页治理——点右侧标签，
+        # 不再往下滚四张表）
         top_lbl = {"CN": "🇨🇳 A股", "US": "🇺🇸 美股", "HK": "🇭🇰 港股",
                    "CRYPTO": "🪙 加密"}
         top_mkt = {"CN": "cn", "US": "us", "HK": "hk", "CRYPTO": "crypto"}
-        top_blk = ""
-        for mk, trows in (snap.get("tops") or {}).items():
+        _mk_order = ["CN", "US", "HK", "CRYPTO"]
+        top_tabs = []
+        for mk in _mk_order:
+            trows = (snap.get("tops") or {}).get(mk)
+            if not trows:
+                continue
             trs = ""
-            for t in (trows or [])[:8]:
+            for t in trows[:8]:
                 chg = t.get("chg20") or 0
                 trs += (
                     "<tr><td>%s<div class='dim'>%s</div></td><td>%s</td>"
@@ -5828,12 +5914,16 @@ gap:14px;align-items:start}}
                        ("%.2f" % t["px"]) if t.get("px") else "—",
                        float(t.get("mix") or 0),
                        "#f85149" if chg >= 0 else "#3fb950", float(chg)))
-            top_blk += (
-                "<div style='margin-top:12px'><b><a href='/bt/m/%s'>%s 强势"
+            top_tabs.append((
+                top_lbl.get(mk, mk),
+                "<div style='margin-top:4px'><b><a href='/bt/m/%s'>%s 强势"
                 "榜 →</a></b><table><tr><th>代码 / 名称</th><th>现价</th>"
                 "<th>RPS复合</th><th>20日</th></tr>%s</table></div>"
-                % (top_mkt.get(mk, "cn"), e(top_lbl.get(mk, mk)), trs))
-        top_blk = top_blk or "<div class='dim'>暂无快照</div>"
+                % (top_mkt.get(mk, "cn"), e(top_lbl.get(mk, mk)), trs)))
+        if top_tabs:
+            top_blk = _tabs_html("rpsrank", top_tabs)
+        else:
+            top_blk = "<div class='dim'>暂无快照</div>"
 
         # ④ 策略说明书
         spec = (
@@ -5865,24 +5955,28 @@ gap:14px;align-items:start}}
                 "initial-scale=1'><title>青萍之末 · 共振选股工作台</title>"
                 + self._COCKPIT_CSS + "</head><body>"
                 + pill_nav("qpzm")
+                # K-STOCK-030 统一产线页骨架：
+                # ① 导航+标题 → ② 工具链(标题下) → ③ 主数据 → ④ 市场Tab →
+                # ⑤ 说明书+尾注（与 /qd/ 双刀页同构）
                 + "<h1>🌊 青萍之末 · 共振选股工作台</h1><div class='dim'>"
                 "策略市场 1 号工作台 · 数据截至 %s（%s）</div>"
                 % (e(str(snap.get("latest", "—"))),
                    e(str(snap.get("ts", ""))))
-                # K237 选股中心：四市场模块卡自量化中心迁入（同源快照）
-                + self._hub_pool_blk()
-                + "<div class='sec'><h2>📖 策略说明书</h2>" + spec + "</div>"
+                # ② 工具链统一紧贴标题（原沉底第 11 位）
+                + "<div style='display:flex;gap:6px;flex-wrap:wrap;"
+                "margin:10px 0'>" + tools + "</div>"
+                # ③ 环境闸门（一票否决层，决策前置）
                 + "<div class='sec'><h2>🚦 环境闸门 · 一票否决层</h2>"
                 + gates_html + "</div>"
                 + "<div class='sec'><h2>🎯 自选池共振信号</h2>" + res_blk
                 + "</div>"
                 + self._qpzm_batch_blk(snap)
+                # ④ 市场维度 Tab 化（K-STOCK-030 长页治理）
                 + "<div class='sec'><h2>📈 全市场 RPS 强势榜（选股漏斗）</h2>"
                 + top_blk + "</div>"
-                + "<div class='sec'><h2>🧰 验证与操作</h2>" + tools
-                + "<div class='dim' style='margin-top:8px'>共振层为评分器"
-                "（暂无独立历史回测），纸面验证走持仓跟踪；四个技术策略的"
-                "回测与参数寻优见上。</div></div>"
+                + self._hub_market_tabs()
+                # ⑤ 说明书（统一放尾区）+ 尾注
+                + "<div class='sec'><h2>📖 策略说明书</h2>" + spec + "</div>"
                 + "<div class='dim' style='margin-top:20px'>纸面研究不构成"
                 "投资建议 · 方法论源自青萍之末2（RPS：全市场N日涨幅百分位；"
                 "共振：四维加权、缺维降权、环境一票否决）</div></body></html>")
@@ -7932,6 +8026,9 @@ function ckPush(i){
                 " · 每日定时跑数→本页看信号→"
                 "<a href='/bt-chanlun-pool'>🛟 预警池明细</a>（全量+持仓盯市）"
                 "</div>"
+                # K-STOCK-030 统一骨架②：工具链紧贴标题（原沉底尾部）
+                + "<div style='display:flex;gap:6px;flex-wrap:wrap;"
+                "margin:10px 0'>" + tools + "</div>"
                 # ① 态势状态条（三市场扫描任务真实状态 + 池水位）
                 + ("<div class='sec' style='margin-top:12px;padding:10px 15px;"
                    "display:flex;gap:6px 22px;flex-wrap:wrap;"
@@ -8054,7 +8151,6 @@ function ckPush(i){
                 + comp_panel
                 + "<div class='sec'><h2>📊 K 线查看器 · 结构叠加（分型/笔/线段/中枢/买卖点）</h2>"
                 + viewer + "</div>"
-                + "<div class='sec'><h2>🧰 相关入口</h2>" + tools + "</div>"
                 + "<div class='dim' style='margin-top:20px'>纸面研究不构成"
                 "投资建议 · 缠论结构交易工作台 · P1~P4 已上线 · P5~P9 影子"
                 "验证中 · 口径/样本/验证总纲见本页面板区与折叠详述</div>"
