@@ -85,6 +85,8 @@ ops/health_latest.json
 jev-eval/logs/
 jev-eval/results/
 inbox/
+locks/
+news_collector/k266_state.json
 
 # 系统杂物补充（B3 滚动 2026-10-07 晚）
 *.bak-*
