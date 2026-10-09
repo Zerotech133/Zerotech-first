@@ -29,6 +29,9 @@ import sqlite3
 from datetime import date, datetime
 
 import pandas as pd
+from pathlib import Path
+
+from warehouse_read_guard import PublicationPending, guarded_read, read_resources
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "data", "tdx")
@@ -43,21 +46,26 @@ DATE_COL = {"ts_income": "end_date", "ts_balancesheet": "end_date",
 CODE_COL_DEFAULT = "ts_code"
 
 
+@guarded_read(lambda *args, **kwargs: [Path(MANIFEST).parent])
 def _manifest():
     if os.path.exists(MANIFEST):
         try:
             with open(MANIFEST, encoding="utf-8") as f:
                 return json.load(f)
+        except PublicationPending:
+            raise
         except Exception:
             return {}
     return {}
 
 
+@guarded_read(lambda *args, **kwargs: [Path(MANIFEST).parent])
 def table_ready(tbl):
     """同步器是否已把该表标记完成（未完成的表读到的是不完整数据）。"""
     return bool(_manifest().get(tbl, {}).get("done"))
 
 
+@guarded_read(lambda *args, **kwargs: [OUT])
 def latest_date(tbl):
     """表内最新 trade_date（'YYYYMMDD'）；空表返回 None。
 
@@ -73,10 +81,13 @@ def latest_date(tbl):
             vals.extend(pd.read_parquet(p, columns=[dcol])[dcol].astype(str))
         vals = [v[:8] for v in vals if v and v[:8].isdigit()]
         return max(vals) if vals else None
+    except PublicationPending:
+        raise
     except Exception:
         return None
 
 
+@guarded_read(lambda *args, **kwargs: [OUT, Path(MANIFEST).parent])
 def fresh(tbl, day):
     """表已同步且覆盖到 day（增量任务兜底判断用）。"""
     if not table_ready(tbl):
@@ -139,6 +150,7 @@ def _apply_code_filter(df, tbl, codes):
     return df[mask]
 
 
+@guarded_read(lambda *args, **kwargs: [OUT])
 def read_day(tbl, day, codes=None, columns=None):
     """读某交易日（或 end_date）全表/指定票，返回 DataFrame（空表给空 df）。"""
     if tbl in SQLITE_TABLES:
@@ -155,11 +167,15 @@ def read_day(tbl, day, codes=None, columns=None):
             head = pd.read_parquet(parts[0])
             cols = [c for c in head.columns
                     if c in want or c == _code_col(head)]
+        except PublicationPending:
+            raise
         except Exception:
             cols = None
     try:
         df = pd.concat([pd.read_parquet(p, columns=cols) for p in parts],
                        ignore_index=True)
+    except PublicationPending:
+        raise
     except Exception:
         return pd.DataFrame()
     if dcol not in df.columns:
@@ -168,6 +184,7 @@ def read_day(tbl, day, codes=None, columns=None):
     return _apply_code_filter(df, tbl, codes).reset_index(drop=True)
 
 
+@guarded_read(lambda *args, **kwargs: [OUT])
 def read_range(tbl, start=None, end=None, codes=None, columns=None):
     """读 [start, end] 闭区间；start/end 任一可省。"""
     if tbl in SQLITE_TABLES:
@@ -179,6 +196,8 @@ def read_range(tbl, start=None, end=None, codes=None, columns=None):
     try:
         df = pd.concat([pd.read_parquet(p, columns=columns) for p in parts],
                        ignore_index=True)
+    except PublicationPending:
+        raise
     except Exception:
         return pd.DataFrame()
     if dcol not in df.columns:
@@ -193,6 +212,7 @@ def read_range(tbl, start=None, end=None, codes=None, columns=None):
     return df.sort_values(dcol).reset_index(drop=True)
 
 
+@guarded_read(lambda *args, **kwargs: [OUT])
 def read_all(tbl, columns=None, codes=None):
     """读整表（无日期列的映射表如 ts_ths_member 用）。"""
     parts = _parts(tbl)
@@ -201,11 +221,14 @@ def read_all(tbl, columns=None, codes=None):
     try:
         df = pd.concat([pd.read_parquet(p, columns=columns) for p in parts],
                        ignore_index=True)
+    except PublicationPending:
+        raise
     except Exception:
         return pd.DataFrame()
     return _apply_code_filter(df, tbl, codes).reset_index(drop=True)
 
 
+@guarded_read(lambda *args, **kwargs: [OUT])
 def day_map(tbl, day, fields, codes=None):
     """单日 → {ts_code: {field: value}}，nine_dim 各 fetch 函数的直接替身。"""
     df = read_day(tbl, day, codes=codes,
@@ -228,6 +251,7 @@ def _code_col(df):
     return None
 
 
+@guarded_read(lambda *args, **kwargs: [Path(INFO_DB).parent])
 def read_info(tbl, codes=None, limit=200, since=None):
     """信息三表（公告/个股新闻/研报）→ list[dict]，按日期倒序。
 
@@ -269,21 +293,22 @@ def read_info(tbl, codes=None, limit=200, since=None):
 
 
 if __name__ == "__main__":
-    import sys
-    m = _manifest()
-    print("%-22s %-6s %-10s" % ("table", "ready", "latest"))
-    for t in sorted(m):
-        if t in SQLITE_TABLES:
-            n = 0
-            if os.path.exists(INFO_DB):
-                conn = sqlite3.connect(INFO_DB)
-                try:
-                    n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
-                except sqlite3.OperationalError:
-                    pass
-                conn.close()
-            print("%-22s %-6s %-10s" % (t, "Y", "%d rows" % n))
-        else:
-            print("%-22s %-6s %-10s"
-                  % (t, "Y" if table_ready(t) else "-",
-                     latest_date(t) or "—"))
+    with read_resources([OUT, Path(INFO_DB).parent, Path(MANIFEST).parent]):
+        import sys
+        m = _manifest()
+        print("%-22s %-6s %-10s" % ("table", "ready", "latest"))
+        for t in sorted(m):
+            if t in SQLITE_TABLES:
+                n = 0
+                if os.path.exists(INFO_DB):
+                    conn = sqlite3.connect(INFO_DB)
+                    try:
+                        n = conn.execute("SELECT COUNT(*) FROM %s" % t).fetchone()[0]
+                    except sqlite3.OperationalError:
+                        pass
+                    conn.close()
+                print("%-22s %-6s %-10s" % (t, "Y", "%d rows" % n))
+            else:
+                print("%-22s %-6s %-10s"
+                      % (t, "Y" if table_ready(t) else "-",
+                         latest_date(t) or "—"))

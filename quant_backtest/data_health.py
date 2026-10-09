@@ -14,6 +14,7 @@
 · 新闻    news_collector/news.db
 · 策略产物 quant_backtest/data/*.json|jsonl
 """
+import hashlib
 import json
 import os
 import sqlite3
@@ -85,8 +86,11 @@ def _scan_news():
     """扫描 news.db：总数、来源分布、日期范围、JEV 判断数。"""
     if not os.path.exists(NEWS_DB):
         return {"exists": False, "path": NEWS_DB}
+    measured = {'path': NEWS_DB, 'size_mb': round(os.path.getsize(NEWS_DB) / 1024**2, 3),
+                'wal_size_bytes': os.path.getsize(NEWS_DB + '-wal') if os.path.exists(NEWS_DB + '-wal') else 0,
+                'measured_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     try:
-        db = sqlite3.connect(NEWS_DB)
+        db = sqlite3.connect('file:' + NEWS_DB.replace('\\', '/') + '?mode=ro', uri=True)
         total = db.execute("SELECT COUNT(*) FROM news").fetchone()[0]
         date_range = db.execute("SELECT MIN(ts), MAX(ts) FROM news").fetchone()
         sources = dict(db.execute(
@@ -95,8 +99,13 @@ def _scan_news():
         jev_judged = db.execute(
             "SELECT COUNT(*) FROM news WHERE jev IS NOT NULL AND jev != ''"
         ).fetchone()[0]
+        source_times = {}
+        if 'created_at' in [r[1] for r in db.execute('PRAGMA table_info(news)')]:
+            source_times = {s: {'latest_event': event, 'latest_ingested': ingested}
+                            for s, event, ingested in db.execute(
+                                'SELECT source, MAX(ts), MAX(created_at) FROM news GROUP BY source')}
         db.close()
-        return {"exists": True, "total": total,
+        return {**measured, "exists": True, "total": total, 'source_times': source_times,
                 "date_range": "%s ~ %s" % (date_range[0], date_range[1]),
                 "sources": sources, "jev_judged": jev_judged,
                 "jev_pending": total - jev_judged,
@@ -104,7 +113,7 @@ def _scan_news():
                 "has_research": sources.get("survey", 0) > 0,
                 "has_report": sources.get("report", 0) > 0}
     except Exception as e:
-        return {"exists": True, "error": str(e)}
+        return {**measured, "exists": True, "error": str(e)}
 
 
 def _scan_artifacts():
@@ -176,20 +185,31 @@ def _scan_tdx_info_db(path):
           "stock_report": "研报"}
     out = []
     try:
-        db = sqlite3.connect(path)
+        db = sqlite3.connect('file:' + path.replace('\\', '/') + '?mode=ro', uri=True)
         for tbl, dc in date_col.items():
             try:
                 n, latest = db.execute(
                     "SELECT COUNT(*), MAX(%s) FROM %s" % (dc, tbl)).fetchone()
                 out.append({"asset": cn[tbl], "table": tbl, "rows": n or 0,
                             "latest": str(latest)[:10] if latest else None,
-                            "path": path})
+                            "path": path, 'latest_kind': 'business_date', 'size_mb': None})
             except sqlite3.OperationalError:
                 pass
         db.close()
     except Exception:
         pass
+    if out:
+        # 共享数据库按物理路径计一次。
+        out[0]['size_mb'] = round(os.path.getsize(path) / 1024**2, 3)
     return out
+
+
+def _manifest_metadata(manifest, name, files_present=True):
+    entry = manifest.get(name) or {}
+    return {'manifest_status': 'not_applicable' if name == 'index_global' else
+            'closed' if entry.get('done') else 'open' if name in manifest else 'missing',
+            'readiness_basis': 'manifest' if entry else 'file_presence' if files_present else 'unknown',
+            'verification_status': 'unknown', 'latest_kind': 'file_mtime'}
 
 
 def _scan_tdx():
@@ -215,7 +235,8 @@ def _scan_tdx():
             newest = max(os.path.getmtime(os.path.join(tdir, p))
                          for p in parts)
             tables.append({
-                "asset": d, "rows": m.get(d, {}).get("rows", 0),
+                "asset": d, "rows": m.get(d, {}).get("rows"),
+                **_manifest_metadata(m, d),
                 "parts": len(parts), "done": m.get(d, {}).get("done", False),
                 "size_mb": round(sum(
                     os.path.getsize(os.path.join(tdir, p)) for p in parts)
@@ -271,14 +292,24 @@ def _scan_tushare():
             if not sizes:
                 continue
             tables.append({
-                "asset": d, "rows": m.get(d, {}).get("rows", 0),
+                "asset": d, "rows": m.get(d, {}).get("rows"),
+                **_manifest_metadata(m, d),
                 "parts": len(sizes), "done": m.get(d, {}).get("done", False),
                 "size_mb": round(sum(sizes) / 1024 / 1024, 1),
                 "latest": datetime.fromtimestamp(newest).strftime(
                     "%Y-%m-%d %H:%M"),
                 "age_hours": round((time.time() - newest) / 3600, 1)})
     n_done = sum(1 for t in tables if t["done"])
-    return {"tables": tables, "sync_done": n_done, "sync_total": len(m)}
+    manifest_only = []
+    for name, entry in m.items():
+        if os.path.isdir(os.path.join(ts_dir, name)):
+            continue
+        coverage = ('empty_probe' if name.endswith('_probe') and entry.get('rows') == 0 else
+                    'no_coverage' if entry.get('codes') == 0 else 'location_unverified')
+        manifest_only.append({'asset': name, 'rows': entry.get('rows'),
+                              'coverage_status': coverage, **_manifest_metadata(m, name, False)})
+    return {"tables": tables, "sync_done": n_done, "sync_total": len(m),
+            'manifest_only': manifest_only}
 
 
 _FCACHE = {"t": 0, "d": None}
@@ -387,6 +418,88 @@ def _scan_freshness():
     return out
 
 
+def _scan_business_monitoring():
+    """只读取评分与图谱回执；数量快照不能证明实时 QA 通过。"""
+    def snapshot(path):
+        try:
+            with open(path, encoding='utf-8') as f:
+                value = json.load(f)
+            if not isinstance(value, dict):
+                raise ValueError('快照不是对象')
+            return value
+        except Exception as exc:
+            return {'_read_error': type(exc).__name__}
+
+    score = snapshot(os.path.join(DATA, 'nine_dim_scores.json'))
+    rows = score.get('rows') or []
+    threshold = score.get('min_cov', 0.75)
+    full = sum(r.get('full') is True and isinstance(r.get('cov'), (int, float))
+               and r['cov'] >= threshold for r in rows)
+    factors = {}
+    missing_items = 0
+    for row in rows:
+        for factor in row.get('detail') or []:
+            item = factors.setdefault(factor['id'], {'name': factor.get('name', factor['id']),
+                                      'unjudgeable': 0, 'incomplete': 0, 'observed': 0})
+            item['observed'] += 1
+            item['unjudgeable'] += factor.get('cov') in (None, 0)
+            item['incomplete'] += (factor.get('cov') or 0) < 1
+            missing_items += sum(x.get('state') is None for x in factor.get('items') or [])
+    coverage = [r['cov'] for r in rows if isinstance(r.get('cov'), (int, float))]
+    nine = {'status': 'UNKNOWN' if not rows else 'FAIL' if full < len(rows) else 'OK',
+            'generated_at': score.get('generated_at'), 'trade_date': score.get('trade_date'),
+            'n_candidates': len(rows), 'n_full': full, 'min_cov': threshold, 'factors': factors,
+            'coverage_min': min(coverage) if coverage else None,
+            'coverage_max': max(coverage) if coverage else None,
+            'cov_histogram': {str(c): coverage.count(c) for c in sorted(set(coverage))},
+            'failure_class_distribution': {'unknown': missing_items},
+            'source_failure_class_distribution': {}, 'source_audit_status': 'unavailable',
+            'error': score.get('_read_error'),
+            'source_status': 'unknown', 'source_note': '评分缺项不区分权限、限流、源空或解析失败；来源资格待核验'}
+    audit = snapshot(os.path.join(DATA, 'nine_dim_source_audit.json'))
+    if not audit.get('_read_error'):
+        expected_hash = (audit.get('versions') or {}).get('nine_dim_scores.json', {}).get('sha256')
+        try:
+            with open(os.path.join(DATA, 'nine_dim_scores.json'), 'rb') as f:
+                current_hash = hashlib.sha256(f.read()).hexdigest()
+        except OSError:
+            current_hash = None
+        nine['source_audit_status'] = 'matched' if current_hash and current_hash == expected_hash else 'version_mismatch'
+        nine['source_audit_at'] = audit.get('audited_at')
+        if nine['source_audit_status'] == 'matched':
+            qualification = audit.get('monitoring') or {}
+            for key in ('failure_class_distribution', 'source_failure_class_distribution', 'cache_score_relationship'):
+                if key in qualification:
+                    nine[key] = qualification[key]
+            nine['source_note'] = '历史来源资格回执与当前评分版本匹配；按回执时点解释，不代表当前接口状态'
+            nine['source_audit_versions'] = audit.get('versions') or {}
+    cache_meta = {}
+    for name in ('nine_dim_fina_cache.json', 'nine_dim_idx_cache.json', 'nine_dim_rc_cache.json'):
+        path = os.path.join(DATA, name)
+        cached = snapshot(path)
+        cache_meta[name] = {'file_modified_at': datetime.fromtimestamp(os.path.getmtime(path)).isoformat() if os.path.exists(path) else None,
+                            'trade_date': cached.get('trade_date'), 'date': cached.get('date'),
+                            'error': cached.get('_read_error')}
+    nine['cache_metadata'] = cache_meta
+    qa = snapshot(os.path.join(DATA, 'graph_check', 'latest.json'))
+    qa_status = 'OK' if qa.get('ok') is True else 'FAIL' if qa.get('ok') is False else 'UNKNOWN'
+    count_files = sorted(Path(HERE, 'reports').glob('graph_schema_*.json'))
+    counts = snapshot(str(count_files[-1])) if count_files else {}
+    return {'nine_dim': nine,
+            'graph_qa': {'status': qa_status, 'generated_at': qa.get('ts') or qa.get('generated_at'),
+                         'live_verified': False, 'details': qa,
+                         'note': '历史QA回执，实时连接未核验'},
+            'graph_counts': {'status': 'INFO' if counts and not counts.get('_read_error') else 'UNKNOWN',
+                             'generated_at': counts.get('ts') or counts.get('generated_at'),
+                             'details': counts, 'note': '数量快照不代表QA通过'}}
+
+
+def _manifest_label(table):
+    status = table.get('manifest_status') or ('closed' if table.get('done') else 'open')
+    return {'missing': '未登记', 'open': 'manifest未收口',
+            'closed': 'manifest已收口', 'not_applicable': 'manifest不适用'}.get(status, '登记待核验') + '（运行状态待核实）'
+
+
 def scan_warehouse():
     """全资产盘点（60s 缓存）：TDX 远端仓 + 本地 K 线 + 新闻 + 策略产物。
 
@@ -413,6 +526,8 @@ def scan_warehouse():
                 "error": str(fresh_error)}]}
     integrity = _scan_integrity()
     artifacts = _scan_artifacts()
+    monitoring = _scan_business_monitoring()
+    measured_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     groups = []
     # 1. TDX 远端仓（含同步进度）
@@ -420,14 +535,18 @@ def scan_warehouse():
                  "rows": "%s (×%d片)" % (_fmt_rows(t["rows"]), t["parts"]),
                  "latest": t["latest"], "size_mb": t["size_mb"],
                  "age_hours": t["age_hours"],
-                 "extra": "同步完成" if t["done"] else "同步中"}
+                 "latest_kind": 'file_mtime', 'file_modified_at': t['latest'],
+                 'measured_at': measured_at,
+                 "extra": _manifest_label(t)}
                 for t in tdx["tables"]]
     tdx_rows += [{"asset": i["asset"] + "（info.db）",
                   "rows": _fmt_rows(i["rows"]), "latest": i["latest"],
-                  "size_mb": tdx["db_size_mb"], "age_hours": None,
-                  "extra": None} for i in tdx["info"]]
+                  "size_mb": i.get('size_mb'), "age_hours": None,
+                  'latest_kind': 'business_date', 'business_date': i['latest'],
+                  'measured_at': measured_at,
+                  "extra": '共享tdx_info.db，容量按物理路径计一次'} for i in tdx["info"]]
     groups.append({"name": "TDX 远端仓", "kind": "tdx", "rows": tdx_rows,
-                   "note": "同步 %d/%d 表 · tdx_info.db %.1f MB"
+                   "note": "manifest已收口 %d/%d 表 · tdx_info.db %.1f MB"
                            % (tdx["sync_done"], tdx["sync_total"],
                               tdx["db_size_mb"])})
     # 1b. Tushare 仓（镜像 TDX 口径）
@@ -435,11 +554,22 @@ def scan_warehouse():
                   "rows": "%s (×%d文件)" % (_fmt_rows(t["rows"]), t["parts"]),
                   "latest": t["latest"], "size_mb": t["size_mb"],
                   "age_hours": t["age_hours"],
-                  "extra": "同步完成" if t["done"] else "同步中"}
+                  "latest_kind": 'file_mtime', 'file_modified_at': t['latest'],
+                  'measured_at': measured_at,
+                  "extra": _manifest_label(t)}
                  for t in tush["tables"]]
     groups.append({"name": "Tushare 仓", "kind": "tushare", "rows": tush_rows,
-                   "note": "同步 %d/%d 表" % (tush["sync_done"],
+                   "note": "manifest已收口 %d/%d 表；运行状态待核实" % (tush["sync_done"],
                                               tush["sync_total"])})
+    if tush.get('manifest_only'):
+        labels = {'location_unverified': '去向待核验（仅有旧回执，不推定丢失）',
+                  'no_coverage': '无覆盖（codes=0，done不代表覆盖完成）',
+                  'empty_probe': '合理空探针（0行，不计缺表故障）'}
+        groups.append({'name': 'manifest独立回执', 'kind': 'manifest_receipt',
+                       'rows': [{'asset': t['asset'], 'rows': _fmt_rows(t['rows']),
+                                 'latest': None, 'size_mb': None, 'age_hours': None,
+                                 'extra': labels[t['coverage_status']]} for t in tush['manifest_only']],
+                       'note': '无物理目录的回执独立核对，不计物理资产数量'})
     # 1c. 新鲜度监控（catalog 驱动，§8）
     st_cn = {"OK": "✓", "WARN": "⚠", "STALE": "✗", "SNAP": "📸",
              "FAIL": "✗", "NA": "—"}
@@ -452,11 +582,15 @@ def scan_warehouse():
                    st_cn.get(t["status"], t["status"]), t["snap"] or "—",
                    "" if t["ready"] else " · 未就绪")}
               for t in fresh.get("tables", [])]
-    n_bad = sum(1 for t in fresh.get("tables", [])
-                if t["status"] in ("STALE", "FAIL"))
+    fresh_counts = dict.fromkeys(('OK', 'WARN', 'STALE', 'FAIL', 'SNAP', 'NA', 'UNKNOWN'), 0)
+    for table in fresh.get('tables') or []:
+        status = table.get('status')
+        fresh_counts[status if status in fresh_counts else 'UNKNOWN'] += 1
+    n_bad = fresh_counts['STALE'] + fresh_counts['FAIL']
+    non_ok = sum(n for s, n in fresh_counts.items() if s != 'OK')
     groups.append({"name": "新鲜度监控", "kind": "freshness", "rows": f_rows,
                    "note": ("新鲜度扫描失败：%s" % fresh_error) if fresh_error else
-                   ("异常 %d 表（STALE/FAIL）" % n_bad) if n_bad
+                   (' · '.join('%s %d 表' % (s, n) for s, n in fresh_counts.items() if n)) if non_ok
                    else "核心表全部 OK"})
     integrity_rows = []
     for metric in integrity["metrics"]:
@@ -481,6 +615,7 @@ def scan_warehouse():
         k_rows.append({"asset": mk_cn[mk] + "（%d 只）" % r["count"],
                        "rows": "日线 parquet", "latest": r.get("latest_file"),
                        "size_mb": r.get("size_mb", 0), "age_hours": None,
+                       'latest_kind': 'file_mtime', 'measured_at': measured_at,
                        "extra": extra})
     groups.append({"name": "本地 K 线仓", "kind": "kline", "rows": k_rows,
                    "note": None})
@@ -490,13 +625,16 @@ def scan_warehouse():
             "name": "新闻资讯", "kind": "news",
             "rows": [{"asset": "快讯（%s）" % "、".join(
                           news.get("sources", {}).keys() or ["—"]),
-                      "rows": _fmt_rows(news.get("total", 0)),
+                      "rows": _fmt_rows(news.get("total")),
                       "latest": (news.get("date_range") or "—").split(" ~ ")[-1],
-                      "size_mb": None, "age_hours": None,
+                      "size_mb": news.get('size_mb'), "age_hours": None,
+                      'latest_kind': 'event_time', 'source_times': news.get('source_times', {}),
+                      'measured_at': news.get('measured_at'),
                       "extra": "JEV 已判 %d · 积压 %d"
                                % (news.get("jev_judged", 0),
                                   news.get("jev_pending", 0))}],
-            "note": None})
+            "note": 'news.db主文件计入总容量；WAL另列 %s 字节，计量时点 %s' % (
+                news.get('wal_size_bytes', '未计量'), news.get('measured_at', '待核验'))})
     # 4. 策略产物
     groups.append({
         "name": "策略产物", "kind": "artifact",
@@ -504,6 +642,7 @@ def scan_warehouse():
                   "rows": _fmt_mb(a.get("size_mb")),
                   "latest": a.get("mtime"), "size_mb": a.get("size_mb"),
                   "age_hours": a.get("age_hours"), "extra": None,
+                  'latest_kind': 'file_mtime', 'measured_at': measured_at,
                   "url": a.get("url")} for a in artifacts],
         "note": None})
 
@@ -513,17 +652,23 @@ def scan_warehouse():
     total_mb = (sum(t["size_mb"] for t in tdx["tables"]) + tdx["db_size_mb"]
                 + sum(t["size_mb"] for t in tush["tables"])
                 + sum(r.get("size_mb", 0) for r in kline.values())
-                + sum(a.get("size_mb", 0) or 0 for a in artifacts))
+                + sum(a.get("size_mb", 0) or 0 for a in artifacts)
+                + (news.get('size_mb') or 0))
     ages = [g2["age_hours"] for g2 in tdx_rows if g2.get("age_hours")]
     freshest = ("%.1fh 前" % min(ages)) if ages else "—"
     kpi = {"n_tables": n_tables, "total_mb": round(total_mb, 1),
            "tdx_sync": "%d/%d" % (tdx["sync_done"], tdx["sync_total"]),
            "tushare_sync": "%d/%d" % (tush["sync_done"], tush["sync_total"]),
            "fresh_bad": n_bad, "freshest": freshest,
+           'fresh_warn': fresh_counts['WARN'], 'fresh_snap': fresh_counts['SNAP'],
+           'fresh_unknown': fresh_counts['NA'] + fresh_counts['UNKNOWN'],
+           'capacity_scope': 'TDX/Tushare parquet、本地K线、tdx_info.db、news.db主文件及策略产物；共享库计一次，WAL另列',
+           'capacity_measured_at': measured_at,
            "integrity_bad": integrity["fail_count"], "integrity_warn": integrity["warn_count"]}
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
            "kpi": kpi, "groups": groups,
            "integrity": integrity,
+           'freshness': {**fresh, 'counts': fresh_counts}, 'monitoring': monitoring,
            "gaps": _build_gaps(kline, news) + (
                ["FAIL freshness_scan: %s" % fresh_error] if fresh_error else []) + [
                "%s %s: %s" % (m["status"], m["name"], m["value"])
@@ -534,8 +679,8 @@ def scan_warehouse():
 
 def _fmt_rows(n):
     """行数千分位 / 万位缩写。"""
-    if not n:
-        return "0"
+    if n is None:
+        return "未计量"
     return ("%.1f 万" % (n / 10000.0)) if n >= 10000 else str(n)
 
 

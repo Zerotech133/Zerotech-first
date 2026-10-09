@@ -24,25 +24,100 @@ done 纪律：manifest done=false 或缺失的表拒绝读（防读到不完整�
 别名自动降级到下一候选。
 """
 import glob
+import hashlib
 import json
 import logging
 import os
 import re
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
+from functools import wraps
+from pathlib import Path
 
 import pandas as pd
 
 import tdx_read as tdxr
+from warehouse_read_guard import PublicationPending, read_resources, publication_stamp
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG = os.path.join(HERE, "data", "catalog.json")
 
 _cat_cache = {"mtime": None, "data": None}
 _LOG = logging.getLogger(__name__)
+_READ_CATALOG = ContextVar('warehouse_read_catalog', default=None)
+_PUBLICATION_STAMPS = {}
+
+
+def _publication_roots(cat, names):
+    """按 catalog 与实际委托路径锁住全部候选，未就绪源也不越过 pending。"""
+    roots = []
+    for name in names:
+        e = cat.get('tables', {}).get(name) or {}
+        if e.get('store'):
+            roots.append(Path(e['store']).parent)
+        if e.get('manifest'):
+            roots.append(Path(e['manifest']).parent)
+        if e.get('layout') == 'sqlite':
+            roots.append(Path(tdxr.INFO_DB).parent)
+        if e.get('layout') == 'part' and name.startswith('ts_'):
+            # 原 latest 快路径会委托 TDX；锁的范围按实际 OUT 而非固定项目根。
+            roots.append(tdxr.OUT)
+    return roots
+
+
+@contextmanager
+def _publication_read(tables):
+    cat = _catalog()
+    names = []
+    for table in tables:
+        alias = cat.get('aliases', {}).get(table)
+        names.extend((alias.get('resolves') or []) if alias else [table])
+    with read_resources(_publication_roots(cat, names)) as roots:
+        # 先获锁并排除 pending，再检查缓存版本，缓存不能绕过发布保护。
+        catalog_version = (str(Path(CATALOG).resolve()), hashlib.sha256(
+            json.dumps(cat, sort_keys=True, ensure_ascii=False).encode('utf-8')).hexdigest())
+        changed = _PUBLICATION_STAMPS.get('catalog') != catalog_version
+        _PUBLICATION_STAMPS['catalog'] = catalog_version
+        for root in roots:
+            stamp = publication_stamp(root)
+            key = os.path.normcase(str(root))
+            if _PUBLICATION_STAMPS.get(key) != stamp:
+                changed = True
+                _PUBLICATION_STAMPS[key] = stamp
+        if changed:
+            _latest_cache.clear()
+            _prev_cache.clear()
+            _fresh_cache.update(ts=0.0, data=None)
+            _trade_cal_cache.update(ts=0.0, days=None)
+        token = _READ_CATALOG.set(cat)
+        try:
+            yield
+        finally:
+            _READ_CATALOG.reset(token)
+
+
+def _guard_table(function):
+    @wraps(function)
+    def wrapped(table, *args, **kwargs):
+        with _publication_read([table]):
+            return function(table, *args, **kwargs)
+    return wrapped
+
+
+def _guard_freshness(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        with _publication_read(['trade_cal'] + [row[0] for row in FRESHNESS_SPEC]):
+            return function(*args, **kwargs)
+    return wrapped
 
 
 def _catalog():
     """catalog.json 读取（按 mtime 缓存；build_catalog 原子写保证完整性）。"""
+    snapshot = _READ_CATALOG.get()
+    if snapshot is not None:
+        return snapshot
     try:
         mt = os.path.getmtime(CATALOG)
     except OSError:
@@ -52,6 +127,8 @@ def _catalog():
             with open(CATALOG, encoding="utf-8") as f:
                 _cat_cache["data"] = json.load(f)
             _cat_cache["mtime"] = mt
+        except PublicationPending:
+            raise
         except Exception:
             return {"tables": {}, "aliases": {}}
     return _cat_cache["data"]
@@ -63,6 +140,8 @@ def _manifest(mpath):
     try:
         with open(mpath, encoding="utf-8") as f:
             return json.load(f)
+    except PublicationPending:
+        raise
     except Exception:
         return {}
 
@@ -92,11 +171,13 @@ def _ready_one(tbl):
     return bool(e.get("done"))
 
 
+@_guard_table
 def ready(table):
     """别名/物理表是否至少一个候选就绪。"""
     return any(_ready_one(t) for t in _resolve(table))
 
 
+@_guard_table
 def explain(table):
     """路由明细：[{name, ready, priority, source, store, layout, freshness,
     live_latest}]。live_latest 为现算最新日期（freshness 是 build_catalog
@@ -114,6 +195,7 @@ def explain(table):
     return out
 
 
+@_guard_table
 def columns(table):
     """归一化 schema：代码列统一为 ts_code。"""
     for t in _resolve(table):
@@ -228,8 +310,12 @@ def _concat_pq(paths, cols=None, dcol=None, ccol=None, start=None, end=None, cod
             filters = _parquet_filters(pf, dcol, ccol, start, end, codes)
             try:
                 return pd.read_parquet(p, columns=c, filters=filters)
+            except PublicationPending:
+                raise
             except Exception:
                 return pd.read_parquet(p, columns=c)
+        except PublicationPending:
+            raise
         except Exception:
             return None
 
@@ -264,6 +350,8 @@ def _part_stats_days(p, dcol):
             mn = a if mn is None or a < mn else mn
             mx = b if mx is None or b > mx else mx
         return (mn, mx) if mn else None
+    except PublicationPending:
+        raise
     except Exception:
         return None
 
@@ -486,6 +574,7 @@ def _normalize(df, entries):
     return df[[c for c in cols if c in df.columns]].reset_index(drop=True)
 
 
+@_guard_table
 def read(table, start=None, end=None, codes=None, fields=None, limit=None):
     """统一读。table 可为物理表名或别名；空结果返回空 DataFrame。"""
     got, entries = [], []
@@ -500,6 +589,8 @@ def read(table, start=None, end=None, codes=None, fields=None, limit=None):
             if fields and merge_key:
                 internal_fields = list(dict.fromkeys(list(fields) + merge_key))
             df = _read_one(t, start, end, codes, internal_fields, limit)
+        except PublicationPending:
+            raise
         except Exception:
             continue
         if df is not None and not df.empty:
@@ -568,6 +659,8 @@ def _compute_latest(e):
             for f in reversed(dated):
                 try:
                     df = pd.read_parquet(f, columns=[dcol])
+                except PublicationPending:
+                    raise
                 except Exception:
                     continue
                 v = _d8(df[dcol])
@@ -590,6 +683,8 @@ def _compute_latest(e):
                 for f in cand:
                     try:
                         df = pd.read_parquet(f, columns=[dcol])
+                    except PublicationPending:
+                        raise
                     except Exception:
                         continue
                     v = _d8(df[dcol])
@@ -609,6 +704,8 @@ def _compute_latest(e):
                 fs = sorted(fs, key=os.path.getmtime, reverse=True)[:20]
             vals = [pd.read_parquet(p, columns=[dcol])[dcol] for p in fs]
             return _d8(pd.concat(vals, ignore_index=True))
+    except PublicationPending:
+        raise
     except Exception:
         return None
     return None
@@ -646,11 +743,14 @@ def _latest_one_uncached(t, e):
         v = _compute_latest(e)
         if v:
             return v
+    except PublicationPending:
+        raise
     except Exception:
         pass
     return e.get("freshness")
 
 
+@_guard_table
 def latest(table):
     """别名/物理表的本地最新日期（现算优先，实时跟随增量同步）。
 
@@ -699,6 +799,7 @@ FRESHNESS_SPEC = [
 _trade_cal_cache = {"ts": 0, "days": None}          # 交易日序列缓存 1h
 
 
+@_guard_freshness
 def _recent_trade_days(n_days=90):
     """升序最近交易日序列（YYYYMMDD，来自 trade_cal；失败返回 []）。"""
     now = time.time()
@@ -718,6 +819,8 @@ def _recent_trade_days(n_days=90):
             sub = df[df[oc] == 1] if oc is not None else df
             days = sorted(str(v)[:8] for v in sub[col]
                           if str(v)[:8].isdigit())
+    except PublicationPending:
+        raise
     except Exception:
         days = []
     _trade_cal_cache.update(ts=now, days=days)
@@ -742,6 +845,7 @@ _fresh_cache = {"ts": 0.0, "data": None}   # freshness 结果缓存（TTL 内复
 _prev_cache = {}                            # table_preview by_code 样本缓存
 
 
+@_guard_freshness
 def freshness_report(ttl_sec=300):
     """核心表时点校对：[{table, group, latest, expect, lag, tol, status,
     note}]。status: ok(≥期望-容忍) / lag-N / empty / nocal(无日历仅报 latest)。
@@ -761,6 +865,8 @@ def freshness_report(ttl_sec=300):
     for table, group, tol, note in FRESHNESS_SPEC:
         try:
             lat = latest(table)
+        except PublicationPending:
+            raise
         except Exception:
             lat = None
         if not lat:
@@ -780,6 +886,7 @@ def freshness_report(ttl_sec=300):
     return result
 
 
+@_guard_table
 def table_preview(table, n=8):
     """K56 数据穿透：白名单表最新 n 行样本（{cols, rows[{列:文本}]}）。
     口径：by_code 布局（us/crypto 万级文件）走 mtime 最新 25 文件直读；
@@ -793,6 +900,8 @@ def table_preview(table, n=8):
     lat = None
     try:
         lat = latest(table)
+    except PublicationPending:
+        raise
     except Exception:
         pass
     df = pd.DataFrame()
@@ -821,6 +930,8 @@ def table_preview(table, n=8):
                         df = _normalize(_d2, [_ent])
                         _prev_cache[_ck] = (time.time(), df)
                         break
+    except PublicationPending:
+        raise
     except Exception:
         df = pd.DataFrame()
 
@@ -829,11 +940,15 @@ def table_preview(table, n=8):
             st = (datetime.strptime(str(lat), "%Y%m%d")
                   - timedelta(days=12)).strftime("%Y%m%d")
             df = read(table, start=st, end=str(lat))
+        except PublicationPending:
+            raise
         except Exception:
             df = pd.DataFrame()
     if df is None or df.empty:
         try:
             df = read(table, limit=300)
+        except PublicationPending:
+            raise
         except Exception:
             df = pd.DataFrame()
     if df is None or df.empty:
@@ -845,6 +960,8 @@ def table_preview(table, n=8):
     if dcol:
         try:
             df = df.sort_values(dcol, ascending=False)
+        except PublicationPending:
+            raise
         except Exception:
             pass
     df = df.head(max(1, min(int(n), 20)))
@@ -857,6 +974,8 @@ def table_preview(table, n=8):
             if isinstance(v, float):
                 return ("%.4g" % v)
             return str(v)[:48]
+        except PublicationPending:
+            raise
         except Exception:
             return str(v)[:48]
 

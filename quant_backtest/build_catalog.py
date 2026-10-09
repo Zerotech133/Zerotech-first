@@ -42,7 +42,7 @@ INFO_DB = os.path.join(HERE, "data", "tdx", "tdx_info.db")
 END_DATE_TABLES = {"ts_income", "ts_balancesheet", "ts_cashflow",
                    "ts_fina_indicator",
                    "income", "balancesheet", "cashflow", "fina_indicator"}
-# 特例声明（未列出的表给默认值；desc 为空则自动留空）
+# 特例声明（未列出的表给默认值）。
 TABLE_DEFS = {
     # ── tushare 仓 ──
     "anns_d":          {"date_col": "ann_date", "freq": "D",
@@ -148,6 +148,35 @@ TABLE_DEFS = {
                         "desc": "旧美股日线（逐股单文件，待 us_daily 收口后废弃）"},
 }
 
+# 信息说明不推定采集完成或业务覆盖。
+for _name, _desc in {
+    'ts_balancesheet': 'A股资产负债表（xtcloud）',
+    'ts_cashflow': 'A股现金流量表（xtcloud）',
+    'ts_fina_indicator': 'A股财务指标（xtcloud）',
+    'ts_income': 'A股利润表（xtcloud）',
+    'cyq_chips': '筹码分布（逐码，文件名提供证券身份）',
+    'cyq_perf': '筹码胜率与成本指标',
+    'index_weight': '指数成分及权重（成分身份见 con_code）',
+    'irm_qa_sh_probe': '沪市互动问答单日探针（不代表全量覆盖）',
+    'irm_qa_sz_probe': '深市互动问答单日探针（不代表全量覆盖）',
+    'limit_list_d': '每日涨跌停明细',
+    'stk_holdernumber': '股东户数',
+    'stk_managers': '上市公司管理层信息',
+    'sw_l1_member': '申万一级行业成分关系（静态集合）',
+}.items():
+    TABLE_DEFS.setdefault(_name, {})['desc'] = _desc
+for _market, _label in (('hk', '港股'), ('us', '美股')):
+    for _table, _label_table in (('balancesheet', '资产负债表'), ('cashflow', '现金流量表'),
+                               ('fina_indicator', '财务指标'), ('income', '利润表')):
+        TABLE_DEFS[_market + '_' + _table] = {
+            'desc': _label + _label_table + '（Tushare）', 'date_col': 'end_date', 'freq': 'Q'}
+TABLE_DEFS['ts_rt_min'] = {'desc': '实时分钟行情（xtcloud，按实际 time 字段核验）',
+                          'date_col': 'time', 'freq': '1min'}
+for _name in ('tdx_sector_def', 'tdx_sector_member', 'ts_ths_member',
+              'stock_company', 'sw_classify_l1', 'sw_l1_member'):
+    TABLE_DEFS[_name]['date_col'] = None
+    TABLE_DEFS[_name]['date_status'] = 'not_applicable'
+
 # 财报主键保留同报告期的报表类型及披露版本；不存在的列在扫描时剔除。
 for _tbl in ("income", "balancesheet", "cashflow", "fina_indicator"):
     for _name in (_tbl, "ts_" + _tbl):
@@ -222,9 +251,9 @@ def _infer_layout(files):
 
 
 def _dcol(tbl, layout):
-    d = TABLE_DEFS.get(tbl, {}).get("date_col")
-    if d:
-        return d
+    definition = TABLE_DEFS.get(tbl, {})
+    if 'date_col' in definition:
+        return definition['date_col']
     if layout == "by_code_month":
         return "trade_time"
     if tbl in END_DATE_TABLES:
@@ -267,7 +296,7 @@ def _freshness(store, layout, dcol, files):
     快筛（早停）跳空壳，读首个非空文件的 dcol；全空 → None（rating
     侧 files 兜底转为可见告警）。
     """
-    if not files:
+    if not files or not dcol:
         return None
     try:
         if layout == "by_date":
@@ -346,29 +375,31 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     d = TABLE_DEFS.get(tbl, {})
     layout = d.get("layout") or (_infer_layout(files) if files else "part")
     schema, freshness = [], None
+    schema_inspected, schema_errors = 0, []
     if files:
         try:
             from pyarrow.parquet import ParquetFile
-            schema = ParquetFile(os.path.join(store, files[0])).schema_arrow.names
             declared = set(d.get("primary_key") or [])
-            if declared - set(schema):
-                # 首分片可能缺明细身份列，仅扫 footer 补齐表级 schema。
-                for filename in files[1:]:
-                    try:
-                        names = ParquetFile(os.path.join(store, filename)).schema_arrow.names
-                    except Exception:
-                        continue
-                    schema.extend(c for c in names if c not in schema)
-                    if declared.issubset(schema):
-                        break
+            # 单片损坏仍继续检查其余footer；保留错误，不能标全面结构。
+            for filename in files:
+                try:
+                    names = ParquetFile(os.path.join(store, filename)).schema_arrow.names
+                except Exception:
+                    schema_errors.append(filename)
+                    continue
+                schema_inspected += 1
+                schema.extend(c for c in names if c not in schema)
+                if layout != 'part' and declared.issubset(schema):
+                    break
         except Exception:
             schema = []
+            schema_errors.append(files[0])
     dcol, ccol = _dcol(tbl, layout), _ccol(tbl)
     if files and schema:
-        if dcol not in schema:
+        if dcol is not None and dcol not in schema:
             dcol = d.get("date_col") or next(
                 (c for c in ("trade_date", "cal_date", "ann_date",
-                             "end_date", "trade_time", "list_date")
+                             "end_date", "trade_time", "time", "list_date")
                  if c in schema), None)
         ccol = ccol if ccol in schema else next(
             (c for c in ("ts_code", "code", "symbol") if c in schema), None)
@@ -379,6 +410,9 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
     return {
         "source": source, "store": store.replace("\\", "/"), "layout": layout,
         "schema": schema, "date_col": dcol, "code_col": ccol,
+        "schema_scope": 'all_footers' if layout == 'part' and schema_inspected == len(files) and files and not schema_errors else 'sampled' if schema_inspected else 'unknown',
+        "schema_files_inspected": schema_inspected, "schema_errors": schema_errors,
+        "date_status": d.get('date_status', 'registered' if dcol else 'unknown'),
         "primary_key": [c for c in primary_key if c in schema],
         "freq": d.get("freq", "D"),
         "priority": d.get("priority", 1),
@@ -387,6 +421,10 @@ def _scan_dir(source, root, mpath, tbl, mf, store=None):
         "freshness": freshness,
         "rows": ent.get("rows") if ent else None,
         "files": len(files), "done": done,
+        "readiness_basis": 'manifest' if ent else 'file_presence',
+        "verification_status": 'unknown',
+        "manifest_status": ('not_applicable' if d.get('manifest', 'unset') is None else
+                            'closed' if ent.get('done') else 'open' if tbl in mf else 'missing'),
         "deprecated": d.get("deprecated", False),
         "desc": d.get("desc", ""),
     }
@@ -399,11 +437,13 @@ def _scan_sqlite(mf):
         return out
     dcol = {"stock_notice": "notice_date", "stock_news": "pub_date",
             "stock_report": "pub_date"}
-    fresh = {}
+    fresh, schemas, rows = {}, {}, {}
     try:
-        conn = sqlite3.connect(INFO_DB, timeout=10)
+        conn = sqlite3.connect('file:' + INFO_DB.replace('\\', '/') + '?mode=ro', uri=True, timeout=10)
         for t, c in dcol.items():
             try:
+                schemas[t] = [r[1] for r in conn.execute('PRAGMA table_info(%s)' % t)]
+                rows[t] = conn.execute('SELECT COUNT(*) FROM %s' % t).fetchone()[0]
                 v = conn.execute("SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
                 s = str(v[0]) if v and v[0] else ""
                 fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() else None
@@ -416,13 +456,17 @@ def _scan_sqlite(mf):
         ent = mf.get(t) or {}
         out[t] = {
             "source": "xtcloud", "store": INFO_DB.replace("\\", "/"),
-            "layout": "sqlite", "schema": [], "date_col": dcol[t],
+            "layout": "sqlite", "schema": schemas.get(t, []), "date_col": dcol[t],
+            "schema_scope": 'sqlite_pragma' if schemas.get(t) else 'unknown',
             "code_col": "ts_code", "freq": "D", "priority": 1,
             "primary_key": [],
             "manifest": WAREHOUSES[0][2].replace("\\", "/"),
-            "freshness": fresh.get(t), "rows": ent.get("rows"),
+            "freshness": fresh.get(t), "rows": rows.get(t),
             "files": 0, "done": bool(ent.get("done")),
             "deprecated": False, "desc": "tdx 信息库（公告/个股新闻/研报）",
+            "readiness_basis": 'manifest' if ent else 'sqlite_table_presence',
+            "verification_status": 'unknown',
+            "manifest_status": 'closed' if ent.get('done') else 'open' if t in mf else 'missing',
         }
     return out
 

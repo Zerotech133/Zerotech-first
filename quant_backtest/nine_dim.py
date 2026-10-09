@@ -442,22 +442,69 @@ def _nan2none(d):
                 for k, v in (dv or {}).items()} for c, dv in d.items()}
 
 
+def _daily_basic(tday):
+    """仅消费带原始 Tushare 来源回执的本地 TTM 日指标。
+
+    旧 TDX pe 是动态口径，绝不映射成 pe_ttm。Tushare circ_mv 与本
+    策略 float_mv 均为流通市值（万元）；读取全列以保留新分片字段。
+    原全市场 API 回退保留，仅补本地缺码/空值，不覆盖合格本地值。
+    """
+    local = {}
+    if TDX_LOCAL and tdxr is not None and tdxr.fresh("ts_daily_basic", tday):
+        try:
+            df = tdxr.read_day("ts_daily_basic", tday)
+            required = {"ts_code", "trade_date", "pe_ttm", "total_mv",
+                        "circ_mv", "source_provider", "actual_received_at",
+                        "source_raw_sha256"}
+            if required.issubset(df.columns):
+                received = pd.to_datetime(df["actual_received_at"],
+                                          utc=True, errors="coerce")
+                eligible = (df["trade_date"].astype(str).map(_td8) == tday) & \
+                    (df["source_provider"] == "tushare.daily_basic") & \
+                    received.notna() & (received <= pd.Timestamp.now(tz="UTC")) & \
+                    df["source_raw_sha256"].fillna("").astype(str).str.fullmatch(
+                        r"[0-9a-fA-F]{64}")
+                rows = df.loc[eligible].copy()
+                rows["_received"] = received.loc[eligible]
+                rows = rows.sort_values("_received").drop_duplicates(
+                    "ts_code", keep="last")
+                if not rows.empty:
+                    local = _nan2none({r["ts_code"]: {
+                        "pe_ttm": r["pe_ttm"], "total_mv": r["total_mv"],
+                        "float_mv": r["circ_mv"]}
+                        for r in rows.to_dict("records")})
+        except Exception:
+            pass
+    rows, ok = _by_trade_date("daily_basic", tday,
+                             ["pe_ttm", "total_mv", "circ_mv"])
+    if ok:
+        remote = _nan2none({c: {"pe_ttm": r.get("pe_ttm"),
+                              "total_mv": r.get("total_mv"),
+                              "float_mv": r.get("circ_mv")}
+                           for c, r in rows.items()})
+        for code, values in remote.items():
+            dst = local.setdefault(code, {})
+            for field, value in values.items():
+                if dst.get(field) is None:
+                    dst[field] = value
+    return local, bool(local) or ok
+
+
 def _fetch_flow(tday):
     """daily_basic / moneyflow / top_list(+top_inst) / block_trade。
     TDX 本地仓优先（_tdx_day fresh 门闸），未落盘表自动回退 tushare
     API；block_trade 无本地表恒走 API。
-    daily_basic 不接本地（语义不匹配，非快照问题）：TDX 'pe'=动态
+    daily_basic 仅接已核验原始 Tushare 回执的新分片：旧 TDX 'pe'=动态
     市盈率（2026-09-27 单日窗口 parity=逐日等于 tushare pe，≠pe_ttm
     18.7846 vs 18.989），本策略估值口径是 pe_ttm，错映射会造成
-    live/回放口径漂移，估值必须走 API。
+    live/回放口径漂移，不得将旧 pe 代替 pe_ttm；无合格分片回退 API。
     moneyflow/top_list/top_inst 历史分区真实（同日单日窗口 parity
     moneyflow 14/14、top_list ratio 1.0、margin_detail 0 差异）。
     排查提醒：TDX 远端 API 忽略 trade_date/ts_code 单参过滤，只有
     start_date/end_date 生效——用 trade_date 查历史分区会恒拉到最新
     分区（2026-09-27 曾据此误判两表为快照型，单日窗口法推翻）。"""
     got = {}
-    got["basic"], got["basic_ok"] = _by_trade_date(
-        "daily_basic", tday, ["pe_ttm", "total_mv", "float_mv"])
+    got["basic"], got["basic_ok"] = _daily_basic(tday)
     # moneyflow（大小单金额，字段名与 tushare 一致）：历史分区真实，
     # 2026-09-27 单日窗口 parity 14/14 后恢复本地优先。
     mf = _tdx_day("ts_moneyflow", tday,

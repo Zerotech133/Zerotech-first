@@ -485,6 +485,352 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
             "warn_count": sum(m["status"] == "WARN" for m in metrics)}
 
 
+_TARGET_SCHEMAS = {
+    **{name: {"keys": [code, "trade_date"], "required": required}
+       for name, (code, required) in TABLES.items()},
+    "tdx_sector_min": {"keys": ["code", "trade_date", "trade_time"],
+                       "required": ["open", "high", "low", "close", "vol", "amount"]},
+}
+
+
+def _target_digest(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True,
+        separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def _target_path(root, value):
+    """受控根内只读路径；拒绝符号链接及越界，不读取外部资格。"""
+    if not isinstance(value, (str, Path)):
+        raise ValueError("路径未声明")
+    path = Path(value)
+    path = path if path.is_absolute() else root / path
+    if not path.is_relative_to(root) or any(part == ".." for part in path.parts):
+        raise ValueError("路径越界")
+    for parent in [path, *path.parents]:
+        if parent == root:
+            break
+        if parent.is_symlink():
+            raise ValueError("符号链接不属于合格证据")
+    resolved = path.resolve()
+    if not resolved.is_relative_to(root) or resolved == root:
+        raise ValueError("路径越界")
+    return resolved
+
+
+def _target_day(value):
+    if isinstance(value, (datetime, pd.Timestamp)):
+        return value.strftime("%Y%m%d")
+    if not isinstance(value, str):
+        raise ValueError("日期不是明确文本")
+    fmt = "%Y-%m-%d" if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) else "%Y%m%d"
+    parsed = datetime.strptime(value, fmt)
+    if parsed.strftime(fmt) != value:
+        raise ValueError("日期格式或日期值无效")
+    return parsed.strftime("%Y%m%d")
+
+
+def _target_key(record, keys, day):
+    if not isinstance(record, dict) or set(record) != set(keys):
+        raise ValueError("资格键结构不符")
+    values = []
+    for key in keys:
+        value = record[key]
+        if key == "trade_date":
+            value = _target_day(value)
+            if value != day:
+                raise ValueError("资格键日期与目标不符")
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("资格键为空或类型未获核验")
+        values.append(value)
+    return tuple(values)
+
+
+def _target_eligibility(root, table, day, rule):
+    reference = rule.get("eligibility")
+    if not isinstance(reference, dict):
+        raise ValueError("没有逐键资格证据")
+    path = _target_path(root, reference.get("path"))
+    content = path.read_bytes()
+    fingerprint = hashlib.sha256(content).hexdigest()
+    if reference.get("sha256") != fingerprint:
+        raise ValueError("资格版本已变化")
+    payload = json.loads(content)
+    keys = rule["primary_key"]
+    if (not isinstance(payload, dict) or payload.get("schema_version") != 1 or payload.get("table") != table
+            or payload.get("primary_key") != keys or payload.get("qualification_status") != "qualified"):
+        raise ValueError("资格表名、版本或主键未获核验")
+    iso_day = datetime.strptime(day, "%Y%m%d").date().isoformat()
+    dates = payload.get("dates")
+    if not isinstance(dates, dict):
+        raise ValueError("资格日期结构无效")
+    selected = dates.get(iso_day)
+    sources = payload.get("sources")
+    if not isinstance(selected, dict) or selected.get("complete") is not True or not isinstance(sources, dict):
+        raise ValueError("目标逐键范围不完整")
+    calendar = selected.get("calendar")
+    if not isinstance(calendar, dict) or calendar.get("is_open") is not True:
+        raise ValueError("目标日历不完整或不是开放日")
+    source_hashes = {}
+
+    def verify_sources(ids):
+        if (not isinstance(ids, list) or not ids or any(not isinstance(i,str) or not i for i in ids)
+                or len(set(ids)) != len(ids)):
+            raise ValueError("缺少逐键来源关联")
+        for source_id in ids:
+            source = sources.get(source_id)
+            if (not isinstance(source, dict) or not isinstance(source.get("valid_dates"),list)
+                    or iso_day not in source["valid_dates"]):
+                raise ValueError("来源证据不适用目标日")
+            source_path = _target_path(root, source.get("path"))
+            source_content = source_path.read_bytes()
+            if not source_content.strip():
+                raise ValueError("空来源原体不能证明逐键资格")
+            actual = hashlib.sha256(source_content).hexdigest()
+            if source.get("sha256") != actual:
+                raise ValueError("来源摘要未核验")
+            source_hashes[source_id] = {"path": str(source_path.relative_to(root)), "sha256": actual}
+
+    verify_sources(calendar.get("source_ids"))
+    required, excluded = set(), set()
+    for field, output in [("keys", required), ("exclusions", excluded)]:
+        entries = selected.get(field)
+        if not isinstance(entries, list):
+            raise ValueError("没有完整逐键资格清单")
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise ValueError("逐键资格结构无效")
+            verify_sources(entry.get("source_ids"))
+            key = _target_key(entry.get("key"), keys, day)
+            if key in output or (field == "exclusions" and not entry.get("reason")):
+                raise ValueError("资格重复或排除理由缺失")
+            output.add(key)
+    if required & excluded or not required:
+        raise ValueError("范围冲突或空资格未获专属核验规则")
+    return required, excluded, _target_digest({"ledger_sha256": fingerprint, "sources": source_hashes})
+
+
+def _target_inventory(root, folder):
+    inventory = {}
+    for candidate in sorted(_target_path(root,folder).glob("part_*.parquet")):
+        path = _target_path(root,candidate)
+        stat = path.stat()
+        inventory[str(path.relative_to(root))] = {"bytes":stat.st_size,"mtime_ns":stat.st_mtime_ns,"file_id":stat.st_ino}
+    return inventory
+
+
+def _target_frame(root, source, table, wanted, day):
+    if source not in {"tdx", "tushare"} or table not in _TARGET_SCHEMAS:
+        raise ValueError("未登记物理读取规则")
+    folder = _target_path(root, Path(source) / table)
+    frames, digests, missing = [], {}, set()
+    inventory = _target_inventory(root,folder)
+    for candidate in inventory:
+        path = _target_path(root, candidate)
+        pf = pq.ParquetFile(path)
+        columns = [col for col in wanted if col in pf.schema_arrow.names]
+        if "trade_date" not in columns:
+            raise ValueError("无法确定目标范围：日期字段缺失")
+        date_index = pf.schema_arrow.names.index("trade_date")
+        row_groups = []
+        for index in range(pf.metadata.num_row_groups):
+            stats = pf.metadata.row_group(index).column(date_index).statistics
+            try:
+                if stats is not None and _target_day(stats.min) <= day <= _target_day(stats.max):
+                    row_groups.append(index)
+                elif stats is None:
+                    row_groups.append(index)
+            except (ValueError,TypeError):
+                # 无可信统计必须读实值，不把缺统计当空结果。
+                row_groups.append(index)
+        if not row_groups:
+            continue
+        before = hashlib.sha256(path.read_bytes()).hexdigest()
+        selected_frames = []
+        for batch in pf.iter_batches(batch_size=200000, columns=columns, row_groups=row_groups):
+            frame = batch.to_pandas()
+            def normalize(raw):
+                try:
+                    return _target_day(raw)
+                except (ValueError, TypeError):
+                    return None
+            dates = frame.trade_date.map(normalize)
+            selected = frame.loc[dates.eq(day)].copy()
+            if selected.empty:
+                continue
+            selected["trade_date"] = day
+            missing.update(set(wanted) - set(selected.columns))
+            for column in set(wanted) - set(selected.columns):
+                selected[column] = pd.NA
+            selected_frames.append(selected[wanted])
+        after = hashlib.sha256(path.read_bytes()).hexdigest()
+        if after != before:
+            raise ValueError("读取期间文件变化")
+        if selected_frames:
+            frames.extend(selected_frames)
+            digests[str(path.relative_to(root))] = before
+    return (pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=wanted)), digests, missing, inventory
+
+
+def _target_observed(frame, keys):
+    valid = pd.Series(True, index=frame.index)
+    for key in keys:
+        valid &= ~_null(frame[key])
+    tuples = [tuple(str(value) for value in row) for row in frame.loc[valid, keys].itertuples(index=False, name=None)]
+    return set(tuples), len(tuples) - len(set(tuples)), int((~valid).sum())
+
+
+def _target_key_dicts(values, keys):
+    return [dict(zip(keys, value)) for value in sorted(values)]
+
+
+def verify_targets(data_root, targets, *, reader=None):
+    """只核验冻结单日目标，返回 table 到证据摘要的字典，绝不写仓。
+
+targets 来自服务端计划并附 version=1 的 verification_rule，不能接收客户端资格。
+rule 明确 source/primary_key/required_columns/eligibility/query，可选 reconcile。
+资格台账逐键绑定受控根内来源摘要；该台账须先由资格流程核验，SHA 本身
+    不证明来源文本的业务含义。reader.root 必须由调用者绑定相同 root，在发布保护内
+物化 read(table, codes=..., start=..., end=...)；缺 reader 不导入默认生产配置。
+status 使用 passed/missing/partial/unknown，供每日视图映射数据状态。
+"""
+    root_path = Path(data_root)
+    if root_path.is_symlink():
+        raise ValueError("仓根不接受符号链接")
+    root = root_path.resolve()
+    if not root.is_dir() or not isinstance(targets, list):
+        raise ValueError("需要显式仓根与冻结目标列表")
+    result = {}
+    for target in targets:
+        if not isinstance(target, dict) or not isinstance(target.get("table"), str):
+            raise ValueError("目标必须有表名")
+        table = target["table"]
+        if table in result:
+            raise ValueError("同表目标重复；日期范围必须明确拆分调用")
+        output = dict(status="unknown", verified_at=datetime.now(timezone.utc).isoformat(),
+                      warehouse_digest=None, eligibility_digest=None, metrics={}, reason="verification_unknown")
+        result[table] = output
+        if target.get("status") == "waiting_release":
+            output.update(status="waiting_release", reason="not_due")
+            continue
+        if target.get("status") != "due" or table not in _TARGET_SCHEMAS:
+            output["reason"] = "target_or_table_unknown"
+            continue
+        rule = target.get("verification_rule")
+        if not isinstance(rule, dict) or rule.get("version") != 1 or not rule.get("rule_id"):
+            output["reason"] = "verification_rule_unknown"
+            continue
+        schema = _TARGET_SCHEMAS[table]
+        keys, required = rule.get("primary_key"), rule.get("required_columns")
+        if keys != schema["keys"] or required != schema["required"]:
+            output["reason"] = "schema_qualification_unknown"
+            continue
+        try:
+            day = _target_day(target.get("target"))
+            expected, excluded, eligibility_digest = _target_eligibility(root, table, day, rule)
+            output["eligibility_digest"] = eligibility_digest
+        except (OSError, ValueError, TypeError, KeyError):
+            output["reason"] = "eligibility_unknown"
+            continue
+        wanted = list(dict.fromkeys(keys + required))
+        try:
+            frame, fingerprints, missing_columns, inventory = _target_frame(root, rule.get("source"), table, wanted, day)
+            inventories = {str(Path(rule["source"])/table):inventory}
+            observed, duplicates, null_keys = _target_observed(frame, keys)
+        except (OSError, ValueError, TypeError, KeyError):
+            output["reason"] = "warehouse_read_failed"
+            continue
+        metrics = dict(scope={"start": datetime.strptime(day,"%Y%m%d").date().isoformat(),
+                              "end": datetime.strptime(day,"%Y%m%d").date().isoformat()},
+            history_verified=False, observed_rows=len(frame), observed_unique_keys=len(observed),
+            expected_keys=len(expected), missing_keys=_target_key_dicts(expected-observed,keys),
+            extra_keys=_target_key_dicts(observed-expected-excluded,keys),
+            excluded_keys=_target_key_dicts(excluded,keys), duplicate_rows=duplicates,
+            null_key_rows=null_keys, required_nulls={column:int(_null(frame[column]).sum()) for column in required},
+            missing_columns=sorted(missing_columns), query={"status":"unknown"})
+        output["metrics"] = metrics
+        problems = bool(metrics["missing_keys"] or metrics["extra_keys"] or duplicates or null_keys
+                        or missing_columns or any(metrics["required_nulls"].values()))
+        reason = "target_incomplete" if problems else None
+        reconciliation = rule.get("reconcile")
+        if reconciliation:
+            try:
+                if not isinstance(reconciliation, dict) or reconciliation.get("primary_key") != keys:
+                    raise ValueError("跨表对账规则未核验")
+                other, other_sha, missing, other_inventory = _target_frame(root, reconciliation.get("source"),
+                    reconciliation.get("table"), keys, day)
+                other_keys, other_duplicates, other_nulls = _target_observed(other, keys)
+                fingerprints.update(other_sha)
+                inventories[str(Path(reconciliation["source"])/reconciliation["table"])] = other_inventory
+                metrics["reconciliation"] = dict(missing_keys=_target_key_dicts(observed-other_keys,keys),
+                    extra_keys=_target_key_dicts(other_keys-observed,keys), duplicate_rows=other_duplicates,
+                    null_key_rows=other_nulls)
+                if missing or other_duplicates or other_nulls or other_keys != observed:
+                    problems, reason = True, "reconciliation_failed"
+            except (OSError, ValueError, TypeError, KeyError):
+                output["reason"] = "reconciliation_unknown"
+                continue
+        output["warehouse_digest"] = _target_digest({"files":fingerprints,"parts":inventories})
+        query = rule.get("query")
+        if (not isinstance(query, dict) or not isinstance(query.get("table"), str)
+                or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,127}",query["table"])
+                or not isinstance(query.get("codes"), list)
+                or any(not isinstance(code,str) or not code for code in query["codes"])):
+            output["reason"] = "query_rule_unknown"
+            continue
+        code_column = keys[0]
+        expected_codes = {key[0] for key in expected}
+        if not expected_codes <= set(query["codes"]):
+            output["reason"] = "query_scope_incomplete"
+            continue
+        if reader is None or not callable(getattr(reader, "read", None)):
+            output["reason"] = "query_reader_unavailable"
+            continue
+        try:
+            if Path(reader.root).resolve() != root:
+                raise ValueError("查询仓根不一致")
+        except (AttributeError, ValueError, TypeError, OSError):
+            output["reason"] = "query_root_unknown"
+            continue
+        try:
+            queried = reader.read(query["table"], codes=query["codes"], start=day, end=day)
+            if not isinstance(queried, pd.DataFrame) or set(wanted) - set(queried.columns):
+                raise ValueError("查询未物化或缺字段")
+            queried = queried[wanted].copy()
+            queried["trade_date"] = queried.trade_date.map(_target_day)
+            if not queried.trade_date.eq(day).all():
+                raise ValueError("查询返回目标外行")
+            query_keys, query_duplicates, query_nulls = _target_observed(queried, keys)
+            physical = frame.loc[frame[code_column].astype(str).isin(query["codes"]), wanted]
+            def canonical(value):
+                return value.sort_values(keys).reset_index(drop=True)
+            equal = (query_keys == observed and not query_duplicates and not query_nulls
+                     and canonical(queried).equals(canonical(physical)))
+            metrics["query"] = {"status":"passed" if equal else "failed", "observed_unique_keys":len(query_keys)}
+            if not equal:
+                problems, reason = True, "query_result_mismatch"
+        except Exception as exc:
+            from warehouse_commit import PublicationPending
+            if isinstance(exc, PublicationPending):
+                raise
+            # 不保存查询异常自由文本，避免连接串或认证材料进入核验摘要。
+            metrics["query"] = {"status":"failed", "error_kind":type(exc).__name__}
+            problems, reason = True, "query_failed"
+        # reader可能触发缓存或长查询；再次核文件/资格，版本变化不发布旧绿证据。
+        try:
+            _, _, current_eligibility = _target_eligibility(root,table,day,rule)
+            if current_eligibility != eligibility_digest or any(
+                    hashlib.sha256(_target_path(root,path).read_bytes()).hexdigest() != fingerprint
+                    for path,fingerprint in fingerprints.items()) or any(
+                    _target_inventory(root,folder) != inventory
+                    for folder,inventory in inventories.items()):
+                raise ValueError("核验版本已变化")
+        except (OSError, ValueError, TypeError, KeyError):
+            output.update(status="unknown",reason="verification_snapshot_changed")
+            continue
+        output.update(status="missing" if not observed else "partial" if problems else "passed", reason=reason)
+    return result
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-root")
