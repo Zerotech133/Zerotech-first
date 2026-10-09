@@ -1,0 +1,21 @@
+{
+  "id": "gunner",
+  "name": "快枪手",
+  "style": "短线型",
+  "desc": "隔日短打 · 尾盘买次日卖（A股 T+1 下的最短周期）。小仓快进快出，单票严格 8% 上限，止损 -3% 最紧；设计评估中——先论证 T+1 约束下短打期望收益能否覆盖双边费用。",
+  "status": "design",
+  "initial_cash": 1000000,
+  "params": {
+    "max_pos_pct": 0.08,
+    "max_total_pct": 0.40,
+    "stop_dist_pct": 0.03,
+    "conf_floor": 0.75
+  },
+  "graduation": {
+    "min_days": 20,
+    "max_drawdown_pct": 5.0,
+    "min_verify_pass_rate": 1.0,
+    "bench": "main"
+  },
+  "created_at": "2026-10-09T13:10:00"
+}

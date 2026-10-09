@@ -10,6 +10,9 @@ v0.2 平台化扩展（K280）：
 - status(): 持仓/挂单/成交投影带 strategy 标记；新增 stops 止损清单（现价+触发距离）
 - snapshot_days(): 全部快照日列表（供前端日期选择器）
 - history(day): 任意历史日回看——当日净值 + 持仓快照 + 当日成交/终态订单
+
+v0.3 多账户口径：门户主页面 = main 交易台投影。全部查询锁 account_id='main'，
+交易员子账本（taishan/chaser/gunner…）不经此层暴露（v0.3 训练期隔离，上岗后另开视图）。
 """
 from __future__ import annotations
 
@@ -18,6 +21,8 @@ import sqlite3
 from pathlib import Path
 
 DB = Path(__file__).resolve().parent.parent / "data" / "paper.db"
+
+MAIN = "main"   # 门户投影固定口径：主交易台
 
 
 def _connect() -> sqlite3.Connection | None:
@@ -36,7 +41,7 @@ def status() -> dict:
     try:
         marks = con.execute(
             "SELECT date,total,cash,market_value,pos_pct,pending,verify_ok "
-            "FROM equity_marks ORDER BY date").fetchall()
+            "FROM equity_marks WHERE account_id=? ORDER BY date", (MAIN,)).fetchall()
         if not marks:
             return {"ok": False, "error": "无快照（跑 paper/cli.py mark 生成）"}
         latest = marks[-1]
@@ -44,25 +49,28 @@ def status() -> dict:
         snap_date = latest["date"]
         positions = con.execute(
             "SELECT stock,qty,avg_cost,last,market_value,pnl,available,strategy,account_id "
-            "FROM positions_snapshot WHERE date=? ORDER BY stock", (snap_date,)).fetchall()
+            "FROM positions_snapshot WHERE account_id=? AND date=? ORDER BY stock",
+            (MAIN, snap_date)).fetchall()
         pending = con.execute(
             "SELECT id,ts,source,strategy,order_kind,conf,stock,side,qty,plan_date,reason "
-            "FROM orders WHERE status='pending' ORDER BY id").fetchall()
+            "FROM orders WHERE account_id=? AND status='pending' ORDER BY id",
+            (MAIN,)).fetchall()
         recent = con.execute(
             "SELECT id,ts,source,strategy,order_kind,ref,stock,side,qty,status,"
             "plan_date,fill_date,filled_price,fee,reason "
-            "FROM orders ORDER BY id DESC LIMIT 20").fetchall()
+            "FROM orders WHERE account_id=? ORDER BY id DESC LIMIT 20", (MAIN,)).fetchall()
         # 止损清单：positions.stop_price LEFT JOIN 最新快照取现价，算触发距离
         last_snap = con.execute(
-            "SELECT MAX(date) AS d FROM positions_snapshot").fetchone()["d"]
+            "SELECT MAX(date) AS d FROM positions_snapshot WHERE account_id=?",
+            (MAIN,)).fetchone()["d"]
         stops: list[dict] = []
         if last_snap:
             rows = con.execute(
                 "SELECT p.stock,p.qty,p.stop_price,p.strategy,s.last "
                 "FROM positions p LEFT JOIN positions_snapshot s "
-                "  ON s.stock=p.stock AND s.date=? "
-                "WHERE p.stop_price IS NOT NULL ORDER BY p.stock",
-                (last_snap,)).fetchall()
+                "  ON s.stock=p.stock AND s.date=? AND s.account_id=p.account_id "
+                "WHERE p.account_id=? AND p.stop_price IS NOT NULL ORDER BY p.stock",
+                (last_snap, MAIN)).fetchall()
             for r in rows:
                 d = dict(r)
                 d["distance_pct"] = (round((r["stop_price"] / r["last"] - 1) * 100, 2)
@@ -71,6 +79,7 @@ def status() -> dict:
         return {
             "ok": True,
             "as_of": snap_date,
+            "account_id": MAIN,
             "latest": {
                 "date": latest["date"], "total": latest["total"], "cash": latest["cash"],
                 "market_value": latest["market_value"], "pos_pct": latest["pos_pct"],
@@ -89,19 +98,20 @@ def status() -> dict:
 
 
 def snapshot_days() -> list[str]:
-    """全部快照日（升序），供前端日期选择器；库/快照缺失返回空列表。"""
+    """主交易台全部快照日（升序），供前端日期选择器；库/快照缺失返回空列表。"""
     con = _connect()
     if con is None:
         return []
     try:
         return [r["date"] for r in
-                con.execute("SELECT date FROM equity_marks ORDER BY date").fetchall()]
+                con.execute("SELECT date FROM equity_marks WHERE account_id=? ORDER BY date",
+                            (MAIN,)).fetchall()]
     finally:
         con.close()
 
 
 def history(day: str) -> dict:
-    """任意历史日回看：当日净值点 + 持仓快照 + 当日成交与终态订单。
+    """任意历史日回看（main 口径）：当日净值点 + 持仓快照 + 当日成交与终态订单。
 
     订单口径：fill_date=当日（实际成交）∪ plan_date=当日且终态为
     rejected/cancelled（当日计划但未成交的终态）；pending 不进历史视图
@@ -112,7 +122,8 @@ def history(day: str) -> dict:
         return {"ok": False, "error": f"paper.db 不存在（模拟仓未初始化）: {DB}"}
     try:
         marks = con.execute(
-            "SELECT date,total FROM equity_marks ORDER BY date").fetchall()
+            "SELECT date,total FROM equity_marks WHERE account_id=? ORDER BY date",
+            (MAIN,)).fetchall()
         if not marks:
             return {"ok": False, "error": "无快照（跑 paper/cli.py mark 生成）"}
         base = marks[0]["total"] or 1.0
@@ -123,16 +134,18 @@ def history(day: str) -> dict:
                     "available_days": days}
         positions = con.execute(
             "SELECT stock,qty,avg_cost,last,market_value,pnl,available,strategy,account_id "
-            "FROM positions_snapshot WHERE date=? ORDER BY stock", (day,)).fetchall()
+            "FROM positions_snapshot WHERE account_id=? AND date=? ORDER BY stock",
+            (MAIN, day)).fetchall()
         orders = con.execute(
             "SELECT id,ts,source,strategy,order_kind,ref,stock,side,qty,status,"
             "plan_date,fill_date,filled_price,fee,reason "
-            "FROM orders WHERE fill_date=? "
-            "   OR (plan_date=? AND status NOT IN ('pending','filled')) "
-            "ORDER BY id", (day, day)).fetchall()
+            "FROM orders WHERE account_id=? AND (fill_date=? "
+            "   OR (plan_date=? AND status NOT IN ('pending','filled'))) "
+            "ORDER BY id", (MAIN, day, day)).fetchall()
         return {
             "ok": True,
             "day": day,
+            "account_id": MAIN,
             "mark": {
                 "total": mark["total"],
                 "cum_pct": round((mark["total"] / base - 1) * 100, 2),

@@ -31,7 +31,8 @@ DEFAULT_DB = DATA_DIR / "paper.db"
 
 def _engine(args) -> PaperEngine:
     db = Path(args.db) if args.db else DEFAULT_DB
-    return PaperEngine(db, ParquetMarket())
+    # v0.3 多交易员子账本：--account 透传（main=主交易台，行为与 v0.2 完全一致）
+    return PaperEngine(db, ParquetMarket(), account=getattr(args, "account", "main"))
 
 
 def _newest_run() -> Path:
@@ -261,6 +262,14 @@ def cmd_order(args) -> int:
 
 
 def main(argv=None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # v0.3 多交易员子账本：--account 全局透传（位置不限，缺省 main=主交易台）
+    account = "main"
+    if "--account" in argv:
+        i = argv.index("--account")
+        if i + 1 < len(argv):
+            account = argv[i + 1]
+            del argv[i:i + 2]
     ap = argparse.ArgumentParser(prog="paper", description="K-STOCK 模拟仓（纸面交易账本）")
     ap.add_argument("--db", default=None, help="账本 SQLite 路径（默认 k_stock/data/paper.db）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -340,6 +349,7 @@ def main(argv=None) -> int:
     p.set_defaults(fn=cmd_order)
 
     args = ap.parse_args(argv)
+    args.account = account   # v0.3 子账本透传（_engine 消费）
     try:
         return args.fn(args)
     except Reject as e:

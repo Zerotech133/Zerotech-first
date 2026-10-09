@@ -1,0 +1,21 @@
+{
+  "id": "taishan",
+  "name": "稳如泰山",
+  "style": "防守型",
+  "desc": "弱市防守 · 高现金 · 严止损 · 回撤控制优先。仓位天花板低，宁可错过不下重手；单票止损收紧到 -4%，触发即清，绝不抗单。",
+  "status": "training",
+  "initial_cash": 1000000,
+  "params": {
+    "max_pos_pct": 0.12,
+    "max_total_pct": 0.60,
+    "stop_dist_pct": 0.04,
+    "conf_floor": 0.70
+  },
+  "graduation": {
+    "min_days": 20,
+    "max_drawdown_pct": 6.0,
+    "min_verify_pass_rate": 1.0,
+    "bench": "main"
+  },
+  "created_at": "2026-10-09T13:10:00"
+}

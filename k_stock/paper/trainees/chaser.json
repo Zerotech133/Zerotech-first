@@ -1,0 +1,21 @@
+{
+  "id": "chaser",
+  "name": "追风者",
+  "style": "趋势型",
+  "desc": "趋势市顺势加仓 · 宽止损拿波段 · 可绑定量子双刀全自动。敢给利润空间，止损放宽到 -8% 换取波段持有；高置信信号（conf≥0.75）允许单票上到 16%。",
+  "status": "training",
+  "initial_cash": 1000000,
+  "params": {
+    "max_pos_pct": 0.16,
+    "max_total_pct": 0.90,
+    "stop_dist_pct": 0.08,
+    "conf_floor": 0.60
+  },
+  "graduation": {
+    "min_days": 20,
+    "max_drawdown_pct": 12.0,
+    "min_verify_pass_rate": 1.0,
+    "bench": "main"
+  },
+  "created_at": "2026-10-09T13:10:00"
+}

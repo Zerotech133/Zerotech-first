@@ -463,3 +463,129 @@ def test_portal_status_projection(tmp_path, monkeypatch):
     assert h["positions"][0]["strategy"] == "manual"
     bad = portal_status.history("1999-01-01")
     assert not bad["ok"] and bad["available_days"] == ["2026-10-09"]
+
+
+# ---------- v0.3 多交易员子账本 ----------
+
+def test_multi_account_isolation(tmp_path):
+    """子账本完全隔离：同库各户独立现金/持仓/订单，互不可见；档案风控独立生效。"""
+    db = tmp_path / "paper.db"
+    main = PaperEngine(db, _mk_market(), account="main")
+    t = PaperEngine(db, _mk_market(), account="taishan",
+                    config={"max_pos_pct": 0.30})   # 档案风控放宽（可买 200 股）
+    r = t.buy("600519.SH", 200)
+    assert r["account_id"] == "taishan"
+    main.buy("600519.SH", 100)
+    assert main.positions("main")[0]["qty"] == 100
+    assert t.positions("taishan")[0]["qty"] == 200
+    assert main.available_qty("600519.SH", "main") == 0   # 各自当日买入各自冻结
+    assert t.available_qty("600519.SH", "taishan") == 0
+    assert main.equity("main")["cash"] != t.equity("taishan")["cash"]
+    assert main.verify("main")["ok"] and t.verify("taishan")["ok"]
+    aids = {a["account_id"] for a in PaperEngine(db, _mk_market()).accounts()}
+    assert aids == {"main", "taishan"}
+
+
+def test_t1_frozen_per_account(tmp_path):
+    """T+1 冻结按账户独立：各户按自己的买入日冻结，湖推进后各自解锁。"""
+    db = tmp_path / "paper.db"
+    mkt = _mk_market()
+    main = PaperEngine(db, mkt, account="main")
+    t = PaperEngine(db, mkt, account="taishan")
+    main.buy("600519.SH", 100)          # 两户都在 1009 买入 → 各自冻结
+    t.buy("600519.SH", 100)
+    assert main.available_qty("600519.SH", "main") == 0
+    assert t.available_qty("600519.SH", "taishan") == 0
+    tail = _mk_market(extra_tail=True)  # 湖推进（1010 入库）→ 1009 买入解锁
+    main.market = tail
+    t.market = tail
+    assert main.available_qty("600519.SH", "main") == 100
+    assert t.available_qty("600519.SH", "taishan") == 100
+
+
+def test_subaccount_ref_segmented_idempotent(tmp_path):
+    """同一条 run 落 main 与子账本：ref 按 @账户 分段互不冲突，各自幂等。"""
+    db = tmp_path / "paper.db"
+    run = tmp_path / "poc_x.json"
+    item = {"stock": "600519.SH", "asof": RUN_ASOF,
+            "outputs": {"D1": {"action": "BUY", "confidence": 0.8}}}
+    run.write_text(json.dumps([item]), encoding="utf-8")
+    mkt = _mk_market()
+    main = PaperEngine(db, mkt, account="main")
+    chaser = PaperEngine(db, mkt, account="chaser")
+    r1 = main.exec_run(run, account_id="main")
+    r2 = chaser.exec_run(run, account_id="chaser")
+    assert len([o for o in r1["orders"] if o.get("status") == "pending"]) == 1
+    assert len([o for o in r2["orders"] if o.get("status") == "pending"]) == 1
+    refs = {row["ref"] for row in PaperEngine(db, mkt).history(10, account_id="chaser")}
+    assert any(r.startswith("poc_x.json@chaser#") for r in refs), refs   # 子账本 ref 带 @段
+    # 各自重跑 → 幂等跳过（互不误伤）
+    r1b = main.exec_run(run, account_id="main")
+    r2b = chaser.exec_run(run, account_id="chaser")
+    assert all("幂等" in s["why"] for s in r1b["skipped"])
+    assert all("幂等" in s["why"] for s in r2b["skipped"])
+
+
+def test_min_conf_filters_buy_only(tmp_path):
+    """min_conf（交易员 conf_floor）只拦 BUY；低于门槛 skip、达标 pending。"""
+    run = tmp_path / "poc_y.json"
+    items = [
+        {"stock": "600519.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.6}}},
+        {"stock": "600001.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.9}}},
+    ]
+    run.write_text(json.dumps(items), encoding="utf-8")
+    e = PaperEngine(tmp_path / "paper.db", _mk_market(), account="chaser")
+    r = e.exec_run(run, account_id="chaser", min_conf=0.7)
+    pend = [o for o in r["orders"] if o.get("status") == "pending"]
+    assert len(pend) == 1 and pend[0]["stock"] == "600001.SH"
+    assert any("交易员门槛" in s["why"] and s["stock"] == "600519.SH"
+               for s in r["skipped"])
+
+
+def test_stops_per_account(tmp_path):
+    """止损按账户独立：main 触发、子账本观察不触发；main 触发单 ref 保持旧格式。"""
+    db = tmp_path / "paper.db"
+    mkt = _mk_market()
+    main = PaperEngine(db, mkt, account="main")
+    t = PaperEngine(db, mkt, account="taishan")
+    main.buy("600519.SH", 100)                  # fill 1009
+    t.buy("600519.SH", 100)
+    main.set_stop("600519.SH", 1270.0)          # main：1010 收 1258 < 1270 → 触发
+    t.set_stop("600519.SH", 1200.0)             # taishan：1258 ≥ 1200 → 观察
+    tail = _mk_market(extra_tail=True)          # 湖推进 → 1009 买入解锁（可卖 100）
+    main.market = tail
+    t.market = tail
+    rm = main.check_stops(account_id="main")
+    rt = t.check_stops(account_id="taishan")
+    assert len([x for x in rm["triggered"] if x.get("status") == "pending"]) == 1
+    assert len([x for x in rt["triggered"] if x.get("status") == "pending"]) == 0
+    assert len(rt["watch"]) == 1
+    mref = next(o["ref"] for o in main.history(5, account_id="main")
+                if o["order_kind"] == "stop")
+    assert mref == "stop#600519.SH#20261010"    # main 保持旧格式（历史兼容）
+
+
+def test_snapshot_pk_multi_account(tmp_path):
+    """同日同票两账户权益/持仓快照共存（PK 含 account_id），门户投影仍只回 main。"""
+    import portal_status
+    db = tmp_path / "paper.db"
+    mkt = _mk_market()
+    main = PaperEngine(db, mkt, account="main")
+    t = PaperEngine(db, mkt, account="taishan")
+    main.buy("600519.SH", 100)
+    t.buy("600519.SH", 100)
+    main.mark("2026-10-09", account_id="main")
+    t.mark("2026-10-09", account_id="taishan")   # 同日同票，不撞主键
+    n = main.con.execute("SELECT COUNT(*) FROM positions_snapshot").fetchone()[0]
+    assert n == 2
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(portal_status, "DB", db)
+    try:
+        s = portal_status.status()
+        assert s["ok"] and len(s["positions"]) == 1          # 只回 main 的持仓
+        assert s["positions"][0]["qty"] == 100
+        assert s["positions"][0]["account_id"] == "main"
+    finally:
+        monkey.undo()
