@@ -208,9 +208,6 @@ def test_fetch_yf_parse(tmpdir, monkeypatch):
 
     fake_yf = types.SimpleNamespace(Ticker=lambda s: types.SimpleNamespace(
         history=lambda period, auto_adjust: _DF()))
-    monkeypatch.setattr(um, "fetch_daily", um.fetch_daily, raising=False)
-    import importlib
-    real_yf = importlib.import_module("yfinance") if False else None
     monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
     rows = um._fetch_yf("gb_aapl")
     assert len(rows) == 2
@@ -232,9 +229,18 @@ if __name__ == "__main__":
         def setattr(self, obj, name, val):
             self._undo.append((obj, name, getattr(obj, name)))
             setattr(obj, name, val)
+        def setitem(self, dic, key, val):
+            self._undo.append(("__item__", dic, key))
+            dic[key] = val
         def undo(self):
-            for obj, name, old in reversed(self._undo):
-                setattr(obj, name, old)
+            for item in reversed(self._undo):
+                if item[0] == "__item__":
+                    _, dic, key = item
+                    if key in dic:
+                        del dic[key]
+                else:
+                    obj, name, old = item
+                    setattr(obj, name, old)
 
     class _Capsys:  # mini capsys
         def __init__(self):
