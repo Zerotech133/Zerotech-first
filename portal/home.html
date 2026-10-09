@@ -30,12 +30,14 @@ a{color:var(--acc);text-decoration:none}
 .kpi small{font-size:12px;color:var(--dim);font-weight:400}
 .sub{color:var(--dim);font-size:12px;margin-top:5px;line-height:1.7}
 .pos{color:var(--up)}.neg{color:var(--down)}
-/* 对话 */
-.chat{margin:14px 0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
-.chat-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#bc8cff,#58a6ff);display:flex;align-items:center;justify-content:center;font-size:19px}
-.chat-head b{font-size:14.5px}.chat-head span{color:var(--dim);font-size:11.5px}
-#msgs{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:6px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 20px}
+.list{font-size:13px;line-height:2}
+.list .t{color:var(--dim);font-size:12px}
+.runok{color:var(--ok)}.runwait{color:var(--warn)}
+footer{text-align:center;color:var(--dim);font-size:11.5px;padding:12px 0 20px}
+/* 对话（菜鸟窗内） */
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#bc8cff,#58a6ff);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+#msgs{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:6px 0}
 .msg{padding:9px 12px;border-radius:10px;max-width:88%;white-space:pre-wrap;line-height:1.55;font-size:13.5px}
 .msg.me{align-self:flex-end;background:#1f6feb33;border:1px solid #1f6feb66}
 .msg.cai{align-self:flex-start;background:#21262d;border:1px solid var(--border)}
@@ -47,11 +49,26 @@ a{color:var(--acc);text-decoration:none}
 .inrow input{flex:1;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-size:13.5px;outline:none}
 .inrow input:focus{border-color:var(--acc)}
 .inrow button{background:#238636;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 20px}
-.list{font-size:13px;line-height:2}
-.list .t{color:var(--dim);font-size:12px}
-.runok{color:var(--ok)}.runwait{color:var(--warn)}
-footer{text-align:center;color:var(--dim);font-size:11.5px;padding:12px 0 20px}
+/* ═══ 悬浮 AI 入口（可拖拽 · 动态）═══ */
+#ai-orb{position:fixed;z-index:900;width:66px;height:66px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;right:26px;bottom:26px}
+#ai-orb.drag{cursor:grabbing}
+#ai-orb .orb-halo{position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,#58a6ff2e 30%,transparent 72%);animation:orbBreathe 2.4s ease-in-out infinite}
+#ai-orb .orb-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed #58a6ff77;animation:orbSpin 8s linear infinite}
+#ai-orb .orb-core{position:absolute;inset:9px;border-radius:50%;background:linear-gradient(135deg,#bc8cff,#58a6ff);display:flex;align-items:center;justify-content:center;font-size:27px;box-shadow:0 4px 18px #58a6ff59;animation:orbFloat 3.2s ease-in-out infinite}
+#ai-orb:hover .orb-core{box-shadow:0 6px 28px #bc8cffaa}
+#ai-orb .orb-dot{position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:var(--up);box-shadow:0 0 8px #f8514999;animation:orbBreathe 1.6s ease-in-out infinite}
+@keyframes orbBreathe{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.12);opacity:1}}
+@keyframes orbSpin{to{transform:rotate(360deg)}}
+@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+/* ═══ 菜鸟窗（点击悬浮球召唤）═══ */
+#cai-win{position:fixed;z-index:950;width:min(430px,94vw);background:var(--panel);border:1px solid #58a6ff66;border-radius:16px;padding:14px;box-shadow:0 14px 48px #000d;display:none}
+#cai-win.open{display:block;animation:winPop .22s ease-out}
+@keyframes winPop{from{opacity:0;transform:scale(.72) translateY(18px)}to{opacity:1;transform:none}}
+.win-head{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.win-head b{font-size:14.5px}
+.win-head span{color:var(--dim);font-size:11.5px}
+.win-x{margin-left:auto;background:none;border:1px solid var(--border);color:var(--dim);width:26px;height:26px;border-radius:50%;font-size:15px;cursor:pointer;line-height:1}
+.win-x:hover{color:var(--text);border-color:var(--acc)}
 </style>
 </head>
 <body>
@@ -65,30 +82,6 @@ footer{text-align:center;color:var(--dim);font-size:11.5px;padding:12px 0 20px}
   <!-- 此刻：老田现在该看什么 -->
   <div class="moment" id="moment"></div>
 
-  <!-- 菜鸟对话 -->
-  <div class="chat">
-    <div class="chat-head"><div class="avatar">🐣</div>
-      <div><b>菜鸟</b><br><span>平行空间的自己 · 替你管公司 · 想去哪个部门说一声就带路</span></div>
-    </div>
-    <div id="msgs">
-      <div class="msg cai">老板好。上面「此刻」是我替你排的优先级——你只需要处理拍板的事，其余我在盯。问「各部门情况」「我的钱」「挂单」「裁决窗」都行，说「打开模拟仓」我带路。</div>
-    </div>
-    <div class="chips">
-      <button class="chip" onclick="ask('各部门情况')">📊 各部门情况</button>
-      <button class="chip" onclick="ask('我的钱')">💰 我的钱</button>
-      <button class="chip" onclick="ask('挂单')">📋 挂单</button>
-      <button class="chip" onclick="ask('裁决窗')">📅 裁决窗</button>
-      <button class="chip" onclick="ask('影子进度')">👤 影子进度</button>
-      <button class="chip" onclick="nav('/paper')">→ 模拟仓</button>
-      <button class="chip" onclick="nav('/kg')">→ 情报图谱</button>
-      <button class="chip" onclick="nav('/qd/')">→ 量子双刀</button>
-    </div>
-    <div class="inrow">
-      <input id="in" placeholder="给菜鸟下指令…" onkeydown="if(event.key==='Enter')send()">
-      <button onclick="send()">发送</button>
-    </div>
-  </div>
-
   <!-- 我的钱 -->
   <div class="grid" id="money-grid"></div>
 
@@ -100,8 +93,44 @@ footer{text-align:center;color:var(--dim);font-size:11.5px;padding:12px 0 20px}
     <div class="card"><h3>🏭 组织架构</h3><div class="list" id="org">读取中…</div></div>
   </div>
 
-  <footer>超级个体 OS · 信息菜鸟推给你 · 决策部门算给你 · 执行账本自己跑 · 你只在裁决点拍板</footer>
+  <footer>超级个体 OS · 信息菜鸟推给你 · 决策部门算给你 · 执行账本自己跑 · 你只在裁决点拍板<br>
+  <span style="font-size:10.5px">右下角的蛋就是菜鸟——拖到顺手的位置，点一下就召唤</span></footer>
 </div>
+
+<!-- ═══ 悬浮 AI 入口：菜鸟蛋（可拖拽 · 点击召唤）═══ -->
+<div id="ai-orb" title="菜鸟 · 拖动换位置 / 点击召唤">
+  <div class="orb-halo"></div>
+  <div class="orb-ring"></div>
+  <div class="orb-core">🐣</div>
+  <div class="orb-dot"></div>
+</div>
+
+<!-- ═══ 菜鸟窗 ═══ -->
+<div id="cai-win">
+  <div class="win-head">
+    <div class="avatar">🐣</div>
+    <div><b>菜鸟</b><br><span>平行空间的自己 · 替你管公司 · 说「打开模拟仓」就带路</span></div>
+    <button class="win-x" onclick="closeCai()" title="收起（Esc）">×</button>
+  </div>
+  <div id="msgs">
+    <div class="msg cai">老板好，我在这儿盯着的。问「各部门情况」「我的钱」「挂单」「裁决窗」都行，说「打开模拟仓」我带路。也可以把我这颗蛋拖到任何顺手的位置。</div>
+  </div>
+  <div class="chips">
+    <button class="chip" onclick="ask('各部门情况')">📊 各部门情况</button>
+    <button class="chip" onclick="ask('我的钱')">💰 我的钱</button>
+    <button class="chip" onclick="ask('挂单')">📋 挂单</button>
+    <button class="chip" onclick="ask('裁决窗')">📅 裁决窗</button>
+    <button class="chip" onclick="ask('影子进度')">👤 影子进度</button>
+    <button class="chip" onclick="nav('/paper')">→ 模拟仓</button>
+    <button class="chip" onclick="nav('/kg')">→ 情报图谱</button>
+    <button class="chip" onclick="nav('/qd/')">→ 量子双刀</button>
+  </div>
+  <div class="inrow">
+    <input id="in" placeholder="给菜鸟下指令…" onkeydown="if(event.key==='Enter')send()">
+    <button onclick="send()">发送</button>
+  </div>
+</div>
+
 <script>
 const $=i=>document.getElementById(i);
 const fmt=n=>n==null?'-':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:0});
@@ -157,6 +186,7 @@ function gray(t){return `<div class="sub">${t}</div>`;}
 
 /* —— 菜鸟对话：规则路由 + 导航意图 —— */
 async function ask(m){
+  openCai();
   addMsg(m,'me');
   const navMap=[['模拟仓','/paper'],['账本页','/bt-report'],['情报','/kg'],['图谱','/kg'],
     ['双刀','/qd/'],['青萍','/bt-rps'],['组织','/org'],['系统','/ops'],['锦标赛','/sim']];
@@ -180,6 +210,66 @@ function addMsg(t,who,via){
   if(via){const v=document.createElement('span');v.className='via';v.textContent='via '+via;d.appendChild(v);}
   $('msgs').appendChild(d);$('msgs').scrollTop=$('msgs').scrollHeight;
 }
+
+/* ═══ 悬浮 AI 入口：拖拽（Pointer Events，鼠标/触摸通吃）+ 点击召唤 ═══ */
+const orb=$('ai-orb'),win=$('cai-win');
+let dragging=false,moved=false,sx=0,sy=0,sl=0,st=0;
+const ORB_SIZE=66,EDGE=6;
+function clamp(l,t){
+  l=Math.max(EDGE,Math.min(innerWidth-ORB_SIZE-EDGE,l));
+  t=Math.max(EDGE,Math.min(innerHeight-ORB_SIZE-EDGE,t));
+  return[l,t];
+}
+function setOrb(l,t){
+  orb.style.left=l+'px';orb.style.top=t+'px';
+  orb.style.right='auto';orb.style.bottom='auto';
+}
+function saveOrb(l,t){try{localStorage.setItem('orb_pos',JSON.stringify({l,t}));}catch(e){}}
+(function restore(){ /* 恢复上次拖放位置 */
+  try{
+    const p=JSON.parse(localStorage.getItem('orb_pos'));
+    if(p&&isFinite(p.l)&&isFinite(p.t))setOrb(...clamp(p.l,p.t));
+  }catch(e){}
+})();
+orb.addEventListener('pointerdown',e=>{
+  dragging=true;moved=false;
+  orb.setPointerCapture(e.pointerId);
+  sx=e.clientX;sy=e.clientY;
+  const r=orb.getBoundingClientRect();sl=r.left;st=r.top;
+  orb.classList.add('drag');
+  e.preventDefault();
+});
+orb.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  const dx=e.clientX-sx,dy=e.clientY-sy;
+  if(!moved&&Math.hypot(dx,dy)<6)return; /* 位移阈值：拖 vs 点 */
+  moved=true;
+  setOrb(...clamp(sl+dx,dy+st));
+});
+orb.addEventListener('pointerup',e=>{
+  dragging=false;orb.classList.remove('drag');
+  if(moved){
+    const r=orb.getBoundingClientRect();saveOrb(r.left,r.top);
+  }else toggleCai(); /* 未拖动＝点击 → 召唤菜鸟 */
+});
+orb.addEventListener('pointercancel',()=>{dragging=false;orb.classList.remove('drag');});
+
+/* ═══ 菜鸟窗：就近弹出 + Esc/× 收起 ═══ */
+function toggleCai(){win.classList.contains('open')?closeCai():openCai();}
+function openCai(){
+  win.classList.add('open');
+  const r=orb.getBoundingClientRect(),w=win.offsetWidth,h=win.offsetHeight;
+  let l=r.left+r.width/2-w/2;                    /* 窗对齐球心 */
+  [l]=clamp(l,0);if(l<EDGE)l=EDGE;if(l+w>innerWidth-EDGE)l=innerWidth-EDGE-w;
+  let t=r.top-h-12;                              /* 优先弹在球上方 */
+  if(t<EDGE)t=Math.min(r.bottom+12,innerHeight-h-EDGE);
+  win.style.left=l+'px';win.style.top=t+'px';
+  win.style.right='auto';win.style.bottom='auto';
+  setTimeout(()=>$('in').focus(),150);
+}
+function closeCai(){win.classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCai();});
+
 load();setInterval(load,120000);
 </script>
 </body>
