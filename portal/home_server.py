@@ -154,12 +154,79 @@ def _cal():
     return {"ok": True, "items": items}
 
 
+def _now_context():
+    """「此刻」模式（老板动线视角）：按星期+时钟给出现在该看什么。"""
+    now = datetime.now()
+    wd, t = now.weekday(), now.hour * 100 + now.minute
+    if wd >= 5:
+        mode, label = "weekend", "周末 · 裁决窗准备模式（10-13 周一三连裁决）"
+        focus = ["复核 5 日窗数据完整性", "预读 RiskGuard 校准材料", "菜鸟陪练：对账本随便提问"]
+    elif t < 930:
+        mode, label = "pre", "盘前 · 看昨日复盘与今日计划"
+        focus = ["挂单计划（pending 的 plan_date）", "昨日跑批产物核对", "今日信号产出预告"]
+    elif t <= 1500:
+        mode, label = "cn_open", "A 股盘中 · 盯账本与信号"
+        focus = ["模拟盘 pending 撮合情况", "策略源最新信号", "账本回撤与止损距离"]
+    elif t <= 2130:
+        mode, label = "post", "盘后 · 复盘与明日预告"
+        focus = ["今日跑批产物齐全性", "裁决窗材料更新", "菜鸟日报核对"]
+    else:
+        mode, label = "us_open", "美股盘中 · 盯 US 独立账本"
+        focus = ["us_qingping 成交与止损", "US 行情缓存新鲜度", "美股信号次日撮合预告"]
+    return {"mode": mode, "label": label, "focus": focus}
+
+
+def _timeline():
+    """今日跑批时间线：从关键产物 mtime 推 automation 执行态（老板问「公司在干嘛」）。"""
+    checks = [
+        ("07:05 主闭环", ROOT / "k_stock" / "data" / "paper.db.bak", "settle/exec/mark"),
+        ("14:40 双刀扫描", ROOT / "quant_backtest" / "reports", "rps/决策产物"),
+        ("17:10 影子运行", SHADOW_LEDGER, "投研部影子决策"),
+        ("17:35 A0 日报", ROOT / "agent_platform" / "data" / "shadow", "日报+点评"),
+        ("16:40 X5 公网快照", ROOT / "deliverables", "对外快照"),
+    ]
+    today_s = date.today().isoformat()
+    out = []
+    for name, p, what in checks:
+        mt = _mt(p)
+        ran = bool(mt and mt.startswith(today_s))
+        out.append({"name": name, "what": what, "last": mt, "ran_today": ran})
+    return out
+
+
+def _money():
+    """我的钱：CNY/USD 分组 + 日变动（对比前一快照）。"""
+    if not PAPER_DB.exists():
+        return {"ok": False}
+    con = sqlite3.connect(f"file:{PAPER_DB.as_posix()}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    try:
+        groups = {"CNY": [], "USD": []}
+        for r in con.execute("SELECT DISTINCT account_id FROM equity_marks ORDER BY account_id"):
+            aid = r["account_id"]
+            marks = con.execute(
+                "SELECT date,total FROM equity_marks WHERE account_id=? ORDER BY date",
+                (aid,)).fetchall()
+            if len(marks) < 1:
+                continue
+            l, prev = marks[-1], (marks[-2] if len(marks) > 1 else None)
+            groups["USD" if aid.startswith("us_") else "CNY"].append({
+                "account": aid, "total": l["total"],
+                "delta": round(l["total"] - prev["total"], 2) if prev else None,
+                "days": len(marks)})
+        return {"ok": True, **groups}
+    finally:
+        con.close()
+
+
 def cockpit() -> dict:
     now = time.strftime("%Y-%m-%d %H:%M")
     return {"ok": True, "now": now,
             "paper": _paper(), "org": _org(), "intel": _intel(),
             "media": _media(), "shadow": _shadow(), "ops": _ops(),
-            "calendar": _cal()}
+            "calendar": _cal(),
+            "now_context": _now_context(), "timeline": _timeline(),
+            "money": _money()}
 
 
 # ---------------- 菜鸟对话（规则路由 + Ollama 兜底） ----------------
