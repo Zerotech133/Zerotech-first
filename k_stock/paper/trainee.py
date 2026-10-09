@@ -499,11 +499,13 @@ def main(argv=None) -> int:
     p.add_argument("trader")
     p.add_argument("--source", required=True, help="qd / qpzm / ai_team")
     p.add_argument("--note", default="")
+    p.add_argument("--json", action="store_true", help="单行 JSON 输出（portal 子进程用）")
     p.set_defaults(fn=_cmd_hire)
 
     p = sub.add_parser("fire", help="解雇：注册表行 status=ended")
     p.add_argument("trader")
     p.add_argument("--source", required=True)
+    p.add_argument("--json", action="store_true")
     p.set_defaults(fn=_cmd_fire)
 
     p = sub.add_parser("hires", help="雇佣关系列表")
@@ -563,14 +565,34 @@ def _cmd_routine(args) -> int:
 
 
 def _cmd_hire(args) -> int:
-    rec = hire(args.trader, args.source, args.note)
+    try:
+        rec = hire(args.trader, args.source, args.note)
+    except Reject as e:
+        if getattr(args, "json", False):
+            print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+            return 2
+        print(f"❌ {e}")
+        return 1
+    if getattr(args, "json", False):
+        print(json.dumps({"ok": True, "hire": rec}, ensure_ascii=False))
+        return 0
     print(f"✅ 已雇佣 {rec['trader']} × {rec['source']}"
           f"（注册表 {HIRES_PATH.name} · 次日 07:05 主闭环生效）")
     return 0
 
 
 def _cmd_fire(args) -> int:
-    fire(args.trader, args.source)
+    try:
+        rec = fire(args.trader, args.source)
+    except Reject as e:
+        if getattr(args, "json", False):
+            print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+            return 2
+        print(f"❌ {e}")
+        return 1
+    if getattr(args, "json", False):
+        print(json.dumps({"ok": True, "fired": rec}, ensure_ascii=False))
+        return 0
     print(f"✅ 已解雇 {args.trader} × {args.source}")
     return 0
 

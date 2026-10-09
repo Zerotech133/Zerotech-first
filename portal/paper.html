@@ -489,8 +489,8 @@ function renderAgents(j, board){
      role:'<b>擅长：</b>趋势市顺势加仓 · 宽止损拿波段（-8%）· conf≥0.60 · 可绑定量子双刀全自动',
      empty:'<div><div class="k">风格</div><div class="v">趋势型</div></div><div><div class="k">状态</div><div class="v">预留</div></div>'},
     {id:'gunner',icon:'⚡',nm:'快枪手',
-     role:'<b>擅长：</b>隔日短打 · 尾盘买次日卖（A 股 T+1 下的最短周期）· conf≥0.75',
-     empty:'<div><div class="k">风格</div><div class="v">短线型</div></div><div><div class="k">状态</div><div class="v">评估中</div></div>'}
+     role:'<b>擅长：</b>隔日短打 · 尾盘买次日卖 · conf≥0.75<br><b style="color:var(--color-warn)">⚠ 已论证未过（2026-10-09）：T+1 期望 -0.13%/止损触发 24%，维持 design</b>',
+     empty:'<div><div class="k">风格</div><div class="v">短线型</div></div><div><div class="k">状态</div><div class="v">论证未过</div></div>'}
   ];
   $('agent-grid').innerHTML=cards.map(c=>{
     const r=bmap[c.id];
@@ -510,7 +510,32 @@ function renderAgents(j, board){
         stats=`<div><div class="k">风格</div><div class="v">${r.style||'-'}</div></div><div><div class="k">实习</div><div class="v">未开账</div></div>`;
       }
     }
-    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div></div>`;
+    /* A3 雇佣区（K-STOCK-042 配置面）：live 可雇 / 已雇带解雇 / training 提示 */
+    let hz='';
+    if(c.id){
+      const hires=(S.hires&&S.hires.hires)||[];
+      const act=hires.filter(h=>h.trader===c.id&&h.status==='active');
+      if(act.length){
+        hz='<div class="flow-note" style="margin:10px 0 0">'+act.map(h=>
+          `<span class="badge b-dk">已雇 · ${STRAT_NAMES[h.source]||h.source}</span> `+
+          `<button class="btn btn-sm btn-gray" onclick="doFire('${c.id}','${h.source}')">解雇</button>`
+        ).join(' ')+' <span style="color:var(--text-dim);font-size:11px">次日 07:05 生效</span></div>';
+      }else{
+        const st_now=(r&&r.status)||(c.id==='gunner'?'design':'');
+        if(st_now==='live'){
+          hz='<div style="margin-top:10px;display:flex;gap:6px;align-items:center">'+
+            `<select id="hire-src-${c.id}" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-surface);color:var(--text);font-size:12px">`+
+            '<option value="qd">量子双刀</option><option value="qpzm">青萍之末</option>'+
+            '<option value="ai_team">AI 值班</option></select>'+
+            `<button class="btn btn-sm btn-primary" onclick="doHire('${c.id}')">雇佣</button></div>`;
+        }else if(st_now==='training'){
+          hz='<div class="flow-note" style="margin:10px 0 0">实习期 · status=live 后可被雇佣</div>';
+        }else if(st_now==='design'){
+          hz='<div class="flow-note" style="margin:10px 0 0">已论证未过（2026-10-09）· 不接信号</div>';
+        }
+      }
+    }
+    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div>${hz}</div>`;
   }).join('');
 }
 
@@ -518,8 +543,38 @@ function renderAgents(j, board){
 async function loadAgents(){
   try{
     const j=await api('/api/trainee_board');
-    if(j&&j.ok&&S.status)renderAgents(S.status,j.rows||[]);
+    if(j&&j.ok&&S.status){
+      renderAgents(S.status,j.rows||[]);
+      try{
+        const h=await api('/api/paper_hires');          // A3 雇佣投影（失败静默降级）
+        if(h&&h.ok){S.hires=h;renderAgents(S.status,j.rows||[]);}
+      }catch(e){}
+    }
   }catch(e){/* 静默降级：保留档案静态卡 */}
+}
+/* A3 雇佣交互（配置面）：POST /api/paper_hire 只改 hires.json，次日 07:05 生效 */
+async function doHire(trader){
+  const sel=document.getElementById('hire-src-'+trader);
+  const src=sel?sel.value:'';
+  if(!src)return toast('❌ 请选择策略源');
+  if(!confirm('雇佣 '+trader+' × '+src+'？\n（只改注册表，次日 07:05 主闭环生效）'))return;
+  try{
+    const j=await api('/api/paper_hire',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'hire',trader:trader,source:src})});
+    if(j.ok){toast('✅ 已雇佣 · 次日 07:05 生效');loadAgents();}
+    else toast('❌ '+(j.error||'失败'));
+  }catch(e){toast('❌ '+e.message);}
+}
+async function doFire(trader,source){
+  if(!confirm('解雇 '+trader+' × '+source+'？'))return;
+  try{
+    const j=await api('/api/paper_hire',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'fire',trader:trader,source:source})});
+    if(j.ok){toast('✅ 已解雇');loadAgents();}
+    else toast('❌ '+(j.error||'失败'));
+  }catch(e){toast('❌ '+e.message);}
 }
 
 // ===== 历史 =====

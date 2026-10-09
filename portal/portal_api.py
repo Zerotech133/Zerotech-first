@@ -74,6 +74,8 @@ _PORTAL_TOKEN = _portal_token()
 # 变更类 POST 端点（逐一对照 do_POST 路由表；/feishu/event 为飞书回调，
 # 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
 _MUTATION_POSTS = frozenset((
+    "/api/data/update-plan",
+    "/api/data/update",
     "/chanlun-anno",
     "/api/chanlun/label/save",
     "/api/report_push",
@@ -97,6 +99,7 @@ _MUTATION_POSTS = frozenset((
     "/api/batch-backtest",
     "/api/paper_order",   # K-STOCK v0.2 模拟仓下单（BUY/SELL/双刀执行）
     "/api/paper_stop",    # K-STOCK v0.2 模拟仓止损挂/解
+    "/api/paper_hire",    # K-STOCK-042 A3 雇佣交互（配置面：只改 hires.json）
 ))
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -3332,10 +3335,48 @@ def bridge_act_desc(cmd, text=""):
     return None
 
 
+_WAREHOUSE_SERVICES = None
+_WAREHOUSE_SERVICES_LOCK = threading.Lock()
+
+
+def warehouse_update_services():
+    """延迟构造安全适配；不初始化任务库、不请求供应商或启动采集。"""
+    global _WAREHOUSE_SERVICES
+    with _WAREHOUSE_SERVICES_LOCK:
+        if _WAREHOUSE_SERVICES is None:
+            if QBT_DIR not in sys.path:
+                sys.path.insert(0, QBT_DIR)
+            from warehouse_update_services import make_services
+            _WAREHOUSE_SERVICES = make_services(STATION)
+        return _WAREHOUSE_SERVICES
+
+
+def warehouse_legacy_status(src):
+    """旧响应字段兼容，但不从未关联的历史日志倒推本次任务。"""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    services = warehouse_update_services()
+    selected = datetime.now(ZoneInfo('Asia/Shanghai')).date().isoformat()
+    runs = [run for run in services['store'].list_runs(selected) if run['plan']['source']==src]
+    if not runs:
+        return dict(running=False,pid=None,exit=None,tail='',error=None,run_id=None,
+                    legacy_log_association='unassociated',process_status='unknown')
+    run = runs[0]
+    log = services['launcher'].read_log(run['run_id'],offset=0,limit=4096)
+    return dict(running=run['status'] in {'queued','running','verifying'},pid=run['pid'],
+                exit=run['exit_code'],tail=log['text'][-1200:],error=None,run_id=run['run_id'],
+                status=run['status'],progress=run['progress'],metrics=run['metrics'],
+                process_status=run['process_status'])
+
+
 def data_sync_start(src):
     """手动触发同步（tdx/tushare/kg/catalog）。单实例 + 后台运行。"""
     if src not in DATA_SYNC_CMDS:
         return {"error": "bad src"}
+    if src in {'tdx', 'tushare'}:
+        # 新手动入口需先展示实际表/市场/范围；旧GET不能越过确认与持久化锁。
+        return dict(started=False,pid=None,running=False,exit=None,tail='',run_id=None,
+                    error='请在每日更新工作台预览范围并确认运行')
     with _DATA_LOCK:
         job = DATA_SYNC_JOBS.get(src)
         if job and job["p"].poll() is None:
@@ -3360,6 +3401,12 @@ def data_sync_status(src):
     """轮询：进程是否在跑 + 日志尾部。"""
     if src not in DATA_SYNC_CMDS:
         return {"error": "bad src"}
+    if src in {'tdx', 'tushare'}:
+        try:
+            return warehouse_legacy_status(src)
+        except Exception:
+            return dict(running=None,pid=None,exit=None,tail='',run_id=None,
+                        error='任务状态暂不可用，请重新查询')
     job = DATA_SYNC_JOBS.get(src)
     running = bool(job and job["p"].poll() is None)
     tail = ""
@@ -14321,6 +14368,40 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     "?c=%s'>🏢 公司本体全景（六扇区点线边 + 直方图）→"
                     "</a></div>"
                     % (_qt(b.get("name") or code), e(code)))
+                # L2 Object View 扇区体检条：声明式装配（kg_objectview），
+                # 复用已取的 st 零额外查询；新增扇区=配置加一行此条自动带出
+                try:
+                    import kg_objectview as _OV
+                    ov = _OV.assemble(st)
+                    _GCLS = {"ok": "g", "stale": "r", "empty": "",
+                             "static": "y"}
+                    _FQLB = {"D": "日频", "E": "触发式", "Q": "季频",
+                             "M": "月频", "static": "静态"}
+                    chips = "".join(
+                        "<span class='bdg %s' style='margin:2px 6px 2px 0'"
+                        " title=\"%s · 信源 %s · %s 档 · %s\">%s · %d · %s"
+                        "%s</span>"
+                        % (_GCLS.get(s["grade"], ""),
+                           e(s["note"] or s["title"]),
+                           e(s["source"] or "—"),
+                           s["trust"] or "—",
+                           _FQLB.get(s["freq"], s["freq"]),
+                           e(s["title"]), s["n"],
+                           s["fresh"] or "—",
+                           ("（滞后%d%s）"
+                            % (s["lag"], "交易日" if s["lag_unit"] == "td"
+                               else "天")
+                            if s["lag"] is not None else ""))
+                        for s in ov["sectors"])
+                    content += (
+                        "<div class='sec'><h2>Object View · 扇区体检</h2>"
+                        "<div style='line-height:2.1'>%s</div>"
+                        "<div class='dim'>徽章=扇区状态（绿=新鲜 红=连续型"
+                        "断流 灰=无数据 黄=静态）· 数字=观测时点/滞后天 · "
+                        "悬停看信源信任档。触发式扇区（龙虎榜/涨跌停类）"
+                        "无数据≠断流。</div></div>" % chips)
+                except Exception:
+                    pass            # 体检条失败不拖垮主视图（旧版兼容）
                 # ACH 三假设条
                 ach = tr.get("ach", {}) if tr.get("ok") else {}
                 bars = "".join(
@@ -21540,6 +21621,65 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             out["error"] = repr(e)
         return out
 
+    def _api_paper_hire(self, raw):
+        """A3 雇佣交互（K-STOCK-042 配置面）：只改 hires.json 注册表，
+        落单仍只在 07:05 automation 单写入口——门户永不直接触发交易。
+        子进程走 trainee.py hire/fire（单写入口），JSON 管道同 paper 模式。"""
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        action = str(rec.get("action") or "").strip().lower()
+        trader = str(rec.get("trader") or "").strip().lower()
+        source = str(rec.get("source") or "").strip().lower()
+        if action not in ("hire", "fire"):
+            self._json({"ok": False, "error": "action 须为 hire/fire"}, 400)
+            return
+        if not re.match(r"^[a-z][a-z0-9_]{0,31}$", trader):
+            self._json({"ok": False, "error": "trader 格式非法"}, 400)
+            return
+        if source not in ("qd", "qpzm", "ai_team"):
+            self._json({"ok": False, "error": "source 须为 qd/qpzm/ai_team"}, 400)
+            return
+        cmd = [self._PAPER_PY, os.path.join(self._PAPER_DIR, "trainee.py"),
+               action, trader, "--source", source, "--json"]
+        if action == "hire" and rec.get("note"):
+            cmd += ["--note", str(rec["note"])[:80]]
+        r = self._paper_run_json(cmd, timeout=35)
+        self._json(r, 200 if r.get("ok") else 409)
+
+    def _api_paper_hires(self):
+        """雇佣关系投影（纯只读：hires.json + trainees/*.json，无子进程）。"""
+        base = self._PAPER_DIR
+        try:
+            hp = os.path.join(base, "hires.json")
+            hires = []
+            if os.path.exists(hp):
+                with open(hp, encoding="utf-8") as f:
+                    d = json.load(f)
+                hires = d.get("hires", []) if isinstance(d, dict) else []
+            faces = {}
+            tdir = os.path.join(base, "trainees")
+            for fn in sorted(glob.glob(os.path.join(tdir, "*.json"))):
+                try:
+                    with open(fn, encoding="utf-8") as f:
+                        x = json.load(f)
+                    faces[x.get("id")] = {"id": x.get("id"), "name": x.get("name"),
+                                          "status": x.get("status"),
+                                          "style": x.get("style")}
+                except Exception:
+                    continue
+            for h in hires:
+                f = faces.get(h.get("trader")) or {}
+                h["trader_name"] = f.get("name")
+                h["trader_status"] = f.get("status")
+            self._json({"ok": True, "hires": hires,
+                        "traders": sorted(faces.values(),
+                                          key=lambda v: str(v.get("name")))})
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+
     def _api_paper_order(self, raw):
         try:
             rec = json.loads(raw.decode("utf-8")) if raw else {}
@@ -21643,6 +21783,24 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             return
         self._json(r, 200 if r.get("ok") else 400)
 
+    def _warehouse_update_request(self, method, path, qs='', raw=b''):
+        """新接口复用全站认证，正文大小在读取前已受限制。"""
+        from urllib.parse import parse_qs
+        try:
+            if method == 'POST' and self.headers.get('Origin') is None and not self._is_local_req():
+                self._json({'error':'无Origin的更新请求仅允许可信本机脚本'},403)
+                return
+            if method == 'POST' and self.headers.get('Content-Type','').split(';',1)[0].strip().lower() != 'application/json':
+                self._json({'error':'每日更新只接受application/json'},415)
+                return
+            from warehouse_update_api import handle_request
+            code, payload = handle_request(method,path,parse_qs(qs,keep_blank_values=True),raw,
+                origin=self.headers.get('Origin'),host=self.headers.get('Host'),
+                authenticated=self._check_portal_token(),services=warehouse_update_services())
+            self._json(payload,code)
+        except Exception:
+            self._json({'error':'每日服务未就绪，未确认任务启动'},503)
+
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
@@ -21661,6 +21819,16 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                                    if "?" in self.path else "")
                 return
             ln = int(self.headers.get("Content-Length") or 0)
+            if path in {'/api/data/update-plan','/api/data/update'}:
+                if ln < 0:
+                    self._json({'error':'正文长度不合法'},400)
+                    return
+                if ln > 65536:
+                    self._json({'error':'请求正文超过64KiB'},413)
+                    return
+                raw = self.rfile.read(ln) if ln else b''
+                self._warehouse_update_request('POST',path,raw=raw)
+                return
             raw = self.rfile.read(ln) if ln > 0 else b""
             if path == "/api/paper_order":
                 # K-STOCK v0.2 模拟仓下单（manual BUY/SELL 或 double_knife 执行）
@@ -21669,6 +21837,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             if path == "/api/paper_stop":
                 # K-STOCK v0.2 模拟仓止损挂/解
                 self._api_paper_stop(raw)
+                return
+            if path == "/api/paper_hire":
+                # K-STOCK-042 A3 雇佣交互（配置面：hire/fire 只改注册表）
+                self._api_paper_hire(raw)
+                return
                 return
             if path == "/feishu/event":
                 # K250 飞书事件回调（卡按钮点击 / url_verification 握手）
@@ -21905,6 +22078,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path == '/api/data/daily' or path.startswith('/api/data/runs/'):
+            self._warehouse_update_request('GET',path,qs)
+            return
         # C1a：GET 动作端点鉴权闸门（与写端点同规则）。本机（回环直连/
         # 本机浏览器）放行；反代+局域网须 X-Portal-Token，缺失/不匹配
         # 返回 403，防止匿名 GET 触发后台子进程与飞书推送。
@@ -21945,6 +22121,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "verified": False,
                             "error": repr(_e)}, 500)
+        elif path == "/api/paper_hires":
+            # K-STOCK-042 A3 雇佣关系投影（纯只读）
+            self._api_paper_hires()
         elif path == "/api/paper_status":
             # K-STOCK 模拟仓只读投影（2026-10-09 前端规划 P2）：
             # 数据层 k_stock/paper/portal_status.py（纯标准库 sqlite ro，零 pandas），
@@ -22229,8 +22408,10 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             except OSError:
                 pass
             self._json(hit or {"none": True})
-        elif path in ("/kg/stats", "/kg/sources", "/kg/overview") or path.startswith(
+        elif path in ("/kg/stats", "/kg/sources", "/kg/overview",
+                      "/kg/ontology") or path.startswith(
                 ("/kg/stock/", "/kg/hotmoney/", "/kg/trace/",
+                 "/kg/objectview/",                   # L2 扇区体检 JSON
                  "/kg/company360/", "/kg/csearch/", "/kg/cexpand/", "/kg/chist/",
                  "/kg/cask/",
                  "/kg/timeline/", "/kg/batch/",   # K262 作战地图
@@ -22259,8 +22440,10 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 qp = _pqkg(qs)
                 days = (qp.get("days") or [None])[0]
                 per = (qp.get("per") or [None])[0]
-                self._json(kg_portal.api(parts[2], _uqkg(parts[3]),
-                                         days, per))
+                # arg 段可缺省（/kg/ontology 等无参 kind，越界即崩线程断连）
+                self._json(kg_portal.api(
+                    parts[2], _uqkg(parts[3]) if len(parts) > 3 else None,
+                    days, per))
         elif path == "/fin":
             # L1 金融驾驶舱（任务导向：查股票/闸门/今日机会/工具）
             self._fin_page()
@@ -22585,17 +22768,19 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             # K245 订阅推送管理页（订阅清单 + 接收人 + 试推）
             self._subscribe_page(qs)
         elif path == "/paper":
-            # K-STOCK 模拟仓占位页（前端 paper.html 未产出；数据层
-            # /api/paper_status 已就绪）——消除导航 404（K-STOCK-024）
-            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
-                       "<title>模拟仓 · 建设中</title>" + self._COCKPIT_CSS
-                       + "</head><body>" + pill_nav("paper")
-                       + "<h1>🧾 模拟仓（K-STOCK 线）</h1><div class='sec'>"
-                       "建设中：前端面板规划产出中，数据层已就绪"
-                       "（/api/paper_status · k_stock/paper 纯标准库只读层）。</div>"
-                       "<div class='dim' style='margin-top:10px'>"
-                       "先看：<a href='/bt-positions'>💼 持仓</a> · "
-                       "<a href='/bt'>🎯 选股中心</a></div></body></html>")
+            # K-STOCK 模拟仓前端（K279 产出 paper.html；nginx 8080 同文件
+            # 静态直出，此处读盘直出保双口径一致——K-STOCK-042 修正过时占位）
+            _pf = os.path.join(ROOT, "paper.html")
+            if os.path.exists(_pf):
+                with open(_pf, encoding="utf-8") as f:
+                    self._html(f.read())
+            else:
+                self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                           "<title>模拟仓 · 建设中</title>" + self._COCKPIT_CSS
+                           + "</head><body>" + pill_nav("paper")
+                           + "<h1>🧾 模拟仓（K-STOCK 线）</h1><div class='sec'>"
+                           "建设中：数据层已就绪（/api/paper_status）。</div>"
+                           "</body></html>")
         elif path == "/bt/stock":
             # 个股全景页（行情+策略信号+共振分解+JEV下钻+AI展望）
             self._bt_stock_page(qs)
