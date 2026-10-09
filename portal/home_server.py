@@ -43,9 +43,19 @@ def _mt(p: Path):
 
 def _paper():
     """量化交易部：main + us_% 账本最新快照。"""
+    try:
+        return _paper_impl()
+    except Exception as e:  # noqa: BLE001
+        # paper.db 被备份/写进程持锁等场景：connect/execute 抛错不能炸穿
+        # cockpit（文件头承诺"全 try 降级"）——降级为灰卡。
+        return {"ok": False, "err": f"paper.db 不可读：{str(e)[:80]}"}
+
+
+def _paper_impl():
     if not PAPER_DB.exists():
         return {"ok": False, "err": "paper.db 不存在"}
-    con = sqlite3.connect(f"file:{PAPER_DB.as_posix()}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{PAPER_DB.as_posix()}?mode=ro", uri=True,
+                          timeout=3)
     con.row_factory = sqlite3.Row
     try:
         accs = {}
@@ -196,9 +206,17 @@ def _timeline():
 
 def _money():
     """我的钱：CNY/USD 分组 + 日变动（对比前一快照）。"""
+    try:
+        return _money_impl()
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "err": f"paper.db 不可读：{str(e)[:80]}"}
+
+
+def _money_impl():
     if not PAPER_DB.exists():
         return {"ok": False}
-    con = sqlite3.connect(f"file:{PAPER_DB.as_posix()}?mode=ro", uri=True)
+    con = sqlite3.connect(f"file:{PAPER_DB.as_posix()}?mode=ro", uri=True,
+                          timeout=3)
     con.row_factory = sqlite3.Row
     try:
         groups = {"CNY": [], "USD": []}
@@ -274,7 +292,7 @@ def answer(msg: str) -> dict:
     # 查：裁决窗
     if any(k in m for k in ("裁决", "窗口", "10-13", "10-14", "10-15", "日程")):
         return {"ok": True, "via": "rule", "text": "裁决窗安排：\n" + "\n".join(
-            f"· {i['day']}（{'今天' if i['in_days'] == 0 else str(i['in_days']) + '天后'}）：{i['what']}"
+            f"· {i['day']}（{'今天' if i['in_days'] == 0 else ('已过' if i['in_days'] < 0 else str(i['in_days']) + '天后')}）：{i['what']}"
             for i in ck["calendar"]["items"])}
     # 查：影子
     if "影子" in m or "shad" in low:
