@@ -36,13 +36,55 @@ def _engine(args) -> PaperEngine:
 
 
 def _newest_run() -> Path:
-    # 排除 poc_qd_*（双刀产物）：否则 07:05 automation 的 exec --newest
-    # 会把双刀信号当 AI 决策执行（策略串味）。AI 通道只吃 AI 产物。
+    # 排除 poc_qd_（双刀）/ poc_qpzm_（青萍 CN）/ poc_qpzmus_（青萍 US，044 M2）：
+    # 否则 07:05 automation 的 exec --newest 会把他源信号当 AI 决策执行（策略串味）。
+    # 口径与 trainee._newest_ai_run 对齐——AI 通道只吃 AI 产物。
     runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
-                  if not x.name.startswith("poc_qd_"))
+                  if not x.name.startswith(("poc_qd_", "poc_qpzm_", "poc_qpzmus_")))
     if not runs:
         raise Reject("k_stock/data/ 下无 poc_*.json 决策产物（AI 通道）")
     return runs[-1]
+
+
+def _us_accounts(db: Path) -> list[str]:
+    import sqlite3
+    if not db.exists():
+        return []
+    con = sqlite3.connect(str(db))
+    try:
+        rows = con.execute(
+            "SELECT DISTINCT account_id FROM account WHERE account_id LIKE 'us_%'").fetchall()
+    finally:
+        con.close()
+    return sorted(r[0] for r in rows)
+
+
+def _us_pass(args):
+    """US 独立账本通道（K-STOCK-044 M3）：存在 us_% 账本才跑；settle 前自动 refresh。
+
+    refresh 只拉有真实敞口的票（pending+持仓）+ SPY 日历基准；单票失败降级记录，
+    不炸 settle——缺 bar 的单由引擎「保持 pending」幂等等待次晨补。
+    返回 [(account_id, engine)] 与 refresh 摘要；无 US 账本返回 None。"""
+    from us_market import UsMarket, refresh, us_symbols_in_db
+    db = Path(args.db) if args.db else DEFAULT_DB
+    aids = _us_accounts(db)
+    if not aids:
+        return None
+    refreshed, failed = [], []
+    try:
+        refresh("spy")
+        refreshed.append("SPY")
+    except Exception as ex:  # 日历失败仍可 settle（湖内已有 bar 的单照常成交）
+        failed.append(f"SPY: {ex}")
+    for sym in us_symbols_in_db(db):
+        try:
+            refresh(sym)
+            refreshed.append(sym)
+        except Exception as ex:  # noqa: BLE001
+            failed.append(f"{sym}: {ex}")
+    return {"accounts": aids,
+            "engines": [(aid, PaperEngine(db, UsMarket(), account=aid)) for aid in aids],
+            "refreshed": refreshed, "refresh_fail": failed}
 
 
 def _print_eq(e: PaperEngine) -> None:
@@ -111,6 +153,23 @@ def cmd_settle(args) -> int:
         print(f"  ❌ #{x['id']} {x['stock']}: {x['why']}")
     if not args.dry_run:
         _print_eq(e)
+    # US 独立账本 pass（K-STOCK-044 M3）：us_% 账本 settle 前自动 refresh 行情缓存
+    us = _us_pass(args)
+    if us:
+        for aid, e_us in us["engines"]:
+            r2 = e_us.settle(dry_run=args.dry_run)
+            print(f"{tag}US 账本 {aid} 撮合: 成交 {len(r2['filled'])} / 搁置 {len(r2['rejected'])}"
+                  f"（refresh {len(us['refreshed'])} 票"
+                  f"{'，失败 ' + str(len(us['refresh_fail'])) if us['refresh_fail'] else ''}）")
+            for f in r2["filled"]:
+                print(f"  ✅ #{f.get('id', '-')} {f['stock']} {f['side']} {f['qty']} 股 @ {f['price']}"
+                      f"（费 {f['fee']:.2f}）")
+            for x in r2["rejected"]:
+                print(f"  ❌ #{x['id']} {x['stock']}: {x['why']}")
+            for w in us["refresh_fail"][:3]:
+                print(f"  ⚠️ refresh 失败: {w}")
+            if not args.dry_run:
+                _print_eq(e_us)
     return 0
 
 
@@ -156,6 +215,14 @@ def cmd_mark(args) -> int:
     ok = "✅" if r["verify_ok"] else "❌"
     print(f"{ok} 快照 {r['date']}: 总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
           f"待撮合 {r['pending']}")
+    # US 独立账本快照（K-STOCK-044 M3）：us_% 账本各记一行（USD 原币口径）
+    us = _us_pass(args)
+    if us:
+        for aid, e_us in us["engines"]:
+            r2 = e_us.mark()
+            ok2 = "✅" if r2["verify_ok"] else "❌"
+            print(f"{ok2} US {aid} 快照: 总资产 {r2['total']:,.2f} 仓位 {r2['pos_pct']:.1%} "
+                  f"待撮合 {r2['pending']}")
     # 账本轻量灾备：*.db 不入 git 也不在 B4 备份链，mark 成功后保留最近一份副本
     try:
         import shutil

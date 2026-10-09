@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """UsMarket 测试（K-STOCK-044 M1）：拆股复权 / 缓存读写 / bar 契约 / 缺数据降级。纯 stdlib，离线跑。"""
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -126,6 +127,67 @@ def test_extrapolate_weekend_boundary(tmpdir):
     assert m.next_trading_day("2026-10-10T09:00") == "20261012"
     # 北京 10-09 09:00 = ET 10-08 21:00 → day=20261008 非交易日(湖无) → 湖内首个更大日 10-09
     assert m.next_trading_day("2026-10-09T09:00") == "20261009"
+
+
+def test_limit_ratio_us_exempt():
+    """K-STOCK-044 M3：美股无涨跌停 → 1.0 等效豁免；A 股口径不变。"""
+    from engine import limit_ratio
+    assert limit_ratio("gb_pltr") == 1.0
+    assert limit_ratio("gb_NVDA") == 1.0
+    assert limit_ratio("600593.SH") == 0.10     # 主板
+    assert limit_ratio("300750.SZ") == 0.20     # 创业板
+
+
+def test_us_symbols_in_db(tmpdir):
+    """us_symbols_in_db：只提 us_% 账本的 gb_ 敞口（pending+持仓），main 不混入。"""
+    import sqlite3
+    db = Path(tmpdir) / "paper.db"
+    con = sqlite3.connect(str(db))
+    con.executescript("""
+        CREATE TABLE orders(id INTEGER PRIMARY KEY, account_id TEXT, stock TEXT, status TEXT);
+        CREATE TABLE positions(account_id TEXT, stock TEXT, qty REAL);
+        INSERT INTO orders VALUES(1,'us_qingping','gb_PLTR','pending');
+        INSERT INTO orders VALUES(2,'us_qingping','gb_NVDA','filled');
+        INSERT INTO orders VALUES(3,'main','gb_XXX','pending');
+        INSERT INTO orders VALUES(4,'us_qingping','600593.SH','pending');
+        INSERT INTO positions VALUES('us_qingping','gb_TSM',300);
+        INSERT INTO positions VALUES('main','AAPL',100);
+    """)
+    con.commit(); con.close()
+    # 只收真实敞口：pending 的 PLTR + 持仓 TSM；filled 的 NVDA / main 账本 / A 股码全排除
+    assert um.us_symbols_in_db(db) == ["gb_PLTR", "gb_TSM"]
+
+
+def test_us_ledger_settle_e2e(tmpdir):
+    """US 独立账本引擎层全链：exec_run 落 pending → UsMarket settle 按开盘价成交。"""
+    us_dir = Path(tmpdir) / "us"; us_dir.mkdir()
+    (us_dir / "AAPL.csv").write_text(
+        "date,open,high,low,close,volume,pre_close\n"
+        "2026-10-07,335,341,334,338,35000000,333\n"
+        "2026-10-08,336.81,341.57,335.90,340.42,35332449,338\n", encoding="utf-8")
+    (us_dir / "SPY.csv").write_text(
+        "date,open,high,low,close,volume,pre_close\n"
+        "2026-10-08,670,675,669,672,50000000,668\n", encoding="utf-8")
+    db = Path(tmpdir) / "paper.db"
+    run = Path(tmpdir) / "poc_qpzmus_test.json"
+    run.write_text(json.dumps([{
+        "stock": "gb_AAPL", "asof": "2026-10-08T05:00",   # =ET 10-07 17:00 盘后 → plan 次日
+        "outputs": {"D1": {"action": "BUY", "confidence": 0.6}}}]),
+        encoding="utf-8")
+    sys.path.insert(0, str(HERE))
+    from engine import PaperEngine
+    eng = PaperEngine(db, um.UsMarket(us_dir=us_dir), account="us_qingping")
+    r = eng.exec_run(run, strategy="qingping_us")
+    pend = [o for o in r["orders"] if o["status"] == "pending"]
+    assert len(pend) == 1 and pend[0]["plan_date"] == "20261008", r["orders"]
+    s = eng.settle()
+    assert len(s["filled"]) == 1
+    f = s["filled"][0]
+    assert f["stock"] == "gb_AAPL" and f["price"] == 336.81        # 10-08 开盘价，无偷价
+    assert f["qty"] > 0
+    m = eng.mark()
+    assert m["verify_ok"], m                                        # 账本自洽（现金+持仓=总资产）
+    eng.con.close()                                                 # 释放 db（TemporaryDirectory 清理需要）
 
 
 if __name__ == "__main__":

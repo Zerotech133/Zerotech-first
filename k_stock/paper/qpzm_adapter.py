@@ -79,7 +79,11 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
         (items if market == "CN" else us_items).append(item)
     if not items and not us_items and not skipped:
         raise ValueError("青萍产物无买入行（res 为空或全回避）")
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # stamp 派生自缓存 ts（非 now()）：同一份 rps 缓存重复跑 4d 产同名 run 文件
+    # → exec_run 的 ref={文件名}#{stock} 不变 → 幂等跳过（now() 时间戳会造出
+    # 新文件名 → ref 变 → 同票双份 pending 双倍成交，044 M3 复盘补丁）
+    ts_raw = str(d.get("ts") or datetime.now().isoformat(timespec="seconds"))
+    stamp = ts_raw.replace("-", "").replace(":", "").replace(" ", "_")
     out_dir.mkdir(parents=True, exist_ok=True)
     cn_path = us_path = None
     if items:

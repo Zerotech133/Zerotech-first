@@ -67,7 +67,7 @@ def list_profiles() -> list[dict]:
 
 def _newest_ai_run() -> Path:
     runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
-                  if not x.name.startswith(("poc_qd_", "poc_qpzm_")))
+                  if not x.name.startswith(("poc_qd_", "poc_qpzm_", "poc_qpzmus_")))
     if not runs:
         raise Reject("k_stock/data/ 下无 poc_*.json（AI 通道）")
     return runs[-1]
@@ -193,6 +193,9 @@ def exec_for(run_path: str | None = None, who: list[str] | None = None,
         profiles = _hired_profiles(source)
         if not profiles:
             raise Reject(f"策略源 {source} 无可用雇佣（active 且 training/live）")
+        # K-STOCK-044 M3 口径（保守观察）：US 信号只进 us_qingping 独立账本
+        # （qpzm_adapter._run_us），训练账本暂不喂 US——_newest_run_for("qpzm")
+        # 只认 poc_qpzm_*（CN），poc_qpzmus_* 已从 AI 通道排除。独立账本跑通后再议。
         strategy = STRAT_OF_SOURCE.get(source, "ai_team")
         run = Path(run_path) if run_path else _newest_run_for(source)
     else:

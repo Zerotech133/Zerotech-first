@@ -156,10 +156,14 @@ def _norm_stock(raw: str) -> str:
 def limit_ratio(code: str) -> float:
     """涨跌停幅度：科创板(68)/创业板(30) 20%，北交所(8/4) 30%，其余主板 10%。
 
+    US 票（gb_ 前缀，K-STOCK-044 M3）：美股无涨跌停制度 → 返回 1.0 等效豁免
+    （settle 的 ±10% 拦截对美股是误杀源——开盘 ±10% 常见）。
     注：ST ±5% 无法从代码识别（需名称/风险警示标记），v0.1 挂账——
     watchlist 主流票非 ST，误判影响仅为放宽而非错杀。
     """
     c = code.split(".")[0]
+    if c.lower().startswith("gb_"):
+        return 1.0
     if c.startswith(("68", "30")):
         return 0.20
     if c.startswith(("8", "4")):

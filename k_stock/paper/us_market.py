@@ -244,6 +244,23 @@ class UsMarket:
         return None
 
 
+def us_symbols_in_db(db_path: Path | str) -> list[str]:
+    """paper.db 中 US 敞口标的（pending 单 + 持仓，us_% 账本，gb_ 原码去重升序）。
+
+    settle 前自动 refresh 用：只拉有真实敞口的票，不盲目全量。"""
+    import sqlite3
+    con = sqlite3.connect(str(db_path))
+    try:
+        rows = con.execute(
+            "SELECT stock FROM orders WHERE account_id LIKE 'us_%' AND status='pending' "
+            "UNION "
+            "SELECT stock FROM positions WHERE account_id LIKE 'us_%' AND qty>0"
+        ).fetchall()
+    finally:
+        con.close()
+    return sorted({r[0] for r in rows if str(r[0]).lower().startswith("gb_")})
+
+
 def main(argv: list[str], us_dir: Path | str | None = None) -> int:
     """CLI：python paper/us_market.py refresh gb_aapl gb_msft spy（增量全量同价——端点返回全史）。"""
     if len(argv) >= 2 and argv[0] == "refresh":
