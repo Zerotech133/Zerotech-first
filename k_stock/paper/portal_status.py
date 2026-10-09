@@ -157,6 +157,73 @@ def history(day: str) -> dict:
         con.close()
 
 
+def us_status() -> dict:
+    """US 独立账本聚合投影（K-STOCK-045e G3）：us_% 账本各一份迷你 status。
+
+    USD 原币口径，不与 main 混算（币种隔离是 044 设计前提）；无 us_% 账本时
+    ok=True 且 accounts=[]（前端隐藏区块，不算错误）。"""
+    con = _connect()
+    if con is None:
+        return {"ok": False, "error": f"paper.db 不存在: {DB}"}
+    try:
+        aids = [r["account_id"] for r in con.execute(
+            "SELECT DISTINCT account_id FROM account WHERE account_id LIKE 'us_%' "
+            "ORDER BY account_id")]
+        out = {"ok": True, "currency": "USD", "accounts": []}
+        for aid in aids:
+            marks = con.execute(
+                "SELECT date,total,cash,market_value,pos_pct,pending,verify_ok "
+                "FROM equity_marks WHERE account_id=? ORDER BY date", (aid,)).fetchall()
+            base = (marks[0]["total"] or 1.0) if marks else 1.0
+            last_snap = con.execute(
+                "SELECT MAX(date) AS d FROM positions_snapshot WHERE account_id=?",
+                (aid,)).fetchone()["d"] if marks else None
+            positions = con.execute(
+                "SELECT stock,qty,avg_cost,last,market_value,pnl,strategy "
+                "FROM positions_snapshot WHERE account_id=? AND date=? ORDER BY stock",
+                (aid, last_snap)).fetchall() if last_snap else []
+            pending = con.execute(
+                "SELECT id,stock,side,qty,plan_date,conf,strategy,reason "
+                "FROM orders WHERE account_id=? AND status='pending' ORDER BY id",
+                (aid,)).fetchall()
+            stops: list[dict] = []
+            if last_snap:
+                for r in con.execute(
+                        "SELECT p.stock,p.qty,p.stop_price,p.strategy,s.last "
+                        "FROM positions p LEFT JOIN positions_snapshot s "
+                        "  ON s.stock=p.stock AND s.date=? AND s.account_id=p.account_id "
+                        "WHERE p.account_id=? AND p.stop_price IS NOT NULL ORDER BY p.stock",
+                        (last_snap, aid)):
+                    d = dict(r)
+                    d["distance_pct"] = (round((r["last"] / r["stop_price"] - 1) * 100, 2)
+                                         if r["last"] else None)
+                    stops.append(d)
+            latest = None
+            curve = []
+            if marks:
+                l = marks[-1]
+                latest = {
+                    "date": l["date"], "total": l["total"], "cash": l["cash"],
+                    "market_value": l["market_value"], "pos_pct": l["pos_pct"],
+                    "pending": l["pending"], "verify_ok": bool(l["verify_ok"]),
+                    "cum_pct": round((l["total"] / base - 1) * 100, 2),
+                }
+                curve = [{"date": m["date"], "total": m["total"],
+                          "cum_pct": round((m["total"] / base - 1) * 100, 2)}
+                         for m in marks]
+            out["accounts"].append({
+                "account_id": aid,
+                "latest": latest,
+                "curve": curve,
+                "positions": [dict(r) for r in positions],
+                "stops": stops,
+                "pending_orders": [dict(r) for r in pending],
+            })
+        return out
+    finally:
+        con.close()
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:

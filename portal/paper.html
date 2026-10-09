@@ -299,6 +299,7 @@
       <span style="font-size:12px;color:var(--text-dim)">日期来自权益快照（equity_marks）</span>
     </div>
     <div id="nav-curve"></div>
+    <div id="us-block"></div>
     <div id="hist-body"><div class="empty">读取中…</div></div>
   </div>
 
@@ -382,10 +383,12 @@ function renderAll(j){
   if(cur&&j.curve.some(c=>c.date===cur))sel.value=cur;
   renderAgents(j);
   renderCurve(j.curve);
+  renderUs(j.us);
 }
 /* B2 净值曲线（SVG 零依赖）：数据=equity_marks 日快照，涨红跌绿（A股口径） */
-function renderCurve(curve){
-  const host=$('nav-curve');if(!host)return;
+function renderCurve(curve, hostId, cur){
+  hostId=hostId||'nav-curve';cur=cur||'¥';
+  const host=$(hostId);if(!host)return;
   if(!curve||curve.length<2){
     host.innerHTML='<div class="flow-note" style="margin:10px 0 0">净值曲线自第 2 个交易日快照起绘制（当前 '+
       (curve?curve.length:0)+' 个快照点 · 每日 mark 自动积累）</div>';return;}
@@ -406,8 +409,37 @@ function renderCurve(curve){
     '<polyline points="'+pts+'" fill="none" stroke="'+lineCol+'" stroke-width="2.2" stroke-linejoin="round"/>'+
     '<circle cx="'+x(curve.length-1).toFixed(1)+'" cy="'+y(last.total).toFixed(1)+'" r="4" fill="'+lineCol+'"/>'+
     '<text x="'+(W-P)+'" y="'+(y(last.total)-10).toFixed(1)+'" font-size="12.5" font-weight="700" fill="'+lineCol+'" text-anchor="end">'+
-    '¥'+fmt(last.total)+'（'+pct(last.cum_pct)+'）</text>'+
+    cur+fmt(last.total)+'（'+pct(last.cum_pct)+'）</text>'+
     '</svg>';
+}
+/* US 独立账本投影（045e G3）：USD 原币，不与 main 混算；无账本隐藏区块 */
+function renderUs(us){
+  const host=$('us-block');if(!host)return;
+  if(!us||!us.ok||!us.accounts||!us.accounts.length){host.innerHTML='';return;}
+  host.innerHTML=us.accounts.map(a=>{
+    const L=a.latest;
+    if(!L)return `<div class="flow-note" style="margin:12px 0 0">💵 ${a.account_id}（US 独立账本 · USD 原币）：已开户，待首笔成交积累快照</div>`;
+    const pos=a.positions.map(p=>
+      `<tr><td>${p.stock}</td><td>${p.qty}</td><td>${fmt(p.avg_cost)}</td><td>${fmt(p.last)}</td>`+
+      `<td class="${cls(p.pnl)}">${fmt(p.pnl)}</td><td>${(p.strategy||'')}</td></tr>`).join('');
+    const pend=a.pending_orders.map(o=>
+      `<div>⏳ ${o.side} ${o.stock} ×${o.qty} → ${o.plan_date} 开盘（${o.conf?('conf '+o.conf):''}）</div>`).join('');
+    const stp=a.stops.map(s=>{
+      const d=s.distance_pct==null?'-':`<span class="${cls(s.distance_pct)}">${pct(s.distance_pct)}</span>`;
+      return `<div>🛡️ ${s.stock} 止损 ${s.stop_price} · 现价 ${s.last==null?'-':fmt(s.last)} · ${d}</div>`;}).join('');
+    return `<div style="margin:18px 0 6px;padding:12px;border:1px solid var(--border);border-radius:10px">`+
+      `<div style="font-weight:700;margin-bottom:4px">💵 ${a.account_id}（US 独立账本 · USD 原币）</div>`+
+      `<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:2px">`+
+      `总资产 $${fmt(L.total)} · 仓位 ${(L.pos_pct*100).toFixed(1)}% · 待撮合 ${L.pending} · 快照 ${L.date} · `+
+      `累计 <span class="${cls(L.cum_pct)}">${pct(L.cum_pct)}</span></div>`+
+      `<div id="us-curve-${a.account_id}"></div>`+
+      (pos?`<table style="width:100%;font-size:12.5px;border-collapse:collapse;margin-top:6px">`+
+        `<tr style="color:var(--text-dim)"><td>标的</td><td>数量</td><td>成本</td><td>现价</td><td>盈亏</td><td>策略</td></tr>${pos}</table>`:'')+
+      (pend?`<div style="font-size:12.5px;margin-top:6px">${pend}</div>`:'')+
+      (stp?`<div style="font-size:12.5px;margin-top:6px">${stp}</div>`:'')+
+      `</div>`;
+  }).join('');
+  us.accounts.forEach(a=>{if(a.latest&&a.curve)renderCurve(a.curve,'us-curve-'+a.account_id,'$');});
 }
 function renderDesk(j){
   const d=j.desk||{};

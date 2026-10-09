@@ -22166,6 +22166,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 from paper.portal_status import status as _paper
                 data = _paper()
                 data["desk"] = self._paper_desk()   # v0.2 交易台动态块（AI/双刀最近产物）
+                try:  # K-STOCK-045e G3：US 独立账本投影（USD 原币；失败降级不拖主投影）
+                    from paper.portal_status import us_status as _us
+                    data["us"] = _us()
+                except Exception as _e2:
+                    data["us"] = {"ok": False, "error": repr(_e2)}
                 self._json(data)
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "error": repr(_e)}, 500)
