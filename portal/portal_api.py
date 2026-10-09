@@ -21128,199 +21128,27 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                                          "reports", "opt.html"),
                             nav_key="opt")
         elif path in ("/qd", "/qd/"):
-            # K-STOCK-022 量子双刀 · 选股中心（研究预览页）：读 qd_scanner.py
-            # 产的缓存 JSON 渲染；无缓存/过期则后台拉起 venv 扫描（stdout 落文件）。
-            # 纯展示层：只读特征湖扫描缓存，零影子链路触碰；显著标注研究态未回测。
-            import html as _h_qd
+            # K-STOCK-027 影子层/展示层分离：渲染委托 qd_view.py（纯函数，
+            # 可离线单测 python qd_view.py），本分支只做 I/O 副作用——
+            # 读扫描缓存 + 无缓存时后台 spawn venv 扫描（stdout 落文件）
             import subprocess as _sp
-            e_qd = _h_qd.escape
+            import qd_view as _qd_view
             cache_p = os.path.join(ROOT, "qd_scan_cache.json")
             log_p = os.path.join(ROOT, "qd_scan.log")
             snap_qd = _read_json(cache_p) if os.path.exists(cache_p) else None
-            VENV_PY = ("C:/Users/Administrator/.workbuddy/binaries/python/"
-                       "envs/default/Scripts/python.exe")
-            SCAN_PY = os.path.join(ROOT, "qd_scanner.py")
-            # K-STOCK-026：/qd/ 专属精简导航——老田要求不出现策略中心/
-            # 青萍之末/缠论等交叉产线工作台（图谱工具走正文 tools_qd），
-            # 故不复用 pill_nav("qd") 的全站下拉
-            nav_qd = ("<a href='/' style='%s'>🏠 首页</a>"
-                      "<span style='color:#8b949e;font-size:11px'>›</span>"
-                      "<span style='%s'>⚔ 量子双刀</span>"
-                      % (_PILL, _PILL_ON))
             if snap_qd is None:
-                # 首次：后台拉起扫描（venv 解释器；stdout/stderr 落文件，长跑纪律）
+                # 首次：后台拉起扫描（venv 解释器；长跑纪律输出落文件）
+                VENV_PY = ("C:/Users/Administrator/.workbuddy/binaries/python/"
+                           "envs/default/Scripts/python.exe")
+                SCAN_PY = os.path.join(ROOT, "qd_scanner.py")
                 if not os.path.exists(log_p) or time.time() - os.path.getmtime(log_p) > 1800:
                     with open(log_p, "ab") as lf:
                         _sp.Popen([VENV_PY, SCAN_PY], stdout=lf, stderr=lf,
                                   stdin=_sp.DEVNULL,
                                   creationflags=0x00000008 | 0x00000200)
-                body_qd = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
-                           "<meta http-equiv='refresh' content='30'>"
-                           "<title>量子双刀 · 研究预览</title>" + self._COCKPIT_CSS
-                           + "</head><body>" + nav_qd
-                           + "<h1>⚔ 量子双刀 · 选股中心（研究预览）</h1>"
-                           "<div style='border:1px solid #d29922;border-radius:8px;"
-                           "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
-                           "⚠ 研究态：策略未回测验证（T-20261009-009 结论前不构成选股依据）</div>"
-                           "<div class='dim'>全市场首次扫描进行中（约 3-5 分钟），"
-                           "页面每 30 秒自动刷新 · 扫描日志 " + e_qd(log_p) + "</div>"
-                           "</body></html>")
-                self._html(body_qd)
+                self._html(_qd_view.render_placeholder(log_p, self._COCKPIT_CSS))
                 return
-            REG_CN = {"trend_up": "趋势上行", "trend_down": "趋势下行",
-                      "rotation": "轮动", "range": "震荡"}
-            rg = snap_qd.get("regime_now", {})
-            rg_txt = " · ".join("%s %d" % (REG_CN.get(k, k), v)
-                                for k, v in sorted(rg.items()))
-
-            def _row_qd(r):
-                # K-STOCK-026：8 列增强行——代码下钻/名称/收盘(涨跌%)/市值/
-                # 换手/市况/技术状态/信号日（涨跌红涨绿跌中国惯例）
-                recent = "、".join(r.get("recent_signals", [])[-3:]) or "—"
-                code_lk = ("<a href='/bt/stock?c=%s'><b>%s</b></a>"
-                           % (e_qd(r["code"]), e_qd(r["code"])))
-                chg = r.get("change_pct")
-                if chg is None or chg == "":
-                    chg_txt = "—"
-                else:
-                    col = "#f85149" if float(chg) >= 0 else "#3fb950"
-                    chg_txt = "<b style='color:%s'>%+.2f%%</b>" % (col, float(chg))
-                cap = r.get("mktcap_yi")
-                cap_txt = ("%.0f亿" % float(cap)) if cap not in (None, "") else "—"
-                to = r.get("turnover_pct")
-                to_txt = ("%.2f%%" % float(to)) if to not in (None, "") else "—"
-                tech = r.get("tech") or "—"
-                nm = r.get("name") or "—"
-                return ("<tr><td>%s</td><td>%s</td><td>%s <span class='dim'>(%s)</span>"
-                        "</td><td>%s</td><td class='dim'>%s</td><td>%s</td>"
-                        "<td class='dim' style='max-width:240px'>%s</td>"
-                        "<td class='dim'>%s</td></tr>"
-                        % (code_lk, e_qd(nm), e_qd(str(r.get("close", "—"))), chg_txt,
-                           e_qd(cap_txt), e_qd(to_txt),
-                           e_qd(REG_CN.get(r.get("regime"), r.get("regime", "?"))),
-                           e_qd(tech), e_qd(recent)))
-            now_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_now", [])) or \
-                "<tr><td colspan=8 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
-            rec_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_recent", [])[:50]) or \
-                "<tr><td colspan=8 class='dim'>近 5 日无信号</td></tr>"
-            # 尾盘候选表（K-STOCK-025：14:40 盘中实时 bar 复核 → 14:55 执行窗口）
-            tail_ls = snap_qd.get("tail_signals", []) or []
-            tail_rows = "".join(
-                ("<tr><td><a href='/bt/stock?c=%s'><b>%s</b></a></td>"
-                 "<td>%s</td><td>%s</td><td class='dim'>%s</td></tr>")
-                % (e_qd(t["code"]), e_qd(t["code"]), e_qd(str(t.get("close", "—"))),
-                   e_qd(REG_CN.get(t.get("regime"), t.get("regime", "?"))),
-                   e_qd(t.get("note", ""))) for t in tail_ls) or \
-                ("<tr><td colspan=4 class='dim'>%s</td></tr>"
-                 % e_qd(snap_qd.get("tail_note") or
-                        "今日尚无尾盘候选（14:40 盘中扫描产出 · 候选池 %d 只昨日十字星）"
-                        % snap_qd.get("star_pool_n", 0)))
-
-            # ── 管线步骤表（对齐缠论 ①-⑫ 规格：模块/入口/字段/状态）──
-            _OK = "<span style='color:#3fb950'>✅ 引擎已实现</span>"
-            _RDY = "<span style='color:#3fb950'>✅ 引擎就绪</span>"
-            _SH = "<span style='color:#d29922'>🧪 研究态</span>"
-            steps_qd = "".join(
-                "<tr><td><b>%s</b></td><td class='dim'>%s</td><td class='dim'>%s</td><td>%s</td></tr>"
-                % (m, tool, fld, stt) for m, tool, fld, stt in [
-                    ("① 连续双日十字星", "实体/振幅比≤0.30 且上下影齐全",
-                     "cross_star_2d", _OK + "（合成序列单测验证）"),
-                    ("② MACD 多头", "dif≥dea 且 dif&gt;0", "macd_ok", _OK),
-                    ("③ 振幅变化率受限", "|range−前日range|/前日range≤0.30",
-                     "range_ok", _OK),
-                    ("④ 价格带+实体方向", "6-200 元且 close≥open",
-                     "price_ok", _OK),
-                    ("⑤ 两日小涨约束", "连续两日涨幅各≤3%（strict）",
-                     "price_ok", _OK),
-                    ("⑥ 流动性门槛", "20 日成交额&gt;30 亿（特征湖 amount 千元口径 3e6）",
-                     "amount_ok", _OK),
-                    ("⑦ 均线多头排列", "MA24≥MA54 且 close≥两者",
-                     "ma_stack_ok", _OK),
-                    ("⑧ 乖离受限", "close≤MA24×1.20 / MA54×1.30",
-                     "ma_distance_ok", _OK),
-                    ("⑨ Regime 四市况分层", "TSI 趋势 60%+突破率 40% → 四市况，"
-                     "趋势下行一票否决", "regime_ok / regime_label", _OK),
-                    ("⑩ 5 分钟入场确认", "突破/量比≥0.9/VWAP≤2.5%/开盘强度，至少过二",
-                     "confirm_double_knife_entry", _RDY + "（接线待 T-20261009-008）"),
-                    ("⑪ strict/relaxed 双版本", "阈值双档对照研究法",
-                     "PROFILE_CONFIG", _SH + "（真实回测待 T-009）"),
-                    ("⑫ 真实回测验证", "特征湖 amt 千元口径 · 分 regime 结论",
-                     "任务 T-20261009-009", _SH + "（P1 · 限 10-25）"),
-                ])
-            tools_qd = "".join(
-                "<a class='tp' href='%s'>%s</a>" % (href, lb) for lb, href in [
-                    ("🕸 图谱探索", "/kg"),
-                    ("💰 游资地图", "/kg/map"),
-                    ("🗺 作战地图", "/kg/battle"),
-                    ("💬 图谱问答", "/kg/ask")])
-            cards_qd = (
-                "<div style='display:grid;grid-template-columns:repeat(auto-fit,"
-                "minmax(200px,1fr));gap:10px;margin:14px 0'>"
-                "<div style='border:1px solid #3fb950;border-radius:10px;"
-                "background:#161b22;padding:12px 14px'><div class='dim' "
-                "style='font-size:12px'>当日信号</div><div style='font-size:24px;"
-                "font-weight:700;color:#3fb950'>%d</div></div>"
-                "<div style='border:1px solid #d29922;border-radius:10px;"
-                "background:#161b22;padding:12px 14px'><div class='dim' "
-                "style='font-size:12px'>近 5 日曾有信号</div><div style='font-size:24px;"
-                "font-weight:700;color:#d29922'>%d</div></div>"
-                "<div style='border:1px solid #30363d;border-radius:10px;"
-                "background:#161b22;padding:12px 14px'><div class='dim' "
-                "style='font-size:12px'>全市场扫描覆盖</div><div style='font-size:24px;"
-                "font-weight:700'>%d 只</div></div>"
-                "<div style='border:1px solid #30363d;border-radius:10px;"
-                "background:#161b22;padding:12px 14px'><div class='dim' "
-                "style='font-size:12px'>当日市况分布</div><div style='font-size:13px;"
-                "line-height:1.8'>%s</div></div></div>"
-                % (len(snap_qd.get("signals_now", [])),
-                   len(snap_qd.get("signals_recent", [])),
-                   snap_qd.get("scanned", 0), e_qd(rg_txt or "—")))
-            body_qd = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
-                       "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-                       "<title>量子双刀 · 选股中心</title>" + self._COCKPIT_CSS
-                       + "</head><body>" + nav_qd
-                       + "<h1>⚔ 量子双刀 · 选股中心</h1>"
-                       "<div style='border:1px solid #d29922;border-radius:8px;"
-                       "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
-                       "⚠ 研究态：策略未回测验证（T-20261009-009 结论前不构成选股依据 · "
-                       "不构成投资建议）· 已注册策略中心（shadow）· 尾盘策略："
-                       "每日 14:40 全市场扫描 → 14:55 执行窗口</div>"
-                       + tools_qd + cards_qd
-                       + "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
-                       "⏱ 今日尾盘候选（%d · 14:40 盘中实时 bar 复核 → 14:55 执行窗口）</h2>"
-                       "%s</div>"
-                       "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
-                       "📌 当日信号（%d）</h2>"
-                       "<table style='border-collapse:collapse;min-width:520px'>"
-                       "<tr class='dim'><td align=left>代码</td><td align=left>名称</td>"
-                       "<td align=left>收盘(涨跌)</td><td align=left>市值</td>"
-                       "<td align=left>换手</td><td align=left>市况</td>"
-                       "<td align=left>技术状态</td><td align=left>近5日信号日</td></tr>"
-                       "%s</table></div>"
-                       "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
-                       "🕘 近 5 日曾有信号（%d，当日已不触发）</h2>"
-                       "<table style='border-collapse:collapse;min-width:520px'>"
-                       "<tr class='dim'><td align=left>代码</td><td align=left>名称</td>"
-                       "<td align=left>收盘(涨跌)</td><td align=left>市值</td>"
-                       "<td align=left>换手</td><td align=left>市况</td>"
-                       "<td align=left>技术状态</td><td align=left>近5日信号日</td></tr>"
-                       "%s</table></div>"
-                       "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
-                       "⚙ 策略管线（八重 AND · 全链单测 23/23）</h2>"
-                       "<table style='border-collapse:collapse;min-width:640px'>"
-                       "<tr class='dim'><td align=left>模块</td><td align=left>口径</td>"
-                       "<td align=left>字段</td><td align=left>状态</td></tr>"
-                       "%s</table></div>"
-                       "<div class='dim' style='margin-top:14px'>数据源：特征湖 parquet "
-                       "（tushare 口径 amount=千元，与引擎阈值直接吻合）· 扫描节奏：每日 "
-                       "17:50 automation（venv 子进程）· 手动刷新：运行 portal/qd_scanner.py"
-                       " · 策略源自 projects-archive 量子双刀产线（K-STOCK-018 移植）"
-                       "</div></body></html>"
-                       % (len(tail_ls), tail_rows,
-                          len(snap_qd.get("signals_now", [])), now_rows,
-                          len(snap_qd.get("signals_recent", [])), rec_rows,
-                          steps_qd))
-            self._html(body_qd)
+            self._html(_qd_view.render_workspace(snap_qd, self._COCKPIT_CSS))
         elif path == "/bt-news":
             self._bt_news(qs)
         elif path == "/bt":
