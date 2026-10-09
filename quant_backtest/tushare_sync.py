@@ -973,14 +973,21 @@ def batch_bclass(m):
 
     # 3) cyq_perf 筹码分布：202509 起逐日全市场（单日 ~5.5k 行单次可返；
     #    探针 2026-09-30 实测 5,559 行无翻页）。全历史 ~1170 万行太重，
-    #    按"密度考虑"原议只留近窗口；0 行（数据未出）也落空片防重拉
+    #    按"密度考虑"原议只留近窗口；0 行=数据未出（T+1 延迟源）不落片，
+    #    留待下次重拉——落空片会永久占位断流（OPS 教训 2026-10-09）
     cdone = cmiss = 0
     for d in days:
         f = os.path.join(tdir("cyq_perf"), "d_%s.parquet" % d)
         if os.path.exists(f):
-            continue
+            try:
+                if len(pd.read_parquet(f)) > 0:
+                    continue
+            except Exception:
+                continue   # 读不了的片不冒险覆盖
         try:
             df = pull_paged("cyq_perf", {"trade_date": d}, 6000)
+            if df.empty:
+                continue
             df.to_parquet(f, index=False)
             cdone += 1
         except Exception as e:

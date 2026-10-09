@@ -268,12 +268,41 @@ def build(cli, dryrun=False):
               % (nl, nh, no))
 
 
-def _pull_one(api, params, path, cap=1000):
-    """sync 用：单分片拉取（文件存在跳过）。"""
+def _recent_open_days(n=2):
+    """本地 trade_cal 最近 n 个已过开市日（升序，去重）——cyq_perf 拉取窗。
+
+    筹码是 T+1 延迟源（T 日数据当晚才出），晨链 06:20 拉"今日"必空，
+    拉取窗必须锚定开市日历而非自然日。"""
+    parts = sorted(glob.glob(os.path.join(TS_DIR, "trade_cal",
+                                          "part_*.parquet")))
+    if not parts:
+        return []
+    cal = pd.concat([pd.read_parquet(p, columns=["cal_date", "is_open"])
+                     for p in parts])
+    today = datetime.now().strftime("%Y%m%d")
+    days = sorted({str(d) for d in cal[cal["is_open"] == 1]["cal_date"]})
+    return [d for d in days if d <= today][-n:]
+
+
+def _pull_one(api, params, path, cap=1000, keep_empty=True):
+    """sync 用：单分片拉取（文件存在且非空跳过）。
+
+    keep_empty=False（T+1 延迟源）：0 行空片视为缺失重拉覆盖，拉到
+    0 行不落片——空片永久占位是断流根因（OPS 教训 2026-10-09）；
+    用覆盖写而非删文件（Windows DeletePending 句柄滞留会让删除
+    假成功，见同日排查）。"""
     import tushare_sync as TS
     if os.path.exists(path):
-        return
+        if keep_empty:
+            return
+        try:
+            if len(pd.read_parquet(path)) > 0:
+                return
+        except Exception:
+            return   # 读不了的片不冒险覆盖
     df = TS.pull_paged(api, params, cap)
+    if df.empty and not keep_empty:
+        return
     df.to_parquet(path, index=False)
 
 
@@ -335,10 +364,13 @@ def sync(cli, date=None):
     _holder_feat()
     _jr.edge("parquet:holder_feat", "parquet:stk_holdernumber", transform="feat")  # X3 血缘
 
-    # cyq_perf：当日筹码分片 + 特征重刷（0 行也落片防重拉）
-    _pull_one("cyq_perf", {"trade_date": date},
-              os.path.join(TS_DIR, "cyq_perf", "d_%s.parquet" % date),
-              cap=6000)
+    # cyq_perf：近 2 个已过开市日逐日补片（0 行不落片）+ 特征重刷。
+    # T+1 延迟源：晨链拉"今日"必空且空片会永久占位（OPS 2026-10-09），
+    # 锚定开市日 T-1 稳定入库；今日留给明晨链以 T-1 身份自愈。
+    for d in _recent_open_days(2):
+        _pull_one("cyq_perf", {"trade_date": d},
+                  os.path.join(TS_DIR, "cyq_perf", "d_%s.parquet" % d),
+                  cap=6000, keep_empty=False)
     _cyq_feat()
     # X3 血缘：特征落盘边 + 运行收尾
     _jr.edge("parquet:cyq_feat", "parquet:cyq_perf", transform="feat")  # X3 血缘

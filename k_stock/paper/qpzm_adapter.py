@@ -82,8 +82,13 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
     # stamp 派生自缓存 ts（非 now()）：同一份 rps 缓存重复跑 4d 产同名 run 文件
     # → exec_run 的 ref={文件名}#{stock} 不变 → 幂等跳过（now() 时间戳会造出
     # 新文件名 → ref 变 → 同票双份 pending 双倍成交，044 M3 复盘补丁）
-    ts_raw = str(d.get("ts") or datetime.now().isoformat(timespec="seconds"))
-    stamp = ts_raw.replace("-", "").replace(":", "").replace(" ", "_")
+    # 缓存无 ts 字段时用文件 mtime 兜底（文件不变 mtime 不变，幂等同样成立）；
+    # 仍用 now() 的话幂等彻底失效——红队审查 045a FIX-1
+    ts_raw = d.get("ts")
+    if not ts_raw:
+        ts_raw = datetime.fromtimestamp(
+            Path(cache_path).stat().st_mtime).isoformat(timespec="seconds")
+    stamp = str(ts_raw).replace("-", "").replace(":", "").replace(" ", "_")
     out_dir.mkdir(parents=True, exist_ok=True)
     cn_path = us_path = None
     if items:

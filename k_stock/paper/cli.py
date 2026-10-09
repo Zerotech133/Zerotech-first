@@ -59,11 +59,12 @@ def _us_accounts(db: Path) -> list[str]:
     return sorted(r[0] for r in rows)
 
 
-def _us_pass(args):
+def _us_pass(args, do_refresh: bool = True):
     """US 独立账本通道（K-STOCK-044 M3）：存在 us_% 账本才跑；settle 前自动 refresh。
 
     refresh 只拉有真实敞口的票（pending+持仓）+ SPY 日历基准；单票失败降级记录，
     不炸 settle——缺 bar 的单由引擎「保持 pending」幂等等待次晨补。
+    do_refresh=False（mark 用）：缓存已在 settle 段刷新过，避免双份全史拉取。
     返回 [(account_id, engine)] 与 refresh 摘要；无 US 账本返回 None。"""
     from us_market import UsMarket, refresh, us_symbols_in_db
     db = Path(args.db) if args.db else DEFAULT_DB
@@ -71,17 +72,18 @@ def _us_pass(args):
     if not aids:
         return None
     refreshed, failed = [], []
-    try:
-        refresh("spy")
-        refreshed.append("SPY")
-    except Exception as ex:  # 日历失败仍可 settle（湖内已有 bar 的单照常成交）
-        failed.append(f"SPY: {ex}")
-    for sym in us_symbols_in_db(db):
+    if do_refresh:
         try:
-            refresh(sym)
-            refreshed.append(sym)
-        except Exception as ex:  # noqa: BLE001
-            failed.append(f"{sym}: {ex}")
+            refresh("spy")
+            refreshed.append("SPY")
+        except Exception as ex:  # 日历失败仍可 settle（湖内已有 bar 的单照常成交）
+            failed.append(f"SPY: {ex}")
+        for sym in us_symbols_in_db(db):
+            try:
+                refresh(sym)
+                refreshed.append(sym)
+            except Exception as ex:  # noqa: BLE001
+                failed.append(f"{sym}: {ex}")
     return {"accounts": aids,
             "engines": [(aid, PaperEngine(db, UsMarket(), account=aid)) for aid in aids],
             "refreshed": refreshed, "refresh_fail": failed}
@@ -153,11 +155,17 @@ def cmd_settle(args) -> int:
         print(f"  ❌ #{x['id']} {x['stock']}: {x['why']}")
     if not args.dry_run:
         _print_eq(e)
-    # US 独立账本 pass（K-STOCK-044 M3）：us_% 账本 settle 前自动 refresh 行情缓存
+    # US 独立账本 pass（K-STOCK-044 M3）：us_% 账本 settle 前自动 refresh 行情缓存。
+    # 红队审查 045a FIX-2：US 段整体 try——SPY 缓存缺失+refresh 失败的组合会让
+    # settle() 抛 FileNotFoundError 炸 CLI（main 已成交但 exit 非零、mark 不跑）。
     us = _us_pass(args)
     if us:
         for aid, e_us in us["engines"]:
-            r2 = e_us.settle(dry_run=args.dry_run)
+            try:
+                r2 = e_us.settle(dry_run=args.dry_run)
+            except Exception as ex:  # noqa: BLE001
+                print(f"⚠️ US 账本 {aid} settle 失败（不阻塞主链）: {ex}")
+                continue
             print(f"{tag}US 账本 {aid} 撮合: 成交 {len(r2['filled'])} / 搁置 {len(r2['rejected'])}"
                   f"（refresh {len(us['refreshed'])} 票"
                   f"{'，失败 ' + str(len(us['refresh_fail'])) if us['refresh_fail'] else ''}）")
@@ -215,11 +223,16 @@ def cmd_mark(args) -> int:
     ok = "✅" if r["verify_ok"] else "❌"
     print(f"{ok} 快照 {r['date']}: 总资产 {r['total']:,.2f} 仓位 {r['pos_pct']:.1%} "
           f"待撮合 {r['pending']}")
-    # US 独立账本快照（K-STOCK-044 M3）：us_% 账本各记一行（USD 原币口径）
-    us = _us_pass(args)
+    # US 独立账本快照（K-STOCK-044 M3）：us_% 账本各记一行（USD 原币口径）；
+    # do_refresh=False——缓存已在 settle 段刷新，mark 不重复全史拉取（045a FIX-3）
+    us = _us_pass(args, do_refresh=False)
     if us:
         for aid, e_us in us["engines"]:
-            r2 = e_us.mark()
+            try:
+                r2 = e_us.mark()
+            except Exception as ex:  # noqa: BLE001
+                print(f"⚠️ US {aid} 快照失败（不阻塞备份）: {ex}")
+                continue
             ok2 = "✅" if r2["verify_ok"] else "❌"
             print(f"{ok2} US {aid} 快照: 总资产 {r2['total']:,.2f} 仓位 {r2['pos_pct']:.1%} "
                   f"待撮合 {r2['pending']}")

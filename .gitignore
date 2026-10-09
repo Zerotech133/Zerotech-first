@@ -26,6 +26,8 @@ quant_backtest/outbox/
 quant_backtest/reports/
 quant_backtest/assets/
 quant_backtest/*.jsonl
+# fastembed 模型缓存（OPS-1014：离线嵌入本地缓存，体积大不入库）
+quant_backtest/.fastembed_cache/
 
 # 情报采集数据
 news_collector/*.db

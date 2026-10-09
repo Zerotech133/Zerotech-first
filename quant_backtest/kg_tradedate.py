@@ -14,18 +14,27 @@
 日上挂 ON_DATE，非交易日新闻保留 date 属性不入链。sync 自愈：清除
 不在新口径内的历史 TradeDate 节点（含其 ON_DATE/NEXT 边）。
 
+前瞻日历（2026-10-09，K267）：市场事实日之外，补 trade_cal 权威
+日历的前瞻开市日（最大事实日之后 ~90 自然日，source=cal_forward）：
+  · NEXT_TRADE_DAY 链通到未来（复市首日/次个交易日导航不再踩空）
+  · 滞后计算按交易日口径（kg_objectview 徽章）需要「今天是否开市」
+  · ON_DATE 挂边仍只对市场事实日做（前瞻日无事件可挂）
+  · 自愈清理排除前瞻日（重查同源），旧节点不误删
+
 用法：
   python kg_tradedate.py            # 全量同步（幂等，重跑零写）
   python kg_tradedate.py --stat     # 只看对账统计
 """
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import kg_schema as S
 from kg_client import KgClient
 import linreg  # X3 血缘登记（best-effort，不阻断）
 
 SOURCE = "graph_dates"
+SOURCE_FWD = "cal_forward"          # 前瞻日历（trade_cal 权威）
+FORWARD_DAYS = 90                   # 前瞻自然日窗
 
 
 def _now():
@@ -36,6 +45,28 @@ def _dow(yyyymmdd):
     """周一=1 … 周日=7。"""
     d = datetime(int(yyyymmdd[:4]), int(yyyymmdd[4:6]), int(yyyymmdd[6:]))
     return d.isoweekday()
+
+
+def _forward_days(fact_max):
+    """trade_cal 前瞻开市日：最大事实日之后 ~90 自然日（K267）。
+
+    失败静默返回 []（前瞻是增强不是依赖——断源时图回退纯事实口径）。
+    """
+    try:
+        import datamart as dm
+        start = (datetime.strptime(fact_max, "%Y%m%d")
+                 + timedelta(days=1)).strftime("%Y%m%d")
+        end = (datetime.now() + timedelta(days=FORWARD_DAYS)) \
+            .strftime("%Y%m%d")
+        df = dm.read("trade_cal", start=start, end=end,
+                     fields=["cal_date", "is_open"])
+        if df is None or df.empty or "cal_date" not in df.columns:
+            return []
+        sub = df[df["is_open"] == 1] if "is_open" in df.columns else df
+        return sorted(str(v)[:8] for v in sub["cal_date"]
+                      if str(v)[:8].isdigit())
+    except Exception:
+        return []
 
 
 def sync(cli):
@@ -50,26 +81,34 @@ def sync(cli):
             + [r["d"] for r in s.run(
                 "MATCH ()-[t:TRADED_ON]->() "
                 "RETURN DISTINCT t.validStart AS d").data()]))
+        # K267 前瞻：trade_cal 开市日（仅建节点+NEXT 链，不挂事件）
+        fwd = _forward_days(ds[-1])
+        all_days = sorted(set(ds) | set(fwd))
         # 自愈：清理旧口径（含 Event/news 日期）留下的非交易日节点
+        # （前瞻日历内的不删——它不是事实日但属于权威日历）
         old = [r["d"] for r in s.run(
             "MATCH (d:TradeDate) RETURN d.date AS d").data()]
-        stale = [d for d in old if d not in set(ds)]
+        stale = [d for d in old if d not in set(all_days)]
         if stale:
             s.run("UNWIND $stale AS x MATCH (d:TradeDate {date:x}) "
                   "DETACH DELETE d", stale=stale).consume()
             print("清理非交易日 TradeDate %d 个（news 日历口径遗留）"
                   % len(stale))
-    print("交易日 %d 个（%s ~ %s）" % (len(ds), ds[0], ds[-1]))
+    print("交易日 %d 个（%s ~ %s，含前瞻 %d）"
+          % (len(all_days), all_days[0], all_days[-1], len(fwd)))
 
-    # ① TradeDate 节点
-    rows = [{"date": d, "dow": _dow(d), "updated_at": ts} for d in ds]
+    # ① TradeDate 节点（前瞻日 source=cal_forward 区分血缘）
+    rows = [{"date": d, "dow": _dow(d), "updated_at": ts,
+             "source": (SOURCE_FWD if d in set(fwd) else SOURCE)}
+            for d in all_days]
     cli.upsert_nodes(S.LBL_TRADE_DATE, ["date"], rows)
 
-    # ② NEXT_TRADE_DAY 链（相邻交易日 N 节点 N-1 边）
-    nxt = [{"src": ds[i], "dst": ds[i + 1], "validStart": ds[i],
+    # ② NEXT_TRADE_DAY 链（相邻交易日 N 节点 N-1 边，链通未来）
+    nxt = [{"src": all_days[i], "dst": all_days[i + 1],
+            "validStart": all_days[i],
             "validEnd": S.VALID_END_OPEN, "source": SOURCE,
             "updated_at": ts}
-           for i in range(len(ds) - 1)]
+           for i in range(len(all_days) - 1)]
     cli.upsert_edge(S.LBL_TRADE_DATE, "date", S.LBL_TRADE_DATE, "date",
                     S.REL_NEXT_TD, nxt)
 

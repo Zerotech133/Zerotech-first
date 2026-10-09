@@ -24,13 +24,14 @@
 用法：
   python kg_candle.py probe 000001.SZ 20260924   # 单日调试（人工核对口径）
   python kg_candle.py build [--ym 202609]        # 全量回填（或单月）
-  python kg_candle.py sync [20260929]            # 增量保鲜（每日链）
+  python kg_candle.py sync [20260929]            # 增量保鲜（每日链；无参=
+                                                # 仓内最近 5 个实际交易日）
 """
 import os
 import sys
 import math
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -278,38 +279,73 @@ def probe(cli, tc, date):
                  e.get("tail_vol", "")))
 
 
-def sync(cli, date=None):
-    """每日保鲜：指定日（默认今日）增量。"""
+def _cur_prev_ym():
+    """当月+上月（YYYYMM 集合）——对齐 TushareSync 增量重拉窗口。"""
+    now = datetime.now()
+    return {now.strftime("%Y%m"),
+            (now.replace(day=1) - timedelta(days=1)).strftime("%Y%m")}
+
+
+def _recent_dates(n=5):
+    """仓内分钟数据实际存在的最近 n 个交易日（YYYYMMDD 升序）。
+
+    TushareSync 每晚 23:30 才拉当日分钟（T+1 入仓），每日链 06:20 跑时
+    "今日"数据必然缺席——增量口径必须锚定仓内实际日期而非自然日历
+    （OPS 教训 2026-10-09：sync 只看今日 → 常态空转，全靠手动补数）。"""
+    yms = _cur_prev_ym()
+    dates = set()
+    for f in os.listdir(MINS_DIR):
+        if not f.endswith(".parquet") or f.rsplit("_", 1)[1][:6] not in yms:
+            continue
+        df = pd.read_parquet(os.path.join(MINS_DIR, f),
+                             columns=["trade_time"])
+        if not df.empty:
+            dates.update(pd.to_datetime(df["trade_time"])
+                         .dt.strftime("%Y%m%d").unique())
+    return sorted(dates)[-n:]
+
+
+def sync(cli, date=None, lookback=5):
+    """每日保鲜：默认回补仓内最近 lookback 个实际交易日；date=单日补历史。
+
+    幂等重刷刻意为之——对齐 TushareSync"删当月+上月重拉"的修正语义，
+    上游重拉修正过的分钟数据会被重新吸收；常态 T+1：今晨链处理昨晚
+    入仓的昨日数据，断链/长假后的存量日自动补齐。"""
     _jr = linreg.JobRun("kg_daily_sync", "candle_sync").__enter__()  # X3 血缘
-    date = date or datetime.now().strftime("%Y%m%d")
-    ym = date[:6]
+    dates = [date] if date else _recent_dates(lookback)
+    if not dates:
+        print("sync：仓内无分钟数据（%s）" % "/".join(sorted(_cur_prev_ym())))
+        _jr.finish("ok")  # X3 血缘
+        return
     name_map = _names(cli)
-    pre_map = _pres(date[:4] + date[4:6] + "01")
+    pre_map = _pres(min(dates)[:6] + "01")
+    want, yms = set(dates), sorted({d[:6] for d in dates})
     tcs = sorted({f.split("_")[0] + "." + f.split("_")[1]
                   for f in os.listdir(MINS_DIR)
                   if f.endswith(".parquet")})
     evs, edges = [], []
     for tc in tcs:
-        f = mins_file(tc, ym)
-        if not os.path.exists(f):
-            continue
-        df = pd.read_parquet(f, columns=["trade_time", "close", "high",
-                                         "amount"])
-        df["trade_time"] = pd.to_datetime(df["trade_time"])
-        day = df[df["trade_time"].dt.strftime("%Y%m%d") == date] \
-            .sort_values("trade_time")
-        if day.empty:
-            continue
-        for e in detect_day(day, pre_map.get((tc, date)), tc,
-                            name_map.get(tc, "")):
-            evs.append(e)
-            edges.append({"src": tc, "dst": e["evt_id"], "validStart": date,
-                          "validEnd": S.VALID_END_OPEN,
-                          "source": "stk_mins", "updated_at": _now()})
+        for ym in yms:
+            f = mins_file(tc, ym)
+            if not os.path.exists(f):
+                continue
+            df = pd.read_parquet(f, columns=["trade_time", "close", "high",
+                                             "amount"])
+            df["trade_time"] = pd.to_datetime(df["trade_time"])
+            df = df[df["trade_time"].dt.strftime("%Y%m%d").isin(want)]
+            for d, day in df.groupby(df["trade_time"].dt.strftime("%Y%m%d")):
+                day = day.sort_values("trade_time")
+                for e in detect_day(day, pre_map.get((tc, d)), tc,
+                                    name_map.get(tc, "")):
+                    evs.append(e)
+                    edges.append({"src": tc, "dst": e["evt_id"],
+                                  "validStart": d,
+                                  "validEnd": S.VALID_END_OPEN,
+                                  "source": "stk_mins", "updated_at": _now()})
     by = {}
     for e in evs:
         by[e["type"]] = by.get(e["type"], 0) + 1
-    print("sync %s：事件 %d %s" % (date, len(evs), by))
+    print("sync %s~%s：事件 %d %s" % (dates[0], dates[-1], len(evs), by))
     if evs:
         cli.upsert_nodes(S.LBL_MARKET_EVENT, ["evt_id"], evs)
         cli.upsert_edge(S.LBL_SECURITY, "ts_code", S.LBL_MARKET_EVENT,
