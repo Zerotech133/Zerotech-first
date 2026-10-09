@@ -656,6 +656,7 @@ DOMAIN_NAV_GROUPS = {
             ("💬 查数", "/nl", "nl"))),
         ("🚀 指挥", (
             ("🚀 驾驶舱", "/bridge", "bridge"),
+            ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
             ("🤖 AI 市场", "/aim", "aim"))),
         ("🎖 策略资产", (
             ("🎖 策略中心", "/strategies", "strategies"),
@@ -6125,6 +6126,47 @@ gap:14px;align-items:start}}
             % (e(g.get("name", "")),
                "".join(_ai_card(a) for a in g.get("ais", [])))
             for g in groups)
+
+        # K-STOCK-034 超级助手结合：Hermes（8787）= AI 组织架构总入口，
+        # 顶部枢纽卡 + org.json 实时组织架构条
+        org = _read_json(os.path.join(
+            STATION, "agent_platform", "registry", "org.json")) or {}
+        dept_chips = "".join(
+            "<span class='tp' style='cursor:default'>%s：%s</span>"
+            % (e(d.get("name", d.get("dept", ""))),
+               e("、".join(d.get("agents", [])) or "扩编中"))
+            for d in org.get("departments", []))
+        chief = org.get("chief", {})
+        hub_card = (
+            "<div class='sec'><h2>🦸 超级助手 · AI 组织架构总入口</h2>"
+            "<div style='display:grid;grid-template-columns:repeat("
+            "auto-fit,minmax(300px,1fr));gap:12px'>"
+            "<a href='http://127.0.0.1:8787' target='_blank' style='display:"
+            "block;border:1px solid #58a6ff;border-radius:12px;"
+            "background:#161b22;padding:16px 18px;text-decoration:none;"
+            "color:#e6edf3'>"
+            "<div style='font-size:17px;font-weight:700'>🦸 Hermes 超级助手"
+            "<span style='float:right;color:#3fb950;font-size:12px'>● 在线"
+            " · 进入对话 →</span></div>"
+            "<div class='dim' style='font-size:12.5px;margin:6px 0 10px'>"
+            "与超级助手对话即可调度下方全部 AI 岗位 · 执行/记忆/插件网关"
+            "</div>"
+            "<div style='font-size:13px'><b>http://127.0.0.1:8787</b></div>"
+            "</a>"
+            "<div style='border:1px solid #30363d;border-radius:12px;"
+            "background:#161b22;padding:16px 18px'>"
+            "<div style='font-size:15px;font-weight:700'>🏛 组织架构"
+            "<span class='dim' style='font-size:11.5px;margin-left:8px'>"
+            "汇报对象：人（%s）</span></div>"
+            "<div style='font-size:13px;margin:8px 0'>🧠 A0 参谋长"
+            "<span class='dim'>（%s · %s）</span></div>"
+            "<div style='display:flex;gap:6px;flex-wrap:wrap'>%s</div>"
+            "<div class='dim' style='font-size:11.5px;margin-top:8px'>"
+            "📡 汇报三通道：日报 17:35 · P0 即时 · P1 一小时内</div>"
+            "</div></div></div>"
+            % (e(str(org.get("report_to", "human"))),
+               e(str(chief.get("role_profile", "chief_of_staff"))),
+               e(str(chief.get("llm_binding", ""))), dept_chips))
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>🤖 AI 市场</title>"
@@ -6133,7 +6175,7 @@ gap:14px;align-items:start}}
                 + "<h1>🤖 AI 市场</h1><div class='dim'>"
                 + e(mkt.get("tagline", ""))
                 + " · 聘请 AI 岗位投入商业化项目 · 本地模型驱动成本可控</div>"
-                + secs
+                + hub_card + secs
                 + "<div class='dim' style='margin-top:20px'>聘请方式："
                 "「在岗」岗位向 A0 参谋长提任务单（飞书日报通道）· "
                 "「即用」专项 AI 点入即用 · 货架源 portal/ai_market.json"
