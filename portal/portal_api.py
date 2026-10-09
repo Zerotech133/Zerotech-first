@@ -21148,7 +21148,13 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                                   creationflags=0x00000008 | 0x00000200)
                 self._html(_qd_view.render_placeholder(log_p, self._COCKPIT_CSS))
                 return
-            self._html(_qd_view.render_workspace(snap_qd, self._COCKPIT_CSS))
+            # K-STOCK-028：当日基础数据快照（qd_daily_snapshot.py 14:55 产出）
+            # 传入渲染——尾盘候选行据此补齐名称/涨跌/市值/换手/技术状态
+            base_p = os.path.join(ROOT, "qd_daily_data", "snap_%s.json"
+                                  % time.strftime("%Y%m%d"))
+            base_qd = _read_json(base_p) if os.path.exists(base_p) else None
+            self._html(_qd_view.render_workspace(snap_qd, self._COCKPIT_CSS,
+                                                 base_qd))
         elif path == "/bt-news":
             self._bt_news(qs)
         elif path == "/bt":

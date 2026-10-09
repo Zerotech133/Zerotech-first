@@ -100,21 +100,44 @@ def _row(r):
                e(tech), e(recent)))
 
 
-def _tail_rows(snap):
-    """尾盘候选行（K-STOCK-025：14:40 盘中实时 bar 复核 → 14:55 执行窗口）"""
+def _tail_rows(snap, base=None):
+    """尾盘候选行（K-STOCK-025：14:40 盘中实时 bar 复核 → 14:55 执行窗口）。
+    K-STOCK-028：详情从当日基础数据快照 base['rows'] 补齐（名称/涨跌/市值/
+    换手/技术状态），对齐信号表 8 列；快照缺失时退化为代码/收盘/市况/note。
+    base 的 rows key 为湖命名（600593_SH），scanner 缓存 code 为点号（600593.SH）。"""
     tail_ls = snap.get("tail_signals", []) or []
-    rows = "".join(
-        ("<tr><td><a href='/bt/stock?c=%s'><b>%s</b></a></td>"
-         "<td>%s</td><td>%s</td><td class='dim'>%s</td></tr>")
-        % (e(t["code"]), e(t["code"]), e(str(t.get("close", "—"))),
-           e(REG_CN.get(t.get("regime"), t.get("regime", "?"))),
-           e(t.get("note", ""))) for t in tail_ls)
+    broots = (base or {}).get("rows", {})
+    rows = ""
+    for t in tail_ls:
+        b = broots.get(t["code"].replace(".", "_"), {})
+        chg = b.get("change_pct")
+        if chg not in (None, ""):
+            col = "#f85149" if float(chg) >= 0 else "#3fb950"
+            chg_txt = "<b style='color:%s'>%+.2f%%</b>" % (col, float(chg))
+        else:
+            chg_txt = "—"
+        cap = b.get("mktcap_yi")
+        cap_txt = ("%.0f亿" % float(cap)) if cap not in (None, "") else "—"
+        to = b.get("turnover_pct")
+        to_txt = ("%.2f%%" % float(to)) if to not in (None, "") else "—"
+        rows += ("<tr><td><a href='/bt/stock?c=%s'><b>%s</b></a></td>"
+                 "<td>%s</td><td>%s <span class='dim'>(%s)</span></td>"
+                 "<td>%s</td><td class='dim'>%s</td><td>%s</td>"
+                 "<td class='dim' style='max-width:240px'>%s</td>"
+                 "<td class='dim'>%s</td></tr>"
+                 % (e(t["code"]), e(t["code"]),
+                    e(b.get("name") or "—"),
+                    e(str(t.get("close", "—"))), chg_txt,
+                    e(cap_txt), e(to_txt),
+                    e(REG_CN.get(t.get("regime"), t.get("regime", "?"))),
+                    e(b.get("tech") or "—"),
+                    e(t.get("note", ""))))
     if rows:
         return len(tail_ls), rows
     empty = snap.get("tail_note") or (
         "今日尚无尾盘候选（14:40 盘中扫描产出 · 候选池 %d 只昨日十字星）"
         % snap.get("star_pool_n", 0))
-    return 0, ("<tr><td colspan=4 class='dim'>%s</td></tr>" % e(empty))
+    return 0, ("<tr><td colspan=8 class='dim'>%s</td></tr>" % e(empty))
 
 
 def render_placeholder(log_path, css):
@@ -132,8 +155,9 @@ def render_placeholder(log_path, css):
             "</body></html>")
 
 
-def render_workspace(snap, css):
-    """工作台主页面：输入扫描缓存 dict + CSS，输出完整 HTML（纯函数）"""
+def render_workspace(snap, css, base=None):
+    """工作台主页面：输入扫描缓存 dict + CSS + 当日基础数据快照（可选），
+    输出完整 HTML（纯函数）。base=None 时尾盘候选退化为简列。"""
     rg = snap.get("regime_now", {})
     rg_txt = " · ".join("%s %d" % (REG_CN.get(k, k), v)
                         for k, v in sorted(rg.items()))
@@ -141,7 +165,7 @@ def render_workspace(snap, css):
         "<tr><td colspan=8 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
     rec_rows = "".join(_row(r) for r in snap.get("signals_recent", [])[:50]) or \
         "<tr><td colspan=8 class='dim'>近 5 日无信号</td></tr>"
-    tail_n, tail_rows = _tail_rows(snap)
+    tail_n, tail_rows = _tail_rows(snap, base)
     steps = "".join(
         "<tr><td><b>%s</b></td><td class='dim'>%s</td><td class='dim'>%s</td><td>%s</td></tr>"
         % (m, tool, fld, stt) for m, tool, fld, stt in _STEPS)
@@ -180,7 +204,8 @@ def render_workspace(snap, css):
             + TOOLS_QD + cards
             + "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
             "⏱ 今日尾盘候选（%d · 14:40 盘中实时 bar 复核 → 14:55 执行窗口）</h2>"
-            "%s</div>"
+            "<table style='border-collapse:collapse;min-width:520px'>"
+            "%s%s</table></div>"
             "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
             "📌 当日信号（%d）</h2>"
             "<table style='border-collapse:collapse;min-width:520px'>"
@@ -200,7 +225,7 @@ def render_workspace(snap, css):
             "14:40 尾盘 automation（venv 子进程）· 手动刷新：运行 portal/qd_scanner.py"
             " · 策略源自 projects-archive 量子双刀产线（K-STOCK-018 移植）"
             "</div></body></html>"
-            % (tail_n, tail_rows,
+            % (tail_n, _TH8, tail_rows,
                len(snap.get("signals_now", [])), _TH8, now_rows,
                len(snap.get("signals_recent", [])), _TH8, rec_rows,
                steps))
@@ -209,20 +234,27 @@ def render_workspace(snap, css):
 if __name__ == "__main__":
     # 离线自校验：读真实缓存渲染，断言结构锚点（不依赖服务器）
     import json, os, sys
-    cache = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         "qd_scan_cache.json")
-    snap = json.load(open(cache, encoding="utf-8"))
-    html = render_workspace(snap, "<style></style>")
+    from datetime import datetime
+    here = os.path.dirname(os.path.abspath(__file__))
+    snap = json.load(open(os.path.join(here, "qd_scan_cache.json"), encoding="utf-8"))
+    base = None
+    bp = os.path.join(here, "qd_daily_data",
+                      "snap_%s.json" % datetime.now().strftime("%Y%m%d"))
+    if os.path.exists(bp):
+        base = json.load(open(bp, encoding="utf-8"))
+    html = render_workspace(snap, "<style></style>", base)
     checks = {
         "专属导航": "⚔ 量子双刀" in html and "域内导航" not in html,
         "无交叉产线": all(s not in html for s in ("🎖 策略中心", "🌊 青萍之末", "🧭 缠论")),
         "图谱四件套": all(s in html for s in ("/kg", "/kg/map", "/kg/battle", "/kg/ask")),
-        "8列表头": html.count("<td align=left>技术状态</td>") == 2,
+        "8列表头x3": html.count("<td align=left>技术状态</td>") == 3,
         "下钻链接": "/bt/stock?c=" in html,
         "14:40语义": "14:40" in html and "17:50" not in html,
         "研究态横幅": "研究态" in html,
+        "尾盘行基础数据": base is None or "尾盘候选基础数据快照" not in html,
     }
     bad = [k for k, v in checks.items() if not v]
     for k, v in checks.items():
         print(("PASS " if v else "FAIL ") + k)
+    print("base snapshot:", "loaded (%d rows)" % base["n"] if base else "absent")
     sys.exit(1 if bad else 0)
