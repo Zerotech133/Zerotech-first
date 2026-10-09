@@ -28,7 +28,7 @@ ORG_JSON = ROOT / "agent_platform" / "registry" / "org.json"
 SHADOW_LEDGER = ROOT / "agent_platform" / "data" / "shadow" / "shadow_ledger.jsonl"
 RPS_LATEST = ROOT / "quant_backtest" / "reports" / "rps_latest.json"
 GZH_DIR = ROOT / "gzh"
-PORT = int(os.environ.get("HOME_PORT", "8092"))
+PORT = int(os.environ.get("HOME_PORT", "8094"))  # 047教训:8092被他服务占用(K-STOCK-053默认值对齐)
 OLLAMA = "http://127.0.0.1:11434"
 
 
