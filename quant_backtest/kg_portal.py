@@ -79,23 +79,22 @@ def _d0(days):
     return (datetime.now() - timedelta(days=days)).strftime("%Y%m%d")
 
 
-# ── /kg/stats：图谱计数 + 保鲜时点 ────────────────────────
+# ── /kg/stats：图谱计数 + 保鲜时点（L1 注册表驱动）────────
 def stats():
-    node_lbls = [S.LBL_SECURITY, S.LBL_COMPANY, S.LBL_INDUSTRY, S.LBL_SW_L1,
-                 S.LBL_REGION, S.LBL_PERSON, S.LBL_PRODUCT, S.LBL_MARKET_INDEX,
-                 S.LBL_HOTMONEY, S.LBL_SEAT, S.LBL_MARKET_EVENT, S.LBL_CONCEPT,
-                 "Event"]
-    edge_rels = [S.REL_OF_COMPANY, S.REL_INDUSTRY_OF, S.REL_AREA_OF,
-                 S.REL_SERVES_AS, S.REL_SW_L1_OF, S.REL_PRODUCES,
-                 S.REL_CORRELATES, "INVOLVES", S.REL_OCCUPIES,
-                 S.REL_TRADED_ON, S.REL_HAS_STRUCTURE, S.REL_HAS_VOL_EVENT,
-                 S.REL_DRIVE, S.REL_BELONGS_TO, S.REL_REQUIRES, S.REL_MAPS_TO]
-    nodes, edges = {}, {}
-    for lbl in node_lbls:
-        nodes[lbl] = _q("MATCH (n:%s) RETURN count(n) AS c" % lbl)[0]["c"]
-    for rel in edge_rels:
-        edges[rel] = _q(
-            "MATCH ()-[r:%s]->() RETURN count(r) AS c" % rel)[0]["c"]
+    """全量标签/边型计数 + 保鲜 + 注册表漂移可见。
+
+    L1（2026-10-09）：计数清单从硬编码 13 标签/16 边型子集改为
+    ontology.py 注册表口径全量（2 条全图扫描替代逐类型计数；
+    labels(n)[0] 取主标签，与 source_col_audit.schema_snapshot 同口径）。
+    形状兼容 portal 健康检查（nodes/edges/freshness/hm_tags 四键保留），
+    新增 registry 键：图内未注册类型在线可见（K264 旁路写入防线）。
+    """
+    import ontology as OT
+    nodes = {r["lbl"]: r["c"] for r in _q(
+        "MATCH (n) RETURN labels(n)[0] AS lbl, count(*) AS c"
+    ) if r.get("lbl")}
+    edges = {r["t"]: r["c"] for r in _q(
+        "MATCH ()-[r]->() RETURN type(r) AS t, count(*) AS c")}
     fresh = _q(
         "MATCH (m:MarketEvent) WITH max(m.date) AS me "
         "OPTIONAL MATCH (e:Event) WITH me, max(e.date) AS ee "
@@ -108,7 +107,15 @@ def stats():
         "RETURN r.hm_tag AS t, count(*) AS n")}
     return {"ok": True, "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "nodes": nodes, "edges": edges, "freshness": fresh,
-            "hm_tags": tags}
+            "hm_tags": tags,
+            "registry": {"version": OT.VERSION,
+                         "registered": {"nodes": len(OT.NODE_TYPES),
+                                        "edges": len(OT.EDGE_TYPES)},
+                         "unregistered": {
+                             "labels": sorted(
+                                 set(nodes) - set(OT.NODE_TYPES)),
+                             "rels": sorted(
+                                 set(edges) - set(OT.EDGE_TYPES))}}}
 
 
 # ── /kg/stock/{code}：个股情报全景 ────────────────────────
@@ -133,7 +140,8 @@ def stock(code, days=120):
     vol = _q(
         "MATCH (sec:Security {ts_code:$c})-[:HAS_VOL_EVENT]->(m:MarketEvent) "
         "WHERE m.date >= $d0 "
-        "RETURN m.type AS type, count(*) AS n ORDER BY n DESC", c=code, d0=d0)
+        "RETURN m.type AS type, count(*) AS n, max(m.date) AS last "
+        "ORDER BY n DESC", c=code, d0=d0)
     hm = _q(
         "MATCH (h:HotMoney)-[:OCCUPIES]->(:Seat)-[t:TRADED_ON]->"
         "(sec:Security {ts_code:$c}) WHERE t.validStart >= $d0 "
@@ -144,7 +152,7 @@ def stock(code, days=120):
         "MATCH (e:Event)-[d:DRIVE]->(m:MarketEvent)"
         "<-[:HAS_STRUCTURE|HAS_VOL_EVENT]-(sec:Security {ts_code:$c}) "
         "WHERE d.validStart >= $d0 "
-        "RETURN d.group AS grp, count(*) AS n, "
+        "RETURN d.group AS grp, count(*) AS n, max(d.validStart) AS last, "
         "collect(DISTINCT left(coalesce(e.text,''),40))[..3] AS texts "
         "ORDER BY n DESC LIMIT 12", c=code, d0=d0)
     candles = _q(
@@ -230,7 +238,8 @@ def stock(code, days=120):
             "candle_cov": {"covered": code in cov, "n_cov": len(cov)},
             "drive_groups": [{"grp": r["grp"],
                               "baseline": r["grp"] in BASELINE_GRP,
-                              "n": r["n"], "texts": r["texts"]}
+                              "n": r["n"], "texts": r["texts"],
+                              "last": r.get("last")}
                              for r in drive]}
 
 
@@ -2108,6 +2117,17 @@ def api(kind, arg=None, days=None, per=None):
     try:
         if kind == "stats":
             return stats()
+        if kind == "ontology":
+            # L1 本体注册表×图内实况：元数据+计数+保鲜+漂移对账
+            import ontology
+            return ontology.snapshot()
+        if kind == "objectview":
+            # L2 Object View 装配引擎：声明式扇区体检（新鲜度/评级徽章）
+            import kg_objectview
+            r = kg_objectview.view(arg or "", int(days or 120))
+            if isinstance(r, dict):
+                r.pop("_stock", None)   # JSON 端点不带原始行集（可走 stock）
+            return r
         if kind == "stock":
             return stock(arg, int(days or 120))
         if kind == "company360":

@@ -13,6 +13,7 @@
 #    step5+6; reads topgap from dt_gap at 5.8, pure graph-read + reports,
 #    before brief so its failure never blocks the ticket flow)
 # 7) distill sample snapshot (M5-W5)   8) graph QA check (G1-8, warn-only)
+# 8.5) ontology snapshot export (L1 registry x live counts, warn-only)
 # 9) daily intel brief -> feishu (G1-1)
 # (graph writers all land before features recompute; distill last,
 #  reads everything incl. daily-pool ret backfill; check+brief after all
@@ -59,6 +60,7 @@ try {
         @{name='sector_flow';      script='kg_sector_flow.py';      arg=''},
         @{name='distill_build';    script='kg_distill.py';          arg='build'},
         @{name='graph_check';      script='kg_check.py';            arg=''},
+        @{name='ontology_snap';    script='ontology.py';            arg='--export'},
         @{name='kg_brief';         script='kg_brief.py';            arg=''}
     )) {
         # rooted script paths (e.g. KGStockAnalysis dev scripts) bypass $wd join
