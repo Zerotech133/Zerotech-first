@@ -21,7 +21,7 @@ from __future__ import annotations
 import csv
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -45,6 +45,23 @@ def sina_symbol(code: str) -> str:
     """引擎 code（gb_AAPL）→ 新浪 symbol（aapl）；spy/裸码原样小写。"""
     c = code.strip().lower()
     return c[3:] if c.startswith("gb_") else c
+
+
+def _et_date_hhmm(ts_iso: str) -> tuple[str, str]:
+    """ISO 时刻（本机=北京时区口径）→ 美东 (YYYYMMDD, HHMM)。
+
+    zoneinfo 可用走真时区（自动处理 DST）；Windows 缺 tzdata 时降级固定 -12h
+    （夏令时口径；冬令时应 -13h，automation 跑批时点远离 16:00 收盘界，1 小时
+    误差无实际影响——降级分支注释显性化）。"""
+    try:
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo
+        dt = (_dt.fromisoformat(str(ts_iso)[:19]).replace(tzinfo=ZoneInfo("Asia/Shanghai"))
+              .astimezone(ZoneInfo("America/New_York")))
+        return dt.strftime("%Y%m%d"), dt.strftime("%H%M")
+    except Exception:  # noqa: BLE001  ZoneInfo 找不到 tzdata 等
+        dt = datetime.fromisoformat(str(ts_iso)[:19]) - timedelta(hours=12)
+        return dt.strftime("%Y%m%d"), dt.strftime("%H%M")
 
 
 def _fetch_sina(sym: str) -> list[dict]:
@@ -156,6 +173,74 @@ class UsMarket:
                         "open": float(r["open"]), "high": float(r["high"]),
                         "low": float(r["low"]), "close": float(r["close"]),
                         "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+        return None
+
+    # ---- 引擎契约的其余方法（与 ParquetMarket 同形；CSV 顺序即日期升序） ----
+
+    def last_bar(self, code: str) -> dict | None:
+        rows = self._read(code)
+        if not rows:
+            return None
+        r = rows[-1]
+        return {"trade_date": r["date"].replace("-", ""),
+                "open": float(r["open"]), "high": float(r["high"]),
+                "low": float(r["low"]), "close": float(r["close"]),
+                "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+
+    def last_bar_before(self, code: str, trade_date: str) -> dict | None:
+        """≤ 给定日的最后一根 bar（AsOfMarket 时点视角用）。"""
+        rows = self._read(code)
+        if not rows:
+            return None
+        want = str(trade_date)
+        hit = [r for r in rows if r["date"].replace("-", "") <= want]
+        if not hit:
+            return None
+        r = hit[-1]
+        return {"trade_date": r["date"].replace("-", ""),
+                "open": float(r["open"]), "high": float(r["high"]),
+                "low": float(r["low"]), "close": float(r["close"]),
+                "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+
+    def first_bar_on_or_after(self, code: str, trade_date: str) -> dict | None:
+        """≥ 给定日的第一根 bar（settle 纠偏用：plan_date 无行情时顺延）。"""
+        rows = self._read(code)
+        if not rows:
+            return None
+        want = str(trade_date)
+        for r in rows:
+            if r["date"].replace("-", "") >= want:
+                return {"trade_date": r["date"].replace("-", ""),
+                        "open": float(r["open"]), "high": float(r["high"]),
+                        "low": float(r["low"]), "close": float(r["close"]),
+                        "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+        return None
+
+    def next_trading_day(self, ts_iso: str) -> str | None:
+        """决策时刻之后第一个（可能的）美股交易日（09:30 ET 界，与 A 股 _next_td_impl 同构）。
+
+        ⚠️ 两处不能直接复用 _next_td_impl：① 其日历入参是本地口径，US 须先转美东；
+        ② 界是 A 股 09:30——恰是美股 09:30 开盘，同界可直接沿用。
+        口径（防止偷价）：信号先于开盘价产生才允许当日撮合——
+          · 转美东后 hhmm < 09:30（盘前，开盘未发生）→ 当日开盘价可成交，plan=当日
+          · 盘中/盘后（开盘价已是过去时）→ plan=次一交易日（湖内或周末规则外推）
+        节假日误外推无害：该日 bar 永远缺失 → settle 走 first_bar_on_or_after 顺延。
+        实例：青萍 ts=北京 23:37（=ET 11:37 盘中）→ plan=次日，不偷当日开盘价。
+        """
+        days = self.trading_days()
+        day, hhmm = _et_date_hhmm(ts_iso)
+        if day in days and hhmm < "0930":
+            return day                      # 美东盘前：当日开盘价尚未产生，可成交
+        for d in days:
+            if d > day:
+                return d
+        cur = datetime.strptime(day, "%Y%m%d")   # 湖尾外推（周末规则，上限防死循环）
+        if hhmm >= "0930":
+            cur += timedelta(days=1)
+        for _ in range(10):
+            if cur.weekday() < 5:
+                return cur.strftime("%Y%m%d")
+            cur += timedelta(days=1)
         return None
 
 

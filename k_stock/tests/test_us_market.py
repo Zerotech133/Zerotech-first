@@ -94,6 +94,40 @@ def test_cli_refresh_mocked(tmpdir, monkeypatch, capsys):
     assert '"symbol": "spy"' in out and (Path(tmpdir) / "SPY.csv").exists()
 
 
+def test_engine_contract_methods(tmpdir):
+    """K-STOCK-044 M2：引擎契约其余四方法（last_bar/last_bar_before/first_bar_on_or_after/next_trading_day）。"""
+    us_dir = Path(tmpdir)
+    (us_dir / "AAPL.csv").write_text(
+        "date,open,high,low,close,volume,pre_close\n"
+        "2026-10-06,330,336,329,333,34000000,331\n"
+        "2026-10-07,335,341,334,338,35000000,333\n"
+        "2026-10-08,336.81,341.57,335.90,340.42,35332449,338\n", encoding="utf-8")
+    m = um.UsMarket(us_dir=us_dir)
+    assert m.last_bar("gb_AAPL")["trade_date"] == "20261008"
+    assert m.last_bar_before("gb_AAPL", "20261007")["trade_date"] == "20261007"
+    assert m.last_bar_before("gb_AAPL", "20261005") is None       # 全在窗口后
+    assert m.first_bar_on_or_after("gb_AAPL", "20261007")["trade_date"] == "20261007"
+    assert m.first_bar_on_or_after("gb_AAPL", "20261009") is None  # 无未来数据
+    # next_trading_day 美东口径（北京→ET -12h 夏令时）：盘前信号 → 当日开盘成交
+    m2 = um.UsMarket(us_dir=us_dir, cal_symbol="AAPL")   # 日历基准指向 AAPL（测试环境无 SPY）
+    assert m2.next_trading_day("2026-10-07T16:00") == "20261007"   # 北京16点=ET04点盘前 → 当日
+    assert m2.next_trading_day("2026-10-08T16:00") == "20261008"   # 同上（ET10-08盘前）
+    assert m2.next_trading_day("2026-10-09T21:00") == "20261009"   # 北京21点=ET09点盘前，湖尾外推当日
+
+
+def test_extrapolate_weekend_boundary(tmpdir):
+    """外推边界（美东口径）：北京周六晨=ET周五盘后 → 下周一；盘前信号含当日。"""
+    us_dir = Path(tmpdir)
+    (us_dir / "SPY.csv").write_text(
+        "date,open,high,low,close,volume,pre_close\n"
+        "2026-10-09,670,675,669,672,50000000,668\n", encoding="utf-8")
+    m = um.UsMarket(us_dir=us_dir)
+    # 北京 10-10 周六 09:00 = ET 10-09 周五 21:00 已收盘 → 湖外顺延跳周末 → 10-12 周一
+    assert m.next_trading_day("2026-10-10T09:00") == "20261012"
+    # 北京 10-09 09:00 = ET 10-08 21:00 → day=20261008 非交易日(湖无) → 湖内首个更大日 10-09
+    assert m.next_trading_day("2026-10-09T09:00") == "20261009"
+
+
 if __name__ == "__main__":
     import contextlib
     import io

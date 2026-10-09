@@ -67,8 +67,59 @@ def test_real_latest_fail_loud_or_convert():
     print(f"PASS test_real_latest_fail_loud_or_convert ({len(items)} CN buys)")
 
 
+def test_split_us_routes_us_buys():
+    """K-STOCK-044 M2：split_us=True 时 US 买入行产独立 poc_qpzmus_ 文件；CRYPTO 仍 skip。"""
+    rows = [
+        {"code": "600593.SH", "name": "大连圣亚", "market": "CN", "action": "买入", "score": 78},
+        {"code": "gb_PLTR", "name": "Palantir", "market": "US", "action": "买入", "score": 86},
+        {"code": "btc_usd", "name": "BTC", "market": "CRYPTO", "action": "买入", "score": 70},
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        cn_path, us_path = cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp),
+                                        split_us=True)
+        assert cn_path and us_path
+        assert cn_path.name.startswith("poc_qpzm_")
+        assert us_path.name.startswith("poc_qpzmus_")
+        us_items = json.loads(us_path.read_text(encoding="utf-8"))
+        assert len(us_items) == 1 and us_items[0]["stock"] == "gb_PLTR"
+        assert us_items[0]["outputs"]["D1"]["confidence"] == QINGPING_CONF
+    print("PASS test_split_us_routes_us_buys")
+
+
+def test_split_us_false_keeps_legacy():
+    """默认口径（split_us=False）：US 行回退 skipped、只返回 CN 单值路径（历史行为零变化）。"""
+    rows = [
+        {"code": "600593.SH", "market": "CN", "action": "买入", "score": 78},
+        {"code": "gb_pltr", "market": "US", "action": "买入", "score": 86},
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        out = cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp))
+        items = json.loads(out.read_text(encoding="utf-8"))
+        assert len(items) == 1 and items[0]["stock"] == "600593.SH"
+        assert Path(out).exists() and not list(Path(tmp).glob("poc_qpzmus_*"))
+    print("PASS test_split_us_false_keeps_legacy")
+
+
+def test_split_us_all_us_no_cn():
+    """全 US 买入：split_us=True 时 cn_path=None、us_path 有效；split_us=False fail-loud。"""
+    rows = [{"code": "gb_aapl", "name": "Apple", "market": "US", "action": "买入", "score": 80}]
+    with tempfile.TemporaryDirectory() as tmp:
+        cn_path, us_path = cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp),
+                                        split_us=True)
+        assert cn_path is None and us_path is not None
+        try:
+            cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp))
+            raise AssertionError("split_us=False 且无 CN 买入应 raise")
+        except ValueError as e:
+            assert "无 CN 买入行" in str(e)
+    print("PASS test_split_us_all_us_no_cn")
+
+
 if __name__ == "__main__":
     test_cn_buy_in_us_buy_skip_gate_blocked_out()
     test_no_buy_rows_raises()
+    test_split_us_routes_us_buys()
+    test_split_us_false_keeps_legacy()
+    test_split_us_all_us_no_cn()
     test_real_latest_fail_loud_or_convert()
-    print("3/3 PASS")
+    print("5/5 PASS (+1 真实产物用例)")
