@@ -7,6 +7,8 @@
   ③ 账本区   paper.db 多账本持仓并列（qty/avg_cost/last/pnl/stop_price）
   ④ 事件区   KG 驱动事件(DRIVE) + 榜后差额(TOPGAP) + 十大流通股东 + 游资(OCCUPIES)
   ⑤ 新闻区   news.db news.stocks 关联新闻（ts_code 精确匹配）
+  ⑥ 时空区   五日演化天轴（K-STOCK-055 L2）：逐日迷你卡（涨跌/信号/盘后/涨停/
+             榜差额/游资/账本动作）+ 演化结论（区间累计/信号日数/账本跟进）
 
 设计纪律：
 - 版面只用 /static/tokens.css 令牌（var(--xxx)），零硬编码色值
@@ -15,7 +17,6 @@
 - 只读：paper.db / news.db 均以 mode=ro 打开
 """
 import html
-import json
 import os
 import sqlite3
 from datetime import datetime
@@ -291,6 +292,167 @@ def _render_news(ts_code, rows):
     return "".join(h)
 
 
+# ---------------- ⑥ 时空区（K-STOCK-055 L2：五日演化天轴） ----------------
+
+_WEEK = ("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+
+
+def _norm_date(v):
+    """任意日期形态 → YYYY-MM-DD（20261009 / '2026-10-09' / '2026-10-09 15:00'）。"""
+    s = str(v or "").strip().replace("-", "").replace("/", "")[:8]
+    if len(s) == 8 and s.isdigit():
+        return f"{s[:4]}-{s[4:6]}-{s[6:8]}"
+    return ""
+
+
+def _bucket_by_date(rows, date_key="date"):
+    b = {}
+    for r in rows or []:
+        g = r if isinstance(r, dict) else {}
+        d = _norm_date(g.get(date_key))
+        if d:
+            b.setdefault(d, []).append(g)
+    return b
+
+
+def _pq_path(ts_code):
+    try:
+        num, suf = ts_code.split(".")
+    except ValueError:
+        return ""
+    return os.path.join(STATION, "quant_backtest", "data", "ashare",
+                        f"{num}_{suf.upper()}.parquet")
+
+
+def _timeline_data(ts_code, kg_data, paper_orders):
+    """近 5 个交易日切片：行情(parquet 逐日) + 信号/盘后/涨跌停/榜(KG 逐日)
+    + 账本动作(orders 逐日) + 游资(hotmoney 聚合 last 归位)。"""
+    days = []
+    pq = _pq_path(ts_code)
+    if pq and os.path.exists(pq):
+        try:
+            import pandas as pd
+            df = pd.read_parquet(pq).tail(6)
+            for _, r in df.iterrows():
+                pct = r.get("pct_chg")
+                days.append({"date": _norm_date(r.get("trade_date")),
+                             "pct": None if pd.isna(pct) else float(pct),
+                             "close": None if pd.isna(r.get("close")) else float(r["close"])})
+        except Exception:  # noqa: BLE001
+            days = []
+    days = days[-5:]
+    # parquet 缺失时兜底：用 KG 盘后事件日期（无逐日 pct）
+    if not days:
+        cand = sorted({_norm_date(c.get("date")) for c in (kg_data.get("candles") or [])},
+                      reverse=True)[:5]
+        days = [{"date": d, "pct": None, "close": None} for d in reversed(cand)]
+    sig_b = _bucket_by_date(kg_data.get("structures"))
+    can_b = _bucket_by_date(kg_data.get("candles"))
+    lim_b = _bucket_by_date(kg_data.get("limits"))
+    tg_b = _bucket_by_date(kg_data.get("topgaps"))
+    ord_b = {}
+    for d, side, qty, price, status in paper_orders or []:
+        dn = _norm_date(d)
+        if dn:
+            ord_b.setdefault(dn, []).append(
+                {"side": side, "qty": qty, "price": price, "status": status})
+    hm_last = set()
+    for r in (kg_data.get("hotmoney") or []):
+        dn = _norm_date(r.get("last"))
+        if dn:
+            hm_last.add(dn)
+    for drow in days:
+        d = drow["date"]
+        drow["sigs"] = sig_b.get(d, [])
+        drow["candles"] = can_b.get(d, [])
+        drow["limits"] = lim_b.get(d, [])
+        drow["gaps"] = tg_b.get(d, [])
+        drow["orders"] = ord_b.get(d, [])
+        drow["hm"] = d in hm_last
+    # 演化结论
+    out = {"days": days, "sig_days": sum(1 for x in days if x["sigs"]),
+           "lt_days": sum(1 for x in days if x["limits"]),
+           "followed": any(o["side"] and "buy" in str(o["side"]).lower()
+                           for x in days for o in x["orders"]),
+           "cum": None, "d0": None, "d1": None}
+    if len(days) >= 2 and days[0]["close"] and days[-1]["close"]:
+        out["cum"] = (days[-1]["close"] / days[0]["close"] - 1) * 100
+        out["d0"], out["d1"] = days[0]["date"], days[-1]["date"]
+    return out
+
+
+def _tl_conclusion(tl):
+    if not tl["days"]:
+        return "暂无可切片的交易日数据"
+    seg = []
+    if tl["cum"] is not None:
+        seg.append(f'近 {len(tl["days"])} 日（{tl["d0"][5:]} → {tl["d1"][5:]}）'
+                   f'累计 <b class="{_pct_cls(tl["cum"])}">{_fmt_pct(tl["cum"])}</b>')
+    seg.append(f'信号日 {tl["sig_days"]}/{len(tl["days"])}')
+    if tl["lt_days"]:
+        seg.append(f'涨停 {tl["lt_days"]} 次')
+    seg.append('账本跟进：<b class="up">✔ 已有买单</b>' if tl["followed"]
+               else '账本跟进：<span class="t">✖ 未跟进</span>')
+    verdict = ""
+    if tl["sig_days"] >= 2 and (tl["cum"] or 0) > 0:
+        verdict = "信号密集且股价走强，演化偏多——盯账本是否兑现"
+    elif tl["sig_days"] >= 1 and (tl["cum"] or 0) > 0:
+        verdict = "信号出现后走强，观察是否延续"
+    elif tl["sig_days"] >= 1:
+        verdict = "信号后回落，防假信号（核对 conf 与互证）"
+    elif (tl["cum"] or 0) > 0:
+        verdict = "无信号驱动的跟随上涨，谨慎追高"
+    else:
+        verdict = "无信号驱动，随市波动"
+    return f'{" · ".join(seg)}<br><span class="t">演化：{verdict}</span>'
+
+
+def _render_timeline(ts_code, tl):
+    h = ['<section class="card"><h3>⑥ 时空 · 五日演化</h3>']
+    if not tl["days"]:
+        h.append('<div class="empty">行情湖暂无该票日线（A股行情湖覆盖）</div>')
+    else:
+        h.append('<div class="tlrow">')
+        for x in tl["days"]:
+            tags = []
+            for s in x["sigs"][:2]:
+                conf = (f' {round(s["conf"], 2)}' if s.get("conf") is not None else "")
+                tags.append(f'✦{_esc(s.get("type"))}{conf}')
+            for c in x["candles"][:1]:
+                tech = f'·{_esc(c["tech"])}' if c.get("tech") else ""
+                tags.append(f'◈{_esc(c.get("type"))}{tech}')
+            for lm in x["limits"][:1]:
+                tags.append(f'⬆涨停连{_esc(lm.get("lt"))}' if (lm.get("lt") or 0) > 0
+                            else '⬆涨停')
+            if x["gaps"]:
+                tags.append('榜后差额')
+            if x["hm"]:
+                tags.append('游资活跃')
+            for o in x["orders"][:2]:
+                side = "买" if "buy" in str(o["side"]).lower() else "卖"
+                tags.append(f'<b class="{"up" if side == "买" else "dn"}">'
+                            f'账本{side}{_esc(o["qty"])}股</b>')
+            extra = len(x["sigs"]) + len(x["candles"]) + len(x["limits"]) \
+                + len(x["orders"]) - 6
+            tag_html = "<br>".join(tags)
+            if extra > 0:
+                tag_html += f'<br><span class="t">+{extra} 条</span>'
+            try:
+                wd = _WEEK[datetime.strptime(x["date"], "%Y-%m-%d").weekday()]
+            except ValueError:
+                wd = ""
+            h.append(
+                f'<div class="daycard">'
+                f'<div class="dc-date">{_esc(x["date"][5:])} {wd}</div>'
+                f'<div class="dc-pct {_pct_cls(x["pct"])}">{_fmt_pct(x["pct"])}</div>'
+                f'<div class="dc-close">收 {_esc(round(x["close"], 2) if x["close"] else "—")}</div>'
+                f'<div class="dc-tags">{tag_html or "—"}</div></div>')
+        h.append("</div>")
+    h.append(f'<div class="tlconcl">{_tl_conclusion(tl)}</div>')
+    h.append("</section>")
+    return "".join(h)
+
+
 # ---------------- 页面组装 ----------------
 
 _STYLE = """
@@ -326,6 +488,16 @@ _STYLE = """
   .deep { margin-top:12px; padding-top:10px; border-top:1px dashed var(--border-weak);
           font-size:12.5px; }
   .deep a { margin-right:6px; }
+  .tlrow { display:flex; gap:10px; overflow-x:auto; }
+  .daycard { flex:1 1 0; min-width:128px; border:1px solid var(--border-weak);
+             border-radius:10px; padding:10px 12px; background:var(--bg-surface); }
+  .dc-date { font-size:11.5px; color:var(--text-dim); }
+  .dc-pct { font-size:19px; font-weight:800; font-family:Consolas,monospace; margin:2px 0; }
+  .dc-close { font-size:12px; font-family:Consolas,monospace; color:var(--text-dim); }
+  .dc-tags { margin-top:6px; font-size:11.5px; line-height:1.8;
+             border-top:1px dashed var(--border-weak); padding-top:6px; }
+  .tlconcl { margin-top:10px; font-size:12.5px; line-height:1.9;
+             border-top:1px dashed var(--border-weak); padding-top:8px; }
 """
 
 
@@ -362,13 +534,13 @@ def render_card(ts_code, days=120):
     if not name:
         name = ts_code
 
-    # paper：挂单/成交（该票）
+    # paper：挂单/成交（该票）——天轴需要逐日归位，多取一些
     paper_orders = []
     try:
         con = _ro(PAPER_DB)
         paper_orders = con.execute(
             "SELECT date(ts),side,qty,coalesce(filled_price,manual_price,price_base,0),status "
-            "FROM orders WHERE stock LIKE ? ORDER BY id DESC LIMIT 10",
+            "FROM orders WHERE stock LIKE ? ORDER BY id DESC LIMIT 30",
             (f"%{_num6(ts_code)}%",)).fetchall()
         con.close()
     except Exception:  # noqa: BLE001
@@ -396,12 +568,13 @@ def render_card(ts_code, days=120):
       <a href="/paper">模拟仓</a>
     </span>
   </div>
-  <div class="t" style="padding:0 0 4px">统一详情卡（五区制）· 生成 {now} · 数据源：KG/news_collector/paper.db</div>
+  <div class="t" style="padding:0 0 4px">统一详情卡（六区制）· 生成 {now} · 数据源：KG/news_collector/paper.db/行情湖</div>
   {_render_quote(ts_code, quote_info.get("quote"), quote_info.get("candles"), quote_info.get("limits"))}
   {_render_signals(kg_data, paper_orders)}
   {_render_ledger(_paper_ledger(ts_code))}
   {_render_events(kg_data)}
   {_render_news(ts_code, _news_list(ts_code))}
+  {_render_timeline(ts_code, _timeline_data(ts_code, kg_data, paper_orders))}
 </div>
 </body>
 </html>"""
