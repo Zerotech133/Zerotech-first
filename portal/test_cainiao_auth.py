@@ -37,11 +37,13 @@ def _fake_http(ok=True, calls=None):
 class _StubHandler(BaseHTTPRequestHandler):
     """本地临时 check-token 端点：按 path 决定返回，验证 urllib 直连真实链路。"""
     behavior = {"ok": True}  # 类变量，测试里可改
+    seen_headers = {}        # 最近一次请求头快照（tenant-id/Authorization 断言用）
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length).decode("utf-8")
         assert "token=" in body
+        _StubHandler.seen_headers = dict(self.headers.items())
         if _StubHandler.behavior["ok"]:
             payload = {"code": 0, "data": {"userId": 7, "expiresTime": 1893456000000}}
             code = 200
@@ -163,6 +165,39 @@ class CainiaoAuthTest(unittest.TestCase):
         self.assertFalse(cainiao_auth.verify_bearer(None).ok)
         r = cainiao_auth.verify_request({"Authorization": "Bearer   "}, "10.0.0.1")
         self.assertFalse(r.ok)
+
+    # --- 8. tenant-id / Basic 凭据头随请求上送（2026-10-09 真端点实证：
+    #        缺 tenant-id 头被芋道租户过滤器拦截 code=400，到不了 OAuth2）---
+    def test_tenant_and_basic_headers_sent(self):
+        _StubHandler.behavior["ok"] = True
+        srv = HTTPServer(("127.0.0.1", 0), _StubHandler)
+        port = srv.server_address[1]
+        t = threading.Thread(target=srv.serve_forever, daemon=True)
+        t.start()
+        try:
+            env = {"CAINIAO_BASE_URL": "http://127.0.0.1:%d" % port,
+                   "CAINIAO_TENANT_ID": "162",
+                   "CAINIAO_CLIENT_ID": "default",
+                   "CAINIAO_CLIENT_SECRET": "sec-test"}
+            with mock.patch.dict(os.environ, env):
+                cainiao_auth.verify_bearer("hdr-check-token")
+            seen = _StubHandler.seen_headers
+            # urllib add_header 会 capitalize 键（tenant-id→Tenant-id），
+            # 服务端头名不区分大小写；断言同样大小写不敏感。
+            seen_lower = {k.lower(): v for k, v in seen.items()}
+            self.assertEqual(seen_lower.get("tenant-id"), "162")
+            self.assertTrue(seen_lower.get("authorization", "").startswith("Basic "))
+            # 租户缺省值=1：环境未设时也必须带头（否则真端点 400）
+            _StubHandler.seen_headers = {}
+            with mock.patch.dict(os.environ, env):
+                os.environ.pop("CAINIAO_TENANT_ID")
+                cainiao_auth._cache.clear()
+                cainiao_auth.verify_bearer("hdr-check-token-2")
+            seen_lower2 = {k.lower(): v for k, v in _StubHandler.seen_headers.items()}
+            self.assertEqual(seen_lower2.get("tenant-id"), "1")
+        finally:
+            srv.shutdown()
+            srv.server_close()
 
 
 if __name__ == "__main__":

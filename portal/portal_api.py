@@ -71,6 +71,28 @@ def _portal_token():
 
 _PORTAL_TOKEN = _portal_token()
 
+
+def _load_cainiao_env():
+    """X1（2026-10-09）：加载菜鸟 OAuth2 本地凭据文件（KEY=VALUE 行）注入
+    os.environ.setdefault——已有环境变量优先，文件不覆盖。文件放
+    C:\\Temp（与 _PORTAL_TOKEN_FILE 同一安全口径：portal/ 目录整挂
+    nginx web root，落盘即等于局域网可直接 GET 下载，凭据绝不能放这里）。
+    """
+    path = r"C:\Temp\cainiao_oauth2.env"
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, v = line.partition("=")
+                os.environ.setdefault(k.strip(), v.strip())
+    except OSError:
+        pass  # 文件缺失 = 未配置菜鸟对接，cainiao_auth 走默认/degraded
+
+
+_load_cainiao_env()
+
 # 变更类 POST 端点（逐一对照 do_POST 路由表；/feishu/event 为飞书回调，
 # 不走 portal token，改走 X-Lark-Signature 验签，见 _api_feishu_event）
 _MUTATION_POSTS = frozenset((
@@ -4954,6 +4976,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _check_portal_token(self):
         """P0-1b：变更类 POST 鉴权。本机放行；反代+局域网须 token 常量比对。"""
         if self._is_local_req():
+            return True
+        # --- X1 菜鸟登录校验（cainiao_auth.py，2026-10-09 接线）---
+        # 机器通道（X-Portal-Token 常量比对）/ Bearer 菜鸟 accessToken 远程
+        # 校验（60s 进程内缓存）；菜鸟不可达按 CAINIAO_AUTH_MODE 降级
+        # （默认 degraded=放行，保产线）。未命中则落到原常量比对，兼容。
+        import cainiao_auth
+        if cainiao_auth.verify_request(self.headers, self.client_address[0],
+                                       portal_token=_PORTAL_TOKEN).ok:
             return True
         got = (self.headers.get("X-Portal-Token") or "").strip()
         return bool(got) and hmac.compare_digest(got, _PORTAL_TOKEN)

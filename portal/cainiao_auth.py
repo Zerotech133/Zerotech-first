@@ -20,6 +20,11 @@
                             达时按「本机可信域」放行，enabled=一律拒绝
   CAINIAO_CLIENT_ID / CAINIAO_CLIENT_SECRET  等凭据到位后设置，
                             以 HTTP Basic 头随 check-token 上送
+  CAINIAO_TENANT_ID         芋道多租户：check-token 必须带 tenant-id 头
+                            （缺头被租户过滤器拦截 code=400「请求的租户
+                            标识未传递」，2026-10-09 真端点实证）；默认 1
+                            （管理租户；菜鸟库另有 162=股票量化，须与
+                            发 token 的租户一致）
 
 安全注意：token 只在内存比对/缓存，绝不写日志、绝不落盘；
 缓存 TTL 60s，进程重启即清空。
@@ -85,6 +90,7 @@ def _cfg() -> dict:
         "mode": (os.environ.get("CAINIAO_AUTH_MODE") or "degraded").strip().lower(),
         "client_id": (os.environ.get("CAINIAO_CLIENT_ID") or "").strip(),
         "client_secret": (os.environ.get("CAINIAO_CLIENT_SECRET") or "").strip(),
+        "tenant_id": (os.environ.get("CAINIAO_TENANT_ID") or "1").strip(),
     }
 
 
@@ -121,6 +127,9 @@ def _http_check_token(token: str, cfg: dict) -> dict:
     url = cfg["base_url"] + cfg["path"]
     body = urllib.parse.urlencode({"token": token}).encode("utf-8")
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    if cfg.get("tenant_id"):
+        # 芋道多租户过滤器：缺 tenant-id 头直接 400，到不了 OAuth2 校验
+        headers["tenant-id"] = cfg["tenant_id"]
     if cfg["client_id"] and cfg["client_secret"]:
         basic = base64.b64encode(
             ("%s:%s" % (cfg["client_id"], cfg["client_secret"])).encode("utf-8")
