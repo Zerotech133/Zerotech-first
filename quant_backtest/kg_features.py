@@ -100,6 +100,21 @@ def main():
     df.to_parquet(OUT, index=False)
     print("落盘: %s（%d 行 × %d 列）" % (OUT, *df.shape))
 
+    # 历史截面归档（因子有效性检验基建：单截面覆盖写→历史永远积累不起来，
+    # 真 IC 序列检验需要 T-1 截面 + 后续收益；滚动保留 400 份≈16 个月）
+    hist_dir = os.path.join(HERE, "data", "features", "kg_features_hist")
+    os.makedirs(hist_dir, exist_ok=True)
+    snap = os.path.join(
+        hist_dir,
+        "kgf_%s.parquet" % str(df["computed_at"].iloc[0])[:10].replace("-", ""))
+    df.to_parquet(snap, index=False)  # 同日重跑幂等覆盖
+    olds = sorted(p for p in os.listdir(hist_dir) if p.startswith("kgf_"))
+    for p in olds[:-400]:
+        try:
+            os.remove(os.path.join(hist_dir, p))
+        except OSError:
+            pass
+
     if args.top:
         for col in [c for c in df.columns if c.startswith(("deg", "peer", "person", "n_"))]:
             top = df.nlargest(args.top, col)[["ts_code", col]]
