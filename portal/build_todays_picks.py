@@ -14,6 +14,7 @@
 用法: python portal/build_todays_picks.py [--details N]
 """
 import csv
+import glob
 import json
 import os
 import sys
@@ -203,6 +204,17 @@ def tier_of(e):
     return "T3"
 
 
+def _latest_history(hist_dir, exclude_day=None):
+    """归档目录里最近一份（排除今日自身），供轮动 diff。"""
+    best = None
+    for fp in glob.glob(os.path.join(hist_dir, "todays_*.json")):
+        if exclude_day and exclude_day in fp:
+            continue
+        if best is None or os.path.getmtime(fp) > os.path.getmtime(best):
+            best = fp
+    return best
+
+
 def _backfill_quotes(stocks):
     """A股 close/pct_chg 回填：从 tdx_read 行情湖最新日一次取全市场。
 
@@ -266,6 +278,22 @@ def main():
     else:
         basis_s = None
         trade_basis = "行情湖不可达，涨跌幅以策略源自带为准"
+    # ── 池子轮动：与上一份归档 diff（新进/退出/留存），随归档积累成轮动视图 ──
+    hist_dir = os.path.join(HERE, "data", "picks_history")
+    os.makedirs(hist_dir, exist_ok=True)
+    cur_codes = {r["code"] for r in out_rows}
+    prev_path = _latest_history(hist_dir, exclude_day=basis_day)
+    rotation = {"new_in": None, "dropped": None, "retained": None,
+                "vs": os.path.basename(prev_path) if prev_path else None}
+    if prev_path:
+        try:
+            prev = json.load(open(prev_path, encoding="utf-8"))
+            prev_codes = {r["code"] for r in prev.get("stocks") or []}
+            rotation["new_in"] = len(cur_codes - prev_codes)
+            rotation["dropped"] = len(prev_codes - cur_codes)
+            rotation["retained"] = len(cur_codes & prev_codes)
+        except Exception as ex:  # noqa: BLE001
+            print("[rotation] 上份归档不可读：%s" % str(ex)[:60])
     doc = {
         "generated_at": now,
         "scan_run_date": basis_s or now[:10],
@@ -277,12 +305,22 @@ def main():
             "T2_high_value": sum(1 for r in out_rows if r["tier"] == "T2"),
             "T3_single": sum(1 for r in out_rows if r["tier"] == "T3"),
             "crowd_alert": sum(1 for r in out_rows if r["tier"] == "CROWD"),
+            "rotation": rotation,
         },
         "stocks": out_rows,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, indent=1)
+    # 每日归档（轮动视图与后验计算的数据地基）
+    if basis_day:
+        arch = os.path.join(hist_dir, "todays_%s.json" % basis_day)
+        with open(arch, "w", encoding="utf-8") as f:
+            json.dump(doc, f, ensure_ascii=False)
+    print("  轮动(vs %s)：新进 %s / 退出 %s / 留存 %s；归档 %s"
+          % (rotation["vs"] or "无", rotation["new_in"], rotation["dropped"],
+             rotation["retained"],
+             "todays_%s.json" % basis_day if basis_day else "跳过(无基准日)"))
     print("todays_picks: total=%d T1=%d T2=%d CROWD=%d T3=%d -> %s"
           % (doc["counts"]["total"], doc["counts"]["T1_resonance"],
              doc["counts"]["T2_high_value"], doc["counts"]["crowd_alert"],

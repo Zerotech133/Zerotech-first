@@ -44,7 +44,11 @@
   .mdistro .legend b { color: var(--text); }
   /* ── 策略卡 ── */
   .strats { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; margin-top: 14px; }
-  .scard { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-m); padding: 12px 14px; }
+  .scard { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-m); padding: 12px 14px; cursor: pointer; transition: border-color .15s ease; }
+  .scard:hover { border-color: var(--link); }
+  .scard.sel { border-color: var(--link); background: var(--bg-raised); box-shadow: 0 0 0 1px var(--link) inset; }
+  .scard .vd { margin-top: 5px; font-size: 10.5px; font-family: Consolas, monospace; color: var(--text-dim); }
+  .scard .vd b { color: var(--text); }
   .scard .row1 { display: flex; align-items: baseline; gap: 8px; }
   .scard .n { font-family: Consolas, monospace; font-size: 22px; font-weight: 700; }
   .scard .lab { font-size: 12.5px; font-weight: 600; }
@@ -200,7 +204,7 @@
   <div class="foot" id="foot"></div>
 </main>
 <script>
-let DATA=null, FILTER_T="", FILTER_M="", Q="", LIMIT=120, SORT="tier";
+let DATA=null, FILTER_T="", FILTER_M="", FILTER_S="", Q="", LIMIT=120, SORT="tier", VERDICTS=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function tick(){ $("#clock").textContent=new Date().toLocaleString("zh-CN",{hour12:false}); }
@@ -316,7 +320,7 @@ function srcTag(s){
 }
 
 function renderVitals(){
-  const c=DATA.counts, m=DATA.strategies;
+  const c=DATA.counts, m=DATA.strategies, ro=c.rotation||{};
   $("#vitals").innerHTML =
     `<span>扫描日 <b>${DATA.scan_run_date}</b></span>`+
     `<span>数据基准 <b>${esc(DATA.trade_basis)}</b></span>`+
@@ -325,15 +329,29 @@ function renderVitals(){
     `<span>T2 高价值 <b>${c.T2_high_value}</b></span>`+
     (c.crowd_alert!=null?`<span style="color:#ff5252">⚠ 拥挤警报 <b>${c.crowd_alert}</b></span>`:"")+
     `<span>T3 单策略 <b>${c.T3_single}</b></span>`+
+    (ro.new_in!=null?`<span>池子轮动(vs ${esc((ro.vs||"").replace(/^todays_|\.json$/g,""))}：<b style="color:#26a69a">＋${ro.new_in} 新进</b> / <b style="color:#ef5350">－${ro.dropped} 退出</b> / 留存 <b>${ro.retained}</b></span>`:"")+
     `<span>生成 <b>${DATA.generated_at}</b></span>`;
+  const VERD=VERDICTS&&VERDICTS.summary||null;
   const cards=["strong","weak","chanlun","qpzm","ninedim","cross","linkage"].map(k=>{
     const s=m[k]||{};
     const n=s.n==null?"—":s.n;
-    return `<div class="scard ${s.ok===false||s.n==null?"off":""}">
+    /* 驾驶舱感：策略卡带本策略整体后验（T+1 均值/命中，无数据时安静降级） */
+    let vd="";
+    if(VERD&&VERD.by_strategy&&VERD.by_strategy[k]&&VERD.by_strategy[k]["1"]
+       &&VERD.by_strategy[k]["1"].n>0){
+      const b=VERD.by_strategy[k]["1"];
+      vd=`<div class="vd">后验T+1：<b>${b.avg>0?"+":""}${b.avg}%</b> · 命中 ${b.hit}% · n=${b.n}</div>`;
+    }
+    return `<div class="scard ${s.ok===false||s.n==null?"off":""} ${FILTER_S===k?"sel":""}" data-s="${k}" title="点击只看本策略命中的票（再点一次取消）">
       <div class="row1"><div class="n num">${n}</div><div class="lab">${esc(s.label||k)}</div></div>
-      <div class="note">${esc(s.note||"")}</div></div>`;
+      ${vd}<div class="note">${esc(s.note||"")}</div></div>`;
   }).join("");
   $("#strats").innerHTML=cards;
+  document.querySelectorAll(".scard[data-s]").forEach(el=>
+    el.addEventListener("click",()=>{
+      const k=el.dataset.s;
+      FILTER_S=(FILTER_S===k?"":k); LIMIT=120; renderVitals(); renderList();
+    }));
   const tg=Object.entries(TIER_GLOSS).map(([k,v])=>`<div class="gitem"><b>${k} 层</b> — ${esc(v)}</div>`).join("");
   const gl=Object.entries(TAG_GLOSS).map(([k,v])=>{const i=k.indexOf("|");return `<div class="gitem"><b>${esc(k.slice(0,i))}·${esc(k.slice(i+1))}</b> — ${esc(v)}</div>`;}).join("");
   $("#foot").innerHTML =
@@ -374,6 +392,7 @@ function matchRows(){
   let rows=DATA.stocks||[];
   if(FILTER_T) rows=rows.filter(r=>r.tier===FILTER_T);
   if(FILTER_M) rows=rows.filter(r=>marketOf(r.code).key===FILTER_M);
+  if(FILTER_S) rows=rows.filter(r=>(r.sources||[]).some(s=>s.s===FILTER_S));
   if(Q){ const q=Q.toLowerCase();
     rows=rows.filter(r=>(r.code||"").toLowerCase().includes(q)||
       (marketOf(r.code).bare||"").toLowerCase().includes(q)||(r.name||"").includes(Q)); }
@@ -513,6 +532,19 @@ async function pickDetail(code, el){
   /* 3) 策略命中明细（任何市场都有）*/
   html+=`<div class="dsec">策略命中明细 · ${(row.sources||[]).length} 项</div>
   <div class="srcgrid">${(row.sources||[]).map(srcCard).join("")||'<span class="dim">无来源记录</span>'}</div>`;
+  /* 3.5) 信号后验卡：本票历史池子信号的 T+1/3/5 真实反应（平行空间对答案） */
+  const vr=VERDICTS&&VERDICTS.per_code&&VERDICTS.per_code[code];
+  if(vr){
+    const wn=(["1","3","5"]).map(w=>{
+      const x=vr.win&&vr.win[w];
+      if(!x||x.r==null)return `<span class="dim">T+${w} 待走完</span>`;
+      const cls=x.r>0?"up":(x.r<0?"dn":"");
+      return `<span>T+${w} <b class="num ${cls}">${x.r>0?"+":""}${x.r}%</b>${x.ex!=null?`<small class="dim">（超额 ${x.ex>0?"+":""}${x.ex}pp）</small>`:""}</span>`;
+    }).join(`<span class="dim"> · </span>`);
+    html+=`<div class="readbox" style="margin-top:10px"><div class="rl"><span class="rk">信号后验</span><span>
+      该票最近一次入池 <b>${esc(vr.date)}</b>（${(vr.strategies||[]).map(esc).join("/")||"—"} 命中），
+      此后真实走势：${wn}——对照为同日全市场中位数，来自行情湖实价，可回测。</span></div></div>`;
+  }
   /* 4) 事实包区块（A 股为主）*/
   if(!f){
     html+=`<div class="loading" style="padding:10px 0">${mk.key==="A"
@@ -578,6 +610,10 @@ async function boot(){
     const res=await fetch("data/todays_picks.json");
     if(!res.ok)throw new Error("HTTP "+res.status);
     render(await res.json());
+    /* 后验数据异步补装（拉不到不影响主视图） */
+    try{ const r2=await fetch("data/pick_verdicts.json");
+      if(r2.ok){ VERDICTS=await r2.json(); renderVitals(); }
+    }catch(e){}
   }catch(e){
     $("#vitals").textContent="todays_picks.json 加载失败："+e.message+
       "（确认 build_todays_picks.py 已运行、nginx 数据副本管道可达）";
