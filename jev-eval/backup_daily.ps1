@@ -17,7 +17,13 @@
 # git is the audit record. To change this script: edit disk -> push
 # registry -> commit git. All three, every time - pushing registry
 # without committing git caused the git drift found on 2026-10-08.
-# VERSION: v9 2026-10-08
+# VERSION: v10 2026-10-09
+# v10 (OPS-1009): quant_db "empty" incident root-caused - quant_system db is
+# an unpopulated shell (all tables 0 rows, only lineage_edge 29 rows), so its
+# full pg_dump gzips to ~25KB. The pipeline was never broken. Quality gate
+# added: Backup-Db minimum dump size 15KB separates an anomalous empty dump
+# (~20-byte gzip of empty stream) from a legit shell-schema dump; dump size
+# now logged in the OK line for eyeball audit.
 # =====================================================================
 $ErrorActionPreference = "Continue"
 
@@ -171,7 +177,19 @@ function Save-DockerStream([string]$container, [string]$shCmd, [string]$dest) {
 
 function Backup-Db([string]$container, [string]$user, [string]$db, [string]$name) {
     $dest = Join-Path $DayDir $name
-    if (Save-DockerStream $container "pg_dump -U $user $db | gzip -c" $dest) { LogOk $name }
+    if (Save-DockerStream $container "pg_dump -U $user $db | gzip -c" $dest) {
+        # OPS-1009 (v10): minimum-size quality gate. An anomalous dump (auth
+        # failure, wrong db, dead pipe) yields a ~20-byte gzip of an empty
+        # stream and would pass the >0 gate in Save-DockerStream. A shell
+        # schema dump (unpopulated db) is ~25KB gzipped. 15KB separates them.
+        $sz = (Get-Item -LiteralPath $dest).Length
+        if ($sz -lt 15360) {
+            Remove-Item $dest -Force -ErrorAction SilentlyContinue
+            LogFail ($name + " dump too small: " + $sz + " bytes (min 15360)")
+        } else {
+            LogOk ($name + " (" + [math]::Round($sz/1KB) + "KB)")
+        }
+    }
     else { LogFail $name }
 }
 
@@ -346,3 +364,4 @@ if ($script:Failed -gt 0) {
 }
 
 if ($script:Failed -gt 0) { exit 1 } else { exit 0 }
+
