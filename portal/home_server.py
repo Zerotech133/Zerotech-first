@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""菜鸟驾驶舱服务（K-STOCK-047 落地变现一期 demo）：新首页原型，独立进程零侵入。
+"""灵界驾驶舱服务（K-STOCK-047 落地变现一期 demo）：新首页原型，独立进程零侵入。
 
   python portal/home_server.py          # 监听 127.0.0.1:8092
   数据面 = 纯只读投影（paper.db ro / org.json / shadow_ledger / git log / 文件 mtime），
@@ -446,7 +446,7 @@ class H(BaseHTTPRequestHandler):
 
 def main():
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), H)
-    print(f"[home] 菜鸟驾驶舱 http://127.0.0.1:{PORT}  ({now_ts()})", flush=True)
+    print(f"[home] 灵界驾驶舱 http://127.0.0.1:{PORT}  ({now_ts()})", flush=True)
     srv.serve_forever()
 
 

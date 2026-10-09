@@ -5551,7 +5551,7 @@ gap:14px;align-items:start}}
         body = (
             "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-            "<title>策略中心 · 老田的 AI 工作站</title>"
+            "<title>策略中心 · 灵界</title>"
             "<link rel='stylesheet' href='/static/tokens.css'></head>"
             "<body style='background:var(--bg-page);color:var(--text);"
             "font-family:\"Segoe UI\",\"Microsoft YaHei\",system-ui,sans-serif;"
@@ -11689,7 +11689,7 @@ transition:.3s;z-index:9}
                 + pill_nav("qpzm")
                 + "<h1>🔔 订阅推送</h1>"
                 "<div class='sb-sub'>自选订阅 · 飞书自动推送 · 盘中定时 + 盘后汇总"
-                " · 青萍之末 AI 工作站</div>"
+                " · 青萍之末 · 灵界</div>"
                 "<div class='sb-card'><h2>订阅清单</h2>"
                 "<table><thead><tr><th>订阅</th><th>类型</th><th>时机</th>"
                 "<th>接收人</th><th>最近推送</th><th>启用</th><th>操作</th>"
@@ -13644,7 +13644,13 @@ font-size:12.5px;line-height:1.7;font-family:inherit}
 font-family:Consolas,monospace;line-height:1.6}
 .nl-call b{color:var(--text,#e6edf3);font-weight:600}
 </style>"""
-        body = [pill_nav("nl"), _NL_CSS,
+        # K-STOCK-057 补全标准页壳（此前裸片段→浏览器白底，风格与全站割裂）
+        _SHELL_HEAD = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                       "<meta name='viewport' content='width=device-width,"
+                       "initial-scale=1'><title>💬 查数 · 青萍之末</title>"
+                       + self._COCKPIT_CSS + "</head><body>")
+        _SHELL_TAIL = "</body></html>"
+        body = [_SHELL_HEAD, pill_nav("nl"), _NL_CSS,
                 "<h1>💬 自然语言查数</h1>",
                 "<div class='dim'>本地 qwen3.5:9b 多 agent（router → "
                 "specialists → synth）· 信息层只读 · 当日缓存复用 · "
@@ -13671,7 +13677,7 @@ font-family:Consolas,monospace;line-height:1.6}
             body.append("<div class='card dim' style='margin-top:20px'>"
                         "输入问句后回车，router 按 sub_q 分发给 specialist，"
                         "synth 汇总成一段答案；带缓存当日复用，强制重算约 10-30s。</div>")
-            self._html("".join(body))
+            self._html("".join(body) + "</body></html>")
             return
         body.append(
             "<h2>当前问句</h2><div class='card'>%s</div>"
@@ -13713,7 +13719,7 @@ function _nlForce(){_wait('强制重算中…（绕过缓存，约 10-30s）');
 </script>""")
         body.append("<div class='dim' style='margin-top:26px'>"
                     "信息层查数 · 不改信号/推送/拦截口径 · 不构成投资建议</div>")
-        self._html("".join(body))
+        self._html("".join(body) + "</body></html>")
 
     def _bt_jev(self):
         """JEV 新闻判断图表页：news.db jev 列近 7 天。
@@ -18605,9 +18611,16 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
 
     def _sim_page(self, qs):
         """K68 三操盘手模拟锦标赛页：六本账（3 操盘手 × 2 盘算）真实日K
-        买卖点战绩榜，对照买入持有基准。只读 reports 两个 json。"""
+        买卖点战绩榜，对照买入持有基准。        只读 reports 两个 json。"""
         import html as _h
-        e = _h.escape
+
+        def e(x):  # K-STOCK-057 防 float/None 穿透（json 字段类型不稳，escape 只吃 str）
+            if x is None:
+                return ""
+            if not isinstance(x, str):
+                x = str(x)
+            return _h.escape(x)
+
         ev, sim = {}, {}
         try:
             with open(os.path.join(REPORTS_DIR, "trader_sim_eval.json"),
@@ -22756,26 +22769,88 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     "</div></body>" % pill_nav())
         elif path == "/fut":
             # K162-E F4 期货量化面板（FutQuant 每日 09:30 刷新数据）
+            # K-STOCK-057 壳对齐全站 tokens（弃手写暗色 body）
             self._html(
                 "<!DOCTYPE html><html lang='zh'><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,"
-                "initial-scale=1'><title>期货量化</title></head><body "
-                "style='background:#0d1117;color:#e6edf3;font-family:"
-                "Microsoft YaHei,Arial;margin:0;padding:20px'>"
+                "initial-scale=1'><title>期货量化</title>"
+                + self._COCKPIT_CSS + "</head><body>"
                 "<div style='max-width:1180px;margin:0 auto'>"
                 + pill_nav("fut") + fut_page_html()
                 + "</div></body></html>")
         elif path == "/sellpoint":
             # K208 SellPoint AI 卖点研判面板（SellPointAI 每日刷新数据）
+            # K-STOCK-057 壳对齐全站 tokens（弃手写暗色 body）
             self._html(
                 "<!DOCTYPE html><html lang='zh'><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,"
-                "initial-scale=1'><title>SellPoint AI</title></head><body "
-                "style='background:#0d1117;color:#e6edf3;font-family:"
-                "Microsoft YaHei,Arial;margin:0;padding:20px'>"
+                "initial-scale=1'><title>SellPoint AI</title>"
+                + self._COCKPIT_CSS + "</head><body>"
                 "<div style='max-width:1180px;margin:0 auto'>"
                 + pill_nav("sellpoint") + sellpoint_page_html()
                 + "</div></body></html>")
+        elif path == "/deliverables":
+            # K-STOCK-057 对外快照档案（X5 公网快照落盘 deliverables/）：
+            # 只读索引 + ?f= 单文件原文（basename 防穿越，仅 md/txt）
+            import glob as _glob
+            import html as _hes
+            from urllib.parse import parse_qs as _pqs2, quote as _urlq
+
+            def _he_es(s):
+                return _hes.escape(s or "")
+
+            ddir = os.path.join(os.path.dirname(ROOT), "deliverables")
+            _fn = (_pqs2(qs).get("f") or [""])[0] if qs else ""
+            if _fn:
+                _bn = os.path.basename(_fn)
+                if not _bn.endswith((".md", ".txt")):
+                    return self._json({"error": "only md/txt"}, 403)
+                _fp = os.path.join(ddir, _bn)
+                if not os.path.isfile(_fp):
+                    return self._json({"error": "not found"}, 404)
+                with open(_fp, encoding="utf-8", errors="replace") as f:
+                    return self._html(
+                        "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                        "<meta name='viewport' content='width=device-width,"
+                        "initial-scale=1'><title>📄 " + _he_es(_bn)
+                        + " · 青萍之末</title>"
+                        + self._COCKPIT_CSS + "</head><body>"
+                        + pill_nav("deliverables")
+                        + "<h1>📄 %s</h1>"
+                        "<pre style='white-space:pre-wrap;font-size:13px;"
+                        "line-height:1.75'>%s</pre></body></html>"
+                        % (_he_es(_bn),
+                           _he_es(f.read())))
+            files = []
+            for fp in sorted(_glob.glob(os.path.join(ddir, "*.md")),
+                             reverse=True):
+                try:
+                    st = os.stat(fp)
+                    files.append((os.path.basename(fp), st.st_size,
+                                  time.strftime("%Y-%m-%d %H:%M",
+                                                time.localtime(st.st_mtime))))
+                except OSError:
+                    continue
+            rows = "".join(
+                "<tr><td><a href='/deliverables?f=%s'>%s</a></td>"
+                "<td class='num'>%.1f KB</td><td class='dim'>%s</td></tr>"
+                % (_urlq(n), _he_es(n), sz / 1024, mt)
+                for n, sz, mt in files)
+            self._html(
+                "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,"
+                "initial-scale=1'><title>📦 对外快照 · 青萍之末</title>"
+                + self._COCKPIT_CSS + "</head><body>"
+                + pill_nav("deliverables")
+                + "<h1>📦 对外快照档案</h1>"
+                "<div class='dim'>X5 公网快照落盘（deliverables/）· "
+                "只读 · 共 %d 份</div>"
+                "<div class='sec' style='margin-top:12px'>"
+                "<table><tr><th>文件</th><th>大小</th><th>时间</th></tr>%s"
+                "</table></div></body></html>"
+                % (len(files), rows or
+                    "<tr><td colspan='3' class='dim'>"
+                    "暂无快照</td></tr>"))
         elif path == "/fut-strat":
             # K161-B F3 期货核心池策略×品种回测对照（fut_backtest.py 生成）
             import glob as _glob
