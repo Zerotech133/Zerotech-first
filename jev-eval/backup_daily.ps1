@@ -364,4 +364,3 @@ if ($script:Failed -gt 0) {
 }
 
 if ($script:Failed -gt 0) { exit 1 } else { exit 0 }
-
