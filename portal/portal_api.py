@@ -10104,7 +10104,15 @@ function ckPush(i){
                     td, thead, "".join(_srow(h) for h in top), plain_html))
 
         self._html(
-            "<h1>📚 弱于板块案例库 <span style='font-size:14px;"
+            # K-STOCK-052 界面修复：此前输出裸 HTML 片段（无 DOCTYPE/CSS 壳，
+            # 浏览器渲染成白底裸内容=「还没有界面」）；补全页壳+域导航，
+            # 与兄弟页（bt-qpzm/bt-9dim）同口径。
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,"
+            "initial-scale=1'><title>📚 弱于板块案例库</title>"
+            + self._COCKPIT_CSS + "</head><body>"
+            + pill_nav("cases")
+            + "<h1>📚 弱于板块案例库 <span style='font-size:14px;"
             "color:#8b949e'>weak 产线：扫描→建案→归因→跟踪→结案 · "
             "影子观察</span></h1>"
             "<h2 style='margin:14px 0 6px'>① 在案案例（每日 15:30 "
@@ -10115,6 +10123,7 @@ function ckPush(i){
             "<div style='color:#8b949e;font-size:12px;margin-top:16px;"
             "border-top:1px solid #30363d;padding-top:8px'>本页纯读展示，"
             "数据为产线落盘产物；仅影子复盘，不构成买卖依据。</div>"
+            "</body></html>"
             % (live_html, closed_html, scan_html))
 
     def _weak_md(self, qp):
@@ -22443,6 +22452,20 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             except OSError:
                 pass
             self._json(hit or {"none": True})
+        elif path.startswith("/kg/stock/") and "format=json" not in qs:
+            # K-STOCK-051 统一股票详情卡（046 §5.1 五区制，唯一样式）：
+            # 浏览器默认 HTML；?format=json 走下方 JSON 端点保兼容既有调用方
+            from urllib.parse import unquote as _uqsc
+            _parts_sc = path.split("/", 3)
+            _code_sc = _uqsc(_parts_sc[3]) if len(_parts_sc) > 3 and _parts_sc[3] else ""
+            if not _code_sc:
+                self._json({"ok": False, "error": "missing code"})
+            else:
+                try:
+                    import stock_card as _stock_card
+                    self._html(_stock_card.render_card(_code_sc).encode())
+                except Exception as _esc_err:  # noqa: BLE001
+                    self._json({"ok": False, "error": f"stock_card: {_esc_err}"})
         elif path in ("/kg/stats", "/kg/sources", "/kg/overview",
                       "/kg/ontology") or path.startswith(
                 ("/kg/stock/", "/kg/hotmoney/", "/kg/trace/",
