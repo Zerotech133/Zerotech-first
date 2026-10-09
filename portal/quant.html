@@ -91,6 +91,20 @@
   .trow a { color: var(--link); text-decoration: none; }
   .trow a:hover { text-decoration: underline; }
 
+  /* K-STOCK-054 页面目录：按数据流分五层，每链接带数据语义说明 */
+  .flowgrid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .fcard { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; }
+  .fcard .fh { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .fcard .fh b { font-size: 13px; }
+  .fcard .fh small { color: var(--text-dim); font-size: 10.5px; font-family: Consolas, monospace; }
+  .fcard .fdesc { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin-bottom: 9px; }
+  .fitem { display: block; padding: 6px 0; border-top: 1px solid var(--border-weak); text-decoration: none; color: var(--text); }
+  .fitem:first-of-type { border-top: none; }
+  .fitem:hover .fn { color: var(--link); }
+  .fitem .fn { font-size: 12.5px; font-weight: 600; }
+  .fitem .fm { font-size: 10.5px; color: var(--text-dim); line-height: 1.5; margin-top: 1px; }
+  .fitem .fm .rt { color: var(--link); font-family: Consolas, monospace; }
+
   @media (max-width: 960px) { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
@@ -149,19 +163,50 @@
     </div>
 
     <div class="sec">
-      <div class="sec-head"><div class="sec-title">◤ 页面目录</div><div class="sec-note">K39 · 结果优先，过程页收纳于此 · 与顶部「☰ 域内导航」同源</div></div>
-      <div class="toc">
-        <div class="trow"><span class="tg2">🌅 盘前与驾驶</span>
-          <a href="/premarket">盘前作战</a><a href="/fin">金融导航</a><a href="/sa">个股分析</a><a href="/nl">查数</a>
+      <div class="sec-head"><div class="sec-title">◤ 页面目录 · 按数据流五层</div><div class="sec-note">信号生产 → 执行账本 → 研究支撑 · K-STOCK-054 语义分类</div></div>
+      <div class="flowgrid">
+        <div class="fcard">
+          <div class="fh"><b>🌅 决策驾驶</b><small>盘前 → 盘中 → 盘后</small></div>
+          <div class="fdesc">每天按时间动线看的页面：开盘前核对跑批，盘中看盘面与账本，收盘后复盘。</div>
+          <a class="fitem" href="/premarket"><div class="fn">盘前作战</div><div class="fm">07:05 主闭环四段汇报核对 · 产物齐全性 <span class="rt">每日 07:05</span></div></a>
+          <a class="fitem" href="/fin"><div class="fn">金融导航</div><div class="fm">行情＋账本＋信号聚合驾驶舱 · 总入口</div></a>
+          <a class="fitem" href="/sa"><div class="fn">个股分析</div><div class="fm">单票全维度事实下钻（共振/缠论/筹码/公告）</div></a>
+          <a class="fitem" href="/nl"><div class="fn">查数</div><div class="fm">自然语言问数 · 不用记表名</div></a>
+          <a class="fitem" href="/bt-brief"><div class="fn">AI 晨报</div><div class="fm">隔夜要闻＋今日计划的机器综述 <span class="rt">每日晨</span></div></a>
         </div>
-        <div class="trow"><span class="tg2">🎖 策略资产</span>
-          <a href="/strategies">策略中心</a><a href="/bt-qpzm">青萍之末</a><a href="/bt-chanlun">缠论</a><a href="/bt-chanlun-pool">预警池</a><a href="/bt-linkage">三线联动</a><a href="/bt-weak">弱于板块</a><a href="/bt-9dim">九维</a><a href="/bt-cross">共振</a>
+        <div class="fcard">
+          <div class="fh"><b>🎖 信号生产</b><small>七策略源 · 决策的上游</small></div>
+          <div class="fdesc">各策略独立扫描产出候选池——这里只生产信号，不动钱；质量看策略中心记分卡。</div>
+          <a class="fitem" href="/strategies"><div class="fn">策略中心（记分卡）</div><div class="fm">全部策略注册表＋战绩指标 · 信号源头总览</div></a>
+          <a class="fitem" href="/bt-qpzm"><div class="fn">青萍之末</div><div class="fm">RPS 强度共振选股（res 名单）<span class="rt">14:40</span></div></a>
+          <a class="fitem" href="/bt-chanlun"><div class="fn">缠论</div><div class="fm">日线结构信号（三买/中枢离开）93 只池</div></a>
+          <a class="fitem" href="/bt-chanlun-pool"><div class="fn">缠论预警池</div><div class="fm">结构未走完的候选——等触发，不追</div></a>
+          <a class="fitem" href="/bt-linkage"><div class="fn">三线联动</div><div class="fm">板块联动口径：价/量/消息三线共振</div></a>
+          <a class="fitem" href="/bt-weak"><div class="fn">弱于板块案例</div><div class="fm">反面教材产线：建案→归因→结案 <span class="rt">15:30 监测</span></div></a>
+          <a class="fitem" href="/bt-9dim"><div class="fn">九维评分</div><div class="fm">218 只量化打分（影子期，不进决策）</div></a>
+          <a class="fitem" href="/bt-cross"><div class="fn">共振</div><div class="fm">多策略同命中交集（n_hit≥2 才入选）</div></a>
         </div>
-        <div class="trow"><span class="tg2">🚦 实盘跟踪</span>
-          <a href="/bt-signals">信号</a><a href="/bt-positions">持仓</a><a href="/bt-report">报告</a>
+        <div class="fcard">
+          <div class="fh"><b>🚦 执行账本</b><small>信号消费 · 模拟盘四账本</small></div>
+          <div class="fdesc">信号落单后的全链路：挂单 → 撮合 → 持仓 → 复盘。四账本 = main / taishan / us_qingping / chaser。</div>
+          <a class="fitem" href="/bt-signals"><div class="fn">明日信号</div><div class="fm">引擎次日撮合计划（pending 挂单来源）</div></a>
+          <a class="fitem" href="/paper"><div class="fn">模拟仓账本</div><div class="fm">四账本净值/仓位/挂单/verify 快照 <span class="rt">每日 mark</span></div></a>
+          <a class="fitem" href="/bt-positions"><div class="fn">持仓跟踪</div><div class="fm">在仓标的＋止损距离（引擎口径）</div></a>
+          <a class="fitem" href="/sellpoint"><div class="fn">卖点研判</div><div class="fm">离场信号研究（止损/止盈位阶）</div></a>
+          <a class="fitem" href="/bt-report"><div class="fn">回测报告</div><div class="fm">策略历史战绩汇总（收益/夏普/回撤）</div></a>
         </div>
-        <div class="trow"><span class="tg2">🧰 研究与数据</span>
-          <a href="/bt">量化中心</a><a href="/bt-opt">寻优</a><a href="/bt-sectors">板块</a><a href="/bt-data-health">数据仓</a>
+        <div class="fcard">
+          <div class="fh"><b>🧰 研究与数据</b><small>选股中心 + 数据地基</small></div>
+          <div class="fdesc">横向工具：跨策略的全市场视图与数据质量底座。</div>
+          <a class="fitem" href="/bt"><div class="fn">量化中心（选股）</div><div class="fm">四市场自选池共振（A股/美股/港股/加密）</div></a>
+          <a class="fitem" href="/bt-opt"><div class="fn">寻优榜单</div><div class="fm">参数寻优结果排行</div></a>
+          <a class="fitem" href="/bt-sectors"><div class="fn">板块热力</div><div class="fm">全市场板块强弱与轮动热力图</div></a>
+          <a class="fitem" href="/bt-data-health"><div class="fn">数据仓健康</div><div class="fm">行情湖/新闻库新鲜度与完整性体检</div></a>
+        </div>
+      </div>
+      <div class="toc" style="margin-top:12px">
+        <div class="trow"><span class="tg2">🏛 治理与快照</span>
+          <a href="/council">投委会（多 Agent 决议）</a><a href="/sim">操盘锦标赛</a><a href="/debate">辩论室</a><a href="/fut">期货量化</a><a href="/deliverables">对外快照</a>
         </div>
       </div>
     </div>
@@ -374,5 +419,6 @@
   Object.entries(CHECKS).forEach(([k, c]) => probe(k, c));
   setInterval(() => Object.entries(CHECKS).forEach(([k, c]) => probe(k, c)), 30000);
 </script>
+<script src="/static/cainiao.js" defer></script>
 </body>
 </html>
