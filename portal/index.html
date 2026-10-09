@@ -229,6 +229,24 @@
   </div>
 </a>
 
+      <!-- ①c 模拟仓平台（K-STOCK v0.2 · 首页直达） -->
+      <a class="dm" href="/paper">
+        <div class="head">
+          <div class="ic">🧾</div>
+          <div><div class="t">模拟仓平台</div><div class="s">多策略 · 手动/自动 · 多 Agent 交易员</div></div>
+        </div>
+        <div class="desc">AI 值班 / 量子双刀 / 青萍之末 / 手动单共用一条 Picks 执行链，策略永不直碰账本；手动止损、历史回看、交易员市场（v0.3 预留）。</div>
+        <div class="ms">
+          <span>总资产 <b id="p-total">—</b></span>
+          <span>累计 <b id="p-cum">—</b></span>
+          <span>挂单 <b id="p-pend">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot" id="p-dot"></span><span id="p-note">连接中…</span></span>
+          <span class="enter">进入交易台 →</span>
+        </div>
+      </a>
+
       <!-- ② 情报中枢 -->
       <a class="dm" href="/intel">
         <div class="head">
@@ -454,6 +472,36 @@
   }
   loadStrong();
   setInterval(loadStrong, 300000);
+
+  // ── 模拟仓卡微指标（/api/paper_status，K-STOCK v0.2 · 涨红跌绿）──
+  async function loadPaper() {
+    const dot = document.getElementById('p-dot'), note = document.getElementById('p-note'),
+          total = document.getElementById('p-total'), cum = document.getElementById('p-cum'),
+          pend = document.getElementById('p-pend');
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/paper_status', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || '状态异常');
+      const L = d.latest || {};
+      if (total) total.textContent = '¥' + (Math.round(L.total / 1000) / 10).toFixed(1) + ' 万';
+      if (cum) {
+        const v = L.cum_pct ?? 0;
+        cum.textContent = (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+        cum.style.color = v > 0 ? 'var(--color-up)' : (v < 0 ? 'var(--color-dn)' : '');
+      }
+      if (pend) pend.textContent = (L.pending ?? 0) + ' 单';
+      if (note) note.textContent = '快照 ' + String(L.date || '').slice(5) + (L.verify_ok ? ' · 对账OK' : ' · 对账异常');
+      if (dot) dot.className = 'dot' + (L.verify_ok ? '' : ' off');
+    } catch {
+      if (note) note.textContent = '模拟仓数据未就绪';
+      if (dot) dot.className = 'dot unknown';
+    }
+  }
+  loadPaper();
+  setInterval(loadPaper, 60000);
 
   // Ollama 模型计数
   async function countModels() {
