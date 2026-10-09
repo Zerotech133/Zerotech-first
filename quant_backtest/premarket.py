@@ -1963,7 +1963,26 @@ def main():
     if not a.force and not (_cal_open(today) and _next_open()):
         print("PREMARKET skip：今日或次日非 A 股交易日（休市，不产报不推送）")
         return
-    run(push=a.push)
+    try:
+        run(push=a.push)
+    except SystemExit:
+        raise
+    except BaseException:
+        # OPS-1009b 防复发加固（2026-10-09）：10-09 07:05 任务层 rc=1 但脚本
+        # 无重定向、print 不落盘，崩溃栈丢失无法归因（融合巡检定案：中期
+        # 方案=此处落日志）。写完整栈后原样 re-raise，rc=1 语义不变。
+        import traceback
+        from pathlib import Path as _P
+        log = _P(__file__).resolve().parent / "logs" / "premarket_last_error.log"
+        try:
+            log.parent.mkdir(exist_ok=True)
+            with open(log, "a", encoding="utf-8") as f:
+                f.write("\n==== %s (push=%s) ====\n" % (
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"), a.push))
+                traceback.print_exc(file=f)
+        except OSError:
+            pass  # 日志写失败不掩盖原始异常
+        raise
 
 
 if __name__ == "__main__":
