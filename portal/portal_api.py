@@ -5847,6 +5847,8 @@ gap:14px;align-items:start}}
                       if gates else "<div class='dim'>暂无快照</div>")
 
         # ② 自选池共振信号（按 建议 → 共振分 排序，全量展示）
+        # K-STOCK-031：全市场混排一张表 → 按 A股/美股/港股/虚拟币
+        # 四市场 Tab 切换（长页治理续，与 RPS 榜/hub 模块同款交互）
         act_c = {"买入": "#f85149", "观察": "#d29922", "回避": "#3fb950"}
         order = {"买入": 0, "观察": 1, "回避": 2}
 
@@ -5858,42 +5860,55 @@ gap:14px;align-items:start}}
         n_b = sum(1 for r in res if _base(r) == "买入")
         n_w = sum(1 for r in res if _base(r) == "观察")
         n_a = len(res) - n_b - n_w
-        res_rows = ""
-        for r in rows:
+
+        def _res_row(r):
             dims = " · ".join(
                 "%s%s" % (lb, ("—" if r.get(k) is None
                                else "%d" % round(r[k])))
                 for k, lb in (("tech", "技"), ("jev", "J"), ("rps", "R"),
                               ("env", "环")))
-            res_rows += (
+            return (
                 "<tr><td><a href='/bt/stock?c=%s'>%s</a><div class='dim'>"
-                "%s</div></td><td class='dim'>%s</td>"
+                "%s</div></td>"
                 "<td style='color:%s;white-space:nowrap'>%s</td>"
                 "<td><b>%d</b></td><td class='dim' style='font-size:12px;"
                 "white-space:nowrap'>%s</td><td>%s</td>"
                 "<td class='dim'>%s</td></tr>"
                 % (e(str(r.get("code", ""))), e(str(r.get("name", ""))),
-                   e(str(r.get("code", ""))), e(str(r.get("market", ""))),
+                   e(str(r.get("code", ""))),
                    act_c.get(_base(r), "#8b949e"),
                    e(str(r.get("action", "—"))),
                    round(r.get("score") or 0), dims,
                    ("%.2f" % r["px"]) if r.get("px") else "—",
                    e(str(r.get("date", "")))))
-        res_blk = (
-            "<div class='dim' style='margin-bottom:4px'>全池 %d 只 · "
-            "<span style='color:#f85149'>买入 %d</span> · <span style="
-            "'color:#d29922'>观察 %d</span> · <span style='color:#3fb950'>"
-            "回避 %d</span></div>"
-            "<table><tr><th>标的</th><th>市场</th><th>建议</th><th>共振分"
-            "</th><th>四维得分</th><th>现价</th><th>日期</th></tr>%s</table>"
-            "<div class='dim' style='margin-top:6px'>四维：技=4策略多头占比"
-            "±MA20修正 · J=近7天关联新闻多空 · R=全市场RPS · 环=市场闸门分"
-            "；score≥70 买入 / 60-69 观察 / 其余回避；闸门收紧强制「回避（"
-            "环境闸门）」；缺维自动降权（如无JEV：技.467 / R.333 / 环.20）"
-            "</div>"
-            % (len(res), n_b, n_w, n_a, res_rows or
-               "<tr><td colspan='7' class='dim'>暂无快照，每日 17:35 刷新"
-               "</td></tr>")) if res else "<div class='dim'>暂无快照</div>"
+
+        _res_th = ("<tr><th>标的</th><th>建议</th><th>共振分</th>"
+                   "<th>四维得分</th><th>现价</th><th>日期</th></tr>")
+        _res_mkt = [("🇨🇳 A股", "CN"), ("🇺🇸 美股", "US"),
+                    ("🇭🇰 港股", "HK"), ("🪙 虚拟币", "CRYPTO")]
+        if res:
+            res_tabs = []
+            for lb, mk in _res_mkt:
+                mrows = [r for r in rows if str(r.get("market", "")) == mk]
+                mtrs = "".join(_res_row(r) for r in mrows) or \
+                    ("<tr><td colspan='6' class='dim'>本市场今日暂无"
+                     "（每日 17:35 刷新）</td></tr>")
+                res_tabs.append((lb, "<table>%s%s</table>" % (_res_th, mtrs)))
+            res_blk = (
+                "<div class='dim' style='margin-bottom:4px'>全池 %d 只 · "
+                "<span style='color:#f85149'>买入 %d</span> · <span style="
+                "'color:#d29922'>观察 %d</span> · <span style='color:#3fb950'>"
+                "回避 %d</span></div>"
+                % (len(res), n_b, n_w, n_a))
+            res_blk += _tabs_html("ressig", res_tabs)
+            res_blk += (
+                "<div class='dim' style='margin-top:6px'>四维：技=4策略多头占比"
+                "±MA20修正 · J=近7天关联新闻多空 · R=全市场RPS · 环=市场闸门分"
+                "；score≥70 买入 / 60-69 观察 / 其余回避；闸门收紧强制「回避（"
+                "环境闸门）」；缺维自动降权（如无JEV：技.467 / R.333 / 环.20）"
+                "</div>")
+        else:
+            res_blk = "<div class='dim'>暂无快照</div>"
 
         # ③ 全市场 RPS 强势榜（策略的选股漏斗出口）
         # K-STOCK-030：四市场竖排改 Tab 切换（长页治理——点右侧标签，
