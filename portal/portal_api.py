@@ -5819,7 +5819,10 @@ gap:14px;align-items:start}}
                 "</span></h2>" + style)
         return head + _tabs_html("hubmkt", tabs) + rest + "</div>"
 
-    def _qpzm_page(self):
+    def _qpzm_page(self, sub=""):
+        """K-STOCK-032 多页面联动：主页=驾驶舱一屏（""），子页=
+        res 共振信号 / rps RPS榜 / hub 四市场模块 / batch 批次回测 /
+        spec 说明书——子页顶部页面级导航条互相联动。"""
         import html as _h
         e = _h.escape
         snap = _read_json(os.path.join(REPORTS_DIR, "rps_latest.json"))
@@ -5969,37 +5972,115 @@ gap:14px;align-items:start}}
                 ("🧪 基础策略库", "/bt"),
             ])
 
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
-                "<meta name='viewport' content='width=device-width,"
-                "initial-scale=1'><title>青萍之末 · 共振选股工作台</title>"
-                + self._COCKPIT_CSS + "</head><body>"
-                + pill_nav("qpzm")
-                # K-STOCK-030 统一产线页骨架：
-                # ① 导航+标题 → ② 工具链(标题下) → ③ 主数据 → ④ 市场Tab →
-                # ⑤ 说明书+尾注（与 /qd/ 双刀页同构）
-                + "<h1>🌊 青萍之末 · 共振选股工作台</h1><div class='dim'>"
-                "策略市场 1 号工作台 · 数据截至 %s（%s）</div>"
-                % (e(str(snap.get("latest", "—"))),
-                   e(str(snap.get("ts", ""))))
-                # ② 工具链统一紧贴标题（原沉底第 11 位）
-                + "<div style='display:flex;gap:6px;flex-wrap:wrap;"
-                "margin:10px 0'>" + tools + "</div>"
-                # ③ 环境闸门（一票否决层，决策前置）
-                + "<div class='sec'><h2>🚦 环境闸门 · 一票否决层</h2>"
-                + gates_html + "</div>"
-                + "<div class='sec'><h2>🎯 自选池共振信号</h2>" + res_blk
-                + "</div>"
-                + self._qpzm_batch_blk(snap)
-                # ④ 市场维度 Tab 化（K-STOCK-030 长页治理）
-                + "<div class='sec'><h2>📈 全市场 RPS 强势榜（选股漏斗）</h2>"
-                + top_blk + "</div>"
-                + self._hub_market_tabs()
-                # ⑤ 说明书（统一放尾区）+ 尾注
-                + "<div class='sec'><h2>📖 策略说明书</h2>" + spec + "</div>"
-                + "<div class='dim' style='margin-top:20px'>纸面研究不构成"
-                "投资建议 · 方法论源自青萍之末2（RPS：全市场N日涨幅百分位；"
-                "共振：四维加权、缺维降权、环境一票否决）</div></body></html>")
-        self._html(body)
+        # ── K-STOCK-032 多页面联动（老田：不要长图，拆多页互相跳转）──
+        # 主页=驾驶舱一屏（闸门+统计+模块入口卡）；共振/RPS/四市场模块/
+        # 批次回测/说明书各自独立子页；子页顶部页面级导航条联动。
+        _SUBS = [("🌊 工作台", "/bt-qpzm", ""),
+                 ("🎯 共振信号", "/bt-qpzm/res", "res"),
+                 ("📈 RPS 强势榜", "/bt-qpzm/rps", "rps"),
+                 ("🗂 四市场模块", "/bt-qpzm/hub", "hub"),
+                 ("📊 批次回测", "/bt-qpzm/batch", "batch"),
+                 ("📖 策略说明书", "/bt-qpzm/spec", "spec")]
+
+        def _shell(title, cur, inner):
+            nav = "".join(
+                ("<span style='%s'>%s</span>" % (_PILL_ON, lb)) if key == cur
+                else ("<a href='%s' style='%s'>%s</a>" % (href, _PILL, lb))
+                for lb, href, key in _SUBS)
+            # 注意：title 走纯拼接不进 % 模板（% 与 + 混用坑第四次变体）
+            return ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                    "<meta name='viewport' content='width=device-width,"
+                    "initial-scale=1'><title>" + title
+                    + " · 青萍之末</title>"
+                    + self._COCKPIT_CSS + "</head><body>"
+                    + pill_nav("qpzm")
+                    + "<div style='display:flex;gap:6px;flex-wrap:wrap;"
+                    "margin:12px 0'>" + nav + "</div>"
+                    + "<h1>" + title + "</h1><div class='dim'>数据截至 "
+                    + e(str(snap.get("latest", "—"))) + "（"
+                    + e(str(snap.get("ts", ""))) + "）</div>"
+                    + inner
+                    + "<div class='dim' style='margin-top:20px'>纸面研究不"
+                    "构成投资建议 · 方法论源自青萍之末2（RPS：全市场N日涨幅"
+                    "百分位；共振：四维加权、缺维降权、环境一票否决）"
+                    "</div></body></html>")
+
+        def _card(href, border, icon, name, desc, stat):
+            return ("<a href='%s' style='display:block;border:1px "
+                    "solid %s;border-radius:12px;background:#161b22;"
+                    "padding:16px 18px;text-decoration:none;"
+                    "color:#e6edf3'>"
+                    "<div style='font-size:17px;font-weight:700'>"
+                    "%s %s</div>"
+                    "<div class='dim' style='font-size:12.5px;"
+                    "margin:6px 0 10px'>%s</div>"
+                    "<div style='font-size:13px'><b>%s</b>"
+                    "<span style='float:right;color:%s;font-size:"
+                    "12.5px'>进入 →</span></div></a>"
+                    % (href, border, icon, name, desc, stat, border))
+
+        if sub == "res":
+            inner = ("<div class='sec'><h2>🎯 自选池共振信号</h2>" + res_blk
+                     + "</div>")
+            self._html(_shell("🌊 共振信号 · 四市场", "res", inner))
+            return
+        if sub == "rps":
+            inner = ("<div class='sec'><h2>📈 全市场 RPS 强势榜"
+                     "（选股漏斗）</h2>" + top_blk + "</div>")
+            self._html(_shell("📈 RPS 强势榜 · 四市场", "rps", inner))
+            return
+        if sub == "hub":
+            inner = self._hub_market_tabs()
+            self._html(_shell("🗂 四市场模块 · 自选池共振", "hub", inner))
+            return
+        if sub == "batch":
+            inner = self._qpzm_batch_blk(snap)
+            self._html(_shell("📊 每日批次回测", "batch", inner))
+            return
+        if sub == "spec":
+            inner = "<div class='sec'><h2>📖 策略说明书</h2>" + spec + "</div>"
+            self._html(_shell("📖 策略说明书", "spec", inner))
+            return
+
+        # 主页 = 驾驶舱一屏：闸门 → 核心统计 → 模块入口卡（联动枢纽）
+        hub_txt = "跨市场 RPS · 策略库 · 策略工具"
+        cards = "".join([
+            _card("/bt-qpzm/res", "#f85149", "🎯", "共振信号",
+                  "自选池四维共振 · 建议→共振分排序 · 四市场 Tab",
+                  "买入 %d · 观察 %d · 回避 %d" % (n_b, n_w, n_a)),
+            _card("/bt-qpzm/rps", "#58a6ff", "📈", "RPS 强势榜",
+                  "策略的选股漏斗出口 · 四市场各 Top8",
+                  "全市场 N 日涨幅百分位"),
+            _card("/bt-qpzm/hub", "#e3b341", "🗂", "四市场模块",
+                  "四法门共振按市场分域 · 同源市场分域页",
+                  hub_txt),
+            _card("/bt-qpzm/batch", "#3fb950", "📊", "每日批次回测",
+                  "K238 每日选股批次的历史回放对照",
+                  "随每日任务积累"),
+            _card("/bt-qpzm/spec", "#8b949e", "📖", "策略说明书",
+                  "共振公式 · RPS 口径 · 与原版差异",
+                  "评分权重一览"),
+        ])
+        inner = (
+            # ② 工具链统一紧贴标题
+            "<div style='display:flex;gap:6px;flex-wrap:wrap;"
+            "margin:10px 0'>" + tools + "</div>"
+            # ③ 环境闸门（一票否决层，决策第一眼）
+            + "<div class='sec'><h2>🚦 环境闸门 · 一票否决层</h2>"
+            + gates_html + "</div>"
+            # 核心统计条
+            + "<div class='sec'><h2>🎯 自选池速览</h2><div class='dim' "
+            "style='font-size:15px'>全池 <b>%d</b> 只 · "
+            "<span style='color:#f85149'>买入 <b>%d</b></span> · "
+            "<span style='color:#d29922'>观察 <b>%d</b></span> · "
+            "<span style='color:#3fb950'>回避 <b>%d</b></span>"
+            "（明细见「共振信号」子页）</div></div>"
+            % (len(res), n_b, n_w, n_a)
+            # 模块入口卡（联动枢纽）
+            + "<h2 style='margin:16px 0 10px'>🧭 板块入口 · 多页联动</h2>"
+            + "<div style='display:grid;grid-template-columns:repeat("
+            "auto-fit,minmax(260px,1fr));gap:12px'>" + cards + "</div>")
+        self._html(_shell("🌊 青萍之末 · 共振选股工作台", "", inner))
 
     # ── K238 每日选股批次回测（挂在自选池共振信号后面） ──
     def _qpzm_batch_blk(self, snap):
@@ -22078,9 +22159,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/bt/seat":
             # 坐席下钻页：席位近60日上榜明细 + 常做票
             self._bt_seat_page(qs)
-        elif path == "/bt-qpzm":
+        elif path == "/bt-qpzm" or path.startswith("/bt-qpzm/"):
             # 策略市场 1 号工作台：青萍之末 · 共振选股
-            self._qpzm_page()
+            # K-STOCK-032 多页面联动：/bt-qpzm 主页驾驶舱 +
+            # /bt-qpzm/{res,rps,hub,batch,spec} 子页
+            self._qpzm_page(path[len("/bt-qpzm"):].strip("/"))
         elif path == "/bt-chanlun":
             # 策略市场 2 号：缠论 · 结构交易（筹备中占位页）
             self._chanlun_page()
