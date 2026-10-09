@@ -21323,6 +21323,18 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 "<tr><td colspan=5 class='dim'>当日无信号（八重 AND 严格过滤，低频属正常）</td></tr>"
             rec_rows = "".join(_row_qd(r) for r in snap_qd.get("signals_recent", [])[:50]) or \
                 "<tr><td colspan=5 class='dim'>近 5 日无信号</td></tr>"
+            # 尾盘候选表（K-STOCK-025：14:40 盘中实时 bar 复核 → 14:55 执行窗口）
+            tail_ls = snap_qd.get("tail_signals", []) or []
+            tail_rows = "".join(
+                ("<tr><td><a href='/bt/stock?c=%s'><b>%s</b></a></td>"
+                 "<td>%s</td><td>%s</td><td class='dim'>%s</td></tr>")
+                % (e_qd(t["code"]), e_qd(t["code"]), e_qd(str(t.get("close", "—"))),
+                   e_qd(REG_CN.get(t.get("regime"), t.get("regime", "?"))),
+                   e_qd(t.get("note", ""))) for t in tail_ls) or \
+                ("<tr><td colspan=4 class='dim'>%s</td></tr>"
+                 % e_qd(snap_qd.get("tail_note") or
+                        "今日尚无尾盘候选（14:40 盘中扫描产出 · 候选池 %d 只昨日十字星）"
+                        % snap_qd.get("star_pool_n", 0)))
 
             # ── 管线步骤表（对齐缠论 ①-⑫ 规格：模块/入口/字段/状态）──
             _OK = "<span style='color:#3fb950'>✅ 引擎已实现</span>"
@@ -21391,9 +21403,13 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                        "<div style='border:1px solid #d29922;border-radius:8px;"
                        "background:#161b22;padding:12px 16px;margin:14px 0;color:#d29922'>"
                        "⚠ 研究态：策略未回测验证（T-20261009-009 结论前不构成选股依据 · "
-                       "不构成投资建议）· 已注册策略中心（shadow）</div>"
+                       "不构成投资建议）· 已注册策略中心（shadow）· 尾盘策略："
+                       "每日 14:40 全市场扫描 → 14:55 执行窗口</div>"
                        + tools_qd + cards_qd
                        + "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
+                       "⏱ 今日尾盘候选（%d · 14:40 盘中实时 bar 复核 → 14:55 执行窗口）</h2>"
+                       "%s</div>"
+                       "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
                        "📌 当日信号（%d）</h2>"
                        "<table style='border-collapse:collapse;min-width:520px'>"
                        "<tr class='dim'><td align=left>代码</td><td align=left>名称</td>"
@@ -21418,7 +21434,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                        "17:50 automation（venv 子进程）· 手动刷新：运行 portal/qd_scanner.py"
                        " · 策略源自 projects-archive 量子双刀产线（K-STOCK-018 移植）"
                        "</div></body></html>"
-                       % (len(snap_qd.get("signals_now", [])), now_rows,
+                       % (len(tail_ls), tail_rows,
+                          len(snap_qd.get("signals_now", [])), now_rows,
                           len(snap_qd.get("signals_recent", [])), rec_rows,
                           steps_qd))
             self._html(body_qd)

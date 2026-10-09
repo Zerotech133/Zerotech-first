@@ -48,25 +48,81 @@ def scan_one(fp):
         "close": round(float(last.name and df["close"].iloc[-1]), 2),
         "recent_signals": recent_days,
         "n_recent": int(out["double_knife_signal"].tail(5).sum()),
+        # 尾盘两段式候选（K-STOCK-025）：末行为单日十字星（双刀第一刀已落，
+        # 今日/次日或成第二刀）→ 14:40 盘中用实时 bar 复核
+        "star_yesterday": bool(last["cross_star"]),
     }
     return code, info
+
+
+def intraday_recheck(candidates):
+    """尾盘两段式复核（K-STOCK-025）：候选票拉腾讯日 K（盘中最后一根=当日
+    实时 bar，qfqday 行为）→ 完整八重重算 → 当日触发即尾盘买信号。
+    量级：候选=昨日单日十字星票（通常几十~几百只），逐票 1 请求可承受。
+    返回 (tail_signals, tail_checked, tail_note)
+    """
+    import pandas as pd  # noqa: F401  scan_one 依赖由调用方保证
+    from tools import kline_daily
+    today = datetime.now().strftime("%Y%m%d")
+    tail_signals, checked = [], 0
+    note = ""
+    for code in candidates:
+        plain = code.split(".")[0]
+        try:
+            kl = kline_daily(plain, n=150)
+        except Exception:
+            continue
+        if len(kl) < 100:
+            continue
+        last_day = str(kl[-1][0]).replace("-", "")
+        if last_day != today:
+            note = "腾讯源末根=%s 非当日（非盘中/接口口径变化），本段结果不可信" % last_day
+            continue
+        checked += 1
+        d = pd.DataFrame(kl).iloc[:, :6]
+        d.columns = ["date", "open", "close", "high", "low", "vol"]
+        for c in ("open", "close", "high", "low", "vol"):
+            d[c] = pd.to_numeric(d[c], errors="coerce")
+        # 腾讯日 K 无成交额：vol(手)*close/1000≈千元（当日 bar 近似，影响
+        # 20 日成交额和约 1/20≈5%，候选复核可容忍；正式口径仍以湖 amt 为准）
+        d["amount"] = d["vol"] * d["close"] / 1000.0
+        try:
+            out = quant_double_knife(d.set_index("date"), profile="strict")
+        except Exception:
+            continue
+        last = out.iloc[-1]
+        if bool(last["double_knife_signal"]):
+            tail_signals.append({
+                "code": code,
+                "close": round(float(d["close"].iloc[-1]), 2),
+                "regime": str(last["regime_label"]),
+                "note": "盘中实时 bar 复核通过 · 14:55 执行窗口",
+            })
+    return tail_signals, checked, note
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--recent-window", type=int, default=5,
                     help="近 N 日信号窗口（默认 5）")
+    ap.add_argument("--intraday", action="store_true",
+                    help="尾盘模式（14:40）：候选池+当日实时 bar 复核，"
+                         "产出 14:55 执行窗口的尾盘买信号")
     args = ap.parse_args()
+    intraday = args.intraday
 
     t0 = time.time()
     files = sorted(glob.glob(str(ASHARE / "*.parquet")))
     sig_now, recent, regime_now, skipped = [], [], {}, 0
+    star_pool = []  # 昨日单日十字星全量候选池（尾盘两段式第一段）
     for i, fp in enumerate(files):
         try:
             code, info = scan_one(fp)
         except Exception:
             skipped += 1
             continue
+        if info is not None and info.get("star_yesterday"):
+            star_pool.append(info["code"])
         if info is None:
             skipped += 1
             continue
@@ -78,6 +134,17 @@ def main():
         if (i + 1) % 1000 == 0:
             print("[scan] %d/%d 已扫 %.0fs" % (i + 1, len(files), time.time() - t0), flush=True)
 
+    # 尾盘两段式（K-STOCK-025）：14:40 盘中触发时，用「昨日单日十字星」
+    # 候选池 + 当日实时 bar 复核，产出今日尾盘买信号（14:55 执行窗口）。
+    # 非盘中（腾讯末根≠当日）自动退化为空并留 note，不误报。
+    tail_signals, tail_checked, tail_note = [], 0, ""
+    star_candidates = [info["code"] for info in recent + sig_now
+                       if info.get("star_yesterday")]
+    # 候选池不足时补扫一遍湖里昨日单日十字星票（recent 仅含已触发票）
+    if intraday and star_pool:
+        star_candidates = sorted(set(star_candidates) | set(star_pool))
+    if intraday:
+        tail_signals, tail_checked, tail_note = intraday_recheck(star_candidates)
     cache = {
         "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "elapsed_s": round(time.time() - t0, 1),
@@ -86,6 +153,11 @@ def main():
         "signals_now": sig_now,
         "signals_recent": recent,
         "regime_now": regime_now,
+        "star_pool_n": len(star_pool),
+        "intraday_mode": intraday,
+        "tail_signals": tail_signals,
+        "tail_checked": tail_checked,
+        "tail_note": tail_note,
         "disclaimer": "研究态：未回测验证（T-20261009-009 结论前不构成选股依据）",
     }
     # 信号票补名称（对齐青萍之末/缠论池行展示；仅信号票逐个拉快照，量小）
@@ -95,10 +167,13 @@ def main():
             info["name"] = quote_snapshot(info["code"].split(".")[0])["name"]
         except Exception:
             info["name"] = ""
+
     CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
-    print("[done] 扫描 %d 只（跳过 %d）：当日信号 %d，近 %d 日有信号 %d，耗时 %.0fs → %s"
+    print("[done] 扫描 %d 只（跳过 %d）：当日信号 %d，近 %d 日有信号 %d，"
+          "尾盘候选池 %d，尾盘复核 %d 只→信号 %d %s，耗时 %.0fs → %s"
           % (cache["scanned"], skipped, len(sig_now), args.recent_window,
-             len(recent), cache["elapsed_s"], CACHE))
+             len(recent), len(star_pool), tail_checked, len(tail_signals),
+             ("(%s)" % tail_note) if tail_note else "", cache["elapsed_s"], CACHE))
 
 
 if __name__ == "__main__":
