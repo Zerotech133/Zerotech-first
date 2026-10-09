@@ -344,9 +344,12 @@ def render_card(ts_code, days=120):
             d = kg_portal.stock(ts_code, days)
             if d.get("ok"):
                 kg_data = d
-                basic = kg_data.get("basic") or []
-                if basic and basic[0].get("name"):
-                    name = basic[0]["name"]
+                # basic 兼容两种形态：dict（kg_portal 现状）或 list[dict]
+                basic = kg_data.get("basic") or {}
+                if isinstance(basic, list):
+                    basic = basic[0] if basic else {}
+                if basic.get("name"):
+                    name = basic["name"]
                 break
         except Exception:  # noqa: BLE001
             if _attempt == 0:
