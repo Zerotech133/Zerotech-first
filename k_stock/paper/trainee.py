@@ -18,6 +18,10 @@
       [--run poc_x.json] [--dry-run]
   python k_stock/paper/trainee.py routine [--dry-run]        # 每日训练例程
   python k_stock/paper/trainee.py board                      # 成绩单（vs main 基准）
+  python k_stock/paper/trainee.py hire chaser --source qd    # 雇佣（仅 live；A3 配置面）
+  python k_stock/paper/trainee.py fire chaser --source qd    # 解雇（注册表行 status=ended）
+  python k_stock/paper/trainee.py hires                      # 雇佣关系列表
+  python k_stock/paper/trainee.py exec --source qd           # 按雇佣路由落单（07:05 automation 用）
 
 automation 建议（训练期）：07:05 主账本闭环（settle→exec→check-stops→mark）后追加
   trainee.py routine    # 子账本同节奏：撮昨日 pending → 挂/查止损 → 快照
@@ -26,6 +30,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -60,10 +65,98 @@ def list_profiles() -> list[dict]:
 
 def _newest_ai_run() -> Path:
     runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
-                  if not x.name.startswith("poc_qd_"))
+                  if not x.name.startswith(("poc_qd_", "poc_qpzm_")))
     if not runs:
         raise Reject("k_stock/data/ 下无 poc_*.json（AI 通道）")
     return runs[-1]
+
+
+# ---------------- 雇佣交互（A3/K-STOCK-042：配置面，门户永不直接下单） ----------------
+
+HIRES_PATH = HERE / "hires.json"
+STRAT_OF_SOURCE = {"qd": "double_knife", "qpzm": "qingping", "ai_team": "ai_team"}
+
+
+def load_hires() -> dict:
+    """雇佣注册表；缺失/损坏 fail-closed 返回空表（路由零雇佣，不炸 07:05 主闭环）。"""
+    try:
+        d = json.loads(HIRES_PATH.read_text(encoding="utf-8"))
+        if isinstance(d, dict) and isinstance(d.get("hires"), list):
+            return d
+    except Exception:
+        pass
+    return {"hires": []}
+
+
+def _save_hires(d: dict) -> None:
+    HIRES_PATH.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def hire(trader: str, source: str, note: str = "") -> dict:
+    """雇佣 = 策略源路由到 live 交易员档案（只改注册表，次日主闭环生效）。"""
+    if source not in STRAT_OF_SOURCE:
+        raise Reject(f"未知策略源: {source}（可选 {'/'.join(STRAT_OF_SOURCE)}）")
+    prof = load_profile(trader)
+    if prof.get("status") != "live":
+        raise Reject(f"{trader} 状态 {prof.get('status')} ≠ live，不可雇佣")
+    d = load_hires()
+    for h in d["hires"]:
+        if (h.get("trader") == trader and h.get("source") == source
+                and h.get("status") == "active"):
+            raise Reject(f"{trader} 已被 {source} 雇佣（先 fire 再操作）")
+    rec = {"trader": trader, "source": source, "status": "active",
+           "hired_at": datetime.now().isoformat(timespec="seconds"), "note": note}
+    d["hires"].append(rec)
+    _save_hires(d)
+    return rec
+
+
+def fire(trader: str, source: str) -> dict:
+    d = load_hires()
+    for h in d["hires"]:
+        if (h.get("trader") == trader and h.get("source") == source
+                and h.get("status") == "active"):
+            h["status"] = "ended"
+            h["fired_at"] = datetime.now().isoformat(timespec="seconds")
+            _save_hires(d)
+            return h
+    raise Reject(f"无 active 雇佣: {trader}×{source}")
+
+
+def hires_list() -> list[dict]:
+    """注册表 + 档案名册合并视图（前端/审计直接用；悬空雇佣如实保留）。"""
+    profs = {p["id"]: p for p in list_profiles()}
+    return [{**h, "trader_name": profs.get(h.get("trader"), {}).get("name"),
+             "trader_status": profs.get(h.get("trader"), {}).get("status")}
+            for h in load_hires().get("hires", [])]
+
+
+def _newest_run_for(source: str) -> Path:
+    """按策略源取最新产物（qd=poc_qd_* / qpzm=poc_qpzm_* / ai_team=其余 poc_*）。"""
+    prefix = {"qd": "poc_qd_", "qpzm": "poc_qpzm_"}.get(source)
+    if prefix is None:
+        runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
+                      if not x.name.startswith(("poc_qd_", "poc_qpzm_")))
+    else:
+        runs = sorted(DATA_DIR.glob(prefix + "*.json"))
+    if not runs:
+        raise Reject(f"k_stock/data/ 下无 {source} 源产物（{prefix or 'poc_*'}）")
+    return runs[-1]
+
+
+def _hired_profiles(source: str) -> list[dict]:
+    """active 雇佣 → 交易员档案（仅 training/live；悬空雇佣跳过不炸）。"""
+    out = []
+    for h in load_hires().get("hires", []):
+        if h.get("source") != source or h.get("status") != "active":
+            continue
+        try:
+            prof = load_profile(h.get("trader", ""))
+        except Reject:
+            continue
+        if prof.get("status") in ("training", "live"):
+            out.append(prof)
+    return out
 
 
 def _engine_for(profile: dict, market, db: Path | None = None) -> PaperEngine:
@@ -79,21 +172,33 @@ def _engine_for(profile: dict, market, db: Path | None = None) -> PaperEngine:
 # ---------------- 训练动作 ----------------
 
 def exec_for(run_path: str | None = None, who: list[str] | None = None,
-             dry_run: bool = False, db: Path | None = None) -> dict:
-    """同一条 picks run 落到若干训练子账本（conf_floor 在引擎端过滤 BUY）。"""
-    run = Path(run_path) if run_path else _newest_ai_run()
+             dry_run: bool = False, db: Path | None = None,
+             source: str | None = None) -> dict:
+    """同一条 picks run 落到若干训练子账本（conf_floor 在引擎端过滤 BUY）。
+    source 雇佣路由（A3）：传入时只喂 hires.json active 交易员，run 取该源最新
+    产物，strategy 按源标注（qd=double_knife / qpzm=qingping / ai_team=ai_team）。"""
+    if source:
+        profiles = _hired_profiles(source)
+        if not profiles:
+            raise Reject(f"策略源 {source} 无可用雇佣（active 且 training/live）")
+        strategy = STRAT_OF_SOURCE.get(source, "ai_team")
+        run = Path(run_path) if run_path else _newest_run_for(source)
+    else:
+        strategy = "ai_team"
+        run = Path(run_path) if run_path else _newest_ai_run()
+        profiles = list_profiles() if not who else [load_profile(t) for t in who]
+        profiles = [p for p in profiles if p.get("status") in ("training", "live")]
+        if not profiles:
+            raise Reject("无可训练交易员（status=training/live）")
     if not run.exists() and not run.is_absolute():
         run = DATA_DIR / run   # 相对路径按 k_stock/data/ 解析（与 CLI cwd 无关）
-    profiles = list_profiles() if not who else [load_profile(t) for t in who]
-    profiles = [p for p in profiles if p.get("status") in ("training", "live")]
-    if not profiles:
-        raise Reject("无可训练交易员（status=training/live）")
     market = ParquetMarket()   # 行情湖只读，多账本共享一份
-    out = {"run": run.name, "trainees": [], "dry_run": dry_run}
+    out = {"run": run.name, "source": source, "strategy": strategy,
+           "trainees": [], "dry_run": dry_run}
     for prof in profiles:
         eng = _engine_for(prof, market, db)
         min_conf = prof.get("params", {}).get("conf_floor")
-        r = eng.exec_run(run, dry_run=dry_run, strategy="ai_team",
+        r = eng.exec_run(run, dry_run=dry_run, strategy=strategy,
                          account_id=prof["id"], min_conf=min_conf)
         out["trainees"].append({
             "id": prof["id"], "name": prof["name"],
@@ -376,6 +481,8 @@ def main(argv=None) -> int:
     p = sub.add_parser("exec", help="picks run 落训练子账本")
     p.add_argument("--run", default=None)
     p.add_argument("--who", default=None, help="逗号分隔账本 ID（缺省全部 training/live）")
+    p.add_argument("--source", default=None,
+                   help="雇佣路由源（qd/qpzm/ai_team）：只喂 hires.json active 交易员")
     p.add_argument("--dry-run", action="store_true")
     p.set_defaults(fn=_cmd_exec)
 
@@ -387,6 +494,20 @@ def main(argv=None) -> int:
     p = sub.add_parser("board", help="成绩单（vs main 基准）")
     p.add_argument("--json", action="store_true", help="单行 JSON 输出（portal 子进程用）")
     p.set_defaults(fn=_cmd_board)
+
+    p = sub.add_parser("hire", help="雇佣：策略源路由到 live 交易员（仅改注册表）")
+    p.add_argument("trader")
+    p.add_argument("--source", required=True, help="qd / qpzm / ai_team")
+    p.add_argument("--note", default="")
+    p.set_defaults(fn=_cmd_hire)
+
+    p = sub.add_parser("fire", help="解雇：注册表行 status=ended")
+    p.add_argument("trader")
+    p.add_argument("--source", required=True)
+    p.set_defaults(fn=_cmd_fire)
+
+    p = sub.add_parser("hires", help="雇佣关系列表")
+    p.set_defaults(fn=_cmd_hires)
 
     p = sub.add_parser("replay", help="历史重放预筛（临时库，不碰真账本）")
     p.add_argument("--run", default=None)
@@ -415,7 +536,7 @@ def _cmd_list(args) -> int:
 
 def _cmd_exec(args) -> int:
     who = args.who.split(",") if args.who else None
-    r = exec_for(args.run, who, args.dry_run, args.db_path)
+    r = exec_for(args.run, who, args.dry_run, args.db_path, source=args.source)
     tag = "[dry-run] " if args.dry_run else ""
     print(f"{tag}训练落单 {r['run']}:")
     for t in r["trainees"]:
@@ -438,6 +559,35 @@ def _cmd_routine(args) -> int:
         print(f"  {t['name']}({t['id']}): 成交 {t['settled']} 搁置/拒绝 {t['rejected']}"
               f" 挂止损 {len(t['stops_set'])} 触发 {t['stop_triggered']}"
               + (f" 快照 {mk.get('total'):,.2f}" if mk else ""))
+    return 0
+
+
+def _cmd_hire(args) -> int:
+    rec = hire(args.trader, args.source, args.note)
+    print(f"✅ 已雇佣 {rec['trader']} × {rec['source']}"
+          f"（注册表 {HIRES_PATH.name} · 次日 07:05 主闭环生效）")
+    return 0
+
+
+def _cmd_fire(args) -> int:
+    fire(args.trader, args.source)
+    print(f"✅ 已解雇 {args.trader} × {args.source}")
+    return 0
+
+
+def _cmd_hires(args) -> int:
+    rows = hires_list()
+    if not rows:
+        print("（无雇佣记录 · hire <trader> --source <qd/qpzm/ai_team> 开始雇佣）")
+        return 0
+    for h in rows:
+        line = (f"  [{h.get('status', '?'):>6}] {h.get('trader_name') or h['trader']}"
+                f" × {h['source']}  雇于 {h.get('hired_at', '?')}")
+        if h.get("fired_at"):
+            line += f"  解于 {h['fired_at']}"
+        if h.get("note"):
+            line += f"  # {h['note']}"
+        print(line)
     return 0
 
 
