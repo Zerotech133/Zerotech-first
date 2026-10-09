@@ -5028,6 +5028,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _html(self, body):
+        # 055-L4 全站令牌前置：tokens.css 只含 :root 变量（零元素规则），
+        # 对未用令牌的页面无副作用；已带链接的页不重复注入
+        if "</head>" in body and "static/tokens.css" not in body:
+            body = body.replace(
+                "</head>",
+                '<link rel="stylesheet" href="/static/tokens.css"></head>', 1)
         b = body.encode("utf-8")
         b += _BTSEL_TAG.encode("utf-8")   # K255 勾选回测 JS（幂等守卫 window.__k255bt）
         b += _SS_TAG.encode("utf-8")      # 055-L3 短屏化 JS（锚点条+折叠，幂等守卫 window.__SS__）
@@ -14491,7 +14497,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     "<div class='dim' style='display:flex;align-items:center;"
                     "gap:8px;margin:4px 0'><span style='width:86px;"
                     "flex:none'>%s</span><span class='hb' style='width:%dpx'>"
-                    "</span><b style='color:#e6edf3'>%.2f</b></div>"
+                    "</span><b style='color:var(--gray-7)'>%.2f</b></div>"
                     % (e(h), int(v * 180), v)
                     for h, v in (ach.get("scores") or {}).items())
                 h3 = ach.get("h3") or {}
@@ -14546,7 +14552,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         if not r.get("reg"):
                             return ""
                         return (" <span class='bdg' style='border:1px solid "
-                                "#f85149;color:#f85149' title='%s'>⚖ %s</span>"
+                                "var(--red-500);color:var(--red-500)' title='%s'>⚖ %s</span>"
                                 % (e(r.get("tech") or ""), e(r["reg"])))
                     cd = "".join(
                         "<tr><td>%s</td><td><span class='bdg %s'>%s</span>%s</td>"
@@ -14775,7 +14781,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                        "up" if (r["net"] or 0) > 0 else "dn",
                        (r["net"] or 0) / 1e6)
                     for r in hd["recent_moves"][:15]) or ""
-                seats = "".join("<span class='tp' style='color:#8b949e'>%s</span>"
+                seats = "".join("<span class='tp' style='color:var(--gray-5)'>%s</span>"
                                 % e(s) for s in hd["seats"][:8])
                 content = (
                     "<h1>💰 %s</h1><div class='dim' style='margin:2px 0 8px'>"
@@ -14899,33 +14905,33 @@ color:#fff;font-size:13.5px;cursor:pointer}
             "下钻）</h2>"
             "<div class='dim' style='margin:2px 0 6px'>窗口 %d 天 · %d 集团"
             " · 跨集团桥接 %d 条 · 节点大小∝席位规模 · 边宽∝跨集团共现"
-            " · <span style='color:#d29922'>橙边</span>=对手盘为主（净流"
-            "向对冲）· <span style='color:#f85149'>红描边</span>=集团内含"
+            " · <span style='color:var(--ylw-500)'>橙边</span>=对手盘为主（净流"
+            "向对冲）· <span style='color:var(--red-500)'>红描边</span>=集团内含"
             " watchlist 名单外候选 · <b>单击</b>集团=右侧详情 · <b>双击</b>"
             "=展开 top 成员 · 搜索席位可定位所属集团 · 快照 %s</div>"
             "<div style='display:flex;gap:10px;margin:4px 0 6px;"
             "align-items:center;flex-wrap:wrap'>"
             "<input id='kgoq' placeholder='搜索席位/注册主体/集团…' "
             "oninput='window._kgQS()' style='flex:1;min-width:180px;"
-            "background:#0d1117;color:#e6edf3;border:1px solid #30363d;"
+            "background:var(--gray-0);color:var(--gray-7);border:1px solid var(--gray-4);"
             "border-radius:6px;font-size:12px;padding:5px 10px' "
             "autocomplete='off'>"
-            "<button onclick='window._kgCSV()' style='background:#21262d;"
-            "color:#58a6ff;border:1px solid #30363d;border-radius:6px;"
+            "<button onclick='window._kgCSV()' style='background:var(--gray-3);"
+            "color:var(--blu-500);border:1px solid var(--gray-4);border-radius:6px;"
             "font-size:12px;padding:4px 12px;cursor:pointer'>⬇ CSV</button>"
-            "<span id='kgors' style='font-size:12px;color:#8b949e'></span>"
+            "<span id='kgors' style='font-size:12px;color:var(--gray-5)'></span>"
             "</div>"
             "<div id='kgores' style='display:none;margin:0 0 6px'></div>"
             "<div style='display:flex;gap:10px;align-items:stretch'>"
             "<div id='kgov' style='flex:1.7;min-width:0;height:560px;"
-            "border:1px solid #30363d;border-radius:8px;background:#0d1117'"
+            "border:1px solid var(--gray-4);border-radius:8px;background:var(--gray-0)'"
             "></div>"
             "<div id='kgod' style='flex:1;min-width:260px;max-width:360px;"
-            "border:1px solid #30363d;border-radius:8px;background:#0d1117;"
+            "border:1px solid var(--gray-4);border-radius:8px;background:var(--gray-0);"
             "padding:10px 12px;overflow:auto'></div></div>"
             "<div id='kgotip' style='display:none;position:fixed;z-index:"
-            "98;background:#161b22;border:1px solid #30363d;border-radius:"
-            "8px;padding:8px 10px;font-size:12px;color:#e6edf3;pointer-"
+            "98;background:var(--gray-2);border:1px solid var(--gray-4);border-radius:"
+            "8px;padding:8px 10px;font-size:12px;color:var(--gray-7);pointer-"
             "events:none;max-width:340px;box-shadow:0 4px 14px rgba(0,0,"
             "0,.5)'></div></div>\n"
             "<script src='/static/g6.min.js'></script>\n<script>\n")
@@ -14999,15 +15005,15 @@ function selGroup(id, scroll){
     +'<div class="dim" style="font-size:12px;line-height:1.7">'
     +'锚点 '+(g.anchor?esc(g.anchor):'—')+'<br>'
     +'席位 <b>'+g.n_seats+'</b> · 池内对 <b>'+g.n_pairs+'</b> · 共现 '
-    +g.w_total+'<br>watchlist 候选 <b style="color:#f85149">'+g.wl_n
+    +g.w_total+'<br>watchlist 候选 <b style="color:var(--red-500)">'+g.wl_n
     +'</b> · 成员共现度合计 '+g.deg_sum+'</div>'
-    +'<div style="margin:8px 0 4px;font-size:12px;color:#8b949e">Top 席位'
+    +'<div style="margin:8px 0 4px;font-size:12px;color:var(--gray-5)">Top 席位'
     +'（按共现度，双击左侧节点可展开全量前 8）</div>'
     +'<table class="sticky"><tr><th>席位/主体</th><th>上榜</th><th>共现'
     +'</th></tr>'+(rows||'<tr><td colspan=3 class="dim">无</td></tr>')
     +'</table>'
     +'<button onclick="window._kgNet(\''+esc(g.short).replace(/'/g,"\\'")
-    +'\')" style="margin:10px 0 4px;background:#1f6feb;color:#fff;border:'
+    +'\')" style="margin:10px 0 4px;background:var(--blu-600);color:#fff;border:'
     +'none;border-radius:6px;font-size:12px;padding:6px 14px;cursor:'
     +'pointer">↓ 在席位网络画布中查看本集团</button>';
   redraw();
@@ -15020,11 +15026,11 @@ function detailDefault(){
     +'border-radius:50%;background:'+g._c+';margin-right:5px"></span>'
     +'<a href="javascript:void(0)" onclick="window._kgSel(\''+g.id+'\')">'
     +esc(g.short)+'</a></td><td>'+g.n_seats+'</td><td>'+g.w_total
-    +'</td><td>'+(g.wl_n?'<span style="color:#f85149">'+g.wl_n
+    +'</td><td>'+(g.wl_n?'<span style="color:var(--red-500)">'+g.wl_n
     +'</span>':'0')+'</td></tr>';}).join('');
   var ls=D.links.map(function(l){return '<tr><td>'+esc((byG[l.a]||{})
     .short)+' × '+esc((byG[l.b]||{}).short)+'</td><td>'+l.w+'</td><td>'
-    +(l.opp*2>l.w?'<span style="color:#d29922">对手 '+l.opp+'</span>':l.opp)
+    +(l.opp*2>l.w?'<span style="color:var(--ylw-500)">对手 '+l.opp+'</span>':l.opp)
     +'</td></tr>';}).join('');
   d.innerHTML='<div style="font-weight:600;font-size:13px;margin:2px 0 6px">'
     +'总览 · 按集团</div><table class="sticky"><tr><th>集团</th><th>席位'
@@ -15053,10 +15059,10 @@ window._kgQS=function(){
   box.style.display='';
   box.innerHTML=hits.slice(0,8).map(function(h){
     return '<div style="display:inline-block;margin:2px 6px 2px 0"><button '
-    +'onclick="window._kgSel(\''+h.g.id+'\')" style="background:#21262d;'
-    +'color:#58a6ff;border:1px solid #30363d;border-radius:6px;font-size:'
+    +'onclick="window._kgSel(\''+h.g.id+'\')" style="background:var(--gray-3);'
+    +'color:var(--blu-500);border:1px solid var(--gray-4);border-radius:6px;font-size:'
     +'12px;padding:3px 10px;cursor:pointer">'+esc(h.g.short)
-    +' <span style="color:#8b949e">('+esc(h.why)+')</span></button></div>';})
+    +' <span style="color:var(--gray-5)">('+esc(h.why)+')</span></button></div>';})
     .join('')||'<span class="dim">无匹配（仅索引 top 成员，全量席位用'
     +'席位网络画布的集团过滤）</span>';};
 window._kgCSV=function(){
@@ -15084,7 +15090,7 @@ try{
     LASTC=Date.now();
     if(String(id).indexOf('m|')===0){var mi=memIdx(id);
       if(mi)tipShow('<b>'+esc(mi.m.reg||mi.m.seat)+'</b><br>上榜 '
-        +mi.m.n+' · 共现度 '+mi.m.deg+'<br><span style="color:#8b949e">'
+        +mi.m.n+' · 共现度 '+mi.m.deg+'<br><span style="color:var(--gray-5)">'
         +esc(mi.m.seat)+'</span>', e.client?e.client.x:e.clientX,
         e.client?e.client.y:e.clientY);
       return;}
@@ -15099,7 +15105,7 @@ try{
     tipShow('<b style="font-size:13px">'+esc(g.name)+'</b><br>席位 '
       +g.n_seats+' · 池内对 '+g.n_pairs+' · 共现 '+g.w_total
       +'<br>watchlist 候选 '+g.wl_n+' · 锚点 '+(g.anchor?esc(g.anchor):'—')
-      +(brid.length?'<br><span style="color:#8b949e">桥接：'
+      +(brid.length?'<br><span style="color:var(--gray-5)">桥接：'
         +brid.map(function(l){return esc((byG[l.a]===g?byG[l.b]:byG[l.a])
           .short)+'×'+l.w;}).join(' · ')+'</span>':''),
       0, 0);});
@@ -15153,7 +15159,7 @@ try{
           +g.n_seats+' · 池内对 '+g.n_pairs+' · 共现 '+g.w_total
           +'<br>watchlist 候选 '+g.wl_n+' · 锚点 '
           +(g.anchor?esc(g.anchor):'—')
-          +(brid.length?'<br><span style="color:#8b949e">桥接：'
+          +(brid.length?'<br><span style="color:var(--gray-5)">桥接：'
             +brid.map(function(l){return esc((byG[l.a]===g?byG[l.b]
               :byG[l.a]).short)+'×'+l.w;}).join(' · ')+'</span>':'');}
       tipShow(HOVH,e.clientX,e.clientY);},false);
@@ -15174,7 +15180,7 @@ try{
       LASTC=Date.now();
       if(hit.m){tipShow('<b>'+esc(hit.m.reg||hit.m.seat)+'</b><br>上榜 '
         +hit.m.n+' · 共现度 '+hit.m.deg
-        +'<br><span style="color:#8b949e">'+esc(hit.m.seat)
+        +'<br><span style="color:var(--gray-5)">'+esc(hit.m.seat)
         +'</span>',e.clientX,e.clientY);return;}
       selGroup(hit.id,false);},false);
     mbox.addEventListener('dblclick',function(e){
@@ -15185,7 +15191,7 @@ try{
       EXP=(EXP===hit.id)?null:hit.id;redraw();},false);
   }catch(e2){}
 }catch(err){
-  document.getElementById('kgov').innerHTML='<div style="color:#f85149;'
+  document.getElementById('kgov').innerHTML='<div style="color:var(--red-500);'
   +'padding:20px;font-size:13px">G6 画布初始化失败：'+esc(err.message)
   +'</div>';}
 detailDefault();
@@ -15225,82 +15231,82 @@ if(m0){var gid=decodeURIComponent(m0[1]);if(byG[gid])selGroup(gid,false);}
             "<div class='dim' style='margin:2px 0 6px'>窗口 %d 天（跟随"
             "集团快照口径，不受窗口切换影响）· 席位同日同标的共现 ≥%d 次"
             "连边 · 节点大小∝共现度 · 边宽∝共现次数 · <span style='color:"
-            "#f85149'>红描边</span>=watchlist 名单外候选 · <span style='"
-            "color:#3fb950'>绿边</span>=同向同盟 / <span style='color:"
-            "#d29922'>橙边</span>=对手盘（净流向对冲）· 点图例按集团过滤"
+            "var(--red-500)'>红描边</span>=watchlist 名单外候选 · <span style='"
+            "color:var(--grn-500)'>绿边</span>=同向同盟 / <span style='color:"
+            "var(--ylw-500)'>橙边</span>=对手盘（净流向对冲）· 点图例按集团过滤"
             " · 悬停邻域聚焦 · 枢纽席位（共现度&gt;500）弱共现（&lt;8 次）"
             "默认折叠，单击枢纽弹清单释放 · 右键节点三态聚焦（一跳→二跳"
             "→清除）· ⏱ 回放按交易日推进（累计口径）· <span style='"
-            "color:#8b949e'>虚线=跨集团桥接</span> · 画布下方图谱分析"
+            "color:var(--gray-5)'>虚线=跨集团桥接</span> · 画布下方图谱分析"
             "（PageRank/介数/集团统计/Louvain 图社区，随回放联动）· "
-            "<span style='color:#a371f7'>双击节点=席位画像（影响力演化/"
-            "同盟/对手）</span> · <span style='color:#f85149'>⚡ 突变=最近 "
-            "20 日新结盟/突增边检测</span> · <span style='color:#3fb950'>⚖ 对比=双时点结构 diff</span></div>"
+            "<span style='color:var(--pur-500)'>双击节点=席位画像（影响力演化/"
+            "同盟/对手）</span> · <span style='color:var(--red-500)'>⚡ 突变=最近 "
+            "20 日新结盟/突增边检测</span> · <span style='color:var(--grn-500)'>⚖ 对比=双时点结构 diff</span></div>"
             "<div style='margin:4px 0 6px'>"
             "<button id='gnb-force' onclick='window._gl(\"force\")' "
-            "style='background:#21262d;color:#58a6ff;border:1px solid "
-            "#30363d;border-radius:6px;font-size:12px;padding:3px 12px;"
+            "style='background:var(--gray-3);color:var(--blu-500);border:1px solid "
+            "var(--gray-4);border-radius:6px;font-size:12px;padding:3px 12px;"
             "cursor:pointer'>力导向</button> "
             "<button id='gnb-circle' onclick='window._gl(\"circle\")' "
-            "style='background:#21262d;color:#58a6ff;border:1px solid "
-            "#30363d;border-radius:6px;font-size:12px;padding:3px 12px;"
+            "style='background:var(--gray-3);color:var(--blu-500);border:1px solid "
+            "var(--gray-4);border-radius:6px;font-size:12px;padding:3px 12px;"
             "cursor:pointer'>环形·按集团</button> "
             "<button id='gnb-grid' onclick='window._gl(\"grid\")' "
-            "style='background:#21262d;color:#58a6ff;border:1px solid "
-            "#30363d;border-radius:6px;font-size:12px;padding:3px 12px;"
+            "style='background:var(--gray-3);color:var(--blu-500);border:1px solid "
+            "var(--gray-4);border-radius:6px;font-size:12px;padding:3px 12px;"
             "cursor:pointer'>网格·按度数</button> "
             "<button id='gnb-clr' onclick='window._gc()' "
-            "style='background:#21262d;color:#a371f7;border:1px solid "
-            "#30363d;border-radius:6px;font-size:12px;padding:3px 12px;"
+            "style='background:var(--gray-3);color:var(--pur-500);border:1px solid "
+            "var(--gray-4);border-radius:6px;font-size:12px;padding:3px 12px;"
             "cursor:pointer'>🎨 着色·注册集团</button> "
             "<button id='gnb-sg' onclick='window._gs()' "
-            "style='background:#21262d;color:#f85149;border:1px solid "
-            "#30363d;border-radius:6px;font-size:12px;padding:3px 12px;"
+            "style='background:var(--gray-3);color:var(--red-500);border:1px solid "
+            "var(--gray-4);border-radius:6px;font-size:12px;padding:3px 12px;"
             "cursor:pointer' title='开关突变边高亮与信号表'>⚡ 突变</button> "
             "<button id='gnb-cmp' onclick='window._gx()' "
-            "style='background:#21262d;color:#3fb950;border:1px solid "
-            "#30363d;border-radius:6px;font-size:12px;padding:3px 12px;"
+            "style='background:var(--gray-3);color:var(--grn-500);border:1px solid "
+            "var(--gray-4);border-radius:6px;font-size:12px;padding:3px 12px;"
             "cursor:pointer' title='双时点结构对比（新增/增长边+影响力升降）'>⚖ 对比</button> "
             "<button onclick='window._ge(\"csv\")' style='background:"
-            "#21262d;color:#58a6ff;border:1px solid #30363d;border-radius:"
+            "var(--gray-3);color:var(--blu-500);border:1px solid var(--gray-4);border-radius:"
             "6px;font-size:12px;padding:3px 10px;cursor:pointer' "
             "title='当前时点全图快照 CSV（节点/边/分析/信号）'>⬇ CSV</button> "
             "<button onclick='window._ge(\"json\")' style='background:"
-            "#21262d;color:#58a6ff;border:1px solid #30363d;border-radius:"
+            "var(--gray-3);color:var(--blu-500);border:1px solid var(--gray-4);border-radius:"
             "6px;font-size:12px;padding:3px 10px;cursor:pointer' "
             "title='全图快照 JSON'>⬇ JSON</button> "
             "<button onclick='window._ge(\"png\")' style='background:"
-            "#21262d;color:#58a6ff;border:1px solid #30363d;border-radius:"
+            "var(--gray-3);color:var(--blu-500);border:1px solid var(--gray-4);border-radius:"
             "6px;font-size:12px;padding:3px 10px;cursor:pointer' "
             "title='画布 PNG（2 倍分辨率）'>⬇ PNG</button>"
             "<span id='gnfoc' style='display:none;margin-left:12px;"
-            "font-size:12px;color:#d29922'></span>"
+            "font-size:12px;color:var(--ylw-500)'></span>"
             "<span id='gncomm' style='display:none;margin-left:12px;"
-            "font-size:12px;color:#58a6ff'>🔒 已过滤集团：<b id='gncommt'"
+            "font-size:12px;color:var(--blu-500)'>🔒 已过滤集团：<b id='gncommt'"
             "></b> <a href='javascript:window._kgSetComm(\"\")' style='"
-            "color:#8b949e;cursor:pointer;text-decoration:underline'>✕ 清除"
+            "color:var(--gray-5);cursor:pointer;text-decoration:underline'>✕ 清除"
             "</a></span></div>"
             "<div style='margin:4px 0 6px;display:flex;align-items:"
             "center;gap:8px'>"
-            "<span style='font-size:12px;color:#8b949e;white-space:"
+            "<span style='font-size:12px;color:var(--gray-5);white-space:"
             "nowrap'>⏱ 回放</span>"
             "<button id='gnplay' onclick='window._gp()' "
-            "style='background:#21262d;color:#58a6ff;border:1px solid "
-            "#30363d;border-radius:6px;font-size:12px;padding:3px 12px;"
+            "style='background:var(--gray-3);color:var(--blu-500);border:1px solid "
+            "var(--gray-4);border-radius:6px;font-size:12px;padding:3px 12px;"
             "cursor:pointer;white-space:nowrap'>▶ 播放</button>"
             "<input type='range' id='gnt' min='0' max='365' value='365' "
             "oninput='window._gt(this.value)' style='flex:1;accent-color:"
-            "#1f6feb;cursor:pointer'>"
-            "<span id='gntl' style='font-size:12px;color:#8b949e;"
+            "var(--blu-600);cursor:pointer'>"
+            "<span id='gntl' style='font-size:12px;color:var(--gray-5);"
             "white-space:nowrap'>全期</span></div>"
-            "<div id='gnet' style='height:620px;border:1px solid #30363d;"
-            "border-radius:8px;background:#0d1117'></div>"
+            "<div id='gnet' style='height:620px;border:1px solid var(--gray-4);"
+            "border-radius:8px;background:var(--gray-0)'></div>"
             "<div id='gnana' style='margin-top:8px'></div>"
             "<div id='gnmodal' style='display:none;position:fixed;inset:0;"
             "background:rgba(0,0,0,.65);z-index:99;align-items:center;"
             "justify-content:center' onclick=\"if(event.target===this)"
             "this.style.display='none'\"><div id='gnbox' style='background:"
-            "#161b22;border:1px solid #30363d;border-radius:10px;max-width:"
+            "var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;max-width:"
             "680px;width:92%%;max-height:72vh;overflow:auto;padding:14px "
             "16px'></div></div></div>\n"
             "<script src='/static/echarts.min.js'></script>\n<script>\n")
@@ -15426,14 +15432,14 @@ function render(){
         return p.data.source+'<br>× '+p.data.target+
           '<br>共现 <b>'+p.data.w+'</b> 次 · 同向 '+(p.data.w-p.data.o)+
           ' / 对手 '+p.data.o+((TI<FULL)
-          ?'<br><span style="color:#8b949e">截至 '+dates[TI]+'（累计）</span>'
+          ?'<br><span style="color:var(--gray-5)">截至 '+dates[TI]+'（累计）</span>'
           :'');
       var n=bySeat[p.data.id];
       var ci=(AA.c2map||{})[p.data.id];
       return '<b>'+p.data.id+'</b><br>集团：'+(n.comm||'未分组')+
         ((ci===undefined)?'':('<br>图社区：社区'+(ci+1)))+
         '<br>主体：'+(n.reg||'—')+'<br>上榜 '+n.n+' 次 · 共现度 '+n.deg+
-        (p.data.foldN?'<br><span style="color:#d29922">已折叠 '+
+        (p.data.foldN?'<br><span style="color:var(--ylw-500)">已折叠 '+
          p.data.foldN+' 条弱共现（单击释放）</span>':'');}},
     legend:{data:catsNow.map(function(c){return c.name;}),
       textStyle:{color:'#8b949e', fontSize:11}, top:4},
@@ -15666,11 +15672,11 @@ function anaPanel(){
       var n=bySeat[x[0]]||{};
       return "<tr><td style='padding:1px 6px;color:#6e7681'>"+(i+1)+
         "</td><td style='padding:1px 6px'><a href='javascript:window._afoc(\""+
-        x[0]+"\")' style='color:#58a6ff' title='"+x[0]+"'>"+shortN(n)+
-        "</a></td><td style='padding:1px 6px;text-align:right;color:#c9d1d9'>"+
-        fmt(x[1])+"</td><td style='padding:1px 6px;color:#8b949e;font-size:11px'>"+
+        x[0]+"\")' style='color:var(--blu-500)' title='"+x[0]+"'>"+shortN(n)+
+        "</a></td><td style='padding:1px 6px;text-align:right;color:var(--gray-6)'>"+
+        fmt(x[1])+"</td><td style='padding:1px 6px;color:var(--gray-5);font-size:11px'>"+
         ((n.comm||'—').replace(' 集团',''))+"</td></tr>";}).join('');}
-  var th="<tr style='color:#8b949e;font-size:11px'><td style='padding:2px 6px'>#</td>"+
+  var th="<tr style='color:var(--gray-5);font-size:11px'><td style='padding:2px 6px'>#</td>"+
     "<td style='padding:2px 6px'>席位</td><td style='padding:2px 6px'>分值</td>"+
     "<td style='padding:2px 6px'>集团</td></tr>";
   var cs=a.comm.map(function(c){
@@ -15681,9 +15687,9 @@ function anaPanel(){
       "</td><td style='padding:1px 6px;text-align:right'>"+
       (c.dens*100).toFixed(0)+"%</td></tr>";}).join('');
   el.innerHTML=
-    "<div style='border:1px solid #30363d;border-radius:8px;background:#0d1117;padding:10px 12px'>"+
+    "<div style='border:1px solid var(--gray-4);border-radius:8px;background:var(--gray-0);padding:10px 12px'>"+
     "<div style='font-weight:600;margin-bottom:2px'>📊 图谱分析"+
-    "<span style='font-weight:400;color:#8b949e;font-size:12px'> · "+cap+
+    "<span style='font-weight:400;color:var(--gray-5);font-size:12px'> · "+cap+
     " · 节点 "+a.N+" · 边 "+a.E+" · 跨集团边 "+a.cross+"</span></div>"+
     "<div class='dim' style='font-size:11px;margin-bottom:6px'>口径：当时时间"+
     "内全部共现边（含折叠弱边，视觉折叠不影响分析）· 点击席位=一跳聚焦定位</div>"+
@@ -15699,30 +15705,30 @@ function anaPanel(){
         return list.map(function(x){
           var pp=x[0].split('|');
           return "<tr><td style='padding:1px 6px'><a href='javascript:window._afoc(\""+
-            pp[0]+"\")' style='color:#58a6ff' title='"+pp[0]+" ↔ "+pp[1]+"'>"+
+            pp[0]+"\")' style='color:var(--blu-500)' title='"+pp[0]+" ↔ "+pp[1]+"'>"+
             shortN(bySeat[pp[0]]||{})+" ↔ "+shortN(bySeat[pp[1]]||{})+
             "</a></td><td style='padding:1px 6px;text-align:right;color:"+
             color+"'>"+x[1]+((x[2]!==undefined)
-            ?("<span style='color:#8b949e;font-size:11px'> ("+x[2]+"→"+
+            ?("<span style='color:var(--gray-5);font-size:11px'> ("+x[2]+"→"+
               (x[2]+x[1])+")</span>"):'')+
             "</td></tr>";}).join('')||
           "<tr><td colspan='2' class='dim' style='padding:4px 6px'>无</td></tr>";}
       function mvRows(ms){
         return ms.map(function(m){
           return "<tr><td style='padding:1px 6px'><a href='javascript:window._afoc(\""+
-            m.s+"\")' style='color:#58a6ff'>"+shortN(bySeat[m.s]||{})+
-            "</a></td><td style='padding:1px 6px;text-align:right;color:#8b949e'>"+
+            m.s+"\")' style='color:var(--blu-500)'>"+shortN(bySeat[m.s]||{})+
+            "</a></td><td style='padding:1px 6px;text-align:right;color:var(--gray-5)'>"+
             m.r0+" → "+m.r1+
             "</td><td style='padding:1px 6px;text-align:right;color:"+
             (m.d>0?'#3fb950':'#f85149')+"'>"+(m.d>0?'+':'')+m.d+
             "</td></tr>";}).join('')||
           "<tr><td colspan='3' class='dim' style='padding:4px 6px'>无</td></tr>";}
-      return "<div style='color:#3fb950;font-size:12px;margin:0 0 2px'>⚖ 双时点对比"+
+      return "<div style='color:var(--grn-500);font-size:12px;margin:0 0 2px'>⚖ 双时点对比"+
         "（基准 <select id='gc-t0' onchange='window._cs(0,this.value)' "+
-        "style='background:#0d1117;color:#3fb950;border:1px solid #30363d;"+
+        "style='background:var(--gray-0);color:var(--grn-500);border:1px solid var(--gray-4);"+
         "border-radius:4px;font-size:11px'>"+opts(c.t0)+"</select> → 对比 "+
         "<select id='gc-t1' onchange='window._cs(1,this.value)' "+
-        "style='background:#0d1117;color:#3fb950;border:1px solid #30363d;"+
+        "style='background:var(--gray-0);color:var(--grn-500);border:1px solid var(--gray-4);"+
         "border-radius:4px;font-size:11px'>"+opts(c.t1)+"</select> · "+
         "对比日跟随回放滑杆 · 画布绿色=T1 新增边 · 点击定位）</div>"+
         "<div class='dim' style='font-size:11px;margin:0 0 4px'>基准 "+
@@ -15731,17 +15737,17 @@ function anaPanel(){
         " · 边 "+c.R1.E+" · 跨集团 "+
         c.R1.cross+"（新增边 "+c.nAdd+" · 增长边 "+c.nGain+"）</div>"+
         "<div style='display:flex;gap:16px;flex-wrap:wrap'>"+
-        "<div style='flex:1;min-width:240px'><div style='color:#3fb950;font-size:12px;margin:2px 0'>新增边 Top8（T1 有·T0 无，按 T1 共现）</div>"+
+        "<div style='flex:1;min-width:240px'><div style='color:var(--grn-500);font-size:12px;margin:2px 0'>新增边 Top8（T1 有·T0 无，按 T1 共现）</div>"+
         "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
         pairRows(c.added,'#3fb950')+"</table></div>"+
-        "<div style='flex:1;min-width:240px'><div style='color:#d29922;font-size:12px;margin:2px 0'>增长最快 Top8（区间共现增量，累计口径边不消失）</div>"+
+        "<div style='flex:1;min-width:240px'><div style='color:var(--ylw-500);font-size:12px;margin:2px 0'>增长最快 Top8（区间共现增量，累计口径边不消失）</div>"+
         "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
         pairRows(c.gains,'#d29922')+"</table></div></div>"+
         "<div style='display:flex;gap:16px;flex-wrap:wrap;margin-top:4px'>"+
-        "<div style='flex:1;min-width:240px'><div style='color:#3fb950;font-size:12px;margin:2px 0'>影响力上升 Top5（PR 排名变化）</div>"+
+        "<div style='flex:1;min-width:240px'><div style='color:var(--grn-500);font-size:12px;margin:2px 0'>影响力上升 Top5（PR 排名变化）</div>"+
         "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
         mvRows(c.up)+"</table></div>"+
-        "<div style='flex:1;min-width:240px'><div style='color:#f85149;font-size:12px;margin:2px 0'>影响力下降 Top5</div>"+
+        "<div style='flex:1;min-width:240px'><div style='color:var(--red-500);font-size:12px;margin:2px 0'>影响力下降 Top5</div>"+
         "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
         mvRows(c.down)+"</table></div></div>";})()+
     (function(){
@@ -15749,58 +15755,58 @@ function anaPanel(){
       var sg=surge();
       var body=sg.list.length?
         "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
-        "<tr style='color:#8b949e;font-size:11px'><td style='padding:2px 6px'>席位对</td>"+
+        "<tr style='color:var(--gray-5);font-size:11px'><td style='padding:2px 6px'>席位对</td>"+
         "<td style='padding:2px 6px'>类型</td>"+
         "<td style='padding:2px 6px;text-align:right'>窗口共现</td>"+
         "<td style='padding:2px 6px;text-align:right'>首现/倍数</td></tr>"+
         sg.list.slice(0,12).map(function(r){
           return "<tr><td style='padding:1px 6px'><a href='javascript:window._afoc(\""+
-            r.a+"\")' style='color:#58a6ff' title='"+r.a+" ↔ "+r.b+"'>"+
+            r.a+"\")' style='color:var(--blu-500)' title='"+r.a+" ↔ "+r.b+"'>"+
             shortN(bySeat[r.a]||{})+" ↔ "+shortN(bySeat[r.b]||{})+
             "</a></td><td style='padding:1px 6px;color:"+
             (r.type==='新结盟'?'#f85149':'#d29922')+"'>"+r.type+
             "</td><td style='padding:1px 6px;text-align:right'>"+r.winW+
-            "</td><td style='padding:1px 6px;text-align:right;color:#8b949e'>"+
+            "</td><td style='padding:1px 6px;text-align:right;color:var(--gray-5)'>"+
             (r.type==='新结盟'?r.first:(r.ratio.toFixed(1)+'x'))+
             "</td></tr>";}).join('')+"</table>"
         :"<div class='dim' style='font-size:12px;padding:2px 6px'>窗口内无突变信号</div>";
-      return "<div style='color:#f85149;font-size:12px;margin:0 0 2px'>⚡ 突变信号"+
+      return "<div style='color:var(--red-500);font-size:12px;margin:0 0 2px'>⚡ 突变信号"+
         "（最近 20 交易日 · "+sg.list.length+" 条 · 新结盟=窗口内首现≥5 次 · "+
         "突增=窗口日均≥历史 3 倍 · 点击定位）</div>"+body;})()+
     "<div style='display:flex;gap:16px;flex-wrap:wrap'>"+
-    "<div style='flex:1;min-width:260px'><div style='color:#d29922;font-size:12px;margin:2px 0'>影响力 Top10（PageRank d=0.85）</div>"+
+    "<div style='flex:1;min-width:260px'><div style='color:var(--ylw-500);font-size:12px;margin:2px 0'>影响力 Top10（PageRank d=0.85）</div>"+
     "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+th+
     rows(a.pr,function(v){return v.toFixed(4);})+"</table></div>"+
-    "<div style='flex:1;min-width:260px'><div style='color:#58a6ff;font-size:12px;margin:2px 0'>桥接 Top10（介数中心性）</div>"+
+    "<div style='flex:1;min-width:260px'><div style='color:var(--blu-500);font-size:12px;margin:2px 0'>桥接 Top10（介数中心性）</div>"+
     "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+th+
     rows(a.btw,function(v){return v.toFixed(1);})+"</table></div></div>"+
-    "<div style='color:#3fb950;font-size:12px;margin:8px 0 2px'>集团统计"+
+    "<div style='color:var(--grn-500);font-size:12px;margin:8px 0 2px'>集团统计"+
     "（内聚密度=集团内边/成员完全图边数）</div>"+
     "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
-    "<tr style='color:#8b949e;font-size:11px'><td style='padding:2px 6px'>集团</td>"+
+    "<tr style='color:var(--gray-5);font-size:11px'><td style='padding:2px 6px'>集团</td>"+
     "<td style='padding:2px 6px;text-align:right'>当时成员</td>"+
     "<td style='padding:2px 6px;text-align:right'>集团内边</td>"+
     "<td style='padding:2px 6px;text-align:right'>跨集团边</td>"+
     "<td style='padding:2px 6px;text-align:right'>内聚密度</td></tr>"+
     cs+"</table>"+
-    "<div style='color:#a371f7;font-size:12px;margin:8px 0 2px'>图社区发现"+
+    "<div style='color:var(--pur-500);font-size:12px;margin:8px 0 2px'>图社区发现"+
     "（Louvain 加权模块度 Q="+a.Q.toFixed(3)+" · "+a.c2.length+" 社区 · "+
     "对照：注册集团划分 Q="+a.Qreg.toFixed(3)+"）</div>"+
     "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
-    "<tr style='color:#8b949e;font-size:11px'><td style='padding:2px 6px'>社区</td>"+
+    "<tr style='color:var(--gray-5);font-size:11px'><td style='padding:2px 6px'>社区</td>"+
     "<td style='padding:2px 6px;text-align:right'>成员</td>"+
     "<td style='padding:2px 6px;text-align:right'>社区内边</td>"+
     "<td style='padding:2px 6px;text-align:right'>跨社区边</td>"+
     "<td style='padding:2px 6px'>主注册集团（纯度）</td>"+
     "<td style='padding:2px 6px'>核心席位（PageRank Top2）</td></tr>"+
     a.c2.map(function(c,i){
-      return "<tr><td style='padding:1px 6px;color:#a371f7'>社区"+(i+1)+
+      return "<tr><td style='padding:1px 6px;color:var(--pur-500)'>社区"+(i+1)+
         "</td><td style='padding:1px 6px;text-align:right'>"+c.m+
         "</td><td style='padding:1px 6px;text-align:right'>"+c.inner+
         "</td><td style='padding:1px 6px;text-align:right'>"+c.cross+
         "</td><td style='padding:1px 6px'>"+c.main+
-        " <span style='color:#8b949e;font-size:11px'>"+c.purity+"</span></td>"+
-        "<td style='padding:1px 6px;font-size:11px;color:#c9d1d9'>"+c.core+
+        " <span style='color:var(--gray-5);font-size:11px'>"+c.purity+"</span></td>"+
+        "<td style='padding:1px 6px;font-size:11px;color:var(--gray-6)'>"+c.core+
         "</td></tr>";}).join('')+"</table>"+
     "<div class='dim' style='font-size:11px;margin-top:4px'>图社区=按共现"+
     "结构自动聚类（与注册集团独立）· 工具条『着色』切换画布按社区着色 · "+
@@ -15817,8 +15823,8 @@ function focBar(){
   if(!FOC){el.style.display='none';el.innerHTML='';return;}
   el.style.display='inline';
   el.innerHTML='🔎 '+FOC.seat+'（'+FOC.hop+' 跳）· 再右键切换 / 第三次清除 '+
-    "<a href='javascript:window._gfoc()' style='color:#58a6ff'>手动清除</a> · "+
-    "<a href='javascript:window._prof(\""+FOC.seat+"\")' style='color:#a371f7'>画像</a>";}
+    "<a href='javascript:window._gfoc()' style='color:var(--blu-500)'>手动清除</a> · "+
+    "<a href='javascript:window._prof(\""+FOC.seat+"\")' style='color:var(--pur-500)'>画像</a>";}
 syncBtns();focBar();
 var gnt=document.getElementById('gnt');
 if(gnt){gnt.max=FULL||1;gnt.value=TI;}
@@ -15893,8 +15899,8 @@ chart.on('click', function(p){
     return "<tr><td style='padding:2px 6px' title='"+x.peer+"'>"+
       ((n&&(n.reg||x.peer))||x.peer).slice(0,26)+"</td><td style='padding:"+
       "2px 6px'>"+x.w+"</td><td style='padding:2px 6px'><button onclick='"+
-      "window._rl("+i+")' style='cursor:pointer;background:#21262d;color:"+
-      "#58a6ff;border:1px solid #30363d;border-radius:5px;font-size:11px;"+
+      "window._rl("+i+")' style='cursor:pointer;background:var(--gray-3);color:"+
+      "var(--blu-500);border:1px solid var(--gray-4);border-radius:5px;font-size:11px;"+
       "padding:1px 8px'>上图</button></td></tr>";}).join('');
   document.getElementById('gnbox').innerHTML=
     "<div style='font-weight:600;margin-bottom:6px'>枢纽席位折叠清单"+
@@ -15966,11 +15972,11 @@ window._prof=function(seat){
     return list.map(function(x){
       var pn=bySeat[x[0]]||{};
       return "<tr><td style='padding:1px 6px'><a href='javascript:window._afoc(\""+
-        x[0]+"\")' style='color:#58a6ff' title='"+x[0]+"'>"+shortN(pn)+
+        x[0]+"\")' style='color:var(--blu-500)' title='"+x[0]+"'>"+shortN(pn)+
         "</a> <a href='javascript:window._prof(\""+x[0]+
-        "\")' style='color:#a371f7;font-size:10px'>📈</a></td><td style='padding:1px 6px;text-align:right'>"+
-        x[1]+"</td><td style='padding:1px 6px;text-align:right;color:#8b949e'>"+
-        x[2]+"</td><td style='padding:1px 6px;color:#8b949e;font-size:11px'>"+
+        "\")' style='color:var(--pur-500);font-size:10px'>📈</a></td><td style='padding:1px 6px;text-align:right'>"+
+        x[1]+"</td><td style='padding:1px 6px;text-align:right;color:var(--gray-5)'>"+
+        x[2]+"</td><td style='padding:1px 6px;color:var(--gray-5);font-size:11px'>"+
         ((pn.comm||'—').replace(' 集团',''))+"</td></tr>";}).join('')||
       "<tr><td colspan='4' class='dim' style='padding:4px 6px'>当时无</td></tr>";}
   var cap=(TI>=FULL)?'全期':('截至 '+dates[TI]+'（累计）');
@@ -15981,46 +15987,46 @@ window._prof=function(seat){
   var box=document.getElementById('gnbox');
   box.innerHTML=
     "<div style='font-weight:600;margin-bottom:4px'>🧭 席位画像"+
-    "<span style='font-weight:400;color:#8b949e;font-size:12px'> · "+cap+
+    "<span style='font-weight:400;color:var(--gray-5);font-size:12px'> · "+cap+
     "</span><span style='float:right;white-space:nowrap'>"+
-    "<button onclick='window._profCsv()' style='background:#21262d;color:#3fb950;"+
-    "border:1px solid #30363d;border-radius:5px;font-size:11px;padding:1px 8px;"+
+    "<button onclick='window._profCsv()' style='background:var(--gray-3);color:var(--grn-500);"+
+    "border:1px solid var(--gray-4);border-radius:5px;font-size:11px;padding:1px 8px;"+
     "cursor:pointer' title='导出画像数据 CSV'>CSV</button> "+
-    "<button onclick='window._profJson()' style='background:#21262d;color:#58a6ff;"+
-    "border:1px solid #30363d;border-radius:5px;font-size:11px;padding:1px 8px;"+
+    "<button onclick='window._profJson()' style='background:var(--gray-3);color:var(--blu-500);"+
+    "border:1px solid var(--gray-4);border-radius:5px;font-size:11px;padding:1px 8px;"+
     "cursor:pointer' title='导出画像快照 JSON'>JSON</button> "+
-    "<button onclick='window._profPng()' style='background:#21262d;color:#d29922;"+
-    "border:1px solid #30363d;border-radius:5px;font-size:11px;padding:1px 8px;"+
+    "<button onclick='window._profPng()' style='background:var(--gray-3);color:var(--ylw-500);"+
+    "border:1px solid var(--gray-4);border-radius:5px;font-size:11px;padding:1px 8px;"+
     "cursor:pointer' title='导出影响力演化图 PNG'>PNG</button>"+
     "<span onclick=\"document.getElementById('gnmodal').style.display='none'\""+
-    " style='cursor:pointer;color:#8b949e;margin-left:8px'>✕</span></span></div>"+
-    "<div style='font-size:13px;color:#c9d1d9;margin-bottom:8px'>"+seat+"</div>"+
+    " style='cursor:pointer;color:var(--gray-5);margin-left:8px'>✕</span></span></div>"+
+    "<div style='font-size:13px;color:var(--gray-6);margin-bottom:8px'>"+seat+"</div>"+
     "<div style='display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;margin-bottom:8px'>"+
     "<span class='dim'>集团</span><span>"+(n.comm||'未分组')+
-    "</span><span class='dim'>图社区</span><span style='color:#a371f7'>"+
+    "</span><span class='dim'>图社区</span><span style='color:var(--pur-500)'>"+
     ((ci===undefined)?'—':('社区'+(ci+1)))+
     "</span><span class='dim'>主体</span><span>"+(n.reg||'—')+
     "</span><span class='dim'>上榜</span><span>"+n.n+" 次"+
     "</span><span class='dim'>共现度</span><span>"+n.deg+
     "</span><span class='dim'>次日胜率</span><span style='color:"+((n.wr===undefined)?'#8b949e':((n.wr>=0.5)?'#f85149':'#3fb950'))+"'>"+((n.wr===undefined)?'—':((Math.round(n.wr*1000)/10)+'%'+(n.wrn?(' · '+n.wrn+'笔'):'')))+
-    "</span><span class='dim'>影响力</span><span style='color:#d29922'>No."+
+    "</span><span class='dim'>影响力</span><span style='color:var(--ylw-500)'>No."+
     ((prR===null)?'—':(prR+"/"+a.N))+
-    "</span><span class='dim'>桥接</span><span style='color:#58a6ff'>No."+
+    "</span><span class='dim'>桥接</span><span style='color:var(--blu-500)'>No."+
     ((btR===null)?'—':(btR+"/"+a.N))+"</span></div>"+
     "<div class='dim' style='font-size:11px;margin-bottom:2px'>影响力演化"+
     "（橙=PageRank 排名，倒轴·上=强 · 蓝=当时连接席位数 · 竖线=当前回放位置）</div>"+
-    "<div id='gprof' style='height:190px;border:1px solid #30363d;border-radius:6px;"+
+    "<div id='gprof' style='height:190px;border:1px solid var(--gray-4);border-radius:6px;"+
     "margin-bottom:8px'></div>"+
     "<div style='display:flex;gap:16px;flex-wrap:wrap'>"+
-    "<div style='flex:1;min-width:240px'><div style='color:#3fb950;font-size:12px;margin:2px 0'>同盟 Top5（累计共现）</div>"+
+    "<div style='flex:1;min-width:240px'><div style='color:var(--grn-500);font-size:12px;margin:2px 0'>同盟 Top5（累计共现）</div>"+
     "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
-    "<tr style='color:#8b949e;font-size:11px'><td style='padding:2px 6px'>席位</td>"+
+    "<tr style='color:var(--gray-5);font-size:11px'><td style='padding:2px 6px'>席位</td>"+
     "<td style='padding:2px 6px;text-align:right'>共现</td>"+
     "<td style='padding:2px 6px;text-align:right'>对手</td>"+
     "<td style='padding:2px 6px'>集团</td></tr>"+prRows(al)+"</table></div>"+
-    "<div style='flex:1;min-width:240px'><div style='color:#d29922;font-size:12px;margin:2px 0'>对手 Top5（对手次数）</div>"+
+    "<div style='flex:1;min-width:240px'><div style='color:var(--ylw-500);font-size:12px;margin:2px 0'>对手 Top5（对手次数）</div>"+
     "<table style='width:100%;font-size:12px;border-collapse:collapse'>"+
-    "<tr style='color:#8b949e;font-size:11px'><td style='padding:2px 6px'>席位</td>"+
+    "<tr style='color:var(--gray-5);font-size:11px'><td style='padding:2px 6px'>席位</td>"+
     "<td style='padding:2px 6px;text-align:right'>对手</td>"+
     "<td style='padding:2px 6px;text-align:right'>共现</td>"+
     "<td style='padding:2px 6px'>集团</td></tr>"+prRows(op)+"</table></div></div>"+
@@ -16339,14 +16345,14 @@ window.addEventListener('resize', function(){chart.resize();});
             "display:flex;gap:8px;flex-wrap:wrap;align-items:center'>"
             "</div><div style='display:flex;gap:10px;align-items:stretch'>"
             "<div id='c360g' style='flex:1.7;min-width:0;height:620px;"
-            "border:1px solid #30363d;border-radius:8px;background:"
-            "#0d1117'></div>"
+            "border:1px solid var(--gray-4);border-radius:8px;background:"
+            "var(--gray-0)'></div>"
             "<div id='c360d' style='flex:1;min-width:260px;max-width:340px;"
-            "border:1px solid #30363d;border-radius:8px;background:#0d1117;"
+            "border:1px solid var(--gray-4);border-radius:8px;background:var(--gray-0);"
             "padding:10px 12px;overflow:auto'></div></div>"
             "<div id='c360tip' style='display:none;position:fixed;z-index:"
-            "98;background:#161b22;border:1px solid #30363d;border-radius:"
-            "8px;padding:8px 10px;font-size:12px;color:#e6edf3;pointer-"
+            "98;background:var(--gray-2);border:1px solid var(--gray-4);border-radius:"
+            "8px;padding:8px 10px;font-size:12px;color:var(--gray-7);pointer-"
             "events:none;max-width:340px;box-shadow:0 4px 14px rgba(0,0,"
             "0,.5)'></div></div>\n"
             "<div class='sec'><h2>📊 实体直方图（数据落地）</h2>"
@@ -16357,13 +16363,13 @@ window.addEventListener('resize', function(){chart.resize();});
             "可与关系筛选叠加）</div>"
             "<div style='display:grid;grid-template-columns:1fr 1fr;gap:"
             "10px'><div id='h_type' style='height:230px;border:1px solid "
-            "#30363d;border-radius:8px;background:#0d1117'></div>"
-            "<div id='h_day' style='height:230px;border:1px solid #30363d;"
-            "border-radius:8px;background:#0d1117'></div>"
-            "<div id='h_hm' style='height:230px;border:1px solid #30363d;"
-            "border-radius:8px;background:#0d1117'></div>"
-            "<div id='h_conf' style='height:230px;border:1px solid #30363d;"
-            "border-radius:8px;background:#0d1117'></div></div></div>\n"
+            "var(--gray-4);border-radius:8px;background:var(--gray-0)'></div>"
+            "<div id='h_day' style='height:230px;border:1px solid var(--gray-4);"
+            "border-radius:8px;background:var(--gray-0)'></div>"
+            "<div id='h_hm' style='height:230px;border:1px solid var(--gray-4);"
+            "border-radius:8px;background:var(--gray-0)'></div>"
+            "<div id='h_conf' style='height:230px;border:1px solid var(--gray-4);"
+            "border-radius:8px;background:var(--gray-0)'></div></div></div>\n"
             "<div class='sec'><h2>🔗 关系统计（主端 · 关系 · 对端 · 强度"
             " · 次数）</h2><div class='dim' style='margin:2px 0 6px'>对标 "
             "graph-studio StatisticsPanel——点行=高亮该关系类型的边并压暗"
@@ -16372,7 +16378,7 @@ window.addEventListener('resize', function(){chart.resize();});
             "</th><th>对端</th><th>强度</th><th>次数</th><th>备注</th>"
             "</tr></table></div>\n"
             "<div class='sec'><h2>📝 公司底档</h2><div class='dim' style="
-            "'line-height:1.8'><b style='color:#e6edf3'>%s</b><br>主营："
+            "'line-height:1.8'><b style='color:var(--gray-7)'>%s</b><br>主营："
             "%s<br>%s</div></div>\n"
             "<script src='/static/g6.min.js'></script>\n"
             "<script src='/static/echarts.min.js'></script>\n<script>\n")
@@ -16488,7 +16494,7 @@ function legend(){
   var h=ORDER.filter(function(s){return cnt[s];}).map(function(s){
     var off=hidden[s];
     return '<button onclick="window._c3sec(\''+s+'\')" style="cursor:'
-      +'pointer;background:#21262d;border:1px solid #30363d;border-radius:'
+      +'pointer;background:var(--gray-3);border:1px solid var(--gray-4);border-radius:'
       +'16px;font-size:12px;padding:3px 10px;color:'+(off?'#484f58'
       :(SEC[s].c))+';text-decoration:'+(off?'line-through':'none')+'">'
       +'<span style="display:inline-block;width:9px;height:9px;border-'
@@ -16499,12 +16505,12 @@ function legend(){
     +'大小∝扇区内权重 · 边色=对端扇区 · 虚线=事件来源（DRIVE）'
     +' · 高管虚线圆=历任</span>';
   if(RELSEL)h2+=' <button onclick="window._c3rel(\'\')" style="cursor:'
-    +'pointer;background:#21262d;border:1px solid #f85149;border-radius:'
-    +'16px;font-size:12px;padding:3px 10px;color:#f85149">✕ 清除关系筛选: '
+    +'pointer;background:var(--gray-3);border:1px solid var(--red-500);border-radius:'
+    +'16px;font-size:12px;padding:3px 10px;color:var(--red-500)">✕ 清除关系筛选: '
     +esc(RELSEL)+'</button>';
   if(HSEL)h2+=' <button onclick="window._c3hs()" style="cursor:pointer;'
-    +'background:#21262d;border:1px solid #d29922;border-radius:16px;'
-    +'font-size:12px;padding:3px 10px;color:#d29922">✕ 清除直方图筛选: '
+    +'background:var(--gray-3);border:1px solid var(--ylw-500);border-radius:16px;'
+    +'font-size:12px;padding:3px 10px;color:var(--ylw-500)">✕ 清除直方图筛选: '
     +esc(HLAB)+'</button>';
   document.getElementById('c360lg').innerHTML=h+' '+h2;}
 // ── 详情面板 ──
@@ -16530,10 +16536,10 @@ function detailOf(n){
       +'</td><td>'+esc(String(v).slice(0,80))+'</td></tr>';});
   var lk=hrefsOf(n).map(function(x){
     return '<a href="'+x[1]+'" style="display:inline-block;margin:4px 8px '
-      +'0 0;font-size:12px;color:#58a6ff">'+x[0]+' →</a>';}).join('');
+      +'0 0;font-size:12px;color:var(--blu-500)">'+x[0]+' →</a>';}).join('');
   return '<div style="font-weight:600;font-size:14px;margin:2px 0 6px">'
     +'<span style="display:inline-block;width:11px;height:11px;border-'
-    +'radius:50%;background:'+((SEC[n.sector]||{}).c||'#8b949e')
+    +'radius:50%;background:'+((SEC[n.sector]||{}).c||'var(--gray-5)')
     +';margin-right:6px"></span>'+esc(n.label)+'</div>'
     +'<div class="dim" style="font-size:12px;margin-bottom:6px">扇区：'
     +((SEC[n.sector]||{}).n||n.sector)+(n.kind==='src'?'（事件来源）':'')
@@ -16568,7 +16574,7 @@ function relTable(){
     var tr=document.createElement('tr');
     tr.style.cursor='pointer';
     tr.innerHTML='<td>'+esc(r.src)+'</td><td><span style="font-family:'
-      +'monospace;color:#58a6ff">'+esc(r.rel)+'</span></td><td>'+esc(r.dst)
+      +'monospace;color:var(--blu-500)">'+esc(r.rel)+'</span></td><td>'+esc(r.dst)
       +'</td><td class="bdg n">'+esc(r.strength)+'</td><td>'+r.count
       +'</td><td class="dim">'+esc(r.note||'')+'</td>';
     tr.onclick=function(){window._c3rel(r.rel,i);};
@@ -16604,7 +16610,7 @@ try{
     var n=null;D.nodes.forEach(function(x){if(x.id===id)n=x;});
     if(!n)return;
     var h='<b style="font-size:13px">'+esc(n.label)+'</b><br>'
-      +'<span style="color:#8b949e">'+((SEC[n.sector]||{}).n||n.sector)
+      +'<span style="color:var(--gray-5)">'+((SEC[n.sector]||{}).n||n.sector)
       +(n.kind==='src'?'（事件来源）':'')+'</span>';
     if(n.props)Object.keys(n.props).slice(0,5).forEach(function(k){
       var v=n.props[k];if(v==null||v==='')return;
@@ -16645,7 +16651,7 @@ try{
         return;}
       if(HOVN!==hit.id){
         var h='<b style="font-size:13px">'+esc(hit.label)+'</b><br>'
-          +'<span style="color:#8b949e">'
+          +'<span style="color:var(--gray-5)">'
           +((SEC[hit.sector]||{}).n||hit.sector)
           +(hit.kind==='src'?'（事件来源）':'')+'</span>';
         if(hit.props)Object.keys(hit.props).slice(0,5).forEach(function(k){
@@ -16673,7 +16679,7 @@ try{
       redraw();},false);
   }catch(e2){}
 }catch(err){
-  document.getElementById('c360g').innerHTML='<div style="color:#f85149;'
+  document.getElementById('c360g').innerHTML='<div style="color:var(--red-500);'
     +'padding:20px;font-size:13px">G6 画布初始化失败：'+esc(err.message)
     +'</div>';}
 legend();relTable();detailDefault();
@@ -16684,7 +16690,7 @@ var AX={axisLine:{lineStyle:{color:'#30363d'}},axisLabel:{color:'#8b949e',
 var CH={},HB={};window._c3CH=CH;
 function mk(id,builder){try{var c=echarts.init(document.getElementById(id));
   CH[id]=c;c.setOption(builder(-1));}catch(e){
-  document.getElementById(id).innerHTML='<div style="color:#8b949e;'
+  document.getElementById(id).innerHTML='<div style="color:var(--gray-5);'
     +'padding:20px;font-size:12px">图表初始化失败</div>';}}
 function hsel(key,set,lab){
   if(HKEY===key){HKEY=null;HSEL=null;HLAB='';}
@@ -17196,13 +17202,13 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                         "<div style='margin:2px 0 6px'>"
                         "<span id='gcm-net' onclick='_gcm(0)' "
                         "style='display:inline-block;padding:2px 12px;"
-                        "border:1px solid #30363d;border-radius:11px;"
-                        "cursor:pointer;font-size:12px;background:#1f6feb;"
-                        "color:#e6edf3'>净买卖色</span> "
+                        "border:1px solid var(--gray-4);border-radius:11px;"
+                        "cursor:pointer;font-size:12px;background:var(--blu-600);"
+                        "color:var(--gray-7)'>净买卖色</span> "
                         "<span id='gcm-wr' onclick='_gcm(1)' "
                         "style='display:inline-block;padding:2px 12px;"
-                        "border:1px solid #30363d;border-radius:11px;"
-                        "cursor:pointer;font-size:12px;color:#e6edf3'>"
+                        "border:1px solid var(--gray-4);border-radius:11px;"
+                        "cursor:pointer;font-size:12px;color:var(--gray-7)'>"
                         "胜率着色</span> "
                         "<span id='gcnote' class='dim' "
                         "style='font-size:12px'>胜率 40 绿 → 55 黄 → "
@@ -17212,14 +17218,14 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                         "<div style='margin:2px 0 6px'>"
                         "<span id='gtp' onclick='_gp()' "
                         "style='display:inline-block;padding:2px 10px;"
-                        "border:1px solid #30363d;border-radius:11px;"
-                        "cursor:pointer;font-size:12px;color:#e6edf3'>"
+                        "border:1px solid var(--gray-4);border-radius:11px;"
+                        "cursor:pointer;font-size:12px;color:var(--gray-7)'>"
                         "▶ 播放</span> "
                         "<input type='range' id='gts' min='0' max='%d' "
                         "value='%d' oninput='_gt()' style='vertical-align:"
                         "middle;width:340px'> "
                         "<span id='gtl' style='font-size:12px;"
-                        "color:#e6edf3'></span> "
+                        "color:var(--gray-7)'></span> "
                         "<span class='dim' style='font-size:12px'>· 滑杆="
                         "按交易日累计净买重渲（KG-V3 口径），着色随当前"
                         "模式</span></div>"
@@ -17420,8 +17426,8 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
             if not bd:
                 return "<span class='dim'>—</span>"
             g = lambda k: bd.get(k) or 0        # noqa: E731
-            return ("结构买 <b style='color:#f85149'>%d</b> / "
-                    "卖 <b style='color:#3fb950'>%d</b>"
+            return ("结构买 <b style='color:var(--red-500)'>%d</b> / "
+                    "卖 <b style='color:var(--grn-500)'>%d</b>"
                     "<span class='dim'>（信号日口径 买%d/卖%d）</span>"
                     " · 量能 %d · 手法 %d"
                     % (g("结构买"), g("结构卖"), g("结构买dt"),
@@ -17626,23 +17632,23 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                "<meta name='viewport' content='width=device-width,"
                "initial-scale=1'><title>推演卡 · 缠论</title>"
                + self._COCKPIT_CSS
-               + "<style>.sec{background:#161b22;border:1px solid #30363d;"
+               + "<style>.sec{background:var(--gray-2);border:1px solid var(--gray-4);"
                  "border-radius:8px;padding:12px 14px;margin:10px 0}"
                  ".sec h3{margin:0 0 8px;font-size:15px}"
-                 ".sec div{font-size:13px;margin:3px 0;color:#c9d1d9}"
+                 ".sec div{font-size:13px;margin:3px 0;color:var(--gray-6)}"
                  "table.t{border-collapse:collapse;margin:8px 0;width:100%}"
-                 "table.t th,table.t td{border:1px solid #21262d;"
+                 "table.t th,table.t td{border:1px solid var(--gray-3);"
                  "padding:4px 8px;font-size:12.5px;text-align:left}"
                  ".fb{margin-top:8px;padding-top:8px;"
-                 "border-top:1px dashed #30363d}"
+                 "border-top:1px dashed var(--gray-4)}"
                  ".fb-b{margin:0 4px;padding:4px 14px;border-radius:12px;"
-                 "border:1px solid #30363d;background:#0d1117;"
-                 "color:#8b949e;cursor:pointer;font-size:12.5px}"
-                 ".fb-b[data-v=right]{color:#3fb950}"
-                 ".fb-b[data-v=partial]{color:#d29922}"
-                 ".fb-b[data-v=wrong]{color:#f85149}"
+                 "border:1px solid var(--gray-4);background:var(--gray-0);"
+                 "color:var(--gray-5);cursor:pointer;font-size:12.5px}"
+                 ".fb-b[data-v=right]{color:var(--grn-500)}"
+                 ".fb-b[data-v=partial]{color:var(--ylw-500)}"
+                 ".fb-b[data-v=wrong]{color:var(--red-500)}"
                  ".fb-b:disabled{opacity:.45;cursor:default}"
-                 ".fb-msg{margin-left:8px;font-size:12px;color:#8b949e}"
+                 ".fb-msg{margin-left:8px;font-size:12px;color:var(--gray-5)}"
                  ".kp li{margin:4px 0;font-size:13px}</style></head><body>"
                + pill_nav("kgcard")
                + "<h2 style='margin:14px 4px'>🃏 三级联立推演卡"
@@ -17713,19 +17719,19 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                "initial-scale=1><title>画图标注 · 缠论金标签</title>"
                + self._COCKPIT_CSS
                + "<style>.tbtn{display:inline-block;padding:5px 11px;"
-                 "border:1px solid #30363d;border-radius:14px;"
-                 "background:#161b22;color:#8b949e;cursor:pointer;"
+                 "border:1px solid var(--gray-4);border-radius:14px;"
+                 "background:var(--gray-2);color:var(--gray-5);cursor:pointer;"
                  "font-size:12.5px;margin:0 3px 4px 0;user-select:none}"
-                 ".tbtn.on{color:#e6edf3;border-color:#58a6ff;"
+                 ".tbtn.on{color:var(--gray-7);border-color:var(--blu-500);"
                  "font-weight:600;background:#1f3a5f}"
-                 ".tbtn.buy{color:#f85149}.tbtn.sell{color:#3fb950}"
-                 "input,select{background:#0d1117;color:#e6edf3;"
-                 "border:1px solid #30363d;border-radius:6px;"
+                 ".tbtn.buy{color:var(--red-500)}.tbtn.sell{color:var(--grn-500)}"
+                 "input,select{background:var(--gray-0);color:var(--gray-7);"
+                 "border:1px solid var(--gray-4);border-radius:6px;"
                  "padding:5px 8px;font-size:13px}"
                  "#wrap{margin:10px 0}#cv{width:100%;height:660px;"
-                 "background:#0d1117;border:1px solid #30363d;"
+                 "background:var(--gray-0);border:1px solid var(--gray-4);"
                  "border-radius:8px;cursor:crosshair;display:block}"
-                 "#st{margin-left:10px;font-size:13px;color:#8b949e}"
+                 "#st{margin-left:10px;font-size:13px;color:var(--gray-5)}"
                  "</style></head><body>" + pill_nav("kglabel")
                + "<h1>🖊 画图标注 · 缠论结构金标签</h1>"
                "<div class='dim'>系统预填算法结构（笔橙 / 中枢紫 / 买卖点"
@@ -17775,9 +17781,9 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                "padding-left:8px")
 
         def _sec(title, href, hint):
-            return ("<div style='%s'>%s <a href='%s' style='color:#58a6ff;"
+            return ("<div style='%s'>%s <a href='%s' style='color:var(--blu-500);"
                     "font-size:11px;text-decoration:none'>进详情 →</a>"
-                    "<span style='color:#8b949e;font-size:11px;"
+                    "<span style='color:var(--gray-5);font-size:11px;"
                     "margin-left:8px'>%s</span></div>"
                     % (_H2, title, href, hint))
 
@@ -17806,12 +17812,12 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
         banner = ("<div style='border:1px solid %s;border-radius:10px;"
                   "padding:10px 14px;margin:10px 0;display:flex;"
                   "justify-content:space-between;align-items:center;"
-                  "background:#161b22'>"
+                  "background:var(--gray-2)'>"
                   "<div><b style='color:%s;font-size:15px'>● %s</b>"
-                  "<span style='color:#8b949e;font-size:12px;"
+                  "<span style='color:var(--gray-5);font-size:12px;"
                   "margin-left:10px'>数据期望日 %s · 体检 %s · 聚合 %s</span>"
-                  "<div style='color:#8b949e;font-size:11px;margin-top:3px'>%s</div></div>"
-                  "<div style='font-size:13px;color:#e6edf3;white-space:nowrap'>"
+                  "<div style='color:var(--gray-5);font-size:11px;margin-top:3px'>%s</div></div>"
+                  "<div style='font-size:13px;color:var(--gray-7);white-space:nowrap'>"
                   "🔴 %d &nbsp; 🟡 %d</div></div>"
                   % (col, col, txt, e(str(s.get("expect") or "?")),
                      e(str(s.get("health_ts") or "?")),
@@ -17821,12 +17827,12 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
 
         # ---- 仪1 数据顶板：15 表新鲜度 + 六服务灯（🔍 穿透到数据行）----
         rows = ["<table style='%s'><tr>" % _TB
-                + "".join("<th style='%s;background:#21262d'>%s</th>"
+                + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
                           % (_TD, x)
                           for x in ("表", "市场", "最新", "状态"))
                 + "</tr>"]
         if warming:
-            rows.append("<tr><td style='%s;color:#58a6ff' colspan='4'>"
+            rows.append("<tr><td style='%s;color:var(--blu-500)' colspan='4'>"
                         "⏳ 时点校对冷算中（约 100s）——完成后本页自动刷新，"
                         "其余四仪已可用</td></tr>" % _TD)
         for r in s.get("freshness", []):
@@ -17839,8 +17845,8 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                 "<span style='cursor:pointer;margin-right:6px' "
                 "title='穿透看数据' onclick=\"tp_toggle('%s')\">🔍</span>"
                 "<a href='/bt-data-health' "
-                "style='color:#58a6ff;text-decoration:none'>%s</a></td>"
-                "<td style='%s;color:#8b949e'>%s</td>"
+                "style='color:var(--blu-500);text-decoration:none'>%s</a></td>"
+                "<td style='%s;color:var(--gray-5)'>%s</td>"
                 "<td style='%s'>%s</td>"
                 "<td style='%s;color:%s'>%s</td></tr>"
                 % (_TD, e(tb), e(tb), _TD,
@@ -17853,7 +17859,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
             "<a href='/sys-health' style='text-decoration:none;"
             "font-size:12px;color:%s;margin-right:10px'>●%s</a>"
             % ("#3fb950" if v else "#f85149", e(str(k)))
-            for k, v in svcs.items()) or "<span style='color:#8b949e'>—</span>"
+            for k, v in svcs.items()) or "<span style='color:var(--gray-5)'>—</span>"
         dk = s.get("docker") or {}
         _cs = s.get("collectors") or {}
         _csrc = _cs.get("sources") or {}
@@ -17864,7 +17870,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                (" +%s" % v["new"]) if v.get("new") else "")
             for k, v in _csrc.items())
         _cline = (("<div style='margin:4px 0 0;font-size:11px;"
-                   "color:#8b949e'>采集 %s%s · 末次 %s · 24h %s 条</div>"
+                   "color:var(--gray-5)'>采集 %s%s · 末次 %s · 24h %s 条</div>"
                    % (_cdots,
                       "" if _cs.get("last_ok") else " · 采集异常!",
                       e(str(_cs.get("last_collect") or "?")),
@@ -17875,7 +17881,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                      "点表名进数据仓；点灯进系统体检")
               + "".join(rows)
               + "<div style='margin:8px 0'>%s"
-                "<span style='color:#8b949e;font-size:11px;"
+                "<span style='color:var(--gray-5);font-size:11px;"
                 "margin-left:10px'>docker %s 容器%s</span>%s</div>"
               % (lights, dk.get("total", "?"),
                  "" if dk.get("ai_portal") else " · ai_portal!", _cline))
@@ -17883,18 +17889,18 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
         # ---- 仪2 运行仪表：今日跑批+投委会 ----
         runs = s.get("runs") or []
         m2 = (_sec("② 运行仪表 · 今日运行", "/council", "跑批+四会+扫描计数")
-              + ("<div style='color:#8b949e;font-size:12px'>今日无运行记录"
+              + ("<div style='color:var(--gray-5);font-size:12px'>今日无运行记录"
                  "</div>" if not runs else
                  "<div style='font-size:12px;line-height:1.9;"
                  "font-family:Consolas,monospace'>%s</div>"
                  % "<br>".join(e(str(x)) for x in runs[:14]))
-              + "<div style='color:#8b949e;font-size:11px'>"
+              + "<div style='color:var(--gray-5);font-size:11px'>"
                 "缠论池今日新扫 %d 票</div>" % s.get("chanlun_today", 0))
 
         # ---- 仪3 预警仪：bad 任务+弱案例+警报池+需注意 ----
         w = s.get("weak") or {}
         al = ["<table style='%s'><tr>" % _TB
-              + "".join("<th style='%s;background:#21262d'>%s</th>"
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
                         % (_TD, x)
                         for x in ("预警源", "数值", "下钻"))
               + "</tr>"]
@@ -17911,14 +17917,14 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                  "#d29922" if s.get("watch_note") else "#3fb950")):
             al.append("<tr><td style='%s'>%s</td>"
                       "<td style='%s;color:%s;font-weight:600'>%s</td>"
-                      "<td style='%s'><a href='%s' style='color:#58a6ff;"
+                      "<td style='%s'><a href='%s' style='color:var(--blu-500);"
                       "text-decoration:none'>去处理 →</a></td></tr>"
                       % (_TD, e(label), _TD, vcol, e(str(val)), _TD, href))
         nl = s.get("nine_list") or []
         if nl:
             al.append("<tr><td style='%s' colspan='3'>警报池 top: %s</td></tr>"
                       % (_TD, " ".join(
-                          "<a href='/kg?c=%s' style='color:#d29922;"
+                          "<a href='/kg?c=%s' style='color:var(--ylw-500);"
                           "text-decoration:none'>%s(%.0f)</a>"
                           % (e(str(x.get("code") or "")),
                              e(str(x.get("name") or x.get("code"))),
@@ -17931,14 +17937,14 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
 
         # ---- 仪4 结构图台账：缠论池近 15 票（图为哪个事件而画）----
         gl = ["<table style='%s'><tr>" % _TB
-              + "".join("<th style='%s;background:#21262d'>%s</th>"
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
                         % (_TD, x)
                         for x in ("代码", "名称", "信号", "信号日", "发现日"))
               + "</tr>"]
         for g in s.get("graphs", []):
             gl.append("<tr><td style='%s'><a href='/kg?c=%s' "
-                      "style='color:#58a6ff;text-decoration:none'>%s</a></td>"
-                      "<td style='%s'>%s</td><td style='%s;color:#d29922'>%s</td>"
+                      "style='color:var(--blu-500);text-decoration:none'>%s</a></td>"
+                      "<td style='%s'>%s</td><td style='%s;color:var(--ylw-500)'>%s</td>"
                       "<td style='%s'>%s</td><td style='%s'>%s</td></tr>"
                       % (_TD, e(str(g.get("code") or "")), e(str(g.get("code") or "")),
                          _TD, e(str(g.get("name") or "")), _TD,
@@ -17952,7 +17958,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
 
         # ---- 仪5 账户态势：4 模拟盘 ----
         ac = ["<table style='%s'><tr>" % _TB
-              + "".join("<th style='%s;background:#21262d'>%s</th>"
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
                         % (_TD, x)
                         for x in ("账户", "持仓", "现金", "净值", "较昨日"))
               + "</tr>"]
@@ -17963,7 +17969,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
             pc = ("#3fb950" if (pn or 0) >= 0 else "#f85149"
                   if isinstance(pn, (int, float)) else "#8b949e")
             ac.append("<tr><td style='%s'><a href='/bt-report' "
-                      "style='color:#58a6ff;text-decoration:none'>%s %s</a></td>"
+                      "style='color:var(--blu-500);text-decoration:none'>%s %s</a></td>"
                       "<td style='%s'>%d</td><td style='%s'>%.0f</td>"
                       "<td style='%s'>%s</td><td style='%s;color:%s'>%s</td></tr>"
                       % (_TD, e(str(a.get("icon") or "")), e(str(a.get("name") or "")),
@@ -18010,11 +18016,11 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                            else "#f85149" if st < 0 else "#8b949e")
                     vrows.append(
                         "<div style='margin:3px 0'><b style='color:%s'>"
-                        "%s %+d</b> <span style='color:#e6edf3'>%s</span></div>"
+                        "%s %+d</b> <span style='color:var(--gray-7)'>%s</span></div>"
                         % (stc, rcn, int(st),
                            e(str(v.get("answer") or "").strip())))
                 risks = "、".join(str(x) for x in (memo.get("risks") or []))
-                body = ("%s<div style='color:#8b949e;font-size:11px;"
+                body = ("%s<div style='color:var(--gray-5);font-size:11px;"
                         "margin-top:5px'>风险：%s ｜ 若看错：%s ｜ 信心 %s"
                         "/100 · 主观分歧 %s · 耗时 %.0fs</div>"
                         % ("".join(vrows), e(risks),
@@ -18030,11 +18036,11 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                         % (vc, e(lv), e(str(j.get("bias") or "")),
                            float(r.get("pnl_pct") or 0)))
                 evs = "".join(
-                    "<div style='color:#8b949e;font-size:11px'>· %s %s</div>"
+                    "<div style='color:var(--gray-5);font-size:11px'>· %s %s</div>"
                     % (e(str(x.get("ts") or ""))[:10],
                        e(str(x.get("text") or "")))
                     for x in (r.get("events") or [])[:3])
-                body = "%s<div style='color:#e6edf3'>%s</div>" % (
+                body = "%s<div style='color:var(--gray-7)'>%s</div>" % (
                     evs, e(str(j.get("view") or "")))
             else:
                 br = str(r.get("bear_right")
@@ -18047,9 +18053,9 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                 cf = str(r.get("counterfactual")
                          or post.get("counterfactual") or "")
                 ls = (r.get("lessons") or post.get("lessons") or [])
-                body = ("<div style='color:#e6edf3'>%s</div>%s"
+                body = ("<div style='color:var(--gray-7)'>%s</div>%s"
                         % (e(cf),
-                           "".join("<div style='color:#d29922;"
+                           "".join("<div style='color:var(--ylw-500);"
                                    "font-size:11px;margin-top:3px'>⚑ %s</div>"
                                    % e(str(x.get("text") or x
                                            if isinstance(x, dict) else x))
@@ -18061,19 +18067,19 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                       {"agree": "✅已同意", "reject": "⛔已否决"}.get(
                           (a0 or {}).get("action"), "📝有备注"))) if a0 else ""
             items.append(
-                "<details style='border-left:3px solid %s;background:#161b22;"
+                "<details style='border-left:3px solid %s;background:var(--gray-2);"
                 "padding:5px 10px;margin:4px 0;border-radius:6px'>"
-                "<summary style='cursor:pointer'><span style='color:#8b949e;"
+                "<summary style='cursor:pointer'><span style='color:var(--gray-5);"
                 "font-size:11px;font-family:Consolas,monospace'>%s</span> %s "
-                "<a href='/kg?c=%s' style='color:#58a6ff;text-decoration:"
-                "none'>%s %s</a>%s <span style='font-size:12px;color:#e6edf3'>"
+                "<a href='/kg?c=%s' style='color:var(--blu-500);text-decoration:"
+                "none'>%s %s</a>%s <span style='font-size:12px;color:var(--gray-7)'>"
                 "%s</span></summary><div style='padding:6px 4px 2px;"
                 "font-size:12px;line-height:1.7'>%s</div></details>"
                 % (tc, hm, tag, e(code), e(code), e(nm), abg, head, body))
         m6 = (_sec("⑥ 决策层 · 四会决策流", "/council",
                    "点条目展开六视角观点原文（立案→盯盘→复盘）")
               + ("".join(items)
-                 or "<div style='color:#8b949e;font-size:12px'>"
+                 or "<div style='color:var(--gray-5);font-size:12px'>"
                    "暂无决策记录（跑批后 23:50 自动产生）</div>"))
 
         # ---- 仪7 影子对照：分歧度×前向收益（转正门槛 n/30）----
@@ -18089,14 +18095,14 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
         mx = max([b.get("n") or 0 for b in bd] + [1])
         bars = "".join(
             "<div style='display:flex;align-items:center;gap:6px;"
-            "margin:2px 0'><span style='width:56px;color:#8b949e;"
+            "margin:2px 0'><span style='width:56px;color:var(--gray-5);"
             "font-size:11px'>%s</span><div style='height:10px;"
-            "background:#d29922;border-radius:3px;width:%dpx'></div>"
-            "<span style='color:#e6edf3;font-size:11px'>%d 票</span></div>"
+            "background:var(--ylw-500);border-radius:3px;width:%dpx'></div>"
+            "<span style='color:var(--gray-7);font-size:11px'>%d 票</span></div>"
             % (e(str(b.get("bucket"))), 6 + int(140 * (b.get("n") or 0) / mx),
                b.get("n") or 0) for b in bd)
         srows = "".join(
-            "<tr><td style='%s'><a href='/kg?c=%s' style='color:#58a6ff;"
+            "<tr><td style='%s'><a href='/kg?c=%s' style='color:var(--blu-500);"
             "text-decoration:none'>%s</a></td><td style='%s'>%s</td>"
             "<td style='%s'>%d</td><td style='%s'>%s</td><td style='%s'>%s"
             "</td><td style='%s'>%s</td></tr>"
@@ -18120,7 +18126,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                    float(s.get("r20") or 0) * 100)
                 for s in pts[:40])
             scatter = ("<svg width='360' height='165' style='background:"
-                       "#161b22;border-radius:8px;margin:6px 0'>"
+                       "var(--gray-2);border-radius:8px;margin:6px 0'>"
                        "<line x1='30' y1='150' x2='335' y2='150' "
                        "stroke='#30363d'/><line x1='30' y1='10' x2='30' "
                        "y2='150' stroke='#30363d'/>%s<text x='338' y='162' "
@@ -18130,12 +18136,12 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
         m7 = (_sec("⑦ 影子对照 · 分歧度×前向收益", "/kg/shadow",
                    "点票进图谱；开市后前向收益自然累积")
               + "<div style='font-size:12px;margin:4px 0'><b style='color:"
-                "%s'>● %s</b> <span style='color:#8b949e'>前向样本 %s/%s · "
+                "%s'>● %s</b> <span style='color:var(--gray-5)'>前向样本 %s/%s · "
                 "更新 %s</span></div>" % (gc, e(gs), e(str(g.get("n"))),
                                           e(str(g.get("need"))),
                                           e(dd["shadow_updated"] or "?"))
               + "<table style='%s'><tr>" % _TB
-              + "".join("<th style='%s;background:#21262d'>%s</th>"
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
                         % (_TD, x)
                         for x in ("票", "名称", "分歧", "结论", "r5", "r20"))
               + "</tr>%s</table>" % (srows
@@ -18157,11 +18163,11 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
             vc = {"支持": "#3fb950", "反对": "#f85149"}.get(vd, "#d29922")
             key = _uq(str(p.get("ts") or ""))
             plines.append(
-                "<div style='padding:6px 8px;margin:4px 0;background:#161b22;"
+                "<div style='padding:6px 8px;margin:4px 0;background:var(--gray-2);"
                 "border-radius:8px;display:flex;justify-content:space-between;"
                 "align-items:center;flex-wrap:wrap;gap:6px'>"
                 "<div style='font-size:12px'><a href='/kg?c=%s' style='"
-                "color:#58a6ff;text-decoration:none'>%s %s</a> "
+                "color:var(--blu-500);text-decoration:none'>%s %s</a> "
                 "<b style='color:%s'>%s</b> · 分歧 %s · %s</div>"
                 "<div><a href='/bridge/act?cmd=agree:%s' style='%s'>"
                 "✅ 同意</a><a href='/bridge/act?cmd=reject:%s' style='%s'>"
@@ -18187,32 +18193,32 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
         m8 = (_sec("⑧ 指挥台 · 待确认与快捷指令", "/council",
                    "两步确认闸门；资金动作走 /screen 既有确认流程")
               + ("".join(plines)
-                 or "<div style='color:#8b949e;font-size:12px'>"
+                 or "<div style='color:var(--gray-5);font-size:12px'>"
                    "待确认队列空（近 20 条备忘录均已处理）</div>")
-              + "<div style='margin:10px 0 4px;color:#8b949e;font-size:11px'>"
+              + "<div style='margin:10px 0 4px;color:var(--gray-5);font-size:11px'>"
                 "快捷指令（观察类 · 点后确认执行）</div>" + quick
               + "<div style='margin-top:8px'><a href='/screen' style='"
-                "display:inline-block;padding:6px 14px;background:#161b22;"
-                "border:1px solid #30363d;border-radius:8px;color:#d29922;"
+                "display:inline-block;padding:6px 14px;background:var(--gray-2);"
+                "border:1px solid var(--gray-4);border-radius:8px;color:var(--ylw-500);"
                 "text-decoration:none;font-size:12px'>💰 资金动作 → 模拟仓"
                 "操作台（建仓/平仓/加减仓，二次确认在彼处——舱的闸门纪律）"
                 "</a></div>")
 
         content = ("%s%s%s%s%s%s%s%s%s%s"
                    % (m1, m2, m3, m4, m5, m6, m7, m8,
-                      "<div style='color:#8b949e;font-size:11px;"
+                      "<div style='color:var(--gray-5);font-size:11px;"
                       "margin:16px 0'>K56 全量交付 · 五仪+决策层+指挥台 · "
                       "数据穿透：点仪① 🔍 就地展开表内数据 · "
                       "API: /api/bridge/summary</div>", _TP_JS))
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                 + ("<meta http-equiv='refresh' content='30'>" if warming else "")
                 + "<title>驾驶舱 · 老田的AI助手</title></head><body "
-                "style='background:#0d1117;margin:0;padding:12px 16px'>"
+                "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
                 + self._COCKPIT_CSS + self._KG_CSS
                 + pill_nav("bridge")
-                + "<div style='color:#e6edf3;font-size:18px;"
+                + "<div style='color:var(--gray-7);font-size:18px;"
                   "font-weight:700;margin:10px 0 2px'>🚀 投研驾驶舱</div>"
-                  "<div style='color:#8b949e;font-size:12px;"
+                  "<div style='color:var(--gray-5);font-size:12px;"
                   "margin-bottom:6px'>指挥大舱不是数据屏——数据到目的地、"
                   "预警不断提醒、红黄绿分级</div>"
                 + content + "</body></html>")
@@ -18230,12 +18236,12 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
         text = (q.get("text") or [""])[0]
         confirm = (q.get("confirm") or ["0"])[0] == "1"
         desc = bridge_act_desc(cmd, text)
-        back = ("<a href='/bridge' style='color:#58a6ff;"
+        back = ("<a href='/bridge' style='color:var(--blu-500);"
                 "text-decoration:none;font-size:12px'>← 返回驾驶舱</a>")
         if desc is None:
-            body = ("<div style='color:#f85149;font-size:14px;"
+            body = ("<div style='color:var(--red-500);font-size:14px;"
                     "font-weight:700;margin:20px 0 8px'>⛔ 未知指令</div>"
-                    "<div style='color:#8b949e;font-size:12px'>cmd=%s "
+                    "<div style='color:var(--gray-5);font-size:12px'>cmd=%s "
                     "不在指挥台白名单</div>%s"
                     % (e(cmd[:80] or "(空)"), back))
         elif confirm:
@@ -18249,7 +18255,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                     if r.get("ok") else "")
             self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>%s"
                        "<title>指挥台 · 执行</title></head><body "
-                       "style='background:#0d1117;margin:0;padding:12px 16px'>"
+                       "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
                        "%s%s</body></html>"
                        % (head, self._COCKPIT_CSS, body))
             return
@@ -18263,35 +18269,35 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                              "<input name='text' placeholder='备注内容"
                              "（≤200 字，将回流记忆闭环）' value='%s' "
                              "style='width:420px;padding:6px 8px;"
-                             "background:#0d1117;color:#e6edf3;"
-                             "border:1px solid #30363d;border-radius:6px'> "
+                             "background:var(--gray-0);color:var(--gray-7);"
+                             "border:1px solid var(--gray-4);border-radius:6px'> "
                              "<button style='padding:6px 14px;background:"
-                             "#21262d;color:#58a6ff;border:1px solid "
-                             "#30363d;border-radius:6px;cursor:pointer'>"
+                             "var(--gray-3);color:var(--blu-500);border:1px solid "
+                             "var(--gray-4);border-radius:6px;cursor:pointer'>"
                              "下一步 →</button></form>"
                              % (e(cmd), e(text[:200])))
                 go = ("<a href='/bridge/act?cmd=%s&text=%s&confirm=1' "
                       "style='display:inline-block;padding:6px 18px;"
-                      "background:#21262d;color:#3fb950;border:1px solid "
-                      "#3fb950;border-radius:6px;text-decoration:none;"
+                      "background:var(--gray-3);color:var(--grn-500);border:1px solid "
+                      "var(--grn-500);border-radius:6px;text-decoration:none;"
                       "font-weight:600'>✅ 确认执行</a>" % (e(cmd), _qp(text[:200])))
             else:
                 go = ("<a href='/bridge/act?cmd=%s&confirm=1' style='"
                       "display:inline-block;padding:6px 18px;background:"
-                      "#21262d;color:#3fb950;border:1px solid #3fb950;"
+                      "var(--gray-3);color:var(--grn-500);border:1px solid var(--grn-500);"
                       "border-radius:6px;text-decoration:none;font-weight:600'"
                       ">✅ 确认执行</a>" % e(cmd))
-            body = ("<div style='color:#d29922;font-size:14px;"
+            body = ("<div style='color:var(--ylw-500);font-size:14px;"
                     "font-weight:700;margin:20px 0 8px'>⚠ 指挥台 · 执行确认"
-                    "</div><div style='white-space:pre-wrap;color:#e6edf3;"
-                    "font-size:13px;line-height:1.8;background:#161b22;"
-                    "border:1px solid #30363d;border-radius:8px;"
+                    "</div><div style='white-space:pre-wrap;color:var(--gray-7);"
+                    "font-size:13px;line-height:1.8;background:var(--gray-2);"
+                    "border:1px solid var(--gray-4);border-radius:8px;"
                     "padding:12px 14px;max-width:560px'>%s</div>%s"
                     "<div style='margin:12px 0'>%s &nbsp; %s</div>"
                     % (e(d), note_form, go, back))
         self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                    "<title>指挥台 · 确认</title></head><body "
-                   "style='background:#0d1117;margin:0;padding:12px 16px'>"
+                   "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
                    "%s%s</body></html>" % (self._COCKPIT_CSS, body))
 
     def _council_page(self, qs):
@@ -18519,8 +18525,8 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                 "align-items:center'>"
                 "<input name='q' value='%s' "
                 "placeholder='按代码/名称检索三张留痕表' "
-                "style='padding:7px 10px;border:1px solid #30363d;"
-                "border-radius:8px;background:#0d1117;color:#e6edf3;"
+                "style='padding:7px 10px;border:1px solid var(--gray-4);"
+                "border-radius:8px;background:var(--gray-0);color:var(--gray-7);"
                 "font-size:13px;min-width:260px'>"
                 "<button style='%s;cursor:pointer'>检索</button>%s</form>"
                 % (e(q), _PILL,
@@ -18586,7 +18592,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                    "（多头/空头/激进/保守/技术/情绪）→ 主持人备忘录 · 四会工作流"
                    "（立案/盯盘/平仓/复盘）· 三张表 append-only · LLM 永不碰交易 · "
                    "资金动作人工确认 · 统计更新 %s · "
-                   "<a href='/sim' style='color:#58a6ff'>♠ 辩论结果交三操盘手"
+                   "<a href='/sim' style='color:var(--blu-500)'>♠ 辩论结果交三操盘手"
                    "六本账模拟 →</a></div>%s%s%s%s%s%s%s%s%s%s"
                    % (e(stats.get("updated") or "—"), form, sec_p, cards,
                       method, tbl_d, tbl_v, mem_sec, tbl_p, tbl_w, tbl_r))
@@ -19405,11 +19411,11 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                     "margin-right:12px'>● %s</span>" % (c, n)
                     for n, c in list(COLS.items())
                     + [("终裁", "#d2a8ff")]) + \
-                    "<span style='color:#8b949e;font-size:11.5px;" \
+                    "<span style='color:var(--gray-5);font-size:11.5px;" \
                     "margin-left:4px'>○ 未重测</span>"
                 # K78 老板插话原文引文：默认可见，不依赖悬停
                 quotes = "".join(
-                    "<div style='color:#8b949e;font-size:11.5px;"
+                    "<div style='color:var(--gray-5);font-size:11.5px;"
                     "margin-top:3px'>💬 插话%d（%s）「%s」</div>"
                     % (i + 1, (h.get("ts") or "")[5:16],
                        e((h.get("text") or "")[:60]))
@@ -19439,7 +19445,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                             if rp.get("who") == v.get("name"):
                                 st3 = rp.get("stance3")
                         if st3 is None:
-                            cells.append("<span style='color:#8b949e'>○"
+                            cells.append("<span style='color:var(--gray-5)'>○"
                                          "</span>")
                         else:
                             cells.append(
@@ -19452,14 +19458,14 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                            "".join(_mtd(c, j)
                                    for j, c in enumerate(cells))))
                 pf = fin.get("stance")
-                fcells = ["<span style='color:#8b949e'>—</span>",
+                fcells = ["<span style='color:var(--gray-5)'>—</span>",
                           ("%+d" % pf) if pf is not None
-                          else "<span style='color:#8b949e'>—</span>"]
+                          else "<span style='color:var(--gray-5)'>—</span>"]
                 for h in hs:
                     f2 = h.get("final2") or {}
                     fs = f2.get("stance")
                     if fs is None:
-                        fcells.append("<span style='color:#8b949e'>○"
+                        fcells.append("<span style='color:var(--gray-5)'>○"
                                       "</span>")
                     else:
                         fcells.append(
@@ -19468,7 +19474,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                         pf = fs
                 matrix = ("<div style='margin-top:10px;overflow-x:auto'>"
                           "<table style='border-collapse:collapse;"
-                          "border:1px solid #30363d'>"
+                          "border:1px solid var(--gray-4)'>"
                           "<tr><th style='%s'></th>%s</tr>%s"
                           "<tr><td style='%s;color:#d2a8ff;font-weight:600'"
                           ">终裁</td>%s</tr></table></div>"
@@ -19521,7 +19527,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                         "{stroke-opacity:.15}50%%{stroke-opacity:.9}}"
                         "</style>%s%s%s%s%s%s"
                         "</svg><div style='margin-top:6px'>%s"
-                        "<span style='color:#8b949e;font-size:11px;"
+                        "<span style='color:var(--gray-5);font-size:11px;"
                         "margin-left:10px'>白圈=立场变化点</span>"
                         "<span style='color:#c58af9;font-size:11px;"
                         "margin-left:10px'>💬列=老板插话后重测</span>"
@@ -19590,8 +19596,8 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                       "以雇主身份加入本场辩论——主持人（分析师团队）与三位"
                       "操盘手将各自回应你（约 10-20 秒）。</div>"
                       "<textarea id='sayta' rows='3' style='width:98%%;"
-                      "background:#0d1117;color:#e6edf3;border:1px solid "
-                      "#30363d;border-radius:6px;padding:8px;font-size:13px'"
+                      "background:var(--gray-0);color:var(--gray-7);border:1px solid "
+                      "var(--gray-4);border-radius:6px;padding:8px;font-size:13px'"
                       " placeholder='例：我认为量能不足，等回踩 10 日线再谈"
                       "进场；或直接质询某位操盘手…'></textarea>"
                       "<div style='margin-top:6px'><button onclick=_say(this) "
@@ -19612,7 +19618,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
             content = ("<h1>🎤 模拟辩论室 · %s %s</h1>"
                        "<div class='dim' style='margin:2px 0 10px'>%s 预演"
                        "（来源 %s）· 分析师票%s（%+.1f）→ 终裁 <b>%s</b>"
-                       "　<a href='/sim' style='color:#58a6ff'>← 返回锦标赛"
+                       "　<a href='/sim' style='color:var(--blu-500)'>← 返回锦标赛"
                        "</a></div>%s%s%s%s"
                        % (e(r.get("code") or ""), e(r.get("name") or ""),
                           r.get("d") or "",
@@ -19667,14 +19673,14 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                (x.get("vote") or {}).get("wsum") or 0,
                _lchips(x),
                e((x.get("final") or {}).get("verdict") or "—"),
-               ("<a href='/debate?p=%d' style='color:#58a6ff'>🎤%s "
+               ("<a href='/debate?p=%d' style='color:var(--blu-500)'>🎤%s "
                 "进场辩论</a>"
                 % (i, ("×%d" % len(x.get("human") or []))
                    if x.get("human") else "")))
             for i, x in enumerate(rev[:30]))
         if not rows:
             rows = ("<tr><td colspan=7 class='dim'>尚无预演场次——先到 "
-                    "<a href='/sim' style='color:#58a6ff'>/sim</a> 点「预演"
+                    "<a href='/sim' style='color:var(--blu-500)'>/sim</a> 点「预演"
                     "当日候选票」</td></tr>")
         # ── K85/K96 常驻统计：老板插话 → 终裁改判率 + 操盘手撬动率
         # （全量行累计：插话跨重跑累计；场级数字按 (code,d) 去重）
@@ -19782,10 +19788,10 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                      "<div class='sstat'><span class='st'>先行(资金>1亿)</span>"
                      "<span class='sv'>%d</span><span class='su'>q_hm=1 档</span></div>"
                      "<div class='sstat'><span class='st'>跟随确认</span>"
-                     "<span class='sv' style='color:#f85149'>%d</span>"
+                     "<span class='sv' style='color:var(--red-500)'>%d</span>"
                      "<span class='su'>历史 ret5 +11.6%%</span></div>"
                      "<div class='sstat'><span class='st'>诱多警示</span>"
-                     "<span class='sv' style='color:#3fb950'>%d</span>"
+                     "<span class='sv' style='color:var(--grn-500)'>%d</span>"
                      "<span class='su'>历史 ret5 -4.2%%</span></div>"
                      "</div>" % (t["n"], t["d_min"], t["d_max"],
                                  t["n_lead"] or 0, t["fc"] or 0, t["lw"] or 0))
@@ -19800,14 +19806,14 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                       "</span>pre&gt;0 且 post&gt;0（先行+继续买）。"
                       "校准样本 n=9414（集中 2026-04~07 行情段）：游资是跟随确认"
                       "者而非驱动者，确认组正超额全部来自 pre≤0 子组。"
-                      "<b style='color:#d29922'>体制切换警讯</b>：近月确认样本 "
+                      "<b style='color:var(--ylw-500)'>体制切换警讯</b>：近月确认样本 "
                       "ret5 全负——行情段外推局限，标注不等于收益承诺。</div></div>")
             bd = "".join(
                 "<tr><td>%s</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td>"
                 "<td>%s</td><td>%.3f</td><td>%.2f</td></tr>"
                 % (r["date"], r["n"],
                    r["n_tag"] and
-                   "<b style='color:#e6edf3'>%d</b>" % r["n_tag"] or "0",
+                   "<b style='color:var(--gray-7)'>%d</b>" % r["n_tag"] or "0",
                    r["fc"] and "<span class='bdg g'>%d</span>" % r["fc"] or "—",
                    r["lw"] and "<span class='bdg r'>%d</span>" % r["lw"] or "—",
                    r["n_lead"] and "<span class='bdg y'>%d</span>" % r["n_lead"]
@@ -19888,7 +19894,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
             rows_f.append(
                 "<tr><td><a href='/kg?c=%s'>%s</a> <span class='dim'>%s"
                 "</span></td><td>%s</td><td class='dim'>%s</td><td>%s</td>"
-                "<td style='color:#d29922'>%s</td></tr>"
+                "<td style='color:var(--ylw-500)'>%s</td></tr>"
                 % (_e(it["code"]), _e(it["name"]), _e(it["code"]),
                    _e(_segs(it)) or "—", _e(sig) or "—", _e(vt) or "—",
                    "★" * min(5, int(it.get("stars") or 0))))
@@ -19917,7 +19923,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
                   "<th>缺线</th><th>传导环节</th><th>结构信号</th></tr>%s"
                   "</table>" % ("".join(rows_p) or
                                 "<tr><td colspan=5 class='dim'>无</td></tr>"))
-        meta = ("主题快照 <b style='color:#e6edf3'>%s</b> · 缠论窗口 %s 起共 "
+        meta = ("主题快照 <b style='color:var(--gray-7)'>%s</b> · 缠论窗口 %s 起共 "
                 "%d 自然日 · 生成 %s · 单线 %d 不输出 · last 文件单主题语义，"
                 "刷新：<code>python kg_resonance.py query %s</code>"
                 "（主题含空格需引号）"
@@ -19942,22 +19948,22 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
 <title>知识画布 · 图谱</title>%s%s<style>
 .wrap{display:flex;gap:10px;height:calc(100vh - 118px)}
 .left{width:250px;flex:none;overflow-y:auto}
-.right{flex:1;position:relative;border:1px solid #30363d;border-radius:10px;
-background:#0d1117;overflow:hidden}
+.right{flex:1;position:relative;border:1px solid var(--gray-4);border-radius:10px;
+background:var(--gray-0);overflow:hidden}
 #cv{width:100%%;height:100%%;cursor:grab;touch-action:none}
-.hit{padding:7px 10px;border:1px solid #30363d;border-radius:8px;
-margin:0 0 6px;cursor:pointer;background:#161b22}
-.hit:hover{border-color:#1f6feb}
-.hit b{color:#e6edf3;font-size:13.5px}
-.hit .lb{color:#8b949e;font-size:11px;margin-left:6px}
-.side{position:absolute;right:10px;top:10px;width:270px;background:#161b22;
-border:1px solid #30363d;border-radius:10px;padding:10px;display:none;
+.hit{padding:7px 10px;border:1px solid var(--gray-4);border-radius:8px;
+margin:0 0 6px;cursor:pointer;background:var(--gray-2)}
+.hit:hover{border-color:var(--blu-600)}
+.hit b{color:var(--gray-7);font-size:13.5px}
+.hit .lb{color:var(--gray-5);font-size:11px;margin-left:6px}
+.side{position:absolute;right:10px;top:10px;width:270px;background:var(--gray-2);
+border:1px solid var(--gray-4);border-radius:10px;padding:10px;display:none;
 max-height:70%%;overflow-y:auto}
-.side h4{margin:0 0 6px;color:#e6edf3;font-size:14px}
-.side .kv{font-size:12px;color:#8b949e;margin:2px 0}
-.side .kv b{color:#c9d1d9;font-weight:500}
-.side a{color:#58a6ff;font-size:12.5px;text-decoration:none}
-.legend{display:flex;gap:12px;font-size:11.5px;color:#8b949e;margin:6px 0}
+.side h4{margin:0 0 6px;color:var(--gray-7);font-size:14px}
+.side .kv{font-size:12px;color:var(--gray-5);margin:2px 0}
+.side .kv b{color:var(--gray-6);font-weight:500}
+.side a{color:var(--blu-500);font-size:12.5px;text-decoration:none}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--gray-5);margin:6px 0}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:50%%;
 margin-right:4px}
 </style></head><body>%s
@@ -19966,16 +19972,16 @@ margin-right:4px}
 <input id=qi class=kfind placeholder='搜实体：股票/游资/环节/主题/公司/概念…'
 style='flex:1' autocomplete=off>
 <button class=kfbtn>🔍</button></form>
-<button class=kfbtn style='background:#2ea043' onclick=newEntity()>＋实体</button>
-<button class=kfbtn style='background:#30363d' onclick=resetAll()>重置</button>
+<button class=kfbtn style='background:var(--grn-600)' onclick=newEntity()>＋实体</button>
+<button class=kfbtn style='background:var(--gray-4)' onclick=resetAll()>重置</button>
 </div>
 <div id=linkbar style='display:none;margin:0 0 6px;padding:6px 10px;
 background:#2a2111;border:1px solid #4d3a13;border-radius:8px;
-color:#d29922;font-size:12.5px'></div>
-<div class=legend><span><i style='background:#f85149'></i>人</span>
-<span><i style='background:#3fb950'></i>地</span>
-<span><i style='background:#d29922'></i>事</span>
-<span><i style='background:#58a6ff'></i>物</span>
+color:var(--ylw-500);font-size:12.5px'></div>
+<div class=legend><span><i style='background:var(--red-500)'></i>人</span>
+<span><i style='background:var(--grn-500)'></i>地</span>
+<span><i style='background:var(--ylw-500)'></i>事</span>
+<span><i style='background:var(--blu-500)'></i>物</span>
 <span><i style='background:#bc8cff'></i>组织</span>
 <span style='margin-left:auto'>点击节点继续扩散 · 虚圈＝终端（只读详情）</span>
 </div>
@@ -19984,27 +19990,27 @@ color:#d29922;font-size:12.5px'></div>
 <div class=side id=side></div></div></div>
 <div id=ed style='display:none;position:absolute;left:50%%;top:50%%;
 transform:translate(-50%%,-50%%);width:430px;max-height:80vh;overflow-y:auto;
-background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px;
+background:var(--gray-2);border:1px solid var(--gray-4);border-radius:12px;padding:14px;
 z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.5)'>
 <div style='display:flex;justify-content:space-between;align-items:center'>
-<h4 id=edt style='margin:0 0 8px;color:#e6edf3;font-size:14.5px'>实体编辑</h4>
-<span style='cursor:pointer;color:#8b949e' onclick=closeEd()>✕</span></div>
+<h4 id=edt style='margin:0 0 8px;color:var(--gray-7);font-size:14.5px'>实体编辑</h4>
+<span style='cursor:pointer;color:var(--gray-5)' onclick=closeEd()>✕</span></div>
 <div style='display:flex;gap:6px;margin:0 0 6px'>
 <select id=edl class=kfind style='width:150px'></select>
 <input id=edk class=kfind placeholder='键（代码/名称）' style='flex:1'></div>
 <div id=edrows></div>
-<button class=kfbtn style='background:#30363d;padding:4px 10px;
+<button class=kfbtn style='background:var(--gray-4);padding:4px 10px;
 font-size:12px' onclick=addRow()>＋属性</button>
-<button class=kfbtn style='background:#1f6feb;padding:4px 10px;
+<button class=kfbtn style='background:var(--blu-600);padding:4px 10px;
 font-size:12px' onclick=saveProps()>保存入图</button>
-<div style='margin:10px 0 4px;color:#8b949e;font-size:12px'>
+<div style='margin:10px 0 4px;color:var(--gray-5);font-size:12px'>
 同类属性分布直方图 <select id=edf class=kfind style='width:120px'></select>
-<button class=kfbtn style='background:#30363d;padding:2px 8px;font-size:11px'
+<button class=kfbtn style='background:var(--gray-4);padding:2px 8px;font-size:11px'
 onclick=loadHist()>查看</button></div>
-<div id=edhist style='font-size:11.5px;color:#c9d1d9'></div>
+<div id=edhist style='font-size:11.5px;color:var(--gray-6)'></div>
 </div>
-<div id=ctx style='display:none;position:fixed;background:#161b22;
-border:1px solid #30363d;border-radius:8px;z-index:30;min-width:130px'>
+<div id=ctx style='display:none;position:fixed;background:var(--gray-2);
+border:1px solid var(--gray-4);border-radius:8px;z-index:30;min-width:130px'>
 <div class=hit onclick=ctxExpand()>🔍 扩散展开</div>
 <div class=hit onclick=ctxEdit()>✏️ 编辑属性</div>
 <div class=hit onclick=ctxLink()>🔗 连接到…</div>
@@ -20178,7 +20184,7 @@ function addRow(k,v){var rows=document.getElementById('edrows');
   d.innerHTML='<input class=kfind placeholder=字段 style="width:120px" '+
     'value="'+esc(k||'')+'"><input class=kfind placeholder=值 '+
     'style="flex:1" value="'+esc(v||'')+'">'+
-    '<span style="cursor:pointer;color:#f85149;align-self:center" '+
+    '<span style="cursor:pointer;color:var(--red-500);align-self:center" '+
     'onclick=this.parentNode.remove()>✕</span>';
   rows.appendChild(d);}
 function saveProps(){var props={};
@@ -20207,7 +20213,7 @@ function loadHist(){var f=document.getElementById('edf').value;
           ';margin:2px 0"><span style="width:90px;overflow:hidden;'+
           'text-overflow:ellipsis;white-space:nowrap">'+esc(x.v)+
           '</span><span class=hb style="width:'+
-          Math.round(x.n/mx*100)+'px;background:#1f6feb"></span>'+x.n+
+          Math.round(x.n/mx*100)+'px;background:var(--blu-600)"></span>'+x.n+
           '</div>'}).join('')||'（无数据）';});}
 function postEdit(obj,cb){
   fetch('/kg/canvas_edit',{method:'POST',
@@ -20259,25 +20265,25 @@ nodeClick=function(id){if(linkFrom){
 <title>知识画布 v2 · 图谱</title>{css}{nav}<style>
 .wrap{display:flex;gap:10px;height:calc(100vh - 150px)}
 .left{width:250px;flex:none;overflow-y:auto}
-.right{flex:1;position:relative;border:1px solid #30363d;border-radius:10px;
-background:#0d1117;overflow:hidden}
+.right{flex:1;position:relative;border:1px solid var(--gray-4);border-radius:10px;
+background:var(--gray-0);overflow:hidden}
 #cv{width:100%;height:100%}
-.hit{padding:7px 10px;border:1px solid #30363d;border-radius:8px;
-margin:0 0 6px;cursor:pointer;background:#161b22}
-.hit:hover{border-color:#1f6feb}
-.hit b{color:#e6edf3;font-size:13.5px}
-.hit .lb{color:#8b949e;font-size:11px;margin-left:6px}
-.side{position:absolute;right:10px;top:10px;width:270px;background:#161b22;
-border:1px solid #30363d;border-radius:10px;padding:10px;display:none;
+.hit{padding:7px 10px;border:1px solid var(--gray-4);border-radius:8px;
+margin:0 0 6px;cursor:pointer;background:var(--gray-2)}
+.hit:hover{border-color:var(--blu-600)}
+.hit b{color:var(--gray-7);font-size:13.5px}
+.hit .lb{color:var(--gray-5);font-size:11px;margin-left:6px}
+.side{position:absolute;right:10px;top:10px;width:270px;background:var(--gray-2);
+border:1px solid var(--gray-4);border-radius:10px;padding:10px;display:none;
 max-height:70%;overflow-y:auto;z-index:10}
-.side h4{margin:0 0 6px;color:#e6edf3;font-size:14px}
-.side .kv{font-size:12px;color:#8b949e;margin:2px 0}
-.side .kv b{color:#c9d1d9;font-weight:500}
-.side a{color:#58a6ff;font-size:12.5px;text-decoration:none;margin-right:8px}
-.legend{display:flex;gap:12px;font-size:11.5px;color:#8b949e;margin:6px 0}
+.side h4{margin:0 0 6px;color:var(--gray-7);font-size:14px}
+.side .kv{font-size:12px;color:var(--gray-5);margin:2px 0}
+.side .kv b{color:var(--gray-6);font-weight:500}
+.side a{color:var(--blu-500);font-size:12.5px;text-decoration:none;margin-right:8px}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--gray-5);margin:6px 0}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;
 margin-right:4px}
-#err{position:absolute;left:10px;bottom:10px;color:#f85149;font-size:11px;
+#err{position:absolute;left:10px;bottom:10px;color:var(--red-500);font-size:11px;
 max-width:80%;white-space:pre-wrap;z-index:30}
 </style></head><body>{nav}
 <div style='display:flex;gap:10px;align-items:center;margin:0 0 6px'>
@@ -20285,24 +20291,24 @@ max-width:80%;white-space:pre-wrap;z-index:30}
 <input id=qi class=kfind placeholder='搜实体：股票/游资/环节/主题/公司/概念…'
 style='flex:1' autocomplete=off>
 <button class=kfbtn>🔍</button></form>
-<button class=kfbtn style='background:#2ea043' onclick=newEntity()>＋实体</button>
+<button class=kfbtn style='background:var(--grn-600)' onclick=newEntity()>＋实体</button>
 <button class=kfbtn style='background:#8957e5' onclick=gxPanel()>📊 图分析</button>
 <select id=layoutSel onchange=setLayoutKind(this.value)
- style='background:#21262d;color:#e6edf3;border:1px solid #30363d;
+ style='background:var(--gray-3);color:var(--gray-7);border:1px solid var(--gray-4);
  border-radius:8px;padding:4px 8px;font-size:12.5px;cursor:pointer'>
 <option value=force>🌐 力导向</option><option value=radial>🏛 组织阵型</option>
 <option value=circular>⭕ 环形</option><option value=grid>▦ 网格</option></select>
-<button class=kfbtn style='background:#1f6feb' onclick=colorCommunity()>🎨 社群着色</button>
-<button class=kfbtn style='background:#30363d' onclick=resetNodeColor()>🎨✕</button>
-<button class=kfbtn style='background:#30363d' onclick=resetAll()>重置</button>
+<button class=kfbtn style='background:var(--blu-600)' onclick=colorCommunity()>🎨 社群着色</button>
+<button class=kfbtn style='background:var(--gray-4)' onclick=resetNodeColor()>🎨✕</button>
+<button class=kfbtn style='background:var(--gray-4)' onclick=resetAll()>重置</button>
 </div>
 <div id=linkbar style='display:none;margin:0 0 6px;padding:6px 10px;
 background:#2a2111;border:1px solid #4d3a13;border-radius:8px;
-color:#d29922;font-size:12.5px'></div>
-<div class=legend><span><i style='background:#f85149'></i>人</span>
-<span><i style='background:#3fb950'></i>地</span>
-<span><i style='background:#d29922'></i>事</span>
-<span><i style='background:#58a6ff'></i>物</span>
+color:var(--ylw-500);font-size:12.5px'></div>
+<div class=legend><span><i style='background:var(--red-500)'></i>人</span>
+<span><i style='background:var(--grn-500)'></i>地</span>
+<span><i style='background:var(--ylw-500)'></i>事</span>
+<span><i style='background:var(--blu-500)'></i>物</span>
 <span><i style='background:#bc8cff'></i>组织</span>
 <span style='margin-left:auto'>G6 力导向 · 节点可拖拽 · 点击继续扩散</span>
 </div>
@@ -20311,27 +20317,27 @@ color:#d29922;font-size:12.5px'></div>
 <div class=side id=side></div><div id=err></div></div></div>
 <div id=ed style='display:none;position:absolute;left:50%%;top:50%%;
 transform:translate(-50%%,-50%%);width:430px;max-height:80vh;overflow-y:auto;
-background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px;
+background:var(--gray-2);border:1px solid var(--gray-4);border-radius:12px;padding:14px;
 z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.5)'>
 <div style='display:flex;justify-content:space-between;align-items:center'>
-<h4 id=edt style='margin:0 0 8px;color:#e6edf3;font-size:14.5px'>实体编辑</h4>
-<span style='cursor:pointer;color:#8b949e' onclick=closeEd()>✕</span></div>
+<h4 id=edt style='margin:0 0 8px;color:var(--gray-7);font-size:14.5px'>实体编辑</h4>
+<span style='cursor:pointer;color:var(--gray-5)' onclick=closeEd()>✕</span></div>
 <div style='display:flex;gap:6px;margin:0 0 6px'>
 <select id=edl class=kfind style='width:150px'></select>
 <input id=edk class=kfind placeholder='键（代码/名称）' style='flex:1'></div>
 <div id=edrows></div>
-<button class=kfbtn style='background:#30363d;padding:4px 10px;
+<button class=kfbtn style='background:var(--gray-4);padding:4px 10px;
 font-size:12px' onclick=addRow()>＋属性</button>
-<button class=kfbtn style='background:#1f6feb;padding:4px 10px;
+<button class=kfbtn style='background:var(--blu-600);padding:4px 10px;
 font-size:12px' onclick=saveProps()>保存入图</button>
-<div style='margin:10px 0 4px;color:#8b949e;font-size:12px'>
+<div style='margin:10px 0 4px;color:var(--gray-5);font-size:12px'>
 同类属性分布直方图 <select id=edf class=kfind style='width:120px'></select>
-<button class=kfbtn style='background:#30363d;padding:2px 8px;font-size:11px'
+<button class=kfbtn style='background:var(--gray-4);padding:2px 8px;font-size:11px'
 onclick=loadHist()>查看</button></div>
-<div id=edhist style='font-size:11.5px;color:#c9d1d9'></div>
+<div id=edhist style='font-size:11.5px;color:var(--gray-6)'></div>
 </div>
-<div id=ctx style='display:none;position:fixed;background:#161b22;
-border:1px solid #30363d;border-radius:8px;z-index:30;min-width:130px'>
+<div id=ctx style='display:none;position:fixed;background:var(--gray-2);
+border:1px solid var(--gray-4);border-radius:8px;z-index:30;min-width:130px'>
 <div class=hit onclick=ctxExpand()>🔍 扩散展开</div>
 <div class=hit onclick=ctxEdit()>✏️ 编辑属性</div>
 <div class=hit onclick=ctxLink()>🔗 连接到…</div>
@@ -20482,7 +20488,7 @@ function addRow(k,v){var rows=document.getElementById('edrows');
   d.innerHTML='<input class=kfind placeholder=字段 style="width:120px" '+
     'value="'+esc(k||'')+'"><input class=kfind placeholder=值 '+
     'style="flex:1" value="'+esc(v||'')+'">'+
-    '<span style="cursor:pointer;color:#f85149;align-self:center" '+
+    '<span style="cursor:pointer;color:var(--red-500);align-self:center" '+
     'onclick=this.parentNode.remove()>✕</span>';
   rows.appendChild(d);}
 function saveProps(){var props={};
@@ -20504,7 +20510,7 @@ function loadHist(){var f=document.getElementById('edf').value;
           ';margin:2px 0"><span style="width:90px;overflow:hidden;'+
           'text-overflow:ellipsis;white-space:nowrap">'+esc(x.v)+
           '</span><span class=hb style="width:'+
-          Math.round(x.n/mx*100)+'px;background:#1f6feb"></span>'+x.n+
+          Math.round(x.n/mx*100)+'px;background:var(--blu-600)"></span>'+x.n+
           '</div>'}).join('')||'（无数据）';});}
 function postEdit(obj,cb){
   fetch('/kg/canvas_edit',{method:'POST',
@@ -20582,18 +20588,18 @@ p.style.cssText='position:fixed;right:14px;top:70px;width:340px;z-index:60;'
  +'padding:12px;max-height:78vh;overflow-y:auto;font-size:13px;color:#e6edf3';
 p.innerHTML="<div style='display:flex;justify-content:space-between'>"
  +"<b style='color:#bc8cff'>📊 图分析</b>"
- +"<span style='cursor:pointer;color:#8b949e' onclick=gxp.style.display='none'>✕</span></div>"
+ +"<span style='cursor:pointer;color:var(--gray-5)' onclick=gxp.style.display='none'>✕</span></div>"
  +"<input id=gxa placeholder='实体A：名称/代码' style='width:100%;margin:8px 0 4px;"
- +"background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px 8px'>"
+ +"background:var(--gray-0);border:1px solid var(--gray-4);color:var(--gray-7);border-radius:6px;padding:6px 8px'>"
  +"<input id=gxb placeholder='实体B（路径/共同邻居用）' style='width:100%;margin:0 0 6px;"
- +"background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px 8px'>"
+ +"background:var(--gray-0);border:1px solid var(--gray-4);color:var(--gray-7);border-radius:6px;padding:6px 8px'>"
  +"<div style='display:flex;gap:6px;flex-wrap:wrap'>"
  +"<button onclick=gxGo('path') style='flex:1'>六度路径</button>"
  +"<button onclick=gxGo('shared') style='flex:1'>共同邻居</button>"
  +"<button onclick=gxGo('community') style='flex:1'>社群</button>"
  +"<button onclick=gxGo('centrality') style='flex:1'>中心性</button></div>"
- +"<select id=gxh style='margin-top:6px;background:#0d1117;color:#e6edf3;"
- +"border:1px solid #30363d;border-radius:6px;padding:4px'>"
+ +"<select id=gxh style='margin-top:6px;background:var(--gray-0);color:var(--gray-7);"
+ +"border:1px solid var(--gray-4);border-radius:6px;padding:4px'>"
  +"<option value=''>跳数:自动</option><option value=2>2跳</option>"
  +"<option value=3>3跳</option><option value=6>6跳</option></select>"
  +"<div id=gxr style='margin-top:8px'></div>";
@@ -20611,7 +20617,7 @@ var u='/kg/gx/'+sub+':'+encodeURIComponent(a)+(b?','+encodeURIComponent(b):'')
 var r=document.getElementById('gxr');
 r.innerHTML="<span class=dim>分析中…</span>";
 fetch(u).then(function(x){return x.json()}).then(function(d){
-if(!d.ok){r.innerHTML="<span style='color:#f85149'>"+d.error+"</span>";return}
+if(!d.ok){r.innerHTML="<span style='color:var(--red-500)'>"+d.error+"</span>";return}
 if(sub=='path'){var hh=d.hops==null?'不连通':'<b>'+d.hops+'</b> 跳'
  +(d['六度内']?' <span style=color:#3fb950>✓六度内</span>':'');
 r.innerHTML=hh+'<div style="margin-top:6px;line-height:1.9">'
@@ -20623,7 +20629,7 @@ r.innerHTML=hh+'<div style="margin-top:6px;line-height:1.9">'
 if(sub=='shared'){var hh=d.n+" 共同邻居";
 r.innerHTML=hh+'<div style="margin-top:6px">'
 +d.neighbors.map(function(n){return "<div style='margin:3px 0'>"
- +"<span style='color:#58a6ff'>"+n.name+"</span>"
+ +"<span style='color:var(--blu-500)'>"+n.name+"</span>"
  +" <span class=dim>"+n.labels.join('/')+" ×"+n.w+"</span></div>"}).join('')
  +"</div><div class=dim style='margin-top:4px'>按类型："
  +Object.keys(d.by_label).map(function(k){return k+"×"+d.by_label[k]}).join(' ')
@@ -20631,16 +20637,16 @@ r.innerHTML=hh+'<div style="margin-top:6px">'
 if(sub=='community'){var hh=d.n_nodes+" 节点 / "+d.n_communities+" 社群";
 r.innerHTML=hh+'<div style="margin-top:6px">'
 +d.communities.map(function(c){return "<div style='margin:6px 0;padding:6px;"
- +"border:1px solid #30363d;border-radius:8px'>"
- +(c.has_seed?"<span style='color:#3fb950'>★</span> ":"")
+ +"border:1px solid var(--gray-4);border-radius:8px'>"
+ +(c.has_seed?"<span style='color:var(--grn-500)'>★</span> ":"")
  +"#"+c.id+" · "+c.size+" 节点 · "
  +Object.keys(c.labels).map(function(k){return k+" "+c.labels[k]}).join('/')
  +"<div class=dim style='margin-top:3px'>"
  +c.tops.map(function(t){return t.name+"("+t.deg+")"}).join(' · ')
  +"</div></div>"}).join('')+"</div>";}
 if(sub=='centrality'){function tbl(t,arr){return "<div style='margin-top:6px'>"
- +"<b style='color:#d29922'>"+t+"</b>"
- +arr.map(function(x){return "<div class=dim style='color:#c9d1d9'>"
+ +"<b style='color:var(--ylw-500)'>"+t+"</b>"
+ +arr.map(function(x){return "<div class=dim style='color:var(--gray-6)'>"
  +x.name+" <span class=dim>"+x.v+"</span></div>"}).join('')+"</div>"}
 r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
  +tbl('度中心性',d.degree)+tbl('中介中心性',d.betweenness)
@@ -20699,11 +20705,11 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         # ── ① 态势感知条（5 格，字段级降级）──
         if su.get("ok"):
             c1 = _cell("NEO4J 连接",
-                       "<span class='dot' style='background:#3fb950'></span>已连接",
+                       "<span class='dot' style='background:var(--grn-500)'></span>已连接",
                        "bolt://localhost:7687")
         else:
             c1 = _cell("NEO4J 连接",
-                       "<span class='dot' style='background:#f85149'></span>未连接",
+                       "<span class='dot' style='background:var(--red-500)'></span>未连接",
                        e((su.get("error") or "")[:60]), warn=True)
         inv_mk = " / ".join("%s %d" % (k, v)
                             for k, v in (su.get("inv_markets") or {}).items())
@@ -20798,46 +20804,46 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
 <title>事件图谱 · K266</title>__CSS____NAV__<style>
 .situgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0 0 14px}
-.sc{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:10px 14px}
+.sc{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;padding:10px 14px}
 .sc.w{border-color:#4d3a13}
-.sl{color:#8b949e;font-size:11px;letter-spacing:1px;margin-bottom:4px}
-.sv{color:#e6edf3;font-size:15px;font-weight:600}
-.ss{color:#8b949e;font-size:11px;margin-top:3px}
+.sl{color:var(--gray-5);font-size:11px;letter-spacing:1px;margin-bottom:4px}
+.sv{color:var(--gray-7);font-size:15px;font-weight:600}
+.ss{color:var(--gray-5);font-size:11px;margin-top:3px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;align-items:center}
-.tab{padding:5px 14px;border:1px solid #30363d;border-radius:14px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22}
-.tab.on{color:#e6edf3;border-color:#58a6ff;font-weight:600}
-.tab.off{opacity:.35;cursor:not-allowed;color:#8b949e}
+.tab{padding:5px 14px;border:1px solid var(--gray-4);border-radius:14px;color:var(--blu-500);text-decoration:none;font-size:12.5px;background:var(--gray-2)}
+.tab.on{color:var(--gray-7);border-color:var(--blu-500);font-weight:600}
+.tab.off{opacity:.35;cursor:not-allowed;color:var(--gray-5)}
 .fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px;position:relative}
-.fsel,.fdt{padding:7px 10px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:12.5px}
-.hits{display:none;position:absolute;top:40px;left:0;background:#161b22;border:1px solid #30363d;border-radius:8px;z-index:50;min-width:320px;max-height:280px;overflow:auto}
-.hit{padding:7px 12px;cursor:pointer;font-size:12.5px;border-bottom:1px solid #21262d}
+.fsel,.fdt{padding:7px 10px;background:var(--gray-2);border:1px solid var(--gray-4);border-radius:8px;color:var(--gray-7);font-size:12.5px}
+.hits{display:none;position:absolute;top:40px;left:0;background:var(--gray-2);border:1px solid var(--gray-4);border-radius:8px;z-index:50;min-width:320px;max-height:280px;overflow:auto}
+.hit{padding:7px 12px;cursor:pointer;font-size:12.5px;border-bottom:1px solid var(--gray-3)}
 .hit:hover{background:rgba(31,111,235,.2)}
-.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:#8b949e;font-size:11.5px;align-items:center}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:var(--gray-5);font-size:11.5px;align-items:center}
 .lg{display:inline-flex;align-items:center;gap:5px}
 .lsw{width:14px;height:3px;border-radius:2px;display:inline-block}
 .lnd{width:9px;height:9px;border-radius:50%;display:inline-block}
-.evrow{padding:9px 12px;border:1px solid #21262d;border-radius:9px;margin-bottom:7px;background:#161b22}
-.co{color:#58a6ff;font-weight:600;cursor:pointer}
+.evrow{padding:9px 12px;border:1px solid var(--gray-3);border-radius:9px;margin-bottom:7px;background:var(--gray-2)}
+.co{color:var(--blu-500);font-weight:600;cursor:pointer}
 .co:hover{text-decoration:underline}
-.arrow{color:#8b949e;font-family:monospace}
-.bdgx{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:600;margin-left:6px;background:#161b22}
-.emeta{color:#8b949e;font-size:11.5px;margin-top:4px}
-.emeta a{color:#d29922;text-decoration:none}
-#evg{height:460px;border:1px solid #30363d;border-radius:10px;background:#0d1117}
+.arrow{color:var(--gray-5);font-family:monospace}
+.bdgx{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:600;margin-left:6px;background:var(--gray-2)}
+.emeta{color:var(--gray-5);font-size:11.5px;margin-top:4px}
+.emeta a{color:var(--ylw-500);text-decoration:none}
+#evg{height:460px;border:1px solid var(--gray-4);border-radius:10px;background:var(--gray-0)}
 #modal{position:fixed;inset:0;background:rgba(1,4,9,.78);z-index:100;display:none;align-items:center;justify-content:center;padding:30px}
-.mbox{background:#0d1117;border:1px solid #30363d;border-radius:12px;max-width:860px;width:100%;max-height:86vh;display:flex;flex-direction:column}
-.mhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid #21262d;font-weight:600;color:#e6edf3}
-.mhead button{background:none;border:1px solid #30363d;border-radius:7px;color:#8b949e;cursor:pointer;padding:3px 10px}
+.mbox{background:var(--gray-0);border:1px solid var(--gray-4);border-radius:12px;max-width:860px;width:100%;max-height:86vh;display:flex;flex-direction:column}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--gray-3);font-weight:600;color:var(--gray-7)}
+.mhead button{background:none;border:1px solid var(--gray-4);border-radius:7px;color:var(--gray-5);cursor:pointer;padding:3px 10px}
 #mbody{padding:14px 18px;overflow:auto}
 .mtags{margin-bottom:8px}
-.mbdg{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:600;margin-right:5px;background:#161b22}
-.mbdg.n{color:#8b949e;border:1px solid #30363d}
-.mtag{display:inline-block;background:#161b22;border:1px solid #30363d;color:#8b949e;border-radius:10px;padding:1px 9px;font-size:11px;margin:2px 3px 2px 0}
-.mwhy{color:#c9d1d9;font-size:12.5px;margin:4px 0}
-.mev{color:#c9d1d9;font-size:12.5px;margin:3px 0;border-left:2px solid #30363d;padding-left:10px}
-.mmeta{color:#8b949e;font-size:11px;margin:8px 0}
-.mtext{white-space:pre-wrap;word-break:break-all;color:#c9d1d9;font-size:12.5px;line-height:1.7;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px;font-family:inherit;margin:0}
+.mbdg{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:600;margin-right:5px;background:var(--gray-2)}
+.mbdg.n{color:var(--gray-5);border:1px solid var(--gray-4)}
+.mtag{display:inline-block;background:var(--gray-2);border:1px solid var(--gray-4);color:var(--gray-5);border-radius:10px;padding:1px 9px;font-size:11px;margin:2px 3px 2px 0}
+.mwhy{color:var(--gray-6);font-size:12.5px;margin:4px 0}
+.mev{color:var(--gray-6);font-size:12.5px;margin:3px 0;border-left:2px solid var(--gray-4);padding-left:10px}
+.mmeta{color:var(--gray-5);font-size:11px;margin:8px 0}
+.mtext{white-space:pre-wrap;word-break:break-all;color:var(--gray-6);font-size:12.5px;line-height:1.7;background:var(--gray-2);border:1px solid var(--gray-3);border-radius:8px;padding:12px;font-family:inherit;margin:0}
 </style></head><body>
 __SITU__
 __TABS__
@@ -20968,7 +20974,7 @@ document.getElementById('qi').addEventListener('input',function(){
 renderRows(INIT.edges,'事件列表 <span class="dim">('+INIT.edges.length+')</span>');
 ensureG().catch(function(err){
  document.getElementById('evg').innerHTML=
-  '<div style="padding:20px;color:#f85149">G6 渲染失败：'+esc(String(err)).slice(0,150)+'</div>'});
+  '<div style="padding:20px;color:var(--red-500)">G6 渲染失败：'+esc(String(err)).slice(0,150)+'</div>'});
 </script></body></html>""".replace("__CSS__", self._KG_CSS).replace(
             "__NAV__", pill_nav("kgevents")).replace(
             "__SITU__", situ_html).replace("__TABS__", tabs).replace(
@@ -21090,15 +21096,15 @@ ensureG().catch(function(err){
                 "<span class='wword' data-w='%s' onclick=\"flt('%s')\" "
                 "title='%d 次 · 点击过滤文档' style='font-size:%dpx;color:%s;"
                 "margin:2px 6px;cursor:pointer;display:inline-block'>%s"
-                "<i style='font-style:normal;color:#8b949e;font-size:10px'> %d"
+                "<i style='font-style:normal;color:var(--gray-5);font-size:10px'> %d"
                 "</i></span>"
                 % (_html.escape(w), _html.escape(w), freq[w],
                    12 + round(20 * (freq[w] / _mx) ** 0.5),
                    "#79c0ff" if len(w) > 3 else "#e6edf3",
                    _html.escape(w), freq[w])
                 for w in top_words)
-            wc_html = ("<div style='background:#0d1117;border:1px solid "
-                       "#30363d;border-radius:10px;padding:14px;"
+            wc_html = ("<div style='background:var(--gray-0);border:1px solid "
+                       "var(--gray-4);border-radius:10px;padding:14px;"
                        "line-height:2'>" + wc_html + "</div>")
         else:
             wc_html = "<div class='empty'>词云待生成（尚无影子数据）</div>"
@@ -21108,33 +21114,33 @@ ensureG().catch(function(err){
 .dc{max-width:1180px;margin:0 auto;padding:0 10px}
 .dgrid{display:grid;grid-template-columns:400px 1fr;gap:14px;margin-top:12px}
 @media(max-width:900px){.dgrid{grid-template-columns:1fr}}
-.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px}
+.panel{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;padding:12px}
 .wchips{margin-top:10px;line-height:2.1}
-.chip.wc{cursor:pointer;background:#161b22;color:#e6edf3}
-.chip.wc i{font-style:normal;color:#8b949e;font-size:10.5px;margin-left:3px}
+.chip.wc{cursor:pointer;background:var(--gray-2);color:var(--gray-7)}
+.chip.wc i{font-style:normal;color:var(--gray-5);font-size:10.5px;margin-left:3px}
 .chip.wc.on{background:#1f3a1f;color:#7ee787}
 .wword.on{background:#1f3a1f;outline:1px solid #7ee787;border-radius:4px}
 .chip.srcf{cursor:pointer}
 .chip.srcf.on{background:#1f3a1f;color:#7ee787}
 a.chip.srcf{text-decoration:none}
-.card{background:#161b22;border:1px solid #30363d;border-radius:10px;
+.card{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;
 padding:10px 12px;margin-bottom:9px}
-.card .nm{color:#58a6ff;font-size:13px;word-break:break-all}
-.card .tg{color:#e6edf3;font-size:14px;font-weight:600;margin:4px 0}
-.meta{font-size:11.5px;color:#8b949e}
+.card .nm{color:var(--blu-500);font-size:13px;word-break:break-all}
+.card .tg{color:var(--gray-7);font-size:14px;font-weight:600;margin:4px 0}
+.meta{font-size:11.5px;color:var(--gray-5)}
 .chip.b{background:#1f3a1f;color:#7ee787}.chip.s{background:#3a1f1f;color:#ffa198}
-.chip.n{background:#161b22;color:#8b949e;border:1px solid #30363d}
-.ev{font-size:12px;color:#c9d1d9;margin-top:5px;padding-left:8px;
-border-left:2px solid #30363d}
+.chip.n{background:var(--gray-2);color:var(--gray-5);border:1px solid var(--gray-4)}
+.ev{font-size:12px;color:var(--gray-6);margin-top:5px;padding-left:8px;
+border-left:2px solid var(--gray-4)}
 .ev a{color:#d2a8ff;text-decoration:none}
 .upbar{display:flex;gap:10px;align-items:center;margin:12px 0}
 .upbar input[type=file]{display:none}
 .upbar button{background:#238636;border:none;color:#fff;border-radius:8px;
 padding:8px 16px;font-size:13px;cursor:pointer}
-.upbar button.alt{background:#30363d}
-#upmsg{font-size:12px;color:#8b949e}
-.empty{color:#8b949e;font-size:13px;padding:30px;text-align:center}
-h3{font-size:14px;color:#e6edf3;margin:2px 0 8px}
+.upbar button.alt{background:var(--gray-4)}
+#upmsg{font-size:12px;color:var(--gray-5)}
+.empty{color:var(--gray-5);font-size:13px;padding:30px;text-align:center}
+h3{font-size:14px;color:var(--gray-7);margin:2px 0 8px}
 </style></head><body><div class='dc'>
 <div class='upbar'>
  <button onclick="document.getElementById('upf').click()">📤 上传公告/研报</button>
@@ -21234,16 +21240,16 @@ render(DOCS);
 .lx{max-width:1180px;margin:0 auto;padding:0 10px}
 .lgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
 @media(max-width:900px){.lgrid{grid-template-columns:1fr}}
-.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px}
-h3{font-size:14px;color:#e6edf3;margin:2px 0 8px}
-textarea{width:100%;min-height:180px;background:#0d1117;color:#e6edf3;
-border:1px solid #30363d;border-radius:8px;padding:10px;font-size:13px;
+.panel{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;padding:12px}
+h3{font-size:14px;color:var(--gray-7);margin:2px 0 8px}
+textarea{width:100%;min-height:180px;background:var(--gray-0);color:var(--gray-7);
+border:1px solid var(--gray-4);border-radius:8px;padding:10px;font-size:13px;
 line-height:1.8;font-family:inherit;box-sizing:border-box}
 .sv{display:flex;gap:10px;align-items:center;margin:14px 0}
 .sv button{background:#238636;border:none;color:#fff;border-radius:8px;
 padding:8px 20px;font-size:13px;cursor:pointer}
-#msg{font-size:12.5px;color:#8b949e}
-.dim{color:#8b949e;font-size:12.5px}
+#msg{font-size:12.5px;color:var(--gray-5)}
+.dim{color:var(--gray-5);font-size:12.5px}
 </style></head><body><div class='lx'>
 <h1 style='font-size:19px'>📚 股吧词表维护 · K263</h1>
 <div class='dim'>情绪词 / 同义归并在线编辑 → data/lexicon.json（guba_sentiment
@@ -21312,32 +21318,32 @@ function save(){
 <title>作战地图 · 图谱</title>{css}{nav}<style>
 .bt{max-width:1180px;margin:0 auto;padding:0 10px}
 .btbar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:center}
-.btbar input,.btbar select{background:#0d1117;border:1px solid #30363d;
-color:#e6edf3;border-radius:8px;padding:7px 10px;font-size:13px}
+.btbar input,.btbar select{background:var(--gray-0);border:1px solid var(--gray-4);
+color:var(--gray-7);border-radius:8px;padding:7px 10px;font-size:13px}
 #qcode{flex:1;min-width:220px}
 .btbar button{background:#238636;border:none;color:#fff;border-radius:8px;
 padding:8px 14px;font-size:13px;cursor:pointer}
-.btbar button.alt{background:#30363d}
-.leg{font-size:11.5px;color:#8b949e;margin:6px 0}
+.btbar button.alt{background:var(--gray-4)}
+.leg{font-size:11.5px;color:var(--gray-5);margin:6px 0}
 .chip{display:inline-block;border-radius:10px;padding:2px 9px;font-size:12px;
-margin-right:6px;border:1px solid #30363d}
+margin-right:6px;border:1px solid var(--gray-4)}
 .chip.b{background:#1f3a1f;color:#7ee787}.chip.s{background:#3a1f1f;color:#ffa198}
-.chip.n{background:#161b22;color:#8b949e}
+.chip.n{background:var(--gray-2);color:var(--gray-5)}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
 gap:10px;margin-top:12px}
-.card{background:#161b22;border-radius:10px;padding:12px;cursor:pointer}
-.card.hi{border:2px solid #f85149}.card.mid{border:2px solid #d29922}
-.card.ok{border:2px solid #2ea043}
-.card .cd{color:#e6edf3;font-weight:600}.card .pr{font-size:12px;margin-top:6px}
+.card{background:var(--gray-2);border-radius:10px;padding:12px;cursor:pointer}
+.card.hi{border:2px solid var(--red-500)}.card.mid{border:2px solid var(--ylw-500)}
+.card.ok{border:2px solid var(--grn-600)}
+.card .cd{color:var(--gray-7);font-weight:600}.card .pr{font-size:12px;margin-top:6px}
 .pr .h{color:#ffa198}.pr .m{color:#e3b341}
-#tl{margin-top:14px;background:#0d1117;border:1px solid #30363d;
+#tl{margin-top:14px;background:var(--gray-0);border:1px solid var(--gray-4);
 border-radius:10px;padding:10px;overflow-x:auto;cursor:grab}
 #tlc{display:block}
-.tlrow{font-size:11px;color:#8b949e;user-select:none}
+.tlrow{font-size:11px;color:var(--gray-5);user-select:none}
 .dot{position:absolute;border-radius:50%;cursor:pointer}
-.det{background:#161b22;border:1px solid #30363d;border-radius:10px;
-padding:12px;margin-top:10px;font-size:13px;color:#e6edf3;display:none}
-.rules{margin:8px 0;font-size:12.5px;color:#e6edf3}
+.det{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;
+padding:12px;margin-top:10px;font-size:13px;color:var(--gray-7);display:none}
+.rules{margin:8px 0;font-size:12.5px;color:var(--gray-7)}
 .rl{margin-right:14px;display:inline-block}
 </style></head><body>{nav}
 <div class=bt><h1>🗺 作战地图</h1>
@@ -21356,9 +21362,9 @@ padding:12px;margin-top:10px;font-size:13px;color:#e6edf3;display:none}
 <span style="color:#ffa198">● 游资/龙虎榜</span>
 <span style="color:#79c0ff">● 资金净流</span>
 <span style="color:#e3b341">● 公告事件</span>
-<span style="color:#c9d1d9">● 涨跌停/形态</span>
-<span style="color:#f85149">● 舆论恐慌</span>
-<span style="color:#2ea043">● 舆论乐观</span>　顶部K线带 · 拖动平移 ·
+<span style="color:var(--gray-6)">● 涨跌停/形态</span>
+<span style="color:var(--red-500)">● 舆论恐慌</span>
+<span style="color:var(--grn-600)">● 舆论乐观</span>　顶部K线带 · 拖动平移 ·
 点圆点看详情 · 词云点词反查原帖</div>
 <div class=rules id=rules></div>
 <div id=records></div>
@@ -21396,7 +21402,7 @@ if(!d.ok){el.innerHTML="<div class=dim style='color:#ffa198'>战绩层加载失�
 var h="<h2 style='margin-top:20px'>📊 四层战绩 <span class=dim style='font-size:12px'>as of "+
  d.as_of+"</span></h2>";
 d.layers.forEach(function(L){
-h+="<div style='margin-top:12px;background:#161b22;border:1px solid #30363d;"+
+h+="<div style='margin-top:12px;background:var(--gray-2);border:1px solid var(--gray-4);"+
 "border-radius:10px;padding:12px'><div style='font-weight:600'>"+L.layer+
 (L.note?" <span class=dim style='font-weight:400;font-size:11.5px'>"+L.note+"</span>":"")+"</div>";
 if(L.error){h+="<div style='color:#ffa198;font-size:12.5px;margin-top:6px'>⚠ "+
@@ -21444,8 +21450,8 @@ fetch('/kg/guba/'+encodeURIComponent(code)+'?days=60')
   mood+="<span style='display:inline-block;width:26px;text-align:center;"+
   "margin-right:3px' title='"+d.date+" 帖"+d.n+" 恐慌"+d.panic+"/乐观"+d.hope+
   "'><span style='display:block;height:34px;vertical-align:bottom;'>"+
-  "<span style='display:block;width:10px;height:"+Math.round(30*(d.panic/Math.max(tot,1)))+"px;background:#f85149;margin:0 auto;'></span>"+
-  "<span style='display:block;width:10px;height:"+Math.round(30*(d.hope/Math.max(tot,1)))+"px;background:#2ea043;margin:0 auto;'></span></span>"+
+  "<span style='display:block;width:10px;height:"+Math.round(30*(d.panic/Math.max(tot,1)))+"px;background:var(--red-500);margin:0 auto;'></span>"+
+  "<span style='display:block;width:10px;height:"+Math.round(30*(d.hope/Math.max(tot,1)))+"px;background:var(--grn-600);margin:0 auto;'></span></span>"+
   "<span class=dim style='font-size:9px'>"+d.date.slice(4)+"</span></span>"});
  var evs='';(g.events||[]).forEach(function(e){evs+="<tr><td>"+e.date+
   "</td><td>"+e.tag+"</td><td style='color:"+(e.dir=='bull'?'#7ee787':'#ffa198')+
@@ -21455,7 +21461,7 @@ fetch('/kg/guba/'+encodeURIComponent(code)+'?days=60')
  el.innerHTML="<h2 style='margin-top:18px'>🗣 股吧舆论（近60日 "+g.n_posts+
  " 帖）</h2><div class=dim>词云重心 · 每日恐慌(红)/乐观(绿) · 事件契合"+
  (g.event_match_rate!=null?("率 "+Math.round(100*g.event_match_rate)+"%"):"")+
- "</div><div style='background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px;margin-top:8px;line-height:2'>"+wcl+"</div>"+
+ "</div><div style='background:var(--gray-0);border:1px solid var(--gray-4);border-radius:10px;padding:14px;margin-top:8px;line-height:2'>"+wcl+"</div>"+
  "<div style='margin-top:10px'>"+mood+"</div>"+
  (evs?"<table style='margin-top:10px;font-size:12.5px;border-collapse:collapse'>"+
  "<tr class=dim><td>日期</td><td>公告tag</td><td>方向</td><td>词云契合</td></tr>"+evs+"</table>":"");
@@ -21472,7 +21478,7 @@ fetch('/kg/guba/'+encodeURIComponent(code)+'?days=60&per='+encodeURIComponent(w)
  .then(function(r){return r.json()}).then(function(d){
  if(!d.ok){el.innerHTML="<div class='dim' style='margin-top:10px'>反查失败："+
   d.error+"</div>";return}
- var h="<div style='margin-top:14px;background:#161b22;border:1px solid #30363d;"+
+ var h="<div style='margin-top:14px;background:var(--gray-2);border:1px solid var(--gray-4);"+
  "border-radius:10px;padding:12px'><b>🔍 含「"+d.word+"」原帖 "+d.n+" 条</b>"+
  " <button class='chip n' style='cursor:pointer;float:right' "+
  "onclick=\"document.getElementById('gbposts').innerHTML=''\">✕ 关闭</button>";
@@ -21563,7 +21569,7 @@ GDOTS.forEach(function(g){var dd=(g.x-mx)*(g.x-mx)+(g.y-my)*(g.y-my);
 if(dd<gbd){gbd=dd;gbest=g}});
 var det=document.getElementById('det');
 if(gbest&&gbd<144&&gbd<bd){var d=gbest.rec;det.style.display='block';
-det.innerHTML="<b style='color:#f85149'>舆情 · "+
+det.innerHTML="<b style='color:var(--red-500)'>舆情 · "+
 (d.mood=='panic'?'恐慌日':'乐观日')+"</b>　<span class=dim>"+d.date+
 "</span><div style='margin-top:6px'>帖 "+d.n+"　恐慌词 "+d.panic+
 "　乐观词 "+d.hope+"　多空票 "+d.bb_bull+"/"+d.bb_bear+
@@ -21600,11 +21606,11 @@ boot();
 <title>图谱问答 · 图谱</title>{css}{nav}<style>
 .qa{max-width:760px;margin:0 auto}
 .qbox{display:flex;gap:8px;margin:12px 0}
-.ans{background:#161b22;border:1px solid #30363d;border-radius:10px;
-padding:14px;margin:10px 0;color:#e6edf3;font-size:14px;line-height:1.7}
+.ans{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;
+padding:14px;margin:10px 0;color:var(--gray-7);font-size:14px;line-height:1.7}
 .src{margin-top:10px}
-.src a{color:#58a6ff;font-size:12.5px;text-decoration:none;margin-right:10px}
-.dim2{color:#8b949e;font-size:11.5px;margin-top:8px}
+.src a{color:var(--blu-500);font-size:12.5px;text-decoration:none;margin-right:10px}
+.dim2{color:var(--gray-5);font-size:11.5px;margin-top:8px}
 </style></head><body>{nav}
 <div class=qa><h1>💬 图谱问答</h1>
 <div class='dim' style='margin:0 0 8px'>图原生问答：实体链接 → 子图检索 → 事实生成（可溯源，Ollama 本地）</div>
@@ -22682,9 +22688,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
 
             def _card(href, border, icon, name, desc, stat):
                 return ("<a href='%s' style='display:block;border:1px "
-                        "solid %s;border-radius:12px;background:#161b22;"
+                        "solid %s;border-radius:12px;background:var(--gray-2);"
                         "padding:16px 18px;text-decoration:none;"
-                        "color:#e6edf3'>"
+                        "color:var(--gray-7)'>"
                         "<div style='font-size:17px;font-weight:700'>"
                         "%s %s</div>"
                         "<div class='dim' style='font-size:12.5px;"
