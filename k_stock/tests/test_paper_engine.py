@@ -607,3 +607,81 @@ def test_exec_run_skips_bad_stock(tmp_path):
     assert len(pend) == 1 and pend[0]["stock"] == "600519.SH"
     assert len(r["skipped"]) == 1 and "落单失败跳过" in r["skipped"][0]["why"]
     assert r["skipped"][0]["stock"] == "000999.SZ"
+
+
+# ---------- v0.4 AsOfMarket 时点视图 + replay 历史重放预筛 ----------
+
+def test_asof_market_view():
+    """AsOfMarket：last_bar/trading_days 停在视角日、end 窗口不预支未来、
+    wall clock 超前视角时按「视角日盘后」取严格后继。"""
+    from market import AsOfMarket
+    m = _mk_market(extra_tail=True)
+    v = AsOfMarket(m, view="20261009", end="20261010")
+    assert v.last_bar("600519.SH")["trade_date"] == "20261009"
+    assert v.last_bar("600519.SH")["close"] == 1252.0
+    assert v.trading_days() == ["20261008", "20261009"]
+    assert v.next_trading_day("2027-01-01T10:00:00") == "20261010"     # wall clock 超前→视角日严格后继
+    v.view = "20261010"                       # 视角逐日推进
+    assert v.last_bar("600519.SH")["trade_date"] == "20261010"
+    assert v.next_trading_day("2027-01-01T10:00:00") is None           # 视角日盘后+窗口尾→无后继
+    v2 = AsOfMarket(m, view="20261009", end="20261009")
+    assert v2.first_bar_on_or_after("600519.SH", "20261010") is None   # 窗外不预支
+    assert v2.next_trading_day("2026-10-09T15:00:00") is None          # 窗外无后继
+
+
+def test_replay_prefilter_tmpdb(tmp_path):
+    """trainee.replay：临时库重放不碰真账本，逐日 settle→止损→mark 全语义，
+    重放 2 天 < 毕业线 → provisional 判定。"""
+    import trainee as T
+    bars = {"600519.SH": [
+        _bar("20261008", open_=1244.6, pre_close=1246.2, close=1247.0),
+        _bar("20261009", open_=1250.0, pre_close=1247.0, close=1252.0),
+        _bar("20261010", open_=1260.0, pre_close=1252.0, close=1258.0),
+        _bar("20261013", open_=1258.0, pre_close=1258.0, close=1265.0),
+    ]}
+    m = FakeMarket(bars)
+    run = _write_run(tmp_path, "poc_rp.json", [
+        {"stock": "600519.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.8}}}])
+    prof = {"id": "rp_t", "name": "重放测试员", "status": "training",
+            "initial_cash": 1_000_000.0,
+            "params": {"max_pos_pct": 0.3, "max_total_pct": 0.9,
+                       "stop_dist_pct": 0.04, "conf_floor": 0.60},
+            "graduation": {"min_days": 20, "max_drawdown_pct": 15}}
+    r = T.replay(run, start="20261009", end="20261013", market=m, profiles=[prof])
+    assert r["ok"] and r["window"]["days"] == 3
+    assert r["window"]["start"] == "20261009" and r["window"]["end"] == "20261013"
+    s = r["rows"][0]
+    assert s["id"] == "rp_t" and s["placed"] == 1
+    assert s["days"] == 3 and s["cum_pct"] > 0        # 1250 买入 → 1013 收 1265 浮盈
+    assert s["verify_ok"] is True                     # 对账过
+    assert s["stop_hits"] == 0                        # 未触发止损
+    assert s["sharpe"] is not None                    # 3 天快照 → 日收益 2 个可算
+    assert s["verdict"].startswith("provisional")     # 3 天 < 毕业线 20 天
+
+
+def test_replay_prefilter_stop_hit(tmp_path):
+    """replay 止损语义：跌破止损价 → check_stops 触发 → 次日开盘卖出，stop_hits 计数。"""
+    import trainee as T
+    bars = {"600519.SH": [
+        _bar("20261008", open_=1244.6, pre_close=1246.2, close=1247.0),
+        _bar("20261009", open_=1250.0, pre_close=1247.0, close=1252.0),
+        _bar("20261010", open_=1150.0, pre_close=1252.0, close=1148.0),   # 崩 -8.3%
+        _bar("20261013", open_=1140.0, pre_close=1148.0, close=1135.0),
+    ]}
+    m = FakeMarket(bars)
+    run = _write_run(tmp_path, "poc_rp2.json", [
+        {"stock": "600519.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.8}}}])
+    prof = {"id": "rp_s", "name": "止损测试员", "status": "training",
+            "initial_cash": 1_000_000.0,
+            "params": {"max_pos_pct": 0.3, "max_total_pct": 0.9,
+                       "stop_dist_pct": 0.04, "conf_floor": 0.60},
+            "graduation": {"min_days": 20, "max_drawdown_pct": 15}}
+    r = T.replay(run, start="20261009", end="20261013", market=m, profiles=[prof])
+    s = r["rows"][0]
+    # 1009 买 1250（stop≈1200）→ 1010 收 1148 < 1200 触发 → SELL pending plan 1013
+    # → 1013 开 1140 撮合卖出
+    assert s["stop_hits"] == 1
+    assert s["cum_pct"] < 0                           # 止损离场实亏
+    assert s["verify_ok"] is True                     # 卖出后现金对账仍平

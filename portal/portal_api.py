@@ -658,7 +658,8 @@ DOMAIN_NAV_GROUPS = {
             ("🗺 门户", "/portal", "portal"),
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
-            ("🤖 AI 市场", "/aim", "aim"))),
+            ("🤖 AI 市场", "/aim", "aim"),
+            ("🏛 组织架构", "/org", "org"))),
         ("🎖 策略资产", (
             ("🎖 策略中心", "/strategies", "strategies"),
             ("🌊 青萍之末", "/bt-qpzm", "qpzm"),
@@ -5236,6 +5237,13 @@ gap:14px;align-items:start}}
 	box-shadow:0 2px 10px rgba(0,0,0,.4)}
 	#_topbtn.show{display:block}
 	#_topbtn:hover{color:#e6edf3;border-color:#58a6ff}
+	/* K-STOCK-037 全站超级助手浮动图标（右下角，与回到顶部按钮上下错开） */
+	#_hermesfab{position:fixed;right:18px;bottom:70px;width:46px;height:46px;
+	border-radius:50%;background:#1f6feb;border:2px solid #58a6ff;
+	font-size:22px;line-height:42px;text-align:center;z-index:100;
+	cursor:pointer;user-select:none;text-decoration:none;
+	box-shadow:0 2px 12px rgba(31,111,235,.45)}
+	#_hermesfab:hover{background:#388bfd}
 	</style>
 	<script>
 	window._tab=function(btn,id){var w=btn.closest('.tabwrap');
@@ -5310,7 +5318,14 @@ gap:14px;align-items:start}}
 	document.body.appendChild(b);
 	window.addEventListener('scroll',function(){
 	b.className=(window.scrollY||document.documentElement.scrollTop)
-	>600?'show':'';},{passive:true});}}catch(e){}};
+	>600?'show':'';},{passive:true});}}catch(e){}
+	/* K-STOCK-037 超级助手浮动图标：全站右下角常驻 */
+	try{if(!document.getElementById('_hermesfab')){
+	var f=document.createElement('a');
+	f.id='_hermesfab';f.href='http://127.0.0.1:8787';f.target='_blank';
+	f.rel='noopener';f.title='超级助手：对话即调度全部 AI 岗位';
+	f.appendChild(document.createTextNode('\uD83E\uDDB8'));
+	document.body.appendChild(f);}}catch(e){}};
 	document.addEventListener('DOMContentLoaded',window._u4init);
 	</script>"""
 
@@ -6172,9 +6187,9 @@ gap:14px;align-items:start}}
                 _card("/aim", "#d29922", "🤖", "AI 市场货架",
                       "11 个可聘岗位：A0 + 投研部五岗 + 专项 AI · 本地模型"
                       "零 token 成本", "在岗 11 · 按岗聘请"),
-                _card("/aim", "#8b949e", "🏛", "组织架构",
+                _card("/org", "#8b949e", "🏛", "组织架构",
                       "A0 参谋长 → 投研部 alpha 团队 → 汇报 human · "
-                      "三通道汇报", "org.json 实时"),
+                      "树形架构图 · 对话统一走超级助手", "org.json 实时"),
             ])),
             _zone("🎯 选股中心 · 三产线", "".join([
                 _card("/bt-qpzm", "#58a6ff", "🌊", "青萍之末",
@@ -6352,6 +6367,145 @@ gap:14px;align-items:start}}
                 "「在岗」岗位向 A0 参谋长提任务单（飞书日报通道）· "
                 "「即用」专项 AI 点入即用 · 货架源 portal/ai_market.json"
                 "（上新改注册表即可）· 不构成投资建议</div></body></html>")
+        self._html(body)
+
+    # ── K-STOCK-037 组织架构图页（/org）：树形岗位图 · 对话统一走超级助手 ──
+    def _org_page(self):
+        """🏛 组织架构：human → A0 参谋长 → 部门 → 岗位 树形图。
+        数据源 agent_platform/registry/{org,team_*}.json 与
+        portal/ai_market.json（注册表存源，本页只读渲染）。
+        岗位不设独立对话窗口——对话统一走 🦸 超级助手
+        （全站右下角浮动图标 / http://127.0.0.1:8787）。"""
+        import html as _h
+        e = _h.escape
+        org = _read_json(os.path.join(
+            STATION, "agent_platform", "registry", "org.json")) or {}
+        mkt = _read_json(os.path.join(ROOT, "ai_market.json")) or {}
+        face = {}
+        for _g in mkt.get("groups", []):
+            for _a in _g.get("ais", []):
+                face[_a.get("id", "")] = _a
+        team_map = {}
+        for _d in org.get("departments", []):
+            for _tn in (_d.get("teams") or []):
+                _tj = _read_json(os.path.join(
+                    STATION, "agent_platform", "registry",
+                    "team_%s.json" % _tn)) or {}
+                if _tj:
+                    team_map[_d.get("dept", "")] = _tj
+
+        def _agent_card(ag):
+            fid = face.get(ag.get("agent_id", ""), {}) or {}
+            icon = fid.get("icon", "🤖")
+            name = fid.get("name") or ag.get("agent_id", "?")
+            tags = []
+            if ag.get("is_debate_node"):
+                tags.append("↔ 辩论 %d 轮" % (ag.get("max_debate_rounds") or 0))
+            if ag.get("level") == 2:
+                tags.append("⚖ L2 汇总")
+            tag_html = "".join(
+                "<span style='margin-left:auto;font-size:10.5px;"
+                "color:#d29922;border:1px solid #d29922;border-radius:10px;"
+                "padding:1px 8px'>%s</span>" % e(t) for t in tags)
+            tools = "、".join(ag.get("tools") or []) or "—"
+            up = "、".join(ag.get("parent_node_keys") or [])
+            up_html = ("<div class='dim' style='font-size:11.5px;"
+                       "margin-top:6px'>↑ 上游：%s</div>" % e(up) if up else "")
+            return (
+                "<div style='border:1px solid #30363d;border-radius:12px;"
+                "background:#161b22;padding:14px 16px'>"
+                "<div style='display:flex;align-items:baseline;gap:8px'>"
+                "<span style='font-size:16px;font-weight:700'>%s %s</span>%s"
+                "</div>"
+                "<div style='font-size:12.5px;margin:6px 0 2px'>%s</div>"
+                "<div class='dim' style='font-size:11.5px'>%s · %s · "
+                "🛠 %s</div>%s</div>"
+                % (e(icon), e(name), tag_html,
+                   e(fid.get("role") or ag.get("role_profile", "")),
+                   e(str(ag.get("role_profile", ""))),
+                   e(str(ag.get("llm_binding", ""))), e(tools), up_html))
+
+        def _dept_block(d):
+            dept = d.get("dept", "")
+            planned = d.get("status") == "planned"
+            tj = team_map.get(dept) or {}
+            cards = "".join(_agent_card(a) for a in tj.get("agents", []))
+            if planned:
+                inner = ("<div class='dim' style='font-size:12.5px;"
+                         "padding:8px 0'>🚧 扩编中（K-ORG-001 P2 预留："
+                         "拉代码·优化代码·训练模型，待投研部影子验收后"
+                         "启动）</div>")
+            elif cards:
+                inner = ("<div style='display:grid;grid-template-columns:"
+                         "repeat(auto-fit,minmax(250px,1fr));gap:10px'>"
+                         + cards + "</div>")
+            else:
+                inner = "<div class='dim'>暂无编制数据</div>"
+            team_line = ""
+            if tj:
+                team_line = ("<span class='dim' style='font-size:11.5px;"
+                             "margin-left:8px'>团队 %s</span>"
+                             % e(str(tj.get("team", ""))))
+            return ("<div style='margin:10px 0 0 26px;border-left:2px solid "
+                    "#30363d;padding-left:16px'>"
+                    "<div style='font-size:15px;font-weight:700'>📁 %s%s"
+                    "</div>"
+                    "<div class='dim' style='font-size:12px;margin:2px 0 8px'>"
+                    "%s</div>%s</div>"
+                    % (e(str(d.get("name", dept))), team_line,
+                       e(str(d.get("charter", ""))), inner))
+
+        chief = org.get("chief", {})
+        rep = org.get("reporting", {})
+        sev = rep.get("severity", {})
+        ch_status = ("骨架已立（9b 判读验证通过）"
+                     if chief.get("status") == "skeleton"
+                     else str(chief.get("status", "")))
+
+        def _arrow(label):
+            return ("<div class='dim' style='margin:4px 0 4px 26px;"
+                    "font-size:12px'>↓ %s</div>" % e(label))
+
+        dept_html = "".join(_dept_block(d)
+                            for d in org.get("departments", []))
+        tree = (
+            "<div class='sec'>"
+            "<div style='border:2px solid #8b949e;border-radius:12px;"
+            "background:#161b22;padding:12px 16px;display:inline-block'>"
+            "👤 %s（老板 · 汇报对象）</div>"
+            % e(str(org.get("report_to", "human")))
+            + _arrow("汇报三通道：📡 日报 %s · 🔴 P0 %s · 🟡 P1 %s"
+                     % (rep.get("daily_push", "17:35"),
+                        sev.get("P0", "即时"), sev.get("P1", "1h")))
+            + "<div style='border:2px solid #d29922;border-radius:12px;"
+              "background:#161b22;padding:12px 16px;display:inline-block'>"
+              "<b style='font-size:16px'>🧠 A0 参谋长</b>"
+              "<span class='dim' style='font-size:12px;margin-left:8px'>"
+              "%s · %s · %s</span></div>"
+              % (e(str(chief.get("role_profile", ""))),
+                 e(str(chief.get("llm_binding", ""))), e(ch_status))
+            + _arrow("直辖部门 %d 个" % len(org.get("departments", [])))
+            + dept_html + "</div>")
+        banner = (
+            "<div class='sec' style='border-color:#58a6ff'>"
+            "🦸 <b>对话统一入口</b>：各岗位均<b>不设独立对话窗口</b>——"
+            "通过超级助手直接对话即可调度全部岗位（全站右下角浮动图标，"
+            "或 <a href='http://127.0.0.1:8787' target='_blank' "
+            "rel='noopener'>127.0.0.1:8787</a>）· 聘请/派单走 "
+            "<a href='/aim'>AI 市场货架</a></div>")
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,"
+                "initial-scale=1'><title>🏛 组织架构</title>"
+                + self._COCKPIT_CSS + "</head><body>"
+                + pill_nav("org")
+                + "<h1>🏛 组织架构</h1><div class='dim'>"
+                "human → A0 参谋长 → 部门 → 岗位 · 注册表实时渲染"
+                "（agent_platform/registry）</div>"
+                + banner + tree
+                + "<div class='dim' style='margin-top:20px'>数据源："
+                "org.json（组织顶点）· team_invest.json（alpha 执行拓扑）· "
+                "ai_market.json（岗位名/图标，与 AI 市场货架同源）· "
+                "上新岗位改注册表即可，页面零改</div></body></html>")
         self._html(body)
 
     # ── K238 每日选股批次回测（挂在自选池共振信号后面） ──
@@ -21807,6 +21961,16 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._json(_hist(_day))
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/trainee_board":
+            # K-STOCK v0.4 交易员成绩单（A1）：trainee.scoreboard 需 pandas（行情湖估值），
+            # 门户保持纯标准库 → 子进程 CLI --json（同 _paper_run_json 模式，UTF-8 管道）。
+            try:
+                r = self._paper_run_json(
+                    [self._PAPER_PY, os.path.join(self._PAPER_DIR, "trainee.py"),
+                     "board", "--json"], timeout=90)
+                self._json(r)
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
         elif path.startswith("/static/"):
             # KG-V1 静态资源（白名单）：本地 echarts / 全站 tokens.css
             fn = path.split("/", 2)[2]
@@ -22438,6 +22602,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/portal":
             # K-STOCK-035 总入口门户：哪里是什么、我的入口在哪里
             self._portal_page()
+        elif path == "/org":
+            self._org_page()
         elif path == "/aim":
             # K-STOCK-033 AI 市场：聘请 AI 岗位货架（ai_market.json 存源）
             self._aim_page()

@@ -175,7 +175,7 @@
     <div class="tab active" data-tab="desk">交易台</div>
     <div class="tab" data-tab="pos">持仓 <span class="n" id="n-pos">0</span></div>
     <div class="tab" data-tab="hist">历史</div>
-    <div class="tab" data-tab="agent">交易员市场 <span class="n">v0.3</span></div>
+    <div class="tab" data-tab="agent">交易员市场 <span class="n">v0.4</span></div>
   </div>
 
   <!-- ============ 交易台 ============ -->
@@ -304,8 +304,8 @@
   <!-- ============ 交易员市场 ============ -->
   <div class="tabpanel" id="tab-agent">
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:15px;font-weight:700">🏪 交易员市场（v0.3 方向 · 选择键已预留）</span>
-      <span style="font-size:12px;color:var(--text-dim)">选股机器人 ≠ 交易机器人：策略源只回答「<b>买什么</b>」，交易员回答「<b>怎么买、买多少、何时卖</b>」。挑交易员就像挑策略——每张卡带着自己的擅长与战绩。</span>
+      <span style="font-size:15px;font-weight:700">🏪 交易员市场（v0.4 · 战绩实时投影）</span>
+      <span style="font-size:12px;color:var(--text-dim)">选股机器人 ≠ 交易机器人：策略源只回答「<b>买什么</b>」，交易员回答「<b>怎么买、买多少、何时卖</b>」。下方战绩来自各子账本每日实习快照（settle→止损→mark 例程）；历史重放预筛见 <code>trainee.py replay</code>。</span>
     </div>
     <div class="agent-grid" id="agent-grid"></div>
     <div class="flow-note" style="margin-top:14px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
@@ -362,7 +362,7 @@ async function loadStatus(){
   try{
     const j=await api('/api/paper_status');
     if(!j.ok){toast('❌ '+j.error);return;}
-    S.status=j;renderAll(j);
+    S.status=j;renderAll(j);loadAgents();   // v0.4 A1：交易员战绩异步补挂（失败静默降级）
   }catch(e){toast('❌ '+e.message);}
 }
 function renderAll(j){
@@ -444,24 +444,54 @@ function renderPos(positions){
     }).join('')+'</table>';
   }).join('');
 }
-function renderAgents(j){
+function renderAgents(j, board){
   const L=j.latest;
+  const ST_MAP={training:['<span class="st preview">实习中</span>','training'],
+                live:['<span class="st live">已上岗</span>','live'],
+                design:['<span class="st preview">设计评估中</span>','reserved']};
+  const bmap={};(board&&board.rows||[]).forEach(r=>bmap[r.id]=r);
   const cards=[
     {cls:'live',icon:'🏦',nm:'我的交易台（main）',st:'<span class="st live">运行中</span>',
      role:`<b>擅长：</b>全风格 · 已雇 AI 值班（自动）+ 量子双刀（手动）+ 手动下单<br>初始 ¥1,000,000 · verify_ok ${L.verify_ok?'✓':'❌'}`,
      stats:`<div><div class="k">总资产</div><div class="v">¥${fmt(L.total)}</div></div><div><div class="k">累计</div><div class="v ${cls(L.cum_pct)}">${pct(L.cum_pct)}</div></div><div><div class="k">持仓</div><div class="v">${j.positions.length} 只</div></div>`},
-    {cls:'reserved',icon:'🛡️',nm:'稳如泰山',st:'<span class="st preview">v0.3 可雇佣</span>',
-     role:'<b>擅长：</b>弱市防守 · 高现金 · 严止损（-4%）· 回撤控制优先',
-     stats:'<div><div class="k">风格</div><div class="v">防守型</div></div><div><div class="k">状态</div><div class="v">预留</div></div>'},
-    {cls:'reserved',icon:'🌪️',nm:'追风者',st:'<span class="st preview">v0.3 可雇佣</span>',
-     role:'<b>擅长：</b>趋势市顺势加仓 · 宽止损拿波段 · 可绑定量子双刀全自动',
-     stats:'<div><div class="k">风格</div><div class="v">趋势型</div></div><div><div class="k">状态</div><div class="v">预留</div></div>'},
-    {cls:'reserved',icon:'⚡',nm:'快枪手',st:'<span class="st preview">设计评估中</span>',
-     role:'<b>擅长：</b>隔日短打 · 尾盘买次日卖（A 股 T+1 下的最短周期）',
-     stats:'<div><div class="k">风格</div><div class="v">短线型</div></div><div><div class="k">状态</div><div class="v">评估中</div></div>'}
+    {id:'taishan',icon:'🛡️',nm:'稳如泰山',
+     role:'<b>擅长：</b>弱市防守 · 高现金 · 严止损（-4%）· 回撤控制优先 · conf≥0.70',
+     empty:'<div><div class="k">风格</div><div class="v">防守型</div></div><div><div class="k">状态</div><div class="v">预留</div></div>'},
+    {id:'chaser',icon:'🌪️',nm:'追风者',
+     role:'<b>擅长：</b>趋势市顺势加仓 · 宽止损拿波段（-8%）· conf≥0.60 · 可绑定量子双刀全自动',
+     empty:'<div><div class="k">风格</div><div class="v">趋势型</div></div><div><div class="k">状态</div><div class="v">预留</div></div>'},
+    {id:'gunner',icon:'⚡',nm:'快枪手',
+     role:'<b>擅长：</b>隔日短打 · 尾盘买次日卖（A 股 T+1 下的最短周期）· conf≥0.75',
+     empty:'<div><div class="k">风格</div><div class="v">短线型</div></div><div><div class="k">状态</div><div class="v">评估中</div></div>'}
   ];
-  $('agent-grid').innerHTML=cards.map(c=>
-    `<div class="agent-card ${c.cls}"><div class="nm">${c.icon} ${c.nm} ${c.st}</div><div class="role">${c.role}</div><div class="agent-stats">${c.stats}</div></div>`).join('');
+  $('agent-grid').innerHTML=cards.map(c=>{
+    const r=bmap[c.id];
+    let st=c.st||'',stats=c.stats||c.empty||'',cls=c.cls;
+    if(c.id&&r){   // 交易员卡：board 真数据覆盖（v0.4 A1 接线）
+      const pair=ST_MAP[r.status]||ST_MAP.training;
+      st=pair[0];
+      cls=r.status==='live'?'live':cls||'reserved';
+      if(r.days){
+        stats=`<div><div class="k">实习</div><div class="v">${r.days} 天</div></div>`+
+          `<div><div class="k">累计</div><div class="v ${cls(r.cum_pct)}">${pct(r.cum_pct)}</div></div>`+
+          `<div><div class="k">最大回撤</div><div class="v down">${r.max_dd_pct.toFixed(2)}%</div></div>`+
+          `<div><div class="k">Sharpe</div><div class="v">${r.sharpe==null?'-':(r.sharpe>0?'+':'')+r.sharpe.toFixed(2)}</div></div>`+
+          `<div><div class="k">Sortino</div><div class="v">${r.sortino==null?'-':(r.sortino>0?'+':'')+r.sortino.toFixed(2)}</div></div>`+
+          `<div><div class="k">对账</div><div class="v">${r.verify_ok?'✓':'❌'}</div></div>`;
+      }else{
+        stats=`<div><div class="k">风格</div><div class="v">${r.style||'-'}</div></div><div><div class="k">实习</div><div class="v">未开账</div></div>`;
+      }
+    }
+    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div></div>`;
+  }).join('');
+}
+
+// ===== 交易员成绩单（v0.4 A1：/api/trainee_board 子进程投影） =====
+async function loadAgents(){
+  try{
+    const j=await api('/api/trainee_board');
+    if(j&&j.ok&&S.status)renderAgents(S.status,j.rows||[]);
+  }catch(e){/* 静默降级：保留档案静态卡 */}
 }
 
 // ===== 历史 =====
