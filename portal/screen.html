@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>数据大屏 · 灵界</title>
+<title>数据大屏 · 零界</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <script src="/static/echarts.min.js"></script>
 <style>
@@ -307,7 +307,7 @@ if (["ALL", "CN", "US", "HK", "CRYPTO"].indexOf(_QM) < 0) _QM = "CN";
 var FMKT = _QM;            // 市场视图由 URL 决定，页面即该市场专属大屏
 var _NF = { CN: "A股", US: "美股", HK: "港股", CRYPTO: "加密", ALL: "全部" };
 var NEWS_FILTER_INIT = _NF[_QM] || "全部";
-document.title = "数据大屏 · " + (MKT[_QM] || "全部市场") + " · 灵界";
+document.title = "数据大屏 · " + (MKT[_QM] || "全部市场") + " · 零界";
 window.addEventListener("DOMContentLoaded", function () {
   var h1 = document.querySelector("h1");
   if (h1) h1.textContent = "📺 量化策略数据大屏 · " + (MKT[_QM] || "全部市场");
