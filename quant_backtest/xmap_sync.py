@@ -305,10 +305,18 @@ def get_cainiao_conn():
     except ImportError:
         print("[exit 3] 缺少驱动：pip install pymysql 后重试。", file=sys.stderr)
         sys.exit(EXIT_MISSING_CREDENTIAL)
-    return pymysql.connect(**parse_dsn(dsn),
-                          connect_timeout=10, cursorclass=__import__(
-                              "pymysql.cursors", fromlist=["DictCursor"]).DictCursor,
-                          read_only=True)
+    # pymysql 无 read_only 连接参数（mysql-connector 专属 API）——
+    # 只读防线两层：账号权限（xmap_ro 仅 SELECT）为真闸 + 会话级只读为兜底。
+    conn = pymysql.connect(**parse_dsn(dsn),
+                           connect_timeout=10, cursorclass=__import__(
+                               "pymysql.cursors", fromlist=["DictCursor"]).DictCursor)
+    try:
+        with conn.cursor() as c:
+            c.execute("SET SESSION TRANSACTION READ ONLY")
+    except Exception:
+        conn.close()
+        raise
+    return conn
 
 
 def fetch_cainiao_stocks(cn_conn, watermark=None):
@@ -321,7 +329,9 @@ def fetch_cainiao_stocks(cn_conn, watermark=None):
         args = (watermark,)
     with cn_conn.cursor() as c:
         c.execute(sql, args)
-        return [dict(zip([d[0] for d in c.description], row)) for row in c.fetchall()]
+        # 连接已用 DictCursor，fetchall() 直接返回 dict 列表；
+        # 若再 dict(zip(cols,row)) 会拿 dict 的键当值（全列名自映射→对齐全 miss）。
+        return list(c.fetchall())
 
 
 # ── 子命令：init（全量对齐） ──────────────────────────────────────────
