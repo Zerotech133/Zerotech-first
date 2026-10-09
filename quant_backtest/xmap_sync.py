@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
 try:  # Windows 控制台 GBK 兜底
@@ -366,6 +367,30 @@ def cmd_init(_args):
 
 
 # ── 子命令：incr（watermark 增量） ────────────────────────────────────
+def _mysql_clock(cn_conn):
+    """取菜鸟 MySQL 挂钟 now() 与其对 UTC 的偏移。
+
+    返回 (mnow_naive, offset)：mnow_naive=MySQL 本地挂钟 naive datetime；
+    offset=MySQL 挂钟 − UTC 的 timedelta。两侧时钟域不同
+    （PG now()=UTC aware、MySQL update_time=本地 DATETIME），pymysql
+    传参按裸字符串拼接不转时区，故增量窗口必须显式换算到 MySQL 挂钟域。
+    """
+    with cn_conn.cursor() as c:
+        c.execute("SELECT NOW(), TIMEDIFF(NOW(), UTC_TIMESTAMP())")
+        mnow, off = c.fetchone()
+    if isinstance(off, timedelta):
+        offset = off
+    else:  # 某些驱动回字符串 '08:00:00'
+        h, m, s = (int(x) for x in str(off).split(":"))
+        offset = timedelta(hours=h, minutes=m, seconds=s)
+    if not isinstance(mnow, datetime):
+        mnow = datetime.strptime(str(mnow)[:19], "%Y-%m-%d %H:%M:%S")
+    return mnow.replace(tzinfo=None), offset
+
+
+OVERLAP = timedelta(minutes=5)  # 水位回看重叠：边界行靠 upsert 幂等兜底
+
+
 def cmd_incr(_args):
     cn = get_cainiao_conn()  # 凭据缺失 → exit 3
     try:
@@ -380,22 +405,33 @@ def cmd_incr(_args):
             row = cur.fetchone()
             wm = row[0] if row else None
             securities = load_securities(cur)
-        print(f"[incr] stock 水位：{wm or '（无，全量）'}")
-        rows = fetch_cainiao_stocks(cn, watermark=wm)
+        # 时钟域统一：水位(UTC aware) → MySQL 挂钟 naive，带 5 分钟回看重叠
+        mnow, offset = _mysql_clock(cn)
+        if wm is not None:
+            wm_mysql = (wm.astimezone(timezone.utc) + offset).replace(tzinfo=None)
+            wm_mysql -= OVERLAP
+            print(f"[incr] stock 水位：{wm} → MySQL 挂钟 {wm_mysql + OVERLAP}"
+                  f"（回看 {OVERLAP}）")
+        else:
+            wm_mysql = None
+            print("[incr] stock 水位：（无，全量）")
+        rows = fetch_cainiao_stocks(cn, watermark=wm_mysql)
         matched, unmatched = align_rows(rows, securities)
         # 退市（list_status='D'）→ disabled，历史映射保留（设计稿 §4）
         for m in matched:
             if (m["payload"].get("list_status") or "").upper() == "D":
                 m["status"] = "disabled"
+        # 新水位 = 本次 MySQL 挂钟 mnow，转回 UTC aware 存 timestamptz
+        wm_utc = (mnow - offset).replace(tzinfo=timezone.utc)
         with conn.cursor() as cur:
             n_ins, n_upd = write_results(cur, MAIN_SCHEMA, matched, unmatched)
             cur.execute(
                 "INSERT INTO xmap.sync_watermark (entity_type, wm) "
-                "VALUES ('stock', now()) ON CONFLICT (entity_type) DO UPDATE "
-                "SET wm = EXCLUDED.wm")
+                "VALUES (%s, %s) ON CONFLICT (entity_type) DO UPDATE "
+                "SET wm = EXCLUDED.wm", ("stock", wm_utc))
         conn.commit()
         print(f"[incr] 拉取 {len(rows)} 行 | 新插 {n_ins} 更新 {n_upd} | 入队 {len(unmatched)}"
-              f" | 水位已推进至 now()")
+              f" | 水位已推进至 {wm_utc.isoformat()}")
         # strategy / user 增量按设计稿 §4 定调后续接入（策略精选制、用户 mobile 归并）
     finally:
         conn.close()

@@ -133,6 +133,12 @@ def main():
     ap.add_argument("--asof", default="", help="基准日 YYYYMMDD（默认=名单 ts 日的前一交易日，自动取名单首个 ts 日期）")
     ap.add_argument("--save", default="", help="结果另存 json 路径")
     a = ap.parse_args()
+    if a.days < 1:
+        print(f"[exit 2] --days 必须 >=1（收到 {a.days}）：0/负数会产出无意义窗口")
+        sys.exit(2)
+    if a.sample < 1:
+        print(f"[exit 2] --sample 必须 >=1（收到 {a.sample}）")
+        sys.exit(2)
 
     path = Path(a.list) if a.list else latest_list_file()
     rows = load_list(path)

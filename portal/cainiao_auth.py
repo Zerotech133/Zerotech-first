@@ -110,10 +110,20 @@ def _cache_get(token: str) -> Optional[VerifyResult]:
     return None
 
 
+_CACHE_MAX = 2000  # 兜底上限：防御随机 token 灌缓存（正常租户远达不到）
+
+
 def _cache_put(token: str, result: VerifyResult) -> None:
     # 只缓存权威结论（菜鸟明确判定的有效/无效）；网络降级结论不缓存，
     # 下次请求重试，菜鸟恢复后立即回到正常路径。
     with _cache_lock:
+        if len(_cache) >= _CACHE_MAX:
+            now = time.monotonic()
+            # 先清过期项；仍超限则淘汰最旧（dict 保插入序）
+            for k in [k for k, (_, ts) in _cache.items() if now - ts >= CACHE_TTL]:
+                del _cache[k]
+            while len(_cache) >= _CACHE_MAX:
+                del _cache[next(iter(_cache))]
         _cache[token] = (result, time.monotonic())
 
 
