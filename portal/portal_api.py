@@ -13609,78 +13609,153 @@ transition:.3s;z-index:9}
     def _nl_page(self, qs):
         """P-E 自然语言查数页：输入问句 → multi_agent 多 agent 答案。
         页面加载只读缓存（read_only）；按钮 force=1 触发现算（10-30s）。
-        specialist 调用链 <details> 下钻。"""
+        specialist 调用链 <details> 下钻。
+        K-STOCK-055 美化：英雄区+一体搜索条+示例 chips+答案卡来源徽章
+        +specialist 卡化+加载 spinner，全部走 tokens.css 变量。"""
         import html as _he
         from urllib.parse import parse_qs as _pqs, unquote as _uq, quote as _uq2
         _qv = _uq((_pqs(qs).get("q") or [""])[0])
-        body = [pill_nav("nl"),
-                "<h1>💬 自然语言查数</h1>",
-                "<div class='dim' style='margin-bottom:10px'>"
-                "本地 qwen3.5:9b 多 agent（router→specialists→synth）·"
-                "信息层只读·当日缓存复用·不外发数据</div>",
-                "<input id='q' placeholder='如 688411最近怎么样 / "
-                "1卖趋势背驰的左尾与688411近期事件 / 预警池最新10条信号' "
-                "style='width:520px;max-width:80%%'%s"
-                " onkeydown=\"if(event.key==='Enter')_go()\">"
-                "<button style='margin-left:8px' onclick='_go()'>查数</button>"
-                % (" value=\"" + _he.escape(_qv, quote=True) + "\"" if _qv
-                   else "")]
+        _esc = _he.escape(_qv, quote=True)
+        _NL_CSS = """<style>
+.nl-hero{margin:4px 0 16px}
+.nl-hero h1{font-size:24px;margin:0 0 6px}
+.nl-hero .dim{font-size:12.5px}
+.nl-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 0}
+.nl-flow .stp{display:inline-block;padding:2px 10px;border:1px solid var(--border-weak,#21262d);
+border-radius:12px;font-size:11px;color:var(--text-dim,#8b949e);background:var(--bg-raised,#161b22)}
+.nl-flow .arw{color:var(--text-dim,#8b949e);font-size:11px}
+.nl-search{display:flex;gap:10px;align-items:stretch;max-width:640px}
+.nl-search input{flex:1;min-width:0;padding:13px 16px;font-size:14px;font-family:inherit;
+color:var(--text,#e6edf3);background:var(--bg-raised,#161b22);
+border:1px solid var(--border,#30363d);border-radius:12px;outline:none;
+transition:border-color .15s,box-shadow .15s}
+.nl-search input:focus{border-color:var(--link,#58a6ff);
+box-shadow:0 0 0 3px rgba(88,166,255,.12)}
+.nl-search input::placeholder{color:var(--text-dim,#8b949e)}
+.nl-go{flex:none;padding:0 22px;font-size:14px;font-weight:600;font-family:inherit;
+color:#fff;background:linear-gradient(135deg,var(--accent,#1f6feb),#388bfd);
+border:none;border-radius:12px;cursor:pointer;transition:filter .15s}
+.nl-go:hover{filter:brightness(1.15)}
+.nl-go:active{filter:brightness(.92)}
+.nl-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.nl-chips a{display:inline-block;padding:6px 14px;border:1px solid var(--border,#30363d);
+border-radius:16px;font-size:12.5px;color:var(--text-dim,#8b949e);
+background:var(--bg-raised,#161b22);text-decoration:none;transition:all .15s}
+.nl-chips a:hover{color:var(--link,#58a6ff);border-color:var(--link,#58a6ff)}
+.nl-q{margin-top:18px;padding:10px 14px;border-left:3px solid var(--accent,#1f6feb);
+background:var(--bg-surface,#0f141c);border-radius:0 10px 10px 0;font-size:13.5px}
+.nl-ans{border:1px solid var(--border,#30363d);border-radius:12px;
+background:var(--bg-surface,#0f141c);margin-top:14px;overflow:hidden}
+.nl-ans-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+padding:10px 16px;border-bottom:1px solid var(--border-weak,#21262d)}
+.nl-ans-h .t{font-size:13px;font-weight:600}
+.nl-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px}
+.nl-badge.cache{color:var(--color-ok,#2ea043);border:1px solid var(--color-ok,#2ea043)}
+.nl-badge.live{color:var(--link,#58a6ff);border:1px solid var(--link,#58a6ff)}
+.nl-badge.deg{color:var(--color-warn,#d29922);border:1px solid var(--color-warn,#d29922)}
+.nl-ans pre{white-space:pre-wrap;word-break:break-word;margin:0;
+padding:14px 16px;font-size:13.5px;line-height:1.75;font-family:inherit}
+.nl-spec{border:1px solid var(--border,#30363d);border-radius:10px;
+background:var(--bg-raised,#161b22);margin-top:10px;overflow:hidden}
+.nl-spec>summary{cursor:pointer;list-style:none;padding:11px 14px;
+display:flex;align-items:center;gap:8px;flex-wrap:wrap;user-select:none}
+.nl-spec>summary::-webkit-details-marker{display:none}
+.nl-spec>summary::before{content:"\\25B6";font-size:10px;
+color:var(--text-dim,#8b949e);transition:transform .15s}
+.nl-spec[open]>summary::before{transform:rotate(90deg)}
+.nl-spec .sname{color:var(--link,#58a6ff);font-weight:600;font-size:13px}
+.nl-spec .sq{color:var(--text-dim,#8b949e);font-size:12.5px}
+.nl-spec .scnt{margin-left:auto;font-size:11px;color:var(--text-dim,#8b949e);
+border:1px solid var(--border-weak,#21262d);border-radius:10px;padding:1px 8px}
+.nl-spec .sbody{border-top:1px solid var(--border-weak,#21262d);padding:12px 14px}
+.nl-spec pre{white-space:pre-wrap;word-break:break-word;margin:0;
+font-size:12.5px;line-height:1.7;font-family:inherit}
+.nl-call{border:1px solid var(--border-weak,#21262d);border-radius:8px;
+padding:8px 11px;margin-top:6px;font-size:12px;
+font-family:Consolas,monospace;color:var(--text-dim,#8b949e)}
+.nl-call b{color:var(--text,#e6edf3);font-weight:600}
+.nl-wait{display:flex;align-items:center;gap:10px;margin-top:16px;
+color:var(--text-dim,#8b949e);font-size:13px}
+.nl-spin{width:18px;height:18px;flex:none;border:2px solid var(--border,#30363d);
+border-top-color:var(--link,#58a6ff);border-radius:50%;
+animation:nls .8s linear infinite}
+@keyframes nls{to{transform:rotate(360deg)}}
+</style>"""
+        body = [pill_nav("nl"), _NL_CSS,
+                "<div class='nl-hero'>"
+                "<h1>💬 自然语言查数</h1>"
+                "<div class='dim'>本地 qwen3.5:9b 多 agent 分发查数 · "
+                "信息层只读 · 当日缓存复用 · 不外发数据</div>"
+                "<div class='nl-flow'>"
+                "<span class='stp'>router 分发</span><span class='arw'>→</span>"
+                "<span class='stp'>specialists 并行查数</span><span class='arw'>→</span>"
+                "<span class='stp'>synth 汇总</span></div></div>",
+                "<div class='nl-search'>"
+                "<input id='q' placeholder='如 688411最近怎么样 / 1卖趋势背驰的左尾 / "
+                "预警池最新10条信号'"
+                " onkeydown=\"if(event.key==='Enter')_go()\"%s>"
+                "<button class='nl-go' onclick='_go()'>查数</button></div>"
+                "<div class='nl-chips'>"
+                "<span class='dim' style='padding:6px 2px'>试一试：</span>"
+                "<a href='/nl?q=%s'>688411 最近怎么样</a>"
+                "<a href='/nl?q=%s'>1卖趋势背驰的左尾</a>"
+                "<a href='/nl?q=%s'>预警池最新10条信号</a></div>"
+                % (" value=\"" + _esc + "\"" if _qv else "",
+                   _uq2("688411最近怎么样"),
+                   _uq2("1卖趋势背驰的左尾"),
+                   _uq2("预警池最新10条信号"))]
+        # K-STOCK-055 修遗留 bug：_go 从未定义（旧版点「查数」为空操作）
+        body.append("<script>function _go(){var v=document."
+                    "getElementById('q').value.trim();if(v){location='/nl?q='"
+                    "+encodeURIComponent(v);}}</script>")
         if not _qv:
-            body.append("<div class='card dim' style='margin-top:18px'>"
-                        "输入问句后回车，多 agent 分发查数。"
-                        "示例：<a href='/nl?q=%s'>688411 最近怎么样</a> · "
-                        "<a href='/nl?q=%s'>1卖趋势背驰的左尾</a> · "
-                        "<a href='/nl?q=%s'>预警池最新10条信号</a>"
-                        "</div>"
-                        % (_uq2("688411最近怎么样"),
-                           _uq2("1卖趋势背驰的左尾"),
-                           _uq2("预警池最新10条信号")))
+            body.append("<div class='card dim' style='margin-top:20px'>"
+                        "输入问句后回车，router 按 sub_q 分发给 specialist，"
+                        "synth 汇总成一段答案；带缓存当日复用，强制重算约 10-30s。</div>")
             self._html("".join(body))
             return
         body.append(
-            "<h2>当前问句</h2><div class='card'>%s</div>"
-            "<div style='margin-top:14px'>"
-            "<button onclick=\"_nlForce()\">🔄 强制重算（10-30s）</button>"
-            "</div>"
-            "<div id='nlout' class='dim' style='margin-top:12px'></div>"
-            "<script>var _nlq=%s;"
-            "function _nlShow(j){"
-            "var o=document.getElementById('nlout');"
-            "if(!j.ok){o.innerHTML='失败：'+(j.err||'未知');return;}"
-            "if(j.empty){o.innerHTML='<div class=card dim>'+j.msg+'</div>';return;}"
-            "var h='<div class=card><pre style=\"white-space:pre-wrap;margin:0\">'"
-            "+(j.answer||'').replace(/</g,'&lt;')+'</pre>';"
-            "h+='<div class=dim style=margin-top:6px>来源:multi_agent'"
-            "+(j.cached?' · 缓存':' · 现算 '+j.elapsed_s+'s')"
-            "+(j.degraded?' · ⚠降级拼接':'')+'</div></div>';"
-            "if(j.specialists&&j.specialists.length){"
-            "h+='<div style=margin-top:14px><div class=dim>下钻：'"
-            "+j.specialists.length+' specialist 调用链</div>';"
-            "j.specialists.forEach(function(s,i){"
-            "h+='<details style=\"margin-top:8px\"><summary "
-            "style=\"cursor:pointer;color:#58a6ff\">【'+s.specialist+'】'"
-            "+(s.sub_q||'').replace(/</g,'&lt;')+'</summary>';"
-            "h+='<div class=card style=\"margin-top:6px\">"
-            "<pre style=\"white-space:pre-wrap;margin:0\">'"
-            "+(s.answer||'').replace(/</g,'&lt;')+'</pre>';"
-            "if(s.calls&&s.calls.length){"
-            "h+='<div class=dim style=margin-top:6px>工具调用 '"
-            "+s.calls.length+' 次：</div>';"
-            "s.calls.forEach(function(c){"
-            "h+='<div class=card style=\"margin-top:4px;font-size:12px\">· '"
-            "+c.tool+' '+JSON.stringify(c.args)"
-            ".replace(/</g,'&lt;')+'<br><span class=dim>→ '"
-            "+(c.res||'').replace(/</g,'&lt;')+'</span></div>';});}"
-            "h+='</div></details>';});"
-            "h+='</div>';}"
-            "o.innerHTML=h;}"
-            "fetch('/api/nlquery?q='+encodeURIComponent(_nlq))"
-            ".then(function(r){return r.json()}).then(_nlShow);"
-            "function _nlForce(){var o=document.getElementById('nlout');"
-            "o.innerHTML='查数中…（router→specialists→synth，10-30s）';"
-            "fetch('/api/nlquery?q='+encodeURIComponent(_nlq)+'&force=1')"
-            ".then(function(r){return r.json()}).then(_nlShow);}"
-            "</script>" % (_he.escape(_qv), json.dumps(_qv, ensure_ascii=False)))
+            "<div class='nl-q'><span class='dim' style='margin-right:8px'>当前问句</span>"
+            "%s</div>"
+            "<div style='margin-top:12px'>"
+            "<button onclick='_nlForce()'>🔄 强制重算（10-30s）</button></div>"
+            "<div id='nlout'></div>")
+        body.append(
+            "<script>var _nlq=" + json.dumps(_qv, ensure_ascii=False) + ";" + r"""
+function _esc(s){return (s||'').replace(/</g,'&lt;')}
+function _wait(t){document.getElementById('nlout').innerHTML=
+ '<div class=nl-wait><div class=nl-spin></div>'+t+'</div>'}
+function _badge(cls,txt){return '<span class=nl-badge '+cls+'>'+txt+'</span>'}
+function _nlShow(j){
+ var o=document.getElementById('nlout');
+ if(!j.ok){o.innerHTML='<div class="card" style="margin-top:14px;color:var(--color-err,#f85149)">失败：'
+  +_esc(j.err||'未知')+'</div>';return;}
+ if(j.empty){o.innerHTML='<div class="card dim" style="margin-top:14px">'+_esc(j.msg)+'</div>';return;}
+ var src=j.cached?_badge('cache','缓存复用'):_badge('live','现算 '+(j.elapsed_s||'?')+'s');
+ if(j.degraded)src+=_badge('deg','⚠ 降级拼接');
+ var h='<div class=nl-ans><div class=nl-ans-h><span class=t>📋 答案</span>'+src+'</div>'
+  +'<pre>'+_esc(j.answer)+'</pre></div>';
+ if(j.specialists&&j.specialists.length){
+  h+='<div style="margin-top:16px" class=dim>下钻：'+j.specialists.length
+   +' 条 specialist 调用链</div>';
+  j.specialists.forEach(function(s){
+   h+='<details class=nl-spec><summary><span class=sname>【'
+    +_esc(s.specialist)+'】</span><span class=sq>'+_esc(s.sub_q)+'</span>'
+    +(s.calls&&s.calls.length?'<span class=scnt>工具调用 '+s.calls.length+'</span>':'')
+    +'</summary><div class=sbody><pre>'+_esc(s.answer)+'</pre>';
+   if(s.calls&&s.calls.length){
+    s.calls.forEach(function(c){
+     h+='<div class=nl-call><b>'+_esc(c.tool)+'</b> '+_esc(JSON.stringify(c.args))
+      +'<br>→ '+_esc(c.res)+'</div>';});}
+   h+='</div></details>';});}
+ o.innerHTML=h;}
+_wait('查数中…（router → specialists → synth，当日缓存命中则秒回）');
+fetch('/api/nlquery?q='+encodeURIComponent(_nlq))
+ .then(function(r){return r.json()}).then(_nlShow);
+function _nlForce(){_wait('强制重算中…（绕过缓存，约 10-30s）');
+ fetch('/api/nlquery?q='+encodeURIComponent(_nlq)+'&force=1')
+ .then(function(r){return r.json()}).then(_nlShow);}
+</script>""")
         body.append("<div class='dim' style='margin-top:26px'>"
                     "信息层查数 · 不改信号/推送/拦截口径 · 不构成投资建议</div>")
         self._html("".join(body))
