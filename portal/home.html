@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>菜鸟驾驶舱 · 超级个体 OS</title>
+<style>
+:root{
+  --bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#e6edf3;--dim:#8b949e;
+  --up:#f85149;--down:#3fb950;--ok:#3fb950;--warn:#d29922;--acc:#58a6ff;--pink:#bc8cff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--acc);text-decoration:none}
+.wrap{max-width:1100px;margin:0 auto;padding:14px 18px;width:100%}
+/* 顶栏 */
+.top{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.top .logo{font-size:18px;font-weight:800}
+.top .sub{color:var(--dim);font-size:12px}
+.top .now{margin-left:auto;color:var(--dim);font-size:12px}
+/* 对话条 */
+.chat{margin:14px 0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px}
+.chat-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#bc8cff,#58a6ff);display:flex;align-items:center;justify-content:center;font-size:19px}
+.chat-head b{font-size:14.5px}
+.chat-head span{color:var(--dim);font-size:11.5px}
+#msgs{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:6px 0}
+.msg{padding:9px 12px;border-radius:10px;max-width:88%;white-space:pre-wrap;line-height:1.55;font-size:13.5px}
+.msg.me{align-self:flex-end;background:#1f6feb33;border:1px solid #1f6feb66}
+.msg.cai{align-self:flex-start;background:#21262d;border:1px solid var(--border)}
+.msg .via{display:block;margin-top:5px;font-size:10.5px;color:var(--dim)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{cursor:pointer;border:1px solid var(--border);background:#21262d;color:var(--text);border-radius:14px;padding:4px 12px;font-size:12px}
+.chip:hover{border-color:var(--acc);color:var(--acc)}
+.inrow{display:flex;gap:8px;margin-top:8px}
+.inrow input{flex:1;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-size:13.5px;outline:none}
+.inrow input:focus{border-color:var(--acc)}
+.inrow button{background:#238636;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer}
+/* 驾驶舱 */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px}
+.card h3{font-size:13px;color:var(--dim);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.g{background:var(--ok)}.dot.y{background:var(--warn)}.dot.x{background:var(--dim)}
+.kpi{font-size:21px;font-weight:800}
+.kpi small{font-size:12px;color:var(--dim);font-weight:400}
+.sub{color:var(--dim);font-size:12px;margin-top:5px;line-height:1.6}
+.pos{color:var(--up)}.neg{color:var(--down)}
+/* 待办/日程 */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.list{font-size:13px;line-height:2}
+.list .t{color:var(--dim);font-size:12px}
+footer{text-align:center;color:var(--dim);font-size:11.5px;padding:12px 0 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="logo">🐣 菜鸟驾驶舱</span>
+    <span class="sub">超级个体 OS · 平行空间的自己 · 替你管公司</span>
+    <span class="now" id="now"></span>
+  </div>
+
+  <!-- 菜鸟对话 -->
+  <div class="chat">
+    <div class="chat-head"><div class="avatar">🐣</div>
+      <div><b>菜鸟</b><br><span>总管 · 组织团队 · 汇报待批</span></div>
+    </div>
+    <div id="msgs">
+      <div class="msg cai">老板好，各部门今日态势我已汇总（下方驾驶舱）。问我「各部门情况」「持仓账本」「挂单」「裁决窗」「影子进度」都可以。</div>
+    </div>
+    <div class="chips">
+      <button class="chip" onclick="ask('各部门情况')">📊 各部门情况</button>
+      <button class="chip" onclick="ask('持仓账本')">💰 持仓账本</button>
+      <button class="chip" onclick="ask('挂单')">📋 挂单</button>
+      <button class="chip" onclick="ask('裁决窗')">📅 裁决窗</button>
+      <button class="chip" onclick="ask('影子进度')">👤 影子进度</button>
+    </div>
+    <div class="inrow">
+      <input id="in" placeholder="给菜鸟下指令…" onkeydown="if(event.key==='Enter')send()">
+      <button onclick="send()">发送</button>
+    </div>
+  </div>
+
+  <!-- 驾驶舱 -->
+  <div class="grid" id="grid"></div>
+
+  <div class="two">
+    <div class="card"><h3>📅 裁决窗日程</h3><div class="list" id="cal">读取中…</div></div>
+    <div class="card"><h3>🏭 组织架构</h3><div class="list" id="org">读取中…</div></div>
+  </div>
+
+  <footer>老田的 AI 助手 · 菜鸟总管 demo · 数据=只读投影（滞后至最近一次 mark/跑批 属预期）</footer>
+</div>
+<script>
+const $=i=>document.getElementById(i);
+const fmt=n=>n==null?'-':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:0});
+const pct=n=>(n>0?'+':'')+n.toFixed(2)+'%';
+const cls=n=>n>0?'pos':(n<0?'neg':'');
+
+async function load(){
+  try{
+    const j=await (await fetch('/api/home')).json();
+    $('now').textContent='更新 '+j.now;
+    render(j);
+  }catch(e){$('grid').innerHTML='<div class="card">数据加载失败：'+e.message+'</div>';}
+}
+function render(j){
+  const p=j.paper,sh=j.shadow,op=j.ops,it=j.intel;
+  const mainA=(p.ok&&p.accounts.main)||null;
+  const usA=(p.ok&&p.accounts.us_qingping)||null;
+  let h='';
+  // 量化交易部
+  h+=card('🟢 量化交易部', mainA?
+    `<div class="kpi ${cls(mainA.cum_pct)}">${fmt(mainA.total)} <small>CNY</small></div>`+
+    `<div class="sub">累计 <span class="${cls(mainA.cum_pct)}">${pct(mainA.cum_pct)}</span> · 仓位 ${(mainA.pos_pct*100).toFixed(0)}% · 待撮合 ${mainA.pending} · ${mainA.days} 个交易日</div>`:
+    gray('账本数据暂缺'));
+  // US 独立账本
+  h+=card('💵 US 独立账本', usA?
+    `<div class="kpi">${fmt(usA.total)} <small>USD</small></div>`+
+    `<div class="sub">累计 ${pct(usA.cum_pct)} · 待撮合 ${usA.pending} · 双源行情（新浪主+yf备）</div>`:
+    gray('US 账本未开户'));
+  // 情报中枢
+  h+=card('🟢 情报中枢', it.ok?
+    `<div class="kpi">${it.rps_buys}<small> 买入信号</small></div>`+
+    `<div class="sub">青萍产物 ${it.rps_ts||'-'} · 知识文档 ${it.kg_docs??'-'} 篇（最新 ${it.kg_latest||'-'})</div>`:
+    gray('情报数据暂缺'));
+  // 自媒体部
+  h+=card('🟡 自媒体部', j.media.ok?
+    `<div class="kpi">${j.media.files}<small> 素材</small></div><div class="sub">最新产出 ${j.media.latest||'-'}</div>`:
+    gray(j.media.err||'暂缺'));
+  // 研发+运维
+  h+=card('🟢 研发部', op.ok?
+    `<div class="kpi">${op.commits_today}<small> 今日提交</small></div><div class="sub">${op.last_commit||''}</div>`:
+    gray(op.err||''));
+  h+=card('🟢 运维部', op.ok?
+    `<div class="kpi small" style="font-size:15px">影子 ${sh.ok?sh.days_total+' 日 / '+sh.rows+' 策':'-'}</div>`+
+    `<div class="sub">账本备份 ${op.bak_mtime||'-'} · 影子期满 10-15 合流</div>`:
+    gray(''));
+  $('grid').innerHTML=h;
+  // 日程
+  $('cal').innerHTML=j.calendar.items.map(i=>
+    `<div>· <b>${i.day}</b>（${i.in_days===0?'今天':i.in_days+' 天后'}）：${i.what} <span class="t">${i.in_days<0?'已过':''}</span></div>`).join('');
+  // 组织
+  const o=j.org;
+  $('org').innerHTML=o.ok?
+    `<div class="t">org=${o.org} · chief=${o.chief}（菜鸟本体）</div>`+
+    o.depts.map(d=>`<div>· <b>${d.name}</b> [${d.status||'active'}] — ${d.charter}</div>`).join(''):
+    gray(o.err||'org.json 不可读');
+}
+function card(title,body){return `<div class="card"><h3>${title}</h3>${body}</div>`;}
+function gray(t){return `<div class="sub">${t}</div>`;}
+
+async function ask(m){
+  addMsg(m,'me');
+  try{
+    const j=await (await fetch('/api/chat',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({msg:m})})).json();
+    addMsg(j.text||('错误：'+(j.error||'未知')),'cai',j.via);
+  }catch(e){addMsg('网络错误：'+e.message,'cai');}
+}
+function send(){const i=$('in');if(!i.value.trim())return;ask(i.value.trim());i.value='';}
+function addMsg(t,who,via){
+  const d=document.createElement('div');d.className='msg '+(who==='me'?'me':'cai');
+  d.textContent=t;
+  if(via){const v=document.createElement('span');v.className='via';v.textContent='via '+via;d.appendChild(v);}
+  $('msgs').appendChild(d);$('msgs').scrollTop=$('msgs').scrollHeight;
+}
+load();setInterval(load,120000);
+</script>
+</body>
+</html>

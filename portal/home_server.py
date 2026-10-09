@@ -1,0 +1,291 @@
+# -*- coding: utf-8 -*-
+"""菜鸟驾驶舱服务（K-STOCK-047 落地变现一期 demo）：新首页原型，独立进程零侵入。
+
+  python portal/home_server.py          # 监听 127.0.0.1:8092
+  数据面 = 纯只读投影（paper.db ro / org.json / shadow_ledger / git log / 文件 mtime），
+  全 try 降级——任一数据源挂了驾驶舱照样亮灯（标灰+原因）。
+  菜鸟对话 = 规则意图路由（查/派/审批/问 四类）优先，未命中走 Ollama qwen3.5:9b
+  （30s 超时，不可达则提示快捷指令）——一期不依赖自由对话质量。
+"""
+from __future__ import annotations
+
+import glob
+import json
+import os
+import sqlite3
+import subprocess
+import time
+from datetime import date, datetime, timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+HOME_HTML = HERE / "home.html"
+PAPER_DB = ROOT / "k_stock" / "data" / "paper.db"
+ORG_JSON = ROOT / "agent_platform" / "registry" / "org.json"
+SHADOW_LEDGER = ROOT / "agent_platform" / "data" / "shadow" / "shadow_ledger.jsonl"
+RPS_LATEST = ROOT / "quant_backtest" / "reports" / "rps_latest.json"
+GZH_DIR = ROOT / "gzh"
+PORT = int(os.environ.get("HOME_PORT", "8092"))
+OLLAMA = "http://127.0.0.1:11434"
+
+
+def _mt(p: Path):
+    try:
+        return time.strftime("%Y-%m-%d %H:%M", time.localtime(p.stat().st_mtime))
+    except OSError:
+        return None
+
+
+# ---------------- 数据面（全 try 降级） ----------------
+
+def _paper():
+    """量化交易部：main + us_% 账本最新快照。"""
+    if not PAPER_DB.exists():
+        return {"ok": False, "err": "paper.db 不存在"}
+    con = sqlite3.connect(f"file:{PAPER_DB.as_posix()}?mode=ro", uri=True)
+    con.row_factory = sqlite3.Row
+    try:
+        accs = {}
+        for aid_row in con.execute(
+                "SELECT DISTINCT account_id FROM equity_marks ORDER BY account_id"):
+            aid = aid_row["account_id"]
+            marks = con.execute(
+                "SELECT date,total,cash,pos_pct,pending,verify_ok FROM equity_marks "
+                "WHERE account_id=? ORDER BY date", (aid,)).fetchall()
+            if not marks:
+                continue
+            base = marks[0]["total"] or 1.0
+            l = marks[-1]
+            accs[aid] = {"total": l["total"], "cash": l["cash"], "date": l["date"],
+                         "pos_pct": l["pos_pct"], "pending": l["pending"],
+                         "cum_pct": round((l["total"] / base - 1) * 100, 2),
+                         "days": len(marks)}
+        pend = con.execute(
+            "SELECT account_id,stock,side,qty,plan_date FROM orders "
+            "WHERE status='pending' ORDER BY id DESC LIMIT 12").fetchall()
+        return {"ok": True, "accounts": accs,
+                "pending": [dict(r) for r in pend]}
+    finally:
+        con.close()
+
+
+def _org():
+    try:
+        d = json.loads(ORG_JSON.read_text(encoding="utf-8"))
+        return {"ok": True, "org": d.get("org"), "chief": d.get("chief", {}).get("agent_id"),
+                "depts": [{"dept": x["dept"], "name": x.get("name"),
+                           "status": x.get("status", "active"),
+                           "charter": x.get("charter", ""), "agents": x.get("agents", [])}
+                          for x in d.get("departments", [])]}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "err": str(e)}
+
+
+def _intel():
+    """情报中枢：青萍产物新鲜度 + KG 事件今日量。"""
+    out = {"ok": True, "rps_ts": None, "rps_buys": 0, "kg_events_today": None}
+    try:
+        d = json.loads(RPS_LATEST.read_text(encoding="utf-8"))
+        out["rps_ts"] = d.get("ts")
+        out["rps_buys"] = len([r for r in d.get("res") or [] if "买入" in str(r.get("action", ""))])
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        kg = sorted(glob.glob(str(ROOT / "knowledge_docs" / "**" / "*"),
+                              recursive=True), key=os.path.getmtime)
+        out["kg_docs"] = len(kg)
+        out["kg_latest"] = _mt(Path(kg[-1])) if kg else None
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+def _media():
+    try:
+        files = sorted(glob.glob(str(GZH_DIR / "**" / "*"), recursive=True),
+                       key=os.path.getmtime)
+        return {"ok": True, "latest": _mt(Path(files[-1])) if files else None,
+                "files": len(files)}
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "err": "gzh 目录不可读"}
+
+
+def _shadow():
+    try:
+        lines = SHADOW_LEDGER.read_text(encoding="utf-8").strip().splitlines()
+        days = {}
+        for ln in lines:
+            try:
+                d = json.loads(ln)
+                days[d["date"]] = days.get(d["date"], 0) + 1
+            except Exception:  # noqa: BLE001
+                continue
+        return {"ok": True, "days_total": len(days), "rows": len(lines),
+                "per_day": days}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "err": str(e)}
+
+
+def _ops():
+    try:
+        import subprocess as sp
+        r = sp.run(["git", "log", "--since=6:00", "--oneline"],
+                   cwd=str(ROOT), capture_output=True, text=True, timeout=10)
+        commits = [x for x in r.stdout.strip().splitlines() if x]
+        return {"ok": True, "commits_today": len(commits),
+                "last_commit": commits[0] if commits else None,
+                "bak_mtime": _mt(PAPER_DB.with_name("paper.db.bak"))}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "err": str(e)}
+
+
+def _cal():
+    """裁决窗倒计时（10-13/14/15）。"""
+    today = date.today()
+    win = {"10-13": "strong 复盘 + 5 日窗满", "10-14": "RiskGuard 裁决",
+           "10-15": "合流 + 校准包 + T-009"}
+    items = []
+    for md, what in win.items():
+        target = date(today.year, int(md.split("-")[0]), int(md.split("-")[1]))
+        items.append({"day": md, "what": what, "in_days": (target - today).days})
+    return {"ok": True, "items": items}
+
+
+def cockpit() -> dict:
+    now = time.strftime("%Y-%m-%d %H:%M")
+    return {"ok": True, "now": now,
+            "paper": _paper(), "org": _org(), "intel": _intel(),
+            "media": _media(), "shadow": _shadow(), "ops": _ops(),
+            "calendar": _cal()}
+
+
+# ---------------- 菜鸟对话（规则路由 + Ollama 兜底） ----------------
+
+def _fmt_money(n):
+    return f"{n:,.0f}"
+
+
+def answer(msg: str) -> dict:
+    m = msg.strip()
+    low = m.lower()
+    ck = cockpit()
+    # 查：部门/状态/情况
+    if any(k in m for k in ("部门", "状态", "情况", "驾驶舱", "总览", "怎么样")):
+        p = ck["paper"]
+        acc_line = "、".join(
+            f"{aid} {('盈' if v['cum_pct'] >= 0 else '亏')} {v['cum_pct']:+.2f}%"
+            for aid, v in (p.get("accounts") or {}).items()) if p.get("ok") else "账本数据暂不可用"
+        sh = ck["shadow"]
+        return {"ok": True, "via": "rule",
+                "text": f"老板，当前全景：账本 [{acc_line}]；"
+                        f"影子期已积累 {sh.get('days_total', 0)} 个交易日（{sh.get('rows', 0)} 条决策）；"
+                        f"研发部今日提交 {ck['ops'].get('commits_today', 0)} 个。"
+                        f"裁决窗最近一个：{ck['calendar']['items'][0]['day']} "
+                        f"({ck['calendar']['items'][0]['what']})。"}
+    # 查：持仓/账本/资产
+    if any(k in low for k in ("持仓", "账本", "资产", "净值", "账户")):
+        p = ck["paper"]
+        if not p.get("ok"):
+            return {"ok": True, "via": "rule", "text": "账本数据暂不可用。"}
+        lines = [f"· {aid}: 总资产 {_fmt_money(v['total'])}（{v['cum_pct']:+.2f}%），"
+                 f"仓位 {v['pos_pct']:.0%}，待撮合 {v['pending']}，快照 {v['date']}"
+                 for aid, v in p["accounts"].items()]
+        return {"ok": True, "via": "rule",
+                "text": "各账本态势（USD/CNY 原币口径）：\n" + "\n".join(lines)}
+    # 查：挂单/pending
+    if any(k in low for k in ("挂单", "pending", "待撮合", "委托")):
+        p = ck["paper"]
+        rows = p.get("pending") or []
+        if not rows:
+            return {"ok": True, "via": "rule", "text": "当前无 pending 挂单。"}
+        return {"ok": True, "via": "rule", "text": "待撮合挂单：\n" + "\n".join(
+            f"· [{r['account_id']}] {r['side']} {r['stock']} ×{r['qty']} → {r['plan_date']} 开盘"
+            for r in rows)}
+    # 查：裁决窗
+    if any(k in m for k in ("裁决", "窗口", "10-13", "10-14", "10-15", "日程")):
+        return {"ok": True, "via": "rule", "text": "裁决窗安排：\n" + "\n".join(
+            f"· {i['day']}（{'今天' if i['in_days'] == 0 else str(i['in_days']) + '天后'}）：{i['what']}"
+            for i in ck["calendar"]["items"])}
+    # 查：影子
+    if "影子" in m or "shad" in low:
+        sh = ck["shadow"]
+        per = "、".join(f"{d}×{n}票" for d, n in sorted((sh.get("per_day") or {}).items()))
+        return {"ok": True, "via": "rule",
+                "text": f"投研部影子期：{sh.get('days_total', 0)} 个交易日 / {sh.get('rows', 0)} 条决策（{per}）。"
+                        f"期满 10-15 合流裁决。"}
+    # 人格
+    if any(k in m for k in ("你是谁", "菜鸟", "介绍")):
+        return {"ok": True, "via": "rule",
+                "text": "老板，我是菜鸟——您的平行空间分身，整个 AI 公司的总管。"
+                        "量化交易部、情报中枢、自媒体部、研发部、运维部都归我调度，"
+                        "我每天盯跑批、盯账本、盯裁决窗，有事第一时间向您汇报。"}
+    # 兜底：Ollama 真对话（30s 超时）
+    try:
+        import urllib.request
+        body = json.dumps({"model": "qwen3.5:9b", "stream": False,
+                           "messages": [
+                               {"role": "system",
+                                "content": "你是菜鸟，老田的 AI 公司总管分身。简洁汇报口吻，"
+                                           "称呼对方为老板，回答控制在 120 字内。"},
+                               {"role": "user", "content": m}]}).encode()
+        req = urllib.request.Request(OLLAMA + "/api/chat", data=body,
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            j = json.loads(resp.read().decode())
+        return {"ok": True, "via": "ollama", "text": j["message"]["content"]}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": True, "via": "fallback",
+                "text": "这条我建议换个问法。试试：\n· 各部门情况\n· 持仓账本\n· 挂单\n· 裁决窗\n· 影子进度\n"
+                        f"（自由对话后端暂不可达：{str(e)[:60]}）"}
+
+
+# ---------------- HTTP ----------------
+
+class H(BaseHTTPRequestHandler):
+    def log_message(self, *a):  # 静默访问日志
+        pass
+
+    def _send(self, code, body, ctype="application/json; charset=utf-8"):
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        u = urlparse(self.path)
+        if u.path in ("/", "/home.html"):
+            self._send(200, HOME_HTML.read_bytes(), "text/html; charset=utf-8")
+        elif u.path == "/api/home":
+            self._send(200, json.dumps(cockpit(), ensure_ascii=False).encode())
+        else:
+            self._send(404, b'{"ok":false,"error":"not found"}')
+
+    def do_POST(self):
+        if urlparse(self.path).path != "/api/chat":
+            self._send(404, b'{"ok":false,"error":"not found"}')
+            return
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            msg = json.loads(self.rfile.read(n).decode()).get("msg", "")
+            self._send(200, json.dumps(answer(msg), ensure_ascii=False).encode())
+        except Exception as e:  # noqa: BLE001
+            self._send(500, json.dumps({"ok": False, "error": str(e)},
+                                       ensure_ascii=False).encode())
+
+
+def main():
+    srv = ThreadingHTTPServer(("127.0.0.1", PORT), H)
+    print(f"[home] 菜鸟驾驶舱 http://127.0.0.1:{PORT}  ({now_ts()})", flush=True)
+    srv.serve_forever()
+
+
+def now_ts():
+    return datetime.now().strftime("%F %T")
+
+
+if __name__ == "__main__":
+    main()
