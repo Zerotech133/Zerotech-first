@@ -655,7 +655,8 @@ DOMAIN_NAV_GROUPS = {
             ("🔍 个股分析", "/sa", "sa"),
             ("💬 查数", "/nl", "nl"))),
         ("🚀 指挥", (
-            ("🚀 驾驶舱", "/bridge", "bridge"),)),
+            ("🚀 驾驶舱", "/bridge", "bridge"),
+            ("🤖 AI 市场", "/aim", "aim"))),
         ("🎖 策略资产", (
             ("🎖 策略中心", "/strategies", "strategies"),
             ("🌊 青萍之末", "/bt-qpzm", "qpzm"),
@@ -724,6 +725,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "linkage": "quant", "council": "quant", "sim": "quant",
                 "debate": "quant", "bridge": "quant", "fut": "quant",
                 "sellpoint": "quant", "paper": "quant",
+                "aim": "quant",
                 "intel": "intel",
                 "jev": "intel", "brief": "intel", "kg": "intel",
                 "kgcanvas": "intel", "kgask": "intel",
@@ -6081,6 +6083,62 @@ gap:14px;align-items:start}}
             + "<div style='display:grid;grid-template-columns:repeat("
             "auto-fit,minmax(260px,1fr));gap:12px'>" + cards + "</div>")
         self._html(_shell("🌊 青萍之末 · 共振选股工作台", "", inner))
+
+    # ── K-STOCK-033 AI 市场：聘请 AI 做商业化（货架页） ──
+    def _aim_page(self):
+        """🤖 AI 市场：可聘 AI 岗位货架。数据源 portal/ai_market.json
+        （注册表存源，本页只读渲染）；卡样式与 /bt 总目录同源。"""
+        import html as _h
+        e = _h.escape
+        mkt = _read_json(os.path.join(ROOT, "ai_market.json")) or {}
+        groups = mkt.get("groups", [])
+
+        def _ai_card(a):
+            badge = a.get("badge", "可聘")
+            bc = a.get("badge_color", "#58a6ff")
+            return (
+                "<div style='border:1px solid #30363d;border-radius:12px;"
+                "background:#161b22;padding:16px 18px'>"
+                "<div style='display:flex;align-items:baseline;gap:8px'>"
+                "<span style='font-size:17px;font-weight:700'>%s %s</span>"
+                "<span style='margin-left:auto;font-size:11.5px;color:%s;"
+                "border:1px solid %s;border-radius:12px;padding:2px 10px'>%s"
+                "</span></div>"
+                "<div style='font-size:13px;margin:8px 0 4px'>%s</div>"
+                "<div class='dim' style='font-size:12px;margin-bottom:6px'>%s"
+                "</div>"
+                "<div class='dim' style='font-size:11.5px'>⚙ %s</div>"
+                "<div style='font-size:12.5px;margin:10px 0;display:flex;"
+                "gap:6px;flex-wrap:wrap'>"
+                "<span class='dim'>📌 %s</span><span class='dim'>·</span>"
+                "<span class='dim'>🤝 %s</span></div>"
+                "<a class='tp' href='%s'>聘请 →</a></div>"
+                % (e(a.get("icon", "🤖")), e(a.get("name", "")), bc, bc,
+                   e(badge), e(a.get("role", "")),
+                   e(a.get("skills", "")), e(a.get("model", "")),
+                   e(a.get("status", "")), e(a.get("hire", "")),
+                   e(a.get("entry", "/"))))
+        secs = "".join(
+            "<div class='sec'><h2>%s</h2>"
+            "<div style='display:grid;grid-template-columns:repeat("
+            "auto-fit,minmax(280px,1fr));gap:12px'>%s</div></div>"
+            % (e(g.get("name", "")),
+               "".join(_ai_card(a) for a in g.get("ais", [])))
+            for g in groups)
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,"
+                "initial-scale=1'><title>🤖 AI 市场</title>"
+                + self._COCKPIT_CSS + "</head><body>"
+                + pill_nav("aim")
+                + "<h1>🤖 AI 市场</h1><div class='dim'>"
+                + e(mkt.get("tagline", ""))
+                + " · 聘请 AI 岗位投入商业化项目 · 本地模型驱动成本可控</div>"
+                + secs
+                + "<div class='dim' style='margin-top:20px'>聘请方式："
+                "「在岗」岗位向 A0 参谋长提任务单（飞书日报通道）· "
+                "「即用」专项 AI 点入即用 · 货架源 portal/ai_market.json"
+                "（上新改注册表即可）· 不构成投资建议</div></body></html>")
+        self._html(body)
 
     # ── K238 每日选股批次回测（挂在自选池共振信号后面） ──
     def _qpzm_batch_blk(self, snap):
@@ -21963,6 +22021,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                       "当日信号 %d · 近5日 %d" % (
                           len((qd_snap or {}).get("signals_now", [])),
                           len((qd_snap or {}).get("signals_recent", [])))),
+                # K-STOCK-033：AI 市场联动卡（聘请 AI 做商业化）
+                _card("/aim", "#d29922", "🤖", "AI 市场",
+                      "可聘 AI 岗位货架 · A0 参谋长 + 投研部 alpha 团队"
+                      "（T1/T2/N1/F1/D1）+ 专项 AI · 本地模型零 token 成本",
+                      "11 个岗位在岗 · 按岗聘请"),
             ])
             body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                     "<meta name='viewport' content='width=device-width,"
@@ -22159,6 +22222,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/bt/seat":
             # 坐席下钻页：席位近60日上榜明细 + 常做票
             self._bt_seat_page(qs)
+        elif path == "/aim":
+            # K-STOCK-033 AI 市场：聘请 AI 岗位货架（ai_market.json 存源）
+            self._aim_page()
         elif path == "/bt-qpzm" or path.startswith("/bt-qpzm/"):
             # 策略市场 1 号工作台：青萍之末 · 共振选股
             # K-STOCK-032 多页面联动：/bt-qpzm 主页驾驶舱 +
