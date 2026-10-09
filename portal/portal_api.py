@@ -1137,6 +1137,9 @@ _BTSEL_JS = '''
 _BTSEL_TAG = (
     "<script>" + _BTSEL_JS + "</script>")
 
+# 055-L3 短屏化：长页锚点条+分区折叠（h2>=6 折叠、>=4 锚点；flex/grid 守卫）
+_SS_TAG = '<script src="/static/shortscreen.js" defer></script>'
+
 
 def pill_nav(page=None):
     """K39 面包屑导航：🏠 首页 › 域 › 当前页 + 右侧「☰ 域内 ▾」折叠下拉。
@@ -5027,6 +5030,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _html(self, body):
         b = body.encode("utf-8")
         b += _BTSEL_TAG.encode("utf-8")   # K255 勾选回测 JS（幂等守卫 window.__k255bt）
+        b += _SS_TAG.encode("utf-8")      # 055-L3 短屏化 JS（锚点条+折叠，幂等守卫 window.__SS__）
         b += self._token_tag().encode("utf-8")  # P0-1b 本机页面注入 token fetch 拦截
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -5551,7 +5555,7 @@ gap:14px;align-items:start}}
         body = (
             "<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-            "<title>策略中心 · 灵界</title>"
+            "<title>策略中心 · 零界</title>"
             "<link rel='stylesheet' href='/static/tokens.css'></head>"
             "<body style='background:var(--bg-page);color:var(--text);"
             "font-family:\"Segoe UI\",\"Microsoft YaHei\",system-ui,sans-serif;"
@@ -11689,7 +11693,7 @@ transition:.3s;z-index:9}
                 + pill_nav("qpzm")
                 + "<h1>🔔 订阅推送</h1>"
                 "<div class='sb-sub'>自选订阅 · 飞书自动推送 · 盘中定时 + 盘后汇总"
-                " · 青萍之末 · 灵界</div>"
+                " · 青萍之末 · 零界</div>"
                 "<div class='sb-card'><h2>订阅清单</h2>"
                 "<table><thead><tr><th>订阅</th><th>类型</th><th>时机</th>"
                 "<th>接收人</th><th>最近推送</th><th>启用</th><th>操作</th>"
@@ -22262,6 +22266,8 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             _CT = {"echarts.min.js": "application/javascript",
                    "g6.min.js": "application/javascript",
                    "tokens.css": "text/css",
+                   "shortscreen.js": "application/javascript",
+                   "cainiao.js": "application/javascript",
                    "china_geo.json": "application/json"}
             if fn in _CT:
                 fp = os.path.join(ROOT, "static", fn)
