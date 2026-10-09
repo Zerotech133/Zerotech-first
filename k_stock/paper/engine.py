@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS orders(
   fee REAL,
   reason TEXT,
   conf REAL,
+  strategy TEXT NOT NULL DEFAULT 'manual',   -- v0.2 策略来源: ai_team|double_knife|qingping|manual|stop_loss
+  account_id TEXT NOT NULL DEFAULT 'main',   -- v0.3 多账户预留（现恒 main）
+  order_kind TEXT NOT NULL DEFAULT 'market', -- market | stop（止损触发单）
   created_at TEXT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_orders_ref ON orders(ref) WHERE ref != '';
@@ -69,7 +72,10 @@ CREATE TABLE IF NOT EXISTS positions(
   stock TEXT PRIMARY KEY,
   qty INTEGER NOT NULL,
   avg_cost REAL NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  strategy TEXT NOT NULL DEFAULT 'manual',
+  account_id TEXT NOT NULL DEFAULT 'main',
+  stop_price REAL                            -- 手动止损价（NULL=未设）；收盘口径触发
 );
 CREATE TABLE IF NOT EXISTS ledger(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,6 +95,7 @@ CREATE TABLE IF NOT EXISTS equity_marks(
   pos_pct REAL NOT NULL,
   pending INTEGER NOT NULL,
   verify_ok INTEGER NOT NULL,
+  account_id TEXT NOT NULL DEFAULT 'main',
   ts TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS positions_snapshot(
@@ -100,9 +107,24 @@ CREATE TABLE IF NOT EXISTS positions_snapshot(
   market_value REAL NOT NULL,
   pnl REAL NOT NULL,
   available INTEGER NOT NULL,
+  strategy TEXT NOT NULL DEFAULT 'manual',
+  account_id TEXT NOT NULL DEFAULT 'main',
   PRIMARY KEY(date, stock)
 );
 """
+
+# v0.1 → v0.2 增量迁移：旧库无新列时 ALTER 补齐（DEFAULT 向后兼容，零数据迁移）
+_MIGRATIONS = [
+    ("orders", "strategy", "TEXT NOT NULL DEFAULT 'manual'"),
+    ("orders", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
+    ("orders", "order_kind", "TEXT NOT NULL DEFAULT 'market'"),
+    ("positions", "strategy", "TEXT NOT NULL DEFAULT 'manual'"),
+    ("positions", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
+    ("positions", "stop_price", "REAL"),
+    ("equity_marks", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
+    ("positions_snapshot", "strategy", "TEXT NOT NULL DEFAULT 'manual'"),
+    ("positions_snapshot", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
+]
 
 
 def _now() -> str:
@@ -146,6 +168,10 @@ class PaperEngine:
         self.con = sqlite3.connect(str(self.db_path))
         self.con.row_factory = sqlite3.Row
         self.con.executescript(_SCHEMA)
+        for tbl, col, ddl in _MIGRATIONS:   # 旧库升级（幂等：列已存在则跳过）
+            cols = {r[1] for r in self.con.execute(f"PRAGMA table_info({tbl})").fetchall()}
+            if cols and col not in cols:
+                self.con.execute(f"ALTER TABLE {tbl} ADD COLUMN {col} {ddl}")
         self.con.commit()
 
     # ---------------- 账户基础 ----------------
@@ -270,7 +296,7 @@ class PaperEngine:
 
     def _fill_manual(self, stock: str, side: str, qty: int, price: float | None,
                      source: str, ref: str, conf: float | None,
-                     force: bool) -> dict:
+                     force: bool, strategy: str = "manual") -> dict:
         bar = self.market.last_bar(stock)
         if bar is None:
             raise Reject(f"行情湖无该股: {stock}")
@@ -289,25 +315,28 @@ class PaperEngine:
         fee = self._fee_buy(qty * price) if side == "BUY" else self._fee_sell(qty * price)
         self._check_risk(stock, side, qty, price, fee, force)
         return self._settle_fill(stock, side, qty, price, fee, bar["trade_date"],
-                                 source, ref, base, conf, None)
+                                 source, ref, base, conf, None, strategy=strategy)
 
     def buy(self, stock: str, qty: int, price: float | None = None,
             force: bool = False, source: str = "manual", ref: str = "",
-            conf: float | None = None) -> dict:
-        return self._fill_manual(stock, "BUY", qty, price, source, ref, conf, force)
+            conf: float | None = None, strategy: str = "manual") -> dict:
+        return self._fill_manual(stock, "BUY", qty, price, source, ref, conf,
+                                 force, strategy=strategy)
 
     def sell(self, stock: str, qty: int | None = None, price: float | None = None,
              force: bool = False, source: str = "manual", ref: str = "",
-             conf: float | None = None) -> dict:
+             conf: float | None = None, strategy: str = "manual") -> dict:
         if qty is None:
             qty = self.available_qty(stock)
             if qty <= 0:
                 raise Reject(f"{stock} 无可卖持仓（T+1 冻结或空仓）")
-        return self._fill_manual(stock, "SELL", qty, price, source, ref, conf, force)
+        return self._fill_manual(stock, "SELL", qty, price, source, ref, conf,
+                                 force, strategy=strategy)
 
     # ---------------- AI 信号单（pending → settle） ----------------
 
-    def exec_run(self, run_path: Path | str, dry_run: bool = False) -> dict:
+    def exec_run(self, run_path: Path | str, dry_run: bool = False,
+                 strategy: str = "ai_team") -> dict:
         """读 poc_*.json（list，每股一项），按 D1 决策落 pending 单。幂等。"""
         run_path = Path(run_path)
         payload = json.loads(run_path.read_text(encoding="utf-8"))
@@ -337,9 +366,11 @@ class PaperEngine:
                                        "why": f"行情湖无 {asof} 之后的交易日，无法定撮合日"})
                 continue
             if action == "BUY":
-                order = self._plan_buy(stock, conf, plan_date, ref, dry_run)
+                order = self._plan_buy(stock, conf, plan_date, ref, dry_run,
+                                       strategy=strategy)
             elif action == "SELL":
-                order = self._plan_sell(stock, conf, plan_date, ref, dry_run)
+                order = self._plan_sell(stock, conf, plan_date, ref, dry_run,
+                                        strategy=strategy)
             else:
                 out["skipped"].append({"stock": stock, "why": f"未知动作 {action}"})
                 continue
@@ -348,7 +379,7 @@ class PaperEngine:
         return out
 
     def _plan_buy(self, stock: str, conf: float, plan_date: str, ref: str,
-                  dry_run: bool) -> dict:
+                  dry_run: bool, strategy: str = "ai_team") -> dict:
         eq = self.equity()
         target_pct = self.cfg["max_pos_pct"] * min(1.0, conf / CONF_FULL)
         bar = self.market.last_bar(stock)
@@ -369,9 +400,9 @@ class PaperEngine:
             if not dry_run:
                 self.con.execute(
                     "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,"
-                    "status,reason,conf,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                    "status,reason,conf,strategy,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (_now(), "ai", ref, stock, "BUY", 0, plan_date, "open",
-                     "cancelled", plan["reason"], conf, _now()))
+                     "cancelled", plan["reason"], conf, strategy, _now()))
             return plan
         plan = {"stock": stock, "side": "BUY", "qty": qty, "plan_date": plan_date,
                 "status": "pending", "ref": ref,
@@ -380,14 +411,14 @@ class PaperEngine:
         if not dry_run:
             cur = self.con.execute(
                 "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,"
-                "status,reason,conf,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                "status,reason,conf,strategy,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (_now(), "ai", ref, stock, "BUY", qty, plan_date, "open",
-                 "pending", plan["reason"], conf, _now()))
+                 "pending", plan["reason"], conf, strategy, _now()))
             plan["order_id"] = cur.lastrowid
         return plan
 
     def _plan_sell(self, stock: str, conf: float, plan_date: str, ref: str,
-                   dry_run: bool) -> dict:
+                   dry_run: bool, strategy: str = "ai_team") -> dict:
         qty = self.available_qty(stock)
         if qty <= 0:
             plan = {"stock": stock, "side": "SELL", "qty": 0, "plan_date": plan_date,
@@ -405,9 +436,9 @@ class PaperEngine:
         if not dry_run:
             cur = self.con.execute(
                 "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,"
-                "status,reason,conf,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                "status,reason,conf,strategy,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (_now(), "ai", ref, stock, "SELL", qty, plan_date, "open",
-                 "pending", plan["reason"], conf, _now()))
+                 "pending", plan["reason"], conf, strategy, _now()))
             plan["order_id"] = cur.lastrowid
         return plan
 
@@ -464,7 +495,8 @@ class PaperEngine:
                                       "price": price, "fee": fee, "dry": True})
                 continue
             rec = self._settle_fill(od["stock"], od["side"], qty, price, fee, plan_date,
-                                    od["source"], od["ref"], "open", od["conf"], od["id"])
+                                    od["source"], od["ref"], "open", od["conf"], od["id"],
+                                    strategy=od["strategy"] or "manual")
             out["filled"].append(rec)
         self.con.commit()
         return out
@@ -479,7 +511,8 @@ class PaperEngine:
 
     def _settle_fill(self, stock: str, side: str, qty: int, price: float, fee: float,
                      fill_date: str, source: str, ref: str, price_base: str,
-                     conf: float | None, pending_id: int | None) -> dict:
+                     conf: float | None, pending_id: int | None,
+                     strategy: str = "manual") -> dict:
         acc = self.con.execute("SELECT cash FROM account WHERE id=1").fetchone()
         cash = float(acc["cash"])
         amount = qty * price
@@ -496,8 +529,9 @@ class PaperEngine:
                 self.con.execute("UPDATE positions SET qty=?,avg_cost=?,updated_at=? WHERE stock=?",
                                  (new_qty, new_cost, ts, stock))
             else:
-                self.con.execute("INSERT INTO positions(stock,qty,avg_cost,updated_at) VALUES(?,?,?,?)",
-                                 (stock, qty, (amount + fee) / qty, ts))
+                self.con.execute(
+                    "INSERT INTO positions(stock,qty,avg_cost,updated_at,strategy) VALUES(?,?,?,?,?)",
+                    (stock, qty, (amount + fee) / qty, ts, strategy))
             ledger_amt = -(amount + fee)
         else:
             cash += (amount - fee)
@@ -523,10 +557,10 @@ class PaperEngine:
         else:
             self.con.execute(
                 "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,manual_price,"
-                "status,fill_date,filled_price,filled_qty,fee,conf,created_at) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "status,fill_date,filled_price,filled_qty,fee,conf,strategy,created_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (ts, source, ref, stock, side, qty, None, price_base, price,
-                 "filled", fill_date, price, qty, fee, conf, ts))
+                 "filled", fill_date, price, qty, fee, conf, strategy, ts))
         self.con.commit()
         return {"stock": stock, "side": side, "qty": qty, "price": price, "fee": fee,
                 "fill_date": fill_date, "cash_after": round(cash, 2), "order_id": pending_id}
@@ -572,10 +606,11 @@ class PaperEngine:
         self.con.execute("DELETE FROM positions_snapshot WHERE date=?", (day,))
         for p in eq["positions"]:
             self.con.execute(
-                "INSERT INTO positions_snapshot(date,stock,qty,avg_cost,last,market_value,pnl,available) "
-                "VALUES(?,?,?,?,?,?,?,?)",
+                "INSERT INTO positions_snapshot(date,stock,qty,avg_cost,last,market_value,"
+                "pnl,available,strategy) VALUES(?,?,?,?,?,?,?,?,?)",
                 (day, p["stock"], p["qty"], p["avg_cost"], p["last"],
-                 p["market_value"], p["pnl"], p["available"]))
+                 p["market_value"], p["pnl"], p["available"],
+                 p.get("strategy", "manual")))
         self.con.commit()
         return {"date": day, "total": eq["total"], "pos_pct": eq["pos_pct"],
                 "pending": int(pend), "verify_ok": v["ok"]}
@@ -584,3 +619,89 @@ class PaperEngine:
         rows = self.con.execute(
             "SELECT * FROM equity_marks ORDER BY date").fetchall()
         return [dict(r) for r in rows]
+
+    # ---------------- 手动止损（v0.2；口径=湖内收盘触发，次日开盘成交，两步制自洽） ----------------
+
+    def set_stop(self, stock: str, stop_price: float) -> dict:
+        """给持仓设/改止损价。无持仓拒绝；stop_price 须为正数。"""
+        stock = _norm_stock(stock)
+        pos = self.con.execute("SELECT qty FROM positions WHERE stock=?", (stock,)).fetchone()
+        if not pos:
+            raise Reject(f"{stock} 无持仓，不能设止损")
+        stop_price = float(stop_price)
+        if stop_price <= 0:
+            raise Reject(f"止损价须为正数，收到 {stop_price}")
+        self.con.execute("UPDATE positions SET stop_price=?,updated_at=? WHERE stock=?",
+                         (stop_price, _now(), stock))
+        self.con.commit()
+        return {"stock": stock, "stop_price": stop_price, "qty": int(pos["qty"])}
+
+    def clear_stop(self, stock: str) -> dict:
+        stock = _norm_stock(stock)
+        cur = self.con.execute("UPDATE positions SET stop_price=NULL,updated_at=? WHERE stock=?",
+                               (_now(), stock))
+        self.con.commit()
+        if cur.rowcount == 0:
+            raise Reject(f"{stock} 无持仓")
+        return {"stock": stock, "stop_price": None}
+
+    def stops(self) -> list[dict]:
+        """已设止损的持仓清单（含现价与触发距离）。"""
+        out = []
+        for p in self.positions():
+            if p.get("stop_price") is None:
+                continue
+            bar = self.market.last_bar(p["stock"])
+            last = bar["close"] if bar else None
+            out.append({
+                "stock": p["stock"], "qty": p["qty"], "stop_price": p["stop_price"],
+                "last": last,
+                "distance_pct": round((last / p["stop_price"] - 1) * 100, 2) if last else None,
+            })
+        return out
+
+    def check_stops(self, dry_run: bool = False) -> dict:
+        """止损检查（每日 settle 后调用）：湖内最新收盘 < stop_price → 生成 SELL pending
+        （order_kind='stop'，strategy='stop_loss'），次日开盘撮合，走既有风控与对账。
+        幂等：ref=stop#{stock}#{bar_date}，同票同日仅生成一次。"""
+        out = {"triggered": [], "watch": [], "dry_run": dry_run}
+        for p in self.positions():
+            if p.get("stop_price") is None:
+                continue
+            bar = self.market.last_bar(p["stock"])
+            if bar is None:
+                continue
+            if bar["close"] >= p["stop_price"] - EPS:
+                out["watch"].append({"stock": p["stock"],
+                                     "close": bar["close"], "stop": p["stop_price"]})
+                continue
+            ref = f"stop#{p['stock']}#{bar['trade_date']}"
+            dup = self.con.execute("SELECT id FROM orders WHERE ref=?", (ref,)).fetchone()
+            if dup:
+                out["triggered"].append({"stock": p["stock"], "why": f"幂等跳过（{ref} 已存在）"})
+                continue
+            avail = self.available_qty(p["stock"])
+            if avail <= 0:
+                out["triggered"].append({"stock": p["stock"],
+                                         "why": "触发但可卖 0（T+1 冻结），明日再查"})
+                continue
+            plan_date = self.market.next_trading_day(
+                datetime.now().isoformat(timespec="seconds"))
+            if plan_date is None:
+                out["triggered"].append({"stock": p["stock"], "why": "湖无后续交易日，明日再查"})
+                continue
+            reason = (f"止损触发：收盘 {bar['close']} < 止损价 {p['stop_price']}"
+                      f"（{bar['trade_date']}），明日开盘清仓 {avail} 股")
+            if not dry_run:
+                self.con.execute(
+                    "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,"
+                    "status,reason,conf,strategy,order_kind,created_at) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (_now(), "ai", ref, p["stock"], "SELL", avail, plan_date, "open",
+                     "pending", reason, None, "stop_loss", "stop", _now()))
+            out["triggered"].append({"stock": p["stock"], "qty": avail,
+                                     "plan_date": plan_date, "ref": ref,
+                                     "reason": reason, "status": "pending"})
+        if not dry_run:
+            self.con.commit()
+        return out

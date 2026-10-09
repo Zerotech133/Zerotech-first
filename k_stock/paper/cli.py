@@ -35,9 +35,12 @@ def _engine(args) -> PaperEngine:
 
 
 def _newest_run() -> Path:
-    runs = sorted(DATA_DIR.glob("poc_*.json"))
+    # 排除 poc_qd_*（双刀产物）：否则 07:05 automation 的 exec --newest
+    # 会把双刀信号当 AI 决策执行（策略串味）。AI 通道只吃 AI 产物。
+    runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
+                  if not x.name.startswith("poc_qd_"))
     if not runs:
-        raise Reject("k_stock/data/ 下无 poc_*.json 决策产物")
+        raise Reject("k_stock/data/ 下无 poc_*.json 决策产物（AI 通道）")
     return runs[-1]
 
 
@@ -179,6 +182,84 @@ def cmd_curve(args) -> int:
     return 0
 
 
+def cmd_stop(args) -> int:
+    e = _engine(args)
+    if args.clear:
+        r = e.clear_stop(args.stock)
+        print(f"🔓 已清除 {r['stock']} 止损")
+        return 0
+    if args.price is None:
+        raise Reject("需要 --price 或 --clear")
+    r = e.set_stop(args.stock, args.price)
+    print(f"🛑 止损已设: {r['stock']} {r['qty']} 股 @ 止损价 {r['stop_price']}（收盘触发，次日开盘清仓）")
+    return 0
+
+
+def cmd_stops(args) -> int:
+    e = _engine(args)
+    rows = e.stops()
+    if not rows:
+        print("（无已设止损）")
+        return 0
+    print(f"已设止损 {len(rows)} 笔:")
+    for r in rows:
+        d = f"{r['distance_pct']:+.2f}%" if r["distance_pct"] is not None else "-"
+        print(f"  {r['stock']}  {r['qty']} 股  止损 {r['stop_price']}  现价 {r['last']}  距离 {d}")
+    return 0
+
+
+def cmd_check_stops(args) -> int:
+    e = _engine(args)
+    r = e.check_stops(dry_run=args.dry_run)
+    tag = "[dry-run] " if args.dry_run else ""
+    print(f"{tag}止损检查: 触发 {len([t for t in r['triggered'] if t.get('status')])} "
+          f"/ 观察 {len(r['watch'])}")
+    for t in r["triggered"]:
+        print(f"  🛑 {t['stock']}: {t['why']}")
+    for w in r["watch"]:
+        print(f"  👀 {w['stock']}: 收盘 {w['close']} ≥ 止损 {w['stop']}")
+    return 0
+
+
+def cmd_order(args) -> int:
+    """统一下单入口（v0.2 平台化）：BUY/SELL/STOP 三合一，--json 供门户 API
+    子进程调用（portal_api 保持纯标准库，引擎走本 CLI）。"""
+    e = _engine(args)
+    try:
+        if args.side == "BUY":
+            if not args.qty or args.qty <= 0 or args.qty % 100:
+                raise Reject("qty 须为 100 的整数倍股数")
+            r = e.buy(args.stock, args.qty, args.price, force=args.force)
+            if args.stop_price is not None:
+                s = e.set_stop(args.stock, args.stop_price)
+                r["stop_price"] = s["stop_price"]
+        elif args.side == "SELL":
+            if not args.all and not args.qty:
+                raise Reject("SELL 需要 --qty 或 --all")
+            r = e.sell(args.stock, None if args.all else args.qty,
+                       args.price, force=args.force)
+        elif args.side == "STOP":
+            if args.clear:
+                r = e.clear_stop(args.stock)
+            elif args.stop_price is not None:
+                r = e.set_stop(args.stock, args.stop_price)
+            else:
+                raise Reject("STOP 需要 --stop-price 或 --clear")
+        else:
+            raise Reject(f"未知 side: {args.side}")
+    except Reject as ex:
+        if args.json:
+            print(json.dumps({"ok": False, "error": str(ex)}, ensure_ascii=False))
+            return 2
+        raise
+    if args.json:
+        print(json.dumps({"ok": True, "order": r}, ensure_ascii=False))
+    else:
+        print(f"✅ {args.side} {args.stock} 完成: "
+              + json.dumps(r, ensure_ascii=False))
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="paper", description="K-STOCK 模拟仓（纸面交易账本）")
     ap.add_argument("--db", default=None, help="账本 SQLite 路径（默认 k_stock/data/paper.db）")
@@ -232,6 +313,31 @@ def main(argv=None) -> int:
 
     p = sub.add_parser("curve", help="查看权益曲线（历史快照）")
     p.set_defaults(fn=cmd_curve)
+
+    p = sub.add_parser("stop", help="设置/清除持仓止损价（收盘触发→次日开盘清仓）")
+    p.add_argument("--stock", required=True)
+    p.add_argument("--price", type=float, default=None)
+    p.add_argument("--clear", action="store_true")
+    p.set_defaults(fn=cmd_stop)
+
+    p = sub.add_parser("stops", help="列出已设止损（含触发距离）")
+    p.set_defaults(fn=cmd_stops)
+
+    p = sub.add_parser("check-stops", help="执行止损检查（automation 每日 settle 后调用）")
+    p.add_argument("--dry-run", action="store_true")
+    p.set_defaults(fn=cmd_check_stops)
+
+    p = sub.add_parser("order", help="统一下单入口 BUY/SELL/STOP（--json 供门户 API）")
+    p.add_argument("--side", required=True, choices=["BUY", "SELL", "STOP"])
+    p.add_argument("--stock", required=True)
+    p.add_argument("--qty", type=int, default=None)
+    p.add_argument("--all", action="store_true")
+    p.add_argument("--price", type=float, default=None)
+    p.add_argument("--stop-price", dest="stop_price", type=float, default=None)
+    p.add_argument("--clear", action="store_true")
+    p.add_argument("--force", action="store_true")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=cmd_order)
 
     args = ap.parse_args(argv)
     try:

@@ -95,6 +95,8 @@ _MUTATION_POSTS = frozenset((
     "/api/council/simrun",
     "/api/debate/say",
     "/api/batch-backtest",
+    "/api/paper_order",   # K-STOCK v0.2 模拟仓下单（BUY/SELL/双刀执行）
+    "/api/paper_stop",    # K-STOCK v0.2 模拟仓止损挂/解
 ))
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -689,6 +691,7 @@ DOMAIN_NAV_GROUPS = {
         ("🕸 知识图谱", (
             ("🎯 知识画布", "/kg/canvasv2", "kgcanvas"),
             ("🗺 作战地图", "/kg/battle", "kgbattle"),
+            ("📰 事件图谱", "/kg/events", "kgevents"),
             ("🕸 图谱探索", "/kg", "kg"),
             ("💬 图谱问答", "/kg/ask", "kgask"),
             ("💰 游资地图", "/kg/map", "kgmap"),
@@ -726,6 +729,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "kgcanvas": "intel", "kgask": "intel",
                 "kgmap": "intel", "kgshadow": "intel",
                 "kgbattle": "intel",
+                "kgevents": "intel",
                 "kgflow": "intel", "kglabel": "intel", "kgcard": "intel",
                 "gzh": "creator", "vd": "creator",
                 "sys": "ops", "audit": "ops"}
@@ -19939,6 +19943,333 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
             "{nav}", pill_nav("kgcanvas"))
         self._html(body)
 
+    def _kg_events_page(self, qs=None):
+        """K266 事件图谱查询面板：态势感知 + 市场Tab + G6 力导向图 + 下钻原文。
+
+        URL：/kg/events?market=主板&q=&dir=&rel=&d0=&d1=
+        数据层 quant_backtest/kg_events_portal.py（纯查询不写库），JSON 端点
+        /kg/events/situ|graph|list|search|doc/{doc_id} 与本页同源。
+        下钻链路：点公司节点 → 事件列表（fetch list?c=code，附图谱全景/
+        K线研判跳转）→ 点事件边/原文链接 → 原文弹层（条级 doc_id 去 iNN
+        后缀关联 doc_texts.jsonl 全文 + structure_shadow 结构化摘要）。
+        """
+        import html as _h
+        import json as _j
+        from datetime import datetime as _dt, timedelta as _td
+        from urllib.parse import parse_qs as _pq, quote as _qt
+        if QBT_DIR not in sys.path:
+            sys.path.insert(0, QBT_DIR)
+        import kg_events_portal as KE
+        e = _h.escape
+        qp = _pq(qs or "")
+        market = (qp.get("market") or ["全部"])[0].strip() or "全部"
+        q = (qp.get("q") or [""])[0].strip()
+        direction = (qp.get("dir") or [""])[0].strip()
+        rel = (qp.get("rel") or [""])[0].strip()
+        d0 = (qp.get("d0") or [""])[0].strip()
+        d1 = (qp.get("d1") or [""])[0].strip()
+        su = KE.api("situ")
+        g = KE.api("graph", None, {"market": market, "q": q, "dir": direction,
+                                   "rel": rel, "d0": d0, "d1": d1})
+
+        def _ago(ts):
+            try:
+                mins = int((_dt.now() - _dt.strptime(
+                    ts, "%Y-%m-%d %H:%M:%S")).total_seconds() // 60)
+                if mins < 60:
+                    return "%d 分钟前" % mins
+                if mins < 2880:
+                    return "%.1f 小时前" % (mins / 60)
+                return "%.1f 天前" % (mins / 1440)
+            except Exception:
+                return ""
+
+        def _cell(label, value, sub="", warn=False):
+            return ("<div class='sc%s'><div class='sl'>%s</div>"
+                    "<div class='sv'>%s</div><div class='ss'>%s</div></div>"
+                    % (" w" if warn else "", label, value, sub))
+
+        # ── ① 态势感知条（5 格，字段级降级）──
+        if su.get("ok"):
+            c1 = _cell("NEO4J 连接",
+                       "<span class='dot' style='background:#3fb950'></span>已连接",
+                       "bolt://localhost:7687")
+        else:
+            c1 = _cell("NEO4J 连接",
+                       "<span class='dot' style='background:#f85149'></span>未连接",
+                       e((su.get("error") or "")[:60]), warn=True)
+        inv_mk = " / ".join("%s %d" % (k, v)
+                            for k, v in (su.get("inv_markets") or {}).items())
+        c2 = _cell("入图事件", "%d 条 · %d 标的" % (
+            su.get("doc_edges") or 0, su.get("sec_involved") or 0), inv_mk,
+            warn=not su.get("doc_edges"))
+        latest = su.get("latest_event_ts") or ""
+        stale = ""
+        if latest:
+            ag = _ago(latest)
+            stale = ag
+            if ag.endswith("天前") and float(ag[:-2]) > 2:
+                stale += " · ⚠ 超过48小时无新入图"
+        c3 = _cell("最新入图", latest or "—", stale)
+        st_m = (su.get("struct") or {}).get("mtime") or "—"
+        c4 = _cell("影子管线", st_m, "结构 %d · 事件影子 %d · 原文 %d" % (
+            (su.get("struct") or {}).get("count") or 0,
+            (su.get("event_shadow") or {}).get("count") or 0,
+            (su.get("texts") or {}).get("count") or 0))
+        cad = su.get("cadence_min") or 5
+        nx = _dt.now().replace(second=0, microsecond=0)
+        nx += _td(minutes=(cad - nx.minute % cad) or cad)
+        c5 = _cell("更新节奏", "摄取 %d 分钟/拍" % cad,
+                   "下次 ≈ %s · 入图 = 人审后 commit" % nx.strftime("%H:%M"))
+        situ_html = ("<div class='situgrid'>%s%s%s%s%s</div>"
+                     % (c1, c2, c3, c4, c5))
+
+        # ── ② 市场 Tab（A股四板 + 美股/港股/加密预留灰置）──
+        MKTS = ("全部", "主板", "创业板", "科创板", "北交所")
+
+        def _href(m):
+            parts = []
+            if m != "全部":
+                parts.append("market=" + _qt(m))
+            for k, v in (("q", q), ("dir", direction), ("rel", rel),
+                         ("d0", d0), ("d1", d1)):
+                if v:
+                    parts.append(k + "=" + _qt(v))
+            return "/kg/events" + ("?" + "&".join(parts) if parts else "")
+
+        tabs = ("<div class='tabs'>"
+                + "".join("<a class='tab%s' href='%s'>%s</a>"
+                          % (" on" if market == m else "", _href(m), e(m))
+                          for m in MKTS)
+                + "".join("<span class='tab off' title='暂未接入 · 预留扩展位'>%s</span>"
+                          % e(m) for m in ("美股", "港股", "加密"))
+                + "</div>")
+
+        # ── ③ 查询表单 ──
+        rel_opts = ("<option value=''>关系</option>"
+                    + "".join("<option%s>%s</option>"
+                              % (" selected" if rel == k else "", e(k))
+                              for k in (su.get("rels") or {})))
+        dir_opts = "".join("<option value=''>方向</option>%s" % "".join(
+            "<option%s>%s</option>" % (" selected" if direction == k else "",
+                                       e(k))
+            for k in ("利好", "中性", "利空")))
+        form = ("<form class='fbar' action='/kg/events' method='get' "
+                "autocomplete='off'>"
+                "<input type='hidden' name='market' value='%s'>"
+                "<input id='qi' name='q' class='kfind' "
+                "placeholder='公司 / 代码 / 别名（联想输入）…' value='%s'>"
+                "<div id='hits' class='hits'></div>"
+                "<select name='dir' class='fsel'>%s</select>"
+                "<select name='rel' class='fsel'>%s</select>"
+                "<input type='date' name='d0' class='fdt' value='%s'>"
+                "<span class='dim'>至</span>"
+                "<input type='date' name='d1' class='fdt' value='%s'>"
+                "<button class='kfbtn'>🔍 查询</button>"
+                "<a class='tab' href='/kg/events'>重置</a></form>"
+                % (e(market), e(q), dir_opts, rel_opts, e(d0), e(d1)))
+
+        # ── ④ 图例 ──
+        LGC = (("主板", "#3fb950"), ("创业板", "#58a6ff"),
+               ("科创板", "#bc8cff"), ("北交所", "#d29922"))
+        legend = ("<div class='legend'>"
+                  + "".join("<span class='lg'><span class='lnd' "
+                            "style='background:%s'></span>%s</span>" % (c, k)
+                            for k, c in LGC)
+                  + "".join("<span class='lg'><span class='lsw' "
+                            "style='background:%s'></span>%s</span>" % (c, k)
+                            for k, c in (("利好", "#3fb950"),
+                                         ("利空", "#f85149"),
+                                         ("中性", "#8b949e")))
+                  + "<span>节点大小=事件连接度 · 线宽=报道数 n · "
+                    "点节点下钻公司 · 点边看原文</span></div>")
+
+        gstat = ("%d 事件 · %d 标的" % (len(g.get("edges") or []),
+                                       len(g.get("nodes") or []))
+                 if g.get("ok") else e((g.get("error") or "查询失败")[:60]))
+
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+<title>事件图谱 · K266</title>__CSS____NAV__<style>
+.situgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0 0 14px}
+.sc{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:10px 14px}
+.sc.w{border-color:#4d3a13}
+.sl{color:#8b949e;font-size:11px;letter-spacing:1px;margin-bottom:4px}
+.sv{color:#e6edf3;font-size:15px;font-weight:600}
+.ss{color:#8b949e;font-size:11px;margin-top:3px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;align-items:center}
+.tab{padding:5px 14px;border:1px solid #30363d;border-radius:14px;color:#58a6ff;text-decoration:none;font-size:12.5px;background:#161b22}
+.tab.on{color:#e6edf3;border-color:#58a6ff;font-weight:600}
+.tab.off{opacity:.35;cursor:not-allowed;color:#8b949e}
+.fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px;position:relative}
+.fsel,.fdt{padding:7px 10px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:12.5px}
+.hits{display:none;position:absolute;top:40px;left:0;background:#161b22;border:1px solid #30363d;border-radius:8px;z-index:50;min-width:320px;max-height:280px;overflow:auto}
+.hit{padding:7px 12px;cursor:pointer;font-size:12.5px;border-bottom:1px solid #21262d}
+.hit:hover{background:rgba(31,111,235,.2)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:#8b949e;font-size:11.5px;align-items:center}
+.lg{display:inline-flex;align-items:center;gap:5px}
+.lsw{width:14px;height:3px;border-radius:2px;display:inline-block}
+.lnd{width:9px;height:9px;border-radius:50%;display:inline-block}
+.evrow{padding:9px 12px;border:1px solid #21262d;border-radius:9px;margin-bottom:7px;background:#161b22}
+.co{color:#58a6ff;font-weight:600;cursor:pointer}
+.co:hover{text-decoration:underline}
+.arrow{color:#8b949e;font-family:monospace}
+.bdgx{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:600;margin-left:6px;background:#161b22}
+.emeta{color:#8b949e;font-size:11.5px;margin-top:4px}
+.emeta a{color:#d29922;text-decoration:none}
+#evg{height:460px;border:1px solid #30363d;border-radius:10px;background:#0d1117}
+#modal{position:fixed;inset:0;background:rgba(1,4,9,.78);z-index:100;display:none;align-items:center;justify-content:center;padding:30px}
+.mbox{background:#0d1117;border:1px solid #30363d;border-radius:12px;max-width:860px;width:100%;max-height:86vh;display:flex;flex-direction:column}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid #21262d;font-weight:600;color:#e6edf3}
+.mhead button{background:none;border:1px solid #30363d;border-radius:7px;color:#8b949e;cursor:pointer;padding:3px 10px}
+#mbody{padding:14px 18px;overflow:auto}
+.mtags{margin-bottom:8px}
+.mbdg{display:inline-block;padding:1px 9px;border-radius:10px;font-size:11px;font-weight:600;margin-right:5px;background:#161b22}
+.mbdg.n{color:#8b949e;border:1px solid #30363d}
+.mtag{display:inline-block;background:#161b22;border:1px solid #30363d;color:#8b949e;border-radius:10px;padding:1px 9px;font-size:11px;margin:2px 3px 2px 0}
+.mwhy{color:#c9d1d9;font-size:12.5px;margin:4px 0}
+.mev{color:#c9d1d9;font-size:12.5px;margin:3px 0;border-left:2px solid #30363d;padding-left:10px}
+.mmeta{color:#8b949e;font-size:11px;margin:8px 0}
+.mtext{white-space:pre-wrap;word-break:break-all;color:#c9d1d9;font-size:12.5px;line-height:1.7;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px;font-family:inherit;margin:0}
+</style></head><body>
+__SITU__
+__TABS__
+__FORM__
+<div class='sec'><h2>事件图谱 <span class='dim'>__GSTAT__</span><span class='dim' style='float:right;font-weight:400'>拖拽平移 · 滚轮缩放 · 点节点下钻公司 · 点边看原文</span></h2>
+<div id='evg'></div>__LEGEND__</div>
+<div class='sec'><h2 id='lh'>事件列表</h2><div id='evlist'><div class='dim'>渲染中…</div></div></div>
+<div id='modal' onclick='if(event.target===this)closeM()'><div class='mbox'>
+<div class='mhead'><span id='mtitle'></span><button onclick='closeM()'>✕ 关闭</button></div>
+<div id='mbody'></div></div></div>
+<script src='/static/g6.min.js'></script>
+<script>
+const INIT=__INIT__;
+const EBY={};INIT.edges.forEach(function(x){EBY[x.id]=x});
+const NBY={};INIT.nodes.forEach(function(x){NBY[x.id]=x});
+const MKTC={'主板':'#3fb950','创业板':'#58a6ff','科创板':'#bc8cff','北交所':'#d29922'};
+const DIRC={'利好':'#3fb950','利空':'#f85149','中性':'#8b949e'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var graph=null;
+async function ensureG(){
+ if(graph)return graph;
+ graph=new G6.Graph({container:'evg',animation:false,
+  data:{nodes:INIT.nodes,edges:INIT.edges},
+  node:{style:{size:function(d){return 18+4*Math.min(4,d.data.deg||1)},
+   fill:function(d){return MKTC[d.data.market]||'#8b949e'},
+   stroke:'#e6edf3',lineWidth:1,
+   labelText:function(d){return d.data.name},labelPlacement:'top',
+   labelFontSize:11,labelFill:'#c9d1d9',labelBackground:true,
+   labelBackgroundFill:'#161b22',labelBackgroundOpacity:.85,labelPadding:[1,4]}},
+  edge:{style:{stroke:function(d){return DIRC[d.data.dir]||'#8b949e'},
+   endArrow:true,
+   lineWidth:function(d){return 1.5+1.2*Math.log2((d.data.n||1)+1)},
+   labelText:function(d){return d.data.rel},labelFontSize:9,
+   labelFill:'#8b949e',labelBackground:true,
+   labelBackgroundFill:'#0d1117',labelBackgroundOpacity:.8}},
+  layout:{type:'d3-force',link:{distance:150},charge:{strength:-420},
+   collide:{radius:32}},
+  behaviors:['drag-canvas','zoom-canvas','drag-element']});
+ graph.on('node:click',function(ev){var id=ev.target&&ev.target.id;
+  if(id)focusCo(id)});
+ graph.on('edge:click',function(ev){var id=ev.target&&ev.target.id;
+  var ed=EBY[id];
+  if(ed&&ed.data&&ed.data.src_doc)openDoc(ed.data.src_doc)});
+ await graph.render();return graph}
+function dirBdg(d){var c=DIRC[d]||'#8b949e';
+ return '<span class="bdgx" style="color:'+c+';border:1px solid '+c+'">'+esc(d)+'</span>'}
+function nmOf(code){var n=NBY[code];return (n&&n.data&&n.data.name)?n.data.name:code}
+function rowH(r){var d=r.data;
+ return '<div class="evrow">'
+  +'<span class="co" onclick="focusCo(\\''+esc(r.source)+'\\')">'+esc(nmOf(r.source))+'</span>'
+  +' <span class="arrow">-['+esc(d.rel)+']-&gt;</span> '
+  +'<span class="co" onclick="focusCo(\\''+esc(r.target)+'\\')">'+esc(nmOf(r.target))+'</span>'
+  +dirBdg(d.dir)
+  +'<div class="emeta">'+(d.date?esc(d.date)+' · ':'')+(d.amount?esc(d.amount)+' · ':'')
+  +d.n+' 篇报道 · 判读 '+esc(d.ts_last)
+  +' · <a href="javascript:void(0)" onclick="openDoc(\\''+esc(d.src_doc)+'\\')">📄 原文</a></div></div>'}
+function renderRows(rows,title){
+ document.getElementById('lh').innerHTML=title;
+ var el=document.getElementById('evlist');
+ el.innerHTML=rows.length?rows.map(rowH).join('')
+  :'<div class="dim">暂无入图事件（影子事件需人审后 --commit 入图）</div>'}
+function focusCo(code){
+ var qs2=location.search?location.search.slice(1)+'&':'';
+ fetch('/kg/events/list?'+qs2+'c='+encodeURIComponent(code))
+  .then(function(r){return r.json()}).then(function(d){
+  if(!d.ok){alert(d.error||'查询失败');return}
+  d.rows.forEach(function(r){
+   if(!NBY[r.ac])NBY[r.ac]={id:r.ac,data:{name:r.an,market:r.am,deg:0}};
+   if(!NBY[r.bc])NBY[r.bc]={id:r.bc,data:{name:r.bn,market:r.bm,deg:0}}});
+  var rows=d.rows.map(function(r){return {source:r.ac,target:r.bc,
+   data:{rel:r.rel,dir:r.dir,n:r.n||1,date:r.date||'',
+    amount:r.amount||'',src_doc:r.src_doc||'',
+    ts_last:String(r.ts_last||'')}}});
+  renderRows(rows,'事件 · <b>'+esc(nmOf(code))+'</b> <span class="dim">('+d.total+')</span>'
+   +' · <a target="_blank" href="/kg?c='+encodeURIComponent(code)+'">图谱全景</a>'
+   +' · <a target="_blank" href="/bt/stock?c='+encodeURIComponent(code)+'">K线研判</a>'
+   +' · <a href="javascript:location.reload()">← 返回全部</a>')})}
+function openDoc(id){
+ var m=document.getElementById('modal');m.style.display='flex';
+ document.getElementById('mtitle').textContent='加载中…';
+ document.getElementById('mbody').innerHTML='';
+ fetch('/kg/events/doc/'+encodeURIComponent(id))
+  .then(function(r){return r.json()}).then(function(d){
+  var st=d.struct||{};
+  document.getElementById('mtitle').textContent=
+   (st.title_guess||d.name||d.doc_id||'').slice(0,70);
+  var h='';
+  if(st.direction||st.doc_type){h+='<div class="mtags">';
+   if(st.direction){var c=DIRC[st.direction]||'#8b949e';
+    h+='<span class="mbdg" style="color:'+c+';border:1px solid '+c+'">'+esc(st.direction)+'</span>'}
+   if(st.doc_type)h+='<span class="mbdg n">'+esc(st.doc_type)+'</span>';h+='</div>'}
+  if(st.direction_why)h+='<div class="mwhy">判读：'+esc(st.direction_why)+'</div>';
+  if((st.key_numbers||[]).length)h+='<div class="mwhy">关键数字：'
+   +st.key_numbers.map(esc).join(' · ')+'</div>';
+  (st.events||[]).forEach(function(x){h+='<div class="mev">'+esc(x.subject||'')
+   +' <b>'+esc(x.rel||'')+'</b> '+esc(x.object||'')
+   +(x.amount?' ['+esc(x.amount)+']':'')+(x.date?' ('+esc(x.date)+')':'')+'</div>'});
+  if((st.tags||[]).length)h+='<div class="mtags">'+st.tags.map(function(t){
+   return '<span class="mtag">'+esc(t)+'</span>'}).join('')+'</div>';
+  h+='<div class="mmeta">源 '+(d.src||'-')+' · '+(d.kind||'-')+' · '+(d.ts||'-')
+   +' · '+(d.text_chars||0)+' 字 · doc '+esc(d.doc_id)
+   +(d.found_text?'':'（原文未命中）')+'</div>';
+  h+='<pre class="mtext">'+esc(d.text||'（未找到原文）')+'</pre>';
+  document.getElementById('mbody').innerHTML=h})
+  .catch(function(err){document.getElementById('mtitle').textContent='加载失败';
+   document.getElementById('mbody').textContent=String(err)})}
+function closeM(){document.getElementById('modal').style.display='none'}
+document.addEventListener('keydown',function(ev){if(ev.key==='Escape')closeM()});
+/* 公司联想（250ms 防抖；点候选直接下钻该公司）*/
+var tmr=null;
+document.getElementById('qi').addEventListener('input',function(){
+ clearTimeout(tmr);var v=this.value.trim();
+ var hb=document.getElementById('hits');
+ if(!v){hb.style.display='none';return}
+ tmr=setTimeout(function(){
+  fetch('/kg/events/search?q='+encodeURIComponent(v))
+   .then(function(r){return r.json()}).then(function(d){
+   hb.innerHTML=(d.hits||[]).map(function(h){
+    return '<div class="hit" data-c="'+esc(h.code)+'"><b>'+esc(h.name)
+     +'</b> <span class="dim">'+esc(h.code)+' · '+esc(h.market)
+     +(h.n_events?' · '+h.n_events+' 事件':'')+'</span></div>'}).join('')
+    ||'<div class="hit">无匹配</div>';
+   hb.style.display='block';
+   hb.querySelectorAll('.hit').forEach(function(x){
+    x.addEventListener('click',function(){
+     var c=this.getAttribute('data-c');hb.style.display='none';
+     if(c)focusCo(c)})})})},250)});
+renderRows(INIT.edges,'事件列表 <span class="dim">('+INIT.edges.length+')</span>');
+ensureG().catch(function(err){
+ document.getElementById('evg').innerHTML=
+  '<div style="padding:20px;color:#f85149">G6 渲染失败：'+esc(String(err)).slice(0,150)+'</div>'});
+</script></body></html>""".replace("__CSS__", self._KG_CSS).replace(
+            "__NAV__", pill_nav("kgevents")).replace(
+            "__SITU__", situ_html).replace("__TABS__", tabs).replace(
+            "__FORM__", form).replace("__GSTAT__", gstat).replace(
+            "__LEGEND__", legend).replace(
+            "__INIT__", _j.dumps(g, ensure_ascii=False))
+        self._html(body)
+
     def _kg_doc_page(self, qs=None):
         """K266 M4 文档智能中心：词云三跳（词→文档→事件→图谱实体）+ 上传入口。
 
@@ -20599,6 +20930,183 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             "{nav}", pill_nav("kgcanvas"))
         self._html(body)
 
+    # ---------------- K-STOCK 模拟仓写路径（v0.2 平台化 2026-10-09） ----------------
+    # 设计：portal_api 保持纯标准库——引擎调用一律 subprocess CLI（py311 绝对
+    # 路径，带 pandas；与 07:05 automation 同一口径）。每次下单一个干净子进程，
+    # 门户进程零 pandas / 零第二写连接 / 零共享账本状态。鉴权：端点已入
+    # _MUTATION_POSTS（本机放行；局域网与脚本须 X-Portal-Token，同全站口径）。
+    _PAPER_PY = r"C:\Program Files\Python311\python.exe"
+    _PAPER_DIR = r"E:\老田的AI助手\k_stock\paper"
+    _PAPER_QD_LOCK = threading.Lock()   # 双刀执行互斥（防连点并发落两套单）
+
+    def _paper_run_json(self, cmd, timeout=35):
+        """跑子进程并解析 stdout 尾部 JSON（CLI --json 模式单行输出）。
+
+        🔴 中文 Windows 坑：子进程管道默认按系统 locale（GBK）编码 stdout，
+        门户侧按 UTF-8 解码必花 → 强制子进程 PYTHONIOENCODING=utf-8。
+        """
+        env = dict(os.environ)
+        env["PYTHONIOENCODING"] = "utf-8"
+        p = subprocess.run(cmd, capture_output=True, timeout=timeout, env=env)
+        out = (p.stdout or b"").decode("utf-8", "replace").strip()
+        err = (p.stderr or b"").decode("utf-8", "replace").strip()
+        if out:
+            try:
+                return json.loads(out.splitlines()[-1])
+            except Exception:
+                pass
+        return {"ok": False,
+                "error": err.splitlines()[-1] if err else (out[-200:] or f"exit={p.returncode}")}
+
+    def _paper_desk(self):
+        """交易台动态块：AI / 双刀最近决策产物（纯标准库 glob+json 只读）。"""
+        out = {}
+        d = r"E:\老田的AI助手\k_stock\data"
+        try:
+            qd = sorted(glob.glob(os.path.join(d, "poc_qd_*.json")))
+            try:  # 与下单防重同口径：查账本（文件存在≠已执行）
+                import sqlite3 as _sq3
+                con = _sq3.connect(
+                    "file:E:/老田的AI助手/k_stock/data/paper.db?mode=ro", uri=True)
+                try:
+                    out["qd_ran_today"] = bool(con.execute(
+                        "SELECT COUNT(*) FROM orders "
+                        "WHERE ref LIKE 'poc_qd_%' AND ts LIKE ?",
+                        (time.strftime("%Y-%m-%d") + "%",)).fetchone()[0])
+                finally:
+                    con.close()
+            except Exception:
+                out["qd_ran_today"] = False
+            if qd:
+                f = qd[-1]
+                m = {"file": os.path.basename(f),
+                     "ts": time.strftime("%Y-%m-%d %H:%M",
+                                         time.localtime(os.path.getmtime(f)))}
+                try:
+                    with open(f, encoding="utf-8") as fh:
+                        items = json.load(fh)
+                    m["signals"] = [{"stock": it.get("stock"),
+                                     "name": (it.get("_meta") or {}).get("name"),
+                                     "close": (it.get("_meta") or {}).get("close")}
+                                    for it in items]
+                except Exception:
+                    m["signals"] = []
+                out["qd_last_run"] = m
+            ai = [x for x in glob.glob(os.path.join(d, "poc_*.json"))
+                  if not os.path.basename(x).startswith("poc_qd_")]
+            if ai:
+                f = max(ai, key=os.path.getmtime)
+                out["ai_last_run"] = {
+                    "file": os.path.basename(f),
+                    "ts": time.strftime("%Y-%m-%d %H:%M",
+                                        time.localtime(os.path.getmtime(f)))}
+        except Exception as e:  # desk 是增强信息，失败不拖垮 status
+            out["error"] = repr(e)
+        return out
+
+    def _api_paper_order(self, raw):
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        mode = str(rec.get("mode") or "manual").strip()
+        try:
+            if mode == "double_knife":
+                # 真幂等：查账本今天是否已有双刀落单（文件存在≠已执行，
+                # dry-run 也产 picks 文件）；并发防重：进程内互斥锁。
+                if not self._PAPER_QD_LOCK.acquire(blocking=False):
+                    self._json({"ok": False,
+                                "error": "双刀执行进行中，请勿重复提交"}, 409)
+                    return
+                try:
+                    import sqlite3 as _sq3
+                    _db = "E:/老田的AI助手/k_stock/data/paper.db"
+                    con = _sq3.connect(f"file:{_db}?mode=ro", uri=True)
+                    try:
+                        n = con.execute(
+                            "SELECT COUNT(*) FROM orders "
+                            "WHERE ref LIKE 'poc_qd_%' AND ts LIKE ?",
+                            (time.strftime("%Y-%m-%d") + "%",)).fetchone()[0]
+                    finally:
+                        con.close()
+                    if n:
+                        self._json({"ok": False,
+                                    "error": "今日双刀信号已执行过（账本已有落单）"}, 409)
+                        return
+                    r = self._paper_run_json(
+                        [self._PAPER_PY,
+                         os.path.join(self._PAPER_DIR, "qd_adapter.py"),
+                         "--json"], timeout=60)
+                finally:
+                    self._PAPER_QD_LOCK.release()
+            else:
+                side = str(rec.get("side") or "").upper()
+                stock = str(rec.get("stock") or "").strip().upper()
+                if not re.match(r"^\d{6}\.(SH|SZ|BJ)$", stock):
+                    self._json({"ok": False,
+                                "error": "股票代码格式：6位数字.SH/.SZ/.BJ"}, 400)
+                    return
+                if side == "BUY":
+                    qty = rec.get("qty")
+                    if not isinstance(qty, int) or qty <= 0 or qty % 100:
+                        self._json({"ok": False,
+                                    "error": "qty 须为 100 的整数倍股数"}, 400)
+                        return
+                elif side == "SELL":
+                    if not rec.get("all") and not rec.get("qty"):
+                        self._json({"ok": False,
+                                    "error": "SELL 需要 qty 或 all=true"}, 400)
+                        return
+                else:
+                    self._json({"ok": False, "error": "side 须为 BUY/SELL"}, 400)
+                    return
+                argv = ["order", "--side", side, "--stock", stock]
+                if side == "SELL" and rec.get("all"):
+                    argv.append("--all")
+                elif rec.get("qty"):
+                    argv += ["--qty", str(rec["qty"])]
+                if rec.get("price"):
+                    argv += ["--price", str(rec["price"])]
+                if rec.get("stop_price"):
+                    argv += ["--stop-price", str(rec["stop_price"])]
+                r = self._paper_run_json(
+                    [self._PAPER_PY, os.path.join(self._PAPER_DIR, "cli.py")] + argv)
+        except subprocess.TimeoutExpired:
+            self._json({"ok": False, "error": "引擎子进程执行超时"}, 504)
+            return
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+            return
+        self._json(r, 200 if r.get("ok") else 400)
+
+    def _api_paper_stop(self, raw):
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        stock = str(rec.get("stock") or "").strip().upper()
+        if not re.match(r"^\d{6}\.(SH|SZ|BJ)$", stock):
+            self._json({"ok": False,
+                        "error": "股票代码格式：6位数字.SH/.SZ/.BJ"}, 400)
+            return
+        if not rec.get("clear") and rec.get("stop_price") is None:
+            self._json({"ok": False, "error": "需要 stop_price 或 clear=true"}, 400)
+            return
+        argv = ["order", "--side", "STOP", "--stock", stock]
+        if rec.get("clear"):
+            argv.append("--clear")
+        else:
+            argv += ["--stop-price", str(rec["stop_price"])]
+        try:
+            r = self._paper_run_json(
+                [self._PAPER_PY, os.path.join(self._PAPER_DIR, "cli.py")] + argv)
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+            return
+        self._json(r, 200 if r.get("ok") else 400)
+
     def do_POST(self):
         """v2.5：标注保存（首个 POST 端点，其余页面均为只读 GET）。"""
         path = self.path.split("?", 1)[0]
@@ -20618,6 +21126,14 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 return
             ln = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(ln) if ln > 0 else b""
+            if path == "/api/paper_order":
+                # K-STOCK v0.2 模拟仓下单（manual BUY/SELL 或 double_knife 执行）
+                self._api_paper_order(raw)
+                return
+            if path == "/api/paper_stop":
+                # K-STOCK v0.2 模拟仓止损挂/解
+                self._api_paper_stop(raw)
+                return
             if path == "/feishu/event":
                 # K250 飞书事件回调（卡按钮点击 / url_verification 握手）
                 self._api_feishu_event(raw)
@@ -20903,8 +21419,26 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 _sysp.path.insert(0, _ksdir)
             try:
                 from paper.portal_status import status as _paper
-                self._json(_paper())
+                data = _paper()
+                data["desk"] = self._paper_desk()   # v0.2 交易台动态块（AI/双刀最近产物）
+                self._json(data)
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
+                self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/paper_history":
+            # K-STOCK v0.2 历史回看（只读）：?day=YYYY-MM-DD，缺省=最新快照日
+            import sys as _sysp
+            _ksdir = r"E:\老田的AI助手\k_stock"
+            if _ksdir not in _sysp.path:
+                _sysp.path.insert(0, _ksdir)
+            try:
+                from urllib.parse import parse_qs as _pqs
+                _q = _pqs(qs)
+                from paper.portal_status import history as _hist, snapshot_days as _days
+                _days_l = _days()
+                _day = (_q.get("day") or [""])[0].strip() \
+                    or (_days_l[-1] if _days_l else "")
+                self._json(_hist(_day))
+            except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
         elif path.startswith("/static/"):
             # KG-V1 静态资源（白名单）：本地 echarts / 全站 tokens.css
@@ -21080,6 +21614,25 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/kg/lexicon":
             # K263-W7 股吧词表维护（情绪词/同义归并 → lexicon.json 热生效）
             self._kg_lexicon_page()
+        elif path == "/kg/events":
+            # K266 事件图谱查询面板（态势感知 + 市场Tab + G6 + 下钻原文）
+            self._kg_events_page(qs)
+        elif path == "/kg/events/situ" or path.startswith(
+                ("/kg/events/graph", "/kg/events/list",
+                 "/kg/events/search", "/kg/events/doc/")):
+            # K266 事件图谱 JSON 端点（数据层 kg_events_portal.py，纯查询）
+            from urllib.parse import parse_qs as _pqev, unquote as _uqev
+            import sys as _syev
+            if QBT_DIR not in _syev.path:
+                _syev.path.insert(0, QBT_DIR)
+            import kg_events_portal as _KE
+            if path == "/kg/events/situ":
+                self._json(_KE.api("situ"))
+            elif path.startswith("/kg/events/doc/"):
+                self._json(_KE.api("doc", _uqev(path[len("/kg/events/doc/"):])))
+            else:
+                self._json(_KE.api(path.split("/")[3], None, {
+                    k: v[0] for k, v in _pqev(qs).items() if v}))
         elif path == "/static/g6.min.js":
             # K234 G6 本地静态（零 CDN 依赖）
             import os as _os6

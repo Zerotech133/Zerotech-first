@@ -337,3 +337,129 @@ def test_settle_normal_path_not_blocked(tmp_path):
     s = e.settle()
     assert len(s["filled"]) == 1
     assert e.verify()["ok"]
+
+
+# ---------- v0.2: strategy 策略来源标记 ----------
+
+def test_strategy_marked_on_orders_and_positions(tmp_path):
+    """AI 单 strategy=ai_team / 手动单默认 manual / 自定义来源贯通到持仓。"""
+    e = _mk_engine(tmp_path)
+    run = _write_run(tmp_path, "poc_st.json", [
+        {"stock": "600519.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.75}}}])
+    e.exec_run(run)
+    od = e.con.execute("SELECT strategy, order_kind FROM orders WHERE ref LIKE 'poc_st.json%'").fetchone()
+    assert od["strategy"] == "ai_team" and od["order_kind"] == "market"
+    e.settle()
+    assert e.con.execute("SELECT strategy FROM positions WHERE stock='600519.SH'").fetchone()["strategy"] == "ai_team"
+    # 手动单：默认 manual（force：AI 单已占 20% 单票限额，测试场景非测风控）
+    e.buy("600519.SH", 100, force=True)
+    od2 = e.con.execute(
+        "SELECT strategy FROM orders WHERE source='manual' ORDER BY id DESC LIMIT 1").fetchone()
+    assert od2["strategy"] == "manual"
+    # 自定义策略来源（双刀 adapter 将用此路径）
+    e.buy("600519.SH", 100, force=True, strategy="double_knife")
+    od3 = e.con.execute(
+        "SELECT strategy FROM orders WHERE source='manual' ORDER BY id DESC LIMIT 1").fetchone()
+    assert od3["strategy"] == "double_knife"
+    assert e.verify()["ok"]
+
+
+def test_migration_adds_columns_to_legacy_db(tmp_path):
+    """旧库（无 v0.2 列）打开时自动 ALTER 升级，数据无损。"""
+    import sqlite3 as sq
+    legacy = tmp_path / "legacy.db"
+    con = sq.connect(str(legacy))
+    con.executescript("""
+      CREATE TABLE account(id INTEGER PRIMARY KEY CHECK(id=1), cash REAL, initial_cash REAL, created_at TEXT);
+      CREATE TABLE orders(id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, source TEXT, ref TEXT DEFAULT '',
+        stock TEXT, side TEXT, qty INTEGER, plan_date TEXT, price_base TEXT, manual_price REAL,
+        status TEXT, fill_date TEXT, filled_price REAL, filled_qty INTEGER, fee REAL,
+        reason TEXT, conf REAL, created_at TEXT);
+      CREATE TABLE positions(stock TEXT PRIMARY KEY, qty INTEGER, avg_cost REAL, updated_at TEXT);
+      CREATE TABLE ledger(id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, type TEXT, stock TEXT,
+        qty INTEGER, amount REAL, cash_after REAL, order_id INTEGER);
+      CREATE TABLE equity_marks(date TEXT PRIMARY KEY, total REAL, cash REAL, market_value REAL,
+        pos_pct REAL, pending INTEGER, verify_ok INTEGER, ts TEXT);
+      CREATE TABLE positions_snapshot(date TEXT, stock TEXT, qty INTEGER, avg_cost REAL, last REAL,
+        market_value REAL, pnl REAL, available INTEGER, PRIMARY KEY(date, stock));
+      INSERT INTO account VALUES(1, 1000000.0, 1000000.0, '2026-10-08');
+      INSERT INTO ledger VALUES(1, '2026-10-08', 'deposit', NULL, 1000000.0, 1000000.0, NULL, NULL);
+    """)
+    con.commit()
+    con.close()
+    e = PaperEngine(legacy, _mk_engine(tmp_path).market)
+    cols = {r["name"] for r in e.con.execute("PRAGMA table_info(orders)").fetchall()}
+    assert {"strategy", "account_id", "order_kind"} <= cols
+    pcols = {r["name"] for r in e.con.execute("PRAGMA table_info(positions)").fetchall()}
+    assert "stop_price" in pcols
+    assert e.verify()["ok"]  # 旧数据对账不受迁移影响
+
+
+# ---------- v0.2: 手动止损 ----------
+
+def test_stop_set_clear_and_validation(tmp_path):
+    e = _mk_engine(tmp_path)
+    with pytest.raises(Reject):  # 无持仓不能设止损
+        e.set_stop("600519.SH", 1200.0)
+    e.buy("600519.SH", 100)
+    r = e.set_stop("600519.SH", 1200.0)
+    assert r["stop_price"] == 1200.0
+    with pytest.raises(Reject):
+        e.set_stop("600519.SH", -1)  # 非法价格
+    rows = e.stops()
+    assert len(rows) == 1 and rows[0]["stock"] == "600519.SH"
+    e.clear_stop("600519.SH")
+    assert e.stops() == []
+
+
+def test_check_stops_triggers_pending_sell(tmp_path):
+    """收盘 < 止损价 → 生成 SELL pending（stop_loss/stop），次日开盘撮合清仓。"""
+    e = _mk_engine(tmp_path)                    # 湖尾=1009：buy 成交于 1009
+    e.buy("600519.SH", 100)                     # fill_date=1009
+    # 把湖推进到 1010：换带尾 bar 的 market（1010 收 1258 跌破止损）
+    e.market = _mk_engine(tmp_path, extra_tail=True).market
+    e.set_stop("600519.SH", 1270.0)             # 1010 收 1258 < 1270 → 触发
+    r = e.check_stops()
+    assert len(r["triggered"]) == 1 and r["triggered"][0].get("status") == "pending"
+    od = e.con.execute(
+        "SELECT * FROM orders WHERE ref LIKE 'stop#%'").fetchone()
+    assert od["side"] == "SELL" and od["strategy"] == "stop_loss"
+    assert od["order_kind"] == "stop" and od["status"] == "pending"
+    # 幂等：再查不重复
+    r2 = e.check_stops()
+    assert all("幂等" in t["why"] for t in r2["triggered"])
+    assert e.verify()["ok"]
+
+
+def test_check_stops_no_trigger_when_above(tmp_path):
+    e = _mk_engine(tmp_path)
+    e.buy("600519.SH", 100)
+    e.set_stop("600519.SH", 1000.0)             # 现价 1252 远高于止损
+    r = e.check_stops()
+    assert r["triggered"] == [] and len(r["watch"]) == 1
+    assert e.con.execute("SELECT COUNT(*) FROM orders WHERE order_kind='stop'").fetchone()[0] == 0
+
+
+def test_portal_status_projection(tmp_path, monkeypatch):
+    """投影层契约：strategy 贯通 / stops 清单 / 历史回看 / 坏日期 fail-soft。"""
+    import portal_status  # noqa: E402
+    db = tmp_path / "paper.db"
+    monkeypatch.setattr(portal_status, "DB", db)
+    e = PaperEngine(db, _mk_market())
+    e.buy("600519.SH", 100, force=True)
+    e.set_stop("600519.SH", 1000.0)
+    e.mark("2026-10-09")
+    s = portal_status.status()
+    assert s["ok"] and s["as_of"] == "2026-10-09"
+    p = s["positions"][0]
+    assert p["strategy"] == "manual" and p["account_id"] == "main"
+    st = s["stops"][0]
+    assert st["stock"] == "600519.SH" and st["stop_price"] == 1000.0
+    assert st["distance_pct"] is not None       # 快照有现价 → 触发距离可算
+    assert portal_status.snapshot_days() == ["2026-10-09"]
+    h = portal_status.history("2026-10-09")
+    assert h["ok"] and h["mark"]["total"] == s["latest"]["total"]
+    assert h["positions"][0]["strategy"] == "manual"
+    bad = portal_status.history("1999-01-01")
+    assert not bad["ok"] and bad["available_days"] == ["2026-10-09"]
