@@ -409,7 +409,7 @@ function renderList(){
     return `<div class="lrow" data-code="${esc(r.code)}" data-i="${i}">
       ${tierBadge(r.tier)}
       <div class="mkt ${mk.cls}">${mk.chip}</div>
-      <div class="code">${esc(mk.bare||r.code)}</div>
+      <div class="code"><a href="/kg/stock/${esc(r.code)}" target="_blank" onclick="event.stopPropagation()">${esc(mk.bare||r.code)}</a></div>
       <div class="sname">${esc(r.name)}<small>${esc(r.industry||"")}</small></div>
       ${fmtPx(r.close)}${fmtPct(r.pct_chg)}
       <div class="num dim">${r.n_hit}</div>

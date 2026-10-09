@@ -541,7 +541,7 @@ def _jev_pool_scores(wl):
 
 
 def _link_code(code):
-    """榜单/共振行 → /bt/stock?c= 的入参（watchlist 代码形态）。"""
+    """榜单/共振行 → /kg/stock/ 的入参（watchlist 代码形态）。"""
     from urllib.parse import quote
     code = str(code)
     if len(code) == 9 and code[6] == ".":          # 600519.SH → sh600519
@@ -857,8 +857,8 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
             trs = []
             for t in rows:
                 trs.append(
-                    "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>"
-                    "<td><a href='/bt/stock?c=%s'>%s</a></td>"
+                    "<tr><td><a href='/kg/stock/%s'>%s</a></td>"
+                    "<td><a href='/kg/stock/%s'>%s</a></td>"
                     "<td>%s</td><td>%s</td><td>%.0f</td>%s"
                     "<td><b>%.1f</b></td></tr>" % (
                         _link_code(t["sym"]), t["sym"],
@@ -883,7 +883,7 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
         mres = [r for r in res if r["market"] == meta["mkt"]]
         if mres:
             trs = "".join(
-                "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>"
+                "<tr><td><a href='/kg/stock/%s'>%s</a></td>"
                 "<td>%.2f</td><td>%d</td><td>%s</td><td>%s%.0f</td>"
                 "<td>%s</td><td><b>%d</b></td><td class='%s'>%s</td>"
                 "<td>%s</td><td class='dim'>%s</td></tr>"
@@ -941,7 +941,7 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
         # ⑤ 策略信号矩阵（4 策略 × 本市场自选）
         if mres:
             trs = "".join(
-                "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>%s<td><b>%d/4"
+                "<tr><td><a href='/kg/stock/%s'>%s</a></td>%s<td><b>%d/4"
                 "</b></td></tr>" % (
                     _link_code(r["code"]), r["name"],
                     "".join(_sig_badge((r.get("sigs") or {}).get(sn))
@@ -991,7 +991,7 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
         if mres:
             show = mres[:8]
             mrows = "".join(
-                "<tr><td><a href='/bt/stock?c=%s'>%s%s</a></td>"
+                "<tr><td><a href='/kg/stock/%s'>%s%s</a></td>"
                 "<td><b>%d</b></td><td class='%s'>%s</td>"
                 "<td>%s</td><td class='dim'>%s</td></tr>" % (
                     _link_code(r["code"]),
@@ -1016,7 +1016,7 @@ def write_pages(env_by_key, res, latest, tops, wl_by_mkt):
     cross = []
     for k, meta in MARKETS.items():
         for t in tops.get(meta["tops"], [])[:3]:
-            cross.append("<tr><td>%s</td><td><a href='/bt/stock?c=%s'>%s"
+            cross.append("<tr><td>%s</td><td><a href='/kg/stock/%s'>%s"
                          "</a></td><td>%s</td><td><b>%.1f</b></td></tr>"
                          % (meta["label"], _link_code(t["sym"]),
                             (t["name"] or t["sym"])[:18], t["sym"],
@@ -1110,7 +1110,7 @@ def write_strategy_pages(strat_data, res, latest):
             st = strat_data.get(mkt, {}).get(sn)
             if st and st["new_long"]:
                 items = " · ".join(
-                    "<a href='/bt/stock?c=%s'>%s</a>%s" % (
+                    "<a href='/kg/stock/%s'>%s</a>%s" % (
                         _link_code(t["sym"]),
                         t["name"] or t["sym"],
                         ("(%+.1f%%)" % t["chg20"]) if t["chg20"]
@@ -1123,7 +1123,7 @@ def write_strategy_pages(strat_data, res, latest):
         rows = [r for r in res if (r.get("sigs") or {}).get(sn) is not None]
         rows.sort(key=lambda r: (-(r["sigs"].get(sn) or 0), -r["score"]))
         trs = "".join(
-            "<tr><td><a href='/bt/stock?c=%s'>%s</a></td><td>%s</td>"
+            "<tr><td><a href='/kg/stock/%s'>%s</a></td><td>%s</td>"
             "<td>%.2f</td><td>%s</td><td>%d</td><td class='%s'>%s</td></tr>"
             % (_link_code(r["code"]), r["name"], r["market"], r["px"],
                "<b class='b-long'>多头</b>" if r["sigs"].get(sn, 0) > 0

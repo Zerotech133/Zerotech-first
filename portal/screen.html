@@ -439,7 +439,7 @@ function renderPf(portfolio) {
       h += "<tr><td>" + acc[sid].icon + " " + acc[sid].name +
            ' <span class="dim">' + (acc[sid].capital / 10000).toFixed(0) + '万</span></td>' +
            "<td><span class='mkt " + p.market + "'>" + (MKT[p.market] || p.market) +
-           "</span></td><td>" + p.name + ' <span class="dim num">' + p.code +
+           "</span></td><td><a href='/kg/stock/" + encodeURIComponent(p.code||"") + "'>" + p.name + "</a> <span class=\"dim num\">" + p.code +
            "</span></td><td class='num'>" + p.entry_px.toFixed(2) +
            "</td><td class='num'>" + p.last_px.toFixed(2) +
            "</td><td class='num'>" + (p.hold_days || 0) + '日<span class="dim">/' +

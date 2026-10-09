@@ -67,7 +67,7 @@ def _parse_stocks(s):
 
 def _stock_a(code, label=None):
     """行内个股下钻链接 → 门户个股全景页（行情/策略/共振/JEV/AI）。"""
-    return "<a href='/bt/stock?c=%s'>%s</a>" % (
+    return "<a href='/kg/stock/%s'>%s</a>" % (
         RR._link_code(code), html.escape(label or str(code)))
 
 
@@ -1560,7 +1560,7 @@ def write_page(data, snap):
     # 层8 共振 Top5（快照时间 + 闸门说明：解释为何某市场缺席）
     res = snap.get("res", [])[:5]
     trs = "".join(
-        "<tr><td><a href='/bt/stock?c=%s'>%s</a></td><td>%d</td><td "
+        "<tr><td><a href='/kg/stock/%s'>%s</a></td><td>%d</td><td "
         "class='%s'>%s</td></tr>" % (
             RR._link_code(r["code"]), r["name"], r["score"],
             "buy" if "买入" in r["action"] else (

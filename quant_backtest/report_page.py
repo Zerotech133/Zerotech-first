@@ -94,7 +94,7 @@ _LK = ("color:#58a6ff;text-decoration:none;border-bottom:1px dotted #30363d")
 
 
 def _stock_link(name, symbol):
-    """标的 → 门户个股全景页 /bt/stock?c=（CN 去后缀取 6 位代码，
+    """标的 → 统一详情卡 /kg/stock/（CN 去后缀取 6 位代码，
     其余原样 URL 编码；symbol 缺失时退回纯文本）。"""
     nm = html.escape(str(name or ""))
     c = str(symbol or "").strip()
@@ -102,7 +102,7 @@ def _stock_link(name, symbol):
         return nm
     if c.endswith(".SH") or c.endswith(".SZ"):
         c = c[:6]
-    return ('<a href="/bt/stock?c=%s" style="%s" title="下钻到个股全景">'
+    return ('<a href="/kg/stock/%s" style="%s" title="下钻到个股全景">'
             '%s</a>' % (quote(c, safe=""), _LK, nm))
 
 

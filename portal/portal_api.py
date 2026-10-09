@@ -5712,7 +5712,7 @@ gap:14px;align-items:start}}
         buys = sorted((r for r in res if r.get("action") == "买入"),
                       key=lambda r: -(r.get("score") or 0))[:5]
         opp_rows = "".join(
-            "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>"
+            "<tr><td><a href='/kg/stock/%s'>%s</a></td>"
             "<td><span class='dim'>%s</span></td>"
             "<td><b>%d</b></td></tr>"
             % (e(str(r.get("code", ""))), e(str(r.get("name", ""))),
@@ -5989,7 +5989,7 @@ gap:14px;align-items:start}}
                 for k, lb in (("tech", "技"), ("jev", "J"), ("rps", "R"),
                               ("env", "环")))
             return (
-                "<tr><td><a href='/bt/stock?c=%s'>%s</a><div class='dim'>"
+                "<tr><td><a href='/kg/stock/%s'>%s</a><div class='dim'>"
                 "%s</div></td>"
                 "<td style='color:%s;white-space:nowrap'>%s</td>"
                 "<td><b>%d</b></td><td class='dim' style='font-size:12px;"
@@ -6856,7 +6856,7 @@ gap:14px;align-items:start}}
                    flbl.get(d["id"], "?"), d["earned"], d["max"])
                 for d in r.get("detail", []))
             return ("<tr%s><td class='dim'>%d</td>"
-                    "<td><a href='/bt/stock?c=%s'>%s</a><div class='dim'>%s"
+                    "<td><a href='/kg/stock/%s'>%s</a><div class='dim'>%s"
                     "</div></td><td class='dim'>%s</td><td>%.1f</td>"
                     "<td style='color:%s'>%+.2f%%</td>"
                     "<td><b>%s</b>%s</td>"
@@ -7145,7 +7145,7 @@ gap:14px;align-items:start}}
             return "".join(sp)
 
         def _stock_link(st):
-            return ("<a href='/bt/stock?c=%s'><b>%s</b></a>"
+            return ("<a href='/kg/stock/%s'><b>%s</b></a>"
                     "<div class='dim'>%s · %s</div>"
                     % (e(st["code"]), e(st["name"] or st["code"]),
                        e(st["code"]), e(st.get("market") or "")))
@@ -8321,7 +8321,7 @@ function ckPush(i){
             rows = []
             for r in rs[:10]:
                 _c = r.get("code") or "—"
-                _cd = ("<a href='/bt/stock?c=%s'><b>%s</b></a>"
+                _cd = ("<a href='/kg/stock/%s'><b>%s</b></a>"
                        % (_c, _c))
                 _t = r.get("type") or "—"
                 _px = r.get("entry_px")
@@ -9056,7 +9056,7 @@ function ckPush(i){
         def _code_lk(code):
             # 下钻：点代码 → 个股全景页（四市场：_bt_stock_page 按代码
             # 前缀推断市场，resolve 失败显示识别表单优雅降级）
-            return ("<a href='/bt/stock?c=%s'><b>%s</b></a>"
+            return ("<a href='/kg/stock/%s'><b>%s</b></a>"
                     % (code, code))
 
         tr_rows = "".join(
@@ -9314,7 +9314,7 @@ function ckPush(i){
             import html as _hb
             brows = "".join(
                 "<tr><td class='dim'>%s</td>"
-                "<td><a href='/bt/stock?c=%s'><b>%s</b></a>"
+                "<td><a href='/kg/stock/%s'><b>%s</b></a>"
                 "<span class='dim'> %s</span></td>"
                 "<td style='max-width:460px;white-space:nowrap;overflow:hidden;"
                 "text-overflow:ellipsis' title='%s'>%s</td>"
@@ -9627,7 +9627,7 @@ function ckPush(i){
                 _tc = "t-bull" if _b == "bull" else "t-bear"
                 _bm = "🟢" if _b == "bull" else "🔴"
                 _code = (_ev.get("stocks") or [""])[0]
-                _link = ("<a href='/bt/stock?c=%s'>%s</a> "
+                _link = ("<a href='/kg/stock/%s'>%s</a> "
                          % (_heg.escape(_code), _heg.escape(_code))
                          if _code else "")
                 _erows += ("<tr><td>%s</td><td><span class='tag %s'>%s</span>"
@@ -10860,7 +10860,7 @@ function ckPush(i){
             "graph.on('node:click',function(ev){\n"
             " var id=ev.itemId||ev.target.id;if(!id"
             "||id.indexOf('s|')!==0)return;var c=id.slice(2).split('.');\n"
-            " if(c.length===2)location.href='/bt/stock?c='"
+            " if(c.length===2)location.href='/kg/stock/'"
             "+c[1].toLowerCase()+c[0];});\n"
             "</script>")
         body.append(
@@ -10899,7 +10899,7 @@ function ckPush(i){
             n_hit = n_eval = 0
             for code, items in sorted(node["stocks"].items()):
                 cs = (code or "").split(".")
-                clink = (("<a href='/bt/stock?c=%s%s'>%s</a>"
+                clink = (("<a href='/kg/stock/%s%s'>%s</a>"
                           % (cs[1].lower() if len(cs) > 1 else "",
                              cs[0], _h.escape(code)))
                          if len(cs) == 2 else _h.escape(code))
@@ -11031,7 +11031,7 @@ function ckPush(i){
         # 成分股涨跌全量表（按涨幅降序，涨幅微条形）
         mxp = max(abs(float(v)) for v in df["pct_chg"]) or 1
         rows_px = "".join(
-            "<tr><td><a href='/bt/stock?c=%s'>%s</a></td><td>%s</td>"
+            "<tr><td><a href='/kg/stock/%s'>%s</a></td><td>%s</td>"
             "<td style='color:%s'><b>%+.2f%%</b></td>"
             "<td style='width:30%%'><span style='display:inline-block;"
             "height:8px;border-radius:2px;background:%s;width:%.0f%%'>"
@@ -11050,7 +11050,7 @@ function ckPush(i){
         if mf_yi:
             mxa = max(abs(v) for v in mf_yi.values()) or 1
             mf_rows = "".join(
-                "<tr><td><a href='/bt/stock?c=%s'>%s</a></td><td>%s</td>"
+                "<tr><td><a href='/kg/stock/%s'>%s</a></td><td>%s</td>"
                 "<td style='color:%s'><b>%+.2f 亿</b></td>"
                 "<td style='width:30%%'><span style='display:inline-block;"
                 "height:8px;border-radius:2px;background:%s;width:%.0f%%'>"
@@ -11226,7 +11226,7 @@ function ckPush(i){
                 "<table><tr><th>代码</th><th>名称</th><th>次数</th>"
                 "<th>上榜日期（近5次）</th></tr>%s</table>"
                 % (len(win), "".join(
-                    "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>"
+                    "<tr><td><a href='/kg/stock/%s'>%s</a></td>"
                     "<td>%s</td><td><b class='buy'>%d</b></td>"
                     "<td class='dim'>%s</td></tr>"
                     % (c[:6], c[:6], _h.escape(str(nm.get(c, ""))), k,
@@ -11261,7 +11261,7 @@ function ckPush(i){
                     for e_, r in g.head(15).iterrows()))
         # 当日全量明细表（净额降序）
         rows = "".join(
-            "<tr><td><a href='/bt/stock?c=%s'>%s</a></td><td>%s</td>"
+            "<tr><td><a href='/kg/stock/%s'>%s</a></td><td>%s</td>"
             "<td style='color:%s'><b>%+.2f%%</b></td>"
             "<td class='dim'>%s</td><td class='dim'>%.2f</td>"
             "<td class='dim'>%.2f</td>"
@@ -11393,7 +11393,7 @@ function ckPush(i){
                      reverse=True)
         det = "".join(
             "<tr><td class='dim'>%s</td>"
-            "<td><a href='/bt/stock?c=%s'>%s</a></td><td>%s</td>"
+            "<td><a href='/kg/stock/%s'>%s</a></td><td>%s</td>"
             "<td class='dim'>%.2f</td><td class='dim'>%.2f</td>"
             "<td style='color:%s'><b>%+.2f</b></td></tr>"
             % (r["d8"], str(r["ts_code"])[:6], str(r["ts_code"])[:6],
@@ -11415,7 +11415,7 @@ function ckPush(i){
                 "<table><tr><th>代码</th><th>名称</th><th>次数</th>"
                 "<th>累计净额(亿)</th></tr>%s</table>"
                 % (len(win), "".join(
-                    "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>"
+                    "<tr><td><a href='/kg/stock/%s'>%s</a></td>"
                     "<td>%s</td><td><b class='buy'>%d</b></td>"
                     "<td style='color:%s'>%+.2f</td></tr>"
                     % (c[:6], c[:6],
@@ -11480,7 +11480,7 @@ function ckPush(i){
         body.append(
             "<h1>🌊 青萍之末分析师报告 · <span class='dim'>%s</span></h1>"
             "<div style='margin-bottom:10px'>"
-            "<a class='arb' href='/bt/stock?c=%s'>↩ 回个股页</a> "
+            "<a class='arb' href='/kg/stock/%s'>↩ 回个股页</a> "
             "<button class='arb' onclick='_arGen()'>🔄 重新生成</button> "
             "<button class='arb on' id='ar-push' onclick='_arPush()'>"
             "📨 一键发送飞书</button> "
@@ -12206,7 +12206,7 @@ transition:.3s;z-index:9}
                    "日线" if p == "1d" else "30分钟")
                 for a in ann)
             body.append(
-                "<div class='sec'><h2><a href='/bt/stock?c=%s'>%s</a> "
+                "<div class='sec'><h2><a href='/kg/stock/%s'>%s</a> "
                 "<span class='dim'>(%s)%s</span></h2>"
                 "<table><tr><th>系统信号</th><th>信号日</th><th>入场价</th>"
                 "<th>筹码密集区(120日)</th></tr>"
@@ -12242,7 +12242,7 @@ transition:.3s;z-index:9}
                 stp = self._chanlun_sl_tp(c)
                 if stp:
                     body.append(
-                        "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>"
+                        "<tr><td><a href='/kg/stock/%s'>%s</a></td>"
                         "<td>%s</td><td>%s</td>"
                         "<td style='color:#f85149'><b>%.2f</b></td>"
                         "<td style='color:#3fb950'>%.2f</td>"
@@ -12254,7 +12254,7 @@ transition:.3s;z-index:9}
                                    _h.escape(str(stp.get("basis") or ""))))
                 else:
                     body.append(
-                        "<tr><td><a href='/bt/stock?c=%s'>%s</a></td>"
+                        "<tr><td><a href='/kg/stock/%s'>%s</a></td>"
                         "<td>%s</td><td>%s</td><td colspan='4' class='dim'>"
                         "结构数据不足，暂无预测</td></tr>"
                         % (c, c, _h.escape(str(nm or "")),
@@ -13909,7 +13909,7 @@ transition:.3s;z-index:9}
                     "<div style='margin:4px 0;font-size:12.5px'>"
                     "<span style='color:%s;font-weight:700'>%s %d%%</span>"
                     "<span style='color:#58606a'> · %s · %s</span> "
-                    "<a href='/bt/stock?c=%s' style='color:#58a6ff'>%s</a>"
+                    "<a href='/kg/stock/%s' style='color:#58a6ff'>%s</a>"
                     "</div>"
                     % ("#3fb950" if _b == "bear" else "#f85149",
                        "利空" if _b == "bear" else "利多",
@@ -14402,7 +14402,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # S3 双向跳转：图谱视角 ⇄ 量化全景（K线/策略/时间轴/AI）
                 content += (
                     "<div class='dim' style='margin:4px 0 8px'>⇄ "
-                    "<a href='/bt/stock?c=%s'>量化全景（K线 / 策略信号 / "
+                    "<a href='/kg/stock/%s'>量化全景（K线 / 策略信号 / "
                     "全事件时间轴 / AI 分析）→</a> · <a href='/kg/company"
                     "?c=%s'>🏢 公司本体全景（六扇区点线边 + 直方图）→"
                     "</a></div>"
@@ -16283,7 +16283,7 @@ window.addEventListener('resize', function(){chart.resize();});
             "<div style='margin:4px 0 6px'>%s</div>"
             "<div class='dim' style='margin:2px 0 6px'>⇄ "
             "<a href='/kg?c=%s'>图谱视角 →</a> · "
-            "<a href='/bt/stock?c=%s'>量化全景（K线/时间轴/AI）→</a> · "
+            "<a href='/kg/stock/%s'>量化全景（K线/时间轴/AI）→</a> · "
             "窗口 %d 天 · 三元组 %d 组（点%d 边%d）</div>"
             "<div style='display:flex;gap:14px;align-items:center;"
             "flex-wrap:wrap'><div>%s</div>"
@@ -16468,13 +16468,13 @@ function hrefsOf(n){
   var out=[];
   if(n.sector==='security')
     out.push(['图谱视角','/kg?c='+encodeURIComponent(D.code)],
-             ['量化全景','/bt/stock?c='+encodeURIComponent(
+             ['量化全景','/kg/stock/'+encodeURIComponent(
                D.basic.name||D.code)]);
   if(n.sector==='hotmoney')
     out.push(['游资画像','/kg/map?hm='+encodeURIComponent(n.label)]);
   if(n.props&&n.props['同业标的']){
     var nm=String(n.props['同业标的']).split(' ').slice(1).join(' ');
-    if(nm)out.push(['量化全景','/bt/stock?c='+encodeURIComponent(nm)]);}
+    if(nm)out.push(['量化全景','/kg/stock/'+encodeURIComponent(nm)]);}
   if(n.sector==='taxonomy'&&/^(sh|sz|bj)/.test(String(n.id)))
     out.push(['图谱视角','/kg?c='+encodeURIComponent(n.id)]);
   return out;}
@@ -20058,7 +20058,7 @@ function side(id){var n=nodes[id],el=document.getElementById('side');
     var v=n.props[k];if(v==null||v==='')return;
     h+='<div class=kv><b>'+esc(k)+'</b>：'+esc(v)+'</div>'});
   if(n.label=='Security')
-    h+=\"<a target=_blank href='/bt/stock?c=\"+encodeURIComponent(
+    h+=\"<a target=_blank href='/kg/stock/\"+encodeURIComponent(
       (n.props||{}).ts_code||'')+\"'>→ K 线研判</a> \"+
       \"<a target=_blank href='/kg?c=\"+encodeURIComponent(
       (n.props||{}).ts_code||'')+\"'>→ 图谱全景</a>\";
@@ -20375,7 +20375,7 @@ function side(id){var n=getNd(id);if(!n)return;
   Object.keys(p).forEach(function(k){if(p[k]==null||p[k]==='')return;
     h+='<div class=kv><b>'+esc(k)+'</b>：'+esc(p[k])+'</div>'});
   if(n.data.label=='Security')
-    h+="<a target=_blank href='/bt/stock?c="+encodeURIComponent(
+    h+="<a target=_blank href='/kg/stock/"+encodeURIComponent(
       p.ts_code||'')+"'>→ K 线研判</a>"+
       "<a target=_blank href='/kg?c="+encodeURIComponent(
       p.ts_code||'')+"'>→ 图谱全景</a>";
@@ -20862,7 +20862,7 @@ function focusCo(code){
     ts_last:String(r.ts_last||'')}}});
   renderRows(rows,'事件 · <b>'+esc(nmOf(code))+'</b> <span class="dim">('+d.total+')</span>'
    +' · <a target="_blank" href="/kg?c='+encodeURIComponent(code)+'">图谱全景</a>'
-   +' · <a target="_blank" href="/bt/stock?c='+encodeURIComponent(code)+'">K线研判</a>'
+   +' · <a target="_blank" href="/kg/stock/'+encodeURIComponent(code)+'">K线研判</a>'
    +' · <a href="javascript:location.reload()">← 返回全部</a>')})}
 function openDoc(id){
  var m=document.getElementById('modal');m.style.display='flex';
@@ -22463,7 +22463,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             else:
                 try:
                     import stock_card as _stock_card
-                    self._html(_stock_card.render_card(_code_sc).encode())
+                    self._html(_stock_card.render_card(_code_sc))
                 except Exception as _esc_err:  # noqa: BLE001
                     self._json({"ok": False, "error": f"stock_card: {_esc_err}"})
         elif path in ("/kg/stats", "/kg/sources", "/kg/overview",
