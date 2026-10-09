@@ -1,0 +1,12 @@
+{
+  "hires": [
+    {
+      "trader": "hawk_test",
+      "source": "qd",
+      "status": "ended",
+      "hired_at": "2026-10-09T17:12:25",
+      "note": "端到端演练 2026-10-09 审查用",
+      "fired_at": "2026-10-09T17:12:30"
+    }
+  ]
+}

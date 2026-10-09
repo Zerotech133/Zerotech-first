@@ -22772,8 +22772,14 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             # 静态直出，此处读盘直出保双口径一致——K-STOCK-042 修正过时占位）
             _pf = os.path.join(ROOT, "paper.html")
             if os.path.exists(_pf):
-                with open(_pf, encoding="utf-8") as f:
-                    self._html(f.read())
+                try:
+                    with open(_pf, encoding="utf-8") as f:
+                        self._html(f.read())
+                except Exception as e:   # 读盘异常兜底占位，不让线程裸断连
+                    self._html("<!DOCTYPE html><html><head><meta charset="
+                               "'utf-8'></head><body>" + pill_nav("paper") +
+                               "<div class='sec'>前端文件读取异常：%s</div>"
+                               "</body></html>" % e)
             else:
                 self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                            "<title>模拟仓 · 建设中</title>" + self._COCKPIT_CSS

@@ -29,6 +29,7 @@ automation 建议（训练期）：07:05 主账本闭环（settle→exec→check
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -89,7 +90,11 @@ def load_hires() -> dict:
 
 
 def _save_hires(d: dict) -> None:
-    HIRES_PATH.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    """原子写（临时文件+os.replace）：写一半崩溃不会产生半截注册表——
+    load_hires 的 fail-closed 是最后防线，不该被常态化触发。"""
+    tmp = HIRES_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(str(tmp), str(HIRES_PATH))
 
 
 def hire(trader: str, source: str, note: str = "") -> dict:
@@ -145,7 +150,10 @@ def _newest_run_for(source: str) -> Path:
 
 
 def _hired_profiles(source: str) -> list[dict]:
-    """active 雇佣 → 交易员档案（仅 training/live；悬空雇佣跳过不炸）。"""
+    """active 雇佣 → 交易员档案（仅 training/live；悬空雇佣跳过不炸）。
+    口径决策（审查 2026-10-09 显性化）：雇佣时校验 live，但路由时 training
+    也放行——覆盖「live 期回撤失控降回 training 复训」场景：复训期继续接
+    信号才有净值数据可验收，断供会让复训永远无法毕业。design 始终不喂。"""
     out = []
     for h in load_hires().get("hires", []):
         if h.get("source") != source or h.get("status") != "active":
@@ -177,6 +185,9 @@ def exec_for(run_path: str | None = None, who: list[str] | None = None,
     """同一条 picks run 落到若干训练子账本（conf_floor 在引擎端过滤 BUY）。
     source 雇佣路由（A3）：传入时只喂 hires.json active 交易员，run 取该源最新
     产物，strategy 按源标注（qd=double_knife / qpzm=qingping / ai_team=ai_team）。"""
+    if source and who:
+        raise Reject("--source 与 --who 互斥：雇佣路由按注册表定账本，"
+                     "不接受手工指定（调试请二选一）")
     if source:
         profiles = _hired_profiles(source)
         if not profiles:
