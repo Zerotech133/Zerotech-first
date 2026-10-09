@@ -11539,6 +11539,18 @@ transition:.3s;z-index:9}
             body.append("</table></div>")
         self._html("".join(body))
 
+    def _back_bar_html(self):
+        """K-STOCK-029 统一返回键（选股中心全产线下钻页共用）：
+        有浏览历史 → history.back() 回真实来源页（/qd/、/bt-qpzm、
+        /bt-chanlun 及未来任何产线池页）；直接开 URL 无历史 → href
+        兜底回 /bt 选股中心总目录。新产线详情页一律复用本组件。"""
+        return ("<div style='margin:0 0 10px'>"
+                "<a href='/bt' onclick=\"if(history.length>1){history.back();"
+                "return false;}\" style='display:inline-block;padding:6px 14px;"
+                "border:1px solid #30363d;border-radius:16px;color:#58a6ff;"
+                "text-decoration:none;font-size:12.5px;background:#161b22'>"
+                "← 返回</a></div>")
+
     def _bt_stock_page(self, qs):
         """个股全景页：行情 + 4策略信号 + 共振分解 + JEV下钻 + AI展望。"""
         from urllib.parse import parse_qs, unquote as _uq
@@ -11570,6 +11582,7 @@ transition:.3s;z-index:9}
             nav.append(("<span>%s</span>" % lb) if k == mkt_key
                        else "<a href='/bt/m/%s'>%s</a>" % (k, lb))
         body.append("".join(nav) + "</div>")
+        body.append(self._back_bar_html())
         body.append("<h1>%s <span class='dim'>(%s · %s)</span></h1>"
                     % (_h.escape(name), _h.escape(code), mkt_label))
         # 🎯 综合研判 + 💼 操作建议（个股缠论日线结构 × 大盘环境，
@@ -12627,16 +12640,19 @@ transition:.3s;z-index:9}
         # ① 公告日 → 当日/3日/5日收盘涨跌：公告到底是利好还是利空，
         #   用后验数据说话；② 巨量(≥2×5日均量)/地量(≤0.5×)交易日明细
         _pv_rows, _ve_rows = [], []
+
+        def _fs(x):
+            # K-STOCK-029 修复：_fs 曾定义在下方 anns 条件块内，港股等
+            # anns 为空而量能事件非空的路径在 genexpr 里 NameError 崩页
+            return ("<span class='%s'>%+.1f%%</span>"
+                    % ("up" if x > 0 else "dn", x)) \
+                if x is not None else "<span class='dim'>—</span>"
         if (anns and df is not None and len(df) > 10
                 and "close" in df.columns):
             try:
                 _dts = [str(x)[:10] for x in df.index]
                 _cl = df["close"].tolist()
 
-                def _fs(x):
-                    return ("<span class='%s'>%+.1f%%</span>"
-                            % ("up" if x > 0 else "dn", x)) \
-                        if x is not None else "<span class='dim'>—</span>"
                 for a in anns:
                     d = str(a.get("date") or "")[:10].replace("-", "")
                     d = (d[:4] + "-" + d[4:6] + "-" + d[6:]) \
