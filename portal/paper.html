@@ -4,136 +4,160 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>模拟仓平台 · K-STOCK</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
 <style>
-  :root{
-    --bg:#f5f6f8; --card:#ffffff; --line:#e5e7eb; --txt:#1f2937; --sub:#6b7280;
-    --up:#dc2626; --down:#16a34a; --blue:#2563eb; --orange:#d97706; --green:#059669; --gray:#6b7280;
-    --purple:#7c3aed; --red:#dc2626; --warn:#b45309;
-  }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--txt); font-size:14px;}
-  .wrap{max-width:1280px; margin:0 auto; padding:16px;}
-  .topbar{background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff; border-radius:12px; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;}
-  .topbar h1{font-size:20px; letter-spacing:1px;}
-  .topbar .tag{display:inline-block; background:rgba(255,255,255,.15); border-radius:6px; padding:2px 10px; font-size:12px; margin-left:10px; vertical-align:3px;}
-  .kpis{display:flex; gap:28px; flex-wrap:wrap;}
-  .kpi .k{font-size:12px; color:#94a3b8; margin-bottom:2px;}
-  .kpi .v{font-size:20px; font-weight:700; font-variant-numeric:tabular-nums;}
-  .kpi .v.small{font-size:15px;}
-  .kpi .v.up{color:#fca5a5;} .kpi .v.down{color:#86efac;}
-  .pipeline{display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin:12px 0; flex-wrap:wrap;}
-  .pipe-node{background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:8px 14px; text-align:center; min-width:120px;}
+  body{font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif; background:var(--bg-page); color:var(--text); min-height:100vh; font-size:14px;}
+  .wrap{max-width:1280px; margin:0 auto; padding:0 26px 48px;}
+
+  /* ── 头部（与 picks/index 同骨架）── */
+  header{display:flex; align-items:center; justify-content:space-between; padding:20px 26px 12px; max-width:1280px; margin:0 auto; flex-wrap:wrap; gap:12px;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .logo{width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,var(--blu-600),var(--pur-500)); display:grid; place-items:center; font-size:19px; font-weight:800; color:#fff;}
+  .brand h1{font-size:17px; font-weight:700;}
+  .brand small{color:var(--text-dim); font-size:10.5px; letter-spacing:3px; display:block; margin-top:2px;}
+  .kpis{display:flex; gap:22px; flex-wrap:wrap; justify-content:flex-end;}
+  .kpi .k{font-size:11px; color:var(--text-dim); margin-bottom:2px;}
+  .kpi .v{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums;}
+  .kpi .v.small{font-size:14px;}
+  .kpi .v.up{color:var(--color-up);} .kpi .v.down{color:var(--color-dn);}
+
+  /* ── 顶部导航（全站同款胶囊）── */
+  .topnav{display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:10px 26px 0; max-width:1280px; margin:0 auto;}
+  .pill{display:inline-block; padding:7px 15px; border:1px solid var(--border); border-radius:999px; color:var(--text-dim); text-decoration:none; font-size:13px; background:var(--bg-surface); transition:border-color .2s ease, color .2s ease;}
+  .pill:hover{border-color:var(--link); color:var(--text);}
+  .pill.on{color:var(--text); border-color:var(--link); font-weight:700; background:var(--bg-raised);}
+
+  .subline{font-size:12.5px; color:var(--text-dim); margin:14px 0 4px;}
+  .pipeline{display:flex; align-items:center; gap:8px; background:var(--bg-raised); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin:12px 0; flex-wrap:wrap;}
+  .pipe-node{background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:8px 14px; text-align:center; min-width:120px;}
   .pipe-node .t{font-weight:700; font-size:13px;}
-  .pipe-node .d{font-size:11px; color:var(--sub); margin-top:2px;}
-  .pipe-arrow{color:#94a3b8; font-size:18px;}
-  .pipe-core{background:#eff6ff; border-color:#bfdbfe;}
+  .pipe-node .d{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .pipe-arrow{color:var(--text-dim); font-size:18px;}
+  .pipe-core{background:rgba(88,166,255,.12); border-color:rgba(88,166,255,.45);}
   .tabs{display:flex; gap:4px; margin:16px 0 0;}
-  .tab{padding:10px 22px; border:1px solid var(--line); border-bottom:none; background:#eef0f3; border-radius:10px 10px 0 0; cursor:pointer; font-weight:600; color:var(--sub);}
-  .tab.active{background:var(--card); color:var(--txt);}
-  .tab .n{font-size:11px; background:#e5e7eb; border-radius:8px; padding:1px 7px; margin-left:6px; color:var(--sub);}
-  .tabpanel{display:none; background:var(--card); border:1px solid var(--line); border-radius:0 10px 10px 10px; padding:20px;}
+  .tab{padding:10px 22px; border:1px solid var(--border); border-bottom:none; background:var(--bg-surface); border-radius:10px 10px 0 0; cursor:pointer; font-weight:600; color:var(--text-dim);}
+  .tab.active{background:var(--bg-raised); color:var(--text);}
+  .tab .n{font-size:11px; background:var(--gray-3); border-radius:8px; padding:1px 7px; margin-left:6px; color:var(--text-dim);}
+  .tabpanel{display:none; background:var(--bg-raised); border:1px solid var(--border); border-radius:0 10px 10px 10px; padding:20px;}
   .tabpanel.active{display:block;}
   .desk{display:grid; grid-template-columns:300px 1fr 300px; gap:16px;}
   @media(max-width:1100px){.desk{grid-template-columns:1fr;}}
-  .col-title{font-size:13px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;}
-  .strat-card{border:2px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; cursor:pointer; transition:all .15s; position:relative; background:#fff;}
-  .strat-card:hover{border-color:#94a3b8;}
-  .strat-card.selected{border-color:var(--blue); background:#f0f7ff; box-shadow:0 2px 8px rgba(37,99,235,.12);}
-  .strat-card.disabled{opacity:.55; cursor:not-allowed; background:#f9fafb;}
+  .col-title{font-size:13px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;}
+  .strat-card{border:2px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; cursor:pointer; transition:all .15s; position:relative; background:var(--bg-surface);}
+  .strat-card:hover{border-color:var(--text-dim);}
+  .strat-card.selected{border-color:var(--link); background:rgba(88,166,255,.08); box-shadow:0 2px 10px rgba(31,111,235,.30);}
+  .strat-card.disabled{opacity:.55; cursor:not-allowed; background:var(--bg-surface);}
   .strat-card .head{display:flex; align-items:center; gap:8px;}
   .strat-card .icon{font-size:20px;}
   .strat-card .name{font-weight:700; font-size:15px;}
   .strat-card .st{font-size:11px; border-radius:6px; padding:1px 8px; margin-left:auto;}
-  .st.live{background:#dcfce7; color:#166534;}
-  .st.planned{background:#f3f4f6; color:var(--sub);}
-  .st.preview{background:#ede9fe; color:#5b21b6;}
-  .strat-card .desc{font-size:12px; color:var(--sub); margin-top:6px; line-height:1.5;}
-  .strat-card .dyn{font-size:11px; margin-top:6px; color:var(--warn);}
-  .strat-card .dyn.ok{color:var(--green);}
-  .strat-card .radio{position:absolute; top:12px; right:12px; width:16px; height:16px; border:2px solid #cbd5e1; border-radius:50%;}
-  .strat-card.selected .radio{border-color:var(--blue); background:radial-gradient(circle,var(--blue) 40%,transparent 45%);}
-  .trigger-switch{display:flex; gap:0; margin-top:10px; border:1px solid var(--line); border-radius:8px; overflow:hidden; font-size:12px;}
-  .trigger-opt{flex:1; text-align:center; padding:6px 0; color:var(--sub); background:#f8fafc;}
-  .trigger-opt.on{background:var(--blue); color:#fff; font-weight:700;}
+  .st.live{background:rgba(46,160,67,.18); color:var(--color-ok);}
+  .st.planned{background:var(--gray-3); color:var(--text-dim);}
+  .st.preview{background:rgba(163,113,247,.15); color:var(--pur-500);}
+  .strat-card .desc{font-size:12px; color:var(--text-dim); margin-top:6px; line-height:1.5;}
+  .strat-card .dyn{font-size:11px; margin-top:6px; color:var(--color-warn);}
+  .strat-card .dyn.ok{color:var(--color-ok);}
+  .strat-card .radio{position:absolute; top:12px; right:12px; width:16px; height:16px; border:2px solid var(--text-dim); border-radius:50%;}
+  .strat-card.selected .radio{border-color:var(--link); background:radial-gradient(circle,var(--link) 40%,transparent 45%);}
+  .trigger-switch{display:flex; gap:0; margin-top:10px; border:1px solid var(--border); border-radius:8px; overflow:hidden; font-size:12px;}
+  .trigger-opt{flex:1; text-align:center; padding:6px 0; color:var(--text-dim); background:var(--bg-surface);}
+  .trigger-opt.on{background:var(--accent); color:#fff; font-weight:700;}
   .trigger-opt.dis{opacity:.5;}
-  .exec-panel{border:1px solid var(--line); border-radius:10px; padding:16px; min-height:380px;}
+  .exec-panel{border:1px solid var(--border); border-radius:10px; padding:16px; min-height:380px;}
   .exec-title{font-size:16px; font-weight:700; margin-bottom:4px;}
-  .exec-sub{font-size:12px; color:var(--sub); margin-bottom:14px;}
+  .exec-sub{font-size:12px; color:var(--text-dim); margin-bottom:14px;}
   .stat-row{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
-  .stat-box{background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:10px 14px; min-width:110px;}
-  .stat-box .k{font-size:11px; color:var(--sub);}
+  .stat-box{background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:10px 14px; min-width:110px;}
+  .stat-box .k{font-size:11px; color:var(--text-dim);}
   .stat-box .v{font-size:17px; font-weight:700; margin-top:2px;}
   .sig-table{width:100%; border-collapse:collapse; margin:10px 0 14px; font-size:13px;}
-  .sig-table th{background:#f1f5f9; padding:7px 10px; text-align:left; font-size:12px; color:var(--sub); border-bottom:1px solid var(--line);}
-  .sig-table td{padding:8px 10px; border-bottom:1px solid #f1f5f9;}
-  .badge{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; font-weight:600; color:#fff;}
-  .b-ai{background:var(--blue);} .b-dk{background:var(--orange);} .b-qp{background:var(--green);}
-  .b-man{background:var(--gray);} .b-stop{background:var(--red);} .b-agent{background:var(--purple);}
-  .btn{border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer; transition:opacity .15s;}
-  .btn-primary{background:var(--blue); color:#fff;}
-  .btn-orange{background:var(--orange); color:#fff;}
-  .btn-gray{background:#e5e7eb; color:var(--sub);}
-  .btn-red{background:var(--red); color:#fff;}
+  .sig-table th{background:var(--bg-surface); padding:7px 10px; text-align:left; font-size:12px; color:var(--text-dim); border-bottom:1px solid var(--border);}
+  .sig-table td{padding:8px 10px; border-bottom:1px solid var(--border-weak);}
+  .badge{display:inline-block; font-size:11px; border-radius:6px; padding:2px 8px; font-weight:600;}
+  .b-ai{background:rgba(88,166,255,.15); color:var(--blu-500);}
+  .b-dk{background:rgba(255,166,87,.15); color:var(--org-400);}
+  .b-qp{background:rgba(63,185,80,.15); color:var(--grn-500);}
+  .b-man{background:rgba(139,148,158,.18); color:var(--text-dim);}
+  .b-stop{background:rgba(248,81,73,.15); color:var(--red-500);}
+  .b-agent{background:rgba(163,113,247,.15); color:var(--pur-500);}
+  .btn{border:none; border-radius:8px; padding:10px 22px; font-size:14px; font-weight:700; cursor:pointer; transition:opacity .15s; color:#fff;}
+  .btn-primary{background:var(--accent);}
+  .btn-orange{background:var(--org-400); color:var(--gray-0);}
+  .btn-gray{background:var(--gray-3); color:var(--text);}
+  .btn-red{background:var(--red-500);}
   .btn-sm{padding:5px 12px; font-size:12px;}
   .btn:disabled{opacity:.45; cursor:not-allowed;}
   .btn:hover:not(:disabled){opacity:.88;}
   .btn-row{display:flex; gap:10px; margin-top:14px; align-items:center; flex-wrap:wrap;}
-  .flow-note{background:#f8fafc; border-left:3px solid var(--blue); padding:8px 12px; font-size:12px; color:var(--sub); margin-top:12px; border-radius:0 6px 6px 0; line-height:1.6;}
+  .flow-note{background:var(--bg-surface); border-left:3px solid var(--accent); padding:8px 12px; font-size:12px; color:var(--text-dim); margin-top:12px; border-radius:0 6px 6px 0; line-height:1.6;}
   .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0;}
-  .field label{display:block; font-size:12px; color:var(--sub); margin-bottom:4px; font-weight:600;}
-  .field input,.field select{width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:14px;}
-  .field input:focus{outline:2px solid #bfdbfe; border-color:var(--blue);}
-  .field .hint{font-size:11px; color:#9ca3af; margin-top:3px;}
-  .seg{display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
-  .seg button{flex:1; border:none; padding:9px 0; background:#fff; font-size:14px; cursor:pointer; font-weight:700; color:var(--sub);}
-  .seg button.on-buy{background:var(--up); color:#fff;}
-  .seg button.on-sell{background:var(--down); color:#fff;}
-  .side-box{border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px;}
+  .field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:4px; font-weight:600;}
+  .field input,.field select{width:100%; border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:14px; background:var(--bg-surface); color:var(--text);}
+  .field input::placeholder{color:var(--text-dim); opacity:.7;}
+  .field input:focus{outline:2px solid rgba(88,166,255,.35); border-color:var(--link);}
+  .field .hint{font-size:11px; color:var(--text-dim); margin-top:3px;}
+  .seg{display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden;}
+  .seg button{flex:1; border:none; padding:9px 0; background:var(--bg-surface); font-size:14px; cursor:pointer; font-weight:700; color:var(--text-dim);}
+  .seg button.on-buy{background:var(--color-up); color:#fff;}
+  .seg button.on-sell{background:var(--color-dn); color:#fff;}
+  .side-box{border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px;}
   .side-box h3{font-size:13px; margin-bottom:10px; display:flex; align-items:center; gap:6px;}
   .mini-table{width:100%; border-collapse:collapse; font-size:12px;}
-  .mini-table td{padding:6px 4px; border-bottom:1px solid #f1f5f9; vertical-align:middle;}
-  .empty{color:#9ca3af; font-size:12px; text-align:center; padding:14px 0;}
+  .mini-table td{padding:6px 4px; border-bottom:1px solid var(--border-weak); vertical-align:middle;}
+  .empty{color:var(--text-dim); font-size:12px; text-align:center; padding:14px 0;}
   .dist{font-variant-numeric:tabular-nums;}
   .group-head{display:flex; align-items:center; gap:8px; margin:18px 0 8px; font-weight:700;}
   .group-head:first-child{margin-top:0;}
-  .group-head .cnt{font-size:12px; color:var(--sub); font-weight:400;}
+  .group-head .cnt{font-size:12px; color:var(--text-dim); font-weight:400;}
   table.data{width:100%; border-collapse:collapse; font-size:13px;}
-  table.data th{background:#f1f5f9; padding:9px 12px; text-align:left; font-size:12px; color:var(--sub); border-bottom:2px solid var(--line);}
-  table.data td{padding:10px 12px; border-bottom:1px solid #f1f5f9; font-variant-numeric:tabular-nums;}
-  table.data tr:hover td{background:#fafbfc;}
-  .up{color:var(--up); font-weight:700;} .down{color:var(--down); font-weight:700;}
+  table.data th{background:var(--bg-surface); padding:9px 12px; text-align:left; font-size:12px; color:var(--text-dim); border-bottom:2px solid var(--border);}
+  table.data td{padding:10px 12px; border-bottom:1px solid var(--border-weak); font-variant-numeric:tabular-nums;}
+  table.data tr:hover td{background:var(--gray-3);}
+  .up{color:var(--color-up); font-weight:700;} .down{color:var(--color-dn); font-weight:700;}
   .toolbar{display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
-  .toolbar select{border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-size:14px;}
+  .toolbar select{border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:14px; background:var(--bg-surface); color:var(--text);}
   .agent-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px;}
-  .agent-card{border:2px solid var(--line); border-radius:12px; padding:16px;}
-  .agent-card.live{border-color:#a7f3d0; background:#f0fdf4;}
-  .agent-card.reserved{opacity:.6; background:#fafafa; border-style:dashed;}
+  .agent-card{border:2px solid var(--border); border-radius:12px; padding:16px;}
+  .agent-card.live{border-color:rgba(63,185,80,.45); background:rgba(46,160,67,.06);}
+  .agent-card.reserved{opacity:.6; background:var(--bg-surface); border-style:dashed;}
   .agent-card .nm{font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;}
-  .agent-card .role{font-size:12px; color:var(--sub); margin:6px 0 10px; line-height:1.6;}
+  .agent-card .role{font-size:12px; color:var(--text-dim); margin:6px 0 10px; line-height:1.6;}
   .agent-stats{display:flex; gap:16px; margin-top:10px;}
-  .agent-stats .k{font-size:11px; color:var(--sub);} .agent-stats .v{font-weight:700;}
-  .legend{display:flex; gap:18px; margin-top:16px; font-size:12px; color:var(--sub); flex-wrap:wrap;}
+  .agent-stats .k{font-size:11px; color:var(--text-dim);} .agent-stats .v{font-weight:700;}
+  .legend{display:flex; gap:18px; margin-top:16px; font-size:12px; color:var(--text-dim); flex-wrap:wrap;}
   .dot{display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px;}
-  .toast{position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:#1e293b; color:#fff; padding:12px 24px; border-radius:10px; font-size:14px; opacity:0; transition:all .3s; z-index:99; box-shadow:0 8px 24px rgba(0,0,0,.25); max-width:80vw;}
+  .toast{position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--gray-3); border:1px solid var(--border); color:var(--text); padding:12px 24px; border-radius:10px; font-size:14px; opacity:0; transition:all .3s; z-index:99; box-shadow:0 8px 24px rgba(0,0,0,.45); max-width:80vw;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
   .spin{display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:r .7s linear infinite; vertical-align:-2px; margin-right:6px;}
   @keyframes r{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
-<div style="max-width:1280px;margin:0 auto;padding:12px 16px 0;">
-  <a href="/" style="font-size:12.5px;color:var(--sub);text-decoration:none;">← 返回工作站首页</a>
-  <span style="font-size:11.5px;color:#9ca3af;margin-left:14px;">量化股票 · 模拟仓域</span>
-</div>
+
+<header>
+  <div class="brand">
+    <div class="logo">仓</div>
+    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.2</small></div>
+  </div>
+  <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
+</header>
+<nav class="topnav">
+  <a class="pill" href="/">🏠 首页</a>
+  <a class="pill" href="/picks.html">🎯 今日选股</a>
+  <a class="pill" href="/strong.html">💪 板块强弱</a>
+  <a class="pill" href="/quant">📈 量化</a>
+  <a class="pill on" href="/paper.html">🧾 模拟仓</a>
+  <a class="pill" href="/intel">🧠 情报</a>
+  <a class="pill" href="/creator">✨ 创作者</a>
+  <a class="pill" href="/dev.html">🧪 工作台</a>
+  <a class="pill" href="/ops">⚙ 系统</a>
+</nav>
+
 <div class="wrap">
 
-  <div class="topbar">
-    <div>
-      <h1>📈 模拟仓平台<span class="tag">K-STOCK v0.2</span></h1>
-      <div style="font-size:12px;color:#94a3b8;margin-top:6px;">多策略来源 · 手动/自动触发 · 多 Agent 交易员（v0.3 预留）</div>
-    </div>
-    <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
-  </div>
+  <div class="subline">多策略来源 · 手动/自动触发 · 多 Agent 交易员（v0.3 预留）</div>
 
   <div class="pipeline">
     <div class="pipe-node"><div class="t">① 策略源（可选）</div><div class="d">AI值班 / 双刀 / 青萍 / 手动 / Agent</div></div>
@@ -219,7 +243,7 @@
           <div id="qd-body"><div class="empty">读取中…</div></div>
           <div class="btn-row">
             <button class="btn btn-orange" id="qd-run" onclick="runQD()">⚡ 执行今日信号</button>
-            <span style="font-size:12px;color:var(--sub)">当日幂等：账本已有落单自动拒绝</span>
+            <span style="font-size:12px;color:var(--text-dim)">当日幂等：账本已有落单自动拒绝</span>
           </div>
         </div>
 
@@ -245,7 +269,7 @@
           </div>
           <div class="btn-row">
             <button class="btn btn-primary" id="f-submit" onclick="submitOrder()">提交订单</button>
-            <span style="font-size:12px;color:var(--sub)">提交前会弹确认；风控（单票 20%）不通过会被引擎拒绝</span>
+            <span style="font-size:12px;color:var(--text-dim)">提交前会弹确认；风控（单票 20%）不通过会被引擎拒绝</span>
           </div>
         </div>
       </div>
@@ -263,7 +287,7 @@
 
   <!-- ============ 持仓 ============ -->
   <div class="tabpanel" id="tab-pos">
-    <div class="toolbar"><span style="font-size:12px;color:var(--sub)">按策略徽标分组 · 快照时点数据（滞后至最近一次 mark 属预期）</span></div>
+    <div class="toolbar"><span style="font-size:12px;color:var(--text-dim)">按策略徽标分组 · 快照时点数据（滞后至最近一次 mark 属预期）</span></div>
     <div id="pos-body"><div class="empty">读取中…</div></div>
   </div>
 
@@ -272,7 +296,7 @@
     <div class="toolbar">
       <label style="font-size:13px;font-weight:700">选择日期：</label>
       <select id="hist-day" onchange="loadHistory()"></select>
-      <span style="font-size:12px;color:var(--sub)">日期来自权益快照（equity_marks）</span>
+      <span style="font-size:12px;color:var(--text-dim)">日期来自权益快照（equity_marks）</span>
     </div>
     <div id="hist-body"><div class="empty">读取中…</div></div>
   </div>
@@ -281,17 +305,17 @@
   <div class="tabpanel" id="tab-agent">
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
       <span style="font-size:15px;font-weight:700">🏪 交易员市场（v0.3 方向 · 选择键已预留）</span>
-      <span style="font-size:12px;color:var(--sub)">选股机器人 ≠ 交易机器人：策略源只回答「<b>买什么</b>」，交易员回答「<b>怎么买、买多少、何时卖</b>」。挑交易员就像挑策略——每张卡带着自己的擅长与战绩。</span>
+      <span style="font-size:12px;color:var(--text-dim)">选股机器人 ≠ 交易机器人：策略源只回答「<b>买什么</b>」，交易员回答「<b>怎么买、买多少、何时卖</b>」。挑交易员就像挑策略——每张卡带着自己的擅长与战绩。</span>
     </div>
     <div class="agent-grid" id="agent-grid"></div>
     <div class="flow-note" style="margin-top:14px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
   </div>
 
   <div class="legend">
-    <span><span class="dot" style="background:#22c55e"></span>已接入（引擎实测）</span>
-    <span><span class="dot" style="background:#eab308"></span>v0.2b 待接入</span>
-    <span><span class="dot" style="background:#cbd5e1"></span>v0.3 预留</span>
-    <span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a href="#" onclick="loadStatus();return false" style="color:var(--blue)">↻ 刷新</a></span>
+    <span><span class="dot" style="background:var(--color-ok)"></span>已接入（引擎实测）</span>
+    <span><span class="dot" style="background:var(--color-warn)"></span>v0.2b 待接入</span>
+    <span><span class="dot" style="background:var(--text-dim)"></span>v0.3 预留</span>
+    <span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a href="#" onclick="loadStatus();return false" style="color:var(--link)">↻ 刷新</a></span>
   </div>
 </div>
 
@@ -364,7 +388,7 @@ function renderDesk(j){
   $('dyn-ai').textContent=ai?`最近产物 ${ai.file} @ ${ai.ts}`:'暂无 AI 产物';
   $('dyn-ai').className='dyn'+(ai&&ai.ts.slice(0,10)===today?' ok':'');
   $('ai-stats').innerHTML=
-    `<div class="stat-box"><div class="k">今日跑批</div><div class="v" style="color:${ai&&ai.ts.slice(0,10)===today?'var(--green)':'var(--warn)'}">${ai&&ai.ts.slice(0,10)===today?'已完成':'未完成'}</div></div>`+
+    `<div class="stat-box"><div class="k">今日跑批</div><div class="v" style="color:${ai&&ai.ts.slice(0,10)===today?'var(--color-ok)':'var(--color-warn)'}">${ai&&ai.ts.slice(0,10)===today?'已完成':'未完成'}</div></div>`+
     `<div class="stat-box"><div class="k">最近产物</div><div class="v small">${ai?ai.ts:'-'}</div></div>`+
     `<div class="stat-box"><div class="k">单票上限</div><div class="v">20%</div></div>`;
   const qd=d.qd_last_run;
@@ -372,7 +396,7 @@ function renderDesk(j){
   $('dyn-qd').className='dyn'+(qd&&qd.ts.slice(0,10)===today?' ok':'');
   if(qd&&qd.signals.length){
     $('qd-body').innerHTML=`<table class="sig-table"><tr><th>股票</th><th>名称</th><th>参考收盘</th><th>方向</th><th>目标仓位</th></tr>`+
-      qd.signals.map(s=>`<tr><td><b>${s.stock}</b></td><td>${s.name||'-'}</td><td>${s.close!=null?s.close:'-'}</td><td style="color:var(--up);font-weight:700">买入</td><td>16%</td></tr>`).join('')+'</table>';
+      qd.signals.map(s=>`<tr><td><b>${s.stock}</b></td><td>${s.name||'-'}</td><td>${s.close!=null?s.close:'-'}</td><td style="color:var(--color-up);font-weight:700">买入</td><td>16%</td></tr>`).join('')+'</table>';
   }else{
     $('qd-body').innerHTML='<div class="empty">今日暂无双刀信号（qd_scan_cache.signals_now 为空或未扫描）</div>';
   }
