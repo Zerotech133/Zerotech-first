@@ -298,6 +298,7 @@
       <select id="hist-day" onchange="loadHistory()"></select>
       <span style="font-size:12px;color:var(--text-dim)">日期来自权益快照（equity_marks）</span>
     </div>
+    <div id="nav-curve"></div>
     <div id="hist-body"><div class="empty">读取中…</div></div>
   </div>
 
@@ -380,6 +381,33 @@ function renderAll(j){
   sel.innerHTML=j.curve.map(c=>`<option value="${c.date}">${c.date}${c.date===L.date?'（最新）':''}</option>`).join('');
   if(cur&&j.curve.some(c=>c.date===cur))sel.value=cur;
   renderAgents(j);
+  renderCurve(j.curve);
+}
+/* B2 净值曲线（SVG 零依赖）：数据=equity_marks 日快照，涨红跌绿（A股口径） */
+function renderCurve(curve){
+  const host=$('nav-curve');if(!host)return;
+  if(!curve||curve.length<2){
+    host.innerHTML='<div class="flow-note" style="margin:10px 0 0">净值曲线自第 2 个交易日快照起绘制（当前 '+
+      (curve?curve.length:0)+' 个快照点 · 每日 mark 自动积累）</div>';return;}
+  const W=860,H=200,P=46;
+  const vals=curve.map(c=>c.total),lo=Math.min(...vals),hi=Math.max(...vals);
+  const span=(hi-lo)||1;
+  const x=i=>P+i*(W-2*P)/(curve.length-1);
+  const y=v=>18+(H-52)*(1-(v-lo)/span);
+  const last=curve[curve.length-1],first=curve[0];
+  const lineCol=last.cum_pct>=0?'var(--color-up)':'var(--color-down)';
+  const pts=curve.map((c,i)=>x(i).toFixed(1)+','+y(c.total).toFixed(1)).join(' ');
+  const baseY=(lo<=first.total&&first.total<=hi)?y(first.total):null;
+  host.innerHTML=
+    '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;margin:12px 0 4px;font-family:inherit">'+
+    '<text x="'+P+'" y="'+(H-8)+'" font-size="11" fill="var(--text-dim)">'+first.date+'</text>'+
+    '<text x="'+(W-P)+'" y="'+(H-8)+'" font-size="11" fill="var(--text-dim)" text-anchor="end">'+last.date+'</text>'+
+    (baseY!==null?'<line x1="'+P+'" y1="'+baseY.toFixed(1)+'" x2="'+(W-P)+'" y2="'+baseY.toFixed(1)+'" stroke="var(--border)" stroke-dasharray="5 4"/>':'')+
+    '<polyline points="'+pts+'" fill="none" stroke="'+lineCol+'" stroke-width="2.2" stroke-linejoin="round"/>'+
+    '<circle cx="'+x(curve.length-1).toFixed(1)+'" cy="'+y(last.total).toFixed(1)+'" r="4" fill="'+lineCol+'"/>'+
+    '<text x="'+(W-P)+'" y="'+(y(last.total)-10).toFixed(1)+'" font-size="12.5" font-weight="700" fill="'+lineCol+'" text-anchor="end">'+
+    '¥'+fmt(last.total)+'（'+pct(last.cum_pct)+'）</text>'+
+    '</svg>';
 }
 function renderDesk(j){
   const d=j.desk||{};
