@@ -655,6 +655,7 @@ DOMAIN_NAV_GROUPS = {
             ("🔍 个股分析", "/sa", "sa"),
             ("💬 查数", "/nl", "nl"))),
         ("🚀 指挥", (
+            ("🗺 门户", "/portal", "portal"),
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
             ("🤖 AI 市场", "/aim", "aim"))),
@@ -1101,7 +1102,7 @@ def pill_nav(page=None):
     cur = next(((lb, href) for lb, href, key in SECTION_PAGES[sec]
                 if key == page), None)
     sep = "<span style='color:#8b949e;font-size:11px'>›</span>"
-    crumb = ("<a href='/' style='%s'>🏠 首页</a>%s"
+    crumb = ("<a href='/portal' style='%s'>🏛 门户</a>%s"
              "<a href='%s' style='%s'>%s</a>"
              % (_PILL, sep, dom[1], _PILL, dom[0]))
     if cur and cur[1] != dom[1]:
@@ -6084,6 +6085,164 @@ gap:14px;align-items:start}}
             + "<div style='display:grid;grid-template-columns:repeat("
             "auto-fit,minmax(260px,1fr));gap:12px'>" + cards + "</div>")
         self._html(_shell("🌊 青萍之末 · 共振选股工作台", "", inner))
+
+    # ── K-STOCK-035 总入口门户：哪里是什么、我的入口在哪里 ──
+    def _portal_page(self):
+        """🏛 门户框架页：全站分区卡片总览——第一屏「我的入口」
+        （Hermes 超级助手 + A0 参谋长），下接 AI 市场/选股中心/行情
+        工作台/情报线/实盘跟踪/创作与运维，每卡带一句话说明。"""
+        import html as _h
+        import urllib.request as _u
+        e = _h.escape
+
+        # 轻量统计（缺省安全降级）
+        rps = _read_json(os.path.join(REPORTS_DIR, "rps_latest.json")) or {}
+        res = rps.get("res", [])
+        qd = _read_json(os.path.join(ROOT, "qd_scan_cache.json")) or {}
+        # Hermes 在线探活（1.5s 超时，挂了不拖页面）
+        hermes_up = False
+        try:
+            _op = _u.build_opener(_u.ProxyHandler({}))
+            _op.open("http://127.0.0.1:8787/", timeout=1.5)
+            hermes_up = True
+        except Exception:
+            pass
+
+        def _card(href, border, icon, name, desc, stat, ext=False):
+            tgt = " target='_blank'" if ext else ""
+            return ("<a href='%s'%s style='display:block;border:1px "
+                    "solid %s;border-radius:12px;background:#161b22;"
+                    "padding:15px 17px;text-decoration:none;"
+                    "color:#e6edf3'>"
+                    "<div style='font-size:16px;font-weight:700'>%s %s"
+                    "<span style='float:right;color:%s;font-size:12px'>"
+                    "进入 →</span></div>"
+                    "<div class='dim' style='font-size:12.5px;"
+                    "margin:6px 0 8px'>%s</div>"
+                    "<div style='font-size:13px'><b>%s</b></div></a>"
+                    % (href, tgt, border, icon, name, border, desc, stat))
+
+        def _zone(title, cards):
+            return ("<h2 style='margin:20px 0 10px;font-size:17px'>%s</h2>"
+                    "<div style='display:grid;grid-template-columns:repeat("
+                    "auto-fit,minmax(270px,1fr));gap:12px'>%s</div>"
+                    % (title, cards))
+
+        st = ("● 在线" if hermes_up else "● 离线",
+              "#3fb950" if hermes_up else "#f85149")
+        hero = (
+            "<div style='display:grid;grid-template-columns:repeat("
+            "auto-fit,minmax(320px,1fr));gap:14px;margin-top:14px'>"
+            "<a href='http://127.0.0.1:8787' target='_blank' style='display:"
+            "block;border:2px solid #58a6ff;border-radius:14px;background:"
+            "#161b22;padding:20px 22px;text-decoration:none;color:#e6edf3'>"
+            "<div style='font-size:20px;font-weight:700'>🦸 Hermes 超级助手"
+            "<span style='float:right;color:%s;font-size:13px'>%s</span>"
+            "</div><div class='dim' style='font-size:13px;margin:8px 0'>"
+            "<b style='color:#e6edf3'>我的主入口</b> · 对话即调度：通过它"
+            "指挥 A0 与全部 AI 岗位 · 执行/记忆/插件网关</div>"
+            "<div style='font-size:14px'><b>http://127.0.0.1:8787</b>"
+            " <span class='dim'>← 点卡片直接进入对话</span></div></a>"
+            "<a href='/fin' style='display:block;border:2px solid #d29922;"
+            "border-radius:14px;background:#161b22;padding:20px 22px;"
+            "text-decoration:none;color:#e6edf3'>"
+            "<div style='font-size:20px;font-weight:700'>🧠 A0 参谋长"
+            "<span style='float:right;color:#3fb950;font-size:13px'>"
+            "● 每日 17:35 值班</span></div><div class='dim' style='font-size:"
+            "13px;margin:8px 0'>AI 组织架构顶点 · 影子日报点评 · 任务派单"
+            " · 汇报直达你（human）</div><div style='font-size:14px'>"
+            "<b>驾驶舱 /fin</b> · 汇报三通道：日报/P0 即时/P1 一小时</div>"
+            "</a></div>"
+            % (st[1], st[0]))
+        zones = "".join([
+            _zone("🤖 AI 市场 · 聘请 AI 做商业化", "".join([
+                _card("/aim", "#d29922", "🤖", "AI 市场货架",
+                      "11 个可聘岗位：A0 + 投研部五岗 + 专项 AI · 本地模型"
+                      "零 token 成本", "在岗 11 · 按岗聘请"),
+                _card("/aim", "#8b949e", "🏛", "组织架构",
+                      "A0 参谋长 → 投研部 alpha 团队 → 汇报 human · "
+                      "三通道汇报", "org.json 实时"),
+            ])),
+            _zone("🎯 选股中心 · 三产线", "".join([
+                _card("/bt-qpzm", "#58a6ff", "🌊", "青萍之末",
+                      "四市场自选池四维共振 · 环境闸门一票否决 · "
+                      "主页驾驶舱+五子页联动",
+                      "全池 %d 只 · 买入 %d" % (
+                          len(res),
+                          sum(1 for r in res if "买入" in str(
+                              r.get("action", ""))))),
+                _card("/bt-chanlun", "#e3b341", "🧭", "缠论",
+                      "多级别结构信号 · 三类买卖点 · 预警池盯市",
+                      "每日盘后扫描"),
+                _card("/qd/", "#3fb950", "⚔", "量子双刀",
+                      "尾盘策略 14:40 扫描 → 14:55 执行 · 八重过滤+"
+                      "Regime（研究态）",
+                      "当日 %d · 近5日 %d" % (
+                          len(qd.get("signals_now", [])),
+                          len(qd.get("signals_recent", [])))),
+                _card("/bt", "#8b949e", "🗂", "产线总目录",
+                      "三产线汇总入口 · 策略中心",
+                      "枢纽页"),
+            ])),
+            _zone("📈 行情工作台", "".join([
+                _card("/screen", "#58a6ff", "📺", "数据大屏",
+                      "全市场实时行情总览", "每日 09:30 起"),
+                _card("/premarket", "#f85149", "🌅", "盘前快报",
+                      "开盘前资讯与准备", "每日早间"),
+                _card("/afterhours", "#d29922", "🌇", "盘后复盘",
+                      "收盘后复盘与对照", "每日盘后"),
+                _card("/sa", "#3fb950", "🔍", "个股 AI 分析",
+                      "任一标的 AI 展望 · 四市场", "点入即用"),
+                _card("/nl", "#8b949e", "💬", "查数",
+                      "自然语言查行情数据", "点入即用"),
+            ])),
+            _zone("📡 情报线 · 图谱工具群", "".join([
+                _card("/intel", "#58a6ff", "🏠", "情报工场",
+                      "情报线总入口", "枢纽页"),
+                _card("/kg", "#3fb950", "🕸", "图谱探索",
+                      "游资/个股/板块知识图谱", "点入即用"),
+                _card("/kg/map", "#d29922", "💰", "游资地图",
+                      "游资席位踪迹与风格", "点入即用"),
+                _card("/kg/ask", "#e3b341", "💬", "图谱问答",
+                      "自然语言查图谱", "点入即用"),
+                _card("/bt-brief", "#8b949e", "🤖", "AI 晨报",
+                      "工作日 09:00 飞书推送", "订阅即享"),
+            ])),
+            _zone("🚦 实盘跟踪", "".join([
+                _card("/bt-signals", "#f85149", "🚦", "明日信号",
+                      "策略明日待执行信号", "每日刷新"),
+                _card("/bt-positions", "#58a6ff", "💼", "持仓跟踪",
+                      "纸面持仓盯市", "每日刷新"),
+                _card("/paper", "#3fb950", "🧾", "模拟仓",
+                      "模拟盘前端（K279 上线）", "实时"),
+                _card("/bt-report", "#d29922", "📄", "回测报告",
+                      "策略历史回测对照", "按次生成"),
+                _card("/sellpoint", "#e3b341", "🎯", "卖点研判",
+                      "缠论卖点 + AI 研判卡", "每日刷新"),
+            ])),
+            _zone("🎬 创作与 🎛 运维", "".join([
+                _card("/creator", "#8b949e", "🎬", "创作专项",
+                      "公众号草稿 / 短视频成片", "工作台"),
+                _card("/ops", "#8b949e", "🎛", "OS 控制台",
+                      "系统运维面板", "运维"),
+                _card("/sys-health", "#3fb950", "🖥", "系统自检",
+                      "服务探活与夜间快照", "实时"),
+            ])),
+        ])
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,"
+                "initial-scale=1'><title>🏛 总入口 · 门户</title>"
+                + self._COCKPIT_CSS + "</head><body>"
+                + pill_nav("portal")
+                + "<h1>🏛 总入口 · 我的门户</h1><div class='dim'>"
+                "哪里是什么 · 我的入口在哪里 · 一页说清全站</div>"
+                + "<h2 style='margin:18px 0 0;font-size:17px'>🚪 我的入口"
+                "</h2>" + hero + zones
+                + "<div class='dim' style='margin-top:20px'>门户即框架："
+                "新产线/新 AI 上架改对应注册表或本页卡片即可 · "
+                "8080 旧首页（QuantDinger SPA）保留互不影响</div>"
+                "</body></html>")
+        self._html(body)
 
     # ── K-STOCK-033 AI 市场：聘请 AI 做商业化（货架页） ──
     def _aim_page(self):
@@ -21167,7 +21326,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 try:
                     out["qd_ran_today"] = bool(con.execute(
                         "SELECT COUNT(*) FROM orders "
-                        "WHERE ref LIKE 'poc_qd_%' AND ts LIKE ?",
+                        "WHERE ref LIKE 'poc_qd_%' AND account_id='main' AND ts LIKE ?",
                         (time.strftime("%Y-%m-%d") + "%",)).fetchone()[0])
                 finally:
                     con.close()
@@ -21222,7 +21381,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     try:
                         n = con.execute(
                             "SELECT COUNT(*) FROM orders "
-                            "WHERE ref LIKE 'poc_qd_%' AND ts LIKE ?",
+                            "WHERE ref LIKE 'poc_qd_%' AND account_id='main' AND ts LIKE ?",
                             (time.strftime("%Y-%m-%d") + "%",)).fetchone()[0]
                     finally:
                         con.close()
@@ -22264,6 +22423,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/bt/seat":
             # 坐席下钻页：席位近60日上榜明细 + 常做票
             self._bt_seat_page(qs)
+        elif path == "/portal":
+            # K-STOCK-035 总入口门户：哪里是什么、我的入口在哪里
+            self._portal_page()
         elif path == "/aim":
             # K-STOCK-033 AI 市场：聘请 AI 岗位货架（ai_market.json 存源）
             self._aim_page()
