@@ -27,6 +27,14 @@
 #       layer only; intel_link exits 1 on main-graph drift (fail-closed).
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
+# OPS-1014 (2026-10-09): evt_build died with httpx ConnectTimeout to
+# huggingface.co - fastembed re-validates the model online on every start and
+# its default cache lives in %TEMP% (wiped by temp cleaners -> forced re-download
+# -> blocked direct HF access from the task session). Fix: persistent cache
+# (pre-warmed 2026-10-09 via hf-mirror, dim=512 verified) + hard offline mode.
+$env:FASTEMBED_CACHE_PATH = 'C:\aios\quant_backtest\.fastembed_cache'
+$env:HF_HUB_OFFLINE = '1'
+$env:HF_HUB_DISABLE_SYMLINKS_WARNING = '1'
 $log = 'C:\Temp\kg_sync_task.log'
 $py = 'C:\Program Files\Python311\python.exe'
 $wd = 'C:\aios\quant_backtest'
