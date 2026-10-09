@@ -5252,82 +5252,82 @@ if(P){setTimeout(function(){go(P)},400)}
     # ── L1 金融驾驶舱（任务导向：查一只股票 / 今天能买吗 / 买什么） ──
     _COCKPIT_CSS = """<link rel='stylesheet' href='/static/tokens.css'>
 <style>
-body{background:#0d1117;color:#e6edf3;font-family:-apple-system,
+body{background:var(--bg-page,#0d1117);color:var(--text,#e6edf3);font-family:-apple-system,
 'Segoe UI','Microsoft YaHei',sans-serif;max-width:1200px;margin:0 auto;
 padding:22px 16px}
 h1{font-size:22px;margin:2px 0 0}
-a{color:#58a6ff;text-decoration:none}
-.dim{color:#8b949e;font-size:12px;line-height:1.7}
-.sec{border:1px solid #30363d;border-radius:12px;padding:15px 17px;
-background:#0f141c;margin-top:14px}
+a{color:var(--link,#58a6ff);text-decoration:none}
+.dim{color:var(--text-dim,#8b949e);font-size:12px;line-height:1.7}
+.sec{border:1px solid var(--border,#30363d);border-radius:12px;padding:15px 17px;
+background:var(--bg-surface,#0f141c);margin-top:14px}
 .sec h2{font-size:15px;margin:0 0 4px}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-td,th{padding:8px 10px;border-bottom:1px solid #21262d;text-align:left}
-th{color:#8b949e;font-weight:500;font-size:12px}
+td,th{padding:8px 10px;border-bottom:1px solid var(--border-weak,#21262d);text-align:left}
+th{color:var(--text-dim,#8b949e);font-weight:500;font-size:12px}
 .gates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
-.gate{border:1px solid #30363d;border-radius:10px;padding:12px 13px;
-background:#161b22;display:block;color:#e6edf3}
-.g-on{border-color:#2ea043}.g-off{border-color:#f85149}
+.gate{border:1px solid var(--border,#30363d);border-radius:10px;padding:12px 13px;
+background:var(--bg-raised,#161b22);display:block;color:var(--text,#e6edf3)}
+.g-on{border-color:var(--color-ok,#2ea043)}.g-off{border-color:var(--color-err,#f85149)}
 .tp{display:inline-block;margin:4px 6px 0 0;padding:7px 13px;
-border:1px solid #30363d;border-radius:16px;font-size:12.5px;
-background:#161b22}
+border:1px solid var(--border,#30363d);border-radius:16px;font-size:12.5px;
+background:var(--bg-raised,#161b22)}
 .doc{display:inline-block;margin:7px 12px 0 0;font-size:13.5px}
 /* 可折叠区块 */
 details.sec{padding:0;overflow:hidden}
 details.sec>summary{cursor:pointer;padding:13px 17px;list-style:none;
 display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;user-select:none}
 details.sec>summary::-webkit-details-marker{display:none}
-details.sec>summary::before{content:"\\25B6";font-size:10px;color:#8b949e;
+details.sec>summary::before{content:"\\25B6";font-size:10px;color:var(--text-dim,#8b949e);
 transition:transform .15s;flex:none;margin-top:2px}
 details.sec[open]>summary::before{transform:rotate(90deg)}
 details.sec>summary h2{display:inline;font-size:15px}
-details.sec>.sec-body{padding:0 17px 15px;border-top:1px solid #21262d}
+details.sec>.sec-body{padding:0 17px 15px;border-top:1px solid var(--border-weak,#21262d)}
 /* 双列网格 */
 @media(min-width:960px){.duo{display:grid;grid-template-columns:1fr 1fr;
 gap:14px;align-items:start}}
 /* 吸顶表头 */
-	table.sticky th{position:sticky;top:0;background:#0f141c;z-index:1}
+	table.sticky th{position:sticky;top:0;background:var(--bg-surface,#0f141c);z-index:1}
 	/* 策略动态卡（B 区：注册表驱动，新增策略零改） */
-	.sstat{display:block;border:1px solid #30363d;border-radius:10px;
-	padding:11px 13px;background:#161b22;color:#e6edf3}
-	.sstat:hover{border-color:#58a6ff}
-	.sstat .st{font-size:12px;color:#8b949e;margin-bottom:3px}
+	.sstat{display:block;border:1px solid var(--border,#30363d);border-radius:10px;
+	padding:11px 13px;background:var(--bg-raised,#161b22);color:var(--text,#e6edf3)}
+	.sstat:hover{border-color:var(--link,#58a6ff)}
+	.sstat .st{font-size:12px;color:var(--text-dim,#8b949e);margin-bottom:3px}
 	.sstat .sv{font-size:17px;font-weight:700;line-height:1.3}
-	.sstat .su{font-size:11px;color:#8b949e;margin-top:4px}
+	.sstat .su{font-size:11px;color:var(--text-dim,#8b949e);margin-top:4px}
 	/* 中式红涨绿跌（2026-10-01 全站统一） */
-	.up{color:var(--color-up,#f85149)}.dn{color:var(--color-down,#3fb950)}.mu{color:#d29922}
+	.up{color:var(--color-up,#f85149)}.dn{color:var(--color-dn,#3fb950)}.mu{color:var(--color-warn,#d29922)}
 	/* 分组 pill 导航 */
 	.navgrp{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
-	.navgrp .gl{font-size:11px;color:#8b949e;padding:6px 0}
+	.navgrp .gl{font-size:11px;color:var(--text-dim,#8b949e);padding:6px 0}
 	/* 长页切割 Tab（U3）：一屏一任务 */
 	.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px;
-	position:sticky;top:0;background:#0d1117;z-index:5;padding:6px 0 0}
-	.tabs button{background:#161b22;border:1px solid #30363d;
-	border-radius:10px 10px 0 0;color:#8b949e;font-size:13px;
+	position:sticky;top:0;background:var(--bg-page,#0d1117);z-index:5;padding:6px 0 0}
+	.tabs button{background:var(--bg-raised,#161b22);border:1px solid var(--border,#30363d);
+	border-radius:10px 10px 0 0;color:var(--text-dim,#8b949e);font-size:13px;
 	padding:8px 16px;cursor:pointer;font-family:inherit}
-	.tabs button:hover{color:#e6edf3;border-color:#58a6ff}
-	.tabs button.on{background:#0f141c;color:#e6edf3;font-weight:600}
+	.tabs button:hover{color:var(--text,#e6edf3);border-color:var(--link,#58a6ff)}
+	.tabs button.on{background:var(--bg-surface,#0f141c);color:var(--text,#e6edf3);font-weight:600}
 	.tabc{display:none}
 	.tabc.on{display:block}
 	/* U4-C 表头排序指示 */
 	th.sortable{cursor:pointer;user-select:none}
-	th.sortable:hover{color:#58a6ff}
-	th[data-sc='a']:after{content:' \2191';font-size:10px;color:#58a6ff}
-	th[data-sc='d']:after{content:' \2193';font-size:10px;color:#58a6ff}
+	th.sortable:hover{color:var(--link,#58a6ff)}
+	th[data-sc='a']:after{content:' \2191';font-size:10px;color:var(--link,#58a6ff)}
+	th[data-sc='d']:after{content:' \2193';font-size:10px;color:var(--link,#58a6ff)}
 	/* U4-D 窄屏表格横滚（桌面 overflow 保持默认，不破坏 sticky 吸顶） */
 	.tblx{overflow-x:visible}
 	@media(max-width:820px){.tblx{overflow-x:auto;
 	-webkit-overflow-scrolling:touch}}
 	/* U4-F 返回顶部 */
 	#_topbtn{position:fixed;right:18px;bottom:18px;width:42px;height:42px;
-	border-radius:50%;border:1px solid #30363d;background:#161b22;
-	color:#8b949e;font-size:15px;cursor:pointer;display:none;z-index:99;
+	border-radius:50%;border:1px solid var(--border,#30363d);background:var(--bg-raised,#161b22);
+	color:var(--text-dim,#8b949e);font-size:15px;cursor:pointer;display:none;z-index:99;
 	box-shadow:0 2px 10px rgba(0,0,0,.4)}
 	#_topbtn.show{display:block}
-	#_topbtn:hover{color:#e6edf3;border-color:#58a6ff}
+	#_topbtn:hover{color:var(--text,#e6edf3);border-color:var(--link,#58a6ff)}
 	/* K-STOCK-037 全站超级助手浮动图标（右下角，与回到顶部按钮上下错开） */
 	#_hermesfab{position:fixed;right:18px;bottom:70px;width:46px;height:46px;
-	border-radius:50%;background:#1f6feb;border:2px solid #58a6ff;
+	border-radius:50%;background:var(--accent,#1f6feb);border:2px solid var(--link,#58a6ff);
 	font-size:22px;line-height:42px;text-align:center;z-index:100;
 	cursor:pointer;user-select:none;text-decoration:none;
 	box-shadow:0 2px 12px rgba(31,111,235,.45)}
@@ -10381,33 +10381,37 @@ function ckPush(i){
             return
         self._json({"status": j["status"], "d": j.get("d")})
 
-    _BT_CSS = ("<style>body{background:#0d1117;color:#c9d1d9;"
+    _BT_CSS = ("<style>@import url('/static/tokens.css');"
+               "body{background:var(--bg-page,#0d1117);color:var(--text,#c9d1d9);"
                "font:14px/1.6 system-ui;margin:0;padding:24px}"
-               "h1{font-size:20px;color:#58a6ff;margin:0 0 4px}"
+               "h1{font-size:20px;color:var(--link,#58a6ff);margin:0 0 4px}"
                "h2{font-size:15px;color:#3fd6c5;margin:24px 0 8px}"
                "table{border-collapse:collapse;width:100%;margin-top:8px}"
-               "td,th{border:1px solid #30363d;padding:6px 10px;"
+               "td,th{border:1px solid var(--border,#30363d);padding:6px 10px;"
                "font-size:13px;text-align:left}"
-               "th{background:#161b22;color:#8b949e}"
-               ".card{border:1px solid #30363d;border-radius:8px;"
-               "padding:12px 16px;background:#161b22;margin-top:8px}"
-               ".dim{font-size:11px;color:#8b949e}"
-               ".buy{color:#f85149}.watch{color:#d29922}.avoid{color:#3fb950}"
-               "a{color:#58a6ff;text-decoration:none}"
+               "th{background:var(--bg-raised,#161b22);color:var(--text-dim,#8b949e)}"
+               ".card{border:1px solid var(--border,#30363d);border-radius:8px;"
+               "padding:12px 16px;background:var(--bg-raised,#161b22);margin-top:8px}"
+               ".dim{font-size:11px;color:var(--text-dim,#8b949e)}"
+               ".buy{color:var(--color-up,#f85149)}.watch{color:var(--color-warn,#d29922)}"
+               ".avoid{color:var(--color-dn,#3fb950)}"
+               "a{color:var(--link,#58a6ff);text-decoration:none}"
                ".nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}"
                ".nav a,.nav span{display:inline-block;padding:6px 13px;"
-               "border:1px solid #30363d;border-radius:16px;color:#58a6ff;"
-               "text-decoration:none;font-size:12.5px;background:#161b22}"
-               ".nav span{color:#e6edf3;border-color:#58a6ff}"
+               "border:1px solid var(--border,#30363d);border-radius:16px;"
+               "color:var(--link,#58a6ff);"
+               "text-decoration:none;font-size:12.5px;background:var(--bg-raised,#161b22)}"
+               ".nav span{color:var(--text,#e6edf3);border-color:var(--link,#58a6ff)}"
                ".tag{display:inline-block;padding:1px 8px;border-radius:10px;"
                "font-size:11.5px;margin-right:8px}"
-               ".t-bull{background:#3a1219;color:#f85149}"
-               ".t-bear{background:#0f2e1b;color:#3fb950}"
-               ".t-neu{background:#2b2f1a;color:#d29922}"
-               ".b-long{color:#f85149;font-weight:600}"
-               ".b-flat{color:#8b949e}.b-short{color:#3fb950;font-weight:600}"
-               "input{background:#0d1117;color:#c9d1d9;"
-               "border:1px solid #30363d;border-radius:8px;"
+               ".t-bull{background:#3a1219;color:var(--color-up,#f85149)}"
+               ".t-bear{background:#0f2e1b;color:var(--color-dn,#3fb950)}"
+               ".t-neu{background:#2b2f1a;color:var(--color-warn,#d29922)}"
+               ".b-long{color:var(--color-up,#f85149);font-weight:600}"
+               ".b-flat{color:var(--text-dim,#8b949e)}"
+               ".b-short{color:var(--color-dn,#3fb950);font-weight:600}"
+               "input{background:var(--bg-page,#0d1117);color:var(--text,#c9d1d9);"
+               "border:1px solid var(--border,#30363d);border-radius:8px;"
                "padding:10px 14px;font-size:15px;width:280px}"
                "button{background:#238636;color:#fff;border:none;"
                "border-radius:8px;padding:10px 18px;font-size:15px;"
@@ -10415,13 +10419,13 @@ function ckPush(i){
                "/* 方法论矩阵：8 张卡一字排开，点卡下钻 */"
                ".mgrid{display:grid;grid-template-columns:"
                "repeat(auto-fill,minmax(165px,1fr));gap:8px;margin-top:8px}"
-               ".mcard{border:1px solid #30363d;border-radius:8px;"
-               "padding:10px 12px;background:#161b22;display:block;"
-               "color:#c9d1d9;text-decoration:none}"
-               ".mcard:hover{border-color:#58a6ff;background:#1c2a3a}"
-               ".mcard .mt{font-size:11px;color:#8b949e;margin-bottom:4px}"
+               ".mcard{border:1px solid var(--border,#30363d);border-radius:8px;"
+               "padding:10px 12px;background:var(--bg-raised,#161b22);display:block;"
+               "color:var(--text,#c9d1d9);text-decoration:none}"
+               ".mcard:hover{border-color:var(--link,#58a6ff);background:#1c2a3a}"
+               ".mcard .mt{font-size:11px;color:var(--text-dim,#8b949e);margin-bottom:4px}"
                ".mcard .mv{font-size:14px;font-weight:600;line-height:1.3}"
-               ".mcard .mu{font-size:11px;color:#58a6ff;margin-top:4px}"
+               ".mcard .mu{font-size:11px;color:var(--link,#58a6ff);margin-top:4px}"
                ".mcard.mute{opacity:.55}"
                "</style>")
 

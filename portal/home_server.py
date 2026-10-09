@@ -19,6 +19,7 @@ from datetime import date, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
+import urllib.request
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -36,6 +37,21 @@ def _mt(p: Path):
     try:
         return time.strftime("%Y-%m-%d %H:%M", time.localtime(p.stat().st_mtime))
     except OSError:
+        return None
+
+
+# K-STOCK-049 C1-4 数据同源：菜鸟回答口径对齐 8080 页面微指标 → 读 portal_api(127.0.0.1:8091) 原生 API
+API_BASE = "http://127.0.0.1:8091"
+# 本机直连不吃环境代理：urllib 默认会读 http_proxy 等环境变量，必须空 ProxyHandler 直连
+_API_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def _api(path: str, timeout: int = 8):
+    """读 8091 portal_api 原生 API，返回 dict；任何失败返回 None（调用方降级本地投影）。"""
+    try:
+        with _API_OPENER.open(API_BASE + path, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:  # noqa: BLE001  8091 挂/超时/非 JSON → 一律 None，不炸穿
         return None
 
 
@@ -258,21 +274,49 @@ def answer(msg: str) -> dict:
     low = m.lower()
     ck = cockpit()
     # 查：部门/状态/情况
+    # K-STOCK-049 C1-4 数据同源：优先 8091 原生 API（/api/brief + /api/paper_status），本地投影补位
     if any(k in m for k in ("部门", "状态", "情况", "驾驶舱", "总览", "怎么样")):
-        p = ck["paper"]
-        acc_line = "、".join(
-            f"{aid} {('盈' if v['cum_pct'] >= 0 else '亏')} {v['cum_pct']:+.2f}%"
-            for aid, v in (p.get("accounts") or {}).items()) if p.get("ok") else "账本数据暂不可用"
-        sh = ck["shadow"]
+        lines = []
+        br = _api("/api/brief")
+        if br and br.get("fin"):
+            fin = br["fin"]
+            lines.append(f"大盘裁决：{fin.get('verdict', '?')}"
+                         f"（概率 {fin.get('prob', '?')}%，最新买点 {fin.get('buy', 0)} 个）")
+        else:
+            lines.append(f"大盘裁决：原生简报暂不可用（本地今日买点信号 {ck['intel'].get('rps_buys', 0)} 个）")
+        if br and br.get("intel"):
+            it = br["intel"]
+            lines.append(f"情报中枢：今日入库 {it.get('today', 0)} 条"
+                         f"（看多 {it.get('bull', 0)} / 看空 {it.get('bear', 0)}）")
+        ps = _api("/api/paper_status")
+        if ps and ps.get("ok") and ps.get("latest"):
+            l = ps["latest"]
+            lines.append(f"量化交易部：{ps.get('account_id', 'main')} 总资产 {_fmt_money(l['total'])}"
+                         f"（{l.get('cum_pct', 0):+.2f}%），待撮合 {l.get('pending', 0)}")
+        else:
+            p = ck["paper"]  # 降级：本地 paper.db 只读投影
+            acc_line = "、".join(
+                f"{aid} {('盈' if v['cum_pct'] >= 0 else '亏')} {v['cum_pct']:+.2f}%"
+                for aid, v in (p.get("accounts") or {}).items()) if p.get("ok") else "账本数据暂不可用"
+            lines.append(f"量化交易部：账本 [{acc_line}]")
+        sh = ck["shadow"]  # 本地投影补位（8091 无对应原生接口）
+        lines.append(f"投研部影子期：{sh.get('days_total', 0)} 个交易日（{sh.get('rows', 0)} 条决策）")
+        lines.append(f"研发部今日提交 {ck['ops'].get('commits_today', 0)} 个")
+        ci = ck["calendar"]["items"][0]
+        lines.append(f"裁决窗最近：{ci['day']}（{ci['what']}）")
         return {"ok": True, "via": "rule",
-                "text": f"老板，当前全景：账本 [{acc_line}]；"
-                        f"影子期已积累 {sh.get('days_total', 0)} 个交易日（{sh.get('rows', 0)} 条决策）；"
-                        f"研发部今日提交 {ck['ops'].get('commits_today', 0)} 个。"
-                        f"裁决窗最近一个：{ck['calendar']['items'][0]['day']} "
-                        f"({ck['calendar']['items'][0]['what']})。"}
-    # 查：持仓/账本/资产
-    if any(k in low for k in ("持仓", "账本", "资产", "净值", "账户")):
-        p = ck["paper"]
+                "text": "老板，当前全景：\n· " + "\n· ".join(lines)}
+    # 查：我的钱/持仓/账本/资产
+    # K-STOCK-049 C1-4 数据同源：优先 8091 原生 API（/api/paper_status），本地投影降级
+    if any(k in low for k in ("钱", "持仓", "账本", "资产", "净值", "账户")):
+        ps = _api("/api/paper_status")
+        if ps and ps.get("ok") and ps.get("latest"):
+            l = ps["latest"]
+            return {"ok": True, "via": "rule",
+                    "text": f"老板，账本态势（8091 原生口径，{ps.get('account_id', 'main')}）："
+                            f"总资产 {_fmt_money(l['total'])}（累计 {l.get('cum_pct', 0):+.2f}%），"
+                            f"待撮合 {l.get('pending', 0)} 单，快照 {l.get('date', '?')}。"}
+        p = ck["paper"]  # 降级：本地 paper.db 只读投影
         if not p.get("ok"):
             return {"ok": True, "via": "rule", "text": "账本数据暂不可用。"}
         lines = [f"· {aid}: 总资产 {_fmt_money(v['total'])}（{v['cum_pct']:+.2f}%），"
@@ -281,19 +325,50 @@ def answer(msg: str) -> dict:
         return {"ok": True, "via": "rule",
                 "text": "各账本态势（USD/CNY 原币口径）：\n" + "\n".join(lines)}
     # 查：挂单/pending
+    # K-STOCK-049 C1-4 数据同源：优先 8091 原生 API（/api/paper_status），本地投影降级
     if any(k in low for k in ("挂单", "pending", "待撮合", "委托")):
-        p = ck["paper"]
+        def _pd(s):  # 20261012 → 2026-10-12
+            s = str(s or "")
+            return f"{s[:4]}-{s[4:6]}-{s[6:]}" if len(s) == 8 and s.isdigit() else s
+        ps = _api("/api/paper_status")
+        if ps and ps.get("ok"):
+            aid = ps.get("account_id", "main")
+            rows = ps.get("pending_orders") or []
+            if rows:
+                return {"ok": True, "via": "rule",
+                        "text": f"待撮合挂单（8091 原生口径，{len(rows)} 单）：\n" + "\n".join(
+                            f"· [{aid}] {r.get('side')} {r.get('stock')} ×{r.get('qty')}"
+                            f" → {_pd(r.get('plan_date'))} 开盘（{r.get('strategy', '')}）"
+                            for r in rows)}
+            rec = ps.get("recent_orders") or []
+            if rec:
+                return {"ok": True, "via": "rule",
+                        "text": "当前无 pending 挂单。最近委托：\n" + "\n".join(
+                            f"· [{aid}] {r.get('side')} {r.get('stock')} ×{r.get('qty')} {r.get('status')}"
+                            for r in rec[:5])}
+            return {"ok": True, "via": "rule", "text": "当前无 pending 挂单。"}
+        p = ck["paper"]  # 降级：本地 paper.db 只读投影
         rows = p.get("pending") or []
         if not rows:
             return {"ok": True, "via": "rule", "text": "当前无 pending 挂单。"}
         return {"ok": True, "via": "rule", "text": "待撮合挂单：\n" + "\n".join(
             f"· [{r['account_id']}] {r['side']} {r['stock']} ×{r['qty']} → {r['plan_date']} 开盘"
             for r in rows)}
-    # 查：裁决窗
-    if any(k in m for k in ("裁决", "窗口", "10-13", "10-14", "10-15", "日程")):
-        return {"ok": True, "via": "rule", "text": "裁决窗安排：\n" + "\n".join(
-            f"· {i['day']}（{'今天' if i['in_days'] == 0 else ('已过' if i['in_days'] < 0 else str(i['in_days']) + '天后')}）：{i['what']}"
-            for i in ck["calendar"]["items"])}
+    # 查：拍板/今天该干什么/裁决窗（K-STOCK-049 C1-5 拍板提醒：读 cockpit().calendar.items）
+    if any(k in m for k in ("拍板", "今天该干什么", "裁决", "窗口", "10-13", "10-14", "10-15", "日程")):
+        items = ck["calendar"]["items"]
+        wins = "；".join(
+            f"{i['day']}（{'今天' if i['in_days'] == 0 else ('已过' if i['in_days'] < 0 else str(i['in_days']) + ' 天后')}）"
+            f"{i['what']}" for i in items)
+        nearest = next((i for i in items if i["in_days"] >= 0), items[-1])
+        if nearest["in_days"] == 0:
+            text = (f"⏰ 今天是裁决日：{nearest['day']}（{nearest['what']}）。\n"
+                    f"三窗安排：{wins}。\n"
+                    f"今日重点：跑批产物齐全性我已替您核对，您只需拍板——看完材料说「批准」或「驳回」即可。")
+        else:
+            text = (f"老板，最近裁决窗：{nearest['day']}（{nearest['in_days']} 天后）：{nearest['what']}。"
+                    f"今日非裁决日，您只需要正常盯盘，材料和账本我来盯。\n三窗安排：{wins}。")
+        return {"ok": True, "via": "rule", "text": text}
     # 查：影子
     if "影子" in m or "shad" in low:
         sh = ck["shadow"]
