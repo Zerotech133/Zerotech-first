@@ -512,11 +512,19 @@ class PaperEngine:
                                        "why": f"行情湖无 {asof} 之后的交易日，无法定撮合日"})
                 continue
             if action == "BUY":
-                order = self._plan_buy(stock, conf, plan_date, ref, dry_run,
-                                       strategy=strategy, account_id=aid)
+                try:
+                    order = self._plan_buy(stock, conf, plan_date, ref, dry_run,
+                                           strategy=strategy, account_id=aid)
+                except Reject as e:   # 单票行情缺失等：跳过该票，不炸整个 run
+                    out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
+                    continue
             elif action == "SELL":
-                order = self._plan_sell(stock, conf, plan_date, ref, dry_run,
-                                        strategy=strategy, account_id=aid)
+                try:
+                    order = self._plan_sell(stock, conf, plan_date, ref, dry_run,
+                                            strategy=strategy, account_id=aid)
+                except Reject as e:
+                    out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
+                    continue
             else:
                 out["skipped"].append({"stock": stock, "why": f"未知动作 {action}"})
                 continue

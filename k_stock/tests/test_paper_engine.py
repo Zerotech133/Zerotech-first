@@ -589,3 +589,21 @@ def test_snapshot_pk_multi_account(tmp_path):
         assert s["positions"][0]["account_id"] == "main"
     finally:
         monkey.undo()
+
+
+def test_exec_run_skips_bad_stock(tmp_path):
+    """exec_run 单票异常隔离：湖外股票 skip（不炸整个 run），正常票照常落单。"""
+    run = tmp_path / "poc_z.json"
+    items = [
+        {"stock": "000999.SZ", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.8}}},   # 湖外票
+        {"stock": "600519.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.8}}},
+    ]
+    run.write_text(json.dumps(items), encoding="utf-8")
+    e = PaperEngine(tmp_path / "paper.db", _mk_market())
+    r = e.exec_run(run)
+    pend = [o for o in r["orders"] if o.get("status") == "pending"]
+    assert len(pend) == 1 and pend[0]["stock"] == "600519.SH"
+    assert len(r["skipped"]) == 1 and "落单失败跳过" in r["skipped"][0]["why"]
+    assert r["skipped"][0]["stock"] == "000999.SZ"

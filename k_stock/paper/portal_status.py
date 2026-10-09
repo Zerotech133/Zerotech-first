@@ -73,8 +73,8 @@ def status() -> dict:
                 (last_snap, MAIN)).fetchall()
             for r in rows:
                 d = dict(r)
-                d["distance_pct"] = (round((r["stop_price"] / r["last"] - 1) * 100, 2)
-                                     if r["last"] else None)
+                d["distance_pct"] = (round((r["last"] / r["stop_price"] - 1) * 100, 2)
+                                     if r["last"] else None)   # 与 engine.stops() 同口径：负=已跌破止损
                 stops.append(d)
         return {
             "ok": True,
