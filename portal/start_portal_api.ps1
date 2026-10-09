@@ -17,9 +17,16 @@ $log = 'C:\Temp\portal_api_task.log'
 $h = 0
 for ($i = 0; $i -lt 3; $i++) {
     try {
-        $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8091/health' `
-            -TimeoutSec 5 -UseBasicParsing
-        if ($r.StatusCode -eq 200) { $h = 1; break }
+        # K234c (10-10): Invoke-WebRequest honors system proxy - local probe
+        # went THROUGH 127.0.0.1:54654 -> fake 200 when service dead (skip
+        # forever) and fake fail when proxy blips (kill loop / bounce war).
+        # Use raw HttpWebRequest with Proxy=$null for a TRUE local probe.
+        $req = [System.Net.HttpWebRequest]::Create('http://127.0.0.1:8091/health')
+        $req.Proxy = $null
+        $req.Timeout = 5000
+        $resp = $req.GetResponse()
+        $resp.Close()
+        if ($resp.StatusCode -eq 'OK') { $h = 1; break }
     } catch { Start-Sleep -Seconds 3 }
 }
 if ($h -eq 1) {
