@@ -13610,93 +13610,52 @@ transition:.3s;z-index:9}
         """P-E 自然语言查数页：输入问句 → multi_agent 多 agent 答案。
         页面加载只读缓存（read_only）；按钮 force=1 触发现算（10-30s）。
         specialist 调用链 <details> 下钻。
-        K-STOCK-055 美化：英雄区+一体搜索条+示例 chips+答案卡来源徽章
-        +specialist 卡化+加载 spinner，全部走 tokens.css 变量。"""
+        K-STOCK-055b 回炉对齐全站扁平风格（老田反馈：与平台整体
+        颜色/风格/布局不一致）：弃渐变按钮/英雄区/彩色徽章/spinner，
+        回归 GitHub Dark 家族语言——h1 22px + .dim 说明行 + .sec/.card
+        边框卡 + 实心绿主按钮(#238636) + 灰字来源行（与 /sa 家族一致）。"""
         import html as _he
         from urllib.parse import parse_qs as _pqs, unquote as _uq, quote as _uq2
         _qv = _uq((_pqs(qs).get("q") or [""])[0])
         _esc = _he.escape(_qv, quote=True)
         _NL_CSS = """<style>
-.nl-hero{margin:4px 0 16px}
-.nl-hero h1{font-size:24px;margin:0 0 6px}
-.nl-hero .dim{font-size:12.5px}
-.nl-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 0}
-.nl-flow .stp{display:inline-block;padding:2px 10px;border:1px solid var(--border-weak,#21262d);
-border-radius:12px;font-size:11px;color:var(--text-dim,#8b949e);background:var(--bg-raised,#161b22)}
-.nl-flow .arw{color:var(--text-dim,#8b949e);font-size:11px}
-.nl-search{display:flex;gap:10px;align-items:stretch;max-width:640px}
-.nl-search input{flex:1;min-width:0;padding:13px 16px;font-size:14px;font-family:inherit;
+.nl-search{display:flex;gap:10px;align-items:stretch;max-width:640px;margin-top:12px}
+.nl-search input{flex:1;min-width:0;padding:12px 14px;font-size:14px;font-family:inherit;
 color:var(--text,#e6edf3);background:var(--bg-raised,#161b22);
-border:1px solid var(--border,#30363d);border-radius:12px;outline:none;
-transition:border-color .15s,box-shadow .15s}
-.nl-search input:focus{border-color:var(--link,#58a6ff);
-box-shadow:0 0 0 3px rgba(88,166,255,.12)}
+border:1px solid var(--border,#30363d);border-radius:10px;outline:none}
+.nl-search input:focus{border-color:var(--link,#58a6ff)}
 .nl-search input::placeholder{color:var(--text-dim,#8b949e)}
-.nl-go{flex:none;padding:0 22px;font-size:14px;font-weight:600;font-family:inherit;
-color:#fff;background:linear-gradient(135deg,var(--accent,#1f6feb),#388bfd);
-border:none;border-radius:12px;cursor:pointer;transition:filter .15s}
-.nl-go:hover{filter:brightness(1.15)}
-.nl-go:active{filter:brightness(.92)}
-.nl-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.nl-chips a{display:inline-block;padding:6px 14px;border:1px solid var(--border,#30363d);
-border-radius:16px;font-size:12.5px;color:var(--text-dim,#8b949e);
-background:var(--bg-raised,#161b22);text-decoration:none;transition:all .15s}
+.nl-go{flex:none;padding:0 20px;font-size:14px;font-weight:600;font-family:inherit;
+color:#fff;background:#238636;border:none;border-radius:10px;cursor:pointer}
+.nl-go:hover{background:#2ea043}
+.nl-chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.nl-chips a{display:inline-block;padding:4px 12px;border:1px solid var(--border,#30363d);
+border-radius:14px;font-size:12.5px;color:var(--text-dim,#8b949e);
+background:var(--bg-raised,#161b22);text-decoration:none}
 .nl-chips a:hover{color:var(--link,#58a6ff);border-color:var(--link,#58a6ff)}
-.nl-q{margin-top:18px;padding:10px 14px;border-left:3px solid var(--accent,#1f6feb);
-background:var(--bg-surface,#0f141c);border-radius:0 10px 10px 0;font-size:13.5px}
-.nl-ans{border:1px solid var(--border,#30363d);border-radius:12px;
-background:var(--bg-surface,#0f141c);margin-top:14px;overflow:hidden}
-.nl-ans-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-padding:10px 16px;border-bottom:1px solid var(--border-weak,#21262d)}
-.nl-ans-h .t{font-size:13px;font-weight:600}
-.nl-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px}
-.nl-badge.cache{color:var(--color-ok,#2ea043);border:1px solid var(--color-ok,#2ea043)}
-.nl-badge.live{color:var(--link,#58a6ff);border:1px solid var(--link,#58a6ff)}
-.nl-badge.deg{color:var(--color-warn,#d29922);border:1px solid var(--color-warn,#d29922)}
-.nl-ans pre{white-space:pre-wrap;word-break:break-word;margin:0;
-padding:14px 16px;font-size:13.5px;line-height:1.75;font-family:inherit}
-.nl-spec{border:1px solid var(--border,#30363d);border-radius:10px;
-background:var(--bg-raised,#161b22);margin-top:10px;overflow:hidden}
-.nl-spec>summary{cursor:pointer;list-style:none;padding:11px 14px;
-display:flex;align-items:center;gap:8px;flex-wrap:wrap;user-select:none}
-.nl-spec>summary::-webkit-details-marker{display:none}
-.nl-spec>summary::before{content:"\\25B6";font-size:10px;
-color:var(--text-dim,#8b949e);transition:transform .15s}
-.nl-spec[open]>summary::before{transform:rotate(90deg)}
-.nl-spec .sname{color:var(--link,#58a6ff);font-weight:600;font-size:13px}
-.nl-spec .sq{color:var(--text-dim,#8b949e);font-size:12.5px}
-.nl-spec .scnt{margin-left:auto;font-size:11px;color:var(--text-dim,#8b949e);
-border:1px solid var(--border-weak,#21262d);border-radius:10px;padding:1px 8px}
-.nl-spec .sbody{border-top:1px solid var(--border-weak,#21262d);padding:12px 14px}
+.nl-ans pre{white-space:pre-wrap;word-break:break-word;margin:6px 0 0;
+font-size:13.5px;line-height:1.75;font-family:inherit}
+.nl-spec{margin-top:10px}
+.nl-spec>summary{cursor:pointer;color:var(--link,#58a6ff);font-size:13px}
+.nl-spec .sbody{margin-top:6px}
 .nl-spec pre{white-space:pre-wrap;word-break:break-word;margin:0;
 font-size:12.5px;line-height:1.7;font-family:inherit}
-.nl-call{border:1px solid var(--border-weak,#21262d);border-radius:8px;
-padding:8px 11px;margin-top:6px;font-size:12px;
-font-family:Consolas,monospace;color:var(--text-dim,#8b949e)}
+.nl-call{margin-top:6px;font-size:12px;color:var(--text-dim,#8b949e);
+font-family:Consolas,monospace;line-height:1.6}
 .nl-call b{color:var(--text,#e6edf3);font-weight:600}
-.nl-wait{display:flex;align-items:center;gap:10px;margin-top:16px;
-color:var(--text-dim,#8b949e);font-size:13px}
-.nl-spin{width:18px;height:18px;flex:none;border:2px solid var(--border,#30363d);
-border-top-color:var(--link,#58a6ff);border-radius:50%;
-animation:nls .8s linear infinite}
-@keyframes nls{to{transform:rotate(360deg)}}
 </style>"""
         body = [pill_nav("nl"), _NL_CSS,
-                "<div class='nl-hero'>"
-                "<h1>💬 自然语言查数</h1>"
-                "<div class='dim'>本地 qwen3.5:9b 多 agent 分发查数 · "
-                "信息层只读 · 当日缓存复用 · 不外发数据</div>"
-                "<div class='nl-flow'>"
-                "<span class='stp'>router 分发</span><span class='arw'>→</span>"
-                "<span class='stp'>specialists 并行查数</span><span class='arw'>→</span>"
-                "<span class='stp'>synth 汇总</span></div></div>",
+                "<h1>💬 自然语言查数</h1>",
+                "<div class='dim'>本地 qwen3.5:9b 多 agent（router → "
+                "specialists → synth）· 信息层只读 · 当日缓存复用 · "
+                "不外发数据</div>",
                 "<div class='nl-search'>"
                 "<input id='q' placeholder='如 688411最近怎么样 / 1卖趋势背驰的左尾 / "
                 "预警池最新10条信号'"
                 " onkeydown=\"if(event.key==='Enter')_go()\"%s>"
                 "<button class='nl-go' onclick='_go()'>查数</button></div>"
                 "<div class='nl-chips'>"
-                "<span class='dim' style='padding:6px 2px'>试一试：</span>"
+                "<span class='dim'>试一试：</span>"
                 "<a href='/nl?q=%s'>688411 最近怎么样</a>"
                 "<a href='/nl?q=%s'>1卖趋势背驰的左尾</a>"
                 "<a href='/nl?q=%s'>预警池最新10条信号</a></div>"
@@ -13715,37 +13674,33 @@ animation:nls .8s linear infinite}
             self._html("".join(body))
             return
         body.append(
-            "<div class='nl-q'><span class='dim' style='margin-right:8px'>当前问句</span>"
-            "%s</div>"
+            "<h2>当前问句</h2><div class='card'>%s</div>"
             "<div style='margin-top:12px'>"
             "<button onclick='_nlForce()'>🔄 强制重算（10-30s）</button></div>"
-            "<div id='nlout'></div>")
+            "<div id='nlout' class='dim' style='margin-top:12px'></div>")
         body.append(
             "<script>var _nlq=" + json.dumps(_qv, ensure_ascii=False) + ";" + r"""
 function _esc(s){return (s||'').replace(/</g,'&lt;')}
-function _wait(t){document.getElementById('nlout').innerHTML=
- '<div class=nl-wait><div class=nl-spin></div>'+t+'</div>'}
-function _badge(cls,txt){return '<span class=nl-badge '+cls+'>'+txt+'</span>'}
+function _wait(t){document.getElementById('nlout').textContent=t}
 function _nlShow(j){
  var o=document.getElementById('nlout');
- if(!j.ok){o.innerHTML='<div class="card" style="margin-top:14px;color:var(--color-err,#f85149)">失败：'
+ if(!j.ok){o.innerHTML='<div class="card" style="color:var(--color-err,#f85149)">失败：'
   +_esc(j.err||'未知')+'</div>';return;}
- if(j.empty){o.innerHTML='<div class="card dim" style="margin-top:14px">'+_esc(j.msg)+'</div>';return;}
- var src=j.cached?_badge('cache','缓存复用'):_badge('live','现算 '+(j.elapsed_s||'?')+'s');
- if(j.degraded)src+=_badge('deg','⚠ 降级拼接');
- var h='<div class=nl-ans><div class=nl-ans-h><span class=t>📋 答案</span>'+src+'</div>'
-  +'<pre>'+_esc(j.answer)+'</pre></div>';
+ if(j.empty){o.innerHTML='<div class="card dim">'+_esc(j.msg)+'</div>';return;}
+ var src='来源:multi_agent'+(j.cached?' · 缓存':' · 现算 '+(j.elapsed_s||'?')+'s')
+  +(j.degraded?' · ⚠降级拼接':'');
+ var h='<div class="sec"><div class=dim>'+src+'</div>'
+  +'<pre class=nl-ans>'+_esc(j.answer)+'</pre></div>';
  if(j.specialists&&j.specialists.length){
-  h+='<div style="margin-top:16px" class=dim>下钻：'+j.specialists.length
-   +' 条 specialist 调用链</div>';
+  h+='<h2 style="margin-top:18px">下钻 · '+j.specialists.length
+   +' 条 specialist 调用链</h2>';
   j.specialists.forEach(function(s){
-   h+='<details class=nl-spec><summary><span class=sname>【'
-    +_esc(s.specialist)+'】</span><span class=sq>'+_esc(s.sub_q)+'</span>'
-    +(s.calls&&s.calls.length?'<span class=scnt>工具调用 '+s.calls.length+'</span>':'')
-    +'</summary><div class=sbody><pre>'+_esc(s.answer)+'</pre>';
+   h+='<details class=nl-spec><summary>【'+_esc(s.specialist)+'】'
+    +'<span class=dim>'+_esc(s.sub_q)+'</span></summary>'
+    +'<div class="card sbody"><pre>'+_esc(s.answer)+'</pre>';
    if(s.calls&&s.calls.length){
     s.calls.forEach(function(c){
-     h+='<div class=nl-call><b>'+_esc(c.tool)+'</b> '+_esc(JSON.stringify(c.args))
+     h+='<div class=nl-call>· <b>'+_esc(c.tool)+'</b> '+_esc(JSON.stringify(c.args))
       +'<br>→ '+_esc(c.res)+'</div>';});}
    h+='</div></details>';});}
  o.innerHTML=h;}
