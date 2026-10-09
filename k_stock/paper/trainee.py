@@ -18,6 +18,7 @@
       [--run poc_x.json] [--dry-run]
   python k_stock/paper/trainee.py routine [--dry-run]        # 每日训练例程
   python k_stock/paper/trainee.py board                      # 成绩单（vs main 基准）
+  python k_stock/paper/trainee.py grad-check                 # 毕业验收判定（建议面，不自动改档案）
   python k_stock/paper/trainee.py hire chaser --source qd    # 雇佣（仅 live；A3 配置面）
   python k_stock/paper/trainee.py fire chaser --source qd    # 解雇（注册表行 status=ended）
   python k_stock/paper/trainee.py hires                      # 雇佣关系列表
@@ -337,6 +338,47 @@ def scoreboard(db: Path | None = None) -> list[dict]:
     return rows
 
 
+# ---------------- 毕业验收判定（K-STOCK-043：建议面） ----------------
+
+def graduation_check(db: Path | None = None) -> dict:
+    """毕业验收：board 四判据 vs 档案 graduation 线逐条核对。
+
+    建议面哲学（与 hire 同款）：判定自动化、变更留人——达标只输出
+    「建议改 live」，档案 status 变更仍由老板复核后手改 JSON。
+    四判据 = 实习天数 / 最大回撤 / 对账通过 / 相对基准超额 > 0。"""
+    rows = {r["id"]: r for r in scoreboard(db)}
+    main = rows.get("main", {})
+    out = []
+    for prof in list_profiles():
+        r = rows.get(prof["id"], {})
+        grad = prof.get("graduation", {})
+        base = {"id": prof["id"], "name": prof.get("name"),
+                "status": prof.get("status")}
+        if not r.get("days"):
+            out.append({**base, "eligible": False,
+                        "reason": "无净值快照（未开账或未跑 routine）"})
+            continue
+        min_days = int(grad.get("min_days", 20))
+        dd_line = -abs(float(grad.get("max_drawdown_pct", 15)))
+        checks = {
+            "days": {"need": f">= {min_days}", "have": r["days"],
+                     "pass": r["days"] >= min_days},
+            "max_dd": {"need": f">= {dd_line:g}%", "have": r["max_dd_pct"],
+                       "pass": r["max_dd_pct"] >= dd_line},
+            "verify": {"need": "100%", "have": "100%" if r["verify_ok"] else "异常",
+                       "pass": bool(r["verify_ok"])},
+        }
+        bench = grad.get("bench", "main")
+        excess = round(r["cum_pct"] - main.get("cum_pct", 0.0), 2)
+        checks["excess"] = {"need": f">0 vs {bench}", "have": excess,
+                            "pass": excess > 0}
+        ok = all(c["pass"] for c in checks.values())
+        out.append({**base, "checks": checks, "eligible": ok,
+                    "suggest": ("达标 → 建议老板复核后改档案 status=live"
+                                if ok else "未达标 → 继续 training")})
+    return {"ok": True, "rows": out}
+
+
 # ---------------- A2 历史重放预筛（v0.4） ----------------
 
 def replay(run_path: str | None = None, days: int = 20, start: str | None = None,
@@ -506,6 +548,10 @@ def main(argv=None) -> int:
     p.add_argument("--json", action="store_true", help="单行 JSON 输出（portal 子进程用）")
     p.set_defaults(fn=_cmd_board)
 
+    p = sub.add_parser("grad-check", help="毕业验收判定（建议面，不自动改档案）")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=_cmd_grad_check)
+
     p = sub.add_parser("hire", help="雇佣：策略源路由到 live 交易员（仅改注册表）")
     p.add_argument("trader")
     p.add_argument("--source", required=True, help="qd / qpzm / ai_team")
@@ -572,6 +618,28 @@ def _cmd_routine(args) -> int:
         print(f"  {t['name']}({t['id']}): 成交 {t['settled']} 搁置/拒绝 {t['rejected']}"
               f" 挂止损 {len(t['stops_set'])} 触发 {t['stop_triggered']}"
               + (f" 快照 {mk.get('total'):,.2f}" if mk else ""))
+    return 0
+
+
+def _cmd_grad_check(args) -> int:
+    r = graduation_check(args.db_path)
+    if getattr(args, "json", False):
+        print(json.dumps(r, ensure_ascii=False))
+        return 0
+    print("毕业验收判定（建议面 · 变更由老板复核后手改档案 JSON）:")
+    hit = False
+    for row in r["rows"]:
+        if row.get("reason"):
+            print(f"  {row['name']}({row['id']}): {row['reason']}")
+            continue
+        marks = " ".join(
+            f"{k}={'✓' if c['pass'] else '✗'}({c['have']}/{c['need']})"
+            for k, c in row["checks"].items())
+        print(f"  {row['name']}({row['id']}) [{row['status']}]: {marks}"
+              f" → {row['suggest']}")
+        hit = hit or row["eligible"]
+    if not any(row.get("eligible") for row in r["rows"]):
+        print("  （当前无达标交易员——毕业线见 trainees/*.json graduation 段）")
     return 0
 
 
