@@ -65,6 +65,27 @@ def list_profiles() -> list[dict]:
     return out
 
 
+# status 口径（P-5 止损档案化新增）：training/live=训练链；design=仅重放预筛；
+# ops=运营账本档案（main/us_qingping 等）——只参与止损档案化与 board 展示，
+# 不进 routine/settle/exec/毕业链（运营账本自有闭环，勿双跑）。
+OPS_STATUS = "ops"
+
+
+def stop_dist_for(account: str) -> float | None:
+    """账户止损距离档案化读取（K-STOCK-077 P-5）：trainees/<account>.json
+    params.stop_dist_pct。档案缺失/未配 → None（调用方自行回退或跳过）。
+    替代 cli.py 硬编码 US_STOP_DIST——改档案 JSON 即生效，零代码变更。"""
+    p = TRAINEE_DIR / f"{account}.json"
+    if not p.exists():
+        return None
+    try:
+        prof = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    dist = prof.get("params", {}).get("stop_dist_pct")
+    return float(dist) if dist else None
+
+
 def _newest_ai_run() -> Path:
     runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
                   if not x.name.startswith(("poc_qd_", "poc_qpzm_", "poc_qpzmus_")))
@@ -226,9 +247,12 @@ def exec_for(run_path: str | None = None, who: list[str] | None = None,
 
 def auto_stops(who: list[str] | None = None, dry_run: bool = False,
                db: Path | None = None) -> dict:
-    """按档案 stop_dist_pct 给子账本持仓挂初始止损（成本锚定；已有止损不覆盖）。"""
+    """按档案 stop_dist_pct 给子账本持仓挂初始止损（成本锚定；已有止损不覆盖）。
+    P-5 起 ops 运营账本（main/us_qingping）同样按档案参与挂止损——机制统一，
+    main 是否挂由档案 stop_dist_pct 决定（null=未拍板不挂）。"""
     profiles = list_profiles() if not who else [load_profile(t) for t in who]
-    profiles = [p for p in profiles if p.get("status") in ("training", "live")]
+    profiles = [p for p in profiles
+                if p.get("status") in ("training", "live", OPS_STATUS)]
     market = ParquetMarket()
     out = {"set": [], "skip": [], "dry_run": dry_run}
     for prof in profiles:
@@ -332,8 +356,10 @@ def scoreboard(db: Path | None = None) -> list[dict]:
     main_eng = PaperEngine(con_db, market, account="main")
     rows.append({"id": "main", "name": "主交易台", "status": "live",
                  **_stats(main_eng, "main")})
-    # 训练账本
+    # 训练账本（ops 且 id=main 跳过：上面基准行已含，防重复行）
     for prof in list_profiles():
+        if prof["id"] == "main":
+            continue
         eng = _engine_for(prof, market, con_db)
         rows.append({"id": prof["id"], "name": prof["name"],
                      "style": prof.get("style"), "status": prof.get("status"),
@@ -353,6 +379,8 @@ def graduation_check(db: Path | None = None) -> dict:
     main = rows.get("main", {})
     out = []
     for prof in list_profiles():
+        if prof.get("status") == OPS_STATUS:
+            continue  # 运营账本不参与毕业验收（无 graduation 段，避免噪声行）
         r = rows.get(prof["id"], {})
         grad = prof.get("graduation", {})
         base = {"id": prof["id"], "name": prof.get("name"),
@@ -590,9 +618,13 @@ def _cmd_list(args) -> int:
     print(f"交易员名册（{len(rows)}）:")
     for p in rows:
         pr = p.get("params", {})
-        print(f"  [{p.get('status','?'):>8}] {p['id']:<8} {p['name']}  {p.get('style','')}"
-              f"  单票≤{pr.get('max_pos_pct',0):.0%} 总仓≤{pr.get('max_total_pct',0):.0%}"
-              f" 止损-{pr.get('stop_dist_pct',0):.0%} conf≥{pr.get('conf_floor',0):.2f}")
+        sd = pr.get("stop_dist_pct")
+        cf = pr.get("conf_floor")
+        print(f"  [{p.get('status','?'):>8}] {p['id']:<8} {p['name']}  {p.get('style') or ''}"
+              f"  单票≤{(pr.get('max_pos_pct') or 0):.0%}"
+              f" 总仓≤{(pr.get('max_total_pct') or 0):.0%}"
+              f" 止损{('-' + format(sd, '.0%')) if sd else '未配'}"
+              f" conf≥{'-' if cf is None else format(cf, '.2f')}")
     return 0
 
 

@@ -24,13 +24,19 @@ sys.path.insert(0, str(HERE))
 
 from engine import PaperEngine, Reject          # noqa: E402
 from market import ParquetMarket                # noqa: E402
+from trainee import stop_dist_for               # noqa: E402  P-5 止损档案化
 
 DATA_DIR = HERE.parent / "data"
 DEFAULT_DB = DATA_DIR / "paper.db"
 
-# US 账本默认止损距离（K-STOCK-045c G2）：青萍信号不带止损参数、档案体系不覆盖 US
-# 账本——保守默认档 8% 成本锚定（与训练档案 stop_dist_pct 同语义）；档案化留二期
+# US 账本止损距离：P-5 起档案化（trainees/us_qingping.json params.stop_dist_pct），
+# 本常量降级为档案缺失时的回退默认（8% 成本锚定，K-STOCK-045c 原值）。
 US_STOP_DIST = 0.08
+
+
+def _stop_dist_of(aid: str) -> float:
+    """档案化止损距离：trainees/<aid>.json 优先，缺失回退 US_STOP_DIST。"""
+    return stop_dist_for(aid) or US_STOP_DIST
 
 
 def _engine(args) -> PaperEngine:
@@ -159,6 +165,20 @@ def cmd_settle(args) -> int:
         print(f"  ❌ #{x['id']} {x['stock']}: {x['why']}")
     if not args.dry_run:
         _print_eq(e)
+        # P-5 main 止损拍板机制：距离读 trainees/main.json params.stop_dist_pct
+        # （当前 null=未拍板不挂，零行为变化）；老田填值后此路径即自动生效。
+        _d = stop_dist_for("main")
+        if _d:
+            _stops = []
+            for pos in e.positions("main"):
+                if pos.get("stop_price") is not None:
+                    continue
+                _stop = round(pos["avg_cost"] * (1 - _d), 2)
+                e.set_stop(pos["stock"], _stop, account_id="main")
+                _stops.append(f"{pos['stock']}@{_stop}")
+            if _stops:
+                print(f"  🛡️ main 止损已挂 {len(_stops)} 笔（-{_d:.0%} 成本锚定）: "
+                      + ", ".join(_stops))
     # US 独立账本 pass（K-STOCK-044 M3）：us_% 账本 settle 前自动 refresh 行情缓存。
     # 红队审查 045a FIX-2：US 段整体 try——SPY 缓存缺失+refresh 失败的组合会让
     # settle() 抛 FileNotFoundError 炸 CLI（main 已成交但 exit 非零、mark 不跑）。
@@ -182,19 +202,22 @@ def cmd_settle(args) -> int:
                 print(f"  ⚠️ refresh 失败: {w}")
             if not args.dry_run:
                 _print_eq(e_us)
-            # G2（K-STOCK-045c）：成交后自动挂默认止损（成本锚定 8%；已有止损不覆盖——
-            # 同 trainee auto_stops 口径）。pending 未成交不挂（无成本锚）。
+            # G2（K-STOCK-045c，P-5 档案化）：成交后自动挂默认止损（成本锚定；
+            # 距离读 trainees/<aid>.json——us_qingping=0.08 档案承载，缺失回退
+            # US_STOP_DIST。已有止损不覆盖——同 trainee auto_stops 口径。
+            # pending 未成交不挂（无成本锚）。
             stops_set = []
             for aid2, e2 in us["engines"]:
+                dist = _stop_dist_of(aid2)
                 for pos in e2.positions(aid2):
                     if pos.get("stop_price") is not None:
                         continue
-                    stop = round(pos["avg_cost"] * (1 - US_STOP_DIST), 2)
+                    stop = round(pos["avg_cost"] * (1 - dist), 2)
                     if not args.dry_run:
                         e2.set_stop(pos["stock"], stop, account_id=aid2)
                     stops_set.append(f"{aid2}:{pos['stock']}@{stop}")
             if stops_set:
-                print(f"  🛡️ US 默认止损已挂 {len(stops_set)} 笔（-{US_STOP_DIST:.0%} 成本锚定）: "
+                print(f"  🛡️ US 默认止损已挂 {len(stops_set)} 笔（成本锚定）: "
                       + ", ".join(stops_set))
     return 0
 
