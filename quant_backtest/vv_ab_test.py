@@ -22,19 +22,27 @@ WINDOWS = [5, 10, 20]
 
 def load_pool():
     sigs, dup = [], 0
+    bad = [0]
     seen = set()
     with open(POOL, encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
+            line = line.strip().lstrip("\ufeff")
             if not line:
                 continue
-            d = json.loads(line)
-            key = (d["code"], d["type"], d["dt"])
+            try:
+                d = json.loads(line)
+                key = (d["code"], d["type"], d["dt"])
+            except (json.JSONDecodeError, KeyError) as e:
+                # 审查 P1-1（077l）：坏行/BOM 容错，计数留痕不中断
+                bad[0] += 1
+                continue
             if key in seen:
                 dup += 1
                 continue
             seen.add(key)
             sigs.append(d)
+    if bad[0]:
+        print(" ! pool 坏行 %d 条跳过" % bad[0])
     return sigs, dup
 
 

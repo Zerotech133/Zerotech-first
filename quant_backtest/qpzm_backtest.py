@@ -164,9 +164,19 @@ def load_jev_replay(path=JEV_REPLAY_PATH):
     for d, by_code in payload.get("series", {}).items():
         d_int = int(d.replace("-", ""))
         for code, rec in by_code.items():
-            rows.setdefault(d_int, {})[code] = float(rec.get("score", 50.0))
+            # 审查 P0（077l）：replay 归档键是 sz301047/gb_nvda 市场形态，
+            # 回测 wide 列是 6 位数字码——双形态都写入，命中为准
+            c6 = str(code).split(".")[0][-6:]
+            rows.setdefault(d_int, {})[c6] = float(rec.get("score", 50.0))
+            if str(code) != c6:
+                rows[d_int][str(code)] = float(rec.get("score", 50.0))
     mat = pd.DataFrame.from_dict(rows, orient="index").sort_index()
-    return mat, payload.get("meta", {})
+    meta = payload.get("meta", {})
+    # 审查 P2-1（077l）：末日为重放时刻前部分数据，剔除防半日偏置
+    if meta.get("partial_last_day") and len(mat) > 1:
+        mat = mat.iloc[:-1]
+        meta["partial_last_day_dropped"] = str(mat.index[-1])
+    return mat, meta
 
 
 def combine_score(tech, rps_mix, env_df, buy_th=75.0, obs_th=50.0,
