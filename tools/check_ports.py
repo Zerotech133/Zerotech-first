@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 REGISTRY = {
-    8091: "灵界门户API(portal_api.py)",
+    8091: "灵零门户API(portal_api.py)",
     8094: "零界驾驶舱(home_server.py)",
     8080: "nginx ai-portal(Docker)",
     3000: "Open WebUI(Docker)",

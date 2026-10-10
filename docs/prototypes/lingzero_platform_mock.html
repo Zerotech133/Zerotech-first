@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>灵零 · 全平台统一入口 Demo（v1 供拍板）</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--txt:#e6edf3;--dim:#8b949e;
+--link:#58a6ff;--gold:#d29922;--green:#3fb950;--red:#f85149;--purple:#bc8cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.7;padding-bottom:60px}
+.wrap{max-width:1140px;margin:0 auto;padding:18px}
+h1{font-size:22px}h2{font-size:16px;color:var(--dim);margin:32px 0 12px;border-left:3px solid var(--gold);padding-left:10px}
+.sub{color:var(--dim);font-size:12.5px}
+.card{background:var(--panel);border:1px solid #21262d;border-radius:12px;padding:15px 17px;margin:10px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:860px){.grid2,.grid4{grid-template-columns:1fr}}
+.pill{display:inline-block;padding:5px 12px;border:1px solid var(--border);border-radius:999px;color:var(--dim);font-size:12px;margin-right:6px}
+.pill.on{color:var(--txt);border-color:var(--gold);font-weight:600}
+/* 顶栏 */
+.topbar{position:sticky;top:0;z-index:99;display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 14px;background:rgba(13,17,23,.94);border-bottom:1px solid var(--border);backdrop-filter:blur(6px)}
+.tb{padding:5px 12px;border:1px solid var(--border);border-radius:999px;color:var(--dim);font-size:12.5px;text-decoration:none}
+.tb.on{color:#e6edf3;border-color:#58a6ff;font-weight:600}
+.flow{color:var(--gold);font-size:11px;font-weight:600;letter-spacing:1px}
+/* 项目卡 */
+.proj .bar{height:7px;background:#21262d;border-radius:4px;overflow:hidden;margin:8px 0 4px}
+.proj .bar i{display:block;height:100%;border-radius:4px}
+.proj .meta{font-size:11.5px;color:var(--dim);display:flex;justify-content:space-between}
+.lamp{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+/* 飞书卡 */
+.fs{border:1px solid #2a3a52;border-radius:12px;background:#141a24;padding:13px 15px;margin:9px 0}
+.fs .head{display:flex;justify-content:space-between;font-size:12px;color:#708599;border-bottom:1px solid #22303f;padding-bottom:6px;margin-bottom:8px}
+.fs .btn{display:inline-block;background:#334b6e;color:#fff;border-radius:6px;padding:4px 14px;font-size:12.5px;cursor:pointer;margin:8px 6px 0 0;border:0}
+.fs .btn.pri{background:#3370ff}
+.fs .done{color:var(--green);font-size:12.5px}
+.fs .detail{display:none;background:#0f141c;border:1px solid #22303f;border-radius:8px;padding:10px;margin-top:8px;font-size:12.5px;color:#c9d1d9}
+.fs .detail.open{display:block}
+.toast{position:fixed;right:20px;bottom:20px;background:#1f6feb;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;display:none;z-index:200;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.loop{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;margin:6px 0}
+.loop b{background:#1c2a3f;border:1px solid #2a3a52;border-radius:8px;padding:4px 10px;color:#9ec1ff;font-weight:600}
+.loop i{color:var(--dim);font-style:normal}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid #21262d;padding:7px 10px;text-align:left}
+th{background:#1c2129;color:var(--dim);white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="flow">⚡ 动线</span>
+  <a class="tb" href="#">🤖 晨报</a><a class="tb" href="#">🌅 盘前</a>
+  <a class="tb" href="#">🚦 信号</a><a class="tb" href="#">📺 大屏</a>
+  <a class="tb on" href="#">🌇 盘后</a><a class="tb" href="#">🧾 模拟仓</a>
+  <span style="color:#30363d;margin:0 4px">|</span>
+  <a class="tb" href="#">🏛 门户</a><a class="tb" href="#">📈 量化</a>
+  <a class="tb" href="#">🕵 情报</a><a class="tb" href="#">🎬 创作</a>
+  <a class="tb" href="#">💻 开发</a><a class="tb" href="#">⚙ 系统</a>
+</div>
+<div class="wrap">
+  <div>
+    <span class="pill on">灵零 LingZero · 平台总 Demo v1</span>
+    <span class="pill">拍板后开发 · 不再垒代码</span>
+    <span class="pill">数据为示意</span>
+  </div>
+  <h1>🈳 灵零 —— 一个人的 AI 公司 · 统一入口</h1>
+  <div class="sub">更名公告：灵界 → <b style="color:var(--gold)">灵零</b>（灵性之灵 + 大写的零）· 本页=拍板基准稿：统一入口 + 七项目进度 + 飞书双向联动</div>
+
+  <h2>一、统一入口（双门）</h2>
+  <div class="grid2">
+    <div class="card"><b>📱 门 A：飞书 —— 指令与进度的总线</b>
+      <p class="sub" style="margin-top:6px">人只对飞书说话：下指令、收进度、批事项、下钻详情。本地七项目全部经飞书回报（已有 lark_card 9104 卡片回调基建 + feishu_bot WS 长连接）。<b>飞书不是通知栏，是遥控器。</b></p></div>
+    <div class="card"><b>🖥 门 B：门户 —— 深读与操作台</b>
+      <p class="sub" style="margin-top:6px">浏览器进 8091：动线六步 + 五域全入口 + 统一卡下钻。飞书卡片里的「详情」按钮全部深链到门户对应页。</p></div>
+  </div>
+
+  <h2>二、七项目进度墙（每完成到点 → 飞书自动回报）</h2>
+  <div class="grid4">
+    <div class="card proj"><span class="lamp" style="background:var(--gold)"></span><b>k_stock 选股产线</b>
+      <div class="bar"><i style="width:72%;background:var(--gold)"></i></div>
+      <div class="meta"><span>影子期 Day7/判据 10-15</span><span>72%</span></div></div>
+    <div class="card proj"><span class="lamp" style="background:var(--green)"></span><b>纸面仓·训练体系</b>
+      <div class="bar"><i style="width:85%;background:var(--green)"></i></div>
+      <div class="meta"><span>10-16 开闸闭环</span><span>85%</span></div></div>
+    <div class="card proj"><span class="lamp" style="background:var(--green)"></span><b>知识图谱 KG</b>
+      <div class="bar"><i style="width:90%;background:var(--green)"></i></div>
+      <div class="meta"><span>死角收编完成</span><span>90%</span></div></div>
+    <div class="card proj"><span class="lamp" style="background:var(--green)"></span><b>JEV 舆情引擎</b>
+      <div class="bar"><i style="width:88%;background:var(--green)"></i></div>
+      <div class="meta"><span>双引擎提案待批 D</span><span>88%</span></div></div>
+    <div class="card proj"><span class="lamp" style="background:var(--link)"></span><b>组织平台 A0</b>
+      <div class="bar"><i style="width:60%;background:var(--link)"></i></div>
+      <div class="meta"><span>日报转正 10-16</span><span>60%</span></div></div>
+    <div class="card proj"><span class="lamp" style="background:var(--purple)"></span><b>算法商品市场</b>
+      <div class="bar"><i style="width:55%;background:var(--purple)"></i></div>
+      <div class="meta"><span>/market 10-20</span><span>55%</span></div></div>
+    <div class="card proj"><span class="lamp" style="background:var(--gold)"></span><b>研发部·多Agent</b>
+      <div class="bar"><i style="width:40%;background:var(--gold)"></i></div>
+      <div class="meta"><span>宪法+devtask 已落</span><span>40%</span></div></div>
+    <div class="card proj"><span class="lamp" style="background:var(--green)"></span><b>+ 灵零门户本体</b>
+      <div class="bar"><i style="width:95%;background:var(--green)"></i></div>
+      <div class="meta"><span>P4 拆分 10-17</span><span>95%</span></div></div>
+  </div>
+  <div class="sub">回报规则：项目每过一个里程碑点（如「撮合验收✓」「批0合并✓」），自动化推飞书卡片；无需人问。</div>
+
+  <h2>三、飞书联动（可交互演示 · 点按钮试试）</h2>
+  <div class="grid2">
+    <div class="fs">
+      <div class="head"><span>🤖 灵零 · 菜鸟</span><span>指令卡</span></div>
+      <b>📤 下指令</b>
+      <div class="sub">「让投研部看看 603188，明天给结论」</div>
+      <button class="btn pri" onclick="fs(this,'已建工单 T-1012-07 → 投研部 · 明早随日报回')">派单</button>
+      <button class="btn" onclick="fs(this,'已转 Hermes 速查：603188 现价 12.34')">快速查</button>
+      <div class="detail"><b>下钻：工单详情</b><br>负责人：投研部-A · 分支 task/T-1012-07 · 评审门 0/3<br>进度：底料打包完（Hermes）→ 分析中</div>
+    </div>
+    <div class="fs">
+      <div class="head"><span>📊 灵零 · k_stock 产线</span><span>进度卡</span></div>
+      <b>📥 自动回报</b>
+      <div class="sub">影子期 Day7：5 票全部 done · 延迟 54~66s · 触达判据还差 2 日</div>
+      <button class="btn" onclick="tog(this)">下钻明细</button>
+      <div class="detail">影子账本：10-09 起 5 票全 done · degraded=false<br>合流判据：双判据合格 → 10-15 触发合流<br><a href="#" style="color:#58a6ff">门户深链 → /kg/shadow</a></div>
+    </div>
+    <div class="fs">
+      <div class="head"><span>⚖ 灵零 · 裁决窗</span><span>审批卡</span></div>
+      <b>✍ 待老田批准</b>
+      <div class="sub">B8 解禁方案甲（分档锚定）· 10-15 自动生效前最后确认</div>
+      <button class="btn pri" onclick="okfs(this,'✓ 已批准，10-15 自动落定，回执已存档')">批准</button>
+      <button class="btn" onclick="fs(this,'已退回：附言『再攒 2 日样本』')">退回</button>
+    </div>
+    <div class="fs">
+      <div class="head"><span>💻 灵零 · 研发部</span><span>进度卡</span></div>
+      <b>📥 多 Agent 开发进度</b>
+      <div class="sub">P4 批 0 预演 PASS · devtask 调度器上线 · 试点 3 单待派</div>
+      <button class="btn" onclick="tog(this)">下钻看板</button>
+      <div class="detail">工单板：T-DEMO done ✓ · 试点单待批 0 开闸<br>评审门：mixin ✓ 导航 ✓ 端口 ✓<br><a href="#" style="color:#58a6ff">门户深链 → /dev 看板</a></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="loop"><b>飞书指令</b><i>→</i><b>feishu_bot WS</b><i>→</i><b>菜鸟解析/建单</b><i>→</i><b>本地执行(devtask/automation)</b><i>→</i><b>里程碑触发</b><i>→</i><b>lark_card 9104 回推卡片</b><i>→</i><b>按钮回调=下钻/审批/再指令</b><i>↺ 循环</i></div>
+    <div class="sub">复用已有：WS 长连接（send_feishu 凭证✓）· 卡片回调 9104（在线✓）· 卡片下钻交互判例（此前项目已试）· 新增的只是「进度事件→卡片」的映射层。</div>
+  </div>
+
+  <h2>四、拍板点（拍完即开发）</h2>
+  <div class="card">
+    <table>
+      <tr><th>#</th><th>拍板项</th><th>建议</th></tr>
+      <tr><td>1</td><td>更名灵零全量生效（含门户页面标题/口号）</td><td>✅ 本轮已全仓改，门户 UI 文案随批0</td></tr>
+      <tr><td>2</td><td>飞书为唯一指令总线？门户保留双入口</td><td>双门并行：飞书管「说」，门户管「看深」</td></tr>
+      <tr><td>3</td><td>进度事件枚举（哪些点必报）</td><td>每项目 3-5 个里程碑点，超期/失败即时报</td></tr>
+      <tr><td>4</td><td>卡片下钻=飞书内展开 or 深链门户</td><td>轻明细内展开 + 重页面深链（本 Demo 形制）</td></tr>
+      <tr><td>5</td><td>施工顺序</td><td>进度映射层(2d)→卡片互动(2d)→统一入口收口(1d)</td></tr>
+    </table>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+function fs(btn,msg){var d=btn.parentElement.querySelector('.detail');
+  if(!d){d=document.createElement('div');d.className='detail';btn.parentElement.appendChild(d);}
+  d.classList.add('open');d.innerHTML='<span class="done">✓ '+msg+'</span>';
+  toast(msg);}
+function okfs(btn,msg){btn.textContent='已批准 ✓';btn.disabled=true;btn.style.background='#238636';
+  toast(msg);var p=btn.parentElement;p.querySelector('.sub').innerHTML+='<br><span class="done">✓ 已批准存档</span>';}
+function tog(btn){var d=btn.parentElement.querySelector('.detail');d.classList.toggle('open');}
+var tt;function toast(m){var t=document.getElementById('toast');t.textContent='🤖 '+m;t.style.display='block';
+  clearTimeout(tt);tt=setTimeout(function(){t.style.display='none'},2600);}
+</script>
+</body>
+</html>
