@@ -19,7 +19,6 @@ PG 连接：默认 127.0.0.1:5442 quant_user/quant_system（零界 docker newqua
 """
 
 import argparse
-import json
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -287,6 +286,25 @@ def load_securities(cur):
 
 
 # ── 菜鸟 MySQL（拉取式只读） ──────────────────────────────────────────
+def _load_env_local_dsn():
+    """CAINIAO_MYSQL_DSN 回落链：env 未设时读同目录 .env.local（与
+    rps_resonance 的 XT_DATA_KEY 同模式），只填空不覆盖显式 env。"""
+    if os.environ.get("CAINIAO_MYSQL_DSN", "").strip():
+        return
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(here, ".env.local")
+    if not os.path.isfile(p):
+        return
+    try:
+        for line in open(p, encoding="utf-8"):
+            line = line.strip()
+            if line.startswith("CAINIAO_MYSQL_DSN=") and not line.lstrip().startswith("#"):
+                os.environ["CAINIAO_MYSQL_DSN"] = line.split("=", 1)[1].strip()
+                return
+    except OSError:
+        pass
+
+
 def parse_dsn(dsn):
     u = urlsplit(dsn)
     return dict(host=u.hostname, port=u.port or 3306, user=u.username,
@@ -295,6 +313,7 @@ def parse_dsn(dsn):
 
 
 def get_cainiao_conn():
+    _load_env_local_dsn()
     dsn = os.environ.get("CAINIAO_MYSQL_DSN", "").strip()
     if not dsn:
         print("[exit 3] 缺少菜鸟凭据：请设置环境变量 CAINIAO_MYSQL_DSN"
@@ -308,9 +327,14 @@ def get_cainiao_conn():
         sys.exit(EXIT_MISSING_CREDENTIAL)
     # pymysql 无 read_only 连接参数（mysql-connector 专属 API）——
     # 只读防线两层：账号权限（xmap_ro 仅 SELECT）为真闸 + 会话级只读为兜底。
-    conn = pymysql.connect(**parse_dsn(dsn),
-                           connect_timeout=10, cursorclass=__import__(
-                               "pymysql.cursors", fromlist=["DictCursor"]).DictCursor)
+    try:
+        conn = pymysql.connect(**parse_dsn(dsn),
+                               connect_timeout=10, cursorclass=__import__(
+                                   "pymysql.cursors", fromlist=["DictCursor"]).DictCursor)
+    except Exception as e:
+        print(f"[exit 3] 菜鸟 MySQL 不可达：{e}（host 见 DSN；"
+              "内网 192.168.203.x 需 VPN/跳板，自动化重跑即可）", file=sys.stderr)
+        sys.exit(EXIT_MISSING_CREDENTIAL)
     try:
         with conn.cursor() as c:
             c.execute("SET SESSION TRANSACTION READ ONLY")
