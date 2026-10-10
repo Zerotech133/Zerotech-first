@@ -116,6 +116,32 @@ def main():
         print("    %s：%s" % (label, "存在（%s）" % datetime.fromtimestamp(
             f.stat().st_mtime).strftime("%H:%M") if f.exists() else "缺失"))
 
+    # 4.5 automation 产物 mtime 断言（K-STOCK-088 P0-3：automation「ACTIVE」≠「当日触发」，
+    #     09:10 cowbridge 曾漏跑靠 V6-5 产物时间戳实锤——此处机器化，漏跑当日即知）
+    print("\n[4.5] automation 产物断言（mtime 须≥目标日）：")
+    stale = []
+    for path, label in (
+            (BASE.parent / "Hermes" / "cowbridge" / "shadow" / "to-cowagent"
+             / ("daily-%s.sample.md" % d), "09:10 cowbridge 交换"),
+            (SHADOW / ("daily_report_%s.md" % d), "17:10 影子日报"),
+            (BASE.parent / "quant_backtest" / "reports" / "rps_latest.json",
+             "RPS 日更"),
+    ):
+        if not path.exists():
+            print("    ❌ %s：%s 缺失" % (label, path.name))
+            stale.append(label)
+        elif datetime.fromtimestamp(path.stat().st_mtime).strftime(
+                "%Y-%m-%d") < d:
+            print("    ❌ %s：停更于 %s（疑似漏跑）" % (
+                label, datetime.fromtimestamp(
+                    path.stat().st_mtime).strftime("%m-%d %H:%M")))
+            stale.append(label)
+        else:
+            print("    ✅ %s（%s）" % (label, datetime.fromtimestamp(
+                path.stat().st_mtime).strftime("%H:%M")))
+    if stale:
+        print("    **[警示]** %d 项产物断言未过：%s" % (len(stale), "、".join(stale)))
+
     # 5. 三判据快照（复用 eval_shadow CLI，联网取现价；审计修正 K-STOCK-021：
     #    eval 超时/异常不得崩掉整个晨检——否则 --push 简报也发不出）
     print("\n[5] 三判据快照：")
@@ -145,6 +171,9 @@ def main():
             brief.append("- **[FAILED]** %s：%s" % (rr["symbol"], rr.get("error", "?")[:80]))
         if not rows:
             brief.append("- **[警示]** 该日无入账行（若为交易日需排查影子 automation）")
+        if stale:
+            brief.append("- **[产物断言未过]** %s（漏跑当日补跑，勿拖到验收日）"
+                         % "、".join(stale))
         brief += ["- " + x for x in j_lines]
         try:
             tmp = SHADOW / "_morning_brief_tmp.md"
