@@ -1,0 +1,97 @@
+{
+  "_note": "算法商品市场注册表（K-STOCK-087，老田：AI 算法商品化——试看结果+订阅制本地解锁）。source 三源纪律：本文件为源，portal/portal_api.py _algo_market_page 只读渲染；订阅状态由 licenses.json 卡密库判定。sample=静态试看样例（真实输出形态）。subscription.price_hint=内测参考价，正式定价待老田定。",
+  "market": "laotian_algo",
+  "tagline": "本地算法 · 试看结果 · 卡密订阅解锁",
+  "algos": [
+    {
+      "id": "quant_dual",
+      "icon": "⚔",
+      "name": "量子双刀 · 三阶段流水线",
+      "tier": "旗舰",
+      "tagline": "Scanner 全市场扫描 → Screener 多因子筛选 → Signal 交易信号",
+      "desc": "尾盘 14:40 扫描 → 14:55 执行：八重过滤 + Regime 市场分层 + 风控闸门，一条流水线出当日交易信号。",
+      "features": ["八重过滤器", "Regime 分层", "T0 引擎回测", "尾盘定时扫描"],
+      "sample": {
+        "title": "2026-10-10 尾盘扫描输出（节选）",
+        "meta": "扫描 5596 只 → 过滤后 42 → 信号 3",
+        "body": "[{\"code\":\"002230\",\"name\":\"广电运通\",\"action\":\"BUY\",\"score\":87.3,\"regime\":\"trend_up\",\"filters\":\"8/8\",\"entry\":12.45,\"stop\":11.90,\"position\":\"4%\"},\n {\"code\":\"601128\",\"name\":\"常熟银行\",\"action\":\"WATCH\",\"score\":79.1,\"regime\":\"range\",\"filters\":\"7/8\",\"reason\":\"量能未达标\"},\n {\"code\":\"300750\",\"name\":\"宁德时代\",\"action\":\"SKIP\",\"score\":68.5,\"regime\":\"risk_off\",\"reason\":\"市场质量闸门拦截\"}]"
+      },
+      "subscription": {"tier": "pro", "price_hint": "¥2,999/年 · 内测价"}
+    },
+    {
+      "id": "riskguard",
+      "icon": "🛡",
+      "name": "RiskGuard 风控影子评估",
+      "tier": "风控",
+      "tagline": "四条核心规则实时评估每笔信号的市场风险",
+      "desc": "市场质量 / 流动性冲击 / 事件风险 / 仓位集中度四规则引擎，对任何信号给出 PASS / WARN / CRITICAL 三级判定与归因。",
+      "features": ["四规则引擎", "三级判定", "归因明细", "后验校准报告"],
+      "sample": {
+        "title": "信号风控评估（节选）",
+        "meta": "评估 213 笔 · PASS 178 / WARN 24 / CRITICAL 11",
+        "body": "{\"code\":\"600519\",\"verdict\":\"WARN\",\"rules\":{\"market_quality\":{\"state\":\"pass\",\"note\":\"换手率/振幅正常\"},\"liquidity_shock\":{\"state\":\"pass\"},\"event_risk\":{\"state\":\"warn\",\"note\":\"3日内有财报披露\"},\"concentration\":{\"state\":\"pass\"}},\"advice\":\"可建仓，仓位上限降至3%\"}"
+      },
+      "subscription": {"tier": "pro", "price_hint": "¥1,999/年 · 内测价"}
+    },
+    {
+      "id": "chanlun_9dim",
+      "icon": "🧭",
+      "name": "缠论九维结构研判",
+      "tier": "结构",
+      "tagline": "缠论多级别买卖点 + 九维评分共振",
+      "desc": "多级别（日线/60F/15F）三类买卖点识别，叠加九维结构评分，双系统共振才出强信号，压低误报。",
+      "features": ["三类买卖点", "多级别联立", "九维评分", "共振闸门"],
+      "sample": {
+        "title": "缠论×九维共振输出（节选）",
+        "meta": "候选 18 → 共振通过 4",
+        "body": "{\"code\":\"000001\",\"chan\":{\"level\":\"日线\",\"signal\":\"三买\",\"pivot\":\"11.2-11.8\"},\"nine_dim\":{\"total\":76,\"dims\":{\"trend\":9,\"volume\":8,\"position\":7,\"momentum\":9}},\"resonance\":\"STRONG\",\"action\":\"BUY\"}"
+      },
+      "subscription": {"tier": "standard", "price_hint": "¥1,499/年 · 内测价"}
+    },
+    {
+      "id": "jev_sentiment",
+      "icon": "📡",
+      "name": "JEV 消息面情绪研判",
+      "tier": "情报",
+      "tagline": "近 7 天关联新闻多空研判 + 置信度",
+      "desc": "新闻抓取 → 本地大模型逐条 JEV 研判（多/空/中性 + 置信），云源 451 自动切本地回落，输出情绪代理指标。",
+      "features": ["本地 9b 推理", "云断自动回落", "置信度分档", "资产价格口径"],
+      "sample": {
+        "title": "JEV 研判输出（节选）",
+        "meta": "近7日 34 条 · 多 12 / 空 5 / 中性 17",
+        "body": "{\"news\":\"某公司获大额订单公告\",\"bias\":\"bull\",\"conf\":0.82,\"reason\":\"订单占年营收比显著，直接影响资产价格\"}\n{\"news\":\"行业峰会在京召开\",\"bias\":\"neutral\",\"conf\":0.61,\"reason\":\"一般性产业进展，无价格直接影响\"}"
+      },
+      "subscription": {"tier": "standard", "price_hint": "¥999/年 · 内测价"}
+    },
+    {
+      "id": "tdx_backtest",
+      "icon": "🧮",
+      "name": "TDX 回测引擎",
+      "tier": "回测",
+      "tagline": "T0 / 日线双模式策略回测",
+      "desc": "基于 TDX 本地数据仓的回测引擎：BacktestEngine + T0Engine，支持费率/滑点建模、分段绩效归因、参数寻优。",
+      "features": ["T0/日线双模", "费率滑点建模", "分段归因", "参数寻优"],
+      "sample": {
+        "title": "策略回测报告（节选）",
+        "meta": "2024-01 ~ 2026-09 · 612 交易日",
+        "body": "{\"total_return\":\"+38.7%\",\"benchmark\":\"+12.1%\",\"sharpe\":1.42,\"max_dd\":\"-11.3%\",\"win_rate\":\"58.2%\",\"trades\":486,\"best_month\":\"+9.8%\",\"worst_month\":\"-4.1%\"}"
+      },
+      "subscription": {"tier": "pro", "price_hint": "¥1,999/年 · 内测价"}
+    },
+    {
+      "id": "score_ranking",
+      "icon": "🎯",
+      "name": "Score 多因子评分排序",
+      "tier": "选股",
+      "tagline": "全市场多因子打分与梯队排序",
+      "desc": "40+ 因子（动量/量能/位置/资金）PCA 降维 + XGBoost/LightGBM 双模型融合打分，输出梯队化选股名单。",
+      "features": ["40+ 因子", "双模型融合", "PCA 降维", "梯队输出"],
+      "sample": {
+        "title": "当日评分梯队（节选）",
+        "meta": "全市场 5596 只 · T1 梯队 20",
+        "body": "[{\"rank\":1,\"code\":\"002475\",\"score\":91.2,\"tier\":\"T1\"},\n {\"rank\":2,\"code\":\"603986\",\"score\":89.7,\"tier\":\"T1\"},\n {\"rank\":21,\"code\":\"601012\",\"score\":74.5,\"tier\":\"T2\",\"note\":\"量能维度拖累\"}]"
+      },
+      "subscription": {"tier": "standard", "price_hint": "¥1,499/年 · 内测价"}
+    }
+  ]
+}

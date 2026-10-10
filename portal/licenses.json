@@ -1,0 +1,12 @@
+{
+  "_note": "算法商品市场本地卡密库（K-STOCK-087）。licenses=可发的有效卡（key+覆盖范围+到期）；activated_keys=本机已激活卡密（激活即本机解锁对应商品，未激活=试看模式）。algos 填 \"all\" 或商品 id 数组（见 algo_market.json）。发卡：往 licenses 里加一条；激活：portal /algo 页输入卡密，或直接把 key 移入 activated_keys。",
+  "licenses": [
+    {
+      "key": "LTSO-NEIQ8-2026A",
+      "algos": "all",
+      "expiry": "2027-12-31",
+      "note": "老田内测首发卡（全商品·两年）"
+    }
+  ],
+  "activated_keys": []
+}

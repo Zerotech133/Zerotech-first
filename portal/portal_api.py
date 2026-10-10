@@ -684,6 +684,7 @@ DOMAIN_NAV_GROUPS = {
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
             ("🤖 AI 市场", "/aim", "aim"),
+            ("🛒 算法市场", "/algo", "algo"),
             ("🏛 组织架构", "/org", "org"))),
         ("🎖 策略资产", (
             ("🎖 策略中心", "/strategies", "strategies"),
@@ -6298,7 +6299,19 @@ gap:14px;align-items:start}}
             "</a></div>"
             % (st[1], st[0]))
         zones = "".join([
-            _zone("🤖 AI 市场 · 聘请 AI 做商业化", "".join([
+            _zone("🛒 AI 市场 · 算法商品 + 聘请 AI 做商业化", "".join([
+                _card("/algo", "#3fb950", "🛒", "算法商品市场",
+                      "六大核心算法商品化：量子双刀/RiskGuard/缠论九维/"
+                      "JEV 情绪/TDX 回测/Score 排序 · 每款可试看真实"
+                      "输出样例 · 卡密订阅本机解锁",
+                      "%d 款商品 · 已解锁 %d" % (
+                          len((_read_json(os.path.join(
+                              ROOT, "algo_market.json")) or {})
+                              .get("algos", [])),
+                          sum(1 for _a in (_read_json(os.path.join(
+                              ROOT, "algo_market.json")) or {})
+                              .get("algos", [])
+                              if self._license_state(_a.get("id", ""))))),
                 _card("/aim", "#d29922", "🤖", "AI 市场货架",
                       "11 个可聘岗位：A0 + 投研部五岗 + 专项 AI · 本地模型"
                       "零 token 成本", "在岗 11 · 按岗聘请"),
@@ -6482,6 +6495,161 @@ gap:14px;align-items:start}}
                 "「在岗」岗位向 A0 参谋长提任务单（飞书日报通道）· "
                 "「即用」专项 AI 点入即用 · 货架源 portal/ai_market.json"
                 "（上新改注册表即可）· 不构成投资建议</div></body></html>")
+        self._html(body)
+
+    # ── K-STOCK-087 算法商品市场（/algo）：试看结果 + 本地卡密订阅解锁 ──
+    def _license_state(self, algo_id):
+        """订阅状态判定：activated_keys 中任一有效卡（未到期）覆盖
+        algo_id → True。卡密库 portal/licenses.json 存源。"""
+        import time as _t
+        lic = _read_json(os.path.join(ROOT, "licenses.json")) or {}
+        act = set(lic.get("activated_keys", []))
+        today = _t.strftime("%Y-%m-%d")
+        for rec in lic.get("licenses", []):
+            if rec.get("key") not in act:
+                continue
+            if str(rec.get("expiry", "")) < today:
+                continue
+            cov = rec.get("algos", "all")
+            if cov == "all" or algo_id in cov:
+                return True
+        return False
+
+    def _algo_activate(self, key):
+        """卡密激活：合法且未激活的 key 写入 activated_keys（本机解锁）。
+        返回 (ok, msg)。"""
+        import json as _json
+        import time as _t
+        fp = os.path.join(ROOT, "licenses.json")
+        lic = _read_json(fp) or {}
+        key = (key or "").strip().upper()
+        if not key:
+            return False, "请输入卡密"
+        today = _t.strftime("%Y-%m-%d")
+        rec = next((r for r in lic.get("licenses", [])
+                    if str(r.get("key", "")).upper() == key), None)
+        if rec is None:
+            return False, "卡密不存在"
+        if str(rec.get("expiry", "")) < today:
+            return False, "卡密已过期"
+        act = lic.setdefault("activated_keys", [])
+        if key in act:
+            return True, "该卡已激活过（本机已解锁）"
+        act.append(key)
+        try:
+            with open(fp, "w", encoding="utf-8") as f:
+                _json.dump(lic, f, ensure_ascii=False, indent=2)
+        except Exception:
+            return False, "写入卡密库失败（文件被占用？）"
+        return True, "激活成功 · 本机已解锁对应商品"
+
+    def _algo_market_page(self, qs=None):
+        """🛒 算法商品市场：本地算法商品化货架。数据源
+        portal/algo_market.json（注册表存源，只读渲染）+
+        portal/licenses.json（卡密库）。未订阅=试看模式（静态样例
+        真实输出形态）；输入卡密激活后本机解锁。"""
+        import html as _h
+        e = _h.escape
+        toast = ""
+        qs = qs or {}
+        if qs.get("key"):
+            ok, msg = self._algo_activate(qs["key"][0])
+            toast = ("<div style='border:1px solid %s;border-radius:10px;"
+                     "padding:10px 14px;margin:10px 0;font-size:13.5px'>%s%s"
+                     "</div>" % ("#3fb950" if ok else "#f85149",
+                                 "✅ " if ok else "❌ ", e(msg)))
+
+        mkt = _read_json(os.path.join(ROOT, "algo_market.json")) or {}
+        algos = mkt.get("algos", [])
+        n_unlocked = sum(1 for a in algos if self._license_state(
+            a.get("id", "")))
+
+        def _algo_card(a):
+            sid = a.get("id", "")
+            unlocked = self._license_state(sid)
+            if unlocked:
+                badge = ("✅ 已解锁", "#3fb950")
+            else:
+                badge = ("👁 试看模式", "#d29922")
+            sm = a.get("sample", {}) or {}
+            feats = "".join(
+                "<span class='tp' style='cursor:default'>%s</span>"
+                % e(f) for f in a.get("features", []))
+            sub = a.get("subscription", {}) or {}
+            sample_html = ""
+            if sm:
+                sample_html = (
+                    "<details style='margin-top:10px'>"
+                    "<summary style='cursor:pointer;font-size:13px;"
+                    "color:#58a6ff'>👁 试看结果 · %s</summary>"
+                    "<div class='dim' style='font-size:11.5px;margin:"
+                    "6px 0 4px'>%s</div>"
+                    "<pre style='background:#0d1117;border:1px solid "
+                    "#30363d;border-radius:8px;padding:10px;font-size:"
+                    "11.5px;overflow-x:auto;white-space:pre-wrap'>%s</pre>"
+                    "</details>" % (e(sm.get("title", "样例输出")),
+                                    e(sm.get("meta", "")),
+                                    e(sm.get("body", ""))))
+            cta = ("<a class='tp' href='%s'>进入 →</a>" % e(a.get("entry", "/"))
+                   if unlocked else
+                   "<span class='dim' style='font-size:12px'>订阅后开放"
+                   "实时入口 · %s</span>" % e(sub.get("price_hint", "")))
+            return ("<div style='border:1px solid %s;border-radius:12px;"
+                    "background:#161b22;padding:16px 18px'>"
+                    "<div style='display:flex;align-items:baseline;gap:8px'>"
+                    "<span style='font-size:17px;font-weight:700'>%s %s"
+                    "</span>"
+                    "<span style='font-size:11px;color:#8b949e;border:1px "
+                    "solid #30363d;border-radius:10px;padding:1px 8px'>%s"
+                    "</span>"
+                    "<span style='margin-left:auto;font-size:11.5px;color:"
+                    "%s;border:1px solid %s;border-radius:12px;padding:"
+                    "2px 10px'>%s</span></div>"
+                    "<div class='dim' style='font-size:12.5px;margin:"
+                    "8px 0 4px'>%s</div>"
+                    "<div style='font-size:13px;margin-bottom:6px'>%s</div>"
+                    "<div style='display:flex;gap:6px;flex-wrap:wrap'>%s"
+                    "</div>"
+                    "%s"
+                    "<div style='font-size:12.5px;margin-top:10px'>%s</div>"
+                    "</div>"
+                    % (badge[1], e(a.get("icon", "🧩")),
+                       e(a.get("name", "")), e(a.get("tier", "")),
+                       badge[1], badge[1], badge[0],
+                       e(a.get("tagline", "")), e(a.get("desc", "")),
+                       feats, sample_html, cta))
+        grid = "".join(
+            "<div style='display:grid;grid-template-columns:repeat("
+            "auto-fit,minmax(320px,1fr));gap:12px'>%s</div>"
+            % "".join(_algo_card(a) for a in algos))
+        act_form = (
+            "<div class='sec'><h2>🔑 卡密激活（本机解锁）</h2>"
+            "<div class='dim' style='font-size:12.5px;margin-bottom:8px'>"
+            "输入卡密后本机立即解锁对应商品 · 卡密由管理员发放"
+            "（portal/licenses.json 存源）· 试看模式下可查看每款算法的"
+            "真实输出样例</div>"
+            "<form method='get' action='/algo' style='display:flex;"
+            "gap:8px'>"
+            "<input name='key' placeholder='如 LTSO-XXXX-XXXX' style='"
+            "background:#0d1117;border:1px solid #30363d;color:#e6edf3;"
+            "border-radius:8px;padding:8px 12px;font-size:14px;min-width:"
+            "240px'>"
+            "<button type='submit' style='background:#238636;color:white;"
+            "border:none;border-radius:8px;padding:8px 18px;font-size:"
+            "14px;cursor:pointer'>激活</button></form></div>")
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,"
+                "initial-scale=1'><title>🛒 算法商品市场</title>"
+                + self._COCKPIT_CSS + "</head><body>"
+                + pill_nav("algo")
+                + "<h1>🛒 算法商品市场</h1><div class='dim'>"
+                + e(mkt.get("tagline", ""))
+                + " · 共 %d 款商品 · 已解锁 %d 款 · 每款可试看真实输出样例"
+                "</div>" % (len(algos), n_unlocked)
+                + toast + grid + act_form
+                + "<div class='dim' style='margin-top:20px'>商品源 portal/"
+                "algo_market.json · 卡密库 portal/licenses.json · 内测"
+                "参考价以正式发卡为准 · 不构成投资建议</div></body></html>")
         self._html(body)
 
     # ── K-STOCK-037 组织架构图页（/org）：树形岗位图 · 对话统一走超级助手 ──
@@ -23016,6 +23184,9 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/aim":
             # K-STOCK-033 AI 市场：聘请 AI 岗位货架（ai_market.json 存源）
             self._aim_page()
+        elif path == "/algo":
+            # K-STOCK-087 算法商品市场：试看样例+本地卡密订阅解锁
+            self._algo_market_page(qs)
         elif path == "/bt-qpzm" or path.startswith("/bt-qpzm/"):
             # 策略市场 1 号工作台：青萍之末 · 共振选股
             # K-STOCK-032 多页面联动：/bt-qpzm 主页驾驶舱 +
