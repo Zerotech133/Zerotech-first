@@ -156,10 +156,20 @@ def _jev_key():
 
 
 def _jev_judge_one_cloud(title, stocks, timeout=15):
-    """typesafe systemone 云判定（原 jev_judge_one 主体，K-STOCK-083 拆出）。"""
+    """typesafe systemone 云判定（原 jev_judge_one 主体，K-STOCK-083 拆出）。
+
+    K-STOCK-084（2026-10-10 451 根因定位）：CF 对大陆出口 geo-block，
+    全端点 451（"not available in your region"，edge 层、key 校验之前）；
+    走海外出口（本机 7890，SG）实测 systemone 200 全链路恢复 ⇒ typesafe
+    请求统一带 proxies 出站。代理不可达时连接失败 → jev_judge_one 路由
+    自动落本地回落（K-STOCK-083），链路不断，只退化。
+    """
     key = _jev_key()
     if not key or not title:
         return None
+    ts_proxy = os.environ.get("TS_PROXY", "http://127.0.0.1:7890")
+    ts_proxies = {"https": ts_proxy, "http": ts_proxy}
+    timeout = max(timeout, 25)   # 7890 首次建连偶发 >15s（K-STOCK-084 实测）
     tag = ("（关联标的：%s）" % "/".join(stocks)) if stocks else ""
     state = "以下是一条刚采集的财经快讯，请判断其市场影响。\n· %s%s" % (
         title[:80], tag)
@@ -168,7 +178,8 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
     try:
         r = requests.post(
             JEV_BASE + "/systemone", json=body, timeout=timeout,
-            headers={"Authorization": "Bearer %s" % key})
+            headers={"Authorization": "Bearer %s" % key},
+            proxies=ts_proxies)
         r.raise_for_status()
         ans = (r.json() or {}).get("answers", {})
         bias = (ans.get("bias") or {}).get("choice", "")
