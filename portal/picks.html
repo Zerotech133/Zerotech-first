@@ -508,7 +508,10 @@ async function pickDetail(code, el){
   const ct=(row.sources||[]).find(s=>s.s==="chanlun");
   if(ct){const trendTxt={up:"上行",down:"下行"}[ct.trend]||ct.trend||"—";
     rl.push(["结构",`缠论 <b>${esc(ct.tag)}</b>（${esc(trendTxt)}${ct.dt?` · 信号日 ${esc(ct.dt)}`:""}）${ct.entry_px!=null?`，参考介入价 <b class="num">${esc(ct.entry_px)}</b>`:""}——${esc(glossOf(ct))}`]);}
-  if(nb.verdict)rl.push(["决策",`决策链判定 <b>${esc(nb.verdict)}</b>——各条件「当前 → 需要」补齐路径见下方不买决策链明细`]);
+  if(nb.verdict){ /* 二十审：T1(选股层共振)与决策链(择时层)职责不同，冲突时桥接说明 */
+    const bridge=(row.tier==="T1"&&/不买/.test(nb.verdict))
+      ?`<br><span class="dim">层共振=选股（值得关注）· 决策链=择时（是否买点）——共振成立但时机未到，等「当前 → 需要」补齐再动手，不否决标的本身</span>`:"";
+    rl.push(["决策",`决策链判定 <b>${esc(nb.verdict)}</b>——各条件「当前 → 需要」补齐路径见下方不买决策链明细${bridge}`]);}
   else if(cl.stop!=null&&cl.tp2!=null)rl.push(["空间",`缠论刻度：止损 <b class="num">${cl.stop}</b> → TP1 <b class="num">${cl.tp1||"—"}</b> → TP2 <b class="num">${cl.tp2}</b>`]);
   if(rl.length)html+=`<div class="readbox">${rl.map(r=>`<div class="rl"><span class="rk">${r[0]}</span><span>${r[1]}</span></div>`).join("")}</div>`;
   /* 2) 刻度条：日内区间 + 缠论止损/目标位阶 */

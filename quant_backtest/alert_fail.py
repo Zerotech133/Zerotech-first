@@ -48,10 +48,32 @@ def alert(task, code, log=""):
         task, code, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     if log and os.path.isfile(log):
         try:
-            with open(log, encoding="utf-8", errors="replace") as f:
-                tail = f.readlines()[-5:]
+            # 二十一审：日志编码三态——Start-Process 重定向=raw UTF-8；PS5.1
+            # `1> file` 重定向=UTF-16LE(BOM ff fe)；个别旧任务=GBK。原 utf-8
+            # 硬解会让 UTF-16/GBK 的 tail 全变替换符（连英文关键字都丢）。
+            raw = open(log, "rb").read()
+            if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+                txt = raw.decode("utf-16")
+            elif raw[:3] == b"\xef\xbb\xbf":
+                txt = raw.decode("utf-8-sig")
+            else:
+                try:
+                    txt = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    txt = raw.decode("gbk", errors="replace")
+            # 内层 mojibake 逆转：PS 管道按 GBK 解过 python 的 UTF-8 输出
+            # （锛=（/鏄=是/鏃=日·无 的 GBK 误读形），可无损还原；失败保持原文。
+            # errors=replace：U+FFFD 不在 GBK 码表，strict 会让一个坏字符
+            # 杀死整篇逆转（实测 miss_check "）"尾字节即中招），降级为 ? 换全局可读。
+            if "锛" in txt or "鏄" in txt or "鏃" in txt:
+                try:
+                    txt = txt.encode("gbk", errors="replace").decode(
+                        "utf-8", errors="replace")
+                except UnicodeDecodeError:
+                    pass
+            tail = txt.splitlines()[-5:]
             if tail:
-                msg += "\n--- log tail ---\n" + "".join(tail).rstrip()
+                msg += "\n--- log tail ---\n" + "\n".join(tail).rstrip()
         except Exception:
             pass
     n = recent_power_loss()
