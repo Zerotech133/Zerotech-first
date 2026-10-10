@@ -2,12 +2,16 @@
 """选股信号后验计算器：历史池子里的票，信号日后 1/3/5 交易日的真实反应。
 
 数据地基：portal/data/picks_history/todays_<YYYYMMDD>.json（build_todays_picks.py 每日归档）。
-口径：信号日 = 归档的 scan_run_date（数据基准收盘日）；从 T+1 起算窗口收益，
-      湖价（ts_daily，未复权原价口径与页面行情列一致）；对照 = 同窗口全市场中位数。
+口径：信号日 = 归档的 scan_run_date（数据基准收盘日）。可成交口径（九审）：
+      画像日 D 的清单在 D+1 15:10 才产出、最早 D+2 开盘可操作——买入价 =
+      信号日后第 2 个交易日开盘，卖出 = 买入日后第 1/3/5 个交易日收盘，
+      剔除「高开买不进」的虚假收益（原 D 收盘起算对强势共振票系统性虚高）。
+      湖价（ts_daily，未复权原价口径与页面行情列一致）；对照 = 同窗口
+      全市场收盘-收盘中位数（隔夜差异在中位数层摊薄，近似合理）。
 输出：portal/data/pick_verdicts.json
       summary: 按窗口的整体命中率/均值/超额 + 按策略分层
-      per_code: 每票最近一次信号的后验（前端详情卡直接消费）
-窗口未满（湖还没走到 T+N）如实标 pending，不硬凑。
+      per_code: 每票最近一次信号的后验（前端详情卡直接消费，win 带 exec 首买日）
+窗口未满（湖还没走到首次可操作日或窗口终点）如实标 pending，不硬凑。
 用法: "C:/Program Files/Python311/python.exe" portal/build_pick_verdicts.py
 """
 import glob
@@ -98,22 +102,28 @@ def main():
         j = i + n
         return trade_days[j] if j < len(trade_days) else None
 
-    def pct_between(code, d0, d1):
-        """d0 收盘 → d1 收盘 的百分比收益（湖价）。"""
+    def pct_between(code, exec_day, d1):
+        """可成交口径（九审）：exec_day 开盘买入 → d1 收盘卖出。
+
+        画像日 D 的清单在 D+1 15:10 产出、最早 D+2 开盘可操作——起算价
+        用首次可操作日开盘，剔除强势票「次日高开买不进」的虚假收益。
+        停牌近似：exec_day 无行时首行（复牌日）开盘即买点。
+        """
         try:
             from tdx_read import read_range
-            df = read_range("ts_daily", d0, d1, codes=[code],
-                            columns=["ts_code", "trade_date", "close"])
-            if df is None or len(df) < 2:
+            df = read_range("ts_daily", exec_day, d1, codes=[code],
+                            columns=["ts_code", "trade_date", "open", "close"])
+            if df is None or len(df) < 1:
                 return None
             df = df.sort_values("trade_date")
-            c0, c1 = float(df["close"].iloc[0]), float(df["close"].iloc[-1])
-            return round((c1 / c0 - 1) * 100, 2) if c0 else None
+            buy = float(df["open"].iloc[0])    # 首次可操作日开盘
+            sel = float(df["close"].iloc[-1])  # 窗口终点收盘
+            return round((sel / buy - 1) * 100, 2) if buy else None
         except Exception as ex:  # noqa: BLE001
             # A5 分诊：pct_between 是后验收益计算核心——静默 None 会
             # 直接污染 RiskGuard 误杀复算统计（拦截/放行样本收益缺失）——留痕
             print("[verdicts] 个股收益读取失败 code=%s %s~%s：%s"
-                  % (code, d0, d1, str(ex)[:60]))
+                  % (code, exec_day, d1, str(ex)[:60]))
             return None
 
     per_code, buckets = {}, {w: [] for w in WINDOWS}
@@ -143,16 +153,27 @@ def main():
                 "win": {}})
             if sig < rec["date"]:
                 continue  # 只保留每票最近一次信号
+            if sig > rec["date"]:
+                # 九审修：票再次入选（信号日更新）→ 刷新 date/tier/strategies
+                # 并重置 win 重算。原实现 win 已有 key 恒 continue，重复
+                # 入选的票永远停在首入选的后验（「最近一次信号」语义失效，
+                # 汇总事件样本也漏记新入选）。
+                rec.update({"name": r.get("name"), "tier": r.get("tier"),
+                            "date": sig, "win": {},
+                            "strategies": sorted({s.get("s") for s in
+                                                  (r.get("sources") or [])
+                                                  if s.get("s")})})
+            exec_d = after_days(sig, 2)  # 首次可操作日（画像+1 日产出、+2 开盘可买）
             for w in WINDOWS:
                 if w in rec["win"]:
                     continue
-                d1 = after_days(sig, w)
+                d1 = after_days(exec_d, w) if exec_d else None
                 if d1 is None:
                     rec["win"][w] = None  # 窗口未满 → pending
                     continue
-                r1 = pct_between(code, sig, d1)
+                r1 = pct_between(code, exec_d, d1)
                 b1 = day_mid(d1)
-                rec["win"][w] = {"r": r1, "base": b1, "ex": (
+                rec["win"][w] = {"r": r1, "base": b1, "exec": exec_d, "ex": (
                     round(r1 - b1, 2) if r1 is not None and b1 is not None
                     else None)}
                 if r1 is not None:
@@ -185,7 +206,7 @@ def main():
           (n_arch, len(per_code), today))
     for w in WINDOWS:
         b = summary["windows"][str(w)]
-        print("  T+%d: n=%s 命中率=%s%% 均值=%s%%" %
+        print("  execT+%d(首买=信号+2开盘): n=%s 命中率=%s%% 均值=%s%%" %
               (w, b["n"], b["hit"], b["avg"]))
 
 
