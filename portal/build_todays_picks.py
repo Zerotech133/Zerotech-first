@@ -434,9 +434,15 @@ def _latest_history(hist_dir, exclude_day=None):
 def _backfill_quotes(stocks):
     """A股 close/pct_chg 回填：从 tdx_read 行情湖最新日一次取全市场。
 
-    六策略源里仅 weak 带 pct_chg，其余 null → 列表页涨跌幅大面积「—」。
-    湖不可达/无 pandas 时整体降级（保持 null，页面已有占位显示），不拖垮聚合。
-    返回 (基准日YYYYMMDD, 回填数)。
+    三十七审（2026-10-10）：湖权威覆盖（原实现只补 None）。loader 占位价
+    是各自快照时点——chanlun 用信号批次 price（可能数周前）、qpzm 用
+    rps px、ninedim 用九维快照 close——与湖 pct 不同源不同日，「close=
+    旧价 + pct_chg=最新日」混搭曾致 76/766 票现价错误（1009 档实证：
+    T1 亚邦 603188 显示信号批次价 4.32 vs 湖 1009 收盘 5.07，错 14.8%，
+    9/29-30 两连板拉起后；最重经纬辉开错 33%）。湖行 close/pct 同日
+    自洽，命中即无条件覆盖。
+    湖不可达/无 pandas 时整体降级（保持 loader 占位，页面已有占位显示），
+    不拖垮聚合。返回 (基准日YYYYMMDD, 覆盖数)。
     """
     try:
         sys.path.insert(0, QB)
@@ -450,11 +456,10 @@ def _backfill_quotes(stocks):
         n = 0
         for c, e in stocks.items():
             hit = q.get(c)
-            if hit and e.get("close") is None:
+            if not hit:
+                continue  # 湖无行（停牌/退市）→ 保留 loader 占位
+            if e.get("close") != hit[0] or e.get("pct_chg") != hit[1]:
                 e["close"], e["pct_chg"] = hit[0], hit[1]
-                n += 1
-            elif hit and e.get("pct_chg") is None:
-                e["pct_chg"] = hit[1]
                 n += 1
         return day, n
     except Exception as ex:  # noqa: BLE001 — 回填失败降级不拖垮
@@ -505,7 +510,15 @@ def main():
         "note": "个股级工具（linkage_signals.py 需指定代码），无全市场扫描口径，今日不产生名单"}
     # T1 否决链状态（十一审）：ok=False 的源含 err（异常失败）；stale 闸门
     # 拦截的源 ok=True（设计内放行），不触发停挂。
-    veto_failed = [s for s in ("chanlun", "weak", "qpzm")
+    # 三十九审（2026-10-10，用户拍板「五源全景闸」）：停挂名单从否决三源
+    # 扩至 +strong（bull 证据腿缺席=T1 近空档、板块领涨 T2 缺失——保守
+    # 方向但无披露）+ninedim（封顶源缺席=拥挤警报失明，K33 实证 alert
+    # 带胜率 9% 的票可直接混入 T1，档被首写锁定不可恢复——激进方向）。
+    # 语义：最高层只在全景可信时开放；异常日 T1 诚实空档，T2/T3 照常，
+    # 档内 t1_gate 留痕供后验按档识别。cross 不入名单：旁路缺失设计内
+    # 可容忍（bull 判定照常），且其数据源与 qpzm/chanlun 命运绑定。
+    veto_failed = [s for s in ("chanlun", "weak", "qpzm",
+                               "strong", "ninedim")
                    if not metas.get(s, {}).get("ok")]
     veto_ok = not veto_failed
 
@@ -549,7 +562,8 @@ def main():
         "strategies": metas,
         "t1_gate": {"ok": veto_ok, "failed": veto_failed,
                     "note": ("" if veto_ok else
-                             "否决源异常失败，T1 当日停挂（共振票降 T2/T3）")},
+                             "关键源（否决/证据/封顶）异常失败，T1 当日停挂"
+                             "（共振票降 T2/T3）——三十九审五源全景闸")},
         "counts": {
             "total": len(out_rows),
             "T1_resonance": sum(1 for r in out_rows if r["tier"] == "T1"),

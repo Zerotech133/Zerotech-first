@@ -7,7 +7,11 @@
       信号日后第 2 个交易日开盘，卖出 = 买入日后第 1/3/5 个交易日收盘，
       剔除「高开买不进」的虚假收益（原 D 收盘起算对强势共振票系统性虚高）。
       湖价（ts_daily，未复权原价口径与页面行情列一致）；对照 = 同窗口
-      全市场收盘-收盘中位数（隔夜差异在中位数层摊薄，近似合理）。
+      全市场开盘-收盘中位数（d0 开盘×d1 收盘，K-STOCK-077 修——旧实现
+      d1 单日 pct 中位与个股 w 天累计错配；三十四审同步此 docstring）。
+      三十一审（2026-10-10）除权守卫：窗口内隔夜缺口 ≤-30.5% 判除权
+      （涨跌幅限制下不可能为交易行为），样本 void 剔除不入桶（详见
+      pct_between）；湖内暂无复权因子，小额现金分红缺口作可接受噪声。
 输出：portal/data/pick_verdicts.json
       summary: 按窗口的整体命中率/均值/超额 + 按策略分层（二十五审方案A：
       by_strategy 只收 T1/T2 可操作层事件，windows 整体仍为全池口径）
@@ -83,24 +87,21 @@ def main():
                 day_cache[key] = None
         return day_cache[key]
 
-    # 全市场交易日历：任取一只宽基票的交易日序列
-    cal_df = read_day("ts_daily", today, columns=["ts_code"])
-    # 交易日历从逐日 latest 回推不现实——改从某只票全史读：
-    spy = cal_df["ts_code"].iloc[0] if cal_df is not None and len(cal_df) else None
+    # 全市场交易日历：全市场 trade_date 并集。
+    # 三十三审修（2026-10-10）：原实现任取湖首行单票全史——首票恰为
+    # 000001.SZ（三十年零缺日）纯属 parquet 落盘顺序的运气，与注释声称的
+    # 「全市场」语义不符；首票若为中途上市/长期停牌票，日历残缺会让
+    # after_days 的 exec_d/d1 静默错位（不崩、不告警、数字看似正常）。
     trade_days = []
-    if spy:
-        try:
-            from tdx_read import read_range
-            # ⚠ read_range 带 codes 时 columns 必须含 ts_code（否则 code 列
-            # 被裁掉、过滤恒空——tdx_read 实测暗坑）
-            df_all = read_range("ts_daily", "20200101", today,
-                                codes=[spy],
-                                columns=["ts_code", "trade_date"])
-            trade_days = sorted({str(d) for d in
-                                 (df_all["trade_date"].tolist()
-                                  if df_all is not None else [])})
-        except Exception as ex:  # noqa: BLE001
-            print("[verdicts] 交易日历读取降级：%s" % str(ex)[:60])
+    try:
+        from tdx_read import read_range
+        df_cal = read_range("ts_daily", "20200101", today,
+                            columns=["trade_date"])
+        trade_days = sorted({str(d)[:8] for d in
+                             (df_cal["trade_date"].tolist()
+                              if df_cal is not None else [])})
+    except Exception as ex:  # noqa: BLE001
+        print("[verdicts] 交易日历读取降级：%s" % str(ex)[:60])
 
     def after_days(sig_day, n):
         """信号日(YYYYMMDD)后第 n 个交易日（严格大于信号日）。"""
@@ -121,6 +122,13 @@ def main():
         画像日 D 的清单在 D+1 15:10 产出、最早 D+2 开盘可操作——起算价
         用首次可操作日开盘，剔除强势票「次日高开买不进」的虚假收益。
         停牌近似：exec_day 无行时首行（复牌日）开盘即买点。
+
+        三十一审（2026-10-10）除权守卫：湖价未复权（ts_daily 原价口径），
+        窗口内遇除权除息会把送转记成假暴跌污染均值——A股各板块涨跌幅
+        限制（主板10/创业科创20/北交30）下隔夜缺口不可能低于 -30%，
+        相邻日 open_t/close_{t-1}≤-30.5% 只可能是除权（2026 实测 77 起，
+        集中 5-7 月分红季），返回 "exdiv" 哨兵由调用方 void 剔除该样本；
+        小额现金分红缺口（约-1~-3%）不可分辨，作为可接受噪声保留。
         """
         try:
             from tdx_read import read_range
@@ -129,8 +137,14 @@ def main():
             if df is None or len(df) < 1:
                 return None
             df = df.sort_values("trade_date")
-            buy = float(df["open"].iloc[0])    # 首次可操作日开盘
-            sel = float(df["close"].iloc[-1])  # 窗口终点收盘
+            opens = df["open"].tolist()
+            closes = df["close"].tolist()
+            for k in range(1, len(df)):
+                prev = float(closes[k - 1])
+                if prev and float(opens[k]) / prev - 1 <= -0.305:
+                    return "exdiv"
+            buy = float(opens[0])    # 首次可操作日开盘
+            sel = float(closes[-1])  # 窗口终点收盘
             return round((sel / buy - 1) * 100, 2) if buy else None
         except Exception as ex:  # noqa: BLE001
             # A5 分诊：pct_between 是后验收益计算核心——静默 None 会
@@ -185,6 +199,15 @@ def main():
                     rec["win"][w] = None  # 窗口未满 → pending
                     continue
                 r1 = pct_between(code, exec_d, d1)
+                if r1 == "exdiv":
+                    # 三十一审：除权窗口 void 样本——不入桶不计 n，
+                    # 结构留痕（前端/工具可识别 void 字段），控制台同步留痕。
+                    rec["win"][w] = {"r": None, "base": None,
+                                     "exec": exec_d, "ex": None,
+                                     "void": "exdiv"}
+                    print("[verdicts] 除权窗口剔除 code=%s win=%s exec=%s"
+                          % (code, w, exec_d))
+                    continue
                 b1 = window_mid(exec_d, d1)
                 rec["win"][w] = {"r": r1, "base": b1, "exec": exec_d, "ex": (
                     round(r1 - b1, 2) if r1 is not None and b1 is not None
@@ -198,18 +221,27 @@ def main():
                     # 买41/卖49 混算），读作「策略成绩」必然误导。整体
                     # buckets（summary.windows）保持全池口径不变。
                     if r.get("tier") in ("T1", "T2"):
+                        # 三十六审（2026-10-10）：桶源白名单=看多源（strong/
+                        # chanlun/qpzm/cross，与 tier_of bull 源+cross 旁路
+                        # 对齐）。weak（反向参考）与 ninedim（low/na 影子
+                        # 无观点）不是入池原因，混入桶会把「恰好被覆盖的
+                        # 共振票成绩」记成该策略成绩——1009 实证 ninedim+
+                        # strong 组合 45 只将全数误进 ninedim 桶，且 1 只
+                        # weak 标记票混进 weak 桶（负面源卡收看多票成绩）。
                         for s in rec["strategies"]:
-                            strat_buckets.setdefault(s, {}).setdefault(
-                                w, []).append(r1)
+                            if s in ("strong", "chanlun", "qpzm", "cross"):
+                                strat_buckets.setdefault(s, {}).setdefault(
+                                    w, []).append(r1)
     # 汇总
     def blk(vals, w):
         if not vals:
-            return {"n": 0, "hit": None, "avg": None, "win_rt": None}
+            return {"n": 0, "hit": None, "avg": None}
         vals_s = sorted(vals)
+        # 三十三审：删除恒等死字段 win_rt（与 hit 同公式同值，全库无消费
+        # 方——picks.html/控制台只用 hit，双字段并列易误读为两个口径）
         return {"n": len(vals),
                 "hit": round(100 * sum(1 for v in vals if v > 0) / len(vals), 1),
                 "avg": round(sum(vals) / len(vals), 2),
-                "win_rt": round(100 * sum(1 for v in vals if v > 0) / len(vals), 1),
                 "med": vals_s[len(vals_s) // 2]}
     summary = {
         "asof": today, "archives": n_arch,
@@ -219,13 +251,17 @@ def main():
             "id": "exec-d2-open-20261010",
             "buy": "信号日后第2个交易日开盘（清单 D+1 15:10 产出、D+2 开盘可操作）",
             "sell": "首买日后 1/3/5 个交易日收盘",
-            "benchmark": "同窗口全市场收盘-收盘中位数",
+            "benchmark": "同窗口全市场开盘-收盘中位数（d0 开盘×d1 收盘，与个股买入口径对齐）",
             "supersedes": "close-d0（2026-10-10 前，不可比）",
         },
         "windows": {str(w): blk(buckets[w], w) for w in WINDOWS},
         # 二十五审（方案A）：分层口径自证——by_strategy 只收 T1/T2 事件
         # （可操作层，分母不含 T3/CROWD 影子），windows 为全池口径，勿混比
-        "by_strategy_caliber": "仅 T1/T2 入池事件（可操作层）；windows 整体为全池口径",
+        # 三十六审：桶源限看多源白名单；多源事件跨桶计入（n 勿跨策略加总，
+        # 1009 档 T1/T2 加总放大 1.33x）
+        "by_strategy_caliber": "仅 T1/T2 入池事件×看多源白名单（strong/chanlun/"
+                               "qpzm/cross；weak/ninedim 非入池原因不计桶）；"
+                               "多源事件跨桶计入，n 勿跨策略加总；windows 为全池口径",
         "by_strategy": {s: {str(w): blk(b.get(w) or [], w) for w in WINDOWS}
                         for s, b in sorted(strat_buckets.items())},
     }

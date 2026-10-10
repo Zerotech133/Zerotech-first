@@ -334,7 +334,7 @@ function renderVitals(){
     `<span>数据基准 <b>${esc(DATA.trade_basis)}</b></span>`+
     `<span>清单 <b>${c.total}</b></span>`+
     `<span>T1 共振 <b>${c.T1_resonance}</b></span>`+
-    (DATA.t1_gate&&!DATA.t1_gate.ok?`<span style="color:#ff5252">⛔ T1 停挂：否决源 ${(DATA.t1_gate.failed||[]).map(esc).join("/")} 异常失败，否决闸门失效</span>`:"")+
+    (DATA.t1_gate&&!DATA.t1_gate.ok?`<span style="color:#ff5252">⛔ T1 停挂：关键源 ${(DATA.t1_gate.failed||[]).map(esc).join("/")} 异常失败（五源全景闸），T1 当日诚实空档</span>`:"")+
     `<span>T2 高价值 <b>${c.T2_high_value}</b></span>`+
     (c.crowd_alert!=null?`<span style="color:#ff5252">⚠ 拥挤警报 <b>${c.crowd_alert}</b></span>`:"")+
     `<span>T3 单策略 <b>${c.T3_single}</b></span>`+
@@ -407,7 +407,11 @@ function matchRows(){
     rows=rows.filter(r=>(r.code||"").toLowerCase().includes(q)||
       (marketOf(r.code).bare||"").toLowerCase().includes(q)||(r.name||"").includes(Q)); }
   const tv={T1:0,T2:1,CROWD:2,T3:3};
-  const sv={tier:r=>tv[r.tier]??9, hit:r=>-(r.n_hit||0), pct:r=>-(+r.pct_chg||-9999)};
+  /* 三十四审：pct 排序用显式 null/NaN 判断，不用 ||——`+r.pct_chg||-9999`
+     会把 0.00 平盘票当无数据沉底（1009 档实测 14 只），而 `+null===0`
+     又会让 null 反而蹿到最前；isNaN 方案两者各归各位 */
+  const sv={tier:r=>tv[r.tier]??9, hit:r=>-(r.n_hit||0),
+    pct:r=>{const p=r.pct_chg==null?NaN:+r.pct_chg;return isNaN(p)?9999:-p;}};
   return rows.slice().sort((a,b)=>(sv[SORT](a)-sv[SORT](b))||
     ((b.n_hit||0)-(a.n_hit||0)));
 }
@@ -551,6 +555,9 @@ async function pickDetail(code, el){
   if(vr){
     const wn=(["1","3","5"]).map(w=>{
       const x=vr.win&&vr.win[w];
+      /* 三十四审：三十一审除权哨兵的前端配套——void 样本不是「待走完」
+         而是「原价收益不可比」，此前被 r==null 分支吞掉误标 */
+      if(x&&x.void==="exdiv")return `<span class="dim" title="窗口遇除权除息，湖价未复权、原价收益不可比（三十一审守卫剔除）">T+${w} 除权剔除</span>`;
       if(!x||x.r==null)return `<span class="dim">T+${w} 待走完</span>`;
       const cls=x.r>0?"up":(x.r<0?"dn":"");
       return `<span>T+${w} <b class="num ${cls}">${x.r>0?"+":""}${x.r}%</b>${x.ex!=null?`<small class="dim">（超额 ${x.ex>0?"+":""}${x.ex}pp）</small>`:""}</span>`;

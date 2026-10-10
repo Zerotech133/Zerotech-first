@@ -16,6 +16,7 @@ PORTAL = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "portal")
 sys.path.insert(0, PORTAL)
 
 from build_todays_picks import _stale_meta, tier_of  # noqa: E402
+from build_todays_picks import _backfill_quotes  # noqa: E402
 
 
 def _e(name, *srcs):
@@ -217,3 +218,38 @@ def test_ninedim_low_band_not_cap():
     """low/na 九维（观察无警报）不影响 T1/T2 正常判定。"""
     assert tier_of(_e("共振票", STRONG_LEAD, CL_BUY, NINEDIM_LOW)) == "T1"
     assert tier_of(_e("缠论票", CL_BUY, NINEDIM_LOW)) == "T2"
+
+
+# ── 现价回填：湖权威覆盖（三十七审 2026-10-10）─────────────
+def test_backfill_overwrites_placeholder(monkeypatch):
+    """loader 占位价（chanlun 批次价等）不得阻塞湖权威价——1009 档实证
+    76/766 票「close=信号日旧价+pct_chg=最新日」混搭（亚邦 4.32→5.07）。"""
+    import pandas as pd
+    import tdx_read
+    monkeypatch.setattr(tdx_read, "latest_date", lambda t: "20261009")
+    monkeypatch.setattr(
+        tdx_read, "read_day",
+        lambda *a, **k: pd.DataFrame({"ts_code": ["603188.SH"],
+                                      "close": [5.07], "pct_chg": [0.6]}))
+    stocks = {"603188.SH": {"code": "603188.SH", "name": "亚邦股份",
+                            "close": 4.32, "pct_chg": None}}
+    day, n = _backfill_quotes(stocks)
+    assert day == "20261009" and n == 1
+    assert stocks["603188.SH"]["close"] == 5.07
+    assert stocks["603188.SH"]["pct_chg"] == 0.6
+
+
+def test_backfill_keeps_placeholder_on_lake_miss(monkeypatch):
+    """湖无行（停牌/退市）→ 保留 loader 占位不动，不误清空。"""
+    import pandas as pd
+    import tdx_read
+    monkeypatch.setattr(tdx_read, "latest_date", lambda t: "20261009")
+    monkeypatch.setattr(
+        tdx_read, "read_day",
+        lambda *a, **k: pd.DataFrame({"ts_code": [], "close": [], "pct_chg": []}))
+    stocks = {"000582.SZ": {"code": "000582.SZ", "name": "北部湾港",
+                            "close": 7.7, "pct_chg": None}}
+    day, n = _backfill_quotes(stocks)
+    assert day == "20261009" and n == 0
+    assert stocks["000582.SZ"]["close"] == 7.7  # 占位保留
+    assert stocks["000582.SZ"]["pct_chg"] is None
