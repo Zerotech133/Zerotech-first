@@ -2,11 +2,11 @@
   "id": "main",
   "name": "主交易台",
   "style": "运营基准",
-  "desc": "运营档案（status=ops）：main 主账本。P-5 止损档案化机制就绪——params.stop_dist_pct 填数值（如 0.08）并重跑 07:05 闭环或 trainee auto-stops 即对全仓持仓挂成本锚定止损；当前 null=未拍板不挂（维持 2026-10-10 前行为，C3 验收判据对 main 只展示不断言）。",
+  "desc": "运营档案（status=ops）：main 主账本。止损已拍板（2026-10-10 老田）：stop_dist_pct=0.08（与 us_qingping 同档，G2 成本锚定）——07:05 闭环 settle 后对新仓自动挂止损，已有止损不覆盖。C3 验收自本拍板起可对 main 并入判据（当前账本无持仓，首仓周一产生）。",
   "status": "ops",
   "initial_cash": 1000000,
   "params": {
-    "stop_dist_pct": null
+    "stop_dist_pct": 0.08
   },
   "created_at": "2026-10-10T18:20:00"
 }
