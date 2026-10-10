@@ -51,10 +51,10 @@ def main():
     try:
         src = reg_source()
     except OSError as e:
-        log("FATAL 注册表源不可读：%r" % e)
+        log("FATAL registry source unreadable: %r" % e)
         return 2
     if not src:
-        log("FATAL 注册表源为空")
+        log("FATAL registry source empty")
         return 2
     try:
         disk = io.open(TARGET, "rb").read()
@@ -63,12 +63,12 @@ def main():
     if disk is not None and not force:
         # 行尾归一比对：一致=无漂移，不重写（保 git 行尾状态）
         if disk.replace(b"\r\n", b"\n") == src.replace(b"\r\n", b"\n"):
-            log("OK 磁盘源在位且与注册表一致（%d bytes）" % len(disk))
+            log("OK disk source matches registry (%d bytes)" % len(disk))
             return 0
-        log("WARN 磁盘源与注册表内容漂移（%d bytes），按 --force 才重写" % len(disk))
+        log("WARN disk/registry drift (%d bytes), use --force to rewrite" % len(disk))
         return 0
     io.open(TARGET, "wb").write(src)
-    log("REGEN 已从注册表重建磁盘源（%d bytes，force=%s）" % (len(src), force))
+    log("REGEN rebuilt disk source from registry (%d bytes, force=%s)" % (len(src), force))
     return 0
 
 

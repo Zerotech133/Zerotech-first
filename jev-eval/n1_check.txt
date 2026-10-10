@@ -1,4 +1,4 @@
-# N1Check v1.6 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal)
+# N1Check v1.6 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal; v1.6.1 K-STOCK-071 KEY_LOST 只查 pending 不算 sent 归档)
 # Checks:
 #  (0) regen self-heal (K-STOCK-061): backup_daily_regen.py exit=0 before presence check
 #  (1) today's backup set: DONE failed=0 + mirror files>=$MinFiles + quant_code files count
@@ -69,11 +69,12 @@ if ($set) {
 } else { Fail ('no backup set for ' + $day + ' under D:\backups_mirror') }
 
 # --- 2. v5 key guard normal path ---
+# v1.6.1 修正（K-STOCK-071）：sent/ 是转送后归档（*.done 已处置），
+# 归档≠在告——只有 pending 区（alertsDir 根）的 flag 才算 FAIL，
+# 否则 10-09 的已处置 KEY_LOST 存档会天天误报（10-10 预演实锤）
 $keyLost = @(Get-ChildItem $alertsDir -Filter 'BACKUP_KEY_LOST_*.flag' -File -ErrorAction SilentlyContinue)
-$sentDir = Join-Path $alertsDir 'sent'
-$sentKeyLost = @(Get-ChildItem $sentDir -Filter 'BACKUP_KEY_LOST_*.flag*' -File -ErrorAction SilentlyContinue)
-if ($keyLost.Count -eq 0 -and $sentKeyLost.Count -eq 0) { Report '[OK] v5 key guard silent (normal path)' }
-else { Fail 'BACKUP_KEY_LOST flag present - key file issue, see flag' }
+if ($keyLost.Count -eq 0) { Report '[OK] v5 key guard silent (normal path)' }
+else { Fail 'BACKUP_KEY_LOST flag PENDING - key file issue, see flag' }
 
 # --- 3. offsite sync ---
 $task = Get-ScheduledTask | Where-Object {
