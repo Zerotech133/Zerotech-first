@@ -56,6 +56,11 @@ RPS_W_CUR = {50: 0.4, 120: 0.3, 250: 0.3}       # 现行
 RPS_W_EQ = {50: 1 / 3, 120: 1 / 3, 250: 1 / 3}  # 等权
 RPS_W_ALT = {50: 0.5, 120: 0.3, 250: 0.2}       # 替代：短周期加权
 W4 = {"tech": 0.35, "jev": 0.25, "rps": 0.25, "env": 0.15}
+# 077k w015 态：JEV 以 50 中性分按 0.15 进权重的权重重组
+W4_W015 = {"tech": 0.40, "jev": 0.15, "rps": 0.30, "env": 0.15}
+JEV_REPLAY_PATH = os.path.join(HERE, "data", "jev_archive",
+                               "jev_replay_series.json")
+JEV_MODES = ("missing", "neutral50", "w015", "replay")
 TH_CUR = (75, 50)      # 现行 买入/观察
 TH_ALT = (70, 50)
 MIN_BARS_ELIG = 55     # resonance_watchlist 最低 bar 数（缺则不参与打分）
@@ -76,7 +81,12 @@ DESIGN = {
                "周期数(1/2/3)标记并给出信号拆分",
     "jev": "JEV 维历史不可重放（news.db 仅近 7 天），按产线缺维降权规则取 "
            "tech/rps/env 三维（归一权重 0.4667/0.3333/0.2），与 "
-           "rps_latest.json 的 dims='tech+rps+env' 一致",
+           "rps_latest.json 的 dims='tech+rps+env' 一致；"
+           "077k 起可经 --jev-mode 注入四态：missing(默认，同上)/"
+           "neutral50(50 中性分进权重)/w015(权重 tech.40/rps.30/jev.15/"
+           "env.15，jev 按 50 中性进权重)/replay(消费 data/jev_archive/"
+           "jev_replay_series.json 逐日截面，归档仅覆盖其日期范围——"
+           "回测区间早于该范围时相关日期无 jev 数据自然缺维，预期行为)",
     "entry_exit": "T 日收盘信号 → T+1 开盘买入 → 持有 N 个交易日后收盘卖出；"
                   "K254：出场日停牌按最后可得价结算（ffill）并计数"
                   "(n_dropped 口径变更为 nobar+一字板)；T+1 一字板（开=高=收"
@@ -142,22 +152,75 @@ def tech_score(longs, above20):
     return (longs * 25 + bonus).clip(0, 100)
 
 
+def load_jev_replay(path=JEV_REPLAY_PATH):
+    """读 jev_replay_series.json → (score DataFrame dates×codes, meta)。
+
+    日期键 'YYYY-MM-DD' 转成 int64 YYYYMMDD 与 wide 索引对齐；只有归档
+    覆盖内的 (date, code) 有分，其余为 NaN（自然缺维，预期行为）。
+    """
+    with open(path, encoding="utf-8") as f:
+        payload = json.load(f)
+    rows = {}
+    for d, by_code in payload.get("series", {}).items():
+        d_int = int(d.replace("-", ""))
+        for code, rec in by_code.items():
+            rows.setdefault(d_int, {})[code] = float(rec.get("score", 50.0))
+    mat = pd.DataFrame.from_dict(rows, orient="index").sort_index()
+    return mat, payload.get("meta", {})
+
+
 def combine_score(tech, rps_mix, env_df, buy_th=75.0, obs_th=50.0,
-                  gate_on=True, eligible=None):
-    """共振打分 + 信号（复刻 resonance_watchlist 缺维降权；JEV 缺维）。
+                  gate_on=True, eligible=None, jev_mode="missing",
+                  jev_mat=None):
+    """共振打分 + 信号（复刻 resonance_watchlist 缺维降权）。
+
+    jev_mode 四态（077k）:
+      missing   JEV 缺维（默认，历史基准，与产线 JEV 缺维完全一致）
+      neutral50 JEV 按 50 中性分进权重（等价 env_score 广播形式）
+      w015      权重重组 tech.40/rps.30/jev.15/env.15，JEV 按 50 中性进权重
+      replay    消费 jev_mat（逐日截面 replay 分）；能匹配的票该分作 jev 维，
+                匹配不到的票保持缺维降权（replay 归档仅覆盖其日期范围）
 
     返回 (score DataFrame, buy bool, obs bool)。gate_on 且 env safe=False →
     买入/观察全部否决（与产线 action='回避（环境闸门）' 一致）。
     """
+    if jev_mode not in JEV_MODES:
+        raise ValueError("unknown jev_mode: %s" % jev_mode)
+    if jev_mode == "replay" and jev_mat is None:
+        raise ValueError("jev_mode=replay requires jev_mat")
     t = tech.to_numpy(dtype=float)
     rp = rps_mix.to_numpy(dtype=float)
     el = tech.notna().to_numpy(dtype=bool) if eligible is None \
         else (eligible & tech.notna()).to_numpy(dtype=bool)
     hr = el & ~np.isnan(rp)
     env_score = env_df["score"].to_numpy(dtype=float)      # (D,)
-    wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr
-    num = t * W4["tech"] + env_score[:, None] * W4["env"] \
-        + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+    if jev_mode == "missing":
+        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr
+        num = t * W4["tech"] + env_score[:, None] * W4["env"] \
+            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+    elif jev_mode == "neutral50":
+        wsum = (W4["tech"] + W4["env"] + W4["jev"]) * el + W4["rps"] * hr
+        num = t * W4["tech"] + env_score[:, None] * W4["env"] \
+            + 50.0 * W4["jev"] * el \
+            + np.where(np.isnan(rp), 0.0, rp * W4["rps"])
+    elif jev_mode == "w015":
+        wt = W4_W015["tech"]
+        wr = W4_W015["rps"]
+        wj = W4_W015["jev"]
+        we = W4_W015["env"]
+        wsum = (wt + we + wj) * el + wr * hr
+        num = t * wt + env_score[:, None] * we \
+            + 50.0 * wj * el \
+            + np.where(np.isnan(rp), 0.0, rp * wr)
+    else:  # replay
+        jm = jev_mat.reindex(index=tech.index,
+                             columns=tech.columns).to_numpy(dtype=float)
+        jv = el & ~np.isnan(jm)
+        wsum = (W4["tech"] + W4["env"]) * el + W4["rps"] * hr \
+            + W4["jev"] * jv
+        num = t * W4["tech"] + env_score[:, None] * W4["env"] \
+            + np.where(np.isnan(rp), 0.0, rp * W4["rps"]) \
+            + np.where(np.isnan(jm), 0.0, jm * W4["jev"])
     sc = np.divide(num, wsum, out=np.full(num.shape, np.nan),
                    where=wsum > 0)
     gate = env_df["safe"].to_numpy(dtype=bool) if gate_on \
@@ -414,6 +477,16 @@ def run_backtest(args):
         rps_by_w[wname] = cross_rps(chg, w)
         print("rps mixed [%s]" % wname, flush=True)
 
+    jev_mat = None
+    jev_meta = {}
+    if args.jev_mode == "replay":
+        jev_mat, jev_meta = load_jev_replay()
+        print("jev replay loaded: %s ~ %s (%d codes, %d days)" % (
+            jev_meta.get("start"), jev_meta.get("end"),
+            jev_mat.shape[1], jev_mat.shape[0]), flush=True)
+    else:
+        print("jev_mode=%s" % args.jev_mode, flush=True)
+
     in_win = np.ones(len(union), dtype=bool)
     if args.start:
         in_win &= union >= int(args.start)
@@ -439,7 +512,8 @@ def run_backtest(args):
             for gname, g in GRID_GATE:
                 _score, buy, _obs = combine_score(
                     tech_w, mix, env_df,
-                    buy_th=bth, obs_th=oth, gate_on=g, eligible=eligible)
+                    buy_th=bth, obs_th=oth, gate_on=g, eligible=eligible,
+                    jev_mode=args.jev_mode, jev_mat=jev_mat)
                 buy_w = buy.loc[in_win]
                 v = {"label": "%s_%s_%s" % (wname, thname, gname),
                      "rps_w": {str(k): round(vv, 4) for k, vv in w.items()},
@@ -461,7 +535,8 @@ def run_backtest(args):
     # 次新拆分：买入信号按 RPS 可用周期数（现行权重+闸门开，全窗口）
     mix_cur, n_avail_cur = rps_by_w["w_cur"]
     _, buy_cur, _ = combine_score(
-        tech_w, mix_cur, env_df, gate_on=True, eligible=eligible)
+        tech_w, mix_cur, env_df, gate_on=True, eligible=eligible,
+        jev_mode=args.jev_mode, jev_mat=jev_mat)
     sig_n = n_avail_cur.where(buy_cur).to_numpy().ravel()
     sig_n = sig_n[~np.isnan(sig_n)]
     subnew = {str(int(k)): int(v) for k, v in
@@ -513,6 +588,8 @@ def run_backtest(args):
             "window": {"start": args.start, "end": args.end,
                        "signal_days": int(in_win.sum())},
             "holds": holds, "cost_roundtrip": args.cost,
+            "jev_mode": args.jev_mode,
+            "jev_replay_meta": jev_meta,
             "sample_mode": bool(args.stocks_limit),
             "elapsed_sec": round(time.time() - t0, 1),
         },
@@ -609,6 +686,12 @@ def parse_args(argv=None):
         REPORTS, "qpzm_backtest_report.json"))
     ap.add_argument("--stocks-limit", type=int, default=0,
                     help=">0 只取前 N 只股票（冒烟用）")
+    ap.add_argument("--jev-mode", default="missing",
+                    choices=list(JEV_MODES),
+                    help="JEV 维注入态：missing=缺维降权（默认，历史基准）；"
+                         "neutral50=50 中性分进权重；w015=权重重组 "
+                         "tech.40/rps.30/jev.15/env.15；replay=消费 "
+                         "jev_replay_series.json 逐日截面（覆盖外日期自然缺维）")
     args = ap.parse_args(argv)
     args.holds = sorted({int(x) for x in str(args.hold).split(",") if x})
     return args
