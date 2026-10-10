@@ -1,5 +1,10 @@
 # DB dump 每日自动化 — 执行记录
 
+## 2026-10-11 02:30
+- rc=0，必保 4 库全 ok=true：cainiao_mysql 169MB / zhice_pg 413MB / quantdinger_pg 645KB / nqs2_pg 699KB
+- Neo4j 两项按预期失败（community 停库窗口），不计失败；产物 backups/db/2026-10-11，轮转无清理项
+- 状态：成功（manifest must_fail=0）
+
 ## 2026-10-10 02:30
 - 命令：`python ops/db_dump_daily.py`（managed python 3.13.12），目录 E:\老田的AI助手
 - 退出码 rc=0，耗时约 1m42s
