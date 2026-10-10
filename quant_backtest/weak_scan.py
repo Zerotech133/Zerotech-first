@@ -34,6 +34,8 @@ import pandas as pd  # noqa: E402
 import tdx_read as tdxr  # noqa: E402
 import linkage  # noqa: E402
 
+# 输出在项目根 reports（⚠️ 与 strong 的 quant_backtest/reports 不同根）——
+# 下游 portal/build_todays_picks 按此路径消费 weak_scan_*.csv，勿改。
 REP = os.path.abspath(os.path.join(HERE, "..", "reports"))
 
 
@@ -72,6 +74,12 @@ def r20_table(days):
         "n": int((x["d"] >= base_day).sum()),
     }), include_groups=False).reset_index()
     stats["last_day"] = last_day
+    # 单位防呆哨兵（077g）：amount 千元口径 /1e5=亿元。若中位额 <0.1 亿
+    # （全市场正常中位约 1~3 亿），大概率数据源单位已变，警告防 10 倍级错判。
+    _med = stats["amt"].median()
+    if pd.notna(_med) and _med < 0.1:
+        sys.stderr.write(" ! 全市场日均额中位 %.4f 亿异常偏低——请核对 amount"
+                         " 单位口径（预期 tushare 千元）\n" % _med)
     return stats, last_day
 
 
@@ -110,18 +118,25 @@ def strong_codes():
             snap = json.loads(f.read().lstrip("\ufeff"))
         for r in snap.get("rows") or []:
             out[str(r.get("code", "")).split(".")[0]] = "snap"
-    except Exception:
-        pass
+    except Exception as e:
+        # 静默吞掉=强转弱/强失速标签无声消失（077g 审计）：留痕但不炸扫描
+        sys.stderr.write(" ! nine_dim_scores.json 读取失败，强转弱/强失速"
+                         "标签缺失: %s\n" % e)
     fp = os.path.join(HERE, "data", "nine_dim_history.jsonl")
     if os.path.exists(fp):
+        _bad = 0
         with open(fp, encoding="utf-8") as f:
             for line in f:
                 try:
                     r = json.loads(line.lstrip("\ufeff"))
                 except Exception:
+                    _bad += 1
                     continue
                 if "alert" in str(r.get("pool_type", "")):
                     out[str(r.get("code", "")).split(".")[0]] = "pool"
+        if _bad:
+            sys.stderr.write(" ! nine_dim_history.jsonl %d 行解析失败跳过\n"
+                             % _bad)
     return out
 
 
