@@ -10,13 +10,20 @@
                action=回避(环境闸门)的票不参与看多计数、不抬 T2）
   5. ninedim : quant_backtest/data/nine_dim_scores.json    rows（score/full/band）
   6. cross   : import cross_poll.build_cross               仅收 A 股看多共振
-               （看多源>=2，九维 dir=long 不计入——K33 警报非看多）
+               （看多源白名单=qpzm买入/缠论买，与 tier_of 一致；sig4 与 qpzm
+               同一份 rps_latest 快照不重复计数；九维不计入——K33 警报非看多；
+               qpzm 回避（环境闸门）一票否决）
   7. linkage : 个股级工具，无全市场扫描口径（记录说明，不产生名单）
 
 分层：T1=看多源共振(strong领涨+chanlun买+qpzm 计数>=2，或 cross)；T2=单策略高价值
 (强领涨/缠论买点/qpzm分>=80)；CROWD=九维高分拥挤警报(K33 语义：
-回避位非买入，不参与 T2 抬层)；T3=其余。weak/ninedim 影子/卖点不参与共振计数。
-用法: python portal/build_todays_picks.py [--details N]
+回避位非买入，不参与 T2 抬层)；T3=其余。weak/ninedim 影子/卖点不参与共振计数；
+qpzm 回避票不进 T1（封顶 T2）；同批次缠论买卖点并存时买点不计入共振（降 T2）；
+weak 负面信号（强失速/深度垫底）同样否决 T1（封顶 T2）；ST/*ST 票不进 T1/T2
+（七审封顶 T3，CROWD 警报可并存）；五源带过期闸门——数据基准落后行情湖
+weak>10 天、日扫源(strong/chanlun/qpzm/ninedim/cross)>4 天时整源不入清单。
+用法: python portal/build_todays_picks.py（无参聚合；个股详情另跑
+      python portal/build_pick_details.py --tier T1）
 """
 import csv
 import glob
@@ -32,6 +39,28 @@ MAX_LAG_DAYS = 10  # weak 周扫源允许的最大滞后自然日（覆盖长假
 IS_A = re.compile(r"^\d{6}\.(SH|SZ|BJ)$")  # 本清单为 A 股口径（cross/qpzm 多市场源入清单前过滤）
 QB = os.path.join(ROOT, "quant_backtest")
 OUT = os.path.join(HERE, "data", "todays_picks.json")
+STALE_LAG_DAILY = 4  # 日扫源允许的最大滞后自然日（覆盖周末+小长假；五审闸门）
+
+
+def _ymd(s):
+    """'2026-10-09' / '20261009' / datetime 串 → YYYYMMDD。"""
+    return str(s or "").replace("-", "")[:8]
+
+
+def _stale_meta(basis_day, src_day, max_lag, label, file, tail):
+    """过期闸门（五审）：源数据基准落后行情湖超 max_lag 自然日 → 整源不入清单。"""
+    if not (basis_day and src_day):
+        return None
+    try:
+        lag = (datetime.strptime(basis_day, "%Y%m%d")
+               - datetime.strptime(src_day, "%Y%m%d")).days
+    except ValueError:
+        return None
+    if lag > max_lag:
+        return {"label": label, "n": 0, "stale": True, "file": file,
+                "note": "数据基准 %s 落后行情湖 %s %d 天(>%d)，旧信号不入清单%s"
+                        % (src_day, basis_day, lag, max_lag, tail)}
+    return None
 
 
 def _std_code(code):
@@ -49,9 +78,22 @@ def _std_code(code):
     return c.upper()
 
 
-def load_strong(stocks):
+def load_strong(stocks, basis_day=None):
     fp = os.path.join(QB, "reports", "strong_latest.json")
     d = json.load(open(fp, encoding="utf-8"))
+    # 八审：date=扫描运行日（正常日比数据基准 +1），闸门拿它比对恒得
+    # lag=-1、单日漏跑 lag=0，永远拦不住「strong 腿用了 D-2 行情」。
+    # basis=数据基准日（板块锚同日校验值，10-10 起随 strong_scan 落盘），
+    # 优先使用；旧文件无 basis 回退 date。
+    stale = _stale_meta(basis_day,
+                        _ymd(d.get("basis")
+                             or d.get("date")
+                             or str(d.get("ts") or "")[:10]),
+                        STALE_LAG_DAILY, "强势板块领涨（599板块扫描）",
+                        "quant_backtest/reports/strong_latest.json",
+                        "；待板块扫描刷新")
+    if stale:
+        return stale
     rows = d.get("list") or []
     for r in rows:
         c = _std_code(r.get("code"))
@@ -109,10 +151,16 @@ def load_weak(stocks, basis_day=None):
             "note": "focus=深度垫底/强失速等弱势标签（反向参考）"}
 
 
-def load_chanlun(stocks):
+def load_chanlun(stocks, basis_day=None):
     fp = os.path.join(QB, "data", "chanlun_pool.jsonl")
     rows = [json.loads(l) for l in open(fp, encoding="utf-8") if l.strip()]
     latest = max((r.get("detect_date") or "") for r in rows)
+    stale = _stale_meta(basis_day, _ymd(latest), STALE_LAG_DAILY,
+                        "缠论信号池（三类买卖点）",
+                        "quant_backtest/data/chanlun_pool.jsonl",
+                        "；待缠论扫描刷新")
+    if stale:
+        return stale
     batch = [r for r in rows if r.get("detect_date") == latest]
     for r in batch:
         c = _std_code(r.get("code"))
@@ -130,9 +178,15 @@ def load_chanlun(stocks):
             "note": "取最新扫描批次；type=1买/2买/3买/1卖/2卖/3卖"}
 
 
-def load_qpzm(stocks):
+def load_qpzm(stocks, basis_day=None):
     fp = os.path.join(QB, "reports", "rps_latest.json")
     d = json.load(open(fp, encoding="utf-8"))
+    stale = _stale_meta(basis_day, _ymd(d.get("latest")), STALE_LAG_DAILY,
+                        "青萍之末（RPS+技术+环境闸门）",
+                        "quant_backtest/reports/rps_latest.json",
+                        "；待 qpzm 扫描刷新")
+    if stale:
+        return stale
     rows = d.get("res") or []
     n_in = 0
     for r in rows:
@@ -155,9 +209,15 @@ def load_qpzm(stocks):
             "ts": d.get("ts"), "note": "action 含 回避（环境闸门）标记"}
 
 
-def load_ninedim(stocks):
+def load_ninedim(stocks, basis_day=None):
     fp = os.path.join(QB, "data", "nine_dim_scores.json")
     d = json.load(open(fp, encoding="utf-8"))
+    stale = _stale_meta(basis_day, _ymd(d.get("trade_date")), STALE_LAG_DAILY,
+                        "九维评分（多维因子合成）",
+                        "quant_backtest/data/nine_dim_scores.json",
+                        "；待九维评分刷新")
+    if stale:
+        return stale
     rows = d.get("rows") or []
     n_cand = 0
     n_scored = 0
@@ -187,9 +247,33 @@ def load_ninedim(stocks):
                     "cov<0.75 不出分；本批 %d/%d 只出分" % (n_scored, n_cand)}
 
 
-def load_cross(stocks):
+def load_cross(stocks, basis_day=None):
     sys.path.insert(0, QB)
     import cross_poll
+    # 过期闸门（五审）：cross 白名单输入 = qpzm + chanlun，取两者数据基准较旧者
+    # 与行情湖比对（chanlun 以 JSONL 批次日期为代理——SQLite/JSONL 双写同批）。
+    days = []
+    try:
+        days.append(_ymd(json.load(open(
+            os.path.join(QB, "reports", "rps_latest.json"),
+            encoding="utf-8")).get("latest")))
+    except Exception:
+        pass
+    try:
+        days.append(_ymd(max(json.loads(l).get("detect_date") or ""
+                             for l in open(os.path.join(
+                                 QB, "data", "chanlun_pool.jsonl"),
+                                 encoding="utf-8") if l.strip())))
+    except Exception:
+        pass
+    days = [x for x in days if x]
+    if days:
+        stale = _stale_meta(basis_day, min(days), STALE_LAG_DAILY,
+                            "交叉共振（多策略同命中）",
+                            "quant_backtest/cross_poll.py(内存聚合)",
+                            "；待上游 qpzm/chanlun 扫描刷新")
+        if stale:
+            return stale
     d = cross_poll.build_cross(force=True)
     n = 0
     n_skip = 0
@@ -197,14 +281,34 @@ def load_cross(stocks):
         c = _std_code(s.get("code"))
         if not IS_A.match(c):
             continue  # cross 面板含美股/加密，本清单仅 A 股
-        # 看多共振口径（2026-10-10 三审修正）：n_hit>=2 曾把 state=short
-        # （如「回避+4策略」）与 n_long<=1 的 mixed 也当共振抬 T1；
-        # 改为看多源(dir=long)计数 >=2，且九维不算——K33：高分=拥挤警报
-        # 非看多，避免其绕过 tier_of 主通道的九维剔除。
+        # 看多共振口径（2026-10-10 三审+四审修正）：三审把 n_hit>=2 收紧为
+        # n_long>=2（九维不计入）；四审进一步把看多源白名单对齐 tier_of 的
+        # bull 源——仅 qpzm 买入 / 缠论买；sig4 与 qpzm 出自同一份 rps_latest
+        # 快照（重复计数，曾致「回避+旧缠论买+4策略」凑成 T1）不计入；
+        # qpzm 回避（环境闸门）一票否决——K33：回避位非买入，不得借 cross 抬 T1。
         hits = s.get("hits") or []
+        # 同批卖点守卫（四审补漏）：cross_poll 每票只留最新一条缠论信号，
+        # 同检出日买卖并列时按序任取（实据：水羊 2买+1卖 取到 2买→long）；
+        # 该票若在最新缠论批次自带卖点，缠论不计入看多源——与 tier_of
+        # 「同批买卖并存不计共振」同口径，堵住经 cross 绕过降级的旁路。
+        # （依赖 chanlun 先于 cross 加载；chanlun 源失败时守卫自动失效降级。）
+        cl_sell = any(src["s"] == "chanlun" and "卖" in (src.get("tag") or "")
+                      for src in (stocks.get(c) or {}).get("sources") or [])
+        # weak 否决（五审）：强失速/深度垫底 = 显式负面信号，与 qpzm 回避同哲学，
+        # 不挂「多策略共振」标签（依赖 weak 先于 cross 加载，顺序见 main）。
+        weak_bad = any(src["s"] == "weak"
+                       for src in (stocks.get(c) or {}).get("sources") or [])
+        # ST 封顶（七审）：ST/*ST 不挂「多策略共振」标签（与 tier_of 封顶同口径）
+        nm = (s.get("name")
+              or (stocks.get(c) or {}).get("name") or "")
+        is_st = "ST" in nm.upper()
         n_long = sum(1 for h in hits
-                     if h.get("dir") == "long" and h.get("sid") != "9dim")
-        if n_long < 2:
+                     if h.get("dir") == "long"
+                     and h.get("sid") in ("qpzm", "chanlun")
+                     and not (cl_sell and h.get("sid") == "chanlun"))
+        avoid = any(h.get("sid") == "qpzm" and h.get("dir") == "short"
+                    for h in hits)
+        if n_long < 2 or avoid or weak_bad or is_st:
             if len(hits) >= 2:
                 n_skip += 1  # 仅统计旧口径(n_hit>=2)本会入选、被新口径拦下的
             continue
@@ -213,15 +317,18 @@ def load_cross(stocks):
                                   "industry": None, "close": None,
                                   "pct_chg": None, "sources": []})
         e["name"] = e["name"] or s.get("name")
-        hit_labels = ["%s|%s" % (h.get("sid"), h.get("label")) for h in hits]
+        # label@日期=信号检出日（缠论为 90 天有效窗内取最新，旧信号显式可见）
+        hit_labels = ["%s|%s%s" % (h.get("sid"), h.get("label"),
+                                   ("@" + h["dt"][:10]) if h.get("dt") else "")
+                      for h in hits]
         e["sources"].append({
             "s": "cross", "tag": "多策略共振",
             "state": s.get("state"), "hits": hit_labels})
     return {"label": "交叉共振（多策略同命中）", "n": n,
             "file": "quant_backtest/cross_poll.py(内存聚合)",
-            "note": "仅收 A 股看多共振（看多源>=2，九维不计入——K33 警报非看多）；"
-                    "本批过滤 n_hit>=2 但看多不足的 %d 只；state=mixed 表示多空并存"
-                    % n_skip}
+            "note": "仅收 A 股看多共振（白名单=qpzm买入/缠论买>=2；sig4/九维不计入；"
+                    "qpzm 回避否决）；本批过滤 n_hit>=2 但口径不符的 %d 只；"
+                    "label@日期=信号检出日" % n_skip}
 
 
 def tier_of(e):
@@ -230,27 +337,43 @@ def tier_of(e):
     # 2026-10-10 复审修正：T1 共振只数看多源（strong 板块领涨 / chanlun 买点 /
     # qpzm），weak(反向回避)、ninedim 影子(未出分无观点)、chanlun 卖点不再
     # 参与凑对——此前 60% 的 T1 靠非看多源凑成；cross(n_hit>=2 派生)仍直接 T1。
+    # 2026-10-10 四审修正：①同批次缠论买卖点并存（如 2买+1卖）时买点不计入
+    # 共振——多空并存非纯看多，降级走 T2 单策略通道（卖点留 sources 复核）；
+    # ②qpzm 回避（环境闸门）票不进 T1、封顶 T2——与 load_cross 否决口径一致，
+    # 防止回避票绕开 cross 通道经 strong+chanlun 直抬 T1。
     srcs = e["sources"]
     ss = {s["s"] for s in srcs}
+    cl_tags = [s.get("tag") or "" for s in srcs if s["s"] == "chanlun"]
+    cl_buy = (any("买" in t for t in cl_tags)
+              and not any("卖" in t for t in cl_tags))
     bull = (any(s["s"] == "qpzm" and s.get("tag") == "买入" for s in srcs)
-            + any(s["s"] == "chanlun" and "买" in (s.get("tag") or "")
-                  for s in srcs)
+            + cl_buy
             + any(s["s"] == "strong" and s.get("tag") == "板块领涨"
                   for s in srcs))
-    if bull >= 2 or "cross" in ss:
-        return "T1"
-    if "chanlun" in ss and any(s["s"] == "chanlun"
-                               and "买" in (s.get("tag") or "")
-                               for s in srcs):
-        return "T2"
-    if "strong" in ss and any(s["s"] == "strong"
-                              and s.get("tag") == "板块领涨"
-                              for s in srcs):
-        return "T2"
-    if "qpzm" in ss and any(s["s"] == "qpzm" and s.get("tag") == "买入"
-                            and (s.get("score") or 0) >= 80
-                            for s in srcs):
-        return "T2"
+    qpzm_avoid = any(s["s"] == "qpzm" and s.get("tag") == "回避" for s in srcs)
+    # weak 否决（五审）：强失速/深度垫底 = 显式负面信号，与 qpzm 回避同哲学，
+    # T1 封顶降 T2；weak 源自身带过期闸门，过期旧负面数据不入场（不误杀）。
+    # 2026-10-10 七审修正：ST/*ST 票（5% 涨跌幅+退市风险警示）不进 T1/T2
+    # 看多层——全管线此前无 ST 过滤（当日 T2 即混入 7 只 *ST），落 T3 反向
+    # 参考；九维拥挤警报与 ST 可并存，CROWD 判定不受影响。
+    is_st = "ST" in (e.get("name") or "").upper()
+    if not is_st:
+        if ((bull >= 2 or "cross" in ss)
+                and not qpzm_avoid and "weak" not in ss):
+            return "T1"
+        if "chanlun" in ss and any(s["s"] == "chanlun"
+                                   and "买" in (s.get("tag") or "")
+                                   for s in srcs):
+            return "T2"
+        if "strong" in ss and any(s["s"] == "strong"
+                                  and s.get("tag") == "板块领涨"
+                                  for s in srcs):
+            return "T2"
+        if "qpzm" in ss and any(s["s"] == "qpzm"
+                                and s.get("tag") == "买入"
+                                and (s.get("score") or 0) >= 80
+                                for s in srcs):
+            return "T2"
     if "ninedim" in ss and any(s["s"] == "ninedim"
                                and s.get("band") in ("alert", "alert2")
                                for s in e["sources"]):
@@ -314,7 +437,7 @@ def main():
                     ("chanlun", load_chanlun), ("qpzm", load_qpzm),
                     ("ninedim", load_ninedim), ("cross", load_cross)):
         try:
-            metas[sid] = fn(stocks, basis0) if sid == "weak" else fn(stocks)
+            metas[sid] = fn(stocks, basis0)
             metas[sid]["ok"] = True
         except Exception as ex:  # noqa: BLE001 — 单源失败不拖垮聚合
             metas[sid] = {"label": sid, "ok": False, "err": str(ex)[:120]}

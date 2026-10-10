@@ -59,22 +59,24 @@ def freshness_guard():
     「date=今日但数据=T-1」静默错误（10-08 14:55 StrongEod 15:45 错时
     同模式教训），拦截退出交人工处置。
 
-    返回 (ok, msg)；ok=False 时 msg 为锚差异详情。
+    返回 (ok, msg, basis)；ok=False 时 msg 为锚差异详情，basis=板块锚
+    最新K线日（数据基准日，ok 时有效——10-10 八审随 basis 落盘带出，
+    供下游 stale 闸门区分「运行日」与「数据基准日」）。
     """
     import chanlun_data
     import linkage
     blk = linkage.block_bars(GUARD_BLOCK, "1d", limit=3)
     if not blk:
-        return False, "板块锚 %s 无K线（tdx_sector_daily 空？）" % GUARD_BLOCK
+        return False, "板块锚 %s 无K线（tdx_sector_daily 空？）" % GUARD_BLOCK, None
     blk_d = str(blk[-1]["dt"])[:10]
     for c in GUARD_SAMPLE:
         r = chanlun_data.load_kline(c, "1d", limit=3)
         if not r.get("ok") or not r.get("bars"):
-            return False, "个股锚 %s 无K线（%s）" % (c, r.get("error", ""))
+            return False, "个股锚 %s 无K线（%s）" % (c, r.get("error", "")), blk_d
         d = str(r["bars"][-1]["dt"])[:10]
         if d != blk_d:
             return False, "个股锚 %s=%s（%s）≠ 板块锚 %s=%s" % (
-                c, d, r.get("source"), GUARD_BLOCK, blk_d)
+                c, d, r.get("source"), GUARD_BLOCK, blk_d), blk_d
     # 全量水位：抽样票可能恰在「零星成功」名单（权重票优先）而全池仍
     # T-1（10-08 21:31 实测前车），计数校验拦「部分补齐」的半 T-1 名单
     rows = chanlun_data._db_query(
@@ -84,9 +86,9 @@ def freshness_guard():
     if n_cn < GUARD_MIN_CN:
         return False, ("zhice CN %s bar 计数 %d < 阈 %d"
                        "（全量未补齐，名单将半 T-1）"
-                       % (blk_d, n_cn, GUARD_MIN_CN))
+                       % (blk_d, n_cn, GUARD_MIN_CN)), blk_d
     return True, "锚一致 %s + CN 计数 %d ≥ %d（个股抽样×%d + 板块 %s）" % (
-        blk_d, n_cn, GUARD_MIN_CN, len(GUARD_SAMPLE), GUARD_BLOCK)
+        blk_d, n_cn, GUARD_MIN_CN, len(GUARD_SAMPLE), GUARD_BLOCK), blk_d
 
 
 def now_iso():
@@ -176,7 +178,7 @@ def main():
         except Exception:
             pass  # 汇总文件损坏视为未扫，继续
 
-    ok_g, msg = freshness_guard()
+    ok_g, msg, g_basis = freshness_guard()
     if not ok_g:
         print("[守卫] 数据新鲜度未过：%s —— 拦截退出（防 T-1 静默名单）"
               % msg, flush=True)
@@ -227,6 +229,10 @@ def main():
               "reasons": h["reasons"]} for h in all_hits]
     summary = {
         "date": today_str(), "ts": now_iso(),
+        # 八审：数据基准日（板块锚同日校验值）——date 是运行日，下游
+        # stale 闸门若拿 date 比对行情湖基准恒得 lag=-1（单日漏跑 lag=0
+        # 永不拦），basis 才是真实的「基于哪天行情」。
+        "basis": g_basis,
         "blocks_total": len(pool), "blocks_scanned": n_scanned,
         "blocks_skipped": skipped, "stocks_evaluated": n_eval_total[0],
         "per_block_cap": int(a.limit),

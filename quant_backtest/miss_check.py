@@ -60,6 +60,16 @@ REGISTRY = {
     # 08:30 晨档 3.8h 检出——晨档与 21:30 双跑位同批部署）
     "TushareSync":        {"expect": "23:30", "since": "2026-10-09"},
     "AI工作站每日备份":     {"expect": "03:00", "since": "2026-10-09"},
+    # 10-10 补（八审 TodaysPicks 时序核查）：T1 聚合链四任务原全不在册。
+    # 单日漏跑时 alert_fail 不推（没跑≠失败）、聚合闸门 4 天容差拦不住
+    # （lag=1<4），T1 错日共振整链静默。ChanlunRefill=聚合消费的早批
+    # （ChanlunScan 15:35 晚批在 15:10 聚合后落盘，不参与当日聚合）。
+    # RpsDaily 仅交易日跑 → trade_only（非交易日跳过，见 _trade_today）。
+    "ChanlunRefill":      {"expect": "06:30", "since": "2026-10-10"},
+    "NineDimScan":        {"expect": "06:40", "since": "2026-10-10"},
+    "TodaysPicks":        {"expect": "15:10", "since": "2026-10-10"},
+    "RpsDaily":           {"expect": "16:05", "since": "2026-10-10",
+                           "trade_only": True},
 }
 
 
@@ -89,6 +99,25 @@ def _task_last_run(name):
         return None
 
 
+def _trade_today(now=None):
+    """今天是否为 A 股交易日：行情湖 ts_daily 最新日 == 今天。
+
+    八审加，供 trade_only 项（仅交易日运行的任务，如 RpsDaily 16:05）
+    非交易日免检：21:30 档检查时 TdxSync 17:30 已入库当日数据 →
+    最新日==今天 即交易日；周末/假日最新日停在上一交易日 → 跳过。
+    查询失败按非交易日跳过（宁漏报不误报）；「TdxSync 挂导致当日
+    未入库」由 KG-TdxSync 在册项兜住，不在此扩大检查面。
+    """
+    try:
+        from tdx_read import latest_date
+        return latest_date("ts_daily") == \
+            (now or datetime.now()).strftime("%Y%m%d")
+    except Exception as e:
+        print("trade_today 查询失败（trade_only 项按非交易日跳过）: %s"
+              % str(e)[:60])
+        return False
+
+
 def run():
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
@@ -96,6 +125,8 @@ def run():
     for name, cfg in REGISTRY.items():
         if cfg.get("since") and today < cfg["since"]:
             continue                     # 生效日前不检（新任务防误报）
+        if cfg.get("trade_only") and not _trade_today(now):
+            continue                     # 仅交易日任务：非交易日不检（八审）
         exp_h, exp_m = map(int, cfg["expect"].split(":"))
         expect = now.replace(hour=exp_h, minute=exp_m, second=0)
         deadline = expect + timedelta(minutes=GRACE_MIN)
