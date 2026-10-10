@@ -2708,6 +2708,12 @@ def _debate_say(rec):
     return {"ok": True, "replies": reps}
 
 
+# K52-D 行情快照内存缓存（300s）：_portfolio_market 专用（原缺失定义，
+# 首次调用即 NameError —— 2026-10-10 审计修复）
+_MKT_TBL_LOCK = threading.Lock()
+_mkt_tbl = {"t": 0.0, "d": None}
+
+
 def _portfolio_market(qs):
     """GET /api/portfolio_market?q= 关键词
     K52-D 手动建仓标的搜索：subprocess 拉引擎全表（300s 缓存），
