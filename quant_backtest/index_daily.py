@@ -36,10 +36,16 @@ COLS = ["trade_date", "open", "close", "high", "low", "vol", "amount"]
 
 
 def _token():
-    """P0-4：优先环境变量 TUSHARE_TOKEN，读不到再落回 .env（兼容，只读该变量）。"""
+    """P0-4：优先环境变量 TUSHARE_TOKEN，再回落同目录 .env.local XT_DATA_KEY
+    （SYSTEM 任务可读，与 tushare_sync/九维同源），最后兼容旧 D:\\青萍之末2\\.env。"""
     tok = os.environ.get("TUSHARE_TOKEN", "").strip()
     if tok:
         return tok
+    _local = os.path.join(HERE, ".env.local")
+    if os.path.exists(_local):
+        for ln in open(_local, encoding="utf-8"):
+            if ln.startswith("XT_DATA_KEY="):
+                return ln.split("=", 1)[1].strip()
     try:
         with open(ENV_PATH, encoding="utf-8") as f:
             for ln in f:
