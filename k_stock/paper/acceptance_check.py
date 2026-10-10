@@ -71,16 +71,34 @@ def check_c2_us_filled(cur, day):
 
 
 def check_c3_stops(cur, day):
-    stops = cur.execute(
-        "SELECT id, account_id, stock, side, qty, status, plan_date, order_kind"
-        " FROM orders WHERE order_kind='stop'").fetchall()
-    stops = [dict(r) for r in stops]
-    # 持仓非空时才要求止损挂出（盘前持仓空判据自动 SKIP）
+    """止损自动挂实证=positions.stop_price 非空（挂出待触发），
+    而非 order_kind='stop' 触发单（收盘跌破后才生成，成交当日必空——首版口径坑）。
+    分层断言（K-STOCK-069c 口径）：
+      核心=US 6 只持仓 stop_price 全非空（cli G2 8% 成本锚定承诺）；
+      chaser=trainee routine auto-stops（0.08）一并断言；
+      main 无自动止损机制（设计现状，是否补默认档待老田拍板）——只展示不并判据。"""
     n_pos = cur.execute("SELECT count(*) FROM positions").fetchone()[0]
     if n_pos == 0:
         return None, {"skip": "positions 空（未撮合，判据未激活）"}
-    ok = len(stops) > 0
-    return ok, {"n_stops": len(stops), "n_positions": n_pos, "stops": stops[:12]}
+    rows = cur.execute(
+        "SELECT account_id, stock, stop_price FROM positions").fetchall()
+    by_acct = {}
+    for r in rows:
+        a = by_acct.setdefault(r["account_id"], {"n": 0, "with_stop": 0, "no_stop": []})
+        a["n"] += 1
+        if r["stop_price"] is not None:
+            a["with_stop"] += 1
+        else:
+            a["no_stop"].append(r["stock"])
+    us = by_acct.get(US_ACCOUNTS[0], {"n": 0, "with_stop": 0})
+    chaser = by_acct.get("chaser", {"n": 0, "with_stop": 0})
+    core_ok = us["n"] > 0 and us["with_stop"] == us["n"]
+    chaser_ok = chaser["n"] == 0 or chaser["with_stop"] == chaser["n"]
+    ok = core_ok and chaser_ok
+    return ok, {"by_account": by_acct,
+                "core": "US+chaser 止损全挂" if ok else "US/chaser 有止损缺口",
+                "main_note": "main 无自动止损机制（设计现状，待拍板是否补默认档）"
+                if "main" in by_acct and by_acct["main"]["no_stop"] else None}
 
 
 def check_c4_snapshot(cur, day):
