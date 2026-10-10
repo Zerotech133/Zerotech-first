@@ -193,6 +193,15 @@ def main():
                 "med": vals_s[len(vals_s) // 2]}
     summary = {
         "asof": today, "archives": n_arch,
+        # K-STOCK-070 口径自证：可成交口径（九审）自 2026-10-10 起生效，
+        # 与此前 D 收盘起算的旧口径数字不可直接比（旧口径对强势票系统性虚高）
+        "caliber": {
+            "id": "exec-d2-open-20261010",
+            "buy": "信号日后第2个交易日开盘（清单 D+1 15:10 产出、D+2 开盘可操作）",
+            "sell": "首买日后 1/3/5 个交易日收盘",
+            "benchmark": "同窗口全市场收盘-收盘中位数",
+            "supersedes": "close-d0（2026-10-10 前，不可比）",
+        },
         "windows": {str(w): blk(buckets[w], w) for w in WINDOWS},
         "by_strategy": {s: {str(w): blk(b.get(w) or [], w) for w in WINDOWS}
                         for s, b in sorted(strat_buckets.items())},
