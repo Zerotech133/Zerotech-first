@@ -118,8 +118,10 @@ def main():
                         sep=" ", timespec="seconds"),
                     "start": a.start, "end": a.end,
                     "days": len(series),
+                    "partial_last_day": True,
                     "note": "关键词用现行 watchlist（历史池漂移不可还原，"
-                            "与每日归档互补）"},
+                            "与每日归档互补）；末一日为重放时刻前的部分数据"
+                            "（077k 审查注），回测消费建议剔除末日"},
            "series": series}
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(OUT), suffix=".tmp")
