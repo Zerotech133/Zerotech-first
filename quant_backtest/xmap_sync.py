@@ -172,7 +172,13 @@ def align_rows(rows, securities):
             item.update(dst_id=derived, method="rule",
                         conf="0.990", status="matched")
             matched.append(item)
-        elif ts_src and derived and ts_src != derived:            # ③ 菜鸟自存与推导打架
+        elif ts_src and derived and ts_src != derived and derived in securities:
+            # ③a 错码自愈（复盘 A1）：自存 ts_code 不在 S 但推导码在 S
+            # → 推导码为准自动修复，audit 留痕（method='rule_fix'）。
+            item.update(dst_id=derived, method="rule_fix",
+                        conf="0.950", status="matched")
+            matched.append(item)
+        elif ts_src and derived and ts_src != derived:            # ③ 双码打架且推导也不在 S
             item["reason"] = "ts_code_mismatch"
             unmatched.append(item)
         elif derived and not ts_src:                              # ③/④ 推导码不在 S
@@ -542,11 +548,17 @@ def _mock_rows():
     rows.append(dict(stock_code="301999", market="SZ",                      # 合法码但零界 S 无
                      ts_code="301999.SZ", stock_name="坏样例-零界缺",
                      list_status="L"))                                      # → dst_not_found
+    # 复盘 A1 自愈样例：自存 ts_code 错后缀（不在 S），推导码在 S → rule_fix 修复
+    rows.append(dict(stock_code="000520", market="SZ",
+                     ts_code="000520.SH", stock_name="自愈样例-错后缀",
+                     list_status="L"))                                      # → rule_fix matched
     return rows
 
 
 # 故意问题样例的 stock_code：构造 mock 零界证券全集 S 时必须排除
-MOCK_BAD_CODES = {"900001", "600519", "301999"}
+# （000520 属 A1 自愈样例：仅手工注入其正确推导码 000520.SZ 进 S，
+#   防其自存错码 000520.SH 被自动收进 S 走 ts_code_confirm 而测不到自愈分支）
+MOCK_BAD_CODES = {"900001", "600519", "301999", "000520"}
 
 
 def cmd_mock_test(_args):
@@ -562,6 +574,7 @@ def cmd_mock_test(_args):
         if d:
             securities.add(d)
     securities.add("000519.SH")       # 噪声，验证规则不误配
+    securities.add("000520.SZ")       # A1 自愈样例的正确推导码（手工注入 S）
 
     try:
         conn = pg_connect()
@@ -605,9 +618,11 @@ def cmd_mock_test(_args):
         print(f"  §7 正向查询 600501 → {fwd[0] if fwd else None}")
         print(f"  §7 反向查询 600501.SH → src_id={rev[0] if rev else None}")
         print("=" * 62)
-        ok = (len(matched) == 47 and q_total == 3 and audit_ins == 47
-              and by_status.get("matched") == 47)
-        print(f"断言：47 对齐 + 3 入队 + 47 audit → {'PASS' if ok else 'FAIL'}")
+        rule_fix = sum(1 for m in matched if m.get("method") == "rule_fix")
+        ok = (len(matched) == 48 and q_total == 3 and audit_ins == 48
+              and by_status.get("matched") == 48 and rule_fix == 1)
+        print(f"断言：48 对齐（含 1 条 A1 自愈 rule_fix）+ 3 入队 + 48 audit"
+              f" → {'PASS' if ok else 'FAIL'}")
         conn.commit()
     except Exception as e:
         print(f"[error] mock-test 执行异常（不挂死，清理后退出）：{e}", file=sys.stderr)

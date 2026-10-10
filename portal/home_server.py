@@ -94,10 +94,10 @@ def _paper_impl():
             if not marks:
                 continue
             base = marks[0]["total"] or 1.0
-            l = marks[-1]
-            accs[aid] = {"total": l["total"], "cash": l["cash"], "date": l["date"],
-                         "pos_pct": l["pos_pct"], "pending": l["pending"],
-                         "cum_pct": round((l["total"] / base - 1) * 100, 2),
+            last = marks[-1]
+            accs[aid] = {"total": last["total"], "cash": last["cash"], "date": last["date"],
+                         "pos_pct": last["pos_pct"], "pending": last["pending"],
+                         "cum_pct": round((last["total"] / base - 1) * 100, 2),
                          "days": len(marks)}
         pend = con.execute(
             "SELECT account_id,stock,side,qty,plan_date FROM orders "
@@ -253,10 +253,10 @@ def _money_impl():
                 (aid,)).fetchall()
             if len(marks) < 1:
                 continue
-            l, prev = marks[-1], (marks[-2] if len(marks) > 1 else None)
+            last, prev = marks[-1], (marks[-2] if len(marks) > 1 else None)
             groups["USD" if aid.startswith("us_") else "CNY"].append({
-                "account": aid, "total": l["total"],
-                "delta": round(l["total"] - prev["total"], 2) if prev else None,
+                "account": aid, "total": last["total"],
+                "delta": round(last["total"] - prev["total"], 2) if prev else None,
                 "days": len(marks)})
         return {"ok": True, **groups}
     finally:
@@ -300,9 +300,9 @@ def answer(msg: str) -> dict:
                          f"（看多 {it.get('bull', 0)} / 看空 {it.get('bear', 0)}）")
         ps = _api("/api/paper_status")
         if ps and ps.get("ok") and ps.get("latest"):
-            l = ps["latest"]
-            lines.append(f"量化交易部：{ps.get('account_id', 'main')} 总资产 {_fmt_money(l['total'])}"
-                         f"（{l.get('cum_pct', 0):+.2f}%），待撮合 {l.get('pending', 0)}")
+            last = ps["latest"]
+            lines.append(f"量化交易部：{ps.get('account_id', 'main')} 总资产 {_fmt_money(last['total'])}"
+                         f"（{last.get('cum_pct', 0):+.2f}%），待撮合 {last.get('pending', 0)}")
         else:
             p = ck["paper"]  # 降级：本地 paper.db 只读投影
             acc_line = "、".join(
@@ -321,11 +321,11 @@ def answer(msg: str) -> dict:
     if any(k in low for k in ("钱", "持仓", "账本", "资产", "净值", "账户")):
         ps = _api("/api/paper_status")
         if ps and ps.get("ok") and ps.get("latest"):
-            l = ps["latest"]
+            last = ps["latest"]
             return {"ok": True, "via": "rule",
                     "text": f"老板，账本态势（8091 原生口径，{ps.get('account_id', 'main')}）："
-                            f"总资产 {_fmt_money(l['total'])}（累计 {l.get('cum_pct', 0):+.2f}%），"
-                            f"待撮合 {l.get('pending', 0)} 单，快照 {l.get('date', '?')}。"}
+                            f"总资产 {_fmt_money(last['total'])}（累计 {last.get('cum_pct', 0):+.2f}%），"
+                            f"待撮合 {last.get('pending', 0)} 单，快照 {last.get('date', '?')}。"}
         p = ck["paper"]  # 降级：本地 paper.db 只读投影
         if not p.get("ok"):
             return {"ok": True, "via": "rule", "text": "账本数据暂不可用。"}
