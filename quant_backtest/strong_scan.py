@@ -108,17 +108,17 @@ def block_pool():
 
 
 def eval_stock(code, block_code):
-    """单股 250 日超额 + 日线趋势 → (ex250, trend_bull, ok)。"""
+    """单股 250 日超额 + 日线趋势 → (ex250, trend_bull, ok, n_bars)。"""
     import linkage
     r = linkage.series(code, "1d", limit=250, block=block_code)
     if not r.get("ok"):
-        return None, False, False
+        return None, False, False, 0
     pct = r.get("stock") or []
     ex = None
     if r.get("block") and pct and r["block"][-1] is not None \
             and pct[-1] is not None:
         ex = round(pct[-1] - r["block"][-1], 1)
-    return ex, trend_bull(pct), True
+    return ex, trend_bull(pct), True, len(pct)
 
 
 def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter):
@@ -136,9 +136,9 @@ def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter):
     for m in members[:max(1, int(limit))]:
         code = m["code"]
         try:
-            ex, bull, ok = eval_stock(code, bc)
+            ex, bull, ok, n_bars = eval_stock(code, bc)
         except Exception as e:
-            ex, bull, ok = None, False, False
+            ex, bull, ok, n_bars = None, False, False, 0
             sys.stderr.write("    ! %s 评估异常: %s\n" % (code, e))
         if not ok:
             continue  # K 线取数失败：跳过个股，不计评估数
@@ -146,6 +146,14 @@ def scan_block(bc, bname, limit, th_ex, min_members, n_eval_counter):
         n_eval_counter[0] += 1
         is_strong, tag, reasons = strong_verdict(ex, n, bull,
                                                  th_ex, min_members)
+        # S2 修复(077e 选股审计): 次新闸——K 线 <250 根时 series 归一
+        # base 落在上市首根, ex250 实为「上市以来超额」, 上市即涨的次新
+        # 虚高涌入领涨名单(rps_resonance new_flag 同哲学, 此前 strong 无
+        # 对称闸)。降级「逆板块强势」观察层=不推送只进名单人工复核。
+        if is_strong and tag == "板块领涨" and 0 < n_bars < 250:
+            tag = "逆板块强势"
+            reasons.append("次新(%d<250根, ex250=上市以来口径) 降级观察"
+                           % n_bars)
         if is_strong:
             hits.append({"ts": now_iso(), "code": code, "name": m["name"],
                          "block": bname, "block_code": bc, "ex250": ex,
@@ -197,6 +205,7 @@ def main():
 
     all_hits, skipped = [], 0
     n_eval_total = [0]
+    n_members_total = [0]
     n_scanned = 0
     for i, (bc, bname) in enumerate(pool, 1):
         try:
@@ -213,6 +222,7 @@ def main():
                   % (i, len(pool), bc, bname, n, skip), flush=True)
             continue
         n_scanned += 1
+        n_members_total[0] += n
         lead = sum(1 for h in hits if h["tag"] == "板块领涨")
         print("[%d/%d] %s %s 成员=%d 评估=%d 命中=%d（领涨=%d 观察=%d）"
               % (i, len(pool), bc, bname, n, n_eval, len(hits), lead,
@@ -236,6 +246,14 @@ def main():
         "blocks_total": len(pool), "blocks_scanned": n_scanned,
         "blocks_skipped": skipped, "stocks_evaluated": n_eval_total[0],
         "per_block_cap": int(a.limit),
+        # S1 修复(077e 选股审计): 覆盖率显式化——每板块仅评清单前 N
+        # (ts_stock_basic 顺序, 非全量), 名单语义=「前 N 里领涨」而非
+        # 「板块领涨」; 下游知情人, 全量扫描留阶段 2b
+        "coverage_note": "每板块仅评成员清单前 %d（ts_stock_basic 顺序）"
+                         "——名单=前 N 里领涨，非全量板块领涨"
+                         % int(a.limit),
+        "member_coverage": (round(n_eval_total[0] / n_members_total[0], 3)
+                            if n_members_total[0] else None),
         "counts": {"板块领涨": len(lead_rows), "逆板块强势": len(obs_rows)},
         "items": items, "list": items,
         "lead": [{"code": h["code"], "name": h["name"],

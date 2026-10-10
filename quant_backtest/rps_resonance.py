@@ -602,7 +602,11 @@ def resonance_watchlist(rps_df, env, full_envs=None, full_rps=None):
             chg[sym] = float(df["close"].iloc[-1]
                              / df["close"].iloc[-51] - 1)
         s = pd.Series(chg)
-        pool_chg[mkt] = ((s.rank(pct=True) * 100).round(1)).to_dict()
+        # R3 修复(077e 选股审计): 兜底池内 RPS 需池量门槛(与池内闸门同
+        # POOL_GATE_MIN)——小池 rank 百分位是纯噪声, 不足门槛记缺维降权,
+        # 不硬凑百分位
+        pool_chg[mkt] = (((s.rank(pct=True) * 100).round(1)).to_dict()
+                         if len(s) >= POOL_GATE_MIN else {})
 
     pool_envs = {}
     for mkt, pairs in by_mkt.items():
@@ -630,8 +634,11 @@ def resonance_watchlist(rps_df, env, full_envs=None, full_rps=None):
                 sv = int(sig.values[-1])
                 sigs[sn] = sv
                 longs += int(sv > 0)
-            except Exception:
-                pass
+            except Exception as e:
+                # R2 修复(077e 选股审计): 策略异常留痕——tech 分参与统计
+                # (A5 判据), 全炸时退化纯 MA 修正仍在出数, 静默即漏网
+                sys.stderr.write("    ! %s %s 策略 %s 异常: %s\n"
+                                 % (mkt, sym, sn, e))
         tech = longs * 25
         ma20 = df["close"].iloc[-20:].mean()
         tech = min(100, max(0, tech + (10 if df["close"].iloc[-1] > ma20
