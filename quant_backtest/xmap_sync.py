@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-X2 实体 ID 映射同步脚本（临界 PG schema xmap）
+X2 实体 ID 映射同步脚本（零界 PG schema xmap）
 设计稿：docs/plans/2026-10-08_X2实体ID映射_设计稿.md
 
 子命令：
@@ -14,7 +14,7 @@ X2 实体 ID 映射同步脚本（临界 PG schema xmap）
   mysql://readonly_user:pass@rookie-host:3306/thunder_model?charset=utf8mb4
 凭据缺失/驱动缺失时干净退出（exit 3），不抛栈。
 
-PG 连接：默认 127.0.0.1:5442 quant_user/quant_system（临界 docker newquantsystem_v2-postgres-1），
+PG 连接：默认 127.0.0.1:5442 quant_user/quant_system（零界 docker newquantsystem_v2-postgres-1），
 可用环境变量 XMAP_PG_HOST / XMAP_PG_PORT / XMAP_PG_USER / XMAP_PG_PASSWORD / XMAP_PG_DB 覆盖。
 """
 
@@ -149,7 +149,7 @@ def rule_derive_ts_code(stock_code, market):
 # ── 设计稿 §3.1 对齐规则（init 与 incr 与 mock 共用同一函数） ─────────
 def align_rows(rows, securities):
     """rows: [{'stock_code','market','ts_code','stock_name','list_status'},...]
-    securities: 临界证券全集 S（ts_code 集合）
+    securities: 零界证券全集 S（ts_code 集合）
     返回 (matched_list, unmatched_list)"""
     matched, unmatched = [], []
     for r in rows:
@@ -254,9 +254,9 @@ def write_results(cur, schema, matched, unmatched):
     return n_ins, n_upd
 
 
-# ── 临界证券全集 S ────────────────────────────────────────────────────
+# ── 零界证券全集 S ────────────────────────────────────────────────────
 def load_securities(cur):
-    """S = 临界证券全集 ts_code 集合。
+    """S = 零界证券全集 ts_code 集合。
     基准优先级：PG public.stock_basic.symbol（ts_code 风格，为空则按规则补后缀）
     → 为空时回退 Neo4j Security.ts_code（kg_client，本轮骨架不强制可用）。"""
     s = set()
@@ -281,7 +281,7 @@ def load_securities(cur):
             "MATCH (n:Security) WHERE n.ts_code IS NOT NULL RETURN n.ts_code AS ts_code")}
         kg.close()
     except Exception as e:  # noqa
-        print(f"[warn] 临界证券全集获取失败（PG stock_basic 空 且 Neo4j 不可用）：{e}",
+        print(f"[warn] 零界证券全集获取失败（PG stock_basic 空 且 Neo4j 不可用）：{e}",
               file=sys.stderr)
     return s
 
@@ -341,14 +341,14 @@ def cmd_init(_args):
     try:
         conn = pg_connect()
     except Exception as e:
-        print(f"[error] 临界 PG 连接失败：{e}", file=sys.stderr)
+        print(f"[error] 零界 PG 连接失败：{e}", file=sys.stderr)
         sys.exit(1)
     try:
         with conn.cursor() as cur:
             create_objects(cur, MAIN_SCHEMA)
             securities = load_securities(cur)
         if not securities:
-            print("[error] 临界证券全集 S 为空，中止 init（先跑临界 stock_basic 同步）",
+            print("[error] 零界证券全集 S 为空，中止 init（先跑零界 stock_basic 同步）",
                   file=sys.stderr)
             sys.exit(1)
         rows = fetch_cainiao_stocks(cn)
@@ -396,7 +396,7 @@ def cmd_incr(_args):
     try:
         conn = pg_connect()
     except Exception as e:
-        print(f"[error] 临界 PG 连接失败：{e}", file=sys.stderr)
+        print(f"[error] 零界 PG 连接失败：{e}", file=sys.stderr)
         sys.exit(1)
     try:
         with conn.cursor() as cur:
@@ -471,19 +471,19 @@ def _mock_rows():
     rows.append(dict(stock_code="600519", market="SH",                      # 自存 ts_code 与推导打架
                      ts_code="600519.SZ", stock_name="坏样例-后缀打架",
                      list_status="L"))                                      # → ts_code_mismatch
-    rows.append(dict(stock_code="301999", market="SZ",                      # 合法码但临界 S 无
-                     ts_code="301999.SZ", stock_name="坏样例-临界缺",
+    rows.append(dict(stock_code="301999", market="SZ",                      # 合法码但零界 S 无
+                     ts_code="301999.SZ", stock_name="坏样例-零界缺",
                      list_status="L"))                                      # → dst_not_found
     return rows
 
 
-# 故意问题样例的 stock_code：构造 mock 临界证券全集 S 时必须排除
+# 故意问题样例的 stock_code：构造 mock 零界证券全集 S 时必须排除
 MOCK_BAD_CODES = {"900001", "600519", "301999"}
 
 
 def cmd_mock_test(_args):
     rows = _mock_rows()
-    # mock 临界证券全集 S：只由正常样例构造（排除故意问题样例）
+    # mock 零界证券全集 S：只由正常样例构造（排除故意问题样例）
     securities = set()
     for r in rows:
         if r["stock_code"] in MOCK_BAD_CODES:
@@ -498,7 +498,7 @@ def cmd_mock_test(_args):
     try:
         conn = pg_connect()
     except Exception as e:
-        print(f"[error] 临界 PG 不可达，mock-test 无法入表：{e}", file=sys.stderr)
+        print(f"[error] 零界 PG 不可达，mock-test 无法入表：{e}", file=sys.stderr)
         sys.exit(1)
     schema = TEST_SCHEMA
     try:

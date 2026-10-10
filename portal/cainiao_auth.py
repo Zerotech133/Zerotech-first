@@ -5,8 +5,8 @@
 代码引用，等菜鸟侧 client 凭据（clientId/clientSecret）到位后按下面
 「portal_api.py 接线点」三行插入即可启用。
 
-架构定调（详见 portal/docs/2026-10-08_临界接入菜鸟登录_勘查.md）：
-  临界 portal 作 OAuth2 资源服务器 —— 浏览器用户带
+架构定调（详见 portal/docs/2026-10-08_零界接入菜鸟登录_勘查.md）：
+  零界 portal 作 OAuth2 资源服务器 —— 浏览器用户带
   Authorization: Bearer <accessToken> 访问，本模块调菜鸟
   POST /admin-api/system/oauth2/check-token 远程校验，结果进程内
   缓存 60s（不落盘）；X-Portal-Token 机器通道原样保留；菜鸟不可达时
