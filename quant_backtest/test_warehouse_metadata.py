@@ -1,7 +1,6 @@
 """计划与采集共享只读快照，不以累计行数代替文件基线。"""
 import importlib
 import json
-from pathlib import Path
 
 import pandas as pd
 import pytest

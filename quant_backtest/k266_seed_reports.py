@@ -2,7 +2,9 @@
 """K266 M3 装料：reportapi 个股研报列表 → curl_cffi 下载 PDF → inbox/pending 投喂。
 依赖：反爬解法 curl_cffi impersonate=chrome131（2026-10-07 实证）。
 用法: python k266_seed_reports.py [--count 100]"""
-import os, sys, time
+import os
+import sys
+import time
 from curl_cffi import requests as creq
 
 PENDING = r"e:\老田的AI助手\inbox\docs\pending"

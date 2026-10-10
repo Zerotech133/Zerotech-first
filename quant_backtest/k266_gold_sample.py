@@ -3,7 +3,9 @@
 分层：研报 20 + 公告剪报（非研报 doc_type）10；direction 配额 利好13/中性16/利空1（利空全量仅1篇保入选）。
 产出：data/k266_docs/gold_labels.jsonl（gold 字段留空待人审）+ 控制台人审清单。
 用法: python -X utf8 k266_gold_sample.py"""
-import json, os, random
+import json
+import os
+import random
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SHADOW = os.path.join(BASE, "data", "k266_docs", "structure_shadow.jsonl")

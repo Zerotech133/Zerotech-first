@@ -39,7 +39,6 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import tdx_read as tdxr
 
 TDX = os.path.join(HERE, "data", "tdx")
 ASHARE = os.path.join(HERE, "data", "ashare")

@@ -31,7 +31,6 @@ sys.path.insert(0, HERE)
 
 import requests                                       # noqa: E402
 from kg_client import KgClient                        # noqa: E402
-import kg_schema as S                                 # noqa: E402
 
 OUT = os.path.join(HERE, "data", "kg_digest_last.json")
 OLLAMA = os.environ.get("KG_OLLAMA", "http://127.0.0.1:11434/api/chat")

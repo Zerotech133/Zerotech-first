@@ -1,5 +1,4 @@
 """只读计划回归；合成日历与元数据，不导入采集器或配置。"""
-import ast
 import copy
 from datetime import datetime
 import importlib

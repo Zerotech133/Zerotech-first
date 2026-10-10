@@ -20,9 +20,7 @@ import sys  # noqa: E402
 
 sys.path.insert(0, str(sys_dir))
 
-from checkpoints import Checkpointer  # noqa: E402
-from llm import OllamaLLM, MockLLM, similarity  # noqa: E402
-from memory import MemoryStore  # noqa: E402
+from llm import similarity  # noqa: E402
 
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
 

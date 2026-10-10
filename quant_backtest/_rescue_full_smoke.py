@@ -9,8 +9,6 @@
 零副作用：不写池文件、不跑 scan_all（topup 对新鲜数据为 no-op，接线
 逻辑已由单测覆盖；本脚本验证的是救援链路的真实数据正确性）。
 """
-import glob
-import json
 import os
 import sys
 from datetime import datetime

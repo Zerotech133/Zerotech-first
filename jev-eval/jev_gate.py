@@ -302,11 +302,11 @@ def ensure_seen_table() -> bool:
                 SEEN_FILE.rename(SEEN_FILE.with_suffix(".json.imported"))
                 log(f"seen 本地 JSON 迁移入库完成：{migrated} 条（留档 gate_seen.json.imported）")
             except Exception as e:  # noqa: BLE001
-                log(f"seen JSON 迁移失败（继续用 DB）", err=str(e)[:120], level="warn")
+                log("seen JSON 迁移失败（继续用 DB）", err=str(e)[:120], level="warn")
         _seen_ready = True
         return True
     except Exception as e:  # noqa: BLE001
-        log(f"jev_gate_seen 建表失败", err=str(e)[:150], level="error")
+        log("jev_gate_seen 建表失败", err=str(e)[:150], level="error")
         return False
 
 
@@ -338,7 +338,7 @@ def _handle_alert(a: dict, dry: bool) -> None:
         try:
             verdict = judge(a)
         except Exception as e:  # noqa: BLE001
-            log(f"Jev 失败（跳过本轮）", alert_id=a["alert_id"], err=str(e)[:120],
+            log("Jev 失败（跳过本轮）", alert_id=a["alert_id"], err=str(e)[:120],
                 level="warn")
             return  # 不标 seen，下轮重试
     elif dry:
@@ -379,7 +379,7 @@ def run_once(dry: bool = False) -> None:
             try:
                 _handle_alert(a, dry)
             except Exception as e:  # noqa: BLE001
-                log(f"单告警处理异常（不标 seen，下轮重试）", alert_id=a["alert_id"],
+                log("单告警处理异常（不标 seen，下轮重试）", alert_id=a["alert_id"],
                     err=str(e)[:150], level="error")
 
 

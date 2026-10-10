@@ -57,7 +57,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 
 DEFAULT_BASE_URL = "http://rookie.xtcloud-tech.com:43083"
 DEFAULT_CHECK_TOKEN_PATH = "/admin-api/system/oauth2/check-token"

@@ -16,7 +16,6 @@ r"""kg_neo4j_backup.py — neo4j-kg 周备停库 dump（K-STOCK-075 案 A 变体
 """
 import subprocess
 import sys
-import time
 from datetime import datetime
 
 CONTAINER = "neo4j-kg"

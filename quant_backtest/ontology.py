@@ -37,7 +37,6 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import kg_schema as S            # 属性映射唯一权威源（注册表复用不重复声明）
 
 VERSION = "1.0"
 REGISTRY_TS = "2026-10-09"

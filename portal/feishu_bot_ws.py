@@ -17,7 +17,6 @@ import json
 import os
 import sys
 import threading
-import time
 import traceback
 from datetime import datetime
 
@@ -49,7 +48,8 @@ def log(msg):
 
 # ── L2 引擎接合 ─────────────────────────────────────────────
 def _portal_shim():
-    import portal_api, portal_report
+    import portal_api
+    import portal_report
 
     class _P:
         _chanlun_sl_tp = staticmethod(portal_api.Handler._chanlun_sl_tp)

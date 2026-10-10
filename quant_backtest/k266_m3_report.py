@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """K266 M3 影子验收统计：类型/方向分布 + tags 榜 + ERR 清单 + 人审抽样。
 用法: python k266_m3_report.py [--sample 10]"""
-import json, os, random, sys
+import json
+import os
+import random
+import sys
 from collections import Counter
 
 BASE = os.path.dirname(os.path.abspath(__file__))

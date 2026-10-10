@@ -20,7 +20,6 @@ import json
 import os
 import sys
 from datetime import datetime
-from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8')
 import pandas as pd

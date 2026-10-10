@@ -16,7 +16,8 @@
   H3 博弈驱动   = 量能事件密度 × 无佐证信号占比（纯量价行为，无外部事件）
 · Event 流 2026-08-29 起沉淀：窗口内"无佐证"可能是"无数据"，D0 前不采信
 """
-import sys, os
+import sys
+import os
 from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

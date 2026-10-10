@@ -34,7 +34,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import kg_schema as S
-import datamart as dm
 
 
 def _now():

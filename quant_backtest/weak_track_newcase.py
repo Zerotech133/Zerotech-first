@@ -17,7 +17,6 @@ weak_track_close.py --type B --newcase-name "名称" --send 时自动调用本�
 """
 import argparse
 import os
-import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))

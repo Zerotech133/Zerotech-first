@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """K12 P1 冒烟测试：company_360 三件（per 切换/在职历任/游资区间）"""
-import sys, io
+import sys
+import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
 import kg_portal as K

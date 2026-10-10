@@ -20,7 +20,6 @@
   python kg_conduction_lag.py run 人形机器人 [--days 365]
 """
 import argparse
-import glob
 import json
 import os
 import sys
@@ -32,7 +31,6 @@ sys.path.insert(0, HERE)
 
 import pandas as pd                                    # noqa: E402
 from kg_client import KgClient                         # noqa: E402
-import kg_schema as S                                  # noqa: E402
 
 ASHARE = os.path.join(HERE, "data", "ashare")
 OUT = os.path.join(HERE, "data", "kg_conduction_lag.json")

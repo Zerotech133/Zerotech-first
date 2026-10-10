@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """dfcfw EO_Bot 反爬实验：报告列表 JSON → PDF 直链 → 请求头组合矩阵"""
-import json, requests
+import requests
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")

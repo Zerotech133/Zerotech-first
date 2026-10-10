@@ -7,7 +7,10 @@
 去重：同(主体,客体,rel,方向) 1 小时聚窗链式合并（多源重复报道计 n）。
 影子纪律：默认只写 event_shadow.jsonl；--dry 预览不落盘；--commit 入图（人审后）。
 用法: python -X utf8 k266_m3a_events.py [--dry] [--commit]"""
-import json, os, sys, time, hashlib
+import json
+import os
+import sys
+import hashlib
 from datetime import datetime, timedelta
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kg_client import KgClient

@@ -21,7 +21,6 @@
   python linkage_signals.py 301216.SZ --periods 1d --lo-win 60 --hi-win 120
 """
 import argparse
-import json
 import os
 import sys
 

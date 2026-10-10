@@ -13,7 +13,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
-from kg_link import OLLAMA, link_text, name_dictionary  # noqa: E402
+from kg_link import OLLAMA, name_dictionary  # noqa: E402
 
 OUT = r"e:\老田的AI助手\quant_backtest\data\semantica\k265_phase0_shadow.jsonl"
 CAP = 200          # 今晚 LLM 抽取上限

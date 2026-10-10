@@ -2,7 +2,6 @@
 """新闻旧时间迁移：prepare 只读，apply 备份后原子修改，rollback 逐行回退。"""
 import argparse
 import json
-import os
 import re
 import sqlite3
 from pathlib import Path

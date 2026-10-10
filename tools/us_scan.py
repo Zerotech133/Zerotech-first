@@ -5,7 +5,10 @@ r"""us_scan: 美股全市场市值榜快照（tradingview-mcp P1a 扩池工具�
   & "$env:APPDATA\uv\tools\tradingview-mcp-server\Scripts\python.exe" us_scan.py [limit]
 产物: out/us_scan_YYYYMMDD.json + 控制台涨幅榜摘要
 """
-import asyncio, datetime, json, sys
+import asyncio
+import datetime
+import json
+import sys
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8')

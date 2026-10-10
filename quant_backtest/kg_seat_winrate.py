@@ -14,8 +14,6 @@
 挂载：start_kg_sync.ps1 步骤 seat_winrate（bclass_sync 后、kg_features 前，
 守"图写入先于特征重算"纪律）。展示：hm_profile 摘要 + KG-V6 _prof 弹窗。
 """
-import io
-import sys
 from datetime import datetime
 
 import pandas as pd

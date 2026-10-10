@@ -15,7 +15,6 @@
 import hashlib
 import json
 import os
-import sys
 import traceback
 from contextlib import contextmanager
 from datetime import datetime, timezone

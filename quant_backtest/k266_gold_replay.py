@@ -7,7 +7,10 @@ v2 口径全部锚定 2026-10-08 用户终审定稿：
   - direction_why 只引本文内容（#01 影子混入周报标题瑕疵）
 独立输出 gold_replay_v2.jsonl，不触碰生产 structure_shadow.jsonl。
 用法: python k266_gold_replay.py"""
-import json, os, re, time
+import json
+import os
+import re
+import time
 import requests
 
 BASE = os.path.dirname(os.path.abspath(__file__))

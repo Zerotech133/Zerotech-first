@@ -294,7 +294,6 @@ def read_info(tbl, codes=None, limit=200, since=None):
 
 if __name__ == "__main__":
     with read_resources([OUT, Path(INFO_DB).parent, Path(MANIFEST).parent]):
-        import sys
         m = _manifest()
         print("%-22s %-6s %-10s" % ("table", "ready", "latest"))
         for t in sorted(m):

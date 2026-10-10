@@ -2,7 +2,6 @@
 import ast
 from io import BytesIO
 from pathlib import Path
-from types import SimpleNamespace
 
 
 def handler(methods):

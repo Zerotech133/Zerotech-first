@@ -11,7 +11,6 @@ import argparse
 import json
 import sqlite3
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 BASE = Path(__file__).parent

@@ -5,12 +5,11 @@ import copy
 from datetime import datetime, timedelta
 import hashlib
 import hmac
-import json
 import unittest
 from unittest.mock import patch
 import uuid
 
-from ai_operator.contracts import EVENT_FIELDS, canonical_json, normalize_time, utc_now
+from ai_operator.contracts import EVENT_FIELDS, canonical_json, normalize_time
 from ai_operator.memory import open_store
 from tests_ai_operator import test_review_gate as gate_fixtures
 

@@ -18,7 +18,6 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

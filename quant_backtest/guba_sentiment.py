@@ -222,7 +222,6 @@ def guba_summary(tc, days=30, top_n=40, word=None):
             if not tag or tag == "中性披露" or tag not in TAG_WORDS:
                 continue
             d8 = (e.get("ts") or "")[:10].replace("-", "")
-            from datetime import date as _d, timedelta as _td
             try:
                 anchor = datetime.strptime(d8, "%Y%m%d").date()
             except Exception:

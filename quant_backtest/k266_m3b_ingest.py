@@ -5,7 +5,10 @@
 映射三级：精确 name → aliases → CONTAINS 唯一命中；歧义/未命中跳过并计数（多为非 A 股实体）。
 幂等：每次从影子全量重算后覆盖写（doc_* 属性），可随影子续跑重刷。
 用法: python -X utf8 k266_m3b_ingest.py [--dry]"""
-import json, os, sys, time
+import json
+import os
+import sys
+import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kg_client import KgClient
 

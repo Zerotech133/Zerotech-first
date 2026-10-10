@@ -7,7 +7,6 @@
     python run_invest.py --stock 600519 --live --model qwen3.5:4b
 """
 import argparse
-import json
 import sys
 from pathlib import Path
 

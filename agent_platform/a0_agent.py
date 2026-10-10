@@ -21,7 +21,7 @@ from pathlib import Path
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
-from llm import LLMError, MockLLM, OllamaLLM  # noqa: E402
+from llm import LLMError, OllamaLLM  # noqa: E402
 
 PERSONA = BASE / "prompts" / "a0_chief.md"
 ORG = BASE / "registry" / "org.json"

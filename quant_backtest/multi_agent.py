@@ -26,7 +26,6 @@ import os
 import re
 import sys
 import time
-from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

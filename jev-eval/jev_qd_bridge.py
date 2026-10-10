@@ -287,7 +287,7 @@ def fetch_market_context(qd_market: str, symbol: str) -> str:
         seq = "; ".join(f"{d} 收 {c:g}" for d, c in reversed(closes))
         return f"近{len(closes)-1}个交易日累计 {chg:+.1%}。逐日收盘（旧→新）: {seq}"
     except Exception as e:  # noqa: BLE001
-        log(f"行情查询失败", symbol=symbol, err=str(e)[:80], level="warn")
+        log("行情查询失败", symbol=symbol, err=str(e)[:80], level="warn")
         return ""
 
 

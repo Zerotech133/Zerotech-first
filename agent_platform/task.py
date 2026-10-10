@@ -7,7 +7,6 @@
     python task.py move <task_id> <new_status> --by dept/dev/DEV1 [--note "..."]
 """
 import argparse
-import json
 import sys
 from pathlib import Path
 

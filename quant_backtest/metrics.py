@@ -5,7 +5,6 @@
 成本 = 换手 × cost_bps/1e4；IR 基准 = 买入持有。
 """
 import numpy as np
-import pandas as pd
 
 TD = 252
 

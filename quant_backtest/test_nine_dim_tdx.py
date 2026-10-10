@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """nine_dim TDX 本地接线单元测试（零真实 IO，零 API 调用）。"""
-import math
 import os
 import sys
 import tempfile

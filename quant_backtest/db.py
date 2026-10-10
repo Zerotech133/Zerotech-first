@@ -17,7 +17,6 @@
 import json
 import os
 import sqlite3
-import tempfile
 from datetime import datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))

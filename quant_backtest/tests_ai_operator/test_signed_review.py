@@ -7,14 +7,13 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib
 import importlib.util
-import json
 import unittest
 from unittest.mock import patch
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from ai_operator.contracts import canonical_json, normalize_time, utc_now
+from ai_operator.contracts import canonical_json, utc_now
 from ai_operator.human_review import record_human_decision, load_human_decision
 from ai_operator.memory import open_store
 import test_human_review as fixtures

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """K265 rj1 commit 口径清理：删 batch=rj1 且对不在 pv2 白名单(ok+conf>=0.95-剔除) 的边。
 背景：rj1 全量切片误将 pv1 行(旧版无自检) 0.95+ 带写入图；pv2 对这些对判负/低conf = 否决。"""
-import json, sys
+import json
+import sys
 from pathlib import Path
 sys.path.insert(0, r'e:\老田的AI助手\quant_backtest')
 from kg_client import KgClient

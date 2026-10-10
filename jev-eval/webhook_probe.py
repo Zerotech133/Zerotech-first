@@ -1,7 +1,9 @@
 # Webhook direct probe: POST a test message, print full Feishu response
 # (backup_alert.send_webhook only returns bool; this shows the error body
 #  for diagnosis: invalid url / sign fail / keyword miss etc.)
-import json, sys, time
+import json
+import sys
+import time
 import urllib.request as rq
 
 sys.path.insert(0, r"E:\老田的AI助手\jev-eval")
@@ -17,7 +19,9 @@ body = {"msg_type": "text",
                              + time.strftime("%Y%m%d_%H%M%S")
                              + " (no action needed)"}}
 if secret:
-    import base64 as b64, hashlib as sha, hmac as hmc
+    import base64 as b64
+    import hashlib as sha
+    import hmac as hmc
     ts = str(int(time.time()))
     dig = hmc.new(ts + "\n" + secret, digestmod=sha.sha256).digest()
     body["timestamp"] = ts

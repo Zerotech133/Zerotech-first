@@ -13,7 +13,10 @@
 # Webhook cards have no button callbacks, so ack/ignore buttons are dropped
 # on the webhook channel (plain notification only).
 # exit codes: 0 sent / 1 send failed / 2 exception
-import json, os, subprocess, sys
+import json
+import os
+import subprocess
+import sys
 
 LARK_PLUGIN_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
 DEFAULT_USER_ID = "ou_50a95455c7dffec1090ade400886d0d4"
@@ -184,7 +187,10 @@ def load_webhook():
 def send_webhook(url, secret, msg_type, content):
     """POST to Feishu custom robot. Returns True on success.
     Sign algorithm: base64(hmac_sha256(key=timestamp+"\\n"+secret, msg=b''))."""
-    import base64 as _b64, hashlib as _sha, hmac as _hmac, time as _time
+    import base64 as _b64
+    import hashlib as _sha
+    import hmac as _hmac
+    import time as _time
     import urllib.request as _rq
     if msg_type == 'interactive':
         body = {'msg_type': 'interactive', 'card': json.loads(content)}

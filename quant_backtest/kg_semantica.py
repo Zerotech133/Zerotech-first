@@ -17,7 +17,9 @@ MERGE 幂等策略冲突。
   python kg_semantica.py 002261.SZ --paths 英维克 3买   # 时序路径（find_temporal_paths）
   可选 --hops 1|2（默认 2：标的→Event→MarketEvent 等）
 """
-import sys, os, time
+import sys
+import os
+import time
 from collections import Counter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

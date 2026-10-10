@@ -13,7 +13,6 @@ RBAC：操作者 by 格式 "A0"（全权）或 "dept/<dept>/<agent>"——move �
     P0 事件可直达 doing（p0=True 跳过派单等待）
 """
 import json
-import sys
 import threading
 from datetime import datetime
 from pathlib import Path

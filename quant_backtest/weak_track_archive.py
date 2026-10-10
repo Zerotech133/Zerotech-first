@@ -23,8 +23,6 @@ tenant_access_token 通道无人值守可靠）：
   python weak_track_archive.py --send         # 归档+推卡片
 """
 import argparse
-import datetime
-import io
 import json
 import os
 import sys

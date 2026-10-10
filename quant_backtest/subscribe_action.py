@@ -23,8 +23,6 @@
 """
 import json
 import os
-import sys
-import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SUB_PATH = os.path.join(HERE, "subscriptions.json")

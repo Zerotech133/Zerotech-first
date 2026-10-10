@@ -9,7 +9,6 @@ MISS 不入边仅 WARN（防错挂）。
 
 用法：python kg_chain.py build [--dryrun] | query <主题名>
 """
-import glob
 import json
 import os
 import sys

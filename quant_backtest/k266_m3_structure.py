@@ -8,7 +8,11 @@
 rel 枚举白名单：落影子前 events.rel 归一（变体映射+白名单外落'其他'）。
 用法: python k266_m3_structure.py [--limit N]（默认全量，幂等跳过已判 doc_id）"""
 import difflib
-import json, os, re, sys, time
+import json
+import os
+import re
+import sys
+import time
 import requests
 
 BASE = os.path.dirname(os.path.abspath(__file__))

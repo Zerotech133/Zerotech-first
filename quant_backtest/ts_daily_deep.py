@@ -10,7 +10,10 @@
 幂等：已有 d_*.parquet 跳过 → 中断重跑自然续。限频错误由
 ts_call 自动退避 61s 重试。
 """
-import os, sys, glob, time
+import os
+import sys
+import glob
+import time
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))

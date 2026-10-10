@@ -252,7 +252,9 @@ def render_workspace(snap, css, base=None):
 
 if __name__ == "__main__":
     # 离线自校验：读真实缓存渲染，断言结构锚点（不依赖服务器）
-    import json, os, sys
+    import json
+    import os
+    import sys
     from datetime import datetime
     here = os.path.dirname(os.path.abspath(__file__))
     snap = json.load(open(os.path.join(here, "qd_scan_cache.json"), encoding="utf-8"))

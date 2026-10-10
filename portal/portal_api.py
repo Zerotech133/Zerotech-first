@@ -5621,7 +5621,6 @@ gap:14px;align-items:start}}
     def _fin_page(self):
         import html as _h
         from urllib.parse import quote as _q
-        from datetime import datetime as _fdt, timedelta as _ftd
         e = _h.escape
         pre = _read_json(os.path.join(REPORTS_DIR,
                                       "premarket_latest.json"))
@@ -19780,7 +19779,7 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
         """M3-W4 影子面板页：真假信号按日对照——信号当时可见（conf/q 三因子，
         pre 窗口无未来信息）vs 影子后验（hm_tag/post_hm10），口径全透明。"""
         import html as _h
-        from urllib.parse import parse_qs as _pq, quote as _qt
+        from urllib.parse import parse_qs as _pq
         import sys as _sy
         if QBT_DIR not in _sy.path:
             _sy.path.insert(0, QBT_DIR)
@@ -19889,7 +19888,8 @@ CH.h_conf.on('click',function(p){var i=p.dataIndex,x=CFB[i];if(!x)return;
     def _kg_resonance_block(self):
         """K207·E2 三线共振看板卡：直读 kg_resonance_last.json（K206 影子
         落盘，只记不推）。last 文件为单主题快照，卡面明示主题与生成时间。"""
-        import json as _js, os as _os
+        import json as _js
+        import os as _os
         from html import escape as _e
         path = _os.path.join(QBT_DIR, "data", "kg_resonance_last.json")
         try:

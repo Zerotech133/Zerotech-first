@@ -176,7 +176,6 @@ def _subgraph(cli, seed, hops=2):
 
 def community(seed, hops=2):
     """社群检测：seed 子图 louvain → 社群划分+代表节点。"""
-    import networkx as nx
     from networkx.algorithms.community import louvain_communities
     cli = KgClient(retry=1, retry_wait=1)
     try:

@@ -16,7 +16,7 @@ import pytest
 PAPER_DIR = Path(__file__).resolve().parent.parent / "paper"
 sys.path.insert(0, str(PAPER_DIR))
 
-from engine import PaperEngine, Reject, LOT   # noqa: E402
+from engine import PaperEngine, Reject   # noqa: E402
 from market import FakeMarket                 # noqa: E402
 
 

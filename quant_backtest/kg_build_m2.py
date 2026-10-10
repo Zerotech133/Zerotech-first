@@ -18,7 +18,9 @@
   python kg_build_m2.py            # 实跑入图
   python kg_build_m2.py --dryrun   # 只打印配对/组合表，不写库
 """
-import sys, os, time
+import sys
+import os
+import time
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

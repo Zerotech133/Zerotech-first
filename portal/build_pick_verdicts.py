@@ -51,24 +51,36 @@ def main():
         print("[verdicts] 行情湖不可达，跳过")
         sys.exit(0)
 
-    # 全市场日收益中位数作对照基准（一次load当日全市场）
+    # 对照基准（K-STOCK-077 修）：与个股同口径的窗口收益中位数——
+    # exec_d 全表开盘 × d1 全表收盘按 ts_code 对齐，中位=(close/open-1)。
+    # 旧实现 day_mid(d1) 只取 d1 单日 pct_chg 中位，与个股 w 天累计错配
+    # （牛市系统性负超额/熊市正超额），今日审计发现，n=0 未产数前修掉。
     day_cache = {}
 
-    def day_mid(dd):
-        if dd not in day_cache:
+    def window_mid(d0, d1):
+        # 真窗口中位：全市场 d0 开盘 → d1 收盘（与个股 exec 买入口径一致）
+        key = (d0, d1)
+        if key not in day_cache:
             try:
-                df = read_day("ts_daily", dd, columns=["ts_code", "pct_chg"])
-                vals = [v for v in
-                        (None if df is None else df["pct_chg"].tolist())
-                        or [] if v is not None]
-                vals.sort()
-                day_cache[dd] = vals[len(vals) // 2] if vals else None
+                import pandas as pd
+                o = read_day("ts_daily", d0, columns=["ts_code", "open"])
+                c = read_day("ts_daily", d1, columns=["ts_code", "close"])
+                if o is None or c is None or not len(o) or not len(c):
+                    day_cache[key] = None
+                    return None
+                m = pd.merge(o[["ts_code", "open"]],
+                             c[["ts_code", "close"]], on="ts_code")
+                vals = sorted(
+                    (float(cc) / float(oo) - 1) * 100
+                    for oo, cc in zip(m["open"], m["close"])
+                    if oo and float(oo) > 0 and cc is not None)
+                day_cache[key] = vals[len(vals) // 2] if vals else None
             except Exception as ex:  # noqa: BLE001
                 # A5 分诊：静默 None 会让基准对照整体缺失（裁决静默劣化）——留痕
-                print("[verdicts] 全市场中位数读取失败 dd=%s：%s"
-                      % (dd, str(ex)[:60]))
-                day_cache[dd] = None
-        return day_cache[dd]
+                print("[verdicts] 窗口基准中位数读取失败 %s~%s：%s"
+                      % (d0, d1, str(ex)[:60]))
+                day_cache[key] = None
+        return day_cache[key]
 
     # 全市场交易日历：任取一只宽基票的交易日序列
     cal_df = read_day("ts_daily", today, columns=["ts_code"])
@@ -172,7 +184,7 @@ def main():
                     rec["win"][w] = None  # 窗口未满 → pending
                     continue
                 r1 = pct_between(code, exec_d, d1)
-                b1 = day_mid(d1)
+                b1 = window_mid(exec_d, d1)
                 rec["win"][w] = {"r": r1, "base": b1, "exec": exec_d, "ex": (
                     round(r1 - b1, 2) if r1 is not None and b1 is not None
                     else None)}

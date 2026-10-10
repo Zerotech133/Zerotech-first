@@ -10,7 +10,6 @@ T5 预览无副作用：真实数据跑 close --type A 预览 → weak_cases 无
 隔离：T1-T4 monkeypatch REP 到 C:\\Temp 临时目录，不碰真实 reports；
      测试标的 code6=999999（不存在冲突）。全部 PASS 退出码 0。
 """
-import json
 import os
 import shutil
 import subprocess

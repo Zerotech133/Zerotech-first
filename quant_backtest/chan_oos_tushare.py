@@ -10,7 +10,6 @@
   - 评估段=[TRAIN_N, n) 连续区间
 """
 import os
-import sys
 import time
 
 import pandas as pd

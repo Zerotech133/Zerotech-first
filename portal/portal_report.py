@@ -24,7 +24,6 @@ import os
 import re
 import sqlite3
 import sys
-import time
 from datetime import datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -601,7 +600,6 @@ def collect_facts(portal, code, name=None):
     df = _facts_bars(code)
     facts["has_bars"] = df is not None
     if df is not None:
-        import numpy as np
         cols = {c.lower(): c for c in df.columns}
         # K246 买点定位：日线中枢突破日（三买日）——回答「哪天才是买点」
         facts["entry_signal"] = _facts_entry_signal(df, facts.get("chanlun"))

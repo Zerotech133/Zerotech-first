@@ -18,7 +18,10 @@ explore 时显式标注，提示数据缺口。
   python kg_build_m4.py            # 实跑入图
   python kg_build_m4.py --dryrun   # 只打印规模（完全只读）
 """
-import sys, os, csv, time
+import sys
+import os
+import csv
+import time
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

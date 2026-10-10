@@ -1,5 +1,4 @@
 """每日接口仅使用临时任务库和注入服务，不整体导入门户。"""
-import copy
 import importlib
 import json
 from pathlib import Path

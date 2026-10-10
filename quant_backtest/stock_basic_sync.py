@@ -25,7 +25,7 @@ import glob
 import json
 import os
 import sys
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent

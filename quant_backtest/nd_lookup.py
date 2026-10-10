@@ -11,7 +11,6 @@
   python nd_lookup.py 301216            # 6 位码自动补后缀
   python nd_lookup.py 301216.SZ
 """
-import glob
 import json
 import os
 import sys

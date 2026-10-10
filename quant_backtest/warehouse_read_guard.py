@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import threading
 
-from warehouse_commit import PublicationPending, publication_guard
+from warehouse_commit import publication_guard
 
 
 _READ_STATE = threading.local()

@@ -24,7 +24,6 @@ import os
 import sqlite3
 import sys
 import time
-from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

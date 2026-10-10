@@ -192,7 +192,7 @@ def append_pending(token: str, card_content: str, status_text: str,
     try:
         with PENDING_FILE.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-        log(f"卡片更新转入 outbox 待冲刷（共待处理），alert 见上一条日志")
+        log("卡片更新转入 outbox 待冲刷（共待处理），alert 见上一条日志")
     except Exception as e:  # noqa: BLE001
         log(f"outbox 写入失败: {e}")
 

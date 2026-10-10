@@ -16,8 +16,6 @@
                   edge_rows)
   cli.stats()
 """
-import sys
-from datetime import datetime
 
 import kg_schema as S
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """K265 回捞收官分析：FLAG 按段分割(rj/非rj) + 0.95带与图内已入图对比 → 待审清单落文件。"""
-import json, sys
+import json
+import sys
 from pathlib import Path
 sys.path.insert(0, r'e:\老田的AI助手\quant_backtest')
 from k265_dir_audit import audit_pair

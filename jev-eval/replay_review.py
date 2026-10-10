@@ -25,18 +25,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import subprocess
 import sys
 import time
-import urllib.request
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from signal_review_gate import (  # noqa: E402  复用判定层
-    API_KEY, BASE_URL, QUESTIONS, TUSHARE_TOKEN, jev_ask, psql,
+    API_KEY, QUESTIONS, TUSHARE_TOKEN, jev_ask, psql,
 )
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):

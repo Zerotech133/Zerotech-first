@@ -25,7 +25,6 @@ import glob
 import json
 import os
 import sqlite3
-import sys
 import time
 
 import pandas as pd

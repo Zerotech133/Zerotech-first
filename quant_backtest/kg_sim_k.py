@@ -26,7 +26,6 @@ import time
 from datetime import datetime, timedelta
 
 import numpy as np
-import pandas as pd
 
 import kg_schema as S
 import tdx_read as tdxr

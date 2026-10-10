@@ -51,7 +51,7 @@ def main():
                 hist[(lo, hi)] += 1
                 break
 
-    print(f"== k265 b4 (pv2) 判定统计 ==")
+    print("== k265 b4 (pv2) 判定统计 ==")
     if not total:
         print("无 pv2 记录")
         return

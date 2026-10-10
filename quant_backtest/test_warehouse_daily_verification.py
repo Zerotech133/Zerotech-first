@@ -1,7 +1,6 @@
 """只读目标核验：真实临时仓、逐键证据和注入查询结果。"""
 import hashlib
 import json
-from pathlib import Path
 
 import pandas as pd
 import pytest
