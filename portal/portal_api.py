@@ -5087,6 +5087,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     body = t.encode("utf-8")
             except Exception:
                 pass
+        # 058 全站统一：文件页同样幂等前置 tokens.css（:root 变量零副作用；
+        # 生成器重写文件后注入依然生效——与 _html 出口同构）
+        try:
+            t = body.decode("utf-8", "ignore")
+            if "</head>" in t and "static/tokens.css" not in t:
+                t = t.replace(
+                    "</head>",
+                    '<link rel="stylesheet" href="/static/tokens.css"></head>',
+                    1)
+                body = t.encode("utf-8")
+        except Exception:
+            pass
         body += _BTSEL_TAG.encode("utf-8")   # K255 静态报告页同样注入
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -9901,7 +9913,13 @@ function ckPush(i){
                       "8px 12px;border-radius:6px;margin:8px 0'>生成异常：%s"
                       "</div>" % e(err)) if err else ""
         self._html(
-            "<h1>🔗 三线联动复盘 <span style='font-size:14px;color:#8b949e'>"
+            # 058 补标准页壳（此前裸片段→浏览器白底，与全站割裂）
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,"
+            "initial-scale=1'><title>🔗 三线联动 · 零界</title>"
+            + self._COCKPIT_CSS + "</head><body>"
+            + pill_nav("linkage")
+            + "<h1>🔗 三线联动复盘 <span style='font-size:14px;color:#8b949e'>"
             "大盘 × 板块(TDX 880xxx) × 个股 · 影子观察</span></h1>"
             "<form method='get' action='/bt-linkage' style='display:flex;gap:"
             "8px;flex-wrap:wrap;margin:10px 0;align-items:center'>"
@@ -9920,7 +9938,7 @@ function ckPush(i){
             "tdx_sector_min 1 分钟重采样）；个股→板块=ts_stock_basic 行业名"
             "匹配（seg 优先 industry881&gt;industry_l1&gt;old_industry，可显"
             "式指定）；对齐=个股时间轴前向填充；归一化=公共首根 0%%。"
-            "仅影子复盘，不构成买卖依据。</div>" % (
+            "仅影子复盘，不构成买卖依据。</div></body></html>" % (
                 e(code), e(block or ""), e(index or ""), bqe, bqe, err_banner,
                 "".join(rows)))
 
