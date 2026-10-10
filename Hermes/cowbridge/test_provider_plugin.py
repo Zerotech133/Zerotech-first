@@ -10,7 +10,8 @@
   4 is_available    5 initialize+context 防线  6 system_prompt_block
   7 prefetch 往返   8 工具 schema+调用   9 影子留痕（memory_write/turn/session_end）
  10 register(ctx)  11 shutdown
- 10 审计P1-1 翻转断言（raise+硬只读+零落盘）  11 审计P2-1 limit 边界  12 审计P2-2 工具描述
+ 10 审计P1-1 翻转断言（raise+硬只读+零落盘）→ v0.3 改：生产翻转合法+生产写实落+回读+幂等
+ 11 审计P2-1 limit 边界  12 审计P2-2 工具描述
 """
 from __future__ import annotations
 
@@ -138,33 +139,55 @@ def main() -> int:
     prov2.sync_turn("cron user", "cron asst")
     check("9b cron 上下文零写入", len(read_jsonl(mirror)) == n0)
 
-    # 10) 审计 P1-1 翻转断言：shadow_mode=false + allow_write_cow=true 但生产写
-    #     未实现 → initialize 必须 raise，且实例硬只读（写路径零落盘）
+    # 10) v0.3 转正（2026-10-10 老田拍板）：生产配置翻转合法——initialize 不再
+    #     raise；sync_turn/on_memory_write 生产写真实落 Cow workspace（指 fixtures）
     prov.shutdown()
     prov3 = load_memory_provider("cowbridge")
     prov3._cfg["shadow_mode"] = False
     prov3._cfg["allow_write_cow"] = True
+    prov3._cfg["cow_root"] = str(FX)
     raised = False
     try:
         prov3.initialize("flip-session", hermes_home=str(user_plugin.parent),
                          agent_context="primary")
     except RuntimeError:
         raised = True
-    check("10 翻转断言 raise(RuntimeError)", raised,
-          "未 raise——防误翻转断言失效！")
-    check("10b 断言触发后 _disabled=True",
-          getattr(prov3, "_disabled", False) is True)
-    applied_f = SHADOW / "to-cowagent" / "memory_write_applied.jsonl"
-    n_m, n_a = len(read_jsonl(mirror)), len(read_jsonl(applied_f))
-    prov3.on_memory_write("add", "memory", "翻转后污染测试")
-    prov3.sync_turn("flip user", "flip asst")
-    check("10c 翻转断言后写路径零落盘",
-          len(read_jsonl(mirror)) == n_m and len(read_jsonl(applied_f)) == n_a)
-    # 10d/10e 复审整改（2026-10-08）：断言触发后提示词不谎报激活、不暴露必败工具
+    check("10 生产配置 initialize 不 raise", not raised and prov3._bridge is not None)
     spb3 = prov3.system_prompt_block()
-    check("10d 断言后提示词不谎报激活", "已禁用" in spb3 and "已激活" not in spb3, spb3)
-    check("10e 断言后工具 schema 为空", prov3.get_tool_schemas() == [],
-          str(prov3.get_tool_schemas())[:80])
+    check("10b 提示词标注生产模式", "生产模式" in spb3, spb3)
+
+    # 10c sync_turn 生产写 → index.db messages 层，且 read_cow_memory 可回读 tier=dialog
+    prov3._bridge.read_cow_memory  # 桥本体未打桩（生产路径须走真实读写）
+    prov3.sync_turn("v0.3 生产写验证问", "v0.3 生产写验证答", session_id="v03-prod-test")
+    import sqlite3 as _sq
+    _con = _sq.connect(str(FX / "memory" / "long-term" / "index.db"))
+    _rows = _con.execute(
+        "SELECT role, content FROM messages WHERE session_id='hermes-v03-prod-test' "
+        "ORDER BY seq").fetchall()
+    _con.close()
+    check("10c turn 落 index.db（2 行 user+assistant）",
+          len(_rows) == 2 and _rows[0][0] == "user" and _rows[1][0] == "assistant",
+          str(_rows)[:120])
+    dlg = [i for i in prov3._bridge.read_cow_memory(FX)
+           if i["tier"] == "dialog" and "v03-prod-test" in i["file"]]
+    check("10d 回读 tier=dialog 含本轮", len(dlg) == 1
+          and "v0.3 生产写验证问" in dlg[0]["body"])
+
+    # 10e on_memory_write 生产写 → daily 层小节化；同内容重写幂等 written=0
+    payload = "## 转正测试节\n- v0.3 生产写 daily 层验证\n"
+    r1 = prov3._bridge.write_memory_to_cow(payload, cow_root=FX)
+    r2 = prov3._bridge.write_memory_to_cow(payload, cow_root=FX)
+    daily_md = FX / "memory" / "daily" / (time.strftime("%Y-%m-%d") + ".md")
+    ok_file = daily_md.exists() and "转正测试节" in daily_md.read_text(encoding="utf-8")
+    check("10e memory 生产写 daily 层 + 幂等（首写 1 重写 0）",
+          r1["written"] == 1 and r2["written"] == 0 and ok_file,
+          f"r1={r1} r2={r2}")
+    applied_f = SHADOW / "to-cowagent" / "memory_write_applied.jsonl"
+    n_a = len(read_jsonl(applied_f))
+    prov3.on_memory_write("add", "memory", payload)
+    rows_a = read_jsonl(applied_f)
+    check("10f applied 留痕带 written 计数", len(rows_a) == n_a + 1
+          and rows_a[-1].get("written") == 0, str(rows_a[-1])[:120])
 
     # 11) 审计 P2-1 limit 边界：0/负数/超大/非法 → 夹逼 [1,50]，0/非法回退 5
     big = [{"side": "cow", "file": f"daily/d{i}.md", "tier": "mid",

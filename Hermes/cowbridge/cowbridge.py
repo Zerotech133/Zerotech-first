@@ -255,6 +255,77 @@ def import_cow_to_hermes(cow_root: Path | None = None) -> dict:
     return {"cow_total": len(cow_items), "new": n_new, "out": str(out_dir)}
 
 
+# ── 生产写（v0.3 转正，2026-10-10 老田拍板）─────────────────
+#
+# 影子纪律仍然成立：生产写只在 provider 层 shadow_mode=false 且
+# allow_write_cow=true 时被调用（见插件 __init__.py）；CLI 主流程
+# （export/import/report）恒为影子候选，零生产写入。
+
+def write_turn_to_cow(user_content: str, assistant_content: str,
+                      session_id: str = "", cow_root: Path | None = None) -> dict:
+    """生产写：一轮对话 → CowAgent index.db messages 层。
+
+    写入后可被 read_cow_memory 以 tier=dialog 回读（闭合验证）。
+    session_id 加 hermes- 前缀防与 CowAgent 原生会话撞号。
+    """
+    import sqlite3
+
+    base = cow_root or COW_WORKSPACE
+    db = base / "memory" / "long-term" / "index.db"
+    db.parent.mkdir(parents=True, exist_ok=True)
+    sid = f"hermes-{session_id or datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    con = sqlite3.connect(str(db))
+    try:
+        con.executescript(
+            "CREATE TABLE IF NOT EXISTS chunks (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "source TEXT, path TEXT, text TEXT);\n"
+            "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "session_id TEXT, seq INTEGER, role TEXT, content TEXT);")
+        seq0 = con.execute(
+            "SELECT COALESCE(MAX(seq), -1) FROM messages WHERE session_id=?",
+            (sid,)).fetchone()[0]
+        for i, (role, text) in enumerate(
+                [("user", user_content), ("assistant", assistant_content)]):
+            con.execute(
+                "INSERT INTO messages(session_id, seq, role, content) "
+                "VALUES (?, ?, ?, ?)",
+                (sid, seq0 + 1 + i, role, json.dumps(
+                    [{"type": "text", "text": text}], ensure_ascii=False)))
+        con.commit()
+    finally:
+        con.close()
+    return {"written": 2, "session_id": sid, "db": str(db)}
+
+
+def write_memory_to_cow(md_text: str, cow_root: Path | None = None) -> dict:
+    """生产写：Hermes 记忆文本 → CowAgent daily 层（小节化 + sha1 去重）。
+
+    去重范围 = CowAgent 全量已有小节（read_cow_memory）+ 目标文件已有小节；
+    纯结构 preamble 不写。返回实际追加的小节数。
+    """
+    base = cow_root or COW_WORKSPACE
+    daily_dir = base / "memory" / "daily"
+    daily_dir.mkdir(parents=True, exist_ok=True)
+    f = daily_dir / f"{datetime.now().strftime('%Y-%m-%d')}.md"
+    seen = {i["sha1"] for i in read_cow_memory(base)}
+    added = []
+    for header, body in split_sections(md_text):
+        if _is_struct_noise({"header": header, "body": body}):
+            continue
+        s = sha1_12(header + "\n" + body)
+        if s in seen:
+            continue
+        seen.add(s)
+        added.append((header, body))
+    if added:
+        prefix = "" if f.exists() else "# Cow Daily\n"
+        with open(f, "a", encoding="utf-8") as fh:
+            fh.write(prefix)
+            for header, body in added:
+                fh.write(f"\n## {header}\n{body}\n")
+    return {"written": len(added), "file": str(f)}
+
+
 # ── 自测与人审 ───────────────────────────────────────────────
 
 def _make_indexdb_fixture(db_path: Path) -> None:

@@ -74,13 +74,13 @@ C:\Users\Administrator\.hermes\plugins\cowbridge\   ← 用户级插件目录（
 |---|---|---|---|
 | `is_available` | ~/cow/memory/ 存在 且 桥本体可加载 | 仅查桥本体文件存在（快路径，不加载、不查 Cow 目录） | 有意简化 |
 | `queue_prefetch` | 优先 index.db FTS5，退词面粗筛 | 纯词面粗筛（read_cow_memory 全量+关键词打分），未用 FTS5 | 简化，挂账 v0.3 |
-| `sync_turn` | 入队→后台小节化提候选→生产写 Cow | 影子=留痕；生产=入队但无消费者（shutdown 丢弃前如实日志） | ⚠️ **生产写未实现**（v0.3 挂账；initialize 有防误翻转断言兜底） |
-| `on_memory_write` | 小节化+去重→Cow 候选；生产写 daily 层 | 影子=mirror 留痕；生产分支仅换名留痕（applied.jsonl），不触 Cow workspace | ⚠️ **生产写未实现**（同上） |
+| `sync_turn` | 入队→后台小节化提候选→生产写 Cow | 影子=留痕；**v0.3 生产=同步直写 index.db messages 层**（write_turn_to_cow，tier=dialog 可回读；失败降级影子留痕） | ✅ **v0.3 已实现**（2026-10-10 转正，断言已删） |
+| `on_memory_write` | 小节化+去重→Cow 候选；生产写 daily 层 | 影子=mirror 留痕；**v0.3 生产=小节化+sha1 去重写 daily 层**（write_memory_to_cow，applied 留痕保留） | ✅ **v0.3 已实现**（同上） |
 | `on_session_end` | 会话末批量提取候选 | 仅留痕计数，不提取 | 简化，挂账 v0.3 |
 | `on_pre_compress` | 压缩丢弃前抢救性提取 | 恒返回 ""（防注入面扩大，有意关闭） | 有意简化 |
 | 工具参数 | query + tier 可选 | query + limit（无 tier 过滤；limit 夹逼 [1,50]，非法回退 5） | 简化 |
 | 读侧数据源 | （成稿时认知）MEMORY.md + daily | 实际主数据源 = long-term/index.db（chunks tier=long + messages 会话转录 tier=dialog），根部 MEMORY.md 常为空模板 | v0.1.1 实测修订（K273） |
 
-结论：影子模式（默认）下读写正确率判据不受上述差异影响——判据所测的 prefetch 注入一致性、on_memory_write 镜像一一对应、sync_turn 零丢 turn，在「留痕即真相」口径下成立。**两处「生产写未实现」条目是转正前置硬门槛**：v0.3 补齐真实现并另行过测后，方可翻转 cowbridge.json（误翻转会被 initialize 断言拒绝，实例硬只读，不会假成功）。
+结论：影子模式（默认）下读写正确率判据不受上述差异影响——判据所测的 prefetch 注入一致性、on_memory_write 镜像一一对应、sync_turn 零丢 turn，在「留痕即真相」口径下成立。**转正已于 2026-10-10 执行（老田拍板）**：3 日窗读写正确率 100% 达标（判据跟踪表 10-08~10-10 三行），两硬门槛同日落地——生产写真实现（write_turn_to_cow / write_memory_to_cow，测试 28/28 全绿含生产写实落+回读+幂等）+ initialize 防误翻转断言删除（v0.2 必改点清账，回归护栏同步改为 v0.3 生产判据）；cowbridge.json 随即翻转 shadow_mode=false + allow_write_cow=true（C→H 仍走候选+人审，allow_write_hermes 暂 false）。回滚：cowbridge.json 恢复 shadow_mode=true 即回影子态。
 
 **⚠️ v0.3 转正必改点（2026-10-08 复审补充）**：补齐生产写真实现时，须**同步删除插件壳 `initialize()` 里的防误翻转断言**（否则合法生产配置会被误拒、provider 硬只读），并同步更新本节两处「生产写未实现」行。断言位置：`~/.hermes/plugins/cowbridge/__init__.py` initialize 内「v0.3 转正必改点」注释处；回归护栏：test_provider_plugin.py 第 10 节三断言（raise/_disabled/零落盘）届时一并删除。
