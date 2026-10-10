@@ -683,6 +683,8 @@ DOMAIN_NAV_GROUPS = {
             ("🗺 门户", "/portal", "portal"),
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
+            ("🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"),
+            ("🧠 智策 OS", "http://127.0.0.1:5175", "zhice"),
             ("🤖 AI 市场", "/aim", "aim"),
             ("🛒 算法市场", "/algo", "algo"),
             ("🏛 组织架构", "/org", "org"))),
@@ -22463,6 +22465,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             fn = path.split("/", 2)[2]
             _CT = {"echarts.min.js": "application/javascript",
                    "g6.min.js": "application/javascript",
+                   "nav.js": "application/javascript",
                    "tokens.css": "text/css",
                    "shortscreen.js": "application/javascript",
                    "cainiao.js": "application/javascript",
