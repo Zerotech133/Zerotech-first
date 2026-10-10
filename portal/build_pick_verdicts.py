@@ -59,13 +59,15 @@ def main():
                         or [] if v is not None]
                 vals.sort()
                 day_cache[dd] = vals[len(vals) // 2] if vals else None
-            except Exception:  # noqa: BLE001
+            except Exception as ex:  # noqa: BLE001
+                # A5 分诊：静默 None 会让基准对照整体缺失（裁决静默劣化）——留痕
+                print("[verdicts] 全市场中位数读取失败 dd=%s：%s"
+                      % (dd, str(ex)[:60]))
                 day_cache[dd] = None
         return day_cache[dd]
 
     # 全市场交易日历：任取一只宽基票的交易日序列
     cal_df = read_day("ts_daily", today, columns=["ts_code"])
-    cal_days = _trading_days(set())  # 占位
     # 交易日历从逐日 latest 回推不现实——改从某只票全史读：
     spy = cal_df["ts_code"].iloc[0] if cal_df is not None and len(cal_df) else None
     trade_days = []
@@ -107,7 +109,11 @@ def main():
             df = df.sort_values("trade_date")
             c0, c1 = float(df["close"].iloc[0]), float(df["close"].iloc[-1])
             return round((c1 / c0 - 1) * 100, 2) if c0 else None
-        except Exception:  # noqa: BLE001
+        except Exception as ex:  # noqa: BLE001
+            # A5 分诊：pct_between 是后验收益计算核心——静默 None 会
+            # 直接污染 RiskGuard 误杀复算统计（拦截/放行样本收益缺失）——留痕
+            print("[verdicts] 个股收益读取失败 code=%s %s~%s：%s"
+                  % (code, d0, d1, str(ex)[:60]))
             return None
 
     per_code, buckets = {}, {w: [] for w in WINDOWS}
@@ -116,7 +122,10 @@ def main():
     for fp in archs:
         try:
             doc = json.load(open(fp, encoding="utf-8"))
-        except Exception:  # noqa: BLE001
+        except Exception as ex:  # noqa: BLE001
+            # A5 分诊：坏档静默跳过会让该信号日整批样本消失——留痕
+            print("[verdicts] 档案读取失败跳过 %s：%s"
+                  % (os.path.basename(fp), str(ex)[:60]))
             continue
         sig = (doc.get("scan_run_date") or "").replace("-", "")
         if not sig or sig > today:
