@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>灵界 · 菜鸟总管 × Hermes 关系与驾驶舱（原型 v1）</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--txt:#e6edf3;--dim:#8b949e;
+--link:#58a6ff;--gold:#d29922;--green:#3fb950;--red:#f85149;--purple:#bc8cff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.7;padding-bottom:60px}
+.wrap{max-width:1120px;margin:0 auto;padding:20px 18px}
+h1{font-size:21px;margin:6px 0 2px}
+h2{font-size:16px;color:var(--dim);margin:34px 0 12px;border-left:3px solid var(--gold);padding-left:10px}
+.sub{color:var(--dim);font-size:12.5px}
+.pill{display:inline-block;padding:5px 12px;border:1px solid var(--border);border-radius:999px;color:var(--dim);font-size:12px;text-decoration:none;background:var(--bg);margin-right:6px}
+.pill.on{color:var(--txt);border-color:var(--gold);font-weight:600}
+.card{background:var(--panel);border:1px solid #21262d;border-radius:12px;padding:16px 18px;margin:10px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border:1px solid #21262d;padding:8px 10px;text-align:left;vertical-align:top}
+th{background:#1c2129;color:var(--dim);font-weight:600;white-space:nowrap}
+td b{color:var(--link)}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.tag.g{background:#12331f;color:var(--green)}.tag.r{background:#3d1418;color:var(--red)}
+.tag.p{background:#2a1e3f;color:var(--purple)}.tag.y{background:#33230a;color:var(--gold)}
+/* 关系图 */
+.relation{display:flex;flex-direction:column;align-items:center;gap:0;padding:18px 0}
+.node{border-radius:12px;padding:12px 20px;text-align:center;min-width:230px;position:relative}
+.node .t{font-weight:700;font-size:15px}.node .d{font-size:11.5px;color:var(--dim)}
+.n-lao{background:#1c2129;border:2px solid var(--gold)}
+.n-cain{background:#12233f;border:2px solid var(--link)}
+.n-her{background:#221a33;border:2px solid var(--purple)}
+.n-dep{background:var(--panel);border:1px solid var(--border)}
+.arrows{display:flex;gap:60px;margin:2px 0}
+.arr{color:var(--dim);font-size:11px;text-align:center;max-width:230px}
+.arr b{color:var(--gold)}
+.deps{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.deps .node{min-width:0;padding:7px 13px;font-size:12px}
+/* 对话演示 */
+.chat{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.msg{max-width:82%;padding:9px 13px;border-radius:12px;font-size:13px}
+.me{align-self:flex-end;background:#1f4b8f;border-bottom-right-radius:4px}
+.cain{align-self:flex-start;background:#21262d;border:1px solid var(--border);border-bottom-left-radius:4px}
+.her{align-self:flex-start;background:#2a1e3f;border:1px solid var(--purple);border-bottom-left-radius:4px}
+.sys{align-self:center;color:var(--dim);font-size:11px}
+.inputbar{display:flex;gap:8px;margin-top:12px}
+.inputbar input{flex:1;background:#0a0d12;border:1px solid var(--border);border-radius:8px;color:var(--txt);padding:9px 12px;font-size:13px}
+.inputbar button{background:#238636;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer}
+.lamp{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.approve{border-left:3px solid var(--gold);padding:8px 12px;background:#1c2129;border-radius:0 8px 8px 0;margin:6px 0;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.approve button{background:var(--gold);border:0;border-radius:6px;color:#1c2129;font-weight:700;padding:3px 12px;cursor:pointer;font-size:12px}
+.note{color:var(--dim);font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <span class="pill on">灵界 · 原型 v1</span>
+    <span class="pill">供拍板：菜鸟 × Hermes 关系定案</span>
+    <span class="pill">示意数据 · 非实盘</span>
+  </div>
+  <h1>🐣 菜鸟总管 × 🦸 Hermes —— 双 AI 关系与联动（页面设计稿）</h1>
+  <div class="sub">定位链：老田（human）→ 菜鸟（总管/CEO 分身）→ 五部门 Agent ｜ Hermes（个人超级助手/执行前端）· 2026-10-11</div>
+
+  <h2>一、双 AI 关系图（谁听谁的、怎么流动）</h2>
+  <div class="card">
+    <div class="relation">
+      <div class="node n-lao"><div class="t">👨‍💼 老田</div><div class="d">human · 唯一审批权 · 只对菜鸟说需求</div></div>
+      <div class="arrows">
+        <div class="arr">⬇ 需求 / 口谕<br><b>⬆ 日报 · 异常 · 审批请求</b></div>
+        <div class="arr">（个人事务也可直呼 Hermes）<br><b></b></div>
+      </div>
+      <div style="display:flex;gap:40px;flex-wrap:wrap;justify-content:center">
+        <div class="node n-cain"><div class="t">🐣 菜鸟 · 总管</div><div class="d">汇报/审批/派单/裁决代收<br>后端 a0_agent · org.json ceo_avatar</div></div>
+        <div class="node n-her"><div class="t">🦸 Hermes · 超级助手</div><div class="d">对话即调度 · 速查提醒 · 执行前端<br>8787 WebUI · 个人记忆</div></div>
+      </div>
+      <div class="arrows" style="margin-top:2px">
+        <div class="arr">⬇ 任务单派单（tasks 七态）<br><b>⬆ 部门产出 · 完工回执</b></div>
+        <div class="arr">⬇ 工单转执行（工具调用）<br><b>⬆ 结果回写任务单</b></div>
+      </div>
+      <div class="deps">
+        <div class="node n-dep">📊 量化交易部</div>
+        <div class="node n-dep">🕵 情报中枢</div>
+        <div class="node n-dep">🎬 自媒体部</div>
+        <div class="node n-dep">💻 研发部</div>
+        <div class="node n-dep">⚙ 运维部</div>
+      </div>
+    </div>
+    <div class="note">一句话：菜鸟是「官」，Hermes 是「管家」。公司的事走菜鸟，个人的事走 Hermes；两人之间靠任务单联动，不私聊。</div>
+  </div>
+
+  <h2>二、分工对照（同一句话，谁接？）</h2>
+  <div class="card">
+    <table>
+      <tr><th>场景</th><th>例句</th><th>谁出面</th><th>理由</th></tr>
+      <tr><td>公司级决策</td><td>「让投研部看看 XX 票」</td><td><span class="tag y">菜鸟</span></td><td>跨部门 → 任务单派单，留痕可审计</td></tr>
+      <tr><td>审批/裁决</td><td>「批准这笔雇佣」「解禁方案选甲」</td><td><span class="tag y">菜鸟</span></td><td>菜鸟代收裁决窗决议，老田唯一拍板</td></tr>
+      <tr><td>状态盘问</td><td>「今天各部门什么情况」</td><td><span class="tag y">菜鸟</span></td><td>读五部门状态灯+日报汇总</td></tr>
+      <tr><td>个人速查</td><td>「明天几点开会」「帮我记一下」</td><td><span class="tag p">Hermes</span></td><td>个人记忆/提醒，不必惊动公司</td></tr>
+      <tr><td>轻执行</td><td>「查一下 603188 现价」</td><td><span class="tag p">Hermes</span></td><td>单点工具调用，直答最快</td></tr>
+      <tr><td>重执行</td><td>「把这批选票全部入模拟仓」</td><td><span class="tag p">Hermes</span> 执行 <span class="tag y">菜鸟</span> 立单</td><td>涉账本写入 → 必须有任务单，Hermes 只是手</td></tr>
+    </table>
+  </div>
+
+  <h2>三、联动三通道（机制定案）</h2>
+  <div class="grid3">
+    <div class="card"><b style="color:var(--link)">① 下行 · 派单转执行</b>
+      <p class="sub" style="margin-top:6px">菜鸟建任务单（tasks 七态）→ 可执行项自动路由 Hermes 工具链 → Hermes 干活。凡写库/下单/发推送，单据先行。</p></div>
+    <div class="card"><b style="color:var(--green)">② 上行 · 结果回写</b>
+      <p class="sub" style="margin-top:6px">Hermes 完成后回写任务单（done/failed + 证据链接）→ 菜鸟汇总进 A0 日报 → 老田一份汇总看全部。</p></div>
+    <div class="card"><b style="color:var(--purple)">③ 平行 · 分流与升级</b>
+      <p class="sub" style="margin-top:6px">判据：<b>是否涉及部门/审批/数据写入</b>。是 → 升级菜鸟建单；否 → Hermes 直答。双向可转让，不留死角。</p></div>
+  </div>
+
+  <h2>四、菜鸟驾驶舱（新首页三段式 · 可交互演示）</h2>
+  <div class="card">
+    <div class="inputbar">
+      <input id="inp" placeholder="对菜鸟说：今天各部门什么情况 / 让投研部看看 603188 / 批准" >
+      <button onclick="send()">指挥</button>
+    </div>
+    <div class="chat" id="chat">
+      <div class="sys">—— 演示脚本（示意对话，非真实推理）——</div>
+      <div class="me">让投研部看看 603188，明天给我结论</div>
+      <div class="cain">🧑‍💻 收到。已建任务单 <b>T-20261012-017</b> 派给投研部（T1 短打口径，明早随日报回）。<span class="tag g">工单已派</span></div>
+      <div class="her">🦸 我把 603188 的现价、五日演化、JEV 情绪打包好了，附在工单里给投研部做底料。<span class="tag p">执行完成·回写</span></div>
+      <div class="me">今天有什么要我批的？</div>
+      <div class="cain">2 项待批 👇</div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="approve"><span>🧾 雇佣申请：情报部申请 1 名「游资席位画像」Agent（月成本 ¥0，本地）</span><button onclick="ok(this)">批准</button></div>
+      <div class="approve"><span>⚖ 解禁裁决：B8 方案甲（分档锚定）· 10-15 自动生效前最后确认</span><button onclick="ok(this)">批准</button></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px;font-size:12.5px">
+      <div class="card" style="margin:0;padding:8px 10px"><span class="lamp" style="background:var(--green)"></span>量化交易部</div>
+      <div class="card" style="margin:0;padding:8px 10px"><span class="lamp" style="background:var(--green)"></span>情报中枢</div>
+      <div class="card" style="margin:0;padding:8px 10px"><span class="lamp" style="background:var(--gold)"></span>自媒体部</div>
+      <div class="card" style="margin:0;padding:8px 10px"><span class="lamp" style="background:var(--dim)"></span>研发部</div>
+      <div class="card" style="margin:0;padding:8px 10px"><span class="lamp" style="background:var(--green)"></span>运维部</div>
+    </div>
+  </div>
+
+  <h2>五、落地路线（拍板后执行）</h2>
+  <div class="card">
+    <table>
+      <tr><th>步</th><th>事项</th><th>依托</th><th>窗口</th></tr>
+      <tr><td>1</td><td>关系定案入 org.json：菜鸟 ceo_avatar、Hermes registered as 执行前端</td><td>org.json / a0_agent</td><td>拍板即做</td></tr>
+      <tr><td>2</td><td>任务单↔Hermes 双向桥：派单路由 + 结果回写（先单向回写）</td><td>tasks 七态 + Hermes 工具链</td><td>10-20 窗</td></tr>
+      <tr><td>3</td><td>驾驶舱页：home.html 三段式（本稿第 4 节为视觉基准）</td><td>产品规划 v1 · 不进巨石</td><td>10-20 窗</td></tr>
+      <tr><td>4</td><td>动线分流判据上线（速查→Hermes / 公司事→菜鸟），错误路由可一键转交</td><td>意图路由（一期四类）</td><td>批 E</td></tr>
+    </table>
+    <div class="note">待老田拍板三点：① 分流判据是否认可 ② Hermes 是否保留独立入口（8787）还是收进驾驶舱 ③ 菜鸟后端绑 9b（已验证）还是留云端开关。</div>
+  </div>
+</div>
+<script>
+function send(){
+  var inp=document.getElementById('inp'),v=inp.value.trim();
+  if(!v)return;
+  var chat=document.getElementById('chat');
+  var me=document.createElement('div');me.className='msg me';me.textContent=v;chat.appendChild(me);
+  var c=document.createElement('div');c.className='msg cain';
+  c.innerHTML=/看|查|派|让/.test(v)
+    ?'🧑‍💻 收到。已建任务单 <b>T-演示</b> 派相关部门，结果随日报回。<span class="tag g">工单已派</span>'
+    :'🧑‍💻 这条是个人事务，转给 Hermes 直答。<span class="tag p">已分流</span>';
+  chat.appendChild(c);
+  if(/看|查|派|让/.test(v)){var h=document.createElement('div');h.className='msg her';
+    h.innerHTML='🦸 底料打包完毕，已回写工单。<span class="tag p">执行完成</span>';chat.appendChild(h);}
+  inp.value='';chat.scrollTop=chat.scrollHeight;
+}
+function ok(b){b.textContent='已批准 ✓';b.disabled=true;b.style.background='var(--green)';b.style.color='#fff'}
+</script>
+</body>
+</html>
