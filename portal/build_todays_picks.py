@@ -6,9 +6,11 @@
   2. weak    : reports/weak_scan_<ymd>.csv                 强失速/深度垫底（周扫；
                数据基准落后行情湖超 MAX_LAG_DAYS 天时旧名单不入清单）
   3. chanlun : quant_backtest/data/chanlun_pool.jsonl      最新 detect_date 批次
-  4. qpzm    : quant_backtest/reports/rps_latest.json      res 列表（score）
+  4. qpzm    : quant_backtest/reports/rps_latest.json      res 列表（score；仅 A 股；
+               action=回避(环境闸门)的票不参与看多计数、不抬 T2）
   5. ninedim : quant_backtest/data/nine_dim_scores.json    rows（score/full/band）
-  6. cross   : import cross_poll.build_cross               多策略共振 n_hit>=2
+  6. cross   : import cross_poll.build_cross               仅收 A 股看多共振
+               （看多源>=2，九维 dir=long 不计入——K33 警报非看多）
   7. linkage : 个股级工具，无全市场扫描口径（记录说明，不产生名单）
 
 分层：T1=看多源共振(strong领涨+chanlun买+qpzm 计数>=2，或 cross)；T2=单策略高价值
@@ -27,6 +29,7 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
 MAX_LAG_DAYS = 10  # weak 周扫源允许的最大滞后自然日（覆盖长假+周一节奏）
+IS_A = re.compile(r"^\d{6}\.(SH|SZ|BJ)$")  # 本清单为 A 股口径（cross/qpzm 多市场源入清单前过滤）
 QB = os.path.join(ROOT, "quant_backtest")
 OUT = os.path.join(HERE, "data", "todays_picks.json")
 
@@ -131,8 +134,12 @@ def load_qpzm(stocks):
     fp = os.path.join(QB, "reports", "rps_latest.json")
     d = json.load(open(fp, encoding="utf-8"))
     rows = d.get("res") or []
+    n_in = 0
     for r in rows:
         c = _std_code(r.get("code"))
+        if not IS_A.match(c):
+            continue  # qpzm 池含美股/加密，本清单仅 A 股
+        n_in += 1
         e = stocks.setdefault(c, {"code": c, "name": r.get("name"),
                                   "industry": None, "close": r.get("px"),
                                   "pct_chg": None, "sources": []})
@@ -143,7 +150,7 @@ def load_qpzm(stocks):
             "action": r.get("action"), "score": r.get("score"),
             "rps": r.get("rps"), "tech": r.get("tech"), "env": r.get("env"),
             "added": r.get("added")})
-    return {"label": "青萍之末（RPS+技术+环境闸门）", "n": len(rows),
+    return {"label": "青萍之末（RPS+技术+环境闸门）", "n": n_in,
             "trade_date": d.get("latest"), "file": "quant_backtest/reports/rps_latest.json",
             "ts": d.get("ts"), "note": "action 含 回避（环境闸门）标记"}
 
@@ -153,8 +160,11 @@ def load_ninedim(stocks):
     d = json.load(open(fp, encoding="utf-8"))
     rows = d.get("rows") or []
     n_cand = 0
+    n_scored = 0
     for r in rows:
         n_cand += 1
+        if r.get("score") is not None:
+            n_scored += 1
         c = _std_code(r.get("code"))
         scored = r.get("score") is not None
         e = stocks.setdefault(c, {"code": c, "name": r.get("name"),
@@ -174,7 +184,7 @@ def load_ninedim(stocks):
             "file": "quant_backtest/data/nine_dim_scores.json",
             "ts": d.get("generated_at"),
             "note": "候选池口径（RPS50>80+额>2亿+动能）；K33：高分=拥挤警报非买入；"
-                    "cov<0.75 不出分，本批全部影子未出分"}
+                    "cov<0.75 不出分；本批 %d/%d 只出分" % (n_scored, n_cand)}
 
 
 def load_cross(stocks):
@@ -182,23 +192,36 @@ def load_cross(stocks):
     import cross_poll
     d = cross_poll.build_cross(force=True)
     n = 0
+    n_skip = 0
     for s in d.get("stocks") or []:
-        if (s.get("n_hit") or 0) < 2:
+        c = _std_code(s.get("code"))
+        if not IS_A.match(c):
+            continue  # cross 面板含美股/加密，本清单仅 A 股
+        # 看多共振口径（2026-10-10 三审修正）：n_hit>=2 曾把 state=short
+        # （如「回避+4策略」）与 n_long<=1 的 mixed 也当共振抬 T1；
+        # 改为看多源(dir=long)计数 >=2，且九维不算——K33：高分=拥挤警报
+        # 非看多，避免其绕过 tier_of 主通道的九维剔除。
+        hits = s.get("hits") or []
+        n_long = sum(1 for h in hits
+                     if h.get("dir") == "long" and h.get("sid") != "9dim")
+        if n_long < 2:
+            if len(hits) >= 2:
+                n_skip += 1  # 仅统计旧口径(n_hit>=2)本会入选、被新口径拦下的
             continue
         n += 1
-        c = _std_code(s.get("code"))
         e = stocks.setdefault(c, {"code": c, "name": s.get("name"),
                                   "industry": None, "close": None,
                                   "pct_chg": None, "sources": []})
         e["name"] = e["name"] or s.get("name")
-        hits = ["%s|%s" % (h.get("s"), h.get("label"))
-                for h in (s.get("hits") or [])]
+        hit_labels = ["%s|%s" % (h.get("sid"), h.get("label")) for h in hits]
         e["sources"].append({
             "s": "cross", "tag": "多策略共振",
-            "state": s.get("state"), "hits": hits})
+            "state": s.get("state"), "hits": hit_labels})
     return {"label": "交叉共振（多策略同命中）", "n": n,
             "file": "quant_backtest/cross_poll.py(内存聚合)",
-            "note": "n_hit>=2 才入选；state=mixed 表示多空信号并存"}
+            "note": "仅收 A 股看多共振（看多源>=2，九维不计入——K33 警报非看多）；"
+                    "本批过滤 n_hit>=2 但看多不足的 %d 只；state=mixed 表示多空并存"
+                    % n_skip}
 
 
 def tier_of(e):
@@ -209,7 +232,7 @@ def tier_of(e):
     # 参与凑对——此前 60% 的 T1 靠非看多源凑成；cross(n_hit>=2 派生)仍直接 T1。
     srcs = e["sources"]
     ss = {s["s"] for s in srcs}
-    bull = (("qpzm" in ss)
+    bull = (any(s["s"] == "qpzm" and s.get("tag") == "买入" for s in srcs)
             + any(s["s"] == "chanlun" and "买" in (s.get("tag") or "")
                   for s in srcs)
             + any(s["s"] == "strong" and s.get("tag") == "板块领涨"
@@ -224,8 +247,9 @@ def tier_of(e):
                               and s.get("tag") == "板块领涨"
                               for s in srcs):
         return "T2"
-    if "qpzm" in ss and any(s["s"] == "qpzm" and (s.get("score") or 0) >= 80
-                            for s in e["sources"]):
+    if "qpzm" in ss and any(s["s"] == "qpzm" and s.get("tag") == "买入"
+                            and (s.get("score") or 0) >= 80
+                            for s in srcs):
         return "T2"
     if "ninedim" in ss and any(s["s"] == "ninedim"
                                and s.get("band") in ("alert", "alert2")
