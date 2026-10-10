@@ -1,4 +1,4 @@
-# N1Check v1.6 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal; v1.6.1 K-STOCK-071 KEY_LOST 只查 pending 不算 sent 归档)
+# N1Check v1.6 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal; v1.6.1 K-STOCK-071 KEY_LOST 只查 pending 不算 sent 归档; v1.7 K-STOCK-076 neo4j 周备新鲜度)
 # Checks:
 #  (0) regen self-heal (K-STOCK-061): backup_daily_regen.py exit=0 before presence check
 #  (1) today's backup set: DONE failed=0 + mirror files>=$MinFiles + quant_code files count
@@ -9,6 +9,7 @@
 #  (6) nightly trio first-run (OPS-1004): TushareSync exit= line numeric/fresh/0
 #      + RPS resonance & daily report task RC=0 + daily exit= line
 #  (7) jev judgment backlog (K-NEWS-001): latest P2 left= line fresh & <= threshold
+#  (8) neo4j weekly dump (K-STOCK-075): latest *.dump mtime within 8 days
 # FAIL -> N1_CHECK_FAIL flag (alert forwarder pushes to Feishu) + report file.
 $ErrorActionPreference = 'Continue'
 $day = (Get-Date).ToString('yyyy-MM-dd')
@@ -191,6 +192,21 @@ if (-not (Test-Path $JevLog)) {
             else { Report ('[OK] jev backlog left=' + $jleft + ' (' + $jtsText + ')') }
         } else { Report ('[WARN] jev P2 line has no left= value: ' + $jlast) }
     } else { Fail ('jev: unparsable P2 line: ' + $jlast) }
+}
+
+# --- 8. neo4j weekly dump freshness (v1.7 / K-STOCK-076) ---
+# KG-Neo4jWeeklyDump 周六 05:30 停库 dump；最新 *.dump 超 8 天=周备断了
+$nbDir = 'E:\KGStockAnalysis\backups\neo4j'
+$nbLatest = @(Get-ChildItem $nbDir -Filter '*.dump' -File -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTime -Descending | Select-Object -First 1)
+if (-not $nbLatest) {
+    Fail 'neo4j dump: no *.dump found in ' + $nbDir
+} elseif ($nbLatest[0].LastWriteTime -lt (Get-Date).AddDays(-8)) {
+    Fail ('neo4j dump STALE: latest=' + $nbLatest[0].Name + ' @ ' +
+        $nbLatest[0].LastWriteTime + ' (>8d) - KG-Neo4jWeeklyDump broken?')
+} else {
+    Report ('[OK] neo4j dump fresh: ' + $nbLatest[0].Name + ' @ ' +
+        $nbLatest[0].LastWriteTime)
 }
 
 # --- summary ---
