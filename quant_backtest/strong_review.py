@@ -63,7 +63,8 @@ def close_series(code: str):
     try:
         import pandas as pd
         df = pd.read_parquet(f, columns=["trade_date", "close"])
-    except Exception:
+    except Exception as ex:  # A5: 复盘样本静默缺失会污染 5 日窗统计——留痕
+        print("[strong_review] parquet 读取失败 %s：%s" % (f, str(ex)[:60]))
         return None
     if df.empty:
         return None

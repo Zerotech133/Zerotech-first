@@ -321,7 +321,8 @@ def load_wide(data_dir, stocks_limit=0, log_every=1000):
             df = pd.read_parquet(os.path.join(data_dir, f),
                                  columns=["trade_date", "open", "high",
                                           "close", "pre_close"])
-        except Exception:
+        except Exception as ex:  # A5: 坏样本静默消失会让回测样本集悄悄缩水——留痕
+            print("[qpzm] 样本读取失败跳过 %s：%s" % (f, str(ex)[:60]))
             continue
         if len(df) < 2:
             continue
