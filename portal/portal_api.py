@@ -674,6 +674,7 @@ DOMAIN_NAV_GROUPS = {
     "quant": (
         ("🌅 盘前与驾驶", (
             ("📺 数据大屏", "/screen", "screen"),
+            ("🛰 大屏信号", "/screen/sig", "screensig"),
             ("🌅 盘前", "/premarket", "pre"),
             ("🌇 盘后复盘", "/afterhours", "afterhours"),
             ("🏠 驾驶舱", "/fin", "fin"),
@@ -682,6 +683,7 @@ DOMAIN_NAV_GROUPS = {
         ("🚀 指挥", (
             ("🗺 门户", "/portal", "portal"),
             ("🚀 驾驶舱", "/bridge", "bridge"),
+            ("⚡ 驾驶舱行动", "/bridge/act", "bridgeact"),
             ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
             ("🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"),
             ("🧠 智策 OS", "http://127.0.0.1:5175", "zhice"),
@@ -730,7 +732,10 @@ DOMAIN_NAV_GROUPS = {
             ("🧨 板块工单", "/kg/flow", "kgflow"),
             ("🖊 画图标注", "/kg/label", "kglabel"),
             ("🃏 推演卡", "/kg/card", "kgcard"),
-            ("👁 影子面板", "/kg/shadow", "kgshadow"))),
+            ("👁 影子面板", "/kg/shadow", "kgshadow"),
+            ("🏢 公司 360", "/kg/company", "kgcompany"),
+            ("📚 图谱词条", "/kg/lexicon", "kglexicon"),
+            ("📄 图谱文档", "/kg/doc", "kgdoc"))),
     ),
     "creator": ((None, (
         ("🎬 创作专项", "/creator", "creator"),
@@ -773,6 +778,7 @@ _PILL = ("display:inline-block;padding:6px 13px;border:1px solid #30363d;"
 _PILL_ON = _PILL + ";color:#e6edf3;border-color:#58a6ff;font-weight:600"
 
 # K-STOCK-037 全站超级助手浮动图标（非 _COCKPIT_CSS 页的内联版）
+_HERMES_UP_CACHE = (0.0, False)  # (ts, up) 30s TTL 探活缓存 K-STOCK-101
 _HERMES_FAB_HTML = ("<a id='_hermesfab' href='http://127.0.0.1:8787' "
                     "target='_blank' rel='noopener' "
                     "title='超级助手：对话即调度全部 AI 岗位' "
@@ -1183,7 +1189,8 @@ def pill_nav(page=None):
           "border-radius:10px;padding:8px 14px 10px;min-width:320px;"
           "box-shadow:0 10px 28px rgba(0,0,0,.45)'>%s</div></details>"
           % (_PILL, menu))
-    return ("<div style='display:flex;align-items:center;"
+    return ("<script src=\"/static/nav.js\" defer></script>"
+            "<div style='display:flex;align-items:center;"
             "justify-content:space-between;gap:10px;flex-wrap:wrap;"
             "margin:0 0 18px'>"
             "<div style='display:flex;align-items:center;gap:7px;"
@@ -6245,14 +6252,21 @@ gap:14px;align-items:start}}
         rps = _read_json(os.path.join(REPORTS_DIR, "rps_latest.json")) or {}
         res = rps.get("res", [])
         qd = _read_json(os.path.join(ROOT, "qd_scan_cache.json")) or {}
-        # Hermes 在线探活（1.5s 超时，挂了不拖页面）
-        hermes_up = False
-        try:
-            _op = _u.build_opener(_u.ProxyHandler({}))
-            _op.open("http://127.0.0.1:8787/", timeout=1.5)
-            hermes_up = True
-        except Exception:
-            pass
+        # Hermes 在线探活（1.5s 超时）+ 30s TTL 缓存（K-STOCK-101：
+        # 原 /portal 每请求同步探活白等最多 1.5s，缓存后 30s 一探）
+        global _HERMES_UP_CACHE
+        now = time.time()
+        if now - _HERMES_UP_CACHE[0] > 30:
+            hermes_up = False
+            try:
+                _op = _u.build_opener(_u.ProxyHandler({}))
+                _op.open("http://127.0.0.1:8787/", timeout=1.5)
+                hermes_up = True
+            except Exception:
+                pass
+            _HERMES_UP_CACHE = (now, hermes_up)
+        else:
+            hermes_up = _HERMES_UP_CACHE[1]
 
         def _card(href, border, icon, name, desc, stat, ext=False):
             tgt = " target='_blank'" if ext else ""
@@ -14244,11 +14258,19 @@ function _nlForce(){_wait('强制重算中…（绕过缓存，约 10-30s）');
             except Exception:
                 return False
 
-        probes = [("门户API(8091)", http_ok("http://127.0.0.1:8091/health")),
-                  ("nginx(8080)", http_ok("http://127.0.0.1:8080/")),
-                  ("量化前端(5175)", http_ok("http://127.0.0.1:5175/")),
-                  ("QD桥接(9103)", tcp_ok(9103)),
-                  ("卡片回调(9104)", tcp_ok(9104))]
+        # K-STOCK-101 探活并发化：原串行 5 探针最坏 12s 白等，
+        # 线程池并发后最坏 = 单探针超时 2.5s
+        from concurrent.futures import ThreadPoolExecutor
+        _spec = [("门户API(8091)", lambda: http_ok(
+                     "http://127.0.0.1:8091/health")),
+                 ("nginx(8080)", lambda: http_ok("http://127.0.0.1:8080/")),
+                 ("量化前端(5175)", lambda: http_ok(
+                     "http://127.0.0.1:5175/")),
+                 ("QD桥接(9103)", lambda: tcp_ok(9103)),
+                 ("卡片回调(9104)", lambda: tcp_ok(9104))]
+        with ThreadPoolExecutor(max_workers=5) as _ex:
+            _res = list(_ex.map(lambda kv: (kv[0], kv[1]()), _spec))
+        probes = _res
         rows = "".join(
             "<div style='display:flex;justify-content:space-between;"
             "background:#161b22;border:1px solid #21262d;border-radius:6px;"
