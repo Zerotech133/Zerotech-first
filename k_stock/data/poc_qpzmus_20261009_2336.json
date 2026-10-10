@@ -1,0 +1,110 @@
+[
+  {
+    "stock": "gb_pltr",
+    "asof": "2026-10-09 23:36",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "Palantir",
+      "score": 86,
+      "px": 198.78,
+      "dims": "tech+jev+rps+env",
+      "rps": 97.2
+    }
+  },
+  {
+    "stock": "gb_tsm",
+    "asof": "2026-10-09 23:36",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "台积电",
+      "score": 81,
+      "px": 472.2,
+      "dims": "tech+jev+rps+env",
+      "rps": 86.7
+    }
+  },
+  {
+    "stock": "gb_tsla",
+    "asof": "2026-10-09 23:36",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "特斯拉",
+      "score": 80,
+      "px": 375.0,
+      "dims": "tech+jev+rps+env",
+      "rps": 88.8
+    }
+  },
+  {
+    "stock": "gb_mrvl",
+    "asof": "2026-10-09 23:36",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "迈威尔",
+      "score": 80,
+      "px": 270.98,
+      "dims": "tech+rps+env",
+      "rps": 95.5
+    }
+  },
+  {
+    "stock": "gb_panw",
+    "asof": "2026-10-09 23:36",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "派拓网络",
+      "score": 78,
+      "px": 398.5,
+      "dims": "tech+rps+env",
+      "rps": 89.4
+    }
+  },
+  {
+    "stock": "gb_lite",
+    "asof": "2026-10-09 23:36",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "Lumentum",
+      "score": 77,
+      "px": 1048.6,
+      "dims": "tech+jev+rps+env",
+      "rps": 98.1
+    }
+  }
+]

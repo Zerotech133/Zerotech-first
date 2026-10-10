@@ -1,2 +1,18 @@
-[BACKUP_KEY_LOST_2026-10-09_1403]
-FATAL: AES key file missing but .enc archives exist. Do NOT let backup run with a new key - restore key from offline paper copy first. keyfile=C:\Users\Administrator\.backup_aes_key sample_enc=D:\backups_mirror\2026-10-08_0048\webui_data.tar.gz.enc
+[N1_CHECK_FAIL_20261010_0730]
+[FAIL] backup_daily.ps1 MISSING from disk (registry will auto-restore at next 03:00 run)
+[OK] backup set 2026-10-10_0300 files=10 MB=1923.7
+[OK] backup.log DONE failed=0
+[OK] quant_code files=3960 (baseline 1756, holiday drift ~0)
+[FAIL] BACKUP_KEY_LOST flag present - key file issue, see flag
+[OK] offsite task RC=0 LastRun=10/10/2026 04:30:01
+[OK] offsite log: [20261010_043001] OK set=2026-10-10_0300 files=10 bytes=2017161089
+[OK] OneDrive set 2026-10-10_0300 files=10
+[OK] OneDrive sets=2 (prune to 2 works)
+[OK] alert queue empty
+[OK] no ENGINE_DOWN event pending
+[OK] tushare_sync exit line: tushare_sync exit=0 2026-10-10T00:47:54
+[OK] AI量化RPS共振 RC=0 LastRun=10/09/2026 23:35:01
+[OK] AI工作站统一日报 RC=0 LastRun=10/10/2026 03:00:01
+[OK] daily exit line: daily exit=0 2026-10-10T03:00:07
+[FAIL] jev: backlog left=3402 > 150 (cloud outage or loop stuck)
+N1 FAILURES=3
