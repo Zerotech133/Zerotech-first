@@ -9,7 +9,8 @@
       湖价（ts_daily，未复权原价口径与页面行情列一致）；对照 = 同窗口
       全市场收盘-收盘中位数（隔夜差异在中位数层摊薄，近似合理）。
 输出：portal/data/pick_verdicts.json
-      summary: 按窗口的整体命中率/均值/超额 + 按策略分层
+      summary: 按窗口的整体命中率/均值/超额 + 按策略分层（二十五审方案A：
+      by_strategy 只收 T1/T2 可操作层事件，windows 整体仍为全池口径）
       per_code: 每票最近一次信号的后验（前端详情卡直接消费，win 带 exec 首买日）
 窗口未满（湖还没走到首次可操作日或窗口终点）如实标 pending，不硬凑。
 用法: "C:/Program Files/Python311/python.exe" portal/build_pick_verdicts.py
@@ -190,9 +191,16 @@ def main():
                     else None)}
                 if r1 is not None:
                     buckets[w].append(r1)
-                    for s in rec["strategies"]:
-                        strat_buckets.setdefault(s, {}).setdefault(
-                            w, []).append(r1)
+                    # 二十五审（方案A 2026-10-10）：策略分层只收可操作层
+                    # （T1/T2）事件，tier 取本归档行 r 自身（rec["tier"] 会被
+                    # 后续归档覆写成最新信号，事件级语义才对）。全 tier 分母
+                    # 混入卖点票/反向参考/无观点影子（chanlun 桶 49% T3 且
+                    # 买41/卖49 混算），读作「策略成绩」必然误导。整体
+                    # buckets（summary.windows）保持全池口径不变。
+                    if r.get("tier") in ("T1", "T2"):
+                        for s in rec["strategies"]:
+                            strat_buckets.setdefault(s, {}).setdefault(
+                                w, []).append(r1)
     # 汇总
     def blk(vals, w):
         if not vals:
@@ -215,6 +223,9 @@ def main():
             "supersedes": "close-d0（2026-10-10 前，不可比）",
         },
         "windows": {str(w): blk(buckets[w], w) for w in WINDOWS},
+        # 二十五审（方案A）：分层口径自证——by_strategy 只收 T1/T2 事件
+        # （可操作层，分母不含 T3/CROWD 影子），windows 为全池口径，勿混比
+        "by_strategy_caliber": "仅 T1/T2 入池事件（可操作层）；windows 整体为全池口径",
         "by_strategy": {s: {str(w): blk(b.get(w) or [], w) for w in WINDOWS}
                         for s, b in sorted(strat_buckets.items())},
     }

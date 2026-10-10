@@ -48,14 +48,24 @@ def _ymd(s):
 
 
 def _stale_meta(basis_day, src_day, max_lag, label, file, tail):
-    """过期闸门（五审）：源数据基准落后行情湖超 max_lag 自然日 → 整源不入清单。"""
-    if not (basis_day and src_day):
+    """过期闸门（五审）：源数据基准落后行情湖超 max_lag 自然日 → 整源不入清单。
+    二十三审 fail-closed：src_day 缺失/不可解析（生产端格式变更）不再静默
+    放行——无法证新鲜=按过期拦截（stale 口径 ok=True 不停挂），旧数据不得
+    借闸门盲区当新数据入场。basis_day 空（行情湖不可达）保持全放行（设计内
+    降级，见 main 的 basis0 留痕）。"""
+    if not basis_day:
         return None
+    if not src_day:
+        return {"label": label, "n": 0, "stale": True, "file": file,
+                "note": "源数据缺基准日字段（生产端格式变更？），无法证新鲜，"
+                        "整源不入清单%s" % tail}
     try:
         lag = (datetime.strptime(basis_day, "%Y%m%d")
                - datetime.strptime(src_day, "%Y%m%d")).days
     except ValueError:
-        return None
+        return {"label": label, "n": 0, "stale": True, "file": file,
+                "note": "源基准日 %s 不可解析（格式变更？），无法证新鲜，"
+                        "整源不入清单%s" % (src_day, tail)}
     if lag > max_lag:
         return {"label": label, "n": 0, "stale": True, "file": file,
                 "note": "数据基准 %s 落后行情湖 %s %d 天(>%d)，旧信号不入清单%s"
@@ -278,13 +288,20 @@ def load_cross(stocks, basis_day=None):
     except Exception as ex:  # A5: 同上——留痕
         print("[picks] chanlun_pool 读取失败：%s" % str(ex)[:60])
     days = [x for x in days if x]
-    if days:
-        stale = _stale_meta(basis_day, min(days), STALE_LAG_DAILY,
-                            "交叉共振（多策略同命中）",
-                            "quant_backtest/cross_poll.py(内存聚合)",
-                            "；待上游 qpzm/chanlun 扫描刷新")
-        if stale:
-            return stale
+    # 二十三审 fail-closed：探针全空（两源日期字段均缺失）不再跳过闸门——
+    # cross_poll 内部按每票最新取信号且 detect_date 有 dt 回退，旧数据可
+    # 绕道进 T1（且此时 cl_sell 守卫因 chanlun 源 n=0 查空失效）。
+    if not days:
+        return {"label": "交叉共振（多策略同命中）", "n": 0, "stale": True,
+                "file": "quant_backtest/cross_poll.py(内存聚合)",
+                "note": "qpzm/chanlun 新鲜度探针均无基准日（格式变更？），"
+                        "整源不入清单；待上游扫描刷新"}
+    stale = _stale_meta(basis_day, min(days), STALE_LAG_DAILY,
+                        "交叉共振（多策略同命中）",
+                        "quant_backtest/cross_poll.py(内存聚合)",
+                        "；待上游 qpzm/chanlun 扫描刷新")
+    if stale:
+        return stale
     d = cross_poll.build_cross(force=True)
     n = 0
     n_skip = 0
@@ -312,7 +329,7 @@ def load_cross(stocks, basis_day=None):
         # ST 封顶（七审）：ST/*ST 不挂「多策略共振」标签（与 tier_of 封顶同口径）
         nm = (s.get("name")
               or (stocks.get(c) or {}).get("name") or "")
-        is_st = "ST" in nm.upper()
+        is_st = bool(re.match(r"^\*?ST", nm.upper()))  # B1: 前缀口径防误伤
         n_long = sum(1 for h in hits
                      if h.get("dir") == "long"
                      and h.get("sid") in ("qpzm", "chanlun")
@@ -371,8 +388,17 @@ def tier_of(e, veto_ok=True):
     # 2026-10-10 七审修正：ST/*ST 票（5% 涨跌幅+退市风险警示）不进 T1/T2
     # 看多层——全管线此前无 ST 过滤（当日 T2 即混入 7 只 *ST），落 T3 反向
     # 参考；九维拥挤警报与 ST 可并存，CROWD 判定不受影响。
-    is_st = "ST" in (e.get("name") or "").upper()
-    if not is_st:
+    # B1 修复(077e 选股审计): 子串 "ST" in name 会误伤名字含 ST 字母的
+    # 非 ST 票——收紧为前缀正则(*ST/ST 开头才是风险警示口径)
+    is_st = bool(re.match(r"^\*?ST", (e.get("name") or "").upper()))
+    # 二十九审（K33 延伸 2026-10-10，用户拍板"封顶 T1"）：九维 alert/alert2
+    # （score≥75 拥挤警报；K33 实证 75+ 胜率 9%、85+ 全亏）与 ST 同权封顶
+    # T1/T2——动量型共振票恰是九维高分人群，此前 T1 分支先于 CROWD 判定
+    # return，拥挤标记被最优标签吞掉、crowd_alert 计数漏记；alert 票直接
+    # 落独立 CROWD 警报层（low/na 九维不影响 T1/T2 判定）。
+    nd_alert = any(s["s"] == "ninedim" and s.get("band") in ("alert", "alert2")
+                   for s in srcs)
+    if not (is_st or nd_alert):
         if (veto_ok and (bull >= 2 or "cross" in ss)
                 and not qpzm_avoid and "weak" not in ss):
             return "T1"
@@ -389,9 +415,7 @@ def tier_of(e, veto_ok=True):
                                 and (s.get("score") or 0) >= 80
                                 for s in srcs):
             return "T2"
-    if "ninedim" in ss and any(s["s"] == "ninedim"
-                               and s.get("band") in ("alert", "alert2")
-                               for s in e["sources"]):
+    if nd_alert:
         return "CROWD"
     return "T3"
 
@@ -436,6 +460,26 @@ def _backfill_quotes(stocks):
     except Exception as ex:  # noqa: BLE001 — 回填失败降级不拖垮
         print("[backfill] 行情回填降级：%s" % str(ex)[:80])
         return None, 0
+
+
+def _archive_once(hist_dir, basis_day, doc):
+    """归档首写锁定（二十六审 2026-10-10）。
+
+    TodaysPicks 每日 15:10 照跑（含周末），周六/周日重跑时 basis_day 仍=
+    上个交易日，同名覆写会把首跑后才变化的"事后清单"混进后验地基（picks_
+    history 是 verdicts/后验工具的样本源，且周五首版快照被冲掉不可恢复）。
+    history 取首次产出快照（first-write-wins）；重跑只刷新 todays_picks.json。
+    返回 (arch, wrote)：wrote=False 表示同名归档已存在、保留首次快照；
+    确需重写先手工删除该归档再跑。
+    """
+    arch = os.path.join(hist_dir, "todays_%s.json" % basis_day)
+    if os.path.exists(arch):
+        return arch, False
+    tmp = arch + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(doc, f, ensure_ascii=False)
+    os.replace(tmp, arch)
+    return arch, True
 
 
 def main():
@@ -517,13 +561,19 @@ def main():
         "stocks": out_rows,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w", encoding="utf-8") as f:
+    # 二十三审：原子落盘——portal http.server 随时在读 OUT，直写会让读端
+    # 拿到半截 JSON（fetch parse error）；tmp+os.replace 同盘原子换名。
+    # 归档同理（verdicts/后验工具随时读 picks_history）。
+    tmp = OUT + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(doc, f, ensure_ascii=False, indent=1)
-    # 每日归档（轮动视图与后验计算的数据地基）
+    os.replace(tmp, OUT)
+    # 每日归档（轮动视图与后验计算的数据地基）——二十六审：首写锁定
     if basis_day:
-        arch = os.path.join(hist_dir, "todays_%s.json" % basis_day)
-        with open(arch, "w", encoding="utf-8") as f:
-            json.dump(doc, f, ensure_ascii=False)
+        arch, wrote = _archive_once(hist_dir, basis_day, doc)
+        if not wrote:
+            print("  归档 %s 已存在：保留首次快照（重跑不覆写；如需重写先删该文件）"
+                  % os.path.basename(arch))
     print("  轮动(vs %s)：新进 %s / 退出 %s / 留存 %s；归档 %s"
           % (rotation["vs"] or "无", rotation["new_in"], rotation["dropped"],
              rotation["retained"],

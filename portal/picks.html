@@ -54,6 +54,11 @@
   .scard .lab { font-size: 12.5px; font-weight: 600; }
   .scard .note { margin-top: 6px; font-size: 11px; color: var(--text-dim); line-height: 1.5; }
   .scard.off { opacity: .55; }
+  /* 二十四审：stale 源视觉标记——ok=True/n=0 的过期拦截卡与正常空扫卡
+     无差异，T1 变少缺一层解释；琥珀边框+徽标与 note 文案互补 */
+  .scard.stale { border-color: #d29922; }
+  .scard.stale .n { color: #d29922; }
+  .scard .stale-tag { margin-left: 6px; font-size: 10px; color: #d29922; font-weight: 700; }
   /* ── 筛选 ── */
   .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 18px 0 10px; }
   .filters .fsep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
@@ -339,15 +344,16 @@ function renderVitals(){
   const cards=["strong","weak","chanlun","qpzm","ninedim","cross","linkage"].map(k=>{
     const s=m[k]||{};
     const n=s.n==null?"—":s.n;
-    /* 驾驶舱感：策略卡带本策略整体后验（T+1 均值/命中，无数据时安静降级） */
+    /* 驾驶舱感：策略卡带本策略可操作层后验（T+1 均值/命中，无数据时安静降级）
+       二十五审方案A：分母只含 T1/T2 入池事件（可成交口径），不含 T3/CROWD 影子 */
     let vd="";
     if(VERD&&VERD.by_strategy&&VERD.by_strategy[k]&&VERD.by_strategy[k]["1"]
        &&VERD.by_strategy[k]["1"].n>0){
       const b=VERD.by_strategy[k]["1"];
-      vd=`<div class="vd">后验T+1·可成交：<b>${b.avg>0?"+":""}${b.avg}%</b> · 命中 ${b.hit}% · n=${b.n}</div>`;
+      vd=`<div class="vd" title="只统计本策略 T1/T2 入池信号：信号+2交易日开盘买入、+1收盘卖出的均值与命中率">后验T+1·可操作层：<b>${b.avg>0?"+":""}${b.avg}%</b> · 命中 ${b.hit}% · n=${b.n}</div>`;
     }
-    return `<div class="scard ${s.ok===false||s.n==null?"off":""} ${FILTER_S===k?"sel":""}" data-s="${k}" title="点击只看本策略命中的票（再点一次取消）">
-      <div class="row1"><div class="n num">${n}</div><div class="lab">${esc(s.label||k)}</div></div>
+    return `<div class="scard ${s.ok===false||s.n==null?"off":""} ${s.stale?"stale":""} ${FILTER_S===k?"sel":""}" data-s="${k}" title="点击只看本策略命中的票（再点一次取消）${s.stale?"；数据过期整源拦截，旧信号不入清单":""}">
+      <div class="row1"><div class="n num">${n}</div><div class="lab">${esc(s.label||k)}${s.stale?`<span class="stale-tag">⏸过期</span>`:""}</div></div>
       ${vd}<div class="note">${esc(s.note||"")}</div></div>`;
   }).join("");
   $("#strats").innerHTML=cards;

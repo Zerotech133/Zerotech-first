@@ -15,7 +15,7 @@ import pytest
 PORTAL = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "portal"))
 sys.path.insert(0, PORTAL)
 
-from build_todays_picks import tier_of  # noqa: E402
+from build_todays_picks import _stale_meta, tier_of  # noqa: E402
 
 
 def _e(name, *srcs):
@@ -31,6 +31,9 @@ QPZM_BUY_LOW = {"s": "qpzm", "tag": "买入", "score": 70}
 QPZM_AVOID = {"s": "qpzm", "tag": "回避"}
 WEAK = {"s": "weak", "tag": "强失速"}
 CROSS = {"s": "cross", "tag": "多策略共振"}
+NINEDIM_ALERT = {"s": "ninedim", "tag": "九维出分", "score": 78, "band": "alert"}
+NINEDIM_ALERT2 = {"s": "ninedim", "tag": "九维出分", "score": 86, "band": "alert2"}
+NINEDIM_LOW = {"s": "ninedim", "tag": "九维出分", "score": 59, "band": "low"}
 
 
 # ── T1 共振路径 ──────────────────────────────────────────────
@@ -148,3 +151,69 @@ def test_load_chanlun_hard_fail_when_file_missing(tmp_path, monkeypatch):
     monkeypatch.setattr(b, "QB", str(tmp_path))
     with pytest.raises(FileNotFoundError):
         b.load_chanlun({})  # 整文件缺失=源 err → main 捕获 → T1 停挂链路
+
+
+# ── stale 闸门 fail-closed（二十三审 2026-10-10）────────────
+def test_stale_gate_basis_missing_pass_all():
+    """行情湖不可达（basis 空）= 设计内全放行降级，不拦截。"""
+    assert _stale_meta(None, "20260101", 4, "L", "f", "；t") is None
+    assert _stale_meta(None, "", 4, "L", "f", "；t") is None
+
+
+def test_stale_gate_src_day_missing_blocks():
+    """src_day 空（生产端格式变更）fail-closed 拦截，不再静默放行。"""
+    r = _stale_meta("20261009", "", 4, "L", "f", "；t")
+    assert r and r["stale"] is True and r["n"] == 0
+
+
+def test_stale_gate_src_day_unparseable_blocks():
+    r = _stale_meta("20261009", "2026/10/", 4, "L", "f", "；t")
+    assert r and r["stale"] is True and "不可解析" in r["note"]
+
+
+def test_stale_gate_fresh_pass_expired_block():
+    assert _stale_meta("20261009", "20261009", 4, "L", "f", "；t") is None
+    r = _stale_meta("20261009", "20261001", 4, "L", "f", "；t")
+    assert r and r["stale"] is True and "旧信号" in r["note"]
+
+
+# ── 归档首写锁定（二十六审 2026-10-10）──────────────────────
+def test_archive_first_write_wins(tmp_path):
+    """周末重跑（basis 仍=上个交易日）不得覆写首版快照——后验地基保真。"""
+    from build_todays_picks import _archive_once
+    d1 = {"scan_run_date": "2026-10-09", "stocks": [{"code": "600000.SH"}]}
+    arch, w1 = _archive_once(str(tmp_path), "20261009", d1)
+    assert w1 is True and os.path.exists(arch)
+    # 周六重跑产出变体清单 → 同名归档保留首次快照
+    d2 = {"scan_run_date": "2026-10-09", "stocks": []}
+    arch2, w2 = _archive_once(str(tmp_path), "20261009", d2)
+    assert w2 is False and arch2 == arch
+    kept = json.load(open(arch, encoding="utf-8"))
+    assert kept["stocks"] == d1["stocks"]
+    assert not os.path.exists(arch + ".tmp")
+
+
+def test_archive_new_day_writes(tmp_path):
+    """新交易日（basis 前进）正常落新档，首写锁定不误伤正常节奏。"""
+    from build_todays_picks import _archive_once
+    arch, w = _archive_once(str(tmp_path), "20261012", {"stocks": []})
+    assert w is True and os.path.basename(arch) == "todays_20261012.json"
+
+
+# ── 九维 alert 拥挤封顶 T1/T2（二十九审 2026-10-10）─────────
+def test_t1_alert_band_capped_to_crowd():
+    """bull≥2 共振票撞九维 alert → 不进 T1，落 CROWD 警报层（K33 延伸）。"""
+    assert tier_of(_e("共振票", STRONG_LEAD, CL_BUY, NINEDIM_ALERT)) == "CROWD"
+    assert tier_of(_e("共振票", STRONG_LEAD, CL_BUY, NINEDIM_ALERT2)) == "CROWD"
+
+
+def test_t2_alert_band_capped_to_crowd():
+    """单通道 T2 票撞九维 alert → 同样封顶落 CROWD。"""
+    assert tier_of(_e("缠论票", CL_BUY, NINEDIM_ALERT)) == "CROWD"
+    assert tier_of(_e("强势票", STRONG_LEAD, NINEDIM_ALERT2)) == "CROWD"
+
+
+def test_ninedim_low_band_not_cap():
+    """low/na 九维（观察无警报）不影响 T1/T2 正常判定。"""
+    assert tier_of(_e("共振票", STRONG_LEAD, CL_BUY, NINEDIM_LOW)) == "T1"
+    assert tier_of(_e("缠论票", CL_BUY, NINEDIM_LOW)) == "T2"
