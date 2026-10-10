@@ -38,15 +38,18 @@ def check_c1_cn_filled(cur, day):
     # 口径：成交按 fill_date=验收日；残留 pending 按 plan_date<=验收日（含过期单）
     rows = cur.execute(
         "SELECT id, account_id, stock, qty, status, fill_date, filled_price,"
-        " filled_qty, fee, plan_date FROM orders"
+        " filled_qty, fee, plan_date, reason FROM orders"
         " WHERE account_id IN (?,?) AND (fill_date=? OR plan_date<=?)",
         CN_ACCOUNTS + (day, day)).fetchall()
     filled = [r for r in rows if r["status"] == "filled"
               and r["fill_date"] and r["filled_price"] and r["filled_qty"]]
     pending = [r for r in rows if r["status"] == "pending"]
+    rejected = [r for r in rows if r["status"] == "rejected"]
     ok = len(filled) == CN_EXPECT and not pending
     detail = {"expected": CN_EXPECT, "filled": len(filled),
               "pending_left": len(pending),
+              "rejected": [{"id": r["id"], "stock": r["stock"],
+                            "why": (r["reason"] or "")[:80]} for r in rejected],
               "fills": [{k: r[k] for k in ("id", "account_id", "stock", "qty",
                                            "filled_price", "filled_qty", "fee")}
                         for r in filled]}
@@ -56,15 +59,18 @@ def check_c1_cn_filled(cur, day):
 def check_c2_us_filled(cur, day):
     rows = cur.execute(
         "SELECT id, stock, qty, status, fill_date, filled_price, filled_qty,"
-        " plan_date FROM orders"
+        " plan_date, reason FROM orders"
         " WHERE account_id=? AND (fill_date=? OR plan_date<=?)",
         (US_ACCOUNTS[0], day, day)).fetchall()
     filled = [r for r in rows if r["status"] == "filled"
               and r["fill_date"] and r["filled_price"] and r["filled_qty"]]
     pending = [r for r in rows if r["status"] == "pending"]
+    rejected = [r for r in rows if r["status"] == "rejected"]
     ok = len(filled) == US_EXPECT and not pending
     detail = {"expected": US_EXPECT, "filled": len(filled),
               "pending_left": len(pending),
+              "rejected": [{"id": r["id"], "stock": r["stock"],
+                            "why": (r["reason"] or "")[:80]} for r in rejected],
               "fills": [{k: r[k] for k in ("id", "stock", "qty", "filled_price")}
                         for r in filled]}
     return ok, detail
