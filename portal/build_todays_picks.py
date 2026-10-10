@@ -239,7 +239,22 @@ def load_qpzm(stocks, basis_day=None):
             "added": r.get("added")})
     return {"label": "青萍之末（RPS+技术+环境闸门）", "n": n_in,
             "trade_date": d.get("latest"), "file": "quant_backtest/reports/rps_latest.json",
-            "ts": d.get("ts"), "note": "action 含 回避（环境闸门）标记"}
+            "ts": d.get("ts"), "note": "action 含 回避（环境闸门）标记",
+            "env_gate": _a_share_env(d.get("envs"))}
+
+
+def _a_share_env(envs):
+    """A股环境闸门状态提取（P1 T1 功效评估 2026-10-11）：qpzm envs 数组
+    中 label 以「A股」开头的一条=全市场宽度闸门（safe=False 时 qpzm 腿
+    全回避、T1 只剩 strong∩chanlun 通道）。附进 meta 随 strategies 归档，
+    后验可按闸门开合分层统计 T1（收紧日/放行日供给与构成不同；湖回算
+    序列已验证与源头一致，但归档固化免回算、可追溯）。stale 拦截时本
+    meta 不产出（过期闸门状态同样不可信，fail-closed）。"""
+    for e in envs or []:
+        if str(e.get("label") or "").startswith("A股"):
+            return {"safe": e.get("safe"), "state": e.get("state"),
+                    "score": e.get("score"), "breadth": e.get("breadth")}
+    return None
 
 
 def load_ninedim(stocks, basis_day=None):

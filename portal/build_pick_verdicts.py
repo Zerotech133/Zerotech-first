@@ -9,9 +9,9 @@
       湖价（ts_daily，未复权原价口径与页面行情列一致）；对照 = 同窗口
       全市场开盘-收盘中位数（d0 开盘×d1 收盘，K-STOCK-077 修——旧实现
       d1 单日 pct 中位与个股 w 天累计错配；三十四审同步此 docstring）。
-      三十一审（2026-10-10）除权守卫：窗口内隔夜缺口 ≤-30.5% 判除权
-      （涨跌幅限制下不可能为交易行为），样本 void 剔除不入桶（详见
-      pct_between）；湖内暂无复权因子，小额现金分红缺口作可接受噪声。
+      复权口径（2026-10-11）：个股收益在 ts_adj_factor 窗口齐备时按
+      open×adj / close×adj 计算（除权自动修正、样本不 void）；因子
+      不可用时降级三十一审缺口守卫（≤-30.5% 判除权 void 剔除）。
 输出：portal/data/pick_verdicts.json
       summary: 按窗口的整体命中率/均值/超额 + 按策略分层（二十五审方案A：
       by_strategy 只收 T1/T2 可操作层事件，windows 整体仍为全池口径）
@@ -44,6 +44,59 @@ def _trading_days(cal):
 def _code_to_ts(code):
     """600540.SH → ts_daily 的 ts_code 同形态（湖本身就是 .SH 风格）。"""
     return (code or "").strip().upper()
+
+
+def pct_between(code, exec_day, d1):
+    """可成交口径（九审）：exec_day 开盘买入 → d1 收盘卖出。
+
+    画像日 D 的清单在 D+1 15:10 产出、最早 D+2 开盘可操作——起算价
+    用首次可操作日开盘，剔除强势票「次日高开买不进」的虚假收益。
+    停牌近似：exec_day 无行时首行（复牌日）开盘即买点。
+
+    复权口径（2026-10-11 消费端升级，ts_adj_factor 入湖）：窗口因子
+    齐备时 buy=open_0×adj_0、sel=close_-1×adj_-1——除权窗口自动修正、
+    样本保留不再 void；因子跳升替代 -30.5% 缺口猜除权后，首轮实证
+    49/277 起「缺口守卫假阳性」（退市整理真暴跌被误 void）自然消除。
+    降级路径（因子表未就绪/该票窗口缺行）：保持三十一审 -30.5% 缺口
+    守卫返回 "exdiv" 哨兵由调用方 void 剔除（不比升级前差）。
+    小额现金分红缺口（约-1~-3%）复权口径下同样被因子修正。
+    P2 抽出（2026-10-11）：原 main 闭包无闭包依赖，上移模块级供测试固化。
+    """
+    try:
+        from tdx_read import read_range, table_ready
+        df = read_range("ts_daily", exec_day, d1, codes=[code],
+                        columns=["ts_code", "trade_date", "open", "close"])
+        if df is None or len(df) < 1:
+            return None
+        df = df.sort_values("trade_date")
+        opens = df["open"].tolist()
+        closes = df["close"].tolist()
+        adjs = None
+        if table_ready("ts_adj_factor"):
+            da = read_range("ts_adj_factor", exec_day, d1, codes=[code])
+            if da is not None and len(da):
+                am = {str(t)[:8]: a for t, a in zip(
+                    da["trade_date"], da["adj_factor"])}
+                adjs = [am.get(str(t)[:8]) for t in df["trade_date"]]
+        if adjs is not None and all(a is not None for a in adjs):
+            buy = float(opens[0]) * float(adjs[0])
+            sel = float(closes[-1]) * float(adjs[-1])
+            return round((sel / buy - 1) * 100, 2) if buy else None
+        # 降级：因子不可用 → 三十一审缺口守卫（-30.5% 只可能是除权，
+        # 涨跌幅限制下主板10/创业科创20/北交30；2026 实测 77 起）
+        for k in range(1, len(df)):
+            prev = float(closes[k - 1])
+            if prev and float(opens[k]) / prev - 1 <= -0.305:
+                return "exdiv"
+        buy = float(opens[0])    # 首次可操作日开盘
+        sel = float(closes[-1])  # 窗口终点收盘
+        return round((sel / buy - 1) * 100, 2) if buy else None
+    except Exception as ex:  # noqa: BLE001
+        # A5 分诊：pct_between 是后验收益计算核心——静默 None 会
+        # 直接污染 RiskGuard 误杀复算统计（拦截/放行样本收益缺失）——留痕
+        print("[verdicts] 个股收益读取失败 code=%s %s~%s：%s"
+              % (code, exec_day, d1, str(ex)[:60]))
+        return None
 
 
 def main():
@@ -118,43 +171,6 @@ def main():
             i = trade_days.index(later[0]) - 1  # 回退一格统一用 index+n
         j = i + n
         return trade_days[j] if j < len(trade_days) else None
-
-    def pct_between(code, exec_day, d1):
-        """可成交口径（九审）：exec_day 开盘买入 → d1 收盘卖出。
-
-        画像日 D 的清单在 D+1 15:10 产出、最早 D+2 开盘可操作——起算价
-        用首次可操作日开盘，剔除强势票「次日高开买不进」的虚假收益。
-        停牌近似：exec_day 无行时首行（复牌日）开盘即买点。
-
-        三十一审（2026-10-10）除权守卫：湖价未复权（ts_daily 原价口径），
-        窗口内遇除权除息会把送转记成假暴跌污染均值——A股各板块涨跌幅
-        限制（主板10/创业科创20/北交30）下隔夜缺口不可能低于 -30%，
-        相邻日 open_t/close_{t-1}≤-30.5% 只可能是除权（2026 实测 77 起，
-        集中 5-7 月分红季），返回 "exdiv" 哨兵由调用方 void 剔除该样本；
-        小额现金分红缺口（约-1~-3%）不可分辨，作为可接受噪声保留。
-        """
-        try:
-            from tdx_read import read_range
-            df = read_range("ts_daily", exec_day, d1, codes=[code],
-                            columns=["ts_code", "trade_date", "open", "close"])
-            if df is None or len(df) < 1:
-                return None
-            df = df.sort_values("trade_date")
-            opens = df["open"].tolist()
-            closes = df["close"].tolist()
-            for k in range(1, len(df)):
-                prev = float(closes[k - 1])
-                if prev and float(opens[k]) / prev - 1 <= -0.305:
-                    return "exdiv"
-            buy = float(opens[0])    # 首次可操作日开盘
-            sel = float(closes[-1])  # 窗口终点收盘
-            return round((sel / buy - 1) * 100, 2) if buy else None
-        except Exception as ex:  # noqa: BLE001
-            # A5 分诊：pct_between 是后验收益计算核心——静默 None 会
-            # 直接污染 RiskGuard 误杀复算统计（拦截/放行样本收益缺失）——留痕
-            print("[verdicts] 个股收益读取失败 code=%s %s~%s：%s"
-                  % (code, exec_day, d1, str(ex)[:60]))
-            return None
 
     per_code, buckets = {}, {w: [] for w in WINDOWS}
     strat_buckets = {}
@@ -257,7 +273,12 @@ def main():
             "id": "exec-d2-open-20261010",
             "buy": "信号日后第2个交易日开盘（清单 D+1 15:10 产出、D+2 开盘可操作）",
             "sell": "首买日后 1/3/5 个交易日收盘",
-            "benchmark": "同窗口全市场开盘-收盘中位数（d0 开盘×d1 收盘，与个股买入口径对齐）",
+            # 复权口径（2026-10-11 消费端升级，ts_adj_factor 入湖）：个股
+            # 收益因子齐备时按 open×adj→close×adj（除权自动修正、样本
+            # 不 void）；因子不可用降级 -30.5% 缺口守卫 void 剔除。升级
+            # 发生在 n=0 未产数前，无新旧数字断裂，caliber.id 不换代。
+            "return": "个股复权收益（2026-10-11 起）：open×adj→close×adj，除权窗口修正保留；降级时缺口守卫 void 剔除",
+            "benchmark": "同窗口全市场开盘-收盘中位数（d0 开盘×d1 收盘，与个股买入口径对齐；横截面中位对尾部除权缺口免疫，不复权）",
             "supersedes": "close-d0（2026-10-10 前，不可比）",
         },
         "windows": {str(w): blk(buckets[w], w) for w in WINDOWS},

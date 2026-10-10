@@ -19,6 +19,8 @@ from build_todays_picks import _stale_meta, tier_of  # noqa: E402
 from build_todays_picks import _backfill_quotes  # noqa: E402
 from build_todays_picks import gate_failed_sources, _push_source_alert  # noqa: E402
 import build_todays_picks as btp  # noqa: E402
+from build_pick_verdicts import pct_between  # noqa: E402
+import tdx_read  # noqa: E402
 
 
 def _e(name, *srcs):
@@ -268,6 +270,27 @@ def test_gate_all_ok_empty():
     assert gate_failed_sources(_ok_metas()) == []
 
 
+def test_a_share_env_extract():
+    """P1 T1 功效评估（2026-10-11）：A 股闸门状态提取——取 envs 中
+    「A股」开头一条（美股/港股/加密不误取），空/缺失返回 None
+    （stale 拦截日 meta 不带 env_gate，后验按缺失跳过该日分层）。"""
+    envs = [
+        {"label": "美股全市场(5832只)", "safe": True, "state": "中性",
+         "score": 43, "breadth": 0.404},
+        {"label": "A股全市场(5552只)", "safe": False,
+         "state": "偏冷（宽度 39%，20日中位 -2.8%）— 闸门收紧",
+         "score": 37, "breadth": 0.386},
+    ]
+    g = btp._a_share_env(envs)
+    assert g["safe"] is False
+    assert g["score"] == 37
+    assert g["breadth"] == 0.386
+    assert "闸门收紧" in g["state"]
+    assert btp._a_share_env([]) is None
+    assert btp._a_share_env(None) is None
+    assert btp._a_share_env([{"label": "港股全市场", "safe": False}]) is None
+
+
 def test_gate_failed_fixed_order():
     """ninedim+chanlun 失败 → 固定顺序停挂名单（五源任一即停挂）。"""
     metas = _ok_metas()
@@ -351,3 +374,98 @@ def test_source_alert_send_error_swallowed(monkeypatch, tmp_path, capsys):
     metas["cross"] = {"label": "cross", "ok": False, "err": "x"}
     _push_source_alert(metas, [], "20261009")  # 不抛异常即通过
     assert "推送失败" in capsys.readouterr().out
+
+
+# ── pct_between 复权口径（2026-10-11 消费端升级）──────────────
+import pandas as pd  # noqa: E402
+
+
+def _mk_daily(rows):
+    return pd.DataFrame(rows, columns=[
+        "ts_code", "trade_date", "open", "close"])
+
+
+def _mk_adj(rows):
+    return pd.DataFrame(rows, columns=["ts_code", "trade_date", "adj_factor"])
+
+
+def test_pct_between_adjusted_exdiv_window():
+    """因子齐备：送转除权窗口（10 送 10，close 20→open 10）复权修正后
+    样本保留——买 10×adj1=10、卖 11×adj2=22 → +120%；旧缺口守卫会
+    误判 -50% 缺口 void 剔除（三十一审）。"""
+    import tdx_read
+
+    def fake_rr(tbl, s, e, codes=None, columns=None):
+        if tbl == "ts_daily":
+            return _mk_daily([("600000.SH", "20260501", 10.0, 20.0),
+                              ("600000.SH", "20260502", 10.0, 11.0)])
+        return _mk_adj([("600000.SH", "20260501", 1.0),
+                        ("600000.SH", "20260502", 2.0)])
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(tdx_read, "read_range", fake_rr)
+    monkeypatch.setattr(tdx_read, "table_ready", lambda t: True)
+    try:
+        assert pct_between("600000.SH", "20260501", "20260502") == 120.0
+    finally:
+        monkeypatch.undo()
+
+
+def test_pct_between_no_factor_change_same_number():
+    """因子恒定（无除权）时复权口径与旧口径数字一致。"""
+    import tdx_read
+
+    def fake_rr(tbl, s, e, codes=None, columns=None):
+        if tbl == "ts_daily":
+            return _mk_daily([("600000.SH", "20260501", 10.0, 10.5),
+                              ("600000.SH", "20260502", 11.0, 12.0)])
+        return _mk_adj([("600000.SH", "20260501", 3.0),
+                        ("600000.SH", "20260502", 3.0)])
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(tdx_read, "read_range", fake_rr)
+    monkeypatch.setattr(tdx_read, "table_ready", lambda t: True)
+    try:
+        # 买 10 卖 12 → +20%（因子 3.0/3.0 约掉）
+        assert pct_between("600000.SH", "20260501", "20260502") == 20.0
+    finally:
+        monkeypatch.undo()
+
+
+def test_pct_between_degraded_gap_guard():
+    """降级路径：因子表未就绪（table_ready=False）→ 三十一审缺口守卫，
+    -50% 隔夜缺口返回 "exdiv" 哨兵由调用方 void。"""
+    import tdx_read
+
+    def fake_rr(tbl, s, e, codes=None, columns=None):
+        return _mk_daily([("600000.SH", "20260501", 10.0, 20.0),
+                          ("600000.SH", "20260502", 10.0, 11.0)])
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(tdx_read, "read_range", fake_rr)
+    monkeypatch.setattr(tdx_read, "table_ready", lambda t: False)
+    try:
+        assert pct_between("600000.SH", "20260501", "20260502") == "exdiv"
+        # 无缺口窗口正常计算
+        assert pct_between("600000.SH", "20260502", "20260502") is not None
+    finally:
+        monkeypatch.undo()
+
+
+def test_pct_between_partial_factor_missing_degrades():
+    """因子表就绪但该票窗口缺行（新票 lag）→ 降级守卫，不误算半复权。"""
+    import tdx_read
+
+    def fake_rr(tbl, s, e, codes=None, columns=None):
+        if tbl == "ts_daily":
+            return _mk_daily([("600000.SH", "20260501", 10.0, 20.0),
+                              ("600000.SH", "20260502", 10.0, 11.0)])
+        return _mk_adj([("600000.SH", "20260502", 2.0)])  # 缺 0501 行
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(tdx_read, "read_range", fake_rr)
+    monkeypatch.setattr(tdx_read, "table_ready", lambda t: True)
+    try:
+        assert pct_between("600000.SH", "20260501", "20260502") == "exdiv"
+    finally:
+        monkeypatch.undo()

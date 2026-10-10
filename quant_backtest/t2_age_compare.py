@@ -29,7 +29,7 @@ import sys
 from datetime import datetime, timedelta
 
 sys.path.insert(0, r"C:\aios\quant_backtest")
-from tdx_read import read_range  # noqa: E402
+from tdx_read import read_range, table_ready  # noqa: E402
 
 PICKS = r"C:\aios\portal\data\todays_picks.json"
 WINDOWS = (5, 10, 20)
@@ -58,9 +58,15 @@ def load_picks():
 
 
 def _exdiv_days(df):
-    """除权日检测（三十一审同构）：相邻日 open_t/close_{t-1} <= -30.5%
-    判除权——涨跌幅限制下不可能是交易行为，零误报。返回除权
-    trade_date 集合（YYYYMMDD）。"""
+    """除权日检测（三十一审同构，降级路径）：相邻日 open_t/close_{t-1}
+    <= -30.5% 判除权——涨跌幅限制下不可能是交易行为。返回除权
+    trade_date 集合（YYYYMMDD）。
+
+    2026-10-11 复权升级（ts_adj_factor 入湖）：正常路径因子齐备时
+    calc_returns 直接按 open×adj/close×adj 修正收益（除权窗口不剔除，
+    样本保留）；因子表未就绪/该票缺行才走本守卫剔除。首轮湖实证：
+    277 起缺口中 49 起为退市整理真暴跌（因子无跳升），缺口守卫
+    假阳性 18%——复权口径下这些样本按真实收益计入。"""
     bad = set()
     o, c, t = df["open"].tolist(), df["close"].tolist(), df["trade_date"].tolist()
     for k in range(1, len(df)):
@@ -73,24 +79,43 @@ def _exdiv_days(df):
 def calc_returns(p, basis):
     """信号+2 开盘买入 -> w 有行日收盘卖；统一近窗另计。
 
-    四十一审（2026-10-10）：同步三十一审除权守卫——湖价未复权，买入→
-    卖出之间出现除权日（送转假跳空，2026 实测 77 起）会污染 w5/10/20
-    长窗收益（比 verdicts 的 1/3/5 窗更易命中）；uw 近窗同守卫。命中
-    窗口剔除不计 n（stat 自动跳过缺键），exdiv_* 留痕供明细识别。"""
+    2026-10-11 复权口径（ts_adj_factor 入湖）：全窗因子齐备时
+    buy=open×adj、sell=close×adj——除权窗口自动修正、样本保留不再
+    剔除（四十一审的 exdiv_w* 剔除降级为因子不可用时的回退路径）。"""
     df = read_range("ts_daily", "20260101", basis.strftime("%Y%m%d"),
                     codes=[p["code"]],
                     columns=["ts_code", "trade_date", "open", "close"])
     if df is None or len(df) == 0:
         return
     df = df.sort_values("trade_date").reset_index(drop=True)
-    exd = _exdiv_days(df)
+    # 复权因子：全窗口齐备才走修正路径（缺一行即降级守卫剔除）
+    adj_ok = False
+    if table_ready("ts_adj_factor"):
+        da = read_range("ts_adj_factor", "20260101",
+                        basis.strftime("%Y%m%d"), codes=[p["code"]])
+        if da is not None and len(da):
+            am = {str(t)[:8]: a for t, a in zip(
+                da["trade_date"], da["adj_factor"]) if a is not None}
+            if am:
+                df["adj"] = [am.get(str(t)[:8]) for t in df["trade_date"]]
+                adj_ok = df["adj"].notna().all()
+    exd = set() if adj_ok else _exdiv_days(df)
+    if adj_ok:
+        p["adjfix"] = True  # 明细留痕：复权口径
     post = df[df.trade_date > p["dt"].replace("-", "")]
     if len(post) >= 3:
         buy = float(post["open"].iloc[1])  # 信号+2 交易日开盘
         if buy > 0:
             for w in WINDOWS:
                 if len(post) >= 2 + w:
-                    # 除权污染窗 = 买入日之后至卖出日（该区间价格尺度断裂）
+                    if adj_ok:
+                        b_adj = float(post["adj"].iloc[1])
+                        s_adj = float(post["adj"].iloc[1 + w])
+                        p["w%d" % w] = round(
+                            (float(post["close"].iloc[1 + w]) * s_adj)
+                            / (buy * b_adj) * 100 - 100, 2)
+                        continue
+                    # 降级：除权污染窗 = 买入日之后至卖出日（价格尺度断裂）
                     span = {str(x)[:8] for x in
                             post["trade_date"].iloc[2:2 + w + 1]}
                     if span & exd:
@@ -101,13 +126,19 @@ def calc_returns(p, basis):
     uw = df[(df.trade_date >= (basis - timedelta(days=13)).strftime("%Y%m%d"))
             & (df.trade_date <= basis.strftime("%Y%m%d"))]
     if len(uw) >= 2:
-        span = {str(x)[:8] for x in uw["trade_date"].iloc[1:]}
-        if span & exd:
-            p["exdiv_uw"] = True
-        else:
+        if adj_ok:
             p["uw"] = round(
-                (float(uw["close"].iloc[-1]) / float(uw["open"].iloc[0]) - 1)
-                * 100, 2)
+                (float(uw["close"].iloc[-1]) * float(uw["adj"].iloc[-1]))
+                / (float(uw["open"].iloc[0]) * float(uw["adj"].iloc[0]))
+                * 100 - 100, 2)
+        else:
+            span = {str(x)[:8] for x in uw["trade_date"].iloc[1:]}
+            if span & exd:
+                p["exdiv_uw"] = True
+            else:
+                p["uw"] = round(
+                    (float(uw["close"].iloc[-1]) / float(uw["open"].iloc[0])
+                     - 1) * 100, 2)
 
 
 def stat(ps, key):
