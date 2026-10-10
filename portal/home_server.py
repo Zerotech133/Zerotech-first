@@ -13,12 +13,11 @@ import glob
 import json
 import os
 import sqlite3
-import subprocess
 import time
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 import urllib.request
 
 HERE = Path(__file__).resolve().parent
@@ -29,8 +28,19 @@ ORG_JSON = ROOT / "agent_platform" / "registry" / "org.json"
 SHADOW_LEDGER = ROOT / "agent_platform" / "data" / "shadow" / "shadow_ledger.jsonl"
 RPS_LATEST = ROOT / "quant_backtest" / "reports" / "rps_latest.json"
 GZH_DIR = ROOT / "gzh"
-PORT = int(os.environ.get("HOME_PORT", "8094"))  # 047教训:8092被他服务占用(K-STOCK-053默认值对齐)
+PORT = int(os.environ.get("HOME_PORT", "8094"))  # 047教训:8092被他服务占用(K-STOCK-53默认值对齐)
 OLLAMA = "http://127.0.0.1:11434"
+
+# ── X1/L6 菜鸟登录接线预置（2026-10-10）────────────────────────
+# 默认关（CAINIAO_AUTH_WIRE 未设/非"1"）= 现行为完全不变。
+# 开关打开后：非回环请求必须带 Authorization: Bearer <菜鸟accessToken>，
+# 经 cainiao_auth 远程校验（60s 缓存）；回环/机器通道语义不变。
+# 凭据（CAINIAO_CLIENT_ID/SECRET/TENANT_ID）到位并设置后即真实校验。
+import cainiao_auth  # noqa: E402  自包含标准库模块，同目录
+
+
+def _auth_wire_on() -> bool:
+    return (os.environ.get("CAINIAO_AUTH_WIRE") or "").strip() == "1"
 
 
 def _mt(p: Path):
@@ -422,7 +432,23 @@ class H(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send(204, b"")
 
+    def _auth(self) -> bool:
+        """L6 预置门：默认关=恒放行。开关开后按 cainiao_auth 判定
+        （回环放行/机器通道/Bearer 远程校验；其余 401）。"""
+        if not _auth_wire_on():
+            return True
+        r = cainiao_auth.verify_request(self.headers, self.client_address[0])
+        if r.ok:
+            self.cnm_uid = r.user_id
+            return True
+        body = json.dumps({"ok": False, "error": "unauthorized",
+                           "reason": r.reason}).encode()
+        self._send(401, body)
+        return False
+
     def do_GET(self):
+        if not self._auth():
+            return
         u = urlparse(self.path)
         if u.path in ("/", "/home.html"):
             self._send(200, HOME_HTML.read_bytes(), "text/html; charset=utf-8")
@@ -432,6 +458,8 @@ class H(BaseHTTPRequestHandler):
             self._send(404, b'{"ok":false,"error":"not found"}')
 
     def do_POST(self):
+        if not self._auth():
+            return
         if urlparse(self.path).path != "/api/chat":
             self._send(404, b'{"ok":false,"error":"not found"}')
             return
