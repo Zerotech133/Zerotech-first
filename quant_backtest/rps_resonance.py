@@ -548,13 +548,48 @@ def _jev_pool_scores(wl):
         cf = (jv.get("conf") or 0) * 100
         for k, code in kws.items():
             if k in title:
-                a = agg.setdefault(code, {"net": 0.0, "n": 0})
+                a = agg.setdefault(code, {"net": 0.0, "n": 0, "hits": []})
                 a["net"] += cf if b == "bull" else -cf
                 a["n"] += 1
+                # 溯源存证（077j）：命中明细逐条留痕，供未来重放/审计
+                if len(a["hits"]) < 20:
+                    a["hits"].append({"kw": k, "title": title[:80],
+                                      "bias": b, "conf": round(cf, 2)})
                 break
+    _archive_jev(since, agg)
     return {code: {"score": round(max(0, min(100, 50 + (a["net"] / a["n"])
                                                      / 2))), "n": a["n"]}
             for code, a in agg.items() if a["n"]}
+
+
+def _archive_jev(since, agg):
+    """JEV 打分快照归档（077j 老田令：精准溯源）。
+
+    每次 _jev_pool_scores 落 data/jev_archive/jev_YYYYMMDD.json：
+    当日 7 天窗逐股命中明细（关键词/标题/bias/conf）+ 聚合分。
+    回测重放直接消费档案，不再受 news.db 查询窗与 watchlist 漂移限制。
+    原子写；失败只留痕不阻断产线。"""
+    try:
+        adir = os.path.join(HERE, "data", "jev_archive")
+        os.makedirs(adir, exist_ok=True)
+        fp = os.path.join(adir, "jev_%s.json"
+                          % datetime.now().strftime("%Y%m%d"))
+        doc = {
+            "archived_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "window_since": since,
+            "pool": {code: {
+                "score": round(max(0, min(100,
+                          50 + (a["net"] / a["n"]) / 2))),
+                "n": a["n"],
+                "hits": a.get("hits", []),
+            } for code, a in agg.items() if a["n"]},
+        }
+        tmp = fp + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(doc, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, fp)
+    except Exception as e:
+        sys.stderr.write(" ! jev 归档失败（不阻断产线）: %s\n" % e)
 
 
 def _link_code(code):
