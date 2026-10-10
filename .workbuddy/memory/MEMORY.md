@@ -8,7 +8,7 @@
 
 ## 待老田拍板/输入（截至 10-10 晚更新）
 - ~~J-1 jev 451 治本~~ **✅销案（084）**：根因=CF 对大陆出口 geo-block；typesafe 走本机 7890（SG）恢复，news_ai 已接 proxies（TS_PROXY env 可覆盖）+ 本地 9b 回落二级保险（083，盲测 86.7%）
-- L6 登录开闸（等 Bearer 凭据）；菜鸟 dump 停在 10-08：周一盘前确认 dump 更新链（R4 OOS 材料依赖）
+- L6 登录开闸（等 Bearer 凭据）；~~菜鸟 dump 停 10-08~~ **✅解除（10-10 晚核）**：cainiao_inbox 四表 10-10 19:04 刷新，数据实到 10-09（周末无新数据正常），周一预检项已提前验证
 
 ## 今晚新增基建（10-10 晚五提交，节点链自动化全覆盖）
 - **V6-5 记忆桥已转正**（K276）：cowbridge 生产写上线（index.db messages + daily 层），cowbridge.json shadow_mode=false；回滚=恢复 shadow_mode=true
