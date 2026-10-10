@@ -128,3 +128,4 @@ projects-archive/
 # ===== CowAgent（K275/V6-6：第三方开源克隆 zhayujie/CowAgent + venv 运行态，不进版本控制）=====
 CowAgent/
 AI/
+.worktrees/
