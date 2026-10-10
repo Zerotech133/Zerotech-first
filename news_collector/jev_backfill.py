@@ -111,6 +111,8 @@ def main():
     t0 = time.time()
     judged = 0
     deadline_hit = 0
+    cloud_fail = 0      # K-STOCK-072：连续空判短路（2026-10-10）
+    empty_streak = 0
     for i in range(0, len(items), 8):        # jev_judge_batch 单次上限 8
         if args.deadline and (time.time() - t0) >= args.deadline:
             deadline_hit = 1
@@ -121,6 +123,17 @@ def main():
                        (json.dumps(j, ensure_ascii=False), nid))
         db.commit()
         judged += len(judges)
+        # 云侧故障短路：连续 3 组（24 条）全军覆没即收工。背景：typesafe
+        # systemone 451 自 10-09 09:18 起持续，旧逻辑每轮空转 25-30 分钟
+        # （451 立即返回+0.8s 间隔+二次重试）还占 ollama 锁。空判恢复即
+        # 自动回归正常路径，云侧自愈无需改码。
+        if len(judges) == 0:
+            empty_streak += 1
+            if empty_streak >= 3:
+                cloud_fail = 1
+                break
+        else:
+            empty_streak = 0
         ollama_lock.heartbeat()
     left = db.execute(
         "SELECT COUNT(*) FROM news WHERE jev IS NULL OR jev=''").fetchone()[0]
@@ -128,8 +141,10 @@ def main():
     if args.alert_threshold and left > args.alert_threshold \
             and _alert_ok(throttle=True):
         alerted = 1 if alert_backlog(left, judged, deadline_hit) else 0
-    print("BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d" % (
-        judged, len(items), left, time.time() - t0, deadline_hit, alerted))
+    print("BACKFILL judged=%d/%d left=%d %.1fs deadline_hit=%d alerted=%d "
+          "cloud_fail=%d" % (
+        judged, len(items), left, time.time() - t0, deadline_hit, alerted,
+        cloud_fail))
 
 
 if __name__ == "__main__":
