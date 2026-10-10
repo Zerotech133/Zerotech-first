@@ -1,27 +1,32 @@
 # -*- coding: utf-8 -*-
 """聚合全部选股策略今日强制扫描结果 → portal/data/todays_picks.json
 
-来源（全部为 2026-10-07 当日强制运行产物，数据基准 2026-09-30 收盘，国庆休市）：
-  1. strong  : quant_backtest/reports/strong_latest.json   63 领涨 + 157 观察
-  2. weak    : reports/weak_scan_<ymd>.csv                 强失速/深度垫底
+来源（各策略最新扫描产物，数据基准日见各 strategy meta）：
+  1. strong  : quant_backtest/reports/strong_latest.json   tag 板块领涨/逆板块强势
+  2. weak    : reports/weak_scan_<ymd>.csv                 强失速/深度垫底（周扫；
+               数据基准落后行情湖超 MAX_LAG_DAYS 天时旧名单不入清单）
   3. chanlun : quant_backtest/data/chanlun_pool.jsonl      最新 detect_date 批次
-  4. qpzm    : quant_backtest/reports/rps_latest.json      res 38 只
-  5. ninedim : quant_backtest/data/nine_dim_scores.json    rows 211 只（score/full）
+  4. qpzm    : quant_backtest/reports/rps_latest.json      res 列表（score）
+  5. ninedim : quant_backtest/data/nine_dim_scores.json    rows（score/full/band）
   6. cross   : import cross_poll.build_cross               多策略共振 n_hit>=2
   7. linkage : 个股级工具，无全市场扫描口径（记录说明，不产生名单）
 
-分层：T1=多策略共振(n_hit>=2)；T2=单策略高价值(强领涨/缠论买点/ninedim full)；T3=其余。
+分层：T1=看多源共振(strong领涨+chanlun买+qpzm 计数>=2，或 cross)；T2=单策略高价值
+(强领涨/缠论买点/qpzm分>=80)；CROWD=九维高分拥挤警报(K33 语义：
+回避位非买入，不参与 T2 抬层)；T3=其余。weak/ninedim 影子/卖点不参与共振计数。
 用法: python portal/build_todays_picks.py [--details N]
 """
 import csv
 import glob
 import json
 import os
+import re
 import sys
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
+MAX_LAG_DAYS = 10  # weak 周扫源允许的最大滞后自然日（覆盖长假+周一节奏）
 QB = os.path.join(ROOT, "quant_backtest")
 OUT = os.path.join(HERE, "data", "todays_picks.json")
 
@@ -63,14 +68,26 @@ def load_strong(stocks):
     return meta
 
 
-def load_weak(stocks):
-    # 取最新一份 weak_scan_*.csv
+def load_weak(stocks, basis_day=None):
     rep = os.path.join(ROOT, "reports")
-    cands = [f for f in os.listdir(rep) if f.startswith("weak_scan_") and f.endswith(".csv")]
+    cands = [f for f in os.listdir(rep)
+             if f.startswith("weak_scan_") and f.endswith(".csv")]
     if not cands:
         return {"label": "弱势失速扫描", "n": 0, "note": "无输出"}
     cands.sort()
     fp = os.path.join(rep, cands[-1])
+    # 过期闸门：WeakScan 为周扫（周一 15:35），数据基准落后行情湖超
+    # MAX_LAG_DAYS 自然日（覆盖长假+周一节奏）视为过期，旧名单不入清单
+    m = re.match(r"weak_scan_(\d{8})\.csv$", cands[-1])
+    if m and basis_day:
+        lag = (datetime.strptime(basis_day, "%Y%m%d")
+               - datetime.strptime(m.group(1), "%Y%m%d")).days
+        if lag > MAX_LAG_DAYS:
+            return {"label": "弱势失速扫描（超额回撤监控）", "n": 0,
+                    "stale": True, "file": "reports/" + cands[-1],
+                    "note": "数据基准 %s 落后行情湖 %s %d 天(>%d)，旧名单不入清单；"
+                            "待 WeakScan 周一 15:35 刷新"
+                            % (m.group(1), basis_day, lag, MAX_LAG_DAYS)}
     rows = list(csv.DictReader(open(fp, encoding="utf-8-sig")))
     # 只取 focus 标注的重点池（深度垫底/强失速等），CSV 全量行不进清单
     rows = [r for r in rows if (r.get("focus") or "").strip()]
@@ -187,18 +204,31 @@ def load_cross(stocks):
 def tier_of(e):
     # K33 复盘（2026-10-08 产品评审 P0）：九维高分=拥挤警报而非买入信号，
     # band 票不再抬进 T2；alert 级入独立 CROWD 警报层（回避标记），其余落 T3。
-    hits = len({s["s"] for s in e["sources"]} - {"cross"})
-    if hits >= 2 or (e["sources"] and any(s["s"] == "cross" for s in e["sources"])):
+    # 2026-10-10 复审修正：T1 共振只数看多源（strong 板块领涨 / chanlun 买点 /
+    # qpzm），weak(反向回避)、ninedim 影子(未出分无观点)、chanlun 卖点不再
+    # 参与凑对——此前 60% 的 T1 靠非看多源凑成；cross(n_hit>=2 派生)仍直接 T1。
+    srcs = e["sources"]
+    ss = {s["s"] for s in srcs}
+    bull = (("qpzm" in ss)
+            + any(s["s"] == "chanlun" and "买" in (s.get("tag") or "")
+                  for s in srcs)
+            + any(s["s"] == "strong" and s.get("tag") == "板块领涨"
+                  for s in srcs))
+    if bull >= 2 or "cross" in ss:
         return "T1"
-    tags = [(s.get("tag") or "") for s in e["sources"]]
-    ss = {s["s"] for s in e["sources"]}
-    if "chanlun" in ss and any(("买" in t) for t in tags):
+    if "chanlun" in ss and any(s["s"] == "chanlun"
+                               and "买" in (s.get("tag") or "")
+                               for s in srcs):
         return "T2"
-    if "strong" in ss and any(t == "板块领涨" for t in tags):
+    if "strong" in ss and any(s["s"] == "strong"
+                              and s.get("tag") == "板块领涨"
+                              for s in srcs):
         return "T2"
-    if "qpzm" in ss and any((s.get("score") or 0) >= 80 for s in e["sources"]):
+    if "qpzm" in ss and any(s["s"] == "qpzm" and (s.get("score") or 0) >= 80
+                            for s in e["sources"]):
         return "T2"
-    if "ninedim" in ss and any(s.get("band") in ("alert", "alert2")
+    if "ninedim" in ss and any(s["s"] == "ninedim"
+                               and s.get("band") in ("alert", "alert2")
                                for s in e["sources"]):
         return "CROWD"
     return "T3"
@@ -249,11 +279,18 @@ def _backfill_quotes(stocks):
 def main():
     stocks = {}
     metas = {}
+    # 行情湖基准日提前取一次（weak 过期闸门用；backfill 内部会再取，轻查询幂等）
+    try:
+        sys.path.insert(0, QB)
+        from tdx_read import latest_date
+        basis0 = latest_date("ts_daily")
+    except Exception:
+        basis0 = None
     for sid, fn in (("strong", load_strong), ("weak", load_weak),
                     ("chanlun", load_chanlun), ("qpzm", load_qpzm),
                     ("ninedim", load_ninedim), ("cross", load_cross)):
         try:
-            metas[sid] = fn(stocks)
+            metas[sid] = fn(stocks, basis0) if sid == "weak" else fn(stocks)
             metas[sid]["ok"] = True
         except Exception as ex:  # noqa: BLE001 — 单源失败不拖垮聚合
             metas[sid] = {"label": sid, "ok": False, "err": str(ex)[:120]}

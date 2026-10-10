@@ -187,18 +187,35 @@ def _bt_agg(sn):
 
 
 # ── tushare ────────────────────────────────────────────────
+_NO_TOKEN_WARNED = False
+
+
 def _token():
-    """P0-4：优先环境变量 TUSHARE_TOKEN，读不到再落回 QP_ENV .env（兼容）。"""
+    """token 解析：env TUSHARE_TOKEN → 同目录 .env.local（XT_DATA_KEY，
+    与 tushare_sync.py 同源，SYSTEM 任务可读）→ QP_ENV .env（旧源，兼容）。
+
+    2026-10-10 审计修复：QP_ENV 目录已删，SYSTEM 任务两路皆空返回空串，
+    导致 fina/forecast/index 三接口静默断供 9 天（九维 0 出分）。"""
+    global _NO_TOKEN_WARNED
     tok = os.environ.get("TUSHARE_TOKEN", "").strip()
     if tok:
         return tok
-    try:
-        with open(QP_ENV, encoding="utf-8") as f:
-            for line in f:
-                if line.startswith("TUSHARE_TOKEN="):
-                    return line.strip().split("=", 1)[1]
-    except OSError:
-        pass
+    for path, key in ((os.path.join(HERE, ".env.local"), "XT_DATA_KEY="),
+                      (QP_ENV, "TUSHARE_TOKEN=")):
+        try:
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith(key):
+                        v = line.strip().split("=", 1)[1]
+                        if v:
+                            return v
+        except OSError:
+            pass
+    if not _NO_TOKEN_WARNED:
+        _NO_TOKEN_WARNED = True
+        print("[WARN] TUSHARE_TOKEN 不可得（env 未设 / .env.local 缺 "
+              "XT_DATA_KEY / QP_ENV 不可读），tushare 接口将全部失败",
+              file=sys.stderr)
     return ""
 
 
