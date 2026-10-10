@@ -81,7 +81,8 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "winlogon", "lsass", "services", "spoolsv", "dockerd",
              "com.docker", "vpn", "wslhost", "wsl", "sihost",
              "weixin", "wechat", "gameviewer", "tailscale", "dubbo",
-             "nvidia", "qq", "feishu", "dingtalk")
+             "nvidia", "qq", "feishu", "dingtalk", "quark",
+             "yundetect")
 
 
 def main():
@@ -108,7 +109,11 @@ def main():
     if unknown:
         rc = 1
         for p, name in unknown:
-            print("  ⚠ %d 由 %s 监听——我方服务未上注册表！" % (p, name))
+            print("  ⚠ %d 由 %s 监听——我方服务未上注册表！"
+                  % (p, name))
+        if not strict:
+            rc = 0  # 非 strict：警示不挡道（瞬时 dev server 常态存在）
+            print("  （非 strict 模式：仅警示；--strict 才 rc=1）")
     else:
         print("  无 ✓（注册表外仅系统/第三方豁免进程）")
     print("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d =="
