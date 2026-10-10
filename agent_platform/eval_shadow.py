@@ -62,6 +62,30 @@ def spearman(xs, ys):
     return num / den if den else None
 
 
+def stance_groups(per_symbol_latest: dict) -> dict:
+    """票→坚守/倒戈分组（first-match 口径，与 a0_chief.debate_health 一致）。
+
+    K-STOCK-080（A-1 逐票明细增强）：分组提前供明细行并列；查询失败不炸评估。
+    """
+    groups = {}
+    if not DB.exists():
+        return groups
+    try:
+        conn = sqlite3.connect(str(DB), check_same_thread=False)
+        for sym, r in per_symbol_latest.items():
+            row = conn.execute(
+                "SELECT output FROM traces WHERE run_id=? AND agent_id='T1' AND phase='debate_final'",
+                (r["run_id"],)).fetchone()
+            head = (row[0] if row else "")[:40]
+            import re as _re
+            m = _re.search(r"看多|看空", head)
+            groups[sym] = "倒戈" if (m and m.group(0) == "看空") else "坚守"
+        conn.close()
+    except Exception:  # noqa: BLE001
+        pass
+    return groups
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min-days", type=int, default=5)
@@ -85,8 +109,9 @@ def main():
     per_symbol_latest = {}
     for r in done:
         per_symbol_latest[r["symbol"]] = r  # 每票取最近一次决策
+    sym_group = stance_groups(per_symbol_latest)  # A-1: 分组并入明细
     scores, confs, rets = [], [], []
-    detail = []  # 逐票明细（K-STOCK-014：评估日可读性）
+    detail = []  # 逐票明细（K-STOCK-014：评估日可读性；K-STOCK-080：加分组列）
     for sym, r in per_symbol_latest.items():
         if r.get("score") is None or not r.get("price_at_decision"):
             continue
@@ -97,16 +122,22 @@ def main():
             confs.append(r.get("confidence") or 0)
             rets.append(ret)
             detail.append((sym, r.get("name", ""), r["score"], r.get("confidence") or 0,
-                           r["price_at_decision"], now, ret, r.get("recommendation", "?")))
+                           r["price_at_decision"], now, ret, r.get("recommendation", "?"),
+                           sym_group.get(sym, "?")))
         except Exception as e:  # noqa: BLE001
             print("  [warn] %s 后验价获取失败: %s" % (sym, e))
     if detail:
         print("  逐票明细（按后验收益降序）:")
-        print("  %-8s %-8s %-5s %-5s %-10s %-10s %-8s %s" % (
-            "票", "名称", "score", "conf", "决策价", "现价", "后验%", "决策"))
-        for sym, name, sc, cf, px0, px1, rt, rec in sorted(detail, key=lambda d: -d[6]):
-            print("  %-8s %-8s %-5s %-5s %-10s %-10s %+8.2f %s" % (
-                sym, name[:8], sc, "%.2f" % cf, px0, px1, rt, rec))
+        print("  %-8s %-8s %-5s %-5s %-10s %-10s %-8s %-11s %s" % (
+            "票", "名称", "score", "conf", "决策价", "现价", "后验%", "决策", "T1组"))
+        for sym, name, sc, cf, px0, px1, rt, rec, grp in sorted(detail, key=lambda d: -d[6]):
+            print("  %-8s %-8s %-5s %-5s %-10s %-10s %+8.2f %-11s %s" % (
+                sym, name[:8], sc, "%.2f" % cf, px0, px1, rt, rec, grp))
+    if failed:  # A-1: failed 票可见（评估日不必翻账本）
+        print("  failed 票（%d 行）:" % len(failed))
+        for r in failed[-10:]:
+            print("    %s %s %s run=%s" % (
+                r.get("date"), r.get("symbol"), r.get("name", ""), r.get("run_id", "?")))
     rho_s = spearman(scores, rets) if scores else None
     rho_c = spearman(confs, rets) if confs else None
     j2 = rho_s is not None and rho_s > 0
@@ -116,19 +147,14 @@ def main():
 
     # 分组判读（K-STOCK-017，B9 定性落地）：坚守/倒戈两组分别算 conf-vs-ret——
     # 倒戈票的低 conf 语义已变（角色自弃拉低），混算会污染整体 rho 解读
+    # K-STOCK-080：分组查询收敛到 stance_groups()，明细行与分组判读共用一份
     try:
-        conn2 = sqlite3.connect(str(DB), check_same_thread=False)
         groups = {"坚守": ([], []), "倒戈": ([], [])}
         for sym, r in per_symbol_latest.items():
-            row = conn2.execute(
-                "SELECT output FROM traces WHERE run_id=? AND agent_id='T1' AND phase='debate_final'",
-                (r["run_id"],)).fetchone()
-            head = (row[0] if row else "")[:40]
-            # 审计修正（K-STOCK-021）：与 a0_chief.debate_health 统一为 first-match——
-            # 原判 "看空" in head 会把「我方看多，反驳对方看空论点」误判为倒戈
-            import re as _re
-            m = _re.search(r"看多|看空", head)
-            g = "倒戈" if (m and m.group(0) == "看空") else "坚守"
+            if sym_group.get(sym) != "倒戈":
+                g = "坚守"
+            else:
+                g = "倒戈"
             if r.get("price_at_decision"):
                 try:
                     now = quote_snapshot(sym)["price"]
@@ -136,7 +162,6 @@ def main():
                     groups[g][1].append((now / r["price_at_decision"] - 1) * 100)
                 except Exception:  # noqa: BLE001
                     pass
-        conn2.close()
         for g, (gs, gr) in groups.items():
             rho_g = spearman(gs, gr) if len(gs) >= 3 else None
             print("  [%s组] n=%d conf-vs-ret rho=%s" % (
