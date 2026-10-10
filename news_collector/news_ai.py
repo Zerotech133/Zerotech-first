@@ -155,9 +155,8 @@ def _jev_key():
         return ""  # 豁免（C2批2）：与"未配置 key"同一出口，jev_judge_one 侧按无 key 跳过
 
 
-def jev_judge_one(title, stocks, timeout=15):
-    """单条新闻 → JEV 判断 {"bias","bias_cn","conf","scope","scope_cn"}。
-    失败返回 None（不抛出，绝不影响推送）。"""
+def _jev_judge_one_cloud(title, stocks, timeout=15):
+    """typesafe systemone 云判定（原 jev_judge_one 主体，K-STOCK-083 拆出）。"""
     key = _jev_key()
     if not key or not title:
         return None
@@ -214,6 +213,68 @@ def jev_reason(title, bias_cn, scope_cn, timeout=20):
         return r.json()["message"]["content"].strip().replace("\n", " ")[:60]
     except Exception:
         return ""  # 豁免（C2批2）：docstring 声明——Ollama 判断依据失败返回空串不阻塞
+
+
+# K-STOCK-083（2026-10-10）：本地回落接线。盲测门已过（86.7% ENABLE，
+# docs/plans/2026-10-10_A3_jev情绪源本地回落预研.md §三）。
+_CLOUD_FAIL_UNTIL = 0.0   # 云失败后此 epoch 前直接走本地，防 451 期每条空打探测
+
+
+def jev_judge_one_local(title, stocks, timeout=60):
+    """本地回落判定（qwen3.5:9b + format json，v2 资产价格口径）。
+
+    prompt 口径与盲测 v2 逐字一致（a3_blindtest.py，一致率 86.7%、反向误判 0）。
+    失败返回 None（与云路径同契约，绝不抛出）。
+    """
+    if not title:
+        return None
+    tag = ("（关联标的：%s）" % "/".join(stocks)) if stocks else ""
+    prompt = (
+        "财经快讯：%s%s\n判断该快讯对相关市场【资产价格】的短期影响方向，只输出 JSON："
+        '{"bias":"bull|bear|neutral","conf":0.0到1.0}，不要输出其他内容。'
+        "口径：只看对资产价格的直接影响——外交会晤、一般性产业与技术进展、常规信息披露、"
+        "国债/政策性金融债发行供给等属 neutral；明确的需求扩张、超预期业绩、降息等利好才判 bull；"
+        "明确的供给冲击、业绩暴雷、加息、制裁等才判 bear。" % (title[:100], tag))
+    try:
+        r = requests.post(OLLAMA, json={
+            "model": os.environ.get("OLLAMA_MODEL", "qwen3.5:9b"),
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False, "think": False, "format": "json",
+            "options": {"temperature": 0.1, "num_predict": 60},
+        }, timeout=timeout)
+        r.raise_for_status()
+        j = json.loads(r.json()["message"]["content"])
+        bias = (j.get("bias") or "").strip().lower()
+        if bias not in _BIAS_CN:
+            return None
+        scope = (j.get("scope") or "").strip().lower()
+        conf = min(max(float(j.get("conf") or 0.5), 0.0), 1.0)
+        bias_cn, scope_cn = _BIAS_CN[bias], _SCOPE_CN.get(scope, scope or "")
+        return {"bias": bias, "bias_cn": bias_cn, "conf": round(conf, 2),
+                "scope": scope, "scope_cn": scope_cn, "src": "local",
+                "reason": jev_reason(title, bias_cn, scope_cn)}
+    except Exception as e:
+        log("jev_judge_local FAIL %s" % str(e)[:100])
+        return None
+
+
+def jev_judge_one(title, stocks, timeout=15):
+    """单条新闻 → JEV 判断 {"bias","bias_cn","conf","scope","scope_cn"[,"src"]}。
+
+    路由：云优先（typesafe）；云失败起 300s 内后续条目直接走本地回落
+    （防 451 期间每条空打两次探测）；回落失败返回 None（不抛，绝不影响推送）。
+    """
+    global _CLOUD_FAIL_UNTIL
+    if time.time() >= _CLOUD_FAIL_UNTIL:
+        r = _jev_judge_one_cloud(title, stocks, timeout)
+        if r is not None:
+            return r
+        _CLOUD_FAIL_UNTIL = time.time() + 300
+        log("jev_judge cloud FAIL -> local fallback for 300s")
+    r = jev_judge_one_local(title, stocks)
+    if r is not None:
+        log("jev_judge LOCAL hit bias=%s conf=%s" % (r["bias"], r["conf"]))
+    return r
 
 
 def jev_judge_batch(items):
