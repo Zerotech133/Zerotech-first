@@ -153,7 +153,18 @@ def load_weak(stocks, basis_day=None):
 
 def load_chanlun(stocks, basis_day=None):
     fp = os.path.join(QB, "data", "chanlun_pool.jsonl")
-    rows = [json.loads(l) for l in open(fp, encoding="utf-8") if l.strip()]
+    # 坏行跳过（十一审 2026-10-10）：对齐 cross_poll._load_jsonl 的 per-line
+    # 容错——此前列表推导一行坏数据即整源丢失，而 cross 走 SQLite 路径存活，
+    # cl_sell 同批卖点守卫随之查空失效，带卖点票可经 cross 旁路挂 T1。
+    rows = []
+    with open(fp, encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                rows.append(json.loads(line))
+            except Exception:
+                continue
     latest = max((r.get("detect_date") or "") for r in rows)
     stale = _stale_meta(basis_day, _ymd(latest), STALE_LAG_DAILY,
                         "缠论信号池（三类买卖点）",
@@ -331,7 +342,11 @@ def load_cross(stocks, basis_day=None):
                     "label@日期=信号检出日" % n_skip}
 
 
-def tier_of(e):
+def tier_of(e, veto_ok=True):
+    # T1 否决链守卫（十一审 2026-10-10）：chanlun/weak/qpzm 之一 err 失败
+    # （非 stale 闸门拦截——stale 是设计内"旧负面不误杀"）时否决闸门静默
+    # 失效，T1 可混入带同批卖点/强失速/qpzm回避的票 → veto_ok=False 当日
+    # T1 判定整体停挂，共振票自然落 T2/T3（单策略通道不受影响）。
     # K33 复盘（2026-10-08 产品评审 P0）：九维高分=拥挤警报而非买入信号，
     # band 票不再抬进 T2；alert 级入独立 CROWD 警报层（回避标记），其余落 T3。
     # 2026-10-10 复审修正：T1 共振只数看多源（strong 板块领涨 / chanlun 买点 /
@@ -358,7 +373,7 @@ def tier_of(e):
     # 参考；九维拥挤警报与 ST 可并存，CROWD 判定不受影响。
     is_st = "ST" in (e.get("name") or "").upper()
     if not is_st:
-        if ((bull >= 2 or "cross" in ss)
+        if (veto_ok and (bull >= 2 or "cross" in ss)
                 and not qpzm_avoid and "weak" not in ss):
             return "T1"
         if "chanlun" in ss and any(s["s"] == "chanlun"
@@ -444,11 +459,16 @@ def main():
     metas["linkage"] = {
         "label": "板块联动信号", "ok": True, "n": None,
         "note": "个股级工具（linkage_signals.py 需指定代码），无全市场扫描口径，今日不产生名单"}
+    # T1 否决链状态（十一审）：ok=False 的源含 err（异常失败）；stale 闸门
+    # 拦截的源 ok=True（设计内放行），不触发停挂。
+    veto_failed = [s for s in ("chanlun", "weak", "qpzm")
+                   if not metas.get(s, {}).get("ok")]
+    veto_ok = not veto_failed
 
     out_rows = []
     for c, e in stocks.items():
         e["n_hit"] = len({s["s"] for s in e["sources"]} - {"cross"})
-        e["tier"] = tier_of(e)
+        e["tier"] = tier_of(e, veto_ok)
         out_rows.append(e)
     order = {"T1": 0, "T2": 1, "CROWD": 2, "T3": 3}
     out_rows.sort(key=lambda x: (order[x["tier"]], -x["n_hit"], x["code"]))
@@ -483,6 +503,9 @@ def main():
         "scan_run_date": basis_s or now[:10],
         "trade_basis": trade_basis,
         "strategies": metas,
+        "t1_gate": {"ok": veto_ok, "failed": veto_failed,
+                    "note": ("" if veto_ok else
+                             "否决源异常失败，T1 当日停挂（共振票降 T2/T3）")},
         "counts": {
             "total": len(out_rows),
             "T1_resonance": sum(1 for r in out_rows if r["tier"] == "T1"),
@@ -509,10 +532,20 @@ def main():
           % (doc["counts"]["total"], doc["counts"]["T1_resonance"],
              doc["counts"]["T2_high_value"], doc["counts"]["crowd_alert"],
              doc["counts"]["T3_single"], OUT))
+    if not veto_ok:
+        # 双通道告警（十二审）：stdout 给运维日志；stderr 给 alert_fail——
+        # start_todays_picks.ps1 只把 err.log 传给 alert_fail，stdout 警告
+        # 收报人看不到，exit=3 推送将无法区分"停挂"与"崩溃"。
+        _hold = ("[T1停挂] 否决源异常失败: %s —— 同批卖点/weak/qpzm回避否决"
+                 "失效，今日不产 T1（共振票降 T2/T3）；exit=3 触发 alert_fail 推送"
+                 % ",".join(veto_failed))
+        print("  " + _hold)
+        print(_hold, file=sys.stderr)
     print("  行情回填：基准 %s，回填 %d 只" % (basis_day or "无", n_backfill))
     for sid, m in metas.items():
         print("  %-8s ok=%s n=%s %s" % (sid, m.get("ok"), m.get("n"),
                                         (m.get("err") or "")[:60]))
+    return veto_ok  # False → __main__ 以退出码 3 结束（ran-but-degraded 警报）
 
 
 if __name__ == "__main__":
@@ -522,4 +555,6 @@ if __name__ == "__main__":
         description="聚合六策略选股产物 → portal/data/todays_picks.json"
                     "（个股详情见 build_pick_details.py）")
     _ap.parse_args()
-    main()
+    # 退出码口径（十一审）：0=正常；3=跑完但 T1 停挂（否决源 err，清单已
+    # 落盘仅缺 T1 层）——start_todays_picks.ps1 透传给 alert_fail 推送。
+    sys.exit(0 if main() else 3)

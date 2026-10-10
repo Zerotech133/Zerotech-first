@@ -1,18 +1,19 @@
-[N1_CHECK_FAIL_20261010_0730]
-[FAIL] backup_daily.ps1 MISSING from disk (registry will auto-restore at next 03:00 run)
+[N1_CHECK_FAIL_20261010_1503]
+[OK] regen self-heal: 2026-10-10 15:03:45  OK disk source matches registry (18560 bytes)
+[OK] backup_daily.ps1 on disk 18560B
 [OK] backup set 2026-10-10_0300 files=10 MB=1923.7
 [OK] backup.log DONE failed=0
 [OK] quant_code files=3960 (baseline 1756, holiday drift ~0)
-[FAIL] BACKUP_KEY_LOST flag present - key file issue, see flag
+[OK] v5 key guard silent (normal path)
 [OK] offsite task RC=0 LastRun=10/10/2026 04:30:01
 [OK] offsite log: [20261010_043001] OK set=2026-10-10_0300 files=10 bytes=2017161089
 [OK] OneDrive set 2026-10-10_0300 files=10
 [OK] OneDrive sets=2 (prune to 2 works)
-[OK] alert queue empty
+[FAIL] alert queue not empty: N1_CHECK_FAIL_20261010_1502.flag
 [OK] no ENGINE_DOWN event pending
 [OK] tushare_sync exit line: tushare_sync exit=0 2026-10-10T00:47:54
 [OK] AI量化RPS共振 RC=0 LastRun=10/09/2026 23:35:01
 [OK] AI工作站统一日报 RC=0 LastRun=10/10/2026 03:00:01
 [OK] daily exit line: daily exit=0 2026-10-10T03:00:07
-[FAIL] jev: backlog left=3402 > 150 (cloud outage or loop stuck)
-N1 FAILURES=3
+[FAIL] jev: backlog left=3721 > 150 (cloud outage or loop stuck)
+N1 FAILURES=2

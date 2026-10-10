@@ -326,6 +326,7 @@ function renderVitals(){
     `<span>数据基准 <b>${esc(DATA.trade_basis)}</b></span>`+
     `<span>清单 <b>${c.total}</b></span>`+
     `<span>T1 共振 <b>${c.T1_resonance}</b></span>`+
+    (DATA.t1_gate&&!DATA.t1_gate.ok?`<span style="color:#ff5252">⛔ T1 停挂：否决源 ${(DATA.t1_gate.failed||[]).map(esc).join("/")} 异常失败，否决闸门失效</span>`:"")+
     `<span>T2 高价值 <b>${c.T2_high_value}</b></span>`+
     (c.crowd_alert!=null?`<span style="color:#ff5252">⚠ 拥挤警报 <b>${c.crowd_alert}</b></span>`:"")+
     `<span>T3 单策略 <b>${c.T3_single}</b></span>`+

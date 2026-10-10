@@ -70,6 +70,12 @@ REGISTRY = {
     "TodaysPicks":        {"expect": "15:10", "since": "2026-10-10"},
     "RpsDaily":           {"expect": "16:05", "since": "2026-10-10",
                            "trade_only": True},
+    # 10-10 补（十三审字段契约审计）：WeakScan 周扫（周一 15:35）原不在册
+    # ——漏跑时 weak 源静默断供，lag>10 后 stale 拦截属设计内放行（不触发
+    # T1 停挂），weak 否决长期失效无人报。周任务用 weekday 语义防误报；
+    # 周一 21:30 档检出当日漏跑；若当日档也挂，下周一复查仍报（last 恒旧）。
+    "WeakScan":           {"expect": "15:35", "since": "2026-10-10",
+                           "weekday": 0},   # 0=周一（Python weekday 约定）
 }
 
 
@@ -127,6 +133,8 @@ def run():
             continue                     # 生效日前不检（新任务防误报）
         if cfg.get("trade_only") and not _trade_today(now):
             continue                     # 仅交易日任务：非交易日不检（八审）
+        if cfg.get("weekday") is not None and now.weekday() != cfg["weekday"]:
+            continue                     # 周任务：仅指定星期检查（十三审）
         exp_h, exp_m = map(int, cfg["expect"].split(":"))
         expect = now.replace(hour=exp_h, minute=exp_m, second=0)
         deadline = expect + timedelta(minutes=GRACE_MIN)
