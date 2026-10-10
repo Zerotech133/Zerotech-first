@@ -1,5 +1,6 @@
-# N1Check v1.5 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog)
+# N1Check v1.6 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal)
 # Checks:
+#  (0) regen self-heal (K-STOCK-061): backup_daily_regen.py exit=0 before presence check
 #  (1) today's backup set: DONE failed=0 + mirror files>=$MinFiles + quant_code files count
 #  (2) v5 key guard normal path: no BACKUP_KEY_LOST flag anywhere
 #  (3) offsite sync: task RC=0 + log "OK set=<day>" + OneDrive set present + prune<=2
@@ -26,6 +27,14 @@ if (-not $BaseDir) { return }
 $alertsDir = Join-Path $BaseDir 'jev-eval\alerts'
 function Report($s) { $script:report += $s }
 function Fail($s) { $script:fail++; $script:report += ('[FAIL] ' + $s) }
+
+# --- 0a. regen self-heal (v1.6 / K-STOCK-061): heal BEFORE presence check ---
+$regenScript = Join-Path $BaseDir 'jev-eval\backup_daily_regen.py'
+if (Test-Path $regenScript) {
+    $regenOut = (& python $regenScript 2>&1 | Select-Object -Last 1)
+    if ($LASTEXITCODE -eq 0) { Report ('[OK] regen self-heal: ' + $regenOut) }
+    else { Fail ('regen self-heal exit=' + $LASTEXITCODE + ' ' + $regenOut) }
+} else { Fail 'backup_daily_regen.py MISSING from disk (regen guard itself lost)' }
 
 # --- 0. backup_daily.ps1 disk presence (v1.4 / OPS-1013) ---
 # 10-08 the script vanished from disk twice silently; N1 only checked backup
