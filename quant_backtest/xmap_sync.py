@@ -19,6 +19,7 @@ PG 连接：默认 127.0.0.1:5442 quant_user/quant_system（零界 docker newqua
 """
 
 import argparse
+import json
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -400,8 +401,14 @@ def _mysql_clock(cn_conn):
     传参按裸字符串拼接不转时区，故增量窗口必须显式换算到 MySQL 挂钟域。
     """
     with cn_conn.cursor() as c:
-        c.execute("SELECT NOW(), TIMEDIFF(NOW(), UTC_TIMESTAMP())")
-        mnow, off = c.fetchone()
+        # 别名 + 双形态取值：连接默认 DictCursor（dict 按别名取键），
+        # 若调用方换普通 Cursor 则退回元组解包——两形态都不再把键名当值。
+        c.execute("SELECT NOW() AS now_v, TIMEDIFF(NOW(), UTC_TIMESTAMP()) AS off_v")
+        row = c.fetchone()
+    if isinstance(row, dict):
+        mnow, off = row["now_v"], row["off_v"]
+    else:
+        mnow, off = row
     if isinstance(off, timedelta):
         offset = off
     else:  # 某些驱动回字符串 '08:00:00'
@@ -422,6 +429,21 @@ def cmd_incr(_args):
     except Exception as e:
         print(f"[error] 零界 PG 连接失败：{e}", file=sys.stderr)
         sys.exit(1)
+    # X3 血缘登记（best-effort，lineage.job_run job='xmap_sync'；失败不拦业务）
+    run_id = None
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO lineage.job_run (job, step, started_at, status, detail) "
+                "VALUES ('xmap_sync', 'incr', now(), 'running', %s) RETURNING id",
+                (json.dumps({"host": parse_dsn(os.environ["CAINIAO_MYSQL_DSN"])["host"]
+                             if os.environ.get("CAINIAO_MYSQL_DSN") else None},
+                            ensure_ascii=False),))
+            run_id = cur.fetchone()[0]
+        conn.commit()
+    except Exception as e:
+        print(f"[warn] lineage 登记失败（不拦业务）：{e}", file=sys.stderr)
+        conn.rollback()
     try:
         with conn.cursor() as cur:
             create_objects(cur, MAIN_SCHEMA)
@@ -456,7 +478,29 @@ def cmd_incr(_args):
         conn.commit()
         print(f"[incr] 拉取 {len(rows)} 行 | 新插 {n_ins} 更新 {n_upd} | 入队 {len(unmatched)}"
               f" | 水位已推进至 {wm_utc.isoformat()}")
+        if run_id is not None:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE lineage.job_run SET status='ok', ended_at=now(), "
+                        "rows_written=%s WHERE id=%s",
+                        (len(rows), run_id))
+                conn.commit()
+            except Exception as e:
+                print(f"[warn] lineage 收尾失败：{e}", file=sys.stderr)
+                conn.rollback()
         # strategy / user 增量按设计稿 §4 定调后续接入（策略精选制、用户 mobile 归并）
+    except Exception:
+        if run_id is not None:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE lineage.job_run SET status='fail', ended_at=now() "
+                        "WHERE id=%s", (run_id,))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+        raise
     finally:
         conn.close()
         cn.close()
