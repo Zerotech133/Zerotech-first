@@ -195,46 +195,49 @@ def align_rows(rows, securities):
 
 # ── 写库：entity_map upsert + map_audit 记账 ──────────────────────────
 def upsert_entity(cur, schema, m, entity_type="stock", actor="xmap_sync"):
+    """原子 upsert（复盘 A2）：单条 CTE 完成「读旧行 → INSERT ON CONFLICT
+    DO UPDATE → 取回新行」，消除先 SELECT 后 UPDATE 的并发竞态窗口；
+    audit 记账行为与原实现逐字段一致（insert/update 双动作 + old/new 留痕）。
+    xmax=0 表示本事务新插入的行（PG heap 特性），用于区分 insert/update。
+    注意：不可在此再加 FOR UPDATE——同一语句内 ON CONFLICT 改过的元组
+    带当前命令 ID，对自身快照不可见，FOR UPDATE 顺链后会整行丢失
+    （2026-10-10 探针实锤）；行锁由 ON CONFLICT DO UPDATE 原子持有。"""
     cur.execute(
-        f"SELECT id, to_jsonb(t) FROM {schema}.entity_map t "
-        "WHERE entity_type=%s AND src_system=%s AND src_ns=%s AND src_id=%s",
-        (entity_type, "rookie", "", m["src_id"]),
-    )
-    old = cur.fetchone()
-    if old is None:
-        cur.execute(
-            f"INSERT INTO {schema}.entity_map "
-            "(entity_type, src_system, src_ns, src_id, dst_system, dst_ns, dst_id,"
-            " match_method, confidence, status, src_payload) "
-            "VALUES (%s, 'rookie', '', %s, 'lingjie', '', %s, %s, %s, %s, %s) "
-            "RETURNING id",
-            (entity_type, m["src_id"], m["dst_id"], m["method"], m["conf"],
-             m["status"], psycopg2.extras.Json(m["payload"])),
+        f"""
+        WITH prev AS (
+            SELECT id, to_jsonb(t) AS old_row
+            FROM {schema}.entity_map t
+            WHERE entity_type=%s AND src_system=%s AND src_ns=%s AND src_id=%s
+        ), up AS (
+            INSERT INTO {schema}.entity_map
+                (entity_type, src_system, src_ns, src_id, dst_system, dst_ns,
+                 dst_id, match_method, confidence, status, src_payload)
+            VALUES (%s, 'rookie', '', %s, 'lingjie', '', %s, %s, %s, %s, %s)
+            ON CONFLICT (entity_type, src_system, src_ns, src_id) DO UPDATE
+                SET dst_id       = EXCLUDED.dst_id,
+                    match_method = EXCLUDED.match_method,
+                    confidence   = EXCLUDED.confidence,
+                    status       = EXCLUDED.status,
+                    src_payload  = EXCLUDED.src_payload,
+                    updated_at   = now()
+            RETURNING id, (xmax = 0) AS is_insert, to_jsonb(entity_map) AS new_row
         )
-        map_id = cur.fetchone()[0]
-        cur.execute(
-            f"SELECT to_jsonb(t) FROM {schema}.entity_map t WHERE id=%s", (map_id,))
-        cur.execute(
-            f"INSERT INTO {schema}.map_audit (map_id, action, old_row, new_row, actor) "
-            "VALUES (%s,'insert',NULL,%s,%s)",
-            (map_id, psycopg2.extras.Json(cur.fetchone()[0]), actor),
-        )
-        return map_id, "insert"
-    map_id, old_row = old
-    cur.execute(
-        f"UPDATE {schema}.entity_map SET dst_id=%s, match_method=%s, confidence=%s,"
-        " status=%s, src_payload=%s, updated_at=now() WHERE id=%s",
-        (m["dst_id"], m["method"], m["conf"], m["status"],
-         psycopg2.extras.Json(m["payload"]), map_id),
+        SELECT up.id, up.is_insert, up.new_row, prev.old_row
+        FROM up LEFT JOIN prev ON true
+        """,
+        (entity_type, "rookie", "", m["src_id"],
+         entity_type, m["src_id"], m["dst_id"], m["method"], m["conf"],
+         m["status"], psycopg2.extras.Json(m["payload"])),
     )
-    cur.execute(f"SELECT to_jsonb(t) FROM {schema}.entity_map t WHERE id=%s", (map_id,))
+    map_id, is_insert, new_row, old_row = cur.fetchone()
     cur.execute(
         f"INSERT INTO {schema}.map_audit (map_id, action, old_row, new_row, actor) "
-        "VALUES (%s,'update',%s,%s,%s)",
-        (map_id, psycopg2.extras.Json(old_row),
-         psycopg2.extras.Json(cur.fetchone()[0]), actor),
+        "VALUES (%s,%s,%s,%s,%s)",
+        (map_id, "insert" if is_insert else "update",
+         psycopg2.extras.Json(old_row) if old_row is not None else None,
+         psycopg2.extras.Json(new_row), actor),
     )
-    return map_id, "update"
+    return map_id, "insert" if is_insert else "update"
 
 
 def enqueue_unmatched(cur, schema, u, entity_type="stock"):
