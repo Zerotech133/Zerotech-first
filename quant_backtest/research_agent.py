@@ -3,7 +3,7 @@
 
 口径（2026-09-28 定稿）：
   · 事实：pool_rows / signal_precedents / tgraph_left_tail / events_for_stock
-  · LLM：本地 Ollama qwen3:8b-8k（与 news_ai 同源），≤220 字中文
+  · LLM：本地 Ollama qwen3.5:9b（与 sellpoint_ai 同源），≤220 字中文
   · 建议：白名单动作（买入/卖出/清仓/建仓/加仓/减仓/做空/止盈/止损/
     回避/入场/离场 + 中性 持有/观望），须引用事实依据
   · 校验（反向）：出参必含 ≥1 白名单动词；缺→重试 1 次→仍缺退拼接版
@@ -28,8 +28,9 @@ sys.path.insert(0, HERE)
 
 RESEARCH_DIR = os.path.join(HERE, "data", "semantica", "research")
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
-MODEL = "qwen3:8b-8k"        # 本地 Ollama（与 news_ai.jev_reason 同源）
-TIMEOUT = 90                 # 研判段 ~220 字，8b CPU 生成 20-60s
+MODEL = "qwen3.5:9b"         # 本地 Ollama（077h 实测 qwen3:8b-8k 已不在
+                             # 本地模型清单，静默降级拼接版；改指 9b 恢复）
+TIMEOUT = 90                 # 研判段 ~220 字，9b CPU 生成 20-60s 留余量
 # 白名单：用户二改定稿——动词是"建议动作" vocabulary（非禁用表）
 ACTIONS = ["买入", "卖出", "清仓", "建仓", "加仓", "减仓", "做空",
            "止盈", "止损", "回避", "入场", "离场", "持有", "观望"]
@@ -187,7 +188,9 @@ def _llm(prompt):
     try:
         import requests
         r = requests.post(OLLAMA_URL, json={
-            "model": MODEL, "stream": False,
+            "model": MODEL, "stream": False, "think": False,
+            # think:False 对齐 news_ai/alias_audit 范式——qwen3.5 思考模型
+            # 不关思考时 num_predict 全被 thinking 吃掉，content 恒空
             "messages": [{"role": "user", "content": prompt}],
             "options": {"temperature": 0.3, "num_predict": 600}},
             timeout=TIMEOUT)

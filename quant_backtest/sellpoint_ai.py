@@ -10,7 +10,7 @@ chanlun_bi 已产出）。研判卡只做信息层——不拦截、不改信号
     影子流，(code,type,dt) 幂等去重
   组装——信号/结构位置(npv)/大盘(reg)/可成交(tradable)/模拟持仓关联
     （chanlun_paper.json open[]，浮盈与持有天数入卡）
-  研判——本地 Ollama qwen3:8b-8k 一卡三行（强度/建议/风险），白名单
+  研判——本地 Ollama qwen3.5:9b 一卡三行（强度/建议/风险），白名单
     动词校验（沿用 research_agent 范式：缺动词重试 1 次，仍缺标注降级）
   落盘——data\sellpoint_cards.jsonl 原子写（影子：只记不推）
   推送——config sellpoint.push（默认 false）+ feishu.push 才发；幂等
@@ -55,7 +55,7 @@ CONFIG = os.path.join(HERE, "config.json")
 
 OLLAMA = "http://127.0.0.1:11434/api/chat"
 MODEL = "qwen3.5:9b"          # 本地 Ollama（与 research_agent/news_ai 同源）
-TIMEOUT = 120                  # 8b 单卡 20-60s，留余量
+TIMEOUT = 120                  # 9b 单卡 20-60s，留余量
 FRESH_DAYS = 7                 # fresh 窗口（自然日，跨周末/假期）
 MAX_CARDS = 12                 # 单次运行默认上限（防 LLM 排队过久）
 LLM_FAIL_ABORT = 3             # 连续 N 次 LLM 失败则中止本轮（防白烧）
@@ -303,7 +303,9 @@ def _facts(r, paper_row, agent):
 
 # ── 研判：Ollama 一卡三行（专辑台独立；同源信号多 agent 并行） ──
 def _llm(prompt):
-    body = {"model": MODEL, "stream": False,
+    body = {"model": MODEL, "stream": False, "think": False,
+            # think:False 对齐 news_ai 范式——qwen3.5 思考模型不关思考时
+            # token 全进 thinking，content 恒空（077h 实测坑）
             "messages": [{"role": "user", "content": prompt}],
             "options": {"temperature": 0}}
     req = urllib.request.Request(
