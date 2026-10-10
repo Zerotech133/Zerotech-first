@@ -268,15 +268,15 @@ def load_cross(stocks, basis_day=None):
         days.append(_ymd(json.load(open(
             os.path.join(QB, "reports", "rps_latest.json"),
             encoding="utf-8")).get("latest")))
-    except Exception:
-        pass
+    except Exception as ex:  # A5: 新鲜度探针失败静默=staleness 口径缺角——留痕
+        print("[picks] rps_latest 读取失败：%s" % str(ex)[:60])
     try:
-        days.append(_ymd(max(json.loads(l).get("detect_date") or ""
-                             for l in open(os.path.join(
+        days.append(_ymd(max(json.loads(ln).get("detect_date") or ""
+                             for ln in open(os.path.join(
                                  QB, "data", "chanlun_pool.jsonl"),
-                                 encoding="utf-8") if l.strip())))
-    except Exception:
-        pass
+                                 encoding="utf-8") if ln.strip())))
+    except Exception as ex:  # A5: 同上——留痕
+        print("[picks] chanlun_pool 读取失败：%s" % str(ex)[:60])
     days = [x for x in days if x]
     if days:
         stale = _stale_meta(basis_day, min(days), STALE_LAG_DAILY,
@@ -446,8 +446,8 @@ def main():
         sys.path.insert(0, QB)
         from tdx_read import latest_date
         basis0 = latest_date("ts_daily")
-    except Exception:
-        basis0 = None
+    except Exception as ex:  # A5: 湖基准日失败会让 basis_day 回退——留痕
+        print("[picks] 行情湖 latest_date 失败 basis0=None：%s" % str(ex)[:60])
     for sid, fn in (("strong", load_strong), ("weak", load_weak),
                     ("chanlun", load_chanlun), ("qpzm", load_qpzm),
                     ("ninedim", load_ninedim), ("cross", load_cross)):
