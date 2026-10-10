@@ -44,9 +44,9 @@ def load_picks():
         if r.get("tier") != "T2":
             continue
         buys = [s for s in r["sources"] if s["s"] == "chanlun"
-                and "买" in (s.get("tag") or "")]
+                and "买" in (s.get("tag") or "") and s.get("dt")]
         if not buys:
-            continue
+            continue  # 四十一审：无 dt 买点跳过（age 无法计算，防 ValueError）
         b = max(buys, key=lambda s: s.get("dt") or "")
         sells = [s for s in r["sources"] if s["s"] == "chanlun"
                  and "卖" in (s.get("tag") or "")]
@@ -57,27 +57,57 @@ def load_picks():
     return d, basis, picks
 
 
+def _exdiv_days(df):
+    """除权日检测（三十一审同构）：相邻日 open_t/close_{t-1} <= -30.5%
+    判除权——涨跌幅限制下不可能是交易行为，零误报。返回除权
+    trade_date 集合（YYYYMMDD）。"""
+    bad = set()
+    o, c, t = df["open"].tolist(), df["close"].tolist(), df["trade_date"].tolist()
+    for k in range(1, len(df)):
+        prev = float(c[k - 1])
+        if prev and float(o[k]) / prev - 1 <= -0.305:
+            bad.add(str(t[k])[:8])
+    return bad
+
+
 def calc_returns(p, basis):
-    """信号+2 开盘买入 -> w 有行日收盘卖；统一近窗另计。"""
+    """信号+2 开盘买入 -> w 有行日收盘卖；统一近窗另计。
+
+    四十一审（2026-10-10）：同步三十一审除权守卫——湖价未复权，买入→
+    卖出之间出现除权日（送转假跳空，2026 实测 77 起）会污染 w5/10/20
+    长窗收益（比 verdicts 的 1/3/5 窗更易命中）；uw 近窗同守卫。命中
+    窗口剔除不计 n（stat 自动跳过缺键），exdiv_* 留痕供明细识别。"""
     df = read_range("ts_daily", "20260101", basis.strftime("%Y%m%d"),
                     codes=[p["code"]],
                     columns=["ts_code", "trade_date", "open", "close"])
     if df is None or len(df) == 0:
         return
     df = df.sort_values("trade_date").reset_index(drop=True)
+    exd = _exdiv_days(df)
     post = df[df.trade_date > p["dt"].replace("-", "")]
     if len(post) >= 3:
         buy = float(post["open"].iloc[1])  # 信号+2 交易日开盘
         if buy > 0:
             for w in WINDOWS:
                 if len(post) >= 2 + w:
+                    # 除权污染窗 = 买入日之后至卖出日（该区间价格尺度断裂）
+                    span = {str(x)[:8] for x in
+                            post["trade_date"].iloc[2:2 + w + 1]}
+                    if span & exd:
+                        p["exdiv_w%d" % w] = True
+                        continue
                     p["w%d" % w] = round(
                         (float(post["close"].iloc[1 + w]) / buy - 1) * 100, 2)
     uw = df[(df.trade_date >= (basis - timedelta(days=13)).strftime("%Y%m%d"))
             & (df.trade_date <= basis.strftime("%Y%m%d"))]
     if len(uw) >= 2:
-        p["uw"] = round(
-            (float(uw["close"].iloc[-1]) / float(uw["open"].iloc[0]) - 1) * 100, 2)
+        span = {str(x)[:8] for x in uw["trade_date"].iloc[1:]}
+        if span & exd:
+            p["exdiv_uw"] = True
+        else:
+            p["uw"] = round(
+                (float(uw["close"].iloc[-1]) / float(uw["open"].iloc[0]) - 1)
+                * 100, 2)
 
 
 def stat(ps, key):
@@ -111,10 +141,15 @@ def main():
     for g in (GROUPS[0][0], GROUPS[2][0]):  # <=30 与 >60 两组明细
         print("\n── %s 组明细 ──" % g)
         for p in sorted(groups[g], key=lambda x: -x["age"]):
-            ws = " ".join("w%d=%s" % (w, p.get("w%d" % w)) for w in WINDOWS)
+            ws = " ".join(
+                ("w%d=%s" % (w, p.get("w%d" % w))) if p.get("w%d" % w) is not None
+                else ("w%d=除权剔" % w) if p.get("exdiv_w%d" % w) else
+                ("w%d=未满" % w)
+                for w in WINDOWS)
             print("  %-10s %-6s %s %s age=%3d %s 近窗=%s%s"
                   % (p["code"], p["name"][:4], p["tag"], p["dt"], p["age"],
-                     ws, p.get("uw"),
+                     ws,
+                     "除权剔" if p.get("exdiv_uw") else p.get("uw"),
                      " ⚠含卖点" if p["has_sell"] else ""))
 
 

@@ -113,6 +113,9 @@ TABLE_DEFS = {
     "irm_qa_sh":       {"freq": "D", "desc": "互动易问答-沪（逐码）"},
     "irm_qa_sz":       {"freq": "D", "desc": "互动易问答-深（逐码）"},
     # ── tdx 仓（仅 desc；其余与 tdx_read 口径一致）──
+    "ts_adj_factor":  {"date_col": "trade_date", "freq": "D",
+                        "desc": "复权因子（tushare 直连，adj_factor_sync 维护，"
+                                "AdjFactorSync 18:10）"},
     "ts_daily":        {"freq": "D", "desc": "A股日线行情（xtcloud，真源）"},
     "ts_stock_basic":  {"primary_key": ["ts_code"],
                         "desc": "A股基础信息（xtcloud，真源）"},

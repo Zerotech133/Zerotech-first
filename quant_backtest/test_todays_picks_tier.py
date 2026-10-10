@@ -17,6 +17,8 @@ sys.path.insert(0, PORTAL)
 
 from build_todays_picks import _stale_meta, tier_of  # noqa: E402
 from build_todays_picks import _backfill_quotes  # noqa: E402
+from build_todays_picks import gate_failed_sources, _push_source_alert  # noqa: E402
+import build_todays_picks as btp  # noqa: E402
 
 
 def _e(name, *srcs):
@@ -253,3 +255,99 @@ def test_backfill_keeps_placeholder_on_lake_miss(monkeypatch):
     assert day == "20261009" and n == 0
     assert stocks["000582.SZ"]["close"] == 7.7  # 占位保留
     assert stocks["000582.SZ"]["pct_chg"] is None
+
+
+# ── 五源全景闸 + 源级降级推送（P2-2/P2-3 2026-10-11）─────────
+def _ok_metas():
+    return {s: {"label": s, "ok": True, "n": 5} for s in
+            ("strong", "weak", "chanlun", "qpzm", "ninedim", "cross")}
+
+
+def test_gate_all_ok_empty():
+    """五源全 ok → 停挂名单空。"""
+    assert gate_failed_sources(_ok_metas()) == []
+
+
+def test_gate_failed_fixed_order():
+    """ninedim+chanlun 失败 → 固定顺序停挂名单（五源任一即停挂）。"""
+    metas = _ok_metas()
+    metas["ninedim"] = {"label": "ninedim", "ok": False, "err": "boom"}
+    metas["chanlun"] = {"label": "chanlun", "ok": False, "err": "bad jsonl"}
+    assert gate_failed_sources(metas) == ["chanlun", "ninedim"]
+
+
+def test_gate_cross_linkage_not_gating():
+    """cross（旁路设计内缺失）与 linkage（纯记录源）失败不停挂。"""
+    metas = _ok_metas()
+    metas["cross"] = {"label": "cross", "ok": False, "err": "探针失败"}
+    metas["linkage"] = {"label": "linkage", "ok": False}
+    assert gate_failed_sources(metas) == []
+
+
+def test_gate_missing_meta_counts():
+    """源键整体缺失（loader 未注册）按停挂计——fail-closed。"""
+    metas = _ok_metas()
+    del metas["weak"]
+    assert gate_failed_sources(metas) == ["weak"]
+
+
+def test_source_alert_silent_on_normal_day(monkeypatch, tmp_path):
+    """正常日零推送（噪音控制）：不发消息、不落 outbox。"""
+    monkeypatch.setattr(btp, "NEWS_DIR", str(tmp_path))
+    called = []
+    monkeypatch.setattr(btp.subprocess, "run",
+                        lambda *a, **k: called.append(a))
+    _push_source_alert(_ok_metas(), [], "20261009")
+    assert not called
+    assert not (tmp_path / "outbox").exists()
+
+
+def test_source_alert_skips_when_veto(monkeypatch, tmp_path):
+    """停挂路径 rc=3 已走 alert_fail——本函数防双推直接短路。"""
+    monkeypatch.setattr(btp, "NEWS_DIR", str(tmp_path))
+    called = []
+    monkeypatch.setattr(btp.subprocess, "run",
+                        lambda *a, **k: called.append(a))
+    metas = _ok_metas()
+    metas["cross"] = {"label": "cross", "ok": False, "err": "boom"}
+    _push_source_alert(metas, ["ninedim"], "20261009")
+    assert not called
+
+
+def test_source_alert_pushes_cross_fail_and_weak_stale(monkeypatch, tmp_path):
+    """rc=0 路径盲区（P2-2 核心场景）：cross 失败 + weak 过期拦截 →
+    写 outbox 并调 send_feishu，消息含源名、原因、数据基准日。"""
+    from types import SimpleNamespace
+    monkeypatch.setattr(btp, "NEWS_DIR", str(tmp_path))
+    sent = []
+
+    def fake_run(args, **k):
+        sent.append(args)
+        return SimpleNamespace(stdout="SEND_OK")
+
+    monkeypatch.setattr(btp.subprocess, "run", fake_run)
+    metas = _ok_metas()
+    metas["cross"] = {"label": "cross", "ok": False, "err": "探针失败"}
+    metas["weak"] = {"label": "weak", "ok": True, "n": 0, "stale": True,
+                     "note": "数据基准落后行情湖 12 天"}
+    _push_source_alert(metas, [], "20261009")
+    assert len(sent) == 1
+    assert sent[0][-1].endswith("pending_picks_sources.txt")
+    msg = (tmp_path / "outbox" / "pending_picks_sources.txt"
+           ).read_text(encoding="utf-8")
+    assert "cross 异常失败" in msg and "探针失败" in msg
+    assert "weak 过期拦截" in msg and "20261009" in msg
+
+
+def test_source_alert_send_error_swallowed(monkeypatch, tmp_path, capsys):
+    """发送异常整体吞掉——告警器不反噬聚合主流程 rc。"""
+
+    def boom(*a, **k):
+        raise OSError("net down")
+
+    monkeypatch.setattr(btp, "NEWS_DIR", str(tmp_path))
+    monkeypatch.setattr(btp.subprocess, "run", boom)
+    metas = _ok_metas()
+    metas["cross"] = {"label": "cross", "ok": False, "err": "x"}
+    _push_source_alert(metas, [], "20261009")  # 不抛异常即通过
+    assert "推送失败" in capsys.readouterr().out

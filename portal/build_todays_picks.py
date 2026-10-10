@@ -30,11 +30,13 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, ".."))
+NEWS_DIR = os.path.join(ROOT, "news_collector")  # P2-2 源级降级推送（outbox+send_feishu）
 MAX_LAG_DAYS = 10  # weak 周扫源允许的最大滞后自然日（覆盖长假+周一节奏）
 IS_A = re.compile(r"^\d{6}\.(SH|SZ|BJ)$")  # 本清单为 A 股口径（cross/qpzm 多市场源入清单前过滤）
 QB = os.path.join(ROOT, "quant_backtest")
@@ -134,6 +136,16 @@ def load_weak(stocks, basis_day=None):
     # 过期闸门：WeakScan 为周扫（周一 15:35），数据基准落后行情湖超
     # MAX_LAG_DAYS 自然日（覆盖长假+周一节奏）视为过期，旧名单不入清单
     m = re.match(r"weak_scan_(\d{8})\.csv$", cands[-1])
+    if not m and basis_day:
+        # 四十一审 fail-closed（对齐二十三审 cross 探针）：文件名解析不出
+        # 数据基准日（命名变更？）不再静默放行——旧名单可能借闸门盲区
+        # 入场。整源不入清单；湖不可达（basis_day 空）时保持放行（设计
+        # 内降级，同 _stale_meta）。
+        return {"label": "弱势失速扫描（超额回撤监控）", "n": 0,
+                "stale": True, "file": "reports/" + cands[-1],
+                "note": "文件名无法解析数据基准日（%s，命名变更？），"
+                        "闸门 fail-closed 不放行；待 WeakScan 刷新或人工核名"
+                        % cands[-1]}
     if m and basis_day:
         lag = (datetime.strptime(basis_day, "%Y%m%d")
                - datetime.strptime(m.group(1), "%Y%m%d")).days
@@ -487,6 +499,73 @@ def _archive_once(hist_dir, basis_day, doc):
     return arch, True
 
 
+def gate_failed_sources(metas):
+    """五源全景闸停挂名单（三十九审 2026-10-10，用户拍板）。
+
+    停挂名单=否决三源（chanlun/weak/qpzm）+strong（bull 证据腿缺席=
+    T1 近空档、板块领涨 T2 缺失——保守方向但无披露）+ninedim（封顶源
+    缺席=拥挤警报失明，K33 实证 alert 带胜率 9% 的票可直接混入 T1，
+    档被首写锁定不可恢复——激进方向）。语义：最高层只在全景可信时开放；
+    异常日 T1 诚实空档，T2/T3 照常，档内 t1_gate 留痕供后验按档识别。
+    cross 不入名单：旁路缺失设计内可容忍（bull 判定照常），且其数据源
+    与 qpzm/chanlun 命运绑定（其降级走 _push_source_alert 推送）。
+    P2-3（2026-10-11）从 main 内联抽出为可测函数；源键整体缺失
+    （loader 未注册）按停挂计——`not metas.get(s, {}).get("ok")`。
+    """
+    return [s for s in ("chanlun", "weak", "qpzm", "strong", "ninedim")
+            if not metas.get(s, {}).get("ok")]
+
+
+def _push_source_alert(metas, veto_failed, basis_day):
+    """P2-2（2026-10-11）：rc=0 路径下的源级降级飞书推送。
+
+    背景：停挂路径（五源任一 ok=False）rc=3 已走 alert_fail 飞书推送
+    （ps1 Invoke-Stage 的 code -ne 0 分支，十二审双通道），但 rc=0 路径
+    存在两类「页面有显示、无人被通知」的盲区——
+      a) 非停挂源失败：cross 探针异常（不在五源停挂名单，二十三审
+         fail-closed 不产名单）→ T1 旁路当日缺失，无任何推送；
+      b) stale 闸门拦截：上游任务未跑/停摆（如 WeakScan 坏了）导致
+         源过期不入清单——stale 口径 ok=True 不停挂，但源长期缺席
+         无人知晓（同 TdxSync 连续失败告警族问题）。
+    正常日（无失败源、无 stale 源）零推送（噪音控制）；veto_failed
+    非空时本函数不推（rc=3 链路已推，防双推）。复用 news_collector
+    outbox+send_feishu（同 alert_fail 口径）；推送异常整体吞掉——
+    告警器不能反噬聚合主流程 rc（同 alert_fail 语义）。
+    """
+    if veto_failed:
+        return
+    lines = []
+    for sid, m in metas.items():
+        if sid == "linkage":
+            continue  # 纯记录源恒 ok=True，无名单语义
+        if not m.get("ok"):
+            lines.append("- %s 异常失败: %s" % (
+                sid, (m.get("err") or "")[:60]))
+        elif m.get("stale"):
+            lines.append("- %s 过期拦截: %s" % (
+                sid, (m.get("note") or "")[:60]))
+    if not lines:
+        return
+    msg = ("[PICKS 源级降级] todays_picks 聚合完成（T1 闸正常，rc=0），"
+           "但以下源降级未入清单（数据基准 %s）：\n%s\n"
+           "页面策略卡有显示；请检查对应上游任务是否停摆。"
+           % (basis_day or "?", "\n".join(lines)))
+    print("  [PICKS 源级降级] " + "；".join(
+        l[2:] for l in lines))
+    try:
+        tmp = os.path.join(NEWS_DIR, "outbox",
+                           "pending_picks_sources.txt")
+        os.makedirs(os.path.dirname(tmp), exist_ok=True)
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(msg)
+        r = subprocess.run(
+            [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
+            capture_output=True, text=True, encoding="utf-8", timeout=60)
+        print("  [picks] 源级降级推送：%s" % (r.stdout or "").strip()[:60])
+    except Exception as ex:  # noqa: BLE001 — 推送失败不反噬 rc
+        print("  [picks] 源级降级推送失败（不影响聚合）：%s" % str(ex)[:80])
+
+
 def main():
     stocks = {}
     metas = {}
@@ -509,17 +588,9 @@ def main():
         "label": "板块联动信号", "ok": True, "n": None,
         "note": "个股级工具（linkage_signals.py 需指定代码），无全市场扫描口径，今日不产生名单"}
     # T1 否决链状态（十一审）：ok=False 的源含 err（异常失败）；stale 闸门
-    # 拦截的源 ok=True（设计内放行），不触发停挂。
-    # 三十九审（2026-10-10，用户拍板「五源全景闸」）：停挂名单从否决三源
-    # 扩至 +strong（bull 证据腿缺席=T1 近空档、板块领涨 T2 缺失——保守
-    # 方向但无披露）+ninedim（封顶源缺席=拥挤警报失明，K33 实证 alert
-    # 带胜率 9% 的票可直接混入 T1，档被首写锁定不可恢复——激进方向）。
-    # 语义：最高层只在全景可信时开放；异常日 T1 诚实空档，T2/T3 照常，
-    # 档内 t1_gate 留痕供后验按档识别。cross 不入名单：旁路缺失设计内
-    # 可容忍（bull 判定照常），且其数据源与 qpzm/chanlun 命运绑定。
-    veto_failed = [s for s in ("chanlun", "weak", "qpzm",
-                               "strong", "ninedim")
-                   if not metas.get(s, {}).get("ok")]
+    # 拦截的源 ok=True（设计内放行）不触发停挂——五源名单语义见
+    # gate_failed_sources docstring（三十九审；P2-3 抽出）。
+    veto_failed = gate_failed_sources(metas)
     veto_ok = not veto_failed
 
     out_rows = []
@@ -609,6 +680,9 @@ def main():
     for sid, m in metas.items():
         print("  %-8s ok=%s n=%s %s" % (sid, m.get("ok"), m.get("n"),
                                         (m.get("err") or "")[:60]))
+    # P2-2（2026-10-11）：rc=0 路径的源级降级（cross 失败/stale 拦截）
+    # 推送飞书——此前页面有卡、无人被通知；停挂路径 rc=3 已走 alert_fail。
+    _push_source_alert(metas, veto_failed, basis_day)
     return veto_ok  # False → __main__ 以退出码 3 结束（ran-but-degraded 警报）
 
 

@@ -507,7 +507,7 @@ async function pickDetail(code, el){
     <h3>${esc(f&&f.name||row.name||code)}</h3>
     <span class="code dim">${esc(mk.bare||code)}</span>
     <span class="ind">${esc(row.industry||"")}</span>
-    <span class="dpx">${fmtPx(q&&q.px!=null?q.px:row.close)}</span>
+    <span class="dpx" title="${q&&q.ts?('实时源行情 '+esc(q.ts)):'清单基准价（行情湖 T-1）'}">${fmtPx(q&&q.px!=null?q.px:row.close)}</span><span class="dim" style="font-size:10px;margin-left:2px">${q&&q.ts?'@实时':'@基准'}</span>
     ${fmtPct(q&&q.pct!=null?q.pct:row.pct_chg)}
     <span class="dclose" title="收起" onclick="closeDetail()">✕ 收起</span>
   </div>

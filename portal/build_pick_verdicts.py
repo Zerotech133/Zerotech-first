@@ -16,6 +16,9 @@
       summary: 按窗口的整体命中率/均值/超额 + 按策略分层（二十五审方案A：
       by_strategy 只收 T1/T2 可操作层事件，windows 整体仍为全池口径）
       per_code: 每票最近一次信号的后验（前端详情卡直接消费，win 带 exec 首买日）
+      四十审（2026-10-10）事件级样本口径：windows/by_strategy 的 n 为
+      事件数——同票跨档再次入选=独立事件（各自 exec 首买日入桶，九审
+      设计），n 可大于去重票数，与 per_code（每票最近一次）是两个视图。
 窗口未满（湖还没走到首次可操作日或窗口终点）如实标 pending，不硬凑。
 用法: "C:/Program Files/Python311/python.exe" portal/build_pick_verdicts.py
 """
@@ -185,7 +188,10 @@ def main():
                 # 并重置 win 重算。原实现 win 已有 key 恒 continue，重复
                 # 入选的票永远停在首入选的后验（「最近一次信号」语义失效，
                 # 汇总事件样本也漏记新入选）。
-                rec.update({"name": r.get("name"), "tier": r.get("tier"),
+                # 四十审：name 加 None 守卫——新档缺名（停牌票源 name 空，
+                # 实据 603056）时保留旧档名，不倒退清空。
+                rec.update({"name": r.get("name") or rec.get("name"),
+                            "tier": r.get("tier"),
                             "date": sig, "win": {},
                             "strategies": sorted({s.get("s") for s in
                                                   (r.get("sources") or [])
