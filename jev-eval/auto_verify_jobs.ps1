@@ -1,8 +1,10 @@
 ﻿# -*- coding: utf-8 -*-
 # K263/K260 日链到点自动验收观察脚本（挂机用，10-07 11:56 启）
 # 验证点：GubaCrawl 17:50 · KgDailySync 明晨06:20 · NoticeBackfill 明晨06:45
+# 061 自愈：挂机先跑 backup_daily_regen.py（第四次丢失误删防护，缺失/漂移自动处理）
 $log = 'C:\Temp\auto_verify_jobs.log'
 function W($m){ $s = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; "$s  $m" | Tee-Object -FilePath $log -Append }
+python "E:\老田的AI助手\jev-eval\backup_daily_regen.py" 2>&1 | ForEach-Object { W("regen: $_") }
 function Wait-Until($t, $desc){
     while((Get-Date) -lt $t){ Start-Sleep 60 }
     Start-Sleep 300   # 任务触发后给 5 分钟余量让结果落定
