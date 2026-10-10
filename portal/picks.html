@@ -314,7 +314,10 @@ function srcTag(s){
   if(/买/.test(t)&&!/回避|卖/.test(t))cls="buy";
   else if(/卖|回避/.test(t))cls="sell";
   else if(/领涨|共振/.test(t))cls="hot";
-  const extra=s.score!=null?` ${s.score}`:"";
+  // 信号日（十六审）：缠论源带 dt（确认滞后设计内，旧信号一眼可见）；
+  // cross 的 hits 自带 @日期；qpzm/weak/strong 无 dt 不受影响。
+  const extra=(s.score!=null?` ${s.score}`:"")
+    +(s.dt?`<span class="dim">@${esc(String(s.dt).slice(5,10))}</span>`:"");
   const g=glossOf(s);
   return `<span class="tag ${cls}"${g?` title="${esc(g)}"`:""}>${esc(s.s)}·${esc(t)}${extra}</span>`;
 }

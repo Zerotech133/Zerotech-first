@@ -1,5 +1,5 @@
-[N1_CHECK_FAIL_20261010_1503]
-[OK] regen self-heal: 2026-10-10 15:03:45  OK disk source matches registry (18560 bytes)
+[N1_CHECK_FAIL_20261010_1726]
+[OK] regen self-heal: 2026-10-10 17:26:35  OK disk source matches registry (18560 bytes)
 [OK] backup_daily.ps1 on disk 18560B
 [OK] backup set 2026-10-10_0300 files=10 MB=1923.7
 [OK] backup.log DONE failed=0
@@ -9,11 +9,12 @@
 [OK] offsite log: [20261010_043001] OK set=2026-10-10_0300 files=10 bytes=2017161089
 [OK] OneDrive set 2026-10-10_0300 files=10
 [OK] OneDrive sets=2 (prune to 2 works)
-[FAIL] alert queue not empty: N1_CHECK_FAIL_20261010_1502.flag
+[OK] alert queue empty
 [OK] no ENGINE_DOWN event pending
 [OK] tushare_sync exit line: tushare_sync exit=0 2026-10-10T00:47:54
 [OK] AI量化RPS共振 RC=0 LastRun=10/09/2026 23:35:01
 [OK] AI工作站统一日报 RC=0 LastRun=10/10/2026 03:00:01
 [OK] daily exit line: daily exit=0 2026-10-10T03:00:07
-[FAIL] jev: backlog left=3721 > 150 (cloud outage or loop stuck)
-N1 FAILURES=2
+[FAIL] jev: backlog left=3896 > 150 (cloud outage or loop stuck)
+[OK] neo4j dump fresh: neo4j-20261010.dump @ 10/10/2026 17:04:02
+N1 FAILURES=1
