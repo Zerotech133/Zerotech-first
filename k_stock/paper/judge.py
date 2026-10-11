@@ -191,6 +191,116 @@ def _narrate(review: dict) -> str | None:
         return f"(LLM 叙述失败降级: {type(e).__name__}: {e})"
 
 
+def meeting(date: str | None = None, llm: bool = False) -> dict:
+    """K-STOCK-122 M5 投研经理每日复盘会（judge 升级为会议主持人）。
+
+    三方输入：① 投研经理=当日 review() 评审；② 分析师=strategist_latest.json
+    （策略源建议）；③ 操盘手=当日盯盘动作（stop/tp 触发单+最新净值）。
+    产出 review_minutes/YYYY-MM-DD.json：inputs + 分歧点 + 决议 + action_items，
+    全量留存=蒸馏语料增量（K-STOCK-100 M4）。llm=True 时经理叙述由 LLM 生成
+    （失败降级不阻塞）。异常整体不抛（routine 尾挂点约定）。"""
+    try:
+        out: dict = {"ok": True, "date": None, "attendees": ["analyst", "trader", "manager"]}
+        rev = review(date, llm=False)
+        out["date"] = rev["date"]
+        out["manager"] = {"score": rev.get("score"), "grade": rev.get("grade"),
+                          "findings": rev.get("findings"),
+                          "narrative": rev.get("narrative")}
+        # ② 分析师：策略源建议
+        ana_path = OUT_DIR.parent / "strategist_latest.json"
+        try:
+            ana = json.loads(ana_path.read_text(encoding="utf-8"))
+            out["analyst"] = {k: ana.get(k) for k in
+                              ("date", "suggestions", "summary", "note")
+                              if ana.get(k) is not None}
+        except Exception as e:  # noqa: BLE001
+            out["analyst"] = {"ok": False, "error": repr(e)}
+        # ③ 操盘手：当日盯盘动作 + 最新净值
+        con = _connect()
+        try:
+            iso = rev["date"]
+            acts = [dict(r) for r in con.execute(
+                "SELECT account_id,stock,side,order_kind,status,reason FROM orders "
+                "WHERE (order_kind IN ('stop','tp') OR reason LIKE '%%触发%%') "
+                "AND (substr(ts,1,10)=? OR fill_date=?) ORDER BY id", (iso, iso))]
+            eq = con.execute(
+                "SELECT date,total FROM equity_marks WHERE account_id='main' "
+                "ORDER BY date DESC LIMIT 2").fetchall()
+            out["trader"] = {"actions": acts,
+                             "equity_recent": [dict(r) for r in eq]}
+        finally:
+            con.close()
+        # 博弈分歧点：分析师建议与经理 findings 相冲时记录（首版规则法）
+        out["disagreements"] = _disagreements(out)
+        out["resolutions"] = [
+            {"on": d["on"], "by": "manager", "decision": d["suggestion"]}
+            for d in out["disagreements"]] or [
+            {"on": "daily", "by": "manager", "decision": "按既有纪律继续执行"}]
+        out["action_items"] = [
+            f["msg"][:80] for f in rev.get("findings", [])
+            if f.get("severity") in ("critical", "high")]
+        if llm:
+            out["minutes_narrative"] = _meeting_narrate(out)
+        mdir = OUT_DIR.parent / "review_minutes"
+        mdir.mkdir(parents=True, exist_ok=True)
+        fp = mdir / f"{rev['date']}.json"
+        fp.write_text(json.dumps(out, ensure_ascii=False, indent=1),
+                      encoding="utf-8")
+        out["_path"] = str(fp)
+        return out
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": repr(e)}
+
+
+def _disagreements(out: dict) -> list:
+    """首版规则法：经理 findings 批评的域 与 分析师建议同域 → 记分歧。"""
+    dis = []
+    ana = out.get("analyst") or {}
+    sugg = json.dumps(ana.get("suggestions") or ana.get("summary") or "",
+                      ensure_ascii=False)
+    for f in out["manager"].get("findings") or []:
+        if f.get("severity") in ("critical", "high") and len(sugg) > 4:
+            dis.append({"on": f["rule"], "manager": f["msg"][:100],
+                        "analyst": sugg[:100],
+                        "suggestion": f"以经理评审为准：{f['msg'][:60]}；"
+                                      f"分析师建议降权观察"})
+    return dis
+
+
+def _meeting_narrate(out: dict) -> str | None:
+    """经理 LLM 纪要叙述（复用 Ollama 链路，account=manager 计量）。"""
+    try:
+        import urllib.request
+        brief = json.dumps({k: out.get(k) for k in
+                            ("manager", "analyst", "trader",
+                             "disagreements")}, ensure_ascii=False)[:1500]
+        prompt = ("你是投研经理，主持模拟盘每日复盘会。基于三方输入写不超过"
+                  "250 字会议纪要：一句话总评 + 分歧裁决 + 明日 1-2 个动作：\n"
+                  f"日期 {out['date']}\n{brief}")
+        body = json.dumps({"model": LLM_MODEL, "stream": False, "think": False,
+                           "messages": [{"role": "user", "content": prompt}]}).encode()
+        req = urllib.request.Request(OLLAMA, data=body,
+                                     headers={"Content-Type": "application/json"})
+        raw = urllib.request.urlopen(req, timeout=120).read().decode("utf-8")
+        d = json.loads(raw)
+        try:
+            try:
+                from llm_cost import record_cost
+            except ImportError:
+                from k_stock.paper.llm_cost import record_cost
+            u = d.get("prompt_eval_count"), d.get("eval_count")
+            if all(u):
+                record_cost("manager", f"ollama/{LLM_MODEL}", u[0], u[1])
+        except Exception:
+            pass
+        msg = d.get("message", {}).get("content", "").strip()
+        if "</think>" in msg:
+            msg = msg.split("</think>", 1)[1].strip()
+        return msg or None
+    except Exception as e:  # noqa: BLE001
+        return f"(LLM 纪要失败降级: {type(e).__name__}: {e})"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="模拟仓日评审（端3 judge）")
     ap.add_argument("--date", default=None, help="YYYYMMDD（缺省=库内最新活动日）")

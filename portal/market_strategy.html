@@ -77,21 +77,36 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-let DATA=null, SUBS=new Set(JSON.parse(localStorage.getItem('sm_subs')||'[]'));
+let DATA=null, SUBS=new Set();
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function apiPost(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();}
 function toast(m){const t=document.getElementById('toast'); t.textContent=m; t.style.display='block'; setTimeout(()=>t.style.display='none',2200);}
-function toggleSub(id,ev){ev.stopPropagation();
-  SUBS.has(id)?SUBS.delete(id):SUBS.add(id);
-  localStorage.setItem('sm_subs',JSON.stringify([...SUBS]));
-  render(); toast(SUBS.has(id)?'已订阅 '+id+'（M3 组合上线后自动生效）':'已退订 '+id);}
+async function toggleSub(id,ev){
+  ev.stopPropagation();
+  const r=await apiPost('/api/portfolio_subscribe',{strategy:id,action:'toggle'});
+  if(r.ok){toast((r.action==='add'?'已订阅 ':'已退订 ')+id); await loadSubs(); render();}
+  else toast('失败：'+(r.error||'?'));}
+async function hireTrader(){
+  const tr=prompt('输入交易员 ID 聘为组合操盘手（如 chaser）：','');
+  if(!tr) return;
+  const r=await apiPost('/api/portfolio_hire',{trader:tr.trim()});
+  if(r.ok){toast('已聘 '+tr.trim()+' 为组合操盘手'); await loadSubs(); render();}
+  else toast('失败：'+(r.error||'?'));}
 function renderPf(){
   const pf=document.getElementById('pf');
   if(!SUBS.size){pf.style.display='none'; return;}
   pf.style.display='block';
   const names=DATA.strategies.filter(s=>SUBS.has(s.id)).map(s=>esc(s.name));
+  const shadow=DATA.strategies.filter(s=>SUBS.has(s.id)&&s.status==='shadow');
   pf.innerHTML='<b style="font-size:13.5px;">我的组合</b><span class="free">免费体验 · 未来商业化收费</span>'
-    +'<div class="mtags" style="margin-top:8px;">'+names.map(n=>'<span>'+n+'</span>').join('')
-    +'</div><div class="tl" style="margin-top:8px;">组合生效后可选：聘交易员自动跟单 / 手动模拟买卖（M3/M4 上线）</div>';}
+    +'<div class="mtags" style="margin-top:8px;">'+names.map(n=>'<span>'+n+'</span>').join('')+'</div>'
+    +(shadow.length?'<div class="warn" style="margin-top:8px;">组合含 shadow 态策略：'+shadow.map(s=>esc(s.name)).join('、')+'（研究验证中，不构成选股依据）</div>':'')
+    +'<div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">'
+    +'<button class="sub" onclick="hireTrader()">聘交易员自动跟</button>'
+    +'<a class="sub" style="text-decoration:none; background:transparent; color:#79b8ff;" href="/paper">手动模拟买卖 →</a>'
+    +'</div>';}
 function render(){
   document.getElementById('stats').innerHTML=
     '策略 <b>'+DATA.count+'</b> 个 ｜ 产线 <b class="s" style="color:#3fb950">'+DATA.live+'</b> ｜ 影子验证 <b style="color:#e3b341">'+DATA.shadow+'</b>';
@@ -123,10 +138,14 @@ async function openDetail(id){
     +(dy.samples.length?dy.samples.map(x=>'<div class="sample"><span><b>'+esc(x.code)+'</b> '+esc(x.name)+' · '+esc(x.industry)+'</span><span class="tag">'+esc(x.tag)+'</span></div>').join(''):'<div class="tl">今日暂无命中</div>')+'</div>'
     +'<div class="sect"><button class="sub" onclick="toggleSub(\''+s.id+'\',event);closeDrawer();">'+(SUBS.has(s.id)?'✓ 退订':'订阅（免费）')+'</button>'
     +' <a href="'+esc(s.href||'#')+'" style="margin-left:10px; font-size:12.5px; color:#79b8ff;">进入策略工作台 →</a></div>';}
+async function loadSubs(){
+  const r=await (await fetch('/api/portfolios')).json();
+  SUBS=new Set();
+  for(const pf of (r.portfolios||[])) for(const s of (pf.strategies||[])) SUBS.add(s);}
 (async()=>{
   const r=await fetch('/api/strategy_market');
   DATA=await r.json();
-  if(DATA.ok) render();
+  if(DATA.ok){ await loadSubs(); render(); }
   else document.getElementById('grid').innerHTML='<p style="color:#f85149">加载失败：'+esc(DATA.error)+'</p>';
 })();
 </script>

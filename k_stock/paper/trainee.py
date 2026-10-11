@@ -419,6 +419,13 @@ def routine(who: list[str] | None = None, dry_run: bool = False,
             out["judge"] = _judge_review()
         except Exception as e:  # noqa: BLE001
             out["judge"] = {"ok": False, "error": repr(e)}
+        # K-STOCK-122 M5：投研经理复盘会（judge 升级，产出会议纪要 JSON；
+        # 异常不阻塞闭环）
+        try:
+            from judge import meeting as _judge_meeting
+            out["meeting"] = _judge_meeting()
+        except Exception as e:  # noqa: BLE001
+            out["meeting"] = {"ok": False, "error": repr(e)}
     return out
 
 

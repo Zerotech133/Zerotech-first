@@ -39,10 +39,14 @@ def main():
     if running():
         print("already running")
         return
+    # K-STOCK-122 M7 白名单：止盈止损指令仅限老田（env 注入子进程）
+    env = dict(os.environ)
+    env.setdefault("EXIT_ALLOW_OPEN_IDS",
+                   "ou_50a95455c7dffec1090ade400886d0d4")  # 老田 bot 域 open_id
     with open(LOG, "ab") as fo:
         subprocess.Popen(
             [PY, "-u", BOT], stdin=subprocess.DEVNULL, stdout=fo,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.STDOUT, env=env,
             creationflags=(subprocess.DETACHED_PROCESS
                            | subprocess.CREATE_NEW_PROCESS_GROUP))
     time.sleep(2)

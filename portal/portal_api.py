@@ -98,6 +98,8 @@ _load_cainiao_env()
 _MUTATION_POSTS = frozenset((
     "/api/data/update-plan",
     "/api/data/update",
+    "/api/portfolio_subscribe",
+    "/api/portfolio_hire",
     "/chanlun-anno",
     "/api/chanlun/label/save",
     "/api/report_push",
@@ -22818,6 +22820,32 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     self._json({"error": "bad json"}, 400)
                     return
                 self._json(_debate_say(rec))
+            elif path == "/api/portfolio_subscribe":
+                # K-STOCK-122 M3 订阅/退订：{strategy, action}
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"error": "bad json"}, 400)
+                    return
+                try:
+                    import subscriptions as _sub
+                    self._json(_sub.subscribe(
+                        str(rec.get("strategy") or ""),
+                        str(rec.get("action") or "toggle")))
+                except Exception as _e:
+                    self._json({"ok": False, "error": repr(_e)}, 500)
+            elif path == "/api/portfolio_hire":
+                # K-STOCK-122 M4 分支①：组合聘交易员 {trader}
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"error": "bad json"}, 400)
+                    return
+                try:
+                    import subscriptions as _sub
+                    self._json(_sub.bind_trader(str(rec.get("trader") or "")))
+                except Exception as _e:
+                    self._json({"ok": False, "error": repr(_e)}, 500)
             elif path == "/api/batch-backtest":
                 # K255 勾选股票自定义批次回测：写批次 JSONL → 引擎子进程异步跑
                 try:
@@ -22944,6 +22972,13 @@ document.getElementById('sf').addEventListener('submit',function(ev){
             try:
                 import strategy_market as _sm
                 self._json(_sm.market())
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/portfolios":
+            # K-STOCK-122 M3 组合列表（订阅集，纯只读）
+            try:
+                import subscriptions as _sub
+                self._json(_sub.portfolios())
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/strategy_detail":
