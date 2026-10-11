@@ -73,6 +73,21 @@ def listening_ports():
 _PROC_CACHE = {}
 
 
+def _powershell_proc_name(pid):
+    """在 tasklist 被沙箱拒绝时，用 Get-Process 读取进程名。"""
+    try:
+        r = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command",
+             "(Get-Process -Id %d -ErrorAction SilentlyContinue).ProcessName" % pid],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=2,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    name = (r.stdout or "").strip().splitlines()
+    return name[0].strip() if name and name[0].strip() else None
+
+
 def proc_name(pid):
     if pid not in _PROC_CACHE:
         r = subprocess.run(["tasklist", "/FI", "PID eq %d" % pid,
@@ -80,7 +95,8 @@ def proc_name(pid):
                            capture_output=True, text=True,
                            encoding="gbk", errors="replace").stdout or ""
         m = re.match(r'"([^"]+)"', r.strip())
-        _PROC_CACHE[pid] = m.group(1) if m else "unknown(%d)" % pid
+        _PROC_CACHE[pid] = m.group(1) if m else (
+            _powershell_proc_name(pid) or "unknown(%d)" % pid)
     return _PROC_CACHE[pid]
 
 
@@ -95,7 +111,7 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
 
 
 # 注册但允许离线的口（手动/按需型服务：strict 只防被抢，不因闲置判负）
-OPTIONAL_OFFLINE = {3001, 8030}
+OPTIONAL_OFFLINE = {3001, 8030, 8899}
 
 
 def main():
