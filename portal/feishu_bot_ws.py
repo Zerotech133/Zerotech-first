@@ -6,7 +6,8 @@
   详情 605100 筹码        → 单维度视图卡
   选股 [T1|T2|全部]       → 今日选股清单卡（默认 T1）
   帮助                    → 指令表
-卡片按钮（card.action.trigger）：value 形如 dim:chips:605100.SH → 回发对应维度卡。
+卡片按钮（card.action.trigger）：er:* 持仓线位交互 / ctl:* 控制中枢（feishu_control）。
+dim:* 分支仅为旧 schema v1 卡兼容保留——schema 2.0 钻取卡无回调按钮（URL 走 behaviors）。
 
 驻进程保活：SYSTEM 计划任务 FeishuBotWatchdog 每 5 分钟拉起（ZhiceWatchdog 同配方）。
 日志：portal/logs/feishu_bot.log（长跑落文件铁律）。
