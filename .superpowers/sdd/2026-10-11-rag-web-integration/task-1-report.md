@@ -1,4 +1,4 @@
-# K-STOCK-126 后端适配层实现报告
+# K-STOCK-125 Task 1 后端适配层实现报告
 
 ## 变更
 
@@ -47,3 +47,11 @@ python -m unittest AI.111111.test_rag_web_backend AI.111111.test_knowledge_base 
 - 新增线程池并发回归测试，验证 `top_k=1` 与 `top_k=8` 结果长度稳定。
 - `python -m unittest AI.111111.test_rag_web_backend AI.111111.test_knowledge_base -v`：13 项通过。
 - `python -m py_compile AI/111111/rag_web_backend.py AI/111111/test_rag_web_backend.py`：通过。
+
+## Fix Round 1
+
+- 修复共享 KnowledgeBase.top_k 的并发竞态：RLock 覆盖索引确保、临时 top_k 切换和检索恢复。
+- 新增线程池并发回归，验证 	op_k=1 与 	op_k=8 结果长度正确。
+- 修复后后端+KnowledgeBase 共 13 项通过；py_compile 通过。
+- 修复提交：5158ab0。
+
