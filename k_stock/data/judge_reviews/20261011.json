@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "date": "2026-10-11",
+  "score": 98.0,
+  "grade": "A",
+  "findings": [
+    {
+      "rule": "STALE_ARTIFACT",
+      "severity": "high",
+      "msg": "1 单被陈旧产物守卫拦截（asof 早于湖最新）——上游产物新鲜度问题",
+      "n": 1
+    },
+    {
+      "rule": "CROSS_ACCOUNT_OVERLAP",
+      "severity": "info",
+      "msg": "600593.SH BUY 被 2 个账本同时持仓意图（同质化集中度，不扣分）",
+      "n": 2
+    },
+    {
+      "rule": "CROSS_ACCOUNT_OVERLAP",
+      "severity": "info",
+      "msg": "600887.SH BUY 被 2 个账本同时持仓意图（同质化集中度，不扣分）",
+      "n": 2
+    },
+    {
+      "rule": "FILL_STATS",
+      "severity": "info",
+      "msg": "当日订单 7：成交 0 / 拒 0 / 其他 7",
+      "n": 7
+    }
+  ],
+  "summary": {
+    "orders": 7,
+    "filled": 0,
+    "rejected": 0,
+    "pending_alive": 10
+  },
+  "narrative": "1. **陈旧产物阻塞**：单因上游数据过期被拦截，需排查数据流水线时效性，确保`asof`时间戳覆盖最新湖仓快照。2. **执行率为零**：当日 7 笔订单全部未成交且无拒单，极可能由风控阻断或参数错误导致。建议立即复核订单生成逻辑与风控策略配置，并补跑数据校验任务以恢复交易链路。"
+}
