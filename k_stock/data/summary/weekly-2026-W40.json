@@ -1,0 +1,27 @@
+{
+ "ok": true,
+ "kind": "weekly",
+ "tag": "weekly-2026-W40",
+ "period": [
+  "2026-09-28",
+  "2026-10-04"
+ ],
+ "performance": {
+  "equity": [],
+  "change_pct": null,
+  "fills": 0,
+  "buys": 0
+ },
+ "problems": {
+  "low_judge_days": [],
+  "discipline_blocks": 0,
+  "meeting_disagreements": 0,
+  "meeting_resolutions": 0
+ },
+ "next_steps": [
+  "周期内零成交：检查信号源新鲜度与 exec 链路"
+ ],
+ "decisions_needed": [
+  "无待裁决事项"
+ ]
+}

@@ -1,0 +1,67 @@
+{
+ "ok": true,
+ "date": "2026-10-11",
+ "attendees": [
+  "analyst",
+  "trader",
+  "manager"
+ ],
+ "manager": {
+  "score": 98.0,
+  "grade": "A",
+  "findings": [
+   {
+    "rule": "STALE_ARTIFACT",
+    "severity": "high",
+    "msg": "1 单被陈旧产物守卫拦截（asof 早于湖最新）——上游产物新鲜度问题",
+    "n": 1
+   },
+   {
+    "rule": "CROSS_ACCOUNT_OVERLAP",
+    "severity": "info",
+    "msg": "600593.SH BUY 被 2 个账本同时持仓意图（同质化集中度，不扣分）",
+    "n": 2
+   },
+   {
+    "rule": "CROSS_ACCOUNT_OVERLAP",
+    "severity": "info",
+    "msg": "600887.SH BUY 被 2 个账本同时持仓意图（同质化集中度，不扣分）",
+    "n": 2
+   },
+   {
+    "rule": "FILL_STATS",
+    "severity": "info",
+    "msg": "当日订单 7：成交 0 / 拒 0 / 其他 7",
+    "n": 7
+   }
+  ],
+  "narrative": null
+ },
+ "analyst": {
+  "note": "本文件仅为建议，automation 未接线，不产生任何调度效果"
+ },
+ "trader": {
+  "actions": [],
+  "equity_recent": [
+   {
+    "date": "2026-10-11",
+    "total": 1000000.0
+   },
+   {
+    "date": "2026-10-10",
+    "total": 1000000.0
+   }
+  ]
+ },
+ "disagreements": [],
+ "resolutions": [
+  {
+   "on": "daily",
+   "by": "manager",
+   "decision": "按既有纪律继续执行"
+  }
+ ],
+ "action_items": [
+  "1 单被陈旧产物守卫拦截（asof 早于湖最新）——上游产物新鲜度问题"
+ ]
+}

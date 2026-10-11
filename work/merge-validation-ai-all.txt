@@ -1,0 +1,32 @@
+test_answer_prompt_contains_only_context_and_admits_unknown (test_knowledge_base.KnowledgeBaseTests.test_answer_prompt_contains_only_context_and_admits_unknown) ... ok
+test_empty_and_no_hit_are_safe (test_knowledge_base.KnowledgeBaseTests.test_empty_and_no_hit_are_safe) ... ok
+test_ingest_chunks_and_preserves_source_and_sequence (test_knowledge_base.KnowledgeBaseTests.test_ingest_chunks_and_preserves_source_and_sequence) ... ok
+test_ingest_rejects_incomplete_embedding_batch_without_partial_index (test_knowledge_base.KnowledgeBaseTests.test_ingest_rejects_incomplete_embedding_batch_without_partial_index) ... ok
+test_json_round_trip_and_read_documents (test_knowledge_base.KnowledgeBaseTests.test_json_round_trip_and_read_documents) ... ok
+test_search_returns_top_k_by_cosine_similarity (test_knowledge_base.KnowledgeBaseTests.test_search_returns_top_k_by_cosine_similarity) ... ok
+test_build_messages_contains_only_matches (test_rag_web_backend.RagWebBackendTests.test_build_messages_contains_only_matches) ... ok
+test_concurrent_searches_keep_requested_top_k (test_rag_web_backend.RagWebBackendTests.test_concurrent_searches_keep_requested_top_k) ... ok
+test_empty_directory_raises_unavailable (test_rag_web_backend.RagWebBackendTests.test_empty_directory_raises_unavailable) ... ok
+test_index_is_cached_and_invalidated_when_document_changes (test_rag_web_backend.RagWebBackendTests.test_index_is_cached_and_invalidated_when_document_changes) ... ok
+test_missing_directory_raises_unavailable (test_rag_web_backend.RagWebBackendTests.test_missing_directory_raises_unavailable) ... ok
+test_no_matches_does_not_call_chat (test_rag_web_backend.RagWebBackendTests.test_no_matches_does_not_call_chat) ... ok
+test_search_validates_question_and_top_k (test_rag_web_backend.RagWebBackendTests.test_search_validates_question_and_top_k) ... ok
+test_stream_emits_answer_sources_and_done (test_rag_web_backend.RagWebBackendTests.test_stream_emits_answer_sources_and_done) ... ok
+test_bad (test_web_chat.WebChatTests.test_bad) ... ok
+test_bind (test_web_chat.WebChatTests.test_bind) ... ok
+test_error (test_web_chat.WebChatTests.test_error) ... ok
+test_invalid_rag_top_k_is_400 (test_web_chat.WebChatTests.test_invalid_rag_top_k_is_400) ... ok
+test_page (test_web_chat.WebChatTests.test_page) ... ok
+test_rag_directory_error_is_503 (test_web_chat.WebChatTests.test_rag_directory_error_is_503) ... ok
+test_rag_endpoint_returns_sources_and_done (test_web_chat.WebChatTests.test_rag_endpoint_returns_sources_and_done) ... ok
+test_rag_stream_failure_does_not_send_second_response (test_web_chat.WebChatTests.test_rag_stream_failure_does_not_send_second_response) ... ok
+test_rag_upstream_error_is_502 (test_web_chat.WebChatTests.test_rag_upstream_error_is_502) ... ok
+test_stream (test_web_chat.WebChatTests.test_stream) ... ok
+test_stream_failure_does_not_send_second_response (test_web_chat.WebChatTests.test_stream_failure_does_not_send_second_response) ... ok
+test_done_keeps_sources_received_before_it (test_web_ui.WebUiTests.test_done_keeps_sources_received_before_it) ... ok
+test_page_has_chat_and_rag_modes (test_web_ui.WebUiTests.test_page_has_chat_and_rag_modes) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 0.654s
+
+OK

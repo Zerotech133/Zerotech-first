@@ -35,3 +35,4 @@
 - **devtask.py 传中文+圆括号原因必须整体加引号**（10-11 K-STOCK-116 drop 实锤）：PS 把裸 `空转待回收(bf4ac94…)` 当子表达式执行→命令未跑但报错埋在 CLIXML 里，exit 0 假绿——多命令 `;` 串跑时单条解析失败不挡后续，须回查 tasks.json 才知 drop 没落
 - **任务单归档先辨性质再动手**（10-11 双 116 处置判例）：`detached@<sha>` 指针≠成果，先 `git merge-base --is-ancestor`+worktree status 双验——成果已代收（116-history）循 114b 判例补登 done；空转零成果（116-time-split）循主控盘点 drop，勿一刀切
 - **清 worktree 前必采样写入活动**（10-11 116-history 实锤）："已合并"的 worktree 可能仍被数据管线当运行时工作区（staging 库/进度文档持续写入）；查 `git status`+目录 mtime+宿主进程三件套再动手，否则等于杀生产线。另：多 Agent 会并发从主仓根跑全量 `pytest -q` 互踩（13:02 三进程烧 3 核 2 小时），全量套件应限定路径或加超时
+- **Windows 评审与导航门**：`bash.exe` 在本机只是 WSL 启动器，调用 Superpowers 的 Bash review 脚本会被 `E_ACCESSDENIED` 阻断；改用 PowerShell 等价生成评审包。运行 `tools/unify_nav.py` 会先注入缺失页，再校验 `nav.js` 与 `portal_api.py`，若源有并行未提交改动必须一并运行 `tools/export_nav.py` 后重跑守卫，不能把门禁失败误判为当前功能缺陷。
