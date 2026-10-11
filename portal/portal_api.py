@@ -22790,6 +22790,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     data["strategist"] = _strat()
                 except Exception as _e5:
                     data["strategist"] = {"ok": False, "error": repr(_e5)}
+                try:  # 077w K-STOCK-101 M3：商业页面投影（tiers+traders 战绩）
+                    from paper.portal_status import market_status as _mkt
+                    data["market"] = _mkt()
+                except Exception as _e6:
+                    data["market"] = {"ok": False, "error": repr(_e6)}
                 self._json(data)
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "error": repr(_e)}, 500)

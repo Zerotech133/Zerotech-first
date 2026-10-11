@@ -183,6 +183,59 @@ def strategist_status() -> dict:
         return {"ok": False, "error": repr(e)}
 
 
+def market_status() -> dict:
+    """K-STOCK-101 M3 商业页面投影（纯只读，零子进程）：
+    tiers.json 五级价目 + trainees/*.json 档案（tier/绑定模型/月价锚）
+    + 各账本战绩（equity_marks 最新快照）。合规口径：模拟业绩展示、
+    不承诺收益。缺失降级 ok=False。"""
+    paper_dir = Path(__file__).resolve().parent
+    try:
+        tiers_d = json.loads((paper_dir / "tiers.json").read_text(encoding="utf-8"))
+        tiers = {k: {"label": v.get("label"), "years": v.get("years"),
+                     "llm_binding": v.get("llm_binding"),
+                     "daily_cost_cap": v.get("daily_cost_cap"),
+                     "price_month": v.get("price_month"),
+                     "params": v.get("params"), "desc": v.get("desc")}
+                 for k, v in (tiers_d.get("tiers") or {}).items()}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": f"tiers.json: {e!r}"}
+    con = _connect()
+    traders = []
+    if con is not None:
+        try:
+            tdir = paper_dir / "trainees"
+            for fn in sorted(tdir.glob("*.json")):
+                try:
+                    x = json.loads(fn.read_text(encoding="utf-8"))
+                except Exception:
+                    continue
+                tid = x.get("id")
+                if not tid:
+                    continue
+                tier = x.get("tier") or "T2"
+                tv = tiers.get(tier) or {}
+                marks = con.execute(
+                    "SELECT date,total,pos_pct FROM equity_marks "
+                    "WHERE account_id=? ORDER BY date", (tid,)).fetchall()
+                base = marks[0]["total"] if marks else None
+                last = marks[-1] if marks else None
+                traders.append({
+                    "id": tid, "name": x.get("name"), "style": x.get("style"),
+                    "desc": x.get("desc"), "status": x.get("status"),
+                    "tier": tier, "tier_label": tv.get("label"),
+                    "price_month": tv.get("price_month"),
+                    "llm_binding": x.get("llm_binding") or tv.get("llm_binding"),
+                    "days": len(marks),
+                    "total": last["total"] if last else None,
+                    "cum_pct": (round((last["total"] / base - 1) * 100, 2)
+                                if marks and base else None),
+                })
+        finally:
+            con.close()
+    return {"ok": True, "tiers": tiers, "traders": traders,
+            "note": "模拟盘真实业绩展示，不构成收益承诺；聘请=订阅 AI 交易员，非购买 tokens"}
+
+
 def snapshot_days() -> list[str]:
     """主交易台全部快照日（升序），供前端日期选择器；库/快照缺失返回空列表。"""
     con = _connect()

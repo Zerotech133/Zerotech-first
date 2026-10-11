@@ -319,6 +319,11 @@
       <span style="font-size:12px;color:var(--text-dim)">选股机器人 ≠ 交易机器人：策略源只回答「<b>买什么</b>」，交易员回答「<b>怎么买、买多少、何时卖</b>」。下方战绩来自各子账本每日实习快照（settle→止损→mark 例程）；历史重放预筛见 <code>trainee.py replay</code>。</span>
     </div>
     <div class="agent-grid" id="agent-grid"></div>
+    <div id="pricing-wrap">
+      <div class="toolbar" style="margin-top:18px"><span style="font-size:14px;font-weight:700">💎 经验等级价目（K-STOCK-101）</span>
+        <span style="font-size:12px;color:var(--text-dim)">聘请=订阅一位有经验、有纪律、可问责的 AI 交易员（非购买 tokens）；等级=模型档位×纪律参数×judge 评审闭环；模拟盘真实业绩展示，不构成收益承诺</span></div>
+      <div class="agent-grid" id="pricing-grid"><div class="empty">读取中…</div></div>
+    </div>
     <div class="flow-note" style="margin-top:14px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
   </div>
 
@@ -452,7 +457,7 @@ function renderStrat(st){
   const sel=$('hist-day');const cur=sel.value;
   sel.innerHTML=j.curve.map(c=>`<option value="${c.date}">${c.date}${c.date===L.date?'（最新）':''}</option>`).join('');
   if(cur&&j.curve.some(c=>c.date===cur))sel.value=cur;
-  renderAgents(j);
+  renderPricing(j.market);renderAgents(j);
   renderCurve(j.curve);
   renderUs(j.us);
 }
@@ -575,6 +580,28 @@ function renderPos(positions){
     }).join('')+'</table>';
   }).join('');
 }
+/* K-STOCK-101 M3：经验等级价目表（tiers.json 投影，锚点价） */
+function renderPricing(mk){
+  const el=$('pricing-grid');
+  if(!mk||!mk.ok){el.innerHTML='<div class="empty">价目未就绪（tiers.json 缺失）</div>';return;}
+  S.market=mk;
+  const order=['T1','T2','T3','T4','T5'];
+  el.innerHTML=order.filter(k=>mk.tiers[k]).map(k=>{
+    const t=mk.tiers[k];
+    const p=t.params||{};
+    return `<div class="agent-card ${k==='T5'?'live':k==='T3'||k==='T4'?'':k==='T1'?'preview':''}">
+      <div class="nm">${k} ${t.label} <span style="font-size:11px;color:var(--text-dim)">${t.years} 年经验</span></div>
+      <div class="role">${t.desc||''}</div>
+      <div class="agent-stats">
+        <div><div class="k">月费</div><div class="v">¥${t.price_month}</div></div>
+        <div><div class="k">引擎</div><div class="v small">${(t.llm_binding||'').split('/').pop()||'-'}</div></div>
+        <div><div class="k">止损</div><div class="v">${p.stop_dist_pct!=null?(p.stop_dist_pct*100).toFixed(0)+'%':'-'}</div></div>
+        <div><div class="k">日单上限</div><div class="v">${p.max_daily_orders!=null?p.max_daily_orders:'-'}</div></div>
+        <div><div class="k">仓位上限</div><div class="v">${p.max_pos_pct!=null?(p.max_pos_pct*100).toFixed(0)+'%':'-'}</div></div>
+        <div><div class="k">成本熔断</div><div class="v small">¥${t.daily_cost_cap}/日</div></div>
+      </div></div>`;
+  }).join('');
+}
 function renderAgents(j, board){
   const L=j.latest;
   const ST_MAP={training:['<span class="st preview">实习中</span>','training'],
@@ -638,7 +665,14 @@ function renderAgents(j, board){
         }
       }
     }
-    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div>${hz}</div>`;
+    /* K-STOCK-101 M3：tier 徽标（月价/引擎档位，来自 market 投影） */
+    let tchip='';
+    if(c.id){
+      const t=((S.market&&S.market.traders)||[]).find(x=>x.id===c.id);
+      if(t&&t.price_month!=null)
+        tchip=` <span class="badge b-dk" style="font-size:10.5px">${t.tier} ${t.tier_label||''} · ¥${t.price_month}/月 · 引擎 ${(t.llm_binding||'').split('/').pop()||'-'}</span>`;
+    }
+    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div>${hz}</div>`;
   }).join('');
 }
 
