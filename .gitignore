@@ -130,3 +130,4 @@ CowAgent/
 AI/
 .worktrees/
 portal/audit_ai_config.json
+prototypes/ai_chat_web/*.db
