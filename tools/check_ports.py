@@ -29,6 +29,7 @@ REGISTRY = {
     8030: "llamacpp 35b(手动)",
     8787: "Hermes WebUI",
     8888: "QuantDinger前端(Docker)",
+    8899: "本地 Ollama Web 聊天(AI/111111/web_chat.py)",
     15000: "QuantDinger API(Docker)",
     15432: "QuantDinger DB(Docker)",
     16379: "QuantDinger Redis(Docker)",
