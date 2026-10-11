@@ -15,6 +15,7 @@
 import argparse
 import json
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -45,6 +46,36 @@ def chief_model():
         return "qwen3.5:9b"
 
 
+# K-STOCK-120：点评质量四判据自检——黑名单操作建议词（含变体，如"建议买入"）
+BLACKLIST_WORDS = ("买入", "卖出", "加仓", "清仓", "止损位")
+
+
+def quality_check(text, source_report):
+    """K-STOCK-120：对点评文本执行质量判据①②③，返回 (ok, reasons)。
+
+    ① 不含操作建议（黑名单词命中即违规）
+    ② 引用了当日 ≥2 个真实数字（从输入日报中出现的数字算）
+    ③ 正文长度 100-500 字（中文字符计）
+    判据④（推理耗时）在 main 里记录，不在此自检。
+    """
+    reasons = []
+    # ① 黑名单词检查（子串匹配即可覆盖"建议买入"等变体）
+    for w in BLACKLIST_WORDS:
+        if w in text:
+            reasons.append("黑名单词命中:%s" % w)
+    # ② 统计点评中出现的、且在输入日报里出现过的数字（≥2 个才算通过）
+    import re
+    src_nums = set(re.findall(r"\d+(?:\.\d+)?", source_report))
+    cited = [n for n in re.findall(r"\d+(?:\.\d+)?", text) if n in src_nums]
+    if len(set(cited)) < 2:
+        reasons.append("真实数字引用<2个(仅%d个)" % len(set(cited)))
+    # ③ 中文字符计数 100-500
+    cn = len(re.findall(r"[\u4e00-\u9fff]", text))
+    if not (100 <= cn <= 500):
+        reasons.append("中文字符数%d不在100-500" % cn)
+    return (len(reasons) == 0, reasons)
+
+
 def main():
     ap = argparse.ArgumentParser(description="A0 总管判读")
     ap.add_argument("--date", default=datetime.now().strftime("%Y-%m-%d"))
@@ -57,6 +88,7 @@ def main():
         print("[A0] 无日报：%s" % report)
         sys.exit(1)
     daily = report.read_text(encoding="utf-8")
+    t0 = time.time()  # K-STOCK-120 判据④：推理耗时起点（含读输入后全过程）
     persona = PERSONA.read_text(encoding="utf-8")
     user = "以下是今日投研部日报，请给出判读：\n\n" + daily
 
@@ -73,8 +105,15 @@ def main():
         print("[A0] mock 模式（结构验证）")
 
     out = BASE / "data" / "shadow" / ("a0_review_%s.md" % args.date)
-    header = "# A0 点评 %s\n\n> 输入：daily_report_%s.md · 影子期间点评不含操作建议\n\n" % (
-        args.date, args.date)
+    elapsed = time.time() - t0  # K-STOCK-120 判据④：推理耗时（仅记录，不自检）
+    print("[A0] 推理耗时 %.1fs" % elapsed)
+    # K-STOCK-120：写文件前执行质量四判据自检（①②③），不过则头部加警告行但不阻塞（人工复核用）
+    ok, reasons = quality_check(review, daily)
+    print("[A0] 质量自检：%s" % ("PASS" if ok else "FAIL（%s）" % ";".join(reasons)))
+    header = "# A0 点评 %s\n\n" % args.date
+    if not ok:
+        header += "> ⚠️ 质量判据未过: %s\n\n" % ";".join(reasons)
+    header += "> 输入：daily_report_%s.md · 影子期间点评不含操作建议\n\n" % args.date
     out.write_text(header + review + "\n", encoding="utf-8")
     print("[A0] 点评已生成：%s" % out)
     print(review)
