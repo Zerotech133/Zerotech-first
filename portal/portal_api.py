@@ -193,6 +193,11 @@ _cache = {"t": 0.0, "data": None}
 
 
 def run(cmd, timeout=30):
+    # K-STOCK-098 #3 防回归：10-09 曾有调用方算出 timeout=-711s 直接炸
+    # TimeoutExpired（deadline-start 计算错，旧版已重构消失）。此处钳制
+    # 任何调用方传入的非正 timeout，防同类回归再入。
+    if not isinstance(timeout, (int, float)) or timeout <= 0:
+        timeout = 30
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=timeout,
                            creationflags=NO_WINDOW)
