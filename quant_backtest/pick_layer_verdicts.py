@@ -33,10 +33,14 @@ LAYERS = ("q_toxic", "q_first_buy", "env_diff_exempt", "panic_buy",
 WINDOWS = (5, 10)
 
 
-def load_archives():
-    """(basis_day, stocks) 列表；trade_basis 取前 10 位日期。"""
+def load_archives(hist_dir=None):
+    """(basis_day, stocks) 列表；trade_basis 取前 10 位日期。
+    hist_dir：演练用模拟归档目录（--hist 传入，如 picks_history_sim），
+    与生产 picks_history 隔离。"""
+    root = os.path.abspath(hist_dir or os.path.join(
+        HERE, "..", "portal", "data", "picks_history"))
     out = []
-    for fp in sorted(glob.glob(os.path.join(HIST, "todays_*.json"))):
+    for fp in sorted(glob.glob(os.path.join(root, "todays_*.json"))):
         try:
             doc = json.load(open(fp, encoding="utf-8"))
         except Exception:
@@ -49,9 +53,13 @@ def load_archives():
 
 
 def main():
-    archs = load_archives()
+    hist_dir = None
+    for i, a in enumerate(sys.argv):
+        if a == "--hist" and i + 1 < len(sys.argv):
+            hist_dir = sys.argv[i + 1]  # 演练模式：读模拟归档目录
+    archs = load_archives(hist_dir)
     if not archs:
-        print("picks_history 无归档可读")
+        print("归档目录无档可读：%s" % (hist_dir or HIST))
         return 1
     cal = R.trade_calendar()
     stocks_k = R.load_table_grouped("ts_daily",
@@ -72,7 +80,9 @@ def main():
         for st in stocks:
             code = st.get("code")
             k = stocks_k.get(code)
-            if not k:
+            # DataFrame 真值歧义防护（2026-10-11 演练暴露）：
+            # 用 is None / empty 判空，勿写 `if not k`
+            if k is None or k.empty:
                 continue
             adf = adj_all.get(code)
             adjmap = ({str(t): float(a) for t, a in zip(
