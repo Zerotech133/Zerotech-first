@@ -6,8 +6,12 @@
 2. netstat 实测全机 LISTENING 端口 → 不在注册表的报「未登记」；
 3. --strict 时未登记>0 返回 rc=1（可挂晨检/CI）。
 
-用法：python tools/check_ports.py [--strict]
+用法：python tools/check_ports.py [--strict] [--json]
+
+--json：输出机器可读结果（registered/unknown/summary），供晨检与
+自动化消费（K-STOCK-114b）；与 --strict 可同用，rc 语义不变。
 """
+import json
 import re
 import socket
 import subprocess
@@ -95,15 +99,19 @@ OPTIONAL_OFFLINE = {3001, 8030}
 
 def main():
     strict = "--strict" in sys.argv
+    as_json = "--json" in sys.argv
     rc = 0
     print("== 注册端口在线状态 ==")
     down = []
+    registered = []
     for p in sorted(REGISTRY):
         up = tcp_up(p)
         print("  %-5d %-5s %s%s" % (p, "✓在线" if up else "✗离线",
                                     REGISTRY[p],
                                     "（可离线）" if p in OPTIONAL_OFFLINE
                                     else ""))
+        registered.append({"port": p, "name": REGISTRY[p], "up": up,
+                           "optional_offline": p in OPTIONAL_OFFLINE})
         if not up:
             down.append(p)
     print("== 未登记监听（服务段 1024-49151，系统/第三方豁免）==")
@@ -130,7 +138,21 @@ def main():
           % (len(REGISTRY), len(down),
              ",".join(map(str, down)) or "无", len(unknown)))
     hard_down = [p for p in down if p not in OPTIONAL_OFFLINE]
-    if strict and (unknown or hard_down):
+    strict_fail = strict and (unknown or hard_down)
+    if as_json:
+        print(json.dumps({
+            "strict": strict,
+            "registered": registered,
+            "offline": down,
+            "unknown": [{"port": p, "pid_name": name}
+                        for p, name in unknown],
+            "summary": {"registered_total": len(REGISTRY),
+                        "offline": len(down),
+                        "unregistered": len(unknown)},
+            "strict_fail": strict_fail,
+            "rc": 1 if strict_fail else rc,
+        }, ensure_ascii=False, indent=2))
+    if strict_fail:
         print("STRICT FAIL")
         return 1
     return rc
