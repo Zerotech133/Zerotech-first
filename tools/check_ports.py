@@ -141,7 +141,7 @@ def main():
           % (len(REGISTRY), len(down),
              ",".join(map(str, down)) or "无", len(unknown)))
     hard_down = [p for p in down if p not in OPTIONAL_OFFLINE]
-    strict_fail = strict and (unknown or hard_down)
+    strict_fail = bool(strict and (unknown or hard_down))
     if as_json:
         print(json.dumps({
             "strict": strict,
