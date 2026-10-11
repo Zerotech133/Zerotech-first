@@ -9,7 +9,7 @@
   "trainee": 19
  },
  "hire_formula": "聘请价 = 角色基价 × coef_vs_glm52（按月，收费动线后置）",
- "generated_at": "2026-10-11T23:37:14",
+ "generated_at": "2026-10-12T00:42:04",
  "models": [
   {
    "model": "deepseek-v4-flash",
@@ -21,12 +21,13 @@
    "usd_in_per_m_peak": 0.44,
    "billing_mode": "tiered_expr",
    "coef_vs_glm52": 0.16,
+   "capability_tier": "standard",
    "hire_price_cny_per_month": {
     "manager": 16,
     "trader": 6,
     "trainee": 3
    },
-   "pricing_version": "5a90f2b86c08bd983a9a2e6d66c255f4eaef9c4bc934386d2b6ae84ef0ff1f1f"
+   "pricing_version": null
   },
   {
    "model": "deepseek-v4-pro",
@@ -38,6 +39,7 @@
    "usd_in_per_m_peak": 0.6204,
    "billing_mode": "tiered_expr",
    "coef_vs_glm52": 0.22,
+   "capability_tier": "standard",
    "hire_price_cny_per_month": {
     "manager": 22,
     "trader": 9,
@@ -55,12 +57,13 @@
    "usd_in_per_m_peak": null,
    "billing_mode": null,
    "coef_vs_glm52": 1.0,
+   "capability_tier": "上一代旗舰",
    "hire_price_cny_per_month": {
     "manager": 99,
     "trader": 39,
     "trainee": 19
    },
-   "pricing_version": null
+   "pricing_version": "5a90f2b86c08bd983a9a2e6d66c255f4eaef9c4bc934386d2b6ae84ef0ff1f1f"
   },
   {
    "model": "GLM-5.3",
@@ -72,6 +75,7 @@
    "usd_in_per_m_peak": null,
    "billing_mode": null,
    "coef_vs_glm52": 1.0,
+   "capability_tier": "新旗舰",
    "hire_price_cny_per_month": {
     "manager": 99,
     "trader": 39,
@@ -89,6 +93,7 @@
    "usd_in_per_m_peak": null,
    "billing_mode": null,
    "coef_vs_glm52": 2.14,
+   "capability_tier": "standard",
    "hire_price_cny_per_month": {
     "manager": 212,
     "trader": 83,

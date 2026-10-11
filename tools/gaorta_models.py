@@ -40,6 +40,11 @@ COEF_BASELINE_IN_USD = 1.4  # GLM-5.2: 0.7 * 2
 MODEL_NAME_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 PRICE_CAP_USD = 10.0
 
+# K-STOCK-137i 拍板项2：GLM-5.3 差异化走能力标签（capability_tier），
+# 价格随上游不人为加价。静态映射 + 其余模型缺省 standard。
+CAPABILITY_TIERS = {"GLM-5.3": "新旗舰", "GLM-5.2": "上一代旗舰"}
+DEFAULT_TIER = "standard"
+
 
 def fetch_pricing():
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -146,6 +151,7 @@ def build(rows, existing_models=None, allow_new=False):
         existing_models = set() if allow_new else load_existing_models()
     models = []
     skipped = 0
+    tier_hinted = set()
     for row in rows:
         got = validate_row(row)
         if got is None:
@@ -158,6 +164,12 @@ def build(rows, existing_models=None, allow_new=False):
                   file=sys.stderr)
             return None
         coef = round(pin / COEF_BASELINE_IN_USD, 2)
+        # K-STOCK-137i：能力标签静态映射，未知模型缺省 standard 并提示可人工定档
+        tier = CAPABILITY_TIERS.get(name, DEFAULT_TIER)
+        if name not in CAPABILITY_TIERS and name not in tier_hinted:
+            print(f"[gaorta_models] 提示: 模型 {name} 未在 CAPABILITY_TIERS 定档，"
+                  f"缺省 '{DEFAULT_TIER}'，可人工定档", file=sys.stderr)
+            tier_hinted.add(name)
         models.append({
             "model": name,
             "vendor_id": row.get("vendor_id"),
@@ -168,6 +180,7 @@ def build(rows, existing_models=None, allow_new=False):
             "usd_in_per_m_peak": peak,
             "billing_mode": row.get("billing_mode"),
             "coef_vs_glm52": coef,
+            "capability_tier": tier,
             "hire_price_cny_per_month": {
                 role: round(base * coef) for role, base in ROLE_BASE_PRICE.items()
             },

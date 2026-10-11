@@ -156,6 +156,30 @@ def test_models_json_consistency():
     print("PASS test_models_json_consistency")
 
 
+def test_capability_tier_present_and_valid():
+    """K-STOCK-137i 拍板项2：每模型含 capability_tier 且取值合法"""
+    doc = json.loads(MODELS_FP.read_text(encoding="utf-8"))
+    valid = set(gm.CAPABILITY_TIERS.values()) | {gm.DEFAULT_TIER}
+    for m in doc["models"]:
+        tier = m.get("capability_tier")
+        assert tier in valid, f"{m['model']} capability_tier 非法: {tier!r}"
+        expected = gm.CAPABILITY_TIERS.get(m["model"], gm.DEFAULT_TIER)
+        assert tier == expected, f"{m['model']} capability_tier 应为 {expected}"
+    print("PASS test_capability_tier_present_and_valid")
+
+
+def test_capability_tier_glm53_no_markup():
+    """K-STOCK-137i：GLM-5.3 标'新旗舰'但 coef==GLM-5.2（价格随上游，不人为加价回归锚）"""
+    doc = json.loads(MODELS_FP.read_text(encoding="utf-8"))
+    models = {m["model"]: m for m in doc["models"]}
+    assert models["GLM-5.3"]["capability_tier"] == "新旗舰"
+    assert models["GLM-5.2"]["capability_tier"] == "上一代旗舰"
+    assert models["GLM-5.3"]["coef_vs_glm52"] == models["GLM-5.2"]["coef_vs_glm52"], \
+        "GLM-5.3 与 5.2 coef 应一致（差异化走能力标签，不走价格）"
+    assert models["GLM-5.3"]["usd_in_per_m"] == models["GLM-5.2"]["usd_in_per_m"]
+    print("PASS test_capability_tier_glm53_no_markup")
+
+
 if __name__ == "__main__":
     test_usd_price_tiered_real_exprs()
     test_usd_price_scientific_and_no_spaces()
@@ -166,4 +190,6 @@ if __name__ == "__main__":
     test_validate_row_rejects_bad_names()
     test_validate_row_rejects_bad_coef_prices()
     test_models_json_consistency()
-    print("9/9 PASS")
+    test_capability_tier_present_and_valid()
+    test_capability_tier_glm53_no_markup()
+    print("11/11 PASS")
