@@ -41,6 +41,8 @@
 | 年度批次 2025-03 | 2025-03-07–2025-04-03，两张表 | 恢复补齐 40 个分片，零空响应、零错误 |
 | 年度批次 2025-04 | 2025-04-07–2025-05-07，两张表 | 恢复补齐 40 个分片，零空响应、零错误 |
 | 年度批次 2025-05 | 2025-05-08–2025-06-05，两张表 | 恢复补齐 40 个分片，零空响应、零错误 |
+| 年度批次 2025-06 | 2025-06-06–2025-07-03，两张表 | 恢复补齐 40 个分片，零空响应、零错误 |
+| 年度批次 2025-07 | 2025-07-04–2025-07-31，两张表 | 恢复补齐 40 个分片，零空响应、零错误 |
 
 批次文件：
 
@@ -51,7 +53,7 @@
 
 RunStore 候选运行已登记在 `quant_backtest/data/tushare_staging/warehouse_runs.sqlite3`：
 
-- 当前候选运行：1168 个日期单元，绑定每个 staging 回执；
+- 当前候选运行：1248 个日期单元，绑定每个 staging 回执；
 - 运行计划：`quant_backtest/data/tushare_staging/runstore_candidate_plan.json`；
 - registry 审计：`quant_backtest/data/tushare_staging/runstore_candidate_audit.json`；
 - 候选结果：`quant_backtest/data/tushare_staging/runstore_candidate_result.json`；
