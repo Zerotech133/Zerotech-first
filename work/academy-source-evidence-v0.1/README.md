@@ -28,3 +28,15 @@
 ```
 
 输出始终是 `read_only`、`training_eligible=false`、`production_eligible=false`。只有补齐原件、哈希核验、日期/原始证据、许可证、本人离线签名、标准定义和日历认证后，才可重新评审 LoRA；本次不改变训练、模拟成交或交易门禁。
+
+## 训练候选治理 v0.1
+
+使用 `tools/audit_training_candidates.py` 对训练候选清单做只读审计：
+
+```powershell
+& 'C:\Program Files\Python311\python.exe' -X utf8 tools/audit_training_candidates.py `
+  --manifest 'E:\老田的AI助手\work\training-eligible-manifest-v0.1.json' `
+  --output 'E:\老田的AI助手\work\academy-source-evidence-v0.1\training-candidate-governance-v0.1.json'
+```
+
+2026-10-12 审计结果：6 条记录中内容资格 0 条、训练资格 0 条、`evaluation_only` 6 条。缺口包括许可证字段、许可证期限、本人离线审核回执、权限快照和 `train/validation/test` 切分；报告只记录缺口，不提升任何权限。
