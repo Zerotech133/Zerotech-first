@@ -326,12 +326,14 @@ def _card_sender_id(ev):
 def reply_card(card, message_id):
     from feishu_card_v2 import send_card  # noqa: F401  通道复用
     import lark_oapi as lark
+    # K-STOCK-141：类名实为 ReplyMessageRequestBody（原 ReplyMessageBody
+    # 在已装 lark_oapi 中不存在，import 即炸→卡片回复从未送达）
     from lark_oapi.api.im.v1 import (ReplyMessageRequest,
-                                     ReplyMessageBody)
+                                     ReplyMessageRequestBody)
     app_id, app_secret = _creds()
     cli = lark.Client.builder().app_id(app_id).app_secret(
         app_secret).build()
-    body = ReplyMessageBody.builder().content(
+    body = ReplyMessageRequestBody.builder().content(
         json.dumps({"msg_type": "interactive",
                     "content": json.dumps(card, ensure_ascii=False)})
     ).msg_type("interactive").build()
@@ -354,12 +356,13 @@ def send_text(text, message_id=None):
         from send_feishu import send_text as _sf_send_text
         return _sf_send_text(text)
     import lark_oapi as lark
+    # K-STOCK-141：同 reply_card——正确类名 ReplyMessageRequestBody
     from lark_oapi.api.im.v1 import (ReplyMessageRequest,
-                                     ReplyMessageBody)
+                                     ReplyMessageRequestBody)
     app_id, app_secret = _creds()
     cli = lark.Client.builder().app_id(app_id).app_secret(
         app_secret).build()
-    body = (ReplyMessageBody.builder()
+    body = (ReplyMessageRequestBody.builder()
             .content(json.dumps({"text": text}, ensure_ascii=False))
             .msg_type("text").build())
     req = (ReplyMessageRequest.builder().message_id(message_id)
