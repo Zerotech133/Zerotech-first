@@ -1,0 +1,385 @@
+{
+  "manifest": {
+    "schema_version": "training-eligible-manifest-v0.1",
+    "generated_at": "2026-10-11T10:05:04.890150+00:00",
+    "source_root": "E:\\老田的AI助手\\knowledge_docs",
+    "policy": {
+      "default_status": "evaluation_only",
+      "training_enabled": false,
+      "financial_execution_enabled": false,
+      "required_fields": [
+        "license_id",
+        "license_subject",
+        "purpose",
+        "valid_from",
+        "valid_until",
+        "commercial_scope",
+        "source_reference",
+        "split",
+        "split_group",
+        "offline_review_receipt",
+        "license_approved",
+        "permission_snapshot",
+        "sample_sha256"
+      ]
+    },
+    "counts": {
+      "total": 6,
+      "training_eligible": 0,
+      "evaluation_only": 6
+    },
+    "records": [
+      {
+        "source": "AI工程实践知识库.md",
+        "source_path": "E:\\老田的AI助手\\knowledge_docs\\AI工程实践知识库.md",
+        "sample_sha256": "8149db989a1d0d24b9550a0a8e106f34114106c4eda976bcd52be5d093d791bc",
+        "size_bytes": 6443,
+        "modified_ns": 1789522516902439000,
+        "license_id": null,
+        "license_subject": null,
+        "purpose": null,
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "source_reference": null,
+        "split": null,
+        "split_group": null,
+        "offline_review_receipt": null,
+        "training_eligible": false,
+        "evaluation_only": true,
+        "eligibility_reasons": [
+          "缺少或未核验字段：commercial_scope",
+          "缺少或未核验字段：license_approved",
+          "缺少或未核验字段：license_id",
+          "缺少或未核验字段：license_subject",
+          "缺少或未核验字段：offline_review_receipt",
+          "缺少或未核验字段：offline_review_receipt_format",
+          "缺少或未核验字段：permission_snapshot",
+          "缺少或未核验字段：purpose",
+          "缺少或未核验字段：sample_sha256",
+          "缺少或未核验字段：source_reference",
+          "缺少或未核验字段：split",
+          "缺少或未核验字段：split_group",
+          "缺少或未核验字段：valid_from",
+          "缺少或未核验字段：valid_until"
+        ]
+      },
+      {
+        "source": "企业分析与尽调知识库.md",
+        "source_path": "E:\\老田的AI助手\\knowledge_docs\\企业分析与尽调知识库.md",
+        "sample_sha256": "282775f41f9a60bce608ac3045ecfb52550ca0765e666e2ea363cc37cbe8e837",
+        "size_bytes": 5898,
+        "modified_ns": 1789522516922726500,
+        "license_id": null,
+        "license_subject": null,
+        "purpose": null,
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "source_reference": null,
+        "split": null,
+        "split_group": null,
+        "offline_review_receipt": null,
+        "training_eligible": false,
+        "evaluation_only": true,
+        "eligibility_reasons": [
+          "缺少或未核验字段：commercial_scope",
+          "缺少或未核验字段：license_approved",
+          "缺少或未核验字段：license_id",
+          "缺少或未核验字段：license_subject",
+          "缺少或未核验字段：offline_review_receipt",
+          "缺少或未核验字段：offline_review_receipt_format",
+          "缺少或未核验字段：permission_snapshot",
+          "缺少或未核验字段：purpose",
+          "缺少或未核验字段：sample_sha256",
+          "缺少或未核验字段：source_reference",
+          "缺少或未核验字段：split",
+          "缺少或未核验字段：split_group",
+          "缺少或未核验字段：valid_from",
+          "缺少或未核验字段：valid_until"
+        ]
+      },
+      {
+        "source": "法律专业知识库.md",
+        "source_path": "E:\\老田的AI助手\\knowledge_docs\\法律专业知识库.md",
+        "sample_sha256": "12cf0cab505d9dbe046e0a976ff043c5f763501fc7c9edcee5e44b3c0f608ded",
+        "size_bytes": 5391,
+        "modified_ns": 1789522516903527800,
+        "license_id": null,
+        "license_subject": null,
+        "purpose": null,
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "source_reference": null,
+        "split": null,
+        "split_group": null,
+        "offline_review_receipt": null,
+        "training_eligible": false,
+        "evaluation_only": true,
+        "eligibility_reasons": [
+          "缺少或未核验字段：commercial_scope",
+          "缺少或未核验字段：license_approved",
+          "缺少或未核验字段：license_id",
+          "缺少或未核验字段：license_subject",
+          "缺少或未核验字段：offline_review_receipt",
+          "缺少或未核验字段：offline_review_receipt_format",
+          "缺少或未核验字段：permission_snapshot",
+          "缺少或未核验字段：purpose",
+          "缺少或未核验字段：sample_sha256",
+          "缺少或未核验字段：source_reference",
+          "缺少或未核验字段：split",
+          "缺少或未核验字段：split_group",
+          "缺少或未核验字段：valid_from",
+          "缺少或未核验字段：valid_until"
+        ]
+      },
+      {
+        "source": "缠论技术分析知识库.md",
+        "source_path": "E:\\老田的AI助手\\knowledge_docs\\缠论技术分析知识库.md",
+        "sample_sha256": "b5c22346abee15511d7b4ea98cff7fcbbda2238750e4a9124223753a6b9172ef",
+        "size_bytes": 5638,
+        "modified_ns": 1789522516943466300,
+        "license_id": null,
+        "license_subject": null,
+        "purpose": null,
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "source_reference": null,
+        "split": null,
+        "split_group": null,
+        "offline_review_receipt": null,
+        "training_eligible": false,
+        "evaluation_only": true,
+        "eligibility_reasons": [
+          "缺少或未核验字段：commercial_scope",
+          "缺少或未核验字段：license_approved",
+          "缺少或未核验字段：license_id",
+          "缺少或未核验字段：license_subject",
+          "缺少或未核验字段：offline_review_receipt",
+          "缺少或未核验字段：offline_review_receipt_format",
+          "缺少或未核验字段：permission_snapshot",
+          "缺少或未核验字段：purpose",
+          "缺少或未核验字段：sample_sha256",
+          "缺少或未核验字段：source_reference",
+          "缺少或未核验字段：split",
+          "缺少或未核验字段：split_group",
+          "缺少或未核验字段：valid_from",
+          "缺少或未核验字段：valid_until"
+        ]
+      },
+      {
+        "source": "资本运作知识库.md",
+        "source_path": "E:\\老田的AI助手\\knowledge_docs\\资本运作知识库.md",
+        "sample_sha256": "1eea4547c7578749523c70a941abf0c3957a34d59396390e4fc2553f4b8f048b",
+        "size_bytes": 6115,
+        "modified_ns": 1789522516943466300,
+        "license_id": null,
+        "license_subject": null,
+        "purpose": null,
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "source_reference": null,
+        "split": null,
+        "split_group": null,
+        "offline_review_receipt": null,
+        "training_eligible": false,
+        "evaluation_only": true,
+        "eligibility_reasons": [
+          "缺少或未核验字段：commercial_scope",
+          "缺少或未核验字段：license_approved",
+          "缺少或未核验字段：license_id",
+          "缺少或未核验字段：license_subject",
+          "缺少或未核验字段：offline_review_receipt",
+          "缺少或未核验字段：offline_review_receipt_format",
+          "缺少或未核验字段：permission_snapshot",
+          "缺少或未核验字段：purpose",
+          "缺少或未核验字段：sample_sha256",
+          "缺少或未核验字段：source_reference",
+          "缺少或未核验字段：split",
+          "缺少或未核验字段：split_group",
+          "缺少或未核验字段：valid_from",
+          "缺少或未核验字段：valid_until"
+        ]
+      },
+      {
+        "source": "金融专业知识库.md",
+        "source_path": "E:\\老田的AI助手\\knowledge_docs\\金融专业知识库.md",
+        "sample_sha256": "35e8914211cc1c071fe6d4e732a7fde340f1af4e9f3f80fef04468169d9b31c3",
+        "size_bytes": 5662,
+        "modified_ns": 1789522516943466300,
+        "license_id": null,
+        "license_subject": null,
+        "purpose": null,
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "source_reference": null,
+        "split": null,
+        "split_group": null,
+        "offline_review_receipt": null,
+        "training_eligible": false,
+        "evaluation_only": true,
+        "eligibility_reasons": [
+          "缺少或未核验字段：commercial_scope",
+          "缺少或未核验字段：license_approved",
+          "缺少或未核验字段：license_id",
+          "缺少或未核验字段：license_subject",
+          "缺少或未核验字段：offline_review_receipt",
+          "缺少或未核验字段：offline_review_receipt_format",
+          "缺少或未核验字段：permission_snapshot",
+          "缺少或未核验字段：purpose",
+          "缺少或未核验字段：sample_sha256",
+          "缺少或未核验字段：source_reference",
+          "缺少或未核验字段：split",
+          "缺少或未核验字段：split_group",
+          "缺少或未核验字段：valid_from",
+          "缺少或未核验字段：valid_until"
+        ]
+      }
+    ]
+  },
+  "evaluation": {
+    "summary": {
+      "total": 6,
+      "hits": 6,
+      "misses": 0,
+      "hit_rate": 1.0
+    },
+    "cases": [
+      {
+        "id": "AI工程实践知识库",
+        "question": "AI 工程实践知识库",
+        "expected_sources": [
+          "AI工程实践知识库.md"
+        ],
+        "returned_sources": [
+          "AI工程实践知识库.md",
+          "AI工程实践知识库.md",
+          "AI工程实践知识库.md",
+          "AI工程实践知识库.md"
+        ],
+        "scores": [
+          0.6533,
+          0.5332,
+          0.5195,
+          0.4882
+        ],
+        "retrieval_hit": true,
+        "citation_complete": true
+      },
+      {
+        "id": "企业分析与尽调知识库",
+        "question": "企业分析与尽职调查知识库",
+        "expected_sources": [
+          "企业分析与尽调知识库.md"
+        ],
+        "returned_sources": [
+          "企业分析与尽调知识库.md",
+          "企业分析与尽调知识库.md",
+          "AI工程实践知识库.md",
+          "企业分析与尽调知识库.md"
+        ],
+        "scores": [
+          0.6614,
+          0.5628,
+          0.4936,
+          0.4923
+        ],
+        "retrieval_hit": true,
+        "citation_complete": true
+      },
+      {
+        "id": "法律专业知识库",
+        "question": "法律专业知识库",
+        "expected_sources": [
+          "法律专业知识库.md"
+        ],
+        "returned_sources": [
+          "法律专业知识库.md",
+          "资本运作知识库.md",
+          "法律专业知识库.md",
+          "法律专业知识库.md"
+        ],
+        "scores": [
+          0.6006,
+          0.4921,
+          0.4899,
+          0.4802
+        ],
+        "retrieval_hit": true,
+        "citation_complete": true
+      },
+      {
+        "id": "缠论技术分析知识库",
+        "question": "缠论技术分析知识库",
+        "expected_sources": [
+          "缠论技术分析知识库.md"
+        ],
+        "returned_sources": [
+          "缠论技术分析知识库.md",
+          "缠论技术分析知识库.md",
+          "缠论技术分析知识库.md",
+          "缠论技术分析知识库.md"
+        ],
+        "scores": [
+          0.7179,
+          0.6845,
+          0.6445,
+          0.5719
+        ],
+        "retrieval_hit": true,
+        "citation_complete": true
+      },
+      {
+        "id": "资本运作知识库",
+        "question": "资本运作专业知识库",
+        "expected_sources": [
+          "资本运作知识库.md"
+        ],
+        "returned_sources": [
+          "资本运作知识库.md",
+          "资本运作知识库.md",
+          "资本运作知识库.md",
+          "金融专业知识库.md"
+        ],
+        "scores": [
+          0.6736,
+          0.5697,
+          0.5468,
+          0.5137
+        ],
+        "retrieval_hit": true,
+        "citation_complete": true
+      },
+      {
+        "id": "金融专业知识库",
+        "question": "金融专业知识库",
+        "expected_sources": [
+          "金融专业知识库.md"
+        ],
+        "returned_sources": [
+          "金融专业知识库.md",
+          "金融专业知识库.md",
+          "资本运作知识库.md",
+          "金融专业知识库.md"
+        ],
+        "scores": [
+          0.5937,
+          0.5609,
+          0.5266,
+          0.5218
+        ],
+        "retrieval_hit": true,
+        "citation_complete": true
+      }
+    ]
+  },
+  "gates": {
+    "training_eligible": false,
+    "lora_review_ready": false,
+    "financial_execution_enabled": false
+  }
+}
