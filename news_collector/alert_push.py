@@ -200,9 +200,43 @@ def main():
               % str(e)[:100])
         res = _fallback_alerts()
     if not res or not res.get("alerts"):
-        print("ALERT_PUSH_FAIL no alerts data")
-        _save_last(False, morning, {"alerts": []}, {})
-        return 1
+        # K-STOCK-098 #1 归因修复：晨扫/盘后「无预警数据」不是推送失败——
+        # 原实现直接 return 1，计划任务记 rc=1 且无人知晓（静默失败假象）。
+        # 改为发一张「今日暂无预警」信息卡（ok=True）；只有这张卡也发不
+        # 出去（通道故障）才 return 1 交 alert_fail_wrap 兜底告警。
+        print("ALERT_PUSH_EMPTY no alerts data -> info card")
+        import card_build
+        cfg = _cfg()
+        targets = _targets(cfg)
+        now = time.strftime("%Y-%m-%d %H:%M")
+        if morning:
+            ititle, isub = "⚠️ 预警速览 · 晨", now + " · 当日新扫描暂无缠论/九维预警"
+        else:
+            ititle, isub = "⚠️ 预警日报 · 盘后", now + " · 五路预警今日均为空"
+        empty_res = {"alerts": [], "empty": True}
+        blocks = build_blocks(empty_res, morning, fetch_index())
+        card = card_build.build_card(
+            ititle, isub, "grey", blocks,
+            footer="AI工作站 · 飞书预警输出 · 不构成投资建议",
+            use_schema2=True)
+        try:
+            tres = push_card_multi(card, targets=targets)
+        except Exception as e:
+            print("card err %s" % str(e)[:120])
+            tres = {t["name"]: False for t in targets}
+        if not any(tres.values()):  # 卡全军覆没 → 文本兜底
+            try:
+                txt = ititle + " " + isub + "\n今日暂无预警，数据链路正常。"
+                tres = push_text_multi(txt, targets)
+            except Exception as e:
+                print("text fallback err %s" % str(e)[:120])
+        ok = any(tres.values())
+        _save_last(ok, morning, empty_res, tres)
+        print("ALERT_PUSH_%s mode=%s alerts=0 targets=%s" % (
+            "OK" if ok else "FAIL",
+            "morning" if morning else "eod",
+            json.dumps(tres, ensure_ascii=False)))
+        return 0 if ok else 1
 
     import card_build
     cfg = _cfg()
