@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>绩效市场 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-page);color:var(--text);font:14px/1.55 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 24px 48px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  h1{font-size:24px;margin:0 0 4px}.sub{color:var(--text-dim);font-size:12px}
+  .badge{display:inline-flex;align-items:center;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-pill);color:var(--color-ok);font-size:12px}
+  .state{margin:18px 0 14px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);color:var(--text-dim)}
+  .state.err{border-color:var(--color-err);color:var(--color-err)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0 22px}
+  .card{background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-l);padding:14px}
+  .label{color:var(--text-dim);font-size:12px}.value{font-size:21px;font-weight:700;margin-top:3px}
+  section{margin-top:22px}h2{font-size:16px;margin:0 0 10px}
+  .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised)}
+  table{width:100%;border-collapse:collapse;min-width:620px}th,td{padding:9px 11px;border-bottom:1px solid var(--border-weak);text-align:left;white-space:nowrap}th{color:var(--text-dim);font-size:12px;font-weight:500}tr:last-child td{border-bottom:0}
+  .up{color:var(--color-up)}.down{color:var(--color-dn)}.muted{color:var(--text-dim)}
+  .note{margin-top:12px;color:var(--text-dim);font-size:12px}.caliber{padding:12px;border-left:3px solid var(--color-warn);background:var(--bg-raised);color:var(--text-dim);font-size:12px}
+  @media(max-width:640px){.wrap{padding:18px 14px 34px}h1{font-size:21px}.value{font-size:18px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div><h1>📊 绩效市场</h1><div class="sub">PERFORMANCE MARKET · 只读研究投影</div></div>
+    <span class="badge">只读 · 不含交易入口</span>
+  </header>
+  <div id="state" class="state">正在读取绩效账本…</div>
+  <section id="summary" hidden>
+    <h2>账本概览</h2>
+    <div class="grid" id="cards"></div>
+  </section>
+  <section id="tiers" hidden><h2>按层级</h2><div class="table-wrap"><table><thead><tr><th>层级</th><th>样本数</th><th>1 日命中</th><th>1 日均值</th><th>3 日命中</th><th>5 日命中</th></tr></thead><tbody id="tierRows"></tbody></table></div></section>
+  <section id="strategies" hidden><h2>按策略</h2><div class="table-wrap"><table><thead><tr><th>策略</th><th>样本数</th><th>1 日命中</th><th>1 日均值</th><th>3 日均值</th><th>5 日均值</th></tr></thead><tbody id="strategyRows"></tbody></table></div></section>
+  <section id="caliber" hidden><h2>统计口径</h2><div class="caliber" id="caliberText"></div><div class="note" id="note"></div></section>
+</main>
+<script>
+(() => {
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const pct = v => v == null ? '<span class="muted">待窗口</span>' : '<span class="'+(v >= 0 ? 'up' : 'down')+'">'+(v >= 0 ? '+' : '')+(Number(v)*100).toFixed(2)+'%</span>';
+  const hit = v => v == null ? '<span class="muted">待窗口</span>' : (Number(v)*100).toFixed(1)+'%';
+  const metric = (obj, key, fn) => fn((obj || {})[key]);
+  function showError(message){ const el=document.getElementById('state'); el.className='state err'; el.textContent=message; }
+  function render(d){
+    const el=document.getElementById('state');
+    el.textContent='账本截至 '+(d.asof || '—')+' · 生成于 '+(d.generated_at || '—');
+    document.getElementById('summary').hidden=false;
+    const t=d.totals || {};
+    document.getElementById('cards').innerHTML=[
+      ['选票样本', esc(t.picks ?? '—')],
+      ['1 日命中', metric(t['1'],'hit',hit)],
+      ['1 日均值', metric(t['1'],'avg',pct)],
+      ['3 日均值', metric(t['3'],'avg',pct)],
+      ['5 日均值', metric(t['5'],'avg',pct)]
+    ].map(x=>'<div class="card"><div class="label">'+x[0]+'</div><div class="value">'+x[1]+'</div></div>').join('');
+    const tiers=d.per_tier||{};
+    document.getElementById('tierRows').innerHTML=Object.keys(tiers).sort().map(k=>{
+      const x=tiers[k]||{}; return '<tr><td><b>'+esc(k)+'</b></td><td>'+esc(x.n ?? '—')+'</td><td>'+metric(x['1'],'hit',hit)+'</td><td>'+metric(x['1'],'avg',pct)+'</td><td>'+metric(x['3'],'hit',hit)+'</td><td>'+metric(x['5'],'hit',hit)+'</td></tr>';}).join('') || '<tr><td colspan="6" class="muted">暂无层级数据</td></tr>';
+    document.getElementById('tiers').hidden=false;
+    const strategies=d.per_strategy||{};
+    document.getElementById('strategyRows').innerHTML=Object.keys(strategies).sort().map(k=>{
+      const x=strategies[k]||{}; return '<tr><td><b>'+esc(k)+'</b></td><td>'+esc(x.n ?? '—')+'</td><td>'+metric(x['1'],'hit',hit)+'</td><td>'+metric(x['1'],'avg',pct)+'</td><td>'+metric(x['3'],'avg',pct)+'</td><td>'+metric(x['5'],'avg',pct)+'</td></tr>';}).join('') || '<tr><td colspan="6" class="muted">暂无策略数据</td></tr>';
+    document.getElementById('strategies').hidden=false;
+    const c=d.caliber||{};
+    document.getElementById('caliberText').innerHTML='<b>'+esc(c.id||'未标注口径')+'</b><br>'+esc(c.buy||'')+'<br>'+esc(c.sell||'')+'<br>'+esc(c.benchmark||'');
+    document.getElementById('note').textContent=String(d.note||'绩效账本仅供研究复盘，不构成交易指令。');
+    document.getElementById('caliber').hidden=false;
+  }
+  fetch('/api/market_performance').then(r=>r.json().then(d=>({ok:r.ok,d}))).then(x=>{
+    if(!x.ok || !x.d.ok){ showError('绩效账本暂不可用：'+(x.d.error||'未知错误')); return; }
+    render(x.d);
+  }).catch(e=>showError('读取绩效账本失败：'+e.message));
+})();
+</script>
+</body>
+</html>

@@ -713,6 +713,7 @@ DOMAIN_NAV_GROUPS = {
             ("💼 持仓", "/bt-positions", "positions"),
             ("🧾 模拟仓", "/paper", "paper"),
             ("🛒 策略市场", "/market-strategy", "market-strategy"),
+            ("📊 绩效市场", "/market", "market"),
             ("📄 报告", "/bt-report", "report"),
             ("🎯 卖点研判", "/sellpoint", "sellpoint"))),
         ("🧰 研究与数据", (
@@ -23037,6 +23038,20 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._json(_sm.market())
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/market_performance":
+            # K-STOCK-132：绩效账本只读投影；缺失/损坏明确返回，不降级成空数据。
+            try:
+                import market_performance as _mp
+                self._json(_mp.project())
+            except FileNotFoundError as _e:
+                self._json({"ok": False, "error_code": "ledger_unavailable",
+                            "error": str(_e)}, 503)
+            except ValueError as _e:
+                self._json({"ok": False, "error_code": "ledger_invalid",
+                            "error": str(_e)}, 500)
+            except Exception as _e:
+                self._json({"ok": False, "error_code": "ledger_error",
+                            "error": repr(_e)}, 500)
         elif path == "/api/portfolios":
             # K-STOCK-122 M3 组合列表（订阅集，纯只读）
             try:
