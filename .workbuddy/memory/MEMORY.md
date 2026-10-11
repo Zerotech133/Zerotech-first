@@ -32,3 +32,6 @@
 
 - **K-STOCK-116 审计修复**：原型目录 `time_split` 只查 `/` 会放过伪造/零长度/倒序区间；平台注册还需读取正式端口对账表；RAG 评测必须包含 `as_of` 用例并把缺 `source_date` 判为阻断。E 盘 `.git` ACL 会阻止 `devtask.py new` 创建分支锁，需先申请 Git 元数据写权限或使用受管 worktree。
 - **时序证据必须按 ISO 日期解析**：不能用字符串大小比较；`as_of/source_date` 格式非法应返回 `invalid_evidence` 并阻断评测。
+- **devtask.py 传中文+圆括号原因必须整体加引号**（10-11 K-STOCK-116 drop 实锤）：PS 把裸 `空转待回收(bf4ac94…)` 当子表达式执行→命令未跑但报错埋在 CLIXML 里，exit 0 假绿——多命令 `;` 串跑时单条解析失败不挡后续，须回查 tasks.json 才知 drop 没落
+- **任务单归档先辨性质再动手**（10-11 双 116 处置判例）：`detached@<sha>` 指针≠成果，先 `git merge-base --is-ancestor`+worktree status 双验——成果已代收（116-history）循 114b 判例补登 done；空转零成果（116-time-split）循主控盘点 drop，勿一刀切
+- **清 worktree 前必采样写入活动**（10-11 116-history 实锤）："已合并"的 worktree 可能仍被数据管线当运行时工作区（staging 库/进度文档持续写入）；查 `git status`+目录 mtime+宿主进程三件套再动手，否则等于杀生产线。另：多 Agent 会并发从主仓根跑全量 `pytest -q` 互踩（13:02 三进程烧 3 核 2 小时），全量套件应限定路径或加超时
