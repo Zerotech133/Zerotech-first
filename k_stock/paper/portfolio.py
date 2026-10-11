@@ -26,6 +26,7 @@ sys.path.insert(0, str(HERE))
 
 from engine import Reject, _norm_stock          # noqa: E402
 import trainee                                  # noqa: E402
+import picks_adapter                            # noqa: E402
 
 PORTAL_DATA = HERE.parent.parent / "portal" / "data"
 SUBS_PATH = PORTAL_DATA / "strategy_subscriptions.json"
@@ -36,7 +37,8 @@ STRAT_PREFIX = {
     "qingping": "poc_qpzm_",
     "qpzm": "poc_qpzm_",            # 青萍之末（CN；qpzmus 独立 US 账本不并入）
 }
-# 其余策略（chanlun/ninedim/…）暂无 poc 产物链 → exec 时记 skipped 挂账
+# 其余策略（chanlun/ninedim/strong/weak/jev-gate）→ picks_adapter 动态生成
+# （M4.3）；linkage/cross/qpzm-tool 等仍无聚合信号 → exec 时记 skipped 挂账
 
 
 def _now() -> str:
@@ -78,10 +80,13 @@ def ensure_hire(pf_id: str, trader: str) -> dict:
 
 def _newest_run_for_strategy(sid: str) -> Path | None:
     prefix = STRAT_PREFIX.get(sid)
-    if prefix is None:
-        return None
-    runs = sorted(trainee.DATA_DIR.glob(prefix + "*.json"))
-    return runs[-1] if runs else None
+    if prefix is not None:
+        runs = sorted(trainee.DATA_DIR.glob(prefix + "*.json"))
+        return runs[-1] if runs else None
+    # M4.3：无独立产物链的策略 → todays_picks 适配器动态生成当日 run
+    if sid in picks_adapter.ADAPTER_STRATS:
+        return picks_adapter.build_run(sid)
+    return None
 
 
 def merge_portfolio_runs(pf: dict) -> tuple[Path, list]:
