@@ -1,0 +1,131 @@
+{
+  "summary": {
+    "total": 6,
+    "hits": 6,
+    "misses": 0,
+    "hit_rate": 1.0,
+    "elapsed_seconds": 0.97
+  },
+  "cases": [
+    {
+      "id": "ai-model-selection",
+      "question": "本地部署大语言模型时，如何根据任务需求选择合适的模型？",
+      "expected_keywords": [
+        "AI工程"
+      ],
+      "returned_sources": [
+        "AI工程实践知识库.md",
+        "AI工程实践知识库.md",
+        "AI工程实践知识库.md",
+        "AI工程实践知识库.md"
+      ],
+      "scores": [
+        0.6765,
+        0.6295,
+        0.5271,
+        0.5182
+      ],
+      "retrieval_hit": true
+    },
+    {
+      "id": "business-due-diligence",
+      "question": "企业分析与尽职调查中，如何验证经营情况并控制风险？",
+      "expected_keywords": [
+        "企业分析"
+      ],
+      "returned_sources": [
+        "企业分析与尽调知识库.md",
+        "企业分析与尽调知识库.md",
+        "企业分析与尽调知识库.md",
+        "企业分析与尽调知识库.md"
+      ],
+      "scores": [
+        0.6774,
+        0.6236,
+        0.575,
+        0.5546
+      ],
+      "retrieval_hit": true
+    },
+    {
+      "id": "legal-system",
+      "question": "中国法律体系的主要层级和组成是什么？",
+      "expected_keywords": [
+        "法律"
+      ],
+      "returned_sources": [
+        "法律专业知识库.md",
+        "金融专业知识库.md",
+        "法律专业知识库.md",
+        "金融专业知识库.md"
+      ],
+      "scores": [
+        0.7568,
+        0.5907,
+        0.4966,
+        0.4927
+      ],
+      "retrieval_hit": true
+    },
+    {
+      "id": "chanlun-analysis",
+      "question": "缠论技术分析中，如何理解走势和买卖点？",
+      "expected_keywords": [
+        "缠论"
+      ],
+      "returned_sources": [
+        "缠论技术分析知识库.md",
+        "缠论技术分析知识库.md",
+        "缠论技术分析知识库.md",
+        "缠论技术分析知识库.md"
+      ],
+      "scores": [
+        0.7251,
+        0.6889,
+        0.673,
+        0.6698
+      ],
+      "retrieval_hit": true
+    },
+    {
+      "id": "capital-management",
+      "question": "资本运作中，如何平衡资本安全、流动性和收益？",
+      "expected_keywords": [
+        "资本"
+      ],
+      "returned_sources": [
+        "资本运作知识库.md",
+        "金融专业知识库.md",
+        "资本运作知识库.md",
+        "资本运作知识库.md"
+      ],
+      "scores": [
+        0.6232,
+        0.5918,
+        0.5532,
+        0.5492
+      ],
+      "retrieval_hit": true
+    },
+    {
+      "id": "finance",
+      "question": "金融专业知识中，如何理解现金流、利润和风险之间的关系？",
+      "expected_keywords": [
+        "金融"
+      ],
+      "returned_sources": [
+        "金融专业知识库.md",
+        "企业分析与尽调知识库.md",
+        "金融专业知识库.md",
+        "金融专业知识库.md"
+      ],
+      "scores": [
+        0.6143,
+        0.6029,
+        0.5883,
+        0.5712
+      ],
+      "retrieval_hit": true
+    }
+  ]
+}

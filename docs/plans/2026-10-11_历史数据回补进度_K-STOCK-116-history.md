@@ -79,6 +79,8 @@ RunStore 候选运行已登记在 `quant_backtest/data/tushare_staging/warehouse
 
 2026-10-11 20:09（本机时间）全仓扫描：93 张表、约 12,335.4 MB；新鲜度 `fresh_bad=0`、`fresh_warn=1`。完整性仍有 6 个失败项和 1 个警告，均来自生产仓已有缺口，年度回补 staging 尚未发布：板块日线覆盖 51、板块定义键对账 51、融资必填空值 2、融资日覆盖 12,858、板块分钟覆盖 14、板块分钟量额空值 14,771；上市股票最新覆盖警告 14。查询回归 `query_daily_history/query_cb_daily/query_income/query_top10_holders/query_top10_floatholders` 均通过。
 
+发布前只读预检已通过：1,820/1,820 parquet 与回执 `SHA-256` 一致，累计 8,482,468 行，RunStore 4 页事件中来源回执 1,820 条，资源锁归属正确，未出现提交意图或完成事件。预检记录：`quant_backtest/data/tushare_staging/publication_preflight.json`。
+
 ## 阻断项
 
 板块日线 51 键和板块分钟 14 键目前没有合格真实来源，计划标记为 `blocked_source_qualification`。在取得逐键来源回执前不补零、不复制前一日、不写生产。
