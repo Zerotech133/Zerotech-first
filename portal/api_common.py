@@ -5,6 +5,10 @@
 """
 import datetime, glob, json, os, re, subprocess, sys, threading, threading as _th, time
 
+_BTSEL_TAG = (
+    "<script>" + _BTSEL_JS + "</script>")
+
+
 
 # ===== P0-5 静默吞错落盘（2026-10-08 全检修复）=====
 # 背景：全检报告 P0-5——258 处 `except Exception` 多为 pass，数据读取失败

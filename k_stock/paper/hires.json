@@ -29,6 +29,22 @@
       "hired_at": "2026-10-11T19:23:44",
       "note": "K-STOCK-122 M4.2 组合跟单雇佣",
       "fired_at": "2026-10-11T19:23:44"
+    },
+    {
+      "trader": "taishan",
+      "source": "pf_001",
+      "status": "ended",
+      "hired_at": "2026-10-11T20:41:28",
+      "note": "K-STOCK-122 M4.2 组合跟单雇佣",
+      "fired_at": "2026-10-11T20:41:28"
+    },
+    {
+      "trader": "taishan",
+      "source": "pf_001",
+      "status": "ended",
+      "hired_at": "2026-10-11T20:45:16",
+      "note": "K-STOCK-122 M4.2 组合跟单雇佣",
+      "fired_at": "2026-10-11T20:45:16"
     }
   ]
 }

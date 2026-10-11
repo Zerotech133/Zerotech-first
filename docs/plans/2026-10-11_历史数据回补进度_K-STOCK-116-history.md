@@ -81,6 +81,8 @@ RunStore 候选运行已登记在 `quant_backtest/data/tushare_staging/warehouse
 
 发布前只读预检已通过：1,820/1,820 parquet 与回执 `SHA-256` 一致，累计 8,482,468 行，RunStore 4 页事件中来源回执 1,820 条，资源锁归属正确，未出现提交意图或完成事件。预检记录：`quant_backtest/data/tushare_staging/publication_preflight.json`。
 
+板块来源探针（2026-10-11）访问 `rookie.xtcloud-tech.com:48088` 只读接口：日线对 51 个缺键做完整日期扫描，远端实际仍缺 51 个键；分钟对 14 个缺键的有界探针全部发现 `code` 过滤合同不成立，未返回请求代码。证据记录在 `quant_backtest/data/tushare_staging/sector_source_probe_20261011.json`，板块日线/分钟继续保持 `blocked_source_qualification`，没有生成补写候选。
+
 ## 阻断项
 
 板块日线 51 键和板块分钟 14 键目前没有合格真实来源，计划标记为 `blocked_source_qualification`。在取得逐键来源回执前不补零、不复制前一日、不写生产。
