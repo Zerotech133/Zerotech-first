@@ -350,6 +350,22 @@ def _freshness_warmup():
     data_freshness_bg(ttl_sec=1800)
 
 
+def _pf_ids_all():
+    """K-STOCK-150：订阅清单中全部组合 id 集合（多组合化基础）。"""
+    try:
+        import subscriptions as _sub
+        return {p.get("id") for p in
+                (_sub.portfolios().get("portfolios") or [])
+                if p.get("id")}
+    except Exception:
+        return {"pf_001"}
+
+
+def _pf_valid(pid):
+    """K-STOCK-150：pf 参数校验——必须在订阅清单内，防任意串参。"""
+    return pid in _pf_ids_all()
+
+
 
 
 import os as _os
@@ -2039,6 +2055,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     return
                 try:
                     import subprocess
+                    # K-STOCK-150：接受 pf 参数（默认 pf_001 向后兼容），
+                    # 仅接受订阅清单内组合，拒绝任意串参。
+                    _pfid = str(rec.get("pf") or "pf_001")
+                    if not _pf_valid(_pfid):
+                        self._json({"ok": False,
+                                    "error": "portfolio not found: %s"
+                                             % _pfid}, 400)
+                        return
                     _pfpy = (r"C:\Program Files\Python311\python.exe"
                              if os.path.exists(r"C:\Program Files"
                                                r"\Python311\python.exe")
@@ -2048,16 +2072,17 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         os.pardir, "k_stock", "paper", "portfolio.py")
                     r = subprocess.run(
                         [_pfpy, "-X", "utf8", _script,
-                         "hire", "--pf", "pf_001",
+                         "hire", "--pf", _pfid,
                          "--trader", str(rec.get("trader") or ""), "--json"],
                         capture_output=True, timeout=60)
                     out = r.stdout.decode("utf-8", "replace").strip()
                     data = json.loads(out.splitlines()[-1]) if out else {}
                     if data.get("ok"):
                         import subscriptions as _sub
-                        _sub.bind_trader(str(rec.get("trader") or ""))
+                        _sub.bind_trader(str(rec.get("trader") or ""),
+                                         pid=_pfid)
                         self._json({"ok": True, "note": data.get("note"),
-                                    "hired": True})
+                                    "hired": True, "portfolio": _pfid})
                     else:
                         self._json({"ok": False,
                                     "error": data.get("error") or out[-200:]
@@ -2076,6 +2101,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 _tid = str(rec.get("trader") or "")
                 try:
                     import subprocess
+                    # K-STOCK-150：接受 pf 参数（默认 pf_001 向后兼容），
+                    # 仅接受订阅清单内组合。
+                    _pfid = str(rec.get("pf") or "pf_001")
+                    if not _pf_valid(_pfid):
+                        self._json({"ok": False,
+                                    "error": "portfolio not found: %s"
+                                             % _pfid}, 400)
+                        return
                     _pfpy = (r"C:\Program Files\Python311\python.exe"
                              if os.path.exists(r"C:\Program Files"
                                                r"\Python311\python.exe")
@@ -2085,7 +2118,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         os.pardir, "k_stock", "paper", "trainee.py")
                     r = subprocess.run(
                         [_pfpy, "-X", "utf8", _script,
-                         "fire", _tid, "--source", "pf_001", "--json"],
+                         "fire", _tid, "--source", _pfid, "--json"],
                         capture_output=True, timeout=60)
                     out = r.stdout.decode("utf-8", "replace").strip()
                     data = json.loads(out.splitlines()[-1]) if out else {}
@@ -2093,15 +2126,17 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         # K-STOCK-122 审查修复：仅当解聘的正是当前绑定
                         # 交易员时才解绑——此前无条件 unbind，解聘旁观者
                         # （如 taishan）会误清 chaser 的组合绑定。
+                        # K-STOCK-150：解绑判定改按目标组合 _pfid。
                         import subscriptions as _sub
                         _pf_now = {}
                         for _p in (_sub.portfolios().get("portfolios") or []):
-                            if _p.get("id") == "pf_001":
+                            if _p.get("id") == _pfid:
                                 _pf_now = _p
                                 break
                         if (_pf_now.get("trader") or "") == _tid:
-                            _sub.unbind_trader()
-                        self._json({"ok": True, "fired": _tid})
+                            _sub.unbind_trader(pid=_pfid)
+                        self._json({"ok": True, "fired": _tid,
+                                    "portfolio": _pfid})
                     else:
                         self._json({"ok": False,
                                     "error": data.get("error") or out[-200:]
@@ -2268,6 +2303,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/portfolio_status":
             # K-STOCK-122 模拟仓侧「我的组合」投影（只读）：
             # 组合策略集 + 在职交易员 + 其 pending/持仓 + 最新净值
+            # K-STOCK-150 多组合化：枚举订阅清单全部组合，逐组合投影
+            # （traders/pending/positions/equity）；顶层 portfolio/
+            # traders/pending/positions/equity 取第一组合以兼容旧前端
+            # （deprecated，未来 UI 迭代消费 portfolios 数组）。
             try:
                 import json as _j2
                 import sqlite3 as _sq2
@@ -2276,48 +2315,66 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     "data", "strategy_subscriptions.json")
                 hires_p = os.path.join(
                     r"E:\老田的AI助手\k_stock\paper", "hires.json")
-                pf = {}
+                _all_pfs = []
                 if os.path.exists(subs_p):
                     with open(subs_p, encoding="utf-8") as _f:
-                        for _p in (_j2.load(_f).get("portfolios") or []):
-                            if _p.get("id") == "pf_001":
-                                pf = _p
-                                break
-                traders = []
+                        _all_pfs = (_j2.load(_f).get("portfolios") or [])
+                _hires = []
                 if os.path.exists(hires_p):
                     with open(hires_p, encoding="utf-8") as _f:
-                        traders = [h.get("trader") for h in
-                                   (_j2.load(_f).get("hires") or [])
-                                   if h.get("source") == "pf_001"
-                                   and h.get("status") == "active"]
+                        _hires = (_j2.load(_f).get("hires") or [])
+                _pf_ids = {p.get("id") for p in _all_pfs if p.get("id")}
                 con = _sq2.connect(r"E:\老田的AI助手\k_stock\data\paper.db")
                 con.row_factory = _sq2.Row
-                pend, poss, eq = [], [], None
+                pf_rows, all_pend, all_poss, top_eq = [], [], [], None
                 try:
-                    for t in traders:
-                        pend += [dict(r) for r in con.execute(
-                            "SELECT stock,side,qty,plan_date,status,ref FROM "
-                            "orders WHERE account_id=? AND ref LIKE "
-                            "'poc_pf_001%' AND status='pending' "
-                            "ORDER BY id DESC LIMIT 20", (t,))]
-                        poss += [dict(r) for r in con.execute(
-                            "SELECT stock,qty,avg_cost FROM positions "
-                            "WHERE account_id=?", (t,))]
-                        r = con.execute(
-                            "SELECT date,total FROM equity_marks WHERE "
-                            "account_id=? ORDER BY date DESC LIMIT 1",
-                            (t,)).fetchone()
-                        if r:
-                            eq = {"account": t, "date": r["date"],
-                                  "total": r["total"]}
+                    for _p in _all_pfs:
+                        _pid = _p.get("id")
+                        traders = [h.get("trader") for h in _hires
+                                   if h.get("source") == _pid
+                                   and h.get("status") == "active"]
+                        pend, poss, eq = [], [], None
+                        for t in traders:
+                            pend += [dict(r) for r in con.execute(
+                                "SELECT stock,side,qty,plan_date,status,"
+                                "ref FROM orders WHERE account_id=? AND "
+                                "ref LIKE ? AND status='pending' "
+                                "ORDER BY id DESC LIMIT 20",
+                                (t, "poc_%s%%" % _pid))]
+                            poss += [dict(r) for r in con.execute(
+                                "SELECT stock,qty,avg_cost FROM positions "
+                                "WHERE account_id=?", (t,))]
+                            r = con.execute(
+                                "SELECT date,total FROM equity_marks "
+                                "WHERE account_id=? ORDER BY date DESC "
+                                "LIMIT 1", (t,)).fetchone()
+                            if r:
+                                eq = {"account": t, "date": r["date"],
+                                      "total": r["total"]}
+                        pf_rows.append({
+                            "id": _pid, "name": _p.get("name"),
+                            "strategies": _p.get("strategies") or [],
+                            "trader": _p.get("trader"),
+                            "note": _p.get("note"),
+                            "traders": traders, "pending": pend,
+                            "positions": poss, "equity": eq})
+                        all_pend += pend
+                        all_poss += poss
+                        if eq:
+                            top_eq = eq
                 finally:
                     con.close()
+                _first = pf_rows[0] if pf_rows else {
+                    "id": None, "name": None, "strategies": [],
+                    "trader": None, "note": None, "traders": [],
+                    "pending": [], "positions": [], "equity": None}
                 self._json({"ok": True, "portfolio": {
-                    "id": pf.get("id"), "name": pf.get("name"),
-                    "strategies": pf.get("strategies") or [],
-                    "trader": pf.get("trader"), "note": pf.get("note")},
-                    "traders": traders, "pending": pend,
-                    "positions": poss, "equity": eq})
+                    "id": _first["id"], "name": _first["name"],
+                    "strategies": _first["strategies"],
+                    "trader": _first["trader"], "note": _first["note"]},
+                    "traders": _first["traders"], "pending": all_pend,
+                    "positions": all_poss, "equity": top_eq,
+                    "portfolios": pf_rows})
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/trader_roster":
@@ -2333,10 +2390,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
                      "board", "--json"], timeout=90)
                 active = set()
                 if os.path.exists(hires_p):
+                    # K-STOCK-150：在职标记按全部组合 id 集合过滤，
+                    # 不再钉死 pf_001（pf_002 的 taishan 同样计入）。
+                    _pf_ids = _pf_ids_all()
                     with open(hires_p, encoding="utf-8") as _f:
                         active = {h.get("trader") for h in
                                   (_j3.load(_f).get("hires") or [])
-                                  if h.get("source") == "pf_001"
+                                  if h.get("source") in _pf_ids
                                   and h.get("status") == "active"}
                 _GRADE = {"live": "正式", "training": "实习",
                           "design": "储备", "ops": "运营台"}
