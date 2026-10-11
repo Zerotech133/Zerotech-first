@@ -26,3 +26,6 @@
 - news_collector 跑 requests 用系统 py311（venv/default 无 requests）；工作区并行线施工时只 add 自己的文件（防 078 收编重演）
 - KGStockAnalysis venv 已装 pytest（新测试 pytest 风格，unittest 收集为 0）
 - **临时产物声明「保留可复用」必须当场入 git/固定数据目录**（10-11 P5c 实锤）：30 份模拟归档+生成脚本口头承诺保留，复查双失→演练不可复现，结论全靠已入档的报告 §6 才没丢；K-STOCK-113 收口时顺手修的 `if not k` 真值歧义也是演练暴露的——演练价值在跑，产物在档
+- **一次性提醒/里程碑任务注册后必查三设置**（10-11 K-STOCK-120 审查实锤）：StartWhenAvailable（错过恢复）、LogonType（InteractiveToken=未登录不跑）、DisallowStartIfOnBatteries——一次性任务错过触发=永久静默丢失且不报错；`Get-ScheduledTask`→改 Settings→`Set-ScheduledTask` 热修不伤触发器
+
+- **K-STOCK-116 审计修复**：原型目录 `time_split` 只查 `/` 会放过伪造/零长度/倒序区间；平台注册还需读取正式端口对账表；RAG 评测必须包含 `as_of` 用例并把缺 `source_date` 判为阻断。E 盘 `.git` ACL 会阻止 `devtask.py new` 创建分支锁，需先申请 Git 元数据写权限或使用受管 worktree。

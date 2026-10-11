@@ -218,6 +218,9 @@ def main():
                  sum(day_supply["chan_first"])))
         print("  结论：形态 B %s（③由用户拍板）"
               % ("门槛达标，可提启用方案" if c1 and c2 else "门槛未达，继续滚动积累"))
+        if max(na, nb) < 30:  # SOP 复核可读线（11-02 判定门①）：防误读
+            print("  注：本轮 T+10 满窗 n<30，「不过」仅指样本不足，"
+                  "不构成形态 B 的反向证据（近月复核需 n≥30）")
 
     if by_month:
         print("\n=== 按月分解：通道内层收益（n=满窗数，格式 n/T+5中位 "
