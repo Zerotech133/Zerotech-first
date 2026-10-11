@@ -1589,6 +1589,7 @@ class Handler:
                 "initial-scale=1'><title>投委会 · 影子留痕</title>"
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
                 + pill_nav("council") + content + cjs + "</body></html>")
+        self._html(body)   # K-STOCK-141 修复：批7搬运切割丢失收尾行（handler 算完 body 不发响应即 return → /council 空连接断开）
     _PAPER_QD_LOCK = threading.Lock()   # 双刀执行互斥（防连点并发落两套单）
     _PAPER_DIR = r"E:\老田的AI助手\k_stock\paper"
     # ---------------- K-STOCK 模拟仓写路径（v0.2 平台化 2026-10-09） ----------------
