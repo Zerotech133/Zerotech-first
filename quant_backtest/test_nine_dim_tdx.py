@@ -139,6 +139,73 @@ class TestNineDimTdx(unittest.TestCase):
         self.assertTrue(flow["block_ok"])
         self.assertNotIn("block_trade", self.calls["ts"])
 
+    def test_flow_filters_date_range_snapshot_block_trade(self):
+        class SnapshotStore:
+            def iter_records(self):
+                return iter([{
+                    "request_params": {"start_date": PREV,
+                                        "end_date": TDAY},
+                    "source_code": 0,
+                    "err": 0,
+                    "fields": ["ts_code", "trade_date", "price"],
+                    "rows": [["600519.SH", PREV, 99.0],
+                             ["600519.SH", TDAY, 100.0]],
+                }])
+
+        flow = nd._fetch_flow(TDAY, source_snapshot=SnapshotStore())
+
+        self.assertEqual(flow["block"]["600519.SH"], [100.0])
+        self.assertTrue(flow["block_ok"])
+        self.assertNotIn("block_trade", self.calls["ts"])
+
+    def test_block_snapshot_normalizes_iso_dates(self):
+        class SnapshotStore:
+            def iter_records(self):
+                return iter([{
+                    "request_params": {"trade_date": "2026-01-08"},
+                    "source_code": 0,
+                    "err": 0,
+                    "fields": ["ts_code", "trade_date", "price"],
+                    "rows": [["600519.SH", "2026-01-08", 100.0]],
+                }])
+
+        block, ok = nd._block_from_snapshot(TDAY, SnapshotStore())
+
+        self.assertEqual(block["600519.SH"], [100.0])
+        self.assertTrue(ok)
+
+    def test_block_snapshot_missing_receipt_fails_closed(self):
+        class SnapshotStore:
+            def iter_records(self):
+                return iter([{
+                    "request_params": {},
+                    "source_code": None,
+                    "err": 1,
+                    "fields": [],
+                    "rows": [],
+                }])
+
+        block, ok = nd._block_from_snapshot(TDAY, SnapshotStore())
+
+        self.assertEqual(block, {})
+        self.assertFalse(ok)
+
+    def test_block_snapshot_malformed_row_fails_closed(self):
+        class SnapshotStore:
+            def iter_records(self):
+                return iter([{
+                    "request_params": {"trade_date": TDAY},
+                    "source_code": 0,
+                    "err": 0,
+                    "fields": ["ts_code", "trade_date", "price"],
+                    "rows": [["600519.SH", TDAY]],
+                }])
+
+        block, ok = nd._block_from_snapshot(TDAY, SnapshotStore())
+
+        self.assertEqual(block, {})
+        self.assertFalse(ok)
+
     def test_margin_local_detail(self):
         _mk(self.tmp, "ts_margin_detail", [pd.DataFrame({
             "ts_code": ["600519.SH", "000001.SZ"],
