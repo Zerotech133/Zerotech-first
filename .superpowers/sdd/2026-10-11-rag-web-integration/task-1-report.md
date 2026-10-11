@@ -2,56 +2,26 @@
 
 ## 变更
 
-- 新增 `AI/111111/rag_web_backend.py`，实现 `RagWebService` 与 `RagUnavailable`。
-- 适配 `KnowledgeBase` 和 `OllamaClient` 的 embed/chat_stream 调用签名，并规范化向量列表返回值。
-- 实现 `knowledge_docs` 支持文件的 `(relative path, st_mtime_ns, st_size)` 索引指纹缓存；目录不存在时抛出 `RagUnavailable`。
-- 限制 `top_k` 为 1 到 8；知识目录存在但没有支持文档时抛出 `RagUnavailable`。
-- 实现问题检索、上下文消息构建、来源路径归一化、流式消息/来源/done 事件及无命中回答。
-- 新增 `AI/111111/test_rag_web_backend.py`，覆盖流式契约、缺失目录、无命中、缓存失效和参数校验。
+- 新增 `AI/111111/rag_web_backend.py`，提供 `RagWebService` 与 `RagUnavailable`。
+- 适配包内导入和直接脚本导入，读取 `knowledge_docs/` 下的 `.txt`、`.md`、`.markdown`。
+- 使用 `(relative path, st_mtime_ns, st_size)` 做内存索引缓存，文档变化后重建。
+- 校验问题和 `top_k`（1 到 8 的整数，拒绝布尔值），输出消息、来源和 done 事件；无命中时返回“我不知道。”且不调用 chat。
+- 用 `RLock` 保护共享索引和请求级 `top_k` 临时切换，避免线程化 HTTP 请求互相污染。
+- `RagUnavailable.status_code` 区分知识库不可用（503）和 Ollama 不可用（502）。
 
-## 测试
+## TDD 与验证
 
-命令：
-
-```powershell
-python -m unittest AI.111111.test_rag_web_backend -v
-```
-
-结果：6 个测试全部通过（OK）。
-
-命令：
-
-```powershell
-python -m unittest AI.111111.test_rag_web_backend AI.111111.test_knowledge_base -v
-```
-
-完整结果：11 个测试全部通过（OK）。
-
-提交前 `git diff --check` 通过。
-
-## 自审
-
-- 默认模型为 `bge-m3` 和 `qwen3.5:9b`，未修改既有 `web_chat.py`、`web_ui.py`、`tools/check_ports.py` 或 portal。
-- 流事件仅使用 `message`、`sources`、`done` 三种规定结构；无命中不会调用 chat 模型。
-- 只读 `.txt`、`.md`、`.markdown` 文档，服务本身未启动监听端口。
-- `top_k` 在构造服务和单次检索时都限制为 1 到 8；空知识目录明确报告为不可用。
-
-## 遗留风险
-
-- 真实 Ollama 服务不可用时，底层客户端异常会向调用方传播；本任务未要求增加重试或降级。
-- 索引指纹依赖文件系统的 `st_mtime_ns` 与大小；若文件内容变化但两者均未变化，需等待下一次指纹变化才会重建。
-
-## Fix Round 1
-
-- 为 `_search()` 增加 `threading.RLock`，覆盖索引确保、`top_k` 临时切换和检索，避免并发请求互相污染。
-- 新增线程池并发回归测试，验证 `top_k=1` 与 `top_k=8` 结果长度稳定。
-- `python -m unittest AI.111111.test_rag_web_backend AI.111111.test_knowledge_base -v`：13 项通过。
+- RED：模块不存在时，`python -m unittest AI.111111.test_rag_web_backend -v` 按预期导入失败。
+- GREEN：`python -m unittest AI.111111.test_rag_web_backend AI.111111.test_knowledge_base -v`：12 项通过；并发修复后包含 13 项后端+知识库回归通过。
 - `python -m py_compile AI/111111/rag_web_backend.py AI/111111/test_rag_web_backend.py`：通过。
+- `git diff --check`：通过。
 
-## Fix Round 1
+## 审查
 
-- 修复共享 KnowledgeBase.top_k 的并发竞态：RLock 覆盖索引确保、临时 top_k 切换和检索恢复。
-- 新增线程池并发回归，验证 	op_k=1 与 	op_k=8 结果长度正确。
-- 修复后后端+KnowledgeBase 共 13 项通过；py_compile 通过。
-- 修复提交：5158ab0。
+任务级复核确认 spec compliance；并发 `top_k` 竞态经 Fix Round 1 加锁和线程池回归测试后通过，无 Critical/Important 遗留。
 
+## 提交
+
+- `2ef85f9`：RAG-Web 后端和基础测试。
+- `5158ab0`：并发锁和回归测试。
+- `5776434`：任务报告校正。

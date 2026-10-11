@@ -25,6 +25,24 @@ class Response:
         return self.stream.read(size)
 
 
+class FakeRagService:
+    def __init__(self, events=None, error=None, error_after=False):
+        self.events = events or [
+            {"message": {"content": "答案"}},
+            {"sources": [{"source": "facts.md", "score": 0.91}]},
+            {"done": True},
+        ]
+        self.error = error
+        self.error_after = error_after
+
+    def stream(self, question, top_k=None):
+        if self.error and not self.error_after:
+            raise self.error
+        yield from self.events
+        if self.error:
+            raise self.error
+
+
 class WebChatTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -52,6 +70,8 @@ class WebChatTests(unittest.TestCase):
         page = data.decode()
         self.assertIn('AI 聊天', page)
         self.assertIn('qwen3.5:9b', page)
+        self.assertIn('value="rag"', page)
+        self.assertIn('/api/rag', page)
 
     @patch.object(web_chat, 'urlopen')
     def test_stream(self, urlopen):
@@ -65,6 +85,36 @@ class WebChatTests(unittest.TestCase):
     def test_bad(self):
         response, _data = self.request('POST', '/api/chat', {'message': ''})
         self.assertEqual(response.status, 400)
+
+    @patch.object(web_chat, 'RAG_SERVICE', FakeRagService())
+    def test_rag_endpoint_returns_sources_and_done(self):
+        response, data = self.request('POST', '/api/rag', {'message': '问题', 'top_k': 2})
+        self.assertEqual(response.status, 200)
+        self.assertIn(b'"sources"', data)
+        self.assertIn(b'"done": true', data)
+
+    @patch.object(web_chat, 'RAG_SERVICE', FakeRagService())
+    def test_invalid_rag_top_k_is_400(self):
+        response, _data = self.request('POST', '/api/rag', {'message': '问题', 'top_k': True})
+        self.assertEqual(response.status, 400)
+
+    @patch.object(web_chat, 'RAG_SERVICE', FakeRagService(error=web_chat.RagUnavailable('目录不可用', status_code=503)))
+    def test_rag_directory_error_is_503(self):
+        response, data = self.request('POST', '/api/rag', {'message': '问题'})
+        self.assertEqual(response.status, 503)
+        self.assertNotIn('目录不可用'.encode(), data)
+
+    @patch.object(web_chat, 'RAG_SERVICE', FakeRagService(error=web_chat.RagUnavailable('模型不可用', status_code=502)))
+    def test_rag_upstream_error_is_502(self):
+        response, data = self.request('POST', '/api/rag', {'message': '问题'})
+        self.assertEqual(response.status, 502)
+        self.assertNotIn('模型不可用'.encode(), data)
+
+    @patch.object(web_chat, 'RAG_SERVICE', FakeRagService(events=[{"message": {"content": "首段"}}], error=web_chat.RagUnavailable('中断', status_code=502), error_after=True))
+    def test_rag_stream_failure_does_not_send_second_response(self):
+        response, data = self.request('POST', '/api/rag', {'message': '问题'})
+        self.assertEqual(response.status, 200)
+        self.assertEqual(data, '{"message": {"content": "首段"}}\n'.encode())
 
     @patch.object(web_chat, 'urlopen', side_effect=OSError('secret'))
     def test_error(self, _urlopen):

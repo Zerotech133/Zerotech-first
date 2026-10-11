@@ -5,12 +5,20 @@ import os
 import threading
 from pathlib import Path
 
-from knowledge_base import KnowledgeBase
-from ollama_client import OllamaClient
+try:
+    from .knowledge_base import KnowledgeBase
+    from .ollama_client import OllamaClient, OllamaError
+except ImportError:
+    from knowledge_base import KnowledgeBase
+    from ollama_client import OllamaClient, OllamaError
 
 
 class RagUnavailable(RuntimeError):
     """知识库目录或上游模型当前不可用。"""
+
+    def __init__(self, message, status_code=503):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class _KnowledgeClient:
@@ -75,8 +83,10 @@ class RagWebService:
             return len(kb._records)
         except RagUnavailable:
             raise
+        except OllamaError as exc:
+            raise RagUnavailable("上游模型不可用", status_code=502) from exc
         except Exception as exc:
-            raise RagUnavailable("知识库索引不可用") from exc
+            raise RagUnavailable("知识库索引不可用", status_code=503) from exc
 
     @staticmethod
     def _validate(question, top_k):
@@ -109,8 +119,10 @@ class RagWebService:
             return self._search(question, top_k)
         except (ValueError, RagUnavailable):
             raise
+        except OllamaError as exc:
+            raise RagUnavailable("上游模型不可用", status_code=502) from exc
         except Exception as exc:
-            raise RagUnavailable("知识库检索不可用") from exc
+            raise RagUnavailable("知识库检索不可用", status_code=503) from exc
 
     def build_messages(self, question, matches):
         context = "\n\n".join(
@@ -139,6 +151,6 @@ class RagWebService:
                 if content:
                     yield {"message": {"content": content}}
         except Exception as exc:
-            raise RagUnavailable("对话模型不可用") from exc
+            raise RagUnavailable("对话模型不可用", status_code=502) from exc
         yield {"sources": [{"source": match.get("source", ""), "score": round(float(match.get("score", 0)), 2)} for match in matches]}
         yield {"done": True}
