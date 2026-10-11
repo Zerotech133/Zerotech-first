@@ -609,6 +609,39 @@ class PaperEngine:
             plan["order_id"] = cur.lastrowid
         return plan
 
+    def plan_bridge_buy(self, stock: str, qty: int, plan_date: str, ref: str,
+                        dry_run: bool = False, strategy: str = "pick_bridge",
+                        account_id: str | None = None) -> dict:
+        """选票桥（pick_bridge）落 pending 单：固定股数，按 plan_date 开盘撮合。
+        与 _plan_buy 区别：股数由桥按预算算好（不用引擎按 conf 定仓），
+        口径=D+2 开盘，与 pick_verdicts win 口径对齐（K-STOCK-097 必改①）。
+        幂等：ref 查重，重复落单返回 skipped（防 events 后写窗口期重复下单）。"""
+        aid = account_id or self.acct
+        stock = _norm_stock(stock)
+        if not stock:
+            raise Reject(f"无效代码: {stock}")
+        if not qty or qty <= 0 or qty % LOT:
+            raise Reject("qty 须为 100 的整数倍股数")
+        dup = self.con.execute("SELECT id FROM orders WHERE ref=?",
+                               (ref,)).fetchone()
+        if dup:
+            return {"stock": stock, "side": "BUY", "qty": qty,
+                    "plan_date": plan_date, "status": "skipped", "ref": ref,
+                    "reason": f"幂等跳过（{ref} 已落单）"}
+        reason = f"pick_bridge T1 选票 → {plan_date} 开盘撮合（{qty} 股）"
+        plan = {"stock": stock, "side": "BUY", "qty": qty, "plan_date": plan_date,
+                "status": "pending", "ref": ref, "reason": reason}
+        if not dry_run:
+            cur = self.con.execute(
+                "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,"
+                "status,reason,strategy,account_id,created_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (_now(), "ai", ref, stock, "BUY", qty, plan_date, "open",
+                 "pending", reason, strategy, aid, _now()))
+            plan["order_id"] = cur.lastrowid
+            self.con.commit()
+        return plan
+
     # ---------------- 撮合 ----------------
 
     def settle(self, dry_run: bool = False, account_id: str | None = None) -> dict:

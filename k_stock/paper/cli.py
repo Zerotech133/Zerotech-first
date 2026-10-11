@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -374,15 +375,44 @@ def cmd_check_stops(args) -> int:
     return 0
 
 
+def _resolve_plan_date(e, spec, asof=None) -> str:
+    """--plan-date 解析：'d2' = asof（缺省今天）后第 2 个交易日（D+2 开盘口径，
+    与 pick_verdicts win 口径对齐）；否则须为 YYYYMMDD。
+    注意 _next_td_impl 盘前（hhmm<0930）含当日 ⇒ 必须传盘后 19 字符 ISO
+    才能取到「严格之后」的交易日（与 AsOfMarket 同一范式）。"""
+    if spec.lower() == "d2":
+        asof = asof or date.today().strftime("%Y%m%d")
+        base = f"{asof[:4]}-{asof[4:6]}-{asof[6:8]}T15:00:00"  # 盘后视角
+        d1 = e.market.next_trading_day(base)
+        if d1 is None:
+            raise Reject(f"行情湖无 {asof} 之后的交易日，无法定 D+1")
+        d2 = e.market.next_trading_day(f"{d1[:4]}-{d1[4:6]}-{d1[6:8]}T15:00:00")
+        if d2 is None:
+            raise Reject(f"行情湖无 {d1} 之后的交易日，无法定 D+2")
+        return d2
+    if len(spec) == 8 and spec.isdigit():
+        return spec
+    raise Reject(f"--plan-date 须为 YYYYMMDD 或 d2，收到: {spec}")
+
+
 def cmd_order(args) -> int:
     """统一下单入口（v0.2 平台化）：BUY/SELL/STOP 三合一，--json 供门户 API
-    子进程调用（portal_api 保持纯标准库，引擎走本 CLI）。"""
+    子进程调用（portal_api 保持纯标准库，引擎走本 CLI）。
+    v0.4：BUY 可选 --plan-date（YYYYMMDD 或 d2）落 pending 单（选票桥通道），
+    按计划日开盘价撮合；缺省保持 v0.2 即时成交语义，完全向后兼容。"""
     e = _engine(args)
     try:
         if args.side == "BUY":
             if not args.qty or args.qty <= 0 or args.qty % 100:
                 raise Reject("qty 须为 100 的整数倍股数")
-            r = e.buy(args.stock, args.qty, args.price, force=args.force)
+            if args.plan_date:
+                pd = _resolve_plan_date(e, args.plan_date,
+                                        getattr(args, "asof", None))
+                r = e.plan_bridge_buy(args.stock, args.qty, pd,
+                                      args.ref or f"bridge#{args.stock}#{pd}",
+                                      strategy=args.strategy or "pick_bridge")
+            else:
+                r = e.buy(args.stock, args.qty, args.price, force=args.force)
             if args.stop_price is not None:
                 s = e.set_stop(args.stock, args.stop_price)
                 r["stop_price"] = s["stop_price"]
@@ -497,6 +527,13 @@ def main(argv=None) -> int:
     p.add_argument("--stop-price", dest="stop_price", type=float, default=None)
     p.add_argument("--clear", action="store_true")
     p.add_argument("--force", action="store_true")
+    p.add_argument("--plan-date", dest="plan_date", default=None,
+                   help="BUY 专用：YYYYMMDD 或 d2（asof 后第 2 个交易日）→ 落 pending 单")
+    p.add_argument("--asof", default=None,
+                   help="d2 基准日（缺省今天），格式 YYYYMMDD")
+    p.add_argument("--ref", default=None, help="pending 单幂等键（选票桥传 trace_id）")
+    p.add_argument("--strategy", default=None,
+                   help="pending 单策略标签（缺省 pick_bridge）")
     p.add_argument("--json", action="store_true")
     p.set_defaults(fn=cmd_order)
 
