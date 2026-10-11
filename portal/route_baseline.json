@@ -1,450 +1,590 @@
 {
- "generated_at": "2026-10-10T18:16:16",
+ "generated_at": "2026-10-12T00:05:09",
  "source": "portal_api.py",
- "source_sha256": "b912f3adab126397",
- "n_routes": 52,
+ "source_sha256": "e69500873cd055be",
+ "n_routes": 69,
  "routes": [
   {
    "path": "/api/alert/push",
    "lines": [
-    134,
-    18207,
-    23131
+    202,
+    5971
    ],
-   "count": 3,
-   "first_line": 134
+   "count": 2,
+   "first_line": 202
   },
   {
    "path": "/api/alerts",
    "lines": [
-    22323
+    5134
    ],
    "count": 1,
-   "first_line": 22323
+   "first_line": 5134
   },
   {
    "path": "/api/analyst-report",
    "lines": [
-    23079
+    5919
    ],
    "count": 1,
-   "first_line": 23079
+   "first_line": 5919
+  },
+  {
+   "path": "/api/audit_chat",
+   "lines": [
+    4451
+   ],
+   "count": 1,
+   "first_line": 4451
+  },
+  {
+   "path": "/api/audit_recent",
+   "lines": [
+    5822
+   ],
+   "count": 1,
+   "first_line": 5822
   },
   {
    "path": "/api/audit_status",
    "lines": [
-    22230
+    4834
    ],
    "count": 1,
-   "first_line": 22230
+   "first_line": 4834
   },
   {
    "path": "/api/batch-backtest",
    "lines": [
-    121,
-    22182,
-    23128
+    187,
+    4786,
+    5968
    ],
    "count": 3,
-   "first_line": 121
+   "first_line": 187
   },
   {
    "path": "/api/bridge/summary",
    "lines": [
-    23094
+    5934
    ],
    "count": 1,
-   "first_line": 23094
+   "first_line": 5934
   },
   {
    "path": "/api/bridge/table_preview",
    "lines": [
-    23101
+    5941
    ],
    "count": 1,
-   "first_line": 23101
+   "first_line": 5941
   },
   {
    "path": "/api/brief",
    "lines": [
-    22317
+    5128
    ],
    "count": 1,
-   "first_line": 22317
+   "first_line": 5128
   },
   {
    "path": "/api/chanlun/backtest",
    "lines": [
-    22403
+    5214
    ],
    "count": 1,
-   "first_line": 22403
+   "first_line": 5214
   },
   {
    "path": "/api/chanlun/card/feedback",
    "lines": [
-    111,
-    22089
+    177,
+    4599
    ],
    "count": 2,
-   "first_line": 111
+   "first_line": 177
   },
   {
    "path": "/api/chanlun/kline",
    "lines": [
-    22346
+    5157
    ],
    "count": 1,
-   "first_line": 22346
+   "first_line": 5157
   },
   {
    "path": "/api/chanlun/label/load",
    "lines": [
-    22519
+    5330
    ],
    "count": 1,
-   "first_line": 22519
+   "first_line": 5330
   },
   {
    "path": "/api/chanlun/label/save",
    "lines": [
-    102,
-    22037
+    168,
+    4547
    ],
    "count": 2,
-   "first_line": 102
+   "first_line": 168
   },
   {
    "path": "/api/chanlun/pool/push",
    "lines": [
-    112,
-    22099
+    178,
+    4609
    ],
    "count": 2,
-   "first_line": 112
+   "first_line": 178
   },
   {
    "path": "/api/chanlun/structure",
    "lines": [
-    22358
+    5169
    ],
    "count": 1,
-   "first_line": 22358
+   "first_line": 5169
   },
   {
    "path": "/api/chips",
    "lines": [
-    23082
+    5922
    ],
    "count": 1,
-   "first_line": 23082
+   "first_line": 5922
   },
   {
    "path": "/api/council/confirm",
    "lines": [
-    118,
-    22152
+    184,
+    4662
    ],
    "count": 2,
-   "first_line": 118
+   "first_line": 184
   },
   {
    "path": "/api/council/simrun",
    "lines": [
-    119,
-    22162
+    185,
+    4672
    ],
    "count": 2,
-   "first_line": 119
+   "first_line": 185
   },
   {
    "path": "/api/data/daily",
    "lines": [
-    22201
+    4805
    ],
    "count": 1,
-   "first_line": 22201
+   "first_line": 4805
   },
   {
    "path": "/api/data/freshness",
    "lines": [
-    23111
+    5951
    ],
    "count": 1,
-   "first_line": 23111
+   "first_line": 5951
   },
   {
    "path": "/api/data/job",
    "lines": [
-    23123
+    5963
    ],
    "count": 1,
-   "first_line": 23123
+   "first_line": 5963
   },
   {
    "path": "/api/data/runs/",
    "lines": [
-    22201
+    4805
    ],
    "count": 1,
-   "first_line": 22201
+   "first_line": 4805
   },
   {
    "path": "/api/data/sync",
    "lines": [
-    133,
-    23118
+    201,
+    5958
    ],
    "count": 2,
-   "first_line": 133
+   "first_line": 201
   },
   {
    "path": "/api/data/update",
    "lines": [
-    100,
-    21942
+    163,
+    4440
    ],
    "count": 2,
-   "first_line": 100
+   "first_line": 163
   },
   {
    "path": "/api/data/update-plan",
    "lines": [
-    99,
-    21942
+    162,
+    4440
    ],
    "count": 2,
-   "first_line": 99
+   "first_line": 162
   },
   {
    "path": "/api/debate/say",
    "lines": [
-    120,
-    22172
+    186,
+    4682
    ],
    "count": 2,
-   "first_line": 120
+   "first_line": 186
+  },
+  {
+   "path": "/api/devops",
+   "lines": [
+    5842
+   ],
+   "count": 1,
+   "first_line": 5842
   },
   {
    "path": "/api/kline",
    "lines": [
-    23057
+    5897
    ],
    "count": 1,
-   "first_line": 23057
+   "first_line": 5897
   },
   {
    "path": "/api/kline_qy",
    "lines": [
-    23068
+    5908
    ],
    "count": 1,
-   "first_line": 23068
+   "first_line": 5908
+  },
+  {
+   "path": "/api/manager_fire",
+   "lines": [
+    192,
+    4472
+   ],
+   "count": 2,
+   "first_line": 192
+  },
+  {
+   "path": "/api/manager_hire",
+   "lines": [
+    191,
+    4468
+   ],
+   "count": 2,
+   "first_line": 191
+  },
+  {
+   "path": "/api/manager_roster",
+   "lines": [
+    4851
+   ],
+   "count": 1,
+   "first_line": 4851
+  },
+  {
+   "path": "/api/market_performance",
+   "lines": [
+    4918
+   ],
+   "count": 1,
+   "first_line": 4918
   },
   {
    "path": "/api/nlquery",
    "lines": [
-    22933
+    5744
    ],
    "count": 1,
-   "first_line": 22933
+   "first_line": 5744
   },
   {
    "path": "/api/overview",
    "lines": [
-    22220
+    4824
    ],
    "count": 1,
-   "first_line": 22220
+   "first_line": 4824
   },
   {
    "path": "/api/paper_hire",
    "lines": [
-    124,
-    21961
+    190,
+    4463
    ],
    "count": 2,
-   "first_line": 124
+   "first_line": 190
   },
   {
    "path": "/api/paper_hires",
    "lines": [
-    22244
+    4848
    ],
    "count": 1,
-   "first_line": 22244
+   "first_line": 4848
   },
   {
    "path": "/api/paper_history",
    "lines": [
-    22267
+    4895
    ],
    "count": 1,
-   "first_line": 22267
+   "first_line": 4895
   },
   {
    "path": "/api/paper_order",
    "lines": [
-    122,
-    21953
+    188,
+    4455
    ],
    "count": 2,
-   "first_line": 122
+   "first_line": 188
   },
   {
    "path": "/api/paper_status",
    "lines": [
-    22247
+    4855
    ],
    "count": 1,
-   "first_line": 22247
+   "first_line": 4855
   },
   {
    "path": "/api/paper_stop",
    "lines": [
-    123,
-    21957
+    189,
+    4459
    ],
    "count": 2,
-   "first_line": 123
+   "first_line": 189
   },
   {
    "path": "/api/portfolio_adjust",
    "lines": [
-    116,
-    22132
+    182,
+    4642
    ],
    "count": 2,
-   "first_line": 116
+   "first_line": 182
   },
   {
    "path": "/api/portfolio_close",
    "lines": [
-    115,
-    22122
+    181,
+    4632
    ],
    "count": 2,
-   "first_line": 115
+   "first_line": 181
   },
   {
    "path": "/api/portfolio_csv",
    "lines": [
-    22329
+    5140
    ],
    "count": 1,
-   "first_line": 22329
+   "first_line": 5140
+  },
+  {
+   "path": "/api/portfolio_hire",
+   "lines": [
+    165,
+    4706
+   ],
+   "count": 2,
+   "first_line": 165
   },
   {
    "path": "/api/portfolio_market",
    "lines": [
-    22343
+    5154
    ],
    "count": 1,
-   "first_line": 22343
+   "first_line": 5154
   },
   {
    "path": "/api/portfolio_open",
    "lines": [
-    117,
-    22142
+    183,
+    4652
    ],
    "count": 2,
-   "first_line": 117
+   "first_line": 183
   },
   {
    "path": "/api/portfolio_set",
    "lines": [
-    113,
-    22109
+    179,
+    4619
    ],
    "count": 2,
-   "first_line": 113
+   "first_line": 179
+  },
+  {
+   "path": "/api/portfolio_status",
+   "lines": [
+    4939
+   ],
+   "count": 1,
+   "first_line": 4939
+  },
+  {
+   "path": "/api/portfolio_subscribe",
+   "lines": [
+    164,
+    4692
+   ],
+   "count": 2,
+   "first_line": 164
   },
   {
    "path": "/api/portfolio_undo",
    "lines": [
-    114,
-    22119
+    180,
+    4629
    ],
    "count": 2,
-   "first_line": 114
+   "first_line": 180
+  },
+  {
+   "path": "/api/portfolios",
+   "lines": [
+    4932
+   ],
+   "count": 1,
+   "first_line": 4932
   },
   {
    "path": "/api/recv_add",
    "lines": [
-    107,
-    22062
+    173,
+    4572
    ],
    "count": 2,
-   "first_line": 107
+   "first_line": 173
   },
   {
    "path": "/api/report_push",
    "lines": [
-    103,
-    22046
+    169,
+    4556
    ],
    "count": 2,
-   "first_line": 103
+   "first_line": 169
   },
   {
    "path": "/api/research",
    "lines": [
-    22914
+    5725
    ],
    "count": 1,
-   "first_line": 22914
+   "first_line": 5725
+  },
+  {
+   "path": "/api/review_minutes",
+   "lines": [
+    5065
+   ],
+   "count": 1,
+   "first_line": 5065
   },
   {
    "path": "/api/screen",
    "lines": [
-    22326
+    5137
    ],
    "count": 1,
-   "first_line": 22326
+   "first_line": 5137
   },
   {
    "path": "/api/strategies",
    "lines": [
-    22320
+    5131
    ],
    "count": 1,
-   "first_line": 22320
+   "first_line": 5131
+  },
+  {
+   "path": "/api/strategy_detail",
+   "lines": [
+    5083
+   ],
+   "count": 1,
+   "first_line": 5083
+  },
+  {
+   "path": "/api/strategy_market",
+   "lines": [
+    4911
+   ],
+   "count": 1,
+   "first_line": 4911
   },
   {
    "path": "/api/sub_del",
    "lines": [
-    105,
-    22054
+    171,
+    4564
    ],
    "count": 2,
-   "first_line": 105
+   "first_line": 171
   },
   {
    "path": "/api/sub_test",
    "lines": [
-    106,
-    22058
+    172,
+    4568
    ],
    "count": 2,
-   "first_line": 106
+   "first_line": 172
   },
   {
    "path": "/api/sub_toggle",
    "lines": [
-    104,
-    22050
+    170,
+    4560
    ],
    "count": 2,
-   "first_line": 104
+   "first_line": 170
+  },
+  {
+   "path": "/api/trader_detail",
+   "lines": [
+    5026
+   ],
+   "count": 1,
+   "first_line": 5026
+  },
+  {
+   "path": "/api/trader_fire",
+   "lines": [
+    166,
+    4742
+   ],
+   "count": 2,
+   "first_line": 166
+  },
+  {
+   "path": "/api/trader_roster",
+   "lines": [
+    4994
+   ],
+   "count": 1,
+   "first_line": 4994
   },
   {
    "path": "/api/trainee_board",
    "lines": [
-    22283
+    5093
    ],
    "count": 1,
-   "first_line": 22283
+   "first_line": 5093
   }
  ]
 }

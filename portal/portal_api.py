@@ -188,6 +188,8 @@ _MUTATION_POSTS = frozenset((
     "/api/paper_order",   # K-STOCK v0.2 模拟仓下单（BUY/SELL/双刀执行）
     "/api/paper_stop",    # K-STOCK v0.2 模拟仓止损挂/解
     "/api/paper_hire",    # K-STOCK-042 A3 雇佣交互（配置面：只改 hires.json）
+    "/api/manager_hire",  # K-STOCK-137d S-b2 经理雇佣（子进程 manager.py hire）
+    "/api/manager_fire",  # K-STOCK-137d S-b2 经理解雇（子进程 manager.py fire）
 ))
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -4198,6 +4200,121 @@ color:#fff;font-size:13.5px;cursor:pointer}
         except Exception as e:
             self._json({"ok": False, "error": repr(e)}, 500)
 
+    # ---------------- K-STOCK-137d S-b2 经理实体接线（纯增量，复刻 trainee 模式） ----------------
+
+    def _manager_run_json(self, cmd, timeout=35):
+        """manager.py --json 专用子进程封装（K-STOCK-137d）。
+        与 _paper_run_json 的差异：manager.py hire/fire 成功输出为
+        indent=1 多行 JSON 数组 [rec]、拒绝时单行 {"ok": false}（exit 2）
+        ——取「整段 stdout json.loads」；拒绝 JSON 原样透传（错误消息
+        直达前端，与 CLI exit 2 口径一致）。"""
+        env = dict(os.environ)
+        env["PYTHONIOENCODING"] = "utf-8"
+        try:
+            p = subprocess.run(cmd, capture_output=True, timeout=timeout, env=env)
+        except Exception as e:
+            return {"ok": False, "error": repr(e)}
+        out = (p.stdout or b"").decode("utf-8", "replace").strip()
+        err = (p.stderr or b"").decode("utf-8", "replace").strip()
+        try:
+            d = json.loads(out)
+        except Exception:
+            d = None
+        if isinstance(d, dict):
+            return d                     # 拒绝（exit 2）：{"ok": false, error} 原样透传
+        if isinstance(d, list) and d and isinstance(d[0], dict):
+            rec = dict(d[0])             # hire/fire 成功：[rec]（indent=1 多行）
+            rec["ok"] = True
+            return rec
+        return {"ok": False,
+                "error": err.splitlines()[-1] if err else (out[-200:] or f"exit={p.returncode}")}
+
+    def _api_manager_roster(self):
+        """K-STOCK-137d 经理名册投影（纯只读：managers/*.json +
+        manager_hires.json + models.json 系数计价，无子进程）。"""
+        base = self._PAPER_DIR
+        try:
+            cat = None
+            try:  # 模型系数表（同 manager._hire_price 口径：基价×coef_vs_glm52）
+                with open(os.path.join(base, "models.json"), encoding="utf-8") as f:
+                    cat = json.load(f)
+            except Exception:
+                cat = None
+            profs = []
+            for fn in sorted(glob.glob(os.path.join(base, "managers", "*.json"))):
+                try:
+                    with open(fn, encoding="utf-8") as f:
+                        p = json.load(f)
+                except Exception:
+                    continue
+                try:
+                    coef = next((m.get("coef_vs_glm52", 1.0)
+                                 for m in (cat or {}).get("models", [])
+                                 if m.get("model") == p.get("model")), None)
+                    p["hire_price_cny"] = (round(p.get("hire_base_price_cny", 99) * coef)
+                                           if coef is not None else None)
+                except Exception:
+                    p["hire_price_cny"] = None
+                p["active_hires"] = []
+                profs.append(p)
+            hp = os.path.join(base, "manager_hires.json")
+            if os.path.exists(hp):
+                with open(hp, encoding="utf-8") as f:
+                    d = json.load(f)
+                for h in ((d.get("hires") or []) if isinstance(d, dict) else []):
+                    if h.get("status") != "active":
+                        continue
+                    for p in profs:
+                        if p.get("id") == h.get("manager"):
+                            p["active_hires"].append(
+                                {"source": h.get("source"),
+                                 "hire_price_cny": h.get("hire_price_cny"),
+                                 "hired_at": h.get("hired_at"), "note": h.get("note")})
+            self._json({"ok": True, "managers": profs})
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+
+    def _api_manager_hire(self, raw):
+        """K-STOCK-137d 雇佣经理：子进程 manager.py hire --json（单写入口）。
+        exit 2 拒绝 JSON 原样透传：HTTP 200 带 ok:false（错误消息直达前端）。"""
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        mid = str(rec.get("mid") or "").strip()
+        source = str(rec.get("source") or "").strip()
+        if not re.match(r"^[a-z0-9_]{1,32}$", mid):
+            self._json({"ok": False, "error": "mid 格式非法"}, 400)
+            return
+        if not re.match(r"^[A-Za-z0-9_\u4e00-\u9fff-]{1,32}$", source):
+            self._json({"ok": False, "error": "source 格式非法"}, 400)
+            return
+        cmd = [self._PAPER_PY, os.path.join(self._PAPER_DIR, "manager.py"),
+               "hire", mid, source, "--json"]
+        if rec.get("note"):
+            cmd += ["--note", str(rec["note"])[:200]]
+        self._json(self._manager_run_json(cmd, timeout=35))
+
+    def _api_manager_fire(self, raw):
+        """K-STOCK-137d 解雇经理：子进程 manager.py fire --json（单写入口）。"""
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        mid = str(rec.get("mid") or "").strip()
+        source = str(rec.get("source") or "").strip()
+        if not re.match(r"^[a-z0-9_]{1,32}$", mid):
+            self._json({"ok": False, "error": "mid 格式非法"}, 400)
+            return
+        if not re.match(r"^[A-Za-z0-9_\u4e00-\u9fff-]{1,32}$", source):
+            self._json({"ok": False, "error": "source 格式非法"}, 400)
+            return
+        cmd = [self._PAPER_PY, os.path.join(self._PAPER_DIR, "manager.py"),
+               "fire", mid, source, "--json"]
+        self._json(self._manager_run_json(cmd, timeout=35))
+
     def _api_paper_order(self, raw):
         try:
             rec = json.loads(raw.decode("utf-8")) if raw else {}
@@ -4347,6 +4464,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # K-STOCK-042 A3 雇佣交互（配置面：hire/fire 只改注册表）
                 self._api_paper_hire(raw)
                 return
+                return
+            if path == "/api/manager_hire":
+                # K-STOCK-137d S-b2 经理雇佣（子进程 manager.py hire --json）
+                self._api_manager_hire(raw)
+                return
+            if path == "/api/manager_fire":
+                # K-STOCK-137d S-b2 经理解雇（子进程 manager.py fire --json）
+                self._api_manager_fire(raw)
                 return
             if path == "/feishu/event":
                 # K250 飞书事件回调（卡按钮点击 / url_verification 握手）
@@ -4723,6 +4848,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/paper_hires":
             # K-STOCK-042 A3 雇佣关系投影（纯只读）
             self._api_paper_hires()
+        elif path == "/api/manager_roster":
+            # K-STOCK-137d S-b2 经理名册投影（纯只读：managers/*.json +
+            # manager_hires.json + models.json 系数计价）
+            self._api_manager_roster()
         elif path == "/api/paper_status":
             # K-STOCK 模拟仓只读投影（2026-10-09 前端规划 P2）：
             # 数据层 k_stock/paper/portal_status.py（纯标准库 sqlite ro，零 pandas），

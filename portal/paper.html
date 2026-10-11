@@ -329,6 +329,11 @@
         <span style="font-size:12px;color:var(--text-dim)">聘请=订阅一位有经验、有纪律、可问责的 AI 交易员（非购买 tokens）；等级=模型档位×纪律参数×judge 评审闭环；模拟盘真实业绩展示，不构成收益承诺</span></div>
       <div class="agent-grid" id="pricing-grid"><div class="empty">读取中…</div></div>
     </div>
+    <div id="manager-wrap">
+      <div class="toolbar" style="margin-top:18px"><span style="font-size:14px;font-weight:700">👔 投资经理（K-STOCK-137 · S-b2）</span>
+        <span style="font-size:12px;color:var(--text-dim)">经理职责：荐策略 / 组织盘前盘后复盘 / 督导操盘手。聘请价 = 档案基价 × 模型系数（按月，<code>models.json</code> 口径）；雇佣/解雇只改 <code>manager_hires.json</code> 注册表。</span></div>
+      <div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
+    </div>
     <div class="flow-note" style="margin-top:14px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
   </div>
 
@@ -755,6 +760,66 @@ async function doFire(trader,source){
     else toast('❌ '+(j.error||'失败'));
   }catch(e){toast('❌ '+e.message);}
 }
+
+// ===== 投资经理（K-STOCK-137d S-b2：/api/manager_roster + manager_hire/fire） =====
+const MGR_SOURCES='<option value="qd">量子双刀</option><option value="qpzm">青萍之末</option><option value="ai_team">AI 值班</option>';
+async function loadManagers(){
+  const g=$('manager-grid');if(!g)return;
+  try{
+    const j=await api('/api/manager_roster');
+    if(!j||!j.ok){g.innerHTML='<div class="empty">❌ '+((j&&j.error)||'读取失败')+'</div>';return;}
+    g.innerHTML=(j.managers||[]).map(m=>{
+      const act=m.active_hires||[];
+      let hz;
+      if(act.length){
+        hz=act.map(h=>
+          `<span class="badge b-dk">已雇 · ${h.source||'-'} · ¥${h.hire_price_cny!=null?h.hire_price_cny:'-'}/月</span> `+
+          `<button class="btn btn-sm btn-gray" onclick="managerFire('${m.id}','${h.source}')">解雇</button>`
+        ).join(' ');
+      }else if(m.status==='live'){
+        hz='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+          `<select id="mgr-src-${m.id}" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-surface);color:var(--text);font-size:12px">${MGR_SOURCES}</select>`+
+          `<button class="btn btn-sm btn-primary" onclick="managerHire('${m.id}')">雇佣</button></div>`;
+      }else{
+        hz=`<span class="flow-note">状态 ${m.status||'-'} ≠ live，不可雇佣</span>`;
+      }
+      return `<div class="agent-card"><div class="nm">👔 ${m.name||m.id} <span class="badge">${m.style||''}</span> <span class="badge b-dk">${m.model||'-'}</span></div>`+
+        `<div class="role">${m.desc||''}</div>`+
+        `<div class="agent-stats"><div><div class="k">月聘价</div><div class="v">${m.hire_price_cny!=null?'¥'+m.hire_price_cny:'计价失败'}</div></div>`+
+        `<div><div class="k">状态</div><div class="v">${m.status||'-'}</div></div>`+
+        `<div><div class="k">在雇源</div><div class="v">${act.length?act.map(h=>h.source).join('、'):'无'}</div></div></div>`+
+        `<div style="font-size:12px;margin-top:8px"><b>擅长：</b>${(m.capabilities||[]).join('、')||'-'}</div>`+
+        `<div style="font-size:12px;color:var(--text-dim)"><b>边界：</b>${(m.boundaries||[]).join('；')||'-'}</div>`+
+        `<details style="margin-top:8px;font-size:12px"><summary style="cursor:pointer">职责提示词（role_prompt）</summary>`+
+        `<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">${m.role_prompt||'-'}</div></details>`+
+        `<div style="margin-top:10px">${hz}</div></div>`;
+    }).join('')||'<div class="empty">无经理档案</div>';
+  }catch(e){g.innerHTML='<div class="empty">❌ '+e.message+'</div>';}
+}
+async function managerHire(mid){
+  const sel=document.getElementById('mgr-src-'+mid);
+  const src=sel?sel.value:'';
+  if(!src)return toast('❌ 请选择组合源');
+  if(!confirm('雇佣经理 '+mid+' × '+src+'？\n（只改 manager_hires.json 注册表）'))return;
+  try{
+    const j=await api('/api/manager_hire',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({mid:mid,source:src})});
+    if(j.ok){toast('✅ 已雇佣经理 '+mid);loadManagers();}
+    else toast('❌ '+(j.error||'失败'),5000);
+  }catch(e){toast('❌ '+e.message);}
+}
+async function managerFire(mid,source){
+  if(!confirm('解雇经理 '+mid+' × '+source+'？'))return;
+  try{
+    const j=await api('/api/manager_fire',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({mid:mid,source:source})});
+    if(j.ok){toast('✅ 已解雇经理 '+mid);loadManagers();}
+    else toast('❌ '+(j.error||'失败'),5000);
+  }catch(e){toast('❌ '+e.message);}
+}
+document.addEventListener('DOMContentLoaded',loadManagers);
 
 // ===== 历史 =====
 async function loadHistory(){
