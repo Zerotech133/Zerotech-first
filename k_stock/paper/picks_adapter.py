@@ -14,6 +14,16 @@ chanlun/ninedim/strong/weak/jev-gate 等策略不走 poc_* 产物链，其信号
   （todays_picks 每日刷新，exec_run 的 replan 语义照常接管旧 pending）。
 
 CLI 自测：python picks_adapter.py chanlun
+
+挂账（2026-10-11 勘查）：
+- linkage：无 stock 级可聚合产物。linkage_signals.py 是个股级 CLI 判定
+  工具（需指定代码，影子观察只判定+展示不推送），build_todays_picks.py
+  亦明记「个股级工具，无全市场扫描口径，今日不产生名单」。
+  证据：quant_backtest/linkage_signals.py（模块 docstring）、
+        portal/build_todays_picks.py:16 与 :799-801（metas["linkage"]）。
+- cross：已接入。cross_poll.build_cross 的 A 股看多共振经
+  build_todays_picks.load_cross 聚合进 todays_picks.json（sources[].s
+  ="cross"，tag=「多策略共振」），走下方通用 build_run 通道即可。
 """
 from __future__ import annotations
 
@@ -31,7 +41,7 @@ from engine import _norm_stock                  # noqa: E402
 PICKS = HERE.parent.parent / "portal" / "data" / "todays_picks.json"
 SELL_TAGS = ("1卖", "2卖", "3卖", "回避")
 TIER_CONF = {"T1": 0.9, "T2": 0.7, "CROWD": 0.5}
-ADAPTER_STRATS = ("chanlun", "ninedim", "strong", "weak", "jev-gate")
+ADAPTER_STRATS = ("chanlun", "ninedim", "strong", "weak", "jev-gate", "cross")
 
 
 def build_run(sid: str) -> Path:

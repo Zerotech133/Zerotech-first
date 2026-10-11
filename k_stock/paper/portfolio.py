@@ -37,8 +37,10 @@ STRAT_PREFIX = {
     "qingping": "poc_qpzm_",
     "qpzm": "poc_qpzm_",            # 青萍之末（CN；qpzmus 独立 US 账本不并入）
 }
-# 其余策略（chanlun/ninedim/strong/weak/jev-gate）→ picks_adapter 动态生成
-# （M4.3）；linkage/cross/qpzm-tool 等仍无聚合信号 → exec 时记 skipped 挂账
+# 其余策略（chanlun/ninedim/strong/weak/jev-gate/cross）→ picks_adapter
+# 动态生成（M4.3）；linkage 无 stock 级产物（个股级 CLI 工具，挂账，证据见
+# picks_adapter.py 头注释）；backtest/zhice/quantdinger 在 strategies.json
+# status=tool（工具态），不接跟单 → exec 时记 skipped 挂账
 
 
 def _now() -> str:
