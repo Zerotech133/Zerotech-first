@@ -6310,7 +6310,10 @@ gap:14px;align-items:start}}
                 "<div><h1 style='font-size:17px;'>🏭 开发指挥台</h1>"
                 "<div style='font-size:10.5px;color:var(--text-dim);letter-spacing:2px;'>"
                 "DEVOPS · K-STOCK-113 · 事件自动回流</div></div>"
-                "<a href='/' style='font-size:12px;'>← 返回首页</a></header><main>"
+                "<div style='display:flex;gap:14px;'>"
+                "<a href='/audit-ai' style='font-size:12px;color:var(--color-ok);'>"
+                "🛡 安全审计 AI</a>"
+                "<a href='/' style='font-size:12px;'>← 返回首页</a></div></header><main>"
                 "<div id='sum' style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;'>"
                 + cards + "</div>"
                 "<h2 style='font-size:14px;margin:22px 0 4px;'>在办工单</h2>"
@@ -6364,6 +6367,140 @@ gap:14px;align-items:start}}
                 "\"<span class='dim'>\"+(x.detail||'')+\"</span></div>\";}).join('')"
                 "||\"<span class='dim'>暂无事件——提交一次代码试试（post-commit 自动上报）</span>\";"
                 "}catch(e){}}load();setInterval(load,30000);</script></body></html>")
+        self._html(html)
+
+    # ── K-STOCK-114e 独立安全审计 AI ─────────────────────────────
+    _AUDIT_MODEL = os.environ.get("AUDIT_MODEL", "qwen3.5:9b")
+    _AUDIT_SYS = (
+        "你是零界平台的独立安全审计官，与开发团队完全独立、只对安全负责。"
+        "审计对象：代码 diff、实现方案、接口设计。"
+        "审计口径：注入/XSS/越权/密钥泄露/路径穿越/竞态/资源泄漏/逻辑后门/"
+        "数据校验缺失/危险调用。输出纪律："
+        "①先给结论（安全/有风险/高危）②按严重度列问题：位置+成因+利用场景+修复建议 "
+        "③没有问题就明说没有，不凑数④简洁，不重复代码。称呼对方为「开发侧」。")
+
+    def _ollama_chat(self, messages, timeout=150):
+        """本机 Ollama 非流式对话（空 ProxyHandler 直连，防系统代理劫持）。"""
+        import urllib.request as _u
+        body = json.dumps({"model": self._AUDIT_MODEL, "stream": False,
+                           "messages": messages}).encode("utf-8")
+        req = _u.Request("http://127.0.0.1:11434/api/chat", data=body,
+                         headers={"Content-Type": "application/json"})
+        opener = _u.build_opener(_u.ProxyHandler({}))
+        with opener.open(req, timeout=timeout) as resp:
+            j = json.loads(resp.read().decode("utf-8"))
+        return j.get("message", {}).get("content", "")
+
+    def _api_audit_chat(self, raw):
+        """POST {messages:[{role,content}...], preset?:'last_commit'} → {ok,reply}。
+        preset=last_commit：服务端抓最近提交 diff 注入为审计素材。"""
+        try:
+            req = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "body 非 JSON"}, 400)
+            return
+        msgs = [{"role": "system", "content": self._AUDIT_SYS}]
+        hist = req.get("messages") or []
+        for m in hist[-12:]:  # 独立会话历史（客户端持有，限 12 轮防炸上下文）
+            if isinstance(m, dict) and m.get("role") in ("user", "assistant") \
+                    and m.get("content"):
+                msgs.append({"role": m["role"],
+                             "content": str(m["content"])[:6000]})
+        if req.get("preset") == "last_commit":
+            try:
+                d = subprocess.run(
+                    ["git", "show", "--format=commit %h %s", "--unified=3",
+                     "HEAD"], cwd=ROOT, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=15)
+                msgs.append({"role": "user", "content":
+                             "审计最近一次提交：\n```\n%s\n```"
+                             % (d.stdout or "(空 diff)")[:12000]})
+            except Exception as _ge:
+                msgs.append({"role": "user",
+                             "content": "抓取最近提交失败：%s" % _ge})
+        try:
+            reply = self._ollama_chat(msgs)
+            self._json({"ok": True, "reply": reply,
+                        "model": self._AUDIT_MODEL})
+        except Exception as _oe:
+            self._json({"ok": False,
+                        "error": "审计模型不可达：%s（模型=%s）"
+                                 % (str(_oe)[:120], self._AUDIT_MODEL)}, 502)
+
+    def _audit_ai_page(self):
+        """独立安全审计 AI 对话页（114e）：会话客户端持有，独立模型。"""
+        mdl = self._AUDIT_MODEL
+        html = ("<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                "<title>🛡 安全审计 AI · 零界</title>"
+                "<link rel='stylesheet' href='/static/tokens.css'>"
+                "<style>body{font-family:'Segoe UI','Microsoft YaHei',system-ui,"
+                "sans-serif;background:var(--bg-page);color:var(--text);}"
+                "main{max-width:900px;margin:0 auto;padding:0 20px 40px;}"
+                "#log{background:var(--bg-raised);border:1px solid var(--border);"
+                "border-radius:12px;padding:14px 18px;min-height:300px;"
+                "max-height:56vh;overflow-y:auto;font-size:13px;line-height:1.8;}"
+                ".u{margin:8px 0;padding:8px 12px;border-radius:10px;"
+                "background:var(--bg-surface);border:1px solid var(--border);}"
+                ".a{margin:8px 0;padding:8px 12px;border-radius:10px;"
+                "background:rgba(63,185,80,.06);border:1px solid rgba(63,185,80,.35);}"
+                ".a b{color:var(--color-ok);}"
+                "textarea{width:100%%;box-sizing:border-box;min-height:70px;"
+                "background:var(--bg-surface);color:var(--text);"
+                "border:1px solid var(--border);border-radius:10px;padding:10px;"
+                "font-size:13px;font-family:inherit;resize:vertical;}"
+                "button{padding:8px 18px;border-radius:9px;border:1px solid var(--border);"
+                "background:var(--bg-raised);color:var(--text);cursor:pointer;font-size:13px;}"
+                "button.pri{border-color:var(--link);color:var(--link);}"
+                "button:hover{border-color:var(--link);}"
+                ".num{font-family:Consolas,monospace;}</style></head><body>"
+                "<header style='display:flex;justify-content:space-between;align-items:center;"
+                "padding:20px 48px 10px;max-width:900px;margin:0 auto;'>"
+                "<div><h1 style='font-size:17px;'>🛡 安全审计 AI</h1>"
+                "<div style='font-size:10.5px;color:var(--text-dim);letter-spacing:2px;'>"
+                "SECURITY AUDITOR · 独立对话 · 独立模型 <span class='num'>"
+                + mdl + "</span></div></div>"
+                "<a href='/devops' style='font-size:12px;'>← 指挥台</a></header><main>"
+                "<div id='log'><div class='dim'>开发侧你好。贴代码让我审，或点「审计最近提交」。"
+                "我只对安全负责：注入/越权/密钥泄露/危险调用/逻辑后门……有问题直说，没问题也直说。</div></div>"
+                "<div style='margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;'>"
+                "<button onclick='auditCommit()' class='pri'>🔍 审计最近提交</button>"
+                "<button onclick='document.getElementById(\"log\").innerHTML=log0;"
+                "hist=[]'>🧹 清空会话</button></div>"
+                "<div style='margin-top:10px;'>"
+                "<textarea id='inp' placeholder='贴代码或描述要审的实现……'></textarea></div>"
+                "<div style='margin-top:8px;display:flex;gap:8px;justify-content:flex-end;'>"
+                "<button class='pri' onclick='send()'>发送 →</button></div>"
+                "<div class='dim' id='st' style='font-size:11px;margin-top:8px;'>就绪</div>"
+                "</main><script>"
+                "const log0=document.getElementById('log').innerHTML;let hist=[];"
+                "function esc(s){return String(s??'').replace(/[&<>]/g,"
+                "c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}"
+                "function push(cls,who,txt){const d=document.createElement('div');"
+                "d.className=cls;d.innerHTML='<b>'+who+'</b><br>'+txt;"
+                "const lg=document.getElementById('log');lg.appendChild(d);"
+                "lg.scrollTop=lg.scrollHeight;return d;}"
+                "async function call(payload,tag){"
+                "const st=document.getElementById('st');st.textContent='审计官思考中…';"
+                "try{const r=await fetch('/api/audit_chat',{method:'POST',"
+                "headers:{'Content-Type':'application/json'},"
+                "body:JSON.stringify(Object.assign({messages:hist},payload))});"
+                "const d=await r.json();if(!d.ok)throw new Error(d.error||'HTTP '+r.status);"
+                "hist.push({role:'assistant',content:d.reply});"
+                "push('a','🛡 审计官 <span class=dim>('+tag+')</span>',"
+                "esc(d.reply).replace(/\\n/g,'<br>'));"
+                "}catch(e){push('a','🛡 审计官','<span style=\\'color:var(--color-err)\\'>'+"
+                "esc(String(e))+'</span>');}"
+                "st.textContent='就绪';}"
+                "function send(){const i=document.getElementById('inp');"
+                "const v=i.value.trim();if(!v)return;i.value='';"
+                "hist.push({role:'user',content:v});"
+                "push('u','👤 开发侧',esc(v).replace(/\\n/g,'<br>'));call({},'对话');}"
+                "async function auditCommit(){push('u','👤 开发侧','🔍 请求审计最近一次提交');"
+                "await call({preset:'last_commit'},'最近提交');}"
+                "document.getElementById('inp').addEventListener('keydown',"
+                "e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))send();});"
+                "</script></body></html>")
         self._html(html)
 
     def _portal_page(self):
@@ -22268,6 +22405,10 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._warehouse_update_request('POST',path,raw=raw)
                 return
             raw = self.rfile.read(ln) if ln > 0 else b""
+            if path == "/api/audit_chat":
+                # K-STOCK-114e 独立安全审计 AI 对话（独立模型绑定 AUDIT_MODEL）
+                self._api_audit_chat(raw)
+                return
             if path == "/api/paper_order":
                 # K-STOCK v0.2 模拟仓下单（manual BUY/SELL 或 double_knife 执行）
                 self._api_paper_order(raw)
@@ -23332,6 +23473,26 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/bt/seat":
             # 坐席下钻页：席位近60日上榜明细 + 常做票
             self._bt_seat_page(qs)
+        elif path == "/api/audit_recent":
+            # K-STOCK-114e 快捷审计素材：最近一次提交 diff（截断 12k）
+            try:
+                r = subprocess.run(
+                    ["git", "log", "-1", "--format=%h %s%n%an %ad",
+                     "--date=iso"], cwd=ROOT, capture_output=True,
+                    text=True, encoding="utf-8", errors="replace", timeout=10)
+                d = subprocess.run(
+                    ["git", "show", "--format=", "--unified=3", "HEAD"],
+                    cwd=ROOT, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=15)
+                diff = (d.stdout or "")[:12000]
+                self._json({"ok": True, "head": (r.stdout or "").strip(),
+                            "diff": diff,
+                            "truncated": len(d.stdout or "") > 12000})
+            except Exception as _ae:
+                self._json({"ok": False, "error": repr(_ae)}, 500)
+        elif path == "/audit-ai":
+            # K-STOCK-114e 独立安全审计 AI 对话页
+            self._audit_ai_page()
         elif path == "/api/devops":
             # K-STOCK-113 开发指挥台数据口：dev_events.jsonl 只读投影
             self._json(self._devops_data())
