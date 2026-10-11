@@ -32,6 +32,9 @@
   .subline{font-size:12.5px; color:var(--text-dim); margin:14px 0 4px;}
   .pipeline{display:flex; align-items:center; gap:8px; background:var(--bg-raised); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin:12px 0; flex-wrap:wrap;}
   .pipe-node{background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:8px 14px; text-align:center; min-width:120px;}
+  .pipe-node.clickable{cursor:pointer; transition:border-color .15s, transform .15s;}
+  .pipe-node.clickable:hover{border-color:var(--link); transform:translateY(-1px);}
+  .pipe-node.clickable:hover .d{color:var(--link);}
   .pipe-node .t{font-weight:700; font-size:13px;}
   .pipe-node .d{font-size:11px; color:var(--text-dim); margin-top:2px;}
   .pipe-arrow{color:var(--text-dim); font-size:18px;}
@@ -160,15 +163,15 @@
   <div class="subline">多策略来源 · 手动/自动触发 · 多 Agent 交易员（v0.3 预留）</div>
 
   <div class="pipeline">
-    <div class="pipe-node"><div class="t">① 策略源（可选）</div><div class="d">AI值班 / 双刀 / 青萍 / 手动 / Agent</div></div>
+    <div class="pipe-node clickable" data-drill="desk-strat" title="下钻：策略来源卡片区"><div class="t">① 策略源（可选）</div><div class="d">AI值班 / 双刀 / 青萍 / 手动 / Agent</div></div>
     <div class="pipe-arrow">→</div>
-    <div class="pipe-node"><div class="t">② picks JSON</div><div class="d">同构信号协议</div></div>
+    <div class="pipe-node clickable" data-drill="desk-run" title="下钻：最新产物一览"><div class="t">② picks JSON</div><div class="d">同构信号协议</div></div>
     <div class="pipe-arrow">→</div>
-    <div class="pipe-node pipe-core"><div class="t">③ 统一执行链</div><div class="d">风控 → T+1 → _settle_fill 唯一写入口</div></div>
+    <div class="pipe-node pipe-core clickable" data-drill="desk-pend" title="下钻：今日挂单"><div class="t">③ 统一执行链</div><div class="d">风控 → T+1 → _settle_fill 唯一写入口</div></div>
     <div class="pipe-arrow">→</div>
-    <div class="pipe-node"><div class="t">④ 账本 + 持仓</div><div class="d">strategy 全程标记</div></div>
+    <div class="pipe-node clickable" data-drill="pos" title="下钻：持仓页"><div class="t">④ 账本 + 持仓</div><div class="d">strategy 全程标记</div></div>
     <div class="pipe-arrow">→</div>
-    <div class="pipe-node"><div class="t">⑤ 止损哨兵</div><div class="d">收盘触发 → 次日开盘撮合</div></div>
+    <div class="pipe-node clickable" data-drill="desk-stops" title="下钻：止损哨兵"><div class="t">⑤ 止损哨兵</div><div class="d">收盘触发 → 次日开盘撮合</div></div>
   </div>
 
   <div class="tabs">
@@ -350,6 +353,32 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.tab,.tabpanel').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');$('tab-'+t.dataset.tab).classList.add('active');
   if(t.dataset.tab==='hist'&&S.status)loadHistory();
+}));
+
+// ===== Pipeline 下钻（077t）：五节点可点，切 tab + 滚动定位 + 高亮闪两下 =====
+function gotoTab(name, anchorId){
+  document.querySelectorAll('.tab,.tabpanel').forEach(x=>x.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${name}"]`)?.classList.add('active');
+  $('tab-'+name).classList.add('active');
+  if(name==='hist'&&S.status)loadHistory();
+  const el=anchorId?$(anchorId):null;
+  if(el){el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.style.transition='box-shadow .25s';el.style.boxShadow='0 0 0 2px var(--link)';
+    setTimeout(()=>{el.style.boxShadow='';},1100);}
+}
+document.querySelectorAll('.pipe-node[data-drill]').forEach(n=>n.addEventListener('click',()=>{
+  const d=n.dataset.drill;
+  if(d==='pos'){gotoTab('pos');return;}
+  if(d==='desk-strat'){gotoTab('desk');setTimeout(()=>$('tab-desk').scrollIntoView({behavior:'smooth',block:'start'}),50);return;}
+  if(d==='desk-pend'){gotoTab('desk','pend-body');return;}
+  if(d==='desk-stops'){gotoTab('desk','stops-body');return;}
+  if(d==='desk-run'){gotoTab('desk');
+    const dk=S.status&&S.status.desk||{};
+    const bits=[];
+    if(dk.ai_last_run)bits.push(`AI值班 ${dk.ai_last_run.file}`);
+    if(dk.qd_last_run)bits.push(`双刀 ${dk.qd_last_run.file}（${(dk.qd_last_run.signals||[]).length} 信号）`);
+    toast('② picks JSON 同构协议——最新产物：'+(bits.join('；')||'暂无产物（点①选源后手动执行生成）'),4500);
+  }
 }));
 document.querySelectorAll('.strat-card:not(.disabled)').forEach(c=>c.addEventListener('click',()=>{
   document.querySelectorAll('.strat-card').forEach(x=>x.classList.remove('selected'));
