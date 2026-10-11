@@ -291,6 +291,8 @@
         <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">我的组合（策略订阅 × AI 交易员）</div>
         <div class="side-box"><div id="pf-body"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">我的组合总览（多组合）</div>
+        <div class="side-box"><div id="pf-multi-body" style="display:none"><div class="empty">读取中…</div></div></div>
         <div class="col-title">策略源建议（strategist · 影子）</div>
         <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">最近成交</div>
@@ -471,6 +473,43 @@ function renderPortfolio(ps){
     <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">跟单由工作日 07:10 计划任务自动执行</div>`;
 }
 fetch('/api/portfolio_status').then(r=>r.json()).then(renderPortfolio).catch(()=>{$('pf-body').innerHTML='<div class="empty">组合数据读取失败</div>';});
+/* ===== K-STOCK-151: 多组合总览（纯增量，消费 /api/portfolio_status 的 portfolios 数组；失败或缺数组时静默隐藏，不影响主面板） ===== */
+function renderPortfoliosMulti(ps){
+  const host=$('pf-multi-body');if(!host)return;
+  const pfs=(ps&&ps.ok&&Array.isArray(ps.portfolios))?ps.portfolios:null;
+  if(!pfs||!pfs.length){host.style.display='none';return;}   // 静默退回现状
+  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  host.style.display='block';
+  host.innerHTML=pfs.map((pf,i)=>{
+    const chips=(pf.strategies||[]).map(s=>`<a href="/market-strategy" style="display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;font-size:11px;text-decoration:none;color:var(--text)">${esc(s)}</a>`).join('')||'<span style="font-size:11px;color:var(--text-dim)">未订阅策略</span>';
+    const eqTotal=(pf.equity&&pf.equity.total!=null)?'¥'+Number(pf.equity.total).toLocaleString():'-';
+    const eqDate=(pf.equity&&pf.equity.date)?`<div style="font-size:10.5px;color:var(--text-dim)">净值快照 ${esc(pf.equity.date)}</div>`:'';
+    const pendCnt=(pf.pending||[]).length,posCnt=(pf.positions||[]).length;
+    const traders=(pf.traders||[]).map(t=>`<div>🤖 AI 交易员在岗：<b>${esc(t)}</b></div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">未聘交易员（可去<a href="/market-strategy">策略市场</a>订阅后一键聘用）</div>';
+    const pend=(pf.pending||[]).slice(0,6).map(p=>`<div>🎯 ${esc(p.side)} <a href="/kg/stock/${p.stock}">${p.stock}</a> ×${p.qty}（${esc(p.plan_date||'')}）</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无挂单</div>';
+    const poss=(pf.positions||[]).slice(0,8).map(p=>`<div>📦 <a href="/kg/stock/${p.stock}">${p.stock}</a> ${p.qty} 股 @${p.avg_cost!=null?Number(p.avg_cost).toFixed(2):'-'}</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无持仓</div>';
+    return `<div style="margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px">
+      <div style="cursor:pointer" onclick="pfMultiToggle('pf-multi-detail-${i}')">
+        <div style="font-weight:700">${esc(pf.name||pf.id||'-')} <span style="font-size:10.5px;color:var(--text-dim);font-weight:400">${esc(pf.id||'')}</span> ▾</div>
+        <div style="font-size:11.5px;color:var(--text-dim);margin:2px 0">${pf.trader?('👤 '+esc(pf.trader)):''}${pf.note?(' · '+esc(pf.note)):''}</div>
+        <div style="font-size:12.5px">权益合计 <b>${eqTotal}</b> · 待成交 <b>${pendCnt}</b> 笔 · 持仓 <b>${posCnt}</b> 只</div>
+        <div style="margin-top:4px">${chips}</div>
+        ${eqDate}
+        <div style="font-size:10px;color:var(--link,#4493f8);margin-top:2px">点击展开/收起明细</div>
+      </div>
+      <div id="pf-multi-detail-${i}" style="display:none;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px">
+        ${traders}
+        <div style="font-size:11px;color:var(--text-dim);margin:6px 0 2px">组合跟单挂单：</div>${pend}
+        <div style="font-size:11px;color:var(--text-dim);margin:6px 0 2px">组合持仓：</div>${poss}
+      </div>
+    </div>`;
+  }).join('')+'<div style="font-size:10.5px;color:var(--text-dim);margin-top:4px">跟单由工作日 07:10 计划任务自动执行</div>';
+}
+function pfMultiToggle(id){
+  const el=$(id);if(!el)return;
+  el.style.display=(el.style.display==='none')?'block':'none';
+}
+fetch('/api/portfolio_status').then(r=>r.json()).then(renderPortfoliosMulti).catch(()=>{});
 function renderJudge(jd){
   const el=$('judge-body');
   if(!jd||!jd.ok||!(jd.reviews||[]).length){
