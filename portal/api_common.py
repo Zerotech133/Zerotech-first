@@ -583,7 +583,7 @@ def _back_link_html():
 
 
 def log_exc(context):
-    """把当前异常栈追加写入 C:\Temp\portal_api_error.log（与 access log
+    r"""把当前异常栈追加写入 C:\Temp\portal_api_error.log（与 access log
     同款追加写；自身失败绝不阻断业务，保持静默）。仅在 except 块内调用。"""
     import traceback
     try:
@@ -635,7 +635,7 @@ def _load_cainiao_env():
 
 
 def _log_rotate(fp):
-    """C6b 日志轮转：fp 超 50MB → 先删旧 .1 → 当前改名为 .1（单代轮转，
+    r"""C6b 日志轮转：fp 超 50MB → 先删旧 .1 → 当前改名为 .1（单代轮转，
     保留最近两段历史，防止 C:\Temp 被无限增长日志吃满磁盘）。
     每次写入前调用；stat/remove/rename 任一失败都静默放过，绝不阻断
     业务或日志写入本身。返回 True 表示发生了轮转。"""
