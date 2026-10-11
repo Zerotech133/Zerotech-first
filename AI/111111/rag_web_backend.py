@@ -142,7 +142,9 @@ class RagWebService:
             yield {"done": True}
             return
         try:
-            chunks = self.client.chat_stream(self.build_messages(question, matches), model=self.chat_model)
+            chunks = self.client.chat_stream(
+                self.build_messages(question, matches), model=self.chat_model, think=False
+            )
             for chunk in chunks:
                 if isinstance(chunk, dict):
                     content = chunk.get("message", {}).get("content", "")

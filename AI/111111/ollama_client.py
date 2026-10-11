@@ -32,8 +32,11 @@ class OllamaClient:
         with self._request("/api/tags") as resp: result = self._json_response(resp)
         return [m.get("name", "") for m in result.get("models", []) if isinstance(m, dict) and m.get("name")]
 
-    def chat_stream(self, messages, model="qwen3.5:35b"):
-        with self._request("/api/chat", {"model":model,"messages":messages,"stream":True}, "POST") as resp:
+    def chat_stream(self, messages, model="qwen3.5:35b", think=None):
+        payload = {"model": model, "messages": messages, "stream": True}
+        if think is not None:
+            payload["think"] = bool(think)
+        with self._request("/api/chat", payload, "POST") as resp:
             for raw in resp:
                 line = raw.decode("utf-8", "replace").strip()
                 if not line: continue
@@ -44,7 +47,8 @@ class OllamaClient:
                 if text: yield text
                 if chunk.get("done"): break
 
-    def chat(self, messages, model="qwen3.5:35b"): return "".join(self.chat_stream(messages, model))
+    def chat(self, messages, model="qwen3.5:35b", think=None):
+        return "".join(self.chat_stream(messages, model, think=think))
 
     def embed(self, texts, model="bge-m3:latest"):
         single = isinstance(texts, str); items = [texts] if single else list(texts)
