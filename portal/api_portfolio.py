@@ -2,7 +2,7 @@
 """P4 批7-PF：持仓/投委会域 Mixin（debate/council 页族 + portfolio 函数族）。
 Handler 壳经基座多继承并入（禁 import *）。
 """
-import json, os, subprocess, sys, threading, time
+import glob, json, os, re, subprocess, sys, threading, time
 from api_common import (
     _read_json,
     log_exc,
@@ -1589,4 +1589,771 @@ class Handler:
                 "initial-scale=1'><title>投委会 · 影子留痕</title>"
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
                 + pill_nav("council") + content + cjs + "</body></html>")
+    _PAPER_QD_LOCK = threading.Lock()   # 双刀执行互斥（防连点并发落两套单）
+    _PAPER_DIR = r"E:\老田的AI助手\k_stock\paper"
+    # ---------------- K-STOCK 模拟仓写路径（v0.2 平台化 2026-10-09） ----------------
+    # 设计：portal_api 保持纯标准库——引擎调用一律 subprocess CLI（py311 绝对
+    # 路径，带 pandas；与 07:05 automation 同一口径）。每次下单一个干净子进程，
+    # 门户进程零 pandas / 零第二写连接 / 零共享账本状态。鉴权：端点已入
+    # _MUTATION_POSTS（本机放行；局域网与脚本须 X-Portal-Token，同全站口径）。
+    _PAPER_PY = r"C:\Program Files\Python311\python.exe"
+
+    def _api_paper_stop(self, raw):
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        stock = str(rec.get("stock") or "").strip().upper()
+        if not re.match(r"^\d{6}\.(SH|SZ|BJ)$", stock):
+            self._json({"ok": False,
+                        "error": "股票代码格式：6位数字.SH/.SZ/.BJ"}, 400)
+            return
+        if not rec.get("clear") and rec.get("stop_price") is None:
+            self._json({"ok": False, "error": "需要 stop_price 或 clear=true"}, 400)
+            return
+        argv = ["order", "--side", "STOP", "--stock", stock]
+        if rec.get("clear"):
+            argv.append("--clear")
+        else:
+            argv += ["--stop-price", str(rec["stop_price"])]
+        try:
+            r = self._paper_run_json(
+                [self._PAPER_PY, os.path.join(self._PAPER_DIR, "cli.py")] + argv)
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+            return
+        self._json(r, 200 if r.get("ok") else 400)
+    def _api_paper_order(self, raw):
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        mode = str(rec.get("mode") or "manual").strip()
+        try:
+            if mode == "double_knife":
+                # 真幂等：查账本今天是否已有双刀落单（文件存在≠已执行，
+                # dry-run 也产 picks 文件）；并发防重：进程内互斥锁。
+                if not self._PAPER_QD_LOCK.acquire(blocking=False):
+                    self._json({"ok": False,
+                                "error": "双刀执行进行中，请勿重复提交"}, 409)
+                    return
+                try:
+                    import sqlite3 as _sq3
+                    _db = "E:/老田的AI助手/k_stock/data/paper.db"
+                    con = _sq3.connect(f"file:{_db}?mode=ro", uri=True)
+                    try:
+                        n = con.execute(
+                            "SELECT COUNT(*) FROM orders "
+                            "WHERE ref LIKE 'poc_qd_%' AND account_id='main' AND ts LIKE ?",
+                            (time.strftime("%Y-%m-%d") + "%",)).fetchone()[0]
+                    finally:
+                        con.close()
+                    if n:
+                        self._json({"ok": False,
+                                    "error": "今日双刀信号已执行过（账本已有落单）"}, 409)
+                        return
+                    r = self._paper_run_json(
+                        [self._PAPER_PY,
+                         os.path.join(self._PAPER_DIR, "qd_adapter.py"),
+                         "--json"], timeout=60)
+                finally:
+                    self._PAPER_QD_LOCK.release()
+            else:
+                side = str(rec.get("side") or "").upper()
+                stock = str(rec.get("stock") or "").strip().upper()
+                if not re.match(r"^\d{6}\.(SH|SZ|BJ)$", stock):
+                    self._json({"ok": False,
+                                "error": "股票代码格式：6位数字.SH/.SZ/.BJ"}, 400)
+                    return
+                if side == "BUY":
+                    qty = rec.get("qty")
+                    if not isinstance(qty, int) or qty <= 0 or qty % 100:
+                        self._json({"ok": False,
+                                    "error": "qty 须为 100 的整数倍股数"}, 400)
+                        return
+                elif side == "SELL":
+                    if not rec.get("all") and not rec.get("qty"):
+                        self._json({"ok": False,
+                                    "error": "SELL 需要 qty 或 all=true"}, 400)
+                        return
+                else:
+                    self._json({"ok": False, "error": "side 须为 BUY/SELL"}, 400)
+                    return
+                argv = ["order", "--side", side, "--stock", stock]
+                if side == "SELL" and rec.get("all"):
+                    argv.append("--all")
+                elif rec.get("qty"):
+                    argv += ["--qty", str(rec["qty"])]
+                if rec.get("price"):
+                    argv += ["--price", str(rec["price"])]
+                if rec.get("stop_price"):
+                    argv += ["--stop-price", str(rec["stop_price"])]
+                r = self._paper_run_json(
+                    [self._PAPER_PY, os.path.join(self._PAPER_DIR, "cli.py")] + argv)
+        except subprocess.TimeoutExpired:
+            self._json({"ok": False, "error": "引擎子进程执行超时"}, 504)
+            return
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+            return
+        self._json(r, 200 if r.get("ok") else 400)
+    def _api_paper_hires(self):
+        """雇佣关系投影（纯只读：hires.json + trainees/*.json，无子进程）。"""
+        base = self._PAPER_DIR
+        try:
+            hp = os.path.join(base, "hires.json")
+            hires = []
+            if os.path.exists(hp):
+                with open(hp, encoding="utf-8") as f:
+                    d = json.load(f)
+                hires = d.get("hires", []) if isinstance(d, dict) else []
+            faces = {}
+            tdir = os.path.join(base, "trainees")
+            for fn in sorted(glob.glob(os.path.join(tdir, "*.json"))):
+                try:
+                    with open(fn, encoding="utf-8") as f:
+                        x = json.load(f)
+                    faces[x.get("id")] = {"id": x.get("id"), "name": x.get("name"),
+                                          "status": x.get("status"),
+                                          "style": x.get("style")}
+                except Exception:
+                    continue
+            for h in hires:
+                f = faces.get(h.get("trader")) or {}
+                h["trader_name"] = f.get("name")
+                h["trader_status"] = f.get("status")
+            self._json({"ok": True, "hires": hires,
+                        "traders": sorted(faces.values(),
+                                          key=lambda v: str(v.get("name")))})
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+    def _api_paper_hire(self, raw):
+        """A3 雇佣交互（K-STOCK-042 配置面）：只改 hires.json 注册表，
+        落单仍只在 07:05 automation 单写入口——门户永不直接触发交易。
+        子进程走 trainee.py hire/fire（单写入口），JSON 管道同 paper 模式。"""
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        action = str(rec.get("action") or "").strip().lower()
+        trader = str(rec.get("trader") or "").strip().lower()
+        source = str(rec.get("source") or "").strip().lower()
+        if action not in ("hire", "fire"):
+            self._json({"ok": False, "error": "action 须为 hire/fire"}, 400)
+            return
+        if not re.match(r"^[a-z][a-z0-9_]{0,31}$", trader):
+            self._json({"ok": False, "error": "trader 格式非法"}, 400)
+            return
+        if source not in ("qd", "qpzm", "ai_team"):
+            self._json({"ok": False, "error": "source 须为 qd/qpzm/ai_team"}, 400)
+            return
+        cmd = [self._PAPER_PY, os.path.join(self._PAPER_DIR, "trainee.py"),
+               action, trader, "--source", source, "--json"]
+        if action == "hire" and rec.get("note"):
+            cmd += ["--note", str(rec["note"])[:80]]
+        r = self._paper_run_json(cmd, timeout=35)
+        self._json(r, 200 if r.get("ok") else 409)
+    def _paper_desk(self):
+        """交易台动态块：AI / 双刀最近决策产物（纯标准库 glob+json 只读）。"""
+        out = {}
+        d = r"E:\老田的AI助手\k_stock\data"
+        try:
+            qd = sorted(glob.glob(os.path.join(d, "poc_qd_*.json")))
+            try:  # 与下单防重同口径：查账本（文件存在≠已执行）
+                import sqlite3 as _sq3
+                con = _sq3.connect(
+                    "file:E:/老田的AI助手/k_stock/data/paper.db?mode=ro", uri=True)
+                try:
+                    out["qd_ran_today"] = bool(con.execute(
+                        "SELECT COUNT(*) FROM orders "
+                        "WHERE ref LIKE 'poc_qd_%' AND account_id='main' AND ts LIKE ?",
+                        (time.strftime("%Y-%m-%d") + "%",)).fetchone()[0])
+                finally:
+                    con.close()
+            except Exception:
+                out["qd_ran_today"] = False
+            if qd:
+                f = qd[-1]
+                m = {"file": os.path.basename(f),
+                     "ts": time.strftime("%Y-%m-%d %H:%M",
+                                         time.localtime(os.path.getmtime(f)))}
+                try:
+                    with open(f, encoding="utf-8") as fh:
+                        items = json.load(fh)
+                    m["signals"] = [{"stock": it.get("stock"),
+                                     "name": (it.get("_meta") or {}).get("name"),
+                                     "close": (it.get("_meta") or {}).get("close")}
+                                    for it in items]
+                except Exception:
+                    m["signals"] = []
+                out["qd_last_run"] = m
+            ai = [x for x in glob.glob(os.path.join(d, "poc_*.json"))
+                  if not os.path.basename(x).startswith("poc_qd_")]
+            if ai:
+                f = max(ai, key=os.path.getmtime)
+                out["ai_last_run"] = {
+                    "file": os.path.basename(f),
+                    "ts": time.strftime("%Y-%m-%d %H:%M",
+                                        time.localtime(os.path.getmtime(f)))}
+        except Exception as e:  # desk 是增强信息，失败不拖垮 status
+            out["error"] = repr(e)
+        return out
+    def _paper_run_json(self, cmd, timeout=35):
+        """跑子进程并解析 stdout 尾部 JSON（CLI --json 模式单行输出）。
+
+        🔴 中文 Windows 坑：子进程管道默认按系统 locale（GBK）编码 stdout，
+        门户侧按 UTF-8 解码必花 → 强制子进程 PYTHONIOENCODING=utf-8。
+        """
+        env = dict(os.environ)
+        env["PYTHONIOENCODING"] = "utf-8"
+        p = subprocess.run(cmd, capture_output=True, timeout=timeout, env=env)
+        out = (p.stdout or b"").decode("utf-8", "replace").strip()
+        err = (p.stderr or b"").decode("utf-8", "replace").strip()
+        if out:
+            try:
+                return json.loads(out.splitlines()[-1])
+            except Exception:
+                pass
+        return {"ok": False,
+                "error": err.splitlines()[-1] if err else (out[-200:] or f"exit={p.returncode}")}
+    def _sim_page(self, qs):
+        """K68 三操盘手模拟锦标赛页：六本账（3 操盘手 × 2 盘算）真实日K
+        买卖点战绩榜，对照买入持有基准。        只读 reports 两个 json。"""
+        import html as _h
+
+        def e(x):  # K-STOCK-057 防 float/None 穿透（json 字段类型不稳，escape 只吃 str）
+            if x is None:
+                return ""
+            if not isinstance(x, str):
+                x = str(x)
+            return _h.escape(x)
+
+        ev, sim = {}, {}
+        try:
+            with open(os.path.join(REPORTS_DIR, "trader_sim_eval.json"),
+                      encoding="utf-8") as f:
+                ev = json.load(f)
+        except Exception:
+            pass
+        try:
+            with open(os.path.join(REPORTS_DIR, "trader_sim.json"),
+                      encoding="utf-8") as f:
+                sim = json.load(f)
+        except Exception:
+            pass
+        BOOKS = ["激进|积极", "激进|保守", "保守|积极",
+                 "保守|保守", "中立|积极", "中立|保守"]
+        # K70 策略来源标签（与 stock_council.SID_DESC 同步）
+        SID_LABEL = {"qpzm": "青萍之末", "9dim": "九维评分",
+                     "sig4": "四策略信号", "chanlun": "缠论结构",
+                     "manual": "手动"}
+
+        def _sl(sid):
+            return SID_LABEL.get(sid or "", sid or "—")
+
+        def _pc(x):
+            return ("%+.2f" % x) if x is not None else "—"
+
+        def _cell(r, bk):
+            x = (r.get("books") or {}).get(bk)
+            if not x:
+                return "<td class='dim'>—</td>"
+            tip = "%s · 出场 %s · 仓位 ×%s" % (
+                "/".join(x.get("reason") or ["—"]),
+                x.get("exit_d") or "—",
+                x.get("size_eff") or "—")
+            return ("<td class='%s' title='%s'>%s</td>"
+                    % ("up" if (x.get("contrib") or 0) >= 0 else "dn",
+                       e(tip), _pc(x.get("contrib"))))
+
+        # 六本账汇总卡
+        ag = ev.get("books") or {}
+        cards = "".join(
+            "<div class='sstat'><span class='st'>%s</span>"
+            "<span class='sv'>%s</span><span class='su'>n=%d 胜率 %.0f%% "
+            "α %+.2f</span></div>"
+            % (e(bk), _pc((ag.get(bk) or {}).get("avg_contrib")),
+               (ag.get(bk) or {}).get("n") or 0,
+               (ag.get(bk) or {}).get("winrate") or 0.0,
+               (ag.get(bk) or {}).get("avg_alpha") or 0.0)
+            for bk in BOOKS)
+        cards = ("<div style='display:grid;grid-template-columns:repeat("
+                 "auto-fit,minmax(150px,1fr));gap:10px'>%s</div>" % cards)
+        # K70 策略来源 × 操盘手 交叉表（复盘归因：哪个策略的票在哪本账好）
+        sids = ev.get("sids") or {}
+        srs = "".join(
+            "<tr><td><span title='%s'>%s</span></td><td>%d</td>%s"
+            "<td class='%s'>%+.2f</td><td><span class='bdg n'>%s</span>"
+            "</td></tr>"
+            % (e(sid), e((s.get("label") or _sl(sid))),
+               s.get("n") or 0,
+               "".join("<td class='%s'>%s</td>"
+                       % ("up" if (s.get(bk) or 0) >= 0 else "dn",
+                          _pc(s.get(bk)) if s.get(bk) is not None else
+                          "<span class='dim'>—</span>")
+                       for bk in BOOKS),
+               "up" if (s.get("total") or 0) >= 0 else "dn",
+               s.get("total") or 0.0, e(s.get("best_bk") or "—"))
+            for sid, s in sorted(sids.items(),
+                                 key=lambda kv: -(kv[1].get("total")
+                                                  or 0))) or \
+            ("<tr><td colspan=10 class='dim'>暂无策略来源汇总——入场后"
+             "自动按策略分组</td></tr>")
+        tbl_sid = ("<div class='sec'><h2>📡 策略来源 × 操盘手（复盘归因 · "
+                   "哪个策略的票交给哪位操盘手最赚）</h2>"
+                   "<table class='sticky'><tr><th>策略来源</th><th>票数</th>"
+                   "<th>激进·积极</th><th>激进·保守</th><th>保守·积极</th>"
+                   "<th>保守·保守</th><th>中立·积极</th><th>中立·保守</th>"
+                   "<th>合计贡献</th><th>最佳账</th></tr>%s</table>"
+                   "<div class='dim' style='font-size:12.5px;margin-top:6px'>"
+                   "行=选股策略（青萍之末/缠论/九维…），列=六本账累计贡献度"
+                   "——留痕全链带来源标签，供复盘归因与 AI 再训练取数。</div>"
+                   "</div>" % srs)
+        # 战绩明细（新→旧）
+        rows = sorted(ev.get("rows") or [],
+                      key=lambda r: r.get("entry_d") or "", reverse=True)[:60]
+        trs = "".join(
+            "<tr><td>%s</td><td><a href='/kg?c=%s'>%s %s</a></td>"
+            "<td title='%s'>%s</td><td>%s@%s</td>%s<td class='%s'>%s</td>"
+            "<td><span class='bdg n'>%s</span></td></tr>"
+            % (e(str(r.get("pkey") or "").split("|")[-1]),
+               e(r.get("code") or ""), e(r.get("code") or ""),
+               e(r.get("name") or ""), e(r.get("sid") or ""),
+               e(r.get("sid_label") or _sl(r.get("sid"))),
+               e(r.get("entry_d") or "—"), e(r.get("entry") or "—"),
+               "".join(_cell(r, bk) for bk in BOOKS),
+               "up" if (r.get("baseline") or 0) >= 0 else "dn",
+               _pc(r.get("baseline")), e(r.get("best") or "—"))
+            for r in rows) or \
+            ("<tr><td colspan=12 class='dim'>暂无入场——立案票在 pending 等"
+             "日K，或投票反对未接单</td></tr>")
+        tbl = ("<div class='sec'><h2>🏆 战绩榜（每票 × 六本账贡献度 · "
+               "对照买入持有基准 · 新→旧）</h2>"
+               "<table class='sticky'><tr><th>立案日</th><th>标的</th>"
+               "<th>策略来源</th><th>入场</th><th>激进·积极</th>"
+               "<th>激进·保守</th><th>保守·积极</th><th>保守·保守</th>"
+               "<th>中立·积极</th><th>中立·保守</th><th>基准</th>"
+               "<th>最佳</th></tr>%s</table>"
+               "<div class='dim' style='font-size:12.5px;margin-top:6px'>"
+               "单元格=贡献度（收益率×仓位系数×出仓比例），悬停看离场理由"
+               "与实际仓位；基准=同窗买入持有。</div></div>" % trs)
+        # 持仓明细（六本账在仓）
+        pos_rows = []
+        for bk in BOOKS:
+            for pk, p in ((sim.get("books") or {}).get(bk)
+                          or {}).get("pos", {}).items():
+                pos_rows.append((bk, p))
+        pos_rows.sort(key=lambda x: x[1].get("entry_d") or "", reverse=True)
+        pr = "".join(
+            "<tr><td>%s</td><td><a href='/kg?c=%s'>%s %s</a></td>"
+            "<td title='%s'>%s</td><td>%s@%s</td><td>×%.2f</td>"
+            "<td>%s（%s）</td><td>%s</td><td>%d/%d</td><td>%s</td></tr>"
+            % (e(bk), e(p.get("code") or ""), e(p.get("code") or ""),
+               e(p.get("name") or ""), e(p.get("sid") or ""),
+               _sl(p.get("sid")),
+               e(p.get("entry_d") or ""), e(p.get("entry") or ""),
+               p.get("size_eff") or 0,
+               e(p.get("stop") or "—"), e(p.get("stop_rule") or "—"),
+               e(str(p.get("tp") or "—")), p.get("n_days") or 0,
+               p.get("max_days") or 0, e(p.get("last_d") or "—"))
+            for bk, p in pos_rows) or \
+            "<tr><td colspan=9 class='dim'>六本账当前空仓</td></tr>"
+        tbl_pos = ("<div class='sec'><h2>📒 在仓明细（%d 笔 · 止损线观点线"
+                   "优先）</h2><table class='sticky'><tr><th>账本</th>"
+                   "<th>标的</th><th>来源</th><th>入场</th><th>仓位</th>"
+                   "<th>止损</th><th>止盈</th><th>天数</th><th>最新K</th>"
+                   "</tr>%s</table></div>" % (len(pos_rows), pr))
+        # 待入场 + 跳过
+        pend = ev.get("pending") or {}
+        tpr = "".join(
+            "<tr><td>%s</td><td>%s %s</td><td title='%s'>%s</td>"
+            "<td>×%.1f</td><td>%+d</td>"
+            "<td><span class='bdg y'>等日K</span></td></tr>"
+            % (e(t.get("d") or "—"), e(t.get("code") or ""),
+               e(t.get("name") or ""), e(t.get("sid") or ""),
+               _sl(t.get("sid")), t.get("k") or 1.0, t.get("net") or 0)
+            for t in sorted(pend.values(),
+                            key=lambda x: x.get("d") or "", reverse=True)) or \
+            "<tr><td colspan=6 class='dim'>无待入场</td></tr>"
+        skp = ev.get("skipped") or {}
+        tsk = "".join(
+            "<tr><td>%s</td><td>%s %s</td><td class='dim'>%s</td></tr>"
+            % (e(s.get("d") or "—"), e(s.get("code") or ""),
+               e(s.get("name") or ""), e(s.get("why") or ""))
+            for s in sorted(skp.values(),
+                            key=lambda x: x.get("d") or "", reverse=True))
+        sec_p = ("<div class='sec'><h2>⏳ 待入场（%d 票）</h2>"
+                 "<table class='sticky'><tr><th>辩论日</th><th>标的</th>"
+                 "<th>账户</th><th>系数</th><th>净多空</th><th>状态</th>"
+                 "</tr>%s</table></div>" % (len(pend), tpr))
+        if skp:
+            sec_p += ("<div class='sec'><h2>🚫 未接单（%d 票）</h2>"
+                      "<table class='sticky'><tr><th>辩论日</th><th>标的</th>"
+                      "<th>原因</th></tr>%s</table></div>"
+                      % (len(skp), tsk))
+        method = ("<div class='sec'><h2>管线与口径（用户愿景 · 全留痕可回放）"
+                  "</h2><div style='font-size:13.5px;line-height:1.9'>"
+                  "选股策略（青萍之末/缠论/九维…）出票（<b>来源标签 sid"
+                  "+中文名全链贯穿</b>：辩论留痕/模拟留痕/六本账/买卖点均"
+                  "可追溯，供复盘归因与 AI 再训练取数）→ 投委会六视角辩论"
+                  "（基本"
+                  "面在前）→ 结果交三位操盘手：<b>激进</b>（同向放大 ×1.2）/"
+                  "<b>保守</b>（同向缩小 ×0.8）/<b>中立</b>（×1.0，K66 口径"
+                  "执行层落地）× 两种盘算：<b>积极</b>（满基数 · TP 半止盈+"
+                  "追踪 8%% · 40日）/<b>保守</b>（半基数 · TP 全出落袋 · 20日）"
+                  "→ 模拟建仓（辩论日次一交易日开盘，反对票不接单）→ 真实日K"
+                  "做买卖点（止损跳空按开盘/盘中按止损价；止损线=观点线 ML/RL "
+                  "优先、无效兜底激进-6%%/保守-8%%/中立按桶）→ 每票×每账评价"
+                  "贡献度，对照买入持有基准。<b>铁律：只写 reports 两个 json"
+                  "，绝不碰真实账本。</b>夜链 23:50 随投委会自动推进，统计"
+                  "更新 %s。</div></div>" % e(ev.get("ts") or "—"))
+        # K69 模拟投委会（预演层）：预演留痕 + 真实对照打分
+        score = {}
+        try:
+            with open(os.path.join(REPORTS_DIR, "council_sim_score.json"),
+                      encoding="utf-8") as f:
+                score = json.load(f)
+        except Exception:
+            pass
+        sim_props = []
+        try:
+            with open(os.path.join(REPORTS_DIR,
+                                   "council_sim_proposals.jsonl"),
+                      encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        sim_props.append(json.loads(line))
+                    except Exception:
+                        continue
+        except OSError:
+            pass
+        cmp_ = {"%s|%s|%s" % (x.get("sid"), x.get("code"), x.get("d")): x
+                for x in (score.get("rows") or [])}
+
+        def _vc(v):
+            return {"支持": "<span class='bdg g'>支持</span>",
+                    "反对": "<span class='bdg r'>反对</span>"}.get(
+                v, "<span class='bdg n'>%s</span>" % e(str(v or "中性")))
+
+        sim_cards = ("<div style='display:grid;grid-template-columns:repeat("
+                     "auto-fit,minmax(150px,1fr));gap:10px'>"
+                     "<div class='sstat'><span class='st'>预演票数</span>"
+                     "<span class='sv'>%d</span><span class='su'>独立留痕"
+                     " sim=True</span></div>"
+                     "<div class='sstat'><span class='st'>真实对齐</span>"
+                     "<span class='sv'>%s</span><span class='su'>按账·票·日"
+                     " 三键对齐</span></div>"
+                     "<div class='sstat'><span class='st'>verdict 一致率"
+                     "</span><span class='sv'>%s</span><span class='su'>"
+                     "预演vs真实结论</span></div>"
+                     "<div class='sstat'><span class='st'>平均|Δ系数|</span>"
+                     "<span class='sv'>%s</span><span class='su'>K66 仓位系数"
+                     "偏差</span></div></div>"
+                     % (len(sim_props), score.get("n_pairs") or 0,
+                        ("%.0f%%" % score["verdict_agree_rate"])
+                        if score.get("verdict_agree_rate") is not None else "—",
+                        ("%.2f" % score["avg_abs_dk"])
+                        if score.get("avg_abs_dk") is not None else "—"))
+
+        def _srow(i, x):
+            key = "%s|%s|%s" % (x.get("sid"), x.get("code"), x.get("d"))
+            c = cmp_.get(key) or {}
+            vt = x.get("vote") or {}
+            dr = x.get("directive") or {}
+            k = (dr.get("sizing") or {}).get("k")
+            k = 1.0 if k is None else k
+            ra = c.get("role_agree") or {}
+            n_agree = sum(1 for v in ra.values() if v)
+            if c:
+                real = "%s <span class='%s'>Δ%+.2f</span>" % (
+                    _vc(c.get("real_verdict")),
+                    "up" if (c.get("d_k") or 0) >= 0 else "dn",
+                    c.get("d_k") or 0)
+                roles = "%d/6" % n_agree
+            else:
+                real = "<span class='dim'>待真实会</span>"
+                roles = "<span class='dim'>—</span>"
+            tvs = ""
+            # K80 插话后立场重测跟随到预演表：取各操盘手最新 stance3
+            hs = x.get("human") or []
+            st3map = {}
+            for h in hs:
+                for rp in h.get("replies") or []:
+                    w = rp.get("who") or ""
+                    if "操盘手" in w and rp.get("stance3") is not None:
+                        st3map[w] = rp.get("stance3")
+            for v in (x.get("traders") or []):
+                st = v.get("stance") or 0
+                st2 = v.get("stance2")
+                lab = "%s%+d" % ((v.get("name") or "")[:2], st)
+                if st2 is not None and st2 != st:      # K73 立场演化高亮
+                    lab += "→%+d" % st2
+                seg = ""
+                st3 = st3map.get(v.get("name") or "")
+                cur = st2 if st2 is not None else st
+                if st3 is not None and st3 != cur:     # K80 插话后段（紫）
+                    seg = "<b style='color:#c58af9'>→%+d</b>" % st3
+                    cur = st3
+                tvs += ("<span class='bdg %s' title='%s'>%s%s</span> "
+                        % ("g" if cur > 0
+                           else ("r" if cur < 0 else "n"),
+                           e((v.get("answer") or "")[:120].replace("\n",
+                                                                   " ")),
+                           e(lab), seg))
+            if not tvs:
+                tvs = "<span class='dim'>—</span>"
+            fin = x.get("final") or {}
+            fv = fin.get("verdict")
+            fbadge = (("<span class='bdg %s' title='%s'>终裁·%s</span>"
+                       % ("g" if fv == "支持" else
+                          ("r" if fv == "反对" else "n"),
+                          e((fin.get("note") or "")[:200]
+                            .replace("\n", " ")), e(fv)))
+                      if fv else "<span class='dim'>—</span>")
+            # K80 插话后终裁重审跟随（verdict 变了才亮紫）
+            if hs:
+                f2v = (hs[-1].get("final2") or {}).get("verdict")
+                if f2v and f2v != fv:
+                    fbadge += (" <span class='bdg n' style='border-color:"
+                               "#c58af9;color:#c58af9' title='老板插话后"
+                               "终裁重审'>插话后·%s</span>" % e(f2v))
+            # K73 完整辩论流水（会议记录式，行下方展开）
+            flow = []
+            m0 = (x.get("memo") or {})
+            mtxt = []
+            for _k, _lab in (("thesis", "论点"), ("risks", "风险"),
+                             ("if_wrong", "错了怎么办")):
+                if m0.get(_k):
+                    mtxt.append("%s：%s" % (_lab, m0[_k]))
+            if mtxt:
+                flow.append(("主持人·分析师纪要", "\n".join(mtxt),
+                             "信度 %s" % m0.get("conviction", "?")))
+            for v in (x.get("traders") or []):
+                if v.get("answer"):
+                    flow.append(("%s·质询" % v.get("name"),
+                                 v["answer"], "%+d" % (v.get("stance") or 0)))
+            rb = (x.get("rebuttal") or {}).get("answer") or ""
+            if rb:
+                flow.append(("主持人·分析师回应", rb, ""))
+            for v in (x.get("traders") or []):
+                if v.get("answer2"):
+                    flow.append(("%s·再表态" % v.get("name"), v["answer2"],
+                                 "%+d" % (v.get("stance2")
+                                          if v.get("stance2") is not None
+                                          else (v.get("stance") or 0))))
+            if fin.get("note"):
+                flow.append(("终裁", fin["note"],
+                             fin.get("verdict") or ""))
+            dhtml = ""
+            if flow:
+                dhtml = ("<tr class='drow'><td colspan=10 "
+                         "style='padding:0;border-top:none'>"
+                         "<details style='margin:0 0 2px 8px'><summary "
+                         "style='cursor:pointer;color:#8ab4f8;font-size:"
+                         "12px'>📜 完整辩论流水（%d 轮发言）</summary>"
+                         "<div style='max-height:420px;overflow:auto;"
+                         "font-size:12.5px;line-height:1.7'>%s</div>"
+                         "</details></td></tr>"
+                         % (len(flow), "".join(
+                             "<div style='margin:4px 0;padding:6px 10px;"
+                             "background:rgba(255,255,255,.04);"
+                             "border-left:2px solid %s'><b>%s</b>%s"
+                             "<div style='white-space:pre-wrap'>%s</div>"
+                             "</div>"
+                             % ("#f28b82" if "终裁" in who
+                                else ("#fdd663" if "操盘手" in who
+                                      else "#8ab4f8"),
+                                e(who),
+                                (" <span class='bdg n'>%s</span>" % e(tag))
+                                if tag else "",
+                                e(txt))
+                             for who, txt, tag in flow)))
+            return ("<tr><td>%s</td><td><a href='/kg?c=%s'>%s %s</a> "
+                    "<a href='/debate?p=%d' title='进场辩论/插话'"
+                    " style='font-size:11.5px'>🎤%s</a></td>"
+                    "<td>%s</td><td>%s（w%+.1f）</td>"
+                    "<td><span class='bdg n'>%s</span></td>"
+                    "<td class='%s'>×%.2f</td><td>%s</td><td>%s</td>"
+                    "<td>%s</td><td>%s</td></tr>%s"
+                    % (x.get("d"), e(x.get("code") or ""),
+                       e(x.get("code") or ""), e(x.get("name") or ""), i,
+                       ("×%d" % len(hs)) if hs else "",
+                       e(x.get("sid") or ""), _vc(vt.get("verdict")),
+                       vt.get("wsum") or 0, e(dr.get("act") or "—"),
+                       "up" if k > 1.0 else ("dn" if k < 1.0 else ""),
+                       k, tvs, fbadge, real, roles, dhtml))
+
+        sp_rows = "".join(_srow(i, x)
+                          for i, x in enumerate(sim_props[::-1][:20])) or \
+            ("<tr><td colspan=10 class='dim'>尚无预演——点右上按钮对当日候选"
+             "票先辩一遍</td></tr>")
+        sec_sim = ("<div class='sec'><h2>🎭 模拟投委会 · 预演层"
+                   "<button onclick='_simrun(this)' style='%s;cursor:pointer;"
+                   "margin-left:12px;font-size:12.5px'>▶ 预演当日候选票"
+                   "</button></h2>"
+                   "<div class='dim' style='margin:0 0 8px;font-size:12.5px'>"
+                   "真实投委会（夜链 23:50）<b>开会前</b>三幕预演：①六视角"
+                   "分析师辩论（LLM+投票+K66 系数，零口径漂移）②<b>操盘手"
+                   "质询</b>——激进/保守/中立三位 AI 操盘手带着自己账本处境"
+                   "入场交锋 ③<b>终裁</b>——主持人综合两方给终版立场；独立"
+                   "留痕不进真实链路，真实会后自动对照打分。</div>%s"
+                   "<table class='sticky'><tr><th>辩论日</th><th>标的</th>"
+                   "<th>账户</th><th>预演票</th><th>指令</th><th>预演系数"
+                   "</th><th>操盘手质询</th><th>终裁</th><th>真实对照</th>"
+                   "<th>视角一致</th></tr>%s</table>"
+                   "</div>" % (_PILL, sim_cards, sp_rows))
+        sjs = ("<script>function _simrun(btn){btn.disabled=true;"
+               "fetch('/api/council/simrun',{method:'POST',"
+               "headers:{'Content-Type':'application/json'},body:'{}'})"
+               ".then(function(r){return r.json();})"
+               ".then(function(j){if(j.ok){alert('预演已启动：后台六视角"
+               "辩论（每票约几十秒），稍后刷新本页看结果');}"
+               "else{alert('失败：'+(j.error||''));btn.disabled=false;}})"
+               ".catch(function(e){alert('网络错误：'+e);"
+               "btn.disabled=false;});}</script>")
+        # K71 取舍决策（仓位固定·有取有舍·事后观察）
+        dcs = (ev.get("decisions") or {})
+        dagg = dcs.get("agg") or {}
+        tips = dcs.get("tips") or []
+        sw = sum(a.get("swap_n") or 0 for a in dagg.values())
+        swok = sum(a.get("swap_ok") or 0 for a in dagg.values())
+        sk = sum(a.get("skip_n") or 0 for a in dagg.values())
+        skok = sum(a.get("skip_ok") or 0 for a in dagg.values())
+
+        def _rate(ok, n):
+            return ("%.0f%%" % (100.0 * ok / n)) if n else "—"
+
+        dcards = ("<div style='display:grid;grid-template-columns:repeat("
+                  "auto-fit,minmax(170px,1fr));gap:10px'>"
+                  "<div class='sstat'><span class='st'>换仓决策</span>"
+                  "<span class='sv'>%d 笔</span><span class='su'>正确率 %s"
+                  "（新票＞被挤票假想）</span></div>"
+                  "<div class='sstat'><span class='st'>放弃决策</span>"
+                  "<span class='sv'>%d 笔</span><span class='su'>正确率 %s"
+                  "（假想收益≤0）</span></div>"
+                  "<div class='sstat'><span class='st'>仓位约束</span>"
+                  "<span class='sv'>≤100%%</span><span class='su'>每账固定"
+                  "资金池·单票≤100%%</span></div></div>"
+                  % (sw, _rate(swok, sw), sk, _rate(skok, sk)))
+
+        def _drow(x):
+            act = x.get("action")
+            if act == "换仓":
+                detail = ("%s → <a href='/kg?c=%s'>%s</a>（让位 @%s，"
+                          "%+.2f%%）"
+                          % (e(x.get("victim_code") or ""),
+                             e(x.get("victim_code") or ""),
+                             e(x.get("victim_name") or ""),
+                             e(x.get("victim_exit") or "—"),
+                             x.get("victim_ret") or 0))
+                after = ("假想 %+.2f%% vs 新票 %+.2f%%"
+                         % (x.get("victim_hyp") or 0,
+                            x.get("new_ret") or 0)
+                         if x.get("victim_hyp") is not None
+                         else "观察中")
+            else:
+                detail = "%s（余仓 %.2f · %s）" % (
+                    e(x.get("note") or ""), x.get("free") or 0,
+                    e(x.get("size_eff") or 0))
+                after = ("假想 %+.2f%%" % x.get("new_hyp")
+                         if x.get("new_hyp") is not None else "观察中")
+            c = x.get("correct")
+            badge = ("<span class='bdg g'>✓ 对</span>" if c
+                     else ("<span class='bdg r'>✗ 错</span>"
+                           if c is False
+                           else "<span class='bdg n'>观察中</span>"))
+            return ("<tr><td>%s</td><td>%s</td><td><span class='bdg %s'>"
+                    "%s</span></td>"
+                    "<td><a href='/kg?c=%s'>%s %s</a></td>"
+                    "<td>%s</td><td class='dim' style='font-size:12px'>%s"
+                    "</td><td>%s</td></tr>"
+                    % (x.get("d"), e(x.get("bk") or ""),
+                       "y" if act == "换仓" else "n", e(act or ""),
+                       e(x.get("new_code") or ""), e(x.get("new_code") or ""),
+                       e(x.get("new_name") or ""), detail, after, badge))
+
+        dtrs = "".join(_drow(x) for x in (dcs.get("rows") or [])[:30]) or \
+            ("<tr><td colspan=7 class='dim'>暂无取舍决策——每账仓位 ≤100%%，"
+             "满仓来新票才触发换仓/放弃</td></tr>")
+        tip_html = ("".join("<div style='margin-top:6px'>⚠ %s</div>"
+                            % e(t) for t in tips)
+                    if tips else "")
+        sec_dec = ("<div class='sec'><h2>⚔️ 取舍决策 · 事后观察（仓位固定"
+                   "→有取有舍→评对错→供进化）</h2>%s%s"
+                   "<table class='sticky' style='margin-top:10px'>"
+                   "<tr><th>日期</th><th>账本</th><th>动作</th><th>新票</th>"
+                   "<th>取舍</th><th>事后对照</th><th>对错</th></tr>%s"
+                   "</table>"
+                   "<div class='dim' style='font-size:12.5px;margin-top:6px'>"
+                   "每本账一个固定资金池（总仓位 ≤100%%，单票 ≤100%%）：满仓"
+                   "来新票时——<b>激进</b>挤掉最弱持仓（浮亏最深）换仓；"
+                   "<b>保守</b>不挤仓放弃新票；<b>中立</b>只挤「过半时间窗"
+                   "且浮亏」者。事后自动对照：换仓对=新票实际收益＞被挤票"
+                   "假想收益；放弃对=新票假想收益≤0。正确率连续偏低会给"
+                   "出进化方向提示（≥5 样本才评）。</div>%s</div>"
+                   % (dcards, tip_html, dtrs, ""))
+        # K88 预演六本账：预演票喂独立账，vs_real=预演质量用钱度量
+        evb = {}
+        try:
+            with open(os.path.join(REPORTS_DIR,
+                                   "trader_sim_simbooks_eval.json"),
+                      encoding="utf-8") as f:
+                evb = json.load(f)
+        except Exception:
+            pass
+        sec_preset = ""
+        if evb:
+            vs = evb.get("vs_real") or {}
+            vb = vs.get("books") or {}
+
+            def _bc(bk, key):
+                x = (vb.get(bk) or {}).get(key) or 0.0
+                return ("<td class='%s'>%+.2f</td>"
+                        % ("up" if x >= 0 else "dn", x))
+            btrs = "".join(
+                "<tr><td>%s</td><td>%d</td>%s%s%s</tr>"
+                % (e(bk), (vb.get(bk) or {}).get("n") or 0,
+                   _bc(bk, "sim"), _bc(bk, "real"), _bc(bk, "diff"))
+                for bk in BOOKS)
+            vd = vs.get("verdict") or {}
+            _so = "；".join(vs.get("sim_only") or [])
+            _ro = "；".join(vs.get("real_only") or [])
+            sec_preset = (
+                "<div class='sec'><h2>🎬 预演六本账 · vs 真实账（预演质量"
+                "的真金白银度量）</h2>"
+                "<div class='dim' style='font-size:12.5px;margin:4px 0 8px'>"
+                "预演票（模拟投委会留痕）喂独立六账：同样操盘规则、独立"
+                "文件对（trader_sim_simbooks*.json），与真实账零干扰；预演"
+                "早真会一步建仓——同票贡献差=领先一步的价值；裁决一致率低"
+                "=预演与真会漂移大，喂账成绩仅供参考。数据 %s</div>"
+                "<table class='sticky'><tr><th>账本</th><th>同票数</th>"
+                "<th>预演均贡献</th><th>真实均贡献</th><th>差值</th></tr>%s"
+                "</table>"
+                "<div class='dim' style='font-size:12.5px;margin-top:6px'>"
+                "预演票 %d · 真实票 %d · 同票 %d · 裁决一致率 %.0f%%（%d/%d）"
+                "%s%s · 预演待入场 %d 票</div></div>"
+                % (e(evb.get("ts") or "—"), btrs,
+                   vs.get("n_sim") or 0, vs.get("n_real") or 0,
+                   vs.get("n_both") or 0, vd.get("pct") or 0.0,
+                   vd.get("agree") or 0, vd.get("n") or 0,
+                   (" ｜预演独接：%s" % e(_so)) if _so else "",
+                   (" ｜真实独接：%s" % e(_ro)) if _ro else "",
+                   len(evb.get("pending") or {})))
+        content = ("<h1>♠ 三操盘手模拟锦标赛 · 六本账</h1>"
+                   "<div class='dim' style='margin:2px 0 10px'>K68 影子"
+                   "模拟层：选股策略出票（来源标签全链贯穿）→ 分析师团队"
+                   "六视角辩论 → 激进/保守/中立 × 积极/保守 六本账 → 真实"
+                   "日K买卖点 → 战绩评价（贡献度+基准α）</div>"
+                   "%s%s%s%s%s%s%s%s%s"
+                   % (cards, tbl_sid, sec_dec, sec_preset, sec_sim, sec_p,
+                      tbl, tbl_pos, method))
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,"
+                "initial-scale=1'><title>操盘手锦标赛 · 六本账</title>"
+                + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
+                + pill_nav("sim") + content + sjs + "</body></html>")
+        self._html(body)
         self._html(body)

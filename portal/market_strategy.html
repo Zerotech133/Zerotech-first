@@ -35,6 +35,8 @@
   .foot{display:flex; justify-content:space-between; align-items:center; margin-top:auto; font-size:11.5px; color:var(--text-dim);}
   .sub{padding:5px 14px; border-radius:8px; border:1px solid var(--blu-600); background:var(--blu-600); color:#fff; font-size:12px; cursor:pointer;}
   .sub.done{background:transparent; color:#3fb950; border-color:#3fb950;}
+  /* K-STOCK-137f S-d 轻量直订：直接建仓为次要按钮（区别于订阅/雇佣主按钮） */
+  .sub.ghost{background:transparent; color:#79b8ff; border-color:#79b8ff55; font-size:11px;}
   /* 下钻抽屉 */
   .mask{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9;}
   .drawer{display:none; position:fixed; top:0; right:0; bottom:0; width:min(560px,94vw); background:var(--bg-page); z-index:10; overflow-y:auto; padding:26px; border-left:1px solid var(--line);}
@@ -106,6 +108,19 @@ async function toggleSub(id,ev){
   const r=await apiPost('/api/portfolio_subscribe',{strategy:id,action:'toggle'});
   if(r.ok){toast((r.action==='add'?'已订阅 ':'已退订 ')+id); await loadSubs(); render();}
   else toast('失败：'+(r.error||'?'));}
+/* K-STOCK-137f S-d 轻量直订动线：不雇佣、不组团队，直接模拟建仓 */
+async function directOpen(id,ev){
+  ev.stopPropagation();
+  const s=(DATA.strategies||[]).find(x=>x.id===id);
+  if(!s||s.status!=='live'){toast('仅产线（live）策略支持直接建仓');return;}
+  const stock=prompt('模拟建仓标的（6位代码.SH/.SZ/.BJ）：','');
+  if(!stock)return;
+  const qty=parseInt(prompt('股数（100 整数倍）：','100'),10);
+  if(!qty||qty<=0||qty%100){toast('qty 须为 100 的整数倍');return;}
+  if(!confirm('轻量直订：在「'+s.name+'」动线下直接模拟建仓 '+stock.trim().toUpperCase()+' ×'+qty+'？\n（无经理无复盘，不组团队）'))return;
+  const r=await apiPost('/api/paper_direct_open',{strategy_id:id,stock:stock.trim().toUpperCase(),qty:qty});
+  if(r.ok){toast('✅ 已模拟建仓 '+stock.trim().toUpperCase()+' · 轻量模式：无经理无复盘，随时可在策略详情升级雇佣');}
+  else toast('建仓失败：'+(r.error||'?'));}
 function renderPf(){
   const pf=document.getElementById('pf');
   if(!SUBS.size){pf.style.display='none'; return;}
@@ -136,8 +151,10 @@ function render(){
       +(s.manager_intro?'<div class="tl" style="font-size:11.5px; color:#d2a8ff;">👔 经理：'+esc(s.manager_intro)+'</div>':'')
       +'<div class="mtags">'+s.method_tags.map(t=>'<span>'+esc(t)+'</span>').join('')+'</div>'
       +'<div class="foot"><span>今日命中 <b>'+s.hits_today+'</b> · 订阅 '+s.subscribers+'</span>'
+      +'<span style="display:flex; gap:6px;">'
+      +(st==='live'?'<button class="sub ghost" title="轻量直订：不雇佣操盘手，直接模拟建仓" onclick="directOpen(\''+s.id+'\',event)">直接建仓</button>':'')
       +'<button class="sub'+(SUBS.has(s.id)?' done':'')+'" onclick="toggleSub(\''+s.id+'\',event)">'
-      +(SUBS.has(s.id)?'✓ 已订阅':'订阅')+'</button></div></div>';}).join('');
+      +(SUBS.has(s.id)?'✓ 已订阅':'订阅')+'</button></span></div></div>';}).join('');
   renderPf();}
 function closeDrawer(){document.getElementById('mask').style.display='none';
   document.getElementById('drawer').style.display='none';}

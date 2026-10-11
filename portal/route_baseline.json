@@ -1,590 +1,599 @@
 {
- "generated_at": "2026-10-12T00:05:09",
+ "generated_at": "2026-10-12T00:13:47",
  "source": "portal_api.py",
- "source_sha256": "e69500873cd055be",
- "n_routes": 69,
+ "source_sha256": "3fc7a5855b92dfbd",
+ "n_routes": 70,
  "routes": [
   {
    "path": "/api/alert/push",
    "lines": [
-    202,
-    5971
+    198,
+    3274
    ],
    "count": 2,
-   "first_line": 202
+   "first_line": 198
   },
   {
    "path": "/api/alerts",
    "lines": [
-    5134
+    2437
    ],
    "count": 1,
-   "first_line": 5134
+   "first_line": 2437
   },
   {
    "path": "/api/analyst-report",
    "lines": [
-    5919
+    3222
    ],
    "count": 1,
-   "first_line": 5919
+   "first_line": 3222
   },
   {
    "path": "/api/audit_chat",
    "lines": [
-    4451
+    1750
    ],
    "count": 1,
-   "first_line": 4451
+   "first_line": 1750
   },
   {
    "path": "/api/audit_recent",
    "lines": [
-    5822
+    3125
    ],
    "count": 1,
-   "first_line": 5822
+   "first_line": 3125
   },
   {
    "path": "/api/audit_status",
    "lines": [
-    4834
+    2137
    ],
    "count": 1,
-   "first_line": 4834
+   "first_line": 2137
   },
   {
    "path": "/api/batch-backtest",
    "lines": [
-    187,
-    4786,
-    5968
+    182,
+    2089,
+    3271
    ],
    "count": 3,
-   "first_line": 187
+   "first_line": 182
   },
   {
    "path": "/api/bridge/summary",
    "lines": [
-    5934
+    3237
    ],
    "count": 1,
-   "first_line": 5934
+   "first_line": 3237
   },
   {
    "path": "/api/bridge/table_preview",
    "lines": [
-    5941
+    3244
    ],
    "count": 1,
-   "first_line": 5941
+   "first_line": 3244
   },
   {
    "path": "/api/brief",
    "lines": [
-    5128
+    2431
    ],
    "count": 1,
-   "first_line": 5128
+   "first_line": 2431
   },
   {
    "path": "/api/chanlun/backtest",
    "lines": [
-    5214
+    2517
    ],
    "count": 1,
-   "first_line": 5214
+   "first_line": 2517
   },
   {
    "path": "/api/chanlun/card/feedback",
    "lines": [
-    177,
-    4599
-   ],
-   "count": 2,
-   "first_line": 177
-  },
-  {
-   "path": "/api/chanlun/kline",
-   "lines": [
-    5157
-   ],
-   "count": 1,
-   "first_line": 5157
-  },
-  {
-   "path": "/api/chanlun/label/load",
-   "lines": [
-    5330
-   ],
-   "count": 1,
-   "first_line": 5330
-  },
-  {
-   "path": "/api/chanlun/label/save",
-   "lines": [
-    168,
-    4547
-   ],
-   "count": 2,
-   "first_line": 168
-  },
-  {
-   "path": "/api/chanlun/pool/push",
-   "lines": [
-    178,
-    4609
-   ],
-   "count": 2,
-   "first_line": 178
-  },
-  {
-   "path": "/api/chanlun/structure",
-   "lines": [
-    5169
-   ],
-   "count": 1,
-   "first_line": 5169
-  },
-  {
-   "path": "/api/chips",
-   "lines": [
-    5922
-   ],
-   "count": 1,
-   "first_line": 5922
-  },
-  {
-   "path": "/api/council/confirm",
-   "lines": [
-    184,
-    4662
-   ],
-   "count": 2,
-   "first_line": 184
-  },
-  {
-   "path": "/api/council/simrun",
-   "lines": [
-    185,
-    4672
-   ],
-   "count": 2,
-   "first_line": 185
-  },
-  {
-   "path": "/api/data/daily",
-   "lines": [
-    4805
-   ],
-   "count": 1,
-   "first_line": 4805
-  },
-  {
-   "path": "/api/data/freshness",
-   "lines": [
-    5951
-   ],
-   "count": 1,
-   "first_line": 5951
-  },
-  {
-   "path": "/api/data/job",
-   "lines": [
-    5963
-   ],
-   "count": 1,
-   "first_line": 5963
-  },
-  {
-   "path": "/api/data/runs/",
-   "lines": [
-    4805
-   ],
-   "count": 1,
-   "first_line": 4805
-  },
-  {
-   "path": "/api/data/sync",
-   "lines": [
-    201,
-    5958
-   ],
-   "count": 2,
-   "first_line": 201
-  },
-  {
-   "path": "/api/data/update",
-   "lines": [
-    163,
-    4440
-   ],
-   "count": 2,
-   "first_line": 163
-  },
-  {
-   "path": "/api/data/update-plan",
-   "lines": [
-    162,
-    4440
-   ],
-   "count": 2,
-   "first_line": 162
-  },
-  {
-   "path": "/api/debate/say",
-   "lines": [
-    186,
-    4682
-   ],
-   "count": 2,
-   "first_line": 186
-  },
-  {
-   "path": "/api/devops",
-   "lines": [
-    5842
-   ],
-   "count": 1,
-   "first_line": 5842
-  },
-  {
-   "path": "/api/kline",
-   "lines": [
-    5897
-   ],
-   "count": 1,
-   "first_line": 5897
-  },
-  {
-   "path": "/api/kline_qy",
-   "lines": [
-    5908
-   ],
-   "count": 1,
-   "first_line": 5908
-  },
-  {
-   "path": "/api/manager_fire",
-   "lines": [
-    192,
-    4472
-   ],
-   "count": 2,
-   "first_line": 192
-  },
-  {
-   "path": "/api/manager_hire",
-   "lines": [
-    191,
-    4468
-   ],
-   "count": 2,
-   "first_line": 191
-  },
-  {
-   "path": "/api/manager_roster",
-   "lines": [
-    4851
-   ],
-   "count": 1,
-   "first_line": 4851
-  },
-  {
-   "path": "/api/market_performance",
-   "lines": [
-    4918
-   ],
-   "count": 1,
-   "first_line": 4918
-  },
-  {
-   "path": "/api/nlquery",
-   "lines": [
-    5744
-   ],
-   "count": 1,
-   "first_line": 5744
-  },
-  {
-   "path": "/api/overview",
-   "lines": [
-    4824
-   ],
-   "count": 1,
-   "first_line": 4824
-  },
-  {
-   "path": "/api/paper_hire",
-   "lines": [
-    190,
-    4463
-   ],
-   "count": 2,
-   "first_line": 190
-  },
-  {
-   "path": "/api/paper_hires",
-   "lines": [
-    4848
-   ],
-   "count": 1,
-   "first_line": 4848
-  },
-  {
-   "path": "/api/paper_history",
-   "lines": [
-    4895
-   ],
-   "count": 1,
-   "first_line": 4895
-  },
-  {
-   "path": "/api/paper_order",
-   "lines": [
-    188,
-    4455
-   ],
-   "count": 2,
-   "first_line": 188
-  },
-  {
-   "path": "/api/paper_status",
-   "lines": [
-    4855
-   ],
-   "count": 1,
-   "first_line": 4855
-  },
-  {
-   "path": "/api/paper_stop",
-   "lines": [
-    189,
-    4459
-   ],
-   "count": 2,
-   "first_line": 189
-  },
-  {
-   "path": "/api/portfolio_adjust",
-   "lines": [
-    182,
-    4642
-   ],
-   "count": 2,
-   "first_line": 182
-  },
-  {
-   "path": "/api/portfolio_close",
-   "lines": [
-    181,
-    4632
-   ],
-   "count": 2,
-   "first_line": 181
-  },
-  {
-   "path": "/api/portfolio_csv",
-   "lines": [
-    5140
-   ],
-   "count": 1,
-   "first_line": 5140
-  },
-  {
-   "path": "/api/portfolio_hire",
-   "lines": [
-    165,
-    4706
-   ],
-   "count": 2,
-   "first_line": 165
-  },
-  {
-   "path": "/api/portfolio_market",
-   "lines": [
-    5154
-   ],
-   "count": 1,
-   "first_line": 5154
-  },
-  {
-   "path": "/api/portfolio_open",
-   "lines": [
-    183,
-    4652
-   ],
-   "count": 2,
-   "first_line": 183
-  },
-  {
-   "path": "/api/portfolio_set",
-   "lines": [
-    179,
-    4619
-   ],
-   "count": 2,
-   "first_line": 179
-  },
-  {
-   "path": "/api/portfolio_status",
-   "lines": [
-    4939
-   ],
-   "count": 1,
-   "first_line": 4939
-  },
-  {
-   "path": "/api/portfolio_subscribe",
-   "lines": [
-    164,
-    4692
-   ],
-   "count": 2,
-   "first_line": 164
-  },
-  {
-   "path": "/api/portfolio_undo",
-   "lines": [
-    180,
-    4629
-   ],
-   "count": 2,
-   "first_line": 180
-  },
-  {
-   "path": "/api/portfolios",
-   "lines": [
-    4932
-   ],
-   "count": 1,
-   "first_line": 4932
-  },
-  {
-   "path": "/api/recv_add",
-   "lines": [
-    173,
-    4572
-   ],
-   "count": 2,
-   "first_line": 173
-  },
-  {
-   "path": "/api/report_push",
-   "lines": [
-    169,
-    4556
-   ],
-   "count": 2,
-   "first_line": 169
-  },
-  {
-   "path": "/api/research",
-   "lines": [
-    5725
-   ],
-   "count": 1,
-   "first_line": 5725
-  },
-  {
-   "path": "/api/review_minutes",
-   "lines": [
-    5065
-   ],
-   "count": 1,
-   "first_line": 5065
-  },
-  {
-   "path": "/api/screen",
-   "lines": [
-    5137
-   ],
-   "count": 1,
-   "first_line": 5137
-  },
-  {
-   "path": "/api/strategies",
-   "lines": [
-    5131
-   ],
-   "count": 1,
-   "first_line": 5131
-  },
-  {
-   "path": "/api/strategy_detail",
-   "lines": [
-    5083
-   ],
-   "count": 1,
-   "first_line": 5083
-  },
-  {
-   "path": "/api/strategy_market",
-   "lines": [
-    4911
-   ],
-   "count": 1,
-   "first_line": 4911
-  },
-  {
-   "path": "/api/sub_del",
-   "lines": [
-    171,
-    4564
-   ],
-   "count": 2,
-   "first_line": 171
-  },
-  {
-   "path": "/api/sub_test",
-   "lines": [
     172,
-    4568
+    1902
    ],
    "count": 2,
    "first_line": 172
   },
   {
-   "path": "/api/sub_toggle",
+   "path": "/api/chanlun/kline",
    "lines": [
-    170,
-    4560
-   ],
-   "count": 2,
-   "first_line": 170
-  },
-  {
-   "path": "/api/trader_detail",
-   "lines": [
-    5026
+    2460
    ],
    "count": 1,
-   "first_line": 5026
+   "first_line": 2460
   },
   {
-   "path": "/api/trader_fire",
+   "path": "/api/chanlun/label/load",
+   "lines": [
+    2633
+   ],
+   "count": 1,
+   "first_line": 2633
+  },
+  {
+   "path": "/api/chanlun/label/save",
+   "lines": [
+    163,
+    1850
+   ],
+   "count": 2,
+   "first_line": 163
+  },
+  {
+   "path": "/api/chanlun/pool/push",
+   "lines": [
+    173,
+    1912
+   ],
+   "count": 2,
+   "first_line": 173
+  },
+  {
+   "path": "/api/chanlun/structure",
+   "lines": [
+    2472
+   ],
+   "count": 1,
+   "first_line": 2472
+  },
+  {
+   "path": "/api/chips",
+   "lines": [
+    3225
+   ],
+   "count": 1,
+   "first_line": 3225
+  },
+  {
+   "path": "/api/council/confirm",
+   "lines": [
+    179,
+    1965
+   ],
+   "count": 2,
+   "first_line": 179
+  },
+  {
+   "path": "/api/council/simrun",
+   "lines": [
+    180,
+    1975
+   ],
+   "count": 2,
+   "first_line": 180
+  },
+  {
+   "path": "/api/data/daily",
+   "lines": [
+    2108
+   ],
+   "count": 1,
+   "first_line": 2108
+  },
+  {
+   "path": "/api/data/freshness",
+   "lines": [
+    3254
+   ],
+   "count": 1,
+   "first_line": 3254
+  },
+  {
+   "path": "/api/data/job",
+   "lines": [
+    3266
+   ],
+   "count": 1,
+   "first_line": 3266
+  },
+  {
+   "path": "/api/data/runs/",
+   "lines": [
+    2108
+   ],
+   "count": 1,
+   "first_line": 2108
+  },
+  {
+   "path": "/api/data/sync",
+   "lines": [
+    197,
+    3261
+   ],
+   "count": 2,
+   "first_line": 197
+  },
+  {
+   "path": "/api/data/update",
+   "lines": [
+    158,
+    1739
+   ],
+   "count": 2,
+   "first_line": 158
+  },
+  {
+   "path": "/api/data/update-plan",
+   "lines": [
+    157,
+    1739
+   ],
+   "count": 2,
+   "first_line": 157
+  },
+  {
+   "path": "/api/debate/say",
+   "lines": [
+    181,
+    1985
+   ],
+   "count": 2,
+   "first_line": 181
+  },
+  {
+   "path": "/api/devops",
+   "lines": [
+    3145
+   ],
+   "count": 1,
+   "first_line": 3145
+  },
+  {
+   "path": "/api/kline",
+   "lines": [
+    3200
+   ],
+   "count": 1,
+   "first_line": 3200
+  },
+  {
+   "path": "/api/kline_qy",
+   "lines": [
+    3211
+   ],
+   "count": 1,
+   "first_line": 3211
+  },
+  {
+   "path": "/api/manager_fire",
+   "lines": [
+    187,
+    1771
+   ],
+   "count": 2,
+   "first_line": 187
+  },
+  {
+   "path": "/api/manager_hire",
+   "lines": [
+    186,
+    1767
+   ],
+   "count": 2,
+   "first_line": 186
+  },
+  {
+   "path": "/api/manager_roster",
+   "lines": [
+    2154
+   ],
+   "count": 1,
+   "first_line": 2154
+  },
+  {
+   "path": "/api/market_performance",
+   "lines": [
+    2221
+   ],
+   "count": 1,
+   "first_line": 2221
+  },
+  {
+   "path": "/api/nlquery",
+   "lines": [
+    3047
+   ],
+   "count": 1,
+   "first_line": 3047
+  },
+  {
+   "path": "/api/overview",
+   "lines": [
+    2127
+   ],
+   "count": 1,
+   "first_line": 2127
+  },
+  {
+   "path": "/api/paper_direct_open",
+   "lines": [
+    188,
+    1775
+   ],
+   "count": 2,
+   "first_line": 188
+  },
+  {
+   "path": "/api/paper_hire",
+   "lines": [
+    185,
+    1762
+   ],
+   "count": 2,
+   "first_line": 185
+  },
+  {
+   "path": "/api/paper_hires",
+   "lines": [
+    2151
+   ],
+   "count": 1,
+   "first_line": 2151
+  },
+  {
+   "path": "/api/paper_history",
+   "lines": [
+    2198
+   ],
+   "count": 1,
+   "first_line": 2198
+  },
+  {
+   "path": "/api/paper_order",
+   "lines": [
+    183,
+    1754
+   ],
+   "count": 2,
+   "first_line": 183
+  },
+  {
+   "path": "/api/paper_status",
+   "lines": [
+    2158
+   ],
+   "count": 1,
+   "first_line": 2158
+  },
+  {
+   "path": "/api/paper_stop",
+   "lines": [
+    184,
+    1758
+   ],
+   "count": 2,
+   "first_line": 184
+  },
+  {
+   "path": "/api/portfolio_adjust",
+   "lines": [
+    177,
+    1945
+   ],
+   "count": 2,
+   "first_line": 177
+  },
+  {
+   "path": "/api/portfolio_close",
+   "lines": [
+    176,
+    1935
+   ],
+   "count": 2,
+   "first_line": 176
+  },
+  {
+   "path": "/api/portfolio_csv",
+   "lines": [
+    2443
+   ],
+   "count": 1,
+   "first_line": 2443
+  },
+  {
+   "path": "/api/portfolio_hire",
+   "lines": [
+    160,
+    2009
+   ],
+   "count": 2,
+   "first_line": 160
+  },
+  {
+   "path": "/api/portfolio_market",
+   "lines": [
+    2457
+   ],
+   "count": 1,
+   "first_line": 2457
+  },
+  {
+   "path": "/api/portfolio_open",
+   "lines": [
+    178,
+    1955
+   ],
+   "count": 2,
+   "first_line": 178
+  },
+  {
+   "path": "/api/portfolio_set",
+   "lines": [
+    174,
+    1922
+   ],
+   "count": 2,
+   "first_line": 174
+  },
+  {
+   "path": "/api/portfolio_status",
+   "lines": [
+    2242
+   ],
+   "count": 1,
+   "first_line": 2242
+  },
+  {
+   "path": "/api/portfolio_subscribe",
+   "lines": [
+    159,
+    1995
+   ],
+   "count": 2,
+   "first_line": 159
+  },
+  {
+   "path": "/api/portfolio_undo",
+   "lines": [
+    175,
+    1932
+   ],
+   "count": 2,
+   "first_line": 175
+  },
+  {
+   "path": "/api/portfolios",
+   "lines": [
+    2235
+   ],
+   "count": 1,
+   "first_line": 2235
+  },
+  {
+   "path": "/api/recv_add",
+   "lines": [
+    168,
+    1875
+   ],
+   "count": 2,
+   "first_line": 168
+  },
+  {
+   "path": "/api/report_push",
+   "lines": [
+    164,
+    1859
+   ],
+   "count": 2,
+   "first_line": 164
+  },
+  {
+   "path": "/api/research",
+   "lines": [
+    3028
+   ],
+   "count": 1,
+   "first_line": 3028
+  },
+  {
+   "path": "/api/review_minutes",
+   "lines": [
+    2368
+   ],
+   "count": 1,
+   "first_line": 2368
+  },
+  {
+   "path": "/api/screen",
+   "lines": [
+    2440
+   ],
+   "count": 1,
+   "first_line": 2440
+  },
+  {
+   "path": "/api/strategies",
+   "lines": [
+    2434
+   ],
+   "count": 1,
+   "first_line": 2434
+  },
+  {
+   "path": "/api/strategy_detail",
+   "lines": [
+    2386
+   ],
+   "count": 1,
+   "first_line": 2386
+  },
+  {
+   "path": "/api/strategy_market",
+   "lines": [
+    2214
+   ],
+   "count": 1,
+   "first_line": 2214
+  },
+  {
+   "path": "/api/sub_del",
    "lines": [
     166,
-    4742
+    1867
    ],
    "count": 2,
    "first_line": 166
   },
   {
-   "path": "/api/trader_roster",
+   "path": "/api/sub_test",
    "lines": [
-    4994
+    167,
+    1871
+   ],
+   "count": 2,
+   "first_line": 167
+  },
+  {
+   "path": "/api/sub_toggle",
+   "lines": [
+    165,
+    1863
+   ],
+   "count": 2,
+   "first_line": 165
+  },
+  {
+   "path": "/api/trader_detail",
+   "lines": [
+    2329
    ],
    "count": 1,
-   "first_line": 4994
+   "first_line": 2329
+  },
+  {
+   "path": "/api/trader_fire",
+   "lines": [
+    161,
+    2045
+   ],
+   "count": 2,
+   "first_line": 161
+  },
+  {
+   "path": "/api/trader_roster",
+   "lines": [
+    2297
+   ],
+   "count": 1,
+   "first_line": 2297
   },
   {
    "path": "/api/trainee_board",
    "lines": [
-    5093
+    2396
    ],
    "count": 1,
-   "first_line": 5093
+   "first_line": 2396
   }
  ]
 }
