@@ -200,6 +200,24 @@ class ParseSendResultTest(unittest.TestCase):
         self.assertIn("no_send_marker", why)
 
 
+class ObservabilityFieldsTest(TmpDirCase):
+    """P1 可观测性：任务三联证据必须在同一条日志中可复核。"""
+
+    def test_wrapper_logs_rc_path_summary_and_exception_class(self):
+        fake_py = self.wbin("fake_success.py", b"print('SEND_OK')\n")
+        errlog = self.wbin("task_err.log", b"task output\n")
+        with mock.patch.object(wrap, "ALERT_FAIL_PY", fake_py), \
+             mock.patch.object(wrap, "SEND_LOG", self.send_log), \
+             mock.patch.object(wrap, "OUTBOX", self.outbox):
+            rc = wrap.main(["observe_task", "3", errlog])
+        self.assertEqual(rc, 0)
+        line = Path(self.send_log).read_text(encoding="ascii").splitlines()[-1]
+        self.assertIn("task_rc=3", line)
+        self.assertIn("log_path=", line)
+        self.assertIn("result_summary=SEND_OK", line)
+        self.assertIn("exception_class=task_failure", line)
+
+
 FAKE_ALERT_FAIL = r'''
 # -*- coding: utf-8 -*-
 """假 alert_fail：同构复刻（写 pending + utf-8 读日志尾 + 打印 SEND 标记）。"""
