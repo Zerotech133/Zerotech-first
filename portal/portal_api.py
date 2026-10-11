@@ -23005,6 +23005,61 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._json(_sub.portfolios())
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/portfolio_status":
+            # K-STOCK-122 模拟仓侧「我的组合」投影（只读）：
+            # 组合策略集 + 在职交易员 + 其 pending/持仓 + 最新净值
+            try:
+                import json as _j2
+                import sqlite3 as _sq2
+                subs_p = os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)),
+                    "data", "strategy_subscriptions.json")
+                hires_p = os.path.join(
+                    r"E:\老田的AI助手\k_stock\paper", "hires.json")
+                pf = {}
+                if os.path.exists(subs_p):
+                    with open(subs_p, encoding="utf-8") as _f:
+                        for _p in (_j2.load(_f).get("portfolios") or []):
+                            if _p.get("id") == "pf_001":
+                                pf = _p
+                                break
+                traders = []
+                if os.path.exists(hires_p):
+                    with open(hires_p, encoding="utf-8") as _f:
+                        traders = [h.get("trader") for h in
+                                   (_j2.load(_f).get("hires") or [])
+                                   if h.get("source") == "pf_001"
+                                   and h.get("status") == "active"]
+                con = _sq2.connect(r"E:\老田的AI助手\k_stock\data\paper.db")
+                con.row_factory = _sq2.Row
+                pend, poss, eq = [], [], None
+                try:
+                    for t in traders:
+                        pend += [dict(r) for r in con.execute(
+                            "SELECT stock,side,qty,plan_date,status,ref FROM "
+                            "orders WHERE account_id=? AND ref LIKE "
+                            "'poc_pf_001%' AND status='pending' "
+                            "ORDER BY id DESC LIMIT 20", (t,))]
+                        poss += [dict(r) for r in con.execute(
+                            "SELECT stock,qty,avg_cost FROM positions "
+                            "WHERE account_id=?", (t,))]
+                        r = con.execute(
+                            "SELECT date,total FROM equity_marks WHERE "
+                            "account_id=? ORDER BY date DESC LIMIT 1",
+                            (t,)).fetchone()
+                        if r:
+                            eq = {"account": t, "date": r["date"],
+                                  "total": r["total"]}
+                finally:
+                    con.close()
+                self._json({"ok": True, "portfolio": {
+                    "id": pf.get("id"), "name": pf.get("name"),
+                    "strategies": pf.get("strategies") or [],
+                    "trader": pf.get("trader"), "note": pf.get("note")},
+                    "traders": traders, "pending": pend,
+                    "positions": poss, "equity": eq})
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/review_minutes":
             # K-STOCK-122 M5 复盘会纪要投影（只读）：?date=YYYY-MM-DD 缺省最新
             try:

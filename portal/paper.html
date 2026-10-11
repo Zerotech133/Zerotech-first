@@ -289,6 +289,8 @@
         <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">今日复盘会（三 Agent）</div>
         <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">我的组合（策略订阅 × AI 交易员）</div>
+        <div class="side-box"><div id="pf-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">策略源建议（strategist · 影子）</div>
         <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">最近成交</div>
@@ -445,6 +447,25 @@ function renderMeeting(m){
     <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">纪要已推飞书 · 点按钮可查持仓线位</div>`;
 }
 fetch('/api/review_minutes').then(r=>r.json()).then(renderMeeting).catch(()=>{$('meet-body').innerHTML='<div class="empty">复盘会读取失败</div>';});
+function renderPortfolio(ps){
+  const el=$('pf-body');
+  if(!ps||!ps.ok){el.innerHTML='<div class="empty">组合数据读取失败</div>';return;}
+  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const pf=ps.portfolio||{};
+  const chips=(pf.strategies||[]).map(s=>`<a href="/market-strategy" style="display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;font-size:11px;text-decoration:none;color:var(--text)">${esc(s)}</a>`).join('')||'<span class="empty">未订阅策略</span>';
+  const traders=(ps.traders||[]).map(t=>`<div>🤖 AI 交易员在岗：<b>${esc(t)}</b></div>`).join('')||'<div class="empty">未聘交易员（可去<a href="/market-strategy">策略市场</a>订阅后一键聘用）</div>';
+  const pend=(ps.pending||[]).slice(0,6).map(p=>
+    `<div>🎯 ${esc(p.side)} <a href="/kg/stock/${p.stock}">${p.stock}</a> ×${p.qty}（${esc(p.plan_date)}·跟单）</div>`).join('');
+  const poss=(ps.positions||[]).slice(0,6).map(p=>
+    `<div>📦 <a href="/kg/stock/${p.stock}">${p.stock}</a> ${p.qty} 股 @${p.avg_cost?Number(p.avg_cost).toFixed(2):'-'}</div>`).join('');
+  const eq=ps.equity?`<div style="font-size:11.5px;color:var(--text-dim);margin:4px 0">净值快照 ${esc(ps.equity.date)} · 总资产 ¥${Number(ps.equity.total).toLocaleString()}</div>`:'';
+  el.innerHTML=`<div style="font-weight:700;margin-bottom:4px">${esc(pf.name||pf.id||'pf_001')}</div>${eq}${traders}
+    <div style="margin:6px 0 2px;font-size:11px;color:var(--text-dim)">订阅策略集：</div>${chips}
+    ${pend?`<div style="margin:6px 0 2px;font-size:11px;color:var(--text-dim)">组合跟单挂单：</div>${pend}`:''}
+    ${poss?`<div style="margin:6px 0 2px;font-size:11px;color:var(--text-dim)">组合持仓：</div>${poss}`:''}
+    <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">跟单由工作日 07:10 计划任务自动执行</div>`;
+}
+fetch('/api/portfolio_status').then(r=>r.json()).then(renderPortfolio).catch(()=>{$('pf-body').innerHTML='<div class="empty">组合数据读取失败</div>';});
 function renderJudge(jd){
   const el=$('judge-body');
   if(!jd||!jd.ok||!(jd.reviews||[]).length){
