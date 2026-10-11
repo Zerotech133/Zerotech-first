@@ -21,10 +21,23 @@ from engine import Reject  # noqa: E402
 
 
 def is_trading_day_today(market) -> bool:
-    """今天在交易日历中 → True。日历不可得时 fail-open（engine 守卫兜底）。"""
+    """今天在交易日历中 → True。日历不可得时 fail-open（engine 守卫兜底）。
+
+    K-STOCK-101 盘前常态放行（2026-10-12 首单被拦复盘）：湖日历只含已入库
+    bar 的交易日（最新=上一交易日），07:05 盘前跑批时「今天」的 bar 必然
+    未入库 → today not in 日历 恒成立 → 交易日早晨 exec 必被误拦。
+    today > 湖最新 且为周一~周五 → 视为交易日放行（节假日误放由 engine
+    replan 守卫 + settle first_bar_on_or_after 顺延兜底，与
+    FakeMarket.next_trading_day 工作日顺延预测同口径）。"""
     today = datetime.now().strftime("%Y%m%d")
     try:
-        return today in set(market.trading_days())
+        days = sorted(set(market.trading_days()))
+        if today in days:
+            return True
+        last = days[-1] if days else ""
+        if last and today > last and datetime.now().weekday() < 5:
+            return True   # 盘前：湖日历未及今天，工作日放行
+        return False
     except Exception:
         return True
 
