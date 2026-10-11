@@ -11903,7 +11903,8 @@ function ckPush(i){
         """坐席（营业部/机构席位）下钻页：该坐席近60日上榜明细
         （日期/股票/买卖净额）+ 常做票。供龙虎榜页坐席名下钻
         （ex=<urlencoded 席位名>）。"""
-        from urllib.parse import parse_qs, unquote as _uq
+        from urllib.parse import parse_qs, quote as _q, \
+            unquote as _uq
         import html as _h
         qp = parse_qs(qs)
         ex = _uq((qp.get("ex") or [""])[0]).strip()[:80]
@@ -11916,7 +11917,63 @@ function ckPush(i){
             self._html("".join(body))
 
         if not ex:
-            _fail("缺少 ex 参数（坐席名），请从龙虎榜页坐席名点击进入")
+            # K-STOCK-123 席位画像榜（无参入口）：读日更管线
+            # portal/data/seat_profiles.json（seat_profile_daily.py 产出）
+            prof = _read_json(os.path.join(ROOT, "data",
+                                           "seat_profiles.json")) or {}
+            seats = prof.get("seats", [])
+            if not seats:
+                _fail("席位画像未生成（portal/data/seat_profiles.json"
+                      " 缺失）——日更管线 seat_profile_daily.py 每交易日"
+                      " 23:50 产出，或手动：python quant_backtest/"
+                      "seat_profile_daily.py")
+                return
+            def _wr_cell(s):
+                wr = s.get("wr_win_rate")
+                if wr is None:
+                    return "<span class='dim'>n=%d</span>" % s.get("wr_n", 0)
+                col = "#3fb950" if wr >= 0.5 else "#f85149"
+                ar = s.get("wr_avg_ret")
+                return ("<b style='color:%s'>%.1f%%</b> <span class='dim'>"
+                        "(n=%d%s)</span>"
+                        % (col, wr * 100, s.get("wr_n", 0),
+                           " · 均向 %+.2f%%" % (ar * 100)
+                           if ar is not None else ""))
+            trs = "".join(
+                "<tr><td><a href='/bt/seat?ex=%s'>%s</a>%s</td>"
+                "<td><b class='buy'>%d</b></td><td>%d</td>"
+                "<td style='color:%s'>%+.1f</td><td>%s</td>"
+                "<td>%s</td><td class='dim'>%s</td></tr>"
+                % (_h.escape(_q(ex2 := s.get("seat", ""))),
+                   _h.escape(ex2[:26]),
+                   " <span style='font-size:11px;color:#d29922'>⚡%s"
+                   "</span>" % _h.escape(s.get("youzi", ""))
+                   if s.get("youzi") else "",
+                   s.get("n_days", 0), s.get("n_stocks", 0),
+                   "#f85149" if s.get("net_yi", 0) > 0 else "#3fb950",
+                   s.get("net_yi", 0.0), _h.escape(s.get("style", "—")),
+                   _wr_cell(s),
+                   _h.escape("、".join(
+                       (t.get("name") or t.get("code", ""))
+                       for t in (s.get("top_stocks") or [])[:3])
+                       or "—"))
+                for s in seats)
+            body.append(
+                "<div class='nav'><a href='/bt/lhb'>← 龙虎榜</a> · "
+                "<span>席位画像</span></div>"
+                "<h1>🎩 游资席位画像榜</h1>"
+                "<div class='dim'>basis %s · 近 %d 个有数据交易日 · "
+                "%d 席位（按上榜日数降序 top） · 点席位名下钻明细</div>"
+                % (_h.escape(str(prof.get("basis", "?"))),
+                   prof.get("window_days", 0), prof.get("n_seats", 0)))
+            body.append(
+                "<h2>画像总榜</h2>"
+                "<table><tr><th>席位</th><th>上榜日</th><th>票数</th>"
+                "<th>净额(亿)</th><th>风格</th><th>方向胜率</th>"
+                "<th>常做票</th></tr>%s</table>"
+                "<div class='dim' style='margin-top:10px'>%s</div>"
+                % (trs, _h.escape(prof.get("note", ""))))
+            self._html("".join(body))
             return
         try:
             import datamart as dm
@@ -12010,6 +12067,7 @@ function ckPush(i){
                     for c, k, v in reg[:12])))
         body.append(
             "<div class='nav'><a href='/bt/lhb'>← 龙虎榜</a> · "
+            "<a href='/bt/seat'>席位画像榜</a> · "
             "<span>坐席下钻</span></div>"
             "<h1>坐席 <span class='dim'>(%s)</span></h1>"
             "<div>近 %d 个有数据交易日 · 上榜 <b class='buy'>%d 日</b> / "
@@ -12017,6 +12075,25 @@ function ckPush(i){
             "<b>%.2f 亿</b> · 净额 <b style='color:%s'>%+.2f 亿</b></div>"
             % (_h.escape(ex), len(win), n_days, n_stk, tot_b, tot_s,
                "#f85149" if tot_n > 0 else "#3fb950", tot_n))
+        # K-STOCK-123 画像摘要行（命中日更画像则显示风格/胜率徽标）
+        _prof = _read_json(os.path.join(ROOT, "data",
+                                        "seat_profiles.json")) or {}
+        _me = next((s for s in _prof.get("seats", [])
+                    if s.get("seat") == ex), None)
+        if _me:
+            _wr = _me.get("wr_win_rate")
+            _wr_txt = ("—" if _wr is None else
+                       "<b style='color:%s'>%.1f%%</b> (n=%d)"
+                       % ("#3fb950" if _wr >= 0.5 else "#f85149",
+                          _wr * 100, _me.get("wr_n", 0)))
+            body.append(
+                "<div class='dim' style='margin-top:6px'>🎩 画像（%s "
+                "· 近%d日榜）：%s风格 <b>%s</b> · 方向胜率 %s</div>"
+                % (_h.escape(str(_prof.get("basis", "?"))),
+                   _prof.get("window_days", 0),
+                   "⚡<b>%s</b> · " % _h.escape(_me.get("youzi", ""))
+                   if _me.get("youzi") else "",
+                   _h.escape(_me.get("style", "—")), _wr_txt))
         body.append(
             "<h2>上榜明细（日期降序）</h2>"
             "<table><tr><th>日期</th><th>代码</th><th>名称</th>"
