@@ -2,7 +2,7 @@
 
 > 依据：v6.2 D6/O7 + RiskGuard 校准草案（R′3）+ z4-riskguard-shadow-spec + kg_riskguard_recon.py 冻结口径 + 063000 缺口清单 K-6。
 > 用途：10-14 首批 5 日后验成熟当天的**判定材料模板**——上午跑工具填空即成裁决包，不现想。
-> 铁律（占位期不变）：**只描述不决策**；S3 判据只是闸门参考，enforce 无论如何都需老田显式 `--enforce` 批准（kg_riskguard.py:430-433 守卫恒降级，GUARD_KEYS 尚余 3 键未校准：riskguard_bear_density / riskguard_min_market_samples / riskguard_min_vol_days）。
+> 铁律（占位期不变）：**只描述不决策**；S3 判据只是闸门参考，enforce 无论如何都需老田显式 `--enforce` 批准。**【10-12 更正】GUARD_KEYS 已 9/9 全校准**（三键 bear_density/min_market_samples/min_vol_days 于 10-08 02:2x 老田拍板入列转正，enforce_allowed()=True；10-12 独立数据复核维持值均有支撑，见 docs/ops/2026-10-12_GUARD_KEYS三键校准建议_K-STOCK-144.md）——本文「余 3 键未校准」为预制时过时口径，已作废；裁决页「enforce 前置缺口」填「已闭合」，enforce 启用守余下两重门：显式 --enforce + 样本外对账 |t|≥3 且老田批准。
 
 ---
 
@@ -49,7 +49,7 @@ python kg_riskguard_recon.py json   >  docs/ops/s3_material_A_full.json
 |---|---|
 | S3 闸门差值（拦截-放行，h=5） | ____ pp（h=10 备注列另记） |
 | 判定 | ☐ 过（±0.2pp 内）☐ 误杀未治愈（>+0.2pp）☐ 守卫有价值（<-0.2pp）☐ 样本不足 |
-| enforce 前置缺口 | GUARD_KEYS 余 3 键：bear_density / min_market_samples / min_vol_days 校准状态 ____ |
+| enforce 前置缺口 | 【10-12 已闭合】GUARD_KEYS 9/9 全校准（10-08 拍板入列，10-12 独立复核维持值有支撑）——enforce 启用守余下两重门：显式 --enforce + 样本外对账 |t|≥3 且老田批准 |
 | 建议动作 | （过→列 enforce 三件套 schema/消费方/回滚 立项草案；不过→列重校方向；不足→列延窗至下一批） |
 | 老田拍板 | （留白） |
 
@@ -76,7 +76,7 @@ python kg_riskguard_recon.py json   >  docs/ops/s3_material_A_full.json
 
 | 分支 | 条件 | 动作 |
 |---|---|---|
-| a. 闸门过 | 差值 ∈ ±0.2pp 且各格 n≥10 | enforce 立项草案三件套（schema/消费方/回滚），GUARD_KEYS 3 键校准排期，**仍等老田 --enforce** |
+| a. 闸门过 | 差值 ∈ ±0.2pp 且各格 n≥10 | enforce 立项草案三件套（schema/消费方/回滚）——GUARD_KEYS 已 9/9 全校准（10-12 更正），**仍等老田 --enforce** |
 | b. 误杀未治愈 | 差值 > +0.2pp（拦的仍更赚） | 回归校准草案 §五重跑脚本，重点 R4；新阈值假设→第二轮影子窗 |
 | c. 样本不足 | 任一关键格 n<10 或 pending 占比>50% | 延窗至下一批成熟（账本继续每日 shadow_daily.ps1 攒数），裁决包标「首报不判定」 |
 | d. 守卫有价值 | 差值 < -0.2pp（拦的更亏） | 直接进 enforce 讨论（最快分支），误杀问题定性「已治愈」 |
