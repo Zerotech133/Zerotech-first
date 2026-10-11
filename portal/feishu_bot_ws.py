@@ -180,6 +180,7 @@ HELP_MD = """**指令表**
 · `止损 605100 5` — 持仓止损线（跌 5% 触发）
 · `止盈单` — 当前全部持仓线位快照
 · `撤线 605100 tp` — 撤止盈（sl=撤止损）
+· `控制` — 控制中枢卡：推送开关/参数档位/告警处置/工单看板
 · `帮助` — 本表
 按钮下钻：主卡各折叠层展开 + 顶部按钮跳门户详情页。"""
 
@@ -338,7 +339,13 @@ def _creds():
     return _load_app_creds()
 
 
-def send_text(text, message_id):
+def send_text(text, message_id=None):
+    """message_id 有值=会话内回复；无值=OpenAPI 直发本人（卡片回调路径用）。
+    （K-STOCK-135 修复：on_card 原以单参调用本函数，必填 message_id 会
+    TypeError 被外层吞掉——卡片按钮的文本回执从未真正送达。）"""
+    if not message_id:
+        from send_feishu import send_text as _sf_send_text
+        return _sf_send_text(text)
     import lark_oapi as lark
     from lark_oapi.api.im.v1 import (ReplyMessageRequest,
                                      ReplyMessageBody)
@@ -407,6 +414,13 @@ def handle_cmd(text, message_id, open_id=""):
             r = _er_cli(args)
             send_text(("✅ " if r.get("ok") else "❌ ")
                       + (r.get("note") or r.get("error")), message_id)
+        elif low.startswith("控制") or low.startswith("面板") or low == "ctrl":
+            # K-STOCK-135 控制中枢：四域状态 + 按钮（ctl:* 动作同样受白名单）
+            import feishu_control
+            if not feishu_control.allowed(open_id):
+                send_text("无权限：控制中枢仅限白名单用户。", message_id)
+                return
+            reply_card(feishu_control.build_control_card(), message_id)
         elif low.startswith("帮助") or low in ("help", "?", "？"):
             send_text(HELP_MD, message_id)
         elif low.startswith("选股"):
@@ -541,6 +555,19 @@ def main():
                           + (r.get("note") or r.get("error")))
                 log("card er:clear2 %s" % r.get("ok"))
             # er:noop → 无操作
+            elif tag.startswith("ctl:"):
+                # K-STOCK-135 控制中枢动作：白名单 → 执行 → 回执 + 重推新卡
+                import feishu_control
+                if not feishu_control.allowed(sender):
+                    send_text("无权限：控制操作仅限白名单用户。")
+                    log("card ctl denied (sender=%s)" % sender)
+                else:
+                    ok, text, card2 = feishu_control.handle_ctl(val, sender)
+                    send_text(("✅ " if ok else "❌ ") + text
+                              if not text.startswith(("✅", "❌")) else text)
+                    if card2 is not None:
+                        send_card(card2)
+                    log("card %s ok=%s" % (tag, ok))
         except Exception:  # noqa: BLE001
             log("card err " + traceback.format_exc()[-300:])
 
