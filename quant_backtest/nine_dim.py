@@ -493,18 +493,38 @@ def _daily_basic(tday):
 def _block_from_snapshot(tday, source_snapshot):
     """从 as-of 逐码快照构造 block_trade，禁止公网回源。"""
     blk = {}
+    target_day = _td8(tday)
+
+    def _norm_day(value):
+        return _td8(value) if value else ""
+
     for rec in source_snapshot.iter_records():
         params = rec.get("request_params") or {}
-        if str(params.get("trade_date") or "") != str(tday):
+        exact_day = _norm_day(params.get("trade_date"))
+        start_day = _norm_day(params.get("start_date"))
+        end_day = _norm_day(params.get("end_date"))
+        if exact_day and exact_day != target_day:
             continue
+        if not exact_day and (start_day or end_day) and not (
+                (not start_day or start_day <= target_day) and
+                (not end_day or target_day <= end_day)):
+            continue
+        if not exact_day and not start_day and not end_day:
+            # 缺失回执没有任何 as-of 边界，不能证明 block_trade 覆盖了
+            # 当前交易日；失败关闭，避免把未知数据报告成 block_ok=True。
+            return {}, False
         if rec.get("err") or rec.get("source_code") != 0:
             return {}, False
         fields = rec.get("fields") or []
         rows = rec.get("rows") or []
         idx = {f: i for i, f in enumerate(fields)}
-        if not {"ts_code", "price"}.issubset(idx):
+        if not {"ts_code", "trade_date", "price"}.issubset(idx):
             return {}, False
         for row in rows:
+            if not isinstance(row, (list, tuple)) or len(row) <= max(idx.values()):
+                return {}, False
+            if _norm_day(row[idx["trade_date"]]) != target_day:
+                continue
             code = row[idx["ts_code"]]
             blk.setdefault(code, []).append(_f(row[idx["price"]]))
     return blk, True
