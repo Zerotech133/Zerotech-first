@@ -5,9 +5,20 @@
 review_minutes（分歧/决议）、tier_gate 触发（orders reason 含"纪律门槛"）。
 「下步工作方向」llm=True 时由投研经理 Ollama 生成，否则规则兜底。
 
+口径变更记录（2026-10-12 多组合对齐，K-STOCK-154）：
+  此前净值只取 main（组合 chaser/taishan 权益不入周报），orders 统计无
+  account 过滤（混入 us_qingping USD 独立账本）。现统一为人民币侧账户
+  集合 cn_accounts() = {main} ∪ {每个已订阅组合的 trader}（chaser/taishan…），
+  us_qingping（USD 独立账本口径）不入人民币组合成绩。
+  performance 新增：total_equity（逐账户周期内最新 mark 求和）、
+  equity_by_account（dict account→rows）、accounts（per-account 成交拆分）。
+  兼容性：equity 字段仍为 main 曲线不变；fills/buys/discipline_blocks
+  由「全账户」改为过滤后口径（原实现含 USD 账本，属口径修正）。
+  --pf 可切换单账户视角。
+
 用法：
-  python period_summary.py --weekly  [--push] [--llm]
-  python period_summary.py --monthly [--push] [--llm]
+  python period_summary.py --weekly  [--push] [--llm] [--pf all|account_id]
+  python period_summary.py --monthly [--push] [--llm] [--pf all|account_id]
 落盘：k_stock/data/summary/weekly-YYYY-Www.json | monthly-YYYY-MM.json
 """
 from __future__ import annotations
@@ -22,6 +33,36 @@ DATA = HERE.parent / "data"
 sys.path.insert(0, str(HERE))
 
 from judge import _connect, LLM_MODEL, OLLAMA  # noqa: E402
+
+# 组合→trader 映射数据文件（portal/subscriptions.py 的存储层）。
+SUB_PATH = HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
+# us_qingping 为 USD 独立账本口径，不入人民币组合成绩
+USD_LEDGER = "us_qingping"
+FALLBACK_ACCOUNTS = frozenset({"main", "chaser"})
+
+
+def cn_accounts() -> set:
+    """人民币侧账户集合：{main} ∪ {每个已订阅组合的 trader}。
+
+    组合→trader 映射来自 portal/data/strategy_subscriptions.json
+    （portal/subscriptions.py:portfolios() 为官方枚举接口，此处直接读
+    同一数据文件以省去 strategies.json 依赖、降低导入成本）。
+    文件缺失/损坏时兜底 {main, chaser} 并 stderr 警告；
+    us_qingping 即使被误绑为 trader 也强制排除（USD 独立账本口径）。
+    """
+    accounts = {"main"}
+    try:
+        d = json.loads(SUB_PATH.read_text(encoding="utf-8"))
+        for pf in d.get("portfolios") or []:
+            t = pf.get("trader")
+            if t:
+                accounts.add(t)
+    except Exception as exc:  # noqa: BLE001
+        print("WARN: strategy_subscriptions 读取失败，账户集兜底 "
+              "{main, chaser}：%s" % exc, file=sys.stderr)
+        accounts |= set(FALLBACK_ACCOUNTS)
+    accounts.discard(USD_LEDGER)
+    return accounts
 
 
 def _period(kind: str):
@@ -45,28 +86,56 @@ def _period(kind: str):
     return start.isoformat(), end.isoformat(), tag
 
 
-def build(kind: str, llm: bool = False) -> dict:
+def build(kind: str, llm: bool = False, account: str = "all") -> dict:
     start, end, tag = _period(kind)
     out: dict = {"ok": True, "kind": kind, "tag": tag,
                  "period": [start, end]}
+    # 口径（2026-10-12 多组合对齐）：--pf all 聚合 main+全部组合 trader 账本；
+    # 指定 account_id 则只看该账户。us_qingping 不在推导集内（USD 独立账本）。
+    accounts = {account} if account != "all" else cn_accounts()
+    ph = ",".join("?" * len(accounts))
+    accts = tuple(sorted(accounts))
     con = _connect()
     try:
-        # ① 成绩：净值序列 + 成交统计
-        eq = [dict(r) for r in con.execute(
-            "SELECT date,total FROM equity_marks WHERE account_id='main' "
-            "AND date BETWEEN ? AND ? ORDER BY date", (start, end))]
+        # ① 成绩：净值序列（多账户） + 成交统计（同口径过滤）
+        eq_all = [dict(r) for r in con.execute(
+            "SELECT account_id,date,total FROM equity_marks "
+            "WHERE account_id IN (%s) AND date BETWEEN ? AND ? ORDER BY date"
+            % ph, accts + (start, end))]
+        # 兼容：equity 字段仍为 main 曲线（--pf 单账户时为该账户曲线）
+        base = account if account != "all" else "main"
+        eq = [r for r in eq_all if r["account_id"] == base]
         if len(eq) >= 2:
             chg = (eq[-1]["total"] / eq[0]["total"] - 1) * 100
         else:
             chg = None
+        # 口径修正：原实现无 account 过滤，混入 us_qingping 等 USD 账本订单
         fills = con.execute(
             "SELECT COUNT(*) n, SUM(CASE WHEN side='BUY' THEN 1 ELSE 0 END) b "
-            "FROM orders WHERE status='filled' AND fill_date BETWEEN ? AND ?",
-            (start, end)).fetchone()
-        out["performance"] = {"equity": eq, "change_pct": round(chg, 2)
-                              if chg is not None else None,
-                              "fills": fills["n"],
-                              "buys": fills["b"] or 0}
+            "FROM orders WHERE status='filled' AND fill_date BETWEEN ? AND ? "
+            "AND account_id IN (%s)" % ph, (start, end) + accts).fetchone()
+        # per-account 成交拆分（口径同上：人民币侧账户集合）
+        by_acct = {r["acct"]: {"fills": r["n"], "buys": r["b"] or 0}
+                   for r in con.execute(
+                       "SELECT account_id acct, COUNT(*) n, SUM(CASE WHEN "
+                       "side='BUY' THEN 1 ELSE 0 END) b FROM orders "
+                       "WHERE status='filled' AND fill_date BETWEEN ? AND ? "
+                       "AND account_id IN (%s) GROUP BY account_id" % ph,
+                       (start, end) + accts)}
+        # 合并权益：逐账户周期内最新 mark 求和
+        latest = {}
+        for r in eq_all:
+            latest[r["account_id"]] = r["total"]
+        out["performance"] = {
+            "equity": eq,
+            "change_pct": round(chg, 2) if chg is not None else None,
+            "fills": fills["n"],
+            "buys": fills["b"] or 0,
+            "total_equity": round(sum(latest.values()), 2) if latest else None,
+            "equity_by_account": {a: [r for r in eq_all
+                                      if r["account_id"] == a]
+                                  for a in sorted(latest)},
+            "accounts": by_acct}
         # ② 问题：judge 评审低分日（JSON 目录）+ 纪律拦截（DB）
         low = []
         jdir = DATA / "judge_reviews"
@@ -81,10 +150,13 @@ def build(kind: str, llm: bool = False) -> dict:
                                     "grade": d.get("grade")})
                 except Exception:  # noqa: BLE001
                     pass
+        # 口径修正：纪律拦截同 account 过滤（原混入 USD 独立账本拒单）
         blocks = con.execute(
             "SELECT COUNT(*) FROM orders WHERE status='rejected' "
             "AND (reason LIKE '%纪律%' OR reason LIKE '%门槛%') "
-            "AND substr(ts,1,10) BETWEEN ? AND ?", (start, end)).fetchone()[0]
+            "AND substr(ts,1,10) BETWEEN ? AND ? "
+            "AND account_id IN (" + ph + ")",
+            (start, end) + accts).fetchone()[0]
         out["problems"] = {"low_judge_days": low,
                            "discipline_blocks": blocks}
     finally:
@@ -231,6 +303,11 @@ def main(argv=None) -> int:
     g.add_argument("--monthly", action="store_true")
     ap.add_argument("--push", action="store_true", help="推飞书手机")
     ap.add_argument("--llm", action="store_true", help="下步方向 LLM 生成")
+    ap.add_argument("--pf", default="all",
+                    help="账户口径：all=聚合 main+全部已订阅组合 trader 账本"
+                         "（默认，2026-10-12 起；剔除 us_qingping USD 独立"
+                         "账本），或指定 account_id（main/chaser/taishan…）"
+                         "看单账户")
     a = ap.parse_args(argv)
     kind = "weekly" if a.weekly else "monthly"
     s, e, tag = _period(kind)
@@ -238,7 +315,7 @@ def main(argv=None) -> int:
         print(json.dumps({"ok": True, "skipped": "not month-end"},
                          ensure_ascii=False))
         return 0
-    out = build(kind, llm=a.llm)
+    out = build(kind, llm=a.llm, account=a.pf)
     if a.push and out.get("ok"):
         ok, msg = _push(out)
         out["push"] = {"ok": bool(ok), "msg": str(msg)}
