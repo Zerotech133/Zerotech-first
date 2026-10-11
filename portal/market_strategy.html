@@ -50,6 +50,22 @@
   .toast{position:fixed; bottom:26px; left:50%; transform:translateX(-50%); background:var(--bg-card); border:1px solid var(--line); padding:10px 20px; border-radius:10px; font-size:13px; display:none; z-index:20;}
   #pf{margin-top:16px; padding:14px 16px; background:var(--bg-card); border:1px solid var(--line); border-radius:12px; display:none;}
   #pf .free{font-size:10.5px; color:#3fb950; margin-left:8px;}
+  /* 投研团队 */
+  .team-title{margin:22px 0 4px; font-size:14.5px; font-weight:700; display:flex; align-items:center; gap:8px;}
+  .team-title small{font-weight:400; color:var(--text-dim); font-size:11.5px;}
+  .tgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; margin-top:10px;}
+  .tcard{background:var(--bg-card); border:1px solid var(--line); border-radius:12px; padding:13px 14px; display:flex; flex-direction:column; gap:6px; cursor:pointer; transition:transform .12s, box-shadow .12s;}
+  .tcard:hover{transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.25);}
+  .tcard h4{font-size:13.5px; display:flex; align-items:center; gap:7px;}
+  .tcard .meta{font-size:11.5px; color:var(--text-dim); line-height:1.55;}
+  .grade{font-size:10px; padding:1px 7px; border-radius:999px; border:1px solid var(--line); color:var(--text-dim);}
+  .grade.live{color:#3fb950; border-color:#3fb95055;}
+  .grade.training{color:#e3b341; border-color:#e3b34155;}
+  .grade.ops{color:#79b8ff; border-color:#79b8ff55;}
+  .hired-dot{font-size:10px; color:#3fb950;}
+  .tbtns{display:flex; gap:8px; margin-top:2px;}
+  .btn-fire{padding:4px 12px; border-radius:8px; border:1px solid #f8514988; background:transparent; color:#f85149; font-size:11.5px; cursor:pointer;}
+  .btn-idx{font-size:11px; color:var(--text-dim); line-height:1.5;}
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -67,6 +83,8 @@
   <div class="stats" id="stats">加载中…</div>
   <div id="pf"></div>
   <div class="grid" id="grid"></div>
+  <div class="team-title">👔 操盘手团队 <small>投资部经理介绍 · 分等级 · 点卡片下钻历史能力</small></div>
+  <div class="tgrid" id="team"><div class="tl">名册加载中…</div></div>
   <p style="margin-top:18px; font-size:11.5px; color:var(--text-dim);">
     合规脚注：本页为模拟盘策略展示。shadow 态策略处于研究验证期，不构成任何选股依据；订阅当前免费，未来商业化另行公示。</p>
 </div>
@@ -88,23 +106,23 @@ async function toggleSub(id,ev){
   const r=await apiPost('/api/portfolio_subscribe',{strategy:id,action:'toggle'});
   if(r.ok){toast((r.action==='add'?'已订阅 ':'已退订 ')+id); await loadSubs(); render();}
   else toast('失败：'+(r.error||'?'));}
-async function hireTrader(){
-  const tr=prompt('输入交易员 ID 聘为组合操盘手（如 chaser）：','');
-  if(!tr) return;
-  const r=await apiPost('/api/portfolio_hire',{trader:tr.trim()});
-  if(r.ok){toast('已聘 '+tr.trim()+' 为组合操盘手'); await loadSubs(); render();}
-  else toast('失败：'+(r.error||'?'));}
 function renderPf(){
   const pf=document.getElementById('pf');
   if(!SUBS.size){pf.style.display='none'; return;}
   pf.style.display='block';
   const names=DATA.strategies.filter(s=>SUBS.has(s.id)).map(s=>esc(s.name));
   const shadow=DATA.strategies.filter(s=>SUBS.has(s.id)&&s.status==='shadow');
+  const hired=TEAM.filter(t=>t.hired_pf);
+  const hiredHtml=hired.length
+    ?('<div class="meta" style="margin-top:8px;">🤖 操盘手：'+hired.map(t=>'<b>'+esc(t.name||t.id)+'</b>').join('、')
+      +'（跟单工作日 07:10 自动执行）</div>')
+    :('<div class="meta" style="margin-top:8px; color:#e3b341;">尚未聘操盘手——在下方团队名册选一位，或手动模拟买卖。</div>');
   pf.innerHTML='<b style="font-size:13.5px;">我的组合</b><span class="free">免费体验 · 未来商业化收费</span>'
     +'<div class="mtags" style="margin-top:8px;">'+names.map(n=>'<span>'+n+'</span>').join('')+'</div>'
+    +hiredHtml
     +(shadow.length?'<div class="warn" style="margin-top:8px;">组合含 shadow 态策略：'+shadow.map(s=>esc(s.name)).join('、')+'（研究验证中，不构成选股依据）</div>':'')
     +'<div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">'
-    +'<button class="sub" onclick="hireTrader()">聘交易员自动跟</button>'
+    +'<button class="sub" onclick="document.getElementById(\'team\').scrollIntoView({behavior:\'smooth\'})">去团队选操盘手 ↓</button>'
     +'<a class="sub" style="text-decoration:none; background:transparent; color:#79b8ff;" href="/paper">手动模拟买卖 →</a>'
     +'</div>';}
 function render(){
@@ -113,8 +131,9 @@ function render(){
   document.getElementById('grid').innerHTML=DATA.strategies.map(s=>{
     const st=s.status;
     return '<div class="card" onclick="openDetail(\''+s.id+'\')">'
-      +'<h3>'+esc(s.name)+' <span class="tag '+st+'">'+(st==='live'?'产线':st==='shadow'?'影子验证':st==='tool'?'工具':'暂停')+'</span></h3>'
+      +'<h3>'+(s.recommended?'<span title="经理主推">⭐</span>':'')+esc(s.name)+' <span class="tag '+st+'">'+(st==='live'?'产线':st==='shadow'?'影子验证':st==='tool'?'工具':'暂停')+'</span></h3>'
       +'<div class="tl">'+esc(s.tagline)+'</div>'
+      +(s.manager_intro?'<div class="tl" style="font-size:11.5px; color:#d2a8ff;">👔 经理：'+esc(s.manager_intro)+'</div>':'')
       +'<div class="mtags">'+s.method_tags.map(t=>'<span>'+esc(t)+'</span>').join('')+'</div>'
       +'<div class="foot"><span>今日命中 <b>'+s.hits_today+'</b> · 订阅 '+s.subscribers+'</span>'
       +'<button class="sub'+(SUBS.has(s.id)?' done':'')+'" onclick="toggleSub(\''+s.id+'\',event)">'
@@ -129,8 +148,9 @@ async function openDetail(id){
   const r=await fetch('/api/strategy_detail?id='+encodeURIComponent(id));
   const d=await r.json(); if(!d.ok){b.textContent='加载失败'; return;}
   const s=d.strategy, dy=d.dynamic;
-  b.innerHTML='<h2>'+esc(s.name)+' <span class="tag '+s.status+'">'+s.status+'</span></h2>'
+  b.innerHTML='<h2>'+(d.recommended?'⭐ ':'')+esc(s.name)+' <span class="tag '+s.status+'">'+s.status+'</span></h2>'
     +'<div class="tl" style="margin-top:8px;">'+esc(s.tagline)+'</div>'
+    +(d.manager_intro?'<div class="sect"><h4>👔 投资部经理介绍</h4><div class="tl" style="color:#d2a8ff;">'+esc(d.manager_intro)+'</div></div>':'')
     +'<div class="mtags" style="margin-top:10px;">'+d.method_tags.map(t=>'<span>'+esc(t)+'</span>').join('')+'</div>'
     +(s.status==='shadow'?'<div class="warn">⚠ '+esc(s.status_note||'研究态 · 不构成选股依据')+'</div>':'')
     +'<div class="sect"><h4>记分卡</h4><table>'+(s.metrics||[]).map(m=>'<tr><td>'+esc(m.k)+'</td><td>'+esc(m.v)+'</td></tr>').join('')+'</table></div>'
@@ -142,10 +162,70 @@ async function loadSubs(){
   const r=await (await fetch('/api/portfolios')).json();
   SUBS=new Set();
   for(const pf of (r.portfolios||[])) for(const s of (pf.strategies||[])) SUBS.add(s);}
+let TEAM=[];
+function pct(v){return (v==null?'-':(v>0?'+':'')+Number(v).toFixed(2)+'%');}
+function renderTeam(){
+  const el=document.getElementById('team');
+  if(!TEAM.length){el.innerHTML='<div class="tl">名册为空</div>';return;}
+  el.innerHTML=TEAM.map(t=>
+    '<div class="tcard" onclick="openTrader(\''+t.id+'\')">'
+    +'<h4>'+esc(t.name||t.id)+' <span class="grade '+t.status+'">'+esc(t.grade)+'</span>'
+    +(t.hired_pf?'<span class="hired-dot">● 组合在岗</span>':'')+'</h4>'
+    +'<div class="meta">'+(t.style?('风格：'+esc(t.style)+' · '):'')
+    +'运行 '+t.days+' 天</div>'
+    +(t.days>0?('<div class="meta">累计 '+pct(t.cum_pct)+' · 最大回撤 '+pct(t.max_dd_pct)
+      +(t.sharpe!=null?(' · Sharpe '+Number(t.sharpe).toFixed(2)):'')+'</div>'):'')
+    +'<div class="tbtns">'
+    +(t.hired_pf
+      ?'<button class="btn-fire" onclick="fireTrader(\''+t.id+'\',event)">解聘</button>'
+      :'<button class="sub" onclick="hireTraderId(\''+t.id+'\',event)">聘为组合操盘手</button>')
+    +'<span class="btn-idx">点卡片看历史能力 →</span></div></div>').join('');}
+async function loadTeam(){
+  const r=await (await fetch('/api/trader_roster')).json();
+  TEAM=r.ok?(r.rows||[]):[];
+  renderTeam();}
+async function hireTraderId(id,ev){
+  ev.stopPropagation();
+  const r=await apiPost('/api/portfolio_hire',{trader:id});
+  if(r.ok){toast('已聘 '+id+'（次日 07:05 主闭环生效）'); await Promise.all([loadTeam(),loadSubs()]); renderPf();}
+  else toast('聘用失败：'+(r.error||'?'));}
+async function fireTrader(id,ev){
+  ev.stopPropagation();
+  if(!confirm('确认解聘 '+id+'？组合跟单将停止。')) return;
+  const r=await apiPost('/api/trader_fire',{trader:id});
+  if(r.ok){toast('已解聘 '+id); await Promise.all([loadTeam(),loadSubs()]); renderPf();}
+  else toast('解聘失败：'+(r.error||'?'));}
+async function openTrader(id){
+  document.getElementById('mask').style.display='block';
+  document.getElementById('drawer').style.display='block';
+  const b=document.getElementById('dbody'); b.textContent='加载中…';
+  const r=await fetch('/api/trader_detail?id='+encodeURIComponent(id));
+  const d=await r.json(); if(!d.ok){b.textContent='加载失败：'+esc(d.error||''); return;}
+  const t=d.trader;
+  const eq=(d.equity||[]).map(e=>
+    '<div class="sample"><span>'+esc(e.date)+'</span><b>¥'+Number(e.total).toLocaleString()+'</b></div>').join('');
+  const rec=(d.recent||[]).map(o=>
+    '<div class="sample"><span>'+esc(o.fill_date)+' <b>'+esc(o.stock)+'</b> '+esc(o.side)+' ×'+o.qty+'</span>'
+    +'<span>'+(o.filled_price?('@'+Number(o.filled_price).toFixed(2)):'-')+'</span></div>').join('');
+  b.innerHTML='<h2>'+esc(t.name||t.id)+' <span class="grade '+t.status+'">'+esc(t.grade)+'</span>'
+    +(t.hired_pf?'<span class="hired-dot">● 组合在岗</span>':'')+'</h2>'
+    +'<div class="tl" style="margin-top:8px;">'+(t.style?('风格：'+esc(t.style)+' · '):'')+'运行 '+t.days+' 天 · 成交 '+d.filled_total+' 笔'
+    +(t.verify_ok!=null?(' · 验证 '+(t.verify_ok?'✅':'⚠')):'')+'</div>'
+    +(t.days>0?('<div class="sect"><h4>能力记分卡</h4><table>'
+      +'<tr><td>累计收益</td><td>'+pct(t.cum_pct)+'</td></tr>'
+      +'<tr><td>最大回撤</td><td>'+pct(t.max_dd_pct)+'</td></tr>'
+      +(t.sharpe!=null?'<tr><td>Sharpe</td><td>'+Number(t.sharpe).toFixed(2)+'</td></tr>':'')
+      +(t.sortino!=null?'<tr><td>Sortino</td><td>'+Number(t.sortino).toFixed(2)+'</td></tr>':'')
+      +'</table></div>'):'<div class="warn">储备/设计期交易员，暂无实盘模拟成绩，启用后开始累计。</div>')
+    +'<div class="sect"><h4>净值快照（近 '+ (d.equity||[]).length +' 日）</h4>'+(eq||'<div class="tl">暂无净值</div>')+'</div>'
+    +'<div class="sect"><h4>近期成交</h4>'+(rec||'<div class="tl">暂无成交</div>')+'</div>'
+    +'<div class="sect"><button class="sub" onclick="closeDrawer();'
+    +(t.hired_pf?('fireTrader(\''+t.id+'\',event)'):('hireTraderId(\''+t.id+'\',event)'))+'">'
+    +(t.hired_pf?'解聘':'聘为组合操盘手（免费）')+'</button></div>';}
 (async()=>{
   const r=await fetch('/api/strategy_market');
   DATA=await r.json();
-  if(DATA.ok){ await loadSubs(); render(); }
+  if(DATA.ok){ await loadSubs(); await loadTeam(); render(); }
   else document.getElementById('grid').innerHTML='<p style="color:#f85149">加载失败：'+esc(DATA.error)+'</p>';
 })();
 </script>

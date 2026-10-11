@@ -100,6 +100,7 @@ _MUTATION_POSTS = frozenset((
     "/api/data/update",
     "/api/portfolio_subscribe",
     "/api/portfolio_hire",
+    "/api/trader_fire",   # K-STOCK-122 投研团队：组合解聘交易员
     "/chanlun-anno",
     "/api/chanlun/label/save",
     "/api/report_push",
@@ -22870,6 +22871,44 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                                     or "hire 失败"})
                 except Exception as _e:
                     self._json({"ok": False, "error": repr(_e)}, 500)
+            elif path == "/api/trader_fire":
+                # K-STOCK-122 投研团队：组合解聘交易员 {trader}
+                # 真解雇走 trainee.py fire（hires.json 行 status=ended）；
+                # 组合侧解绑同步执行。
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"error": "bad json"}, 400)
+                    return
+                _tid = str(rec.get("trader") or "")
+                try:
+                    import subprocess
+                    _pfpy = (r"C:\Program Files\Python311\python.exe"
+                             if os.path.exists(r"C:\Program Files"
+                                               r"\Python311\python.exe")
+                             else sys.executable)
+                    _script = os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),
+                        os.pardir, "k_stock", "paper", "trainee.py")
+                    r = subprocess.run(
+                        [_pfpy, "-X", "utf8", _script,
+                         "fire", _tid, "--source", "pf_001", "--json"],
+                        capture_output=True, timeout=60)
+                    out = r.stdout.decode("utf-8", "replace").strip()
+                    data = json.loads(out.splitlines()[-1]) if out else {}
+                    if data.get("ok"):
+                        import subscriptions as _sub
+                        try:
+                            _sub.unbind_trader()
+                        except Exception:
+                            pass
+                        self._json({"ok": True, "fired": _tid})
+                    else:
+                        self._json({"ok": False,
+                                    "error": data.get("error") or out[-200:]
+                                    or "fire 失败"})
+                except Exception as _e:
+                    self._json({"ok": False, "error": repr(_e)}, 500)
             elif path == "/api/batch-backtest":
                 # K255 勾选股票自定义批次回测：写批次 JSONL → 引擎子进程异步跑
                 try:
@@ -23058,6 +23097,77 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     "trader": pf.get("trader"), "note": pf.get("note")},
                     "traders": traders, "pending": pend,
                     "positions": poss, "equity": eq})
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/trader_roster":
+            # K-STOCK-122 投研团队：操盘手团队名册（trainee.py board 成绩
+            # + hires.json 在职标记 + 经理等级标签），纯只读。
+            try:
+                import json as _j3
+                hires_p = os.path.join(
+                    r"E:\老田的AI助手\k_stock\paper", "hires.json")
+                r = self._paper_run_json(
+                    [self._PAPER_PY,
+                     os.path.join(self._PAPER_DIR, "trainee.py"),
+                     "board", "--json"], timeout=90)
+                active = set()
+                if os.path.exists(hires_p):
+                    with open(hires_p, encoding="utf-8") as _f:
+                        active = {h.get("trader") for h in
+                                  (_j3.load(_f).get("hires") or [])
+                                  if h.get("source") == "pf_001"
+                                  and h.get("status") == "active"}
+                _GRADE = {"live": "正式", "training": "实习",
+                          "design": "储备", "ops": "运营台"}
+                rows = []
+                for t in (r.get("rows") or []):
+                    t = dict(t)
+                    t["grade"] = _GRADE.get(t.get("status"), "储备")
+                    t["hired_pf"] = t.get("id") in active
+                    rows.append(t)
+                rows.sort(key=lambda x: (not x.get("hired_pf"),
+                                         x.get("status") != "live",
+                                         -(x.get("cum_pct") or 0)))
+                self._json({"ok": True, "rows": rows})
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/trader_detail":
+            # K-STOCK-122 投研团队：交易员下钻——成绩行 + 净值曲线 + 近期成交
+            from urllib.parse import parse_qs as _pqs4
+            _tid = (_pqs4(qs).get("id") or [""])[0].strip()
+            try:
+                import json as _j4
+                import sqlite3 as _sq3
+                r = self._paper_run_json(
+                    [self._PAPER_PY,
+                     os.path.join(self._PAPER_DIR, "trainee.py"),
+                     "board", "--json"], timeout=90)
+                row = next((x for x in (r.get("rows") or [])
+                            if x.get("id") == _tid), None)
+                if not row:
+                    self._json({"ok": False, "error": "no trader: %s" % _tid})
+                    return
+                con = _sq3.connect(
+                    r"E:\老田的AI助手\k_stock\data\paper.db")
+                con.row_factory = _sq3.Row
+                eq, recent, n_filled = [], [], 0
+                try:
+                    eq = [dict(x) for x in con.execute(
+                        "SELECT date,total FROM equity_marks WHERE "
+                        "account_id=? ORDER BY date DESC LIMIT 15",
+                        (_tid,))][::-1]
+                    recent = [dict(x) for x in con.execute(
+                        "SELECT stock,side,qty,filled_price,fill_date "
+                        "FROM orders WHERE account_id=? AND "
+                        "status='filled' ORDER BY id DESC LIMIT 8",
+                        (_tid,))]
+                    n_filled = con.execute(
+                        "SELECT COUNT(*) FROM orders WHERE account_id=? "
+                        "AND status='filled'", (_tid,)).fetchone()[0]
+                finally:
+                    con.close()
+                self._json({"ok": True, "trader": row, "equity": eq,
+                            "recent": recent, "filled_total": n_filled})
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/review_minutes":

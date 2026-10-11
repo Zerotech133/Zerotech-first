@@ -39,6 +39,32 @@ TAG_MAP = {
     "深度垫底": "weak", "回避": "jev-gate",
 }
 
+# 投资部经理荐语（K-STOCK-122 投研团队口径：经理负责介绍策略、
+# 给出适配场景与风险提示；recommended=经理主推，进组合优先看）
+MANAGER_INTRO = {
+    "double_knife": ("主推。尾盘十字星+MACD 双确认，Regime 分层控制仓位——"
+                     "我们的旗舰产线，适合作为组合进攻主力。注意尾盘信号"
+                     "当日成交，别用开盘价心态看它。"),
+    "chanlun": ("主推。缠论三类买卖点，体系成熟、信号可解释，适合做组合"
+                "的底仓节奏源；卖点信号已接入组合跟单（卖出/回避→SELL）。"),
+    "qpzm": ("青萍之末，微动前置信号，风格偏左侧潜伏。波动容忍度低的"
+             "客户建议小仓位跟；与双刀形成攻守搭配。"),
+    "ninedim": ("九维漏斗走 RPS50 强势池多维评分，出票少而精，适合"
+                "等它出分再动手的稳健派。影子期先观察。"),
+    "weak": ("弱于板块识别，偏风险预警与逆向观察，不建议单独作为买入口径。"),
+    "strong": ("板块强弱两只眼的领涨端，抓主线用；配合共振筛选效果更好。"),
+    "linkage": ("三线联动是个股×板块×大盘的体检工具，目前个股级产物"
+                "尚未挂账组合，先当工作台用。"),
+    "cross": ("共振筛选把多策略票池取交集，信号少但质量高，适合求精"
+              "的搭配位。"),
+    "jev-gate": ("AI 复核门，五原子判断做最后一道闸；它说回避的票，"
+                 "其他策略再看好也先放一放。"),
+    "backtest": ("回测/寻优底座，策略上线前的必经车间，不直接出信号。"),
+    "quantdinger": ("开源量化平台接入，多市场调度，工具属性。"),
+    "zhice": ("智策 OS 四市场调度，工具属性。"),
+}
+MANAGER_RECOMMENDED = {"double_knife", "chanlun"}
+
 
 def _read(path):
     if not os.path.exists(path):
@@ -84,6 +110,8 @@ def _card(s, hits, subs_n):
         "badge": s.get("badge"),
         "href": s.get("href"),
         "method_tags": METHOD_TAGS.get(s.get("id"), []),
+        "manager_intro": MANAGER_INTRO.get(s.get("id"), ""),
+        "recommended": s.get("id") in MANAGER_RECOMMENDED,
         "hits_today": (hits.get(s.get("id")) or {}).get("n", 0),
         "subscribers": subs_n,
     }
@@ -114,6 +142,8 @@ def detail(sid):
     hits = _dynamic_hits().get(sid) or {"n": 0, "samples": []}
     return {"ok": True, "strategy": s,
             "method_tags": METHOD_TAGS.get(sid, []),
+            "manager_intro": MANAGER_INTRO.get(sid, ""),
+            "recommended": sid in MANAGER_RECOMMENDED,
             "dynamic": {"source": "todays_picks.json", **hits}}
 
 
