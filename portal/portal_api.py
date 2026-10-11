@@ -22571,6 +22571,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     data["us"] = _us()
                 except Exception as _e2:
                     data["us"] = {"ok": False, "error": repr(_e2)}
+                try:  # 077q：选票通道（pick_bridge）投影（10-16 实弹；失败降级）
+                    from paper.portal_status import pick_status as _pick
+                    data["pick"] = _pick()
+                except Exception as _e3:
+                    data["pick"] = {"ok": False, "error": repr(_e3)}
                 self._json(data)
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "error": repr(_e)}, 500)

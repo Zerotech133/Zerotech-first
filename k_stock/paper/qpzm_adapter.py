@@ -113,14 +113,18 @@ def _us_stocks(us_path: Path) -> list[str]:
     return [str(x.get("stock", "")) for x in payload if x.get("stock")]
 
 
-def _run_us(us_path: Path, dry_run: bool) -> dict:
+def _run_us(us_path: Path, dry_run: bool, force_trading: bool = False) -> dict:
     """US 独立账本通道：refresh 行情缓存 → UsMarket 引擎 → exec_run。
 
     单票 refresh 失败只降级该票（写 skipped），SPY 日历失败才整段放弃。"""
     sys.path.insert(0, str(HERE))
     from engine import PaperEngine          # noqa: E402
     from us_market import UsMarket, refresh  # noqa: E402
+    from trade_guard import ensure_trading_day  # noqa: E402
 
+    us_mkt = UsMarket()
+    if not force_trading:
+        ensure_trading_day(us_mkt, market_label="US")   # 077q 交易日守卫
     res = {"run": us_path.name, "account_id": US_ACCOUNT, "strategy": US_STRATEGY,
            "orders": [], "skipped": [], "refreshed": [], "dry_run": dry_run}
     try:
@@ -135,7 +139,7 @@ def _run_us(us_path: Path, dry_run: bool) -> dict:
         except Exception as e:  # noqa: BLE001
             res["skipped"].append({"stock": sym,
                                    "why": f"行情 refresh 失败降级跳过: {e}"})
-    eng = PaperEngine(DATA_DIR / "paper.db", UsMarket())
+    eng = PaperEngine(DATA_DIR / "paper.db", us_mkt)
     r = eng.exec_run(us_path, dry_run=dry_run, strategy=US_STRATEGY,
                      account_id=US_ACCOUNT)
     # 合并：exec 结果为主，refresh 降级行去重后追加（同票已进 exec skipped 则不重复记）
@@ -144,21 +148,26 @@ def _run_us(us_path: Path, dry_run: bool) -> dict:
     return {**res, "orders": r["orders"], "skipped": list(r["skipped"]) + extra}
 
 
-def run(dry_run: bool = False, cache_path: Path | None = None) -> dict:
+def run(dry_run: bool = False, cache_path: Path | None = None,
+        force_trading: bool = False) -> dict:
     """一条龙：青萍产物 → run 文件 → 双路 exec（CN 走 A 股湖 / US 走独立账本）。"""
     sys.path.insert(0, str(HERE))
     from engine import PaperEngine          # noqa: E402
     from market import ParquetMarket        # noqa: E402
+    from trade_guard import ensure_trading_day  # noqa: E402
 
+    cn_mkt = ParquetMarket()
+    if not force_trading:
+        ensure_trading_day(cn_mkt, market_label="CN")   # 077q 交易日守卫
     cn_path, us_path = cache_to_run(cache_path, split_us=True)
     result = {"run": Path(cn_path).name if cn_path else (Path(us_path).name if us_path else None),
               "orders": [], "skipped": [], "us": None}
     if cn_path:
-        eng = PaperEngine(DATA_DIR / "paper.db", ParquetMarket())
+        eng = PaperEngine(DATA_DIR / "paper.db", cn_mkt)
         r = eng.exec_run(cn_path, dry_run=dry_run, strategy="qingping")
         result.update({"run": r["run"], "orders": r["orders"], "skipped": r["skipped"]})
     if us_path:
-        result["us"] = _run_us(us_path, dry_run)
+        result["us"] = _run_us(us_path, dry_run, force_trading=force_trading)
     result["run_path"] = str(cn_path or us_path)
     return result
 
@@ -168,10 +177,13 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="青萍之末买入信号 → 模拟仓落单")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--cache", default=None, help="指定 rps_latest.json 路径")
+    ap.add_argument("--force-trading", dest="force_trading", action="store_true",
+                    help="跳过交易日守卫（调试用；automation 勿加）")
     ap.add_argument("--json", action="store_true", help="JSON 输出（供门户 API 子进程解析）")
     a = ap.parse_args()
     try:
-        res = run(dry_run=a.dry_run, cache_path=a.cache)
+        res = run(dry_run=a.dry_run, cache_path=a.cache,
+                  force_trading=getattr(a, "force_trading", False))
         res["ok"] = True
     except Exception as e:  # 产物缺失/无买入等 → fail loud（JSON 化）
         if a.json:

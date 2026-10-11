@@ -279,6 +279,8 @@
         <div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">今日挂单（pending）</div>
         <div class="side-box"><div id="pend-body"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">选票通道（pick_bridge）</div>
+        <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">最近成交</div>
         <div class="side-box"><div id="recent-body"><div class="empty">读取中…</div></div></div>
       </div>
@@ -376,7 +378,20 @@ function renderAll(j){
     `<div class="kpi"><div class="k">现金</div><div class="v small">¥${fmt(L.cash)}</div></div>`+
     `<div class="kpi"><div class="k">快照日</div><div class="v small">${L.date}</div></div>`;
   $('n-pos').textContent=j.positions.length;
-  renderDesk(j);renderStops(j.stops);renderPend(j.pending_orders);
+  renderDesk(j);renderStops(j.stops);renderPend(j.pending_orders);renderPick(j.pick);
+
+function renderPick(pk){
+  const el=$('pick-body');
+  if(!pk||!pk.ok){el.innerHTML='<div class="empty">选票通道未接入（10-16 实弹）</div>';return;}
+  const pend=(pk.pending_orders||[]).map(p=>
+    `<div>🎯 ${p.side} <a href="/kg/stock/${p.stock}">${p.stock}</a> ×${p.qty} → ${p.plan_date} 开盘${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${p.warn}</span>`:''}</div>`).join('');
+  const done=(pk.recent_orders||[]).filter(r=>r.status==='filled').slice(0,5).map(r=>
+    `<div>✅ ${r.stock} ${fmt(r.qty)} @${r.filled_price?fmt(r.filled_price):'-'}（${r.fill_date}）</div>`).join('');
+  const m=pk.marks&&pk.marks.length?pk.marks[pk.marks.length-1]:null;
+  const head=m?`<div style="font-size:11.5px;color:var(--text-dim);margin-bottom:4px">快照 ${m.date} · 总资产 ${fmt(m.total)} · 待撮合 ${m.pending}</div>`:'';
+  el.innerHTML=head+(pend||'')+(done||'')||'<div class="empty">无挂单无成交（10-16 实弹）</div>';
+  if(!pend&&!done)el.innerHTML=head+'<div class="empty">无挂单无成交（10-16 实弹）</div>';
+}
   renderRecent(j.recent_orders);renderPos(j.positions);
   const sel=$('hist-day');const cur=sel.value;
   sel.innerHTML=j.curve.map(c=>`<option value="${c.date}">${c.date}${c.date===L.date?'（最新）':''}</option>`).join('');
@@ -423,7 +438,7 @@ function renderUs(us){
       `<tr><td><a href="/kg/stock/${p.stock}">${p.stock}</a></td><td>${p.qty}</td><td>${fmt(p.avg_cost)}</td><td>${fmt(p.last)}</td>`+
       `<td class="${cls(p.pnl)}">${fmt(p.pnl)}</td><td>${(p.strategy||'')}</td></tr>`).join('');
     const pend=a.pending_orders.map(o=>
-      `<div>⏳ ${o.side} <a href="/kg/stock/${o.stock}">${o.stock}</a> ×${o.qty} → ${o.plan_date} 开盘（${o.conf?('conf '+o.conf):''}）</div>`).join('');
+      `<div>⏳ ${o.side} <a href="/kg/stock/${o.stock}">${o.stock}</a> ×${o.qty} → ${o.plan_date} 开盘（${o.conf?('conf '+o.conf):''}）${o.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${o.warn}</span>`:''}</div>`).join('');
     const stp=a.stops.map(s=>{
       const d=s.distance_pct==null?'-':`<span class="${cls(s.distance_pct)}">${pct(s.distance_pct)}</span>`;
       return `<div>🛡️ <a href="/kg/stock/${s.stock}">${s.stock}</a> 止损 ${s.stop_price} · 现价 ${s.last==null?'-':fmt(s.last)} · ${d}</div>`;}).join('');
@@ -477,7 +492,7 @@ function renderPend(ps){
   $('pend-body').innerHTML=ps.length?
     '<table class="mini-table">'+ps.map(p=>
       `<tr><td><span class="badge b-${(p.strategy||'manual').slice(0,2)==='ai'?'ai':(p.strategy==='double_knife'?'dk':(p.strategy==='stop_loss'?'stop':'man'))}">${STRAT_NAMES[p.strategy]||p.strategy}</span></td>`+
-      `<td><b>${p.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${p.stock}">${p.stock}</a></td><td>${fmt(p.qty)}</td><td class="dist">${p.plan_date} 开盘</td></tr>`).join('')+'</table>'
+      `<td><b>${p.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${p.stock}">${p.stock}</a>${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${p.warn}</span>`:''}</td><td>${fmt(p.qty)}</td><td class="dist">${p.plan_date} 开盘</td></tr>`).join('')+'</table>'
     :'<div class="empty">无挂单</div>';
 }
 function renderRecent(rs){

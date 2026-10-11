@@ -203,10 +203,11 @@ def _engine_for(profile: dict, market, db: Path | None = None) -> PaperEngine:
 
 def exec_for(run_path: str | None = None, who: list[str] | None = None,
              dry_run: bool = False, db: Path | None = None,
-             source: str | None = None) -> dict:
+             source: str | None = None, force_trading: bool = False) -> dict:
     """同一条 picks run 落到若干训练子账本（conf_floor 在引擎端过滤 BUY）。
     source 雇佣路由（A3）：传入时只喂 hires.json active 交易员，run 取该源最新
-    产物，strategy 按源标注（qd=double_knife / qpzm=qingping / ai_team=ai_team）。"""
+    产物，strategy 按源标注（qd=double_knife / qpzm=qingping / ai_team=ai_team）。
+    force_trading：跳过交易日守卫（调试用；automation 勿加，077q）。"""
     if source and who:
         raise Reject("--source 与 --who 互斥：雇佣路由按注册表定账本，"
                      "不接受手工指定（调试请二选一）")
@@ -229,6 +230,9 @@ def exec_for(run_path: str | None = None, who: list[str] | None = None,
     if not run.exists() and not run.is_absolute():
         run = DATA_DIR / run   # 相对路径按 k_stock/data/ 解析（与 CLI cwd 无关）
     market = ParquetMarket()   # 行情湖只读，多账本共享一份
+    if not force_trading:
+        from trade_guard import ensure_trading_day   # 077q 交易日守卫
+        ensure_trading_day(market, market_label="CN")
     out = {"run": run.name, "source": source, "strategy": strategy,
            "trainees": [], "dry_run": dry_run}
     for prof in profiles:
@@ -568,6 +572,8 @@ def main(argv=None) -> int:
     p.add_argument("--source", default=None,
                    help="雇佣路由源（qd/qpzm/ai_team）：只喂 hires.json active 交易员")
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--force-trading", dest="force_trading", action="store_true",
+                   help="跳过交易日守卫（调试用；automation 勿加）")
     p.set_defaults(fn=_cmd_exec)
 
     p = sub.add_parser("routine", help="每日训练例程：settle→auto-stops→check-stops→mark")
@@ -630,7 +636,8 @@ def _cmd_list(args) -> int:
 
 def _cmd_exec(args) -> int:
     who = args.who.split(",") if args.who else None
-    r = exec_for(args.run, who, args.dry_run, args.db_path, source=args.source)
+    r = exec_for(args.run, who, args.dry_run, args.db_path, source=args.source,
+                 force_trading=getattr(args, "force_trading", False))
     tag = "[dry-run] " if args.dry_run else ""
     print(f"{tag}训练落单 {r['run']}:")
     for t in r["trainees"]:

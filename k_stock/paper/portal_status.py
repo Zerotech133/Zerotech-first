@@ -18,11 +18,29 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 DB = Path(__file__).resolve().parent.parent / "data" / "paper.db"
 
 MAIN = "main"   # 门户投影固定口径：主交易台
+
+
+def _pending_health(rows: list, snap_date: str) -> list:
+    """077q pending 健康度标注：同票多批 / 撮合日已过未撮 → warn 字段
+    （前端红警示；077q 事故即靠此可见——当时页面完全看不出异常）。"""
+    from collections import Counter
+    cnt = Counter((r["stock"], r["side"]) for r in rows)
+    snap = snap_date.replace("-", "")
+    for r in rows:
+        warns = []
+        n = cnt.get((r["stock"], r["side"]), 0)
+        if n > 1:
+            warns.append(f"同票多批 ×{n}")
+        if r["plan_date"] and snap > str(r["plan_date"]):
+            warns.append(f"撮合日已过（快照 {snap_date}）")
+        r["warn"] = "；".join(warns)
+    return rows
 
 
 def _connect() -> sqlite3.Connection | None:
@@ -90,9 +108,36 @@ def status() -> dict:
                        "cum_pct": round((m["total"] / base - 1) * 100, 2)} for m in marks],
             "positions": [dict(r) for r in positions],
             "stops": stops,
-            "pending_orders": [dict(r) for r in pending],
+            "pending_orders": _pending_health(
+                [dict(r) for r in pending], snap_date),
             "recent_orders": [dict(r) for r in recent],
         }
+    finally:
+        con.close()
+
+
+def pick_status() -> dict:
+    """选票通道（pick_bridge 子账本，K-STOCK-095/097）投影：
+    pending/近期成交/权益 marks。10-16 实弹前恒空属预期；
+    /paper 页展示位与 /market 绩效表的数据源。"""
+    con = _connect()
+    if con is None:
+        return {"ok": False, "error": "paper.db 不存在（模拟仓未初始化）"}
+    try:
+        marks = con.execute(
+            "SELECT date,total,cash,market_value,pos_pct,pending,verify_ok "
+            "FROM equity_marks WHERE account_id='pick_bridge' ORDER BY date").fetchall()
+        pending = [dict(r) for r in con.execute(
+            "SELECT id,ts,strategy,conf,stock,side,qty,plan_date,reason "
+            "FROM orders WHERE account_id='pick_bridge' AND status='pending' ORDER BY id")]
+        recent = [dict(r) for r in con.execute(
+            "SELECT id,ts,ref,stock,side,qty,status,plan_date,fill_date,"
+            "filled_price,fee,reason FROM orders WHERE account_id='pick_bridge' "
+            "ORDER BY id DESC LIMIT 20")]
+        snap = marks[-1]["date"] if marks else datetime.now().strftime("%Y-%m-%d")
+        return {"ok": True, "marks": [dict(m) for m in marks],
+                "pending_orders": _pending_health(pending, snap),
+                "recent_orders": recent}
     finally:
         con.close()
 
@@ -217,7 +262,8 @@ def us_status() -> dict:
                 "curve": curve,
                 "positions": [dict(r) for r in positions],
                 "stops": stops,
-                "pending_orders": [dict(r) for r in pending],
+                "pending_orders": _pending_health(
+                    [dict(r) for r in pending], last_snap or latest["date"]),
             })
         return out
     finally:
