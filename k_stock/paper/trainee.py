@@ -234,6 +234,41 @@ def _engine_for(profile: dict, market, db: Path | None = None) -> PaperEngine:
 
 # ---------------- 训练动作 ----------------
 
+def _tier_gate(prof: dict, eng: PaperEngine) -> str | None:
+    """K-STOCK-101 T4/T5 纪律门槛（077w）：任一触发返回拒绝原因，None=放行。
+    dd_circuit_pct：账本净值自峰值回撤超阈 → 熔断停开新仓（已有持仓/止损不受影响）。
+    judge_min_grade：最近一次 judge 评审等级低于要求（昨日评审，exec 在 routine 尾
+    judge 之前跑）→ 暂停加仓。评审文件缺失=无记录，不拦（首跑宽限）。"""
+    pr = prof.get("params", {})
+    dd = pr.get("dd_circuit_pct")
+    if dd:
+        rows = eng.con.execute(
+            "SELECT total FROM equity_marks WHERE account_id=? ORDER BY date",
+            (prof["id"],)).fetchall()
+        if len(rows) >= 2:
+            peak = max(r["total"] for r in rows)
+            if peak > 0:
+                drawdown = (peak - rows[-1]["total"]) / peak * 100.0
+                if drawdown > float(dd):
+                    return (f"回撤熔断：峰值回撤 {drawdown:.2f}% > "
+                            f"dd_circuit_pct {dd}%（停开新仓）")
+    jmin = pr.get("judge_min_grade")
+    if jmin:
+        order = {"A": 4, "B": 3, "C": 2, "D": 1}
+        try:
+            jdir = DATA_DIR / "judge_reviews"
+            files = sorted(jdir.glob("*.json"))
+            if files:
+                jd = json.loads(files[-1].read_text(encoding="utf-8"))
+                grade = jd.get("grade")
+                if grade and order.get(grade, 0) < order.get(jmin, 0):
+                    return (f"judge 门槛：最近评审 {jd.get('date')} 为 {grade} 级 "
+                            f"< 要求 {jmin} 级（暂停加仓）")
+        except Exception:
+            pass  # 门槛判定失败不拦（与 judge 失败不阻塞闭环同口径）
+    return None
+
+
 def exec_for(run_path: str | None = None, who: list[str] | None = None,
              dry_run: bool = False, db: Path | None = None,
              source: str | None = None, force_trading: bool = False) -> dict:
@@ -271,6 +306,15 @@ def exec_for(run_path: str | None = None, who: list[str] | None = None,
     for prof in profiles:
         eng = _engine_for(prof, market, db)
         min_conf = prof.get("params", {}).get("conf_floor")
+        gate = _tier_gate(prof, eng)   # 077w：T4/T5 纪律门槛（回撤熔断/judge 评审级）
+        if gate and not dry_run:
+            out["trainees"].append({
+                "id": prof["id"], "name": prof["name"],
+                "pending": 0, "skipped": 1,
+                "detail": {"orders": [], "skipped": [gate]},
+                "tier_gate": gate,
+            })
+            continue
         r = eng.exec_run(run, dry_run=dry_run, strategy=strategy,
                          account_id=prof["id"], min_conf=min_conf)
         out["trainees"].append({
