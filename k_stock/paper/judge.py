@@ -170,7 +170,19 @@ def _narrate(review: dict) -> str | None:
                            "messages": [{"role": "user", "content": prompt}]}).encode()
         req = urllib.request.Request(OLLAMA, data=body, headers={"Content-Type": "application/json"})
         raw = urllib.request.urlopen(req, timeout=120).read().decode("utf-8")
-        msg = json.loads(raw).get("message", {}).get("content", "").strip()
+        d = json.loads(raw)
+        # 077w M2 后半：成本记账（本地 Ollama 单价 0，仍记调用量；失败不阻塞）
+        try:
+            try:
+                from llm_cost import record_cost
+            except ImportError:
+                from k_stock.paper.llm_cost import record_cost
+            u = d.get("prompt_eval_count"), d.get("eval_count")
+            if all(u):
+                record_cost("judge", f"ollama/{LLM_MODEL}", u[0], u[1])
+        except Exception:
+            pass
+        msg = d.get("message", {}).get("content", "").strip()
         # 旧版 Ollama 忽略 think:False → 剥 <think> 段兜底
         if "</think>" in msg:
             msg = msg.split("</think>", 1)[1].strip()

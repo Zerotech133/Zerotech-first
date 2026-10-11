@@ -22784,6 +22784,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     data["judge"] = _judge()
                 except Exception as _e4:
                     data["judge"] = {"ok": False, "error": repr(_e4)}
+                try:  # 077w：端1 策略源影子路由建议（strategist，失败降级）
+                    from paper.portal_status import strategist_status as _strat
+                    data["strategist"] = _strat()
+                except Exception as _e5:
+                    data["strategist"] = {"ok": False, "error": repr(_e5)}
                 self._json(data)
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "error": repr(_e)}, 500)

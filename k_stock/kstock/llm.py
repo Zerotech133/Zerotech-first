@@ -16,12 +16,13 @@ class LLMUnavailable(Exception):
 
 class LLMClient:
     def __init__(self, primary="http://127.0.0.1:8098", fallback="http://127.0.0.1:11434",
-                 model_fallback="qwen3.5:9b", timeout=300, mock=False):
+                 model_fallback="qwen3.5:9b", timeout=300, mock=False, account=None):
         self.primary = primary.rstrip("/")
         self.fallback = fallback.rstrip("/")
         self.model_fallback = model_fallback
         self.timeout = timeout
         self.mock = mock
+        self.account = account   # 077w M2 后半：成本计量归属账本（None=不记账）
         self._opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     def chat(self, messages, temperature=0.3, json_mode=True, max_tokens=2000):
@@ -57,7 +58,28 @@ class LLMClient:
         )
         r = self._opener.open(req, timeout=self.timeout)
         d = json.loads(r.read())
+        self._meter(base, model, d)   # 077w M2 后半：计量失败不阻塞主调用
         return d["choices"][0]["message"]["content"]
+
+    def _meter(self, base, model, d):
+        """成本记账（077w K-STOCK-101 M2 后半）：从 OpenAI 兼容 usage 取 token 数，
+        落 llm_cost 独立账本。account 未设置或计量异常均静默跳过。"""
+        if not self.account:
+            return
+        try:
+            usage = d.get("usage") or {}
+            pt, ct = usage.get("prompt_tokens"), usage.get("completion_tokens")
+            if pt is None or ct is None:
+                return
+            binding = ("zhipu/glm-4-flash" if base == self.primary
+                       else f"ollama/{model}")
+            try:
+                from k_stock.paper import llm_cost
+            except ImportError:
+                import llm_cost
+            llm_cost.record_cost(self.account, binding, int(pt), int(ct))
+        except Exception:
+            pass
 
     @staticmethod
     def _mock(messages):

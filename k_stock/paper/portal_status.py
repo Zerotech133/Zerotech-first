@@ -164,6 +164,25 @@ def judge_status(days: int = 5) -> dict:
         return {"ok": False, "error": repr(e)}
 
 
+def strategist_status() -> dict:
+    """端1 策略源影子路由建议投影，077w：读 data/strategist_latest.json。
+    影子声明原样透传（前端标注「仅建议」）；缺失/异常降级 ok=False。"""
+    fp = Path(__file__).resolve().parent.parent / "data" / "strategist_latest.json"
+    try:
+        d = json.loads(fp.read_text(encoding="utf-8"))
+        return {"ok": True,
+                "generated_at": d.get("generated_at"),
+                "days": d.get("days"),
+                "mode": d.get("mode"),
+                "sources": [
+                    {"name": k, "score": v.get("score"), "grade": v.get("grade"),
+                     "suggestion": v.get("suggestion")}
+                    for k, v in (d.get("sources") or {}).items()],
+                "note": d.get("note")}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": repr(e)}
+
+
 def snapshot_days() -> list[str]:
     """主交易台全部快照日（升序），供前端日期选择器；库/快照缺失返回空列表。"""
     con = _connect()

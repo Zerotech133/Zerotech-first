@@ -26,6 +26,7 @@ MODEL_UNIT_PRICE: dict[str, float] = {
     "deepseek/deepseek-reasoner": 4.0,
     "qwen/qwen-max": 20.0,
     "qwen/qwen-plus": 8.0,
+    "zhipu/glm-4-flash": 1.0,   # 077w M2：kstock/llm.py primary 实际模型（低价锚点）
     "zhipu/glm-4-plus": 50.0,
     "anthropic/claude-sonnet-4": 60.0,
     "anthropic/claude-opus-4": 150.0,
