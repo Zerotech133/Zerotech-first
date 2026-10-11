@@ -23,6 +23,8 @@ class SourceSnapshot:
     """读取并规范化九维来源快照，整个对象保持只读语义。"""
 
     APIS = ("forecast", "report_rc", "block_trade")
+    OPTIONAL_APIS = ("fina_indicator",)
+    SUPPORTED_APIS = APIS + OPTIONAL_APIS
     _DATE_RE = re.compile(r"^\d{8}$")
 
     def __init__(self, path: str | Path):
@@ -53,7 +55,7 @@ class SourceSnapshot:
             if not isinstance(api_map, dict):
                 raise SnapshotFormatError("逐码回执结构无效")
             normalized: Dict[str, Dict[str, Any]] = {}
-            for api in self.APIS:
+            for api in self.SUPPORTED_APIS:
                 rec = api_map.get(api)
                 if rec is None:
                     normalized[api] = self._missing(api, code)
@@ -113,7 +115,7 @@ class SourceSnapshot:
     def get(self, api: str, code: str,
             default: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
         """返回单个接口回执副本；缺失时保持 unknown。"""
-        if api not in self.APIS:
+        if api not in self.SUPPORTED_APIS:
             raise KeyError(api)
         rec = self._records.get(code, {}).get(api)
         if rec is None:
@@ -124,7 +126,7 @@ class SourceSnapshot:
 
     def iter_records(self, api: str) -> Iterator[Dict[str, Any]]:
         """按代码顺序遍历接口回执副本。"""
-        if api not in self.APIS:
+        if api not in self.SUPPORTED_APIS:
             raise KeyError(api)
         for code in sorted(self._records):
             yield self.get(api, code)
@@ -138,7 +140,7 @@ class ApiRecordStore:
     """把 ``SourceSnapshot`` 适配成回放缓存使用的 ``.get(code)``。"""
 
     def __init__(self, snapshot: SourceSnapshot, api: str):
-        if api not in snapshot.APIS:
+        if api not in snapshot.SUPPORTED_APIS:
             raise KeyError(api)
         self.snapshot = snapshot
         self.api = api

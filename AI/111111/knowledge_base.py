@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -33,6 +35,7 @@ class KnowledgeBase:
         self.chunk_size, self.top_k = chunk_size, top_k
         self.embed_model, self.chat_model = embed_model, chat_model
         self._records = []
+        self.index_version = 0
 
     def read_documents(self, path):
         """读取目录或单个文本/Markdown 文件，返回 source 到文本的映射。"""
@@ -50,6 +53,23 @@ class KnowledgeBase:
             vectors = [result.get("embedding", [])]
         return vectors or []
 
+    @staticmethod
+    def _document_hash(text):
+        return hashlib.sha256(str(text).encode("utf-8")).hexdigest()
+
+    def _chunk_records(self, source, text, document_hash=None):
+        document_hash = document_hash or self._document_hash(text)
+        return [
+            {
+                "text": chunk,
+                "source": str(source),
+                "index": index,
+                "document_hash": document_hash,
+            }
+            for index, start in enumerate(range(0, len(text), self.chunk_size))
+            if (chunk := str(text)[start:start + self.chunk_size])
+        ]
+
     def ingest(self, documents):
         """切块、向量化并加入索引；documents 可为映射或 (source, text) 序列。"""
         if isinstance(documents, (str, Path)):
@@ -57,11 +77,7 @@ class KnowledgeBase:
         items = documents.items() if hasattr(documents, "items") else documents
         pending = []
         for source, text in items:
-            text = str(text)
-            for index, start in enumerate(range(0, len(text), self.chunk_size)):
-                chunk = text[start:start + self.chunk_size]
-                if chunk:
-                    pending.append({"text": chunk, "source": str(source), "index": index})
+            pending.extend(self._chunk_records(source, str(text)))
         vectors = self._embed([item["text"] for item in pending])
         if len(vectors) != len(pending):
             raise ValueError(
@@ -71,7 +87,46 @@ class KnowledgeBase:
         for item, vector in zip(pending, vectors):
             item["embedding"] = vector
             self._records.append(item)
+        self.index_version += 1
         return pending
+
+    def update_documents(self, documents, index_path=None):
+        """增量更新索引，只为新增或内容变化的来源重新向量化。
+
+        ``documents`` 可以是目录、单文件、映射或 ``(source, text)`` 序列。
+        已删除的来源会从索引移除；传入 ``index_path`` 时会立即持久化。
+        """
+        if isinstance(documents, (str, Path)):
+            documents = self.read_documents(documents)
+        items = {str(source): str(text) for source, text in (
+            documents.items() if hasattr(documents, "items") else documents
+        )}
+        existing = {}
+        for record in self._records:
+            existing.setdefault(str(record.get("source", "")), []).append(record)
+
+        unchanged, pending = [], []
+        for source, text in items.items():
+            digest = self._document_hash(text)
+            records = existing.get(source, [])
+            if records and all(record.get("document_hash") == digest for record in records):
+                unchanged.extend(records)
+            else:
+                pending.extend(self._chunk_records(source, text, digest))
+
+        vectors = self._embed([item["text"] for item in pending])
+        if len(vectors) != len(pending):
+            raise ValueError(
+                "embedding 数量与文本块数量不一致："
+                f"{len(vectors)} != {len(pending)}"
+            )
+        for item, vector in zip(pending, vectors):
+            item["embedding"] = vector
+        self._records = unchanged + pending
+        self.index_version += 1
+        if index_path is not None:
+            self.save(index_path)
+        return list(self._records)
 
     @staticmethod
     def _cosine(left, right):
@@ -105,8 +160,21 @@ class KnowledgeBase:
         return str(result)
 
     def save(self, path):
-        Path(path).write_text(json.dumps(self._records, ensure_ascii=False, indent=2), encoding="utf-8")
+        payload = {
+            "version": 2,
+            "index_version": self.index_version,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "records": self._records,
+        }
+        Path(path).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def load(self, path):
-        self._records = json.loads(Path(path).read_text(encoding="utf-8"))
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if isinstance(payload, dict) and "records" in payload:
+            self._records = payload.get("records", [])
+            self.index_version = int(payload.get("index_version", 0))
+        else:
+            # 兼容早期直接保存 records 列表的索引文件。
+            self._records = payload
+            self.index_version = 1
         return self._records

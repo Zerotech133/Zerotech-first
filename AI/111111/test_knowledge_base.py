@@ -87,6 +87,36 @@ class KnowledgeBaseTests(unittest.TestCase):
 
         self.assertEqual(kb._records, [])
 
+    def test_update_documents_reuses_unchanged_source_and_removes_deleted_source(self):
+        client = FakeClient()
+        kb = KnowledgeBase(client=client, chunk_size=5)
+        kb.update_documents({"a.md": "abcdefghij", "b.md": "keep"})
+        first_embed_count = len(client.embedded)
+
+        kb.update_documents({"a.md": "abcdefghij", "c.md": "new"})
+
+        # a.md 未变化，不应再次嵌入；b.md 已删除，c.md 新增。
+        self.assertEqual(len(client.embedded), first_embed_count + 1)
+        self.assertEqual({record["source"] for record in kb._records}, {"a.md", "c.md"})
+        self.assertTrue(all(record.get("document_hash") for record in kb._records))
+
+    def test_update_documents_persists_versioned_metadata_and_loads_legacy_list(self):
+        client = FakeClient()
+        kb = KnowledgeBase(client=client, chunk_size=10)
+        with tempfile.TemporaryDirectory() as temp:
+            index = Path(temp) / "index.json"
+            kb.update_documents({"guide.md": "hello"}, index_path=index)
+            payload = json.loads(index.read_text(encoding="utf-8"))
+            self.assertEqual(payload["version"], 2)
+            self.assertEqual(payload["index_version"], 1)
+
+            legacy = Path(temp) / "legacy.json"
+            legacy.write_text(json.dumps(payload["records"], ensure_ascii=False), encoding="utf-8")
+            loaded = KnowledgeBase(client=client)
+            loaded.load(legacy)
+            self.assertEqual(loaded.index_version, 1)
+            self.assertEqual(loaded._records[0]["source"], "guide.md")
+
 
 if __name__ == "__main__":
     unittest.main()

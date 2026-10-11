@@ -253,6 +253,10 @@ def coarse_filter(frames, basic, rps50):
     for code, df in frames.items():
         if len(df) < 130:
             continue
+        # 仅使用当前活跃 stock_basic 中可解析的股票。历史行情文件可能
+        # 保留已退市代码；主数据缺失时不能把它误当成当前候选。
+        if code not in basic:
+            continue
         nm = (basic.get(code) or ["", ""])[0]
         if "ST" in nm or "退" in nm:
             continue

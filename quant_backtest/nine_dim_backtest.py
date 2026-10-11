@@ -78,8 +78,13 @@ def _snapshot_stores(path, codes):
     if missing:
         raise SnapshotFormatError("来源快照缺少候选代码: %s" %
                                   ",".join(missing[:5]))
-    return {api: ApiRecordStore(snapshot, api)
-            for api in SourceSnapshot.APIS}
+    apis = list(SourceSnapshot.APIS)
+    # fina_indicator 为可选扩展：旧快照没有该回执时保持原有 SQLite/JSON
+    # 路径；新 staging 快照带回执时，回放必须优先消费同一份 as-of 载荷。
+    if any(snapshot.get("fina_indicator", c)["source_status"] !=
+           "missing_receipt" for c in snapshot.codes):
+        apis.append("fina_indicator")
+    return {api: ApiRecordStore(snapshot, api) for api in apis}
 
 
 def _i8(v):
@@ -989,7 +994,9 @@ def run(args):
                                        "%Y%m%d").strftime("%Y%m")
     snapshot_stores = (_snapshot_stores(args.source_snapshot, union)
                        if args.source_snapshot else None)
-    fina_c = _fina_bt(union) if todo else _load_cache(BT_FIN)
+    fina_c = (snapshot_stores["fina_indicator"]
+              if snapshot_stores and "fina_indicator" in snapshot_stores
+              else _fina_bt(union) if todo else _load_cache(BT_FIN))
     rc_c = (snapshot_stores["report_rc"] if snapshot_stores
             else _rc_bt(union, rc_st) if todo else _load_cache(BT_RC))
     fc_c = (snapshot_stores["forecast"] if snapshot_stores

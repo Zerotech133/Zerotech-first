@@ -1,9 +1,9 @@
 {
   "schema": "academy_e_drive_candidate_manifest/v1",
   "status": "candidate_only",
-  "generated_at": "2026-10-11T16:25:43Z",
+  "generated_at": "2026-10-11T17:17:28Z",
   "dataset_version": "e-drive-reference-v0.3",
-  "source_snapshot_id": "e-drive-reference-v0.3-20261011T162543Z",
+  "source_snapshot_id": "e-drive-reference-v0.3-20261011T171728Z",
   "training_eligible": false,
   "production_eligible": false,
   "entries": [
@@ -228,28 +228,6 @@
       ]
     },
     {
-      "sample_id": "EVAL-E-3a73cc3b19d7f859",
-      "course_id": "RES-201",
-      "task_type": "source_grounded_summary",
-      "input_refs": [
-        "E-3a73cc3b19d7f859#full"
-      ],
-      "evidence_refs": [
-        "E-3a73cc3b19d7f859#full"
-      ],
-      "target_output": null,
-      "review_status": "pending",
-      "license_scope": "pending",
-      "split": "evaluation_only",
-      "split_group": "E-3a73cc3b19d7f859",
-      "sample_sha256": "93721e59170597dd50c2db23f23208264b0c2b71c86544551108f56729451069",
-      "generation_mode": "candidate_only",
-      "quality_flags": [
-        "source_snapshot_pending",
-        "human_review_pending"
-      ]
-    },
-    {
       "sample_id": "EVAL-E-6c4ddca759d64f9b",
       "course_id": "RES-201",
       "task_type": "source_grounded_summary",
@@ -319,6 +297,7 @@
   "blockers": [
     "calendar_completeness_uncertified",
     "evaluation_only_by_policy",
+    "hash_drift",
     "human_review_pending",
     "license_scope_pending",
     "missing_exact_2026-10-08_quantum_double_blade_report",

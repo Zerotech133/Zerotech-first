@@ -10,21 +10,27 @@
       "relative_path": "knowledge_docs/缠论技术分析知识库.md",
       "source_date": null,
       "evidence_status": "pending_source_date",
-      "observed_at": "2026-10-11T23:13:04+08:00"
+      "observed_at": "2026-10-11T23:13:04+08:00",
+      "date_receipt_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#source_date_receipts/knowledge_docs/缠论技术分析知识库.md",
+      "date_receipt_status": "observation_only"
     },
     {
       "evidence_ref": "local://knowledge_docs/金融专业知识库.md#file-content",
       "relative_path": "knowledge_docs/金融专业知识库.md",
       "source_date": null,
       "evidence_status": "pending_source_date",
-      "observed_at": "2026-10-11T23:13:04+08:00"
+      "observed_at": "2026-10-11T23:13:04+08:00",
+      "date_receipt_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#source_date_receipts/knowledge_docs/金融专业知识库.md",
+      "date_receipt_status": "observation_only"
     },
     {
       "evidence_ref": "local://knowledge_docs/AI工程实践知识库.md#file-content",
       "relative_path": "knowledge_docs/AI工程实践知识库.md",
       "source_date": null,
       "evidence_status": "pending_source_date",
-      "observed_at": "2026-10-11T23:13:04+08:00"
+      "observed_at": "2026-10-11T23:13:04+08:00",
+      "date_receipt_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#source_date_receipts/knowledge_docs/AI工程实践知识库.md",
+      "date_receipt_status": "observation_only"
     },
     {
       "evidence_ref": "local://docs/plans/2026-10-09_交易员训练与上岗体系v0.3.md#header",
@@ -73,7 +79,9 @@
       "relative_path": "quant_backtest/chanlun_signal.py",
       "source_date": null,
       "evidence_status": "pending_source_date",
-      "observed_at": "2026-10-11T23:13:04+08:00"
+      "observed_at": "2026-10-11T23:13:04+08:00",
+      "date_receipt_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#source_date_receipts/quant_backtest/chanlun_signal.py",
+      "date_receipt_status": "observation_only"
     },
     {
       "evidence_ref": "local://quant_backtest/nine_dim.py#K33-2026-10-02",
@@ -87,21 +95,27 @@
       "relative_path": "agent_platform/a0_chief.py",
       "source_date": null,
       "evidence_status": "pending_source_date",
-      "observed_at": "2026-10-11T23:13:04+08:00"
+      "observed_at": "2026-10-11T23:13:04+08:00",
+      "date_receipt_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#source_date_receipts/agent_platform/a0_chief.py",
+      "date_receipt_status": "observation_only"
     },
     {
       "evidence_ref": "local://jev-eval/signal_review_gate.py#module-docstring",
       "relative_path": "jev-eval/signal_review_gate.py",
       "source_date": null,
       "evidence_status": "pending_source_date",
-      "observed_at": "2026-10-11T23:13:04+08:00"
+      "observed_at": "2026-10-11T23:13:04+08:00",
+      "date_receipt_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#source_date_receipts/jev-eval/signal_review_gate.py",
+      "date_receipt_status": "observation_only"
     },
     {
       "evidence_ref": "local://portal/strategies.json#_meta",
       "relative_path": "portal/strategies.json",
       "source_date": null,
       "evidence_status": "pending_source_date",
-      "observed_at": "2026-10-11T23:13:04+08:00"
+      "observed_at": "2026-10-11T23:13:04+08:00",
+      "date_receipt_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#source_date_receipts/portal/strategies.json",
+      "date_receipt_status": "observation_only"
     }
   ],
   "source_root": "E:\\老田的AI助手",
@@ -115,5 +129,14 @@
       "relative_path": "docs/plans/2026-10-08_量子双刀策略研究报告.md",
       "reason": "exact_original_not_found"
     }
-  ]
+  ],
+  "date_receipt_file": "work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json",
+  "date_receipt_status": "observation_receipts_added_source_dates_unresolved",
+  "date_receipt_policy": "观察回执只证明来源在指定时点可见；未发现正文发布日期的条目 source_date 保持 null。",
+  "exact_source_search": {
+    "relative_path": "docs/plans/2026-10-08_量子双刀策略研究报告.md",
+    "status": "not_found",
+    "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#exact_source_search",
+    "related_but_not_substitute": "docs/plans/2026-10-09_量子双刀策略研究报告.md"
+  }
 }

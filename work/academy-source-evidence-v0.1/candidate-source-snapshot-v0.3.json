@@ -1,7 +1,7 @@
 {
   "schema": "academy_e_drive_candidate_snapshot/v1",
-  "snapshot_id": "e-drive-reference-v0.3-20261011T162543Z",
-  "generated_at": "2026-10-11T16:25:43Z",
+  "snapshot_id": "e-drive-reference-v0.3-20261011T171728Z",
+  "generated_at": "2026-10-11T17:17:28Z",
   "root": "E:\\老田的AI助手",
   "mode": "read_only",
   "license_status": "pending",
@@ -149,20 +149,6 @@
       "evidence_status": "pending_source_date"
     },
     {
-      "source_id": "E-3a73cc3b19d7f859",
-      "path": "E:\\老田的AI助手\\quant_backtest\\nine_dim.py",
-      "relative_path": "quant_backtest/nine_dim.py",
-      "bytes": 61671,
-      "sha256": "93721e59170597dd50c2db23f23208264b0c2b71c86544551108f56729451069",
-      "source_class": "e_drive_reviewed_reference",
-      "license_scope": "pending",
-      "raw_source_available": true,
-      "source_date": "2026-10-02",
-      "observed_at": "2026-10-11T23:13:04+08:00",
-      "evidence_ref": "local://quant_backtest/nine_dim.py#K33-2026-10-02",
-      "evidence_status": "complete"
-    },
-    {
       "source_id": "E-6c4ddca759d64f9b",
       "path": "E:\\老田的AI助手\\agent_platform\\a0_chief.py",
       "relative_path": "agent_platform/a0_chief.py",
@@ -208,6 +194,7 @@
   "rejected": [],
   "blockers": [
     "calendar_completeness_uncertified",
+    "hash_drift",
     "human_review_pending",
     "missing_exact_2026-10-08_quantum_double_blade_report",
     "proposal_not_activated",
@@ -220,7 +207,9 @@
     "source_date_missing:quant_backtest/chanlun_signal.py",
     "standard_definitions_uncertified"
   ],
-  "hash_drift_paths": [],
+  "hash_drift_paths": [
+    "quant_backtest/nine_dim.py"
+  ],
   "missing_source_paths": [
     "docs/plans/2026-10-08_量子双刀策略研究报告.md"
   ],

@@ -129,3 +129,24 @@ def test_backtest_builds_api_record_stores_from_payload_snapshot():
     assert stores["forecast"].get("605100.SH")["payload_available"] is True
     assert stores["block_trade"].get("605100.SH")["rows"] == []
 
+
+def test_optional_fina_indicator_payload_is_available_for_replay(tmp_path):
+    path = tmp_path / "snapshot_with_fina.json"
+    _write(path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    raw["source_receipts"]["per_code"]["605100.SH"]["fina_indicator"] = {
+        "source_code": 0,
+        "fields": ["ts_code", "ann_date", "end_date", "ocf_to_or"],
+        "rows": [["605100.SH", "20261001", "20260930", 1.2]],
+        "coverage_status": "sample_has_data",
+    }
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    record = SourceSnapshot(path).get("fina_indicator", "605100.SH")
+    stores = __import__("nine_dim_backtest")._snapshot_stores(
+        path, ["605100.SH"])
+
+    assert record["source_status"] == "source_response_verified"
+    assert record["rows"][0][-1] == 1.2
+    assert "fina_indicator" in stores
+

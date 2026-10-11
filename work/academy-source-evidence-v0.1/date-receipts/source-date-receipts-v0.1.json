@@ -1,0 +1,191 @@
+{
+  "schema": "academy_source_date_receipts/v1",
+  "generated_at": "2026-10-12T01:11:03+08:00",
+  "mode": "read_only",
+  "policy": {
+    "source_date_rule": "只接受正文明确日期或原始发布/观察回执；不从文件名、mtime、报告生成时间推断 source_date。",
+    "receipt_semantics": "本文件中的 observed_at 证明来源在指定时点可见；若没有正文发布日期，source_date 仍保持 null。",
+    "training_effect": "仅补证据，不改变 license、人工审核、标准定义、交易日历或训练门禁。"
+  },
+  "receipts": [
+    {
+      "receipt_id": "WB-E-DRIVE-SCAN-20261008-0729",
+      "receipt_kind": "original_observation_receipt",
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "source": {
+        "path": "C:\\Users\\Administrator\\WorkBuddy\\2026-10-08-07-29-36\\老田的AI助手_全量盘点报告.md",
+        "bytes": 5358,
+        "sha256": "6d1c56b3f6c8f420f0c264d43b10d23397e96c513ffb5c1ed04d3dc156b631dc"
+      },
+      "local_copy": {
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\source-evidence-receipt\\老田的AI助手\\work\\academy-source-evidence-v0.1\\date-receipts\\E盘数据仓全量盘点报告_20261008.md",
+        "bytes": 5358,
+        "sha256": "6d1c56b3f6c8f420f0c264d43b10d23397e96c513ffb5c1ed04d3dc156b631dc"
+      },
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "claim": "盘点报告正文明确写明扫描时间为 2026-10-08 07:29；它证明该次全量扫描时的 E 盘目录可见性。",
+      "verbatim_excerpt": {
+        "line_start": 2,
+        "line_end": 7,
+        "text": "2: \n3: > 扫描时间：2026-10-08 07:29 ｜ 方式：全量文件清点 + 结构化目录遍历 + 核心文档精读\n4: > 说明：全库 239,314 个文件 / 约 26 GB，其中 21.8 万个为 parquet 行情数据文件，逐字节读取物理上不可行；本报告 = 全量清点（清单已落盘）+ 结构化遍历 + 关键文档精读。\n5: \n6: ---\n7: "
+      }
+    },
+    {
+      "receipt_id": "WB-E-DRIVE-FILELIST-20261008",
+      "receipt_kind": "inventory_filelist_receipt",
+      "observed_at": "2026-10-08T07:36:46+08:00",
+      "source": {
+        "path": "C:\\Users\\Administrator\\WorkBuddy\\2026-10-08-07-29-36\\scan_文件清单.txt",
+        "bytes": 15772168,
+        "sha256": "f1aedeb5ceab2ffc71f455c740abf2811db1eff0184fe8fd17ab3308c7a8ac01"
+      },
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#receipts.WB-E-DRIVE-FILELIST-20261008",
+      "claim": "扫描清单是与 07:29 盘点配套的文件路径/字节数清单；仅作为原始观察回执，不提供发布日期。",
+      "listed_paths": [
+        {
+          "relative_path": "agent_platform/a0_chief.py",
+          "bytes": 9930,
+          "verbatim_line": "agent_platform/a0_chief.py\\t9930"
+        },
+        {
+          "relative_path": "jev-eval/signal_review_gate.py",
+          "bytes": 30274,
+          "verbatim_line": "jev-eval/signal_review_gate.py\\t30274"
+        },
+        {
+          "relative_path": "knowledge_docs/AI工程实践知识库.md",
+          "bytes": 6443,
+          "verbatim_line": "knowledge_docs/AI工程实践知识库.md\\t6443"
+        },
+        {
+          "relative_path": "knowledge_docs/缠论技术分析知识库.md",
+          "bytes": 5638,
+          "verbatim_line": "knowledge_docs/缠论技术分析知识库.md\\t5638"
+        },
+        {
+          "relative_path": "knowledge_docs/金融专业知识库.md",
+          "bytes": 5662,
+          "verbatim_line": "knowledge_docs/金融专业知识库.md\\t5662"
+        },
+        {
+          "relative_path": "portal/strategies.json",
+          "bytes": 6915,
+          "verbatim_line": "portal/strategies.json\\t6915"
+        },
+        {
+          "relative_path": "quant_backtest/chanlun_signal.py",
+          "bytes": 12947,
+          "verbatim_line": "quant_backtest/chanlun_signal.py\\t12947"
+        }
+      ]
+    },
+    {
+      "receipt_id": "WB-DOUBLE-BLADE-ARCHIVE-20261008",
+      "receipt_kind": "archive_observation_receipt",
+      "observed_at": "2026-10-08T23:59:59+08:00",
+      "source": {
+        "path": "C:\\Users\\Administrator\\WorkBuddy\\2026-10-07-09-24-59\\.workbuddy\\memory\\2026-10-08.md",
+        "bytes": 50052,
+        "sha256": "189d6dd6a9611581d3022eaf519236def7df329c09389403d81e92b86bd7c79e"
+      },
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/source-date-receipts-v0.1.json#receipts.WB-DOUBLE-BLADE-ARCHIVE-20261008",
+      "claim": "WorkBuddy 工作记忆记录“D 盘 10-08 归档”，并明确研究报告落档为 2026-10-09；这支持归档时点与后续报告日期，不能将 10-08 归档日改写成 10-08 报告发布日期。",
+      "verbatim_excerpt": {
+        "line_start": 363,
+        "line_end": 369,
+        "text": "363: \n364: ## 量子双刀策略研究（10-09 00:40 老田令，报告 c317afc）\n365: \n366: - 位置：projects-archive/量子双刀/（D 盘 10-08 归档，原目录已回收）。研究报告落档 docs/plans/2026-10-09_量子双刀策略研究报告.md。\n367: - **策略本质**：双刀=连续双日十字星+MACD 多头；八重 AND 过滤（振幅变化率/价格带 6-200 元/两日小涨/20 日成交额 30 亿/均线多头/乖离上限/MACD/Regime）；**Regime 四市况分层器**（TSI 趋势+资金平衡+情绪→trend_up/down/rotation/range，trend_down 一票否决）；日线候选再过 5 分钟级四条件入场确认（突破/量比/VWAP/开盘强度，至少过二）。\n368: - strict/relaxed 双版本对照研究法（不二选一，分 regime 回测定适用域）。三阶段流水线=Scanner 四 Screener（含共振）→RPS→SignalExporter。\n369: - **短板：无真实回测结论**（run_double_knife_backtest 是 demo 合成数据；改进方案自评 C+ 回测 30 分）；5-04 六个月改进路线未见执行记录。"
+      }
+    }
+  ],
+  "source_date_receipts": [
+    {
+      "relative_path": "agent_platform/a0_chief.py",
+      "source_date": null,
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "evidence_status": "observation_receipt_only",
+      "date_basis": "E 盘全量盘点正文/配套清单明确该文件在扫描时可见，但未提供该文件的原始发布日期或生效日期。"
+    },
+    {
+      "relative_path": "jev-eval/signal_review_gate.py",
+      "source_date": null,
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "evidence_status": "observation_receipt_only",
+      "date_basis": "E 盘全量盘点正文/配套清单明确该文件在扫描时可见，但未提供该文件的原始发布日期或生效日期。"
+    },
+    {
+      "relative_path": "knowledge_docs/AI工程实践知识库.md",
+      "source_date": null,
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "evidence_status": "observation_receipt_only",
+      "date_basis": "E 盘全量盘点正文/配套清单明确该文件在扫描时可见，但未提供该文件的原始发布日期或生效日期。"
+    },
+    {
+      "relative_path": "knowledge_docs/缠论技术分析知识库.md",
+      "source_date": null,
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "evidence_status": "observation_receipt_only",
+      "date_basis": "E 盘全量盘点正文/配套清单明确该文件在扫描时可见，但未提供该文件的原始发布日期或生效日期。"
+    },
+    {
+      "relative_path": "knowledge_docs/金融专业知识库.md",
+      "source_date": null,
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "evidence_status": "observation_receipt_only",
+      "date_basis": "E 盘全量盘点正文/配套清单明确该文件在扫描时可见，但未提供该文件的原始发布日期或生效日期。"
+    },
+    {
+      "relative_path": "portal/strategies.json",
+      "source_date": null,
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "evidence_status": "observation_receipt_only",
+      "date_basis": "E 盘全量盘点正文/配套清单明确该文件在扫描时可见，但未提供该文件的原始发布日期或生效日期。"
+    },
+    {
+      "relative_path": "quant_backtest/chanlun_signal.py",
+      "source_date": null,
+      "observed_at": "2026-10-08T07:29:00+08:00",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/date-receipts/E盘数据仓全量盘点报告_20261008.md#L3",
+      "evidence_status": "observation_receipt_only",
+      "date_basis": "E 盘全量盘点正文/配套清单明确该文件在扫描时可见，但未提供该文件的原始发布日期或生效日期。"
+    }
+  ],
+  "exact_source_search": {
+    "relative_path": "docs/plans/2026-10-08_量子双刀策略研究报告.md",
+    "status": "not_found",
+    "searched_at": "2026-10-12T01:11:03+08:00",
+    "search_roots": [
+      "E:\\老田的AI助手",
+      "C:\\Temp\\k116_history_quarantine\\老田的AI助手",
+      "C:\\Users\\Administrator\\Documents\\Codex\\2026-10-07\\new-chat-2",
+      "C:\\Users\\Administrator\\WorkBuddy"
+    ],
+    "methods": [
+      "按精确文件名和标题递归文件名检索",
+      "按标题全文检索本地文本/交付物/WorkBuddy 记忆",
+      "Git 全历史路径检索和对象清单检索",
+      "WorkBuddy 学习库产物清单核对"
+    ],
+    "result": "没有可复制、可哈希、可验证的 2026-10-08 原文；不得用 2026-10-09 文档替代。",
+    "related_but_not_substitute": {
+      "relative_path": "docs/plans/2026-10-09_量子双刀策略研究报告.md",
+      "source_date": "2026-10-09",
+      "file": {
+        "path": "C:\\Users\\Administrator\\.codex\\worktrees\\source-evidence-receipt\\老田的AI助手\\docs\\plans\\2026-10-09_量子双刀策略研究报告.md",
+        "bytes": 5437,
+        "sha256": "1a35d1caabb8876a40a791629ae428727bcbf680fbb2f78c583128944428fe56"
+      },
+      "git_commit": "c317afc03e1db0fc1b26fe9b9f86c055de22a3e4a3",
+      "commit_at": "2026-10-09T00:43:03+08:00",
+      "status": "complete_but_not_substitute"
+    }
+  },
+  "status": "date_receipts_added_exact_source_still_missing",
+  "training_eligible": false,
+  "production_eligible": false
+}
