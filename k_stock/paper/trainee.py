@@ -52,7 +52,40 @@ def load_profile(tid: str) -> dict:
     p = TRAINEE_DIR / f"{tid}.json"
     if not p.exists():
         raise Reject(f"交易员档案不存在: {p}")
-    return json.loads(p.read_text(encoding="utf-8"))
+    prof = json.loads(p.read_text(encoding="utf-8"))
+    return _apply_tier(prof)
+
+
+def _load_tiers() -> dict:
+    """经验等级协议（K-STOCK-101）：tiers.json 缺失/损坏时静默返回空表
+    （档案无 tier 字段则零影响，向后兼容）。"""
+    tp = TRAINEE_DIR / "tiers.json"
+    if not tp.exists():
+        tp = Path(__file__).resolve().parent / "tiers.json"
+    try:
+        return json.loads(tp.read_text(encoding="utf-8")).get("tiers", {})
+    except Exception:
+        return {}
+
+
+def _apply_tier(prof: dict) -> dict:
+    """tier 缺省补齐 + tier 缺省参数合并（档案显式 params 优先——
+    老田拍板过的止损等不被协议覆盖）。llm_binding 只挂字段不动路由
+    （M2 网关侧接线前是纯元数据）。"""
+    tiers = _load_tiers()
+    tid = prof.get("tier") or "T2"
+    t = tiers.get(tid)
+    if not t:
+        prof.setdefault("tier", "T2")
+        return prof
+    prof["tier"] = tid
+    prof.setdefault("llm_binding", t.get("llm_binding"))
+    merged = dict(t.get("params") or {})
+    merged.update(prof.get("params") or {})   # 显式优先
+    prof["params"] = merged
+    prof.setdefault("tier_label", t.get("label"))
+    prof.setdefault("daily_cost_cap", t.get("daily_cost_cap"))
+    return prof
 
 
 def list_profiles() -> list[dict]:

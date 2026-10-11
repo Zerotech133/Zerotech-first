@@ -1,0 +1,48 @@
+{
+  "_doc": "AI 交易员经验等级协议（K-STOCK-101，2026-10-11）。定价为锚点示意；成本上限=每账本每日 token 成本熔断线（触线降级本地模型）。llm_binding 格式沿用 agent_platform registry：provider/model。",
+  "tiers": {
+    "T1": {
+      "label": "实习生", "years": "0-2",
+      "llm_binding": "ollama/qwen3.5:4b",
+      "daily_cost_cap": 5,
+      "price_month": 9.9,
+      "params": {"conf_floor": 0.70, "stop_dist_pct": 0.12, "max_pos_pct": 0.10, "max_daily_orders": 3},
+      "desc": "保守多看少动，零边际成本，适合体验"
+    },
+    "T2": {
+      "label": "初级", "years": "3-5",
+      "llm_binding": "ollama/qwen3.5:9b",
+      "daily_cost_cap": 20,
+      "price_month": 39,
+      "params": {"conf_floor": 0.65, "stop_dist_pct": 0.10, "max_pos_pct": 0.15, "max_daily_orders": 5},
+      "desc": "本地推理为主，纪律完整"
+    },
+    "T3": {
+      "label": "资深", "years": "5-10",
+      "llm_binding": "deepseek/deepseek-chat",
+      "daily_cost_cap": 100,
+      "price_month": 129,
+      "params": {"conf_floor": 0.60, "stop_dist_pct": 0.08, "max_pos_pct": 0.20, "max_daily_orders": 8},
+      "desc": "中档云模型，行业分散约束"
+    },
+    "T4": {
+      "label": "专家", "years": "10-15",
+      "llm_binding": "anthropic/claude-sonnet-4",
+      "daily_cost_cap": 300,
+      "price_month": 399,
+      "params": {"conf_floor": 0.55, "stop_dist_pct": 0.08, "max_pos_pct": 0.20, "max_daily_orders": 10},
+      "desc": "高档云模型，judge 评审 A 级才加仓，回撤熔断 5%"
+    },
+    "T5": {
+      "label": "首席", "years": "15+",
+      "llm_binding": "xai/grok-4",
+      "daily_cost_cap": 1000,
+      "price_month": 999,
+      "params": {"conf_floor": 0.50, "stop_dist_pct": 0.08, "max_pos_pct": 0.25, "max_daily_orders": 15},
+      "desc": "旗舰模型+盘中实时评审+人工复核通道"
+    }
+  },
+  "default_tier": "T2",
+  "degrade_binding": "ollama/qwen3.5:9b",
+  "_notes": "蒸馏降本路径：T4/T5 云端优质 episode 经 judge 评分后沉淀，蒸馏本地模型逐步替换 llm_binding，同价毛利变厚，对外口径不变。"
+}
