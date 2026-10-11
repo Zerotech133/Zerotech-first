@@ -81,12 +81,27 @@ def parse_file(path):
     routes = set()
     funcs = set()
 
+    def collect_body_path_literals(func_node):
+        """收集函数体内所有以 '/' 开头的字符串字面量（自建 HTTP Server 的
+        do_GET/do_POST/do_PUT/do_DELETE 等 do_* 方法没有装饰器，路由是
+        `if path == "/xxx"` / `path.startswith("/yyy")` 这类分支字面量）。"""
+        found = set()
+        for n in ast.walk(func_node):
+            if isinstance(n, ast.Constant) and isinstance(n.value, str):
+                s = n.value.strip()
+                if s.startswith("/"):
+                    found.add(s)
+        return found
+
     for node in tree.body:
         # a) top-level 函数：收集函数本体上的装饰器路由
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             funcs.add(node.name)
             for dec in node.decorator_list:
                 routes.update(extract_strings_from_decorator(dec))
+            # do_* 一族方法体：路径字面量也算路由面
+            if re.fullmatch(r"do_[A-Za-z]+", node.name):
+                routes.update(collect_body_path_literals(node))
         # b) top-level 类：类本身装饰器 + 类下方法
         elif isinstance(node, ast.ClassDef):
             for dec in node.decorator_list:
@@ -96,6 +111,9 @@ def parse_file(path):
                     funcs.add("%s.%s" % (node.name, sub.name))
                     for dec in sub.decorator_list:
                         routes.update(extract_strings_from_decorator(dec))
+                    # 类内 do_* 方法（如 handler 类的 do_GET/do_POST）同样纳入
+                    if re.fullmatch(r"do_[A-Za-z]+", sub.name):
+                        routes.update(collect_body_path_literals(sub))
 
     return routes, funcs
 
@@ -141,8 +159,9 @@ def cmd_check(args):
     """子命令 check：拆分后文件集合 vs 基线并集对比。"""
     with open(args.baseline, "r", encoding="utf-8") as f:
         base = json.load(f)
-    base_routes = set(base["__union__"]["routes"])
-    base_funcs = set(base["__union__"]["funcs"])
+    # 向后兼容：旧基线无路由字段时视为空集（.get 默认 []）
+    base_routes = set(base.get("__union__", {}).get("routes", []))
+    base_funcs = set(base.get("__union__", {}).get("funcs", []))
 
     cur_routes, cur_funcs = load_files(args.files)
 
