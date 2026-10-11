@@ -1,0 +1,41 @@
+# K-STOCK-116-history 历史数据回补进度
+
+本任务按“明确缺口 → 最近 30 个交易日 → 2023 年以来年度批次”执行。所有数据只写入 `quant_backtest/data/tushare_staging`，没有修改 `quant_backtest/data/tushare`，`global_activation=false` 保持不变。
+
+## 已完成批次
+
+| 阶段 | 范围 | 结果 |
+|---|---|---|
+| 明确缺口 | `daily_basic/20260928` | 5,557 行，`candidate_ready`，主键唯一 |
+| 明确缺口 | `margin_detail/20261008` | 4,454 行，`candidate_ready`，主键唯一 |
+| 最近 30 个交易日 | 20260821–20261009，`daily_basic` | 30 个分片全部完成，零空响应、零错误 |
+| 最近 30 个交易日 | 20260821–20261009，`margin_detail` | 30 个分片全部完成，零空响应、零错误 |
+| 年度首批 | 2023 年前 20 个交易日，两张表 | 40 个分片全部完成，零空响应、零错误 |
+| 年度批次 2 | 2023-02-07–2023-03-06，两张表 | 40 个分片全部完成，零空响应、零错误 |
+| 年度批次 3 | 2023-03-07–2023-04-03，两张表 | 40 个分片全部完成，零空响应、零错误 |
+| 年度批次 4 | 2023-04-04–2023-05-05，两张表 | 40 个分片全部完成，零空响应、零错误 |
+| 年度批次 5 | 2023-05-08–2023-06-02，两张表 | 40 个分片全部完成，零空响应、零错误 |
+| 年度批次 6 | 2023-06-05–2023-07-04，两张表 | 40 个分片全部完成，零空响应、零错误 |
+
+批次文件：
+
+- `quant_backtest/data/tushare_staging/history/recent30_summary.json`
+- `quant_backtest/data/tushare_staging/explicit_gaps/`
+- `quant_backtest/data/tushare_staging/annual_2023_batch_001_summary.json`
+- 完整计划：`quant_backtest/data/tushare_staging/history_backfill_plan.json`
+
+RunStore 候选运行已登记在 `quant_backtest/data/tushare_staging/warehouse_runs.sqlite3`：
+
+- 当前候选运行：240 个日期单元，绑定每个 staging 回执；
+- 运行计划：`quant_backtest/data/tushare_staging/runstore_candidate_plan.json`；
+- registry 审计：`quant_backtest/data/tushare_staging/runstore_candidate_audit.json`；
+- 候选结果：`quant_backtest/data/tushare_staging/runstore_candidate_result.json`；
+- 当前仍未生成 `commit_intent`，发布锁、发布后指纹和回读对账均为 `not_started`。
+
+## 阻断项
+
+板块日线 51 键和板块分钟 14 键目前没有合格真实来源，计划标记为 `blocked_source_qualification`。在取得逐键来源回执前不补零、不复制前一日、不写生产。
+
+## 回补规则
+
+每个交易日独立保存 parquet 与 receipt；回执包含 API、参数、返回码、行数、日期集合、重复键、主键空值和响应 `SHA-256`。已有完整回执时直接复用，失败批次可以从中断日期继续。staging 通过逐键对账、RunStore、资源锁、发布锁、发布后指纹和回读验证后，才允许进入生产仓。
