@@ -16,12 +16,10 @@ from api_common import (
     _tabs_html,
     _back_link_html,
     _BTSEL_TAG,
-    _PILL, _PILL_ON)
+    _PILL, _PILL_ON,
+    CANDLE_CN,
+    _LABELS_FP, _CARD_FB_FP)
 
-_CARD_FB_FP = os.path.join(QBT_DIR, "data", "labels",
-                           "card_feedback.jsonl")
-_LABELS_FP = os.path.join(QBT_DIR, "data", "labels",
-                          "chanlun_labels.jsonl")
 
 
 _KG_LABEL_JS = r"""'use strict';
