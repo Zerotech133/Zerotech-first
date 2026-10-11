@@ -100,13 +100,15 @@ OPTIONAL_OFFLINE = {3001, 8030}
 def main():
     strict = "--strict" in sys.argv
     as_json = "--json" in sys.argv
+    # --json 模式 stdout 只出纯 JSON（人读横幅关闭），供自动化直接解析
+    say = (lambda *a, **k: None) if as_json else print
     rc = 0
-    print("== 注册端口在线状态 ==")
+    say("== 注册端口在线状态 ==")
     down = []
     registered = []
     for p in sorted(REGISTRY):
         up = tcp_up(p)
-        print("  %-5d %-5s %s%s" % (p, "✓在线" if up else "✗离线",
+        say("  %-5d %-5s %s%s" % (p, "✓在线" if up else "✗离线",
                                     REGISTRY[p],
                                     "（可离线）" if p in OPTIONAL_OFFLINE
                                     else ""))
@@ -114,7 +116,7 @@ def main():
                            "optional_offline": p in OPTIONAL_OFFLINE})
         if not up:
             down.append(p)
-    print("== 未登记监听（服务段 1024-49151，系统/第三方豁免）==")
+    say("== 未登记监听（服务段 1024-49151，系统/第三方豁免）==")
     listen = listening_ports()
     unknown = []
     for p, pid in sorted(listen.items()):
@@ -127,14 +129,14 @@ def main():
     if unknown:
         rc = 1
         for p, name in unknown:
-            print("  ⚠ %d 由 %s 监听——我方服务未上注册表！"
+            say("  ⚠ %d 由 %s 监听——我方服务未上注册表！"
                   % (p, name))
         if not strict:
             rc = 0  # 非 strict：警示不挡道（瞬时 dev server 常态存在）
-            print("  （非 strict 模式：仅警示；--strict 才 rc=1）")
+            say("  （非 strict 模式：仅警示；--strict 才 rc=1）")
     else:
-        print("  无 ✓（注册表外仅系统/第三方豁免进程）")
-    print("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d =="
+        say("  无 ✓（注册表外仅系统/第三方豁免进程）")
+    say("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d =="
           % (len(REGISTRY), len(down),
              ",".join(map(str, down)) or "无", len(unknown)))
     hard_down = [p for p in down if p not in OPTIONAL_OFFLINE]
@@ -153,7 +155,7 @@ def main():
             "rc": 1 if strict_fail else rc,
         }, ensure_ascii=False, indent=2))
     if strict_fail:
-        print("STRICT FAIL")
+        say("STRICT FAIL")
         return 1
     return rc
 
