@@ -25,3 +25,4 @@
 - **automation「ACTIVE」≠「当日触发」**（09:10 cowbridge 漏跑实锤）：判据表挂"待 automation 补全"的行要核产物文件时间戳
 - news_collector 跑 requests 用系统 py311（venv/default 无 requests）；工作区并行线施工时只 add 自己的文件（防 078 收编重演）
 - KGStockAnalysis venv 已装 pytest（新测试 pytest 风格，unittest 收集为 0）
+- **临时产物声明「保留可复用」必须当场入 git/固定数据目录**（10-11 P5c 实锤）：30 份模拟归档+生成脚本口头承诺保留，复查双失→演练不可复现，结论全靠已入档的报告 §6 才没丢；K-STOCK-113 收口时顺手修的 `if not k` 真值歧义也是演练暴露的——演练价值在跑，产物在档
