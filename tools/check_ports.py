@@ -17,7 +17,7 @@ REGISTRY = {
     8091: "零界门户API(portal_api.py)",
     8094: "零界驾驶舱(home_server.py)",
     8080: "nginx ai-portal(Docker)",
-    8734: "零界首页镜像(临时静态服务·待收编,见K-STOCK-107)",
+    8734: "零界首页(portproxy→8080,K-STOCK-107收编)",
     3000: "Open WebUI(Docker)",
     3001: "图谱studio(学习仓)",
     5175: "智策OS前端(zhice)",
