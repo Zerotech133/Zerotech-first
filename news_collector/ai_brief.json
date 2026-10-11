@@ -1,11 +1,11 @@
 {
  "kind": "brief",
- "date": "2026-10-10",
- "ts": "2026-10-10 08:00",
+ "date": "2026-10-11",
+ "ts": "2026-10-11 08:00",
  "model": "qwen3.5:9b",
  "ok": true,
- "pushed": false,
+ "pushed": true,
  "news_count": 50,
- "market_count": 0,
- "headline": "美债去杠杆与AI监管收紧成主线，中概股反弹但地缘政治与制裁松动带来复杂扰动。"
+ "market_count": 46,
+ "headline": "A 港股美股全线收涨，市场聚焦外贸高增、地缘冲突升级及英伟达 AI 布局。"
 }

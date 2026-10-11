@@ -1,0 +1,110 @@
+[
+  {
+    "stock": "gb_pltr",
+    "asof": "2026-10-10 23:35",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "Palantir",
+      "score": 86,
+      "px": 209.05,
+      "dims": "tech+jev+rps+env",
+      "rps": 97.9
+    }
+  },
+  {
+    "stock": "gb_tsla",
+    "asof": "2026-10-10 23:35",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "特斯拉",
+      "score": 80,
+      "px": 382.7,
+      "dims": "tech+jev+rps+env",
+      "rps": 87.9
+    }
+  },
+  {
+    "stock": "gb_mrvl",
+    "asof": "2026-10-10 23:35",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "迈威尔",
+      "score": 80,
+      "px": 275.28,
+      "dims": "tech+rps+env",
+      "rps": 96.0
+    }
+  },
+  {
+    "stock": "gb_be",
+    "asof": "2026-10-10 23:35",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "Bloom Energy",
+      "score": 79,
+      "px": 280.5,
+      "dims": "tech+rps+env",
+      "rps": 93.1
+    }
+  },
+  {
+    "stock": "gb_tsm",
+    "asof": "2026-10-10 23:35",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "台积电",
+      "score": 79,
+      "px": 457.99,
+      "dims": "tech+jev+rps+env",
+      "rps": 78.6
+    }
+  },
+  {
+    "stock": "gb_panw",
+    "asof": "2026-10-10 23:35",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "qingping",
+      "name": "派拓网络",
+      "score": 78,
+      "px": 418.78,
+      "dims": "tech+rps+env",
+      "rps": 90.4
+    }
+  }
+]
