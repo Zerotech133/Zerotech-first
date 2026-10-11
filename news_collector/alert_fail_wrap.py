@@ -44,6 +44,7 @@ def normalize_err_log(log_path):
     if enc == "utf-8":
         return log_path
     text = sniff_read_text(log_path)
+    os.makedirs(OUTBOX, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=OUTBOX, prefix="norm_err_",
                                suffix=".log")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
