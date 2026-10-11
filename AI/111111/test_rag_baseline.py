@@ -94,9 +94,6 @@ class RagBaselineTests(unittest.TestCase):
         self.assertFalse(report["cases"][1]["citation_complete"])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 class OfflineRegressionTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -139,3 +136,7 @@ class OfflineRegressionTests(unittest.TestCase):
         finally:
             urllib.request.urlopen = original
         self.assertEqual(report["mode"], "offline_deterministic")
+
+
+if __name__ == "__main__":
+    unittest.main()
