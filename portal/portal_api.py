@@ -6395,31 +6395,57 @@ gap:14px;align-items:start}}
         return {"api": "ollama",
                 "model": os.environ.get("AUDIT_MODEL", "qwen3.5:9b")}
 
-    def _audit_chat(self, messages, timeout=150):
-        """按配置路由审计模型：openai 兼容网关 / 本机 Ollama，均非流式直连。"""
-        import urllib.request as _u
+    _AUDIT_ZHIPU_BASE = "https://open.bigmodel.cn/api/paas/v4"
+    _AUDIT_ZHIPU_MODEL = "glm-4.5-flash"
+
+    def _audit_backends(self):
+        """云边协同回退链：外部网关 → 本地 Ollama → 智谱（密钥见配置/env）。"""
+        chain = []
         cfg = self._audit_cfg()
-        opener = _u.build_opener(_u.ProxyHandler({}))
         if cfg["api"] == "openai":
-            body = json.dumps({"model": cfg["model"], "stream": False,
-                               "messages": messages}).encode("utf-8")
-            req = _u.Request(cfg["base"].rstrip("/") + "/chat/completions",
-                             data=body, headers={
-                                 "Content-Type": "application/json",
-                                 "Authorization": "Bearer " + cfg["key"]})
-            with opener.open(req, timeout=timeout) as resp:
-                j = json.loads(resp.read().decode("utf-8"))
-            if "error" in j:
-                raise RuntimeError("网关返回错误：%s" % json.dumps(
-                    j["error"], ensure_ascii=False)[:200])
-            return (j.get("choices") or [{}])[0].get("message", {}).get("content", "")
-        body = json.dumps({"model": cfg["model"], "stream": False,
-                           "messages": messages}).encode("utf-8")
-        req = _u.Request("http://127.0.0.1:11434/api/chat", data=body,
-                         headers={"Content-Type": "application/json"})
-        with opener.open(req, timeout=timeout) as resp:
-            j = json.loads(resp.read().decode("utf-8"))
-        return j.get("message", {}).get("content", "")
+            chain.append(("gateway", cfg["base"], cfg["key"], cfg["model"]))
+        chain.append(("ollama", "http://127.0.0.1:11434/api/chat", None,
+                      cfg.get("model") if cfg["api"] != "openai" else "qwen3.5:9b"))
+        zk = cfg.get("zhipu_key") or os.environ.get("ZHIPUAI_API_KEY", "")
+        if zk:
+            chain.append(("zhipu", self._AUDIT_ZHIPU_BASE, zk, self._AUDIT_ZHIPU_MODEL))
+        return chain
+
+    def _audit_chat(self, messages, timeout=150):
+        """按回退链依次尝试审计模型（网关→本地→智谱），返回 (回复, 后端名)。"""
+        import urllib.request as _u
+        opener = _u.build_opener(_u.ProxyHandler({}))
+        last_err = None
+        for name, base, key, model in self._audit_backends():
+            try:
+                body = json.dumps({"model": model, "stream": False,
+                                   "messages": messages}).encode("utf-8")
+                headers = {"Content-Type": "application/json"}
+                if name == "zhipu":
+                    url = base.rstrip("/") + "/chat/completions"
+                    headers["Authorization"] = "Bearer " + key
+                elif name == "gateway":
+                    url = base.rstrip("/") + "/chat/completions"
+                    headers["Authorization"] = "Bearer " + key
+                else:
+                    url = base
+                req = _u.Request(url, data=body, headers=headers)
+                with opener.open(req, timeout=timeout) as resp:
+                    j = json.loads(resp.read().decode("utf-8"))
+                if name == "ollama":
+                    text = j.get("message", {}).get("content", "")
+                else:
+                    if j.get("error"):
+                        raise RuntimeError("网关错误：%s" % json.dumps(
+                            j["error"], ensure_ascii=False)[:150])
+                    text = (j.get("choices") or [{}])[0].get(
+                        "message", {}).get("content", "")
+                if text:
+                    return text, "%s/%s" % (name, model)
+                raise RuntimeError("空回复")
+            except Exception as _e:
+                last_err = "%s(%s): %s" % (name, model, str(_e)[:100])
+        raise RuntimeError("全部后端不可达——" + str(last_err)[:300])
 
     def _api_audit_chat(self, raw):
         """POST {messages:[{role,content}...], preset?:'last_commit'} → {ok,reply}。
@@ -6449,14 +6475,11 @@ gap:14px;align-items:start}}
                 msgs.append({"role": "user",
                              "content": "抓取最近提交失败：%s" % _ge})
         try:
-            cfg = self._audit_cfg()
-            reply = self._audit_chat(msgs)
-            self._json({"ok": True, "reply": reply,
-                        "model": cfg["model"]})
+            reply, backend = self._audit_chat(msgs)
+            self._json({"ok": True, "reply": reply, "backend": backend})
         except Exception as _oe:
             self._json({"ok": False,
-                        "error": "审计模型不可达：%s（模型=%s）"
-                                 % (str(_oe)[:120], cfg.get("model", "?"))}, 502)
+                        "error": "审计模型不可达：%s" % str(_oe)[:160]}, 502)
 
     def _audit_ai_page(self):
         """独立安全审计 AI 对话页（114e）：会话客户端持有，独立模型。"""
@@ -6518,7 +6541,7 @@ gap:14px;align-items:start}}
                 "body:JSON.stringify(Object.assign({messages:hist},payload))});"
                 "const d=await r.json();if(!d.ok)throw new Error(d.error||'HTTP '+r.status);"
                 "hist.push({role:'assistant',content:d.reply});"
-                "push('a','🛡 审计官 <span class=dim>('+tag+')</span>',"
+                "push('a','🛡 审计官 <span class=dim>('+tag+(d.backend?' · '+d.backend:'')+')</span>',"
                 "esc(d.reply).replace(/\\n/g,'<br>'));"
                 "}catch(e){push('a','🛡 审计官','<span style=\\'color:var(--color-err)\\'>'+"
                 "esc(String(e))+'</span>');}"
