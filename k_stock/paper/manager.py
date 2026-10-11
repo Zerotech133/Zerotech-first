@@ -37,7 +37,10 @@ def load_profile(mid: str) -> dict:
         raise Reject(f"非法经理ID: {mid!r}")
     if not fp.exists():
         raise Reject(f"未知经理: {mid}")
-    prof = json.loads(fp.read_text(encoding="utf-8"))
+    try:
+        prof = json.loads(fp.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise Reject(f"经理档案损坏（{fp.name} JSON 解析失败）: {e}")
     prof["hire_price_cny"] = _hire_price(prof)
     return prof
 
@@ -134,17 +137,32 @@ def fire(mid: str, source: str) -> dict:
 
 
 def hires_list() -> list[dict]:
+    """注册表 + 档案名册合并视图（悬空审计：manager_status 取档案侧状态，
+    档案文件缺失标 missing / 存在但不可读标 corrupted）。"""
     profs = {p["id"]: p for p in list_profiles()}
-    return [{**h, "style": profs.get(h.get("manager"), {}).get("style")}
-            for h in _load_hires().get("hires", [])]
+    out = []
+    for h in _load_hires().get("hires", []):
+        p = profs.get(h.get("manager"), {})
+        if p:
+            mstatus = p.get("status")
+        elif (MANAGERS_DIR / f"{h.get('manager')}.json").exists():
+            mstatus = "corrupted"
+        else:
+            mstatus = "missing"
+        out.append({**h, "style": p.get("style"), "manager_status": mstatus})
+    return out
 
 
 def _main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(prog="manager", description="投资部经理管线")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("list", help="经理名册").set_defaults(fn=lambda a: list_profiles())
-    sub.add_parser("hires", help="雇佣注册表").set_defaults(fn=lambda a: hires_list())
+    p = sub.add_parser("list", help="经理名册")
+    p.add_argument("--json", action="store_true", help="单行 JSON 输出（portal 子进程用）")
+    p.set_defaults(fn=lambda a: list_profiles(), json_key="profiles")
+    p = sub.add_parser("hires", help="雇佣注册表")
+    p.add_argument("--json", action="store_true", help="单行 JSON 输出（portal 子进程用）")
+    p.set_defaults(fn=lambda a: hires_list(), json_key="hires")
     p = sub.add_parser("hire")
     p.add_argument("mid"); p.add_argument("source"); p.add_argument("--note", default="")
     p.add_argument("--json", action="store_true")
@@ -156,6 +174,10 @@ def _main(argv=None):
     args = ap.parse_args(argv)
     try:
         out = args.fn(args)
+        # 单行 JSON 仅限设置了 json_key 的子命令（list/hires）；hire/fire 维持 137c 原状
+        if getattr(args, "json", False) and getattr(args, "json_key", None):
+            print(json.dumps({"ok": True, args.json_key: out}, ensure_ascii=False))
+            return 0
         print(json.dumps(out, ensure_ascii=False, indent=1))
         return 0
     except Reject as e:

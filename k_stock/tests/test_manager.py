@@ -5,6 +5,8 @@
 models.json 损坏拒/mid·source·note 非法拒/fire 周期/tmp 账本原子写无残留。
 全部 monkeypatch 临时目录，真账本与真档案零触碰。
 """
+import contextlib
+import io
 import json
 import sys
 import tempfile
@@ -148,6 +150,67 @@ def test_ledger_atomic_write_no_tmp_leftover():
     print("PASS test_ledger_atomic_write_no_tmp_leftover")
 
 
+def test_hires_list_manager_status_audit():
+    """悬空审计位：manager_status 取档案侧 status；档案缺失 missing / 损坏 corrupted。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        _setup(tmp)
+        hire("bull_desk", "qd")
+        assert hires_list()[0]["manager_status"] == "live"
+        _profile(tmp, "bull_desk", "retired")
+        assert hires_list()[0]["manager_status"] == "retired"
+        (manager.MANAGERS_DIR / "bull_desk.json").unlink()
+        assert hires_list()[0]["manager_status"] == "missing"
+        (manager.MANAGERS_DIR / "bull_desk.json").write_text("{bad json!!", encoding="utf-8")
+        assert hires_list()[0]["manager_status"] == "corrupted"
+        # 账本行原样保留（悬空雇佣不丢）
+        assert hires_list()[0]["status"] == "active"
+    print("PASS test_hires_list_manager_status_audit")
+
+
+def test_cli_list_hires_json_single_line():
+    """--json 单行模式（portal 子进程用）：一行合法 JSON、ok=true、exit 0。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        _setup(tmp)
+        hire("bull_desk", "qd")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = manager._main(["hires", "--json"])
+        out = buf.getvalue().strip()
+        assert rc == 0
+        assert "\n" not in out, f"--json 应单行输出，实际多行: {out!r}"
+        parsed = json.loads(out)
+        assert parsed["ok"] is True
+        assert parsed["hires"][0]["manager"] == "bull_desk"
+        assert parsed["hires"][0]["manager_status"] == "live"
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = manager._main(["list", "--json"])
+        out = buf.getvalue().strip()
+        assert rc == 0 and "\n" not in out
+        parsed = json.loads(out)
+        assert parsed["ok"] is True
+        assert [p["id"] for p in parsed["profiles"]] == ["bull_desk"]
+    print("PASS test_cli_list_hires_json_single_line")
+
+
+def test_load_profile_corrupted_json_rejected():
+    """档案 JSON 损坏 → Reject（含档案名与「损坏」），不再裸抛 JSONDecodeError。"""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        _setup(tmp)
+        (manager.MANAGERS_DIR / "bull_desk.json").write_text("{bad json!!", encoding="utf-8")
+        try:
+            load_profile("bull_desk")
+            raise AssertionError("损坏档案应拒")
+        except Reject as e:
+            assert "bull_desk.json" in str(e) and "损坏" in str(e)
+        # hire 同样收敛为 Reject，CLI 不再 traceback 裸退
+        _rejects(lambda: hire("bull_desk", "qd"), "损坏档案 hire 应拒（Reject 非 JSONDecodeError）")
+    print("PASS test_load_profile_corrupted_json_rejected")
+
+
 if __name__ == "__main__":
     test_hire_normal_path_price_snapshot()
     test_hire_duplicate_rejected()
@@ -158,4 +221,7 @@ if __name__ == "__main__":
     test_hire_rejects_bad_source_and_note()
     test_fire_cycle_and_no_active()
     test_ledger_atomic_write_no_tmp_leftover()
-    print("9/9 PASS")
+    test_hires_list_manager_status_audit()
+    test_cli_list_hires_json_single_line()
+    test_load_profile_corrupted_json_rejected()
+    print("12/12 PASS")
