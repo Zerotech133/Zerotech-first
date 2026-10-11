@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>零界 · 开发指挥台原型 — 多 IDE 统一调度（K-STOCK-108）</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg-page:#0d1117; --bg-surface:#161b22; --bg-raised:#1c2128;
+    --border:#2d333b; --border-weak:#21262d;
+    --text:#e6edf3; --text-dim:#8b949e; --gray-6:#6e7681;
+    --link:#58a6ff; --blu-600:#1f6feb; --pur-500:#8957e5;
+    --color-ok:#3fb950; --color-err:#f85149; --color-warn:#d29922;
+    --color-up:#f85149; --color-dn:#3fb950; --gold:#e3b341;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg-page);color:var(--text);min-height:100vh;}
+  .num{font-family:Consolas,"Courier New",monospace;}
+  .dim{color:var(--text-dim);}
+  main{max-width:1180px;margin:0 auto;padding:0 26px 60px;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:22px 48px 12px;max-width:1180px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--blu-600),var(--pur-500));display:grid;place-items:center;font-size:20px;font-weight:800;color:#fff;}
+  .brand h1{font-size:17px;font-weight:700;letter-spacing:.5px;}
+  .brand small{color:var(--text-dim);font-size:10.5px;letter-spacing:3px;display:block;margin-top:2px;}
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;padding:10px 48px 0;max-width:1180px;margin:0 auto;}
+  .tab{padding:7px 16px;border:1px solid var(--border);border-radius:999px;color:var(--text-dim);font-size:13px;cursor:pointer;background:var(--bg-surface);transition:.2s;user-select:none;}
+  .tab:hover{border-color:var(--link);color:var(--text);}
+  .tab.on{color:var(--text);border-color:var(--link);font-weight:700;background:var(--bg-raised);}
+  .pane{display:none;}
+  .pane.on{display:block;}
+
+  h2{font-size:15px;margin:26px 0 10px;display:flex;align-items:center;gap:9px;}
+  h2 .hint{font-size:11px;color:var(--text-dim);font-weight:400;}
+  .card{background:var(--bg-raised);border:1px solid var(--border);border-radius:13px;padding:18px 20px;}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));margin-top:12px;}
+
+  /* 项目进度墙 */
+  .pj{background:var(--bg-raised);border:1px solid var(--border);border-radius:13px;padding:16px 18px;transition:border-color .2s;}
+  .pj:hover{border-color:var(--link);}
+  .pj .t{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  .pj .st{font-size:10px;padding:2px 9px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);font-weight:400;}
+  .pj .st.ga{color:var(--color-ok);border-color:var(--color-ok);}
+  .pj .st.beta{color:var(--color-warn);border-color:var(--color-warn);}
+  .pj .row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-dim);margin-top:9px;}
+  .pj .row b{color:var(--text);font-weight:600;}
+  .bar{height:6px;border-radius:4px;background:var(--bg-surface);margin-top:10px;overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blu-600),var(--link));}
+  .agents{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .agent{font-size:10.5px;padding:3px 9px;border-radius:999px;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-dim);}
+  .agent.busy{color:var(--gold);border-color:var(--gold);}
+  .agent.idle{color:var(--color-ok);border-color:var(--color-ok);}
+
+  /* 派单流水线 */
+  .flow{display:flex;gap:0;align-items:stretch;margin-top:14px;overflow-x:auto;padding-bottom:6px;}
+  .stage{flex:1;min-width:150px;background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;margin-right:26px;}
+  .stage:last-child{margin-right:0;}
+  .stage::after{content:"→";position:absolute;right:-22px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:17px;}
+  .stage:last-child::after{content:"";}
+  .stage .n{font-size:10px;color:var(--link);letter-spacing:1px;font-weight:700;}
+  .stage .t{font-size:13.5px;font-weight:700;margin-top:5px;}
+  .stage .d{font-size:11px;color:var(--text-dim);margin-top:7px;line-height:1.6;}
+  .stage .cmd{font-family:Consolas,monospace;font-size:10.5px;color:var(--gold);background:var(--bg-surface);border:1px solid var(--border-weak);border-radius:6px;padding:4px 7px;margin-top:8px;display:inline-block;}
+  .stage.hot{border-color:var(--link);box-shadow:0 0 14px rgba(88,166,255,.12);}
+
+  /* 任务单表格 */
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+  th{color:var(--text-dim);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{padding:8px 10px;border-bottom:1px solid var(--border-weak);}
+  tr:hover td{background:var(--bg-surface);}
+  .badge{font-size:10.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--border);white-space:nowrap;}
+  .b-run{color:var(--gold);border-color:var(--gold);}
+  .b-review{color:var(--link);border-color:var(--link);}
+  .b-done{color:var(--color-ok);border-color:var(--color-ok);}
+  .b-new{color:var(--text-dim);}
+  .b-block{color:var(--color-err);border-color:var(--color-err);}
+
+  /* 端口地图 */
+  .ports{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));margin-top:12px;}
+  .port{display:flex;align-items:center;gap:10px;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:12px;}
+  .port .p{font-family:Consolas,monospace;font-weight:700;color:var(--link);font-size:13px;min-width:46px;}
+  .port .n{flex:1;color:var(--text);}
+  .port .ok{width:8px;height:8px;border-radius:50%;background:var(--color-ok);box-shadow:0 0 8px var(--color-ok);}
+  .port .off{width:8px;height:8px;border-radius:50%;background:var(--color-err);}
+  .port.warn{border-style:dashed;}
+  .port.warn .ok{background:var(--color-warn);box-shadow:0 0 8px var(--color-warn);}
+
+  /* 飞书卡 */
+  .fs-cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));margin-top:12px;}
+  .fcard{background:var(--bg-surface);border:1px solid var(--border);border-radius:13px;padding:15px 17px;position:relative;cursor:pointer;transition:border-color .2s,transform .15s;}
+  .fcard:hover{border-color:var(--link);transform:translateY(-2px);}
+  .fcard .tag{position:absolute;top:-9px;left:14px;font-size:10px;padding:2px 9px;border-radius:999px;background:var(--bg-raised);border:1px solid var(--border);color:var(--text-dim);}
+  .fcard .t{font-size:13.5px;font-weight:700;margin-top:4px;}
+  .fcard .d{font-size:11.5px;color:var(--text-dim);margin-top:7px;line-height:1.65;}
+  .fcard .acts{display:flex;gap:8px;margin-top:11px;}
+  .fcard button{flex:1;padding:6px 0;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-raised);color:var(--text);cursor:pointer;}
+  .fcard button.pri{border-color:var(--color-ok);color:var(--color-ok);}
+  .fcard button:hover{border-color:var(--link);}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-raised);border:1px solid var(--color-ok);color:var(--text);padding:11px 22px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;z-index:99;box-shadow:0 6px 24px rgba(0,0,0,.5);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* 联动闭环链 */
+  .loop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;font-size:12px;}
+  .loop .node{background:var(--bg-raised);border:1px solid var(--border);border-radius:9px;padding:8px 13px;}
+  .loop .arr{color:var(--text-dim);}
+  .loop .node.hi{border-color:var(--gold);color:var(--gold);}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px;margin-top:10px;}
+  .kv dt{color:var(--text-dim);}
+  .kv dd{color:var(--text);}
+  .note{font-size:11.5px;color:var(--text-dim);line-height:1.7;margin-top:10px;}
+  .note b{color:var(--gold);font-weight:600;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">零</div>
+    <div><h1>零界 · 开发指挥台</h1><small>MULTI-IDE OPS · 原型 K-STOCK-108</small></div>
+  </div>
+  <div class="num dim" style="font-size:13px;">原型稿 · 数据为演示样例</div>
+</header>
+
+<nav class="tabs">
+  <span class="tab on" data-p="p1">🏭 指挥总览</span>
+  <span class="tab" data-p="p2">📋 派单流水线</span>
+  <span class="tab" data-p="p3">🗺 端口地图</span>
+  <span class="tab" data-p="p4">✈️ 飞书遥控器</span>
+  <span class="tab" data-p="p5">🔗 环节串联走通</span>
+</nav>
+
+<main>
+<!-- ═══ P1 指挥总览 ═══ -->
+<section class="pane on" id="p1">
+  <h2>七项目进度墙 <span class="hint">数据源 = devtask board + 各线 tasks/看板 JSON，30s 刷新</span></h2>
+  <div class="grid">
+    <div class="pj"><div class="t">📈 门户量化域 <span class="st ga">GA</span></div>
+      <div class="row"><span>今日提交</span><b class="num">7</b></div>
+      <div class="row"><span>开发中工单</span><b class="num">2</b></div>
+      <div class="bar"><i style="width:92%"></i></div>
+      <div class="agents"><span class="agent busy">CodeBuddy·A /bt-opt</span><span class="agent idle">Claude·B 空闲</span></div></div>
+    <div class="pj"><div class="t">🧠 知识图谱 KG <span class="st ga">GA</span></div>
+      <div class="row"><span>今日提交</span><b class="num">3</b></div>
+      <div class="row"><span>开发中工单</span><b class="num">1</b></div>
+      <div class="bar"><i style="width:84%"></i></div>
+      <div class="agents"><span class="agent busy">Claude·C /kg-trace</span></div></div>
+    <div class="pj"><div class="t">🧾 k_stock 影子 <span class="st beta">Beta</span></div>
+      <div class="row"><span>裁决窗</span><b class="num">10-15（4 天）</b></div>
+      <div class="row"><span>开发中工单</span><b class="num">1</b></div>
+      <div class="bar"><i style="width:71%"></i></div>
+      <div class="agents"><span class="agent busy">CodeBuddy·D /paper</span></div></div>
+    <div class="pj"><div class="t">🏛 组织平台 A0 <span class="st beta">Beta</span></div>
+      <div class="row"><span>今日提交</span><b class="num">2</b></div>
+      <div class="row"><span>A0 日报</span><b>17:35 已发</b></div>
+      <div class="bar"><i style="width:63%"></i></div>
+      <div class="agents"><span class="agent idle">— 空闲 —</span></div></div>
+    <div class="pj"><div class="t">🤖 Hermes <span class="st beta">Beta</span></div>
+      <div class="row"><span>WebUI</span><b class="num">8787 在线</b></div>
+      <div class="row"><span>开发中工单</span><b class="num">0</b></div>
+      <div class="bar"><i style="width:55%"></i></div>
+      <div class="agents"><span class="agent idle">— 空闲 —</span></div></div>
+    <div class="pj"><div class="t">🎯 智策 OS <span class="st beta">Beta</span></div>
+      <div class="row"><span>前端/API</span><b class="num">5175 / 8102</b></div>
+      <div class="row"><span>开发中工单</span><b class="num">1</b></div>
+      <div class="bar"><i style="width:48%"></i></div>
+      <div class="agents"><span class="agent busy">CodeBuddy·E /sa</span></div></div>
+    <div class="pj"><div class="t">📰 公众号 gzh <span class="st">暂缓</span></div>
+      <div class="row"><span>批 D 索证</span><b>三件待办</b></div>
+      <div class="row"><span>开发中工单</span><b class="num">0</b></div>
+      <div class="bar"><i style="width:20%"></i></div>
+      <div class="agents"><span class="agent idle">— 空闲 —</span></div></div>
+  </div>
+
+  <h2>此刻指挥态势 <span class="hint">= home_server「此刻」模式同款逻辑，搬到开发域</span></h2>
+  <div class="card">
+    <div class="kv">
+      <dt>在线 IDE Agent</dt><dd class="num">5 个（CodeBuddy×3 · Claude Code×2），最大并发 6</dd>
+      <dt>worktree 隔离中</dt><dd class="num">5 个（wt-d / wt-bt-opt / wt-kg / wt-sa / wt-paper），互不可见零冲突</dd>
+      <dt>评审门排队</dt><dd class="num">1 单（K-GIT-021 mixin 校验中）</dd>
+      <dt>今日合并</dt><dd class="num">4 单全绿（三守卫：mixin / unify_nav / check_ports）</dd>
+      <dt>违规拦截</dt><dd class="num" style="color:var(--color-err)">1 次抢端口（devtask 拒绝分配已占用 8102，已自动改派 8131）</dd>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ P2 派单流水线 ═══ -->
+<section class="pane" id="p2">
+  <h2>一单的生命周期 <span class="hint">每一步都有真实命令映射（devtask.py 已落地）</span></h2>
+  <div class="flow">
+    <div class="stage"><div class="n">STEP 1</div><div class="t">派单</div>
+      <div class="d">老田一句话 / 飞书指令卡 / 菜鸟转述 → 生成任务单（编号+模块前缀）</div>
+      <span class="cmd">devtask new K-PUSH-031</span></div>
+    <div class="stage hot"><div class="n">STEP 2</div><div class="t">领单隔离</div>
+      <div class="d">自动开 worktree + 分支 + 分配空闲端口，写回端口注册表，IDE Agent 领单</div>
+      <span class="cmd">worktree: wt-push031 / port: 8127</span></div>
+    <div class="stage"><div class="n">STEP 3</div><div class="t">开发中</div>
+      <div class="d">Agent 在隔离区写码，进度事件实时上报（开始/提交/卡壳），指挥台+飞书同步可见</div>
+      <span class="cmd">进度 → tasks.jsonl 事件行</span></div>
+    <div class="stage"><div class="n">STEP 4</div><div class="t">三守卫评审</div>
+      <div class="d">合并前强制过三道门：mixin 完整性 / 导航统一 / 端口注册表；红一个打回</div>
+      <span class="cmd">devtask merge K-PUSH-031</span></div>
+    <div class="stage"><div class="n">STEP 5</div><div class="t">合并+清场</div>
+      <div class="d">全绿才 --no-ff 进 master，worktree 自动清理；两小时 :10 auto 快照兜底收编</div>
+      <span class="cmd">master ← no-ff · 清场容错</span></div>
+    <div class="stage"><div class="n">STEP 6</div><div class="t">飞书回执</div>
+      <div class="d">合并结果+变更摘要卡片推送飞书；审批卡可下钻到指挥台对应工单详情</div>
+      <span class="cmd">✅ K-PUSH-031 已合并</span></div>
+  </div>
+
+  <h2>在办工单看板 <span class="hint">devtask list 同款数据，七态：new→claimed→coding→review→merged / blocked / dropped</span></h2>
+  <div class="card" style="padding:6px 14px 12px;">
+    <table>
+      <tr><th>工单</th><th>模块</th><th>IDE Agent</th><th>worktree</th><th>端口</th><th>状态</th><th>评审门</th></tr>
+      <tr><td class="num">K-PUSH-031</td><td>推送链</td><td>CodeBuddy·A</td><td class="num">wt-push031</td><td class="num">8127</td><td><span class="badge b-run">coding</span></td><td class="dim">—</td></tr>
+      <tr><td class="num">K-GIT-021</td><td>仓库治理</td><td>Claude·B</td><td class="num">wt-git021</td><td class="num">—</td><td><span class="badge b-review">review</span></td><td style="color:var(--gold)">mixin 校验中…</td></tr>
+      <tr><td class="num">K-STOCK-108</td><td>量化股票</td><td>CodeBuddy·D</td><td class="num">wt-paper</td><td class="num">8094</td><td><span class="badge b-run">coding</span></td><td class="dim">—</td></tr>
+      <tr><td class="num">K-N1-044</td><td>巡检</td><td>Claude·C</td><td class="num">wt-kg</td><td class="num">—</td><td><span class="badge b-done">merged</span></td><td style="color:var(--color-ok)">三门全绿 ✓</td></tr>
+      <tr><td class="num">K-ORG-012</td><td>组织平台</td><td>—</td><td class="num">—</td><td class="num">—</td><td><span class="badge b-new">new</span></td><td class="dim">待领单</td></tr>
+      <tr><td class="num">K-BK-052</td><td>备份</td><td>CodeBuddy·E</td><td class="num">wt-bk052</td><td class="num">8131</td><td><span class="badge b-block">blocked</span></td><td style="color:var(--color-err)">端口冲突→已改派</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ P3 端口地图 ═══ -->
+<section class="pane" id="p3">
+  <h2>端口注册表（check_ports REGISTRY 同源） <span class="hint">绿=在线 · 红=离线 · 虚线=未登记警示 · devtask 分配从 8100 起避开此表</span></h2>
+  <div class="ports">
+    <div class="port"><span class="p">8080</span><span class="n">nginx 正门（8734 同源）</span><span class="ok"></span></div>
+    <div class="port"><span class="p">8091</span><span class="n">零界门户API</span><span class="ok"></span></div>
+    <div class="port"><span class="p">8094</span><span class="n">菜鸟驾驶舱</span><span class="ok"></span></div>
+    <div class="port"><span class="p">8734</span><span class="n">零界首页(portproxy)</span><span class="ok"></span></div>
+    <div class="port"><span class="p">5175</span><span class="n">智策OS前端</span><span class="ok"></span></div>
+    <div class="port"><span class="p">8102</span><span class="n">智策OS API</span><span class="ok"></span></div>
+    <div class="port"><span class="p">8787</span><span class="n">Hermes WebUI</span><span class="ok"></span></div>
+    <div class="port"><span class="p">9899</span><span class="n">CowAgent console</span><span class="ok"></span></div>
+    <div class="port"><span class="p">8888</span><span class="n">QuantDinger 前端</span><span class="ok"></span></div>
+    <div class="port"><span class="p">15000</span><span class="n">QuantDinger API</span><span class="ok"></span></div>
+    <div class="port"><span class="p">9103</span><span class="n">QD桥</span><span class="ok"></span></div>
+    <div class="port"><span class="p">9104</span><span class="n">飞书卡片回调</span><span class="ok"></span></div>
+    <div class="port"><span class="p">11434</span><span class="n">Ollama</span><span class="ok"></span></div>
+    <div class="port"><span class="p">3307</span><span class="n">菜鸟MySQL</span><span class="ok"></span></div>
+    <div class="port warn"><span class="p">3001</span><span class="n">图谱studio（未启动）</span><span class="off"></span></div>
+    <div class="port warn"><span class="p">8030</span><span class="n">llamacpp 35b（手动）</span><span class="off"></span></div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="t" style="font-weight:700;font-size:13.5px;">🛡 端口铁律（AGENTS.md 宪法第 2 节，Agent 必读）</div>
+    <ul style="font-size:12px;color:var(--text-dim);line-height:1.9;margin:9px 0 0 18px;">
+      <li>开发临时端口一律 <b class="num" style="color:var(--gold)">devtask port</b> 分配（8100 起，跳过注册表已占用）</li>
+      <li>常驻新服务必须先入 REGISTRY 再上线；<b>check_ports 三守卫之一，合并前强制</b></li>
+      <li>未登记监听 = 警示单，weekly 巡检收编；抢端口行为在派单时就地拦截（见总览违规计数）</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ P4 飞书遥控器 ═══ -->
+<section class="pane" id="p4">
+  <h2>飞书 = 遥控器，不是通知栏 <span class="hint">三类卡片：指令可派单 · 进度可下钻 · 审批可拍板（点击卡片体验）</span></h2>
+  <div class="fs-cards">
+    <div class="fcard" onclick="toast('✅ 指令已受理：devtask new K-ORG-012，等待 Agent 领单')">
+      <span class="tag">🎛 指令卡</span>
+      <div class="t">派单：组织平台任务单协作</div>
+      <div class="d">「给 A0 加任务单协作模块，CodeBuddy 做」<br>→ 已解析为 K-ORG-012，等待领单隔离</div>
+      <div class="acts"><button>受理 ✓</button><button>看解析详情</button></div>
+    </div>
+    <div class="fcard" onclick="toast('📱 下钻打开指挥台 → 工单 K-PUSH-031 实时页')">
+      <span class="tag">📊 进度卡</span>
+      <div class="t">K-PUSH-031 推送链 · coding 40%</div>
+      <div class="d">CodeBuddy·A · wt-push031 · 端口 8127<br>最近事件：信号推送重试逻辑已提交</div>
+      <div class="acts"><button>下钻详情 →</button><button>催一催</button></div>
+    </div>
+    <div class="fcard" onclick="this.querySelector('.acts').innerHTML='<span style=\'color:var(--color-ok);font-size:12px\'>已批准，devtask merge 自动执行中…</span>'">
+      <span class="tag">✍️ 审批卡</span>
+      <div class="t">K-N1-044 请求合并 master</div>
+      <div class="d">三门预检全绿（mixin ✓ / nav ✓ / ports ✓）<br>变更：+312 −87，巡检覆盖 4 项新探针</div>
+      <div class="acts"><button class="pri">批准合并</button><button>驳回</button></div>
+    </div>
+    <div class="fcard" onclick="toast('🚨 已定位：8093 由 python.exe 监听，工单 K-N1-045 已建')">
+      <span class="tag" style="color:var(--color-err);border-color:var(--color-err);">⚠️ 告警卡</span>
+      <div class="t">check_ports：发现未登记监听 8093</div>
+      <div class="d">python.exe · 今日 07:42 起<br>→ 已按宪法要求生成收编工单，等你指派</div>
+      <div class="acts"><button>一键建收编单</button><button>忽略</button></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="t" style="font-weight:700;font-size:13.5px;">🔁 卡片 ⇄ 指挥台 ⇄ IDE 闭环链</div>
+    <div class="loop">
+      <span class="node hi">飞书指令卡</span><span class="arr">→</span>
+      <span class="node">菜鸟解析派单</span><span class="arr">→</span>
+      <span class="node">devtask 隔离+端口</span><span class="arr">→</span>
+      <span class="node">IDE Agent 开发</span><span class="arr">→</span>
+      <span class="node">进度事件回流</span><span class="arr">→</span>
+      <span class="node hi">飞书进度卡</span><span class="arr">→</span>
+      <span class="node">三守卫评审</span><span class="arr">→</span>
+      <span class="node hi">飞书审批卡</span><span class="arr">→</span>
+      <span class="node">merge 进 master</span><span class="arr">↺</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ P5 串联走通 ═══ -->
+<section class="pane" id="p5">
+  <h2>整条链怎么走通（全部复用已有资产，唯一新增标 ⭐）</h2>
+  <div class="card">
+    <table>
+      <tr><th>环节</th><th>靠什么</th><th>现状</th></tr>
+      <tr><td>① 谁在干什么</td><td>devtask board + tasks.jsonl 事件账</td><td style="color:var(--color-ok)">✅ 已落地（105）</td></tr>
+      <tr><td>② 端口不打架</td><td>check_ports REGISTRY + devtask port</td><td style="color:var(--color-ok)">✅ 已落地（103/105）</td></tr>
+      <tr><td>③ Agent 知规矩</td><td>AGENTS.md 宪法七节</td><td style="color:var(--color-ok)">✅ 已落地（105）</td></tr>
+      <tr><td>④ 进度事件枚举/上报 SDK</td><td>⭐ events.py：task_start / commit / blocked / merge_done 四事件写 jsonl + 推飞书</td><td style="color:var(--color-warn)">❗ 唯一大新增</td></tr>
+      <tr><td>⑤ 指挥台页面</td><td>本原型 → portal_api 挂 /devops 路由（数据源现成）</td><td style="color:var(--color-warn)">原型待拍板转实施</td></tr>
+      <tr><td>⑥ 飞书卡片流</td><td>feishu_card_v2.py + 卡片回调 9104（下钻链接指向 /devops）</td><td style="color:var(--color-ok)">✅ 通道现成，只加卡型</td></tr>
+      <tr><td>⑦ 菜鸟入口</td><td>home_server 对话路由加「派单/工单」意图 → 调 devtask</td><td style="color:var(--color-warn)">规则路由加两行</td></tr>
+    </table>
+  </div>
+  <h2>施工顺序建议（每步独立可回退）</h2>
+  <div class="flow">
+    <div class="stage hot"><div class="n">D+1</div><div class="t">⭐ events.py</div><div class="d">四个事件+落盘+飞书推送，devtask 钩子接入。半天。</div></div>
+    <div class="stage"><div class="n">D+2</div><div class="t">指挥台 /devops</div><div class="d">按本原型实现，只读现有 jsonl/board，不碰业务。</div></div>
+    <div class="stage"><div class="n">D+3</div><div class="t">飞书三卡型</div><div class="d">指令/进度/审批卡，复用 feishu_card_v2 通道与下钻。</div></div>
+    <div class="stage"><div class="n">D+4</div><div class="t">3 单实弹试点</div><div class="d">CodeBuddy/Claude Code 各领一单真实开发走全链（105 已预演过 merge 链）。</div></div>
+    <div class="stage"><div class="n">D+5</div><div class="t">菜鸟接线</div><div class="d">对话派单意图接入，形成「动嘴不动手」闭环。</div></div>
+  </div>
+  <div class="note" style="margin-top:18px;">
+    <b>拍板点（4 个）：</b>① 进度卡推送频率（每事件 vs 每半小时摘要）② 审批卡是否强制（小改自动过、大改必审批？建议 diff&lt;50 行自动）
+    ③ 指挥台挂 8091 新路由 /devops（推荐，正门同源）还是 8094 驾驶舱加页 ④ IDE Agent 命名规则（现示例 CodeBuddy·A/B…，是否绑定到具体机器/账号）。
+  </div>
+</section>
+</main>
+
+<div class="toast" id="toast"></div>
+<script>
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');document.getElementById(t.dataset.p).classList.add('on');
+  });
+  let tt;function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2600);}
+</script>
+</body>
+</html>
