@@ -242,9 +242,24 @@ def main(argv=None) -> int:
     if a.push and out.get("ok"):
         ok, msg = _push(out)
         out["push"] = {"ok": bool(ok), "msg": str(msg)}
+        # M6 审查修复：推送结果回写落盘（原实现只进 stdout，计划任务
+        # 重定向缺失时即丢），且推送失败不再假绿返回 0。
+        try:
+            _fp = out.get("_path")
+            if _fp:
+                from pathlib import Path as _Path
+                _Path(_fp).write_text(
+                    json.dumps(out, ensure_ascii=False, indent=1),
+                    encoding="utf-8")
+        except Exception:
+            pass  # 落盘失败不掩盖 push 事实，rc 仍按 push 结果判
     print(json.dumps({k: v for k, v in out.items()
                       if k != "performance" or True}, ensure_ascii=False)[:800])
-    return 0 if out.get("ok") else 1
+    if not out.get("ok"):
+        return 1
+    if a.push and out.get("push") and not out["push"].get("ok"):
+        return 1  # M6 审查修复：推送失败非零，计划任务可见
+    return 0
 
 
 if __name__ == "__main__":
