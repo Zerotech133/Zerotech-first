@@ -1,0 +1,21 @@
+[P5c 复验日] 形态 B（T1 chanlun 腿 1买独占）预定今日复验——距离回测报告已 3 周，现行组合 P5b+形态C+P4 自动运行中。
+
+复验四步（quant_backtest/ 下依次执行）：
+1. python pick_archive_monitor.py
+   —— 归档健康 + 五影子层样本进度（重点：q_first_buy 是否 n≥10）
+2. python pick_layer_verdicts.py
+   —— 实盘归档分层收益：q_first_buy 层 vs 全体基准（T+5/T+10）
+3. python t1_channel_verdicts.py --since 2026-09-11
+   —— 通道内近月 T+10 满窗复核（满窗 n≥30 才可读）
+4. python t1_channel_verdicts.py --by-month --supply-q
+   —— 全期月度表 + 供给分位数（K-STOCK-117 扩角度模式）
+
+判定门 v2（报告 §3.4/§3.5/§6，三关全过才提交）：
+① 中位差：全期 ≥+1pp 且第 3 步近月满窗后仍 ≥+1pp
+② 月度结构：第 4 步月度表无「连续两月反转」（重点定论 09 的 -1.80 读数）
+③ 归档层：q_first_buy n≥10 且占优
+三关全过 → 连同供给代价提交老田拍板（拍板材料=全交易日空日率，基线 78%，及近月供给 1.9-2.1只/日趋势；启用开关 FIRST_BUY_STRONG_ONLY 已预置）
+不过 → 挂账 #6 更新进度，继续滚动积累
+附加关注：panic_buy 层近月是否持续弱于基准（30 日演练发现与全期结论反转，报告 §6）
+
+（本提醒由计划任务 P5cRecheck 一次性触发）
