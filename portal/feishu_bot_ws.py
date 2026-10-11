@@ -474,8 +474,12 @@ def _handle_card(val, sender):
     """卡片动作执行体（线程侧）：tag 分发 + 回执。
     K-STOCK-137：lark_oapi ws 是 asyncio 单循环，on_card 若同步执行
     重动作（ctl:board 子进程 180s / er:set 120s / dim: 现抓 66s）会卡死
-    心跳与全部消息——对齐 on_msg 线程化判例，on_card 只解析不执行。"""
+    心跳与全部消息——对齐 on_msg 线程化判例，on_card 只解析不执行。
+    K-STOCK-138：平移出 main() 闭包后 send_card 名字丢失（原由闭包捕获
+    main 内局部 import），所有发卡按钮分支 NameError 被吞——函数内补局部
+    import（reply_card 同款模式）。"""
     try:
+        from feishu_card_v2 import send_card  # K-STOCK-138：闭包平移补名
         tag = val.get("tag", "")
         if tag.startswith("dim:"):
             _, dim, code = tag.split(":", 2)
