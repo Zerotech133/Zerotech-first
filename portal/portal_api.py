@@ -22477,7 +22477,7 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                         # （如 taishan）会误清 chaser 的组合绑定。
                         import subscriptions as _sub
                         _pf_now = {}
-                        for _p in (_sub.portfolios() or []):
+                        for _p in (_sub.portfolios().get("portfolios") or []):
                             if _p.get("id") == "pf_001":
                                 _pf_now = _p
                                 break
