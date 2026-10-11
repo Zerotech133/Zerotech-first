@@ -556,3 +556,102 @@ def _sched_rc_html(tstat):
                  % (rc if rc is not None else "?"))
 
 
+NO_WINDOW = 0x08000000  # CREATE_NO_WINDOW（run 同族随行）
+# ==== 批5 修复提级：run/MKT_LABEL/_pool_bear_news（跨域共享）====
+
+def run(cmd, timeout=30):
+    # K-STOCK-098 #3 防回归：10-09 曾有调用方算出 timeout=-711s 直接炸
+    # TimeoutExpired（deadline-start 计算错，旧版已重构消失）。此处钳制
+    # 任何调用方传入的非正 timeout，防同类回归再入。
+    if not isinstance(timeout, (int, float)) or timeout <= 0:
+        timeout = 30
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=timeout,
+                           creationflags=NO_WINDOW)
+        return r.stdout.decode("utf-8", "replace")
+    except Exception:
+        log_exc("run() 子进程失败: %s" % (cmd[:2] if isinstance(cmd, list) else cmd))  # C2批1
+        return ""
+
+
+MKT_LABEL = {"cn": "A股", "us": "美股", "hk": "港股", "crypto": "加密货币"}
+
+
+def _pool_bear_news(codes_names, days=5, min_conf=0.75, limit=12):
+    """预警池利空消息警示（news.db 只读）：近 days 天 bias=bear 且
+    置信≥min_conf、可归属到池内个股的消息。
+
+    依据（llm观察记录 回测 v2）：偏空消息 T+1 跑输全市场 ~0.5pp，
+    「避雷」方向有效 —— 只提示不拦截、不用于增强买入。
+    归属三路：① stocks 列真 ts_code ② 标题前缀代码 [600853 龙建股份]
+    / [个股研报·org] 300059 ③ 股票名出现在标题。
+    返回 [{ts, code, name, title, conf, reason}]，新→旧。"""
+    import sqlite3
+    from datetime import datetime as _dt, timedelta as _td
+    if not codes_names:
+        return []
+    since = (_dt.now() - _td(days=days)).strftime("%Y-%m-%d %H:%M")
+    c6 = {c.split(".")[0]: c for c in codes_names}
+    name2code = {n: c for c, n in codes_names.items() if n and len(n) >= 2}
+    out, seen = [], set()
+    try:
+        db = sqlite3.connect(os.path.join(STATION, "news_collector",
+                                          "news.db"))
+        rows = db.execute(
+            "SELECT created_at, title, stocks, jev FROM news "
+            "WHERE jev IS NOT NULL AND created_at>=? "
+            "ORDER BY id DESC LIMIT 4000", (since,)).fetchall()
+        db.close()
+    except Exception:
+        log_exc("_pool_bear_news:news.db 查询")  # C2批1
+        return out
+    for ca, title, stocks, jev in rows:
+        if not title:
+            continue
+        try:
+            jv = json.loads(jev)
+        except Exception:
+            continue
+        if jv.get("bias") != "bear" or (jv.get("conf") or 0) < min_conf:
+            continue
+        if jv.get("scope") != "cn":
+            # 只取 A 股域消息：宏观/港股/商品域新闻按名归属噪声大
+            # （实测：新世界发展≠新世界、金龙指数提及比亚迪、
+            #  法国政局挂到金正大），警示层宁可漏报不可误报
+            continue
+        hit = None
+        try:
+            lst = json.loads(stocks) if stocks else []
+        except Exception:
+            lst = []
+        for x in lst if isinstance(lst, list) else []:
+            if isinstance(x, str) and x in codes_names:
+                hit = x
+                break
+        if hit is None:
+            m = re.match(r"^\[(\d{6})[\s·\]]", title)
+            if not m:
+                m = re.match(r"^\[[^\]]+\]\s*(\d{6})\s", title)
+            if m and m.group(1) in c6:
+                hit = c6[m.group(1)]
+        if hit is None:
+            for n, c in name2code.items():
+                if n in title:
+                    hit = c
+                    break
+        if hit is None:
+            continue
+        key = (hit, title[:40])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"ts": (ca or "")[:16], "code": hit,
+                    "name": codes_names.get(hit, ""),
+                    "title": title[:60],
+                    "conf": round((jv.get("conf") or 0) * 100),
+                    "reason": (jv.get("reason") or "")[:40]})
+        if len(out) >= limit:
+            break
+    return out
+
+
