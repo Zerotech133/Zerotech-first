@@ -231,6 +231,89 @@ def _fmt_lines(r):
     return "\n".join(lines)
 
 
+# ── M7 交互卡：卡片按钮 → 指令回路（点按→这端执行→回推结果卡）──
+
+def _btn(text, value, ptype="default"):
+    return {"tag": "button", "text": {"tag": "plain_text", "content": text},
+            "type": ptype, "value": value}
+
+
+def card_er_lines(r):
+    """持仓线位交互卡：每只持仓带 止盈/止损/撤线 按钮（点按进入幅度选择）。"""
+    if not r.get("ok"):
+        return {"config": {"wide_screen_mode": True},
+                "header": {"template": "red", "title": {"tag": "plain_text",
+                            "content": "持仓查询失败"}},
+                "elements": [{"tag": "markdown",
+                              "content": _esc(r.get("error"))}]}
+    accts = r.get("account") or "main"
+    els = []
+    for p in r.get("positions") or []:
+        code6 = (p["stock"] or "").split(".")[0]
+        line = "**%s** ×%s 成本 %.2f" % (p["stock"], p["qty"], p["avg_cost"])
+        if p.get("stop_price"):
+            line += " · 止损 %.2f" % p["stop_price"]
+        if p.get("stop_distance_pct") is not None:
+            line += "（现价距 %.2f%%）" % p["stop_distance_pct"]
+        els.append({"tag": "markdown", "content": line})
+        els.append({"tag": "action", "actions": [
+            _btn("止盈", {"tag": "er:choice", "code": code6, "kind": "tp"},
+                 "primary"),
+            _btn("止损", {"tag": "er:choice", "code": code6, "kind": "sl"},
+                 "danger"),
+            _btn("撤线", {"tag": "er:clear", "code": code6},
+                 "default"),
+        ]})
+    for t in r.get("tp_rules") or []:
+        els.append({"tag": "markdown", "content":
+                    "**%s** 止盈线 %.2f（+%s%%）" % (t["stock"], t["line"],
+                                                     t["pct"])})
+    if not els:
+        els.append({"tag": "markdown", "content": "（无持仓、无线位）"})
+    els.append({"tag": "note", "elements": [{"tag": "plain_text", "content":
+                "点按按钮 → 选幅度 → 确认执行（模拟盘）"}]})
+    return {"config": {"wide_screen_mode": True},
+            "header": {"template": "blue", "title": {"tag": "plain_text",
+                       "content": "持仓线位 · %s" % accts}},
+            "elements": els}
+
+
+def card_er_pct(code, kind):
+    """幅度选择卡：点幅度即执行（er:set），附撤销按钮。"""
+    label = "止盈" if kind == "tp" else "止损"
+    pcts = ["5", "8", "10", "15"] if kind == "tp" else ["3", "5", "8"]
+    els = [{"tag": "markdown", "content":
+            "为 **%s** 设置**%s**线，请点幅度（成本比例）："
+            % (code, label)}]
+    els.append({"tag": "action", "actions": [
+        _btn("+%s%%" % p if kind == "tp" else "-%s%%" % p,
+             {"tag": "er:set", "code": code, "kind": kind, "pct": p},
+             "primary") for p in pcts]})
+    els.append({"tag": "action", "actions": [
+        _btn("取消", {"tag": "er:noop"}, "default")]})
+    return {"config": {"wide_screen_mode": True},
+            "header": {"template": "orange", "title": {"tag": "plain_text",
+                       "content": "%s %s 线设置" % (code, label)}},
+            "elements": els}
+
+
+def _card_sender_id(ev):
+    """卡片回调里尽力取操作者 open_id（白名单用；取不到返回空）。"""
+    op = getattr(ev, "operator", None)
+    for att in ("open_id", "operator_open_id", "user_id"):
+        v = getattr(op, att, None) if op is not None else None
+        if v:
+            return v
+    ctx = getattr(ev, "context", None)
+    if ctx is not None:
+        try:
+            d = ctx if isinstance(ctx, dict) else json.loads(str(ctx))
+            return d.get("open_operator_id") or ""
+        except Exception:  # noqa: BLE001
+            pass
+    return ""
+
+
 # ── 发送 ────────────────────────────────────────────────────
 def reply_card(card, message_id):
     from feishu_card_v2 import send_card  # noqa: F401  通道复用
@@ -293,7 +376,8 @@ def handle_cmd(text, message_id, open_id=""):
             return
         if low.startswith("止盈单"):
             send_text("查询中…", message_id)
-            send_text(_fmt_lines(_er_cli(["list"])), message_id)
+            # 交互卡：持仓行带 止盈/止损/撤线 按钮（点按即走指令回路）
+            reply_card(card_er_lines(_er_cli(["list"])), message_id)
         elif low.startswith("止盈") or low.startswith("止损"):
             kind = "tp" if low.startswith("止盈") else "sl"
             parts = text.split()
@@ -404,11 +488,59 @@ def main():
             if isinstance(val, str):
                 val = json.loads(val)
             tag = val.get("tag", "")
+            sender = _card_sender_id(ev)
             if tag.startswith("dim:"):
                 _, dim, code = tag.split(":", 2)
                 f, _ = get_facts(code)
                 ok, why = send_card(card_dim(code, f, dim))
                 log("card->%s %s %s" % (dim, code, ok or why))
+            elif tag.startswith("er:") and not _er_allowed(sender):
+                send_text("无权限：该操作仅限白名单用户。")
+                log("card er denied (sender=%s)" % sender)
+            elif tag == "er:list":
+                ok, why = send_card(card_er_lines(_er_cli(["list"])))
+                log("card er:list %s" % (ok or why))
+            elif tag == "er:help":
+                send_text(HELP_MD)
+                log("card er:help")
+            elif tag == "er:choice":
+                ok, why = send_card(card_er_pct(val.get("code"),
+                                                val.get("kind")))
+                log("card er:choice %s" % (ok or why))
+            elif tag == "er:set":
+                r = _er_cli(["set", "--code", str(val.get("code")),
+                             "--kind", str(val.get("kind")),
+                             "--pct", str(val.get("pct"))])
+                send_text(("✅ " if r.get("ok") else "❌ ")
+                          + ("%s %s 线 %.2f 已设（成本 %.2f）· 触线后次日开盘清仓"
+                             % (r.get("stock"), "止盈" if val.get("kind") == "tp"
+                                else "止损", r.get("line", 0),
+                                r.get("avg_cost", 0))
+                             if r.get("ok") else r.get("error")))
+                log("card er:set %s" % r.get("ok"))
+            elif tag == "er:clear":
+                # 点撤线 → 先发撤线选择卡（tp/sl 二选一，再点执行）
+                code = val.get("code")
+                els = [{"tag": "markdown", "content":
+                        "撤销 **%s** 的哪条线？" % code},
+                       {"tag": "action", "actions": [
+                           _btn("撤止盈", {"tag": "er:clear2", "code": code,
+                                           "kind": "tp"}, "primary"),
+                           _btn("撤止损", {"tag": "er:clear2", "code": code,
+                                           "kind": "sl"}, "danger"),
+                           _btn("取消", {"tag": "er:noop"})]}]
+                send_card({"config": {"wide_screen_mode": True},
+                           "header": {"template": "grey",
+                                      "title": {"tag": "plain_text",
+                                                "content": "撤线 %s" % code}},
+                           "elements": els})
+            elif tag == "er:clear2":
+                r = _er_cli(["clear", "--code", str(val.get("code")),
+                             "--kind", str(val.get("kind"))])
+                send_text(("✅ " if r.get("ok") else "❌ ")
+                          + (r.get("note") or r.get("error")))
+                log("card er:clear2 %s" % r.get("ok"))
+            # er:noop → 无操作
         except Exception:  # noqa: BLE001
             log("card err " + traceback.format_exc()[-300:])
 

@@ -84,6 +84,15 @@ def build_card(m: dict) -> dict:
              "- " + _esc(x) for x in items[:8]) or "（无）"}]},
         {"tag": "note", "elements": [{"tag": "plain_text", "content":
             "模拟盘 · 详见门户 /market-strategy 组合页"}]},
+        # K-STOCK-122 联动：卡片按钮 → 机器人指令回路（点按即执行/查询）
+        {"tag": "action", "actions": [
+            {"tag": "button", "text": {"tag": "plain_text",
+                                       "content": "📊 持仓线位/下指令"},
+             "type": "primary", "value": {"tag": "er:list"}},
+            {"tag": "button", "text": {"tag": "plain_text",
+                                       "content": "📜 指令表"},
+             "type": "default", "value": {"tag": "er:help"}},
+        ]},
     ]
     return {"config": {"wide_screen_mode": True},
             "header": {"template": "blue", "title": {"tag": "plain_text",

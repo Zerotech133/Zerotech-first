@@ -213,6 +213,12 @@ def _push(out: dict) -> tuple:
                   "\n".join("- " + s for s in out["decisions_needed"])),
             {"tag": "note", "elements": [{"tag": "plain_text", "content":
                 "模拟盘周期总结 · 详见门户"}]},
+            # 联动：按钮 → 机器人指令回路
+            {"tag": "action", "actions": [
+                {"tag": "button", "text": {"tag": "plain_text",
+                                           "content": "📊 持仓线位/下指令"},
+                 "type": "primary", "value": {"tag": "er:list"}},
+            ]},
         ]}
     return send_card(card)
 

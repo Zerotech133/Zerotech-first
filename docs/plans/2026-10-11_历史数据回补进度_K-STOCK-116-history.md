@@ -28,6 +28,8 @@
 | 年度批次 2024-06 | 2024-06-05–2024-07-03，两张表 | 40 个分片全部完成，零空响应、零错误 |
 | 年度批次 2024-07 | 2024-07-04–2024-07-31，两张表 | 40 个分片全部完成，零空响应、零错误 |
 | 年度批次 2024-08 | 2024-08-01–2024-08-28，两张表 | 40 个分片全部完成，零空响应、零错误 |
+| 年度批次 2024-09 | 2024-08-29–2024-09-27，两张表 | 40 个分片全部完成，零空响应、零错误 |
+| 年度批次 2024-10 | 2024-09-30–2024-11-01，两张表 | 40 个分片全部完成，零空响应、零错误 |
 
 批次文件：
 
@@ -38,7 +40,7 @@
 
 RunStore 候选运行已登记在 `quant_backtest/data/tushare_staging/warehouse_runs.sqlite3`：
 
-- 当前候选运行：720 个日期单元，绑定每个 staging 回执；
+- 当前候选运行：800 个日期单元，绑定每个 staging 回执；
 - 运行计划：`quant_backtest/data/tushare_staging/runstore_candidate_plan.json`；
 - registry 审计：`quant_backtest/data/tushare_staging/runstore_candidate_audit.json`；
 - 候选结果：`quant_backtest/data/tushare_staging/runstore_candidate_result.json`；
