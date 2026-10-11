@@ -28,7 +28,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from engine import PaperEngine, Reject          # noqa: E402
+from engine import PaperEngine          # noqa: E402
 from market import ParquetMarket                # noqa: E402
 
 try:  # 与 trainee 同款相对导入兜底
