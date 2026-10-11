@@ -73,9 +73,14 @@ def check_junction():
     指向 E:\老田的AI助手——C 盘全部脚本路径依赖它。E 盘换盘符/移盘/
     junction 误删 → C 盘脚本批量静默瘫痪，巡检需分钟级发现。
     依据: docs/ops/2026-10-08_Jev双副本治理方案.md 方案B第2步。"""
+    # K-STOCK-098 #4 修探针：原实现拿 realpath(C:/aios)（解析结果=
+    # E://老田的AI助手）与 STATION（=C://aios，本脚本目录推导）比较，
+    # junction 越健康越恒假。改为与既定目标 E://老田的AI助手 比对，
+    # 并加「既是 reparse point 又能解析到目标」双条件。
+    expected = ("E:\老田的AI助手").lower()
     try:
-        real = os.path.realpath("C:/aios")
-        return real.lower() == STATION.lower()
+        real = os.path.realpath("C:/aios").lower()
+        return real == expected and os.path.isdir("C:/aios/portal")
     except OSError:
         return False
 
@@ -116,23 +121,30 @@ def check_docker():
 #   与 ChanlunRefill / RtdxRtMinPull / _sentinelEOD / _sentinelKgTdx / Git for
 #   Windows Updater 五任务同码时间吻合（含长时等待哨兵进程被杀）。豁免按 rc 码
 #   而非按任务名（Git Updater 等系统自带任务不宜点名）。
-_BENIGN_RC = {0, 267009, 267011, 267014, 2147946720, 2147943467}
+_BENIGN_RC = {0, 267009, 267011, 267014, 2147946720, 2147943467,
+              3221225786}  # +0xC000013A 关机/CTRL_C 被动终止（K-STOCK-098 #4：CryptoSync/RiskGuardR3Weekly 同类，非业务故障）
 # A5: 命中后仍保留可见性的良性码子集——不进 bad、不触发 exit 1，
 # 但在 issues 记一条 [info] 级（区别于静默豁免的 0/0x41301 等）。
-_BENIGN_RC_INFO = {2147943467}
+_BENIGN_RC_INFO = {2147943467, 3221225786}
 _BENIGN_RC_INFO_NOTE = "关机被动终止(0x8007042B)，非业务故障，定性见 runbook 2026-10-07 §5"
 # 系统自带噪音任务（OneDrive 更新器等，与本站无关）
 _IGNORE_NAME = ("OneDrive",)
 
 
 def check_tasks():
-    ps = ("Get-ScheduledTask | Where-Object { $_.TaskPath -notlike '\\Microsoft*' } | "
+    # K-STOCK-098 #4 加固：PS 输出强制 UTF-8 + 读侧 errors=replace。
+    # 此前 text=True 跟随解释器 locale/UTF-8 模式，PS 管道输出按 GBK 写、
+    # UTF-8 读 → reader 线程 UnicodeDecodeError → 任务清单静默变 0 条
+    #（20:23 实测翻车，快照 tasks.total=0 看似「无任务」实为探针残废）。
+    ps = ("[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+          "Get-ScheduledTask | Where-Object { $_.TaskPath -notlike '\\Microsoft*' } | "
           "ForEach-Object { $i = $_ | Get-ScheduledTaskInfo -ErrorAction SilentlyContinue; "
           "'{0}|{1}|{2}|{3}' -f $_.TaskName, $_.State, $i.LastTaskResult, "
           "$i.LastRunTime.ToString('yyyy-MM-dd HH:mm') }")
     try:
         r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=60)
         lines = [l.strip() for l in (r.stdout or "").splitlines() if "|" in l]
     except Exception:
         return {"total": 0, "bad": [{"name": "查询失败", "rc": -1}],
