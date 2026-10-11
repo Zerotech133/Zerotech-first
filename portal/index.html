@@ -237,14 +237,14 @@
           <div class="ic" aria-hidden="true">🎓</div>
           <div><div class="t">智能体学院 <span class="tag-soon">交互原型</span></div><div class="s">AI 教 AI · 独立评测 · 能力交付</div></div>
         </div>
-        <div class="desc">接入不同类型的 AI，探索教学、能力包与服务市场。支持激进、稳健、保守敏感度及中立方向偏好。</div>
+        <div class="desc">AI 教 AI 实验场：接入不同类型 AI 互教与独立评测，沉淀能力包。激进攻稳健保守四档偏好可选。</div>
         <div class="ms">
-          <span>交流 <b>AI 与 AI</b></span>
-          <span>市场 <b>未上架</b></span>
-          <span>训练 <b>未开放</b></span>
+          <span>教学 <b>原型在线</b></span>
+          <span>评测 <b>Prototype</b></span>
+          <span>市场 <b>规划中</b></span>
         </div>
         <div class="foot">
-          <span class="st"><span class="dot unknown academy-dot"></span><span>训练、模拟成交、交易关闭</span></span>
+          <span class="st"><span class="dot unknown academy-dot"></span><span>阶段 1/3 · 交互原型期，训练与交易随后开放</span></span>
           <span class="enter">查看学院 →</span>
         </div>
       </a>
@@ -382,6 +382,7 @@
           <span>任务 <b id="o-tasks">—</b></span>
           <span>容器 <b id="o-cont">—</b></span>
           <span>告警 <b id="o-alerts">—</b></span>
+          <span>备份 <b id="o-bk">—</b></span>
         </div>
         <div class="foot">
           <span class="st"><span class="dot" id="o-dot"></span><span id="o-note">连接中…</span></span>
@@ -393,9 +394,9 @@
       <a class="dm soon" href="/dev.html#more">
         <div class="head">
           <div class="ic">➕</div>
-          <div><div class="t">更多领域 <span class="tag-soon">预留位</span></div><div class="s">整其他的部分</div></div>
+          <div><div class="t">更多领域 <span class="tag-soon">预留位</span></div><div class="s">生活 · 交易执行 · 知识管理</div></div>
         </div>
-        <div class="desc">OS 不止量化：下一个领域（生活 / 交易执行 / 知识管理…）上线时，从这块位置接入。</div>
+        <div class="desc">OS 不止量化：下一个领域上线时从此接入，与量化同级的完整专项（驾驶舱 + 专项页 + 产线卡）。</div>
         <div class="foot">
           <span class="st"><span class="dim">位置已留好</span></span>
           <span class="enter">扩展说明 →</span>
@@ -491,6 +492,9 @@
       document.getElementById('o-tasks').textContent = tasksOk + '/' + (d.tasks || []).length;
       document.getElementById('o-cont').textContent = run + '/' + tot;
       document.getElementById('o-alerts').textContent = al.pending ?? 0;
+      const bk = (d.backups || {}).latest;
+      const bkEl = document.getElementById('o-bk');
+      if (bkEl && bk) { bkEl.textContent = bk.split('_')[0].slice(5); }
       const odot = document.getElementById('o-dot'), onote = document.getElementById('o-note');
       if (tasksBad === 0) { odot.className = 'dot'; onote.textContent = '全绿'; }
       else { odot.className = 'dot off'; onote.textContent = tasksBad + ' 项异常'; }

@@ -268,7 +268,8 @@ def get_backups():
     res = {"latest": None, "failed": None, "recent": [], "mirror": os.path.exists(MIRROR)}
     try:
         dirs = sorted((d for d in os.listdir(BACKUPS)
-                       if os.path.isdir(os.path.join(BACKUPS, d))), reverse=True)
+                       if os.path.isdir(os.path.join(BACKUPS, d))
+                       and re.match(r"^\d{4}-\d{2}-\d{2}_", d)), reverse=True)
         res["recent"] = dirs[:3]
         if dirs:
             res["latest"] = dirs[0]
