@@ -6,20 +6,35 @@
 """
 import json
 import os
+import re
+import sys
 from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
 MANAGERS_DIR = HERE / "managers"
 HIRES_PATH = HERE / "manager_hires.json"
+
+_MID_RE = re.compile(r"^[a-z0-9_]{1,32}$")
+_SOURCE_RE = re.compile(r"^[A-Za-z0-9_\u4e00-\u9fff-]{1,32}$")
 
 
 class Reject(Exception):
     """业务拒绝（雇佣/解聘语义错误），与 trainee.Reject 同款语义。"""
 
 
+def _check_mid(mid: str) -> None:
+    if not isinstance(mid, str) or not _MID_RE.match(mid):
+        raise Reject(f"非法经理ID: {mid!r}（限 1-32 位小写字母/数字/下划线）")
+
+
 def load_profile(mid: str) -> dict:
+    _check_mid(mid)
     fp = MANAGERS_DIR / f"{mid}.json"
+    if fp.parent != MANAGERS_DIR:
+        raise Reject(f"非法经理ID: {mid!r}")
     if not fp.exists():
         raise Reject(f"未知经理: {mid}")
     prof = json.loads(fp.read_text(encoding="utf-8"))
@@ -28,19 +43,16 @@ def load_profile(mid: str) -> dict:
 
 
 def _hire_price(prof: dict) -> int:
-    """聘请价 = 档案基价 × 模型系数（系数来自 models.json；未知模型按 1.0 并标警）。"""
-    coef = 1.0
+    """聘请价 = 档案基价 × 模型系数（系数来自 models.json；fail-closed，不静默降级）。"""
     try:
         cat = json.loads((HERE / "models.json").read_text(encoding="utf-8"))
-        for m in cat.get("models", []):
-            if m["model"] == prof.get("model"):
-                coef = m.get("coef_vs_glm52", 1.0)
-                break
-        else:
-            prof = dict(prof, _model_warning="模型不在 gaorta 目录")
-    except Exception:
-        pass
-    return round(prof.get("hire_base_price_cny", 99) * coef)
+    except Exception as e:
+        raise Reject(f"gaorta 模型目录（models.json）不可读: {e}")
+    model = prof.get("model")
+    for m in cat.get("models", []):
+        if m["model"] == model:
+            return round(prof.get("hire_base_price_cny", 99) * m.get("coef_vs_glm52", 1.0))
+    raise Reject(f"模型 {model!r} 不在 gaorta 目录，计价失败")
 
 
 def list_profiles() -> list[dict]:
@@ -64,14 +76,32 @@ def _load_hires() -> dict:
 
 
 def _save_hires(d: dict) -> None:
-    tmp = HIRES_PATH.with_suffix(".json.tmp")
+    import secrets
+    tmp = HIRES_PATH.with_suffix(f".json.tmp.{os.getpid()}.{secrets.token_hex(2)}")
     tmp.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(str(tmp), str(HIRES_PATH))
+
+
+def _check_source(source: str) -> None:
+    if not isinstance(source, str) or not _SOURCE_RE.match(source):
+        raise Reject(f"非法组合源: {source!r}（限 1-32 位字母/数字/下划线/中文/连字符）")
+
+
+def _check_note(note: str) -> str:
+    if not isinstance(note, str):
+        raise Reject("非法备注: 必须为字符串")
+    cleaned = "".join(ch for ch in note if ch.isprintable())
+    if len(cleaned) > 200:
+        raise Reject("备注过长（限 200 字符）")
+    return cleaned
 
 
 def hire(mid: str, source: str, note: str = "") -> dict:
     """雇佣经理到某组合源。模型必须在 gaorta 目录内。"""
     from gaorta_client import allowed_models
+    _check_mid(mid)
+    _check_source(source)
+    note = _check_note(note)
     prof = load_profile(mid)
     if prof.get("status") != "live":
         raise Reject(f"{mid} 状态 {prof.get('status')} ≠ live，不可雇佣")
@@ -91,6 +121,8 @@ def hire(mid: str, source: str, note: str = "") -> dict:
 
 
 def fire(mid: str, source: str) -> dict:
+    _check_mid(mid)
+    _check_source(source)
     d = _load_hires()
     for h in d["hires"]:
         if h.get("manager") == mid and h.get("source") == source and h.get("status") == "active":
@@ -115,17 +147,23 @@ def _main(argv=None):
     sub.add_parser("hires", help="雇佣注册表").set_defaults(fn=lambda a: hires_list())
     p = sub.add_parser("hire")
     p.add_argument("mid"); p.add_argument("source"); p.add_argument("--note", default="")
-    p.set_defaults(fn=lambda a: [hire(a.mid, a.source, a.note)])
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=lambda a: [hire(a.mid, a.source, a.note)], cmd_name="hire")
     p = sub.add_parser("fire")
     p.add_argument("mid"); p.add_argument("source")
-    p.set_defaults(fn=lambda a: [fire(a.mid, a.source)])
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=lambda a: [fire(a.mid, a.source)], cmd_name="fire")
     args = ap.parse_args(argv)
     try:
-        print(json.dumps(args.fn(args), ensure_ascii=False, indent=1))
+        out = args.fn(args)
+        print(json.dumps(out, ensure_ascii=False, indent=1))
         return 0
     except Reject as e:
-        print("REJECT:", e)
-        return 2
+        if getattr(args, "json", False):
+            print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+            return 2
+        print(f"❌ {e}")
+        return 1
 
 
 if __name__ == "__main__":
