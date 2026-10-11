@@ -50,7 +50,8 @@ from api_common import (
     _sched_rc_html,
     run, MKT_LABEL, _pool_bear_news, NO_WINDOW,
     CANDLE_CN, _matrix_cards, _stock_chip_summary, _stock_sector_rows,
-    _SEC_CACHE)
+    _SEC_CACHE, CACHE_TTL, build_alerts, _fmt_pct,
+    _alerts_last_jsonl, _council_stats, _council_pending, _council_cache)
 # ==== 批0 导入结束 ====
 # ==== P4 批1：api_data 显式导入 ====
 import api_data  # 模块名绑定：Handler 多继承基类引用 api_data.Handler
@@ -132,7 +133,6 @@ TASKS = ["AI工作站每日备份", "AI工作站告警转发", "JevFOCUS首期�
          "金融新闻收盘复盘", "自选股行情快照", "公众号选题撰文",
          "金融量化每日扫描", "ChanlunScan",
          "金融量化季度调参"]
-CACHE_TTL = 20
 # K84 辩论室「你的插话已重测」横幅的时效窗口（秒）：
 # 插话后该秒数内进详情页显示横幅；可用环境变量 DEBATE_RECENT_SEC 覆盖
 DEBATE_RECENT_SEC = int(os.environ.get("DEBATE_RECENT_SEC") or 600)
@@ -651,82 +651,10 @@ _SS_TAG = '<script src="/static/shortscreen.js" defer></script>'
 
 
 
-# ── K39 今日预警速览：各策略产线最新预警值聚合 ──────────────
-def _alerts_last_jsonl(fp):
-    """JSONL 末行解析（weak 在案口径：末行可解析才计入）。"""
-    try:
-        last = ""
-        with open(fp, encoding="utf-8") as f:
-            for ln in f:
-                last = ln
-        last = last.strip()
-        return json.loads(last) if last else None
-    except Exception:
-        # 豁免（C2批1）：口径即「末行可解析才计入」（weak 在案口径注释）
-        return None
 
 
-def _council_stats():
-    """K61 投委会大屏锚：最近跑批夜三会计数 + 影子转正进度。
-    全部读 jsonl/json 落盘锚（60s TTL，大屏轮询零重量级）；
-    「最近夜」= 三张留痕表最大 d（23:50 跑批属前夜，白天看仍是当期）。"""
-    now = time.time()
-    if _council_cache["d"] is not None and now - _council_cache["t"] < 55:
-        return _council_cache["d"]
-    rd = os.path.join(QBT_DIR, "reports")
-
-    def _rows(fp):
-        try:
-            out = []
-            with open(fp, encoding="utf-8") as f:
-                for ln in f:
-                    ln = ln.strip()
-                    if ln:
-                        try:
-                            out.append(json.loads(ln))
-                        except Exception:
-                            pass
-            return out
-        except OSError:
-            return []
-
-    props = _rows(os.path.join(rd, "council_proposals.jsonl"))
-    watch = _rows(os.path.join(rd, "council_watch.jsonl"))
-    revs = _rows(os.path.join(rd, "council_reviews.jsonl"))
-    ds = [r.get("d") for r in props + watch + revs if r.get("d")]
-    last = max(ds) if ds else ""
-    # K62：当期 (sid,code) 最新指令（预警类计数）+ 风格分桶分布
-    latest = {}
-    for r in props:
-        k = (r.get("sid"), r.get("code"))
-        latest[k] = (r.get("directive") or {}).get("act") or ""
-    n_warn = sum(1 for a in latest.values()
-                 if a in ("平仓预警", "减仓预警"))
-    styles = {}
-    smap = {}
-    for r in props:
-        if r.get("code"):
-            smap[r["code"]] = r.get("style") or "稳健"
-    for s in smap.values():
-        styles[s] = styles.get(s, 0) + 1
-    st = _read_json(os.path.join(rd, "council_shadow_stats.json"))
-    gate = (st or {}).get("gate") or {}
-    res = {"d": last,
-           "n_prop": len({(r.get("sid"), r.get("code")) for r in props
-                          if r.get("d") == last}),
-           "n_watch": sum(1 for r in watch if r.get("d") == last
-                          and r.get("type") == "watch"),
-           "n_rev": sum(1 for r in revs if r.get("d") == last),
-           "n_total": len(props), "n_warn": n_warn, "styles": styles,
-           "n_pend": len(_council_pending()),     # K64d 待人工确认队列
-           "shadow_n": gate.get("n", 0), "shadow_need": gate.get("need", 30),
-           "gate": gate.get("status", ""),
-           "ts": (st or {}).get("updated", "")}
-    _council_cache.update(t=now, d=res)
-    return res
 
 
-_council_cache = {"t": 0.0, "d": None}
 
 
 def _council_holdings(cs, opens):
@@ -766,117 +694,6 @@ def _council_holdings(cs, opens):
     return hold
 
 
-def build_alerts():
-    """量化域首页「今日预警速览」数据源：盘前/缠论/九维/weak/共振。
-    全部读产线落盘快照（与各专项页同源同口径），单项失败即缺项不拖垮整体。
-    弱于板块口径=页面口径（排除 .closed_ 且末行可解析），非注册表口径。"""
-    out = []
-    # ① 盘前倾向（premarket_latest.json：verdict + 六度分值 + 溢价概率）
-    pre = _read_json(os.path.join(REPORTS_DIR, "premarket_latest.json"))
-    if pre.get("verdict"):
-        vals = pre.get("vals") or {}
-        l6 = pre.get("l6") or {}
-        an6 = l6.get("ann_stats") or {}
-        rp6 = l6.get("rpt_stats") or {}
-        six = [{"k": k, "v": vals.get(k)} for k in
-               ("外围", "政策", "流动性", "板块", "情绪")]
-        six.append({"k": "公告研报", "v": None,
-                    "n": (an6.get("total") or 0) + (rp6.get("total") or 0)})
-        out.append({"name": "盘前倾向",
-                    "value": str(pre["verdict"]).split("（")[0],
-                    "sub": "开盘溢价概率 %s%%" % pre.get("prob", "—"),
-                    "href": "/premarket", "delta": None,
-                    "six": six, "overall": pre.get("overall")})
-    # ② 缠论预警池（chanlun_pool.jsonl：最新检出日 买/卖 计数 + 较前日差）
-    try:
-        rows = []
-        with open(os.path.join(QBT_DIR, "data", "chanlun_pool.jsonl"),
-                  encoding="utf-8") as f:
-            for ln in f:
-                ln = ln.strip()
-                if not ln:
-                    continue
-                try:
-                    rows.append(json.loads(ln))
-                except Exception:
-                    pass
-        days = sorted({r.get("detect_date", "") for r in rows
-                       if r.get("detect_date")})
-        if days:
-            def _nb(dd):
-                return sum(1 for r in rows if r.get("detect_date") == dd
-                           and str(r.get("type", "")).endswith("买"))
-            last = days[-1]
-            ns = sum(1 for r in rows if r.get("detect_date") == last
-                     and str(r.get("type", "")).endswith("卖"))
-            out.append({"name": "缠论信号",
-                        "value": "买 %d · 卖 %d" % (_nb(last), ns),
-                        "sub": "检出日 %s" % last,
-                        "href": "/bt-chanlun-pool",
-                        "delta": (_nb(last) - _nb(days[-2]))
-                        if len(days) > 1 else None})
-    except Exception:
-        log_exc("build_alerts:chanlun_pool.jsonl")  # C2批1
-    # ③ 九维警报池（nine_dim_scores.json：n_alert 阈值入池数）
-    snap = _read_json(os.path.join(QBT_DIR, "data", "nine_dim_scores.json"))
-    if snap:
-        out.append({"name": "九维警报池",
-                    "value": "%s 只" % snap.get("n_alert",
-                                                snap.get("n_buy", 0)),
-                    "sub": "综合分 ≥%s 入池 · %s" % (
-                        snap.get("alert_th", 75),
-                        snap.get("trade_date", "—")),
-                    "href": "/bt-9dim", "delta": None})
-    # ④ 弱于板块在案（weak_track_*.jsonl 排除结案流）
-    try:
-        n_act = sum(
-            1 for fp in glob.glob(os.path.join(
-                STATION, "reports", "weak_track_*.jsonl"))
-            if ".closed_" not in os.path.basename(fp)
-            and _alerts_last_jsonl(fp) is not None)
-        out.append({"name": "弱于板块在案", "value": "%d 案" % n_act,
-                    "sub": "扫描→建案→跟踪→复评→结案",
-                    "href": "/bt-weak", "delta": None})
-    except Exception:
-        log_exc("build_alerts:weak_track 在案统计")  # C2批1
-    # ⑤ 共振做多（cross_poll.build_cross 内置 60s 缓存；口径=共振页 longs）
-    try:
-        if QBT_DIR not in sys.path:
-            sys.path.insert(0, QBT_DIR)
-        import cross_poll
-        stocks = cross_poll.build_cross().get("stocks", [])
-        n_long = sum(1 for s in stocks if s.get("n_hit", 0) >= 2
-                     and s.get("state") == "long"
-                     and s.get("n_long", 0) >= 2)
-        out.append({"name": "共振做多", "value": "%d 只" % n_long,
-                    "sub": "多策略信号共振 · 买入级",
-                    "href": "/bt-cross", "delta": None})
-    except Exception:
-        log_exc("build_alerts:cross_poll 共振")  # C2批1
-    # ⑥ 投委会（K61：最近跑批夜三会计数 + 影子转正进度，态势带卡；
-    #    K62：管理预警计数 + 风格分桶分布上屏；K64d：待确认队列计数）
-    try:
-        cs = _council_stats()
-        if cs["d"]:
-            warn = (" · ⚠预警 %d" % cs["n_warn"]) if cs.get("n_warn") \
-                else ""
-            pend = (" · 待确认 %d" % cs["n_pend"]) if cs.get("n_pend") \
-                else ""
-            sty = cs.get("styles") or {}
-            sty_s = ""
-            if sty:
-                sty_s = " · 桶 %s/%s" % (sty.get("激进", 0),
-                                         sty.get("稳健", 0))
-            out.append({"name": "🏛 投委会",
-                        "value": "立案 %d" % cs["n_prop"],
-                        "sub": "盯盘需注意 %d · 复盘 %d · 影子 %d/%d%s%s%s" % (
-                            cs["n_watch"], cs["n_rev"],
-                            cs["shadow_n"], cs["shadow_need"],
-                            warn, pend, sty_s),
-                        "href": "/council", "delta": None})
-    except Exception:
-        log_exc("build_alerts:council_stats")  # C2批1
-    return {"ts": time.strftime("%Y-%m-%d %H:%M"), "alerts": out}
 
 
 SCREEN_TTL = 60
@@ -1653,15 +1470,6 @@ def _portfolio_open(rec):
                 "run_tail": out.splitlines()[-2:], "account": _pf_summary(sid)}
 
 
-def _council_pending():
-    """K64d 读投委会待确认队列 council_pending.json（dict，sid|code 键）。"""
-    try:
-        with open(os.path.join(REPORTS_DIR, "council_pending.json"),
-                  encoding="utf-8") as f:
-            d = json.load(f)
-        return d if isinstance(d, dict) else {}
-    except Exception:
-        return {}
 
 
 def _council_confirm(rec):
@@ -1953,9 +1761,6 @@ def _debate_say(rec):
     return {"ok": True, "replies": reps}
 
 
-# K52-D 行情快照内存缓存（300s）：_portfolio_market 专用（原缺失定义，
-# 首次调用即 NameError —— 2026-10-10 审计修复）
-_MKT_TBL_LOCK = threading.Lock()
 _mkt_tbl = {"t": 0.0, "d": None}
 
 
@@ -3937,32 +3742,6 @@ gap:14px;align-items:start}}
                 "工作日 08:30</div></body></html>")
         self._html(body)
 
-    # ── L2 策略工作台：青萍之末 · 共振选股（方法论源自 D:\青萍之末2） ──
-    def _hub_pool_blk(self):
-        """K237 选股中心迁移：从 bt_hub.html 提取四市场模块卡区段。
-        滤掉 hub 的 body{...} 全局样式（防污染本页），只带模块卡
-        样式与结构；hub 未生成时返回空串安全降级。"""
-        import re as _re_h
-        try:
-            hub = open(os.path.join(STATION, "quant_backtest", "reports",
-                                    "bt_hub.html"),
-                       encoding="utf-8").read()
-        except OSError:
-            return ""
-        s0, s1 = hub.find("<style"), hub.find("</style>")
-        style = ""
-        if 0 <= s0 < s1:
-            style = _re_h.sub(r"body\{[^}]*\}", "",
-                              hub[s0:s1 + 8])          # 去全局 body 样式
-        p0 = hub.find("<h2>四市场模块")
-        if p0 < 0:
-            return ""
-        p1 = hub.find("</body>")
-        body = hub[p0:p1 if p1 > p0 else len(hub)]
-        return ("<div class='sec'><h2>🎯 选股中心 · 四市场模块"
-                "<span class='dim' style='font-weight:400;font-size:12px'>"
-                "（四法门共振 · 自量化中心迁入 · 与市场分域页同源）"
-                "</span></h2>" + style + body + "</div>")
 
     def _hub_market_tabs(self):
         """K-STOCK-030 长页治理：hub 四市场模块段（4 张 .module 卡竖排
@@ -6819,13 +6598,6 @@ gap:14px;align-items:start}}
         self._json({"status": j["status"], "d": j.get("d")})
 
 
-    # ── K41 个股基本面 / 公告研报取数（_bt_stock_page 专用 helper） ──
-    @staticmethod
-    def _fmt_pct(x):
-        try:
-            return "%.1f%%" % float(x)
-        except (TypeError, ValueError):
-            return "—"
 
     @classmethod
     def _stock_valuation(cls, ts_code):
@@ -6893,7 +6665,7 @@ gap:14px;align-items:start}}
                                  ("估值", "总市值(亿)", "—")]
                     except (TypeError, ValueError):
                         pass
-                    rows.append(("估值", "换手率", cls._fmt_pct(
+                    rows.append(("估值", "换手率", _fmt_pct(
                         val.get("turnover_rate"))))
                 if QBT_DIR not in sys.path:
                     sys.path.insert(0, QBT_DIR)
@@ -6904,11 +6676,11 @@ gap:14px;align-items:start}}
 
                 def _g2(k):
                     # K235 成长组：本期 + 前期对照（财报趋势一眼可见）
-                    v = cls._fmt_pct(cur.get(k))
+                    v = _fmt_pct(cur.get(k))
                     p = prv.get(k)
                     if v != "—" and p not in (None, ""):
                         try:
-                            v += "（前值 %s）" % cls._fmt_pct(float(p))
+                            v += "（前值 %s）" % _fmt_pct(float(p))
                         except (TypeError, ValueError):
                             pass
                     return v
@@ -6923,15 +6695,15 @@ gap:14px;align-items:start}}
                     pass
                 # K235 扩容：(组, 标签, 值) 三元组——估值/盈利/成长/健康
                 # 四组汇总；新增现金流覆盖(ocf_to_or)与 EBITDA
-                rows += [("盈利", "ROE", cls._fmt_pct(cur.get("roe"))),
-                         ("盈利", "毛利率", cls._fmt_pct(
+                rows += [("盈利", "ROE", _fmt_pct(cur.get("roe"))),
+                         ("盈利", "毛利率", _fmt_pct(
                              cur.get("grossprofit_margin"))),
-                         ("盈利", "现金流/营收", cls._fmt_pct(
+                         ("盈利", "现金流/营收", _fmt_pct(
                              cur.get("ocf_to_or"))),
                          ("盈利", "EBITDA", _eb_s),
                          ("成长", "营收增速", _g2("or_yoy")),
                          ("成长", "净利增速", _g2("netprofit_yoy")),
-                         ("健康", "资产负债率", cls._fmt_pct(
+                         ("健康", "资产负债率", _fmt_pct(
                              cur.get("debt_to_assets")))]
                 if cur.get("end_date"):
                     note = "财务报告期 %s · 估值 %s" % (
@@ -6956,14 +6728,14 @@ gap:14px;align-items:start}}
                             float(r["total_market_cap"]) / 1e8)))
                 except (TypeError, ValueError):
                     pass
-                rows += [("盈利", "ROE", cls._fmt_pct(r.get("roe_avg"))),
-                         ("盈利", "毛利率", cls._fmt_pct(
+                rows += [("盈利", "ROE", _fmt_pct(r.get("roe_avg"))),
+                         ("盈利", "毛利率", _fmt_pct(
                              r.get("gross_profit_ratio"))),
-                         ("成长", "营收增速", cls._fmt_pct(
+                         ("成长", "营收增速", _fmt_pct(
                              r.get("operate_income_yoy"))),
-                         ("成长", "净利增速", cls._fmt_pct(
+                         ("成长", "净利增速", _fmt_pct(
                              r.get("holder_profit_yoy"))),
-                         ("健康", "资产负债率", cls._fmt_pct(
+                         ("健康", "资产负债率", _fmt_pct(
                              r.get("debt_asset_ratio")))]
                 note = "港股 · %s（%s 财币）" % (
                     r.get("report_type") or "", r.get("currency") or "HKD")

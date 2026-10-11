@@ -3,7 +3,7 @@
 由批 0 施工脚本从 portal_api.py 结构边界剪切生成；唯一实例（锁/缓存单例）。
 消费方必须显式 import（import * 不导出下划线名）。
 """
-import datetime, json, os, re, subprocess, threading, threading as _th, time
+import datetime, glob, json, os, re, subprocess, sys, threading, threading as _th, time
 
 
 # ===== P0-5 静默吞错落盘（2026-10-08 全检修复）=====
@@ -872,3 +872,216 @@ def _stock_sector_rows(code, limit=4):
         return []
 
 
+# ==== 批7 前哨：C 类提级 CACHE_TTL/build_alerts/_fmt_pct（拍板#2）====
+
+CACHE_TTL = 20
+
+
+def build_alerts():
+    """量化域首页「今日预警速览」数据源：盘前/缠论/九维/weak/共振。
+    全部读产线落盘快照（与各专项页同源同口径），单项失败即缺项不拖垮整体。
+    弱于板块口径=页面口径（排除 .closed_ 且末行可解析），非注册表口径。"""
+    out = []
+    # ① 盘前倾向（premarket_latest.json：verdict + 六度分值 + 溢价概率）
+    pre = _read_json(os.path.join(REPORTS_DIR, "premarket_latest.json"))
+    if pre.get("verdict"):
+        vals = pre.get("vals") or {}
+        l6 = pre.get("l6") or {}
+        an6 = l6.get("ann_stats") or {}
+        rp6 = l6.get("rpt_stats") or {}
+        six = [{"k": k, "v": vals.get(k)} for k in
+               ("外围", "政策", "流动性", "板块", "情绪")]
+        six.append({"k": "公告研报", "v": None,
+                    "n": (an6.get("total") or 0) + (rp6.get("total") or 0)})
+        out.append({"name": "盘前倾向",
+                    "value": str(pre["verdict"]).split("（")[0],
+                    "sub": "开盘溢价概率 %s%%" % pre.get("prob", "—"),
+                    "href": "/premarket", "delta": None,
+                    "six": six, "overall": pre.get("overall")})
+    # ② 缠论预警池（chanlun_pool.jsonl：最新检出日 买/卖 计数 + 较前日差）
+    try:
+        rows = []
+        with open(os.path.join(QBT_DIR, "data", "chanlun_pool.jsonl"),
+                  encoding="utf-8") as f:
+            for ln in f:
+                ln = ln.strip()
+                if not ln:
+                    continue
+                try:
+                    rows.append(json.loads(ln))
+                except Exception:
+                    pass
+        days = sorted({r.get("detect_date", "") for r in rows
+                       if r.get("detect_date")})
+        if days:
+            def _nb(dd):
+                return sum(1 for r in rows if r.get("detect_date") == dd
+                           and str(r.get("type", "")).endswith("买"))
+            last = days[-1]
+            ns = sum(1 for r in rows if r.get("detect_date") == last
+                     and str(r.get("type", "")).endswith("卖"))
+            out.append({"name": "缠论信号",
+                        "value": "买 %d · 卖 %d" % (_nb(last), ns),
+                        "sub": "检出日 %s" % last,
+                        "href": "/bt-chanlun-pool",
+                        "delta": (_nb(last) - _nb(days[-2]))
+                        if len(days) > 1 else None})
+    except Exception:
+        log_exc("build_alerts:chanlun_pool.jsonl")  # C2批1
+    # ③ 九维警报池（nine_dim_scores.json：n_alert 阈值入池数）
+    snap = _read_json(os.path.join(QBT_DIR, "data", "nine_dim_scores.json"))
+    if snap:
+        out.append({"name": "九维警报池",
+                    "value": "%s 只" % snap.get("n_alert",
+                                                snap.get("n_buy", 0)),
+                    "sub": "综合分 ≥%s 入池 · %s" % (
+                        snap.get("alert_th", 75),
+                        snap.get("trade_date", "—")),
+                    "href": "/bt-9dim", "delta": None})
+    # ④ 弱于板块在案（weak_track_*.jsonl 排除结案流）
+    try:
+        n_act = sum(
+            1 for fp in glob.glob(os.path.join(
+                STATION, "reports", "weak_track_*.jsonl"))
+            if ".closed_" not in os.path.basename(fp)
+            and _alerts_last_jsonl(fp) is not None)
+        out.append({"name": "弱于板块在案", "value": "%d 案" % n_act,
+                    "sub": "扫描→建案→跟踪→复评→结案",
+                    "href": "/bt-weak", "delta": None})
+    except Exception:
+        log_exc("build_alerts:weak_track 在案统计")  # C2批1
+    # ⑤ 共振做多（cross_poll.build_cross 内置 60s 缓存；口径=共振页 longs）
+    try:
+        if QBT_DIR not in sys.path:
+            sys.path.insert(0, QBT_DIR)
+        import cross_poll
+        stocks = cross_poll.build_cross().get("stocks", [])
+        n_long = sum(1 for s in stocks if s.get("n_hit", 0) >= 2
+                     and s.get("state") == "long"
+                     and s.get("n_long", 0) >= 2)
+        out.append({"name": "共振做多", "value": "%d 只" % n_long,
+                    "sub": "多策略信号共振 · 买入级",
+                    "href": "/bt-cross", "delta": None})
+    except Exception:
+        log_exc("build_alerts:cross_poll 共振")  # C2批1
+    # ⑥ 投委会（K61：最近跑批夜三会计数 + 影子转正进度，态势带卡；
+    #    K62：管理预警计数 + 风格分桶分布上屏；K64d：待确认队列计数）
+    try:
+        cs = _council_stats()
+        if cs["d"]:
+            warn = (" · ⚠预警 %d" % cs["n_warn"]) if cs.get("n_warn") \
+                else ""
+            pend = (" · 待确认 %d" % cs["n_pend"]) if cs.get("n_pend") \
+                else ""
+            sty = cs.get("styles") or {}
+            sty_s = ""
+            if sty:
+                sty_s = " · 桶 %s/%s" % (sty.get("激进", 0),
+                                         sty.get("稳健", 0))
+            out.append({"name": "🏛 投委会",
+                        "value": "立案 %d" % cs["n_prop"],
+                        "sub": "盯盘需注意 %d · 复盘 %d · 影子 %d/%d%s%s%s" % (
+                            cs["n_watch"], cs["n_rev"],
+                            cs["shadow_n"], cs["shadow_need"],
+                            warn, pend, sty_s),
+                        "href": "/council", "delta": None})
+    except Exception:
+        log_exc("build_alerts:council_stats")  # C2批1
+    return {"ts": time.strftime("%Y-%m-%d %H:%M"), "alerts": out}
+
+
+# ── K41 个股基本面 / 公告研报取数（_bt_stock_page 专用 helper，批7拍板#2 提级顶层）──
+def _fmt_pct(x):
+    try:
+        return "%.1f%%" % float(x)
+    except (TypeError, ValueError):
+        return "—"
+
+
+# ==== 批7 前哨连锁：_alerts_last_jsonl/_council_stats（build_alerts 依赖）====
+
+# ── K39 今日预警速览：各策略产线最新预警值聚合 ──────────────
+def _alerts_last_jsonl(fp):
+    """JSONL 末行解析（weak 在案口径：末行可解析才计入）。"""
+    try:
+        last = ""
+        with open(fp, encoding="utf-8") as f:
+            for ln in f:
+                last = ln
+        last = last.strip()
+        return json.loads(last) if last else None
+    except Exception:
+        # 豁免（C2批1）：口径即「末行可解析才计入」（weak 在案口径注释）
+        return None
+
+
+def _council_stats():
+    """K61 投委会大屏锚：最近跑批夜三会计数 + 影子转正进度。
+    全部读 jsonl/json 落盘锚（60s TTL，大屏轮询零重量级）；
+    「最近夜」= 三张留痕表最大 d（23:50 跑批属前夜，白天看仍是当期）。"""
+    now = time.time()
+    if _council_cache["d"] is not None and now - _council_cache["t"] < 55:
+        return _council_cache["d"]
+    rd = os.path.join(QBT_DIR, "reports")
+
+    def _rows(fp):
+        try:
+            out = []
+            with open(fp, encoding="utf-8") as f:
+                for ln in f:
+                    ln = ln.strip()
+                    if ln:
+                        try:
+                            out.append(json.loads(ln))
+                        except Exception:
+                            pass
+            return out
+        except OSError:
+            return []
+
+    props = _rows(os.path.join(rd, "council_proposals.jsonl"))
+    watch = _rows(os.path.join(rd, "council_watch.jsonl"))
+    revs = _rows(os.path.join(rd, "council_reviews.jsonl"))
+    ds = [r.get("d") for r in props + watch + revs if r.get("d")]
+    last = max(ds) if ds else ""
+    # K62：当期 (sid,code) 最新指令（预警类计数）+ 风格分桶分布
+    latest = {}
+    for r in props:
+        k = (r.get("sid"), r.get("code"))
+        latest[k] = (r.get("directive") or {}).get("act") or ""
+    n_warn = sum(1 for a in latest.values()
+                 if a in ("平仓预警", "减仓预警"))
+    styles = {}
+    smap = {}
+    for r in props:
+        if r.get("code"):
+            smap[r["code"]] = r.get("style") or "稳健"
+    for s in smap.values():
+        styles[s] = styles.get(s, 0) + 1
+    st = _read_json(os.path.join(rd, "council_shadow_stats.json"))
+    gate = (st or {}).get("gate") or {}
+    res = {"d": last,
+           "n_prop": len({(r.get("sid"), r.get("code")) for r in props
+                          if r.get("d") == last}),
+           "n_watch": sum(1 for r in watch if r.get("d") == last
+                          and r.get("type") == "watch"),
+           "n_rev": sum(1 for r in revs if r.get("d") == last),
+           "n_total": len(props), "n_warn": n_warn, "styles": styles,
+           "n_pend": len(_council_pending()),     # K64d 待人工确认队列
+           "shadow_n": gate.get("n", 0), "shadow_need": gate.get("need", 30),
+           "gate": gate.get("status", ""),
+           "ts": (st or {}).get("updated", "")}
+    _council_cache.update(t=now, d=res)
+    return res
+
+# ==== 批7 前哨连锁第二轮：_council_pending(def)/_council_cache ====
+def _council_pending():
+    """K64d 读投委会待确认队列 council_pending.json（dict，sid|code 键）。"""
+    try:
+        with open(os.path.join(REPORTS_DIR, "council_pending.json"),
+                  encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+_council_cache = {"t": 0.0, "d": None}
