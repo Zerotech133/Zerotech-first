@@ -376,14 +376,42 @@ def routine(who: list[str] | None = None, dry_run: bool = False,
                         eng.set_stop(pos["stock"], stop, account_id=aid)
                     stops_set.append({"stock": pos["stock"], "stop_price": stop})
         ck = eng.check_stops(dry_run=dry_run, account_id=aid)
+        # K-STOCK-122 M7：手机端止盈线检查（exit_rules.json，异常不阻塞闭环）
+        tp_triggered = 0
+        try:
+            from exit_rules import check_tps as _check_tps
+            tp = _check_tps(aid, eng=eng, dry_run=dry_run)
+            tp_triggered = len([t for t in tp["triggered"]
+                                if t.get("status") == "pending"])
+        except Exception as e:  # noqa: BLE001
+            out.setdefault("tp_error", []).append({"account": aid,
+                                                   "error": repr(e)})
         mk = None if dry_run else eng.mark(account_id=aid)
         out["trainees"].append({
             "id": aid, "name": prof["name"],
             "settled": len(st["filled"]), "rejected": len(st["rejected"]),
             "stops_set": stops_set,
             "stop_triggered": len([t for t in ck["triggered"] if t.get("status")]),
+            "tp_triggered": tp_triggered,
             "mark": mk,
         })
+    # K-STOCK-122 M7：ops 运营账本（main 等）不在上方训练循环内，
+    # 手机端止盈线若设在这些账本也须检查（异常不阻塞）。
+    if not dry_run:
+        try:
+            from exit_rules import _load as _er_load, check_tps as _check_tps
+            tp_accounts = sorted({r["account"] for r in _er_load().get("rules", [])
+                                  if r.get("kind") == "tp"
+                                  and r["account"] not in
+                                  {p["id"] for p in profiles}})
+            for tp_aid in tp_accounts:
+                tp = _check_tps(tp_aid)
+                out.setdefault("ops_tp", []).append(
+                    {"account": tp_aid, "triggered": len(
+                        [t for t in tp["triggered"]
+                         if t.get("status") == "pending"])})
+        except Exception as e:  # noqa: BLE001
+            out["ops_tp_error"] = repr(e)
     # 077w：端3 judge 日评审（轻量规则版，llm=False；异常不阻塞闭环）
     if not dry_run:
         try:

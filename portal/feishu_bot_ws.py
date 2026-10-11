@@ -176,8 +176,59 @@ HELP_MD = """**指令表**
 · `缠论 605100` — 多层折叠主卡（中枢/情报/决策链）
 · `详情 605100 筹码` — 单维度：筹码/板块/公告/龙虎榜/量能/共振/决策链/缠论
 · `选股 T1` — 今日选股（T1/T2/全部）
+· `止盈 605100 8` — 持仓止盈线（涨 8% 触发，模拟盘次日开盘清仓）
+· `止损 605100 5` — 持仓止损线（跌 5% 触发）
+· `止盈单` — 当前全部持仓线位快照
+· `撤线 605100 tp` — 撤止盈（sl=撤止损）
 · `帮助` — 本表
 按钮下钻：主卡各折叠层展开 + 顶部按钮跳门户详情页。"""
+
+# ── K-STOCK-122 M7：手机端止盈止损指令（exit_rules CLI 消费端）──
+ER_SCRIPT = os.path.join(os.path.dirname(HERE), "k_stock", "paper",
+                         "exit_rules.py")
+# 白名单：env EXIT_ALLOW_OPEN_IDS（逗号分隔 open_id）；未配置=放行并警告
+# （单用户部署默认宽松；配置后非白名单指令一律拒绝）
+
+
+def _er_allowed(open_id):
+    allow = os.environ.get("EXIT_ALLOW_OPEN_IDS", "").strip()
+    if not allow:
+        return True
+    return open_id and open_id in {x.strip() for x in allow.split(",")}
+
+
+def _er_cli(args):
+    """子进程调 exit_rules CLI（UTF-8 管道，同 _paper_run_json 配方）。"""
+    import subprocess
+    r = subprocess.run(
+        [sys.executable, "-X", "utf8", ER_SCRIPT, "--json"] + args,
+        capture_output=True, timeout=120)
+    out = r.stdout.decode("utf-8", "replace").strip()
+    try:
+        return json.loads(out.splitlines()[-1])
+    except Exception:  # noqa: BLE001
+        return {"ok": False, "error": (r.stderr.decode("utf-8", "replace")
+                                       or out)[-200:]}
+
+
+def _fmt_lines(r):
+    """list 结果 → 手机速览文本。"""
+    if not r.get("ok"):
+        return "查询失败：%s" % r.get("error")
+    lines = ["**持仓线位快照**（%s）" % r.get("account")]
+    for p in r.get("positions") or []:
+        lines.append("· %s ×%s 成本 %.2f%s%s" % (
+            p["stock"], p["qty"], p["avg_cost"],
+            " ｜ 止损 %.2f（距 %.2f%%）" % (p["stop_price"],
+                                            p["stop_distance_pct"])
+            if p.get("stop_price") else " ｜ 无止损",
+            ""))
+    for t in r.get("tp_rules") or []:
+        lines.append("· %s 止盈线 %.2f（+%s%%）" % (t["stock"], t["line"],
+                                                   t["pct"]))
+    if not (r.get("positions") or r.get("tp_rules")):
+        lines.append("（无持仓、无线位）")
+    return "\n".join(lines)
 
 
 # ── 发送 ────────────────────────────────────────────────────
@@ -231,11 +282,48 @@ def _norm_code(tok):
                                     }.get(c[:1], ".SZ")) if c.isdigit() and len(c) == 6 else c.upper()
 
 
-def handle_cmd(text, message_id):
+def handle_cmd(text, message_id, open_id=""):
     text = (text or "").strip()
     low = text.lower()
     try:
-        if low.startswith("帮助") or low in ("help", "?", "？"):
+        # M7 止盈止损：先于其余指令做白名单闸门
+        if (low.startswith(("止盈", "止损", "止盈单", "撤线"))
+                and not _er_allowed(open_id)):
+            send_text("无权限：该指令仅限白名单用户。", message_id)
+            return
+        if low.startswith("止盈单"):
+            send_text("查询中…", message_id)
+            send_text(_fmt_lines(_er_cli(["list"])), message_id)
+        elif low.startswith("止盈") or low.startswith("止损"):
+            kind = "tp" if low.startswith("止盈") else "sl"
+            parts = text.split()
+            if len(parts) < 3:
+                send_text("用法：%s 605100 8 [账本]（幅度正数，账本缺省 main）"
+                          % ("止盈" if kind == "tp" else "止损"), message_id)
+                return
+            args = ["set", "--code", parts[1], "--kind", kind,
+                    "--pct", parts[2]]
+            if len(parts) > 3:
+                args += ["--account", parts[3]]
+            r = _er_cli(args)
+            send_text(("✅ " if r.get("ok") else "❌ ") + (
+                "%s %s 线 %.2f 已设（成本 %.2f，%s%%）· %s"
+                % (r.get("stock"), "止盈" if kind == "tp" else "止损",
+                   r.get("line", 0), r.get("avg_cost", 0), r.get("pct"),
+                   r.get("note", "")) if r.get("ok") else r.get("error")),
+                message_id)
+        elif low.startswith("撤线"):
+            parts = text.split()
+            if len(parts) < 3 or parts[2] not in ("tp", "sl"):
+                send_text("用法：撤线 605100 tp|sl [账本]", message_id)
+                return
+            args = ["clear", "--code", parts[1], "--kind", parts[2]]
+            if len(parts) > 3:
+                args += ["--account", parts[3]]
+            r = _er_cli(args)
+            send_text(("✅ " if r.get("ok") else "❌ ")
+                      + (r.get("note") or r.get("error")), message_id)
+        elif low.startswith("帮助") or low in ("help", "?", "？"):
             send_text(HELP_MD, message_id)
         elif low.startswith("选股"):
             tier = "T1"
@@ -298,7 +386,12 @@ def main():
             content = json.loads(msg.content or "{}")
             text = content.get("text", "")
             log("recv: %r (chat=%s)" % (text[:40], msg.chat_type))
-            threading.Thread(target=handle_cmd, args=(text, mid),
+            sender_id = ""
+            try:  # M7 白名单用：sender → sender_id → open_id（多层防御取值）
+                sender_id = (msg.sender.sender_id.open_id or "")
+            except Exception:  # noqa: BLE001
+                pass
+            threading.Thread(target=handle_cmd, args=(text, mid, sender_id),
                              daemon=True).start()
         except Exception:  # noqa: BLE001
             log("msg err " + traceback.format_exc()[-300:])

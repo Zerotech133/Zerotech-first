@@ -709,6 +709,7 @@ DOMAIN_NAV_GROUPS = {
             ("🚦 信号", "/bt-signals", "signals"),
             ("💼 持仓", "/bt-positions", "positions"),
             ("🧾 模拟仓", "/paper", "paper"),
+            ("🛒 策略市场", "/market-strategy", "market-strategy"),
             ("📄 报告", "/bt-report", "report"),
             ("🎯 卖点研判", "/sellpoint", "sellpoint"))),
         ("🧰 研究与数据", (
@@ -22936,6 +22937,23 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 _day = (_q.get("day") or [""])[0].strip() \
                     or (_days_l[-1] if _days_l else "")
                 self._json(_hist(_day))
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/strategy_market":
+            # K-STOCK-122 M1 策略市场：12 策略卡全量（strategies.json 直读）
+            try:
+                import strategy_market as _sm
+                self._json(_sm.market())
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/strategy_detail":
+            # K-STOCK-122 M2 下钻一层：?id=xxx 静态档案+动态命中样本
+            from urllib.parse import parse_qs as _pqs2
+            _sid = (_pqs2(qs).get("id") or [""])[0].strip()
+            try:
+                import strategy_market as _sm
+                self._json(_sm.detail(_sid),
+                           200 if _sid else 400)
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/trainee_board":
