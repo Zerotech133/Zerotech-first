@@ -63,6 +63,11 @@ class KnowledgeBase:
                 if chunk:
                     pending.append({"text": chunk, "source": str(source), "index": index})
         vectors = self._embed([item["text"] for item in pending])
+        if len(vectors) != len(pending):
+            raise ValueError(
+                "embedding 数量与文本块数量不一致："
+                f"{len(vectors)} != {len(pending)}"
+            )
         for item, vector in zip(pending, vectors):
             item["embedding"] = vector
             self._records.append(item)

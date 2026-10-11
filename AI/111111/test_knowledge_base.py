@@ -25,6 +25,12 @@ class FakeClient:
         return {"message": {"content": "基于上下文的回答"}}
 
 
+class ShortEmbeddingClient(FakeClient):
+    def embed(self, model, input):
+        values = super().embed(model, input)["embeddings"]
+        return {"embeddings": values[:-1]}
+
+
 class KnowledgeBaseTests(unittest.TestCase):
     def test_ingest_chunks_and_preserves_source_and_sequence(self):
         client = FakeClient()
@@ -72,6 +78,14 @@ class KnowledgeBaseTests(unittest.TestCase):
             loaded = KnowledgeBase(client=client)
             loaded.load(index)
             self.assertEqual(loaded._records[0]["source"], str(path))
+
+    def test_ingest_rejects_incomplete_embedding_batch_without_partial_index(self):
+        kb = KnowledgeBase(client=ShortEmbeddingClient(), chunk_size=5)
+
+        with self.assertRaisesRegex(ValueError, "embedding 数量"):
+            kb.ingest({"guide.md": "abcdefghij"})
+
+        self.assertEqual(kb._records, [])
 
 
 if __name__ == "__main__":
