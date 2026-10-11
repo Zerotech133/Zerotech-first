@@ -22836,14 +22836,38 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     self._json({"ok": False, "error": repr(_e)}, 500)
             elif path == "/api/portfolio_hire":
                 # K-STOCK-122 M4 分支①：组合聘交易员 {trader}
+                # 真雇佣走 k_stock/paper/portfolio.py（hires.json 落
+                # source=<pf_id> 条目 + live/training 校验）；再绑定组合侧。
                 try:
                     rec = json.loads(raw.decode("utf-8"))
                 except Exception:
                     self._json({"error": "bad json"}, 400)
                     return
                 try:
-                    import subscriptions as _sub
-                    self._json(_sub.bind_trader(str(rec.get("trader") or "")))
+                    import subprocess
+                    _pfpy = (r"C:\Program Files\Python311\python.exe"
+                             if os.path.exists(r"C:\Program Files"
+                                               r"\Python311\python.exe")
+                             else sys.executable)
+                    _script = os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),
+                        os.pardir, "k_stock", "paper", "portfolio.py")
+                    r = subprocess.run(
+                        [_pfpy, "-X", "utf8", _script,
+                         "hire", "--pf", "pf_001",
+                         "--trader", str(rec.get("trader") or ""), "--json"],
+                        capture_output=True, timeout=60)
+                    out = r.stdout.decode("utf-8", "replace").strip()
+                    data = json.loads(out.splitlines()[-1]) if out else {}
+                    if data.get("ok"):
+                        import subscriptions as _sub
+                        _sub.bind_trader(str(rec.get("trader") or ""))
+                        self._json({"ok": True, "note": data.get("note"),
+                                    "hired": True})
+                    else:
+                        self._json({"ok": False,
+                                    "error": data.get("error") or out[-200:]
+                                    or "hire 失败"})
                 except Exception as _e:
                     self._json({"ok": False, "error": repr(_e)}, 500)
             elif path == "/api/batch-backtest":
