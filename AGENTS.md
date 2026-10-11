@@ -15,6 +15,8 @@
 - 起新服务前：① 先查 REGISTRY——被占用即换；② 用 `python tools/devtask.py port <服务名>` 申请分配；③ 分配到后**必须**把端口+服务名写回 check_ports.py REGISTRY（同一提交内）。
 - 一律绑 `127.0.0.1`，对外暴露走 nginx 反代（052 收敛既定）。
 - 违规自查：`python tools/check_ports.py`（--strict 供 CI）。
+- **入口唯一（K-STOCK-113 立宪，杜绝双口混乱）**：人类入口**只有一个 = 8734**（portproxy→nginx 同源合一）；8080 仅为容器/局域网反代链路，**文档、话术、页脚一律只写 8734，禁止再出现「8080/8734 同步生效」这类双口表述**。页内相对路径一律不带端口（走同源反代）。
+- **开发侧全量回流（同上立宪）**：一切 IDE Agent 的开发动作必须自动进平台事件层 `portal/data/dev_events.jsonl`（tools/events.py 四事件：task_start/commit/blocked/merge_done）；post-commit 钩子已自动上报 commit——**禁止任何 Agent 关闭/绕过该钩子**；工单页 `http://127.0.0.1:8734/devops`。
 
 ## 2. 前端准入三件套（新页面缺一不收）
 
