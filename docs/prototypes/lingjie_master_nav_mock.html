@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>零界 · 全站层级下转总图（K-STOCK-111 校准稿）</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg-page:#0d1117; --bg-surface:#161b22; --bg-raised:#1c2128;
+    --border:#2d333b; --border-weak:#21262d;
+    --text:#e6edf3; --text-dim:#8b949e;
+    --link:#58a6ff; --blu-600:#1f6feb; --pur-500:#8957e5;
+    --color-ok:#3fb950; --color-err:#f85149; --color-warn:#d29922; --gold:#e3b341;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg-page);color:var(--text);min-height:100vh;}
+  .num{font-family:Consolas,monospace;}
+  .dim{color:var(--text-dim);}
+  a{color:var(--link);text-decoration:none;}
+  main{max-width:1180px;margin:0 auto;padding:0 26px 60px;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:22px 48px 10px;max-width:1180px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--blu-600),var(--pur-500));display:grid;place-items:center;font-size:20px;font-weight:800;color:#fff;}
+  .brand h1{font-size:17px;font-weight:700;}
+  .brand small{color:var(--text-dim);font-size:10.5px;letter-spacing:3px;display:block;margin-top:2px;}
+
+  /* 展开全部/收起 */
+  .ctl{display:flex;gap:8px;justify-content:center;margin:6px 0 4px;}
+  .ctl button{padding:6px 16px;font-size:12px;border-radius:999px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-dim);cursor:pointer;}
+  .ctl button:hover{border-color:var(--link);color:var(--text);}
+
+  /* L1 主页卡 */
+  .home{background:linear-gradient(120deg,var(--bg-raised),var(--bg-surface) 65%);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;margin-top:14px;}
+  .home .t{font-size:15px;font-weight:700;}
+  .home .d{font-size:11.5px;color:var(--text-dim);margin-top:6px;line-height:1.7;}
+  .home .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+
+  /* 层级树 */
+  .lvl{margin-top:12px;}
+  details{border:1px solid var(--border);border-radius:12px;background:var(--bg-raised);margin-top:10px;}
+  details[open]{border-color:var(--link);}
+  summary{cursor:pointer;list-style:none;padding:13px 18px;display:flex;align-items:center;gap:11px;user-select:none;flex-wrap:wrap;}
+  summary::-webkit-details-marker{display:none;}
+  summary .ar{color:var(--text-dim);font-size:11px;transition:.2s;width:12px;}
+  details[open]>summary .ar{transform:rotate(90deg);color:var(--link);}
+  summary .ic{font-size:18px;}
+  summary .nm{font-size:14px;font-weight:700;}
+  summary .sub{font-size:11px;color:var(--text-dim);}
+  summary .cnt{margin-left:auto;font-size:10.5px;color:var(--text-dim);border:1px solid var(--border);border-radius:999px;padding:2px 10px;font-family:Consolas,monospace;}
+  .bd{padding:2px 18px 14px;border-top:1px solid var(--border-weak);}
+  .path{font-size:11px;color:var(--gold);font-family:Consolas,monospace;padding:8px 0 2px;}
+
+  /* 子板块卡 */
+  .kids{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));margin-top:8px;}
+  .kid{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;}
+  .kid .kt{font-size:12.5px;font-weight:700;display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+  .kid .kd{font-size:10.5px;color:var(--text-dim);margin-top:5px;line-height:1.6;}
+  .kid .kr{font-size:10px;color:var(--link);font-family:Consolas,monospace;margin-top:6px;}
+  .kid.core{border-color:var(--link);}
+  .kid.plan{border-style:dashed;}
+  .tag{font-size:9px;padding:1px 7px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);font-weight:400;}
+  .tag.new{color:var(--gold);border-color:var(--gold);}
+  .tag.live{color:var(--color-ok);border-color:var(--color-ok);}
+
+  /* 动线条 */
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;font-size:12px;}
+  .flow .node{background:var(--bg-surface);border:1px solid var(--border);border-radius:9px;padding:7px 12px;}
+  .flow .node.hi{border-color:var(--gold);color:var(--gold);}
+  .flow .arr{color:var(--text-dim);}
+  .note{font-size:11.5px;color:var(--text-dim);line-height:1.8;margin-top:12px;}
+  .note b{color:var(--gold);font-weight:600;}
+  @media (max-width:640px){header{padding:16px 20px 8px;}main{padding:0 14px 40px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">零</div>
+    <div><h1>零界 · 全站层级下转总图</h1><small>MASTER NAV · K-STOCK-111 校准稿</small></div>
+  </div>
+  <div class="num dim" style="font-size:13px;">每一层可展开下转 · 数据=实测资产</div>
+</header>
+
+<main>
+  <div class="ctl">
+    <button onclick="document.querySelectorAll('details').forEach(d=>d.open=true)">⤵ 全部展开</button>
+    <button onclick="document.querySelectorAll('details').forEach(d=>d.open=false)">⤒ 全部收起</button>
+  </div>
+
+  <!-- ═══ L1 ═══ -->
+  <div class="home">
+    <div class="t">🏠 L1 主入口 · 零界首页 <span class="num dim" style="font-size:11px;">/ &nbsp;· 8080 正门 · 8734 同源</span></div>
+    <div class="d">唯一的家：只做分发与态势灯，不承载业务。保留板块 = 五领域 pill + K44 大屏横幅 + 今日动线金条 + 底部状态条（Ollama/备份/时钟）。<b style="color:var(--gold)">已定稿不再动</b>。</div>
+    <div class="pills">
+      <span class="num dim" style="font-size:12px;">下转 →</span>
+      <span style="font-size:12px;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">📈 量化股票</span>
+      <span style="font-size:12px;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">🕵 情报</span>
+      <span style="font-size:12px;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">🎬 创作</span>
+      <span style="font-size:12px;border:1px solid var(--gold);border-radius:999px;padding:5px 13px;color:var(--gold);">💻 开发（今日主战场）</span>
+      <span style="font-size:12px;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">⚙ 系统</span>
+      <span style="font-size:12px;border:1px solid var(--border);border-radius:999px;padding:5px 13px;">🎓 智能体学院</span>
+    </div>
+  </div>
+
+  <!-- ═══ L2 树 ═══ -->
+  <div class="lvl">
+
+    <!-- 量化 -->
+    <details>
+      <summary><span class="ar">▶</span><span class="ic">📈</span><span class="nm">量化股票</span><span class="sub">/quant · 已按四层动线重组（110 落地）</span><span class="cnt">4 层 · 37 链接</span></summary>
+      <div class="bd">
+        <div class="path">/ → /quant → 四层目录 → 各专项页</div>
+        <div class="kids">
+          <div class="kid core"><div class="kt">🚦 ① 驾驶层<span class="tag live">每天必看</span></div><div class="kd">大屏 · 晨报 · 盘前 · 盘后 · 金融导航 · 个股分析 · 查数</div><div class="kr">/screen /bt-brief /premarket /afterhours /fin /sa /nl</div></div>
+          <div class="kid"><div class="kt">🔍 ② 选股研究层</div><div class="kd">/bt 扫描 与 /qd 双刀决策双中心 + 青萍/缠论/共振/九维/强弱/热力</div><div class="kr">/bt /qd /bt-qpzm /bt-chanlun /bt-cross /strong /bt-weak …</div></div>
+          <div class="kid"><div class="kt">⚙ ③ 信号与账本层</div><div class="kd">记分卡领队 → 信号 → 模拟仓 → 持仓 → 卖点 → 回测</div><div class="kr">/strategies /bt-signals /paper /bt-positions /sellpoint …</div></div>
+          <div class="kid"><div class="kt">🧪 ④ 投研竞技层</div><div class="kd">投委会 · 锦标赛 · 辩论室 · 期货 · 对外快照</div><div class="kr">/council /sim /debate /fut /deliverables</div></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 情报 -->
+    <details>
+      <summary><span class="ar">▶</span><span class="ic">🕵</span><span class="nm">情报</span><span class="sub">/intel · 新闻流+JEV+图谱</span><span class="cnt">3 块</span></summary>
+      <div class="bd">
+        <div class="path">/ → /intel → 三块</div>
+        <div class="kids">
+          <div class="kid"><div class="kt">📰 新闻流与多空</div><div class="kd">四源采集 · 今日入库/利多利空计数（首页情报卡微指标同源）</div><div class="kr">/intel</div></div>
+          <div class="kid"><div class="kt">⚖ JEV 判断</div><div class="kd">事件价值判断复核 · 9101 jev_gate</div><div class="kr">/intel 内嵌</div></div>
+          <div class="kid"><div class="kt">🧠 知识图谱 KG</div><div class="kd">游资图谱 / 个股追踪 / 热钱（GA 产线）</div><div class="kr">/kg/stats /kg/stock/&lt;code&gt; /kg/hotmoney /kg/trace</div></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 创作 -->
+    <details>
+      <summary><span class="ar">▶</span><span class="ic">🎬</span><span class="nm">创作</span><span class="sub">/creator · 内容出口（暂缓线）</span><span class="cnt">3 块</span></summary>
+      <div class="bd">
+        <div class="path">/ → /creator → 三块</div>
+        <div class="kids">
+          <div class="kid"><div class="kt">📝 公众号草稿库</div><div class="kd">策略认知内容出口 · 批 D 索证三件后启用（MP 凭证缺口）</div><div class="kr">/gzh /gzh/view/&lt;preview&gt;</div></div>
+          <div class="kid"><div class="kt">🎥 短视频成片库</div><div class="kd">成片/配音/字幕产物库 · 20s 读超时反代</div><div class="kr">/vd /vd/file/&lt;dir&gt;/&lt;mp4|wav|srt&gt;</div></div>
+          <div class="kid plan"><div class="kt">🎙 录一段</div><div class="kd">语音速录产线 · 规划中</div><div class="kr">creator 内嵌</div></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 开发 -->
+    <details open>
+      <summary><span class="ar">▶</span><span class="ic">💻</span><span class="nm">开发</span><span class="sub">/dev · 今日主战场：实时开发的全部入口</span><span class="cnt">4 块</span></summary>
+      <div class="bd">
+        <div class="path">/ → /dev → 四块（指挥台是核心）</div>
+        <div class="kids">
+          <div class="kid core"><div class="kt">🏭 开发指挥台<span class="tag new">今日建成</span></div><div class="kd">多 IDE 统一调度：七项目进度墙 / 派单流水线（devtask new→merge）/ 端口地图 / 飞书遥控器。原型已拍板，events.py→页面→飞书卡→3 单实弹 顺序施工</div><div class="kr">/devops（挂 8091，正门同源）</div></div>
+          <div class="kid"><div class="kt">🩺 基建状态板</div><div class="kd">服务探活 / 容器 / 计划任务面 / 每日体检清单（health.json 驱动）</div><div class="kr">/dev</div></div>
+          <div class="kid"><div class="kt">🤖 Agent 工具坞</div><div class="kd">CowAgent 控制台 · Hermes WebUI · 智策 OS（带探活点）</div><div class="kr">:9899 :8787 :5175</div></div>
+          <div class="kid plan"><div class="kt">📜 工单看板</div><div class="kd">devtask board 静态看板 → 升级为指挥台内嵌页</div><div class="kr">devtask list/board</div></div>
+        </div>
+        <div class="flow">
+          <span class="node hi">今天动线</span><span class="arr">：</span>
+          <span class="node">devtask new 建单</span><span class="arr">→</span>
+          <span class="node">IDE Agent 领单隔离开发</span><span class="arr">→</span>
+          <span class="node">三守卫评审</span><span class="arr">→</span>
+          <span class="node">merge 进 master</span><span class="arr">→</span>
+          <span class="node">飞书回执</span>
+        </div>
+      </div>
+    </details>
+
+    <!-- 系统 -->
+    <details>
+      <summary><span class="ar">▶</span><span class="ic">⚙</span><span class="nm">系统</span><span class="sub">/ops · 运维修护面</span><span class="cnt">5 块</span></summary>
+      <div class="bd">
+        <div class="path">/ → /ops → 五块</div>
+        <div class="kids">
+          <div class="kid"><div class="kt">🗓 计划任务矩阵</div><div class="kd">105 任务全景 · rc≠0 异常标注</div><div class="kr">/ops 内嵌</div></div>
+          <div class="kid"><div class="kt">🗄 备份与磁盘</div><div class="kd">每日 03:00 · 保留 14 天 · offsite/OneDrive 镜像</div><div class="kr">/ops 内嵌</div></div>
+          <div class="kid"><div class="kt">📮 告警收件箱</div><div class="kd">pending 计数联动首页系统卡红点</div><div class="kr">/ops 内嵌</div></div>
+          <div class="kid"><div class="kt">📦 容器矩阵</div><div class="kd">Docker 栈运行/总数 · ai-portal 等</div><div class="kr">/ops 内嵌</div></div>
+          <div class="kid"><div class="kt">🔌 端口探活</div><div class="kd">/sys-health 5 探针并发 2.5s · check_ports 注册表 21 口</div><div class="kr">/sys-health</div></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- 学院 -->
+    <details>
+      <summary><span class="ar">▶</span><span class="ic">🎓</span><span class="nm">智能体学院</span><span class="sub">/academy · 交互原型（训练/交易未开放）</span><span class="cnt">1 块</span></summary>
+      <div class="bd">
+        <div class="kids">
+          <div class="kid plan"><div class="kt">🎓 AI 教 AI</div><div class="kd">教学/能力包/服务市场原型 · 市场未上架、训练未开放、模拟成交与交易关闭</div><div class="kr">/academy</div></div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <h2 style="font-size:15px;margin:30px 0 4px;">全站今日动线（一条线串起所有层）</h2>
+  <div class="card" style="background:var(--bg-raised);border:1px solid var(--border);border-radius:13px;padding:16px 20px;">
+    <div class="flow">
+      <span class="node hi">🏠 首页</span><span class="arr">→</span>
+      <span class="node">📈 /quant 驾驶层<br><span class="dim" style="font-size:10px">晨报→盘前</span></span><span class="arr">→</span>
+      <span class="node">盘中大屏盯信号<br><span class="dim" style="font-size:10px">驾驶层</span></span><span class="arr">→</span>
+      <span class="node">出票→模拟仓挂单<br><span class="dim" style="font-size:10px">账本层</span></span><span class="arr">→</span>
+      <span class="node">盘后收盘全景<br><span class="dim" style="font-size:10px">驾驶层</span></span><span class="arr">→</span>
+      <span class="node">💻 /dev 指挥台<br><span class="dim" style="font-size:10px">盯 5 个 IDE 开发</span></span><span class="arr">→</span>
+      <span class="node">✈️ 飞书回执<br><span class="dim" style="font-size:10px">离屏也在线</span></span>
+    </div>
+    <div class="note">
+      <b>今日实时开发施工序（其余项目暂停，全部围绕零界）：</b>
+      ① events.py 进度事件层（唯一大新增）→ ② /devops 指挥台页面挂 8091（按 108 原型）→ ③ 飞书三卡型（指令/进度/审批）→
+      ④ devtask 3 单实弹试点（本仓内开发本指挥台自己就是第一单——吃自己的狗粮）。
+      每步独立可回退；所有开发文档均在 E:\老田的AI助手 仓内，分步开发不影响最终整体接入。
+    </div>
+  </div>
+</main>
+</body>
+</html>
