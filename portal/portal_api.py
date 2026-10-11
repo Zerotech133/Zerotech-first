@@ -6370,7 +6370,6 @@ gap:14px;align-items:start}}
         self._html(html)
 
     # ── K-STOCK-114e 独立安全审计 AI ─────────────────────────────
-    _AUDIT_MODEL = os.environ.get("AUDIT_MODEL", "qwen3.5:9b")
     _AUDIT_SYS = (
         "你是零界平台的独立安全审计官，与开发团队完全独立、只对安全负责。"
         "审计对象：代码 diff、实现方案、接口设计。"
@@ -6379,14 +6378,45 @@ gap:14px;align-items:start}}
         "①先给结论（安全/有风险/高危）②按严重度列问题：位置+成因+利用场景+修复建议 "
         "③没有问题就明说没有，不凑数④简洁，不重复代码。称呼对方为「开发侧」。")
 
-    def _ollama_chat(self, messages, timeout=150):
-        """本机 Ollama 非流式对话（空 ProxyHandler 直连，防系统代理劫持）。"""
+    _AUDIT_CFG_PATH = os.path.join(ROOT, "audit_ai_config.json")
+
+    @classmethod
+    def _audit_cfg(cls):
+        """审计模型配置：audit_ai_config.json（不入库）> 环境变量 > 本机 Ollama。
+        json: {"api":"openai","base":"https://…/v1","key":"sk-…","model":"…"}"""
+        try:
+            with open(cls._AUDIT_CFG_PATH, encoding="utf-8") as f:
+                c = json.load(f)
+            if c.get("base") and c.get("key") and c.get("model"):
+                c.setdefault("api", "openai")
+                return c
+        except Exception:
+            pass
+        return {"api": "ollama",
+                "model": os.environ.get("AUDIT_MODEL", "qwen3.5:9b")}
+
+    def _audit_chat(self, messages, timeout=150):
+        """按配置路由审计模型：openai 兼容网关 / 本机 Ollama，均非流式直连。"""
         import urllib.request as _u
-        body = json.dumps({"model": self._AUDIT_MODEL, "stream": False,
+        cfg = self._audit_cfg()
+        opener = _u.build_opener(_u.ProxyHandler({}))
+        if cfg["api"] == "openai":
+            body = json.dumps({"model": cfg["model"], "stream": False,
+                               "messages": messages}).encode("utf-8")
+            req = _u.Request(cfg["base"].rstrip("/") + "/chat/completions",
+                             data=body, headers={
+                                 "Content-Type": "application/json",
+                                 "Authorization": "Bearer " + cfg["key"]})
+            with opener.open(req, timeout=timeout) as resp:
+                j = json.loads(resp.read().decode("utf-8"))
+            if "error" in j:
+                raise RuntimeError("网关返回错误：%s" % json.dumps(
+                    j["error"], ensure_ascii=False)[:200])
+            return (j.get("choices") or [{}])[0].get("message", {}).get("content", "")
+        body = json.dumps({"model": cfg["model"], "stream": False,
                            "messages": messages}).encode("utf-8")
         req = _u.Request("http://127.0.0.1:11434/api/chat", data=body,
                          headers={"Content-Type": "application/json"})
-        opener = _u.build_opener(_u.ProxyHandler({}))
         with opener.open(req, timeout=timeout) as resp:
             j = json.loads(resp.read().decode("utf-8"))
         return j.get("message", {}).get("content", "")
@@ -6419,17 +6449,18 @@ gap:14px;align-items:start}}
                 msgs.append({"role": "user",
                              "content": "抓取最近提交失败：%s" % _ge})
         try:
-            reply = self._ollama_chat(msgs)
+            cfg = self._audit_cfg()
+            reply = self._audit_chat(msgs)
             self._json({"ok": True, "reply": reply,
-                        "model": self._AUDIT_MODEL})
+                        "model": cfg["model"]})
         except Exception as _oe:
             self._json({"ok": False,
                         "error": "审计模型不可达：%s（模型=%s）"
-                                 % (str(_oe)[:120], self._AUDIT_MODEL)}, 502)
+                                 % (str(_oe)[:120], cfg.get("model", "?"))}, 502)
 
     def _audit_ai_page(self):
         """独立安全审计 AI 对话页（114e）：会话客户端持有，独立模型。"""
-        mdl = self._AUDIT_MODEL
+        mdl = self._audit_cfg()["model"]
         html = ("<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,initial-scale=1'>"
                 "<title>🛡 安全审计 AI · 零界</title>"

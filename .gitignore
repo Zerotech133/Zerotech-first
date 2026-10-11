@@ -129,3 +129,4 @@ projects-archive/
 CowAgent/
 AI/
 .worktrees/
+portal/audit_ai_config.json
