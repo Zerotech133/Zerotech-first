@@ -3,7 +3,7 @@
 由批 0 施工脚本从 portal_api.py 结构边界剪切生成；唯一实例（锁/缓存单例）。
 消费方必须显式 import（import * 不导出下划线名）。
 """
-import datetime, json, os, subprocess, threading as _th, time
+import datetime, json, os, re, subprocess, threading, threading as _th, time
 
 
 # ===== P0-5 静默吞错落盘（2026-10-08 全检修复）=====
