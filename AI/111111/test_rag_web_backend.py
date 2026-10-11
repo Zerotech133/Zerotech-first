@@ -13,14 +13,16 @@ class FakeRagClient:
     def __init__(self):
         self.embed_calls = 0
         self.chat_calls = 0
+        self.chat_think_values = []
 
     def embed(self, model, input):
         self.embed_calls += 1
         values = input if isinstance(input, list) else [input]
         return {"embeddings": [[float(len(value)), 1.0] for value in values]}
 
-    def chat_stream(self, messages, model):
+    def chat_stream(self, messages, model, think=None):
         self.chat_calls += 1
+        self.chat_think_values.append(think)
         yield {"message": {"content": "答案来自东方。"}}
 
 
@@ -43,6 +45,16 @@ class RagWebBackendTests(unittest.TestCase):
         self.assertEqual(events[-2]["sources"][0]["source"], "facts.md")
         self.assertIn("东方", "".join(event["message"]["content"] for event in events if "message" in event))
         self.assertEqual(client.chat_calls, 1)
+
+    def test_stream_disables_model_thinking_for_rag_answer(self):
+        temp, _ = self.make_docs()
+        self.addCleanup(temp.cleanup)
+        client = FakeRagClient()
+        service = RagWebService(client=client, docs_dir=temp.name)
+
+        list(service.stream("太阳从哪里升起？"))
+
+        self.assertEqual(client.chat_think_values, [False])
 
     def test_missing_directory_raises_unavailable(self):
         with tempfile.TemporaryDirectory() as temp:
