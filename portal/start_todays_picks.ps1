@@ -7,7 +7,8 @@
 #   -> build_pick_verdicts.py  (local archives + quote lake, backfill windows)
 #   rc 1 (crash, todays_picks.json may be STALE) -> skip downstream so
 #   details never regenerate from yesterday's list as "today's" facts.
-#   Each stage alerts independently via alert_fail.
+#   Each stage alerts independently via alert_fail_wrap so send results and
+#   pending→.sent flow are recorded in news_collector/logs/alert_send.log.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
 $py = 'C:\Program Files\Python311\python.exe'
@@ -23,7 +24,7 @@ function Invoke-Stage($name, $args_) {
     $code = $p.ExitCode
     ('{0} exit={1} {2}' -f $name, $code, (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($code -ne 0) {
-        & $py -X utf8 C:\aios\quant_backtest\alert_fail.py $name $code ("C:\Temp\{0}_err.log" -f $name) 1>$null 2>$null
+        & $py -X utf8 C:\aios\news_collector\alert_fail_wrap.py $name $code ("C:\Temp\{0}_err.log" -f $name) 1>$null 2>$null
     }
     return $code
 }

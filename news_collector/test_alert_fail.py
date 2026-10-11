@@ -12,6 +12,7 @@
 """
 import json
 import os
+from pathlib import Path
 import re
 import sys
 import tempfile
@@ -91,6 +92,14 @@ class NormalizeErrLogTest(TmpDirCase):
         self.assertEqual(wrap.normalize_err_log(""), "")
         self.assertEqual(wrap.normalize_err_log(
             os.path.join(self.dir, "nope.log")), "")
+
+    def test_utf16_log_creates_missing_outbox(self):
+        src = self.wbin("missing_outbox.log", "失败原因".encode("utf-16"))
+        with mock.patch.object(wrap, "OUTBOX", self.outbox):
+            dst = wrap.normalize_err_log(src)
+        self.addCleanup(lambda: os.path.isfile(dst) and os.unlink(dst))
+        self.assertTrue(os.path.isdir(self.outbox))
+        self.assertIn("失败原因", Path(dst).read_text(encoding="utf-8"))
 
 
 class SendLogFormatTest(TmpDirCase):
@@ -264,6 +273,17 @@ class AtomicJsonTest(TmpDirCase):
             self.assertEqual(json.load(f), {"ok": True, "名": "值"})
         self.assertEqual([n for n in os.listdir(self.outbox)
                           if n.endswith(".tmp")], [])
+
+
+class LauncherWiringTest(unittest.TestCase):
+    """任务启动器必须走可观测包装器，避免失败只进旧 outbox。"""
+
+    def test_todays_picks_uses_observable_alert_wrapper(self):
+        launcher = (Path(__file__).resolve().parents[1]
+                    / "portal" / "start_todays_picks.ps1")
+        source = launcher.read_text(encoding="utf-8")
+        self.assertIn("alert_fail_wrap.py", source)
+        self.assertNotRegex(source, r"quant_backtest[\\/]alert_fail\.py")
 
 
 if __name__ == "__main__":
