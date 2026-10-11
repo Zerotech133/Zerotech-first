@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>零界 · 量化域线路梳理原型（K-STOCK-109）</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg-page:#0d1117; --bg-surface:#161b22; --bg-raised:#1c2128;
+    --border:#2d333b; --border-weak:#21262d;
+    --text:#e6edf3; --text-dim:#8b949e;
+    --link:#58a6ff; --blu-600:#1f6feb; --pur-500:#8957e5;
+    --color-ok:#3fb950; --color-err:#f85149; --color-warn:#d29922; --gold:#e3b341;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg-page);color:var(--text);}
+  .num{font-family:Consolas,monospace;}
+  .dim{color:var(--text-dim);}
+  main{max-width:1180px;margin:0 auto;padding:0 26px 60px;}
+  header{display:flex;align-items:center;justify-content:space-between;padding:22px 48px 12px;max-width:1180px;margin:0 auto;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--blu-600),var(--pur-500));display:grid;place-items:center;font-size:20px;font-weight:800;color:#fff;}
+  .brand h1{font-size:17px;font-weight:700;}
+  .brand small{color:var(--text-dim);font-size:10.5px;letter-spacing:3px;display:block;margin-top:2px;}
+  h2{font-size:15px;margin:28px 0 10px;display:flex;gap:9px;align-items:center;}
+  h2 .hint{font-size:11px;color:var(--text-dim);font-weight:400;}
+  .card{background:var(--bg-raised);border:1px solid var(--border);border-radius:13px;padding:18px 20px;}
+
+  /* 三层定位图 */
+  .layers{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+  .layer{display:flex;gap:14px;align-items:flex-start;background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:14px 18px;}
+  .layer .lv{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--link);min-width:86px;padding-top:3px;}
+  .layer .body{flex:1;}
+  .layer .t{font-size:14px;font-weight:700;}
+  .layer .d{font-size:11.5px;color:var(--text-dim);margin-top:5px;line-height:1.7;}
+  .layer.l1{border-color:var(--gold);}
+  .layer.l1 .lv{color:var(--gold);}
+
+  /* 四层 IA */
+  .ia{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));margin-top:12px;}
+  .grp{background:var(--bg-raised);border:1px solid var(--border);border-radius:13px;padding:15px 16px;}
+  .grp .gh{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .grp .gs{font-size:10.5px;color:var(--text-dim);margin-bottom:10px;}
+  .lnk{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;font-size:12px;color:var(--text);text-decoration:none;border:1px solid transparent;}
+  .lnk:hover{background:var(--bg-surface);border-color:var(--border);}
+  .lnk .rt{font-family:Consolas,monospace;font-size:10.5px;color:var(--link);min-width:96px;}
+  .lnk .new{font-size:9px;color:var(--gold);border:1px solid var(--gold);border-radius:99px;padding:0 6px;}
+  .lnk .mv{font-size:9px;color:var(--color-warn);border:1px solid var(--color-warn);border-radius:99px;padding:0 6px;}
+  .grp.core{border-color:var(--link);}
+
+  /* 混乱点表 */
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+  th{color:var(--text-dim);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);}
+  td{padding:8px 10px;border-bottom:1px solid var(--border-weak);vertical-align:top;line-height:1.6;}
+  tr:hover td{background:var(--bg-surface);}
+  .badge{font-size:10.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--border);white-space:nowrap;}
+  .b-p0{color:var(--color-err);border-color:var(--color-err);}
+  .b-p1{color:var(--gold);border-color:var(--gold);}
+  .b-p2{color:var(--text-dim);}
+
+  .note{font-size:11.5px;color:var(--text-dim);line-height:1.8;margin-top:10px;}
+  .note b{color:var(--gold);font-weight:600;}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;font-size:12px;}
+  .flow .node{background:var(--bg-raised);border:1px solid var(--border);border-radius:9px;padding:8px 13px;}
+  .flow .node.hi{border-color:var(--gold);color:var(--gold);}
+  .flow .arr{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">零</div>
+    <div><h1>零界 · 量化域线路梳理</h1><small>QUANT IA · 原型 K-STOCK-109</small></div>
+  </div>
+  <div class="num dim" style="font-size:13px;">实测 30 路由全活 · 2026-10-11</div>
+</header>
+
+<main>
+  <h2>一、上一层入口的定位定案 <span class="hint">指挥台的上一层 = 零界首页，三层结构立宪</span></h2>
+  <div class="layers">
+    <div class="layer l1">
+      <div class="lv">L1 个人 OS 正门</div>
+      <div class="body">
+        <div class="t">零界首页（8080 正门 · 8734 同源别名）</div>
+        <div class="d">定位：<b style="color:var(--gold)">唯一的家</b>。五领域 pill（量化/情报/创作/开发/系统）+ K44 大屏直达。一切上层进入都从这里开始——开发指挥台、量化、情报都是它的「领域下层」，首页不承载业务细节，只做分发与态势灯。</div>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="lv">L2 领域门户</div>
+      <div class="body">
+        <div class="t">量化 /quant · 情报 /intel · 创作 /creator · 开发 /dev（含指挥台）· 系统 /ops</div>
+        <div class="d">定位：领域内的<b>目录页</b>。按「工作流分层」组织本域全部专项入口（见下节量化四层），一处不漏、一类不重。</div>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="lv">L3 专项工作台</div>
+      <div class="body">
+        <div class="t">30+ 专项页（/bt /qd /paper /screen /premarket …）</div>
+        <div class="d">定位：真正干活的地方。每页只服务一个任务，页头带「返回领域门户 + 今日动线上下文」，不再互相乱跳。</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>二、量化域现状乱点（实测） <span class="hint">/quant.html 平铺 31 链接，无层级无动线</span></h2>
+  <div class="card" style="padding:6px 14px 12px;">
+    <table>
+      <tr><th>乱点</th><th>证据（实测）</th><th>级别</th><th>收敛动作</th></tr>
+      <tr><td>31 链接一马平铺</td><td>quant.html 全部链接同级罗列，选股/账本/投研/内容混排</td><td><span class="badge b-p0">P0 乱源</span></td><td>重组为四层分组（下节）</td></tr>
+      <tr><td>双选股中心并存</td><td>/bt「选股中心·多产线」与 /qd「量子双刀·选股中心」标题几乎同名</td><td><span class="badge b-p0">P0 乱源</span></td><td>语义切分：/bt=扫描研究 · /qd=双刀决策，命名+分组区分</td></tr>
+      <tr><td>盘后链路断裂</td><td>/afterhours（收盘全景）在 nginx 有路由，但 quant.html 根本没挂链接</td><td><span class="badge b-p1">P1 断链</span></td><td>补入「盘前盘后」层</td></tr>
+      <tr><td>大屏游离</td><td>/screen 只在首页横幅有入口，量化域内无下钻路径</td><td><span class="badge b-p1">P1 断链</span></td><td>置顶驾驶舱层</td></tr>
+      <tr><td>投研内容混入量化</td><td>/council /sim /debate /sellpoint /deliverables 与选股页并列</td><td><span class="badge b-p2">P2 归位</span></td><td>单独「投研竞技」层</td></tr>
+    </table>
+  </div>
+
+  <h2>三、量化域四层信息架构（目标态） <span class="hint">蓝色框=每层核心入口；金标=新增补挂；黄标=改挂位置</span></h2>
+  <div class="ia">
+    <div class="grp core">
+      <div class="gh">🚦 ① 驾驶层（每天必看）</div>
+      <div class="gs">大盘裁决 → 信号 → 账本，一条动线</div>
+      <a class="lnk"><span class="rt">/screen</span>数据大屏<span class="mv">提位</span></a>
+      <a class="lnk"><span class="rt">/bt-brief</span>AI 晨报</a>
+      <a class="lnk"><span class="rt">/premarket</span>盘前六层因子</a>
+      <a class="lnk"><span class="rt">/afterhours</span>盘后收盘全景<span class="new">补挂</span></a>
+      <a class="lnk"><span class="rt">/fin</span>金融驾驶舱</a>
+      <a class="lnk"><span class="rt">/paper</span>模拟仓平台（账本）</a>
+    </div>
+    <div class="grp">
+      <div class="gh">🔍 ② 选股研究层（找票）</div>
+      <div class="gs">/bt=多产线扫描 · /qd=双刀决策，双中心各司其职</div>
+      <a class="lnk"><span class="rt">/bt</span>选股中心·多产线扫描</a>
+      <a class="lnk"><span class="rt">/qd</span>量子双刀·决策工作台<span class="mv">改名</span></a>
+      <a class="lnk"><span class="rt">/bt-9dim</span>九维选股</a>
+      <a class="lnk"><span class="rt">/bt-qpzm</span>青萍之末共振</a>
+      <a class="lnk"><span class="rt">/bt-cross</span>多策略共振集市</a>
+      <a class="lnk"><span class="rt">/bt-chanlun</span>缠论结构</a>
+      <a class="lnk"><span class="rt">/bt-chanlun-pool</span>缠论预警池</a>
+      <a class="lnk"><span class="rt">/strong</span>板块强弱对照</a>
+      <a class="lnk"><span class="rt">/sa</span>个股分析</a>
+      <a class="lnk"><span class="rt">/bt-weak</span>弱势案例库</a>
+    </div>
+    <div class="grp">
+      <div class="gh">⚙ ③ 信号与账本层（执行）</div>
+      <div class="gs">信号产出 → 挂单 → 持仓 → 复盘</div>
+      <a class="lnk"><span class="rt">/bt-signals</span>全池策略信号</a>
+      <a class="lnk"><span class="rt">/bt-report</span>每日 Top5 回测报告</a>
+      <a class="lnk"><span class="rt">/bt-positions</span>纸面持仓跟踪</a>
+      <a class="lnk"><span class="rt">/bt-opt</span>参数寻优榜单</a>
+      <a class="lnk"><span class="rt">/bt-data-health</span>数据仓管理</a>
+      <a class="lnk"><span class="rt">/strategies</span>策略中心记分卡</a>
+      <a class="lnk"><span class="rt">/fut</span>期货量化</a>
+    </div>
+    <div class="grp">
+      <div class="gh">🧪 ④ 投研竞技层（练兵）</div>
+      <div class="gs">影子留痕/锦标赛/辩论，从选股层剥离</div>
+      <a class="lnk"><span class="rt">/council</span>投委会影子留痕<span class="mv">归位</span></a>
+      <a class="lnk"><span class="rt">/sim</span>操盘手锦标赛<span class="mv">归位</span></a>
+      <a class="lnk"><span class="rt">/debate</span>模拟辩论室<span class="mv">归位</span></a>
+      <a class="lnk"><span class="rt">/bt-linkage</span>三线联动</a>
+      <a class="lnk"><span class="rt">/nl</span>AI 对话查数</a>
+      <a class="lnk"><span class="rt">/sellpoint</span>SellPoint AI<span class="mv">归位</span></a>
+    </div>
+  </div>
+
+  <h2>四、量化今日动线（老板视角一条线） <span class="hint">与首页「今日动线」金色条同款逻辑下沉到域内</span></h2>
+  <div class="card">
+    <div class="flow">
+      <span class="node">晨 09:00<br><b>晨报 + 盘前因子</b></span><span class="arr">→</span>
+      <span class="node">盘中<br><b>大屏盯信号</b></span><span class="arr">→</span>
+      <span class="node">触发<br><b>双刀/共振出票</b></span><span class="arr">→</span>
+      <span class="node">下单<br><b>模拟仓挂单</b></span><span class="arr">→</span>
+      <span class="node">盘后<br><b>收盘全景对照</b></span><span class="arr">→</span>
+      <span class="node hi">周内<br><b>投委会/锦标赛复盘</b></span>
+    </div>
+    <div class="note">
+      <b>施工清单（拍板后执行，全部小改）：</b>① quant.html 重组为上述四层分组（保留全部 31 链接零删除，只动排版）
+      ② /qd 页内标题改「量子双刀·决策工作台」消歧 ③ 补挂 /afterhours、/screen 下钻 ④ 页头加「← 量化门户」返回条（L3 统一）
+      ⑤ 动线条高亮当前时段该看的层。
+    </div>
+  </div>
+</main>
+</body>
+</html>
