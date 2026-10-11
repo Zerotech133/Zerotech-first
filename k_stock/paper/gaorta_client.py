@@ -54,6 +54,33 @@ def chat(model, messages, timeout=60, temperature=None):
     }
 
 
+def chat_for_hire(mid, source, messages, timeout=60):
+    """运行层统一入口：按 manager 账本 active 雇佣记录取模后调用 gaorta 通道（K-STOCK-137j P1-1）。
+
+    约定一（运行层纪律）：业务代码必须经 chat_for_hire 调用模型，禁止裸调 chat()。
+    hire() 校验的是档案快照、chat() 校验的是调用实参，两者之间的窗口
+    （账本 model 快照 vs 实际调用模型）只能靠本函数闭环。
+
+    约定二（模型比对纪律，审查 P2-3）：账本记录与模型目录的比对必须精确匹配（==），
+    禁止 normalize（casefold/strip 等）后比对——防止大小写/空白别名绕过白名单。
+
+    无该 mid+source 的 active 雇佣记录时 raise RuntimeError（fail-closed，不降级、不猜测）。
+    """
+    import manager  # 延迟 import：manager 顶部亦引用 gaorta_client，避免循环依赖
+    model = None
+    for h in manager._load_hires().get("hires", []):
+        if (h.get("manager") == mid and h.get("source") == source
+                and h.get("status") == "active"):
+            model = h.get("model")
+            break
+    if not model:
+        raise RuntimeError(
+            f"chat_for_hire 拒绝：无 {mid}×{source} 的 active 雇佣记录"
+            f"（账本 {manager.HIRES_PATH}），运行层调用模型前必须先由经理雇佣建立（fail-closed）")
+    # chat() 内部再过 allowed_models() 精确匹配白名单——双重校验第二道
+    return chat(model, messages, timeout=timeout)
+
+
 if __name__ == "__main__":
     print("目录内模型:", sorted(allowed_models()))
     try:
