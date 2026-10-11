@@ -6742,10 +6742,24 @@ gap:14px;align-items:start}}
         e = _h.escape
         mkt = _read_json(os.path.join(ROOT, "ai_market.json")) or {}
         groups = mkt.get("groups", [])
+        # K-STOCK-122 岗位→算法互链：algo id → 商品卡（icon/name），
+        # 岗位卡渲染「所用算法」芯片，点击跳 /algo 锚点定位
+        algo_mkt = _read_json(os.path.join(ROOT, "algo_market.json")) or {}
+        amap = {a.get("id", ""): a
+                for a in algo_mkt.get("algos", []) if a.get("id")}
 
         def _ai_card(a):
             badge = a.get("badge", "可聘")
             bc = a.get("badge_color", "#58a6ff")
+            algo_chips = "".join(
+                "<a class='tp' href='/algo?id=%s' style='text-decoration:"
+                "none;font-size:11.5px'>%s %s</a>"
+                % (e(i), e(amap.get(i, {}).get("icon", "🧩")),
+                   e(amap.get(i, {}).get("name", i)))
+                for i in a.get("algos", []) or [] if i in amap)
+            algo_row = ("<div style='display:flex;gap:6px;flex-wrap:wrap;"
+                        "margin-top:8px'>%s</div>" % algo_chips
+                        if algo_chips else "")
             return (
                 "<div style='border:1px solid #30363d;border-radius:12px;"
                 "background:#161b22;padding:16px 18px'>"
@@ -6762,12 +6776,13 @@ gap:14px;align-items:start}}
                 "gap:6px;flex-wrap:wrap'>"
                 "<span class='dim'>📌 %s</span><span class='dim'>·</span>"
                 "<span class='dim'>🤝 %s</span></div>"
+                "%s"
                 "<a class='tp' href='%s'>聘请 →</a></div>"
                 % (e(a.get("icon", "🤖")), e(a.get("name", "")), bc, bc,
                    e(badge), e(a.get("role", "")),
                    e(a.get("skills", "")), e(a.get("model", "")),
                    e(a.get("status", "")), e(a.get("hire", "")),
-                   e(a.get("entry", "/"))))
+                   algo_row, e(a.get("entry", "/"))))
         secs = "".join(
             "<div class='sec'><h2>%s</h2>"
             "<div style='display:grid;grid-template-columns:repeat("
@@ -6885,6 +6900,13 @@ gap:14px;align-items:start}}
         import html as _h
         e = _h.escape
         toast = ""
+        # do_GET 传的是原始 query 串（字符串），内部直调可能传 dict——
+        # 统一归一成 parse_qs dict（K-STOCK-122 修：此前 qs 字符串直接
+        # .get 在带 ?key=/?id= 的 HTTP 请求上 AttributeError 打死连接，
+        # 087 的卡密激活走浏览器一直 502/断连，仅直调冒烟未暴露）
+        from urllib.parse import parse_qs as _aqs
+        if isinstance(qs, str):
+            qs = _aqs(qs)
         qs = qs or {}
         if qs.get("key"):
             ok, msg = self._algo_activate(qs["key"][0])
@@ -6897,6 +6919,17 @@ gap:14px;align-items:start}}
         algos = mkt.get("algos", [])
         n_unlocked = sum(1 for a in algos if self._license_state(
             a.get("id", "")))
+        # K-STOCK-122 岗位→算法互链（反向）：algo id → 在岗使用该算法的
+        # 岗位名列表（源 ai_market.json algos 外键）；?id= 锚点定位高亮
+        aim = _read_json(os.path.join(ROOT, "ai_market.json")) or {}
+        users = {}
+        for g in aim.get("groups", []):
+            for a in g.get("ais", []):
+                for i in a.get("algos", []) or []:
+                    users.setdefault(i, []).append(
+                        a.get("name", a.get("id", "")))
+        anchor = (qs.get("id") or [""])[0]
+        anchor_ok = anchor and any(a.get("id") == anchor for a in algos)
 
         def _algo_card(a):
             sid = a.get("id", "")
@@ -6905,6 +6938,12 @@ gap:14px;align-items:start}}
                 badge = ("✅ 已解锁", "#3fb950")
             else:
                 badge = ("👁 试看模式", "#d29922")
+            hl = ("outline:2px solid #58a6ff;outline-offset:2px;"
+                  if sid == anchor and anchor_ok else "")
+            use_row = ("<div class='dim' style='font-size:11.5px;"
+                       "margin-top:8px'>🤖 在岗使用：%s</div>"
+                       % e("、".join(users.get(sid, [])))
+                       if users.get(sid) else "")
             sm = a.get("sample", {}) or {}
             feats = "".join(
                 "<span class='tp' style='cursor:default'>%s</span>"
@@ -6928,8 +6967,9 @@ gap:14px;align-items:start}}
                    if unlocked else
                    "<span class='dim' style='font-size:12px'>订阅后开放"
                    "实时入口 · %s</span>" % e(sub.get("price_hint", "")))
-            return ("<div style='border:1px solid %s;border-radius:12px;"
-                    "background:#161b22;padding:16px 18px'>"
+            return ("<div id='algo-%s' style='border:1px solid %s;"
+                    "border-radius:12px;"
+                    "background:#161b22;padding:16px 18px;%s'>"
                     "<div style='display:flex;align-items:baseline;gap:8px'>"
                     "<span style='font-size:17px;font-weight:700'>%s %s"
                     "</span>"
@@ -6945,13 +6985,20 @@ gap:14px;align-items:start}}
                     "<div style='display:flex;gap:6px;flex-wrap:wrap'>%s"
                     "</div>"
                     "%s"
+                    "%s"
                     "<div style='font-size:12.5px;margin-top:10px'>%s</div>"
                     "</div>"
-                    % (badge[1], e(a.get("icon", "🧩")),
+                    % (e(sid), badge[1], hl,
+                       e(a.get("icon", "🧩")),
                        e(a.get("name", "")), e(a.get("tier", "")),
                        badge[1], badge[1], badge[0],
                        e(a.get("tagline", "")), e(a.get("desc", "")),
-                       feats, sample_html, cta))
+                       feats, sample_html, use_row, cta))
+        scroll_js = ""
+        if anchor_ok:
+            scroll_js = ("<script>var t=document.getElementById("
+                         "'algo-%s');if(t){t.scrollIntoView({behavior:"
+                         "'smooth',block:'center'});}</script>" % e(anchor))
         grid = "".join(
             "<div style='display:grid;grid-template-columns:repeat("
             "auto-fit,minmax(320px,1fr));gap:12px'>%s</div>"
@@ -6980,7 +7027,7 @@ gap:14px;align-items:start}}
                 + e(mkt.get("tagline", ""))
                 + " · 共 %d 款商品 · 已解锁 %d 款 · 每款可试看真实输出样例"
                 "</div>" % (len(algos), n_unlocked)
-                + toast + grid + act_form
+                + toast + grid + act_form + scroll_js
                 + "<div class='dim' style='margin-top:20px'>商品源 portal/"
                 "algo_market.json · 卡密库 portal/licenses.json · 内测"
                 "参考价以正式发卡为准 · 不构成投资建议</div></body></html>")

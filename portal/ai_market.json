@@ -1,5 +1,5 @@
 {
-  "_note": "AI 市场货架注册表（K-STOCK-033，老田：聘请 AI 做商业化）。source 三源纪律：本文件为源，portal/portal_api.py _aim_page 只读渲染。hire=聘请方式，entry=入口页，status=在岗状态。",
+  "_note": "AI 市场货架注册表（K-STOCK-033，老田：聘请 AI 做商业化）。source 三源纪律：本文件为源，portal/portal_api.py _aim_page 只读渲染。hire=聘请方式，entry=入口页，status=在岗状态。algos=该岗位所依赖的算法商品 id 数组（外键→portal/algo_market.json，K-STOCK-122 岗位→算法互链；留空数组=该岗位不依赖货架商品，卡片不渲染算法行）。",
   "market": "laotian_ai",
   "tagline": "本地驱动 · 零 token 成本 · 按岗聘请",
   "groups": [
@@ -18,7 +18,8 @@
           "hire": "提任务单 · 飞书日报通道",
           "entry": "/fin",
           "badge": "在岗",
-          "badge_color": "#3fb950"
+          "badge_color": "#3fb950",
+          "algos": ["quant_dual", "score_ranking"]
         }
       ]
     },
@@ -37,7 +38,8 @@
           "hire": "提任务单 · 投研日报通道",
           "entry": "/bt-qpzm/res",
           "badge": "在岗",
-          "badge_color": "#f85149"
+          "badge_color": "#f85149",
+          "algos": ["quant_dual", "tdx_backtest"]
         },
         {
           "id": "T2",
@@ -50,7 +52,8 @@
           "hire": "提任务单 · 投研日报通道",
           "entry": "/bt-qpzm/res",
           "badge": "在岗",
-          "badge_color": "#3fb950"
+          "badge_color": "#3fb950",
+          "algos": ["tdx_backtest", "riskguard"]
         },
         {
           "id": "N1",
@@ -63,7 +66,8 @@
           "hire": "提任务单 · 投研日报通道",
           "entry": "/bt-jev",
           "badge": "在岗",
-          "badge_color": "#d29922"
+          "badge_color": "#d29922",
+          "algos": ["jev_sentiment"]
         },
         {
           "id": "F1",
@@ -76,7 +80,8 @@
           "hire": "提任务单 · 投研日报通道",
           "entry": "/bt-qpzm/res",
           "badge": "在岗",
-          "badge_color": "#58a6ff"
+          "badge_color": "#58a6ff",
+          "algos": ["score_ranking"]
         },
         {
           "id": "D1",
@@ -89,7 +94,8 @@
           "hire": "提任务单 · 投研日报通道",
           "entry": "/bt-qpzm/res",
           "badge": "在岗",
-          "badge_color": "#3fb950"
+          "badge_color": "#3fb950",
+          "algos": ["quant_dual", "riskguard"]
         }
       ]
     },
@@ -108,7 +114,8 @@
           "hire": "点入即用 · 免费无限次",
           "entry": "/sa",
           "badge": "即用",
-          "badge_color": "#3fb950"
+          "badge_color": "#3fb950",
+          "algos": ["chanlun_9dim"]
         },
         {
           "id": "SP",
@@ -121,7 +128,8 @@
           "hire": "点入即用 · 免费无限次",
           "entry": "/sellpoint",
           "badge": "即用",
-          "badge_color": "#3fb950"
+          "badge_color": "#3fb950",
+          "algos": ["chanlun_9dim"]
         },
         {
           "id": "KG",
@@ -134,7 +142,8 @@
           "hire": "点入即用 · 免费无限次",
           "entry": "/kg/ask",
           "badge": "即用",
-          "badge_color": "#3fb950"
+          "badge_color": "#3fb950",
+          "algos": []
         },
         {
           "id": "CARD",
@@ -147,7 +156,8 @@
           "hire": "点入即用 · 免费无限次",
           "entry": "/kg/card",
           "badge": "即用",
-          "badge_color": "#3fb950"
+          "badge_color": "#3fb950",
+          "algos": ["chanlun_9dim"]
         },
         {
           "id": "BRIEF",
@@ -160,7 +170,8 @@
           "hire": "订阅即享 · 飞书通道",
           "entry": "/bt-brief",
           "badge": "在岗",
-          "badge_color": "#58a6ff"
+          "badge_color": "#58a6ff",
+          "algos": ["score_ranking", "jev_sentiment"]
         }
       ]
     }
