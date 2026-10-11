@@ -239,6 +239,12 @@ def _btn(text, value, ptype="default"):
             "type": ptype, "value": value}
 
 
+def _esc(s):
+    """错误文本进 markdown 前的轻转义（K-STOCK-137：原调用处无定义，
+    er:list 失败路径 NameError 被吞=点了零反馈）。"""
+    return str(s or "").replace("`", "'").replace("*", "")[:200]
+
+
 def card_er_lines(r):
     """持仓线位交互卡：每只持仓带 止盈/止损/撤线 按钮（点按进入幅度选择）。"""
     if not r.get("ok"):
@@ -464,6 +470,83 @@ def handle_cmd(text, message_id, open_id=""):
 
 
 # ── ws 主程序 ───────────────────────────────────────────────
+def _handle_card(val, sender):
+    """卡片动作执行体（线程侧）：tag 分发 + 回执。
+    K-STOCK-137：lark_oapi ws 是 asyncio 单循环，on_card 若同步执行
+    重动作（ctl:board 子进程 180s / er:set 120s / dim: 现抓 66s）会卡死
+    心跳与全部消息——对齐 on_msg 线程化判例，on_card 只解析不执行。"""
+    try:
+        tag = val.get("tag", "")
+        if tag.startswith("dim:"):
+            _, dim, code = tag.split(":", 2)
+            f, _ = get_facts(code)
+            ok, why = send_card(card_dim(code, f, dim))
+            log("card->%s %s %s" % (dim, code, ok or why))
+        elif tag.startswith("er:") and not _er_allowed(sender):
+            send_text("无权限：该操作仅限白名单用户。")
+            log("card er denied (sender=%s)" % sender)
+        elif tag == "er:list":
+            ok, why = send_card(card_er_lines(_er_cli(["list"])))
+            log("card er:list %s" % (ok or why))
+        elif tag == "er:help":
+            send_text(HELP_MD)
+            log("card er:help")
+        elif tag == "er:choice":
+            ok, why = send_card(card_er_pct(val.get("code"),
+                                            val.get("kind")))
+            log("card er:choice %s" % (ok or why))
+        elif tag == "er:set":
+            r = _er_cli(["set", "--code", str(val.get("code")),
+                         "--kind", str(val.get("kind")),
+                         "--pct", str(val.get("pct"))])
+            send_text(("✅ " if r.get("ok") else "❌ ")
+                      + ("%s %s 线 %.2f 已设（成本 %.2f）· 触线后次日开盘清仓"
+                         % (r.get("stock"), "止盈" if val.get("kind") == "tp"
+                            else "止损", r.get("line", 0),
+                            r.get("avg_cost", 0))
+                         if r.get("ok") else r.get("error")))
+            log("card er:set %s" % r.get("ok"))
+        elif tag == "er:clear":
+            # 点撤线 → 先发撤线选择卡（tp/sl 二选一，再点执行）
+            code = val.get("code")
+            els = [{"tag": "markdown", "content":
+                    "撤销 **%s** 的哪条线？" % code},
+                   {"tag": "action", "actions": [
+                       _btn("撤止盈", {"tag": "er:clear2", "code": code,
+                                       "kind": "tp"}, "primary"),
+                       _btn("撤止损", {"tag": "er:clear2", "code": code,
+                                       "kind": "sl"}, "danger"),
+                       _btn("取消", {"tag": "er:noop"})]}]
+            send_card({"config": {"wide_screen_mode": True},
+                       "header": {"template": "grey",
+                                  "title": {"tag": "plain_text",
+                                            "content": "撤线 %s" % code}},
+                       "elements": els})
+        elif tag == "er:clear2":
+            r = _er_cli(["clear", "--code", str(val.get("code")),
+                         "--kind", str(val.get("kind"))])
+            send_text(("✅ " if r.get("ok") else "❌ ")
+                      + (r.get("note") or r.get("error")))
+            log("card er:clear2 %s" % r.get("ok"))
+        # er:noop → 无操作
+        elif tag.startswith("ctl:"):
+            # K-STOCK-135 控制中枢动作：白名单 → 执行 → 回执 + 重推新卡
+            import feishu_control
+            if not feishu_control.allowed(sender):
+                send_text("无权限：控制操作仅限白名单用户。")
+                log("card ctl denied (sender=%s)" % sender)
+            else:
+                ok, text, card2 = feishu_control.handle_ctl(val, sender)
+                send_text(("✅ " if ok else "❌ ") + text
+                          if not text.startswith(("✅", "❌")) else text)
+                if card2 is not None:
+                    send_card(card2)
+                log("card %s ok=%s" % (tag, ok))
+    except Exception:  # noqa: BLE001
+        log("card err " + traceback.format_exc()[-300:])
+
+
+# ── ws 主程序 ───────────────────────────────────────────────
 def main():
     import lark_oapi as lark
     from lark_oapi.api.im.v1 import P2ImMessageReceiveV1
@@ -495,79 +578,17 @@ def main():
             log("msg err " + traceback.format_exc()[-300:])
 
     def on_card(data):
+        # K-STOCK-137 薄壳：只解析事件、不执行动作（执行体=_handle_card
+        # 线程侧），防 asyncio 单循环被长任务卡死心跳
         try:
             ev = getattr(data, "event", None) or {}
             action = (getattr(ev, "action", None) or {})
             val = getattr(action, "value", None) or {}
             if isinstance(val, str):
                 val = json.loads(val)
-            tag = val.get("tag", "")
-            sender = _card_sender_id(ev)
-            if tag.startswith("dim:"):
-                _, dim, code = tag.split(":", 2)
-                f, _ = get_facts(code)
-                ok, why = send_card(card_dim(code, f, dim))
-                log("card->%s %s %s" % (dim, code, ok or why))
-            elif tag.startswith("er:") and not _er_allowed(sender):
-                send_text("无权限：该操作仅限白名单用户。")
-                log("card er denied (sender=%s)" % sender)
-            elif tag == "er:list":
-                ok, why = send_card(card_er_lines(_er_cli(["list"])))
-                log("card er:list %s" % (ok or why))
-            elif tag == "er:help":
-                send_text(HELP_MD)
-                log("card er:help")
-            elif tag == "er:choice":
-                ok, why = send_card(card_er_pct(val.get("code"),
-                                                val.get("kind")))
-                log("card er:choice %s" % (ok or why))
-            elif tag == "er:set":
-                r = _er_cli(["set", "--code", str(val.get("code")),
-                             "--kind", str(val.get("kind")),
-                             "--pct", str(val.get("pct"))])
-                send_text(("✅ " if r.get("ok") else "❌ ")
-                          + ("%s %s 线 %.2f 已设（成本 %.2f）· 触线后次日开盘清仓"
-                             % (r.get("stock"), "止盈" if val.get("kind") == "tp"
-                                else "止损", r.get("line", 0),
-                                r.get("avg_cost", 0))
-                             if r.get("ok") else r.get("error")))
-                log("card er:set %s" % r.get("ok"))
-            elif tag == "er:clear":
-                # 点撤线 → 先发撤线选择卡（tp/sl 二选一，再点执行）
-                code = val.get("code")
-                els = [{"tag": "markdown", "content":
-                        "撤销 **%s** 的哪条线？" % code},
-                       {"tag": "action", "actions": [
-                           _btn("撤止盈", {"tag": "er:clear2", "code": code,
-                                           "kind": "tp"}, "primary"),
-                           _btn("撤止损", {"tag": "er:clear2", "code": code,
-                                           "kind": "sl"}, "danger"),
-                           _btn("取消", {"tag": "er:noop"})]}]
-                send_card({"config": {"wide_screen_mode": True},
-                           "header": {"template": "grey",
-                                      "title": {"tag": "plain_text",
-                                                "content": "撤线 %s" % code}},
-                           "elements": els})
-            elif tag == "er:clear2":
-                r = _er_cli(["clear", "--code", str(val.get("code")),
-                             "--kind", str(val.get("kind"))])
-                send_text(("✅ " if r.get("ok") else "❌ ")
-                          + (r.get("note") or r.get("error")))
-                log("card er:clear2 %s" % r.get("ok"))
-            # er:noop → 无操作
-            elif tag.startswith("ctl:"):
-                # K-STOCK-135 控制中枢动作：白名单 → 执行 → 回执 + 重推新卡
-                import feishu_control
-                if not feishu_control.allowed(sender):
-                    send_text("无权限：控制操作仅限白名单用户。")
-                    log("card ctl denied (sender=%s)" % sender)
-                else:
-                    ok, text, card2 = feishu_control.handle_ctl(val, sender)
-                    send_text(("✅ " if ok else "❌ ") + text
-                              if not text.startswith(("✅", "❌")) else text)
-                    if card2 is not None:
-                        send_card(card2)
-                    log("card %s ok=%s" % (tag, ok))
+            threading.Thread(target=_handle_card,
+                             args=(val, _card_sender_id(ev)),
+                             daemon=True).start()
         except Exception:  # noqa: BLE001
             log("card err " + traceback.format_exc()[-300:])
 

@@ -267,14 +267,13 @@ def handle_ctl(val, operator=""):
                 PRESETS[key]["label"], v, PRESETS[key]["unit"]), \
                 build_control_card()
         if tag == "ctl:alert_ack":
+            # DB 异常由外层 except 兜底回执「处理失败」（K-STOCK-137 清死分支）
             n = _alert_ack(val.get("alert_id"), False, operator)
-            return (True, "✅ 已处理（%s 行）" % n, build_control_card()) \
-                if n is not None else (False, "告警库不可达", None)
+            return True, "✅ 已处理（%s 行，0 行=此前已确认，幂等）" % n, \
+                build_control_card()
         if tag == "ctl:alert_ignore":
             n = _alert_ack(val.get("alert_id"), True, operator)
-            return (True, "✅ 已忽略并确认（%s 行）" % n,
-                    build_control_card()) \
-                if n is not None else (False, "告警库不可达", None)
+            return True, "✅ 已忽略并确认（%s 行）" % n, build_control_card()
         if tag == "ctl:alert_ack_all":
             n = _db().db_execute(
                 "UPDATE v2_alert SET status='ACKED', acked_at=now() "
