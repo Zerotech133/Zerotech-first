@@ -306,7 +306,19 @@ def main(argv=None) -> int:
     ap.add_argument("--date", default=None, help="YYYYMMDD（缺省=库内最新活动日）")
     ap.add_argument("--llm", action="store_true", help="追加 Ollama 叙述分析")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--meeting", action="store_true",
+                    help="K-STOCK-122 M5：开投研经理复盘会（产出会议纪要）")
     a = ap.parse_args(argv)
+    if a.meeting:
+        r = meeting(a.date, llm=a.llm)
+        if a.json:
+            print(json.dumps(r, ensure_ascii=False))
+        else:
+            print(("✅ 复盘会完成 " if r.get("ok") else "❌ 复盘会失败 ")
+                  + json.dumps({k: r.get(k) for k in
+                                ("date", "disagreements", "_path")},
+                               ensure_ascii=False))
+        return 0 if r.get("ok") else 1
     r = review(a.date, llm=a.llm)
     if a.json:
         print(json.dumps(r, ensure_ascii=False))
