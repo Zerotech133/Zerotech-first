@@ -1,0 +1,100 @@
+{
+ "schema": "k-stock-137/models-v0.1",
+ "source": "https://client.gaorta.com/api/pricing",
+ "constraint": "模型目录仅限 gaorta 平台（老田 2026-10-11 拍板）",
+ "coef_baseline": "GLM-5.2 输入价 = 1.0",
+ "role_base_price_cny": {
+  "manager": 99,
+  "trader": 39,
+  "trainee": 19
+ },
+ "hire_formula": "聘请价 = 角色基价 × coef_vs_glm52（按月，收费动线后置）",
+ "generated_at": "2026-10-11T23:37:14",
+ "models": [
+  {
+   "model": "deepseek-v4-flash",
+   "vendor_id": 1,
+   "endpoint": "openai",
+   "base_url": "https://client.gaorta.com/v1",
+   "usd_in_per_m": 0.22,
+   "usd_out_per_m": 0.66,
+   "usd_in_per_m_peak": 0.44,
+   "billing_mode": "tiered_expr",
+   "coef_vs_glm52": 0.16,
+   "hire_price_cny_per_month": {
+    "manager": 16,
+    "trader": 6,
+    "trainee": 3
+   },
+   "pricing_version": "5a90f2b86c08bd983a9a2e6d66c255f4eaef9c4bc934386d2b6ae84ef0ff1f1f"
+  },
+  {
+   "model": "deepseek-v4-pro",
+   "vendor_id": 1,
+   "endpoint": "openai",
+   "base_url": "https://client.gaorta.com/v1",
+   "usd_in_per_m": 0.3102,
+   "usd_out_per_m": 0.9306,
+   "usd_in_per_m_peak": 0.6204,
+   "billing_mode": "tiered_expr",
+   "coef_vs_glm52": 0.22,
+   "hire_price_cny_per_month": {
+    "manager": 22,
+    "trader": 9,
+    "trainee": 4
+   },
+   "pricing_version": null
+  },
+  {
+   "model": "GLM-5.2",
+   "vendor_id": 2,
+   "endpoint": "openai",
+   "base_url": "https://client.gaorta.com/v1",
+   "usd_in_per_m": 1.4,
+   "usd_out_per_m": 4.4,
+   "usd_in_per_m_peak": null,
+   "billing_mode": null,
+   "coef_vs_glm52": 1.0,
+   "hire_price_cny_per_month": {
+    "manager": 99,
+    "trader": 39,
+    "trainee": 19
+   },
+   "pricing_version": null
+  },
+  {
+   "model": "GLM-5.3",
+   "vendor_id": 2,
+   "endpoint": "openai",
+   "base_url": "https://client.gaorta.com/v1",
+   "usd_in_per_m": 1.4,
+   "usd_out_per_m": 4.4,
+   "usd_in_per_m_peak": null,
+   "billing_mode": null,
+   "coef_vs_glm52": 1.0,
+   "hire_price_cny_per_month": {
+    "manager": 99,
+    "trader": 39,
+    "trainee": 19
+   },
+   "pricing_version": null
+  },
+  {
+   "model": "kimi-k3",
+   "vendor_id": 3,
+   "endpoint": "openai",
+   "base_url": "https://client.gaorta.com/v1",
+   "usd_in_per_m": 3.0,
+   "usd_out_per_m": 15.0,
+   "usd_in_per_m_peak": null,
+   "billing_mode": null,
+   "coef_vs_glm52": 2.14,
+   "hire_price_cny_per_month": {
+    "manager": 212,
+    "trader": 83,
+    "trainee": 41
+   },
+   "pricing_version": null
+  }
+ ]
+}
