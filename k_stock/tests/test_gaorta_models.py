@@ -180,6 +180,16 @@ def test_capability_tier_glm53_no_markup():
     print("PASS test_capability_tier_glm53_no_markup")
 
 
+def test_hire_formula_mentions_profile_override():
+    """K-STOCK-147 P2-10：hire_formula 注明「档案可覆盖统一基价」（蓝图拍板项 1）"""
+    doc = json.loads(MODELS_FP.read_text(encoding="utf-8"))
+    formula = doc["hire_formula"]
+    assert "档案可覆盖" in formula, f"hire_formula 应注明档案可覆盖: {formula!r}"
+    assert "hire_base_price_cny" in formula, \
+        f"hire_formula 应指明档案字段 hire_base_price_cny: {formula!r}"
+    print("PASS test_hire_formula_mentions_profile_override")
+
+
 if __name__ == "__main__":
     test_usd_price_tiered_real_exprs()
     test_usd_price_scientific_and_no_spaces()
@@ -192,4 +202,5 @@ if __name__ == "__main__":
     test_models_json_consistency()
     test_capability_tier_present_and_valid()
     test_capability_tier_glm53_no_markup()
-    print("11/11 PASS")
+    test_hire_formula_mentions_profile_override()
+    print("12/12 PASS")

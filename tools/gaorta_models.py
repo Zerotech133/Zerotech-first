@@ -195,7 +195,9 @@ def build(rows, existing_models=None, allow_new=False):
         "constraint": "模型目录仅限 gaorta 平台（老田 2026-10-11 拍板）",
         "coef_baseline": "GLM-5.2 输入价 = 1.0",
         "role_base_price_cny": ROLE_BASE_PRICE,
-        "hire_formula": "聘请价 = 角色基价 × coef_vs_glm52（按月，收费动线后置）",
+        "hire_formula": "聘请价 = 角色基价 × coef_vs_glm52（按月，收费动线后置）；"
+                        "档案可覆盖统一基价：正式聘请价以经理档案 "
+                        "hire_base_price_cny × coef 为准（蓝图拍板项 1，2026-10-12）",
         "generated_at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
         "models": models,
         "_skipped_rows": skipped,

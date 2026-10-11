@@ -10,6 +10,7 @@ key 从环境变量 GAORTA_API_KEY 读取；未配置时 fail-closed 报清晰�
 """
 import json
 import os
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -45,10 +46,23 @@ def chat(model, messages, timeout=60, temperature=None):
         method="POST",
     )
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    with op.open(req, timeout=timeout) as resp:
-        data = json.loads(resp.read())
+    try:
+        with op.open(req, timeout=timeout) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        # K-STOCK-147 P2-9：保留状态码/原因但包装为 RuntimeError，不裸抛 HTTPError
+        raise RuntimeError(
+            f"gaorta HTTP {e.code}: {e.reason}（模型 {model}）") from e
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as e:
+        # K-STOCK-147 P2-9：缺 choices/choices[0].message 时给可排障上下文，替代裸 KeyError
+        top_keys = sorted(data) if isinstance(data, dict) else type(data).__name__
+        raise RuntimeError(
+            f"gaorta 响应结构异常：缺 choices[0].message.content"
+            f"（模型 {model}），顶层键={top_keys}") from e
     return {
-        "content": data["choices"][0]["message"]["content"],
+        "content": content,
         "model": data.get("model", model),
         "usage": data.get("usage", {}),
     }

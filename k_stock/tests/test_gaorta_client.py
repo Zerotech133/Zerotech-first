@@ -9,6 +9,7 @@ import json
 import os
 import sys
 import tempfile
+import urllib.error
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -144,6 +145,57 @@ def test_timeout_passthrough(monkeypatch):
     print("PASS test_timeout_passthrough")
 
 
+def test_http_error_wrapped_with_context(monkeypatch):
+    """K-STOCK-147 P2-9：HTTP 非 200 包装为 RuntimeError，带状态码/原因/模型名，不裸抛 HTTPError"""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        _setup(tmp, monkeypatch)
+
+        class _RaisingOpener:
+            def open(self, req, timeout=None):
+                raise urllib.error.HTTPError(
+                    "https://client.gaorta.com/v1/chat/completions", 405,
+                    "Method Not Allowed", None, None)
+
+        monkeypatch.setattr(gaorta_client.urllib.request, "build_opener",
+                            lambda handler=None: _RaisingOpener())
+        try:
+            gaorta_client.chat(LEGAL_MODEL, MSG)
+            raise AssertionError("HTTP 405 应包装为 RuntimeError")
+        except RuntimeError as e:
+            msg = str(e)
+            assert "405" in msg and "Method Not Allowed" in msg \
+                and LEGAL_MODEL in msg, f"错误消息缺上下文: {msg!r}"
+            assert not isinstance(e, urllib.error.HTTPError)
+    print("PASS test_http_error_wrapped_with_context")
+
+
+def test_malformed_response_wrapped(monkeypatch):
+    """K-STOCK-147 P2-9：响应缺 choices 时包装为 RuntimeError「结构异常」，替代裸 KeyError"""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        _setup(tmp, monkeypatch)
+
+        class _BareOpener:
+            def open(self, req, timeout=None):
+                body = json.loads(req.data.decode("utf-8"))
+                return _FakeResp({"object": "chat.completion",
+                                  "model": body["model"]})
+
+        monkeypatch.setattr(gaorta_client.urllib.request, "build_opener",
+                            lambda handler=None: _BareOpener())
+        try:
+            gaorta_client.chat(LEGAL_MODEL, MSG)
+            raise AssertionError("缺 choices 应包装为 RuntimeError")
+        except RuntimeError as e:
+            msg = str(e)
+            assert "结构异常" in msg and LEGAL_MODEL in msg, \
+                f"错误消息缺上下文: {msg!r}"
+        except KeyError:
+            raise AssertionError("不应裸抛 KeyError")
+    print("PASS test_malformed_response_wrapped")
+
+
 if __name__ == "__main__":
     class _MP:
         def setattr(self, obj, name, val):
@@ -156,4 +208,6 @@ if __name__ == "__main__":
     test_no_active_hire_rejected(_MP())
     test_tampered_model_rejected_by_chat_whitelist(_MP())
     test_timeout_passthrough(_MP())
-    print("4/4 PASS")
+    test_http_error_wrapped_with_context(_MP())
+    test_malformed_response_wrapped(_MP())
+    print("6/6 PASS")
