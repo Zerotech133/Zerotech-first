@@ -74,7 +74,7 @@ def main():
     got = json.loads(navjs[i + len("var NAV="):j])
     want = json.loads(want)  # _regen_js 返回 JSON 串，解析后结构比对
     if got != want:
-        print("FAIL nav.js 与 portal_api.py 导航数据漂移——"
+        print("FAIL nav.js 与 api_common.py 导航数据漂移——"
               "先跑 python tools/export_nav.py")
         return 1
     print("守卫 PASS：%d 静态页全带统一顶栏，nav.js 与源零漂移"

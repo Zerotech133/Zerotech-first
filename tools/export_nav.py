@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """前端入口统一治理（K-STOCK-100）· 第一件：导航单一源导出器。
 
-用 AST 从 portal_api.py 提取 DOMAIN_NAV_GROUPS 与 SECTIONS 两个字面量，
+用 AST 从 api_common.py 提取 DOMAIN_NAV_GROUPS 与 SECTIONS 两个字面量，
 生成 portal/static/nav.js（统一顶栏渲染器，数据内嵌）。
 
 为什么 AST 不 import：portal_api.py 是 2.3 万行巨石且 import 有副作用
@@ -15,7 +15,7 @@ import os
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(REPO, "portal", "portal_api.py")
+SRC = os.path.join(REPO, "portal", "api_common.py")
 OUT = os.path.join(REPO, "portal", "static", "nav.js")
 
 
@@ -41,8 +41,8 @@ def main():
                    for k, its_groups in groups.items()},
     }
     js = (
-        "/* 自动生成：tools/export_nav.py · 源=portal_api.py DOMAIN_NAV_GROUPS\n"
-        "   勿手改本文件——改 portal_api.py 导航数据后重跑导出器。*/\n"
+        "/* 自动生成：tools/export_nav.py · 源=api_common.py DOMAIN_NAV_GROUPS\n"
+        "   勿手改本文件——改 api_common.py 导航数据后重跑导出器。*/\n"
         "(function(){\n"
         "var NAV=" + json.dumps(data, ensure_ascii=False) + ";\n"
         "var PILL='display:inline-block;padding:6px 13px;"
