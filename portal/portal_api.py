@@ -6240,6 +6240,110 @@ gap:14px;align-items:start}}
         self._html(_shell("🌊 青萍之末 · 共振选股工作台", "", inner))
 
     # ── K-STOCK-035 总入口门户：哪里是什么、我的入口在哪里 ──
+    # ── K-STOCK-113 开发指挥台：dev_events.jsonl 只读投影 ──────────
+    _DEV_EVENTS = os.path.join(ROOT, "data", "dev_events.jsonl")
+    _DEV_KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail")
+
+    def _devops_data(self):
+        """今日开发态势：四类事件计数 + 活跃 Agent + 工单台账 + 最近事件。"""
+        day = time.strftime("%Y-%m-%d")
+        evs = []
+        try:
+            with open(self._DEV_EVENTS, "r", encoding="utf-8") as f:
+                for ln in f:
+                    try:
+                        evs.append(json.loads(ln))
+                    except Exception:
+                        continue
+        except OSError:
+            pass
+        today = [e for e in evs if e.get("day") == day]
+        by_kind = {k: 0 for k in self._DEV_KINDS}
+        agents = {}
+        tasks = {}
+        for e in today:
+            by_kind[e.get("kind", "?")] = by_kind.get(e.get("kind", "?"), 0) + 1
+            if e.get("agent"):
+                agents[e["agent"]] = agents.get(e["agent"], 0) + 1
+            t = e.get("task") or "(未编号)"
+            st = tasks.setdefault(t, {"events": 0, "last": "", "last_kind": "", "last_detail": ""})
+            st["events"] += 1
+            st["last"] = e.get("ts", "")
+            st["last_kind"] = e.get("kind", "")
+            st["last_detail"] = e.get("detail", "")
+        return {"ok": True, "day": day, "total": len(today),
+                "by_kind": by_kind, "agents": agents,
+                "tasks": tasks, "recent": today[-30:][::-1]}
+
+    def _devops_page(self):
+        """开发指挥台页（108 原型落地版·只读）：四类计数 + 工单表 + 事件流。"""
+        import html as _h
+        e = _h.escape
+        cards = "".join(
+            "<div style='background:var(--bg-surface);border:1px solid var(--border);"
+            "border-radius:10px;padding:12px 15px;'>"
+            "<div style='font-size:11px;color:var(--text-dim);'>%s</div>"
+            "<div style='font-size:22px;font-weight:700;margin-top:4px;' id='c-%s'>—</div></div>"
+            % (label, key)
+            for key, label in [("task_start", "🚀 建单"), ("commit", "📝 提交"),
+                               ("merge_done", "✅ 合并"), ("blocked", "⛔ 卡壳")])
+        html = ("<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>"
+                "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                "<title>开发指挥台 · 零界</title>"
+                "<link rel='stylesheet' href='/static/tokens.css'>"
+                "<style>body{font-family:'Segoe UI','Microsoft YaHei',system-ui,sans-serif;"
+                "background:var(--bg-page);color:var(--text);}"
+                "main{max-width:1080px;margin:0 auto;padding:0 22px 46px;}"
+                "table{width:100%%;border-collapse:collapse;font-size:12px;margin-top:8px;}"
+                "th{color:var(--text-dim);text-align:left;padding:7px 9px;"
+                "border-bottom:1px solid var(--border);font-weight:600;}"
+                "td{padding:7px 9px;border-bottom:1px solid var(--border-weak);}"
+                ".num{font-family:Consolas,monospace;}"
+                ".bdg{font-size:10.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--border);}"
+                "</style></head><body>"
+                "<header style='display:flex;justify-content:space-between;align-items:center;"
+                "padding:20px 48px 10px;max-width:1080px;margin:0 auto;'>"
+                "<div><h1 style='font-size:17px;'>🏭 开发指挥台</h1>"
+                "<div style='font-size:10.5px;color:var(--text-dim);letter-spacing:2px;'>"
+                "DEVOPS · K-STOCK-113 · 事件自动回流</div></div>"
+                "<a href='/' style='font-size:12px;'>← 返回首页</a></header><main>"
+                "<div id='sum' style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;'>"
+                + cards + "</div>"
+                "<h2 style='font-size:14px;margin:22px 0 4px;'>在办工单</h2>"
+                "<div style='background:var(--bg-raised);border:1px solid var(--border);"
+                "border-radius:12px;padding:6px 14px 10px;'>"
+                "<table><tr><th>工单</th><th>事件数</th><th>最近事件</th><th>最近动态</th><th>时间</th></tr>"
+                "<tbody id='tasks'><tr><td class='dim'>加载中…</td></tr></tbody></table></div>"
+                "<h2 style='font-size:14px;margin:22px 0 4px;'>事件流 <span class='dim' "
+                "style='font-size:11px;'>最近 30 条 · 30s 自动刷新</span></h2>"
+                "<div id='feed' style='background:var(--bg-surface);border:1px solid var(--border);"
+                "border-radius:12px;padding:10px 16px;font-size:12px;line-height:2;'></div>"
+                "</main><script>"
+                "const KD={task_start:['🚀 建单','#58a6ff'],commit:['📝 提交','#8b949e'],"
+                "blocked:['⛔ 卡壳','#f85149'],merge_done:['✅ 合并','#3fb950'],guard_fail:['🛑 守卫','#d29922']};"
+                "async function load(){try{const r=await fetch('/api/devops',{cache:'no-store'});"
+                "if(!r.ok)return;const d=await r.json();"
+                "document.getElementById('c-task_start').textContent=d.by_kind.task_start||0;"
+                "document.getElementById('c-commit').textContent=d.by_kind.commit||0;"
+                "document.getElementById('c-merge_done').textContent=d.by_kind.merge_done||0;"
+                "document.getElementById('c-blocked').textContent=d.by_kind.blocked||0;"
+                "const es=Object.entries(d.tasks||{}).sort((a,b)=>(b[1].last||'').localeCompare(a[1].last||''));"
+                "document.getElementById('tasks').innerHTML=es.map(([t,s])=>"
+                "\"<tr><td class='num'>\"+t+\"</td><td class='num'>\"+s.events+\"</td>\""
+                "+\"<td><span class='bdg'>\"+((KD[s.last_kind]||[s.last_kind])[0])+\"</span></td>\""
+                "+\"<td style='max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>\""
+                "+(s.last_detail||'')+\"</td>\""
+                "+\"<td class='num dim'>\"+(s.last||'').slice(11)+\"</td></tr>\").join('')"
+                "||\"<tr><td class='dim'>今日暂无工单事件</td></tr>\";"
+                "document.getElementById('feed').innerHTML=(d.recent||[]).map(x=>{const k=KD[x.kind]||[x.kind,'#8b949e'];"
+                "return \"<div><span class='num dim'>\"+(x.ts||'').slice(11)+\"</span> \"+"
+                "\"<b style='color:\"+k[1]+\"'>\"+k[0]+\"</b> \"+"
+                "\"<span class='num'>\"+(x.task||'')+(x.agent?' · '+x.agent:'')+\"</span> \"+"
+                "\"<span class='dim'>\"+(x.detail||'')+\"</span></div>\";}).join('')"
+                "||\"<span class='dim'>暂无事件——提交一次代码试试（post-commit 自动上报）</span>\";"
+                "}catch(e){}}load();setInterval(load,30000);</script></body></html>")
+        self._html(html)
+
     def _portal_page(self):
         """🏛 门户框架页：全站分区卡片总览——第一屏「我的入口」
         （Hermes 超级助手 + A0 参谋长），下接 AI 市场/选股中心/行情
@@ -23201,6 +23305,12 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         elif path == "/bt/seat":
             # 坐席下钻页：席位近60日上榜明细 + 常做票
             self._bt_seat_page(qs)
+        elif path == "/api/devops":
+            # K-STOCK-113 开发指挥台数据口：dev_events.jsonl 只读投影
+            self._json(self._devops_data())
+        elif path == "/devops":
+            # K-STOCK-113 开发指挥台页：多 IDE 统一调度态势（只读）
+            self._devops_page()
         elif path == "/portal":
             # K-STOCK-035 总入口门户：哪里是什么、我的入口在哪里
             self._portal_page()
