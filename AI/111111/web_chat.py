@@ -21,11 +21,13 @@ class ChatHandler(BaseHTTPRequestHandler):
   if self.path!='/api/chat': self._err(404,'路径不存在'); return
   try:p=_payload(self)
   except ValueError as e:self._err(400,str(e)); return
+  response_started=False
   try:
    with urlopen(Request(OLLAMA_URL,data=json.dumps(p).encode(),headers={'Content-Type':'application/json'},method='POST'),timeout=120) as r:
-    self.send_response(200); self.send_header('Content-Type','application/x-ndjson'); self.send_header('Cache-Control','no-cache'); self.end_headers()
+    self.send_response(200); response_started=True; self.send_header('Content-Type','application/x-ndjson'); self.send_header('Cache-Control','no-cache'); self.end_headers()
     while c:=r.read(8192): self.wfile.write(c); self.wfile.flush()
-  except (HTTPError,URLError,OSError,TimeoutError): self._err(502,'无法连接 Ollama，请确认服务已启动')
+  except (HTTPError,URLError,OSError,TimeoutError):
+   if not response_started: self._err(502,'无法连接 Ollama，请确认服务已启动')
  def _err(self,status,msg):
   b=_error(msg); self.send_response(status); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
 def make_server(host=HOST,port=PORT):
