@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
 
 from knowledge_base import KnowledgeBase
@@ -42,6 +43,7 @@ class RagWebService:
         self.client = client or OllamaClient()
         self._kb = None
         self._index_key = None
+        self._lock = threading.RLock()
 
     def _files_and_key(self):
         if not self.docs_dir.is_dir():
@@ -90,14 +92,15 @@ class RagWebService:
             return os.fspath(source)
 
     def _search(self, question, top_k):
-        self.ensure_index()
-        requested = self.top_k if top_k is None else top_k
-        old_top_k = self._kb.top_k
-        self._kb.top_k = requested
-        try:
-            matches = self._kb.search(question)
-        finally:
-            self._kb.top_k = old_top_k
+        with self._lock:
+            self.ensure_index()
+            requested = self.top_k if top_k is None else top_k
+            old_top_k = self._kb.top_k
+            self._kb.top_k = requested
+            try:
+                matches = self._kb.search(question)
+            finally:
+                self._kb.top_k = old_top_k
         return [dict(match, source=self._source_name(match.get("source", ""))) for match in matches]
 
     def search(self, question, top_k=None):

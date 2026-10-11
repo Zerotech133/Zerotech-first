@@ -1,6 +1,8 @@
 import sys
 import tempfile
 import unittest
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -98,6 +100,25 @@ class RagWebBackendTests(unittest.TestCase):
         self.assertEqual(messages[0]["role"], "system")
         self.assertIn("上下文", messages[-1]["content"])
         self.assertIn("问题", messages[-1]["content"])
+
+    def test_concurrent_searches_keep_requested_top_k(self):
+        class SlowKnowledgeBase:
+            def __init__(self):
+                self.top_k = 4
+                self._records = []
+
+            def search(self, question):
+                time.sleep(0.01)
+                return [{"source": "facts.md", "text": str(index), "score": 1.0}
+                        for index in range(self.top_k)]
+
+        service = RagWebService(client=FakeRagClient())
+        service._kb = SlowKnowledgeBase()
+        service.ensure_index = lambda: 1
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(service.search, "问题", top_k) for top_k in (1, 8)]
+            lengths = [len(future.result()) for future in futures]
+        self.assertEqual(lengths, [1, 8])
 
 
 if __name__ == "__main__":
