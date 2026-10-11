@@ -1277,3 +1277,14 @@ def _council_pending():
     except Exception:
         return {}
 _council_cache = {"t": 0.0, "d": None}
+
+# ==== 批7-BT 随行：_HERMES_FAB_HTML（strategies 页共用悬浮卡）====
+_HERMES_FAB_HTML = ("<a id='_hermesfab' href='http://127.0.0.1:8787' "
+                    "target='_blank' rel='noopener' "
+                    "title='超级助手：对话即调度全部 AI 岗位' "
+                    "style='position:fixed;right:18px;bottom:70px;width:46px;"
+                    "height:46px;border-radius:50%;background:#1f6feb;"
+                    "border:2px solid #58a6ff;font-size:22px;line-height:42px;"
+                    "text-align:center;z-index:100;cursor:pointer;"
+                    "user-select:none;text-decoration:none;"
+                    "box-shadow:0 2px 12px rgba(31,111,235,.45)'>🦸</a>")

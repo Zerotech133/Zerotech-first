@@ -400,3 +400,539 @@ def bridge_act_desc(cmd, text=""):
     return None
 
 
+# ══ Handler 方法壳（经 MRO 并入基座，批2补录）══
+
+class Handler:
+    def _bridge_act_page(self, qs):
+        """K56-B3 两步确认页 /bridge/act（零 JS 闸门）：confirm=1 执行
+        并 3s 回舱；缺省黄页确认（note 先填备注表单）。资金动作不在
+        白名单——这是指挥舱的闸门纪律。"""
+        import html as _h
+        from urllib.parse import parse_qs as _pqs, quote_plus as _qp
+        e = _h.escape
+        q = _pqs(qs or "")
+        cmd = (q.get("cmd") or [""])[0]
+        text = (q.get("text") or [""])[0]
+        confirm = (q.get("confirm") or ["0"])[0] == "1"
+        desc = bridge_act_desc(cmd, text)
+        back = ("<a href='/bridge' style='color:var(--blu-500);"
+                "text-decoration:none;font-size:12px'>← 返回驾驶舱</a>")
+        if desc is None:
+            body = ("<div style='color:var(--red-500);font-size:14px;"
+                    "font-weight:700;margin:20px 0 8px'>⛔ 未知指令</div>"
+                    "<div style='color:var(--gray-5);font-size:12px'>cmd=%s "
+                    "不在指挥台白名单</div>%s"
+                    % (e(cmd[:80] or "(空)"), back))
+        elif confirm:
+            r = bridge_act(cmd, text)
+            col = "#3fb950" if r.get("ok") else "#f85149"
+            body = ("<div style='color:%s;font-size:14px;font-weight:700;"
+                    "margin:20px 0 8px'>%s %s</div>%s"
+                    % (col, "✅" if r.get("ok") else "❌",
+                       e(str(r.get("msg"))), back))
+            head = ("<meta http-equiv='refresh' content='3;url=/bridge'>"
+                    if r.get("ok") else "")
+            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>%s"
+                       "<title>指挥台 · 执行</title></head><body "
+                       "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
+                       "%s%s</body></html>"
+                       % (head, self._COCKPIT_CSS, body))
+            return
+        else:
+            d, lv = desc
+            note_form = ""
+            if cmd.startswith("note:"):
+                note_form = ("<form action='/bridge/act' method='get' "
+                             "style='margin:10px 0'><input type='hidden' "
+                             "name='cmd' value='%s'>"
+                             "<input name='text' placeholder='备注内容"
+                             "（≤200 字，将回流记忆闭环）' value='%s' "
+                             "style='width:420px;padding:6px 8px;"
+                             "background:var(--gray-0);color:var(--gray-7);"
+                             "border:1px solid var(--gray-4);border-radius:6px'> "
+                             "<button style='padding:6px 14px;background:"
+                             "var(--gray-3);color:var(--blu-500);border:1px solid "
+                             "var(--gray-4);border-radius:6px;cursor:pointer'>"
+                             "下一步 →</button></form>"
+                             % (e(cmd), e(text[:200])))
+                go = ("<a href='/bridge/act?cmd=%s&text=%s&confirm=1' "
+                      "style='display:inline-block;padding:6px 18px;"
+                      "background:var(--gray-3);color:var(--grn-500);border:1px solid "
+                      "var(--grn-500);border-radius:6px;text-decoration:none;"
+                      "font-weight:600'>✅ 确认执行</a>" % (e(cmd), _qp(text[:200])))
+            else:
+                go = ("<a href='/bridge/act?cmd=%s&confirm=1' style='"
+                      "display:inline-block;padding:6px 18px;background:"
+                      "var(--gray-3);color:var(--grn-500);border:1px solid var(--grn-500);"
+                      "border-radius:6px;text-decoration:none;font-weight:600'"
+                      ">✅ 确认执行</a>" % e(cmd))
+            body = ("<div style='color:var(--ylw-500);font-size:14px;"
+                    "font-weight:700;margin:20px 0 8px'>⚠ 指挥台 · 执行确认"
+                    "</div><div style='white-space:pre-wrap;color:var(--gray-7);"
+                    "font-size:13px;line-height:1.8;background:var(--gray-2);"
+                    "border:1px solid var(--gray-4);border-radius:8px;"
+                    "padding:12px 14px;max-width:560px'>%s</div>%s"
+                    "<div style='margin:12px 0'>%s &nbsp; %s</div>"
+                    % (e(d), note_form, go, back))
+        self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                   "<title>指挥台 · 确认</title></head><body "
+                   "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
+                   "%s%s</body></html>" % (self._COCKPIT_CSS, body))
+    def _bridge_page(self, qs):
+        """K56-B1 投研驾驶舱 /bridge：顶板五仪——数据顶板（15 表+服务灯）/
+        运行仪表（今日跑批+投委会）/预警仪（bad 任务+待跟进+警报池+需注意）/
+        结构图台账（缠论池近 15 票）/账户态势（4 模拟盘）。服务端渲染，只读；
+        每条数据绑下钻目的地（图即导航），横幅红黄绿分级提醒。"""
+        import html as _h
+        e = _h.escape
+        s = bridge_summary()
+        _TB = ("border-collapse:collapse;width:100%;font-size:12px;"
+               "font-family:Consolas,monospace")
+        _TD = "border:1px solid #30363d;padding:3px 8px;color:#e6edf3"
+        _H2 = ("color:#e6edf3;font-size:13px;font-weight:600;"
+               "margin:14px 0 6px;border-left:3px solid #58a6ff;"
+               "padding-left:8px")
+
+        def _sec(title, href, hint):
+            return ("<div style='%s'>%s <a href='%s' style='color:var(--blu-500);"
+                    "font-size:11px;text-decoration:none'>进详情 →</a>"
+                    "<span style='color:var(--gray-5);font-size:11px;"
+                    "margin-left:8px'>%s</span></div>"
+                    % (_H2, title, href, hint))
+
+        # ---- 舱头横幅：红黄绿分级 + 红黄计数（w=预热中）----
+        warming = bool(s.get("warming"))
+        lv = "w" if warming else s.get("level", "g")
+        col, txt = {"r": ("#f85149", "红 · 今日必须处理"),
+                    "y": ("#d29922", "黄 · 知晓即可"),
+                    "g": ("#3fb950", "绿 · 安心"),
+                    "w": ("#58a6ff", "⏳ 时点校对预热中")}[lv]
+        reds = s.get("red_tables") or []
+        lags = s.get("lag_tables") or []
+        bad = s.get("tasks", {}).get("bad") or []
+        detail = []
+        if reds:
+            detail.append("空表: " + ", ".join(str(x) for x in reds[:5]))
+        if bad:
+            detail.append("坏任务: " + ", ".join(
+                str(b.get("name")) for b in bad[:5]))
+        if lags:
+            detail.append("滞后: " + ", ".join(str(x) for x in lags[:5]))
+        detail_txt = ("15 表时点校对装载中（~100s）· 页面 30s 自动刷新"
+                      if warming
+                      else ("；".join(detail) if detail
+                            else "各表在容忍内，无坏任务"))
+        banner = ("<div style='border:1px solid %s;border-radius:10px;"
+                  "padding:10px 14px;margin:10px 0;display:flex;"
+                  "justify-content:space-between;align-items:center;"
+                  "background:var(--gray-2)'>"
+                  "<div><b style='color:%s;font-size:15px'>● %s</b>"
+                  "<span style='color:var(--gray-5);font-size:12px;"
+                  "margin-left:10px'>数据期望日 %s · 体检 %s · 聚合 %s</span>"
+                  "<div style='color:var(--gray-5);font-size:11px;margin-top:3px'>%s</div></div>"
+                  "<div style='font-size:13px;color:var(--gray-7);white-space:nowrap'>"
+                  "🔴 %d &nbsp; 🟡 %d</div></div>"
+                  % (col, col, txt, e(str(s.get("expect") or "?")),
+                     e(str(s.get("health_ts") or "?")),
+                     e(str(s.get("ts") or "?")),
+                     e(detail_txt),
+                     s.get("n_red", 0), s.get("n_yellow", 0)))
+
+        # ---- 仪1 数据顶板：15 表新鲜度 + 六服务灯（🔍 穿透到数据行）----
+        rows = ["<table style='%s'><tr>" % _TB
+                + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
+                          % (_TD, x)
+                          for x in ("表", "市场", "最新", "状态"))
+                + "</tr>"]
+        if warming:
+            rows.append("<tr><td style='%s;color:var(--blu-500)' colspan='4'>"
+                        "⏳ 时点校对冷算中（约 100s）——完成后本页自动刷新，"
+                        "其余四仪已可用</td></tr>" % _TD)
+        for r in s.get("freshness", []):
+            st = str(r.get("status") or "")
+            sc = ("#3fb950" if st == "ok"
+                  else ("#f85149" if st == "empty" else "#d29922"))
+            tb = str(r.get("table") or "")
+            rows.append(
+                "<tr><td style='%s'>"
+                "<span style='cursor:pointer;margin-right:6px' "
+                "title='穿透看数据' onclick=\"tp_toggle('%s')\">🔍</span>"
+                "<a href='/bt-data-health' "
+                "style='color:var(--blu-500);text-decoration:none'>%s</a></td>"
+                "<td style='%s;color:var(--gray-5)'>%s</td>"
+                "<td style='%s'>%s</td>"
+                "<td style='%s;color:%s'>%s</td></tr>"
+                % (_TD, e(tb), e(tb), _TD,
+                   e(_TP_MKT.get(tb, str(r.get("group") or ""))), _TD,
+                   e(str(r.get("latest") or "—")), _TD, sc, e(st))
+                + _tp_row(tb))
+        rows.append("</table>")
+        svcs = s.get("services") or {}
+        lights = " ".join(
+            "<a href='/sys-health' style='text-decoration:none;"
+            "font-size:12px;color:%s;margin-right:10px'>●%s</a>"
+            % ("#3fb950" if v else "#f85149", e(str(k)))
+            for k, v in svcs.items()) or "<span style='color:var(--gray-5)'>—</span>"
+        dk = s.get("docker") or {}
+        _cs = s.get("collectors") or {}
+        _csrc = _cs.get("sources") or {}
+        _cdots = " ".join(
+            "<span style='font-size:11px;color:%s;margin-right:6px'>"
+            "●%s%s</span>"
+            % ("#3fb950" if v.get("ok") else "#f85149", e(str(k)),
+               (" +%s" % v["new"]) if v.get("new") else "")
+            for k, v in _csrc.items())
+        _cline = (("<div style='margin:4px 0 0;font-size:11px;"
+                   "color:var(--gray-5)'>采集 %s%s · 末次 %s · 24h %s 条</div>"
+                   % (_cdots,
+                      "" if _cs.get("last_ok") else " · 采集异常!",
+                      e(str(_cs.get("last_collect") or "?")),
+                      e(str(_cs.get("news_24h") or "?"))))
+                  if _cs else "")
+        m1 = (banner
+              + _sec("① 数据顶板 · 核心表新鲜度", "/bt-data-health",
+                     "点表名进数据仓；点灯进系统体检")
+              + "".join(rows)
+              + "<div style='margin:8px 0'>%s"
+                "<span style='color:var(--gray-5);font-size:11px;"
+                "margin-left:10px'>docker %s 容器%s</span>%s</div>"
+              % (lights, dk.get("total", "?"),
+                 "" if dk.get("ai_portal") else " · ai_portal!", _cline))
+
+        # ---- 仪2 运行仪表：今日跑批+投委会 ----
+        runs = s.get("runs") or []
+        m2 = (_sec("② 运行仪表 · 今日运行", "/council", "跑批+四会+扫描计数")
+              + ("<div style='color:var(--gray-5);font-size:12px'>今日无运行记录"
+                 "</div>" if not runs else
+                 "<div style='font-size:12px;line-height:1.9;"
+                 "font-family:Consolas,monospace'>%s</div>"
+                 % "<br>".join(e(str(x)) for x in runs[:14]))
+              + "<div style='color:var(--gray-5);font-size:11px'>"
+                "缠论池今日新扫 %d 票</div>" % s.get("chanlun_today", 0))
+
+        # ---- 仪3 预警仪：bad 任务+弱案例+警报池+需注意 ----
+        w = s.get("weak") or {}
+        al = ["<table style='%s'><tr>" % _TB
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
+                        % (_TD, x)
+                        for x in ("预警源", "数值", "下钻"))
+              + "</tr>"]
+        for label, val, href, vcol in (
+                ("坏任务", "%d 个" % len(bad), "/sys-health",
+                 "#f85149" if bad else "#3fb950"),
+                ("弱于板块·待跟进", str(w.get("pending", "?")), "/bt-weak",
+                 "#d29922" if w.get("pending") else "#3fb950"),
+                ("弱于板块·在案", str(w.get("open", "?")), "/bt-weak",
+                 "#8b949e"),
+                ("九维警报池(≥75)", str(s.get("nine_alerts", 0)), "/bt-9dim",
+                 "#d29922" if s.get("nine_alerts") else "#3fb950"),
+                ("盯盘需注意", str(s.get("watch_note", 0)), "/council",
+                 "#d29922" if s.get("watch_note") else "#3fb950")):
+            al.append("<tr><td style='%s'>%s</td>"
+                      "<td style='%s;color:%s;font-weight:600'>%s</td>"
+                      "<td style='%s'><a href='%s' style='color:var(--blu-500);"
+                      "text-decoration:none'>去处理 →</a></td></tr>"
+                      % (_TD, e(label), _TD, vcol, e(str(val)), _TD, href))
+        nl = s.get("nine_list") or []
+        if nl:
+            al.append("<tr><td style='%s' colspan='3'>警报池 top: %s</td></tr>"
+                      % (_TD, " ".join(
+                          "<a href='/kg?c=%s' style='color:var(--ylw-500);"
+                          "text-decoration:none'>%s(%.0f)</a>"
+                          % (e(str(x.get("code") or "")),
+                             e(str(x.get("name") or x.get("code"))),
+                             float(x.get("score") or 0))
+                          for x in nl[:8])))
+        al.append("</table>")
+        m3 = (_sec("③ 预警仪 · 待处理与知晓", "/sys-health",
+                   "红=今日必须处理；黄=知晓")
+              + "".join(al))
+
+        # ---- 仪4 结构图台账：缠论池近 15 票（图为哪个事件而画）----
+        gl = ["<table style='%s'><tr>" % _TB
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
+                        % (_TD, x)
+                        for x in ("代码", "名称", "信号", "信号日", "发现日"))
+              + "</tr>"]
+        for g in s.get("graphs", []):
+            gl.append("<tr><td style='%s'><a href='/kg?c=%s' "
+                      "style='color:var(--blu-500);text-decoration:none'>%s</a></td>"
+                      "<td style='%s'>%s</td><td style='%s;color:var(--ylw-500)'>%s</td>"
+                      "<td style='%s'>%s</td><td style='%s'>%s</td></tr>"
+                      % (_TD, e(str(g.get("code") or "")), e(str(g.get("code") or "")),
+                         _TD, e(str(g.get("name") or "")), _TD,
+                         e(str(g.get("type") or "")), _TD,
+                         e(str(g.get("dt") or "")), _TD,
+                         e(str(g.get("detect_date") or ""))))
+        gl.append("</table>")
+        m4 = (_sec("④ 结构图台账 · 缠论池近 15 票", "/bt-chanlun-pool",
+                   "点代码进图谱溯源")
+              + "".join(gl))
+
+        # ---- 仪5 账户态势：4 模拟盘 ----
+        ac = ["<table style='%s'><tr>" % _TB
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
+                        % (_TD, x)
+                        for x in ("账户", "持仓", "现金", "净值", "较昨日"))
+              + "</tr>"]
+        for a in s.get("accounts", []):
+            nav = a.get("nav")
+            ps = a.get("ps")
+            pn = a.get("pnl_pct")
+            pc = ("#3fb950" if (pn or 0) >= 0 else "#f85149"
+                  if isinstance(pn, (int, float)) else "#8b949e")
+            ac.append("<tr><td style='%s'><a href='/bt-report' "
+                      "style='color:var(--blu-500);text-decoration:none'>%s %s</a></td>"
+                      "<td style='%s'>%d</td><td style='%s'>%.0f</td>"
+                      "<td style='%s'>%s</td><td style='%s;color:%s'>%s</td></tr>"
+                      % (_TD, e(str(a.get("icon") or "")), e(str(a.get("name") or "")),
+                         _TD, int(a.get("open") or 0), _TD,
+                         float(a.get("cash") or 0), _TD,
+                         e(("%.0f" % nav) if isinstance(nav, (int, float)) else "—"),
+                         _TD, pc,
+                         e(("%+.2f%%" % ((pn or 0) * 100))
+                           if isinstance(pn, (int, float))
+                           else (("ps %s" % ps) if ps else "—"))))
+        ac.append("</table>")
+        m5 = (_sec("⑤ 账户态势 · 4 模拟盘", "/bt-report", "点账户进报告")
+              + "".join(ac))
+
+        # ---- 仪6 决策层：四会决策流时间线（点条目展开观点原文）----
+        dd = bridge_decisions()
+        acts = bridge_actions_index()
+        _ROLE = (("bull", "多头"), ("bear", "空头"), ("aggr", "激进"),
+                 ("cons", "保守"), ("tech", "技术面"), ("senti", "情绪面"))
+        tl = ([("🏛 立案", "#58a6ff", p.get("ts") or "", p)
+               for p in dd["props"]]
+              + [("👁 盯盘", "#d29922", w.get("ts") or "", w)
+                 for w in dd["watches"]]
+              + [("🧾 复盘", "#bc8cff", r.get("ts") or "", r)
+                 for r in dd["reviews"]])
+        tl.sort(key=lambda x: x[1], reverse=True)
+        items = []
+        for tag, tc, ts, r in tl[:24]:
+            code = str(r.get("code") or "")
+            nm = str(r.get("name") or code)
+            hm = str(ts)[5:16] if ts else "?"
+            if tag == "🏛 立案":
+                memo = r.get("memo") or {}
+                vd = str(memo.get("verdict") or "?")
+                vc = {"支持": "#3fb950", "反对": "#f85149"}.get(vd, "#d29922")
+                head = ("<b style='color:%s'>%s</b> · 分歧 %s ｜ %s"
+                        % (vc, e(vd), e(str(r.get("dissent"))),
+                           e(str(memo.get("thesis") or ""))))
+                vrows = []
+                for rk, rcn in _ROLE:
+                    v = (r.get("views") or {}).get(rk) or {}
+                    st = v.get("stance") or 0
+                    stc = ("#3fb950" if st > 0
+                           else "#f85149" if st < 0 else "#8b949e")
+                    vrows.append(
+                        "<div style='margin:3px 0'><b style='color:%s'>"
+                        "%s %+d</b> <span style='color:var(--gray-7)'>%s</span></div>"
+                        % (stc, rcn, int(st),
+                           e(str(v.get("answer") or "").strip())))
+                risks = "、".join(str(x) for x in (memo.get("risks") or []))
+                body = ("%s<div style='color:var(--gray-5);font-size:11px;"
+                        "margin-top:5px'>风险：%s ｜ 若看错：%s ｜ 信心 %s"
+                        "/100 · 主观分歧 %s · 耗时 %.0fs</div>"
+                        % ("".join(vrows), e(risks),
+                           e(str(memo.get("if_wrong") or "")),
+                           e(str(memo.get("conviction"))),
+                           e(str(memo.get("dissent_hat"))),
+                           float(r.get("elapsed_s") or 0)))
+            elif tag == "👁 盯盘":
+                j = r.get("judge") or {}
+                lv = str(j.get("level") or "?")
+                vc = "#d29922" if lv == "需注意" else "#3fb950"
+                head = ("<b style='color:%s'>%s · %s</b> · 浮盈 %+.1f%%"
+                        % (vc, e(lv), e(str(j.get("bias") or "")),
+                           float(r.get("pnl_pct") or 0)))
+                evs = "".join(
+                    "<div style='color:var(--gray-5);font-size:11px'>· %s %s</div>"
+                    % (e(str(x.get("ts") or ""))[:10],
+                       e(str(x.get("text") or "")))
+                    for x in (r.get("events") or [])[:3])
+                body = "%s<div style='color:var(--gray-7)'>%s</div>" % (
+                    evs, e(str(j.get("view") or "")))
+            else:
+                br = str(r.get("bear_right")
+                         or (r.get("close") or {}).get("bear_right") or "?")
+                at = str(r.get("attribution")
+                         or (r.get("post") or {}).get("attribution") or "?")
+                head = "<b style='color:#bc8cff'>空头%s · 归因%s</b>" % (
+                    e(br), e(at))
+                post = (r.get("post") or {})
+                cf = str(r.get("counterfactual")
+                         or post.get("counterfactual") or "")
+                ls = (r.get("lessons") or post.get("lessons") or [])
+                body = ("<div style='color:var(--gray-7)'>%s</div>%s"
+                        % (e(cf),
+                           "".join("<div style='color:var(--ylw-500);"
+                                   "font-size:11px;margin-top:3px'>⚑ %s</div>"
+                                   % e(str(x.get("text") or x
+                                           if isinstance(x, dict) else x))
+                                   for x in ls[:3])))
+            a0 = acts.get(r.get("ts") or "")
+            abg = ("<b style='color:%s;font-size:11px'>%s</b>"
+                   % ({"agree": "#3fb950", "reject": "#f85149"}.get(
+                       (a0 or {}).get("action"), "#d29922"),
+                      {"agree": "✅已同意", "reject": "⛔已否决"}.get(
+                          (a0 or {}).get("action"), "📝有备注"))) if a0 else ""
+            items.append(
+                "<details style='border-left:3px solid %s;background:var(--gray-2);"
+                "padding:5px 10px;margin:4px 0;border-radius:6px'>"
+                "<summary style='cursor:pointer'><span style='color:var(--gray-5);"
+                "font-size:11px;font-family:Consolas,monospace'>%s</span> %s "
+                "<a href='/kg?c=%s' style='color:var(--blu-500);text-decoration:"
+                "none'>%s %s</a>%s <span style='font-size:12px;color:var(--gray-7)'>"
+                "%s</span></summary><div style='padding:6px 4px 2px;"
+                "font-size:12px;line-height:1.7'>%s</div></details>"
+                % (tc, hm, tag, e(code), e(code), e(nm), abg, head, body))
+        m6 = (_sec("⑥ 决策层 · 四会决策流", "/council",
+                   "点条目展开六视角观点原文（立案→盯盘→复盘）")
+              + ("".join(items)
+                 or "<div style='color:var(--gray-5);font-size:12px'>"
+                   "暂无决策记录（跑批后 23:50 自动产生）</div>"))
+
+        # ---- 仪7 影子对照：分歧度×前向收益（转正门槛 n/30）----
+        def _fmt_r(v):
+            return ("待开市" if not isinstance(v, (int, float))
+                    else "%+.1f%%" % (v * 100))
+        g = dd["gate"] or {}
+        sm = dd["samples"] or []
+        bd = dd["by_dissent"] or []
+        gs = str(g.get("status") or "样本积累中")
+        gc = {"显著·建议转正评估": "#3fb950",
+              "样本积累中": "#58a6ff"}.get(gs, "#d29922")
+        mx = max([b.get("n") or 0 for b in bd] + [1])
+        bars = "".join(
+            "<div style='display:flex;align-items:center;gap:6px;"
+            "margin:2px 0'><span style='width:56px;color:var(--gray-5);"
+            "font-size:11px'>%s</span><div style='height:10px;"
+            "background:var(--ylw-500);border-radius:3px;width:%dpx'></div>"
+            "<span style='color:var(--gray-7);font-size:11px'>%d 票</span></div>"
+            % (e(str(b.get("bucket"))), 6 + int(140 * (b.get("n") or 0) / mx),
+               b.get("n") or 0) for b in bd)
+        srows = "".join(
+            "<tr><td style='%s'><a href='/kg?c=%s' style='color:var(--blu-500);"
+            "text-decoration:none'>%s</a></td><td style='%s'>%s</td>"
+            "<td style='%s'>%d</td><td style='%s'>%s</td><td style='%s'>%s"
+            "</td><td style='%s'>%s</td></tr>"
+            % (_TD, e(str(s.get("code") or "")), e(str(s.get("code") or "")),
+               _TD, e(str(s.get("name") or "")), _TD,
+               int(s.get("dissent") or 0), _TD, e(str(s.get("verdict") or "")),
+               _TD, e(_fmt_r(s.get("r5"))), _TD, e(_fmt_r(s.get("r20"))))
+            for s in sm[:12])
+        pts = [s for s in sm if isinstance(s.get("r20"), (int, float))]
+        scatter = ""
+        if pts:
+            dots = "".join(
+                "<a href='/kg?c=%s'><circle cx='%d' cy='%d' r='5' "
+                "fill='#58a6ff' opacity='0.85'><title>%s 分歧%d r20 "
+                "%+.1f%%</title></circle></a>"
+                % (e(str(s.get("code") or "")),
+                   30 + int(3.0 * (s.get("dissent") or 0)),
+                   150 - int(140 * max(-0.2, min(0.4, s.get("r20") or 0)) / 0.6),
+                   e(str(s.get("name") or s.get("code"))),
+                   int(s.get("dissent") or 0),
+                   float(s.get("r20") or 0) * 100)
+                for s in pts[:40])
+            scatter = ("<svg width='360' height='165' style='background:"
+                       "var(--gray-2);border-radius:8px;margin:6px 0'>"
+                       "<line x1='30' y1='150' x2='335' y2='150' "
+                       "stroke='#30363d'/><line x1='30' y1='10' x2='30' "
+                       "y2='150' stroke='#30363d'/>%s<text x='338' y='162' "
+                       "fill='#8b949e' font-size='10'>分歧度</text><text "
+                       "x='6' y='16' fill='#8b949e' font-size='10'>r20</text>"
+                       "</svg>" % dots)
+        m7 = (_sec("⑦ 影子对照 · 分歧度×前向收益", "/kg/shadow",
+                   "点票进图谱；开市后前向收益自然累积")
+              + "<div style='font-size:12px;margin:4px 0'><b style='color:"
+                "%s'>● %s</b> <span style='color:var(--gray-5)'>前向样本 %s/%s · "
+                "更新 %s</span></div>" % (gc, e(gs), e(str(g.get("n"))),
+                                          e(str(g.get("need"))),
+                                          e(dd["shadow_updated"] or "?"))
+              + "<table style='%s'><tr>" % _TB
+              + "".join("<th style='%s;background:var(--gray-3)'>%s</th>"
+                        % (_TD, x)
+                        for x in ("票", "名称", "分歧", "结论", "r5", "r20"))
+              + "</tr>%s</table>" % (srows
+                                     or "<tr><td style='%s' colspan='6'>"
+                                        "暂无在册提案</td></tr>" % _TD)
+              + scatter + "<div style='margin-top:6px'>%s</div>" % bars)
+
+        # ---- 仪8 指挥台：待确认队列三动作 + 快捷指令（两步确认闸门）----
+        from urllib.parse import quote as _uq
+        _BTN = ("display:inline-block;padding:3px 10px;margin:2px 3px;"
+                "border-radius:12px;font-size:11px;text-decoration:none;"
+                "border:1px solid %s;color:%s;background:#161b22")
+        pend = [p for p in dd["props"]
+                if (p.get("ts") or "") not in acts][:6]
+        plines = []
+        for p in pend:
+            memo = p.get("memo") or {}
+            vd = str(memo.get("verdict") or "?")
+            vc = {"支持": "#3fb950", "反对": "#f85149"}.get(vd, "#d29922")
+            key = _uq(str(p.get("ts") or ""))
+            plines.append(
+                "<div style='padding:6px 8px;margin:4px 0;background:var(--gray-2);"
+                "border-radius:8px;display:flex;justify-content:space-between;"
+                "align-items:center;flex-wrap:wrap;gap:6px'>"
+                "<div style='font-size:12px'><a href='/kg?c=%s' style='"
+                "color:var(--blu-500);text-decoration:none'>%s %s</a> "
+                "<b style='color:%s'>%s</b> · 分歧 %s · %s</div>"
+                "<div><a href='/bridge/act?cmd=agree:%s' style='%s'>"
+                "✅ 同意</a><a href='/bridge/act?cmd=reject:%s' style='%s'>"
+                "⛔ 否决</a><a href='/bridge/act?cmd=note:%s' style='%s'>"
+                "📝 备注</a></div></div>"
+                % (e(str(p.get("code") or "")), e(str(p.get("code") or "")),
+                   e(str(p.get("name") or "")), vc, e(vd),
+                   e(str(p.get("dissent"))), e(str(p.get("d"))),
+                   key, _BTN % ("#3fb950", "#3fb950"),
+                   key, _BTN % ("#f85149", "#f85149"),
+                   key, _BTN % ("#d29922", "#d29922")))
+        quick = "".join(
+            "<a href='%s' style='%s'>%s</a>"
+            % ((("/bridge/act?cmd=" + _uq(c)) if c else "/api/alert/push"),
+               _BTN % ("#30363d", "#58a6ff"), lb)
+            for lb, c in (("🔄 同步 tdx", "sync:tdx"),
+                          ("🔄 同步 tushare", "sync:tushare"),
+                          ("🔄 同步 kg", "sync:kg"),
+                          ("🛰 缠论扫描", "scan:chanlun"),
+                          ("🛰 弱案例扫描", "scan:weak"),
+                          ("🛰 九维扫描", "scan:nine"),
+                          ("📣 预警推送", None)))
+        m8 = (_sec("⑧ 指挥台 · 待确认与快捷指令", "/council",
+                   "两步确认闸门；资金动作走 /screen 既有确认流程")
+              + ("".join(plines)
+                 or "<div style='color:var(--gray-5);font-size:12px'>"
+                   "待确认队列空（近 20 条备忘录均已处理）</div>")
+              + "<div style='margin:10px 0 4px;color:var(--gray-5);font-size:11px'>"
+                "快捷指令（观察类 · 点后确认执行）</div>" + quick
+              + "<div style='margin-top:8px'><a href='/screen' style='"
+                "display:inline-block;padding:6px 14px;background:var(--gray-2);"
+                "border:1px solid var(--gray-4);border-radius:8px;color:var(--ylw-500);"
+                "text-decoration:none;font-size:12px'>💰 资金动作 → 模拟仓"
+                "操作台（建仓/平仓/加减仓，二次确认在彼处——舱的闸门纪律）"
+                "</a></div>")
+
+        content = ("%s%s%s%s%s%s%s%s%s%s"
+                   % (m1, m2, m3, m4, m5, m6, m7, m8,
+                      "<div style='color:var(--gray-5);font-size:11px;"
+                      "margin:16px 0'>K56 全量交付 · 五仪+决策层+指挥台 · "
+                      "数据穿透：点仪① 🔍 就地展开表内数据 · "
+                      "API: /api/bridge/summary</div>", _TP_JS))
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                + ("<meta http-equiv='refresh' content='30'>" if warming else "")
+                + "<title>驾驶舱 · 老田的AI助手</title></head><body "
+                "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
+                + self._COCKPIT_CSS + self._KG_CSS
+                + pill_nav("bridge")
+                + "<div style='color:var(--gray-7);font-size:18px;"
+                  "font-weight:700;margin:10px 0 2px'>🚀 投研驾驶舱</div>"
+                  "<div style='color:var(--gray-5);font-size:12px;"
+                  "margin-bottom:6px'>指挥大舱不是数据屏——数据到目的地、"
+                  "预警不断提醒、红黄绿分级</div>"
+                + content + "</body></html>")
+        self._html(body)
