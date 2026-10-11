@@ -142,6 +142,28 @@ def pick_status() -> dict:
         con.close()
 
 
+def judge_status(days: int = 5) -> dict:
+    """端3 评判 Agent（judge）投影，077w：读 data/judge_reviews/ 最新 N 天 JSON。
+    异常/缺失降级 ok=False，不阻塞 /api/paper_status。"""
+    rdir = Path(__file__).resolve().parent.parent / "data" / "judge_reviews"
+    try:
+        files = sorted(rdir.glob("*.json"))[-days:]
+        if not files:
+            return {"ok": True, "reviews": []}
+        reviews = []
+        for f in files:
+            d = json.loads(f.read_text(encoding="utf-8"))
+            reviews.append({
+                "date": d.get("date") or f.stem,
+                "score": d.get("score"), "grade": d.get("grade"),
+                "findings": d.get("findings", []),
+                "narrative": d.get("narrative"),
+            })
+        return {"ok": True, "reviews": reviews}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": repr(e)}
+
+
 def snapshot_days() -> list[str]:
     """主交易台全部快照日（升序），供前端日期选择器；库/快照缺失返回空列表。"""
     con = _connect()

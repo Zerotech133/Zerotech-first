@@ -340,6 +340,13 @@ def routine(who: list[str] | None = None, dry_run: bool = False,
             "stop_triggered": len([t for t in ck["triggered"] if t.get("status")]),
             "mark": mk,
         })
+    # 077w：端3 judge 日评审（轻量规则版，llm=False；异常不阻塞闭环）
+    if not dry_run:
+        try:
+            from judge import review as _judge_review
+            out["judge"] = _judge_review()
+        except Exception as e:  # noqa: BLE001
+            out["judge"] = {"ok": False, "error": repr(e)}
     return out
 
 

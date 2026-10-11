@@ -22779,6 +22779,11 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                     data["pick"] = _pick()
                 except Exception as _e3:
                     data["pick"] = {"ok": False, "error": repr(_e3)}
+                try:  # 077w：端3 评判 Agent（judge）投影（失败降级）
+                    from paper.portal_status import judge_status as _judge
+                    data["judge"] = _judge()
+                except Exception as _e4:
+                    data["judge"] = {"ok": False, "error": repr(_e4)}
                 self._json(data)
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "error": repr(_e)}, 500)

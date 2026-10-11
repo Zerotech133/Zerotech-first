@@ -284,6 +284,8 @@
         <div class="side-box"><div id="pend-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">选票通道（pick_bridge）</div>
         <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">评判 Agent（judge）</div>
+        <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">最近成交</div>
         <div class="side-box"><div id="recent-body"><div class="empty">读取中…</div></div></div>
       </div>
@@ -407,7 +409,7 @@ function renderAll(j){
     `<div class="kpi"><div class="k">现金</div><div class="v small">¥${fmt(L.cash)}</div></div>`+
     `<div class="kpi"><div class="k">快照日</div><div class="v small">${L.date}</div></div>`;
   $('n-pos').textContent=j.positions.length;
-  renderDesk(j);renderStops(j.stops);renderPend(j.pending_orders);renderPick(j.pick);
+  renderDesk(j);renderStops(j.stops);renderPend(j.pending_orders);renderPick(j.pick);renderJudge(j.judge);
 
 function renderPick(pk){
   const el=$('pick-body');
@@ -420,6 +422,19 @@ function renderPick(pk){
   const head=m?`<div style="font-size:11.5px;color:var(--text-dim);margin-bottom:4px">快照 ${m.date} · 总资产 ${fmt(m.total)} · 待撮合 ${m.pending}</div>`:'';
   el.innerHTML=head+(pend||'')+(done||'')||'<div class="empty">无挂单无成交（10-16 实弹）</div>';
   if(!pend&&!done)el.innerHTML=head+'<div class="empty">无挂单无成交（10-16 实弹）</div>';
+}
+function renderJudge(jd){
+  const el=$('judge-body');
+  if(!jd||!jd.ok||!(jd.reviews||[]).length){
+    el.innerHTML='<div class="empty">暂无评审（每日 routine 尾自动生成）</div>';return;}
+  const gc=s=>s>=90?'var(--color-up)':s>=75?'#e3b341':'var(--color-down)';
+  el.innerHTML=jd.reviews.map(r=>{
+    const f=(r.findings||[]).filter(x=>x.severity!=='info').slice(0,3).map(x=>
+      `<div style="font-size:11.5px;color:var(--text-dim)">· [${x.rule}] ${x.msg}</div>`).join('');
+    return `<div style="margin-bottom:8px">
+      <div style="font-weight:700">${r.date} · <span style="color:${gc(r.score)}">${r.score} 分 ${r.grade}</span></div>
+      ${f||'<div style="font-size:11.5px;color:var(--text-dim)">· 无风险项</div>'}</div>`;
+  }).join('');
 }
   renderRecent(j.recent_orders);renderPos(j.positions);
   const sel=$('hist-day');const cur=sel.value;
