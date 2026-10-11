@@ -65,18 +65,52 @@ def parse_send_result(stdout, returncode):
     return False, "no_send_marker rc=%d out=%s" % (returncode, out[:60])
 
 
-def log_send(task, channel, ok, reason):
-    """单行 ASCII 状态日志：时间 | 任务 | 渠道 | 结果 | 原因。"""
+def _log_field(value, limit=240):
+    """把结构化字段压成单行，避免 ``|``/换行破坏日志解析。"""
+    text = str(value if value is not None else "")
+    text = text.replace("|", "/").replace("\r", " ").replace("\n", " ")
+    return text[:limit] or "-"
+
+
+def exception_class(task_rc, ok, reason, wrapper_error=False,
+                    rename_error=False):
+    """根据任务返回码和发送链结果给出稳定的异常分类。"""
+    if wrapper_error:
+        return "wrapper_exception"
+    if rename_error:
+        return "pending_rename_failure"
+    try:
+        task_failed = int(str(task_rc)) != 0
+    except (TypeError, ValueError):
+        task_failed = str(task_rc or "?") not in ("0", "?")
+    if task_failed:
+        return "task_failure"
+    if ok:
+        return "none"
+    if "SEND_FAIL" in (reason or "") or "alert send error" in (reason or ""):
+        return "send_failure"
+    return "send_unknown"
+
+
+def log_send(task, channel, ok, reason, task_rc="?", log_path="",
+             result_summary="", exception_kind="none"):
+    """单行 ASCII 状态日志，保留旧字段并补齐任务三联证据。"""
     append_ascii_log(
-        SEND_LOG, "%s | task=%s | channel=%s | result=%s | reason=%s" % (
-            time.strftime("%Y-%m-%dT%H:%M:%S"), task, channel,
-            "OK" if ok else "FAIL", reason))
+        SEND_LOG, "%s | task=%s | channel=%s | result=%s | reason=%s"
+        " | task_rc=%s | log_path=%s | result_summary=%s"
+        " | exception_class=%s" % (
+            time.strftime("%Y-%m-%dT%H:%M:%S"), _log_field(task, 80),
+            _log_field(channel, 40), "OK" if ok else "FAIL", _log_field(reason),
+            _log_field(task_rc, 32), _log_field(log_path, 260),
+            _log_field(result_summary or reason), _log_field(exception_kind, 48)))
 
 
-def handle_send_result(pending, task, ok, reason):
+def handle_send_result(pending, task, ok, reason, task_rc="?", log_path="",
+                       result_summary="", exception_kind="none"):
     """发送结果落盘 + 成功时 pending→.sent 流转。返回动作标记：
     sent / sent_existing（.sent 已存在走时间戳兜底）/ no_pending / kept。"""
-    log_send(task, "feishu", ok, reason)
+    log_send(task, "feishu", ok, reason, task_rc=task_rc, log_path=log_path,
+             result_summary=result_summary, exception_kind=exception_kind)
     if not ok:
         return "kept"
     if not os.path.isfile(pending):
@@ -94,6 +128,7 @@ def main(argv=None):
     code = argv[1] if len(argv) > 1 else "?"
     raw_log = argv[2] if len(argv) > 2 else ""
     norm_log = ""
+    wrapper_error = False
     try:
         norm_log = normalize_err_log(raw_log)
         r = subprocess.run(
@@ -106,6 +141,7 @@ def main(argv=None):
         ok, reason = parse_send_result(out, r.returncode)
     except Exception as e:  # 观测层自身故障也要留痕
         ok, reason = False, "wrap_err " + str(e)[:100]
+        wrapper_error = True
     finally:
         if norm_log and os.path.isfile(norm_log):
             try:
@@ -113,9 +149,16 @@ def main(argv=None):
             except OSError:
                 pass  # 豁免（C2批2）：临时错误日志清理兜底，发送结果已落 alert_send.log
     try:
-        action = handle_send_result(pending_path(task), task, ok, reason)
+        action = handle_send_result(
+            pending_path(task), task, ok, reason, task_rc=code,
+            log_path=raw_log, result_summary=reason,
+            exception_kind=exception_class(
+                code, ok, reason, wrapper_error=wrapper_error))
     except Exception as e:  # 改名失败不吞发送事实
-        log_send(task, "feishu", ok, reason + " rename_err " + str(e)[:60])
+        log_send(task, "feishu", ok, reason + " rename_err " + str(e)[:60],
+                 task_rc=code, log_path=raw_log, result_summary=reason,
+                 exception_kind=exception_class(
+                     code, ok, reason, rename_error=True))
         action = "rename_err"
     print("ALERT_WRAP_%s action=%s reason=%s" % (
         "OK" if ok else "FAIL", action, reason[:80]))
