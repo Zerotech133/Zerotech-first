@@ -1,0 +1,138 @@
+# -*- coding: utf-8 -*-
+"""K-STOCK-149 · 经理会议线触发编排（conductor）
+
+职责：由定时调度（WorkBuddy automation，工作日 09:05/15:15 双触发同一命令）
+调起，为全部 active 雇佣逐对召开 pre_open/post_close 会议。
+本脚本只做编排（枚举/去重/上下文组装/失败隔离），会议本体在 meeting.hold_meeting。
+
+去重：以 minutes 账本为准——同 mid+kind+当日已存在纪要则跳过（重复触发幂等）。
+交易日：weekday<5 粗判（未接节假日历，节假日空跑无害——无 active 雇佣或照常
+开会只是纪要内容不含休市说明，接受此限制）。
+失败隔离：单对雇佣失败不阻断其余；有失败则 exit 2（供调度层汇报）。
+"""
+import argparse
+import json
+import sys
+from datetime import datetime
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
+
+import manager  # noqa: E402
+import meeting  # noqa: E402
+
+STRATEGIST_LATEST = HERE.parent / "data" / "strategist_latest.json"
+
+
+def kind_auto(now: datetime | None = None) -> str:
+    """按触发时刻定会议类型：12 点前=盘前会，之后=收盘会。"""
+    now = now or datetime.now()
+    return "pre_open" if now.hour < 12 else "post_close"
+
+
+def _today_prefix(now: datetime | None = None) -> str:
+    return (now or datetime.now()).strftime("%Y-%m-%d")
+
+
+def already_held(mid: str, kind: str, now: datetime | None = None) -> bool:
+    """账本去重：同 mid+kind+当日已有纪要 → True。"""
+    prefix = _today_prefix(now)
+    for rec in minutes_list(mid):
+        created = str(rec.get("created_at", ""))
+        if rec.get("kind") == kind and created.startswith(prefix):
+            return True
+    return False
+
+
+def minutes_list(mid):
+    import minutes
+    return minutes.list_minutes(mid)
+
+
+def active_pairs() -> list[tuple[str, str]]:
+    """全部 active 雇佣的去重 (mid, source) 对（按账本序）。"""
+    seen, pairs = set(), []
+    for h in manager.hires_list():
+        if h.get("status") != "active":
+            continue
+        pair = (h.get("manager"), h.get("source"))
+        if pair[0] and pair[1] and pair not in seen:
+            seen.add(pair)
+            pairs.append(pair)
+    return pairs
+
+
+def build_context(now: datetime | None = None) -> str:
+    """轻量上下文：策略官最新产出摘要（缺失则空，hold_meeting 有兜底文案）。"""
+    now = now or datetime.now()
+    lines = [f"日期：{now.strftime('%Y-%m-%d %A')}"]
+    try:
+        d = json.loads(STRATEGIST_LATEST.read_text(encoding="utf-8"))
+        gen = d.get("generated_at", "")
+        title = d.get("title") or d.get("summary") or ""
+        if title:
+            lines.append(f"策略官最新产出（{gen}）：{str(title)[:200]}")
+    except (OSError, ValueError):
+        pass
+    return "\n".join(lines)
+
+
+def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[int, list[dict]]:
+    """编排一轮会议。返回 (exit_code, 结果明细)。"""
+    now = now or datetime.now()
+    if kind == "auto":
+        kind = kind_auto(now)
+    if kind not in meeting.KINDS:
+        print(f"FAIL 非法会议类型: {kind!r}")
+        return 2, []
+    if now.weekday() >= 5:
+        print(f"SKIP 周末（{now:%Y-%m-%d %a}），不开会")
+        return 0, []
+    pairs = active_pairs()
+    if not pairs:
+        print("SKIP 无 active 雇佣，不开会")
+        return 0, []
+
+    results, failed = [], 0
+    for mid, source in pairs:
+        if already_held(mid, kind, now):
+            print(f"SKIP {mid}×{source} {kind} 今日已开（账本去重）")
+            results.append({"mid": mid, "source": source, "status": "skipped"})
+            continue
+        if dry_run:
+            print(f"DRY {mid}×{source} {kind} 将召开（dry-run 不实际开会）")
+            results.append({"mid": mid, "source": source, "status": "dry"})
+            continue
+        try:
+            rec, provider = meeting.hold_meeting(mid, source, kind,
+                                                 context=build_context(now))
+            print(f"OK {mid}×{source} {kind} → {rec.get('title')} "
+                  f"(channel={rec.get('channel')}, provider={provider})")
+            results.append({"mid": mid, "source": source, "status": "ok",
+                            "title": rec.get("title"), "provider": provider})
+        except meeting.MeetingError as e:
+            failed += 1
+            print(f"FAIL {mid}×{source} {kind} → {e}")
+            results.append({"mid": mid, "source": source, "status": "failed",
+                            "error": str(e)[:200]})
+    if failed:
+        print(f"SUMMARY {len(pairs) - failed}/{len(pairs)} 成功，{failed} 失败")
+        return 2, results
+    print(f"SUMMARY {len(results)}/{len(pairs)} 完成（含去重跳过）")
+    return 0, results
+
+
+def _main(argv=None) -> int:
+    ap = argparse.ArgumentParser(prog="meetings_conductor",
+                                 description="经理会议线触发编排（交易日/去重/失败隔离）")
+    ap.add_argument("--kind", default="auto", help="pre_open|post_close|auto（按小时判定）")
+    ap.add_argument("--dry-run", action="store_true", help="只枚举不实际开会")
+    args = ap.parse_args(argv)
+    code, _ = run(args.kind, dry_run=args.dry_run)
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(_main())
