@@ -20,8 +20,10 @@ sys.path.insert(0, NEWS)
 from send_feishu import _load_app_creds, USER_ID  # noqa: E402
 
 # 卡片按钮的 URL 在飞书客户端（手机/外部设备）打开 → 必须用跨设备可达地址。
-# 127.0.0.1 只有服务器本机浏览器可用（2026-10-07 实测改用 Tailscale 地址）。
-PORTAL_BASE = "http://100.110.192.72:8080"  # Tailscale 隧道（nginx 8080 全接口监听）
+# 127.0.0.1 只有服务器本机浏览器可用。入口唯一=8734（K-STOCK-113 立宪）：
+# portproxy 在 Tailscale 接口监听 8734 → nginx 127.0.0.1:8080，手机入 Tailscale 网可达。
+# K-STOCK-140：原 100.110.192.72:8080 已随 052 收敛失效（nginx 仅绑回环）→ 实弹打不开。
+PORTAL_BASE = "http://100.110.192.72:8734"  # Tailscale（portproxy→nginx 同源反代）
 
 
 def _fmt_quote(facts):
