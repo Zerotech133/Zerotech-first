@@ -29,3 +29,4 @@
 - **一次性提醒/里程碑任务注册后必查三设置**（10-11 K-STOCK-120 审查实锤）：StartWhenAvailable（错过恢复）、LogonType（InteractiveToken=未登录不跑）、DisallowStartIfOnBatteries——一次性任务错过触发=永久静默丢失且不报错；`Get-ScheduledTask`→改 Settings→`Set-ScheduledTask` 热修不伤触发器
 
 - **K-STOCK-116 审计修复**：原型目录 `time_split` 只查 `/` 会放过伪造/零长度/倒序区间；平台注册还需读取正式端口对账表；RAG 评测必须包含 `as_of` 用例并把缺 `source_date` 判为阻断。E 盘 `.git` ACL 会阻止 `devtask.py new` 创建分支锁，需先申请 Git 元数据写权限或使用受管 worktree。
+- **时序证据必须按 ISO 日期解析**：不能用字符串大小比较；`as_of/source_date` 格式非法应返回 `invalid_evidence` 并阻断评测。
