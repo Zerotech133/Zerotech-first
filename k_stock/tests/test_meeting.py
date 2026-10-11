@@ -121,7 +121,9 @@ def test_hold_meeting_rejects_unknown_mid(env):
     print("PASS test_hold_meeting_rejects_unknown_mid")
 
 
-def test_hold_meeting_llm_failure_no_half_minutes(env):
+def test_hold_meeting_llm_failure_no_half_minutes(env, monkeypatch):
+    # 门控隔离：无论真实 meeting_fallback.json 开关如何，本用例只验主链失败路径
+    monkeypatch.setattr(meeting, "_zhipu_fallback_allowed", lambda fp=None: False)
     def boom(mid, source, messages, timeout=60):
         raise RuntimeError("未配置 GAORTA_API_KEY，无法调用 gaorta 通道")
     import gaorta_client as g
@@ -134,6 +136,31 @@ def test_hold_meeting_llm_failure_no_half_minutes(env):
         g.chat_for_hire = orig
     assert env.sent == [], "LLM 失败时 minutes.send 不得被调用（不落半截纪要）"
     print("PASS test_hold_meeting_llm_failure_no_half_minutes")
+
+
+def test_hold_meeting_gate_on_fallback_also_fails_no_half_minutes(env, monkeypatch):
+    # 门开 + 兜底通道也失败 → 仍 MeetingError 且不落半截纪要
+    monkeypatch.setattr(meeting, "_zhipu_fallback_allowed", lambda fp=None: True)
+    def boom(mid, source, messages, timeout=60):
+        raise RuntimeError("未配置 GAORTA_API_KEY，无法调用 gaorta 通道")
+    import gaorta_client as g
+    orig = g.chat_for_hire
+    g.chat_for_hire = boom
+
+    class FakeLLM:
+        def __init__(self, *a, **k):
+            pass
+        def chat(self, messages, **k):
+            raise RuntimeError("智谱兜底也不可达（模拟）")
+
+    monkeypatch.setattr(meeting, "_LLMClient", FakeLLM)  # meeting 顶部延迟导入的模块级引用
+    try:
+        with pytest.raises(MeetingError):
+            hold_meeting(MID, SOURCE, "pre_open", context="行情摘要")
+    finally:
+        g.chat_for_hire = orig
+    assert env.sent == [], "兜底也失败时 minutes.send 不得被调用"
+    print("PASS test_hold_meeting_gate_on_fallback_also_fails_no_half_minutes")
 
 
 def test_hold_meeting_llm_empty_body_rejected(env):
