@@ -287,6 +287,8 @@
         <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">评判 Agent（judge）</div>
         <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">今日复盘会（三 Agent）</div>
+        <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">策略源建议（strategist · 影子）</div>
         <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">最近成交</div>
@@ -431,6 +433,18 @@ function renderPick(pk){
   el.innerHTML=head+(pend||'')+(done||'')||'<div class="empty">无挂单无成交（10-16 实弹）</div>';
   if(!pend&&!done)el.innerHTML=head+'<div class="empty">无挂单无成交（10-16 实弹）</div>';
 }
+function renderMeeting(m){
+  const el=$('meet-body');
+  if(!m||!m.ok){el.innerHTML='<div class="empty">暂无复盘会（每日 routine 尾自动召开）</div>';return;}
+  const mgr=m.manager||{}, dis=m.disagreements||[], items=m.action_items||[];
+  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const narr=m.minutes_narrative?`<div style="font-size:11.5px;margin-bottom:6px">🗣 ${esc(m.minutes_narrative).slice(0,180)}</div>`:'';
+  const dd=dis.length?`<div style="font-size:11.5px;color:#e3b341;margin-bottom:6px">⚖ 分歧 ${dis.length}：${esc(dis[0].on)}…</div>`:'';
+  const ai=items.length?`<div style="font-size:11.5px;color:var(--text-dim)">待办：${esc(items[0]).slice(0,60)}${items.length>1?` 等 ${items.length} 项`:''}</div>`:'';
+  el.innerHTML=`<div style="font-weight:700;margin-bottom:6px">${esc(m.date)} · ${mgr.score??'-'} 分 ${mgr.grade??''}</div>${narr}${dd}${ai}
+    <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">纪要已推飞书 · 点按钮可查持仓线位</div>`;
+}
+fetch('/api/review_minutes').then(r=>r.json()).then(renderMeeting).catch(()=>{$('meet-body').innerHTML='<div class="empty">复盘会读取失败</div>';});
 function renderJudge(jd){
   const el=$('judge-body');
   if(!jd||!jd.ok||!(jd.reviews||[]).length){

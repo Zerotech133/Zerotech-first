@@ -23005,6 +23005,24 @@ document.getElementById('sf').addEventListener('submit',function(ev){
                 self._json(_sub.portfolios())
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/review_minutes":
+            # K-STOCK-122 M5 复盘会纪要投影（只读）：?date=YYYY-MM-DD 缺省最新
+            try:
+                from urllib.parse import parse_qs as _pqs3
+                _d = (_pqs3(qs).get("date") or [""])[0].strip()
+                import glob as _glob
+                mdir = os.path.join(
+                    r"E:\老田的AI助手\k_stock\data", "review_minutes")
+                fp = (os.path.join(mdir, "%s.json" % _d) if _d
+                      else max(_glob.glob(os.path.join(mdir, "*.json")),
+                               default=None))
+                if not fp or not os.path.exists(fp):
+                    self._json({"ok": False, "error": "无纪要文件"})
+                    return
+                with open(fp, encoding="utf-8") as _f:
+                    self._json(json.load(_f))
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/strategy_detail":
             # K-STOCK-122 M2 下钻一层：?id=xxx 静态档案+动态命中样本
             from urllib.parse import parse_qs as _pqs2
