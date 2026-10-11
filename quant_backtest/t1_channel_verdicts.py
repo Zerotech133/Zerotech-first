@@ -15,7 +15,9 @@
 
 局限：qpzm 通道无历史留档，本模拟仅覆盖 strong∩chanlun 通道；1买 样本
 集中 2026-04 后（反弹期右尾偏差）。只读工具。用法：
-python t1_channel_verdicts.py
+python t1_channel_verdicts.py [--since YYYY-MM-DD] [--by-month] [--supply-q]
+  --by-month  按月分解：月度通道层收益（T+5/T+10 中位）+ 月度通道供给
+  --supply-q  供给分位数：日粒度分布 / 通道空日率（批次日+全交易日双口径）
 """
 import bisect
 import collections
@@ -52,6 +54,8 @@ def sig_layer(e):
 
 def main():
     since = None
+    by_month = "--by-month" in sys.argv  # 按月分解（报告 §3.4）
+    supply_q = "--supply-q" in sys.argv  # 供给分位数（报告 §3.5）
     for i, a in enumerate(sys.argv):
         if a == "--since" and i + 1 < len(sys.argv):
             since = sys.argv[i + 1][:10]  # 近期切片验证，如 2026-09-11
@@ -121,7 +125,9 @@ def main():
     chan_rows = {"1买": [], "2/3买残余": [], "毒层(P5b已砍)": []}
     day_supply = {"resid": [], "first": [],
                   "chan_resid": [], "chan_first": []}
+    day_stats = {}  # D → [池残余, 池1买, 通道残余, 通道1买]（--by-month/--supply-q）
     for D, codes in by_day_code.items():
+        st = day_stats.setdefault(D, [0, 0, 0, 0])
         leads = {r["code"] for r in rows
                  if r["D"] == D and r["lead"]}
         n_resid = n_first = 0
@@ -141,8 +147,10 @@ def main():
             if code in leads:  # 当日 strong 领涨（通道内）
                 if resid:
                     day_supply["chan_resid"].append(1)
+                    st[2] += 1
                 if "1买" in resid:
                     day_supply["chan_first"].append(1)
+                    st[3] += 1
                     chan_rows["1买"].append(r0)
                 elif toxic and not resid:
                     chan_rows["毒层(P5b已砍)"].append(r0)
@@ -150,6 +158,7 @@ def main():
                     chan_rows["2/3买残余"].append(r0)
         day_supply["resid"].append(n_resid)
         day_supply["first"].append(n_first)
+        st[0], st[1] = n_resid, n_first
     print("[3/3] 批次日 %d" % len(day_supply["resid"]), flush=True)
 
     def stat(sel, w):
@@ -209,6 +218,65 @@ def main():
                  sum(day_supply["chan_first"])))
         print("  结论：形态 B %s（③由用户拍板）"
               % ("门槛达标，可提启用方案" if c1 and c2 else "门槛未达，继续滚动积累"))
+
+    if by_month:
+        print("\n=== 按月分解：通道内层收益（n=满窗数，格式 n/T+5中位 "
+              "n/T+10中位，%）===")
+
+        def med_w(sel, w):
+            vals = [r["wins"][w] for r in sel
+                    if isinstance(r["wins"][w], float)
+                    and np.isfinite(r["wins"][w])]
+            if not vals:
+                return "0/—"
+            return "%d/%+.2f" % (len(vals), float(np.median(vals)))
+
+        months = sorted({D[:7] for D in day_stats})
+        for m in months:
+            fa = [r for r in chan_rows["1买"] if r["D"][:7] == m]
+            fb = [r for r in chan_rows["2/3买残余"] if r["D"][:7] == m]
+            a10 = med_w(fa, 10).split("/")[1]
+            b10 = med_w(fb, 10).split("/")[1]
+            diff = ("—" if "—" in (a10, b10)
+                    else "%+.2f" % (float(a10) - float(b10)))
+            print("%-9s 1买 %10s %10s | 残余 %10s %10s | T+10差 %s"
+                  % (m, med_w(fa, 5), med_w(fa, 10),
+                     med_w(fb, 5), med_w(fb, 10), diff))
+        print("\n=== 按月分解：通道供给（批次日口径）===")
+        print("%-9s %8s %9s %7s" % ("月", "残余/日", "1买/日", "空日%"))
+        for m in months:
+            ds = [v for D, v in day_stats.items() if D[:7] == m]
+            nd = len(ds)
+            print("%-9s %8.2f %9.2f %6.0f%%"
+                  % (m, sum(v[2] for v in ds) / nd,
+                     sum(v[3] for v in ds) / nd,
+                     sum(1 for v in ds if v[2] == 0) / nd * 100))
+
+    if supply_q:
+        print("\n=== 供给分位数（日粒度，批次日 n=%d）==="
+              % len(day_stats))
+        print("%-12s %5s %5s %5s %5s %4s %6s %6s %6s"
+              % ("口径", "p25", "p50", "p75", "p90", "max",
+                 "日均", "空日%", "≥2日%"))
+        for idx, lab in ((0, "池级残余/日"), (1, "池级1买/日"),
+                         (2, "通道残余/日"), (3, "通道1买/日")):
+            arr = np.array([v[idx] for v in day_stats.values()],
+                           dtype=float)
+            q = np.percentile(arr, [25, 50, 75, 90])
+            print("%-12s %5.1f %5.1f %5.1f %5.1f %4.0f %6.2f "
+                  "%5.0f%% %5.0f%%"
+                  % (lab, q[0], q[1], q[2], q[3], arr.max(), arr.mean(),
+                     (arr == 0).mean() * 100, (arr >= 2).mean() * 100))
+        d8s = sorted(R.d8(D) for D in day_stats)
+        t_days = (bisect.bisect_right(cal, d8s[-1])
+                  - bisect.bisect_left(cal, d8s[0]))
+        if t_days > 0:
+            nz_r = sum(1 for v in day_stats.values() if v[2] > 0)
+            nz_f = sum(1 for v in day_stats.values() if v[3] > 0)
+            print("（全交易日口径 n=%d：通道残余空日 %.0f%% · "
+                  "通道1买空日 %.0f%%）"
+                  % (t_days, (1 - nz_r / t_days) * 100,
+                     (1 - nz_f / t_days) * 100))
     return 0
 
 
