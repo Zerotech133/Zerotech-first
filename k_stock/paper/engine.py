@@ -481,13 +481,32 @@ class PaperEngine:
                  min_conf: float | None = None) -> dict:
         """读 poc_*.json（list，每股一项），按 D1 决策落 pending 单。幂等。
         同一 run 可落多个交易员子账本（ref 按 @账户 分段互不冲突）。
-        min_conf：BUY 置信度门槛（交易员档案 conf_floor；SELL 不受限——该卖还得卖）。"""
+        min_conf：BUY 置信度门槛（交易员档案 conf_floor；SELL 不受限——该卖还得卖）。
+
+        v0.4 两道守卫（077q，周末 pending 堆叠事故复盘）：
+        1. replan 语义：落单前撤销同账户同策略的旧 pending（每次 exec=最新意图
+           全量重声明）。ref 按产物文件名做幂等，产物每日换名→幂等失效→周末
+           堆叠多批同票单，周一 settle 双倍成交。撤销记录 reason 可追溯。
+        2. 时间旅行守卫：plan_date ≤ 湖最新交易日 → 判陈旧产物，拒单
+           （否则 settle 按 first_bar_on_or_after 撮到过去开盘价=拿旧价成交）。"""
         aid = account_id or self.acct
         run_path = Path(run_path)
         payload = json.loads(run_path.read_text(encoding="utf-8"))
         run_name = run_path.name
         out = {"run": run_name, "account_id": aid, "orders": [], "skipped": [],
-               "dry_run": dry_run}
+               "dry_run": dry_run, "cancelled": 0}
+        # 守卫1：replan——撤销「其他批次」旧 pending（ref 不以本 run 名开头）。
+        # 本 run 重放（幂等路径）不误伤；旧批次被最新意图取代，防周末堆叠双倍成交。
+        if not dry_run:
+            cur = self.con.execute(
+                "UPDATE orders SET status='cancelled', "
+                "reason='superseded: 新批次 exec 全量重声明（防 pending 堆叠双倍成交）' "
+                "WHERE account_id=? AND strategy=? AND status='pending' "
+                "AND ref NOT LIKE ?",
+                (aid, strategy, run_name + "%"))
+            if cur.rowcount:
+                out["cancelled"] = cur.rowcount
+        last_td = self.market.trading_days()[-1]
         for item in payload:
             raw_stock = str(item.get("stock", ""))
             stock = _norm_stock(raw_stock)
@@ -514,6 +533,14 @@ class PaperEngine:
             if plan_date is None:
                 out["skipped"].append({"stock": stock,
                                        "why": f"行情湖无 {asof} 之后的交易日，无法定撮合日"})
+                continue
+            # 守卫2：时间旅行——决策日早于湖最新交易日（产物已隔收盘=陈旧）则拒单。
+            # 盘前决策当日开盘撮合（asof 日 == 湖最新）是合法语义，不拦。
+            asof_day = asof[:10].replace("-", "")
+            if asof_day < last_td:
+                out["skipped"].append({"stock": stock,
+                                       "why": f"陈旧产物：决策日 {asof_day} < 湖最新交易日 {last_td}，"
+                                              f"拒绝按过去开盘价成交（asof={asof[:16]}）"})
                 continue
             if action == "BUY":
                 try:

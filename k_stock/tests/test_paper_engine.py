@@ -609,6 +609,46 @@ def test_exec_run_skips_bad_stock(tmp_path):
     assert r["skipped"][0]["stock"] == "000999.SZ"
 
 
+def test_exec_run_replan_supersedes_old_batch(tmp_path):
+    """077q 守卫1：跨 run replan——新批次 exec 撤销旧批次 pending（防周末堆叠
+    双倍成交）；本 run 幂等重放不误伤。"""
+    run1 = _write_run(tmp_path, "poc_a.json", [
+        {"stock": "600519.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.75}}}])
+    run2 = _write_run(tmp_path, "poc_b.json", [
+        {"stock": "600519.SH", "asof": RUN_ASOF,
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.75}}}])
+    e = PaperEngine(tmp_path / "paper.db", _mk_market())
+    r1 = e.exec_run(run1)
+    assert len(r1["orders"]) == 1
+    # 同 run 重放：幂等跳过，旧单不撤
+    r1b = e.exec_run(run1)
+    assert r1b["cancelled"] == 0 and len(e.pending()) == 1
+    # 新 run：旧批被取代
+    r2 = e.exec_run(run2)
+    assert r2["cancelled"] == 1 and len(e.pending()) == 1
+    old = [o for o in e.history(10) if o["ref"] and "poc_a" in o["ref"]]
+    assert old and old[0]["status"] == "cancelled"
+    assert "superseded" in (old[0]["reason"] or "")
+
+
+def test_exec_run_rejects_stale_artifact(tmp_path):
+    """077q 守卫2：决策日早于湖最新交易日（隔收盘的陈旧产物）拒单，
+    盘前决策当日撮合（asof 日 == 湖最新）不拦。"""
+    stale = _write_run(tmp_path, "poc_stale.json", [
+        {"stock": "600519.SH", "asof": "2026-10-08T19:38:00",
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.8}}}])
+    fresh = _write_run(tmp_path, "poc_fresh.json", [
+        {"stock": "600519.SH", "asof": RUN_ASOF,   # 10-09 盘前 == 湖最新
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.8}}}])
+    e = PaperEngine(tmp_path / "paper.db", _mk_market())
+    rs = e.exec_run(stale)
+    assert len(rs["orders"]) == 0
+    assert any("陈旧产物" in s["why"] for s in rs["skipped"])
+    rf = e.exec_run(fresh)
+    assert len([o for o in rf["orders"] if o.get("status") == "pending"]) == 1
+
+
 # ---------- v0.4 AsOfMarket 时点视图 + replay 历史重放预筛 ----------
 
 def test_asof_market_view():
