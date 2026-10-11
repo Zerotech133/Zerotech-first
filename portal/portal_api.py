@@ -6266,11 +6266,15 @@ gap:14px;align-items:start}}
             if e.get("agent"):
                 agents[e["agent"]] = agents.get(e["agent"], 0) + 1
             t = e.get("task") or "(未编号)"
-            st = tasks.setdefault(t, {"events": 0, "last": "", "last_kind": "", "last_detail": ""})
+            st = tasks.setdefault(t, {"events": 0, "last": "", "last_kind": "",
+                                      "last_detail": "", "last_ide": "",
+                                      "last_model": ""})
             st["events"] += 1
             st["last"] = e.get("ts", "")
             st["last_kind"] = e.get("kind", "")
             st["last_detail"] = e.get("detail", "")
+            st["last_ide"] = e.get("ide", "")
+            st["last_model"] = e.get("model", "")
         return {"ok": True, "day": day, "total": len(today),
                 "by_kind": by_kind, "agents": agents,
                 "tasks": tasks, "recent": today[-30:][::-1]}
@@ -6312,7 +6316,7 @@ gap:14px;align-items:start}}
                 "<h2 style='font-size:14px;margin:22px 0 4px;'>在办工单</h2>"
                 "<div style='background:var(--bg-raised);border:1px solid var(--border);"
                 "border-radius:12px;padding:6px 14px 10px;'>"
-                "<table><tr><th>工单</th><th>事件数</th><th>最近事件</th><th>最近动态</th><th>时间</th></tr>"
+                "<table><tr><th>工单</th><th>IDE / 模型</th><th>事件数</th><th>最近事件</th><th>最近动态</th><th>时间</th></tr>"
                 "<tbody id='tasks'><tr><td class='dim'>加载中…</td></tr></tbody></table></div>"
                 "<h2 style='font-size:14px;margin:22px 0 4px;'>Agent 工时榜 <span class='dim' "
                 "style='font-size:11px;'>今日事件数排行</span></h2>"
@@ -6333,7 +6337,10 @@ gap:14px;align-items:start}}
                 "document.getElementById('c-blocked').textContent=d.by_kind.blocked||0;"
                 "const es=Object.entries(d.tasks||{}).sort((a,b)=>(b[1].last||'').localeCompare(a[1].last||''));"
                 "document.getElementById('tasks').innerHTML=es.map(([t,s])=>"
-                "\"<tr><td class='num'>\"+t+\"</td><td class='num'>\"+s.events+\"</td>\""
+                "\"<tr><td class='num'>\"+t+\"</td>\""
+                "+\"<td class='num' style='font-size:11px;'>\""
+                "+((s.last_ide||s.last_model)?(s.last_ide||'—')+'<br><span class=dim>'+(s.last_model||'—')+'</span>':'<span class=dim>—</span>')+\"</td>\""
+                "+\"<td class='num'>\"+s.events+\"</td>\""
                 "+\"<td><span class='bdg'>\"+((KD[s.last_kind]||[s.last_kind])[0])+\"</span></td>\""
                 "+\"<td style='max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>\""
                 "+(s.last_detail||'')+\"</td>\""
@@ -6353,6 +6360,7 @@ gap:14px;align-items:start}}
                 "return \"<div><span class='num dim'>\"+(x.ts||'').slice(11)+\"</span> \"+"
                 "\"<b style='color:\"+k[1]+\"'>\"+k[0]+\"</b> \"+"
                 "\"<span class='num'>\"+(x.task||'')+(x.agent?' · '+x.agent:'')+\"</span> \"+"
+                "((x.ide||x.model)?\"<span class='bdg num' style='font-size:10px;'>\"+(x.ide||'?')+(x.model?' / '+x.model:'')+\"</span> \":\"\")+"
                 "\"<span class='dim'>\"+(x.detail||'')+\"</span></div>\";}).join('')"
                 "||\"<span class='dim'>暂无事件——提交一次代码试试（post-commit 自动上报）</span>\";"
                 "}catch(e){}}load();setInterval(load,30000);</script></body></html>")

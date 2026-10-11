@@ -41,8 +41,10 @@ def _master_events_file() -> Path:
 KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail")
 
 
-def emit(kind: str, task: str = "", agent: str = "", detail: str = "") -> dict:
-    """追加一条事件。任何失败静默返回 {"ok": False}——事件层永远不挡开发。"""
+def emit(kind: str, task: str = "", agent: str = "", detail: str = "",
+         ide: str = "", model: str = "") -> dict:
+    """追加一条事件。任何失败静默返回 {"ok": False}——事件层永远不挡开发。
+    ide/model：开发工具与模型（如 CodeBuddy / qwen3.5:9b、Claude Code / claude-4.5）。"""
     try:
         if kind not in KINDS:
             raise ValueError("unknown kind: %s" % kind)
@@ -54,6 +56,8 @@ def emit(kind: str, task: str = "", agent: str = "", detail: str = "") -> dict:
             "kind": kind,
             "task": str(task or "").strip(),
             "agent": str(agent or os.environ.get("DEVTOOL_AGENT", "")).strip(),
+            "ide": str(ide or os.environ.get("DEVTOOL_IDE", "")).strip()[:40],
+            "model": str(model or os.environ.get("DEVTOOL_MODEL", "")).strip()[:60],
             "detail": str(detail or "").strip()[:300],
         }
         with open(target, "a", encoding="utf-8") as f:
@@ -107,13 +111,16 @@ def main() -> None:
     p1.add_argument("--task", default="")
     p1.add_argument("--agent", default="")
     p1.add_argument("--detail", default="")
+    p1.add_argument("--ide", default="")
+    p1.add_argument("--model", default="")
     p2 = sub.add_parser("today", help="今日汇总")
     p2.add_argument("--day", default=None)
     p3 = sub.add_parser("tail", help="最近 N 条")
     p3.add_argument("-n", type=int, default=20)
     a = ap.parse_args()
     if a.cmd == "emit":
-        print(json.dumps(emit(a.kind, a.task, a.agent, a.detail),
+        print(json.dumps(emit(a.kind, a.task, a.agent, a.detail,
+                              getattr(a, "ide", ""), getattr(a, "model", "")),
                          ensure_ascii=False))
     elif a.cmd == "today":
         print(json.dumps(today_summary(a.day), ensure_ascii=False, indent=1))

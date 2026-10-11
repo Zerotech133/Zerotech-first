@@ -17,6 +17,7 @@
 - 违规自查：`python tools/check_ports.py`（--strict 供 CI）。
 - **入口唯一（K-STOCK-113 立宪，杜绝双口混乱）**：人类入口**只有一个 = 8734**（portproxy→nginx 同源合一）；8080 仅为容器/局域网反代链路，**文档、话术、页脚一律只写 8734，禁止再出现「8080/8734 同步生效」这类双口表述**。页内相对路径一律不带端口（走同源反代）。
 - **开发侧全量回流（同上立宪）**：一切 IDE Agent 的开发动作必须自动进平台事件层 `portal/data/dev_events.jsonl`（tools/events.py 四事件：task_start/commit/blocked/merge_done）；post-commit 钩子已自动上报 commit——**禁止任何 Agent 关闭/绕过该钩子**；工单页 `http://127.0.0.1:8734/devops`。
+- **开发身份三环境变量（领单必设）**：干活前导出 `DEVTOOL_AGENT`（谁，如 CodeBuddy·A）、`DEVTOOL_IDE`（什么工具，如 CodeBuddy/Claude Code）、`DEVTOOL_MODEL`（什么模型，如 qwen3.5:9b/claude-4.5-sonnet）——事件层与指挥台「IDE/模型」列靠它归因，不设=详情页看不到你在用什么开发。
 
 ## 2. 前端准入三件套（新页面缺一不收）
 
