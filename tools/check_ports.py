@@ -111,7 +111,9 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
 
 
 # 注册但允许离线的口（手动/按需型服务：strict 只防被抢，不因闲置判负）
-OPTIONAL_OFFLINE = {3001, 8030, 8899}
+# 9104 lark_card 于 2026-10-12 老田拍板转 OPTIONAL_OFFLINE（无启动链，
+# 卡片回调疑被 feishu_bot_ws 长连接替代；转按需语义，strict 仍防被抢）
+OPTIONAL_OFFLINE = {3001, 8030, 8899, 9104}
 
 
 def main():
