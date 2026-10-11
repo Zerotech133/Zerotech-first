@@ -64,6 +64,16 @@ def test_missing_code_is_unknown_and_does_not_raise(tmp_path):
     assert record["rows"] == []
 
 
+def test_source_error_keeps_replay_unknown(tmp_path):
+    path = tmp_path / "snapshot.json"
+    _write(path, source_code=-2001)
+
+    record = SourceSnapshot(path).get("forecast", "605100.SH")
+
+    assert record["source_status"] == "source_error"
+    assert record["err"] == 1
+
+
 def test_rejects_production_enabled_snapshot(tmp_path):
     path = tmp_path / "snapshot.json"
     _write(path)
@@ -89,4 +99,33 @@ def test_real_staging_asof_snapshot_is_metadata_safe():
     assert snap.get("forecast", "605100.SH")["payload_available"] is False
     assert snap.get("block_trade", "605100.SH")["coverage_status"] == \
         "valid_empty_response"
+
+
+def test_real_payload_snapshot_exposes_rows_for_replay():
+    path = Path(__file__).parent / "data" / "tushare_staging" / \
+        "nine_dim_source_payload_20261008.json"
+    if not path.exists():
+        pytest.skip("staging 完整载荷未提供")
+
+    snap = SourceSnapshot(path)
+    record = snap.get("forecast", "605100.SH")
+
+    assert len(snap.codes) == 218
+    assert record["payload_available"] is True
+    assert record["source_status"] == "source_response_verified"
+
+
+def test_backtest_builds_api_record_stores_from_payload_snapshot():
+    from nine_dim_backtest import _snapshot_stores
+
+    path = Path(__file__).parent / "data" / "tushare_staging" / \
+        "nine_dim_source_payload_20261008.json"
+    if not path.exists():
+        pytest.skip("staging 完整载荷未提供")
+
+    stores = _snapshot_stores(path, ["605100.SH"])
+
+    assert set(stores) == {"forecast", "report_rc", "block_trade"}
+    assert stores["forecast"].get("605100.SH")["payload_available"] is True
+    assert stores["block_trade"].get("605100.SH")["rows"] == []
 

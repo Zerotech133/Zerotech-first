@@ -122,6 +122,23 @@ class TestNineDimTdx(unittest.TestCase):
                           "top_list"])
         self.assertEqual(flow["top"], {})
 
+    def test_flow_uses_snapshot_block_trade_without_api(self):
+        class SnapshotStore:
+            def iter_records(self):
+                return iter([{
+                    "request_params": {"trade_date": TDAY},
+                    "source_code": 0,
+                    "err": 0,
+                    "fields": ["ts_code", "trade_date", "price"],
+                    "rows": [["600519.SH", TDAY, 100.0]],
+                }])
+
+        flow = nd._fetch_flow(TDAY, source_snapshot=SnapshotStore())
+
+        self.assertEqual(flow["block"]["600519.SH"], [100.0])
+        self.assertTrue(flow["block_ok"])
+        self.assertNotIn("block_trade", self.calls["ts"])
+
     def test_margin_local_detail(self):
         _mk(self.tmp, "ts_margin_detail", [pd.DataFrame({
             "ts_code": ["600519.SH", "000001.SZ"],

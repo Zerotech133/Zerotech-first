@@ -490,10 +490,30 @@ def _daily_basic(tday):
     return local, bool(local) or ok
 
 
-def _fetch_flow(tday):
+def _block_from_snapshot(tday, source_snapshot):
+    """从 as-of 逐码快照构造 block_trade，禁止公网回源。"""
+    blk = {}
+    for rec in source_snapshot.iter_records():
+        params = rec.get("request_params") or {}
+        if str(params.get("trade_date") or "") != str(tday):
+            continue
+        if rec.get("err") or rec.get("source_code") != 0:
+            return {}, False
+        fields = rec.get("fields") or []
+        rows = rec.get("rows") or []
+        idx = {f: i for i, f in enumerate(fields)}
+        if not {"ts_code", "price"}.issubset(idx):
+            return {}, False
+        for row in rows:
+            code = row[idx["ts_code"]]
+            blk.setdefault(code, []).append(_f(row[idx["price"]]))
+    return blk, True
+
+
+def _fetch_flow(tday, source_snapshot=None):
     """daily_basic / moneyflow / top_list(+top_inst) / block_trade。
     TDX 本地仓优先（_tdx_day fresh 门闸），未落盘表自动回退 tushare
-    API；block_trade 无本地表恒走 API。
+    API；block_trade 无本地表恒走 API，传入 as-of 快照时改走快照。
     daily_basic 仅接已核验原始 Tushare 回执的新分片：旧 TDX 'pe'=动态
     市盈率（2026-09-27 单日窗口 parity=逐日等于 tushare pe，≠pe_ttm
     18.7846 vs 18.989），本策略估值口径是 pe_ttm，错映射会造成
@@ -561,15 +581,20 @@ def _fetch_flow(tday):
             got["inst_net"], got["inst_ok"] = inst, True
         except Exception:
             got["inst_net"], got["inst_ok"] = None, False
-    try:                                     # 大宗成交价列表（折价率用）
-        rows, fields = _ts("block_trade", trade_date=tday)
-        i = {f: k for k, f in enumerate(fields)}
-        blk = {}
-        for r in rows:
-            blk.setdefault(r[i["ts_code"]], []).append(_f(r[i["price"]]))
-        got["block"], got["block_ok"] = blk, True
-    except Exception:
-        got["block"], got["block_ok"] = {}, False
+    if source_snapshot is not None:
+        got["block"], got["block_ok"] = _block_from_snapshot(
+            tday, source_snapshot)
+    else:
+        try:                                 # 大宗成交价列表（折价率用）
+            rows, fields = _ts("block_trade", trade_date=tday)
+            i = {f: k for k, f in enumerate(fields)}
+            blk = {}
+            for r in rows:
+                blk.setdefault(r[i["ts_code"]], []).append(
+                    _f(r[i["price"]]))
+            got["block"], got["block_ok"] = blk, True
+        except Exception:
+            got["block"], got["block_ok"] = {}, False
     return got
 
 

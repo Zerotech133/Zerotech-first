@@ -31,8 +31,8 @@ class SourceSnapshot:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise SnapshotFormatError("无法读取来源快照") from exc
-        if not isinstance(raw, dict) or raw.get("snapshot_type") != \
-                "nine_dim_source_asof":
+        if not isinstance(raw, dict) or raw.get("snapshot_type") not in \
+                ("nine_dim_source_asof", "nine_dim_source_payload"):
             raise SnapshotFormatError("快照类型不符")
         if raw.get("global_activation") is not False or \
                 raw.get("production_write") is not False:
@@ -44,6 +44,7 @@ class SourceSnapshot:
         if not isinstance(receipts, dict):
             raise SnapshotFormatError("缺少逐码来源回执")
         self.asof_trade_date = asof
+        self.snapshot_type = raw["snapshot_type"]
         self.path = self.path.resolve()
         self._records: Dict[str, Dict[str, Dict[str, Any]]] = {}
         for code, api_map in receipts.items():
@@ -70,6 +71,7 @@ class SourceSnapshot:
             "source_status": "missing_receipt",
             "coverage_status": "unknown",
             "source_code": None,
+            "err": 1,
             "fields": [],
             "rows": [],
             "row_count": 0,
@@ -98,6 +100,7 @@ class SourceSnapshot:
             "source_status": status,
             "coverage_status": coverage,
             "source_code": source_code,
+            "err": 0 if source_code == 0 else 1,
             "source_message": str(rec.get("source_message") or "")[:200],
             "request_params": copy.deepcopy(rec.get("request_params") or {}),
             "body_sha256": rec.get("body_sha256"),
@@ -129,4 +132,20 @@ class SourceSnapshot:
     @property
     def codes(self) -> tuple[str, ...]:
         return tuple(sorted(self._records))
+
+
+class ApiRecordStore:
+    """把 ``SourceSnapshot`` 适配成回放缓存使用的 ``.get(code)``。"""
+
+    def __init__(self, snapshot: SourceSnapshot, api: str):
+        if api not in snapshot.APIS:
+            raise KeyError(api)
+        self.snapshot = snapshot
+        self.api = api
+
+    def get(self, code: str, default: Optional[Mapping[str, Any]] = None):
+        return self.snapshot.get(self.api, code, default)
+
+    def iter_records(self) -> Iterator[Dict[str, Any]]:
+        return self.snapshot.iter_records(self.api)
 

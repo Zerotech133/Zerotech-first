@@ -48,6 +48,9 @@ sys.path.insert(0, HERE)
 import nine_dim as nd                     # noqa: E402  单一规则来源
 import rps_resonance as rps               # noqa: E402
 import db                                 # noqa: E402  SQLite 数据层（Phase 2）
+from nine_dim_source_snapshot import (    # noqa: E402
+    ApiRecordStore, SourceSnapshot, SnapshotFormatError,
+)
 
 DATA = nd.DATA
 REPLAY_JSONL = os.path.join(DATA, "nine_dim_replay.jsonl")
@@ -66,6 +69,17 @@ BENCH = "000300.SH"     # 超额基准
 MIN_FR = 3000           # 锚点本地数据少于该股票数 → 跳过（数据缺口）
 RC_WIN_DAYS = 30        # report_rc 窗口（日历日，同 live）
 FC_WIN_DAYS = 120       # forecast 窗口（日历日，同 live）
+
+
+def _snapshot_stores(path, codes):
+    """加载 as-of staging 载荷，适配为回放缓存使用的 per-code stores。"""
+    snapshot = SourceSnapshot(path)
+    missing = sorted(set(codes) - set(snapshot.codes))
+    if missing:
+        raise SnapshotFormatError("来源快照缺少候选代码: %s" %
+                                  ",".join(missing[:5]))
+    return {api: ApiRecordStore(snapshot, api)
+            for api in SourceSnapshot.APIS}
 
 
 def _i8(v):
@@ -87,6 +101,23 @@ def _atomic_rewrite(path, rows):
         f.write("".join(json.dumps(r, ensure_ascii=False) + "\n"
                         for r in rows))
     os.replace(tmp, path)
+
+
+def _load_replay_rows(path, replace_anchors=()):
+    """读取研究回放，并仅移除本次要强制重跑的锚点。"""
+    replace = {str(a) for a in replace_anchors}
+    rows = []
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    row = json.loads(line)
+                except Exception:
+                    continue
+                if isinstance(row, dict) and str(row.get("anchor", "")) not in replace:
+                    rows.append(row)
+    done = {str(row["anchor"]) for row in rows if row.get("anchor")}
+    return rows, done
 
 
 # ── ① 本地全量装载 + as-of 切片 ────────────────────────────
@@ -689,7 +720,7 @@ def pass_a(frames, tds, basic, anchors, idx688):
 
 # ── ⑥ 评分阶段（锚点 × 候选 → 样本行） ─────────────────────
 def score_anchor(dt, meta, frames, tds, basic, prev5, fina_bt_c,
-                 rc_bt_c, fc_bt_c, hsgt):
+                 rc_bt_c, fc_bt_c, hsgt, source_stores=None):
     ai = int(dt)
     cand = meta["cand"]
     fr = {}
@@ -700,7 +731,9 @@ def score_anchor(dt, meta, frames, tds, basic, prev5, fina_bt_c,
     if not fr:
         return []
 
-    flow = nd._fetch_flow(dt)            # basic/moneyflow/龙虎/大宗
+    block_store = source_stores.get("block_trade") \
+        if source_stores else None
+    flow = nd._fetch_flow(dt, source_snapshot=block_store)
     marg = nd._fetch_margin(dt, prev5)
     pts = [(t, v) for t, v in hsgt if t <= ai]
     north3 = None
@@ -929,18 +962,10 @@ def run(args):
                                                    len(anchors)))
 
     # 样本库已有锚点（幂等）
-    done = set()
-    old_rows = []
-    if os.path.exists(REPLAY_JSONL) and not args.force:
-        with open(REPLAY_JSONL, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    r = json.loads(line)
-                    old_rows.append(r)
-                    done.add(r["anchor"])
-                except Exception:
-                    continue
-    todo = [a for a in anchors if a not in done]
+    old_rows, done = _load_replay_rows(
+        REPLAY_JSONL, replace_anchors=anchors if args.force else ()
+    )
+    todo = list(anchors) if args.force else [a for a in anchors if a not in done]
     print("todo anchors=%d (done=%d, force=%s)"
           % (len(todo), len(done), args.force))
 
@@ -962,16 +987,20 @@ def run(args):
     fc_st = "%s01" % datetime.strptime(str(_cal_shift(win_first,
                                                     FC_WIN_DAYS + 10)),
                                        "%Y%m%d").strftime("%Y%m")
+    snapshot_stores = (_snapshot_stores(args.source_snapshot, union)
+                       if args.source_snapshot else None)
     fina_c = _fina_bt(union) if todo else _load_cache(BT_FIN)
-    rc_c = _rc_bt(union, rc_st) if todo else _load_cache(BT_RC)
-    fc_c = _fc_bt(union, fc_st) if todo else _load_cache(BT_FC)
+    rc_c = (snapshot_stores["report_rc"] if snapshot_stores
+            else _rc_bt(union, rc_st) if todo else _load_cache(BT_RC))
+    fc_c = (snapshot_stores["forecast"] if snapshot_stores
+            else _fc_bt(union, fc_st) if todo else _load_cache(BT_FC))
 
     new_rows = []
     for k, dt in enumerate(todo):
         t1 = time.time()
         prev5 = cal[cal_pos[dt] - 5] if cal_pos[dt] >= 5 else None
         rows = score_anchor(dt, meta[dt], frames, tds, basic, prev5,
-                            fina_c, rc_c, fc_c, hsgt)
+                            fina_c, rc_c, fc_c, hsgt, snapshot_stores)
         n90 = sum(1 for r in rows if (r["score"] or 0) >= 90)
         print("  [%d/%d] %s scored=%d ge90=%d  %.1fs"
               % (k + 1, len(todo), dt, len(rows), n90,
@@ -1005,6 +1034,8 @@ def main():
     ap.add_argument("--anchor", default="")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dryrun", action="store_true")
+    ap.add_argument("--source-snapshot", default="",
+                    help="使用 staging as-of 完整载荷，禁止公网回源")
     run(ap.parse_args())
 
 

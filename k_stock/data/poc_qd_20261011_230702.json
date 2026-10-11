@@ -1,0 +1,36 @@
+[
+  {
+    "stock": "600593.SH",
+    "asof": "2026-10-09 14:48:26",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "double_knife",
+      "regime": "range",
+      "name": "大连圣亚",
+      "close": 48.97,
+      "tech": ""
+    }
+  },
+  {
+    "stock": "600887.SH",
+    "asof": "2026-10-09 14:48:26",
+    "outputs": {
+      "D1": {
+        "action": "BUY",
+        "confidence": 0.6
+      }
+    },
+    "_meta": {
+      "source": "double_knife",
+      "regime": "range",
+      "name": "伊利股份",
+      "close": 27.32,
+      "tech": ""
+    }
+  }
+]

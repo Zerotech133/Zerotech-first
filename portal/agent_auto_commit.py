@@ -8,7 +8,8 @@ agent_auto_commit.py — 各 Agent 代码定时强制入库（portal 统揽板�
 .gitignore 挡运行时产物）。
 
 行为：
-  1. git add -A
+  1. git add -A（带在途文件排除表 EXCLUDE_PATHSPECS：MEMORY*/雇佣与纪要账本/
+     work/tmp*，见 2026-10-12 拍板材料方案 B；add 撞 index.lock 同款重试）
   2. 膨胀守卫：新增文件数/总字节/单文件超阈值 → 拒绝本次入库（unstage，
      工作区文件不动），状态记 BLOAT_GUARD，防止运行时产物击穿 .gitignore
   3. 无暂存改动 → 记"空跑"状态，退出 0
@@ -34,6 +35,19 @@ LOCK_WAIT_RETRY, LOCK_WAIT_SEC = 3, 10
 BLOAT_MAX_NEW_FILES = 300   # 单次提交新增文件数上限
 BLOAT_MAX_TOTAL_MB = 50     # 单次提交新增文件总字节上限
 BLOAT_MAX_SINGLE_MB = 20    # 单个新增文件体积上限
+
+# ---- 在途文件排除表（2026-10-12 拍板材料方案 B 轻量版）----
+# 演练账本/Agent 记忆类文件高频翻转，扫进快照只会污染历史；真成果由对应
+# Agent 正式提交。新增同类产物时在此追加一行即可。
+EXCLUDE_PATHSPECS = [
+    ":(exclude)**/MEMORY*",                 # Agent 记忆/笔记（多项目通用）
+    ":(exclude)**/hires.json",              # 操盘手雇佣演练账本
+    ":(exclude)**/manager_hires.json",      # 经理雇佣账本（K-STOCK-137，同类）
+    ":(exclude)**/minutes.json",            # 纪要账本（K-STOCK-137 S-c，同类）
+    ":(exclude)**/minutes_inbox.json",      # 站内纪要收件箱（运行时翻转）
+    ":(exclude)**/minutes_trader_feed.json",  # 操盘手纪要订阅流（运行时翻转）
+    ":(exclude)work/tmp*",                  # work/ 下临时产物
+]
 
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
@@ -107,7 +121,29 @@ def main() -> int:
             print(f"[{ts}] 空跑：无改动")
             return finish(status)
 
-        git("add", "-A")  # 强制全收（.gitignore 已挡数据/日志/快照）
+        # 方案 C 撞车强化：add 也可能撞 index.lock（人工提交/其他 Agent 持锁），
+        # 与 commit 同款重试；重试间隙 HEAD 可能变动 → add 后再核对暂存区
+        add_last = None
+        for i in range(LOCK_WAIT_RETRY):
+            add_last = git("add", "-A", "--", *EXCLUDE_PATHSPECS, check=False)
+            if add_last.returncode == 0:
+                break
+            if "index.lock" in (add_last.stderr or ""):
+                time.sleep(LOCK_WAIT_SEC)
+                continue
+            break
+        if add_last.returncode != 0:
+            status["detail"] = f"add 失败: {(add_last.stderr or '').strip()[:200]}"
+            print(f"[{ts}] FAIL {status['detail']}")
+            return finish(status, code=2)
+
+        # 撞车判定：status 到 add 之间人工提交抢先落库 → 排除表过滤后暂存区
+        # 可能为空，属正常空跑而非失败
+        staged_files = git("diff", "--cached", "--name-only", check=False).stdout.strip()
+        if not staged_files:
+            status.update(ok=True, detail="撞车或全被排除：暂存区为空，空跑")
+            print(f"[{ts}] 空跑：暂存区为空（人工已提交或命中排除表）")
+            return finish(status)
 
         bloat = bloat_reason()
         if bloat:
@@ -123,7 +159,13 @@ def main() -> int:
             f"auto: 各Agent代码定时入库快照 {now.strftime('%m-%d %H:%M')}（改{mod} 新增{new} 删{dele}）"
         )
         if r is None or r.returncode != 0:
-            status["detail"] = f"提交失败: {((r.stderr if r else '') or '').strip()[:200]}"
+            err = ((r.stderr if r else '') or '').strip()
+            # 撞车兜底：commit 时人工已把暂存区提交走 → nothing to commit 属空跑
+            if "nothing to commit" in err or "没有已暂存的变更" in err:
+                status.update(ok=True, detail="撞车：暂存已被人工提交抢先，空跑")
+                print(f"[{ts}] 空跑：暂存已被人工提交抢先")
+                return finish(status)
+            status["detail"] = f"提交失败: {err[:200]}"
             print(f"[{ts}] FAIL {status['detail']}")
             return finish(status, code=2)
 
