@@ -23,6 +23,21 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 EVENTS_FILE = ROOT / "portal" / "data" / "dev_events.jsonl"
 
+
+def _master_events_file() -> Path:
+    """worktree 隔离开发时，事件必须落主仓文件（否则回流分裂）。
+    经 git rev-parse --git-common-dir 定位主仓根；失败退回本仓根。"""
+    try:
+        import subprocess
+        gd = subprocess.run(
+            ["git", "rev-parse", "--git-common-dir"], cwd=str(ROOT),
+            capture_output=True, text=True, timeout=5).stdout.strip()
+        if gd:
+            return Path(gd).resolve().parent / "portal" / "data" / "dev_events.jsonl"
+    except Exception:  # noqa: BLE001
+        pass
+    return EVENTS_FILE
+
 KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail")
 
 
@@ -31,7 +46,8 @@ def emit(kind: str, task: str = "", agent: str = "", detail: str = "") -> dict:
     try:
         if kind not in KINDS:
             raise ValueError("unknown kind: %s" % kind)
-        EVENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        target = _master_events_file()
+        target.parent.mkdir(parents=True, exist_ok=True)
         rec = {
             "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
             "day": date.today().isoformat(),
@@ -40,7 +56,7 @@ def emit(kind: str, task: str = "", agent: str = "", detail: str = "") -> dict:
             "agent": str(agent or os.environ.get("DEVTOOL_AGENT", "")).strip(),
             "detail": str(detail or "").strip()[:300],
         }
-        with open(EVENTS_FILE, "a", encoding="utf-8") as f:
+        with open(target, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         return {"ok": True, "rec": rec}
     except Exception as e:  # noqa: BLE001
@@ -50,7 +66,7 @@ def emit(kind: str, task: str = "", agent: str = "", detail: str = "") -> dict:
 def read(limit: int | None = None) -> list[dict]:
     """读全部（或最近 N 条）事件；坏行跳过。"""
     try:
-        lines = EVENTS_FILE.read_text(encoding="utf-8").strip().splitlines()
+        lines = _master_events_file().read_text(encoding="utf-8").strip().splitlines()
     except OSError:
         return []
     out = []

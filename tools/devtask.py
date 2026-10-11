@@ -23,6 +23,27 @@ import time
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WT_DIR = os.path.join(REPO, ".worktrees")
 TASKS = os.path.join(WT_DIR, "tasks.json")
+
+
+def _emit(kind, task, detail=""):
+    """事件回流（K-STOCK-114c）：merge/guard 动作自动进平台事件层，失败不挡道。"""
+    try:
+        sys.path.insert(0, os.path.join(REPO, "tools"))
+        from events import emit
+        emit(kind, task=task, agent=os.environ.get("DEVTOOL_AGENT", "devtask"),
+             detail=detail)
+    except Exception:  # noqa: BLE001  事件层永不阻塞调度器
+        pass
+    # 飞书卡尽力而为：合并→回执卡；守卫失败→告警卡（任一失败静默）
+    try:
+        if kind in ("merge_done", "guard_fail"):
+            from notify_devops import card_event
+            from feishu_card_v2 import send_card
+            send_card(card_event(
+                "merge" if kind == "merge_done" else "blocked",
+                task, detail))
+    except Exception:  # noqa: BLE001
+        pass
 GATES = [("Mixin方法集", [sys.executable,
                           os.path.join(REPO, "tools", "_mixin_integrity.py"),
                           "--check"]),
@@ -66,6 +87,7 @@ def cmd_new(tid, *desc):
                   "status": "doing", "created": time.strftime("%F %T"),
                   "owner": os.environ.get("AGENT_NAME", "unknown-agent")}
     _save(tasks)
+    _emit("task_start", tid, "%s（owner=%s）" % (desc, tasks[tid]["owner"]))
     print("工单 %s 已开：%s（分支 %s）owner=%s"
           % (tid, desc, branch, tasks[tid]["owner"]))
     print("→ Agent 请 cd %s 内干活，完工跑 devtask.py merge %s" % (wt, tid))
@@ -138,6 +160,8 @@ def cmd_merge(tid):
             print("门未过，拒绝合并。修完重跑。")
             t["status"] = "review"
             _save(tasks)
+            _emit("guard_fail", tid, "门 %s 未过：%s"
+                  % (name, ((r.stdout or r.stderr).strip() or "")[:120]))
             return 1
     _git("merge", "--no-ff", t["branch"], "-m",
          "merge task/%s: %s" % (tid, t["desc"]))
@@ -154,6 +178,7 @@ def cmd_merge(tid):
     t["status"] = "done"
     t["merged"] = time.strftime("%F %T")
     _save(tasks)
+    _emit("merge_done", tid, "三守卫全绿，已合并 master")
     print("工单 %s 已合并清场 ✓" % tid)
     return 0
 
