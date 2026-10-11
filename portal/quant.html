@@ -30,7 +30,7 @@
   .sec-title { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); }
   .sec-note { font-size: 11px; color: var(--text-dim); font-family: Consolas, monospace; }
 
-  .kpi-strip { display: grid; gap: 1px; grid-template-columns: repeat(4, 1fr); background: var(--border-weak); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .kpi-strip { display: grid; gap: 1px; grid-template-columns: repeat(3, 1fr); background: var(--border-weak); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
   .kpi { background: var(--bg-surface); padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .kpi .lb { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
   .kpi .vl { font-size: 19px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -149,6 +149,8 @@
         <div class="kpi"><span class="lb">策略资产</span><a href="/strategies" style="text-decoration:none;color:inherit"><span class="vl num" id="k-strat">—</span><span class="sb" id="k-strat-sub">策略中心 →</span></a></div>
         <div class="kpi"><span class="lb">在案跟踪</span><a href="/bt-weak" style="text-decoration:none;color:inherit"><span class="vl num" id="k-weak">—</span><span class="sb">weak 产线 · 案例库 →</span></a></div>
         <div class="kpi"><span class="lb">今日情报</span><a href="/intel" style="text-decoration:none;color:inherit"><span class="vl num" id="k-news">—</span><span class="sb" id="k-news-sub">—</span></a></div>
+        <div class="kpi"><span class="lb">今日预警</span><a href="/bt-signals" style="text-decoration:none;color:inherit"><span class="vl num" id="k-alerts">—</span><span class="sb">速览清单见下方 →</span></a></div>
+        <div class="kpi"><span class="lb">模拟仓</span><a href="/paper" style="text-decoration:none;color:inherit"><span class="vl num" id="k-paper">—</span><span class="sb" id="k-paper-sub">四账本 →</span></a></div>
       </div>
     </div>
 
@@ -299,7 +301,9 @@
       const r = await fetch('/api/alerts', { signal: ctl.signal, cache: 'no-store' });
       if (!r.ok) return;
       const d = await r.json();
-      document.getElementById('al-ts').textContent = '快照 ' + (d.ts || '');
+      document.getElementById('al-ts').textContent = '快照 ' + (d.ts || '') + ' · 共 ' + items.length + ' 条';
+      const ka = document.getElementById('k-alerts');
+      if (ka) ka.textContent = items.length + ' 条';
       const items = d.alerts || [];
       document.getElementById('al-list').innerHTML = items.map(a => {
         let dl = '';
@@ -335,6 +339,28 @@
   }
   loadBrief();
   setInterval(loadBrief, 60000);
+
+  // ── 模拟仓 KPI（K-STOCK-112 驾驶舱补全，涨红跌绿）──
+  async function loadPaperKpi() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/paper_status', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d.ok || !d.latest) return;
+      const L = d.latest;
+      document.getElementById('k-paper').textContent =
+        '¥' + (Math.round(L.total / 1000) / 10).toFixed(1) + ' 万';
+      const v = L.cum_pct ?? 0;
+      const el = document.getElementById('k-paper');
+      el.style.color = v > 0 ? 'var(--color-up)' : (v < 0 ? 'var(--color-dn)' : '');
+      document.getElementById('k-paper-sub').textContent =
+        (v > 0 ? '+' : '') + v.toFixed(2) + '% · 待撮合 ' + (L.pending ?? 0) + ' 单 →';
+    } catch {}
+  }
+  loadPaperKpi();
+  setInterval(loadPaperKpi, 60000);
 
   async function loadOverview() {
     try {

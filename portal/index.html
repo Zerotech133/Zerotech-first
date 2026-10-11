@@ -185,6 +185,51 @@
       <span class="enter">进入大屏 →</span>
     </a>
 
+    <!-- 今日要务：一进来就把今天所有事串成态势（K-STOCK-112） -->
+    <div style="margin-top:18px;">
+      <div style="font-size:12px;letter-spacing:2.5px;color:var(--text-dim);font-weight:700;margin-bottom:10px;">◤ 今日要务 · 四域态势</div>
+      <div class="board" style="margin-top:0;">
+        <a class="dm" href="/quant" style="min-height:0;padding:15px 18px 13px;">
+          <div class="head"><div class="ic" style="width:36px;height:36px;font-size:17px;">📈</div>
+            <div><div class="t" style="font-size:14px;">量化 <span class="dim" id="t-q-alert" style="font-size:11px;font-weight:400;"></span></div></div></div>
+          <div class="ms" style="margin-top:8px;">
+            <span>盘面 <b id="t-q-verdict">—</b></span>
+            <span>共振 <b id="t-q-buy">—</b></span>
+            <span>预警 <b id="t-q-alerts">—</b></span>
+          </div>
+          <div class="foot" style="padding-top:8px;"><span class="st dim" style="font-size:10.5px;" id="t-q-note">加载中…</span><span class="enter">进入量化 →</span></div>
+        </a>
+        <a class="dm" href="/intel" style="min-height:0;padding:15px 18px 13px;">
+          <div class="head"><div class="ic" style="width:36px;height:36px;font-size:17px;">🕵</div>
+            <div><div class="t" style="font-size:14px;">情报</div></div></div>
+          <div class="ms" style="margin-top:8px;">
+            <span>今日 <b id="t-i-news">—</b></span>
+            <span>利多 <b id="t-i-bull">—</b></span>
+            <span>利空 <b id="t-i-bear">—</b></span>
+          </div>
+          <div class="foot" style="padding-top:8px;"><span class="st dim" style="font-size:10.5px;" id="t-i-note">加载中…</span><span class="enter">进入情报 →</span></div>
+        </a>
+        <a class="dm" href="/creator" style="min-height:0;padding:15px 18px 13px;">
+          <div class="head"><div class="ic" style="width:36px;height:36px;font-size:17px;">🎬</div>
+            <div><div class="t" style="font-size:14px;">创作 <span class="tag-soon">待办</span></div></div></div>
+          <div class="ms" style="margin-top:8px;">
+            <span>草稿 <b id="t-c-draft">—</b></span>
+            <span>成片 <b id="t-c-video">—</b></span>
+          </div>
+          <div class="foot" style="padding-top:8px;"><span class="st dim" style="font-size:10.5px;" id="t-c-note">加载中…</span><span class="enter">进入创作 →</span></div>
+        </a>
+        <a class="dm" href="/dev.html" style="min-height:0;padding:15px 18px 13px;">
+          <div class="head"><div class="ic" style="width:36px;height:36px;font-size:17px;">💻</div>
+            <div><div class="t" style="font-size:14px;">开发 <span class="dim" id="t-d-dev" style="font-size:11px;font-weight:400;"></span></div></div></div>
+          <div class="ms" style="margin-top:8px;">
+            <span>体检 <b id="t-d-health">—</b></span>
+            <span>IDE <b id="t-d-ide">5 个</b></span>
+          </div>
+          <div class="foot" style="padding-top:8px;"><span class="st dim" style="font-size:10.5px;" id="t-d-note">加载中…</span><span class="enter">进入开发 →</span></div>
+        </a>
+      </div>
+    </div>
+
     <div class="board">
       <!-- 智能体学院：仅交互原型，真实训练与交易未开放 -->
       <a class="dm" href="/academy.html">
@@ -530,6 +575,58 @@
   }
   loadPaper();
   setInterval(loadPaper, 60000);
+
+  // ── 今日要务四域态势（K-STOCK-112）──
+  async function loadToday() {
+    // 量化：盘面 + 共振（brief）+ 预警计数（alerts）+ 模拟仓快照日
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const d = await r.json(), f = d.fin || {}, n = d.intel || {};
+        document.getElementById('t-q-verdict').textContent = String(f.verdict || '—').split('（')[0];
+        document.getElementById('t-q-buy').textContent = (f.buy ?? 0) + ' 只';
+        document.getElementById('t-i-news').textContent = (n.today ?? 0) + ' 条';
+        document.getElementById('t-i-bull').textContent = n.bull ?? 0;
+        document.getElementById('t-i-bear').textContent = n.bear ?? 0;
+        document.getElementById('t-i-note').textContent = (n.bear ?? 0) > (n.bull ?? 0) ? '利空偏多，留意' : '多空均衡';
+      }
+    } catch {}
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/alerts', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const d = await r.json(), items = d.alerts || [];
+        document.getElementById('t-q-alerts').textContent = items.length + ' 条';
+        document.getElementById('t-q-note').textContent = '预警速览就绪';
+      }
+    } catch {}
+    // 创作：草稿/成片（overview）
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 15000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const d = await r.json();
+        document.getElementById('t-c-draft').textContent = ((d.gz || {}).drafts || []).length + ' 篇';
+        document.getElementById('t-c-video').textContent = ((d.video || {}).videos || []).length + ' 条';
+        document.getElementById('t-c-note').textContent = '内容产线在册';
+      }
+    } catch { document.getElementById('t-c-note').textContent = '产线数据未就绪'; }
+    // 开发：体检快照
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch('/data/health.json?ts=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const h = await r.json();
+        const iss = (h.issues || []).length;
+        document.getElementById('t-d-health').textContent = iss ? iss + ' 项待办' : '全绿';
+        document.getElementById('t-d-note').textContent = String(h.ts || '').slice(5, 10) + ' 体检';
+        document.getElementById('t-d-dev').textContent = iss ? '' : '全绿';
+      }
+    } catch { document.getElementById('t-d-note').textContent = '体检未生成'; }
+  }
+  loadToday();
+  setInterval(loadToday, 120000);
 
   // Ollama 模型计数
   async function countModels() {
