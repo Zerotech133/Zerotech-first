@@ -40,6 +40,7 @@ const mode = document.getElementById("mode");
 const message = document.getElementById("message");
 const out = document.getElementById("out");
 const sources = document.getElementById("sources");
+let latestSources = [];
 
 function renderSources(items) {
   sources.textContent = "";
@@ -59,6 +60,7 @@ send.onclick = async () => {
   }
   out.textContent = "思考中...";
   sources.textContent = "";
+  latestSources = [];
   send.disabled = true;
   try {
     const endpoint = mode.value === "rag" ? "/api/rag" : "/api/chat";
@@ -89,8 +91,11 @@ send.onclick = async () => {
             out.textContent += record.message.content;
           }
           if (typeof record.response === "string") out.textContent += record.response;
-          if (record.sources) renderSources(record.sources);
-          if (record.done) renderSources(record.sources || []);
+          if (record.sources) {
+            latestSources = record.sources;
+            renderSources(latestSources);
+          }
+          if (record.done) renderSources(latestSources);
         } catch (_) {
           // 忽略不完整或无效的流记录，继续处理后续内容。
         }
@@ -103,7 +108,10 @@ send.onclick = async () => {
           out.textContent += record.message.content;
         }
         if (typeof record.response === "string") out.textContent += record.response;
-        if (record.sources) renderSources(record.sources);
+        if (record.sources) {
+          latestSources = record.sources;
+          renderSources(latestSources);
+        }
       } catch (_) {
         // 服务端应返回 NDJSON；末尾残片无需阻断已显示的答案。
       }

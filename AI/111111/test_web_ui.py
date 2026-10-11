@@ -15,6 +15,11 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('/api/rag', page)
         self.assertIn('sources', page)
 
+    def test_done_keeps_sources_received_before_it(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn("latestSources = record.sources", page)
+        self.assertIn("if (record.done) renderSources(latestSources)", page)
+
 
 if __name__ == "__main__":
     unittest.main()
