@@ -195,6 +195,8 @@ def market_status() -> dict:
                      "llm_binding": v.get("llm_binding"),
                      "daily_cost_cap": v.get("daily_cost_cap"),
                      "price_month": v.get("price_month"),
+                     "price_note": v.get("price_note"),
+                     "cost_tier": v.get("cost_tier"),
                      "params": v.get("params"), "desc": v.get("desc")}
                  for k, v in (tiers_d.get("tiers") or {}).items()}
     except Exception as e:  # noqa: BLE001

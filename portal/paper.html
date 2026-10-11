@@ -589,16 +589,22 @@ function renderPricing(mk){
   el.innerHTML=order.filter(k=>mk.tiers[k]).map(k=>{
     const t=mk.tiers[k];
     const p=t.params||{};
+    const extra=[];
+    if(p.judge_min_grade)extra.push('judge '+p.judge_min_grade+' 级才加仓');
+    if(p.dd_circuit_pct)extra.push('回撤熔断 '+p.dd_circuit_pct+'%');
+    if(p.sector_diversify)extra.push('行业分散约束');
+    if(p.priority_scheduling)extra.push('盘中实时评审');
+    if(p.human_review_channel)extra.push('人工复核通道');
     return `<div class="agent-card ${k==='T5'?'live':k==='T3'||k==='T4'?'':k==='T1'?'preview':''}">
       <div class="nm">${k} ${t.label} <span style="font-size:11px;color:var(--text-dim)">${t.years} 年经验</span></div>
-      <div class="role">${t.desc||''}</div>
+      <div class="role">${t.desc||''}${extra.length?'<br><b>专属纪律：</b>'+extra.join(' · '):''}</div>
       <div class="agent-stats">
-        <div><div class="k">月费</div><div class="v">¥${t.price_month}</div></div>
+        <div><div class="k">月费</div><div class="v">${t.price_note?t.price_note:('¥'+t.price_month)}</div></div>
+        <div><div class="k">成本档</div><div class="v small">${t.cost_tier||'-'}</div></div>
         <div><div class="k">引擎</div><div class="v small">${(t.llm_binding||'').split('/').pop()||'-'}</div></div>
         <div><div class="k">止损</div><div class="v">${p.stop_dist_pct!=null?(p.stop_dist_pct*100).toFixed(0)+'%':'-'}</div></div>
         <div><div class="k">日单上限</div><div class="v">${p.max_daily_orders!=null?p.max_daily_orders:'-'}</div></div>
         <div><div class="k">仓位上限</div><div class="v">${p.max_pos_pct!=null?(p.max_pos_pct*100).toFixed(0)+'%':'-'}</div></div>
-        <div><div class="k">成本熔断</div><div class="v small">¥${t.daily_cost_cap}/日</div></div>
       </div></div>`;
   }).join('');
 }
