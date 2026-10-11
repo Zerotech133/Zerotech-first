@@ -35,6 +35,9 @@ REGISTRY = {
     9899: "CowAgent console",
     11434: "Ollama",
     3307: "菜鸟MySQL(Docker)",
+    8093: "数据仓管理预览(daily_ui_preview_server.py)",
+    8096: "Codex实验·智能体学院签名审核(Documents,非平台栈)",
+    8123: "claudemind server(桌面第三方,非平台栈)",
 }
 
 
@@ -83,7 +86,11 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "com.docker", "vpn", "wslhost", "wsl", "sihost",
              "weixin", "wechat", "gameviewer", "tailscale", "dubbo",
              "nvidia", "qq", "feishu", "dingtalk", "quark",
-             "yundetect")
+             "yundetect", "vmms", "wpscloudsvr", "sgtool")
+
+
+# 注册但允许离线的口（手动/按需型服务：strict 只防被抢，不因闲置判负）
+OPTIONAL_OFFLINE = {3001, 8030}
 
 
 def main():
@@ -93,8 +100,10 @@ def main():
     down = []
     for p in sorted(REGISTRY):
         up = tcp_up(p)
-        print("  %-5d %-5s %s" % (p, "✓在线" if up else "✗离线",
-                                  REGISTRY[p]))
+        print("  %-5d %-5s %s%s" % (p, "✓在线" if up else "✗离线",
+                                    REGISTRY[p],
+                                    "（可离线）" if p in OPTIONAL_OFFLINE
+                                    else ""))
         if not up:
             down.append(p)
     print("== 未登记监听（服务段 1024-49151，系统/第三方豁免）==")
@@ -120,7 +129,8 @@ def main():
     print("== 汇总：注册 %d 个，离线 %d（%s），未登记 %d =="
           % (len(REGISTRY), len(down),
              ",".join(map(str, down)) or "无", len(unknown)))
-    if strict and (unknown or down):
+    hard_down = [p for p in down if p not in OPTIONAL_OFFLINE]
+    if strict and (unknown or hard_down):
         print("STRICT FAIL")
         return 1
     return rc
