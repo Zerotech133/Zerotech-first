@@ -39,6 +39,8 @@ class WebUiTests(unittest.TestCase):
         page = web_ui.render_chat_page(("qwen3.5:9b",))
         self.assertIn("<details", page)
         self.assertIn("<summary>来源", page)
+        self.assertIn("document_hash", page)
+        self.assertIn("index_version", page)
 
 
 if __name__ == "__main__":

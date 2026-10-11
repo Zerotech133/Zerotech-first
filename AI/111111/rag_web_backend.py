@@ -74,13 +74,19 @@ class RagWebService:
             if self._kb is not None and self._index_key == key:
                 return len(self._kb._records)
             adapter = _KnowledgeClient(self.client, self.embed_model)
-            kb = KnowledgeBase(client=adapter, top_k=self.top_k,
-                               embed_model=self.embed_model, chat_model=self.chat_model)
-            documents = kb.read_documents(self.docs_dir)
-            kb.ingest(documents)
-            self._kb = kb
+            documents = (self._kb.read_documents(self.docs_dir)
+                         if self._kb is not None
+                         else KnowledgeBase(client=adapter, top_k=self.top_k,
+                                            embed_model=self.embed_model,
+                                            chat_model=self.chat_model).read_documents(self.docs_dir))
+            if self._kb is None:
+                self._kb = KnowledgeBase(client=adapter, top_k=self.top_k,
+                                         embed_model=self.embed_model, chat_model=self.chat_model)
+            else:
+                self._kb.client = adapter
+            self._kb.update_documents(documents)
             self._index_key = key
-            return len(kb._records)
+            return len(self._kb._records)
         except RagUnavailable:
             raise
         except OllamaError as exc:
@@ -154,5 +160,13 @@ class RagWebService:
                     yield {"message": {"content": content}}
         except Exception as exc:
             raise RagUnavailable("对话模型不可用", status_code=502) from exc
-        yield {"sources": [{"source": match.get("source", ""), "score": round(float(match.get("score", 0)), 2)} for match in matches]}
+        yield {"sources": [
+            {
+                "source": match.get("source", ""),
+                "score": round(float(match.get("score", 0)), 2),
+                "document_hash": match.get("document_hash", ""),
+                "index_version": self._kb.index_version,
+            }
+            for match in matches
+        ]}
         yield {"done": True}

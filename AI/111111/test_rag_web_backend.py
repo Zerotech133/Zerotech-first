@@ -12,12 +12,14 @@ from rag_web_backend import RagUnavailable, RagWebService
 class FakeRagClient:
     def __init__(self):
         self.embed_calls = 0
+        self.embed_items = []
         self.chat_calls = 0
         self.chat_think_values = []
 
     def embed(self, model, input):
         self.embed_calls += 1
         values = input if isinstance(input, list) else [input]
+        self.embed_items.extend(values)
         return {"embeddings": [[float(len(value)), 1.0] for value in values]}
 
     def chat_stream(self, messages, model, think=None):
@@ -43,6 +45,8 @@ class RagWebBackendTests(unittest.TestCase):
 
         self.assertEqual(events[-1], {"done": True})
         self.assertEqual(events[-2]["sources"][0]["source"], "facts.md")
+        self.assertTrue(events[-2]["sources"][0]["document_hash"])
+        self.assertEqual(events[-2]["sources"][0]["index_version"], 1)
         self.assertIn("东方", "".join(event["message"]["content"] for event in events if "message" in event))
         self.assertEqual(client.chat_calls, 1)
 
@@ -80,6 +84,24 @@ class RagWebBackendTests(unittest.TestCase):
         path.write_text("太阳从西方升起" * 2, encoding="utf-8")
         self.assertEqual(service.ensure_index(), 1)
         self.assertEqual(client.embed_calls, 2)
+
+    def test_index_reuses_unchanged_document_vectors(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        first = Path(temp.name) / "first.md"
+        second = Path(temp.name) / "second.md"
+        first.write_text("第一份文档", encoding="utf-8")
+        second.write_text("第二份文档", encoding="utf-8")
+        client = FakeRagClient()
+        service = RagWebService(client=client, docs_dir=temp.name)
+
+        self.assertEqual(service.ensure_index(), 2)
+        embedded_after_first_index = len(client.embed_items)
+        second.write_text("第二份文档已更新", encoding="utf-8")
+        self.assertEqual(service.ensure_index(), 2)
+
+        self.assertEqual(len(client.embed_items), embedded_after_first_index + 1)
+        self.assertEqual(service._kb.index_version, 2)
 
     def test_search_validates_question_and_top_k(self):
         temp, _ = self.make_docs()

@@ -1,0 +1,140 @@
+{
+  "generated_at": "2026-10-12 06:24:19",
+  "kpi": {
+    "n_tables": 93,
+    "total_mb": 12348.2,
+    "tdx_sync": "28/32",
+    "tushare_sync": "24/31",
+    "fresh_bad": 0,
+    "freshest": "23.2h ǰ",
+    "fresh_warn": 1,
+    "fresh_snap": 2,
+    "fresh_unknown": 0,
+    "capacity_scope": "TDX/Tushare parquet������K�ߡ�tdx_info.db��news.db���ļ������Բ���������һ�Σ�WAL����",
+    "capacity_measured_at": "2026-10-12 06:24:19",
+    "integrity_bad": 6,
+    "integrity_warn": 1
+  },
+  "gaps": [
+    "FAIL tdx_sector_daily_daily_coverage: 51",
+    "FAIL ts_margin_detail_required_nulls: 2",
+    "FAIL ts_margin_detail_daily_coverage: 12858",
+    "FAIL sector_definition_key_reconciliation: 51",
+    "WARN listed_stock_latest_coverage: 14",
+    "FAIL sector_minute_daily_coverage: 14",
+    "FAIL sector_minute_required_nulls: 14771"
+  ],
+  "freshness": {
+    "tables": [
+      {
+        "table": "daily",
+        "live": "20261009",
+        "snap": "20261009",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "stock_basic",
+        "live": "20261009",
+        "snap": "20260924",
+        "lag_days": 1,
+        "ready": true,
+        "status": "SNAP"
+      },
+      {
+        "table": "trade_cal",
+        "live": "20271231",
+        "snap": "20271231",
+        "lag_days": 0,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "notice",
+        "live": "20261010",
+        "snap": "20261010",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "news",
+        "live": "20261011",
+        "snap": "20261010",
+        "lag_days": 1,
+        "ready": true,
+        "status": "SNAP"
+      },
+      {
+        "table": "report",
+        "live": "20261010",
+        "snap": "20261010",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "stk_mins",
+        "live": "20261009",
+        "snap": "20261009",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "us_daily",
+        "live": "20261009",
+        "snap": "20261009",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "cb_daily",
+        "live": "20261009",
+        "snap": "20261009",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "bak_basic",
+        "live": "20261009",
+        "snap": "20261009",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      },
+      {
+        "table": "hk_daily",
+        "live": "20260930",
+        "snap": "20260930",
+        "lag_days": 3,
+        "ready": true,
+        "status": "WARN"
+      },
+      {
+        "table": "idx_mins",
+        "live": "20261009",
+        "snap": "20261009",
+        "lag_days": 1,
+        "ready": true,
+        "status": "OK"
+      }
+    ],
+    "counts": {
+      "OK": 9,
+      "WARN": 1,
+      "STALE": 0,
+      "FAIL": 0,
+      "SNAP": 2,
+      "NA": 0,
+      "UNKNOWN": 0
+    }
+  },
+  "integrity_summary": {
+    "fail_count": 6,
+    "warn_count": 1
+  }
+}

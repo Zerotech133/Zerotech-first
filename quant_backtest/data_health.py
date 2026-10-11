@@ -36,6 +36,10 @@ ARTIFACT_MANIFEST = [
     (("reports",), "premarket_latest.json", "盘前分析", "/premarket"),
 ]
 
+# 日更策略产物超过一个工作日仍未刷新时，健康页必须显式提示。
+# 取 26 小时以覆盖周末前的收盘任务和时区边界，避免只看文件存在性。
+ARTIFACT_STALE_HOURS = 26
+
 
 def _scan_kline(market):
     """扫描指定市场 K 线目录。market: cn/us/hk/crypto"""
@@ -136,9 +140,13 @@ def _scan_artifacts():
     return out
 
 
-def _build_gaps(kline, news):
+def _build_gaps(kline, news, artifacts=None):
     """根据扫描结果生成缺口清单。"""
     gaps = []
+    cn = kline.get("cn") or {}
+    missing_fields = sorted(set(cn.get("missing_fields") or []))
+    if missing_fields:
+        gaps.append("A股关键字段缺失：%s" % ", ".join(missing_fields))
     if not kline["us"]["exists"] or kline["us"]["count"] == 0:
         gaps.append("美股 K 线缺失：盘前 L1 恒指/纳指/标普无本地验证")
     if not kline["hk"]["exists"] or kline["hk"]["count"] == 0:
@@ -153,6 +161,13 @@ def _build_gaps(kline, news):
         gaps.append("新闻无研报源：券商研报/行业分析缺失")
     if news.get("exists") and news.get("jev_pending", 0) > 100:
         gaps.append("JEV 积压 %d 条未判断" % news["jev_pending"])
+    for artifact in artifacts or []:
+        if not artifact.get("exists"):
+            continue
+        age = artifact.get("age_hours")
+        if isinstance(age, (int, float)) and age > ARTIFACT_STALE_HOURS:
+            gaps.append("策略产物过期：%s（%.1f 小时未刷新）" %
+                        (artifact.get("name") or artifact.get("file") or "未知产物", age))
     return gaps
 
 
@@ -172,7 +187,7 @@ def scan_data_health():
     artifacts = _scan_artifacts()
     return {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "kline": kline, "news": news, "strategy_artifacts": artifacts,
-            "gaps": _build_gaps(kline, news)}
+            "gaps": _build_gaps(kline, news, artifacts)}
 
 
 def _scan_tdx_info_db(path):

@@ -5,6 +5,7 @@ __all__ = [
     "HealthCheckResult",
     "HealthReport",
     "check_ollama_health",
+    "launch_web",
 ]
 
 
@@ -12,6 +13,9 @@ def __getattr__(name):
     """按需导出健康检查 API，避免 ``python -m ollama_service.health`` 重复加载。"""
     if name in __all__:
         from . import health
+        if name == "launch_web":
+            from .launcher import launch_web
 
+            return launch_web
         return getattr(health, name)
     raise AttributeError(name)

@@ -43,7 +43,7 @@ function loadHistory(){try{const value=JSON.parse(localStorage.getItem(HISTORY_K
 function saveHistory(){localStorage.setItem(HISTORY_KEY,JSON.stringify(conversationHistory.slice(-50)));}
 function setStatus(text){status.textContent=text;}
 function renderHistory(){history.textContent="";conversationHistory.forEach((item)=>{const entry=document.createElement("article");const question=document.createElement("p");const answer=document.createElement("p");question.textContent="你："+String(item.question||"");answer.textContent="AI："+String(item.answer||"");entry.append(question,answer);history.appendChild(entry);});}
-function renderSources(items){sourceList.textContent="";sources.hidden=!Array.isArray(items)||items.length===0;if(sources.hidden)return;items.forEach((item)=>{const line=document.createElement("p");const name=item&&item.source?String(item.source):"未知来源";const score=item&&item.score!==undefined?`（分数：${item.score}）`:"";line.textContent=name+score;sourceList.appendChild(line);});}
+function renderSources(items){sourceList.textContent="";sources.hidden=!Array.isArray(items)||items.length===0;if(sources.hidden)return;items.forEach((item)=>{const line=document.createElement("p");const name=item&&item.source?String(item.source):"未知来源";const score=item&&item.score!==undefined?`（分数：${item.score}）`:"";const hash=item&&item.document_hash?`（哈希：${String(item.document_hash).slice(0,12)}）`:"";const version=item&&item.index_version?`（索引 v${item.index_version}）`:"";line.textContent=name+score+hash+version;sourceList.appendChild(line);});}
 renderHistory();
 clearHistory.onclick=()=>{conversationHistory=[];localStorage.removeItem(HISTORY_KEY);renderHistory();setStatus("历史已清理");};
 cancel.onclick=()=>{if(activeController)activeController.abort();};
