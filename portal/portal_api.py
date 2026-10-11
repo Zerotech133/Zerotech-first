@@ -1640,8 +1640,30 @@ color:#fff;font-size:13.5px;cursor:pointer}
                "fire", mid, source, "--json"]
         self._json(self._manager_run_json(cmd, timeout=35))
 
-
-
+    def _api_minutes_inbox(self, qs):
+        """K-STOCK-146 S-c 纪要收件箱只读投影（纯只读直读
+        minutes_inbox.json，复刻 _api_manager_roster 直读形状，无子进程）。
+        文件缺失/空 → {"ok": true, "minutes": []}；?mid= 可选按经理过滤；
+        按 created_at 倒序，最多 50 条；字段透传（body 全量，前端折叠）。"""
+        try:
+            from urllib.parse import parse_qs as _pqs
+            mid = (_pqs(qs.lstrip("?")).get("mid") or [""])[0].strip()
+            fp = os.path.join(self._PAPER_DIR, "minutes_inbox.json")
+            items = []
+            if os.path.exists(fp):
+                with open(fp, encoding="utf-8") as f:
+                    d = json.load(f)
+                raw = d.get("items") if isinstance(d, dict) else None
+                if not isinstance(raw, list):
+                    raw = d.get("minutes") if isinstance(d, dict) else None
+                items = [m for m in (raw or []) if isinstance(m, dict)]
+            if mid:
+                items = [m for m in items if m.get("mid") == mid]
+            items.sort(key=lambda m: str(m.get("created_at") or ""),
+                       reverse=True)
+            self._json({"ok": True, "minutes": items[:50]})
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
 
     def _api_paper_direct_open(self, raw):
         """K-STOCK-137f S-d 轻量直订动线：策略市场「直接建仓」。
@@ -2155,6 +2177,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-STOCK-137d S-b2 经理名册投影（纯只读：managers/*.json +
             # manager_hires.json + models.json 系数计价）
             self._api_manager_roster()
+        elif path == "/api/minutes_inbox":
+            # K-STOCK-146 S-c 纪要收件箱只读投影（纯只读直读
+            # minutes_inbox.json；?mid= 可选按经理过滤，created_at 倒序≤50）
+            self._api_minutes_inbox(qs)
         elif path == "/api/paper_status":
             # K-STOCK 模拟仓只读投影（2026-10-09 前端规划 P2）：
             # 数据层 k_stock/paper/portal_status.py（纯标准库 sqlite ro，零 pandas），

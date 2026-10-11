@@ -821,6 +821,50 @@ async function managerFire(mid,source){
 }
 document.addEventListener('DOMContentLoaded',loadManagers);
 
+// ===== 经理会议纪要（K-STOCK-146 S-c：/api/minutes_inbox 只读投影） =====
+// 纯增量：每经理卡下追加「纪要」折叠区（title/kind 徽标/时间，点开看 body）。
+let MINS_BY_MID={};
+const MINS_KIND_LABEL={pre_open:'盘前',post_close:'盘后'};
+function injectMinutes(){
+  const g=document.getElementById('manager-grid');if(!g)return;
+  g.querySelectorAll('.agent-card').forEach(card=>{
+    const hit=(card.innerHTML||'').match(/manager(?:Hire|Fire)\('([^']+)'/);
+    if(!hit)return;
+    const mid=hit[1],list=MINS_BY_MID[mid]||[];
+    let el=card.querySelector('div[data-minutes]');
+    if(!el){el=document.createElement('div');el.setAttribute('data-minutes','1');card.appendChild(el);}
+    el.innerHTML=list.length?
+      '<details style="margin-top:8px;font-size:12px"><summary style="cursor:pointer">🗒️ 会议纪要（'+list.length+'）</summary>'+
+      list.map(m=>
+        '<details style="margin:6px 0 0 10px"><summary style="cursor:pointer">'+
+        '<span class="badge b-dk">'+(MINS_KIND_LABEL[m.kind]||m.kind||'纪要')+'</span> '+
+        (m.title||'(无标题)')+
+        ' <span style="color:var(--text-dim)">'+String(m.created_at||'').slice(0,16).replace('T',' ')+'</span></summary>'+
+        '<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">'+(m.body||'')+'</div></details>'
+      ).join('')+'</details>'
+      :'<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">🗒️ 暂无会议纪要</div>';
+  });
+}
+async function loadMinutes(){
+  try{
+    const j=await api('/api/minutes_inbox');
+    if(!j||!j.ok)return;               // 只读装饰区：失败静默，不影响主面板
+    MINS_BY_MID={};
+    (j.minutes||[]).forEach(m=>{
+      const k=m.mid||'(未分配)';
+      (MINS_BY_MID[k]=MINS_BY_MID[k]||[]).push(m);
+    });
+    injectMinutes();
+  }catch(e){/* 静默 */}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  loadMinutes();
+  // 经理卡为 loadManagers 异步重渲染（雇佣/解雇后整卡重建），监听重挂纪要区
+  const mg=document.getElementById('manager-grid');
+  if(mg&&window.MutationObserver)
+    new MutationObserver(()=>injectMinutes()).observe(mg,{childList:true});
+});
+
 // ===== 历史 =====
 async function loadHistory(){
   const day=$('hist-day').value;
