@@ -389,6 +389,185 @@ def _mk_adj(rows):
     return pd.DataFrame(rows, columns=["ts_code", "trade_date", "adj_factor"])
 
 
+# ── 环境闸门差异化·影子标注（P3 2026-10-11）─────────────────
+CL_BUY_REG_DOWN = {"s": "chanlun", "tag": "1买", "reg": "down"}
+CL_BUY_REG_FLAT = {"s": "chanlun", "tag": "3买", "reg": "flat"}
+
+
+def test_env_diff_shadow_two_level_independent():
+    """收紧日买点(env_diff)与恐慌期买点(panic_buy)两级独立标注：
+    调研依据 reg=down 期 T+10 中位 +0.32 vs flat -2.91。"""
+    d, p, why = btp._env_diff_shadow(_e("共振票", CL_BUY_REG_DOWN), True)
+    assert d and p and "闸门收紧" in why and "reg=down" in why
+    d, p, why = btp._env_diff_shadow(_e("某票", CL_BUY_REG_FLAT), True)
+    assert d and not p and "reg=down" not in why
+    d, p, why = btp._env_diff_shadow(_e("某票", CL_BUY_REG_DOWN), False)
+    assert not d and p and "闸门收紧" not in why
+
+
+def test_env_diff_shadow_no_buy_no_mark():
+    """无缠论买点（卖点/纯 strong）不打任何标注。"""
+    d, p, why = btp._env_diff_shadow(_e("某票", CL_SELL), True)
+    assert not d and not p and why is None
+    d, p, why = btp._env_diff_shadow(_e("某票", STRONG_LEAD), True)
+    assert not d and not p and why is None
+
+
+def test_env_diff_shadow_wide_scope_with_sell():
+    """买卖并存票仍标（影子宽口径：环境压制下的买点证据全记录，
+    多空并存留给后验分层；tier 侧 cl_buy 严格口径不受影响——
+    见 test_veto_cl_sell_same_batch）。"""
+    d, p, _ = btp._env_diff_shadow(
+        _e("多空票", CL_BUY_REG_DOWN, CL_SELL), True)
+    assert d and p
+
+
+def test_env_diff_shadow_reg_missing_not_panic():
+    """reg 缺失（None/旧档无字段）≠ down——不误标恐慌层。"""
+    d, p, why = btp._env_diff_shadow(
+        _e("旧档票", {"s": "chanlun", "tag": "2买"}), True)
+    assert d and not p and "reg=down" not in (why or "")
+
+
+# ── 环境闸门差异化·豁免（P4 启用 2026-10-11）─────────────────
+CL_1BUY = {"s": "chanlun", "tag": "1买", "reg": "flat"}
+QPZM_ENV_AVOID = {"s": "qpzm", "tag": "回避", "action": "回避（环境闸门）",
+                  "score": 55}
+QPZM_STOCK_AVOID = {"s": "qpzm", "tag": "回避", "action": "回避", "score": 55}
+QPZM_AVOID_NO_ACTION = {"s": "qpzm", "tag": "回避", "score": 55}
+
+
+def test_env_diff_exempt_lifts_t1():
+    """收紧日 strong领涨+1买+环境闸门型回避 → 豁免否决进 T1（旧=T2）。"""
+    e = _e("豁免票", STRONG_LEAD, CL_1BUY, QPZM_ENV_AVOID)
+    assert btp.tier_of(e, True, gate_tight=True) == "T1"
+    assert btp._env_diff_exempt(e, True) is True
+
+
+def test_env_diff_exempt_gate_open_no_lift():
+    """放行日同组合不豁免 → qpzm_avoid 否决 T1、chanlun 买走 T2。"""
+    e = _e("对照票", STRONG_LEAD, CL_1BUY, QPZM_ENV_AVOID)
+    assert btp.tier_of(e, True, gate_tight=False) == "T2"
+    assert btp._env_diff_exempt(e, False) is False
+
+
+def test_env_diff_exempt_stock_reason_still_blocks():
+    """个股型回避（action 无环境闸门）仍否决——豁免只针对环境闸门型。"""
+    e = _e("个股回避票", STRONG_LEAD, CL_1BUY, QPZM_STOCK_AVOID)
+    assert btp.tier_of(e, True, gate_tight=True) == "T2"
+
+
+def test_env_diff_exempt_action_missing_still_blocks():
+    """action 缺失=型别不可判，维持否决（保守方向）。"""
+    e = _e("旧档票", STRONG_LEAD, CL_1BUY, QPZM_AVOID_NO_ACTION)
+    assert btp.tier_of(e, True, gate_tight=True) == "T2"
+
+
+def test_env_diff_exempt_third_buy_not_lifted():
+    """非 1买（3买）不豁免——豁免绑定质量分层唯一正 alpha 层。"""
+    e = _e("三买票", STRONG_LEAD,
+           {"s": "chanlun", "tag": "3买", "reg": "down"}, QPZM_ENV_AVOID)
+    assert btp.tier_of(e, True, gate_tight=True) == "T2"
+
+
+def test_env_diff_exempt_no_resonance_no_t1():
+    """豁免不绕过 bull>=2 共振：仅 1买+环境回避（无 strong/qpzm买入）仍 T2。"""
+    e = _e("单源票", CL_1BUY, QPZM_ENV_AVOID)
+    assert btp.tier_of(e, True, gate_tight=True) == "T2"
+
+
+def test_env_diff_exempt_other_vetoes_untouched():
+    """其余否决全部不动：weak 否决 / ST 封顶 / 同批卖点并存，
+    满足豁免条件也不进 T1。"""
+    e = _e("weak票", STRONG_LEAD, CL_1BUY, QPZM_ENV_AVOID, WEAK)
+    assert btp.tier_of(e, True, gate_tight=True) == "T2"
+    e = _e("ST票", STRONG_LEAD, CL_1BUY, QPZM_ENV_AVOID)
+    e["name"] = "*ST豁免"
+    assert btp.tier_of(e, True, gate_tight=True) == "T3"
+    e = _e("多空票", STRONG_LEAD, CL_1BUY, CL_SELL, QPZM_ENV_AVOID)
+    assert btp.tier_of(e, True, gate_tight=True) == "T2"
+
+
+# ── P5 质量分层：毒层不计 T1 共振（2026-10-11 启用）──────────
+CL_3BUY_BEI_F = {"s": "chanlun", "tag": "3买", "bei": False, "trend": "up"}
+CL_3BUY_BEI_T = {"s": "chanlun", "tag": "3买", "bei": True, "trend": "up"}
+CL_3BUY_BEI_N = {"s": "chanlun", "tag": "3买", "trend": "up"}  # bei 不可判
+CL_2BUY_RANGE = {"s": "chanlun", "tag": "2买", "trend": "range"}
+
+
+def test_toxic_buy_not_counted_for_t1():
+    """毒层买点（3买bei=False / 2买range）+ strong → 不进 T1、落 T2。"""
+    assert btp.tier_of(_e("毒层票", STRONG_LEAD, CL_3BUY_BEI_F)) == "T2"
+    assert btp.tier_of(_e("毒层票", STRONG_LEAD, CL_2BUY_RANGE)) == "T2"
+
+
+def test_toxic_switch_off_restores_old_behavior():
+    """TOXIC_EXCLUDE=False 一键回退：毒层买点恢复同权计 T1 共振。"""
+    old = btp.TOXIC_EXCLUDE
+    try:
+        btp.TOXIC_EXCLUDE = False
+        assert btp.tier_of(_e("回退票", STRONG_LEAD, CL_3BUY_BEI_F)) == "T1"
+        assert btp.tier_of(_e("回退票", STRONG_LEAD, CL_2BUY_RANGE)) == "T1"
+    finally:
+        btp.TOXIC_EXCLUDE = old
+
+
+def test_nontoxic_buys_unaffected():
+    """非毒层不受影响：1买/3买bei=True/3买bei=None + strong 均 T1。"""
+    assert btp.tier_of(_e("一买票", STRONG_LEAD, CL_1BUY)) == "T1"
+    assert btp.tier_of(_e("背驰票", STRONG_LEAD, CL_3BUY_BEI_T)) == "T1"
+    assert btp.tier_of(_e("无标注票", STRONG_LEAD, CL_3BUY_BEI_N)) == "T1"
+
+
+def test_toxic_with_qpzm_buy_also_blocked():
+    """毒层 chanlun 腿 + qpzm 买入同样不凑成 T1（毒层是 chanlun 腿降权）。"""
+    e = _e("毒腿票", CL_3BUY_BEI_F,
+           {"s": "qpzm", "tag": "买入", "score": 85})
+    assert btp.tier_of(e) == "T2"
+
+
+def test_q_layer_marks_scope():
+    """影子标注口径：q_toxic/q_first_buy 两级；无买点票双 False；
+    毒层与 1买 可并存（多信号票）。"""
+    qt, qf = btp._q_layer_marks(_e("一买票", CL_1BUY))
+    assert (qt, qf) == (False, True)
+    qt, qf = btp._q_layer_marks(_e("毒层票", CL_3BUY_BEI_F))
+    assert (qt, qf) == (True, False)
+    qt, qf = btp._q_layer_marks(_e("卖点票", CL_SELL))
+    assert (qt, qf) == (False, False)
+    qt, qf = btp._q_layer_marks(_e("并存票", CL_1BUY, CL_3BUY_BEI_F))
+    assert (qt, qf) == (True, True)
+
+
+# ── P5c 形态 C：tier 内 1买 置顶（2026-10-11 启用）───────────
+def test_pick_sort_first_buy_top_within_tier():
+    """同 tier 内 q_first_buy=True 排前；tier 主序不变。"""
+    rows = [
+        {"tier": "T1", "n_hit": 3, "code": "000001.SZ",
+         "q_first_buy": True},
+        {"tier": "T1", "n_hit": 3, "code": "000002.SZ"},  # 非一买
+        {"tier": "T2", "n_hit": 3, "code": "000003.SZ",
+         "q_first_buy": True},
+        {"tier": "T3", "n_hit": 3, "code": "000004.SZ"},
+    ]
+    s = sorted(rows, key=btp._pick_sort_key)
+    assert [r["code"] for r in s] == ["000001.SZ", "000002.SZ",
+                                      "000003.SZ", "000004.SZ"]
+
+
+def test_pick_sort_n_hit_desc_after_first_buy():
+    """1买 置顶后仍按 n_hit 降序；无标注字段（旧档兼容）不炸。"""
+    rows = [
+        {"tier": "T2", "n_hit": 2, "code": "B.SZ", "q_first_buy": True},
+        {"tier": "T2", "n_hit": 3, "code": "A.SZ", "q_first_buy": True},
+        {"tier": "T2", "n_hit": 3, "code": "C.SZ"},  # 非一买 n_hit=3
+        {"tier": "T2", "n_hit": 1},  # 无 code 场景由上游保证，此处不测
+    ]
+    rows[3]["code"] = "D.SZ"
+    s = sorted(rows, key=btp._pick_sort_key)
+    assert [r["code"] for r in s] == ["A.SZ", "B.SZ", "C.SZ", "D.SZ"]
+
+
 def test_pct_between_adjusted_exdiv_window():
     """因子齐备：送转除权窗口（10 送 10，close 20→open 10）复权修正后
     样本保留——买 10×adj1=10、卖 11×adj2=22 → +120%；旧缺口守卫会

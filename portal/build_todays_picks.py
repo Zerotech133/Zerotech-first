@@ -22,6 +22,19 @@ qpzm 回避票不进 T1（封顶 T2）；同批次缠论买卖点并存时买点
 weak 负面信号（强失速/深度垫底）同样否决 T1（封顶 T2）；ST/*ST 票不进 T1/T2
 （七审封顶 T3，CROWD 警报可并存）；五源带过期闸门——数据基准落后行情湖
 weak>10 天、日扫源(strong/chanlun/qpzm/ninedim/cross)>4 天时整源不入清单。
+环境闸门差异化·影子（P3 2026-10-11）：env_diff(闸门收紧日×缠论买点)/
+panic_buy(买点信号reg=down) 两级票级标注只随档归档供后验分层，不参与
+tier 判定不拦截——调研依据 chanlun_quality_layering.py（reg=down 期买点
+T+10 中位 +0.32 vs flat -2.91）；qpzm stale/异常日 gate 类标注不打（fail-
+closed）。P4 豁免已启用（2026-10-11 用户拍板）：收紧日×缠论1买×qpzm回避
+全为环境闸门型 → qpzm_avoid 不再否决 T1（_env_diff_exempt；bull>=2 共振
+把关不变，收紧日实际生效通道=strong领涨∩1买；个股型回避/action 缺失仍
+否决，weak/ST/CROWD/同批卖点闸门不动；cross 旁路不同步、维持保守）。
+P5 质量分层（2026-10-11 用户拍板）：毒层买点（3买bei=False：T+10 中位
+-4.03 n=289；2买range：T+5 胜率 8.3% n=46）不计 T1 共振票也不计 cross
+看多源（TOXIC_EXCLUDE 开关一键回退；票仍走 T2 通道）；q_toxic/q_first_buy
+影子标注随档归档供后验分层（pick_layer_verdicts.py），P5c「T1 腿 1买独占」
+待后验达标再议。
 用法: python portal/build_todays_picks.py（无参聚合；个股详情另跑
       python portal/build_pick_details.py --tier T1）
 """
@@ -42,6 +55,9 @@ IS_A = re.compile(r"^\d{6}\.(SH|SZ|BJ)$")  # 本清单为 A 股口径（cross/qp
 QB = os.path.join(ROOT, "quant_backtest")
 OUT = os.path.join(HERE, "data", "todays_picks.json")
 STALE_LAG_DAILY = 4  # 日扫源允许的最大滞后自然日（覆盖周末+小长假；五审闸门）
+# P5b 毒层过滤开关（2026-10-11 启用，用户拍板）：毒层买点不计 T1 共振。
+# 回退=改 False（cl_buy/载荷计数即刻恢复同权口径）。
+TOXIC_EXCLUDE = True
 
 
 def _ymd(s):
@@ -205,7 +221,12 @@ def load_chanlun(stocks, basis_day=None):
         e["sources"].append({
             "s": "chanlun", "tag": r.get("type"),
             "dt": r.get("dt"), "trend": r.get("trend"),
-            "tbe": r.get("tbe"), "entry_px": r.get("entry_px")})
+            "tbe": r.get("tbe"), "entry_px": r.get("entry_px"),
+            # P3 环境闸门差异化（2026-10-11）：reg=信号时大盘 regime
+            # （P8 附标，down/flat/up）随源带出，供影子标注与后验分层。
+            # P5b 毒层过滤（2026-10-11）：bei=盘整背驰标注（3类适用，
+            # True/False/None 不可判），供 3买bei=False 毒层判定。
+            "reg": r.get("reg"), "bei": r.get("bei")})
     return {"label": "缠论信号池（三类买卖点）", "n": len(batch),
             "batch_date": latest, "file": "quant_backtest/data/chanlun_pool.jsonl",
             "note": "取最新扫描批次；type=1买/2买/3买/1卖/2卖/3卖"}
@@ -255,6 +276,115 @@ def _a_share_env(envs):
             return {"safe": e.get("safe"), "state": e.get("state"),
                     "score": e.get("score"), "breadth": e.get("breadth")}
     return None
+
+
+def _env_diff_shadow(e, gate_tight):
+    """环境闸门差异化·影子标注（P3 2026-10-11，chanlun 买点质量分层
+    调研落地；调研脚本 chanlun_quality_layering.py，3438 事件可成交口径）。
+
+    调研发现：大盘 reg=down 期检出的缠论买点 T+10 中位 +0.32，显著优于
+    flat 期 -2.91——恐慌期买点质量反而高，环境闸门一刀切压制 chanlun 腿
+    损失的不全是噪音。本函数打两级影子标注（只标注不拦截不抬层，tier
+    判定不读本标注；启用门槛=影子样本 n≥10 且后验显著优于对照，届时
+    另提方案用户拍板）：
+      · env_diff  = A股闸门收紧日(safe=False) × 票有缠论买点——差异化
+        对象（收紧期 qpzm 腿全回避、T1 只剩 strong∩chanlun 通道，此层
+        即「环境差但结构信号在」的候选豁免人群）
+      · panic_buy = 缠论买点信号自带 reg=down（信号级恐慌标注，不依赖
+        qpzm 闸门状态；chanlun 源 stale 拦截时源不入场，天然 fail-closed）
+    证据字段 env_diff_why 随票归档。宽口径说明：买卖点并存的票也标
+    （标注对象=环境压制下的买点证据，多空并存的信息留给后验自行分层；
+    tier 侧 cl_buy 严格口径不受影响）。qpzm stale/异常时 env_gate 缺失
+    → gate_tight=False（闸门状态不可信不打日级标注，与 _a_share_env
+    fail-closed 哲学一致）。返回 (env_diff, panic_buy, why)。
+    """
+    cl_buys = [s for s in e["sources"]
+               if s["s"] == "chanlun" and "买" in (s.get("tag") or "")]
+    if not cl_buys:
+        return False, False, None
+    panic = any(s.get("reg") == "down" for s in cl_buys)
+    diff = bool(gate_tight)
+    why = None
+    if diff or panic:
+        bits = []
+        if diff:
+            bits.append("A股闸门收紧日买点")
+        if panic:
+            bits.append("信号reg=down(恐慌期检出)")
+        why = "×".join(bits)
+    return diff, panic, why
+
+
+def _env_diff_exempt(e, gate_tight):
+    """环境闸门差异化·豁免判定（P4 启用 2026-10-11，用户拍板）。
+
+    条件（全部满足才豁免 qpzm 回避对 T1 的否决）：
+      1. gate_tight：A股闸门收紧日（env_gate.safe=False；qpzm stale/异常
+         时 env_gate 缺失 → 不豁免，闸门状态不可信 fail-closed）
+      2. 票有缠论 1买——质量分层唯一正 alpha 层（T+10 中位 +0.43 vs
+         全池 -1.14；进 T1 仍需 bull>=2 共振把关，收紧日实际即
+         strong领涨∩1买，供给增量天然受 strong 交集约束不泛滥）
+      3. qpzm 回避全部为「环境闸门」型（action 含 环境闸门 字样）——
+         个股型回避仍否决；action 缺失=型别不可判，维持否决（保守）
+    哲学：环境闸门型回避传递的是「市场差」信息，而调研（可成交口径
+    3438 事件）显示市场差恰是 1买 质量最高的环境（reg=down T+10 中位
+    +0.32 vs flat -2.91；收紧期一刀切否决 1买 共振票自相矛盾）。豁免
+    仅作用于 qpzm_avoid 一处；weak 否决/ST 封顶/CROWD/同批卖点不计
+    共振等其余闸门全部不动。cross 通道（load_cross 侧过滤）本次不同步
+    ——豁免票走 strong+chanlun 主通道即可，cross 旁路维持保守。
+    """
+    if not gate_tight:
+        return False
+    if not any(s["s"] == "chanlun" and s.get("tag") == "1买"
+               for s in e["sources"]):
+        return False
+    avoids = [s for s in e["sources"]
+              if s["s"] == "qpzm" and s.get("tag") == "回避"]
+    return bool(avoids) and all(
+        "环境闸门" in (s.get("action") or "") for s in avoids)
+
+
+def _chanlun_toxic(srcs):
+    """毒层买点判定（P5b 启用 2026-10-11，用户拍板；调研依据
+    chanlun_quality_layering.py 可成交口径 3438 事件）。
+
+    毒层 = 以下任一买点（T1 共振不计票，票本身仍走 T2 单策略通道）：
+      · 3买 ∧ bei=False（盘整背驰明确不成立）：T+10 中位 -4.03 vs
+        全池 -1.14（n=289，超 skill 达标线 n≥10 且反向显著）
+      · 2买 ∧ trend=range：T+5 胜率 8.3%（n=46，小样本——故整体
+        挂 TOXIC_EXCLUDE 开关可一键回退）
+    bei=None（不可判）/ trend 缺失不判毒——保守方向，与 P4 fail-closed
+    哲学一致。卖点票不进本判定（cl_buy 口径已排除买卖并存）。
+    """
+    for s in srcs:
+        if s.get("s") != "chanlun":
+            continue
+        tag = s.get("tag") or ""
+        if "买" not in tag:
+            continue
+        if tag == "3买" and s.get("bei") is False:
+            return True
+        if tag == "2买" and s.get("trend") == "range":
+            return True
+    return False
+
+
+def _q_layer_marks(e):
+    """chanlun 买点质量分层·影子标注（P5a 2026-10-11，只标注不拦截）。
+
+    两级标注随档归档供 P5d 后验分层（pick_layer_verdicts.py）：
+      · q_toxic    = 毒层买点票（口径同 _chanlun_toxic；P5b 已启用过滤，
+        本标注继续记录毒层人群构成，跟踪其 T2 通道表现是否同样劣势）
+      · q_first_buy= 缠论 1买票（唯一正 alpha 层：T+10 中位 +0.43 vs
+        全池 -1.14，分半稳健；P5c「T1 腿 1买独占」是否启用由后验说话）
+    返回 (q_toxic, q_first_buy)。
+    """
+    cl_buys = [s for s in e["sources"]
+               if s["s"] == "chanlun" and "买" in (s.get("tag") or "")]
+    if not cl_buys:
+        return False, False
+    return (_chanlun_toxic(e["sources"]),
+            any(s.get("tag") == "1买" for s in cl_buys))
 
 
 def load_ninedim(stocks, basis_day=None):
@@ -349,6 +479,11 @@ def load_cross(stocks, basis_day=None):
         # （依赖 chanlun 先于 cross 加载；chanlun 源失败时守卫自动失效降级。）
         cl_sell = any(src["s"] == "chanlun" and "卖" in (src.get("tag") or "")
                       for src in (stocks.get(c) or {}).get("sources") or [])
+        # P5b 毒层同步（2026-10-11）：毒层买点（_chanlun_toxic 口径）
+        # 不计入 cross 看多源——与 tier_of cl_buy 收紧同口径，堵旁路
+        # （依赖 chanlun 先于 cross 加载；chanlun 源失败守卫自动失效降级）。
+        cl_toxic = _chanlun_toxic(
+            (stocks.get(c) or {}).get("sources") or [])
         # weak 否决（五审）：强失速/深度垫底 = 显式负面信号，与 qpzm 回避同哲学，
         # 不挂「多策略共振」标签（依赖 weak 先于 cross 加载，顺序见 main）。
         weak_bad = any(src["s"] == "weak"
@@ -360,7 +495,9 @@ def load_cross(stocks, basis_day=None):
         n_long = sum(1 for h in hits
                      if h.get("dir") == "long"
                      and h.get("sid") in ("qpzm", "chanlun")
-                     and not (cl_sell and h.get("sid") == "chanlun"))
+                     and not (cl_sell and h.get("sid") == "chanlun")
+                     and not (TOXIC_EXCLUDE and cl_toxic
+                              and h.get("sid") == "chanlun"))
         avoid = any(h.get("sid") == "qpzm" and h.get("dir") == "short"
                     for h in hits)
         if n_long < 2 or avoid or weak_bad or is_st:
@@ -386,7 +523,17 @@ def load_cross(stocks, basis_day=None):
                     "label@日期=信号检出日" % n_skip}
 
 
-def tier_of(e, veto_ok=True):
+def _pick_sort_key(x):
+    """清单排序键（P5c 形态 C 2026-10-11 启用）：tier → tier 内缠论 1买
+    （q_first_buy，唯一正中位层）置顶 → n_hit 降序 → code。纯展示层
+    优先级，不影响 tier 判定/拦截；形态 B（strong∩chanlun 通道 1买
+    独占）待影子达标另议，数据工具 t1_channel_verdicts.py。"""
+    order = {"T1": 0, "T2": 1, "CROWD": 2, "T3": 3}
+    return (order[x["tier"]], not x.get("q_first_buy"),
+            -x["n_hit"], x["code"])
+
+
+def tier_of(e, veto_ok=True, gate_tight=False):
     # T1 否决链守卫（十一审 2026-10-10）：chanlun/weak/qpzm 之一 err 失败
     # （非 stale 闸门拦截——stale 是设计内"旧负面不误杀"）时否决闸门静默
     # 失效，T1 可混入带同批卖点/强失速/qpzm回避的票 → veto_ok=False 当日
@@ -405,11 +552,21 @@ def tier_of(e, veto_ok=True):
     cl_tags = [s.get("tag") or "" for s in srcs if s["s"] == "chanlun"]
     cl_buy = (any("买" in t for t in cl_tags)
               and not any("卖" in t for t in cl_tags))
+    # P5b 毒层过滤（2026-10-11 启用）：毒层买点（3买bei=False/2买range）
+    # 不计 T1 共振票——票仍走 T2 单策略通道；回退=TOXIC_EXCLUDE=False。
+    if TOXIC_EXCLUDE and cl_buy and _chanlun_toxic(srcs):
+        cl_buy = False
     bull = (any(s["s"] == "qpzm" and s.get("tag") == "买入" for s in srcs)
             + cl_buy
             + any(s["s"] == "strong" and s.get("tag") == "板块领涨"
                   for s in srcs))
     qpzm_avoid = any(s["s"] == "qpzm" and s.get("tag") == "回避" for s in srcs)
+    # 环境闸门差异化豁免（P4 启用 2026-10-11）：收紧日 × 缠论1买 × 回避
+    # 全为环境闸门型 → qpzm_avoid 不再否决 T1（市场差恰是 1买 质量最高
+    # 环境，reg=down T+10 中位 +0.32 vs flat -2.91；详见 _env_diff_exempt）。
+    # bull>=2 共振把关不变，收紧日实际生效通道=strong领涨∩1买。
+    if qpzm_avoid and _env_diff_exempt(e, gate_tight):
+        qpzm_avoid = False
     # weak 否决（五审）：强失速/深度垫底 = 显式负面信号，与 qpzm 回避同哲学，
     # T1 封顶降 T2；weak 源自身带过期闸门，过期旧负面数据不入场（不误杀）。
     # 2026-10-10 七审修正：ST/*ST 票（5% 涨跌幅+退市风险警示）不进 T1/T2
@@ -609,12 +766,39 @@ def main():
     veto_ok = not veto_failed
 
     out_rows = []
+    # P3 环境闸门差异化·影子标注（2026-10-11）：qpzm stale/异常时
+    # env_gate 缺失 → gate_tight=False（fail-closed，不打日级标注）。
+    env_gate = (metas.get("qpzm") or {}).get("env_gate")
+    gate_tight = bool(env_gate and env_gate.get("safe") is False)
+    n_env_diff = n_panic_buy = n_exempt = n_q_toxic = n_q_first = 0
     for c, e in stocks.items():
         e["n_hit"] = len({s["s"] for s in e["sources"]} - {"cross"})
-        e["tier"] = tier_of(e, veto_ok)
+        e["tier"] = tier_of(e, veto_ok, gate_tight)
+        d, p, why = _env_diff_shadow(e, gate_tight)
+        if d:
+            e["env_diff"] = True
+            n_env_diff += 1
+        if p:
+            e["panic_buy"] = True
+            n_panic_buy += 1
+        if why:
+            e["env_diff_why"] = why
+        # P4 豁免标注：满足豁免条件的票（无论最终 tier）随档归档，
+        # 后验可统计「豁免人群」与收紧日对照层的窗口收益差。
+        if _env_diff_exempt(e, gate_tight):
+            e["env_diff_exempt"] = True
+            n_exempt += 1
+        # P5a 质量分层影子标注：q_toxic（毒层构成跟踪）/q_first_buy
+        # （1买层，P5c 是否启用由后验说话）——只标注不拦截。
+        qt, qf = _q_layer_marks(e)
+        if qt:
+            e["q_toxic"] = True
+            n_q_toxic += 1
+        if qf:
+            e["q_first_buy"] = True
+            n_q_first += 1
         out_rows.append(e)
-    order = {"T1": 0, "T2": 1, "CROWD": 2, "T3": 3}
-    out_rows.sort(key=lambda x: (order[x["tier"]], -x["n_hit"], x["code"]))
+    out_rows.sort(key=_pick_sort_key)
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     basis_day, n_backfill = _backfill_quotes(stocks)
@@ -657,6 +841,18 @@ def main():
             "T3_single": sum(1 for r in out_rows if r["tier"] == "T3"),
             "crowd_alert": sum(1 for r in out_rows if r["tier"] == "CROWD"),
             "rotation": rotation,
+            # P3 环境闸门差异化·影子（2026-10-11）：只统计不拦截——
+            # 收紧日买点/恐慌期买点两层，达标启用另议（函数 docstring）
+            "env_diff_shadow": n_env_diff,
+            "panic_buy_shadow": n_panic_buy,
+            # P4 豁免启用（2026-10-11）：收紧日×1买×环境闸门型回避 →
+            # qpzm_avoid 不再否决 T1（bull>=2 共振把关仍在）
+            "env_diff_exempt": n_exempt,
+            # P5a 质量分层影子（2026-10-11）：q_toxic 毒层构成跟踪（P5b
+            # 已过滤其 T1 共振票，标注记录 T2 通道表现）；q_first_buy 1买
+            # 层（P5c「T1 腿 1买独占」后验达标再议启用）
+            "q_toxic_shadow": n_q_toxic,
+            "q_first_buy_shadow": n_q_first,
         },
         "stocks": out_rows,
     }
