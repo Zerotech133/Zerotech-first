@@ -671,6 +671,46 @@ def _archive_once(hist_dir, basis_day, doc):
     return arch, True
 
 
+def _snapshot_qpzm(hist_dir, basis_day):
+    """qpzm 源逐日快照留档（K-STOCK-121，2026-10-11）。
+
+    quant_backtest/reports/rps_latest.json 每日滚动覆写、历史不保，T1 主
+    通道之一（qpzm 腿）因此无法离线重放（P5c 报告 §5 局限「qpzm 通道
+    留白」的根源）。本函数把当日 rps_latest 全量（res/tops/envs 环境闸门）
+    首写锁定快照进 picks_history（qpzm_YYYY-MM-DD.json，~27KB/日）：
+    - 与 _archive_once 同口径 first-write-wins，重跑不覆写；
+    - 独立补档：归档已存在也照补（功能上线日的既有 basis_day 可回填，
+      如 2026-10-09 周末回填）；monitor/verdicts 只认 todays_*.json
+      前缀，本快照对其不可见、零污染；
+    - 防错位：仅当源自身 latest 与 basis_day 一致才落档（行情湖与源
+      刷新错位日不误标历史）；
+    - 侧线动作不反噬主链：任何异常仅打印。
+    """
+    try:
+        src = os.path.join(QB, "reports", "rps_latest.json")
+        if not os.path.exists(src):
+            return
+        with open(src, encoding="utf-8") as f:
+            d = json.load(f)
+        latest = str(d.get("latest") or "")
+        if latest != basis_day.replace("-", ""):
+            print("  [qpzm 快照] 跳过：源 latest=%s 与 basis=%s 错位"
+                  "（防误标，不落档）" % (latest or "?", basis_day))
+            return
+        out = os.path.join(hist_dir, "qpzm_%s.json" % basis_day)
+        if os.path.exists(out):
+            return  # 首写锁定，重跑不覆写（与 _archive_once 同口径）
+        tmp = out + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, out)
+        print("  [qpzm 快照] 留档 %s（res=%s tops=%s envs=%s）"
+              % (os.path.basename(out), len(d.get("res") or []),
+                 len(d.get("tops") or []), len(d.get("envs") or [])))
+    except Exception as ex:  # noqa: BLE001
+        print("  [qpzm 快照] 失败（不反噬主链）：%s" % str(ex)[:80])
+
+
 def gate_failed_sources(metas):
     """五源全景闸停挂名单（三十九审 2026-10-10，用户拍板）。
 
@@ -870,6 +910,9 @@ def main():
         if not wrote:
             print("  归档 %s 已存在：保留首次快照（重跑不覆写；如需重写先删该文件）"
                   % os.path.basename(arch))
+        # qpzm 源快照独立补档（K-STOCK-121）：归档在不在都照补，
+        # 回填既有 basis_day；与归档同日随 TodaysPicks 自然积累
+        _snapshot_qpzm(hist_dir, basis_day)
     print("  轮动(vs %s)：新进 %s / 退出 %s / 留存 %s；归档 %s"
           % (rotation["vs"] or "无", rotation["new_in"], rotation["dropped"],
              rotation["retained"],
