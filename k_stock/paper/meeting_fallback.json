@@ -1,0 +1,5 @@
+{
+ "schema": "k-stock-153/meeting-fallback-v0.1",
+ "allow_zhipu_fallback": false,
+ "note": "会议线智谱兜底通道门控（默认关）。通道兜底不改变模型目录约束：GLM-5.2 仍属 gaorta 目录模型，仅计费通道经智谱官方，启用须老田批准。"
+}

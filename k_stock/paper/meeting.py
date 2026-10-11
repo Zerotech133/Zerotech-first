@@ -10,6 +10,14 @@
 
 fail-closed：kind 非法 / 无 active 雇佣 / LLM 不可达 / 投递未成功 → MeetingError，
 不静默、不落半截纪要（LLM 失败时 minutes.send 绝不被调用）。
+
+智谱兜底通道（K-STOCK-153，默认关闭待拍板）：
+gaorta 通道因 GAORTA_API_KEY 未配置而失败时，若门控开启，改经 kstock/llm.py
+LLMClient（智谱官方 coding 端点，GLM_API_KEY）生成同款纪要，provider 记
+"zhipu-fallback"，纪要后续投递/审计流程完全不变；兜底失败仍 MeetingError。
+通道兜底不改变模型目录约束：GLM-5.2 仍属 gaorta 目录模型，仅计费通道经
+智谱官方，启用须老田批准。门控读 meeting_fallback.json 的
+{"allow_zhipu_fallback": true/false}，文件缺失一律视为 false（默认关）。
 """
 import argparse
 import json
@@ -25,6 +33,18 @@ import manager  # noqa: E402
 import minutes  # noqa: E402
 
 KINDS = ("pre_open", "post_close")
+
+# 智谱兜底通道门控文件（K-STOCK-153；默认缺失=false，启用须老田批准）
+FALLBACK_CONFIG_FP = HERE / "meeting_fallback.json"
+
+# kstock/llm.py LLMClient（智谱官方主链）；导入失败置 None（兜底自然不可用）
+try:
+    _kstock_dir = str(HERE.parent)
+    if _kstock_dir not in sys.path:
+        sys.path.insert(0, _kstock_dir)
+    from kstock.llm import LLMClient as _LLMClient  # noqa: E402
+except ImportError:
+    _LLMClient = None
 
 _KIND_LABELS = {"pre_open": "盘前会", "post_close": "收盘会"}
 
@@ -55,6 +75,49 @@ def _resolve_channel(mid: str, profile: dict, channel: str | None) -> str:
         if ch in minutes.DELIVERY_CHANNELS:
             return ch
     return "site"
+
+
+def _zhipu_fallback_allowed(fp=None) -> bool:
+    """兜底门控：读 meeting_fallback.json，文件缺失/解析失败一律 false（默认关）。"""
+    fp = Path(fp) if fp is not None else FALLBACK_CONFIG_FP
+    try:
+        cfg = json.loads(fp.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return bool(isinstance(cfg, dict) and cfg.get("allow_zhipu_fallback", False))
+
+
+def _zhipu_model_name(ledger_model) -> str | None:
+    """雇佣账本模型名 → 智谱 coding 端点可用名。
+
+    探针实测（2026-10-12）：GLM-5.2 与 glm-5.2 在智谱 coding 端点均接受
+    （端点别名归一，实际服务 glm-5.3）。仅 GLM 家族可映射，非 GLM 模型
+    （deepseek/kimi 等）智谱无对应 → 返回 None（兜底不可用）。
+    """
+    m = (ledger_model or "").strip()
+    return m.lower() if m.lower().startswith("glm-") else None
+
+
+def _try_zhipu_fallback(messages, ledger_model, orig_err) -> str | None:
+    """智谱兜底生成（仅限 GAORTA_API_KEY 缺失类失败 + 门控开启）。
+
+    返回纪要正文；不可兜底/兜底失败一律返回 None（调用方维持原 MeetingError）。
+    通道兜底不改变模型目录约束：GLM-5.2 仍属 gaorta 目录模型，仅计费通道
+    经智谱官方，启用须老田批准。
+    """
+    if not (isinstance(orig_err, RuntimeError) and "GAORTA_API_KEY" in str(orig_err)):
+        return None
+    if not _zhipu_fallback_allowed() or _LLMClient is None:
+        return None
+    zname = _zhipu_model_name(ledger_model)
+    if not zname:
+        return None
+    try:
+        client = _LLMClient(glm_model=zname, timeout=120)
+        text, _prov = client.chat(messages, json_mode=False, max_tokens=4000)
+    except Exception:
+        return None
+    return text if (text or "").strip() else None
 
 
 def hold_meeting(mid: str, source: str, kind: str,
@@ -92,9 +155,14 @@ def hold_meeting(mid: str, source: str, kind: str,
     try:
         out = gaorta_client.chat_for_hire(mid, source, messages)
     except (RuntimeError, ValueError, OSError) as e:
-        raise MeetingError(
-            f"会议 {mid}×{source} {kind}: LLM 生成纪要失败（不落半截纪要）→ {e}") from e
-    body = (out or {}).get("content") or ""
+        body = _try_zhipu_fallback(messages, active[0].get("model"), e)
+        if body is None:
+            raise MeetingError(
+                f"会议 {mid}×{source} {kind}: LLM 生成纪要失败（不落半截纪要）→ {e}") from e
+        provider_tag = "zhipu-fallback"
+    else:
+        body = (out or {}).get("content") or ""
+        provider_tag = None
     if not body.strip():
         raise MeetingError(f"会议 {mid}×{source} {kind}: LLM 返回空纪要（不落半截纪要）")
 
@@ -103,14 +171,15 @@ def hold_meeting(mid: str, source: str, kind: str,
     ch = _resolve_channel(mid, profile, channel)
     try:
         rec = minutes.send(mid, kind, title, body, channel=ch,
-                           meta={"source": source, "provider": (out or {}).get("model")})
+                           meta={"source": source, "provider": provider_tag
+                                 or (out or {}).get("model")})
     except minutes.Reject as e:
         raise MeetingError(f"会议 {mid}×{source} {kind}: 纪要投递被拒 → {e}") from e
     if rec.get("status") != "delivered":
         raise MeetingError(
             f"会议 {mid}×{source} {kind}: 纪要投递未成功"
             f"（channel={ch}, status={rec.get('status')}, meta={rec.get('meta')}）")
-    return rec, (out or {}).get("model") or active[0].get("model") or "unknown"
+    return rec, provider_tag or (out or {}).get("model") or active[0].get("model") or "unknown"
 
 
 # ── CLI ──────────────────────────────────────────────────────────

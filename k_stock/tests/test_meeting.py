@@ -168,5 +168,111 @@ def test_cli_hold_rejected_exit_codes(env, capsys):
     print("PASS test_cli_hold_rejected_exit_codes")
 
 
+# ── K-STOCK-153 · 智谱兜底通道（门控默认关；mock LLMClient 不触网） ──
+
+class _FakeLLMClient:
+    """LLMClient 替身：记录实例化与 chat 调用，不触网。"""
+
+    calls = []
+    boom = False
+    text = "【纪要】兜底正文（智谱通道测试）"
+
+    def __init__(self, glm_model=None, timeout=300, **kwargs):
+        self.glm_model = glm_model
+
+    def chat(self, messages, temperature=0.3, json_mode=True, max_tokens=2000):
+        _FakeLLMClient.calls.append({"glm_model": self.glm_model,
+                                     "messages": messages, "max_tokens": max_tokens})
+        if _FakeLLMClient.boom:
+            raise RuntimeError("智谱兜底也不可达")
+        return _FakeLLMClient.text, "glm"
+
+
+@pytest.fixture()
+def fallback_env(env, tmp_path, monkeypatch):
+    """在 env 之上注入兜底门控文件（临时区）与 fake LLMClient。"""
+    gate = tmp_path / "meeting_fallback.json"
+    monkeypatch.setattr(meeting, "FALLBACK_CONFIG_FP", gate)
+    _FakeLLMClient.calls = []
+    monkeypatch.setattr(meeting, "_LLMClient", _FakeLLMClient)
+    return gate
+
+
+def _boom_no_gaorta_key(mid, source, messages, timeout=60):
+    raise RuntimeError("未配置 GAORTA_API_KEY，无法调用 gaorta 通道")
+
+
+def test_fallback_disabled_meeting_error_no_llmclient(fallback_env, env):
+    """开关关（文件缺失=false）→ chat_for_hire 失败即 MeetingError，不兜底。"""
+    import gaorta_client as g
+    orig = g.chat_for_hire
+    g.chat_for_hire = _boom_no_gaorta_key
+    try:
+        with pytest.raises(MeetingError, match="GAORTA_API_KEY"):
+            hold_meeting(MID, SOURCE, "pre_open", context="行情摘要")
+    finally:
+        g.chat_for_hire = orig
+    assert _FakeLLMClient.calls == [], "开关关闭时 LLMClient 不得被调用"
+    assert env.sent == []
+    print("PASS test_fallback_disabled_meeting_error_no_llmclient")
+
+
+def test_fallback_enabled_delivers_with_zhipu_provider(fallback_env, env):
+    """开关开 → chat_for_hire 失败后 LLMClient 被调用，投递成功且 provider=zhipu-fallback。"""
+    fallback_env.write_text(json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8")
+    import gaorta_client as g
+    orig = g.chat_for_hire
+    g.chat_for_hire = _boom_no_gaorta_key
+    try:
+        rec, provider = hold_meeting(MID, SOURCE, "pre_open", context="行情摘要")
+    finally:
+        g.chat_for_hire = orig
+    assert len(_FakeLLMClient.calls) == 1
+    assert _FakeLLMClient.calls[0]["glm_model"] == "glm-5.2"  # 账本 GLM-5.2 → 智谱小写可用名
+    assert len(env.sent) == 1
+    assert env.sent[0]["body"] == "【纪要】兜底正文（智谱通道测试）"
+    assert env.sent[0]["meta"]["provider"] == "zhipu-fallback"
+    assert rec["status"] == "delivered"
+    assert provider == "zhipu-fallback"
+    print("PASS test_fallback_enabled_delivers_with_zhipu_provider")
+
+
+def test_fallback_also_fails_meeting_error(fallback_env, env):
+    """开关开但兜底也失败 → 仍 MeetingError，send 不被调用（不落半截纪要）。"""
+    fallback_env.write_text(json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8")
+    _FakeLLMClient.boom = True
+    import gaorta_client as g
+    orig = g.chat_for_hire
+    g.chat_for_hire = _boom_no_gaorta_key
+    try:
+        with pytest.raises(MeetingError, match="LLM 生成纪要失败"):
+            hold_meeting(MID, SOURCE, "pre_open", context="行情摘要")
+    finally:
+        g.chat_for_hire = orig
+        _FakeLLMClient.boom = False
+    assert len(_FakeLLMClient.calls) == 1, "兜底确实被尝试过"
+    assert env.sent == []
+    print("PASS test_fallback_also_fails_meeting_error")
+
+
+def test_fallback_only_for_missing_gaorta_key(fallback_env, env):
+    """非 GAORTA_API_KEY 类失败（如 HTTP 5xx）不触发兜底，即使开关已开。"""
+    fallback_env.write_text(json.dumps({"allow_zhipu_fallback": True}), encoding="utf-8")
+    import gaorta_client as g
+    orig = g.chat_for_hire
+
+    def boom_http(mid, source, messages, timeout=60):
+        raise RuntimeError("gaorta HTTP 500: internal error（模型 GLM-5.2）")
+    g.chat_for_hire = boom_http
+    try:
+        with pytest.raises(MeetingError, match="HTTP 500"):
+            hold_meeting(MID, SOURCE, "pre_open", context="行情摘要")
+    finally:
+        g.chat_for_hire = orig
+    assert _FakeLLMClient.calls == []
+    assert env.sent == []
+    print("PASS test_fallback_only_for_missing_gaorta_key")
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
