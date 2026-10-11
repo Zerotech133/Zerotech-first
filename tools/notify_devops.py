@@ -73,6 +73,10 @@ def card_event(kind: str, task: str, detail: str) -> dict:
     if kind == "merge":
         title, tmpl = "✅ 合并回执 · %s" % task, "green"
         md = "**%s 已合并 master**\n%s" % (task, detail or "三守卫全绿")
+    elif kind == "new":
+        title, tmpl = "📋 新工单 · %s" % task, "blue"
+        md = ("**%s 已建单**\n%s\n---\n领单纪律：DEVTOOL_AGENT/DEVTOOL_IDE/"
+              "DEVTOOL_MODEL 三环境变量带齐再动工" % (task, detail or ""))
     else:
         title, tmpl = "⛔ 开发卡壳 · %s" % task, "red"
         md = "**%s 卡壳**\n%s\n---\n请拍板：继续 / 换人 / 放弃" % (task, detail or "原因未填")
@@ -97,6 +101,9 @@ def main() -> None:
     p1 = sub.add_parser("merge", help="合并回执卡")
     p1.add_argument("--task", required=True)
     p1.add_argument("--detail", default="")
+    pn = sub.add_parser("new", help="建单通知卡（蓝）")
+    pn.add_argument("--task", required=True)
+    pn.add_argument("--detail", default="")
     p2 = sub.add_parser("blocked", help="卡壳告警卡")
     p2.add_argument("--task", required=True)
     p2.add_argument("--detail", default="")
