@@ -29,6 +29,12 @@
 
 输出始终是 `read_only`、`training_eligible=false`、`production_eligible=false`。只有补齐原件、哈希核验、日期/原始证据、许可证、本人离线签名、标准定义和日历认证后，才可重新评审 LoRA；本次不改变训练、模拟成交或交易门禁。
 
+## 只读 RAG 基线 v0.4
+
+2026-10-12 使用当前候选快照重跑 `work/_rag_test_staging_v0.1/run_e_drive_rag_baseline.py`，结果保存在 `rag-run-v0.4/`：5 个用例全部完成，3/3 正向检索命中（Recall@5=1.0）、2/2 缺证据拒答通过、术语覆盖完整；1 个时序用例因来源日期缺失保持风险状态。由于快照仍有 `hash_drift`、缺失精确双刀原文、来源日期缺口、人工审核、标准定义和日历认证阻断，决策为 `blocked_snapshot`。
+
+报告中 `model_calls=0`、`training_steps=0`、`training_eligible=false`、`production_eligible=false`，因此本轮没有模型训练或金融执行副作用。
+
 ## 训练候选治理 v0.1
 
 使用 `tools/audit_training_candidates.py` 对训练候选清单做只读审计：
