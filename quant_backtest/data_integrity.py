@@ -345,7 +345,8 @@ def _margin_coverage(root, keys, counts, recent, latest):
         "window_start": recent[0] if recent else None, "window_end": latest,
         "reference_date": reference_day, "reference_unique_codes": len(reference),
         "latest_unique_codes": len(keys.get(latest, set())), "latest_missing_count": coverage.get(latest, {}).get("missing_count", 0),
-        "gap_keys": _key_evidence(reference, keys.get(latest, set())),
+        "gap_keys": _key_evidence(set().union(*(set(row["missing"]) for row in coverage.values())), set()),
+        "latest_gap_keys": _key_evidence(reference, keys.get(latest, set())),
         "raw_count": sum(row["raw_count"] for row in coverage.values()),
         "raw_set": sum(row["raw_set"] for row in coverage.values()),
         "prelisting_excluded_count": sum(row["prelisting_excluded_count"] for row in coverage.values()),
@@ -408,7 +409,9 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
                                     "reference_unique_codes": base,
                                     "latest_unique_codes": len(keys.get(latest, set())),
                                     "latest_missing_count": max(0, base - len(keys.get(latest, set()))),
-                                    "gap_keys": _key_evidence(reference_keys, keys.get(latest, set()))}
+                                    "gap_keys": _key_evidence(
+                                        set().union(*(set(reference_keys) - keys.get(d, set()) for d in recent)), set()),
+                                    "latest_gap_keys": _key_evidence(reference_keys, keys.get(latest, set()))}
             if name == "ts_margin_detail":
                 coverage, missing_count, failed = _margin_coverage(root, keys, counts, recent, latest)
             else:
@@ -442,8 +445,10 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
             details["_summary"] = {"window_start": start, "window_end": latest,
                                     "reference_date": max(recent, default=latest),
                                     "reference_unique_codes": len(sector_def),
-                                    "gap_keys": _key_evidence(sector_def,
-                                                               tables["tdx_sector_daily"].get(latest, set()))}
+                                    "gap_keys": _key_evidence(
+                                        set().union(*(sector_def - tables["tdx_sector_daily"].get(d, set()) for d in recent)), set()),
+                                    "latest_gap_keys": _key_evidence(
+                                        sector_def, tables["tdx_sector_daily"].get(latest, set()))}
             _metric(metrics, "sector_definition_key_reconciliation", "FAIL" if absent else "OK", absent, details)
         elif not paths:
             _metric(metrics, "sector_definition_key_reconciliation", "WARN", 0, {"error": "板块定义不可用，使用近期唯一代码基准"})
@@ -534,8 +539,13 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
                                "reference_unique_codes": base,
                                "latest_unique_codes": len(minute_codes[latest]),
                                "latest_missing_count": details.get(latest, {}).get("missing_count", 0),
-                               "gap_keys": _key_evidence(sector_def if sector_def else set().union(*minute_codes.values()),
-                                                          minute_codes[latest]),
+                               "gap_keys": _key_evidence(
+                                   set().union(*(
+                                       (sector_def - minute_codes[d]) if sector_def else
+                                       (set().union(*minute_codes.values()) - minute_codes[d])
+                                       for d in recent)), set()),
+                               "latest_gap_keys": _key_evidence(
+                                   sector_def if sector_def else set().union(*minute_codes.values()), minute_codes[latest]),
                                "policy": "定义明确的任何缺键均FAIL；无定义保留近期数量参考及90%阈值，不推定历史资格"}
         _metric(metrics, "sector_minute_daily_coverage", "FAIL" if failed else "OK", missing_count, details)
         duplicates = {day: minute_key_rows[day] - len(minute_keys[day]) for day in minute_key_rows
