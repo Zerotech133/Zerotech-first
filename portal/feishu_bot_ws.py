@@ -574,12 +574,15 @@ def main():
             mid = msg.message_id
             content = json.loads(msg.content or "{}")
             text = content.get("text", "")
-            log("recv: %r (chat=%s)" % (text[:40], msg.chat_type))
             sender_id = ""
             try:  # M7 白名单用：sender → sender_id → open_id（多层防御取值）
                 sender_id = (msg.sender.sender_id.open_id or "")
             except Exception:  # noqa: BLE001
                 pass
+            # K-STOCK-188：recv 行补记 open_id——F-006 白名单清单的原始
+            # 积累通道（此前日志不含发送者，白名单清单无从收集）。
+            log("recv: %r (chat=%s, sender=%s)"
+                % (text[:40], msg.chat_type, sender_id or "-"))
             threading.Thread(target=handle_cmd, args=(text, mid, sender_id),
                              daemon=True).start()
         except Exception:  # noqa: BLE001
