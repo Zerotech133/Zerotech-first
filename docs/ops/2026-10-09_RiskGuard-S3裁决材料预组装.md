@@ -26,12 +26,12 @@
 
 ## 三、裁决包四件（10-14 上午按序产出）
 
-**A · recon 三连输出**（原始证据）
+**A · recon 三连输出**（原始证据；🔴 解释器必须系统 3.11——托管 3.13 无 pandas recon 必炸，10-12 预检实测撞过）
 ```
 cd E:\KGStockAnalysis
-python kg_riskguard_recon.py status >  docs/ops/s3_material_A_status.txt
-python kg_riskguard_recon.py stats  >  docs/ops/s3_material_A_stats.txt
-python kg_riskguard_recon.py json   >  docs/ops/s3_material_A_full.json
+C:/Program Files/Python311/python.exe kg_riskguard_recon.py status >  docs/ops/s3_material_A_status.txt
+C:/Program Files/Python311/python.exe kg_riskguard_recon.py stats  >  docs/ops/s3_material_A_stats.txt
+C:/Program Files/Python311/python.exe kg_riskguard_recon.py json   >  docs/ops/s3_material_A_full.json
 ```
 填空：成熟行数 ____ / pending 行数 ____ / 逐规则（R1/R2/R3/R4）拦截 n=____ 放行 n=____
 
@@ -71,6 +71,20 @@ python kg_riskguard_recon.py json   >  docs/ops/s3_material_A_full.json
 - ⚠️ **R4 例外**：拦截组全史仅 1 条（pending 113 为 10-08 批放行）——R4 是历史误杀归因最重（+2.39pp）但影子样本最少，10-15 判定时 R4 拦截格 n 大概率 <10 → 按 §二统计门槛走「样本不足」分支 c（如实标注，不硬算）
 - 建议执行日：**10-15（周四）收盘后**；若 R4 需要补样，顺延观察至 R4 拦截 n≥10 另批裁决，不阻塞 R1/R2/R3 的 S3 判定
 4. 台账双记：v6.2 P2 时间窗行 + KGStockAnalysis 侧（如有台账线）
+
+## 五-A、判定日预检（10-12 17:45 · K-STOCK-193，只读实测）
+
+**结论：四环全绿，10-15 判定日可按本模板盲跑。**
+
+| 环节 | 实测 | 状态 |
+|---|---|---|
+| recon 工具 | 系统 3.11 下 status 正常输出；🔴 托管 3.13 无 pandas 必炸（已撞，§三 A 件命令已改全路径） | ✅ |
+| 成熟时点 | 09-30 批（t0=20260930）+5 交易日 = **10-15 收盘后 h=5 成熟**（国庆后首交易日 10-09 起算），与 16:10 automation 吻合 | ✅ |
+| 账本推进 | 31,653 行（10-10 预跑 25,981 → +5,672/2日）；R1 拦 10,986（09-30 批 2,989）——每格 n≥10 无虞 | ✅ |
+| 影子采集 | shadow_daily 每日 19:10（10-08~11 连跑 exit=0，err 空）；10-12 批今晚 19:10 正常落 | ✅ |
+| R4 预判 | 拦截组全史 **n=2**（10-10 时 1）——§五分支 c「样本不足」预判维持，10-15 判 R1/R2/R3 不阻塞 | ✅ 维持 |
+
+观察项（不阻塞）：① recon 分组现 20261011（周日）批 2,767 行，其 t0=10-12 → h=5 成熟 10-16，**不参与 10-15 判定**（判定只依赖 09-30 批）；② 模拟仓 5 日窗跟踪表（C 件数据源）已存在，10-13 满窗后再核一眼。
 
 ## 五、分支预案
 
