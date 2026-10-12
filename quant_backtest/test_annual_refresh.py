@@ -27,6 +27,7 @@ def test_annual_refresh_retries_only_failed_batches(tmp_path):
     assert first["status"] == "blocked"
     assert first["failed_units"] == 1
     assert len(calls) == 3
+    assert json.loads((tmp_path / "annual_2023_manifest.json").read_text(encoding="utf-8"))["entries"][2]["reason"] is None
 
     calls.clear()
     second = resume_annual_refresh("ts_daily_basic", 2023, _days(), tmp_path, fetch=fetch, batch_days=30)

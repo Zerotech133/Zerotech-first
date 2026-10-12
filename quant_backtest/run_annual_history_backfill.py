@@ -62,6 +62,7 @@ def resume_annual_refresh(table, year, trading_days, output_dir, *, fetch, batch
             continue
         if saved:
             retried += 1
+        unit_reason = None
         try:
             response = fetch({"unit_id": unit_id, "table": table, "scope": scope})
             if not isinstance(response, dict):
@@ -76,25 +77,27 @@ def resume_annual_refresh(table, year, trading_days, output_dir, *, fetch, batch
             for row in rows:
                 key = _annual_row_key(table, row) if isinstance(row, dict) else None
                 if key is None:
-                    status, reason = "blocked", "primary_key_unresolved"
+                    status, unit_reason = "blocked", "primary_key_unresolved"
                     break
                 if key in seen:
                     duplicate_keys.append(key)
                 seen.add(key)
             if duplicate_keys:
-                status, reason = "blocked", "duplicate_key"
+                status, unit_reason = "blocked", "duplicate_key"
             elif status != "blocked":
-                status, reason = "candidate_ready", None
+                status, unit_reason = "candidate_ready", None
                 (staging / f"{unit_id.replace(':', '_')}.jsonl").write_text(
                     "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
         elif status in {"source_empty", "blocked", "permission_denied", "rate_limited", "source_error"}:
-            reason = reason or status
+            unit_reason = status
             status = "blocked" if status != "source_error" else "source_error"
         else:
-            status, reason = "blocked", "unknown_probe_status"
+            status, unit_reason = "blocked", "unknown_probe_status"
+        if unit_reason and reason is None:
+            reason = unit_reason
         entry = {"unit_id": unit_id, "table": table, "year": year, "scope": scope,
                  "status": status, "complete": status == "candidate_ready", "row_count": len(rows),
-                 "duplicate_keys": [list(key) for key in duplicate_keys], "reason": reason,
+                 "duplicate_keys": [list(key) for key in duplicate_keys], "reason": unit_reason,
                  "captured_at": datetime.now().astimezone().isoformat(), "production_write": False}
         entries.append(entry)
         if status == "candidate_ready":
