@@ -211,13 +211,13 @@
       <span class="enter">进入大屏 →</span>
     </a>
 
-    <!-- ⚡ 常用工具：每人自己的操作面，可随意增删（K-STOCK-245） -->
+    <!-- 📋 工作台：当下工作的快报态势，固定展示（K-STOCK-247） -->
     <div style="margin-top:18px;">
       <div class="sec-line">
-        <span class="sec-t">⚡ 常用工具</span>
-        <span class="sec-s">你的日常操作面 · 点「＋ 添加」从全域挑选，悬停卡片右上角 × 移除</span>
+        <span class="sec-t">📋 工作台 · 当下快报</span>
+        <span class="sec-s">四域实时态势 · 自动刷新，进入工作看这里</span>
       </div>
-      <div class="board" id="favBoard" style="margin-top:0;">
+      <div class="board" style="margin-top:0;">
         <a class="dm" href="/quant">
           <div class="head"><div class="ic">📈</div>
             <div><div class="t">量化 <span class="s" id="t-q-alert" style="margin-top:0;"></span></div></div></div>
@@ -256,18 +256,16 @@
           </div>
           <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-d-note">加载中…</span></span><span class="enter">进入开发 →</span></div>
         </a>
-        <a class="dm fav-add" id="favAdd" href="javascript:void(0)">
-          <div class="fav-plus">＋</div>
-          <div class="t">添加常用</div>
-        </a>
       </div>
-      <div id="favPanel" hidden></div>
     </div>
 
-    <!-- ═══ 分界线：以上=个人常用面，以下=全部分域 ═══ -->
-    <div class="divider"><span>🧭 全部分域</span></div>
+    <!-- ═══ 分界线：以上=工作台快报（固定），以下=常用应用（可增删） ═══ -->
+    <div class="divider"><span>🧭 常用应用</span></div>
+    <div class="sec-line" style="margin-top:10px;">
+      <span class="sec-s">点「＋ 添加」从工具池挑选，悬停卡片右上角 × 移除 · 本机记住你的配置</span>
+    </div>
 
-    <div class="board">
+    <div class="board" id="favBoard" style="margin-top:8px;">
       <!-- 智能体学院：仅交互原型，真实训练与交易未开放 -->
       <a class="dm" href="/academy.html">
         <div class="head">
@@ -346,7 +344,12 @@
       </a>
 
       <!-- ⑥ 更多领域：预留 -->
+        <a class="dm fav-add" id="favAdd" href="javascript:void(0)">
+          <div class="fav-plus">＋</div>
+          <div class="t">添加常用</div>
+        </a>
       </div>
+      <div id="favPanel" hidden></div>
 
     <div class="statusbar">
       <span>⚡ 本地模型 <b id="m-ollama">--</b></span><span class="sep">│</span>
