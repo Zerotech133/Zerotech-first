@@ -47,8 +47,13 @@ def check_c1_cn_filled(cur, day):
         " filled_qty, fee, plan_date, reason FROM orders"
         " WHERE account_id IN (?,?) AND (fill_date=? OR plan_date<=?)",
         CN_ACCOUNTS + (day, day)).fetchall()
+    # K-STOCK-201: filled 必须按 fill_date=验收日 过滤（v1 口径「成交按 fill_date=
+    # 验收日」）——原实现只靠 OR plan_date<=day 选行，历史成交（fill_date<验收日）
+    # 会被误计入当日 filled（明细失真；≥ 判据下不影响 PASS/FAIL 但口径不实）。
+    # 注：表存 fill_date=YYYYMMDD 无连字符（K-STOCK-200 判例），与入参同形态直比。
     filled = [r for r in rows if r["status"] == "filled"
-              and r["fill_date"] and r["filled_price"] and r["filled_qty"]]
+              and r["fill_date"] == day
+              and r["filled_price"] and r["filled_qty"]]
     pending = [r for r in rows if r["status"] == "pending"]
     rejected = [r for r in rows if r["status"] == "rejected"]
     ok = len(filled) >= CN_EXPECT
@@ -68,8 +73,11 @@ def check_c2_us_filled(cur, day):
         " plan_date, reason FROM orders"
         " WHERE account_id=? AND (fill_date=? OR plan_date<=?)",
         (US_ACCOUNTS[0], day, day)).fetchall()
+    # K-STOCK-201: 同 C1——filled 按 fill_date=验收日 过滤（US_EXPECT 硬等式下
+    # 历史成交误计会直接判错：将来若有旧批次成交，等式必假 FAIL）
     filled = [r for r in rows if r["status"] == "filled"
-              and r["fill_date"] and r["filled_price"] and r["filled_qty"]]
+              and r["fill_date"] == day
+              and r["filled_price"] and r["filled_qty"]]
     pending = [r for r in rows if r["status"] == "pending"]
     rejected = [r for r in rows if r["status"] == "rejected"]
     ok = len(filled) == US_EXPECT and not pending
