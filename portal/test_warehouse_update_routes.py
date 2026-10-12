@@ -9,7 +9,9 @@ def handler(methods):
     tree = ast.parse(path.read_text(encoding='utf8'))
     cls = next(n for n in tree.body if isinstance(n,ast.ClassDef) and n.name=='Handler')
     selected = [n for n in cls.body if isinstance(n,ast.FunctionDef) and n.name in methods]
-    ns = {'_MUTATION_POSTS':frozenset({'/api/data/update-plan','/api/data/update'}), '_ACTION_GETS':frozenset()}
+    ns = {'_MUTATION_POSTS':frozenset({'/api/data/update-plan','/api/data/update'}), '_ACTION_GETS':frozenset(),
+          # K-STOCK-185b：频控符号随隔离 exec 一并打桩（恒放行，测派发不测限流）
+          '_rate_hit':lambda key,max_per_min:False, '_WRITE_MAX_PER_MIN':12}
     exec(compile(ast.fix_missing_locations(ast.Module(body=[ast.ClassDef(name='Probe',bases=[],keywords=[],body=selected,decorator_list=[])],type_ignores=[])),str(path),'exec'),ns)
     obj = ns['Probe']()
     obj.responses = []

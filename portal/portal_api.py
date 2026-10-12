@@ -215,6 +215,27 @@ _ACCESS_LOG = r"C:\Temp\portal_api_access.log"
 _NLQ_FORCE_MAX_PER_MIN = 3
 _NLQ_FORCE_HITS = {}   # ip -> [timestamp, ...]
 
+# ===== K-STOCK-185b 写端点频控（安全审计 F-008）=====
+# _MUTATION_POSTS 全族每 IP 每分钟 ≤12 次，超限 429。防脚本循环刷
+# onboard/direct_open/雇佣等写接口（资源滥用与垃圾数据面）。人工操作
+# 远达不到该阈值；本机与代理来源同口径计数（X-Real-IP 优先，nginx 注入）。
+_WRITE_MAX_PER_MIN = 12
+_WRITE_HITS = {}   # (bucket, key) -> [timestamp, ...]
+
+
+def _rate_hit(key, max_per_min, window_sec=60.0):
+    """滑动窗口计数；超限返回 True。进程内内存计数，重启清零（够用）。"""
+    import time as _t
+    now = _t.time()
+    with _lock:
+        hits = _WRITE_HITS.setdefault(key, [])
+        while hits and now - hits[0] > window_sec:
+            hits.pop(0)
+        if len(hits) >= max_per_min:
+            return True
+        hits.append(now)
+        return False
+
 _lock = threading.Lock()
 _cache = {"t": 0.0, "data": None}
 
@@ -2069,6 +2090,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         " header X-Portal-Token，token 见 PORTAL_API_TOKEN"
                         " 或 C:\\Temp\\portal_api_token）"}, 403)
             return
+        # K-STOCK-185b：写端点频控（鉴权之后、业务之前），超限 429。
+        if path in _MUTATION_POSTS:
+            _rip = (self.headers.get("X-Real-IP") or "").strip()
+            _addr = getattr(self, "client_address", None)  # 探针 stub 可能缺省
+            _ck = _rip or (_addr[0] if _addr else "?")
+            if _rate_hit(("write", _ck), _WRITE_MAX_PER_MIN):
+                self._json({"error": "too many requests: 写端点每分钟限 "
+                            f"{_WRITE_MAX_PER_MIN} 次"}, 429)
+                return
         try:
             if path == "/chanlun-anno":
                 # K77 缠论图手工标注增删（body 已在 _chanlun_anno 读）
