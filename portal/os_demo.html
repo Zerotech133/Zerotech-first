@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>个人 OS 指挥大屏 · Demo v3（ECharts 驾驶舱）</title>
+<script src="/static/vendor/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #060a14; overflow: hidden;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+  :root {
+    --panel: rgba(16, 28, 52, .55);
+    --panel-line: rgba(72, 120, 200, .28);
+    --cyan: #35d0ff; --blue: #4d8bff; --gold: #ffc53d;
+    --up: #ff5d5d; --dn: #3ddc97; --dim: #7d92b8; --txt: #dbe7ff;
+  }
+  #stage { width: 1920px; height: 1080px; transform-origin: 0 0; position: absolute;
+    left: 50%; top: 50%; display: flex; flex-direction: column;
+    padding: 18px 26px 14px; gap: 14px;
+    background:
+      radial-gradient(1100px 500px at 50% -8%, rgba(53,120,255,.16), transparent 60%),
+      radial-gradient(900px 420px at 8% 105%, rgba(53,208,255,.08), transparent 60%),
+      radial-gradient(900px 420px at 95% 105%, rgba(255,197,61,.05), transparent 60%),
+      #060a14; }
+
+  /* ── 顶栏 ── */
+  header { display: flex; align-items: center; height: 64px; position: relative; }
+  header .line { position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan) 20%, var(--blue) 50%, var(--cyan) 80%, transparent);
+    opacity: .55; }
+  header h1 { font-size: 30px; letter-spacing: 10px; font-weight: 800; color: #fff;
+    background: linear-gradient(180deg, #fff, #9cc8ff); -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; }
+  header .sub { margin-left: 18px; font-size: 13px; color: var(--dim); letter-spacing: 2px; }
+  header .clock { margin-left: auto; text-align: right; color: var(--txt); }
+  header .clock .t { font-size: 26px; font-family: Consolas, monospace; font-weight: 700; }
+  header .clock .d { font-size: 12px; color: var(--dim); margin-top: 2px; }
+
+  /* ── KPI 六数 ── */
+  .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .kpi { background: var(--panel); border: 1px solid var(--panel-line); border-radius: 10px;
+    padding: 14px 18px 12px; position: relative; overflow: hidden; }
+  .kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: linear-gradient(180deg, var(--cyan), transparent); }
+  .kpi.gold::before { background: linear-gradient(180deg, var(--gold), transparent); }
+  .kpi .v { font-size: 40px; font-weight: 800; font-family: Consolas, monospace;
+    color: #fff; text-shadow: 0 0 18px rgba(53,208,255,.45); line-height: 1.05; }
+  .kpi.gold .v { text-shadow: 0 0 18px rgba(255,197,61,.4); }
+  .kpi .v small { font-size: 18px; font-weight: 600; color: var(--dim); margin-left: 3px; }
+  .kpi .k { font-size: 13px; color: var(--txt); margin-top: 6px; font-weight: 600; }
+  .kpi .s { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+  /* ── 主区三栏 ── */
+  .main { flex: 1; display: grid; grid-template-columns: 480px 1fr 480px; gap: 14px; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--panel-line); border-radius: 10px;
+    padding: 13px 16px; display: flex; flex-direction: column; min-height: 0; position: relative; }
+  .panel::after { content: ""; position: absolute; right: -1px; top: -1px; width: 22px; height: 22px;
+    border-top: 2px solid var(--cyan); border-right: 2px solid var(--cyan);
+    border-radius: 0 10px 0 0; opacity: .8; }
+  .panel .pt { font-size: 14px; font-weight: 700; color: var(--txt); letter-spacing: 1px;
+    display: flex; align-items: center; gap: 8px; }
+  .panel .pt::before { content: ""; width: 8px; height: 8px; background: var(--cyan);
+    transform: rotate(45deg); box-shadow: 0 0 8px var(--cyan); }
+  .panel .pt .r { margin-left: auto; font-size: 11px; color: var(--dim); font-weight: 400; }
+  .chart { flex: 1; min-height: 0; }
+
+  /* 账户行 */
+  .arow { display: flex; align-items: center; gap: 10px; padding: 6px 4px;
+    border-bottom: 1px dashed rgba(72,120,200,.18); font-size: 12px; color: var(--dim); }
+  .arow:last-child { border-bottom: 0; }
+  .arow .an { width: 110px; color: var(--txt); font-weight: 600; }
+  .arow b { font-family: Consolas, monospace; color: #fff; font-weight: 600; }
+  .up { color: var(--up) !important; } .dn { color: var(--dn) !important; }
+
+  /* Agent 行 */
+  .agrow { display: flex; align-items: center; gap: 10px; padding: 7px 4px;
+    border-bottom: 1px dashed rgba(72,120,200,.18); font-size: 12.5px; }
+  .agrow:last-child { border-bottom: 0; }
+  .agrow .ico { width: 26px; height: 26px; border-radius: 7px; background: rgba(53,208,255,.12);
+    border: 1px solid var(--panel-line); display: grid; place-items: center; font-size: 14px; }
+  .agrow .n { color: var(--txt); font-weight: 600; }
+  .agrow .d { color: var(--dim); font-size: 11.5px; margin-top: 1px; }
+  .agrow .r { margin-left: auto; text-align: right; font-family: Consolas, monospace; }
+
+  /* ── 底部跑马灯 ── */
+  .ticker { height: 40px; background: var(--panel); border: 1px solid var(--panel-line);
+    border-radius: 10px; display: flex; align-items: center; overflow: hidden; }
+  .ticker .tag { flex-shrink: 0; padding: 0 16px; height: 100%; display: flex; align-items: center;
+    background: linear-gradient(90deg, rgba(53,208,255,.18), transparent);
+    color: var(--cyan); font-size: 13px; font-weight: 700; letter-spacing: 2px;
+    border-right: 1px solid var(--panel-line); }
+  .ticker .wrap { flex: 1; overflow: hidden; position: relative; height: 100%; }
+  .ticker .move { position: absolute; white-space: nowrap; line-height: 40px;
+    font-size: 13px; color: var(--txt); animation: mv 36s linear infinite; }
+  .ticker .move span { margin-right: 60px; }
+  .ticker .move b { color: var(--gold); }
+  @keyframes mv { from { transform: translateX(100vw); } to { transform: translateX(-100%); } }
+  .dim { color: var(--dim) !important; }
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div id="stage">
+  <header>
+    <h1>个人 OS · 指挥大屏</h1>
+    <div class="sub">SUPER-OS COMMAND CENTER</div>
+    <div class="clock"><div class="t" id="clock">--:--:--</div><div class="d" id="date">----</div></div>
+    <div class="line"></div>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="k-collect">—</div><div class="k">今日采集研判</div><div class="s" id="k-collect-s">情报流</div></div>
+    <div class="kpi"><div class="v" id="k-commit">—</div><div class="k">AI 敲码提交</div><div class="s" id="k-commit-s">今日</div></div>
+    <div class="kpi"><div class="v" id="k-orders">—</div><div class="k">交易订单累计</div><div class="s" id="k-orders-s">模拟盘</div></div>
+    <div class="kpi"><div class="v" id="k-assets">—</div><div class="k">模拟资产总值</div><div class="s">五市场账户</div></div>
+    <div class="kpi"><div class="v" id="k-scan">—</div><div class="k">全池扫描</div><div class="s" id="k-scan-s">量子双刀</div></div>
+    <div class="kpi gold"><div class="v" id="k-todo">—</div><div class="k">待办 / 亮牌</div><div class="s" id="k-todo-s">需要你处理</div></div>
+  </div>
+
+  <div class="main">
+    <!-- 左栏 -->
+    <div class="col">
+      <div class="panel" style="flex:1.1;">
+        <div class="pt">模拟资产 · 市场分布 <span class="r" id="dist-r">A股 / 美股 / 港股 / 虚拟币 / 大宗</span></div>
+        <div class="chart" id="ch-dist"></div>
+      </div>
+      <div class="panel" style="flex:1;">
+        <div class="pt">账户明细 <span class="r">涨红跌绿</span></div>
+        <div style="overflow:auto; flex:1;" id="acct-rows"></div>
+      </div>
+    </div>
+
+    <!-- 中栏 -->
+    <div class="col">
+      <div class="panel" style="flex:1.25;">
+        <div class="pt">main 账户净值曲线 <span class="r" id="nav-r">基准 ¥1,000,000</span></div>
+        <div class="chart" id="ch-nav"></div>
+      </div>
+      <div class="panel" style="flex:.9;">
+        <div class="pt">账户资产对比 <span class="r">初始 vs 当前</span></div>
+        <div class="chart" id="ch-bar"></div>
+      </div>
+      <div class="panel" style="flex:.75;">
+        <div class="pt">全市场 Regime 分层 <span class="r" id="regime-r"></span></div>
+        <div class="chart" id="ch-regime"></div>
+      </div>
+    </div>
+
+    <!-- 右栏 -->
+    <div class="col">
+      <div class="panel" style="flex:1.1;">
+        <div class="pt">今日产出构成 <span class="r">AI 交给你的成品</span></div>
+        <div class="chart" id="ch-out"></div>
+      </div>
+      <div class="panel" style="flex:1;">
+        <div class="pt">Agent 动向 <span class="r">双助手统领</span></div>
+        <div style="overflow:auto; flex:1;" id="ag-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ticker">
+    <div class="tag">实时动态</div>
+    <div class="wrap"><div class="move" id="ticker-move"><span>数据加载中…</span></div></div>
+  </div>
+</div>
+
+<script>
+  // ── 大屏等比适配（1920×1080 设计稿）──
+  const stage = document.getElementById('stage');
+  function fit() {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+    stage.style.left = '50%'; stage.style.top = '50%';
+  }
+  fit(); addEventListener('resize', fit);
+
+  const fmt = n => (n ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
+  const $ = id => document.getElementById(id);
+  setInterval(() => {
+    const d = new Date();
+    $('clock').textContent = d.toLocaleTimeString('zh-CN', { hour12: false });
+    $('date').textContent = d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+  }, 1000);
+
+  const AXC = 'rgba(125,146,184,.75)';
+  const mkAxis = { axisLine: { lineStyle: { color: AXC } }, axisLabel: { color: AXC, fontSize: 11 },
+                   splitLine: { lineStyle: { color: 'rgba(72,120,200,.12)' } } };
+  const charts = {};
+  function ch(id) { charts[id] = charts[id] || echarts.init($(id)); return charts[id]; }
+  addEventListener('resize', () => Object.values(charts).forEach(c => c.resize()));
+
+  // ── 核心：/api/os + /api/paper_status 双源 ──
+  async function load() {
+    let d = {}, ps = {};
+    try { d = await (await fetch('/api/os', { cache: 'no-store' })).json(); } catch {}
+    try { ps = await (await fetch('/api/paper_status', { cache: 'no-store' })).json(); } catch {}
+
+    const c = d.collect || {}, p = d.paper || {}, q = d.qd || {},
+          cd = d.coding || {}, td = d.todo || {}, ac = d.accounts || {}, o = d.output || {};
+    // KPI
+    $('k-collect').textContent = fmt(c.today); $('k-collect-s').textContent = '已判 ' + fmt(c.judged) + ' · 总库 ' + fmt(c.total);
+    $('k-commit').textContent = fmt(cd.commits_today); $('k-commit-s').textContent = cd.last_commit ? ('最近 ' + cd.last_commit) : '今日';
+    $('k-orders').textContent = fmt(p.orders_total); $('k-orders-s').textContent = '今日 ' + fmt(p.orders_today) + ' · 昨日 ' + fmt(p.orders_yday);
+    const markets = ac.markets || {};
+    const totalAll = Object.values(markets).reduce((s, m) => s + (m.total || 0), 0);
+    $('k-assets').innerHTML = '¥<small style="font-size:20px">' + fmt(totalAll) + '</small>';
+    $('k-scan').textContent = fmt(q.scanned); $('k-scan-s').textContent = '星池 ' + fmt(q.star_pool_n) + ' · 跳过 ' + fmt(q.skipped);
+    const todoN = (td.health || 0) + (td.biz_remind || 0) + (td.notes_doing || 0);
+    $('k-todo').textContent = fmt(todoN); $('k-todo-s').textContent = '健康 ' + fmt(td.health) + ' · 提醒 ' + fmt(td.biz_remind) + ' · 在研 ' + fmt(td.notes_doing);
+
+    // ① 市场分布环形
+    const mcolor = { cn: '#35d0ff', us: '#4d8bff', hk: '#b58bff', crypto: '#ffc53d', commodities: '#ff8f5d' };
+    const dist = Object.entries(markets).filter(([, m]) => m.opened)
+      .map(([k, m]) => ({ name: m.name, value: Math.round(m.total), itemStyle: { color: mcolor[k] } }));
+    ch('ch-dist').setOption({
+      tooltip: { trigger: 'item', formatter: '{b}<br/>¥{c}（{d}%）' },
+      legend: { bottom: 0, textStyle: { color: AXC, fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
+      series: [{ type: 'pie', radius: ['52%', '74%'], center: ['50%', '44%'],
+        label: { color: '#dbe7ff', fontSize: 12, formatter: '{b}\n{d}%' },
+        labelLine: { lineStyle: { color: AXC } }, itemStyle: { borderColor: '#060a14', borderWidth: 2 },
+        data: dist.length ? dist : [{ name: '暂无数据', value: 1, itemStyle: { color: '#1a2745' } }] }]
+    });
+
+    // ② 净值曲线（/api/paper_status.curve）
+    const curve = ps.curve || [];
+    $('nav-r').textContent = (curve.length ? ('截至 ' + curve[curve.length - 1].date + ' · ') : '') + '基准 ¥1,000,000';
+    ch('ch-nav').setOption({
+      grid: { left: 70, right: 20, top: 18, bottom: 26 },
+      xAxis: { type: 'category', data: curve.map(x => x.date), ...mkAxis, boundaryGap: false },
+      yAxis: { type: 'value', scale: true, ...mkAxis,
+        axisLabel: { ...mkAxis.axisLabel, formatter: v => (v / 10000).toFixed(0) + '万' } },
+      series: [{ type: 'line', data: curve.map(x => x.total), smooth: true, symbol: 'circle', symbolSize: 7,
+        lineStyle: { width: 2.5, color: '#35d0ff', shadowColor: 'rgba(53,208,255,.5)', shadowBlur: 12 },
+        itemStyle: { color: '#35d0ff', borderColor: '#fff', borderWidth: 1.5 },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(53,208,255,.32)' }, { offset: 1, color: 'rgba(53,208,255,0)' }]) },
+        markLine: { silent: true, symbol: 'none', lineStyle: { color: 'rgba(255,197,61,.5)', type: 'dashed' },
+          label: { color: '#ffc53d', fontSize: 10, formatter: '基准' }, data: [{ yAxis: 1000000 }] } }]
+    });
+
+    // ③ 账户对比柱（初始 vs 当前）
+    const acts = Object.values(markets).flatMap(m => m.accounts || []);
+    ch('ch-bar').setOption({
+      grid: { left: 90, right: 20, top: 18, bottom: 24 },
+      tooltip: { trigger: 'axis', valueFormatter: v => '¥' + fmt(v) },
+      xAxis: { type: 'value', ...mkAxis, axisLabel: { ...mkAxis.axisLabel, formatter: v => (v / 10000) + '万' } },
+      yAxis: { type: 'category', data: acts.map(x => x.id).reverse(), ...mkAxis },
+      series: [
+        { name: '初始', type: 'bar', stack: 'x', barWidth: 13, itemStyle: { color: 'rgba(77,139,255,.35)' },
+          data: acts.map(x => x.initial).reverse() },
+        { name: '当前', type: 'bar', stack: 'x', barWidth: 13,
+          itemStyle: { color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [{ offset: 0, color: '#35d0ff' }, { offset: 1, color: '#4d8bff' }]) },
+          data: acts.map(x => x.total).reverse() }]
+    });
+
+    // ④ Regime 四分层
+    const rg = q.regime || {};
+    const RC = [['trend_up', '趋势上行', '#ff5d5d'], ['range', '区间震荡', '#8b949e'],
+                ['rotation', '轮动', '#b58bff'], ['trend_down', '趋势下行', '#3ddc97']];
+    const rgv = RC.map(([k]) => rg[k] || 0), rgt = rgv.reduce((a, b) => a + b, 0) || 1;
+    $('regime-r').textContent = rg.ts ? ('截至 ' + String(rg.ts).slice(5, 16)) : '';
+    ch('ch-regime').setOption({
+      grid: { left: 10, right: 10, top: 30, bottom: 4 },
+      xAxis: { type: 'value', show: false, max: rgt },
+      yAxis: { type: 'category', data: [''], show: false },
+      series: RC.map(([k, n, col], i) => ({ name: n, type: 'bar', stack: 'r', barWidth: 26,
+        itemStyle: { color: col, shadowColor: col, shadowBlur: 8 },
+        label: { show: true, position: 'inside', color: '#060a14', fontWeight: 700, fontSize: 11,
+          formatter: p => rgv[p.dataIndex] >= rgt * .08 ? (n + ' ' + rgv[p.dataIndex]) : '' },
+        data: [rgv[i]] }))
+    });
+
+    // ⑤ 今日产出构成（横向柱，output 实测字段）
+    const out = [
+      ['卖点判定', o.verdicts || 0],
+      ['选股池', (o.picks && o.picks.total) || 0],
+      ['板块强弱', (o.strong && o.strong.items) || 0],
+      ['晨报汇聚', (o.brief && o.brief.news_count) || 0],
+      ['公众号草稿', o.gzh || 0],
+      ['成片', o.video || 0],
+      ['AI 提交', cd.commits_today || 0]];
+    ch('ch-out').setOption({
+      grid: { left: 76, right: 40, top: 10, bottom: 22 },
+      xAxis: { type: 'value', ...mkAxis },
+      yAxis: { type: 'category', data: out.map(x => x[0]).reverse(), ...mkAxis },
+      series: [{ type: 'bar', barWidth: 12, data: out.map(x => x[1]).reverse(),
+        itemStyle: { color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [{ offset: 0, color: '#ffc53d' }, { offset: 1, color: 'rgba(255,197,61,.15)' }]),
+          borderRadius: [0, 6, 6, 0] },
+        label: { show: true, position: 'right', color: '#dbe7ff', fontSize: 11, fontFamily: 'Consolas' } }]
+    });
+
+    // ⑥ 账户明细行
+    $('acct-rows').innerHTML = acts.map(x => {
+      const r = x.ret_pct || 0, cls = r > 0.005 ? 'up' : (r < -0.005 ? 'dn' : '');
+      return '<div class="arow"><span class="an">' + x.id + '</span>'
+        + '<span>总 <b>¥' + fmt(x.total) + '</b></span>'
+        + '<span>仓位 <b>' + ((x.pos_pct || 0) * 100).toFixed(1) + '%</b></span>'
+        + '<span>收益 <b class="' + cls + '">' + (r >= 0 ? '+' : '') + r.toFixed(2) + '%</b></span></div>';
+    }).join('') || '<div class="dim" style="font-size:12px">暂无账户</div>';
+
+    // ⑦ Agent 动向
+    const a = d.agents || {};
+    const ag = [
+      ['🧠', '参谋长 A0', a.chief ? (a.chief + ' · 统领全站') : '组织架构顶点', '—', ''],
+      ['📄', '影子日报', a.daily_report ? '最新 ' + a.daily_report : '今日未出', '—', ''],
+      ['⚖️', 'A0 点评', a.a0_review ? '最新 ' + a.a0_review : '今日未出', '—', ''],
+      ['📋', '岗位任务单', '累计 ' + fmt(a.plan_total) + ' 单', '今日 ' + fmt(a.plan_today), ''],
+      ['🔍', '判决复核', '累计 ' + fmt(a.judge_total) + ' 件', '今日 ' + fmt(a.judge_today), ''],
+      ['💻', 'AI 研发', '今日提交 ' + fmt(cd.commits_today) + ' 笔', cd.last_commit || '', '']];
+    $('ag-rows').innerHTML = ag.map(([i, n, ds, r]) =>
+      '<div class="agrow"><span class="ico">' + i + '</span><span><div class="n">' + n + '</div><div class="d">' + ds + '</div></span>'
+      + '<span class="r dim">' + r + '</span></div>').join('');
+
+    // ⑧ 底部跑马灯
+    const items = [
+      '📥 今日采集 <b>' + fmt(c.today) + '</b> 条，已研判 <b>' + fmt(c.judged) + '</b>',
+      '📤 今日产出：晨报 · 盘前研判 · 影子日报 · A0 点评 · 选股池 <b>' + fmt((o.picks || {}).total) + '</b>',
+      '💻 AI 敲码提交 <b>' + fmt(cd.commits_today) + '</b> 笔',
+      '📈 双刀全池扫描 <b>' + fmt(q.scanned) + '</b> 只 · 星池 <b>' + fmt(q.star_pool_n) + '</b>',
+      '💰 模拟资产总值 <b>¥' + fmt(totalAll) + '</b>（五市场）',
+      '✅ 待办亮牌 <b>' + fmt(todoN) + '</b> 项'];
+    $('ticker-move').innerHTML = items.map(s => '<span>' + s + '</span>').join('') + items.map(s => '<span>' + s + '</span>').join('');
+  }
+  load(); setInterval(load, 120000);
+</script>
+</body>
+</html>
