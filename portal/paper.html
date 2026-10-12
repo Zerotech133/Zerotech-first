@@ -465,7 +465,7 @@ function renderPlanReview(r,pf){
     (r.summary?`<div style="font-size:12.5px;margin-bottom:8px">📋 ${esc(r.summary)}</div>`:'')+
     (ap?`<table class="mini-table"><tr style="color:var(--text-dim)"><td>批准买入</td><td>理由</td><td>建议仓位</td></tr>${ap}</table>`
        :'<div class="empty">今日无批准买入</div>')+
-    (rj?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim)">驳回清单（${rj.length} 只，点击展开）</summary>
+    (rj?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim)">驳回清单（${(r.rejected||[]).length} 只，点击展开）</summary>
         <table class="mini-table" style="margin-top:4px">${rj}</table></details>`:'')+
     `<div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">审批单 ${esc(r.generated_at||'')}${prov}${deg}</div>`;
 }
