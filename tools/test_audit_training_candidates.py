@@ -62,10 +62,29 @@ def test_complete_record_is_content_eligible_but_global_training_off(tmp_path):
         "total": 1,
         "content_eligible": 1,
         "training_eligible": 0,
+        "strategy_training_eligible": 0,
         "evaluation_only": 1,
     }
     assert result["records"][0]["training_eligible"] is False
+    assert result["records"][0]["strategy_training_eligible"] is False
+    assert result["strategy_training_eligible"] is False
     assert "training_disabled" in result["records"][0]["reasons"]
+
+
+def test_complete_record_can_enter_strategy_training_without_financial_training(tmp_path):
+    record = _record(tmp_path / "sources", "a.md")
+    manifest = _manifest(tmp_path, [record], training_enabled=False)
+    manifest["policy"]["strategy_training_enabled"] = True
+
+    result = audit_manifest(manifest)
+
+    assert result["policy"]["strategy_training_enabled"] is True
+    assert result["strategy_training_eligible"] is True
+    assert result["counts"]["strategy_training_eligible"] == 1
+    assert result["records"][0]["strategy_training_eligible"] is True
+    assert result["records"][0]["evaluation_only"] is False
+    assert result["records"][0]["training_eligible"] is False
+    assert result["policy"]["financial_execution_enabled"] is False
 
 
 def test_missing_license_and_split_stays_evaluation_only(tmp_path):
