@@ -154,6 +154,18 @@ class RagWebBackendTests(unittest.TestCase):
         self.assertIn("上下文", messages[-1]["content"])
         self.assertIn("问题", messages[-1]["content"])
 
+    def test_profile_prompt_is_used_and_returned_in_sources_event(self):
+        temp, _ = self.make_docs()
+        self.addCleanup(temp.cleanup)
+        service = RagWebService(client=FakeRagClient(), docs_dir=temp.name)
+        messages = service.build_messages(
+            "问题", [{"source": "facts.md", "text": "上下文"}], profile="risk_review"
+        )
+        self.assertIn("风险", messages[0]["content"])
+        events = list(service.stream("问题", profile="risk_review"))
+        self.assertEqual(events[-2]["profile"], "risk_review")
+        self.assertEqual(events[-2]["model"], "qwen3.5:9b")
+
     def test_concurrent_searches_keep_requested_top_k(self):
         class SlowKnowledgeBase:
             def __init__(self):

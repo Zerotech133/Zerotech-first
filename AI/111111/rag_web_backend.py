@@ -9,10 +9,12 @@ try:
     from .knowledge_base import KnowledgeBase
     from .ollama_client import OllamaClient, OllamaError
     from .model_routing import EMBED_MODEL, RAG_CHAT_MODEL, validate_model
+    from .chat_profiles import ProfileError, get_profile
 except ImportError:
     from knowledge_base import KnowledgeBase
     from ollama_client import OllamaClient, OllamaError
     from model_routing import EMBED_MODEL, RAG_CHAT_MODEL, validate_model
+    from chat_profiles import ProfileError, get_profile
 
 
 class RagUnavailable(RuntimeError):
@@ -144,17 +146,25 @@ class RagWebService:
         except Exception as exc:
             raise RagUnavailable("知识库检索不可用", status_code=503) from exc
 
-    def build_messages(self, question, matches):
+    def build_messages(self, question, matches, profile=None):
+        try:
+            role = get_profile(profile)
+        except ProfileError as exc:
+            raise ValueError(str(exc)) from exc
         context = "\n\n".join(
             "[来源: %s]\n%s" % (match.get("source", ""), match.get("text", ""))
             for match in matches
         )
         return [
-            {"role": "system", "content": "你是严谨的知识库问答助手，只依据用户提供的上下文回答。上下文不足时明确回答‘不知道’，不要编造。"},
+            {"role": "system", "content": role["system_prompt"] + "\n\n你还必须只依据用户提供的知识库上下文回答。上下文不足时明确回答‘不知道’，不要编造。"},
             {"role": "user", "content": "上下文：\n%s\n\n问题：%s\n若上下文不足，请明确回答‘不知道’，不要编造。" % (context, question)},
         ]
 
-    def stream(self, question, top_k=None):
+    def stream(self, question, top_k=None, profile=None):
+        try:
+            role = get_profile(profile)
+        except ProfileError as exc:
+            raise ValueError(str(exc)) from exc
         matches = self.search(question, top_k)
         if not matches:
             yield {"message": {"content": "我不知道。"}}
@@ -163,7 +173,7 @@ class RagWebService:
             return
         try:
             chunks = self.client.chat_stream(
-                self.build_messages(question, matches), model=self.chat_model, think=False
+                self.build_messages(question, matches, profile=role["id"]), model=self.chat_model, think=False
             )
             for chunk in chunks:
                 if isinstance(chunk, dict):
@@ -182,5 +192,5 @@ class RagWebService:
                 "index_version": self._kb.index_version,
             }
             for match in matches
-        ]}
+        ], "profile": role["id"], "model": self.chat_model}
         yield {"done": True}

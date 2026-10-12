@@ -2,6 +2,8 @@
 
 运行 `python AI/111111/web_chat.py`，服务监听 `127.0.0.1:8899`。页面可在“普通聊天”和“知识库问答”之间切换：普通聊天调用 `/api/chat`，知识库问答调用只读 `/api/rag`。
 
+页面角色下拉框来自 `chat_profiles.json`。普通聊天会把最近 20 轮（最多 40 条 `user/assistant` 消息）连同当前角色的 system prompt 一起发送给 Ollama，并将角色写入浏览器本地历史；服务端拒绝伪造 `system` 消息、空消息和超长历史。RAG 请求也携带角色，响应的 `sources` 事件会附带 `profile` 与实际 `model`，便于审计。
+
 推荐先执行启动前自检：
 
 ```powershell
@@ -14,6 +16,6 @@ python -m ollama_service.launcher --check-only
 python -m ollama_service.launcher
 ```
 
-`/api/rag` 接受 `{"message":"问题", "top_k":4}`，其中 `top_k` 为 1 到 8 的整数。响应为 NDJSON：先返回 `message` 片段，再返回 `sources`（来源相对路径和分数），最后返回 `done`。知识库只读取 `knowledge_docs/` 下的 `.txt`、`.md` 和 `.markdown` 文件，索引保存在内存中，文档目录不存在或没有支持文件时返回 503；Ollama 不可用时返回 502。页面不保存历史、不包含密钥。
+`/api/chat` 接受 `{"message":"问题", "model":"qwen3.5:9b", "profile":"general", "history":[]}`，`history` 最多 40 条。`/api/rag` 接受 `{"message":"问题", "top_k":4, "profile":"research"}`，其中 `top_k` 为 1 到 8 的整数。响应为 NDJSON：先返回 `message` 片段，再返回 `sources`（来源相对路径、分数、索引版本，以及角色和模型），最后返回 `done`。知识库只读取 `knowledge_docs/` 下的 `.txt`、`.md` 和 `.markdown` 文件，索引保存在内存中，文档目录不存在或没有支持文件时返回 503；Ollama 不可用时返回 502。页面不包含密钥，历史仅保存在浏览器本地。
 
 RAG 回答默认关闭模型思考模式以降低首问延迟；普通聊天保持 Ollama 默认行为。

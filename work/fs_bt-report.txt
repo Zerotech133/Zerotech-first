@@ -1,0 +1,8 @@
+### Result
+"FS-BAR OK len=85"
+### Ran Playwright code
+```js
+await page.evaluate('() => (document.getElementById(\'fs-bar\') ? \'FS-BAR OK len=\'+document.getElementById(\'fs-bar\').textContent.length : \'NO FS-BAR\')');
+```
+### Events
+- New console entries: .playwright-cli\console-2026-10-12T02-42-10-990Z.log#L1

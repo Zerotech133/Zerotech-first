@@ -1,0 +1,1668 @@
+{
+  "tdx": {
+    "manifest_total": 32,
+    "physical_dirs": 29,
+    "done": 31,
+    "incomplete": [
+      "ts_rt_min"
+    ],
+    "no_coverage": [],
+    "manifest_only": [
+      "stock_notice",
+      "stock_report",
+      "stock_news"
+    ],
+    "rows": [
+      {
+        "asset": "ts_etf_basic",
+        "done": true,
+        "rows": 1829,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "stock_notice",
+        "done": true,
+        "rows": 116609,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": false
+      },
+      {
+        "asset": "ts_moneyflow_hsgt",
+        "done": true,
+        "rows": 745,
+        "codes": null,
+        "parts": 4,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "tdx_sector_def",
+        "done": true,
+        "rows": 1119,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_ths_index",
+        "done": true,
+        "rows": 1666,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_stock_basic",
+        "done": true,
+        "rows": 5911,
+        "codes": null,
+        "parts": 3,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "tdx_sector_member",
+        "done": true,
+        "rows": 9186,
+        "codes": null,
+        "parts": 3,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_index_basic",
+        "done": true,
+        "rows": 9764,
+        "codes": null,
+        "parts": 4,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_index_weight",
+        "done": true,
+        "rows": 11400,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_fund_basic",
+        "done": true,
+        "rows": 18484,
+        "codes": null,
+        "parts": 4,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_top_list",
+        "done": true,
+        "rows": 53509,
+        "codes": null,
+        "parts": 4,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "stock_report",
+        "done": true,
+        "rows": 147400,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": false
+      },
+      {
+        "asset": "stock_news",
+        "done": true,
+        "rows": 263161,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": false
+      },
+      {
+        "asset": "ts_fina_indicator",
+        "done": true,
+        "rows": 266083,
+        "codes": null,
+        "parts": 2,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_balancesheet",
+        "done": true,
+        "rows": 288229,
+        "codes": null,
+        "parts": 2,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_cashflow",
+        "done": true,
+        "rows": 310907,
+        "codes": null,
+        "parts": 2,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_income",
+        "done": true,
+        "rows": 346980,
+        "codes": null,
+        "parts": 2,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_ths_member",
+        "done": true,
+        "rows": 376789,
+        "codes": null,
+        "parts": 6,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_hk_daily",
+        "done": true,
+        "rows": 413284,
+        "codes": null,
+        "parts": 6,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_top_inst",
+        "done": true,
+        "rows": 428207,
+        "codes": null,
+        "parts": 6,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_fund_daily",
+        "done": true,
+        "rows": 1219348,
+        "codes": null,
+        "parts": 10,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_ths_daily",
+        "done": true,
+        "rows": 1270622,
+        "codes": null,
+        "parts": 10,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_margin_detail",
+        "done": true,
+        "rows": 2703981,
+        "codes": null,
+        "parts": 24,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "tdx_sector_daily",
+        "done": true,
+        "rows": 1456200,
+        "codes": null,
+        "parts": 29,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_daily",
+        "done": true,
+        "rows": 4159077,
+        "codes": null,
+        "parts": 44,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_daily_basic",
+        "done": true,
+        "rows": 4159077,
+        "codes": null,
+        "parts": 44,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_index_daily",
+        "done": true,
+        "rows": 6268424,
+        "codes": null,
+        "parts": 43,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_moneyflow",
+        "done": true,
+        "rows": 3972052,
+        "codes": null,
+        "parts": 41,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "tdx_sector_min",
+        "done": true,
+        "rows": 32672233,
+        "codes": null,
+        "parts": 7,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_rt_min",
+        "done": false,
+        "rows": 25000000,
+        "codes": null,
+        "parts": 125,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "tdx_sector_min_tail",
+        "done": true,
+        "rows": 1338854,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "ts_adj_factor",
+        "done": true,
+        "rows": 4189691,
+        "codes": null,
+        "parts": 21,
+        "physical": true,
+        "probe": false
+      }
+    ]
+  },
+  "tushare": {
+    "manifest_total": 31,
+    "physical_dirs": 50,
+    "done": 30,
+    "incomplete": [
+      "monetary_policy"
+    ],
+    "no_coverage": [
+      "hk_mins"
+    ],
+    "manifest_only": [
+      "monetary_policy",
+      "anns_d_probe",
+      "stk_auction_c_probe",
+      "stk_auction_o_probe",
+      "stk_auction_probe",
+      "etf_auction_probe",
+      "hk_mins"
+    ],
+    "rows": [
+      {
+        "asset": "trade_cal",
+        "done": true,
+        "rows": 13514,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "stock_basic",
+        "done": true,
+        "rows": 5573,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "cb_basic",
+        "done": true,
+        "rows": 1171,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "us_basic",
+        "done": true,
+        "rows": 24270,
+        "codes": null,
+        "parts": 12,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "hk_basic",
+        "done": true,
+        "rows": 2792,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "sw_classify_l1",
+        "done": true,
+        "rows": 511,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "npr",
+        "done": true,
+        "rows": 19054,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "monetary_policy",
+        "done": false,
+        "rows": null,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": false
+      },
+      {
+        "asset": "news",
+        "done": true,
+        "rows": 6000,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "major_news",
+        "done": true,
+        "rows": 577,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "research_report",
+        "done": true,
+        "rows": 6000,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "anns_d_probe",
+        "done": true,
+        "rows": 12000,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": true
+      },
+      {
+        "asset": "stk_auction_c_probe",
+        "done": true,
+        "rows": 0,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": true
+      },
+      {
+        "asset": "stk_auction_o_probe",
+        "done": true,
+        "rows": 0,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": true
+      },
+      {
+        "asset": "stk_auction_probe",
+        "done": true,
+        "rows": 0,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": true
+      },
+      {
+        "asset": "etf_auction_probe",
+        "done": true,
+        "rows": 0,
+        "codes": null,
+        "parts": 0,
+        "physical": false,
+        "probe": true
+      },
+      {
+        "asset": "irm_qa_sh_probe",
+        "done": true,
+        "rows": 3000,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": true
+      },
+      {
+        "asset": "irm_qa_sz_probe",
+        "done": true,
+        "rows": 3000,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": true
+      },
+      {
+        "asset": "idx_mins",
+        "done": true,
+        "rows": null,
+        "codes": 10,
+        "parts": 2020,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "sw_mins",
+        "done": true,
+        "rows": null,
+        "codes": 31,
+        "parts": 2170,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "etf_mins",
+        "done": true,
+        "rows": null,
+        "codes": 20,
+        "parts": 760,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "stk_mins",
+        "done": true,
+        "rows": null,
+        "codes": 800,
+        "parts": 12370,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "hk_mins",
+        "done": true,
+        "rows": null,
+        "codes": 0,
+        "parts": 0,
+        "physical": false,
+        "probe": false
+      },
+      {
+        "asset": "shibor_lpr",
+        "done": true,
+        "rows": 1532,
+        "codes": null,
+        "parts": 16,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "sf_month",
+        "done": true,
+        "rows": 296,
+        "codes": null,
+        "parts": 15,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "stock_company",
+        "done": true,
+        "rows": 6298,
+        "codes": null,
+        "parts": 17,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "income",
+        "done": true,
+        "rows": null,
+        "codes": null,
+        "parts": 5569,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "balancesheet",
+        "done": true,
+        "rows": null,
+        "codes": null,
+        "parts": 5569,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "cashflow",
+        "done": true,
+        "rows": null,
+        "codes": null,
+        "parts": 5569,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "fina_indicator",
+        "done": true,
+        "rows": null,
+        "codes": null,
+        "parts": 5569,
+        "physical": true,
+        "probe": false
+      },
+      {
+        "asset": "stk_managers",
+        "done": true,
+        "rows": 575201,
+        "codes": null,
+        "parts": 1,
+        "physical": true,
+        "probe": false
+      }
+    ]
+  },
+  "three_year_staging": {
+    "receipt_count": 1824,
+    "statuses": {
+      "candidate_ready": 1824
+    },
+    "raw_json_count": 1849,
+    "parquet_count": 1824
+  },
+  "qualification": {
+    "global_activation": false,
+    "production_write": false,
+    "tables": [
+      {
+        "asset": "tdx_sector_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "tdx_sector_def",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "tdx_sector_member",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "tdx_sector_min",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "tdx_sector_min_tail",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_balancesheet",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_cashflow",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_daily_basic",
+        "status": "candidate_ready",
+        "pending": [
+          "runstore_run_id",
+          "resource_lock",
+          "publication_lock",
+          "post_publish_fingerprint",
+          "readback_reconciliation"
+        ]
+      },
+      {
+        "asset": "ts_etf_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_fina_indicator",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_fund_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_fund_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_hk_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_income",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_index_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_index_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_index_weight",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_margin_detail",
+        "status": "candidate_ready",
+        "pending": [
+          "runstore_run_id",
+          "resource_lock",
+          "publication_lock",
+          "post_publish_fingerprint",
+          "readback_reconciliation"
+        ]
+      },
+      {
+        "asset": "ts_moneyflow",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_moneyflow_hsgt",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_rt_min",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_stock_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_ths_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_ths_index",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_ths_member",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_top_inst",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "ts_top_list",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stock_notice",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stock_news",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stock_report",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "adj_factor",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "anns_d",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "bak_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "balancesheet",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "cashflow",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "cb_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "cb_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "cyq_chips",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "cyq_perf",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "etf_mins",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "fina_indicator",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "hk_balancesheet",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "hk_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "hk_cashflow",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "hk_fina_indicator",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "hk_income",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "idx_mins",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "income",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "index_global",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "index_weight",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "irm_qa_sh",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "irm_qa_sh_probe",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "irm_qa_sz",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "irm_qa_sz_probe",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "limit_list_d",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "major_news",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "news",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "npr",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "research_report",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "sf_month",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "shibor_lpr",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stk_holdernumber",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stk_managers",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stk_mins",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stock_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "stock_company",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "sw_classify_l1",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "sw_l1_member",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "sw_mins",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "top10_floatholders",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "top10_holders",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "top_list",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "trade_cal",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "us_balancesheet",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "us_basic",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "us_cashflow",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "us_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "us_fina_indicator",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "us_income",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "us_legacy",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      },
+      {
+        "asset": "crypto_daily",
+        "status": "unknown",
+        "pending": [
+          "market",
+          "event_date_kind",
+          "policy_evidence",
+          "calendar",
+          "supported_scope",
+          "verification_rule"
+        ]
+      }
+    ]
+  },
+  "health": {
+    "kpi": {
+      "n_tables": 93,
+      "total_mb": 12348.5,
+      "tdx_sync": "28/32",
+      "tushare_sync": "22/31",
+      "fresh_bad": 0,
+      "freshest": "26.5h 前",
+      "fresh_warn": 1,
+      "fresh_snap": 1,
+      "fresh_unknown": 0,
+      "capacity_scope": "TDX/Tushare parquet、本地K线、tdx_info.db、news.db主文件及策略产物；共享库计一次，WAL另列",
+      "capacity_measured_at": "2026-10-12 09:45:08",
+      "integrity_bad": 6,
+      "integrity_warn": 1
+    },
+    "gaps": [
+      "A股关键字段缺失：market_cap, pe, turnover",
+      "JEV 积压 123 条未判断",
+      "策略产物过期：盘前分析（91.2 小时未刷新）",
+      "FAIL tdx_sector_daily_daily_coverage: 51",
+      "FAIL ts_margin_detail_required_nulls: 2",
+      "FAIL ts_margin_detail_daily_coverage: 12858",
+      "FAIL sector_definition_key_reconciliation: 51",
+      "WARN listed_stock_latest_coverage: 14",
+      "FAIL sector_minute_daily_coverage: 14",
+      "FAIL sector_minute_required_nulls: 14771"
+    ],
+    "integrity_fail": 6,
+    "integrity_warn": 1
+  },
+  "catalog_manifest_paths": {
+    "count": 81,
+    "existing": 81,
+    "missing": 0
+  },
+  "read_only": true,
+  "readability": {
+    "tdx": {
+      "tables": 29,
+      "read_ok": 29,
+      "read_error": [],
+      "empty_files": 0,
+      "rows_sampled": 4345470
+    },
+    "tushare": {
+      "tables": 50,
+      "read_ok": 50,
+      "read_error": [],
+      "empty_files": 5,
+      "rows_sampled": 825024
+    }
+  }
+}

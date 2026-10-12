@@ -1,6 +1,6 @@
 {
   "schema": "academy_source_evidence_search_receipt/v1",
-  "observed_at": "2026-10-12T08:32:58+08:00",
+  "observed_at": "2026-10-12T09:45:48+08:00",
   "mode": "read_only",
   "source_root": "E:/老田的AI助手",
   "exact_source": {
@@ -31,9 +31,11 @@
   "nine_dim": {
     "current_bytes": 64325,
     "current_sha256": "bb623d1e75e2b4794753a7df5bdf6874cd62a07ea8195733f2af9c900a5d8969",
-    "indexed_bytes": 61671,
-    "indexed_sha256": "93721e59170597dd50c2db23f23208264b0c2b71c86544551108f56729451069",
-    "status": "hash_drift_requires_index_refresh"
+    "indexed_bytes": 64325,
+    "indexed_sha256": "bb623d1e75e2b4794753a7df5bdf6874cd62a07ea8195733f2af9c900a5d8969",
+    "status": "verified_against_refreshed_full_index",
+    "index_path": "work/e-drive-inventory-refresh-2026-10-12/E盘数据仓全量清单v0.1.jsonl",
+    "index_file_count": 276431
   },
   "training_eligible": false,
   "production_eligible": false,

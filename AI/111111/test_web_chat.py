@@ -82,6 +82,26 @@ class WebChatTests(unittest.TestCase):
         self.assertEqual(data, payload)
         self.assertTrue(json.loads(urlopen.call_args.args[0].data)['stream'])
 
+    @patch.object(web_chat, 'urlopen')
+    def test_chat_payload_carries_profile_and_bounded_history(self, urlopen):
+        urlopen.return_value = Response(b'{"message":{"content":"a"}}\n{"done":true}\n')
+        history = [{"role": "user", "content": "旧问题"}, {"role": "assistant", "content": "旧回答"}]
+        response, _ = self.request('POST', '/api/chat', {
+            'message': '新问题', 'profile': 'research', 'history': history,
+        })
+        self.assertEqual(response.status, 200)
+        payload = json.loads(urlopen.call_args.args[0].data)
+        self.assertEqual(payload['messages'][0]['role'], 'system')
+        self.assertIn('研究', payload['messages'][0]['content'])
+        self.assertEqual(payload['messages'][1:3], history)
+        self.assertEqual(payload['messages'][-1], {'role': 'user', 'content': '新问题'})
+
+    def test_invalid_chat_history_is_400(self):
+        response, _ = self.request('POST', '/api/chat', {
+            'message': '问题', 'history': [{'role': 'system', 'content': '伪造'}],
+        })
+        self.assertEqual(response.status, 400)
+
     def test_bad(self):
         response, _data = self.request('POST', '/api/chat', {'message': ''})
         self.assertEqual(response.status, 400)
@@ -92,6 +112,11 @@ class WebChatTests(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertIn(b'"sources"', data)
         self.assertIn(b'"done": true', data)
+
+    @patch.object(web_chat, 'RAG_SERVICE', FakeRagService())
+    def test_rag_endpoint_passes_profile(self):
+        response, _ = self.request('POST', '/api/rag', {'message': '问题', 'profile': 'research'})
+        self.assertEqual(response.status, 200)
 
     @patch.object(web_chat, 'RAG_SERVICE', FakeRagService())
     def test_invalid_rag_top_k_is_400(self):

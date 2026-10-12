@@ -1,0 +1,90 @@
+{
+ "schema": "k-stock-163/plan-review-v0.1",
+ "pf_id": "pf_001",
+ "manager_id": "laotian_pm",
+ "source": "pf_001",
+ "date": "20261012",
+ "generated_at": "2026-10-12T10:16:49",
+ "provider": "zhipu-fallback",
+ "parsed": true,
+ "approved": [
+  {
+   "stock": "000820.SZ",
+   "reason": "全池唯一T1且最高conf=0.90，chanlun 3买确认度最强，给予组合最高权重，远低于20%单票上限",
+   "weight": "12%"
+  },
+  {
+   "stock": "603188.SH",
+   "reason": "T2 conf=0.70，chanlun 3买在同置信下确认强度优于2买，沪市主板，按'3买优先+板块分散'规则入选",
+   "weight": "8%"
+  },
+  {
+   "stock": "600801.SH",
+   "reason": "T2 conf=0.70，chanlun 3买信号强度占优，沪市主板，与T1标的分仓配置",
+   "weight": "8%"
+  },
+  {
+   "stock": "605388.SH",
+   "reason": "T2 conf=0.70，chanlun 3买信号强度占优，沪市主板，延续3买优先规则",
+   "weight": "8%"
+  },
+  {
+   "stock": "300740.SZ",
+   "reason": "T2 conf=0.70，chanlun 2买，作为创业板代表入选以满足板块分散，仓位低于3买类标的",
+   "weight": "7%"
+  },
+  {
+   "stock": "000705.SZ",
+   "reason": "T2 conf=0.70，chanlun 2买，作为深市主板代表入选补齐板块分散",
+   "weight": "7%"
+  }
+ ],
+ "rejected": [
+  {
+   "stock": "920183.BJ",
+   "reason_code": "流动性"
+  },
+  {
+   "stock": "600352.SH",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "600748.SH",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "000159.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "001220.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "001233.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "001379.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "300143.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "300422.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "600593.SH",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "600887.SH",
+   "reason_code": "信心不足"
+  }
+ ],
+ "summary": "按'T1最高置信优先、同置信3买优于2买、板块分散、单票≤20%'四条规则批准6只合计仓位50%（000820.SZ配12%为上限内最高），驳回11只：北交所标的流动性不足、pending两笔conf=0.6低于0.70入围线判信心不足、其余同源chanlun 2买因8只上限与单一策略集中风险敞口落选，未列名的低置信意图同样不予批准。",
+ "body": "{\"approved\": [{\"stock\": \"000820.SZ\", \"reason\": \"全池唯一T1且最高conf=0.90，chanlun 3买确认度最强，给予组合最高权重，远低于20%单票上限\", \"weight\": \"12%\"}, {\"stock\": \"603188.SH\", \"reason\": \"T2 conf=0.70，chanlun 3买在同置信下确认强度优于2买，沪市主板，按'3买优先+板块分散'规则入选\", \"weight\": \"8%\"}, {\"stock\": \"600801.SH\", \"reason\": \"T2 conf=0.70，chanlun 3买信号强度占优，沪市主板，与T1标的分仓配置\", \"weight\": \"8%\"}, {\"stock\": \"605388.SH\", \"reason\": \"T2 conf=0.70，chanlun 3买信号强度占优，沪市主板，延续3买优先规则\", \"weight\": \"8%\"}, {\"stock\": \"300740.SZ\", \"reason\": \"T2 conf=0.70，chanlun 2买，作为创业板代表入选以满足板块分散，仓位低于3买类标的\", \"weight\": \"7%\"}, {\"stock\": \"000705.SZ\", \"reason\": \"T2 conf=0.70，chanlun 2买，作为深市主板代表入选补齐板块分散\", \"weight\": \"7%\"}], \"rejected\": [{\"stock\": \"920183.BJ\", \"reason_code\": \"流动性\"}, {\"stock\": \"600352.SH\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"600748.SH\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"000159.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"001220.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"001233.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"001379.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"300143.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"300422.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"600593.SH\", \"reason_code\": \"信心不足\"}, {\"stock\": \"600887.SH\", \"reason_code\": \"信心不足\"}], \"summary\": \"按'T1最高置信优先、同置信3买优于2买、板块分散、单票≤20%'四条规则批准6只合计仓位50%（000820.SZ配12%为上限内最高），驳回11只：北交所标的流动性不足、pending两笔conf=0.6低于0.70入围线判信心不足、其余同源chanlun 2买因8只上限与单一策略集中风险敞口落选，未列名的低置信意图同样不予批准。\"}"
+}

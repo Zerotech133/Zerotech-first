@@ -1,10 +1,10 @@
 {
   "schema": "academy_source_evidence_followup/v1",
-  "observed_at": "2026-10-12T01:11:03+08:00",
+  "observed_at": "2026-10-12T09:45:48+08:00",
   "mode": "read_only",
   "refreshed_index": "E:\\老田的AI助手\\work\\e-drive-inventory-refresh-2026-10-12\\E盘数据仓全量清单v0.1.jsonl",
-  "refreshed_file_count": 267412,
-  "candidate_snapshot_id": "e-drive-reference-v0.3-20261011T162543Z",
+  "refreshed_file_count": 276431,
+  "candidate_snapshot_id": "e-drive-reference-v0.3-20261012T014523Z",
   "exact_missing_source": "docs/plans/2026-10-08_量子双刀策略研究报告.md",
   "exact_source_files_found": [],
   "exact_source_index_matches": [],
@@ -18,13 +18,11 @@
     "quant_backtest/chanlun_signal.py"
   ],
   "explicit_iso_date_evidence_found": [],
-  "nine_dim_current_bytes": 61671,
-  "nine_dim_current_sha256": "1fbe474c1ceeeb140160664d9be67510b056be3bdf4791e15de315a095f69e9b",
-  "nine_dim_new_index_match": false,
+  "nine_dim_current_bytes": 64325,
+  "nine_dim_current_sha256": "bb623d1e75e2b4794753a7df5bdf6874cd62a07ea8195733f2af9c900a5d8969",
+  "nine_dim_new_index_match": true,
   "nine_dim_old_index_match": false,
-  "hash_drift_paths": [
-    "quant_backtest/nine_dim.py"
-  ],
+  "hash_drift_paths": [],
   "unchanged_blockers": [
     "calendar_completeness_uncertified",
     "human_review_pending",
@@ -37,8 +35,7 @@
     "source_date_missing:knowledge_docs/金融专业知识库.md",
     "source_date_missing:portal/strategies.json",
     "source_date_missing:quant_backtest/chanlun_signal.py",
-    "standard_definitions_uncertified",
-    "hash_drift"
+    "standard_definitions_uncertified"
   ],
   "training_eligible": false,
   "production_eligible": false,

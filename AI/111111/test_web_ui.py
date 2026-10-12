@@ -15,6 +15,13 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('/api/rag', page)
         self.assertIn('sources', page)
 
+    def test_page_has_role_profiles_and_sends_history(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",), ("general", "research", "risk_review"))
+        self.assertIn('id="profile"', page)
+        self.assertIn('value="research"', page)
+        self.assertIn('history: historyMessages()', page)
+        self.assertIn('profile: profile.value', page)
+
     def test_done_keeps_sources_received_before_it(self):
         page = web_ui.render_chat_page(("qwen3.5:9b",))
         self.assertIn("latestSources = record.sources", page)

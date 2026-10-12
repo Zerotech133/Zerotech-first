@@ -1,0 +1,578 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]: ⚡ 动线
+    - link "🤖 晨报" [ref=e4] [cursor=pointer]:
+      - /url: /bt-brief
+    - link "🌅 盘前" [ref=e5] [cursor=pointer]:
+      - /url: /premarket
+    - link "🚦 信号" [ref=e6] [cursor=pointer]:
+      - /url: /bt-signals
+    - link "📺 大屏" [ref=e7] [cursor=pointer]:
+      - /url: /screen
+    - link "🌇 盘后" [ref=e8] [cursor=pointer]:
+      - /url: /afterhours
+    - link "🧾 模拟仓" [ref=e9] [cursor=pointer]:
+      - /url: /paper
+    - link "📊 绩效" [ref=e10] [cursor=pointer]:
+      - /url: /market
+    - generic [ref=e11]: "|"
+    - link "🏛 零界门面" [ref=e12] [cursor=pointer]:
+      - /url: /
+    - link "🗂 门户" [ref=e13] [cursor=pointer]:
+      - /url: /portal
+    - group [ref=e14]:
+      - generic "📈 量化 ▾" [ref=e15]
+    - group [ref=e16]:
+      - generic "🕵️ 情报 ▾" [ref=e17]
+    - group [ref=e18]:
+      - generic "🎬 创作 ▾" [ref=e19]
+    - group [ref=e20]:
+      - generic "💻 开发 ▾" [ref=e21]
+    - group [ref=e22]:
+      - generic "⚙️ 系统 ▾" [ref=e23]
+  - generic [ref=e24]:
+    - generic [ref=e25]: ⚡ 动线
+    - link "🤖 晨报" [ref=e26] [cursor=pointer]:
+      - /url: /bt-brief
+    - link "🌅 盘前" [ref=e27] [cursor=pointer]:
+      - /url: /premarket
+    - link "🚦 信号" [ref=e28] [cursor=pointer]:
+      - /url: /bt-signals
+    - link "📺 大屏" [ref=e29] [cursor=pointer]:
+      - /url: /screen
+    - link "🌇 盘后" [ref=e30] [cursor=pointer]:
+      - /url: /afterhours
+    - link "🧾 模拟仓" [ref=e31] [cursor=pointer]:
+      - /url: /paper
+    - link "📊 绩效" [ref=e32] [cursor=pointer]:
+      - /url: /market
+    - generic [ref=e33]: "|"
+    - link "🏛 零界门面" [ref=e34] [cursor=pointer]:
+      - /url: /
+    - link "🗂 门户" [ref=e35] [cursor=pointer]:
+      - /url: /portal
+    - group [ref=e36]:
+      - generic "📈 量化 ▾" [ref=e37]
+    - group [ref=e38]:
+      - generic "🕵️ 情报 ▾" [ref=e39]
+    - group [ref=e40]:
+      - generic "🎬 创作 ▾" [ref=e41]
+    - group [ref=e42]:
+      - generic "💻 开发 ▾" [ref=e43]
+    - group [ref=e44]:
+      - generic "⚙️ 系统 ▾" [ref=e45]
+  - generic [ref=e47]:
+    - generic [ref=e48]:
+      - link "← 返回" [ref=e49] [cursor=pointer]:
+        - /url: /portal
+      - link "🏛 门户" [ref=e50] [cursor=pointer]:
+        - /url: /portal
+      - generic [ref=e51]: ›
+      - link "📈 量化" [ref=e52] [cursor=pointer]:
+        - /url: /quant
+      - generic [ref=e53]: ›
+      - generic [ref=e54]: 🚦 信号
+    - group [ref=e55]:
+      - generic "☰ 域内导航 ▾" [ref=e56] [cursor=pointer]:
+        - text: ☰ 域内导航
+        - generic [ref=e57]: ▾
+  - generic [ref=e58]:
+    - heading "🚦 全池策略信号（明日执行参照）" [level=1] [ref=e59]
+    - generic [ref=e60]: 生成于 2026-10-11 16:00 · 38 只 · 策略参数=当前 config（季度自动调参）
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - link "← 返回" [ref=e63] [cursor=pointer]:
+          - /url: /portal
+        - link "🏛 门户" [ref=e64] [cursor=pointer]:
+          - /url: /portal
+        - generic [ref=e65]: ›
+        - link "📈 量化" [ref=e66] [cursor=pointer]:
+          - /url: /quant
+        - generic [ref=e67]: ›
+        - generic [ref=e68]: 🚦 信号
+      - group [ref=e69]:
+        - generic "☰ 域内导航 ▾" [ref=e70] [cursor=pointer]:
+          - text: ☰ 域内导航
+          - generic [ref=e71]: ▾
+    - generic [ref=e72]:
+      - link "全部 38" [ref=e73] [cursor=pointer]:
+        - /url: /bt-signals
+      - link "只看持仓 38" [ref=e74] [cursor=pointer]:
+        - /url: /bt-signals?hold=1
+    - table [ref=e75]:
+      - rowgroup [ref=e76]:
+        - row [ref=e77]:
+          - columnheader "标的" [ref=e78]
+          - columnheader "市场" [ref=e79]
+          - columnheader "现价" [ref=e80]
+          - columnheader "数据日" [ref=e81]
+          - columnheader [ref=e82]:
+            - link "趋势跟随" [ref=e83] [cursor=pointer]:
+              - /url: /bt/strategy/trend_follow
+          - columnheader [ref=e84]:
+            - link "均线交叉" [ref=e85] [cursor=pointer]:
+              - /url: /bt/strategy/ma_cross
+          - columnheader [ref=e86]:
+            - link "布林突破" [ref=e87] [cursor=pointer]:
+              - /url: /bt/strategy/boll_breakout
+          - columnheader [ref=e88]:
+            - link "RSI 反转" [ref=e89] [cursor=pointer]:
+              - /url: /bt/strategy/rsi_reversal
+          - columnheader "共振" [ref=e90]
+        - row [ref=e91]:
+          - cell [ref=e92]:
+            - link "先导基电" [ref=e93] [cursor=pointer]:
+              - /url: /kg/stock/600641
+          - cell "CN" [ref=e94]
+          - cell "44.66" [ref=e95]
+          - cell "2026-10-09" [ref=e96]
+          - cell "●" [ref=e97]
+          - cell "●" [ref=e98]
+          - cell "●" [ref=e99]
+          - cell "●" [ref=e100]
+          - cell "4/4" [ref=e101]
+        - row [ref=e102]:
+          - cell [ref=e103]:
+            - link "博汇科技" [ref=e104] [cursor=pointer]:
+              - /url: /kg/stock/688004
+          - cell "CN" [ref=e105]
+          - cell "31.04" [ref=e106]
+          - cell "2026-10-09" [ref=e107]
+          - cell "●" [ref=e108]
+          - cell "●" [ref=e109]
+          - cell "●" [ref=e110]
+          - cell "●" [ref=e111]
+          - cell "4/4" [ref=e112]
+        - row [ref=e113]:
+          - cell [ref=e114]:
+            - link "恒申新材" [ref=e115] [cursor=pointer]:
+              - /url: /kg/stock/000782
+          - cell "CN" [ref=e116]
+          - cell "8.04" [ref=e117]
+          - cell "2026-10-09" [ref=e118]
+          - cell "●" [ref=e119]
+          - cell "●" [ref=e120]
+          - cell "●" [ref=e121]
+          - cell "●" [ref=e122]
+          - cell "4/4" [ref=e123]
+        - row [ref=e124]:
+          - cell [ref=e125]:
+            - link "闽东电力" [ref=e126] [cursor=pointer]:
+              - /url: /kg/stock/000993
+          - cell "CN" [ref=e127]
+          - cell "17.89" [ref=e128]
+          - cell "2026-10-09" [ref=e129]
+          - cell "●" [ref=e130]
+          - cell "●" [ref=e131]
+          - cell "●" [ref=e132]
+          - cell "●" [ref=e133]
+          - cell "4/4" [ref=e134]
+        - row [ref=e135]:
+          - cell [ref=e136]:
+            - link "鼎阳科技" [ref=e137] [cursor=pointer]:
+              - /url: /kg/stock/688112
+          - cell "CN" [ref=e138]
+          - cell "87.36" [ref=e139]
+          - cell "2026-10-09" [ref=e140]
+          - cell "●" [ref=e141]
+          - cell "●" [ref=e142]
+          - cell "●" [ref=e143]
+          - cell "●" [ref=e144]
+          - cell "4/4" [ref=e145]
+        - row [ref=e146]:
+          - cell [ref=e147]:
+            - link "Bloom Energy" [ref=e148] [cursor=pointer]:
+              - /url: /kg/stock/BE
+          - cell "US" [ref=e149]
+          - cell "280.5" [ref=e150]
+          - cell "2026-10-09" [ref=e151]
+          - cell "●" [ref=e152]
+          - cell "●" [ref=e153]
+          - cell "●" [ref=e154]
+          - cell "○" [ref=e155]
+          - cell "3/4" [ref=e156]
+        - row [ref=e157]:
+          - cell [ref=e158]:
+            - link "Lumentum" [ref=e159] [cursor=pointer]:
+              - /url: /kg/stock/LITE
+          - cell "US" [ref=e160]
+          - cell "1103" [ref=e161]
+          - cell "2026-10-09" [ref=e162]
+          - cell "●" [ref=e163]
+          - cell "●" [ref=e164]
+          - cell "●" [ref=e165]
+          - cell "○" [ref=e166]
+          - cell "3/4" [ref=e167]
+        - row [ref=e168]:
+          - cell [ref=e169]:
+            - link "Palantir" [ref=e170] [cursor=pointer]:
+              - /url: /kg/stock/PLTR
+          - cell "US" [ref=e171]
+          - cell "209.1" [ref=e172]
+          - cell "2026-10-09" [ref=e173]
+          - cell "●" [ref=e174]
+          - cell "●" [ref=e175]
+          - cell "●" [ref=e176]
+          - cell "○" [ref=e177]
+          - cell "3/4" [ref=e178]
+        - row [ref=e179]:
+          - cell [ref=e180]:
+            - link "义翘神州" [ref=e181] [cursor=pointer]:
+              - /url: /kg/stock/301047
+          - cell "CN" [ref=e182]
+          - cell "147.1" [ref=e183]
+          - cell "2026-10-09" [ref=e184]
+          - cell "●" [ref=e185]
+          - cell "●" [ref=e186]
+          - cell "●" [ref=e187]
+          - cell "○" [ref=e188]
+          - cell "3/4" [ref=e189]
+        - row [ref=e190]:
+          - cell [ref=e191]:
+            - link "五洲医疗" [ref=e192] [cursor=pointer]:
+              - /url: /kg/stock/301234
+          - cell "CN" [ref=e193]
+          - cell "147" [ref=e194]
+          - cell "2026-10-09" [ref=e195]
+          - cell "●" [ref=e196]
+          - cell "●" [ref=e197]
+          - cell "●" [ref=e198]
+          - cell "○" [ref=e199]
+          - cell "3/4" [ref=e200]
+        - row [ref=e201]:
+          - cell [ref=e202]:
+            - link "光智科技" [ref=e203] [cursor=pointer]:
+              - /url: /kg/stock/300489
+          - cell "CN" [ref=e204]
+          - cell "278.8" [ref=e205]
+          - cell "2026-10-09" [ref=e206]
+          - cell "●" [ref=e207]
+          - cell "●" [ref=e208]
+          - cell "●" [ref=e209]
+          - cell "○" [ref=e210]
+          - cell "3/4" [ref=e211]
+        - row [ref=e212]:
+          - cell [ref=e213]:
+            - link "台积电" [ref=e214] [cursor=pointer]:
+              - /url: /kg/stock/TSM
+          - cell "US" [ref=e215]
+          - cell "458" [ref=e216]
+          - cell "2026-10-08" [ref=e217]
+          - cell "●" [ref=e218]
+          - cell "●" [ref=e219]
+          - cell "●" [ref=e220]
+          - cell "○" [ref=e221]
+          - cell "3/4" [ref=e222]
+        - row [ref=e223]:
+          - cell [ref=e224]:
+            - link "新恒泰" [ref=e225] [cursor=pointer]:
+              - /url: /kg/stock/920028.BJ
+          - cell "CN" [ref=e226]
+          - cell "15.7" [ref=e227]
+          - cell "2026-10-09" [ref=e228]
+          - cell "●" [ref=e229]
+          - cell "●" [ref=e230]
+          - cell "●" [ref=e231]
+          - cell "○" [ref=e232]
+          - cell "3/4" [ref=e233]
+        - row [ref=e234]:
+          - cell [ref=e235]:
+            - link "派拓网络" [ref=e236] [cursor=pointer]:
+              - /url: /kg/stock/PANW
+          - cell "US" [ref=e237]
+          - cell "418.8" [ref=e238]
+          - cell "2026-10-09" [ref=e239]
+          - cell "●" [ref=e240]
+          - cell "●" [ref=e241]
+          - cell "●" [ref=e242]
+          - cell "○" [ref=e243]
+          - cell "3/4" [ref=e244]
+        - row [ref=e245]:
+          - cell [ref=e246]:
+            - link "特斯拉" [ref=e247] [cursor=pointer]:
+              - /url: /kg/stock/TSLA
+          - cell "US" [ref=e248]
+          - cell "382.7" [ref=e249]
+          - cell "2026-10-09" [ref=e250]
+          - cell "●" [ref=e251]
+          - cell "●" [ref=e252]
+          - cell "●" [ref=e253]
+          - cell "○" [ref=e254]
+          - cell "3/4" [ref=e255]
+        - row [ref=e256]:
+          - cell [ref=e257]:
+            - link "红豆股份" [ref=e258] [cursor=pointer]:
+              - /url: /kg/stock/600400
+          - cell "CN" [ref=e259]
+          - cell "3.98" [ref=e260]
+          - cell "2026-10-09" [ref=e261]
+          - cell "●" [ref=e262]
+          - cell "●" [ref=e263]
+          - cell "●" [ref=e264]
+          - cell "○" [ref=e265]
+          - cell "3/4" [ref=e266]
+        - row [ref=e267]:
+          - cell [ref=e268]:
+            - link "英伟达" [ref=e269] [cursor=pointer]:
+              - /url: /kg/stock/NVDA
+          - cell "US" [ref=e270]
+          - cell "229.3" [ref=e271]
+          - cell "2026-10-09" [ref=e272]
+          - cell "●" [ref=e273]
+          - cell "●" [ref=e274]
+          - cell "●" [ref=e275]
+          - cell "○" [ref=e276]
+          - cell "3/4" [ref=e277]
+        - row [ref=e278]:
+          - cell [ref=e279]:
+            - link "药康生物" [ref=e280] [cursor=pointer]:
+              - /url: /kg/stock/688046
+          - cell "CN" [ref=e281]
+          - cell "34.63" [ref=e282]
+          - cell "2026-10-09" [ref=e283]
+          - cell "●" [ref=e284]
+          - cell "●" [ref=e285]
+          - cell "●" [ref=e286]
+          - cell "○" [ref=e287]
+          - cell "3/4" [ref=e288]
+        - row [ref=e289]:
+          - cell [ref=e290]:
+            - link "迈威尔" [ref=e291] [cursor=pointer]:
+              - /url: /kg/stock/MRVL
+          - cell "US" [ref=e292]
+          - cell "275.3" [ref=e293]
+          - cell "2026-10-09" [ref=e294]
+          - cell "●" [ref=e295]
+          - cell "●" [ref=e296]
+          - cell "●" [ref=e297]
+          - cell "○" [ref=e298]
+          - cell "3/4" [ref=e299]
+        - row [ref=e300]:
+          - cell [ref=e301]:
+            - link "万邦医药" [ref=e302] [cursor=pointer]:
+              - /url: /kg/stock/301520
+          - cell "CN" [ref=e303]
+          - cell "69.33" [ref=e304]
+          - cell "2026-10-09" [ref=e305]
+          - cell "○" [ref=e306]
+          - cell "●" [ref=e307]
+          - cell "○" [ref=e308]
+          - cell "●" [ref=e309]
+          - cell "2/4" [ref=e310]
+        - row [ref=e311]:
+          - cell [ref=e312]:
+            - link "中石科技" [ref=e313] [cursor=pointer]:
+              - /url: /kg/stock/300684
+          - cell "CN" [ref=e314]
+          - cell "92.98" [ref=e315]
+          - cell "2026-10-09" [ref=e316]
+          - cell "○" [ref=e317]
+          - cell "●" [ref=e318]
+          - cell "○" [ref=e319]
+          - cell "●" [ref=e320]
+          - cell "2/4" [ref=e321]
+        - row [ref=e322]:
+          - cell [ref=e323]:
+            - link "创业黑马" [ref=e324] [cursor=pointer]:
+              - /url: /kg/stock/300688
+          - cell "CN" [ref=e325]
+          - cell "32.58" [ref=e326]
+          - cell "2026-10-09" [ref=e327]
+          - cell "○" [ref=e328]
+          - cell "●" [ref=e329]
+          - cell "○" [ref=e330]
+          - cell "●" [ref=e331]
+          - cell "2/4" [ref=e332]
+        - row [ref=e333]:
+          - cell [ref=e334]:
+            - link "思瑞浦" [ref=e335] [cursor=pointer]:
+              - /url: /kg/stock/688536
+          - cell "CN" [ref=e336]
+          - cell "286.4" [ref=e337]
+          - cell "2026-10-09" [ref=e338]
+          - cell "○" [ref=e339]
+          - cell "●" [ref=e340]
+          - cell "○" [ref=e341]
+          - cell "●" [ref=e342]
+          - cell "2/4" [ref=e343]
+        - row [ref=e344]:
+          - cell [ref=e345]:
+            - link "昌红科技" [ref=e346] [cursor=pointer]:
+              - /url: /kg/stock/300151
+          - cell "CN" [ref=e347]
+          - cell "18.6" [ref=e348]
+          - cell "2026-10-09" [ref=e349]
+          - cell "○" [ref=e350]
+          - cell "●" [ref=e351]
+          - cell "○" [ref=e352]
+          - cell "●" [ref=e353]
+          - cell "2/4" [ref=e354]
+        - row [ref=e355]:
+          - cell [ref=e356]:
+            - link "星徽股份" [ref=e357] [cursor=pointer]:
+              - /url: /kg/stock/300464
+          - cell "CN" [ref=e358]
+          - cell "9.35" [ref=e359]
+          - cell "2026-10-09" [ref=e360]
+          - cell "○" [ref=e361]
+          - cell "●" [ref=e362]
+          - cell "○" [ref=e363]
+          - cell "●" [ref=e364]
+          - cell "2/4" [ref=e365]
+        - row [ref=e366]:
+          - cell [ref=e367]:
+            - link "杰普特" [ref=e368] [cursor=pointer]:
+              - /url: /kg/stock/688025
+          - cell "CN" [ref=e369]
+          - cell "394.3" [ref=e370]
+          - cell "2026-10-09" [ref=e371]
+          - cell "○" [ref=e372]
+          - cell "●" [ref=e373]
+          - cell "○" [ref=e374]
+          - cell "●" [ref=e375]
+          - cell "2/4" [ref=e376]
+        - row [ref=e377]:
+          - cell [ref=e378]:
+            - link "松发股份" [ref=e379] [cursor=pointer]:
+              - /url: /kg/stock/603268
+          - cell "CN" [ref=e380]
+          - cell "203.5" [ref=e381]
+          - cell "2026-10-09" [ref=e382]
+          - cell "○" [ref=e383]
+          - cell "●" [ref=e384]
+          - cell "○" [ref=e385]
+          - cell "●" [ref=e386]
+          - cell "2/4" [ref=e387]
+        - row [ref=e388]:
+          - cell [ref=e389]:
+            - link "甬金股份" [ref=e390] [cursor=pointer]:
+              - /url: /kg/stock/603995
+          - cell "CN" [ref=e391]
+          - cell "25.03" [ref=e392]
+          - cell "2026-10-09" [ref=e393]
+          - cell "○" [ref=e394]
+          - cell "●" [ref=e395]
+          - cell "○" [ref=e396]
+          - cell "●" [ref=e397]
+          - cell "2/4" [ref=e398]
+        - row [ref=e399]:
+          - cell [ref=e400]:
+            - link "皖仪科技" [ref=e401] [cursor=pointer]:
+              - /url: /kg/stock/688600
+          - cell "CN" [ref=e402]
+          - cell "32.2" [ref=e403]
+          - cell "2026-10-09" [ref=e404]
+          - cell "○" [ref=e405]
+          - cell "●" [ref=e406]
+          - cell "○" [ref=e407]
+          - cell "●" [ref=e408]
+          - cell "2/4" [ref=e409]
+        - row [ref=e410]:
+          - cell [ref=e411]:
+            - link "肯特催化" [ref=e412] [cursor=pointer]:
+              - /url: /kg/stock/603120
+          - cell "CN" [ref=e413]
+          - cell "52.9" [ref=e414]
+          - cell "2026-10-09" [ref=e415]
+          - cell "○" [ref=e416]
+          - cell "●" [ref=e417]
+          - cell "○" [ref=e418]
+          - cell "●" [ref=e419]
+          - cell "2/4" [ref=e420]
+        - row [ref=e421]:
+          - cell [ref=e422]:
+            - link "能辉科技" [ref=e423] [cursor=pointer]:
+              - /url: /kg/stock/301046
+          - cell "CN" [ref=e424]
+          - cell "28.88" [ref=e425]
+          - cell "2026-10-09" [ref=e426]
+          - cell "○" [ref=e427]
+          - cell "●" [ref=e428]
+          - cell "○" [ref=e429]
+          - cell "●" [ref=e430]
+          - cell "2/4" [ref=e431]
+        - row [ref=e432]:
+          - cell [ref=e433]:
+            - link "艾艾精工" [ref=e434] [cursor=pointer]:
+              - /url: /kg/stock/603580
+          - cell "CN" [ref=e435]
+          - cell "69.8" [ref=e436]
+          - cell "2026-10-09" [ref=e437]
+          - cell "○" [ref=e438]
+          - cell "●" [ref=e439]
+          - cell "○" [ref=e440]
+          - cell "●" [ref=e441]
+          - cell "2/4" [ref=e442]
+        - row [ref=e443]:
+          - cell [ref=e444]:
+            - link "超颖电子" [ref=e445] [cursor=pointer]:
+              - /url: /kg/stock/603175
+          - cell "CN" [ref=e446]
+          - cell "99.76" [ref=e447]
+          - cell "2026-10-09" [ref=e448]
+          - cell "○" [ref=e449]
+          - cell "●" [ref=e450]
+          - cell "○" [ref=e451]
+          - cell "●" [ref=e452]
+          - cell "2/4" [ref=e453]
+        - row [ref=e454]:
+          - cell [ref=e455]:
+            - link "Nebius" [ref=e456] [cursor=pointer]:
+              - /url: /kg/stock/NBIS
+          - cell "US" [ref=e457]
+          - cell "221.1" [ref=e458]
+          - cell "2026-10-09" [ref=e459]
+          - cell "○" [ref=e460]
+          - cell "●" [ref=e461]
+          - cell "○" [ref=e462]
+          - cell "○" [ref=e463]
+          - cell "1/4" [ref=e464]
+        - row [ref=e465]:
+          - cell [ref=e466]:
+            - link "Solana" [ref=e467] [cursor=pointer]:
+              - /url: /kg/stock/SOL%2FUSDT
+          - cell "CRYPTO" [ref=e468]
+          - cell "110.1" [ref=e469]
+          - cell "2026-10-10" [ref=e470]
+          - cell "○" [ref=e471]
+          - cell "○" [ref=e472]
+          - cell "○" [ref=e473]
+          - cell "●" [ref=e474]
+          - cell "1/4" [ref=e475]
+        - row [ref=e476]:
+          - cell [ref=e477]:
+            - link "以太坊" [ref=e478] [cursor=pointer]:
+              - /url: /kg/stock/ETH%2FUSDT
+          - cell "CRYPTO" [ref=e479]
+          - cell "2502" [ref=e480]
+          - cell "2026-10-11" [ref=e481]
+          - cell "○" [ref=e482]
+          - cell "○" [ref=e483]
+          - cell "○" [ref=e484]
+          - cell "●" [ref=e485]
+          - cell "1/4" [ref=e486]
+        - row [ref=e487]:
+          - cell [ref=e488]:
+            - link "比特币" [ref=e489] [cursor=pointer]:
+              - /url: /kg/stock/BTC%2FUSDT
+          - cell "CRYPTO" [ref=e490]
+          - cell "8.302e+04" [ref=e491]
+          - cell "2026-10-11" [ref=e492]
+          - cell "○" [ref=e493]
+          - cell "○" [ref=e494]
+          - cell "○" [ref=e495]
+          - cell "●" [ref=e496]
+          - cell "1/4" [ref=e497]
+        - row [ref=e498]:
+          - cell [ref=e499]:
+            - link "闪迪" [ref=e500] [cursor=pointer]:
+              - /url: /kg/stock/SNDK
+          - cell "US" [ref=e501]
+          - cell "1582" [ref=e502]
+          - cell "2026-10-09" [ref=e503]
+          - cell "○" [ref=e504]
+          - cell "○" [ref=e505]
+          - cell "○" [ref=e506]
+          - cell "●" [ref=e507]
+          - cell "1/4" [ref=e508]
+    - generic [ref=e509]: ● 持仓 ○ 空仓（悬停可见信号起始日）· 共振=4 策略同时持仓数（≥3 橙色） · 点标的 → 个股全景 · 点策略列头 → 策略纵切页 · 信号基于最新收盘数据，按下一交易日执行（T+1）· 不构成投资建议

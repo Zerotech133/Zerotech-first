@@ -1,0 +1,8 @@
+{
+  "receipts": 1824,
+  "raw_sha_mismatch": 0,
+  "parquet_sha_mismatch": 0,
+  "invalid": 0,
+  "duplicate_keys": 0,
+  "rows": 8510038
+}

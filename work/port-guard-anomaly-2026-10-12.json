@@ -1,0 +1,35 @@
+{
+  "schema": "port_guard_anomaly/v1",
+  "observed_at": "2026-10-12T09:52:00+08:00",
+  "read_only": true,
+  "command": "python tools/check_ports.py --strict --json",
+  "exit_code": 1,
+  "registered": {
+    "8094": {
+      "status": "offline",
+      "expected_state": "retired",
+      "evidence": "docs/ops/BLOCKERS_等老板清单.md#B-05",
+      "action": "端口注册表与退役决策对齐后再复核"
+    }
+  },
+  "unknown_listeners": [
+    {
+      "port": 14571,
+      "pid_name": "TdxW",
+      "classification": "unresolved_third_party",
+      "executable_path_verified": false
+    },
+    {
+      "port": 17709,
+      "pid_name": "TdxW",
+      "classification": "unresolved_third_party",
+      "executable_path_verified": false
+    }
+  ],
+  "policy": {
+    "do_not_register_unknown_ports": true,
+    "do_not_modify_business_or_trading_state": true,
+    "platform_preflight": "blocked"
+  },
+  "next_action": "由平台管理员确认 TdxW 是否为受认可的第三方行情组件；确认后再决定白名单或登记。同步清理已退役 8094 的注册表条目，并重跑 strict 守卫。"
+}

@@ -1,10 +1,10 @@
 {
   "root": "E:\\老田的AI助手",
-  "file_count": 267412,
-  "total_bytes": 31686395246,
-  "text_files_scanned": 30857,
-  "text_files_skipped_large_or_decode_failed": 7,
-  "binary_or_unparsed_files": 236543,
+  "file_count": 276431,
+  "total_bytes": 35473233004,
+  "text_files_scanned": 36660,
+  "text_files_skipped_large_or_decode_failed": 17,
+  "binary_or_unparsed_files": 239749,
   "access_errors": [
     {
       "path": "docs/dev/zhice-os-v2-集成说明.md",
@@ -12,14 +12,14 @@
       "error": "[Errno 13] Permission denied: 'E:\\\\老田的AI助手\\\\docs\\\\dev\\\\zhice-os-v2-集成说明.md'"
     },
     {
-      "path": "inbox/docs/pending/news_20261012_001615_1.txt",
-      "error_type": "FileNotFoundError",
-      "error": "[Errno 2] No such file or directory: 'E:\\\\老田的AI助手\\\\inbox\\\\docs\\\\pending\\\\news_20261012_001615_1.txt'"
-    },
-    {
       "path": "jev-eval/jev-gate.env.ps1",
       "error_type": "PermissionError",
       "error": "[Errno 13] Permission denied: 'E:\\\\老田的AI助手\\\\jev-eval\\\\jev-gate.env.ps1'"
+    },
+    {
+      "path": "locks/ollama_batch.lock",
+      "error_type": "FileNotFoundError",
+      "error": "[Errno 2] No such file or directory: 'E:\\\\老田的AI助手\\\\locks\\\\ollama_batch.lock'"
     },
     {
       "path": "quantdinger/.env",
@@ -37,6 +37,10 @@
     ".pytest_cache (generated/cache)",
     ".ruff_cache (generated/cache)",
     "__pycache__ (generated/cache)",
+    ".worktrees/K-STOCK-155/.pytest_cache (generated/cache)",
+    ".worktrees/K-STOCK-155/news_collector/__pycache__ (generated/cache)",
+    ".worktrees/K-STOCK-155/portal/__pycache__ (generated/cache)",
+    ".worktrees/K-STOCK-155/tools/__pycache__ (generated/cache)",
     "agent_platform/__pycache__ (generated/cache)",
     "agent_platform/engine/__pycache__ (generated/cache)",
     "AI/111111/__pycache__ (generated/cache)",
@@ -946,6 +950,7 @@
     "news_collector/.pytest_cache (generated/cache)",
     "news_collector/__pycache__ (generated/cache)",
     "ollama_service/__pycache__ (generated/cache)",
+    "ollama_service/tests/__pycache__ (generated/cache)",
     "ops/__pycache__ (generated/cache)",
     "portal/.pytest_cache (generated/cache)",
     "portal/.ruff_cache (generated/cache)",
@@ -1076,12 +1081,12 @@
   ],
   "top_level": {
     "quant_backtest": {
-      "files": 223185,
-      "bytes": 14644305874
+      "files": 228714,
+      "bytes": 17476237736
     },
     "CowAgent": {
       "files": 18120,
-      "bytes": 163122986
+      "bytes": 163128350
     },
     "菜鸟": {
       "files": 9010,
@@ -1093,23 +1098,31 @@
     },
     "reports": {
       "files": 4330,
-      "bytes": 1146603161
+      "bytes": 1146607807
+    },
+    ".worktrees": {
+      "files": 2159,
+      "bytes": 122090553
     },
     "portal": {
-      "files": 1333,
-      "bytes": 18308879
+      "files": 1328,
+      "bytes": 18356332
+    },
+    ".tmp_pycache": {
+      "files": 1122,
+      "bytes": 27501215
     },
     "inbox": {
-      "files": 658,
-      "bytes": 281120598
+      "files": 705,
+      "bytes": 281385699
     },
     "知识图谱": {
       "files": 541,
       "bytes": 5336513
     },
     "Hermes": {
-      "files": 467,
-      "bytes": 9493627
+      "files": 470,
+      "bytes": 9498372
     },
     "video": {
       "files": 271,
@@ -1120,28 +1133,32 @@
       "bytes": 15086527
     },
     "docs": {
-      "files": 148,
-      "bytes": 1111189
+      "files": 166,
+      "bytes": 1233990
     },
     "news_collector": {
-      "files": 136,
-      "bytes": 33710649
+      "files": 137,
+      "bytes": 34269361
     },
     "tools": {
-      "files": 110,
-      "bytes": 329972861
-    },
-    "jev-eval": {
-      "files": 94,
-      "bytes": 8357624
+      "files": 126,
+      "bytes": 330068657
     },
     "k_stock": {
-      "files": 91,
-      "bytes": 833523
+      "files": 121,
+      "bytes": 1528062
+    },
+    "work": {
+      "files": 108,
+      "bytes": 80748224
+    },
+    "jev-eval": {
+      "files": 95,
+      "bytes": 8716493
     },
     "backups": {
-      "files": 66,
-      "bytes": 9683017483
+      "files": 71,
+      "bytes": 10408138297
     },
     "llamacpp_35b": {
       "files": 58,
@@ -1149,19 +1166,15 @@
     },
     "agent_platform": {
       "files": 51,
-      "bytes": 316605
+      "bytes": 316748
     },
     "gzh": {
       "files": 39,
-      "bytes": 174340
-    },
-    "work": {
-      "files": 28,
-      "bytes": 3559997
+      "bytes": 174782
     },
     "AI": {
-      "files": 19,
-      "bytes": 84970
+      "files": 23,
+      "bytes": 133220
     },
     ".trae": {
       "files": 16,
@@ -1172,16 +1185,24 @@
       "bytes": 120416
     },
     "ops": {
-      "files": 9,
-      "bytes": 51153
+      "files": 10,
+      "bytes": 54262
     },
     "knowledge_docs": {
+      "files": 7,
+      "bytes": 814929
+    },
+    "ollama_service": {
       "files": 6,
-      "bytes": 35147
+      "bytes": 16617
+    },
+    ".superpowers": {
+      "files": 4,
+      "bytes": 12845
     },
     ".workbuddy": {
       "files": 4,
-      "bytes": 34913
+      "bytes": 39991
     },
     "quantdinger": {
       "files": 4,
@@ -1190,10 +1211,6 @@
     "prototypes": {
       "files": 3,
       "bytes": 6611
-    },
-    ".superpowers": {
-      "files": 2,
-      "bytes": 7215
     },
     "%TEMP%": {
       "files": 1,
@@ -1207,10 +1224,6 @@
       "files": 1,
       "bytes": 198
     },
-    ".worktrees": {
-      "files": 1,
-      "bytes": 10513
-    },
     "AGENTS.md": {
       "files": 1,
       "bytes": 4925
@@ -1223,13 +1236,13 @@
       "files": 1,
       "bytes": 11506
     },
+    "locks": {
+      "files": 1,
+      "bytes": 0
+    },
     "ollama_lock.py": {
       "files": 1,
       "bytes": 4424
-    },
-    "ollama_service": {
-      "files": 1,
-      "bytes": 1477
     },
     "zhice.ps1": {
       "files": 1,
@@ -1238,92 +1251,100 @@
   },
   "extensions": {
     ".parquet": {
-      "files": 225529,
-      "bytes": 13747689595
+      "files": 227355,
+      "bytes": 14520303230
     },
     ".py": {
-      "files": 18258,
-      "bytes": 103051897
-    },
-    ".png": {
-      "files": 4734,
-      "bytes": 1201725902
+      "files": 19160,
+      "bytes": 114384139
     },
     ".json": {
-      "files": 3754,
-      "bytes": 273460741
+      "files": 7625,
+      "bytes": 2339039101
+    },
+    ".png": {
+      "files": 4738,
+      "bytes": 1202188893
     },
     ".java": {
-      "files": 3623,
-      "bytes": 10957880
+      "files": 3906,
+      "bytes": 11432606
     },
     ".vue": {
       "files": 2360,
       "bytes": 16159559
     },
+    ".md": {
+      "files": 1713,
+      "bytes": 17415494
+    },
     ".ts": {
-      "files": 1477,
-      "bytes": 3624734
+      "files": 1534,
+      "bytes": 3701233
     },
     "<noext>": {
-      "files": 1423,
-      "bytes": 5871364
+      "files": 1515,
+      "bytes": 6429417
     },
-    ".md": {
-      "files": 1386,
-      "bytes": 13980401
+    ".pyc": {
+      "files": 1122,
+      "bytes": 27501215
     },
     ".txt": {
-      "files": 814,
-      "bytes": 6619329
+      "files": 905,
+      "bytes": 6999361
     },
     ".pyi": {
-      "files": 469,
-      "bytes": 2382243
+      "files": 488,
+      "bytes": 2420283
     },
     ".mdx": {
       "files": 289,
       "bytes": 1242719
     },
     ".html": {
-      "files": 229,
-      "bytes": 20063775
+      "files": 272,
+      "bytes": 20784769
+    },
+    ".js": {
+      "files": 234,
+      "bytes": 13275822
+    },
+    ".svg": {
+      "files": 225,
+      "bytes": 616854
     },
     ".jpg": {
       "files": 221,
       "bytes": 22551593
     },
-    ".js": {
-      "files": 214,
-      "bytes": 10765261
-    },
     ".jsonl": {
-      "files": 205,
-      "bytes": 60222763
-    },
-    ".svg": {
-      "files": 175,
-      "bytes": 537566
+      "files": 221,
+      "bytes": 209618085
     },
     ".tsx": {
-      "files": 145,
-      "bytes": 1347375
+      "files": 195,
+      "bytes": 1788698
     },
     ".xml": {
-      "files": 145,
-      "bytes": 384607
+      "files": 169,
+      "bytes": 426698
     },
-    ".pyd": {
-      "files": 127,
-      "bytes": 55120384
-    },
-    ".sql": {
-      "files": 120,
-      "bytes": 3077106989
+    ".ps1": {
+      "files": 166,
+      "bytes": 476167
     },
     ".log": {
-      "files": 112,
-      "bytes": 15445082
+      "files": 146,
+      "bytes": 16785937
+    },
+    ".pyd": {
+      "files": 143,
+      "bytes": 69335040
+    },
+    ".sql": {
+      "files": 121,
+      "bytes": 3077118300
     },
     ".csv": {
       "files": 105,
@@ -1333,13 +1354,13 @@
       "files": 101,
       "bytes": 267674840
     },
-    ".ps1": {
-      "files": 92,
-      "bytes": 293256
+    ".scss": {
+      "files": 100,
+      "bytes": 118369
     },
     ".typed": {
-      "files": 83,
-      "bytes": 724
+      "files": 97,
+      "bytes": 785
     },
     ".bat": {
       "files": 71,
@@ -1349,29 +1370,29 @@
       "files": 70,
       "bytes": 508079
     },
-    ".scss": {
+    ".yml": {
       "files": 65,
-      "bytes": 87642
+      "bytes": 211717
+    },
+    ".exe": {
+      "files": 62,
+      "bytes": 323040510
     },
     ".f90": {
       "files": 62,
       "bytes": 30836
     },
     ".css": {
-      "files": 58,
-      "bytes": 1199527
-    },
-    ".exe": {
-      "files": 57,
-      "bytes": 322498819
-    },
-    ".yml": {
-      "files": 55,
-      "bytes": 187367
+      "files": 60,
+      "bytes": 1202613
     },
     ".yaml": {
       "files": 45,
       "bytes": 1725547
+    },
+    ".gz": {
+      "files": 43,
+      "bytes": 7827871809
     },
     ".http": {
       "files": 41,
@@ -1380,10 +1401,6 @@
     ".done": {
       "files": 39,
       "bytes": 523805
-    },
-    ".gz": {
-      "files": 39,
-      "bytes": 7118303508
     },
     ".dll": {
       "files": 37,
@@ -1399,7 +1416,7 @@
     },
     ".out": {
       "files": 27,
-      "bytes": 3585332
+      "bytes": 3800248
     },
     ".f": {
       "files": 25,
@@ -1409,13 +1426,21 @@
       "files": 25,
       "bytes": 1766
     },
+    ".pyx": {
+      "files": 22,
+      "bytes": 248062
+    },
     ".lib": {
       "files": 21,
       "bytes": 393712
     },
     ".db": {
       "files": 20,
-      "bytes": 897773568
+      "bytes": 898396160
+    },
+    ".pxd": {
+      "files": 19,
+      "bytes": 83757
     },
     ".gif": {
       "files": 18,
@@ -1423,15 +1448,7 @@
     },
     ".enc": {
       "files": 16,
-      "bytes": 2601502208
-    },
-    ".pyx": {
-      "files": 16,
-      "bytes": 172928
-    },
-    ".pxd": {
-      "files": 15,
-      "bytes": 77983
+      "bytes": 2617053200
     },
     ".template": {
       "files": 15,
@@ -1443,27 +1460,31 @@
     },
     ".bak": {
       "files": 13,
-      "bytes": 3951394
+      "bytes": 4033314
     },
     ".example": {
       "files": 12,
       "bytes": 24940
     },
+    ".ico": {
+      "files": 12,
+      "bytes": 377146
+    },
+    ".lock": {
+      "files": 12,
+      "bytes": 0
+    },
     ".env": {
       "files": 11,
       "bytes": 8202
     },
-    ".ico": {
-      "files": 11,
-      "bytes": 309500
-    },
-    ".lock": {
-      "files": 11,
-      "bytes": 0
-    },
     ".toml": {
       "files": 11,
       "bytes": 23378
+    },
+    ".zip": {
+      "files": 11,
+      "bytes": 18339256
     },
     ".err": {
       "files": 9,
@@ -1489,9 +1510,9 @@
       "files": 7,
       "bytes": 28788
     },
-    ".zip": {
+    ".pem": {
       "files": 7,
-      "bytes": 16546293
+      "bytes": 1004510
     },
     ".bak_20261006_k259": {
       "files": 6,
@@ -1501,13 +1522,17 @@
       "files": 6,
       "bytes": 93858
     },
+    ".cjs": {
+      "files": 6,
+      "bytes": 1074031
+    },
+    ".conf": {
+      "files": 6,
+      "bytes": 44729
+    },
     ".npy": {
       "files": 6,
-      "bytes": 107547785
-    },
-    ".pem": {
-      "files": 6,
-      "bytes": 760335
+      "bytes": 110949513
     },
     ".rst": {
       "files": 6,
@@ -1521,10 +1546,6 @@
       "files": 5,
       "bytes": 902644
     },
-    ".conf": {
-      "files": 5,
-      "bytes": 29896
-    },
     ".ffpreset": {
       "files": 5,
       "bytes": 1127
@@ -1537,9 +1558,9 @@
       "files": 5,
       "bytes": 5926
     },
-    ".cjs": {
+    ".mp4": {
       "files": 4,
-      "bytes": 1048742
+      "bytes": 11339941
     },
     ".tab": {
       "files": 4,
@@ -1569,9 +1590,13 @@
       "files": 3,
       "bytes": 2321
     },
-    ".mp4": {
+    ".properties": {
       "files": 3,
-      "bytes": 10355515
+      "bytes": 818
+    },
+    ".pxi": {
+      "files": 3,
+      "bytes": 7640
     },
     ".sent": {
       "files": 3,
@@ -1593,6 +1618,10 @@
       "files": 2,
       "bytes": 27635
     },
+    ".cmd": {
+      "files": 2,
+      "bytes": 13656
+    },
     ".config": {
       "files": 2,
       "bytes": 215
@@ -1613,6 +1642,10 @@
       "files": 2,
       "bytes": 3472218
     },
+    ".ndjson": {
+      "files": 2,
+      "bytes": 11157
+    },
     ".npz": {
       "files": 2,
       "bytes": 819
@@ -1621,13 +1654,9 @@
       "files": 2,
       "bytes": 1500
     },
-    ".properties": {
+    ".srt": {
       "files": 2,
-      "bytes": 524
-    },
-    ".pxi": {
-      "files": 2,
-      "bytes": 5550
+      "bytes": 1700
     },
     ".stage": {
       "files": 2,
@@ -1636,6 +1665,10 @@
     ".thunder": {
       "files": 2,
       "bytes": 1500
+    },
+    ".wav": {
+      "files": 2,
+      "bytes": 4362436
     },
     ".apache2": {
       "files": 1,
@@ -1717,10 +1750,6 @@
       "files": 1,
       "bytes": 989
     },
-    ".cmd": {
-      "files": 1,
-      "bytes": 6734
-    },
     ".code-snippets": {
       "files": 1,
       "bytes": 2103
@@ -1789,10 +1818,6 @@
       "files": 1,
       "bytes": 14295
     },
-    ".ndjson": {
-      "files": 1,
-      "bytes": 5575
-    },
     ".ollama": {
       "files": 1,
       "bytes": 1760
@@ -1825,10 +1850,6 @@
       "files": 1,
       "bytes": 76111872
     },
-    ".srt": {
-      "files": 1,
-      "bytes": 850
-    },
     ".tiktoken": {
       "files": 1,
       "bytes": 2561218
@@ -1849,10 +1870,6 @@
       "files": 1,
       "bytes": 7512
     },
-    ".wav": {
-      "files": 1,
-      "bytes": 2181218
-    },
     ".xdb": {
       "files": 1,
       "bytes": 4177309
@@ -1863,14 +1880,14 @@
     }
   },
   "keyword_totals": {
-    "策略": 9893,
-    "训练": 2771,
-    "交易": 20383,
-    "模拟": 3932,
-    "审计": 7840,
-    "知识图谱": 11028,
-    "风险": 11301,
-    "数据源": 18346
+    "策略": 11210,
+    "训练": 3039,
+    "交易": 20384,
+    "模拟": 5467,
+    "审计": 9440,
+    "知识图谱": 15340,
+    "风险": 11803,
+    "数据源": 21149
   },
   "manifest": "E盘数据仓全量清单v0.1.jsonl",
   "text_index": "E盘数据仓文本摘要v0.1.jsonl"
