@@ -51,6 +51,30 @@ def _read_text(path: Path) -> str:
         return ""
 
 
+def _logical_shell_lines(text: str) -> list[str]:
+    """把 PowerShell 反引号续行拼成可审计的逻辑行。
+
+    任务脚本常把解释器、脚本路径和参数拆成多行。逐物理行扫描会漏掉
+    ``alert_fail.py`` 或 ``alert_fail_wrap.py``，因此在过滤注释后先还原
+    PowerShell 的反引号续行。其他格式按原行处理。
+    """
+    logical: list[str] = []
+    pending = ""
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip()
+        if line.endswith("`"):
+            pending += line[:-1]
+            continue
+        if pending:
+            logical.append(pending + line)
+            pending = ""
+        else:
+            logical.append(line)
+    if pending:
+        logical.append(pending)
+    return logical
+
+
 def _has_alert_call(path: Path, text: str, target: re.Pattern[str]) -> bool:
     """只识别实际执行入口，忽略注释和文档字符串。"""
     if not target.search(text):
@@ -110,13 +134,22 @@ def _has_alert_call(path: Path, text: str, target: re.Pattern[str]) -> bool:
                     return True
             return False
         # 语法不完整时保守回退到去注释行扫描，避免漏报。
-    for line in text.splitlines():
+    shell_text = re.sub(r"<#.*?#>", "", text, flags=re.DOTALL)
+    shell_text = re.sub(r"<!--.*?-->", "", shell_text, flags=re.DOTALL)
+    shell_exec = re.compile(
+        r"(?:\bpython(?:\.exe)?\b|\bstart-process\b|"
+        r"\bcmd(?:\.exe)?\b|\bcall\s+|&\s*)", re.IGNORECASE)
+    for line in _logical_shell_lines(shell_text):
         stripped = line.lstrip()
         if (stripped.startswith("#") or stripped.startswith("::")
                 or stripped.lower().startswith("rem ")):
             continue
         code = line.split("#", 1)[0]
-        if target.search(code):
+        lower = code.lstrip().lower()
+        if lower.startswith(("write-output ", "write-host ", "echo ",
+                              "add-content ", "out-file ")):
+            continue
+        if target.search(code) and shell_exec.search(code):
             return True
     return False
 
@@ -131,12 +164,15 @@ def _has_direct_alert_call(path: Path, text: str) -> bool:
         if tree is not None:
             function_aliases: set[str] = set()
             module_aliases: set[str] = set()
+            wildcard_import = False
             for node in ast.walk(tree):
                 if (isinstance(node, ast.ImportFrom)
                         and node.module == "alert_fail"):
                     function_aliases.update(
                         alias.asname or alias.name for alias in node.names
                         if alias.name != "*")
+                    wildcard_import |= any(alias.name == "*"
+                                           for alias in node.names)
                 elif isinstance(node, ast.Import):
                     module_aliases.update(
                         alias.asname or alias.name
@@ -150,6 +186,9 @@ def _has_direct_alert_call(path: Path, text: str) -> bool:
                 if (isinstance(func, ast.Attribute)
                         and isinstance(func.value, ast.Name)
                         and func.value.id in module_aliases):
+                    return True
+                if (wildcard_import and isinstance(func, ast.Name)
+                        and func.id == "alert"):
                     return True
     return _has_alert_call(path, text, _DIRECT_ALERT)
 
