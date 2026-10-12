@@ -40,3 +40,31 @@ def test_audit_separates_wrapper_coverage_market_and_hire_evidence(tmp_path):
     assert report["scheduler"]["actual_execution_evidence"] is False
     assert report["employment"]["active_sources"] == []
     assert report["employment"]["three_source_skip_verified"] is False
+
+
+def test_alert_coverage_ignores_comments_and_counts_real_python_calls(tmp_path):
+    (tmp_path / "news_collector").mkdir()
+    (tmp_path / "quant_backtest").mkdir()
+    (tmp_path / "news_collector" / "alert_fail_wrap.py").write_text(
+        "task_rc log_path result_summary exception_class", encoding="utf-8")
+    (tmp_path / "quant_backtest" / "comment_only.py").write_text(
+        '# alert_fail.py is mentioned in a comment\n'
+        '"""alert_fail.py is mentioned in a docstring."""\n',
+        encoding="utf-8")
+    (tmp_path / "quant_backtest" / "real_call.py").write_text(
+        'import subprocess\n'
+        'subprocess.run(["python", "alert_fail.py", "task", "1"])\n',
+        encoding="utf-8")
+    (tmp_path / "quant_backtest" / "wrapper_call.py").write_text(
+        'subprocess.run(["python", "alert_fail_wrap.py", "task", "1"])\n',
+        encoding="utf-8")
+
+    report = audit(tmp_path)
+
+    assert report["alert_fail"]["direct_files"] == [
+        "quant_backtest/real_call.py"
+    ]
+    assert report["alert_fail"]["direct_file_count"] == 1
+    assert report["alert_fail"]["wrapper_files"] == [
+        "quant_backtest/wrapper_call.py"
+    ]

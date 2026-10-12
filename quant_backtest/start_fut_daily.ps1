@@ -21,7 +21,7 @@ try {
     ('fut_scan exit=' + $rc1 + ' fut_backtest exit=' + $rc2 + ' fut_walkforward exit=' + $rc3 + ' cn_fut exit=' + $rc4 + ' ' + (Get-Date -Format s)) |
         Out-File $log -Append -Encoding utf8
     if ($rc1 -ne 0 -or $rc2 -ne 0 -or $rc3 -ne 0 -or $rc4 -ne 0) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py fut_daily ($rc1 * 1000 + $rc2 * 100 + $rc3 * 10 + $rc4) C:\Temp\fut_backtest_err.log 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py fut_daily ($rc1 * 1000 + $rc2 * 100 + $rc3 * 10 + $rc4) C:\Temp\fut_backtest_err.log 1>$null 2>$null
         exit 1
     }
     exit 0

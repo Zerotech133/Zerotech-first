@@ -22,7 +22,7 @@ try {
     if ($null -eq $rc) { $rc = 1 }  # null guard: prefer false alarm over fake green
     ('adj_factor_sync exit=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($rc -ne 0) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py adj_factor_sync $rc C:\Temp\adj_factor_sync_err.log 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py adj_factor_sync $rc C:\Temp\adj_factor_sync_err.log 1>$null 2>$null
     }
     exit $rc
 } catch {

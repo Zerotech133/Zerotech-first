@@ -303,6 +303,20 @@ class LauncherWiringTest(unittest.TestCase):
         self.assertIn("alert_fail_wrap.py", source)
         self.assertNotRegex(source, r"quant_backtest[\\/]alert_fail\.py")
 
+    def test_representative_launchers_use_observable_wrapper(self):
+        root = Path(__file__).resolve().parents[1]
+        launchers = (
+            root / "gzh" / "start_gzh_writer.ps1",
+            root / "portal" / "start_portal_api.ps1",
+            root / "quant_backtest" / "start_fut_daily.ps1",
+        )
+        for launcher in launchers:
+            with self.subTest(launcher=launcher):
+                source = launcher.read_text(encoding="utf-8")
+                self.assertIn("alert_fail_wrap.py", source)
+                self.assertNotRegex(
+                    source, r"quant_backtest[\\/]alert_fail\.py")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

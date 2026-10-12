@@ -10,7 +10,7 @@ try {
     Pop-Location
     ('rps_daily exit=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($rc -ne 0) {
-        & 'C:/Program Files\Python311\python.exe' -X utf8 C:/aios/quant_backtest/alert_fail.py rps_daily $rc C:/Temp/rps_daily_err.log 1>$null 2>$null
+        & 'C:/Program Files\Python311\python.exe' -X utf8 C:/aios/news_collector/alert_fail_wrap.py rps_daily $rc C:/Temp/rps_daily_err.log 1>$null 2>$null
     }
     # E2: sector effect shadow scan - runs only after rps_daily success,
     # independent stdout/err redirect + own status line + own alert
@@ -21,7 +21,7 @@ try {
         $scanRc = $LASTEXITCODE
         ('sector_scan exit=' + $scanRc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
         if ($scanRc -ne 0) {
-            & 'C:/Program Files\Python311\python.exe' -X utf8 C:/aios/quant_backtest/alert_fail.py sector_scan $scanRc C:/Temp/sector_scan_err.log 1>$null 2>$null
+            & 'C:/Program Files\Python311\python.exe' -X utf8 C:/aios/news_collector/alert_fail_wrap.py sector_scan $scanRc C:/Temp/sector_scan_err.log 1>$null 2>$null
         }
     }
     # task rc: rps_daily failure dominates; otherwise propagate scan failure
@@ -30,6 +30,6 @@ try {
 } catch {
     Pop-Location -ErrorAction SilentlyContinue
     ('rps_daily ERR ' + $_.Exception.Message) | Out-File $log -Append -Encoding utf8
-    & 'C:/Program Files\Python311\python.exe' -X utf8 C:/aios/quant_backtest/alert_fail.py rps_daily 9 $log 1>$null 2>$null
+    & 'C:/Program Files\Python311\python.exe' -X utf8 C:/aios/news_collector/alert_fail_wrap.py rps_daily 9 $log 1>$null 2>$null
     exit 1
 }

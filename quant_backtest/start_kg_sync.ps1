@@ -78,7 +78,7 @@ try {
         if ($code -ne 0) {
             ('kg_sync ABORT at ' + $step.name) | Out-File $log -Append -Encoding utf8
             $errL = "C:\Temp\kg_" + $step.name + "_err.log"
-            & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py ("kg_sync:" + $step.name) $code $errL 1>$null 2>$null
+            & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py ("kg_sync:" + $step.name) $code $errL 1>$null 2>$null
             exit 1
         }
     }

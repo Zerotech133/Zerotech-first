@@ -101,7 +101,7 @@ code{background:#0d1117;border:1px solid #30363d;border-radius:4px;
 （K175）三大模块：①源列快照（arrow footer）②消费端底册交叉（本页表格）
 ③图内 presence（MarketEvent/Seat/边，图内链 __GSTATE__）。</p>
 <p>断源嫌疑处置：先判定「tushare 改名 vs 消费端写错」，再改对应头；
-任务 FAIL 已自动经 alert_fail.py 推飞书。</p>
+任务 FAIL 已自动经 alert_fail_wrap.py 推飞书。</p>
 </div>
 
 <h2>二、底册状态（__NTBL__ 表）</h2>

@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 from pathlib import Path
@@ -17,7 +18,12 @@ from typing import Any
 _SCAN_DIRS = ("news_collector", "quant_backtest", "portal", "gzh",
               "k_stock", "agent_platform")
 _CODE_SUFFIXES = frozenset({".py", ".ps1", ".cmd", ".bat", ".xml"})
-_DIRECT_ALERT = re.compile(r"(?<!wrap)alert_fail\.py")
+_DIRECT_ALERT = re.compile(r"(?<!wrap)alert_fail\.py(?![A-Za-z0-9_])")
+_WRAPPER_ALERT = re.compile(r"alert_fail_wrap\.py")
+_PYTHON_ALERT_CALL = re.compile(
+    r"(?:subprocess\.(?:run|Popen|call|check_call|check_output)|"
+    r"os\.(?:system|popen)|\b(?:run|Popen|call|check_call|check_output)\s*\()"
+)
 _SOURCES = ("qd", "qpzm", "ai_team")
 
 
@@ -42,6 +48,41 @@ def _read_text(path: Path) -> str:
         return ""
 
 
+def _has_alert_call(path: Path, text: str, target: re.Pattern[str]) -> bool:
+    """只识别实际执行入口，忽略注释和文档字符串。"""
+    if not target.search(text):
+        return False
+    if path.suffix.lower() == ".py":
+        try:
+            tree = ast.parse(text, filename=str(path))
+        except SyntaxError:
+            tree = None
+        if tree is not None:
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                segment = ast.get_source_segment(text, node) or ""
+                if (target.search(segment)
+                        and _PYTHON_ALERT_CALL.search(segment)):
+                    return True
+            return False
+        # 语法不完整时保守回退到去注释行扫描，避免漏报。
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if (stripped.startswith("#") or stripped.startswith("::")
+                or stripped.lower().startswith("rem ")):
+            continue
+        code = line.split("#", 1)[0]
+        if target.search(code):
+            return True
+    return False
+
+
+def _has_direct_alert_call(path: Path, text: str) -> bool:
+    """判断是否仍有绕过包装器的旧告警入口。"""
+    return _has_alert_call(path, text, _DIRECT_ALERT)
+
+
 def _alert_coverage(root: Path) -> dict[str, Any]:
     direct, wrapper = [], []
     for path in _source_files(root):
@@ -49,10 +90,10 @@ def _alert_coverage(root: Path) -> dict[str, Any]:
                 or path.name.startswith("test_")):
             continue
         text = _read_text(path)
-        if _DIRECT_ALERT.search(text):
-            direct.append(str(path.relative_to(root)))
-        if "alert_fail_wrap.py" in text:
-            wrapper.append(str(path.relative_to(root)))
+        if _has_direct_alert_call(path, text):
+            direct.append(path.relative_to(root).as_posix())
+        if _has_alert_call(path, text, _WRAPPER_ALERT):
+            wrapper.append(path.relative_to(root).as_posix())
     wrapper_path = root / "news_collector" / "alert_fail_wrap.py"
     wrapper_text = _read_text(wrapper_path)
     schema = ("task_rc", "log_path", "result_summary", "exception_class")

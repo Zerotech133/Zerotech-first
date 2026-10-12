@@ -17,7 +17,7 @@ try {
     $code = $p.ExitCode
     ('monitor exit={0} {1}' -f $code, (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($code -eq 1) {
-        & $py -X utf8 C:\aios\quant_backtest\alert_fail.py PickArchiveMonitor $code 'C:\Temp\pick_monitor_err.log' 1>$null 2>$null
+        & $py -X utf8 C:\aios\news_collector\alert_fail_wrap.py PickArchiveMonitor $code 'C:\Temp\pick_monitor_err.log' 1>$null 2>$null
     }
     exit 0
 } catch {

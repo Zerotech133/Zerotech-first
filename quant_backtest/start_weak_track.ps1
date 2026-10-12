@@ -3,7 +3,7 @@
 # Defaults keep case 301216 (existing task WeakTrackCheck runs w/o args, unchanged).
 # exit code semantic: 0=normal / 1=review triggered (SOP text auto-sent by
 # weak_track_check.py itself via weak_track_alert.py, do NOT double-push) /
-# 2=script error (technical alert via alert_fail.py)
+# 2=script error (technical alert via alert_fail_wrap.py)
 param(
     [string]$Code = '301216',
     [string]$Pivots = '16.12,16.80,17.93',
@@ -23,7 +23,7 @@ try {
     $code = $p.ExitCode
     ("weak_track $Code exit=" + $code + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($code -ge 2) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py weak_track_$c6 $code "C:\Temp\weak_track_${c6}_out.log" 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py weak_track_$c6 $code "C:\Temp\weak_track_${c6}_out.log" 1>$null 2>$null
     }
     exit $code
 } catch {

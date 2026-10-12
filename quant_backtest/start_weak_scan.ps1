@@ -1,7 +1,7 @@
 # Weekly weak-scan launcher (ASCII only, junction path)
 # Runs weak_scan.py --send (full-market signal-2 scan + incremental card push).
 # exit code semantic: 0=normal (incl. "no new candidates, skipped") /
-# 1+=error (technical alert via alert_fail.py)
+# 1+=error (technical alert via alert_fail_wrap.py)
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
 $log = 'C:\Temp\weak_scan_task.log'
@@ -15,7 +15,7 @@ try {
     $code = $p.ExitCode
     ('weak_scan exit=' + $code + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($code -ge 1) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py weak_scan $code 'C:\Temp\weak_scan_out.log' 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py weak_scan $code 'C:\Temp\weak_scan_out.log' 1>$null 2>$null
     }
     exit $code
 } catch {

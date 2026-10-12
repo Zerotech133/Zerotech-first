@@ -12,7 +12,7 @@ $rc = $LASTEXITCODE
 if ($rc -ne 0) {
     # 10-09 补：失败推飞书（MissCheck 只兜「没跑」，此分支兜「跑挂」）
     & 'C:\Program Files\Python311\python.exe' -X utf8 `
-        C:\aios\quant_backtest\alert_fail.py k260_regression $rc $log 1>$null 2>$null
+        C:\aios\news_collector\alert_fail_wrap.py k260_regression $rc $log 1>$null 2>$null
 }
 if (Test-Path $log) {
     if ((Get-Item $log).Length -gt 200KB) {

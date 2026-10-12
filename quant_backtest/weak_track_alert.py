@@ -4,7 +4,7 @@
 读 reports/weak_track_<code6>.jsonl 最新行：
   命中触发 → 按 §8 SOP 生成结构化推送文案（触发/基线/分流动作/落款/
   结案提醒）；--send 时经飞书直发（outbox 缓存 + send_feishu.py，
-  与 alert_fail.py 同口径）；
+  与 alert_fail_wrap.py 同口径）；
   无触发 → 提示后退出 0。
 
 文案格式外置可调：默认读同目录 weak_track_alert_tpl.txt 渲染（# 开头
@@ -86,7 +86,7 @@ def build_alert(code, r, tpl=None):
 
 
 def send_alert(msg):
-    """与 alert_fail.py 同口径：outbox 缓存 + send_feishu.py。"""
+    """与 alert_fail_wrap.py 同口径：outbox 缓存 + send_feishu.py。"""
     tmp = os.path.join(NEWS_DIR, "outbox", "pending_alert_weak_track.txt")
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     with open(tmp, "w", encoding="utf-8") as f:

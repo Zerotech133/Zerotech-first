@@ -11,6 +11,6 @@ Add-Content -Path $log -Value ("starting " + (Get-Date).ToUniversalTime().ToStri
 $rc = $LASTEXITCODE
 Add-Content -Path $log -Value ("exit=$rc " + (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Encoding ascii
 if ($rc -ne 0) {
-    & $py -X utf8 (Join-Path $root 'alert_fail.py') notice_backfill $rc $err 1>$null 2>$null
+    & $py -X utf8 (Join-Path (Split-Path $root -Parent) 'news_collector\alert_fail_wrap.py') notice_backfill $rc $err 1>$null 2>$null
 }
 exit $rc
