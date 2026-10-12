@@ -43,10 +43,13 @@ def test_dd_circuit_triggers(tmp_path):
     assert gate and "回撤熔断" in gate and "6.00%" in gate
 
 
-def test_dd_circuit_passes_within_threshold(tmp_path):
+def test_dd_circuit_passes_within_threshold(tmp_path, monkeypatch):
     eng = _eng(tmp_path)
     _marks(eng, [1_000_000, 960_000])          # 回撤 4% ≤ 5%
-    # 只留 dd 判定：judge 文件目录缺失→不拦
+    # 只留 dd 判定：DATA_DIR 钉到 tmp（judge_reviews 缺失→宽限不拦）。
+    # 隔离修复：原先裸读真实 DATA_DIR，真实 judge 评审落盘（如当日 B 级）
+    # 会令本用例被 judge 门槛误拦——测试不得依赖真库状态（K-STOCK-177）。
+    monkeypatch.setattr(trainee, "DATA_DIR", tmp_path)
     assert trainee._tier_gate(PROF, eng) is None
 
 
