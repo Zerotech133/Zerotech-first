@@ -2,7 +2,7 @@
   "_note": "产品管理部注册表（K-ORG-018 新设，对照截图产品经理角色）。",
   "team": "prodcore",
   "dept": "product",
-  "description": "产品管理部：产品经理",
+  "description": "产品与设计部：产品经理 + UI/UX 设计师",
   "agents": [
     {
       "agent_id": "PM1",
@@ -18,6 +18,22 @@
       "memory_grants": {
         "read": ["domain/*", "dept/product/*", "dept/invest/decision", "dept/dev/observation", "agent/PM1/*"],
         "write": ["agent/PM1/*", "dept/product/observation"]
+      }
+    },
+    {
+      "agent_id": "DSGN1",
+      "role_profile": "ui_designer",
+      "analysis_type": "ui_ux_design",
+      "node_key": "dsgn1_design",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/product/*", "dept/dev/observation", "agent/DSGN1/*"],
+        "write": ["agent/DSGN1/*", "dept/product/observation"]
       }
     }
   ]

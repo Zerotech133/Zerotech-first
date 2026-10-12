@@ -1,6 +1,8 @@
 {
-  "_note": "组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：8 职能中心 + 3 项目部门 A/B/C 并行开发）。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。",
+  "_note": "GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队：+DevOps/安全/UI设计/技术文档）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。",
   "org": "laotian_ai",
+  "host": "GenOS",
+  "host_note": "K-ORG-019 老田拍板：GenOS=个人 OS 宿主（门户 8080/指挥大屏/组织架构页为其门面），代码开发部分全部收编于本 org——任何新开发需求=在本注册表加岗或加项目部门，不改平台。",
   "report_to": "human",
   "chief": {
     "agent_id": "A0",
@@ -26,8 +28,8 @@
       "name": "研发部",
       "lead": null,
       "status": "active",
-      "charter": "拉代码·优化代码·训练模型·code review·写策略·回测·前端 UI·架构评审（K-ORG-015 实例化 / K-ORG-017 v2 / K-ORG-018 +架构师）",
-      "agents": ["DEV1", "DEV2", "DEV3", "DEV4", "DEV5", "ARCH1"],
+      "charter": "拉代码·优化代码·训练模型·code review·写策略·回测·前端 UI·架构评审·DevOps·技术文档（K-ORG-015 实例化 / K-ORG-017 v2 / K-ORG-018 +架构师 / K-ORG-019 完整开发团队）",
+      "agents": ["DEV1", "DEV2", "DEV3", "DEV4", "DEV5", "ARCH1", "OPS1", "DOC1"],
       "agent_profiles": [
         {
           "agent_id": "DEV1",
@@ -94,9 +96,31 @@
             "read": ["domain/*", "dept/dev/*", "dept/data/*", "dept/product/*", "agent/ARCH1/*"],
             "write": ["agent/ARCH1/*", "dept/dev/observation", "domain/arch_registry"]
           }
+        },
+        {
+          "agent_id": "OPS1",
+          "role_profile": "devops_engineer",
+          "charter_detail": "DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "agent/OPS1/*"],
+            "write": ["agent/OPS1/*", "dept/dev/observation"]
+          }
+        },
+        {
+          "agent_id": "DOC1",
+          "role_profile": "tech_writer",
+          "charter_detail": "技术文档工程师：docs/plans 计划谱系维护·INDEX 索引总账·判例沉淀（撞号/行尾/回滚死引用等判例入册）·README 与宪法文档保鲜",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "agent/DOC1/*"],
+            "write": ["agent/DOC1/*", "dept/dev/observation"]
+          }
         }
       ],
-      "source": "K-ORG-001 组织设计 P2 扩编，2026-10-13 K-ORG-015 老田指令实例化；K-ORG-017 v2 三岗扩编；K-ORG-018 +ARCH1 架构师（对照截图五角色补齐）"
+      "source": "K-ORG-001 组织设计 P2 扩编，2026-10-13 K-ORG-015 老田指令实例化；K-ORG-017 v2 三岗扩编；K-ORG-018 +ARCH1；K-ORG-019 完整开发团队 +OPS1 DevOps/+DOC1 技术文档"
     },
     {
       "dept": "trading",
@@ -148,8 +172,8 @@
       "name": "产品管理部",
       "lead": null,
       "status": "active",
-      "charter": "需求池·版本规划·验收口径·产品设计（K-ORG-018 新设，对照截图产品经理角色）",
-      "agents": ["PM1"],
+      "charter": "需求池·版本规划·验收口径·产品设计·UI/UX 设计（K-ORG-018 新设 / K-ORG-019 +设计师）",
+      "agents": ["PM1", "DSGN1"],
       "agent_profiles": [
         {
           "agent_id": "PM1",
@@ -161,17 +185,28 @@
             "read": ["domain/*", "dept/product/*", "dept/invest/decision", "dept/dev/observation", "agent/PM1/*"],
             "write": ["agent/PM1/*", "dept/product/observation"]
           }
+        },
+        {
+          "agent_id": "DSGN1",
+          "role_profile": "ui_designer",
+          "charter_detail": "UI/UX 设计师：tokens.css 设计语言治理·Demo 先行流程（老田拍板后再怼生产）·风格一致化巡查（悬空 token 三分类判例执法）·驾驶舱暗色同构风守门",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/product/*", "dept/dev/observation", "agent/DSGN1/*"],
+            "write": ["agent/DSGN1/*", "dept/product/observation"]
+          }
         }
       ],
-      "source": "K-ORG-018 矩阵制新设"
+      "source": "K-ORG-018 矩阵制新设；K-ORG-019 +DSGN1 UI/UX 设计师（老田门面反复打磨的承接位）"
     },
     {
       "dept": "quality",
       "name": "质量工程部",
       "lead": null,
       "status": "active",
-      "charter": "测试·验收·三守卫门神·质量红线（K-ORG-018 新设，对照截图 QA 工程师角色）",
-      "agents": ["QA1"],
+      "charter": "测试·验收·三守卫门神·质量红线·安全审计（K-ORG-018 新设 / K-ORG-019 +安全）",
+      "agents": ["QA1", "SEC1"],
       "agent_profiles": [
         {
           "agent_id": "QA1",
@@ -183,9 +218,20 @@
             "read": ["domain/*", "dept/quality/*", "dept/dev/*", "dept/data/*", "agent/QA1/*"],
             "write": ["agent/QA1/*", "dept/quality/observation"]
           }
+        },
+        {
+          "agent_id": "SEC1",
+          "role_profile": "security_auditor",
+          "charter_detail": "安全审计师：凭据红线监护（X1 OAuth/QMT 凭据不入库）·注册表 grants 越权审计·危险命令面盘点（rm/checkout--/杀进程验身份判例执法）·skill/脚本引入安全审查",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/quality/*", "dept/dev/*", "agent/SEC1/*"],
+            "write": ["agent/SEC1/*", "dept/quality/observation"]
+          }
         }
       ],
-      "source": "K-ORG-018 矩阵制新设：review 积压 18 单盘点分派的承接位"
+      "source": "K-ORG-018 矩阵制新设：review 积压 18 单盘点分派的承接位；K-ORG-019 +SEC1 安全审计"
     },
     {
       "dept": "proj_backtest",

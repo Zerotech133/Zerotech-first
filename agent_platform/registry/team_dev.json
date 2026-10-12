@@ -99,6 +99,38 @@
         "read": ["domain/*", "dept/dev/*", "dept/data/*", "dept/product/*", "agent/ARCH1/*"],
         "write": ["agent/ARCH1/*", "dept/dev/observation", "domain/arch_registry"]
       }
+    },
+    {
+      "agent_id": "OPS1",
+      "role_profile": "devops_engineer",
+      "analysis_type": "devops_operations",
+      "node_key": "dev_ops",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "agent/OPS1/*"],
+        "write": ["agent/OPS1/*", "dept/dev/observation"]
+      }
+    },
+    {
+      "agent_id": "DOC1",
+      "role_profile": "tech_writer",
+      "analysis_type": "documentation",
+      "node_key": "dev_doc",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "agent/DOC1/*"],
+        "write": ["agent/DOC1/*", "dept/dev/observation"]
+      }
     }
   ]
 }

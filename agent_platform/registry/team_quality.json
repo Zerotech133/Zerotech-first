@@ -2,7 +2,7 @@
   "_note": "质量工程部注册表（K-ORG-018 新设，对照截图 QA 工程师角色）。三守卫的人化复核位。",
   "team": "qualcore",
   "dept": "quality",
-  "description": "质量工程部：质量工程师",
+  "description": "质量与安全保障部：质量工程师 + 安全审计师",
   "agents": [
     {
       "agent_id": "QA1",
@@ -18,6 +18,22 @@
       "memory_grants": {
         "read": ["domain/*", "dept/quality/*", "dept/dev/*", "dept/data/*", "agent/QA1/*"],
         "write": ["agent/QA1/*", "dept/quality/observation"]
+      }
+    },
+    {
+      "agent_id": "SEC1",
+      "role_profile": "security_auditor",
+      "analysis_type": "security_audit",
+      "node_key": "sec1_audit",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/quality/*", "dept/dev/*", "agent/SEC1/*"],
+        "write": ["agent/SEC1/*", "dept/quality/observation"]
       }
     }
   ]
