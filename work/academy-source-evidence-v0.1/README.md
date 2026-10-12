@@ -46,3 +46,17 @@
 ```
 
 2026-10-12 审计结果：6 条记录中内容资格 0 条、训练资格 0 条、`evaluation_only` 6 条。缺口包括许可证字段、许可证期限、本人离线审核回执、权限快照和 `train/validation/test` 切分；报告只记录缺口，不提升任何权限。
+
+## 策略训练与金融执行隔离
+
+`strategy_training_enabled` 是独立于传统 `training_enabled` 的开关，只允许
+在隔离环境中评估策略分析、候选标的、风险等级、置信度和缺数据拒答能力。
+它不会授予下单、账本写入、模拟成交、生产或收费权限。策略训练资格还要求
+`financial_execution_enabled`、`simulated_execution_enabled` 和
+`commercialization_enabled` 均为 `false`；缺少许可证、来源日期、哈希、本人
+离线审核回执、权限快照或时间切分时仍保持 `evaluation_only`。
+
+当前正式矩阵和候选清单均显式设置 `strategy_training_enabled=false`，因此本
+工作区的 `strategy_training_eligible` 继续为 `false`。只有完成证据治理、只读
+RAG 基线和影子验收后，才允许单独评审该开关；本轮不安装训练依赖、不启动 LoRA、
+不执行模拟成交或交易。

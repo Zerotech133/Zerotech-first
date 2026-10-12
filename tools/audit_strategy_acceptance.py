@@ -23,6 +23,7 @@ _EXECUTION_FLAGS = (
     "training_enabled",
     "commercialization_enabled",
 )
+_OPTIONAL_EXECUTION_FLAGS = ("simulated_execution_enabled",)
 _GLOBAL_REQUIREMENTS = (
     "source_reference",
     "source_date_receipt",
@@ -159,6 +160,9 @@ def _global_reasons(policy: dict[str, Any]) -> list[str]:
     if policy.get("calendar_certified") is not True:
         reasons.append("global:calendar_uncertified")
     for name in _EXECUTION_FLAGS:
+        if policy.get(name) is True:
+            reasons.append(f"global:{name}_must_be_false")
+    for name in _OPTIONAL_EXECUTION_FLAGS:
         if policy.get(name) is True:
             reasons.append(f"global:{name}_must_be_false")
     return reasons
@@ -365,6 +369,8 @@ def audit_matrix(
     policy = matrix["policy"]
     p1_reasons = _p1_reasons(p1_report)
     global_reasons = _global_reasons(policy)
+    strategy_training_enabled = policy.get("strategy_training_enabled") is True
+    simulated_execution_enabled = policy.get("simulated_execution_enabled") is True
     evidence_reasons: set[str] = set()
     if not isinstance(evidence, dict) or evidence.get("schema") != _EVIDENCE_SCHEMA:
         evidence_reasons.add("invalid:evidence_schema")
@@ -401,12 +407,16 @@ def audit_matrix(
         "read_only": True,
         "financial_execution_enabled": False,
         "training_enabled": False,
+        "strategy_training_enabled": strategy_training_enabled,
+        "simulated_execution_enabled": simulated_execution_enabled,
         "commercialization_enabled": False,
         "policy": {
             "standard_definitions_certified": policy.get("standard_definitions_certified") is True,
             "calendar_certified": policy.get("calendar_certified") is True,
             "financial_execution_enabled": False,
             "training_enabled": False,
+            "strategy_training_enabled": strategy_training_enabled,
+            "simulated_execution_enabled": simulated_execution_enabled,
             "commercialization_enabled": False,
         },
         "gate_reasons": sorted(set(global_reasons) | set(p1_reasons) | evidence_reasons),
@@ -415,6 +425,11 @@ def audit_matrix(
         "all_strategies_ready_for_shadow_review": bool(output)
         and all(row["verdict"] == "ready_for_shadow_review" for row in output),
         "training_eligible": False,
+        "strategy_training_eligible": (
+            strategy_training_enabled
+            and bool(output)
+            and all(row["verdict"] == "ready_for_shadow_review" for row in output)
+        ),
         "production_eligible": False,
         "commercialization_eligible": False,
     }
@@ -440,12 +455,15 @@ def main(argv: list[str] | None = None) -> int:
             "read_only": True,
             "financial_execution_enabled": False,
             "training_enabled": False,
+            "strategy_training_enabled": False,
+            "simulated_execution_enabled": False,
             "commercialization_enabled": False,
             "gate_reasons": ["audit:input_invalid"],
             "p1_status": "blocked",
             "strategies": [],
             "all_strategies_ready_for_shadow_review": False,
             "training_eligible": False,
+            "strategy_training_eligible": False,
             "production_eligible": False,
             "commercialization_eligible": False,
             "error": f"{type(exc).__name__}: {exc}",
@@ -462,6 +480,8 @@ def main(argv: list[str] | None = None) -> int:
         "training_eligible": report["training_eligible"],
         "production_eligible": report["production_eligible"],
         "financial_execution_enabled": report["financial_execution_enabled"],
+        "strategy_training_enabled": report["strategy_training_enabled"],
+        "strategy_training_eligible": report["strategy_training_eligible"],
         "commercialization_eligible": report["commercialization_eligible"],
         "all_strategies_ready_for_shadow_review": report["all_strategies_ready_for_shadow_review"],
     }, ensure_ascii=False))

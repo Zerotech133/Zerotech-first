@@ -181,6 +181,8 @@ def audit_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
     training_enabled = policy.get("training_enabled") is True
     strategy_training_enabled = policy.get("strategy_training_enabled") is True
     financial_execution_enabled = policy.get("financial_execution_enabled") is True
+    simulated_execution_enabled = policy.get("simulated_execution_enabled") is True
+    commercialization_enabled = policy.get("commercialization_enabled") is True
     output_records = []
     for item in audited:
         reasons = set(item["reasons"])
@@ -189,13 +191,22 @@ def audit_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
             reasons.add("training_disabled")
         if not strategy_training_enabled:
             reasons.add("strategy_training_disabled")
+        if strategy_training_enabled and training_enabled:
+            reasons.add("strategy_training_requires_training_off")
         if strategy_training_enabled and financial_execution_enabled:
             reasons.add("strategy_training_requires_financial_execution_off")
+        if strategy_training_enabled and simulated_execution_enabled:
+            reasons.add("strategy_training_requires_simulated_execution_off")
+        if strategy_training_enabled and commercialization_enabled:
+            reasons.add("strategy_training_requires_commercialization_off")
         training_eligible = content_eligible and training_enabled
         strategy_training_eligible = (
             content_eligible
             and strategy_training_enabled
+            and not training_enabled
             and not financial_execution_enabled
+            and not simulated_execution_enabled
+            and not commercialization_enabled
         )
         output_records.append({
             **{key: item[key] for key in ("sample_id", "source", "split",
@@ -224,6 +235,8 @@ def audit_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
             "training_enabled": training_enabled,
             "strategy_training_enabled": strategy_training_enabled,
             "financial_execution_enabled": financial_execution_enabled,
+            "simulated_execution_enabled": simulated_execution_enabled,
+            "commercialization_enabled": commercialization_enabled,
             "as_of": policy.get("as_of"),
         },
         "counts": {

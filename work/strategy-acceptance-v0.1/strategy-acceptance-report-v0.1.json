@@ -4,12 +4,16 @@
   "read_only": true,
   "financial_execution_enabled": false,
   "training_enabled": false,
+  "strategy_training_enabled": false,
+  "simulated_execution_enabled": false,
   "commercialization_enabled": false,
   "policy": {
     "standard_definitions_certified": false,
     "calendar_certified": false,
     "financial_execution_enabled": false,
     "training_enabled": false,
+    "strategy_training_enabled": false,
+    "simulated_execution_enabled": false,
     "commercialization_enabled": false
   },
   "gate_reasons": [
@@ -191,6 +195,7 @@
   ],
   "all_strategies_ready_for_shadow_review": false,
   "training_eligible": false,
+  "strategy_training_eligible": false,
   "production_eligible": false,
   "commercialization_eligible": false
 }

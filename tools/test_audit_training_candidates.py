@@ -87,6 +87,34 @@ def test_complete_record_can_enter_strategy_training_without_financial_training(
     assert result["policy"]["financial_execution_enabled"] is False
 
 
+def test_strategy_training_is_blocked_when_simulated_execution_is_enabled(tmp_path):
+    record = _record(tmp_path / "sources", "a.md")
+    manifest = _manifest(tmp_path, [record], training_enabled=False)
+    manifest["policy"].update({
+        "strategy_training_enabled": True,
+        "simulated_execution_enabled": True,
+    })
+
+    result = audit_manifest(manifest)
+
+    assert result["strategy_training_eligible"] is False
+    assert result["counts"]["strategy_training_eligible"] == 0
+    assert result["policy"]["simulated_execution_enabled"] is True
+    assert "strategy_training_requires_simulated_execution_off" in result["records"][0]["reasons"]
+
+
+def test_strategy_training_is_blocked_when_traditional_training_is_enabled(tmp_path):
+    record = _record(tmp_path / "sources", "a.md")
+    manifest = _manifest(tmp_path, [record], training_enabled=True)
+    manifest["policy"]["strategy_training_enabled"] = True
+
+    result = audit_manifest(manifest)
+
+    assert result["strategy_training_eligible"] is False
+    assert result["counts"]["strategy_training_eligible"] == 0
+    assert "strategy_training_requires_training_off" in result["records"][0]["reasons"]
+
+
 def test_missing_license_and_split_stays_evaluation_only(tmp_path):
     record = _record(tmp_path / "sources", "a.md")
     for field in ("license_id", "license_approved", "split", "split_group"):

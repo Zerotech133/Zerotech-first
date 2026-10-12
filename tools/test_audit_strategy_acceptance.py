@@ -116,6 +116,49 @@ def test_complete_evidence_is_ready_for_shadow_review_but_never_production():
     assert report["all_strategies_ready_for_shadow_review"] is True
 
 
+def test_strategy_training_is_separate_from_financial_execution():
+    report = audit_matrix(
+        matrix({"strategy_training_enabled": True}), evidence(), p1_ok()
+    )
+
+    assert report["strategy_training_enabled"] is True
+    assert report["strategy_training_eligible"] is True
+    assert report["training_enabled"] is False
+    assert report["financial_execution_enabled"] is False
+    assert report["production_eligible"] is False
+
+
+def test_strategy_training_is_blocked_when_financial_execution_is_enabled():
+    report = audit_matrix(
+        matrix({
+            "strategy_training_enabled": True,
+            "financial_execution_enabled": True,
+        }),
+        evidence(),
+        p1_ok(),
+    )
+
+    assert report["strategy_training_enabled"] is True
+    assert report["strategy_training_eligible"] is False
+    assert "global:financial_execution_enabled_must_be_false" in report["gate_reasons"]
+
+
+def test_strategy_training_is_blocked_when_simulated_execution_is_enabled():
+    report = audit_matrix(
+        matrix({
+            "strategy_training_enabled": True,
+            "simulated_execution_enabled": True,
+        }),
+        evidence(),
+        p1_ok(),
+    )
+
+    assert report["strategy_training_enabled"] is True
+    assert report["simulated_execution_enabled"] is True
+    assert report["strategy_training_eligible"] is False
+    assert "global:simulated_execution_enabled_must_be_false" in report["gate_reasons"]
+
+
 def test_missing_evidence_does_not_add_spurious_invalid_reason():
     report = audit_matrix(matrix(), {"strategies": {"chanlun": {}}}, p1_ok())
     reasons = report["strategies"][0]["reasons"]
@@ -280,6 +323,7 @@ def test_cli_stdout_contains_all_gate_fields(tmp_path, capsys):
     summary = __import__("json").loads(capsys.readouterr().out)
     for key in (
         "financial_execution_enabled",
+        "strategy_training_eligible",
         "commercialization_eligible",
         "all_strategies_ready_for_shadow_review",
     ):

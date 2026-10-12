@@ -5,7 +5,10 @@
   "policy": {
     "default_status": "evaluation_only",
     "training_enabled": false,
+    "strategy_training_enabled": false,
     "financial_execution_enabled": false,
+    "simulated_execution_enabled": false,
+    "commercialization_enabled": false,
     "required_fields": [
       "license_id",
       "license_subject",

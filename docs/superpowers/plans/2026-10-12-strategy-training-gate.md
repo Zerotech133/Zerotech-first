@@ -34,10 +34,10 @@
 - Consumes: manifest `policy.strategy_training_enabled`（缺失按 `false`）。
 - Produces: report `policy.strategy_training_enabled`、`strategy_training_eligible` 计数和每条记录的 `strategy_training_eligible`；传统字段保持兼容。
 
-- [ ] 写开关关闭和开启的红测试。
-- [ ] 运行新增测试确认失败。
-- [ ] 实现策略资格计算，禁止改变传统 `training_eligible`。
-- [ ] 运行训练候选测试并确认通过。
+- [x] 写开关关闭和开启的红测试。
+- [x] 运行新增测试确认失败。
+- [x] 实现策略资格计算，禁止改变传统 `training_eligible`。
+- [x] 运行训练候选测试并确认通过。
 
 ### Task 2: 策略分层验收报告字段
 
@@ -50,10 +50,10 @@
 - Consumes: `policy.strategy_training_enabled`（缺失按 `false`）和现有策略证据。
 - Produces: 顶层 `strategy_training_enabled`、`strategy_training_eligible`；金融执行、模拟执行、商业化字段独立保持关闭。
 
-- [ ] 写策略开关开启且证据完整的红测试。
-- [ ] 运行测试确认失败。
-- [ ] 实现仅在全部策略 `ready_for_shadow_review` 且金融执行关闭时返回策略训练资格。
-- [ ] 为正式矩阵显式登记 `strategy_training_enabled=false`。
+- [x] 写策略开关开启且证据完整的红测试。
+- [x] 运行测试确认失败。
+- [x] 实现仅在全部策略 `ready_for_shadow_review` 且金融执行关闭时返回策略训练资格。
+- [x] 为正式矩阵显式登记 `strategy_training_enabled=false`。
 - [ ] 运行策略验收和 CLI 测试并确认通过。
 
 ### Task 3: 回归与评审门
@@ -62,7 +62,7 @@
 - Modify: `work/training-eligible-manifest-v0.1.json`
 - Modify: `work/academy-source-evidence-v0.1/README.md`
 
-- [ ] 在 manifest 中显式写入 `strategy_training_enabled=false`。
-- [ ] README 说明策略训练与金融执行分离以及默认关闭状态。
+- [x] 在 manifest 中显式写入 `strategy_training_enabled=false`。
+- [x] README 说明策略训练与金融执行分离以及默认关闭状态。
 - [ ] 运行聚焦 pytest、策略候选审计和三道评审门。
 - [ ] 提交信息包含 `K-STOCK-185`，再执行 `python tools/devtask.py merge K-STOCK-185`。
