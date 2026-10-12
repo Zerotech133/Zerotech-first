@@ -1142,19 +1142,23 @@ async function obwSubmit(){
   }catch(e){/* 静默：迎宾卡不阻塞页面 */
   }
 })();
-// K-STOCK-194 经理汇报模式：只汇报，不推销。策略产物（审批单）与经理服务（纪要复盘）分栏呈现
+// K-STOCK-194 经理汇报模式：只汇报，不推销。K-STOCK-207 增设服务清单（老田口径：接待先讲有哪些服务——免费/订阅分清，付费为订阅制·行囊装备制，不在接待现场推销）
 function mgrReport(pfs){
   const d=new Date();
   const today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const box=$('ob-box');
   box.innerHTML='<div style="font-size:13.5px;font-weight:700;margin-bottom:6px">🧑‍💼 值班经理 · 今日汇报</div>'
-    +'<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.7">您好，我是您的值班经理。您名下 <b>'+pfs.length+'</b> 个组合在管（'+OB_ESC(pfs.map(p=>p.name||p.id).join('、'))+'）。今天两件事，我分开向您汇报：</div>'
+    +'<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.7">您好，我是您的值班经理。您名下 <b>'+pfs.length+'</b> 个组合在管（'+OB_ESC(pfs.map(p=>p.name||p.id).join('、'))+'）。先给您过一遍我们的服务，再汇报今天两件事：</div>'
+    +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px">'
+    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📋 我们的服务 <span style="font-weight:400;color:var(--text-dim)">（免费 / 订阅分清 · 付费均为订阅制，已订的存于您的行囊，随订随退）</span></div>'
+    +'<div id="svc-menu" style="font-size:12px;line-height:1.9;color:var(--text-dim)">读取中…</div></div>'
     +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px">'
     +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📈 一、今日交易计划 <span style="font-weight:400;color:var(--text-dim)">（策略产物 · 完整审批单见下方右栏）</span></div>'
     +'<div id="mgr-plan" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>'
     +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px">'
     +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">🗒️ 二、今日复盘与经理服务 <span style="font-weight:400;color:var(--text-dim)">（会议产物 · 纪要全文见下方纪要区）</span></div>'
     +'<div id="mgr-post" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>';
+  renderSvcMenu();
   api('/api/plan_review').then(r=>{
     const el=$('mgr-plan'); if(!el)return;
     const rv=(r&&r.review)||null;
@@ -1171,6 +1175,27 @@ function mgrReport(pfs){
     el.innerHTML='今日已开 <b>'+ms.length+'</b> 场会：'+ms.map(m=>OB_ESC(String(m.title||'').slice(0,26))).join('、')
       +'。 <a href="#meet-body">看纪要全文 →</a>';
   }).catch(()=>{const el=$('mgr-post');if(el)el.textContent='纪要暂不可用。';});
+}
+// K-STOCK-207 服务菜单（全部现役真实服务，失败静默）：免费×2 + 经理订阅（真实价格/在雇行囊态）+ 交易员市场
+function renderSvcMenu(){
+  const el=$('svc-menu');if(!el)return;
+  Promise.all([
+    api('/api/reception').catch(()=>null),
+    api('/api/manager_roster').catch(()=>null)
+  ]).then(([rc,mr])=>{
+    if(!el)return;
+    const profs=(rc&&rc.ok&&rc.profiles)||[];
+    const prices=profs.length?profs.map(p=>'¥'+p.price).join(' / '):'¥49 / ¥99 / ¥199';
+    const mgrs=(mr&&mr.ok&&Array.isArray(mr.managers))?mr.managers:[];
+    const hired=mgrs.filter(m=>(m.active_hires||[]).length>0);
+    const hiredTxt=hired.length
+      ?('当前在雇 <b>'+hired.length+'</b> 位 · 已存于您的行囊：'+hired.map(m=>OB_ESC(String(m.name||m.id))).join('、'))
+      :'尚未订阅——需要时到经理卡区一键订阅';
+    el.innerHTML='🆓 <b>值班服务</b>（免费 · 进行中）：值班经理接待盯盘、盘前/收盘会纪要、今日审批单——您已在享受<br>'
+      +'🆓 <b>策略市场</b>（免费）：挑选策略当您的信号来源（选股机器人，选股不收费） <a href="#strat-body">去策略源 →</a><br>'
+      +'💳 <b>经理订阅</b>（'+OB_ESC(prices)+'/月 · 订阅制）：'+hiredTxt+' <a href="#manager-grid">看经理卡区 →</a><br>'
+      +'🧑‍✈️ <b>交易员市场</b>：策略×交易员组合执行，历史战绩逐日留痕 <a href="#agent-grid">看交易员战绩 →</a>';
+  }).catch(()=>{if(el)el.textContent='服务清单暂不可用。';});
 }
 
 // K-STOCK-17x P0：step3 死锁修复——obw-mgr 单选 change 即时回写 OBW.needMgr 并重渲染，
