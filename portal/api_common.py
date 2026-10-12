@@ -269,6 +269,7 @@ DOMAIN_NAV_GROUPS = {
             ("🌊 青萍之末", "/bt-qpzm", "qpzm"),
             ("🔔 订阅推送", "/bt/subscribe", "subscribe"),
             ("🧭 缠论", "/bt-chanlun", "chanlun"),
+            ("🧪 TBE 分层", "/bt-tbe", "tbe"),
             ("⚔ 量子双刀", "/qd/", "qd"),
             ("🛟 预警池", "/bt-chanlun-pool", "chanlun-pool"),
             ("🔗 三线联动", "/bt-linkage", "linkage"),
@@ -293,7 +294,8 @@ DOMAIN_NAV_GROUPS = {
             ("🌾 期货量化", "/fut", "fut"),
             ("📊 寻优", "/bt-opt", "opt"),
             ("🔥 板块", "/bt-sectors", "sectors"),
-            ("🗄 数据仓", "/bt-data-health", "data-health"))),
+            ("🗄 数据仓", "/bt-data-health", "data-health"),
+            ("🧾 列对账", "/col-audit", "colaudit"))),
     ),
     "intel": (
         ("📡 情报流", (

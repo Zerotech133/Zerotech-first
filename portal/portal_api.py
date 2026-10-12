@@ -634,6 +634,19 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                 body = t.encode("utf-8")
         except Exception:
             pass
+        # K-STOCK-170 包2.1 首屏结论条：报告页 3 秒定则落地（宪法 6.2）
+        # （.env/.kpi 结论候选克隆到顶部+买卖计数徽标；无候选短页自动跳过）
+        try:
+            t = body.decode("utf-8", "ignore")
+            if ("</head>" in t and "static/firstscreen.js" not in t
+                    and b"<body" in body):
+                t = t.replace(
+                    "</head>",
+                    '<script src="/static/firstscreen.js" defer></script></head>',
+                    1)
+                body = t.encode("utf-8")
+        except Exception:
+            pass
         body += _BTSEL_TAG.encode("utf-8")   # K255 静态报告页同样注入
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -2778,6 +2791,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                    "nav.js": "application/javascript",
                    "tokens.css": "text/css",
                    "shortscreen.js": "application/javascript",
+                   "firstscreen.js": "application/javascript",
                    "cainiao.js": "application/javascript",
                    "china_geo.json": "application/json"}
             if fn in _CT:
