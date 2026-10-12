@@ -1,14 +1,14 @@
 {
- "generated_at": "2026-10-12T09:42:09",
+ "generated_at": "2026-10-12T09:53:02",
  "source": "portal_api.py",
- "source_sha256": "7fd9291b7089e264",
+ "source_sha256": "bc6d35fb048aa0a4",
  "n_routes": 72,
  "routes": [
   {
    "path": "/api/alert/push",
    "lines": [
     199,
-    3632
+    3611
    ],
    "count": 2,
    "first_line": 199
@@ -24,10 +24,10 @@
   {
    "path": "/api/analyst-report",
    "lines": [
-    3580
+    3559
    ],
    "count": 1,
-   "first_line": 3580
+   "first_line": 3559
   },
   {
    "path": "/api/audit_chat",
@@ -40,10 +40,10 @@
   {
    "path": "/api/audit_recent",
    "lines": [
-    3483
+    3465
    ],
    "count": 1,
-   "first_line": 3483
+   "first_line": 3465
   },
   {
    "path": "/api/audit_status",
@@ -58,7 +58,7 @@
    "lines": [
     183,
     2418,
-    3629
+    3608
    ],
    "count": 3,
    "first_line": 183
@@ -66,18 +66,18 @@
   {
    "path": "/api/bridge/summary",
    "lines": [
-    3595
+    3574
    ],
    "count": 1,
-   "first_line": 3595
+   "first_line": 3574
   },
   {
    "path": "/api/bridge/table_preview",
    "lines": [
-    3602
+    3581
    ],
    "count": 1,
-   "first_line": 3602
+   "first_line": 3581
   },
   {
    "path": "/api/brief",
@@ -149,10 +149,10 @@
   {
    "path": "/api/chips",
    "lines": [
-    3583
+    3562
    ],
    "count": 1,
-   "first_line": 3583
+   "first_line": 3562
   },
   {
    "path": "/api/council/confirm",
@@ -183,18 +183,18 @@
   {
    "path": "/api/data/freshness",
    "lines": [
-    3612
+    3591
    ],
    "count": 1,
-   "first_line": 3612
+   "first_line": 3591
   },
   {
    "path": "/api/data/job",
    "lines": [
-    3624
+    3603
    ],
    "count": 1,
-   "first_line": 3624
+   "first_line": 3603
   },
   {
    "path": "/api/data/runs/",
@@ -208,7 +208,7 @@
    "path": "/api/data/sync",
    "lines": [
     198,
-    3619
+    3598
    ],
    "count": 2,
    "first_line": 198
@@ -243,10 +243,10 @@
   {
    "path": "/api/devops",
    "lines": [
-    3503
+    3485
    ],
    "count": 1,
-   "first_line": 3503
+   "first_line": 3485
   },
   {
    "path": "/api/home",
@@ -259,18 +259,18 @@
   {
    "path": "/api/kline",
    "lines": [
-    3558
+    3537
    ],
    "count": 1,
-   "first_line": 3558
+   "first_line": 3537
   },
   {
    "path": "/api/kline_qy",
    "lines": [
-    3569
+    3548
    ],
    "count": 1,
-   "first_line": 3569
+   "first_line": 3548
   },
   {
    "path": "/api/manager_fire",
@@ -317,10 +317,10 @@
   {
    "path": "/api/nlquery",
    "lines": [
-    3405
+    3390
    ],
    "count": 1,
-   "first_line": 3405
+   "first_line": 3390
   },
   {
    "path": "/api/onboard",
@@ -514,10 +514,10 @@
   {
    "path": "/api/research",
    "lines": [
-    3386
+    3371
    ],
    "count": 1,
-   "first_line": 3386
+   "first_line": 3371
   },
   {
    "path": "/api/review_minutes",

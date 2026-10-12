@@ -14,6 +14,7 @@
 | B-03 | MP 凭证索取 | 批 D 无法开工 | ⏳ 等外部 | 挂账清单 |
 | B-04 | scheduler 主从判定规则 | 双实例风险 | ⏳ 等拍板 | 双实例清理拍板遗留 |
 | B-05 | home.html+8094 驾驶舱退役 | 四入口分裂 | ✅ 已拍板执行（2026-10-12） | 门户重排 K-STOCK-166 盘点 |
+| B-06 | webroot json 泄露面 | 9 个运行时 json 可被公网直读 | ⏳ 等 nginx 维护窗口 | 版面宪法 2026-10-12 |
 
 ---
 
@@ -46,6 +47,13 @@
 - **事实修正**：盘点头注「8092」不准——home_server.py 实际端口 8094（K-STOCK-047 改），且计划任务在拉、nginx `/cai/api/` 反代在，属「活着但无站内入口」；唯一完整路径是手敲 8094。
 - **执行**：cockpit 五投影（此刻条/我的钱/时间线/裁决窗/组织）移植 portal_api `/api/home`（api_misc.build_home_cockpit，全 try 降级）；index.html 门面新增「此刻区」；home.html+home_server.py 进回收站（备份 %TEMP%/lingjie_home_retire_backup_20261012）；8094 进程已停、计划任务「AI工作站零界驾驶舱8094」已禁用。
 - **遗留（低危）**：nginx `location ^~ /cai/api/` 反代指向已死端口，无消费者，下次 nginx 维护窗口一并清理；菜鸟对话（answer/Ollama）未移植——门面 cainiao.js 已覆盖同职能。
+
+## B-06 webroot json 泄露面（⏳ 等 nginx 维护窗口）
+
+- **实况**：nginx 404 拦截后缀为 `py|pyc|ps1|md|conf|enc|key|token|env`，**不含 json**——portal/ 即 webroot，9 个运行时 json（ai_market/algo_market/audit_ai_config/licenses/mixin_baseline/qd_replay_verify/qd_scan_cache/route_baseline/strategies）均可被 `GET /xxx.json` 直读。全部有活代码引用，不能挪文件。
+- **影响**：中低敏（市场缓存/扫描缓存/基线），非密钥类，但架构上不该暴露。
+- **修法（一个维护窗口内完成）**：拦截正则加 `json` + 给 `/static/` 加 `^~` 前缀 location（china_geo.json 等静态资产豁免直出）→ `nginx -t` 验证 → Docker nginx reload → 全量 9 json 复测 404 + static 资产复测 200。
+- **风险**：reload 期间 8080 短暂闪断；配置错会让门面挂——必须先 `nginx -t`。
 
 ## B-04 scheduler 主从判定规则
 

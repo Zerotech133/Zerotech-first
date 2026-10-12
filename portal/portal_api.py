@@ -3257,11 +3257,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._html_file(os.path.join(
                 STATION, "quant_backtest", "reports",
                 "chanlun_tbe_report.html"))
-        elif path == "/bt-stock-incident":
-            # 事故复盘：/bt/stock K157 文案 %/ 未转义连接重置（2026-10-05）
-            self._html_file(os.path.join(
-                STATION, "quant_backtest", "reports",
-                "portal_stock_incident_20261005.html"))
         elif path == "/col-audit":
             # K176 数据源列对账摘要（source_col_audit 防线报告，取最新）
             _cands = glob.glob(os.path.join(
@@ -3359,16 +3354,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 % (len(files), rows or
                     "<tr><td colspan='3' class='dim'>"
                     "暂无快照</td></tr>"))
-        elif path == "/fut-strat":
-            # K161-B F3 期货核心池策略×品种回测对照（fut_backtest.py 生成）
-            import glob as _glob
-            cands = sorted(_glob.glob(os.path.join(
-                STATION, "tools", "out", "fut_strat_*.html")))
-            if cands:
-                self._html_file(cands[-1])
-            else:
-                self._json({"error": "fut_strat 报表未生成，先跑 "
-                                     "tools/fut_backtest.py"}, 404)
         elif path == "/afterhours":
             # 盘后复盘（收盘全景/赚钱效应/预判对照）
             self._html_file(os.path.join(
@@ -3468,9 +3453,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/bt/report":
             # 研报本地全文页（结构化库直读，零外链）
             self._bt_report_page(qs)
-        elif path == "/bt/analysts":
-            # 分析师知识图谱页（分析师→个股→评级记录）
-            self._bt_analysts_page()
         elif path == "/bt/ind_drill":
             # 行业下钻页：成分股涨跌全量 + 主力资金个股明细
             self._bt_ind_drill_page(qs)
@@ -3546,9 +3528,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/bt-weak":
             # 弱于板块案例库（weak 产线：扫描→建案→归因→跟踪→结案）
             self._weak_cases_page()
-        elif path == "/bt-weak-md":
-            from urllib.parse import parse_qs as _pqw
-            self._weak_md(_pqw(qs))
         elif path == "/bt-9dim":
             # 策略市场：九维量化选股（影子评分，纯门户不推送）
             self._nine_dim_page()
