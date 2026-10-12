@@ -91,6 +91,32 @@ def valuation_field_coverage(view: pd.DataFrame) -> dict[str, Any]:
     return {"rows": total, "fields": fields}
 
 
+def read_only_valuation_check(kline: pd.DataFrame, source_dir: str | Path) -> dict[str, Any]:
+    """只读核对估值来源，区分来源空与字段合法空值。
+
+    返回的视图和覆盖统计均由副本计算，绝不回写行情文件或来源目录。
+    ``source_empty`` 只表示没有可匹配的 ``ts_daily_basic`` 记录；亏损股
+    PE 为空等业务合法空值仍由 :func:`classify_valuation_null` 单独分类。
+    """
+    root = Path(source_dir)
+    files = sorted(root.glob("*.parquet")) if root.exists() else []
+    view = join_daily_basic_from_dir(kline.copy(), root) if files else join_daily_basic_to_kline(
+        kline.copy(), pd.DataFrame(columns=["ts_code", "trade_date", "total_mv", "pe", "turnover_rate"])
+    )
+    coverage = valuation_field_coverage(view)
+    matched = sum(coverage["fields"][field]["present"] for field in ("market_cap", "pe", "turnover"))
+    status = "ok" if matched else "source_empty"
+    return {
+        "status": status,
+        "source_dir": str(root),
+        "source_files": len(files),
+        "coverage": coverage,
+        "matched_values": matched,
+        "production_write": False,
+        "global_activation": False,
+    }
+
+
 def classify_valuation_null(row: Any) -> str:
     """区分亏损股 PE 空值、停牌换手率空值与未解释空值。"""
     def value(name: str):

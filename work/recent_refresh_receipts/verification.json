@@ -1,0 +1,14 @@
+{
+  "blocked": 12937,
+  "global_activation": false,
+  "production_write": false,
+  "publication": "not_started",
+  "qualified": 0,
+  "reason": "source_qualification_failed",
+  "rejected": 0,
+  "staging_rows": {},
+  "status": "blocked",
+  "windows": [
+    30
+  ]
+}

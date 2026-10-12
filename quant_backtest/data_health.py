@@ -44,6 +44,43 @@ ARTIFACT_MANIFEST = [
 ARTIFACT_STALE_HOURS = 26
 
 
+def scan_recent_refresh_receipts(receipt_dir):
+    """读取最近刷新回执，供看板显示状态和体量（只读）。
+
+    回执缺失或 JSONL 中存在损坏行时返回 ``blocked``，不把部分结果
+    误报为已更新。生产开关始终保持关闭，发布由后续受控流程完成。
+    """
+    root = Path(receipt_dir)
+    path = root / "source_receipt.jsonl"
+    if not path.exists():
+        return {"status": "blocked", "reason": "receipt_missing", "qualified": 0,
+                "blocked": 0, "rejected": 0, "rows": 0,
+                "production_write": False, "global_activation": False}
+    counts = {"qualified": 0, "blocked": 0, "rejected": 0}
+    rows = 0
+    errors = []
+    try:
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                item = json.loads(line)
+            except (TypeError, ValueError) as exc:
+                errors.append(f"line_{number}:{type(exc).__name__}")
+                continue
+            status = str(item.get("status", "rejected"))
+            if status not in counts:
+                status = "rejected"
+            counts[status] += 1
+            rows += int(item.get("result_rows") or 0)
+    except OSError as exc:
+        errors.append(f"read:{type(exc).__name__}")
+    overall = "blocked" if errors or counts["blocked"] or counts["rejected"] else "updated"
+    return {"status": overall, "reason": "receipt_parse_error" if errors else None,
+            **counts, "rows": rows, "errors": errors,
+            "production_write": False, "global_activation": False}
+
+
 def _scan_kline(market):
     """扫描指定市场 K 线目录。market: cn/us/hk/crypto"""
     if market == "cn":
