@@ -1,13 +1,4 @@
 
-  // ── 大屏等比适配（1920×1080 设计稿）──
-  const stage = document.getElementById('stage');
-  function fit() {
-    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
-    stage.style.transform = `translate(-50%,-50%) scale(${s})`;
-    stage.style.left = '50%'; stage.style.top = '50%';
-  }
-  fit(); addEventListener('resize', fit);
-
   const fmt = n => (n ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
   const $ = id => document.getElementById(id);
   setInterval(() => {
