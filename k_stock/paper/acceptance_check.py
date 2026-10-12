@@ -108,9 +108,12 @@ def check_c3_stops(cur, day):
 
 
 def check_c4_snapshot(cur, day):
+    # K-STOCK-189: 表内 date 为连字符形态（2026-10-12），判据入参为 YYYYMMDD
+    # ——两形态都查，防日期形态不匹配恒 FAIL
+    day_hyphen = f"{day[:4]}-{day[4:6]}-{day[6:8]}" if len(day) == 8 else day
     rows = cur.execute(
         "SELECT account_id, stock, qty, market_value FROM positions_snapshot"
-        " WHERE date=?", (day,)).fetchall()
+        " WHERE date IN (?, ?)", (day, day_hyphen)).fetchall()
     rows = [dict(r) for r in rows]
     ok = len(rows) > 0
     return ok, {"n_rows": len(rows),
@@ -119,9 +122,11 @@ def check_c4_snapshot(cur, day):
 
 
 def check_c5_idempotent(cur, day):
+    # K-STOCK-189: 空 ref（""）非 order_id 标识，剔除分组（原判据仅排 NULL，
+    #   两条手工单空 ref 被误判同组重复）
     dup = cur.execute(
         "SELECT ref, count(*) c FROM orders WHERE status='filled' AND fill_date=?"
-        " AND ref IS NOT NULL GROUP BY ref HAVING c > 1", (day,)).fetchall()
+        " AND ref IS NOT NULL AND ref != '' GROUP BY ref HAVING c > 1", (day,)).fetchall()
     dup = [dict(r) for r in dup]
     ok = not dup
     return ok, {"duplicate_refs": dup,
