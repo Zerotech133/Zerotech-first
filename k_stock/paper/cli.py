@@ -125,7 +125,7 @@ def cmd_status(args) -> int:
 
 def cmd_buy(args) -> int:
     e = _engine(args)
-    r = e.buy(args.stock, args.qty, args.price, force=args.force)
+    r = e.buy(args.stock, args.qty, args.price, force=args.force, ref=args.ref)
     print(f"✅ 成交: BUY {r['stock']} {r['qty']} 股 @ {r['price']}（费 {r['fee']:.2f}）"
           f" 现金余 {r['cash_after']:,.2f}")
     return 0
@@ -134,7 +134,7 @@ def cmd_buy(args) -> int:
 def cmd_sell(args) -> int:
     e = _engine(args)
     qty = None if args.all else args.qty
-    r = e.sell(args.stock, qty, args.price, force=args.force)
+    r = e.sell(args.stock, qty, args.price, force=args.force, ref=args.ref)
     print(f"✅ 成交: SELL {r['stock']} {r['qty']} 股 @ {r['price']}（费 {r['fee']:.2f}）"
           f" 现金余 {r['cash_after']:,.2f}")
     return 0
@@ -464,6 +464,7 @@ def main(argv=None) -> int:
     p.add_argument("--qty", type=int, required=True, help="股数（100 整数手）")
     p.add_argument("--price", type=float, default=None)
     p.add_argument("--force", action="store_true", help="跳过风控三条（测试极端场景）")
+    p.add_argument("--ref", default="", help="幂等引用（K-STOCK-195 规范：建议 manual-YYYYMMDD-用途；同日同 ref 只允许一条成交，C5 幂等判据保护面）")
     p.set_defaults(fn=cmd_buy)
 
     p = sub.add_parser("sell", help="手动卖出（--all 清可卖仓）")
@@ -472,6 +473,7 @@ def main(argv=None) -> int:
     p.add_argument("--all", action="store_true")
     p.add_argument("--price", type=float, default=None)
     p.add_argument("--force", action="store_true")
+    p.add_argument("--ref", default="", help="幂等引用（同 buy --ref）")
     p.set_defaults(fn=cmd_sell)
 
     p = sub.add_parser("exec", help="AI 决策产物落 pending 单（默认最新 poc_*.json）")
