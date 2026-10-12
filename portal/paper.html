@@ -280,7 +280,7 @@
 
       <div>
         <!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
-        <div class="col-title">今日交易计划（经理审批单）</div>
+        <div class="col-title" style="display:flex;align-items:center;justify-content:space-between;gap:6px">今日交易计划（经理审批单）<select id="plan-pf-select" style="font-size:11px;max-width:132px" title="K-STOCK-169u：切换组合查看对应审批单"></select></div>
         <div class="side-box"><div id="plan-body"><div class="empty">读取中…</div></div></div>
         <!-- K-STOCK-165 迎宾向导对话式改造（值班经理逐题引导，一屏一问，纯增量，失败静默） -->
         <div class="col-title">值班经理接待</div>
@@ -442,14 +442,16 @@ function renderAll(j){
     `<div class="kpi"><div class="k">快照日</div><div class="v small">${L.date}</div></div>`;
   $('n-pos').textContent=j.positions.length;
   renderDesk(j);renderStops(j.stops);renderPend(j.pending_orders);renderPick(j.pick);renderJudge(j.judge);renderStrat(j.strategist);
-  loadPlanReview();   // K-STOCK-163 今日交易计划审批单（独立只读端点，失败静默）
+  loadPlanReview();loadPlanPfOptions();   // K-STOCK-163 今日交易计划审批单（独立只读端点，失败静默）；K-STOCK-169u 组合下拉
+  const ppfSel=$('plan-pf-select');if(ppfSel)ppfSel.onchange=loadPlanReview;   // K-STOCK-169u 属性赋值幂等，切换即按需重拉
 
 // ===== K-STOCK-163 今日交易计划审批单（/api/plan_review 只读投影，失败静默） =====
+// K-STOCK-169u：多组合切换——下拉选项来自 /api/portfolio_status.portfolios，切换即 fetch /api/plan_review?pf_id=<选中>；默认 pf_001 向后兼容
 const PLAN_RC_COLOR={'信心不足':'var(--text-dim)','行业集中':'#e3b341','风险敞口':'var(--color-dn)','流动性':'var(--pur-500,#a371f7)'};
-function renderPlanReview(r){
+function renderPlanReview(r,pf){
   const el=$('plan-body');
-  if(!r){el.innerHTML='<div class="empty">今日审批单尚未生成（09:05 经理盘前会后将产出）</div>';return;}
   const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  if(!r){el.innerHTML='<div class="empty">今日审批单尚未生成（09:05 经理盘前会后将产出）'+(pf?`（组合 ${esc(pf)}）`:'')+'</div>';return;}
   const ap=(r.approved||[]).map(a=>
     `<tr><td><b><a href="/kg/stock/${esc(a.stock)}">${esc(a.stock)}</a></b></td>`+
     `<td style="font-size:12px">${esc(a.reason)}</td>`+
@@ -468,11 +470,31 @@ function renderPlanReview(r){
     `<div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">审批单 ${esc(r.generated_at||'')}${prov}${deg}</div>`;
 }
 async function loadPlanReview(){
+  let pf='pf_001';   // K-STOCK-169u 默认 pf_001 向后兼容
   try{
-    const j=await api('/api/plan_review?pf_id=pf_001');
-    if(j&&j.ok)renderPlanReview(j.review||null);
-    else renderPlanReview(null);
-  }catch(e){renderPlanReview(null);}
+    const sel=$('plan-pf-select');
+    if(sel&&sel.value)pf=sel.value;
+    sel&&(sel.dataset.loaded=pf);
+    const j=await api('/api/plan_review?pf_id='+encodeURIComponent(pf));
+    if(j&&j.ok)renderPlanReview(j.review||null,pf);
+    else renderPlanReview(null,pf);
+  }catch(e){renderPlanReview(null,pf);}
+}
+// K-STOCK-169u：组合下拉选项（/api/portfolio_status.portfolios，独立轻量 fetch，失败/缺数组静默保留默认 pf_001）
+async function loadPlanPfOptions(){
+  try{
+    const j=await api('/api/portfolio_status');
+    const sel=$('plan-pf-select');if(!sel)return;
+    const pfs=(j&&j.ok&&Array.isArray(j.portfolios))?j.portfolios:null;
+    if(!pfs||!pfs.length)return;
+    const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const cur=sel.value||'pf_001';
+    sel.innerHTML=pfs.map(p=>`<option value="${esc(p.id||'')}">${esc(p.name||p.id||'')}</option>`).join('');
+    if(pfs.some(p=>(p.id||'')===cur))sel.value=cur;
+    else if(pfs.some(p=>p.id==='pf_001'))sel.value='pf_001';
+    // 加载时序容错：若下拉生效值与已渲染审批单的组合不一致（如默认 pf_001 不在列表），按需补拉
+    if(sel.value&&sel.value!==sel.dataset.loaded)loadPlanReview();
+  }catch(e){}
 }
 
 function renderPick(pk){
