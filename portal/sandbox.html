@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>研发沙盘 · R&D Sandbox · 零界</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#11161d; --panel2:#161d26; --line:#212a35;
+    --fg:#e6edf3; --dim:#8b949e; --dim2:#6e7681;
+    --blue:#58a6ff; --green:#3fb950; --orange:#d29922; --purple:#bc8cff; --red:#f85149;
+    --e3:#3fb950; --e2:#58a6ff; --e1:#8b949e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    min-height:100vh; width:100%;
+  }
+  .wrap{width:100%; max-width:1720px; margin:0 auto; padding:22px 28px 48px}
+
+  /* ── header ── */
+  header{display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:12px;
+    border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:18px}
+  header h1{font-size:clamp(22px,2.2vw,30px); letter-spacing:1px}
+  header h1 small{display:block; font-size:12px; color:var(--dim2); letter-spacing:3px; margin-top:4px; font-weight:normal}
+  .hd-right{display:flex; gap:10px; align-items:center}
+  .hd-right a{color:var(--blue); text-decoration:none; font-size:13px; border:1px solid var(--line);
+    padding:7px 14px; border-radius:8px; background:var(--panel)}
+  .hd-right a:hover{border-color:var(--blue)}
+
+  /* ── KPI ── */
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:20px}
+  .kpi{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 18px}
+  .kpi .v{font-size:clamp(24px,2.4vw,34px); font-weight:700}
+  .kpi .k{font-size:12px; color:var(--dim); margin-top:2px}
+  .kpi .v b.blue{color:var(--blue)} .kpi .v b.green{color:var(--green)} .kpi .v b.orange{color:var(--orange)} .kpi .v b.purple{color:var(--purple)}
+
+  /* ── 卡墙 ── */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:16px}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px;
+    cursor:pointer; transition:transform .15s, border-color .15s; position:relative; overflow:hidden}
+  .card:hover{transform:translateY(-3px); border-color:var(--blue)}
+  .card .c-head{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+  .card .badge{font-size:22px}
+  .card .c-name{font-size:17px; font-weight:700}
+  .card .c-dept{font-size:11px; color:var(--dim2); margin-top:2px}
+  .phase{margin-left:auto; font-size:11px; padding:3px 10px; border-radius:20px; white-space:nowrap; font-weight:600}
+  .ph-design{background:rgba(188,140,255,.14); color:var(--purple)}
+  .ph-dev{background:rgba(88,166,255,.14); color:var(--blue)}
+  .ph-test{background:rgba(210,153,34,.16); color:var(--orange)}
+  .ph-accept{background:rgba(63,185,80,.14); color:var(--green)}
+  .card .c-sum{font-size:12.5px; color:var(--dim); line-height:1.7; min-height:38px; margin-bottom:10px}
+  .bar{height:8px; background:var(--panel2); border-radius:6px; overflow:hidden; margin-bottom:6px}
+  .bar i{display:block; height:100%; border-radius:6px;
+    background:linear-gradient(90deg,#1f6feb,#58a6ff)}
+  .bar-row{display:flex; justify-content:space-between; font-size:11px; color:var(--dim2); margin-bottom:12px}
+  .bar-row b{color:var(--fg)}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px}
+  .chip{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; background:var(--panel2);
+    border:1px solid var(--line); border-radius:16px; padding:3px 10px 3px 4px}
+  .chip .gid{font-weight:700}
+  .chip .grole{color:var(--dim2)}
+  .g{display:inline-block; width:18px; height:18px; line-height:18px; text-align:center; border-radius:50%;
+    font-size:10px; font-weight:800; color:#0b0f14}
+  .g-E3{background:var(--e3)} .g-E2{background:var(--e2)} .g-E1{background:var(--e1)}
+  .c-foot{display:flex; gap:8px}
+  .btn{flex:1; text-align:center; font-size:12.5px; padding:8px 0; border-radius:8px; border:1px solid var(--line);
+    color:var(--dim); background:var(--panel2)}
+  .btn.proto-on{color:var(--fg); border-color:var(--blue); background:rgba(88,166,255,.12); font-weight:600}
+  .btn.proto-on::before{content:"▶ "}
+  .card .proto-flag{position:absolute; top:0; right:0; width:0; height:0;
+    border-top:34px solid var(--blue); border-left:34px solid transparent; opacity:.85}
+
+  /* ── 下钻抽屉 ── */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.66); display:none; z-index:50; backdrop-filter:blur(3px)}
+  .overlay.open{display:block}
+  .drawer{position:fixed; top:0; right:-100%; width:min(96vw,1240px); height:100vh; background:var(--bg);
+    border-left:1px solid var(--line); z-index:60; transition:right .25s ease; display:flex; flex-direction:column}
+  .drawer.open{right:0}
+  .d-head{display:flex; align-items:center; gap:12px; padding:16px 22px; border-bottom:1px solid var(--line)}
+  .d-head h2{font-size:18px}
+  .d-head .close{margin-left:auto; cursor:pointer; color:var(--dim); font-size:22px; padding:4px 10px; border-radius:8px}
+  .d-head .close:hover{color:var(--fg); background:var(--panel2)}
+  .d-body{flex:1; display:grid; grid-template-columns:380px 1fr; gap:0; min-height:0}
+  .d-left{border-right:1px solid var(--line); padding:18px; overflow:auto}
+  .d-left h3{font-size:13px; color:var(--dim); margin:14px 0 10px; letter-spacing:1px}
+  .d-left h3:first-child{margin-top:0}
+  .d-proto-note{font-size:12.5px; color:var(--dim); background:var(--panel); border:1px dashed var(--line);
+    border-radius:10px; padding:12px; line-height:1.7}
+  .task{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 13px; margin-bottom:9px}
+  .task .tt{font-size:13px; line-height:1.55; margin-bottom:7px}
+  .task .tm{display:flex; align-items:center; gap:8px; font-size:11px; color:var(--dim2)}
+  .st{display:inline-block; padding:1px 9px; border-radius:12px; font-size:10.5px; font-weight:700}
+  .st-done{background:rgba(63,185,80,.15); color:var(--green)}
+  .st-doing{background:rgba(88,166,255,.15); color:var(--blue)}
+  .st-todo{background:rgba(139,148,158,.15); color:var(--dim)}
+  .d-right{display:flex; flex-direction:column; min-width:0}
+  .d-right .proto-bar{padding:10px 18px; border-bottom:1px solid var(--line); font-size:12px; color:var(--dim);
+    display:flex; justify-content:space-between; align-items:center}
+  .d-right iframe{flex:1; width:100%; border:0; background:var(--bg)}
+  .no-proto{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:var(--dim2)}
+  .no-proto .big{font-size:52px; opacity:.4}
+  @media (max-width:1180px){
+    .grid{grid-template-columns:1fr}
+    .d-body{grid-template-columns:1fr; grid-template-rows:auto 1fr}
+    .d-left{border-right:0; border-bottom:1px solid var(--line); max-height:44vh}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🛠 研发沙盘<small>R&amp;D SANDBOX · PARALLEL ENGINEERING</small></h1>
+    <div class="hd-right">
+      <a href="/index.html">← 零界门户</a>
+      <a href="/os_demo.html">个人 OS 大屏</a>
+    </div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="overlay" id="ov" onclick="closeDrawer()"></div>
+<div class="drawer" id="dw">
+  <div class="d-head">
+    <span id="d-badge" style="font-size:22px"></span>
+    <h2 id="d-name"></h2>
+    <span class="phase" id="d-phase"></span>
+    <span class="close" onclick="closeDrawer()">✕</span>
+  </div>
+  <div class="d-body">
+    <div class="d-left">
+      <h3>项目编制（矩阵制 · 跨职能抽人）</h3>
+      <div class="chips" id="d-members"></div>
+      <h3>任务单（devtask 工单投影）</h3>
+      <div id="d-tasks"></div>
+      <h3>原型状态</h3>
+      <div class="d-proto-note" id="d-protonote"></div>
+    </div>
+    <div class="d-right">
+      <div class="proto-bar"><span id="d-prototitle"></span><span>原型仅作 UI 评审 · 非生产页面</span></div>
+      <iframe id="d-frame" style="display:none"></iframe>
+      <div class="no-proto" id="d-noproto">
+        <div class="big">📐</div>
+        <div id="d-noprototext">原型未出图</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PHASES = {design:["设计期","ph-design"], dev:["开发中","ph-dev"], test:["联调/测试","ph-test"], accept:["验收","ph-accept"]};
+const STS = {done:["完成","st-done"], doing:["进行","st-doing"], todo:["待办","st-todo"]};
+let DATA = null;
+
+function gradeChip(m){
+  return '<span class="chip"><span class="g g-'+m.grade+'">'+m.grade+'</span>'
+    + '<span class="gid">'+m.id+'</span><span class="grole">'+m.role+'</span></span>';
+}
+
+function render(){
+  const ps = DATA.projects;
+  const doing = ps.filter(p=>p.phase==="dev"||p.phase==="test").length;
+  const staff = new Set(); ps.forEach(p=>p.members.forEach(m=>staff.add(m.id)));
+  const protos = ps.filter(p=>p.proto).length;
+  const tasks = ps.reduce((a,p)=>a+p.tasks.length,0);
+  const doingT = ps.reduce((a,p)=>a+p.tasks.filter(t=>t.st==="doing").length,0);
+  document.getElementById("kpis").innerHTML =
+    '<div class="kpi"><div class="v">'+ps.length+'</div><div class="k">并行工程线</div></div>'
+    + '<div class="kpi"><div class="v"><b class="blue">'+doing+'</b> / '+ps.length+'</div><div class="k">施工中（开发+联调）</div></div>'
+    + '<div class="kpi"><div class="v"><b class="green">'+staff.size+'</b></div><div class="k">在岗 Agent（跨职能矩阵）</div></div>'
+    + '<div class="kpi"><div class="v"><b class="purple">'+protos+'</b></div><div class="k">原型已出图（可下钻评审）</div></div>'
+    + '<div class="kpi"><div class="v"><b class="orange">'+doingT+'</b> / '+tasks+'</div><div class="k">工单在途 / 总数</div></div>';
+
+  document.getElementById("grid").innerHTML = ps.map((p,i)=>{
+    const ph = PHASES[p.phase]||PHASES.dev;
+    return '<div class="card" onclick="openDrawer('+i+')">'
+      + (p.proto?'<div class="proto-flag"></div>':'')
+      + '<div class="c-head"><span class="badge">'+p.badge+'</span>'
+      + '<div><div class="c-name">'+p.name+'</div><div class="c-dept">'+p.dept_label+'</div></div>'
+      + '<span class="phase '+ph[1]+'">'+ph[0]+'</span></div>'
+      + '<div class="c-sum">'+p.summary+'</div>'
+      + '<div class="bar"><i style="width:'+p.progress+'%"></i></div>'
+      + '<div class="bar-row"><span>'+p.tasks.filter(t=>t.st==="done").length+'/'+p.tasks.length+' 任务完成</span><b>'+p.progress+'%</b></div>'
+      + '<div class="chips">'+p.members.map(gradeChip).join("")+'</div>'
+      + '<div class="c-foot">'
+      + '<div class="btn '+(p.proto?'proto-on':'')+'">'+(p.proto?'拉起原型':'原型未出图')+'</div>'
+      + '<div class="btn">详情下钻</div>'
+      + '</div></div>';
+  }).join("");
+}
+
+function openDrawer(i){
+  const p = DATA.projects[i];
+  document.getElementById("d-badge").textContent = p.badge;
+  document.getElementById("d-name").textContent = p.name + " · " + p.dept_label;
+  const ph = PHASES[p.phase]||PHASES.dev;
+  const dph = document.getElementById("d-phase");
+  dph.textContent = ph[0]; dph.className = "phase "+ph[1];
+  document.getElementById("d-members").innerHTML = p.members.map(gradeChip).join("");
+  document.getElementById("d-tasks").innerHTML = p.tasks.map(t=>{
+    const st = STS[t.st]||STS.todo;
+    return '<div class="task"><div class="tt">'+t.t+'</div>'
+      + '<div class="tm"><span class="st '+st[1]+'">'+st[0]+'</span><span>owner · <b style="color:var(--fg)">'+t.owner+'</b></span></div></div>';
+  }).join("");
+  const fr = document.getElementById("d-frame"), np = document.getElementById("d-noproto");
+  if(p.proto){
+    fr.style.display="block"; np.style.display="none";
+    document.getElementById("d-prototitle").innerHTML = "原型 · <b style='color:var(--fg)'>"+p.proto+"</b>";
+    fr.src = "/"+p.proto+"?t="+Date.now();
+  }else{
+    fr.style.display="none"; np.style.display="flex"; fr.src="about:blank";
+    document.getElementById("d-prototitle").textContent = "原型 · 未出图";
+    document.getElementById("d-noprototext").textContent = p.proto_note || "原型未出图";
+  }
+  document.getElementById("d-protonote").textContent = p.proto_note || "—";
+  document.getElementById("ov").classList.add("open");
+  document.getElementById("dw").classList.add("open");
+}
+function closeDrawer(){
+  document.getElementById("ov").classList.remove("open");
+  document.getElementById("dw").classList.remove("open");
+  document.getElementById("d-frame").src = "about:blank";
+}
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDrawer(); });
+
+fetch("/projects_registry.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{ DATA=d; render(); })
+  .catch(e=>{ document.getElementById("grid").innerHTML =
+    '<div class="card" style="cursor:default">注册表加载失败：'+e+'</div>'; });
+</script>
+</body>
+</html>

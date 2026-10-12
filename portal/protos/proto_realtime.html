@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>原型 v1 · 盘中实时监控面板 · 待拍板</title>
+<style>
+  :root{--bg:#0b0f14;--panel:#11161d;--panel2:#161d26;--line:#212a35;--fg:#e6edf3;--dim:#8b949e;
+    --blue:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Microsoft YaHei",sans-serif;padding:18px 22px;width:100%}
+  .proto-banner{background:rgba(210,153,34,.12);border:1px dashed var(--orange);color:var(--orange);
+    border-radius:10px;padding:9px 16px;font-size:12.5px;margin-bottom:16px}
+  h1{font-size:20px} h1 small{font-size:11px;color:var(--dim);letter-spacing:2px;font-weight:normal;display:block;margin-top:3px}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+  .kpi-line{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .k{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+  .k .v{font-size:22px;font-weight:700} .k .t{font-size:11px;color:var(--dim);margin-top:2px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .panel h3{font-size:13px;color:var(--dim);margin-bottom:10px;letter-spacing:1px}
+  .feed{font-size:12.5px;line-height:2.05;font-family:Consolas,monospace}
+  .feed .t{color:var(--dim2);margin-right:10px}
+  .feed .ok{color:var(--green)} .feed .warn{color:var(--orange)}
+  .beat{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(33,42,53,.5);font-size:12.5px}
+  .beat:last-child{border:0}
+  .pulse{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
+  .p-g{background:var(--green);box-shadow:0 0 6px var(--green)}
+  .p-o{background:var(--orange);box-shadow:0 0 6px var(--orange)}
+  .up{color:var(--red)} .dn{color:var(--green)}
+  @media(max-width:1000px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="proto-banner">📐 UI 原型 v1（K-ORG-021 沙盘下钻评审用）· 占位数据 · 老田拍板后 DEV5/DEV8 怼生产页</div>
+<h1>📡 盘中实时监控面板<small>REALTIME INGEST MONITOR · 数据智能部 × 工程部</small></h1>
+<div class="sub">盯盘行情（605/100 等）实时回流 → 分钟级入库 → 延迟与断流监控 → 异常告警飞书推送</div>
+
+<div class="kpi-line">
+  <div class="k"><div class="v" style="color:var(--green)">正常</div><div class="t">采集链路心跳</div></div>
+  <div class="k"><div class="v">2.1s</div><div class="t">行情→入库平均延迟</div></div>
+  <div class="k"><div class="v">18,442</div><div class="t">今日入库 bar 数</div></div>
+  <div class="k"><div class="v" style="color:var(--blue)">1</div><div class="t">断流事件（已自愈）</div></div>
+</div>
+
+<div class="row">
+  <div>
+    <div class="panel">
+      <h3>数据源心跳（605 / 100 等盯盘源）</h3>
+      <div class="beat"><span><span class="pulse p-g"></span>605 主源 · 全市场快照</span><span>延迟 <b class="up">1.8s</b> · 正常</span></div>
+      <div class="beat"><span><span class="pulse p-g"></span>100 副源 · 分钟线增量</span><span>延迟 <b class="up">2.4s</b> · 正常</span></div>
+      <div class="beat"><span><span class="pulse p-g"></span>板块资金流 · 5s 轮询</span><span>延迟 <b class="up">3.1s</b> · 正常</span></div>
+      <div class="beat"><span><span class="pulse p-o"></span>L2 备源 · 凭据待开通</span><span><b class="warn">待接线（X1）</b></span></div>
+    </div>
+    <div class="panel">
+      <h3>告警阈值（OPS1 端口监护同款纪律）</h3>
+      <div class="beat"><span>断流判定</span><span>连续 3 个心跳周期无数据 → 飞书告警</span></div>
+      <div class="beat"><span>延迟判定</span><span>&gt; 10s 持续 60s → 降级告警</span></div>
+      <div class="beat"><span>入库校验</span><span>bar 数分钟环比骤降 &gt; 50% → 异常</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <h3>入库流水（tail - 占位）</h3>
+      <div class="feed">
+        <div><span class="t">14:52:05</span><span class="ok">✓</span> 605 快照 5412 只 → parquet 分区 20261013/1450</div>
+        <div><span class="t">14:52:02</span><span class="ok">✓</span> 分钟 bar 落库 4412 条（含 tdx_sector_min 尾巴）</div>
+        <div><span class="t">14:51:58</span><span class="ok">✓</span> 板块资金流 86 板块 → market.json 刷新</div>
+        <div><span class="t">14:51:12</span><span class="warn">⚠</span> 100 副源延迟 8.2s（阈值内，未告警）</div>
+        <div><span class="t">14:50:41</span><span class="ok">✓</span> 断流自愈：605 重连成功（累计中断 26s）</div>
+        <div><span class="t">14:47:30</span><span class="ok">✓</span> 新闻采集批 128 条 → news.db（去重后 96）</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>下游消费方（谁在吃这批数据）</h3>
+      <div class="beat"><span>盯盘机器人 · quant_engine</span><span>分钟线 + 板块流</span></div>
+      <div class="beat"><span>尾盘买入策略（在研）</span><span>14:30 候选池扫描</span></div>
+      <div class="beat"><span>特征湖 · 5596 只</span><span>日频落盘 + 实时校验</span></div>
+      <div class="beat"><span>门户 picks / market 页</span><span>选股与行情投影</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

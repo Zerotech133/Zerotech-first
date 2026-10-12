@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>原型 v1 · 回测工作台 · 待拍板</title>
+<style>
+  :root{--bg:#0b0f14;--panel:#11161d;--panel2:#161d26;--line:#212a35;--fg:#e6edf3;--dim:#8b949e;
+    --blue:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Microsoft YaHei",sans-serif;padding:18px 22px;width:100%}
+  .proto-banner{background:rgba(210,153,34,.12);border:1px dashed var(--orange);color:var(--orange);
+    border-radius:10px;padding:9px 16px;font-size:12.5px;margin-bottom:16px}
+  h1{font-size:20px} h1 small{font-size:11px;color:var(--dim);letter-spacing:2px;font-weight:normal;display:block;margin-top:3px}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:16px}
+  .row{display:grid;grid-template-columns:1fr 1.8fr;gap:14px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .panel h3{font-size:13px;color:var(--dim);margin-bottom:10px;letter-spacing:1px}
+  .kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(33,42,53,.5);font-size:12.5px}
+  .kv:last-child{border:0}
+  .kv .lbl{color:var(--dim)}
+  .go{display:inline-block;padding:2px 12px;border-radius:14px;font-size:11px;font-weight:700;
+    background:rgba(63,185,80,.15);color:var(--green)}
+  .kpi-line{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .k{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+  .k .v{font-size:22px;font-weight:700} .k .t{font-size:11px;color:var(--dim);margin-top:2px}
+  .chart-box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{color:var(--dim2);font-weight:normal;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px}
+  td{padding:7px 8px;border-bottom:1px solid rgba(33,42,53,.5)}
+  .up{color:var(--red)} .dn{color:var(--green)}
+  @media(max-width:1000px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="proto-banner">📐 UI 原型 v1（K-ORG-021 沙盘下钻评审用）· 占位数据 · 老田拍板后 DEV5/DEV8 怼生产页</div>
+<h1>🧪 回测工作台<small>BACKTEST WORKBENCH · 项目部门 A（DEV3+DEV4+QA1）</small></h1>
+<div class="sub">半年窗口批量回测 → 冻结判据复核 → Go/No-Go 结论登记 domain/backtest_registry</div>
+
+<div class="kpi-line">
+  <div class="k"><div class="v">126</div><div class="t">半年窗口交易日（2026-04~10）</div></div>
+  <div class="k"><div class="v" style="color:var(--blue)">24</div><div class="t">已注册策略（strategies.json）</div></div>
+  <div class="k"><div class="v" style="color:var(--orange)">5</div><div class="t">本批复核在途</div></div>
+  <div class="k"><div class="v" style="color:var(--green)">2 Go</div><div class="t">判据通过（可申请影子）</div></div>
+</div>
+
+<div class="row">
+  <div>
+    <div class="panel">
+      <h3>回测参数（半年窗口批次）</h3>
+      <div class="kv"><span class="lbl">窗口</span><span>2026-04-13 → 2026-10-12</span></div>
+      <div class="kv"><span class="lbl">基准</span><span>沪深300（000300.SH）</span></div>
+      <div class="kv"><span class="lbl">初始资金</span><span>¥1,000,000</span></div>
+      <div class="kv"><span class="lbl">手续费/滑点</span><span>万2.5 / 0.1%</span></div>
+      <div class="kv"><span class="lbl">T+1 约束</span><span>启用（BacktestEngine+T0Engine）</span></div>
+      <div class="kv"><span class="lbl">RiskGuard</span><span>四规则全程挂载</span></div>
+    </div>
+    <div class="panel">
+      <h3>判据复核结论（DEV4 出 Go/No-Go · QA1 复核口径）</h3>
+      <div class="kv"><span class="lbl">年化超额 vs 基准</span><span class="up">≥ +10% ✓</span></div>
+      <div class="kv"><span class="lbl">最大回撤</span><span>≤ 12% ✓（实测 8.7%）</span></div>
+      <div class="kv"><span class="lbl">胜率</span><span>≥ 55% ✓（实测 61.2%）</span></div>
+      <div class="kv"><span class="lbl">样本外稳定性</span><span class="go">三月滚动为正</span></div>
+      <div class="kv"><span class="lbl">结论</span><span class="go">GO · 可申请影子账挂载</span></div>
+      <div style="font-size:11px;color:var(--dim2);margin-top:8px;line-height:1.6">纪律：判据冻结期内不改判据；复核意见写 agent/DEV4/decision 供 DEV3 修订；结果版本化登记 domain/backtest_registry。</div>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <h3>半年窗口收益曲线（占位示意）</h3>
+      <div class="chart-box">
+        <svg viewBox="0 0 680 240" style="width:100%;display:block">
+          <g stroke="#212a35" stroke-width="1">
+            <line x1="40" y1="20" x2="660" y2="20"/><line x1="40" y1="70" x2="660" y2="70"/>
+            <line x1="40" y1="120" x2="660" y2="120"/><line x1="40" y1="170" x2="660" y2="170"/>
+            <line x1="40" y1="220" x2="660" y2="220"/>
+          </g>
+          <g fill="#6e7681" font-size="10" text-anchor="end">
+            <text x="34" y="24">+24%</text><text x="34" y="74">+12%</text>
+            <text x="34" y="124">0</text><text x="34" y="174">-12%</text><text x="34" y="224">-24%</text>
+          </g>
+          <polyline fill="none" stroke="#8b949e" stroke-width="1.6" stroke-dasharray="5,4"
+            points="40,120 130,124 220,118 310,126 400,116 490,122 580,114 660,118"/>
+          <text x="662" y="122" fill="#8b949e" font-size="10">基准</text>
+          <polyline fill="none" stroke="#f85149" stroke-width="2.4"
+            points="40,120 100,112 160,96 220,104 280,84 340,92 400,68 460,76 520,52 580,58 660,40"/>
+          <text x="662" y="42" fill="#f85149" font-size="10" font-weight="bold">策略</text>
+          <rect x="440" y="30" width="200" height="60" fill="#11161d" stroke="#212a35" rx="6"/>
+          <text x="452" y="52" fill="#e6edf3" font-size="11">区间收益 +18.4%（策略）</text>
+          <text x="452" y="70" fill="#8b949e" font-size="11">基准 +0.5% · 超额 +17.9%</text>
+          <text x="452" y="86" fill="#3fb950" font-size="11">最大回撤 -8.7% · 胜率 61.2%</text>
+        </svg>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>本批复核队列（逐日账本投影 · K-STOCK-277）</h3>
+      <table>
+        <tr><th>策略</th><th>区间收益</th><th>回撤</th><th>胜率</th><th>DEV4 结论</th></tr>
+        <tr><td>示例策略·尾盘买入</td><td class="up">+18.4%</td><td>-8.7%</td><td>61.2%</td><td class="up">GO</td></tr>
+        <tr><td>示例策略·缠论联立</td><td class="up">+9.6%</td><td>-11.2%</td><td>57.0%</td><td class="up">GO</td></tr>
+        <tr><td>示例策略·动量轮动</td><td class="dn">-2.1%</td><td>-14.8%</td><td>48.3%</td><td class="dn">NO-GO 留档</td></tr>
+        <tr><td>示例策略·快枪手</td><td class="dn">-5.7%</td><td>-18.9%</td><td>44.1%</td><td class="dn">NO-GO 留档</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

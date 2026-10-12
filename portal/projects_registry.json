@@ -1,0 +1,140 @@
+{
+  "version": "K-ORG-021",
+  "updated": "2026-10-13 08:00",
+  "note": "研发沙盘项目注册表（portal/sandbox.html 数据源）。加项目=加一个对象，沙盘自动渲染；proto 指 portal/protos/ 下的原型页相对路径（空串=原型未出图，下钻显示排期占位）；phase: design|dev|test|accept；task.st: done|doing|todo",
+  "projects": [
+    {
+      "id": "proj_data",
+      "badge": "🅱",
+      "name": "数据底层治理",
+      "dept_label": "项目部门 B · proj_data",
+      "phase": "dev",
+      "progress": 65,
+      "lead": "DATA1",
+      "summary": "X2 实体映射 / X3 血缘运维 / X1 凭据接线 / 特征湖治理（v5 B 线延伸）",
+      "proto": "",
+      "proto_note": "原型未出图 · DSGN1 排期中",
+      "members": [
+        {"id": "DATA1", "grade": "E2", "role": "数据工程师"},
+        {"id": "DEV1", "grade": "E3", "role": "代码工程师"}
+      ],
+      "tasks": [
+        {"t": "X2 实体映射表重建（证券/板块/概念归一）", "owner": "DATA1", "st": "done"},
+        {"t": "X3 血缘运维脚本 + 断链告警", "owner": "DATA1", "st": "doing"},
+        {"t": "X1 等凭据接线（等待外部开通）", "owner": "DEV1", "st": "todo"},
+        {"t": "特征湖 parquet 分区治理（5596 只复检）", "owner": "DEV1", "st": "doing"}
+      ]
+    },
+    {
+      "id": "proj_crawl",
+      "badge": "🕷",
+      "name": "数据采集 · 爬虫矩阵",
+      "dept_label": "数据智能部 · data",
+      "phase": "dev",
+      "progress": 80,
+      "lead": "DATA1",
+      "summary": "多源情报采集 → news.db 入库（采集域已在跑）→ 清洗去重管线",
+      "proto": "",
+      "proto_note": "后台作业线 · 无 UI 原型（产出看门户采集域）",
+      "members": [
+        {"id": "DATA1", "grade": "E2", "role": "数据工程师"},
+        {"id": "DEV7", "grade": "E1", "role": "代码工程师"}
+      ],
+      "tasks": [
+        {"t": "主源采集调度（定时自动化在跑）", "owner": "DATA1", "st": "done"},
+        {"t": "增量去重 + 正文抽取清洗", "owner": "DEV7", "st": "doing"},
+        {"t": "爬虫失败重试与站点黑名单", "owner": "DEV7", "st": "todo"},
+        {"t": "采集量日报告警接飞书", "owner": "DATA1", "st": "doing"}
+      ]
+    },
+    {
+      "id": "proj_realtime",
+      "badge": "📡",
+      "name": "盘中实时监控 · 入库",
+      "dept_label": "数据智能部 × 工程部联合",
+      "phase": "dev",
+      "progress": 55,
+      "lead": "DATA1",
+      "summary": "盯盘行情（605/100 等）实时回流 → 分钟级入库 → 延迟与断流监控",
+      "proto": "protos/proto_realtime.html",
+      "proto_note": "实时监控面板原型 v1（下钻查看）",
+      "members": [
+        {"id": "DATA1", "grade": "E2", "role": "数据工程师"},
+        {"id": "DEV6", "grade": "E2", "role": "代码工程师"}
+      ],
+      "tasks": [
+        {"t": "行情源接入与心跳探测", "owner": "DEV6", "st": "doing"},
+        {"t": "分钟级 K 线入库（tdx_sector_min 尾巴补齐）", "owner": "DATA1", "st": "done"},
+        {"t": "断流/延迟告警阈值校准", "owner": "DEV6", "st": "todo"},
+        {"t": "监控面板原型评审（老田拍板原型正确性）", "owner": "DATA1", "st": "doing"}
+      ]
+    },
+    {
+      "id": "proj_backtest",
+      "badge": "🅰",
+      "name": "回测子系统（半年窗口）",
+      "dept_label": "项目部门 A · proj_backtest",
+      "phase": "test",
+      "progress": 45,
+      "lead": "DEV4",
+      "summary": "回测中心（K-STOCK-277 逐日账本已上线）+ 组合制 v6 评审 + 半年窗口批量回测",
+      "proto": "protos/proto_backtest.html",
+      "proto_note": "回测工作台原型 v1（下钻查看）",
+      "members": [
+        {"id": "DEV3", "grade": "E2", "role": "策略工程师"},
+        {"id": "DEV4", "grade": "E2", "role": "回测工程师"},
+        {"id": "QA1", "grade": "E3", "role": "质量工程师"}
+      ],
+      "tasks": [
+        {"t": "逐日回测账本只读投影上线", "owner": "DEV4", "st": "done"},
+        {"t": "组合制 v6 代码影响面评审（K-ORG-015a）", "owner": "DEV3", "st": "doing"},
+        {"t": "半年窗口批量回测调度器", "owner": "DEV4", "st": "doing"},
+        {"t": "判据冻结与 Go/No-Go 验收口径", "owner": "QA1", "st": "todo"}
+      ]
+    },
+    {
+      "id": "proj_tail_buy",
+      "badge": "🎯",
+      "name": "尾盘买入策略子系统",
+      "dept_label": "策略线 · dev（DEV3→DEV4 串行）",
+      "phase": "dev",
+      "progress": 20,
+      "lead": "DEV3",
+      "summary": "14:30 后候选池扫描 → 尾盘触发条件判定 → 次日开盘卖出闭环（策略注册制新增）",
+      "proto": "protos/proto_tail_buy.html",
+      "proto_note": "尾盘买入操作台原型 v1（下钻查看，待拍板）",
+      "members": [
+        {"id": "DEV3", "grade": "E2", "role": "策略工程师"},
+        {"id": "DEV4", "grade": "E2", "role": "回测工程师"}
+      ],
+      "tasks": [
+        {"t": "策略 charter 与回测判据前置自检", "owner": "DEV3", "st": "done"},
+        {"t": "候选池扫描器（量比/涨幅/板块共振）", "owner": "DEV3", "st": "doing"},
+        {"t": "半年窗口回测验证（判据冻结）", "owner": "DEV4", "st": "todo"},
+        {"t": "影子账挂载申请（禁跳过影子期）", "owner": "DEV4", "st": "todo"}
+      ]
+    },
+    {
+      "id": "proj_next",
+      "badge": "🅲",
+      "name": "下一版本设计 · nl_query 推理",
+      "dept_label": "项目部门 C · proj_next",
+      "phase": "design",
+      "progress": 10,
+      "lead": "PM1",
+      "summary": "图谱自然语言问答最小闭环（PM1 口径 → ARCH1 终审 → DEV2 实施）+ 下版门户产品定义",
+      "proto": "",
+      "proto_note": "原型未出图 · 需求口径评审中（proj_c_nlq_001 工单在途）",
+      "members": [
+        {"id": "PM1", "grade": "E3", "role": "产品经理"},
+        {"id": "ARCH1", "grade": "E3", "role": "架构师"},
+        {"id": "DEV2", "grade": "E2", "role": "训练/推理"}
+      ],
+      "tasks": [
+        {"t": "nl_query 验收口径（PM1 出稿）", "owner": "PM1", "st": "doing"},
+        {"t": "方案终审（图谱只读问答边界）", "owner": "ARCH1", "st": "todo"},
+        {"t": "最小闭环实施（nl_query v0）", "owner": "DEV2", "st": "todo"}
+      ]
+    }
+  ]
+}
