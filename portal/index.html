@@ -265,6 +265,28 @@
           </div>
           <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-d-note">加载中…</span></span><span class="enter">进入开发 →</span></div>
         </a>
+        <a class="dm" href="javascript:void(0)" onclick="alert('商务合作板：行程/会见/纪要数据由 portal/data/biz.json 驱动，专项页随后开放')">
+          <div class="head"><div class="ic">🤝</div>
+            <div><div class="t">商务合作 <span class="tag-soon">数据源已接</span></div></div></div>
+          <div class="desc" id="t-b-desc">行程与会见安排、会谈想法、会议纪要一条龙；下一步节点由 AI 在约定时间提醒你。</div>
+          <div class="ms">
+            <span>运行 <b id="t-b-run">—</b></span>
+            <span>在研 <b id="t-b-dev">—</b></span>
+            <span>状态 <b id="t-b-st">—</b></span>
+          </div>
+          <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-b-note">加载中…</span></span><span class="enter">查看安排 →</span></div>
+        </a>
+        <a class="dm" href="javascript:void(0)" onclick="alert('个人整理板：报告/PPT/课件/公文台账由 portal/data/notes.json 驱动，专项页随后开放')">
+          <div class="head"><div class="ic">🗂️</div>
+            <div><div class="t">个人整理 <span class="tag-soon">数据源已接</span></div></div></div>
+          <div class="desc" id="t-n-desc">要处理的商业报告、PPT、讲课课件，以及平时整理的文章与公文，一档归口。</div>
+          <div class="ms">
+            <span>运行 <b id="t-n-run">—</b></span>
+            <span>在研 <b id="t-n-dev">—</b></span>
+            <span>状态 <b id="t-n-st">—</b></span>
+          </div>
+          <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-n-note">加载中…</span></span><span class="enter">查看台账 →</span></div>
+        </a>
       </div>
     </div>
 
@@ -524,6 +546,36 @@
         set('t-d-run', run + '/' + tot + ' 容器');
       }
     } catch {}
+    // 商务合作：行程/会见/纪要（biz.json，AI 或老田手工维护）
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch('/data/biz.json?ts=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const b = await r.json();
+        const trips = (b.trips || []).length, meet = (b.meetings || []).length, min = (b.minutes || []).length;
+        set('t-b-run', trips + ' 行程 · ' + meet + ' 会见');
+        set('t-b-dev', min + ' 纪要');
+        // 下一步节点提醒：remind_at 未到的条数
+        const now = Date.now();
+        const due = (b.minutes || []).filter(m => m.remind_at && new Date(m.remind_at.replace(' ', 'T')) > now).length;
+        set('t-b-st', due ? '提醒 ' + due : '正常');
+        set('t-b-note', trips + meet ? '近期 ' + (trips + meet) + ' 项安排' : '暂无安排');
+      }
+    } catch { set('t-b-note', 'biz.json 未就绪'); }
+    // 个人整理：报告/PPT/课件/公文台账（notes.json）
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch('/data/notes.json?ts=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const n = await r.json();
+        const docs = n.docs || [];
+        const doing = docs.filter(x => x.status === '在研').length;
+        set('t-n-run', docs.length + ' 篇');
+        set('t-n-dev', doing + ' 在写');
+        set('t-n-st', '正常');
+        set('t-n-note', '报告 ' + docs.filter(x => x.type === '报告').length + ' · PPT ' + docs.filter(x => x.type === 'PPT').length + ' · 课件 ' + docs.filter(x => x.type === '课件').length);
+      }
+    } catch { set('t-n-note', 'notes.json 未就绪'); }
   }
   loadToday();
   setInterval(loadToday, 120000);
