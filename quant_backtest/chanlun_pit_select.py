@@ -21,7 +21,7 @@ OUT_DIR = os.path.join(BASE, "quant_backtest")
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_signal import analyze as chan_analyze   # noqa: E402
 
-HORIZONS = (5, 10, 20, 60)
+HORIZONS = (5, 10, 20, 30, 40, 50, 60, 120, 180, 360)   # 老田 10-13 钉死口径，十档
 
 def load_universe(universe):
     if universe == "pool":
