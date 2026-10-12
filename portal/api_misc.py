@@ -394,8 +394,17 @@ def build_os_cockpit():
         "notes": [d for d in (nt.get("docs") or [])
                   if d.get("status") == "在研"][:6],
         "notes_total": len(nt.get("docs") or []),
-        # 学习域：暂无独立数据源（学院页纯静态）——如实占位
-        "learn": {"ready": False},
+        # 学习域：智能体学院·缠论专业（263 数据链终审 + 269 组合制立项）
+        "learn": {
+            "ready": True,
+            "academy": "智能体学院 · 缠论专业",
+            "stage": "组合制新方案研究期（269 立项 10-13）",
+            "wins": [
+                "263 数据链终审：除权污染与伪信号已修，1 买前瞻 +10.71%（胜率 97.7%）",
+                "269 七臂归因：单票择时全负贡献，再平衡 α +23.07%",
+                "组合层 10 日再平衡 + regime 调仓：+15.37% / 回撤 -16.81%",
+            ],
+        },
     }
     out["biz"] = biz
     return out

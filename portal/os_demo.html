@@ -347,8 +347,15 @@
       + '<div class="d">' + esc(x.type || '') + ' · 在研 · 更新 ' + esc(x.updated || '') + '</div></span></div>').join('');
     ln += '<div class="agrow"><span class="ico">✍️</span><span><div class="n">公众号草稿 ' + fmt(o.gzh || 0) + ' 篇</div><div class="d">选题→成稿流水线在库</div></span></div>';
     ln += '<div class="agrow"><span class="ico">🎬</span><span><div class="n">短视频成片 ' + fmt(o.video || 0) + ' 条</div><div class="d">创作流水线</div></span></div>';
-    if (!(bz.learn || {}).ready)
+    if ((bz.learn || {}).ready) {
+      const L = bz.learn;
+      ln += '<div class="agrow"><span class="ico">🎓</span><span><div class="n">' + esc(L.academy || '') + '</div><div class="d">' + esc(L.stage || '') + '</div></span></div>';
+      (L.wins || []).forEach(w => {
+        ln += '<div class="agrow"><span class="ico">🏅</span><span><div class="d" style="font-size:11.5px">' + esc(w) + '</div></span></div>';
+      });
+    } else {
       ln += '<div class="agrow"><span class="ico">🎓</span><span><div class="n">学习域建设中</div><div class="d">零界学院课程/笔记数据源待接入</div></span></div>';
+    }
     $('learn-rows').innerHTML = ln;
     $('learn-r').textContent = '在研 ' + notes.length + ' / 共 ' + fmt(bz.notes_total) + ' 篇';
 
