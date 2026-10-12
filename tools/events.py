@@ -7,7 +7,7 @@
     python tools/events.py emit --kind commit --task K-STOCK-113 --agent CodeBuddy --detail "xxx 完成"
     python tools/events.py today          # 今日汇总（JSON）
     python tools/events.py tail [-n 20]   # 最近 N 条（JSON）
-  git 自动上报 : .git/hooks/post-commit 调 emit(--kind commit)，开发侧零操作。
+  git 自动上报 : .git/hooks/post-commit 调 tools/post_commit_event.py，开发侧零操作。
   设计纪律 : 纯标准库；写坏不抛出（emit 永不阻塞开发动作）；append-only 不改历史。
 """
 from __future__ import annotations
