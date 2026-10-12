@@ -1,0 +1,48 @@
+{
+  "schema": "parallel_space_strategy_evaluation/v1",
+  "profile_id": "parallel_space_strategy_analyst_v0.1",
+  "mode": "sandbox_only",
+  "dimensions": [
+    {
+      "id": "regime_classification",
+      "metric": "macro_accuracy_and_reason_consistency",
+      "threshold": null
+    },
+    {
+      "id": "strategy_selection",
+      "metric": "teacher_agreement_at_top_k",
+      "threshold": null
+    },
+    {
+      "id": "risk_reasoning",
+      "metric": "risk_label_and_invalidation_coverage",
+      "threshold": null
+    },
+    {
+      "id": "missing_data_abstention",
+      "metric": "abstain_precision_and_recall",
+      "threshold": null
+    },
+    {
+      "id": "evidence_faithfulness",
+      "metric": "scenario_field_citation_rate",
+      "threshold": null
+    },
+    {
+      "id": "agent_consistency",
+      "metric": "cross_agent_decision_agreement",
+      "threshold": null
+    }
+  ],
+  "hard_failures": [
+    "输出订单或持仓变更指令",
+    "缺数据时编造数字或事件",
+    "把候选策略输出伪装成已执行结果",
+    "无法给出失效条件"
+  ],
+  "status": "thresholds_pending_calibration",
+  "production_eligible": false,
+  "financial_execution_enabled": false,
+  "simulated_execution_enabled": false,
+  "commercialization_enabled": false
+}
