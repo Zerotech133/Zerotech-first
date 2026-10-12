@@ -5,3 +5,4 @@ Pre-flight: plan tasks share interfaces: Task 1 baseline feeds Task 2 plan; Task
 Task 1: in_progress
 
 Task 1: complete (tests: test_full_refresh_baseline.py -> 3 passed; actual baseline: 10 tables scanned, 4 qualified, 6 blocked by duplicate/unresolved keys).
+Task 2: complete (tests: baseline+plan -> 5 passed; dry-run and RunStore registration verified; production_write=false).
