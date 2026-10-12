@@ -4707,7 +4707,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
             "<link rel='stylesheet' href='/static/tokens.css'></head>"
             "<body style='background:var(--bg-page);color:var(--text);"
             "font-family:\"Segoe UI\",\"Microsoft YaHei\",system-ui,sans-serif;"
-            "margin:0;padding:20px 22px 40px;max-width:1180px'>"
+            "margin:0;padding:20px 22px 40px;max-width:var(--page-w)'>"
             + nav + _HERMES_FAB_HTML +
             "<div style='display:flex;align-items:baseline;gap:14px;"
             "flex-wrap:wrap'><div style='font-size:22px;font-weight:800'>"

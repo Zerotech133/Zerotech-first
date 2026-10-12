@@ -267,7 +267,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
         if d is None:
             message = ("扫描器异常：" + state["error"] if state["error"]
                        else "核验中，尚无完整扫描结果。")
-            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
                        "<meta http-equiv='refresh' content='10'><title>数据仓</title>"
                        + self._COCKPIT_CSS + "</head><body>"

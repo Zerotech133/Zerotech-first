@@ -1147,7 +1147,7 @@ class Handler:
                           vt.get("verdict"), vt.get("wsum") or 0,
                           e(fin.get("verdict") or "—"),
                           _stance_chart(r), _say_effect(r), cards, saybox))
-            body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                     "<meta name='viewport' content='width=device-width,"
                     "initial-scale=1'><title>模拟辩论室 · %s</title>"
                     % e(r.get("code") or "")
@@ -1266,7 +1266,7 @@ class Handler:
                    "<th>来源</th><th>分析师票</th><th>操盘手（含演化）</th>"
                    "<th>终裁</th><th>进场</th></tr>%s</table>"
                    % (hstat, rows))
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>模拟辩论室</title>"
                 + self._COCKPIT_CSS + "</head><body>"
@@ -1584,7 +1584,7 @@ class Handler:
                "if(btn)btn.disabled=false;}})"
                ".catch(function(e){alert('网络错误：'+e);"
                "if(btn)btn.disabled=false;});}</script>")
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>投委会 · 影子留痕</title>"
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
@@ -2294,7 +2294,7 @@ class Handler:
                    "%s%s%s%s%s%s%s%s%s"
                    % (cards, tbl_sid, sec_dec, sec_preset, sec_sim, sec_p,
                       tbl, tbl_pos, method))
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>操盘手锦标赛 · 六本账</title>"
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"

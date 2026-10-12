@@ -929,7 +929,7 @@ function ckPush(i){
 
         _cw_ml_html = _cw_stage_rows()
 
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>缠论 · 结构交易工作台</title>"
                 + self._COCKPIT_CSS + "</head><body>"
@@ -1478,7 +1478,7 @@ function ckPush(i){
         }[mkt]
         _drill_tip = ("点代码进个股看结构图细节" if mkt == "CN"
                       else "US/HK 明细页暂无个股下钻与结构图")
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>缠论预警池 · %s扫描 · "
                 "模拟交易（影子）</title>" % _mkt_cn + self._COCKPIT_CSS

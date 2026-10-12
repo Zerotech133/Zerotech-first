@@ -678,7 +678,7 @@ background:#000'></video>
                    _h.escape(r.get("note", ""))))
 
         css = """<style>
-.sb-wrap{max-width:1100px;margin:0 auto;padding:18px}
+.sb-wrap{max-width:var(--page-w);margin:0 auto;padding:18px}
 .sb-wrap h1{font-size:20px;margin:0 0 4px}
 .sb-sub{color:#8b949e;font-size:13px;margin-bottom:16px}
 .sb-card{background:#0d1117;border:1px solid #30363d;border-radius:10px;

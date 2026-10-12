@@ -1107,7 +1107,7 @@ class Handler:
                    _f(r.get("px")), _f(r.get("npv"))))
         n_buy = sum(1 for r in rows if "买" in str(r.get("type")))
         n_sell = sum(1 for r in rows if "卖" in str(r.get("type")))
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta http-equiv='refresh' content='60'>"
                 "<title>当日买卖点 · %s</title>"
                 "<style>body{background:#0d1117;color:#c9d1d9;"
@@ -1353,7 +1353,7 @@ class Handler:
                    if bk_rows else "<div style='color:#8b949e;font-size:12px'>"
                                    "无账本</div>"))
 
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<title>数据大屏 · 老田的AI助手</title></head><body "
                 "style='background:#0d1117;margin:0;padding:12px 16px'>"
                 + self._COCKPIT_CSS + self._KG_CSS

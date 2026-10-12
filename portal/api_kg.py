@@ -441,7 +441,7 @@ _KG_CARD_JS = r"""
 class Handler:
     def _kg_ask_page(self):
         """K240 四期：图原生问答页（问句→实体链接→子图事实→生成+溯源）。"""
-        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>图谱问答 · 图谱</title>{css}{nav}<style>
 .qa{max-width:760px;margin:0 auto}
@@ -490,10 +490,10 @@ document.getElementById('sf').addEventListener('submit',function(ev){
         数据：/kg/timeline/{code}（五图层压平+三研究规则）、
              /kg/batch/{codes}。
         """
-        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>作战地图 · 图谱</title>{css}{nav}<style>
-.bt{max-width:1180px;margin:0 auto;padding:0 10px}
+.bt{max-width:var(--page-w);margin:0 auto;padding:0 10px}
 .btbar{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;align-items:center}
 .btbar input,.btbar select{background:var(--gray-0);border:1px solid var(--gray-4);
 color:var(--gray-7);border-radius:8px;padding:7px 10px;font-size:13px}
@@ -792,10 +792,10 @@ boot();
         _hope = "\n".join(_gs.HOPE_WORDS)
         _alias = "\n".join("%s=%s" % kv for kv in _gs.WORD_ALIAS.items())
         _stop = "\n".join(sorted(_gs.STOP))
-        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>股吧词表维护 · K263</title>{css}{nav}<style>
-.lx{max-width:1180px;margin:0 auto;padding:0 10px}
+.lx{max-width:var(--page-w);margin:0 auto;padding:0 10px}
 .lgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
 @media(max-width:900px){.lgrid{grid-template-columns:1fr}}
 .panel{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;padding:12px}
@@ -987,10 +987,10 @@ function save(){
                        "line-height:2'>" + wc_html + "</div>")
         else:
             wc_html = "<div class='empty'>词云待生成（尚无影子数据）</div>"
-        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>文档智能中心 · K266</title>{css}{nav}<style>
-.dc{max-width:1180px;margin:0 auto;padding:0 10px}
+.dc{max-width:var(--page-w);margin:0 auto;padding:0 10px}
 .dgrid{display:grid;grid-template-columns:400px 1fr;gap:14px;margin-top:12px}
 @media(max-width:900px){.dgrid{grid-template-columns:1fr}}
 .panel{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;padding:12px}
@@ -1240,7 +1240,7 @@ render(DOCS);
                                        len(g.get("nodes") or []))
                  if g.get("ok") else e((g.get("error") or "查询失败")[:60]))
 
-        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>
 <title>事件图谱 · K266</title>__CSS____NAV__<style>
 .situgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0 0 14px}
 .sc{background:var(--gray-2);border:1px solid var(--gray-4);border-radius:10px;padding:10px 14px}
@@ -1425,7 +1425,7 @@ ensureG().catch(function(err){
         """K234 画布 v2：AntV G6 v5 重做（拖拽/力导向/右键编辑全内置）。
         数据层复用 K226/K231 csearch/cexpand/chist/canvas_edit 零改动。
         body 用 replace 占位符（CSS 含 %，% 格式化会炸）。"""
-        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>知识画布 v2 · 图谱</title>{css}{nav}<style>
 .wrap{display:flex;gap:10px;height:calc(100vh - 150px)}
@@ -1824,7 +1824,7 @@ r.innerHTML=d.n_nodes+" 节点 / "+d.n_edges+" 边"
         """K226 知识画布：拖出实体点 → 加载数据 → 逐跳扩散引导。
         人/地/事/物/组织五类着色；海量节点（事件/交易日）为终端只读。
         数据层 kg_portal csearch/cexpand（/kg/api 分发复用）。"""
-        body = """<!DOCTYPE html><html><head><meta charset='utf-8'>
+        body = """<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>知识画布 · 图谱</title>%s%s<style>
 .wrap{display:flex;gap:10px;height:calc(100vh - 118px)}
@@ -2316,7 +2316,7 @@ nodeClick=function(id){if(linkFrom){
                        % (days, pills(), cards, method, byday, detail,
                           self._kg_resonance_block()))
 
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>影子面板 · 图谱</title>"
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
@@ -2330,7 +2330,7 @@ nodeClick=function(id){if(linkFrom){
         增删买卖点；保存时后端算 diff（=算法系统性偏差定位）落
         data/labels/chanlun_labels.jsonl（金标签，远期 LightGBM/E3）。
         """
-        htm = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        htm = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                "<meta name='viewport' content='width=device-width,"
                "initial-scale=1><title>画图标注 · 缠论金标签</title>"
                + self._COCKPIT_CSS
@@ -2479,7 +2479,7 @@ nodeClick=function(id){if(linkFrom){
                    e("%.2f" % an["low_8"]) if an.get("low_8") else "—",
                    sig_tbl, fb))
 
-        htm = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        htm = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                "<meta name='viewport' content='width=device-width,"
                "initial-scale=1'><title>推演卡 · 缠论</title>"
                + self._COCKPIT_CSS
@@ -2589,7 +2589,7 @@ nodeClick=function(id){if(linkFrom){
         hist = hist[-30:]                      # 近 30 条触发记录
 
         if not doc:
-            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                        "<title>板块异动工单</title>" + self._COCKPIT_CSS
                        + "</head><body>" + pill_nav("kgflow")
                        + "<h1>🧨 板块异动工单</h1><div class='sec'>"
@@ -2697,7 +2697,7 @@ nodeClick=function(id){if(linkFrom){
                    "尚无历史</td></tr>"))
 
         self._html(
-            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
             "<meta name='viewport' content='width=device-width,"
             "initial-scale=1'><title>板块异动工单 · 六步数据流</title>"
             + self._COCKPIT_CSS + "</head><body>" + pill_nav("kgflow")
@@ -2876,7 +2876,7 @@ nodeClick=function(id){if(linkFrom){
             # U4-A 流式骨架：head+导航+Tab 框架先 flush（浏览器即刻有反馈，
             # 冷缓存 Cypher 10~30s 不再白屏），数据算完再续发三个 tabc
             self._html_open(
-                "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+                "<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>游资地图</title>"
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
@@ -3291,7 +3291,7 @@ nodeClick=function(id){if(linkFrom){
             # U4-A 流式收尾：骨架已在响应头阶段发出，这里只续发正文
             self._html_more(content + _BTSEL_TAG + "</body></html>")
         else:
-            body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                     "<meta name='viewport' content='width=device-width,"
                     "initial-scale=1'><title>" + e(title) + "</title>"
                     + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
@@ -5694,7 +5694,7 @@ if(m0){var gid=decodeURIComponent(m0[1]);if(byG[gid])selGroup(gid,false);}
                     "%s</table></div>%s" % (cards, sgr, src_html))
 
         # 标题用拼接而非 % 格式化：content 内含字面量 %（如 +11.6%）
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 "<meta name='viewport' content='width=device-width,"
                 "initial-scale=1'><title>" + e(title) + " · 图谱探索</title>"
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"

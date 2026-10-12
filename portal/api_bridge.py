@@ -432,7 +432,7 @@ class Handler:
                        e(str(r.get("msg"))), back))
             head = ("<meta http-equiv='refresh' content='3;url=/bridge'>"
                     if r.get("ok") else "")
-            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>%s"
+            self._html("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>%s"
                        "<title>指挥台 · 执行</title></head><body "
                        "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
                        "%s%s</body></html>"
@@ -474,7 +474,7 @@ class Handler:
                     "padding:12px 14px;max-width:560px'>%s</div>%s"
                     "<div style='margin:12px 0'>%s &nbsp; %s</div>"
                     % (e(d), note_form, go, back))
-        self._html("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        self._html("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                    "<title>指挥台 · 确认</title></head><body "
                    "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
                    "%s%s</body></html>" % (self._COCKPIT_CSS, body))
@@ -923,7 +923,7 @@ class Handler:
                       "margin:16px 0'>K56 全量交付 · 五仪+决策层+指挥台 · "
                       "数据穿透：点仪① 🔍 就地展开表内数据 · "
                       "API: /api/bridge/summary</div>", _TP_JS))
-        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
+        body = ("<!DOCTYPE html><html><head><meta charset='utf-8'><link rel='stylesheet' href='/static/tokens.css'>"
                 + ("<meta http-equiv='refresh' content='30'>" if warming else "")
                 + "<title>驾驶舱 · 老田的AI助手</title></head><body "
                 "style='background:var(--gray-0);margin:0;padding:12px 16px'>"
