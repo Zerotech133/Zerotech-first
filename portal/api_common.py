@@ -251,7 +251,8 @@ DOMAIN_NAV_GROUPS = {
             ("🌅 盘前", "/premarket", "pre"),
             ("🌇 盘后复盘", "/afterhours", "afterhours"),
             ("💰 金融驾驶舱", "/fin", "fin"),
-            ("🔍 个股分析", "/sa", "sa"))),
+            ("🔍 个股分析", "/sa", "sa"),
+            ("💬 查数", "/nl", "nl"))),
         ("🚀 指挥", (
             ("🚀 驾驶舱", "/bridge", "bridge"),
             ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
