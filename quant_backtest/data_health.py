@@ -81,6 +81,44 @@ def scan_recent_refresh_receipts(receipt_dir):
             "production_write": False, "global_activation": False}
 
 
+def build_full_refresh_health(*, daily_stock, daily_sector, critical_nulls,
+                              cross_table_keys, query_results, source_freshness=None):
+    """构建全量刷新健康指标，按所有日期和实际查询结果对账。"""
+    def coverage(values):
+        rows = dict(values or {})
+        missing = {day: max(0, int(item.get("expected", 0)) - int(item.get("actual", 0)))
+                   for day, item in rows.items() if int(item.get("actual", 0)) < int(item.get("expected", 0))}
+        return {"status": "FAIL" if missing else "OK", "value": sum(missing.values()),
+                "days": len(rows), "missing_days": missing}
+
+    nulls = {str(key): int(value) for key, value in (critical_nulls or {}).items()}
+    key_rows = {str(key): value for key, value in (cross_table_keys or {}).items()}
+    key_bad = {key: value for key, value in key_rows.items()
+               if int(value.get("missing", 0)) or int(value.get("duplicate", 0))}
+    query_bad = {}
+    for name, value in (query_results or {}).items():
+        rows = int(value.get("rows", 0) or 0)
+        if value.get("error") or rows == 0:
+            query_bad[str(name)] = {"rows": rows, "error": value.get("error")}
+    freshness = source_freshness or {}
+    return {
+        "daily_unique_stock_coverage": coverage(daily_stock),
+        "daily_unique_sector_coverage": coverage(daily_sector),
+        "critical_nulls": {"status": "FAIL" if sum(nulls.values()) else "OK",
+                            "value": sum(nulls.values()), "columns": nulls},
+        "cross_table_key_reconciliation": {"status": "FAIL" if key_bad else "OK",
+                                             "value": sum(int(v.get("missing", 0)) + int(v.get("duplicate", 0)) for v in key_bad.values()),
+                                             "details": key_rows},
+        "query_result_checks": {"status": "FAIL" if query_bad else "OK",
+                                 "value": len(query_bad), "details": query_bad},
+        "source_freshness": {"status": "FAIL" if any(value in {"blocked", "stale", "error"}
+                                                        for value in freshness.values()) else "OK",
+                              "details": freshness},
+        "production_write": False,
+        "global_activation": False,
+    }
+
+
 def _scan_kline(market):
     """扫描指定市场 K 线目录。market: cn/us/hk/crypto"""
     if market == "cn":
