@@ -26,6 +26,7 @@
 - `evaluation-matrix-v0.1.json`：离线评测维度和门槛。
 - `training-job-manifest-v0.1.json`：当前训练准备状态。
 - `distillation-evaluation-v0.1.json`：5 个跨市场场景的教师/学生离线蒸馏对照结果。
+- `distillation-evaluation-full-v0.1.json`：12 个场景全量蒸馏结果和风险标签校准矩阵。
 
 ## 蒸馏评测
 
@@ -38,4 +39,12 @@ python -X utf8 work/evaluate_parallel_space_distillation_20261013.py
 当前评测固定抽取 `PS-001、PS-003、PS-005、PS-008、PS-012`，覆盖 A 股、指数、期货、虚拟币以及缺数据拒答。学生端使用独立规则基线，评测只比较策略选择、风险等级、拒答、失效条件和禁止动作协议，不复制教师答案，也不更新权重。
 
 本轮 `distillation_baseline_pass=true`，策略一致率 1.0，风险一致率 0.8，缺数据拒答召回率 1.0。报告中的 `lora_review_status=pending_human_review` 只表示可以进入隔离 LoRA 方案评审；权重训练、生产资格、模拟成交、交易和商业化仍全部关闭。
+
+全量复核命令：
+
+```text
+python -X utf8 work/evaluate_parallel_space_distillation_full_20261013.py
+```
+
+全量报告覆盖 12 个合成场景。若教师和学生在风险等级或缺数据拒答上出现分歧，报告会将样本列入 `calibration_gate.blocking_samples`，先校准标签再评审 LoRA。
 
