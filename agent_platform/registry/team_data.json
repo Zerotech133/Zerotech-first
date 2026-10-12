@@ -14,11 +14,25 @@
       "is_parallel": true,
       "wait_all_complete": false,
       "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["devtask", "events"],
+      "tools": [
+        "devtask",
+        "events"
+      ],
       "memory_grants": {
-        "read": ["domain/*", "dept/data/*", "dept/dev/*", "agent/DATA1/*"],
-        "write": ["agent/DATA1/*", "dept/data/observation"]
-      }
+        "read": [
+          "domain/*",
+          "dept/data/*",
+          "dept/dev/*",
+          "agent/DATA1/*"
+        ],
+        "write": [
+          "agent/DATA1/*",
+          "dept/data/observation"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：数据底座独立运维",
+      "charter_detail": "数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护"
     }
   ]
 }

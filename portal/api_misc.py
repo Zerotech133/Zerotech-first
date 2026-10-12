@@ -1542,6 +1542,16 @@ transition:.3s;z-index:9}
                 tags.append("↔ 辩论 %d 轮" % (ag.get("max_debate_rounds") or 0))
             if ag.get("level") == 2:
                 tags.append("⚖ L2 汇总")
+            # K-ORG-020 职级徽章：E3 绿(30年档) / E2 蓝(20年档) / E1 灰(10年档)
+            _grade_tag = ""
+            if ag.get("grade"):
+                _gcolor = {"E3": "#3fb950", "E2": "#58a6ff",
+                           "E1": "#8b949e"}.get(ag["grade"], "#d29922")
+                _grade_tag = ("<span style='font-size:10.5px;color:%s;"
+                              "border:1px solid %s;border-radius:10px;"
+                              "padding:1px 8px;margin-left:6px'>%s %s</span>"
+                              % (_gcolor, _gcolor, e(str(ag["grade"])),
+                                 e(str(ag.get("grade_note") or "").split("：")[0])))
             tag_html = "".join(
                 "<span style='margin-left:auto;font-size:10.5px;"
                 "color:#d29922;border:1px solid #d29922;border-radius:10px;"
@@ -1550,6 +1560,10 @@ transition:.3s;z-index:9}
             up = "、".join(ag.get("parent_node_keys") or [])
             up_html = ("<div class='dim' style='font-size:11.5px;"
                        "margin-top:6px'>↑ 上游：%s</div>" % e(up) if up else "")
+            # K-ORG-020 职责详情行（梯队说明：E2·20年档·后端：常规交付…）
+            cd_html = ("<div class='dim' style='font-size:11.5px;"
+                       "margin-top:5px'>%s</div>" % e(str(ag.get("charter_detail")))
+                       if ag.get("charter_detail") else "")
             return (
                 "<div style='border:1px solid #30363d;border-radius:12px;"
                 "background:#161b22;padding:14px 16px'>"
@@ -1558,11 +1572,12 @@ transition:.3s;z-index:9}
                 "</div>"
                 "<div style='font-size:12.5px;margin:6px 0 2px'>%s</div>"
                 "<div class='dim' style='font-size:11.5px'>%s · %s · "
-                "🛠 %s</div>%s</div>"
-                % (e(icon), e(name), tag_html,
+                "🛠 %s</div>%s%s</div>"
+                % (e(icon), e(name), tag_html + _grade_tag,
                    e(fid.get("role") or ag.get("role_profile", "")),
                    e(str(ag.get("role_profile", ""))),
-                   e(str(ag.get("llm_binding", ""))), e(tools), up_html))
+                   e(str(ag.get("llm_binding", ""))), e(tools),
+                   cd_html, up_html))
 
         def _dept_block(d):
             dept = d.get("dept", "")

@@ -2,7 +2,7 @@
   "_note": "质量工程部注册表（K-ORG-018 新设，对照截图 QA 工程师角色）。三守卫的人化复核位。",
   "team": "qualcore",
   "dept": "quality",
-  "description": "质量与安全保障部：质量工程师 + 安全审计师",
+  "description": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计",
   "agents": [
     {
       "agent_id": "QA1",
@@ -14,11 +14,26 @@
       "is_parallel": true,
       "wait_all_complete": false,
       "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["devtask", "events"],
+      "tools": [
+        "devtask",
+        "events"
+      ],
       "memory_grants": {
-        "read": ["domain/*", "dept/quality/*", "dept/dev/*", "dept/data/*", "agent/QA1/*"],
-        "write": ["agent/QA1/*", "dept/quality/observation"]
-      }
+        "read": [
+          "domain/*",
+          "dept/quality/*",
+          "dept/dev/*",
+          "dept/data/*",
+          "agent/QA1/*"
+        ],
+        "write": [
+          "agent/QA1/*",
+          "dept/quality/observation"
+        ]
+      },
+      "grade": "E3",
+      "grade_note": "30年档：验收口径裁定/三守卫裁定",
+      "charter_detail": "质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌"
     },
     {
       "agent_id": "SEC1",
@@ -30,11 +45,54 @@
       "is_parallel": true,
       "wait_all_complete": false,
       "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["devtask", "events"],
+      "tools": [
+        "devtask",
+        "events"
+      ],
       "memory_grants": {
-        "read": ["domain/*", "dept/quality/*", "dept/dev/*", "agent/SEC1/*"],
-        "write": ["agent/SEC1/*", "dept/quality/observation"]
-      }
+        "read": [
+          "domain/*",
+          "dept/quality/*",
+          "dept/dev/*",
+          "agent/SEC1/*"
+        ],
+        "write": [
+          "agent/SEC1/*",
+          "dept/quality/observation"
+        ]
+      },
+      "grade": "E2",
+      "grade_note": "20年档：审计独立表态",
+      "charter_detail": "安全审计师：凭据红线监护（X1 OAuth/QMT 凭据不入库）·注册表 grants 越权审计·危险命令面盘点（rm/checkout--/杀进程验身份判例执法）·skill/脚本引入安全审查"
+    },
+    {
+      "agent_id": "QA2",
+      "role_profile": "qa_engineer",
+      "analysis_type": "quality_assurance",
+      "node_key": "qa2_exec",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": [
+        "devtask",
+        "events"
+      ],
+      "memory_grants": {
+        "read": [
+          "domain/*",
+          "dept/quality/*",
+          "agent/QA2/*"
+        ],
+        "write": [
+          "agent/QA2/*",
+          "dept/quality/observation"
+        ]
+      },
+      "grade": "E1",
+      "grade_note": "10年档：用例执行位",
+      "charter_detail": "E1·10年档·测试：用例执行/证据采集/回归跑批；结论交 QA1 裁定"
     }
   ]
 }

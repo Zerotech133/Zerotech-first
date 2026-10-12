@@ -14,11 +14,25 @@
       "is_parallel": true,
       "wait_all_complete": false,
       "llm_binding": "ollama/qwen3.5:4b",
-      "tools": ["paper_bridge", "events"],
+      "tools": [
+        "paper_bridge",
+        "events"
+      ],
       "memory_grants": {
-        "read": ["domain/*", "dept/trading/*", "dept/invest/decision", "agent/TR1/*"],
-        "write": ["agent/TR1/*", "dept/trading/feedback"]
-      }
+        "read": [
+          "domain/*",
+          "dept/trading/*",
+          "dept/invest/decision",
+          "agent/TR1/*"
+        ],
+        "write": [
+          "agent/TR1/*",
+          "dept/trading/feedback"
+        ]
+      },
+      "grade": "E1",
+      "grade_note": "10年档：轻量执行位",
+      "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）"
     }
   ]
 }
