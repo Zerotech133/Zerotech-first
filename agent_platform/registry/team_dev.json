@@ -1,8 +1,8 @@
 {
-  "_note": "研发部长期员工注册表（K-ORG-015 实例化）。与执行拓扑的差异：无辩论节点、无屏障汇总，DEV1/DEV2 为常驻岗位，由任务单（tools/devtask.py）驱动，非流水线触发。schema 对齐 team_invest.json 以复用 interpreter 校验。",
+  "_note": "研发部长期员工注册表（K-ORG-015 实例化 / K-ORG-017 v2 扩编）。与执行拓扑的差异：无辩论节点、无屏障汇总，DEV1~DEV5 为常驻岗位，由任务单（tools/devtask.py）驱动，非流水线触发。schema 对齐 team_invest.json 以复用 interpreter 校验。K-ORG-017：策略线 DEV3→DEV4 串行（写策略→回测复核），DEV5 前端独立并行。",
   "team": "devcore",
   "dept": "dev",
-  "description": "研发部核心岗：代码工程师 + 模型训练师",
+  "description": "研发部核心岗：代码工程师 + 模型训练师 + 策略工程师 + 回测工程师 + 前端工程师",
   "agents": [
     {
       "agent_id": "DEV1",
@@ -34,6 +34,54 @@
       "memory_grants": {
         "read": ["domain/*", "dept/dev/*", "agent/DEV2/*"],
         "write": ["agent/DEV2/*", "dept/dev/observation", "domain/model_registry"]
+      }
+    },
+    {
+      "agent_id": "DEV3",
+      "role_profile": "strategy_engineer",
+      "analysis_type": "strategy_research",
+      "node_key": "dev3_strategy",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "dept/invest/decision", "agent/DEV3/*"],
+        "write": ["agent/DEV3/*", "dept/dev/observation", "domain/strategy_registry"]
+      }
+    },
+    {
+      "agent_id": "DEV4",
+      "role_profile": "backtest_engineer",
+      "analysis_type": "backtest_review",
+      "node_key": "dev4_backtest",
+      "parent_node_keys": ["dev3_strategy"],
+      "level": 2,
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "dept/invest/decision", "agent/DEV4/*"],
+        "write": ["agent/DEV4/*", "dept/dev/observation", "domain/backtest_registry"]
+      }
+    },
+    {
+      "agent_id": "DEV5",
+      "role_profile": "frontend_engineer",
+      "analysis_type": "frontend_engineering",
+      "node_key": "dev5_frontend",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "agent/DEV5/*"],
+        "write": ["agent/DEV5/*", "dept/dev/observation"]
       }
     }
   ]

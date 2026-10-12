@@ -1,5 +1,5 @@
 {
-  "_note": "组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编）。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。",
+  "_note": "组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2：+DEV3 策略/DEV4 回测/DEV5 前端）。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。",
   "org": "laotian_ai",
   "report_to": "human",
   "chief": {
@@ -26,8 +26,8 @@
       "name": "研发部",
       "lead": null,
       "status": "active",
-      "charter": "拉代码·优化代码·训练模型·code review（K-ORG-015 实例化）",
-      "agents": ["DEV1", "DEV2"],
+      "charter": "拉代码·优化代码·训练模型·code review·写策略·回测·前端 UI（K-ORG-015 实例化 / K-ORG-017 v2 扩编）",
+      "agents": ["DEV1", "DEV2", "DEV3", "DEV4", "DEV5"],
       "agent_profiles": [
         {
           "agent_id": "DEV1",
@@ -50,9 +50,42 @@
             "read": ["domain/*", "dept/dev/*", "agent/DEV2/*"],
             "write": ["agent/DEV2/*", "dept/dev/observation", "domain/model_registry"]
           }
+        },
+        {
+          "agent_id": "DEV3",
+          "role_profile": "strategy_engineer",
+          "charter_detail": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "dept/invest/decision", "agent/DEV3/*"],
+            "write": ["agent/DEV3/*", "dept/dev/observation", "domain/strategy_registry"]
+          }
+        },
+        {
+          "agent_id": "DEV4",
+          "role_profile": "backtest_engineer",
+          "charter_detail": "回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "dept/invest/decision", "agent/DEV4/*"],
+            "write": ["agent/DEV4/*", "dept/dev/observation", "domain/backtest_registry"]
+          }
+        },
+        {
+          "agent_id": "DEV5",
+          "role_profile": "frontend_engineer",
+          "charter_detail": "门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "agent/DEV5/*"],
+            "write": ["agent/DEV5/*", "dept/dev/observation"]
+          }
         }
       ],
-      "source": "K-ORG-001 组织设计 P2 扩编，2026-10-13 K-ORG-015 老田指令实例化"
+      "source": "K-ORG-001 组织设计 P2 扩编，2026-10-13 K-ORG-015 老田指令实例化；K-ORG-017 研发部 v2 三岗扩编（老田拍板 K-ORG-016 待拍板项③）"
     },
     {
       "dept": "trading",
