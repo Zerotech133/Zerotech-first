@@ -89,17 +89,19 @@ class CainiaoAuthTest(unittest.TestCase):
 
     # --- 3. 网络超时：degraded 放行 / enabled 拒绝 ---
     def test_timeout_degraded_vs_enabled(self):
+        """K-STOCK-187 fail-closed 收窄：不可达时 degraded/enabled 均拒绝
+        （能到 bearer 分支的必然是非回环来源，降级放行=鉴权洞）。"""
         def boom(token, cfg):
             raise OSError("timed out")
         with mock.patch.object(cainiao_auth, "_http_check_token", boom):
             with mock.patch.dict(os.environ, {"CAINIAO_AUTH_MODE": "degraded"}):
                 r = cainiao_auth.verify_bearer("tok-net")
-            self.assertTrue(r.ok)
-            self.assertTrue(r.reason.startswith("degraded_"))
+            self.assertFalse(r.ok)
+            self.assertTrue(r.reason.startswith("auth_unreachable_rejected"))
             with mock.patch.dict(os.environ, {"CAINIAO_AUTH_MODE": "enabled"}):
                 r2 = cainiao_auth.verify_bearer("tok-net")
             self.assertFalse(r2.ok)
-            self.assertTrue(r2.reason.startswith("auth_service_unreachable"))
+            self.assertTrue(r2.reason.startswith("auth_unreachable_rejected"))
 
     # --- 4. 机器通道优先：X-Portal-Token 命中即放行，不走 Bearer ---
     def test_machine_channel_priority(self):

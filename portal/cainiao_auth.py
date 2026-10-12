@@ -51,6 +51,7 @@ import base64
 import hmac
 import json
 import os
+import sys
 import threading
 import time
 import urllib.error
@@ -190,13 +191,27 @@ def verify_bearer(token: str) -> VerifyResult:
         return _on_unreachable(type(e).__name__)
 
 
+_last_unreachable_warn = 0.0   # 不可达告警节流（60s）
+
+
 def _on_unreachable(detail: str) -> VerifyResult:
-    """菜鸟不可达：degraded 放行（按本机可信域口径，保产线）；
-    enabled 拒绝。降级结论不缓存。"""
+    """菜鸟不可达：一律拒绝（K-STOCK-187 收窄，安全审计 F-005）。
+
+    原 degraded 模式在此放行，但能走到本分支的调用方必然是非回环
+    来源（本机可信域在 verify_request step2 已先行放行）——放行等于
+    「远程依赖抖动=鉴权洞」。现改为 fail-closed：enabled/degraded 均
+    拒绝，reason 标注模式；stderr 告警 60s 节流，提醒运维 auth 服务
+    异常。本机产线流量不经此路径，不受影响。降级结论不缓存。"""
     mode = _cfg()["mode"]
-    if mode != "enabled":
-        return VerifyResult(True, reason="degraded_unreachable:" + detail)
-    return VerifyResult(False, reason="auth_service_unreachable:" + detail)
+    now = time.time()
+    global _last_unreachable_warn
+    if now - _last_unreachable_warn > 60:
+        _last_unreachable_warn = now
+        print("WARN: cainiao auth 服务不可达，写鉴权 fail-closed "
+              "(mode=%s): %s" % (mode, detail), file=sys.stderr)
+    return VerifyResult(False,
+                        reason="auth_unreachable_rejected(mode=%s):%s"
+                               % (mode, detail))
 
 
 def verify_request(headers, remote_addr, portal_token: str = "") -> VerifyResult:
