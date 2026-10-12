@@ -197,6 +197,31 @@ def _probes(reader, metrics):
         execute("query_" + table, query)
 
 
+def _reader_for_root(root):
+    """为显式数据根绑定统一读层，避免探针误读当前代码副本。"""
+    catalog_path = Path(root) / "catalog.json"
+    if not catalog_path.exists():
+        return None
+    try:
+        import datamart
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        if not isinstance(catalog, dict) or not isinstance(catalog.get("tables"), dict):
+            return None
+    except (OSError, ValueError, ImportError):
+        return None
+
+    class RootReader:
+        def read(self, table, start=None, end=None, codes=None, fields=None, limit=None):
+            token = datamart._READ_CATALOG.set(catalog)
+            try:
+                return datamart.read(table, start=start, end=end, codes=codes,
+                                     fields=fields, limit=limit)
+            finally:
+                datamart._READ_CATALOG.reset(token)
+
+    return RootReader()
+
+
 def _stock_list_dates(root):
     dates, sources, invalid = {}, [], 0
     for path in _parts(root, "tushare", "stock_basic") + _parts(root, "tdx", "ts_stock_basic"):
@@ -474,7 +499,9 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
     if run_probes:
         try:
             if reader is None:
-                import datamart as reader
+                reader = _reader_for_root(root)
+                if reader is None:
+                    raise ValueError("显式数据根缺少可绑定 catalog.json")
             _probes(reader, metrics)
         except Exception as exc:
             _metric(metrics, "query_reader", "FAIL", 0, {"error": str(exc)})
