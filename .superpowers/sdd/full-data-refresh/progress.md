@@ -8,3 +8,5 @@ Task 1: complete (tests: test_full_refresh_baseline.py -> 3 passed; actual basel
 Task 2: complete (tests: baseline+plan -> 5 passed; dry-run and RunStore registration verified; production_write=false).
 Task 3: complete (tests: test_full_refresh_baseline.py test_full_refresh_plan.py test_recent_refresh.py -> 10 passed; recent receipt snapshot: 12937 blocked, 0 qualified, 0 production writes).
 Task 4: complete (tests: test_annual_refresh.py -> 3 passed; 2023 first batch blocked by remote_probe_deferred, 0 production writes; explicit importer no longer performs import-time network calls).
+Task 5: complete (tests: test_lineage_manifest.py -> 3 passed; source receipt, SHA256 and readback digest gates verified).
+Task 6: complete (tests: test_full_refresh_health.py -> 1 passed; health snapshot records historical daily coverage, nulls, key reconciliation and queries).
