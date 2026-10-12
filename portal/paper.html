@@ -338,13 +338,17 @@
     </div>
     <div id="combo-bt-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
       <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">③ 组合回测（选好了？先跑历史数据看这个组合）</span></div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">总监默认带队（可另配经理）+ 您选的操盘手（可加策略源）组成组合，用历史行情跑回测——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。满意 → 迎宾向导完成雇佣上岗。</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">总监默认带队（可另配经理）+ <b>选股分析师</b>（选什么股的信号源，可多选）+ 您选的操盘手（怎么买卖）组成组合，用历史行情跑回测——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。满意 → 迎宾向导完成雇佣上岗。</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <label style="font-size:12px">带队 <select id="cbt-manager" style="padding:3px 6px"><option value="director_apex" selected>🏛️ 投资总监（默认在岗）</option></select></label>
         <label style="font-size:12px">操盘手 <select id="cbt-trader" style="padding:3px 6px"><option value="">选择操盘手…</option></select></label>
         <label style="font-size:12px">起始日 <input type="date" id="cbt-start" value="2025-01-01" style="padding:2px 4px"></label>
         <label style="font-size:12px">时长 <select id="cbt-len" style="padding:3px 6px"><option value="1m">跑1个月</option><option value="3m" selected>跑3个月</option><option value="6m">跑半年</option><option value="1y">跑1年</option></select></label>
         <button class="btn" id="cbt-run" onclick="runComboBacktest()">▶ 跑组合回测</button>
+      </div>
+      <!-- K-STOCK-229 选股分析师（老田 10-12 23:45 拍板：组队动线补上信号源一环，可选 X 个） -->
+      <div style="margin-top:8px;font-size:12px">📡 选股分析师（信号源 · 可多选，来自策略市场）：
+        <span id="cbt-analysts" style="display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle"><span style="color:var(--text-dim)">读取中…</span></span>
       </div>
       <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">⏱ <b>point-in-time 口径（不泄露答案）</b>：从起始日起逐日推进，每天<b>只使用当天当时已知</b>的行情与信号做决策——绝不使用未来数据。例：2025-01-01 起跑 3 个月，回测值=该组合在当时真实可得信息下的最贴近实跑成绩。</div>
       <div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。回测引擎产出后此处展示该组合的回测收益曲线与最大回撤。</div>
@@ -830,10 +834,18 @@ async function loadAgents(){
 //      回测收益/回撤，满意才上岗。引擎执行属冻结区（quant_backtest），本版为交互骨架+排队语义，开闸接线，不造假结果） =====
 async function fillComboSelectors(){
   try{
-    const [tr,mr]=await Promise.all([
+    const [tr,mr,sm]=await Promise.all([
       api('/api/trader_roster').catch(()=>null),
-      api('/api/manager_roster').catch(()=>null)
+      api('/api/manager_roster').catch(()=>null),
+      api('/api/strategy_market').catch(()=>null)   // K-STOCK-229 选股分析师=策略市场信号源
     ]);
+    const box=$('cbt-analysts');
+    if(box&&sm&&sm.strategies){
+      const cands=sm.strategies.filter(s=>s.status==='live'||s.status==='shadow');
+      box.innerHTML=cands.map(s=>`<label style="font-size:11.5px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;cursor:pointer;user-select:none">`
+        +`<input type="checkbox" class="cbt-ana" value="${esc(s.id)}" style="vertical-align:-2px;margin:0 2px 0 0"> ${esc(s.name)}`
+        +`${s.status==='shadow'?' <span style="color:var(--text-dim)">影子</span>':''}</label>`).join('');
+    }
     const ms=$('cbt-manager'), ts=$('cbt-trader');
     if(!ms||!ts)return;
     const DIRECTORS=new Set(['director_20y','laotian_pm']);   // K-STOCK-227：总监=默认在岗首项，不进可挑选列表
@@ -855,13 +867,15 @@ async function fillComboSelectors(){
 function runComboBacktest(){
   const mid=($('cbt-manager')||{}).value||'director_apex', tid=($('cbt-trader')||{}).value;
   const sd=($('cbt-start')||{}).value, ln=($('cbt-len')||{}).value;
+  const anas=[...document.querySelectorAll('.cbt-ana:checked')].map(c=>c.value);
   const out=$('cbt-result'); if(!out)return;
   if(!tid){toast('⚠️ 请先选择操盘手（总监默认带队），再跑组合回测');return;}
   const LEN={ '1m':'1 个月','3m':'3 个月','6m':'半年','1y':'1 年' };
   const now=new Date(), pad=n=>String(n).padStart(2,'0');
   const ts=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes());
   const lead=mid==='director_apex'?'🏛️ 投资总监（默认在岗）':('经理 <code>'+esc(mid)+'</code>');
-  out.innerHTML='🕐 <b>组合回测任务已登记（'+ts+'）</b>：'+lead+' × 操盘手 <code>'+esc(tid)+'</code>'
+  const anaTxt=anas.length?('📡 选股分析师 '+anas.length+' 个（<code>'+esc(anas.join(' + '))+'</code>）'):'📡 选股分析师：未指定（默认信号池）';
+  out.innerHTML='🕐 <b>组合回测任务已登记（'+ts+'）</b>：'+lead+' × '+anaTxt+' × 操盘手 <code>'+esc(tid)+'</code>'
     +' · <b>'+esc(sd)+'</b> 起跑 '+ (LEN[ln]||ln) +' · point-in-time 口径（逐日只用当时已知信息，不泄露未来答案）。'
     +'回测引擎批量执行属验收冻结区（10-13~15），开闸（10-16）后按队列跑批，结果回填本区域——'
     +'届时展示该组合的<b>回测收益曲线 / 最大回撤 / 年化</b>，满意再走迎宾向导完成雇佣上岗。';
