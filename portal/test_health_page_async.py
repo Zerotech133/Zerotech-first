@@ -13,24 +13,42 @@ import pytest
 
 @pytest.fixture
 def portal(monkeypatch):
-    path = Path(__file__).with_name("portal_api.py")
-    tree = ast.parse(path.read_text(encoding="utf-8-sig"))
-    functions = {"data_health_bg", "data_health_kg_bg", "data_freshness", "data_freshness_bg", "_freshness_warmup"}
-    constants = {"_HEALTH_CACHE", "_HEALTH_LOCK", "_KG_HEALTH_CACHE", "_KG_HEALTH_LOCK", "_FRESH_BG_LOCK", "_FRESH_BG_ERROR"}
+    # 04a6cb7 健康检查 mixin 拆分后本体迁址：api_data.py（扫描/图谱后台 +
+    # _HEALTH_*/_KG_* + Handler._data_health_page）、api_common.py（freshness
+    # 后台 + _FRESH_BG_*）；portal_api.py 仅存 _freshness_warmup/_warm_freshness。
+    # 行为未删只是搬家，故按新布局分文件抽 AST（函数名清单不变）。
+    here = Path(__file__).with_name("portal_api.py").parent
+    spec = {
+        here / "portal_api.py": ({"_freshness_warmup"}, set(), {}, {"_warm_freshness"}),
+        here / "api_data.py": (
+            {"data_health_bg", "data_health_kg_bg", "data_freshness"},
+            {"_HEALTH_CACHE", "_HEALTH_LOCK", "_KG_HEALTH_CACHE", "_KG_HEALTH_LOCK"},
+            {"Handler": "_data_health_page"}, set()),
+        here / "api_common.py": ({"data_freshness_bg"},
+                                 {"_FRESH_BG_LOCK", "_FRESH_BG_ERROR"}, {}, set()),
+    }
     nodes = []
-    for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and node.name in functions:
-            nodes.append(node)
-        elif isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id in constants for t in node.targets):
-            nodes.append(node)
-        elif isinstance(node, ast.ClassDef) and node.name == "Handler":
-            method = next(n for n in node.body if isinstance(n, ast.FunctionDef) and n.name == "_data_health_page")
-            nodes.append(ast.ClassDef(name="Handler", bases=[], keywords=[], body=[method], decorator_list=[]))
-    nodes.extend(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "_warm_freshness")
+    for path, (functions, constants, methods, nested) in spec.items():
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef) and node.name in functions:
+                nodes.append(node)
+            elif isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id in constants for t in node.targets):
+                nodes.append(node)
+            elif isinstance(node, ast.ClassDef) and node.name in methods:
+                method = next(n for n in node.body if isinstance(n, ast.FunctionDef)
+                              and n.name == methods[node.name])
+                nodes.append(ast.ClassDef(name=node.name, bases=[], keywords=[],
+                                          body=[method], decorator_list=[]))
+        nodes.extend(n for n in ast.walk(tree)
+                     if isinstance(n, ast.FunctionDef) and n.name in nested)
     namespace = {"threading": threading, "_th": threading, "time": time, "sys": sys,
                  "os": os, "json": json, "_TP_JS": "",
-                 "QBT_DIR": sys.path[0], "pill_nav": lambda _: "", "log_exc": lambda _: None}
-    exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), str(path), "exec"), namespace)
+                 "QBT_DIR": sys.path[0], "pill_nav": lambda _: "", "log_exc": lambda _: None,
+                 "_tp_row": lambda *_a, **_k: ""}
+    exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])),
+                 str(here / "portal_api.py"), "exec"), namespace)
     return namespace
 
 
