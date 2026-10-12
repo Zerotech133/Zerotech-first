@@ -279,6 +279,7 @@ DOMAIN_NAV_GROUPS = {
             ("♠ 操盘锦标赛", "/sim", "sim"),
             ("🎤 辩论室", "/debate", "debate"))),
         ("🚦 实盘跟踪", (
+            ("🎯 今日选股", "/picks.html", "picks"),
             ("🚦 信号", "/bt-signals", "signals"),
             ("💼 持仓", "/bt-positions", "positions"),
             ("🧾 模拟仓", "/paper", "paper"),
@@ -288,6 +289,7 @@ DOMAIN_NAV_GROUPS = {
             ("🎯 卖点研判", "/sellpoint", "sellpoint"))),
         ("🧰 研究与数据", (
             ("🎯 选股中心", "/bt", "bt"),
+            ("⚔ 板块强弱", "/strong", "strong"),
             ("🌾 期货量化", "/fut", "fut"),
             ("📊 寻优", "/bt-opt", "opt"),
             ("🔥 板块", "/bt-sectors", "sectors"),
@@ -317,7 +319,10 @@ DOMAIN_NAV_GROUPS = {
         ("🎬 创作专项", "/creator", "creator"),
         ("📝 公众号草稿", "/gzh", "gzh"),
         ("🎞 短视频成片", "/vd", "vd"))),),
-    "dev": ((None, (("💻 开发者专项", "/dev", "dev"),)),),
+    "dev": (
+        (None, (("💻 开发者专项", "/dev", "dev"),)),
+        ("🎓 零界学院", (("🎓 零界学院", "/academy", "academy"),)),
+    ),
     "ops": ((None, (
         ("🎛 OS 控制台", "/ops", "opshome"),
         ("🛡 审计状态", "/audit", "audit"),
@@ -773,7 +778,7 @@ def _pool_bear_news(codes_names, days=5, min_conf=0.75, limit=12):
     """预警池利空消息警示（news.db 只读）：近 days 天 bias=bear 且
     置信≥min_conf、可归属到池内个股的消息。
 
-    依据（llm观察记录 回测 v2）：偏空消息 T+1 跑输全市场 ~0.5pp，
+    依据（docs/ops/portal_llm观察记录.md 回测 v2）：偏空消息 T+1 跑输全市场 ~0.5pp，
     「避雷」方向有效 —— 只提示不拦截、不用于增强买入。
     归属三路：① stocks 列真 ts_code ② 标题前缀代码 [600853 龙建股份]
     / [个股研报·org] 300059 ③ 股票名出现在标题。

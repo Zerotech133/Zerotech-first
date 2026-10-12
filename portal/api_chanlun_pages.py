@@ -1448,7 +1448,7 @@ function ckPush(i){
             type(self)._tstat_cache = _tsc2
 
         # ── 利空消息警示（回测 v2：偏空 T+1 跑输市场 ~0.5pp；
-        #    只提示不拦截，口径见 llm观察记录.md）──
+        #    只提示不拦截，口径见 docs/ops/portal_llm观察记录.md）──
         cn_map = {}
         for r in pool[-200:]:
             if r.get("code"):

@@ -620,6 +620,20 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                 body = t.encode("utf-8")
         except Exception:
             pass
+        # K-STOCK-164 全站短屏化：报告外壳统一注入 shortscreen.js
+        # （锚点条+自动 details 折叠；<4 个标题的短页其内部自动跳过；
+        #   生成器重写文件后注入依然生效——与上方 tokens.css 同构）
+        try:
+            t = body.decode("utf-8", "ignore")
+            if ("</head>" in t and "static/shortscreen.js" not in t
+                    and b"<body" in body):
+                t = t.replace(
+                    "</head>",
+                    '<script src="/static/shortscreen.js" defer></script></head>',
+                    1)
+                body = t.encode("utf-8")
+        except Exception:
+            pass
         body += _BTSEL_TAG.encode("utf-8")   # K255 静态报告页同样注入
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -761,7 +775,7 @@ gap:14px;align-items:start}}
 	for(var r=1;r<tb.rows.length;r++)rows.push(tb.rows[r]);
 	var val=function(row){
 	var s=(row.cells[ti]?row.cells[ti].textContent:'').trim()
-	.replace(/[,\uFF0C\s%+\u2212\u2013\u2014-]/g,'');
+	.replace(/[,\uFF0C\\s%+\u2212\u2013\u2014-]/g,'');
 	var u=/\u4EBF/.test(s)?1e8:(/\u4E07/.test(s)?1e4:1);
 	s=s.replace(/\u4EBF|\u4E07/g,'');
 	var n=parseFloat(s);
