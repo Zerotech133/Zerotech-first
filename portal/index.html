@@ -37,7 +37,7 @@
   .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
   .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
 
-  /* ── 顶栏导航：首页 + 五领域 ────────────── */
+  /* ── 顶栏导航：首页 + 六领域（K-STOCK-219 超级个体主框架） ── */
   .topnav {
     display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
     padding: 10px 48px 0; max-width: 1080px; margin: 0 auto;
@@ -103,6 +103,16 @@
     font-family: Consolas, "Microsoft YaHei", monospace;
   }
   .dm .ms b { color: var(--text); font-weight: 600; }
+  /* K-STOCK-219 子入口 chips：领域内直达，统一药丸样式 */
+  .dm .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dm .chip {
+    font-size: 11.5px; padding: 4px 11px;
+    border: 1px solid var(--border); border-radius: 999px;
+    color: var(--link); text-decoration: none; background: var(--bg-surface);
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .dm .chip:hover { border-color: var(--link); color: var(--text); }
+  .dm .chip.todo { color: var(--text-dim); border-style: dashed; cursor: default; }
   .dm .foot {
     display: flex; align-items: center; justify-content: space-between;
     margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border-weak);
@@ -172,12 +182,12 @@
 
   <nav class="topnav">
     <span class="pill on">🏠 首页</span>
-    <a class="pill" href="/quant">📈 量化股票</a>
-    <a class="pill" href="/intel">🕵️ 情报</a>
-    <a class="pill" href="/creator">🎬 创作</a>
+    <a class="pill" href="/quant">📈 量化交易</a>
+    <a class="pill" href="/intel">📰 新闻情报</a>
+    <a class="pill" href="/academy.html">🎓 技能学院</a>
     <a class="pill" href="/dev.html">💻 开发</a>
+    <a class="pill" href="/creator">🎬 自媒体创作</a>
     <a class="pill" href="/ops">⚙️ 系统</a>
-    <a class="pill" href="/academy.html">🎓 智能体学院</a>
   </nav>
 
   <main>
@@ -191,7 +201,7 @@
       <span class="enter">进入大屏 →</span>
     </a>
 
-    <!-- 今日要务：一进来就把今天所有事串成态势（K-STOCK-112） -->
+    <!-- 今日要务：一进来就把今天所有事串成态势（K-STOCK-112 · 218 口径对齐主框架） -->
     <div style="margin-top:18px;">
       <div style="font-size:12px;letter-spacing:2.5px;color:var(--text-dim);font-weight:700;margin-bottom:10px;">◤ 今日要务 · 四域态势</div>
       <div class="board" style="margin-top:0;">
@@ -206,7 +216,7 @@
           <div class="foot" style="padding-top:8px;"><span class="st dim" style="font-size:10.5px;" id="t-q-note">加载中…</span><span class="enter">进入量化 →</span></div>
         </a>
         <a class="dm" href="/intel" style="min-height:0;padding:15px 18px 13px;">
-          <div class="head"><div class="ic" style="width:36px;height:36px;font-size:17px;">🕵️</div>
+          <div class="head"><div class="ic" style="width:36px;height:36px;font-size:17px;">📰</div>
             <div><div class="t" style="font-size:14px;">情报</div></div></div>
           <div class="ms" style="margin-top:8px;">
             <span>今日 <b id="t-i-news">—</b></span>
@@ -217,7 +227,7 @@
         </a>
         <a class="dm" href="/creator" style="min-height:0;padding:15px 18px 13px;">
           <div class="head"><div class="ic" style="width:36px;height:36px;font-size:17px;">🎬</div>
-            <div><div class="t" style="font-size:14px;">创作 <span class="tag-soon">待办</span></div></div></div>
+            <div><div class="t" style="font-size:14px;">自媒体创作 <span class="tag-soon">扩展中</span></div></div></div>
           <div class="ms" style="margin-top:8px;">
             <span>草稿 <b id="t-c-draft">—</b></span>
             <span>成片 <b id="t-c-video">—</b></span>
@@ -236,72 +246,134 @@
       </div>
     </div>
 
-    <div class="board">
-      <!-- 智能体学院：仅交互原型，真实训练与交易未开放 -->
-      <a class="dm" href="/academy.html">
-        <div class="head">
-          <div class="ic" aria-hidden="true">🎓</div>
-          <div><div class="t">智能体学院 <span class="tag-soon">交互原型</span></div><div class="s">AI 教 AI · 独立评测 · 能力交付</div></div>
-        </div>
-        <div class="desc">AI 教 AI 实验场：接入不同类型 AI 互教与独立评测，沉淀能力包。激进攻稳健保守四档偏好可选。</div>
-        <div class="ms">
-          <span>教学 <b>原型在线</b></span>
-          <span>评测 <b>Prototype</b></span>
-          <span>市场 <b>规划中</b></span>
-        </div>
-        <div class="foot">
-          <span class="st"><span class="dot unknown academy-dot"></span><span>阶段 1/3 · 交互原型期，训练与交易随后开放</span></span>
-          <span class="enter">查看学院 →</span>
-        </div>
-      </a>
+    <!-- 超级个体主框架（K-STOCK-219）：金融 / 情报 / 学习 / 开发 / 创作 / 底座 -->
+    <div style="margin-top:22px;font-size:12px;letter-spacing:2.5px;color:var(--text-dim);font-weight:700;">◤ 主框架 · 六大领域</div>
+    <div class="board" style="margin-top:10px;">
 
-      <!-- ① 量化股票：主领域 -->
-      <!-- ①b 板块强弱对照（D2 第 11 领域卡 · strong 产线） -->
-<a class="dm" href="/strong.html">
-  <div class="head">
-    <div class="ic">📊</div>
-    <div><div class="t">板块强弱对照</div><div class="s">strong 领涨识别 · D2 第 11 卡</div></div>
-  </div>
-  <div class="desc">强弱两只眼：weak 找弱势立案、strong 找领涨确认，板块轮动从名单迁移浮现。</div>
-  <div class="ms">
-    <span>超额阈值 <b>+10pp</b></span>
-    <span>板块门槛 <b>≥5 只</b></span>
-    <span>领涨 <b id="s-strong">—</b></span>
-  </div>
-  <div class="foot">
-    <span class="st"><span class="dot" id="s-dot"></span><span id="s-note">数据源 reports</span></span>
-    <span class="enter">进入专项 →</span>
-  </div>
-</a>
-
-      <!-- ①c 模拟仓平台（K-STOCK v0.2 · 首页直达） -->
-      <a class="dm" href="/paper">
+      <!-- ① 量化交易：金融域全量收拢（含模拟建仓 / 板块强弱，218 口径） -->
+      <a class="dm" href="/quant">
         <div class="head">
-          <div class="ic">🧾</div>
-          <div><div class="t">模拟仓平台</div><div class="s">多策略 · 手动/自动 · 多 Agent 交易员</div></div>
+          <div class="ic" aria-hidden="true">📈</div>
+          <div><div class="t">量化交易</div><div class="s">金融 · 行情到下单全流程闭环</div></div>
         </div>
-        <div class="desc">AI 值班 / 量子双刀 / 青萍之末 / 手动单共用一条 Picks 执行链，策略永不直碰账本；手动止损、历史回看、交易员市场（v0.3 预留）。</div>
+        <div class="desc">所有涉交易之事皆在此域：盘面研判、策略选股、信号共振、模拟建仓、板块强弱对照与盘后复盘。</div>
+        <div class="chips">
+          <span class="chip-wrap"><a class="chip" href="/screen">📺 数据大屏</a></span>
+          <a class="chip" href="/premarket">🌅 盘前</a>
+          <a class="chip" href="/afterhours">🌇 盘后</a>
+          <a class="chip" href="/bt">🎯 选股中心</a>
+          <a class="chip" href="/paper">🧾 模拟建仓</a>
+          <a class="chip" href="/strong.html">📊 板块强弱</a>
+          <a class="chip" href="/fin">💰 金融驾驶舱</a>
+        </div>
         <div class="ms">
           <span>总资产 <b id="p-total">—</b></span>
           <span>累计 <b id="p-cum">—</b></span>
           <span>挂单 <b id="p-pend">—</b></span>
+          <span>领涨 <b id="s-strong">—</b></span>
         </div>
         <div class="foot">
           <span class="st"><span class="dot" id="p-dot"></span><span id="p-note">连接中…</span></span>
-          <span class="enter">进入交易台 →</span>
+          <span class="enter">进入量化 →</span>
         </div>
       </a>
 
-      <!-- ② 情报中枢 -->
-      <!-- ③ 内容创作 -->
-      <!-- ④ 开发者：基建状态板已上线（D4） -->
-      <!-- ⑤ 系统运维 -->
+      <!-- ② 新闻情报：个人超级助理的关注面推送（218 新口径） -->
+      <a class="dm" href="/intel">
+        <div class="head">
+          <div class="ic" aria-hidden="true">📰</div>
+          <div><div class="t">新闻情报</div><div class="s">职业情报 · 正在发生什么</div></div>
+        </div>
+        <div class="desc">我关注的一切新闻，主动推送正在发生与即将发生：多空判读、要闻晨报，知识图谱沉淀为第二记忆。</div>
+        <div class="chips">
+          <a class="chip" href="/intel">🌐 情报中枢</a>
+          <a class="chip" href="/bt-brief">🤖 AI 晨报</a>
+          <a class="chip" href="/kg">🕸 知识图谱</a>
+          <a class="chip" href="/bt-jev">📡 JEV 情报</a>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot unknown" id="i-dot"></span><span id="i-note">加载中…</span></span>
+          <span class="enter">进入情报 →</span>
+        </div>
+      </a>
+
+      <!-- ③ 技能学院：School 逻辑（218 口径扩展：不止 AI 互教） -->
+      <a class="dm" href="/academy.html">
+        <div class="head">
+          <div class="ic" aria-hidden="true">🎓</div>
+          <div><div class="t">技能学院 <span class="tag-soon">交互原型</span></div><div class="s">学习 · 全方位技能 School</div></div>
+        </div>
+        <div class="desc">个人的学习场：AI 教 AI 互教与独立评测打底，编程、写作、办公技能课程逐板块上线。</div>
+        <div class="chips">
+          <a class="chip" href="/academy.html">🎓 AI 互教</a>
+          <span class="chip todo">💻 编程课 · 规划中</span>
+          <span class="chip todo">📝 写作课 · 规划中</span>
+        </div>
+        <div class="ms">
+          <span>教学 <b>原型在线</b></span>
+          <span>评测 <b>Prototype</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot unknown academy-dot"></span><span>阶段 1/3 · 课程陆续开放</span></span>
+          <span class="enter">查看学院 →</span>
+        </div>
+      </a>
+
+      <!-- ④ 开发：个人搞开发的必然板块 -->
+      <a class="dm" href="/dev.html">
+        <div class="head">
+          <div class="ic" aria-hidden="true">💻</div>
+          <div><div class="t">开发</div><div class="s">工作 · 基建与工具链</div></div>
+        </div>
+        <div class="desc">超级个体的技术底车间：每日体检、IDE 矩阵、数据仓与工具脚本，一切自产能力的源头。</div>
+        <div class="chips">
+          <a class="chip" href="/dev.html">💻 开发台</a>
+          <a class="chip" href="/bt-data-health">🗄️ 数据仓</a>
+          <a class="chip" href="/devops">🔧 DevOps</a>
+        </div>
+        <div class="ms">
+          <span>体检 <b id="d-health">—</b></span>
+          <span>IDE <b>5 个</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot unknown" id="d-hdot"></span><span id="d-hnote">加载中…</span></span>
+          <span class="enter">进入开发 →</span>
+        </div>
+      </a>
+
+      <!-- ⑤ 自媒体创作：不止剪片（218 口径扩展：自媒体 + 工作创作） -->
+      <a class="dm" href="/creator">
+        <div class="head">
+          <div class="ic" aria-hidden="true">🎬</div>
+          <div><div class="t">自媒体创作</div><div class="s">创作 · 自媒体 + 工作创作</div></div>
+        </div>
+        <div class="desc">不止剪片：公众号、视频等自媒体产线在跑；方案、PPT、汇报材料等超级个体工作创作逐步接入。</div>
+        <div class="chips">
+          <a class="chip" href="/creator">🎬 创作台</a>
+          <a class="chip" href="/gzh">📝 公众号</a>
+          <a class="chip" href="/vd">🎞 视频</a>
+          <span class="chip todo">📋 方案 / PPT · 规划中</span>
+        </div>
+        <div class="ms">
+          <span>草稿 <b id="c-draft">—</b></span>
+          <span>成片 <b id="c-video">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot unknown" id="c-dot"></span><span id="c-note">加载中…</span></span>
+          <span class="enter">进入创作 →</span>
+        </div>
+      </a>
+
+      <!-- ⑥ 系统：个人 OS 底座 -->
       <a class="dm" href="/ops">
         <div class="head">
-          <div class="ic">⚙️</div>
-          <div><div class="t">系统运维</div><div class="s">任务 · 备份 · 告警 · 容器</div></div>
+          <div class="ic" aria-hidden="true">⚙️</div>
+          <div><div class="t">系统</div><div class="s">底座 · 任务 备份 告警 容器</div></div>
         </div>
-        <div class="desc">OS 控制台全量：计划任务矩阵、备份与磁盘、告警收件箱、容器矩阵与关键端口探活。</div>
+        <div class="desc">个人 OS 的地基：计划任务矩阵、备份与磁盘、告警收件箱、容器矩阵与关键端口探活。</div>
+        <div class="chips">
+          <a class="chip" href="/ops">🎛 OS 控制台</a>
+        </div>
         <div class="ms">
           <span>任务 <b id="o-tasks">—</b></span>
           <span>容器 <b id="o-cont">—</b></span>
@@ -310,12 +382,11 @@
         </div>
         <div class="foot">
           <span class="st"><span class="dot" id="o-dot"></span><span id="o-note">连接中…</span></span>
-          <span class="enter">进入专项 →</span>
+          <span class="enter">进入控制台 →</span>
         </div>
       </a>
 
-      <!-- ⑥ 更多领域：预留 -->
-      </div>
+    </div>
 
     <div class="statusbar">
       <span>⚡ 本地模型 <b id="m-ollama">--</b></span><span class="sep">│</span>
@@ -337,56 +408,37 @@
   }
   tick(); setInterval(tick, 1000);
 
-  // ── 盘面 / 情报微指标（/api/brief）──
+  // ── 新闻情报卡脚标（/api/brief：多空 + 图谱源红点判例 K8）──
+  // 218 修复：原写向 q-verdict/i-news 等已不存在 id（board2 清理遗留死 JS），收敛为只喂 i-dot/i-note
   async function loadBrief() {
+    const idot = document.getElementById('i-dot'), inote = document.getElementById('i-note');
     try {
       const ctl = new AbortController();
       setTimeout(() => ctl.abort(), 8000);
       const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
-      if (!r.ok) return;
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const d = await r.json();
-      const f = d.fin || {}, n = d.intel || {};
-      document.getElementById('q-verdict').textContent = String(f.verdict || '—').split('（')[0];
-      document.getElementById('i-news').textContent = (n.today ?? 0) + ' 条';
-      document.getElementById('i-bull').textContent = n.bull ?? 0;
-      document.getElementById('i-bear').textContent = n.bear ?? 0;
-      document.getElementById('q-note').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只';
-      // 图谱源红点判例（K8）：断流转红、滞后转黄
-      const kg = d.kg || {};
-      const idot = document.getElementById('i-dot'), inote = document.getElementById('i-note');
+      const n = d.intel || {}, kg = d.kg || {};
       if (kg.stale > 0) {
         inote.textContent = '图谱源断流 ' + kg.stale + ' 表';
         idot.className = 'dot off';
       } else if (kg.catalog_stale) {
         inote.textContent = 'catalog 滞后 ' + (kg.catalog_age_days ?? '?') + ' 天';
         idot.className = 'dot unknown';
-      } else inote.textContent = '利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0);
-    } catch {}
+      } else {
+        inote.textContent = '今日 ' + (n.today ?? 0) + ' 条 · 利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0);
+        idot.className = 'dot';
+      }
+    } catch {
+      if (inote) inote.textContent = '情报数据未就绪';
+      if (idot) idot.className = 'dot unknown';
+    }
   }
   loadBrief();
   setInterval(loadBrief, 60000);
 
-  // ── 策略 / 在案微指标（/api/strategies 注册表）──
-  async function loadStrategies() {
-    try {
-      const ctl = new AbortController();
-      setTimeout(() => ctl.abort(), 8000);
-      const r = await fetch('/api/strategies', { signal: ctl.signal, cache: 'no-store' });
-      if (!r.ok) return;
-      const d = await r.json();
-      const items = d.strategies || [];
-      const nL = items.filter(s => s.status === 'live').length;
-      const nS = items.filter(s => s.status === 'shadow').length;
-      document.getElementById('q-strat').textContent = items.length + ' 条';
-      const wk = items.find(s => s.id === 'weak');
-      const wm = wk && wk.metrics && wk.metrics.find(m => m.k === '在案');
-      if (wm) document.getElementById('q-weak').textContent = wm.v;
-    } catch {}
-  }
-  loadStrategies();
-  setInterval(loadStrategies, 120000);
-
-  // ── 内容 / 系统微指标（/api/overview）──
+  // ── 内容 + 系统微指标（/api/overview）──
+  // 218 修复：c-draft/c-video 原写向不存在 id，现落在自媒体创作卡
   async function loadOverview() {
     try {
       const ctl = new AbortController();
@@ -395,8 +447,11 @@
       if (!r.ok) return;
       const d = await r.json();
       const gz = d.gz || {}, vd = d.video || {};
-      document.getElementById('c-draft').textContent = (gz.drafts || []).length + ' 篇';
-      document.getElementById('c-video').textContent = (vd.videos || []).length + ' 条';
+      const cDraft = document.getElementById('c-draft'), cVideo = document.getElementById('c-video');
+      if (cDraft) cDraft.textContent = (gz.drafts || []).length + ' 篇';
+      if (cVideo) cVideo.textContent = (vd.videos || []).length + ' 条';
+      const cNote = document.getElementById('c-note');
+      if (cNote) cNote.textContent = '内容产线在册';
       const tasksOk = (d.tasks || []).filter(t => String(t.last) === '0').length;
       const tasksBad = (d.tasks || []).filter(t => String(t.last) !== '0' && String(t.last) !== '267011').length;
       const al = d.alerts || {};
@@ -439,10 +494,9 @@
   loadDevHealth();
   setInterval(loadDevHealth, 300000);
 
-  // ── strong 卡微指标（D2 第 11 卡，片段注释口径）──
+  // ── 强弱对照微指标（218：强弱并入量化卡，只喂 s-strong）──
   async function loadStrong() {
-    const el = document.getElementById('s-strong'), dot = document.getElementById('s-dot'),
-          note = document.getElementById('s-note');
+    const el = document.getElementById('s-strong');
     try {
       const ctl = new AbortController();
       setTimeout(() => ctl.abort(), 6000);
@@ -452,18 +506,14 @@
       const items = h.items || h.list || [];
       const lead = items.filter(x => x.tag === '板块领涨').length;
       if (el) el.textContent = lead ? (lead + ' 只') : '0';
-      if (dot) dot.className = 'dot';
-      if (note) note.textContent = '体检 ' + String(h.date || h.ts || '').slice(4, 6) + '/' + String(h.date || '').slice(6, 8);
     } catch {
       if (el) el.textContent = '—';
-      if (dot) dot.className = 'dot unknown';
-      if (note) note.textContent = '数据未生成';
     }
   }
   loadStrong();
   setInterval(loadStrong, 300000);
 
-  // ── 模拟仓卡微指标（/api/paper_status，K-STOCK v0.2 · 涨红跌绿）──
+  // ── 模拟仓微指标（/api/paper_status，K-STOCK v0.2 · 涨红跌绿）──
   async function loadPaper() {
     const dot = document.getElementById('p-dot'), note = document.getElementById('p-note'),
           total = document.getElementById('p-total'), cum = document.getElementById('p-cum'),
@@ -518,7 +568,7 @@
         document.getElementById('t-q-note').textContent = '预警速览就绪';
       }
     } catch {}
-    // 创作：草稿/成片（overview）
+    // 自媒体创作：草稿/成片（overview）
     try {
       const ctl = new AbortController(); setTimeout(() => ctl.abort(), 15000);
       const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
