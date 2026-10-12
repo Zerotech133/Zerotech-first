@@ -72,6 +72,55 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("已命中", page)
         self.assertIn("未命中来源", page)
 
+    def test_page_uses_zero_boundary_workspace_shell(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('id="appShell"', page)
+        self.assertIn('class="contextRail"', page)
+        self.assertIn('class="chatStage"', page)
+        self.assertIn('id="composer"', page)
+        self.assertIn('id="connectionBadge"', page)
+        self.assertIn('/static/tokens.css', page)
+        self.assertIn('/static/nav.js', page)
+        self.assertIn("prefers-reduced-motion", page)
+
+    def test_page_exposes_accessible_composer_controls(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('aria-label="发送消息"', page)
+        self.assertIn('aria-label="取消请求"', page)
+        self.assertIn('aria-live="polite"', page)
+        self.assertIn('id="mobileContextToggle"', page)
+
+    def test_page_has_conversation_workbench_controls(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('id="newChat"', page)
+        self.assertIn('id="conversationSearch"', page)
+        self.assertIn('id="conversationList"', page)
+        self.assertIn('CONVERSATIONS_KEY', page)
+        self.assertIn('renderConversationList', page)
+
+    def test_page_has_reasoning_and_message_actions(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('id="reasoning"', page)
+        self.assertIn('id="reasoningText"', page)
+        self.assertIn('copyMessage', page)
+        self.assertIn('retryMessage', page)
+        self.assertIn('copy.dataset.action="copy"', page)
+
+    def test_page_has_context_and_search_controls(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('id="useContext"', page)
+        self.assertIn('id="webSearch"', page)
+        self.assertIn('history: useContext.checked ? historyMessages() : []', page)
+        self.assertIn('id="scrollTop"', page)
+
+
+    def test_rag_source_cards_expose_details_and_citation_copy(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn("source-detail", page)
+        self.assertIn("source-snippet", page)
+        self.assertIn("copySourceCitation", page)
+        self.assertIn("copy-source", page)
+
 
 if __name__ == "__main__":
     unittest.main()

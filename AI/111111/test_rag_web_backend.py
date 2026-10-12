@@ -46,6 +46,7 @@ class RagWebBackendTests(unittest.TestCase):
         self.assertEqual(events[-1], {"done": True})
         self.assertEqual(events[-2]["sources"][0]["source"], "facts.md")
         self.assertTrue(events[-2]["sources"][0]["document_hash"])
+        self.assertEqual(events[-2]["sources"][0]["text"], "太阳从东方升起")
         self.assertEqual(events[-2]["sources"][0]["index_version"], 1)
         self.assertIn("东方", "".join(event["message"]["content"] for event in events if "message" in event))
         self.assertEqual(client.chat_calls, 1)
