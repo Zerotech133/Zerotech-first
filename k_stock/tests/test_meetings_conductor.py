@@ -89,3 +89,104 @@ def test_context_compose_tolerates_missing(monkeypatch):
     monkeypatch.setattr(cond, "STRATEGIST_LATEST", cond.HERE.parent / "data" / "__no_such__.json")
     ctx = cond.build_context(_wed_0900())
     assert "日期：" in ctx                             # 缺文件不炸，仅日期行
+
+
+# ---- K-STOCK-158 · S-g 订阅服务开关（缺省全开，显式 false 才关） ----
+
+import json  # noqa: E402
+
+
+def _write_subs(tmp_path, monkeypatch, portfolios):
+    p = tmp_path / "strategy_subscriptions.json"
+    p.write_text(json.dumps({"portfolios": portfolios}), encoding="utf-8")
+    monkeypatch.setattr(cond, "STRATEGY_SUBSCRIPTIONS", p)
+
+
+def test_services_missing_field_defaults_on(monkeypatch, tmp_path, capsys):
+    # 缺 services 字段（存量形态）→ 照常开会，行为零变化
+    _write_subs(tmp_path, monkeypatch, [{"id": "qd", "name": "老订阅"}])
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "qd", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    calls = []
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        calls.append((mid, source, kind)) or
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and calls == [("laotian_pm", "qd", "pre_open")]
+    assert results[0]["status"] == "ok"
+    assert "客户未订阅" not in capsys.readouterr().out
+
+
+def test_pre_open_report_false_skips_pre_open_but_post_close_on(monkeypatch, tmp_path, capsys):
+    # 显式 pre_open_report=false → 盘前跳过、盘后照开
+    _write_subs(tmp_path, monkeypatch, [
+        {"id": "qd", "services": {"pre_open_report": False, "post_close_report": True}}])
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "qd", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    calls = []
+
+    def fake_hold(mid, source, kind, context="", channel=None):
+        calls.append((mid, source, kind))
+        return ({"title": "t", "channel": "site"}, "glm-5.3-flash")
+
+    monkeypatch.setattr(meeting, "hold_meeting", fake_hold)
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and calls == []
+    assert results[0]["status"] == "skipped"
+    assert "SKIP laotian_pm×qd pre_open 客户未订阅该报告服务" in capsys.readouterr().out
+    code, results = cond.run("post_close", now=datetime(2026, 10, 14, 15, 15))
+    assert code == 0 and calls == [("laotian_pm", "qd", "post_close")]
+    assert results[0]["status"] == "ok"
+
+
+def test_services_explicit_true_holds(monkeypatch, tmp_path, capsys):
+    # 显式双 true（pf_001/pf_002 锚定形态）→ 照常开会
+    _write_subs(tmp_path, monkeypatch, [
+        {"id": "qd", "services": {"pre_open_report": True, "post_close_report": True}}])
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "qd", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    calls = []
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        calls.append((mid, source, kind)) or
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and calls == [("laotian_pm", "qd", "pre_open")]
+    assert results[0]["status"] == "ok"
+
+
+def test_subscriptions_file_missing_all_on_with_warning(monkeypatch, tmp_path, capsys):
+    # 订阅清单缺失 → 全开兜底 + stderr 警告（不阻断会议线）
+    monkeypatch.setattr(cond, "STRATEGY_SUBSCRIPTIONS", tmp_path / "__no_such__.json")
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "qd", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    calls = []
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        calls.append((mid, source, kind)) or
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and calls == [("laotian_pm", "qd", "pre_open")]
+    captured = capsys.readouterr()
+    assert "WARN" in captured.err and "订阅清单不可读" in captured.err
+
+
+def test_hired_source_not_in_subscriptions_not_killed(monkeypatch, tmp_path, capsys):
+    # 雇佣的 source 不在订阅清单（如 qd 直订信号源）→ 视为开启，不误杀
+    _write_subs(tmp_path, monkeypatch, [{"id": "pf_001", "name": "我的组合"}])
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "qd", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    calls = []
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        calls.append((mid, source, kind)) or
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and calls == [("laotian_pm", "qd", "pre_open")]
+    assert results[0]["status"] == "ok"

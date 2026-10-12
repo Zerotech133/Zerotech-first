@@ -24,6 +24,8 @@ import manager  # noqa: E402
 import meeting  # noqa: E402
 
 STRATEGIST_LATEST = HERE.parent / "data" / "strategist_latest.json"
+# K-STOCK-158 · S-g：订阅服务开关（客户可选盘前/盘后报告；缺省全开兼容存量）
+STRATEGY_SUBSCRIPTIONS = HERE.parent.parent / "portal" / "data" / "strategy_subscriptions.json"
 
 
 def kind_auto(now: datetime | None = None) -> str:
@@ -64,6 +66,30 @@ def active_pairs() -> list[tuple[str, str]]:
     return pairs
 
 
+def _load_services() -> dict[str, dict]:
+    """读订阅清单的组合服务开关（pf_id → services）；缺文件/坏 JSON → {}（全开兜底，
+    与 manager 线缺省兜底风格一致）。"""
+    try:
+        d = json.loads(STRATEGY_SUBSCRIPTIONS.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"WARN 订阅清单不可读（{STRATEGY_SUBSCRIPTIONS}：{e}），报告服务开关全开",
+              file=sys.stderr)
+        return {}
+    return {p.get("id"): (p.get("services") or {})
+            for p in d.get("portfolios", []) if p.get("id")}
+
+
+def service_enabled(services_map: dict, source: str, kind: str) -> bool:
+    """按组合判定 kind 报告服务是否开启：
+    - source 不在订阅清单（雇佣的 source 非订阅组合）→ 开启（不误杀）；
+    - services 或对应子键缺失 → 视为 true（缺省全开，存量行为零变化）；
+    - 显式 false → 关闭。"""
+    services = services_map.get(source)
+    if services is None:
+        return True
+    return services.get(f"{kind}_report") is not False
+
+
 def build_context(now: datetime | None = None) -> str:
     """轻量上下文：策略官最新产出摘要（缺失则空，hold_meeting 有兜底文案）。"""
     now = now or datetime.now()
@@ -95,8 +121,13 @@ def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[
         print("SKIP 无 active 雇佣，不开会")
         return 0, []
 
+    services_map = _load_services()
     results, failed = [], 0
     for mid, source in pairs:
+        if not service_enabled(services_map, source, kind):
+            print(f"SKIP {mid}×{source} {kind} 客户未订阅该报告服务")
+            results.append({"mid": mid, "source": source, "status": "skipped"})
+            continue
         if already_held(mid, kind, now):
             print(f"SKIP {mid}×{source} {kind} 今日已开（账本去重）")
             results.append({"mid": mid, "source": source, "status": "skipped"})
