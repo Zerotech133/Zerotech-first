@@ -1,0 +1,16 @@
+/* K-STOCK-182 包2.3 窄屏表格横滚（宪法「移动端可看不溢出」判据）
+   仅 <760px 生效：宽表格变块级+容器内横滚，页面级零溢出。
+   经 _html_file 幂等注入，生成器重写文件后依然生效（与 tokens.css 同构）。 */
+@media (max-width: 760px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  /* 大图/长代码块同样收进横滚容器 */
+  img, pre, iframe, embed, video {
+    max-width: 100%;
+    height: auto;
+  }
+}

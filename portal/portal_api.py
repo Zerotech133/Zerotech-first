@@ -625,6 +625,18 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
                 body = t.encode("utf-8")
         except Exception:
             pass
+        # K-STOCK-182 包2.3 窄屏表格横滚：<760px 宽表格块级+容器内横滚，
+        # 页面级零溢出（宪法「移动端可看不溢出」判据；生成器重写后依然生效）
+        try:
+            t = body.decode("utf-8", "ignore")
+            if "</head>" in t and "static/mobile_table.css" not in t:
+                t = t.replace(
+                    "</head>",
+                    '<link rel="stylesheet" href="/static/mobile_table.css"></head>',
+                    1)
+                body = t.encode("utf-8")
+        except Exception:
+            pass
         # K-STOCK-164 全站短屏化：报告外壳统一注入 shortscreen.js
         # （锚点条+自动 details 折叠；<4 个标题的短页其内部自动跳过；
         #   生成器重写文件后注入依然生效——与上方 tokens.css 同构）
@@ -2794,6 +2806,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                    "g6.min.js": "application/javascript",
                    "nav.js": "application/javascript",
                    "tokens.css": "text/css",
+                   "mobile_table.css": "text/css",
                    "shortscreen.js": "application/javascript",
                    "firstscreen.js": "application/javascript",
                    "cainiao.js": "application/javascript",
