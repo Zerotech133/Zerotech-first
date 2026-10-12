@@ -595,7 +595,7 @@ function renderJudge(jd){
   const el=$('judge-body');
   if(!jd||!jd.ok||!(jd.reviews||[]).length){
     el.innerHTML='<div class="empty">暂无评审（每日 routine 尾自动生成）</div>';return;}
-  const gc=s=>s>=90?'var(--color-up)':s>=75?'#e3b341':'var(--color-down)';
+  const gc=s=>s>=90?'var(--color-up)':s>=75?'#e3b341':'var(--color-dn)';
   el.innerHTML=jd.reviews.map(r=>{
     const f=(r.findings||[]).filter(x=>x.severity!=='info').slice(0,3).map(x=>
       `<div style="font-size:11.5px;color:var(--text-dim)">· [${esc(x.rule)}] ${esc(x.msg)}</div>`).join('');
@@ -608,7 +608,7 @@ function renderStrat(st){
   const el=$('strat-body');
   if(!st||!st.ok||!(st.sources||[]).length){
     el.innerHTML='<div class="empty">暂无影子建议（每日 automation 4e 产出）</div>';return;}
-  const gc=s=>s>=85?'var(--color-up)':s>=70?'#e3b341':'var(--color-down)';
+  const gc=s=>s>=85?'var(--color-up)':s>=70?'#e3b341':'var(--color-dn)';
   const head=`<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">快照 ${st.generated_at||'-'} · 影子模式仅建议，不产生调度效果</div>`;
   el.innerHTML=head+st.sources.map(s=>
     `<div style="margin-bottom:6px"><div style="font-weight:700">${esc(s.name)} · <span style="color:${gc(s.score)}">${s.score} ${esc(s.grade)}</span></div>
@@ -635,7 +635,7 @@ function renderCurve(curve, hostId, cur){
   const x=i=>P+i*(W-2*P)/(curve.length-1);
   const y=v=>18+(H-52)*(1-(v-lo)/span);
   const last=curve[curve.length-1],first=curve[0];
-  const lineCol=last.cum_pct>=0?'var(--color-up)':'var(--color-down)';
+  const lineCol=last.cum_pct>=0?'var(--color-up)':'var(--color-dn)';
   const pts=curve.map((c,i)=>x(i).toFixed(1)+','+y(c.total).toFixed(1)).join(' ');
   const baseY=(lo<=first.total&&first.total<=hi)?y(first.total):null;
   host.innerHTML=
