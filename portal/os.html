@@ -75,6 +75,14 @@
   .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: var(--text-dim); margin-top: 7px; }
   .legend b { color: var(--text); font-family: Consolas, monospace; }
 
+  /* K-STOCK-262 账户明细行 */
+  .arow { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center;
+    padding: 7px 12px; border: 1px solid var(--border); border-radius: 9px;
+    margin-top: 7px; font-size: 12px; color: var(--text-dim);
+    background: var(--bg-surface); }
+  .arow b { color: var(--text); font-family: Consolas, monospace; font-weight: 600; }
+  .arow .an { font-weight: 700; color: var(--text); font-size: 12.5px; min-width: 90px; }
+
   .statusbar {
     margin-top: 30px; background: var(--bg-surface); border: 1px solid var(--border);
     border-radius: 10px; padding: 13px 22px; display: flex; flex-wrap: wrap; gap: 22px;
@@ -89,7 +97,7 @@
   }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
-</head>
+<script src="/static/nav.js" defer></script></head>
 <body>
   <header>
     <div class="brand">
@@ -210,6 +218,17 @@
       <div class="legend" id="q-regime-legend"></div>
     </div>
 
+    <!-- 💼 个人模拟资产 · 分市场账户（K-STOCK-262）-->
+    <div class="sec-line">
+      <span class="sec-t">💼 个人模拟资产</span>
+      <span class="sec-s">A股 · 美股 · 港股 · 虚拟币（预留大宗）· 实盘接入后并列真实账户</span>
+    </div>
+    <div class="tiles" id="acct-tiles"></div>
+    <div class="acard" style="margin-top:12px;">
+      <div class="t">🗂 账户明细</div>
+      <div id="acct-rows" style="margin-top:8px;"></div>
+    </div>
+
     <!-- 🗄️ 入库与基建 -->
     <div class="sec-line">
       <span class="sec-t">🗄️ 入库与基建</span>
@@ -235,6 +254,35 @@
   function tick() { set('clock', new Date().toLocaleTimeString('zh-CN', { hour12: false })); }
   tick(); setInterval(tick, 1000);
 
+  // ── 💼 个人模拟资产 · 分市场账户（K-STOCK-262）──
+  function renderAccounts(ac) {
+    const tiles = document.getElementById('acct-tiles'),
+          rows  = document.getElementById('acct-rows');
+    if (!tiles || !rows) return;
+    if (!ac || !ac.markets) { tiles.innerHTML = '<div class="dim" style="font-size:12px">账户矩阵暂不可用</div>'; return; }
+    const fmt = n => (n ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
+    let th = '', tr = '';
+    Object.values(ac.markets).forEach(m => {
+      const ret = m.initial ? ((m.total - m.initial) / m.initial * 100) : 0;
+      const retCls = ret > 0.005 ? 'up' : (ret < -0.005 ? 'dn' : '');
+      th += '<div class="tile"><div class="v num">' + (m.opened ? '¥' + fmt(m.total) : '<span class="dim">未开立</span>')
+          + '</div><div class="k">' + m.name + '</div><div class="sub">'
+          + (m.opened ? (m.accounts.length + ' 账户 · 持仓 ' + m.positions + ' · 收益 <b class="' + retCls + '">' + (ret >= 0 ? '+' : '') + ret.toFixed(2) + '%</b>') : '待接入')
+          + '</div></div>';
+      m.accounts.forEach(x => {
+        const xr = x.ret_pct, xc = xr > 0.005 ? 'up' : (xr < -0.005 ? 'dn' : '');
+        tr += '<div class="arow"><span class="an">' + esc(x.id) + '</span>'
+            + '<span>现金 <b class="num">¥' + fmt(x.cash) + '</b></span>'
+            + '<span>市值 <b class="num">¥' + fmt(x.mv) + '</b></span>'
+            + '<span>仓位 <b class="num">' + ((x.pos_pct || 0) * 100).toFixed(1) + '%</b></span>'
+            + '<span>收益 <b class="num ' + xc + '">' + (xr >= 0 ? '+' : '') + xr.toFixed(2) + '%</b></span>'
+            + '<span class="dim">截至 ' + esc(x.as_of || '—') + '</span></div>';
+      });
+    });
+    tiles.innerHTML = th;
+    rows.innerHTML = tr || '<div class="dim" style="font-size:12px">暂无账户</div>';
+  }
+
   const REGIME_CN = { trend_up: ['趋势上行', 'var(--color-up)'], range: ['区间震荡', '#8b949e'],
                       rotation: ['轮动', 'var(--pur-500)'], trend_down: ['趋势下行', 'var(--color-dn)'] };
 
@@ -249,6 +297,7 @@
       const c = d.collect || {}, a = d.agents || {}, p = d.paper || {}, q = d.qd || {},
             s = d.strategies || {}, w = d.warehouse || {}, o = d.output || {},
             cd = d.coding || {}, td = d.todo || {};
+      renderAccounts(d.accounts);
       // 今日一览六数
       set('v-collect', c.today ?? 0);
       set('v-collect-sub', '已判 ' + (c.judged ?? 0));

@@ -205,6 +205,66 @@ def build_os_cockpit():
     except Exception:
         log_exc("build_os_cockpit:paper.db 计数")  # 交易域缺库时前端亮未知点
     out["paper"] = paper
+
+    # ── ③b 个人模拟资产 · 分市场账户矩阵（K-STOCK-262）──
+    # 账户即策略账户，市场维度走代码内映射（不改 paper.db schema）；
+    # A股/美股/港股/虚拟币四板块常开，大宗 commodities 预留、开立即现。
+    MARKETS = [("cn", "A股"), ("us", "美股"), ("hk", "港股"),
+               ("crypto", "虚拟币"), ("commodities", "大宗")]
+    ACCOUNT_MARKET = {
+        "main": "cn", "taishan": "cn", "chaser": "cn",
+        "hawk_test": "cn", "us_qingping": "us",        # 青萍美股
+    }
+    accounts = []
+    try:
+        import sqlite3
+        db = sqlite3.connect(os.path.join(ksd, "paper.db"))
+        db.row_factory = sqlite3.Row
+        last_mark = db.execute(
+            "SELECT account_id, MAX(date) d FROM equity_marks "
+            "GROUP BY account_id")
+        mark = {r["account_id"]: r["d"] for r in last_mark}
+        for a in db.execute("SELECT * FROM account"):
+            aid = a["account_id"]
+            mk = mark.get(aid)
+            eq = None
+            if mk:
+                eq = db.execute(
+                    "SELECT total, cash, market_value, pos_pct "
+                    "FROM equity_marks WHERE account_id=? AND date=?",
+                    (aid, mk)).fetchone()
+            npos = db.execute(
+                "SELECT COUNT(*) FROM positions WHERE account_id=?",
+                (aid,)).fetchone()[0]
+            nord = db.execute(
+                "SELECT COUNT(*) FROM orders WHERE ref LIKE ? OR source='ai'",
+                ("%" + aid + "%",)).fetchone()[0]  # ref 带 account 的口径粗对
+            total = eq["total"] if eq else a["cash"]
+            accounts.append({
+                "id": aid, "market": ACCOUNT_MARKET.get(aid, "cn"),
+                "initial": a["initial_cash"], "cash": a["cash"],
+                "total": total, "mv": eq["market_value"] if eq else 0,
+                "pos_pct": eq["pos_pct"] if eq else 0,
+                "ret_pct": ((total - a["initial_cash"]) /
+                            a["initial_cash"] * 100) if a["initial_cash"] else 0,
+                "positions": npos, "as_of": mk,
+            })
+        db.close()
+    except Exception:
+        log_exc("build_os_cockpit:accounts 矩阵")  # 缺库时前端亮未知点
+    by_market = {}
+    for mkey, mname in MARKETS:
+        rows = [x for x in accounts if x["market"] == mkey]
+        by_market[mkey] = {
+            "name": mname,
+            "accounts": rows,
+            "total": sum(x["total"] for x in rows),
+            "initial": sum(x["initial"] for x in rows),
+            "positions": sum(x["positions"] for x in rows),
+            "opened": bool(rows),
+        }
+    out["accounts"] = {"markets": by_market,
+                       "live_note": "实盘接入讯投QMT后在此并列真实账户"}
     qd = _read_json(os.path.join(ROOT, "qd_scan_cache.json")) or {}
     out["qd"] = {"ts": qd.get("ts"), "scanned": qd.get("scanned", 0),
                  "skipped": qd.get("skipped", 0),
