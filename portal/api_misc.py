@@ -2059,7 +2059,7 @@ transition:.3s;z-index:9}
 
 # ── K-STOCK-167 驾驶舱数据面收编（自 home_server.py/8094 移植，方案 A 拍板）──
 # 只移植前端消费的五个投影（此刻条/我的钱/时间线/裁决窗/组织），全 try 降级；
-# 对话（answer/Ollama）不移植——index 门面已有 cainiao.js 全站标准 AI 入口。
+# 对话（answer/Ollama）不移植——2026-10-12 起 AI 对话入口已全站下线（K-STOCK-213）。
 
 # ⚠ api_common.ROOT = portal/ 目录；数据资产在仓库根（home_server 旧 ROOT 语义）
 _HOME_ROOT = os.path.dirname(ROOT)
