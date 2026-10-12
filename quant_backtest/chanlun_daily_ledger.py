@@ -145,6 +145,7 @@ for di, day in enumerate(cal_win):
     deployed = eqv - cash
     target = deploy_target(eqv, cap)
     n_sell = n_buy = 0
+    legs = []                                          # 逐笔换手明细（277 补）
     if deployed > target * 1.005:                     # 超配 → 等比例减
         ratio = 1 - target / deployed
         for s in list(pos):
@@ -153,6 +154,10 @@ for di, day in enumerate(cal_win):
             cash += cut * (1 - COST)
             p["val"] -= cut; p["cost"] *= (1 - ratio)
             n_sell += 1
+            legs.append({"stock": s, "side": "SELL", "how": "regime_trim",
+                         "amt_pct": round(cut / max(eqv, 1e-9) * 100, 2)})
+            trades.append({"day": day, "stock": s, "side": "SELL", "how": "regime_trim",
+                           "note": f"regime 减仓 {ratio:.0%}", "pnl": None})
         actions.append({"type": "trim", "note": f"减仓至 {cap:.0%}：卖出 {n_sell} 只持仓的 {ratio:.0%}"})
     if is_rebal or (di == 0):
         # 等权再平衡：按持仓市值排序，卖超配买低配到等权（在 target 预算内）
@@ -167,6 +172,8 @@ for di, day in enumerate(cal_win):
                     cash += cut * (1 - COST)
                     p["val"] -= cut; p["cost"] *= (p["val"] / (p["val"] + cut))
                     n_sell += 1
+                    legs.append({"stock": s, "side": "SELL", "how": "rebal_sell",
+                                 "amt_pct": round(cut / max(eqv, 1e-9) * 100, 2)})
             # 买入低配
             cash_avail = min(cash - eqv * 0.005, sum(max(0.0, eq_slot - pos[s]["val"]) for s in pos))
             need_total = sum(max(0.0, eq_slot - pos[s]["val"]) for s in pos)
@@ -181,7 +188,17 @@ for di, day in enumerate(cal_win):
                             cash -= amt
                             p["val"] += amt * (1 - COST); p["cost"] += amt * (1 - COST)
                             n_buy += 1
-        actions.append({"type": "rebalance", "note": f"10 日再平衡：卖出超配 {n_sell} 笔 / 买入低配 {n_buy} 笔 → 等权×{cap:.0%}"})
+                            legs.append({"stock": s, "side": "BUY", "how": "rebal_buy",
+                                         "amt_pct": round(amt / max(eqv, 1e-9) * 100, 2)})
+        note = f"10 日再平衡：卖出超配 {n_sell} 笔 / 买入低配 {n_buy} 笔 → 等权×{cap:.0%}"
+        act = {"type": "rebalance", "note": note}
+        if legs:
+            act["legs"] = legs
+            for lg in legs:
+                if lg["how"] != "regime_trim":       # trim 已在上方逐笔入账
+                    trades.append({"day": day, "stock": lg["stock"], "side": lg["side"],
+                                   "how": lg["how"], "note": f"换手 {lg['amt_pct']}%", "pnl": None})
+        actions.append(act)
     # 5) 新股入场（池内未进场且有数据——窗口中途从未有，保持等权完整性）
     want_in = {s for s in books if s not in pos and day in row_idx[s].index}
     n_entry = 0
@@ -217,10 +234,6 @@ for di, day in enumerate(cal_win):
                  "cap": cap, "regime": regime_lv, "actions": actions}
     holdings[day] = pos_rows
     equity_curve.append({"day": day, "nav": round(eqv, 4), "inv_pct": round((eqv - cash) / eqv * 100, 1)})
-    for a in actions:
-        if a["type"] in ("trim",):
-            trades.append({"day": day, "stock": "PORTFOLIO", "side": "SELL", "how": "regime_trim",
-                           "note": a["note"], "pnl": None})
 
 # ---------- KPI ----------
 eq = pd.Series({d: days[d]["equity"] for d in cal_win})

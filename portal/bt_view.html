@@ -328,7 +328,14 @@ function selectDay(d){
   }else{
     $('day-actions').innerHTML=rec.actions.map(a=>{
       const c=ACT_COLOR[a.type]||'var(--gray-5)';
-      return `<div class="act-line"><span class="tag" style="background:${c}22;color:${c};border:1px solid ${c}55">${esc(ACT_TAG[a.type]||a.type)}</span><span>${a.stock?`<b>${esc(a.stock)}</b> `:''}${esc(a.note)}</span></div>`;
+      let legsHtml='';
+      if(a.legs&&a.legs.length){
+        const show=a.legs.slice(0,12), rest=a.legs.length-show.length;
+        legsHtml='<div style="margin:4px 0 2px 52px;font-size:11.5px;color:var(--text-dim);line-height:1.7">'+
+          show.map(l=>`<span style="color:${l.side==='BUY'?'var(--color-up)':'var(--color-dn)'};font-weight:600">${l.side}</span> ${esc(l.stock)} <span style="opacity:.7">${l.amt_pct}%</span>`).join('　')+
+          (rest>0?`<span style="opacity:.6">　…等 ${rest} 笔</span>`:'')+'</div>';
+      }
+      return `<div class="act-line" style="display:block"><div style="display:flex;gap:8px"><span class="tag" style="background:${c}22;color:${c};border:1px solid ${c}55;flex-shrink:0;font-size:10.5px;border-radius:5px;padding:1px 7px;height:fit-content;white-space:nowrap">${esc(ACT_TAG[a.type]||a.type)}</span><span>${a.stock?`<b>${esc(a.stock)}</b> `:''}${esc(a.note)}</span></div>${legsHtml}</div>`;
     }).join('');
   }
   // 持仓明细
@@ -349,8 +356,12 @@ function sortHold(k){ if(holdSort.key===k) holdSort.asc=!holdSort.asc; else hold
 function drawTrades(){
   const t=DATA.trades||[];
   $('trade-count').textContent=t.length+' 笔';
-  $('trade-tbl').innerHTML='<thead><tr><th>日期</th><th>标的</th><th>方向</th><th>类型</th><th>说明</th></tr></thead><tbody>'+
-    (t.length?t.map(x=>`<tr><td>${x.day}</td><td>${esc(x.stock)}</td><td style="color:${x.side==='BUY'?'var(--color-up)':'var(--color-dn)'};font-weight:700">${x.side}</td><td><span class="badge">${esc(x.how)}</span></td><td class="dim">${esc(x.note||'')}</td></tr>`).join(''):'<tr><td colspan="5" class="dim">窗口内无离散交易——269 终案为持有型组合，仅再平衡换手（账本版未记录逐笔换手明细，仅记录组合级动作）</td></tr>')+'</tbody>';
+  const HOW_CN={'init_entry':'建仓','rebal_buy':'再平衡·买','rebal_sell':'再平衡·卖','regime_trim':'regime 减仓'};
+  $('trade-tbl').innerHTML='<thead><tr><th>日期</th><th>标的</th><th>方向</th><th>类型</th><th>金额占比</th><th>说明</th></tr></thead><tbody>'+
+    (t.length?t.map(x=>{
+      const amt=x.note&&x.note.indexOf('%')>=0?x.note:null;
+      return `<tr><td>${x.day}</td><td>${esc(x.stock)}</td><td style="color:${x.side==='BUY'?'var(--color-up)':'var(--color-dn)'};font-weight:700">${x.side}</td><td><span class="badge">${esc(HOW_CN[x.how]||x.how)}</span></td><td>${amt?esc(amt):'—'}</td><td class="dim">${amt?'':esc(x.note||'')}</td></tr>`;
+    }).join(''):'<tr><td colspan="6" class="dim">窗口内无离散交易</td></tr>')+'</tbody>';
 }
 boot();
 </script>
