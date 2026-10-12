@@ -1,0 +1,15 @@
+{
+  "observed_at": "2026-10-12T03:17:23.982121+00:00",
+  "pid": 51792,
+  "process_name": "TdxW",
+  "executable_path": "D:\\new_tdx64\\TdxW.exe",
+  "company": "深圳市财富趋势科技股份有限公司",
+  "product": "通达信应用程序",
+  "description": "通达信应用程序",
+  "listening_ports": [
+    14571,
+    17709
+  ],
+  "evidence_method": "只读 Get-Process 元数据核验；未修改进程、端口或系统配置",
+  "whitelist_reason": "第三方通达信进程，不属于零界平台技术栈"
+}

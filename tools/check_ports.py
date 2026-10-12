@@ -19,7 +19,6 @@ import sys
 
 REGISTRY = {
     8091: "零界门户API(portal_api.py)",
-    8094: "零界驾驶舱(home_server.py)",
     8080: "nginx ai-portal(Docker)",
     8734: "零界首页(portproxy→8080,K-STOCK-107收编)",
     3000: "Open WebUI(Docker)",
@@ -101,12 +100,14 @@ def proc_name(pid):
 
 
 # 系统级/第三方豁免名单（随机口合法持有者，非我方技术栈）
+# 2026-10-12 只读核验：TdxW.exe 位于 D:\\new_tdx64\\TdxW.exe，
+# 公司为深圳市财富趋势科技股份有限公司，14571/17709 属通达信自身监听。
 WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "workbuddy", "explorer", "msedgewebview2", "wininit",
              "winlogon", "lsass", "services", "spoolsv", "dockerd",
              "com.docker", "vpn", "wslhost", "wsl", "sihost",
              "weixin", "wechat", "gameviewer", "tailscale", "dubbo",
-             "nvidia", "qq", "feishu", "dingtalk", "quark",
+             "nvidia", "qq", "feishu", "dingtalk", "quark", "tdxw",
              "yundetect", "vmms", "wpscloudsvr", "sgtool")
 
 
