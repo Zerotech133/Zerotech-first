@@ -13,13 +13,24 @@ def _model_options(models: Sequence[str]) -> str:
     )
 
 
-def _profile_options(profiles: Sequence[str]) -> str:
+def _profile_options(profiles: Sequence[object]) -> str:
     selected = tuple(profiles) or ("general",)
-    return "".join(
-        '<option value="{value}">{label}</option>'.format(
-            value=escape(str(profile), quote=True), label=escape(str(profile))
-        ) for profile in selected
-    )
+    options = []
+    for profile in selected:
+        if isinstance(profile, dict):
+            profile_id = profile.get("id", "general")
+            name = profile.get("name", profile_id)
+            model = profile.get("model")
+            label = f"{name}（{model}）" if model else name
+        else:
+            profile_id = name = str(profile)
+            label = name
+        options.append(
+            '<option value="{value}">{label}</option>'.format(
+                value=escape(str(profile_id), quote=True), label=escape(str(label))
+            )
+        )
+    return "".join(options)
 
 
 def render_chat_page(models: Sequence[str], profiles: Sequence[str] = ()) -> str:

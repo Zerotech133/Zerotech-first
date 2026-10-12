@@ -72,6 +72,8 @@ class WebChatTests(unittest.TestCase):
         self.assertIn('qwen3.5:9b', page)
         self.assertIn('value="rag"', page)
         self.assertIn('/api/rag', page)
+        self.assertIn('通用助手', page)
+        self.assertIn('研究助手', page)
 
     @patch.object(web_chat, 'urlopen')
     def test_stream(self, urlopen):

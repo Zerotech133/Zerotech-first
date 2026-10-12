@@ -4,6 +4,8 @@ dify/
 dify-backup/
 llamacpp_35b/
 knowledge_docs/
+work/rag_index.local.json
+work/rag_baseline_*local.json
 菜鸟/
 reports/
 
@@ -128,6 +130,14 @@ projects-archive/
 # ===== CowAgent（K275/V6-6：第三方开源克隆 zhayujie/CowAgent + venv 运行态，不进版本控制）=====
 CowAgent/
 AI/
+# 本地 Ollama 聊天角色契约（源代码与测试纳入版本控制）
+!AI/
+AI/*
+!AI/111111/
+AI/111111/*
+!AI/111111/chat_profiles.py
+!AI/111111/chat_profiles.json
+!AI/111111/test_chat_profiles.py
 .worktrees/
 portal/audit_ai_config.json
 prototypes/ai_chat_web/*.db

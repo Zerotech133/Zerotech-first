@@ -16,9 +16,14 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('sources', page)
 
     def test_page_has_role_profiles_and_sends_history(self):
-        page = web_ui.render_chat_page(("qwen3.5:9b",), ("general", "research", "risk_review"))
+        page = web_ui.render_chat_page(("qwen3.5:9b",), (
+            {"id": "general", "name": "通用助手", "model": "qwen3.5:9b"},
+            {"id": "research", "name": "研究助手", "model": "qwen3.5:9b"},
+            {"id": "risk_review", "name": "风控复核", "model": "qwen3.5:9b"},
+        ))
         self.assertIn('id="profile"', page)
         self.assertIn('value="research"', page)
+        self.assertIn("研究助手", page)
         self.assertIn('history: historyMessages()', page)
         self.assertIn('profile: profile.value', page)
 

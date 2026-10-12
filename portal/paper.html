@@ -184,6 +184,18 @@
 
   <!-- ============ 交易台 ============ -->
   <div class="tabpanel active" id="tab-desk">
+    <!-- K-STOCK-194 值班经理接待前置为首屏（老田 10-12 拍板）：第一眼=接待，不是内部看板 -->
+    <div class="col-title" style="margin-bottom:8px">值班经理接待</div>
+    <div class="side-box" id="ob-box" style="display:none;margin-bottom:14px">
+      <div id="obw-dots" style="display:flex;gap:5px;margin-bottom:8px"></div>
+      <div id="obw-line" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
+      <div id="obw-body" style="font-size:12px"></div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn" id="obw-prev" onclick="obwPrev()" style="display:none">上一步</button>
+        <button class="btn btn-primary" id="obw-next" onclick="obwNext()">下一步</button>
+      </div>
+      <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
+    </div>
     <div class="desk">
       <div>
         <div class="col-title">策略来源（选择键 ①）</div>
@@ -282,18 +294,6 @@
         <!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
         <div class="col-title" style="display:flex;align-items:center;justify-content:space-between;gap:6px">今日交易计划（经理审批单）<select id="plan-pf-select" style="font-size:11px;max-width:132px" title="K-STOCK-169u：切换组合查看对应审批单"></select></div>
         <div class="side-box"><div id="plan-body"><div class="empty">读取中…</div></div></div>
-        <!-- K-STOCK-165 迎宾向导对话式改造（值班经理逐题引导，一屏一问，纯增量，失败静默） -->
-        <div class="col-title">值班经理接待</div>
-        <div class="side-box" id="ob-box" style="display:none">
-          <div id="obw-dots" style="display:flex;gap:5px;margin-bottom:8px"></div>
-          <div id="obw-line" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
-          <div id="obw-body" style="font-size:12px"></div>
-          <div style="display:flex;gap:6px;margin-top:8px">
-            <button class="btn" id="obw-prev" onclick="obwPrev()" style="display:none">上一步</button>
-            <button class="btn btn-primary" id="obw-next" onclick="obwNext()">下一步</button>
-          </div>
-          <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
-        </div>
         <div class="col-title">止损哨兵</div>
         <div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">今日挂单（pending · 全量清单已折叠）</div>
@@ -359,6 +359,13 @@
     <span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a href="#" onclick="loadStatus();return false" style="color:var(--link)">↻ 刷新</a></span>
   </div>
 </div>
+
+<!-- K-STOCK-194 公司运行看板（老田 10-12 拍板：自主页内容下沉至此——页底折叠区，绝不占首屏） -->
+<div class="col-title" style="margin-top:18px">公司运行看板 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（账本 / 今日自动化 / 裁决窗 / 组织 · 默认折叠，非交易功能）</span></div>
+<details style="margin-bottom:24px">
+  <summary style="cursor:pointer;font-size:12px;color:var(--text-dim)">展开公司级运行看板</summary>
+  <div id="corp-cards" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px"></div>
+</details>
 
 <div class="toast" id="toast"></div>
 
@@ -982,9 +989,9 @@ async function postWrite(url,body,desc){
 const OB_ESC=esc;
 const OBW={step:1,mode:'',mgr:'',needMgr:false,pre:true,post:true,
   strats:[],sel:[],profiles:[],busy:false,done:false};
-const OBW_LINE={1:'您好，欢迎来到 K-STOCK 投研交易所，我是值班经理。先看看今天的策略池，有看中的吗？',
-  2:'这些策略，您打算自己手动交易，还是聘请机器人自动交易？',
-  3:'需要为您配一位理财经理吗？',
+const OBW_LINE={1:'您好，欢迎来到 K-STOCK 投研交易所，我是值班经理。第一步，先定策略——策略决定「谁给您提供买卖信号」，这是选股的事。看看今天的策略池，有看中的吗？',
+  2:'策略定了。接下来是交易方式：这些策略，您打算自己手动交易，还是聘请机器人自动交易？',
+  3:'最后一个是服务选择：需要为您配一位理财经理吗？经理负责盯盘、复盘、督导操盘手——是管服务，不替您选股，与上面的策略是两回事。',
   4:'要不要每天给您出一份复盘报告？',
   5:'那每天开盘前，需要为您做一份盘前规划吗？',
   6:'好的，都替您记下了，请过目——确认无误就提交。'};
@@ -1122,17 +1129,51 @@ async function obwSubmit(){
 }
 (async function initOnboard(){
   try{
-    const [rec,mk]=await Promise.all([
+    const [rec,mk,pf]=await Promise.all([
       api('/api/reception').catch(()=>null),
-      api('/api/strategy_market').catch(()=>null)]);
+      api('/api/strategy_market').catch(()=>null),
+      api('/api/portfolio_status').catch(()=>null)]);
     if(mk&&mk.ok)OBW.strats=(mk.strategies||[]).filter(s=>s.status==='live');
     if(rec&&rec.ok)OBW.profiles=rec.profiles||[];
+    // K-STOCK-194 接待分支（老田 10-12 拍板）：已买已选→值班经理汇报模式（今日交易计划/复盘两件事分开讲）；新客→迎宾向导
+    const pfs=(pf&&pf.ok&&Array.isArray(pf.portfolios))?pf.portfolios:[];
+    if(pfs.length){mgrReport(pfs);$('ob-box').style.display='';return;}
     if(!OBW.strats.length)return;
     obwRender();
     $('ob-box').style.display='';
   }catch(e){/* 静默：迎宾卡不阻塞页面 */
   }
 })();
+// K-STOCK-194 经理汇报模式：只汇报，不推销。策略产物（审批单）与经理服务（纪要复盘）分栏呈现
+function mgrReport(pfs){
+  const d=new Date();
+  const today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const box=$('ob-box');
+  box.innerHTML='<div style="font-size:13.5px;font-weight:700;margin-bottom:6px">🧑‍💼 值班经理 · 今日汇报</div>'
+    +'<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.7">您好，我是您的值班经理。您名下 <b>'+pfs.length+'</b> 个组合在管（'+OB_ESC(pfs.map(p=>p.name||p.id).join('、'))+'）。今天两件事，我分开向您汇报：</div>'
+    +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px">'
+    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📈 一、今日交易计划 <span style="font-weight:400;color:var(--text-dim)">（策略产物 · 完整审批单见下方右栏）</span></div>'
+    +'<div id="mgr-plan" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>'
+    +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px">'
+    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">🗒️ 二、今日复盘与经理服务 <span style="font-weight:400;color:var(--text-dim)">（会议产物 · 纪要全文见下方纪要区）</span></div>'
+    +'<div id="mgr-post" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>';
+  api('/api/plan_review').then(r=>{
+    const el=$('mgr-plan'); if(!el)return;
+    const rv=(r&&r.review)||null;
+    if(!rv){el.textContent='今日审批单尚未生成（07:05 跑批后由经理评审产出）。';return;}
+    const ap=rv.approved||[],rj=rv.rejected||[];
+    el.innerHTML='批准 <b>'+ap.length+'</b> 只、驳回 '+rj.length+' 只'
+      +(ap.length?('，重点：'+ap.slice(0,3).map(a=>OB_ESC(String(a.stock||a.id||''))).join('、')+(ap.length>3?' 等':'')):'')
+      +'。 <a href="#plan-body">看完整审批单 →</a>';
+  }).catch(()=>{const el=$('mgr-plan');if(el)el.textContent='审批单暂不可用。';});
+  api('/api/minutes_inbox').then(r=>{
+    const el=$('mgr-post'); if(!el)return;
+    const ms=((r&&r.minutes)||[]).filter(m=>String(m.created_at||m.date||'').slice(0,10)===today);
+    if(!ms.length){el.textContent='今日纪要待产出（盘前会 09:05 / 收盘会 15:05 我自动召开）。';return;}
+    el.innerHTML='今日已开 <b>'+ms.length+'</b> 场会：'+ms.map(m=>OB_ESC(String(m.title||'').slice(0,26))).join('、')
+      +'。 <a href="#meet-body">看纪要全文 →</a>';
+  }).catch(()=>{const el=$('mgr-post');if(el)el.textContent='纪要暂不可用。';});
+}
 
 // K-STOCK-17x P0：step3 死锁修复——obw-mgr 单选 change 即时回写 OBW.needMgr 并重渲染，
 // 否则「需要请一位」勾选后资历档 radio 永不出现（needMgr 仅在 obwNext 离开时回写），
@@ -1144,6 +1185,33 @@ $('ob-box').addEventListener('change',e=>{
     obwRender();
   }
 });
+
+// K-STOCK-194 公司运行看板（页底折叠区）：/api/home 同源数据，compact 渲染，失败静默
+(async function initCorpBoard(){
+  const el=$('corp-cards'); if(!el)return;
+  try{
+    const j=await api('/api/home');
+    const card=(t,b)=>'<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-raised)"><div style="color:var(--text-dim);font-size:12px;font-weight:600;margin-bottom:7px">'+t+'</div>'+b+'</div>';
+    let h='';
+    const m=j.money||{};
+    if(m.ok){
+      ['CNY','USD'].forEach(g=>{
+        const rows=m[g]||[]; if(!rows.length)return;
+        const tot=rows.reduce((s,r)=>s+(r.total||0),0);
+        h+=card(g==='USD'?'💵 美元账本':'💰 人民币账本',
+          '<div style="font-size:18px;font-weight:800">'+(g==='USD'?'$':'¥')+Number(tot).toLocaleString('zh-CN',{maximumFractionDigits:0})+'</div>'
+          +'<div style="color:var(--text-dim);font-size:11.5px;margin-top:4px">'+rows.map(r=>'· '+esc(r.account)+' '+Number(r.total).toLocaleString('zh-CN',{maximumFractionDigits:0})).join('<br>')+'</div>');
+      });
+    }
+    const tl=(j.timeline||[]).map(t=>'<div style="font-size:12px;line-height:1.8">· '+(t.ran_today?'✔':'○')+' '+esc(t.name)+' <span style="color:var(--text-dim)">'+esc(t.last||'无记录')+'</span></div>').join('');
+    h+=card('🏭 公司在跑 · 今日自动化',tl||'—');
+    const cal=((j.calendar||{}).items||[]).map(i=>'<div style="font-size:12px;line-height:1.8">· <b>'+esc(i.day)+'</b>（'+(i.in_days===0?'今天':i.in_days+' 天后')+'）：'+esc(i.what)+'</div>').join('');
+    h+=card('📅 裁决窗',cal||'—');
+    const o=j.org||{};
+    if(o.ok)h+=card('🏛 组织',(o.depts||[]).map(d=>'<div style="font-size:12px;line-height:1.8">· <b>'+esc(d.name)+'</b> ['+esc(d.status||'active')+']</div>').join(''));
+    el.innerHTML=h;
+  }catch(e){/* 静默：看板不阻塞交易页 */}
+})();
 
 loadStatus();
 </script>

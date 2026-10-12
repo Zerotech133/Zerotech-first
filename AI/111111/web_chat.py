@@ -7,12 +7,12 @@ try:
  from .rag_web_backend import RagUnavailable, RagWebService
  from .web_ui import render_chat_page
  from .model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
- from .chat_profiles import ProfileError, get_profile, list_profiles
+ from .chat_profiles import ProfileError, get_profile, list_profile_specs
 except ImportError:
  from rag_web_backend import RagUnavailable, RagWebService
  from web_ui import render_chat_page
  from model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
- from chat_profiles import ProfileError, get_profile, list_profiles
+ from chat_profiles import ProfileError, get_profile, list_profile_specs
 HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS
 RAG_SERVICE = None
 def _error(s): return json.dumps({'error':s},ensure_ascii=False).encode()
@@ -53,7 +53,7 @@ class ChatHandler(BaseHTTPRequestHandler):
  def log_message(self,*a): pass
  def do_GET(self):
   if self.path!='/': self.send_error(404); return
-  b=render_chat_page(MODELS, list_profiles()).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
+  b=render_chat_page(MODELS, list_profile_specs()).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_POST(self):
   if self.path=='/api/rag': self._do_rag(); return
   if self.path!='/api/chat': self._err(404,'路径不存在'); return
