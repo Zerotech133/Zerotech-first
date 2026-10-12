@@ -1,14 +1,14 @@
 {
- "generated_at": "2026-10-12T08:12:30",
+ "generated_at": "2026-10-12T08:52:38",
  "source": "portal_api.py",
- "source_sha256": "59c25f6099f8b23d",
- "n_routes": 73,
+ "source_sha256": "b77f1416916111cc",
+ "n_routes": 74,
  "routes": [
   {
    "path": "/api/alert/push",
    "lines": [
     199,
-    3600
+    3619
    ],
    "count": 2,
    "first_line": 199
@@ -16,18 +16,18 @@
   {
    "path": "/api/alerts",
    "lines": [
-    2763
+    2782
    ],
    "count": 1,
-   "first_line": 2763
+   "first_line": 2782
   },
   {
    "path": "/api/analyst-report",
    "lines": [
-    3548
+    3567
    ],
    "count": 1,
-   "first_line": 3548
+   "first_line": 3567
   },
   {
    "path": "/api/audit_chat",
@@ -40,10 +40,10 @@
   {
    "path": "/api/audit_recent",
    "lines": [
-    3451
+    3470
    ],
    "count": 1,
-   "first_line": 3451
+   "first_line": 3470
   },
   {
    "path": "/api/audit_status",
@@ -58,7 +58,7 @@
    "lines": [
     182,
     2382,
-    3597
+    3616
    ],
    "count": 3,
    "first_line": 182
@@ -66,34 +66,34 @@
   {
    "path": "/api/bridge/summary",
    "lines": [
-    3563
+    3582
    ],
    "count": 1,
-   "first_line": 3563
+   "first_line": 3582
   },
   {
    "path": "/api/bridge/table_preview",
    "lines": [
-    3570
+    3589
    ],
    "count": 1,
-   "first_line": 3570
+   "first_line": 3589
   },
   {
    "path": "/api/brief",
    "lines": [
-    2757
+    2776
    ],
    "count": 1,
-   "first_line": 2757
+   "first_line": 2776
   },
   {
    "path": "/api/chanlun/backtest",
    "lines": [
-    2843
+    2862
    ],
    "count": 1,
-   "first_line": 2843
+   "first_line": 2862
   },
   {
    "path": "/api/chanlun/card/feedback",
@@ -107,18 +107,18 @@
   {
    "path": "/api/chanlun/kline",
    "lines": [
-    2786
+    2805
    ],
    "count": 1,
-   "first_line": 2786
+   "first_line": 2805
   },
   {
    "path": "/api/chanlun/label/load",
    "lines": [
-    2959
+    2978
    ],
    "count": 1,
-   "first_line": 2959
+   "first_line": 2978
   },
   {
    "path": "/api/chanlun/label/save",
@@ -141,18 +141,18 @@
   {
    "path": "/api/chanlun/structure",
    "lines": [
-    2798
+    2817
    ],
    "count": 1,
-   "first_line": 2798
+   "first_line": 2817
   },
   {
    "path": "/api/chips",
    "lines": [
-    3551
+    3570
    ],
    "count": 1,
-   "first_line": 3551
+   "first_line": 3570
   },
   {
    "path": "/api/council/confirm",
@@ -183,18 +183,18 @@
   {
    "path": "/api/data/freshness",
    "lines": [
-    3580
+    3599
    ],
    "count": 1,
-   "first_line": 3580
+   "first_line": 3599
   },
   {
    "path": "/api/data/job",
    "lines": [
-    3592
+    3611
    ],
    "count": 1,
-   "first_line": 3592
+   "first_line": 3611
   },
   {
    "path": "/api/data/runs/",
@@ -208,7 +208,7 @@
    "path": "/api/data/sync",
    "lines": [
     198,
-    3587
+    3606
    ],
    "count": 2,
    "first_line": 198
@@ -243,26 +243,26 @@
   {
    "path": "/api/devops",
    "lines": [
-    3471
+    3490
    ],
    "count": 1,
-   "first_line": 3471
+   "first_line": 3490
   },
   {
    "path": "/api/kline",
    "lines": [
-    3526
+    3545
    ],
    "count": 1,
-   "first_line": 3526
+   "first_line": 3545
   },
   {
    "path": "/api/kline_qy",
    "lines": [
-    3537
+    3556
    ],
    "count": 1,
-   "first_line": 3537
+   "first_line": 3556
   },
   {
    "path": "/api/manager_fire",
@@ -293,10 +293,10 @@
   {
    "path": "/api/market_performance",
    "lines": [
-    2522
+    2541
    ],
    "count": 1,
-   "first_line": 2522
+   "first_line": 2541
   },
   {
    "path": "/api/minutes_inbox",
@@ -309,10 +309,10 @@
   {
    "path": "/api/nlquery",
    "lines": [
-    3373
+    3392
    ],
    "count": 1,
-   "first_line": 3373
+   "first_line": 3392
   },
   {
    "path": "/api/onboard",
@@ -360,10 +360,10 @@
   {
    "path": "/api/paper_history",
    "lines": [
-    2499
+    2518
    ],
    "count": 1,
-   "first_line": 2499
+   "first_line": 2518
   },
   {
    "path": "/api/paper_order",
@@ -392,6 +392,14 @@
    "first_line": 184
   },
   {
+   "path": "/api/plan_review",
+   "lines": [
+    2499
+   ],
+   "count": 1,
+   "first_line": 2499
+  },
+  {
    "path": "/api/portfolio_adjust",
    "lines": [
     177,
@@ -412,10 +420,10 @@
   {
    "path": "/api/portfolio_csv",
    "lines": [
-    2769
+    2788
    ],
    "count": 1,
-   "first_line": 2769
+   "first_line": 2788
   },
   {
    "path": "/api/portfolio_hire",
@@ -429,10 +437,10 @@
   {
    "path": "/api/portfolio_market",
    "lines": [
-    2783
+    2802
    ],
    "count": 1,
-   "first_line": 2783
+   "first_line": 2802
   },
   {
    "path": "/api/portfolio_open",
@@ -455,10 +463,10 @@
   {
    "path": "/api/portfolio_status",
    "lines": [
-    2543
+    2562
    ],
    "count": 1,
-   "first_line": 2543
+   "first_line": 2562
   },
   {
    "path": "/api/portfolio_subscribe",
@@ -481,10 +489,10 @@
   {
    "path": "/api/portfolios",
    "lines": [
-    2536
+    2555
    ],
    "count": 1,
-   "first_line": 2536
+   "first_line": 2555
   },
   {
    "path": "/api/reception",
@@ -515,50 +523,50 @@
   {
    "path": "/api/research",
    "lines": [
-    3354
+    3373
    ],
    "count": 1,
-   "first_line": 3354
+   "first_line": 3373
   },
   {
    "path": "/api/review_minutes",
    "lines": [
-    2694
+    2713
    ],
    "count": 1,
-   "first_line": 2694
+   "first_line": 2713
   },
   {
    "path": "/api/screen",
    "lines": [
-    2766
+    2785
    ],
    "count": 1,
-   "first_line": 2766
+   "first_line": 2785
   },
   {
    "path": "/api/strategies",
    "lines": [
-    2760
+    2779
    ],
    "count": 1,
-   "first_line": 2760
+   "first_line": 2779
   },
   {
    "path": "/api/strategy_detail",
    "lines": [
-    2712
+    2731
    ],
    "count": 1,
-   "first_line": 2712
+   "first_line": 2731
   },
   {
    "path": "/api/strategy_market",
    "lines": [
-    2515
+    2534
    ],
    "count": 1,
-   "first_line": 2515
+   "first_line": 2534
   },
   {
    "path": "/api/sub_del",
@@ -590,10 +598,10 @@
   {
    "path": "/api/trader_detail",
    "lines": [
-    2655
+    2674
    ],
    "count": 1,
-   "first_line": 2655
+   "first_line": 2674
   },
   {
    "path": "/api/trader_fire",
@@ -607,18 +615,18 @@
   {
    "path": "/api/trader_roster",
    "lines": [
-    2620
+    2639
    ],
    "count": 1,
-   "first_line": 2620
+   "first_line": 2639
   },
   {
    "path": "/api/trainee_board",
    "lines": [
-    2722
+    2741
    ],
    "count": 1,
-   "first_line": 2722
+   "first_line": 2741
   }
  ]
 }
