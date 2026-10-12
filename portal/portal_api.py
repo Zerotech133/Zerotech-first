@@ -2678,11 +2678,24 @@ color:#fff;font-size:13.5px;cursor:pointer}
                                   and h.get("status") == "active"}
                 _GRADE = {"live": "正式", "training": "实习",
                           "design": "储备", "ops": "运营台"}
+                # K-STOCK-167 C3 文案收编：擅长/风格文案改由档案投影驱动，
+                # 从 trainees/*.json 读真档案 desc，前端不再内置硬编码。
+                _faces = {}
+                _tdir = os.path.join(
+                    r"E:\老田的AI助手\k_stock\paper", "trainees")
+                for _fn in sorted(glob.glob(os.path.join(_tdir, "*.json"))):
+                    try:
+                        with open(_fn, encoding="utf-8") as _f:
+                            _x = _j3.load(_f)
+                        _faces[_x.get("id")] = _x.get("desc")
+                    except Exception:
+                        continue
                 rows = []
                 for t in (r.get("rows") or []):
                     t = dict(t)
                     t["grade"] = _GRADE.get(t.get("status"), "储备")
                     t["hired_pf"] = t.get("id") in active
+                    t["desc"] = _faces.get(t.get("id"))
                     rows.append(t)
                 rows.sort(key=lambda x: (not x.get("hired_pf"),
                                          x.get("status") != "live",

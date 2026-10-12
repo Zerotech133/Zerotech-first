@@ -720,20 +720,20 @@ function renderAgents(j, board){
                 live:['<span class="st live">已上岗</span>','live'],
                 design:['<span class="st preview">设计评估中</span>','reserved']};
   const bmap={};(board&&board.rows||[]).forEach(r=>bmap[r.id]=r);
+  /* K-STOCK-167 C3 文案收编：taishan/chaser/gunner 擅长/风格文案不再内置，
+     全部由 /api/trader_roster 投影字段（desc/style/grade/hired_pf）驱动 */
+  const ICON_MAP={taishan:'🛡️',chaser:'🌪️',gunner:'⚡'};
   const cards=[
     {cls:'live',icon:'🏦',nm:'我的交易台（main）',st:'<span class="st live">运行中</span>',
      role:`<b>擅长：</b>全风格 · 已雇 AI 值班（自动）+ 量子双刀（手动）+ 手动下单<br>初始 ¥1,000,000 · verify_ok ${L.verify_ok?'✓':'❌'}`,
-     stats:`<div><div class="k">总资产</div><div class="v">¥${fmt(L.total)}</div></div><div><div class="k">累计</div><div class="v ${cls(L.cum_pct)}">${pct(L.cum_pct)}</div></div><div><div class="k">持仓</div><div class="v">${j.positions.length} 只</div></div>`},
-    {id:'taishan',icon:'🛡️',nm:'稳如泰山',
-     role:'<b>擅长：</b>弱市防守 · 高现金 · 严止损（-4%）· 回撤控制优先 · conf≥0.70',
-     empty:'<div><div class="k">风格</div><div class="v">防守型</div></div><div><div class="k">状态</div><div class="v">预留</div></div>'},
-    {id:'chaser',icon:'🌪️',nm:'追风者',
-     role:'<b>擅长：</b>趋势市顺势加仓 · 宽止损拿波段（-8%）· conf≥0.60 · 可绑定量子双刀全自动',
-     empty:'<div><div class="k">风格</div><div class="v">趋势型</div></div><div><div class="k">状态</div><div class="v">预留</div></div>'},
-    {id:'gunner',icon:'⚡',nm:'快枪手',
-     role:'<b>擅长：</b>隔日短打 · 尾盘买次日卖 · conf≥0.75<br><b style="color:var(--color-warn)">⚠ 已论证未过（2026-10-09）：T+1 期望 -0.13%/止损触发 24%，维持 design</b>',
-     empty:'<div><div class="k">风格</div><div class="v">短线型</div></div><div><div class="k">状态</div><div class="v">论证未过</div></div>'}
+     stats:`<div><div class="k">总资产</div><div class="v">¥${fmt(L.total)}</div></div><div><div class="k">累计</div><div class="v ${cls(L.cum_pct)}">${pct(L.cum_pct)}</div></div><div><div class="k">持仓</div><div class="v">${j.positions.length} 只</div></div>`}
   ];
+  (board&&board.rows||[]).forEach(r=>{
+    if(r.id==='main')return;   // 主台卡已在上方按 S.status 实时投影
+    cards.push({id:r.id,icon:ICON_MAP[r.id]||'🤖',nm:r.name||r.id,st:'',
+     role:r.desc?`<b>擅长：</b>${r.desc}`:`<b>擅长：</b>${r.style||'-'}`,
+     empty:`<div><div class="k">风格</div><div class="v">${r.style||'-'}</div></div>`});
+  });
   $('agent-grid').innerHTML=cards.map(c=>{
     const r=bmap[c.id];
     let st=c.st||'',stats=c.stats||c.empty||'',cls=c.cls;
