@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-10-13T01:55:00+08:00",
+  "production_write": false,
+  "global_activation": false,
+  "queue_total": 44,
+  "pending_after_batch": 0,
+  "receipt_rows": 44,
+  "statuses": {
+    "decided": 44
+  },
+  "decisions": {
+    "bear": 10,
+    "neutral": 17,
+    "bull": 17
+  },
+  "models": {
+    "news_ai:local": 44
+  },
+  "blocked": 0,
+  "receipt": "work/jev_receipt_staging_20261013_incremental.jsonl"
+}
