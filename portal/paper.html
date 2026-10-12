@@ -320,17 +320,17 @@
     </div>
     <!-- K-STOCK-221 信息架构重做（老田 10-12 23:20 拍板：市场双板块/角色卡片化/组合回测驱动选择/上岗-实仓-战绩生命周期。
          217 的战绩总览表按「不是一上去就能看得到回撤」口径摘除——回测是选择组合后的动作，不是进市场的展牌） -->
-    <div id="manager-wrap">
-      <div class="toolbar" style="margin:14px 0 4px"><span style="font-size:14px;font-weight:700">① 选择投研经理（不同形势下配的策略不一样）</span>
+    <div id="manager-wrap" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">① 选择投研经理（不同形势下配的策略不一样）</span>
         <span style="font-size:12px;color:var(--text-dim)">经理职责：按市况优选/切换策略、组织盘前盘后复盘、督导操盘手。聘请价 = 档案基价 × 模型系数（按月）。</span></div>
       <div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
     </div>
-    <div>
-      <div class="toolbar" style="margin:16px 0 4px"><span style="font-size:14px;font-weight:700">② 选择操盘手（保守 / 均衡 / 激进，买卖方式各异）</span>
-        <span style="font-size:12px;color:var(--text-dim)">已上岗者标注上岗时间；上岗后才有实仓，实仓后才有战绩（账本真实快照，逐日留痕）。</span></div>
+    <div style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">② 选择操盘手（保守 / 均衡 / 激进，买卖方式各异）</span>
+        <span style="font-size:12px;color:var(--text-dim)">已上岗者标注上岗时间；上岗后才有实仓，实仓后才有战绩（账本真实快照，逐日留痕）。卡片徽标＝经验档位（T1 实习生 → T5 首席）。</span></div>
       <div class="agent-grid" id="agent-grid"></div>
     </div>
-    <div id="combo-bt-wrap" style="margin-top:18px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
+    <div id="combo-bt-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
       <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">③ 组合回测（选好了？先跑历史数据看这个组合）</span></div>
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">把①+②的角色（可加策略源）组成一个组合，用历史行情跑回测——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。满意 → 迎宾向导完成雇佣上岗。</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -340,10 +340,18 @@
       </div>
       <div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。回测引擎产出后此处展示该组合的回测收益曲线与最大回撤。</div>
     </div>
-    <div id="pricing-wrap">
-      <div class="toolbar" style="margin-top:18px"><span style="font-size:14px;font-weight:700">💎 经验等级价目（K-STOCK-101）</span>
-        <span style="font-size:12px;color:var(--text-dim)">聘请=订阅一位有经验、有纪律、可问责的 AI 交易员（非购买 tokens）；等级=模型档位×纪律参数×judge 评审闭环；模拟盘真实业绩展示，不构成收益承诺</span></div>
-      <div class="agent-grid" id="pricing-grid"><div class="empty">读取中…</div></div>
+    <!-- K-STOCK-223 价目区收编：T1-T5 五大卡长图砍掉，压一行说明+折叠速览表（档位信息已随操盘手卡片徽标走） -->
+    <div id="pricing-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+      <div style="font-size:12.5px;line-height:1.6"><b>💎 经验等级＝风控松紧档位</b>（不是资历头衔）：模型档位 × 纪律参数（止损距离 / 日单上限 / 仓位上限 / judge 评审门槛）× 月费，<b>T1 实习生 → T5 首席</b>。每位操盘手卡片上的徽标即其档位，各档纪律与价目收进下面折叠，不再铺长图。</div>
+      <details style="margin-top:6px">
+        <summary style="cursor:pointer;font-size:12px;color:var(--link)">展开：T1–T5 各档纪律参数与月费（速览表）</summary>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table class="sig-table" id="pricing-table">
+            <thead><tr style="color:var(--text-dim)"><th style="text-align:left">等级</th><th>经验</th><th>月费</th><th>引擎</th><th>止损距离</th><th>日单上限</th><th>仓位上限</th><th style="text-align:left">专属纪律</th></tr></thead>
+            <tbody><tr><td colspan="8" class="empty">读取中…</td></tr></tbody>
+          </table>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -722,30 +730,29 @@ function renderPos(positions){
 }
 /* K-STOCK-101 M3：经验等级价目表（tiers.json 投影，锚点价） */
 function renderPricing(mk){
-  const el=$('pricing-grid');
-  if(!mk||!mk.ok){el.innerHTML='<div class="empty">价目未就绪（tiers.json 缺失）</div>';return;}
+  /* K-STOCK-223：T1-T5 大卡长图 → 折叠速览表（一行一档），档位徽标已随操盘手卡片走 */
+  const tb=document.querySelector('#pricing-table tbody');
+  if(!tb)return;
+  if(!mk||!mk.ok){tb.innerHTML='<tr><td colspan="8" class="empty">价目未就绪（tiers.json 缺失）</td></tr>';return;}
   S.market=mk;
   const order=['T1','T2','T3','T4','T5'];
-  el.innerHTML=order.filter(k=>mk.tiers[k]).map(k=>{
-    const t=mk.tiers[k];
-    const p=t.params||{};
-    const extra=[];
-    if(p.judge_min_grade)extra.push('judge '+p.judge_min_grade+' 级才加仓');
-    if(p.dd_circuit_pct)extra.push('回撤熔断 '+p.dd_circuit_pct+'%');
-    if(p.sector_diversify)extra.push('行业分散约束');
-    if(p.priority_scheduling)extra.push('盘中实时评审');
-    if(p.human_review_channel)extra.push('人工复核通道');
-    return `<div class="agent-card ${k==='T5'?'live':k==='T3'||k==='T4'?'':k==='T1'?'preview':''}">
-      <div class="nm">${k} ${t.label} <span style="font-size:11px;color:var(--text-dim)">${t.years} 年经验</span></div>
-      <div class="role">${t.desc||''}${extra.length?'<br><b>专属纪律：</b>'+extra.join(' · '):''}</div>
-      <div class="agent-stats">
-        <div><div class="k">月费</div><div class="v">${t.price_note?t.price_note:('¥'+t.price_month)}</div></div>
-        <div><div class="k">成本档</div><div class="v small">${t.cost_tier||'-'}</div></div>
-        <div><div class="k">引擎</div><div class="v small">${(t.llm_binding||'').split('/').pop()||'-'}</div></div>
-        <div><div class="k">止损</div><div class="v">${p.stop_dist_pct!=null?(p.stop_dist_pct*100).toFixed(0)+'%':'-'}</div></div>
-        <div><div class="k">日单上限</div><div class="v">${p.max_daily_orders!=null?p.max_daily_orders:'-'}</div></div>
-        <div><div class="k">仓位上限</div><div class="v">${p.max_pos_pct!=null?(p.max_pos_pct*100).toFixed(0)+'%':'-'}</div></div>
-      </div></div>`;
+  tb.innerHTML=order.filter(k=>mk.tiers[k]).map(k=>{
+    const t=mk.tiers[k],p=t.params||{},ex=[];
+    if(p.judge_min_grade)ex.push('judge '+p.judge_min_grade+' 级才加仓');
+    if(p.dd_circuit_pct)ex.push('回撤熔断 '+p.dd_circuit_pct+'%');
+    if(p.sector_diversify)ex.push('行业分散约束');
+    if(p.priority_scheduling)ex.push('盘中实时评审');
+    if(p.human_review_channel)ex.push('人工复核通道');
+    return '<tr>'
+      +`<td style="text-align:left"><b>${k}</b> ${esc(t.label||'')}</td>`
+      +`<td>${t.years!=null?t.years+' 年':'-'}</td>`
+      +`<td>${t.price_note?esc(t.price_note):('¥'+t.price_month)}</td>`
+      +`<td>${esc((t.llm_binding||'').split('/').pop()||'-')}</td>`
+      +`<td>${p.stop_dist_pct!=null?(p.stop_dist_pct*100).toFixed(0)+'%':'-'}</td>`
+      +`<td>${p.max_daily_orders!=null?p.max_daily_orders:'-'}</td>`
+      +`<td>${p.max_pos_pct!=null?(p.max_pos_pct*100).toFixed(0)+'%':'-'}</td>`
+      +`<td style="text-align:left">${ex.length?ex.join(' · '):'—'}</td>`
+      +'</tr>';
   }).join('');
 }
 function renderAgents(j, board){
