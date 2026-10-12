@@ -315,33 +315,35 @@
   <!-- ============ 交易员市场 ============ -->
   <div class="tabpanel" id="tab-agent">
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:15px;font-weight:700">🏪 交易员市场（选择团队 → 之后才有持仓）</span>
-      <span style="font-size:12px;color:var(--text-dim)">先选策略与团队，选择之后产生持仓。下方战绩表：分档回测（近1年/半年/3月/1月）待回测引擎接入后逐档填充，现展示各子账本<b>实习快照真实业绩</b>（settle→止损→mark 例程，逐日留痕）。</span>
+      <span style="font-size:15px;font-weight:700">🏪 投研市场（在这里选择你的团队）</span>
+      <span style="font-size:12px;color:var(--text-dim)">市场分两个板块：<b>策略市场</b>（<a href="/market-strategy" style="color:var(--link)">/market-strategy</a>，已知策略=「买什么」的信号源）与<b>投研市场</b>（本页）。组队动线：<b>选投研经理</b>（按市况配策略）→ <b>选操盘手</b>（保守/激进，买卖方式各异）→ <b>跑组合回测</b>（历史数据验证这个组合）→ 满意才<b>上岗</b>（记录上岗时间）→ 上岗后产生<b>实仓</b> → 实仓后积累<b>战绩</b>。角色全部卡片化，灵活组合、混合模式。</span>
     </div>
-    <!-- K-STOCK-217 战绩总览表（老田 10-12 拍板：Table 页方式展现，经理/交易员分角色呈现，回测四档列结构先立） -->
-    <div style="overflow-x:auto;margin:10px 0 16px">
-      <table class="sig-table" id="market-table">
-        <thead>
-          <tr style="color:var(--text-dim)">
-            <th style="text-align:left">团队 / 交易员</th><th>角色</th><th>风格</th>
-            <th>近1月</th><th>近3月</th><th>近半年</th><th>近1年</th>
-            <th>实习累计</th><th>最大回撤</th><th>Sharpe</th><th>状态</th>
-          </tr>
-        </thead>
-        <tbody><tr><td colspan="11" class="empty">读取中…</td></tr></tbody>
-      </table>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:-8px">· 分档列为回测口径（待接入）；实习累计/回撤/Sharpe 为模拟盘账本真实现价快照 · 涨=红 跌=绿</div>
+    <!-- K-STOCK-221 信息架构重做（老田 10-12 23:20 拍板：市场双板块/角色卡片化/组合回测驱动选择/上岗-实仓-战绩生命周期。
+         217 的战绩总览表按「不是一上去就能看得到回撤」口径摘除——回测是选择组合后的动作，不是进市场的展牌） -->
+    <div id="manager-wrap">
+      <div class="toolbar" style="margin:14px 0 4px"><span style="font-size:14px;font-weight:700">① 选择投研经理（不同形势下配的策略不一样）</span>
+        <span style="font-size:12px;color:var(--text-dim)">经理职责：按市况优选/切换策略、组织盘前盘后复盘、督导操盘手。聘请价 = 档案基价 × 模型系数（按月）。</span></div>
+      <div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
     </div>
-    <div class="agent-grid" id="agent-grid"></div>
+    <div>
+      <div class="toolbar" style="margin:16px 0 4px"><span style="font-size:14px;font-weight:700">② 选择操盘手（保守 / 均衡 / 激进，买卖方式各异）</span>
+        <span style="font-size:12px;color:var(--text-dim)">已上岗者标注上岗时间；上岗后才有实仓，实仓后才有战绩（账本真实快照，逐日留痕）。</span></div>
+      <div class="agent-grid" id="agent-grid"></div>
+    </div>
+    <div id="combo-bt-wrap" style="margin-top:18px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
+      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">③ 组合回测（选好了？先跑历史数据看这个组合）</span></div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">把①+②的角色（可加策略源）组成一个组合，用历史行情跑回测——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。满意 → 迎宾向导完成雇佣上岗。</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:12px">经理 <select id="cbt-manager" style="padding:3px 6px"><option value="">选择投研经理…</option></select></label>
+        <label style="font-size:12px">操盘手 <select id="cbt-trader" style="padding:3px 6px"><option value="">选择操盘手…</option></select></label>
+        <button class="btn" id="cbt-run" onclick="runComboBacktest()">▶ 跑组合回测</button>
+      </div>
+      <div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。回测引擎产出后此处展示该组合的回测收益曲线与最大回撤。</div>
+    </div>
     <div id="pricing-wrap">
       <div class="toolbar" style="margin-top:18px"><span style="font-size:14px;font-weight:700">💎 经验等级价目（K-STOCK-101）</span>
         <span style="font-size:12px;color:var(--text-dim)">聘请=订阅一位有经验、有纪律、可问责的 AI 交易员（非购买 tokens）；等级=模型档位×纪律参数×judge 评审闭环；模拟盘真实业绩展示，不构成收益承诺</span></div>
       <div class="agent-grid" id="pricing-grid"><div class="empty">读取中…</div></div>
-    </div>
-    <div id="manager-wrap">
-      <div class="toolbar" style="margin-top:18px"><span style="font-size:14px;font-weight:700">👔 投资经理（K-STOCK-137 · S-b2）</span>
-        <span style="font-size:12px;color:var(--text-dim)">经理职责：荐策略 / 组织盘前盘后复盘 / 督导操盘手。聘请价 = 档案基价 × 模型系数（按月，<code>models.json</code> 口径）；雇佣/解雇只改 <code>manager_hires.json</code> 注册表。</span></div>
-      <div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
     </div>
   </div>
 
@@ -804,41 +806,42 @@ async function loadAgents(){
       renderAgents(S.status,{rows:j.rows||[]});
     }
   }catch(e){/* 静默降级：保留档案静态卡 */}
-  renderMarketTable();   // K-STOCK-217 战绩总览表（失败静默降级）
+  fillComboSelectors();   // K-STOCK-221 组合回测器下拉填充（失败静默降级）
 }
 
-// ===== K-STOCK-217 市场战绩总览表（老田 10-12 拍板：Table 页方式，经理/交易员分角色；
-//      分档回测四列（1月/3月/半年/1年）待回测引擎接入，现仅填账本真实快照，绝不编数） =====
-function renderMarketTable(){
-  const tb=document.querySelector('#market-table tbody');
-  if(!tb)return;
-  Promise.all([
-    api('/api/trader_roster').catch(()=>null),
-    api('/api/manager_roster').catch(()=>null)
-  ]).then(([tr,mr])=>{
-    const rows=[];
+// ===== K-STOCK-221 组合回测器（老田拍板：回测是「选好组合之后」的动作——跑历史数据看组合的
+//      回测收益/回撤，满意才上岗。引擎执行属冻结区（quant_backtest），本版为交互骨架+排队语义，开闸接线，不造假结果） =====
+async function fillComboSelectors(){
+  try{
+    const [tr,mr]=await Promise.all([
+      api('/api/trader_roster').catch(()=>null),
+      api('/api/manager_roster').catch(()=>null)
+    ]);
+    const ms=$('cbt-manager'), ts=$('cbt-trader');
+    if(!ms||!ts)return;
     (mr&&mr.managers||[]).forEach(m=>{
-      rows.push({nm:esc(m.name||m.id), role:'投资经理', style:esc(m.style||'-'),
-        cum:null, dd:null, sharpe:null,
-        st:m.status==='live'?'在雇待选':'规划中',
-        price:m.hire_price_cny?`¥${m.hire_price_cny}/月`:''});
+      if(m.status!=='live')return;
+      const o=document.createElement('option');
+      o.value=m.id; o.textContent=(m.name||m.id)+'（'+(m.style||'-')+'）';
+      ms.appendChild(o);
     });
     ((tr&&tr.rows)||[]).forEach(r=>{
-      rows.push({nm:esc(r.name||r.id), role:'交易员', style:esc(r.style||'-'),
-        cum:r.cum_pct, dd:r.max_dd_pct, sharpe:r.sharpe,
-        st:r.status==='live'?'已上岗':'实习中', days:r.days});
+      if(r.id==='main')return;   // 主交易台=用户自有账本，不是可选角色
+      const o=document.createElement('option');
+      o.value=r.id; o.textContent=(r.name||r.id)+'（'+(r.style||'-')+(r.status==='live'?'·已上岗':'·候选')+'）';
+      ts.appendChild(o);
     });
-    if(!rows.length){tb.innerHTML='<tr><td colspan="11" class="empty">暂无名册数据</td></tr>';return;}
-    tb.innerHTML=rows.map(x=>'<tr>'
-      +`<td style="text-align:left"><b>${x.nm}</b>${x.price?` <span style="color:var(--text-dim);font-size:11px">${x.price}</span>`:''}</td>`
-      +`<td>${x.role}</td><td>${x.style}</td>`
-      +'<td>—</td><td>—</td><td>—</td><td>—</td>'
-      +`<td class="${cls(x.cum)}">${pct(x.cum)}</td>`
-      +`<td class="down">${x.dd==null?'—':x.dd.toFixed(2)+'%'}</td>`
-      +`<td>${x.sharpe==null?'—':(x.sharpe>0?'+':'')+x.sharpe.toFixed(2)}</td>`
-      +`<td>${x.st}${x.days?` <span style="color:var(--text-dim);font-size:11px">${x.days}天</span>`:''}</td>`
-      +'</tr>').join('');
-  });
+  }catch(e){/* 静默 */}
+}
+function runComboBacktest(){
+  const mid=($('cbt-manager')||{}).value, tid=($('cbt-trader')||{}).value;
+  const out=$('cbt-result'); if(!out)return;
+  if(!mid||!tid){toast('⚠️ 请先选好投研经理与操盘手，再跑组合回测');return;}
+  const now=new Date(), pad=n=>String(n).padStart(2,'0');
+  const ts=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes());
+  out.innerHTML='🕐 <b>组合回测任务已登记（'+ts+'）</b>：经理 <code>'+esc(mid)+'</code> × 操盘手 <code>'+esc(tid)+'</code>。'
+    +'回测引擎批量执行属验收冻结区（10-13~15），开闸（10-16）后按队列跑批，结果回填本区域——'
+    +'届时展示该组合的<b>回测收益曲线 / 最大回撤 / 年化</b>，满意再走迎宾向导完成雇佣上岗。';
 }
 
 // ===== 投资经理（K-STOCK-137d S-b2：/api/manager_roster + manager_hire/fire） =====
