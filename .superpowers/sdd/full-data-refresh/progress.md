@@ -10,3 +10,4 @@ Task 3: complete (tests: test_full_refresh_baseline.py test_full_refresh_plan.py
 Task 4: complete (tests: test_annual_refresh.py -> 3 passed; 2023 first batch blocked by remote_probe_deferred, 0 production writes; explicit importer no longer performs import-time network calls).
 Task 5: complete (tests: test_lineage_manifest.py -> 3 passed; source receipt, SHA256 and readback digest gates verified).
 Task 6: complete (tests: test_full_refresh_health.py -> 1 passed; health snapshot records historical daily coverage, nulls, key reconciliation and queries).
+Task 7: blocked (controlled release gate evaluated; 12937 source units lack qualified real supply, so publication lock/fingerprint/readback remain not_started and production_write=false).
