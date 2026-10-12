@@ -321,23 +321,32 @@
     <!-- K-STOCK-221 信息架构重做（老田 10-12 23:20 拍板：市场双板块/角色卡片化/组合回测驱动选择/上岗-实仓-战绩生命周期。
          217 的战绩总览表按「不是一上去就能看得到回撤」口径摘除——回测是选择组合后的动作，不是进市场的展牌） -->
     <div id="manager-wrap" style="border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
-      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">① 选择投研经理（不同形势下配的策略不一样）</span>
-        <span style="font-size:12px;color:var(--text-dim)">经理职责：按市况优选/切换策略、组织盘前盘后复盘、督导操盘手。聘请价 = 档案基价 × 模型系数（按月）。</span></div>
+      <!-- K-STOCK-227 组织架构顶点（老田 10-12 23:32 拍板：投资总监默认在岗全程参与，不是被挑选的卡片） -->
+      <div style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,.03),transparent)">
+        <span style="font-size:13.5px;font-weight:700">🏛️ 投资总监</span>
+        <span class="st live" style="margin-left:6px">默认在岗 · 全程参与</span>
+        <span style="font-size:12px;color:var(--text-dim);margin-left:8px">组织架构顶点：定方向、配策略、督导操盘手、主持盘前盘后复盘。总监常设不参与挑选——您在总监之下选经理、点操盘手，组队灵活组合。</span>
+      </div>
+      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">① 经理阵营（总监之下，按市况配策略）</span>
+        <span style="font-size:12px;color:var(--text-dim)">经理职责：按市况优选/切换策略、执行总监决策、督导操盘手。聘请价 = 档案基价 × 模型系数（按月）。</span></div>
       <div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
     </div>
     <div style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
       <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">② 选择操盘手（保守 / 均衡 / 激进，买卖方式各异）</span>
         <span style="font-size:12px;color:var(--text-dim)">已上岗者标注上岗时间；上岗后才有实仓，实仓后才有战绩（账本真实快照，逐日留痕）。卡片徽标＝经验档位（T1 实习生 → T5 首席）。</span></div>
-      <div class="agent-grid" id="agent-grid"></div>
+      <div class="agent-grid" id="agent-grid"><div class="empty">读取中…</div></div>
     </div>
     <div id="combo-bt-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
       <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">③ 组合回测（选好了？先跑历史数据看这个组合）</span></div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">把①+②的角色（可加策略源）组成一个组合，用历史行情跑回测——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。满意 → 迎宾向导完成雇佣上岗。</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">总监默认带队（可另配经理）+ 您选的操盘手（可加策略源）组成组合，用历史行情跑回测——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。满意 → 迎宾向导完成雇佣上岗。</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <label style="font-size:12px">经理 <select id="cbt-manager" style="padding:3px 6px"><option value="">选择投研经理…</option></select></label>
+        <label style="font-size:12px">带队 <select id="cbt-manager" style="padding:3px 6px"><option value="director_apex" selected>🏛️ 投资总监（默认在岗）</option></select></label>
         <label style="font-size:12px">操盘手 <select id="cbt-trader" style="padding:3px 6px"><option value="">选择操盘手…</option></select></label>
+        <label style="font-size:12px">起始日 <input type="date" id="cbt-start" value="2025-01-01" style="padding:2px 4px"></label>
+        <label style="font-size:12px">时长 <select id="cbt-len" style="padding:3px 6px"><option value="1m">跑1个月</option><option value="3m" selected>跑3个月</option><option value="6m">跑半年</option><option value="1y">跑1年</option></select></label>
         <button class="btn" id="cbt-run" onclick="runComboBacktest()">▶ 跑组合回测</button>
       </div>
+      <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">⏱ <b>point-in-time 口径（不泄露答案）</b>：从起始日起逐日推进，每天<b>只使用当天当时已知</b>的行情与信号做决策——绝不使用未来数据。例：2025-01-01 起跑 3 个月，回测值=该组合在当时真实可得信息下的最贴近实跑成绩。</div>
       <div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。回测引擎产出后此处展示该组合的回测收益曲线与最大回撤。</div>
     </div>
     <!-- K-STOCK-223 价目区收编：T1-T5 五大卡长图砍掉，压一行说明+折叠速览表（档位信息已随操盘手卡片徽标走） -->
@@ -605,7 +614,7 @@ function renderStrat(st){
   const sel=$('hist-day');const cur=sel.value;
   sel.innerHTML=j.curve.map(c=>`<option value="${c.date}">${c.date}${c.date===L.date?'（最新）':''}</option>`).join('');
   if(cur&&j.curve.some(c=>c.date===cur))sel.value=cur;
-  renderPricing(j.market);renderAgents(j);
+  renderPricing(j.market);   // K-STOCK-227：renderAgents 移出此处——操盘手网格由 loadAgents 按 trader_roster 渲染，避免空 cards 清掉占位
   renderCurve(j.curve);
   renderUs(j.us);
 }
@@ -764,11 +773,9 @@ function renderAgents(j, board){
   /* K-STOCK-167 C3 文案收编：taishan/chaser/gunner 擅长/风格文案不再内置，
      全部由 /api/trader_roster 投影字段（desc/style/grade/hired_pf）驱动 */
   const ICON_MAP={taishan:'🛡️',chaser:'🌪️',gunner:'⚡'};
-  const cards=[
-    {cls:'live',icon:'🏦',nm:'我的交易台（main）',st:'<span class="st live">运行中</span>',
-     role:`<b>擅长：</b>全风格 · 已雇 AI 值班（自动）+ 量子双刀（手动）+ 手动下单<br>初始 ¥1,000,000 · verify_ok ${L.verify_ok?'✓':'❌'}`,
-     stats:`<div><div class="k">总资产</div><div class="v">¥${fmt(L.total)}</div></div><div><div class="k">累计</div><div class="v ${cls(L.cum_pct)}">${pct(L.cum_pct)}</div></div><div><div class="k">持仓</div><div class="v">${j.positions.length} 只</div></div>`}
-  ];
+  /* K-STOCK-227：main 主交易台卡撤出市场（自有账本≠市场角色，老田 10-12 23:32 拍板），
+     该卡信息在交易台页首屏已有完整投影 */
+  const cards=[];
   (board&&board.rows||[]).forEach(r=>{
     if(r.id==='main')return;   // 主台卡已在上方按 S.status 实时投影
     cards.push({id:r.id,icon:ICON_MAP[r.id]||'🤖',nm:esc(r.name||r.id),st:'',
@@ -777,15 +784,17 @@ function renderAgents(j, board){
   });
   $('agent-grid').innerHTML=cards.map(c=>{
     const r=bmap[c.id];
-    let st=c.st||'',stats=c.stats||c.empty||'',cls=c.cls;
+    let st=c.st||'',stats=c.stats||c.empty||'',cardCls=c.cls;
     if(c.id&&r){   // 交易员卡：board 真数据覆盖（v0.4 A1 接线）
       const pair=ST_MAP[r.status]||ST_MAP.training;
       st=pair[0];
-      cls=r.status==='live'?'live':cls||'reserved';
+      cardCls=r.status==='live'?'live':cardCls||'reserved';
       if(r.days){
+        /* K-STOCK-227 修存量静默 bug：局部 cardCls 曾遮蔽全局 cls() 配色函数，
+           致 trader 卡自 A1 起从未渲染成功（被 try/catch 吞掉，网格只剩 main 卡）；顺带 dd 空值防护 */
         stats=`<div><div class="k">实习</div><div class="v">${r.days} 天</div></div>`+
           `<div><div class="k">累计</div><div class="v ${cls(r.cum_pct)}">${pct(r.cum_pct)}</div></div>`+
-          `<div><div class="k">最大回撤</div><div class="v down">${r.max_dd_pct.toFixed(2)}%</div></div>`+
+          `<div><div class="k">最大回撤</div><div class="v down">${r.max_dd_pct==null?'-':r.max_dd_pct.toFixed(2)+'%'}</div></div>`+
           `<div><div class="k">Sharpe</div><div class="v">${r.sharpe==null?'-':(r.sharpe>0?'+':'')+r.sharpe.toFixed(2)}</div></div>`+
           `<div><div class="k">Sortino</div><div class="v">${r.sortino==null?'-':(r.sortino>0?'+':'')+r.sortino.toFixed(2)}</div></div>`+
           `<div><div class="k">对账</div><div class="v">${r.verify_ok?'✓':'❌'}</div></div>`;
@@ -800,7 +809,7 @@ function renderAgents(j, board){
       if(t&&t.price_month!=null)
         tchip=` <span class="badge b-dk" style="font-size:10.5px">${esc(t.tier)} ${esc(t.tier_label||'')} · ¥${t.price_month}/月 · 引擎 ${esc((t.llm_binding||'').split('/').pop()||'-')}</span>`;
     }
-    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div></div>`;
+    return `<div class="agent-card ${cardCls}"><div class="nm">${c.icon} ${c.nm} ${st}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div></div>`;
   }).join('');
 }
 
@@ -809,8 +818,9 @@ function renderAgents(j, board){
 async function loadAgents(){
   try{
     const j=await api('/api/trader_roster');
-    if(j&&j.ok&&S.status){
-      renderAgents(S.status,{rows:j.rows||[]});
+    if(j&&j.ok){
+      /* K-STOCK-227：main 卡已撤，renderAgents 不再依赖 S.status（j.latest/positions 仅主卡用，已删） */
+      renderAgents(S.status||{},{rows:j.rows||[]});
     }
   }catch(e){/* 静默降级：保留档案静态卡 */}
   fillComboSelectors();   // K-STOCK-221 组合回测器下拉填充（失败静默降级）
@@ -826,8 +836,10 @@ async function fillComboSelectors(){
     ]);
     const ms=$('cbt-manager'), ts=$('cbt-trader');
     if(!ms||!ts)return;
+    const DIRECTORS=new Set(['director_20y','laotian_pm']);   // K-STOCK-227：总监=默认在岗首项，不进可挑选列表
     (mr&&mr.managers||[]).forEach(m=>{
       if(m.status!=='live')return;
+      if(DIRECTORS.has(m.id))return;
       const o=document.createElement('option');
       o.value=m.id; o.textContent=(m.name||m.id)+'（'+(m.style||'-')+'）';
       ms.appendChild(o);
@@ -841,12 +853,16 @@ async function fillComboSelectors(){
   }catch(e){/* 静默 */}
 }
 function runComboBacktest(){
-  const mid=($('cbt-manager')||{}).value, tid=($('cbt-trader')||{}).value;
+  const mid=($('cbt-manager')||{}).value||'director_apex', tid=($('cbt-trader')||{}).value;
+  const sd=($('cbt-start')||{}).value, ln=($('cbt-len')||{}).value;
   const out=$('cbt-result'); if(!out)return;
-  if(!mid||!tid){toast('⚠️ 请先选好投研经理与操盘手，再跑组合回测');return;}
+  if(!tid){toast('⚠️ 请先选择操盘手（总监默认带队），再跑组合回测');return;}
+  const LEN={ '1m':'1 个月','3m':'3 个月','6m':'半年','1y':'1 年' };
   const now=new Date(), pad=n=>String(n).padStart(2,'0');
   const ts=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes());
-  out.innerHTML='🕐 <b>组合回测任务已登记（'+ts+'）</b>：经理 <code>'+esc(mid)+'</code> × 操盘手 <code>'+esc(tid)+'</code>。'
+  const lead=mid==='director_apex'?'🏛️ 投资总监（默认在岗）':('经理 <code>'+esc(mid)+'</code>');
+  out.innerHTML='🕐 <b>组合回测任务已登记（'+ts+'）</b>：'+lead+' × 操盘手 <code>'+esc(tid)+'</code>'
+    +' · <b>'+esc(sd)+'</b> 起跑 '+ (LEN[ln]||ln) +' · point-in-time 口径（逐日只用当时已知信息，不泄露未来答案）。'
     +'回测引擎批量执行属验收冻结区（10-13~15），开闸（10-16）后按队列跑批，结果回填本区域——'
     +'届时展示该组合的<b>回测收益曲线 / 最大回撤 / 年化</b>，满意再走迎宾向导完成雇佣上岗。';
 }
@@ -858,7 +874,9 @@ async function loadManagers(){
   try{
     const j=await api('/api/manager_roster');
     if(!j||!j.ok){g.innerHTML='<div class="empty">❌ '+((j&&j.error)||'读取失败')+'</div>';return;}
-    g.innerHTML=(j.managers||[]).map(m=>{
+    /* K-STOCK-227：总监=顶点横幅（不进网格）、值班经理=接待首屏角色（不进经理阵营） */
+    const CAMP_SKIP=new Set(['director_20y','laotian_pm','duty_receptionist']);
+    g.innerHTML=(j.managers||[]).filter(m=>!CAMP_SKIP.has(m.id)).map(m=>{
       const act=m.active_hires||[];
       let hz;
       if(act.length){
