@@ -224,38 +224,44 @@
         <a class="dm" href="/quant">
           <div class="head"><div class="ic">📈</div>
             <div><div class="t">量化 <span class="s" id="t-q-alert" style="margin-top:0;"></span></div></div></div>
+          <div class="desc" id="t-q-desc">策略资产全景：产线策略实时运行，影子策略验证转正中，盘面状态随行情自动刷新。</div>
           <div class="ms">
-            <span>盘面 <b id="t-q-verdict">—</b></span>
-            <span>共振 <b id="t-q-buy">—</b></span>
-            <span>预警 <b id="t-q-alerts">—</b></span>
+            <span>运行 <b id="t-q-run">—</b></span>
+            <span>在研 <b id="t-q-dev">—</b></span>
+            <span>状态 <b id="t-q-st">—</b></span>
           </div>
           <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-q-note">加载中…</span></span><span class="enter">进入量化 →</span></div>
         </a>
         <a class="dm" href="/intel">
           <div class="head"><div class="ic">🕵️</div>
             <div><div class="t">情报</div></div></div>
+          <div class="desc" id="t-i-desc">情报产线每日自动采集研判，利多利空实时分栏；知识图谱源健康巡检，断流即亮牌。</div>
           <div class="ms">
-            <span>今日 <b id="t-i-news">—</b></span>
-            <span>利多 <b id="t-i-bull">—</b></span>
-            <span>利空 <b id="t-i-bear">—</b></span>
+            <span>运行 <b id="t-i-run">—</b></span>
+            <span>在研 <b id="t-i-dev">—</b></span>
+            <span>状态 <b id="t-i-st">—</b></span>
           </div>
           <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-i-note">加载中…</span></span><span class="enter">进入情报 →</span></div>
         </a>
         <a class="dm" href="/creator">
           <div class="head"><div class="ic">🎬</div>
             <div><div class="t">创作 <span class="tag-soon">待办</span></div></div></div>
+          <div class="desc" id="t-c-desc">自媒体创作产线：公众号草稿与短视频成片持续产出；方案·PPT 工作创作在研中。</div>
           <div class="ms">
-            <span>草稿 <b id="t-c-draft">—</b></span>
-            <span>成片 <b id="t-c-video">—</b></span>
+            <span>运行 <b id="t-c-run">—</b></span>
+            <span>在研 <b>方案PPT</b></span>
+            <span>状态 <b id="t-c-st">待办</b></span>
           </div>
           <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-c-note">加载中…</span></span><span class="enter">进入创作 →</span></div>
         </a>
         <a class="dm" href="/dev.html">
           <div class="head"><div class="ic">💻</div>
             <div><div class="t">开发 <span class="s" id="t-d-dev" style="margin-top:0;"></span></div></div></div>
+          <div class="desc" id="t-d-desc">基建状态板：计划任务矩阵与容器集群运行巡检，待办事项清点，异常即亮牌。</div>
           <div class="ms">
-            <span>体检 <b id="t-d-health">—</b></span>
-            <span>IDE <b id="t-d-ide">5 个</b></span>
+            <span>运行 <b id="t-d-run">—</b></span>
+            <span>在研 <b id="t-d-todo">—</b></span>
+            <span>状态 <b id="t-d-st">—</b></span>
           </div>
           <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-d-note">加载中…</span></span><span class="enter">进入开发 →</span></div>
         </a>
@@ -456,29 +462,32 @@
   // 判空赋值：常用工具卡可被移除，元素可能不存在（K-STOCK-245）
   function set(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 
-  // ── 今日要务四域态势（K-STOCK-112）──
+  // ── 工作台四域整体阐述（运行/在研/状态，K-STOCK-251）──
   async function loadToday() {
-    // 量化：盘面 + 共振（brief）+ 预警计数（alerts）+ 模拟仓快照日
+    // 量化：策略注册表（live/shadow 计数）+ 盘面状态（brief.verdict）
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/strategies', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const items = (await r.json()).strategies || [];
+        const live = items.filter(s => s.status === 'live').length;
+        const shadow = items.filter(s => s.status === 'shadow').length;
+        set('t-q-run', live + ' 策略');
+        set('t-q-dev', shadow + ' 影子');
+        set('t-q-note', '在册 ' + items.length + ' 条 · 工具 ' + items.filter(s => s.status === 'tool').length);
+      }
+    } catch {}
+    // 情报：今日条数 + 图谱源健康（brief）
     try {
       const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
       const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
       if (r.ok) {
-        const d = await r.json(), f = d.fin || {}, n = d.intel || {};
-        set('t-q-verdict', String(f.verdict || '—').split('（')[0]);
-        set('t-q-buy', (f.buy ?? 0) + ' 只');
-        set('t-i-news', (n.today ?? 0) + ' 条');
-        set('t-i-bull', n.bull ?? 0);
-        set('t-i-bear', n.bear ?? 0);
-        set('t-i-note', (n.bear ?? 0) > (n.bull ?? 0) ? '利空偏多，留意' : '多空均衡');
-      }
-    } catch {}
-    try {
-      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
-      const r = await fetch('/api/alerts', { signal: ctl.signal, cache: 'no-store' });
-      if (r.ok) {
-        const d = await r.json(), items = d.alerts || [];
-        set('t-q-alerts', items.length + ' 条');
-        set('t-q-note', '预警速览就绪');
+        const d = await r.json(), f = d.fin || {}, n = d.intel || {}, kg = d.kg || {};
+        set('t-q-st', String(f.verdict || '—').split('（')[0]);
+        set('t-i-run', (n.today ?? 0) + ' 条/日');
+        if (kg.stale > 0) { set('t-i-dev', kg.stale + ' 表断流'); set('t-i-st', '修复中'); }
+        else { set('t-i-dev', '图谱巡检'); set('t-i-st', '正常'); }
+        set('t-i-note', '利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0) + ' · 命中 ' + (n.hit ?? 0));
       }
     } catch {}
     // 创作：草稿/成片（overview）
@@ -487,73 +496,125 @@
       const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
       if (r.ok) {
         const d = await r.json();
-        set('t-c-draft', ((d.gz || {}).drafts || []).length + ' 篇');
-        set('t-c-video', ((d.video || {}).videos || []).length + ' 条');
-        set('t-c-note', '内容产线在册');
+        set('t-c-run', ((d.gz || {}).drafts || []).length + ' 草稿');
+        set('t-c-note', '成片 ' + ((d.video || {}).videos || []).length + ' 条在册');
       }
     } catch { set('t-c-note', '产线数据未就绪'); }
-    // 开发：体检快照
+    // 开发：容器运行 + 体检待办
     try {
       const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
       const r = await fetch('/data/health.json?ts=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
       if (r.ok) {
         const h = await r.json();
         const iss = (h.issues || []).length;
-        set('t-d-health', iss ? iss + ' 项待办' : '全绿');
+        set('t-d-todo', iss ? iss + ' 项' : '0 项');
+        set('t-d-st', iss ? '待办' : '全绿');
         set('t-d-note', String(h.ts || '').slice(5, 10) + ' 体检');
         set('t-d-dev', iss ? '' : '全绿');
       }
     } catch { set('t-d-note', '体检未生成'); }
+    // 开发：容器矩阵运行数（overview，与创作共用但独立容错）
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 15000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const d = await r.json();
+        let run = 0, tot = 0;
+        Object.values(d.containers || {}).forEach(v => { run += v.running; tot += v.total; });
+        set('t-d-run', run + '/' + tot + ' 容器');
+      }
+    } catch {}
   }
   loadToday();
   setInterval(loadToday, 120000);
 
   // ── 常用工具区：增删 + localStorage 持久化（K-STOCK-245）──
   const FAV_KEY = 'os_favs_v1';
-  // 工具池：板块 → 子板块 → 应用 三级目录（对齐 nav.js 真源，K-STOCK-249）
+  // 工具池：板块 → 子板块 → 应用 三级目录（对齐 nav.js 真源，K-STOCK-249/251）
+  // items 四元组：[图标, 名称, 路由, 整体阐述]——拖入常用区的卡与九域大卡同构
   const FAV_GROUPS = [
     { g: '📈 量化交易', subs: [
       { s: '盘前与驾驶', items: [
-        ['📺', '数据大屏', '/screen.html'], ['🌅', '盘前', '/premarket'], ['🌇', '盘后复盘', '/afterhours'],
-        ['💰', '金融驾驶舱', '/fin'], ['🔍', '个股分析', '/sa'], ['💬', '查数', '/nl']] },
+        ['📺', '数据大屏', '/screen.html', '全市场盘面影院式总览，开盘前一眼扫全局。'],
+        ['🌅', '盘前', '/premarket', '开盘前驾驶舱：竞价、隔夜消息与今日作战要点。'],
+        ['🌇', '盘后复盘', '/afterhours', '收盘后自动复盘：涨跌归因、板块轮动与明日预案。'],
+        ['💰', '金融驾驶舱', '/fin', '多账本绩效总览：模拟仓与策略收益一目了然。'],
+        ['🔍', '个股分析', '/sa', '单票全维度事实下钻：共振/缠论/筹码/公告。'],
+        ['💬', '查数', '/nl', '自然语言问数：大白话直达库表结果，不用记表名。']] },
       { s: '指挥与市场', items: [
-        ['🚀', '驾驶舱', '/bridge'], ['🤖', 'AI 市场', '/aim'], ['🛒', '算法市场', '/algo']] },
+        ['🚀', '驾驶舱', '/bridge', 'OS 中枢指挥台：跨域任务调度与全局态势。'],
+        ['🤖', 'AI 市场', '/aim', 'AI 能力市场：模型与智能体能力交易入口。'],
+        ['🛒', '算法市场', '/algo', '算法资产货架：选股/回测/风控算法在册流通。']] },
       { s: '策略资产', items: [
-        ['🎖', '策略中心', '/strategies'], ['⚔', '量子双刀', '/qd/'], ['🧭', '缠论', '/bt-chanlun'],
-        ['🧪', 'TBE 分层', '/bt-tbe'], ['🛟', '预警池', '/bt-chanlun-pool'], ['🔗', '三线联动', '/bt-linkage'],
-        ['📚', '弱势案例', '/bt-weak'], ['🧮', '九维', '/bt-9dim'], ['🎯', '共振', '/bt-cross'],
-        ['🏛', '投委会', '/council'], ['♠', '操盘锦标赛', '/sim'], ['🎤', '辩论室', '/debate'], ['🔔', '订阅推送', '/bt/subscribe']] },
+        ['🎖', '策略中心', '/strategies', '策略注册表：产线/影子/工具三态全量在册。'],
+        ['⚔', '量子双刀', '/qd/', 'Scanner→Screener→Signal 三段流水线主策略。'],
+        ['🧭', '缠论', '/bt-chanlun', '缠论三类买卖点识别与回放引擎。'],
+        ['🧪', 'TBE 分层', '/bt-tbe', '趋势/震荡分层引擎，行情状态先分层再决策。'],
+        ['🛟', '预警池', '/bt-chanlun-pool', '缠论信号预警池：待确认买点集中盯守。'],
+        ['🔗', '三线联动', '/bt-linkage', '多周期三线共振联动验证。'],
+        ['📚', '弱势案例', '/bt-weak', '弱于板块案例库：弱势股立案与归因复盘。'],
+        ['🧮', '九维', '/bt-9dim', '九维选股漏斗：多维因子层层过滤。'],
+        ['🎯', '共振', '/bt-cross', '多因子共振打分：机会集中确认。'],
+        ['🏛', '投委会', '/council', '多智能体投委会合议：AI 分角色表决。'],
+        ['♠', '操盘锦标赛', '/sim', '多策略同场竞技锦标赛计分。'],
+        ['🎤', '辩论室', '/debate', '多空 AI 辩论：观点对撞后留痕。'],
+        ['🔔', '订阅推送', '/bt/subscribe', '信号订阅与飞书推送通道。']] },
       { s: '实盘跟踪', items: [
-        ['🎯', '今日选股', '/picks.html'], ['🚦', '信号', '/bt-signals'], ['💼', '持仓', '/bt-positions'],
-        ['🧾', '模拟仓', '/paper'], ['📄', '报告', '/bt-report'], ['🎯', '卖点研判', '/sellpoint'],
-        ['🛒', '策略市场 🚧', '/market-strategy'], ['📊', '绩效市场 🚧', '/market']] },
+        ['🎯', '今日选股', '/picks.html', '每日精选出票：当日候选与理由全留痕。'],
+        ['🚦', '信号', '/bt-signals', '全策略信号流水：买卖点实时汇总。'],
+        ['💼', '持仓', '/bt-positions', '当前持仓与浮动盈亏一览。'],
+        ['🧾', '模拟仓', '/paper', '多策略模拟交易台：手动/自动共用执行链。'],
+        ['📄', '报告', '/bt-report', '回测与复盘报告归档中心。'],
+        ['🎯', '卖点研判', '/sellpoint', '持仓卖点研判：减仓/清仓信号辅助。'],
+        ['🛒', '策略市场 🚧', '/market-strategy', '策略能力上架交易（规划中）。'],
+        ['📊', '绩效市场 🚧', '/market', '策略绩效证券化市场（规划中）。']] },
       { s: '研究与数据', items: [
-        ['🎯', '选股中心', '/bt'], ['📊', '板块强弱', '/strong.html'], ['🌾', '期货量化', '/fut'],
-        ['📊', '寻优', '/bt-opt'], ['🔥', '板块', '/bt-sectors'], ['🗄️', '数据仓', '/bt-data-health']] },
+        ['🎯', '选股中心', '/bt', '选股主产线：全流程筛选与候补管理。'],
+        ['📊', '板块强弱', '/strong.html', '强弱两只眼：weak 立案、strong 确认领涨。'],
+        ['🌾', '期货量化', '/fut', '期货品种量化研究与行情。'],
+        ['📊', '寻优', '/bt-opt', '参数寻优工作台：网格遍历与稳健性检验。'],
+        ['🔥', '板块', '/bt-sectors', '板块行情与资金流监测。'],
+        ['🗄️', '数据仓', '/bt-data-health', '数据源健康巡检：缺口与延迟早发现。']] },
     ]},
     { g: '📰 新闻情报', subs: [
       { s: '情报流', items: [
-        ['🏠', '情报工场', '/intel'], ['🤖', 'AI 晨报', '/bt-brief'], ['⚖️', 'JEV 判断', '/bt-jev']] },
+        ['🏠', '情报工场', '/intel', '多源情报采集研判：利多利空实时分栏。'],
+        ['🤖', 'AI 晨报', '/bt-brief', '每日自动生成晨报：隔夜要务一页读。'],
+        ['⚖️', 'JEV 判断', '/bt-jev', '事件价值评估：新闻对持仓的真实影响打分。']] },
       { s: '知识图谱', items: [
-        ['🕸️', '图谱探索', '/kg'], ['💬', '图谱问答', '/kg/ask'], ['🎯', '知识画布', '/kg/canvasv2'],
-        ['🗺️', '作战地图', '/kg/battle'], ['📰', '事件图谱', '/kg/events'], ['💰', '游资地图', '/kg/map'],
-        ['🧨', '板块工单', '/kg/flow'], ['🖊', '画图标注', '/kg/label'], ['🃏', '推演卡', '/kg/card'],
-        ['👁', '影子面板', '/kg/shadow'], ['🏢', '公司 360', '/kg/company'], ['📚', '图谱词条', '/kg/lexicon'], ['📄', '图谱文档', '/kg/doc']] },
+        ['🕸️', '图谱探索', '/kg', '个股-事件-产业链知识图谱总入口。'],
+        ['💬', '图谱问答', '/kg/ask', '图谱自然语言问答：关系链一句话查清。'],
+        ['🎯', '知识画布', '/kg/canvasv2', '可视化画布：自由排布节点做研究。'],
+        ['🗺️', '作战地图', '/kg/battle', '热点作战地图：题材脉络实时铺开。'],
+        ['📰', '事件图谱', '/kg/events', '事件演化链：从爆料到落地全程追踪。'],
+        ['💰', '游资地图', '/kg/map', '游资席位动向地图：谁在买一目了然。'],
+        ['🧨', '板块工单', '/kg/flow', '板块资金工单流：主力进出留痕。'],
+        ['🖊', '画图标注', '/kg/label', '图谱人工标注：闭环喂养模型。'],
+        ['🃏', '推演卡', '/kg/card', '情景推演卡：假设-验证式研究。'],
+        ['👁', '影子面板', '/kg/shadow', '影子策略运行面板：只记分不拦截。'],
+        ['🏢', '公司 360', '/kg/company', '公司全景档案：基本面一页尽调。'],
+        ['📚', '图谱词条', '/kg/lexicon', '图谱词条库：概念解释与关联。'],
+        ['📄', '图谱文档', '/kg/doc', '图谱相关文档归档。']] },
     ]},
     { g: '🎬 自媒体创作', subs: [
       { s: '创作产线', items: [
-        ['🎬', '创作专项', '/creator'], ['📝', '公众号草稿', '/gzh'], ['🎞', '短视频成片', '/vd']] },
+        ['🎬', '创作专项', '/creator', '创作总台：选题、脚本、成片全流程。'],
+        ['📝', '公众号草稿', '/gzh', '公众号草稿管理与发布流。'],
+        ['🎞', '短视频成片', '/vd', '短视频成片库：AI 剪辑产出归档。']] },
     ]},
     { g: '💻 开发与学院', subs: [
       { s: '开发', items: [
-        ['💻', '开发者专项', '/dev.html'], ['🎓', '智能体学院', '/academy.html']] },
+        ['💻', '开发者专项', '/dev.html', '开发台：产线仓库、任务与调试工具集。'],
+        ['🎓', '智能体学院', '/academy.html', 'AI 教 AI 实验场：互教与独立评测原型。']] },
     ]},
     { g: '⚙️ 系统', subs: [
       { s: '底座', items: [
-        ['🎛', 'OS 控制台', '/ops'], ['🛡️', '审计状态', '/audit.html'], ['🖥️', '系统自检', '/sys-health']] },
+        ['🎛', 'OS 控制台', '/ops', '计划任务矩阵、备份磁盘、告警收件箱全量。'],
+        ['🛡️', '审计状态', '/audit.html', '安全审计与合规状态总览。'],
+        ['🖥️', '系统自检', '/sys-health', '关键端口与服务探活自检。']] },
     ]},
   ];
-  const FAV_POOL = FAV_GROUPS.flatMap(g => g.subs.flatMap(s => s.items.map(([ic, t, href]) => ({ ic, t, href }))));
+  const FAV_POOL = FAV_GROUPS.flatMap(g => g.subs.flatMap(s => s.items.map(([ic, t, href, d]) => ({ ic, t, href, g: g.g, s: s.s, d }))));
   const FAV_ALIAS = { '/market.html': '/fin', '/market_strategy.html': '/market-strategy' }; // 旧存档别名归一
   const FAV_DEFAULT = ['/quant', '/intel', '/creator', '/dev.html'];
   const favBoard = document.getElementById('favBoard');
@@ -578,8 +639,10 @@
   function favCard(p) {
     const a = document.createElement('a');
     a.className = 'dm fav-dyn'; a.href = p.href;
-    a.innerHTML = '<div class="head"><div class="ic">' + p.ic + '</div><div><div class="t">' + p.t + '</div></div></div>'
-      + '<div class="foot"><span class="st"><span class="dot unknown"></span><span>' + (p.s || '常用直达') + '</span></span><span class="enter">进入 →</span></div>';
+    a.innerHTML = '<div class="head"><div class="ic">' + p.ic + '</div><div><div class="t">' + p.t + '</div><div class="s">' + (p.s || '常用直达') + '</div></div></div>'
+      + '<div class="desc">' + (p.d || '个人 OS 常用应用，点卡片直达专项页。') + '</div>'
+      + '<div class="ms"><span>归属 <b>' + (p.g || '常用') + '</b></span><span>状态 <b>在线</b></span></div>'
+      + '<div class="foot"><span class="st"><span class="dot unknown"></span><span>常用应用</span></span><span class="enter">进入 →</span></div>';
     favBindX(a, p.href);
     return a;
   }
