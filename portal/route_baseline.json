@@ -1,869 +1,624 @@
 {
- "__union__": {
-  "routes": [
-   "/",
-   "/afterhours",
-   "/aim",
-   "/algo",
-   "/api/alert/push",
-   "/api/alerts",
-   "/api/analyst-report",
-   "/api/audit_chat",
-   "/api/audit_recent",
-   "/api/audit_status",
-   "/api/batch-backtest",
-   "/api/bridge/summary",
-   "/api/bridge/table_preview",
-   "/api/brief",
-   "/api/chanlun/backtest",
-   "/api/chanlun/card/feedback",
-   "/api/chanlun/kline",
-   "/api/chanlun/label/load",
-   "/api/chanlun/label/save",
-   "/api/chanlun/pool/push",
-   "/api/chanlun/structure",
-   "/api/chips",
-   "/api/council/confirm",
-   "/api/council/simrun",
-   "/api/data/daily",
-   "/api/data/freshness",
-   "/api/data/job",
-   "/api/data/runs/",
-   "/api/data/sync",
-   "/api/data/update",
-   "/api/data/update-plan",
-   "/api/debate/say",
-   "/api/devops",
-   "/api/kline",
-   "/api/kline_qy",
-   "/api/manager_fire",
-   "/api/manager_hire",
-   "/api/manager_roster",
-   "/api/market_performance",
-   "/api/minutes_inbox",
-   "/api/nlquery",
-   "/api/overview",
-   "/api/paper_direct_open",
-   "/api/paper_hire",
-   "/api/paper_hires",
-   "/api/paper_history",
-   "/api/paper_order",
-   "/api/paper_status",
-   "/api/paper_stop",
-   "/api/portfolio_adjust",
-   "/api/portfolio_close",
-   "/api/portfolio_csv",
-   "/api/portfolio_hire",
-   "/api/portfolio_market",
-   "/api/portfolio_open",
-   "/api/portfolio_set",
-   "/api/portfolio_status",
-   "/api/portfolio_subscribe",
-   "/api/portfolio_undo",
-   "/api/portfolios",
-   "/api/recv_add",
-   "/api/report_push",
-   "/api/research",
-   "/api/review_minutes",
-   "/api/screen",
-   "/api/strategies",
-   "/api/strategy_detail",
-   "/api/strategy_market",
-   "/api/sub_del",
-   "/api/sub_test",
-   "/api/sub_toggle",
-   "/api/trader_detail",
-   "/api/trader_fire",
-   "/api/trader_roster",
-   "/api/trainee_board",
-   "/audit-ai",
-   "/bridge",
-   "/bridge/act",
-   "/bt",
-   "/bt-9dim",
-   "/bt-brief",
-   "/bt-chanlun",
-   "/bt-chanlun-pool",
-   "/bt-cross",
-   "/bt-data-health",
-   "/bt-jev",
-   "/bt-linkage",
-   "/bt-linkage-png",
-   "/bt-news",
-   "/bt-opt",
-   "/bt-positions",
-   "/bt-qpzm",
-   "/bt-qpzm/",
-   "/bt-report",
-   "/bt-report/",
-   "/bt-report/img/",
-   "/bt-rps",
-   "/bt-sectors",
-   "/bt-signals",
-   "/bt-stock-incident",
-   "/bt-tbe",
-   "/bt-weak",
-   "/bt-weak-md",
-   "/bt/analyst-report",
-   "/bt/analysts",
-   "/bt/ind_drill",
-   "/bt/lhb",
-   "/bt/m/",
-   "/bt/m/cn",
-   "/bt/report",
-   "/bt/seat",
-   "/bt/stock",
-   "/bt/strategy/",
-   "/bt/subscribe",
-   "/chanlun-anno",
-   "/chanlun-anno-report",
-   "/chanlun-png",
-   "/col-audit",
-   "/council",
-   "/debate",
-   "/deliverables",
-   "/devops",
-   "/feishu/event",
-   "/fin",
-   "/fut",
-   "/fut-strat",
-   "/gzh",
-   "/gzh/view/",
-   "/health",
-   "/intel",
-   "/kg",
-   "/kg/ask",
-   "/kg/batch/",
-   "/kg/battle",
-   "/kg/canvas",
-   "/kg/canvas_edit",
-   "/kg/canvasv2",
-   "/kg/card",
-   "/kg/cask/",
-   "/kg/cexpand/",
-   "/kg/chist/",
-   "/kg/company",
-   "/kg/company360/",
-   "/kg/csearch/",
-   "/kg/doc",
-   "/kg/doc/upload",
-   "/kg/events",
-   "/kg/events/doc/",
-   "/kg/events/graph",
-   "/kg/events/list",
-   "/kg/events/search",
-   "/kg/events/situ",
-   "/kg/flow",
-   "/kg/guba/",
-   "/kg/gx/",
-   "/kg/hotmoney/",
-   "/kg/label",
-   "/kg/lexicon",
-   "/kg/lexicon/save",
-   "/kg/map",
-   "/kg/objectview/",
-   "/kg/ontology",
-   "/kg/overview",
-   "/kg/records/",
-   "/kg/shadow",
-   "/kg/sources",
-   "/kg/stats",
-   "/kg/stock/",
-   "/kg/timeline/",
-   "/kg/trace/",
-   "/nl",
-   "/org",
-   "/paper",
-   "/portal",
-   "/premarket",
-   "/qd",
-   "/qd/",
-   "/sa",
-   "/sa/result",
-   "/sa/start",
-   "/screen",
-   "/screen-sig",
-   "/sellpoint",
-   "/sim",
-   "/static/",
-   "/static/g6.min.js",
-   "/strategies",
-   "/sys-health",
-   "/vd",
-   "/vd/file/"
-  ],
-  "funcs": [
-   "Handler._aim_page",
-   "Handler._algo_activate",
-   "Handler._algo_market_page",
-   "Handler._analyst_report_page",
-   "Handler._anno_key",
-   "Handler._anno_load",
-   "Handler._api_analyst_report",
-   "Handler._api_audit_chat",
-   "Handler._api_feishu_event",
-   "Handler._api_manager_fire",
-   "Handler._api_manager_hire",
-   "Handler._api_manager_roster",
-   "Handler._api_minutes_inbox",
-   "Handler._api_paper_direct_open",
-   "Handler._api_paper_hire",
-   "Handler._api_paper_hires",
-   "Handler._api_paper_order",
-   "Handler._api_paper_stop",
-   "Handler._api_recv_add",
-   "Handler._api_report_push",
-   "Handler._api_sub_del",
-   "Handler._api_sub_test",
-   "Handler._api_sub_toggle",
-   "Handler._audit_ai_page",
-   "Handler._audit_backends",
-   "Handler._audit_cfg",
-   "Handler._audit_chat",
-   "Handler._back_bar_html",
-   "Handler._back_link_html",
-   "Handler._bridge_act_page",
-   "Handler._bridge_page",
-   "Handler._bt_analysts_page",
-   "Handler._bt_brief",
-   "Handler._bt_ind_drill_page",
-   "Handler._bt_jev",
-   "Handler._bt_lhb_page",
-   "Handler._bt_news",
-   "Handler._bt_report_page",
-   "Handler._bt_seat_page",
-   "Handler._bt_sectors",
-   "Handler._bt_stock_form",
-   "Handler._bt_stock_page",
-   "Handler._chanlun_anno",
-   "Handler._chanlun_anno_report",
-   "Handler._chanlun_auto_lines",
-   "Handler._chanlun_day_plots_sec",
-   "Handler._chanlun_page",
-   "Handler._chanlun_png",
-   "Handler._chanlun_pool_page",
-   "Handler._chanlun_sl_tp",
-   "Handler._chanlun_stock_sec",
-   "Handler._check_portal_token",
-   "Handler._council_page",
-   "Handler._cross_page",
-   "Handler._data_health_page",
-   "Handler._debate_page",
-   "Handler._devops_data",
-   "Handler._devops_page",
-   "Handler._feishu_encrypt_key",
-   "Handler._fin_page",
-   "Handler._gzh_list",
-   "Handler._handle_card_action",
-   "Handler._html",
-   "Handler._html_file",
-   "Handler._html_more",
-   "Handler._html_open",
-   "Handler._hub_market_tabs",
-   "Handler._intel_page",
-   "Handler._is_local_req",
-   "Handler._json",
-   "Handler._kg_ask_page",
-   "Handler._kg_battle_page",
-   "Handler._kg_canvas_page",
-   "Handler._kg_canvas_v2_page",
-   "Handler._kg_card_page",
-   "Handler._kg_company_page",
-   "Handler._kg_doc_page",
-   "Handler._kg_events_page",
-   "Handler._kg_flow_page",
-   "Handler._kg_label_page",
-   "Handler._kg_lexicon_page",
-   "Handler._kg_map_page",
-   "Handler._kg_net_html",
-   "Handler._kg_overview_html",
-   "Handler._kg_page",
-   "Handler._kg_resonance_block",
-   "Handler._kg_shadow_page",
-   "Handler._license_state",
-   "Handler._linkage_page",
-   "Handler._linkage_png",
-   "Handler._manager_run_json",
-   "Handler._nine_dim_page",
-   "Handler._nl_page",
-   "Handler._org_page",
-   "Handler._paper_desk",
-   "Handler._paper_run_json",
-   "Handler._portal_page",
-   "Handler._qpzm_batch_blk",
-   "Handler._qpzm_page",
-   "Handler._sa_page",
-   "Handler._sa_result",
-   "Handler._sa_start",
-   "Handler._screen_page",
-   "Handler._screen_sig_page",
-   "Handler._send_media",
-   "Handler._sim_page",
-   "Handler._stock_fundamental",
-   "Handler._stock_notices",
-   "Handler._stock_valuation",
-   "Handler._strategies_page",
-   "Handler._sub_data",
-   "Handler._sub_engine",
-   "Handler._sub_write",
-   "Handler._subscribe_page",
-   "Handler._sys_health",
-   "Handler._token_tag",
-   "Handler._vd_list",
-   "Handler._warehouse_update_request",
-   "Handler._weak_cases_page",
-   "Handler._weak_md",
-   "Handler.do_GET",
-   "Handler.do_POST",
-   "Handler.log_message",
-   "_alerts_last_jsonl",
-   "_back_link_html",
-   "_bt_custom_start",
-   "_bt_custom_status",
-   "_bt_jev_news",
-   "_bt_norm_code",
-   "_bt_resolve",
-   "_chanlun_pool_push",
-   "_chips_data",
-   "_council_confirm",
-   "_council_holdings",
-   "_council_pending",
-   "_council_simrun",
-   "_council_stats",
-   "_debate_flow",
-   "_debate_say",
-   "_env_market_key",
-   "_fmt_pct",
-   "_freshness_warmup",
-   "_kg_card_fb_save",
-   "_kg_label_diff",
-   "_kg_label_save",
-   "_kline_data",
-   "_kline_qy",
-   "_load_cainiao_env",
-   "_log_rotate",
-   "_matrix_cards",
-   "_news_db",
-   "_pf_apply",
-   "_pf_csv",
-   "_pf_ids_all",
-   "_pf_reason_cat",
-   "_pf_summary",
-   "_pf_valid",
-   "_pool_bear_news",
-   "_portal_token",
-   "_portfolio_adjust",
-   "_portfolio_close",
-   "_portfolio_market",
-   "_portfolio_open",
-   "_portfolio_set",
-   "_portfolio_undo",
-   "_pulse_ago",
-   "_pulse_exit_line",
-   "_pulse_fresh",
-   "_read_json",
-   "_sa_hist_append",
-   "_sa_hist_read",
-   "_sa_worker",
-   "_sched_rc_html",
-   "_stock_chip_summary",
-   "_stock_sector_rows",
-   "_tabs_html",
-   "_tp_row",
-   "_ts_daily_prepend",
-   "bridge_act",
-   "bridge_act_desc",
-   "bridge_actions_index",
-   "bridge_decisions",
-   "bridge_summary",
-   "bridge_table_preview",
-   "build_alerts",
-   "build_brief",
-   "build_daily_pulse",
-   "build_overview",
-   "build_screen",
-   "data_freshness",
-   "data_freshness_bg",
-   "data_health_bg",
-   "data_health_kg_bg",
-   "data_sync_start",
-   "data_sync_status",
-   "fut_page_html",
-   "get_alerts",
-   "get_backtest",
-   "get_backups",
-   "get_containers",
-   "get_disks",
-   "get_gzh",
-   "get_news",
-   "get_quotes",
-   "get_tasks",
-   "get_video",
-   "log_exc",
-   "pill_nav",
-   "run",
-   "sellpoint_page_html",
-   "strategies_data",
-   "tcp_ok",
-   "warehouse_legacy_status",
-   "warehouse_update_services"
-  ]
- },
- "files": {
-  "portal/portal_api.py": {
-   "routes": [
-    "/",
-    "/afterhours",
-    "/aim",
-    "/algo",
-    "/api/alert/push",
-    "/api/alerts",
-    "/api/analyst-report",
-    "/api/audit_chat",
-    "/api/audit_recent",
-    "/api/audit_status",
-    "/api/batch-backtest",
-    "/api/bridge/summary",
-    "/api/bridge/table_preview",
-    "/api/brief",
-    "/api/chanlun/backtest",
-    "/api/chanlun/card/feedback",
-    "/api/chanlun/kline",
-    "/api/chanlun/label/load",
-    "/api/chanlun/label/save",
-    "/api/chanlun/pool/push",
-    "/api/chanlun/structure",
-    "/api/chips",
-    "/api/council/confirm",
-    "/api/council/simrun",
-    "/api/data/daily",
-    "/api/data/freshness",
-    "/api/data/job",
-    "/api/data/runs/",
-    "/api/data/sync",
-    "/api/data/update",
-    "/api/data/update-plan",
-    "/api/debate/say",
-    "/api/devops",
-    "/api/kline",
-    "/api/kline_qy",
-    "/api/manager_fire",
-    "/api/manager_hire",
-    "/api/manager_roster",
-    "/api/market_performance",
-    "/api/minutes_inbox",
-    "/api/nlquery",
-    "/api/overview",
-    "/api/paper_direct_open",
-    "/api/paper_hire",
-    "/api/paper_hires",
-    "/api/paper_history",
-    "/api/paper_order",
-    "/api/paper_status",
-    "/api/paper_stop",
-    "/api/portfolio_adjust",
-    "/api/portfolio_close",
-    "/api/portfolio_csv",
-    "/api/portfolio_hire",
-    "/api/portfolio_market",
-    "/api/portfolio_open",
-    "/api/portfolio_set",
-    "/api/portfolio_status",
-    "/api/portfolio_subscribe",
-    "/api/portfolio_undo",
-    "/api/portfolios",
-    "/api/recv_add",
-    "/api/report_push",
-    "/api/research",
-    "/api/review_minutes",
-    "/api/screen",
-    "/api/strategies",
-    "/api/strategy_detail",
-    "/api/strategy_market",
-    "/api/sub_del",
-    "/api/sub_test",
-    "/api/sub_toggle",
-    "/api/trader_detail",
-    "/api/trader_fire",
-    "/api/trader_roster",
-    "/api/trainee_board",
-    "/audit-ai",
-    "/bridge",
-    "/bridge/act",
-    "/bt",
-    "/bt-9dim",
-    "/bt-brief",
-    "/bt-chanlun",
-    "/bt-chanlun-pool",
-    "/bt-cross",
-    "/bt-data-health",
-    "/bt-jev",
-    "/bt-linkage",
-    "/bt-linkage-png",
-    "/bt-news",
-    "/bt-opt",
-    "/bt-positions",
-    "/bt-qpzm",
-    "/bt-qpzm/",
-    "/bt-report",
-    "/bt-report/",
-    "/bt-report/img/",
-    "/bt-rps",
-    "/bt-sectors",
-    "/bt-signals",
-    "/bt-stock-incident",
-    "/bt-tbe",
-    "/bt-weak",
-    "/bt-weak-md",
-    "/bt/analyst-report",
-    "/bt/analysts",
-    "/bt/ind_drill",
-    "/bt/lhb",
-    "/bt/m/",
-    "/bt/m/cn",
-    "/bt/report",
-    "/bt/seat",
-    "/bt/stock",
-    "/bt/strategy/",
-    "/bt/subscribe",
-    "/chanlun-anno",
-    "/chanlun-anno-report",
-    "/chanlun-png",
-    "/col-audit",
-    "/council",
-    "/debate",
-    "/deliverables",
-    "/devops",
-    "/feishu/event",
-    "/fin",
-    "/fut",
-    "/fut-strat",
-    "/gzh",
-    "/gzh/view/",
-    "/health",
-    "/intel",
-    "/kg",
-    "/kg/ask",
-    "/kg/batch/",
-    "/kg/battle",
-    "/kg/canvas",
-    "/kg/canvas_edit",
-    "/kg/canvasv2",
-    "/kg/card",
-    "/kg/cask/",
-    "/kg/cexpand/",
-    "/kg/chist/",
-    "/kg/company",
-    "/kg/company360/",
-    "/kg/csearch/",
-    "/kg/doc",
-    "/kg/doc/upload",
-    "/kg/events",
-    "/kg/events/doc/",
-    "/kg/events/graph",
-    "/kg/events/list",
-    "/kg/events/search",
-    "/kg/events/situ",
-    "/kg/flow",
-    "/kg/guba/",
-    "/kg/gx/",
-    "/kg/hotmoney/",
-    "/kg/label",
-    "/kg/lexicon",
-    "/kg/lexicon/save",
-    "/kg/map",
-    "/kg/objectview/",
-    "/kg/ontology",
-    "/kg/overview",
-    "/kg/records/",
-    "/kg/shadow",
-    "/kg/sources",
-    "/kg/stats",
-    "/kg/stock/",
-    "/kg/timeline/",
-    "/kg/trace/",
-    "/nl",
-    "/org",
-    "/paper",
-    "/portal",
-    "/premarket",
-    "/qd",
-    "/qd/",
-    "/sa",
-    "/sa/result",
-    "/sa/start",
-    "/screen",
-    "/screen-sig",
-    "/sellpoint",
-    "/sim",
-    "/static/",
-    "/static/g6.min.js",
-    "/strategies",
-    "/sys-health",
-    "/vd",
-    "/vd/file/"
+ "generated_at": "2026-10-12T08:12:30",
+ "source": "portal_api.py",
+ "source_sha256": "59c25f6099f8b23d",
+ "n_routes": 73,
+ "routes": [
+  {
+   "path": "/api/alert/push",
+   "lines": [
+    199,
+    3600
    ],
-   "funcs": [
-    "Handler._api_manager_fire",
-    "Handler._api_manager_hire",
-    "Handler._api_manager_roster",
-    "Handler._api_minutes_inbox",
-    "Handler._api_paper_direct_open",
-    "Handler._back_bar_html",
-    "Handler._back_link_html",
-    "Handler._check_portal_token",
-    "Handler._html",
-    "Handler._html_file",
-    "Handler._html_more",
-    "Handler._html_open",
-    "Handler._hub_market_tabs",
-    "Handler._is_local_req",
-    "Handler._json",
-    "Handler._linkage_page",
-    "Handler._linkage_png",
-    "Handler._manager_run_json",
-    "Handler._nl_page",
-    "Handler._portal_page",
-    "Handler._sys_health",
-    "Handler._token_tag",
-    "Handler.do_GET",
-    "Handler.do_POST",
-    "Handler.log_message",
-    "_freshness_warmup",
-    "_pf_ids_all",
-    "_pf_valid"
-   ]
+   "count": 2,
+   "first_line": 199
   },
-  "portal/api_common.py": {
-   "routes": [],
-   "funcs": [
-    "_alerts_last_jsonl",
-    "_back_link_html",
-    "_council_pending",
-    "_council_stats",
-    "_env_market_key",
-    "_fmt_pct",
-    "_load_cainiao_env",
-    "_log_rotate",
-    "_matrix_cards",
-    "_pool_bear_news",
-    "_portal_token",
-    "_read_json",
-    "_sched_rc_html",
-    "_stock_chip_summary",
-    "_stock_sector_rows",
-    "_tabs_html",
-    "_tp_row",
-    "build_alerts",
-    "data_freshness_bg",
-    "data_sync_start",
-    "log_exc",
-    "pill_nav",
-    "run"
-   ]
+  {
+   "path": "/api/alerts",
+   "lines": [
+    2763
+   ],
+   "count": 1,
+   "first_line": 2763
   },
-  "portal/api_kg.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._kg_ask_page",
-    "Handler._kg_battle_page",
-    "Handler._kg_canvas_page",
-    "Handler._kg_canvas_v2_page",
-    "Handler._kg_card_page",
-    "Handler._kg_company_page",
-    "Handler._kg_doc_page",
-    "Handler._kg_events_page",
-    "Handler._kg_flow_page",
-    "Handler._kg_label_page",
-    "Handler._kg_lexicon_page",
-    "Handler._kg_map_page",
-    "Handler._kg_net_html",
-    "Handler._kg_overview_html",
-    "Handler._kg_page",
-    "Handler._kg_resonance_block",
-    "Handler._kg_shadow_page",
-    "_kg_card_fb_save",
-    "_kg_label_diff",
-    "_kg_label_save"
-   ]
+  {
+   "path": "/api/analyst-report",
+   "lines": [
+    3548
+   ],
+   "count": 1,
+   "first_line": 3548
   },
-  "portal/api_data.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._data_health_page",
-    "Handler._warehouse_update_request",
-    "_news_db",
-    "data_freshness",
-    "data_health_bg",
-    "data_health_kg_bg",
-    "data_sync_status",
-    "warehouse_legacy_status",
-    "warehouse_update_services"
-   ]
+  {
+   "path": "/api/audit_chat",
+   "lines": [
+    2020
+   ],
+   "count": 1,
+   "first_line": 2020
   },
-  "portal/api_chanlun_pages.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._anno_key",
-    "Handler._anno_load",
-    "Handler._chanlun_anno",
-    "Handler._chanlun_anno_report",
-    "Handler._chanlun_auto_lines",
-    "Handler._chanlun_day_plots_sec",
-    "Handler._chanlun_page",
-    "Handler._chanlun_png",
-    "Handler._chanlun_pool_page",
-    "Handler._chanlun_sl_tp",
-    "Handler._chanlun_stock_sec",
-    "_chanlun_pool_push"
-   ]
+  {
+   "path": "/api/audit_recent",
+   "lines": [
+    3451
+   ],
+   "count": 1,
+   "first_line": 3451
   },
-  "portal/api_backtest.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._algo_activate",
-    "Handler._algo_market_page",
-    "Handler._bt_analysts_page",
-    "Handler._bt_brief",
-    "Handler._bt_ind_drill_page",
-    "Handler._bt_jev",
-    "Handler._bt_lhb_page",
-    "Handler._bt_news",
-    "Handler._bt_report_page",
-    "Handler._bt_seat_page",
-    "Handler._bt_sectors",
-    "Handler._bt_stock_form",
-    "Handler._bt_stock_page",
-    "Handler._cross_page",
-    "Handler._fin_page",
-    "Handler._nine_dim_page",
-    "Handler._sa_page",
-    "Handler._sa_result",
-    "Handler._sa_start",
-    "Handler._strategies_page",
-    "Handler._weak_cases_page",
-    "Handler._weak_md",
-    "_bt_custom_start",
-    "_bt_custom_status",
-    "_bt_jev_news",
-    "_bt_norm_code",
-    "_bt_resolve",
-    "_pulse_ago",
-    "_pulse_exit_line",
-    "_pulse_fresh",
-    "_sa_hist_append",
-    "_sa_hist_read",
-    "_sa_worker",
-    "build_daily_pulse",
-    "fut_page_html",
-    "get_backtest",
-    "sellpoint_page_html",
-    "strategies_data"
-   ]
+  {
+   "path": "/api/audit_status",
+   "lines": [
+    2430
+   ],
+   "count": 1,
+   "first_line": 2430
   },
-  "portal/api_bridge.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._bridge_act_page",
-    "Handler._bridge_page",
-    "bridge_act",
-    "bridge_act_desc",
-    "bridge_actions_index",
-    "bridge_decisions",
-    "bridge_summary",
-    "bridge_table_preview"
-   ]
+  {
+   "path": "/api/batch-backtest",
+   "lines": [
+    182,
+    2382,
+    3597
+   ],
+   "count": 3,
+   "first_line": 182
   },
-  "portal/api_portfolio.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._api_paper_hire",
-    "Handler._api_paper_hires",
-    "Handler._api_paper_order",
-    "Handler._api_paper_stop",
-    "Handler._council_page",
-    "Handler._debate_page",
-    "Handler._paper_desk",
-    "Handler._paper_run_json",
-    "Handler._sim_page",
-    "_council_confirm",
-    "_council_holdings",
-    "_council_simrun",
-    "_debate_flow",
-    "_debate_say",
-    "_pf_apply",
-    "_pf_csv",
-    "_pf_reason_cat",
-    "_pf_summary",
-    "_portfolio_adjust",
-    "_portfolio_close",
-    "_portfolio_market",
-    "_portfolio_open",
-    "_portfolio_set",
-    "_portfolio_undo"
-   ]
+  {
+   "path": "/api/bridge/summary",
+   "lines": [
+    3563
+   ],
+   "count": 1,
+   "first_line": 3563
   },
-  "portal/api_screen.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._screen_page",
-    "Handler._screen_sig_page",
-    "Handler._stock_fundamental",
-    "Handler._stock_notices",
-    "Handler._stock_valuation",
-    "_chips_data",
-    "_kline_data",
-    "_kline_qy",
-    "_ts_daily_prepend",
-    "build_screen",
-    "get_quotes"
-   ]
+  {
+   "path": "/api/bridge/table_preview",
+   "lines": [
+    3570
+   ],
+   "count": 1,
+   "first_line": 3570
   },
-  "portal/api_misc.py": {
-   "routes": [],
-   "funcs": [
-    "Handler._aim_page",
-    "Handler._analyst_report_page",
-    "Handler._api_analyst_report",
-    "Handler._api_audit_chat",
-    "Handler._api_feishu_event",
-    "Handler._api_recv_add",
-    "Handler._api_report_push",
-    "Handler._api_sub_del",
-    "Handler._api_sub_test",
-    "Handler._api_sub_toggle",
-    "Handler._audit_ai_page",
-    "Handler._audit_backends",
-    "Handler._audit_cfg",
-    "Handler._audit_chat",
-    "Handler._devops_data",
-    "Handler._devops_page",
-    "Handler._feishu_encrypt_key",
-    "Handler._gzh_list",
-    "Handler._handle_card_action",
-    "Handler._intel_page",
-    "Handler._license_state",
-    "Handler._org_page",
-    "Handler._qpzm_batch_blk",
-    "Handler._qpzm_page",
-    "Handler._send_media",
-    "Handler._sub_data",
-    "Handler._sub_engine",
-    "Handler._sub_write",
-    "Handler._subscribe_page",
-    "Handler._vd_list",
-    "build_brief",
-    "build_overview",
-    "get_alerts",
-    "get_backups",
-    "get_containers",
-    "get_disks",
-    "get_gzh",
-    "get_news",
-    "get_tasks",
-    "get_video",
-    "tcp_ok"
-   ]
+  {
+   "path": "/api/brief",
+   "lines": [
+    2757
+   ],
+   "count": 1,
+   "first_line": 2757
+  },
+  {
+   "path": "/api/chanlun/backtest",
+   "lines": [
+    2843
+   ],
+   "count": 1,
+   "first_line": 2843
+  },
+  {
+   "path": "/api/chanlun/card/feedback",
+   "lines": [
+    172,
+    2176
+   ],
+   "count": 2,
+   "first_line": 172
+  },
+  {
+   "path": "/api/chanlun/kline",
+   "lines": [
+    2786
+   ],
+   "count": 1,
+   "first_line": 2786
+  },
+  {
+   "path": "/api/chanlun/label/load",
+   "lines": [
+    2959
+   ],
+   "count": 1,
+   "first_line": 2959
+  },
+  {
+   "path": "/api/chanlun/label/save",
+   "lines": [
+    163,
+    2124
+   ],
+   "count": 2,
+   "first_line": 163
+  },
+  {
+   "path": "/api/chanlun/pool/push",
+   "lines": [
+    173,
+    2186
+   ],
+   "count": 2,
+   "first_line": 173
+  },
+  {
+   "path": "/api/chanlun/structure",
+   "lines": [
+    2798
+   ],
+   "count": 1,
+   "first_line": 2798
+  },
+  {
+   "path": "/api/chips",
+   "lines": [
+    3551
+   ],
+   "count": 1,
+   "first_line": 3551
+  },
+  {
+   "path": "/api/council/confirm",
+   "lines": [
+    179,
+    2239
+   ],
+   "count": 2,
+   "first_line": 179
+  },
+  {
+   "path": "/api/council/simrun",
+   "lines": [
+    180,
+    2249
+   ],
+   "count": 2,
+   "first_line": 180
+  },
+  {
+   "path": "/api/data/daily",
+   "lines": [
+    2401
+   ],
+   "count": 1,
+   "first_line": 2401
+  },
+  {
+   "path": "/api/data/freshness",
+   "lines": [
+    3580
+   ],
+   "count": 1,
+   "first_line": 3580
+  },
+  {
+   "path": "/api/data/job",
+   "lines": [
+    3592
+   ],
+   "count": 1,
+   "first_line": 3592
+  },
+  {
+   "path": "/api/data/runs/",
+   "lines": [
+    2401
+   ],
+   "count": 1,
+   "first_line": 2401
+  },
+  {
+   "path": "/api/data/sync",
+   "lines": [
+    198,
+    3587
+   ],
+   "count": 2,
+   "first_line": 198
+  },
+  {
+   "path": "/api/data/update",
+   "lines": [
+    158,
+    2009
+   ],
+   "count": 2,
+   "first_line": 158
+  },
+  {
+   "path": "/api/data/update-plan",
+   "lines": [
+    157,
+    2009
+   ],
+   "count": 2,
+   "first_line": 157
+  },
+  {
+   "path": "/api/debate/say",
+   "lines": [
+    181,
+    2259
+   ],
+   "count": 2,
+   "first_line": 181
+  },
+  {
+   "path": "/api/devops",
+   "lines": [
+    3471
+   ],
+   "count": 1,
+   "first_line": 3471
+  },
+  {
+   "path": "/api/kline",
+   "lines": [
+    3526
+   ],
+   "count": 1,
+   "first_line": 3526
+  },
+  {
+   "path": "/api/kline_qy",
+   "lines": [
+    3537
+   ],
+   "count": 1,
+   "first_line": 3537
+  },
+  {
+   "path": "/api/manager_fire",
+   "lines": [
+    187,
+    2041
+   ],
+   "count": 2,
+   "first_line": 187
+  },
+  {
+   "path": "/api/manager_hire",
+   "lines": [
+    186,
+    2037
+   ],
+   "count": 2,
+   "first_line": 186
+  },
+  {
+   "path": "/api/manager_roster",
+   "lines": [
+    2451
+   ],
+   "count": 1,
+   "first_line": 2451
+  },
+  {
+   "path": "/api/market_performance",
+   "lines": [
+    2522
+   ],
+   "count": 1,
+   "first_line": 2522
+  },
+  {
+   "path": "/api/minutes_inbox",
+   "lines": [
+    2455
+   ],
+   "count": 1,
+   "first_line": 2455
+  },
+  {
+   "path": "/api/nlquery",
+   "lines": [
+    3373
+   ],
+   "count": 1,
+   "first_line": 3373
+  },
+  {
+   "path": "/api/onboard",
+   "lines": [
+    189,
+    2049
+   ],
+   "count": 2,
+   "first_line": 189
+  },
+  {
+   "path": "/api/overview",
+   "lines": [
+    2420
+   ],
+   "count": 1,
+   "first_line": 2420
+  },
+  {
+   "path": "/api/paper_direct_open",
+   "lines": [
+    188,
+    2045
+   ],
+   "count": 2,
+   "first_line": 188
+  },
+  {
+   "path": "/api/paper_hire",
+   "lines": [
+    185,
+    2032
+   ],
+   "count": 2,
+   "first_line": 185
+  },
+  {
+   "path": "/api/paper_hires",
+   "lines": [
+    2444
+   ],
+   "count": 1,
+   "first_line": 2444
+  },
+  {
+   "path": "/api/paper_history",
+   "lines": [
+    2499
+   ],
+   "count": 1,
+   "first_line": 2499
+  },
+  {
+   "path": "/api/paper_order",
+   "lines": [
+    183,
+    2024
+   ],
+   "count": 2,
+   "first_line": 183
+  },
+  {
+   "path": "/api/paper_status",
+   "lines": [
+    2459
+   ],
+   "count": 1,
+   "first_line": 2459
+  },
+  {
+   "path": "/api/paper_stop",
+   "lines": [
+    184,
+    2028
+   ],
+   "count": 2,
+   "first_line": 184
+  },
+  {
+   "path": "/api/portfolio_adjust",
+   "lines": [
+    177,
+    2219
+   ],
+   "count": 2,
+   "first_line": 177
+  },
+  {
+   "path": "/api/portfolio_close",
+   "lines": [
+    176,
+    2209
+   ],
+   "count": 2,
+   "first_line": 176
+  },
+  {
+   "path": "/api/portfolio_csv",
+   "lines": [
+    2769
+   ],
+   "count": 1,
+   "first_line": 2769
+  },
+  {
+   "path": "/api/portfolio_hire",
+   "lines": [
+    160,
+    2283
+   ],
+   "count": 2,
+   "first_line": 160
+  },
+  {
+   "path": "/api/portfolio_market",
+   "lines": [
+    2783
+   ],
+   "count": 1,
+   "first_line": 2783
+  },
+  {
+   "path": "/api/portfolio_open",
+   "lines": [
+    178,
+    2229
+   ],
+   "count": 2,
+   "first_line": 178
+  },
+  {
+   "path": "/api/portfolio_set",
+   "lines": [
+    174,
+    2196
+   ],
+   "count": 2,
+   "first_line": 174
+  },
+  {
+   "path": "/api/portfolio_status",
+   "lines": [
+    2543
+   ],
+   "count": 1,
+   "first_line": 2543
+  },
+  {
+   "path": "/api/portfolio_subscribe",
+   "lines": [
+    159,
+    2269
+   ],
+   "count": 2,
+   "first_line": 159
+  },
+  {
+   "path": "/api/portfolio_undo",
+   "lines": [
+    175,
+    2206
+   ],
+   "count": 2,
+   "first_line": 175
+  },
+  {
+   "path": "/api/portfolios",
+   "lines": [
+    2536
+   ],
+   "count": 1,
+   "first_line": 2536
+  },
+  {
+   "path": "/api/reception",
+   "lines": [
+    2447
+   ],
+   "count": 1,
+   "first_line": 2447
+  },
+  {
+   "path": "/api/recv_add",
+   "lines": [
+    168,
+    2149
+   ],
+   "count": 2,
+   "first_line": 168
+  },
+  {
+   "path": "/api/report_push",
+   "lines": [
+    164,
+    2133
+   ],
+   "count": 2,
+   "first_line": 164
+  },
+  {
+   "path": "/api/research",
+   "lines": [
+    3354
+   ],
+   "count": 1,
+   "first_line": 3354
+  },
+  {
+   "path": "/api/review_minutes",
+   "lines": [
+    2694
+   ],
+   "count": 1,
+   "first_line": 2694
+  },
+  {
+   "path": "/api/screen",
+   "lines": [
+    2766
+   ],
+   "count": 1,
+   "first_line": 2766
+  },
+  {
+   "path": "/api/strategies",
+   "lines": [
+    2760
+   ],
+   "count": 1,
+   "first_line": 2760
+  },
+  {
+   "path": "/api/strategy_detail",
+   "lines": [
+    2712
+   ],
+   "count": 1,
+   "first_line": 2712
+  },
+  {
+   "path": "/api/strategy_market",
+   "lines": [
+    2515
+   ],
+   "count": 1,
+   "first_line": 2515
+  },
+  {
+   "path": "/api/sub_del",
+   "lines": [
+    166,
+    2141
+   ],
+   "count": 2,
+   "first_line": 166
+  },
+  {
+   "path": "/api/sub_test",
+   "lines": [
+    167,
+    2145
+   ],
+   "count": 2,
+   "first_line": 167
+  },
+  {
+   "path": "/api/sub_toggle",
+   "lines": [
+    165,
+    2137
+   ],
+   "count": 2,
+   "first_line": 165
+  },
+  {
+   "path": "/api/trader_detail",
+   "lines": [
+    2655
+   ],
+   "count": 1,
+   "first_line": 2655
+  },
+  {
+   "path": "/api/trader_fire",
+   "lines": [
+    161,
+    2328
+   ],
+   "count": 2,
+   "first_line": 161
+  },
+  {
+   "path": "/api/trader_roster",
+   "lines": [
+    2620
+   ],
+   "count": 1,
+   "first_line": 2620
+  },
+  {
+   "path": "/api/trainee_board",
+   "lines": [
+    2722
+   ],
+   "count": 1,
+   "first_line": 2722
   }
- }
+ ]
 }

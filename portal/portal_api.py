@@ -186,6 +186,7 @@ _MUTATION_POSTS = frozenset((
     "/api/manager_hire",  # K-STOCK-137d S-b2 经理雇佣（子进程 manager.py hire）
     "/api/manager_fire",  # K-STOCK-137d S-b2 经理解雇（子进程 manager.py fire）
     "/api/paper_direct_open",  # K-STOCK-137f S-d 轻量直订动线（策略市场直接建仓）
+    "/api/onboard",       # K-STOCK-159 S-e 迎宾向导四问落账（建组合+雇佣链）
 ))
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -1656,6 +1657,237 @@ color:#fff;font-size:13.5px;cursor:pointer}
                "fire", mid, source, "--json"]
         self._json(self._manager_run_json(cmd, timeout=35))
 
+    # ---------------- K-STOCK-159 S-e 接待式迎宾向导（纯增量） ----------------
+
+    _OB_GREETING_FB = (
+        "欢迎光临 K-STOCK 投研交易所！我是值班经理。回答我四个问题，"
+        "帮你把服务配置到位：免费还是收费、自动还是手动、"
+        "要不要每日盘前汇报与盘后总结、想请哪位资历经理。")
+
+    def _api_reception(self):
+        """K-STOCK-159 S-e 迎宾向导数据源（纯只读）。
+        greeting：优先 duty_receptionist.json 的 role_prompt 提炼，
+        档案缺失/读取失败 → 内置兜底文案；
+        profiles：managers/*.json 中 status=="live" 且 id 以
+        _5y/_10y/_20y 结尾的资历档摘要（读不到返回空数组）；
+        portfolios：现有组合摘要。"""
+        try:
+            base = self._PAPER_DIR
+            greeting = self._OB_GREETING_FB
+            rp = os.path.join(base, "managers", "duty_receptionist.json")
+            if os.path.exists(rp):
+                try:
+                    with open(rp, encoding="utf-8") as f:
+                        _d = json.load(f)
+                    _t = str(_d.get("role_prompt") or "").strip()
+                    if _t:  # 提炼：取首段，限 200 字
+                        greeting = _t.splitlines()[0].strip()[:200]
+                except Exception:
+                    pass
+            profiles = []
+            for fn in sorted(glob.glob(os.path.join(base, "managers", "*.json"))):
+                try:
+                    with open(fn, encoding="utf-8") as f:
+                        p = json.load(f)
+                except Exception:
+                    continue
+                pid = str(p.get("id") or "")
+                if p.get("status") != "live" or not pid.endswith(
+                        ("_5y", "_10y", "_20y")):
+                    continue
+                profiles.append({"id": pid, "name": p.get("name"),
+                                 "price": p.get("hire_base_price_cny"),
+                                 "style": p.get("style")})
+            try:
+                import subscriptions as _sub
+                pfs = [{"id": p.get("id"), "name": p.get("name"),
+                        "strategies": p.get("strategies") or [],
+                        "trader": p.get("trader"), "price": p.get("price"),
+                        "paid": p.get("paid"), "services": p.get("services")}
+                       for p in (_sub.portfolios().get("portfolios") or [])]
+            except Exception:
+                pfs = []
+            self._json({"ok": True, "greeting": greeting,
+                        "profiles": profiles, "portfolios": pfs})
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+
+    def _api_onboard(self, raw):
+        """K-STOCK-159 S-e 迎宾向导四问落账。
+        body: {plan: free_manual|free_auto|paid_auto, pre_open_report: bool,
+               post_close_report: bool, manager_id?, portfolio_name?}
+        free_manual → 不动订阅，引导策略市场直接建仓（轻量动线）；
+        free_auto/paid_auto → 建组合 pf_<NNN>（序号递增，复用 subscriptions
+        原子写入口）+ strategies 默认 ninedim（live 兜底）+ trader 取
+        roster（trainees/*.json status∈{live,training}）未被占用者
+        （占用判定：hires.json 活跃雇佣；portfolio.py hire 子进程落账）；
+        paid_auto → price 置 99、paid=false+「收费意向待商业化开通」；
+        manager_id 合法（live）→ 子进程 manager.py hire <mid> <pf_id>。
+        幂等：同 plan+同组合名重复提交返回已存在组合。"""
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        plan = str(rec.get("plan") or "").strip()
+        if plan not in ("free_manual", "free_auto", "paid_auto"):
+            self._json({"ok": False,
+                        "error": "plan 非法（free_manual|free_auto|paid_auto）"}, 400)
+            return
+        if plan == "free_manual":
+            self._json({"ok": True, "plan": plan,
+                        "guidance": "引导策略市场直接建仓（轻量动线）",
+                        "market_url": "/market-strategy"})
+            return
+        base = self._PAPER_DIR
+        try:
+            import subscriptions as _sub
+            # 经理前置校验（非法立即 400，不落任何账）
+            mid = str(rec.get("manager_id") or "").strip()
+            if mid:
+                if not re.match(r"^[a-z0-9_]{1,32}$", mid):
+                    self._json({"ok": False, "error": "manager_id 格式非法"}, 400)
+                    return
+                mp = os.path.join(base, "managers", mid + ".json")
+                try:
+                    with open(mp, encoding="utf-8") as f:
+                        _m = json.load(f)
+                except Exception:
+                    _m = None
+                if not _m or _m.get("status") != "live":
+                    self._json({"ok": False,
+                                "error": "manager 不存在或非 live: %s" % mid}, 400)
+                    return
+            d = _sub._load()
+            pfs = d.get("portfolios") or []
+            # 幂等：同 plan+同组合名（含都为空）已有迎宾组合 → 原样返回
+            marker = "K-STOCK-159 迎宾向导 plan=%s" % plan
+            pname = str(rec.get("portfolio_name") or "").strip()[:32]
+            for p in pfs:
+                if str(p.get("note") or "").startswith(marker) and \
+                        (pname == "" or (p.get("name") or "") == pname):
+                    # 组合名未提供时按 plan 标记命中（自动命名不参与匹配）
+                    self._json({"ok": True, "plan": plan,
+                                "portfolio": p.get("id"), "existed": True,
+                                "guidance": "已存在迎宾组合，未重复创建"})
+                    return
+            # 组合序号递增（查现有最大号）
+            mx = 0
+            for p in pfs:
+                m = re.match(r"^pf_(\d+)$", str(p.get("id") or ""))
+                if m:
+                    mx = max(mx, int(m.group(1)))
+            pf_id = "pf_%03d" % (mx + 1)
+            # 策略：默认 ninedim，非 live → 兜底取注册表首个 live
+            strat = "ninedim"
+            try:
+                with open(_sub.REG, encoding="utf-8") as f:
+                    reg = json.load(f).get("strategies") or []
+            except Exception:
+                reg = []
+            def _live(sid):
+                return any(s.get("id") == sid and s.get("status") == "live"
+                           for s in reg)
+            if not _live(strat):
+                alt = next((s["id"] for s in reg
+                            if s.get("status") == "live"), None)
+                if not alt:
+                    self._json({"ok": False, "error": "注册表无 live 策略"}, 409)
+                    return
+                strat = alt
+            # trader：roster 取 status∈{live,training} 且未被占用者
+            traders = []
+            for fn in sorted(glob.glob(os.path.join(base, "trainees", "*.json"))):
+                try:
+                    with open(fn, encoding="utf-8") as f:
+                        t = json.load(f)
+                except Exception:
+                    continue
+                if t.get("status") in ("live", "training") and \
+                        t.get("id") not in (None, "", "main"):
+                    traders.append(t)
+            occupied = set()
+            hp = os.path.join(base, "hires.json")
+            if os.path.exists(hp):
+                try:
+                    with open(hp, encoding="utf-8") as f:
+                        for h in (json.load(f).get("hires") or []):
+                            if h.get("status") == "active":
+                                occupied.add(h.get("trader"))
+                except Exception:
+                    pass
+            for p in pfs:  # 订阅清单 trader 字段并计（防 hires 缺行重复指派）
+                if p.get("trader"):
+                    occupied.add(p.get("trader"))
+            free = sorted((t for t in traders
+                           if t.get("id") not in occupied),
+                          key=lambda t: t.get("status") != "live")
+            if not free:
+                self._json({"ok": False,
+                            "error": "无可用交易员（live/training 且未被占用）"}, 409)
+                return
+            trader = free[0].get("id")
+            # 组合落账（原子写：复用 subscriptions._save）
+            now = _sub._now()
+            note = marker
+            price, paid = 0, False
+            if plan == "paid_auto":
+                price, paid = 99, False
+                note += " · 收费意向待商业化开通"
+            pf = {"id": pf_id, "name": pname or ("迎宾组合 " + pf_id),
+                  "strategies": [strat], "price": price, "paid": paid,
+                  "trader": None, "note": note, "created_at": now,
+                  "services": {"pre_open_report":
+                               bool(rec.get("pre_open_report", True)),
+                               "post_close_report":
+                               bool(rec.get("post_close_report", True))}}
+            d["portfolios"].append(pf)
+            _sub._save(d)
+            # 真雇佣链：portfolio.py hire（hires.json 落 source=<pf_id>）
+            warn = []
+            _pfpy = (r"C:\Program Files\Python311\python.exe"
+                     if os.path.exists(r"C:\Program Files"
+                                       r"\Python311\python.exe")
+                     else sys.executable)
+            _script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   os.pardir, "k_stock", "paper",
+                                   "portfolio.py")
+            hired = False
+            try:
+                r = subprocess.run(
+                    [_pfpy, "-X", "utf8", _script, "hire",
+                     "--pf", pf_id, "--trader", str(trader), "--json"],
+                    capture_output=True, timeout=60)
+                out = r.stdout.decode("utf-8", "replace").strip()
+                data = json.loads(out.splitlines()[-1]) if out else {}
+                hired = bool(data.get("ok"))
+            except Exception as _e:
+                data = {"error": repr(_e)}
+            if hired:
+                _sub.bind_trader(str(trader), pid=pf_id)
+            else:
+                warn.append("交易员雇佣未落账：%s"
+                            % (data.get("error") or "unknown"))
+            # 经理雇佣（复刻 manager_hire 端点形状：子进程 manager.py hire）
+            mh = None
+            if mid:
+                cmd = [self._PAPER_PY,
+                       os.path.join(self._PAPER_DIR, "manager.py"),
+                       "hire", mid, pf_id, "--json",
+                       "--note", "K-STOCK-159 迎宾向导雇佣"[:200]]
+                mh = self._manager_run_json(cmd, timeout=35)
+                if not mh.get("ok"):
+                    warn.append("经理雇佣未落账：%s"
+                                % (mh.get("error") or "unknown"))
+            self._json({"ok": True, "plan": plan, "portfolio": pf_id,
+                        "trader": str(trader) if hired else None,
+                        "strategies": [strat], "price": price, "paid": paid,
+                        "services": pf["services"],
+                        "manager_hire": mh, "warning": "；".join(warn) or None,
+                        "guidance": "组合已生成，订阅与雇佣链次日 07:05 主闭环生效"})
+        except Exception as e:
+            self._json({"ok": False, "error": repr(e)}, 500)
+
     def _api_minutes_inbox(self, qs):
         """K-STOCK-146 S-c 纪要收件箱只读投影（纯只读直读
         minutes_inbox.json，复刻 _api_manager_roster 直读形状，无子进程）。
@@ -1813,6 +2045,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             if path == "/api/paper_direct_open":
                 # K-STOCK-137f S-d 轻量直订动线：策略市场「直接建仓」
                 self._api_paper_direct_open(raw)
+                return
+            if path == "/api/onboard":
+                # K-STOCK-159 S-e 迎宾向导四问落账（建组合+雇佣链）
+                self._api_onboard(raw)
                 return
             if path == "/feishu/event":
                 # K250 飞书事件回调（卡按钮点击 / url_verification 握手）
@@ -2208,6 +2444,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/paper_hires":
             # K-STOCK-042 A3 雇佣关系投影（纯只读）
             self._api_paper_hires()
+        elif path == "/api/reception":
+            # K-STOCK-159 S-e 迎宾向导数据源（纯只读：duty_receptionist
+            # 迎宾词 + 资历经理三档摘要 + 现有组合摘要）
+            self._api_reception()
         elif path == "/api/manager_roster":
             # K-STOCK-137d S-b2 经理名册投影（纯只读：managers/*.json +
             # manager_hires.json + models.json 系数计价）

@@ -279,6 +279,24 @@
       </div>
 
       <div>
+        <!-- K-STOCK-159 S-e 接待式迎宾向导（值班经理四问，纯增量，失败静默） -->
+        <div class="col-title">值班经理接待</div>
+        <div class="side-box" id="ob-box" style="display:none">
+          <div id="ob-greeting" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
+          <div style="font-size:12px;margin-bottom:3px">① 服务方案：</div>
+          <select id="ob-plan" style="width:100%;margin-bottom:6px">
+            <option value="free_manual">免费策略 + 手动交易</option>
+            <option value="free_auto">免费策略 + 自动交易</option>
+            <option value="paid_auto">收费策略 + 自动交易（¥99/月 · 意向登记）</option>
+          </select>
+          <label style="font-size:12px;display:block"><input type="checkbox" id="ob-pre" checked> ② 每日盘前汇报</label>
+          <label style="font-size:12px;display:block;margin-bottom:6px"><input type="checkbox" id="ob-post" checked> ③ 每日盘后总结</label>
+          <div style="font-size:12px;margin-bottom:3px">④ 资历经理（可跳过）：</div>
+          <select id="ob-mgr" style="width:100%;margin-bottom:6px"><option value="">跳过（不请经理）</option></select>
+          <input id="ob-name" placeholder="组合名（可空，默认自动命名）" style="width:100%;margin-bottom:6px">
+          <button class="btn btn-primary" onclick="submitOnboard()">提交接待</button>
+          <div id="ob-free-link" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
+        </div>
         <div class="col-title">止损哨兵</div>
         <div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">今日挂单（pending）</div>
@@ -981,6 +999,46 @@ async function postWrite(url,body,desc){
     toast(j.ok?('✅ '+desc+' 完成'):'❌ '+(j.error||'失败'),5000);
   }catch(e){toast('❌ '+e.message,5000);}
   await loadStatus();
+}
+
+// ===== K-STOCK-159 S-e 接待式迎宾向导（值班经理四问，纯增量，失败静默） =====
+const OB_ESC=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+(async function initOnboard(){
+  try{
+    const r=await api('/api/reception');
+    if(!r||!r.ok)return;
+    if(r.greeting)$('ob-greeting').textContent=r.greeting;
+    (r.profiles||[]).forEach(p=>{
+      const o=document.createElement('option');
+      o.value=p.id;
+      o.textContent=(p.name||p.id)+(p.price!=null?`（¥${p.price}/月）`:'');
+      $('ob-mgr').appendChild(o);
+    });
+    $('ob-box').style.display='';
+  }catch(e){/* 静默：迎宾卡不阻塞页面 */}
+})();
+async function submitOnboard(){
+  try{
+    const body={plan:$('ob-plan').value,
+      pre_open_report:$('ob-pre').checked,
+      post_close_report:$('ob-post').checked};
+    const mid=$('ob-mgr').value;if(mid)body.manager_id=mid;
+    const nm=$('ob-name').value.trim();if(nm)body.portfolio_name=nm;
+    const r=await api('/api/onboard',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r&&r.ok){
+      if(r.plan==='free_manual'||r.market_url){
+        $('ob-free-link').style.display='';
+        toast('✅ 已登记：'+OB_ESC(r.guidance||'去策略市场直接建仓'),5000);
+      }else{
+        const warn=r.warning?('<br>⚠️ '+OB_ESC(r.warning)):'';
+        toast(`✅ 接待完成：新组合 <b>${OB_ESC(r.portfolio||'')}</b>`+
+          (r.trader?(' · 交易员 '+OB_ESC(r.trader)):'')+
+          (r.manager_hire&&r.manager_hire.ok?(' · 经理已聘'):'')+
+          '<br>'+OB_ESC(r.guidance||'')+warn,6000);
+      }
+    }else toast('❌ 接待失败：'+OB_ESC((r&&r.error)||'未知'),5000);
+  }catch(e){toast('❌ 接待失败：'+OB_ESC(e.message),5000);}
 }
 
 loadStatus();
