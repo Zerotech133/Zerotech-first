@@ -1,0 +1,173 @@
+{
+ "ts": "2026-10-13T01:35",
+ "A": {
+  "run": "A_baseline_equalweight",
+  "pool_size": 72,
+  "pool_missing": [
+   "001220.SZ",
+   "001233.SZ",
+   "603210.SH",
+   "920183.BJ"
+  ],
+  "window": [
+   "20250101",
+   "20250331"
+  ],
+  "trade_days": 57,
+  "total_return_pct": 5.49,
+  "annualized_pct": 25.45,
+  "max_drawdown_pct": -5.66,
+  "sharpe": 1.19,
+  "win_days": 33,
+  "win_day_ratio": 0.579,
+  "median_stock_buyhold_pct": 0.81,
+  "top_contrib": [
+   [
+    "002656.SZ",
+    0.89
+   ],
+   [
+    "920639.BJ",
+    0.75
+   ],
+   [
+    "600081.SH",
+    0.64
+   ],
+   [
+    "300765.SZ",
+    0.56
+   ],
+   [
+    "600128.SH",
+    0.49
+   ]
+  ],
+  "bottom_contrib": [
+   [
+    "000820.SZ",
+    -0.37
+   ],
+   [
+    "002390.SZ",
+    -0.25
+   ],
+   [
+    "002646.SZ",
+    -0.22
+   ],
+   [
+    "000159.SZ",
+    -0.17
+   ],
+   [
+    "300295.SZ",
+    -0.16
+   ]
+  ],
+  "caveat": "池子=2026-10-12 快照回溯 2025Q1（示范口径，含池选择前视偏差）；缺日个股现金态简化"
+ },
+ "B": {
+  "run": "B_chanlun_signal_engine",
+  "scanned": 20,
+  "runs_with_trades": 17,
+  "examples": [
+   {
+    "stock": "002656.SZ",
+    "signals_in_window": 0,
+    "types": [],
+    "stats": {
+     "trades": 0,
+     "wins": 0,
+     "win_rate": null,
+     "total_return": 0.0,
+     "max_dd": 0.0,
+     "buy_hold": 6.37,
+     "open_pos": false
+    }
+   },
+   {
+    "stock": "920639.BJ",
+    "signals_in_window": 1,
+    "types": [
+     "3买"
+    ],
+    "stats": {
+     "trades": 1,
+     "wins": 1,
+     "win_rate": 100.0,
+     "total_return": 36.46,
+     "max_dd": 0.0,
+     "buy_hold": 160.68,
+     "open_pos": false
+    }
+   },
+   {
+    "stock": "600081.SH",
+    "signals_in_window": 2,
+    "types": [
+     "3买"
+    ],
+    "stats": {
+     "trades": 1,
+     "wins": 1,
+     "win_rate": 100.0,
+     "total_return": 62.11,
+     "max_dd": 0.0,
+     "buy_hold": 41.33,
+     "open_pos": false
+    }
+   },
+   {
+    "stock": "300765.SZ",
+    "signals_in_window": 2,
+    "types": [
+     "1买",
+     "2买"
+    ],
+    "stats": {
+     "trades": 1,
+     "wins": 1,
+     "win_rate": 100.0,
+     "total_return": 49.22,
+     "max_dd": 0.0,
+     "buy_hold": 302.91,
+     "open_pos": false
+    }
+   },
+   {
+    "stock": "600128.SH",
+    "signals_in_window": 2,
+    "types": [
+     "3买"
+    ],
+    "stats": {
+     "trades": 1,
+     "wins": 1,
+     "win_rate": 100.0,
+     "total_return": 37.99,
+     "max_dd": 0.0,
+     "buy_hold": 38.8,
+     "open_pos": false
+    }
+   },
+   {
+    "stock": "000820.SZ",
+    "signals_in_window": 1,
+    "types": [
+     "3买"
+    ],
+    "stats": {
+     "trades": 1,
+     "wins": 0,
+     "win_rate": 0.0,
+     "total_return": -29.34,
+     "max_dd": 29.34,
+     "buy_hold": -40.74,
+     "open_pos": false
+    }
+   }
+  ],
+  "caveat": "理论价成交（引擎防未来声明：信号确认依赖后续笔形成），纸面信号质量口径"
+ }
+}
