@@ -210,10 +210,10 @@
           </div>
         </div>
 
-        <div class="strat-card disabled" data-s="qingping">
+        <div class="strat-card" data-s="qingping">
           <div class="radio"></div>
-          <div class="head"><span class="icon">🍃</span><span class="name">青萍之末</span><span class="st planned">v0.2b 待接入</span></div>
-          <div class="desc">信号逻辑移植到 Picks 协议 · 接入后即拥有同样的选择键</div>
+          <div class="head"><span class="icon">🍃</span><span class="name">青萍之末</span><span class="st live">已上架</span></div>
+          <div class="desc">信号逻辑已移植到 Picks 协议 · 订阅/建仓入口在<a href="/market-strategy">策略市场</a>（qpzm）</div>
         </div>
 
         <div class="strat-card" data-s="manual">
@@ -252,9 +252,9 @@
         </div>
 
         <div class="exec-panel" id="exec-qingping" style="display:none">
-          <div class="exec-title">🍃 青萍之末 · 接入中</div>
+          <div class="exec-title">🍃 青萍之末 · 已上架</div>
           <div class="exec-sub">v0.2b：只移植信号逻辑产 picks，不引入第二套交易语义</div>
-          <div class="empty" style="padding:60px 0">选择键已预留 —— 接入后此面板与左侧卡片自动点亮</div>
+          <div class="flow-note">订阅与建仓入口：<a href="/market-strategy">策略市场 → 青萍之末（qpzm）</a>。信号产物进同一条 picks 协议：风控 → 撮合 → 账本。</div>
         </div>
 
         <div class="exec-panel" id="exec-manual" style="display:none">
@@ -311,8 +311,6 @@
         <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">今日复盘会（三 Agent）</div>
         <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">我的组合（策略订阅 × AI 交易员）</div>
-        <div class="side-box"><div id="pf-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">我的组合总览（多组合）</div>
         <div class="side-box"><div id="pf-multi-body" style="display:none"><div class="empty">读取中…</div></div></div>
         <div class="col-title">策略源建议（strategist · 影子）</div>
@@ -363,7 +361,6 @@
 
   <div class="legend">
     <span><span class="dot" style="background:var(--color-ok)"></span>已接入（引擎实测）</span>
-    <span><span class="dot" style="background:var(--color-warn)"></span>v0.2b 待接入</span>
     <span><span class="dot" style="background:var(--text-dim)"></span>v0.3 预留</span>
     <span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a href="#" onclick="loadStatus();return false" style="color:var(--link)">↻ 刷新</a></span>
   </div>
@@ -452,7 +449,6 @@ function renderAll(j){
   $('n-pos').textContent=j.positions.length;
   renderDesk(j);renderStops(j.stops);renderPend(j.pending_orders);renderPick(j.pick);renderJudge(j.judge);renderStrat(j.strategist);
   loadPlanReview();   // K-STOCK-163 今日交易计划审批单（独立只读端点，失败静默）
-}
 
 // ===== K-STOCK-163 今日交易计划审批单（/api/plan_review 只读投影，失败静默） =====
 const PLAN_RC_COLOR={'信心不足':'var(--text-dim)','行业集中':'#e3b341','风险敞口':'var(--color-dn)','流动性':'var(--pur-500,#a371f7)'};
@@ -509,25 +505,6 @@ function renderMeeting(m){
     <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">纪要已推飞书 · 点按钮可查持仓线位</div>`;
 }
 fetch('/api/review_minutes').then(r=>r.json()).then(renderMeeting).catch(()=>{$('meet-body').innerHTML='<div class="empty">复盘会读取失败</div>';});
-function renderPortfolio(ps){
-  const el=$('pf-body');
-  if(!ps||!ps.ok){el.innerHTML='<div class="empty">组合数据读取失败</div>';return;}
-  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-  const pf=ps.portfolio||{};
-  const chips=(pf.strategies||[]).map(s=>`<a href="/market-strategy" style="display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;font-size:11px;text-decoration:none;color:var(--text)">${esc(s)}</a>`).join('')||'<span class="empty">未订阅策略</span>';
-  const traders=(ps.traders||[]).map(t=>`<div>🤖 AI 交易员在岗：<b>${esc(t)}</b></div>`).join('')||'<div class="empty">未聘交易员（可去<a href="/market-strategy">策略市场</a>订阅后一键聘用）</div>';
-  const pend=(ps.pending||[]).slice(0,6).map(p=>
-    `<div>🎯 ${esc(p.side)} <a href="/kg/stock/${p.stock}">${p.stock}</a> ×${p.qty}（${esc(p.plan_date)}·跟单）</div>`).join('');
-  const poss=(ps.positions||[]).slice(0,6).map(p=>
-    `<div>📦 <a href="/kg/stock/${p.stock}">${p.stock}</a> ${p.qty} 股 @${p.avg_cost?Number(p.avg_cost).toFixed(2):'-'}</div>`).join('');
-  const eq=ps.equity?`<div style="font-size:11.5px;color:var(--text-dim);margin:4px 0">净值快照 ${esc(ps.equity.date)} · 总资产 ¥${Number(ps.equity.total).toLocaleString()}</div>`:'';
-  el.innerHTML=`<div style="font-weight:700;margin-bottom:4px">${esc(pf.name||pf.id||'pf_001')}</div>${eq}${traders}
-    <div style="margin:6px 0 2px;font-size:11px;color:var(--text-dim)">订阅策略集：</div>${chips}
-    ${pend?`<div style="margin:6px 0 2px;font-size:11px;color:var(--text-dim)">组合跟单挂单：</div>${pend}`:''}
-    ${poss?`<div style="margin:6px 0 2px;font-size:11px;color:var(--text-dim)">组合持仓：</div>${poss}`:''}
-    <div style="font-size:10.5px;color:var(--text-dim);margin-top:6px">跟单由工作日 07:10 计划任务自动执行</div>`;
-}
-fetch('/api/portfolio_status').then(r=>r.json()).then(renderPortfolio).catch(()=>{$('pf-body').innerHTML='<div class="empty">组合数据读取失败</div>';});
 /* ===== K-STOCK-151: 多组合总览（纯增量，消费 /api/portfolio_status 的 portfolios 数组；失败或缺数组时静默隐藏，不影响主面板） ===== */
 function renderPortfoliosMulti(ps){
   const host=$('pf-multi-body');if(!host)return;

@@ -2033,7 +2033,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # K-STOCK-042 A3 雇佣交互（配置面：hire/fire 只改注册表）
                 self._api_paper_hire(raw)
                 return
-                return
             if path == "/api/manager_hire":
                 # K-STOCK-137d S-b2 经理雇佣（子进程 manager.py hire --json）
                 self._api_manager_hire(raw)
