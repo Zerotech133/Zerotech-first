@@ -1,0 +1,134 @@
+[
+ {
+  "reb": "1d",
+  "regime": true,
+  "total_pct": 12.63,
+  "ann_pct": 4.08,
+  "mdd_pct": -17.04,
+  "calmar": 0.24,
+  "turnover_x": 39.1,
+  "n_rebal": 728,
+  "est_cost_drag_pct": 5.87
+ },
+ {
+  "reb": "1d",
+  "regime": false,
+  "total_pct": 9.17,
+  "ann_pct": 3.0,
+  "mdd_pct": -25.7,
+  "calmar": 0.12,
+  "turnover_x": 10.9,
+  "n_rebal": 728,
+  "est_cost_drag_pct": 1.64
+ },
+ {
+  "reb": "5d",
+  "regime": true,
+  "total_pct": 14.43,
+  "ann_pct": 4.64,
+  "mdd_pct": -16.91,
+  "calmar": 0.27,
+  "turnover_x": 35.2,
+  "n_rebal": 229,
+  "est_cost_drag_pct": 5.28
+ },
+ {
+  "reb": "5d",
+  "regime": false,
+  "total_pct": 11.45,
+  "ann_pct": 3.72,
+  "mdd_pct": -25.28,
+  "calmar": 0.15,
+  "turnover_x": 5.6,
+  "n_rebal": 150,
+  "est_cost_drag_pct": 0.84
+ },
+ {
+  "reb": "10d",
+  "regime": true,
+  "total_pct": 15.37,
+  "ann_pct": 4.93,
+  "mdd_pct": -16.81,
+  "calmar": 0.29,
+  "turnover_x": 34.1,
+  "n_rebal": 164,
+  "est_cost_drag_pct": 5.12
+ },
+ {
+  "reb": "10d",
+  "regime": false,
+  "total_pct": 12.86,
+  "ann_pct": 4.15,
+  "mdd_pct": -25.12,
+  "calmar": 0.17,
+  "turnover_x": 4.2,
+  "n_rebal": 77,
+  "est_cost_drag_pct": 0.63
+ },
+ {
+  "reb": "20d",
+  "regime": true,
+  "total_pct": 14.9,
+  "ann_pct": 4.78,
+  "mdd_pct": -16.84,
+  "calmar": 0.28,
+  "turnover_x": 33.4,
+  "n_rebal": 133,
+  "est_cost_drag_pct": 5.01
+ },
+ {
+  "reb": "20d",
+  "regime": false,
+  "total_pct": 10.67,
+  "ann_pct": 3.47,
+  "mdd_pct": -25.09,
+  "calmar": 0.14,
+  "turnover_x": 3.3,
+  "n_rebal": 45,
+  "est_cost_drag_pct": 0.5
+ },
+ {
+  "reb": "60d",
+  "regime": true,
+  "total_pct": 13.96,
+  "ann_pct": 4.5,
+  "mdd_pct": -16.92,
+  "calmar": 0.27,
+  "turnover_x": 32.9,
+  "n_rebal": 114,
+  "est_cost_drag_pct": 4.93
+ },
+ {
+  "reb": "60d",
+  "regime": false,
+  "total_pct": 9.94,
+  "ann_pct": 3.24,
+  "mdd_pct": -24.61,
+  "calmar": 0.13,
+  "turnover_x": 2.5,
+  "n_rebal": 23,
+  "est_cost_drag_pct": 0.38
+ },
+ {
+  "reb": "0d",
+  "regime": true,
+  "total_pct": 14.05,
+  "ann_pct": 4.52,
+  "mdd_pct": -16.99,
+  "calmar": 0.27,
+  "turnover_x": 32.7,
+  "n_rebal": 104,
+  "est_cost_drag_pct": 4.91
+ },
+ {
+  "reb": "0d",
+  "regime": false,
+  "total_pct": 7.07,
+  "ann_pct": 2.32,
+  "mdd_pct": -25.77,
+  "calmar": 0.09,
+  "turnover_x": 1.9,
+  "n_rebal": 13,
+  "est_cost_drag_pct": 0.29
+ }
+]
