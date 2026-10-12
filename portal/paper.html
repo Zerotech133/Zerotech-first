@@ -1135,6 +1135,17 @@ async function obwSubmit(){
   }
 })();
 
+// K-STOCK-17x P0：step3 死锁修复——obw-mgr 单选 change 即时回写 OBW.needMgr 并重渲染，
+// 否则「需要请一位」勾选后资历档 radio 永不出现（needMgr 仅在 obwNext 离开时回写），
+// obwNext 读不到 obw-tier 恒 toast「请选择经理资历档」卡死。挂在静态祖先 #ob-box 上做事件委托，obwRender 重绘 innerHTML 后仍生效。
+$('ob-box').addEventListener('change',e=>{
+  if(e.target&&e.target.name==='obw-mgr'){
+    OBW.needMgr=e.target.value==='yes';
+    OBW.mgr='';
+    obwRender();
+  }
+});
+
 loadStatus();
 </script>
 <script src="/static/cainiao.js" defer></script>
