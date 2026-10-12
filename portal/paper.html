@@ -864,21 +864,73 @@ async function fillComboSelectors(){
     });
   }catch(e){/* 静默 */}
 }
-function runComboBacktest(){
+let _cbtJobId=null, _cbtTimer=null;
+function _cbtBarHtml(){
+  return '<div id="cbt-progress" style="margin-top:10px">'
+    +'<div style="display:flex;align-items:center;gap:8px">'
+    +'<div style="flex:1;height:8px;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--bg)">'
+    +'<div id="cbt-bar" style="height:100%;width:2%;background:linear-gradient(90deg,#2f81f7,#3fb950);transition:width .5s"></div></div>'
+    +'<span id="cbt-pct" style="font-size:11.5px;color:var(--text-dim);min-width:150px;text-align:right">登记中…</span></div>'
+    +'<div id="cbt-stages" style="margin-top:4px;font-size:11.5px;color:var(--text-dim)">① 已登记 → ② 排队 → ③ 引擎跑批 → ④ 结果回填</div></div>';
+}
+function _cbtStopPoll(){ if(_cbtTimer){clearInterval(_cbtTimer);_cbtTimer=null;} }
+async function pollCbt(){
+  const bar=$('cbt-bar');
+  if(!bar){_cbtStopPoll();return;}
+  let r=null;
+  try{ r=await api('/api/combo_backtest_jobs'); }catch(e){ return; }  // 瞬时网络错误不拆条，下轮再取
+  if(!r||!r.ok)return;
+  const jobs=r.jobs||[];
+  const j=jobs.find(x=>x.id===_cbtJobId);
+  if(!j)return;
+  const pct=$('cbt-pct'), stg=$('cbt-stages');
+  const ST={queued:'🕐 排队中',running:'⚙️ 引擎跑批中',done:'✅ 完成',dead:'❌ 失败'};
+  if(j.status==='queued'){
+    bar.style.width='8%';
+    pct.textContent='排队第 '+j.queue_pos+' 位';
+    stg.innerHTML='① 已登记 ✅ → <b>② 排队中（第 '+j.queue_pos+' 位）</b> → ③ 引擎跑批 → ④ 结果回填'
+      +'｜引擎开闸 <b>'+esc(r.gate||'2026-10-16')+'</b> 后按队列自动跑批，无需重新提交';
+  }else if(j.status==='running'){
+    const p=Math.max(8,Math.min(99,Math.round(j.pct||0)));
+    bar.style.width=p+'%';
+    pct.textContent=p+'% · '+(j.stage||'跑批中');
+    stg.innerHTML='① 已登记 ✅ → ② 排队 ✅ → <b>③ 引擎跑批中'+(j.pct!=null?('（'+p+'%）'):'')+'</b> → ④ 结果回填';
+  }else if(j.status==='done'){
+    _cbtStopPoll();
+    bar.style.width='100%';
+    pct.textContent='100% · 完成';
+    stg.innerHTML='①→②→③ 全部完成 ✅，<b>④ 结果已回填</b>——刷新查看收益曲线/最大回撤/年化';
+  }else{ // dead
+    _cbtStopPoll();
+    bar.style.width='100%'; bar.style.background='#f85149';
+    pct.textContent='失败';
+    stg.innerHTML='❌ 引擎回报失败'+(j.error?('：'+esc(j.error)):'')+'——可重新发起';
+  }
+}
+async function runComboBacktest(){
   const mid=($('cbt-manager')||{}).value||'director_apex', tid=($('cbt-trader')||{}).value;
   const sd=($('cbt-start')||{}).value, ln=($('cbt-len')||{}).value;
   const anas=[...document.querySelectorAll('.cbt-ana:checked')].map(c=>c.value);
   const out=$('cbt-result'); if(!out)return;
   if(!tid){toast('⚠️ 请先选择操盘手（总监默认带队），再跑组合回测');return;}
   const LEN={ '1m':'1 个月','3m':'3 个月','6m':'半年','1y':'1 年' };
-  const now=new Date(), pad=n=>String(n).padStart(2,'0');
-  const ts=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+' '+pad(now.getHours())+':'+pad(now.getMinutes());
   const lead=mid==='director_apex'?'🏛️ 投资总监（默认在岗）':('经理 <code>'+esc(mid)+'</code>');
   const anaTxt=anas.length?('📡 选股分析师 '+anas.length+' 个（<code>'+esc(anas.join(' + '))+'</code>）'):'📡 选股分析师：未指定（默认信号池）';
-  out.innerHTML='🕐 <b>组合回测任务已登记（'+ts+'）</b>：'+lead+' × '+anaTxt+' × 操盘手 <code>'+esc(tid)+'</code>'
-    +' · <b>'+esc(sd)+'</b> 起跑 '+ (LEN[ln]||ln) +' · point-in-time 口径（逐日只用当时已知信息，不泄露未来答案）。'
-    +'回测引擎批量执行属验收冻结区（10-13~15），开闸（10-16）后按队列跑批，结果回填本区域——'
-    +'届时展示该组合的<b>回测收益曲线 / 最大回撤 / 年化</b>，满意再走迎宾向导完成雇佣上岗。';
+  let r=null;
+  try{
+    r=await api('/api/combo_backtest',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({manager:mid,trader:tid,analysts:anas,start:sd,len:ln})});
+  }catch(e){ r={ok:false,error:String(e.message||e)}; }
+  if(!r||!r.ok){
+    out.innerHTML='❌ <b>任务登记失败</b>：'+esc((r&&r.error)||'未知错误')+'——稍后再试或联系值班。';
+    return;
+  }
+  _cbtJobId=r.job.id;
+  out.innerHTML='🕐 <b>组合回测任务已登记（'+esc(r.job.ts)+' · 单号 <code>'+esc(r.job.id)+'</code>）</b>：'
+    +lead+' × '+anaTxt+' × 操盘手 <code>'+esc(tid)+'</code> · <b>'+esc(sd)+'</b> 起跑 '+(LEN[ln]||ln)
+    +' · point-in-time 口径（逐日只用当时已知信息，不泄露未来答案）。'+_cbtBarHtml();
+  pollCbt();
+  _cbtStopPoll(); _cbtTimer=setInterval(pollCbt,5000);
 }
 
 // ===== 投资经理（K-STOCK-137d S-b2：/api/manager_roster + manager_hire/fire） =====

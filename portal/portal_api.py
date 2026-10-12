@@ -114,6 +114,8 @@ from api_backtest import (
     _bt_norm_code,
     _bt_custom_start,
     _bt_custom_status,
+    _cbt_start,
+    _cbt_status,
     _pulse_exit_line,
     _pulse_fresh,
     _pulse_ago,
@@ -160,6 +162,7 @@ _MUTATION_POSTS = frozenset((
     "/api/portfolio_subscribe",
     "/api/portfolio_hire",
     "/api/trader_fire",   # K-STOCK-122 投研团队：组合解聘交易员
+    "/api/combo_backtest",  # K-STOCK-275 组合回测任务登记（落盘排队）
     "/chanlun-anno",
     "/api/chanlun/label/save",
     "/api/report_push",
@@ -2474,6 +2477,16 @@ color:#fff;font-size:13.5px;cursor:pointer}
                                     or "fire 失败"})
                 except Exception as _e:
                     self._json({"ok": False, "error": repr(_e)}, 500)
+            elif path == "/api/combo_backtest":
+                # K-STOCK-275 组合回测任务登记：校验 → 落盘排队（cbt_jobs.jsonl）。
+                # 开闸（10-16）前不跑批，如实返回 queued；引擎侧经
+                # cbt_queue_state.json 覆盖进度，本路由不改。
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"ok": False, "error": "bad json"}, 400)
+                    return
+                self._json(_cbt_start(rec))
             elif path == "/api/batch-backtest":
                 # K255 勾选股票自定义批次回测：写批次 JSONL → 引擎子进程异步跑
                 try:
@@ -2627,6 +2640,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json(_hist(_day))
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/combo_backtest_jobs":
+            # K-STOCK-275 组合回测队列只读投影（任务清单/队列位置/引擎进度覆盖）
+            self._json(_cbt_status())
         elif path == "/api/strategy_market":
             # K-STOCK-122 M1 策略市场：12 策略卡全量（strategies.json 直读）
             try:

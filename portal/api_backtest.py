@@ -511,6 +511,76 @@ def _bt_custom_status():
             "report": rep if done else None}
 
 
+# ── K-STOCK-275 组合回测任务队列（paper.html 组合回测器真接线）──────────
+# 动线：前端登记 → 本队列真实落盘 →（10-16 开闸后包 C 引擎消费）跑批 →
+# 结果回填。开闸前不跑批（验收冻结区拍板，不造假）：任务如实「排队中」，
+# 进度条显示队列位置与开闸闸门；引擎侧后续只写 _CBT_STATE_JSON 覆盖状态
+# （queued→running(pct/stage)→done(result)/dead），本模块零改动兼容。
+_CBT_JOBS_JSONL = os.path.join(REPORTS_DIR, "cbt_jobs.jsonl")
+_CBT_STATE_JSON = os.path.join(REPORTS_DIR, "cbt_queue_state.json")
+_CBT_GATE = "2026-10-16"          # 引擎开闸日（K-STOCK 冻结拍板：10-13~15 验收冻结）
+
+
+def _cbt_start(rec):
+    """POST /api/combo_backtest：登记一个组合回测任务（纯落盘排队，不跑引擎）。"""
+    manager = str(rec.get("manager") or "director_apex").strip()[:64]
+    trader = str(rec.get("trader") or "").strip()[:64]
+    analysts = [str(a).strip()[:64] for a in (rec.get("analysts") or [])
+                if str(a).strip()][:16]
+    start = str(rec.get("start") or "").strip()[:10]
+    ln = str(rec.get("len") or "3m").strip()[:4]
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", start):
+        return {"ok": False, "error": "start 须为 YYYY-MM-DD"}
+    if ln not in ("1m", "3m", "6m", "1y"):
+        return {"ok": False, "error": "len 须为 1m/3m/6m/1y"}
+    if not trader:
+        return {"ok": False, "error": "trader 必填"}
+    now = datetime.datetime.now()
+    jid = "cbt-" + now.strftime("%Y%m%d-%H%M%S") + "-" + os.urandom(2).hex()
+    job = {"id": jid, "ts": now.strftime("%Y-%m-%d %H:%M:%S"),
+           "manager": manager, "trader": trader, "analysts": analysts,
+           "start": start, "len": ln, "status": "queued"}
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    with open(_CBT_JOBS_JSONL, "a", encoding="utf-8") as f:
+        f.write(json.dumps(job, ensure_ascii=False) + "\n")
+    return {"ok": True, "job": job, "gate": _CBT_GATE}
+
+
+def _cbt_status():
+    """GET /api/combo_backtest_jobs：任务清单（≤20 条倒序）+ 队列位置 +
+    引擎状态覆盖合并（queued/running/done/dead + pct/stage/result/error）。"""
+    jobs = []
+    if os.path.exists(_CBT_JOBS_JSONL):
+        with open(_CBT_JOBS_JSONL, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    j = json.loads(line)
+                except Exception:
+                    continue
+                if isinstance(j, dict) and j.get("id"):
+                    jobs.append(j)
+    st = _read_json(_CBT_STATE_JSON)
+    if not isinstance(st, dict):
+        st = {}
+    qn = 0
+    for j in jobs:                    # jsonl 顺序 = 提交顺序
+        ov = st.get(j["id"]) or {}
+        if not isinstance(ov, dict):
+            ov = {}
+        j["status"] = str(ov.get("status") or j.get("status") or "queued")
+        if j["status"] == "queued":
+            qn += 1
+            j["queue_pos"] = qn
+        for k in ("pct", "stage", "result", "error"):
+            if k in ov:
+                j[k] = ov[k]
+    return {"ok": True, "gate": _CBT_GATE, "total": len(jobs),
+            "jobs": list(reversed(jobs[-20:]))}
+
+
 # ── 个股全景页辅助（量化中心下钻目标） ──────────────────
 def _bt_resolve(q):
     """输入(名/代码/watchlist代码) → watchlist 条目；失败返回 None。"""
