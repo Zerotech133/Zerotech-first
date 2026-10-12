@@ -2566,8 +2566,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 from urllib.parse import parse_qs as _pqs
                 _q = _pqs(qs)
                 _pf = (_q.get("pf_id") or ["pf_001"])[0].strip()
+                # K-STOCK-184：参数校验失败属客户端错误，显式 400（原先抛
+                # ValueError 落兜底 except 变 500，语义错误且污染监控）。
                 if not re.match(r"^[A-Za-z0-9_]{1,40}$", _pf):
-                    raise ValueError("pf_id 非法（仅字母数字下划线）")
+                    self._json({"ok": False,
+                                "error": "pf_id 非法（仅字母数字下划线）"}, 400)
+                    return
                 _fp = os.path.join(r"E:\老田的AI助手\k_stock\data\plan_review",
                                    time.strftime("%Y%m%d") + "_" + _pf + ".json")
                 _rev = None
@@ -2776,6 +2780,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             try:
                 from urllib.parse import parse_qs as _pqs3
                 _d = (_pqs3(qs).get("date") or [""])[0].strip()
+                # K-STOCK-184 安全校验：date 严格 YYYY-MM-DD。裸 join 曾可被
+                # 反斜杠穿越 / 盘符绝对路径覆写读盘上任意 .json（含飞书密钥）。
+                if _d and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", _d):
+                    self._json({"ok": False,
+                                "error": "date 非法（YYYY-MM-DD）"}, 400)
+                    return
                 import glob as _glob
                 mdir = os.path.join(
                     r"E:\老田的AI助手\k_stock\data", "review_minutes")
