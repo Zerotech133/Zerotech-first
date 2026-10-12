@@ -14,8 +14,17 @@ except ImportError:
  from model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
  from chat_profiles import ProfileError, get_profile, list_profile_specs
 HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS
+MAX_HISTORY_CHARS = 12000
+DEFAULT_KEEP_ALIVE = '30m'
 RAG_SERVICE = None
 def _error(s): return json.dumps({'error':s},ensure_ascii=False).encode()
+def _trim_history(history):
+ kept=[]; used=0
+ for item in reversed(history):
+  size=len(item['content'])
+  if kept and used + size > MAX_HISTORY_CHARS: break
+  kept.append(item); used += size
+ return list(reversed(kept))
 def _payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')
@@ -33,9 +42,12 @@ def _payload(h):
   if not isinstance(content,str) or not content.strip() or len(content)>12000:
    raise ValueError('history 消息内容无效')
   clean_history.append({'role':item['role'],'content':content.strip()})
+ clean_history = _trim_history(clean_history)
+ think = p.get('think', False)
+ if not isinstance(think, bool): raise ValueError('think 必须是布尔值')
  try: model=select_model('chat', p.get('model') or role['model']).model
  except ModelRoutingError as e: raise ValueError(str(e)) from e
- return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True}
+ return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True,'think':think,'keep_alive':DEFAULT_KEEP_ALIVE}
 def _rag_payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')
@@ -53,7 +65,7 @@ class ChatHandler(BaseHTTPRequestHandler):
  def log_message(self,*a): pass
  def do_GET(self):
   if self.path!='/': self.send_error(404); return
-  b=render_chat_page(MODELS, list_profile_specs()).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
+  b=render_chat_page(MODELS, list_profile_specs(), default_model=DEFAULT_MODEL).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_POST(self):
   if self.path=='/api/rag': self._do_rag(); return
   if self.path!='/api/chat': self._err(404,'路径不存在'); return

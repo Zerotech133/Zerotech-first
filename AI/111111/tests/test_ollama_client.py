@@ -10,6 +10,8 @@ from ollama_client import OllamaClient, OllamaError
 
 
 class Handler(BaseHTTPRequestHandler):
+    last_chat_payload = None
+
     def do_GET(self):
         if self.path == "/api/tags":
             self.send_json({"models": [{"name": "demo"}]})
@@ -19,6 +21,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         n = int(self.headers.get("Content-Length", 0)); body = json.loads(self.rfile.read(n))
         if self.path == "/api/chat":
+            type(self).last_chat_payload = body
             self.send_response(200); self.send_header("Content-Type", "application/x-ndjson"); self.end_headers()
             for item in ({"message": {"content": "你"}}, {"message": {"content": "好"}, "done": True}):
                 self.wfile.write((json.dumps(item, ensure_ascii=False) + "\n").encode()); self.wfile.flush()
@@ -40,6 +43,8 @@ class OllamaClientTests(unittest.TestCase):
     def test_all_operations(self):
         self.assertEqual(self.client.list_models(), ["demo"])
         self.assertEqual(list(self.client.chat_stream([], "demo")), ["你", "好"])
+        self.assertFalse(Handler.last_chat_payload["think"])
+        self.assertEqual(Handler.last_chat_payload["keep_alive"], "30m")
         self.assertEqual(self.client.chat([], "demo"), "你好")
         self.assertEqual(self.client.embed("x"), [3, 4]); self.assertEqual(self.client.embed(["x", "y"]), [[3, 4], [3, 4]])
         self.assertAlmostEqual(self.client.similarity([3, 4], [3, 4]), 1.0); self.assertEqual(self.client.similarity([0], [1]), 0.0)
