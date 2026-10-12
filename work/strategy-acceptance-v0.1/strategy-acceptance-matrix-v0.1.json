@@ -1,0 +1,93 @@
+{
+  "schema": "strategy_acceptance_matrix/v1",
+  "version": "v0.1",
+  "policy": {
+    "standard_definitions_certified": false,
+    "calendar_certified": false,
+    "financial_execution_enabled": false,
+    "training_enabled": false,
+    "commercialization_enabled": false
+  },
+  "global_requirements": [
+    "source_reference",
+    "source_date_receipt",
+    "sample_sha256",
+    "offline_review_receipt",
+    "time_split",
+    "split_group",
+    "same_window_benchmark",
+    "explicit_cost_model",
+    "missing_data_rejection_log",
+    "transient_structure_snapshot"
+  ],
+  "strategies": [
+    {
+      "id": "chanlun",
+      "name": "缠论",
+      "status": "shadow",
+      "minimums": {"sample_count": 30, "trading_days": 20},
+      "benchmark": "same_window_index",
+      "cost_model": {"commission_bps": 3, "slippage_bps": 2},
+      "required_evidence": [
+        "sample_count", "trading_days", "time_split", "source_hashes", "offline_review_receipt",
+        "source_reference", "source_date_receipt",
+        "benchmark", "cost_model", "missing_data_rejections",
+        "transient_structure_snapshots"
+      ],
+      "missing_data_policy": "缺行情、缺分型/笔/线段/中枢或日期越界即拒绝",
+      "transient_structure_evidence": ["fractal", "stroke", "segment", "center"],
+      "review_output": "仅生成同窗口影子评测，不生成交易指令"
+    },
+    {
+      "id": "ninedim",
+      "name": "九维",
+      "status": "shadow",
+      "minimums": {"sample_count": 100, "trading_days": 60},
+      "benchmark": "same_window_cross_section",
+      "cost_model": {"commission_bps": 3, "slippage_bps": 2},
+      "required_evidence": [
+        "sample_count", "trading_days", "time_split", "source_hashes", "offline_review_receipt",
+        "source_reference", "source_date_receipt",
+        "benchmark", "cost_model", "missing_data_rejections",
+        "transient_structure_snapshots"
+      ],
+      "missing_data_policy": "任一维度、来源日期或版本哈希缺失即拒绝",
+      "transient_structure_evidence": ["dimension_inputs", "source_date", "version_hash"],
+      "review_output": "仅生成横截面影子评测，不生成交易指令"
+    },
+    {
+      "id": "weak",
+      "name": "weak",
+      "status": "shadow",
+      "minimums": {"sample_count": 30, "trading_days": 20},
+      "benchmark": "sector_and_index_same_window",
+      "cost_model": {"commission_bps": 3, "slippage_bps": 2},
+      "required_evidence": [
+        "sample_count", "trading_days", "time_split", "source_hashes", "offline_review_receipt",
+        "source_reference", "source_date_receipt",
+        "benchmark", "cost_model", "missing_data_rejections",
+        "transient_structure_snapshots"
+      ],
+      "missing_data_policy": "缺板块、大盘或跟踪状态链时挂起，不出结论",
+      "transient_structure_evidence": ["trigger", "review", "close"],
+      "review_output": "仅生成触发/复评/结案链影子报告"
+    },
+    {
+      "id": "double_knife",
+      "name": "双刀",
+      "status": "shadow",
+      "minimums": {"sample_count": 30, "trading_days": 20},
+      "benchmark": "same_window_index",
+      "cost_model": {"commission_bps": 3, "slippage_bps": 2},
+      "required_evidence": [
+        "sample_count", "trading_days", "time_split", "source_hashes", "offline_review_receipt",
+        "source_reference", "source_date_receipt",
+        "benchmark", "cost_model", "missing_data_rejections",
+        "transient_structure_snapshots"
+      ],
+      "missing_data_policy": "任一行情源缺失整批挂起，不模拟成交",
+      "transient_structure_evidence": ["signal", "gate", "receipt"],
+      "review_output": "仅生成信号/门禁/回执三联影子报告"
+    }
+  ]
+}
