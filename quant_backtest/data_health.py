@@ -259,7 +259,10 @@ def _scan_jev_reconciliation(news_db_path=None, queue_paths=None, receipt_paths=
                 receipt_errors.append(number)
     pending_unqueued = sorted(pending_ids - queue_ids)
     queue_orphans = sorted(queue_ids - all_ids)
-    status = "FAIL" if pending_unqueued or queue_blocked or receipt_errors else "OK"
+    receipt_orphans = sorted(receipt_ids - queue_ids)
+    decided_without_receipt = sorted(queue_decided - receipt_ids)
+    status = "FAIL" if (pending_unqueued or queue_blocked or receipt_errors or
+                         receipt_orphans or decided_without_receipt) else "OK"
     return {
         "status": status, "available": True, "news_pending": len(pending_ids),
         "queue_total": len(queue_ids), "queue_pending": len(queue_pending),
@@ -267,6 +270,9 @@ def _scan_jev_reconciliation(news_db_path=None, queue_paths=None, receipt_paths=
         "receipt_rows": len(receipt_ids), "pending_unqueued": pending_unqueued[:100],
         "pending_unqueued_count": len(pending_unqueued),
         "queue_orphans": queue_orphans[:100], "queue_orphans_count": len(queue_orphans),
+        "receipt_orphans": receipt_orphans[:100], "receipt_orphans_count": len(receipt_orphans),
+        "decided_without_receipt": decided_without_receipt[:100],
+        "decided_without_receipt_count": len(decided_without_receipt),
         "receipt_errors": receipt_errors, "queue_path": str(queue_path) if queue_path else None,
         "receipt_path": str(receipt_path) if receipt_path else None,
         "production_write": False, "global_activation": False,
@@ -324,8 +330,10 @@ def _build_gaps(kline, news, artifacts=None, jev_reconciliation=None):
     if news.get("exists") and news.get("jev_pending", 0) > 100:
         gaps.append("JEV 积压 %d 条未判断" % news["jev_pending"])
     if isinstance(jev_reconciliation, dict) and jev_reconciliation.get("status") == "FAIL":
-        gaps.append("JEV staging/新闻库对账失败：%d 条新闻未进入队列" %
-                    int(jev_reconciliation.get("pending_unqueued_count", 0)))
+        gaps.append("JEV staging/新闻库对账失败：未入队 %d，回执孤儿 %d，已决策无回执 %d" % (
+            int(jev_reconciliation.get("pending_unqueued_count", 0)),
+            int(jev_reconciliation.get("receipt_orphans_count", 0)),
+            int(jev_reconciliation.get("decided_without_receipt_count", 0))))
     for artifact in artifacts or []:
         if not artifact.get("exists"):
             continue

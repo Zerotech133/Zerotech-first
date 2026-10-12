@@ -66,6 +66,26 @@ def test_jev_reconciliation_exposes_pending_unqueued_ids(tmp_path):
     assert result["queue_orphans"] == ["99"]
 
 
+def test_jev_reconciliation_rejects_receipt_queue_mismatch(tmp_path):
+    db_path = tmp_path / "news.db"
+    db = sqlite3.connect(db_path)
+    db.execute("CREATE TABLE news (id INTEGER PRIMARY KEY, jev TEXT)")
+    db.executemany("INSERT INTO news(id, jev) VALUES (?, ?)", [(1, "利多"), (2, "利空")])
+    db.commit()
+    db.close()
+    queue = tmp_path / "queue.json"
+    queue.write_text(json.dumps([{"id": "1", "status": "decided"},
+                                 {"id": "2", "status": "decided"}], ensure_ascii=False), encoding="utf-8")
+    receipt = tmp_path / "receipt.jsonl"
+    receipt.write_text(json.dumps({"id": "1", "status": "decided"}) + "\n" +
+                       json.dumps({"id": "9", "status": "decided"}) + "\n", encoding="utf-8")
+    result = data_health._scan_jev_reconciliation(news_db_path=db_path,
+                                                  queue_paths=[queue], receipt_paths=[receipt])
+    assert result["status"] == "FAIL"
+    assert result["receipt_orphans"] == ["9"]
+    assert result["decided_without_receipt"] == ["2"]
+
+
 def test_build_gaps_reports_valuation_nulls_and_jev_reconciliation():
     kline = {"cn": {"count": 1, "exists": True,
                      "valuation_fields": {"pe": {"missing": 2}, "turnover": {"missing": 0}}},

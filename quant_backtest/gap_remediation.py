@@ -63,7 +63,7 @@ def _append_coverage(keys: list[dict[str, Any]], metric: Mapping[str, Any], tabl
                 "code": str(code),
                 "trade_date": trade_date,
                 "status": "pending",
-                "reason": "coverage_gap",
+                "reason": "source_empty_pending" if day.get("source_state") == "source_empty_pending" else "coverage_gap",
             })
 
 

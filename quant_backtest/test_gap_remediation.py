@@ -16,7 +16,8 @@ def _report():
                 _metric(
                     "tdx_sector_daily_daily_coverage",
                     {
-                        "20261001": {"missing": ["880002", "880001"], "missing_count": 2},
+                        "20261001": {"missing": ["880002", "880001"], "missing_count": 2,
+                                      "source_state": "source_empty_pending"},
                         "20260930": {"missing": ["880003"], "missing_count": 1},
                         "_summary": {"latest_missing_count": 0},
                     },
@@ -63,6 +64,8 @@ def test_build_gap_snapshot_extracts_exact_sorted_keys_and_counts():
         "status": "pending",
         "reason": "coverage_gap",
     }
+    assert all(row["reason"] == "source_empty_pending"
+               for row in snapshot["keys"] if row["table"] == "tdx_sector_daily" and row["trade_date"] == "20261001")
 
 
 def test_build_gap_snapshot_is_deterministic_and_does_not_include_summary_rows():
