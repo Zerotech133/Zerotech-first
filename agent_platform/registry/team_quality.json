@@ -1,0 +1,24 @@
+{
+  "_note": "质量工程部注册表（K-ORG-018 新设，对照截图 QA 工程师角色）。三守卫的人化复核位。",
+  "team": "qualcore",
+  "dept": "quality",
+  "description": "质量工程部：质量工程师",
+  "agents": [
+    {
+      "agent_id": "QA1",
+      "role_profile": "qa_engineer",
+      "analysis_type": "quality_assurance",
+      "node_key": "qa1_core",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/quality/*", "dept/dev/*", "dept/data/*", "agent/QA1/*"],
+        "write": ["agent/QA1/*", "dept/quality/observation"]
+      }
+    }
+  ]
+}

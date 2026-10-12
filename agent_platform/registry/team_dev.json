@@ -1,8 +1,8 @@
 {
-  "_note": "研发部长期员工注册表（K-ORG-015 实例化 / K-ORG-017 v2 扩编）。与执行拓扑的差异：无辩论节点、无屏障汇总，DEV1~DEV5 为常驻岗位，由任务单（tools/devtask.py）驱动，非流水线触发。schema 对齐 team_invest.json 以复用 interpreter 校验。K-ORG-017：策略线 DEV3→DEV4 串行（写策略→回测复核），DEV5 前端独立并行。",
+  "_note": "研发部长期员工注册表（K-ORG-015 实例化 / K-ORG-017 v2 扩编 / K-ORG-018 +ARCH1 架构师）。与执行拓扑的差异：无辩论节点、无屏障汇总，DEV1~DEV5+ARCH1 为常驻岗位，由任务单（tools/devtask.py）驱动，非流水线触发。schema 对齐 team_invest.json 以复用 interpreter 校验。K-ORG-017：策略线 DEV3→DEV4 串行（写策略→回测复核），DEV5 前端独立并行。",
   "team": "devcore",
   "dept": "dev",
-  "description": "研发部核心岗：代码工程师 + 模型训练师 + 策略工程师 + 回测工程师 + 前端工程师",
+  "description": "工程研发中心：代码工程师 + 模型训练师 + 策略工程师 + 回测工程师 + 前端工程师 + 架构师",
   "agents": [
     {
       "agent_id": "DEV1",
@@ -82,6 +82,22 @@
       "memory_grants": {
         "read": ["domain/*", "dept/dev/*", "agent/DEV5/*"],
         "write": ["agent/DEV5/*", "dept/dev/observation"]
+      }
+    },
+    {
+      "agent_id": "ARCH1",
+      "role_profile": "solution_architect",
+      "analysis_type": "architecture_review",
+      "node_key": "dev_arch",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "dept/data/*", "dept/product/*", "agent/ARCH1/*"],
+        "write": ["agent/ARCH1/*", "dept/dev/observation", "domain/arch_registry"]
       }
     }
   ]

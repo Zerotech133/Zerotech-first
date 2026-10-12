@@ -1,0 +1,56 @@
+{
+  "_note": "🅲 下版本设计推理部·项目编制（K-ORG-018 项目部门 type=project）。PM1 需求定义 → ARCH1 技术终审 → DEV2 推理侧；v5 C 线（nl_query 图谱问答）今日立项。worktree 前缀 proj_c_。",
+  "team": "proj-nextver",
+  "dept": "proj_next",
+  "description": "项目部门 C：下一版本设计与推理（PM1 产品 + ARCH1 架构 + DEV2 训练/推理）",
+  "agents": [
+    {
+      "agent_id": "PM1",
+      "role_profile": "product_manager",
+      "analysis_type": "product_management",
+      "node_key": "proj_c_pm1",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/product/*", "agent/PM1/*"],
+        "write": ["agent/PM1/*", "dept/product/observation"]
+      }
+    },
+    {
+      "agent_id": "ARCH1",
+      "role_profile": "solution_architect",
+      "analysis_type": "architecture_review",
+      "node_key": "proj_c_arch1",
+      "parent_node_keys": ["proj_c_pm1"],
+      "level": 2,
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "agent/ARCH1/*"],
+        "write": ["agent/ARCH1/*", "domain/arch_registry"]
+      }
+    },
+    {
+      "agent_id": "DEV2",
+      "role_profile": "model_trainer",
+      "analysis_type": "model_training",
+      "node_key": "proj_c_dev2",
+      "parent_node_keys": ["proj_c_arch1"],
+      "level": 3,
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["ollama", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "agent/DEV2/*"],
+        "write": ["agent/DEV2/*", "domain/model_registry"]
+      }
+    }
+  ]
+}

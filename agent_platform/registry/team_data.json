@@ -1,0 +1,24 @@
+{
+  "_note": "数据智能部注册表（K-ORG-018 新设）。v5 B 线（数据一体化）常设归属。",
+  "team": "datacore",
+  "dept": "data",
+  "description": "数据智能部：数据工程师",
+  "agents": [
+    {
+      "agent_id": "DATA1",
+      "role_profile": "data_engineer",
+      "analysis_type": "data_engineering",
+      "node_key": "data1_eng",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/data/*", "dept/dev/*", "agent/DATA1/*"],
+        "write": ["agent/DATA1/*", "dept/data/observation"]
+      }
+    }
+  ]
+}

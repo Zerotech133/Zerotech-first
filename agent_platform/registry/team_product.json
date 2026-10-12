@@ -1,0 +1,24 @@
+{
+  "_note": "产品管理部注册表（K-ORG-018 新设，对照截图产品经理角色）。",
+  "team": "prodcore",
+  "dept": "product",
+  "description": "产品管理部：产品经理",
+  "agents": [
+    {
+      "agent_id": "PM1",
+      "role_profile": "product_manager",
+      "analysis_type": "product_management",
+      "node_key": "pm1_core",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/product/*", "dept/invest/decision", "dept/dev/observation", "agent/PM1/*"],
+        "write": ["agent/PM1/*", "dept/product/observation"]
+      }
+    }
+  ]
+}

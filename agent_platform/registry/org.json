@@ -1,5 +1,5 @@
 {
-  "_note": "组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2：+DEV3 策略/DEV4 回测/DEV5 前端）。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。",
+  "_note": "组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：8 职能中心 + 3 项目部门 A/B/C 并行开发）。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。",
   "org": "laotian_ai",
   "report_to": "human",
   "chief": {
@@ -26,8 +26,8 @@
       "name": "研发部",
       "lead": null,
       "status": "active",
-      "charter": "拉代码·优化代码·训练模型·code review·写策略·回测·前端 UI（K-ORG-015 实例化 / K-ORG-017 v2 扩编）",
-      "agents": ["DEV1", "DEV2", "DEV3", "DEV4", "DEV5"],
+      "charter": "拉代码·优化代码·训练模型·code review·写策略·回测·前端 UI·架构评审（K-ORG-015 实例化 / K-ORG-017 v2 / K-ORG-018 +架构师）",
+      "agents": ["DEV1", "DEV2", "DEV3", "DEV4", "DEV5", "ARCH1"],
       "agent_profiles": [
         {
           "agent_id": "DEV1",
@@ -83,9 +83,20 @@
             "read": ["domain/*", "dept/dev/*", "agent/DEV5/*"],
             "write": ["agent/DEV5/*", "dept/dev/observation"]
           }
+        },
+        {
+          "agent_id": "ARCH1",
+          "role_profile": "solution_architect",
+          "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录写 domain/arch_registry（版本化，对齐 model_registry 判例）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "dept/data/*", "dept/product/*", "agent/ARCH1/*"],
+            "write": ["agent/ARCH1/*", "dept/dev/observation", "domain/arch_registry"]
+          }
         }
       ],
-      "source": "K-ORG-001 组织设计 P2 扩编，2026-10-13 K-ORG-015 老田指令实例化；K-ORG-017 研发部 v2 三岗扩编（老田拍板 K-ORG-016 待拍板项③）"
+      "source": "K-ORG-001 组织设计 P2 扩编，2026-10-13 K-ORG-015 老田指令实例化；K-ORG-017 v2 三岗扩编；K-ORG-018 +ARCH1 架构师（对照截图五角色补齐）"
     },
     {
       "dept": "trading",
@@ -109,6 +120,105 @@
         }
       ],
       "source": "K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）"
+    },
+    {
+      "dept": "data",
+      "name": "数据智能部",
+      "lead": null,
+      "status": "active",
+      "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）",
+      "agents": ["DATA1"],
+      "agent_profiles": [
+        {
+          "agent_id": "DATA1",
+          "role_profile": "data_engineer",
+          "charter_detail": "数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/data/*", "dept/dev/*", "agent/DATA1/*"],
+            "write": ["agent/DATA1/*", "dept/data/observation"]
+          }
+        }
+      ],
+      "source": "K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属"
+    },
+    {
+      "dept": "product",
+      "name": "产品管理部",
+      "lead": null,
+      "status": "active",
+      "charter": "需求池·版本规划·验收口径·产品设计（K-ORG-018 新设，对照截图产品经理角色）",
+      "agents": ["PM1"],
+      "agent_profiles": [
+        {
+          "agent_id": "PM1",
+          "role_profile": "product_manager",
+          "charter_detail": "产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/product/*", "dept/invest/decision", "dept/dev/observation", "agent/PM1/*"],
+            "write": ["agent/PM1/*", "dept/product/observation"]
+          }
+        }
+      ],
+      "source": "K-ORG-018 矩阵制新设"
+    },
+    {
+      "dept": "quality",
+      "name": "质量工程部",
+      "lead": null,
+      "status": "active",
+      "charter": "测试·验收·三守卫门神·质量红线（K-ORG-018 新设，对照截图 QA 工程师角色）",
+      "agents": ["QA1"],
+      "agent_profiles": [
+        {
+          "agent_id": "QA1",
+          "role_profile": "qa_engineer",
+          "charter_detail": "质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/quality/*", "dept/dev/*", "dept/data/*", "agent/QA1/*"],
+            "write": ["agent/QA1/*", "dept/quality/observation"]
+          }
+        }
+      ],
+      "source": "K-ORG-018 矩阵制新设：review 积压 18 单盘点分派的承接位"
+    },
+    {
+      "dept": "proj_backtest",
+      "name": "🅰 回测开发部",
+      "lead": null,
+      "type": "project",
+      "status": "active",
+      "charter": "【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建",
+      "agents": ["DEV3", "DEV4", "QA1"],
+      "worktree_prefix": "proj_a_",
+      "source": "K-ORG-018 老田原话「部门 A 现目前在完成我们的回测的开发」"
+    },
+    {
+      "dept": "proj_data",
+      "name": "🅱 数据治理部",
+      "lead": null,
+      "type": "project",
+      "status": "active",
+      "charter": "【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建",
+      "agents": ["DATA1", "DEV1"],
+      "worktree_prefix": "proj_b_",
+      "source": "K-ORG-018 老田原话「部门 B 在完成我们的数据底层的治理」"
+    },
+    {
+      "dept": "proj_next",
+      "name": "🅲 下版本设计推理部",
+      "lead": "PM1",
+      "type": "project",
+      "status": "active",
+      "charter": "【项目部门·现役】下一版本设计+推理：nl_query 图谱自然语言问答（v5 C 线启动·最小闭环先行）+ 下一版门户/大屏产品定义；PM1 出验收口径 → ARCH1 技术终审 → DEV2 推理侧",
+      "agents": ["PM1", "ARCH1", "DEV2"],
+      "worktree_prefix": "proj_c_",
+      "source": "K-ORG-018 老田原话「部门 C 在完成我们下一个版本的设计。和推理」；v5 设想 C 线（图谱智能化）今日立项"
     },
     {
       "dept": "marketing",

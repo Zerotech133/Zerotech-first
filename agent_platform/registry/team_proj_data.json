@@ -1,0 +1,40 @@
+{
+  "_note": "🅱 数据治理部·项目编制（K-ORG-018 项目部门 type=project）。成员为职能岗引用，交付完归建。worktree 前缀 proj_b_。",
+  "team": "proj-datagov",
+  "dept": "proj_data",
+  "description": "项目部门 B：数据底层治理（DATA1 数据工程师 + DEV1 代码工程师）",
+  "agents": [
+    {
+      "agent_id": "DATA1",
+      "role_profile": "data_engineer",
+      "analysis_type": "data_engineering",
+      "node_key": "proj_b_data1",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/data/*", "agent/DATA1/*"],
+        "write": ["agent/DATA1/*", "dept/data/observation"]
+      }
+    },
+    {
+      "agent_id": "DEV1",
+      "role_profile": "code_engineer",
+      "analysis_type": "code_engineering",
+      "node_key": "proj_b_dev1",
+      "parent_node_keys": ["proj_b_data1"],
+      "level": 2,
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "agent/DEV1/*"],
+        "write": ["agent/DEV1/*", "dept/dev/observation"]
+      }
+    }
+  ]
+}
