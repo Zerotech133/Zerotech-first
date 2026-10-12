@@ -1,5 +1,5 @@
 # weekly source column audit (K178; SYSTEM-safe path via C:\aios junction)
-# audit exit 1 = broken-source suspects -> alert_fail.py feishu alert.
+# audit exit 1 = broken-source suspects -> alert_fail_wrap.py feishu alert.
 # all-ASCII per system-task-deploy command-line rule.
 [Console]::OutputEncoding = [Text.Encoding]::UTF8   # PS5.1 redirect keeps UTF-8 readable
 $log = 'C:\Temp\col_audit_task.log'
@@ -15,7 +15,7 @@ if ($null -eq $rc -or '' -eq "$rc") { $rc = 1 }
 ('exit=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $sched -Append -Encoding utf8
 if ($rc -ne 0) {
     & 'C:\Program Files\Python311\python.exe' -X utf8 `
-        'C:\aios\quant_backtest\alert_fail.py' source_col_audit $rc $log `
+        'C:\aios\news_collector\alert_fail_wrap.py' source_col_audit $rc $log `
         1>$null 2>$null
 }
 exit $rc

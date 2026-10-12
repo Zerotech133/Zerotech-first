@@ -26,6 +26,7 @@
 import json
 import os
 import shutil
+import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
@@ -1597,9 +1598,12 @@ if __name__ == "__main__":
         # OPS-0930c：cmd /c 直调无 ps launcher，python 侧兜底告警
         # （任务 rc 由 cmd 天然透传，这里只补"飞书直达"缺口）
         try:
-            from alert_fail import alert
-            alert("rps_resonance", 1,
-                  os.path.join(HERE, "logs", "rps_task.out"))
+            wrapper = os.path.abspath(os.path.join(
+                HERE, "..", "news_collector", "alert_fail_wrap.py"))
+            subprocess.run([
+                sys.executable, wrapper, "rps_resonance", "1",
+                os.path.join(HERE, "logs", "rps_task.out")],
+                timeout=120, check=False)
         except Exception:
             pass
         raise

@@ -166,7 +166,7 @@ def run():
         try:
             subprocess.run(
                 [sys.executable,
-                 os.path.join(HERE, "alert_fail.py"),
+                 os.path.join(HERE, "..", "news_collector", "alert_fail_wrap.py"),
                  "miss_check", "MISS×%d" % len(miss),
                  json.dumps(miss, ensure_ascii=False)],
                 timeout=30)

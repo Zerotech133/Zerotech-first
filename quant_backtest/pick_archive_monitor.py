@@ -66,7 +66,6 @@ def _push_alerts(alerts, latest, today):
     掉电归类/outbox→send_feishu）；发送失败仅打印，不反噬监控退出码。
     健康静默——无告警不推，避免每日噪音。"""
     try:
-        from alert_fail import alert
         lines = ["T1 实盘归档监控告警（最近收盘交易日 %s / 最新档 %s）"
                  % (today, latest)]
         lines += ["[ALERT] " + a for a in alerts]
@@ -76,7 +75,11 @@ def _push_alerts(alerts, latest, today):
             f.write("\n".join(lines))
             tmp = f.name
         try:
-            alert("PickArchiveMonitor", 2, tmp)
+            wrapper = os.path.abspath(os.path.join(
+                HERE, "..", "news_collector", "alert_fail_wrap.py"))
+            subprocess.run([
+                sys.executable, wrapper, "PickArchiveMonitor", "2", tmp],
+                timeout=120, check=False)
         finally:
             os.unlink(tmp)
     except Exception as e:

@@ -20,6 +20,7 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 import tempfile
 from datetime import datetime
@@ -205,13 +206,15 @@ def main():
     # 检查器"有判定、无告警"等于采集不判定。
     if not out["ok"]:
         try:
-            from alert_fail import alert
             bad = ["%s: %s" % (k, v["detail"]) for k, v
                    in out["issues"].items() if not v["ok"]]
             fd, tp = tempfile.mkstemp(suffix=".txt")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write("\n".join(bad)[:500])
-            alert("kg_check", 1, tp)
+            wrapper = os.path.abspath(os.path.join(
+                HERE, "..", "news_collector", "alert_fail_wrap.py"))
+            subprocess.run([sys.executable, wrapper, "kg_check", "1", tp],
+                           timeout=120, check=False)
             os.remove(tp)
         except Exception:
             pass

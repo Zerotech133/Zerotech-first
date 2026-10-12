@@ -17,12 +17,12 @@ try {
     Pop-Location
     ('chanlun_scan_hk exit=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($rc -ne 0) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py chanlun_scan_hk $rc C:\Temp\chanlun_scan_hk_err.log 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py chanlun_scan_hk $rc C:\Temp\chanlun_scan_hk_err.log 1>$null 2>$null
     }
     exit $rc
 } catch {
     Pop-Location -ErrorAction SilentlyContinue
     ('chanlun_scan_hk ERR ' + $_.Exception.Message) | Out-File $log -Append -Encoding utf8
-    & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py chanlun_scan_hk 9 $log 1>$null 2>$null
+    & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py chanlun_scan_hk 9 $log 1>$null 2>$null
     exit 1
 }

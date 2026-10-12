@@ -11,7 +11,7 @@
 
 板块日线滞后时自动「分钟尾巴刷新 → 30m 聚合补日」。
 状态追加 reports/weak_track_<code6>.jsonl（每日一行）。
-退出码：0=正常跟踪 / 1=触发复评（接 alert_fail.py 推送）。
+退出码：0=正常跟踪 / 1=触发复评（接 alert_fail_wrap.py 推送）。
 
 用法:
   python weak_track_check.py 301216 --pivots 16.12,16.80,17.93 --since 2026-10-02

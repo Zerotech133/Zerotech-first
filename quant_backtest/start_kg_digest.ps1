@@ -9,11 +9,11 @@ try {
     $rc = $LASTEXITCODE
     ('exit=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($rc -ne 0) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 (Join-Path $PSScriptRoot 'alert_fail.py') kg_digest $rc $err 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 (Join-Path (Split-Path $PSScriptRoot -Parent) 'news_collector\alert_fail_wrap.py') kg_digest $rc $err 1>$null 2>$null
     }
     exit $rc
 } catch {
     ('ERR ' + $_.Exception.Message) | Out-File $log -Append -Encoding utf8
-    & 'C:\Program Files\Python311\python.exe' -X utf8 (Join-Path $PSScriptRoot 'alert_fail.py') kg_digest 999 $err 1>$null 2>$null
+    & 'C:\Program Files\Python311\python.exe' -X utf8 (Join-Path (Split-Path $PSScriptRoot -Parent) 'news_collector\alert_fail_wrap.py') kg_digest 999 $err 1>$null 2>$null
     exit 1
 }

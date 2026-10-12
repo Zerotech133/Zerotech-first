@@ -40,3 +40,91 @@ def test_audit_separates_wrapper_coverage_market_and_hire_evidence(tmp_path):
     assert report["scheduler"]["actual_execution_evidence"] is False
     assert report["employment"]["active_sources"] == []
     assert report["employment"]["three_source_skip_verified"] is False
+
+
+def test_alert_coverage_ignores_comments_and_counts_real_python_calls(tmp_path):
+    (tmp_path / "news_collector").mkdir()
+    (tmp_path / "quant_backtest").mkdir()
+    (tmp_path / "news_collector" / "alert_fail_wrap.py").write_text(
+        "task_rc log_path result_summary exception_class", encoding="utf-8")
+    (tmp_path / "quant_backtest" / "comment_only.py").write_text(
+        '# alert_fail.py is mentioned in a comment\n'
+        '"""alert_fail.py is mentioned in a docstring."""\n',
+        encoding="utf-8")
+    (tmp_path / "quant_backtest" / "real_call.py").write_text(
+        'import subprocess\n'
+        'subprocess.run(["python", "alert_fail.py", "task", "1"])\n',
+        encoding="utf-8")
+    (tmp_path / "quant_backtest" / "import_call.py").write_text(
+        'from alert_fail import alert\n'
+        'alert("task", 1, "log")\n', encoding="utf-8")
+    (tmp_path / "quant_backtest" / "import_only.py").write_text(
+        'from alert_fail import alert\n'
+        'def unrelated():\n'
+        '    return "healthy"\n', encoding="utf-8")
+    (tmp_path / "quant_backtest" / "wildcard_call.py").write_text(
+        'from alert_fail import *\n'
+        'alert("task", 1, "log")\n', encoding="utf-8")
+    (tmp_path / "quant_backtest" / "shell_notes.ps1").write_text(
+        '<# alert_fail.py in a block comment #>\n'
+        "Write-Output 'alert_fail.py is documentation'\n",
+        encoding="utf-8")
+    (tmp_path / "quant_backtest" / "xml_notes.xml").write_text(
+        '<!-- alert_fail.py in an XML comment -->\n', encoding="utf-8")
+    (tmp_path / "quant_backtest" / "wrapper_call.py").write_text(
+        'subprocess.run(["python", "alert_fail_wrap.py", "task", "1"])\n',
+        encoding="utf-8")
+
+    report = audit(tmp_path)
+
+    assert report["alert_fail"]["direct_files"] == [
+        "quant_backtest/import_call.py",
+        "quant_backtest/real_call.py",
+        "quant_backtest/wildcard_call.py",
+    ]
+    assert report["alert_fail"]["direct_file_count"] == 3
+    assert report["alert_fail"]["wrapper_files"] == [
+        "quant_backtest/wrapper_call.py"
+    ]
+
+
+def test_alert_coverage_scans_powershell_backtick_continuations(tmp_path):
+    (tmp_path / "news_collector").mkdir()
+    (tmp_path / "quant_backtest").mkdir()
+    (tmp_path / "news_collector" / "alert_fail_wrap.py").write_text(
+        "task_rc log_path result_summary exception_class", encoding="utf-8")
+    (tmp_path / "quant_backtest" / "continued_direct.ps1").write_text(
+        "& 'C:/Program Files/Python311/python.exe' -X utf8 `\n"
+        "  'C:/aios/news_collector/alert_fail.py' task 1 C:/Temp/log `\n"
+        "  1>$null\n",
+        encoding="utf-8")
+    (tmp_path / "quant_backtest" / "continued_wrapper.ps1").write_text(
+        "& 'C:/Program Files/Python311/python.exe' -X utf8 `\n"
+        "  'C:/aios/news_collector/alert_fail_wrap.py' task 1 C:/Temp/log\n",
+        encoding="utf-8")
+
+    report = audit(tmp_path)
+
+    assert report["alert_fail"]["direct_files"] == [
+        "quant_backtest/continued_direct.ps1"
+    ]
+    assert report["alert_fail"]["wrapper_files"] == [
+        "quant_backtest/continued_wrapper.ps1"
+    ]
+
+
+def test_alert_coverage_detects_python_subprocess_alias_and_variable(tmp_path):
+    (tmp_path / "news_collector").mkdir()
+    (tmp_path / "quant_backtest").mkdir()
+    (tmp_path / "news_collector" / "alert_fail_wrap.py").write_text(
+        "task_rc log_path result_summary exception_class", encoding="utf-8")
+    (tmp_path / "quant_backtest" / "alias_call.py").write_text(
+        'from subprocess import run as invoke\n'
+        'cmd = ["python", "alert_fail.py", "task", "1"]\n'
+        'invoke(cmd)\n', encoding="utf-8")
+
+    report = audit(tmp_path)
+
+    assert report["alert_fail"]["direct_files"] == [
+        "quant_backtest/alias_call.py"
+    ]
