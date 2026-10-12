@@ -233,6 +233,85 @@ def build_os_cockpit():
         "reports_total": len(rep),
         "reports_today": sum(1 for p in rep if _today(p)),
     }
+
+    # ── ⑤ 今日产出（给老田看的东西，K-STOCK-261 扩容）──
+    pre = _read_json(os.path.join(REPORTS_DIR, "premarket_latest.json")) or {}
+    ab = _read_json(os.path.join(STATION, "news_collector", "ai_brief.json")) or {}
+    ar = _read_json(os.path.join(STATION, "news_collector", "ai_review.json")) or {}
+    tps = _read_json(os.path.join(ROOT, "data", "todays_picks.json")) or {}
+    pv = _read_json(os.path.join(ROOT, "data", "pick_verdicts.json")) or {}
+    sl = _read_json(os.path.join(ROOT, "data", "strong_latest.json")) or {}
+    gzh = _read_json(os.path.join(STATION, "gzh", "drafts", "index.json")) or []
+    vids = _read_json(os.path.join(STATION, "video", "output", "index.json")) or []
+    tpc = tps.get("counts") or {}
+    out["output"] = {
+        "brief": {"date": ab.get("date"), "ok": ab.get("ok"),
+                  "pushed": ab.get("pushed"), "ts": ab.get("ts"),
+                  "news_count": ab.get("news_count")},
+        "premarket": {"verdict": pre.get("verdict"), "prob": pre.get("prob")},
+        "ai_review": {"date": ar.get("date"), "ok": ar.get("ok")},
+        "picks": {"total": tpc.get("total", 0),
+                  "t1": tpc.get("T1_resonance", 0),
+                  "t2": tpc.get("T2_high_value", 0),
+                  "t3": tpc.get("T3_single", 0),
+                  "generated_at": tps.get("generated_at")},
+        "verdicts": len(pv.get("per_code") or {}),
+        "strong": {"date": sl.get("date"), "items": len(sl.get("items") or [])},
+        "gzh": len(gzh) if isinstance(gzh, list) else 0,
+        "video": len(vids) if isinstance(vids, list) else 0,
+    }
+
+    # ── ⑥ AI 研发：git 提交即敲代码留痕（解析 .git/logs/HEAD reflog，
+    #     零外部命令——服务会话无 git PATH，subprocess 方案已实测吃 0）──
+    coding = {"commits_today": 0, "last_commit": None}
+    try:
+        today0 = time.mktime(time.strptime(today, "%Y-%m-%d"))
+        n = 0
+        last_ts = None
+        with open(os.path.join(STATION, ".git", "logs", "HEAD"),
+                  encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if "\t" not in line:
+                    continue
+                meta, msg = line.split("\t", 1)
+                if not (msg.startswith("commit") or msg.startswith("merge")):
+                    continue  # 豁免：reflog 里 reset/checkout 等非提交动作不计
+                parts = meta.split()
+                try:
+                    ts = int(parts[-2])
+                except (ValueError, IndexError):
+                    continue  # 豁免：坏行跳过
+                if ts >= today0:
+                    n += 1
+                    last_ts = ts
+        coding["commits_today"] = n
+        if last_ts:
+            coding["last_commit"] = time.strftime("%m-%d %H:%M", time.localtime(last_ts))
+    except Exception:
+        log_exc("build_os_cockpit:reflog 提交计数")  # reflog 缺失时前端显示 0 笔
+    out["coding"] = coding
+
+    # ── ⑦ 待办提醒：健康亮牌 + 商务提醒 + 在研文稿（告警收件箱前端走 overview）──
+    hp = _read_json(os.path.join(ROOT, "data", "health.json")) or {}
+    bz = _read_json(os.path.join(ROOT, "data", "biz.json")) or {}
+    nt = _read_json(os.path.join(ROOT, "data", "notes.json")) or {}
+    remind = 0
+    now = time.time()
+    for m in bz.get("minutes") or []:
+        ra = m.get("remind_at")
+        if not ra:
+            continue
+        try:
+            if time.mktime(time.strptime(str(ra)[:16], "%Y-%m-%d %H:%M")) > now:
+                remind += 1
+        except ValueError:
+            pass  # 豁免：提醒时间格式不对的条目跳过不计数
+    out["todo"] = {
+        "health": len(hp.get("issues") or []),
+        "biz_remind": remind,
+        "notes_doing": sum(1 for d in nt.get("docs") or []
+                           if d.get("status") == "在研"),
+    }
     return out
 
 def build_overview():
