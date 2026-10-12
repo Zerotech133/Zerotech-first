@@ -218,6 +218,11 @@ _NLQ_FORCE_HITS = {}   # ip -> [timestamp, ...]
 _lock = threading.Lock()
 _cache = {"t": 0.0, "data": None}
 
+# K-STOCK-037 全站超级助手浮动图标（非 _COCKPIT_CSS 页的内联版）
+_HERMES_UP_CACHE = (0.0, False)  # (ts, up) 30s TTL 探活缓存 K-STOCK-101
+# （K-STOCK-181 复原：f0b9f9b/137f auto 快照裹挟切割时误删本初始化行，
+#   而 _portal_page:910 仍引用 → /portal NameError 裸断连，10-12 14:18 定位）
+
 
 
 
@@ -880,16 +885,10 @@ gap:14px;align-items:start}}
     _DEV_EVENTS = os.path.join(ROOT, "data", "dev_events.jsonl")
     _DEV_KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail")
 
-
-
-
-
-    @classmethod
-
-
-
-
-
+    # K-STOCK-181: 此处原有错位的 @classmethod（f0b9f9b/137f 切割残留，
+    #   原属被搬走的 _audit_cfg(cls)）——classmethod 把类对象绑进 self 形参，
+    #   方法体内全部 self._xxx(arg) 变成类直调 → missing xxx 系 TypeError，
+    #   /portal 自 10-12 凌晨 137f 起裸断连。装饰器已移除，还原普通方法。
 
     def _portal_page(self):
         """🏛 门户框架页：全站分区卡片总览——第一屏「我的入口」
@@ -965,20 +964,25 @@ gap:14px;align-items:start}}
             "<b>驾驶舱 /fin</b> · 汇报三通道：日报/P0 即时/P1 一小时</div>"
             "</a></div>"
             % (st[1], st[0]))
+        # K-STOCK-181: 原 genexpr 形态 `sum(1 for _a in ... if self._license_state(...))`
+        # 线上稳定 TypeError(missing algo_id) 而直调同函数 OK——genexpr 闭包自变量
+        # 解析玄学，改显式循环（LOAD_FAST 直取 self），一并 try 兜底单条坏数据
+        _algo_rows = (_read_json(os.path.join(
+            ROOT, "algo_market.json")) or {}).get("algos", [])
+        _n_unlocked = 0
+        for _a in _algo_rows:
+            try:
+                if self._license_state(_a.get("id", "")):
+                    _n_unlocked += 1
+            except TypeError as _te:
+                log_exc("portal-page license-state TypeError on %r: %r" % (_a, _te))
         zones = "".join([
             _zone("🛒 AI 市场 · 算法商品 + 聘请 AI 做商业化", "".join([
                 _card("/algo", "#3fb950", "🛒", "算法商品市场",
                       "六大核心算法商品化：量子双刀/RiskGuard/缠论九维/"
                       "JEV 情绪/TDX 回测/Score 排序 · 每款可试看真实"
                       "输出样例 · 卡密订阅本机解锁",
-                      "%d 款商品 · 已解锁 %d" % (
-                          len((_read_json(os.path.join(
-                              ROOT, "algo_market.json")) or {})
-                              .get("algos", [])),
-                          sum(1 for _a in (_read_json(os.path.join(
-                              ROOT, "algo_market.json")) or {})
-                              .get("algos", [])
-                              if self._license_state(_a.get("id", ""))))),
+                      "%d 款商品 · 已解锁 %d" % (len(_algo_rows), _n_unlocked)),
                 _card("/aim", "#d29922", "🤖", "AI 市场货架",
                       "11 个可聘岗位：A0 + 投研部五岗 + 专项 AI · 本地模型"
                       "零 token 成本", "在岗 11 · 按岗聘请"),
@@ -3517,7 +3521,16 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._devops_page()
         elif path == "/portal":
             # K-STOCK-035 总入口门户：哪里是什么、我的入口在哪里
-            self._portal_page()
+            # K-STOCK-181 fail-loud 化：此分支异常曾以「裸断连+stderr 无处寻」
+            # 形态存在 6 小时（_HERMES_UP_CACHE NameError），不进 C:\Temp 日志
+            try:
+                self._portal_page()
+            except Exception:
+                log_exc("portal-page")
+                try:
+                    self._json({"ok": False, "error": "portal internal (see err log)"}, 500)
+                except Exception:
+                    pass
         elif path == "/org":
             self._org_page()
         elif path == "/aim":
