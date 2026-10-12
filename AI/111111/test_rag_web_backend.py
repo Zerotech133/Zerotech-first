@@ -103,6 +103,25 @@ class RagWebBackendTests(unittest.TestCase):
         self.assertEqual(len(client.embed_items), embedded_after_first_index + 1)
         self.assertEqual(service._kb.index_version, 2)
 
+    def test_index_persists_and_reloads_without_reembedding(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        path = Path(temp.name) / "facts.md"
+        index = Path(temp.name) / "rag-index.json"
+        path.write_text("太阳从东方升起", encoding="utf-8")
+        client = FakeRagClient()
+
+        first = RagWebService(client=client, docs_dir=temp.name, index_path=index)
+        self.assertEqual(first.ensure_index(), 1)
+        self.assertTrue(index.is_file())
+        version = first._kb.index_version
+        embedded = len(client.embed_items)
+
+        second = RagWebService(client=client, docs_dir=temp.name, index_path=index)
+        self.assertEqual(second.ensure_index(), 1)
+        self.assertEqual(len(client.embed_items), embedded)
+        self.assertEqual(second._kb.index_version, version)
+
     def test_search_validates_question_and_top_k(self):
         temp, _ = self.make_docs()
         self.addCleanup(temp.cleanup)

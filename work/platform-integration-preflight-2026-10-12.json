@@ -1,0 +1,74 @@
+{
+  "schema": "platform_integration_preflight/v1",
+  "observed_at": "2026-10-12T08:31:00+08:00",
+  "read_only": true,
+  "platform_guards": {
+    "mixin_integrity": {
+      "command": "python tools/_mixin_integrity.py --check",
+      "exit_code": 0,
+      "status": "pass",
+      "summary": "125 methods / 91 funcs 与基线零 diff"
+    },
+    "navigation": {
+      "command": "python tools/unify_nav.py --check",
+      "exit_code": 0,
+      "status": "pass",
+      "summary": "14 静态页全带统一顶栏，nav.js 与源零漂移"
+    },
+    "ports": {
+      "command": "python tools/check_ports.py --strict",
+      "exit_code": 0,
+      "status": "pass",
+      "registered_count": 25,
+      "unregistered_listeners": 0,
+      "offline_optional": ["3001", "8030", "9104"]
+    }
+  },
+  "upstream_gates": {
+    "source_evidence": {
+      "exact_2026_10_08_original": false,
+      "date_receipts_complete": false,
+      "status": "blocked",
+      "evidence_ref": "local://work/academy-source-evidence-v0.1/source-evidence-search-receipt-2026-10-12.json"
+    },
+    "p1_observability": {
+      "report": "work/p1-observability-audit-v0.1.json",
+      "actual_execution_evidence": true,
+      "alert_coverage_gap": true,
+      "direct_alert_fail_calls": 44,
+      "three_source_skip_verified": false,
+      "status": "blocked",
+      "execution_receipt": "work/p1-execution-receipt-2026-10-12.json"
+    },
+    "strategy_acceptance": {
+      "report": "work/strategy-acceptance-v0.1/strategy-acceptance-report-v0.1.json",
+      "p1_status": "blocked",
+      "all_strategies_ready_for_shadow_review": false,
+      "verdicts": {
+        "chanlun": "blocked",
+        "ninedim": "blocked",
+        "weak": "blocked",
+        "double_knife": "blocked"
+      }
+    },
+    "standard_definitions_certified": false,
+    "calendar_certified": false
+  },
+  "verdict": "blocked",
+  "blockers": [
+    "缺少精确 2026-10-08 量子双刀原文或可哈希的可信发布回执",
+    "七个来源仍缺正文发布日期/生效日期或原始发布回执",
+    "P1 仍有 44 个 alert_fail.py 直调用未迁移",
+    "07:05 实际执行成功但 qd 非无雇佣，三源统一跳过验收未通过",
+    "标准定义与交易日日历未认证",
+    "四策略证据清单未满足样本、时间切分、成本、缺数据拒绝和暂态结构要求"
+  ],
+  "policy": {
+    "training_eligible": false,
+    "lora_enabled": false,
+    "simulated_execution_enabled": false,
+    "trading_enabled": false,
+    "commercialization_enabled": false
+  },
+  "next_action": "补齐精确来源与日期回执、刷新 nine_dim.py 全量索引、分批迁移 44 个告警直调用，然后重跑同一组只读门禁"
+}

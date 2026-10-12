@@ -117,6 +117,13 @@ class KnowledgeBaseTests(unittest.TestCase):
             self.assertEqual(loaded.index_version, 1)
             self.assertEqual(loaded._records[0]["source"], "guide.md")
 
+    def test_update_documents_does_not_bump_version_when_nothing_changed(self):
+        kb = KnowledgeBase(client=FakeClient(), chunk_size=10)
+        kb.update_documents({"guide.md": "hello"})
+        self.assertEqual(kb.index_version, 1)
+        kb.update_documents({"guide.md": "hello"})
+        self.assertEqual(kb.index_version, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

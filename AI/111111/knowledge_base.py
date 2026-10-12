@@ -8,6 +8,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+try:
+    from .model_routing import EMBED_MODEL, RAG_CHAT_MODEL, validate_model
+except ImportError:
+    from model_routing import EMBED_MODEL, RAG_CHAT_MODEL, validate_model
+
 
 class _OllamaClient:
     def __init__(self, host="http://127.0.0.1:11434"):
@@ -28,12 +33,13 @@ class _OllamaClient:
 
 class KnowledgeBase:
     def __init__(self, client=None, chunk_size=500, top_k=4,
-                 embed_model="bge-m3", chat_model="qwen3.5:9b"):
+                 embed_model=EMBED_MODEL, chat_model=RAG_CHAT_MODEL):
         if chunk_size <= 0 or top_k <= 0:
             raise ValueError("chunk_size 和 top_k 必须为正数")
         self.client = client or _OllamaClient()
         self.chunk_size, self.top_k = chunk_size, top_k
-        self.embed_model, self.chat_model = embed_model, chat_model
+        self.embed_model = validate_model("embedding", embed_model)
+        self.chat_model = validate_model("rag", chat_model)
         self._records = []
         self.index_version = 0
 
@@ -106,13 +112,18 @@ class KnowledgeBase:
             existing.setdefault(str(record.get("source", "")), []).append(record)
 
         unchanged, pending = [], []
+        changed = False
         for source, text in items.items():
             digest = self._document_hash(text)
             records = existing.get(source, [])
             if records and all(record.get("document_hash") == digest for record in records):
                 unchanged.extend(records)
             else:
+                changed = True
                 pending.extend(self._chunk_records(source, text, digest))
+
+        if set(existing) - set(items):
+            changed = True
 
         vectors = self._embed([item["text"] for item in pending])
         if len(vectors) != len(pending):
@@ -123,7 +134,8 @@ class KnowledgeBase:
         for item, vector in zip(pending, vectors):
             item["embedding"] = vector
         self._records = unchanged + pending
-        self.index_version += 1
+        if changed:
+            self.index_version += 1
         if index_path is not None:
             self.save(index_path)
         return list(self._records)

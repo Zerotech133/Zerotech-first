@@ -1,6 +1,16 @@
 """Ollama HTTP API 客户端（仅使用 Python 标准库）。"""
 import json, math, urllib.error, urllib.request
 
+try:
+    from .model_routing import (
+        DEFAULT_CHAT_MODEL,
+        EMBED_MODEL,
+        ModelSelection,
+        select_model,
+    )
+except ImportError:
+    from model_routing import DEFAULT_CHAT_MODEL, EMBED_MODEL, ModelSelection, select_model
+
 class OllamaError(RuntimeError):
     """服务、协议或 API 返回错误。"""
 
@@ -32,7 +42,7 @@ class OllamaClient:
         with self._request("/api/tags") as resp: result = self._json_response(resp)
         return [m.get("name", "") for m in result.get("models", []) if isinstance(m, dict) and m.get("name")]
 
-    def chat_stream(self, messages, model="qwen3.5:35b", think=None):
+    def chat_stream(self, messages, model=DEFAULT_CHAT_MODEL, think=None):
         payload = {"model": model, "messages": messages, "stream": True}
         if think is not None:
             payload["think"] = bool(think)
@@ -47,10 +57,10 @@ class OllamaClient:
                 if text: yield text
                 if chunk.get("done"): break
 
-    def chat(self, messages, model="qwen3.5:35b", think=None):
+    def chat(self, messages, model=DEFAULT_CHAT_MODEL, think=None):
         return "".join(self.chat_stream(messages, model, think=think))
 
-    def embed(self, texts, model="bge-m3:latest"):
+    def embed(self, texts, model=EMBED_MODEL):
         single = isinstance(texts, str); items = [texts] if single else list(texts)
         with self._request("/api/embed", {"model":model,"input":items}, "POST") as resp: result = self._json_response(resp)
         vectors = result.get("embeddings", [])
@@ -62,3 +72,8 @@ class OllamaClient:
         if len(vec_a) != len(vec_b): raise ValueError("向量维度不一致")
         norm = math.sqrt(sum(x*x for x in vec_a) * sum(y*y for y in vec_b))
         return sum(x*y for x,y in zip(vec_a, vec_b)) / norm if norm else 0.0
+
+    @staticmethod
+    def route_model(capability, requested=None, installed=None) -> ModelSelection:
+        """离线选择模型；调用方可据此展示降级提示后再发起请求。"""
+        return select_model(capability, requested=requested, installed=installed)

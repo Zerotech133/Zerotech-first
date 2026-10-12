@@ -17,6 +17,11 @@ from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
+# 兼容 ``python ops/health_check.py`` 直接调用：此时 sys.path 默认只有 ops/。
+if STATION not in sys.path:
+    sys.path.insert(0, STATION)
+
+from ollama_service.health import HealthCheckConfig, check_ollama_health
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -85,7 +90,23 @@ def check_junction():
         return False
 
 
-def check_services():
+def _check_ollama_service():
+    """复用 Ollama 专用探针，并保留服务层需要的布尔结果与失败原因。"""
+    try:
+        report = check_ollama_health(HealthCheckConfig())
+        http_result = report.checks.get("ollama_http")
+    except Exception as exc:
+        return False, "Ollama 健康探针异常（%s）" % str(exc)[:160]
+    if http_result is None:
+        return False, "Ollama 健康探针未返回 HTTP 检查结果"
+    return bool(http_result.ok), http_result.message
+
+
+def check_services(failure_messages=None):
+    """检查服务；可选地收集带上下文的失败原因，不改变原返回结构。"""
+    ollama_ok, ollama_message = _check_ollama_service()
+    if failure_messages is not None and not ollama_ok:
+        failure_messages["Ollama(11434)"] = ollama_message
     return {
         "门户API(8091)": _http_ok("http://127.0.0.1:8091/health") or _tcp_ok(8091),
         "nginx(8080)": _http_ok("http://127.0.0.1:8080/"),
@@ -96,7 +117,7 @@ def check_services():
         # K267 盲区治理（2026-10-08）：20+ AI 模块依赖 Ollama，但此前服务层
         # 无探针——实例死掉而任务 rc 恰好良性时会「全绿假象」
         #（根因见 docs/ops/2026-10-08_Ollama任务根因排查.md §三）。
-        "Ollama(11434)": _http_ok("http://127.0.0.1:11434/api/tags"),
+        "Ollama(11434)": ollama_ok,
     }
 
 
@@ -255,12 +276,17 @@ def run():
     result = {"ts": datetime.now().strftime("%Y-%m-%d %H:%M")}
     issues = []
 
-    result["services"] = check_services()
+    service_failures = {}
+    result["services"] = check_services(service_failures)
     for name, ok in result["services"].items():
         if ok == "checker-error":
             issues.append("检查器故障(degraded): %s" % name)
         elif not ok:
-            issues.append("服务下线: %s" % name)
+            detail = service_failures.get(name)
+            if detail:
+                issues.append("服务下线: %s（%s）" % (name, detail))
+            else:
+                issues.append("服务下线: %s" % name)
 
     result["junction_c_aios"] = check_junction()
     if not result["junction_c_aios"]:

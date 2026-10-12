@@ -10,6 +10,7 @@ sys.path.insert(0, str(HERE.parent / "paper"))
 
 import meetings_conductor as cond  # noqa: E402
 import meeting  # noqa: E402
+import plan_review  # noqa: E402  # K-STOCK-163：conductor 经同模块做意图摘要增强
 
 
 def _wed_0900():
@@ -89,6 +90,58 @@ def test_context_compose_tolerates_missing(monkeypatch):
     monkeypatch.setattr(cond, "STRATEGIST_LATEST", cond.HERE.parent / "data" / "__no_such__.json")
     ctx = cond.build_context(_wed_0900())
     assert "日期：" in ctx                             # 缺文件不炸，仅日期行
+
+
+# ---- K-STOCK-163 · build_context 组合意图清单摘要增强（无产物=原文案，向后兼容） ----
+
+def test_build_context_pf_source_appends_digest(monkeypatch):
+    """source 为组合且有当日意图 → context 追加摘要块。"""
+    monkeypatch.setattr(cond, "STRATEGIST_LATEST", cond.HERE.parent / "data" / "__no_such__.json")
+    monkeypatch.setattr(plan_review, "collect_context",
+                        lambda pf, now=None: "【今日买入意图清单摘要】组合 pf_001")
+    ctx = cond.build_context(_wed_0900(), source="pf_001")
+    assert "日期：" in ctx
+    assert "【今日买入意图清单摘要】" in ctx and "pf_001" in ctx
+
+
+def test_build_context_no_artifact_degrades_to_original(monkeypatch):
+    """无产物（collect_context 空串）→ 输出与旧版完全一致（只有日期行）。"""
+    monkeypatch.setattr(cond, "STRATEGIST_LATEST", cond.HERE.parent / "data" / "__no_such__.json")
+    monkeypatch.setattr(plan_review, "collect_context", lambda pf, now=None: "")
+    ctx = cond.build_context(_wed_0900(), source="pf_001")
+    assert ctx.strip() == f"日期：{_wed_0900().strftime('%Y-%m-%d %A')}"
+    assert cond.build_context(_wed_0900()) == ctx            # 不传 source 同款
+
+
+def test_build_context_collect_failure_silent(monkeypatch):
+    """collect_context 抛错（如模块级故障）→ 静默为空，会议线不受阻。"""
+    monkeypatch.setattr(cond, "STRATEGIST_LATEST", cond.HERE.parent / "data" / "__no_such__.json")
+
+    def boom(pf, now=None):
+        raise RuntimeError("模拟故障")
+    monkeypatch.setattr(plan_review, "collect_context", boom)
+    ctx = cond.build_context(_wed_0900(), source="pf_001")
+    assert "日期：" in ctx and "意图清单" not in ctx
+
+
+def test_run_passes_source_context_to_meeting(monkeypatch, tmp_path, capsys):
+    """run() 召开会议时把 source 传给 build_context（context 含意图摘要）。"""
+    _write_subs(tmp_path, monkeypatch, [{"id": "pf_001", "name": "我的组合"}])
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_001", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    monkeypatch.setattr(plan_review, "collect_context",
+                        lambda pf, now=None: "【今日买入意图清单摘要】组合 pf_001")
+    got = {}
+
+    def fake_hold(mid, source, kind, context="", channel=None):
+        got["context"] = context
+        return ({"title": "t", "channel": "site"}, "glm-5.3-flash")
+
+    monkeypatch.setattr(meeting, "hold_meeting", fake_hold)
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and results[0]["status"] == "ok"
+    assert "【今日买入意图清单摘要】" in got["context"]
 
 
 # ---- K-STOCK-158 · S-g 订阅服务开关（缺省全开，显式 false 才关） ----

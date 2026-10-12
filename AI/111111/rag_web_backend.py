@@ -8,9 +8,11 @@ from pathlib import Path
 try:
     from .knowledge_base import KnowledgeBase
     from .ollama_client import OllamaClient, OllamaError
+    from .model_routing import EMBED_MODEL, RAG_CHAT_MODEL, validate_model
 except ImportError:
     from knowledge_base import KnowledgeBase
     from ollama_client import OllamaClient, OllamaError
+    from model_routing import EMBED_MODEL, RAG_CHAT_MODEL, validate_model
 
 
 class RagUnavailable(RuntimeError):
@@ -43,12 +45,15 @@ class _KnowledgeClient:
 
 class RagWebService:
     def __init__(self, docs_dir="knowledge_docs", top_k=4,
-                 embed_model="bge-m3", chat_model="qwen3.5:9b", client=None):
+                 embed_model=EMBED_MODEL, chat_model=RAG_CHAT_MODEL, client=None,
+                 index_path=None):
         self.docs_dir = Path(docs_dir)
         self.top_k = top_k
-        self.embed_model = embed_model
-        self.chat_model = chat_model
+        # 保留旧参数名以兼容调用方，但 RAG 的模型角色由集中契约固定。
+        self.embed_model = validate_model("embedding", embed_model)
+        self.chat_model = validate_model("rag", chat_model)
         self.client = client or OllamaClient()
+        self.index_path = Path(index_path) if index_path else self.docs_dir / ".rag_index.json"
         self._kb = None
         self._index_key = None
         self._lock = threading.RLock()
@@ -82,9 +87,18 @@ class RagWebService:
             if self._kb is None:
                 self._kb = KnowledgeBase(client=adapter, top_k=self.top_k,
                                          embed_model=self.embed_model, chat_model=self.chat_model)
+                if self.index_path.is_file():
+                    try:
+                        self._kb.load(self.index_path)
+                    except (OSError, ValueError, TypeError):
+                        self._kb._records = []
+                        self._kb.index_version = 0
             else:
                 self._kb.client = adapter
-            self._kb.update_documents(documents)
+            try:
+                self._kb.update_documents(documents, index_path=self.index_path)
+            except OSError:
+                self._kb.update_documents(documents)
             self._index_key = key
             return len(self._kb._records)
         except RagUnavailable:

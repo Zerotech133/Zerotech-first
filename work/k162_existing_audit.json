@@ -1,0 +1,13 @@
+{
+  "date_count": 910,
+  "expected_units": 1820,
+  "parquet_ready": 1820,
+  "raw_missing_among_ready": 1820,
+  "missing_or_invalid_count": 0,
+  "missing_or_invalid_sample": [],
+  "status_counts": {
+    "candidate_ready": 1820
+  },
+  "production_write": false,
+  "global_activation": false
+}

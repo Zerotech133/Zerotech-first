@@ -1,0 +1,67 @@
+{
+ "ok": true,
+ "date": "2026-10-12",
+ "attendees": [
+  "analyst",
+  "trader",
+  "manager"
+ ],
+ "manager": {
+  "score": 84.0,
+  "grade": "B",
+  "findings": [
+   {
+    "rule": "DUP_PENDING",
+    "severity": "critical",
+    "msg": "main 账本 600593.SH BUY 挂单 2 批并存（077q 事故形态）",
+    "n": 2
+   },
+   {
+    "rule": "CROSS_ACCOUNT_OVERLAP",
+    "severity": "info",
+    "msg": "600593.SH BUY 被 2 个账本同时持仓意图（同质化集中度，不扣分）",
+    "n": 2
+   },
+   {
+    "rule": "CROSS_ACCOUNT_OVERLAP",
+    "severity": "info",
+    "msg": "600887.SH BUY 被 2 个账本同时持仓意图（同质化集中度，不扣分）",
+    "n": 2
+   },
+   {
+    "rule": "FILL_STATS",
+    "severity": "info",
+    "msg": "当日订单 290：成交 2 / 拒 0 / 其他 288",
+    "n": 290
+   }
+  ],
+  "narrative": null
+ },
+ "analyst": {
+  "note": "本文件仅为建议，automation 未接线，不产生任何调度效果"
+ },
+ "trader": {
+  "actions": [],
+  "equity_recent": [
+   {
+    "date": "2026-10-12",
+    "total": 999990.0
+   },
+   {
+    "date": "2026-10-11",
+    "total": 1000000.0
+   }
+  ]
+ },
+ "disagreements": [],
+ "resolutions": [
+  {
+   "on": "daily",
+   "by": "manager",
+   "decision": "按既有纪律继续执行"
+  }
+ ],
+ "action_items": [
+  "main 账本 600593.SH BUY 挂单 2 批并存（077q 事故形态）"
+ ]
+}

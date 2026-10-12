@@ -219,7 +219,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--manifest-out")
     parser.add_argument("--report-out")
     parser.add_argument("--top-k", type=int, default=4)
+    parser.add_argument("--offline-regression", action="store_true", help="使用可控替身运行离线回归")
+    parser.add_argument("--cases", help="离线回归 JSON/JSONL 评测样例")
     args = parser.parse_args(argv)
+    if args.offline_regression:
+        result = run_offline_regression(args.docs_dir, cases_path=args.cases, report_out=args.report_out, top_k=args.top_k)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
     result = run_baseline(args.docs_dir, top_k=args.top_k)
     if args.manifest_out:
         _write_json(args.manifest_out, result["manifest"])
@@ -227,6 +233,190 @@ def main(argv: Sequence[str] | None = None) -> int:
         _write_json(args.report_out, result)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
+
+
+class OfflineEmbeddingClient:
+    """可重复的本地向量替身；只在内存中计算，不连接 Ollama。"""
+
+    def __init__(self, dimensions: int = 256):
+        if isinstance(dimensions, bool) or not isinstance(dimensions, int) or dimensions < 32:
+            raise ValueError("dimensions 必须是不小于 32 的整数")
+        self.dimensions = dimensions
+        self.embed_calls = 0
+
+    @staticmethod
+    def _tokens(text: str) -> list[str]:
+        lowered = str(text).lower()
+        tokens = re.findall(r"[a-z0-9_./-]+", lowered)
+        for run in re.findall(r"[\u4e00-\u9fff]+", lowered):
+            tokens.extend(run)
+            tokens.extend(run[index:index + 2] for index in range(len(run) - 1))
+        return [token for token in tokens if token]
+
+    def _vector(self, text: str) -> list[float]:
+        vector = [0.0] * self.dimensions
+        for token in self._tokens(text):
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            index = int.from_bytes(digest[:4], "big") % self.dimensions
+            vector[index] += 1.0
+        return vector
+
+    def embed(self, model, input):  # noqa: ARG002 - 与 KnowledgeBase client 接口一致
+        values = [input] if isinstance(input, str) else list(input)
+        self.embed_calls += len(values)
+        return {"embeddings": [self._vector(value) for value in values]}
+
+
+class _OfflineService:
+    """把 KnowledgeBase 包成与 RagWebService 相同的只读 search 接口。"""
+
+    def __init__(self, docs_dir: str | Path, top_k: int = 4, client: OfflineEmbeddingClient | None = None):
+        try:
+            from .knowledge_base import KnowledgeBase
+        except ImportError:
+            from knowledge_base import KnowledgeBase
+
+        self.docs_dir = Path(docs_dir)
+        self.client = client or OfflineEmbeddingClient()
+        self._kb = KnowledgeBase(client=self.client, top_k=top_k)
+        self._kb.ingest(self._kb.read_documents(self.docs_dir))
+
+    def search(self, question: str, top_k: int | None = None) -> list[dict]:
+        requested = self._kb.top_k if top_k is None else top_k
+        old_top_k = self._kb.top_k
+        self._kb.top_k = requested
+        try:
+            matches = self._kb.search(question)
+        finally:
+            self._kb.top_k = old_top_k
+        output = []
+        for match in matches:
+            item = dict(match)
+            try:
+                item["source"] = Path(item.get("source", "")).relative_to(self.docs_dir).as_posix()
+            except ValueError:
+                item["source"] = str(item.get("source", ""))
+            output.append(item)
+        return output
+
+
+def load_evaluation_cases(path: str | Path | None) -> list[dict]:
+    """读取 JSON/JSONL 评测样例，并统一 query/question 与来源字段。"""
+    if path is None:
+        return []
+    source = Path(path)
+    if not source.is_file():
+        raise FileNotFoundError(source)
+    raw = source.read_text(encoding="utf-8")
+    if source.suffix.lower() == ".jsonl":
+        payload = [json.loads(line) for line in raw.splitlines() if line.strip()]
+    else:
+        decoded = json.loads(raw)
+        payload = decoded if isinstance(decoded, list) else decoded.get("cases", [])
+    cases = []
+    for index, item in enumerate(payload):
+        if not isinstance(item, Mapping):
+            raise ValueError(f"评测样例第 {index + 1} 项必须是对象")
+        question = item.get("question", item.get("query"))
+        if not isinstance(question, str) or not question.strip():
+            raise ValueError(f"评测样例第 {index + 1} 项缺少 question/query")
+        expected = item.get("expected_sources", item.get("expected_relative_paths", []))
+        if isinstance(expected, str):
+            expected = [expected]
+        if not isinstance(expected, Sequence) or isinstance(expected, (str, bytes)):
+            raise ValueError(f"评测样例第 {index + 1} 项 expected_sources 必须是数组")
+        case = dict(item)
+        case["id"] = str(item.get("id", item.get("case_id", f"case-{index + 1}")))
+        case["question"] = question
+        case["expected_sources"] = [str(value).replace("\\", "/") for value in expected]
+        case.setdefault("split", "evaluation_only")
+        cases.append(case)
+    return cases
+
+
+def _metric(total: int, passed: int) -> dict:
+    return {
+        "total": total,
+        "passed": passed,
+        "failed": total - passed,
+        "hit_rate": round(passed / total, 4) if total else None,
+    }
+
+
+def _unknown_refusal_eval(service: _OfflineService, cases: Sequence[Mapping[str, object]], top_k: int, threshold: float = 0.35) -> dict:
+    results = []
+    for case in cases:
+        matches = service.search(str(case["question"]), top_k=top_k)
+        scores = [round(float(match.get("score", 0.0)), 6) for match in matches]
+        refused = not matches or max(scores, default=0.0) < threshold
+        expected = str(case.get("expected_decision", "refuse_missing_evidence"))
+        passed = refused if expected.startswith("refuse") else not refused
+        results.append({
+            "id": str(case.get("id", "")),
+            "question": str(case["question"]),
+            "expected_decision": expected,
+            "returned_sources": [str(match.get("source", "")) for match in matches],
+            "scores": scores,
+            "threshold": threshold,
+            "refused": refused,
+            "passed": passed,
+        })
+    passed = sum(1 for result in results if result["passed"])
+    return {**_metric(len(results), passed), "refusal_rate": round(passed / len(results), 4) if results else None, "cases": results}
+
+
+def run_offline_regression(
+    docs_dir: str | Path,
+    cases_path: str | Path | None = None,
+    report_out: str | Path | None = None,
+    top_k: int = 4,
+) -> dict:
+    """运行可重复的离线 RAG 回归，绝不实例化或调用 Ollama 客户端。"""
+    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
+        raise ValueError("top_k 必须是正整数")
+    root = Path(docs_dir)
+    manifest = build_manifest(root)
+    service = _OfflineService(root, top_k=top_k)
+    title_cases = build_title_cases(root)
+    supplied_cases = load_evaluation_cases(cases_path)
+    positive_cases = [case for case in supplied_cases if case.get("expected_sources")]
+    semantic_cases = positive_cases or title_cases
+    unknown_cases = [case for case in supplied_cases if not case.get("expected_sources")]
+    title_eval = run_retrieval_eval(service, title_cases, top_k=top_k)
+    semantic_eval = run_retrieval_eval(service, semantic_cases, top_k=top_k)
+    source_total = len(title_cases) + len(positive_cases)
+    source_passed = sum(item["retrieval_hit"] for item in title_eval["cases"])
+    semantic_positive = run_retrieval_eval(service, positive_cases, top_k=top_k)
+    source_passed += sum(item["retrieval_hit"] for item in semantic_positive["cases"])
+    source_metric = round(source_passed / source_total, 4) if source_total else None
+    unknown_metric = _unknown_refusal_eval(service, unknown_cases, top_k=top_k)
+    report = {
+        "schema": "rag_eval_regression/v1",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "mode": "offline_deterministic",
+        "evaluation_only": True,
+        "training_eligible": False,
+        "production_eligible": False,
+        "model_calls": 0,
+        "training_steps": 0,
+        "manifest": manifest,
+        "metrics": {
+            "title_retrieval": {**title_eval["summary"], "cases": title_eval["cases"]},
+            "semantic_retrieval": {**semantic_eval["summary"], "cases": semantic_eval["cases"]},
+            "source_hit_rate": source_metric,
+            "unknown_refusal": unknown_metric,
+        },
+        "summary": {
+            "title_retrieval_hit_rate": title_eval["summary"]["hit_rate"],
+            "semantic_retrieval_hit_rate": semantic_eval["summary"]["hit_rate"],
+            "source_hit_rate": source_metric,
+            "unknown_refusal_rate": unknown_metric["refusal_rate"],
+        },
+    }
+    if report_out is not None:
+        _write_json(report_out, report)
+    return report
+
 
 
 if __name__ == "__main__":

@@ -90,8 +90,12 @@ def service_enabled(services_map: dict, source: str, kind: str) -> bool:
     return services.get(f"{kind}_report") is not False
 
 
-def build_context(now: datetime | None = None) -> str:
-    """轻量上下文：策略官最新产出摘要（缺失则空，hold_meeting 有兜底文案）。"""
+def build_context(now: datetime | None = None, source: str | None = None) -> str:
+    """轻量上下文：策略官最新产出摘要（缺失则空，hold_meeting 有兜底文案）。
+
+    K-STOCK-163：source 为组合（pf_*）时追加「今日买入意图清单摘要」
+    （plan_review.collect_context，失败静默为空——无产物时输出与旧版完全一致，
+    09:05 盘前会向后兼容）。"""
     now = now or datetime.now()
     lines = [f"日期：{now.strftime('%Y-%m-%d %A')}"]
     try:
@@ -102,6 +106,14 @@ def build_context(now: datetime | None = None) -> str:
             lines.append(f"策略官最新产出（{gen}）：{str(title)[:200]}")
     except (OSError, ValueError):
         pass
+    if source:
+        try:
+            import plan_review
+            digest = plan_review.collect_context(source, now)
+            if digest:
+                lines.append(digest)
+        except Exception:
+            pass  # 意图摘要是增强信息：任何失败静默为空，不阻断会议线
     return "\n".join(lines)
 
 
@@ -138,7 +150,7 @@ def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[
             continue
         try:
             rec, provider = meeting.hold_meeting(mid, source, kind,
-                                                 context=build_context(now))
+                                                 context=build_context(now, source=source))
             print(f"OK {mid}×{source} {kind} → {rec.get('title')} "
                   f"(channel={rec.get('channel')}, provider={provider})")
             results.append({"mid": mid, "source": source, "status": "ok",

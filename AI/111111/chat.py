@@ -1,7 +1,8 @@
 """命令行多轮对话。"""
 import json, os, sys
 from ollama_client import OllamaClient, OllamaError
-DEFAULT_MODEL = "qwen3.5:35b"
+from model_routing import DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
+DEFAULT_MODEL = DEFAULT_CHAT_MODEL
 HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.json")
 HELP = "/model <名称> 切换模型\n/clear 清空历史\n/history 查看条数\n/help 显示帮助\n/exit 退出"
 def load_history():
@@ -15,7 +16,14 @@ def main():
     client, model, history = OllamaClient(), DEFAULT_MODEL, load_history()
     try: models = client.list_models()
     except OllamaError as e: print(f"[错误] {e}"); return
-    if models and model not in models: model = models[0]
+    try:
+        selection = select_model("chat", model, installed=models)
+        model = selection.model
+        if selection.message:
+            print(f"[提示] {selection.message}")
+    except ModelRoutingError as e:
+        print(f"[错误] {e}")
+        return
     print(f"当前模型: {model}（/help 查看命令）")
     while True:
         try: text = input("你: ").strip()
@@ -27,7 +35,16 @@ def main():
         if text == "/history": print(f"[已保存 {len(history)} 条记录]"); continue
         if text == "/model" or text.startswith("/model "):
             arg = text[6:].strip()
-            if arg: model = arg; print(f"[已切换模型: {model}]")
+            if arg:
+                try:
+                    selection = select_model("chat", arg, installed=client.list_models())
+                except ModelRoutingError as e:
+                    print(f"[错误] {e}")
+                    continue
+                model = selection.model
+                if selection.message:
+                    print(f"[提示] {selection.message}")
+                print(f"[已切换模型: {model}]")
             else:
                 try: print("可用模型: " + ", ".join(client.list_models()))
                 except OllamaError as e: print(f"[错误] {e}")

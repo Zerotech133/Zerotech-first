@@ -6,18 +6,21 @@ from urllib.error import HTTPError, URLError
 try:
  from .rag_web_backend import RagUnavailable, RagWebService
  from .web_ui import render_chat_page
+ from .model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
 except ImportError:
  from rag_web_backend import RagUnavailable, RagWebService
  from web_ui import render_chat_page
-HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL='qwen3.5:9b'; MODELS=('qwen3.5:9b','qwen3.5:4b')
+ from model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
+HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS
 RAG_SERVICE = None
 def _error(s): return json.dumps({'error':s},ensure_ascii=False).encode()
 def _payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')
  if not isinstance(p,dict) or not isinstance(p.get('message'),str) or not p['message'].strip(): raise ValueError('message 不能为空')
- if p.get('model',DEFAULT_MODEL) not in MODELS: raise ValueError('model 不受支持')
- return {'model':p.get('model',DEFAULT_MODEL),'messages':[{'role':'user','content':p['message'].strip()}],'stream':True}
+ try: model=select_model('chat', p.get('model',DEFAULT_MODEL)).model
+ except ModelRoutingError as e: raise ValueError(str(e)) from e
+ return {'model':model,'messages':[{'role':'user','content':p['message'].strip()}],'stream':True}
 def _rag_payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')

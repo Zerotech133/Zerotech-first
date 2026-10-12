@@ -104,10 +104,16 @@ def _scan_news():
             "SELECT COUNT(*) FROM news WHERE jev IS NOT NULL AND jev != ''"
         ).fetchone()[0]
         source_times = {}
-        if 'created_at' in [r[1] for r in db.execute('PRAGMA table_info(news)')]:
-            source_times = {s: {'latest_event': event, 'latest_ingested': ingested}
-                            for s, event, ingested in db.execute(
-                                'SELECT source, MAX(ts), MAX(created_at) FROM news GROUP BY source')}
+        # created_at 仅用于附加维度；其 schema 探针失败不能覆盖前面已成功
+        # 读取的核心统计（旧库、只读锁或测试替身都可能不支持 PRAGMA）。
+        try:
+            columns = [r[1] for r in db.execute('PRAGMA table_info(news)')]
+            if 'created_at' in columns:
+                source_times = {s: {'latest_event': event, 'latest_ingested': ingested}
+                                for s, event, ingested in db.execute(
+                                    'SELECT source, MAX(ts), MAX(created_at) FROM news GROUP BY source')}
+        except Exception:
+            source_times = {}
         db.close()
         return {**measured, "exists": True, "total": total, 'source_times': source_times,
                 "date_range": "%s ~ %s" % (date_range[0], date_range[1]),
@@ -171,18 +177,24 @@ def _build_gaps(kline, news, artifacts=None):
     return gaps
 
 
+def _annotate_cn_sample(kline):
+    """把 A 股样本字段缺失写回扫描结果，供两个健康入口共用。"""
+    sample = _sample_parquet("cn")
+    if not sample or "cols" not in sample:
+        return
+    known = {"ts_code", "trade_date", "open", "high", "low", "close",
+             "volume", "amount", "pre_close", "pct_chg"}
+    missing = [c for c in ("turnover", "market_cap", "pe")
+               if c not in known and c not in sample["cols"]]
+    if missing:
+        kline.setdefault("cn", {})["missing_fields"] = missing
+    kline.setdefault("cn", {})["avg_rows"] = sample.get("rows")
+
+
 def scan_data_health():
     """一次性扫描数据仓，返回结构化健康报告。"""
     kline = {m: _scan_kline(m) for m in ("cn", "us", "hk", "crypto")}
-    sample = _sample_parquet("cn")
-    if sample and "cols" in sample:
-        known = {"ts_code", "trade_date", "open", "high", "low", "close",
-                 "volume", "amount", "pre_close", "pct_chg"}
-        missing = [c for c in ("turnover", "market_cap", "pe")
-                   if c not in known and c not in sample["cols"]]
-        if missing:
-            kline["cn"]["missing_fields"] = missing
-        kline["cn"]["avg_rows"] = sample["rows"]
+    _annotate_cn_sample(kline)
     news = _scan_news()
     artifacts = _scan_artifacts()
     return {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -260,9 +272,23 @@ def _scan_tdx():
                     "%Y-%m-%d %H:%M"),
                 "age_hours": round((time.time() - newest) / 3600, 1)})
     info = _scan_tdx_info_db(os.path.join(tdx_dir, "tdx_info.db"))
-    n_done = sum(1 for t in tables if t["done"])
+    sqlite_names = {"stock_notice", "stock_news", "stock_report"}
+    parquet_names = sorted(name for name in m if name not in sqlite_names)
+    table_by_name = {t["asset"]: t for t in tables}
+    parquet_done = sum(1 for name in parquet_names
+                       if table_by_name.get(name, {}).get("done"))
+    incomplete = [name for name in parquet_names
+                  if not table_by_name.get(name, {}).get("done")]
+    n_done = parquet_done
     return {"tables": tables, "info": info,
             "sync_done": n_done, "sync_total": len(m),
+            "sync_summary": {
+                "parquet_done": parquet_done,
+                "parquet_total": len(parquet_names),
+                "sqlite_done": len(info),
+                "sqlite_total": len(sqlite_names),
+                "incomplete": incomplete,
+            },
             "db_size_mb": round(
                 os.path.getsize(os.path.join(tdx_dir, "tdx_info.db"))
                 / 1024 / 1024, 1) if info else 0}
@@ -314,7 +340,12 @@ def _scan_tushare():
                 "latest": datetime.fromtimestamp(newest).strftime(
                     "%Y-%m-%d %H:%M"),
                 "age_hours": round((time.time() - newest) / 3600, 1)})
-    n_done = sum(1 for t in tables if t["done"])
+    table_by_name = {t["asset"]: t for t in tables}
+    probe_names = {name for name in m if name.endswith("_probe")}
+    entity_names = sorted(name for name in m if name not in probe_names)
+    n_done = sum(1 for name in entity_names
+                 if table_by_name.get(name, {}).get("done")
+                 and m.get(name, {}).get("codes") != 0)
     manifest_only = []
     for name, entry in m.items():
         if os.path.isdir(os.path.join(ts_dir, name)):
@@ -323,8 +354,25 @@ def _scan_tushare():
                     'no_coverage' if entry.get('codes') == 0 else 'location_unverified')
         manifest_only.append({'asset': name, 'rows': entry.get('rows'),
                               'coverage_status': coverage, **_manifest_metadata(m, name, False)})
+    no_coverage = sorted(name for name in entity_names
+                         if m.get(name, {}).get("codes") == 0)
+    incomplete = sorted(name for name in entity_names
+                        if name in no_coverage or
+                        not table_by_name.get(name, {}).get("done"))
+    legacy_dirs = sorted(
+        d for d in os.listdir(ts_dir)
+        if os.path.isdir(os.path.join(ts_dir, d))
+        and not d.startswith("_") and d not in m)
     return {"tables": tables, "sync_done": n_done, "sync_total": len(m),
-            'manifest_only': manifest_only}
+            'manifest_only': manifest_only,
+            'legacy_dirs': legacy_dirs,
+            'sync_summary': {
+                "entity_done": n_done,
+                "entity_total": len(entity_names),
+                "probe_count": len(probe_names),
+                "no_coverage": no_coverage,
+                "incomplete": incomplete,
+            }}
 
 
 _FCACHE = {"t": 0, "d": None}
@@ -524,6 +572,7 @@ def scan_warehouse():
     if _WCACHE["d"] and time.time() - _WCACHE["t"] < 60:
         return _WCACHE["d"]
     kline = {mk: _scan_kline(mk) for mk in ("cn", "us", "hk", "crypto")}
+    _annotate_cn_sample(kline)
     news = _scan_news()
     tdx = _scan_tdx()
     tush = _scan_tushare()
@@ -560,10 +609,16 @@ def scan_warehouse():
                   'latest_kind': 'business_date', 'business_date': i['latest'],
                   'measured_at': measured_at,
                   "extra": '共享tdx_info.db，容量按物理路径计一次'} for i in tdx["info"]]
+    tdx_summary = tdx.get("sync_summary")
+    tdx_note = ("Parquet %d/%d；SQLite %d/%d；未完成：%s · tdx_info.db %.1f MB" % (
+        tdx_summary["parquet_done"], tdx_summary["parquet_total"],
+        tdx_summary["sqlite_done"], tdx_summary["sqlite_total"],
+        ", ".join(tdx_summary["incomplete"]) or "无",
+        tdx["db_size_mb"])) if tdx_summary else (
+        "manifest已收口 %d/%d 表 · tdx_info.db %.1f MB" %
+        (tdx["sync_done"], tdx["sync_total"], tdx["db_size_mb"]))
     groups.append({"name": "TDX 远端仓", "kind": "tdx", "rows": tdx_rows,
-                   "note": "manifest已收口 %d/%d 表 · tdx_info.db %.1f MB"
-                           % (tdx["sync_done"], tdx["sync_total"],
-                              tdx["db_size_mb"])})
+                   "note": tdx_note})
     # 1b. Tushare 仓（镜像 TDX 口径）
     tush_rows = [{"asset": t["asset"],
                   "rows": "%s (×%d文件)" % (_fmt_rows(t["rows"]), t["parts"]),
@@ -573,9 +628,16 @@ def scan_warehouse():
                   'measured_at': measured_at,
                   "extra": _manifest_label(t)}
                  for t in tush["tables"]]
+    tush_summary = tush.get("sync_summary")
+    tush_note = ("实体表 %d/%d；探针 %d；无覆盖：%s；旧目录：%d 个" % (
+        tush_summary["entity_done"], tush_summary["entity_total"],
+        tush_summary["probe_count"],
+        ", ".join(tush_summary["no_coverage"]) or "无",
+        len(tush.get("legacy_dirs") or []))) if tush_summary else (
+        "manifest已收口 %d/%d 表；运行状态待核实" %
+        (tush["sync_done"], tush["sync_total"]))
     groups.append({"name": "Tushare 仓", "kind": "tushare", "rows": tush_rows,
-                   "note": "manifest已收口 %d/%d 表；运行状态待核实" % (tush["sync_done"],
-                                              tush["sync_total"])})
+                   "note": tush_note})
     if tush.get('manifest_only'):
         labels = {'location_unverified': '去向待核验（仅有旧回执，不推定丢失）',
                   'no_coverage': '无覆盖（codes=0，done不代表覆盖完成）',
@@ -683,8 +745,10 @@ def scan_warehouse():
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
            "kpi": kpi, "groups": groups,
            "integrity": integrity,
+           "sync_summary": {"tdx": tdx.get("sync_summary"),
+                            "tushare": tush.get("sync_summary")},
            'freshness': {**fresh, 'counts': fresh_counts}, 'monitoring': monitoring,
-           "gaps": _build_gaps(kline, news) + (
+           "gaps": _build_gaps(kline, news, artifacts) + (
                ["FAIL freshness_scan: %s" % fresh_error] if fresh_error else []) + [
                "%s %s: %s" % (m["status"], m["name"], m["value"])
                for m in integrity["metrics"] if m["status"] in ("FAIL", "WARN")]}

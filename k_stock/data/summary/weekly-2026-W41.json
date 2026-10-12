@@ -1,0 +1,89 @@
+{
+ "ok": true,
+ "kind": "weekly",
+ "tag": "weekly-2026-W41",
+ "period": [
+  "2026-10-05",
+  "2026-10-11"
+ ],
+ "performance": {
+  "equity": [
+   {
+    "account_id": "main",
+    "date": "2026-10-09",
+    "total": 1000000.0
+   },
+   {
+    "account_id": "main",
+    "date": "2026-10-10",
+    "total": 1000000.0
+   },
+   {
+    "account_id": "main",
+    "date": "2026-10-11",
+    "total": 1000000.0
+   }
+  ],
+  "change_pct": 0.0,
+  "fills": 0,
+  "buys": 0,
+  "total_equity": 3000000.0,
+  "equity_by_account": {
+   "chaser": [
+    {
+     "account_id": "chaser",
+     "date": "2026-10-09",
+     "total": 1000000.0
+    },
+    {
+     "account_id": "chaser",
+     "date": "2026-10-11",
+     "total": 1000000.0
+    }
+   ],
+   "main": [
+    {
+     "account_id": "main",
+     "date": "2026-10-09",
+     "total": 1000000.0
+    },
+    {
+     "account_id": "main",
+     "date": "2026-10-10",
+     "total": 1000000.0
+    },
+    {
+     "account_id": "main",
+     "date": "2026-10-11",
+     "total": 1000000.0
+    }
+   ],
+   "taishan": [
+    {
+     "account_id": "taishan",
+     "date": "2026-10-09",
+     "total": 1000000.0
+    },
+    {
+     "account_id": "taishan",
+     "date": "2026-10-11",
+     "total": 1000000.0
+    }
+   ]
+  },
+  "accounts": {}
+ },
+ "problems": {
+  "low_judge_days": [],
+  "discipline_blocks": 0,
+  "meeting_disagreements": 0,
+  "meeting_resolutions": 1
+ },
+ "next_steps": [
+  "周期内零成交：检查信号源新鲜度与 exec 链路"
+ ],
+ "decisions_needed": [
+  "组合含 shadow 态策略 chanlun：是否继续保留订阅？",
+  "组合含 shadow 态策略 double_knife：是否继续保留订阅？"
+ ]
+}

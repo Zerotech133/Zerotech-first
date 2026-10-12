@@ -2496,6 +2496,25 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json(data)
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "error": repr(_e)}, 500)
+        elif path == "/api/plan_review":
+            # K-STOCK-163 今日交易计划审批单只读投影：?pf_id=（缺省 pf_001），
+            # 直读 k_stock/data/plan_review/<YYYYMMDD>_<pf>.json；无则 review=null。
+            # 纯只读文件投影（零子进程/零写），不入 _MUTATION_POSTS/_ACTION_GETS 守卫。
+            try:
+                from urllib.parse import parse_qs as _pqs
+                _q = _pqs(qs)
+                _pf = (_q.get("pf_id") or ["pf_001"])[0].strip()
+                if not re.match(r"^[A-Za-z0-9_]{1,40}$", _pf):
+                    raise ValueError("pf_id 非法（仅字母数字下划线）")
+                _fp = os.path.join(r"E:\老田的AI助手\k_stock\data\plan_review",
+                                   time.strftime("%Y%m%d") + "_" + _pf + ".json")
+                _rev = None
+                if os.path.exists(_fp):
+                    with open(_fp, encoding="utf-8") as _fh:
+                        _rev = json.load(_fh)
+                self._json({"ok": True, "pf_id": _pf, "review": _rev})
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/paper_history":
             # K-STOCK v0.2 历史回看（只读）：?day=YYYY-MM-DD，缺省=最新快照日
             import sys as _sysp

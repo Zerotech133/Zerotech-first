@@ -16,7 +16,6 @@
     "global:calendar_uncertified",
     "global:standard_definition_uncertified",
     "p1:alert_coverage_gap",
-    "p1:scheduler_execution_evidence_missing",
     "p1:three_source_skip_unverified"
   ],
   "p1_status": "blocked",
@@ -36,12 +35,13 @@
         "missing:missing_data_rejections",
         "missing:offline_review_receipt",
         "missing:sample_count",
+        "missing:source_date_receipt",
         "missing:source_hashes",
+        "missing:source_reference",
         "missing:time_split",
         "missing:trading_days",
         "missing:transient_structure_snapshots",
         "p1:alert_coverage_gap",
-        "p1:scheduler_execution_evidence_missing",
         "p1:three_source_skip_unverified"
       ],
       "evidence_summary": {
@@ -77,12 +77,13 @@
         "missing:missing_data_rejections",
         "missing:offline_review_receipt",
         "missing:sample_count",
+        "missing:source_date_receipt",
         "missing:source_hashes",
+        "missing:source_reference",
         "missing:time_split",
         "missing:trading_days",
         "missing:transient_structure_snapshots",
         "p1:alert_coverage_gap",
-        "p1:scheduler_execution_evidence_missing",
         "p1:three_source_skip_unverified"
       ],
       "evidence_summary": {
@@ -118,12 +119,13 @@
         "missing:missing_data_rejections",
         "missing:offline_review_receipt",
         "missing:sample_count",
+        "missing:source_date_receipt",
         "missing:source_hashes",
+        "missing:source_reference",
         "missing:time_split",
         "missing:trading_days",
         "missing:transient_structure_snapshots",
         "p1:alert_coverage_gap",
-        "p1:scheduler_execution_evidence_missing",
         "p1:three_source_skip_unverified"
       ],
       "evidence_summary": {
@@ -159,12 +161,13 @@
         "missing:missing_data_rejections",
         "missing:offline_review_receipt",
         "missing:sample_count",
+        "missing:source_date_receipt",
         "missing:source_hashes",
+        "missing:source_reference",
         "missing:time_split",
         "missing:trading_days",
         "missing:transient_structure_snapshots",
         "p1:alert_coverage_gap",
-        "p1:scheduler_execution_evidence_missing",
         "p1:three_source_skip_unverified"
       ],
       "evidence_summary": {

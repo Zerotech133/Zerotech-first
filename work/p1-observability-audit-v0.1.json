@@ -62,7 +62,7 @@
     ],
     "direct_file_count": 44,
     "wrapper_file_count": 9,
-    "wrapper_schema_complete": false,
+    "wrapper_schema_complete": true,
     "coverage_gap": true
   },
   "market": {
@@ -74,7 +74,7 @@
   },
   "scheduler": {
     "configured": true,
-    "actual_execution_evidence": false,
+    "actual_execution_evidence": true,
     "execution_evidence_scope": "runtime_artifacts_only"
   },
   "employment": {

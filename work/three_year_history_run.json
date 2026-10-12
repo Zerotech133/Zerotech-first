@@ -1,0 +1,1813 @@
+{
+  "created_at_utc": "2026-10-12T00:21:49.931823+00:00",
+  "stage_root": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y",
+  "batch_count": 1,
+  "entry_count": 40,
+  "complete_count": 40,
+  "reused_count": 0,
+  "entries": [
+    {
+      "captured_at_utc": "2026-10-12T00:20:57.135641+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230103"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "ab407aa8430a4fbeee36be8bc2877f5f2ea3e111d0c41c11bb23a3c861348ba9",
+      "production_write": false,
+      "row_count": 5062,
+      "unique_keys": 5062,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230103"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230103.json",
+      "raw_sha256": "ab407aa8430a4fbeee36be8bc2877f5f2ea3e111d0c41c11bb23a3c861348ba9",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230103.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230103.parquet",
+      "staged_sha256": "93a8918167036ddc116daf073e2c18879057c253780afdcd604b1e8ccd9033e9"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:20:58.386079+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230104"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "f78e4fc4f14919b8f1f3151fb420ae3b389bb11ac948534634bdafd6ab37a72b",
+      "production_write": false,
+      "row_count": 5064,
+      "unique_keys": 5064,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230104"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230104.json",
+      "raw_sha256": "f78e4fc4f14919b8f1f3151fb420ae3b389bb11ac948534634bdafd6ab37a72b",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230104.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230104.parquet",
+      "staged_sha256": "07e40d4a2e24fc92dc89b34e3e30b23faa4e3c4ffd417672ca234143ec1b21fb"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:20:59.930285+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230105"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "fcd9478ad7c5a58ab7f6fd4af71a340f13e35777330089dd01d64ec4c7b76c42",
+      "production_write": false,
+      "row_count": 5064,
+      "unique_keys": 5064,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230105"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230105.json",
+      "raw_sha256": "fcd9478ad7c5a58ab7f6fd4af71a340f13e35777330089dd01d64ec4c7b76c42",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230105.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230105.parquet",
+      "staged_sha256": "46971c4bc590c91565b0a4385922c563967be8c234e72729af9275a3eb180dfe"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:01.463666+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230106"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "5c35826b68c1186a72a28073f71476b9c6e777bbd4a6facc2ccc26701e28231d",
+      "production_write": false,
+      "row_count": 5064,
+      "unique_keys": 5064,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230106"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230106.json",
+      "raw_sha256": "5c35826b68c1186a72a28073f71476b9c6e777bbd4a6facc2ccc26701e28231d",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230106.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230106.parquet",
+      "staged_sha256": "c7f8a7db28ee083cabd32c2c4699680fbc4edc77d2b3946d34d295440a5562cf"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:02.948007+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230109"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "aa6910df3af84510a748e44108515076c2ab4f4a78c9d22e954ed94cf8d57049",
+      "production_write": false,
+      "row_count": 5061,
+      "unique_keys": 5061,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230109"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230109.json",
+      "raw_sha256": "aa6910df3af84510a748e44108515076c2ab4f4a78c9d22e954ed94cf8d57049",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230109.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230109.parquet",
+      "staged_sha256": "223636de537a85ae6a2827e6c42613db0c704101c714d6cc98eb4ed00e765718"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:04.652809+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230110"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "3bf73a9720a3dc76c1d44bbef4d5ce79425ba48d4424ab39644967abda564d6f",
+      "production_write": false,
+      "row_count": 5065,
+      "unique_keys": 5065,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230110"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230110.json",
+      "raw_sha256": "3bf73a9720a3dc76c1d44bbef4d5ce79425ba48d4424ab39644967abda564d6f",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230110.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230110.parquet",
+      "staged_sha256": "cbfe2a85306054c26b56937d8b5cada67c9a6e2b23113ac7e47bf79366fcde70"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:06.265179+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230111"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "7a2766ca46b82da9dac6d752aabec6581ebd8ef824d009eb683b4cf0a03dbe54",
+      "production_write": false,
+      "row_count": 5066,
+      "unique_keys": 5066,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230111"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230111.json",
+      "raw_sha256": "7a2766ca46b82da9dac6d752aabec6581ebd8ef824d009eb683b4cf0a03dbe54",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230111.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230111.parquet",
+      "staged_sha256": "d801e510e9a653b18ba519ec049bd6a9d8416a9a7d005e45b900dd092f01d921"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:07.660498+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230112"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "decec1531fa17bcc356247bf1fc84f1ebe8ddfdcc1762fa2381892db8f9640b3",
+      "production_write": false,
+      "row_count": 5062,
+      "unique_keys": 5062,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230112"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230112.json",
+      "raw_sha256": "decec1531fa17bcc356247bf1fc84f1ebe8ddfdcc1762fa2381892db8f9640b3",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230112.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230112.parquet",
+      "staged_sha256": "404e96e01b247f50017de34b888873cabd74f55e12f25ca0d711b52ea265cdb2"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:09.038768+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230113"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "61534285d689ec9d88275db2d745e8aec06187e70e20d717ef5ccc45c878d156",
+      "production_write": false,
+      "row_count": 5063,
+      "unique_keys": 5063,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230113"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230113.json",
+      "raw_sha256": "61534285d689ec9d88275db2d745e8aec06187e70e20d717ef5ccc45c878d156",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230113.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230113.parquet",
+      "staged_sha256": "9ab72a633d78c7833509ffd3a25124eb3856fee6000255f559eb70fecd93236c"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:10.450736+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230116"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "65306929692b883fa0c2d5e3da5a49abc69fd695a641793bed01bfa137cd4e74",
+      "production_write": false,
+      "row_count": 5064,
+      "unique_keys": 5064,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230116"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230116.json",
+      "raw_sha256": "65306929692b883fa0c2d5e3da5a49abc69fd695a641793bed01bfa137cd4e74",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230116.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230116.parquet",
+      "staged_sha256": "d5faaecfb8ecfbdade272c55e12cbb703b0829d8db81f6d687558c8c705a1a2c"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:11.769247+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230117"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "480bdf1947aafdc3639d7c460ac6bdb1f33ffd2fbd6fee529c812d6e3d6750c3",
+      "production_write": false,
+      "row_count": 5062,
+      "unique_keys": 5062,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230117"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230117.json",
+      "raw_sha256": "480bdf1947aafdc3639d7c460ac6bdb1f33ffd2fbd6fee529c812d6e3d6750c3",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230117.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230117.parquet",
+      "staged_sha256": "48655ed7e8413b1fb73dd943fbc2b0d98dfceb15cdb6f7b660e2790a1ec8e129"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:13.402245+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230118"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "18bbd5596c197a5a8b676ca79ecd1328c94cf680a23d7f73ceea98e52270eae3",
+      "production_write": false,
+      "row_count": 5064,
+      "unique_keys": 5064,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230118"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230118.json",
+      "raw_sha256": "18bbd5596c197a5a8b676ca79ecd1328c94cf680a23d7f73ceea98e52270eae3",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230118.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230118.parquet",
+      "staged_sha256": "2a381ff4afd03e5958011341660921b277e4d404ae0e96613cf44d694e09e649"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:14.662428+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230119"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "f7380073bf944f781bc3bd603c8174d747f1906f79cbdfc28e1c16a2656e276a",
+      "production_write": false,
+      "row_count": 5065,
+      "unique_keys": 5065,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230119"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230119.json",
+      "raw_sha256": "f7380073bf944f781bc3bd603c8174d747f1906f79cbdfc28e1c16a2656e276a",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230119.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230119.parquet",
+      "staged_sha256": "4da205b4594dd2c0c422e111635b53e2a546e1a1a75ebb26c44051b86f813985"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:15.996572+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230120"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "1e290d25418871444ca7b949c6356dceb99e4b25b359168a95c5e242e3061a4c",
+      "production_write": false,
+      "row_count": 5066,
+      "unique_keys": 5066,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230120"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230120.json",
+      "raw_sha256": "1e290d25418871444ca7b949c6356dceb99e4b25b359168a95c5e242e3061a4c",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230120.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230120.parquet",
+      "staged_sha256": "f5948277b5bc2bfcacfb0b331d0c8f9cf992ef1ea423c6e425963249d32fe6a9"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:17.408202+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230130"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "e33691d8a7f14e327445acf9c339a563ea7a12a6280d3da97b44040dc3d26a60",
+      "production_write": false,
+      "row_count": 5066,
+      "unique_keys": 5066,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230130"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230130.json",
+      "raw_sha256": "e33691d8a7f14e327445acf9c339a563ea7a12a6280d3da97b44040dc3d26a60",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230130.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230130.parquet",
+      "staged_sha256": "3f49827c5d8eabe72e12c253b29f9be785ad7b9dc5e3e9808126373856852e2b"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:18.718846+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230131"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "5214e4daebb700fc9212370ba417afcbb2dffd9597e0ee83938592f1ef1a7150",
+      "production_write": false,
+      "row_count": 5065,
+      "unique_keys": 5065,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230131"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230131.json",
+      "raw_sha256": "5214e4daebb700fc9212370ba417afcbb2dffd9597e0ee83938592f1ef1a7150",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230131.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230131.parquet",
+      "staged_sha256": "3d3b8374ed80a8aecedc1924b3f97edb6807176fce717df1be46e47bbc318ee1"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:20.182633+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230201"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "81190ad5c8e17307cf160a481f148236dfa046c330a8531745b4ed5de99bf236",
+      "production_write": false,
+      "row_count": 5067,
+      "unique_keys": 5067,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230201"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230201.json",
+      "raw_sha256": "81190ad5c8e17307cf160a481f148236dfa046c330a8531745b4ed5de99bf236",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230201.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230201.parquet",
+      "staged_sha256": "814976a4ffe0b5e05d9c82e8e8f0b77d3d27a3d6a68447db81d6440e0f81ea7a"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:21.617384+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230202"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "bad54ea95c9f2652ca2c679a43993f97c0964c9d2da4de1722e51e2966e416c1",
+      "production_write": false,
+      "row_count": 5071,
+      "unique_keys": 5071,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230202"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230202.json",
+      "raw_sha256": "bad54ea95c9f2652ca2c679a43993f97c0964c9d2da4de1722e51e2966e416c1",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230202.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230202.parquet",
+      "staged_sha256": "776c739bc666080e41130f976625f4a0f981edf688f10ecbabb95138f951bdff"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:22.967301+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230203"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "b3fc5e453518a6b69c2dd5d43cc30b69cf47fdaab38687d71cd8e63260fc6fdb",
+      "production_write": false,
+      "row_count": 5068,
+      "unique_keys": 5068,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230203"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230203.json",
+      "raw_sha256": "b3fc5e453518a6b69c2dd5d43cc30b69cf47fdaab38687d71cd8e63260fc6fdb",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230203.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230203.parquet",
+      "staged_sha256": "84ebfe42ff32da02abd69df91f38f9faad56512308003e2e2f1904eb92870025"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:24.408844+00:00",
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "request_params": {
+        "trade_date": "20230206"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "a8f04540a23e0612a39f6b779a1dae63d1c8ab1c4b3508399ca931e99c0f5b34",
+      "production_write": false,
+      "row_count": 5070,
+      "unique_keys": 5070,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230206"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "ts_code",
+        "trade_date",
+        "close",
+        "turnover_rate",
+        "turnover_rate_f",
+        "volume_ratio",
+        "pe",
+        "pe_ttm",
+        "pb",
+        "ps",
+        "ps_ttm",
+        "dv_ratio",
+        "dv_ttm",
+        "total_share",
+        "float_share",
+        "free_share",
+        "total_mv",
+        "circ_mv"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230206.json",
+      "raw_sha256": "a8f04540a23e0612a39f6b779a1dae63d1c8ab1c4b3508399ca931e99c0f5b34",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230206.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_daily_basic_20230206.parquet",
+      "staged_sha256": "6b51e566ea99c818a428cd288f77333fe081d56274af30794198a72102271bcc"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:25.528220+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230103"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "31b50d3b9488c134113c0a024e375e997cdeb043d5d5ffbbc690dfdb9e358751",
+      "production_write": false,
+      "row_count": 3316,
+      "unique_keys": 3316,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230103"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230103.json",
+      "raw_sha256": "31b50d3b9488c134113c0a024e375e997cdeb043d5d5ffbbc690dfdb9e358751",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230103.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230103.parquet",
+      "staged_sha256": "88b9a3721d63b2a7ef6b66adcc0cad7b87e7fffcb29e72f0d3ea032ddce54b3c"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:26.690773+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230104"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "91e3a77297b114b0f9df91f49af3a3b1ed8673a60906ed2267b1fd3deb80658e",
+      "production_write": false,
+      "row_count": 3316,
+      "unique_keys": 3316,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230104"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230104.json",
+      "raw_sha256": "91e3a77297b114b0f9df91f49af3a3b1ed8673a60906ed2267b1fd3deb80658e",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230104.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230104.parquet",
+      "staged_sha256": "6092a7c7695ad8d22fe43a75cd0067a2ba85b9cb21c0af2e1cb4179d7b96264a"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:27.994074+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230105"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "77d4b9f1a172419b3b6e766ed37d273729ee4a463fd34b0ace0f20152802f2f3",
+      "production_write": false,
+      "row_count": 3316,
+      "unique_keys": 3316,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230105"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230105.json",
+      "raw_sha256": "77d4b9f1a172419b3b6e766ed37d273729ee4a463fd34b0ace0f20152802f2f3",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230105.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230105.parquet",
+      "staged_sha256": "886280bc1a89eacb9fd4454055917ff976fd2689f0b47c6105d64e1db9112997"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:29.287863+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230106"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "59cdf58d866244253c6204efd2739869b0aa255e1fb05d56dc32ae780729a446",
+      "production_write": false,
+      "row_count": 3317,
+      "unique_keys": 3317,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230106"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230106.json",
+      "raw_sha256": "59cdf58d866244253c6204efd2739869b0aa255e1fb05d56dc32ae780729a446",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230106.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230106.parquet",
+      "staged_sha256": "613ccf39c966c4ec1acf54a5e370c468b8ff8cdfe09d2914d21efae1eabc5e16"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:30.547919+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230109"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "4fcd3b4b6719ab44a59217d1f107bc4a5927742d58c625a198738a9392b11fcb",
+      "production_write": false,
+      "row_count": 3317,
+      "unique_keys": 3317,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230109"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230109.json",
+      "raw_sha256": "4fcd3b4b6719ab44a59217d1f107bc4a5927742d58c625a198738a9392b11fcb",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230109.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230109.parquet",
+      "staged_sha256": "793d636e523d8a0ae02b0db9656ed807f9e51469ba622ec65906c70703b16098"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:31.831021+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230110"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "c35c7db23043343dadea992b619a570619d059a343561c2a4f8498b0a39bb30d",
+      "production_write": false,
+      "row_count": 3317,
+      "unique_keys": 3317,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230110"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230110.json",
+      "raw_sha256": "c35c7db23043343dadea992b619a570619d059a343561c2a4f8498b0a39bb30d",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230110.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230110.parquet",
+      "staged_sha256": "4b3b063968193fb59142ed51df7b6d01201202360612f663c799884764217563"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:32.997313+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230111"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "44068849862f813f6e0f8c748ac23686a264d72a71c239feba70ac76db636fb9",
+      "production_write": false,
+      "row_count": 3317,
+      "unique_keys": 3317,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230111"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230111.json",
+      "raw_sha256": "44068849862f813f6e0f8c748ac23686a264d72a71c239feba70ac76db636fb9",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230111.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230111.parquet",
+      "staged_sha256": "aed056ac5d48ee57a6e1390b8b0b6e1c66611eaad3bff0fd5eaa3f07c9307cee"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:34.260934+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230112"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "339b26c444ea00fe41ecb72128118f4856fcf4d9a0abe9234ad6d3b0a810ec7d",
+      "production_write": false,
+      "row_count": 3317,
+      "unique_keys": 3317,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230112"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230112.json",
+      "raw_sha256": "339b26c444ea00fe41ecb72128118f4856fcf4d9a0abe9234ad6d3b0a810ec7d",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230112.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230112.parquet",
+      "staged_sha256": "bfa970c26b176dc4413ba55b3b43837a4ab37390a77b8c0b87af1f76d3249cb2"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:35.539368+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230113"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "050f6a43f679a8a21ab384ac03347c20d6b88121a185569e8f792c4578153213",
+      "production_write": false,
+      "row_count": 3317,
+      "unique_keys": 3317,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230113"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230113.json",
+      "raw_sha256": "050f6a43f679a8a21ab384ac03347c20d6b88121a185569e8f792c4578153213",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230113.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230113.parquet",
+      "staged_sha256": "adf4ca041250ff8d7936748c90d1bc2460212e74c110d26fc0873a2c60089398"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:36.869573+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230116"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "b23973d1fac56f6ba300c332db431acef1592c04c47d43ee41278afb35205437",
+      "production_write": false,
+      "row_count": 3337,
+      "unique_keys": 3337,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230116"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230116.json",
+      "raw_sha256": "b23973d1fac56f6ba300c332db431acef1592c04c47d43ee41278afb35205437",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230116.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230116.parquet",
+      "staged_sha256": "ef007da84db043087ac531ea35b2b0e9aee7ff8030066dd711ca360b902259de"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:38.226599+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230117"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "028ee895c984f0e700e26658626c5f7ff4f6b78331f2e14c902925f87404bc02",
+      "production_write": false,
+      "row_count": 3337,
+      "unique_keys": 3337,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230117"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230117.json",
+      "raw_sha256": "028ee895c984f0e700e26658626c5f7ff4f6b78331f2e14c902925f87404bc02",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230117.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230117.parquet",
+      "staged_sha256": "0bcbc00780c48614e7d705b34a37b9d3a8917483cb659af7ca2885a0afc8971a"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:39.527892+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230118"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "9fce896fe2631fb0f026fcd01904c44820e80ae9e41c669425cdeb5df1775a30",
+      "production_write": false,
+      "row_count": 3338,
+      "unique_keys": 3338,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230118"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230118.json",
+      "raw_sha256": "9fce896fe2631fb0f026fcd01904c44820e80ae9e41c669425cdeb5df1775a30",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230118.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230118.parquet",
+      "staged_sha256": "bd47efbf995829426231a120c46fefdb50ceef764871c2609a98a8b18569dcb8"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:40.868720+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230119"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "92b6d7406436fff1d3ce2c4796e84568cffe912c648aa05ef393fefcfde8ced5",
+      "production_write": false,
+      "row_count": 3340,
+      "unique_keys": 3340,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230119"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230119.json",
+      "raw_sha256": "92b6d7406436fff1d3ce2c4796e84568cffe912c648aa05ef393fefcfde8ced5",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230119.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230119.parquet",
+      "staged_sha256": "e008f8327eb49376a0f15315e24f2dc845b1d57cae8bd198b4f8c51fb3f21c23"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:42.098581+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230120"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "642be515b03e9d6cf79b657d42bab475e91304b3c1e15735a2591e5a88787d96",
+      "production_write": false,
+      "row_count": 3340,
+      "unique_keys": 3340,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230120"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230120.json",
+      "raw_sha256": "642be515b03e9d6cf79b657d42bab475e91304b3c1e15735a2591e5a88787d96",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230120.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230120.parquet",
+      "staged_sha256": "ba3df0b4555d0dfdc12a23834c588505d04cc4a01a0602ba3ac8e876dfa3103a"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:43.567172+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230130"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "a439c0d37d2cf410cef9945f6b5a7391a59877a2a5178790c419eacecd5e5bd0",
+      "production_write": false,
+      "row_count": 3340,
+      "unique_keys": 3340,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230130"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230130.json",
+      "raw_sha256": "a439c0d37d2cf410cef9945f6b5a7391a59877a2a5178790c419eacecd5e5bd0",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230130.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230130.parquet",
+      "staged_sha256": "c66d77302f251aec7ed6fa0b0bc4d3f05dc81faf37084aa455a8f0f334404535"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:44.838249+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230131"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "6393165b4cbabeafbafced676161de91dc0ac51173a16af1229f093aa72723a1",
+      "production_write": false,
+      "row_count": 3340,
+      "unique_keys": 3340,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230131"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230131.json",
+      "raw_sha256": "6393165b4cbabeafbafced676161de91dc0ac51173a16af1229f093aa72723a1",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230131.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230131.parquet",
+      "staged_sha256": "095945acc578b183a906d33e8c93998d2a74100024ffe19092391719e18d8fce"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:46.077843+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230201"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "3fab32832825d957e4942ede823260f4d684199dfe4f5eed8736a802d9c0487c",
+      "production_write": false,
+      "row_count": 3340,
+      "unique_keys": 3340,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230201"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230201.json",
+      "raw_sha256": "3fab32832825d957e4942ede823260f4d684199dfe4f5eed8736a802d9c0487c",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230201.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230201.parquet",
+      "staged_sha256": "f39a60882e02ebf9f09da1d82774cdcdf955bb4c10f774d1ff218a4d74b5b779"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:47.469770+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230202"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "58233bace03306f2c6a826561e094c804947538220b56582809a16c25b6437e1",
+      "production_write": false,
+      "row_count": 3340,
+      "unique_keys": 3340,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230202"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230202.json",
+      "raw_sha256": "58233bace03306f2c6a826561e094c804947538220b56582809a16c25b6437e1",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230202.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230202.parquet",
+      "staged_sha256": "3bbb128e2c9f1bb7b9492a20482be86d9b9e582043c5ea96d1b4b0a2f59c51d5"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:48.665275+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230203"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "34511c1777248bea00cbdcffaf9f07b996e4812bfe76cd4274f884cf6554e639",
+      "production_write": false,
+      "row_count": 3339,
+      "unique_keys": 3339,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230203"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230203.json",
+      "raw_sha256": "34511c1777248bea00cbdcffaf9f07b996e4812bfe76cd4274f884cf6554e639",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230203.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230203.parquet",
+      "staged_sha256": "e329dccc93597252a5695a7220f46a9f4f29e88c62758bf069cbbf42fd17d8b9"
+    },
+    {
+      "captured_at_utc": "2026-10-12T00:21:49.907707+00:00",
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "request_params": {
+        "trade_date": "20230206"
+      },
+      "source_code": 0,
+      "source_message": "",
+      "body_sha256": "bc26e97f868712c95848c31339d3ccdf6d183ae14d1e709661e3136940e4c2b5",
+      "production_write": false,
+      "row_count": 3340,
+      "unique_keys": 3340,
+      "duplicate_keys": 0,
+      "date_values": [
+        "20230206"
+      ],
+      "null_primary_key": {
+        "ts_code": 0,
+        "trade_date": 0
+      },
+      "columns": [
+        "trade_date",
+        "ts_code",
+        "rzye",
+        "rqye",
+        "rzmre",
+        "rqyl",
+        "rzche",
+        "rqchl",
+        "rqmcl",
+        "rzrqye"
+      ],
+      "status": "candidate_ready",
+      "complete": true,
+      "raw_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230206.json",
+      "raw_sha256": "bc26e97f868712c95848c31339d3ccdf6d183ae14d1e709661e3136940e4c2b5",
+      "receipt_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230206.receipt.json",
+      "staged_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\batch_001\\ts_margin_detail_20230206.parquet",
+      "staged_sha256": "29592cefabd1dceb18801a7bdb21a28340ce8a995c8c423c8826fc7609fb3581"
+    }
+  ],
+  "production_write": false,
+  "global_activation": false,
+  "plan_path": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y\\plan.json"
+}

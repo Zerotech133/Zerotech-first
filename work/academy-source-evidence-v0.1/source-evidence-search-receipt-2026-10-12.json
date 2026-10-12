@@ -1,0 +1,41 @@
+{
+  "schema": "academy_source_evidence_search_receipt/v1",
+  "observed_at": "2026-10-12T08:32:58+08:00",
+  "mode": "read_only",
+  "source_root": "E:/老田的AI助手",
+  "exact_source": {
+    "relative_path": "docs/plans/2026-10-08_量子双刀策略研究报告.md",
+    "status": "not_found",
+    "search_roots": [
+      "E:/老田的AI助手",
+      "C:/Temp/k116_history_quarantine/老田的AI助手",
+      "C:/Users/Administrator/Documents/Codex/2026-10-07/new-chat-2",
+      "C:/Users/Administrator/WorkBuddy"
+    ],
+    "search_command": "rg --files -g 2026-10-08_量子双刀策略研究报告.md --hidden --no-messages <search_root>",
+    "related_but_not_substitute": "docs/plans/2026-10-09_量子双刀策略研究报告.md"
+  },
+  "date_receipts": {
+    "status": "observation_only",
+    "policy": "观察时间只证明文件可见，不替代来源正文发布日期或原始发布回执",
+    "unresolved_paths": [
+      "agent_platform/a0_chief.py",
+      "jev-eval/signal_review_gate.py",
+      "knowledge_docs/AI工程实践知识库.md",
+      "knowledge_docs/缠论技术分析知识库.md",
+      "knowledge_docs/金融专业知识库.md",
+      "portal/strategies.json",
+      "quant_backtest/chanlun_signal.py"
+    ]
+  },
+  "nine_dim": {
+    "current_bytes": 64325,
+    "current_sha256": "bb623d1e75e2b4794753a7df5bdf6874cd62a07ea8195733f2af9c900a5d8969",
+    "indexed_bytes": 61671,
+    "indexed_sha256": "93721e59170597dd50c2db23f23208264b0c2b71c86544551108f56729451069",
+    "status": "hash_drift_requires_index_refresh"
+  },
+  "training_eligible": false,
+  "production_eligible": false,
+  "next_action": "取得精确 2026-10-08 原文或可信发布回执；补齐七个来源的正文日期证据；刷新 nine_dim.py 全量索引后重新核验"
+}
