@@ -1,0 +1,89 @@
+{
+  "schema": "offline_review_receipt/v1",
+  "status": "pending",
+  "receipt_rules": [
+    "每个样本一条回执，sample_sha256必须与候选清单完全一致",
+    "只登记公钥指纹和签名结果，不收集私钥或口令",
+    "签名算法、主体和审核范围必须可离线复核"
+  ],
+  "receipts": [
+    {
+      "receipt_id": null,
+      "sample_id": "D-QD-bdcf431d6d1ef825",
+      "sample_sha256": "bdcf431d6d1ef825ff89d926ca303362c84de0df51ffbbc020596910417e4d1c",
+      "reviewer_subject": null,
+      "review_scope": "source_and_training_use",
+      "reviewed_at": null,
+      "key_fingerprint": null,
+      "signature_algorithm": null,
+      "signature_value": null,
+      "receipt_sha256": null,
+      "status": "pending"
+    },
+    {
+      "receipt_id": null,
+      "sample_id": "D-QD-b834eaaf34bf391e",
+      "sample_sha256": "b834eaaf34bf391e4d04f25040c5565c37898bf54e14df2b2674a7eb4ed53a4a",
+      "reviewer_subject": null,
+      "review_scope": "source_and_training_use",
+      "reviewed_at": null,
+      "key_fingerprint": null,
+      "signature_algorithm": null,
+      "signature_value": null,
+      "receipt_sha256": null,
+      "status": "pending"
+    },
+    {
+      "receipt_id": null,
+      "sample_id": "D-QD-6ea22762e606efe4",
+      "sample_sha256": "6ea22762e606efe4239a6df570efbe3540867054d7a8a805b93213791973b6a1",
+      "reviewer_subject": null,
+      "review_scope": "source_and_training_use",
+      "reviewed_at": null,
+      "key_fingerprint": null,
+      "signature_algorithm": null,
+      "signature_value": null,
+      "receipt_sha256": null,
+      "status": "pending"
+    },
+    {
+      "receipt_id": null,
+      "sample_id": "D-QD-e89cdf814128e557",
+      "sample_sha256": "e89cdf814128e557462465db340fbe508b667f7f20ae4ca4529a456554e0b489",
+      "reviewer_subject": null,
+      "review_scope": "source_and_training_use",
+      "reviewed_at": null,
+      "key_fingerprint": null,
+      "signature_algorithm": null,
+      "signature_value": null,
+      "receipt_sha256": null,
+      "status": "pending"
+    },
+    {
+      "receipt_id": null,
+      "sample_id": "D-QD-6cf59704d5b3b5d3",
+      "sample_sha256": "6cf59704d5b3b5d38d8a57cdd4d54b8b1554d7f3c0c42847fd6b460f11ae4bce",
+      "reviewer_subject": null,
+      "review_scope": "source_and_training_use",
+      "reviewed_at": null,
+      "key_fingerprint": null,
+      "signature_algorithm": null,
+      "signature_value": null,
+      "receipt_sha256": null,
+      "status": "pending"
+    },
+    {
+      "receipt_id": null,
+      "sample_id": "D-QD-be557a19442395a5",
+      "sample_sha256": "be557a19442395a515bcfa17f6ea97baf2a92936945b6063f55a51ab585db36c",
+      "reviewer_subject": null,
+      "review_scope": "source_and_training_use",
+      "reviewed_at": null,
+      "key_fingerprint": null,
+      "signature_algorithm": null,
+      "signature_value": null,
+      "receipt_sha256": null,
+      "status": "pending"
+    }
+  ]
+}

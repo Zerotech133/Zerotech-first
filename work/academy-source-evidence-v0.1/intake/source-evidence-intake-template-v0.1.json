@@ -1,0 +1,418 @@
+{
+  "schema": "quantum_double_blade_source_evidence_intake/v1",
+  "status": "pending_user_evidence",
+  "source_root": "D:\\Documents\\xwechat_files\\tianfeng1333_2e0a\\msg\\file",
+  "required_fields": [
+    "sample_sha256",
+    "source_reference",
+    "source_date",
+    "source_date_basis",
+    "license",
+    "offline_review",
+    "permission_snapshot",
+    "time_split"
+  ],
+  "prohibitions": [
+    "不得填写或保存私钥、口令或助记词",
+    "不得用文件mtime或文件名日期替代原始发布日期",
+    "证据未齐前保持evaluation_only"
+  ],
+  "records": [
+    {
+      "sample_id": "D-QD-bdcf431d6d1ef825",
+      "source": "量子双刀实盘20260227.rzrk",
+      "source_path": "2026-02/量子双刀实盘20260227.rzrk",
+      "sample_sha256": "bdcf431d6d1ef825ff89d926ca303362c84de0df51ffbbc020596910417e4d1c",
+      "source_reference": null,
+      "source_date": null,
+      "source_date_basis": {
+        "evidence_type": null,
+        "locator": null,
+        "exact_quote": null,
+        "evidence_sha256": null
+      },
+      "license": {
+        "license_id": null,
+        "license_subject": null,
+        "purpose": "strategy_model_evaluation_only",
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "license_approved": false,
+        "evidence_ref": null
+      },
+      "offline_review": {
+        "receipt_id": null,
+        "reviewer_subject": null,
+        "key_fingerprint": null,
+        "reviewed_at": null,
+        "signature_algorithm": null,
+        "signature_value": null,
+        "receipt_ref": null,
+        "status": "pending"
+      },
+      "permission_snapshot": {
+        "snapshot_id": null,
+        "captured_at": null,
+        "subject": null,
+        "roles": [],
+        "scope": null,
+        "expires_at": null,
+        "snapshot_sha256": null,
+        "status": "missing"
+      },
+      "time_split": {
+        "split": null,
+        "split_group": null,
+        "train_window": {
+          "from": null,
+          "to": null
+        },
+        "validation_window": {
+          "from": null,
+          "to": null
+        },
+        "test_window": {
+          "from": null,
+          "to": null
+        },
+        "no_temporal_overlap_asserted": false,
+        "evidence_ref": null
+      },
+      "training_eligible": false,
+      "strategy_training_eligible": false,
+      "production_eligible": false,
+      "evaluation_only": true
+    },
+    {
+      "sample_id": "D-QD-b834eaaf34bf391e",
+      "source": "量子双刀实盘20260303.rzrk",
+      "source_path": "2026-03/量子双刀实盘20260303.rzrk",
+      "sample_sha256": "b834eaaf34bf391e4d04f25040c5565c37898bf54e14df2b2674a7eb4ed53a4a",
+      "source_reference": null,
+      "source_date": null,
+      "source_date_basis": {
+        "evidence_type": null,
+        "locator": null,
+        "exact_quote": null,
+        "evidence_sha256": null
+      },
+      "license": {
+        "license_id": null,
+        "license_subject": null,
+        "purpose": "strategy_model_evaluation_only",
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "license_approved": false,
+        "evidence_ref": null
+      },
+      "offline_review": {
+        "receipt_id": null,
+        "reviewer_subject": null,
+        "key_fingerprint": null,
+        "reviewed_at": null,
+        "signature_algorithm": null,
+        "signature_value": null,
+        "receipt_ref": null,
+        "status": "pending"
+      },
+      "permission_snapshot": {
+        "snapshot_id": null,
+        "captured_at": null,
+        "subject": null,
+        "roles": [],
+        "scope": null,
+        "expires_at": null,
+        "snapshot_sha256": null,
+        "status": "missing"
+      },
+      "time_split": {
+        "split": null,
+        "split_group": null,
+        "train_window": {
+          "from": null,
+          "to": null
+        },
+        "validation_window": {
+          "from": null,
+          "to": null
+        },
+        "test_window": {
+          "from": null,
+          "to": null
+        },
+        "no_temporal_overlap_asserted": false,
+        "evidence_ref": null
+      },
+      "training_eligible": false,
+      "strategy_training_eligible": false,
+      "production_eligible": false,
+      "evaluation_only": true
+    },
+    {
+      "sample_id": "D-QD-6ea22762e606efe4",
+      "source": "量子双刀实盘20260303(改1).rzrk",
+      "source_path": "2026-03/量子双刀实盘20260303(改1).rzrk",
+      "sample_sha256": "6ea22762e606efe4239a6df570efbe3540867054d7a8a805b93213791973b6a1",
+      "source_reference": null,
+      "source_date": null,
+      "source_date_basis": {
+        "evidence_type": null,
+        "locator": null,
+        "exact_quote": null,
+        "evidence_sha256": null
+      },
+      "license": {
+        "license_id": null,
+        "license_subject": null,
+        "purpose": "strategy_model_evaluation_only",
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "license_approved": false,
+        "evidence_ref": null
+      },
+      "offline_review": {
+        "receipt_id": null,
+        "reviewer_subject": null,
+        "key_fingerprint": null,
+        "reviewed_at": null,
+        "signature_algorithm": null,
+        "signature_value": null,
+        "receipt_ref": null,
+        "status": "pending"
+      },
+      "permission_snapshot": {
+        "snapshot_id": null,
+        "captured_at": null,
+        "subject": null,
+        "roles": [],
+        "scope": null,
+        "expires_at": null,
+        "snapshot_sha256": null,
+        "status": "missing"
+      },
+      "time_split": {
+        "split": null,
+        "split_group": null,
+        "train_window": {
+          "from": null,
+          "to": null
+        },
+        "validation_window": {
+          "from": null,
+          "to": null
+        },
+        "test_window": {
+          "from": null,
+          "to": null
+        },
+        "no_temporal_overlap_asserted": false,
+        "evidence_ref": null
+      },
+      "training_eligible": false,
+      "strategy_training_eligible": false,
+      "production_eligible": false,
+      "evaluation_only": true
+    },
+    {
+      "sample_id": "D-QD-e89cdf814128e557",
+      "source": "量子双刀实盘20260306.rzrk",
+      "source_path": "2026-03/量子双刀实盘20260306.rzrk",
+      "sample_sha256": "e89cdf814128e557462465db340fbe508b667f7f20ae4ca4529a456554e0b489",
+      "source_reference": null,
+      "source_date": null,
+      "source_date_basis": {
+        "evidence_type": null,
+        "locator": null,
+        "exact_quote": null,
+        "evidence_sha256": null
+      },
+      "license": {
+        "license_id": null,
+        "license_subject": null,
+        "purpose": "strategy_model_evaluation_only",
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "license_approved": false,
+        "evidence_ref": null
+      },
+      "offline_review": {
+        "receipt_id": null,
+        "reviewer_subject": null,
+        "key_fingerprint": null,
+        "reviewed_at": null,
+        "signature_algorithm": null,
+        "signature_value": null,
+        "receipt_ref": null,
+        "status": "pending"
+      },
+      "permission_snapshot": {
+        "snapshot_id": null,
+        "captured_at": null,
+        "subject": null,
+        "roles": [],
+        "scope": null,
+        "expires_at": null,
+        "snapshot_sha256": null,
+        "status": "missing"
+      },
+      "time_split": {
+        "split": null,
+        "split_group": null,
+        "train_window": {
+          "from": null,
+          "to": null
+        },
+        "validation_window": {
+          "from": null,
+          "to": null
+        },
+        "test_window": {
+          "from": null,
+          "to": null
+        },
+        "no_temporal_overlap_asserted": false,
+        "evidence_ref": null
+      },
+      "training_eligible": false,
+      "strategy_training_eligible": false,
+      "production_eligible": false,
+      "evaluation_only": true
+    },
+    {
+      "sample_id": "D-QD-6cf59704d5b3b5d3",
+      "source": "全量公式.tne",
+      "source_path": "2026-03/全量公式.tne",
+      "sample_sha256": "6cf59704d5b3b5d38d8a57cdd4d54b8b1554d7f3c0c42847fd6b460f11ae4bce",
+      "source_reference": null,
+      "source_date": null,
+      "source_date_basis": {
+        "evidence_type": null,
+        "locator": null,
+        "exact_quote": null,
+        "evidence_sha256": null
+      },
+      "license": {
+        "license_id": null,
+        "license_subject": null,
+        "purpose": "strategy_model_evaluation_only",
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "license_approved": false,
+        "evidence_ref": null
+      },
+      "offline_review": {
+        "receipt_id": null,
+        "reviewer_subject": null,
+        "key_fingerprint": null,
+        "reviewed_at": null,
+        "signature_algorithm": null,
+        "signature_value": null,
+        "receipt_ref": null,
+        "status": "pending"
+      },
+      "permission_snapshot": {
+        "snapshot_id": null,
+        "captured_at": null,
+        "subject": null,
+        "roles": [],
+        "scope": null,
+        "expires_at": null,
+        "snapshot_sha256": null,
+        "status": "missing"
+      },
+      "time_split": {
+        "split": null,
+        "split_group": null,
+        "train_window": {
+          "from": null,
+          "to": null
+        },
+        "validation_window": {
+          "from": null,
+          "to": null
+        },
+        "test_window": {
+          "from": null,
+          "to": null
+        },
+        "no_temporal_overlap_asserted": false,
+        "evidence_ref": null
+      },
+      "training_eligible": false,
+      "strategy_training_eligible": false,
+      "production_eligible": false,
+      "evaluation_only": true
+    },
+    {
+      "sample_id": "D-QD-be557a19442395a5",
+      "source": "选股及交易策略260305.docx",
+      "source_path": "2026-03/选股及交易策略260305.docx",
+      "sample_sha256": "be557a19442395a515bcfa17f6ea97baf2a92936945b6063f55a51ab585db36c",
+      "source_reference": null,
+      "source_date": null,
+      "source_date_basis": {
+        "evidence_type": null,
+        "locator": null,
+        "exact_quote": null,
+        "evidence_sha256": null
+      },
+      "license": {
+        "license_id": null,
+        "license_subject": null,
+        "purpose": "strategy_model_evaluation_only",
+        "valid_from": null,
+        "valid_until": null,
+        "commercial_scope": null,
+        "license_approved": false,
+        "evidence_ref": null
+      },
+      "offline_review": {
+        "receipt_id": null,
+        "reviewer_subject": null,
+        "key_fingerprint": null,
+        "reviewed_at": null,
+        "signature_algorithm": null,
+        "signature_value": null,
+        "receipt_ref": null,
+        "status": "pending"
+      },
+      "permission_snapshot": {
+        "snapshot_id": null,
+        "captured_at": null,
+        "subject": null,
+        "roles": [],
+        "scope": null,
+        "expires_at": null,
+        "snapshot_sha256": null,
+        "status": "missing"
+      },
+      "time_split": {
+        "split": null,
+        "split_group": null,
+        "train_window": {
+          "from": null,
+          "to": null
+        },
+        "validation_window": {
+          "from": null,
+          "to": null
+        },
+        "test_window": {
+          "from": null,
+          "to": null
+        },
+        "no_temporal_overlap_asserted": false,
+        "evidence_ref": null
+      },
+      "training_eligible": false,
+      "strategy_training_eligible": false,
+      "production_eligible": false,
+      "evaluation_only": true
+    }
+  ]
+}

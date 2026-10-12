@@ -1,0 +1,137 @@
+{
+  "schema": "strategy_time_split/v1",
+  "status": "pending",
+  "allowed_split": [
+    "train",
+    "validation",
+    "test",
+    "evaluation_only"
+  ],
+  "rules": [
+    "split_group用于防止同一来源或同一事件跨集合泄漏",
+    "窗口必须使用ISO日期且train早于validation早于test",
+    "无法证明时间边界时只能填evaluation_only"
+  ],
+  "records": [
+    {
+      "sample_id": "D-QD-bdcf431d6d1ef825",
+      "sample_sha256": "bdcf431d6d1ef825ff89d926ca303362c84de0df51ffbbc020596910417e4d1c",
+      "split": null,
+      "split_group": null,
+      "train_window": {
+        "from": null,
+        "to": null
+      },
+      "validation_window": {
+        "from": null,
+        "to": null
+      },
+      "test_window": {
+        "from": null,
+        "to": null
+      },
+      "no_temporal_overlap_asserted": false,
+      "evidence_ref": null
+    },
+    {
+      "sample_id": "D-QD-b834eaaf34bf391e",
+      "sample_sha256": "b834eaaf34bf391e4d04f25040c5565c37898bf54e14df2b2674a7eb4ed53a4a",
+      "split": null,
+      "split_group": null,
+      "train_window": {
+        "from": null,
+        "to": null
+      },
+      "validation_window": {
+        "from": null,
+        "to": null
+      },
+      "test_window": {
+        "from": null,
+        "to": null
+      },
+      "no_temporal_overlap_asserted": false,
+      "evidence_ref": null
+    },
+    {
+      "sample_id": "D-QD-6ea22762e606efe4",
+      "sample_sha256": "6ea22762e606efe4239a6df570efbe3540867054d7a8a805b93213791973b6a1",
+      "split": null,
+      "split_group": null,
+      "train_window": {
+        "from": null,
+        "to": null
+      },
+      "validation_window": {
+        "from": null,
+        "to": null
+      },
+      "test_window": {
+        "from": null,
+        "to": null
+      },
+      "no_temporal_overlap_asserted": false,
+      "evidence_ref": null
+    },
+    {
+      "sample_id": "D-QD-e89cdf814128e557",
+      "sample_sha256": "e89cdf814128e557462465db340fbe508b667f7f20ae4ca4529a456554e0b489",
+      "split": null,
+      "split_group": null,
+      "train_window": {
+        "from": null,
+        "to": null
+      },
+      "validation_window": {
+        "from": null,
+        "to": null
+      },
+      "test_window": {
+        "from": null,
+        "to": null
+      },
+      "no_temporal_overlap_asserted": false,
+      "evidence_ref": null
+    },
+    {
+      "sample_id": "D-QD-6cf59704d5b3b5d3",
+      "sample_sha256": "6cf59704d5b3b5d38d8a57cdd4d54b8b1554d7f3c0c42847fd6b460f11ae4bce",
+      "split": null,
+      "split_group": null,
+      "train_window": {
+        "from": null,
+        "to": null
+      },
+      "validation_window": {
+        "from": null,
+        "to": null
+      },
+      "test_window": {
+        "from": null,
+        "to": null
+      },
+      "no_temporal_overlap_asserted": false,
+      "evidence_ref": null
+    },
+    {
+      "sample_id": "D-QD-be557a19442395a5",
+      "sample_sha256": "be557a19442395a515bcfa17f6ea97baf2a92936945b6063f55a51ab585db36c",
+      "split": null,
+      "split_group": null,
+      "train_window": {
+        "from": null,
+        "to": null
+      },
+      "validation_window": {
+        "from": null,
+        "to": null
+      },
+      "test_window": {
+        "from": null,
+        "to": null
+      },
+      "no_temporal_overlap_asserted": false,
+      "evidence_ref": null
+    }
+  ]
+}
