@@ -2643,6 +2643,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/combo_backtest_jobs":
             # K-STOCK-275 组合回测队列只读投影（任务清单/队列位置/引擎进度覆盖）
             self._json(_cbt_status())
+        elif path == "/api/ops_today":
+            # K-STOCK-281 每日运营真实状态（数据新鲜度/买卖点/执行状态；按数据日缓存幂等）
+            import sys as _sys281
+            if r"E:/老田的AI助手/quant_backtest" not in _sys281.path:
+                _sys281.path.insert(0, r"E:/老田的AI助手/quant_backtest")
+            from ops_signal_today import compute as _ops_compute
+            self._json(_ops_compute())
         elif path == "/api/bt_daily_ledger":
             # K-STOCK-277 逐日回测账本只读投影（回测中心 bt_view.html 数据源）
             try:

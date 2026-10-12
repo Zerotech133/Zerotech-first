@@ -94,6 +94,22 @@
   <div id="load"><div class="spinner"></div><div style="margin-top:12px">加载逐日账本…</div></div>
   <div id="app" style="display:none">
 
+    <!-- ⓪ 今日运营（真实运营层 K-STOCK-281） -->
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-title">📡 今日运营 <span class="badge" id="ops-asof">加载中</span> <span class="badge" id="ops-fresh"></span></div>
+      <div class="detail-grid">
+        <div>
+          <div class="sec-title" style="font-size:13px">组合层（真实执行）</div>
+          <div id="ops-portfolio" class="dim">…</div>
+          <div class="dim" id="ops-policy" style="margin-top:8px;font-size:12px"></div>
+        </div>
+        <div>
+          <div class="sec-title" style="font-size:13px">缠论买卖点（信号层） <span class="badge" id="ops-sigcount"></span></div>
+          <div class="hold-scroll"><table class="hold-tbl" id="ops-sigtbl"></table></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ① 方案说明 -->
     <div class="sec" style="margin-top:16px">
       <div class="sec-title">📐 回测方案 <span class="badge" id="m-window"></span> <span class="badge" id="m-pool"></span> <span class="badge" id="m-basis"></span></div>
@@ -198,6 +214,38 @@ async function boot(){
   $('load').style.display='none';
   // 默认选中最后一天
   selectDay(days[days.length-1]);
+  loadOps();   // K-STOCK-281 今日运营（并行加载，不阻塞账本渲染）
+}
+
+/* ── 今日运营：真实数据新鲜度 + 买卖点执行状态 ── */
+async function loadOps(){
+  try{
+    const res=await fetch('/api/ops_today');
+    const o=await res.json();
+    if(!o.ok){ $('ops-asof').textContent='运营数据不可用'; return; }
+    drawOps(o);
+  }catch(e){ $('ops-asof').textContent='运营接口异常'; }
+}
+function drawOps(o){
+  const F=o.freshness, P=o.portfolio||{};
+  $('ops-asof').textContent='K线数据截至 '+F.asof;
+  $('ops-fresh').textContent='新鲜 '+F.n_fresh+'/'+F.n_stocks+(F.stale_over_30d&&F.stale_over_30d.length?(' · 停牌/陈旧 '+F.stale_over_30d.length):'');
+  const capTxt=P.cap!=null?(P.cap*100).toFixed(0)+'%':'—';
+  $('ops-portfolio').innerHTML=
+    `<div>池：${o.pool.file.replace('poc_adapter_chanlun_','').replace('.json','')} 选出 <b>${o.pool.n}</b> 只（${Object.entries(o.pool.tiers).map(([t,n])=>t+':'+n).join(' / ')}）</div>`+
+    `<div>当前仓位档：<b>${capTxt}</b>（regime 连续调节） · 组合净值 <b>${P.nav!=null?P.nav.toFixed(4):'—'}</b>（账本 ${P.ledger_last_day||'—'}）</div>`+
+    `<div>最近一次再平衡：<b>${P.last_rebalance_day||'—'}</b> · 窗口内共 ${P.n_rebalances!=null?P.n_rebalances:'—'} 次${P.next_rebalance_day?` · 下一次推算 ${P.next_rebalance_day}`:''}</div>`;
+  $('ops-policy').textContent='执行口径：'+o.policy;
+  $('ops-sigcount').textContent=o.n_signals+' 个 · 今日新增 '+o.n_new;
+  const stTag=s=>{
+    const m={'fresh':['var(--color-up)','今日新增'],'baseline':['var(--gray-5)','存量基线'],'seen':['var(--gray-5)','已见·持续']}[s]||['var(--gray-5)',s];
+    return `<span class="badge" style="color:${m[0]};border:1px solid ${m[0]}66">${m[1]}</span>`;
+  };
+  const rows=o.signals.slice(0,14).map(x=>
+    `<tr><td>${esc(x.stock)}</td><td>${esc(x.tier)}</td><td style="color:${x.type.endsWith('买')?'var(--color-up)':'var(--color-dn)'};font-weight:700">${esc(x.type)}</td><td>${x.sig_dt}</td><td>${stTag(x.status)}</td><td class="dim" title="${esc(x.exec_note)}">影子·未执行</td></tr>`).join('');
+  $('ops-sigtbl').innerHTML='<thead><tr><th>代码</th><th>层级</th><th>信号</th><th>信号日</th><th>状态</th><th>执行</th></tr></thead><tbody>'+
+    (o.n_signals?rows:'<tr><td colspan="6" class="dim">本数据日无信号</td></tr>')+
+    (o.n_signals>14?`<tr><td colspan="6" class="dim">…其余 ${o.n_signals-14} 个见数据接口</td></tr>`:'')+'</tbody>';
 }
 
 function render(){
