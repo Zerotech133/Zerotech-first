@@ -1714,11 +1714,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
 
     def _api_onboard(self, raw):
         """K-STOCK-159 S-e 迎宾向导四问落账。
-        body: {plan: free_manual|free_auto|paid_auto, pre_open_report: bool,
+        body: {plan: free_manual|free_auto|paid_auto, strategies?: [sid..],
+               pre_open_report: bool,
                post_close_report: bool, manager_id?, portfolio_name?}
         free_manual → 不动订阅，引导策略市场直接建仓（轻量动线）；
         free_auto/paid_auto → 建组合 pf_<NNN>（序号递增，复用 subscriptions
-        原子写入口）+ strategies 默认 ninedim（live 兜底）+ trader 取
+        原子写入口）+ strategies 显式传入优先（至少 1 个，须 live；缺省
+        兜底 ninedim→注册表首个 live）+ trader 取
         roster（trainees/*.json status∈{live,training}）未被占用者
         （占用判定：hires.json 活跃雇佣；portfolio.py hire 子进程落账）；
         paid_auto → price 置 99、paid=false+「收费意向待商业化开通」；
@@ -1778,8 +1780,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 if m:
                     mx = max(mx, int(m.group(1)))
             pf_id = "pf_%03d" % (mx + 1)
-            # 策略：默认 ninedim，非 live → 兜底取注册表首个 live
-            strat = "ninedim"
+            # 策略：K-STOCK-165 显式传入 strategies（list[str]，至少 1 个，
+            # 每个须在注册表存在且 status=="live"）优先；缺省/为空 → 兜底
+            # ninedim（非 live → 注册表首个 live）。写入订阅记录用客户选的。
             try:
                 with open(_sub.REG, encoding="utf-8") as f:
                     reg = json.load(f).get("strategies") or []
@@ -1788,13 +1791,37 @@ color:#fff;font-size:13.5px;cursor:pointer}
             def _live(sid):
                 return any(s.get("id") == sid and s.get("status") == "live"
                            for s in reg)
-            if not _live(strat):
-                alt = next((s["id"] for s in reg
-                            if s.get("status") == "live"), None)
-                if not alt:
-                    self._json({"ok": False, "error": "注册表无 live 策略"}, 409)
+            raw_strats = rec.get("strategies")
+            if raw_strats is not None and not isinstance(raw_strats, list):
+                self._json({"ok": False,
+                            "error": "strategies 须为 list[str]"}, 400)
+                return
+            chosen = []
+            for s in (raw_strats or []):
+                sid = str(s).strip()
+                if sid and sid not in chosen:
+                    chosen.append(sid)
+            if raw_strats is not None and not chosen:
+                self._json({"ok": False,
+                            "error": "strategies 至少 1 个"}, 400)
+                return
+            if chosen:
+                bad = [s for s in chosen if not _live(s)]
+                if bad:
+                    self._json({"ok": False,
+                                "error": "策略不存在或非 live: %s"
+                                % ",".join(bad)}, 400)
                     return
-                strat = alt
+            else:
+                strat = "ninedim"
+                if not _live(strat):
+                    alt = next((s["id"] for s in reg
+                                if s.get("status") == "live"), None)
+                    if not alt:
+                        self._json({"ok": False, "error": "注册表无 live 策略"}, 409)
+                        return
+                    strat = alt
+                chosen = [strat]
             # trader：roster 取 status∈{live,training} 且未被占用者
             traders = []
             for fn in sorted(glob.glob(os.path.join(base, "trainees", "*.json"))):
@@ -1835,7 +1862,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 price, paid = 99, False
                 note += " · 收费意向待商业化开通"
             pf = {"id": pf_id, "name": pname or ("迎宾组合 " + pf_id),
-                  "strategies": [strat], "price": price, "paid": paid,
+                  "strategies": chosen, "price": price, "paid": paid,
                   "trader": None, "note": note, "created_at": now,
                   "services": {"pre_open_report":
                                bool(rec.get("pre_open_report", True)),
@@ -1881,7 +1908,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                                 % (mh.get("error") or "unknown"))
             self._json({"ok": True, "plan": plan, "portfolio": pf_id,
                         "trader": str(trader) if hired else None,
-                        "strategies": [strat], "price": price, "paid": paid,
+                        "strategies": chosen, "price": price, "paid": paid,
                         "services": pf["services"],
                         "manager_hire": mh, "warning": "；".join(warn) or None,
                         "guidance": "组合已生成，订阅与雇佣链次日 07:05 主闭环生效"})

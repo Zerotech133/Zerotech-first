@@ -282,23 +282,17 @@
         <!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
         <div class="col-title">今日交易计划（经理审批单）</div>
         <div class="side-box"><div id="plan-body"><div class="empty">读取中…</div></div></div>
-        <!-- K-STOCK-159 S-e 接待式迎宾向导（值班经理四问，纯增量，失败静默） -->
+        <!-- K-STOCK-165 迎宾向导对话式改造（值班经理逐题引导，一屏一问，纯增量，失败静默） -->
         <div class="col-title">值班经理接待</div>
         <div class="side-box" id="ob-box" style="display:none">
-          <div id="ob-greeting" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
-          <div style="font-size:12px;margin-bottom:3px">① 服务方案：</div>
-          <select id="ob-plan" style="width:100%;margin-bottom:6px">
-            <option value="free_manual">免费策略 + 手动交易</option>
-            <option value="free_auto">免费策略 + 自动交易</option>
-            <option value="paid_auto">收费策略 + 自动交易（¥99/月 · 意向登记）</option>
-          </select>
-          <label style="font-size:12px;display:block"><input type="checkbox" id="ob-pre" checked> ② 每日盘前汇报</label>
-          <label style="font-size:12px;display:block;margin-bottom:6px"><input type="checkbox" id="ob-post" checked> ③ 每日盘后总结</label>
-          <div style="font-size:12px;margin-bottom:3px">④ 资历经理（可跳过）：</div>
-          <select id="ob-mgr" style="width:100%;margin-bottom:6px"><option value="">跳过（不请经理）</option></select>
-          <input id="ob-name" placeholder="组合名（可空，默认自动命名）" style="width:100%;margin-bottom:6px">
-          <button class="btn btn-primary" onclick="submitOnboard()">提交接待</button>
-          <div id="ob-free-link" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
+          <div id="obw-dots" style="display:flex;gap:5px;margin-bottom:8px"></div>
+          <div id="obw-line" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
+          <div id="obw-body" style="font-size:12px"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn" id="obw-prev" onclick="obwPrev()" style="display:none">上一步</button>
+            <button class="btn btn-primary" id="obw-next" onclick="obwNext()">下一步</button>
+          </div>
+          <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
         </div>
         <div class="col-title">止损哨兵</div>
         <div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
@@ -1015,45 +1009,161 @@ async function postWrite(url,body,desc){
   await loadStatus();
 }
 
-// ===== K-STOCK-159 S-e 接待式迎宾向导（值班经理四问，纯增量，失败静默） =====
+// ===== K-STOCK-165 迎宾向导对话式改造（值班经理逐题引导，一屏一问，纯增量，失败静默） =====
 const OB_ESC=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-(async function initOnboard(){
+const OBW={step:1,mode:'',mgr:'',needMgr:false,pre:true,post:true,
+  strats:[],sel:[],profiles:[],busy:false,done:false};
+const OBW_LINE={1:'您好，欢迎来到 K-STOCK 投研交易所，我是值班经理。先看看今天的策略池，有看中的吗？',
+  2:'这些策略，您打算自己手动交易，还是聘请机器人自动交易？',
+  3:'需要为您配一位理财经理吗？',
+  4:'要不要每天给您出一份复盘报告？',
+  5:'那每天开盘前，需要为您做一份盘前规划吗？',
+  6:'好的，都替您记下了，请过目——确认无误就提交。'};
+function obwDots(){
+  return Array.from({length:6},(_,i)=>
+    '<span style="width:8px;height:8px;border-radius:50%;display:inline-block;'
+    +(i+1<=OBW.step?'background:#4a9eff':'background:#3a3f4b')
+    +'"></span>').join('');
+}
+function obwSummary(){
+  const names=OBW.sel.map(id=>{const s=OBW.strats.find(x=>x.id===id);return (s&&s.name)||id;});
+  let mgr='不聘请';
+  if(OBW.needMgr&&OBW.mgr){const p=OBW.profiles.find(x=>x.id===OBW.mgr);mgr=(p&&p.name)||OBW.mgr;}
+  return '策略：'+OB_ESC(names.join('、'))
+    +'<br>交易方式：'+(OBW.mode==='manual'?'手动交易':'机器人自动交易')
+    +'<br>理财经理：'+OB_ESC(mgr)
+    +'<br>每日复盘报告：'+(OBW.post?'是':'否')
+    +'<br>每日盘前规划：'+(OBW.pre?'是':'否');
+}
+function obwRender(){
+  if(OBW.done)return;
+  $('obw-dots').innerHTML=obwDots();
+  $('obw-line').textContent='【值班经理】'+OBW_LINE[OBW.step];
+  const b=$('obw-body');
+  if(OBW.step===1){
+    b.innerHTML=OBW.strats.map(s=>
+      '<label style="display:block;margin-bottom:3px"><input type="checkbox" class="obw-strat" value="'+OB_ESC(s.id)+'"'
+      +(OBW.sel.includes(s.id)?' checked':'')+'> '+OB_ESC(s.name||s.id)
+      +(s.tagline?(' <span style="color:var(--text-dim)">'+OB_ESC(s.tagline)+'</span>'):'')+'</label>').join('');
+  }else if(OBW.step===2){
+    b.innerHTML=[['manual','自己手动交易'],['auto','聘请机器人自动交易']].map(([v,t])=>
+      '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-mode" value="'+v+'"'
+      +(OBW.mode===v?' checked':'')+'> '+t+'</label>').join('');
+  }else if(OBW.step===3){
+    let h='<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-mgr" value="no"'
+      +(!OBW.needMgr?' checked':'')+'> 不需要，谢谢</label>'
+      +'<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-mgr" value="yes"'
+      +(OBW.needMgr?' checked':'')+'> 需要请一位</label>';
+    if(OBW.needMgr){
+      h+='<div style="margin:6px 0 3px;color:var(--text-dim)">选资历档：</div>'
+        +OBW.profiles.map(p=>
+          '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-tier" value="'+OB_ESC(p.id)+'"'
+          +(OBW.mgr===p.id?' checked':'')+'> '+OB_ESC(p.name||p.id)
+          +(p.price!=null?('（¥'+p.price+'/月）'):'')+'</label>').join('');
+    }
+    b.innerHTML=h;
+  }else if(OBW.step===4){
+    b.innerHTML=[['yes','要，每天发我'],['no','不用了']].map(([v,t])=>
+      '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-post" value="'+v+'"'
+      +((OBW.post?'yes':'no')===v?' checked':'')+'> '+t+'</label>').join('');
+  }else if(OBW.step===5){
+    b.innerHTML=[['yes','要，每天发我'],['no','不用了']].map(([v,t])=>
+      '<label style="display:block;margin-bottom:3px"><input type="radio" name="obw-pre" value="'+v+'"'
+      +((OBW.pre?'yes':'no')===v?' checked':'')+'> '+t+'</label>').join('');
+  }else{
+    b.innerHTML='<div style="border:1px solid var(--line,#3a3f4b);border-radius:6px;padding:8px;line-height:1.8">'+obwSummary()+'</div>';
+  }
+  $('obw-prev').style.display=OBW.step>1?'':'none';
+  $('obw-next').textContent=OBW.step===6?'确认提交':'下一步';
+}
+function obwPrev(){
+  if(OBW.done||OBW.busy||OBW.step<=1)return;
+  OBW.step--;obwRender();
+}
+function obwNext(){
+  if(OBW.done||OBW.busy)return;
+  const st=OBW.step;
+  if(st===1){
+    const sel=[...document.querySelectorAll('.obw-strat:checked')].map(x=>x.value);
+    if(!sel.length){toast('请至少选择 1 个策略');return;}
+    OBW.sel=sel;
+  }else if(st===2){
+    OBW.mode=(document.querySelector('input[name=obw-mode]:checked')||{}).value||'';
+    if(!OBW.mode){toast('请选择交易方式');return;}
+    if(OBW.mode==='manual'){
+      obwSubmitManual();
+      return;
+    }
+  }else if(st===3){
+    OBW.needMgr=(document.querySelector('input[name=obw-mgr]:checked')||{}).value==='yes';
+    OBW.mgr='';
+    if(OBW.needMgr){
+      OBW.mgr=(document.querySelector('input[name=obw-tier]:checked')||{}).value||'';
+      if(!OBW.mgr){toast('请选择经理资历档');return;}
+    }
+  }else if(st===4){
+    OBW.post=(document.querySelector('input[name=obw-post]:checked')||{}).value!=='no';
+  }else if(st===5){
+    OBW.pre=(document.querySelector('input[name=obw-pre]:checked')||{}).value!=='no';
+  }else if(st===6){
+    obwSubmit();return;
+  }
+  OBW.step=Math.min(st+1,6);
+  obwRender();
+}
+function obwFinish(extra){
+  OBW.done=true;
+  $('obw-line').textContent='【值班经理】'+extra;
+  $('obw-dots').style.display='none';
+  $('obw-prev').style.display='none';
+  $('obw-next').style.display='none';
+  $('obw-body').innerHTML='';
+  $('obw-end').style.display='';
+}
+async function obwPost(body){
+  return api('/api/onboard',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+}
+function obwSubmitManual(){
+  obwPost({plan:'free_manual'}).then(r=>{
+    if(r&&r.ok)obwFinish(r.guidance||'轻量动线适合先小试身手——去策略市场直接建仓就行。');
+    else toast('❌ 接待失败：'+OB_ESC((r&&r.error)||'未知'),5000);
+  }).catch(e=>toast('❌ 接待失败：'+OB_ESC(e.message),5000));
+}
+async function obwSubmit(){
+  if(OBW.busy)return;
+  OBW.busy=true;
+  const btn=$('obw-next');btn.disabled=true;btn.textContent='提交中…';
   try{
-    const r=await api('/api/reception');
-    if(!r||!r.ok)return;
-    if(r.greeting)$('ob-greeting').textContent=r.greeting;
-    (r.profiles||[]).forEach(p=>{
-      const o=document.createElement('option');
-      o.value=p.id;
-      o.textContent=(p.name||p.id)+(p.price!=null?`（¥${p.price}/月）`:'');
-      $('ob-mgr').appendChild(o);
-    });
-    $('ob-box').style.display='';
-  }catch(e){/* 静默：迎宾卡不阻塞页面 */}
-})();
-async function submitOnboard(){
-  try{
-    const body={plan:$('ob-plan').value,
-      pre_open_report:$('ob-pre').checked,
-      post_close_report:$('ob-post').checked};
-    const mid=$('ob-mgr').value;if(mid)body.manager_id=mid;
-    const nm=$('ob-name').value.trim();if(nm)body.portfolio_name=nm;
-    const r=await api('/api/onboard',{method:'POST',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const body={plan:'free_auto',strategies:OBW.sel,
+      pre_open_report:OBW.pre,post_close_report:OBW.post};
+    if(OBW.mgr)body.manager_id=OBW.mgr;
+    const r=await obwPost(body);
     if(r&&r.ok){
-      if(r.plan==='free_manual'||r.market_url){
-        $('ob-free-link').style.display='';
-        toast('✅ 已登记：'+OB_ESC(r.guidance||'去策略市场直接建仓'),5000);
-      }else{
-        const warn=r.warning?('<br>⚠️ '+OB_ESC(r.warning)):'';
-        toast(`✅ 接待完成：新组合 <b>${OB_ESC(r.portfolio||'')}</b>`+
-          (r.trader?(' · 交易员 '+OB_ESC(r.trader)):'')+
-          (r.manager_hire&&r.manager_hire.ok?(' · 经理已聘'):'')+
-          '<br>'+OB_ESC(r.guidance||'')+warn,6000);
-      }
+      const warn=r.warning?('<br>⚠️ '+OB_ESC(r.warning)):'';
+      toast(`✅ 接待完成：新组合 <b>${OB_ESC(r.portfolio||'')}</b>`
+        +(r.trader?(' · 交易员 '+OB_ESC(r.trader)):'')
+        +(r.manager_hire&&r.manager_hire.ok?(' · 经理已聘'):'')
+        +'<br>'+OB_ESC(r.guidance||'')+warn,6000);
+      obwFinish('已为您开好组合 '+OB_ESC(r.portfolio||'')
+        +'，订阅与雇佣链次日 07:05 主闭环生效。');
     }else toast('❌ 接待失败：'+OB_ESC((r&&r.error)||'未知'),5000);
   }catch(e){toast('❌ 接待失败：'+OB_ESC(e.message),5000);}
+  OBW.busy=false;btn.disabled=false;obwRender();
 }
+(async function initOnboard(){
+  try{
+    const [rec,mk]=await Promise.all([
+      api('/api/reception').catch(()=>null),
+      api('/api/strategy_market').catch(()=>null)]);
+    if(mk&&mk.ok)OBW.strats=(mk.strategies||[]).filter(s=>s.status==='live');
+    if(rec&&rec.ok)OBW.profiles=rec.profiles||[];
+    if(!OBW.strats.length)return;
+    obwRender();
+    $('ob-box').style.display='';
+  }catch(e){/* 静默：迎宾卡不阻塞页面 */
+  }
+})();
 
 loadStatus();
 </script>
