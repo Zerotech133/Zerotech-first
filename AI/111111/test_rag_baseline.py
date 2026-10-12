@@ -94,6 +94,50 @@ class RagBaselineTests(unittest.TestCase):
         self.assertFalse(report["cases"][1]["citation_complete"])
 
 
+class OfflineRegressionTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        (self.root / "facts.md").write_text("# 太阳知识\n太阳从东方升起。", encoding="utf-8")
+        (self.root / "risk.txt").write_text("# 风险\n回答前先核验来源。", encoding="utf-8")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_offline_regression_reports_all_metrics(self):
+        import json
+        rb = importlib.import_module("AI.111111.rag_baseline")
+        cases = self.root / "evaluation-cases.jsonl"
+        cases.write_text(
+            "\n".join([
+                json.dumps({"id": "sun-semantic", "question": "太阳每天从哪里升起？", "expected_sources": ["facts.md"], "split": "evaluation_only"}, ensure_ascii=False),
+                json.dumps({"id": "risk-semantic", "question": "回答前如何核验来源？", "expected_sources": ["risk.txt"], "split": "evaluation_only"}, ensure_ascii=False),
+                json.dumps({"id": "unknown", "question": "火星基地的虚构规则是什么？", "expected_sources": [], "expected_decision": "refuse_missing_evidence", "split": "evaluation_only"}, ensure_ascii=False),
+            ]) + "\n", encoding="utf-8")
+        report_path = self.root / "regression.json"
+        report = rb.run_offline_regression(self.root, cases_path=cases, report_out=report_path)
+        self.assertEqual(report["metrics"]["title_retrieval"]["hit_rate"], 1.0)
+        self.assertEqual(report["metrics"]["semantic_retrieval"]["hit_rate"], 1.0)
+        self.assertEqual(report["metrics"]["source_hit_rate"], 1.0)
+        self.assertEqual(report["metrics"]["unknown_refusal"]["refusal_rate"], 1.0)
+        self.assertTrue(report["evaluation_only"])
+        self.assertFalse(report["training_eligible"])
+        self.assertEqual(report["model_calls"], 0)
+        self.assertEqual(report["training_steps"], 0)
+        self.assertEqual(json.loads(report_path.read_text(encoding="utf-8")), report)
+
+    def test_offline_regression_does_not_touch_ollama(self):
+        import urllib.request
+        rb = importlib.import_module("AI.111111.rag_baseline")
+        original = urllib.request.urlopen
+        urllib.request.urlopen = lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("offline regression must not call Ollama"))
+        try:
+            report = rb.run_offline_regression(self.root)
+        finally:
+            urllib.request.urlopen = original
+        self.assertEqual(report["mode"], "offline_deterministic")
+
+
 if __name__ == "__main__":
     unittest.main()
 
