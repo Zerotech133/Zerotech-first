@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "work" / "parallel-space-strategy-v0.1" / "dataset"
 BASELINE_SCRIPT = ROOT / "work" / "evaluate_parallel_space_distillation_20261013.py"
 OUTPUT = DATA / "distillation-evaluation-full-v0.1.json"
+CALIBRATED_LABELS = DATA / "teacher-labels-calibrated-v0.1.jsonl"
 
 
 def _load_baseline_module():
@@ -77,11 +78,14 @@ def build_risk_calibration(
 def build_full_report() -> dict[str, Any]:
     baseline = _load_baseline_module()
     scenarios = _load_jsonl(DATA / "scenario-packets-v0.1.jsonl")
-    labels = _load_jsonl(DATA / "teacher-labels-v0.1.jsonl")
+    if not CALIBRATED_LABELS.exists():
+        raise RuntimeError("缺少教师标签校准文件，请先运行 build_distillation_calibration_20261013.py")
+    labels = _load_jsonl(CALIBRATED_LABELS)
     sample_ids = [row["sample_id"] for row in scenarios]
     report = baseline.build_report(scenarios, labels, sample_ids=sample_ids)
     report["schema"] = "parallel_space_strategy_distillation_evaluation/v2"
     report["evaluation_scope"] = "all_synthetic_scenarios"
+    report["teacher_label_source"] = CALIBRATED_LABELS.name
     report["risk_calibration"] = build_risk_calibration(report["comparisons"])
     report["calibration_gate"] = {
         "required_before_lora_review": True,
@@ -90,6 +94,11 @@ def build_full_report() -> dict[str, Any]:
             item["sample_id"] for item in report["risk_calibration"]["risk_mismatches"]
         ],
     }
+    if report["distillation_baseline_pass"] and not report["calibration_gate"]["blocking_samples"]:
+        report["lora_review_status"] = "ready_for_isolated_lora_review"
+        report["recommendation"] = (
+            "满足隔离 LoRA 评审前置条件；只进入评审，不安装依赖、不启动权重训练。"
+        )
     if report["risk_calibration"]["risk_mismatches"]:
         report["recommendation"] = (
             "先复核教师风险标签和震荡/缺数据边界样本，再评审隔离 LoRA；"
