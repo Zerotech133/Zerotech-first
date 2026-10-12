@@ -22,9 +22,12 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+from valuation_field_reconcile import join_daily_basic_from_dir, valuation_field_coverage
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 NEWS_DB = os.path.join(HERE, "..", "news_collector", "news.db")
+DAILY_BASIC_DIRNAME = os.path.join("tdx", "ts_daily_basic")
 
 # 已知策略产物清单：(相对目录, 文件名) → 中文名 + 所属工作台 URL
 ARTIFACT_MANIFEST = [
@@ -74,7 +77,11 @@ def _sample_parquet(market="cn"):
         subdir = Path(DATA) / market
     if not subdir.exists():
         return None
-    files = list(subdir.rglob("*.parquet"))
+    files = sorted(subdir.rglob("*.parquet"))
+    # 000001.SH 通常是上证指数，优先抽取一只股票以便与 daily_basic 对账。
+    if market == "cn":
+        stock_files = [f for f in files if f.name != "000001_SH.parquet"]
+        files = stock_files or files
     if not files:
         return None
     try:
@@ -186,8 +193,30 @@ def _annotate_cn_sample(kline):
              "volume", "amount", "pre_close", "pct_chg"}
     missing = [c for c in ("turnover", "market_cap", "pe")
                if c not in known and c not in sample["cols"]]
-    if missing:
-        kline.setdefault("cn", {})["missing_fields"] = missing
+    cn = kline.setdefault("cn", {})
+    source_dir = os.path.join(DATA, DAILY_BASIC_DIRNAME)
+    if os.path.isdir(source_dir):
+        try:
+            import pyarrow.parquet as pq
+            sample_path = Path(DATA) / "ashare" / str(sample["file"])
+            frame = pq.read_table(str(sample_path)).to_pandas()
+            view = join_daily_basic_from_dir(frame, source_dir)
+            cn["valuation_fields"] = valuation_field_coverage(view)["fields"]
+            cn["valuation_source"] = {
+                "name": "ts_daily_basic",
+                "path": source_dir,
+                "status": "joined",
+                "rows": int(len(view)),
+            }
+            # 字段来自事实源即可消除结构性缺失告警；合法空值由 coverage 单独展示。
+            cn["missing_fields"] = []
+        except Exception as exc:
+            cn["valuation_source"] = {
+                "name": "ts_daily_basic", "path": source_dir,
+                "status": "error", "error": str(exc),
+            }
+    elif missing:
+        cn["missing_fields"] = missing
     kline.setdefault("cn", {})["avg_rows"] = sample.get("rows")
 
 

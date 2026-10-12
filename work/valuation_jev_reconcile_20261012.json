@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-10-12T23:58:00+08:00",
+  "production_write": false,
+  "global_activation": false,
+  "valuation_source": {
+    "path": "E:\\老田的AI助手\\quant_backtest\\data\\tdx\\ts_daily_basic",
+    "parts": 44,
+    "rows": 4164636,
+    "codes": 5676,
+    "min_trade_date": "20230731",
+    "max_trade_date": "20261009",
+    "columns": [
+      "ts_code",
+      "trade_date",
+      "turnover_rate",
+      "pe",
+      "total_mv"
+    ]
+  },
+  "valuation_health_sample": {
+    "file": {
+      "name": "ts_daily_basic",
+      "path": "E:\\老田的AI助手\\quant_backtest\\data\\tdx\\ts_daily_basic",
+      "status": "joined",
+      "rows": 852
+    },
+    "rows": 852,
+    "fields": {
+      "turnover": {
+        "present": 772,
+        "missing": 80,
+        "coverage": 0.906103
+      },
+      "market_cap": {
+        "present": 772,
+        "missing": 80,
+        "coverage": 0.906103
+      },
+      "pe": {
+        "present": 772,
+        "missing": 80,
+        "coverage": 0.906103
+      }
+    },
+    "missing_fields": []
+  },
+  "jev": {
+    "queue_total": 111,
+    "pending_after_batch": 60,
+    "batch_size": 51,
+    "decisions": {
+      "bull": 18,
+      "bear": 13,
+      "neutral": 20
+    },
+    "blocked": 0,
+    "models": [
+      "news_ai:local"
+    ],
+    "receipt": "work/jev_receipt_staging_20261012_v2.jsonl"
+  },
+  "gaps_after_readonly_stage": []
+}
