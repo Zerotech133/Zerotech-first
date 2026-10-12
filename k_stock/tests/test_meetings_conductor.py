@@ -353,3 +353,153 @@ def test_skipped_and_dry_do_not_trigger_review(monkeypatch, tmp_path, capsys):
     assert st["laotian_pm"] == "skipped" and st["bull_desk"] == "dry"
     assert calls == []
     assert "审批单" not in capsys.readouterr().out
+
+
+# ---- K-STOCK-170 · 收盘复盘会注入当日真实数据（成交/未成交/权益摘要；缺失静默退化） ----
+
+import sqlite3  # noqa: E402
+
+WED_1515 = datetime(2026, 10, 14, 15, 15)  # 周三收盘会后
+
+
+def _make_paper_db(path, fills=(), pendings=(), marks=()):
+    """tmp SQLite 造 orders/equity_marks 最小样例（列与 engine.py schema 对齐）。"""
+    con = sqlite3.connect(path)
+    con.executescript("""
+      CREATE TABLE orders(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, stock TEXT NOT NULL,
+        side TEXT NOT NULL, qty INTEGER NOT NULL, plan_date TEXT,
+        status TEXT NOT NULL, fill_date TEXT, filled_price REAL,
+        filled_qty INTEGER, account_id TEXT NOT NULL DEFAULT 'main');
+      CREATE TABLE equity_marks(
+        date TEXT NOT NULL, account_id TEXT NOT NULL DEFAULT 'main',
+        total REAL NOT NULL, pos_pct REAL NOT NULL,
+        PRIMARY KEY(date, account_id));
+    """)
+    for stock, side, qty, price in fills:
+        con.execute("INSERT INTO orders(stock, side, qty, plan_date, status, "
+                    "fill_date, filled_price, filled_qty, account_id) "
+                    "VALUES(?,?,?,?,?,?,?,?,?)",
+                    (stock, side, qty, "2026-10-14", "filled", "2026-10-14",
+                     price, qty, "trader_a"))
+    for stock, side, qty in pendings:
+        con.execute("INSERT INTO orders(stock, side, qty, plan_date, status, "
+                    "account_id) VALUES(?,?,?,?,?,?)",
+                    (stock, side, qty, "2026-10-14", "pending", "trader_a"))
+    for day, total, pos_pct in marks:
+        con.execute("INSERT INTO equity_marks(date, account_id, total, pos_pct) "
+                    "VALUES(?,?,?,?)", (day, "trader_a", total, pos_pct))
+    con.commit()
+    con.close()
+    return path
+
+
+def _use_db(monkeypatch, path, trader="trader_a"):
+    """把 plan_review 的账本入口指到 tmp SQLite（conductor 经它取数）。"""
+    monkeypatch.setattr(plan_review, "DB_PATH", path)
+    monkeypatch.setattr(plan_review, "_pf_trader", lambda pf: trader)
+
+
+def test_postclose_context_with_fills_and_mark(monkeypatch, tmp_path):
+    """有成交+未成交+双日 mark → 摘要含成交明细行、未成交行、权益与昨日对比。"""
+    _use_db(monkeypatch, _make_paper_db(
+        tmp_path / "paper.db",
+        fills=[("600000", "BUY", 100, 12.34)],
+        pendings=[("000001", "BUY", 200)],
+        marks=[("2026-10-13", 100000.0, 0.30), ("2026-10-14", 101234.56, 0.35)]))
+    ctx = cond.build_postclose_context("pf_001", now=WED_1515)
+    assert "【今日交易复盘摘要】组合 pf_001" in ctx
+    assert "成交 1 笔：" in ctx and "600000 BUY 100股 @12.34" in ctx
+    assert "未成交 1 笔：" in ctx and "000001 BUY 200股" in ctx
+    assert "最新权益：101234.56 元（仓位 35%，2026-10-14）" in ctx
+    assert "较前一日（2026-10-13）+1234.56 元" in ctx
+
+
+def test_postclose_context_no_trades_today(monkeypatch, tmp_path):
+    """有 mark 无当日订单 → 「今日无成交记录」+ 权益行。"""
+    _use_db(monkeypatch, _make_paper_db(
+        tmp_path / "paper.db", marks=[("2026-10-14", 50000.0, 0.10)]))
+    ctx = cond.build_postclose_context("pf_001", now=WED_1515)
+    assert "今日无成交记录" in ctx
+    assert "最新权益：50000.00 元（仓位 10%" in ctx
+    assert "未成交" not in ctx
+
+
+def test_postclose_context_missing_db_degrades(monkeypatch, tmp_path):
+    """库文件不存在 → 返回空串（调用方退化原泛文案）。"""
+    _use_db(monkeypatch, tmp_path / "__no_such__.db")
+    assert cond.build_postclose_context("pf_001", now=WED_1515) == ""
+
+
+def test_postclose_context_no_trader_degrades(monkeypatch, tmp_path):
+    """trader 未知（组合不在订阅清单口径）→ 返回空串。"""
+    _make_paper_db(tmp_path / "paper.db", marks=[("2026-10-14", 1.0, 0.0)])
+    _use_db(monkeypatch, tmp_path / "paper.db", trader=None)
+    assert cond.build_postclose_context("pf_001", now=WED_1515) == ""
+
+
+def test_postclose_context_no_mark_degrades(monkeypatch, tmp_path):
+    """有订单但 equity_marks 空（无 mark）→ 返回空串。"""
+    _use_db(monkeypatch, _make_paper_db(
+        tmp_path / "paper.db", fills=[("600000", "BUY", 100, 12.34)]))
+    assert cond.build_postclose_context("pf_001", now=WED_1515) == ""
+
+
+def test_postclose_context_broken_db_degrades(monkeypatch, tmp_path):
+    """库不可达（坏文件）→ 静默返回空串，不抛错不阻断 15:15 automation。"""
+    bad = tmp_path / "broken.db"
+    bad.write_bytes(b"not a sqlite file at all")
+    _use_db(monkeypatch, bad)
+    assert cond.build_postclose_context("pf_001", now=WED_1515) == ""
+
+
+def test_run_post_close_injects_pre_open_not(monkeypatch, tmp_path):
+    """透传验证：post_close 的 context 追加真实数据摘要；pre_open 不追加。"""
+    _use_db(monkeypatch, _make_paper_db(
+        tmp_path / "paper.db",
+        fills=[("600000", "BUY", 100, 12.34)],
+        marks=[("2026-10-14", 101234.56, 0.35)]))
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_001", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    monkeypatch.setattr(cond, "STRATEGIST_LATEST",
+                        cond.HERE.parent / "data" / "__no_such__.json")
+    monkeypatch.setattr(plan_review, "collect_context", lambda pf, now=None: "")
+    got = {}
+
+    def fake_hold(mid, source, kind, context="", channel=None):
+        got[kind] = context
+        return ({"title": "t", "channel": "site"}, "glm-5.3-flash")
+
+    monkeypatch.setattr(meeting, "hold_meeting", fake_hold)
+    code, results = cond.run("post_close", now=WED_1515)
+    assert code == 0 and results[0]["status"] == "ok"
+    assert "【今日交易复盘摘要】组合 pf_001" in got["post_close"]
+    assert "600000 BUY 100股 @12.34" in got["post_close"]
+    assert "最新权益：101234.56 元" in got["post_close"]
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0
+    assert "【今日交易复盘摘要】" not in got["pre_open"]  # 盘前会维持现状
+
+
+def test_run_post_close_degrades_to_generic(monkeypatch, tmp_path):
+    """无数据（无 trader）→ post_close context 无摘要块，会议照开（退化泛文案）。"""
+    _make_paper_db(tmp_path / "paper.db", marks=[("2026-10-14", 1.0, 0.0)])
+    _use_db(monkeypatch, tmp_path / "paper.db", trader=None)
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_001", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    monkeypatch.setattr(cond, "STRATEGIST_LATEST",
+                        cond.HERE.parent / "data" / "__no_such__.json")
+    monkeypatch.setattr(plan_review, "collect_context", lambda pf, now=None: "")
+    got = {}
+
+    def fake_hold(mid, source, kind, context="", channel=None):
+        got["context"] = context
+        return ({"title": "t", "channel": "site"}, "glm-5.3-flash")
+
+    monkeypatch.setattr(meeting, "hold_meeting", fake_hold)
+    code, results = cond.run("post_close", now=WED_1515)
+    assert code == 0 and results[0]["status"] == "ok"
+    assert "【今日交易复盘摘要】" not in got["context"]
+    assert got["context"].strip() == f"日期：{WED_1515.strftime('%Y-%m-%d %A')}"

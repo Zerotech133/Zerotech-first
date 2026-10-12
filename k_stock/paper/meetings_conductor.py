@@ -13,6 +13,7 @@
 import argparse
 import json
 import os
+import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -118,6 +119,62 @@ def build_context(now: datetime | None = None, source: str | None = None) -> str
     return "\n".join(lines)
 
 
+def build_postclose_context(pf_id: str, now: datetime | None = None) -> str:
+    """K-STOCK-170 · 收盘复盘会当日真实数据摘要（组合 pf_id → 文本）。
+
+    聚合 paper.db（连接手法复刻 plan_review._pending_buys：sqlite ro）：
+    - orders 该组合 trader 账本当日（fill_date/plan_date 含今日）成交与未成交；
+    - equity_marks 该 account 最新 mark（total/pos_pct）与前一日对比。
+    任何数据缺失（trader 未知/库不可达/无 mark）→ 返回 ""（调用方维持原泛文案，
+    不抛错不阻断 15:15 automation）。"""
+    now = now or datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    try:
+        import plan_review
+        trader = plan_review._pf_trader(pf_id)
+        db = plan_review.DB_PATH
+        if not trader or not db.exists():
+            return ""
+        con = sqlite3.connect(f"file:{db.as_posix()}?mode=ro", uri=True)
+        try:
+            fills = con.execute(
+                "SELECT stock, side, filled_qty, filled_price FROM orders "
+                "WHERE account_id=? AND status='filled' AND (fill_date=? OR plan_date=?) "
+                "ORDER BY id", (trader, today, today)).fetchall()
+            pending = con.execute(
+                "SELECT stock, side, qty FROM orders "
+                "WHERE account_id=? AND status='pending' AND (plan_date=? OR fill_date=?) "
+                "ORDER BY id", (trader, today, today)).fetchall()
+            marks = con.execute(
+                "SELECT date, total, pos_pct FROM equity_marks WHERE account_id=? "
+                "ORDER BY date DESC LIMIT 2", (trader,)).fetchall()
+        finally:
+            con.close()
+    except Exception:
+        return ""  # 摘要是增强信息：任何故障静默退化，不阻断会议线
+    if not marks:
+        return ""
+    lines = [f"【今日交易复盘摘要】组合 {pf_id}（{today}，账本 {trader}）"]
+    if fills:
+        lines.append(f"成交 {len(fills)} 笔：")
+        for r in fills:
+            price = f"@{r[3]:g}" if r[3] is not None else ""
+            lines.append(f"  {r[0]} {r[1]} {r[2]}股 {price}".rstrip())
+    else:
+        lines.append("今日无成交记录")
+    if pending:
+        lines.append(f"未成交 {len(pending)} 笔：")
+        for r in pending:
+            lines.append(f"  {r[0]} {r[1]} {r[2]}股（挂单未撮合）")
+    latest, prev = marks[0], (marks[1] if len(marks) > 1 else None)
+    eq = (f"最新权益：{latest[1]:.2f} 元（仓位 {latest[2] * 100:.0f}%，{latest[0]}）")
+    if prev:
+        delta = latest[1] - prev[1]
+        eq += f"，较前一日（{prev[0]}）{delta:+.2f} 元"
+    lines.append(eq)
+    return "\n".join(lines)
+
+
 def _auto_plan_review(mid: str, source: str) -> None:
     """K-STOCK-168 · 盘前会后自动生成经理审批单（plan_review.review_plan）。
 
@@ -174,8 +231,12 @@ def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[
             results.append({"mid": mid, "source": source, "status": "dry"})
             continue
         try:
-            rec, provider = meeting.hold_meeting(mid, source, kind,
-                                                 context=build_context(now, source=source))
+            ctx = build_context(now, source=source)
+            if kind == "post_close":  # K-STOCK-170：收盘复盘注入当日真实数据摘要
+                digest = build_postclose_context(source, now)
+                if digest:
+                    ctx = f"{ctx}\n{digest}" if ctx else digest
+            rec, provider = meeting.hold_meeting(mid, source, kind, context=ctx)
             print(f"OK {mid}×{source} {kind} → {rec.get('title')} "
                   f"(channel={rec.get('channel')}, provider={provider})")
             results.append({"mid": mid, "source": source, "status": "ok",
