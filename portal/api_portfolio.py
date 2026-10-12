@@ -1700,63 +1700,6 @@ class Handler:
             self._json({"ok": False, "error": repr(e)}, 500)
             return
         self._json(r, 200 if r.get("ok") else 400)
-    def _api_paper_hires(self):
-        """雇佣关系投影（纯只读：hires.json + trainees/*.json，无子进程）。"""
-        base = self._PAPER_DIR
-        try:
-            hp = os.path.join(base, "hires.json")
-            hires = []
-            if os.path.exists(hp):
-                with open(hp, encoding="utf-8") as f:
-                    d = json.load(f)
-                hires = d.get("hires", []) if isinstance(d, dict) else []
-            faces = {}
-            tdir = os.path.join(base, "trainees")
-            for fn in sorted(glob.glob(os.path.join(tdir, "*.json"))):
-                try:
-                    with open(fn, encoding="utf-8") as f:
-                        x = json.load(f)
-                    faces[x.get("id")] = {"id": x.get("id"), "name": x.get("name"),
-                                          "status": x.get("status"),
-                                          "style": x.get("style")}
-                except Exception:
-                    continue
-            for h in hires:
-                f = faces.get(h.get("trader")) or {}
-                h["trader_name"] = f.get("name")
-                h["trader_status"] = f.get("status")
-            self._json({"ok": True, "hires": hires,
-                        "traders": sorted(faces.values(),
-                                          key=lambda v: str(v.get("name")))})
-        except Exception as e:
-            self._json({"ok": False, "error": repr(e)}, 500)
-    def _api_paper_hire(self, raw):
-        """A3 雇佣交互（K-STOCK-042 配置面）：只改 hires.json 注册表，
-        落单仍只在 07:05 automation 单写入口——门户永不直接触发交易。
-        子进程走 trainee.py hire/fire（单写入口），JSON 管道同 paper 模式。"""
-        try:
-            rec = json.loads(raw.decode("utf-8")) if raw else {}
-        except Exception:
-            self._json({"ok": False, "error": "bad json"}, 400)
-            return
-        action = str(rec.get("action") or "").strip().lower()
-        trader = str(rec.get("trader") or "").strip().lower()
-        source = str(rec.get("source") or "").strip().lower()
-        if action not in ("hire", "fire"):
-            self._json({"ok": False, "error": "action 须为 hire/fire"}, 400)
-            return
-        if not re.match(r"^[a-z][a-z0-9_]{0,31}$", trader):
-            self._json({"ok": False, "error": "trader 格式非法"}, 400)
-            return
-        if source not in ("qd", "qpzm", "ai_team"):
-            self._json({"ok": False, "error": "source 须为 qd/qpzm/ai_team"}, 400)
-            return
-        cmd = [self._PAPER_PY, os.path.join(self._PAPER_DIR, "trainee.py"),
-               action, trader, "--source", source, "--json"]
-        if action == "hire" and rec.get("note"):
-            cmd += ["--note", str(rec["note"])[:80]]
-        r = self._paper_run_json(cmd, timeout=35)
-        self._json(r, 200 if r.get("ok") else 409)
     def _paper_desk(self):
         """交易台动态块：AI / 双刀最近决策产物（纯标准库 glob+json 只读）。"""
         out = {}

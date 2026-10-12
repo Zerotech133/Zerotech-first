@@ -752,31 +752,6 @@ function renderAgents(j, board){
         stats=`<div><div class="k">风格</div><div class="v">${r.style||'-'}</div></div><div><div class="k">实习</div><div class="v">未开账</div></div>`;
       }
     }
-    /* A3 雇佣区（K-STOCK-042 配置面）：live 可雇 / 已雇带解雇 / training 提示 */
-    let hz='';
-    if(c.id){
-      const hires=(S.hires&&S.hires.hires)||[];
-      const act=hires.filter(h=>h.trader===c.id&&h.status==='active');
-      if(act.length){
-        hz='<div class="flow-note" style="margin:10px 0 0">'+act.map(h=>
-          `<span class="badge b-dk">已雇 · ${STRAT_NAMES[h.source]||h.source}</span> `+
-          `<button class="btn btn-sm btn-gray" onclick="doFire('${c.id}','${h.source}')">解雇</button>`
-        ).join(' ')+' <span style="color:var(--text-dim);font-size:11px">次日 07:05 生效</span></div>';
-      }else{
-        const st_now=(r&&r.status)||(c.id==='gunner'?'design':'');
-        if(st_now==='live'){
-          hz='<div style="margin-top:10px;display:flex;gap:6px;align-items:center">'+
-            `<select id="hire-src-${c.id}" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-surface);color:var(--text);font-size:12px">`+
-            '<option value="qd">量子双刀</option><option value="qpzm">青萍之末</option>'+
-            '<option value="ai_team">AI 值班</option></select>'+
-            `<button class="btn btn-sm btn-primary" onclick="doHire('${c.id}')">雇佣</button></div>`;
-        }else if(st_now==='training'){
-          hz='<div class="flow-note" style="margin:10px 0 0">实习期 · status=live 后可被雇佣</div>';
-        }else if(st_now==='design'){
-          hz='<div class="flow-note" style="margin:10px 0 0">已论证未过（2026-10-09）· 不接信号</div>';
-        }
-      }
-    }
     /* K-STOCK-101 M3：tier 徽标（月价/引擎档位，来自 market 投影） */
     let tchip='';
     if(c.id){
@@ -784,46 +759,19 @@ function renderAgents(j, board){
       if(t&&t.price_month!=null)
         tchip=` <span class="badge b-dk" style="font-size:10.5px">${t.tier} ${t.tier_label||''} · ¥${t.price_month}/月 · 引擎 ${(t.llm_binding||'').split('/').pop()||'-'}</span>`;
     }
-    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div>${hz}</div>`;
+    return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div></div>`;
   }).join('');
 }
 
-// ===== 交易员成绩单（v0.4 A1：/api/trainee_board 子进程投影） =====
+// ===== 交易员战绩（v0.4 A1，K-STOCK-166 并轨：/api/trader_roster 替代 trainee_board，
+// 字段更全 grade/hired_pf；旧 /api/paper_hire(s) 雇佣动线已删——雇佣入口走策略市场页/迎宾向导） =====
 async function loadAgents(){
   try{
-    const j=await api('/api/trainee_board');
+    const j=await api('/api/trader_roster');
     if(j&&j.ok&&S.status){
-      renderAgents(S.status,j.rows||[]);
-      try{
-        const h=await api('/api/paper_hires');          // A3 雇佣投影（失败静默降级）
-        if(h&&h.ok){S.hires=h;renderAgents(S.status,j.rows||[]);}
-      }catch(e){}
+      renderAgents(S.status,{rows:j.rows||[]});
     }
   }catch(e){/* 静默降级：保留档案静态卡 */}
-}
-/* A3 雇佣交互（配置面）：POST /api/paper_hire 只改 hires.json，次日 07:05 生效 */
-async function doHire(trader){
-  const sel=document.getElementById('hire-src-'+trader);
-  const src=sel?sel.value:'';
-  if(!src)return toast('❌ 请选择策略源');
-  if(!confirm('雇佣 '+trader+' × '+src+'？\n（只改注册表，次日 07:05 主闭环生效）'))return;
-  try{
-    const j=await api('/api/paper_hire',{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'hire',trader:trader,source:src})});
-    if(j.ok){toast('✅ 已雇佣 · 次日 07:05 生效');loadAgents();}
-    else toast('❌ '+(j.error||'失败'));
-  }catch(e){toast('❌ '+e.message);}
-}
-async function doFire(trader,source){
-  if(!confirm('解雇 '+trader+' × '+source+'？'))return;
-  try{
-    const j=await api('/api/paper_hire',{method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'fire',trader:trader,source:source})});
-    if(j.ok){toast('✅ 已解雇');loadAgents();}
-    else toast('❌ '+(j.error||'失败'));
-  }catch(e){toast('❌ '+e.message);}
 }
 
 // ===== 投资经理（K-STOCK-137d S-b2：/api/manager_roster + manager_hire/fire） =====
