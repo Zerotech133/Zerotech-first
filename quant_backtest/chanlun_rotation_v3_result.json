@@ -1,0 +1,1220 @@
+{
+ "meta": {
+  "D0": "20251013",
+  "exec": "D收盘确认→D+1收盘成交(T+1)",
+  "cost_bps": 15,
+  "invest_cap": 0.8,
+  "kline_basis": "hfq(官方pct_chg因子链,PIT安全) — v2污染修复",
+  "hfq_自证_max_abs_err_pct": 0.0,
+  "census": {
+   "个股买点集合被复权改变": "4/76",
+   "原始vs_hfq_覆盖股票数": {
+    "1买": [
+     73,
+     72
+    ],
+    "2买": [
+     72,
+     72
+    ],
+    "3买": [
+     70,
+     70
+    ],
+    "1卖": [
+     69,
+     70
+    ],
+    "2卖": [
+     61,
+     62
+    ],
+    "3卖": [
+     76,
+     76
+    ]
+   }
+  }
+ },
+ "A": {
+  "label": "A_80帽换股+补仓(hfq)",
+  "total_return_pct": -32.32,
+  "annualized_pct": -32.64,
+  "max_drawdown_pct": -37.88,
+  "n_trades": 157,
+  "win_rate_pct": 37.6,
+  "avg_holding_days": 12.8,
+  "min_holding_days": 1,
+  "n_rotations": 66,
+  "avg_invested_pct": 72.4,
+  "max_invested_pct": 81.1
+ },
+ "B": {
+  "label": "B_80帽换股无补仓(hfq)",
+  "total_return_pct": -31.67,
+  "annualized_pct": -32.0,
+  "max_drawdown_pct": -37.05,
+  "n_trades": 170,
+  "win_rate_pct": 38.2,
+  "avg_holding_days": 11.6,
+  "min_holding_days": 1,
+  "n_rotations": 80,
+  "avg_invested_pct": 70.5,
+  "max_invested_pct": 80.7
+ },
+ "C": {
+  "label": "C_80帽风控出场(hfq)",
+  "total_return_pct": -27.09,
+  "annualized_pct": -27.37,
+  "max_drawdown_pct": -32.66,
+  "n_trades": 81,
+  "win_rate_pct": 29.6,
+  "avg_holding_days": 25.5,
+  "min_holding_days": 1,
+  "n_rotations": 0,
+  "avg_invested_pct": 71.8,
+  "max_invested_pct": 81.5
+ },
+ "D": {
+  "label": "D_80帽买入持有(hfq)",
+  "total_return_pct": -5.39,
+  "annualized_pct": -5.45,
+  "max_drawdown_pct": -14.87,
+  "n_trades": 5,
+  "win_rate_pct": 40.0,
+  "avg_holding_days": 3.8,
+  "min_holding_days": 2,
+  "n_rotations": 0,
+  "avg_invested_pct": 39.0,
+  "max_invested_pct": 48.2
+ },
+ "audit": {
+  "T+1校验": "全部交易持有≥1交易日，合规",
+  "min_holding_days": 1,
+  "信号确认滞后(信号dt→确认日)": {
+   "median": 1016,
+   "p90": 9802,
+   "max": 9985
+  },
+  "入场追高体检": {
+   "入场mom20均值": 0.98,
+   "池候选mom20中位": 0.49
+  }
+ },
+ "monthly_A": {
+  "202510": 2.72,
+  "202511": -5.55,
+  "202512": -1.95,
+  "202601": -0.79,
+  "202602": 3.16,
+  "202603": -6.74,
+  "202604": -1.71,
+  "202605": -3.22,
+  "202606": -16.92,
+  "202607": -5.51,
+  "202608": 3.94,
+  "202609": -0.15,
+  "202610": -3.81
+ },
+ "trades_A": [
+  {
+   "stock": "600748.SH",
+   "exit_day": "20251017",
+   "pnl": 0.3102767367799999,
+   "entry_day": "20251014",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "000705.SZ",
+   "exit_day": "20251017",
+   "pnl": -0.02415257999999998,
+   "entry_day": "20251015",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600801.SH",
+   "exit_day": "20251022",
+   "pnl": 0.01701039499999979,
+   "entry_day": "20251017",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002928.SZ",
+   "exit_day": "20251022",
+   "pnl": -0.04605719999999991,
+   "entry_day": "20251020",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300692.SZ",
+   "exit_day": "20251027",
+   "pnl": -0.09575411384780441,
+   "entry_day": "20251014",
+   "how": "stop"
+  },
+  {
+   "stock": "300120.SZ",
+   "exit_day": "20251030",
+   "pnl": -0.02245980999999997,
+   "entry_day": "20251028",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20251103",
+   "pnl": 0.0647273683260241,
+   "entry_day": "20251028",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002594.SZ",
+   "exit_day": "20251107",
+   "pnl": -0.024048417204855954,
+   "entry_day": "20251103",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002778.SZ",
+   "exit_day": "20251110",
+   "pnl": 0.04482110104853221,
+   "entry_day": "20251024",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "001379.SZ",
+   "exit_day": "20251111",
+   "pnl": -0.00039999999999995595,
+   "entry_day": "20251110",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300753.SZ",
+   "exit_day": "20251111",
+   "pnl": -0.006676019358305418,
+   "entry_day": "20251017",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002875.SZ",
+   "exit_day": "20251113",
+   "pnl": 0.012499999999999956,
+   "entry_day": "20251112",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600352.SH",
+   "exit_day": "20251118",
+   "pnl": 0.09517325209830352,
+   "entry_day": "20251014",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300993.SZ",
+   "exit_day": "20251118",
+   "pnl": -0.13773257603575662,
+   "entry_day": "20251103",
+   "how": "stop"
+  },
+  {
+   "stock": "300374.SZ",
+   "exit_day": "20251118",
+   "pnl": 0.009724221195654081,
+   "entry_day": "20251105",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20251119",
+   "pnl": -0.02218687467237701,
+   "entry_day": "20251111",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "603069.SH",
+   "exit_day": "20251120",
+   "pnl": 0.006899999999999906,
+   "entry_day": "20251119",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600233.SH",
+   "exit_day": "20251121",
+   "pnl": 0.008399999999999963,
+   "entry_day": "20251120",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002184.SZ",
+   "exit_day": "20251124",
+   "pnl": -0.10392039797227515,
+   "entry_day": "20251017",
+   "how": "stop"
+  },
+  {
+   "stock": "601727.SH",
+   "exit_day": "20251124",
+   "pnl": -0.08389926316446539,
+   "entry_day": "20251105",
+   "how": "stop"
+  },
+  {
+   "stock": "301158.SZ",
+   "exit_day": "20251124",
+   "pnl": -0.08412162643411691,
+   "entry_day": "20251106",
+   "how": "stop"
+  },
+  {
+   "stock": "603069.SH",
+   "exit_day": "20251124",
+   "pnl": -0.033400000000000096,
+   "entry_day": "20251121",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600352.SH",
+   "exit_day": "20251126",
+   "pnl": -0.04942042563612803,
+   "entry_day": "20251119",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300485.SZ",
+   "exit_day": "20251126",
+   "pnl": -0.029058785006857546,
+   "entry_day": "20251119",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20251127",
+   "pnl": 0.0,
+   "entry_day": "20251126",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "301158.SZ",
+   "exit_day": "20251127",
+   "pnl": 0.005635019999999935,
+   "entry_day": "20251125",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300374.SZ",
+   "exit_day": "20251128",
+   "pnl": -0.023539660000000184,
+   "entry_day": "20251126",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600352.SH",
+   "exit_day": "20251128",
+   "pnl": 0.0038000000000000256,
+   "entry_day": "20251127",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002184.SZ",
+   "exit_day": "20251203",
+   "pnl": -0.021648828248200025,
+   "entry_day": "20251127",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "301301.SZ",
+   "exit_day": "20251204",
+   "pnl": -0.08390687075639247,
+   "entry_day": "20251117",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600143.SH",
+   "exit_day": "20251204",
+   "pnl": 0.007805750000000167,
+   "entry_day": "20251202",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600257.SH",
+   "exit_day": "20251205",
+   "pnl": 0.06782469329593388,
+   "entry_day": "20251128",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002739.SZ",
+   "exit_day": "20251209",
+   "pnl": -0.010668837852257806,
+   "entry_day": "20251120",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002184.SZ",
+   "exit_day": "20251209",
+   "pnl": -0.008000000000000007,
+   "entry_day": "20251208",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002184.SZ",
+   "exit_day": "20251210",
+   "pnl": -0.005900000000000016,
+   "entry_day": "20251209",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20251211",
+   "pnl": -0.034081755570625094,
+   "entry_day": "20251205",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300295.SZ",
+   "exit_day": "20251215",
+   "pnl": -0.14172606354853456,
+   "entry_day": "20251124",
+   "how": "stop"
+  },
+  {
+   "stock": "002390.SZ",
+   "exit_day": "20251215",
+   "pnl": -0.20481976345600006,
+   "entry_day": "20251210",
+   "how": "stop"
+  },
+  {
+   "stock": "603188.SH",
+   "exit_day": "20251217",
+   "pnl": -0.10446602620600542,
+   "entry_day": "20251107",
+   "how": "stop"
+  },
+  {
+   "stock": "002928.SZ",
+   "exit_day": "20251223",
+   "pnl": -0.005499999999999949,
+   "entry_day": "20251222",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "603069.SH",
+   "exit_day": "20251231",
+   "pnl": 0.16246750356074902,
+   "entry_day": "20251212",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "301158.SZ",
+   "exit_day": "20260105",
+   "pnl": 0.04482049827881851,
+   "entry_day": "20251210",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002587.SZ",
+   "exit_day": "20260106",
+   "pnl": 0.005906600000000095,
+   "entry_day": "20251231",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600352.SH",
+   "exit_day": "20260107",
+   "pnl": 0.08986880103969241,
+   "entry_day": "20251201",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20260108",
+   "pnl": -0.0027171199999997953,
+   "entry_day": "20260106",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600801.SH",
+   "exit_day": "20260112",
+   "pnl": 0.07339172378736225,
+   "entry_day": "20251203",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300523.SZ",
+   "exit_day": "20260114",
+   "pnl": 0.0043999999999999595,
+   "entry_day": "20260113",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "605388.SH",
+   "exit_day": "20260114",
+   "pnl": -0.061592580420239074,
+   "entry_day": "20251217",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600352.SH",
+   "exit_day": "20260116",
+   "pnl": -0.033771497164150066,
+   "entry_day": "20260107",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "000159.SZ",
+   "exit_day": "20260119",
+   "pnl": 0.0031000000000001027,
+   "entry_day": "20260116",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002495.SZ",
+   "exit_day": "20260119",
+   "pnl": -0.0669095018605893,
+   "entry_day": "20251223",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "001379.SZ",
+   "exit_day": "20260120",
+   "pnl": -0.030524923100821666,
+   "entry_day": "20260114",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "603879.SH",
+   "exit_day": "20260121",
+   "pnl": -0.09214179059332595,
+   "entry_day": "20260108",
+   "how": "stop"
+  },
+  {
+   "stock": "600257.SH",
+   "exit_day": "20260126",
+   "pnl": 0.12849316320462956,
+   "entry_day": "20251208",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002928.SZ",
+   "exit_day": "20260127",
+   "pnl": -0.007236128382135276,
+   "entry_day": "20260105",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300485.SZ",
+   "exit_day": "20260129",
+   "pnl": -0.07762596049900006,
+   "entry_day": "20260126",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300143.SZ",
+   "exit_day": "20260203",
+   "pnl": -0.09710326078278275,
+   "entry_day": "20260115",
+   "how": "stop"
+  },
+  {
+   "stock": "600748.SH",
+   "exit_day": "20260203",
+   "pnl": -0.10870466985063665,
+   "entry_day": "20260119",
+   "how": "stop"
+  },
+  {
+   "stock": "605050.SH",
+   "exit_day": "20260203",
+   "pnl": -0.016403810696188237,
+   "entry_day": "20260126",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300485.SZ",
+   "exit_day": "20260205",
+   "pnl": -0.008099999999999996,
+   "entry_day": "20260204",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600257.SH",
+   "exit_day": "20260206",
+   "pnl": -0.019299999999999984,
+   "entry_day": "20260204",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "001379.SZ",
+   "exit_day": "20260210",
+   "pnl": -0.013399999999999967,
+   "entry_day": "20260209",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002760.SZ",
+   "exit_day": "20260225",
+   "pnl": 0.016742085850130817,
+   "entry_day": "20260129",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002646.SZ",
+   "exit_day": "20260227",
+   "pnl": 0.0034000000000000696,
+   "entry_day": "20260226",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "001379.SZ",
+   "exit_day": "20260303",
+   "pnl": -0.08220000000000005,
+   "entry_day": "20260302",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300753.SZ",
+   "exit_day": "20260304",
+   "pnl": -0.09550346953198241,
+   "entry_day": "20260120",
+   "how": "stop"
+  },
+  {
+   "stock": "600233.SH",
+   "exit_day": "20260311",
+   "pnl": 0.09759003830122559,
+   "entry_day": "20260205",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300740.SZ",
+   "exit_day": "20260313",
+   "pnl": -0.11170585840610281,
+   "entry_day": "20260105",
+   "how": "stop"
+  },
+  {
+   "stock": "603680.SH",
+   "exit_day": "20260316",
+   "pnl": -0.11482629357531238,
+   "entry_day": "20260121",
+   "how": "stop"
+  },
+  {
+   "stock": "300740.SZ",
+   "exit_day": "20260318",
+   "pnl": 0.022014260000000174,
+   "entry_day": "20260316",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600352.SH",
+   "exit_day": "20260323",
+   "pnl": -0.14318520622571318,
+   "entry_day": "20260128",
+   "how": "stop"
+  },
+  {
+   "stock": "301158.SZ",
+   "exit_day": "20260323",
+   "pnl": -0.15389874210043608,
+   "entry_day": "20260311",
+   "how": "stop"
+  },
+  {
+   "stock": "002778.SZ",
+   "exit_day": "20260324",
+   "pnl": -0.08302893319039406,
+   "entry_day": "20251203",
+   "how": "stop"
+  },
+  {
+   "stock": "603188.SH",
+   "exit_day": "20260324",
+   "pnl": -0.09831047069145216,
+   "entry_day": "20260203",
+   "how": "stop"
+  },
+  {
+   "stock": "603070.SH",
+   "exit_day": "20260324",
+   "pnl": -0.08125398068692369,
+   "entry_day": "20260318",
+   "how": "stop"
+  },
+  {
+   "stock": "300765.SZ",
+   "exit_day": "20260331",
+   "pnl": 0.0704567339925406,
+   "entry_day": "20260325",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300982.SZ",
+   "exit_day": "20260403",
+   "pnl": -0.14867344798961535,
+   "entry_day": "20260324",
+   "how": "stop"
+  },
+  {
+   "stock": "300845.SZ",
+   "exit_day": "20260407",
+   "pnl": 0.03148852165113647,
+   "entry_day": "20260324",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300982.SZ",
+   "exit_day": "20260408",
+   "pnl": 0.05270700000000006,
+   "entry_day": "20260407",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "301301.SZ",
+   "exit_day": "20260413",
+   "pnl": -0.0447699184380691,
+   "entry_day": "20260326",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300982.SZ",
+   "exit_day": "20260414",
+   "pnl": 0.023401999999999923,
+   "entry_day": "20260413",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300740.SZ",
+   "exit_day": "20260417",
+   "pnl": 0.14422172820894397,
+   "entry_day": "20260403",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600801.SH",
+   "exit_day": "20260420",
+   "pnl": -0.001318509865954831,
+   "entry_day": "20260401",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600143.SH",
+   "exit_day": "20260421",
+   "pnl": 0.0725544382726726,
+   "entry_day": "20260403",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600496.SH",
+   "exit_day": "20260422",
+   "pnl": -0.0887455416500228,
+   "entry_day": "20251022",
+   "how": "stop"
+  },
+  {
+   "stock": "300683.SZ",
+   "exit_day": "20260422",
+   "pnl": 0.008489853968108196,
+   "entry_day": "20260211",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20260422",
+   "pnl": 0.004747000000000057,
+   "entry_day": "20260421",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300765.SZ",
+   "exit_day": "20260424",
+   "pnl": -0.09441181936781651,
+   "entry_day": "20260416",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600257.SH",
+   "exit_day": "20260424",
+   "pnl": -0.07185636859696054,
+   "entry_day": "20260413",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300485.SZ",
+   "exit_day": "20260429",
+   "pnl": -0.045062509219430336,
+   "entry_day": "20260423",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600257.SH",
+   "exit_day": "20260507",
+   "pnl": 0.003262737175512731,
+   "entry_day": "20260429",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20260511",
+   "pnl": 0.01880943816421965,
+   "entry_day": "20260423",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002390.SZ",
+   "exit_day": "20260512",
+   "pnl": 0.028037547901678117,
+   "entry_day": "20260421",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300692.SZ",
+   "exit_day": "20260515",
+   "pnl": -0.09035518894128058,
+   "entry_day": "20260420",
+   "how": "stop"
+  },
+  {
+   "stock": "600801.SH",
+   "exit_day": "20260518",
+   "pnl": -0.15013363358188325,
+   "entry_day": "20260427",
+   "how": "stop"
+  },
+  {
+   "stock": "600748.SH",
+   "exit_day": "20260518",
+   "pnl": -0.11828596966000471,
+   "entry_day": "20260511",
+   "how": "stop"
+  },
+  {
+   "stock": "002739.SZ",
+   "exit_day": "20260518",
+   "pnl": -0.031827309295348716,
+   "entry_day": "20260506",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300143.SZ",
+   "exit_day": "20260519",
+   "pnl": -0.0851332580739893,
+   "entry_day": "20260325",
+   "how": "stop"
+  },
+  {
+   "stock": "600801.SH",
+   "exit_day": "20260521",
+   "pnl": -0.017405000000000004,
+   "entry_day": "20260519",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "601002.SH",
+   "exit_day": "20260522",
+   "pnl": -0.11591067182214887,
+   "entry_day": "20260508",
+   "how": "stop"
+  },
+  {
+   "stock": "600143.SH",
+   "exit_day": "20260522",
+   "pnl": 0.003969485209698975,
+   "entry_day": "20260513",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300143.SZ",
+   "exit_day": "20260522",
+   "pnl": 0.0027960000000000207,
+   "entry_day": "20260521",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600233.SH",
+   "exit_day": "20260526",
+   "pnl": -0.08643527407635554,
+   "entry_day": "20260313",
+   "how": "stop"
+  },
+  {
+   "stock": "300683.SZ",
+   "exit_day": "20260526",
+   "pnl": -0.16354315374994366,
+   "entry_day": "20260519",
+   "how": "stop"
+  },
+  {
+   "stock": "300753.SZ",
+   "exit_day": "20260526",
+   "pnl": -0.07716060145476422,
+   "entry_day": "20260520",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "603680.SH",
+   "exit_day": "20260528",
+   "pnl": -0.13476115847694237,
+   "entry_day": "20260518",
+   "how": "stop"
+  },
+  {
+   "stock": "300692.SZ",
+   "exit_day": "20260528",
+   "pnl": 0.007203020120000181,
+   "entry_day": "20260526",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "000159.SZ",
+   "exit_day": "20260601",
+   "pnl": 0.03298352372500002,
+   "entry_day": "20260528",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002875.SZ",
+   "exit_day": "20260603",
+   "pnl": -0.04005099048395133,
+   "entry_day": "20260423",
+   "how": "stop"
+  },
+  {
+   "stock": "300523.SZ",
+   "exit_day": "20260604",
+   "pnl": -0.09476817596981935,
+   "entry_day": "20260522",
+   "how": "stop"
+  },
+  {
+   "stock": "002760.SZ",
+   "exit_day": "20260608",
+   "pnl": -0.02181999999999995,
+   "entry_day": "20260605",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "601727.SH",
+   "exit_day": "20260609",
+   "pnl": -0.14170460675411267,
+   "entry_day": "20260526",
+   "how": "stop"
+  },
+  {
+   "stock": "300120.SZ",
+   "exit_day": "20260609",
+   "pnl": 0.1465312068035287,
+   "entry_day": "20260528",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300982.SZ",
+   "exit_day": "20260610",
+   "pnl": -0.1674909707015969,
+   "entry_day": "20260601",
+   "how": "stop"
+  },
+  {
+   "stock": "603070.SH",
+   "exit_day": "20260612",
+   "pnl": -0.11507377788073414,
+   "entry_day": "20260521",
+   "how": "stop"
+  },
+  {
+   "stock": "300845.SZ",
+   "exit_day": "20260616",
+   "pnl": -0.10528242967796142,
+   "entry_day": "20260608",
+   "how": "stop"
+  },
+  {
+   "stock": "600496.SH",
+   "exit_day": "20260618",
+   "pnl": -0.13068257674491968,
+   "entry_day": "20260603",
+   "how": "stop"
+  },
+  {
+   "stock": "603070.SH",
+   "exit_day": "20260623",
+   "pnl": -0.10117692978684645,
+   "entry_day": "20260616",
+   "how": "stop"
+  },
+  {
+   "stock": "300295.SZ",
+   "exit_day": "20260626",
+   "pnl": -0.13585614825851777,
+   "entry_day": "20260526",
+   "how": "stop"
+  },
+  {
+   "stock": "002594.SZ",
+   "exit_day": "20260626",
+   "pnl": -0.14628865418509152,
+   "entry_day": "20260612",
+   "how": "stop"
+  },
+  {
+   "stock": "002760.SZ",
+   "exit_day": "20260626",
+   "pnl": -0.11440387033379862,
+   "entry_day": "20260609",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300740.SZ",
+   "exit_day": "20260701",
+   "pnl": 0.03977602894780574,
+   "entry_day": "20260626",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "603069.SH",
+   "exit_day": "20260706",
+   "pnl": -0.06783365700275723,
+   "entry_day": "20260617",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "002587.SZ",
+   "exit_day": "20260709",
+   "pnl": -0.15000881039232417,
+   "entry_day": "20260525",
+   "how": "stop"
+  },
+  {
+   "stock": "601727.SH",
+   "exit_day": "20260709",
+   "pnl": -0.04943446067772084,
+   "entry_day": "20260629",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300854.SZ",
+   "exit_day": "20260720",
+   "pnl": -0.21338218399880482,
+   "entry_day": "20260304",
+   "how": "stop"
+  },
+  {
+   "stock": "600143.SH",
+   "exit_day": "20260720",
+   "pnl": -0.135752906318915,
+   "entry_day": "20260623",
+   "how": "stop"
+  },
+  {
+   "stock": "002928.SZ",
+   "exit_day": "20260720",
+   "pnl": -0.0991061247887256,
+   "entry_day": "20260703",
+   "how": "stop"
+  },
+  {
+   "stock": "300740.SZ",
+   "exit_day": "20260720",
+   "pnl": -0.22566616331381673,
+   "entry_day": "20260706",
+   "how": "stop"
+  },
+  {
+   "stock": "002587.SZ",
+   "exit_day": "20260727",
+   "pnl": 0.02999969969377614,
+   "entry_day": "20260722",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "000159.SZ",
+   "exit_day": "20260729",
+   "pnl": -0.007694547564662035,
+   "entry_day": "20260626",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600233.SH",
+   "exit_day": "20260806",
+   "pnl": 0.18354194212517405,
+   "entry_day": "20260618",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002875.SZ",
+   "exit_day": "20260814",
+   "pnl": 0.1429753633514228,
+   "entry_day": "20260717",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600143.SH",
+   "exit_day": "20260818",
+   "pnl": 0.15904467983603698,
+   "entry_day": "20260721",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300692.SZ",
+   "exit_day": "20260819",
+   "pnl": 0.15885445990858482,
+   "entry_day": "20260610",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600801.SH",
+   "exit_day": "20260820",
+   "pnl": 0.09208917184685084,
+   "entry_day": "20260727",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300485.SZ",
+   "exit_day": "20260821",
+   "pnl": 0.10850285174271002,
+   "entry_day": "20260723",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300740.SZ",
+   "exit_day": "20260825",
+   "pnl": 0.03796887288500006,
+   "entry_day": "20260821",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600257.SH",
+   "exit_day": "20260825",
+   "pnl": 0.16528781785030477,
+   "entry_day": "20260722",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20260827",
+   "pnl": 0.012175161478402918,
+   "entry_day": "20260814",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300854.SZ",
+   "exit_day": "20260831",
+   "pnl": 0.03710135109422352,
+   "entry_day": "20260807",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600257.SH",
+   "exit_day": "20260902",
+   "pnl": 0.017513636057116644,
+   "entry_day": "20260827",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300120.SZ",
+   "exit_day": "20260902",
+   "pnl": -0.02867799999999998,
+   "entry_day": "20260901",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600233.SH",
+   "exit_day": "20260902",
+   "pnl": -0.051429043286463805,
+   "entry_day": "20260820",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300753.SZ",
+   "exit_day": "20260904",
+   "pnl": -0.013994272474914804,
+   "entry_day": "20260821",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300692.SZ",
+   "exit_day": "20260908",
+   "pnl": 0.025900999999999952,
+   "entry_day": "20260907",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "300854.SZ",
+   "exit_day": "20260911",
+   "pnl": -0.1475454923197146,
+   "entry_day": "20260903",
+   "how": "stop"
+  },
+  {
+   "stock": "600143.SH",
+   "exit_day": "20260914",
+   "pnl": -0.11328278841739403,
+   "entry_day": "20260819",
+   "how": "stop"
+  },
+  {
+   "stock": "300753.SZ",
+   "exit_day": "20260915",
+   "pnl": -0.02307300000000012,
+   "entry_day": "20260914",
+   "how": "rotate_out"
+  },
+  {
+   "stock": "600019.SH",
+   "exit_day": "20260916",
+   "pnl": 0.010351274330893778,
+   "entry_day": "20260903",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300753.SZ",
+   "exit_day": "20260916",
+   "pnl": 0.004523000000000055,
+   "entry_day": "20260915",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600496.SH",
+   "exit_day": "20260918",
+   "pnl": 0.0437502338573752,
+   "entry_day": "20260915",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "600352.SH",
+   "exit_day": "20261012",
+   "pnl": -0.06906383120605808,
+   "entry_day": "20260701",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "301158.SZ",
+   "exit_day": "20261012",
+   "pnl": -0.0553416034954165,
+   "entry_day": "20260807",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "002928.SZ",
+   "exit_day": "20261012",
+   "pnl": -0.025685743570903585,
+   "entry_day": "20260814",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300765.SZ",
+   "exit_day": "20261012",
+   "pnl": 0.036085912589941094,
+   "entry_day": "20260911",
+   "how": "sell_signal"
+  },
+  {
+   "stock": "300753.SZ",
+   "exit_day": "20261012",
+   "pnl": -0.03959688665652639,
+   "entry_day": "20260924",
+   "how": "rotate_out"
+  }
+ ]
+}
