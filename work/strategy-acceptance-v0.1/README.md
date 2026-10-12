@@ -12,7 +12,7 @@
 矩阵必须声明完整的 `global_requirements` 和布尔型 `policy` 门禁；证据必须使用
 `strategy_acceptance_evidence/v1`，来源日期回执要求带时区时间戳和 SHA256，三组切分必须非空、日期有序且样本 ID 不跨组。来源哈希数量不足以覆盖样本数、`NaN/Inf` 数值、非只读或错误 schema 的 P1 报告都会阻断。CLI 输入异常会写入 `status=error` 的只读报告并返回非零码。
 
-`tools/audit_strategy_acceptance.py` 只读读取矩阵、证据清单和 P1 报告。当前矩阵将标准定义、交易日日历、训练、金融执行和商业化开关全部设为关闭，因此任何策略最多只能得到 `ready_for_shadow_review`，不能获得 `training_eligible`、`production_eligible` 或收费资格。缺证据时固定输出 `blocked`，不会补造排程执行或交易回执。
+`tools/audit_strategy_acceptance.py` 只读读取矩阵、证据清单和 P1 报告。当前矩阵将标准定义、交易日日历、策略训练、传统训练、金融执行、模拟成交和商业化开关全部设为关闭，因此任何策略最多只能得到 `ready_for_shadow_review`，不能获得 `strategy_training_eligible`、`training_eligible`、`production_eligible` 或收费资格。缺证据时固定输出 `blocked`，不会补造排程执行或交易回执。
 
 运行示例：
 

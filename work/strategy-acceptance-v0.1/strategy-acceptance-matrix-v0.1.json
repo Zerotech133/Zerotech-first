@@ -4,7 +4,9 @@
   "policy": {
     "standard_definitions_certified": false,
     "calendar_certified": false,
+    "strategy_training_enabled": false,
     "financial_execution_enabled": false,
+    "simulated_execution_enabled": false,
     "training_enabled": false,
     "commercialization_enabled": false
   },
