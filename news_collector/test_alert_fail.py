@@ -317,6 +317,20 @@ class LauncherWiringTest(unittest.TestCase):
                 self.assertNotRegex(
                     source, r"quant_backtest[\\/]alert_fail\.py")
 
+    def test_python_alert_entries_use_observable_wrapper(self):
+        root = Path(__file__).resolve().parents[1]
+        callers = (
+            root / "quant_backtest" / "kg_check.py",
+            root / "quant_backtest" / "rps_resonance.py",
+            root / "quant_backtest" / "pick_archive_monitor.py",
+        )
+        for caller in callers:
+            with self.subTest(caller=caller):
+                source = caller.read_text(encoding="utf-8")
+                self.assertIn("alert_fail_wrap.py", source)
+                self.assertNotIn("from alert_fail import", source)
+                self.assertNotIn("import alert_fail", source)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
