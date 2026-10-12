@@ -1,5 +1,5 @@
 {
-  "_note": "组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地）。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。",
+  "_note": "组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编）。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。",
   "org": "laotian_ai",
   "report_to": "human",
   "chief": {
@@ -7,14 +7,15 @@
     "role_profile": "chief_of_staff",
     "llm_binding": "ollama/qwen3.5:9b",
     "binding_note": "35b 于 2026-10-08 20:57 实测：本机显存不足溢出 CPU，2x300s 超时未完成单次判读（EXIT=2）——实时场景不可用，硬件扩容后再评估；9b 判读质量已验证（命中倒戈/假收敛/全HOLD 三要点）",
-    "status": "skeleton",
-    "skeleton_note": "v0.1 骨架已立（agent_platform/a0_agent.py 判读能力，live 9b 验证通过）；automation 接入待拍板"
+    "status": "active",
+    "status_note": "K-ORG-015 起转 active：a0_agent.py 9b 判读 live 验证通过 + 日报 automation 17:35（K-ORG-004）实跑中 + A0 点评产线连续出稿（影子日报 10-08~10-12）"
   },
   "departments": [
     {
       "dept": "invest",
       "name": "投研部",
       "lead": null,
+      "status": "active",
       "charter": "选股研究·多空辩论·情绪与基本面分析·投资决策",
       "agents": ["T1", "T2", "N1", "F1", "D1"],
       "teams": ["alpha"],
@@ -24,15 +25,70 @@
       "dept": "dev",
       "name": "研发部",
       "lead": null,
+      "status": "active",
+      "charter": "拉代码·优化代码·训练模型·code review（K-ORG-015 实例化）",
+      "agents": ["DEV1", "DEV2"],
+      "agent_profiles": [
+        {
+          "agent_id": "DEV1",
+          "role_profile": "code_engineer",
+          "charter_detail": "拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["devtask", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "dept/invest/decision", "agent/DEV1/*"],
+            "write": ["agent/DEV1/*", "dept/dev/observation"]
+          }
+        },
+        {
+          "agent_id": "DEV2",
+          "role_profile": "model_trainer",
+          "charter_detail": "模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）",
+          "llm_binding": "ollama/qwen3.5:9b",
+          "tools": ["ollama", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/dev/*", "agent/DEV2/*"],
+            "write": ["agent/DEV2/*", "dept/dev/observation", "domain/model_registry"]
+          }
+        }
+      ],
+      "source": "K-ORG-001 组织设计 P2 扩编，2026-10-13 K-ORG-015 老田指令实例化"
+    },
+    {
+      "dept": "trading",
+      "name": "交易部",
+      "lead": null,
+      "status": "active",
+      "charter": "执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）",
+      "agents": ["TR1"],
+      "agent_profiles": [
+        {
+          "agent_id": "TR1",
+          "role_profile": "trade_executor",
+          "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）",
+          "llm_binding": "ollama/qwen3.5:4b",
+          "binding_note": "执行员轻量路由即可，设计 §10 分层原则：轻量=4b",
+          "tools": ["paper_bridge", "events"],
+          "memory_grants": {
+            "read": ["domain/*", "dept/trading/*", "dept/invest/decision", "agent/TR1/*"],
+            "write": ["agent/TR1/*", "dept/trading/feedback"]
+          }
+        }
+      ],
+      "source": "K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）"
+    },
+    {
+      "dept": "marketing",
+      "name": "市场部",
       "status": "planned",
-      "charter": "拉代码·优化代码·训练模型（K-ORG-001 P2 扩编，待投研部影子验收后启动）",
+      "charter": "视频制作·宣发文案（K-ORG-001 P3 预留，AIGC 三补件落地后实例化）",
       "agents": [],
-      "source": "K-ORG-001 组织设计预留"
+      "source": "K-ORG-001 §11 AIGC 松耦合扩展预留"
     }
   ],
   "reporting": {
     "daily_push": "17:35",
-    "daily_push_note": "automation 工作日 17:35 --push（K-ORG-004）；P0 事件不受此时刻限制（run_shadow 即时告警 K-STOCK-013 + a0_chief 强制推）",
+    "daily_push_note": "automation 工作日 17:35 --push（K-ORG-004）；P0 事件不受此时刻限制（run_shadow 即时告警 K-STOCK-013 + a0_chief 强制推）。⚠ K-ORG-015：日报标题仍为投研部口径（影子期哨文件冻结），扩面待 10-15 影子解禁随 ROADMAP 批 C",
     "severity": { "P0": "immediate", "P1": "1h", "P2": "daily" }
   }
 }

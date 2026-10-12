@@ -1,0 +1,40 @@
+{
+  "_note": "研发部长期员工注册表（K-ORG-015 实例化）。与执行拓扑的差异：无辩论节点、无屏障汇总，DEV1/DEV2 为常驻岗位，由任务单（tools/devtask.py）驱动，非流水线触发。schema 对齐 team_invest.json 以复用 interpreter 校验。",
+  "team": "devcore",
+  "dept": "dev",
+  "description": "研发部核心岗：代码工程师 + 模型训练师",
+  "agents": [
+    {
+      "agent_id": "DEV1",
+      "role_profile": "code_engineer",
+      "analysis_type": "code_engineering",
+      "node_key": "dev1_code",
+      "parent_node_keys": [],
+      "level": 1,
+      "is_parallel": true,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["devtask", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "dept/invest/decision", "agent/DEV1/*"],
+        "write": ["agent/DEV1/*", "dept/dev/observation"]
+      }
+    },
+    {
+      "agent_id": "DEV2",
+      "role_profile": "model_trainer",
+      "analysis_type": "model_training",
+      "node_key": "dev2_train",
+      "parent_node_keys": ["dev1_code"],
+      "level": 2,
+      "is_parallel": false,
+      "wait_all_complete": false,
+      "llm_binding": "ollama/qwen3.5:9b",
+      "tools": ["ollama", "events"],
+      "memory_grants": {
+        "read": ["domain/*", "dept/dev/*", "agent/DEV2/*"],
+        "write": ["agent/DEV2/*", "dept/dev/observation", "domain/model_registry"]
+      }
+    }
+  ]
+}
