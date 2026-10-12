@@ -104,7 +104,14 @@ def check_c3_stops(cur, day):
             a["no_stop"].append(r["stock"])
     us = by_acct.get(US_ACCOUNTS[0], {"n": 0, "with_stop": 0})
     chaser = by_acct.get("chaser", {"n": 0, "with_stop": 0})
-    core_ok = us["n"] > 0 and us["with_stop"] == us["n"]
+    if us["n"] == 0:
+        # K-STOCK-192: US 无持仓=判据未激活（US 未成交无从挂止损），SKIP 而非
+        # FAIL——否则 C2 FAIL 时 C3 必然陪绑 FAIL（伴生噪声污染归因）；
+        # FAIL 收敛到「有持仓但无止损=真缺口」。G2 接线已核实（cmd_settle US 段
+        # 成交后 _stop_dist_of 自动挂，us_qingping=0.08 档案承载）。
+        return None, {"skip": "US 无持仓（未成交，判据未激活；成交后 G2 自动挂 0.08）",
+                      "by_account": by_acct}
+    core_ok = us["with_stop"] == us["n"]
     chaser_ok = chaser["n"] == 0 or chaser["with_stop"] == chaser["n"]
     ok = core_ok and chaser_ok
     return ok, {"by_account": by_acct,

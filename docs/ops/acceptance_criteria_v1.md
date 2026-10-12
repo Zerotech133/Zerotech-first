@@ -9,7 +9,7 @@
 |---|---|---|---|
 | C1 CN filled | **`filled >= 4`**（main/chaser，fill 字段齐全） | PASS/FAIL | **B（≥ 判据）**：超额成交是好消息不判 FAIL；残留 pending 降为观察项 `pending_watch` 不阻塞（过期单清理属运维线非撮合链缺陷） |
 | C2 US filled | `filled == 6` 且 pending == 0（us_qingping） | PASS/FAIL | 硬等式：US 无超额单源（就 6 笔 pending）；数据源延迟致 pending 保持=如实 FAIL（归因清晰） |
-| C3 止损自动挂 | US 持仓 stop_price 全非空（核心）+ chaser 同断言；main 只展示不并判据 | PASS/FAIL | 分层断言（069c 口径）；chaser/us_qingping 接线缺口如实 FAIL 不阻塞总判外的归因记录 |
+| C3 止损自动挂 | US 持仓 stop_price 全非空（核心）+ chaser 同断言；main 只展示不并判据；**US 无持仓=SKIP（判据未激活，192 澄清——非口径变更）** | PASS/FAIL/SKIP | 分层断言（069c 口径）；接线已核实（G2=cli settle US 段 + trainee auto_stops） |
 | C4 快照首战 | positions_snapshot 验收日行数 > 0（双日期形态兼容） | PASS/FAIL | K-STOCK-189 修复 |
 | C5 幂等 | 同日同 ref（非空）至多一条 filled | PASS/FAIL | K-STOCK-189 修复（空 ref 剔除） |
 
