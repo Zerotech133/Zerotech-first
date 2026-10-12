@@ -167,7 +167,8 @@ def build_control_card():
             s.get("kind") or ""))
     els.append({"tag": "markdown", "content": "\n".join(lines) or "（无订阅）"})
     for s in subs:
-        sid, name = s.get("id"), (s.get("name") or sid)[:8]
+        sid = s.get("id")
+        name = (s.get("name") or sid or "")[:8]  # K-STOCK-193: 原 (name or sid) 在同语句解包中引用 sid，首项缺 name 即 NameError，非首项则误用上一项 id
         els.append({"tag": "action", "actions": [
             (_btn("关 %s" % name,
                   {"tag": "ctl:sub_toggle", "id": sid, "to": "off"}, "danger")
