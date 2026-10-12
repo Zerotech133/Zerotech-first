@@ -169,8 +169,12 @@ def main():
             print(b, "\n" + "─" * 40)
         print("DRY_RUN (add --push to send)")
         return
-    if card_build.push_card(card):
-        print("DAILY_REPORT pushed")
+    # K163 三目标推送：首目标（个人）card_build 完整通道，家人群/量化群 OpenAPI
+    # 直连——复用 alert_push.push_card_multi 判例，勿在此重写发送逻辑
+    from alert_push import push_card_multi, _targets
+    res = push_card_multi(card, targets=_targets(cfg))
+    print("DAILY_REPORT pushed %s" % res)
+    if res.get("个人"):  # 首目标成功即触发文档刷新（群目标成败已含在 res 打印里）
         try:  # 同步刷新飞书简报文档（失败静默）
             import news_doc_board
             news_doc_board.refresh()
