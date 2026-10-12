@@ -5,13 +5,14 @@
 供盘后一条命令验收；提前跑（盘前/周末）应全部 FAIL——即探测器自证有效。
 
 判据对应 docs/ops/2026-10-13_周一撮合验收清单.md §2：
-  C1 CN filled >= 4（main/chaser 各 2，fill 字段齐全；K-STOCK-191 口径 B：
-     ≥ 判据——超额成交是好消息不判 FAIL，残留 pending 降为观察项不阻塞）
-  C2 US 6 笔 pending→filled（us_qingping 6，硬等式——US 无超额单源）
-  C3 持仓生成后止损自动挂出（订单类 stop 或账本 stops 非空）
-  C4 positions_snapshot 出现验收日快照行（首战）
-  C5 幂等：同一 order_id 至多一条 filled 记录（无重复成交）
-口径版本化：docs/ops/acceptance_criteria_v1.md（改口径必升版本）
+  C1 CN 批次(plan_date=--plan-day, 默认 20261012) filled >= 4（main/chaser，
+     fill 字段齐全；191 口径 B：≥ 判据，残留 pending 降观察项；
+     209 v1.1：批次口径——成交日允许跨验收日，CN 10-12 成交 US 10-13 成交）
+  C2 US 批次 6 笔 pending→filled（us_qingping，硬等式——US 无超额单源）
+  C3 持仓生成后止损自动挂出（US 无持仓=SKIP，192）
+  C4 positions_snapshot 出现验收日(--date)快照行（首战）
+  C5 幂等：同日同 ref 至多一条 filled（无重复成交）
+口径版本化：docs/ops/acceptance_criteria_v1.md（v1.1，改口径必升版本）
 
 用法：
   python acceptance_check.py --date 20261013          # 周一盘后验收
@@ -36,56 +37,54 @@ def ro_connect():
     return con
 
 
-def check_c1_cn_filled(cur, day):
-    # 口径（K-STOCK-191 拍板 B，老田 10-12）：filled >= CN_EXPECT 即 PASS——
-    #   超额成交（涨停拒单复活/普涨多成交）是好消息，硬等式判 FAIL 不合常理；
-    #   残留 pending 降为观察项（pending_watch）不阻塞——过期单清理属运维线
-    #   （chaser/人工），非撮合链缺陷。
-    # 成交按 fill_date=验收日；残留 pending 按 plan_date<=验收日（含过期单）
+def check_c1_cn_filled(cur, day, plan_day):
+    # 口径 v1.1（K-STOCK-209 修订，老田 10-12 拍板 B 语义不变）：验收主语=
+    # 「20261012 落单批次转 filled」——批次按 plan_date=plan_day 圈定，成交日
+    # 允许跨验收日（实况：CN 10-12 成交、US 10-13 成交；v1 的 fill_date=验收日
+    # 过滤在跨日场景会把已成交批次误判 FAIL）。批次隔离天然免疫历史/未来
+    # 批次混入（201 防混入诉求由此继承，不再依赖 fill_date==day）。
+    # filled >= CN_EXPECT 即 PASS（191 拍板 B）；批次内残留 pending 降观察项。
     rows = cur.execute(
         "SELECT id, account_id, stock, qty, status, fill_date, filled_price,"
         " filled_qty, fee, plan_date, reason FROM orders"
-        " WHERE account_id IN (?,?) AND (fill_date=? OR plan_date<=?)",
-        CN_ACCOUNTS + (day, day)).fetchall()
-    # K-STOCK-201: filled 必须按 fill_date=验收日 过滤（v1 口径「成交按 fill_date=
-    # 验收日」）——原实现只靠 OR plan_date<=day 选行，历史成交（fill_date<验收日）
-    # 会被误计入当日 filled（明细失真；≥ 判据下不影响 PASS/FAIL 但口径不实）。
-    # 注：表存 fill_date=YYYYMMDD 无连字符（K-STOCK-200 判例），与入参同形态直比。
+        " WHERE account_id IN (?,?) AND plan_date=?",
+        CN_ACCOUNTS + (plan_day,)).fetchall()
     filled = [r for r in rows if r["status"] == "filled"
-              and r["fill_date"] == day
               and r["filled_price"] and r["filled_qty"]]
     pending = [r for r in rows if r["status"] == "pending"]
     rejected = [r for r in rows if r["status"] == "rejected"]
     ok = len(filled) >= CN_EXPECT
     detail = {"expected_min": CN_EXPECT, "filled": len(filled),
+              "batch": plan_day,
               "pending_watch": len(pending),
               "rejected": [{"id": r["id"], "stock": r["stock"],
                             "why": (r["reason"] or "")[:80]} for r in rejected],
               "fills": [{k: r[k] for k in ("id", "account_id", "stock", "qty",
-                                           "filled_price", "filled_qty", "fee")}
+                                           "fill_date", "filled_price",
+                                           "filled_qty", "fee")}
                         for r in filled]}
     return ok, detail
 
 
-def check_c2_us_filled(cur, day):
+def check_c2_us_filled(cur, day, plan_day):
+    # 口径 v1.1：同 C1 批次口径（plan_date=plan_day 圈定 US 6 笔），硬等式不变
     rows = cur.execute(
         "SELECT id, stock, qty, status, fill_date, filled_price, filled_qty,"
         " plan_date, reason FROM orders"
-        " WHERE account_id=? AND (fill_date=? OR plan_date<=?)",
-        (US_ACCOUNTS[0], day, day)).fetchall()
-    # K-STOCK-201: 同 C1——filled 按 fill_date=验收日 过滤（US_EXPECT 硬等式下
-    # 历史成交误计会直接判错：将来若有旧批次成交，等式必假 FAIL）
+        " WHERE account_id=? AND plan_date=?",
+        (US_ACCOUNTS[0], plan_day)).fetchall()
     filled = [r for r in rows if r["status"] == "filled"
-              and r["fill_date"] == day
               and r["filled_price"] and r["filled_qty"]]
     pending = [r for r in rows if r["status"] == "pending"]
     rejected = [r for r in rows if r["status"] == "rejected"]
     ok = len(filled) == US_EXPECT and not pending
     detail = {"expected": US_EXPECT, "filled": len(filled),
+              "batch": plan_day,
               "pending_left": len(pending),
               "rejected": [{"id": r["id"], "stock": r["stock"],
                             "why": (r["reason"] or "")[:80]} for r in rejected],
-              "fills": [{k: r[k] for k in ("id", "stock", "qty", "filled_price")}
+              "fills": [{k: r[k] for k in ("id", "stock", "qty", "fill_date",
+                                           "filled_price")}
                         for r in filled]}
     return ok, detail
 
@@ -156,7 +155,9 @@ def check_c5_idempotent(cur, day):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="周一撮合验收只读验收器")
-    ap.add_argument("--date", default="20261013", help="验收日 YYYYMMDD")
+    ap.add_argument("--date", default="20261013", help="验收日 YYYYMMDD（管 C4/C5 及总判语境）")
+    ap.add_argument("--plan-day", default="20261012",
+                    help="落单批次日 YYYYMMDD（管 C1/C2 批次圈定，v1.1 口径）")
     ap.add_argument("--json", action="store_true", help="机器可读输出")
     args = ap.parse_args(argv)
 
@@ -167,9 +168,10 @@ def main(argv=None):
     cur = con.cursor()
     results = {
         "date": args.date,
+        "plan_day": args.plan_day,
         "db": str(DB),
-        "C1_cn_filled": check_c1_cn_filled(cur, args.date),
-        "C2_us_filled": check_c2_us_filled(cur, args.date),
+        "C1_cn_filled": check_c1_cn_filled(cur, args.date, args.plan_day),
+        "C2_us_filled": check_c2_us_filled(cur, args.date, args.plan_day),
         "C3_stops_auto": check_c3_stops(cur, args.date),
         "C4_snapshot": check_c4_snapshot(cur, args.date),
         "C5_idempotent": check_c5_idempotent(cur, args.date),
