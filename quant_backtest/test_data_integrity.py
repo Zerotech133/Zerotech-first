@@ -193,6 +193,31 @@ def test_coverage_value_reports_missing_keys_instead_of_reference_size(tmp_path)
     assert entry["details"]["_summary"]["latest_unique_codes"] == 1
 
 
+def test_coverage_records_window_reference_and_stable_gap_evidence(tmp_path):
+    fixture(tmp_path)
+    path = tmp_path / "tdx" / "tdx_sector_daily" / "part_0000.parquet"
+    frame = pd.read_parquet(path)
+    frame.loc[frame.trade_date.ne("20260930")].to_parquet(path, index=False)
+    entry = metric(scan_integrity(tmp_path, today="20261007", run_probes=False),
+                   "tdx_sector_daily_daily_coverage")
+    summary = entry["details"]["_summary"]
+    assert summary["window_start"] == "20260924"
+    assert summary["window_end"] == "20260930"
+    assert summary["reference_date"] == "20260929"
+    assert len(summary["gap_keys"]["missing_keys_sample"]) == 10
+    assert len(summary["gap_keys"]["missing_keys_sha256"]) == 64
+
+
+def test_empty_day_is_marked_as_source_pending(tmp_path):
+    fixture(tmp_path)
+    path = tmp_path / "tdx" / "ts_daily" / "part_0000.parquet"
+    frame = pd.read_parquet(path)
+    frame.loc[frame.trade_date.ne("20260930")].to_parquet(path, index=False)
+    entry = metric(scan_integrity(tmp_path, today="20261007", run_probes=False),
+                   "ts_daily_daily_coverage")
+    assert entry["details"]["20260930"]["source_state"] == "source_empty_pending"
+
+
 def test_suspension_evidence_is_limited_to_verified_dates(tmp_path):
     fixture(tmp_path)
     path = tmp_path / "tdx" / "ts_daily" / "part_0000.parquet"

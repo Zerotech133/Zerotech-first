@@ -94,8 +94,11 @@ def build_model(data, state):
                 count = len(missing) if isinstance(missing, list) else (
                     max(0, reference - actual) if _number(reference) and reference > 0 and _number(actual) else None)
             valid = _number(actual) and actual >= 0 and _number(reference) and reference > 0 and _number(count) and count >= 0
+            source_state = row.get("source_state") if isinstance(row, dict) else None
             days[date] = {"actual": actual, "reference": reference, "missing_count": count,
                           "missing": missing, "status": ("gap" if count else "ok") if valid else "unknown",
+                          "source_state": source_state,
+                          "source_empty_pending": source_state == "source_empty_pending",
                           "gap_type": "keys" if per_key else "reference",
                           "qualified": bool(valid and count == 0 and actual < reference),
                           "details": row}
@@ -261,7 +264,9 @@ def render_dashboard(data, state, *, freshness_html, graph_html, nav, base_css, 
                 if day is None:
                     cells.append('<td><span class="muted">无结果</span></td>')
                     continue
-                if day["status"] == "gap":
+                if day.get("source_empty_pending"):
+                    label = "待来源核验"
+                elif day["status"] == "gap":
                     label = ("缺 %s" if day["gap_type"] == "keys" else "参考差 %s") % fmt(day["missing_count"])
                 elif day["status"] == "ok":
                     label = "资格后无缺键" if day["qualified"] else "无缺键" if day["gap_type"] == "keys" else "数量一致"

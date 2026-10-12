@@ -24,9 +24,10 @@ def join_daily_basic_to_kline(kline: pd.DataFrame, daily_basic: pd.DataFrame) ->
     left["_join_date"] = _date_series(left["trade_date"])
     right["_join_code"] = right["ts_code"].astype(str)
     right["_join_date"] = _date_series(right["trade_date"])
+    right["_daily_basic_match"] = True
     right = right.drop_duplicates(["_join_code", "_join_date"], keep="last")
     fields = [field for field in ["total_mv", "pe", "turnover_rate"] if field in right.columns]
-    merged = left.merge(right[["_join_code", "_join_date"] + fields], on=["_join_code", "_join_date"], how="left", suffixes=("", "_basic"))
+    merged = left.merge(right[["_join_code", "_join_date", "_daily_basic_match"] + fields], on=["_join_code", "_join_date"], how="left", suffixes=("", "_basic"))
     total_mv = merged.get("total_mv_basic", merged.get("total_mv"))
     if total_mv is not None:
         merged["market_cap"] = pd.to_numeric(total_mv, errors="coerce") * 10000.0
@@ -43,6 +44,7 @@ def join_daily_basic_to_kline(kline: pd.DataFrame, daily_basic: pd.DataFrame) ->
             merged[target] = merged[target].where(merged[target].notna(), basic_source)
         else:
             merged[target] = basic_source
+    merged["_daily_basic_match"] = merged.get("_daily_basic_match", pd.Series(False, index=merged.index)).fillna(False).astype(bool)
     return merged.drop(columns=["_join_code", "_join_date"], errors="ignore")
 
 
@@ -88,7 +90,10 @@ def valuation_field_coverage(view: pd.DataFrame) -> dict[str, Any]:
             "missing": total - present,
             "coverage": round(present / total, 6) if total else 0.0,
         }
-    return {"rows": total, "fields": fields}
+    matched = int(view["_daily_basic_match"].sum()) if "_daily_basic_match" in view else None
+    return {"rows": total, "source_matched_rows": matched,
+            "source_unmatched_rows": total - matched if matched is not None else None,
+            "fields": fields}
 
 
 def read_only_valuation_check(kline: pd.DataFrame, source_dir: str | Path) -> dict[str, Any]:

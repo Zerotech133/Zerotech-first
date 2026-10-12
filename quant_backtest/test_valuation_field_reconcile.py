@@ -53,3 +53,5 @@ def test_join_from_daily_basic_parts_only_reads_matching_keys(tmp_path):
     assert view.loc[0, "market_cap"] == 100000.0
     assert view.loc[0, "turnover"] == 1.2
     assert valuation_field_coverage(view)["fields"]["pe"]["coverage"] == 1.0
+    assert valuation_field_coverage(view)["source_matched_rows"] == 1
+    assert valuation_field_coverage(view)["source_unmatched_rows"] == 0

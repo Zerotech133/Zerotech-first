@@ -208,6 +208,71 @@ def _scan_news():
         return {**measured, "exists": True, "error": str(e)}
 
 
+def _scan_jev_reconciliation(news_db_path=None, queue_paths=None, receipt_paths=None):
+    """只读对账新闻库 pending、JEV staging 队列和判断回执。"""
+    db_path = Path(news_db_path or NEWS_DB)
+    if not db_path.exists():
+        return {"status": "UNKNOWN", "reason": "news_db_missing", "available": False}
+    try:
+        db = sqlite3.connect("file:" + str(db_path).replace("\\", "/") + "?mode=ro", uri=True)
+        pending_rows = db.execute("SELECT id FROM news WHERE jev IS NULL OR jev='' ").fetchall()
+        all_ids = {str(row[0]) for row in db.execute("SELECT id FROM news").fetchall()}
+        db.close()
+    except Exception as exc:
+        return {"status": "FAIL", "reason": "news_db_read_error", "error": str(exc), "available": True}
+    pending_ids = {str(row[0]) for row in pending_rows}
+    root = Path(HERE).parent
+    candidates = [Path(p) for p in (queue_paths or [])]
+    if not candidates:
+        candidates = sorted((root / "work").glob("jev_queue_staging_*.json"))
+    candidates = [p for p in candidates if p.exists()]
+    queue_path = max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
+    queue_items = []
+    if queue_path:
+        try:
+            payload = json.loads(queue_path.read_text(encoding="utf-8"))
+            if not isinstance(payload, list):
+                raise ValueError("队列不是数组")
+            queue_items = [dict(item) for item in payload if isinstance(item, dict) and item.get("id") is not None]
+        except Exception as exc:
+            return {"status": "FAIL", "reason": "queue_read_error", "error": str(exc),
+                    "available": True, "news_pending": len(pending_ids), "queue_path": str(queue_path)}
+    queue_ids = {str(item["id"]) for item in queue_items}
+    queue_pending = {str(item["id"]) for item in queue_items if str(item.get("status", "pending")) == "pending"}
+    queue_decided = {str(item["id"]) for item in queue_items if str(item.get("status", "")) == "decided"}
+    queue_blocked = {str(item["id"]) for item in queue_items if str(item.get("status", "")) == "blocked"}
+    receipt_candidates = [Path(p) for p in (receipt_paths or [])]
+    if not receipt_candidates:
+        receipt_candidates = sorted((root / "work").glob("jev_receipt_staging_*.jsonl"))
+    receipt_candidates = [p for p in receipt_candidates if p.exists()]
+    receipt_path = max(receipt_candidates, key=lambda p: p.stat().st_mtime) if receipt_candidates else None
+    receipt_ids, receipt_errors = set(), []
+    if receipt_path:
+        for number, line in enumerate(receipt_path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                item = json.loads(line)
+                if item.get("id") is not None:
+                    receipt_ids.add(str(item["id"]))
+            except (TypeError, ValueError):
+                receipt_errors.append(number)
+    pending_unqueued = sorted(pending_ids - queue_ids)
+    queue_orphans = sorted(queue_ids - all_ids)
+    status = "FAIL" if pending_unqueued or queue_blocked or receipt_errors else "OK"
+    return {
+        "status": status, "available": True, "news_pending": len(pending_ids),
+        "queue_total": len(queue_ids), "queue_pending": len(queue_pending),
+        "queue_decided": len(queue_decided), "queue_blocked": len(queue_blocked),
+        "receipt_rows": len(receipt_ids), "pending_unqueued": pending_unqueued[:100],
+        "pending_unqueued_count": len(pending_unqueued),
+        "queue_orphans": queue_orphans[:100], "queue_orphans_count": len(queue_orphans),
+        "receipt_errors": receipt_errors, "queue_path": str(queue_path) if queue_path else None,
+        "receipt_path": str(receipt_path) if receipt_path else None,
+        "production_write": False, "global_activation": False,
+    }
+
+
 def _scan_artifacts():
     """扫描策略产物：文件存在性 + 最后更新时间 + 距今天数。"""
     out = []
@@ -228,13 +293,22 @@ def _scan_artifacts():
     return out
 
 
-def _build_gaps(kline, news, artifacts=None):
+def _build_gaps(kline, news, artifacts=None, jev_reconciliation=None):
     """根据扫描结果生成缺口清单。"""
     gaps = []
     cn = kline.get("cn") or {}
     missing_fields = sorted(set(cn.get("missing_fields") or []))
     if missing_fields:
         gaps.append("A股关键字段缺失：%s" % ", ".join(missing_fields))
+    valuation = cn.get("valuation_fields") or {}
+    valuation_missing = {field: int(item.get("missing", 0)) for field, item in valuation.items()
+                         if isinstance(item, dict) and int(item.get("missing", 0) or 0)}
+    if valuation_missing:
+        source = cn.get("valuation_source") or {}
+        qualifier = ("来源未匹配/待业务分类" if source.get("unmatched_rows") else "待业务分类")
+        gaps.append("A股估值字段存在%s：%s" % (
+            qualifier, ", ".join("%s=%d" % (field, count)
+                                  for field, count in sorted(valuation_missing.items()))))
     if not kline["us"]["exists"] or kline["us"]["count"] == 0:
         gaps.append("美股 K 线缺失：盘前 L1 恒指/纳指/标普无本地验证")
     if not kline["hk"]["exists"] or kline["hk"]["count"] == 0:
@@ -249,6 +323,9 @@ def _build_gaps(kline, news, artifacts=None):
         gaps.append("新闻无研报源：券商研报/行业分析缺失")
     if news.get("exists") and news.get("jev_pending", 0) > 100:
         gaps.append("JEV 积压 %d 条未判断" % news["jev_pending"])
+    if isinstance(jev_reconciliation, dict) and jev_reconciliation.get("status") == "FAIL":
+        gaps.append("JEV staging/新闻库对账失败：%d 条新闻未进入队列" %
+                    int(jev_reconciliation.get("pending_unqueued_count", 0)))
     for artifact in artifacts or []:
         if not artifact.get("exists"):
             continue
@@ -276,12 +353,15 @@ def _annotate_cn_sample(kline):
             sample_path = Path(DATA) / "ashare" / str(sample["file"])
             frame = pq.read_table(str(sample_path)).to_pandas()
             view = join_daily_basic_from_dir(frame, source_dir)
-            cn["valuation_fields"] = valuation_field_coverage(view)["fields"]
+            coverage = valuation_field_coverage(view)
+            cn["valuation_fields"] = coverage["fields"]
             cn["valuation_source"] = {
                 "name": "ts_daily_basic",
                 "path": source_dir,
                 "status": "joined",
                 "rows": int(len(view)),
+                "matched_rows": coverage.get("source_matched_rows"),
+                "unmatched_rows": coverage.get("source_unmatched_rows"),
             }
             # 字段来自事实源即可消除结构性缺失告警；合法空值由 coverage 单独展示。
             cn["missing_fields"] = []
@@ -300,10 +380,12 @@ def scan_data_health():
     kline = {m: _scan_kline(m) for m in ("cn", "us", "hk", "crypto")}
     _annotate_cn_sample(kline)
     news = _scan_news()
+    jev_reconciliation = _scan_jev_reconciliation()
     artifacts = _scan_artifacts()
     return {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "kline": kline, "news": news, "strategy_artifacts": artifacts,
-            "gaps": _build_gaps(kline, news, artifacts)}
+            "jev_reconciliation": jev_reconciliation,
+            "gaps": _build_gaps(kline, news, artifacts, jev_reconciliation)}
 
 
 def _scan_tdx_info_db(path):
@@ -678,6 +760,7 @@ def scan_warehouse():
     kline = {mk: _scan_kline(mk) for mk in ("cn", "us", "hk", "crypto")}
     _annotate_cn_sample(kline)
     news = _scan_news()
+    jev_reconciliation = _scan_jev_reconciliation()
     tdx = _scan_tdx()
     tush = _scan_tushare()
     fresh = _scan_freshness()
@@ -816,6 +899,17 @@ def scan_warehouse():
                                   news.get("jev_pending", 0))}],
             "note": 'news.db主文件计入总容量；WAL另列 %s 字节，计量时点 %s' % (
                 news.get('wal_size_bytes', '未计量'), news.get('measured_at', '待核验'))})
+    if jev_reconciliation.get("available"):
+        groups.append({
+            "name": "JEV 队列对账", "kind": "jev_reconciliation",
+            "rows": [{"asset": "新闻库 pending / staging / receipt",
+                      "rows": "%d / %d / %d" % (
+                          jev_reconciliation.get("news_pending", 0),
+                          jev_reconciliation.get("queue_pending", 0),
+                          jev_reconciliation.get("receipt_rows", 0)),
+                      "latest": None, "size_mb": None, "age_hours": None,
+                      "extra": jev_reconciliation.get("status")}],
+            "note": "逐条 ID 对账；不把 staging 决策回写新闻库"})
     # 4. 策略产物
     groups.append({
         "name": "策略产物", "kind": "artifact",
@@ -852,7 +946,8 @@ def scan_warehouse():
            "sync_summary": {"tdx": tdx.get("sync_summary"),
                             "tushare": tush.get("sync_summary")},
            'freshness': {**fresh, 'counts': fresh_counts}, 'monitoring': monitoring,
-           "gaps": _build_gaps(kline, news, artifacts) + (
+           'jev_reconciliation': jev_reconciliation,
+           "gaps": _build_gaps(kline, news, artifacts, jev_reconciliation) + (
                ["FAIL freshness_scan: %s" % fresh_error] if fresh_error else []) + [
                "%s %s: %s" % (m["status"], m["name"], m["value"])
                for m in integrity["metrics"] if m["status"] in ("FAIL", "WARN")]}
