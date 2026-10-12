@@ -1,0 +1,400 @@
+{
+ "meta": {
+  "window": [
+   "20260912",
+   "20261012"
+  ],
+  "pool_size": 76,
+  "scanned": 76,
+  "no_data": [],
+  "data_range": "2023-04-03 → 2026-10-12",
+  "pit": "analyze 喂全历史（引擎确认滞后防前视），账本只取窗口内信号",
+  "adjustment": "引擎回测=tdx 因子复权 OHLC（202609→窗口尾 ffill）；前瞻收益=官方 pct_chg 复权",
+  "no_factor_excluded": []
+ },
+ "signal_ledger": [
+  {
+   "stock": "000820.SZ",
+   "dt": 20260915,
+   "type": "3买"
+  },
+  {
+   "stock": "002594.SZ",
+   "dt": 20260922,
+   "type": "3卖"
+  },
+  {
+   "stock": "002605.SZ",
+   "dt": 20260922,
+   "type": "3卖"
+  },
+  {
+   "stock": "002928.SZ",
+   "dt": 20260921,
+   "type": "3卖"
+  },
+  {
+   "stock": "300295.SZ",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "300523.SZ",
+   "dt": 20260921,
+   "type": "3买"
+  },
+  {
+   "stock": "300845.SZ",
+   "dt": 20260915,
+   "type": "3买"
+  },
+  {
+   "stock": "600081.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "600143.SH",
+   "dt": 20260922,
+   "type": "3卖"
+  },
+  {
+   "stock": "600233.SH",
+   "dt": 20260921,
+   "type": "3卖"
+  },
+  {
+   "stock": "600257.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "600801.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "603188.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "603210.SH",
+   "dt": 20260916,
+   "type": "1买"
+  },
+  {
+   "stock": "603326.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "603768.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "603879.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "605388.SH",
+   "dt": 20260916,
+   "type": "3买"
+  },
+  {
+   "stock": "920183.BJ",
+   "dt": 20260922,
+   "type": "3卖"
+  }
+ ],
+ "type_dist": {
+  "3买": 12,
+  "3卖": 6,
+  "1买": 1
+ },
+ "fwd_agg": {
+  "d5": {
+   "n": 19,
+   "mean": 0.0131,
+   "win_rate": 0.5789,
+   "median": 0.0116
+  },
+  "d10": {
+   "n": 19,
+   "mean": 0.0353,
+   "win_rate": 0.6316,
+   "median": 0.0367
+  },
+  "d20": {
+   "n": 19,
+   "mean": 0.0166,
+   "win_rate": 0.5789,
+   "median": 0.0136
+  }
+ },
+ "fwd_by_dir": {
+  "buy": {
+   "n": 13,
+   "d5_mean": 0.0368,
+   "d10_mean": 0.0633,
+   "d20_mean": 0.036
+  },
+  "sell": {
+   "n": 6,
+   "d5_mean": -0.0384,
+   "d10_mean": -0.0255,
+   "d20_mean": -0.0255
+  }
+ },
+ "backtest_rows": [
+  {
+   "stock": "000820.SZ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 96.87,
+   "max_dd": 0.0,
+   "buy_hold": -1.42
+  },
+  {
+   "stock": "002594.SZ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3卖"
+   ],
+   "trades": 0,
+   "win_rate": null,
+   "total_return": 0.0,
+   "max_dd": 0.0,
+   "buy_hold": -0.97
+  },
+  {
+   "stock": "002605.SZ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3卖"
+   ],
+   "trades": 0,
+   "win_rate": null,
+   "total_return": 0.0,
+   "max_dd": 0.0,
+   "buy_hold": 2.67
+  },
+  {
+   "stock": "002928.SZ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3卖"
+   ],
+   "trades": 0,
+   "win_rate": null,
+   "total_return": 0.0,
+   "max_dd": 0.0,
+   "buy_hold": -1.59
+  },
+  {
+   "stock": "300295.SZ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 309.98,
+   "max_dd": 0.0,
+   "buy_hold": 2.23
+  },
+  {
+   "stock": "300523.SZ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 196.64,
+   "max_dd": 0.0,
+   "buy_hold": 8.16
+  },
+  {
+   "stock": "300845.SZ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 156.79,
+   "max_dd": 0.0,
+   "buy_hold": 3.24
+  },
+  {
+   "stock": "600081.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 951.23,
+   "max_dd": 0.0,
+   "buy_hold": -1.82
+  },
+  {
+   "stock": "600143.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3卖"
+   ],
+   "trades": 0,
+   "win_rate": null,
+   "total_return": 0.0,
+   "max_dd": 0.0,
+   "buy_hold": -0.32
+  },
+  {
+   "stock": "600233.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3卖"
+   ],
+   "trades": 0,
+   "win_rate": null,
+   "total_return": 0.0,
+   "max_dd": 0.0,
+   "buy_hold": 4.33
+  },
+  {
+   "stock": "600257.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 566.36,
+   "max_dd": 0.0,
+   "buy_hold": -4.81
+  },
+  {
+   "stock": "600801.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 1111.86,
+   "max_dd": 0.0,
+   "buy_hold": -10.15
+  },
+  {
+   "stock": "603188.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 147.8,
+   "max_dd": 0.0,
+   "buy_hold": 5.08
+  },
+  {
+   "stock": "603210.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "1买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 8.62,
+   "max_dd": 0.0,
+   "buy_hold": 6.38
+  },
+  {
+   "stock": "603326.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 164.51,
+   "max_dd": 0.0,
+   "buy_hold": 0.81
+  },
+  {
+   "stock": "603768.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 12.43,
+   "max_dd": 0.0,
+   "buy_hold": 2.09
+  },
+  {
+   "stock": "603879.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 158.36,
+   "max_dd": 0.0,
+   "buy_hold": -5.46
+  },
+  {
+   "stock": "605388.SH",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3买"
+   ],
+   "trades": 1,
+   "win_rate": 100.0,
+   "total_return": 73.67,
+   "max_dd": 0.0,
+   "buy_hold": 10.33
+  },
+  {
+   "stock": "920183.BJ",
+   "adjusted": true,
+   "signals": 1,
+   "types": [
+    "3卖"
+   ],
+   "trades": 0,
+   "win_rate": null,
+   "total_return": 0.0,
+   "max_dd": 0.0,
+   "buy_hold": -1.03
+  }
+ ]
+}
