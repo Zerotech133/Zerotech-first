@@ -19,6 +19,7 @@ agent_auto_commit.py — 各 Agent 代码定时强制入库（portal 统揽板�
 退出码：0 = 成功/空跑/守卫拦截；2 = 提交失败（重试耗尽）
 """
 import json
+import re
 import subprocess
 import sys
 import time
@@ -78,6 +79,38 @@ def commit_with_retry(msg: str) -> subprocess.CompletedProcess:
 def staged_new_files() -> list:
     out = git("diff", "--cached", "--name-status").stdout
     return [line.split("\t")[-1] for line in out.splitlines() if line.startswith("A\t")]
+
+
+# ---- 敏感内容守卫（K-STOCK-185）：密钥/凭据不入 git 历史 ----
+# 文件名闸不受截断影响；内容闸对暂存 diff 全文扫（超长截断，漏扫残余
+# 风险可接受）。命中即 reset+SKIP 留人工甄别，与膨胀守卫同款处置。
+SECRET_FILE_RE = re.compile(
+    r"(^|/)(\.env(\..*)?|id_rsa[^/]*|\.netrc"
+    r"|[^/]*\.(pem|pfx|p12|keystore|token)$"
+    r"|[^/]*_(token|secret|key)$"
+    r"|[^/]*(secret|credential|api[_-]?key|private[_-]?key|access[_-]?token)"
+    r"[^/]*\.(json|ya?ml|txt|ini|cfg|conf|py)$)", re.I)
+SECRET_BODY_RE = re.compile(
+    r"(BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY"
+    r"|sk-[A-Za-z0-9_\-]{20,}"
+    r"|ghp_[A-Za-z0-9]{20,}"
+    r"|AKIA[0-9A-Z]{16}"
+    r"|xox[abp]-[A-Za-z0-9\-]{10,}"
+    r"|(?:GLM_API_KEY|API_KEY|SECRET_KEY)\s*=\s*[\"'][^\"']{8,}[\"'])")
+SECRET_SCAN_CAP = 8_000_000  # 暂存 diff 扫描字节上限
+
+
+def secret_reason() -> str:
+    """暂存改动命中敏感文件名/密钥特征则返回拦截原因，否则返回空串。"""
+    files = git("diff", "--cached", "--name-only", check=False).stdout.split()
+    for f in files:
+        if SECRET_FILE_RE.search(f.replace("\\", "/")):
+            return f"敏感文件名: {f}"
+    diff = git("diff", "--cached", "-U0", check=False).stdout
+    m = SECRET_BODY_RE.search(diff[:SECRET_SCAN_CAP])
+    if m:
+        return f"疑似密钥内容: {m.group(0)[:16]}***"
+    return ""
 
 
 def bloat_reason() -> str:
@@ -149,6 +182,13 @@ def main() -> int:
         if bloat:
             git("reset", "-q")  # 退暂存；工作区文件不动，等人工甄别
             status.update(ok=True, committed=False, detail=f"BLOAT_GUARD: {bloat}")
+            print(f"[{ts}] SKIP {status['detail']}")
+            return finish(status)
+
+        sec = secret_reason()  # K-STOCK-185：密钥/凭据不入 git 历史
+        if sec:
+            git("reset", "-q")
+            status.update(ok=True, committed=False, detail=f"SECRET_GUARD: {sec}")
             print(f"[{ts}] SKIP {status['detail']}")
             return finish(status)
 
