@@ -21,14 +21,14 @@
   body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
   .dim { color: var(--text-dim); }
   .num { font-family: Consolas, "Courier New", monospace; }
-  main { max-width: 1180px; margin: 0 auto; padding: 0 26px 56px; }
-  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: 1180px; margin: 0 auto; }
+  main { max-width: var(--page-w); margin: 0 auto; padding: 0 26px 56px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: var(--page-w); margin: 0 auto; }
   .brand { display: flex; align-items: center; gap: 12px; }
   .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
   .brand h1 { font-size: 17px; font-weight: 700; }
   .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
   .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
-  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: 1180px; margin: 0 auto; }
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: var(--page-w); margin: 0 auto; }
   .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
   .pill:hover { border-color: var(--link); color: var(--text); }
   .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }

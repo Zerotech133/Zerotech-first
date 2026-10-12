@@ -56,6 +56,7 @@
   --fs-xs: 11px;  --fs-s: 12.5px;  --fs-m: 13.5px;  --fs-l: 15px;  --fs-xl: 22px;
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
   --r-s: 6px; --r-m: 10px; --r-l: 14px; --r-pill: 16px;
+  --page-w: 1080px;  /* 内容区统一宽度（=首页标准，2026-10-13）*/
 
   /* ── 字体（2026-10-12 补：此前无全局字体，market.html 等裸奔页退化为浏览器衬线字）── */
   --font-ui:   'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
