@@ -115,7 +115,9 @@ def _try_zhipu_fallback(messages, ledger_model, orig_err) -> str | None:
     try:
         client = _LLMClient(glm_model=zname, timeout=120)
         text, _prov = client.chat(messages, json_mode=False, max_tokens=4000)
-    except Exception:
+    except Exception as e:
+        # 兜底失败必须显式留痕：静默 None 会让上层误报原始 gaorta 错误（排查血泪）
+        print(f"[zhipu-fallback] 兜底通道异常: {type(e).__name__}: {e}", file=sys.stderr)
         return None
     return text if (text or "").strip() else None
 
