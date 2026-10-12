@@ -1,0 +1,54 @@
+{
+  "table": "ts_daily_basic",
+  "year": 2023,
+  "entries": [
+    {
+      "unit_id": "ts_daily_basic:20230103-20230206:0001",
+      "table": "ts_daily_basic",
+      "year": 2023,
+      "scope": {
+        "trading_days": [
+          "20230103",
+          "20230104",
+          "20230105",
+          "20230106",
+          "20230109",
+          "20230110",
+          "20230111",
+          "20230112",
+          "20230113",
+          "20230116",
+          "20230117",
+          "20230118",
+          "20230119",
+          "20230120",
+          "20230130",
+          "20230131",
+          "20230201",
+          "20230202",
+          "20230203",
+          "20230206"
+        ],
+        "start_date": "20230103",
+        "end_date": "20230206",
+        "year": 2023
+      },
+      "status": "blocked",
+      "complete": false,
+      "row_count": 0,
+      "duplicate_keys": [],
+      "reason": "source_empty",
+      "captured_at": "2026-10-13T02:39:08.653488+08:00",
+      "production_write": false
+    }
+  ],
+  "entry_count": 1,
+  "complete_count": 0,
+  "failed_count": 1,
+  "retried_units": 0,
+  "status": "blocked",
+  "reason": "source_empty",
+  "publication": "not_started",
+  "production_write": false,
+  "global_activation": false
+}
