@@ -161,20 +161,6 @@
 
 <div class="wrap">
 
-  <div class="subline">多策略来源 · 手动/自动触发 · 多 Agent 交易员（v0.3 预留）</div>
-
-  <div class="pipeline">
-    <div class="pipe-node clickable" data-drill="desk-strat" title="下钻：策略来源卡片区"><div class="t">① 策略源（可选）</div><div class="d">AI值班 / 双刀 / 青萍 / 手动 / Agent</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node clickable" data-drill="desk-run" title="下钻：最新产物一览"><div class="t">② picks JSON</div><div class="d">同构信号协议</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node pipe-core clickable" data-drill="desk-pend" title="下钻：今日挂单"><div class="t">③ 统一执行链</div><div class="d">风控 → T+1 → _settle_fill 唯一写入口</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node clickable" data-drill="pos" title="下钻：持仓页"><div class="t">④ 账本 + 持仓</div><div class="d">strategy 全程标记</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-node clickable" data-drill="desk-stops" title="下钻：止损哨兵"><div class="t">⑤ 止损哨兵</div><div class="d">收盘触发 → 次日开盘撮合</div></div>
-  </div>
-
   <div class="tabs">
     <div class="tab active" data-tab="desk">交易台</div>
     <div class="tab" data-tab="pos">持仓 <span class="n" id="n-pos">0</span></div>
@@ -350,12 +336,9 @@
         <span style="font-size:12px;color:var(--text-dim)">经理职责：荐策略 / 组织盘前盘后复盘 / 督导操盘手。聘请价 = 档案基价 × 模型系数（按月，<code>models.json</code> 口径）；雇佣/解雇只改 <code>manager_hires.json</code> 注册表。</span></div>
       <div class="agent-grid" id="manager-grid"><div class="empty">读取中…</div></div>
     </div>
-    <div class="flow-note" style="margin-top:14px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
   </div>
 
   <div class="legend">
-    <span><span class="dot" style="background:var(--color-ok)"></span>已接入（引擎实测）</span>
-    <span><span class="dot" style="background:var(--text-dim)"></span>v0.3 预留</span>
     <span style="margin-left:auto">涨=红 · 跌=绿（A股口径）· <a href="#" onclick="loadStatus();return false" style="color:var(--link)">↻ 刷新</a></span>
   </div>
 </div>
@@ -365,6 +348,21 @@
 <details style="margin-bottom:24px">
   <summary style="cursor:pointer;font-size:12px;color:var(--text-dim)">展开公司级运行看板</summary>
   <div id="corp-cards" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px"></div>
+  <div style="margin-top:16px;font-size:11.5px;color:var(--text-dim);font-weight:700">架构链路（内部口径 · 多策略来源 · 手动/自动触发 · 多 Agent 交易员（v0.3 预留））</div>
+  <div class="pipeline">
+    <div class="pipe-node clickable" data-drill="desk-strat" title="下钻：策略来源卡片区"><div class="t">① 策略源（可选）</div><div class="d">AI值班 / 双刀 / 青萍 / 手动 / Agent</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node clickable" data-drill="desk-run" title="下钻：最新产物一览"><div class="t">② picks JSON</div><div class="d">同构信号协议</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node pipe-core clickable" data-drill="desk-pend" title="下钻：今日挂单"><div class="t">③ 统一执行链</div><div class="d">风控 → T+1 → _settle_fill 唯一写入口</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node clickable" data-drill="pos" title="下钻：持仓页"><div class="t">④ 账本 + 持仓</div><div class="d">strategy 全程标记</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node clickable" data-drill="desk-stops" title="下钻：止损哨兵"><div class="t">⑤ 止损哨兵</div><div class="d">收盘触发 → 次日开盘撮合</div></div>
+  </div>
+  <div style="margin-top:16px;font-size:11.5px;color:var(--text-dim);font-weight:700">交易员机制（内部口径）</div>
+  <div class="flow-note" style="margin-top:6px">机制：交易员的「擅长」= 一组执行参数档案（<b>仓位系数 / 止损距离 / 触发方式 / 单票上限</b>）+ 独立 account_id 子账本（schema 已预留）。策略市场 × 交易员市场<b>正交组合</b>，同一条 picks 协议对接——新增交易员零引擎改动。</div>
+
 </details>
 
 <div class="toast" id="toast"></div>
