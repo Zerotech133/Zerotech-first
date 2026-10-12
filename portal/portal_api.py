@@ -95,7 +95,8 @@ from api_screen import build_screen, _kline_data, _kline_qy, _chips_data, get_qu
 import api_screen  # 模块名绑定（多继承基类引用）
 import api_misc  # 模块名绑定（多继承基类引用）
 from api_misc import (get_news, get_alerts, build_overview,
-    build_brief, get_backups, get_video, get_gzh, _SS_TAG)
+    build_brief, get_backups, get_video, get_gzh, _SS_TAG,
+    build_home_cockpit)
 import api_chanlun_pages  # 模块名绑定（多继承基类引用）
 from api_chanlun_pages import (
     _chanlun_pool_push)
@@ -182,7 +183,6 @@ _MUTATION_POSTS = frozenset((
     "/api/batch-backtest",
     "/api/paper_order",   # K-STOCK v0.2 模拟仓下单（BUY/SELL/双刀执行）
     "/api/paper_stop",    # K-STOCK v0.2 模拟仓止损挂/解
-    "/api/paper_hire",    # K-STOCK-042 A3 雇佣交互（配置面：只改 hires.json）
     "/api/manager_hire",  # K-STOCK-137d S-b2 经理雇佣（子进程 manager.py hire）
     "/api/manager_fire",  # K-STOCK-137d S-b2 经理解雇（子进程 manager.py fire）
     "/api/paper_direct_open",  # K-STOCK-137f S-d 轻量直订动线（策略市场直接建仓）
@@ -2070,10 +2070,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # K-STOCK v0.2 模拟仓止损挂/解
                 self._api_paper_stop(raw)
                 return
-            if path == "/api/paper_hire":
-                # K-STOCK-042 A3 雇佣交互（配置面：hire/fire 只改注册表）
-                self._api_paper_hire(raw)
-                return
             if path == "/api/manager_hire":
                 # K-STOCK-137d S-b2 经理雇佣（子进程 manager.py hire --json）
                 self._api_manager_hire(raw)
@@ -2481,9 +2477,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "verified": False,
                             "error": repr(_e)}, 500)
-        elif path == "/api/paper_hires":
-            # K-STOCK-042 A3 雇佣关系投影（纯只读）
-            self._api_paper_hires()
         elif path == "/api/reception":
             # K-STOCK-159 S-e 迎宾向导数据源（纯只读：duty_receptionist
             # 迎宾词 + 资历经理三档摘要 + 现有组合摘要）
@@ -2603,9 +2596,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-STOCK-122 模拟仓侧「我的组合」投影（只读）：
             # 组合策略集 + 在职交易员 + 其 pending/持仓 + 最新净值
             # K-STOCK-150 多组合化：枚举订阅清单全部组合，逐组合投影
-            # （traders/pending/positions/equity）；顶层 portfolio/
-            # traders/pending/positions/equity 取第一组合以兼容旧前端
-            # （deprecated，未来 UI 迭代消费 portfolios 数组）。
+            # （traders/pending/positions/equity）。
+            # K-STOCK-166 清债第二批：顶层 portfolio/traders/pending/
+            # positions/equity deprecated 兼容字段删除，响应收敛为
+            # {ok, portfolios}（D1 已删旧面板消费方，paper.html 只读数组）。
             try:
                 import json as _j2
                 import sqlite3 as _sq2
@@ -2622,10 +2616,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 if os.path.exists(hires_p):
                     with open(hires_p, encoding="utf-8") as _f:
                         _hires = (_j2.load(_f).get("hires") or [])
-                _pf_ids = {p.get("id") for p in _all_pfs if p.get("id")}
                 con = _sq2.connect(r"E:\老田的AI助手\k_stock\data\paper.db")
                 con.row_factory = _sq2.Row
-                pf_rows, all_pend, all_poss, top_eq = [], [], [], None
+                pf_rows = []
                 try:
                     for _p in _all_pfs:
                         _pid = _p.get("id")
@@ -2657,23 +2650,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
                             "note": _p.get("note"),
                             "traders": traders, "pending": pend,
                             "positions": poss, "equity": eq})
-                        all_pend += pend
-                        all_poss += poss
-                        if eq:
-                            top_eq = eq
                 finally:
                     con.close()
-                _first = pf_rows[0] if pf_rows else {
-                    "id": None, "name": None, "strategies": [],
-                    "trader": None, "note": None, "traders": [],
-                    "pending": [], "positions": [], "equity": None}
-                self._json({"ok": True, "portfolio": {
-                    "id": _first["id"], "name": _first["name"],
-                    "strategies": _first["strategies"],
-                    "trader": _first["trader"], "note": _first["note"]},
-                    "traders": _first["traders"], "pending": all_pend,
-                    "positions": all_poss, "equity": top_eq,
-                    "portfolios": pf_rows})
+                self._json({"ok": True, "portfolios": pf_rows})
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/trader_roster":
@@ -2778,16 +2757,6 @@ color:#fff;font-size:13.5px;cursor:pointer}
                            200 if _sid else 400)
             except Exception as _e:
                 self._json({"ok": False, "error": repr(_e)}, 500)
-        elif path == "/api/trainee_board":
-            # K-STOCK v0.4 交易员成绩单（A1）：trainee.scoreboard 需 pandas（行情湖估值），
-            # 门户保持纯标准库 → 子进程 CLI --json（同 _paper_run_json 模式，UTF-8 管道）。
-            try:
-                r = self._paper_run_json(
-                    [self._PAPER_PY, os.path.join(self._PAPER_DIR, "trainee.py"),
-                     "board", "--json"], timeout=90)
-                self._json(r)
-            except Exception as _e:
-                self._json({"ok": False, "error": repr(_e)}, 500)
         elif path.startswith("/static/"):
             # KG-V1 静态资源（白名单）：本地 echarts / 全站 tokens.css
             fn = path.split("/", 2)[2]
@@ -2822,6 +2791,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/alerts":
             # K39 今日预警速览：各策略产线最新预警值聚合（量化域首页）
             self._json(build_alerts())
+        elif path == "/api/home":
+            # K-STOCK-167 门面「此刻区」数据源（自 home_server/8094 收编，
+            # 原服务退役；nginx /api/ 反代直达）
+            self._json(build_home_cockpit())
         elif path == "/api/screen":
             # K44 数据大屏：策略×市场×行业×账本成绩 聚合
             self._json(build_screen())

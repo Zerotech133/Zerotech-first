@@ -185,6 +185,54 @@
       <span class="enter">进入大屏 →</span>
     </a>
 
+    <!-- 此刻区：老田现在该看什么（K-STOCK-167 自驾驶舱 home.html/8094 收编） -->
+    <div id="moment-bar" style="margin-top:18px;background:linear-gradient(90deg,#1f6feb22,#bc8cff18);border:1px solid #58a6ff44;border-radius:12px;padding:13px 16px;">
+      <div style="font-size:15.5px;font-weight:800;">🕘 此刻加载中…</div>
+      <div style="color:var(--text-dim,#8b949e);font-size:12.5px;margin-top:5px;line-height:1.7;">—</div>
+    </div>
+    <div class="board" id="moment-cards" style="margin-top:10px;"></div>
+    <script>
+    (function(){
+      var fmt=function(n){return n==null?'-':Number(n).toLocaleString('zh-CN',{maximumFractionDigits:0});};
+      var cls=function(n){return n>0?' style="color:var(--up,#f85149)"':(n<0?' style="color:var(--down,#3fb950)"':'');};
+      function card(t,b){return '<div class="dm" style="min-height:0;padding:13px 16px;cursor:default"><div style="color:var(--text-dim,#8b949e);font-size:12px;font-weight:600;margin-bottom:7px">'+t+'</div>'+b+'</div>';}
+      fetch('/api/home').then(function(r){return r.json();}).then(function(j){
+        var nc=j.now_context||{};
+        var f=(nc.focus||[]).map(function(x,i){return '<b style="color:var(--text,#e6edf3)">'+(i+1)+'. '+x+'</b>';}).join('　');
+        document.getElementById('moment-bar').innerHTML=
+          '<div style="font-size:15.5px;font-weight:800">🕘 '+(nc.label||'')+'</div>'+
+          '<div style="color:var(--text-dim,#8b949e);font-size:12.5px;margin-top:5px;line-height:1.7">此刻优先级：'+f+'　<span>——菜鸟已盯其余一切</span></div>';
+        var h='';
+        var m=j.money||{};
+        if(m.ok){
+          ['CNY','USD'].forEach(function(g){
+            var rows=m[g]||[]; if(!rows.length)return;
+            var tot=rows.reduce(function(s,r){return s+(r.total||0);},0);
+            var d=rows.reduce(function(s,r){return s+(r.delta||0);},0);
+            h+=card(g==='USD'?'💵 美元账本':'💰 人民币账本',
+              '<div style="font-size:20px;font-weight:800"'+cls(d)+'>'+(g==='USD'?'$':'¥')+fmt(tot)+'</div>'+
+              '<div style="color:var(--text-dim,#8b949e);font-size:11.5px;margin-top:4px">'+rows.map(function(r){
+                return '· '+r.account+' '+fmt(r.total)+(r.delta!=null?'（今日 <span'+cls(r.delta)+'>'+(r.delta>0?'+':'')+fmt(r.delta)+'</span>）':'');
+              }).join('<br>')+'</div>');
+          });
+        }
+        var tl=(j.timeline||[]).map(function(t){
+          return '<div style="font-size:12.5px;line-height:1.9">· <span style="color:'+(t.ran_today?'var(--ok,#3fb950)':'var(--warn,#d29922)')+'">'+(t.ran_today?'✔':'○')+'</span> <b>'+t.name+'</b> <span style="color:var(--text-dim,#8b949e)">'+(t.last||'无记录')+'</span></div>';
+        }).join('');
+        h+=card('🏭 公司在跑 · 今日自动化',tl||'—');
+        var cal=((j.calendar||{}).items||[]).map(function(i){
+          return '<div style="font-size:12.5px;line-height:1.9">· <b>'+i.day+'</b>（'+(i.in_days===0?'今天':(i.in_days<0?'已过':i.in_days+' 天后'))+'）：'+i.what+'</div>';
+        }).join('');
+        h+=card('📅 裁决窗',cal||'—');
+        var o=j.org||{};
+        if(o.ok){h+=card('🏛 组织',(o.depts||[]).map(function(d){return '<div style="font-size:12.5px;line-height:1.9">· <b>'+d.name+'</b> ['+(d.status||'active')+']</div>';}).join(''));}
+        document.getElementById('moment-cards').innerHTML=h;
+      }).catch(function(e){
+        document.getElementById('moment-bar').innerHTML='<div style="font-size:14px;color:var(--warn,#d29922)">此刻区暂不可用（8091 未起时正常，稍后自动恢复）：'+e.message+'</div>';
+      });
+    })();
+    </script>
+
     <!-- 今日要务：一进来就把今天所有事串成态势（K-STOCK-112） -->
     <div style="margin-top:18px;">
       <div style="font-size:12px;letter-spacing:2.5px;color:var(--text-dim);font-weight:700;margin-bottom:10px;">◤ 今日要务 · 四域态势</div>
