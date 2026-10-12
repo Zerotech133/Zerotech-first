@@ -1,33 +1,37 @@
 {
   "schema": "platform_integration_preflight/v1",
-  "observed_at": "2026-10-12T09:52:00+08:00",
+  "observed_at": "2026-10-12T11:49:08.579183+08:00",
   "read_only": true,
   "platform_guards": {
     "mixin_integrity": {
       "command": "python tools/_mixin_integrity.py --check",
       "exit_code": 0,
       "status": "pass",
-      "summary": "123 methods / 98 funcs 与基线零 diff"
+      "summary": "✅ INTEGRITY OK: 121 methods / 98 funcs 与基线零 diff"
     },
     "navigation": {
       "command": "python tools/unify_nav.py --check",
       "exit_code": 0,
       "status": "pass",
-      "summary": "13 静态页全带统一顶栏，nav.js 与源零漂移"
+      "summary": "守卫 PASS：13 静态页全带统一顶栏，nav.js 与源零漂移"
     },
     "ports": {
-      "command": "python tools/check_ports.py --strict",
-      "exit_code": 1,
-      "status": "fail",
-      "registered_count": 25,
-      "unregistered_listeners": 2,
-      "unknown_listeners": [
-        {"port": 14571, "pid_name": "TdxW"},
-        {"port": 17709, "pid_name": "TdxW"}
+      "command": "python tools/check_ports.py --strict --json",
+      "exit_code": 0,
+      "status": "pass",
+      "registered_count": 24,
+      "unregistered_listeners": 0,
+      "unknown_listeners": [],
+      "offline": [
+        3001,
+        8030,
+        9104
       ],
-      "anomaly_evidence": "work/port-guard-anomaly-2026-10-12.json",
-      "offline": ["3001", "8030", "8094", "9104"],
-      "offline_optional": ["3001", "8030", "9104"]
+      "offline_optional": [
+        3001,
+        8030,
+        9104
+      ]
     }
   },
   "upstream_gates": {
@@ -37,6 +41,7 @@
       "nine_dim_index_refreshed": true,
       "nine_dim_hash_drift": false,
       "nine_dim_index_file_count": 276431,
+      "nine_dim_sha256": "bb623d1e75e2b4794753a7df5bdf6874cd62a07ea8195733f2af9c900a5d8969",
       "status": "blocked",
       "evidence_ref": "local://work/academy-source-evidence-v0.1/source-evidence-search-receipt-2026-10-12.json"
     },
@@ -66,12 +71,12 @@
   "verdict": "blocked",
   "blockers": [
     "缺少精确 2026-10-08 量子双刀原文或可哈希的可信发布回执",
-    "七个来源仍缺正文发布日期/生效日期或原始发布回执",
+    "七个来源仍缺正文发布日期/生效日期或原始发布回执（当前 7 项）",
     "P1 仍有 44 个 alert_fail.py 直调用未迁移",
-    "07:05 实际执行成功但 qd 非无雇佣，三源统一跳过验收未通过",
-    "标准定义与交易日日历未认证",
-    "四策略证据清单未满足样本、时间切分、成本、缺数据拒绝和暂态结构要求",
-    "端口守卫发现 TdxW 占用未登记端口 14571/17709，且 8094 驾驶舱离线"
+    "07:05 实际执行成功但三源统一无雇佣跳过验收未通过",
+    "标准定义未认证",
+    "交易日日历未认证",
+    "四策略证据清单未满足样本、时间切分、成本、缺数据拒绝和暂态结构要求"
   ],
   "policy": {
     "training_eligible": false,
@@ -80,5 +85,5 @@
     "trading_enabled": false,
     "commercialization_enabled": false
   },
-  "next_action": "确认 TdxW 端口归属并完成第三方豁免或登记决策，恢复 8094 后再重跑端口守卫；同时补齐精确来源与日期回执并分批迁移 44 个告警直调用"
+  "next_action": "补齐精确来源与日期回执；分批迁移 44 个告警直调用并补三源跳过证据；完成标准定义与交易日历认证后再评审策略。"
 }
