@@ -16,7 +16,7 @@
   "student_agent_id": "student_rule_fixture_v0.1",
   "metrics": {
     "strategy_agreement": 1.0,
-    "risk_level_agreement": 0.8,
+    "risk_level_agreement": 1.0,
     "abstention_agreement": 1.0,
     "abstention_precision": 1.0,
     "abstention_recall": 1.0,
@@ -41,13 +41,19 @@
       "student_agent_id": "student_rule_fixture_v0.1",
       "teacher": {
         "selected_strategy": "trend_follow",
-        "risk_level": "moderate",
-        "abstain": false
+        "risk_level": "medium",
+        "risk_level_raw": "medium",
+        "abstain": false,
+        "calibration": {
+          "original_risk_level": "moderate",
+          "calibrated_risk_level": "medium",
+          "reason": "统一 moderate/medium 为 canonical medium。"
+        }
       },
       "student": {
         "regime": "trend_confirmed",
         "selected_strategy": "trend_follow",
-        "risk_level": "moderate",
+        "risk_level": "medium",
         "abstain": false,
         "evidence": [
           "scenario_packet.price_features.trend_strength",
@@ -73,8 +79,14 @@
       "student_agent_id": "student_rule_fixture_v0.1",
       "teacher": {
         "selected_strategy": "abstain",
-        "risk_level": "high",
-        "abstain": true
+        "risk_level": "unknown",
+        "risk_level_raw": "unknown",
+        "abstain": true,
+        "calibration": {
+          "original_risk_level": "high",
+          "calibrated_risk_level": "unknown",
+          "reason": "events 缺失，风险不可量化；按缺数据协议改为 unknown，保留 abstain。"
+        }
       },
       "student": {
         "regime": "unknown_due_to_missing_data",
@@ -91,7 +103,7 @@
       },
       "agreement": {
         "strategy": true,
-        "risk_level": false,
+        "risk_level": true,
         "abstention": true
       },
       "student_validation_errors": []
@@ -103,13 +115,19 @@
       "student_agent_id": "student_rule_fixture_v0.1",
       "teacher": {
         "selected_strategy": "mean_reversion",
-        "risk_level": "moderate",
-        "abstain": false
+        "risk_level": "medium",
+        "risk_level_raw": "medium",
+        "abstain": false,
+        "calibration": {
+          "original_risk_level": "moderate",
+          "calibrated_risk_level": "medium",
+          "reason": "统一 moderate/medium 为 canonical medium。"
+        }
       },
       "student": {
         "regime": "range_or_weak_trend",
         "selected_strategy": "mean_reversion",
-        "risk_level": "moderate",
+        "risk_level": "medium",
         "abstain": false,
         "evidence": [
           "scenario_packet.price_features.trend_strength",
@@ -136,7 +154,13 @@
       "teacher": {
         "selected_strategy": "defensive_cash",
         "risk_level": "high",
-        "abstain": false
+        "risk_level_raw": "high",
+        "abstain": false,
+        "calibration": {
+          "original_risk_level": "high",
+          "calibrated_risk_level": "high",
+          "reason": "保留原风险标签。"
+        }
       },
       "student": {
         "regime": "high_volatility",
@@ -168,7 +192,13 @@
       "teacher": {
         "selected_strategy": "abstain",
         "risk_level": "unknown",
-        "abstain": true
+        "risk_level_raw": "unknown",
+        "abstain": true,
+        "calibration": {
+          "original_risk_level": "unknown",
+          "calibrated_risk_level": "unknown",
+          "reason": "保留原风险标签。"
+        }
       },
       "student": {
         "regime": "unknown_due_to_missing_data",
@@ -192,5 +222,6 @@
       },
       "student_validation_errors": []
     }
-  ]
+  ],
+  "teacher_label_source": "teacher-labels-calibrated-v0.1.jsonl"
 }

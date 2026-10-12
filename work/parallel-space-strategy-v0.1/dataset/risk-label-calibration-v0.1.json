@@ -1,0 +1,79 @@
+{
+  "schema": "parallel_space_strategy_risk_label_calibration/v1",
+  "raw_teacher_labels": "teacher-labels-v0.1.jsonl",
+  "calibrated_teacher_labels": "teacher-labels-calibrated-v0.1.jsonl",
+  "raw_labels_unchanged": true,
+  "raw_teacher_labels_sha256": "7cc280724bf64a130b2b79a80c3d9e592e97982a6c4a77106b4b7be3c004771c",
+  "canonical_risk_levels": [
+    "low",
+    "medium",
+    "high",
+    "unknown"
+  ],
+  "mapping": {
+    "moderate": "medium"
+  },
+  "overrides": [
+    {
+      "sample_id": "PS-001",
+      "original_risk_level": "moderate",
+      "calibrated_risk_level": "medium",
+      "selected_strategy": "trend_follow",
+      "abstain": false,
+      "reason": "统一 moderate/medium 为 canonical medium。"
+    },
+    {
+      "sample_id": "PS-002",
+      "original_risk_level": "medium",
+      "calibrated_risk_level": "medium",
+      "selected_strategy": "abstain",
+      "abstain": true,
+      "reason": "低趋势、低波动且未确认突破，保留保守拒答并使用 medium 风险。"
+    },
+    {
+      "sample_id": "PS-003",
+      "original_risk_level": "high",
+      "calibrated_risk_level": "unknown",
+      "selected_strategy": "abstain",
+      "abstain": true,
+      "reason": "events 缺失，风险不可量化；按缺数据协议改为 unknown，保留 abstain。"
+    },
+    {
+      "sample_id": "PS-004",
+      "original_risk_level": "moderate",
+      "calibrated_risk_level": "medium",
+      "selected_strategy": "trend_follow",
+      "abstain": false,
+      "reason": "统一 moderate/medium 为 canonical medium。"
+    },
+    {
+      "sample_id": "PS-005",
+      "original_risk_level": "moderate",
+      "calibrated_risk_level": "medium",
+      "selected_strategy": "mean_reversion",
+      "abstain": false,
+      "reason": "统一 moderate/medium 为 canonical medium。"
+    },
+    {
+      "sample_id": "PS-007",
+      "original_risk_level": "moderate",
+      "calibrated_risk_level": "medium",
+      "selected_strategy": "trend_follow",
+      "abstain": false,
+      "reason": "统一 moderate/medium 为 canonical medium。"
+    },
+    {
+      "sample_id": "PS-011",
+      "original_risk_level": "moderate",
+      "calibrated_risk_level": "medium",
+      "selected_strategy": "mean_reversion",
+      "abstain": false,
+      "reason": "统一 moderate/medium 为 canonical medium。"
+    }
+  ],
+  "training_started": false,
+  "financial_execution_enabled": false,
+  "simulated_execution_enabled": false,
+  "commercialization_enabled": false,
+  "calibrated_teacher_labels_sha256": "72569634e2493032ed094917186f96eee656dc93b48a88c16b8e0e2626d7b869"
+}

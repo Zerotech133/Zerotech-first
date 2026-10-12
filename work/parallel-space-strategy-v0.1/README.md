@@ -27,6 +27,8 @@
 - `training-job-manifest-v0.1.json`：当前训练准备状态。
 - `distillation-evaluation-v0.1.json`：5 个跨市场场景的教师/学生离线蒸馏对照结果。
 - `distillation-evaluation-full-v0.1.json`：12 个场景全量蒸馏结果和风险标签校准矩阵。
+- `teacher-labels-calibrated-v0.1.jsonl`：保留原始教师标签后的可审计校准层。
+- `risk-label-calibration-v0.1.json`：风险枚举统一和 PS-002/PS-003 复核记录。
 
 ## 蒸馏评测
 
@@ -46,5 +48,5 @@ python -X utf8 work/evaluate_parallel_space_distillation_20261013.py
 python -X utf8 work/evaluate_parallel_space_distillation_full_20261013.py
 ```
 
-全量报告覆盖 12 个合成场景。若教师和学生在风险等级或缺数据拒答上出现分歧，报告会将样本列入 `calibration_gate.blocking_samples`，先校准标签再评审 LoRA。
+全量报告覆盖 12 个合成场景。PS-002 保留低趋势、低波动、无突破确认时的保守拒答；PS-003 因 `events` 缺失将风险统一为 `unknown`；`moderate` 统一为 canonical `medium`。校准后策略、风险和拒答一致率均为 1.0，`calibration_gate.status=aligned`，报告状态变为 `ready_for_isolated_lora_review`。这只表示可以进入隔离 LoRA 评审，仍不安装依赖或启动权重训练。
 

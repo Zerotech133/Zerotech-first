@@ -25,6 +25,7 @@ ALLOWED_STRATEGIES = {
     "abstain",
 }
 FORBIDDEN_ACTION_TOKENS = ("买入", "卖出", "下单", "持仓变更", "模拟成交", "订单")
+RISK_CANONICAL_MAP = {"moderate": "medium"}
 
 
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -56,12 +57,31 @@ def _student_decision(row: dict[str, Any]) -> dict[str, Any]:
             "invalidating_conditions": [f"补齐字段：{field}" for field in missing],
         }
 
+    # 低趋势、低波动且没有突破确认时，学生沿用教师的保守拒答边界。
+    if trend <= 0.3 and volatility < 0.4 and volume <= 1.0:
+        return {
+            "regime": "range_without_confirmation",
+            "selected_strategy": "abstain",
+            "risk_level": "medium",
+            "abstain": True,
+            "evidence": [
+                "scenario_packet.price_features.trend_strength",
+                "scenario_packet.price_features.realized_volatility",
+                "scenario_packet.price_features.volume_ratio",
+                "scenario_packet.technical_features.breakout_confirmed",
+            ],
+            "student_reasoning": "趋势弱、波动低且未确认突破，暂缓策略选择。",
+            "invalidating_conditions": [
+                "趋势强度超过0.35并出现突破确认",
+                "成交量放大且方向性信号持续",
+            ],
+        }
     if volatility >= 0.8:
         strategy, risk, regime = "defensive_cash", "high", "high_volatility"
     elif trend >= 0.75 and volume >= 1.4:
-        strategy, risk, regime = "trend_follow", "moderate", "trend_confirmed"
+        strategy, risk, regime = "trend_follow", "medium", "trend_confirmed"
     elif trend <= 0.3:
-        strategy, risk, regime = "mean_reversion", "moderate", "range_or_weak_trend"
+        strategy, risk, regime = "mean_reversion", "medium", "range_or_weak_trend"
     else:
         strategy, risk, regime = "breakout", "medium", "transition"
 
@@ -129,6 +149,10 @@ def _precision_recall(tp: int, predicted: int, actual: int) -> tuple[float, floa
     return _ratio(tp, predicted), _ratio(tp, actual)
 
 
+def _canonical_risk(value: Any) -> str:
+    return RISK_CANONICAL_MAP.get(str(value), str(value))
+
+
 def build_report(
     scenarios: list[dict[str, Any]], labels: list[dict[str, Any]], *, sample_ids: list[str]
 ) -> dict[str, Any]:
@@ -154,7 +178,8 @@ def build_report(
         failures.extend(sample_id + ":" + error for error in student_errors)
 
         teacher_strategy = teacher.get("selected_strategy")
-        teacher_risk = teacher.get("risk_level")
+        teacher_risk_raw = teacher.get("risk_level")
+        teacher_risk = _canonical_risk(teacher_risk_raw)
         teacher_abstain = bool(teacher.get("abstain"))
         student_strategy = student.get("selected_strategy")
         student_risk = student.get("risk_level")
@@ -178,7 +203,9 @@ def build_report(
                 "teacher": {
                     "selected_strategy": teacher_strategy,
                     "risk_level": teacher_risk,
+                    "risk_level_raw": teacher_risk_raw,
                     "abstain": teacher_abstain,
+                    "calibration": teacher.get("calibration"),
                 },
                 "student": student,
                 "agreement": {
@@ -259,13 +286,16 @@ def main(argv: list[str] | None = None) -> int:
     if not sample_ids:
         parser.error("至少指定一个 sample_id")
     scenario_rows = _load_jsonl(DATA / "scenario-packets-v0.1.jsonl")
-    labels = _load_jsonl(DATA / "teacher-labels-v0.1.jsonl")
+    calibrated_labels = DATA / "teacher-labels-calibrated-v0.1.jsonl"
+    labels_path = calibrated_labels if calibrated_labels.exists() else DATA / "teacher-labels-v0.1.jsonl"
+    labels = _load_jsonl(labels_path)
     by_id = {row["sample_id"]: row for row in scenario_rows}
     missing_ids = [sample_id for sample_id in sample_ids if sample_id not in by_id]
     if missing_ids:
         parser.error("未知 sample_id: " + ",".join(missing_ids))
     selected = [by_id[sample_id] for sample_id in sample_ids]
     report = build_report(selected, labels, sample_ids=sample_ids)
+    report["teacher_label_source"] = labels_path.name
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
