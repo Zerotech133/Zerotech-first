@@ -1,0 +1,14 @@
+{
+  "schema": "parallel_space_strategy_dataset_manifest/v1",
+  "mode": "sandbox_only",
+  "synthetic_fixture": true,
+  "scenario_count": 12,
+  "missing_data_cases": 4,
+  "teacher_labels": 12,
+  "ollama_teacher_labels": 2,
+  "weight_training_started": false,
+  "financial_execution_enabled": false,
+  "simulated_execution_enabled": false,
+  "commercialization_enabled": false,
+  "source": "generated_synthetic_scenarios"
+}
