@@ -1,0 +1,58 @@
+{
+  "schema": "parallel_space_strategy_agent_profile/v1",
+  "profile_id": "parallel_space_strategy_analyst_v0.1",
+  "mode": "sandbox_only",
+  "purpose": "培养用于策略分析、选择和 AI 对 AI 评审的智能体",
+  "agent_communication": "ai_to_ai_only",
+  "market_domains": ["A股", "指数", "期货", "虚拟币"],
+  "capabilities": [
+    "regime_classification",
+    "strategy_selection",
+    "candidate_ranking",
+    "risk_reasoning",
+    "evidence_explanation",
+    "missing_data_abstention",
+    "teacher_student_distillation"
+  ],
+  "input_contract": "scenario_packet/v1",
+  "output_contract": "strategy_decision_packet/v1",
+  "output_fields": [
+    "market_domain",
+    "regime",
+    "candidate_strategies",
+    "selected_strategy",
+    "risk_level",
+    "confidence",
+    "evidence",
+    "invalidating_conditions",
+    "abstain",
+    "next_observation"
+  ],
+  "forbidden_capabilities": [
+    "broker_order",
+    "exchange_order",
+    "paper_ledger_write",
+    "simulated_fill",
+    "position_change",
+    "production_publish",
+    "commercial_listing"
+  ],
+  "governance": {
+    "sandbox_requires_production_license": false,
+    "sandbox_requires_offline_signature": false,
+    "sandbox_requires_permission_snapshot": false,
+    "sandbox_requires_time_split_receipt": false,
+    "production_eligible": false,
+    "financial_execution_enabled": false,
+    "simulated_execution_enabled": false,
+    "commercialization_enabled": false,
+    "evidence_policy": "optional_internal_provenance_only"
+  },
+  "training": {
+    "method": "distillation_then_optional_lora",
+    "base_model": "qwen3.5:4b",
+    "backend": "transformers_peft",
+    "weights_training_started": false,
+    "status": "dataset_preparation_only"
+  }
+}
