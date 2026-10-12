@@ -5,11 +5,13 @@
 供盘后一条命令验收；提前跑（盘前/周末）应全部 FAIL——即探测器自证有效。
 
 判据对应 docs/ops/2026-10-13_周一撮合验收清单.md §2：
-  C1 CN 4 笔 pending→filled（main/chaser 各 2，fill 字段齐全）
-  C2 US 6 笔 pending→filled（us_qingping 6）
+  C1 CN filled >= 4（main/chaser 各 2，fill 字段齐全；K-STOCK-191 口径 B：
+     ≥ 判据——超额成交是好消息不判 FAIL，残留 pending 降为观察项不阻塞）
+  C2 US 6 笔 pending→filled（us_qingping 6，硬等式——US 无超额单源）
   C3 持仓生成后止损自动挂出（订单类 stop 或账本 stops 非空）
   C4 positions_snapshot 出现验收日快照行（首战）
   C5 幂等：同一 order_id 至多一条 filled 记录（无重复成交）
+口径版本化：docs/ops/acceptance_criteria_v1.md（改口径必升版本）
 
 用法：
   python acceptance_check.py --date 20261013          # 周一盘后验收
@@ -35,7 +37,11 @@ def ro_connect():
 
 
 def check_c1_cn_filled(cur, day):
-    # 口径：成交按 fill_date=验收日；残留 pending 按 plan_date<=验收日（含过期单）
+    # 口径（K-STOCK-191 拍板 B，老田 10-12）：filled >= CN_EXPECT 即 PASS——
+    #   超额成交（涨停拒单复活/普涨多成交）是好消息，硬等式判 FAIL 不合常理；
+    #   残留 pending 降为观察项（pending_watch）不阻塞——过期单清理属运维线
+    #   （chaser/人工），非撮合链缺陷。
+    # 成交按 fill_date=验收日；残留 pending 按 plan_date<=验收日（含过期单）
     rows = cur.execute(
         "SELECT id, account_id, stock, qty, status, fill_date, filled_price,"
         " filled_qty, fee, plan_date, reason FROM orders"
@@ -45,9 +51,9 @@ def check_c1_cn_filled(cur, day):
               and r["fill_date"] and r["filled_price"] and r["filled_qty"]]
     pending = [r for r in rows if r["status"] == "pending"]
     rejected = [r for r in rows if r["status"] == "rejected"]
-    ok = len(filled) == CN_EXPECT and not pending
-    detail = {"expected": CN_EXPECT, "filled": len(filled),
-              "pending_left": len(pending),
+    ok = len(filled) >= CN_EXPECT
+    detail = {"expected_min": CN_EXPECT, "filled": len(filled),
+              "pending_watch": len(pending),
               "rejected": [{"id": r["id"], "stock": r["stock"],
                             "why": (r["reason"] or "")[:80]} for r in rejected],
               "fills": [{k: r[k] for k in ("id", "account_id", "stock", "qty",
