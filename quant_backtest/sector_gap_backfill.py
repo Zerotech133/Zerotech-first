@@ -152,6 +152,11 @@ def stage_sector_daily(keys: Sequence[Mapping[str, Any]], stage_root: str | Path
         elif status == "source_empty":
             counts["source_empty"] += 1
             counts["blocked"] += 1
+        elif status == "invalid_source" and result.get("reason") in {"total_mismatch", "expected_exactly_one_row"}:
+            # 远端忽略单键过滤时返回整日/整表结果；无法把行安全归因到请求键，
+            # 这是来源能力阻断而非数据本身损坏。
+            counts["blocked"] += 1
+            status = "blocked"
         else:
             counts["rejected"] += 1
         receipt_rows.append({

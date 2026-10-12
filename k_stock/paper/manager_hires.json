@@ -1,0 +1,24 @@
+{
+  "hires": [
+    {
+      "manager": "laotian_pm",
+      "manager_name": "老田投资总监",
+      "model": "GLM-5.2",
+      "source": "pf_002",
+      "status": "active",
+      "hire_price_cny": 99,
+      "hired_at": "2026-10-12T01:46:54",
+      "note": ""
+    },
+    {
+      "manager": "laotian_pm",
+      "manager_name": "老田投资总监",
+      "model": "GLM-5.2",
+      "source": "pf_001",
+      "status": "active",
+      "hire_price_cny": 99,
+      "hired_at": "2026-10-12T10:10:57",
+      "note": ""
+    }
+  ]
+}
