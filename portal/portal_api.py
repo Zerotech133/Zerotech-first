@@ -96,7 +96,7 @@ import api_screen  # 模块名绑定（多继承基类引用）
 import api_misc  # 模块名绑定（多继承基类引用）
 from api_misc import (get_news, get_alerts, build_overview,
     build_brief, get_backups, get_video, get_gzh, _SS_TAG,
-    build_home_cockpit)
+    build_home_cockpit, build_os_cockpit)
 import api_chanlun_pages  # 模块名绑定（多继承基类引用）
 from api_chanlun_pages import (
     _chanlun_pool_push)
@@ -2879,6 +2879,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-STOCK-167 门面「此刻区」数据源（自 home_server/8094 收编，
             # 原服务退役；nginx /api/ 反代直达）
             self._json(build_home_cockpit())
+        elif path == "/api/os":
+            # K-STOCK-260 个人 OS 指挥大屏聚合（采集/Agent/量化/入库四域，
+            # 纯文件+sqlite 轻量读；nginx /api/ 反代直达）
+            self._json(build_os_cockpit())
         elif path == "/api/screen":
             # K44 数据大屏：策略×市场×行业×账本成绩 聚合
             self._json(build_screen())

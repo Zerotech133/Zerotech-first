@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人 OS 指挥大屏 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-ui, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif);
+    background: var(--bg-page); color: var(--text); min-height: 100vh;
+  }
+  main { max-width: var(--page-w, 1080px); margin: 0 auto; padding: 0 26px 56px; }
+  .num { font-family: var(--font-mono, Consolas, monospace); }
+  .dim { color: var(--text-dim); }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 48px 12px; max-width: var(--page-w, 1080px); margin: 0 auto;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--blu-600), var(--pur-500));
+    display: grid; place-items: center; font-size: 20px;
+  }
+  .brand h1 { font-size: 17px; font-weight: 700; letter-spacing: .5px; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .topr { display: flex; align-items: center; gap: 14px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+  .pill {
+    display: inline-block; padding: 7px 15px; border: 1px solid var(--border);
+    border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px;
+    background: var(--bg-surface); transition: border-color .2s ease, color .2s ease;
+  }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+
+  /* ── 此刻条 ── */
+  .nowbar {
+    margin-top: 14px; padding: 12px 20px; border: 1px solid var(--border);
+    border-radius: 12px; background: var(--bg-raised);
+    display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline;
+  }
+  .nowbar .mode { font-size: 14.5px; font-weight: 700; }
+  .nowbar .focus { font-size: 12px; color: var(--gray-6); }
+
+  /* ── 分区 ── */
+  .sec-line { display: flex; align-items: baseline; gap: 12px; margin: 22px 0 10px; }
+  .sec-t { font-size: 12px; letter-spacing: 2.5px; color: var(--text-dim); font-weight: 700; }
+  .sec-s { font-size: 11px; color: var(--gray-6); }
+
+  /* ── 大数字瓷砖 ── */
+  .tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
+  .tile {
+    background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px 12px; position: relative;
+  }
+  .tile .v { font-family: var(--font-mono, Consolas, monospace); font-size: 26px; font-weight: 700; line-height: 1.15; }
+  .tile .v small { font-size: 13px; font-weight: 400; color: var(--text-dim); }
+  .tile .k { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; }
+  .tile .sub { font-size: 10.5px; color: var(--gray-6); margin-top: 2px; }
+  .tile.warn { border-color: var(--color-warn); }
+  .tile.bad { border-color: var(--color-err); }
+  .up { color: var(--color-up); } .dn { color: var(--color-dn); }
+
+  /* ── Agent 行与条形 ── */
+  .agents { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .acard {
+    background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px;
+    padding: 13px 16px 11px;
+  }
+  .acard .t { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+  .acard .d { font-size: 11.5px; color: var(--text-dim); margin-top: 5px; line-height: 1.6; }
+  .regime { display: flex; height: 22px; border-radius: 7px; overflow: hidden; margin-top: 9px; border: 1px solid var(--border); }
+  .regime div { display: grid; place-items: center; font-size: 10px; color: #0d1117; font-weight: 700; min-width: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: var(--text-dim); margin-top: 7px; }
+  .legend b { color: var(--text); font-family: Consolas, monospace; }
+
+  .statusbar {
+    margin-top: 30px; background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 13px 22px; display: flex; flex-wrap: wrap; gap: 22px;
+    align-items: center; justify-content: center;
+    font-family: Consolas, monospace; font-size: 11.5px; color: var(--text-dim);
+  }
+  .statusbar b { color: var(--text); font-weight: 600; }
+  @media (max-width: 640px) {
+    header { padding: 16px 20px 8px; }
+    main { padding: 0 14px 40px; }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">🖥️</div>
+      <div><h1>个人 OS 指挥大屏</h1><small>PERSONAL OS · COMMAND</small></div>
+    </div>
+    <div class="topr">
+      <div class="clock" id="clock">--:--:--</div>
+      <a class="pill" href="/">← 返回首页</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="nowbar">
+      <span class="mode" id="now-mode">此刻…</span>
+      <span class="focus" id="now-focus"></span>
+    </div>
+
+    <div class="sec-line">
+      <span class="sec-t">📥 今日采集</span>
+      <span class="sec-s">新闻情报产线 · 今日入 Canter 多少、判了多少</span>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="v num" id="c-today">—</div><div class="k">今日采集</div><div class="sub" id="c-today-sub">news.db</div></div>
+      <div class="tile"><div class="v num" id="c-judged">—</div><div class="k">今日已研判</div><div class="sub">JEV 打分</div></div>
+      <div class="tile"><div class="v num" id="c-hit">—</div><div class="k">命中持仓相关</div><div class="sub">hit=1</div></div>
+      <div class="tile"><div class="v num"><span class="up" id="c-bull">—</span><small> / </small><span class="dn" id="c-bear">—</span></div><div class="k">利多 / 利空</div><div class="sub" id="c-neutral"></div></div>
+      <div class="tile"><div class="v num" id="c-total">—</div><div class="k">情报总库累计</div><div class="sub">全量入库</div></div>
+    </div>
+
+    <div class="sec-line">
+      <span class="sec-t">🤖 Agent 动向</span>
+      <span class="sec-s">双助手 + 一众 AI 岗位 · 他们在干什么</span>
+    </div>
+    <div class="agents">
+      <div class="acard"><div class="t">🧠 参谋长 A0</div><div class="d" id="ag-org">组织架构读取中…</div></div>
+      <div class="acard"><div class="t">📄 影子日报</div><div class="d" id="ag-daily">—</div></div>
+      <div class="acard"><div class="t">⚖️ A0 点评</div><div class="d" id="ag-review">—</div></div>
+      <div class="acard"><div class="t">🗂 岗位任务单</div><div class="d" id="ag-plan">—</div></div>
+      <div class="acard"><div class="t">🧾 判决复核</div><div class="d" id="ag-judge">—</div></div>
+      <div class="acard"><div class="t">⏱ 任务矩阵</div><div class="d" id="ag-tasks">读取中…</div></div>
+      <div class="acard"><div class="t">🐳 容器集群</div><div class="d" id="ag-cont">读取中…</div></div>
+    </div>
+
+    <div class="sec-line">
+      <span class="sec-t">📈 量化产出</span>
+      <span class="sec-s">策略 · 扫描 · 信号 · 交易</span>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="v num" id="q-live">—</div><div class="k">产线策略</div><div class="sub" id="q-strat-sub"></div></div>
+      <div class="tile"><div class="v num" id="q-scan">—</div><div class="k">双刀全池扫描</div><div class="sub" id="q-scan-sub"></div></div>
+      <div class="tile"><div class="v num" id="q-star">—</div><div class="k">星池在册</div><div class="sub">重点盯守</div></div>
+      <div class="tile"><div class="v num" id="q-orders">—</div><div class="k">订单累计</div><div class="sub" id="q-orders-sub"></div></div>
+      <div class="tile"><div class="v num" id="q-pos">—</div><div class="k">当前持仓</div><div class="sub">模拟仓</div></div>
+      <div class="tile"><div class="v num" id="q-equity">—</div><div class="k">模拟仓总资产</div><div class="sub" id="q-equity-sub"></div></div>
+    </div>
+    <div class="acard" style="margin-top:12px;">
+      <div class="t">🌡 全市场 Regime 分层 <span class="dim" style="font-size:11px;font-weight:400" id="q-regime-ts"></span></div>
+      <div class="regime" id="q-regime"></div>
+      <div class="legend" id="q-regime-legend"></div>
+    </div>
+
+    <div class="sec-line">
+      <span class="sec-t">🗄️ 入库与分析</span>
+      <span class="sec-s">图谱健康 · 报告库沉淀</span>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="v num" id="w-reports">—</div><div class="k">回测报告库</div><div class="sub" id="w-reports-sub"></div></div>
+      <div class="tile" id="w-kg-tile"><div class="v num" id="w-kg">—</div><div class="k">图谱断流源</div><div class="sub" id="w-kg-sub"></div></div>
+      <div class="tile"><div class="v num" id="w-backup">—</div><div class="k">最近备份</div><div class="sub">每日 03:00</div></div>
+      <div class="tile"><div class="v num" id="w-models">—</div><div class="k">本地模型</div><div class="sub">Ollama 11434</div></div>
+    </div>
+
+    <div class="statusbar">
+      <span>📡 数据时间 <b id="f-ts">--</b></span><span class="sep">│</span>
+      <span>🔄 自动刷新 <b>120s</b></span><span class="sep">│</span>
+      <span>🧠 个人 OS · 双助手统领全站 Agent</span>
+    </div>
+  </main>
+
+<script>
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function set(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+  function tick() { set('clock', new Date().toLocaleTimeString('zh-CN', { hour12: false })); }
+  tick(); setInterval(tick, 1000);
+
+  const REGIME_CN = { trend_up: ['趋势上行', 'var(--color-up)'], range: ['区间震荡', '#8b949e'],
+                      rotation: ['轮动', 'var(--pur-500)'], trend_down: ['趋势下行', 'var(--color-dn)'] };
+
+  // ── 核心：/api/os（采集/Agent/量化/入库四域一炮）──
+  async function loadOS() {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/os', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      set('f-ts', d.ts || '--');
+      // ① 采集
+      const c = d.collect || {};
+      set('c-today', c.today ?? 0); set('c-judged', c.judged ?? 0);
+      set('c-total', (c.total ?? 0) + ' 条');
+      // ② Agent 产物
+      const a = d.agents || {};
+      set('ag-daily', a.daily_report ? '最新 ' + a.daily_report.replace('daily_report_', '').replace('.md', '') : '暂无产物');
+      set('ag-review', a.a0_review ? '最新 ' + a.a0_review.replace('a0_review_', '').replace('.md', '') : '暂无产物');
+      set('ag-plan', '累计 ' + (a.plan_total ?? 0) + ' 单 · 今日 ' + (a.plan_today ?? 0));
+      set('ag-judge', '累计 ' + (a.judge_total ?? 0) + ' 件 · 今日 ' + (a.judge_today ?? 0));
+      // ③ 量化
+      const s = d.strategies || {};
+      set('q-live', (s.live ?? 0) + ' live');
+      set('q-strat-sub', '影子 ' + (s.shadow ?? 0) + ' · 工具 ' + (s.tool ?? 0) + ' · 在册 ' + (s.total ?? 0));
+      const q = d.qd || {};
+      set('q-scan', (q.scanned ?? 0).toLocaleString() + ' 只');
+      set('q-scan-sub', q.ts ? String(q.ts).slice(5, 16) : '快照未生成');
+      set('q-star', (q.star_pool_n ?? 0).toLocaleString());
+      const p = d.paper || {};
+      set('q-orders', p.orders_total ?? 0);
+      set('q-orders-sub', '昨日 ' + (p.orders_yday ?? 0) + ' · 今日 ' + (p.orders_today ?? 0));
+      set('q-pos', p.positions ?? 0);
+      // regime 分层条
+      const rg = q.regime || {};
+      const keys = Object.keys(REGIME_CN).filter(k => rg[k] > 0);
+      const tot = keys.reduce((x, k) => x + rg[k], 0);
+      const bar = document.getElementById('q-regime');
+      const lg = document.getElementById('q-regime-legend');
+      if (bar && tot) {
+        bar.innerHTML = keys.map(k => {
+          const pct = rg[k] / tot * 100;
+          return '<div style="width:' + pct + '%;background:' + REGIME_CN[k][1] + '">' + (pct > 8 ? Math.round(pct) + '%' : '') + '</div>';
+        }).join('');
+        lg.innerHTML = keys.map(k => '<span>' + REGIME_CN[k][0] + ' <b>' + rg[k].toLocaleString() + '</b></span>').join('');
+        set('q-regime-ts', q.ts ? '· ' + String(q.ts).slice(5, 16) : '');
+      }
+      // ④ 入库与分析
+      const w = d.warehouse || {};
+      set('w-reports', w.reports_total ?? 0);
+      set('w-reports-sub', '今日更新 ' + (w.reports_today ?? 0) + ' 件');
+      set('w-kg', w.kg_stale ?? 0);
+      set('w-kg-sub', w.catalog_age_days === 0 ? '目录今日已巡检' : '目录龄 ' + (w.catalog_age_days ?? '?') + ' 天');
+      const tile = document.getElementById('w-kg-tile');
+      if (tile) tile.className = 'tile' + ((w.kg_stale ?? 0) > 0 ? ' warn' : '');
+    } catch {
+      set('f-ts', '聚合接口未就绪');
+    }
+    // brief 补采集分布
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const n = ((await r.json()).intel) || {};
+        set('c-hit', n.hit ?? 0);
+        set('c-bull', n.bull ?? 0); set('c-bear', n.bear ?? 0);
+        set('c-neutral', '中性 ' + (n.neutral ?? 0));
+      }
+    } catch {}
+  }
+
+  // ── 此刻 + 组织（/api/home）──
+  async function loadHome() {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/home', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const nc = d.now_context || {};
+      set('now-mode', nc.label || d.now || '此刻');
+      set('now-focus', (nc.focus || []).join(' · '));
+      const o = d.org || {};
+      if (o.ok) {
+        const deps = o.depts || [];
+        set('ag-org', 'chief ' + String(o.chief || 'A0') + ' · 直辖 ' + deps.length + ' 部门：'
+          + deps.map(x => x.name + (x.status === 'active' ? '' : '（规划）')).join('、'));
+      }
+    } catch {}
+  }
+
+  // ── 任务矩阵 + 容器 + 备份（/api/overview，首次聚合可能慢）──
+  async function loadOverview() {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 45000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const today = new Date().toISOString().slice(0, 10);
+      const tasks = d.tasks || [];
+      const ranToday = tasks.filter(t => String(t.lastrun || '').slice(0, 10) === today).length;
+      const ok = tasks.filter(t => String(t.last) === '0').length;
+      set('ag-tasks', '今日已跑 ' + ranToday + '/' + tasks.length + ' · 全绿 ' + ok);
+      let run = 0, tot = 0;
+      Object.values(d.containers || {}).forEach(v => { run += v.running; tot += v.total; });
+      set('ag-cont', run + '/' + tot + ' 在线');
+      const bk = (d.backups || {}).latest;
+      if (bk) set('w-backup', String(bk).split('_')[0].slice(5));
+    } catch { set('ag-tasks', '矩阵读取超时'); }
+  }
+
+  // ── 模拟仓资产（/api/paper_status）──
+  async function loadPaperStatus() {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/paper_status', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d.ok) return;
+      const L = d.latest || {};
+      set('q-equity', '¥' + (Math.round((L.total || 0) / 1000) / 10).toFixed(1) + ' 万');
+      const v = L.cum_pct ?? 0;
+      const el = document.getElementById('q-equity-sub');
+      if (el) {
+        el.textContent = '累计 ' + (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+        el.style.color = v > 0 ? 'var(--color-up)' : (v < 0 ? 'var(--color-dn)' : '');
+      }
+    } catch {}
+  }
+
+  // ── 本地模型数 ──
+  async function countModels() {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 3000);
+      const r = await fetch('http://localhost:11434/api/tags', { signal: ctl.signal, cache: 'no-store' });
+      const j = await r.json();
+      set('w-models', j.models.length + ' 个');
+    } catch { set('w-models', '离线'); }
+  }
+
+  loadOS(); loadHome(); loadOverview(); loadPaperStatus(); countModels();
+  setInterval(loadOS, 120000); setInterval(loadHome, 120000);
+  setInterval(loadOverview, 120000); setInterval(loadPaperStatus, 120000);
+</script>
+<script src="/static/cainiao.js" defer></script>
+</body>
+</html>

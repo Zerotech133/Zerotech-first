@@ -135,6 +135,106 @@ def build_brief():
                "catalog_age_days": st.get("catalog_age_days"),
                "ts": rt.get("ts")},
     }
+def build_os_cockpit():
+    """个人 OS 指挥大屏聚合（K-STOCK-260）：今天采集了什么 / Agent 在干什么 /
+    产出多少量化交易 / 入库与分析了多少——四域一炮。
+    全部轻量文件与 sqlite 读（无 docker/PS 子进程，毫秒级）；任务矩阵与容器
+    由前端并行另拉 /api/overview，此刻/钱/组织/日历走 /api/home。"""
+    today = time.strftime("%Y-%m-%d")
+    out = {"ok": True, "ts": time.strftime("%Y-%m-%d %H:%M"), "today": today}
+
+    # ── ① 采集：news.db 总量 + 今日 + 今日已判（与 /api/brief 同源独立读）──
+    news = {"total": 0, "today": 0, "judged": 0}
+    try:
+        import sqlite3
+        db = sqlite3.connect(os.path.join(STATION, "news_collector", "news.db"))
+        news["total"] = db.execute("SELECT COUNT(*) FROM news").fetchone()[0]
+        news["today"] = db.execute(
+            "SELECT COUNT(*) FROM news WHERE "
+            "created_at>=date('now','localtime')").fetchone()[0]
+        news["judged"] = db.execute(
+            "SELECT COUNT(*) FROM news WHERE jev IS NOT NULL AND "
+            "created_at>=date('now','localtime')").fetchone()[0]
+        db.close()
+    except Exception:
+        log_exc("build_os_cockpit:news.db 计数")  # 采集域缺库时前端亮未知点
+    out["collect"] = news
+
+    # ── ② Agent 动向：影子日报/点评 + 任务单审议产物 ──
+    sh = os.path.join(STATION, "agent_platform", "data", "shadow")
+    ksd = os.path.join(STATION, "k_stock", "data")
+    daily = sorted(glob.glob(os.path.join(sh, "daily_report_*.md")))
+    a0rev = sorted(glob.glob(os.path.join(sh, "a0_review_*.md")))
+    plans = glob.glob(os.path.join(ksd, "plan_review", "*"))
+    judges = glob.glob(os.path.join(ksd, "judge_reviews", "*"))
+
+    def _today(p):
+        try:
+            return time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(p))) == today
+        except OSError:
+            return False
+    out["agents"] = {
+        "daily_report": os.path.basename(daily[-1]) if daily else None,
+        "a0_review": os.path.basename(a0rev[-1]) if a0rev else None,
+        "plan_total": len(plans),
+        "plan_today": sum(1 for p in plans if _today(p)),
+        "judge_total": len(judges),
+        "judge_today": sum(1 for p in judges if _today(p)),
+    }
+
+    # ── ③ 量化产出：paper.db 订单/持仓 + 量子双刀扫描快照 ──
+    paper = {"orders_total": 0, "orders_today": 0, "orders_yday": 0,
+             "positions": 0, "ledger_today": 0}
+    try:
+        import sqlite3
+        db = sqlite3.connect(os.path.join(ksd, "paper.db"))
+        paper["orders_total"] = db.execute(
+            "SELECT COUNT(*) FROM orders").fetchone()[0]
+        paper["orders_today"] = db.execute(
+            "SELECT COUNT(*) FROM orders WHERE date(ts)=?",
+            (today,)).fetchone()[0]
+        paper["orders_yday"] = db.execute(
+            "SELECT COUNT(*) FROM orders WHERE date(ts)=date('now','-1 day')"
+        ).fetchone()[0]
+        paper["ledger_today"] = db.execute(
+            "SELECT COUNT(*) FROM ledger WHERE date(ts)=?",
+            (today,)).fetchone()[0]
+        paper["positions"] = db.execute(
+            "SELECT COUNT(*) FROM positions").fetchone()[0]
+        db.close()
+    except Exception:
+        log_exc("build_os_cockpit:paper.db 计数")  # 交易域缺库时前端亮未知点
+    out["paper"] = paper
+    qd = _read_json(os.path.join(ROOT, "qd_scan_cache.json")) or {}
+    out["qd"] = {"ts": qd.get("ts"), "scanned": qd.get("scanned", 0),
+                 "skipped": qd.get("skipped", 0),
+                 "star_pool_n": qd.get("star_pool_n", 0),
+                 "regime": qd.get("regime_now") or {}}
+    strat = {"live": 0, "shadow": 0, "tool": 0, "total": 0}
+    try:
+        from api_backtest import strategies_data
+        rows = (strategies_data() or {}).get("strategies") or []
+        strat["total"] = len(rows)
+        for s in rows:
+            k = s.get("status")
+            if k in strat:
+                strat[k] += 1
+    except Exception:
+        log_exc("build_os_cockpit:strategies 计数")  # 策略注册表缺文件时降级
+    out["strategies"] = strat
+
+    # ── ④ 入库与分析：图谱源健康 + 回测报告库 ──
+    rt = _read_json(os.path.join(QBT_DIR, "data", "kg_source_rating.json")) or {}
+    st = rt.get("staleness") or {}
+    rep = glob.glob(os.path.join(REPORTS_DIR, "*"))
+    out["warehouse"] = {
+        "kg_stale": len(st.get("stale_tables") or []),
+        "catalog_age_days": st.get("catalog_age_days"),
+        "reports_total": len(rep),
+        "reports_today": sum(1 for p in rep if _today(p)),
+    }
+    return out
+
 def build_overview():
     services = [
         {"name": "智策前端", "port": 5175},
