@@ -156,6 +156,26 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
+  /* ── 常用工具区 / 分区分界线（K-STOCK-245）── */
+  .sec-line { display: flex; align-items: baseline; gap: 12px; margin: 18px 0 10px; }
+  .sec-t { font-size: 12px; letter-spacing: 2.5px; color: var(--text-dim); font-weight: 700; }
+  .sec-s { font-size: 11px; color: var(--gray-6); }
+  .divider { display: flex; align-items: center; gap: 14px; margin: 26px 0 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--border-weak, var(--border)), transparent); }
+  .divider span { font-size: 12px; letter-spacing: 2.5px; color: var(--text-dim); font-weight: 700; white-space: nowrap; }
+  .fav-x { position: absolute; top: 10px; right: 12px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-dim); font-size: 12px; line-height: 20px; text-align: center; opacity: 0; transition: opacity .15s ease, color .15s ease, border-color .15s ease; cursor: pointer; }
+  .dm:hover .fav-x { opacity: 1; }
+  .fav-x:hover { color: var(--color-dn); border-color: var(--color-dn); }
+  .fav-add { border-style: dashed; align-items: center; justify-content: center; gap: 8px; color: var(--text-dim); cursor: pointer; }
+  .fav-add:hover { color: var(--link); border-color: var(--link); transform: none; }
+  .fav-plus { font-size: 26px; line-height: 1; }
+  .fav-add .t { font-size: 13px; font-weight: 600; }
+  #favPanel { margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #favPanel[hidden] { display: none; }
+  .fav-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border: 1px solid var(--border); border-radius: 999px; font-size: 12.5px; color: var(--text); cursor: pointer; background: var(--bg-surface); transition: border-color .15s ease; }
+  .fav-chip:hover { border-color: var(--link); }
+  .fav-chip.in { opacity: .45; cursor: default; border-style: dashed; }
+  .fav-chip .ic-s { font-size: 15px; }
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -191,10 +211,13 @@
       <span class="enter">进入大屏 →</span>
     </a>
 
-    <!-- 今日要务：一进来就把今天所有事串成态势（K-STOCK-112） -->
+    <!-- ⚡ 常用工具：每人自己的操作面，可随意增删（K-STOCK-245） -->
     <div style="margin-top:18px;">
-      <div style="font-size:12px;letter-spacing:2.5px;color:var(--text-dim);font-weight:700;margin-bottom:10px;">◤ 今日要务 · 四域态势</div>
-      <div class="board" style="margin-top:0;">
+      <div class="sec-line">
+        <span class="sec-t">⚡ 常用工具</span>
+        <span class="sec-s">你的日常操作面 · 点「＋ 添加」从全域挑选，悬停卡片右上角 × 移除</span>
+      </div>
+      <div class="board" id="favBoard" style="margin-top:0;">
         <a class="dm" href="/quant">
           <div class="head"><div class="ic">📈</div>
             <div><div class="t">量化 <span class="s" id="t-q-alert" style="margin-top:0;"></span></div></div></div>
@@ -233,8 +256,16 @@
           </div>
           <div class="foot"><span class="st"><span class="dot unknown"></span><span id="t-d-note">加载中…</span></span><span class="enter">进入开发 →</span></div>
         </a>
+        <a class="dm fav-add" id="favAdd" href="javascript:void(0)">
+          <div class="fav-plus">＋</div>
+          <div class="t">添加常用</div>
+        </a>
       </div>
+      <div id="favPanel" hidden></div>
     </div>
+
+    <!-- ═══ 分界线：以上=个人常用面，以下=全部分域 ═══ -->
+    <div class="divider"><span>🧭 全部分域</span></div>
 
     <div class="board">
       <!-- 智能体学院：仅交互原型，真实训练与交易未开放 -->
@@ -330,10 +361,8 @@
   // 时钟
   function tick() {
     const n = new Date();
-    document.getElementById('clock').textContent =
-      n.toLocaleTimeString('zh-CN', { hour12: false });
-    document.getElementById('m-date').textContent =
-      n.toLocaleDateString('zh-CN') + ' ' + n.toLocaleTimeString('zh-CN', { hour12: false });
+    set('clock', n.toLocaleTimeString('zh-CN', { hour12: false }));
+    set('m-date', n.toLocaleDateString('zh-CN') + ' ' + n.toLocaleTimeString('zh-CN', { hour12: false }));
   }
   tick(); setInterval(tick, 1000);
 
@@ -350,9 +379,9 @@
       const al = d.alerts || {};
       let run = 0, tot = 0;
       Object.values(d.containers || {}).forEach(v => { run += v.running; tot += v.total; });
-      document.getElementById('o-tasks').textContent = tasksOk + '/' + (d.tasks || []).length;
-      document.getElementById('o-cont').textContent = run + '/' + tot;
-      document.getElementById('o-alerts').textContent = al.pending ?? 0;
+      set('o-tasks', tasksOk + '/' + (d.tasks || []).length);
+      set('o-cont', run + '/' + tot);
+      set('o-alerts', al.pending ?? 0);
       const bk = (d.backups || {}).latest;
       const bkEl = document.getElementById('o-bk');
       if (bkEl && bk) { bkEl.textContent = bk.split('_')[0].slice(5); }
@@ -418,6 +447,9 @@
   loadPaper();
   setInterval(loadPaper, 60000);
 
+  // 判空赋值：常用工具卡可被移除，元素可能不存在（K-STOCK-245）
+  function set(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
   // ── 今日要务四域态势（K-STOCK-112）──
   async function loadToday() {
     // 量化：盘面 + 共振（brief）+ 预警计数（alerts）+ 模拟仓快照日
@@ -426,12 +458,12 @@
       const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
       if (r.ok) {
         const d = await r.json(), f = d.fin || {}, n = d.intel || {};
-        document.getElementById('t-q-verdict').textContent = String(f.verdict || '—').split('（')[0];
-        document.getElementById('t-q-buy').textContent = (f.buy ?? 0) + ' 只';
-        document.getElementById('t-i-news').textContent = (n.today ?? 0) + ' 条';
-        document.getElementById('t-i-bull').textContent = n.bull ?? 0;
-        document.getElementById('t-i-bear').textContent = n.bear ?? 0;
-        document.getElementById('t-i-note').textContent = (n.bear ?? 0) > (n.bull ?? 0) ? '利空偏多，留意' : '多空均衡';
+        set('t-q-verdict', String(f.verdict || '—').split('（')[0]);
+        set('t-q-buy', (f.buy ?? 0) + ' 只');
+        set('t-i-news', (n.today ?? 0) + ' 条');
+        set('t-i-bull', n.bull ?? 0);
+        set('t-i-bear', n.bear ?? 0);
+        set('t-i-note', (n.bear ?? 0) > (n.bull ?? 0) ? '利空偏多，留意' : '多空均衡');
       }
     } catch {}
     try {
@@ -439,8 +471,8 @@
       const r = await fetch('/api/alerts', { signal: ctl.signal, cache: 'no-store' });
       if (r.ok) {
         const d = await r.json(), items = d.alerts || [];
-        document.getElementById('t-q-alerts').textContent = items.length + ' 条';
-        document.getElementById('t-q-note').textContent = '预警速览就绪';
+        set('t-q-alerts', items.length + ' 条');
+        set('t-q-note', '预警速览就绪');
       }
     } catch {}
     // 创作：草稿/成片（overview）
@@ -449,11 +481,11 @@
       const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
       if (r.ok) {
         const d = await r.json();
-        document.getElementById('t-c-draft').textContent = ((d.gz || {}).drafts || []).length + ' 篇';
-        document.getElementById('t-c-video').textContent = ((d.video || {}).videos || []).length + ' 条';
-        document.getElementById('t-c-note').textContent = '内容产线在册';
+        set('t-c-draft', ((d.gz || {}).drafts || []).length + ' 篇');
+        set('t-c-video', ((d.video || {}).videos || []).length + ' 条');
+        set('t-c-note', '内容产线在册');
       }
-    } catch { document.getElementById('t-c-note').textContent = '产线数据未就绪'; }
+    } catch { set('t-c-note', '产线数据未就绪'); }
     // 开发：体检快照
     try {
       const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
@@ -461,14 +493,91 @@
       if (r.ok) {
         const h = await r.json();
         const iss = (h.issues || []).length;
-        document.getElementById('t-d-health').textContent = iss ? iss + ' 项待办' : '全绿';
-        document.getElementById('t-d-note').textContent = String(h.ts || '').slice(5, 10) + ' 体检';
-        document.getElementById('t-d-dev').textContent = iss ? '' : '全绿';
+        set('t-d-health', iss ? iss + ' 项待办' : '全绿');
+        set('t-d-note', String(h.ts || '').slice(5, 10) + ' 体检');
+        set('t-d-dev', iss ? '' : '全绿');
       }
-    } catch { document.getElementById('t-d-note').textContent = '体检未生成'; }
+    } catch { set('t-d-note', '体检未生成'); }
   }
   loadToday();
   setInterval(loadToday, 120000);
+
+  // ── 常用工具区：增删 + localStorage 持久化（K-STOCK-245）──
+  const FAV_KEY = 'os_favs_v1';
+  const FAV_POOL = [
+    { href: '/quant', ic: '📈', t: '量化' },
+    { href: '/intel', ic: '🕵️', t: '情报' },
+    { href: '/creator', ic: '🎬', t: '创作' },
+    { href: '/dev.html', ic: '💻', t: '开发' },
+    { href: '/screen.html', ic: '🖥️', t: '数据大屏', s: '盘面总览' },
+    { href: '/strong.html', ic: '📊', t: '板块强弱', s: '领涨识别' },
+    { href: '/paper', ic: '🧾', t: '模拟仓', s: '交易台' },
+    { href: '/academy.html', ic: '🎓', t: '智能体学院', s: 'AI 教 AI' },
+    { href: '/ops', ic: '⚙️', t: '系统运维', s: 'OS 控制台' },
+    { href: '/market.html', ic: '💰', t: '金融驾驶舱', s: '绩效账本' },
+    { href: '/picks.html', ic: '🎯', t: '选股中心', s: '每日精选' },
+    { href: '/kg/ask', ic: '🕸️', t: '图谱问答', s: '图谱查询' },
+    { href: '/audit.html', ic: '🛡️', t: '安全审计', s: '合规检查' },
+    { href: '/market_strategy.html', ic: '🧮', t: '策略市场', s: '策略投影' },
+  ];
+  const FAV_DEFAULT = ['/quant', '/intel', '/creator', '/dev.html'];
+  const favBoard = document.getElementById('favBoard');
+  const favPanel = document.getElementById('favPanel');
+  function favList() {
+    try { const v = JSON.parse(localStorage.getItem(FAV_KEY)); if (Array.isArray(v) && v.length) return v; } catch {}
+    return FAV_DEFAULT.slice();
+  }
+  function favSave(l) { try { localStorage.setItem(FAV_KEY, JSON.stringify(l)); } catch {} }
+  function favBindX(el, href) {
+    const x = document.createElement('div');
+    x.className = 'fav-x'; x.title = '移除'; x.textContent = '×';
+    x.onclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); favSave(favList().filter(v => v !== href)); renderFavs(); };
+    el.appendChild(x);
+  }
+  function favCard(p) {
+    const a = document.createElement('a');
+    a.className = 'dm fav-dyn'; a.href = p.href;
+    a.innerHTML = '<div class="head"><div class="ic">' + p.ic + '</div><div><div class="t">' + p.t + '</div></div></div>'
+      + '<div class="foot"><span class="st"><span class="dot unknown"></span><span>' + (p.s || '常用直达') + '</span></span><span class="enter">进入 →</span></div>';
+    favBindX(a, p.href);
+    return a;
+  }
+  function renderFavs() {
+    const list = favList();
+    favBoard.querySelectorAll('.fav-dyn').forEach(el => el.remove());
+    FAV_DEFAULT.forEach(h => {
+      const el = favBoard.querySelector('a.dm[href="' + h + '"]');
+      if (el) {
+        el.style.display = list.includes(h) ? '' : 'none';
+        const old = el.querySelector('.fav-x'); if (old) old.remove();
+        if (list.includes(h)) favBindX(el, h);
+      }
+    });
+    const addCard = document.getElementById('favAdd');
+    list.filter(h => !FAV_DEFAULT.includes(h)).forEach(h => {
+      const p = FAV_POOL.find(x => x.href === h);
+      if (p && addCard) favBoard.insertBefore(favCard(p), addCard);
+    });
+    renderPanel();
+  }
+  function renderPanel() {
+    const list = favList();
+    favPanel.innerHTML = '';
+    FAV_POOL.forEach(p => {
+      const inFav = list.includes(p.href);
+      const c = document.createElement('span');
+      c.className = 'fav-chip' + (inFav ? ' in' : '');
+      c.innerHTML = '<span class="ic-s">' + p.ic + '</span>' + p.t + (inFav ? ' · 已添加' : '');
+      if (!inFav) c.onclick = () => { favSave(favList().concat([p.href])); renderFavs(); };
+      favPanel.appendChild(c);
+    });
+    const tip = document.createElement('span');
+    tip.style.cssText = 'font-size:11px;color:var(--gray-6);margin-left:auto;';
+    tip.textContent = '点选加入常用区 · 配置存在本机浏览器';
+    favPanel.appendChild(tip);
+  }
+  document.getElementById('favAdd').addEventListener('click', (e) => { e.preventDefault(); favPanel.hidden = !favPanel.hidden; });
+  renderFavs();
 
   // Ollama 模型计数
   async function countModels() {
@@ -477,8 +586,8 @@
       setTimeout(() => ctl.abort(), 3000);
       const r = await fetch('http://localhost:11434/api/tags', { signal: ctl.signal, cache: 'no-store' });
       const j = await r.json();
-      document.getElementById('m-ollama').textContent = j.models.length + ' 个';
-    } catch { document.getElementById('m-ollama').textContent = '就绪'; }
+      set('m-ollama', j.models.length + ' 个');
+    } catch { set('m-ollama', '就绪'); }
   }
   countModels();
 
