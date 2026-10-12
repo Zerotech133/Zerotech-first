@@ -12,6 +12,7 @@
 """
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -117,6 +118,30 @@ def build_context(now: datetime | None = None, source: str | None = None) -> str
     return "\n".join(lines)
 
 
+def _auto_plan_review(mid: str, source: str) -> None:
+    """K-STOCK-168 · 盘前会后自动生成经理审批单（plan_review.review_plan）。
+
+    保险丝：KSTOCK_PLAN_REVIEW=0 可整体关闭（缺省开）——防止审批单 LLM 调用
+    拖垮会议编排主链。失败只 WARN 不阻断、不改变 exit code 语义（会议成功
+    仍是主目标）。重复跑覆盖当日审批单（以最新审查为准），无需去重。
+    """
+    if os.environ.get("KSTOCK_PLAN_REVIEW") == "0":
+        return
+    try:
+        import plan_review
+    except Exception as e:  # 模块级故障同走 WARN，不阻断会议线
+        print(f"WARN 审批单生成失败 {source}: {e}")
+        return
+    try:
+        r = plan_review.review_plan(pf_id=source, manager_id=mid)
+        fn = f"{r.get('date')}_{r.get('pf_id')}.json"
+        print(f"OK 审批单 {source} → {fn} (provider={r.get('provider')})")
+    except plan_review.PlanReviewError as e:
+        print(f"WARN 审批单生成失败 {source}: {e}")
+    except Exception as e:
+        print(f"WARN 审批单生成失败 {source}: {e}")
+
+
 def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[int, list[dict]]:
     """编排一轮会议。返回 (exit_code, 结果明细)。"""
     now = now or datetime.now()
@@ -155,6 +180,8 @@ def run(kind: str, dry_run: bool = False, now: datetime | None = None) -> tuple[
                   f"(channel={rec.get('channel')}, provider={provider})")
             results.append({"mid": mid, "source": source, "status": "ok",
                             "title": rec.get("title"), "provider": provider})
+            if kind == "pre_open":   # K-STOCK-168：审批单属盘前语义，盘后不生成
+                _auto_plan_review(mid, source)
         except meeting.MeetingError as e:
             failed += 1
             print(f"FAIL {mid}×{source} {kind} → {e}")

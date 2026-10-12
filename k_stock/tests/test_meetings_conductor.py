@@ -11,6 +11,14 @@ sys.path.insert(0, str(HERE.parent / "paper"))
 import meetings_conductor as cond  # noqa: E402
 import meeting  # noqa: E402
 import plan_review  # noqa: E402  # K-STOCK-163：conductor 经同模块做意图摘要增强
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_auto_plan_review(monkeypatch):
+    """K-STOCK-168：审批单自动化在测试里缺省关闭（防存量 ok 用例真调
+    review_plan 触网）；审批单相关用例在用例体内 setenv("1") 显式覆盖。"""
+    monkeypatch.setenv("KSTOCK_PLAN_REVIEW", "0")
 
 
 def _wed_0900():
@@ -243,3 +251,105 @@ def test_hired_source_not_in_subscriptions_not_killed(monkeypatch, tmp_path, cap
     code, results = cond.run("pre_open", now=_wed_0900())
     assert code == 0 and calls == [("laotian_pm", "qd", "pre_open")]
     assert results[0]["status"] == "ok"
+
+
+# ---- K-STOCK-168 · 盘前会后自动生成经理审批单（KSTOCK_PLAN_REVIEW=0 保险丝） ----
+
+def _fake_review_calls(monkeypatch, raise_exc=None):
+    """挂 plan_review.review_plan 桩，记录调用；raise_exc 非空则抛。"""
+    calls = []
+
+    def fake_review(pf_id, manager_id, source=None):
+        calls.append((pf_id, manager_id, source))
+        if raise_exc is not None:
+            raise raise_exc
+        return {"date": "20261014", "pf_id": pf_id,
+                "provider": "glm-5.3-flash", "approved": [], "rejected": []}
+
+    monkeypatch.setattr(plan_review, "review_plan", fake_review)
+    return calls
+
+
+def test_pre_open_ok_triggers_review_plan(monkeypatch, capsys):
+    """pre_open ok → review_plan 被调且参数正确（pf_id=source, manager_id=mid）。"""
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_002", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    calls = _fake_review_calls(monkeypatch)
+    monkeypatch.setenv("KSTOCK_PLAN_REVIEW", "1")
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and results[0]["status"] == "ok"
+    assert calls == [("pf_002", "laotian_pm", None)]
+    out = capsys.readouterr().out
+    assert "OK 审批单 pf_002 → 20261014_pf_002.json (provider=glm-5.3-flash)" in out
+
+
+def test_review_failure_warns_but_still_exit0(monkeypatch, capsys):
+    """审批单失败 → WARN 留痕，但会议成功主语义不变（仍 exit 0）。"""
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_002", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    _fake_review_calls(monkeypatch,
+                       raise_exc=plan_review.PlanReviewError("LLM 审查失败（模拟）"))
+    monkeypatch.setenv("KSTOCK_PLAN_REVIEW", "1")
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and results[0]["status"] == "ok"
+    out = capsys.readouterr().out
+    assert "WARN 审批单生成失败 pf_002" in out and "SUMMARY" in out
+
+
+def test_env_switch_off_disables_review(monkeypatch, capsys):
+    """KSTOCK_PLAN_REVIEW=0 → 不调 review_plan（保险丝）。"""
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_002", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    calls = _fake_review_calls(monkeypatch)
+    monkeypatch.setenv("KSTOCK_PLAN_REVIEW", "0")
+    code, results = cond.run("pre_open", now=_wed_0900())
+    assert code == 0 and results[0]["status"] == "ok"   # 会议照开
+    assert calls == []
+    assert "审批单" not in capsys.readouterr().out
+
+
+def test_post_close_does_not_trigger_review(monkeypatch, capsys):
+    """审批单属盘前语义 → post_close ok 也不调 review_plan。"""
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_002", "status": "active"}])
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: [])
+    monkeypatch.setattr(meeting, "hold_meeting",
+                        lambda mid, source, kind, context="", channel=None:
+                        ({"title": "t", "channel": "site"}, "glm-5.3-flash"))
+    calls = _fake_review_calls(monkeypatch)
+    monkeypatch.setenv("KSTOCK_PLAN_REVIEW", "1")
+    code, results = cond.run("post_close", now=datetime(2026, 10, 14, 15, 15))
+    assert code == 0 and results[0]["status"] == "ok"
+    assert calls == []
+    assert "审批单" not in capsys.readouterr().out
+
+
+def test_skipped_and_dry_do_not_trigger_review(monkeypatch, tmp_path, capsys):
+    """去重跳过（skipped）与 dry-run（dry）都不调 review_plan。"""
+    monkeypatch.setattr(cond.manager, "hires_list", lambda: [
+        {"manager": "laotian_pm", "source": "pf_002", "status": "active"},
+        {"manager": "bull_desk", "source": "pf_002", "status": "active"}])
+    # laotian_pm 今日已开 → skipped；bull_desk 走 dry-run
+    monkeypatch.setattr(cond, "minutes_list", lambda mid: (
+        [{"kind": "pre_open", "created_at": "2026-10-14 09:00:00"}]
+        if mid == "laotian_pm" else []))
+    calls = _fake_review_calls(monkeypatch)
+    monkeypatch.setenv("KSTOCK_PLAN_REVIEW", "1")
+    code, results = cond.run("pre_open", dry_run=True, now=_wed_0900())
+    st = {r["mid"]: r["status"] for r in results}
+    assert code == 0
+    assert st["laotian_pm"] == "skipped" and st["bull_desk"] == "dry"
+    assert calls == []
+    assert "审批单" not in capsys.readouterr().out
