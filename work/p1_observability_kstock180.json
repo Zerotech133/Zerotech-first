@@ -18,7 +18,10 @@
       "portal/start_todays_picks.ps1",
       "quant_backtest/col_audit_task.ps1",
       "quant_backtest/k260_regression_task.ps1",
+      "quant_backtest/kg_check.py",
       "quant_backtest/miss_check.py",
+      "quant_backtest/pick_archive_monitor.py",
+      "quant_backtest/rps_resonance.py",
       "quant_backtest/start_adj_factor_sync.ps1",
       "quant_backtest/start_bt_scan.ps1",
       "quant_backtest/start_chanlun_scan.ps1",
@@ -57,7 +60,7 @@
       "quant_backtest/start_weak_track.ps1"
     ],
     "direct_file_count": 0,
-    "wrapper_file_count": 50,
+    "wrapper_file_count": 53,
     "wrapper_schema_complete": true,
     "coverage_gap": false
   },

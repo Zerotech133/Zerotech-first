@@ -24,6 +24,9 @@ _PYTHON_ALERT_CALL = re.compile(
     r"(?:subprocess\.(?:run|Popen|call|check_call|check_output)|"
     r"os\.(?:system|popen)|\b(?:run|Popen|call|check_call|check_output)\s*\()"
 )
+_SUBPROCESS_METHODS = frozenset({
+    "run", "Popen", "call", "check_call", "check_output",
+})
 _SOURCES = ("qd", "qpzm", "ai_team")
 
 
@@ -58,12 +61,52 @@ def _has_alert_call(path: Path, text: str, target: re.Pattern[str]) -> bool:
         except SyntaxError:
             tree = None
         if tree is not None:
+            module_aliases = {"subprocess"}
+            call_aliases: set[str] = set()
+            target_vars: set[str] = set()
+            for item in ast.walk(tree):
+                if isinstance(item, ast.Import):
+                    for alias in item.names:
+                        if alias.name == "subprocess":
+                            module_aliases.add(alias.asname or "subprocess")
+                elif (isinstance(item, ast.ImportFrom)
+                      and item.module == "subprocess"):
+                    for alias in item.names:
+                        if alias.name in _SUBPROCESS_METHODS:
+                            call_aliases.add(alias.asname or alias.name)
+                elif isinstance(item, (ast.Assign, ast.AnnAssign)):
+                    value = item.value
+                    has_target = any(
+                        isinstance(child, ast.Constant)
+                        and isinstance(child.value, str)
+                        and target.search(child.value)
+                        for child in ast.walk(value))
+                    if has_target:
+                        targets = (item.targets if isinstance(item, ast.Assign)
+                                   else [item.target])
+                        target_vars.update(
+                            node.id for node in targets
+                            if isinstance(node, ast.Name))
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue
                 segment = ast.get_source_segment(text, node) or ""
-                if (target.search(segment)
-                        and _PYTHON_ALERT_CALL.search(segment)):
+                func = node.func
+                is_exec = False
+                if isinstance(func, ast.Name):
+                    is_exec = func.id in call_aliases
+                elif isinstance(func, ast.Attribute):
+                    owner = func.value.id if isinstance(func.value, ast.Name) else ""
+                    is_exec = ((owner in module_aliases
+                                and func.attr in _SUBPROCESS_METHODS)
+                               or (owner == "os"
+                                   and func.attr in {"system", "popen"}))
+                if ((target.search(segment) and (
+                        is_exec or _PYTHON_ALERT_CALL.search(segment)))
+                        or (is_exec and any(
+                            isinstance(child, ast.Name)
+                            and child.id in target_vars
+                            for child in ast.walk(node)))):
                     return True
             return False
         # 语法不完整时保守回退到去注释行扫描，避免漏报。
@@ -80,6 +123,34 @@ def _has_alert_call(path: Path, text: str, target: re.Pattern[str]) -> bool:
 
 def _has_direct_alert_call(path: Path, text: str) -> bool:
     """判断是否仍有绕过包装器的旧告警入口。"""
+    if path.suffix.lower() == ".py":
+        try:
+            tree = ast.parse(text, filename=str(path))
+        except SyntaxError:
+            tree = None
+        if tree is not None:
+            function_aliases: set[str] = set()
+            module_aliases: set[str] = set()
+            for node in ast.walk(tree):
+                if (isinstance(node, ast.ImportFrom)
+                        and node.module == "alert_fail"):
+                    function_aliases.update(
+                        alias.asname or alias.name for alias in node.names
+                        if alias.name != "*")
+                elif isinstance(node, ast.Import):
+                    module_aliases.update(
+                        alias.asname or alias.name
+                        for alias in node.names if alias.name == "alert_fail")
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                if isinstance(func, ast.Name) and func.id in function_aliases:
+                    return True
+                if (isinstance(func, ast.Attribute)
+                        and isinstance(func.value, ast.Name)
+                        and func.value.id in module_aliases):
+                    return True
     return _has_alert_call(path, text, _DIRECT_ALERT)
 
 
