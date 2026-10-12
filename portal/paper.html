@@ -147,25 +147,18 @@
   <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
 <nav class="topnav">
-  <a class="pill" href="/">🏠 首页</a>
-  <a class="pill" href="/picks.html">🎯 今日选股</a>
-  <a class="pill" href="/strong.html">💪 板块强弱</a>
-  <a class="pill" href="/quant">📈 量化</a>
+  <!-- K-STOCK-217 胶囊精简（老田 10-12 拍板：顶端胶囊太多跳来跳去，只留返回+当前页，其余入口走首页门面动线） -->
+  <a class="pill" href="/">🏠 返回首页</a>
   <a class="pill on" href="/paper.html">🧾 模拟仓</a>
-  <a class="pill" href="/market-strategy">🛒 策略市场</a>
-  <a class="pill" href="/intel">🧠 情报</a>
-  <a class="pill" href="/creator">✨ 创作者</a>
-  <a class="pill" href="/dev.html">🧪 工作台</a>
-  <a class="pill" href="/ops">⚙ 系统</a>
 </nav>
 
 <div class="wrap">
 
   <div class="tabs">
     <div class="tab active" data-tab="desk">交易台</div>
+    <div class="tab" data-tab="agent">交易员市场</div>
     <div class="tab" data-tab="pos">持仓 <span class="n" id="n-pos">0</span></div>
     <div class="tab" data-tab="hist">历史</div>
-    <div class="tab" data-tab="agent">交易员市场 <span class="n">v0.4</span></div>
   </div>
 
   <!-- ============ 交易台 ============ -->
@@ -322,8 +315,22 @@
   <!-- ============ 交易员市场 ============ -->
   <div class="tabpanel" id="tab-agent">
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
-      <span style="font-size:15px;font-weight:700">🏪 交易员市场（v0.4 · 战绩实时投影）</span>
-      <span style="font-size:12px;color:var(--text-dim)">选股机器人 ≠ 交易机器人：策略源只回答「<b>买什么</b>」，交易员回答「<b>怎么买、买多少、何时卖</b>」。下方战绩来自各子账本每日实习快照（settle→止损→mark 例程）；历史重放预筛见 <code>trainee.py replay</code>。</span>
+      <span style="font-size:15px;font-weight:700">🏪 交易员市场（选择团队 → 之后才有持仓）</span>
+      <span style="font-size:12px;color:var(--text-dim)">先选策略与团队，选择之后产生持仓。下方战绩表：分档回测（近1年/半年/3月/1月）待回测引擎接入后逐档填充，现展示各子账本<b>实习快照真实业绩</b>（settle→止损→mark 例程，逐日留痕）。</span>
+    </div>
+    <!-- K-STOCK-217 战绩总览表（老田 10-12 拍板：Table 页方式展现，经理/交易员分角色呈现，回测四档列结构先立） -->
+    <div style="overflow-x:auto;margin:10px 0 16px">
+      <table class="sig-table" id="market-table">
+        <thead>
+          <tr style="color:var(--text-dim)">
+            <th style="text-align:left">团队 / 交易员</th><th>角色</th><th>风格</th>
+            <th>近1月</th><th>近3月</th><th>近半年</th><th>近1年</th>
+            <th>实习累计</th><th>最大回撤</th><th>Sharpe</th><th>状态</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="11" class="empty">读取中…</td></tr></tbody>
+      </table>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:-8px">· 分档列为回测口径（待接入）；实习累计/回撤/Sharpe 为模拟盘账本真实现价快照 · 涨=红 跌=绿</div>
     </div>
     <div class="agent-grid" id="agent-grid"></div>
     <div id="pricing-wrap">
@@ -797,6 +804,41 @@ async function loadAgents(){
       renderAgents(S.status,{rows:j.rows||[]});
     }
   }catch(e){/* 静默降级：保留档案静态卡 */}
+  renderMarketTable();   // K-STOCK-217 战绩总览表（失败静默降级）
+}
+
+// ===== K-STOCK-217 市场战绩总览表（老田 10-12 拍板：Table 页方式，经理/交易员分角色；
+//      分档回测四列（1月/3月/半年/1年）待回测引擎接入，现仅填账本真实快照，绝不编数） =====
+function renderMarketTable(){
+  const tb=document.querySelector('#market-table tbody');
+  if(!tb)return;
+  Promise.all([
+    api('/api/trader_roster').catch(()=>null),
+    api('/api/manager_roster').catch(()=>null)
+  ]).then(([tr,mr])=>{
+    const rows=[];
+    (mr&&mr.managers||[]).forEach(m=>{
+      rows.push({nm:esc(m.name||m.id), role:'投资经理', style:esc(m.style||'-'),
+        cum:null, dd:null, sharpe:null,
+        st:m.status==='live'?'在雇待选':'规划中',
+        price:m.hire_price_cny?`¥${m.hire_price_cny}/月`:''});
+    });
+    ((tr&&tr.rows)||[]).forEach(r=>{
+      rows.push({nm:esc(r.name||r.id), role:'交易员', style:esc(r.style||'-'),
+        cum:r.cum_pct, dd:r.max_dd_pct, sharpe:r.sharpe,
+        st:r.status==='live'?'已上岗':'实习中', days:r.days});
+    });
+    if(!rows.length){tb.innerHTML='<tr><td colspan="11" class="empty">暂无名册数据</td></tr>';return;}
+    tb.innerHTML=rows.map(x=>'<tr>'
+      +`<td style="text-align:left"><b>${x.nm}</b>${x.price?` <span style="color:var(--text-dim);font-size:11px">${x.price}</span>`:''}</td>`
+      +`<td>${x.role}</td><td>${x.style}</td>`
+      +'<td>—</td><td>—</td><td>—</td><td>—</td>'
+      +`<td class="${cls(x.cum)}">${pct(x.cum)}</td>`
+      +`<td class="down">${x.dd==null?'—':x.dd.toFixed(2)+'%'}</td>`
+      +`<td>${x.sharpe==null?'—':(x.sharpe>0?'+':'')+x.sharpe.toFixed(2)}</td>`
+      +`<td>${x.st}${x.days?` <span style="color:var(--text-dim);font-size:11px">${x.days}天</span>`:''}</td>`
+      +'</tr>').join('');
+  });
 }
 
 // ===== 投资经理（K-STOCK-137d S-b2：/api/manager_roster + manager_hire/fire） =====
