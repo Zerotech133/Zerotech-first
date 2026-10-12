@@ -136,6 +136,33 @@
       '<div class="agrow"><span class="ico">' + i + '</span><span><div class="n">' + n + '</div><div class="d">' + ds + '</div></span>'
       + '<span class="r dim">' + r + '</span></div>').join('');
 
+    // ⑨ 商务 · 出行（biz.json：未来 7 天出行/会议 + 下次提醒 + 纪要在库）
+    const bz = d.biz || {};
+    const KIND = { trips: ['🚗', '出行'], meetings: ['🤝', '会议'] };
+    let bizHtml = (bz.near || []).map(x => {
+      const [ico, kind] = x.where ? KIND.trips : KIND.meetings;
+      return '<div class="agrow"><span class="ico">' + ico + '</span><span>'
+        + '<div class="n">' + kind + ' · ' + esc(x.where || x.who || '') + '</div>'
+        + '<div class="d">' + esc(x.date || '') + ' · ' + esc(x.topic || x.ideas || '') + '</div></span></div>';
+    }).join('');
+    if (bz.remind_next) bizHtml += '<div class="agrow"><span class="ico">⏰</span><span><div class="n">AI 定时提醒</div><div class="d">下次 ' + esc(bz.remind_next) + '</div></span></div>';
+    bizHtml += '<div class="agrow"><span class="ico">📝</span><span><div class="n">会议纪要在库</div><div class="d">' + fmt(bz.minutes_total) + ' 份 · 节点自动提醒</div></span></div>';
+    $('biz-rows').innerHTML = bizHtml || '<div class="dim" style="font-size:12px">近 7 天无出行/会议安排</div>';
+    $('biz-r').textContent = '出行 ' + fmt(bz.trips_total) + ' · 会议 ' + fmt(bz.meetings_total);
+
+    // ⑩ 学习 · 内容创作（在研文稿实锤 + 学院域如实占位）
+    const notes = bz.notes || [];
+    let ln = notes.map(x =>
+      '<div class="agrow"><span class="ico">📄</span><span>'
+      + '<div class="n">' + esc(x.title || '') + '</div>'
+      + '<div class="d">' + esc(x.type || '') + ' · 在研 · 更新 ' + esc(x.updated || '') + '</div></span></div>').join('');
+    ln += '<div class="agrow"><span class="ico">✍️</span><span><div class="n">公众号草稿 ' + fmt(o.gzh || 0) + ' 篇</div><div class="d">选题→成稿流水线在库</div></span></div>';
+    ln += '<div class="agrow"><span class="ico">🎬</span><span><div class="n">短视频成片 ' + fmt(o.video || 0) + ' 条</div><div class="d">创作流水线</div></span></div>';
+    if (!(bz.learn || {}).ready)
+      ln += '<div class="agrow"><span class="ico">🎓</span><span><div class="n">学习域建设中</div><div class="d">零界学院课程/笔记数据源待接入</div></span></div>';
+    $('learn-rows').innerHTML = ln;
+    $('learn-r').textContent = '在研 ' + notes.length + ' / 共 ' + fmt(bz.notes_total) + ' 篇';
+
     // ⑧ 底部跑马灯
     const items = [
       '📥 今日采集 <b>' + fmt(c.today) + '</b> 条，已研判 <b>' + fmt(c.judged) + '</b>',
@@ -143,6 +170,8 @@
       '💻 AI 敲码提交 <b>' + fmt(cd.commits_today) + '</b> 笔',
       '📈 双刀全池扫描 <b>' + fmt(q.scanned) + '</b> 只 · 星池 <b>' + fmt(q.star_pool_n) + '</b>',
       '💰 模拟资产总值 <b>¥' + fmt(totalAll) + '</b>（五市场）',
+      '🚗 商务：近 7 天出行/会议 <b>' + fmt((bz.near || []).length) + '</b> 项' + (bz.remind_next ? ' · 下次提醒 <b>' + bz.remind_next + '</b>' : ''),
+      '📚 在研文稿 <b>' + fmt(bz.notes_total) + '</b> 篇 · 草稿 <b>' + fmt(o.gzh || 0) + '</b>',
       '✅ 待办亮牌 <b>' + fmt(todoN) + '</b> 项'];
     $('ticker-move').innerHTML = items.map(s => '<span>' + s + '</span>').join('') + items.map(s => '<span>' + s + '</span>').join('');
   }

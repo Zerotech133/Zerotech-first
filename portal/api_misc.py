@@ -372,6 +372,32 @@ def build_os_cockpit():
         "notes_doing": sum(1 for d in nt.get("docs") or []
                            if d.get("status") == "在研"),
     }
+
+    # ── ⑧ 商务办公与个人整理（K-STOCK-267）：出行/会议/纪要/在研文稿 ──
+    today_d = today
+    near = sorted((bz.get("trips") or []) + (bz.get("meetings") or []),
+                  key=lambda x: str(x.get("date") or ""))
+    biz = {
+        # 未来 7 天内的出行与会议（含今天）
+        "near": [x for x in near
+                 if str(x.get("date") or "") >= today_d
+                 and str(x.get("date") or "") <= time.strftime(
+                     "%Y-%m-%d", time.localtime(now + 7 * 86400))][:6],
+        "trips_total": len(bz.get("trips") or []),
+        "meetings_total": len(bz.get("meetings") or []),
+        "minutes_total": len(bz.get("minutes") or []),
+        "remind_next": min((str(m.get("remind_at"))[:16]
+                            for m in bz.get("minutes") or [] if m.get("remind_at")
+                            and str(m.get("remind_at")) >= time.strftime("%Y-%m-%d %H:%M", time.localtime(now))),
+                           default=None),
+        # 在研文稿明细（个人整理：报告/PPT/课件/公文）
+        "notes": [d for d in (nt.get("docs") or [])
+                  if d.get("status") == "在研"][:6],
+        "notes_total": len(nt.get("docs") or []),
+        # 学习域：暂无独立数据源（学院页纯静态）——如实占位
+        "learn": {"ready": False},
+    }
+    out["biz"] = biz
     return out
 
 def build_overview():
