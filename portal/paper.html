@@ -369,6 +369,8 @@ const STRAT_NAMES={ai_team:'AI 值班',double_knife:'量子双刀',qingping:'青
 const fmt=n=>n==null?'-':Number(n).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const pct=n=>n==null?'-':(n>0?'+':'')+n.toFixed(2)+'%';
 const cls=n=>n>0?'up':(n<0?'down':'');
+/* K-STOCK-183 XSS 收敛：全页唯一 HTML 转义函数（含引号，属性上下文安全），原先 5 处重复定义（453/490/516/529/OB_ESC 983）全部收敛至此 */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function toast(msg,ms=3200){const t=$('toast');t.innerHTML=msg;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),ms);}
 
@@ -450,7 +452,6 @@ function renderAll(j){
 const PLAN_RC_COLOR={'信心不足':'var(--text-dim)','行业集中':'#e3b341','风险敞口':'var(--color-dn)','流动性':'var(--pur-500,#a371f7)'};
 function renderPlanReview(r,pf){
   const el=$('plan-body');
-  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   if(!r){el.innerHTML='<div class="empty">今日审批单尚未生成（09:05 经理盘前会后将产出）'+(pf?`（组合 ${esc(pf)}）`:'')+'</div>';return;}
   const ap=(r.approved||[]).map(a=>
     `<tr><td><b><a href="/kg/stock/${esc(a.stock)}">${esc(a.stock)}</a></b></td>`+
@@ -487,7 +488,6 @@ async function loadPlanPfOptions(){
     const sel=$('plan-pf-select');if(!sel)return;
     const pfs=(j&&j.ok&&Array.isArray(j.portfolios))?j.portfolios:null;
     if(!pfs||!pfs.length)return;
-    const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const cur=sel.value||'pf_001';
     sel.innerHTML=pfs.map(p=>`<option value="${esc(p.id||'')}">${esc(p.name||p.id||'')}</option>`).join('');
     if(pfs.some(p=>(p.id||'')===cur))sel.value=cur;
@@ -501,11 +501,11 @@ function renderPick(pk){
   const el=$('pick-body');
   if(!pk||!pk.ok){el.innerHTML='<div class="empty">选票通道未接入（10-16 实弹）</div>';return;}
   const pend=(pk.pending_orders||[]).map(p=>
-    `<div>🎯 ${p.side} <a href="/kg/stock/${p.stock}">${p.stock}</a> ×${p.qty} → ${p.plan_date} 开盘${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${p.warn}</span>`:''}</div>`).join('');
+    `<div>🎯 ${esc(p.side)} <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ×${p.qty} → ${esc(p.plan_date)} 开盘${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${esc(p.warn)}</span>`:''}</div>`).join('');
   const done=(pk.recent_orders||[]).filter(r=>r.status==='filled').slice(0,5).map(r=>
-    `<div>✅ ${r.stock} ${fmt(r.qty)} @${r.filled_price?fmt(r.filled_price):'-'}（${r.fill_date}）</div>`).join('');
+    `<div>✅ ${esc(r.stock)} ${fmt(r.qty)} @${r.filled_price?fmt(r.filled_price):'-'}（${esc(r.fill_date)}）</div>`).join('');
   const m=pk.marks&&pk.marks.length?pk.marks[pk.marks.length-1]:null;
-  const head=m?`<div style="font-size:11.5px;color:var(--text-dim);margin-bottom:4px">快照 ${m.date} · 总资产 ${fmt(m.total)} · 待撮合 ${m.pending}</div>`:'';
+  const head=m?`<div style="font-size:11.5px;color:var(--text-dim);margin-bottom:4px">快照 ${esc(m.date)} · 总资产 ${fmt(m.total)} · 待撮合 ${m.pending}</div>`:'';
   el.innerHTML=head+(pend||'')+(done||'')||'<div class="empty">无挂单无成交（10-16 实弹）</div>';
   if(!pend&&!done)el.innerHTML=head+'<div class="empty">无挂单无成交（10-16 实弹）</div>';
 }
@@ -513,7 +513,6 @@ function renderMeeting(m){
   const el=$('meet-body');
   if(!m||!m.ok){el.innerHTML='<div class="empty">暂无复盘会（每日 routine 尾自动召开）</div>';return;}
   const mgr=m.manager||{}, dis=m.disagreements||[], items=m.action_items||[];
-  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const narr=m.minutes_narrative?`<div style="font-size:11.5px;margin-bottom:6px">🗣 ${esc(m.minutes_narrative).slice(0,180)}</div>`:'';
   const dd=dis.length?`<div style="font-size:11.5px;color:#e3b341;margin-bottom:6px">⚖ 分歧 ${dis.length}：${esc(dis[0].on)}…</div>`:'';
   const ai=items.length?`<div style="font-size:11.5px;color:var(--text-dim)">待办：${esc(items[0]).slice(0,60)}${items.length>1?` 等 ${items.length} 项`:''}</div>`:'';
@@ -526,7 +525,6 @@ function renderPortfoliosMulti(ps){
   const host=$('pf-multi-body');if(!host)return;
   const pfs=(ps&&ps.ok&&Array.isArray(ps.portfolios))?ps.portfolios:null;
   if(!pfs||!pfs.length){host.style.display='none';return;}   // 静默退回现状
-  const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   host.style.display='block';
   host.innerHTML=pfs.map((pf,i)=>{
     const chips=(pf.strategies||[]).map(s=>`<a href="/market-strategy" style="display:inline-block;border:1px solid var(--border);border-radius:10px;padding:1px 8px;margin:0 4px 4px 0;font-size:11px;text-decoration:none;color:var(--text)">${esc(s)}</a>`).join('')||'<span style="font-size:11px;color:var(--text-dim)">未订阅策略</span>';
@@ -534,8 +532,8 @@ function renderPortfoliosMulti(ps){
     const eqDate=(pf.equity&&pf.equity.date)?`<div style="font-size:10.5px;color:var(--text-dim)">净值快照 ${esc(pf.equity.date)}</div>`:'';
     const pendCnt=(pf.pending||[]).length,posCnt=(pf.positions||[]).length;
     const traders=(pf.traders||[]).map(t=>`<div>🤖 AI 交易员在岗：<b>${esc(t)}</b></div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">未聘交易员（可去<a href="/market-strategy">策略市场</a>订阅后一键聘用）</div>';
-    const pend=(pf.pending||[]).slice(0,6).map(p=>`<div>🎯 ${esc(p.side)} <a href="/kg/stock/${p.stock}">${p.stock}</a> ×${p.qty}（${esc(p.plan_date||'')}）</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无挂单</div>';
-    const poss=(pf.positions||[]).slice(0,8).map(p=>`<div>📦 <a href="/kg/stock/${p.stock}">${p.stock}</a> ${p.qty} 股 @${p.avg_cost!=null?Number(p.avg_cost).toFixed(2):'-'}</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无持仓</div>';
+    const pend=(pf.pending||[]).slice(0,6).map(p=>`<div>🎯 ${esc(p.side)} <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ×${p.qty}（${esc(p.plan_date||'')}）</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无挂单</div>';
+    const poss=(pf.positions||[]).slice(0,8).map(p=>`<div>📦 <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a> ${p.qty} 股 @${p.avg_cost!=null?Number(p.avg_cost).toFixed(2):'-'}</div>`).join('')||'<div style="font-size:11px;color:var(--text-dim)">无持仓</div>';
     return `<div style="margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px">
       <div style="cursor:pointer" onclick="pfMultiToggle('pf-multi-detail-${i}')">
         <div style="font-weight:700">${esc(pf.name||pf.id||'-')} <span style="font-size:10.5px;color:var(--text-dim);font-weight:400">${esc(pf.id||'')}</span> ▾</div>
@@ -565,9 +563,9 @@ function renderJudge(jd){
   const gc=s=>s>=90?'var(--color-up)':s>=75?'#e3b341':'var(--color-down)';
   el.innerHTML=jd.reviews.map(r=>{
     const f=(r.findings||[]).filter(x=>x.severity!=='info').slice(0,3).map(x=>
-      `<div style="font-size:11.5px;color:var(--text-dim)">· [${x.rule}] ${x.msg}</div>`).join('');
+      `<div style="font-size:11.5px;color:var(--text-dim)">· [${esc(x.rule)}] ${esc(x.msg)}</div>`).join('');
     return `<div style="margin-bottom:8px">
-      <div style="font-weight:700">${r.date} · <span style="color:${gc(r.score)}">${r.score} 分 ${r.grade}</span></div>
+      <div style="font-weight:700">${esc(r.date)} · <span style="color:${gc(r.score)}">${r.score} 分 ${esc(r.grade)}</span></div>
       ${f||'<div style="font-size:11.5px;color:var(--text-dim)">· 无风险项</div>'}</div>`;
   }).join('');
 }
@@ -578,8 +576,8 @@ function renderStrat(st){
   const gc=s=>s>=85?'var(--color-up)':s>=70?'#e3b341':'var(--color-down)';
   const head=`<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">快照 ${st.generated_at||'-'} · 影子模式仅建议，不产生调度效果</div>`;
   el.innerHTML=head+st.sources.map(s=>
-    `<div style="margin-bottom:6px"><div style="font-weight:700">${s.name} · <span style="color:${gc(s.score)}">${s.score} ${s.grade}</span></div>
-     <div style="font-size:11.5px;color:var(--text-dim)">${s.suggestion||''}</div></div>`).join('');
+    `<div style="margin-bottom:6px"><div style="font-weight:700">${esc(s.name)} · <span style="color:${gc(s.score)}">${s.score} ${esc(s.grade)}</span></div>
+     <div style="font-size:11.5px;color:var(--text-dim)">${esc(s.suggestion||'')}</div></div>`).join('');
 }
   renderRecent(j.recent_orders);renderPos(j.positions);
   const sel=$('hist-day');const cur=sel.value;
@@ -624,7 +622,7 @@ function renderUs(us){
     const L=a.latest;
     if(!L)return `<div class="flow-note" style="margin:12px 0 0">💵 ${a.account_id}（US 独立账本 · USD 原币）：已开户，待首笔成交积累快照</div>`;
     const pos=a.positions.map(p=>
-      `<tr><td><a href="/kg/stock/${p.stock}">${p.stock}</a></td><td>${p.qty}</td><td>${fmt(p.avg_cost)}</td><td>${fmt(p.last)}</td>`+
+      `<tr><td><a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a></td><td>${p.qty}</td><td>${fmt(p.avg_cost)}</td><td>${fmt(p.last)}</td>`+
       `<td class="${cls(p.pnl)}">${fmt(p.pnl)}</td><td>${(p.strategy||'')}</td></tr>`).join('');
     const pend=a.pending_orders.map(o=>
       `<div>⏳ ${o.side} <a href="/kg/stock/${o.stock}">${o.stock}</a> ×${o.qty} → ${o.plan_date} 开盘（${o.conf?('conf '+o.conf):''}）${o.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${o.warn}</span>`:''}</div>`).join('');
@@ -681,14 +679,14 @@ function renderPend(ps){
   $('pend-body').innerHTML=ps.length?
     '<table class="mini-table">'+ps.map(p=>
       `<tr><td><span class="badge b-${(p.strategy||'manual').slice(0,2)==='ai'?'ai':(p.strategy==='double_knife'?'dk':(p.strategy==='stop_loss'?'stop':'man'))}">${STRAT_NAMES[p.strategy]||p.strategy}</span></td>`+
-      `<td><b>${p.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${p.stock}">${p.stock}</a>${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${p.warn}</span>`:''}</td><td>${fmt(p.qty)}</td><td class="dist">${p.plan_date} 开盘</td></tr>`).join('')+'</table>'
+      `<td><b>${p.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a>${p.warn?` <span style="color:var(--color-dn,#f85149);font-size:11px">⚠ ${esc(p.warn)}</span>`:''}</td><td>${fmt(p.qty)}</td><td class="dist">${esc(p.plan_date)} 开盘</td></tr>`).join('')+'</table>'
     :'<div class="empty">无挂单</div>';
 }
 function renderRecent(rs){
   const filled=rs.filter(r=>r.status==='filled');
   $('recent-body').innerHTML=filled.length?
     '<table class="mini-table">'+filled.slice(0,8).map(r=>
-      `<tr><td>${r.ts.slice(5,10)}</td><td><b>${r.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${r.stock}">${r.stock}</a></td><td>${fmt(r.qty)}</td><td class="dist">@${r.filled_price}</td></tr>`).join('')+'</table>'
+      `<tr><td>${r.ts.slice(5,10)}</td><td><b>${r.side==='BUY'?'买':'卖'}</b> <a href="/kg/stock/${esc(r.stock)}">${esc(r.stock)}</a></td><td>${fmt(r.qty)}</td><td class="dist">@${r.filled_price}</td></tr>`).join('')+'</table>'
     :'<div class="empty">暂无成交</div>';
 }
 function renderPos(positions){
@@ -701,10 +699,10 @@ function renderPos(positions){
     <table class="data"><tr><th>股票</th><th>数量</th><th>成本价</th><th>现价</th><th>市值</th><th>浮动盈亏</th><th>可卖</th><th>止损</th><th>操作</th></tr>`+
     ps.map(p=>{
       const pnl=pct(p.market_value?(p.pnl/Math.max(1,p.market_value-p.pnl))*100:0);
-      return `<tr><td><b><a href="/kg/stock/${p.stock}">${p.stock}</a></b></td><td>${fmt(p.qty)}</td><td>${p.avg_cost}</td><td>${p.last}</td><td>${fmt(p.market_value)}</td>`+
+      return `<tr><td><b><a href="/kg/stock/${esc(p.stock)}">${esc(p.stock)}</a></b></td><td>${fmt(p.qty)}</td><td>${p.avg_cost}</td><td>${p.last}</td><td>${fmt(p.market_value)}</td>`+
       `<td class="${p.pnl>0?'up':p.pnl<0?'down':''}">${p.pnl>0?'+':''}${fmt(p.pnl)}</td><td>${p.available}</td><td>${p.stop_price?('🛑 '+p.stop_price):'—'}</td>`+
-      `<td>${p.stop_price?'':`<button class="btn btn-sm btn-primary" onclick="setStopPrompt('${p.stock}')">止损</button> `}`+
-      `<button class="btn btn-sm btn-red" onclick="sellPrompt('${p.stock}',${p.available})" ${p.available<=0?'disabled':''}>卖出</button></td></tr>`;
+      `<td>${p.stop_price?'':`<button class="btn btn-sm btn-primary" onclick="setStopPrompt('${esc(p.stock)}')">止损</button> `}`+
+      `<button class="btn btn-sm btn-red" onclick="sellPrompt('${esc(p.stock)}',${p.available})" ${p.available<=0?'disabled':''}>卖出</button></td></tr>`;
     }).join('')+'</table>';
   }).join('');
 }
@@ -752,9 +750,9 @@ function renderAgents(j, board){
   ];
   (board&&board.rows||[]).forEach(r=>{
     if(r.id==='main')return;   // 主台卡已在上方按 S.status 实时投影
-    cards.push({id:r.id,icon:ICON_MAP[r.id]||'🤖',nm:r.name||r.id,st:'',
-     role:r.desc?`<b>擅长：</b>${r.desc}`:`<b>擅长：</b>${r.style||'-'}`,
-     empty:`<div><div class="k">风格</div><div class="v">${r.style||'-'}</div></div>`});
+    cards.push({id:r.id,icon:ICON_MAP[r.id]||'🤖',nm:esc(r.name||r.id),st:'',
+     role:r.desc?`<b>擅长：</b>${esc(r.desc)}`:`<b>擅长：</b>${esc(r.style||'-')}`,
+     empty:`<div><div class="k">风格</div><div class="v">${esc(r.style||'-')}</div></div>`});
   });
   $('agent-grid').innerHTML=cards.map(c=>{
     const r=bmap[c.id];
@@ -771,7 +769,7 @@ function renderAgents(j, board){
           `<div><div class="k">Sortino</div><div class="v">${r.sortino==null?'-':(r.sortino>0?'+':'')+r.sortino.toFixed(2)}</div></div>`+
           `<div><div class="k">对账</div><div class="v">${r.verify_ok?'✓':'❌'}</div></div>`;
       }else{
-        stats=`<div><div class="k">风格</div><div class="v">${r.style||'-'}</div></div><div><div class="k">实习</div><div class="v">未开账</div></div>`;
+        stats=`<div><div class="k">风格</div><div class="v">${esc(r.style||'-')}</div></div><div><div class="k">实习</div><div class="v">未开账</div></div>`;
       }
     }
     /* K-STOCK-101 M3：tier 徽标（月价/引擎档位，来自 market 投影） */
@@ -779,7 +777,7 @@ function renderAgents(j, board){
     if(c.id){
       const t=((S.market&&S.market.traders)||[]).find(x=>x.id===c.id);
       if(t&&t.price_month!=null)
-        tchip=` <span class="badge b-dk" style="font-size:10.5px">${t.tier} ${t.tier_label||''} · ¥${t.price_month}/月 · 引擎 ${(t.llm_binding||'').split('/').pop()||'-'}</span>`;
+        tchip=` <span class="badge b-dk" style="font-size:10.5px">${esc(t.tier)} ${esc(t.tier_label||'')} · ¥${t.price_month}/月 · 引擎 ${esc((t.llm_binding||'').split('/').pop()||'-')}</span>`;
     }
     return `<div class="agent-card ${cls}"><div class="nm">${c.icon} ${c.nm} ${st}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div></div>`;
   }).join('');
@@ -808,25 +806,25 @@ async function loadManagers(){
       let hz;
       if(act.length){
         hz=act.map(h=>
-          `<span class="badge b-dk">已雇 · ${h.source||'-'} · ¥${h.hire_price_cny!=null?h.hire_price_cny:'-'}/月</span> `+
-          `<button class="btn btn-sm btn-gray" onclick="managerFire('${m.id}','${h.source}')">解雇</button>`
+          `<span class="badge b-dk">已雇 · ${esc(h.source||'-')} · ¥${h.hire_price_cny!=null?h.hire_price_cny:'-'}/月</span> `+
+          `<button class="btn btn-sm btn-gray" onclick="managerFire('${esc(m.id)}','${esc(h.source)}')">解雇</button>`
         ).join(' ');
       }else if(m.status==='live'){
         hz='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
-          `<select id="mgr-src-${m.id}" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-surface);color:var(--text);font-size:12px">${MGR_SOURCES}</select>`+
-          `<button class="btn btn-sm btn-primary" onclick="managerHire('${m.id}')">雇佣</button></div>`;
+          `<select id="mgr-src-${esc(m.id)}" style="padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-surface);color:var(--text);font-size:12px">${MGR_SOURCES}</select>`+
+          `<button class="btn btn-sm btn-primary" onclick="managerHire('${esc(m.id)}')">雇佣</button></div>`;
       }else{
-        hz=`<span class="flow-note">状态 ${m.status||'-'} ≠ live，不可雇佣</span>`;
+        hz=`<span class="flow-note">状态 ${esc(m.status||'-')} ≠ live，不可雇佣</span>`;
       }
-      return `<div class="agent-card"><div class="nm">👔 ${m.name||m.id} <span class="badge">${m.style||''}</span> <span class="badge b-dk">${m.model||'-'}</span></div>`+
-        `<div class="role">${m.desc||''}</div>`+
+      return `<div class="agent-card"><div class="nm">👔 ${esc(m.name||m.id)} <span class="badge">${esc(m.style||'')}</span> <span class="badge b-dk">${esc(m.model||'-')}</span></div>`+
+        `<div class="role">${esc(m.desc||'')}</div>`+
         `<div class="agent-stats"><div><div class="k">月聘价</div><div class="v">${m.hire_price_cny!=null?'¥'+m.hire_price_cny:'计价失败'}</div></div>`+
-        `<div><div class="k">状态</div><div class="v">${m.status||'-'}</div></div>`+
-        `<div><div class="k">在雇源</div><div class="v">${act.length?act.map(h=>h.source).join('、'):'无'}</div></div></div>`+
-        `<div style="font-size:12px;margin-top:8px"><b>擅长：</b>${(m.capabilities||[]).join('、')||'-'}</div>`+
-        `<div style="font-size:12px;color:var(--text-dim)"><b>边界：</b>${(m.boundaries||[]).join('；')||'-'}</div>`+
+        `<div><div class="k">状态</div><div class="v">${esc(m.status||'-')}</div></div>`+
+        `<div><div class="k">在雇源</div><div class="v">${act.length?act.map(h=>esc(h.source)).join('、'):'无'}</div></div></div>`+
+        `<div style="font-size:12px;margin-top:8px"><b>擅长：</b>${(m.capabilities||[]).map(esc).join('、')||'-'}</div>`+
+        `<div style="font-size:12px;color:var(--text-dim)"><b>边界：</b>${(m.boundaries||[]).map(esc).join('；')||'-'}</div>`+
         `<details style="margin-top:8px;font-size:12px"><summary style="cursor:pointer">职责提示词（role_prompt）</summary>`+
-        `<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">${m.role_prompt||'-'}</div></details>`+
+        `<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">${esc(m.role_prompt||'-')}</div></details>`+
         `<div style="margin-top:10px">${hz}</div></div>`;
     }).join('')||'<div class="empty">无经理档案</div>';
   }catch(e){g.innerHTML='<div class="empty">❌ '+e.message+'</div>';}
@@ -872,10 +870,10 @@ function injectMinutes(){
       '<details style="margin-top:8px;font-size:12px"><summary style="cursor:pointer">🗒️ 会议纪要（'+list.length+'）</summary>'+
       list.map(m=>
         '<details style="margin:6px 0 0 10px"><summary style="cursor:pointer">'+
-        '<span class="badge b-dk">'+(MINS_KIND_LABEL[m.kind]||m.kind||'纪要')+'</span> '+
-        (m.title||'(无标题)')+
-        ' <span style="color:var(--text-dim)">'+String(m.created_at||'').slice(0,16).replace('T',' ')+'</span></summary>'+
-        '<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">'+(m.body||'')+'</div></details>'
+        '<span class="badge b-dk">'+esc(MINS_KIND_LABEL[m.kind]||m.kind||'纪要')+'</span> '+
+        esc(m.title||'(无标题)')+
+        ' <span style="color:var(--text-dim)">'+esc(String(m.created_at||'').slice(0,16).replace('T',' '))+'</span></summary>'+
+        '<div style="margin-top:6px;color:var(--text-dim);white-space:pre-wrap">'+esc(m.body||'')+'</div></details>'
       ).join('')+'</details>'
       :'<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">🗒️ 暂无会议纪要</div>';
   });
@@ -980,7 +978,8 @@ async function postWrite(url,body,desc){
 }
 
 // ===== K-STOCK-165 迎宾向导对话式改造（值班经理逐题引导，一屏一问，纯增量，失败静默） =====
-const OB_ESC=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+// K-STOCK-183：OB_ESC 收敛为全局 esc 别名（原独立实现缺引号转义）
+const OB_ESC=esc;
 const OBW={step:1,mode:'',mgr:'',needMgr:false,pre:true,post:true,
   strats:[],sel:[],profiles:[],busy:false,done:false};
 const OBW_LINE={1:'您好，欢迎来到 K-STOCK 投研交易所，我是值班经理。先看看今天的策略池，有看中的吗？',
