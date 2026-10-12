@@ -248,25 +248,22 @@ DOMAIN_NAV_GROUPS = {
     "quant": (
         ("🌅 盘前与驾驶", (
             ("📺 数据大屏", "/screen", "screen"),
-            ("🛰 大屏信号", "/screen/sig", "screensig"),
             ("🌅 盘前", "/premarket", "pre"),
             ("🌇 盘后复盘", "/afterhours", "afterhours"),
-            ("🏠 驾驶舱", "/fin", "fin"),
+            ("💰 金融驾驶舱", "/fin", "fin"),
             ("🔍 个股分析", "/sa", "sa"),
             ("💬 查数", "/nl", "nl"))),
         ("🚀 指挥", (
-            ("🗺 门户", "/portal", "portal"),
             ("🚀 驾驶舱", "/bridge", "bridge"),
-            ("⚡ 驾驶舱行动", "/bridge/act", "bridgeact"),
             ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
             ("🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"),
             ("🧠 智策 OS", "http://127.0.0.1:5175", "zhice"),
             ("🤖 AI 市场", "/aim", "aim"),
             ("🛒 算法市场", "/algo", "algo"),
-            ("🏛 组织架构", "/org", "org"))),
+            ("🏛 组织架构 🚧", "/org", "org"))),
         ("🎖 策略资产", (
             ("🎖 策略中心", "/strategies", "strategies"),
-            ("🌊 青萍之末", "/bt-qpzm", "qpzm"),
+            ("🌊 青萍之末 🚧", "/bt-qpzm", "qpzm"),
             ("🔔 订阅推送", "/bt/subscribe", "subscribe"),
             ("🧭 缠论", "/bt-chanlun", "chanlun"),
             ("🧪 TBE 分层", "/bt-tbe", "tbe"),
@@ -284,8 +281,8 @@ DOMAIN_NAV_GROUPS = {
             ("🚦 信号", "/bt-signals", "signals"),
             ("💼 持仓", "/bt-positions", "positions"),
             ("🧾 模拟仓", "/paper", "paper"),
-            ("🛒 策略市场", "/market-strategy", "market-strategy"),
-            ("📊 绩效市场", "/market", "market"),
+            ("🛒 策略市场 🚧", "/market-strategy", "market-strategy"),
+            ("📊 绩效市场 🚧", "/market", "market"),
             ("📄 报告", "/bt-report", "report"),
             ("🎯 卖点研判", "/sellpoint", "sellpoint"))),
         ("🧰 研究与数据", (
@@ -294,8 +291,7 @@ DOMAIN_NAV_GROUPS = {
             ("🌾 期货量化", "/fut", "fut"),
             ("📊 寻优", "/bt-opt", "opt"),
             ("🔥 板块", "/bt-sectors", "sectors"),
-            ("🗄 数据仓", "/bt-data-health", "data-health"),
-            ("🧾 列对账", "/col-audit", "colaudit"))),
+            ("🗄 数据仓", "/bt-data-health", "data-health"))),
     ),
     "intel": (
         ("📡 情报流", (
