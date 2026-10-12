@@ -52,26 +52,6 @@
   .pill:hover { border-color: var(--link); color: var(--text); }
   .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
 
-  /* ── K44 数据大屏横幅入口 ─────────────── */
-  .screen-banner {
-    display: flex; align-items: center; gap: 15px; flex-wrap: wrap;
-    margin-top: 22px; padding: 15px 22px;
-    background: linear-gradient(120deg, var(--bg-raised), var(--bg-surface) 65%);
-    border: 1px solid var(--border); border-radius: 14px;
-    text-decoration: none; color: var(--text);
-    transition: border-color .2s ease, transform .2s ease;
-  }
-  .screen-banner:hover { border-color: var(--link); transform: translateY(-2px); }
-  .screen-banner .ic {
-    width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
-    display: grid; place-items: center; font-size: 21px;
-    background: var(--bg-surface); border: 1px solid var(--border);
-  }
-  .screen-banner .t { font-size: 15px; font-weight: 700; }
-  .screen-banner .s { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-  .screen-banner .enter { margin-left: auto; font-size: 12.5px; color: var(--link); font-weight: 600; }
-  .screen-banner:hover .enter { text-decoration: underline; }
-
   /* ── 领域入口板 ───────────────────────── */
   .board {
     display: grid; gap: 16px;
@@ -146,12 +126,6 @@
     header { padding: 16px 20px 8px; }
     .topnav { padding: 8px 20px 0; }
     main { padding: 0 14px 40px; }
-    /* K-STOCK-183 包4.2 大屏横幅移动端收细条（台账 4.2 判据） */
-    .screen-banner { padding: 10px 14px; gap: 10px; margin-top: 16px; border-radius: 11px; }
-    .screen-banner .ic { width: 33px; height: 33px; font-size: 16px; border-radius: 9px; }
-    .screen-banner .t { font-size: 13.5px; }
-    .screen-banner .s { font-size: 10.5px; margin-top: 1px; }
-    .screen-banner .enter { font-size: 11.5px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -204,15 +178,35 @@
   </nav>
 
   <main>
-    <!-- K44 数据大屏：首页直达横幅 -->
-    <a class="screen-banner" href="/screen">
-      <div class="ic">📺</div>
-      <div>
-        <div class="t">量化策略数据大屏</div>
-        <div class="s">策略选股 · A股/美股/港股/加密 · 行业细分 · 模拟建仓 · 账本成绩</div>
-      </div>
-      <span class="enter">进入大屏 →</span>
-    </a>
+    <!-- 🧠 个人 OS 双助手：平行空间的自己 + 参谋长（K-STOCK-258） -->
+    <div class="sec-line" style="margin-top:22px;">
+      <span class="sec-t">🧠 个人 OS · 双助手</span>
+      <span class="sec-s">平行空间的自己 + 参谋长 · 统领全站 AI 岗位</span>
+    </div>
+    <div class="board" style="margin-top:0;">
+      <a class="dm" href="javascript:void(0)" onclick="caiSummon()">
+        <div class="head"><div class="ic">🐣</div>
+          <div><div class="t">菜鸟 <span class="tag-soon">平行空间的自己</span></div><div class="s">AI 总管 · 替你管公司</div></div></div>
+        <div class="desc">你的分身总管：组织团队、分配任务、盯各部门执行，一句话说清公司现状，说「打开 XX」带路全站任意板块。</div>
+        <div class="ms">
+          <span>身份 <b>AI 总管</b></span>
+          <span>手段 <b>对话派单</b></span>
+          <span>召唤 <b>点卡片</b></span>
+        </div>
+        <div class="foot"><span class="st"><span class="dot unknown"></span><span>悬浮蛋常驻 · 拖动换位</span></span><span class="enter">唤起对话 →</span></div>
+      </a>
+      <a class="dm" href="/org">
+        <div class="head"><div class="ic">🧠</div>
+          <div><div class="t">参谋长 A0</div><div class="s">组织架构顶点 · 每日 17:35 值班</div></div></div>
+        <div class="desc">AI 组织的顶点：管着投研部等一众 AI 岗位，影子日报点评、任务派单，汇报三通道（日报 / P0 即时 / P1 一小时）直达你。</div>
+        <div class="ms">
+          <span>直辖 <b id="a0-dept">—</b></span>
+          <span>在编 <b id="a0-live">—</b></span>
+          <span>汇报 <b>三通道</b></span>
+        </div>
+        <div class="foot"><span class="st"><span class="dot unknown" id="a0-dot"></span><span id="a0-note">连接中…</span></span><span class="enter">进入组织架构 →</span></div>
+      </a>
+    </div>
 
     <!-- 📋 工作台：当下工作的快报态势，固定展示（K-STOCK-247） -->
     <div style="margin-top:18px;">
@@ -290,8 +284,8 @@
       </div>
     </div>
 
-    <!-- ═══ 分界线：以上=工作台快报（固定），以下=常用应用（可增删） ═══ -->
-    <div class="divider"><span>🧭 常用应用</span></div>
+    <!-- ═══ 分界线：以上=个人 OS（双助手+工作台快报，固定），以下=个人应用（可增删） ═══ -->
+    <div class="divider"><span>🧭 个人应用</span></div>
     <div class="sec-line" style="margin-top:10px;">
       <span class="sec-s">点「＋ 添加」从工具池挑选，悬停卡片右上角 × 移除 · 本机记住你的配置</span>
     </div>
@@ -377,7 +371,7 @@
       <!-- ⑥ 更多领域：预留 -->
         <a class="dm fav-add" id="favAdd" href="javascript:void(0)">
           <div class="fav-plus">＋</div>
-          <div class="t">添加常用</div>
+          <div class="t">添加应用</div>
         </a>
       </div>
       <div id="favPanel" hidden></div>
@@ -580,6 +574,33 @@
   loadToday();
   setInterval(loadToday, 120000);
 
+  // ── 双助手：菜鸟召唤（pointerup 复用悬浮蛋开窗，K-STOCK-258）──
+  function caiSummon() {
+    const orb = document.getElementById('ai-orb');
+    if (orb && window.PointerEvent) orb.dispatchEvent(new PointerEvent('pointerup'));
+  }
+
+  // ── 双助手：参谋长在编数（/api/home.org 实时）──
+  async function loadA0() {
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/home', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const o = ((await r.json()).org) || {};
+      if (!o.ok) throw new Error(o.err || 'org 未就绪');
+      const deps = o.depts || [];
+      set('a0-dept', deps.length + ' 部门');
+      set('a0-live', deps.filter(d => d.status === 'active').length + ' 在编');
+      set('a0-note', 'chief ' + String(o.chief || 'A0') + ' · org.json 实时');
+      const el = document.getElementById('a0-dot'); if (el) el.className = 'dot';
+    } catch {
+      set('a0-note', 'org 数据未就绪');
+      const el = document.getElementById('a0-dot'); if (el) el.className = 'dot unknown';
+    }
+  }
+  loadA0();
+  setInterval(loadA0, 120000);
+
   // ── 常用工具区：增删 + localStorage 持久化（K-STOCK-245）──
   const FAV_KEY = 'os_favs_v1';
   // 工具池：板块 → 子板块 → 应用 三级目录（对齐 nav.js 真源，K-STOCK-249/251）
@@ -677,9 +698,11 @@
     if (Array.isArray(v) && v.length) {
       const out = [];
       v.forEach(h => { h = FAV_ALIAS[h] || h; if (!out.includes(h)) out.push(h); });
+      // K-STOCK-258：大屏横幅撤出置顶 → 一次性迁移进个人应用区首位
+      if (!out.includes('/screen.html')) { out.unshift('/screen.html'); favSave(out); }
       return out;
     }
-    return FAV_DEFAULT.slice();
+    return ['/screen.html'].concat(FAV_DEFAULT); // 新装默认：大屏在个人应用区首位
   }
   function favSave(l) { try { localStorage.setItem(FAV_KEY, JSON.stringify(l)); } catch {} }
   function favBindX(el, href) {
@@ -692,9 +715,9 @@
     const a = document.createElement('a');
     a.className = 'dm fav-dyn'; a.href = p.href;
     a.innerHTML = '<div class="head"><div class="ic">' + p.ic + '</div><div><div class="t">' + p.t + '</div><div class="s">' + (p.s || '常用直达') + '</div></div></div>'
-      + '<div class="desc">' + (p.d || '个人 OS 常用应用，点卡片直达专项页。') + '</div>'
+      + '<div class="desc">' + (p.d || '个人应用，点卡片直达专项页。') + '</div>'
       + '<div class="ms"><span>归属 <b>' + (p.g || '常用') + '</b></span><span>状态 <b>在线</b></span></div>'
-      + '<div class="foot"><span class="st"><span class="dot unknown"></span><span>常用应用</span></span><span class="enter">进入 →</span></div>';
+      + '<div class="foot"><span class="st"><span class="dot unknown"></span><span>个人应用</span></span><span class="enter">进入 →</span></div>';
     favBindX(a, p.href);
     return a;
   }
@@ -741,7 +764,7 @@
     });
     const tip = document.createElement('span');
     tip.style.cssText = 'width:100%;font-size:11px;color:var(--gray-6);margin-top:4px;';
-    tip.textContent = '点选任意应用拎进常用区 · 配置存在本机浏览器';
+    tip.textContent = '点选任意应用拎进个人应用区 · 配置存在本机浏览器';
     favPanel.appendChild(tip);
   }
   document.getElementById('favAdd').addEventListener('click', (e) => { e.preventDefault(); favPanel.hidden = !favPanel.hidden; });
