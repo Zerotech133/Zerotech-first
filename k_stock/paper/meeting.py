@@ -113,13 +113,18 @@ def _try_zhipu_fallback(messages, ledger_model, orig_err) -> str | None:
     if not zname:
         return None
     try:
-        client = _LLMClient(glm_model=zname, timeout=120)
-        text, _prov = client.chat(messages, json_mode=False, max_tokens=4000)
+        client = _LLMClient(glm_model=zname, timeout=180)
+        # glm-5.2 系思考型模型：推理消耗预算，长上下文下 4000 会导致可见正文为空
+        text, _prov = client.chat(messages, json_mode=False, max_tokens=8000)
     except Exception as e:
         # 兜底失败必须显式留痕：静默 None 会让上层误报原始 gaorta 错误（排查血泪）
         print(f"[zhipu-fallback] 兜底通道异常: {type(e).__name__}: {e}", file=sys.stderr)
         return None
-    return text if (text or "").strip() else None
+    if not (text or "").strip():
+        # 空正文同样显式留痕：多为思考超预算，静默 None 会误传上游错误
+        print("[zhipu-fallback] 兜底返回空正文（疑似思考消耗超 max_tokens 预算）", file=sys.stderr)
+        return None
+    return text
 
 
 def hold_meeting(mid: str, source: str, kind: str,
