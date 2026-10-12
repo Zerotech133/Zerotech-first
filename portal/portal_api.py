@@ -2643,6 +2643,25 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/combo_backtest_jobs":
             # K-STOCK-275 组合回测队列只读投影（任务清单/队列位置/引擎进度覆盖）
             self._json(_cbt_status())
+        elif path == "/api/bt_daily_ledger":
+            # K-STOCK-277 逐日回测账本只读投影（回测中心 bt_view.html 数据源）
+            try:
+                _led_dir = os.path.join(STATION, "quant_backtest",
+                                        "data", "daily_ledger")
+                _files = sorted(glob.glob(os.path.join(_led_dir,
+                                                       "ledger_*.json")))
+                if not _files:
+                    self._json({"ok": False,
+                                "error": "no ledger yet (run chanlun_daily_ledger.py)"}, 404)
+                    return
+                _latest = _files[-1]
+                with open(_latest, encoding="utf-8") as _f:
+                    _payload = json.load(_f)
+                _payload["ok"] = True
+                _payload["source_file"] = os.path.basename(_latest)
+                self._json(_payload)
+            except Exception as _e:
+                self._json({"ok": False, "error": repr(_e)}, 500)
         elif path == "/api/strategy_market":
             # K-STOCK-122 M1 策略市场：12 策略卡全量（strategies.json 直读）
             try:
@@ -3531,6 +3550,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/bt/subscribe":
             # K245 订阅推送管理页（订阅清单 + 接收人 + 试推）
             self._subscribe_page(qs)
+        elif path == "/btview":
+            # K-STOCK-277 回测中心（逐日账本/月历热力/AI决策流水，展示借智策 OS v2 形态）
+            self._html_file(os.path.join(ROOT, "bt_view.html"))
         elif path == "/paper":
             # K-STOCK 模拟仓前端（K279 产出 paper.html；nginx 8080 同文件
             # 静态直出，此处读盘直出保双口径一致——K-STOCK-042 修正过时占位）
