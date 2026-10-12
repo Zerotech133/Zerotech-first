@@ -170,8 +170,11 @@
   .fav-add:hover { color: var(--link); border-color: var(--link); transform: none; }
   .fav-plus { font-size: 26px; line-height: 1; }
   .fav-add .t { font-size: 13px; font-weight: 600; }
-  #favPanel { margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #favPanel { margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; max-height: 360px; overflow-y: auto; }
   #favPanel[hidden] { display: none; }
+  .fav-gt { width: 100%; font-size: 12px; letter-spacing: 2px; color: var(--text); font-weight: 700; margin-top: 6px; }
+  .fav-gt:first-child { margin-top: 0; }
+  .fav-st { width: 100%; font-size: 10.5px; color: var(--gray-6); margin-top: 2px; letter-spacing: 1px; }
   .fav-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border: 1px solid var(--border); border-radius: 999px; font-size: 12.5px; color: var(--text); cursor: pointer; background: var(--bg-surface); transition: border-color .15s ease; }
   .fav-chip:hover { border-color: var(--link); }
   .fav-chip.in { opacity: .45; cursor: default; border-style: dashed; }
@@ -507,27 +510,62 @@
 
   // ── 常用工具区：增删 + localStorage 持久化（K-STOCK-245）──
   const FAV_KEY = 'os_favs_v1';
-  const FAV_POOL = [
-    { href: '/quant', ic: '📈', t: '量化' },
-    { href: '/intel', ic: '🕵️', t: '情报' },
-    { href: '/creator', ic: '🎬', t: '创作' },
-    { href: '/dev.html', ic: '💻', t: '开发' },
-    { href: '/screen.html', ic: '🖥️', t: '数据大屏', s: '盘面总览' },
-    { href: '/strong.html', ic: '📊', t: '板块强弱', s: '领涨识别' },
-    { href: '/paper', ic: '🧾', t: '模拟仓', s: '交易台' },
-    { href: '/academy.html', ic: '🎓', t: '智能体学院', s: 'AI 教 AI' },
-    { href: '/ops', ic: '⚙️', t: '系统运维', s: 'OS 控制台' },
-    { href: '/market.html', ic: '💰', t: '金融驾驶舱', s: '绩效账本' },
-    { href: '/picks.html', ic: '🎯', t: '选股中心', s: '每日精选' },
-    { href: '/kg/ask', ic: '🕸️', t: '图谱问答', s: '图谱查询' },
-    { href: '/audit.html', ic: '🛡️', t: '安全审计', s: '合规检查' },
-    { href: '/market_strategy.html', ic: '🧮', t: '策略市场', s: '策略投影' },
+  // 工具池：板块 → 子板块 → 应用 三级目录（对齐 nav.js 真源，K-STOCK-249）
+  const FAV_GROUPS = [
+    { g: '📈 量化交易', subs: [
+      { s: '盘前与驾驶', items: [
+        ['📺', '数据大屏', '/screen.html'], ['🌅', '盘前', '/premarket'], ['🌇', '盘后复盘', '/afterhours'],
+        ['💰', '金融驾驶舱', '/fin'], ['🔍', '个股分析', '/sa'], ['💬', '查数', '/nl']] },
+      { s: '指挥与市场', items: [
+        ['🚀', '驾驶舱', '/bridge'], ['🤖', 'AI 市场', '/aim'], ['🛒', '算法市场', '/algo']] },
+      { s: '策略资产', items: [
+        ['🎖', '策略中心', '/strategies'], ['⚔', '量子双刀', '/qd/'], ['🧭', '缠论', '/bt-chanlun'],
+        ['🧪', 'TBE 分层', '/bt-tbe'], ['🛟', '预警池', '/bt-chanlun-pool'], ['🔗', '三线联动', '/bt-linkage'],
+        ['📚', '弱势案例', '/bt-weak'], ['🧮', '九维', '/bt-9dim'], ['🎯', '共振', '/bt-cross'],
+        ['🏛', '投委会', '/council'], ['♠', '操盘锦标赛', '/sim'], ['🎤', '辩论室', '/debate'], ['🔔', '订阅推送', '/bt/subscribe']] },
+      { s: '实盘跟踪', items: [
+        ['🎯', '今日选股', '/picks.html'], ['🚦', '信号', '/bt-signals'], ['💼', '持仓', '/bt-positions'],
+        ['🧾', '模拟仓', '/paper'], ['📄', '报告', '/bt-report'], ['🎯', '卖点研判', '/sellpoint'],
+        ['🛒', '策略市场 🚧', '/market-strategy'], ['📊', '绩效市场 🚧', '/market']] },
+      { s: '研究与数据', items: [
+        ['🎯', '选股中心', '/bt'], ['📊', '板块强弱', '/strong.html'], ['🌾', '期货量化', '/fut'],
+        ['📊', '寻优', '/bt-opt'], ['🔥', '板块', '/bt-sectors'], ['🗄️', '数据仓', '/bt-data-health']] },
+    ]},
+    { g: '📰 新闻情报', subs: [
+      { s: '情报流', items: [
+        ['🏠', '情报工场', '/intel'], ['🤖', 'AI 晨报', '/bt-brief'], ['⚖️', 'JEV 判断', '/bt-jev']] },
+      { s: '知识图谱', items: [
+        ['🕸️', '图谱探索', '/kg'], ['💬', '图谱问答', '/kg/ask'], ['🎯', '知识画布', '/kg/canvasv2'],
+        ['🗺️', '作战地图', '/kg/battle'], ['📰', '事件图谱', '/kg/events'], ['💰', '游资地图', '/kg/map'],
+        ['🧨', '板块工单', '/kg/flow'], ['🖊', '画图标注', '/kg/label'], ['🃏', '推演卡', '/kg/card'],
+        ['👁', '影子面板', '/kg/shadow'], ['🏢', '公司 360', '/kg/company'], ['📚', '图谱词条', '/kg/lexicon'], ['📄', '图谱文档', '/kg/doc']] },
+    ]},
+    { g: '🎬 自媒体创作', subs: [
+      { s: '创作产线', items: [
+        ['🎬', '创作专项', '/creator'], ['📝', '公众号草稿', '/gzh'], ['🎞', '短视频成片', '/vd']] },
+    ]},
+    { g: '💻 开发与学院', subs: [
+      { s: '开发', items: [
+        ['💻', '开发者专项', '/dev.html'], ['🎓', '智能体学院', '/academy.html']] },
+    ]},
+    { g: '⚙️ 系统', subs: [
+      { s: '底座', items: [
+        ['🎛', 'OS 控制台', '/ops'], ['🛡️', '审计状态', '/audit.html'], ['🖥️', '系统自检', '/sys-health']] },
+    ]},
   ];
+  const FAV_POOL = FAV_GROUPS.flatMap(g => g.subs.flatMap(s => s.items.map(([ic, t, href]) => ({ ic, t, href }))));
+  const FAV_ALIAS = { '/market.html': '/fin', '/market_strategy.html': '/market-strategy' }; // 旧存档别名归一
   const FAV_DEFAULT = ['/quant', '/intel', '/creator', '/dev.html'];
   const favBoard = document.getElementById('favBoard');
   const favPanel = document.getElementById('favPanel');
   function favList() {
-    try { const v = JSON.parse(localStorage.getItem(FAV_KEY)); if (Array.isArray(v) && v.length) return v; } catch {}
+    let v = null;
+    try { v = JSON.parse(localStorage.getItem(FAV_KEY)); } catch {}
+    if (Array.isArray(v) && v.length) {
+      const out = [];
+      v.forEach(h => { h = FAV_ALIAS[h] || h; if (!out.includes(h)) out.push(h); });
+      return out;
+    }
     return FAV_DEFAULT.slice();
   }
   function favSave(l) { try { localStorage.setItem(FAV_KEY, JSON.stringify(l)); } catch {} }
@@ -566,17 +604,29 @@
   function renderPanel() {
     const list = favList();
     favPanel.innerHTML = '';
-    FAV_POOL.forEach(p => {
-      const inFav = list.includes(p.href);
-      const c = document.createElement('span');
-      c.className = 'fav-chip' + (inFav ? ' in' : '');
-      c.innerHTML = '<span class="ic-s">' + p.ic + '</span>' + p.t + (inFav ? ' · 已添加' : '');
-      if (!inFav) c.onclick = () => { favSave(favList().concat([p.href])); renderFavs(); };
-      favPanel.appendChild(c);
+    // 三级目录：板块 → 子板块 → 应用（点选拎进常用区）
+    FAV_GROUPS.forEach(gr => {
+      const gt = document.createElement('div');
+      gt.className = 'fav-gt'; gt.textContent = gr.g;
+      favPanel.appendChild(gt);
+      gr.subs.forEach(sub => {
+        const st = document.createElement('div');
+        st.className = 'fav-st'; st.textContent = '─ ' + sub.s;
+        favPanel.appendChild(st);
+        sub.items.forEach(([ic, t, href]) => {
+          const inFav = list.includes(href);
+          const c = document.createElement('span');
+          c.className = 'fav-chip' + (inFav ? ' in' : '');
+          c.title = href;
+          c.innerHTML = '<span class="ic-s">' + ic + '</span>' + t + (inFav ? ' · 已添加' : '');
+          if (!inFav) c.onclick = () => { favSave(favList().concat([href])); renderFavs(); };
+          favPanel.appendChild(c);
+        });
+      });
     });
     const tip = document.createElement('span');
-    tip.style.cssText = 'font-size:11px;color:var(--gray-6);margin-left:auto;';
-    tip.textContent = '点选加入常用区 · 配置存在本机浏览器';
+    tip.style.cssText = 'width:100%;font-size:11px;color:var(--gray-6);margin-top:4px;';
+    tip.textContent = '点选任意应用拎进常用区 · 配置存在本机浏览器';
     favPanel.appendChild(tip);
   }
   document.getElementById('favAdd').addEventListener('click', (e) => { e.preventDefault(); favPanel.hidden = !favPanel.hidden; });
