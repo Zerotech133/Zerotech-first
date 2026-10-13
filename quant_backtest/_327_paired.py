@@ -16,11 +16,12 @@
 """
 import json
 import os
-import subprocess
 import sys
 import time
 
 import pandas as pd
+
+from _run_guard import run_guarded
 
 QBT = os.path.dirname(os.path.abspath(__file__))
 PY = sys.executable
@@ -73,13 +74,14 @@ def main():
         if os.path.exists(out_fp):
             os.remove(out_fp)   # --force 语义前移：先删旧产物，杜绝“引擎没写文件→读旧 json 误判 DONE”
         print("RUN", jid, flush=True)
-        r = subprocess.run(
+        # K-STOCK-337: subprocess.run -> run_guarded（静默挂死杀树+自动重试一次）
+        rc, _used = run_guarded(
             [PY, "-u", BT2, "--d0", D0, "--d1", D1, "--hist-st", "true",
              "--job-id", jid] + extra,
-            stdout=log, stderr=subprocess.STDOUT, cwd=QBT)
-        if r.returncode != 0 or not os.path.exists(out_fp):
+            log_fh=log, cwd=QBT, label=jid)
+        if rc != 0 or not os.path.exists(out_fp):
             print("FAIL %s rc=%s out_exists=%s -> _327_paired.log"
-                  % (jid, r.returncode, os.path.exists(out_fp)))
+                  % (jid, rc, os.path.exists(out_fp)))
             sys.exit(4)
         s = json.load(open(out_fp, encoding="utf-8"))["summary"]
         results.append((suf, s))
