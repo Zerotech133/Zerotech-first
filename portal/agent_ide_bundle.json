@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-13 11:45",
+ "generated": "2026-10-13 13:23",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 27,
@@ -189,6 +189,49 @@
  ],
  "coder_traces": [
   {
+   "k_id": "K-ORG-039a",
+   "actions": 35,
+   "kinds": {
+    "generate": 3,
+    "edit": 7,
+    "lint": 7,
+    "write": 7,
+    "smoke": 7,
+    "fail": 2,
+    "add": 1,
+    "commit": 1
+   },
+   "last_ts": "12:24:54",
+   "last": "commit: cf2134b K-ORG-039a: qa1_review复核结论自动入事件账 — by DEV2 via gpt6"
+  },
+  {
+   "k_id": "K-ORG-038a",
+   "actions": 17,
+   "kinds": {
+    "generate": 2,
+    "edit": 3,
+    "lint": 5,
+    "fail": 1,
+    "write": 2,
+    "smoke": 2,
+    "add": 1,
+    "commit": 1
+   },
+   "last_ts": "12:09:17",
+   "last": "commit: 3a2c59f K-ORG-038a: QA1复核固化工具 — by DEV2 via anthropic"
+  },
+  {
+   "k_id": "K-ORG-037-RR",
+   "actions": 7,
+   "kinds": {
+    "commit": 3,
+    "add": 3,
+    "fail": 1
+   },
+   "last_ts": "11:50:24",
+   "last": "commit: bca320a K-ORG-037-RR: 按单回滚演练 — by OPS1 via cloud"
+  },
+  {
    "k_id": "K-ORG-036i",
    "actions": 40,
    "kinds": {
@@ -217,39 +260,6 @@
    },
    "last_ts": "11:43:53",
    "last": "commit: 0d89a0f K-ORG-036h: 模型分层修正:轻量档升4.5-flash — by DEV2 via cloud"
-  },
-  {
-   "k_id": "K-SMOKE-F4",
-   "actions": 3,
-   "kinds": {
-    "fail": 3
-   },
-   "last_ts": "11:42:48",
-   "last": "fail: git commit: On branch master\nChanges not staged for commit:\n  (use \"git add <file>...\" to upda"
-  },
-  {
-   "k_id": "K-ORG-036d",
-   "actions": 2,
-   "kinds": {
-    "fail": 2
-   },
-   "last_ts": "11:14:30",
-   "last": "fail: git commit: On branch master\nChanges not staged for commit:\n  (use \"git add <file>...\" to upda"
-  },
-  {
-   "k_id": "K-ORG-036g",
-   "actions": 40,
-   "kinds": {
-    "generate": 6,
-    "edit": 8,
-    "lint": 8,
-    "write": 8,
-    "fail": 5,
-    "smoke": 4,
-    "commit": 1
-   },
-   "last_ts": "11:13:48",
-   "last": "commit: c0d0343 K-ORG-036g: model_route绝对路径重写 — by DEV2 via cloud"
   }
  ],
  "departments": [
@@ -736,7 +746,7 @@
     "domain/arch_registry"
    ],
    "prompt_file": "agent_platform/prompts/solution_architect.md",
-   "prompt": "# ARCH1 · 架构师（solution_architect）\n\n> 工程研发中心（K-ORG-018 注册，对照截图架构师角色）。技术方案的终审位：只裁决「怎么建」，不亲自搬砖。\n\n## 职责\n1. **架构评审**：跨部门方案（项目 A/B/C 交付物）技术终审，结论 Go/Revise 写工单回填。\n2. **技术选型**：新组件引入须过 ARCH1（对齐现有栈：Python/FastAPI/SQLite/Qdrant/Ollama 优先，不随意加新依赖）。\n3. **ADR 登记**：重要架构决策写 `domain/arch_registry`（版本化，一决策一条），格式：背景/决策/代价/复核期。\n\n## 纪律（写死，不可协商）\n- **不越俎代庖**：A0 只仲裁派单、ARCH1 只裁决方案——执行归 DEV 岗（K-ORG-001 §5 防单点瓶颈原则）。\n- **复用优先**：先查 domain/arch_registry 与 docs/plans 既有设计，能复用不新造（P4 Mixin 拆分、合流「平台为骨算法为插件」均为既定判例）。\n- **改动面显式化**：评审意见必须列全影响面（文件/接口/回滚方式），禁止\"大体没问题\"式模糊结论。\n- **一单一结论**：每张评审工单一个明确结论，禁止挂起不表态。\n\n## 上游/下游\n- 上游：PM1 需求定义、各项目组方案稿\n- 下游：DEV 岗执行、QA1 验收（按 ADR 复核期回访）\n\n## 模型\nollama/qwen3.5:9b\n",
+   "prompt": "# ARCH1 · 架构师（solution_architect）\n\n> 工程研发中心（K-ORG-018 注册，对照截图架构师角色）。技术方案的终审位：只裁决「怎么建」，不亲自搬砖。\n\n## 职责\n1. **架构评审**：跨部门方案（项目 A/B/C 交付物）技术终审，结论 Go/Revise 写工单回填。\n2. **技术选型**：新组件引入须过 ARCH1（对齐现有栈：Python/FastAPI/SQLite/Qdrant/Ollama 优先，不随意加新依赖）。\n3. **ADR 登记**：重要架构决策用 `python tools/adr.py new --slug <短名> --bg <背景> --dec <决策> --cost <代价> --review <复核期>` 登记，落 `docs/adr/`（K-ORG-041 固化；原 domain/arch_registry 从未存在，系 D3 评测揪出的纪律悬空）。一决策一条，复核期默认一周，QA1 到期回访。\n\n## 纪律（写死，不可协商）\n- **不越俎代庖**：A0 只仲裁派单、ARCH1 只裁决方案——执行归 DEV 岗（K-ORG-001 §5 防单点瓶颈原则）。\n- **复用优先**：先查 domain/arch_registry 与 docs/plans 既有设计，能复用不新造（P4 Mixin 拆分、合流「平台为骨算法为插件」均为既定判例）。\n- **改动面显式化**：评审意见必须列全影响面（文件/接口/回滚方式），禁止\"大体没问题\"式模糊结论。\n- **一单一结论**：每张评审工单一个明确结论，禁止挂起不表态。\n- **产出必留痕（铁律，D3 评测 45 分教训）**：架构产出（方案终审/选型/评审结论）完成后必须双写——①黑板 decision 记录带 Go/Revise 结论与影响面；②重要决策追加 ADR（tools/adr.py）。只记\"做了什么\"不留结论 = 评审未发生。\n\n## 上游/下游\n- 上游：PM1 需求定义、各项目组方案稿\n- 下游：DEV 岗执行、QA1 验收（按 ADR 复核期回访）\n\n## 模型\nollama/qwen3.5:9b\n",
    "projects": [
     "proj_next"
    ],
