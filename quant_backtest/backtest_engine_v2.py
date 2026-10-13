@@ -33,6 +33,7 @@ idx_nav = ma20 = ma60 = None
 EXEC_TIMELINE = {
     "chanlun": ["T 收盘：缠论买点确认（seen-ever·hfq）", "T+1 开盘：买入（runup帽>15%放弃该机会）",
                 "T 收盘：卖点确认", "T+1 开盘：卖出，资金回池等下一个买点",
+                "T 收盘：三买失效检查（收盘跌破中枢上沿=三买被否定）→ T+1 开盘离场",
                 "组合层：regime 80/50/30 连续调仓（D-1 判定）+ 超帽等比减仓"],
     "double_knife": ["T 14:45：选股引擎跑双刀信号（十字星2连+MACD多头+均线多头+regime非空）",
                      "T 14:55：只卖不买（信号消失/持有到期/灾难止损，收盘价离场）",
@@ -41,7 +42,8 @@ EXEC_TIMELINE = {
 }
 ASSUMPTIONS = {
     "chanlun": ["信号=T 收盘确认的 seen-ever fresh 口径（hfq K 线，263 铁律）",
-                "成交价=T+1 开盘（hfq）；15bp 双边成本", "无个股硬止损（269 实锤止损负贡献）"],
+                "成交价=T+1 开盘（hfq）；15bp 双边成本", "无个股硬止损（269 实锤止损负贡献）",
+                "三买失效离场：收盘跌破买入时中枢上沿 zg 即离场（缠论理论内规则·10-13 老田定性）"],
     "double_knife": ["信号=原始价 K 线（引擎 6-200 元/成交额为实务门槛，hfq 全灭·10-13 实证）；结算仍走 hfq 因子链",
                      "14:45 选股用 T 日 bar 近似（盘中快照数据未入库，包 C 升级项）",
                      "买入=T+1 开盘而非 T 14:55（避免用当日收盘价成交的前视）",
@@ -270,13 +272,18 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
     一/二/三买全部入池，交易只吃 buy_filter 允许的买点（默认仅三买）。
     事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。"""
     cache_fp = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
-                            "sig_events_market_%s_%s.json" % (d0, d1))
+                            "sig_events_market_v2_%s_%s.json" % (d0, d1))
     if not os.path.exists(cache_fp):
+        legacy = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+                              "sig_events_market_%s_%s.json" % (d0, d1))
+        if os.path.exists(legacy):
+            return None, None, None, "事件缓存为 v1（无中枢上沿 zg）：%s\n重扫：python market_scan.py --d0 %s --d1 %s" % (legacy, d0, d1)
         return None, None, None, "全市场事件缓存不存在：%s\n先跑：python market_scan.py --d0 %s --d1 %s" % (cache_fp, d0, d1)
     j = json.load(open(cache_fp, encoding="utf-8"))
     events = j["events"]
     allowed = BUY_FILTERS.get(buy_filter, BUY_FILTERS["3"])
     sig_buy, sig_sell = {}, {}
+    sig_zg = {}              # day -> {stock: zg}（三买失效离场）
     pool_daily = {}          # 每日入池统计：一二三买全部入池（老田口径），trade=仅 buy_filter
     for d in (x for x in cal_idx_all if d0 <= x <= d1):
         sig_buy[d], sig_sell[d], pool_daily[d] = set(), set(), {"pool": 0, "trade": 0}
@@ -291,13 +298,16 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
         if tp in allowed:
             sig_buy[day].add(ev["stock"])
             pool_daily[day]["trade"] += 1
+            if ev.get("zg"):
+                sig_zg.setdefault(day, {})[ev["stock"]] = (ev["zg"], ev.get("zd"))
         elif tp in SELL_TYPES:
             sig_sell[day].add(ev["stock"])
     if progress:
         progress("信号", 30, f"全市场事件缓存命中（{len(events)} 事件·{BUY_FILTER_LABEL.get(buy_filter, buy_filter)}）")
     src = "全市场扫描(market_scan·%d只·剔ST/北交所)·%s" % (j.get("meta", {}).get("universe", 0),
                                                    BUY_FILTER_LABEL.get(buy_filter, buy_filter))
-    return sig_buy, sig_sell, {"pool_daily": pool_daily, "scan_meta": j.get("meta", {}), "signal_source": src}, None
+    return sig_buy, sig_sell, {"pool_daily": pool_daily, "scan_meta": j.get("meta", {}),
+                               "signal_source": src, "sig_zg": sig_zg}, None
 
 
 def calc_dknife_signals(d0, d1, profile="relaxed", progress=None):
@@ -349,11 +359,17 @@ class BacktestConfig:
 # ============================================================
 # 统一引擎
 # ============================================================
-def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=None):
+def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=None,
+                 sig_zg=None, three_fail=True, fail_level="zg", regime_gate=False,
+                 fail_buffer=0.0):
+    """sig_zg：{day: {stock: (中枢上沿zg, 下沿zd)(hfq)}}——三买失效离场用（10-13 老田：跌破中枢=三买被否定）。
+    fail_level：zg=收盘跌破上沿即离场（紧）/ zd=收盘跌破下沿（中枢整体否定，松）。
+    regime_gate：池指数<MA60（low）时不开新三买仓（269 regime 实锤·熊市绞肉机对策）。"""
     global cal
     cash, pos = 1.0, {}
     days, equity_curve, trades, holdings = {}, [], [], {}
     pending_buy, pending_sell = set(), set()
+    zg_pending = {}          # pending_buy 买入候选的中枢上沿（信号日随单携带）
     holding_since = {}
     n_trim = 0
     prev_eq = 1.0
@@ -383,10 +399,16 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
             val_exit = p["val"] * o / p["ref_px"]
             pnl = val_exit / p["cost"] - 1
             cash += val_exit * (1 - cfg.cost)
+            why = p.pop("exit_why", None)
             del pos[s]; holding_since.pop(s, None)
-            actions.append({"type": "sell", "stock": s, "note": "T+1 开盘离场",
-                            "pnl_pct": round(pnl * 100, 2)})
-            rec(day, "SELL", s, "exit_open", pnl)
+            if why == "3b_fail":
+                actions.append({"type": "sell", "stock": s, "note": "三买失效离场（T+1 开盘）",
+                                "pnl_pct": round(pnl * 100, 2)})
+                rec(day, "SELL", s, "3b_fail", pnl)
+            else:
+                actions.append({"type": "sell", "stock": s, "note": "T+1 开盘离场",
+                                "pnl_pct": round(pnl * 100, 2)})
+                rec(day, "SELL", s, "exit_open", pnl)
         pending_sell = still
 
         # A2. 开盘买入（统一 T+1 open；runup 帽 / 总仓位帽 / slot）
@@ -409,6 +431,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
             if cfg.runup_cap > 0 and prev_day:
                 c_prev = px(s, prev_day, "close")
                 if c_prev and o / c_prev - 1 > cfg.runup_cap:
+                    zg_pending.pop(s, None)
                     actions.append({"type": "skip", "stock": s,
                                     "note": f"runup帽：开盘较昨收 +{(o/c_prev-1)*100:.1f}% >{cfg.runup_cap:.0%}，放弃"})
                     continue
@@ -416,7 +439,9 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
             if amt < 0.002 * eqv_open:
                 continue
             cash -= amt
-            pos[s] = {"val": amt * (1 - cfg.cost), "cost": amt * (1 - cfg.cost), "ref_px": o}
+            fz = zg_pending.pop(s, None)
+            pos[s] = {"val": amt * (1 - cfg.cost), "cost": amt * (1 - cfg.cost), "ref_px": o,
+                      "fz": fz}
             holding_since[s] = di
             deployed += amt; n_buy_today += 1
             actions.append({"type": "buy", "stock": s,
@@ -451,13 +476,31 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 
         # D. 收盘事件
         if cfg.strategy == "chanlun":
+            if three_fail and sig_zg is not None:
+                # 三买失效离场（缠论理论内规则）：收盘跌破失效线 = 三买被否定 → 明日开盘卖
+                for s in list(pos):
+                    fz = pos[s].get("fz")
+                    if not fz:
+                        continue
+                    thr = fz[1] if fail_level == "zd" and fz[1] else fz[0] * (1 - fail_buffer)
+                    c = px(s, day, "close")
+                    if c is not None and c < thr and s not in pending_sell:
+                        pending_sell.add(s)
+                        pos[s]["exit_why"] = "3b_fail"
+                        actions.append({"type": "note", "stock": s,
+                                        "note": f"三买失效：收盘跌破{'中枢下沿' if fail_level == 'zd' and fz[1] else '中枢上沿'}→明日开盘卖"})
             for s in sorted(sig_sell.get(day, set())):
                 if s in pos:
                     pending_sell.add(s)
                     actions.append({"type": "note", "stock": s, "note": "卖点确认→明日开盘卖"})
             for s in sorted(sig_buy.get(day, set())):
+                if regime_gate and regime_lv == "low":
+                    if s not in pos and s not in pending_buy:
+                        actions.append({"type": "note", "stock": s, "note": "regime闸门：池指数<MA60 弱市不开新仓"})
+                    continue
                 if s not in pos and s not in pending_buy:
                     pending_buy.add(s)
+                    zg_pending[s] = (sig_zg or {}).get(day, {}).get(s)
                     actions.append({"type": "note", "stock": s, "note": "买点确认→明日开盘候选"})
         else:
             for s in sorted(sig_buy.get(day, set())):
@@ -525,7 +568,8 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "top_n": 10, "slot_pct": 0.08, "cap_mode": "regime_8050",
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
-            "holding_max_days": 0, "buy_filter": "3", "universe": "market"}
+            "holding_max_days": 0, "buy_filter": "3", "universe": "market",
+            "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
@@ -564,6 +608,8 @@ def run_job(params: dict, job_id: str, progress=None):
         if progress:
             progress("信号", 10, f"计算信号：{cfg.name} {d0}→{d1}（universe={universe}）")
         pool_info = None
+        sig_zg = None
+        three_fail = p["three_fail_exit"] is not False and str(p["three_fail_exit"]) != "false"
         if strategy == "chanlun":
             buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "3"
             if universe == "market":
@@ -573,6 +619,7 @@ def run_job(params: dict, job_id: str, progress=None):
                 if err:
                     return None, err
                 src = pool_info["signal_source"]
+                sig_zg = pool_info["sig_zg"]
             else:
                 sig_buy, sig_sell, src = calc_chanlun_signals(d0, d1, progress, buy_filter=buy_filter)
         else:
@@ -583,10 +630,15 @@ def run_job(params: dict, job_id: str, progress=None):
             sig_sell, src = {}, "自算(原始价·relaxed)"
         if progress:
             progress("回测", 65, "逐日执行中")
-        result = run_backtest(cfg, sig_buy, sig_sell, progress)
+        result = run_backtest(cfg, sig_buy, sig_sell, progress,
+                              sig_zg=sig_zg, three_fail=three_fail and strategy == "chanlun",
+                              fail_level=p["fail_level"] if p["fail_level"] in ("zg", "zd") else "zg",
+                              regime_gate=bool(p.get("regime_gate")),
+                              fail_buffer=max(0.0, min(0.2, float(p.get("fail_buffer") or 0))))
         result["meta"]["signal_source"] = src
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
+        result["meta"]["three_fail_exit"] = bool(three_fail and strategy == "chanlun" and sig_zg)
         result["meta"]["job_id"] = job_id
         if pool_info:
             result["meta"]["pool_daily"] = pool_info["pool_daily"]
@@ -619,6 +671,14 @@ if __name__ == "__main__":
                     help="缠论买点等级：3=仅三买(默认·10-13拍板) 23=二买+三买 all=含一买")
     ap.add_argument("--universe", default="market", choices=["market", "pool76"],
                     help="样本域：market=全市场5000+剔ST/北交所(默认) pool76=静态76只池")
+    ap.add_argument("--three-fail-exit", default="true", choices=["true", "false"],
+                    help="三买失效离场：收盘跌破中枢即离场(默认开·缠论理论内规则)")
+    ap.add_argument("--fail-level", default="zg", choices=["zg", "zd"],
+                    help="失效线：zg=上沿(紧·默认) zd=下沿(中枢整体否定)")
+    ap.add_argument("--regime-gate", default="false", choices=["true", "false"],
+                    help="regime闸门：池指数<MA60 弱市不开新三买(默认关)")
+    ap.add_argument("--fail-buffer", type=float, default=0.0,
+                    help="失效线缓冲：收盘跌破 zg*(1-buffer) 才算失效(默认0·降噪用)")
     ap.add_argument("--job-id", default=None)
     args = ap.parse_args()
     jid = args.job_id or ("cli-" + time.strftime("%Y%m%d-%H%M%S"))

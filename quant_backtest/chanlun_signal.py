@@ -185,6 +185,7 @@ def _pivot_signals(bis, pvs):
                     bei2, fv2 = _entry_leave_beichi(bis, k, r)
                     out.append({"type": "3买", "dt": r["e_dt"],
                                 "price": r["e_price"],
+                                "zg": p["zg"], "zd": p["zd"],
                                 "note": "中枢上沿回踩不破",
                                 "bei": bei, "fv": fv,
                                 "bei2": bei2, "fv2": fv2})

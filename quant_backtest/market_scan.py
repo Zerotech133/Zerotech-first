@@ -73,7 +73,7 @@ def scan_stock(args):
         seg = bars_all[:i + 1][-WARMUP:]
         out = {}
         for sg in ((chan_analyze(seg) or {}).get("signals") or []):
-            out[(code, sg["type"])] = int(sg["dt"])
+            out[(code, sg["type"])] = (int(sg["dt"]), sg.get("zg"), sg.get("zd"))
         return out
 
     events = []
@@ -82,7 +82,8 @@ def scan_stock(args):
         cur = run_day(day)
         fresh = [k for k in cur if k not in seen]
         seen |= set(cur)
-        events += [{"stock": s, "type": tp, "day": day} for (s, tp) in fresh]
+        events += [{"stock": s, "type": tp, "day": day, "zg": zg, "zd": zd}
+                   for (s, tp), (dt, zg, zd) in ((k, cur[k]) for k in fresh)]
     return events
 
 
@@ -95,8 +96,8 @@ def scan_market(d0, d1, workers=None, progress=None):
     if progress:
         progress("宇宙", 3, f"全市场 {len(stocks)} 只（剔 ST/北交所/指数）")
     cal = None
-    # 日历：用上证综指日历（数据文件里有 000001_SH 指数残片，正好当日历用）
-    idx_fp = os.path.join(DATA, "000001_SH.parquet")
+    # 日历：用 000001_SZ（2023-04 起全量；000001_SH 指数文件是 300 行残片勿用）
+    idx_fp = os.path.join(DATA, "000001_SZ.parquet")
     cal_all = pd.read_parquet(idx_fp, columns=["trade_date"])["trade_date"].astype(str).tolist()
     prior = [d for d in cal_all if d < d0]
     init_day = prior[-1] if prior else d0
@@ -118,7 +119,7 @@ def scan_market(d0, d1, workers=None, progress=None):
             "type_dist": dict(cnt), "workers": n, "seconds": round(time.time() - t0, 1),
             "generated_at": time.strftime("%Y-%m-%d %H:%M:%S")}
     os.makedirs(OUT_DIR, exist_ok=True)
-    fp = os.path.join(OUT_DIR, "sig_events_market_%s_%s.json" % (d0, d1))
+    fp = os.path.join(OUT_DIR, "sig_events_market_v2_%s_%s.json" % (d0, d1))
     json.dump({"meta": meta, "events": events}, open(fp, "w", encoding="utf-8"),
               ensure_ascii=False)
     if progress:
