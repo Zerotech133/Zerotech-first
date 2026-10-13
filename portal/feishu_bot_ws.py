@@ -468,7 +468,10 @@ def handle_cmd(text, message_id, open_id=""):
             f, cached = get_facts(code)
             reply_card(card_main(code, f, cached), message_id)
         else:
-            send_text("没听懂。发「帮助」看指令表。", message_id)
+            # K-STOCK-300：兜底文案指路——本 bot 只做指令下钻，自由问答
+            # 去找问答机器人（用户此前被「没听懂」误导以为联动坏了）。
+            send_text("未识别指令。我是下钻指令机器人，发「帮助」看指令表；"
+                      "自由问答请艾特或私聊「量化问答机器人」。", message_id)
     except Exception as e:  # noqa: BLE001
         log("cmd err: %s" % traceback.format_exc()[-300:])
         try:
@@ -586,6 +589,11 @@ def main():
             # K-STOCK-299：群消息只响应 @本bot 的（content 渲染为 @_user_N
             # 占位）。双 bot 并存期，@ 新 bot 的消息是 <at user_id=ou_...>
             # 原文——一律沉默，防抢答回「没听懂」污染对方会话。
+            # K-STOCK-300：<at 原文（= @ 的不是本 app）扩展到所有会话类型
+            # （p2p 里误 @ 他 bot 同样沉默）。
+            if "<at user_id=" in text:
+                log("skip at-other-bot: %r" % text[:40])
+                return
             if msg.chat_type == "group" and "@_user_" not in text:
                 log("skip group not-@me: %r" % text[:40])
                 return
