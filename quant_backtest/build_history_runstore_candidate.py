@@ -71,10 +71,10 @@ def _registry_audit(registry: dict, registry_path: Path = REGISTRY) -> dict:
     }
 
 
-def _complete_receipts(stage_root: Path = STAGE) -> list[tuple[str, str, Path, dict]]:
+def _complete_receipts(receipt_root: Path = STAGE) -> list[tuple[str, str, Path, dict]]:
     entries = []
     for table, api in (("ts_daily_basic", "daily_basic"), ("ts_margin_detail", "margin_detail")):
-        for receipt_path in sorted(stage_root.glob(f"annual_*/*{table}_*.receipt.json")):
+        for receipt_path in sorted(receipt_root.glob(f"annual_*/*{table}_*.receipt.json")):
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             if receipt.get("complete") is not True or receipt.get("status") != "candidate_ready":
                 continue
@@ -85,10 +85,12 @@ def _complete_receipts(stage_root: Path = STAGE) -> list[tuple[str, str, Path, d
     return entries
 
 
-def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE) -> dict:
-    """生成候选运行；registry 可来自主工作区，产物只写入 staging_root。"""
+def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE,
+          receipt_root: Path | None = None) -> dict:
+    """生成候选运行；来源 registry/回执可来自主工作区，产物只写入 staging_root。"""
     registry_path = Path(registry_path).resolve()
     stage_root = Path(stage_root).resolve()
+    receipt_root = Path(receipt_root or stage_root).resolve()
     audit_path = stage_root / "runstore_candidate_audit.json"
     plan_path = stage_root / "runstore_candidate_plan.json"
     runs_path = stage_root / "warehouse_runs.sqlite3"
@@ -97,7 +99,7 @@ def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE) -> dict:
     audit = _registry_audit(registry, registry_path)
     stage_root.mkdir(parents=True, exist_ok=True)
     audit_path.write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
-    entries = _complete_receipts(stage_root)
+    entries = _complete_receipts(receipt_root)
     units = []
     for table, _api, receipt_path, receipt in entries:
         date = str(receipt["request_params"]["trade_date"])
@@ -114,7 +116,7 @@ def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE) -> dict:
     plan = {
         "version": 1,
         "source": "tushare",
-        "resource": str(stage_root),
+        "resource": str(receipt_root),
         "market": "cn",
         "date": "2026-10-11",
         "selected_tables": ["ts_daily_basic", "ts_margin_detail"],
@@ -131,7 +133,7 @@ def build(*, registry_path: Path = REGISTRY, stage_root: Path = STAGE) -> dict:
             {"table": "tdx_sector_daily", "missing_keys": 51, "status": "blocked_source_qualification"},
             {"table": "tdx_sector_min", "missing_keys": 14, "status": "blocked_source_qualification"},
         ],
-        "baseline_digest": _sha(stage_root / "reconciliation" / "report.json"),
+        "baseline_digest": _sha(receipt_root / "reconciliation" / "report.json"),
     }
     plan["plan_digest"] = plan_digest(plan)
     plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -184,5 +186,8 @@ if __name__ == "__main__":
                         help="只读来源 registry 路径，默认使用当前工作树候选 registry")
     parser.add_argument("--stage-root", type=Path, default=STAGE,
                         help="候选产物和 staging 回执目录，默认当前工作树 staging")
+    parser.add_argument("--receipt-root", type=Path, default=None,
+                        help="只读回执与对账基线目录，默认与 stage-root 相同")
     args = parser.parse_args()
-    print(json.dumps(build(registry_path=args.registry, stage_root=args.stage_root), ensure_ascii=False))
+    print(json.dumps(build(registry_path=args.registry, stage_root=args.stage_root,
+                           receipt_root=args.receipt_root), ensure_ascii=False))
