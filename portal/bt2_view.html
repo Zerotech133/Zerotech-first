@@ -63,6 +63,7 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>追高帽%</label><input name="runup_cap" type="number" value="15" min="0" max="50"></div>
   <div class="fld"><label>止损%（0关）</label><input name="stop_pct" type="number" value="0" min="-50" max="0"></div>
   <div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>
+  <div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="23">仅二买+三买（默认）</option><option value="2">仅二买</option><option value="3">仅三买</option><option value="all">一二三类全要</option></select></div>
   <div class="fld" style="justify-content:flex-end"><label>&nbsp;</label><button id="go" type="submit">开始回测</button></div>
 </div></form>
 <div class="err" id="ferr"></div>
@@ -134,7 +135,7 @@ function render(){
   document.getElementById("timelines").innerHTML=
     `<div class="tl-card"><h3>${c.name}（${c.strategy==="chanlun"?"🟣":"🟡"}）执行时间轴</h3>`+
     DATA.meta.execution_timeline.map((s,i)=>`<div class="tl-step"><b>${i+1}.</b><span>${s}</span></div>`).join("")+
-    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · slot=${Math.round(c.slot_pct*100)}% · 总仓位=${c.cap_mode==="fixed"?"固定80%":"regime 80/50/30"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
+    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · slot=${Math.round(c.slot_pct*100)}% · 总仓位=${c.cap_mode==="fixed"?"固定80%":"regime 80/50/30"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 买点等级=${({23:"二买+三买",2:"仅二买",3:"仅三买",all:"全要"})[DATA.meta.buy_filter]||"-"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
     `<div class="note">口径声明：${DATA.meta.assumptions.join("；")}</div>`;
   // KPI
   const s=DATA.summary, cls=v=>v>0?"up":"dn";

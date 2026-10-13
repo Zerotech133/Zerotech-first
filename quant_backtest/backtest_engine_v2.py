@@ -115,6 +115,13 @@ from chanlun_signal import analyze as chan_analyze  # noqa: E402
 WARMUP = 250
 SELL_TYPES = {"1卖", "2卖", "3卖"}
 BUY_TYPES = {"1买", "2买", "3买"}
+# 买点等级过滤（10-13 老田拍板：缠论只选二买/三买，一买不作为选择）
+BUY_FILTERS = {"all": {"1买", "2买", "3买"}, "23": {"2买", "3买"},
+               "2": {"2买"}, "3": {"3买"}}
+BUY_FILTER_LABEL = {"23": "仅二买+三买（一买不入选·10-13拍板）", "2": "仅二买",
+                    "3": "仅三买", "all": "一/二/三类全要"}
+SIG_EVENTS_CACHE = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+                                "sig_events_%s_%s.json")
 
 def _chanlun_run_day(day):
     out = {}
@@ -128,9 +135,14 @@ def _chanlun_run_day(day):
             out[(s, sg["type"])] = int(sg["dt"])
     return out
 
-def calc_chanlun_signals(d0, d1, progress=None):
-    """hfq + seen-ever 缠论信号自算（任意窗口）。一年窗（=277 账本口径）直接复用缓存零重算。"""
-    if d0 >= "20251013" and d1 <= "20261012" and os.path.exists(LEDGER):
+def calc_chanlun_signals(d0, d1, progress=None, buy_filter="all"):
+    """hfq + seen-ever 缠论信号自算（任意窗口）。一年窗（=277 账本口径）直接复用缓存零重算。
+
+    buy_filter：买点等级过滤（"23"=仅二买三买·10-13 拍板 / "2" / "3" / "all"）。
+    277 账本 sig_buy 不带买点类型 → 非 all 时走事件缓存自算（首跑数分钟，之后秒级）。
+    """
+    allowed = BUY_FILTERS.get(buy_filter, BUY_FILTERS["all"])
+    if allowed == BUY_FILTERS["all"] and d0 >= "20251013" and d1 <= "20261012" and os.path.exists(LEDGER):
         j = json.load(open(LEDGER, encoding="utf-8"))
         sig_buy, sig_sell = {}, {}
         for day, d in j["days"].items():
@@ -146,23 +158,54 @@ def calc_chanlun_signals(d0, d1, progress=None):
         if progress:
             progress("信号", 30, f"缠论信号复用 277 账本（{len(sig_buy)} 日，零重算）")
         return sig_buy, sig_sell, "277账本缓存"
-    # 自算：窗口前一日初始化 seen-ever
+    # 自算：窗口前一日初始化 seen-ever；事件缓存（stock,type,首现日）→ 任意买点等级过滤秒级
+    cache_fp = SIG_EVENTS_CACHE % (d0, d1)
+    if os.path.exists(cache_fp):
+        try:
+            events = json.load(open(cache_fp, encoding="utf-8"))["events"]
+        except Exception:
+            events = None
+    else:
+        events = None
+    sig_buy, sig_sell = {}, {}
+    if events is not None:
+        for ev in events:
+            day = ev["day"]
+            sig_buy.setdefault(day, set())
+            sig_sell.setdefault(day, set())
+            if ev["type"] in allowed:
+                sig_buy[day].add(ev["stock"])
+            elif ev["type"] in SELL_TYPES:
+                sig_sell[day].add(ev["stock"])
+        for d in (x for x in cal_idx_all if d0 <= x <= d1):
+            sig_buy.setdefault(d, set())
+            sig_sell.setdefault(d, set())
+        if progress:
+            progress("信号", 30, f"缠论信号事件缓存命中（{len(events)} 事件，{BUY_FILTER_LABEL.get(buy_filter, buy_filter)}）")
+        return sig_buy, sig_sell, "事件缓存·自算(hfq+seen-ever)·%s" % BUY_FILTER_LABEL.get(buy_filter, buy_filter)
     prior = [d for d in cal_idx_all if d < d0]
     init_day = prior[-1] if prior else d0
     t0 = time.time()
     seen_ever = set(_chanlun_run_day(init_day))
-    sig_buy, sig_sell = {}, {}
     win = [d for d in cal_idx_all if d0 <= d <= d1]
+    events = []
     for i, day in enumerate(win):
         cur = _chanlun_run_day(day)
         fresh = [k for k in cur if k not in seen_ever]
         seen_ever |= set(cur)
-        sig_buy[day] = {s for (s, tp) in fresh if tp in BUY_TYPES}
+        sig_buy[day] = {s for (s, tp) in fresh if tp in allowed}
         sig_sell[day] = {s for (s, tp) in fresh if tp in SELL_TYPES}
+        events += [{"stock": s, "type": tp, "day": day} for (s, tp) in fresh]
         if progress and (i % 20 == 0 or i == len(win) - 1):
             progress("信号", 5 + int(60 * (i + 1) / len(win)),
                      f"缠论 seen-ever {i+1}/{len(win)} 日（{round(time.time()-t0)}s）")
-    return sig_buy, sig_sell, "自算(hfq+seen-ever)"
+    try:
+        os.makedirs(os.path.dirname(cache_fp), exist_ok=True)
+        json.dump({"d0": d0, "d1": d1, "n": len(events), "events": events},
+                  open(cache_fp, "w", encoding="utf-8"), ensure_ascii=False)
+    except Exception:
+        pass
+    return sig_buy, sig_sell, "自算(hfq+seen-ever)·%s" % BUY_FILTER_LABEL.get(buy_filter, buy_filter)
 
 def calc_dknife_signals(d0, d1, profile="relaxed", progress=None):
     """量子双刀逐日信号：原始价 K 线（引擎实务门槛），T 日 14:45 口径近似=T 日 bar。"""
@@ -389,7 +432,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "top_n": 10, "slot_pct": 0.08, "cap_mode": "regime_8050",
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
-            "holding_max_days": 0}
+            "holding_max_days": 0, "buy_filter": "23"}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
@@ -424,14 +467,17 @@ def run_job(params: dict, job_id: str, progress=None):
         if progress:
             progress("信号", 10, f"计算信号：{cfg.name} {d0}→{d1}")
         if strategy == "chanlun":
-            sig_buy, sig_sell, src = calc_chanlun_signals(d0, d1, progress)
+            buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "23"
+            sig_buy, sig_sell, src = calc_chanlun_signals(d0, d1, progress, buy_filter=buy_filter)
         else:
+            buy_filter = "all"
             sig_buy = calc_dknife_signals(d0, d1, progress=progress)
             sig_sell, src = {}, "自算(原始价·relaxed)"
         if progress:
             progress("回测", 65, "逐日执行中")
         result = run_backtest(cfg, sig_buy, sig_sell, progress)
         result["meta"]["signal_source"] = src
+        result["meta"]["buy_filter"] = buy_filter
         result["meta"]["job_id"] = job_id
         os.makedirs(OUT_DIR, exist_ok=True)
         out = os.path.join(OUT_DIR, f"bt2_{job_id}.json")
@@ -457,6 +503,8 @@ if __name__ == "__main__":
     ap.add_argument("--runup-cap", type=float, default=0.15)
     ap.add_argument("--stop-pct", type=float, default=0.0)
     ap.add_argument("--holding-max", type=int, default=0)
+    ap.add_argument("--buy-filter", default="23", choices=["23", "2", "3", "all"],
+                    help="缠论买点等级：23=仅二买三买(默认·10-13拍板) all=含一买")
     ap.add_argument("--job-id", default=None)
     args = ap.parse_args()
     jid = args.job_id or ("cli-" + time.strftime("%Y%m%d-%H%M%S"))
