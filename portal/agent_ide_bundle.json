@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14 01:26",
+ "generated": "2026-10-14 01:37",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 29,
@@ -757,6 +757,7 @@
    "id": "chief",
    "name": "🧠 参谋长 · 田小皮",
    "type": "chief",
+   "charter": "",
    "agents": [
     "A0",
     "A0A"
@@ -770,6 +771,7 @@
    "id": "invest",
    "name": "📊 投研部",
    "type": "func",
+   "charter": "选股研究·多空辩论·情绪与基本面分析·投资决策",
    "agents": [
     "D1",
     "F1",
@@ -789,6 +791,7 @@
    "id": "dev",
    "name": "🏗 工程研发中心",
    "type": "func",
+   "charter": "多梯队工程交付：后端(30/20/10年三档)·前端(30/20年)·量化(20年三岗)·架构/运维(30年)·文档(20年)",
    "agents": [
     "ARCH1",
     "DEV1",
@@ -820,6 +823,7 @@
    "id": "trading",
    "name": "📈 交易部",
    "type": "func",
+   "charter": "执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）",
    "agents": [
     "TR1"
    ],
@@ -831,6 +835,7 @@
    "id": "data",
    "name": "🗄 数据智能部",
    "type": "func",
+   "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）",
    "agents": [
     "DATA1"
    ],
@@ -842,6 +847,7 @@
    "id": "product",
    "name": "📋 产品管理部",
    "type": "func",
+   "charter": "需求池·版本规划·验收口径·UI/UX 设计（30年主笔+10年执行双梯队）",
    "agents": [
     "DSGN1",
     "DSGN2",
@@ -857,6 +863,7 @@
    "id": "quality",
    "name": "✅ 质量工程部",
    "type": "func",
+   "charter": "测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计（SEC1合规红线·SEC2研发质量对抗/走形检查）",
    "agents": [
     "QA1",
     "QA2",
@@ -874,6 +881,7 @@
    "id": "marketing",
    "name": "📣 市场部",
    "type": "func",
+   "charter": "统一口号纪律·内容宣发(过LEG1审查后发布)·开源社区影响面·在研文稿协同",
    "agents": [
     "MKT1"
    ],
@@ -885,6 +893,7 @@
    "id": "legal",
    "name": "⚖️ 合规法务部",
    "type": "func",
+   "charter": "对外材料合规审查·口径裁定(四原则)·数据与采集合规红线·公安协调支撑；直属参谋长田小皮，独立表态",
    "agents": [
     "LEG1"
    ],
@@ -896,6 +905,7 @@
    "id": "proj_backtest",
    "name": "🅰 回测开发部",
    "type": "project",
+   "charter": "【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建",
    "agents": [
     "DEV3",
     "DEV4",
@@ -911,6 +921,7 @@
    "id": "proj_data",
    "name": "🅱 数据治理部",
    "type": "project",
+   "charter": "【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建",
    "agents": [
     "DATA1",
     "DEV1"
@@ -924,6 +935,7 @@
    "id": "proj_next",
    "name": "🅲 下版本设计推理部",
    "type": "project",
+   "charter": "【项目部门·现役】下一版本设计+推理：nl_query 图谱自然语言问答（v5 C 线启动·最小闭环先行）+ 下一版门户/大屏产品定义；PM1 出验收口径 → ARCH1 技术终审 → DEV2 推理侧",
    "agents": [
     "ARCH1",
     "DEV2",

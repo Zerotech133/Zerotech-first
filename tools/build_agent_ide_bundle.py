@@ -22,12 +22,9 @@ REG = os.path.join(ROOT, "agent_platform", "registry")
 PROMPTS = os.path.join(ROOT, "agent_platform", "prompts")
 OUT = os.path.join(ROOT, "portal", "agent_ide_bundle.json")
 
-# 职能部 team 文件（主数据源）；项目部文件单独归类
-# K-ORG-052: +team_chief.json 参谋长办公室（A0A 助理；chief 特殊卡在 main() 先行入编，
-# 此处只补 A0A 等新增岗——dept_agents 合并语义防覆盖 A0）
-FUNC_TEAMS = ["team_chief.json", "team_invest.json", "team_dev.json",
-              "team_trading.json", "team_data.json", "team_product.json",
-              "team_quality.json", "team_marketing.json", "team_legal.json"]
+# 职能部/项目部分类（K-ORG-053 起按文件名约定判定：team_proj_* = 项目部只打标，
+# 其余 team_*.json 一律职能部落卡——组织图新注册部门免改码自动入编）
+# （旧 FUNC_TEAMS 白名单已废：新增部门曾因不在白名单被当项目部处理只打标不落卡）
 
 DEPT_META = {  # 部门显示名（org.json name 键值在此冗余固化，避免页面再拉 org）
     "invest": ("📊 投研部", "func"),
@@ -142,7 +139,8 @@ def main():
         "role_profile": chief.get("role_profile", "chief_of_staff"),
         "grade": "E3",
         "grade_note": "参谋长·组织枢纽（汇报聚合/任务仲裁/记忆治理）",
-        "charter": "全组织 29 在编岗向田小皮汇报：判读各部门日报、风险优先输出判读、"
+        # 在编数尾段回填（K-ORG-053：组织图动态注册后岗数随实际，不再硬编码）
+        "charter": "全组织 {N} 在编岗向田小皮汇报：判读各部门日报、风险优先输出判读、"
                    "任务单仲裁、记忆治理；影子期纪律：不给买卖操作建议。",
         "llm": chief.get("llm_binding", "ollama/qwen3.5:9b"),
         "tools": ["events", "devtask"],
@@ -162,10 +160,11 @@ def main():
         d = json.load(open(fn, encoding="utf-8"))
         dept = d.get("dept", "")
         ids = [a.get("agent_id") for a in d.get("agents", [])]
-        # K-ORG-052: 合并语义——chief 的 A0 已在 main() 先行入编，
-        # team_chief.json 的 A0A 必须并入而非覆盖，否则 A0 从左树消失
+        # K-ORG-052: 合并语义——chief 的 A0 先行入编，team_chief.json 并入不覆盖
         dept_agents[dept] = sorted(set(dept_agents.get(dept, [])) | set(ids))
-        if base in FUNC_TEAMS:
+        # K-ORG-053: 项目部命名约定 team_proj_*；其余一律职能部落卡——
+        # 组织图新注册的部门 team 文件免登记自动入编（去 FUNC_TEAMS 白名单依赖）
+        if not base.startswith("team_proj_"):
             for a in d.get("agents", []):
                 aid = a.get("agent_id")
                 agents[aid] = {
@@ -203,18 +202,36 @@ def main():
             miss_prompt.append(aid)
 
     # 部门视图（IDE 左树顺序：参谋长在顶，职能部居中，项目部在后）
+    # K-ORG-053：组织图动态注册的新部门免改码——org.json departments 取显示名/type，
+    # order 之外的新部门按 org.json 顺序追加在尾部
+    org_dept_meta = {d.get("dept"): d for d in org.get("departments", [])}
     order = ["chief", "invest", "dev", "trading", "data", "product", "quality",
              "marketing", "legal", "proj_backtest", "proj_data", "proj_next"]
+    order += [dep for dep in org_dept_meta if dep not in order
+              and dep in dept_agents]
+    order += [dep for dep in dept_agents if dep not in order]  # 纯 team 文件新部门兜底
     departments = []
     for dep in order:
         if dep not in dept_agents:
             continue
-        name, typ = DEPT_META.get(dep, ("🧠 参谋长 · 田小皮", "chief" if dep == "chief" else "func"))
+        od = org_dept_meta.get(dep, {})
+        if dep == "chief":
+            name, typ = "🧠 参谋长 · 田小皮", "chief"
+        elif dep in DEPT_META:
+            name, typ = DEPT_META[dep]
+        else:  # 动态注册部门：显示名与类型全部取 org.json
+            name, typ = od.get("name", dep), od.get("type", "func")
         departments.append({
             "id": dep, "name": name, "type": typ,
+            "charter": od.get("charter", ""),
             "agents": [a for a in dept_agents[dep] if a in agents],
             "all_ids": dept_agents[dep],  # 项目部可能引用未在职能表落卡者（现状无）
         })
+
+    # 参谋长 charter 回填实际在编数（K-ORG-053）
+    if "{N}" in agents["A0"]["charter"]:
+        agents["A0"]["charter"] = agents["A0"]["charter"].replace(
+            "{N}", str(len(agents)))
 
     # 工单投影（K-ORG-024 批C先行）：devtask tasks.json 活跃单挂到岗卡
     # owner 精确匹配 agent_id（如 DEV1/PM1）；Codex 系自由身 worker 归全局池

@@ -33,7 +33,8 @@ TOOLS_BY_DEPT = {
 
 
 def tools_for(agent):
-    return TOOLS_BY_DEPT.get(agent["dept"], RO_TOOLS)
+    # K-ORG-053: 组织图动态注册岗可带 claude_tools 覆盖（架构即注册表）
+    return agent.get("claude_tools") or TOOLS_BY_DEPT.get(agent["dept"], RO_TOOLS)
 
 
 # K-ORG-052: 岗级模型特例——A0A(E1 轻量调度)走 Lite，不随 chief 部门吃 SMART
@@ -41,6 +42,9 @@ MODEL_OVERRIDES = {"A0A": LITE}
 
 
 def model_for(agent):
+    # K-ORG-053: 岗卡 claude_model > 岗级特例 > 部门默认
+    if agent.get("claude_model"):
+        return agent["claude_model"]
     if agent.get("id") in MODEL_OVERRIDES:
         return MODEL_OVERRIDES[agent["id"]]
     return SMART if agent["dept"] in SMART_DEPTS else LITE
@@ -74,8 +78,9 @@ def main():
     with open(OUT_PATH, "w", encoding="utf-8", newline="\n") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     print("exported %d agents -> %s" % (len(out), OUT_PATH))
-    # 自检：29 岗（K-ORG-052 +A0A +SEC2）、四字段齐、边界段在、质检/安全只读
-    assert len(out) == 29, len(out)
+    # 自检：岗数与 bundle 一致（K-ORG-053 去硬编码：组织图动态注册随时扩编）
+    n_bundle = len(bundle["agents"])
+    assert len(out) == n_bundle, (len(out), n_bundle)
     for aid, e in out.items():
         assert all(e.get(k) for k in ("description", "prompt", "tools", "model")), aid
         assert "工作边界" in e["prompt"], aid
@@ -84,8 +89,8 @@ def main():
     assert out["A0A"]["model"] == LITE and out["SEC2"]["model"] == SMART
     assert out["DEV2"]["tools"] == FULL_TOOLS
     n_smart = sum(1 for e in out.values() if e["model"] == SMART)
-    print("selfcheck OK: 29 agents, QA1/SEC1/SEC2 read-only, smart=%d lite=%d"
-          % (n_smart, 29 - n_smart))
+    print("selfcheck OK: %d agents (bundle %d), QA1/SEC1/SEC2 read-only, smart=%d lite=%d"
+          % (len(out), n_bundle, n_smart, len(out) - n_smart))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>老田 AI 工作站 · 组织架构图</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#0e1117; --panel:#161a23; --panel2:#1c2130; --line:#2a3145;
+  --txt:#e8ebf2; --dim:#8a93a5; --acc:#4a9eff; --gold:#d4a017;
+  --green:#3fb27f; --red:#e05656;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;padding:18px 22px 40px}
+h1{font-size:20px;font-weight:600;display:flex;align-items:center;gap:10px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.bar .sub{color:var(--dim);font-size:12.5px}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.primary{background:#1e3a5f;border-color:#2d5b96}
+.btn.primary:hover{background:#264d7f;color:#fff}
+.btn.danger{border-color:#6e2f2f;color:#e08585}
+.stats{color:var(--dim);font-size:12.5px;margin-bottom:18px}
+.stats b{color:var(--txt)}
+
+/* ---- 组织树 ---- */
+.chart{overflow-x:auto;padding-bottom:8px}
+.tree{min-width:2100px;display:flex;flex-direction:column;align-items:center}
+.chief{background:linear-gradient(135deg,#1b2a45,#16202f);border:1px solid #2d5b96;border-radius:12px;padding:14px 34px;text-align:center;position:relative;z-index:2}
+.chief .nm{font-size:17px;font-weight:700}
+.chief .rl{color:var(--acc);font-size:12px;margin-top:2px}
+.chief .ct{color:var(--dim);font-size:11.5px;max-width:420px;margin-top:6px}
+.vline{width:2px;height:22px;background:var(--line)}
+.rail{height:2px;background:var(--line);align-self:stretch;margin:0 40px}
+.cols{display:flex;gap:12px;align-items:flex-start;justify-content:center;padding-top:0;margin-top:-1px}
+.dept{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:168px;max-width:220px;flex:1;position:relative}
+.dept::before{content:"";position:absolute;top:-14px;left:50%;width:2px;height:14px;background:var(--line)}
+.dept .dh{padding:8px 10px 6px;border-bottom:1px solid var(--line)}
+.dept .dh .dn{font-weight:600;font-size:13.5px}
+.dept .dh .dc{color:var(--dim);font-size:11px;line-height:1.45;margin-top:2px;max-height:34px;overflow:hidden}
+.dept .dbody{padding:8px;display:flex;flex-direction:column;gap:6px}
+.chip{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--dim);border-radius:7px;padding:5px 8px;cursor:pointer;font-size:12.5px}
+.chip:hover{border-color:var(--acc);background:#20273a}
+.chip .id{font-weight:600;letter-spacing:.5px}
+.chip .gd{margin-left:auto;font-size:10.5px;color:var(--dim)}
+.chip.g3{border-left-color:var(--gold)} .chip.g3 .gd{color:var(--gold)}
+.chip.g2{border-left-color:var(--acc)} .chip.g2 .gd{color:var(--acc)}
+.sect{margin-top:26px}
+.sect .st{font-size:13px;color:var(--dim);border-bottom:1px dashed var(--line);padding-bottom:6px;margin-bottom:12px}
+.proj{display:flex;gap:12px;flex-wrap:wrap}
+.proj .dept{max-width:320px}
+
+/* ---- 弹层 ---- */
+.mask{position:fixed;inset:0;background:rgba(5,8,14,.72);display:none;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:40px 16px}
+.mask.on{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;max-width:640px;width:100%;padding:20px 22px}
+.modal h3{font-size:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.modal h3 .x{cursor:pointer;color:var(--dim);font-size:20px;line-height:1}
+.modal h3 .x:hover{color:var(--txt)}
+.kv{display:grid;grid-template-columns:88px 1fr;gap:4px 10px;font-size:13px;margin-bottom:10px}
+.kv .k{color:var(--dim)}
+.prompt{background:#0b0e14;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:12px/1.55 Consolas,monospace;max-height:300px;overflow:auto;white-space:pre-wrap;color:#c7cede}
+label{display:block;font-size:12.5px;color:var(--dim);margin:10px 0 3px}
+input[type=text],select,textarea{width:100%;background:#0b0e14;border:1px solid var(--line);border-radius:7px;color:var(--txt);padding:7px 9px;font-size:13px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc)}
+textarea{resize:vertical;min-height:56px}
+.frow{display:flex;gap:10px}.frow>div{flex:1}
+.err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:8px}
+.plan{background:#0b0e14;border:1px solid var(--line);border-radius:8px;padding:10px 12px;max-height:260px;overflow:auto;font-size:12.5px}
+.plan .pi{padding:3px 0;border-bottom:1px dashed #1c2233}
+.plan .act{color:var(--green);font-weight:600;margin-right:8px}
+.plan code{color:#9fb6d4;font-family:Consolas,monospace}
+.ok-msg{color:var(--green);font-size:13px}
+.audit{margin-top:30px;font-size:12px;color:var(--dim)}
+.audit table{width:100%;border-collapse:collapse;margin-top:6px}
+.audit td,.audit th{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left;font-weight:400}
+.audit th{color:var(--dim)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1e3a5f;border:1px solid #2d5b96;padding:10px 22px;border-radius:9px;display:none;z-index:99;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>🧬 老田 AI 工作站 · 组织架构图
+    <span class="sub" id="src">架构即注册表 · 图上改、落盘生效</span></h1>
+  <div>
+    <button class="btn primary" id="btnAddAgent">➕ 新增 AI</button>
+    <button class="btn" id="btnAddDept">🏢 新增部门</button>
+    <button class="btn" id="btnReload">🔄 刷新</button>
+  </div>
+</div>
+<div class="stats" id="stats">加载中…</div>
+<div class="chart"><div class="tree" id="tree"></div></div>
+<div class="sect" id="projSect" style="display:none">
+  <div class="st">🅰 项目矩阵（项目部门·交付完归建，人员一岗多 project）</div>
+  <div class="proj" id="projRow"></div>
+</div>
+<div class="audit">
+  <div class="st" style="border:none;margin-bottom:0">📜 注册台账（最近 20 笔 · 全量见 agent_platform/data/org_registry_audit.jsonl）</div>
+  <table id="auditTbl" style="display:none">
+    <tr><th>时间</th><th>动作</th><th>对象</th><th>年限档</th><th>落盘文件</th></tr>
+  </table>
+</div>
+
+<!-- 岗位详情 -->
+<div class="mask" id="mDetail"><div class="modal">
+  <h3><span id="dtTitle">岗位</span><span class="x" onclick="ui('mDetail',0)">×</span></h3>
+  <div class="kv" id="dtKv"></div>
+  <div style="font-size:12.5px;color:var(--dim);margin:8px 0 4px">人设全文（prompts）</div>
+  <div class="prompt" id="dtPrompt"></div>
+</div></div>
+
+<!-- 表单（新增 AI / 部门） -->
+<div class="mask" id="mForm"><div class="modal">
+  <h3 id="fmTitle">➕ 新增 AI<span class="x" onclick="ui('mForm',0)">×</span></h3>
+  <div id="fAgent">
+    <div class="frow">
+      <div><label>工号（大写字母+数字，如 DEV9）</label><input type="text" id="fId" placeholder="DEV9"></div>
+      <div><label>姓名（可选）</label><input type="text" id="fName" placeholder="如 田二皮"></div>
+    </div>
+    <label>所属部门</label><select id="fDept"></select>
+    <div id="fNewDept" style="display:none">
+      <div class="frow">
+        <div><label>新部门标识（小写，如 research）</label><input type="text" id="fNd" placeholder="research"></div>
+        <div><label>新部门显示名</label><input type="text" id="fNdn" placeholder="如 🔬 前沿研究部"></div>
+      </div>
+      <label>部门职责（一句话）</label><input type="text" id="fNdc">
+    </div>
+    <div class="frow">
+      <div><label>工作年限档</label><select id="fGrade">
+        <option value="E1">E1 · 10 年档（执行位）</option>
+        <option value="E2">E2 · 20 年档（独立表态位）</option>
+        <option value="E3">E3 · 30 年档（裁定位）</option>
+      </select></div>
+      <div><label>模型档</label><select id="fModel">
+        <option value="glm46">智谱 glm-4.6（包年·重推理）</option>
+        <option value="flash">智谱 glm-4.5-flash（轻量）</option>
+        <option value="ollama9b">本地 qwen3.5:9b</option>
+        <option value="ollama4b">本地 qwen3.5:4b</option>
+      </select></div>
+      <div><label>能力档（工具面）</label><select id="fTool">
+        <option value="dev">研发全能（可读写代码）</option>
+        <option value="audit">审查只读（Read,Grep）</option>
+        <option value="light">轻量只读（Read,Grep,Glob）</option>
+      </select></div>
+    </div>
+    <label>岗位职责 · 他是干嘛的（组织图即职责定义，≥8 字）</label>
+    <textarea id="fCharter" placeholder="如：策略回测复核·三守卫二次确认·质量红线亮牌"></textarea>
+    <label>人设要点（写进 prompts 人设，可后补）</label>
+    <textarea id="fPersona" placeholder="背景/专长/性格/纪律…"></textarea>
+  </div>
+  <div id="fDeptOnly" style="display:none">
+    <div class="frow">
+      <div><label>部门标识（小写，如 research）</label><input type="text" id="fD2" placeholder="research"></div>
+      <div><label>部门显示名</label><input type="text" id="fDn2" placeholder="如 🔬 前沿研究部"></div>
+    </div>
+    <label>部门职责（一句话）</label><input type="text" id="fDc2">
+  </div>
+  <div class="err" id="fErr"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+    <button class="btn" onclick="ui('mForm',0)">取消</button>
+    <button class="btn primary" id="btnPreview">② 预览落盘计划</button>
+    <button class="btn primary" id="btnConfirm" style="display:none">③ 确认落盘注册</button>
+  </div>
+</div></div>
+
+<!-- 落盘计划预览 -->
+<div class="mask" id="mPlan"><div class="modal">
+  <h3>落盘计划（未写盘）<span class="x" onclick="ui('mPlan',0)">×</span></h3>
+  <div class="plan" id="planBody"></div>
+  <div class="err" id="pErr"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+    <button class="btn" onclick="ui('mPlan',0)">返回修改</button>
+    <button class="btn primary" id="btnDoRegister">确认落盘</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+var B=null, ORG=null, AUDIT=[];
+var $=function(id){return document.getElementById(id)};
+function ui(id,on){$(id).classList.toggle("on",!!on)}
+function toast(msg){var t=$("toast");t.textContent=msg;t.style.display="block";setTimeout(function(){t.style.display="none"},3200)}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function gd(g){return g==="E3"?"30年":g==="E2"?"20年":g==="E1"?"10年":(g||"?")}
+function gcls(g){return g==="E3"?"g3":g==="E2"?"g2":""}
+
+function render(){
+  var A=B.agents, D=B.departments, S=B.stats||{};
+  $("stats").innerHTML="在编 <b>"+(S.agents||Object.keys(A).length)+"</b> 岗 · 部门 <b>"+(S.departments||D.length)+"</b> · "
+    +"E3 <b>"+Object.values(A).filter(function(a){return a.grade==="E3"}).length+"</b> · E2 <b>"+Object.values(A).filter(function(a){return a.grade==="E2"}).length+"</b> · E1 <b>"+Object.values(A).filter(function(a){return a.grade==="E1"}).length+"</b>"
+    +"　<span style='color:var(--dim)'>E 档=工作年限（E3 裁定 / E2 独立表态 / E1 执行）</span>";
+  var func=D.filter(function(d){return d.type!=="project"});
+  var proj=D.filter(function(d){return d.type==="project"});
+  var h='<div class="chief"><div class="nm">🧠 田小皮（A0）</div><div class="rl">参谋长 · 全组织汇报顶点</div>'
+    +'<div class="ct">'+esc((A["A0"]||{}).charter||"")+'</div></div>'
+    +'<div class="vline"></div><div class="rail"></div><div class="cols">';
+  func.forEach(function(d){h+=deptCard(d,A)});
+  h+='</div>';
+  $("tree").innerHTML=h;
+  // 项目矩阵
+  if(proj.length){
+    $("projSect").style.display="block";
+    $("projRow").innerHTML=proj.map(function(d){return deptCard(d,A)}).join("");
+  } else $("projSect").style.display="none";
+  // 台账
+  if(AUDIT.length){
+    var t=$("auditTbl");t.style.display="table";
+    AUDIT.forEach(function(r){
+      var tr=t.insertRow(-1);
+      tr.innerHTML="<td>"+esc(r.ts)+"</td><td>"+esc(r.kind)+"</td><td><b>"+esc(r.agent_id||r.dept)+"</b> @"+esc(r.dept||"")
+        +"</td><td>"+esc(r.grade||"-")+"</td><td>"+((r.files||[]).length)+" 个文件</td>";
+    });
+  }
+  // 部门下拉
+  var sel=$("fDept");sel.innerHTML="";
+  D.forEach(function(d){
+    var o=document.createElement("option");o.value=d.id;o.textContent=d.name;sel.appendChild(o);
+  });
+  var nd=document.createElement("option");nd.value="__new__";nd.textContent="➕ 新建部门…";sel.appendChild(nd);
+}
+function deptCard(d,A){
+  var dn = d.id==="chief" ? "🎖 参谋长办公室" : d.name;  // 参谋长本人已在顶部主卡
+  var h='<div class="dept"><div class="dh"><div class="dn">'+esc(dn)+'</div>'
+    +(d.charter?'<div class="dc" title="'+esc(d.charter)+'">'+esc(d.charter)+'</div>':"")
+    +'</div><div class="dbody">';
+  (d.agents||[]).forEach(function(id){
+    var a=A[id]||{};
+    h+='<div class="chip '+gcls(a.grade)+'" data-id="'+esc(id)+'"><span class="id">'+esc(id)+'</span>'
+      +(a.name&&a.name!==id?'<span>'+esc(a.name)+'</span>':"")
+      +'<span class="gd">'+gd(a.grade)+'</span></div>';
+  });
+  if(!(d.agents||[]).length)h+='<div style="color:var(--dim);font-size:11.5px;padding:2px">（空编）</div>';
+  return h+'</div></div>';
+}
+function showDetail(id){
+  var a=B.agents[id];if(!a)return;
+  $("dtTitle").textContent=id+(a.name&&a.name!==id?" · "+a.name:"")+"（"+(a.dept==="chief"?"参谋长":a.dept)+"部）";
+  $("dtKv").innerHTML=
+    "<div class='k'>年限档</div><div>"+esc(a.grade)+" · "+gd(a.grade)+"　"+esc(a.grade_note||"")+"</div>"
+    +"<div class='k'>职责</div><div>"+esc(a.charter||"-")+"</div>"
+    +"<div class='k'>模型</div><div>"+esc(a.llm||"-")+"</div>"
+    +"<div class='k'>工具</div><div>"+esc((a.tools||[]).join("、"))+"</div>"
+    +"<div class='k'>项目</div><div>"+esc((a.projects||[]).join("、")||"-")+"</div>"
+    +"<div class='k'>读权限</div><div>"+esc((a.grants_read||[]).join(" "))+"</div>"
+    +"<div class='k'>写权限</div><div>"+esc((a.grants_write||[]).join(" "))+"</div>";
+  $("dtPrompt").textContent=a.prompt||"（无人设文件）";
+  ui("mDetail",1);
+}
+function payload(kind){
+  var p={kind:kind};
+  if(kind==="agent"){
+    p.agent_id=($("fId").value||"").trim();
+    p.name=($("fName").value||"").trim();
+    var dep=$("fDept").value;
+    if(dep==="__new__"){
+      p.dept=($("fNd").value||"").trim();
+      p.dept_name=($("fNdn").value||"").trim();
+      p.dept_charter=($("fNdc").value||"").trim();
+    } else p.dept=dep;
+    p.grade=$("fGrade").value;p.model=$("fModel").value;p.tool_preset=$("fTool").value;
+    p.charter=($("fCharter").value||"").trim();
+    p.persona=($("fPersona").value||"").trim();
+  }else{
+    p.dept=($("fD2").value||"").trim();
+    p.dept_name=($("fDn2").value||"").trim();
+    p.dept_charter=($("fDc2").value||"").trim();
+  }
+  return p;
+}
+function post(path,p,cb){
+  fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)})
+    .then(function(r){return r.json().then(function(j){cb(j,r.status)})})
+    .catch(function(e){cb({ok:false,error:String(e)},0)});
+}
+var PENDING=null;
+function doPreview(){
+  $("fErr").textContent="";
+  var kind=$("fDeptOnly").style.display!=="none"?"dept":"agent";
+  var p=payload(kind);PENDING=p;
+  post("/api/preview",p,function(j){
+    if(!j.ok){$("fErr").textContent=j.error||"校验失败";return}
+    ui("mForm",0);ui("mPlan",1);
+    $("planBody").innerHTML=j.plan.map(function(x){
+      return "<div class='pi'><span class='act'>"+esc(x.action)+"</span><code>"+esc(x.path)+"</code> — "+esc(x.what)+"</div>";
+    }).join("");
+  });
+}
+function doRegister(){
+  if(!PENDING)return;
+  $("btnDoRegister").disabled=true;
+  post("/api/register",PENDING,function(j){
+    $("btnDoRegister").disabled=false;
+    if(!j.ok){$("pErr").textContent=j.error||"落盘失败";return}
+    ui("mPlan",0);PENDING=null;
+    toast("✅ 注册落盘成功，在编 "+j.headcount+" 岗（git 提交按产线纪律出 K 号）");
+    load();
+  });
+}
+function load(){
+  fetch("/api/org").then(function(r){return r.json()}).then(function(j){
+    B=j.bundle;ORG=j.org;AUDIT=j.audit_tail||[];render();
+  }).catch(function(e){$("stats").textContent="加载失败："+e});
+}
+$("fDept").addEventListener("change",function(){
+  $("fNewDept").style.display=this.value==="__new__"?"block":"none";
+});
+$("btnAddAgent").addEventListener("click",function(){
+  $("fmTitle").firstChild.textContent="➕ 新增 AI";
+  $("fAgent").style.display="block";$("fDeptOnly").style.display="none";
+  $("fErr").textContent="";$("btnPreview").style.display="inline-block";
+  ui("mForm",1);
+});
+$("btnAddDept").addEventListener("click",function(){
+  $("fmTitle").firstChild.textContent="🏢 新增部门";
+  $("fAgent").style.display="none";$("fDeptOnly").style.display="block";
+  $("fErr").textContent="";$("btnPreview").style.display="inline-block";
+  ui("mForm",1);
+});
+$("btnPreview").addEventListener("click",doPreview);
+$("btnDoRegister").addEventListener("click",doRegister);
+$("btnReload").addEventListener("click",function(){toast("刷新中…");load()});
+$("tree").addEventListener("click",function(e){
+  var c=e.target.closest(".chip");if(c)showDetail(c.getAttribute("data-id"));
+});
+$("projRow").addEventListener("click",function(e){
+  var c=e.target.closest(".chip");if(c)showDetail(c.getAttribute("data-id"));
+});
+load();
+</script>
+</body>
+</html>
