@@ -355,6 +355,49 @@ def calc_dknife_signals(d0, d1, profile="relaxed", progress=None):
                      f"双刀扫描 {i+1}/{len(win_books)} 只（{round(time.time()-t0)}s）")
     return sig
 
+def calc_dknife_signals_market(d0, d1, progress=None, profile="relaxed", hist_st=True):
+    """量子双刀全市场（K-STOCK-323）：14:45 口径日 K（dknife_snap 分钟线重构，
+    覆盖 20260806~0901），替代 T 日 bar 近似以消除前视。信号语义与 pool76 分支一致。"""
+    sys.path.insert(0, BASE)
+    from agent_platform.engine.quant_double_knife import quant_double_knife
+    import market_scan
+    snap_fp = os.path.join(BASE, "quant_backtest", "data", "tdx", "dknife_snap", "dknife_snap.parquet")
+    if not os.path.exists(snap_fp):
+        return None, None, None, "14:45 快照不存在：%s\n先跑：python dknife_snap.py" % snap_fp
+    snap = pd.read_parquet(snap_fp)
+    days = sorted(snap.trade_date.unique())
+    cover = [d for d in days if d0 <= d <= d1]
+    missing = [d for d in days if d0 <= d <= d1]  # 全部可得日中的窗内日
+    if not cover:
+        return None, None, None, ("14:45 快照覆盖 %s~%s，不含窗口 %s~%s（分钟线所限）"
+                                  % (days[0], days[-1], d0, d1))
+    excl = market_scan.hist_st_set(d0, d1) if hist_st else set()
+    sig, t0 = {}, time.time()
+    codes = sorted(snap.ts_code.unique())
+    n_drop_evt = 0
+    for i, s in enumerate(codes):
+        if s in excl:
+            n_drop_evt += int(((snap.ts_code == s) & (snap.trade_date >= d0)
+                               & (snap.trade_date <= d1)).sum())
+            continue
+        b = snap[snap.ts_code == s].sort_values("trade_date")
+        df = pd.DataFrame({"open": b.open.values, "high": b.high.values,
+                           "low": b.low.values, "close": b.close.values,
+                           "amount": b.amount.values})
+        out = quant_double_knife(df, profile=profile)
+        mask = out["double_knife_signal"].fillna(False).values
+        for day in b["trade_date"].values[mask]:
+            if d0 <= day <= d1:
+                sig.setdefault(day, set()).add(s)
+        if progress and (i % 500 == 0 or i == len(codes) - 1):
+            progress("信号", 5 + int(60 * (i + 1) / len(codes)),
+                     f"双刀全网 14:45 扫描 {i+1}/{len(codes)} 只（{round(time.time()-t0)}s）")
+    n_sig = sum(len(v) for v in sig.values())
+    meta = {"universe": len(codes), "snap_days": cover, "n_sig": n_sig,
+            "hist_st": {"on": bool(excl), "n_codes": len(excl), "n_rows_drop": n_drop_evt},
+            "source": "dknife_snap(14:45重构·%s~%s)" % (days[0], days[-1])}
+    return sig, {}, meta, None
+
 # ============================================================
 # BacktestConfig —— 11 参数空间（283 定档）
 # ============================================================
@@ -811,10 +854,18 @@ def run_job(params: dict, job_id: str, progress=None):
                 sig_buy, sig_sell, src = calc_chanlun_signals(d0, d1, progress, buy_filter=buy_filter)
         else:
             if universe == "market":
-                return None, "量子双刀全市场扫描属包 C 项（14:45 全网快照数据未入库），暂仅支持 pool76"
-            buy_filter = "all"
-            sig_buy = calc_dknife_signals(d0, d1, progress=progress)
-            sig_sell, src = {}, "自算(原始价·relaxed)"
+                _hst = p.get("hist_st")
+                _dhst = _hst is True or (isinstance(_hst, str) and _hst.strip().lower() in ("true", "1", "yes"))
+                sig_buy, sig_sell, dmeta, err = calc_dknife_signals_market(
+                    d0, d1, progress=progress, hist_st=_dhst)
+                if err:
+                    return None, err
+                src = "双刀全网14:45快照(%s)·%s" % (dmeta["source"], dmeta["universe"])
+                sig_zg, sig_meta = {}, dmeta
+            else:
+                buy_filter = "all"
+                sig_buy = calc_dknife_signals(d0, d1, progress=progress)
+                sig_sell, src = {}, "自算(原始价·relaxed)"
         # 手动指定票池（K-STOCK-297 老田：可手动添加）——逗号/中文逗号分隔代码，
         # 提供后交易只吃名单内的信号（评分照常排序）；名单为空=全自动。
         _mp_raw = str(p.get("manual_picks") or "").replace("，", ",").replace(" ", "")
