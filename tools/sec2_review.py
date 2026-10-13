@@ -74,7 +74,11 @@ def load_evidence(args):
             parts.append("文件 %s:\n%s" % (f, body))
         else:
             parts.append("文件 %s: 不存在（这可能本身就是缺失证据）" % f)
-    return "\n\n".join(parts)[:EVIDENCE_MAX * 3]
+    joined = "\n\n".join(parts)
+    if len(joined) > EVIDENCE_MAX * 3:  # K-ORG-056·QA1 observation：外层截断不得静默
+        print("[sec2_review][warn] 证据总长 %d 超上限 %d，已截断——审查者须知"
+              % (len(joined), EVIDENCE_MAX * 3), file=sys.stderr)
+    return joined[:EVIDENCE_MAX * 3]
 
 
 def parse_verdict(report):
