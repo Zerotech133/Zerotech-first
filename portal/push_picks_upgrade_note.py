@@ -9,7 +9,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from feishu_card_v2 import send_card, PORTAL_BASE  # noqa: E402
+from feishu_card_v2 import send_card, PORTAL_BASE, PORTAL_KEY  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
 
 GROUP_CHAT_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"  # 家人群（news_config.push_targets[1]）
@@ -72,7 +72,8 @@ def build_card():
             {"tag": "button", "type": "primary", "size": "medium",
              "text": {"tag": "plain_text", "content": "门户详情页"},
              "behaviors": [{"type": "open_url",
-                            "default_url": "%s/picks.html" % PORTAL_BASE}]},
+                            "default_url": "%s/picks.html?key=%s" % (
+                                PORTAL_BASE, PORTAL_KEY)}]},
             {"tag": "markdown", "content":
              "<font color='grey'>老田的AI工作站 · 六策略强制扫描 · "
              "picks.html v3（市场徽标+下钻+解读层）</font>"},

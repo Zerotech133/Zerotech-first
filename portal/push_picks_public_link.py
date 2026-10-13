@@ -9,11 +9,11 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from feishu_card_v2 import send_card  # noqa: E402
+from feishu_card_v2 import send_card, PORTAL_BASE, PORTAL_KEY  # noqa: E402
 
 GROUP_CHAT_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"  # 家人群
-BASE = "https://quant-picks-board.app.workbuddy.host"
-KEY = "picks-15fdb9"
+BASE = PORTAL_BASE  # K-STOCK-305：域名/访问码收敛到 feishu_card_v2 单点维护
+KEY = PORTAL_KEY
 
 
 def build_card():
