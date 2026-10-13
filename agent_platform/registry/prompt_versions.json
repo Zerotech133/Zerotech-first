@@ -1,7 +1,7 @@
 {
  "_note": "D1(K-ORG-030,ARCH1) prompt 版本化登记：单一事实源=git 历史，改 prompt 后重跑 tools/prompt_version_registry.py 再生。version=提交次数。",
- "generated": "2026-10-13 10:11",
- "total": 22,
+ "generated": "2026-10-14 01:27",
+ "total": 24,
  "prompts": {
   "a0_chief": {
    "file": "agent_platform/prompts/a0_chief.md",
@@ -35,6 +35,21 @@
      "sha": "57a595d",
      "date": "2026-10-13",
      "msg": "K-ORG-017: 研发部 v2 扩编——DEV3 策略/DEV4 回测/DEV5 前端三岗注册落地"
+    }
+   ]
+  },
+  "chief_assistant": {
+   "file": "agent_platform/prompts/chief_assistant.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "b35ef75",
+   "last_date": "2026-10-14",
+   "last_msg": "K-ORG-052: 田小皮中枢治理模型P1落地·注册两岗(A0A参谋长助理+SEC2网络安全工程师)——K-ORG-051设计稿老田拍板按计划实施——【A0A·E1·参谋长办公室】新team_chief.json注册(glm-4.5-fl",
+   "history": [
+    {
+     "sha": "b35ef75",
+     "date": "2026-10-14",
+     "msg": "K-ORG-052: 田小皮中枢治理模型P1落地·注册两岗(A0A参谋长助理+SEC2网络安全工程师)——K-ORG-051设计稿老田拍板按计划实施——【A0A·E1·参谋长办公室】新team_chief.json注册(glm-4.5-fl"
     }
    ]
   },
@@ -233,14 +248,39 @@
     }
    ]
   },
-  "solution_architect": {
-   "file": "agent_platform/prompts/solution_architect.md",
+  "security_lead": {
+   "file": "agent_platform/prompts/security_lead.md",
    "version": 1,
    "status": "committed",
-   "last_commit": "90207e8",
-   "last_date": "2026-10-13",
-   "last_msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）",
+   "last_commit": "b35ef75",
+   "last_date": "2026-10-14",
+   "last_msg": "K-ORG-052: 田小皮中枢治理模型P1落地·注册两岗(A0A参谋长助理+SEC2网络安全工程师)——K-ORG-051设计稿老田拍板按计划实施——【A0A·E1·参谋长办公室】新team_chief.json注册(glm-4.5-fl",
    "history": [
+    {
+     "sha": "b35ef75",
+     "date": "2026-10-14",
+     "msg": "K-ORG-052: 田小皮中枢治理模型P1落地·注册两岗(A0A参谋长助理+SEC2网络安全工程师)——K-ORG-051设计稿老田拍板按计划实施——【A0A·E1·参谋长办公室】新team_chief.json注册(glm-4.5-fl"
+    }
+   ]
+  },
+  "solution_architect": {
+   "file": "agent_platform/prompts/solution_architect.md",
+   "version": 3,
+   "status": "committed",
+   "last_commit": "fd4a6f3",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-042a: QA1退回整改·arch_registry全库清扫+shadow_eval覆盖缺陷修复(042批次)——①QA1(gpt6)对0b63ea6判退回(病灶半除:人设复用优先行仍指domain/arch_registry",
+   "history": [
+    {
+     "sha": "fd4a6f3",
+     "date": "2026-10-13",
+     "msg": "K-ORG-042a: QA1退回整改·arch_registry全库清扫+shadow_eval覆盖缺陷修复(042批次)——①QA1(gpt6)对0b63ea6判退回(病灶半除:人设复用优先行仍指domain/arch_registry"
+    },
+    {
+     "sha": "0b63ea6",
+     "date": "2026-10-13",
+     "msg": "K-ORG-041: ADR流程落地·040评测ARCH1缺口闭环(老田10-13 13:15下一步指令)——【病根定性】ARCH1人设自K-ORG-018写有ADR登记纪律·但落点domain/arch_registry从未存在无工具支撑"
+    },
     {
      "sha": "90207e8",
      "date": "2026-10-13",
