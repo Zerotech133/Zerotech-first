@@ -64,6 +64,12 @@ class WebChatTests(unittest.TestCase):
         connection.close()
         return response, data
 
+    def test_static_assets_are_served_from_8899(self):
+        response, data = self.request("GET", "/static/tokens.css")
+        self.assertEqual(response.status, 200)
+        self.assertIn("text/css", response.getheader("Content-Type"))
+        self.assertIn(b"--bg-page", data)
+
     def test_page(self):
         response, data = self.request('GET', '/')
         self.assertEqual(response.status, 200)

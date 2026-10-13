@@ -8,6 +8,12 @@ web_ui = importlib.import_module("AI.111111.web_ui")
 
 
 class WebUiTests(unittest.TestCase):
+    def test_page_uses_same_origin_static_assets(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('href="/static/tokens.css"', page)
+        self.assertIn('src="/static/nav.js"', page)
+        self.assertNotIn("127.0.0.1:8734/static", page)
+
     def test_page_has_chat_and_rag_modes(self):
         page = web_ui.render_chat_page(("qwen3.5:9b", "qwen3.5:4b"))
         self.assertIn('value="chat"', page)

@@ -1,5 +1,6 @@
 """127.0.0.1 上的 Ollama NDJSON 聊天网页。"""
 import json
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
@@ -14,6 +15,11 @@ except ImportError:
  from model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
  from chat_profiles import ProfileError, get_profile, list_profile_specs
 HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS
+STATIC_ROOT = Path(__file__).resolve().parents[2] / 'portal' / 'static'
+STATIC_ASSETS = {
+    '/static/tokens.css': (STATIC_ROOT / 'tokens.css', 'text/css; charset=utf-8'),
+    '/static/nav.js': (STATIC_ROOT / 'nav.js', 'application/javascript; charset=utf-8'),
+}
 RAG_SERVICE = None
 def _error(s): return json.dumps({'error':s},ensure_ascii=False).encode()
 def _payload(h):
@@ -52,6 +58,13 @@ def _rag_service():
 class ChatHandler(BaseHTTPRequestHandler):
  def log_message(self,*a): pass
  def do_GET(self):
+  if self.path in STATIC_ASSETS:
+   path, content_type = STATIC_ASSETS[self.path]
+   try:
+    b = path.read_bytes()
+   except OSError:
+    self.send_error(404); return
+   self.send_response(200); self.send_header('Content-Type', content_type); self.send_header('Content-Length', str(len(b))); self.end_headers(); self.wfile.write(b); return
   if self.path!='/': self.send_error(404); return
   b=render_chat_page(MODELS, list_profile_specs()).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_POST(self):

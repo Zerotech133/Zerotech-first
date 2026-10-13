@@ -39,6 +39,8 @@ def render_chat_page(models: Sequence[str], profiles: Sequence[str] = ()) -> str
     return """<!doctype html>
 <meta charset="utf-8">
 <title>AI 聊天</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
 <h1>AI 聊天</h1>
 <label>模型 <select id="model">{options}</select></label>
 <label>角色 <select id="profile">{profile_options}</select></label>
