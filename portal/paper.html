@@ -146,7 +146,7 @@
 <header>
   <div class="brand">
     <div class="logo">仓</div>
-    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.5</small></div>
+    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.6</small></div>
   </div>
   <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
@@ -246,11 +246,11 @@
   <div class="tabpanel" id="tab-strategy">
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
       <span style="font-size:15px;font-weight:700">🧭 策略管理中心（先选策略，再去交易员市场组团队）</span>
-      <span style="font-size:12px;color:var(--text-dim)">策略按角色分三类：<b>📡 研究员的策略</b>（选什么股 = 信号来源，本页下方卡片直接选）；<b>🧑‍💼 经理的策略</b>（怎么按市况配策略 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 经理阵营</a>）；<b>🧑‍✈️ 操盘手的策略</b>（怎么买卖 = 执行纪律档案 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 操盘手</a>）。要上新策略去 <a href="/market-strategy" style="color:var(--link)">策略市场</a> 选购，订了即出现在下方并在此执行。</span>
+      <span style="font-size:12px;color:var(--text-dim)">本页两层：<b>🔌 信号接入通道</b>（下方卡片=已接入账本的执行通道，点选即执行）；<b>📡 研究员的策略橱窗</b>（页底=全部策略资产，策略市场上新自动出现，订阅后即可接入通道）。另有：🧑‍💼 经理配策略 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 经理阵营</a>；🧑‍✈️ 操盘手纪律 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 操盘手</a>。订阅入口在 <a href="/market-strategy" style="color:var(--link)">策略市场</a>。</span>
     </div>
     <div class="desk">
       <div>
-        <div class="col-title">📡 研究员的策略 · 信号来源（点卡片切换，免费值班已含）</div>
+        <div class="col-title">🔌 信号接入通道（点卡片切换 · 已接入您的账本）<span style="font-weight:400;font-size:11px;color:var(--text-dim)">全部策略资产见页底「研究员的策略橱窗」</span></div>
 
         <div class="strat-card selected" data-s="ai_team">
           <div class="radio"></div>
@@ -277,7 +277,7 @@
         <div class="strat-card" data-s="qingping">
           <div class="radio"></div>
           <div class="head"><span class="icon">🍃</span><span class="name">青萍之末</span><span class="st live">已上架</span></div>
-          <div class="desc">信号逻辑已移植到 Picks 协议 · 订阅/建仓入口在<a href="/market-strategy">策略市场</a>（qpzm）</div>
+          <div class="desc">注册表名 qpzm（与策略市场同源）· 订阅/建仓入口在<a href="/market-strategy">策略市场</a></div>
         </div>
 
         <div class="strat-card" data-s="manual">
@@ -358,8 +358,9 @@
       <div id="nl-out" style="display:none;margin-top:10px"></div>
     </div>
 
-    <!-- K-STOCK-352 策略资产总览（strategies.json 单一数据源 · 12 策略全量 · /api/strategy_market 直读） -->
-    <div class="col-title" style="margin-top:18px">🗂️ 全部策略资产（12）<span style="font-weight:400;color:var(--text-dim);font-size:11px">（🟢 产线在跑 = live · 🟡 影子验证 = shadow · ⚙️ 支撑工具 = tool · 点「详情」进策略页）</span></div>
+    <!-- K-STOCK-354 研究员的策略橱窗（strategies.json 单一数据源 · 策略市场上新自动出现）：
+         这是「将来上全策略=策略市场投影」的位置；上方🔌卡=已接入的执行通道，两区互补不重复 -->
+    <div class="col-title" style="margin-top:18px">📡 研究员的策略橱窗（全策略资产 · 订阅即上架于此）<span style="font-weight:400;color:var(--text-dim);font-size:11px">（🟢 产线在跑 · 🟡 影子验证 · ⚙️ 支撑工具——已接入的卡标「本页执行」，未接入的去市场订阅）</span></div>
     <div id="strat12-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div class="empty">读取中…</div></div>
   </div>
 
@@ -1399,19 +1400,28 @@ async function loadStrategy12(){
   try{
     const j=await api('/api/strategy_market');
     if(!(j&&j.ok&&j.strategies))throw 0;
-    box.innerHTML=j.strategies.map(s=>{
+    const G=[['live','🟢 产线在跑'],['shadow','🟡 影子验证中'],['tool','⚙️ 支撑工具']];
+    const card=s=>{
       const st=STRAT12_ST[s.status]||[s.status||'?','var(--text-dim)'];
       const exec=(s.id==='double_knife')
         ?'<a href="#" onclick="gotoTab(\'strategy\');selStrat(\'double_knife\');return false" style="color:var(--link);font-size:11.5px">本页执行 →</a> ':'';
+      const sub=(s.status==='live'&&s.id!=='double_knife')
+        ?'<a href="/market-strategy" style="color:var(--link);font-size:11.5px">市场订阅 →</a> ':'';
       const link=s.href?'<a href="'+esc(s.href)+'" style="color:var(--link);font-size:11.5px">详情 →</a>':'';
       return '<div class="side-box" style="margin:0">'
         +'<div style="display:flex;align-items:center;gap:6px"><b style="font-size:13px">'+esc(s.name||s.id)+'</b>'
         +'<span style="margin-left:auto;font-size:10.5px;color:'+st[1]+';white-space:nowrap">'+st[0]+'</span></div>'
         +'<div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;line-height:1.5">'+esc(s.tagline||'')+'</div>'
         +'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">'+esc(s.status_note||'')+'</div>'
-        +'<div style="margin-top:6px">'+exec+link+'</div></div>';
+        +'<div style="margin-top:6px">'+exec+sub+link+'</div></div>';
+    };
+    box.innerHTML=G.map(([k,label])=>{
+      const list=j.strategies.filter(s=>(s.status||'')===k);
+      if(!list.length)return '';
+      return '<div style="grid-column:1/-1;font-size:11.5px;color:var(--text-dim);margin:6px 0 0">'+label+'（'+list.length+'）</div>'
+        +list.map(card).join('');
     }).join('');
-  }catch(e){box.innerHTML='<div class="empty">策略总览暂时读不到（静默降级，刷新重试）</div>';}
+  }catch(e){box.innerHTML='<div class="empty">策略橱窗暂时读不到（静默降级，刷新重试）</div>';}
 }
 function selStrat(sid){const c=document.querySelector('.strat-card[data-s="'+sid+'"]');if(c)c.click();}
 
