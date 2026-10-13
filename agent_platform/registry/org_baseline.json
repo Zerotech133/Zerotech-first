@@ -212,12 +212,16 @@
     {
      "id": "G2",
      "task": "P2 走形检查闭环制度化：方案文档模板+SEC2产出格式+任务单联动+approval_request审批事件(G4·灰度两周全抄送老田)",
-     "owner": "A0"
+     "owner": "A0",
+     "done": "2026-10-14",
+     "note": "K-ORG-054：研发方案模板(docs/templates/)+events三类新事件(approval_request/approval_verdict/deviation_report)+SEC2走查固化工具tools/sec2_review.py(条目→证据→判定→建议命令·报告落data/sec2/)"
     },
     {
      "id": "G3",
      "task": "P2 首次端到端走查：拿一个真实研发方案全链试跑(分发→归集→走形检查→直批)",
-     "owner": "A0A"
+     "owner": "A0A",
+     "done": "2026-10-14",
+     "note": "K-ORG-054 首次端到端走查实跑：方案=K-ORG-051设计稿 vs 实现=b35ef75，SEC2 判定完善3·走形1·缺失3，报告 agent_platform/data/sec2/20261014_0154_*.md（走形项=田小皮修改命令输入，直推晨巡判读）"
     },
     {
      "id": "G4",

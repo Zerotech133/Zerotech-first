@@ -47,9 +47,10 @@ MEMORY_DIR = os.path.join(ROOT, "agent_platform", "data", "memory")
 
 
 def memory_digest(agent_id, max_recent=8):
-    """岗卡记忆面板：各 namespace jsonl 行数 + 最近 N 条摘要（只读·K-STOCK-344 三期加深供全文查看）。"""
+    """岗卡记忆面板：各 namespace jsonl 行数 + 最近 N 条摘要（只读·K-STOCK-344 三期加深供全文查看）。
+    K-ORG-054: +knowledge 种类——知识库学习沉淀（agent/<id>/knowledge 专属空间）。"""
     ns = {}
-    for kind in ("decision", "observation", "feedback"):
+    for kind in ("decision", "observation", "feedback", "knowledge"):
         fp = os.path.join(MEMORY_DIR, "agent__%s__%s.jsonl" % (agent_id, kind))
         if not os.path.exists(fp):
             continue
@@ -124,6 +125,15 @@ def coder_traces_digest(max_orders=5):
     return out or None
 
 
+def _default_attributes(a):
+    """K-ORG-054: 未填属性岗按年限档推导经验字段（图上可再编辑覆盖）。"""
+    g = a.get("grade") or ""
+    years = {"E3": "30 年", "E2": "20 年", "E1": "10 年"}.get(g, "")
+    return {"experience": ("%s从业经验（%s）" % (years, a.get("grade_note", ""))
+                           if years else a.get("grade_note", "")),
+            "specialties": [], "knowledge": []}
+
+
 def main():
     agents = {}          # agent_id -> 卡片（职能部主数据）
     dept_agents = {}     # dept -> [agent_id]（含项目部编制）
@@ -152,6 +162,10 @@ def main():
                        os.path.join(PROMPTS, "a0_chief.md")) else "",
         "projects": [],
         "team_desc": "参谋长（组织枢纽）· 每日 17:35 值班判读",
+        "attributes": chief.get("attributes") or {
+            "experience": "组织枢纽：汇报聚合、任务仲裁、记忆治理（K-ORG-015 起 live）",
+            "specialties": ["日报判读", "任务单仲裁", "风险优先输出", "记忆治理"],
+            "knowledge": []},
     }
     dept_agents["chief"] = ["A0"]
 
@@ -182,6 +196,8 @@ def main():
                     "prompt": "",
                     "projects": [],
                     "team_desc": d.get("description", ""),
+                    # K-ORG-054: 属性透传（从业经验/擅长/知识库）；缺省按年限档自动推导
+                    "attributes": a.get("attributes") or _default_attributes(a),
                 }
         else:
             for aid in ids:

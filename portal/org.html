@@ -108,6 +108,7 @@ textarea{resize:vertical;min-height:56px}
   <div class="kv" id="dtKv"></div>
   <div style="font-size:12.5px;color:var(--dim);margin:8px 0 4px">人设全文（prompts）</div>
   <div class="prompt" id="dtPrompt"></div>
+  <div id="dtMore"></div>
 </div></div>
 
 <!-- 表单（新增 AI / 部门） -->
@@ -178,7 +179,7 @@ textarea{resize:vertical;min-height:56px}
 <div class="toast" id="toast"></div>
 <script>
 "use strict";
-var B=null, ORG=null, AUDIT=[];
+var B=null, ORG=null, AUDIT=[], KDOCS=[];
 var $=function(id){return document.getElementById(id)};
 function ui(id,on){$(id).classList.toggle("on",!!on)}
 function toast(msg){var t=$("toast");t.textContent=msg;t.style.display="block";setTimeout(function(){t.style.display="none"},3200)}
@@ -236,17 +237,72 @@ function deptCard(d,A){
 }
 function showDetail(id){
   var a=B.agents[id];if(!a)return;
+  var at=a.attributes||{};
   $("dtTitle").textContent=id+(a.name&&a.name!==id?" · "+a.name:"")+"（"+(a.dept==="chief"?"参谋长":a.dept)+"部）";
   $("dtKv").innerHTML=
     "<div class='k'>年限档</div><div>"+esc(a.grade)+" · "+gd(a.grade)+"　"+esc(a.grade_note||"")+"</div>"
     +"<div class='k'>职责</div><div>"+esc(a.charter||"-")+"</div>"
+    +"<div class='k'>从业经验</div><div>"+esc(at.experience||"-")+"</div>"
+    +"<div class='k'>擅长</div><div>"+esc((at.specialties||[]).join("、")||"-")+"</div>"
+    +"<div class='k'>知识沉淀</div><div>"+esc((at.knowledge||[]).join("、")||"尚未学习知识库")
+    +(a.memory&&a.memory.knowledge?"（已沉淀 <b>"+a.memory.knowledge.count+"</b> 条笔记）":"")+"</div>"
     +"<div class='k'>模型</div><div>"+esc(a.llm||"-")+"</div>"
     +"<div class='k'>工具</div><div>"+esc((a.tools||[]).join("、"))+"</div>"
     +"<div class='k'>项目</div><div>"+esc((a.projects||[]).join("、")||"-")+"</div>"
     +"<div class='k'>读权限</div><div>"+esc((a.grants_read||[]).join(" "))+"</div>"
     +"<div class='k'>写权限</div><div>"+esc((a.grants_write||[]).join(" "))+"</div>";
   $("dtPrompt").textContent=a.prompt||"（无人设文件）";
+  // 属性/模型/学习 编辑区（A0 走 org.json chief 段，图上编辑不含 A0）
+  if(id!=="A0"){
+    $("dtMore").innerHTML=
+      '<div style="border-top:1px dashed var(--line);margin-top:12px;padding-top:10px">'
+      +'<div style="font-size:13px;font-weight:600;margin-bottom:6px">⚙ 属性与模型选配（改完落盘注册表·自动重烘）</div>'
+      +'<label>从业经验</label><input type="text" id="eExp" value="'+esc(at.experience||"")+'">'
+      +'<label>擅长（顿号/逗号分隔）</label><input type="text" id="eSpec" value="'+esc((at.specialties||[]).join("、"))+'">'
+      +'<div class="frow"><div><label>模型选配</label><select id="eModel">'
+      +'<option value="">（保持 '+esc(a.llm||"")+' 不变）</option>'
+      +'<option value="glm46">智谱 glm-4.6（包年·重推理）</option>'
+      +'<option value="flash">智谱 glm-4.5-flash（轻量）</option>'
+      +'<option value="ollama9b">本地 qwen3.5:9b</option>'
+      +'<option value="ollama4b">本地 qwen3.5:4b</option></select></div>'
+      +'<div><label>能力档</label><select id="eTool"><option value="">（保持不变）</option>'
+      +'<option value="dev">研发全能</option><option value="audit">审查只读</option>'
+      +'<option value="light">轻量只读</option></select></div></div>'
+      +'<div style="display:flex;gap:10px;align-items:center;margin-top:8px">'
+      +'<button class="btn primary" id="eSave">保存属性/选配</button><span class="ok-msg" id="eMsg"></span></div>'
+      +'<div style="font-size:13px;font-weight:600;margin:12px 0 4px">📚 布置学习任务（读知识库→按本岗职责提炼→沉淀专属空间）</div>'
+      +'<div class="frow"><div><select id="eDoc">'+(KDOCS||[]).map(function(d){return "<option>"+esc(d)+"</option>"}).join("")+'</select></div>'
+      +'<div style="flex:0 0 auto"><button class="btn" id="eLearn">布置学习</button></div></div>'
+      +'<div class="err" id="lMsg"></div><div id="kList"></div></div>';
+    $("eSave").addEventListener("click",function(){
+      $("eMsg").textContent="保存中…";
+      post("/api/agent/update",{agent_id:id,experience:$("eExp").value,
+        specialties:$("eSpec").value,model:$("eModel").value,tool_preset:$("eTool").value},
+        function(j){ if(!j.ok){$("eMsg").textContent="";$("lMsg").textContent=j.error;return}
+          $("eMsg").textContent="✅ 已落盘："+(j.changed||[]).join("、");setTimeout(function(){ui("mDetail",0);load()},900);});
+    });
+    $("eLearn").addEventListener("click",function(){
+      var doc=$("eDoc").value;$("lMsg").textContent="学习中（模型提炼约 10~60 秒，勿关页）…";
+      post("/api/agent/learn",{agent_id:id,doc:doc},function(j){
+        if(!j.ok){$("lMsg").textContent=j.error;return}
+        $("lMsg").textContent="✅ 已沉淀 "+j.digest_len+" 字笔记到 "+id+"/knowledge";
+        loadKnowledge(id);
+      });
+    });
+    loadKnowledge(id);
+  } else $("dtMore").innerHTML="";
   ui("mDetail",1);
+}
+function loadKnowledge(id){
+  fetch("/api/agent/knowledge?id="+id).then(function(r){return r.json()}).then(function(j){
+    var el=$("kList");if(!el)return;
+    if(!j.items||!j.items.length){el.innerHTML='<div style="color:var(--dim);font-size:11.5px;margin-top:6px">（专属空间暂无沉淀笔记）</div>';return}
+    el.innerHTML=j.items.slice().reverse().map(function(r){
+      return '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px;color:var(--acc)">'
+        +esc(r.ts)+' 学《'+esc(r.doc)+'》沉淀 '+esc(String(r.digest||"").length)+' 字</summary>'
+        +'<div class="prompt" style="max-height:200px;margin-top:4px">'+esc(r.digest)+'</div></details>';
+    }).join("");
+  });
 }
 function payload(kind){
   var p={kind:kind};
@@ -300,7 +356,7 @@ function doRegister(){
 }
 function load(){
   fetch("/api/org").then(function(r){return r.json()}).then(function(j){
-    B=j.bundle;ORG=j.org;AUDIT=j.audit_tail||[];render();
+    B=j.bundle;ORG=j.org;AUDIT=j.audit_tail||[];KDOCS=j.knowledge_docs||[];render();
   }).catch(function(e){$("stats").textContent="加载失败："+e});
 }
 $("fDept").addEventListener("change",function(){

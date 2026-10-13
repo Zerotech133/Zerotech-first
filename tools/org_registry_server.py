@@ -33,6 +33,8 @@ REG = os.path.join(ROOT, "agent_platform", "registry")
 PROMPTS = os.path.join(ROOT, "agent_platform", "prompts")
 HTML = os.path.join(ROOT, "portal", "org.html")
 AUDIT = os.path.join(ROOT, "agent_platform", "data", "org_registry_audit.jsonl")
+KDOCS = os.path.join(ROOT, "knowledge_docs")          # 知识库文档源
+MEMDIR = os.path.join(ROOT, "agent_platform", "data", "memory")  # 岗位专属记忆空间
 PORT = 8093
 
 GRADE = {  # 工作年限档（老田口径：年限即档位）
@@ -70,6 +72,135 @@ def load_registry():
     if org.get("chief", {}).get("agent_id"):  # A0 只在 org.json 不在 team 文件
         agents[org["chief"]["agent_id"]] = org["chief"]
     return agents, teams, org
+
+
+def _rebake_and_reexport():
+    """重烘 bundle + 重导出 claude_agents（注册/改配后统一调用）。"""
+    for script in ("tools/build_agent_ide_bundle.py",
+                   "tools/export_claude_agents.py"):
+        r = subprocess.run([sys.executable, os.path.join(ROOT, script)],
+                           capture_output=True, cwd=ROOT)
+        if r.returncode != 0:
+            raise RuntimeError("%s 失败: %s" % (script,
+                                 (r.stderr or b"").decode("utf-8", "ignore")[-400:]))
+
+
+def _find_team_entry(agent_id):
+    """定位工号所在 team 文件与条目（含 org.json chief 兜底）。返回 (path, entry, team)。"""
+    for fn in sorted(os.listdir(REG)):
+        if fn.startswith("team_") and fn.endswith(".json"):
+            p = os.path.join(REG, fn)
+            team = json.load(open(p, encoding="utf-8"))
+            for e in team.get("agents", []):
+                if e.get("agent_id") == agent_id:
+                    return p, e, team
+    org = json.load(open(os.path.join(REG, "org.json"), encoding="utf-8"))
+    if org.get("chief", {}).get("agent_id") == agent_id:
+        return None, None, None  # A0 属性走 org.json chief 段（现状编辑面不含 A0）
+    return None, None, None
+
+
+def agent_update(p):
+    """K-ORG-054: 属性编辑 + 模型选配。{agent_id, experience?, specialties?, model?, tool_preset?}"""
+    aid = (p.get("agent_id") or "").strip().upper()
+    path, entry, team = _find_team_entry(aid)
+    if entry is None:
+        return "工号 %s 不在可编辑注册表（A0 走 org.json chief，暂不支持图上改）", None
+    changed = []
+    attrs = entry.setdefault("attributes", {"experience": "", "specialties": [], "knowledge": []})
+    if "experience" in p:
+        attrs["experience"] = (p.get("experience") or "").strip()
+        changed.append("从业经验")
+    if "specialties" in p:
+        sp = p.get("specialties")
+        if isinstance(sp, str):
+            sp = [s.strip() for s in re.split("[,，、;；]", sp) if s.strip()]
+        attrs["specialties"] = sp
+        changed.append("擅长")
+    if p.get("model"):
+        if p["model"] not in MODEL:
+            return "模型档未知", None
+        binding, claude_model = MODEL[p["model"]]
+        entry["llm_binding"] = binding
+        if claude_model:
+            entry["claude_model"] = claude_model
+        else:
+            entry.pop("claude_model", None)
+        changed.append("模型→%s" % binding)
+    if p.get("tool_preset"):
+        if p["tool_preset"] not in TOOLS:
+            return "能力档未知", None
+        tools, claude_tools = TOOLS[p["tool_preset"]]
+        entry["tools"] = tools
+        entry["claude_tools"] = claude_tools
+        changed.append("能力档")
+    if not changed:
+        return "没有要改的字段", None
+    json.dump(team, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    # org.json 内联卡同步（有 agent_profiles 的部门）
+    org_path = os.path.join(REG, "org.json")
+    org = json.load(open(org_path, encoding="utf-8"))
+    for d in org.get("departments", []):
+        for prof in d.get("agent_profiles", []) or []:
+            if prof.get("agent_id") == aid:
+                prof["llm_binding"] = entry["llm_binding"]
+    json.dump(org, open(org_path, "w", encoding="utf-8"),
+              ensure_ascii=False, indent=1)
+    _rebake_and_reexport()
+    rec = audit_log({"kind": "update", "agent_id": aid, "dept": entry.get("dept", ""),
+                     "grade": entry.get("grade"), "model": p.get("model"),
+                     "files": [path]}, changed)
+    return None, {"updated": aid, "changed": changed, "audit": rec,
+                  "headcount": len(load_registry()[0])}
+
+
+def agent_learn(p):
+    """K-ORG-054: 知识库学习——读知识文档→模型按本岗职责提炼→沉淀 agent/<id>/knowledge 专属空间。"""
+    aid = (p.get("agent_id") or "").strip().upper()
+    doc = (p.get("doc") or "").strip()
+    _, entry, _ = _find_team_entry(aid)
+    if entry is None:
+        return "工号 %s 不在编", None
+    if doc != os.path.basename(doc) or not os.path.isfile(os.path.join(KDOCS, doc)):
+        return "知识文档须是 knowledge_docs/ 下的文件名", None
+    raw = open(os.path.join(KDOCS, doc), encoding="utf-8", errors="replace").read()
+    text = raw[:8000] + ("\n…(中段截)…\n" + raw[-4000:] if len(raw) > 12000 else "")
+    charter = entry.get("charter_detail", "")
+    attrs = entry.get("attributes", {})
+    spec = "、".join(attrs.get("specialties", []))
+    prompt = ("你是 %s（%s）。专长：%s。岗位职责：%s。\n"
+              "请从下面的知识库文档《%s》中提炼**与本岗职责相关**的学习笔记：\n"
+              "- 条目式，600~900 字；\n"
+              "- 每条要点标注（能用在岗内什么事上）；\n"
+              "- 末尾一行：「对本岗的价值：…」；\n"
+              "- 只输出笔记本体。\n\n=== 文档内容（截断） ===\n%s"
+              % (aid, entry.get("grade_note", ""), spec or "（待补）",
+                 charter, doc, text))
+    import agent_coder  # 懒加载（首次 import 才拉模型通道配置）
+    note = agent_coder.chat_auto(aid, {"label": "learn:%s" % doc,
+                                       "prompt": prompt}).strip()
+    if not note:
+        return "学习失败：模型空回（通道异常，稍后重试）", None
+    os.makedirs(MEMDIR, exist_ok=True)
+    fp = os.path.join(MEMDIR, "agent__%s__knowledge.jsonl" % aid)
+    rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "event": "learned",
+           "doc": doc, "digest": note[:4000],
+           "chars": len(raw), "via": agent_coder.last_channel()}
+    with open(fp, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    # 注册表 attributes.knowledge 登记已学文档（去重）
+    path, entry2, team = _find_team_entry(aid)
+    klist = entry2.setdefault("attributes", {}).setdefault("knowledge", [])
+    if doc not in klist:
+        klist.append(doc)
+        json.dump(team, open(path, "w", encoding="utf-8"),
+                  ensure_ascii=False, indent=1)
+    _rebake_and_reexport()
+    audit_log({"kind": "learn", "agent_id": aid, "dept": entry2.get("dept", ""),
+               "grade": entry2.get("grade"), "model": None,
+               "files": [doc]}, ["知识沉淀 %d 字" % len(note)])
+    return None, {"agent_id": aid, "doc": doc, "digest_len": len(note),
+                  "digest": note}
 
 
 def validate(p):
@@ -352,12 +483,26 @@ class Handler(BaseHTTPRequestHandler):
             if os.path.exists(AUDIT):
                 lines = [l for l in open(AUDIT, encoding="utf-8") if l.strip()]
                 tail = [json.loads(l) for l in lines[-20:]]
-            self._json(200, {"bundle": bundle, "org": org, "audit_tail": tail})
+            kdocs = sorted(os.listdir(KDOCS)) if os.path.isdir(KDOCS) else []
+            self._json(200, {"bundle": bundle, "org": org, "audit_tail": tail,
+                             "knowledge_docs": kdocs})
+        elif self.path.startswith("/api/agent/knowledge"):
+            q = dict(p.split("=", 1) for p in self.path.split("?", 1)[1].split("&")
+                     if "=" in p)
+            aid = q.get("id", "")
+            fp = os.path.join(MEMDIR, "agent__%s__knowledge.jsonl" % aid)
+            rows = []
+            if os.path.exists(fp):
+                for l in open(fp, encoding="utf-8"):
+                    if l.strip():
+                        rows.append(json.loads(l))
+            self._json(200, {"ok": True, "agent_id": aid, "items": rows[-30:]})
         else:
             self._json(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):
-        if self.path not in ("/api/preview", "/api/register"):
+        if self.path not in ("/api/preview", "/api/register",
+                             "/api/agent/update", "/api/agent/learn"):
             self._json(404, {"ok": False, "error": "not found"})
             return
         try:
@@ -367,6 +512,16 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"ok": False, "error": "bad json: %s" % e})
             return
         with LOCK:
+            if self.path == "/api/agent/update":
+                err, result = agent_update(p)
+                self._json(400 if err else 200,
+                           {"ok": not err, **({"error": err} if err else result)})
+                return
+            if self.path == "/api/agent/learn":
+                err, result = agent_learn(p)
+                self._json(400 if err else 200,
+                           {"ok": not err, **({"error": err} if err else result)})
+                return
             err, n = validate(p)
             if err:
                 self._json(400, {"ok": False, "error": err})
