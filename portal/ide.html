@@ -212,7 +212,7 @@ async function send(){
   try{
     const r = await fetch("/ollama/api/chat", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model: CUR.llm.replace(/^ollama\//,""), stream:false,
+      body: JSON.stringify({ model: CUR.llm.replace(/^ollama\//,""), stream:false, think:false,
         options:{num_ctx:8192},
         messages:[{role:"system",content:CUR.prompt},{role:"user",content:q}] })
     });

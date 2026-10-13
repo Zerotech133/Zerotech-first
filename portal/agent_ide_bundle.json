@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-13 10:12",
+ "generated": "2026-10-13 10:21",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 27,
@@ -7,7 +7,7 @@
   "prompt_ok": 27,
   "prompt_miss": [],
   "workorders_doing": 3,
-  "workorders_review": 20
+  "workorders_review": 19
  },
  "workorders": [
   {
@@ -185,14 +185,6 @@
    "owner": "PM1",
    "branch": "task/proj_c_nlq_001",
    "created": "2026-10-13 07:24:46"
-  },
-  {
-   "id": "K-STOCK-292",
-   "desc": "修复训练候选审计器兼容 entries 清单并补回归测试",
-   "status": "review",
-   "owner": "unknown-agent",
-   "branch": "task/K-STOCK-292",
-   "created": "2026-10-13 09:46:51"
   }
  ],
  "departments": [
@@ -546,7 +538,23 @@
     "proj_backtest"
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
-   "memory": null
+   "memory": {
+    "decision": {
+     "count": 2,
+     "recent": [
+      {
+       "ts": "2026-10-13 10:16",
+       "event": "drill_output",
+       "desc": "D2对练首轮产出(尾盘买入过滤规则)："
+      },
+      {
+       "ts": "2026-10-13 10:16",
+       "event": "drill_output",
+       "desc": "D2对练首轮产出(尾盘买入过滤规则)：- 时间窗：14:30 至 14:48 收盘前 12 分钟触发入场  \n- 涨幅上限：收盘价较昨日同日未收盘价跌幅超 5%"
+      }
+     ]
+    }
+   }
   },
   "DEV4": {
    "id": "DEV4",
@@ -577,7 +585,23 @@
     "proj_backtest"
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
-   "memory": null
+   "memory": {
+    "decision": {
+     "count": 2,
+     "recent": [
+      {
+       "ts": "2026-10-13 10:16",
+       "event": "drill_review",
+       "desc": "D2对练复核意见："
+      },
+      {
+       "ts": "2026-10-13 10:16",
+       "event": "drill_review",
+       "desc": "D2对练复核意见：1. 过滤规则依赖当日收盘后数据（未收盘价、最终成交额），无法在 T+0 时段实时校验，导致前视偏差。\n2. “前一交易日放量滞涨/巨震”为事"
+      }
+     ]
+    }
+   }
   },
   "DEV5": {
    "id": "DEV5",

@@ -99,7 +99,9 @@
     {
      "id": "D2",
      "task": "双 Agent 对练（DEV3写→DEV4复核）",
-     "owner": "DEV3"
+     "owner": "DEV3",
+     "done": "2026-10-13",
+     "note": "K-ORG-031a首轮对练完成：DEV3写→DEV4复核抓前视偏差·机制建立可批量跑D3"
     },
     {
      "id": "D3",
