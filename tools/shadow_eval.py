@@ -112,15 +112,21 @@ def main(argv):
         results.append((aid, v))
         print("[eval] %-6s score=%s risk=%s" % (aid, v.get("score"), v.get("risk")))
 
-    # 报告落盘（文件名带时刻——同日复评永不覆盖，K-ORG-042 判例）
+    # 报告落盘（文件名带时刻——同日复评永不覆盖，K-ORG-042 判例；
+    # 042e：改 x 模式原子创建封 TOCTOU 并发竞态——QA1 R6 意见，
+    # exists() 检查后写入非原子，并发双进程可同选同一路径互相覆盖）
     day = time.strftime("%Y-%m-%d")
-    rep = os.path.join(ROOT, "agent_platform", "data", "shadow",
-                       "shadow_eval_%s_%s.md" % (day, time.strftime("%H%M%S")))
-    _n = 0
-    while os.path.exists(rep):          # 同秒冲突兜底：递增尾号，永不覆盖
-        _n += 1
-        rep = rep[:-3] + ("_%d.md" % _n)
-    os.makedirs(os.path.dirname(rep), exist_ok=True)
+    rep_dir = os.path.join(ROOT, "agent_platform", "data", "shadow")
+    os.makedirs(rep_dir, exist_ok=True)
+    base = os.path.join(rep_dir, "shadow_eval_%s_%s.md"
+                        % (day, time.strftime("%H%M%S")))
+    rep, _n, fh = base, 0, None
+    while fh is None:                    # x 模式=O_EXCL 原子创建，内核级防重
+        try:
+            fh = open(rep, "x", encoding="utf-8")
+        except FileExistsError:
+            _n += 1
+            rep = base[:-3] + ("_%d.md" % _n)
     lines = ["# D3 影子评测报告（行为对齐人设）· %s" % day, "",
              "> 通道=%s · 每岗人设×最近%d条决策记录 · 评分锚点见工具头注"
              % (ac.backend(), top), "",
@@ -141,8 +147,8 @@ def main(argv):
         lines += ["- **%s** score=%s：%s" % (a, v.get("score"),
                                              v.get("advice", ""))
                   for a, v in lows]
-    with open(rep, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    with fh:
+        fh.write("\n".join(lines) + "\n")
     avg = sum(v["score"] for _, v in results if v["score"] >= 0) / \
         max(1, len([1 for _, v in results if v["score"] >= 0]))
     print("[report] %s · 岗数=%d 均分=%.0f 低分=%d"
