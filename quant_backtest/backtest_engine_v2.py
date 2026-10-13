@@ -836,6 +836,8 @@ def run_job(params: dict, job_id: str, progress=None):
         if progress:
             progress("信号", 10, f"计算信号：{cfg.name} {d0}→{d1}（universe={universe}）")
         pool_info = None
+        dmeta = None
+        buy_filter = "all"   # 双刀无买点过滤语义；chanlun 分支按参数覆写（325 修 UnboundLocalError）
         sig_zg = None
         sig_meta = None
         three_fail = p["three_fail_exit"] is not False and str(p["three_fail_exit"]) != "false"
@@ -896,7 +898,12 @@ def run_job(params: dict, job_id: str, progress=None):
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
         result["meta"]["manual_picks"] = sorted(_picks)
-        result["meta"]["hist_st"] = pool_info["hist_st"] if (pool_info and "hist_st" in pool_info) else None
+        result["meta"]["hist_st"] = (pool_info["hist_st"] if (pool_info and "hist_st" in pool_info)
+                                     else (dmeta.get("hist_st") if dmeta else None))
+        if dmeta:
+            result["meta"]["dknife_sig"] = {"universe": dmeta.get("universe"),
+                                            "n_sig": dmeta.get("n_sig"),
+                                            "snap_days": dmeta.get("snap_days")}
         result["meta"]["top_n_mid"] = int(p.get("top_n_mid") or 0)
         result["meta"]["three_fail_exit"] = bool(three_fail and strategy == "chanlun" and sig_zg)
         result["meta"]["job_id"] = job_id
