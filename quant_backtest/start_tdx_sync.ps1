@@ -1,6 +1,9 @@
 # tdx warehouse daily incremental sync launcher (ASCII only, junction path)
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
+$env:HTTP_PROXY = 'http://127.0.0.1:7890'
+$env:HTTPS_PROXY = 'http://127.0.0.1:7890'
+$env:NO_PROXY = 'localhost,127.0.0.1'
 $log = 'C:\Temp\tdx_sync_task.log'
 try {
     Push-Location 'C:\aios\quant_backtest'
