@@ -21,6 +21,7 @@ STATIC_ROOT = Path(__file__).resolve().parents[2] / 'portal' / 'static'
 STATIC_ASSETS = {
     '/static/tokens.css': (STATIC_ROOT / 'tokens.css', 'text/css; charset=utf-8'),
     '/static/nav.js': (STATIC_ROOT / 'nav.js', 'application/javascript; charset=utf-8'),
+    '/static/shortscreen.js': (STATIC_ROOT / 'shortscreen.js', 'application/javascript; charset=utf-8'),
 }
 RAG_SERVICE = None
 def _error(s): return json.dumps({'error':s},ensure_ascii=False).encode()

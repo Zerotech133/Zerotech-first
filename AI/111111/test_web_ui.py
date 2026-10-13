@@ -31,6 +31,14 @@ class WebUiTests(unittest.TestCase):
         page = web_ui.render_chat_page(("qwen3.5:9b", "zhipu/glm-4-flash"))
         self.assertIn('智谱 · glm-4-flash', page)
 
+    def test_page_uses_zero_boundary_shell_layout(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('class="ai-page-shell"', page)
+        self.assertIn('class="chat-grid"', page)
+        self.assertIn('class="panel context-panel"', page)
+        self.assertIn('零界对话台', page)
+        self.assertIn('/static/shortscreen.js', page)
+
     def test_page_has_chat_and_rag_modes(self):
         page = web_ui.render_chat_page(("qwen3.5:9b", "qwen3.5:4b"))
         self.assertIn('value="chat"', page)

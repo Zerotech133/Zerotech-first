@@ -69,6 +69,9 @@ class WebChatTests(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertIn("text/css", response.getheader("Content-Type"))
         self.assertIn(b"--bg-page", data)
+        response, data = self.request("GET", "/static/shortscreen.js")
+        self.assertEqual(response.status, 200)
+        self.assertIn(b"__SS__", data)
 
     def test_page(self):
         response, data = self.request('GET', '/')

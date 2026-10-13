@@ -33,6 +33,8 @@ class SmokeLocalTests(unittest.TestCase):
                 return _Response(b":root{--bg-page:#000}", "text/css; charset=utf-8")
             if url.endswith("/static/nav.js"):
                 return _Response(b"window.nav=true", "application/javascript; charset=utf-8")
+            if url.endswith("/static/shortscreen.js"):
+                return _Response(b"window.__SS__=1", "application/javascript; charset=utf-8")
             if url.endswith("/api/chat"):
                 return _Response(b'{"message":{"content":"ok"}}\n{"done":true}\n', "application/x-ndjson")
             if url.endswith("/api/rag"):
@@ -46,6 +48,7 @@ class SmokeLocalTests(unittest.TestCase):
             )
         self.assertTrue(result["ok"])
         self.assertTrue({"ollama_tags", "web_page", "static_assets", "chat", "rag"} <= set(result["checks"]))
+        self.assertIn("shortscreen.js", result["checks"]["static_assets"]["assets"])
 
     def test_ndjson_protocol_errors_cannot_be_marked_success(self):
         summary = _ndjson_summary(b'{"message":{"content":"ok"}}\nBAD\n{"done":true}\n')

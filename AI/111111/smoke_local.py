@@ -113,7 +113,7 @@ def run_smoke(
     )
 
     assets: dict[str, Any] = {}
-    for asset in ("tokens.css", "nav.js"):
+    for asset in ("tokens.css", "nav.js", "shortscreen.js"):
         result = _fetch(f"{web_url}/static/{asset}", timeout=timeout)
         body = result.get("body", b"")
         expected_type = "text/css" if asset.endswith(".css") else "javascript"
