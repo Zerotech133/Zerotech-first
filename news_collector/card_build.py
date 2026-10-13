@@ -36,7 +36,7 @@ def build_card(title, subtitle, template, md_blocks, footer=None,
     混血卡——桌面端容错渲染、手机端 elements 整体不渲染（只见彩色标题
     正文空白）；真 2.0（schema+body 包装）两端均正常。2.0 下禁用 img 组件
     （200621 拒发），带二维码的卡勿用 v2；v1 tag=action 按钮在 2.0 下
-    未验证，按钮卡勿用 v2。"""
+    实测拒发（K-STOCK-354 日报卡实证），按钮卡勿用 v2。"""
     els = []
     for i, md in enumerate(md_blocks):
         if i:

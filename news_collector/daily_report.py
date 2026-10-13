@@ -169,8 +169,10 @@ def main():
     doc = cfg.get("doc_url", "")
     blocks = build_blocks(today)
     footer = "统一日报 · 各域计划任务自动产出汇总 · 不构成投资建议"
-    # K43 切真 Card 2.0：手机端渲染需要（混血卡手机空白判例）；
-    # 内网按钮/二维码已移除（外网不可达），doc 飞书文档链接改 md 超链接
+    # K43 历史切 Card 2.0（混血卡手机空白判例）；K-STOCK-354 实测撞新判例回退：
+    # v1 tag=action 按钮装进 schema 2.0 body 会被拒发（card_build docstring
+    # 「按钮卡勿用 v2」+ 今晨拒发实证）。纯 v1（elements 顶层+action 按钮）
+    # 手机端渲染与点击双正常（news_digest v2 / K305 卡同款实证），故改回 v1。
     blocks.append("")
     blocks.append("[📄 详情文档](%s)" % doc if doc else
                   "（未配置文档 URL）")
@@ -185,7 +187,7 @@ def main():
         pass
     card = card_build.build_card(
         "🌙 AI 工作站统一日报", now + " · 五域一天全览", "violet",
-        blocks, footer=footer, buttons=buttons, use_schema2=True)
+        blocks, footer=footer, buttons=buttons)  # v1 模式（见上注）
     if not push:
         for b in blocks:
             print(b, "\n" + "─" * 40)
