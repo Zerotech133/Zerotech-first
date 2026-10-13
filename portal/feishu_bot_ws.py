@@ -16,6 +16,7 @@ dim:* 分支仅为旧 schema v1 卡兼容保留——schema 2.0 钻取卡无回�
 """
 import json
 import os
+import re
 import sys
 import threading
 import traceback
@@ -33,6 +34,9 @@ DIMS = ("chanlun", "chips", "sectors", "notices", "lhb", "vol_events",
         "resonance", "no_buy_reasons")
 
 _log_lock = threading.Lock()
+
+# K-STOCK-299：飞书 receive_v1 里 @本app机器人 渲染为 @_user_N 脱敏占位
+_AT_PLACEHOLDER = re.compile(r"@_user_\d+\s*")
 
 
 def log(msg):
@@ -579,8 +583,17 @@ def main():
                 sender_id = (msg.sender.sender_id.open_id or "")
             except Exception:  # noqa: BLE001
                 pass
+            # K-STOCK-299：群消息只响应 @本bot 的（content 渲染为 @_user_N
+            # 占位）。双 bot 并存期，@ 新 bot 的消息是 <at user_id=ou_...>
+            # 原文——一律沉默，防抢答回「没听懂」污染对方会话。
+            if msg.chat_type == "group" and "@_user_" not in text:
+                log("skip group not-@me: %r" % text[:40])
+                return
+            text = _AT_PLACEHOLDER.sub("", text).strip()
+            if not text:
+                return
             # K-STOCK-188：recv 行补记 open_id——F-006 白名单清单的原始
-            # 积累通道（此前日志不含发送者，白名单清单无从收集）。
+            # 积累通道（此前日志不含发送者，白名单无从收集）。
             log("recv: %r (chat=%s, sender=%s)"
                 % (text[:40], msg.chat_type, sender_id or "-"))
             threading.Thread(target=handle_cmd, args=(text, mid, sender_id),

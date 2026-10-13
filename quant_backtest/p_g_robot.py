@@ -275,22 +275,29 @@ def _worker(q, chat_id, exe, dry):
 # ── 事件解析 ───────────────────────────────────────────────
 def _parse_event(line):
     """解析 event consume stdout 一行 NDJSON。
-    返回 (问句, chat_id, message_id, sender_id) 或 None（不触发）。"""
+    返回 (问句, chat_id, message_id, sender_id, chat_type) 或 None。"""
     try:
         d = json.loads(line)
     except Exception:
         return None
-    # 必须 mentions 含 BOT_OPEN_ID
-    mentions = d.get("mentions") or []
-    hit = any((m.get("id") == BOT_OPEN_ID) for m in mentions)
-    if not hit:
-        return None
-    # chat_id 白名单由调用方过滤（多群场景）
+    chat_type = d.get("chat_type") or ""
     chat_id = d.get("chat_id")
     msg_id = d.get("message_id")
     sender_id = d.get("sender_id")
     # 跳过 bot 自己发的（双保险，event 一般不触发 bot 发送方）
     if d.get("sender_type") == "bot":
+        return None
+    if chat_type == "p2p":
+        # K-STOCK-299：私聊无需 @，content 即问句——此前被「mentions
+        # 必含 bot」+「群白名单」双闸拦死，私聊从不触发。
+        q = (d.get("content") or "").strip()
+        if not q or q.startswith("[AI] "):
+            return None
+        return (q, chat_id, msg_id, sender_id, chat_type)
+    # 群聊：必须 mentions 含 BOT_OPEN_ID
+    mentions = d.get("mentions") or []
+    hit = any((m.get("id") == BOT_OPEN_ID) for m in mentions)
+    if not hit:
         return None
     content = d.get("content") or ""
     # content 已预渲染为"@机器人名 问句"，去 @名字
@@ -304,7 +311,7 @@ def _parse_event(line):
         return None
     if not q:
         return None
-    return (q, chat_id, msg_id, sender_id)
+    return (q, chat_id, msg_id, sender_id, chat_type)
 
 
 # ── 主循环 ─────────────────────────────────────────────────
@@ -408,11 +415,12 @@ def main():
                 _log("RAW_EVENT: %s" % line[:300])
                 parsed = _parse_event(line)
                 if not parsed:
-                    _log("parse_skip (not @bot or filtered)")
+                    _log("parse_skip (not @bot/p2p or filtered)")
                     continue
-                q, cid, msg_id, sender = parsed
-                # 白名单过滤
-                if cid not in chat_whitelist:
+                q, cid, msg_id, sender, ctype = parsed
+                # 白名单过滤（K-STOCK-299：私聊放行——单用户部署，
+                # bot 只可能被主人/家庭成员私聊，无滥用面）
+                if ctype != "p2p" and cid not in chat_whitelist:
                     _log("skip chat not in whitelist: %s" % cid)
                     continue
                 # 幂等去重
