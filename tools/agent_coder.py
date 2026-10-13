@@ -90,6 +90,52 @@ def backend():
     return os.environ.get("CODER_BACKEND", "cloud")
 
 
+# ---------- F3: 编辑协议 + lint 门（K-ORG-035 批F·借 Aider/SWE-agent 范式） ----------
+
+import re
+
+SR_RE = re.compile(
+    r"<<<<<<< SEARCH\r?\n(.*?)\r?\n?=======\r?\n(.*?)\r?\n?>>>>>>> REPLACE\r?\n?",
+    re.S)
+FENCE_RE = re.compile(r"^```[a-zA-Z0-9_]*\r?\n|\r?\n```\s*$")
+
+
+def strip_fences(text):
+    """剥模型输出的 Markdown 代码围栏。"""
+    return FENCE_RE.sub("", text.strip())
+
+
+def lint_py_text(content, name="<target>"):
+    """语法门：纯 compile 不落盘。返回 None=过 / 错误摘要。"""
+    try:
+        compile(content, name, "exec")
+        return None
+    except SyntaxError as e:
+        return "line %d: %s" % (e.lineno, e.msg)
+
+
+def apply_edit_protocol(raw, target_path):
+    """SEARCH/REPLACE 块协议（Aider 范式）：块内 SEARCH 必须在目标文件唯一命中，
+    逐块替换。返回 (content, mode)：
+      'whole'   无块 → 整文件重写（剥围栏）
+      'sr'      块全命中 → 应用后的完整内容
+      'sr_fail' 有块但存在未唯一命中 → content=None（调用方带错重试，禁止落盘）
+    ⚠️ 判例：块命中失败时若兜底整文件写回，会把协议标记原文写进目标（垃圾落盘）。"""
+    body = strip_fences(raw)
+    blocks = SR_RE.findall(body)
+    if not blocks:
+        return body, "whole"
+    try:
+        cur = open(target_path, encoding="utf-8").read()
+    except FileNotFoundError:
+        return body, "whole"
+    for old, new in blocks:
+        if cur.count(old) != 1:  # 唯一性断言（判例：多命中=伪随机替换事故源）
+            return None, "sr_fail"
+        cur = cur.replace(old, new, 1)
+    return cur, "sr"
+
+
 ANTHROPIC_BASE = "https://open.bigmodel.cn/api/anthropic"
 
 
@@ -159,8 +205,9 @@ def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420, timeout_clau
     return chat(agent_id, task, timeout_local)
 
 
-def run(label, agent_id, out_path, prompt, validator=None, json_out=False):
-    """生成→落盘→校验。返回 (ok, detail)。"""
+def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
+        lint_retries=2):
+    """生成→编辑协议→lint门→(带错重试)→落盘→校验。返回 (ok, detail)。"""
     task = {"label": label, "prompt": prompt, "json_out": json_out}
     raw = chat_auto(agent_id, task)
     if json_out:
@@ -170,7 +217,33 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False):
         except Exception as e:
             return False, "JSON 解析失败: %s | raw[:120]=%r" % (e, raw[:120])
     else:
-        content = raw
+        content, mode = apply_edit_protocol(raw, out_path)
+        print("  [edit-protocol] mode=%s" % mode)
+        err = None
+        if mode == "sr_fail":
+            err = "SEARCH/REPLACE 块未在目标文件唯一命中"
+        elif out_path.endswith(".py"):
+            err = lint_py_text(content, out_path)
+        tries = 0
+        while err and tries < lint_retries:
+            print("  [lint-gate] 第%d轮拦截: %s → 带错重试" % (tries + 1, err))
+            task["prompt"] = (prompt +
+                "\n\n【上一次产出未通过验证门，错误：%s】"
+                "\n请重新输出修正后的完整文件内容（或修正的 SEARCH/REPLACE 块）。" % err)
+            raw = chat_auto(agent_id, task)
+            content, mode = apply_edit_protocol(raw, out_path)
+            if mode == "sr_fail":
+                err = "SEARCH/REPLACE 块未在目标文件唯一命中"
+            elif content is None:
+                err = "产出为空"
+            elif out_path.endswith(".py"):
+                err = lint_py_text(content, out_path)
+            else:
+                err = None
+            tries += 1
+        if err:
+            return False, "验证门 %d 轮未过: %s" % (lint_retries, err)
+        print("  [lint-gate] PASS")
     if validator:
         ok, detail = validator(content)
         if not ok:
