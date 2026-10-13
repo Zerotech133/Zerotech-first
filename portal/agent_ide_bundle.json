@@ -1,12 +1,192 @@
 {
- "generated": "2026-10-13 08:30",
- "generator": "tools/build_agent_ide_bundle.py (K-ORG-022)",
+ "generated": "2026-10-13 08:37",
+ "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
-  "agents": 25,
-  "departments": 10,
-  "prompt_ok": 25,
-  "prompt_miss": []
+  "agents": 27,
+  "departments": 12,
+  "prompt_ok": 27,
+  "prompt_miss": [],
+  "workorders_doing": 3,
+  "workorders_review": 19
  },
+ "workorders": [
+  {
+   "id": "K-STOCK-136",
+   "desc": "补齐来源证据并重建训练候选快照",
+   "status": "review",
+   "owner": "Codex·Evidence",
+   "branch": "detached@e3870fe",
+   "created": "2026-10-11 23:05:17"
+  },
+  {
+   "id": "K-STOCK-145",
+   "desc": "Ollama 工具集启动与健康检查",
+   "status": "review",
+   "owner": "Codex·Health",
+   "branch": "managed worktree: ollama-health",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-146",
+   "desc": "RAG 增量索引、持久化与文档元数据",
+   "status": "review",
+   "owner": "Codex·RAG",
+   "branch": "managed worktree: rag-index",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-147",
+   "desc": "Web 聊天历史、状态与来源展示体验",
+   "status": "review",
+   "owner": "Codex·Web",
+   "branch": "managed worktree: web-ux",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-152",
+   "desc": "Ollama Web 启动前自检与一键启动入口",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "managed worktree: ollama-launcher",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-153",
+   "desc": "将增量 RAG 索引接入 Web 服务并展示来源元数据",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "managed worktree: rag-web-incremental",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-154",
+   "desc": "RAG 索引持久化与服务重启恢复",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "managed worktree: rag-index-persistence",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-155",
+   "desc": "RAG 离线评测回归与质量报告",
+   "status": "review",
+   "owner": "Codex·Eval",
+   "branch": "managed worktree: rag-eval",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-156",
+   "desc": "Web 配置与 RAG 索引状态展示",
+   "status": "review",
+   "owner": "Codex·Web",
+   "branch": "managed worktree: web-status",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-157",
+   "desc": "RAG 索引管理 CLI：状态、重建与校验",
+   "status": "review",
+   "owner": "Codex·Tools",
+   "branch": "managed worktree: index-cli",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-158",
+   "desc": "将 Ollama 健康检查接入 ops health_check",
+   "status": "review",
+   "owner": "Codex·Ops",
+   "branch": "managed worktree: ops-health-integration",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-159",
+   "desc": "统一 Ollama 模型路由与降级配置",
+   "status": "review",
+   "owner": "Codex·Model",
+   "branch": "managed worktree: model-routing",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-160",
+   "desc": "本地 Ollama/RAG 运行手册与 smoke 验证",
+   "status": "review",
+   "owner": "Codex·Docs",
+   "branch": "managed worktree: runbook-smoke",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-162",
+   "desc": "三年历史数据只读 staging 计划、审计与可恢复执行器",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "主工作区（Git 元数据写权限阻断）",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-209",
+   "desc": "缺口发布审计阻断 pending/blocked 回执并完成盘前 dry-run",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "主工作区（Git ACL 阻断）",
+   "created": "2026-10-12"
+  },
+  {
+   "id": "K-STOCK-211",
+   "desc": "修复A股估值字段缺失并建立JEV 51条可恢复核验",
+   "status": "doing",
+   "owner": "Codex·A",
+   "branch": "task/K-STOCK-211",
+   "created": "2026-10-12 23:30:24"
+  },
+  {
+   "id": "K-STOCK-212",
+   "desc": "菜鸟与开源智能对话模式对照及Ollama聊天体验设计记录",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "task/K-STOCK-212",
+   "created": "2026-10-12 23:52:22"
+  },
+  {
+   "id": "K-STOCK-213",
+   "desc": "RAG来源卡片详情与引用复制",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "task/K-STOCK-213",
+   "created": "2026-10-13 00:58:18"
+  },
+  {
+   "id": "K-STOCK-222",
+   "desc": "菜鸟式消息内嵌来源与快捷提问布局",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "task/K-STOCK-222",
+   "created": "2026-10-13 02:20:17"
+  },
+  {
+   "id": "K-STOCK-227",
+   "desc": "本地聊天性能优化：思考开关、常驻模型与上下文预算",
+   "status": "review",
+   "owner": "Codex·主控",
+   "branch": "task/K-STOCK-227",
+   "created": "2026-10-13 06:46:03"
+  },
+  {
+   "id": "K-ORG-015a",
+   "desc": "组合制新方案v6(K-STOCK-269底档)代码面评审:三层架构(组合层再平衡/个股层最小干预/信号层影子池)实施影响面梳理+风险清单,产出评审意见写agent/DEV1/decision",
+   "status": "doing",
+   "owner": "DEV1",
+   "branch": "task/K-ORG-015a",
+   "created": "2026-10-13 07:07:39"
+  },
+  {
+   "id": "proj_c_nlq_001",
+   "desc": "nl_query图谱自然语言问答最小闭环立项:范围=图谱只读问答(单跳查询),验收口径由PM1定义->ARCH1技术终审->DEV2推理侧实施;产出验收口径文档写dept/product/observation",
+   "status": "doing",
+   "owner": "PM1",
+   "branch": "task/proj_c_nlq_001",
+   "created": "2026-10-13 07:24:46"
+  }
+ ],
  "departments": [
   {
    "id": "chief",
@@ -119,6 +299,28 @@
     "QA1",
     "SEC1",
     "QA2"
+   ]
+  },
+  {
+   "id": "marketing",
+   "name": "📣 市场部",
+   "type": "func",
+   "agents": [
+    "MKT1"
+   ],
+   "all_ids": [
+    "MKT1"
+   ]
+  },
+  {
+   "id": "legal",
+   "name": "⚖️ 合规法务部",
+   "type": "func",
+   "agents": [
+    "LEG1"
+   ],
+   "all_ids": [
+    "LEG1"
    ]
   },
   {
@@ -249,7 +451,14 @@
    "projects": [
     "proj_data"
    ],
-   "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)"
+   "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
+   "tasks": [
+    {
+     "id": "K-ORG-015a",
+     "desc": "组合制新方案v6(K-STOCK-269底档)代码面评审:三层架构(组合层再平衡/个股层最小干预/信号层影子池)实施影响面梳理+风险清单,产出评审意见写agent/DEV1/decision",
+     "status": "doing"
+    }
+   ]
   },
   "DEV2": {
    "id": "DEV2",
@@ -654,6 +863,58 @@
    "projects": [],
    "team_desc": "投研部选股团队（菜鸟 ai_team_role 独立版）"
   },
+  "LEG1": {
+   "id": "LEG1",
+   "dept": "legal",
+   "role_profile": "leg1_legal",
+   "grade": "E3",
+   "grade_note": "30年档：独立表态·一票否决权",
+   "charter": "E3·30年档·合规法务：政府材料/宣发文稿发布前审查(通过/修改后通过/驳回)·四条对外口径裁定权·爬虫采集合规红线·军方背景与涉政一票驳回",
+   "llm": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "grants_read": [
+    "domain/*",
+    "dept/legal/*",
+    "dept/marketing/*",
+    "agent/LEG1/*"
+   ],
+   "grants_write": [
+    "agent/LEG1/*",
+    "dept/legal/review"
+   ],
+   "prompt_file": "agent_platform/prompts/leg1_legal.md",
+   "prompt": "# LEG1 · 合规法务（E3·30年档）\n\n## 身份\n你是 LEG1，老田 AI 工作站合规法务总顾问（E3·30年档），**直属参谋长田小皮**，独立表态、不受部门意见影响。\n\n## 职责边界（charter）\n1. **对外材料合规审查**：涪陵 OPC 政府请示/汇报材料、北理工联合实验室材料、市场部宣发文案——发布前逐份审查，出书面审查意见（通过/修改后通过/驳回）。\n2. **口径裁定**：产业落地表述（非创业起步）、能力平台定位（非 Tokens 售卖）、硬件产 Tokens 6% 税率开票口径、军方背景剔除——四条口径的**裁定权**在 LEG1，执行层不得擅自变通。\n3. **数据与账号合规**：用户数据出境/跨境网络/Token 分发业务的合规边界盘点；爬虫与数据采集的合规红线（robots/版权/个人信息）。\n4. **公安协调支撑**：支撑型互联网应用合规治理所需的公安对接材料准备与表述把关。\n\n## 纪律（红线）\n- 独立性：审查意见只对老田和田小皮负责，被审部门无权施压改意见。\n- 军方背景、涉政敏感：任何材料出现即**一票驳回**。\n- 审查留痕：每份意见归档 dept/legal/review，可追溯。\n\n## 汇报\n- 周报直达田小皮；驳回意见（一票否决）即时上报不等周报。\n- 涉及老田本人决策事项只提示风险与选项，不代做决定。\n",
+   "projects": [],
+   "team_desc": "合规法务部：对外材料审查·四条口径裁定·数据采集合规红线·公安协调支撑；直属参谋长"
+  },
+  "MKT1": {
+   "id": "MKT1",
+   "dept": "marketing",
+   "role_profile": "mkt1_marketer",
+   "grade": "E2",
+   "grade_note": "20年档：内容与社区运营独立交付",
+   "charter": "E2·20年档·市场运营：统一口号纪律执法·宣发文案/视频脚本·开源社区高star项目对比报告·在研文稿协同；对外定位=能力平台，禁Tokens售卖标签",
+   "llm": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "grants_read": [
+    "domain/*",
+    "dept/marketing/*",
+    "dept/legal/*",
+    "agent/MKT1/*"
+   ],
+   "grants_write": [
+    "agent/MKT1/*",
+    "dept/marketing/observation"
+   ],
+   "prompt_file": "agent_platform/prompts/mkt1_marketer.md",
+   "prompt": "# MKT1 · 市场运营（E2·20年档）\n\n## 身份\n你是 MKT1，老田 AI 工作站市场运营专员（E2·20年档），隶属市场部，向参谋长田小皮汇报。\n\n## 职责边界（charter）\n1. **统一口号纪律**：全站对外传播只用统一口号，禁止每人一套 slogan；发现口径漂移立即纠正并上报田小皮。\n2. **内容宣发**：宣发文案/视频脚本/社区帖子的撰写与排期；对外文稿须经 LEG1 合规审查后方可发布。\n3. **开源社区影响面**：跟踪社区高 star 个人 AI 助理项目（Hermes/OpenClaw/CowAgent/Khoj 等），产出对比与定位报告；我们的对外定位=**能力平台**（软硬一体、云边协同），**禁止**出现「Tokens 售卖公司」标签。\n4. **在研文稿协同**：老田在研文稿的资料整理、初稿协同与版本归档（目录：docs/ 对外材料区）。\n\n## 纪律（红线）\n- 对外口径四原则：产业落地（成熟产业链介入，非创业）· 能力平台定位 · 统一口号 · 不披露军方背景。\n- 涉政府/园区材料一律先过 LEG1；涉军事、涉政敏感话题一律不碰，上报田小皮。\n- 数字口径（产值/税收/台数）只引用老田已拍板版本，禁止自行估算外传。\n\n## 汇报\n- 日报进部门 observation，周报经田小皮判读后上报老田。\n- P1 以上口径风险即时上报（不等日报）。\n",
+   "projects": [],
+   "team_desc": "市场部：统一口号纪律·内容宣发(经LEG1审查)·开源社区影响面·在研文稿协同"
+  },
   "PM1": {
    "id": "PM1",
    "dept": "product",
@@ -682,7 +943,14 @@
    "projects": [
     "proj_next"
    ],
-   "team_desc": "产品与设计部：产品经理 + UI 双梯队(30年主笔+10年执行)"
+   "team_desc": "产品与设计部：产品经理 + UI 双梯队(30年主笔+10年执行)",
+   "tasks": [
+    {
+     "id": "proj_c_nlq_001",
+     "desc": "nl_query图谱自然语言问答最小闭环立项:范围=图谱只读问答(单跳查询),验收口径由PM1定义->ARCH1技术终审->DEV2推理侧实施;产出验收口径文档写dept/product/observation",
+     "status": "doing"
+    }
+   ]
   },
   "DSGN1": {
    "id": "DSGN1",

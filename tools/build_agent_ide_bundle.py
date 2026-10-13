@@ -24,7 +24,8 @@ OUT = os.path.join(ROOT, "portal", "agent_ide_bundle.json")
 
 # 职能部 team 文件（主数据源）；项目部文件单独归类
 FUNC_TEAMS = ["team_invest.json", "team_dev.json", "team_trading.json",
-              "team_data.json", "team_product.json", "team_quality.json"]
+              "team_data.json", "team_product.json", "team_quality.json",
+              "team_marketing.json", "team_legal.json"]
 
 DEPT_META = {  # 部门显示名（org.json name 键值在此冗余固化，避免页面再拉 org）
     "invest": ("📊 投研部", "func"),
@@ -33,10 +34,15 @@ DEPT_META = {  # 部门显示名（org.json name 键值在此冗余固化，避�
     "data": ("🗄 数据智能部", "func"),
     "product": ("📋 产品管理部", "func"),
     "quality": ("✅ 质量工程部", "func"),
+    "marketing": ("📣 市场部", "func"),
+    "legal": ("⚖️ 合规法务部", "func"),
     "proj_backtest": ("🅰 回测开发部", "project"),
     "proj_data": ("🅱 数据治理部", "project"),
     "proj_next": ("🅲 下版本设计推理部", "project"),
 }
+
+# devtask 工单库（K-ORG-024 批C先行：研发工单真实投影进 IDE）
+TASKS = os.path.join(ROOT, ".worktrees", "tasks.json")
 
 
 def main():
@@ -113,7 +119,7 @@ def main():
 
     # 部门视图（IDE 左树顺序：参谋长在顶，职能部居中，项目部在后）
     order = ["chief", "invest", "dev", "trading", "data", "product", "quality",
-             "proj_backtest", "proj_data", "proj_next"]
+             "marketing", "legal", "proj_backtest", "proj_data", "proj_next"]
     departments = []
     for dep in order:
         if dep not in dept_agents:
@@ -125,15 +131,44 @@ def main():
             "all_ids": dept_agents[dep],  # 项目部可能引用未在职能表落卡者（现状无）
         })
 
+    # 工单投影（K-ORG-024 批C先行）：devtask tasks.json 活跃单挂到岗卡
+    # owner 精确匹配 agent_id（如 DEV1/PM1）；Codex 系自由身 worker 归全局池
+    workorders = []
+    if os.path.exists(TASKS):
+        raw = json.load(open(TASKS, encoding="utf-8"))
+        for tid, t in raw.items():
+            if t.get("status") not in ("doing", "review"):
+                continue
+            wo = {
+                "id": tid,
+                "desc": t.get("desc", ""),
+                "status": t.get("status"),
+                "owner": t.get("owner", ""),
+                "branch": t.get("branch", ""),
+                "created": t.get("created", ""),
+            }
+            workorders.append(wo)
+            owner = t.get("owner", "")
+            if owner in agents:
+                agents[owner].setdefault("tasks", []).append(
+                    {"id": tid, "desc": t.get("desc", ""), "status": t.get("status")})
+    wo_stats = {
+        "doing": sum(1 for w in workorders if w["status"] == "doing"),
+        "review": sum(1 for w in workorders if w["status"] == "review"),
+    }
+
     bundle = {
         "generated": time.strftime("%Y-%m-%d %H:%M"),
-        "generator": "tools/build_agent_ide_bundle.py (K-ORG-022)",
+        "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
         "stats": {
             "agents": len(agents),
             "departments": len(departments),
             "prompt_ok": len(agents) - len(miss_prompt),
             "prompt_miss": miss_prompt,
+            "workorders_doing": wo_stats["doing"],
+            "workorders_review": wo_stats["review"],
         },
+        "workorders": workorders,
         "departments": departments,
         "agents": agents,
     }
@@ -142,6 +177,7 @@ def main():
     print("bundle ->", OUT)
     print("agents:", len(agents), "| prompt_ok:", bundle["stats"]["prompt_ok"],
           "| miss:", miss_prompt or "none")
+    print("workorders: doing=%d review=%d" % (wo_stats["doing"], wo_stats["review"]))
 
 
 if __name__ == "__main__":

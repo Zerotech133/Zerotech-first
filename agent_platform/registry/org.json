@@ -1,5 +1,5 @@
 {
- "_note": "GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。",
+ "_note": "GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。 | K-ORG-024 27满编：marketing 激活(MKT1) + legal 新设(LEG1直属参谋长)",
  "org": "laotian_ai",
  "host": "GenOS",
  "host_note": "K-ORG-019 老田拍板：GenOS=个人 OS 宿主（门户 8080/指挥大屏/组织架构页为其门面），代码开发部分全部收编于本 org——任何新开发需求=在本注册表加岗或加项目部门，不改平台。",
@@ -614,10 +614,76 @@
   {
    "dept": "marketing",
    "name": "市场部",
-   "status": "planned",
-   "charter": "视频制作·宣发文案（K-ORG-001 P3 预留，AIGC 三补件落地后实例化）",
-   "agents": [],
-   "source": "K-ORG-001 §11 AIGC 松耦合扩展预留"
+   "status": "active",
+   "charter": "统一口号纪律·内容宣发(过LEG1审查后发布)·开源社区影响面·在研文稿协同",
+   "agents": [
+    "MKT1"
+   ],
+   "source": "K-ORG-001 §11 AIGC 松耦合扩展预留；K-ORG-024 激活+MKT1 入编",
+   "agent_profiles": [
+    {
+     "agent_id": "MKT1",
+     "role_profile": "mkt1_marketer",
+     "charter_detail": "E2·20年档·市场运营：统一口号纪律执法·宣发文案/视频脚本·开源社区高star项目对比报告·在研文稿协同；对外定位=能力平台，禁Tokens售卖标签",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/marketing/*",
+       "dept/legal/*",
+       "agent/MKT1/*"
+      ],
+      "write": [
+       "agent/MKT1/*",
+       "dept/marketing/observation"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "20年档：内容与社区运营独立交付"
+    }
+   ]
+  },
+  {
+   "dept": "legal",
+   "name": "合规法务部",
+   "lead": null,
+   "status": "active",
+   "charter": "对外材料合规审查·口径裁定(四原则)·数据与采集合规红线·公安协调支撑；直属参谋长田小皮，独立表态",
+   "agents": [
+    "LEG1"
+   ],
+   "agent_profiles": [
+    {
+     "agent_id": "LEG1",
+     "role_profile": "leg1_legal",
+     "charter_detail": "E3·30年档·合规法务：政府材料/宣发文稿发布前审查(通过/修改后通过/驳回)·四条对外口径裁定权·爬虫采集合规红线·军方背景与涉政一票驳回",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/legal/*",
+       "dept/marketing/*",
+       "agent/LEG1/*"
+      ],
+      "write": [
+       "agent/LEG1/*",
+       "dept/legal/review"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：独立表态·一票否决权"
+    }
+   ],
+   "teams": [
+    "team_legal"
+   ],
+   "source": "K-ORG-024 新设（27满编收官）：直属参谋长，E3 一票否决"
   }
  ],
  "reporting": {
