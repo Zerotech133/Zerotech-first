@@ -103,6 +103,8 @@ class WebChatTests(unittest.TestCase):
         self.assertIn('研究', payload['messages'][0]['content'])
         self.assertEqual(payload['messages'][1:3], history)
         self.assertEqual(payload['messages'][-1], {'role': 'user', 'content': '新问题'})
+        self.assertFalse(payload['think'])
+        self.assertEqual(payload['keep_alive'], '30m')
 
     def test_invalid_chat_history_is_400(self):
         response, _ = self.request('POST', '/api/chat', {

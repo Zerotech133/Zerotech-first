@@ -28,7 +28,16 @@ class _OllamaClient:
         return self._post("/api/embed", {"model": model, "input": input})
 
     def chat(self, model, messages):
-        return self._post("/api/chat", {"model": model, "messages": messages, "stream": False})
+        return self._post(
+            "/api/chat",
+            {
+                "model": model,
+                "messages": messages,
+                "stream": False,
+                "think": False,
+                "keep_alive": "30m",
+            },
+        )
 
 
 class KnowledgeBase:

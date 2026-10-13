@@ -2,9 +2,11 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+import knowledge_base
 from knowledge_base import KnowledgeBase
 
 
@@ -32,6 +34,25 @@ class ShortEmbeddingClient(FakeClient):
 
 
 class KnowledgeBaseTests(unittest.TestCase):
+    def test_ollama_client_chat_sends_fast_chat_contract(self):
+        class Response:
+            def __enter__(self):
+                return self
+            def __exit__(self, *_args):
+                return False
+            def read(self):
+                return b'{"message":{"content":"ok"}}'
+
+        captured = {}
+        def opener(request, timeout):
+            captured["payload"] = json.loads(request.data.decode("utf-8"))
+            return Response()
+
+        client = knowledge_base._OllamaClient()
+        with patch.object(knowledge_base, "urlopen", opener):
+            client.chat("qwen3.5:9b", [])
+        self.assertFalse(captured["payload"]["think"])
+        self.assertEqual(captured["payload"]["keep_alive"], "30m")
     def test_ingest_chunks_and_preserves_source_and_sequence(self):
         client = FakeClient()
         kb = KnowledgeBase(client=client, chunk_size=5)

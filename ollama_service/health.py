@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import socket
 import sys
@@ -17,7 +18,13 @@ from typing import Any, Callable, Mapping
 
 
 DEFAULT_BASE_URL = "http://127.0.0.1:11434"
-DEFAULT_CHAT_MODEL = "qwen3.5:35b"
+try:
+    DEFAULT_CHAT_MODEL = importlib.import_module(
+        "AI.111111.model_routing"
+    ).DEFAULT_CHAT_MODEL
+except (ImportError, ModuleNotFoundError, AttributeError):
+    # 直接从 ollama_service 目录运行时，仓库根目录可能不在 sys.path。
+    DEFAULT_CHAT_MODEL = "qwen3.5:9b"
 DEFAULT_EMBED_MODEL = "bge-m3:latest"
 DEFAULT_WEB_CHAT_HOST = "127.0.0.1"
 DEFAULT_WEB_CHAT_PORT = 8899

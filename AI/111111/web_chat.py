@@ -41,7 +41,7 @@ def _payload(h):
   clean_history.append({'role':item['role'],'content':content.strip()})
  try: model=select_model('chat', p.get('model') or role['model']).model
  except ModelRoutingError as e: raise ValueError(str(e)) from e
- return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True}
+ return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True,'think':False,'keep_alive':'30m'}
 def _rag_payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')
