@@ -1,6 +1,7 @@
 import json
+import os
 
-DEFAULT_PATH = "config/ollama_model_route.json"
+DEFAULT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "ollama_model_route.json")
 
 def load_route_config(path=DEFAULT_PATH) -> dict:
     """
