@@ -146,7 +146,7 @@
 <header>
   <div class="brand">
     <div class="logo">仓</div>
-    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.6</small></div>
+    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.7</small></div>
   </div>
   <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
@@ -246,54 +246,17 @@
   <div class="tabpanel" id="tab-strategy">
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
       <span style="font-size:15px;font-weight:700">🧭 策略管理中心（先选策略，再去交易员市场组团队）</span>
-      <span style="font-size:12px;color:var(--text-dim)">本页两层：<b>🔌 信号接入通道</b>（下方卡片=已接入账本的执行通道，点选即执行）；<b>📡 研究员的策略橱窗</b>（页底=全部策略资产，策略市场上新自动出现，订阅后即可接入通道）。另有：🧑‍💼 经理配策略 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 经理阵营</a>；🧑‍✈️ 操盘手纪律 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 操盘手</a>。订阅入口在 <a href="/market-strategy" style="color:var(--link)">策略市场</a>。</span>
+      <span style="font-size:12px;color:var(--text-dim)">下方<b>策略卡墙</b>=全部可选策略（量化 12 策略 + AI 值班/手动下单两条常驻通道，策略市场上新自动出现）——<b>点任意卡即选中，执行台跟着出操作面板</b>：已接入的直接执行，未接入的给接入指引。另有：🧑‍💼 经理配策略 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 经理阵营</a>；🧑‍✈️ 操盘手纪律 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 操盘手</a>。订阅入口在 <a href="/market-strategy" style="color:var(--link)">策略市场</a>。</span>
     </div>
-    <div class="desk">
+    <!-- K-STOCK-355 老田拍板：12 策略卡墙直接可选可执行，删除独立通道卡（双刀/青萍并入卡墙）。
+         strategies.json 单一数据源 + ai_team/manual 两条常驻通道置顶；点任意卡→执行台联动 -->
+    <div class="col-title">📡 策略卡墙（点任意卡选择 → 下方执行台出操作面板）</div>
+    <div id="strat12-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div class="empty">读取中…</div></div>
+
+        <div class="flow-note" style="margin-top:10px">💡 您选的每个策略，下单都走同一套流程：自动风控 → 模拟撮合 → 账本记账——<b>任何来源都动不了您的账本，只能提交订单</b>。写操作仅限本机浏览器（局域网只读）。</div>
+
+      <div class="col-title" style="margin-top:14px">⚡ 执行台（选中策略后这里出操作面板）</div>
       <div>
-        <div class="col-title">🔌 信号接入通道（点卡片切换 · 已接入您的账本）<span style="font-weight:400;font-size:11px;color:var(--text-dim)">全部策略资产见页底「研究员的策略橱窗」</span></div>
-
-        <div class="strat-card selected" data-s="ai_team">
-          <div class="radio"></div>
-          <div class="head"><span class="icon">🤖</span><span class="name">AI 值班</span><span class="st live">已接入</span></div>
-          <div class="desc">每日 07:05 跑批 · 5 票辩论 · 单票 ≤20% · strategy=ai_team</div>
-          <div class="dyn" id="dyn-ai">最近产物：读取中…</div>
-          <div class="trigger-switch">
-            <div class="trigger-opt on">自动（每日跑批）</div>
-            <div class="trigger-opt">手动补跑</div>
-          </div>
-        </div>
-
-        <div class="strat-card" data-s="double_knife">
-          <div class="radio"></div>
-          <div class="head"><span class="icon">⚔️</span><span class="name">量子双刀</span><span class="st live">已接入</span></div>
-          <div class="desc">全湖扫描 · conf≥0.60 · 目标仓位 16% · trend_down 一票否决</div>
-          <div class="dyn" id="dyn-qd">最近产物：读取中…</div>
-          <div class="trigger-switch">
-            <div class="trigger-opt">自动（盘后扫描）</div>
-            <div class="trigger-opt on">手动执行</div>
-          </div>
-        </div>
-
-        <div class="strat-card" data-s="qingping">
-          <div class="radio"></div>
-          <div class="head"><span class="icon">🍃</span><span class="name">青萍之末</span><span class="st live">已上架</span></div>
-          <div class="desc">注册表名 qpzm（与策略市场同源）· 订阅/建仓入口在<a href="/market-strategy">策略市场</a></div>
-        </div>
-
-        <div class="strat-card" data-s="manual">
-          <div class="radio"></div>
-          <div class="head"><span class="icon">✋</span><span class="name">手动下单</span><span class="st live">已接入</span></div>
-          <div class="desc">人自主决策 · 支持指定止损价 · strategy=manual</div>
-          <div class="trigger-switch">
-            <div class="trigger-opt on dis">手动（唯一模式）</div>
-          </div>
-        </div>
-
-        <div class="flow-note">💡 您订的每个信号来源，下单都走同一套流程：自动风控 → 模拟撮合 → 账本记账——<b>任何来源都动不了您的账本，只能提交订单</b>。写操作仅限本机浏览器（局域网只读）。</div>
-      </div>
-
-      <div>
-        <div class="col-title">⚡ 执行台（选中策略后这里出操作面板）</div>
 
         <div class="exec-panel" id="exec-ai_team">
           <div class="exec-title">🤖 AI 值班 · 每日跑批</div>
@@ -340,9 +303,14 @@
             <span style="font-size:12px;color:var(--text-dim)">提交前会弹确认；风控（单票 20%）不通过会被引擎拒绝</span>
           </div>
         </div>
+
+        <div class="exec-panel" id="exec-generic" style="display:none">
+          <div class="exec-title" id="generic-name">策略</div>
+          <div class="exec-sub" id="generic-status"></div>
+          <div class="flow-note"><span id="generic-tagline"></span><br>该策略<b>尚未接入模拟账本执行</b>。两条路：① <a id="generic-href" href="/market-strategy" style="color:var(--link)">策略市场 · 订阅/详情</a>——订阅后由值班经理接入通道即可直接执行；② 先在下方「说一句话」或<a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 组合回测</a>验证策略成色。</div>
+        </div>
       </div>
 
-    </div>
     <!-- K-STOCK-352 自然语言自建策略（/api/bt2_nl 解析 + /api/bt2_run 执行 · 解析与执行分离，299 口径） -->
     <div class="col-title" style="margin-top:18px">🗣️ 说一句话，生成一个策略 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（自然语言回测 · 测试版：先解析成参数给您核对，再提交回测中心实跑）</span></div>
     <div class="side-box">
@@ -358,10 +326,7 @@
       <div id="nl-out" style="display:none;margin-top:10px"></div>
     </div>
 
-    <!-- K-STOCK-354 研究员的策略橱窗（strategies.json 单一数据源 · 策略市场上新自动出现）：
-         这是「将来上全策略=策略市场投影」的位置；上方🔌卡=已接入的执行通道，两区互补不重复 -->
-    <div class="col-title" style="margin-top:18px">📡 研究员的策略橱窗（全策略资产 · 订阅即上架于此）<span style="font-weight:400;color:var(--text-dim);font-size:11px">（🟢 产线在跑 · 🟡 影子验证 · ⚙️ 支撑工具——已接入的卡标「本页执行」，未接入的去市场订阅）</span></div>
-    <div id="strat12-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div class="empty">读取中…</div></div>
+    <!-- K-STOCK-354 橱窗已并入上方策略卡墙（355 老田拍板：一张卡墙直接联动执行台） -->
   </div>
 
   <!-- ============ 持仓 ============ -->
@@ -521,11 +486,33 @@ document.querySelectorAll('.pipe-node[data-drill]').forEach(n=>n.addEventListene
     toast('② picks JSON 同构协议——最新产物：'+(bits.join('；')||'暂无产物（点①选源后手动执行生成）'),4500);
   }
 }));
-document.querySelectorAll('.strat-card:not(.disabled)').forEach(c=>c.addEventListener('click',()=>{
-  document.querySelectorAll('.strat-card').forEach(x=>x.classList.remove('selected'));
-  c.classList.add('selected');S.cur=c.dataset.s;
-  ['ai_team','double_knife','qingping','manual'].forEach(id=>$('exec-'+id).style.display=(id===S.cur)?'block':'none');
-}));
+function bindStratCards(){
+  document.querySelectorAll('.strat-card:not(.disabled)').forEach(c=>{
+    if(c._bound)return; c._bound=true;
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('.strat-card').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected');S.cur=c.dataset.s;
+      showExecPanel(S.cur);
+    });
+  });
+}
+// K-STOCK-355：注册表 id → 执行面板映射（qpzm=青萍的注册表名，面板 id=qingping；其余无面板的走通用接入指引）
+function showExecPanel(sid){
+  const OWNED=['ai_team','double_knife','qingping','manual'];
+  const pid=(sid==='qpzm')?'qingping':sid;
+  const target=OWNED.includes(pid)?pid:'generic';
+  ['ai_team','double_knife','qingping','manual','generic'].forEach(id=>{
+    const el=$('exec-'+id); if(el)el.style.display=(id===target)?'block':'none';
+  });
+  if(target==='generic'){
+    const m=STRAT_META[sid]||{};
+    $('generic-name').textContent=(m.icon||'📡')+' '+(m.name||sid);
+    $('generic-status').textContent=m.statusLabel||'';
+    $('generic-tagline').textContent=m.tagline||'';
+    if(m.href)$('generic-href').href=m.href;
+  }
+}
+bindStratCards();
 function pickSide(btn,side){
   document.querySelectorAll('#f-side button').forEach(b=>b.className='');
   btn.className=side==='BUY'?'on-buy':'on-sell';S.side=side;
@@ -752,15 +739,21 @@ function renderDesk(j){
   const d=j.desk||{};
   const today=new Date().toISOString().slice(0,10);
   const ai=d.ai_last_run;
-  $('dyn-ai').textContent=ai?`最近产物 ${ai.file} @ ${ai.ts}`:'暂无 AI 产物';
-  $('dyn-ai').className='dyn'+(ai&&ai.ts.slice(0,10)===today?' ok':'');
+  const _dai=$('dyn-ai');   // 355：卡墙异步渲染，元素可能尚未就位——静默跳过，渲染完成后的选中恢复会再触发
+  if(_dai){
+    _dai.textContent=ai?`最近产物 ${ai.file} @ ${ai.ts}`:'暂无 AI 产物';
+    _dai.className='dyn'+(ai&&ai.ts.slice(0,10)===today?' ok':'');
+  }
   $('ai-stats').innerHTML=
     `<div class="stat-box"><div class="k">今日跑批</div><div class="v" style="color:${ai&&ai.ts.slice(0,10)===today?'var(--color-ok)':'var(--color-warn)'}">${ai&&ai.ts.slice(0,10)===today?'已完成':'未完成'}</div></div>`+
     `<div class="stat-box"><div class="k">最近产物</div><div class="v small">${ai?ai.ts:'-'}</div></div>`+
     `<div class="stat-box"><div class="k">单票上限</div><div class="v">20%</div></div>`;
   const qd=d.qd_last_run;
-  $('dyn-qd').textContent=qd?`最近产物 ${qd.file} @ ${qd.ts} · ${qd.signals.length} 信号`:'暂无双刀产物';
-  $('dyn-qd').className='dyn'+(qd&&qd.ts.slice(0,10)===today?' ok':'');
+  const _dqd=$('dyn-qd');   // 355：同上，卡墙异步渲染防御
+  if(_dqd){
+    _dqd.textContent=qd?`最近产物 ${qd.file} @ ${qd.ts} · ${qd.signals.length} 信号`:'暂无双刀产物';
+    _dqd.className='dyn'+(qd&&qd.ts.slice(0,10)===today?' ok':'');
+  }
   if(qd&&qd.signals.length){
     $('qd-body').innerHTML=`<table class="sig-table"><tr><th>股票</th><th>名称</th><th>参考收盘</th><th>方向</th><th>目标仓位</th></tr>`+
       qd.signals.map(s=>`<tr><td><b><a href="/kg/stock/${s.stock}">${s.stock}</a></b></td><td>${s.name||'-'}</td><td>${s.close!=null?s.close:'-'}</td><td style="color:var(--color-up);font-weight:700">买入</td><td>16%</td></tr>`).join('')+'</table>';
@@ -1394,34 +1387,49 @@ async function askDuty(preset){
 }
 
 // ===== K-STOCK-352 ② 策略资产总览（12 策略全量 · /api/strategy_market 单一数据源） =====
-const STRAT12_ST={live:['🟢 产线','#3fb950'],shadow:['🟡 影子验证','var(--color-warn)'],tool:['⚙️ 支撑工具','var(--text-dim)'],paused:['⏸ 暂停','var(--text-dim)']};
+let STRAT_META={};
 async function loadStrategy12(){
   const box=$('strat12-grid'); if(!box)return;
   try{
     const j=await api('/api/strategy_market');
     if(!(j&&j.ok&&j.strategies))throw 0;
-    const G=[['live','🟢 产线在跑'],['shadow','🟡 影子验证中'],['tool','⚙️ 支撑工具']];
-    const card=s=>{
-      const st=STRAT12_ST[s.status]||[s.status||'?','var(--text-dim)'];
-      const exec=(s.id==='double_knife')
-        ?'<a href="#" onclick="gotoTab(\'strategy\');selStrat(\'double_knife\');return false" style="color:var(--link);font-size:11.5px">本页执行 →</a> ':'';
-      const sub=(s.status==='live'&&s.id!=='double_knife')
-        ?'<a href="/market-strategy" style="color:var(--link);font-size:11.5px">市场订阅 →</a> ':'';
-      const link=s.href?'<a href="'+esc(s.href)+'" style="color:var(--link);font-size:11.5px">详情 →</a>':'';
-      return '<div class="side-box" style="margin:0">'
-        +'<div style="display:flex;align-items:center;gap:6px"><b style="font-size:13px">'+esc(s.name||s.id)+'</b>'
-        +'<span style="margin-left:auto;font-size:10.5px;color:'+st[1]+';white-space:nowrap">'+st[0]+'</span></div>'
-        +'<div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;line-height:1.5">'+esc(s.tagline||'')+'</div>'
-        +'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">'+esc(s.status_note||'')+'</div>'
-        +'<div style="margin-top:6px">'+exec+sub+link+'</div></div>';
+    // K-STOCK-355：全量卡墙=常驻通道（ai_team/manual）+注册表 12 条；点任意卡→执行台联动
+    STRAT_META={
+      ai_team:{name:'AI 值班',icon:'🤖',tagline:'每日 07:05 跑批 · 5 票辩论 · 单票 ≤20% · strategy=ai_team',statusLabel:'已接入',href:''},
+      manual:{name:'手动下单',icon:'✋',tagline:'人自主决策 · 支持指定止损价 · strategy=manual',statusLabel:'已接入',href:''}};
+    const stMap={live:['🟢 产线','#3fb950'],shadow:['🟡 影子验证','var(--color-warn)'],tool:['⚙️ 支撑工具','var(--text-dim)']};
+    j.strategies.forEach(s=>{STRAT_META[s.id]={name:s.name||s.id,icon:'📡',tagline:s.tagline||'',statusLabel:(stMap[s.status]||[s.status||'?'])[0],href:s.href||''};});
+    const hasPanel=sid=>['ai_team','manual','double_knife','qpzm'].includes(sid);
+    const stCls=s=>s==='live'?'st live':'st';
+    const cardHTML=(sid,extra='')=>{
+      const m=STRAT_META[sid]||{};
+      return '<div class="strat-card" data-s="'+sid+'" title="点击选中，执行台出操作面板">'
+        +'<div class="radio"></div>'
+        +'<div class="head"><span class="icon">'+(m.icon||'📡')+'</span><span class="name">'+esc(m.name||sid)+'</span>'
+        +'<span class="'+stCls((sid==='double_knife')?'live':'')+'">'+esc(m.statusLabel||'')+'</span></div>'
+        +'<div class="desc">'+esc(m.tagline||'')+(hasPanel(sid)?'':'<br><span style="color:var(--text-dim)">· 未接入账本，点击看接入指引</span>')+'</div>'
+        +extra+'</div>';
     };
-    box.innerHTML=G.map(([k,label])=>{
-      const list=j.strategies.filter(s=>(s.status||'')===k);
-      if(!list.length)return '';
-      return '<div style="grid-column:1/-1;font-size:11.5px;color:var(--text-dim);margin:6px 0 0">'+label+'（'+list.length+'）</div>'
-        +list.map(card).join('');
-    }).join('');
-  }catch(e){box.innerHTML='<div class="empty">策略橱窗暂时读不到（静默降级，刷新重试）</div>';}
+    const aiExtra='<div class="dyn" id="dyn-ai">最近产物：读取中…</div>'
+      +'<div class="trigger-switch"><div class="trigger-opt on">自动（每日跑批）</div><div class="trigger-opt">手动补跑</div></div>';
+    const qdExtra='<div class="dyn" id="dyn-qd">最近产物：读取中…</div>'
+      +'<div class="trigger-switch"><div class="trigger-opt">自动（盘后扫描）</div><div class="trigger-opt on">手动执行</div></div>';
+    const by={live:[],shadow:[],tool:[]};
+    j.strategies.forEach(s=>{(by[s.status]||by.tool).push(s.id);});
+    const grp=(label,ids)=>ids.length?'<div style="grid-column:1/-1;font-size:11.5px;color:var(--text-dim);margin:6px 0 0">'+label+'</div>'+ids.map(sid=>cardHTML(sid,sid==='double_knife'?qdExtra:'')).join(''):'';
+    box.innerHTML=
+      '<div style="grid-column:1/-1;font-size:11.5px;color:var(--text-dim);margin:0">🔌 已接入通道（2）</div>'
+      +cardHTML('ai_team',aiExtra)+cardHTML('manual')
+      +grp('🟢 产线在跑（'+by.live.length+'）',by.live)
+      +grp('🟡 影子验证中（'+by.shadow.length+'）',by.shadow)
+      +grp('⚙️ 支撑工具（'+by.tool.length+'）',by.tool);
+    bindStratCards();
+    // 选中态恢复（S.cur 默认 ai_team）
+    const cur=document.querySelector('.strat-card[data-s="'+(S.cur||'ai_team')+'"]');
+    if(cur){document.querySelectorAll('.strat-card').forEach(x=>x.classList.remove('selected'));cur.classList.add('selected');showExecPanel(S.cur||'ai_team');}
+    // 卡墙晚于 renderDesk 渲染完成 → 重放 dyn 回填（S.status 已缓存；355 时序修正）
+    if(S.status)renderDesk(S.status);
+  }catch(e){box.innerHTML='<div class="empty">策略卡墙暂时读不到（静默降级，刷新重试）</div>';}
 }
 function selStrat(sid){const c=document.querySelector('.strat-card[data-s="'+sid+'"]');if(c)c.click();}
 
