@@ -272,18 +272,19 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
     一/二/三买全部入池，交易只吃 buy_filter 允许的买点（默认仅三买）。
     事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。"""
     cache_fp = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
-                            "sig_events_market_v2_%s_%s.json" % (d0, d1))
+                            "sig_events_market_v3_%s_%s.json" % (d0, d1))
     if not os.path.exists(cache_fp):
-        legacy = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
-                              "sig_events_market_%s_%s.json" % (d0, d1))
-        if os.path.exists(legacy):
-            return None, None, None, "事件缓存为 v1（无中枢上沿 zg）：%s\n重扫：python market_scan.py --d0 %s --d1 %s" % (legacy, d0, d1)
+        v2 = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+                          "sig_events_market_v2_%s_%s.json" % (d0, d1))
+        if os.path.exists(v2):
+            return None, None, None, "事件缓存为 v2（无评分）：%s\n重扫：python market_scan.py --d0 %s --d1 %s" % (v2, d0, d1)
         return None, None, None, "全市场事件缓存不存在：%s\n先跑：python market_scan.py --d0 %s --d1 %s" % (cache_fp, d0, d1)
     j = json.load(open(cache_fp, encoding="utf-8"))
     events = j["events"]
     allowed = BUY_FILTERS.get(buy_filter, BUY_FILTERS["3"])
     sig_buy, sig_sell = {}, {}
-    sig_zg = {}              # day -> {stock: zg}（三买失效离场）
+    sig_zg = {}              # day -> {stock: (zg, zd)}（三买失效离场）
+    sig_meta = {}            # day -> {stock: {score,zg,zd,bei,bei2,vr}}（评分·展示）
     pool_daily = {}          # 每日入池统计：一二三买全部入池（老田口径），trade=仅 buy_filter
     for d in (x for x in cal_idx_all if d0 <= x <= d1):
         sig_buy[d], sig_sell[d], pool_daily[d] = set(), set(), {"pool": 0, "trade": 0}
@@ -300,14 +301,18 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
             pool_daily[day]["trade"] += 1
             if ev.get("zg"):
                 sig_zg.setdefault(day, {})[ev["stock"]] = (ev["zg"], ev.get("zd"))
+            sig_meta.setdefault(day, {})[ev["stock"]] = {
+                "score": ev.get("score"), "zg": ev.get("zg"), "zd": ev.get("zd"),
+                "bei": ev.get("bei"), "bei2": ev.get("bei2"), "vr": ev.get("vr")}
         elif tp in SELL_TYPES:
             sig_sell[day].add(ev["stock"])
     if progress:
-        progress("信号", 30, f"全市场事件缓存命中（{len(events)} 事件·{BUY_FILTER_LABEL.get(buy_filter, buy_filter)}）")
-    src = "全市场扫描(market_scan·%d只·剔ST/北交所)·%s" % (j.get("meta", {}).get("universe", 0),
-                                                   BUY_FILTER_LABEL.get(buy_filter, buy_filter))
+        n_scored = sum(1 for m in sig_meta.values() for v in m.values() if v.get("score"))
+        progress("信号", 30, f"全市场事件缓存命中（{len(events)} 事件·{BUY_FILTER_LABEL.get(buy_filter, buy_filter)}·评分覆盖 {n_scored}）")
+    src = "全市场扫描(market_scan v3·%d只·剔ST/北交所)·%s" % (j.get("meta", {}).get("universe", 0),
+                                                      BUY_FILTER_LABEL.get(buy_filter, buy_filter))
     return sig_buy, sig_sell, {"pool_daily": pool_daily, "scan_meta": j.get("meta", {}),
-                               "signal_source": src, "sig_zg": sig_zg}, None
+                               "signal_source": src, "sig_zg": sig_zg, "sig_meta": sig_meta}, None
 
 
 def calc_dknife_signals(d0, d1, profile="relaxed", progress=None):
@@ -361,15 +366,18 @@ class BacktestConfig:
 # ============================================================
 def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=None,
                  sig_zg=None, three_fail=True, fail_level="zg", regime_gate=False,
-                 fail_buffer=0.0):
+                 fail_buffer=0.0, sig_meta=None):
     """sig_zg：{day: {stock: (中枢上沿zg, 下沿zd)(hfq)}}——三买失效离场用（10-13 老田：跌破中枢=三买被否定）。
     fail_level：zg=收盘跌破上沿即离场（紧）/ zd=收盘跌破下沿（中枢整体否定，松）。
-    regime_gate：池指数<MA60（low）时不开新三买仓（269 regime 实锤·熊市绞肉机对策）。"""
+    regime_gate：池指数<MA60（low）时不开新三买仓（269 regime 实锤·熊市绞肉机对策）。
+    sig_meta：{day: {stock: {score,zg,zd,bei,bei2,vr}}}——评分（K-STOCK-293 老田：评分取前十）。
+    规律校准：候选按评分降序入场（旧版按代码序=伪随机·bug）；top_n=持仓槽数上限。"""
     global cal
     cash, pos = 1.0, {}
     days, equity_curve, trades, holdings = {}, [], [], {}
     pending_buy, pending_sell = set(), set()
-    zg_pending = {}          # pending_buy 买入候选的中枢上沿（信号日随单携带）
+    zg_pending = {}          # pending_buy 买入候选的中枢（信号日随单携带）
+    score_pending = {}       # pending_buy 买入候选的评分要素（信号日随单携带）
     holding_since = {}
     n_trim = 0
     prev_eq = 1.0
@@ -418,34 +426,52 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
         deployed = eqv_open - cash
         still = set()
         n_buy_today = 0
-        for s in sorted(pending_buy):
+        # 评分降序填槽（K-STOCK-293 规律校准：评分取前十；旧版代码序=伪随机 bug）
+        def _sc_key(x):
+            m = score_pending.get(x) or {}
+            sc = m.get("score")
+            return (-(sc if isinstance(sc, (int, float)) else -1), x)
+        for s in sorted(pending_buy, key=_sc_key):
+            sc_m = score_pending.get(s) or {}
+            sc = sc_m.get("score")
             if n_buy_today >= cfg.top_n:
                 still.add(s)
                 continue
             if s in pos:
+                score_pending.pop(s, None); zg_pending.pop(s, None)
+                continue
+            if len(pos) >= cfg.top_n:
+                # 槽位已满：评分更低的候选放弃（缠论机会 T+1 是唯一入场点，不过夜追）
+                score_pending.pop(s, None); zg_pending.pop(s, None)
+                actions.append({"type": "skip", "stock": s,
+                                "note": f"槽位已满（{cfg.top_n}）·评分{sc if sc is not None else '-'}·放弃该机会"})
                 continue
             o = px(s, day, "open")
             if o is None:
-                still.add(s)
+                still.add(s)          # 停牌顺延（不丢单）
                 continue
             if cfg.runup_cap > 0 and prev_day:
                 c_prev = px(s, prev_day, "close")
                 if c_prev and o / c_prev - 1 > cfg.runup_cap:
-                    zg_pending.pop(s, None)
+                    zg_pending.pop(s, None); score_pending.pop(s, None)
                     actions.append({"type": "skip", "stock": s,
-                                    "note": f"runup帽：开盘较昨收 +{(o/c_prev-1)*100:.1f}% >{cfg.runup_cap:.0%}，放弃"})
+                                    "note": f"runup帽：开盘较昨收 +{(o/c_prev-1)*100:.1f}% >{cfg.runup_cap:.0%}，放弃（评分{sc if sc is not None else '-'}）"})
                     continue
             amt = min(cash, eqv_open * cfg.slot_pct, max(0.0, eqv_open * capv - deployed))
             if amt < 0.002 * eqv_open:
+                score_pending.pop(s, None); zg_pending.pop(s, None)
+                actions.append({"type": "skip", "stock": s,
+                                "note": f"资金不足（需≥{amt:.0%}·评分{sc if sc is not None else '-'}）"})
                 continue
             cash -= amt
             fz = zg_pending.pop(s, None)
+            score_pending.pop(s, None)
             pos[s] = {"val": amt * (1 - cfg.cost), "cost": amt * (1 - cfg.cost), "ref_px": o,
-                      "fz": fz}
+                      "fz": fz, "score": sc}
             holding_since[s] = di
             deployed += amt; n_buy_today += 1
             actions.append({"type": "buy", "stock": s,
-                            "note": f"{cfg.buy_timing} 买入 {amt / eqv_open:.1%}"})
+                            "note": f"{cfg.buy_timing} 买入 {amt / eqv_open:.1%}·评分{sc if sc is not None else '-'}"})
             rec(day, "BUY", s, cfg.strategy)
         pending_buy = still
 
@@ -494,14 +520,18 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                     pending_sell.add(s)
                     actions.append({"type": "note", "stock": s, "note": "卖点确认→明日开盘卖"})
             for s in sorted(sig_buy.get(day, set())):
+                m_s = (sig_meta or {}).get(day, {}).get(s) or {}
                 if regime_gate and regime_lv == "low":
                     if s not in pos and s not in pending_buy:
-                        actions.append({"type": "note", "stock": s, "note": "regime闸门：池指数<MA60 弱市不开新仓"})
+                        actions.append({"type": "note", "stock": s,
+                                        "note": f"regime闸门：池指数<MA60 弱市不开新仓·评分{m_s.get('score') if m_s.get('score') is not None else '-'}"})
                     continue
                 if s not in pos and s not in pending_buy:
                     pending_buy.add(s)
                     zg_pending[s] = (sig_zg or {}).get(day, {}).get(s)
-                    actions.append({"type": "note", "stock": s, "note": "买点确认→明日开盘候选"})
+                    score_pending[s] = m_s
+                    actions.append({"type": "note", "stock": s,
+                                    "note": f"买点确认→明日开盘候选·评分{m_s.get('score') if m_s.get('score') is not None else '-'}"})
         else:
             for s in sorted(sig_buy.get(day, set())):
                 if s not in pos and s not in pending_buy:
@@ -529,14 +559,21 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
         pnl_day = (eqv / prev_eq - 1) * 100
         prev_eq = eqv
         wins = sum(1 for p in pos.values() if p["val"] / p["cost"] - 1 > 0)
+        # 当日候选池（K-STOCK-293 老田：池子里 10 只要看得到·评分要看得到）
+        pool_today = [{"stock": s, "score": ((sig_meta or {}).get(day, {}).get(s) or {}).get("score"),
+                       "bei": (sig_meta or {}).get(day, {}).get(s, {}).get("bei"),
+                       "vr": (sig_meta or {}).get(day, {}).get(s, {}).get("vr")}
+                      for s in sorted(sig_buy.get(day, set()))] if cfg.strategy == "chanlun" else []
         days[day] = {"pnl_pct": round(pnl_day, 3), "equity": round(eqv, 6),
                      "n_pos": len(pos), "wins": wins, "losses": len(pos) - wins,
                      "cap": capv, "regime": regime_lv,
                      "cash_pct": round(cash / eqv * 100, 1) if eqv else 0,
+                     "pool_today": pool_today,
                      "actions": actions}
         equity_curve.append({"day": day, "equity": round(eqv, 6),
                              "inv_pct": round((eqv - cash) / eqv * 100, 1) if eqv else 0})
-        holdings[day] = [{"stock": s, "pnl_pct": round((p["val"] / p["cost"] - 1) * 100, 2),
+        holdings[day] = [{"stock": s, "score": p.get("score"),
+                          "pnl_pct": round((p["val"] / p["cost"] - 1) * 100, 2),
                           "wgt_pct": round(p["val"] / eqv * 100, 2)} for s, p in sorted(pos.items())]
 
     cal = cal_saved
@@ -609,17 +646,17 @@ def run_job(params: dict, job_id: str, progress=None):
             progress("信号", 10, f"计算信号：{cfg.name} {d0}→{d1}（universe={universe}）")
         pool_info = None
         sig_zg = None
+        sig_meta = None
         three_fail = p["three_fail_exit"] is not False and str(p["three_fail_exit"]) != "false"
         if strategy == "chanlun":
             buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "3"
             if universe == "market":
-                if buy_filter == "all":
-                    pass  # 全市场也允许 all（对照用）
                 sig_buy, sig_sell, pool_info, err = calc_chanlun_signals_market(d0, d1, progress, buy_filter)
                 if err:
                     return None, err
                 src = pool_info["signal_source"]
                 sig_zg = pool_info["sig_zg"]
+                sig_meta = pool_info["sig_meta"]
             else:
                 sig_buy, sig_sell, src = calc_chanlun_signals(d0, d1, progress, buy_filter=buy_filter)
         else:
@@ -630,11 +667,14 @@ def run_job(params: dict, job_id: str, progress=None):
             sig_sell, src = {}, "自算(原始价·relaxed)"
         if progress:
             progress("回测", 65, "逐日执行中")
+        _rg = p.get("regime_gate")
+        regime_gate = _rg is True or (isinstance(_rg, str) and _rg.strip().lower() == "true")
         result = run_backtest(cfg, sig_buy, sig_sell, progress,
                               sig_zg=sig_zg, three_fail=three_fail and strategy == "chanlun",
                               fail_level=p["fail_level"] if p["fail_level"] in ("zg", "zd") else "zg",
-                              regime_gate=bool(p.get("regime_gate")),
-                              fail_buffer=max(0.0, min(0.2, float(p.get("fail_buffer") or 0))))
+                              regime_gate=regime_gate,
+                              fail_buffer=max(0.0, min(0.2, float(p.get("fail_buffer") or 0))),
+                              sig_meta=sig_meta)
         result["meta"]["signal_source"] = src
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
@@ -643,6 +683,18 @@ def run_job(params: dict, job_id: str, progress=None):
         if pool_info:
             result["meta"]["pool_daily"] = pool_info["pool_daily"]
             result["meta"]["scan_meta"] = pool_info["scan_meta"]
+        # 涉及股票名称映射（前端展示用：只嵌涉及的，不嵌全市场 5911 名单）
+        try:
+            _c2n = json.load(open(os.path.join(BASE, "quant_backtest", "data", "stock_names.json"),
+                                  encoding="utf-8"))["code2name"]
+            used = set(result["trades"] and [t["stock"] for t in result["trades"]] or [])
+            for hs in result["holdings"].values():
+                used.update(x["stock"] for x in hs)
+            for dd in result["days"].values():
+                used.update(x["stock"] for x in dd.get("pool_today", []))
+            result["meta"]["names"] = {k: _c2n.get(k) for k in used if _c2n.get(k)}
+        except Exception:
+            result["meta"]["names"] = {}
         os.makedirs(OUT_DIR, exist_ok=True)
         out = os.path.join(OUT_DIR, f"bt2_{job_id}.json")
         json.dump(result, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

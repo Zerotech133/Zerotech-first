@@ -46,8 +46,42 @@ def market_stocks():
     return sorted(out)
 
 
+def score_3buy(close, zg, vr, bei, bei2):
+    """三买评分（0-100，老田"评分取前十"规律）：位置贴近 40 + 量能 30 + 背驰 30。
+
+    - 位置：收盘距中枢上沿 zg 的回踩贴近度（贴近=洗盘充分·远离=追高风险）
+    - 量能：信号日成交额 / 20 日均额（量比·放量过中枢优）
+    - 背驰：bei=回踩笔盘整背驰 18 分 · bei2=回踩vs离开力度背驰 12 分
+    """
+    if not zg or zg <= 0:
+        return None
+    t = close / zg - 1.0
+    if t <= 0.02:
+        sp = 40
+    elif t <= 0.05:
+        sp = 32
+    elif t <= 0.10:
+        sp = 24
+    elif t <= 0.20:
+        sp = 14
+    else:
+        sp = 8
+    if vr is None:
+        sv = 15
+    elif vr >= 1.5:
+        sv = 30
+    elif vr >= 1.0:
+        sv = 24
+    elif vr >= 0.7:
+        sv = 16
+    else:
+        sv = 8
+    sb = (18 if bei else 0) + (12 if bei2 else 0)
+    return round(sp + sv + sb)
+
+
 def scan_stock(args):
-    """单股票 seen-ever 扫描（worker 端）。返回 [{stock,type,day}, ...]"""
+    """单股票 seen-ever 扫描（worker 端）。返回 [{stock,type,day,...}, ...]"""
     code, d0, d1, init_day, win = args
     import pandas as pd
     from chanlun_signal import analyze as chan_analyze
@@ -61,6 +95,7 @@ def scan_stock(args):
     r = b["pct_chg"] / 100.0
     r.iloc[0] = 0.0
     kfac = (1.0 + r).cumprod() / b["close"]
+    amt = b["amount"].astype(float).tolist() if "amount" in b.columns else None
     bars_all = [{"dt": int(t), "o": float(o), "h": float(h), "l": float(l), "c": float(c)}
                 for t, o, h, l, c in zip(b["trade_date"], b["open"], b["high"],
                                          b["low"], b["close"] * kfac)]
@@ -71,9 +106,20 @@ def scan_stock(args):
         if i is None or i + 1 < WARMUP // 2:
             return {}
         seg = bars_all[:i + 1][-WARMUP:]
+        vr = None
+        if amt is not None and i >= 19:
+            w = amt[i - 19:i + 1]
+            m = sum(w) / 20.0
+            vr = amt[i] / m if m > 0 else None
+        close = bars_all[i]["c"]
         out = {}
         for sg in ((chan_analyze(seg) or {}).get("signals") or []):
-            out[(code, sg["type"])] = (int(sg["dt"]), sg.get("zg"), sg.get("zd"))
+            sc = None
+            if sg["type"] == "3买":
+                sc = score_3buy(close, sg.get("zg"), vr, sg.get("bei"), sg.get("bei2"))
+            out[(code, sg["type"])] = {"dt": int(sg["dt"]), "zg": sg.get("zg"),
+                                       "zd": sg.get("zd"), "vr": vr, "bei": sg.get("bei"),
+                                       "bei2": sg.get("bei2"), "score": sc}
         return out
 
     events = []
@@ -82,8 +128,8 @@ def scan_stock(args):
         cur = run_day(day)
         fresh = [k for k in cur if k not in seen]
         seen |= set(cur)
-        events += [{"stock": s, "type": tp, "day": day, "zg": zg, "zd": zd}
-                   for (s, tp), (dt, zg, zd) in ((k, cur[k]) for k in fresh)]
+        events += [{"stock": s, "type": tp, "day": day, **cur[k]}
+                   for (s, tp) in fresh for k in ((s, tp),) if k in cur]
     return events
 
 
@@ -119,7 +165,7 @@ def scan_market(d0, d1, workers=None, progress=None):
             "type_dist": dict(cnt), "workers": n, "seconds": round(time.time() - t0, 1),
             "generated_at": time.strftime("%Y-%m-%d %H:%M:%S")}
     os.makedirs(OUT_DIR, exist_ok=True)
-    fp = os.path.join(OUT_DIR, "sig_events_market_v2_%s_%s.json" % (d0, d1))
+    fp = os.path.join(OUT_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
     json.dump({"meta": meta, "events": events}, open(fp, "w", encoding="utf-8"),
               ensure_ascii=False)
     if progress:
