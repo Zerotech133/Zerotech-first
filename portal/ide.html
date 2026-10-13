@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent IDE · GenOS 开发台 · 零界</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#11161d; --panel2:#161d26; --line:#212a35;
+    --fg:#e6edf3; --dim:#8b949e; --dim2:#6e7681;
+    --blue:#58a6ff; --green:#3fb950; --orange:#d29922; --purple:#bc8cff;
+    --e3:#3fb950; --e2:#58a6ff; --e1:#8b949e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    display:flex;flex-direction:column;overflow:hidden}
+  header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header h1{font-size:16px;letter-spacing:1px}
+  header h1 small{font-size:10px;color:var(--dim2);letter-spacing:3px;display:block;font-weight:normal}
+  .hd-stats{display:flex;gap:14px;font-size:11.5px;color:var(--dim)}
+  .hd-stats b{color:var(--fg)}
+  .hd-right{margin-left:auto;display:flex;gap:10px}
+  .hd-right a{color:var(--blue);text-decoration:none;font-size:12px;border:1px solid var(--line);
+    padding:6px 12px;border-radius:8px;background:var(--panel)}
+  .regen{font-size:11px;color:var(--dim2)}
+  .main{flex:1;display:grid;grid-template-columns:250px 1fr 400px;min-height:0}
+
+  /* ── 左：部门树 ── */
+  .tree{border-right:1px solid var(--line);overflow:auto;padding:10px}
+  .tree .dep-t{font-size:11px;color:var(--dim2);letter-spacing:2px;margin:12px 4px 6px}
+  .tree .dep-t:first-child{margin-top:2px}
+  .dep{font-size:12.5px;color:var(--dim);padding:5px 8px;border-radius:7px;cursor:default}
+  .dep.proj{color:var(--purple)}
+  .ag{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:5px 8px 5px 20px;border-radius:7px;cursor:pointer}
+  .ag:hover{background:var(--panel2)}
+  .ag.on{background:rgba(88,166,255,.13);color:var(--fg)}
+  .g{display:inline-flex;width:17px;height:17px;line-height:17px;text-align:center;border-radius:50%;
+    font-size:9.5px;font-weight:800;color:#0b0f14;flex:none}
+  .g-E3{background:var(--e3)} .g-E2{background:var(--e2)} .g-E1{background:var(--e1)}
+  .ag .rid{font-weight:700}
+  .ag .rr{color:var(--dim2);font-size:10.5px;margin-left:auto}
+
+  /* ── 中：档案 ── */
+  .center{overflow:auto;padding:16px 20px;min-width:0}
+  .placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--dim2);gap:10px}
+  .placeholder .big{font-size:46px;opacity:.4}
+  .a-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .a-head h2{font-size:19px}
+  .tagline{font-size:11px;color:var(--dim2);margin-bottom:14px}
+  .ptag{display:inline-block;font-size:10.5px;padding:2px 9px;border-radius:12px;
+    background:rgba(188,140,255,.13);color:var(--purple);margin-left:6px}
+  .blk{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-bottom:12px}
+  .blk h3{font-size:12px;color:var(--dim);letter-spacing:1.5px;margin-bottom:9px}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:5px 12px;font-size:12.5px}
+  .kv .k{color:var(--dim2)}
+  .kv .v code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:11.5px;color:var(--blue)}
+  .kv .v .gr{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:11px;color:var(--dim);margin:0 4px 4px 0}
+  .charter{font-size:12.5px;line-height:1.8;color:var(--fg)}
+  .prompt-box{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:12px;
+    font-size:12px;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow:auto;
+    font-family:Consolas,monospace;color:#c9d1d9}
+  .prompt-tools{display:flex;gap:8px;margin-bottom:8px}
+  .mini{font-size:11px;padding:4px 11px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--dim);cursor:pointer}
+  .mini:hover{color:var(--fg);border-color:var(--blue)}
+
+  /* ── 右：调试台 ── */
+  .debug{border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
+  .debug .d-t{font-size:12px;color:var(--dim);letter-spacing:1.5px;padding:12px 14px 8px}
+  .debug .target{margin:0 14px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+    padding:9px 12px;font-size:12px}
+  .debug .target b{color:var(--blue)}
+  .debug .sysinfo{font-size:10.5px;color:var(--dim2);margin-top:4px;line-height:1.6}
+  .chat{flex:1;overflow:auto;padding:6px 14px;min-height:0}
+  .msg{margin-bottom:10px;font-size:12.5px;line-height:1.7}
+  .msg .who{font-size:10.5px;color:var(--dim2);margin-bottom:3px}
+  .msg.u .bubble{background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.3)}
+  .msg.a .bubble{background:var(--panel2);border:1px solid var(--line)}
+  .bubble{border-radius:10px;padding:9px 12px;white-space:pre-wrap;word-break:break-word}
+  .inputbar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+  .inputbar textarea{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+    color:var(--fg);font-family:inherit;font-size:12.5px;padding:9px 11px;resize:none;height:64px}
+  .inputbar textarea:focus{outline:none;border-color:var(--blue)}
+  .send{align-self:flex-end;padding:10px 16px;border-radius:9px;border:1px solid var(--blue);
+    background:rgba(88,166,255,.13);color:var(--blue);font-weight:700;font-size:12.5px;cursor:pointer}
+  .send:disabled{opacity:.45;cursor:default}
+  .dbg-note{font-size:10.5px;color:var(--dim2);padding:0 14px 10px;line-height:1.6}
+  @media (max-width:1180px){
+    .main{grid-template-columns:210px 1fr;grid-template-rows:1fr 360px}
+    .debug{grid-column:1/3;border-left:0;border-top:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH</small></h1>
+  <div class="hd-stats" id="stats"></div>
+  <div class="hd-right">
+    <span class="regen" id="gen">bundle 生成于 —</span>
+    <a href="/sandbox">研发沙盘</a>
+    <a href="/index.html">← 门户</a>
+  </div>
+</header>
+<div class="main">
+  <div class="tree" id="tree"></div>
+  <div class="center" id="center">
+    <div class="placeholder"><div class="big">⌨</div><div>左侧选择一个 Agent<br>查看人设档案 / 人设 prompt 全文 / 右侧调试台试运行</div></div>
+  </div>
+  <div class="debug">
+    <div class="d-t">🧪 调试台 · 试运行</div>
+    <div class="target" id="dbg-target">未选择 Agent</div>
+    <div class="chat" id="chat"></div>
+    <div class="inputbar">
+      <textarea id="q" placeholder="给该 Agent 发一条测试消息（以其人设 prompt 作为 system）…"></textarea>
+      <button class="send" id="send" onclick="send()" disabled>发送</button>
+    </div>
+    <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · qwen3.5:9b 推理约 10-60s · 此调试不发工单不落记忆</div>
+  </div>
+</div>
+
+<script>
+const GRADE_CN = {E3:"30年档", E2:"20年档", E1:"10年档"};
+let B = null, CUR = null;
+
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function renderTree(){
+  const func = B.departments.filter(d=>d.type==="func"), proj = B.departments.filter(d=>d.type==="project");
+  let h = '<div class="dep-t">职能中心</div>';
+  for(const d of func){
+    h += '<div class="dep">'+d.name+'</div>';
+    for(const id of d.agents){ const a=B.agents[id];
+      h += '<div class="ag" id="ag-'+id+'" onclick="pick(\''+id+'\')"><span class="g g-'+a.grade+'">'+a.grade+'</span><span class="rid">'+id+'</span><span class="rr">'+esc(a.role_profile)+'</span></div>';
+    }
+  }
+  h += '<div class="dep-t">项目部门（矩阵制）</div>';
+  for(const d of proj){
+    h += '<div class="dep proj">'+d.name+'</div>';
+    for(const id of d.agents){ const a=B.agents[id]; if(!a) continue;
+      h += '<div class="ag" id="agp-'+id+'" onclick="pick(\''+id+'\')"><span class="g g-'+a.grade+'">'+a.grade+'</span><span class="rid">'+id+'</span><span class="rr">'+esc(a.role_profile)+'</span></div>';
+    }
+  }
+  document.getElementById("tree").innerHTML = h;
+}
+
+function pick(id){
+  CUR = B.agents[id];
+  document.querySelectorAll(".ag.on").forEach(e=>e.classList.remove("on"));
+  document.querySelectorAll('[id="ag-'+id+'"],[id="agp-'+id+'"]').forEach(e=>e.classList.add("on"));
+  const pj = CUR.projects.map(p=>'<span class="ptag">'+esc(p)+'</span>').join("");
+  document.getElementById("center").innerHTML =
+    '<div class="a-head"><h2>'+CUR.id+'</h2>'
+    + '<span class="g g-'+CUR.grade+'" style="width:24px;height:24px;line-height:24px;font-size:11px">'+CUR.grade+'</span>'
+    + '<span style="font-size:12px;color:var(--dim)">'+GRADE_CN[CUR.grade]||''+'</span>'+pj+'</div>'
+    + '<div class="tagline">'+esc(CUR.team_desc)+'</div>'
+    + '<div class="blk"><h3>岗位职责 CHARTER</h3><div class="charter">'+esc(CUR.charter)+'</div></div>'
+    + '<div class="blk"><h3>运行配置</h3><div class="kv">'
+    + '<div class="k">人设 profile</div><div class="v"><code>'+esc(CUR.role_profile)+'</code></div>'
+    + '<div class="k">模型绑定</div><div class="v"><code>'+esc(CUR.llm)+'</code></div>'
+    + '<div class="k">工具链</div><div class="v">'+CUR.tools.map(t=>'<code>'+esc(t)+'</code>').join(' ')+'</div>'
+    + '<div class="k">记忆读</div><div class="v">'+CUR.grants_read.map(g=>'<span class="gr">'+esc(g)+'</span>').join('')+'</div>'
+    + '<div class="k">记忆写</div><div class="v">'+CUR.grants_write.map(g=>'<span class="gr" style="color:var(--green)">'+esc(g)+'</span>').join('')+'</div>'
+    + '<div class="k">prompt 源</div><div class="v"><code>'+esc(CUR.prompt_file)+'</code></div>'
+    + '</div></div>'
+    + '<div class="blk"><h3>人设 PROMPT 全文（prompt_file 单一事实源）</h3>'
+    + '<div class="prompt-tools"><button class="mini" onclick="copyPrompt()">📋 复制全文</button>'
+    + '<span style="font-size:11px;color:var(--dim2);align-self:center">'+CUR.prompt.length+' 字符 · 修改须改 prompts/ 源文件后重跑 bundle 脚本</span></div>'
+    + '<div class="prompt-box" id="pbox">'+esc(CUR.prompt)+'</div></div>';
+  document.getElementById("dbg-target").innerHTML =
+    '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 模型 <b>'+esc(CUR.llm.split("/").pop())+'</b>'
+    + '<div class="sysinfo">system = 人设 prompt 全文（'+CUR.prompt.length+' 字符，已装载）</div>';
+  document.getElementById("send").disabled = false;
+  document.getElementById("chat").innerHTML = "";
+}
+
+function copyPrompt(){
+  navigator.clipboard.writeText(CUR.prompt).then(()=>{
+    const b = event.target; b.textContent = "✅ 已复制";
+    setTimeout(()=>{ b.textContent = "📋 复制全文"; }, 1200);
+  });
+}
+
+function addMsg(cls, who, text){
+  const c = document.getElementById("chat");
+  const d = document.createElement("div");
+  d.className = "msg "+cls;
+  d.innerHTML = '<div class="who">'+who+'</div><div class="bubble">'+esc(text)+'</div>';
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+  return d.querySelector(".bubble");
+}
+
+async function send(){
+  const q = document.getElementById("q").value.trim();
+  if(!q || !CUR) return;
+  document.getElementById("q").value = "";
+  addMsg("u", CUR.id + " 的测试指令", q);
+  const btn = document.getElementById("send"); btn.disabled = true;
+  const bub = addMsg("a", CUR.id + "（"+CUR.llm.split("/").pop()+"）· 推理中…", "…");
+  const t0 = Date.now();
+  try{
+    const r = await fetch("/ollama/api/chat", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ model: CUR.llm.replace(/^ollama\//,""), stream:false,
+        options:{num_ctx:8192},
+        messages:[{role:"system",content:CUR.prompt},{role:"user",content:q}] })
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d = await r.json();
+    const txt = (d.message&&d.message.content)||"(空响应)";
+    bub.textContent = txt + "\n\n── " + ((Date.now()-t0)/1000).toFixed(1) + "s · eval "+((d.eval_count||0)+" tok")+" ──";
+  }catch(e){
+    bub.textContent = "❌ 调用失败："+e.message+"（检查本地 Ollama 是否在跑 / nginx /ollama/ 反代）";
+  }
+  btn.disabled = false;
+}
+document.getElementById("q").addEventListener("keydown", e=>{
+  if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); send(); }
+});
+
+fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
+  B = d;
+  document.getElementById("stats").innerHTML =
+    '<span>在编 Agent <b>'+B.stats.agents+'</b></span><span>部门 <b>'+B.stats.departments+'</b></span>'
+    + '<span>prompt 覆盖 <b style="color:var(--green)">'+B.stats.prompt_ok+'/'+B.stats.agents+'</b></span>';
+  document.getElementById("gen").textContent = "bundle 生成于 " + B.generated + " · 改注册表/prompt 后重跑 tools/build_agent_ide_bundle.py";
+  renderTree();
+}).catch(e=>{ document.getElementById("tree").innerHTML = '<div class="dep">bundle 加载失败：'+e+'</div>'; });
+</script>
+</body>
+</html>
