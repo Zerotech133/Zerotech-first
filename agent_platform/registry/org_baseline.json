@@ -181,7 +181,8 @@
      "id": "F5",
      "task": "轨迹事件流（events扩code_action/observation+shadow/coder_traces/+IDE轨迹块）",
      "owner": "OPS1",
-     "note": "DEV8做IDE视图；判据=失败工单可回放定位"
+     "status": "doing",
+     "note": "K-ORG-036e核心交付(提前于计划10-16)：KINDS 9→11类+trace_log按单jsonl全程留痕(generate/edit/lint/smoke/write/commit/fail)·三项冒烟+F3/F4回归过；余IDE轨迹块(DEV8·随bundle重烘)"
     },
     {
      "id": "F6",

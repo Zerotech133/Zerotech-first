@@ -114,6 +114,23 @@ def lint_py_text(content, name="<target>"):
         return "line %d: %s" % (e.lineno, e.msg)
 
 
+TRACE_DIR = os.path.join("shadow", "coder_traces")
+
+
+def trace_log(k_id, kind, detail):
+    """F5: 编码轨迹落盘（OpenHands 事件流范式——Action/Observation 对按单 jsonl，
+    出问题可回放定位）。kind: generate/edit/lint/smoke/write/commit/fail。"""
+    if not k_id:
+        return
+    d = os.path.join(TRACE_DIR, time.strftime("%Y-%m-%d"))
+    os.makedirs(d, exist_ok=True)
+    fn = re.sub(r"[^\w.-]", "_", str(k_id)) + ".jsonl"
+    rec = {"ts": time.strftime("%H:%M:%S"), "k_id": k_id,
+           "kind": kind, "detail": str(detail)[:300]}
+    with open(os.path.join(d, fn), "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
 def apply_edit_protocol(raw, target_path):
     """SEARCH/REPLACE 块协议（Aider 范式）：块内 SEARCH 必须在目标文件唯一命中，
     逐块替换。返回 (content, mode)：
@@ -206,11 +223,12 @@ def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420, timeout_clau
 
 
 def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
-        lint_retries=2, smoke=None):
-    """生成→编辑协议→lint门→(带错重试)→落盘→校验→冒烟。返回 (ok, detail)。
+        lint_retries=2, smoke=None, k_id=None):
+    """生成→编辑协议→lint门→(带错重试)→落盘→校验→冒烟→轨迹。返回 (ok, detail)。
     smoke: 可选 callable(out_path)，落盘后执行（如 import/py_compile/断言），
-    抛异常=FAIL（文件保留，调用方决定回退）。"""
+    抛异常=FAIL（文件保留，调用方决定回退）。k_id: 工单号，轨迹按单归档。"""
     task = {"label": label, "prompt": prompt, "json_out": json_out}
+    trace_log(k_id, "generate", "%s by %s via %s" % (label, agent_id, backend()))
     raw = chat_auto(agent_id, task)
     if json_out:
         try:
@@ -221,6 +239,7 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
     else:
         content, mode = apply_edit_protocol(raw, out_path)
         print("  [edit-protocol] mode=%s" % mode)
+        trace_log(k_id, "edit", "mode=%s" % mode)
         err = None
         if mode == "sr_fail":
             err = "SEARCH/REPLACE 块未在目标文件唯一命中"
@@ -229,6 +248,7 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
         tries = 0
         while err and tries < lint_retries:
             print("  [lint-gate] 第%d轮拦截: %s → 带错重试" % (tries + 1, err))
+            trace_log(k_id, "lint", "round%d blocked: %s" % (tries + 1, err))
             task["prompt"] = (prompt +
                 "\n\n【上一次产出未通过验证门，错误：%s】"
                 "\n请重新输出修正后的完整文件内容（或修正的 SEARCH/REPLACE 块）。" % err)
@@ -244,8 +264,10 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
                 err = None
             tries += 1
         if err:
+            trace_log(k_id, "fail", "gate %d rounds: %s" % (lint_retries, err))
             return False, "验证门 %d 轮未过: %s" % (lint_retries, err)
         print("  [lint-gate] PASS")
+        trace_log(k_id, "lint", "PASS")
     if validator:
         ok, detail = validator(content)
         if not ok:
@@ -253,12 +275,15 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
     with open(out_path, "wb") as f:
         f.write(content.replace("\r\n", "\n").encode("utf-8"))
     print("  -> written", out_path, len(content), "chars")
+    trace_log(k_id, "write", "%s %d chars" % (out_path, len(content)))
     if smoke:
         try:
             smoke(out_path)
         except Exception as e:
+            trace_log(k_id, "fail", "smoke: %s" % str(e)[:150])
             return False, "smoke FAIL: %s" % str(e)[:150]
         print("  [smoke] PASS")
+        trace_log(k_id, "smoke", "PASS")
     return True, "ok"
 
 
@@ -273,6 +298,7 @@ def commit_work(out_path, k_id, agent_id, label, channel=None, dry_run=False):
     r = sp.run(["git", "add", "--", out_path], capture_output=True, text=True,
                encoding="utf-8", errors="replace")
     if r.returncode != 0:
+        trace_log(k_id, "fail", "git add: " + (r.stderr or r.stdout or "")[:100])
         return False, "git add: " + (r.stderr or r.stdout or "")[:120]
     cmd = ["git", "commit"]
     if dry_run:
@@ -281,11 +307,13 @@ def commit_work(out_path, k_id, agent_id, label, channel=None, dry_run=False):
     r = sp.run(cmd, capture_output=True, text=True, encoding="utf-8",
                errors="replace")
     if r.returncode != 0:
+        trace_log(k_id, "fail", "git commit: " + (r.stderr or r.stdout or "")[:120])
         return False, "git commit: " + (r.stderr or r.stdout or "")[:150]
     if not dry_run:
         sha = sp.run(["git", "rev-parse", "--short", "HEAD"],
                      capture_output=True, text=True).stdout.strip()
         print("  [commit] %s (%s)" % (sha, msg))
+        trace_log(k_id, "commit", "%s %s" % (sha, msg))
         return True, sha
     print("  [commit] dry-run ok:", msg)
     return True, "dry-run"

@@ -40,7 +40,8 @@ def _master_events_file() -> Path:
     return EVENTS_FILE
 
 KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail",
-        "dispatch", "accept", "review_verdict", "patrol_verdict")  # K-ORG-027b(OPS1)：+派单域四类
+        "dispatch", "accept", "review_verdict", "patrol_verdict",  # K-ORG-027b(OPS1)：+派单域四类
+        "code_action", "code_observation")  # K-ORG-036e(F5)：+编码生产线动作/观察对（OpenHands 事件流范式）
 
 
 def emit(kind: str, task: str = "", agent: str = "", detail: str = "",
