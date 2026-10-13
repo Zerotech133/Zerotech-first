@@ -243,6 +243,21 @@ def main():
             "content": txt[:CF_CAP] + ("\n… [已截断，完整内容看仓库文件]" if truncated else ""),
         })
 
+    # A0 日报+点评烘入（342 设计稿④底部面板数据源，随 bundle 重建刷新）
+    SHADOW = os.path.join(ROOT, "agent_platform", "data", "shadow")
+    def _latest_md(prefix):
+        fs = sorted(glob.glob(os.path.join(SHADOW, prefix + "*.md")))
+        return fs[-1] if fs else None
+    a0_daily = a0_review = None
+    fp = _latest_md("daily_report_")
+    if fp:
+        a0_daily = {"date": os.path.basename(fp)[13:23],
+                    "content": open(fp, encoding="utf-8", errors="replace").read()[:8000]}
+    fp = _latest_md("a0_review_")
+    if fp:
+        a0_review = {"date": os.path.basename(fp)[10:20],
+                     "content": open(fp, encoding="utf-8", errors="replace").read()[:4000]}
+
     bundle = {
         "generated": time.strftime("%Y-%m-%d %H:%M"),
         "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
@@ -257,6 +272,8 @@ def main():
         "workorders": workorders,
         "coder_traces": coder_traces_digest(),  # K-ORG-036e F5 轨迹只读视图
         "code_files": code_files,  # IDE 左栏代码预览（agent_platform 源码内嵌）
+        "a0_daily": a0_daily,      # 最近一期 A0 日报（只读快照）
+        "a0_review": a0_review,    # 最近一期 A0 点评（只读快照）
         "departments": departments,
         "agents": agents,
     }
