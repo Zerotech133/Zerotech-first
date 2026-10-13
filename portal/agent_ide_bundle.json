@@ -1,12 +1,12 @@
 {
- "generated": "2026-10-13 08:37",
+ "generated": "2026-10-13 08:41",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 27,
   "departments": 12,
   "prompt_ok": 27,
   "prompt_miss": [],
-  "workorders_doing": 3,
+  "workorders_doing": 4,
   "workorders_review": 19
  },
  "workorders": [
@@ -185,6 +185,14 @@
    "owner": "PM1",
    "branch": "task/proj_c_nlq_001",
    "created": "2026-10-13 07:24:46"
+  },
+  {
+   "id": "K-ORG-025a",
+   "desc": "review积压19单质检分派:四批分组R1·RAG索引检索7单(146/153/154/155/156/157/213)/R2·Ollama运维4单(145/158/159/160)/R3·Web聊天体验5单(147/152/212/222/227)/R4·数据与发布审计3单(136/162/209);每批QA1人化复核+三守卫,涉数据只读(162)与发布审计(209)SEC1加审;产出质检意见写dept/quality/observation,通过单进merge队列",
+   "status": "doing",
+   "owner": "QA1",
+   "branch": "task/K-ORG-025a",
+   "created": "2026-10-13 08:41:00"
   }
  ],
  "departments": [
@@ -1033,7 +1041,14 @@
    "projects": [
     "proj_backtest"
    ],
-   "team_desc": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计"
+   "team_desc": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计",
+   "tasks": [
+    {
+     "id": "K-ORG-025a",
+     "desc": "review积压19单质检分派:四批分组R1·RAG索引检索7单(146/153/154/155/156/157/213)/R2·Ollama运维4单(145/158/159/160)/R3·Web聊天体验5单(147/152/212/222/227)/R4·数据与发布审计3单(136/162/209);每批QA1人化复核+三守卫,涉数据只读(162)与发布审计(209)SEC1加审;产出质检意见写dept/quality/observation,通过单进merge队列",
+     "status": "doing"
+    }
+   ]
   },
   "SEC1": {
    "id": "SEC1",
