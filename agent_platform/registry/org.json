@@ -12,7 +12,9 @@
   "status": "active",
   "status_note": "K-ORG-015 起转 active：a0_agent.py 9b 判读 live 验证通过 + 日报 automation 17:35（K-ORG-004）实跑中 + A0 点评产线连续出稿（影子日报 10-08~10-12）",
   "name": "田小皮",
-  "name_note": "老田 2026-10-13 08:28 命名：参谋长取名田小皮，全组织向其汇报（agent_id 仍为 A0，牵动记忆 namespace 与日报链不动）"
+  "name_note": "老田 2026-10-13 08:28 命名：参谋长取名田小皮，全组织向其汇报（agent_id 仍为 A0，牵动记忆 namespace 与日报链不动）",
+  "assistant": "A0A",
+  "assistant_note": "K-ORG-052 注册（K-ORG-051 田小皮治理模型 P1）：参谋长助理只调度不决策——方案分发/汇总归集/命令跟踪；编制在 team_chief.json"
  },
  "departments": [
   {
@@ -485,11 +487,12 @@
    "name": "质量工程部",
    "lead": null,
    "status": "active",
-   "charter": "测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计",
+   "charter": "测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计（SEC1合规红线·SEC2研发质量对抗/走形检查）",
    "agents": [
     "QA1",
     "QA2",
-    "SEC1"
+    "SEC1",
+    "SEC2"
    ],
    "agent_profiles": [
     {
@@ -563,9 +566,32 @@
        "dept/quality/observation"
       ]
      }
+    },
+    {
+     "agent_id": "SEC2",
+     "role_profile": "security_lead",
+     "charter_detail": "网络安全工程师(30年+全栈)：对照研发方案走形检查(条目→证据→判定→建议命令·走形开单@田小皮直推·返工复查闭环)·渗透/反渗透·压力测试；与SEC1分工=SEC1合规红线执法·SEC2研发质量对抗",
+     "grade": "E3",
+     "grade_note": "30年档：方案级走形裁定·渗透/反渗透·压测与瓶颈定位（研发质量对抗线）",
+     "llm_binding": "glm/glm-4.6",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/*",
+       "agent/SEC2/*"
+      ],
+      "write": [
+       "agent/SEC2/*",
+       "dept/quality/observation"
+      ]
+     }
     }
    ],
-   "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队"
+   "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队；K-ORG-052 +SEC2（田小皮治理模型·研发质量对抗线）"
   },
   {
    "dept": "proj_backtest",

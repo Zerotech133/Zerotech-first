@@ -23,9 +23,11 @@ PROMPTS = os.path.join(ROOT, "agent_platform", "prompts")
 OUT = os.path.join(ROOT, "portal", "agent_ide_bundle.json")
 
 # 职能部 team 文件（主数据源）；项目部文件单独归类
-FUNC_TEAMS = ["team_invest.json", "team_dev.json", "team_trading.json",
-              "team_data.json", "team_product.json", "team_quality.json",
-              "team_marketing.json", "team_legal.json"]
+# K-ORG-052: +team_chief.json 参谋长办公室（A0A 助理；chief 特殊卡在 main() 先行入编，
+# 此处只补 A0A 等新增岗——dept_agents 合并语义防覆盖 A0）
+FUNC_TEAMS = ["team_chief.json", "team_invest.json", "team_dev.json",
+              "team_trading.json", "team_data.json", "team_product.json",
+              "team_quality.json", "team_marketing.json", "team_legal.json"]
 
 DEPT_META = {  # 部门显示名（org.json name 键值在此冗余固化，避免页面再拉 org）
     "invest": ("📊 投研部", "func"),
@@ -140,7 +142,7 @@ def main():
         "role_profile": chief.get("role_profile", "chief_of_staff"),
         "grade": "E3",
         "grade_note": "参谋长·组织枢纽（汇报聚合/任务仲裁/记忆治理）",
-        "charter": "全组织 24 在编岗向田小皮汇报：判读各部门日报、风险优先输出判读、"
+        "charter": "全组织 29 在编岗向田小皮汇报：判读各部门日报、风险优先输出判读、"
                    "任务单仲裁、记忆治理；影子期纪律：不给买卖操作建议。",
         "llm": chief.get("llm_binding", "ollama/qwen3.5:9b"),
         "tools": ["events", "devtask"],
@@ -160,7 +162,9 @@ def main():
         d = json.load(open(fn, encoding="utf-8"))
         dept = d.get("dept", "")
         ids = [a.get("agent_id") for a in d.get("agents", [])]
-        dept_agents[dept] = ids
+        # K-ORG-052: 合并语义——chief 的 A0 已在 main() 先行入编，
+        # team_chief.json 的 A0A 必须并入而非覆盖，否则 A0 从左树消失
+        dept_agents[dept] = sorted(set(dept_agents.get(dept, [])) | set(ids))
         if base in FUNC_TEAMS:
             for a in d.get("agents", []):
                 aid = a.get("agent_id")

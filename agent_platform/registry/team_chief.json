@@ -1,0 +1,37 @@
+{
+ "_note": "参谋长办公室注册表（K-ORG-052 新设，K-ORG-051 田小皮中枢治理模型 P1）。田小皮的执行手：方案分发/汇总归集/命令跟踪。只调度不决策。",
+ "team": "chiefoffice",
+ "dept": "chief",
+ "description": "参谋长办公室：田小皮助理（方案分发·汇总归集·命令下发跟踪）",
+ "agents": [
+  {
+   "agent_id": "A0A",
+   "role_profile": "chief_assistant",
+   "analysis_type": "dispatch_tracking",
+   "node_key": "a0a_dispatch",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "glm/glm-4.5-flash",
+   "binding_note": "E1 轻量调度岗走 Lite 档（K-ORG-050 包年通道）；判读类一律上浮田小皮，不占重模型",
+   "tools": [
+    "devtask",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/*",
+     "agent/A0A/*"
+    ],
+    "write": [
+     "agent/A0A/*"
+    ]
+   },
+   "grade": "E1",
+   "grade_note": "10年档：调度执行位·只调度不决策（判断类上浮田小皮/SEC2）",
+   "charter_detail": "参谋长助理：研发方案按部门并发分发·各部门产出归集初筛（聚类/标红异常·宁松勿严）·田小皮修改命令下发跟踪台账·晨会三件套预备"
+  }
+ ]
+}

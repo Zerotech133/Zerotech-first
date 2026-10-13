@@ -2,7 +2,7 @@
  "_note": "田小皮监督回路的计划基线（K-ORG-026）。机器可读：tools/chief_patrol.py 只读 diff 本基线 vs tasks.json+dev_events 实际执行，产出四色判读。改计划=改本文件+重跑巡检。",
  "org": "GenOS/老田AI工作站",
  "chief": "A0 田小皮",
- "updated": "2026-10-13",
+ "updated": "2026-10-14",
  "batches": [
   {
    "id": "A",
@@ -193,6 +193,36 @@
      "owner": "ARCH1",
      "status": "doing",
      "note": "K-ORG-036f：export_claude_agents.py交付(27岗·工作边界纪律段·QA1/SEC1只读·模型分层15智能+12轻量·selfcheck过)·余真spawn验证随F1解禁"
+    }
+   ]
+  },
+  {
+   "id": "G",
+   "name": "批G·田小皮中枢治理模型（K-ORG-051 设计·K-ORG-052 P1 落地）",
+   "deadline": "2026-10-20",
+   "status": "doing",
+   "items": [
+    {
+     "id": "G1",
+     "task": "P1 注册两岗：A0A 参谋长助理(E1)+SEC2 网络安全工程师(E3)·bundle重烘·IDE组织树可见",
+     "owner": "A0",
+     "done": "2026-10-14",
+     "note": "K-ORG-052：29在编满编；A0A=只调度不决策·SEC2=研发质量对抗线(与SEC1合规红线分工)；claude_agents 29岗自检绿"
+    },
+    {
+     "id": "G2",
+     "task": "P2 走形检查闭环制度化：方案文档模板+SEC2产出格式+任务单联动+approval_request审批事件(G4·灰度两周全抄送老田)",
+     "owner": "A0"
+    },
+    {
+     "id": "G3",
+     "task": "P2 首次端到端走查：拿一个真实研发方案全链试跑(分发→归集→走形检查→直批)",
+     "owner": "A0A"
+    },
+    {
+     "id": "G4",
+     "task": "P3 渗透/反渗透/压测工具链（SEC2 对抗能力·依赖评估后另立计划）",
+     "owner": "SEC2"
     }
    ]
   }

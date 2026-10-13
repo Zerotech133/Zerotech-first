@@ -2,7 +2,7 @@
   "_note": "质量工程部注册表（K-ORG-018 新设，对照截图 QA 工程师角色）。三守卫的人化复核位。",
   "team": "qualcore",
   "dept": "quality",
-  "description": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计",
+  "description": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计(SEC1合规红线·SEC2研发质量对抗)",
   "agents": [
     {
       "agent_id": "QA1",
@@ -90,9 +90,39 @@
           "dept/quality/observation"
         ]
       },
-      "grade": "E1",
-      "grade_note": "10年档：用例执行位",
-      "charter_detail": "E1·10年档·测试：用例执行/证据采集/回归跑批；结论交 QA1 裁定"
-    }
-  ]
+   "grade": "E1",
+   "grade_note": "10年档：用例执行位",
+   "charter_detail": "E1·10年档·测试：用例执行/证据采集/回归跑批；结论交 QA1 裁定"
+  },
+  {
+   "agent_id": "SEC2",
+   "role_profile": "security_lead",
+   "analysis_type": "deviation_review",
+   "node_key": "sec2_lead",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "glm/glm-4.6",
+   "binding_note": "E3 顶配走包年 glm-4.6（K-ORG-050 通道）：方案级走形检查+渗透压测属深度推理任务，审查类单约 4~5 积分",
+   "tools": [
+    "devtask",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/*",
+     "agent/SEC2/*"
+    ],
+    "write": [
+     "agent/SEC2/*",
+     "dept/quality/observation"
+    ]
+   },
+   "grade": "E3",
+   "grade_note": "30年档：方案级走形裁定·渗透/反渗透·压测与瓶颈定位（研发质量对抗线）",
+   "charter_detail": "网络安全工程师(30年+全栈)：对照研发方案走形检查(条目→证据→判定→建议命令·走形开单@田小皮直推·返工复查闭环)·渗透/反渗透·压力测试；与SEC1分工=SEC1合规红线执法·SEC2研发质量对抗"
+  }
+ ]
 }
