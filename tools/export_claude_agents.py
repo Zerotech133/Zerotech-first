@@ -9,7 +9,7 @@ K-ORG-036 F6: 27 在编岗人设 → Claude Code --agents JSON 导出（子代�
   prompt       = bundle 人设 + 追加【工作边界】段（由 grants_write 推导，模型文本不可绕→以
                  PreToolUse 钩子兜底，此处为提示层纪律）
   tools        = 质检/安全只读（Read,Grep）；研发全能（Read,Edit,Grep,Glob,Bash）；其余只读三件套
-  model        = 决策/研发/质检岗 glm-4.6；轻量产出岗 glm-4-flash（成本分层）
+  model        = 决策/研发/质检岗 glm-4.6；轻量产出岗 glm-4.5-flash（成本分层）
 """
 import json
 import os
@@ -23,7 +23,7 @@ RO_TOOLS = "Read,Grep,Glob"
 AUDIT_TOOLS = "Read,Grep"  # 质检/安全：只读边界（SEC1 判例）
 
 SMART = "glm-4.6"
-LITE = "glm-4-flash"
+LITE = "glm-4.5-flash"
 SMART_DEPTS = {"chief", "dev", "quality"}
 
 TOOLS_BY_DEPT = {
