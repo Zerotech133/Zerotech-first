@@ -153,13 +153,15 @@
      "id": "F1",
      "task": "通道合流：agent_coder 增 claude_glm backend（智谱Anthropic端点×Claude Code CLI，worker侧执行）",
      "owner": "DEV2",
-     "note": "判据=该通道重写同级模块一个 py_compile+冒烟过；回退=环境变量切cloud"
+     "status": "blocked",
+     "note": "K-ORG-036a：代码就位(chat_claude三级降级claude_glm→cloud→ollama)·🔴安全中心程序黑名单拦reg.exe(claude CLI内部spawn·命令侧不可绕)·待老田安全中心解禁后worker侧复跑work/f1_claude_smoke.py；降级预案=纯API自研工具环"
     },
     {
      "id": "F2",
      "task": "仓库地图 repo_map.py（AST签名压缩≤2K token·按工单择邻注入prompt）",
      "owner": "ARCH1",
-     "note": "判据=开关地图对照，开图产出引用真实文件/函数名"
+     "done": "2026-10-13",
+     "note": "K-ORG-036b交付：关键词择邻冒烟过(route model→model_route.py排首·22文件1634token)；开关地图A/B对照随首批编码工单落"
     },
     {
      "id": "F3",

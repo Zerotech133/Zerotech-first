@@ -10,9 +10,18 @@ K-ORG-033 云端化（老田 10-13 10:28 指令：写代码的全部调用云端
            = "ollama" 本地 9b（60s 级，作离线兜底）
   CODER_BACKEND 环境变量可切，默认 cloud。
   Claude Code CLI(2.1.83 已装) 留给 worker/调度侧——本会话沙箱拦其内部 spawn(reg.exe)。
+
+K-ORG-035/036 F1 通道合流（蓝图 docs/plans/2026-10-13_105000_）：
+  backend = "claude_glm"  Claude Code CLI headless × 智谱 Anthropic 兼容端点
+          (open.bigmodel.cn/api/anthropic + GLM_API_KEY → glm-4.6)
+          工具型 Agent（Read/Edit/Bash/Grep 工具环），与通道A纯补全本质差异；
+          主控沙箱拦 spawn → 执行位 worker/计划任务侧。
+  路由：claude_glm → cloud → ollama 逐级降级。
 """
 import json
 import os
+import shutil
+import subprocess
 import sys
 import time
 import urllib.request
@@ -81,9 +90,68 @@ def backend():
     return os.environ.get("CODER_BACKEND", "cloud")
 
 
-def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420):
-    """按 CODER_BACKEND 路由；cloud 失败自动降级 ollama。"""
-    if backend() == "cloud":
+ANTHROPIC_BASE = "https://open.bigmodel.cn/api/anthropic"
+
+
+def _claude_bin():
+    """定位 claude 可执行体。Windows npm 装=claude.cmd 垫片，裸名 subprocess
+    CreateProcess 找不到(WinError 2)——必须 which 出带扩展名全路径。"""
+    bin_ = os.environ.get("CLAUDE_BIN") or shutil.which("claude")
+    if not bin_:
+        raise RuntimeError("claude CLI 未找到(PATH 无 claude/CLAUDE_BIN 未设)")
+    return bin_
+
+
+def chat_claude(agent_id, task, timeout=600):
+    """通道B：Claude Code CLI headless × 智谱 GLM（Anthropic 兼容端点）。
+
+    与 chat_cloud(纯补全) 的本质差异：模型带工具环（Read/Edit/Bash/Grep/Glob），
+    能自己看仓库、改文件、跑验证——SWE-agent 判例「接口>模型」的落地形态。
+    人设经 --append-system-prompt 注入；max_turns 限步数防失控。
+    """
+    key = os.environ.get("GLM_API_KEY") or os.environ.get("ZHIPUAI_API_KEY")
+    if not key:
+        raise RuntimeError("GLM_API_KEY/ZHIPUAI_API_KEY 未设置")
+    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    model = os.environ.get("CODER_CLAUDE_MODEL", "glm-4.6")
+    env = dict(os.environ)
+    env.update(ANTHROPIC_BASE_URL=ANTHROPIC_BASE,
+               ANTHROPIC_AUTH_TOKEN=key,
+               ANTHROPIC_MODEL=model,
+               ANTHROPIC_SMALL_FAST_MODEL=model)
+    cmd = [_claude_bin(), "-p", task["prompt"],
+           "--output-format", "json",
+           "--append-system-prompt", sys_prompt,
+           "--allowedTools", task.get("allowed_tools", "Read,Edit,Grep,Glob,Bash"),
+           "--max-turns", str(task.get("max_turns", 40))]
+    t0 = time.time()
+    proc = subprocess.run(cmd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace",
+                          timeout=timeout, env=env)
+    if proc.returncode != 0:
+        raise RuntimeError("claude rc=%d %s" % (proc.returncode,
+                          (proc.stderr or proc.stdout or "")[:200]))
+    d = json.loads(proc.stdout)
+    out = (d.get("result") or "").strip()
+    print("[claude_glm:%s %s %.0fs turns=%s cost=%s] %d chars"
+          % (agent_id, task.get("label", ""), time.time() - t0,
+             d.get("num_turns"), d.get("total_cost_usd"), len(out)))
+    return out
+
+
+def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420, timeout_claude=600):
+    """按 CODER_BACKEND 路由；逐级降级 claude_glm → cloud → ollama。"""
+    bk = backend()
+    if bk == "claude_glm":
+        try:
+            return chat_claude(agent_id, task, timeout_claude)
+        except Exception as e:
+            print("[claude_glm FAIL -> fallback cloud]", str(e)[:120])
+        try:
+            return chat_cloud(agent_id, task, timeout_cloud)
+        except Exception as e:
+            print("[cloud FAIL -> fallback ollama]", str(e)[:120])
+    elif bk == "cloud":
         try:
             return chat_cloud(agent_id, task, timeout_cloud)
         except Exception as e:
@@ -94,7 +162,7 @@ def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420):
 def run(label, agent_id, out_path, prompt, validator=None, json_out=False):
     """生成→落盘→校验。返回 (ok, detail)。"""
     task = {"label": label, "prompt": prompt, "json_out": json_out}
-    raw = chat(agent_id, task)
+    raw = chat_auto(agent_id, task)
     if json_out:
         try:
             data = json.loads(raw)
