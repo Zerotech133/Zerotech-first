@@ -166,3 +166,14 @@ def test_entries_alias_is_accepted_for_rebuilt_candidate_manifest(tmp_path):
 
     assert result["counts"]["total"] == 1
     assert result["records"][0]["sample_id"] == record["sample_id"]
+
+
+def test_source_name_is_used_when_source_path_is_omitted(tmp_path):
+    record = _record(tmp_path / "sources", "a.md")
+    manifest = _manifest(tmp_path, [record])
+    manifest["records"][0].pop("source_path")
+
+    result = audit_manifest(manifest)
+
+    assert result["counts"]["content_eligible"] == 1
+    assert "source_missing" not in result["records"][0]["reasons"]

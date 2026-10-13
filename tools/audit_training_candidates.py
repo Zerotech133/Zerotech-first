@@ -102,7 +102,12 @@ def _hash_ok(root: Path, record: dict[str, Any], reasons: set[str]) -> None:
     if not isinstance(expected, str) or not _SHA256.fullmatch(expected):
         reasons.add("invalid:sample_sha256")
         return
-    path = _source_path(root, record.get("source_path"))
+    raw_path = record.get("source_path")
+    if raw_path is None or raw_path == "":
+        # 旧版治理清单只记录 source 文件名；仅在显式路径缺失时回退，
+        # 保留对显式非法 source_path 的严格失败关闭行为。
+        raw_path = record.get("source")
+    path = _source_path(root, raw_path)
     if path is None or not path.is_file():
         reasons.add("source_missing")
         return
