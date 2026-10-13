@@ -892,6 +892,7 @@ def get_quotes():
 
 class Handler:
 
+    @staticmethod
     def _stock_notices(code):
         """A股公告（带原文 url）+ 研报（pdf_url）：tdx_info.db 直查。
         返回 (anns, rpts)；非 A 股或无库静默 ([], [])。"""

@@ -97,6 +97,12 @@ _TD = ["20260928", "20260929", "20260930",
 def test_lag_of_trade_day_unit(monkeypatch):
     """td 口径：期望日（最近已收盘交易日）之前开市日数；周末/长假不累计。"""
     import datamart as dm
+    class _FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 10, 9)
+
+    monkeypatch.setattr(OV, "datetime", _FixedDateTime)
     monkeypatch.setattr(dm, "_expected_trade_day", lambda days: "20261008")
     # 国庆场景：0930 → 期望 1008，之间开市日仅 {1008} → 1（8 天假不算）
     assert OV._lag_of("20260930", _TD) == (1, "td")

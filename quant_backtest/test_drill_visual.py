@@ -354,8 +354,8 @@ class TestPremarketRenderDrill(unittest.TestCase):
         det = h.split("点击展开全量清单", 1)[1]
         det = det.split("</details>", 1)[0]
         lu_tbl = det.split("跌停明细", 1)[0]   # 涨停表在跌停/炸板表之前
-        self.assertEqual(lu_tbl.count("/bt/stock?c="), 6)
-        self.assertEqual(det.count("/bt/stock?c="), 9)   # 6涨+1跌+2炸
+        self.assertEqual(lu_tbl.count("/kg/stock/"), 6)
+        self.assertEqual(det.count("/kg/stock/"), 9)   # 6涨+1跌+2炸
         self.assertIn("首板", lu_tbl)               # streak=1 标注
         self.assertIn("2 连板", lu_tbl)             # streak≥2 标注
 
@@ -520,7 +520,7 @@ class TestIndDrillPage(unittest.TestCase):
         self.assertIn("color:#3fb950'><b>-1.20%</b>", h)   # 跌绿
         self.assertIn("30.0 亿", h)                          # 千元→亿
         self.assertIn("涨 1</b> · 平 0 · <b style='color:#3fb950'>跌 1", h)
-        self.assertIn("c=600001", h)                         # 个股下钻
+        self.assertIn("/kg/stock/600001", h)                  # 个股下钻
 
     def test_industry_page_moneyflow_detail(self):
         """主力资金个股明细全量：正红负绿 + 条形 + 合计。"""
@@ -722,7 +722,7 @@ class TestSeatPage(unittest.TestCase):
         # 同日净额降序：600001(+0.50) 在 600005(-0.30) 前
         d30 = h.index("20260930")
         self.assertLess(h.index("600001", d30), h.index("600005", d30))
-        self.assertIn("<a href='/bt/stock?c=600001'>", h)
+        self.assertIn("<a href='/kg/stock/600001'>", h)
         # 票名来自 ts_top_list
         self.assertIn("票A", h)
         self.assertIn("票B", h)
@@ -753,9 +753,9 @@ class TestSeatPage(unittest.TestCase):
         self.assertIn("无上榜记录", h)
 
     def test_missing_param(self):
-        """缺 ex 参数 → 提示从龙虎榜页进入。"""
+        """缺 ex 参数 → 进入席位画像榜；无产物时给出明确回退。"""
         h = self._seat("")
-        self.assertIn("缺少 ex 参数", h)
+        self.assertIn("席位画像未生成", h)
 
 
 if __name__ == "__main__":

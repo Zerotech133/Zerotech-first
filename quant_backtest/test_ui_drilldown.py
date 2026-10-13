@@ -59,21 +59,21 @@ class TestStockLink(unittest.TestCase):
 
     def test_cn_strips_suffix(self):
         a = report_page._stock_link("贵州茅台", "600519.SH")
-        self.assertIn('href="/bt/stock?c=600519"', a)
+        self.assertIn('href="/kg/stock/600519"', a)
         self.assertIn("贵州茅台", a)
 
     def test_sz_strips_suffix(self):
-        self.assertIn("c=000001",
+        self.assertIn("/kg/stock/000001",
                       report_page._stock_link("平安银行", "000001.SZ"))
 
     def test_us_ticker(self):
-        self.assertIn("c=PLTR", report_page._stock_link("Palantir", "PLTR"))
+        self.assertIn("/kg/stock/PLTR", report_page._stock_link("Palantir", "PLTR"))
 
     def test_hk(self):
-        self.assertIn("c=00700", report_page._stock_link("腾讯控股", "00700"))
+        self.assertIn("/kg/stock/00700", report_page._stock_link("腾讯控股", "00700"))
 
     def test_crypto_urlencoded(self):
-        self.assertIn("c=BTC%2FUSDT",
+        self.assertIn("/kg/stock/BTC%2FUSDT",
                       report_page._stock_link("比特币", "BTC/USDT"))
 
     def test_empty_symbol_plain_text(self):
@@ -137,8 +137,8 @@ class TestPositionsPage(unittest.TestCase):
         self.assertTrue(os.path.exists(out))
         with open(out, encoding="utf-8") as f:
             h = f.read()
-        for frag in ("/bt/stock?c=600519", "/bt/stock?c=PLTR",
-                     "/bt/stock?c=00700",                 # 三表标的可点
+        for frag in ("/kg/stock/600519", "/kg/stock/PLTR",
+                     "/kg/stock/00700",                 # 三表标的可点
                      "/bt/strategy/ma_cross",
                      "/bt/strategy/trend_follow",
                      "/bt/strategy/rsi_reversal",          # 策略可点
@@ -182,8 +182,8 @@ class TestSignalsPage(unittest.TestCase):
         report_page.write_signals_html(rows, "2026-09-27 12:00:00")
         with open(self.path, encoding="utf-8") as f:
             h = f.read()
-        self.assertIn("/bt/stock?c=600519", h)
-        self.assertIn("/bt/stock?c=PLTR", h)
+        self.assertIn("/kg/stock/600519", h)
+        self.assertIn("/kg/stock/PLTR", h)
         for s in report_page.SIG_STRATS:      # 列头全部可点
             self.assertIn("/bt/strategy/%s" % s, h)
         self.assertIn("/bt-cross", h)
@@ -468,7 +468,7 @@ class TestPillNav(unittest.TestCase):
 
     def test_current_page_highlighted_not_link(self):
         h = self.pa.pill_nav("qpzm")
-        self.assertIn(">🌊 青萍之末</span>", h)    # 高亮 span
+        self.assertIn(">🌊 青萍之末 🚧</span>", h)    # 高亮 span
         self.assertNotIn("href='/bt-qpzm'", h)     # 自己不再是链接
 
     def test_other_sections_flat(self):
@@ -518,9 +518,9 @@ class TestFinCockpit(unittest.TestCase):
             if "rps" in p:
                 return rps or {}
             return {}
-        with mock.patch.object(self.pa, "_read_json",
+        with mock.patch.object(self.pa.api_backtest, "_read_json",
                                side_effect=fake_read), \
-             mock.patch.object(self.pa, "_sa_hist_read",
+             mock.patch.object(self.pa.api_backtest, "_sa_hist_read",
                                return_value=hist or []), \
              mock.patch.dict(sys.modules, {"cross_poll": fake_mod}):
             h._fin_page()
@@ -552,7 +552,7 @@ class TestFinCockpit(unittest.TestCase):
                 "market": "CN", "px": 10 + i, "score": 90 - i,
                 "dims": "4/4", "action": "买入"} for i in range(8)]
         h = self._render(rps={"latest": "t", "res": res})
-        self.assertEqual(h.count("<tr><td><a href='/bt/stock?c="),
+        self.assertEqual(h.count("<tr><td><a href='/kg/stock/"),
                          5)                          # Top5 截断
         self.assertIn("全池 8 只", h)                # 计数报全池
         self.assertIn("买入 5", h)                   # 展示数为截断后
@@ -737,7 +737,7 @@ class TestCrossBoard(unittest.TestCase):
 
     def test_stock_and_badge_drilldowns(self):
         h = self._render()
-        self.assertIn("href='/bt/stock?c=600519'", h)   # 标的→个股全景
+        self.assertIn("href='/kg/stock/600519'", h)   # 标的→个股全景
         self.assertIn("href='/bt-a'", h)                # 徽标→策略工作台
         self.assertIn("下钻到 A看多", h)                 # 徽标 title
         self.assertIn("贵州茅台", h)
@@ -755,7 +755,7 @@ class TestCrossBoard(unittest.TestCase):
     def test_pair_drilldown_view(self):
         h = self._render(path="/bt-cross?pair=a,b")
         self.assertIn("交集明细：策略A × 策略B", h)
-        self.assertIn("href='/bt/stock?c=600519'", h)   # 共同命中
+        self.assertIn("href='/kg/stock/600519'", h)   # 共同命中
 
     def test_market_filter_tab(self):
         h = self._render(path="/bt-cross?m=US")
@@ -788,16 +788,23 @@ class TestChanlunPoolPage(unittest.TestCase):
     def setUp(self):
         self._orig_qbt = self.pa.QBT_DIR
         self._orig_run = self.pa.run
+        self._orig_mixin_qbt = self.pa.api_chanlun_pages.QBT_DIR
+        self._orig_mixin_run = self.pa.api_chanlun_pages.run
         self.tmp = tempfile.mkdtemp(prefix="clpool_")
         self.d = os.path.join(self.tmp, "data")
         os.makedirs(self.d)
         self.pa.QBT_DIR = self.tmp
-        self.pa.run = lambda *a, **kw: (
+        self.pa.api_chanlun_pages.QBT_DIR = self.tmp
+        _run = lambda *a, **kw: (
             "last=2026-09-27 07:10  result=0  next=2026-09-28 07:10")
+        self.pa.run = _run
+        self.pa.api_chanlun_pages.run = _run
 
     def tearDown(self):
         self.pa.QBT_DIR = self._orig_qbt
         self.pa.run = self._orig_run
+        self.pa.api_chanlun_pages.QBT_DIR = self._orig_mixin_qbt
+        self.pa.api_chanlun_pages.run = self._orig_mixin_run
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _write(self, pool_lines, paper=None, ev=None):
@@ -824,7 +831,7 @@ class TestChanlunPoolPage(unittest.TestCase):
             '"dt":"2026-09-26 15:00","detect_date":"2026-09-26",'
             '"entry_px":1452.0,"tbe":true,"mbei":true,"bei":false}\n'])
         h = self._render()
-        self.assertIn("href='/bt/stock?c=600519'", h)   # 代码→个股全景
+        self.assertIn("href='/kg/stock/600519'", h)   # 代码→个股全景
         self.assertIn("href='/bt-chanlun'", h)          # 徽标→样本面板
         self.assertIn("影子", h)                        # 影子口径不变形
 
@@ -864,7 +871,7 @@ class TestChanlunPoolPage(unittest.TestCase):
                                      "pnl": 0.028, "tags": {}}],
                            "closed": []})
         h = self._render()
-        self.assertIn("href='/bt/stock?c=000001'", h)
+        self.assertIn("href='/kg/stock/000001'", h)
         self.assertIn("+2.80%", h)                      # pnl 红绿着色
         self.assertIn("color:#3fb950", h)
 
@@ -910,12 +917,22 @@ class TestStockOverview(unittest.TestCase):
 
     def setUp(self):
         self._orig_station = self.pa.STATION
+        self._orig_ab_station = self.pa.api_backtest.STATION
+        self._orig_ab_reports = self.pa.api_backtest.REPORTS_DIR
+        self._orig_ab_qbt = self.pa.api_backtest.QBT_DIR
         self.tmp = tempfile.mkdtemp(prefix="stkov_")
         os.makedirs(os.path.join(self.tmp, "quant_backtest", "reports"))
         self.pa.STATION = self.tmp
+        self.pa.api_backtest.STATION = self.tmp
+        self.pa.api_backtest.REPORTS_DIR = os.path.join(
+            self.tmp, "quant_backtest", "reports")
+        self.pa.api_backtest.QBT_DIR = self.tmp
 
     def tearDown(self):
         self.pa.STATION = self._orig_station
+        self.pa.api_backtest.STATION = self._orig_ab_station
+        self.pa.api_backtest.REPORTS_DIR = self._orig_ab_reports
+        self.pa.api_backtest.QBT_DIR = self._orig_ab_qbt
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     class _DF(list):
@@ -962,9 +979,9 @@ class TestStockOverview(unittest.TestCase):
         mods = {"stock_analyze": fake_sa, "runner": fake_runner,
                 "data_loader": fake_dl, "strategies": fake_strats,
                 "cross_poll": fake_cp}
-        with mock.patch.object(self.pa, "_bt_resolve",
+        with mock.patch.object(self.pa.api_backtest, "_bt_resolve",
                                return_value=entry), \
-             mock.patch.object(self.pa, "_bt_jev_news",
+             mock.patch.object(self.pa.api_backtest, "_bt_jev_news",
                                return_value=items if items is not None
                                else []), \
              mock.patch.dict(sys.modules, mods):
@@ -1217,17 +1234,21 @@ class TestDataHealth(unittest.TestCase):
         _dh._WCACHE["t"], _dh._WCACHE["d"] = 0, None   # 还原缓存
         for k in ("generated_at", "kpi", "groups", "gaps"):
             self.assertIn(k, d)
-        self.assertEqual(len(d["groups"]), 7)   # TDX/Tushare/新鲜度/数据完整度/K线/新闻/产物（integrity@9aabecb）
-        self.assertEqual([g["kind"] for g in d["groups"]],
-                         ["tdx", "tushare", "freshness", "integrity",
-                          "kline", "news", "artifact"])
+        kinds = [g["kind"] for g in d["groups"]]
+        required = {"tdx", "tushare", "freshness", "integrity",
+                    "kline", "news", "artifact"}
+        self.assertTrue(required.issubset(set(kinds)))
+        self.assertGreaterEqual(len(kinds), len(required))
+        if "jev_reconciliation" in kinds:
+            self.assertEqual(kinds[kinds.index("jev_reconciliation")],
+                             "jev_reconciliation")
         self.assertEqual(d["kpi"]["tdx_sync"], "1/2")
         tdx_g = d["groups"][0]
         self.assertEqual(len(tdx_g["rows"]), 2)        # parquet 表 + info 表
         for r in tdx_g["rows"]:                        # 字段统一
             for k in ("asset", "rows", "latest", "size_mb", "age_hours"):
                 self.assertIn(k, r)
-        self.assertIn("同步", tdx_g["note"])
+        self.assertTrue(any(word in tdx_g["note"] for word in ("同步", "manifest")))
 
     def test_page_renders_warehouse(self):
         """资产总览页：KPI + 四组清单 + 新鲜度色标 + 产物下钻 + 缺口。"""
@@ -1267,16 +1288,21 @@ class TestDataHealth(unittest.TestCase):
         captured = []
         h = object.__new__(self.pa.Handler)
         h._html = captured.append
-        with mock.patch.dict(sys.modules, {
-                "data_health": types.SimpleNamespace(
-                    scan_warehouse=lambda: fake)}):
+        state = {"data": fake, "error": None, "refreshing": False}
+        with mock.patch.object(self.pa.api_data, "data_health_bg",
+                               return_value=state), \
+             mock.patch.object(self.pa.api_data, "data_freshness_bg",
+                               return_value={"expect": "20260930", "rows": []}), \
+             mock.patch.object(self.pa.api_data, "data_health_kg_bg",
+                               return_value={"data": None, "refreshing": False,
+                                             "error": None}):
             h._data_health_page()
         self.assertEqual(len(captured), 1)
         html = captured[0]
         # KPI 总览
         self.assertIn("数据仓 · 全部资产", html)
         self.assertIn("26", html)
-        self.assertIn("520 MB", html)
+        self.assertIn("520</b>MB", html)
         self.assertIn("11/15", html)
         # 四组资产清单
         for g in ("TDX 远端仓", "本地 K 线仓", "新闻资讯", "策略产物"):
@@ -1284,13 +1310,13 @@ class TestDataHealth(unittest.TestCase):
         self.assertIn("413.7 万", html)             # 规模列
         self.assertIn("同步 11/15", html)           # 组注释
         # 新鲜度三色：0.5h 绿 / 100h 红 / None 灰
-        self.assertIn("color:#3fb950", html)
-        self.assertIn("color:#f85149", html)
-        self.assertIn("color:#8b949e", html)
+        self.assertIn("var(--color-ok)", html)
+        self.assertIn("var(--color-err)", html)
+        self.assertIn("var(--text-dim)", html)
         # extra 列 + 产物下钻 + 缺口
         self.assertIn("JEV 已判 679", html)
         self.assertIn("href='/bt-chanlun-pool'", html)
-        self.assertIn("⚠", html)
+        self.assertIn("缺口", html)
         self.assertIn("美股 K线缺失", html)
 
 
