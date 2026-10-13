@@ -196,7 +196,7 @@ def main():
     # K163 三目标推送：首目标（个人）card_build 完整通道，家人群/量化群 OpenAPI
     # 直连——复用 alert_push.push_card_multi 判例，勿在此重写发送逻辑
     from alert_push import push_card_multi, _targets
-    res = push_card_multi(card, targets=_targets(cfg))
+    res = push_card_multi(card, targets=_targets(cfg), kind="daily:report")
     print("DAILY_REPORT pushed %s" % res)
     if res.get("个人"):  # 首目标成功即触发文档刷新（群目标成败已含在 res 打印里）
         try:  # 同步刷新飞书简报文档（失败静默）
