@@ -174,9 +174,18 @@ def main():
     blocks.append("")
     blocks.append("[📄 详情文档](%s)" % doc if doc else
                   "（未配置文档 URL）")
+    # K-STOCK-353 台账按钮：公网域名+访问码单点收敛在 feishu_card_v2（K-STOCK-305 判例）
+    buttons = None
+    try:
+        sys.path.insert(0, os.path.join(STATION, "portal"))
+        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
+        buttons = [("💼 交易台账", "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
+                    "primary")]
+    except Exception:
+        pass
     card = card_build.build_card(
         "🌙 AI 工作站统一日报", now + " · 五域一天全览", "violet",
-        blocks, footer=footer, use_schema2=True)
+        blocks, footer=footer, buttons=buttons, use_schema2=True)
     if not push:
         for b in blocks:
             print(b, "\n" + "─" * 40)
