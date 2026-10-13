@@ -181,14 +181,15 @@
      "id": "F5",
      "task": "轨迹事件流（events扩code_action/observation+shadow/coder_traces/+IDE轨迹块）",
      "owner": "OPS1",
-     "status": "doing",
-     "note": "K-ORG-036e核心交付(提前于计划10-16)：KINDS 9→11类+trace_log按单jsonl全程留痕(generate/edit/lint/smoke/write/commit/fail)·三项冒烟+F3/F4回归过；余IDE轨迹块(DEV8·随bundle重烘)"
+     "done": "2026-10-13",
+     "note": "K-ORG-036e/f交付·提前于计划10-16：KINDS 11类+trace_log按单jsonl+IDE轨迹块上线(真实数据回显·可回放判据机制全链走通)·三项冒烟+F3/F4回归过"
     },
     {
      "id": "F6",
      "task": "27岗子代理化（bundle人设导出--agents JSON+QA1复核升级claude -p只读审查）",
      "owner": "ARCH1",
-     "note": "判据=对练走子代理通道DEV4仍抓真问题；10-17全线验收（三通道对比+5工单全自动链+巡检批F全绿）"
+     "status": "doing",
+     "note": "K-ORG-036f：export_claude_agents.py交付(27岗·工作边界纪律段·QA1/SEC1只读·模型分层15智能+12轻量·selfcheck过)·余真spawn验证随F1解禁"
     }
    ]
   }

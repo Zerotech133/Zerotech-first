@@ -1,12 +1,12 @@
 {
- "generated": "2026-10-13 10:21",
+ "generated": "2026-10-13 11:06",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 27,
   "departments": 12,
   "prompt_ok": 27,
   "prompt_miss": [],
-  "workorders_doing": 3,
+  "workorders_doing": 4,
   "workorders_review": 19
  },
  "workorders": [
@@ -185,6 +185,25 @@
    "owner": "PM1",
    "branch": "task/proj_c_nlq_001",
    "created": "2026-10-13 07:24:46"
+  },
+  {
+   "id": "K-STOCK-298",
+   "desc": "修复训练候选审计器对 source 字段的安全路径回退",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/K-STOCK-298",
+   "created": "2026-10-13 11:00:46"
+  }
+ ],
+ "coder_traces": [
+  {
+   "k_id": "K-ORG-036d",
+   "actions": 1,
+   "kinds": {
+    "fail": 1
+   },
+   "last_ts": "11:01:36",
+   "last": "fail: git commit: On branch master\nChanges not staged for commit:\n  (use \"git add <file>...\" to upda"
   }
  ],
  "departments": [
@@ -507,7 +526,23 @@
     "proj_next"
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
-   "memory": null
+   "memory": {
+    "decision": {
+     "count": 2,
+     "recent": [
+      {
+       "ts": "2026-10-13 10:22",
+       "event": "deliver",
+       "desc": "整改交付：config/ollama_model_route.json集中路由配置(default_model/fallback_chain/route_rul"
+      },
+      {
+       "ts": "2026-10-13 10:30",
+       "event": "deliver",
+       "desc": "云端编码交付：tools/model_route.py(1658字·glm-4-flash 21s·tok in=681 out=358)——三函数·py_co"
+      }
+     ]
+    }
+   }
   },
   "DEV3": {
    "id": "DEV3",
@@ -741,7 +776,18 @@
    "prompt": "# DOC1 · 技术文档工程师（tech_writer）\n\n> 工程研发中心（K-ORG-019 注册）。组织记忆的 librarian：91 份计划谱系、宪法、判例的保鲜人。\n\n## 职责\n1. **计划谱系**：docs/plans INDEX 索引总账维护；新计划入账、旧计划冻结标注（ROADMAP v1 立宪后旧五源只读）。\n2. **判例沉淀**：把事故与教训提炼成判例入册（撞号 amend/行尾 CRLF/回滚死引用/Edit 锚点写回/Write 后 CR 检查等），供各岗位 prompt 引用。\n3. **宪法保鲜**：版面架构宪法、AGENT-PACT、命名宪章等治理文档与实际纪律的一致性核对。\n4. **交付文档**：README、部署手册、验收报告模板——让新 Agent/新人一个文档上手。\n\n## 纪律（写死，不可协商）\n- **只读冻结尊重**：已冻结计划不改动；历史文档修正只加勘注不重写。\n- **索引即总账**：每份新文档必须有 INDEX 条目（编号/日期/状态/上游），无账不入库。\n- **判例三要素**：现象/根因/执法动作，缺一不入册。\n- **K 编号纪律**：K-<模块>-<序号> 提交前 git log 扫邻号防撞。\n\n## 上游/下游\n- 上游：各岗位产出、事故复盘\n- 下游：全岗位 prompt 引用、老田检索\n\n## 模型\nollama/qwen3.5:9b\n",
    "projects": [],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
-   "memory": null
+   "memory": {
+    "decision": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-13 10:22",
+       "event": "deliver",
+       "desc": "整改交付：docs/ops/Ollama_RAG_运行手册.md(168行·五章·9b真生成61s)——QA1退回整改由主控派发在编岗DOC1代执行"
+      }
+     ]
+    }
+   }
   },
   "DEV6": {
    "id": "DEV6",

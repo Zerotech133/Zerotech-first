@@ -73,6 +73,44 @@ def memory_digest(agent_id, max_recent=2):
     return ns or None
 
 
+# 编码轨迹（K-ORG-036e F5：shadow/coder_traces 只读视图进 IDE）
+TRACE_DIR = os.path.join(ROOT, "shadow", "coder_traces")
+
+
+def coder_traces_digest(max_orders=5):
+    """最近 N 个编码工单轨迹：K编号 + 动作数 + 各类计数 + 最后一条。"""
+    files = []
+    if os.path.isdir(TRACE_DIR):
+        for day in os.listdir(TRACE_DIR):
+            d = os.path.join(TRACE_DIR, day)
+            if not os.path.isdir(d):
+                continue
+            for fn in os.listdir(d):
+                if fn.endswith(".jsonl"):
+                    files.append((os.path.getmtime(os.path.join(d, fn)),
+                                  os.path.join(d, fn)))
+    files.sort(reverse=True)
+    out = []
+    for _, fp in files[:max_orders]:
+        try:
+            recs = [json.loads(l) for l in open(fp, encoding="utf-8",
+                                                errors="replace") if l.strip()]
+        except Exception:  # noqa: BLE001
+            continue
+        if not recs:
+            continue
+        kinds = {}
+        for r in recs:
+            kinds[r.get("kind", "?")] = kinds.get(r.get("kind", "?"), 0) + 1
+        last = recs[-1]
+        out.append({"k_id": last.get("k_id", os.path.basename(fp)[:-6]),
+                    "actions": len(recs),
+                    "kinds": kinds,
+                    "last_ts": last.get("ts", ""),
+                    "last": (last.get("kind", "") + ": " + (last.get("detail", "") or ""))[:100]})
+    return out or None
+
+
 def main():
     agents = {}          # agent_id -> 卡片（职能部主数据）
     dept_agents = {}     # dept -> [agent_id]（含项目部编制）
@@ -198,6 +236,7 @@ def main():
             "workorders_review": wo_stats["review"],
         },
         "workorders": workorders,
+        "coder_traces": coder_traces_digest(),  # K-ORG-036e F5 轨迹只读视图
         "departments": departments,
         "agents": agents,
     }

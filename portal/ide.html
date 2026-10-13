@@ -166,6 +166,14 @@ function pick(id){
               + m.recent.map(r=>'<div style="color:var(--dim);font-size:11.5px">└ ['+esc(r.ts)+'] '+esc(r.event)+'：'+esc(r.desc)+'</div>').join('')
               + '</div>').join('<div style="height:6px"></div>')
           + '</div></div>' : '')
+    + (B.coder_traces
+        ? '<div class="blk"><h3>编码生产线轨迹（shadow/coder_traces 只读 · K-ORG-036e）</h3><div class="charter">'
+          + B.coder_traces.map(t=>
+              '<div>● <code>'+esc(t.k_id)+'</code> × '+t.actions+' 动作（'
+              + Object.entries(t.kinds).map(([k,n])=>k+'×'+n).join(' ')
+              + '）<div style="color:var(--dim);font-size:11.5px">└ ['+esc(t.last_ts)+'] '+esc(t.last)+'</div></div>'
+            ).join('<div style="height:6px"></div>')
+          + '</div></div>' : '')
     + '<div class="blk"><h3>运行配置</h3><div class="kv">'
     + '<div class="k">人设 profile</div><div class="v"><code>'+esc(CUR.role_profile)+'</code></div>'
     + '<div class="k">模型绑定</div><div class="v"><code>'+esc(CUR.llm)+'</code></div>'
