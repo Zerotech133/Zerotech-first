@@ -300,7 +300,22 @@ def build(d):
     L.append("· " + DISCLAIMER)
 
     head = "🕸 KG 每日情报简报 %s" % d
-    return "\n".join([head] + L), {"d": d, "n_lines": len(L)}
+    text = "\n".join([head] + L)
+    # K-STOCK-360 六段分区（按段落序号聚合缩进行），供卡片渲染
+    secs, cur = [], [head]
+    for line in L:
+        if line.startswith("· " + DISCLAIMER):
+            cur.append(line)
+            break
+        if len(line) > 1 and line[0] in "①②③④⑤⑥" + "·" and line[1] in " ":
+            if cur:
+                secs.append("\n".join(cur))
+            cur = [line]
+        else:
+            cur.append(line)
+    if cur:
+        secs.append("\n".join(cur))
+    return text, {"d": d, "n_lines": len(L), "secs": secs}
 
 
 def _send(text):
@@ -335,6 +350,77 @@ def _send(text):
         os.unlink(tmp)
 
 
+# K-STOCK-360 群同步目标（判例同 K-STOCK-357/358 晨报）
+SYNC_GROUPS = [
+    ("内部测试", "oc_6b97bee8b5340e071d0fc10cc6c8569f"),
+    ("量化群", "oc_16ed759795430734a90a7850ba33bec1"),
+]
+
+
+def _build_card_payload(secs):
+    """K-STOCK-360 六段 → v1 互动卡（首行加粗分区 + 台账/看板双按钮）。
+
+    v1 模式（不传 use_schema2）：K-STOCK-354 判例——按钮卡勿用 v2；
+    按钮域名/访问码单点收敛 portal/feishu_card_v2（K-STOCK-305 判例）。"""
+    blocks = []
+    for s in secs:
+        lines = s.split("\n")
+        lines[0] = "**%s**" % lines[0]
+        blocks.append("\n".join(lines))
+    buttons = None
+    try:
+        sys.path.insert(0, os.path.abspath(
+            os.path.join(HERE, "..", "portal")))
+        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
+        buttons = [
+            ("💼 交易台账",
+             "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "primary"),
+            ("📈 选股看板",
+             "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "default"),
+        ]
+    except Exception:
+        pass  # 按钮可选组件：域名模块不可用→纯分区卡照发
+    sys.path.insert(0, NEWS_DIR)
+    from card_build import build_card
+    return build_card(
+        "🕸 KG 每日情报简报", "结构 × 盘口 × 资金 × 传导 × 席位 × 健康",
+        "turquoise", blocks,
+        footer="个人研究·知识图谱情报简报·非投资建议", buttons=buttons)
+
+
+def _send_card(card):
+    """复用 card_build.push_card 发互动卡。"""
+    try:
+        sys.path.insert(0, NEWS_DIR)
+        from card_build import push_card
+        return push_card(card)
+    except Exception as e:
+        print("card send error: %s" % str(e)[:120])
+        return False
+
+
+def _sync_groups(card, text):
+    """K-STOCK-360 群同步：卡优先降级文本，单群失败不影响其他。"""
+    try:
+        sys.path.insert(0, NEWS_DIR)
+        from send_feishu import send_content_to
+        card_str = json.dumps(card, ensure_ascii=False)
+        if len(text) > 12000:  # 群文本同护栏（WinError 206 判例）
+            text = text[:12000] + "\n…(发送截断，全文见 /kg 面板)"
+        text_str = json.dumps({"text": text}, ensure_ascii=False)
+        for gname, gid in SYNC_GROUPS:
+            g_ok = False
+            try:
+                g_ok = send_content_to(gid, "chat_id", card_str, "interactive")
+                if not g_ok:
+                    g_ok = send_content_to(gid, "chat_id", text_str, "text")
+            except Exception as e:
+                print("sync %s error: %s" % (gname, str(e)[:100]))
+            print("sync %s: %s" % (gname, "SEND_OK" if g_ok else "FAIL"))
+    except Exception as e:
+        print("group sync import error: %s" % str(e)[:100])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--d", default=None, help="yyyymmdd，默认最新活跃信号日")
@@ -362,7 +448,18 @@ def main():
     if a.dry:
         print("[dry] meta=%s" % meta)
         return 0
-    ok = _send(text)
+    # K-STOCK-360 卡优先 → 文本降级保底 → 群同步（水位只看个人送达）
+    card = None
+    try:
+        card = _build_card_payload(meta.get("secs") or [])
+    except Exception as e:
+        print("card build error: %s" % str(e)[:120])
+    ok = _send_card(card) if card is not None else False
+    if not ok:
+        print("card FAIL -> text fallback")
+        ok = _send(text)
+    if card is not None:
+        _sync_groups(card, text)
     if ok:
         _save_state({"last_date": d, "sent_at":
                      datetime.now().isoformat(timespec="seconds")})
