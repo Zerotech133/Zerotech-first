@@ -1322,7 +1322,7 @@ transition:.3s;z-index:9}
         card_push = (
             "<div class='idm'>"
             "<div class='ihead'><div class='iic'>📨</div><div>"
-            "<div class='it'>飞书预警输出<span class='itag'>独立板块"
+            "<div class='it'>飞书预警输出<span class='itag'>情报变现"
             "</span></div><div class='is'>发 · 定时定量往外推送"
             "</div></div></div>"
             "<div class='idesc'>把其他板块的数据抽出来，每天定时定量"
@@ -1331,6 +1331,7 @@ transition:.3s;z-index:9}
             + _push_ms +
             "<div class='itools'>"
             "<a href='/api/alert/push'>📨 立即推送全量</a>"
+            "<a href='http://127.0.0.1:8097'>🛰 推送中台 · 情报变现 →</a>"
             "<a href='/quant'>📊 预警速览 →</a></div>"
             "<div class='ifoot'><span class='ist'>"
             "<i class='idot%s'></i>%s</span><span class='ienter'>"
@@ -1964,7 +1965,78 @@ transition:.3s;z-index:9}
     _AI_DUTY_SYSTEM = (
         "你是「零界」模拟交易平台的 AI 值班经理。要求：①用客户语言，不说内部工程词；"
         "②亲切、具体、有下一步动作指引（如去哪个页签/点哪个卡）；③回复 200 字以内；"
-        "④这是模拟盘，涉及投资判断只给信息不下结论。\n【平台现状】\n%s")
+        "④这是模拟盘，涉及投资判断只给信息不下结论。"
+        "⑤指引只用真实入口，不得编造：页签=接待大厅→策略中心→交易员市场→持仓→历史；"
+        "页面=回测中心 /bt2view、策略市场 /market-strategy。\n【平台现状】\n%s")
+
+    def _today_context(self):
+        """K-STOCK-353：值班经理当日动态上下文（今日审批单+账本概要+挂单/止损）。
+        逐段 try/except 降级——任一数据源异常不拖垮整体；只报事实不下结论。"""
+        out = []
+        # ① 今日交易计划审批单（pf_001/pf_002 全扫，163 口径）
+        try:
+            _pdir = r"E:\老田的AI助手\k_stock\data\plan_review"
+            _today = time.strftime("%Y%m%d")
+            _files = sorted(glob.glob(os.path.join(_pdir, _today + "_pf_*.json")))
+            for _fp in _files:
+                with open(_fp, encoding="utf-8") as _fh:
+                    _rev = json.load(_fh)
+                _ap, _rj = _rev.get("approved") or [], _rev.get("rejected") or []
+                if _ap:
+                    _names = "、".join(str(a.get("stock")) for a in _ap[:5])
+                    out.append("今日计划(%s)：批准 %d 只（%s%s），驳回 %d 只。%s" % (
+                        _rev.get("pf_id", "?"), len(_ap), _names,
+                        "等" if len(_ap) > 5 else "", len(_rj),
+                        str(_rev.get("summary") or "")[:80]))
+                else:
+                    out.append("今日计划(%s)：暂无批准条目，驳回 %d 只。" % (
+                        _rev.get("pf_id", "?"), len(_rj)))
+            if not _files:
+                out.append("今日计划：审批单尚未生成。")
+        except Exception:
+            pass
+        # ② 模拟仓账本概要（组合/挂单/止损哨兵，实数口径=页面一致）
+        try:
+            _ks = r"E:\老田的AI助手\k_stock"
+            if _ks not in sys.path:
+                sys.path.insert(0, _ks)
+            from paper.portal_status import status as _ps
+            _d = _ps()
+            if _d.get("ok"):
+                _l = _d.get("latest") or {}
+                out.append("账本快照 %s：总资产 %.0f 元，仓位 %.1f%%，累计收益 %.2f%%，现金 %.0f 元。" % (
+                    _l.get("date"), _l.get("total") or 0, (_l.get("pos_pct") or 0) * 100,
+                    _l.get("cum_pct") or 0, _l.get("cash") or 0))
+                _pos = _d.get("positions") or []
+                if _pos:
+                    _seg = "、".join("%s %s%.0f 元" % (
+                        p.get("stock"), "+" if (p.get("pnl") or 0) >= 0 else "",
+                        p.get("pnl") or 0) for p in _pos[:6])
+                    out.append("持仓 %d 只：%s%s。" % (
+                        len(_pos), _seg, "等" if len(_pos) > 6 else ""))
+                _pd = _d.get("pending_orders") or []
+                if _pd:
+                    _buy = sum(1 for x in _pd if x.get("side") == "BUY")
+                    out.append("待撮合挂单 %d 笔（买 %d/卖 %d）。" % (
+                        len(_pd), _buy, len(_pd) - _buy))
+                _st = _d.get("stops") or []
+                _hit = [s for s in _st if (s.get("distance_pct") or 9) < 0]
+                if _st:
+                    _near = sorted([s for s in _st if (s.get("distance_pct") or 9) >= 0],
+                                   key=lambda x: x["distance_pct"])[:2]
+                    _msg = "止损哨兵 %d 只在防。" % len(_st)
+                    if _hit:
+                        _msg += "⚠ %s 已跌破止损线！" % "、".join(
+                            s.get("stock") for s in _hit)
+                    elif _near:
+                        _msg += "最接近触发：%s（距线 %.1f%%）。" % (
+                            _near[0].get("stock"), _near[0]["distance_pct"])
+                    out.append(_msg)
+            else:
+                out.append("账本：%s" % str(_d.get("error"))[:80])
+        except Exception:
+            pass
+        return out
 
     def _api_ai_duty(self, raw):
         try:
@@ -1993,6 +2065,13 @@ transition:.3s;z-index:9}
         uctx = str(req.get("ctx") or "").strip()[:1200]
         if uctx:
             ctx.append("客户当前所在：" + uctx)
+        # K-STOCK-353：注入当日动态（审批单/账本/挂单/止损），让「今天注意什么」有据可答
+        try:
+            _today = self._today_context()
+            if _today:
+                ctx.append("【当日动态】\n" + "\n".join(_today))
+        except Exception:
+            pass
         sysmsg = self._AI_DUTY_SYSTEM % ("\n".join(ctx) or "（暂无）")
         try:
             reply, backend = self._audit_chat(
