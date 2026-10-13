@@ -707,11 +707,11 @@ DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "slot_mode": "fixed", "slot_min": 0.05, "slot_max": 0.10, "manual_picks": "",
             "cap_high": 0.80, "cap_mid": 0.50, "cap_low": 0.30, "cap_fixed": 0.80,
             "sig_expiry": 0,
-            "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
+            "runup_cap": 0.05, "stop_pct": 0.0, "min_holding_days": 0,
             "holding_max_days": 0, "buy_filter": "3", "universe": "market",
             "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0,
             "gate_mode": "off", "min_score": 0,
-            "limit_check": False, "trail_activate": 0.0, "trail_drawdown": 0.0}
+            "limit_check": True, "trail_activate": 0.0, "trail_drawdown": 0.0}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
@@ -910,7 +910,8 @@ if __name__ == "__main__":
     ap.add_argument("--cap-fixed", type=float, default=0.80, help="固定模式总仓位（默认0.80）")
     ap.add_argument("--sig-expiry", type=int, default=0,
                     help="信号有效期：确认后N日未入场放弃（0=不限·补仓窗口设置）")
-    ap.add_argument("--runup-cap", type=float, default=0.15)
+    ap.add_argument("--runup-cap", type=float, default=0.05,
+                    help="追高帽：开盘较昨收涨幅>此值放弃（307 定稿 5%·智策跳空纪律）")
     ap.add_argument("--stop-pct", type=float, default=0.0)
     ap.add_argument("--holding-max", type=int, default=0)
     ap.add_argument("--buy-filter", default="3", choices=["23", "2", "3", "all"],
@@ -927,8 +928,8 @@ if __name__ == "__main__":
                     help="开新仓闸门：off=不设 / weak=池指数<MA60不开 / high=仅池指数≥MA20开(301)")
     ap.add_argument("--min-score", type=int, default=0,
                     help="评分门槛：三买评分(0-100)低于此值不入场(0=不限·303)")
-    ap.add_argument("--limit-check", default="false", choices=["true", "false"],
-                    help="涨跌停可成交检查：涨停开盘买不进/跌停开盘卖不出(智策对照·305)")
+    ap.add_argument("--limit-check", default="true", choices=["true", "false"],
+                    help="涨跌停可成交检查：涨停开盘买不进/跌停开盘卖不出(307 定稿默认开·305)")
     ap.add_argument("--trail-activate", type=float, default=0.0,
                     help="移动止损启动浮盈(0=关·智策CHAN族0.05·305)")
     ap.add_argument("--trail-drawdown", type=float, default=0.0,

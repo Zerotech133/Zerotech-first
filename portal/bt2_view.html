@@ -120,7 +120,7 @@ button:disabled{opacity:.5;cursor:default}
 <div class="row">
   <div class="fld"><label>信号有效期(日·0不限)</label><input name="sig_expiry" type="number" value="0" min="0" max="60"></div>
   <div class="fld"><label>评分门槛(0-100·0不限)</label><input name="min_score" type="number" value="0" min="0" max="100"></div>
-  <div class="fld"><label>追高帽%（0关）</label><input name="runup_cap" type="number" value="15" min="0" max="50"></div>
+  <div class="fld"><label>追高帽%（0关）</label><input name="runup_cap" type="number" value="5" min="0" max="50"></div>
 </div>
 <div class="note">补仓机制：卖出回笼的资金回池 → 等待新的合格买点信号 → 按<b>评分降序</b>自动补位（评分高者先入场）→ 信号确认后 <b>N 日内</b>未入场（停牌/资金不足/帽满）即过期放弃（0=一直等到能买）。追高帽：开盘较昨收涨幅超帽放弃该机会（防追高接盘）。</div></div>
 
@@ -132,7 +132,7 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>个股止损%（0关）</label><input name="stop_pct" type="number" value="0" min="-50" max="0"></div>
   <div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>
   <div class="fld"><label>开新仓闸门</label><select name="gate_mode" id="gate-mode"><option value="off">不设闸（默认）</option><option value="weak">弱市闸门：指数&lt;MA60 不开新仓</option><option value="high">高位限定：仅指数≥MA20 开新仓（291 包 C）</option></select></div>
-  <div class="fld"><label>涨跌停成交检查</label><select name="limit_check"><option value="false">关（默认）</option><option value="true">开：涨停买不进/跌停卖不出（智策对照）</option></select></div>
+  <div class="fld"><label>涨跌停成交检查</label><select name="limit_check"><option value="true">开：涨停买不进/跌停卖不出（默认·307 定稿）</option><option value="false">关（回测偏乐观）</option></select></div>
   <div class="fld"><label>移动止损启动浮盈%(0关)</label><input name="trail_activate" type="number" value="0" min="0" max="50" step="0.5"></div>
   <div class="fld"><label>移动止损峰值回撤%</label><input name="trail_drawdown" type="number" value="0" min="0" max="50" step="0.5"></div>
   <input type="hidden" name="regime_gate" value="false">
