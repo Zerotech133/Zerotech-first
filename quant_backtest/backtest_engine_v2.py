@@ -80,18 +80,76 @@ def _ensure_loaded(progress=None):
     idx_nav = (1 + pd.Series(idx_ret).sort_index()).cumprod()
     ma20 = idx_nav.rolling(20).mean()
     ma60 = idx_nav.rolling(60).mean()
+    _BOOK_CACHE.update(books)
     _LOADED = True
     if progress:
         progress("数据装载", 5, f"池 {len(books)} 只 · 日历 {len(cal_idx_all)} 日")
 
 def px(s, day, kind):
-    b = books.get(s)
+    b = _book(s)
     if b is None:
         return None
     row = b[b.trade_date == day]
     if row.empty:
         return None
     return float(row.iloc[0]["adj_" + kind])
+
+
+_BOOK_CACHE = {}
+
+def _book(s):
+    """惰性取股票 book（全市场模式按需读 parquet·hfq 因子链同 263）。"""
+    if s in _BOOK_CACHE:
+        return _BOOK_CACHE[s]
+    f = os.path.join(DATA, s.replace(".", "_") + ".parquet")
+    if not os.path.exists(f):
+        _BOOK_CACHE[s] = None
+        return None
+    b = pd.read_parquet(f).sort_values("trade_date").reset_index(drop=True)
+    r = b["pct_chg"] / 100.0
+    r.iloc[0] = 0.0
+    kfac = (1.0 + r).cumprod() / b["close"]
+    for col in ("open", "high", "low", "close"):
+        b["adj_" + col] = b[col] * kfac
+    _BOOK_CACHE[s] = b
+    return b
+
+
+def market_stocks_list():
+    """全市场宇宙（剔 ST/北交所/指数，与 market_scan 同口径）。"""
+    import market_scan as _ms
+    return _ms.market_stocks()
+
+
+def _ensure_market_loaded(progress=None):
+    """全市场模式：rets 全量载入（等权指数做 regime），books 走 _book 惰性。"""
+    global _LOADED, books, rets, cal, cal_idx_all, idx_nav, ma20, ma60
+    if _LOADED:
+        return
+    stocks = market_stocks_list()
+    t0 = time.time()
+    for i, s in enumerate(stocks):
+        f = os.path.join(DATA, s.replace(".", "_") + ".parquet")
+        if not os.path.exists(f):
+            continue
+        b = pd.read_parquet(f, columns=["trade_date", "pct_chg"])
+        rets[s] = b.set_index("trade_date")["pct_chg"] / 100.0
+        if progress and i % 500 == 0:
+            progress("数据装载", 2 + int(8 * i / len(stocks)),
+                     f"全市场收益载入 {i+1}/{len(stocks)}（{round(time.time()-t0)}s）")
+    cal_all = sorted(set().union(*[set(r.index) for r in rets.values()]))
+    cal_idx_all = [d for d in cal_all if d >= D0_MIN]
+    idx_ret = {}
+    for day in cal_idx_all:
+        rs = [rets[s].get(day) for s in rets]
+        rs = [x for x in rs if x is not None and not pd.isna(x)]
+        idx_ret[day] = sum(rs) / len(rs) if rs else 0.0
+    idx_nav = (1 + pd.Series(idx_ret).sort_index()).cumprod()
+    ma20 = idx_nav.rolling(20).mean()
+    ma60 = idx_nav.rolling(60).mean()
+    _LOADED = True
+    if progress:
+        progress("数据装载", 10, f"全市场 {len(rets)} 只 · 日历 {len(cal_idx_all)} 日（{round(time.time()-t0)}s）")
 
 def regime_of(day):
     i = idx_nav.index.get_loc(day)
@@ -206,6 +264,41 @@ def calc_chanlun_signals(d0, d1, progress=None, buy_filter="all"):
     except Exception:
         pass
     return sig_buy, sig_sell, "自算(hfq+seen-ever)·%s" % BUY_FILTER_LABEL.get(buy_filter, buy_filter)
+
+def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
+    """全市场模式（K-STOCK-289 老田口径）：每日全网 5000+（剔 ST/北交所）缠论扫描，
+    一/二/三买全部入池，交易只吃 buy_filter 允许的买点（默认仅三买）。
+    事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。"""
+    cache_fp = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+                            "sig_events_market_%s_%s.json" % (d0, d1))
+    if not os.path.exists(cache_fp):
+        return None, None, None, "全市场事件缓存不存在：%s\n先跑：python market_scan.py --d0 %s --d1 %s" % (cache_fp, d0, d1)
+    j = json.load(open(cache_fp, encoding="utf-8"))
+    events = j["events"]
+    allowed = BUY_FILTERS.get(buy_filter, BUY_FILTERS["3"])
+    sig_buy, sig_sell = {}, {}
+    pool_daily = {}          # 每日入池统计：一二三买全部入池（老田口径），trade=仅 buy_filter
+    for d in (x for x in cal_idx_all if d0 <= x <= d1):
+        sig_buy[d], sig_sell[d], pool_daily[d] = set(), set(), {"pool": 0, "trade": 0}
+    from collections import Counter
+    for ev in events:
+        day = ev["day"]
+        if day not in sig_buy:
+            continue
+        tp = ev["type"]
+        if tp in ("1买", "2买", "3买"):
+            pool_daily[day]["pool"] += 1
+        if tp in allowed:
+            sig_buy[day].add(ev["stock"])
+            pool_daily[day]["trade"] += 1
+        elif tp in SELL_TYPES:
+            sig_sell[day].add(ev["stock"])
+    if progress:
+        progress("信号", 30, f"全市场事件缓存命中（{len(events)} 事件·{BUY_FILTER_LABEL.get(buy_filter, buy_filter)}）")
+    src = "全市场扫描(market_scan·%d只·剔ST/北交所)·%s" % (j.get("meta", {}).get("universe", 0),
+                                                   BUY_FILTER_LABEL.get(buy_filter, buy_filter))
+    return sig_buy, sig_sell, {"pool_daily": pool_daily, "scan_meta": j.get("meta", {}), "signal_source": src}, None
+
 
 def calc_dknife_signals(d0, d1, profile="relaxed", progress=None):
     """量子双刀逐日信号：原始价 K 线（引擎实务门槛），T 日 14:45 口径近似=T 日 bar。"""
@@ -432,14 +525,18 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "top_n": 10, "slot_pct": 0.08, "cap_mode": "regime_8050",
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
-            "holding_max_days": 0, "buy_filter": "3"}
+            "holding_max_days": 0, "buy_filter": "3", "universe": "market"}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
     try:
-        _ensure_loaded(progress)
         p = dict(DEFAULTS)
         p.update({k: v for k, v in (params or {}).items() if v not in (None, "")})
+        universe = p["universe"] if p["universe"] in ("market", "pool76") else "market"
+        if universe == "market":
+            _ensure_market_loaded(progress)
+        else:
+            _ensure_loaded(progress)
         strategy = p["strategy"] if p["strategy"] in ("chanlun", "double_knife") else "chanlun"
         d0, d1 = str(p["d0"]).replace("-", ""), str(p["d1"]).replace("-", "")
         if not (d0.isdigit() and d1.isdigit() and d0 < d1):
@@ -465,11 +562,22 @@ def run_job(params: dict, job_id: str, progress=None):
             stop_pct=float(p["stop_pct"] or 0),
         )
         if progress:
-            progress("信号", 10, f"计算信号：{cfg.name} {d0}→{d1}")
+            progress("信号", 10, f"计算信号：{cfg.name} {d0}→{d1}（universe={universe}）")
+        pool_info = None
         if strategy == "chanlun":
-            buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "23"
-            sig_buy, sig_sell, src = calc_chanlun_signals(d0, d1, progress, buy_filter=buy_filter)
+            buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "3"
+            if universe == "market":
+                if buy_filter == "all":
+                    pass  # 全市场也允许 all（对照用）
+                sig_buy, sig_sell, pool_info, err = calc_chanlun_signals_market(d0, d1, progress, buy_filter)
+                if err:
+                    return None, err
+                src = pool_info["signal_source"]
+            else:
+                sig_buy, sig_sell, src = calc_chanlun_signals(d0, d1, progress, buy_filter=buy_filter)
         else:
+            if universe == "market":
+                return None, "量子双刀全市场扫描属包 C 项（14:45 全网快照数据未入库），暂仅支持 pool76"
             buy_filter = "all"
             sig_buy = calc_dknife_signals(d0, d1, progress=progress)
             sig_sell, src = {}, "自算(原始价·relaxed)"
@@ -478,7 +586,11 @@ def run_job(params: dict, job_id: str, progress=None):
         result = run_backtest(cfg, sig_buy, sig_sell, progress)
         result["meta"]["signal_source"] = src
         result["meta"]["buy_filter"] = buy_filter
+        result["meta"]["universe"] = universe
         result["meta"]["job_id"] = job_id
+        if pool_info:
+            result["meta"]["pool_daily"] = pool_info["pool_daily"]
+            result["meta"]["scan_meta"] = pool_info["scan_meta"]
         os.makedirs(OUT_DIR, exist_ok=True)
         out = os.path.join(OUT_DIR, f"bt2_{job_id}.json")
         json.dump(result, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
@@ -505,6 +617,8 @@ if __name__ == "__main__":
     ap.add_argument("--holding-max", type=int, default=0)
     ap.add_argument("--buy-filter", default="3", choices=["23", "2", "3", "all"],
                     help="缠论买点等级：3=仅三买(默认·10-13拍板) 23=二买+三买 all=含一买")
+    ap.add_argument("--universe", default="market", choices=["market", "pool76"],
+                    help="样本域：market=全市场5000+剔ST/北交所(默认) pool76=静态76只池")
     ap.add_argument("--job-id", default=None)
     args = ap.parse_args()
     jid = args.job_id or ("cli-" + time.strftime("%Y%m%d-%H%M%S"))

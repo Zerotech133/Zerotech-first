@@ -4997,6 +4997,8 @@ def _bt2_start(rec):
         "holding_max_days": _intv("holding_max_days", 0, 60, 5 if strategy == "double_knife" else 0),
         # 缠论买点等级过滤（10-13 老田拍板：只看三买）
         "buy_filter": rec.get("buy_filter") if rec.get("buy_filter") in ("23", "2", "3", "all") else "3",
+        # 样本域（10-13 老田拍板：全市场 5000+ 剔 ST/北交所，一二三买入池·仅三买交易）
+        "universe": rec.get("universe") if rec.get("universe") in ("market", "pool76") else "market",
     }
     now = datetime.datetime.now()
     jid = now.strftime("%Y%m%d-%H%M%S") + "-" + os.urandom(2).hex()
