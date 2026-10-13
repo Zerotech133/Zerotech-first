@@ -24,7 +24,17 @@
   .hd-right a{color:var(--blue);text-decoration:none;font-size:12px;border:1px solid var(--line);
     padding:6px 12px;border-radius:8px;background:var(--panel)}
   .regen{font-size:11px;color:var(--dim2)}
-  .main{flex:1;display:grid;grid-template-columns:250px 1fr 400px;min-height:0}
+  .main{flex:1;display:grid;
+    grid-template-columns:var(--w-tree,250px) 6px 1fr 6px var(--w-dbg,400px);min-height:0}
+
+  /* ── 可拖拽分隔条（K-ORG-DEV3 视觉线 → 可拉动）── */
+  .rz{position:relative;cursor:col-resize;flex:none;user-select:none}
+  .rz::before{content:'';position:absolute;left:2.5px;top:0;bottom:0;width:1px;background:var(--line);
+    transition:background .15s,width .15s}
+  .rz:hover::before,.rz.drag::before{background:var(--blue);width:3px;left:1.5px}
+  .rz-h{cursor:row-resize}
+  .rz-h::before{left:0;right:0;top:2.5px;bottom:auto;width:auto;height:1px}
+  .rz-h:hover::before,.rz-h.drag::before{width:auto;height:3px;top:1.5px;left:0}
 
   /* ── 左：部门树 ── */
   .tree{border-right:1px solid var(--line);overflow:auto;padding:10px}
@@ -87,9 +97,12 @@
   .send:disabled{opacity:.45;cursor:default}
   .dbg-note{font-size:10.5px;color:var(--dim2);padding:0 14px 10px;line-height:1.6}
   @media (max-width:1180px){
-    .main{grid-template-columns:210px 1fr;grid-template-rows:1fr 360px}
-    .debug{grid-column:1/3;border-left:0;border-top:1px solid var(--line)}
+    .main{grid-template-columns:var(--w-tree,210px) 6px 1fr;grid-template-rows:1fr 6px var(--h-dbg,360px)}
+    .rz2{display:none}
+    .rz3{display:block}
+    .debug{grid-column:1/4;border-left:0}
   }
+  @media (min-width:1181px){ .rz3{display:none} }
 </style>
 <script src="/static/nav.js" defer></script></head>
 <body>
@@ -104,9 +117,12 @@
 </header>
 <div class="main">
   <div class="tree" id="tree"></div>
+  <div class="rz rz1" title="拖动调整左栏宽度"></div>
   <div class="center" id="center">
     <div class="placeholder"><div class="big">⌨</div><div>左侧选择一个 Agent<br>查看人设档案 / 人设 prompt 全文 / 右侧调试台试运行</div></div>
   </div>
+  <div class="rz rz2" title="拖动调整调试台宽度"></div>
+  <div class="rz rz3 rz-h" title="拖动调整调试台高度"></div>
   <div class="debug">
     <div class="d-t">🧪 调试台 · 试运行</div>
     <div class="target" id="dbg-target">未选择 Agent</div>
@@ -122,6 +138,52 @@
 <script>
 const GRADE_CN = {E3:"30年档", E2:"20年档", E1:"10年档"};
 let B = null, CUR = null;
+
+/* ── 可拖拽分隔条：宽度/高度拖动 + localStorage 记忆（纯前端零依赖）── */
+(function(){
+  const main = document.querySelector(".main");
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  function drag(el, onMove){
+    el.addEventListener("mousedown", e=>{
+      e.preventDefault();
+      el.classList.add("drag");
+      document.body.style.cursor = el.classList.contains("rz-h") ? "row-resize" : "col-resize";
+      const mv = ev=>onMove(ev);
+      const up = ()=>{
+        el.classList.remove("drag");
+        document.body.style.cursor = "";
+        document.removeEventListener("mousemove", mv);
+        document.removeEventListener("mouseup", up);
+      };
+      document.addEventListener("mousemove", mv);
+      document.addEventListener("mouseup", up);
+    });
+  }
+  function px(varName, def){ return parseInt(localStorage.getItem(varName)) || def; }
+  // 恢复记忆值（key=CSS 变量名）
+  for(const [k, def] of [["--w-tree",250],["--w-dbg",400],["--h-dbg",360]]){
+    const v = localStorage.getItem(k);
+    if(v) main.style.setProperty(k, v + "px");
+  }
+  // rz1：左栏宽
+  drag(document.querySelector(".rz1"), ev=>{
+    const w = clamp(ev.clientX - main.getBoundingClientRect().left, 160, 440);
+    main.style.setProperty("--w-tree", w + "px");
+    localStorage.setItem("--w-tree", w);
+  });
+  // rz2：调试台宽
+  drag(document.querySelector(".rz2"), ev=>{
+    const w = clamp(main.getBoundingClientRect().right - ev.clientX, 260, 680);
+    main.style.setProperty("--w-dbg", w + "px");
+    localStorage.setItem("--w-dbg", w);
+  });
+  // rz3：窄屏调试台高
+  drag(document.querySelector(".rz3"), ev=>{
+    const h = clamp(main.getBoundingClientRect().bottom - ev.clientY, 180, window.innerHeight * 0.7);
+    main.style.setProperty("--h-dbg", h + "px");
+    localStorage.setItem("--h-dbg", h);
+  });
+})();
 
 function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
