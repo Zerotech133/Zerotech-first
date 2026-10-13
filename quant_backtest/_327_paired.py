@@ -28,7 +28,7 @@ PY = sys.executable
 BT2 = os.path.join(QBT, "backtest_engine_v2.py")
 SNAP = os.path.join(QBT, "data", "tdx", "dknife_snap", "dknife_snap.parquet")
 BT2_DIR = os.path.join(QBT, "data", "bt2")
-CACHE = os.path.join(QBT, "data", "bt2_state",
+CACHE = os.path.join(QBT, "data", "sig_events",
                      "sig_events_market_v3_20260901_20261012.json")
 D0, D1 = "20260901", "20261012"
 FORCE = "--force" in sys.argv

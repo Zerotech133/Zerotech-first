@@ -185,7 +185,7 @@ BUY_FILTERS = {"all": {"1买", "2买", "3买"}, "23": {"2买", "3买"},
                "2": {"2买"}, "3": {"3买"}}
 BUY_FILTER_LABEL = {"23": "仅二买+三买（一买不入选·10-13拍板）", "2": "仅二买",
                     "3": "仅三买", "all": "一/二/三类全要"}
-SIG_EVENTS_CACHE = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+SIG_EVENTS_CACHE = os.path.join(BASE, "quant_backtest", "data", "sig_events",
                                 "sig_events_%s_%s.json")
 
 def _chanlun_run_day(day):
@@ -278,10 +278,10 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3", hist_st=F
     事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。
     hist_st（K-STOCK-311）：历史 ST 回溯——窗口内任一时点曾为 ST 的股票事件全剔
     （修现名剔 ST 的幸存者偏差；零重扫·等价宇宙剔除）。"""
-    cache_fp = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+    cache_fp = os.path.join(BASE, "quant_backtest", "data", "sig_events",
                             "sig_events_market_v3_%s_%s.json" % (d0, d1))
     if not os.path.exists(cache_fp):
-        v2 = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+        v2 = os.path.join(BASE, "quant_backtest", "data", "sig_events",
                           "sig_events_market_v2_%s_%s.json" % (d0, d1))
         if os.path.exists(v2):
             return None, None, None, "事件缓存为 v2（无评分）：%s\n重扫：python market_scan.py --d0 %s --d1 %s" % (v2, d0, d1)
@@ -934,7 +934,7 @@ def run_job(params: dict, job_id: str, progress=None):
             se = {}
             ev_fp = None
             if strategy == "chanlun" and universe == "market":
-                ev_fp = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+                ev_fp = os.path.join(BASE, "quant_backtest", "data", "sig_events",
                                      "sig_events_market_v3_%s_%s.json" % (d0, d1))
             elif strategy == "chanlun":
                 ev_fp = SIG_EVENTS_CACHE % (d0, d1)

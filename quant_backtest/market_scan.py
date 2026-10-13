@@ -21,7 +21,7 @@ BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else r"
 QBT = BASE
 DATA = os.path.join(QBT, "data", "ashare")
 NAMES_FP = os.path.join(QBT, "data", "stock_names.json")
-OUT_DIR = os.path.join(QBT, "data", "bt2_state")
+OUT_DIR = os.path.join(QBT, "data", "sig_events")   # K-STOCK-358：事件缓存独立目录（原混在 bt2_state）
 NC_FP = os.path.join(QBT, "data", "tdx", "ts_namechange.parquet")   # K-STOCK-311 历史曾用名
 WARMUP = 250
 

@@ -24,7 +24,7 @@ PY = sys.executable
 BT2 = os.path.join(QBT, "backtest_engine_v2.py")
 SCAN = os.path.join(QBT, "market_scan.py")
 BT2_DIR = os.path.join(QBT, "data", "bt2")
-STATE_DIR = os.path.join(QBT, "data", "bt2_state")
+SIG_EVENTS_DIR = os.path.join(QBT, "data", "sig_events")   # K-STOCK-358：独立目录
 FORCE = "--force" in sys.argv
 # ⚠️ --d1-override 仅供链路自测（用既有缓存窗口），正式开闸禁用
 D1_OVERRIDE = None
@@ -67,7 +67,7 @@ def lake_latest():
 
 
 def ensure_cache(d0, d1, log):
-    fp = os.path.join(STATE_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
+    fp = os.path.join(SIG_EVENTS_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
     if os.path.exists(fp):
         log.write("cache HIT %s\n" % fp)
         return True
