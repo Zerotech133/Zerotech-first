@@ -35,6 +35,8 @@ STATE = os.path.join(HERE, "data", "morning_report_state.json")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 SEND_PY = os.path.join(NEWS_DIR, "send_feishu.py")
 DISCLAIMER = "个人研究晨报·非投资建议"
+# K-STOCK-357 晨报同步目标：内部测试群（判例同 K-STOCK-355 速报同步）
+TEST_GROUP_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"
 
 
 def _today8():
@@ -290,10 +292,26 @@ def main():
     if a.dry:
         return
     # K-STOCK-356 卡优先 → 文本降级保底（watermark 只看最终是否送达）
-    ok = _send_card(build_card_payload(secs))
+    card = build_card_payload(secs)
+    ok = _send_card(card)
     if not ok:
         print("card FAIL -> text fallback")
         ok = _send(text)
+    # K-STOCK-357 同步内部测试群：卡优先降级文本，群失败不影响个人+水位
+    g_ok = False
+    try:
+        sys.path.insert(0, NEWS_DIR)
+        from send_feishu import send_content_to
+        g_ok = send_content_to(
+            TEST_GROUP_ID, "chat_id",
+            json.dumps(card, ensure_ascii=False), "interactive")
+        if not g_ok:
+            g_ok = send_content_to(
+                TEST_GROUP_ID, "chat_id",
+                json.dumps({"text": text}, ensure_ascii=False), "text")
+    except Exception as e:
+        print("test-group sync error: %s" % str(e)[:100])
+    print("test-group: %s" % ("SEND_OK" if g_ok else "FAIL"))
     print("send: %s" % ("SEND_OK" if ok else "FAIL"))
     if ok:
         _save_state({"last_date": today,
