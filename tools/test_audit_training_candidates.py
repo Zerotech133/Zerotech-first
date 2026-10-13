@@ -154,3 +154,15 @@ def test_audit_result_is_json_serializable(tmp_path):
     record = _record(tmp_path / "sources", "a.md")
     result = audit_manifest(_manifest(tmp_path, [record]))
     json.dumps(result, ensure_ascii=False)
+
+
+def test_entries_alias_is_accepted_for_rebuilt_candidate_manifest(tmp_path):
+    record = _record(tmp_path / "sources", "a.md")
+    manifest = _manifest(tmp_path, [record])
+    manifest.pop("records")
+    manifest["entries"] = [record]
+
+    result = audit_manifest(manifest)
+
+    assert result["counts"]["total"] == 1
+    assert result["records"][0]["sample_id"] == record["sample_id"]
