@@ -14,6 +14,7 @@
 依赖: 仅标准库 + tools/agent_coder.py。
 """
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -27,6 +28,7 @@ if TOOLS_DIR not in sys.path:
 import agent_coder  # noqa: E402  （必须在 sys.path 处理之后再导入）
 
 DIFF_MAX_CHARS = 3000
+NOTE_MAX_CHARS = 2048  # K-ORG-043: 附证文本上限，进 prompt 前截断
 REJECT_KEYWORD = "退回"
 
 
@@ -52,7 +54,13 @@ def get_diff(sha):
 
 def build_prompt(sha, diff, note=None):
     """构造 QA1 复核 prompt：逐笔三项作答，结论只能二选一。
-    note: 提交方附证（负面断言如「全库清扫」须附现值核验计数，K-ORG-042 判例）。"""
+    note: 提交方附证（负面断言如「全库清扫」须附现值核验计数，K-ORG-042 判例）。
+    安全加固（K-ORG-043，QA1 R7 观察项a）: 附证先中性化（任意连续 >=4 个 '>' 压为 '>>>'）、
+    再截断至 NOTE_MAX_CHARS（超长加省略号"…"），保证 '>>>>' 只以模板定界符出现。"""
+    if note:
+        note = re.sub(r">{4,}", ">>>", note)
+        if len(note) > NOTE_MAX_CHARS:
+            note = note[:NOTE_MAX_CHARS] + "…"
     note_blk = ("\n【提交方附证（可复现现值核验）】\n<<<<\n%s\n>>>>\n" % note) if note else ""
     return (
         f"你是 QA1 质检复核员，请复核以下这笔提交。\n"
