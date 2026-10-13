@@ -31,6 +31,42 @@ BUNDLE = json.load(open("portal/agent_ide_bundle.json", encoding="utf-8"))
 
 ZHIPU_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 CLOUD_MODEL = os.environ.get("CODER_CLOUD_MODEL", "glm-4-flash")
+# K-ORG-038: 包年 Coding Plan 走 Anthropic 兼容端点——额度与 API 钱包分开计费
+# （判例：chat/completions 报 1113 余额不足 ≠ 套餐耗尽），纯 HTTP 无 spawn。
+ANTHROPIC_URL = "https://open.bigmodel.cn/api/anthropic/v1/messages"
+ANTHROPIC_MODEL = os.environ.get("CODER_ANTHROPIC_MODEL", "glm-4.6")
+
+
+def chat_anthropic(agent_id, task, timeout=240):
+    """智谱包年(Coding Plan) Anthropic 兼容端点生成——GLM-4.6 档。
+    ⚠️ 判例：glm-4.6 是思考型，content 为 [thinking, text] 块数组——
+    正文只拼 type=text 块；max_tokens 须给足（64 级会被 thinking 吞成空回，
+    stop=max_tokens 表面成功）。"""
+    key = os.environ.get("GLM_API_KEY", "")
+    if not key:
+        raise RuntimeError("GLM_API_KEY 未设置")
+    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    payload = {
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": task.get("max_tokens", 32768),  # 038判例: thinking耗额·8192级被截断(stop=max_tokens)
+        "system": sys_prompt,
+        "messages": [{"role": "user", "content": task["prompt"]}],
+    }
+    req = urllib.request.Request(ANTHROPIC_URL, data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "application/json",
+                                          "x-api-key": key,
+                                          "anthropic-version": "2023-06-01"})
+    t0 = time.time()
+    d = json.load(OP.open(req, timeout=timeout))
+    out = "".join(b.get("text", "") for b in d.get("content", [])
+                  if b.get("type") == "text").strip()
+    if not out:
+        raise RuntimeError("anthropic 空回(thinking 吞 content? stop=%s)"
+                           % d.get("stop_reason"))
+    print("[anthropic:%s %s %.1fs] %d chars (stop=%s)"
+          % (agent_id, task.get("label", ""), time.time() - t0, len(out),
+             d.get("stop_reason")))
+    return out
 
 
 def chat_cloud(agent_id, task, timeout=120):
@@ -101,7 +137,16 @@ FENCE_RE = re.compile(r"^```[a-zA-Z0-9_]*\r?\n|\r?\n```\s*$")
 
 
 def strip_fences(text):
-    """剥模型输出的 Markdown 代码围栏。"""
+    """剥模型输出的 Markdown 代码围栏。
+    🔴 K-ORG-038 判例：glm-4.6 爱先写说明文字再上围栏——原「仅剥首尾围栏标记」
+    会把围栏前的散文一并留给 lint 门（line 1 全角字符）。
+    有围栏时直接提取第一个开栏到最后一个闭栏之间的内容。"""
+    m = re.search(r"```[a-zA-Z0-9_]*[ \t]*\r?\n", text)
+    if m:
+        start = m.end()
+        end = text.rfind("```")
+        if end > start:
+            return text[start:end].strip("\n").strip()
     return FENCE_RE.sub("", text.strip())
 
 
@@ -208,9 +253,19 @@ def chat_claude(agent_id, task, timeout=600):
 
 
 def chat_auto(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
-    """按 CODER_BACKEND 路由；逐级降级 claude_glm → cloud → ollama。"""
+    """按 CODER_BACKEND 路由；逐级降级。
+    anthropic(包年GLM-4.6·纯API) → claude_glm(CLI·blocked) → cloud → ollama。"""
     bk = backend()
-    if bk == "claude_glm":
+    if bk == "anthropic":
+        try:
+            return chat_anthropic(agent_id, task, timeout_cloud)
+        except Exception as e:
+            print("[anthropic FAIL -> fallback cloud]", str(e)[:120])
+        try:
+            return chat_cloud(agent_id, task, timeout_cloud)
+        except Exception as e:
+            print("[cloud FAIL -> fallback ollama]", str(e)[:120])
+    elif bk == "claude_glm":
         try:
             return chat_claude(agent_id, task, timeout_claude)
         except Exception as e:

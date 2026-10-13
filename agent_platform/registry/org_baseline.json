@@ -153,8 +153,9 @@
      "id": "F1",
      "task": "通道合流：agent_coder 增 claude_glm backend（智谱Anthropic端点×Claude Code CLI，worker侧执行）",
      "owner": "DEV2",
-     "status": "blocked",
-     "note": "K-ORG-036a：代码就位(chat_claude三级降级claude_glm→cloud→ollama)·🔴安全中心程序黑名单拦reg.exe(claude CLI内部spawn·命令侧不可绕)·待老田安全中心解禁后worker侧复跑work/f1_claude_smoke.py；降级预案=纯API自研工具环"
+     "status": "done",
+     "done": "2026-10-13",
+     "note": "K-ORG-038判据达成(anthropic纯API形态)：老田披露智谱包年Coding Plan→额度与钱包分开(1113≠套餐耗尽)·chat_anthropic直连open.bigmodel.cn/api/anthropic跑GLM-4.6·判据工单qa1_review.py(py_compile+实跑冒烟·3a2c59f)·零spawn绕开reg.exe拦截；CLI形态(chat_claude)代码就位留worker侧·F6真spawn仍待解禁"
     },
     {
      "id": "F2",
