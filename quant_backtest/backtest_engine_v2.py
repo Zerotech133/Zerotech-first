@@ -34,7 +34,7 @@ EXEC_TIMELINE = {
     "chanlun": ["T 收盘：缠论买点确认（seen-ever·hfq）", "T+1 开盘：买入（runup帽>15%放弃该机会）",
                 "T 收盘：卖点确认", "T+1 开盘：卖出，资金回池等下一个买点",
                 "T 收盘：三买失效检查（收盘跌破中枢上沿=三买被否定）→ T+1 开盘离场",
-                "组合层：regime 80/50/30 连续调仓（D-1 判定）+ 超帽等比减仓"],
+                "组合层：regime 三档仓位帽（默认 80/50/30·可自定义）连续调仓（D-1 判定）+ 超帽等比减仓"],
     "double_knife": ["T 14:45：选股引擎跑双刀信号（十字星2连+MACD多头+均线多头+regime非空）",
                      "T 14:55：只卖不买（信号消失/持有到期/灾难止损，收盘价离场）",
                      "T 盘中：禁止买入", "T+1 开盘：买入新选出的票（slot 内 · 总仓位帽内）",
@@ -154,17 +154,18 @@ def _ensure_market_loaded(progress=None):
         progress("数据装载", 10, f"全市场 {len(rets)} 只 · 日历 {len(cal_idx_all)} 日（{round(time.time()-t0)}s）")
 
 def regime_of(day):
+    """返回 (档位, 判定说明)。仓位帽由 BacktestConfig.cap_of(档位) 决定（295 三档可配）。"""
     i = idx_nav.index.get_loc(day)
     if i == 0:
-        return 0.50, "mid", "首日默认"
+        return "mid", "首日默认"
     v, m20v, m60v = idx_nav.iloc[i-1], ma20.iloc[i-1], ma60.iloc[i-1]
     if pd.isna(m60v):
-        return 0.50, "mid", "MA60 未预热"
+        return "mid", "MA60 未预热"
     if v >= m20v:
-        return 0.80, "high", "池指数≥MA20"
+        return "high", "池指数≥MA20"
     if v >= m60v:
-        return 0.50, "mid", "MA60≤池指数<MA20"
-    return 0.30, "low", "池指数<MA60"
+        return "mid", "MA60≤池指数<MA20"
+    return "low", "池指数<MA60"
 
 # ============================================================
 # 信号源（自算 + 缓存）
@@ -351,15 +352,27 @@ class BacktestConfig:
     holding_max_days: int = 0           # 0=不限
     top_n: int = 10
     slot_pct: float = 0.08
-    cap_mode: str = "regime_8050"       # regime_8050 | fixed
-    cap_fixed: float = 0.80
+    cap_mode: str = "regime_8050"       # regime_8050(三档可配) | fixed
+    cap_fixed: float = 0.80             # 固定模式总仓位
+    cap_high: float = 0.80              # regime 三档（K-STOCK-295 老田：总仓位档位可自定义）
+    cap_mid: float = 0.50
+    cap_low: float = 0.30
+    sig_expiry: int = 0                 # 信号有效期（确认后 N 日内未入场即放弃·0=不限）——补仓窗口设置
     runup_cap: float = 0.0
     stop_pct: float = 0.0
     rebalance_every: int = 0
     cost: float = COST
 
-    def cap_of(self, regime_cap):
-        return regime_cap if self.cap_mode == "regime_8050" else self.cap_fixed
+    def cap_of(self, regime_lv):
+        """总仓位帽：fixed=固定值；regime=按三档映射（档位可配，不再写死 80/50/30）。"""
+        if self.cap_mode == "fixed":
+            return self.cap_fixed
+        return {"high": self.cap_high, "mid": self.cap_mid, "low": self.cap_low}.get(regime_lv, self.cap_mid)
+
+    def cap_desc(self):
+        if self.cap_mode == "fixed":
+            return "固定 %d%%" % round(self.cap_fixed * 100)
+        return "regime %d/%d/%d" % (round(self.cap_high * 100), round(self.cap_mid * 100), round(self.cap_low * 100))
 
 # ============================================================
 # 统一引擎
@@ -375,7 +388,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
     global cal
     cash, pos = 1.0, {}
     days, equity_curve, trades, holdings = {}, [], [], {}
-    pending_buy, pending_sell = set(), set()
+    pending_buy, pending_sell = {}, set()   # pending_buy: {stock: 确认日索引}（信号有效期用）
     zg_pending = {}          # pending_buy 买入候选的中枢（信号日随单携带）
     score_pending = {}       # pending_buy 买入候选的评分要素（信号日随单携带）
     holding_since = {}
@@ -419,12 +432,12 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                 rec(day, "SELL", s, "exit_open", pnl)
         pending_sell = still
 
-        # A2. 开盘买入（统一 T+1 open；runup 帽 / 总仓位帽 / slot）
-        cap, regime_lv, regime_why = regime_of(day)
-        capv = cfg.cap_of(cap)
+        # A2. 开盘买入（统一 T+1 open；runup 帽 / 总仓位帽 / slot / 信号有效期）
+        regime_lv, regime_why = regime_of(day)
+        capv = cfg.cap_of(regime_lv)
         eqv_open = cash + sum(p["val"] for p in pos.values())
         deployed = eqv_open - cash
-        still = set()
+        still = {}
         n_buy_today = 0
         # 评分降序填槽（K-STOCK-293 规律校准：评分取前十；旧版代码序=伪随机 bug）
         def _sc_key(x):
@@ -434,8 +447,15 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
         for s in sorted(pending_buy, key=_sc_key):
             sc_m = score_pending.get(s) or {}
             sc = sc_m.get("score")
+            added = pending_buy[s]
+            # 信号有效期（K-STOCK-295 补仓窗口设置）：确认后 N 日仍未入场 → 放弃该机会
+            if cfg.sig_expiry > 0 and di - added >= cfg.sig_expiry:
+                score_pending.pop(s, None); zg_pending.pop(s, None)
+                actions.append({"type": "skip", "stock": s,
+                                "note": f"信号过期：确认后{cfg.sig_expiry}日未入场·评分{sc if sc is not None else '-'}·放弃"})
+                continue
             if n_buy_today >= cfg.top_n:
-                still.add(s)
+                still[s] = added
                 continue
             if s in pos:
                 score_pending.pop(s, None); zg_pending.pop(s, None)
@@ -448,7 +468,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                 continue
             o = px(s, day, "open")
             if o is None:
-                still.add(s)          # 停牌顺延（不丢单）
+                still[s] = added      # 停牌顺延（不丢单）
                 continue
             if cfg.runup_cap > 0 and prev_day:
                 c_prev = px(s, prev_day, "close")
@@ -527,7 +547,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                                         "note": f"regime闸门：池指数<MA60 弱市不开新仓·评分{m_s.get('score') if m_s.get('score') is not None else '-'}"})
                     continue
                 if s not in pos and s not in pending_buy:
-                    pending_buy.add(s)
+                    pending_buy[s] = di
                     zg_pending[s] = (sig_zg or {}).get(day, {}).get(s)
                     score_pending[s] = m_s
                     actions.append({"type": "note", "stock": s,
@@ -535,7 +555,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
         else:
             for s in sorted(sig_buy.get(day, set())):
                 if s not in pos and s not in pending_buy:
-                    pending_buy.add(s)
+                    pending_buy[s] = di
                     actions.append({"type": "note", "stock": s, "note": "14:45 选出→明日开盘买入"})
             for s in list(pos):
                 p = pos[s]
@@ -604,6 +624,8 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 # ============================================================
 DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "top_n": 10, "slot_pct": 0.08, "cap_mode": "regime_8050",
+            "cap_high": 0.80, "cap_mid": 0.50, "cap_low": 0.30, "cap_fixed": 0.80,
+            "sig_expiry": 0,
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
             "holding_max_days": 0, "buy_filter": "3", "universe": "market",
             "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0}
@@ -630,6 +652,11 @@ def run_job(params: dict, job_id: str, progress=None):
         if len(win) < 20:
             return None, f"窗口内交易日不足（{len(win)} 日）"
         d0, d1 = win[0], win[-1]
+        def _r(k, dflt):
+            try:
+                return float(p.get(k) or dflt)
+            except (TypeError, ValueError):
+                return dflt
         cfg = BacktestConfig(
             name={"chanlun": "缠论等机会轮动", "double_knife": "量子双刀日内纪律"}[strategy],
             strategy=strategy, d0=d0, d1=d1,
@@ -639,6 +666,11 @@ def run_job(params: dict, job_id: str, progress=None):
             top_n=max(1, min(50, int(p["top_n"] or 10))),
             slot_pct=max(0.01, min(0.5, float(p["slot_pct"] or 0.08))),
             cap_mode="fixed" if p["cap_mode"] == "fixed" else "regime_8050",
+            cap_fixed=max(0.05, min(1.0, _r("cap_fixed", 0.80))),
+            cap_high=max(0.05, min(1.0, _r("cap_high", 0.80))),
+            cap_mid=max(0.05, min(1.0, _r("cap_mid", 0.50))),
+            cap_low=max(0.0, min(1.0, _r("cap_low", 0.30))),
+            sig_expiry=max(0, min(60, int(p.get("sig_expiry") or 0))),
             runup_cap=float(p["runup_cap"] or 0) if strategy == "chanlun" else 0.0,
             stop_pct=float(p["stop_pct"] or 0),
         )
@@ -683,18 +715,37 @@ def run_job(params: dict, job_id: str, progress=None):
         if pool_info:
             result["meta"]["pool_daily"] = pool_info["pool_daily"]
             result["meta"]["scan_meta"] = pool_info["scan_meta"]
-        # 涉及股票名称映射（前端展示用：只嵌涉及的，不嵌全市场 5911 名单）
+        # 涉及股票集合 + 名称映射 + 个股信号时间轴（K-STOCK-295 老田：每只票什么时间
+        # 异动（一/二/三买）、什么时间到三买要看得到 → 从事件缓存筛窗口内涉及股票落档）
         try:
-            _c2n = json.load(open(os.path.join(BASE, "quant_backtest", "data", "stock_names.json"),
-                                  encoding="utf-8"))["code2name"]
-            used = set(result["trades"] and [t["stock"] for t in result["trades"]] or [])
+            used = {t["stock"] for t in result["trades"]}
             for hs in result["holdings"].values():
                 used.update(x["stock"] for x in hs)
             for dd in result["days"].values():
                 used.update(x["stock"] for x in dd.get("pool_today", []))
+            _c2n = json.load(open(os.path.join(BASE, "quant_backtest", "data", "stock_names.json"),
+                                  encoding="utf-8"))["code2name"]
             result["meta"]["names"] = {k: _c2n.get(k) for k in used if _c2n.get(k)}
+            se = {}
+            ev_fp = None
+            if strategy == "chanlun" and universe == "market":
+                ev_fp = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
+                                     "sig_events_market_v3_%s_%s.json" % (d0, d1))
+            elif strategy == "chanlun":
+                ev_fp = SIG_EVENTS_CACHE % (d0, d1)
+            if ev_fp and os.path.exists(ev_fp):
+                _evs = json.load(open(ev_fp, encoding="utf-8"))["events"]
+                for ev in _evs:
+                    if ev.get("stock") in used and d0 <= ev.get("day", "") <= d1:
+                        se.setdefault(ev["stock"], []).append({
+                            "day": ev["day"], "type": ev["type"],
+                            "score": ev.get("score"), "vr": ev.get("vr")})
+            for k in se:
+                se[k].sort(key=lambda x: x["day"])
+            result["meta"]["stock_events"] = se
         except Exception:
             result["meta"]["names"] = {}
+            result["meta"]["stock_events"] = {}
         os.makedirs(OUT_DIR, exist_ok=True)
         out = os.path.join(OUT_DIR, f"bt2_{job_id}.json")
         json.dump(result, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
@@ -716,6 +767,12 @@ if __name__ == "__main__":
     ap.add_argument("--top-n", type=int, default=10)
     ap.add_argument("--slot-pct", type=float, default=0.08)
     ap.add_argument("--cap-mode", default="regime_8050", choices=["regime_8050", "fixed"])
+    ap.add_argument("--cap-high", type=float, default=0.80, help="regime 高位总仓位帽（默认0.80）")
+    ap.add_argument("--cap-mid", type=float, default=0.50, help="regime 中位总仓位帽（默认0.50）")
+    ap.add_argument("--cap-low", type=float, default=0.30, help="regime 低位总仓位帽（默认0.30）")
+    ap.add_argument("--cap-fixed", type=float, default=0.80, help="固定模式总仓位（默认0.80）")
+    ap.add_argument("--sig-expiry", type=int, default=0,
+                    help="信号有效期：确认后N日未入场放弃（0=不限·补仓窗口设置）")
     ap.add_argument("--runup-cap", type=float, default=0.15)
     ap.add_argument("--stop-pct", type=float, default=0.0)
     ap.add_argument("--holding-max", type=int, default=0)

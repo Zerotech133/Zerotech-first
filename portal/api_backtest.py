@@ -4991,7 +4991,19 @@ def _bt2_start(rec):
         "strategy": strategy, "d0": d0, "d1": d1,
         "top_n": _intv("top_n", 1, 50, 10),
         "slot_pct": _ratio("slot_pct", 0.01, 0.5, 0.08),
+        # 总仓位（K-STOCK-295 老田：档位可自定义——regime 三档各自可配或固定 X%）
         "cap_mode": "fixed" if rec.get("cap_mode") == "fixed" else "regime_8050",
+        "cap_high": _ratio("cap_high", 0.05, 1.0, 0.80),
+        "cap_mid": _ratio("cap_mid", 0.05, 1.0, 0.50),
+        "cap_low": _ratio("cap_low", 0.0, 1.0, 0.30),
+        "cap_fixed": _ratio("cap_fixed", 0.05, 1.0, 0.80),
+        # 补仓规则：信号有效期（确认后 N 日未入场放弃·0=不限）
+        "sig_expiry": _intv("sig_expiry", 0, 60, 0),
+        # 清仓规则：三买失效离场三件套（引擎里有、表单此前未暴露）
+        "three_fail_exit": "false" if str(rec.get("three_fail_exit", "")).strip().lower() == "false" else "true",
+        "fail_level": rec.get("fail_level") if rec.get("fail_level") in ("zg", "zd") else "zg",
+        "fail_buffer": _ratio("fail_buffer", 0, 0.2, 0.0),
+        "regime_gate": "true" if str(rec.get("regime_gate", "")).strip().lower() == "true" else "false",
         "runup_cap": _ratio("runup_cap", 0, 0.5, 0.15 if strategy == "chanlun" else 0),
         "stop_pct": _ratio("stop_pct", -0.5, 0, 0.0),
         "holding_max_days": _intv("holding_max_days", 0, 60, 5 if strategy == "double_knife" else 0),

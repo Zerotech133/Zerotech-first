@@ -10,13 +10,17 @@ h1{font-size:19px;margin-bottom:2px} h1 .tag{color:var(--gold);font-size:12px;ma
 .sub{color:var(--tx2);font-size:12px;margin-bottom:14px}
 .panel{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
 .panel h2{font-size:14px;margin-bottom:10px;color:var(--blue)}
-form .row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.grp{border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.grp-t{font-size:12.5px;color:var(--gold);font-weight:600;margin-bottom:8px}
+.grp-t .gt2{color:var(--tx2);font-weight:400;font-size:11px;margin-left:8px}
+form .row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px}
 .fld{display:flex;flex-direction:column;gap:2px}
 .fld label{font-size:11px;color:var(--tx2)}
 .fld select,.fld input{background:var(--panel2);border:1px solid var(--bd);color:var(--tx);border-radius:6px;padding:5px 8px;font-size:13px;width:130px}
-.fld input[type=number]{width:100px}
+.fld input[type=number]{width:92px}
 button{background:#238636;border:1px solid #2ea043;color:#fff;border-radius:6px;padding:7px 20px;font-size:14px;cursor:pointer}
 button:disabled{opacity:.5;cursor:default}
+.capprev{font-size:12px;color:var(--purple);margin-left:6px;align-self:flex-end;padding-bottom:6px}
 .jobs{font-size:12.5px}
 .jobs .job{display:flex;gap:12px;align-items:center;padding:5px 8px;border-bottom:1px solid #21262d;cursor:pointer;border-radius:5px}
 .jobs .job:hover{background:var(--panel2)}
@@ -48,31 +52,71 @@ button:disabled{opacity:.5;cursor:default}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .empty{color:var(--tx2);font-size:13px;padding:20px;text-align:center}
 .err{color:var(--up);font-size:12px;margin-top:6px}
-/* ==== 293 候选/持仓表样式 ==== */
+/* ==== 293 候选/持仓表 · 295 票池/个股时间轴 ==== */
 .ptab{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:11.5px}
 .ptab th{color:var(--tx2);text-align:left;font-weight:500;padding:3px 8px;border-bottom:1px solid var(--bd,#2a2f3a)}
 .ptab td{padding:3px 8px;border-bottom:1px solid rgba(255,255,255,.04)}
+#stock-sel{background:var(--panel2);border:1px solid var(--bd);color:var(--tx);border-radius:6px;padding:5px 8px;font-size:12.5px;width:100%;max-width:420px}
+.stl{max-height:340px;overflow:auto;margin-top:8px}
+.stl .ev{display:flex;gap:8px;padding:3px 6px;border-bottom:1px dashed #21262d;font-size:12px}
+.stl .ev .d{color:var(--gold);white-space:nowrap;font-weight:600}
+.stl .ev .t{white-space:nowrap;font-weight:600;min-width:88px}
+.stl .ev .x{color:var(--tx2)}
+.h3s{font-size:13px;color:var(--tx);margin-bottom:4px}
 </style><script src="/static/nav.js" defer></script></head><body>
-<h1>回测框架 v2 <span class="tag">K-STOCK-285b · 缠论等机会 × 量子双刀日内纪律 · 配置驱动引擎</span></h1>
-<div class="sub">老田 10-13 口径：缠论≠当天满仓（选出股票<b>等机会</b>）；量子双刀 14:45 选股 / 14:55 只卖不买（盘中禁买入）/ 买入 T+1 开盘 / 次日早盘可卖（T+1 制度）。改参数即改策略行为，无需改引擎。</div>
+<h1>回测框架 v2 <span class="tag">K-STOCK-295 · 票池可见 × 总仓位/补仓/清仓全可设</span></h1>
+<div class="sub">老田 10-13 口径：缠论≠当天满仓（选出股票<b>等机会</b>）；全市场扫描·一二三买全部入池·满足买点的交易。总仓位三档 / 信号有效期（补仓窗口）/ 失效离场（清仓）全部页面可设，改参数即改策略行为。</div>
 
 <div class="panel"><h2>① 发起回测</h2>
-<form id="f"><div class="row">
+<form id="f">
+<div class="grp"><div class="grp-t">基本设置<span class="gt2">策略 / 窗口 / 样本域 / 买点等级 / 槽位</span></div>
+<div class="row">
   <div class="fld"><label>策略</label><select name="strategy"><option value="chanlun">🟣 缠论等机会轮动</option><option value="double_knife">🟡 量子双刀日内纪律</option></select></div>
   <div class="fld"><label>窗口起</label><input name="d0" value="20251013" placeholder="YYYYMMDD"></div>
   <div class="fld"><label>窗口止</label><input name="d1" value="20261012" placeholder="YYYYMMDD"></div>
+  <div class="fld"><label>样本域</label><select name="universe"><option value="market">全市场 5000+（剔ST/北交所）</option><option value="pool76">静态 76 只池</option></select></div>
+  <div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="3">仅三买（默认）</option><option value="23">二买+三买</option><option value="2">仅二买</option><option value="all">一二三类全要</option></select></div>
   <div class="fld"><label>持仓槽数</label><input name="top_n" type="number" value="10" min="1" max="50"></div>
   <div class="fld"><label>单票仓位%</label><input name="slot_pct" type="number" value="8" min="1" max="50"></div>
-  <div class="fld"><label>总仓位</label><select name="cap_mode"><option value="regime_8050">regime 80/50/30</option><option value="fixed">固定 80%</option></select></div>
-  <div class="fld"><label>追高帽%</label><input name="runup_cap" type="number" value="15" min="0" max="50"></div>
-  <div class="fld"><label>止损%（0关）</label><input name="stop_pct" type="number" value="0" min="-50" max="0"></div>
+</div></div>
+
+<div class="grp"><div class="grp-t">🔴 总仓位设置<span class="gt2">留多少总仓位由你定——regime 三档各自可改，或固定 X%</span></div>
+<div class="row">
+  <div class="fld"><label>总仓位模式</label><select name="cap_mode" id="cap-mode"><option value="regime_8050">regime 三档（随行情调）</option><option value="fixed">固定 X%（不随行情）</option></select></div>
+  <span id="cap-regime-box" style="display:flex;gap:10px">
+    <div class="fld"><label>高位帽%（指数≥MA20）</label><input name="cap_high" type="number" value="80" min="5" max="100"></div>
+    <div class="fld"><label>中位帽%（MA20~60）</label><input name="cap_mid" type="number" value="50" min="5" max="100"></div>
+    <div class="fld"><label>低位帽%（&lt;MA60）</label><input name="cap_low" type="number" value="30" min="0" max="100"></div>
+  </span>
+  <span id="cap-fixed-box" style="display:none">
+    <div class="fld"><label>固定总仓位%</label><input name="cap_fixed" type="number" value="80" min="5" max="100"></div>
+  </span>
+  <div class="capprev" id="cap-preview"></div>
+</div>
+<div class="note">判定口径：前一交易日收盘看池等权指数与 MA20/MA60 的位置 → 决定今日总仓位帽；持仓超帽时收盘等比减仓。想「少留现金」就把三档都调高；想「行情差时空仓」把低位帽调到 0。</div></div>
+
+<div class="grp"><div class="grp-t">补仓规则<span class="gt2">卖出资金回池后，什么情况再进场</span></div>
+<div class="row">
+  <div class="fld"><label>信号有效期(日·0不限)</label><input name="sig_expiry" type="number" value="0" min="0" max="60"></div>
+  <div class="fld"><label>追高帽%（0关）</label><input name="runup_cap" type="number" value="15" min="0" max="50"></div>
+</div>
+<div class="note">补仓机制：卖出回笼的资金回池 → 等待新的合格买点信号 → 按<b>评分降序</b>自动补位（评分高者先入场）→ 信号确认后 <b>N 日内</b>未入场（停牌/资金不足/帽满）即过期放弃（0=一直等到能买）。追高帽：开盘较昨收涨幅超帽放弃该机会（防追高接盘）。</div></div>
+
+<div class="grp"><div class="grp-t">清仓规则<span class="gt2">什么情况下离场</span></div>
+<div class="row">
+  <div class="fld"><label>三买失效离场</label><select name="three_fail_exit"><option value="true">开（默认·缠论理论内）</option><option value="false">关</option></select></div>
+  <div class="fld"><label>失效线</label><select name="fail_level"><option value="zg">中枢上沿 zg（紧）</option><option value="zd">中枢下沿 zd（松）</option></select></div>
+  <div class="fld"><label>失效缓冲%</label><input name="fail_buffer" type="number" value="0" min="0" max="20"></div>
+  <div class="fld"><label>个股止损%（0关）</label><input name="stop_pct" type="number" value="0" min="-50" max="0"></div>
   <div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>
-  <div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="3">仅三买（默认）</option><option value="23">二买+三买</option><option value="2">仅二买</option><option value="all">一二三类全要</option></select></div>
-  <div class="fld"><label>样本域</label><select name="universe"><option value="market">全市场 5000+（剔ST/北交所）</option><option value="pool76">静态 76 只池</option></select></div>
-  <div class="fld" style="justify-content:flex-end"><label>&nbsp;</label><button id="go" type="submit">开始回测</button></div>
-</div></form>
-<div class="err" id="ferr"></div>
-<div class="note">三年内数据可支持（20231010 起＝273 体检诚实上限）。窗口超出一年时缠论信号现场重算（hfq+seen-ever，需数分钟），进度见任务列表。</div></div>
+  <div class="fld"><label>弱市闸门</label><select name="regime_gate"><option value="false">关（默认）</option><option value="true">开：指数&lt;MA60 不开新仓</option></select></div>
+</div>
+<div class="note">清仓条件（满足其一即 T+1 开盘卖出）：① 三买失效——收盘跌破买入时的中枢上沿×(1−缓冲)；② 缠论卖点确认（一卖/二卖/三卖）；③ 个股止损（0=关，269 实锤止损负贡献默认关）；④ 持有超上限（0=不限）。另有组合层清仓：regime 降档导致超帽 → 收盘等比减仓。</div></div>
+
+<div class="row"><div class="fld"><label>&nbsp;</label><button id="go" type="submit">开始回测</button></div>
+<div class="fld" style="justify-content:flex-end"><label>&nbsp;</label><span class="note">窗口超一年时缠论信号现场重算（hfq+seen-ever·数分钟）·20231010 起（273 诚实上限）</span></div></div>
+</form>
+<div class="err" id="ferr"></div></div>
 
 <div class="panel"><h2>② 任务列表 <span style="font-size:11px;color:var(--tx2)">（点击已完成任务载入结果）</span></h2>
 <div class="jobs" id="jobs"><div class="empty">加载中…</div></div></div>
@@ -82,11 +126,18 @@ button:disabled{opacity:.5;cursor:default}
 <div class="panel"><h2>④ 结果 KPI</h2>
 <div class="kpis" id="kpis"></div>
 <div id="chart"></div>
-<div class="legend"><span><span class="sw" style="background:#1f6feb55"></span>regime=high(80%)</span>
-<span><span class="sw" style="background:#d2992233"></span>regime=mid(50%)</span>
-<span><span class="sw" style="background:#21262d"></span>regime=low(30%)</span></div>
+<div class="legend"><span><span class="sw" style="background:#1f6feb55"></span>regime=high</span>
+<span><span class="sw" style="background:#d2992233"></span>regime=mid</span>
+<span><span class="sw" style="background:#21262d"></span>regime=low</span></div>
 <div class="note" id="kpi-note"></div></div>
-<div class="panel"><h2>⑤ 逐日日历复盘</h2>
+<div class="panel"><h2>⑤ 票池与个股时间轴 <span style="font-size:11px;color:var(--tx2)">（左侧=当前持仓快照；右侧=选一只票看它何时异动/何时到买点/何时买卖）</span></h2>
+<div class="grid2">
+  <div><div class="h3s" id="cur-hold-title">当前持仓池</div><div id="cur-holdings" style="max-height:380px;overflow:auto"></div></div>
+  <div><div class="h3s">个股信号时间轴（异动/买点/买卖全程）</div>
+    <select id="stock-sel"></select>
+    <div class="stl" id="stock-tl"><div class="note">选择一只股票查看时间轴</div></div></div>
+</div></div>
+<div class="panel"><h2>⑥ 逐日日历复盘</h2>
 <div id="calendar"></div>
 <div class="day-detail" id="day-detail"><span class="note">点击日历格看当日：信号→决策→成交逐笔</span></div></div>
 </div>
@@ -94,12 +145,31 @@ button:disabled{opacity:.5;cursor:default}
 <script>
 const TYPE_CN={buy:"买入",sell:"卖出",trim:"减仓",skip:"放弃",note:"信号"};
 const TY_COLOR={buy:"var(--up)",sell:"var(--dn)",trim:"var(--gold)",skip:"var(--tx2)",note:"var(--blue)"};
+const SIG_CN={"1买":["一买（底背驰·异动）","up"],"2买":["二买（回踩不破·异动）","up"],"3买":["三买（中枢上移·异动）","up"],
+"1卖":["一卖（顶背驰）","dn"],"2卖":["二卖","dn"],"3卖":["三卖（中枢下移）","dn"]};
 let CURJID=null, DATA=null;
+
+// ── 表单联动 ──
+const capMode=document.getElementById("cap-mode");
+function capSync(){
+  const m=capMode.value;
+  document.getElementById("cap-regime-box").style.display=m==="fixed"?"none":"flex";
+  document.getElementById("cap-fixed-box").style.display=m==="fixed"?"":"none";
+  const f=n=>+document.querySelector(`[name=${n}]`).value||0;
+  document.getElementById("cap-preview").textContent=m==="fixed"
+    ?`→ 任何行情总仓位都留 ${f("cap_fixed")}%`
+    :`→ 高位留 ${f("cap_high")}% · 中位留 ${f("cap_mid")}% · 低位留 ${f("cap_low")}%`;
+}
+capMode.onchange=capSync;
+document.querySelectorAll("#cap-regime-box input,#cap-fixed-box input").forEach(i=>i.oninput=capSync);
+capSync();
 
 document.getElementById("f").onsubmit=async e=>{
   e.preventDefault();
   const fd=new FormData(e.target), o={};
-  fd.forEach((v,k)=>{o[k]= k==="slot_pct"||k==="runup_cap"||k==="stop_pct" ? (+v)/100 : (k==="top_n"||k==="holding_max_days" ? +v : v);});
+  const PCT=new Set(["slot_pct","runup_cap","stop_pct","fail_buffer","cap_high","cap_mid","cap_low","cap_fixed"]);
+  const INT=new Set(["top_n","holding_max_days","sig_expiry"]);
+  fd.forEach((v,k)=>{o[k]= PCT.has(k)?(+v)/100 : INT.has(k)?+v : v;});
   const r=await fetch("/api/bt2_run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)}).then(x=>x.json()).catch(err=>({ok:false,error:String(err)}));
   if(!r.ok){document.getElementById("ferr").textContent=r.error||"提交失败";return;}
   document.getElementById("ferr").textContent="";
@@ -140,7 +210,7 @@ function render(){
   document.getElementById("timelines").innerHTML=
     `<div class="tl-card"><h3>${c.name}（${c.strategy==="chanlun"?"🟣":"🟡"}）执行时间轴</h3>`+
     DATA.meta.execution_timeline.map((s,i)=>`<div class="tl-step"><b>${i+1}.</b><span>${s}</span></div>`).join("")+
-    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · slot=${Math.round(c.slot_pct*100)}% · 总仓位=${c.cap_mode==="fixed"?"固定80%":"regime 80/50/30"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 买点等级=${({23:"二买+三买",2:"仅二买",3:"仅三买",all:"全要"})[DATA.meta.buy_filter]||"-"} · 样本域=${DATA.meta.universe==="market"?"全市场":"76池"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
+    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · slot=${Math.round(c.slot_pct*100)}% · <b>总仓位=${capDesc(c)}</b> · 信号有效期=${c.sig_expiry?c.sig_expiry+"日":"不限"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 失效离场=${DATA.meta.three_fail_exit?"开("+({"zg":"上沿","zd":"下沿"})[DATA.meta.fail_level||"zg"]+")":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 买点等级=${({23:"二买+三买",2:"仅二买",3:"仅三买",all:"全要"})[DATA.meta.buy_filter]||"-"} · 样本域=${DATA.meta.universe==="market"?"全市场":"76池"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
     `<div class="note">口径声明：${DATA.meta.assumptions.join("；")}</div>`;
   // KPI
   const s=DATA.summary, cls=v=>v>0?"up":"dn";
@@ -152,7 +222,12 @@ function render(){
     ["平均仓位",s.avg_invested_pct+"%","gld"],
   ].map(k=>`<div class="kpi"><div class="lb">${k[0]}</div><div class="v ${k[2]}">${k[1]}</div></div>`).join("");
   document.getElementById("kpi-note").innerHTML=`盈亏比 PF=${s.profit_factor??"-"} · regime 超帽减仓 ${s.n_trim} 次 · 年化 ${s.annualized_pct}% · 窗口 ${c.d0}→${c.d1}`;
-  drawChart(); drawCal();
+  drawChart(); drawCal(); drawPool();
+}
+
+function capDesc(c){
+  if(c.cap_mode==="fixed")return "固定"+Math.round(c.cap_fixed*100)+"%";
+  return `regime ${Math.round(c.cap_high*100)}/${Math.round(c.cap_mid*100)}/${Math.round(c.cap_low*100)}`;
 }
 
 function drawChart(){
@@ -209,6 +284,50 @@ function showDay(d){
   // ③ 当日决策流水
   h+=(dd.actions||[]).map(a=>`<div class="act"><span class="ty" style="color:${TY_COLOR[a.type]||"var(--tx)"}">[${TYPE_CN[a.type]||a.type}]</span>${a.stock?a.stock+" "+NM(a.stock)+" ":""}${a.note}${a.pnl_pct!=null?` <span class="${a.pnl_pct>0?"up":"dn"}">(${a.pnl_pct>0?"+":""}${a.pnl_pct}%)</span>`:""}</div>`).join("")||'<div class="act note">无决策事件</div>';
   document.getElementById("day-detail").innerHTML=h;
+}
+
+// ══ 295 票池与个股时间轴 ══
+function drawPool(){
+  const days=DATA.days,ks=Object.keys(days).sort(),last=ks[ks.length-1],dd=days[last];
+  const hs=(DATA.holdings[last]||[]).slice().sort((a,b)=>(b.score??-1)-(a.score??-1));
+  document.getElementById("cur-hold-title").innerHTML=
+    `当前持仓池（${last} 最新日）· ${hs.length}/${DATA.meta.config.top_n} 槽 · 现金 ${dd.cash_pct}% · 总仓位帽 ${capDesc(DATA.meta.config)}（当日 regime=${dd.regime}·帽 ${Math.round(dd.cap*100)}%）`;
+  document.getElementById("cur-holdings").innerHTML=
+    `<table class="ptab"><tr><th>代码</th><th>名称</th><th>评分</th><th>盈亏%</th><th>权重%</th></tr>`+
+    hs.map(x=>`<tr><td>${x.stock}</td><td class="note">${NM(x.stock)}</td><td style="color:${scoreColor(x.score)}">${SC(x.score)}</td><td class="${x.pnl_pct>0?"up":"dn"}">${x.pnl_pct>0?"+":""}${x.pnl_pct}</td><td>${x.wgt_pct}</td></tr>`).join("")+
+    (hs.length?"":"<tr><td colspan=5 class=note>空仓（资金在池里等买点）</td></tr>")+"</table>";
+  // 个股下拉：信号事件 ∪ 成交 ∪ 持仓
+  const set=new Set(Object.keys(DATA.meta.stock_events||{}));
+  DATA.trades.forEach(t=>set.add(t.stock));
+  Object.values(DATA.holdings).forEach(a=>a.forEach(x=>set.add(x.stock)));
+  const arr=[...set].sort();
+  const sel=document.getElementById("stock-sel");
+  sel.innerHTML=arr.length?`<option value="">— 选择股票（${arr.length} 只）—</option>`+
+    arr.map(s=>`<option value="${s}">${s} ${NM(s)}</option>`).join("")
+    :'<option value="">（本结果无个股事件数据）</option>';
+  document.getElementById("stock-tl").innerHTML='<div class="note">选择一只股票查看：何时异动→何时到买点→何时买卖</div>';
+  sel.onchange=()=>showStockTl(sel.value);
+  if(arr.length===1)showStockTl(arr[0]);
+}
+function showStockTl(s){
+  const el=document.getElementById("stock-tl");
+  if(!s){el.innerHTML='<div class="note">选择一只股票查看时间轴</div>';return;}
+  const evs=[];
+  (DATA.meta.stock_events||{})[s]&&DATA.meta.stock_events[s].forEach(e=>{
+    const cn=SIG_CN[e.type]||[e.type,""];
+    evs.push({day:e.day,txt:cn[0],col:cn[1]==="up"?"var(--up)":cn[1]==="dn"?"var(--dn)":"var(--blue)",
+      x:`${e.score!=null?"评分"+e.score+" · ":""}${e.vr!=null?"量比"+(+e.vr).toFixed(2):""}`});
+  });
+  Object.entries(DATA.days).forEach(([d,x])=>(x.actions||[]).forEach(a=>{
+    if(a.stock!==s)return;
+    evs.push({day:d,txt:TYPE_CN[a.type]||a.type,col:TY_COLOR[a.type]||"var(--tx)",
+      x:`${a.note||""}${a.pnl_pct!=null?`（盈亏 ${a.pnl_pct>0?"+":""}${a.pnl_pct}%）`:""}`});
+  }));
+  evs.sort((a,b)=>a.day.localeCompare(b.day)||0);
+  el.innerHTML=evs.length?evs.map(e=>
+    `<div class="ev"><span class="d">${e.day.slice(0,4)}/${e.day.slice(4,6)}/${e.day.slice(6)}</span>`+
+    `<span class="t" style="color:${e.col}">${e.txt}</span><span class="x">${e.x}</span></div>`).join("")
+    :'<div class="note">该股在窗口内无信号/成交记录</div>';
 }
 poll(); setInterval(poll,5000);
 </script></body></html>
