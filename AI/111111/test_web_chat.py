@@ -80,6 +80,39 @@ class WebChatTests(unittest.TestCase):
         self.assertIn('/api/rag', page)
         self.assertIn('通用助手', page)
         self.assertIn('研究助手', page)
+        self.assertIn('zhipu/glm-4-flash', page)
+
+    @patch.object(web_chat, 'ZhipuProvider')
+    def test_cloud_model_streams_through_zhipu_provider(self, provider_class):
+        provider_class.return_value.stream.return_value = iter([
+            {'message': {'content': '云端答案'}}, {'done': True},
+        ])
+        response, data = self.request('POST', '/api/chat', {
+            'message': 'hi', 'model': 'zhipu/glm-4-flash', 'think': True,
+        })
+        self.assertEqual(response.status, 200)
+        self.assertIn('云端答案'.encode(), data)
+        provider_class.return_value.stream.assert_called_once()
+        self.assertEqual(provider_class.return_value.stream.call_args.kwargs['model'], 'glm-4-flash')
+        self.assertTrue(provider_class.return_value.stream.call_args.kwargs['think'])
+
+    @patch.object(web_chat, 'ZhipuProvider', side_effect=web_chat.ProviderNotConfigured('hidden'))
+    def test_cloud_model_without_key_is_503(self, _provider_class):
+        response, data = self.request('POST', '/api/chat', {
+            'message': 'hi', 'model': 'zhipu/glm-4-flash',
+        })
+        self.assertEqual(response.status, 503)
+        self.assertNotIn(b'hidden', data)
+
+    @patch.object(web_chat, 'ZhipuProvider')
+    def test_cloud_provider_not_configured_before_stream_headers(self, provider_class):
+        provider_class.return_value.configured = False
+        response, data = self.request('POST', '/api/chat', {
+            'message': 'hi', 'model': 'zhipu/glm-4-flash',
+        })
+        self.assertEqual(response.status, 503)
+        self.assertEqual(data, '{"error": "智谱未配置，请设置 GLM_API_KEY 或 ZHIPU_API_KEY"}'.encode())
+        provider_class.return_value.stream.assert_not_called()
 
     @patch.object(web_chat, 'urlopen')
     def test_stream(self, urlopen):

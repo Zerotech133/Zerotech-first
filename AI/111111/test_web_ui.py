@@ -27,6 +27,10 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('think: think.checked', page)
         self.assertIn('将触发冷启动', page)
 
+    def test_page_labels_cloud_provider(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b", "zhipu/glm-4-flash"))
+        self.assertIn('智谱 · glm-4-flash', page)
+
     def test_page_has_chat_and_rag_modes(self):
         page = web_ui.render_chat_page(("qwen3.5:9b", "qwen3.5:4b"))
         self.assertIn('value="chat"', page)

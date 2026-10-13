@@ -7,14 +7,16 @@ from urllib.error import HTTPError, URLError
 try:
  from .rag_web_backend import RagUnavailable, RagWebService
  from .web_ui import render_chat_page
- from .model_routing import CHAT_CONTEXT_CHAR_BUDGET, CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
+ from .model_routing import CHAT_CONTEXT_CHAR_BUDGET, CHAT_MODELS, CLOUD_CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
  from .chat_profiles import ProfileError, get_profile, list_profile_specs
+ from .cloud_provider import ProviderAuthError, ProviderNotConfigured, ProviderProtocolError, ProviderUnavailable, ZhipuProvider
 except ImportError:
  from rag_web_backend import RagUnavailable, RagWebService
  from web_ui import render_chat_page
- from model_routing import CHAT_CONTEXT_CHAR_BUDGET, CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
+ from model_routing import CHAT_CONTEXT_CHAR_BUDGET, CHAT_MODELS, CLOUD_CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
  from chat_profiles import ProfileError, get_profile, list_profile_specs
-HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS
+ from cloud_provider import ProviderAuthError, ProviderNotConfigured, ProviderProtocolError, ProviderUnavailable, ZhipuProvider
+HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS + CLOUD_CHAT_MODELS
 STATIC_ROOT = Path(__file__).resolve().parents[2] / 'portal' / 'static'
 STATIC_ASSETS = {
     '/static/tokens.css': (STATIC_ROOT / 'tokens.css', 'text/css; charset=utf-8'),
@@ -49,9 +51,14 @@ def _payload(h):
    item=dict(item, content=item['content'][-CHAT_CONTEXT_CHAR_BUDGET:]); size=len(item['content'])
   bounded.append(item); total += size
  clean_history=list(reversed(bounded))
- try: model=select_model('chat', p.get('model') or role['model']).model
- except ModelRoutingError as e: raise ValueError(str(e)) from e
- return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True,'think':think,'keep_alive':'30m'}
+ requested = p.get('model') or role['model']
+ provider = 'ollama'
+ if requested in CLOUD_CHAT_MODELS:
+  provider, model = 'zhipu', requested.split('/', 1)[1]
+ else:
+  try: model=select_model('chat', requested).model
+  except ModelRoutingError as e: raise ValueError(str(e)) from e
+ return {'provider':provider,'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True,'think':think,'keep_alive':'30m'}
 def _rag_payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')
@@ -84,9 +91,24 @@ class ChatHandler(BaseHTTPRequestHandler):
   except ValueError as e:self._err(400,str(e)); return
   response_started=False
   try:
-   with urlopen(Request(OLLAMA_URL,data=json.dumps(p).encode(),headers={'Content-Type':'application/json'},method='POST'),timeout=120) as r:
+   if p['provider'] == 'zhipu':
+    provider=ZhipuProvider()
+    if not provider.configured: raise ProviderNotConfigured('智谱未配置，请设置 GLM_API_KEY 或 ZHIPU_API_KEY')
+    events=provider.stream(p['messages'], model=p['model'], think=p['think'])
+    self.send_response(200); response_started=True; self.send_header('Content-Type','application/x-ndjson; charset=utf-8'); self.send_header('Cache-Control','no-cache'); self.end_headers()
+    for event in events:
+     self.wfile.write((json.dumps(event,ensure_ascii=False)+'\n').encode()); self.wfile.flush()
+    return
+   ollama_payload=dict(p); ollama_payload.pop('provider', None)
+   with urlopen(Request(OLLAMA_URL,data=json.dumps(ollama_payload).encode(),headers={'Content-Type':'application/json'},method='POST'),timeout=120) as r:
     self.send_response(200); response_started=True; self.send_header('Content-Type','application/x-ndjson'); self.send_header('Cache-Control','no-cache'); self.end_headers()
     while c:=r.read(8192): self.wfile.write(c); self.wfile.flush()
+  except ProviderNotConfigured:
+   if not response_started: self._err(503,'智谱未配置，请设置 GLM_API_KEY 或 ZHIPU_API_KEY')
+  except ProviderAuthError:
+   if not response_started: self._err(502,'智谱鉴权失败，请检查 API key')
+  except (ProviderUnavailable,ProviderProtocolError):
+   if not response_started: self._err(502,'智谱服务暂不可用')
   except (HTTPError,URLError,OSError,TimeoutError):
    if not response_started: self._err(502,'无法连接 Ollama，请确认服务已启动')
  def _do_rag(self):

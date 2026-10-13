@@ -14,10 +14,16 @@ def _model_options(models: Sequence[str], selected: str = DEFAULT_CHAT_MODEL) ->
     selected = selected if selected in models else (str(models[0]) if models else selected)
     return "".join(
         '<option value="{value}"{selected}>{label}</option>'.format(
-            value=escape(str(model), quote=True), label=escape(str(model))
+            value=escape(str(model), quote=True), label=escape(_model_label(str(model)))
             , selected=" selected" if str(model) == selected else ""
         ) for model in models
     )
+
+
+def _model_label(model: str) -> str:
+    if model.startswith("zhipu/"):
+        return "智谱 · " + model.split("/", 1)[1]
+    return model
 
 
 def _profile_options(profiles: Sequence[object]) -> str:

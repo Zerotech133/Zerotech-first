@@ -11,6 +11,7 @@ from typing import Iterable
 
 
 CHAT_MODELS = ("qwen3.5:4b", "qwen3.5:9b", "qwen3.5:35b")
+CLOUD_CHAT_MODELS = ("zhipu/glm-4-flash",)
 DEFAULT_CHAT_MODEL = "qwen3.5:9b"
 RAG_CHAT_MODEL = "qwen3.5:9b"
 EMBED_MODEL = "bge-m3"
@@ -118,6 +119,7 @@ def validate_model(capability: str, model: str | None = None) -> str:
 
 __all__ = [
     "CHAT_MODELS",
+    "CLOUD_CHAT_MODELS",
     "DEFAULT_CHAT_MODEL",
     "RAG_CHAT_MODEL",
     "EMBED_MODEL",
