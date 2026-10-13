@@ -52,7 +52,7 @@
    "id": "C",
    "name": "批C·调度闭环",
    "deadline": "2026-10-20",
-   "status": "doing",
+   "status": "done",
    "items": [
     {
      "id": "C1",
@@ -78,7 +78,8 @@
      "id": "C4",
      "task": "review 积压 19 单质检分派（K-ORG-025a 四批）",
      "owner": "QA1",
-     "note": "R2批已质检：158通过/145部分通过/159·160整改退回；R1·R4·R3待检"
+     "note": "K-ORG-025a闭环：四批19单全出质检结论(通过11/部分3/整改2/SEC1加审3)",
+     "done": "2026-10-13"
     }
    ]
   },
@@ -86,12 +87,14 @@
    "id": "D",
    "name": "批D·能力升级",
    "deadline": null,
-   "status": "planned",
+   "status": "doing",
    "items": [
     {
      "id": "D1",
      "task": "prompt 版本化登记",
-     "owner": "ARCH1"
+     "owner": "ARCH1",
+     "note": "K-ORG-030a交付：prompt_versions.json 22份committed·git单一事实源幂等再生",
+     "done": "2026-10-13"
     },
     {
      "id": "D2",

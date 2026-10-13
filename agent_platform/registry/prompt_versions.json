@@ -1,0 +1,342 @@
+{
+ "_note": "D1(K-ORG-030,ARCH1) prompt 版本化登记：单一事实源=git 历史，改 prompt 后重跑 tools/prompt_version_registry.py 再生。version=提交次数。",
+ "generated": "2026-10-13 10:11",
+ "total": 22,
+ "prompts": {
+  "a0_chief": {
+   "file": "agent_platform/prompts/a0_chief.md",
+   "version": 2,
+   "status": "committed",
+   "last_commit": "ea9b325",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-023: 参谋长命名田小皮+27满编开发计划(老田10-13 08:28指令:27人完整部门理明白+完整开发计划尽快落地+开源社区参考+参谋长取名田小皮)——【命名落地】org.json chief.name=田小皮(agent",
+   "history": [
+    {
+     "sha": "ea9b325",
+     "date": "2026-10-13",
+     "msg": "K-ORG-023: 参谋长命名田小皮+27满编开发计划(老田10-13 08:28指令:27人完整部门理明白+完整开发计划尽快落地+开源社区参考+参谋长取名田小皮)——【命名落地】org.json chief.name=田小皮(agent"
+    },
+    {
+     "sha": "062e8b5",
+     "date": "2026-10-08",
+     "msg": "K-ORG-006 A0总管实例化骨架v0.1:a0_agent.py读日报出A0点评(独立CLI不挂automation待拍板,模型默认org.json chief binding=35b可--model覆盖)+prompts/a0_ch"
+    }
+   ]
+  },
+  "backtest_engineer": {
+   "file": "agent_platform/prompts/backtest_engineer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "57a595d",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-017: 研发部 v2 扩编——DEV3 策略/DEV4 回测/DEV5 前端三岗注册落地",
+   "history": [
+    {
+     "sha": "57a595d",
+     "date": "2026-10-13",
+     "msg": "K-ORG-017: 研发部 v2 扩编——DEV3 策略/DEV4 回测/DEV5 前端三岗注册落地"
+    }
+   ]
+  },
+  "code_engineer": {
+   "file": "agent_platform/prompts/code_engineer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "6f86524",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-015: 组织扩编——研发部/交易部实例化（K-ORG-001 P2 落地）",
+   "history": [
+    {
+     "sha": "6f86524",
+     "date": "2026-10-13",
+     "msg": "K-ORG-015: 组织扩编——研发部/交易部实例化（K-ORG-001 P2 落地）"
+    }
+   ]
+  },
+  "d1_decision": {
+   "file": "agent_platform/prompts/d1_decision.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e2cd242",
+   "last_date": "2026-10-08",
+   "last_msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖",
+   "history": [
+    {
+     "sha": "e2cd242",
+     "date": "2026-10-08",
+     "msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖"
+    }
+   ]
+  },
+  "data_engineer": {
+   "file": "agent_platform/prompts/data_engineer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "90207e8",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）",
+   "history": [
+    {
+     "sha": "90207e8",
+     "date": "2026-10-13",
+     "msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）"
+    }
+   ]
+  },
+  "devops_engineer": {
+   "file": "agent_platform/prompts/devops_engineer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e3c8033",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编",
+   "history": [
+    {
+     "sha": "e3c8033",
+     "date": "2026-10-13",
+     "msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编"
+    }
+   ]
+  },
+  "f1_fundamental": {
+   "file": "agent_platform/prompts/f1_fundamental.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e2cd242",
+   "last_date": "2026-10-08",
+   "last_msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖",
+   "history": [
+    {
+     "sha": "e2cd242",
+     "date": "2026-10-08",
+     "msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖"
+    }
+   ]
+  },
+  "frontend_engineer": {
+   "file": "agent_platform/prompts/frontend_engineer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "57a595d",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-017: 研发部 v2 扩编——DEV3 策略/DEV4 回测/DEV5 前端三岗注册落地",
+   "history": [
+    {
+     "sha": "57a595d",
+     "date": "2026-10-13",
+     "msg": "K-ORG-017: 研发部 v2 扩编——DEV3 策略/DEV4 回测/DEV5 前端三岗注册落地"
+    }
+   ]
+  },
+  "leg1_legal": {
+   "file": "agent_platform/prompts/leg1_legal.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "6347f4d",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-024: 27满编落地+研发工单投影(老田10-13 08:35指令:按K-ORG-023规划马上进行研发部门开发=批A2拍板)——【满编收官】MKT1市场运营E2(市场部planned→active:统一口号纪律执法·宣发经L",
+   "history": [
+    {
+     "sha": "6347f4d",
+     "date": "2026-10-13",
+     "msg": "K-ORG-024: 27满编落地+研发工单投影(老田10-13 08:35指令:按K-ORG-023规划马上进行研发部门开发=批A2拍板)——【满编收官】MKT1市场运营E2(市场部planned→active:统一口号纪律执法·宣发经L"
+    }
+   ]
+  },
+  "mkt1_marketer": {
+   "file": "agent_platform/prompts/mkt1_marketer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "6347f4d",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-024: 27满编落地+研发工单投影(老田10-13 08:35指令:按K-ORG-023规划马上进行研发部门开发=批A2拍板)——【满编收官】MKT1市场运营E2(市场部planned→active:统一口号纪律执法·宣发经L",
+   "history": [
+    {
+     "sha": "6347f4d",
+     "date": "2026-10-13",
+     "msg": "K-ORG-024: 27满编落地+研发工单投影(老田10-13 08:35指令:按K-ORG-023规划马上进行研发部门开发=批A2拍板)——【满编收官】MKT1市场运营E2(市场部planned→active:统一口号纪律执法·宣发经L"
+    }
+   ]
+  },
+  "model_trainer": {
+   "file": "agent_platform/prompts/model_trainer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "6f86524",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-015: 组织扩编——研发部/交易部实例化（K-ORG-001 P2 落地）",
+   "history": [
+    {
+     "sha": "6f86524",
+     "date": "2026-10-13",
+     "msg": "K-ORG-015: 组织扩编——研发部/交易部实例化（K-ORG-001 P2 落地）"
+    }
+   ]
+  },
+  "n1_sentiment": {
+   "file": "agent_platform/prompts/n1_sentiment.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e2cd242",
+   "last_date": "2026-10-08",
+   "last_msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖",
+   "history": [
+    {
+     "sha": "e2cd242",
+     "date": "2026-10-08",
+     "msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖"
+    }
+   ]
+  },
+  "product_manager": {
+   "file": "agent_platform/prompts/product_manager.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "90207e8",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）",
+   "history": [
+    {
+     "sha": "90207e8",
+     "date": "2026-10-13",
+     "msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）"
+    }
+   ]
+  },
+  "qa_engineer": {
+   "file": "agent_platform/prompts/qa_engineer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "90207e8",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）",
+   "history": [
+    {
+     "sha": "90207e8",
+     "date": "2026-10-13",
+     "msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）"
+    }
+   ]
+  },
+  "security_auditor": {
+   "file": "agent_platform/prompts/security_auditor.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e3c8033",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编",
+   "history": [
+    {
+     "sha": "e3c8033",
+     "date": "2026-10-13",
+     "msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编"
+    }
+   ]
+  },
+  "solution_architect": {
+   "file": "agent_platform/prompts/solution_architect.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "90207e8",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）",
+   "history": [
+    {
+     "sha": "90207e8",
+     "date": "2026-10-13",
+     "msg": "K-ORG-018: 中大型软件公司组织架构 v1——矩阵制落地（8 职能中心 + 3 项目部门 A/B/C 并行）"
+    }
+   ]
+  },
+  "strategy_engineer": {
+   "file": "agent_platform/prompts/strategy_engineer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "57a595d",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-017: 研发部 v2 扩编——DEV3 策略/DEV4 回测/DEV5 前端三岗注册落地",
+   "history": [
+    {
+     "sha": "57a595d",
+     "date": "2026-10-13",
+     "msg": "K-ORG-017: 研发部 v2 扩编——DEV3 策略/DEV4 回测/DEV5 前端三岗注册落地"
+    }
+   ]
+  },
+  "t1_bull": {
+   "file": "agent_platform/prompts/t1_bull.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e2cd242",
+   "last_date": "2026-10-08",
+   "last_msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖",
+   "history": [
+    {
+     "sha": "e2cd242",
+     "date": "2026-10-08",
+     "msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖"
+    }
+   ]
+  },
+  "t2_bear": {
+   "file": "agent_platform/prompts/t2_bear.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e2cd242",
+   "last_date": "2026-10-08",
+   "last_msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖",
+   "history": [
+    {
+     "sha": "e2cd242",
+     "date": "2026-10-08",
+     "msg": "K-STOCK-004 投研部骨架落地可跑:菜鸟五角色独立(T1/T2辩论+N1/F1并行+D1五档决策)+DSL解释器+四级namespace RBAC+SQLite checkpoint,Mock冒烟8/8 PASS,零第三方依赖"
+    }
+   ]
+  },
+  "tech_writer": {
+   "file": "agent_platform/prompts/tech_writer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e3c8033",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编",
+   "history": [
+    {
+     "sha": "e3c8033",
+     "date": "2026-10-13",
+     "msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编"
+    }
+   ]
+  },
+  "trade_executor": {
+   "file": "agent_platform/prompts/trade_executor.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "6f86524",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-015: 组织扩编——研发部/交易部实例化（K-ORG-001 P2 落地）",
+   "history": [
+    {
+     "sha": "6f86524",
+     "date": "2026-10-13",
+     "msg": "K-ORG-015: 组织扩编——研发部/交易部实例化（K-ORG-001 P2 落地）"
+    }
+   ]
+  },
+  "ui_designer": {
+   "file": "agent_platform/prompts/ui_designer.md",
+   "version": 1,
+   "status": "committed",
+   "last_commit": "e3c8033",
+   "last_date": "2026-10-13",
+   "last_msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编",
+   "history": [
+    {
+     "sha": "e3c8033",
+     "date": "2026-10-13",
+     "msg": "K-ORG-019: GenOS 完整开发团队——+DevOps/安全/UI设计/技术文档四岗收编"
+    }
+   ]
+  }
+ }
+}
