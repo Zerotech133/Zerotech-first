@@ -31,6 +31,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -69,7 +70,7 @@ def app_creds():
         _APP_CREDS = (app_id, app_secret)
     return _APP_CREDS
 
-BOT_OPEN_ID = os.environ.get("PG_BOT_OPEN_ID", "ou_6bbb99fcfa7a5b1049f0cf19f64462ae")   # 默认=本 app（cli_aa3e4f1b58f85cdd）视角 bot open_id（2026-10-07 mention 回绑实证）；open_id 为 app 维度，换绑 app 时设 PG_BOT_OPEN_ID 覆盖，勿跨用他 app 所得 id
+BOT_OPEN_ID = os.environ.get("PG_BOT_OPEN_ID", "ou_0b743476bdd6657918407e86a1fd1a23")   # 默认=本 app（cli_aa469e12a8b85bcd）视角 bot open_id（2026-10-13 /bot/v3/info 实证回绑）；open_id 为 app 维度，换绑 app 时设 PG_BOT_OPEN_ID 覆盖，勿跨用他 app 所得 id；注意任务计划程序宿主缓存旧环境变量，故代码默认值必须同步换新
 
 # 防滥用
 RATE_LIMIT_S = 60      # 每 sender_id 每 N 秒 1 次
@@ -273,6 +274,22 @@ def _worker(q, chat_id, exe, dry):
 
 
 # ── 事件解析 ───────────────────────────────────────────────
+_AT_PLACEHOLDER = re.compile(r"@_user_\d+\s*")            # 客户端 @本app机器人 脱敏占位
+_AT_RAW_TAG = re.compile(r"<at\s+user_id=[^>]*>[^<]*</at>\s*")   # API 直发 @ 原文标签
+
+
+def _strip_at(d):
+    """content 去全部 @ 残留（mentions 名字 / @_user_N 占位 / <at> 原文），返回净问句文本。"""
+    content = d.get("content") or ""
+    for m in (d.get("mentions") or []):
+        name = m.get("name")
+        if name:
+            content = content.replace("@" + name, "")
+    content = _AT_PLACEHOLDER.sub("", content)
+    content = _AT_RAW_TAG.sub("", content)
+    return content
+
+
 def _parse_event(line):
     """解析 event consume stdout 一行 NDJSON。
     返回 (问句, chat_id, message_id, sender_id, chat_type) 或 None。"""
@@ -290,22 +307,27 @@ def _parse_event(line):
     if chat_type == "p2p":
         # K-STOCK-299：私聊无需 @，content 即问句——此前被「mentions
         # 必含 bot」+「群白名单」双闸拦死，私聊从不触发。
-        q = (d.get("content") or "").strip()
+        q = _strip_at(d).strip()
         if not q or q.startswith("[AI] "):
             return None
         return (q, chat_id, msg_id, sender_id, chat_type)
-    # 群聊：必须 mentions 含 BOT_OPEN_ID
+    # 群聊 @ 判定（K-STOCK-301：三形态兼容——lark-cli NDJSON 实测不透出
+    # mentions，纯 mentions 判定对真实客户端消息永不命中，2026-10-13 实证）：
+    #   1) mentions 含 BOT_OPEN_ID（透出时精确路径）
+    #   2) content 含 @_user_N 占位（真实客户端 @本app机器人，Feishu 脱敏渲染，
+    #      旧 bot 同款判据；@其他 app 机器人保留原文不会误中）
+    #   3) content 含 <at user_id=BOT_OPEN_ID> 原文（API 直发 @，pg 命名空间）
     mentions = d.get("mentions") or []
-    hit = any((m.get("id") == BOT_OPEN_ID) for m in mentions)
+    content = d.get("content") or ""
+    if mentions:
+        hit = any((m.get("id") == BOT_OPEN_ID) for m in mentions)
+    else:
+        hit = ("@_user_" in content
+               or ('<at user_id=%s' % BOT_OPEN_ID) in content
+               or ('<at user_id="%s"' % BOT_OPEN_ID) in content)
     if not hit:
         return None
-    content = d.get("content") or ""
-    # content 已预渲染为"@机器人名 问句"，去 @名字
-    for m in mentions:
-        name = m.get("name")
-        if name:
-            content = content.replace("@" + name, "")
-    q = content.strip()
+    q = _strip_at(d).strip()
     # 过滤机器人自己发的回复（[AI] 前缀，双保险）
     if q.startswith("[AI] "):
         return None
@@ -412,7 +434,7 @@ def main():
                 line = line.strip()
                 if not line:
                     continue
-                _log("RAW_EVENT: %s" % line[:300])
+                _log("RAW_EVENT: %s" % line[:2000])
                 parsed = _parse_event(line)
                 if not parsed:
                     _log("parse_skip (not @bot/p2p or filtered)")
