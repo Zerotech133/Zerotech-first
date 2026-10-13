@@ -75,6 +75,18 @@
     color:var(--dim);cursor:pointer}
   .mini:hover{color:var(--fg);border-color:var(--blue)}
 
+  /* ── 长文块折叠（介绍类板块压缩篇幅：默认 150px+渐隐，展开看全文）── */
+  .clampable{position:relative;max-height:150px;overflow:hidden}
+  .clampable.open{max-height:none}
+  .clampable:not(.open)::after{content:'';position:absolute;left:0;right:0;bottom:0;height:42px;
+    background:linear-gradient(rgba(17,22,29,0),var(--panel));pointer-events:none}
+  .prompt-box.clampable{max-height:150px;overflow:hidden}
+  .prompt-box.clampable.open{max-height:420px;overflow:auto}
+  .prompt-box.clampable:not(.open)::after{content:'';position:absolute;left:0;right:0;bottom:0;height:42px;
+    background:linear-gradient(rgba(22,29,38,0),var(--panel2));pointer-events:none}
+  .clamp-bar{margin-top:6px}
+  .cf .rid{font-family:Consolas,monospace;font-size:11.5px}
+
   /* ── 右：调试台 ── */
   .debug{border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:var(--panel)}
   .debug .d-t{font-size:12px;color:var(--dim);letter-spacing:1.5px;padding:12px 14px 8px}
@@ -214,22 +226,27 @@ function pick(id){
   document.getElementById("center").innerHTML =
     '<div class="a-head"><h2>'+CUR.id+'</h2>'
     + '<span class="g g-'+CUR.grade+'" style="width:24px;height:24px;line-height:24px;font-size:11px">'+CUR.grade+'</span>'
-    + '<span style="font-size:12px;color:var(--dim)">'+GRADE_CN[CUR.grade]||''+'</span>'+pj+'</div>'
+    + '<span style="font-size:12px;color:var(--dim)">'+(GRADE_CN[CUR.grade]||'')+'</span>'+pj+'</div>'
     + '<div class="tagline">'+esc(CUR.team_desc)+'</div>'
-    + '<div class="blk"><h3>岗位职责 CHARTER</h3><div class="charter">'+esc(CUR.charter)+'</div></div>'
+    + '<div class="blk"><h3>岗位职责 CHARTER</h3>'
+    + (CUR.charter.length > 260
+        ? '<div class="charter clampable">'+esc(CUR.charter)+'</div>'
+          + '<div class="clamp-bar"><button class="mini" onclick="toggleClamp(this)">▾ 展开全文（'+CUR.charter.length+' 字）</button></div>'
+        : '<div class="charter">'+esc(CUR.charter)+'</div>')
+    + '</div>'
     + (CUR.tasks && CUR.tasks.length
         ? '<div class="blk"><h3>名下活跃工单（devtask 真实投影）</h3><div class="charter">'
           + CUR.tasks.map(t=>'<div>● <code>'+esc(t.id)+'</code> <span style="color:'+(t.status==='doing'?'var(--green)':'var(--amber,#d29922)')+'">['+t.status+']</span> '+esc(t.desc)+'</div>').join('')
           + '</div></div>' : '')
     + (CUR.memory
-        ? '<div class="blk"><h3>记忆活动（agent/'+CUR.id+'/* 只读面板 · K-ORG-027a）</h3><div class="charter">'
+        ? '<div class="blk"><h3>记忆活动（agent/'+CUR.id+'/* 只读面板 · K-ORG-027a）</h3><div class="charter clampable">'
           + Object.entries(CUR.memory).map(([ns, m])=>
               '<div><b>'+ns+'</b> × '+m.count+' 条'
               + m.recent.map(r=>'<div style="color:var(--dim);font-size:11.5px">└ ['+esc(r.ts)+'] '+esc(r.event)+'：'+esc(r.desc)+'</div>').join('')
               + '</div>').join('<div style="height:6px"></div>')
           + '</div></div>' : '')
     + (B.coder_traces
-        ? '<div class="blk"><h3>编码生产线轨迹（shadow/coder_traces 只读 · K-ORG-036e）</h3><div class="charter">'
+        ? '<div class="blk"><h3>编码生产线轨迹（shadow/coder_traces 只读 · K-ORG-036e）</h3><div class="charter clampable">'
           + B.coder_traces.map(t=>
               '<div>● <code>'+esc(t.k_id)+'</code> × '+t.actions+' 动作（'
               + Object.entries(t.kinds).map(([k,n])=>k+'×'+n).join(' ')
@@ -247,7 +264,8 @@ function pick(id){
     + '<div class="blk"><h3>人设 PROMPT 全文（prompt_file 单一事实源）</h3>'
     + '<div class="prompt-tools"><button class="mini" onclick="copyPrompt()">📋 复制全文</button>'
     + '<span style="font-size:11px;color:var(--dim2);align-self:center">'+CUR.prompt.length+' 字符 · 修改须改 prompts/ 源文件后重跑 bundle 脚本</span></div>'
-    + '<div class="prompt-box" id="pbox">'+esc(CUR.prompt)+'</div></div>';
+    + '<div class="prompt-box clampable" id="pbox">'+esc(CUR.prompt)+'</div>'
+    + '<div class="clamp-bar"><button class="mini" onclick="toggleClamp(this)">▾ 展开全文</button></div></div>';
   document.getElementById("dbg-target").innerHTML =
     '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 模型 <b>'+esc(CUR.llm.split("/").pop())+'</b>'
     + '<div class="sysinfo">system = 人设 prompt 全文（'+CUR.prompt.length+' 字符，已装载）</div>';
@@ -259,6 +277,51 @@ function copyPrompt(){
   navigator.clipboard.writeText(CUR.prompt).then(()=>{
     const b = event.target; b.textContent = "✅ 已复制";
     setTimeout(()=>{ b.textContent = "📋 复制全文"; }, 1200);
+  });
+}
+
+/* ── 长文块折叠展开（介绍类板块压缩篇幅）── */
+function toggleClamp(btn){
+  const box = btn.closest(".blk").querySelector(".clampable");
+  if(!box) return;
+  const open = box.classList.toggle("open");
+  btn.textContent = open ? "▴ 收起" : "▾ 展开全文";
+}
+
+/* ── 左栏代码预览（bundle 内嵌 agent_platform 源码，纯静态零后端）── */
+function renderCodeTree(){
+  if(!B.code_files || !B.code_files.length) return;
+  let h = '<div class="dep-t">💻 平台代码</div>';
+  B.code_files.forEach((f,i)=>{
+    h += '<div class="ag cf" id="cf-'+i+'" onclick="showCode('+i+')">'
+      + '<span class="rid">'+esc(f.path.split('/').pop())+'</span>'
+      + '<span class="rr">'+f.lines+' 行</span></div>';
+  });
+  document.getElementById("tree").insertAdjacentHTML("beforeend", h);
+}
+
+function showCode(i){
+  const f = B.code_files[i];
+  CUR = null;
+  document.querySelectorAll(".ag.on").forEach(e=>e.classList.remove("on"));
+  document.querySelectorAll(".cf.on").forEach(e=>e.classList.remove("on"));
+  document.getElementById("cf-"+i).classList.add("on");
+  document.getElementById("dbg-target").textContent = "未选择 Agent（代码预览模式）";
+  document.getElementById("send").disabled = true;
+  document.getElementById("chat").innerHTML = "";
+  document.getElementById("center").innerHTML =
+    '<div class="a-head"><h2 style="font-family:Consolas,monospace;font-size:16px">'+esc(f.path)+'</h2>'
+    + '<span style="font-size:11.5px;color:var(--dim)">'+f.lines+' 行 · '+(f.size/1024).toFixed(1)+' KB</span>'
+    + (f.truncated ? '<span class="ptag" style="background:rgba(210,153,34,.15);color:var(--orange)">已截断 · 完整看仓库</span>' : '')
+    + '<button class="mini" onclick="copyCode('+i+',this)">📋 复制</button></div>'
+    + '<div class="blk" style="padding:0;overflow:hidden"><pre class="prompt-box" style="border:0;border-radius:12px;max-height:calc(100vh - 180px)">'+esc(f.content)+'</pre></div>';
+  document.getElementById("center").scrollTop = 0;
+}
+
+function copyCode(i, btn){
+  navigator.clipboard.writeText(B.code_files[i].content).then(()=>{
+    btn.textContent = "✅ 已复制";
+    setTimeout(()=>{ btn.textContent = "📋 复制"; }, 1200);
   });
 }
 
@@ -307,6 +370,7 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
     + '<span>工单 <b style="color:var(--green)">'+(B.stats.workorders_doing||0)+'</b> doing / <b style="color:var(--amber,#d29922)">'+(B.stats.workorders_review||0)+'</b> review</span>';
   document.getElementById("gen").textContent = "bundle 生成于 " + B.generated + " · 改注册表/prompt 后重跑 tools/build_agent_ide_bundle.py";
   renderTree();
+  renderCodeTree();
 }).catch(e=>{ document.getElementById("tree").innerHTML = '<div class="dep">bundle 加载失败：'+e+'</div>'; });
 </script>
 </body>

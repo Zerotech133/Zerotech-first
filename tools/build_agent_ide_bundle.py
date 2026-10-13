@@ -224,6 +224,25 @@ def main():
         "review": sum(1 for w in workorders if w["status"] == "review"),
     }
 
+    # 平台代码内嵌（IDE 左栏代码预览，纯静态零后端）：agent_platform 顶层 .py + registry/org.json
+    code_files = []
+    cf_paths = sorted(glob.glob(os.path.join(ROOT, "agent_platform", "*.py")))
+    cf_paths.append(os.path.join(ROOT, "agent_platform", "registry", "org.json"))
+    CF_CAP = 60000  # 单文件上限（现状最大约 10KB，不会触发；防膨胀兜底）
+    for fp in cf_paths:
+        try:
+            txt = open(fp, encoding="utf-8", errors="replace").read()
+        except Exception:  # noqa: BLE001
+            continue
+        truncated = len(txt) > CF_CAP
+        code_files.append({
+            "path": os.path.relpath(fp, ROOT).replace("\\", "/"),
+            "size": len(txt),
+            "lines": txt.count("\n") + 1,
+            "truncated": truncated,
+            "content": txt[:CF_CAP] + ("\n… [已截断，完整内容看仓库文件]" if truncated else ""),
+        })
+
     bundle = {
         "generated": time.strftime("%Y-%m-%d %H:%M"),
         "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
@@ -237,6 +256,7 @@ def main():
         },
         "workorders": workorders,
         "coder_traces": coder_traces_digest(),  # K-ORG-036e F5 轨迹只读视图
+        "code_files": code_files,  # IDE 左栏代码预览（agent_platform 源码内嵌）
         "departments": departments,
         "agents": agents,
     }
@@ -246,6 +266,8 @@ def main():
     print("agents:", len(agents), "| prompt_ok:", bundle["stats"]["prompt_ok"],
           "| miss:", miss_prompt or "none")
     print("workorders: doing=%d review=%d" % (wo_stats["doing"], wo_stats["review"]))
+    print("code_files: %d 个 · 合计 %.1f KB" % (
+        len(code_files), sum(f["size"] for f in code_files) / 1024))
 
 
 if __name__ == "__main__":
