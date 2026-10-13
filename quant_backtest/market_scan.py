@@ -37,6 +37,13 @@ def market_stocks():
         code = fn[:-8].replace("_", ".")      # 000001_SZ -> 000001.SZ
         if code.endswith(".BJ"):              # 北交所（老田口径：不分析）
             continue
+        # 指数混入剔除（K-STOCK-303·273 体检实锤 000001_SH/399001/399006 混入）：
+        # SH 指数=000xxx/880xxx/999xxx 段（股票是 60/68 段，不会误伤 000688.SZ 国城矿业这类同名码）；
+        # SZ 指数=399 段（深市个股无 399 开头）。
+        if code.endswith(".SH") and code[:3] in ("000", "880", "999"):
+            continue
+        if code.startswith("399"):
+            continue
         nm = names.get(code)
         if nm is None:                        # 指数/北交所/名单外
             continue

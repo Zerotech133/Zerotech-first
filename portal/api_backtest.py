@@ -5012,6 +5012,8 @@ def _bt2_start(rec):
         "regime_gate": "true" if str(rec.get("regime_gate", "")).strip().lower() == "true" else "false",
         # 开新仓闸门三档（K-STOCK-301）：off=不设 / weak=弱市不开 / high=仅高位开（291 包 C·高位限定）
         "gate_mode": rec.get("gate_mode") if rec.get("gate_mode") in ("off", "weak", "high") else "off",
+        # 评分门槛（K-STOCK-303）：三买评分低于此值不入场，0=不限（量能/背驰过滤落地形态）
+        "min_score": _intv("min_score", 0, 100, 0),
         "runup_cap": _ratio("runup_cap", 0, 0.5, 0.15 if strategy == "chanlun" else 0),
         "stop_pct": _ratio("stop_pct", -0.5, 0, 0.0),
         "holding_max_days": _intv("holding_max_days", 0, 60, 5 if strategy == "double_knife" else 0),

@@ -386,7 +386,7 @@ class BacktestConfig:
 # ============================================================
 def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=None,
                  sig_zg=None, three_fail=True, fail_level="zg", regime_gate=False,
-                 gate_mode="off", fail_buffer=0.0, sig_meta=None):
+                 gate_mode="off", fail_buffer=0.0, sig_meta=None, min_score=0):
     """sig_zg：{day: {stock: (中枢上沿zg, 下沿zd)(hfq)}}——三买失效离场用（10-13 老田：跌破中枢=三买被否定）。
     fail_level：zg=收盘跌破上沿即离场（紧）/ zd=收盘跌破下沿（中枢整体否定，松）。
     gate_mode 闸门三档（K-STOCK-301，291 归因「正期望依赖趋势环境」的落地）：off=不设闸（默认·兼容旧行为）/
@@ -565,6 +565,13 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                     actions.append({"type": "note", "stock": s, "note": "卖点确认→明日开盘卖"})
             for s in sorted(sig_buy.get(day, set())):
                 m_s = (sig_meta or {}).get(day, {}).get(s) or {}
+                if min_score > 0:
+                    sc = m_s.get("score")
+                    if not isinstance(sc, (int, float)) or sc < min_score:
+                        if s not in pos and s not in pending_buy:
+                            actions.append({"type": "note", "stock": s,
+                                            "note": f"评分门槛：评分{sc if sc is not None else '-'}<{min_score} 放弃（量能/背驰弱）"})
+                        continue
                 if gate_mode == "high" and regime_lv != "high":
                     if s not in pos and s not in pending_buy:
                         actions.append({"type": "note", "stock": s,
@@ -659,7 +666,7 @@ DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
             "holding_max_days": 0, "buy_filter": "3", "universe": "market",
             "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0,
-            "gate_mode": "off"}
+            "gate_mode": "off", "min_score": 0}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
@@ -751,8 +758,10 @@ def run_job(params: dict, job_id: str, progress=None):
                               fail_level=p["fail_level"] if p["fail_level"] in ("zg", "zd") else "zg",
                               regime_gate=regime_gate, gate_mode=gate_mode,
                               fail_buffer=max(0.0, min(0.2, float(p.get("fail_buffer") or 0))),
-                              sig_meta=sig_meta)
+                              sig_meta=sig_meta,
+                              min_score=max(0, min(100, int(p.get("min_score") or 0))))
         result["meta"]["gate_mode"] = gate_mode
+        result["meta"]["min_score"] = max(0, min(100, int(p.get("min_score") or 0)))
         result["meta"]["signal_source"] = src
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
@@ -862,6 +871,8 @@ if __name__ == "__main__":
                     help="regime闸门(旧布尔)：等价 gate_mode=weak")
     ap.add_argument("--gate-mode", default="off", choices=["off", "weak", "high"],
                     help="开新仓闸门：off=不设 / weak=池指数<MA60不开 / high=仅池指数≥MA20开(301)")
+    ap.add_argument("--min-score", type=int, default=0,
+                    help="评分门槛：三买评分(0-100)低于此值不入场(0=不限·303)")
     ap.add_argument("--fail-buffer", type=float, default=0.0,
                     help="失效线缓冲：收盘跌破 zg*(1-buffer) 才算失效(默认0·降噪用)")
     ap.add_argument("--job-id", default=None)
