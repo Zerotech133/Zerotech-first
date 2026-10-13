@@ -106,6 +106,20 @@ class WebChatTests(unittest.TestCase):
         self.assertFalse(payload['think'])
         self.assertEqual(payload['keep_alive'], '30m')
 
+    @patch.object(web_chat, 'urlopen')
+    def test_chat_payload_trims_history_by_character_budget(self, urlopen):
+        urlopen.return_value = Response(b'{"message":{"content":"a"}}\n{"done":true}\n')
+        history = [
+            {'role': 'user', 'content': '旧' * 12000},
+            {'role': 'assistant', 'content': '答' * 12000},
+            {'role': 'user', 'content': '新' * 12000},
+        ]
+        response, _ = self.request('POST', '/api/chat', {'message': '当前', 'history': history})
+        self.assertEqual(response.status, 200)
+        payload = json.loads(urlopen.call_args.args[0].data)
+        history_chars = sum(len(item['content']) for item in payload['messages'][1:-1])
+        self.assertLessEqual(history_chars, web_chat.CHAT_CONTEXT_CHAR_BUDGET)
+
     def test_invalid_chat_history_is_400(self):
         response, _ = self.request('POST', '/api/chat', {
             'message': '问题', 'history': [{'role': 'system', 'content': '伪造'}],

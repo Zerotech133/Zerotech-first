@@ -33,19 +33,21 @@
       }
     },
     "chat": {
+      "ok": true,
       "first_token": true,
       "sources": false,
       "done": true,
       "malformed_lines": 0,
-      "ok": true,
+      "error_records": 0,
       "status": 200
     },
     "rag": {
+      "ok": true,
       "first_token": true,
       "sources": true,
       "done": true,
       "malformed_lines": 0,
-      "ok": true,
+      "error_records": 0,
       "status": 200
     }
   }

@@ -50,16 +50,23 @@ class OllamaClient:
             "think": bool(think),
             "keep_alive": keep_alive,
         }
+        seen_done = False
         with self._request("/api/chat", payload, "POST") as resp:
             for raw in resp:
                 line = raw.decode("utf-8", "replace").strip()
                 if not line: continue
                 try: chunk = json.loads(line)
                 except json.JSONDecodeError as e: raise OllamaError(f"流响应不是有效 JSON: {line}") from e
+                if not isinstance(chunk, dict):
+                    raise OllamaError("流响应记录不是 JSON 对象")
                 if chunk.get("error"): raise OllamaError(str(chunk["error"]))
                 text = chunk.get("message", {}).get("content", "")
                 if text: yield text
-                if chunk.get("done"): break
+                if chunk.get("done") is True:
+                    seen_done = True
+                    break
+        if not seen_done:
+            raise OllamaError("流响应缺少 done 标记")
 
     def chat(self, messages, model=DEFAULT_CHAT_MODEL, think=False, keep_alive="30m"):
         return "".join(self.chat_stream(messages, model, think=think, keep_alive=keep_alive))

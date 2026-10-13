@@ -14,6 +14,7 @@ CHAT_MODELS = ("qwen3.5:4b", "qwen3.5:9b", "qwen3.5:35b")
 DEFAULT_CHAT_MODEL = "qwen3.5:9b"
 RAG_CHAT_MODEL = "qwen3.5:9b"
 EMBED_MODEL = "bge-m3"
+CHAT_CONTEXT_CHAR_BUDGET = 24000
 # 语义别名便于调用方按角色读取，实际值仍由上面的单一常量维护。
 CHAT_MODEL_4B, CHAT_MODEL_9B, CHAT_MODEL_35B = CHAT_MODELS
 RAG_MODEL = RAG_CHAT_MODEL
@@ -120,6 +121,7 @@ __all__ = [
     "DEFAULT_CHAT_MODEL",
     "RAG_CHAT_MODEL",
     "EMBED_MODEL",
+    "CHAT_CONTEXT_CHAR_BUDGET",
     "CHAT_MODEL_4B",
     "CHAT_MODEL_9B",
     "CHAT_MODEL_35B",

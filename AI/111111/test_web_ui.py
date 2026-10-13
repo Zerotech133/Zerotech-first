@@ -14,6 +14,11 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('src="/static/nav.js"', page)
         self.assertNotIn("127.0.0.1:8734/static", page)
 
+    def test_page_selects_nine_b_as_default_and_exposes_context_budget(self):
+        page = web_ui.render_chat_page(("qwen3.5:4b", "qwen3.5:9b", "qwen3.5:35b"))
+        self.assertIn('value="qwen3.5:9b" selected', page)
+        self.assertIn("MAX_CONTEXT_CHARS", page)
+
     def test_page_has_chat_and_rag_modes(self):
         page = web_ui.render_chat_page(("qwen3.5:9b", "qwen3.5:4b"))
         self.assertIn('value="chat"', page)
@@ -32,6 +37,7 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("研究助手", page)
         self.assertIn('history: historyMessages()', page)
         self.assertIn('profile: profile.value', page)
+        self.assertIn("historyMessages()", page)
 
     def test_done_keeps_sources_received_before_it(self):
         page = web_ui.render_chat_page(("qwen3.5:9b",))

@@ -52,6 +52,7 @@ def _ndjson_summary(body: bytes) -> dict[str, Any]:
     sources = False
     done = False
     malformed = 0
+    error_records = 0
     for raw in body.splitlines():
         if not raw.strip():
             continue
@@ -60,15 +61,26 @@ def _ndjson_summary(body: bytes) -> dict[str, Any]:
         except (UnicodeDecodeError, json.JSONDecodeError):
             malformed += 1
             continue
-        if isinstance(record, dict):
-            message = record.get("message")
-            if isinstance(message, dict) and isinstance(message.get("content"), str) and message["content"]:
-                first_token = True
-            if isinstance(record.get("response"), str) and record["response"]:
-                first_token = True
-            sources = sources or "sources" in record
-            done = done or bool(record.get("done"))
-    return {"first_token": first_token, "sources": sources, "done": done, "malformed_lines": malformed}
+        if not isinstance(record, dict):
+            malformed += 1
+            continue
+        if record.get("error"):
+            error_records += 1
+        message = record.get("message")
+        if isinstance(message, dict) and isinstance(message.get("content"), str) and message["content"]:
+            first_token = True
+        if isinstance(record.get("response"), str) and record["response"]:
+            first_token = True
+        sources = sources or "sources" in record
+        done = done or record.get("done") is True
+    return {
+        "ok": malformed == 0 and error_records == 0,
+        "first_token": first_token,
+        "sources": sources,
+        "done": done,
+        "malformed_lines": malformed,
+        "error_records": error_records,
+    }
 
 
 def run_smoke(
@@ -93,16 +105,21 @@ def run_smoke(
             checks["ollama_tags"] = {"ok": False, "status": tags.get("status"), "error": "invalid_json"}
 
     page = _fetch(f"{web_url}/", timeout=timeout)
+    page_content = page.get("body", b"")
+    page_ok = page.get("ok") and page.get("content_type", "").lower().startswith("text/html") and b"<" in page_content
     checks["web_page"] = (
-        {"ok": True, "status": page.get("status"), "content_type": page.get("content_type")}
+        {"ok": bool(page_ok), "status": page.get("status"), "content_type": page.get("content_type")}
         if page.get("ok") else _failure(page)
     )
 
     assets: dict[str, Any] = {}
     for asset in ("tokens.css", "nav.js"):
         result = _fetch(f"{web_url}/static/{asset}", timeout=timeout)
+        body = result.get("body", b"")
+        expected_type = "text/css" if asset.endswith(".css") else "javascript"
+        asset_ok = result.get("ok") and expected_type in result.get("content_type", "").lower() and bool(body)
         assets[asset] = (
-            {"ok": True, "status": result.get("status"), "content_type": result.get("content_type")}
+            {"ok": bool(asset_ok), "status": result.get("status"), "content_type": result.get("content_type")}
             if result.get("ok") else _failure(result)
         )
     checks["static_assets"] = {"ok": all(item["ok"] for item in assets.values()), "assets": assets}
@@ -114,14 +131,14 @@ def run_smoke(
     )
     chat_summary = _ndjson_summary(chat.get("body", b"")) if chat.get("ok") else _failure(chat)
     if chat.get("ok"):
-        chat_summary["ok"] = bool(chat_summary.get("first_token") and chat_summary.get("done"))
+        chat_summary["ok"] = bool(chat_summary.get("ok") and chat_summary.get("first_token") and chat_summary.get("done"))
         chat_summary["status"] = chat.get("status")
     checks["chat"] = chat_summary
 
     rag = _fetch(f"{web_url}/api/rag", {"message": "smoke", "top_k": 1}, timeout=timeout)
     rag_summary = _ndjson_summary(rag.get("body", b"")) if rag.get("ok") else _failure(rag)
     if rag.get("ok"):
-        rag_summary["ok"] = bool(rag_summary.get("sources") and rag_summary.get("done"))
+        rag_summary["ok"] = bool(rag_summary.get("ok") and rag_summary.get("sources") and rag_summary.get("done"))
         rag_summary["status"] = rag.get("status")
     checks["rag"] = rag_summary
     return {"ok": all(bool(item.get("ok")) for item in checks.values()), "checks": checks}

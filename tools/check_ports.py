@@ -101,10 +101,13 @@ def _powershell_proc_name(pid):
 
 def proc_name(pid):
     if pid not in _PROC_CACHE:
-        r = subprocess.run(["tasklist", "/FI", "PID eq %d" % pid,
-                            "/FO", "CSV", "/NH"],
-                           capture_output=True, text=True,
-                           encoding="gbk", errors="replace").stdout or ""
+        try:
+            r = subprocess.run(["tasklist", "/FI", "PID eq %d" % pid,
+                                "/FO", "CSV", "/NH"],
+                               capture_output=True, text=True,
+                               encoding="gbk", errors="replace").stdout or ""
+        except (OSError, subprocess.SubprocessError):
+            r = ""
         m = re.match(r'"([^"]+)"', r.strip())
         _PROC_CACHE[pid] = m.group(1) if m else (
             _powershell_proc_name(pid) or "unknown(%d)" % pid)

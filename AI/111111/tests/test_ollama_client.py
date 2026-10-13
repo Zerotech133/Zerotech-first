@@ -4,6 +4,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ollama_client import OllamaClient, OllamaError
@@ -55,6 +56,16 @@ class OllamaClientTests(unittest.TestCase):
     def test_ndjson_malformed_and_error(self):
         with self.assertRaises(OllamaError):
             list(OllamaClient("http://127.0.0.1:1", timeout=.01).chat_stream([], "x"))
+
+    def test_stream_requires_done_marker_and_object_records(self):
+        class StreamResponse:
+            def __enter__(self): return self
+            def __exit__(self, *_args): return False
+            def __iter__(self): return iter([b'{"message":{"content":"partial"}}\n'])
+
+        with patch.object(self.client, "_request", return_value=StreamResponse()):
+            with self.assertRaisesRegex(OllamaError, "done"):
+                list(self.client.chat_stream([], "demo"))
 
 
 if __name__ == "__main__": unittest.main()

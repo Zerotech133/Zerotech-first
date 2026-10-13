@@ -4,11 +4,18 @@ from __future__ import annotations
 from html import escape
 from typing import Sequence
 
+try:
+    from .model_routing import CHAT_CONTEXT_CHAR_BUDGET, DEFAULT_CHAT_MODEL
+except ImportError:
+    from model_routing import CHAT_CONTEXT_CHAR_BUDGET, DEFAULT_CHAT_MODEL
 
-def _model_options(models: Sequence[str]) -> str:
+
+def _model_options(models: Sequence[str], selected: str = DEFAULT_CHAT_MODEL) -> str:
+    selected = selected if selected in models else (str(models[0]) if models else selected)
     return "".join(
-        '<option value="{value}">{label}</option>'.format(
+        '<option value="{value}"{selected}>{label}</option>'.format(
             value=escape(str(model), quote=True), label=escape(str(model))
+            , selected=" selected" if str(model) == selected else ""
         ) for model in models
     )
 
@@ -33,8 +40,8 @@ def _profile_options(profiles: Sequence[object]) -> str:
     return "".join(options)
 
 
-def render_chat_page(models: Sequence[str], profiles: Sequence[str] = ()) -> str:
-    options = _model_options(models)
+def render_chat_page(models: Sequence[str], profiles: Sequence[str] = (), default_model: str = DEFAULT_CHAT_MODEL) -> str:
+    options = _model_options(models, default_model)
     profile_options = _profile_options(profiles)
     return """<!doctype html>
 <meta charset="utf-8">
@@ -69,7 +76,7 @@ const model=document.getElementById("model"), profile=document.getElementById("p
 const status=document.getElementById("status"), history=document.getElementById("history"), out=document.getElementById("out");
 const sources=document.getElementById("sources"), sourceList=document.getElementById("sourceList");
 const modeStatus=document.getElementById("modeStatus"), indexStatus=document.getElementById("indexStatus"), sourceStatus=document.getElementById("sourceStatus");
-const HISTORY_KEY="zero-boundary-chat-history-v1", REQUEST_TIMEOUT_MS=120000;
+const HISTORY_KEY="zero-boundary-chat-history-v1", REQUEST_TIMEOUT_MS=120000, MAX_CONTEXT_CHARS={context_budget};
 let conversationHistory=loadHistory(), latestSources=[], activeController=null;
 
 function loadHistory(){try{const value=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");return Array.isArray(value)?value:[];}catch(_){return [];}}
@@ -77,7 +84,7 @@ function saveHistory(){localStorage.setItem(HISTORY_KEY,JSON.stringify(conversat
 function setStatus(text){status.textContent=text;}
 function setRuntimeStatus(state,items){const isRag=mode.value==="rag";modeStatus.textContent=isRag?"知识库问答":"普通聊天";if(!isRag){indexStatus.textContent="—";sourceStatus.textContent="不适用";return;}const list=Array.isArray(items)?items:[];if(state==="loading"){indexStatus.textContent="读取中…";sourceStatus.textContent="等待来源";return;}const versions=[...new Set(list.map((item)=>item&&item.index_version).filter((version)=>version!==undefined&&version!==null))];indexStatus.textContent=versions.length?versions.map((version)=>`v${version}`).join(", "):"—";sourceStatus.textContent=list.length?`已命中 ${list.length} 个来源`:state==="error"?"不可用":state==="done"?"未命中来源":"未加载";}
 function renderHistory(){history.textContent="";conversationHistory.forEach((item)=>{const entry=document.createElement("article");const question=document.createElement("p");const answer=document.createElement("p");question.textContent="你："+String(item.question||"");answer.textContent="AI："+String(item.answer||"");entry.append(question,answer);history.appendChild(entry);});}
-function historyMessages(){return conversationHistory.slice(-20).flatMap((item)=>{const rows=[];if(item&&item.question)rows.push({role:"user",content:String(item.question)});if(item&&item.answer)rows.push({role:"assistant",content:String(item.answer)});return rows;});}
+function historyMessages(){const rows=conversationHistory.flatMap((item)=>{const out=[];if(item&&item.question)out.push({role:"user",content:String(item.question)});if(item&&item.answer)out.push({role:"assistant",content:String(item.answer)});return out;});let total=0,selected=[];for(let i=rows.length-1;i>=0;i--){let row=rows[i],size=row.content.length;if(selected.length&&total+size>MAX_CONTEXT_CHARS)break;if(!selected.length&&size>MAX_CONTEXT_CHARS){row={role:row.role,content:row.content.slice(-MAX_CONTEXT_CHARS)};size=row.content.length;}selected.unshift(row);total+=size;}return selected;}
 function renderSources(items){sourceList.textContent="";sources.hidden=!Array.isArray(items)||items.length===0;if(sources.hidden)return;items.forEach((item)=>{const line=document.createElement("p");const name=item&&item.source?String(item.source):"未知来源";const score=item&&item.score!==undefined?`（分数：${item.score}）`:"";const hash=item&&item.document_hash?`（哈希：${String(item.document_hash).slice(0,12)}）`:"";const version=item&&item.index_version?`（索引 v${item.index_version}）`:"";line.textContent=name+score+hash+version;sourceList.appendChild(line);});}
 renderHistory();
 setRuntimeStatus("idle",latestSources);
@@ -101,7 +108,7 @@ send.onclick=async()=>{
   }catch(error){if(error&&error.name==="AbortError"){setStatus("请求超时或已取消");out.textContent="请求已取消（或请求超时）";}else{setStatus("请求错误");out.textContent="无法连接服务，请稍后重试。";}setRuntimeStatus("error",latestSources);}
   finally{clearTimeout(timeout);send.disabled=false;cancel.disabled=true;activeController=null;}
 };
-</script>""".replace("{options}", options).replace("{profile_options}", profile_options)
+</script>""".replace("{options}", options).replace("{profile_options}", profile_options).replace("{context_budget}", str(CHAT_CONTEXT_CHAR_BUDGET))
 
 
 __all__ = ["render_chat_page"]

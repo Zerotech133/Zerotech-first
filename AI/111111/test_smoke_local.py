@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from smoke_local import run_smoke
+from smoke_local import _ndjson_summary, run_smoke
 
 
 class _Response:
@@ -44,7 +44,16 @@ class SmokeLocalTests(unittest.TestCase):
                 base_url="http://127.0.0.1:11434",
                 web_url="http://127.0.0.1:8899",
             )
+        self.assertTrue(result["ok"])
         self.assertTrue({"ollama_tags", "web_page", "static_assets", "chat", "rag"} <= set(result["checks"]))
+
+    def test_ndjson_protocol_errors_cannot_be_marked_success(self):
+        summary = _ndjson_summary(b'{"message":{"content":"ok"}}\nBAD\n{"done":true}\n')
+        self.assertFalse(summary["ok"])
+        self.assertEqual(summary["malformed_lines"], 1)
+
+        summary = _ndjson_summary(b'{"error":"upstream"}\n{"done":true}\n')
+        self.assertFalse(summary["ok"])
 
 
 if __name__ == "__main__":

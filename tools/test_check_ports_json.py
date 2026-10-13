@@ -57,6 +57,11 @@ class CheckPortsJsonTests(unittest.TestCase):
         self.assertIs(payload['strict_fail'], True)
         self.assertEqual(payload['rc'], 1)
 
+    def test_process_lookup_permission_denied_falls_back_to_unknown(self):
+        check_ports._PROC_CACHE.pop(9001, None)
+        with patch.object(check_ports.subprocess, 'run', side_effect=PermissionError('sandbox')):
+            self.assertEqual(check_ports.proc_name(9001), 'unknown(9001)')
+
 
 if __name__ == '__main__':
     unittest.main()

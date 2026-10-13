@@ -2,7 +2,7 @@
 
 运行 `python AI/111111/web_chat.py`，服务监听 `127.0.0.1:8899`。页面可在“普通聊天”和“知识库问答”之间切换：普通聊天调用 `/api/chat`，知识库问答调用只读 `/api/rag`。
 
-页面角色下拉框来自 `chat_profiles.json`。普通聊天会把最近 20 轮（最多 40 条 `user/assistant` 消息）连同当前角色的 system prompt 一起发送给 Ollama，并将角色写入浏览器本地历史；服务端拒绝伪造 `system` 消息、空消息和超长历史。RAG 请求也携带角色，响应的 `sources` 事件会附带 `profile` 与实际 `model`，便于审计。
+页面角色下拉框来自 `chat_profiles.json`。普通聊天会按共享的字符预算保留最近上下文，再连同当前角色的 system prompt 一起发送给 Ollama，并将角色写入浏览器本地历史；服务端拒绝伪造 `system` 消息、空消息和超长历史。RAG 请求也携带角色，响应的 `sources` 事件会附带 `profile` 与实际 `model`，便于审计。
 
 推荐先执行启动前自检：
 

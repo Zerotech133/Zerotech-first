@@ -7,12 +7,12 @@ from urllib.error import HTTPError, URLError
 try:
  from .rag_web_backend import RagUnavailable, RagWebService
  from .web_ui import render_chat_page
- from .model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
+ from .model_routing import CHAT_CONTEXT_CHAR_BUDGET, CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
  from .chat_profiles import ProfileError, get_profile, list_profile_specs
 except ImportError:
  from rag_web_backend import RagUnavailable, RagWebService
  from web_ui import render_chat_page
- from model_routing import CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
+ from model_routing import CHAT_CONTEXT_CHAR_BUDGET, CHAT_MODELS, DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
  from chat_profiles import ProfileError, get_profile, list_profile_specs
 HOST='127.0.0.1'; PORT=8899; OLLAMA_URL='http://127.0.0.1:11434/api/chat'; DEFAULT_MODEL=DEFAULT_CHAT_MODEL; MODELS=CHAT_MODELS
 STATIC_ROOT = Path(__file__).resolve().parents[2] / 'portal' / 'static'
@@ -30,7 +30,7 @@ def _payload(h):
  except ProfileError as e: raise ValueError(str(e)) from e
  history=p.get('history', [])
  if history is None: history=[]
- if not isinstance(history,list) or len(history)>40: raise ValueError('history 必须是最多 40 条消息的数组')
+ if not isinstance(history,list): raise ValueError('history 必须是消息数组')
  clean_history=[]
  for item in history:
   if not isinstance(item,dict) or item.get('role') not in {'user','assistant'}:
@@ -39,6 +39,14 @@ def _payload(h):
   if not isinstance(content,str) or not content.strip() or len(content)>12000:
    raise ValueError('history 消息内容无效')
   clean_history.append({'role':item['role'],'content':content.strip()})
+ bounded=[]; total=0
+ for item in reversed(clean_history):
+  size=len(item['content'])
+  if bounded and total + size > CHAT_CONTEXT_CHAR_BUDGET: break
+  if not bounded and size > CHAT_CONTEXT_CHAR_BUDGET:
+   item=dict(item, content=item['content'][-CHAT_CONTEXT_CHAR_BUDGET:]); size=len(item['content'])
+  bounded.append(item); total += size
+ clean_history=list(reversed(bounded))
  try: model=select_model('chat', p.get('model') or role['model']).model
  except ModelRoutingError as e: raise ValueError(str(e)) from e
  return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True,'think':False,'keep_alive':'30m'}
@@ -66,7 +74,7 @@ class ChatHandler(BaseHTTPRequestHandler):
     self.send_error(404); return
    self.send_response(200); self.send_header('Content-Type', content_type); self.send_header('Content-Length', str(len(b))); self.end_headers(); self.wfile.write(b); return
   if self.path!='/': self.send_error(404); return
-  b=render_chat_page(MODELS, list_profile_specs()).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
+  b=render_chat_page(MODELS, list_profile_specs(), default_model=DEFAULT_MODEL).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Content-Length',str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_POST(self):
   if self.path=='/api/rag': self._do_rag(); return
   if self.path!='/api/chat': self._err(404,'路径不存在'); return
