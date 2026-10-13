@@ -67,6 +67,13 @@ def collect():
 
 def main():
     listing = "--list" in sys.argv
+    # K-STOCK-349 干跑预检加固：WAL 伴生文件存在即警告（journal_mode=delete 下不该有，
+    # 未来若有人开 WAL，只打包 .db 主文件会静默丢未 checkpoint 数据）
+    for suffix in ("-wal", "-shm"):
+        wal = os.path.join(ROOT, "agent_platform", "data", "checkpoints.db" + suffix)
+        if os.path.exists(wal):
+            print("[warn] 检测到 checkpoints.db%s（%d B）——sqlite 可能处于 WAL 模式，"
+                  "zip 仅含 .db 主文件可能不是最新快照，封存前请先确认/收编" % (suffix, os.path.getsize(wal)))
     found, missing = collect()
     print("== S1 封存清单 ==")
     for fp, arc in found:
