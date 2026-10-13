@@ -26,6 +26,8 @@ def _payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')
  if not isinstance(p,dict) or not isinstance(p.get('message'),str) or not p['message'].strip(): raise ValueError('message 不能为空')
+ think=p.get('think', False)
+ if not isinstance(think,bool): raise ValueError('think 必须是布尔值')
  try: role=get_profile(p.get('profile'))
  except ProfileError as e: raise ValueError(str(e)) from e
  history=p.get('history', [])
@@ -49,7 +51,7 @@ def _payload(h):
  clean_history=list(reversed(bounded))
  try: model=select_model('chat', p.get('model') or role['model']).model
  except ModelRoutingError as e: raise ValueError(str(e)) from e
- return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True,'think':False,'keep_alive':'30m'}
+ return {'model':model,'messages':[{'role':'system','content':role['system_prompt']},*clean_history,{'role':'user','content':p['message'].strip()}],'stream':True,'think':think,'keep_alive':'30m'}
 def _rag_payload(h):
  try:n=int(h.headers.get('Content-Length','0')); p=json.loads(h.rfile.read(n).decode())
  except (ValueError,UnicodeDecodeError,json.JSONDecodeError): raise ValueError('请求格式无效')

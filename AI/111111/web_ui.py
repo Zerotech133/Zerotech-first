@@ -50,6 +50,8 @@ def render_chat_page(models: Sequence[str], profiles: Sequence[str] = (), defaul
 <script src="/static/nav.js" defer></script>
 <h1>AI 聊天</h1>
 <label>模型 <select id="model">{options}</select></label>
+<label><input id="think" type="checkbox"> 深度思考</label>
+<p id="modelNotice" role="status" aria-live="polite">当前会话模型：{default_model}</p>
 <label>角色 <select id="profile">{profile_options}</select></label>
 <label>模式 <select id="mode"><option value="chat">普通聊天</option><option value="rag">知识库问答</option></select></label>
 <br>
@@ -72,12 +74,12 @@ def render_chat_page(models: Sequence[str], profiles: Sequence[str] = (), defaul
 // latestSources = record.sources
 // if (record.done) renderSources(latestSources)
 const send=document.getElementById("send"), cancel=document.getElementById("cancel"), clearHistory=document.getElementById("clearHistory");
-const model=document.getElementById("model"), profile=document.getElementById("profile"), mode=document.getElementById("mode"), message=document.getElementById("message");
+const model=document.getElementById("model"), think=document.getElementById("think"), modelNotice=document.getElementById("modelNotice"), profile=document.getElementById("profile"), mode=document.getElementById("mode"), message=document.getElementById("message");
 const status=document.getElementById("status"), history=document.getElementById("history"), out=document.getElementById("out");
 const sources=document.getElementById("sources"), sourceList=document.getElementById("sourceList");
 const modeStatus=document.getElementById("modeStatus"), indexStatus=document.getElementById("indexStatus"), sourceStatus=document.getElementById("sourceStatus");
 const HISTORY_KEY="zero-boundary-chat-history-v1", REQUEST_TIMEOUT_MS=120000, MAX_CONTEXT_CHARS={context_budget};
-let conversationHistory=loadHistory(), latestSources=[], activeController=null;
+let conversationHistory=loadHistory(), latestSources=[], activeController=null, sessionModel=model.value;
 
 function loadHistory(){try{const value=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");return Array.isArray(value)?value:[];}catch(_){return [];}}
 function saveHistory(){localStorage.setItem(HISTORY_KEY,JSON.stringify(conversationHistory.slice(-50)));}
@@ -89,6 +91,7 @@ function renderSources(items){sourceList.textContent="";sources.hidden=!Array.is
 renderHistory();
 setRuntimeStatus("idle",latestSources);
 mode.onchange=()=>{latestSources=[];renderSources([]);setRuntimeStatus("idle",latestSources);};
+model.onchange=()=>{if(model.value!==sessionModel){modelNotice.textContent=`切换到 ${model.value} 将触发冷启动（当前会话：${sessionModel}）`;setStatus("模型已切换，下一条消息将触发冷启动");}else{modelNotice.textContent=`当前会话模型：${sessionModel}`;}};
 clearHistory.onclick=()=>{conversationHistory=[];localStorage.removeItem(HISTORY_KEY);renderHistory();setStatus("历史已清理");};
 cancel.onclick=()=>{if(activeController)activeController.abort();};
 
@@ -98,17 +101,18 @@ send.onclick=async()=>{
   activeController=new AbortController();const timeout=setTimeout(()=>activeController.abort(),REQUEST_TIMEOUT_MS);
   try{
     const endpoint=mode.value==="rag"?"/api/rag":"/api/chat";
-    const requestBody=mode.value==="rag"?{message: text, profile: profile.value}:{model: model.value, message: text, profile: profile.value, history: historyMessages()};
+    const requestModel=model.value;
+    const requestBody=mode.value==="rag"?{message: text, profile: profile.value}:{model: requestModel, message: text, profile: profile.value, history: historyMessages(), think: think.checked};
     const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(requestBody),signal:activeController.signal});
     if(!response.ok){out.textContent=await response.text()||"请求失败";setStatus("请求失败");setRuntimeStatus("error",latestSources);return;}
     out.textContent="";setStatus("生成中...");const reader=response.body.getReader(),decoder=new TextDecoder();let buffer="";
     for(;;){const chunk=await reader.read();if(chunk.done)break;buffer+=decoder.decode(chunk.value,{stream:true});const lines=buffer.split("\\n");buffer=lines.pop();for(const line of lines){if(!line.trim())continue;try{const record=JSON.parse(line);if(record.message&&typeof record.message.content==="string")out.textContent+=record.message.content;if(typeof record.response==="string")out.textContent+=record.response;if(record.sources){latestSources = record.sources;renderSources(latestSources);}if(record.done) renderSources(latestSources);}catch(_){}}}
     if(buffer.trim()){try{const record=JSON.parse(buffer);if(record.message&&typeof record.message.content==="string")out.textContent+=record.message.content;if(typeof record.response==="string")out.textContent+=record.response;if(record.sources){latestSources=record.sources;renderSources(latestSources);}}catch(_) {}}
-    conversationHistory.push({question:text,answer:out.textContent,mode:mode.value,profile:profile.value,sources:latestSources,createdAt:Date.now()});saveHistory();renderHistory();setStatus("完成");setRuntimeStatus("done",latestSources);
+    sessionModel=requestModel;modelNotice.textContent=`当前会话模型：${sessionModel}`;conversationHistory.push({question:text,answer:out.textContent,mode:mode.value,profile:profile.value,sources:latestSources,createdAt:Date.now()});saveHistory();renderHistory();setStatus("完成");setRuntimeStatus("done",latestSources);
   }catch(error){if(error&&error.name==="AbortError"){setStatus("请求超时或已取消");out.textContent="请求已取消（或请求超时）";}else{setStatus("请求错误");out.textContent="无法连接服务，请稍后重试。";}setRuntimeStatus("error",latestSources);}
   finally{clearTimeout(timeout);send.disabled=false;cancel.disabled=true;activeController=null;}
 };
-</script>""".replace("{options}", options).replace("{profile_options}", profile_options).replace("{context_budget}", str(CHAT_CONTEXT_CHAR_BUDGET))
+</script>""".replace("{options}", options).replace("{profile_options}", profile_options).replace("{context_budget}", str(CHAT_CONTEXT_CHAR_BUDGET)).replace("{default_model}", escape(str(default_model)))
 
 
 __all__ = ["render_chat_page"]

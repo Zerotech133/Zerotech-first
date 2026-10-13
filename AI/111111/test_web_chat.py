@@ -107,6 +107,14 @@ class WebChatTests(unittest.TestCase):
         self.assertEqual(payload['keep_alive'], '30m')
 
     @patch.object(web_chat, 'urlopen')
+    def test_chat_payload_accepts_explicit_deep_thinking(self, urlopen):
+        urlopen.return_value = Response(b'{"message":{"content":"a"}}\n{"done":true}\n')
+        response, _ = self.request('POST', '/api/chat', {'message': 'hi', 'think': True})
+        self.assertEqual(response.status, 200)
+        payload = json.loads(urlopen.call_args.args[0].data)
+        self.assertTrue(payload['think'])
+
+    @patch.object(web_chat, 'urlopen')
     def test_chat_payload_trims_history_by_character_budget(self, urlopen):
         urlopen.return_value = Response(b'{"message":{"content":"a"}}\n{"done":true}\n')
         history = [

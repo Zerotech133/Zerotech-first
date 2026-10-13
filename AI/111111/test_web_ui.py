@@ -19,6 +19,14 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('value="qwen3.5:9b" selected', page)
         self.assertIn("MAX_CONTEXT_CHARS", page)
 
+    def test_page_has_off_by_default_deep_thinking_switch_and_model_cold_start_notice(self):
+        page = web_ui.render_chat_page(("qwen3.5:4b", "qwen3.5:9b"))
+        self.assertIn('id="think"', page)
+        self.assertIn('type="checkbox"', page)
+        self.assertIn('深度思考', page)
+        self.assertIn('think: think.checked', page)
+        self.assertIn('将触发冷启动', page)
+
     def test_page_has_chat_and_rag_modes(self):
         page = web_ui.render_chat_page(("qwen3.5:9b", "qwen3.5:4b"))
         self.assertIn('value="chat"', page)
