@@ -871,10 +871,17 @@ def run_job(params: dict, job_id: str, progress=None):
         # 手动指定票池（K-STOCK-297 老田：可手动添加）——逗号/中文逗号分隔代码，
         # 提供后交易只吃名单内的信号（评分照常排序）；名单为空=全自动。
         _mp_raw = str(p.get("manual_picks") or "").replace("，", ",").replace(" ", "")
-        if not _mp_raw and p.get("manual_picks_file"):
-            _mpf = str(p["manual_picks_file"])
-            _mp_raw = open(_mpf, encoding="utf-8").read().replace("，", ",").replace(" ", "").replace("\n", ",")
+        _mpf = str(p.get("manual_picks_file") or "")
+        if not _mp_raw and _mpf:
+            # utf-8-sig：容错带 BOM 的名单文件（BOM 不剥会污染首码→静默少票）
+            _mp_raw = open(_mpf, encoding="utf-8-sig").read().replace("，", ",").replace(" ", "").replace("\n", ",")
         _picks = {x.upper() for x in _mp_raw.split(",") if x}
+        if _mpf and not _picks:
+            # K-STOCK-338 fail-closed：给了名单文件却解析出 0 只有效代码（空文件/
+            # 编码错/全是非法字符）→ 静默回落全自动宇宙 = 336『表面产出在内容空』
+            # 家族，必须报错拒绝而不是带病跑全宇宙。
+            return None, ("manual_picks_file=%s 解析出 0 只有效代码（文件不存在会在此前抛错）"
+                          "——拒绝静默回落全自动宇宙，请检查名单文件内容/编码" % _mpf)
         if _picks:
             _hit = sum(len(ss & _picks) for ss in sig_buy.values())
             sig_buy = {d: (ss & _picks) for d, ss in sig_buy.items()}

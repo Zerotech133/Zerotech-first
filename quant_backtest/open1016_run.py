@@ -112,6 +112,12 @@ def main():
             results.append((suf, d["summary"]))
             continue
         t0 = time.time()
+        if os.path.exists(out_fp):
+            # K-STOCK-338: --force 语义前移补齐（对齐 _327_paired 335 判例）——
+            # 到这里必然是 FORCE（非 FORCE 且已存在早在上面 skip 了）。旧产物
+            # 不先删，引擎若复刻 335 无声中断形态（rc=0 不写文件）会读到旧
+            # json 打 DONE 假象——--force 文档语义本就是"覆盖"。
+            os.remove(out_fp)
         print("RUN", jid, flush=True)
         # K-STOCK-337: subprocess.run -> run_guarded（静默挂死杀树+自动重试一次）
         rc, _used = run_guarded([PY, "-u", BT2, "--d0", d0, "--d1", d1,

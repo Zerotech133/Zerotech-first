@@ -91,6 +91,33 @@ def run_guarded(cmd, log_fh, cwd=None, quiet_secs=DEFAULT_QUIET_SECS,
             elif time.time() - last_progress >= quiet_secs:
                 silent = time.time() - last_progress
                 tk_rc, tk_out, tk_err = _kill_tree(proc.pid)
+                if tk_rc != 0:
+                    # K-STOCK-338: taskkill 失败通常是超时判定与子进程自行退出撞上
+                    # （竞态窗口：poll 之后 sleep 期间进程退出·taskkill 报"进程不存在"）
+                    # ——补杀一次再复核。
+                    tk_rc, tk_out, tk_err = _kill_tree(proc.pid)
+                    if proc.poll() is not None:
+                        # 子进程其实已自行退出：不吞真实 rc、不误判为被杀。
+                        # 真实退出码透传上层（不重试·保持既有语义）。
+                        rc = proc.returncode
+                        log_fh.write(
+                            "%s attempt %d 杀灭窗口内子进程已自行退出 rc=%s"
+                            " -> 真实 rc 透传上层·不重试 (tk_rc=%s %s%s)\n"
+                            % (tag, attempt, rc, tk_rc, tk_out, tk_err))
+                        log_fh.flush()
+                        return rc, used
+                if tk_rc != 0 and proc.poll() is None:
+                    # K-STOCK-338: 补杀仍失败且子进程仍挂死——绝不重试（重试会
+                    # 造成新旧两份引擎并发跑·并发写同一产物 json = 数据污染），
+                    # 返回哨兵交上层 FAIL 收口；挂死进程留给人工 taskkill。
+                    log_fh.write(
+                        "%s WATCHDOG 杀灭失败且子进程仍存活 pid=%s tk_rc=%s %s%s"
+                        " -> 放弃重试防并发双跑·需人工 taskkill /F /T /PID %s\n"
+                        % (tag, proc.pid, tk_rc, tk_out, tk_err, proc.pid))
+                    log_fh.flush()
+                    rc = KILLED_RC
+                    killed = True
+                    break
                 proc.wait()
                 log_fh.write(
                     "%s WATCHDOG 触发: attempt %d 静默 %.0fs(阈值 %.0fs) 无日志增长"
