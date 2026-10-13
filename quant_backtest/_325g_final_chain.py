@@ -3,7 +3,10 @@
 
 链：①守卫（_325b 回补须已静默 ≥15 分钟，防双进程并发写 manifest）
     ②幂等补拉（重跑 _325b_backfill.py：done 全跳过，仅 fail 票重试）
-    ③终版快照（dknife_snap.py --src tushare --ym0 202606 --ym1 202610 --verify）
+    ③终版快照（dknife_snap.py --src tushare --ym0 202606 --ym1 202610
+       ——⚠️ 不带 --verify：该脚本 verify 与重建互斥（if/else），
+       带 --verify 只验证旧 rtmin 快照即退出、tushare 不重建（325G 干跑预检修）；
+       重建分支末尾自带 verify(s)，重建+验证一步到位）
     ④首窗回测（calc_dknife_signals_market 全窗口 → _325g_result.json）
 全程输出落文件（长跑铁律），任一步 FAIL 即停并留痕。
 
@@ -76,7 +79,7 @@ def main():
 
     rc = run_step("③终版快照",
                   [sys.executable, "-u", "dknife_snap.py", "--src", "tushare",
-                   "--ym0", "202606", "--ym1", "202610", "--verify"],
+                   "--ym0", "202606", "--ym1", "202610"],
                   os.path.join(HERE, "_325g_step3_snap.log"))
     if rc != 0:
         log("FAIL@③快照 rc=%d——停链" % rc)
