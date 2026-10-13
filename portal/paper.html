@@ -156,6 +156,7 @@
 
   <div class="tabs">
     <div class="tab active" data-tab="desk">接待大厅</div>
+    <div class="tab" data-tab="strategy">策略中心</div>
     <div class="tab" data-tab="agent">交易员市场</div>
     <div class="tab" data-tab="pos">持仓 <span class="n" id="n-pos">0</span></div>
     <div class="tab" data-tab="hist">历史</div>
@@ -179,11 +180,58 @@
         </div>
         <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
       </div>
-      <div style="font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:8px">您的进门路线：<b>① 这里听经理接待</b> → ② 下方选服务（免费值班已含 / 订阅策略随订随退） → ③ <a href="#" onclick="document.querySelector('[data-tab=agent]').click();return false" style="color:var(--link)">交易员市场组团队</a>（选经理配操盘手 → 跑组合回测验证） → ④ 满意才上岗 → 上岗后的<b>持仓</b>与<b>历史</b>在上方页签随时看。</div>
+      <div style="font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:8px">您的进门路线：<b>① 这里听经理接待</b> → ② <a href="#" onclick="gotoTab('strategy');return false" style="color:var(--link)">策略中心选策略</a>（免费值班已含 / 订阅策略随订随退） → ③ <a href="#" onclick="document.querySelector('[data-tab=agent]').click();return false" style="color:var(--link)">交易员市场组团队</a>（选经理配操盘手 → 跑组合回测验证） → ④ 满意才上岗 → 上岗后的<b>持仓</b>与<b>历史</b>在上方页签随时看。</div>
+    </div>
+    <!-- K-STOCK-350 今天的事（客户日常：您的钱今天怎么样。从原右栏 9 盒中拆出客户关心的五件，全宽双栏） -->
+    <div class="col-title" style="margin-top:18px">📅 今天的事 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（您的钱今天怎么样：计划 · 风控 · 成交）</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
+      <div>
+        <!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
+        <div class="col-title" style="display:flex;align-items:center;justify-content:space-between;gap:6px">今日交易计划（经理审批单）<select id="plan-pf-select" style="font-size:11px;max-width:132px" title="K-STOCK-169u：切换组合查看对应审批单"></select></div>
+        <div class="side-box"><div id="plan-body"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">止损哨兵</div>
+        <div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">今日挂单（pending · 全量清单已折叠）</div>
+        <details><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim);margin-bottom:6px">展开全量挂单清单（审批单之外的原始 pending）</summary>
+        <div class="side-box" style="margin-top:6px"><div id="pend-body"><div class="empty">读取中…</div></div></div></details>
+      </div>
+      <div>
+        <div class="col-title">我的组合总览（多组合）</div>
+        <div class="side-box"><div id="pf-multi-body" style="display:none"><div class="empty">读取中…</div></div></div>
+        <div class="col-title">最近成交</div>
+        <div class="side-box"><div id="recent-body"><div class="empty">读取中…</div></div></div>
+      </div>
+    </div>
+
+    <!-- K-STOCK-350 投研机制（后台在为您工作，默认折叠——客户进门不必看内部齿轮） -->
+    <details style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+      <summary style="cursor:pointer;font-size:13px;font-weight:700">⚙️ 投研机制（后台在为您工作 · 点开细看）</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:10px">
+        <div>
+          <div class="col-title">选票通道（pick_bridge）</div>
+          <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
+          <div class="col-title">评判 Agent（judge）</div>
+          <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
+        </div>
+        <div>
+          <div class="col-title">今日复盘会（三 Agent）</div>
+          <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
+          <div class="col-title">策略源建议（strategist · 影子）</div>
+          <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ 策略中心（K-STOCK-351 老田拍板：接待不选策略——研究员/经理/操盘手三类策略统一后置到策略管理中心） ============ -->
+  <div class="tabpanel" id="tab-strategy">
+    <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:6px">
+      <span style="font-size:15px;font-weight:700">🧭 策略管理中心（先选策略，再去交易员市场组团队）</span>
+      <span style="font-size:12px;color:var(--text-dim)">策略按角色分三类：<b>📡 研究员的策略</b>（选什么股 = 信号来源，本页下方卡片直接选）；<b>🧑‍💼 经理的策略</b>（怎么按市况配策略 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 经理阵营</a>）；<b>🧑‍✈️ 操盘手的策略</b>（怎么买卖 = 执行纪律档案 → <a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 操盘手</a>）。要上新策略去 <a href="/market-strategy" style="color:var(--link)">策略市场</a> 选购，订了即出现在下方并在此执行。</span>
     </div>
     <div class="desk">
       <div>
-        <div class="col-title">② 选服务 · 信号来源（点卡片切换，免费值班已含）</div>
+        <div class="col-title">📡 研究员的策略 · 信号来源（点卡片切换，免费值班已含）</div>
 
         <div class="strat-card selected" data-s="ai_team">
           <div class="radio"></div>
@@ -226,7 +274,7 @@
       </div>
 
       <div>
-        <div class="col-title">③ 执行台（选中服务后这里出操作面板）</div>
+        <div class="col-title">⚡ 执行台（选中策略后这里出操作面板）</div>
 
         <div class="exec-panel" id="exec-ai_team">
           <div class="exec-title">🤖 AI 值班 · 每日跑批</div>
@@ -276,46 +324,6 @@
       </div>
 
     </div>
-
-    <!-- K-STOCK-350 今天的事（客户日常：您的钱今天怎么样。从原右栏 9 盒中拆出客户关心的五件，全宽双栏） -->
-    <div class="col-title" style="margin-top:18px">📅 今天的事 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（您的钱今天怎么样：计划 · 风控 · 成交）</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
-      <div>
-        <!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
-        <div class="col-title" style="display:flex;align-items:center;justify-content:space-between;gap:6px">今日交易计划（经理审批单）<select id="plan-pf-select" style="font-size:11px;max-width:132px" title="K-STOCK-169u：切换组合查看对应审批单"></select></div>
-        <div class="side-box"><div id="plan-body"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">止损哨兵</div>
-        <div class="side-box"><div id="stops-body"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">今日挂单（pending · 全量清单已折叠）</div>
-        <details><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim);margin-bottom:6px">展开全量挂单清单（审批单之外的原始 pending）</summary>
-        <div class="side-box" style="margin-top:6px"><div id="pend-body"><div class="empty">读取中…</div></div></div></details>
-      </div>
-      <div>
-        <div class="col-title">我的组合总览（多组合）</div>
-        <div class="side-box"><div id="pf-multi-body" style="display:none"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">最近成交</div>
-        <div class="side-box"><div id="recent-body"><div class="empty">读取中…</div></div></div>
-      </div>
-    </div>
-
-    <!-- K-STOCK-350 投研机制（后台在为您工作，默认折叠——客户进门不必看内部齿轮） -->
-    <details style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
-      <summary style="cursor:pointer;font-size:13px;font-weight:700">⚙️ 投研机制（后台在为您工作 · 点开细看）</summary>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:10px">
-        <div>
-          <div class="col-title">选票通道（pick_bridge）</div>
-          <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
-          <div class="col-title">评判 Agent（judge）</div>
-          <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
-        </div>
-        <div>
-          <div class="col-title">今日复盘会（三 Agent）</div>
-          <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
-          <div class="col-title">策略源建议（strategist · 影子）</div>
-          <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
-        </div>
-      </div>
-    </details>
   </div>
 
   <!-- ============ 持仓 ============ -->
@@ -1389,9 +1397,9 @@ function renderSvcMenu(){
       ?('当前在雇 <b>'+hired.length+'</b> 位 · 已存于您的行囊：'+hired.map(m=>OB_ESC(String(m.name||m.id))).join('、'))
       :'尚未订阅——需要时到经理卡区一键订阅';
     el.innerHTML='🆓 <b>值班服务</b>（免费 · 进行中）：值班经理接待盯盘、盘前/收盘会纪要、今日审批单——您已在享受<br>'
-      +'🆓 <b>策略市场</b>（免费）：挑选策略当您的信号来源（选股机器人，选股不收费） <a href="#strat-body">去策略源 →</a><br>'
-      +'💳 <b>经理订阅</b>（'+OB_ESC(prices)+'/月 · 订阅制）：'+hiredTxt+' <a href="#manager-grid">看经理卡区 →</a><br>'
-      +'🧑‍✈️ <b>交易员市场</b>：策略×交易员组合执行，历史战绩逐日留痕 <a href="#agent-grid">看交易员战绩 →</a>';
+      +'🆓 <b>策略市场</b>（免费）：挑选策略当您的信号来源（选股机器人，选股不收费） <a href="#" onclick="gotoTab(\'strategy\');return false">去策略中心 →</a><br>'
+      +'💳 <b>经理订阅</b>（'+OB_ESC(prices)+'/月 · 订阅制）：'+hiredTxt+' <a href="#" onclick="gotoTab(\'agent\');return false">看经理卡区 →</a><br>'
+      +'🧑‍✈️ <b>交易员市场</b>：策略×交易员组合执行，历史战绩逐日留痕 <a href="#" onclick="gotoTab(\'agent\');return false">看交易员战绩 →</a>';
   }).catch(()=>{if(el)el.textContent='服务清单暂不可用。';});
 }
 
