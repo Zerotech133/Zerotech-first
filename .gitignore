@@ -138,6 +138,11 @@ AI/111111/*
 !AI/111111/chat_profiles.py
 !AI/111111/chat_profiles.json
 !AI/111111/test_chat_profiles.py
+!AI/111111/model_routing.py
+!AI/111111/test_model_routing.py
 .worktrees/
 portal/audit_ai_config.json
 prototypes/ai_chat_web/*.db
+
+# ===== 本地密钥（K-ORG-039：绝不进版本库）=====
+config/*.local.json

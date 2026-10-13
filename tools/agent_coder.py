@@ -35,6 +35,55 @@ CLOUD_MODEL = os.environ.get("CODER_CLOUD_MODEL", "glm-4-flash")
 # （判例：chat/completions 报 1113 余额不足 ≠ 套餐耗尽），纯 HTTP 无 spawn。
 ANTHROPIC_URL = "https://open.bigmodel.cn/api/anthropic/v1/messages"
 ANTHROPIC_MODEL = os.environ.get("CODER_ANTHROPIC_MODEL", "glm-4.6")
+# K-ORG-039: GPT-6.0（老田自备密钥·OpenAI 兼容端点）——密钥存
+# config/model_keys.local.json（gitignored）或环境变量 GPT6_API_KEY。
+GPT6_URL = os.environ.get("GPT6_URL", "https://itokengate.com/v1/chat/completions")
+GPT6_MODEL = os.environ.get("GPT6_MODEL", "gpt-6-sol")
+
+
+def _gpt6_key():
+    key = os.environ.get("GPT6_API_KEY", "")
+    if key:
+        return key
+    try:
+        conf = json.load(open("config/model_keys.local.json", encoding="utf-8"))
+        return conf.get("gpt6", {}).get("api_key", "")
+    except (OSError, ValueError):
+        return ""
+
+
+def chat_openai(agent_id, task, timeout=180):
+    """GPT-6.0 自定义 OpenAI 兼容端点（K-ORG-039·实测 10~19s/轮）。
+    探测判据：tool_call 正确出参、编码探针一次写对；
+    content 兼容字符串与块数组两种回形。"""
+    key = _gpt6_key()
+    if not key:
+        raise RuntimeError("GPT6 key 未配置(env GPT6_API_KEY 或 config/model_keys.local.json)")
+    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    payload = {
+        "model": GPT6_MODEL,
+        "max_tokens": task.get("max_tokens", 8192),
+        "messages": [{"role": "system", "content": sys_prompt},
+                     {"role": "user", "content": task["prompt"]}],
+    }
+    req = urllib.request.Request(GPT6_URL, data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": "Bearer " + key})
+    t0 = time.time()
+    d = json.load(OP.open(req, timeout=timeout))
+    msg = (d.get("choices") or [{}])[0].get("message", {})
+    c = msg.get("content")
+    if isinstance(c, list):  # 块数组变体（reasoning 网关常见）
+        out = "".join(b.get("text", "") for b in c
+                      if isinstance(b, dict) and b.get("type") == "text").strip()
+    else:
+        out = (c or "").strip()
+    if not out:
+        raise RuntimeError("gpt6 空回(finish=%s)"
+                           % (d.get("choices") or [{}])[0].get("finish_reason"))
+    print("[gpt6:%s %s %.1fs] %d chars"
+          % (agent_id, task.get("label", ""), time.time() - t0, len(out)))
+    return out
 
 
 def chat_anthropic(agent_id, task, timeout=240):
@@ -254,9 +303,23 @@ def chat_claude(agent_id, task, timeout=600):
 
 def chat_auto(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
     """按 CODER_BACKEND 路由；逐级降级。
-    anthropic(包年GLM-4.6·纯API) → claude_glm(CLI·blocked) → cloud → ollama。"""
+    gpt6(GPT-6.0·老田密钥) | anthropic(包年GLM-4.6·纯API) | claude_glm(CLI·blocked)
+    | cloud | ollama。gpt6/anthropic 失败均降级 cloud→ollama。"""
     bk = backend()
-    if bk == "anthropic":
+    if bk == "gpt6":
+        try:
+            return chat_openai(agent_id, task)
+        except Exception as e:
+            print("[gpt6 FAIL -> fallback anthropic]", str(e)[:120])
+        try:
+            return chat_anthropic(agent_id, task, timeout_cloud)
+        except Exception as e:
+            print("[anthropic FAIL -> fallback cloud]", str(e)[:120])
+        try:
+            return chat_cloud(agent_id, task, timeout_cloud)
+        except Exception as e:
+            print("[cloud FAIL -> fallback ollama]", str(e)[:120])
+    elif bk == "anthropic":
         try:
             return chat_anthropic(agent_id, task, timeout_cloud)
         except Exception as e:
