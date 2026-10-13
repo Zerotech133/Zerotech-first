@@ -18,6 +18,7 @@ K-ORG-035/036 F1 通道合流（蓝图 docs/plans/2026-10-13_105000_）：
           主控沙箱拦 spawn → 执行位 worker/计划任务侧。
   路由：claude_glm → cloud → ollama 逐级降级。
 """
+import ast
 import json
 import os
 import shutil
@@ -208,6 +209,33 @@ def lint_py_text(content, name="<target>"):
         return "line %d: %s" % (e.lineno, e.msg)
 
 
+def _integrity_gate(content, orig_bytes, out_path):
+    """K-ORG-044 完整性闸门：拦截截水特征/函数丢失。
+    043 判例：whole 模式整文件截水 4.5KB→845c 丢 main，冒烟只测
+    目标行为 → 残缺文件假 PASS。返回错误串；None=过；
+    新文件（orig_bytes 空）不查。"""
+    if orig_bytes is None:
+        return None
+    orig = orig_bytes.decode("utf-8", errors="replace")
+    if len(content) < len(orig) * 0.8:
+        return ("完整性FAIL: 产出%d字 < 原文%d字*0.8(截水特征)"
+                % (len(content), len(orig)))
+    if out_path.endswith(".py"):
+        def _top_defs(text):
+            # 优先 ast 顶层节点计数，解析失败按工单规格正则兜底
+            try:
+                return sum(1 for n in ast.parse(text).body
+                           if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                             ast.ClassDef)))
+            except SyntaxError:
+                return len(re.findall(r"(?m)^(?:async\s+def|def|class)\s", text))
+        n_new, n_old = _top_defs(content), _top_defs(orig)
+        if n_new < n_old:
+            return ("完整性FAIL: 顶层定义%d个 < 原文%d个(函数丢失)"
+                    % (n_new, n_old))
+    return None
+
+
 TRACE_DIR = os.path.join("shadow", "coder_traces")
 
 
@@ -390,10 +418,13 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             err = lint_py_text(content, out_path)
         else:
             err = None
+        if not err:  # K-ORG-044: 完整性闸在 lint 过后、写盘前，与语法错同路
+            err = _integrity_gate(content, orig_bytes, out_path)
         tries = 0
         while err and tries < lint_retries:
-            print("  [lint-gate] 第%d轮拦截: %s → 带错重试" % (tries + 1, err))
-            trace_log(k_id, "lint", "round%d blocked: %s" % (tries + 1, err))
+            kind = "integrity" if err.startswith("完整性") else "lint"  # K-ORG-044: 按闸门定 trace
+            print("  [%s-gate] 第%d轮拦截: %s → 带错重试" % (kind, tries + 1, err))
+            trace_log(k_id, kind, "round%d blocked: %s" % (tries + 1, err))
             task["prompt"] = (prompt +
                 "\n\n【上一次产出未通过验证门，错误：%s】"
                 "\n请重新输出修正后的完整文件内容（或修正的 SEARCH/REPLACE 块）。" % err)
@@ -407,6 +438,8 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
                 err = lint_py_text(content, out_path)
             else:
                 err = None
+            if not err:  # K-ORG-044: 重试产出同样过完整性闸
+                err = _integrity_gate(content, orig_bytes, out_path)
             tries += 1
         if err:
             trace_log(k_id, "fail", "gate %d rounds: %s" % (lint_retries, err))
@@ -434,6 +467,7 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             if attempt >= smoke_retries:
                 trace_log(k_id, "fail",
                           "smoke %d rounds: %s" % (smoke_retries + 1, sm))
+                _restore()  # K-ORG-044: 坏产出零残留（044首跑实录修复）
                 return False, "smoke FAIL %d 轮: %s" % (smoke_retries + 1, sm)
             print("  [smoke] 第%d轮拦截: %s → 还原原文带错重试" % (attempt + 1, sm))
             _restore()
