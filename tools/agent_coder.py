@@ -20,6 +20,7 @@ K-ORG-035/036 F1 通道合流（蓝图 docs/plans/2026-10-13_105000_）：
 """
 import ast
 import json
+from dataclasses import dataclass
 import os
 import shutil
 import subprocess
@@ -329,48 +330,118 @@ def chat_claude(agent_id, task, timeout=600):
     return out
 
 
-def chat_auto(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
+# ---------- K-ORG-048: chat_auto 通道元数据（043/045 判例：降级链后实际通道丢失） ----------
+
+@dataclass
+class ChatResult:
+    content: str
+    channel: str      # 实际生成通道（降级后最终档）
+    requested: str    # backend() 请求档
+    attempts: list    # [(通道, err)] 失败链
+    latency_s: float
+
+
+_LAST_META = None  # 最近一次 chat_auto_meta 结果（非线程安全）
+
+
+def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
     """按 CODER_BACKEND 路由；逐级降级。
     gpt6(GPT-6.0·老田密钥) | anthropic(包年GLM-4.6·纯API) | claude_glm(CLI·blocked)
-    | cloud | ollama。gpt6/anthropic 失败均降级 cloud→ollama。"""
+    | cloud | ollama。gpt6/anthropic 失败均降级 cloud→ollama。
+    K-ORG-048: 返回 ChatResult——channel=实际成功档，requested=bk，attempts=失败链。"""
+    global _LAST_META
     bk = backend()
+    _t0 = time.time()
+    attempts = []
     if bk == "gpt6":
         try:
-            return chat_openai(agent_id, task)
+            out = chat_openai(agent_id, task)
+            _LAST_META = ChatResult(out, "gpt6", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[gpt6 FAIL -> fallback anthropic]", str(e)[:120])
+            attempts.append(("gpt6", str(e)[:120]))
         try:
-            return chat_anthropic(agent_id, task, timeout_cloud)
+            out = chat_anthropic(agent_id, task, timeout_cloud)
+            _LAST_META = ChatResult(out, "anthropic", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[anthropic FAIL -> fallback cloud]", str(e)[:120])
+            attempts.append(("anthropic", str(e)[:120]))
         try:
-            return chat_cloud(agent_id, task, timeout_cloud)
+            out = chat_cloud(agent_id, task, timeout_cloud)
+            _LAST_META = ChatResult(out, "cloud", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
+            attempts.append(("cloud", str(e)[:120]))
     elif bk == "anthropic":
         try:
-            return chat_anthropic(agent_id, task, timeout_cloud)
+            out = chat_anthropic(agent_id, task, timeout_cloud)
+            _LAST_META = ChatResult(out, "anthropic", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[anthropic FAIL -> fallback cloud]", str(e)[:120])
+            attempts.append(("anthropic", str(e)[:120]))
         try:
-            return chat_cloud(agent_id, task, timeout_cloud)
+            out = chat_cloud(agent_id, task, timeout_cloud)
+            _LAST_META = ChatResult(out, "cloud", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
+            attempts.append(("cloud", str(e)[:120]))
     elif bk == "claude_glm":
         try:
-            return chat_claude(agent_id, task, timeout_claude)
+            out = chat_claude(agent_id, task, timeout_claude)
+            _LAST_META = ChatResult(out, "claude_glm", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[claude_glm FAIL -> fallback cloud]", str(e)[:120])
+            attempts.append(("claude_glm", str(e)[:120]))
         try:
-            return chat_cloud(agent_id, task, timeout_cloud)
+            out = chat_cloud(agent_id, task, timeout_cloud)
+            _LAST_META = ChatResult(out, "cloud", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
+            attempts.append(("cloud", str(e)[:120]))
     elif bk == "cloud":
         try:
-            return chat_cloud(agent_id, task, timeout_cloud)
+            out = chat_cloud(agent_id, task, timeout_cloud)
+            _LAST_META = ChatResult(out, "cloud", bk, attempts,
+                                    round(time.time() - _t0, 1))
+            return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
-    return chat(agent_id, task, timeout_local)
+            attempts.append(("cloud", str(e)[:120]))
+    out = chat(agent_id, task, timeout_local)
+    _LAST_META = ChatResult(out, "ollama", bk, attempts,
+                            round(time.time() - _t0, 1))
+    return _LAST_META
+
+
+def chat_auto(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
+    """K-ORG-048 兼容薄壳：只回 content，旧调用方零改动。"""
+    return _chat_auto_impl(agent_id, task, timeout_cloud,
+                           timeout_local, timeout_claude).content
+
+
+def chat_auto_meta(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
+    """K-ORG-048: 返回完整 ChatResult（content/channel/requested/attempts/latency_s）。"""
+    return _chat_auto_impl(agent_id, task, timeout_cloud,
+                           timeout_local, timeout_claude)
+
+
+def last_channel():
+    """K-ORG-048: 最近一次实际生成通道；无记录回退请求档。"""
+    return _LAST_META.channel if _LAST_META else backend()
 
 
 def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
@@ -380,7 +451,6 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
     带错误反馈重新生成（最多 smoke_retries 轮）——F4 迭代回路完整形态。
     k_id: 工单号，轨迹按单归档。"""
     task = {"label": label, "prompt": prompt, "json_out": json_out}
-    trace_log(k_id, "generate", "%s by %s via %s" % (label, agent_id, backend()))
     orig_bytes = None
     if os.path.exists(out_path):
         orig_bytes = open(out_path, "rb").read()
@@ -390,7 +460,10 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             with open(out_path, "wb") as f:
                 f.write(orig_bytes)
 
-    raw = chat_auto(agent_id, task)
+    meta = chat_auto_meta(agent_id, task)
+    raw = meta.content
+    trace_log(k_id, "generate", "%s by %s via %s(requested=%s actual=%s)"
+              % (label, agent_id, backend(), meta.requested, meta.channel))
     if json_out:
         try:
             data = json.loads(raw)
@@ -428,7 +501,8 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             task["prompt"] = (prompt +
                 "\n\n【上一次产出未通过验证门，错误：%s】"
                 "\n请重新输出修正后的完整文件内容（或修正的 SEARCH/REPLACE 块）。" % err)
-            raw = chat_auto(agent_id, task)
+            meta = chat_auto_meta(agent_id, task)
+            raw = meta.content
             content, mode = apply_edit_protocol(raw, out_path)
             if mode.startswith("sr_fail"):
                 err = mode  # 带结构化诊断（块序号/命中数/SEARCH原文）喂回
@@ -475,7 +549,8 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
                 "\n\n【上一次产出通过了语法门但未通过行为冒烟，错误：%s】"
                 "\n禁止整文件重写式重做——只允许输出 SEARCH/REPLACE 块做最小修改，"
                 "\n现有函数实现体一字不动，禁止 pass/... 占位。" % sm)
-            raw = chat_auto(agent_id, task)
+            meta = chat_auto_meta(agent_id, task)
+            raw = meta.content
     return False, "unreachable"
 
 
@@ -484,8 +559,8 @@ def commit_work(out_path, k_id, agent_id, label, channel=None, dry_run=False):
     只 add 目标文件（禁 -A/禁 .），独立 commit 可按单回滚。
     消息格式：K编号: 工单名 — by 岗位 via 通道。返回 (ok, detail)。"""
     import subprocess as sp
-    if channel is None:
-        channel = backend()
+    if channel in (None, "auto"):  # K-ORG-048: 缺省=实际通道(last_channel)；显式传值仍覆盖
+        channel = last_channel()
     msg = "%s: %s — by %s via %s" % (k_id, label, agent_id, channel)
     r = sp.run(["git", "add", "--", out_path], capture_output=True, text=True,
                encoding="utf-8", errors="replace")
