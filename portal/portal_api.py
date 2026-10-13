@@ -2587,6 +2587,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "verified": False,
                             "error": repr(_e)}, 500)
+        elif path == "/api/duty_brief":
+            # K-STOCK-364 值班经理盘前简报（只读·复用当日上下文·零模型调用；
+            # ?snapshot=1 由 9:15 出件任务调用：现算+原子落盘当日快照）
+            self._api_duty_brief(qs)
         elif path == "/api/reception":
             # K-STOCK-159 S-e 迎宾向导数据源（纯只读：duty_receptionist
             # 迎宾词 + 资历经理三档摘要 + 现有组合摘要）

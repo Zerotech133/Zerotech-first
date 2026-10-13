@@ -185,6 +185,16 @@
         <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
       </div>
       <div style="font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:8px">您的进门路线：<b>① 这里听经理接待</b> → ② <a href="#" onclick="gotoTab('strategy');return false" style="color:var(--link)">策略中心选策略</a>（免费值班已含 / 订阅策略随订随退） → ③ <a href="#" onclick="document.querySelector('[data-tab=agent]').click();return false" style="color:var(--link)">交易员市场组团队</a>（选经理配操盘手 → 跑组合回测验证） → ④ 满意才上岗 → 上岗后的<b>持仓</b>与<b>历史</b>在上方页签随时看。</div>
+      <!-- K-STOCK-364 盘前简报：值班经理主动服务（9:15 出件快照·复用当日上下文·零模型调用；渲染失败静默不拖垮接待卡） -->
+      <div id="duty-brief" style="display:none;margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg-surface)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <b style="font-size:13px">📋 今日盘前简报</b>
+          <span id="duty-brief-badge" style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(88,166,255,.15);color:var(--text)"></span>
+          <span id="duty-brief-time" style="font-size:11px;color:var(--text-dim)"></span>
+        </div>
+        <div id="duty-brief-headline" style="font-size:12.5px;margin-top:6px;font-weight:600"></div>
+        <ul id="duty-brief-rows" style="margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--text-dim);line-height:1.7"></ul>
+      </div>
       <!-- K-STOCK-352 AI 值班经理 · 有问必答（接待即服务：客户进门就能问，后端复用 8091 模型回退链） -->
       <div style="border-top:1px dashed var(--border);margin-top:10px;padding-top:10px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1150,11 +1160,33 @@ async function loadMinutes(){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   loadMinutes();
+  loadDutyBrief();  // K-STOCK-364 盘前简报（接待首屏主动服务）
   // 经理卡为 loadManagers 异步重渲染（雇佣/解雇后整卡重建），监听重挂纪要区
   const mg=document.getElementById('manager-grid');
   if(mg&&window.MutationObserver)
     new MutationObserver(()=>injectMinutes()).observe(mg,{childList:true});
 });
+
+// ===== K-STOCK-364 盘前简报（值班经理主动服务·失败静默） =====
+// 文本一律 textContent 注入（零 innerHTML 面）；9:15 后服务端优先回当日快照
+async function loadDutyBrief(){
+  const box=document.getElementById('duty-brief');
+  if(!box)return;
+  try{
+    const j=await api('/api/duty_brief');
+    if(!j||!j.ok)return;
+    document.getElementById('duty-brief-badge').textContent=
+      (j.phase_label||j.phase||'')+((j.from_snapshot)?' · 9:15 快照':'');
+    document.getElementById('duty-brief-time').textContent=
+      '生成于 '+j.generated_at+(j.weekday?' · '+j.weekday:'');
+    document.getElementById('duty-brief-headline').textContent=
+      j.headline||'今日暂无重点动态';
+    const ul=document.getElementById('duty-brief-rows');
+    ul.innerHTML='';
+    (j.rows||[]).forEach(r=>{const li=document.createElement('li');li.textContent=r;ul.appendChild(li);});
+    box.style.display='block';
+  }catch(e){/* 简报失败静默，不拖垮接待卡 */}
+}
 
 // ===== 历史 =====
 async function loadHistory(){

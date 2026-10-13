@@ -2085,6 +2085,79 @@ transition:.3s;z-index:9}
             self._json({"ok": False,
                         "error": "值班经理暂时离线：%s" % str(oe)[:160]}, 502)
 
+    # ==== K-STOCK-364 值班经理盘前简报（主动服务·复用当日上下文·零模型调用） ====
+
+    def _duty_brief_phase(self):
+        hhmm = time.strftime("%H%M")
+        if hhmm < "0915":
+            return "pre"
+        if hhmm < "1500":
+            return "open"
+        return "closed"
+
+    def _duty_brief_payload(self):
+        """364：纯规则组装简报（只报事实不下结论，沿用 353 纪律）。
+        headline 优先级：跌破止损警示 > 今日计划首条 > 首行。"""
+        try:
+            rows = self._today_context() or []
+        except Exception:
+            rows = []
+        headline = ""
+        for r in rows:
+            if "跌破止损线" in r or "最接近触发" in r:
+                headline = r
+                break
+        if not headline:
+            for r in rows:
+                if r.startswith("今日计划"):
+                    headline = r
+                    break
+        if not headline and rows:
+            headline = rows[0]
+        wd = int(time.strftime("%w"))
+        phase = self._duty_brief_phase()
+        return {
+            "ok": True,
+            "date": time.strftime("%Y-%m-%d"),
+            "weekday": "周" + "日一二三四五六"[wd],
+            "phase": phase,
+            "phase_label": {"pre": "盘前 · 正式简报 9:15 出件",
+                            "open": "盘中", "closed": "已收盘"}[phase],
+            "generated_at": time.strftime("%H:%M:%S"),
+            "headline": headline,
+            "rows": rows,
+            "n": len(rows),
+        }
+
+    def _api_duty_brief(self, qs):
+        """GET /api/duty_brief[?snapshot=1]。
+        ?snapshot=1：9:15 出件任务调用——现算+原子落盘当日快照（357 判例 tmp+os.replace）；
+        常规：9:15 后优先读当日快照（盘前时点口径），无快照/盘前则惰性现算。"""
+        snap = "snapshot=1" in (qs or "")
+        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+        fp = os.path.join(data_dir, "duty_brief_%s.json" % time.strftime("%Y%m%d"))
+        payload = None
+        if snap:
+            payload = self._duty_brief_payload()
+            payload["snapshotted_at"] = time.strftime("%H:%M:%S")
+            try:
+                tmp = fp + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as fh:
+                    json.dump(payload, fh, ensure_ascii=False)
+                os.replace(tmp, fp)
+            except Exception:
+                pass  # 落盘失败不阻断应答（下次 snapshot 重写）
+        elif os.path.exists(fp) and self._duty_brief_phase() != "pre":
+            try:
+                with open(fp, encoding="utf-8") as fh:
+                    payload = json.load(fh)
+                payload["from_snapshot"] = True
+            except Exception:
+                payload = None
+        if payload is None:
+            payload = self._duty_brief_payload()
+        self._json(payload)
+
     def _devops_page(self):
         """开发指挥台页（108 原型落地版·只读）：四类计数 + 工单表 + 事件流。"""
         import html as _h
