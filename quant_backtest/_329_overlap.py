@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-329 · 双刀×缠论并轨价值验证：持仓/成交重叠度 + 收益相关性 + 并轨模拟。
 
-用 327 三臂账本（data/bt2/bt2_327_*.json·中期快照版 972 宇宙·窗 20260901-20261012）：
+用 327 三臂账本（data/bt2/bt2_327_*.json·宇宙取自 chan_final meta.manual_picks·窗 20260901-20261012）：
 1. 逐日持仓重叠（共同活跃日 Jaccard + 平均重叠票数）；
 2. 逐笔成交重叠（同票同日同侧）；
 3. 日收益相关系数（全窗 + 共同活跃窗两口径）；
@@ -16,6 +16,8 @@ import os
 QBT = os.path.dirname(os.path.abspath(__file__))
 BT2_DIR = os.path.join(QBT, "data", "bt2")
 ARMS = ["dknife", "chan_final"]
+UNIV = len(json.load(open(os.path.join(BT2_DIR, "bt2_327_chan_final.json"),
+                          encoding="utf-8"))["meta"].get("manual_picks") or [])
 
 
 def load(arm):
@@ -101,8 +103,9 @@ def main():
 
     # 输出
     lines = [
-        "# K-STOCK-329 双刀×缠论并轨价值验证（重叠度·基于 327 中期版三臂账本）", "",
-        "窗 20260901~20261012（%d 交易日）·宇宙 972 只·⚠️ 中期快照版·数字仅方向性" % len(days),
+        "# K-STOCK-329 双刀×缠论并轨价值验证（重叠度·基于 327 三臂账本）", "",
+        "窗 20260901~20261012（%d 交易日）·宇宙 %d 只（chan_final manual_picks·终版快照）" % (
+            len(days), UNIV),
         "",
         "## 1. 持仓与成交重叠",
         "- 窗内持仓活跃日：%s %d 日 / %s %d 日；两臂同日均有持仓 %d 日" % (
@@ -130,7 +133,7 @@ def main():
     lines += ["", "## 4. 判读",
               "- 重叠低（Jaccard %.2f·成交重叠 %d 笔）+ 相关弱（r=%.2f）⇒ 并轨分散价值成立方向；"
               "并轨 ret/mdd 与单臂对照见上表。" % (jac, len(ev_common), r_all),
-              "- ⚠️ 24 日短窗+972 中期宇宙：结论仅方向性，正式版（终版快照）后重跑本脚本刷新。"]
+              "- ⚠️ 24 日短窗：结论仅方向性（r 的 95%% CI 宽·样本少）；正式版宇宙 %d 只已刷新（终版快照 202606-202610）。" % UNIV]
     out = os.path.join(QBT, "_329_overlap.md")
     open(out, "w", encoding="utf-8").write("\n".join(lines) + "\n")
     print("\n".join(lines))

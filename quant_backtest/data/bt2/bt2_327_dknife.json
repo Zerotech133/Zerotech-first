@@ -47,7 +47,7 @@
   "min_score": 0,
   "limit_check": true,
   "trail": null,
-  "signal_source": "双刀全网14:45快照(dknife_snap(14:45重构·20260601~20261012))·972",
+  "signal_source": "双刀全网14:45快照(dknife_snap(14:45重构·20260601~20261013))·5037",
   "buy_filter": "all",
   "universe": "market",
   "manual_picks": [],
@@ -57,8 +57,8 @@
    "n_rows_drop": 60
   },
   "dknife_sig": {
-   "universe": 972,
-   "n_sig": 34,
+   "universe": 5037,
+   "n_sig": 220,
    "snap_days": [
     "20260901",
     "20260902",
@@ -88,36 +88,99 @@
   },
   "top_n_mid": 0,
   "three_fail_exit": false,
-  "job_id": "bt2_327_dknife",
+  "job_id": "327_dknife",
   "names": {
-   "000333.SZ": "美的集团",
-   "601766.SH": "中国中车",
-   "600801.SH": "华新建材",
-   "000532.SZ": "华金资本",
-   "000505.SZ": "京粮控股",
-   "600642.SH": "申能股份",
-   "000014.SZ": "沙河股份",
-   "000933.SZ": "神火股份",
-   "600547.SH": "山东黄金",
-   "688297.SH": "中无人机",
-   "601155.SH": "新城控股",
-   "300347.SZ": "泰格医药",
-   "603979.SH": "金诚信",
-   "600346.SH": "恒力石化",
-   "601918.SH": "新集能源",
-   "688281.SH": "华秦科技",
-   "603175.SH": "超颖电子",
+   "300562.SZ": "乐心股份",
+   "002349.SZ": "精华制药",
+   "603803.SH": "瑞斯康达",
+   "301226.SZ": "祥明智能",
+   "300967.SZ": "晓鸣股份",
    "300999.SZ": "金龙鱼",
-   "600038.SH": "中直股份",
-   "600309.SH": "万华化学",
-   "600031.SH": "三一重工",
+   "301020.SZ": "密封科技",
+   "605507.SH": "国邦医药",
+   "002923.SZ": "润都股份",
+   "600992.SH": "贵绳股份",
+   "002597.SZ": "金禾实业",
+   "300559.SZ": "佳发教育",
+   "601155.SH": "新城控股",
+   "601766.SH": "中国中车",
+   "000586.SZ": "汇源通信",
+   "603886.SH": "元祖股份",
+   "003010.SZ": "若羽臣",
+   "600801.SH": "华新建材",
    "000151.SZ": "中成股份",
-   "000768.SZ": "中航西飞",
+   "300437.SZ": "清水源",
+   "601918.SH": "新集能源",
+   "300711.SZ": "广哈通信",
+   "300551.SZ": "古鳌科技",
+   "003019.SZ": "宸展光电",
+   "600212.SH": "绿能慧充",
+   "301220.SZ": "亚香股份",
+   "301330.SZ": "熵基科技",
+   "603306.SH": "华懋科技",
+   "300404.SZ": "博济医药",
+   "300411.SZ": "金盾股份",
+   "001228.SZ": "永泰运",
+   "300369.SZ": "绿盟科技",
+   "603051.SH": "鹿山新材",
+   "603527.SH": "众源新材",
+   "301151.SZ": "冠龙节能",
+   "600793.SH": "宜宾纸业",
+   "600218.SH": "全柴动力",
+   "002879.SZ": "长缆科技",
+   "301122.SZ": "采纳股份",
+   "301373.SZ": "凌玮科技",
+   "001210.SZ": "金房能源",
+   "301207.SZ": "华兰疫苗",
+   "300736.SZ": "百邦科技",
+   "301628.SZ": "强达电路",
+   "300981.SZ": "中红医疗",
+   "002057.SZ": "中钢天源",
+   "000014.SZ": "沙河股份",
+   "301156.SZ": "美农生物",
+   "300410.SZ": "正业科技",
+   "300781.SZ": "因赛集团",
+   "603983.SH": "丸美生物",
+   "300347.SZ": "泰格医药",
+   "001366.SZ": "播恩集团",
    "600036.SH": "招商银行",
+   "002780.SZ": "三夫户外",
+   "688651.SH": "盛邦安全",
+   "688613.SH": "奥精医疗",
+   "301056.SZ": "森赫股份",
+   "605167.SH": "利柏特",
+   "605566.SH": "福莱蒽特",
+   "002264.SZ": "新华都",
+   "300427.SZ": "红相股份",
+   "300243.SZ": "瑞丰高材",
+   "300860.SZ": "锋尚文化",
+   "688084.SH": "晶品特装",
    "000156.SZ": "华数传媒",
-   "601128.SH": "常熟银行",
+   "300363.SZ": "博腾股份",
+   "301061.SZ": "匠心家居",
+   "300976.SZ": "达瑞电子",
+   "603112.SH": "华翔股份",
+   "300138.SZ": "晨光生物",
+   "600623.SH": "华谊集团",
+   "000768.SZ": "中航西飞",
+   "688339.SH": "亿华通",
+   "002534.SZ": "西子洁能",
+   "601609.SH": "金田股份",
+   "301119.SZ": "正强股份",
+   "002985.SZ": "北摩高科",
+   "002876.SZ": "三利谱",
+   "603711.SH": "香飘飘",
+   "603313.SH": "梦百合",
+   "688699.SH": "明微电子",
    "600377.SH": "宁沪高速",
-   "603259.SH": "药明康德"
+   "601128.SH": "常熟银行",
+   "300662.SZ": "科锐国际",
+   "300378.SZ": "鼎捷数智",
+   "300235.SZ": "方直科技",
+   "600776.SH": "东方通信",
+   "000592.SZ": "平潭发展",
+   "603393.SH": "新天然气",
+   "003030.SZ": "祖名股份"
   },
   "stock_events": {},
   "stock_basics": {
@@ -154,33 +217,22 @@
     "vr": null,
     "n_sig": 0
    },
-   "000333.SZ": {
-    "name": "美的集团",
-    "close": 83.5,
-    "chg5": 1.83,
-    "chg20": -4.65,
+   "000586.SZ": {
+    "name": "汇源通信",
+    "close": 11.77,
+    "chg5": -7.47,
+    "chg20": -12.56,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
     "vr": null,
     "n_sig": 0
    },
-   "000505.SZ": {
-    "name": "京粮控股",
-    "close": 6.29,
-    "chg5": 2.61,
-    "chg20": -10.91,
-    "last_sig": null,
-    "last_sig_day": null,
-    "score": null,
-    "vr": null,
-    "n_sig": 0
-   },
-   "000532.SZ": {
-    "name": "华金资本",
-    "close": 11.75,
-    "chg5": -5.62,
-    "chg20": 1.82,
+   "000592.SZ": {
+    "name": "平潭发展",
+    "close": 7.37,
+    "chg5": -18.92,
+    "chg20": -1.6,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
@@ -198,11 +250,209 @@
     "vr": null,
     "n_sig": 0
    },
-   "000933.SZ": {
-    "name": "神火股份",
-    "close": 26.21,
-    "chg5": 4.21,
-    "chg20": -4.2,
+   "001210.SZ": {
+    "name": "金房能源",
+    "close": 24.43,
+    "chg5": -8.67,
+    "chg20": -13.18,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "001228.SZ": {
+    "name": "永泰运",
+    "close": 36.39,
+    "chg5": -0.66,
+    "chg20": 21.87,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "001366.SZ": {
+    "name": "播恩集团",
+    "close": 12.95,
+    "chg5": -1.15,
+    "chg20": -9.82,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002057.SZ": {
+    "name": "中钢天源",
+    "close": 8.71,
+    "chg5": 0.81,
+    "chg20": -1.91,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002264.SZ": {
+    "name": "新华都",
+    "close": 8.14,
+    "chg5": 6.54,
+    "chg20": 17.63,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002349.SZ": {
+    "name": "精华制药",
+    "close": 8.45,
+    "chg5": -2.65,
+    "chg20": 10.31,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002534.SZ": {
+    "name": "西子洁能",
+    "close": 16.72,
+    "chg5": 0.12,
+    "chg20": 2.58,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002597.SZ": {
+    "name": "金禾实业",
+    "close": 22.01,
+    "chg5": 4.51,
+    "chg20": 4.46,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002780.SZ": {
+    "name": "三夫户外",
+    "close": 14.43,
+    "chg5": -2.76,
+    "chg20": 1.55,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002876.SZ": {
+    "name": "三利谱",
+    "close": 29.37,
+    "chg5": -6.88,
+    "chg20": -1.11,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002879.SZ": {
+    "name": "长缆科技",
+    "close": 15.89,
+    "chg5": -8.73,
+    "chg20": -5.64,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002923.SZ": {
+    "name": "润都股份",
+    "close": 11.55,
+    "chg5": 7.44,
+    "chg20": 3.96,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "002985.SZ": {
+    "name": "北摩高科",
+    "close": 26.53,
+    "chg5": -1.41,
+    "chg20": -4.26,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "003010.SZ": {
+    "name": "若羽臣",
+    "close": 25.62,
+    "chg5": -8.47,
+    "chg20": -18.92,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "003019.SZ": {
+    "name": "宸展光电",
+    "close": 24.55,
+    "chg5": -5.94,
+    "chg20": -10.66,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "003030.SZ": {
+    "name": "祖名股份",
+    "close": 26.03,
+    "chg5": -0.72,
+    "chg20": 5.21,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300138.SZ": {
+    "name": "晨光生物",
+    "close": 11.81,
+    "chg5": 5.64,
+    "chg20": -1.83,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300235.SZ": {
+    "name": "方直科技",
+    "close": 12.24,
+    "chg5": 4.17,
+    "chg20": 8.32,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300243.SZ": {
+    "name": "瑞丰高材",
+    "close": 17.55,
+    "chg5": -18.26,
+    "chg20": 14.26,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
@@ -220,6 +470,215 @@
     "vr": null,
     "n_sig": 0
    },
+   "300363.SZ": {
+    "name": "博腾股份",
+    "close": 23.15,
+    "chg5": -3.18,
+    "chg20": 17.69,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300369.SZ": {
+    "name": "绿盟科技",
+    "close": 11.13,
+    "chg5": 24.36,
+    "chg20": 39.65,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300378.SZ": {
+    "name": "鼎捷数智",
+    "close": 37.06,
+    "chg5": -2.29,
+    "chg20": -6.74,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300404.SZ": {
+    "name": "博济医药",
+    "close": 13.59,
+    "chg5": -4.5,
+    "chg20": 9.33,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300410.SZ": {
+    "name": "正业科技",
+    "close": 8.37,
+    "chg5": 0.0,
+    "chg20": 6.62,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300411.SZ": {
+    "name": "金盾股份",
+    "close": 8.33,
+    "chg5": 2.46,
+    "chg20": -1.19,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300427.SZ": {
+    "name": "红相股份",
+    "close": 5.95,
+    "chg5": -1.49,
+    "chg20": -13.52,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300437.SZ": {
+    "name": "清水源",
+    "close": 10.7,
+    "chg5": 1.71,
+    "chg20": -6.06,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300551.SZ": {
+    "name": "古鳌科技",
+    "close": 11.13,
+    "chg5": -3.89,
+    "chg20": -9.95,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300559.SZ": {
+    "name": "佳发教育",
+    "close": 12.18,
+    "chg5": -3.87,
+    "chg20": 4.82,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300562.SZ": {
+    "name": "乐心股份",
+    "close": 14.36,
+    "chg5": -10.47,
+    "chg20": -19.37,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300662.SZ": {
+    "name": "科锐国际",
+    "close": 21.53,
+    "chg5": 6.27,
+    "chg20": -4.1,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300711.SZ": {
+    "name": "广哈通信",
+    "close": 17.19,
+    "chg5": 1.0,
+    "chg20": -5.18,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300736.SZ": {
+    "name": "百邦科技",
+    "close": 33.51,
+    "chg5": -0.33,
+    "chg20": 3.62,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300781.SZ": {
+    "name": "因赛集团",
+    "close": 30.6,
+    "chg5": 18.65,
+    "chg20": 5.44,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300860.SZ": {
+    "name": "锋尚文化",
+    "close": 30.4,
+    "chg5": 6.82,
+    "chg20": 1.6,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300967.SZ": {
+    "name": "晓鸣股份",
+    "close": 15.55,
+    "chg5": -3.72,
+    "chg20": -13.18,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300976.SZ": {
+    "name": "达瑞电子",
+    "close": 51.38,
+    "chg5": -10.78,
+    "chg20": -12.86,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "300981.SZ": {
+    "name": "中红医疗",
+    "close": 22.29,
+    "chg5": 20.03,
+    "chg20": 35.09,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
    "300999.SZ": {
     "name": "金龙鱼",
     "close": 25.56,
@@ -231,11 +690,143 @@
     "vr": null,
     "n_sig": 0
    },
-   "600031.SH": {
-    "name": "三一重工",
-    "close": 17.52,
-    "chg5": 1.92,
-    "chg20": -12.4,
+   "301020.SZ": {
+    "name": "密封科技",
+    "close": 21.49,
+    "chg5": -5.04,
+    "chg20": 2.48,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301056.SZ": {
+    "name": "森赫股份",
+    "close": 12.68,
+    "chg5": -2.98,
+    "chg20": -14.32,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301061.SZ": {
+    "name": "匠心家居",
+    "close": 38.24,
+    "chg5": -7.36,
+    "chg20": 0.63,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301119.SZ": {
+    "name": "正强股份",
+    "close": 32.97,
+    "chg5": 25.65,
+    "chg20": 25.17,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301122.SZ": {
+    "name": "采纳股份",
+    "close": 65.87,
+    "chg5": 1.79,
+    "chg20": 45.09,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301151.SZ": {
+    "name": "冠龙节能",
+    "close": 19.34,
+    "chg5": -7.11,
+    "chg20": -12.61,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301156.SZ": {
+    "name": "美农生物",
+    "close": 11.47,
+    "chg5": -3.45,
+    "chg20": -7.72,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301207.SZ": {
+    "name": "华兰疫苗",
+    "close": 19.55,
+    "chg5": -1.16,
+    "chg20": 14.13,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301220.SZ": {
+    "name": "亚香股份",
+    "close": 30.57,
+    "chg5": 3.17,
+    "chg20": 14.49,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301226.SZ": {
+    "name": "祥明智能",
+    "close": 37.3,
+    "chg5": 1.11,
+    "chg20": 15.66,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301330.SZ": {
+    "name": "熵基科技",
+    "close": 25.61,
+    "chg5": 0.12,
+    "chg20": -0.35,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301373.SZ": {
+    "name": "凌玮科技",
+    "close": 98.4,
+    "chg5": -19.69,
+    "chg20": 2.79,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "301628.SZ": {
+    "name": "强达电路",
+    "close": 93.24,
+    "chg5": -11.42,
+    "chg20": -12.86,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
@@ -253,33 +844,22 @@
     "vr": null,
     "n_sig": 0
    },
-   "600038.SH": {
-    "name": "中直股份",
-    "close": 26.38,
-    "chg5": -1.53,
-    "chg20": -5.62,
+   "600212.SH": {
+    "name": "绿能慧充",
+    "close": 5.56,
+    "chg5": -2.28,
+    "chg20": -12.72,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
     "vr": null,
     "n_sig": 0
    },
-   "600309.SH": {
-    "name": "万华化学",
-    "close": 69.2,
-    "chg5": -0.29,
-    "chg20": -10.89,
-    "last_sig": null,
-    "last_sig_day": null,
-    "score": null,
-    "vr": null,
-    "n_sig": 0
-   },
-   "600346.SH": {
-    "name": "恒力石化",
-    "close": 15.76,
-    "chg5": -4.02,
-    "chg20": -17.14,
+   "600218.SH": {
+    "name": "全柴动力",
+    "close": 8.16,
+    "chg5": 3.03,
+    "chg20": 5.84,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
@@ -297,22 +877,33 @@
     "vr": null,
     "n_sig": 0
    },
-   "600547.SH": {
-    "name": "山东黄金",
-    "close": 26.54,
-    "chg5": 1.45,
-    "chg20": -29.97,
+   "600623.SH": {
+    "name": "华谊集团",
+    "close": 8.81,
+    "chg5": 2.44,
+    "chg20": 2.44,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
     "vr": null,
     "n_sig": 0
    },
-   "600642.SH": {
-    "name": "申能股份",
-    "close": 9.19,
-    "chg5": 4.31,
-    "chg20": 7.23,
+   "600776.SH": {
+    "name": "东方通信",
+    "close": 12.06,
+    "chg5": -1.71,
+    "chg20": -7.87,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "600793.SH": {
+    "name": "宜宾纸业",
+    "close": 15.45,
+    "chg5": -7.32,
+    "chg20": 1.44,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
@@ -324,6 +915,17 @@
     "close": 22.49,
     "chg5": -5.7,
     "chg20": -9.31,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "600992.SH": {
+    "name": "贵绳股份",
+    "close": 10.0,
+    "chg5": -2.06,
+    "chg20": 0.2,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
@@ -352,6 +954,17 @@
     "vr": null,
     "n_sig": 0
    },
+   "601609.SH": {
+    "name": "金田股份",
+    "close": 10.6,
+    "chg5": -5.27,
+    "chg20": -20.54,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
    "601766.SH": {
     "name": "中国中车",
     "close": 6.39,
@@ -374,55 +987,198 @@
     "vr": null,
     "n_sig": 0
    },
-   "603175.SH": {
-    "name": "超颖电子",
-    "close": 98.54,
-    "chg5": -5.59,
-    "chg20": 11.98,
+   "603051.SH": {
+    "name": "鹿山新材",
+    "close": 22.69,
+    "chg5": -5.81,
+    "chg20": 7.13,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
     "vr": null,
     "n_sig": 0
    },
-   "603259.SH": {
-    "name": "药明康德",
-    "close": 157.85,
-    "chg5": -2.44,
-    "chg20": 2.61,
+   "603112.SH": {
+    "name": "华翔股份",
+    "close": 16.22,
+    "chg5": -2.35,
+    "chg20": -1.16,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
     "vr": null,
     "n_sig": 0
    },
-   "603979.SH": {
-    "name": "金诚信",
-    "close": 71.36,
-    "chg5": 0.35,
-    "chg20": -10.28,
+   "603306.SH": {
+    "name": "华懋科技",
+    "close": 63.78,
+    "chg5": -13.75,
+    "chg20": -10.88,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
     "vr": null,
     "n_sig": 0
    },
-   "688281.SH": {
-    "name": "华秦科技",
-    "close": 46.68,
-    "chg5": -5.03,
-    "chg20": -9.36,
+   "603313.SH": {
+    "name": "梦百合",
+    "close": 6.25,
+    "chg5": 0.0,
+    "chg20": -2.8,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
     "vr": null,
     "n_sig": 0
    },
-   "688297.SH": {
-    "name": "中无人机",
-    "close": 38.16,
-    "chg5": -9.32,
-    "chg20": -10.3,
+   "603393.SH": {
+    "name": "新天然气",
+    "close": 24.42,
+    "chg5": -1.89,
+    "chg20": -8.23,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "603527.SH": {
+    "name": "众源新材",
+    "close": 9.46,
+    "chg5": 0.11,
+    "chg20": -3.86,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "603711.SH": {
+    "name": "香飘飘",
+    "close": 12.06,
+    "chg5": 2.9,
+    "chg20": 3.25,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "603803.SH": {
+    "name": "瑞斯康达",
+    "close": 10.08,
+    "chg5": -9.27,
+    "chg20": -6.67,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "603886.SH": {
+    "name": "元祖股份",
+    "close": 12.61,
+    "chg5": 1.12,
+    "chg20": -0.24,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "603983.SH": {
+    "name": "丸美生物",
+    "close": 28.66,
+    "chg5": -4.78,
+    "chg20": -13.88,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "605167.SH": {
+    "name": "利柏特",
+    "close": 15.2,
+    "chg5": -3.18,
+    "chg20": -5.3,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "605507.SH": {
+    "name": "国邦医药",
+    "close": 16.85,
+    "chg5": -8.02,
+    "chg20": 8.15,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "605566.SH": {
+    "name": "福莱蒽特",
+    "close": 31.4,
+    "chg5": -1.91,
+    "chg20": 10.8,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "688084.SH": {
+    "name": "晶品特装",
+    "close": 37.92,
+    "chg5": -8.18,
+    "chg20": -20.52,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "688339.SH": {
+    "name": "亿华通",
+    "close": 19.08,
+    "chg5": 3.19,
+    "chg20": 8.53,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "688613.SH": {
+    "name": "奥精医疗",
+    "close": 19.04,
+    "chg5": -2.96,
+    "chg20": 20.58,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "688651.SH": {
+    "name": "盛邦安全",
+    "close": 24.86,
+    "chg5": -1.74,
+    "chg20": 4.41,
+    "last_sig": null,
+    "last_sig_day": null,
+    "score": null,
+    "vr": null,
+    "n_sig": 0
+   },
+   "688699.SH": {
+    "name": "明微电子",
+    "close": 53.3,
+    "chg5": -17.49,
+    "chg20": -6.79,
     "last_sig": null,
     "last_sig_day": null,
     "score": null,
@@ -433,15 +1189,15 @@
  },
  "summary": {
   "name": "量子双刀日内纪律",
-  "total_return_pct": -0.94,
-  "annualized_pct": -9.17,
-  "max_drawdown_pct": -1.68,
-  "calmar": -5.45,
-  "n_trades": 30,
-  "win_rate_pct": 46.7,
-  "profit_factor": 0.89,
-  "avg_invested_pct": 10.0,
-  "n_trim": 0,
+  "total_return_pct": -6.64,
+  "annualized_pct": -50.38,
+  "max_drawdown_pct": -7.88,
+  "calmar": -6.39,
+  "n_trades": 92,
+  "win_rate_pct": 45.7,
+  "profit_factor": 0.67,
+  "avg_invested_pct": 31.0,
+  "n_trim": 1,
   "n_mid_slot_days": 0
  },
  "equity_curve": [
@@ -452,118 +1208,118 @@
   },
   {
    "day": "20260902",
-   "equity": 1.00219,
-   "inv_pct": 40.1
+   "equity": 1.013534,
+   "inv_pct": 80.3
   },
   {
    "day": "20260903",
-   "equity": 1.000648,
-   "inv_pct": 7.9
+   "equity": 0.992748,
+   "inv_pct": 0.0
   },
   {
    "day": "20260904",
-   "equity": 1.001276,
-   "inv_pct": 16.1
+   "equity": 0.986233,
+   "inv_pct": 79.9
   },
   {
    "day": "20260907",
-   "equity": 0.992327,
-   "inv_pct": 31.7
+   "equity": 0.989429,
+   "inv_pct": 0.0
   },
   {
    "day": "20260908",
-   "equity": 0.996075,
-   "inv_pct": 8.1
+   "equity": 0.995799,
+   "inv_pct": 80.1
   },
   {
    "day": "20260909",
-   "equity": 1.002055,
-   "inv_pct": 24.5
+   "equity": 0.989506,
+   "inv_pct": 0.0
   },
   {
    "day": "20260910",
-   "equity": 0.992176,
-   "inv_pct": 16.0
+   "equity": 0.979038,
+   "inv_pct": 55.5
   },
   {
    "day": "20260911",
-   "equity": 0.987572,
-   "inv_pct": 7.9
+   "equity": 0.962562,
+   "inv_pct": 24.2
   },
   {
    "day": "20260914",
-   "equity": 0.990718,
-   "inv_pct": 32.1
+   "equity": 0.963658,
+   "inv_pct": 25.8
   },
   {
    "day": "20260915",
-   "equity": 0.98561,
-   "inv_pct": 8.0
+   "equity": 0.959581,
+   "inv_pct": 24.1
   },
   {
    "day": "20260916",
-   "equity": 0.986888,
-   "inv_pct": 0.0
+   "equity": 0.963677,
+   "inv_pct": 25.8
   },
   {
    "day": "20260917",
-   "equity": 0.986888,
-   "inv_pct": 0.0
+   "equity": 0.965108,
+   "inv_pct": 16.4
   },
   {
    "day": "20260918",
-   "equity": 0.986888,
-   "inv_pct": 0.0
+   "equity": 0.969423,
+   "inv_pct": 33.7
   },
   {
    "day": "20260921",
-   "equity": 0.986888,
-   "inv_pct": 0.0
+   "equity": 0.983093,
+   "inv_pct": 40.2
   },
   {
    "day": "20260922",
-   "equity": 0.985323,
-   "inv_pct": 15.9
+   "equity": 0.978974,
+   "inv_pct": 40.1
   },
   {
    "day": "20260923",
-   "equity": 0.985982,
-   "inv_pct": 16.0
+   "equity": 0.972902,
+   "inv_pct": 40.5
   },
   {
    "day": "20260924",
-   "equity": 0.988219,
-   "inv_pct": 0.0
+   "equity": 0.964337,
+   "inv_pct": 16.0
   },
   {
    "day": "20260928",
-   "equity": 0.988219,
-   "inv_pct": 0.0
+   "equity": 0.946416,
+   "inv_pct": 54.9
   },
   {
    "day": "20260929",
-   "equity": 0.988219,
-   "inv_pct": 0.0
+   "equity": 0.949451,
+   "inv_pct": 7.3
   },
   {
    "day": "20260930",
-   "equity": 0.988162,
-   "inv_pct": 8.0
+   "equity": 0.946466,
+   "inv_pct": 23.9
   },
   {
    "day": "20261008",
-   "equity": 0.989717,
-   "inv_pct": 8.0
+   "equity": 0.944802,
+   "inv_pct": 26.1
   },
   {
    "day": "20261009",
-   "equity": 0.99062,
-   "inv_pct": 0.0
+   "equity": 0.949218,
+   "inv_pct": 26.3
   },
   {
    "day": "20261012",
-   "equity": 0.99062,
-   "inv_pct": 0.0
+   "equity": 0.933647,
+   "inv_pct": 23.6
   }
  ],
  "days": {
@@ -590,12 +1346,67 @@
     },
     {
      "type": "note",
+     "stock": "001366.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002780.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300411.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300562.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300711.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300781.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300860.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300967.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301025.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "600038.SH",
      "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "note",
+     "stock": "600212.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "600547.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600640.SH",
      "note": "14:45 选出→明日开盘买入"
     },
     {
@@ -606,14 +1417,14 @@
    ]
   },
   "20260902": {
-   "pnl_pct": 0.219,
-   "equity": 1.00219,
-   "n_pos": 5,
-   "wins": 2,
+   "pnl_pct": 1.353,
+   "equity": 1.013534,
+   "n_pos": 10,
+   "wins": 7,
    "losses": 3,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 59.9,
+   "cash_pct": 19.7,
    "pool_today": [],
    "actions": [
     {
@@ -628,41 +1439,281 @@
     },
     {
      "type": "buy",
-     "stock": "600038.SH",
+     "stock": "001366.SZ",
      "note": "T+1_open 买入 8.0%·评分-"
     },
     {
      "type": "buy",
-     "stock": "600547.SH",
+     "stock": "002780.SZ",
      "note": "T+1_open 买入 8.0%·评分-"
     },
     {
      "type": "buy",
-     "stock": "603979.SH",
+     "stock": "300411.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300562.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300711.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300781.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300860.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300967.SZ",
      "note": "T+1_open 买入 8.0%·评分-"
     },
     {
      "type": "note",
      "stock": "000532.SZ",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "001872.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002267.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002328.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002339.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002394.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002644.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300380.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300565.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300662.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300932.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600158.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603101.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603165.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603598.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "605177.SH",
+     "note": "14:45 选出→明日开盘买入"
     }
    ]
   },
   "20260903": {
-   "pnl_pct": -0.154,
-   "equity": 1.000648,
-   "n_pos": 1,
+   "pnl_pct": -2.051,
+   "equity": 0.992748,
+   "n_pos": 0,
    "wins": 0,
-   "losses": 1,
+   "losses": 0,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 92.1,
+   "cash_pct": 100.0,
    "pool_today": [],
    "actions": [
     {
-     "type": "buy",
+     "type": "skip",
      "stock": "000532.SZ",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "001872.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "002267.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "002328.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "002339.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "002394.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "002644.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300380.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300565.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300662.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300932.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "301025.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "600038.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "600158.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "600212.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "600547.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "600640.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603101.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603165.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603598.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603979.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "605177.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "note",
+     "stock": "001210.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002985.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "003010.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300551.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300662.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301628.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600776.SH",
+     "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "note",
@@ -671,7 +1722,27 @@
     },
     {
      "type": "note",
+     "stock": "601609.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603983.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "688281.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688333.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688621.SH",
      "note": "14:45 选出→明日开盘买入"
     },
     {
@@ -688,35 +1759,100 @@
     },
     {
      "type": "sell",
-     "stock": "600038.SH",
+     "stock": "001366.SZ",
      "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": 0.79
+     "pnl_pct": 0.0
     },
     {
      "type": "sell",
-     "stock": "600547.SH",
+     "stock": "002780.SZ",
      "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": 4.75
+     "pnl_pct": -0.07
     },
     {
      "type": "sell",
-     "stock": "603979.SH",
+     "stock": "300411.SZ",
      "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -1.87
+     "pnl_pct": 2.13
+    },
+    {
+     "type": "sell",
+     "stock": "300562.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -0.65
+    },
+    {
+     "type": "sell",
+     "stock": "300711.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -0.05
+    },
+    {
+     "type": "sell",
+     "stock": "300781.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -4.29
+    },
+    {
+     "type": "sell",
+     "stock": "300860.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 1.55
+    },
+    {
+     "type": "sell",
+     "stock": "300967.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -4.61
     }
    ]
   },
   "20260904": {
-   "pnl_pct": 0.063,
-   "equity": 1.001276,
-   "n_pos": 2,
-   "wins": 2,
-   "losses": 0,
+   "pnl_pct": -0.656,
+   "equity": 0.986233,
+   "n_pos": 10,
+   "wins": 4,
+   "losses": 6,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 83.9,
+   "cash_pct": 20.1,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "001210.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "002985.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "003010.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300551.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300662.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301628.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "600776.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
     {
      "type": "buy",
      "stock": "601155.SH",
@@ -724,7 +1860,12 @@
     },
     {
      "type": "buy",
-     "stock": "688281.SH",
+     "stock": "601609.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603983.SH",
      "note": "T+1_open 买入 8.0%·评分-"
     },
     {
@@ -739,6 +1880,16 @@
     },
     {
      "type": "note",
+     "stock": "002100.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300133.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "600031.SH",
      "note": "14:45 选出→明日开盘买入"
     },
@@ -748,48 +1899,164 @@
      "note": "14:45 选出→明日开盘买入"
     },
     {
-     "type": "sell",
-     "stock": "000532.SZ",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -0.94
+     "type": "note",
+     "stock": "603960.SH",
+     "note": "14:45 选出→明日开盘买入"
     }
    ]
   },
   "20260907": {
-   "pnl_pct": -0.894,
-   "equity": 0.992327,
-   "n_pos": 4,
+   "pnl_pct": 0.324,
+   "equity": 0.989429,
+   "n_pos": 0,
    "wins": 0,
-   "losses": 4,
+   "losses": 0,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 68.3,
+   "cash_pct": 100.0,
    "pool_today": [],
    "actions": [
     {
-     "type": "buy",
+     "type": "skip",
      "stock": "000333.SZ",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
     },
     {
-     "type": "buy",
+     "type": "skip",
      "stock": "000933.SZ",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
     },
     {
-     "type": "buy",
+     "type": "skip",
+     "stock": "002100.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300133.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
      "stock": "600031.SH",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
     },
     {
-     "type": "buy",
+     "type": "skip",
      "stock": "600346.SH",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603960.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688281.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688333.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688621.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "note",
+     "stock": "300378.SZ",
+     "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "note",
      "stock": "300999.SZ",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301056.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301156.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301226.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600212.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600793.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600992.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603112.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603393.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "001210.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -5.73
+    },
+    {
+     "type": "sell",
+     "stock": "002985.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 6.15
+    },
+    {
+     "type": "sell",
+     "stock": "003010.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.09
+    },
+    {
+     "type": "sell",
+     "stock": "300551.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 1.16
+    },
+    {
+     "type": "sell",
+     "stock": "300662.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 4.93
+    },
+    {
+     "type": "sell",
+     "stock": "301628.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.16
+    },
+    {
+     "type": "sell",
+     "stock": "600776.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.79
     },
     {
      "type": "sell",
@@ -799,31 +2066,122 @@
     },
     {
      "type": "sell",
-     "stock": "688281.SH",
+     "stock": "601609.SH",
      "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -2.49
+     "pnl_pct": -3.13
+    },
+    {
+     "type": "sell",
+     "stock": "603983.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.16
     }
    ]
   },
   "20260908": {
-   "pnl_pct": 0.378,
-   "equity": 0.996075,
-   "n_pos": 1,
-   "wins": 1,
-   "losses": 0,
+   "pnl_pct": 0.644,
+   "equity": 0.995799,
+   "n_pos": 10,
+   "wins": 7,
+   "losses": 3,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 91.9,
+   "cash_pct": 19.9,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "300378.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
     {
      "type": "buy",
      "stock": "300999.SZ",
      "note": "T+1_open 买入 8.0%·评分-"
     },
     {
+     "type": "buy",
+     "stock": "301056.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301156.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301226.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "600212.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "600793.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "600992.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603112.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603393.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
      "type": "note",
      "stock": "000505.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "000803.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002214.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002292.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300400.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300427.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300792.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300933.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301533.SZ",
      "note": "14:45 选出→明日开盘买入"
     },
     {
@@ -833,60 +2191,126 @@
     },
     {
      "type": "note",
+     "stock": "601882.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603199.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603506.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603717.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "688297.SH",
      "note": "14:45 选出→明日开盘买入"
     },
     {
-     "type": "sell",
-     "stock": "000333.SZ",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -2.73
-    },
-    {
-     "type": "sell",
-     "stock": "000933.SZ",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": 1.22
-    },
-    {
-     "type": "sell",
-     "stock": "600031.SH",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -0.1
-    },
-    {
-     "type": "sell",
-     "stock": "600346.SH",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -1.11
+     "type": "note",
+     "stock": "688696.SH",
+     "note": "14:45 选出→明日开盘买入"
     }
    ]
   },
   "20260909": {
-   "pnl_pct": 0.6,
-   "equity": 1.002055,
-   "n_pos": 3,
-   "wins": 3,
+   "pnl_pct": -0.632,
+   "equity": 0.989506,
+   "n_pos": 0,
+   "wins": 0,
    "losses": 0,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 75.5,
+   "cash_pct": 100.0,
    "pool_today": [],
    "actions": [
     {
-     "type": "buy",
+     "type": "skip",
      "stock": "000505.SZ",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
     },
     {
-     "type": "buy",
+     "type": "skip",
+     "stock": "000803.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "002214.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "002292.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300400.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300427.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300792.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300933.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "301533.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
      "stock": "600309.SH",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
     },
     {
-     "type": "buy",
+     "type": "skip",
+     "stock": "601882.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603199.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603506.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603717.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
      "stock": "688297.SH",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688696.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
     },
     {
      "type": "note",
@@ -895,26 +2319,105 @@
     },
     {
      "type": "note",
+     "stock": "300437.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600623.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "600801.SH",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603527.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603711.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688084.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "300378.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -4.27
     },
     {
      "type": "sell",
      "stock": "300999.SZ",
      "note": "14:55 信号消失（收盘价）",
      "pnl_pct": 0.58
+    },
+    {
+     "type": "sell",
+     "stock": "301056.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.2
+    },
+    {
+     "type": "sell",
+     "stock": "301156.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.79
+    },
+    {
+     "type": "sell",
+     "stock": "301226.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -1.55
+    },
+    {
+     "type": "sell",
+     "stock": "600212.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.16
+    },
+    {
+     "type": "sell",
+     "stock": "600793.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.58
+    },
+    {
+     "type": "sell",
+     "stock": "600992.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.59
+    },
+    {
+     "type": "sell",
+     "stock": "603112.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.41
+    },
+    {
+     "type": "sell",
+     "stock": "603393.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 1.61
     }
    ]
   },
   "20260910": {
-   "pnl_pct": -0.986,
-   "equity": 0.992176,
-   "n_pos": 2,
+   "pnl_pct": -1.058,
+   "equity": 0.979038,
+   "n_pos": 7,
    "wins": 1,
-   "losses": 1,
+   "losses": 6,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 84.0,
+   "cash_pct": 44.5,
    "pool_today": [],
    "actions": [
     {
@@ -924,8 +2427,43 @@
     },
     {
      "type": "buy",
+     "stock": "300437.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "600623.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
      "stock": "600801.SH",
      "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603527.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603711.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "688084.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "note",
+     "stock": "000586.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301122.SZ",
+     "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "note",
@@ -933,40 +2471,42 @@
      "note": "14:45 选出→明日开盘买入"
     },
     {
-     "type": "sell",
-     "stock": "000505.SZ",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -0.13
-    },
-    {
-     "type": "sell",
-     "stock": "600309.SH",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -0.92
-    },
-    {
-     "type": "sell",
-     "stock": "688297.SH",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -0.09
+     "type": "note",
+     "stock": "600113.SH",
+     "note": "14:45 选出→明日开盘买入"
     }
    ]
   },
   "20260911": {
-   "pnl_pct": -0.464,
-   "equity": 0.987572,
-   "n_pos": 1,
-   "wins": 0,
-   "losses": 1,
+   "pnl_pct": -1.683,
+   "equity": 0.962562,
+   "n_pos": 3,
+   "wins": 1,
+   "losses": 2,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 92.1,
+   "cash_pct": 75.8,
    "pool_today": [],
    "actions": [
     {
      "type": "buy",
+     "stock": "000586.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301122.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
      "stock": "600036.SH",
      "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "600113.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
     },
     {
      "type": "note",
@@ -985,7 +2525,22 @@
     },
     {
      "type": "note",
+     "stock": "603051.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "603175.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603313.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603803.SH",
      "note": "14:45 选出→明日开盘买入"
     },
     {
@@ -996,21 +2551,51 @@
     },
     {
      "type": "sell",
+     "stock": "300437.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -5.78
+    },
+    {
+     "type": "sell",
+     "stock": "600623.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -5.33
+    },
+    {
+     "type": "sell",
      "stock": "600801.SH",
      "note": "14:55 信号消失（收盘价）",
      "pnl_pct": -1.29
+    },
+    {
+     "type": "sell",
+     "stock": "603527.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -4.13
+    },
+    {
+     "type": "sell",
+     "stock": "603711.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -6.13
+    },
+    {
+     "type": "sell",
+     "stock": "688084.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -2.04
     }
    ]
   },
   "20260914": {
-   "pnl_pct": 0.319,
-   "equity": 0.990718,
+   "pnl_pct": 0.114,
+   "equity": 0.963658,
    "n_pos": 4,
    "wins": 3,
    "losses": 1,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 67.9,
+   "cash_pct": 74.2,
    "pool_today": [],
    "actions": [
     {
@@ -1030,13 +2615,55 @@
     },
     {
      "type": "buy",
+     "stock": "603051.SH",
+     "note": "T+1_open 买入 1.8%·评分-"
+    },
+    {
+     "type": "skip",
      "stock": "603175.SH",
-     "note": "T+1_open 买入 8.0%·评分-"
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "603313.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "603803.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "note",
+     "stock": "002264.SZ",
+     "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "note",
      "stock": "300347.SZ",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300410.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300736.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "000586.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.28
+    },
+    {
+     "type": "sell",
+     "stock": "301122.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -1.41
     },
     {
      "type": "sell",
@@ -1047,20 +2674,65 @@
    ]
   },
   "20260915": {
-   "pnl_pct": -0.516,
-   "equity": 0.98561,
-   "n_pos": 1,
-   "wins": 0,
-   "losses": 1,
+   "pnl_pct": -0.423,
+   "equity": 0.959581,
+   "n_pos": 3,
+   "wins": 1,
+   "losses": 2,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 92.0,
+   "cash_pct": 75.9,
    "pool_today": [],
    "actions": [
     {
      "type": "buy",
+     "stock": "002264.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
      "stock": "300347.SZ",
      "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300410.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "300736.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "note",
+     "stock": "002349.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "003019.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300736.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301151.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301680.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688333.SH",
+     "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "sell",
@@ -1082,66 +2754,296 @@
     },
     {
      "type": "sell",
-     "stock": "603175.SH",
+     "stock": "603051.SH",
      "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": 2.35
+     "pnl_pct": 3.68
     }
    ]
   },
   "20260916": {
-   "pnl_pct": 0.13,
-   "equity": 0.986888,
-   "n_pos": 0,
-   "wins": 0,
-   "losses": 0,
+   "pnl_pct": 0.427,
+   "equity": 0.963677,
+   "n_pos": 4,
+   "wins": 1,
+   "losses": 3,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 100.0,
+   "cash_pct": 74.2,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "002349.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "003019.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300736.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301151.SZ",
+     "note": "T+1_open 买入 1.9%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "301680.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "688333.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "note",
+     "stock": "002597.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300559.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "002264.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.23
+    },
     {
      "type": "sell",
      "stock": "300347.SZ",
      "note": "14:55 信号消失（收盘价）",
      "pnl_pct": 1.43
+    },
+    {
+     "type": "sell",
+     "stock": "300410.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.54
     }
    ]
   },
   "20260917": {
-   "pnl_pct": 0.0,
-   "equity": 0.986888,
-   "n_pos": 0,
-   "wins": 0,
-   "losses": 0,
+   "pnl_pct": 0.148,
+   "equity": 0.965108,
+   "n_pos": 2,
+   "wins": 1,
+   "losses": 1,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 100.0,
+   "cash_pct": 83.6,
    "pool_today": [],
-   "actions": []
+   "actions": [
+    {
+     "type": "buy",
+     "stock": "002597.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300559.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "note",
+     "stock": "003030.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300976.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301061.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301373.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688699.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "002349.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.12
+    },
+    {
+     "type": "sell",
+     "stock": "003019.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.55
+    },
+    {
+     "type": "sell",
+     "stock": "300736.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.62
+    },
+    {
+     "type": "sell",
+     "stock": "301151.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -1.88
+    }
+   ]
   },
   "20260918": {
-   "pnl_pct": 0.0,
-   "equity": 0.986888,
-   "n_pos": 0,
-   "wins": 0,
-   "losses": 0,
+   "pnl_pct": 0.447,
+   "equity": 0.969423,
+   "n_pos": 5,
+   "wins": 4,
+   "losses": 1,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 100.0,
+   "cash_pct": 66.3,
    "pool_today": [],
-   "actions": []
+   "actions": [
+    {
+     "type": "buy",
+     "stock": "003030.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300976.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301061.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301373.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "688699.SH",
+     "note": "T+1_open 买入 1.6%·评分-"
+    },
+    {
+     "type": "note",
+     "stock": "300981.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603306.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603313.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603803.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "605167.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688381.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688419.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "002597.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.93
+    },
+    {
+     "type": "sell",
+     "stock": "300559.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 6.99
+    }
+   ]
   },
   "20260921": {
-   "pnl_pct": 0.0,
-   "equity": 0.986888,
-   "n_pos": 0,
-   "wins": 0,
+   "pnl_pct": 1.41,
+   "equity": 0.983093,
+   "n_pos": 5,
+   "wins": 5,
    "losses": 0,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 100.0,
+   "cash_pct": 59.8,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "300981.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603306.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603313.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603803.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "605167.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "688381.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688419.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "note",
+     "stock": "000592.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002057.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
     {
      "type": "note",
      "stock": "300347.SZ",
@@ -1149,22 +3051,167 @@
     },
     {
      "type": "note",
+     "stock": "300404.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300427.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300537.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300554.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300725.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300841.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301041.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301060.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301161.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301580.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600391.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "603259.SH",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603601.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "605222.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688131.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688151.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688352.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688531.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688589.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688613.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688719.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688758.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "003030.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.09
+    },
+    {
+     "type": "sell",
+     "stock": "300976.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.84
+    },
+    {
+     "type": "sell",
+     "stock": "301061.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 5.91
+    },
+    {
+     "type": "sell",
+     "stock": "301373.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.13
+    },
+    {
+     "type": "sell",
+     "stock": "688699.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 3.62
     }
    ]
   },
   "20260922": {
-   "pnl_pct": -0.159,
-   "equity": 0.985323,
-   "n_pos": 2,
-   "wins": 0,
-   "losses": 2,
+   "pnl_pct": -0.419,
+   "equity": 0.978974,
+   "n_pos": 5,
+   "wins": 2,
+   "losses": 3,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 84.1,
+   "cash_pct": 59.9,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "000592.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "002057.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
     {
      "type": "buy",
      "stock": "300347.SZ",
@@ -1172,8 +3219,138 @@
     },
     {
      "type": "buy",
-     "stock": "603259.SH",
+     "stock": "300404.SZ",
      "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300427.SZ",
+     "note": "T+1_open 买入 7.8%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "300537.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300554.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300725.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "300841.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "301041.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "301060.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "301161.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "301580.SZ",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "600391.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603259.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603601.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "605222.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688131.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688151.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688352.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688531.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688589.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688613.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688719.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688758.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "note",
+     "stock": "002923.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300363.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301020.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301061.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301220.SZ",
+     "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "note",
@@ -1182,14 +3359,202 @@
     },
     {
      "type": "note",
+     "stock": "600822.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "601918.SH",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603716.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "605222.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688023.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688719.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688758.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688767.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "300981.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 3.58
+    },
+    {
+     "type": "sell",
+     "stock": "603306.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -0.12
+    },
+    {
+     "type": "sell",
+     "stock": "603313.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.06
+    },
+    {
+     "type": "sell",
+     "stock": "603803.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.34
+    },
+    {
+     "type": "sell",
+     "stock": "605167.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -2.14
     }
    ]
   },
   "20260923": {
-   "pnl_pct": 0.067,
-   "equity": 0.985982,
+   "pnl_pct": -0.62,
+   "equity": 0.972902,
+   "n_pos": 5,
+   "wins": 3,
+   "losses": 2,
+   "cap": 0.8,
+   "regime": "high",
+   "cash_pct": 59.5,
+   "pool_today": [],
+   "actions": [
+    {
+     "type": "buy",
+     "stock": "002923.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300363.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301020.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301061.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301220.SZ",
+     "note": "T+1_open 买入 7.9%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "600642.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "600822.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "601918.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "603716.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "605222.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688023.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688719.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688758.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "skip",
+     "stock": "688767.SH",
+     "note": "槽位已满（10·regime=high）·评分-·放弃该机会"
+    },
+    {
+     "type": "note",
+     "stock": "601918.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "605507.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "000592.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -5.23
+    },
+    {
+     "type": "sell",
+     "stock": "002057.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -0.22
+    },
+    {
+     "type": "sell",
+     "stock": "300347.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -0.53
+    },
+    {
+     "type": "sell",
+     "stock": "300404.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 6.53
+    },
+    {
+     "type": "sell",
+     "stock": "300427.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -10.24
+    }
+   ]
+  },
+  "20260924": {
+   "pnl_pct": -0.88,
+   "equity": 0.964337,
    "n_pos": 2,
    "wins": 1,
    "losses": 1,
@@ -1200,94 +3565,290 @@
    "actions": [
     {
      "type": "buy",
-     "stock": "600642.SH",
+     "stock": "601918.SH",
      "note": "T+1_open 买入 8.0%·评分-"
     },
     {
      "type": "buy",
-     "stock": "601918.SH",
+     "stock": "605507.SH",
      "note": "T+1_open 买入 8.0%·评分-"
     },
     {
-     "type": "sell",
-     "stock": "300347.SZ",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": -0.53
+     "type": "note",
+     "stock": "002876.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002879.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300243.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301119.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301330.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688613.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688651.SH",
+     "note": "14:45 选出→明日开盘买入"
     },
     {
      "type": "sell",
-     "stock": "603259.SH",
+     "stock": "002923.SZ",
      "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": 0.02
-    }
-   ]
-  },
-  "20260924": {
-   "pnl_pct": 0.227,
-   "equity": 0.988219,
-   "n_pos": 0,
-   "wins": 0,
-   "losses": 0,
-   "cap": 0.8,
-   "regime": "high",
-   "cash_pct": 100.0,
-   "pool_today": [],
-   "actions": [
-    {
-     "type": "sell",
-     "stock": "600642.SH",
-     "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": 0.92
+     "pnl_pct": -3.81
     },
     {
      "type": "sell",
-     "stock": "601918.SH",
+     "stock": "300363.SZ",
      "note": "14:55 信号消失（收盘价）",
-     "pnl_pct": 2.48
+     "pnl_pct": -0.83
+    },
+    {
+     "type": "sell",
+     "stock": "301020.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 11.15
+    },
+    {
+     "type": "sell",
+     "stock": "301061.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.34
+    },
+    {
+     "type": "sell",
+     "stock": "301220.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -6.19
     }
    ]
   },
   "20260928": {
-   "pnl_pct": 0.0,
-   "equity": 0.988219,
-   "n_pos": 0,
+   "pnl_pct": -1.858,
+   "equity": 0.946416,
+   "n_pos": 7,
    "wins": 0,
-   "losses": 0,
+   "losses": 7,
    "cap": 0.8,
    "regime": "high",
-   "cash_pct": 100.0,
-   "pool_today": [],
-   "actions": []
-  },
-  "20260929": {
-   "pnl_pct": 0.0,
-   "equity": 0.988219,
-   "n_pos": 0,
-   "wins": 0,
-   "losses": 0,
-   "cap": 0.5,
-   "regime": "mid",
-   "cash_pct": 100.0,
+   "cash_pct": 45.1,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "002876.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "002879.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300243.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301119.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "301330.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "688613.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "688651.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "note",
+     "stock": "001211.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "001376.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002382.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300254.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300434.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600059.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "601918.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 5.24
+    },
+    {
+     "type": "sell",
+     "stock": "605507.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -2.55
+    }
+   ]
+  },
+  "20260929": {
+   "pnl_pct": 0.321,
+   "equity": 0.949451,
+   "n_pos": 1,
+   "wins": 0,
+   "losses": 1,
+   "cap": 0.5,
+   "regime": "mid",
+   "cash_pct": 92.7,
+   "pool_today": [],
+   "actions": [
+    {
+     "type": "skip",
+     "stock": "001211.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "001376.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "002382.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "300254.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "300434.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "600059.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "trim",
+     "note": "regime=mid 超帽：等比减仓 9%（目标 50%）"
+    },
+    {
+     "type": "note",
+     "stock": "300235.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300369.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
     {
      "type": "note",
      "stock": "600377.SH",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "002876.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -4.71
+    },
+    {
+     "type": "sell",
+     "stock": "002879.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.6
+    },
+    {
+     "type": "sell",
+     "stock": "300243.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -5.76
+    },
+    {
+     "type": "sell",
+     "stock": "301119.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -2.32
+    },
+    {
+     "type": "sell",
+     "stock": "301330.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -0.93
+    },
+    {
+     "type": "sell",
+     "stock": "688613.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -2.8
     }
    ]
   },
   "20260930": {
-   "pnl_pct": -0.006,
-   "equity": 0.988162,
-   "n_pos": 1,
-   "wins": 1,
-   "losses": 0,
+   "pnl_pct": -0.314,
+   "equity": 0.946466,
+   "n_pos": 3,
+   "wins": 2,
+   "losses": 1,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 92.0,
+   "cash_pct": 76.1,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "300235.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300369.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
     {
      "type": "buy",
      "stock": "600377.SH",
@@ -1295,26 +3856,99 @@
     },
     {
      "type": "note",
+     "stock": "301207.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "601766.SH",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603886.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "605566.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688639.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "688651.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.26
     }
    ]
   },
   "20261008": {
-   "pnl_pct": 0.157,
-   "equity": 0.989717,
-   "n_pos": 1,
-   "wins": 1,
-   "losses": 0,
+   "pnl_pct": -0.176,
+   "equity": 0.944802,
+   "n_pos": 4,
+   "wins": 3,
+   "losses": 1,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 92.0,
+   "cash_pct": 73.9,
    "pool_today": [],
    "actions": [
     {
      "type": "buy",
+     "stock": "301207.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
      "stock": "601766.SH",
      "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "603886.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "605566.SH",
+     "note": "T+1_open 买入 2.1%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "688639.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "note",
+     "stock": "001228.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600218.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688339.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "300235.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 0.0
+    },
+    {
+     "type": "sell",
+     "stock": "300369.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -4.08
     },
     {
      "type": "sell",
@@ -1325,35 +3959,237 @@
    ]
   },
   "20261009": {
-   "pnl_pct": 0.091,
-   "equity": 0.99062,
-   "n_pos": 0,
-   "wins": 0,
-   "losses": 0,
+   "pnl_pct": 0.467,
+   "equity": 0.949218,
+   "n_pos": 4,
+   "wins": 3,
+   "losses": 1,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 100.0,
+   "cash_pct": 73.7,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "001228.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "600218.SH",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "688339.SH",
+     "note": "T+1_open 买入 7.9%·评分-"
+    },
+    {
+     "type": "note",
+     "stock": "002534.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "002780.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300138.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300717.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301015.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301211.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301226.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301231.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301550.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600639.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603086.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "603937.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688360.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "688651.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "301207.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -2.79
+    },
     {
      "type": "sell",
      "stock": "601766.SH",
      "note": "14:55 信号消失（收盘价）",
      "pnl_pct": 2.11
+    },
+    {
+     "type": "sell",
+     "stock": "603886.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 1.63
     }
    ]
   },
   "20261012": {
-   "pnl_pct": 0.0,
-   "equity": 0.99062,
-   "n_pos": 0,
-   "wins": 0,
-   "losses": 0,
+   "pnl_pct": -1.64,
+   "equity": 0.933647,
+   "n_pos": 3,
+   "wins": 1,
+   "losses": 2,
    "cap": 0.5,
    "regime": "mid",
-   "cash_pct": 100.0,
+   "cash_pct": 76.4,
    "pool_today": [],
    "actions": [
+    {
+     "type": "buy",
+     "stock": "002534.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "002780.SZ",
+     "note": "T+1_open 买入 8.0%·评分-"
+    },
+    {
+     "type": "buy",
+     "stock": "300138.SZ",
+     "note": "T+1_open 买入 7.7%·评分-"
+    },
+    {
+     "type": "skip",
+     "stock": "300717.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "301015.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "301211.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "301226.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "301231.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "301550.SZ",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "600639.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "603086.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "603937.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "688360.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "skip",
+     "stock": "688651.SH",
+     "note": "资金不足（需≥0%·评分-）"
+    },
+    {
+     "type": "note",
+     "stock": "002332.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300199.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300457.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300612.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "300792.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "301608.SZ",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
+     "stock": "600827.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
     {
      "type": "note",
      "stock": "601225.SH",
@@ -1361,8 +4197,37 @@
     },
     {
      "type": "note",
+     "stock": "688039.SH",
+     "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "note",
      "stock": "688248.SH",
      "note": "14:45 选出→明日开盘买入"
+    },
+    {
+     "type": "sell",
+     "stock": "605566.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.03
+    },
+    {
+     "type": "sell",
+     "stock": "001228.SZ",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -3.24
+    },
+    {
+     "type": "sell",
+     "stock": "600218.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": 2.13
+    },
+    {
+     "type": "sell",
+     "stock": "688339.SH",
+     "note": "14:55 信号消失（收盘价）",
+     "pnl_pct": -6.24
     }
    ]
   }
@@ -1374,129 +4239,252 @@
     "stock": "000156.SZ",
     "score": null,
     "pnl_pct": -1.0,
-    "wgt_pct": 7.89
+    "wgt_pct": 7.8
    },
    {
     "stock": "000768.SZ",
     "score": null,
     "pnl_pct": 1.68,
-    "wgt_pct": 8.1
+    "wgt_pct": 8.01
    },
    {
-    "stock": "600038.SH",
+    "stock": "001366.SZ",
     "score": null,
-    "pnl_pct": -0.07,
+    "pnl_pct": 11.11,
+    "wgt_pct": 8.76
+   },
+   {
+    "stock": "002780.SZ",
+    "score": null,
+    "pnl_pct": 1.06,
     "wgt_pct": 7.96
    },
    {
-    "stock": "600547.SH",
+    "stock": "300411.SZ",
     "score": null,
-    "pnl_pct": 5.84,
-    "wgt_pct": 8.44
+    "pnl_pct": 5.89,
+    "wgt_pct": 8.35
    },
    {
-    "stock": "603979.SH",
+    "stock": "300562.SZ",
+    "score": null,
+    "pnl_pct": 1.57,
+    "wgt_pct": 8.01
+   },
+   {
+    "stock": "300711.SZ",
+    "score": null,
+    "pnl_pct": 2.13,
+    "wgt_pct": 8.05
+   },
+   {
+    "stock": "300781.SZ",
+    "score": null,
+    "pnl_pct": -1.52,
+    "wgt_pct": 7.76
+   },
+   {
+    "stock": "300860.SZ",
+    "score": null,
+    "pnl_pct": 0.47,
+    "wgt_pct": 7.92
+   },
+   {
+    "stock": "300967.SZ",
     "score": null,
     "pnl_pct": -2.95,
-    "wgt_pct": 7.74
+    "wgt_pct": 7.65
    }
   ],
-  "20260903": [
-   {
-    "stock": "000532.SZ",
-    "score": null,
-    "pnl_pct": -1.12,
-    "wgt_pct": 7.91
-   }
-  ],
+  "20260903": [],
   "20260904": [
+   {
+    "stock": "001210.SZ",
+    "score": null,
+    "pnl_pct": -6.23,
+    "wgt_pct": 7.54
+   },
+   {
+    "stock": "002985.SZ",
+    "score": null,
+    "pnl_pct": 0.8,
+    "wgt_pct": 8.11
+   },
+   {
+    "stock": "003010.SZ",
+    "score": null,
+    "pnl_pct": -0.35,
+    "wgt_pct": 8.01
+   },
+   {
+    "stock": "300551.SZ",
+    "score": null,
+    "pnl_pct": 2.4,
+    "wgt_pct": 8.23
+   },
+   {
+    "stock": "300662.SZ",
+    "score": null,
+    "pnl_pct": 6.4,
+    "wgt_pct": 8.56
+   },
+   {
+    "stock": "301628.SZ",
+    "score": null,
+    "pnl_pct": -3.89,
+    "wgt_pct": 7.73
+   },
+   {
+    "stock": "600776.SH",
+    "score": null,
+    "pnl_pct": -2.75,
+    "wgt_pct": 7.82
+   },
    {
     "stock": "601155.SH",
     "score": null,
     "pnl_pct": 0.08,
-    "wgt_pct": 7.99
+    "wgt_pct": 8.05
    },
    {
-    "stock": "688281.SH",
+    "stock": "601609.SH",
     "score": null,
-    "pnl_pct": 0.98,
-    "wgt_pct": 8.06
-   }
-  ],
-  "20260907": [
-   {
-    "stock": "000333.SZ",
-    "score": null,
-    "pnl_pct": -1.45,
-    "wgt_pct": 7.94
+    "pnl_pct": -2.91,
+    "wgt_pct": 7.81
    },
    {
-    "stock": "000933.SZ",
+    "stock": "603983.SH",
     "score": null,
-    "pnl_pct": -0.74,
-    "wgt_pct": 8.0
-   },
-   {
-    "stock": "600031.SH",
-    "score": null,
-    "pnl_pct": -0.5,
+    "pnl_pct": -0.27,
     "wgt_pct": 8.02
-   },
-   {
-    "stock": "600346.SH",
-    "score": null,
-    "pnl_pct": -4.05,
-    "wgt_pct": 7.73
    }
   ],
+  "20260907": [],
   "20260908": [
+   {
+    "stock": "300378.SZ",
+    "score": null,
+    "pnl_pct": -2.97,
+    "wgt_pct": 7.7
+   },
    {
     "stock": "300999.SZ",
     "score": null,
     "pnl_pct": 1.42,
+    "wgt_pct": 8.05
+   },
+   {
+    "stock": "301056.SZ",
+    "score": null,
+    "pnl_pct": 2.57,
+    "wgt_pct": 8.14
+   },
+   {
+    "stock": "301156.SZ",
+    "score": null,
+    "pnl_pct": 2.69,
+    "wgt_pct": 8.15
+   },
+   {
+    "stock": "301226.SZ",
+    "score": null,
+    "pnl_pct": -0.7,
+    "wgt_pct": 7.88
+   },
+   {
+    "stock": "600212.SH",
+    "score": null,
+    "pnl_pct": 1.71,
     "wgt_pct": 8.07
-   }
-  ],
-  "20260909": [
-   {
-    "stock": "000505.SZ",
-    "score": null,
-    "pnl_pct": 6.72,
-    "wgt_pct": 8.47
    },
    {
-    "stock": "600309.SH",
+    "stock": "600793.SH",
     "score": null,
-    "pnl_pct": 1.28,
-    "wgt_pct": 8.04
+    "pnl_pct": 1.93,
+    "wgt_pct": 8.09
    },
    {
-    "stock": "688297.SH",
+    "stock": "600992.SH",
     "score": null,
-    "pnl_pct": 0.95,
-    "wgt_pct": 8.02
+    "pnl_pct": 1.6,
+    "wgt_pct": 8.06
+   },
+   {
+    "stock": "603112.SH",
+    "score": null,
+    "pnl_pct": -1.39,
+    "wgt_pct": 7.83
+   },
+   {
+    "stock": "603393.SH",
+    "score": null,
+    "pnl_pct": 2.7,
+    "wgt_pct": 8.15
    }
   ],
+  "20260909": [],
   "20260910": [
    {
     "stock": "000014.SZ",
     "score": null,
     "pnl_pct": -2.04,
-    "wgt_pct": 7.9
+    "wgt_pct": 7.91
+   },
+   {
+    "stock": "300437.SZ",
+    "score": null,
+    "pnl_pct": -2.35,
+    "wgt_pct": 7.88
+   },
+   {
+    "stock": "600623.SH",
+    "score": null,
+    "pnl_pct": -1.0,
+    "wgt_pct": 7.99
    },
    {
     "stock": "600801.SH",
     "score": null,
     "pnl_pct": 0.48,
     "wgt_pct": 8.11
+   },
+   {
+    "stock": "603527.SH",
+    "score": null,
+    "pnl_pct": -1.73,
+    "wgt_pct": 7.93
+   },
+   {
+    "stock": "603711.SH",
+    "score": null,
+    "pnl_pct": -2.69,
+    "wgt_pct": 7.86
+   },
+   {
+    "stock": "688084.SH",
+    "score": null,
+    "pnl_pct": -2.87,
+    "wgt_pct": 7.84
    }
   ],
   "20260911": [
    {
+    "stock": "000586.SZ",
+    "score": null,
+    "pnl_pct": 1.49,
+    "wgt_pct": 8.25
+   },
+   {
+    "stock": "301122.SZ",
+    "score": null,
+    "pnl_pct": -2.81,
+    "wgt_pct": 7.9
+   },
+   {
     "stock": "600036.SH",
     "score": null,
     "pnl_pct": -0.96,
-    "wgt_pct": 7.95
+    "wgt_pct": 8.05
    }
   ],
   "20260914": [
@@ -1504,88 +4492,373 @@
     "stock": "000151.SZ",
     "score": null,
     "pnl_pct": -1.5,
-    "wgt_pct": 7.84
+    "wgt_pct": 7.86
    },
    {
     "stock": "600377.SH",
     "score": null,
     "pnl_pct": 1.27,
-    "wgt_pct": 8.06
+    "wgt_pct": 8.08
    },
    {
     "stock": "601128.SH",
     "score": null,
     "pnl_pct": 0.78,
-    "wgt_pct": 8.02
+    "wgt_pct": 8.04
    },
    {
-    "stock": "603175.SH",
+    "stock": "603051.SH",
     "score": null,
-    "pnl_pct": 3.03,
-    "wgt_pct": 8.2
+    "pnl_pct": 2.01,
+    "wgt_pct": 1.84
    }
   ],
   "20260915": [
    {
+    "stock": "002264.SZ",
+    "score": null,
+    "pnl_pct": -1.67,
+    "wgt_pct": 7.89
+   },
+   {
     "stock": "300347.SZ",
     "score": null,
     "pnl_pct": -0.34,
-    "wgt_pct": 8.0
+    "wgt_pct": 7.99
+   },
+   {
+    "stock": "300410.SZ",
+    "score": null,
+    "pnl_pct": 1.96,
+    "wgt_pct": 8.18
    }
   ],
-  "20260916": [],
-  "20260917": [],
-  "20260918": [],
-  "20260921": [],
+  "20260916": [
+   {
+    "stock": "002349.SZ",
+    "score": null,
+    "pnl_pct": -0.12,
+    "wgt_pct": 7.94
+   },
+   {
+    "stock": "003019.SZ",
+    "score": null,
+    "pnl_pct": 1.51,
+    "wgt_pct": 8.07
+   },
+   {
+    "stock": "300736.SZ",
+    "score": null,
+    "pnl_pct": -0.89,
+    "wgt_pct": 7.88
+   },
+   {
+    "stock": "301151.SZ",
+    "score": null,
+    "pnl_pct": -1.97,
+    "wgt_pct": 1.89
+   }
+  ],
+  "20260917": [
+   {
+    "stock": "002597.SZ",
+    "score": null,
+    "pnl_pct": -1.11,
+    "wgt_pct": 7.89
+   },
+   {
+    "stock": "300559.SZ",
+    "score": null,
+    "pnl_pct": 7.15,
+    "wgt_pct": 8.55
+   }
+  ],
+  "20260918": [
+   {
+    "stock": "003030.SZ",
+    "score": null,
+    "pnl_pct": 2.99,
+    "wgt_pct": 8.19
+   },
+   {
+    "stock": "300976.SZ",
+    "score": null,
+    "pnl_pct": 0.51,
+    "wgt_pct": 7.99
+   },
+   {
+    "stock": "301061.SZ",
+    "score": null,
+    "pnl_pct": 2.71,
+    "wgt_pct": 8.17
+   },
+   {
+    "stock": "301373.SZ",
+    "score": null,
+    "pnl_pct": -2.12,
+    "wgt_pct": 7.78
+   },
+   {
+    "stock": "688699.SH",
+    "score": null,
+    "pnl_pct": 2.96,
+    "wgt_pct": 1.6
+   }
+  ],
+  "20260921": [
+   {
+    "stock": "300981.SZ",
+    "score": null,
+    "pnl_pct": 3.53,
+    "wgt_pct": 8.15
+   },
+   {
+    "stock": "603306.SH",
+    "score": null,
+    "pnl_pct": 1.46,
+    "wgt_pct": 7.99
+   },
+   {
+    "stock": "603313.SH",
+    "score": null,
+    "pnl_pct": 2.35,
+    "wgt_pct": 8.06
+   },
+   {
+    "stock": "603803.SH",
+    "score": null,
+    "pnl_pct": 1.63,
+    "wgt_pct": 8.01
+   },
+   {
+    "stock": "605167.SH",
+    "score": null,
+    "pnl_pct": 1.13,
+    "wgt_pct": 7.97
+   }
+  ],
   "20260922": [
+   {
+    "stock": "000592.SZ",
+    "score": null,
+    "pnl_pct": 2.14,
+    "wgt_pct": 8.19
+   },
+   {
+    "stock": "002057.SZ",
+    "score": null,
+    "pnl_pct": -0.22,
+    "wgt_pct": 8.0
+   },
    {
     "stock": "300347.SZ",
     "score": null,
     "pnl_pct": -1.65,
-    "wgt_pct": 7.87
+    "wgt_pct": 7.89
    },
    {
-    "stock": "603259.SH",
+    "stock": "300404.SZ",
     "score": null,
-    "pnl_pct": -0.04,
-    "wgt_pct": 8.0
+    "pnl_pct": 4.35,
+    "wgt_pct": 8.37
+   },
+   {
+    "stock": "300427.SZ",
+    "score": null,
+    "pnl_pct": -2.13,
+    "wgt_pct": 7.67
    }
   ],
   "20260923": [
    {
-    "stock": "600642.SH",
+    "stock": "002923.SZ",
     "score": null,
-    "pnl_pct": 0.34,
-    "wgt_pct": 8.01
+    "pnl_pct": -1.95,
+    "wgt_pct": 7.88
    },
+   {
+    "stock": "300363.SZ",
+    "score": null,
+    "pnl_pct": 5.08,
+    "wgt_pct": 8.45
+   },
+   {
+    "stock": "301020.SZ",
+    "score": null,
+    "pnl_pct": 4.94,
+    "wgt_pct": 8.44
+   },
+   {
+    "stock": "301061.SZ",
+    "score": null,
+    "pnl_pct": 0.32,
+    "wgt_pct": 8.06
+   },
+   {
+    "stock": "301220.SZ",
+    "score": null,
+    "pnl_pct": -2.67,
+    "wgt_pct": 7.69
+   }
+  ],
+  "20260924": [
    {
     "stock": "601918.SH",
     "score": null,
-    "pnl_pct": -0.09,
+    "pnl_pct": 2.48,
+    "wgt_pct": 8.26
+   },
+   {
+    "stock": "605507.SH",
+    "score": null,
+    "pnl_pct": -3.72,
+    "wgt_pct": 7.76
+   }
+  ],
+  "20260928": [
+   {
+    "stock": "002876.SZ",
+    "score": null,
+    "pnl_pct": -4.08,
+    "wgt_pct": 7.81
+   },
+   {
+    "stock": "002879.SZ",
+    "score": null,
+    "pnl_pct": -2.19,
+    "wgt_pct": 7.96
+   },
+   {
+    "stock": "300243.SZ",
+    "score": null,
+    "pnl_pct": -7.74,
+    "wgt_pct": 7.51
+   },
+   {
+    "stock": "301119.SZ",
+    "score": null,
+    "pnl_pct": -1.69,
+    "wgt_pct": 8.0
+   },
+   {
+    "stock": "301330.SZ",
+    "score": null,
+    "pnl_pct": -1.27,
+    "wgt_pct": 8.04
+   },
+   {
+    "stock": "688613.SH",
+    "score": null,
+    "pnl_pct": -6.97,
+    "wgt_pct": 7.57
+   },
+   {
+    "stock": "688651.SH",
+    "score": null,
+    "pnl_pct": -1.94,
     "wgt_pct": 7.98
    }
   ],
-  "20260924": [],
-  "20260928": [],
-  "20260929": [],
+  "20260929": [
+   {
+    "stock": "688651.SH",
+    "score": null,
+    "pnl_pct": -0.93,
+    "wgt_pct": 7.3
+   }
+  ],
   "20260930": [
+   {
+    "stock": "300235.SZ",
+    "score": null,
+    "pnl_pct": -3.49,
+    "wgt_pct": 7.73
+   },
+   {
+    "stock": "300369.SZ",
+    "score": null,
+    "pnl_pct": 2.21,
+    "wgt_pct": 8.19
+   },
    {
     "stock": "600377.SH",
     "score": null,
     "pnl_pct": 0.08,
-    "wgt_pct": 7.99
+    "wgt_pct": 8.02
    }
   ],
   "20261008": [
    {
+    "stock": "301207.SZ",
+    "score": null,
+    "pnl_pct": -4.6,
+    "wgt_pct": 7.63
+   },
+   {
     "stock": "601766.SH",
     "score": null,
     "pnl_pct": 0.81,
-    "wgt_pct": 8.04
+    "wgt_pct": 8.07
+   },
+   {
+    "stock": "603886.SH",
+    "score": null,
+    "pnl_pct": 2.48,
+    "wgt_pct": 8.2
+   },
+   {
+    "stock": "605566.SH",
+    "score": null,
+    "pnl_pct": 5.37,
+    "wgt_pct": 2.17
    }
   ],
-  "20261009": [],
-  "20261012": []
+  "20261009": [
+   {
+    "stock": "001228.SZ",
+    "score": null,
+    "pnl_pct": 2.82,
+    "wgt_pct": 8.17
+   },
+   {
+    "stock": "600218.SH",
+    "score": null,
+    "pnl_pct": 5.51,
+    "wgt_pct": 8.39
+   },
+   {
+    "stock": "605566.SH",
+    "score": null,
+    "pnl_pct": 3.37,
+    "wgt_pct": 2.12
+   },
+   {
+    "stock": "688339.SH",
+    "score": null,
+    "pnl_pct": -3.34,
+    "wgt_pct": 7.62
+   }
+  ],
+  "20261012": [
+   {
+    "stock": "002534.SZ",
+    "score": null,
+    "pnl_pct": -2.17,
+    "wgt_pct": 7.95
+   },
+   {
+    "stock": "002780.SZ",
+    "score": null,
+    "pnl_pct": -3.8,
+    "wgt_pct": 7.81
+   },
+   {
+    "stock": "300138.SZ",
+    "score": null,
+    "pnl_pct": 0.25,
+    "wgt_pct": 7.84
+   }
+  ]
  },
  "trades": [
   {
@@ -1606,7 +4879,7 @@
   },
   {
    "day": "20260902",
-   "stock": "600038.SH",
+   "stock": "001366.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1614,7 +4887,7 @@
   },
   {
    "day": "20260902",
-   "stock": "600547.SH",
+   "stock": "002780.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1622,15 +4895,47 @@
   },
   {
    "day": "20260902",
-   "stock": "603979.SH",
+   "stock": "300411.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
    "pnl": null
   },
   {
-   "day": "20260903",
-   "stock": "000532.SZ",
+   "day": "20260902",
+   "stock": "300562.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260902",
+   "stock": "300711.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260902",
+   "stock": "300781.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260902",
+   "stock": "300860.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260902",
+   "stock": "300967.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1654,27 +4959,123 @@
   },
   {
    "day": "20260903",
-   "stock": "600038.SH",
+   "stock": "001366.SZ",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": 0.79
+   "pnl": 0.0
   },
   {
    "day": "20260903",
-   "stock": "600547.SH",
+   "stock": "002780.SZ",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": 4.75
+   "pnl": -0.07
   },
   {
    "day": "20260903",
-   "stock": "603979.SH",
+   "stock": "300411.SZ",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": -1.87
+   "pnl": 2.13
+  },
+  {
+   "day": "20260903",
+   "stock": "300562.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -0.65
+  },
+  {
+   "day": "20260903",
+   "stock": "300711.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -0.05
+  },
+  {
+   "day": "20260903",
+   "stock": "300781.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -4.29
+  },
+  {
+   "day": "20260903",
+   "stock": "300860.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 1.55
+  },
+  {
+   "day": "20260903",
+   "stock": "300967.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -4.61
+  },
+  {
+   "day": "20260904",
+   "stock": "001210.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260904",
+   "stock": "002985.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260904",
+   "stock": "003010.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260904",
+   "stock": "300551.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260904",
+   "stock": "300662.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260904",
+   "stock": "301628.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260904",
+   "stock": "600776.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
   },
   {
    "day": "20260904",
@@ -1686,7 +5087,7 @@
   },
   {
    "day": "20260904",
-   "stock": "688281.SH",
+   "stock": "601609.SH",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1694,43 +5095,67 @@
   },
   {
    "day": "20260904",
-   "stock": "000532.SZ",
+   "stock": "603983.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260907",
+   "stock": "001210.SZ",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": -0.94
+   "pnl": -5.73
   },
   {
    "day": "20260907",
-   "stock": "000333.SZ",
-   "side": "BUY",
-   "how": "double_knife",
+   "stock": "002985.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
    "note": "",
-   "pnl": null
+   "pnl": 6.15
   },
   {
    "day": "20260907",
-   "stock": "000933.SZ",
-   "side": "BUY",
-   "how": "double_knife",
+   "stock": "003010.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
    "note": "",
-   "pnl": null
+   "pnl": -3.09
   },
   {
    "day": "20260907",
-   "stock": "600031.SH",
-   "side": "BUY",
-   "how": "double_knife",
+   "stock": "300551.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
    "note": "",
-   "pnl": null
+   "pnl": 1.16
   },
   {
    "day": "20260907",
-   "stock": "600346.SH",
-   "side": "BUY",
-   "how": "double_knife",
+   "stock": "300662.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
    "note": "",
-   "pnl": null
+   "pnl": 4.93
+  },
+  {
+   "day": "20260907",
+   "stock": "301628.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.16
+  },
+  {
+   "day": "20260907",
+   "stock": "600776.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -3.79
   },
   {
    "day": "20260907",
@@ -1742,11 +5167,27 @@
   },
   {
    "day": "20260907",
-   "stock": "688281.SH",
+   "stock": "601609.SH",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": -2.49
+   "pnl": -3.13
+  },
+  {
+   "day": "20260907",
+   "stock": "603983.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.16
+  },
+  {
+   "day": "20260908",
+   "stock": "300378.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
   },
   {
    "day": "20260908",
@@ -1758,39 +5199,63 @@
   },
   {
    "day": "20260908",
-   "stock": "000333.SZ",
-   "side": "SELL",
-   "how": "dk_信号消失",
+   "stock": "301056.SZ",
+   "side": "BUY",
+   "how": "double_knife",
    "note": "",
-   "pnl": -2.73
+   "pnl": null
   },
   {
    "day": "20260908",
-   "stock": "000933.SZ",
-   "side": "SELL",
-   "how": "dk_信号消失",
+   "stock": "301156.SZ",
+   "side": "BUY",
+   "how": "double_knife",
    "note": "",
-   "pnl": 1.22
+   "pnl": null
   },
   {
    "day": "20260908",
-   "stock": "600031.SH",
-   "side": "SELL",
-   "how": "dk_信号消失",
+   "stock": "301226.SZ",
+   "side": "BUY",
+   "how": "double_knife",
    "note": "",
-   "pnl": -0.1
+   "pnl": null
   },
   {
    "day": "20260908",
-   "stock": "600346.SH",
-   "side": "SELL",
-   "how": "dk_信号消失",
+   "stock": "600212.SH",
+   "side": "BUY",
+   "how": "double_knife",
    "note": "",
-   "pnl": -1.11
+   "pnl": null
   },
   {
-   "day": "20260909",
-   "stock": "000505.SZ",
+   "day": "20260908",
+   "stock": "600793.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260908",
+   "stock": "600992.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260908",
+   "stock": "603112.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260908",
+   "stock": "603393.SH",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1798,19 +5263,11 @@
   },
   {
    "day": "20260909",
-   "stock": "600309.SH",
-   "side": "BUY",
-   "how": "double_knife",
+   "stock": "300378.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
    "note": "",
-   "pnl": null
-  },
-  {
-   "day": "20260909",
-   "stock": "688297.SH",
-   "side": "BUY",
-   "how": "double_knife",
-   "note": "",
-   "pnl": null
+   "pnl": -4.27
   },
   {
    "day": "20260909",
@@ -1821,8 +5278,88 @@
    "pnl": 0.58
   },
   {
+   "day": "20260909",
+   "stock": "301056.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.2
+  },
+  {
+   "day": "20260909",
+   "stock": "301156.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.79
+  },
+  {
+   "day": "20260909",
+   "stock": "301226.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -1.55
+  },
+  {
+   "day": "20260909",
+   "stock": "600212.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.16
+  },
+  {
+   "day": "20260909",
+   "stock": "600793.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.58
+  },
+  {
+   "day": "20260909",
+   "stock": "600992.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.59
+  },
+  {
+   "day": "20260909",
+   "stock": "603112.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.41
+  },
+  {
+   "day": "20260909",
+   "stock": "603393.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 1.61
+  },
+  {
    "day": "20260910",
    "stock": "000014.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260910",
+   "stock": "300437.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260910",
+   "stock": "600623.SH",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1838,27 +5375,43 @@
   },
   {
    "day": "20260910",
-   "stock": "000505.SZ",
-   "side": "SELL",
-   "how": "dk_信号消失",
+   "stock": "603527.SH",
+   "side": "BUY",
+   "how": "double_knife",
    "note": "",
-   "pnl": -0.13
+   "pnl": null
   },
   {
    "day": "20260910",
-   "stock": "600309.SH",
-   "side": "SELL",
-   "how": "dk_信号消失",
+   "stock": "603711.SH",
+   "side": "BUY",
+   "how": "double_knife",
    "note": "",
-   "pnl": -0.92
+   "pnl": null
   },
   {
    "day": "20260910",
-   "stock": "688297.SH",
-   "side": "SELL",
-   "how": "dk_信号消失",
+   "stock": "688084.SH",
+   "side": "BUY",
+   "how": "double_knife",
    "note": "",
-   "pnl": -0.09
+   "pnl": null
+  },
+  {
+   "day": "20260911",
+   "stock": "000586.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260911",
+   "stock": "301122.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
   },
   {
    "day": "20260911",
@@ -1878,11 +5431,51 @@
   },
   {
    "day": "20260911",
+   "stock": "300437.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -5.78
+  },
+  {
+   "day": "20260911",
+   "stock": "600623.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -5.33
+  },
+  {
+   "day": "20260911",
    "stock": "600801.SH",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
    "pnl": -1.29
+  },
+  {
+   "day": "20260911",
+   "stock": "603527.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -4.13
+  },
+  {
+   "day": "20260911",
+   "stock": "603711.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -6.13
+  },
+  {
+   "day": "20260911",
+   "stock": "688084.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -2.04
   },
   {
    "day": "20260914",
@@ -1910,11 +5503,27 @@
   },
   {
    "day": "20260914",
-   "stock": "603175.SH",
+   "stock": "603051.SH",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
    "pnl": null
+  },
+  {
+   "day": "20260914",
+   "stock": "000586.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.28
+  },
+  {
+   "day": "20260914",
+   "stock": "301122.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -1.41
   },
   {
    "day": "20260914",
@@ -1926,7 +5535,23 @@
   },
   {
    "day": "20260915",
+   "stock": "002264.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260915",
    "stock": "300347.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260915",
+   "stock": "300410.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1958,11 +5583,51 @@
   },
   {
    "day": "20260915",
-   "stock": "603175.SH",
+   "stock": "603051.SH",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": 2.35
+   "pnl": 3.68
+  },
+  {
+   "day": "20260916",
+   "stock": "002349.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260916",
+   "stock": "003019.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260916",
+   "stock": "300736.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260916",
+   "stock": "301151.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260916",
+   "stock": "002264.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.23
   },
   {
    "day": "20260916",
@@ -1973,6 +5638,214 @@
    "pnl": 1.43
   },
   {
+   "day": "20260916",
+   "stock": "300410.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.54
+  },
+  {
+   "day": "20260917",
+   "stock": "002597.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260917",
+   "stock": "300559.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260917",
+   "stock": "002349.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.12
+  },
+  {
+   "day": "20260917",
+   "stock": "003019.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.55
+  },
+  {
+   "day": "20260917",
+   "stock": "300736.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -3.62
+  },
+  {
+   "day": "20260917",
+   "stock": "301151.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -1.88
+  },
+  {
+   "day": "20260918",
+   "stock": "003030.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260918",
+   "stock": "300976.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260918",
+   "stock": "301061.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260918",
+   "stock": "301373.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260918",
+   "stock": "688699.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260918",
+   "stock": "002597.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.93
+  },
+  {
+   "day": "20260918",
+   "stock": "300559.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 6.99
+  },
+  {
+   "day": "20260921",
+   "stock": "300981.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260921",
+   "stock": "603306.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260921",
+   "stock": "603313.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260921",
+   "stock": "603803.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260921",
+   "stock": "605167.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260921",
+   "stock": "003030.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.09
+  },
+  {
+   "day": "20260921",
+   "stock": "300976.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.84
+  },
+  {
+   "day": "20260921",
+   "stock": "301061.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 5.91
+  },
+  {
+   "day": "20260921",
+   "stock": "301373.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.13
+  },
+  {
+   "day": "20260921",
+   "stock": "688699.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 3.62
+  },
+  {
+   "day": "20260922",
+   "stock": "000592.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260922",
+   "stock": "002057.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
    "day": "20260922",
    "stock": "300347.SZ",
    "side": "BUY",
@@ -1982,7 +5855,63 @@
   },
   {
    "day": "20260922",
-   "stock": "603259.SH",
+   "stock": "300404.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260922",
+   "stock": "300427.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260922",
+   "stock": "300981.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 3.58
+  },
+  {
+   "day": "20260922",
+   "stock": "603306.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -0.12
+  },
+  {
+   "day": "20260922",
+   "stock": "603313.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.06
+  },
+  {
+   "day": "20260922",
+   "stock": "603803.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.34
+  },
+  {
+   "day": "20260922",
+   "stock": "605167.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -2.14
+  },
+  {
+   "day": "20260923",
+   "stock": "002923.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1990,7 +5919,7 @@
   },
   {
    "day": "20260923",
-   "stock": "600642.SH",
+   "stock": "300363.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -1998,11 +5927,43 @@
   },
   {
    "day": "20260923",
-   "stock": "601918.SH",
+   "stock": "301020.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
    "pnl": null
+  },
+  {
+   "day": "20260923",
+   "stock": "301061.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260923",
+   "stock": "301220.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260923",
+   "stock": "000592.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -5.23
+  },
+  {
+   "day": "20260923",
+   "stock": "002057.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -0.22
   },
   {
    "day": "20260923",
@@ -2014,31 +5975,231 @@
   },
   {
    "day": "20260923",
-   "stock": "603259.SH",
+   "stock": "300404.SZ",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": 0.02
+   "pnl": 6.53
   },
   {
-   "day": "20260924",
-   "stock": "600642.SH",
+   "day": "20260923",
+   "stock": "300427.SZ",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": 0.92
+   "pnl": -10.24
   },
   {
    "day": "20260924",
    "stock": "601918.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260924",
+   "stock": "605507.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260924",
+   "stock": "002923.SZ",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
-   "pnl": 2.48
+   "pnl": -3.81
+  },
+  {
+   "day": "20260924",
+   "stock": "300363.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -0.83
+  },
+  {
+   "day": "20260924",
+   "stock": "301020.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 11.15
+  },
+  {
+   "day": "20260924",
+   "stock": "301061.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -3.34
+  },
+  {
+   "day": "20260924",
+   "stock": "301220.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -6.19
+  },
+  {
+   "day": "20260928",
+   "stock": "002876.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260928",
+   "stock": "002879.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260928",
+   "stock": "300243.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260928",
+   "stock": "301119.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260928",
+   "stock": "301330.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260928",
+   "stock": "688613.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260928",
+   "stock": "688651.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260928",
+   "stock": "601918.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 5.24
+  },
+  {
+   "day": "20260928",
+   "stock": "605507.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -2.55
+  },
+  {
+   "day": "20260929",
+   "stock": "002876.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -4.71
+  },
+  {
+   "day": "20260929",
+   "stock": "002879.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -3.6
+  },
+  {
+   "day": "20260929",
+   "stock": "300243.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -5.76
+  },
+  {
+   "day": "20260929",
+   "stock": "301119.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -2.32
+  },
+  {
+   "day": "20260929",
+   "stock": "301330.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -0.93
+  },
+  {
+   "day": "20260929",
+   "stock": "688613.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -2.8
+  },
+  {
+   "day": "20260930",
+   "stock": "300235.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260930",
+   "stock": "300369.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
   },
   {
    "day": "20260930",
    "stock": "600377.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20260930",
+   "stock": "688651.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -3.26
+  },
+  {
+   "day": "20261008",
+   "stock": "301207.SZ",
    "side": "BUY",
    "how": "double_knife",
    "note": "",
@@ -2051,6 +6212,38 @@
    "how": "double_knife",
    "note": "",
    "pnl": null
+  },
+  {
+   "day": "20261008",
+   "stock": "603886.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261008",
+   "stock": "605566.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261008",
+   "stock": "300235.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 0.0
+  },
+  {
+   "day": "20261008",
+   "stock": "300369.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -4.08
   },
   {
    "day": "20261008",
@@ -2062,11 +6255,107 @@
   },
   {
    "day": "20261009",
+   "stock": "001228.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261009",
+   "stock": "600218.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261009",
+   "stock": "688339.SH",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261009",
+   "stock": "301207.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -2.79
+  },
+  {
+   "day": "20261009",
    "stock": "601766.SH",
    "side": "SELL",
    "how": "dk_信号消失",
    "note": "",
    "pnl": 2.11
+  },
+  {
+   "day": "20261009",
+   "stock": "603886.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 1.63
+  },
+  {
+   "day": "20261012",
+   "stock": "002534.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261012",
+   "stock": "002780.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261012",
+   "stock": "300138.SZ",
+   "side": "BUY",
+   "how": "double_knife",
+   "note": "",
+   "pnl": null
+  },
+  {
+   "day": "20261012",
+   "stock": "605566.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -3.03
+  },
+  {
+   "day": "20261012",
+   "stock": "001228.SZ",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -3.24
+  },
+  {
+   "day": "20261012",
+   "stock": "600218.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": 2.13
+  },
+  {
+   "day": "20261012",
+   "stock": "688339.SH",
+   "side": "SELL",
+   "how": "dk_信号消失",
+   "note": "",
+   "pnl": -6.24
   }
  ]
 }

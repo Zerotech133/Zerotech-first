@@ -48,15 +48,15 @@ def main():
 
     snap = pd.read_parquet(SNAP, columns=["ts_code"])
     picks = sorted(snap.ts_code.unique())
-    picks_str = ",".join(picks)
-    print("universe from snapshot: %d codes (manual_picks %d chars)"
-          % (len(picks), len(picks_str)))
+    picks_file = os.path.join(QBT, "_327_universe.txt")
+    open(picks_file, "w", encoding="utf-8").write(",".join(picks))
+    print("universe from snapshot: %d codes -> %s" % (len(picks), picks_file))
 
     ARMS = [
         ("dknife", ["--strategy", "double_knife"]),
-        ("chan_base", ["--strategy", "chanlun", "--manual-picks", picks_str,
+        ("chan_base", ["--strategy", "chanlun", "--manual-picks-file", picks_file,
                        "--gate-mode", "off"]),
-        ("chan_final", ["--strategy", "chanlun", "--manual-picks", picks_str,
+        ("chan_final", ["--strategy", "chanlun", "--manual-picks-file", picks_file,
                         "--gate-mode", "high", "--min-score", "80"]),
     ]
     results = []
@@ -70,13 +70,16 @@ def main():
             results.append((suf, json.load(open(out_fp, encoding="utf-8"))["summary"]))
             continue
         t0 = time.time()
+        if os.path.exists(out_fp):
+            os.remove(out_fp)   # --force 语义前移：先删旧产物，杜绝“引擎没写文件→读旧 json 误判 DONE”
         print("RUN", jid, flush=True)
         r = subprocess.run(
             [PY, "-u", BT2, "--d0", D0, "--d1", D1, "--hist-st", "true",
              "--job-id", jid] + extra,
             stdout=log, stderr=subprocess.STDOUT, cwd=QBT)
         if r.returncode != 0 or not os.path.exists(out_fp):
-            print("FAIL %s rc=%s -> _327_paired.log" % (jid, r.returncode))
+            print("FAIL %s rc=%s out_exists=%s -> _327_paired.log"
+                  % (jid, r.returncode, os.path.exists(out_fp)))
             sys.exit(4)
         s = json.load(open(out_fp, encoding="utf-8"))["summary"]
         results.append((suf, s))
@@ -85,7 +88,7 @@ def main():
             s["n_trades"], s["max_drawdown_pct"]), flush=True)
 
     # 对照表
-    lines = ["# K-STOCK-327 双刀×缠论并轨对照（窗 %s~%s·同宇宙 %d 只·中期快照版）"
+    lines = ["# K-STOCK-327 双刀×缠论并轨对照（窗 %s~%s·同宇宙 %d 只）"
              % (D0, D1, len(picks)), "",
              "| 臂 | ret% | annual% | PF | 胜率% | 笔数 | 回撤% | 平均仓位% |",
              "|---|---|---|---|---|---|---|---|"]

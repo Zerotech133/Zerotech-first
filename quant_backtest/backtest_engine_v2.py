@@ -871,6 +871,9 @@ def run_job(params: dict, job_id: str, progress=None):
         # 手动指定票池（K-STOCK-297 老田：可手动添加）——逗号/中文逗号分隔代码，
         # 提供后交易只吃名单内的信号（评分照常排序）；名单为空=全自动。
         _mp_raw = str(p.get("manual_picks") or "").replace("，", ",").replace(" ", "")
+        if not _mp_raw and p.get("manual_picks_file"):
+            _mpf = str(p["manual_picks_file"])
+            _mp_raw = open(_mpf, encoding="utf-8").read().replace("，", ",").replace(" ", "").replace("\n", ",")
         _picks = {x.upper() for x in _mp_raw.split(",") if x}
         if _picks:
             _hit = sum(len(ss & _picks) for ss in sig_buy.values())
@@ -990,6 +993,8 @@ if __name__ == "__main__":
     ap.add_argument("--slot-min", type=float, default=0.05, help="随机模式下限（默认0.05）")
     ap.add_argument("--slot-max", type=float, default=0.10, help="随机模式上限（默认0.10）")
     ap.add_argument("--manual-picks", default="", help="手动指定票池：逗号分隔代码·交易只吃名单内信号（空=全自动）")
+    ap.add_argument("--manual-picks-file", default="",
+                    help="手动票池文件（K-STOCK-333·全宇宙名单超 Windows 32K 命令行上限时用）：每行或逗号分隔代码，优先级低于 --manual-picks")
     ap.add_argument("--cap-mode", default="regime_8050", choices=["regime_8050", "fixed"])
     ap.add_argument("--cap-high", type=float, default=0.80, help="regime 高位总仓位帽（默认0.80）")
     ap.add_argument("--cap-mid", type=float, default=0.50, help="regime 中位总仓位帽（默认0.50）")
