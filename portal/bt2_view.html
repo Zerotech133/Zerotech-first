@@ -67,6 +67,18 @@ button:disabled{opacity:.5;cursor:default}
 <h1>回测框架 v2 <span class="tag">K-STOCK-295 · 票池可见 × 总仓位/补仓/清仓全可设</span></h1>
 <div class="sub">老田 10-13 口径：缠论≠当天满仓（选出股票<b>等机会</b>）；全市场扫描·一二三买全部入池·满足买点的交易。总仓位三档 / 信号有效期（补仓窗口）/ 失效离场（清仓）全部页面可设，改参数即改策略行为。</div>
 
+<div class="panel"><h2>🗣 自然语言回测 <span style="font-size:11px;color:var(--tx2)">（K-STOCK-299 · 一句话说清怎么回测，解析结果回填下方表单，核对后再开跑）</span></h2>
+<div class="grp">
+  <textarea id="nl-text" rows="2" placeholder='例：最近一年，全市场5000多只，只看三买，持仓10只，单票5%到10%随机，总仓位高位80低位20，信号3天内有效，止损8%，只买600519和000004' style="width:100%;background:var(--panel2);border:1px solid var(--bd);color:var(--tx);border-radius:6px;padding:8px;font-size:13px;resize:vertical"></textarea>
+  <div class="row" style="margin-top:8px;align-items:center">
+    <button id="nl-go" type="button" style="background:#1f6feb;border-color:#388bfd">解析并回填表单</button>
+    <label style="font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:4px"><input type="checkbox" id="nl-llm" checked>规则没认全时问本地大模型兜底（qwen3.5:4b）</label>
+    <span class="note" id="nl-status"></span>
+  </div>
+  <div class="note" id="nl-notes"></div>
+  <div class="note" id="nl-unknown" style="color:var(--gold)"></div>
+</div></div>
+
 <div class="panel"><h2>① 发起回测</h2>
 <form id="f">
 <div class="grp"><div class="grp-t">基本设置<span class="gt2">策略 / 窗口 / 样本域 / 买点等级 / 槽位</span></div>
@@ -368,5 +380,33 @@ function showStockTl(s){
     `<span class="t" style="color:${e.col}">${e.txt}</span><span class="x">${e.x}</span></div>`).join("")
     :'<div class="note">该股在窗口内无信号/成交记录</div>');
 }
+// ══ 299 自然语言回测 ══
+document.getElementById("nl-go").onclick=async()=>{
+  const txt=document.getElementById("nl-text").value.trim();
+  const st=document.getElementById("nl-status");
+  if(!txt){st.textContent="先输入一句话描述";return;}
+  st.textContent="解析中…";
+  const r=await fetch("/api/bt2_nl",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({text:txt,use_llm:document.getElementById("nl-llm").checked})}).then(x=>x.json()).catch(e=>({ok:false,error:String(e)}));
+  if(!r.ok){st.textContent="";document.getElementById("nl-unknown").textContent=r.error||"解析失败";document.getElementById("nl-notes").textContent="";return;}
+  // 回填表单（键名=name；select 按 value 匹配；百分比类值×100 显示）
+  const PCT_SHOW=new Set(["slot_pct","slot_min","slot_max","cap_high","cap_mid","cap_low","cap_fixed","runup_cap","fail_buffer"]);
+  const NEG_SHOW=new Set(["stop_pct"]);
+  const form=document.getElementById("f");
+  Object.entries(r.params).forEach(([k,v])=>{
+    const el=form.elements[k]; if(!el)return;
+    if(el.tagName==="SELECT"){el.value=v;return;}
+    if(k==="d0"||k==="d1"){el.value=v;return;}
+    let x=v;
+    if(PCT_SHOW.has(k))x=Math.round(v*10000)/100;
+    if(NEG_SHOW.has(k))x=Math.round(v*10000)/100;
+    el.value=x;
+  });
+  capSync(); slotSync();
+  st.textContent="已回填 "+Object.keys(r.params).length+" 项（"+(r.engine||"规则")+"）——核对下方表单后点「开始回测」";
+  document.getElementById("nl-notes").innerHTML=(r.notes||[]).map(x=>"· "+x).join("<br>");
+  document.getElementById("nl-unknown").textContent=(r.unknown||[]).length?("未识别/已丢弃："+r.unknown.join("；")):"";
+};
+
 poll(); setInterval(poll,5000);
 </script></body></html>

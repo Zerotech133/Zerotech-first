@@ -5056,6 +5056,21 @@ def _bt2_worker(jid, params):
         _BT2_LOCK.release()
 
 
+def _bt2_nl(rec):
+    """POST /api/bt2_nl（K-STOCK-299）：自然语言 → 回测参数（只解析不执行）。
+    返回 params 交前端回填表单，老田核对后走既有 /api/bt2_run（那边再做数值校验）——
+    解析与执行分离，不黑箱开跑。"""
+    text = str(rec.get("text") or "").strip()
+    if not text:
+        return {"ok": False, "error": "text 为空"}
+    use_llm = rec.get("use_llm") is not False
+    qbt = os.path.join(STATION, "quant_backtest")
+    if qbt not in sys.path:
+        sys.path.insert(0, qbt)
+    import nl_backtest
+    return nl_backtest.parse_nl(text, use_llm=use_llm)
+
+
 def _bt2_status():
     """GET /api/bt2_jobs：最近 20 个任务（state 合并：进度/结果/错误）。"""
     out = []

@@ -119,6 +119,7 @@ from api_backtest import (
     _bt2_start,
     _bt2_status,
     _bt2_result,
+    _bt2_nl,
     _pulse_exit_line,
     _pulse_fresh,
     _pulse_ago,
@@ -167,6 +168,7 @@ _MUTATION_POSTS = frozenset((
     "/api/trader_fire",   # K-STOCK-122 投研团队：组合解聘交易员
     "/api/combo_backtest",  # K-STOCK-275 组合回测任务登记（落盘排队）
     "/api/bt2_run",         # K-STOCK-285b 回测框架 v2 参数化回测（daemon 线程跑引擎）
+    "/api/bt2_nl",          # K-STOCK-299 自然语言回测解析（规则+LLM 兜底·只解析不执行）
     "/chanlun-anno",
     "/api/chanlun/label/save",
     "/api/report_push",
@@ -2500,6 +2502,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     self._json({"ok": False, "error": "bad json"}, 400)
                     return
                 self._json(_bt2_start(rec))
+            elif path == "/api/bt2_nl":
+                # K-STOCK-299 自然语言回测：nl_backtest 双轨解析（规则+本地 LLM 兜底），
+                # 只解析回填表单不执行——执行仍走 /api/bt2_run 双重校验。
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"ok": False, "error": "bad json"}, 400)
+                    return
+                self._json(_bt2_nl(rec))
             elif path == "/api/batch-backtest":
                 # K255 勾选股票自定义批次回测：写批次 JSONL → 引擎子进程异步跑
                 try:
