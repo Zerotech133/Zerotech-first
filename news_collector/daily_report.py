@@ -1,27 +1,25 @@
 # -*- coding: utf-8 -*-
-"""AI 工作站统一日报：每晚聚合全系统一天产出，推一条飞书汇总卡。
+"""AI 工作站统一日报：每晚聚合一天核心产出，推一条飞书汇总卡（对外价值版）。
 
-数据源（全部只读本地落盘，缺啥跳啥，单源失败不影响整卡）:
-  news_collector/status.json      新闻采集量/源状态
-  news_collector/ai_brief.json    AI 晨报执行状态
-  news_collector/ai_review.json   收盘复盘执行状态
-  news_collector/sectors.json     板块涨跌（15:30 复盘落盘）
-  quant_backtest/positions.json   纸面持仓账本（16:00 盘后更新）
-  quant_backtest/last_backtest.json  最新回测结果
-  gzh/drafts/index.json           公众号草稿
-  video/output/index.json         短视频成片
+K-STOCK-349 拍板（2026-10-14 老田）：彻底简化——砍系统健康/内容产出
+（内部运维与内容线与读者无关），聚焦四块：
+  🧭 舆论风向一行（news.db jev 24h 聚合，同新闻日报 v2 口径）
+  📰 信息采集量（status.json：24h/累计/源在线——只报数不报内部任务状态）
+  🔥 板块异动（sectors.json 15:30 复盘落盘）
+  💼 量化实战（positions.json——浮盈口径=等权平均，禁用逐股收益率加总）
 
 用法: python daily_report.py [--push]
 """
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import card_build
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
+CST = timezone(timedelta(hours=8))
 
 
 def _j(path):
@@ -37,57 +35,56 @@ def _green(v, fmt="%+.2f%%"):
         else "<font color='red'>%s</font>" % (fmt % v)
 
 
-def _ok(flag):
-    return "✓" if flag else "<font color='red'>✗</font>"
-
-
-def _health_block():
-    """调用 ops/health_check.py 汇总系统健康（缺啥跳啥）。"""
-    import subprocess
+def _sentiment_line():
+    """舆论风向一行版：news.db jev 24h 聚合（口径同新闻日报 v2，缺库静默跳过）。"""
+    import sqlite3
     try:
-        r = subprocess.run(
-            [sys.executable, os.path.join(STATION, "ops", "health_check.py"),
-             "--json"],
-            capture_output=True, text=True, encoding="utf-8", timeout=120)
-        h = json.loads((r.stdout or "").strip() or "null")
-        if not h:
-            return None
+        db = sqlite3.connect(os.path.join(HERE, "news.db"))
+        since = (datetime.now(CST) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M")
+        rows = db.execute(
+            "SELECT jev FROM news WHERE jev IS NOT NULL AND jev != '' "
+            "AND created_at >= ?", (since,)).fetchall()
+        db.close()
     except Exception:
-        return None  # 豁免（C2批2）：docstring 声明——health 缺啥跳啥（健康块降级不阻断日报）
-    svcs = h.get("services") or {}
-    n_ok = sum(1 for v in svcs.values() if v)
-    dk = h.get("docker") or {}
-    tk = h.get("tasks") or {}
-    bad = tk.get("bad") or []
-    lines = ["**🖥 系统健康**",
-             "服务 %d/%d · 容器 %s · 计划任务 %d（异常 %d）" % (
-                 n_ok, len(svcs), dk.get("total", "?"),
-                 tk.get("total", 0), len(bad))]
-    for iss in (h.get("issues") or [])[:4]:
-        lines.append("<font color='red'>⚠ %s</font>" % iss)
-    return "\n".join(lines)
+        return None
+    cnt = {"bull": 0, "bear": 0, "neutral": 0}
+    for (jev,) in rows:
+        try:
+            b = json.loads(jev).get("bias")
+        except ValueError:
+            continue
+        if b in cnt:
+            cnt[b] += 1
+    total = sum(cnt.values())
+    if not total:
+        return None
+    pb, ps = cnt["bull"] / total, cnt["bear"] / total
+    skew = (pb - ps) * 100
+    if skew > 10:
+        tone, color = "整体偏暖", "red"
+    elif skew < -10:
+        tone, color = "整体偏冷", "green"
+    else:
+        tone, color = "多空均衡", "grey"
+    return ("🧭 **舆论风向：<font color='%s'>%s</font>**"
+            "（偏多 %.0f%% / 偏空 %.0f%% · AI 判定 %d 条）"
+            % (color, tone, pb * 100, ps * 100, total))
 
 
 def build_blocks(today):
-    """返回 (md_blocks, 汇总统计 dict)。"""
+    """返回 md_blocks（四块：风向/采集/板块/量化，缺啥跳啥）。"""
     blocks = []
-    hb = _health_block()
-    if hb:
-        blocks.append(hb)
+    sl = _sentiment_line()
+    if sl:
+        blocks.append(sl)
 
-    # ── 📰 信息采集 ──────────────────────────────────────────
+    # ── 📰 信息采集（只报数：24h/累计/源在线） ────────────────
     st = _j(os.path.join(HERE, "status.json")) or {}
     srcs = st.get("sources") or {}
     n_ok = sum(1 for v in srcs.values() if v and v.get("ok"))
-    parts = ["**📰 信息采集**",
-             "24h 入库 %s 条（累计 %s）· 源在线 %d/%d · 最近采集 %s" % (
-                 st.get("news_24h", "?"), st.get("news_total", "?"),
-                 n_ok, len(srcs), st.get("last_collect", "—"))]
-    ai = _j(os.path.join(HERE, "ai_brief.json")) or {}
-    rv = _j(os.path.join(HERE, "ai_review.json")) or {}
-    parts.append("AI 晨报 %s · 收盘复盘 %s" % (
-        _ok(ai.get("ok")), _ok(rv.get("ok"))))
-    blocks.append("\n".join(parts))
+    blocks.append("📰 **信息采集**\n24h 入库 %s 条 · 累计 %s 条 · 采集源在线 %d/%d" % (
+        st.get("news_24h", "?"), st.get("news_total", "?"),
+        n_ok, len(srcs)))
 
     # ── 🔥 板块异动 ──────────────────────────────────────────
     sec = _j(os.path.join(HERE, "sectors.json")) or {}
@@ -97,13 +94,14 @@ def build_blocks(today):
         top = "、".join("%s %s" % (x["name"], _green(x["pct"]))
                        for x in s[:3])
         bot = "、".join("%s %s" % (x["name"], _green(x["pct"]))
-                       for x in s[-3:])
-        blocks.append("**🔥 板块异动**（%s）\n领涨：%s\n领跌：%s" % (
+                        for x in s[-3:])
+        blocks.append("🔥 **板块异动**（%s）\n领涨：%s\n领跌：%s" % (
             sec.get("ts", "—"), top, bot))
     else:
-        blocks.append("**🔥 板块异动**（暂无，交易日 15:30 后生成）")
+        blocks.append("🔥 **板块异动**（暂无，交易日 15:30 后生成）")
 
     # ── 💼 量化实战（纸面） ──────────────────────────────────
+    # 浮盈口径=等权平均（K-STOCK-349 判例：逐股收益率直接加总无组合意义）
     led = _j(os.path.join(STATION, "quant_backtest",
                           "positions.json")) or {}
     pend = led.get("pending") or []
@@ -112,38 +110,20 @@ def build_blocks(today):
     n_today = sum(1 for c in closed if c.get("exit_date") == today)
     wins = sum(1 for c in closed if c.get("pnl", 0) > 0)
     wr = wins * 100.0 / len(closed) if closed else 0
-    pnl_open = sum(e.get("pnl", 0) for e in open_)
-    lines = ["**💼 量化实战（纸面）**",
+    lines = ["💼 **量化实战（纸面）**",
              "明晨待买 %d · 持仓 %d · 今日平仓 %d" % (
                  len(pend), len(open_), n_today)]
     if closed:
         lines.append("累计平仓 %d 笔 · 胜率 %.0f%%" % (len(closed), wr))
     if open_:
-        lines.append("持仓合计浮盈 %s" % _green(pnl_open))
-    bt = _j(os.path.join(STATION, "quant_backtest",
-                         "last_backtest.json")) or {}
-    if bt.get("mode") == "scan" and bt.get("results"):
-        b = bt["results"][0]
-        lines.append("最新扫描 %s · Top [%s] %s 夏普%.2f %s" % (
-            bt.get("ts", "")[:10], b.get("market"), b.get("name"),
-            b.get("sharpe", 0), _green(b.get("total_return", 0) * 100)))
-    elif bt.get("symbol"):
-        lines.append("最新单股 [%s] %s · %s · 夏普%.2f %s" % (
-            bt.get("market"), bt.get("symbol"),
-            bt.get("ts", "")[:10], bt.get("sharpe", 0),
-            _green((bt.get("total_return") or 0) * 100)))
+        avg = sum(e.get("pnl", 0) for e in open_) / len(open_)
+        best = max(open_, key=lambda e: e.get("pnl", 0))
+        worst = min(open_, key=lambda e: e.get("pnl", 0))
+        lines.append("持仓等权浮盈 %s（%d 只 · 最佳 %s %s · 最差 %s %s）" % (
+            _green(avg * 100), len(open_),
+            best.get("name") or best.get("symbol"), _green(best["pnl"] * 100),
+            worst.get("name") or worst.get("symbol"), _green(worst["pnl"] * 100)))
     blocks.append("\n".join(lines))
-
-    # ── 📝 内容产出 ──────────────────────────────────────────
-    gz = _j(os.path.join(STATION, "gzh", "drafts", "index.json")) or []
-    vd = _j(os.path.join(STATION, "video", "output", "index.json")) or []
-    gz_today = sum(1 for x in gz if str(x.get("ts", "")).startswith(today))
-    vd_today = sum(1 for x in vd if str(x.get("ts", "")).startswith(today))
-    pub = sum(1 for x in gz if x.get("status") == "published")
-    rev = sum(1 for x in gz if x.get("status") == "reviewed")
-    blocks.append("**📝 内容产出**\n公众号：今日 +%d 稿（累计 %d · 已审 %d · "
-                  "已发 %d）\n短视频：今日 +%d 片（累计 %d）" % (
-                      gz_today, len(gz), rev, pub, vd_today, len(vd)))
     return blocks
 
 
