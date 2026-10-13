@@ -1,0 +1,49 @@
+{
+  "ok": false,
+  "checks": {
+    "ollama_tags": {
+      "ok": true,
+      "status": 200,
+      "model_count": 4,
+      "models": [
+        "qwen3.5:35b",
+        "qwen3.5:4b",
+        "qwen3.5:9b",
+        "bge-m3:latest"
+      ]
+    },
+    "web_page": {
+      "ok": true,
+      "status": 200,
+      "content_type": "text/html; charset=utf-8"
+    },
+    "static_assets": {
+      "ok": true,
+      "assets": {
+        "tokens.css": {
+          "ok": true,
+          "status": 200,
+          "content_type": "text/css; charset=utf-8"
+        },
+        "nav.js": {
+          "ok": true,
+          "status": 200,
+          "content_type": "application/javascript; charset=utf-8"
+        }
+      }
+    },
+    "chat": {
+      "first_token": true,
+      "sources": false,
+      "done": true,
+      "malformed_lines": 0,
+      "ok": true,
+      "status": 200
+    },
+    "rag": {
+      "ok": false,
+      "status": 503,
+      "error": "http_503"
+    }
+  }
+}
