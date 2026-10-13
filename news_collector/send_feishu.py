@@ -49,39 +49,14 @@ def _load_app_creds():
 
 
 def _send_openapi(content, msg_type, receive_id=None, receive_id_type="open_id"):
-    """OpenAPI 直连（backup_alert.send_openapi 同款）：tenant token → 发消息。
+    """OpenAPI 直连：K-STOCK-228 起内部委托 feishu_client（全仓唯一底座）。
 
     receive_id 缺省=USER_ID（OpenAPI 应用自身域 open_id，与凭证同应用）；
     K42-b 起可传群 chat_id（receive_id_type=chat_id）等多目标。"""
     if receive_id is None:
         receive_id = USER_ID
-    app_id, app_secret = _load_app_creds()
-    if not app_id or not app_secret:
-        return False, "no app creds"
-    try:
-        body = json.dumps({"app_id": app_id,
-                           "app_secret": app_secret}).encode("utf-8")
-        req = urllib.request.Request(
-            "https://open.feishu.cn/open-apis/auth/v3/"
-            "tenant_access_token/internal",
-            data=body, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            tok = json.loads(r.read().decode("utf-8")).get(
-                "tenant_access_token")
-        if not tok:
-            return False, "no tenant token"
-        body2 = json.dumps({"receive_id": receive_id, "msg_type": msg_type,
-                            "content": content}).encode("utf-8")
-        req2 = urllib.request.Request(
-            "https://open.feishu.cn/open-apis/im/v1/messages"
-            "?receive_id_type=" + receive_id_type,
-            data=body2, headers={"Content-Type": "application/json",
-                                 "Authorization": "Bearer " + tok})
-        with urllib.request.urlopen(req2, timeout=15) as r2:
-            resp = json.loads(r2.read().decode("utf-8"))
-        return resp.get("code") == 0, ("openapi code=%s" % resp.get("code"))
-    except Exception as e:
-        return False, ("openapi err " + str(e))[:150]  # 豁免（C2批2）：错误随返回值上抛，调用方打印 SEND_FAIL
+    from feishu_client import send_msg  # 同目录（K-STOCK-228 出口收敛）
+    return send_msg(content, msg_type, receive_id, receive_id_type)
 
 
 def send_content_to(receive_id, receive_id_type, content, msg_type):

@@ -91,32 +91,9 @@ def build_drill_card(code, facts, sections, title_extra="",
 
 
 def send_card(card, receive_id=None, receive_id_type="open_id"):
-    """OpenAPI 直发 interactive（与 send_feishu 同凭证同 API）。"""
+    """发送 interactive 卡片：K-STOCK-228 起委托 feishu_client 统一底座。"""
     if receive_id is None:
         receive_id = USER_ID
-    app_id, app_secret = _load_app_creds()
-    if not app_id:
-        return False, "no app creds"
-    try:
-        body = json.dumps({"app_id": app_id,
-                           "app_secret": app_secret}).encode("utf-8")
-        req = urllib.request.Request(
-            "https://open.feishu.cn/open-apis/auth/v3/"
-            "tenant_access_token/internal",
-            data=body, headers={"Content-Type": "application/json"})
-        tok = json.loads(urllib.request.urlopen(req, timeout=15).read()
-                         ).get("tenant_access_token")
-        body2 = json.dumps({
-            "receive_id": receive_id, "msg_type": "interactive",
-            "content": json.dumps(card, ensure_ascii=False)
-        }).encode("utf-8")
-        req2 = urllib.request.Request(
-            "https://open.feishu.cn/open-apis/im/v1/messages"
-            "?receive_id_type=" + receive_id_type,
-            data=body2, headers={"Content-Type": "application/json",
-                                 "Authorization": "Bearer " + tok})
-        resp = json.loads(urllib.request.urlopen(req2, timeout=15).read())
-        return resp.get("code") == 0, ("code=%s %s" % (
-            resp.get("code"), str(resp.get("msg"))[:120]))
-    except Exception as e:  # noqa: BLE001
-        return False, str(e)[:150]
+    from feishu_client import send_msg  # NEWS 已挂 path（K-STOCK-228 出口收敛）
+    return send_msg(json.dumps(card, ensure_ascii=False), "interactive",
+                    receive_id, receive_id_type)

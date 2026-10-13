@@ -53,12 +53,15 @@ def _cfg():
 
 
 def _token():
-    body = json.dumps({"app_id": _cfg()[0],
-                       "app_secret": _cfg()[1]}).encode()
-    r = urllib.request.urlopen(urllib.request.Request(
-        OPEN + "/auth/v3/tenant_access_token/internal", data=body,
-        headers={"Content-Type": "application/json"}), timeout=30)
-    return json.loads(r.read())["tenant_access_token"]
+    # K-STOCK-228 出口收敛：token 委托 feishu_client；drive 家族 API 与
+    # ScopeError 守卫保留在本文件（授权后需新 token → use_cache=False）。
+    sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
+    from feishu_client import get_tat
+    a, s = _cfg()
+    tok = get_tat(a, s, use_cache=False)
+    if not tok:
+        raise RuntimeError("tenant_access_token 获取失败（config 缺失或 HTTP 异常）")
+    return tok
 
 
 class ScopeError(Exception):

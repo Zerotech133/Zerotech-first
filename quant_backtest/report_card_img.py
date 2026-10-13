@@ -190,56 +190,18 @@ def _tenant_token():
     app_id, app_secret = _app_creds()
     if not app_id or not app_secret:
         return None
-    import urllib.request
-    body = json.dumps({"app_id": app_id,
-                       "app_secret": app_secret}).encode("utf-8")
-    req = urllib.request.Request(
-        "https://open.feishu.cn/open-apis/auth/v3/"
-        "tenant_access_token/internal",
-        data=body, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=15) as r:
-            return json.loads(r.read().decode("utf-8")).get(
-                "tenant_access_token")
-    except Exception:
-        return None
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
+    from feishu_client import get_tat  # K-STOCK-228 出口收敛
+    return get_tat(app_id, app_secret)
 
 
 def _upload_openapi(raw, filename):
-    """OpenAPI 上传图片（手搓 multipart，避免依赖 requests_toolbelt）。"""
-    import urllib.request
-    tok = _tenant_token()
-    if not tok:
-        return None
-    boundary = "----QPZMBoundary7MA4YWxkTrZu0gW"
-    b = boundary.encode()
-    fname = (filename or "img.png").encode("utf-8")
-    parts = []
-    parts.append(b"--" + b)
-    parts.append(b'Content-Disposition: form-data; name="image_type"')
-    parts.append(b"")
-    parts.append(b"message")
-    parts.append(b"--" + b)
-    parts.append(b'Content-Disposition: form-data; name="image"; filename="'
-                 + fname + b'"')
-    parts.append(b"Content-Type: image/png")
-    parts.append(b"")
-    head = b"\r\n".join(parts) + b"\r\n"
-    tail = b"\r\n--" + b + b"--\r\n"
-    data = head + raw + tail
-    req = urllib.request.Request(
-        "https://open.feishu.cn/open-apis/im/v1/images",
-        data=data,
-        headers={"Content-Type": "multipart/form-data; boundary=" + boundary,
-                 "Authorization": "Bearer " + tok})
-    try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            resp = json.loads(r.read().decode("utf-8"))
-        if resp.get("code") == 0:
-            return (resp.get("data") or {}).get("image_key")
-        return None
-    except Exception:
-        return None
+    """上传图片：K-STOCK-228 起委托 feishu_client（multipart 判例下沉底座）。"""
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
+    from feishu_client import upload_image
+    return upload_image(raw, filename or "img.png")
 
 
 def card_image_key(code, period="1d", show_n=150):
