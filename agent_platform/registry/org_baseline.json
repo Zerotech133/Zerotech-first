@@ -1,0 +1,139 @@
+{
+ "_note": "田小皮监督回路的计划基线（K-ORG-026）。机器可读：tools/chief_patrol.py 只读 diff 本基线 vs tasks.json+dev_events 实际执行，产出四色判读。改计划=改本文件+重跑巡检。",
+ "org": "GenOS/老田AI工作站",
+ "chief": "A0 田小皮",
+ "updated": "2026-10-13",
+ "batches": [
+  {
+   "id": "A",
+   "name": "批A·命名满编",
+   "deadline": "2026-10-17",
+   "status": "done",
+   "items": [
+    {
+     "id": "A1",
+     "task": "参谋长命名田小皮全链落地",
+     "owner": "A0",
+     "done": "2026-10-13"
+    },
+    {
+     "id": "A2",
+     "task": "MKT1+LEG1 注册满编 27",
+     "owner": "A0",
+     "done": "2026-10-13"
+    }
+   ]
+  },
+  {
+   "id": "B",
+   "name": "批B·汇报链真实化",
+   "deadline": "2026-10-17",
+   "status": "blocked_until_1015",
+   "gate": "10-15 影子解禁（哨文件冻结纪律优先，解禁前禁改 A0 日报链）",
+   "items": [
+    {
+     "id": "B1",
+     "task": "全员日报扩面→田小皮判读",
+     "owner": "A0"
+    },
+    {
+     "id": "B2",
+     "task": "判读结果飞书折叠卡推送老田",
+     "owner": "A0"
+    },
+    {
+     "id": "B3",
+     "task": "devtask 加 approve 字段（跨部门单田小皮批）",
+     "owner": "DOC1"
+    }
+   ]
+  },
+  {
+   "id": "C",
+   "name": "批C·调度闭环",
+   "deadline": "2026-10-20",
+   "status": "doing",
+   "items": [
+    {
+     "id": "C1",
+     "task": "A0 派单 automation（晨巡+派单）",
+     "owner": "A0"
+    },
+    {
+     "id": "C2",
+     "task": "devtask 工单投影进 IDE",
+     "owner": "DEV5",
+     "done": "2026-10-13"
+    },
+    {
+     "id": "C3",
+     "task": "记忆面板：agent/<id>/* 只读视图进 IDE",
+     "owner": "DEV8"
+    },
+    {
+     "id": "C4",
+     "task": "review 积压 19 单质检分派（K-ORG-025a 四批）",
+     "owner": "QA1",
+     "note": "K-ORG-025a doing：QA1 四批分组已立，R2 首检进行中"
+    }
+   ]
+  },
+  {
+   "id": "D",
+   "name": "批D·能力升级",
+   "deadline": null,
+   "status": "planned",
+   "items": [
+    {
+     "id": "D1",
+     "task": "prompt 版本化登记",
+     "owner": "ARCH1"
+    },
+    {
+     "id": "D2",
+     "task": "双 Agent 对练（DEV3写→DEV4复核）",
+     "owner": "DEV3"
+    },
+    {
+     "id": "D3",
+     "task": "影子评测（行为对齐人设）",
+     "owner": "QA1"
+    }
+   ]
+  },
+  {
+   "id": "E",
+   "name": "批E·田小皮监督回路（K-ORG-026）",
+   "deadline": "2026-10-16",
+   "status": "doing",
+   "items": [
+    {
+     "id": "E1",
+     "task": "计划基线 JSON + chief_patrol 只读巡检 v1",
+     "owner": "A0",
+     "done": "2026-10-13"
+    },
+    {
+     "id": "E2",
+     "task": "晨巡 automation（工作日 09:15）",
+     "owner": "A0"
+    },
+    {
+     "id": "E3",
+     "task": "巡检判读并入 17:35 日报+飞书卡（随批 B 解禁）",
+     "owner": "A0"
+    },
+    {
+     "id": "E4",
+     "task": "事件 schema 扩类（dispatch/accept/review_verdict）",
+     "owner": "OPS1"
+    }
+   ]
+  }
+ ],
+ "thresholds": {
+  "doing_stall_hours": 48,
+  "review_backlog_warn": 20,
+  "review_backlog_p0": 30
+ }
+}
