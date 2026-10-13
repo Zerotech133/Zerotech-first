@@ -38,8 +38,10 @@ DST = os.path.join(PORTAL, "picks_public")
 
 SINGLE_FILES = [
     ("picks.html", "picks.html"),
+    ("ledger.html", "ledger.html"),  # K-STOCK-353 交易台账
     (os.path.join("static", "tokens.css"), os.path.join("static", "tokens.css")),
     (os.path.join("data", "todays_picks.json"), os.path.join("data", "todays_picks.json")),
+    (os.path.join("data", "ledger.json"), os.path.join("data", "ledger.json")),  # K-STOCK-353
 ]
 DETAILS_SUBDIR = os.path.join("data", "pick_details")
 
