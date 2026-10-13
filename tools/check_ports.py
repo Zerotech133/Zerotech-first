@@ -108,7 +108,10 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "com.docker", "vpn", "wslhost", "wsl", "sihost",
              "weixin", "wechat", "gameviewer", "tailscale", "dubbo",
              "nvidia", "qq", "feishu", "dingtalk", "quark", "tdxw",
-             "yundetect", "vmms", "wpscloudsvr", "sgtool")
+             "yundetect", "vmms", "wpscloudsvr", "sgtool",
+             "sogoucloud", "baidunetdiskhost")
+# 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
+# 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 
 
 # 注册但允许离线的口（手动/按需型服务：strict 只防被抢，不因闲置判负）

@@ -57,7 +57,9 @@
     {
      "id": "C1",
      "task": "A0 派单 automation（晨巡+派单）",
-     "owner": "A0"
+     "owner": "A0",
+     "done": "2026-10-13",
+     "note": "合并评估：晨巡automation已含派单动作(🟡滞后→025链登记催办+A0 dispatch黑板)，A0派单自动化=晨巡一体化实现，不另建"
     },
     {
      "id": "C2",
@@ -68,13 +70,15 @@
     {
      "id": "C3",
      "task": "记忆面板：agent/<id>/* 只读视图进 IDE",
-     "owner": "DEV8"
+     "owner": "DEV8",
+     "done": "2026-10-13",
+     "note": "K-ORG-027a交付：bundle memory_digest 27岗+ide.html记忆活动块"
     },
     {
      "id": "C4",
      "task": "review 积压 19 单质检分派（K-ORG-025a 四批）",
      "owner": "QA1",
-     "note": "K-ORG-025a doing：QA1 四批分组已立，R2 首检进行中"
+     "note": "R2批已质检：158通过/145部分通过/159·160整改退回；R1·R4·R3待检"
     }
    ]
   },
@@ -116,7 +120,9 @@
     {
      "id": "E2",
      "task": "晨巡 automation（工作日 09:15）",
-     "owner": "A0"
+     "owner": "A0",
+     "done": "2026-10-13",
+     "note": "automation 28fdc826 ACTIVE（rrule 工作日 09:15），2026-10-13 首跑成功，判读落盘+黑板 patrol_verdict 均验证"
     },
     {
      "id": "E3",
@@ -126,7 +132,9 @@
     {
      "id": "E4",
      "task": "事件 schema 扩类（dispatch/accept/review_verdict）",
-     "owner": "OPS1"
+     "owner": "OPS1",
+     "done": "2026-10-13",
+     "note": "K-ORG-027b交付：KINDS 5→9类+emit自检"
     }
    ]
   }
