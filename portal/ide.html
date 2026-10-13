@@ -159,6 +159,13 @@ function pick(id){
         ? '<div class="blk"><h3>名下活跃工单（devtask 真实投影）</h3><div class="charter">'
           + CUR.tasks.map(t=>'<div>● <code>'+esc(t.id)+'</code> <span style="color:'+(t.status==='doing'?'var(--green)':'var(--amber,#d29922)')+'">['+t.status+']</span> '+esc(t.desc)+'</div>').join('')
           + '</div></div>' : '')
+    + (CUR.memory
+        ? '<div class="blk"><h3>记忆活动（agent/'+CUR.id+'/* 只读面板 · K-ORG-027a）</h3><div class="charter">'
+          + Object.entries(CUR.memory).map(([ns, m])=>
+              '<div><b>'+ns+'</b> × '+m.count+' 条'
+              + m.recent.map(r=>'<div style="color:var(--dim);font-size:11.5px">└ ['+esc(r.ts)+'] '+esc(r.event)+'：'+esc(r.desc)+'</div>').join('')
+              + '</div>').join('<div style="height:6px"></div>')
+          + '</div></div>' : '')
     + '<div class="blk"><h3>运行配置</h3><div class="kv">'
     + '<div class="k">人设 profile</div><div class="v"><code>'+esc(CUR.role_profile)+'</code></div>'
     + '<div class="k">模型绑定</div><div class="v"><code>'+esc(CUR.llm)+'</code></div>'

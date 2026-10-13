@@ -43,6 +43,34 @@ DEPT_META = {  # 部门显示名（org.json name 键值在此冗余固化，避�
 
 # devtask 工单库（K-ORG-024 批C先行：研发工单真实投影进 IDE）
 TASKS = os.path.join(ROOT, ".worktrees", "tasks.json")
+# 记忆黑板（K-ORG-027a 批C3：agent/<id>/* 只读视图进 IDE）
+MEMORY_DIR = os.path.join(ROOT, "agent_platform", "data", "memory")
+
+
+def memory_digest(agent_id, max_recent=2):
+    """岗卡记忆面板：各 namespace jsonl 行数 + 最近 N 条摘要（只读）。"""
+    ns = {}
+    for kind in ("decision", "observation", "feedback"):
+        fp = os.path.join(MEMORY_DIR, "agent__%s__%s.jsonl" % (agent_id, kind))
+        if not os.path.exists(fp):
+            continue
+        try:
+            lines = [l for l in open(fp, encoding="utf-8", errors="replace")
+                     if l.strip()]
+        except Exception:  # noqa: BLE001
+            continue
+        if not lines:
+            continue
+        recent = []
+        for l in lines[-max_recent:]:
+            try:
+                e = json.loads(l)
+                recent.append({"ts": e.get("ts", ""), "event": e.get("event", ""),
+                               "desc": (e.get("desc", "") or "")[:80]})
+            except Exception:  # noqa: BLE001
+                pass
+        ns[kind] = {"count": len(lines), "recent": recent}
+    return ns or None
 
 
 def main():
@@ -108,6 +136,7 @@ def main():
     miss_prompt = []
     for aid, card in agents.items():
         card["projects"] = projects_of.get(aid, [])
+        card["memory"] = memory_digest(aid)  # K-ORG-027a 记忆面板（只读摘要）
         if card["prompt"]:
             continue
         pf = os.path.join(PROMPTS, card["role_profile"] + ".md")

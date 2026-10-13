@@ -2,7 +2,8 @@
 """零界开发进度事件层（K-STOCK-113）——开发侧全量自动回流平台的数据地基。
 
   事件文件 : portal/data/dev_events.jsonl（每行一事件，append-only）
-  四类事件 : task_start / commit / blocked / merge_done（guard_fail 预留）
+  事件类型 : task_start / commit / blocked / merge_done / guard_fail
+             + dispatch / accept / review_verdict / patrol_verdict（K-ORG-027b 派单域）
   CLI 用法 :
     python tools/events.py emit --kind commit --task K-STOCK-113 --agent CodeBuddy --detail "xxx 完成"
     python tools/events.py today          # 今日汇总（JSON）
@@ -38,7 +39,8 @@ def _master_events_file() -> Path:
         pass
     return EVENTS_FILE
 
-KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail")
+KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail",
+        "dispatch", "accept", "review_verdict", "patrol_verdict")  # K-ORG-027b(OPS1)：+派单域四类
 
 
 def emit(kind: str, task: str = "", agent: str = "", detail: str = "",
