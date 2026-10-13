@@ -223,6 +223,7 @@
 <header>
   <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 多工作区</small></h1>
   <div class="wsbar" id="wsbar"></div>
+  <div class="wsbar" id="projbar" style="display:none"></div>
   <select id="me" class="mesel" onchange="setMe(this.value)" title="身份视角：以某 Agent 的视角看工单与组织"></select>
   <div class="hd-stats" id="stats"></div>
   <div class="hd-right">
@@ -317,6 +318,57 @@ function wsAgents(){   // 当前工作区成员 Set；null=全部不过滤
   return new Set(d ? d.agents : []);
 }
 
+/* ═══ 项目线（K-ORG-057：工作区内二级维度，不另开工作区）═══
+   键位：ide-proj@<ws> · 过滤面=工单视图/看板/轨迹（k_id 前缀归线）· 会话按 agent 键不切线 */
+let PROJ = "all";
+function wsDeptId(){
+  if(WS==="all" || !B) return null;
+  const d = B.departments.find(x=>x.name===WS);
+  return d ? d.id : null;
+}
+function wsProjects(){
+  if(!B) return [];
+  const dep = wsDeptId();
+  return (B.projects||[]).filter(p => dep===null || p.dept===dep || p.dept==="")
+    .sort((a,b)=>(a.status==="active"?0:1)-(b.status==="active"?0:1));
+}
+function curProj(){ return PROJ==="all" ? null : (B.projects||[]).find(p=>p.project_id===PROJ) || null; }
+function renderProjBar(){
+  const el = document.getElementById("projbar");
+  const ps = wsProjects();
+  if(!ps.length){ el.innerHTML=""; el.style.display="none"; return; }
+  el.style.display="flex";
+  const cur = curProj();
+  let h = '<span style="font-size:11px;color:var(--dim2);align-self:center;margin-right:2px">项目线</span>';
+  h += '<span class="wsbtn'+(PROJ==="all"?' on':'')+'" onclick="setProj(\'all\')">全部</span>';
+  ps.forEach(p=>{
+    const off = p.status!=="active";
+    h += '<span class="wsbtn'+(PROJ===p.project_id?' on':'')+'"'+(off?' style="opacity:.45"':'')
+      + ' onclick="setProj('+q(p.project_id)+')"'
+      + ' title="'+esc(p.name)+' · '+esc(p.k_prefix)+' 前缀归线'+(off?' · 已归档':'')+'">'
+      + esc(p.name)+(off?'（结项）':'')+'</span>';
+  });
+  el.innerHTML = h;
+}
+function setProj(pid){
+  if(pid===PROJ) return;
+  PROJ = pid;
+  wsSet("ide-proj", pid);
+  renderProjBar(); renderSide(); renderTabs(); renderTab();
+  addLog("项目线 → "+(pid==="all"?"全部":pid), "lg-b");
+}
+function projMatchK(kPrefix, kId){   // k_id 前缀归线（K-ORG-057）
+  if(!curProj() || !kPrefix) return true;
+  return String(kId||"").indexOf(kPrefix)===0;
+}
+function projMatch(p){   // 工单 project 字段过滤
+  const c = curProj();
+  if(!c) return true;
+  return (p.project||"general")===c.project_id
+    || (c.k_prefix && String(p.id||"").indexOf(c.k_prefix)===0);
+}
+
+
 function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 /* 属性安全 JSON：双引号转 &quot;，防 onclick 属性被截断（343 实测判例） */
 function q(s){ return JSON.stringify(String(s)).replace(/"/g,"&quot;"); }
@@ -377,11 +429,22 @@ function panelToggle(){
 const WS_ICONS = ["🅰","🅱","🅲","🅳","🅴","🅵"];
 function renderWs(){
   const el = document.getElementById("wsbar");
+  const pds = projDepts();
   let h = '<span class="wsbtn'+(WS==="all"?' on':'')+'" onclick="setWs(\'all\')" title="聚合视图（全部部门）">🌐 全部</span>';
-  projDepts().forEach((d,i)=>{
-    h += '<span class="wsbtn'+(WS===d.name?' on':'')+'" onclick="setWs('+q(d.name)+')"'
-      + ' title="'+esc((d.agents||[]).join(' / '))+'">'+(WS_ICONS[i]||"▫")+' '+esc(d.name)+'</span>';
-  });
+  if(pds.length > 5){
+    /* K-ORG-057：工作区 >5 个折叠为下拉（防 8+ 部门按钮挤爆顶栏） */
+    const cur = pds.find(d=>d.name===WS);
+    h += '<select class="mesel" style="width:auto" onchange="setWs(this.value)" title="选择工作区（项目部）">'
+      + '<option value="" disabled'+(cur?'':' selected')+'>选择工作区…</option>'
+      + pds.map(d=>'<option value="'+esc(d.name)+'"'+(WS===d.name?' selected':'')+'>'+esc(d.name)+'</option>').join('')
+      + '</select>';
+    if(cur) h += '<span class="wsbtn on">'+(WS_ICONS[pds.indexOf(cur)]||"▫")+' '+esc(WS)+'</span>';
+  } else {
+    pds.forEach((d,i)=>{
+      h += '<span class="wsbtn'+(WS===d.name?' on':'')+'" onclick="setWs('+q(d.name)+')"'
+        + ' title="'+esc((d.agents||[]).join(' / '))+'">'+(WS_ICONS[i]||"▫")+' '+esc(d.name)+'</span>';
+    });
+  }
   el.innerHTML = h;
 }
 function setWs(name){
@@ -391,11 +454,12 @@ function setWs(name){
   /* 工作现场整套切换：视图 / Tab 集 / 调试目标（会话历史按 ws 独立存，切回即回） */
   DBGCUR = null;
   VIEW = wsGet("ide-view") || "org";
+  PROJ = wsGet("ide-proj") || "all";   // K-ORG-057：项目线随工作区恢复
   loadTabs();
   document.getElementById("chat").innerHTML = "";
   document.getElementById("dbg-target").textContent = "未选择 Agent";
   document.getElementById("send").disabled = true;
-  renderWs(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  renderWs(); renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
   addLog("工作区 → "+(name==="all"?"全部":name), "lg-b");
 }
 
@@ -449,7 +513,7 @@ function renderSide(){
     });
   } else if(VIEW==="task"){
     const inWs = w => !wsA || (w.owner && wsA.has(w.owner));
-    const all = (B.workorders||[]);
+    const all = (B.workorders||[]).filter(projMatch);   // K-ORG-057：项目线过滤
     if(ME){
       const mine = all.filter(w=>w.owner===ME);
       const mD = mine.filter(w=>w.status==="doing"), mR = mine.filter(w=>w.status==="review");
@@ -493,7 +557,9 @@ function renderSide(){
     /* 轨迹按工单 owner 归属工作区：k_id→工单→owner；无主轨迹只在「全部」显示 */
     const wo = {};
     (B.workorders||[]).forEach(w=>{ wo[w.id]=w.owner; });
-    const list = (B.coder_traces||[]).filter(t=> !wsA || (wo[t.k_id] && wsA.has(wo[t.k_id])));
+    const cp = curProj();   // K-ORG-057：k_id 前缀归线过滤
+    const list = (B.coder_traces||[]).filter(t=> (!wsA || (wo[t.k_id] && wsA.has(wo[t.k_id])))
+      && (!cp || (cp.k_prefix && String(t.k_id||"").indexOf(cp.k_prefix)===0)));
     h += '<div class="s-t">'+(WS==="all"?"":"["+esc(WS)+"] ")+'编码生产线轨迹（shadow 只读）</div>';
     list.forEach(t=>{
       h += '<div class="it'+(tabOn("trace",t.k_id)?' on':'')+'" onclick="openTab(\'trace\','+q(t.k_id)+')">'
@@ -1012,17 +1078,22 @@ function rBoard(c){
   } else {
     cols = [{name:WS, test:w=>!!wsA && wsA.has(w.owner)}];
   }
-  const all = (B.workorders||[]);
+  const all = (B.workorders||[]).filter(projMatch);   // K-ORG-057：项目线过滤
+  const projTag = w => {
+    const pl = (B.projects||[]).find(p=>p.project_id===w.project
+      || (p.k_prefix && String(w.id||"").indexOf(p.k_prefix)===0));
+    return pl ? '<span style="font-size:9.5px;color:var(--dim2);margin-left:4px">'+esc(pl.name)+'</span>' : '';
+  };
   c.innerHTML =
     '<div class="a-head"><h2>🗂 工单看板</h2>'
-    + '<span style="font-size:11.5px;color:var(--dim)">'+(WS==="all"?"按项目部门分组":"工作区["+esc(WS)+"]")+' · 绿条 doing / 橙条 review · 点卡片开工单 Tab</span></div>'
+    + '<span style="font-size:11.5px;color:var(--dim)">'+(WS==="all"?"按项目部门分组":"工作区["+esc(WS)+"]")+(curProj()?" · 项目线["+esc(curProj().name)+"]":"")+' · 绿条 doing / 橙条 review · 点卡片开工单 Tab</span></div>'
     + '<div class="board">'
     + cols.map(col=>{
         const ws = all.filter(w=>col.test(w));
         return '<div class="bcol"><h4>'+esc(col.name)+'（'+ws.length+'）</h4>'
           + ws.map(w=>'<div class="card '+w.status+'" onclick="openTab(\'task\','+q(w.id)+')">'
             + '<div class="cid">'+esc(w.id)+' <span class="st-'+w.status+'" style="font-size:9.5px;margin-left:4px">'+w.status+'</span></div>'
-            + '<div class="co">'+esc(w.owner||"未分配")+(ME&&w.owner===ME?' <span style="color:var(--orange)">★我</span>':'')+'</div>'
+            + '<div class="co">'+esc(w.owner||"未分配")+(ME&&w.owner===ME?' <span style="color:var(--orange)">★我</span>':'')+projTag(w)+'</div>'
             + '<div style="color:var(--dim);margin-top:3px;line-height:1.5">'+esc(String(w.desc||"").slice(0,60))+'</div></div>').join("")
           + (ws.length ? "" : '<div class="s-note">空</div>')
           + '</div>';
@@ -1102,7 +1173,7 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
     + '<span>prompt 覆盖 <b style="color:var(--green)">'+B.stats.prompt_ok+'/'+B.stats.agents+'</b></span>'
     + '<span>工单 <b style="color:var(--green)">'+(B.stats.workorders_doing||0)+'</b> doing / <b style="color:var(--amber,#d29922)">'+(B.stats.workorders_review||0)+'</b> review</span>';
   document.getElementById("gen").textContent = "bundle " + B.generated;
-  renderMe(); renderWs(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  renderMe(); renderWs(); PROJ = wsGet("ide-proj") || "all"; renderProjBar(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
   if(SPLIT.on) renderSplit();
   addLog("bundle 加载完成 · agents "+B.stats.agents+" · code_files "+((B.code_files||[]).length)+" 件 · 工单 "+(B.stats.workorders_doing||0)+" doing · 工作区 "+(WS==="all"?"全部":WS), "lg-g");
   if(B.a0_daily) addLog("A0 日报快照 "+B.a0_daily.date+" · 点评 "+(B.a0_review?B.a0_review.date:"无"));

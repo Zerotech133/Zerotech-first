@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14 01:50",
+ "generated": "2026-10-14 07:27",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 29,
@@ -16,7 +16,8 @@
    "status": "review",
    "owner": "Codex·Evidence",
    "branch": "detached@e3870fe",
-   "created": "2026-10-11 23:05:17"
+   "created": "2026-10-11 23:05:17",
+   "project": "general"
   },
   {
    "id": "K-STOCK-145",
@@ -24,7 +25,8 @@
    "status": "review",
    "owner": "Codex·Health",
    "branch": "managed worktree: ollama-health",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-146",
@@ -32,7 +34,8 @@
    "status": "review",
    "owner": "Codex·RAG",
    "branch": "managed worktree: rag-index",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-147",
@@ -40,7 +43,8 @@
    "status": "review",
    "owner": "Codex·Web",
    "branch": "managed worktree: web-ux",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-152",
@@ -48,7 +52,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "managed worktree: ollama-launcher",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-153",
@@ -56,7 +61,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "managed worktree: rag-web-incremental",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-154",
@@ -64,7 +70,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "managed worktree: rag-index-persistence",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-155",
@@ -72,7 +79,8 @@
    "status": "review",
    "owner": "Codex·Eval",
    "branch": "managed worktree: rag-eval",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-156",
@@ -80,7 +88,8 @@
    "status": "review",
    "owner": "Codex·Web",
    "branch": "managed worktree: web-status",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-157",
@@ -88,7 +97,8 @@
    "status": "review",
    "owner": "Codex·Tools",
    "branch": "managed worktree: index-cli",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-158",
@@ -96,7 +106,8 @@
    "status": "review",
    "owner": "Codex·Ops",
    "branch": "managed worktree: ops-health-integration",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-159",
@@ -104,7 +115,8 @@
    "status": "review",
    "owner": "Codex·Model",
    "branch": "managed worktree: model-routing",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-160",
@@ -112,7 +124,8 @@
    "status": "review",
    "owner": "Codex·Docs",
    "branch": "managed worktree: runbook-smoke",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-162",
@@ -120,7 +133,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "主工作区（Git 元数据写权限阻断）",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-209",
@@ -128,7 +142,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "主工作区（Git ACL 阻断）",
-   "created": "2026-10-12"
+   "created": "2026-10-12",
+   "project": "general"
   },
   {
    "id": "K-STOCK-211",
@@ -136,7 +151,8 @@
    "status": "doing",
    "owner": "Codex·A",
    "branch": "task/K-STOCK-211",
-   "created": "2026-10-12 23:30:24"
+   "created": "2026-10-12 23:30:24",
+   "project": "general"
   },
   {
    "id": "K-STOCK-212",
@@ -144,7 +160,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "task/K-STOCK-212",
-   "created": "2026-10-12 23:52:22"
+   "created": "2026-10-12 23:52:22",
+   "project": "general"
   },
   {
    "id": "K-STOCK-213",
@@ -152,7 +169,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "task/K-STOCK-213",
-   "created": "2026-10-13 00:58:18"
+   "created": "2026-10-13 00:58:18",
+   "project": "general"
   },
   {
    "id": "K-STOCK-222",
@@ -160,7 +178,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "task/K-STOCK-222",
-   "created": "2026-10-13 02:20:17"
+   "created": "2026-10-13 02:20:17",
+   "project": "general"
   },
   {
    "id": "K-STOCK-227",
@@ -168,7 +187,8 @@
    "status": "review",
    "owner": "Codex·主控",
    "branch": "task/K-STOCK-227",
-   "created": "2026-10-13 06:46:03"
+   "created": "2026-10-13 06:46:03",
+   "project": "general"
   },
   {
    "id": "K-ORG-015a",
@@ -176,7 +196,8 @@
    "status": "doing",
    "owner": "DEV1",
    "branch": "task/K-ORG-015a",
-   "created": "2026-10-13 07:07:39"
+   "created": "2026-10-13 07:07:39",
+   "project": "general"
   },
   {
    "id": "proj_c_nlq_001",
@@ -184,7 +205,8 @@
    "status": "doing",
    "owner": "PM1",
    "branch": "task/proj_c_nlq_001",
-   "created": "2026-10-13 07:24:46"
+   "created": "2026-10-13 07:24:46",
+   "project": "general"
   },
   {
    "id": "K-STOCK-307",
@@ -192,10 +214,107 @@
    "status": "doing",
    "owner": "unknown-agent",
    "branch": "task/K-STOCK-307",
-   "created": "2026-10-14 01:05:33"
+   "created": "2026-10-14 01:05:33",
+   "project": "general"
   }
  ],
  "coder_traces": [
+  {
+   "k_id": "K-ORG-056",
+   "actions": 16,
+   "kinds": {
+    "generate": 4,
+    "edit": 4,
+    "lint": 4,
+    "write": 2,
+    "integrity": 1,
+    "fail": 1
+   },
+   "last_ts": "02:23:54",
+   "last": "fail: gate 2 rounds: line 1: invalid syntax",
+   "events": [
+    {
+     "ts": "02:12:15",
+     "kind": "generate",
+     "detail": "morning_brief_v0 by DEV1 via anthropic(requested=anthropic actual=cloud)"
+    },
+    {
+     "ts": "02:12:15",
+     "kind": "edit",
+     "detail": "mode=whole"
+    },
+    {
+     "ts": "02:12:15",
+     "kind": "lint",
+     "detail": "PASS"
+    },
+    {
+     "ts": "02:12:15",
+     "kind": "write",
+     "detail": "tools/morning_brief.py 3037 chars"
+    },
+    {
+     "ts": "02:17:07",
+     "kind": "generate",
+     "detail": "morning_brief_v0_fix1 by DEV1 via anthropic(requested=anthropic actual=cloud)"
+    },
+    {
+     "ts": "02:17:07",
+     "kind": "edit",
+     "detail": "mode=whole"
+    },
+    {
+     "ts": "02:17:07",
+     "kind": "integrity",
+     "detail": "round1 blocked: 完整性FAIL: 产出533字 < 原文3037字*0.8(截水特征)"
+    },
+    {
+     "ts": "02:22:06",
+     "kind": "generate",
+     "detail": "morning_brief_v0_fix2 by DEV1 via anthropic(requested=anthropic actual=anthropic)"
+    },
+    {
+     "ts": "02:22:06",
+     "kind": "edit",
+     "detail": "mode=whole"
+    },
+    {
+     "ts": "02:22:06",
+     "kind": "lint",
+     "detail": "PASS"
+    },
+    {
+     "ts": "02:22:06",
+     "kind": "write",
+     "detail": "tools/morning_brief.py 8106 chars"
+    },
+    {
+     "ts": "02:22:50",
+     "kind": "generate",
+     "detail": "morning_brief_v0_fix3 by DEV1 via anthropic(requested=anthropic actual=anthropic)"
+    },
+    {
+     "ts": "02:22:50",
+     "kind": "edit",
+     "detail": "mode=whole"
+    },
+    {
+     "ts": "02:22:50",
+     "kind": "lint",
+     "detail": "round1 blocked: line 2: invalid syntax"
+    },
+    {
+     "ts": "02:23:29",
+     "kind": "lint",
+     "detail": "round2 blocked: line 1: invalid syntax"
+    },
+    {
+     "ts": "02:23:54",
+     "kind": "fail",
+     "detail": "gate 2 rounds: line 1: invalid syntax"
+    }
+   ]
+  },
   {
    "k_id": "K-ORG-043",
    "actions": 30,
@@ -492,184 +611,6 @@
      "detail": "609fe3f K-ORG-045: diff通道中性化 — by DEV2 via anthropic"
     }
    ]
-  },
-  {
-   "k_id": "K-ORG-044",
-   "actions": 32,
-   "kinds": {
-    "generate": 4,
-    "edit": 6,
-    "lint": 9,
-    "fail": 3,
-    "write": 4,
-    "smoke": 4,
-    "add": 1,
-    "commit": 1
-   },
-   "last_ts": "16:12:26",
-   "last": "commit: 3924d73 K-ORG-044: run()完整性断言闸门 — by DEV2 via anthropic",
-   "events": [
-    {
-     "ts": "15:12:45",
-     "kind": "generate",
-     "detail": "K-ORG-044 run()闸门栈完整性断言(whole截水防护) by DEV2 via anthropic"
-    },
-    {
-     "ts": "15:17:20",
-     "kind": "edit",
-     "detail": "mode=whole"
-    },
-    {
-     "ts": "15:17:20",
-     "kind": "lint",
-     "detail": "round1 blocked: line 41: expected an indented block after 'if' statement on line 38"
-    },
-    {
-     "ts": "15:22:07",
-     "kind": "lint",
-     "detail": "round2 blocked: line 41: expected an indented block after 'if' statement on line 38"
-    },
-    {
-     "ts": "15:27:21",
-     "kind": "fail",
-     "detail": "gate 2 rounds: line 37: expected an indented block after 'if' statement on line 35"
-    },
-    {
-     "ts": "15:28:04",
-     "kind": "generate",
-     "detail": "K-ORG-044 run()闸门栈完整性断言(whole截水防护) by DEV2 via anthropic"
-    },
-    {
-     "ts": "15:34:50",
-     "kind": "edit",
-     "detail": "mode=sr"
-    },
-    {
-     "ts": "15:34:50",
-     "kind": "lint",
-     "detail": "PASS"
-    },
-    {
-     "ts": "15:34:50",
-     "kind": "write",
-     "detail": "tools/agent_coder.py 21156 chars"
-    },
-    {
-     "ts": "15:34:51",
-     "kind": "smoke",
-     "detail": "round1 fail: gate_check FAIL: Traceback (most recent call last):\n  File \"E:\\老田的AI助手\\work\\korg044_gate_check.py\", line 25, in <module>\n    assert err and \"函数丢失\" "
-    },
-    {
-     "ts": "15:41:58",
-     "kind": "edit",
-     "detail": "mode=sr"
-    },
-    {
-     "ts": "15:41:58",
-     "kind": "lint",
-     "detail": "PASS"
-    },
-    {
-     "ts": "15:41:58",
-     "kind": "write",
-     "detail": "tools/agent_coder.py 21716 chars"
-    },
-    {
-     "ts": "15:42:00",
-     "kind": "smoke",
-     "detail": "round2 fail: gate_check FAIL: Traceback (most recent call last):\n  File \"E:\\老田的AI助手\\work\\korg044_gate_check.py\", line 25, in <module>\n    assert err and \"函数丢失\" "
-    },
-    {
-     "ts": "15:48:47",
-     "kind": "edit",
-     "detail": "mode=sr"
-    },
-    {
-     "ts": "15:48:47",
-     "kind": "lint",
-     "detail": "PASS"
-    },
-    {
-     "ts": "15:48:47",
-     "kind": "write",
-     "detail": "tools/agent_coder.py 20943 chars"
-    },
-    {
-     "ts": "15:48:48",
-     "kind": "smoke",
-     "detail": "round3 fail: gate_check FAIL: Traceback (most recent call last):\n  File \"E:\\老田的AI助手\\work\\korg044_gate_check.py\", line 25, in <module>\n    assert err and \"函数丢失\" "
-    },
-    {
-     "ts": "15:48:48",
-     "kind": "fail",
-     "detail": "smoke 3 rounds: gate_check FAIL: Traceback (most recent call last):\n  File \"E:\\老田的AI助手\\work\\korg044_gate_check.py\", line 25, in <module>\n    assert err and \"函数丢"
-    },
-    {
-     "ts": "15:54:03",
-     "kind": "generate",
-     "detail": "K-ORG-044 run()闸门栈完整性断言(whole截水防护) by DEV2 via cloud"
-    },
-    {
-     "ts": "15:55:59",
-     "kind": "edit",
-     "detail": "mode=whole"
-    },
-    {
-     "ts": "15:55:59",
-     "kind": "lint",
-     "detail": "round1 blocked: line 36: expected an indented block after 'if' statement on line 34"
-    },
-    {
-     "ts": "15:56:58",
-     "kind": "lint",
-     "detail": "round2 blocked: line 41: expected an indented block after 'if' statement on line 39"
-    },
-    {
-     "ts": "15:57:49",
-     "kind": "fail",
-     "detail": "gate 2 rounds: line 38: expected an indented block after 'if' statement on line 36"
-    },
-    {
-     "ts": "15:57:51",
-     "kind": "generate",
-     "detail": "K-ORG-044 run()闸门栈完整性断言(whole截水防护) by DEV2 via anthropic"
-    },
-    {
-     "ts": "16:04:12",
-     "kind": "edit",
-     "detail": "mode=whole"
-    },
-    {
-     "ts": "16:04:12",
-     "kind": "lint",
-     "detail": "round1 blocked: line 38: invalid character '（' (U+FF08)"
-    },
-    {
-     "ts": "16:12:14",
-     "kind": "lint",
-     "detail": "PASS"
-    },
-    {
-     "ts": "16:12:14",
-     "kind": "write",
-     "detail": "tools/agent_coder.py 20867 chars"
-    },
-    {
-     "ts": "16:12:18",
-     "kind": "smoke",
-     "detail": "PASS"
-    },
-    {
-     "ts": "16:12:18",
-     "kind": "add",
-     "detail": "tools/agent_coder.py"
-    },
-    {
-     "ts": "16:12:26",
-     "kind": "commit",
-     "detail": "3924d73 K-ORG-044: run()完整性断言闸门 — by DEV2 via anthropic"
-    }
-   ]
   }
  ],
  "code_files": [
@@ -946,6 +887,44 @@
     "DEV2",
     "PM1"
    ]
+  }
+ ],
+ "projects": [
+  {
+   "project_id": "quant",
+   "dept": "dev",
+   "name": "量化双刀",
+   "k_prefix": "K-STOCK",
+   "members": [
+    "DEV1",
+    "DEV5",
+    "QA2"
+   ],
+   "charter": "Scanner→Screener→Signal 流水线 + 合流主线（L1）",
+   "status": "active"
+  },
+  {
+   "project_id": "watchbot",
+   "dept": "dev",
+   "name": "盯盘机器人",
+   "k_prefix": "K-PUSH",
+   "members": [
+    "DEV2"
+   ],
+   "charter": "盯盘 quant_engine + 推送链（订阅/飞书/告警转发）",
+   "status": "active"
+  },
+  {
+   "project_id": "portal",
+   "dept": "dev",
+   "name": "AI 门户与组织平台",
+   "k_prefix": "K-ORG",
+   "members": [
+    "DEV3",
+    "SEC1"
+   ],
+   "charter": "portal/IDE/org 图/agent_platform 平台本体",
+   "status": "active"
   }
  ],
  "agents": {

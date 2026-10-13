@@ -264,6 +264,7 @@ def main():
                 "owner": t.get("owner", ""),
                 "branch": t.get("branch", ""),
                 "created": t.get("created", ""),
+                "project": t.get("project", "general"),  # K-ORG-057 项目线
             }
             workorders.append(wo)
             owner = t.get("owner", "")
@@ -309,6 +310,21 @@ def main():
         a0_review = {"date": os.path.basename(fp)[10:20],
                      "content": open(fp, encoding="utf-8", errors="replace").read()[:4000]}
 
+    # K-ORG-057：项目线注册表透传（项目线=工作区内二级维度，不另开工作区）
+    proj_path = os.path.join(REG, "projects.json")
+    projects = []
+    if os.path.exists(proj_path):
+        for pr in json.load(open(proj_path, encoding="utf-8")).get("projects", []):
+            projects.append({
+                "project_id": pr.get("project_id", ""),
+                "dept": pr.get("dept", ""),
+                "name": pr.get("name", pr.get("project_id", "")),
+                "k_prefix": pr.get("k_prefix", ""),
+                "members": pr.get("members", []),
+                "charter": pr.get("charter", ""),
+                "status": pr.get("status", "active"),
+            })
+
     bundle = {
         "generated": time.strftime("%Y-%m-%d %H:%M"),
         "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
@@ -326,6 +342,7 @@ def main():
         "a0_daily": a0_daily,      # 最近一期 A0 日报（只读快照）
         "a0_review": a0_review,    # 最近一期 A0 点评（只读快照）
         "departments": departments,
+        "projects": projects,  # K-ORG-057 项目线（IDE 工作区内 chips）
         "agents": agents,
     }
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:

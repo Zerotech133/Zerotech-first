@@ -457,6 +457,80 @@ def audit_log(n, written):
     return rec
 
 
+# ── K-ORG-057：项目线注册（工作区内二级维度；与部门注册同构） ──
+PROJ_REG = os.path.join(REG, "projects.json")
+
+
+def project_validate(p):
+    """表单 → 校验。返回 (err, normalized)。"""
+    dept = (p.get("dept") or "").strip()
+    pid = (p.get("project_id") or "").strip().lower()
+    name = (p.get("name") or "").strip()
+    k_prefix = (p.get("k_prefix") or "").strip().upper()
+    members = [m.strip().upper() for m in (p.get("members") or []) if m.strip()]
+    charter = (p.get("charter") or "").strip()
+    if not pid or not re.fullmatch(r"[a-z][a-z0-9_]{1,23}", pid):
+        return "项目线 id 须为小写字母开头的 2~24 位 [a-z0-9_]（如 quant）", None
+    if not name or len(name) < 2:
+        return "项目线名称至少 2 个字", None
+    if k_prefix and not re.fullmatch(r"K-[A-Z0-9]{2,8}", k_prefix):
+        return "k 前缀形如 K-STOCK（K- 加 2~8 位大写字母数字）", None
+    agents, _, org = load_registry()
+    if dept not in [d.get("dept") for d in org.get("departments", [])]:
+        return "部门 %s 不存在（先建部门）" % dept, None
+    known = set(agents.keys())
+    bad = [m for m in members if m not in known]
+    if bad:
+        return "成员工号未注册: %s" % ", ".join(bad), None
+    try:
+        existing = json.load(open(PROJ_REG, encoding="utf-8")).get("projects", [])
+    except Exception:  # noqa: BLE001
+        existing = []
+    for pr in existing:
+        if pr.get("project_id") == pid:
+            return "项目线 %s 已存在（%s·%s）" % (
+                pid, pr.get("name", "?"), "活跃" if pr.get("status", "active") == "active" else "已归档"), None
+    n = {"kind": "project", "project_id": pid, "dept": dept, "name": name,
+         "k_prefix": k_prefix, "members": members, "charter": charter}
+    steps = [
+        {"action": "write", "path": "agent_platform/registry/projects.json",
+         "what": "登记项目线 %s（%s·%s·成员 %d 人）挂在部门 %s"
+                 % (pid, name, k_prefix or "无独立前缀", len(members), dept)},
+        {"action": "rebake", "path": "portal/agent_ide_bundle.json",
+         "what": "重烘 bundle → IDE 该部门工作区顶栏自动出现项目线芯片"},
+    ]
+    return None, {"n": n, "plan": steps}
+
+
+def project_apply(n):
+    try:
+        data = json.load(open(PROJ_REG, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        data = {"projects": []}
+    data.setdefault("projects", []).append({
+        "project_id": n["project_id"], "dept": n["dept"], "name": n["name"],
+        "k_prefix": n["k_prefix"], "members": n["members"],
+        "charter": n["charter"], "status": "active",
+        "created": time.strftime("%F"),
+        "source": "org-chart 注册（operator=laotian）",
+    })
+    data["updated"] = time.strftime("%F")
+    os.makedirs(os.path.dirname(PROJ_REG), exist_ok=True)
+    with open(PROJ_REG, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+    _rebake_and_reexport()
+    rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+           "operator": "laotian@org-chart", "kind": "project",
+           "agent_id": None, "dept": n["dept"], "project_id": n["project_id"],
+           "grade": None, "model": None,
+           "files": ["agent_platform/registry/projects.json",
+                     "portal/agent_ide_bundle.json"]}
+    os.makedirs(os.path.dirname(AUDIT), exist_ok=True)
+    with open(AUDIT, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    return rec
+
+
 class Handler(BaseHTTPRequestHandler):
     def _json(self, code, obj):
         body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -502,7 +576,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path not in ("/api/preview", "/api/register",
-                             "/api/agent/update", "/api/agent/learn"):
+                             "/api/agent/update", "/api/agent/learn",
+                             "/api/project/preview", "/api/project/register"):
             self._json(404, {"ok": False, "error": "not found"})
             return
         try:
@@ -521,6 +596,18 @@ class Handler(BaseHTTPRequestHandler):
                 err, result = agent_learn(p)
                 self._json(400 if err else 200,
                            {"ok": not err, **({"error": err} if err else result)})
+                return
+            if self.path in ("/api/project/preview", "/api/project/register"):
+                err, pv = project_validate(p)   # K-ORG-057 项目线注册
+                if err:
+                    self._json(400, {"ok": False, "error": err})
+                    return
+                if self.path.endswith("/preview"):
+                    self._json(200, {"ok": True, "mode": "preview", "plan": pv["plan"]})
+                    return
+                rec = project_apply(pv["n"])
+                self._json(200, {"ok": True, "mode": "registered",
+                                 "audit": rec, "plan": pv["plan"]})
                 return
             err, n = validate(p)
             if err:

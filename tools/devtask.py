@@ -23,6 +23,27 @@ import time
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WT_DIR = os.path.join(REPO, ".worktrees")
 TASKS = os.path.join(WT_DIR, "tasks.json")
+PROJECTS = os.path.join(REPO, "agent_platform", "registry", "projects.json")
+
+
+def _load_projects():
+    """K-ORG-057：项目线注册表（缺文件/坏 JSON 一律降级为空，不挡道）。"""
+    try:
+        return json.load(open(PROJECTS, encoding="utf-8")).get("projects", [])
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _resolve_project(pid):
+    """校验项目线：未注册/已归档 → 拒收（判据3：跨线工单必须显式声明合法 project）。"""
+    for pr in _load_projects():
+        if pr.get("project_id") == pid:
+            if pr.get("status", "active") != "active":
+                raise SystemExit("项目线 %s 已归档（archived）——新工单拒收，请选活跃线或先在组织图恢复" % pid)
+            return pr
+    raise SystemExit("项目线 %s 未注册——拒收。先在组织图部门卡「+ 子项目」注册，"
+                     "或用已注册线：%s" % (pid, ", ".join(
+                         p.get("project_id", "?") for p in _load_projects()) or "（无）"))
 
 
 def _emit(kind, task, detail=""):
@@ -76,6 +97,20 @@ def _save(tasks):
 
 
 def cmd_new(tid, *desc):
+    # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
+    # 保兼容；判据3的「拒收」落在「声明了但不存在的线」上）
+    desc = list(desc)
+    project = "general"
+    if "--project" in desc:
+        i = desc.index("--project")
+        if i + 1 >= len(desc):
+            raise SystemExit("--project 需要跟项目线 id（如 --project quant）")
+        project = desc.pop(i + 1)
+        desc.pop(i)
+        _resolve_project(project)  # 未注册/已归档 → SystemExit 拒收
+    elif desc:
+        print("[warn] 未声明 --project，归入 general 线（建议显式带线："
+              "new %s --project <pid> ...）" % tid)
     desc = " ".join(desc) or "(无描述)"
     tasks = _tasks()
     if tid in tasks:
@@ -85,11 +120,13 @@ def cmd_new(tid, *desc):
     _git("worktree", "add", wt, "-b", branch)
     tasks[tid] = {"desc": desc, "branch": branch, "worktree": wt,
                   "status": "doing", "created": time.strftime("%F %T"),
+                  "project": project,
                   "owner": os.environ.get("AGENT_NAME", "unknown-agent")}
     _save(tasks)
-    _emit("task_start", tid, "%s（owner=%s）" % (desc, tasks[tid]["owner"]))
-    print("工单 %s 已开：%s（分支 %s）owner=%s"
-          % (tid, desc, branch, tasks[tid]["owner"]))
+    _emit("task_start", tid, "%s（owner=%s·project=%s）"
+          % (desc, tasks[tid]["owner"], project))
+    print("工单 %s 已开：%s（分支 %s）owner=%s project=%s"
+          % (tid, desc, branch, tasks[tid]["owner"], project))
     print("→ Agent 请 cd %s 内干活，完工跑 devtask.py merge %s" % (wt, tid))
     return 0
 
@@ -104,19 +141,31 @@ def _ahead_behind(branch):
         return 0, 0
 
 
-def cmd_list():
+def cmd_list(*args):
+    # K-ORG-057：--project <pid> 按线过滤；project 列入表
+    proj_filter = None
+    args = list(args)
+    if "--project" in args:
+        i = args.index("--project")
+        proj_filter = args[i + 1] if i + 1 < len(args) else None
+        args = args[:i] + args[i + 2:]
     tasks = _tasks()
-    print("%-10s %-8s %-22s %-28s %s" %
-          ("工单", "状态", "owner/分支", "描述", "ahead/behind·末提交"))
+    if proj_filter:
+        tasks = {k: v for k, v in tasks.items()
+                 if v.get("project", "general") == proj_filter}
+        print("（过滤：project=%s）" % proj_filter)
+    print("%-10s %-8s %-10s %-20s %-24s %s" %
+          ("工单", "状态", "项目线", "owner/分支", "描述", "ahead/behind·末提交"))
     for tid, t in sorted(tasks.items()):
         ahead, behind = _ahead_behind(t["branch"])
         try:
             last = _git("log", "-1", "--format=%ar", t["branch"])
         except SystemExit:
             last = "?"
-        print("%-10s %-8s %-22s %-28s +%d/-%d · %s"
-              % (tid, t["status"], t["owner"][:9] + "/" + t["branch"][5:19],
-                 t["desc"][:26], ahead, behind, last))
+        print("%-10s %-8s %-10s %-20s %-24s +%d/-%d · %s"
+              % (tid, t["status"], t.get("project", "general")[:8],
+                 t["owner"][:8] + "/" + t["branch"][5:15],
+                 t["desc"][:22], ahead, behind, last))
     if not tasks:
         print("（无任务单——先 devtask.py new）")
     return 0
@@ -246,7 +295,7 @@ def main():
         return 0
     c, rest = a[0], a[1:]
     return {"new": lambda: cmd_new(*rest),
-            "list": cmd_list,
+            "list": lambda: cmd_list(*rest),
             "port": lambda: cmd_port(*rest),
             "merge": lambda: cmd_merge(*rest),
             "drop": lambda: cmd_drop(*rest),

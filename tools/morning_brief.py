@@ -40,6 +40,8 @@ EVENTS_PATH: Path = REPO_ROOT / "portal" / "data" / "dev_events.jsonl"
 BASELINE_PATH: Path = REPO_ROOT / "agent_platform" / "registry" / "org_baseline.json"
 SEC2_DIR: Path = REPO_ROOT / "agent_platform" / "data" / "sec2"
 BRIEF_OUT_DIR: Path = REPO_ROOT / "agent_platform" / "data" / "morning_brief"
+PROJ_PATH: Path = REPO_ROOT / "agent_platform" / "registry" / "projects.json"  # K-ORG-057
+TASKS_PATH: Path = REPO_ROOT / ".worktrees" / "tasks.json"
 
 EVENT_KINDS = ("approval_request", "approval_verdict", "deviation_report",
                "task_start", "commit")
@@ -122,6 +124,53 @@ def load_sec2_stat() -> str:
         return "无近期走查（sec2 目录缺失或不可读，已降级）"
 
 
+def load_proj_board() -> str:
+    """K-ORG-057：活跃工单按项目线分组（projects.json + tasks.json 只读投影）。"""
+    try:
+        proj = json.loads(PROJ_PATH.read_text(encoding="utf-8")).get("projects", [])
+    except Exception as exc:  # noqa: BLE001
+        _warn(f"load_proj_board projects failed: {exc!r}")
+        return "（项目线注册表读不到——占位）"
+    try:
+        tasks = json.loads(TASKS_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        _warn(f"load_proj_board tasks failed: {exc!r}")
+        tasks = {}
+    act = {t: d for t, d in tasks.items()
+           if d.get("status") in ("doing", "review")}
+    if not act:
+        return "（无活跃工单）"
+    prefix_map = [(p.get("k_prefix", ""), p.get("project_id"))
+                  for p in proj if p.get("k_prefix")]
+
+    def _line_of(tid: str, d: dict) -> str:
+        pid = d.get("project")
+        if pid and pid != "general":
+            return pid
+        for kp, prid in prefix_map:      # 老单按 k_id 前缀归线
+            if kp and tid.startswith(kp):
+                return prid
+        return "general"
+
+    by_proj: dict[str, list[str]] = {}
+    for tid, d in sorted(act.items()):
+        pid = _line_of(tid, d)
+        by_proj.setdefault(pid, []).append(
+            "- %s [%s] @%s：%s" % (tid, d.get("status"), d.get("owner", "?"),
+                                   str(d.get("desc", ""))[:60]))
+    names = {p.get("project_id"): p.get("name", p.get("project_id"))
+             for p in proj}
+    lines = []
+    for pid in sorted(by_proj):
+        label = "%s（%s）" % (pid, names.get(pid, "?")) if pid in names else pid
+        lines.append("**%s** %d 单" % (label, len(by_proj[pid])))
+        lines.extend(by_proj[pid])
+    general = [l for pid, ls in by_proj.items() if pid == "general" for l in ls]
+    if general:
+        lines.append("> 未带线的 general 单建议尽快显式归线（devtask new --project）")
+    return "\n".join(lines)
+
+
 def render(day: str, brief_out: str | None) -> str:
     lines = ["# 晨会三件套（%s）" % day, ""]
     lines.append("- 生成时间：%s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -145,6 +194,9 @@ def render(day: str, brief_out: str | None) -> str:
                     r.get("agent", "-"), str(r.get("detail", ""))[:120]))
         else:
             lines.append("当日无五类事件记录。")
+    lines.append("")
+    lines.append("## 工单看板（按项目线分组）")
+    lines.append(load_proj_board())
     lines.append("")
     lines.append("## 今日分发清单")
     lines.append("org_baseline 批状态（pending 项即今日待分发）：")

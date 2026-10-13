@@ -86,6 +86,7 @@ textarea{resize:vertical;min-height:56px}
   <div>
     <button class="btn primary" id="btnAddAgent">➕ 新增 AI</button>
     <button class="btn" id="btnAddDept">🏢 新增部门</button>
+    <button class="btn" id="btnAddProj">📂 新增子项目</button>
     <button class="btn" id="btnReload">🔄 刷新</button>
   </div>
 </div>
@@ -157,6 +158,18 @@ textarea{resize:vertical;min-height:56px}
     </div>
     <label>部门职责（一句话）</label><input type="text" id="fDc2">
   </div>
+  <div id="fProjOnly" style="display:none">
+    <label>挂在哪个部门下（工作区内二级维度，不另开工作区）</label><select id="fPDept"></select>
+    <div class="frow">
+      <div><label>项目线 id（小写，如 quant）</label><input type="text" id="fPid" placeholder="quant"></div>
+      <div><label>项目线名称</label><input type="text" id="fPn" placeholder="如 量化双刀"></div>
+    </div>
+    <div class="frow">
+      <div><label>k 前缀（K 编号归线，如 K-STOCK，可空）</label><input type="text" id="fPk" placeholder="K-XXXX"></div>
+      <div><label>成员工号（逗号分隔，需已注册）</label><input type="text" id="fPm" placeholder="DEV1,DEV5"></div>
+    </div>
+    <label>项目线职责（一句话）</label><input type="text" id="fPc">
+  </div>
   <div class="err" id="fErr"></div>
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
     <button class="btn" onclick="ui('mForm',0)">取消</button>
@@ -210,7 +223,7 @@ function render(){
     var t=$("auditTbl");t.style.display="table";
     AUDIT.forEach(function(r){
       var tr=t.insertRow(-1);
-      tr.innerHTML="<td>"+esc(r.ts)+"</td><td>"+esc(r.kind)+"</td><td><b>"+esc(r.agent_id||r.dept)+"</b> @"+esc(r.dept||"")
+      tr.innerHTML="<td>"+esc(r.ts)+"</td><td>"+esc(r.kind)+"</td><td><b>"+esc(r.agent_id||r.project_id||r.dept)+"</b> @"+esc(r.dept||"")
         +"</td><td>"+esc(r.grade||"-")+"</td><td>"+((r.files||[]).length)+" 个文件</td>";
     });
   }
@@ -318,6 +331,13 @@ function payload(kind){
     p.grade=$("fGrade").value;p.model=$("fModel").value;p.tool_preset=$("fTool").value;
     p.charter=($("fCharter").value||"").trim();
     p.persona=($("fPersona").value||"").trim();
+  }else if(kind==="project"){
+    p.dept=($("fPDept").value||"").trim();
+    p.project_id=($("fPid").value||"").trim();
+    p.name=($("fPn").value||"").trim();
+    p.k_prefix=($("fPk").value||"").trim();
+    p.members=($("fPm").value||"").split(/[,，]/).map(function(s){return s.trim()}).filter(Boolean);
+    p.charter=($("fPc").value||"").trim();
   }else{
     p.dept=($("fD2").value||"").trim();
     p.dept_name=($("fDn2").value||"").trim();
@@ -330,12 +350,18 @@ function post(path,p,cb){
     .then(function(r){return r.json().then(function(j){cb(j,r.status)})})
     .catch(function(e){cb({ok:false,error:String(e)},0)});
 }
-var PENDING=null;
+var PENDING=null, FMODE="agent";
+function formMode(){
+  if($("fProjOnly").style.display!=="none") return "project";
+  if($("fDeptOnly").style.display!=="none") return "dept";
+  return "agent";
+}
 function doPreview(){
   $("fErr").textContent="";
-  var kind=$("fDeptOnly").style.display!=="none"?"dept":"agent";
+  var kind=formMode();
   var p=payload(kind);PENDING=p;
-  post("/api/preview",p,function(j){
+  var path = kind==="project" ? "/api/project/preview" : "/api/preview";
+  post(path,p,function(j){
     if(!j.ok){$("fErr").textContent=j.error||"校验失败";return}
     ui("mForm",0);ui("mPlan",1);
     $("planBody").innerHTML=j.plan.map(function(x){
@@ -346,11 +372,13 @@ function doPreview(){
 function doRegister(){
   if(!PENDING)return;
   $("btnDoRegister").disabled=true;
-  post("/api/register",PENDING,function(j){
+  var path = formMode()==="project" ? "/api/project/register" : "/api/register";
+  post(path,PENDING,function(j){
     $("btnDoRegister").disabled=false;
     if(!j.ok){$("pErr").textContent=j.error||"落盘失败";return}
     ui("mPlan",0);PENDING=null;
-    toast("✅ 注册落盘成功，在编 "+j.headcount+" 岗（git 提交按产线纪律出 K 号）");
+    toast("✅ 注册落盘成功"+(j.headcount?"，在编 "+j.headcount+" 岕":"（项目线已挂部门工作区）")
+      +"（git 提交按产线纪律出 K 号）");
     load();
   });
 }
@@ -364,13 +392,24 @@ $("fDept").addEventListener("change",function(){
 });
 $("btnAddAgent").addEventListener("click",function(){
   $("fmTitle").firstChild.textContent="➕ 新增 AI";
-  $("fAgent").style.display="block";$("fDeptOnly").style.display="none";
+  $("fAgent").style.display="block";$("fDeptOnly").style.display="none";$("fProjOnly").style.display="none";
   $("fErr").textContent="";$("btnPreview").style.display="inline-block";
   ui("mForm",1);
 });
 $("btnAddDept").addEventListener("click",function(){
   $("fmTitle").firstChild.textContent="🏢 新增部门";
-  $("fAgent").style.display="none";$("fDeptOnly").style.display="block";
+  $("fAgent").style.display="none";$("fDeptOnly").style.display="block";$("fProjOnly").style.display="none";
+  $("fErr").textContent="";$("btnPreview").style.display="inline-block";
+  ui("mForm",1);
+});
+$("btnAddProj").addEventListener("click",function(){
+  $("fmTitle").firstChild.textContent="📂 新增子项目（项目线）";
+  $("fAgent").style.display="none";$("fDeptOnly").style.display="none";$("fProjOnly").style.display="block";
+  /* 部门下拉与 fDept 同源（render() 已填），排除 __new__ 与 chief（项目线挂职能部/项目部） */
+  var sel=$("fPDept");sel.innerHTML="";
+  Array.prototype.forEach.call($("fDept").options,function(o){
+    if(o.value!=="__new__"&&o.value!=="chief"){var n=document.createElement("option");n.value=o.value;n.textContent=o.textContent;sel.appendChild(n)}
+  });
   $("fErr").textContent="";$("btnPreview").style.display="inline-block";
   ui("mForm",1);
 });
