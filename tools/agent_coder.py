@@ -340,6 +340,7 @@ def commit_work(out_path, k_id, agent_id, label, channel=None, dry_run=False):
     if r.returncode != 0:
         trace_log(k_id, "fail", "git add: " + (r.stderr or r.stdout or "")[:100])
         return False, "git add: " + (r.stderr or r.stdout or "")[:120]
+    trace_log(k_id, "add", out_path)  # 037: add 成功也留痕（回放序列完整）
     cmd = ["git", "commit"]
     if dry_run:
         cmd.append("--dry-run")
