@@ -132,6 +132,9 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>个股止损%（0关）</label><input name="stop_pct" type="number" value="0" min="-50" max="0"></div>
   <div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>
   <div class="fld"><label>开新仓闸门</label><select name="gate_mode" id="gate-mode"><option value="off">不设闸（默认）</option><option value="weak">弱市闸门：指数&lt;MA60 不开新仓</option><option value="high">高位限定：仅指数≥MA20 开新仓（291 包 C）</option></select></div>
+  <div class="fld"><label>涨跌停成交检查</label><select name="limit_check"><option value="false">关（默认）</option><option value="true">开：涨停买不进/跌停卖不出（智策对照）</option></select></div>
+  <div class="fld"><label>移动止损启动浮盈%(0关)</label><input name="trail_activate" type="number" value="0" min="0" max="50" step="0.5"></div>
+  <div class="fld"><label>移动止损峰值回撤%</label><input name="trail_drawdown" type="number" value="0" min="0" max="50" step="0.5"></div>
   <input type="hidden" name="regime_gate" value="false">
 </div>
 <div class="note">清仓条件（满足其一即 T+1 开盘卖出）：① 三买失效——收盘跌破买入时的中枢上沿×(1−缓冲)；② 缠论卖点确认（一卖/二卖/三卖）；③ 个股止损（0=关，269 实锤止损负贡献默认关）；④ 持有超上限（0=不限）。另有组合层清仓：regime 降档导致超帽 → 收盘等比减仓。</div></div>
@@ -202,7 +205,7 @@ slotMode.onchange=slotSync; slotSync();
 document.getElementById("f").onsubmit=async e=>{
   e.preventDefault();
   const fd=new FormData(e.target), o={};
-  const PCT=new Set(["slot_pct","runup_cap","stop_pct","fail_buffer","cap_high","cap_mid","cap_low","cap_fixed","slot_min","slot_max"]);
+  const PCT=new Set(["slot_pct","runup_cap","stop_pct","fail_buffer","cap_high","cap_mid","cap_low","cap_fixed","slot_min","slot_max","trail_activate","trail_drawdown"]);
   const INT=new Set(["top_n","holding_max_days","sig_expiry","min_score"]);
   fd.forEach((v,k)=>{o[k]= PCT.has(k)?(+v)/100 : INT.has(k)?+v : v;});
   const r=await fetch("/api/bt2_run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)}).then(x=>x.json()).catch(err=>({ok:false,error:String(err)}));

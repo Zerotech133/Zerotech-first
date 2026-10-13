@@ -369,6 +369,10 @@ class BacktestConfig:
     stop_pct: float = 0.0
     rebalance_every: int = 0
     cost: float = COST
+    # 智策对照移植（K-STOCK-305）：涨跌停可成交性 + 移动止损（默认关=行为不变）
+    limit_check: bool = False        # 涨停开盘买不进/跌停开盘卖不出（智策 market_rules.can_buy/can_sell 同源思想）
+    trail_activate: float = 0.0      # 移动止损启动浮盈（0=关；智策 CHAN 族 0.05）
+    trail_drawdown: float = 0.0      # 启动后自峰值回落此幅度离场（智策 CHAN 族 0.035）
 
     def cap_of(self, regime_lv):
         """总仓位帽：fixed=固定值；regime=按三档映射（档位可配，不再写死 80/50/30）。"""
@@ -429,6 +433,13 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
             if o is None:
                 still.add(s)
                 continue
+            if cfg.limit_check and prev_day:
+                pc = px(s, prev_day, "close")
+                if pc and o <= pc * 0.905:
+                    still.add(s)
+                    actions.append({"type": "note", "stock": s,
+                                    "note": f"跌停开盘卖不出（较昨收{(o/pc-1)*100:.1f}%）→顺延"})
+                    continue
             val_exit = p["val"] * o / p["ref_px"]
             pnl = val_exit / p["cost"] - 1
             cash += val_exit * (1 - cfg.cost)
@@ -438,6 +449,10 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                 actions.append({"type": "sell", "stock": s, "note": "三买失效离场（T+1 开盘）",
                                 "pnl_pct": round(pnl * 100, 2)})
                 rec(day, "SELL", s, "3b_fail", pnl)
+            elif why == "trail_stop":
+                actions.append({"type": "sell", "stock": s, "note": "移动止损离场（T+1 开盘）",
+                                "pnl_pct": round(pnl * 100, 2)})
+                rec(day, "SELL", s, "trail_stop", pnl)
             else:
                 actions.append({"type": "sell", "stock": s, "note": "T+1 开盘离场",
                                 "pnl_pct": round(pnl * 100, 2)})
@@ -492,6 +507,13 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                     actions.append({"type": "skip", "stock": s,
                                     "note": f"runup帽：开盘较昨收 +{(o/c_prev-1)*100:.1f}% >{cfg.runup_cap:.0%}，放弃（评分{sc if sc is not None else '-'}）"})
                     continue
+            if cfg.limit_check and prev_day:
+                c_p = px(s, prev_day, "close")
+                if c_p and o >= c_p * 1.095:
+                    still[s] = added       # 涨停开盘买不进（现实中无卖盘）→顺延，信号未过期
+                    actions.append({"type": "note", "stock": s,
+                                    "note": f"涨停开盘买不进（较昨收+{(o/c_p-1)*100:.1f}%）→顺延（评分{sc if sc is not None else '-'}）"})
+                    continue
             # 单票仓位（297 三模式）：fixed=固定 X%；random=区间均匀随机（固定种子可复现）；
             # score=评分权重（该票评分/当日候选评分和 × 总仓位帽，评分越高仓位越大）
             if cfg.slot_mode == "random":
@@ -511,7 +533,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
             fz = zg_pending.pop(s, None)
             score_pending.pop(s, None)
             pos[s] = {"val": amt * (1 - cfg.cost), "cost": amt * (1 - cfg.cost), "ref_px": o,
-                      "fz": fz, "score": sc}
+                      "fz": fz, "score": sc, "entry_px": o}
             holding_since[s] = di
             deployed += amt; n_buy_today += 1
             actions.append({"type": "buy", "stock": s,
@@ -563,6 +585,28 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                 if s in pos:
                     pending_sell.add(s)
                     actions.append({"type": "note", "stock": s, "note": "卖点确认→明日开盘卖"})
+            # 移动止损（智策对照移植·CHAN 族 5%启动/3.5%跟随）：浮盈达标布防→自峰值回撤即离场。
+            # 解「三卖等不到」（291 闭环率 1/634）——利润兑现不依赖缠论三卖出现。
+            if cfg.trail_activate > 0 and cfg.trail_drawdown > 0:
+                for s in list(pos):
+                    p = pos[s]
+                    c = px(s, day, "close")
+                    if c is None:
+                        continue
+                    ep = p.get("entry_px") or p["ref_px"]
+                    if not p.get("trail_armed"):
+                        if c / ep - 1 >= cfg.trail_activate:
+                            p["trail_armed"] = True
+                            p["peak_px"] = c
+                            actions.append({"type": "note", "stock": s,
+                                            "note": f"浮盈{(c/ep-1)*100:.1f}%≥{cfg.trail_activate:.0%}·移动止损布防（峰值{c:.2f}）"})
+                    if p.get("trail_armed"):
+                        p["peak_px"] = max(p.get("peak_px") or c, c)
+                        if c <= p["peak_px"] * (1 - cfg.trail_drawdown) and s not in pending_sell:
+                            pending_sell.add(s)
+                            pos[s]["exit_why"] = "trail_stop"
+                            actions.append({"type": "note", "stock": s,
+                                            "note": f"移动止损：自峰值回落{(1-c/p['peak_px'])*100:.1f}%≥{cfg.trail_drawdown:.0%}→明日开盘卖"})
             for s in sorted(sig_buy.get(day, set())):
                 m_s = (sig_meta or {}).get(day, {}).get(s) or {}
                 if min_score > 0:
@@ -666,7 +710,8 @@ DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
             "holding_max_days": 0, "buy_filter": "3", "universe": "market",
             "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0,
-            "gate_mode": "off", "min_score": 0}
+            "gate_mode": "off", "min_score": 0,
+            "limit_check": False, "trail_activate": 0.0, "trail_drawdown": 0.0}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
@@ -695,6 +740,10 @@ def run_job(params: dict, job_id: str, progress=None):
                 return float(p.get(k) or dflt)
             except (TypeError, ValueError):
                 return dflt
+        _lc = p.get("limit_check")
+        _limit_check = _lc is True or (isinstance(_lc, str) and _lc.strip().lower() in ("true", "1", "yes"))
+        _trail_act = max(0.0, min(0.5, _r("trail_activate", 0.0)))
+        _trail_dd = max(0.0, min(0.5, _r("trail_drawdown", 0.0)))
         cfg = BacktestConfig(
             name={"chanlun": "缠论等机会轮动", "double_knife": "量子双刀日内纪律"}[strategy],
             strategy=strategy, d0=d0, d1=d1,
@@ -714,6 +763,9 @@ def run_job(params: dict, job_id: str, progress=None):
             sig_expiry=max(0, min(60, int(p.get("sig_expiry") or 0))),
             runup_cap=float(p["runup_cap"] or 0) if strategy == "chanlun" else 0.0,
             stop_pct=float(p["stop_pct"] or 0),
+            limit_check=_limit_check,
+            trail_activate=_trail_act,
+            trail_drawdown=_trail_dd,
         )
         if progress:
             progress("信号", 10, f"计算信号：{cfg.name} {d0}→{d1}（universe={universe}）")
@@ -762,6 +814,8 @@ def run_job(params: dict, job_id: str, progress=None):
                               min_score=max(0, min(100, int(p.get("min_score") or 0))))
         result["meta"]["gate_mode"] = gate_mode
         result["meta"]["min_score"] = max(0, min(100, int(p.get("min_score") or 0)))
+        result["meta"]["limit_check"] = _limit_check
+        result["meta"]["trail"] = [_trail_act, _trail_dd] if _trail_act > 0 and _trail_dd > 0 else None
         result["meta"]["signal_source"] = src
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
@@ -873,6 +927,12 @@ if __name__ == "__main__":
                     help="开新仓闸门：off=不设 / weak=池指数<MA60不开 / high=仅池指数≥MA20开(301)")
     ap.add_argument("--min-score", type=int, default=0,
                     help="评分门槛：三买评分(0-100)低于此值不入场(0=不限·303)")
+    ap.add_argument("--limit-check", default="false", choices=["true", "false"],
+                    help="涨跌停可成交检查：涨停开盘买不进/跌停开盘卖不出(智策对照·305)")
+    ap.add_argument("--trail-activate", type=float, default=0.0,
+                    help="移动止损启动浮盈(0=关·智策CHAN族0.05·305)")
+    ap.add_argument("--trail-drawdown", type=float, default=0.0,
+                    help="移动止损峰值回撤幅(智策CHAN族0.035·305)")
     ap.add_argument("--fail-buffer", type=float, default=0.0,
                     help="失效线缓冲：收盘跌破 zg*(1-buffer) 才算失效(默认0·降噪用)")
     ap.add_argument("--job-id", default=None)

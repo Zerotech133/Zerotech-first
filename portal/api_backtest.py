@@ -5014,6 +5014,10 @@ def _bt2_start(rec):
         "gate_mode": rec.get("gate_mode") if rec.get("gate_mode") in ("off", "weak", "high") else "off",
         # 评分门槛（K-STOCK-303）：三买评分低于此值不入场，0=不限（量能/背驰过滤落地形态）
         "min_score": _intv("min_score", 0, 100, 0),
+        # 智策对照移植（K-STOCK-305）：涨跌停可成交检查 + 移动止损
+        "limit_check": "true" if str(rec.get("limit_check", "")).strip().lower() in ("true", "1", "yes") else "false",
+        "trail_activate": _ratio("trail_activate", 0, 0.5, 0.0),
+        "trail_drawdown": _ratio("trail_drawdown", 0, 0.5, 0.0),
         "runup_cap": _ratio("runup_cap", 0, 0.5, 0.15 if strategy == "chanlun" else 0),
         "stop_pct": _ratio("stop_pct", -0.5, 0, 0.0),
         "holding_max_days": _intv("holding_max_days", 0, 60, 5 if strategy == "double_knife" else 0),
