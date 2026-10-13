@@ -8,8 +8,15 @@ K-ORG-033 云端化（老田 10-13 10:28 指令：写代码的全部调用云端
   backend = "cloud"  智谱开放平台 API（GLM_API_KEY，免费档 glm-4-flash 实测 0.4s；
                      付费旗舰 4.5/4.6/4.7 余额不足 code 1113，充值后改 MODEL 即用）
            = "ollama" 本地 9b（60s 级，作离线兜底）
-  CODER_BACKEND 环境变量可切，默认 cloud。
   Claude Code CLI(2.1.83 已装) 留给 worker/调度侧——本会话沙箱拦其内部 spawn(reg.exe)。
+
+K-ORG-050 默认档切换（老田 10-14 01:07 拍板：千问本地跑不动敲代码，产线用智谱
+包年 Coding Plan 的 glm-4.6）：
+  CODER_BACKEND 默认 "anthropic"（包年端点 glm-4.6·USER 级 GLM_API_KEY 已持久
+  注入，调度子进程自动继承）。降级链不变：anthropic → cloud → ollama。
+  ⚠️ 套餐合规边界（038 判例）：仅限 AI 编程工具类用途——编码产线正是此列；
+  通用 API 场景勿用套餐 Key。积分预算：单工单 ~3K in + 1K out ≈ 4~5 积分
+  （Lite 2000 积分/5h 窗口可跑约 400 单，10-13 实测口径）。
 
 K-ORG-035/036 F1 通道合流（蓝图 docs/plans/2026-10-13_105000_）：
   backend = "claude_glm"  Claude Code CLI headless × 智谱 Anthropic 兼容端点
@@ -174,7 +181,8 @@ def chat(agent_id, task, timeout=420, num_ctx=6144):
 
 
 def backend():
-    return os.environ.get("CODER_BACKEND", "cloud")
+    # K-ORG-050：默认 anthropic（智谱包年 Coding Plan glm-4.6）——本地千问跑不动敲代码
+    return os.environ.get("CODER_BACKEND", "anthropic")
 
 
 # ---------- F3: 编辑协议 + lint 门（K-ORG-035 批F·借 Aider/SWE-agent 范式） ----------
