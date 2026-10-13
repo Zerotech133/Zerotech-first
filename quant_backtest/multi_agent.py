@@ -77,11 +77,14 @@ SPECIALISTS = {
                   "与偏性），不要再调用工具",
     },
     "data_lookup": {
-        "desc": "数据中台读层/表新鲜度/可用性/全仓健康",
-        "tools": ["stock_info", "datamart_read", "datamart_latest",
-                  "datamart_ready", "data_health"],
+        "desc": "数据中台读层/表新鲜度/可用性/全仓健康/市场总量",
+        "tools": ["stock_info", "market_snapshot", "datamart_read",
+                  "datamart_latest", "datamart_ready", "data_health"],
         "system": "你是数据查数 specialist，只用提供的工具读数据中台，不得编造。\n"
                   "规则：\n"
+                  "· 市场总量问题（大盘/交易所整体成交额、量能、涨跌家数，"
+                  "如'北交所今天成交额'）：用 market_snapshot(market=..., days=...)，"
+                  "不要用 stock_info/datamart_read 试\n"
                   "· table 参数是表名（如 ts_daily/news/notice/chanlun_pool），"
                   "不是股票代码\n"
                   "· 查个股名称/最新行情/池内信号：先调 stock_info(code)，"
@@ -112,6 +115,8 @@ ROUTER_SYSTEM = """你是任务分发 agent。把用户问句拆成子任务，�
 · 用户问句是 6 位纯数字（股票代码，如 "600000"）= 查该股全景：三个
   specialist 都要派（data_lookup 查名称行情、quant_judge 查池内信号、
   event_face 查事件）
+· 市场整体/交易所总量类问句（大盘成交额、量能、涨跌家数，如
+  "北交所今天成交额"）= 只派 data_lookup
 · 用户问句含股票名称（非代码）时：你若有把握知道对应候选代码，把它写进
   相关 sub_q，格式如"某某股份（候选代码 123456，需用 stock_info 核对现名）"；
   无把握就只传名称，绝不把无把握的码写成确定事实

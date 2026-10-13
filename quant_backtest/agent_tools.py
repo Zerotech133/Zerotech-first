@@ -286,6 +286,51 @@ def datamart_ready(table):
             "explain": dm.explain(table) if r else None}
 
 
+@tool
+def market_snapshot(market=None, days=5):
+    """市场总量快照：按市场(沪/深/北)聚合 ts_daily 成交额/量/涨跌家数，
+    近 N 个交易日逐日。问大盘或某交易所整体成交额、量能（如"北交所今天
+    成交额"）等非个股问题时用此工具，不要用 stock_info/datamart_read 试。"""
+    from datetime import datetime, timedelta
+    import datamart as dm
+    alias = {"BJ": ".BJ", "北交所": ".BJ", "北": ".BJ",
+             "SH": ".SH", "沪": ".SH", "沪市": ".SH", "上证": ".SH", "上交所": ".SH",
+             "SZ": ".SZ", "深": ".SZ", "深市": ".SZ", "深证": ".SZ", "深交所": ".SZ"}
+    raw = str(market or "").strip()
+    suf = alias.get(raw) or alias.get(raw.upper()) if raw else None
+    if raw and not suf:
+        return {"ok": False,
+                "err": "market 仅支持 SH/SZ/BJ（或 沪/深/北交所）；'%s' 不识别" % raw}
+    days = max(1, min(int(days or 5), 20))
+    start = (datetime.now() - timedelta(days=days * 2 + 6)).strftime("%Y%m%d")
+    df = dm.read("ts_daily", start=start)
+    if df is None or not len(df):
+        return {"ok": False, "err": "ts_daily 近段无数据（数据未同步？）"}
+    df = df.copy()
+    df["suf"] = df["ts_code"].astype(str).str[-3:]
+    dates = sorted(df["trade_date"].unique())[-days:]
+    df = df[df["trade_date"].isin(dates)]
+    want = [suf] if suf else [".SH", ".SZ", ".BJ"]
+    rows = []
+    for d in dates:
+        sub = df[df["trade_date"] == d]
+        row = {"trade_date": str(d)}
+        for s in want:
+            g = sub[sub["suf"] == s]
+            row[s.strip(".")] = {
+                "n": int(len(g)),
+                "amount_yi": round(float(g["amount"].sum()) / 1e5, 1),
+                "vol_yi": round(float(g["vol"].sum()) / 1e8, 2),
+                "up": int((g["change"] > 0).sum()),
+                "down": int((g["change"] < 0).sum()),
+            }
+        rows.append(row)
+    return {"ok": True, "market": (suf or "沪+深+北").strip("."),
+            "unit": "amount_yi=成交额(亿元), vol_yi=成交量(亿手)",
+            "note": "日线为收盘后同步；问'今天'时以最新交易日作答并注明日期",
+            "latest_trade_date": str(dates[-1]), "rows": rows}
+
+
 # ── ⑤ 数据健康（data_health） ────────────────────────────────
 @tool
 def data_health():
@@ -416,6 +461,8 @@ TOOLS = {
                            "codes": "代码列表", "fields": "列列表", "limit": "行数"}),
     "datamart_latest": (datamart_latest, "表最新日期", {"table": "表/别名"}),
     "datamart_ready": (datamart_ready, "表可用性", {"table": "表/别名"}),
+    "market_snapshot": (market_snapshot, "市场总量快照(沪深北成交额/量/涨跌家数;问大盘整体成交额用它)",
+                          {"market": "SH/SZ/BJ或沪/深/北交所,空=全部", "days": "近几日"}),
     "data_health":    (data_health,    "全仓健康扫描", {}),
     "pool_rows":      (pool_rows,      "预警池查询",
                           {"sig_type": "信号类型", "tbe": "布尔",
