@@ -35,26 +35,35 @@ def _green(v, fmt="%+.2f%%"):
         else "<font color='red'>%s</font>" % (fmt % v)
 
 
-def _sentiment_line():
-    """舆论风向一行版：news.db jev 24h 聚合（口径同新闻日报 v2，缺库静默跳过）。"""
+def _sentiment_block():
+    """舆论风向块：jev 24h 聚合 + 高置信信号摘要（口径同新闻日报 v2 / K-STOCK-348）。
+
+    信号筛选：conf ≥ HI_CONF 且 bias∈(bull,bear)；scope（涉及标的/板块）
+    非空优先，按 conf 降序，同题前 20 字去重。
+    """
     import sqlite3
+    HI_CONF, TOP = 0.80, 4
     try:
         db = sqlite3.connect(os.path.join(HERE, "news.db"))
         since = (datetime.now(CST) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M")
         rows = db.execute(
-            "SELECT jev FROM news WHERE jev IS NOT NULL AND jev != '' "
+            "SELECT title, jev FROM news WHERE jev IS NOT NULL AND jev != '' "
             "AND created_at >= ?", (since,)).fetchall()
         db.close()
     except Exception:
         return None
     cnt = {"bull": 0, "bear": 0, "neutral": 0}
-    for (jev,) in rows:
+    parsed = []
+    for title, jev in rows:
         try:
-            b = json.loads(jev).get("bias")
+            j = json.loads(jev)
         except ValueError:
             continue
-        if b in cnt:
-            cnt[b] += 1
+        b = j.get("bias")
+        if b not in cnt:
+            continue
+        cnt[b] += 1
+        parsed.append((title, j))
     total = sum(cnt.values())
     if not total:
         return None
@@ -66,15 +75,39 @@ def _sentiment_line():
         tone, color = "整体偏冷", "green"
     else:
         tone, color = "多空均衡", "grey"
-    return ("🧭 **舆论风向：<font color='%s'>%s</font>**"
-            "（偏多 %.0f%% / 偏空 %.0f%% · AI 判定 %d 条）"
-            % (color, tone, pb * 100, ps * 100, total))
+    lines = ["🧭 **舆论风向：<font color='%s'>%s</font>**"
+             "（偏多 %.0f%% / 偏空 %.0f%% · AI 判定 %d 条）"
+             % (color, tone, pb * 100, ps * 100, total)]
+    sigs = [p for p in parsed
+            if p[1].get("conf", 0) >= HI_CONF and p[1].get("bias") in ("bull", "bear")]
+    sigs.sort(key=lambda p: (bool(p[1].get("scope")), p[1].get("conf", 0)), reverse=True)
+    seen, picked = set(), []
+    for title, j in sigs:
+        k = title[:20]
+        if k in seen:
+            continue
+        seen.add(k)
+        icon = "🐂" if j["bias"] == "bull" else "🐻"
+        scope = (j.get("scope_cn") or j.get("scope") or "").strip()
+        tag = "【%s】" % scope[:8] if scope else ""
+        # 标题可能带正文（采集器【标题】正文拼入）：取首行；若以【标题】开头则取括号内真标题
+        t = title.split("\n")[0]
+        if t.startswith("【"):
+            end = t.find("】")
+            if 0 < end <= 40:
+                t = t[1:end]
+        picked.append("%s %s%s（%.2f）" % (icon, tag, t[:36], j.get("conf", 0)))
+        if len(picked) >= TOP:
+            break
+    if picked:
+        lines.append("高置信信号（conf≥%.2f）：%s" % (HI_CONF, "；".join(picked)))
+    return "\n".join(lines)
 
 
 def build_blocks(today):
     """返回 md_blocks（四块：风向/采集/板块/量化，缺啥跳啥）。"""
     blocks = []
-    sl = _sentiment_line()
+    sl = _sentiment_block()
     if sl:
         blocks.append(sl)
 
