@@ -35,8 +35,11 @@ STATE = os.path.join(HERE, "data", "morning_report_state.json")
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 SEND_PY = os.path.join(NEWS_DIR, "send_feishu.py")
 DISCLAIMER = "个人研究晨报·非投资建议"
-# K-STOCK-357 晨报同步目标：内部测试群（判例同 K-STOCK-355 速报同步）
-TEST_GROUP_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"
+# K-STOCK-357/358 晨报群同步目标（判例同 K-STOCK-355 速报同步）
+SYNC_GROUPS = [
+    ("内部测试", "oc_6b97bee8b5340e071d0fc10cc6c8569f"),
+    ("量化群", "oc_16ed759795430734a90a7850ba33bec1"),
+]
 
 
 def _today8():
@@ -297,21 +300,24 @@ def main():
     if not ok:
         print("card FAIL -> text fallback")
         ok = _send(text)
-    # K-STOCK-357 同步内部测试群：卡优先降级文本，群失败不影响个人+水位
-    g_ok = False
+    # K-STOCK-357/358 群同步（内部测试+量化群）：卡优先降级文本，
+    # 单群失败不影响其他群/个人/水位
     try:
         sys.path.insert(0, NEWS_DIR)
         from send_feishu import send_content_to
-        g_ok = send_content_to(
-            TEST_GROUP_ID, "chat_id",
-            json.dumps(card, ensure_ascii=False), "interactive")
-        if not g_ok:
-            g_ok = send_content_to(
-                TEST_GROUP_ID, "chat_id",
-                json.dumps({"text": text}, ensure_ascii=False), "text")
+        card_str = json.dumps(card, ensure_ascii=False)
+        text_str = json.dumps({"text": text}, ensure_ascii=False)
+        for gname, gid in SYNC_GROUPS:
+            g_ok = False
+            try:
+                g_ok = send_content_to(gid, "chat_id", card_str, "interactive")
+                if not g_ok:
+                    g_ok = send_content_to(gid, "chat_id", text_str, "text")
+            except Exception as e:
+                print("sync %s error: %s" % (gname, str(e)[:100]))
+            print("sync %s: %s" % (gname, "SEND_OK" if g_ok else "FAIL"))
     except Exception as e:
-        print("test-group sync error: %s" % str(e)[:100])
-    print("test-group: %s" % ("SEND_OK" if g_ok else "FAIL"))
+        print("group sync import error: %s" % str(e)[:100])
     print("send: %s" % ("SEND_OK" if ok else "FAIL"))
     if ok:
         _save_state({"last_date": today,
