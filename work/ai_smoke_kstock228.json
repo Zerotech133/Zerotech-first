@@ -1,5 +1,5 @@
 {
-  "ok": false,
+  "ok": true,
   "checks": {
     "ollama_tags": {
       "ok": true,
@@ -41,9 +41,12 @@
       "status": 200
     },
     "rag": {
-      "ok": false,
-      "status": 503,
-      "error": "http_503"
+      "first_token": true,
+      "sources": true,
+      "done": true,
+      "malformed_lines": 0,
+      "ok": true,
+      "status": 200
     }
   }
 }
