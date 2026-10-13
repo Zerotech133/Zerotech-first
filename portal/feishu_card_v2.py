@@ -20,10 +20,13 @@ sys.path.insert(0, NEWS)
 from send_feishu import _load_app_creds, USER_ID  # noqa: E402
 
 # 卡片按钮的 URL 在飞书客户端（手机/外部设备）打开 → 必须用跨设备可达地址。
-# 127.0.0.1 只有服务器本机浏览器可用。入口唯一=8734（K-STOCK-113 立宪）：
-# portproxy 在 Tailscale 接口监听 8734 → nginx 127.0.0.1:8080，手机入 Tailscale 网可达。
-# K-STOCK-140：原 100.110.192.72:8080 已随 052 收敛失效（nginx 仅绑回环）→ 实弹打不开。
-PORTAL_BASE = "http://100.110.192.72:8734"  # Tailscale（portproxy→nginx 同源反代）
+# K-STOCK-140 判例：100.110.192.72:8080 随 052 收敛失效（nginx 仅绑回环）。
+# K-STOCK-305 判例：Tailscale 链（100.110.192.72:8734）对手机是死路——手机从未入
+# Tailscale 网，按钮必死；公网鉴权站（WorkBuddy 托管 picks_public 静态快照）
+# 2026-10-13 外部网络实测 /picks.html 全页可达。注意：/kg/stock/<code> 个股页
+# 被腾讯云 WAF 拦（403），不可用于卡片按钮。8734 仍是本机/在网设备唯一入口（K-STOCK-113）。
+PORTAL_BASE = "https://quant-picks-board.app.workbuddy.host"  # 公网鉴权站（访问码门禁）
+PORTAL_KEY = "picks-15fdb9"  # 访问码（泄露在服务端改口令即时作废）
 
 
 def _fmt_quote(facts):
@@ -75,7 +78,8 @@ def build_drill_card(code, facts, sections, title_extra="",
         "tag": "button", "type": "primary", "size": "medium",
         "text": {"tag": "plain_text", "content": "门户详情页"},
         "behaviors": [{"type": "open_url",
-                       "default_url": "%s/picks.html" % PORTAL_BASE}]})
+                       "default_url": "%s/picks.html?key=%s" % (
+                           PORTAL_BASE, PORTAL_KEY)}]})
     elements.append({
         "tag": "markdown", "content":
             "<font color='grey'>老田的AI工作站 · 缠论引擎K78+K246 · "
