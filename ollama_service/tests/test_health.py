@@ -23,7 +23,7 @@ class HealthyOpener:
     def __call__(self, request, timeout):
         return FakeResponse({
             "models": [
-                {"name": "qwen3.5:35b"},
+                {"name": "qwen3.5:9b"},
                 {"name": "bge-m3:latest"},
             ]
         })
@@ -44,7 +44,7 @@ class HealthCheckTests(unittest.TestCase):
 
         self.assertTrue(report.ok)
         self.assertTrue(all(check.ok for check in report.checks.values()))
-        self.assertEqual(report.checks["chat_model"].details["model"], "qwen3.5:35b")
+        self.assertEqual(report.checks["chat_model"].details["model"], "qwen3.5:9b")
         self.assertTrue(report.to_dict()["ok"])
 
     def test_reports_missing_models_and_unavailable_web_chat_in_chinese(self):
