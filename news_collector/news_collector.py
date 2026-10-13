@@ -37,6 +37,10 @@ UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 DISAMBIG_SUFFIX = ("银行", "证券", "基金", "人寿", "产险", "信托", "租赁",
                    "健康", "好医生", "科技", "不动产", "养老", "镇", "市", "区")
 
+# K-STOCK-355 金融新闻速报同步目标：内部测试群（飞书实名，owner=本人；
+# 与 news_config.push_targets 中 oc_6b97… 同群，该处注释「家人群」系命名漂移已修正）
+TEST_GROUP_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"
+
 
 def term_in(term, text):
     """子串命中，但排除别名后紧跟区分性后缀的情况（所有出现位置都被排除才算未命中）。"""
@@ -487,6 +491,7 @@ def main():
         lines.append("—— %s · 信息采集域" % now_cst().strftime("%H:%M"))
         text = "\n".join(lines)
         sent = False
+        card = None
         try:
             from card_build import build_card, push_card
             doc = cfg.get("doc_url", "")
@@ -513,6 +518,24 @@ def main():
             log("card build FAIL %s" % str(e)[:120])
         if not sent:
             sent = push_message(text)
+        # K-STOCK-355 金融新闻速报同步到内部测试群（个人照常收，群另发一份；
+        # 卡失败降级文本，群同步失败不影响个人推送）
+        try:
+            from send_feishu import send_content_to
+            if card is not None:
+                g_sent = send_content_to(
+                    TEST_GROUP_ID, "chat_id",
+                    json.dumps(card, ensure_ascii=False), "interactive")
+            else:
+                g_sent = False
+            if not g_sent:
+                g_sent = send_content_to(
+                    TEST_GROUP_ID, "chat_id",
+                    json.dumps({"text": text}, ensure_ascii=False), "text")
+            log("speed-report test-group(%s) -> %s" % (
+                TEST_GROUP_ID[:10], "SEND_OK" if g_sent else "SEND_FAIL"))
+        except Exception as e:
+            log("test-group sync FAIL %s" % str(e)[:100])
         if sent:
             push_count = len(hits)
             for it in hits:
