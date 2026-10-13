@@ -164,8 +164,9 @@ def _sec_events():
         return "④ 近24h强事件：无"
     lines = ["④ 近24h强事件 %d 条：" % len(evs)]
     for e in evs[:8]:
-        icon = "🟢" if e.get("bias") == "bull" else \
-            "🔴" if e.get("bias") == "bear" else "⚪"
+        # K-STOCK-359 A股口径红涨绿跌：bull=🔴 bear=🟢（对齐 premarket 判例）
+        icon = "🔴" if e.get("bias") == "bull" else \
+            "🟢" if e.get("bias") == "bear" else "⚪"
         lines.append("  %s %s [%s] %s" % (icon, e.get("ts", ""),
                                           e.get("tag", ""),
                                           (e.get("text") or "")[:40]))

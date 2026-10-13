@@ -522,7 +522,8 @@ def summary_for_stock(code, days=7, topn=4):
         code, days, s["n"], "牛%d/熊%d" % (s["bull"], s["bear"]), s["net"])
     lines = []
     for e in r["events"][:topn]:
-        mark = {"bull": "🟢", "bear": "🔴"}.get(e.get("bias"), "⚪")
+        # K-STOCK-359 A股口径红涨绿跌（对齐 premarket 判例）
+        mark = {"bull": "🔴", "bear": "🟢"}.get(e.get("bias"), "⚪")
         lines.append("  %s %s %s" % (mark, (e.get("ts") or "")[:10],
                                      (e.get("text") or "")[:40]))
     return head + "\n" + "\n".join(lines)
@@ -557,7 +558,8 @@ def main():
         print("  bull=%d bear=%d neutral=%d unknown=%d net=%+.2f"
               % (s["bull"], s["bear"], s["neutral"], s["unknown"], s["net"]))
         for e in r_["events"][:args.topn]:
-            mark = {"bull": "🟢", "bear": "🔴"}.get(e.get("bias"), "⚪")
+            # K-STOCK-359 A股口径红涨绿跌（对齐 premarket 判例）
+            mark = {"bull": "🔴", "bear": "🟢"}.get(e.get("bias"), "⚪")
             print("  %s [%s] %s %s (conf=%s %s)" % (
                 mark, (e.get("ts") or "")[:10], (e.get("text") or "")[:46],
                 e.get("tag"), e.get("conf"), (e.get("reason") or "")[:24]))
