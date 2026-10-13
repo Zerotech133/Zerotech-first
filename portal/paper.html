@@ -146,7 +146,7 @@
 <header>
   <div class="brand">
     <div class="logo">仓</div>
-    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.8</small></div>
+    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.9</small></div>
   </div>
   <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
@@ -1462,6 +1462,7 @@ function selStrat(sid){const c=document.querySelector('.strat-card[data-s="'+sid
 // ===== K-STOCK-357 我的策略：保存/重跑/删除（NL 沉淀 · /api/my_strategies） =====
 async function nlSave(){
   if(!_nlParams){toast('先解析出参数再保存');return;}
+  collectNL();
   const name=prompt('给这个策略起个名字（如：三买·高位闸门·评分80）：');
   if(!name)return;
   // 357 修正：与 nlRun 同口径合并 NL_DEFAULTS（解析结果常缺 strategy/gate_mode 等默认键，
@@ -1505,20 +1506,40 @@ async function nlParse(){
   try{
     const j=await api('/api/bt2_nl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
     if(!(j&&j.ok&&j.params))throw new Error((j&&j.error)||'没能识别出参数，换个说法试试');
-    _nlParams=j.params;
-    const kv=Object.entries(j.params).map(([k,v])=>'<span class="ai-chip" style="cursor:default">'+esc(k)+' = '+esc(String(v))+'</span>').join(' ');
-    out.innerHTML='<div style="font-size:12px;margin-bottom:6px"><b>解析结果</b>（引擎：'+esc(j.engine||'规则')+'）——请核对：</div>'
+    // K-STOCK-359：参数墙渲染**完整有效集**（NL_DEFAULTS∪解析结果——strategy/gate_mode 等
+    // 默认键一并上墙才可编辑；357 判例：合并放共同入口，渲染也是消费路径）
+    _nlParams=Object.assign({},NL_DEFAULTS,j.params);
+    // 参数墙可编辑（strategy 下拉·其余输入框）——改完可直接重跑/保存
+    const field=(k,v)=>{
+      if(k==='strategy')return '<select class="nl-edit" data-k="strategy" style="background:transparent;border:none;border-bottom:1px dashed var(--text-dim);color:var(--text);font-size:12px;outline:none;font-family:inherit">'
+        +['chanlun','double_knife'].map(o=>'<option '+(String(v)===o?'selected':'')+'>'+o+'</option>').join('')+'</select>';
+      return '<input class="nl-edit" data-k="'+esc(k)+'" value="'+esc(String(v))+'" style="width:'+Math.max(4,String(v).length+1)+'ch;background:transparent;border:none;border-bottom:1px dashed var(--text-dim);color:var(--text);font-size:12px;outline:none;font-family:inherit">';
+    };
+    const kv=Object.entries(_nlParams).map(([k,v])=>'<span class="ai-chip" style="cursor:default;display:inline-flex;align-items:center;gap:4px">'+esc(k)+' = '+field(k,v)+'</span>').join(' ');
+    out.innerHTML='<div style="font-size:12px;margin-bottom:6px"><b>解析结果</b>（引擎：'+esc(j.engine||'规则')+'）——核对/直接改虚线值：</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+kv+'</div>'
       +((j.notes||[]).map(n=>'<div style="font-size:11px;color:var(--text-dim)">· '+esc(n)+'</div>').join(''))
       +'<div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" onclick="nlRun()">⚡ 用这些参数跑回测</button>'
       +'<button class="btn" onclick="nlSave()">💾 保存为我的策略</button>'
-      +'<span style="font-size:11.5px;color:var(--text-dim)">解析与执行分离：参数先过目，回测在回测中心引擎实跑；保存后进策略卡墙「我的策略」组</span></div>';
+      +'<span style="font-size:11.5px;color:var(--text-dim)">参数可直接编辑（虚线处）——重跑/保存都以编辑后为准；保存后进策略卡墙「我的策略」组</span></div>';
   }catch(e){out.innerHTML='<div class="empty">'+esc(e.message||'解析失败')+'</div>';}
   finally{btn.disabled=false;}
+}
+// K-STOCK-359：参数墙编辑值回写（nlRun/nlSave 共同入口——357 判例：两条消费路径的合并/编辑都在入口做）
+function collectNL(){
+  if(!_nlParams)return;
+  const NUMK={min_score:1,slot_pct:1,top_n:1};
+  document.querySelectorAll('#nl-out .nl-edit').forEach(el=>{
+    const k=el.dataset.k; if(!k)return;
+    let v=String(el.value).trim();
+    if(NUMK[k]&&v!==''){const n=Number(v); if(!isNaN(n))v=n;}
+    _nlParams[k]=v;
+  });
 }
 const NL_DEFAULTS={strategy:'chanlun',gate_mode:'off',min_score:0,slot_pct:0.08};
 async function nlRun(){
   if(!_nlParams||_nlPolling)return;
+  collectNL();
   const p=Object.assign({},NL_DEFAULTS,_nlParams);
   if(!p.d0||!p.d1){toast('这句话没识别出时间窗口——补一句「最近一年」再解析');return;}
   const out=$('nl-out');
