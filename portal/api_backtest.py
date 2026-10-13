@@ -4945,6 +4945,69 @@ def _bt2_state_path(jid):
     return os.path.join(_BT2_STATE_DIR, "bt2_%s.state.json" % jid)
 
 
+# ===== K-STOCK-357 我的策略（NL 建策略沉淀 · portal/data/my_strategies.json 单文件 ·
+#       参数键白名单与 bt2_run 同语义 · 写操作走 _MUTATION_POSTS 同守卫） =====
+_MY_STRAT_FILE = os.path.join(STATION, "portal", "data", "my_strategies.json")
+_MY_STRAT_KEYS = frozenset((
+    "strategy", "d0", "d1", "gate_mode", "min_score", "slot_pct", "top_n",
+    "buy_filter", "universe", "hist_st", "limit_check", "runup_cap"))
+
+
+def _my_strat_load():
+    try:
+        with open(_MY_STRAT_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, list) else []
+    except Exception:
+        return []
+
+
+def _my_strat_save(lst):
+    os.makedirs(os.path.dirname(_MY_STRAT_FILE), exist_ok=True)
+    tmp = _MY_STRAT_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(lst, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, _MY_STRAT_FILE)
+
+
+def _api_my_strategies(req):
+    """我的策略（NL 沉淀）：
+    {"action":"list"}                    → {"ok":true,"strategies":[...]}
+    {"action":"save","name","params",..} → {"ok":true,"id","total"}
+    {"action":"delete","id"}             → {"ok":true,"total"}"""
+    if not isinstance(req, dict):
+        return {"ok": False, "error": "bad request"}
+    act = str(req.get("action") or "list")
+    if act == "list":
+        return {"ok": True, "strategies": _my_strat_load()}
+    if act == "save":
+        name = str(req.get("name") or "").strip()[:40]
+        note = str(req.get("note") or "").strip()[:200]
+        params = req.get("params")
+        if not name:
+            return {"ok": False, "error": "策略名不能为空"}
+        if not isinstance(params, dict) or not params.get("strategy"):
+            return {"ok": False, "error": "参数集缺 strategy 字段"}
+        clean = {k: params[k] for k in params if k in _MY_STRAT_KEYS}
+        if not clean.get("strategy") or not (clean.get("d0") and clean.get("d1")):
+            return {"ok": False, "error": "参数集不完整（缺策略/窗口）"}
+        lst = _my_strat_load()
+        sid = "my_" + time.strftime("%Y%m%d%H%M%S") + "_%d" % (len(lst) + 1)
+        lst.append({"id": sid, "name": name, "params": clean, "note": note,
+                    "ts": time.strftime("%Y-%m-%d %H:%M")})
+        _my_strat_save(lst)
+        return {"ok": True, "id": sid, "total": len(lst)}
+    if act == "delete":
+        sid = str(req.get("id") or "")
+        lst = _my_strat_load()
+        rest = [x for x in lst if x.get("id") != sid]
+        if len(rest) == len(lst):
+            return {"ok": False, "error": "策略不存在"}
+        _my_strat_save(rest)
+        return {"ok": True, "total": len(rest)}
+    return {"ok": False, "error": "unknown action"}
+
+
 def _bt2_write_state(jid, **kv):
     st = _read_json(_bt2_state_path(jid))
     if not isinstance(st, dict) or not st:

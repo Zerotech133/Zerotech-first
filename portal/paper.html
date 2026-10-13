@@ -146,7 +146,7 @@
 <header>
   <div class="brand">
     <div class="logo">仓</div>
-    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.7</small></div>
+    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.8</small></div>
   </div>
   <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
@@ -308,6 +308,16 @@
           <div class="exec-title" id="generic-name">策略</div>
           <div class="exec-sub" id="generic-status"></div>
           <div class="flow-note"><span id="generic-tagline"></span><br>该策略<b>尚未接入模拟账本执行</b>。两条路：① <a id="generic-href" href="/market-strategy" style="color:var(--link)">策略市场 · 订阅/详情</a>——订阅后由值班经理接入通道即可直接执行；② 先在下方「说一句话」或<a href="#" onclick="gotoTab('agent');return false" style="color:var(--link)">交易员市场 · 组合回测</a>验证策略成色。</div>
+        </div>
+
+        <div class="exec-panel" id="exec-mystrat" style="display:none">
+          <div class="exec-title" id="mystrat-name">🧩 我的策略</div>
+          <div class="exec-sub">您保存的回测口径 · 点重跑用同一套参数再次验证（回测结果出现在下方「说一句话」区）</div>
+          <div id="mystrat-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="myRunBtn()">⚡ 重跑回测</button>
+            <button class="btn btn-gray" onclick="myDelBtn()">🗑 删除</button>
+          </div>
         </div>
       </div>
 
@@ -500,8 +510,9 @@ function bindStratCards(){
 function showExecPanel(sid){
   const OWNED=['ai_team','double_knife','qingping','manual'];
   const pid=(sid==='qpzm')?'qingping':sid;
-  const target=OWNED.includes(pid)?pid:'generic';
-  ['ai_team','double_knife','qingping','manual','generic'].forEach(id=>{
+  let target=OWNED.includes(pid)?pid:'generic';
+  if(String(sid||'').startsWith('my_'))target='mystrat';   // 357：我的策略专用面板
+  ['ai_team','double_knife','qingping','manual','generic','mystrat'].forEach(id=>{
     const el=$('exec-'+id); if(el)el.style.display=(id===target)?'block':'none';
   });
   if(target==='generic'){
@@ -510,6 +521,11 @@ function showExecPanel(sid){
     $('generic-status').textContent=m.statusLabel||'';
     $('generic-tagline').textContent=m.tagline||'';
     if(m.href)$('generic-href').href=m.href;
+  }
+  if(target==='mystrat'){
+    const m=MY_STRATS[String(sid)]||{};
+    $('mystrat-name').textContent='🧩 '+(m.name||'我的策略');
+    $('mystrat-chips').innerHTML=Object.entries(m.params||{}).map(([k,v])=>'<span class="ai-chip" style="cursor:default">'+esc(k)+' = '+esc(String(v))+'</span>').join(' ');
   }
 }
 bindStratCards();
@@ -1387,12 +1403,13 @@ async function askDuty(preset){
 }
 
 // ===== K-STOCK-352 ② 策略资产总览（12 策略全量 · /api/strategy_market 单一数据源） =====
-let STRAT_META={};
+let STRAT_META={}, MY_STRATS={};
 async function loadStrategy12(){
   const box=$('strat12-grid'); if(!box)return;
   try{
     const j=await api('/api/strategy_market');
     if(!(j&&j.ok&&j.strategies))throw 0;
+    const my=await api('/api/my_strategies');   // 357：我的策略（NL 沉淀）
     // K-STOCK-355：全量卡墙=常驻通道（ai_team/manual）+注册表 12 条；点任意卡→执行台联动
     STRAT_META={
       ai_team:{name:'AI 值班',icon:'🤖',tagline:'每日 07:05 跑批 · 5 票辩论 · 单票 ≤20% · strategy=ai_team',statusLabel:'已接入',href:''},
@@ -1416,10 +1433,20 @@ async function loadStrategy12(){
       +'<div class="trigger-switch"><div class="trigger-opt">自动（盘后扫描）</div><div class="trigger-opt on">手动执行</div></div>';
     const by={live:[],shadow:[],tool:[]};
     j.strategies.forEach(s=>{(by[s.status]||by.tool).push(s.id);});
+    // 357：我的策略进卡墙（data-s=my_<id>，点选出 mystrat 面板）
+    MY_STRATS={};
+    const mine=((my&&my.ok&&my.strategies)||[]);
+    const myIds=mine.map(m=>{
+      MY_STRATS[m.id]=m;
+      const p=m.params||{};
+      STRAT_META[m.id]={name:m.name,icon:'🧩',tagline:(m.note?m.note+' · ':'')+(p.strategy||'')+' '+(p.d0||'')+'→'+(p.d1||'')+' · 闸门'+(p.gate_mode||'-')+' · 评分'+(p.min_score||0),statusLabel:'我的策略',href:''};
+      return m.id;
+    });
     const grp=(label,ids)=>ids.length?'<div style="grid-column:1/-1;font-size:11.5px;color:var(--text-dim);margin:6px 0 0">'+label+'</div>'+ids.map(sid=>cardHTML(sid,sid==='double_knife'?qdExtra:'')).join(''):'';
     box.innerHTML=
       '<div style="grid-column:1/-1;font-size:11.5px;color:var(--text-dim);margin:0">🔌 已接入通道（2）</div>'
       +cardHTML('ai_team',aiExtra)+cardHTML('manual')
+      +grp('🧩 我的策略（'+myIds.length+'）',myIds)
       +grp('🟢 产线在跑（'+by.live.length+'）',by.live)
       +grp('🟡 影子验证中（'+by.shadow.length+'）',by.shadow)
       +grp('⚙️ 支撑工具（'+by.tool.length+'）',by.tool);
@@ -1432,6 +1459,40 @@ async function loadStrategy12(){
   }catch(e){box.innerHTML='<div class="empty">策略卡墙暂时读不到（静默降级，刷新重试）</div>';}
 }
 function selStrat(sid){const c=document.querySelector('.strat-card[data-s="'+sid+'"]');if(c)c.click();}
+// ===== K-STOCK-357 我的策略：保存/重跑/删除（NL 沉淀 · /api/my_strategies） =====
+async function nlSave(){
+  if(!_nlParams){toast('先解析出参数再保存');return;}
+  const name=prompt('给这个策略起个名字（如：三买·高位闸门·评分80）：');
+  if(!name)return;
+  // 357 修正：与 nlRun 同口径合并 NL_DEFAULTS（解析结果常缺 strategy/gate_mode 等默认键，
+  // 直接保存会被服务端白名单 fail-closed 拒绝）
+  const p=Object.assign({},NL_DEFAULTS,_nlParams);
+  if(!p.d0||!p.d1){toast('这句话没识别出时间窗口——补一句「最近一年」再保存');return;}
+  try{
+    const j=await api('/api/my_strategies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',name,params:p})});
+    if(!(j&&j.ok))throw new Error((j&&j.error)||'保存失败');
+    toast('已保存「'+name+'」——策略卡墙「我的策略」组可见');
+    loadStrategy12();
+  }catch(e){toast('❌ '+e.message);}
+}
+function myRunBtn(){
+  const m=MY_STRATS[String(S.cur||'')];
+  if(!m){toast('先在卡墙点选一个「我的策略」');return;}
+  _nlParams=Object.assign({},m.params);
+  nlRun();
+  $('nl-out').scrollIntoView({behavior:'smooth',block:'center'});
+}
+async function myDelBtn(){
+  const mid=String(S.cur||'');
+  if(!MY_STRATS[mid]){toast('先在卡墙点选一个「我的策略」');return;}
+  if(!confirm('删除「'+MY_STRATS[mid].name+'」？'))return;
+  try{
+    const j=await api('/api/my_strategies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id:mid})});
+    if(!(j&&j.ok))throw new Error((j&&j.error)||'删除失败');
+    toast('已删除');
+    S.cur='ai_team';loadStrategy12();
+  }catch(e){toast('❌ '+e.message);}
+}
 
 // ===== K-STOCK-352 ③ 自然语言自建策略（/api/bt2_nl 只解析 → 核对 → /api/bt2_run 实跑） =====
 function nlFill(t){$('nl-text').value=t;}
@@ -1450,7 +1511,8 @@ async function nlParse(){
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+kv+'</div>'
       +((j.notes||[]).map(n=>'<div style="font-size:11px;color:var(--text-dim)">· '+esc(n)+'</div>').join(''))
       +'<div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" onclick="nlRun()">⚡ 用这些参数跑回测</button>'
-      +'<span style="font-size:11.5px;color:var(--text-dim)">解析与执行分离：参数先过目，回测在回测中心引擎实跑</span></div>';
+      +'<button class="btn" onclick="nlSave()">💾 保存为我的策略</button>'
+      +'<span style="font-size:11.5px;color:var(--text-dim)">解析与执行分离：参数先过目，回测在回测中心引擎实跑；保存后进策略卡墙「我的策略」组</span></div>';
   }catch(e){out.innerHTML='<div class="empty">'+esc(e.message||'解析失败')+'</div>';}
   finally{btn.disabled=false;}
 }

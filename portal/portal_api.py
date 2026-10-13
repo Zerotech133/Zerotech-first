@@ -118,6 +118,7 @@ from api_backtest import (
     _cbt_status,
     _bt2_start,
     _bt2_status,
+    _api_my_strategies,
     _bt2_result,
     _bt2_nl,
     _pulse_exit_line,
@@ -169,6 +170,7 @@ _MUTATION_POSTS = frozenset((
     "/api/combo_backtest",  # K-STOCK-275 组合回测任务登记（落盘排队）
     "/api/bt2_run",         # K-STOCK-285b 回测框架 v2 参数化回测（daemon 线程跑引擎）
     "/api/bt2_nl",          # K-STOCK-299 自然语言回测解析（规则+LLM 兜底·只解析不执行）
+    "/api/my_strategies",   # K-STOCK-357 我的策略保存/删除（NL 沉淀·单文件 JSON）
     "/chanlun-anno",
     "/api/chanlun/label/save",
     "/api/report_push",
@@ -2515,6 +2517,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     self._json({"ok": False, "error": "bad json"}, 400)
                     return
                 self._json(_bt2_nl(rec))
+            elif path == "/api/my_strategies":
+                # K-STOCK-357 我的策略：POST save/delete（_MUTATION_POSTS 守卫已覆盖）
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"ok": False, "error": "bad json"}, 400)
+                    return
+                self._json(_api_my_strategies(rec))
             elif path == "/api/batch-backtest":
                 # K255 勾选股票自定义批次回测：写批次 JSONL → 引擎子进程异步跑
                 try:
@@ -2681,6 +2691,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/bt2_jobs":
             # K-STOCK-285b 回测框架 v2 任务清单（进度/结果/错误合并投影）
             self._json(_bt2_status())
+        elif path == "/api/my_strategies":
+            # K-STOCK-357 我的策略列表（GET 只读；写走 POST+守卫）
+            self._json(_api_my_strategies({"action": "list"}))
         elif path == "/api/bt2_job":
             # K-STOCK-285b 单任务全量账本（?id=，done 后可取）
             from urllib.parse import parse_qs as _pqs
