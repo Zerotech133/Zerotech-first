@@ -5010,6 +5010,8 @@ def _bt2_start(rec):
         "fail_level": rec.get("fail_level") if rec.get("fail_level") in ("zg", "zd") else "zg",
         "fail_buffer": _ratio("fail_buffer", 0, 0.2, 0.0),
         "regime_gate": "true" if str(rec.get("regime_gate", "")).strip().lower() == "true" else "false",
+        # 开新仓闸门三档（K-STOCK-301）：off=不设 / weak=弱市不开 / high=仅高位开（291 包 C·高位限定）
+        "gate_mode": rec.get("gate_mode") if rec.get("gate_mode") in ("off", "weak", "high") else "off",
         "runup_cap": _ratio("runup_cap", 0, 0.5, 0.15 if strategy == "chanlun" else 0),
         "stop_pct": _ratio("stop_pct", -0.5, 0, 0.0),
         "holding_max_days": _intv("holding_max_days", 0, 60, 5 if strategy == "double_knife" else 0),

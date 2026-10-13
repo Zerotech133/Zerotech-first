@@ -130,7 +130,8 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>失效缓冲%</label><input name="fail_buffer" type="number" value="0" min="0" max="20"></div>
   <div class="fld"><label>个股止损%（0关）</label><input name="stop_pct" type="number" value="0" min="-50" max="0"></div>
   <div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>
-  <div class="fld"><label>弱市闸门</label><select name="regime_gate"><option value="false">关（默认）</option><option value="true">开：指数&lt;MA60 不开新仓</option></select></div>
+  <div class="fld"><label>开新仓闸门</label><select name="gate_mode" id="gate-mode"><option value="off">不设闸（默认）</option><option value="weak">弱市闸门：指数&lt;MA60 不开新仓</option><option value="high">高位限定：仅指数≥MA20 开新仓（291 包 C）</option></select></div>
+  <input type="hidden" name="regime_gate" value="false">
 </div>
 <div class="note">清仓条件（满足其一即 T+1 开盘卖出）：① 三买失效——收盘跌破买入时的中枢上沿×(1−缓冲)；② 缠论卖点确认（一卖/二卖/三卖）；③ 个股止损（0=关，269 实锤止损负贡献默认关）；④ 持有超上限（0=不限）。另有组合层清仓：regime 降档导致超帽 → 收盘等比减仓。</div></div>
 
@@ -243,7 +244,7 @@ function render(){
   document.getElementById("timelines").innerHTML=
     `<div class="tl-card"><h3>${c.name}（${c.strategy==="chanlun"?"🟣":"🟡"}）执行时间轴</h3>`+
     DATA.meta.execution_timeline.map((s,i)=>`<div class="tl-step"><b>${i+1}.</b><span>${s}</span></div>`).join("")+
-    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · <b>仓位分配=${slotDesc(c)}</b> · <b>总仓位=${capDesc(c)}</b> · 信号有效期=${c.sig_expiry?c.sig_expiry+"日":"不限"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 失效离场=${DATA.meta.three_fail_exit?"开("+({"zg":"上沿","zd":"下沿"})[DATA.meta.fail_level||"zg"]+")":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 买点等级=${({23:"二买+三买",2:"仅二买",3:"仅三买",all:"全要"})[DATA.meta.buy_filter]||"-"} · 样本域=${DATA.meta.universe==="market"?"全市场":"76池"} · 票池=${(DATA.meta.manual_picks||[]).length?"手动指定 "+(DATA.meta.manual_picks||[]).length+" 只":"自动（评分前十）"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
+    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · <b>仓位分配=${slotDesc(c)}</b> · <b>总仓位=${capDesc(c)}</b> · 信号有效期=${c.sig_expiry?c.sig_expiry+"日":"不限"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 失效离场=${DATA.meta.three_fail_exit?"开("+({"zg":"上沿","zd":"下沿"})[DATA.meta.fail_level||"zg"]+")":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 买点等级=${({23:"二买+三买",2:"仅二买",3:"仅三买",all:"全要"})[DATA.meta.buy_filter]||"-"} · 开新仓闸门=${({off:"不设",weak:"弱市不开",high:"仅高位"})[DATA.meta.gate_mode]||"不设"} · 样本域=${DATA.meta.universe==="market"?"全市场":"76池"} · 票池=${(DATA.meta.manual_picks||[]).length?"手动指定 "+(DATA.meta.manual_picks||[]).length+" 只":"自动（评分前十）"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
     `<div class="note">口径声明：${DATA.meta.assumptions.join("；")}</div>`;
   // KPI
   const s=DATA.summary, cls=v=>v>0?"up":"dn";

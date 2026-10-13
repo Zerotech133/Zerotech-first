@@ -386,13 +386,18 @@ class BacktestConfig:
 # ============================================================
 def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=None,
                  sig_zg=None, three_fail=True, fail_level="zg", regime_gate=False,
-                 fail_buffer=0.0, sig_meta=None):
+                 gate_mode="off", fail_buffer=0.0, sig_meta=None):
     """sig_zg：{day: {stock: (中枢上沿zg, 下沿zd)(hfq)}}——三买失效离场用（10-13 老田：跌破中枢=三买被否定）。
     fail_level：zg=收盘跌破上沿即离场（紧）/ zd=收盘跌破下沿（中枢整体否定，松）。
-    regime_gate：池指数<MA60（low）时不开新三买仓（269 regime 实锤·熊市绞肉机对策）。
+    gate_mode 闸门三档（K-STOCK-301，291 归因「正期望依赖趋势环境」的落地）：off=不设闸（默认·兼容旧行为）/
+    weak=池指数<MA60（low）不开新仓（=旧 regime_gate=True）/ high=仅池指数≥MA20（high）开新仓（291 包 C 方向·高位限定）。
+    regime_gate=True 且未显式给 gate_mode 时自动升格为 weak（向后兼容）。
     sig_meta：{day: {stock: {score,zg,zd,bei,bei2,vr}}}——评分（K-STOCK-293 老田：评分取前十）。
     规律校准：候选按评分降序入场（旧版按代码序=伪随机·bug）；top_n=持仓槽数上限。"""
     global cal
+    gate_mode = {"weak": "weak", "high": "high"}.get(gate_mode, "off")
+    if regime_gate and gate_mode == "off":
+        gate_mode = "weak"          # 旧布尔参数向后兼容
     cash, pos = 1.0, {}
     days, equity_curve, trades, holdings = {}, [], [], {}
     pending_buy, pending_sell = {}, set()   # pending_buy: {stock: 确认日索引}（信号有效期用）
@@ -560,7 +565,12 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                     actions.append({"type": "note", "stock": s, "note": "卖点确认→明日开盘卖"})
             for s in sorted(sig_buy.get(day, set())):
                 m_s = (sig_meta or {}).get(day, {}).get(s) or {}
-                if regime_gate and regime_lv == "low":
+                if gate_mode == "high" and regime_lv != "high":
+                    if s not in pos and s not in pending_buy:
+                        actions.append({"type": "note", "stock": s,
+                                        "note": f"高位限定闸门：仅池指数≥MA20 开新仓（当前{regime_why}）·评分{m_s.get('score') if m_s.get('score') is not None else '-'}"})
+                    continue
+                if gate_mode == "weak" and regime_lv == "low":
                     if s not in pos and s not in pending_buy:
                         actions.append({"type": "note", "stock": s,
                                         "note": f"regime闸门：池指数<MA60 弱市不开新仓·评分{m_s.get('score') if m_s.get('score') is not None else '-'}"})
@@ -648,7 +658,8 @@ DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "sig_expiry": 0,
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
             "holding_max_days": 0, "buy_filter": "3", "universe": "market",
-            "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0}
+            "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0,
+            "gate_mode": "off"}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
@@ -733,12 +744,15 @@ def run_job(params: dict, job_id: str, progress=None):
             progress("回测", 65, "逐日执行中")
         _rg = p.get("regime_gate")
         regime_gate = _rg is True or (isinstance(_rg, str) and _rg.strip().lower() == "true")
+        _gm = str(p.get("gate_mode") or "off").strip().lower()
+        gate_mode = _gm if _gm in ("off", "weak", "high") else "off"
         result = run_backtest(cfg, sig_buy, sig_sell, progress,
                               sig_zg=sig_zg, three_fail=three_fail and strategy == "chanlun",
                               fail_level=p["fail_level"] if p["fail_level"] in ("zg", "zd") else "zg",
-                              regime_gate=regime_gate,
+                              regime_gate=regime_gate, gate_mode=gate_mode,
                               fail_buffer=max(0.0, min(0.2, float(p.get("fail_buffer") or 0))),
                               sig_meta=sig_meta)
+        result["meta"]["gate_mode"] = gate_mode
         result["meta"]["signal_source"] = src
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
@@ -845,7 +859,9 @@ if __name__ == "__main__":
     ap.add_argument("--fail-level", default="zg", choices=["zg", "zd"],
                     help="失效线：zg=上沿(紧·默认) zd=下沿(中枢整体否定)")
     ap.add_argument("--regime-gate", default="false", choices=["true", "false"],
-                    help="regime闸门：池指数<MA60 弱市不开新三买(默认关)")
+                    help="regime闸门(旧布尔)：等价 gate_mode=weak")
+    ap.add_argument("--gate-mode", default="off", choices=["off", "weak", "high"],
+                    help="开新仓闸门：off=不设 / weak=池指数<MA60不开 / high=仅池指数≥MA20开(301)")
     ap.add_argument("--fail-buffer", type=float, default=0.0,
                     help="失效线缓冲：收盘跌破 zg*(1-buffer) 才算失效(默认0·降噪用)")
     ap.add_argument("--job-id", default=None)
