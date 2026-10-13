@@ -57,7 +57,7 @@ def smoke(_path):
 
 
 def main():
-    if CHANNEL == "cloud":
+    if CHANNEL in ("cloud", "gpt6"):
         # 同起点对比：先还原到加固前版本（0bfa1ef^ = 177bea1 时点）再生成
         pre = subprocess.run(
             ["git", "show", "177bea1:" + TARGET],
@@ -66,6 +66,12 @@ def main():
         with open(TARGET, "w", encoding="utf-8", newline="") as f:
             f.write(pre)
         print("[reset] TARGET 已还原到加固前版本(177bea1)")
+    if CHANNEL == "gpt6":
+        # gpt6 内置 timeout=180 对大文件 SR 偏紧；提至 600 防降级污染对比。
+        # run() 走 chat_auto_meta（模块全局查 chat_openai，patch 生效）。
+        _orig_openai = ac.chat_openai
+        ac.chat_openai = lambda agent_id, task: _orig_openai(agent_id, task,
+                                                             timeout=600)
     cur = open(TARGET, encoding="utf-8").read()
     prompt = (TASK + "\n\n【目标文件当前完整内容 tools/qa1_review.py】\n<<<<\n"
               + cur + "\n>>>>\n")
@@ -76,6 +82,12 @@ def main():
     print("[run] ok=%s detail=%s" % (ok, detail))
     if not ok:
         sys.exit(1)
+
+    # K-ORG-048 元数据首次实战：验证实际生成通道=请求档，降级即拒绝（防对比污染）
+    actual = ac.last_channel()
+    print("[channel] requested=%s actual=%s" % (ac.backend(), actual))
+    assert actual == CHANNEL, \
+        "通道降级(actual=%s)!=请求档(%s)：对比样本被污染，拒绝归档" % (actual, CHANNEL)
 
     if CHANNEL == "anthropic":
         # 该通道产出已作为第一版提交（0bfa1ef）；此处为同起点对比重跑：
