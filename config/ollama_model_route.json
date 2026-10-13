@@ -1,0 +1,35 @@
+{
+ "default_model": "qwen3.5:9b",
+ "fallback_chain": {
+  "主模型": [
+   "qwen3.5:4b",
+   "qwen3.5:9b"
+  ]
+ },
+ "route_rules": [
+  {
+   "task_type": "embedding",
+   "model": "bge-m3",
+   "reason": "嵌入专用，语义检索最优"
+  },
+  {
+   "task_type": "complex_reasoning",
+   "model": "qwen3.5:9b",
+   "reason": "主力模型，平衡性能与显存"
+  },
+  {
+   "task_type": "light_task",
+   "model": "qwen3.5:4b",
+   "reason": "轻量任务，降低延迟"
+  },
+  {
+   "task_type": "default",
+   "model": "qwen3.5:9b",
+   "reason": "默认路由，避免 35b 显存溢出"
+  }
+ ],
+ "constraints": {
+  "显存约束": "禁止使用 qwen3.5:35b（实测溢出至 CPU，禁用于实时场景）；所有模型加载需预留 2GB 缓冲",
+  "上下文约束": "长文本处理优先启用 4b 模型或分段策略，防止 Ollama 上下文窗口超限"
+ }
+}
