@@ -107,6 +107,7 @@ from api_backtest import (
     get_backtest,
     fut_page_html,
     sellpoint_page_html,
+    _sa_hist_read,
     _BT_CUSTOM_BATCHES,
     _BT_CUSTOM_REPORT,
     _BT_CUSTOM_STATE,
@@ -1293,11 +1294,7 @@ gap:14px;align-items:start}}
 
 
 
-    @classmethod
-
-    @classmethod
-
-    @staticmethod
+    # 兼容多继承 Handler：返回键必须保持实例方法绑定。
 
 
 

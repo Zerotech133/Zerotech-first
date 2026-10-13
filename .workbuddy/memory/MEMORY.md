@@ -53,3 +53,4 @@
 - **本地 RAG smoke 的主页与索引都是特殊状态**（K-STOCK-160）：`/` 返回 `text/html`，只能按 HTTP 200/Content-Type 验证，不能套 `/api/tags` 的 JSON 解码；持久化索引首次运行可不存在，smoke 应把索引缺失作为可选状态，真正必检的是主页、Ollama `/api/tags` 和 `/api/rag` 的 `sources/done` 事件。
 - **运行实例与磁盘代码错位=乱象之源**（10-12 10:36 portal_api exit=1 实锤）：合并风暴（10:04-10:46 五连发）期间旧 23k 行实例仍在跑，traceback 拿旧 code object 行号去读已重构的新文件（3734 行）→ 乱码栈+假 AttributeError（_chanlun_page 丢失假象）；watchdog 重启又撞上 mid-merge 半写状态 → NameError(threading/api_data) 启动崩。诊断正解：①先跑 \	ools/_mixin_integrity.py --check\ 看磁盘真相 ②对比进程启动时间 vs 最后提交时间，错位即干净重启对齐 HEAD（Start-ScheduledTask 拉起后三类页面 curl 复核）③别按 traceback 字面行号读现在的文件
 - **显式 data_root 审计必须绑定同根 catalog**（K-STOCK-211）：`data_integrity.scan_integrity(data_root=...)` 的物理扫描与查询探针必须使用同一根目录；默认导入工作树 `datamart` 会把真实查询误读为空，造成假 FAIL。
+- **portal_api 拆分后的兼容层要单独验收**（K-STOCK-211）：从 mixin 迁移模块级 helper 时，必须显式导入下划线函数供测试注入；方法定义前残留装饰器会改变描述符绑定，导致实例页运行时出现 `missing self`。
