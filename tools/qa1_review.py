@@ -69,10 +69,23 @@ def review_one(sha):
     """复核单笔提交，返回 QA1 模型结论文本。"""
     diff = get_diff(sha)
     task = build_prompt(sha, diff)
-    return str(agent_coder.chat_auto("QA1", task))
+    return str(
+        agent_coder.chat_auto(
+            "QA1",
+            {"label": "QA1复核 " + sha, "prompt": task, "json_out": False},
+        )
+    )
 
 
 def main(argv):
+    task_id = "QA1-REVIEW"
+    if argv and argv[0] == "--task":
+        if len(argv) < 2:
+            print("用法: python tools/qa1_review.py [--task <工单号>] <短sha> [<sha>...]", file=sys.stderr)
+            return 2
+        task_id = argv[1]
+        argv = argv[2:]
+
     if not argv:
         print("用法: python tools/qa1_review.py <短sha> [<sha>...]", file=sys.stderr)
         return 2
@@ -82,15 +95,40 @@ def main(argv):
         print(f"=== QA1 复核 {sha} ===")
         try:
             verdict = review_one(sha)
-        except RuntimeError as exc:
+        except Exception as exc:
             # git 取 diff 失败无法复核，按退回处理，防止坏账混过质检门
             print(f"[退回] {sha}: {exc}", file=sys.stderr)
             rejected = True
             continue
         print(verdict)
         print("")
-        if REJECT_KEYWORD in verdict:
+
+        last_line = next(
+            (line for line in reversed(verdict.splitlines()) if line.strip()),
+            "",
+        )
+        if REJECT_KEYWORD in last_line:
             rejected = True
+
+        try:
+            subprocess.run(
+                [
+                    "python",
+                    "tools/events.py",
+                    "emit",
+                    "--kind",
+                    "review_verdict",
+                    "--agent",
+                    "QA1",
+                    "--task",
+                    task_id,
+                    "--detail",
+                    f"{sha}: {last_line.strip()[:200]}",
+                ],
+                check=True,
+            )
+        except Exception as exc:
+            print(f"[警告] review_verdict 留痕失败（{sha}）: {exc}", file=sys.stderr)
 
     return 1 if rejected else 0
 
