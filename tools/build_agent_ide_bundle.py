@@ -78,7 +78,9 @@ TRACE_DIR = os.path.join(ROOT, "shadow", "coder_traces")
 
 
 def coder_traces_digest(max_orders=5):
-    """最近 N 个编码工单轨迹：K编号 + 动作数 + 各类计数 + 最后一条。"""
+    """最近 N 个编码工单轨迹：K编号 + 动作数 + 各类计数 + 最后一条。
+    K-STOCK-345 审计加固：k_id<4字符视为畸形轨迹不入展示面（证据文件保留在磁盘）；
+    events 上限 200 条防超大 trace 撑爆 bundle。"""
     files = []
     if os.path.isdir(TRACE_DIR):
         for day in os.listdir(TRACE_DIR):
@@ -91,6 +93,7 @@ def coder_traces_digest(max_orders=5):
                                   os.path.join(d, fn)))
     files.sort(reverse=True)
     out = []
+    skipped = []
     for _, fp in files[:max_orders]:
         try:
             recs = [json.loads(l) for l in open(fp, encoding="utf-8",
@@ -99,18 +102,26 @@ def coder_traces_digest(max_orders=5):
             continue
         if not recs:
             continue
+        last = recs[-1]
+        kid = last.get("k_id", os.path.basename(fp)[:-6])
+        if len(str(kid)) < 4:  # 畸形轨迹（如 T.jsonl·345 审计）：不进展示面
+            skipped.append(str(kid))
+            continue
         kinds = {}
         for r in recs:
             kinds[r.get("kind", "?")] = kinds.get(r.get("kind", "?"), 0) + 1
-        last = recs[-1]
-        out.append({"k_id": last.get("k_id", os.path.basename(fp)[:-6]),
+        events = [{"ts": r.get("ts", ""), "kind": r.get("kind", "?"),
+                   "detail": (r.get("detail", "") or "")[:160]} for r in recs]
+        if len(events) > 200:  # 345 审计：防超大 trace 撑爆 bundle（保留最近 200）
+            events = events[-200:]
+        out.append({"k_id": kid,
                     "actions": len(recs),
                     "kinds": kinds,
                     "last_ts": last.get("ts", ""),
                     "last": (last.get("kind", "") + ": " + (last.get("detail", "") or ""))[:100],
-                    # K-STOCK-344 三期：逐动作时间线（全部动作，detail 截 160 字）
-                    "events": [{"ts": r.get("ts", ""), "kind": r.get("kind", "?"),
-                                "detail": (r.get("detail", "") or "")[:160]} for r in recs]})
+                    "events": events})
+    if skipped:
+        print("traces skip(畸形k_id):", skipped)
     return out or None
 
 

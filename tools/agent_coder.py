@@ -245,6 +245,8 @@ def trace_log(k_id, kind, detail):
     出问题可回放定位）。kind: generate/edit/lint/smoke/write/commit/fail。"""
     if not k_id:
         return
+    if len(str(k_id)) < 4:  # K-STOCK-345 审计：畸形 k_id（如"T"）打警告不拒写（保留证据）
+        print("[warn] trace_log k_id 疑似残缺(长度<4): %r —— 调用方应传完整工单号" % (k_id,))
     d = os.path.join(TRACE_DIR, time.strftime("%Y-%m-%d"))
     os.makedirs(d, exist_ok=True)
     fn = re.sub(r"[^\w.-]", "_", str(k_id)) + ".jsonl"

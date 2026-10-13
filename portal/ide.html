@@ -246,7 +246,7 @@
 <script>
 const GRADE_CN = {E3:"30年档", E2:"20年档", E1:"10年档"};
 let B = null;
-let VIEW = "org";           // ②当前视图
+let VIEW = localStorage.getItem("ide-view") || "org";  // 345 审计修复：恢复上一次视图
 let TABS = [];              // ③{tid,kind,key,title}
 let ATAB = null;            // 激活 tab tid
 let PVIEW = "log";          // ④当前面板页
@@ -317,7 +317,11 @@ function renderAct(){
   document.getElementById("act").innerHTML = VIEWS.map(v=>
     '<div class="ai'+(VIEW===v[0]?' on':'')+'" title="'+v[2]+'" onclick="setView(\''+v[0]+'\')">'+v[1]+'</div>').join('');
 }
-function setView(v){ VIEW = v; renderAct(); renderSide(); }
+function setView(v){
+  VIEW = v;
+  localStorage.setItem("ide-view", v);  // 345 审计修复：视图状态持久化（340 resizer 有记忆而视图漏了）
+  renderAct(); renderSide();
+}
 
 function renderSide(){
   let h = "";
@@ -663,14 +667,14 @@ function atCheck(){
   const before = qbox.value.slice(0, pos);
   const m = before.match(/@([\w.\-]*)$/);
   if(!m || !B){ atHide(); return; }
-  const q = m[1].toLowerCase();
+  const kw = m[1].toLowerCase();  // 345 审计：原名 q 遮蔽全局 q() helper（属性安全 JSON），改名防未来误用
   atItems = [];
   for(const id in B.agents){
-    if(id.toLowerCase().startsWith(q)) atItems.push({token:id, kind:"agent", rr:B.agents[id].role_profile});
+    if(id.toLowerCase().startsWith(kw)) atItems.push({token:id, kind:"agent", rr:B.agents[id].role_profile});
   }
   (B.code_files||[]).forEach(f=>{
     const fn = f.path.split("/").pop();
-    if(fn.toLowerCase().startsWith(q)) atItems.push({token:fn, kind:"file", rr:f.lines+" 行"});
+    if(fn.toLowerCase().startsWith(kw)) atItems.push({token:fn, kind:"file", rr:f.lines+" 行"});
   });
   atItems = atItems.slice(0,12);
   if(!atItems.length){ atHide(); return; }

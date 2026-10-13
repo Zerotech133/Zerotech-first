@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14 00:33",
+ "generated": "2026-10-14 00:40",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 27,
@@ -352,28 +352,6 @@
      "ts": "17:46:57",
      "kind": "smoke",
      "detail": "PASS"
-    }
-   ]
-  },
-  {
-   "k_id": "T",
-   "actions": 2,
-   "kinds": {
-    "add": 1,
-    "fail": 1
-   },
-   "last_ts": "17:26:49",
-   "last": "fail: git commit: On branch master\nChanges not staged for commit:\n  (use \"git add <file>...\" to upda",
-   "events": [
-    {
-     "ts": "17:26:45",
-     "kind": "add",
-     "detail": "tools/agent_coder.py"
-    },
-    {
-     "ts": "17:26:49",
-     "kind": "fail",
-     "detail": "git commit: On branch master\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git"
     }
    ]
   },
