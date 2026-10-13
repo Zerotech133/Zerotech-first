@@ -42,7 +42,7 @@ def _sentiment_block():
     非空优先，按 conf 降序，同题前 20 字去重。
     """
     import sqlite3
-    HI_CONF, TOP = 0.80, 4
+    HI_CONF, TOP = 0.80, 5  # K-STOCK-351 拍板：5 条 / 0.80
     try:
         db = sqlite3.connect(os.path.join(HERE, "news.db"))
         since = (datetime.now(CST) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M")
