@@ -146,9 +146,14 @@ def apply_edit_protocol(raw, target_path):
         cur = open(target_path, encoding="utf-8").read()
     except FileNotFoundError:
         return body, "whole"
-    for old, new in blocks:
-        if cur.count(old) != 1:  # 唯一性断言（判例：多命中=伪随机替换事故源）
-            return None, "sr_fail"
+    for i, (old, new) in enumerate(blocks):
+        n = cur.count(old)  # 唯一性断言（判例：多命中=伪随机替换事故源）
+        if n != 1:
+            # SWE-agent「错误结构化」：失败必须可定位——哪个块、命中几次、SEARCH 原文
+            diag = ("sr_fail: 第%d/%d块未唯一命中(hit=%d) SEARCH前80字=%r"
+                    % (i + 1, len(blocks), n, old[:80]))
+            print("  [edit-protocol]", diag)
+            return None, diag
         cur = cur.replace(old, new, 1)
     return cur, "sr"
 
@@ -202,7 +207,7 @@ def chat_claude(agent_id, task, timeout=600):
     return out
 
 
-def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420, timeout_claude=600):
+def chat_auto(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
     """按 CODER_BACKEND 路由；逐级降级 claude_glm → cloud → ollama。"""
     bk = backend()
     if bk == "claude_glm":
@@ -261,8 +266,12 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
         content, mode = apply_edit_protocol(raw, out_path)
         print("  [edit-protocol] mode=%s" % mode)
         trace_log(k_id, "edit", "mode=%s" % mode)
-        err = sr_err if mode == "sr_fail" else (
-            lint_py_text(content, out_path) if out_path.endswith(".py") else None)
+        if mode.startswith("sr_fail"):
+            err = mode  # 带结构化诊断
+        elif out_path.endswith(".py"):
+            err = lint_py_text(content, out_path)
+        else:
+            err = None
         tries = 0
         while err and tries < lint_retries:
             print("  [lint-gate] 第%d轮拦截: %s → 带错重试" % (tries + 1, err))
@@ -272,8 +281,8 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
                 "\n请重新输出修正后的完整文件内容（或修正的 SEARCH/REPLACE 块）。" % err)
             raw = chat_auto(agent_id, task)
             content, mode = apply_edit_protocol(raw, out_path)
-            if mode == "sr_fail":
-                err = sr_err
+            if mode.startswith("sr_fail"):
+                err = mode  # 带结构化诊断（块序号/命中数/SEARCH原文）喂回
             elif content is None:
                 err = "产出为空"
             elif out_path.endswith(".py"):

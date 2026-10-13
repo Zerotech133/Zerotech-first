@@ -23,7 +23,7 @@ print("1 sr-block-edit PASS")
 # 2) SEARCH 不命中 → sr_fail（禁止落盘，由调用方带错重试）
 raw2 = raw1.replace("def add(a, b):\n    return a + b", "return x")  # 制造不命中
 content, mode = ac.apply_edit_protocol(raw2, target)
-assert mode == "sr_fail" and content is None, (mode, content)
+assert mode.startswith("sr_fail") and content is None, (mode, content)  # 036h起带结构化诊断
 print("2 sr-miss-sr_fail PASS")
 
 # 3) 无块 + 围栏剥离 → 整文件

@@ -1,12 +1,12 @@
 {
- "generated": "2026-10-13 11:14",
+ "generated": "2026-10-13 11:45",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 27,
   "departments": 12,
   "prompt_ok": 27,
   "prompt_miss": [],
-  "workorders_doing": 4,
+  "workorders_doing": 3,
   "workorders_review": 19
  },
  "workorders": [
@@ -185,17 +185,48 @@
    "owner": "PM1",
    "branch": "task/proj_c_nlq_001",
    "created": "2026-10-13 07:24:46"
-  },
-  {
-   "id": "K-STOCK-298",
-   "desc": "修复训练候选审计器对 source 字段的安全路径回退",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/K-STOCK-298",
-   "created": "2026-10-13 11:00:46"
   }
  ],
  "coder_traces": [
+  {
+   "k_id": "K-ORG-036i",
+   "actions": 40,
+   "kinds": {
+    "generate": 5,
+    "edit": 8,
+    "lint": 11,
+    "write": 6,
+    "smoke": 6,
+    "fail": 3,
+    "commit": 1
+   },
+   "last_ts": "11:44:41",
+   "last": "commit: 0d93649 K-ORG-036i: 冒烟轨迹去噪:专属号K-SMOKE-F4 — by DEV2 via cloud"
+  },
+  {
+   "k_id": "K-ORG-036h",
+   "actions": 36,
+   "kinds": {
+    "generate": 5,
+    "edit": 7,
+    "lint": 10,
+    "fail": 4,
+    "write": 4,
+    "smoke": 4,
+    "commit": 2
+   },
+   "last_ts": "11:43:53",
+   "last": "commit: 0d89a0f K-ORG-036h: 模型分层修正:轻量档升4.5-flash — by DEV2 via cloud"
+  },
+  {
+   "k_id": "K-SMOKE-F4",
+   "actions": 3,
+   "kinds": {
+    "fail": 3
+   },
+   "last_ts": "11:42:48",
+   "last": "fail: git commit: On branch master\nChanges not staged for commit:\n  (use \"git add <file>...\" to upda"
+  },
   {
    "k_id": "K-ORG-036d",
    "actions": 2,
