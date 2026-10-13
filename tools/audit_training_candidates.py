@@ -145,9 +145,12 @@ def audit_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
     policy = manifest.get("policy") or {}
     root = Path(str(manifest.get("source_root") or "."))
     as_of = _iso_date(policy.get("as_of"))
-    records = manifest.get("records")
+    # 训练候选清单历史上使用 records，来源快照重建器输出 entries；
+    # 两者表示相同的逐条候选记录，审计器需兼容这两个稳定接口。
+    records = (manifest.get("records") if "records" in manifest
+               else manifest.get("entries"))
     if not isinstance(records, list):
-        raise ValueError("records 必须是 JSON 列表")
+        raise ValueError("records/entries 必须是 JSON 列表")
 
     audited: list[dict[str, Any]] = []
     seen_ids: dict[str, int] = {}
