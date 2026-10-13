@@ -149,28 +149,15 @@ def load_app_creds():
 
 
 def send_openapi(msg_type, content, user_id, receive_id_type='open_id'):
-    """Send via Feishu OpenAPI: tenant_access_token (from static app creds)
-    then im/v1/messages. receive_id_type: 'open_id' (user) or 'chat_id' (group).
-    Returns True on success."""
-    import urllib.request as _rq
-    app_id, app_secret = load_app_creds()
-    if not app_id or not app_secret:
-        return False
-    body = json.dumps({'app_id': app_id, 'app_secret': app_secret}).encode('utf-8')
-    req = _rq.Request('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal',
-                      data=body, headers={'Content-Type': 'application/json'})
-    with _rq.urlopen(req, timeout=15) as r:
-        tok = json.loads(r.read().decode('utf-8')).get('tenant_access_token')
-    if not tok:
-        return False
-    body2 = json.dumps({'receive_id': user_id, 'msg_type': msg_type,
-                        'content': content}).encode('utf-8')
-    req2 = _rq.Request('https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=' + receive_id_type,
-                       data=body2, headers={'Content-Type': 'application/json',
-                                            'Authorization': 'Bearer ' + tok})
-    with _rq.urlopen(req2, timeout=15) as r2:
-        resp = json.loads(r2.read().decode('utf-8'))
-    return resp.get('code') == 0
+    """Send via Feishu OpenAPI. K-STOCK-228: delegate to
+    news_collector/feishu_client (single API base for the whole repo).
+    receive_id_type: 'open_id' (user) or 'chat_id' (group).
+    Returns True on success (network errors degrade to False, not raise)."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(here), 'news_collector'))
+    from feishu_client import send_msg
+    ok, _why = send_msg(content, msg_type, user_id, receive_id_type)
+    return ok
 
 
 def load_webhook():

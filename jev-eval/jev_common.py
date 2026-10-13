@@ -293,26 +293,26 @@ def _load_bot_creds() -> "tuple[str, str, str] | None":
     with _TAT_LOCK:
         if _TAT_CACHE and _TAT_CACHE[0] > time.time():
             return _TAT_CACHE[1], _TAT_CACHE[2], _TAT_CACHE[3]
-    cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
+    # K-STOCK-228 出口收敛：token 换取委托 feishu_client（全仓唯一底座），
+    # 本层缓存元组语义保留（lark_env 注入需 tat+app_id+app_secret 三件套）。
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
+    from feishu_client import load_app_creds as _fc_creds, get_tat as _fc_tat
+    app_id, app_secret = _fc_creds()
+    if not app_id or not app_secret:
+        log("静态 app 凭证缺失，bot 凭证注入降级", level="warn")
+        return None
     try:
-        with open(cfg, encoding="utf-8") as f:
-            apps = json.load(f).get("apps") or []
-        app_id, app_secret = apps[0]["appId"], apps[0]["appSecret"]
-        body = json.dumps({"app_id": app_id,
-                           "app_secret": app_secret}).encode("utf-8")
-        req = urllib.request.Request(
-            "https://open.feishu.cn/open-apis/auth/v3/"
-            "tenant_access_token/internal",
-            data=body, headers={"Content-Type": "application/json"})
-        tok = json.loads(urllib.request.urlopen(req, timeout=15).
-                         read().decode("utf-8")).get("tenant_access_token")
-        if tok:
-            _TAT_CACHE = (time.time() + 7200 - 600, tok,
-                          app_id, app_secret)  # 有效期~7200s
-            return tok, app_id, app_secret
+        tok = _fc_tat(app_id, app_secret)
     except Exception as e:
-        log(f"tenant_access_token 获取失败（config 缺失或 HTTP 异常），"
-            f"bot 凭证注入降级: {str(e)[:100]}", level="warn")  # C2批2
+        log(f"tenant_access_token 获取失败，bot 凭证注入降级: "
+            f"{str(e)[:100]}", level="warn")  # C2批2
+        return None
+    if tok:
+        _TAT_CACHE = (time.time() + 7200 - 600, tok,
+                      app_id, app_secret)  # 有效期~7200s
+        return tok, app_id, app_secret
+    log("tenant_access_token 为空，bot 凭证注入降级", level="warn")
     return None
 
 
