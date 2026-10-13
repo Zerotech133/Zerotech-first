@@ -31,6 +31,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "agent_platform" / "data" / "sec2"
 PLAN_MAX = 9000      # 方案全文上限（K-ORG-051 设计稿约 6KB 不会触发）
 EVIDENCE_MAX = 9000  # 实现证据上限
+FILE_MAX = 18000     # K-ORG-056 判例：--files 单文件上限（原 4500 截断致 SEC2
+                     # 把完整实现误判"缺失"两例——截断≠缺失，必须让审查者看见全文
+                     # 或看见显式截断标注）
 
 FORMAT_RULES = """你是 SEC2 网络安全工程师（30年网安+全栈）。对照研发方案逐条检查实现，只做判定不修改代码。
 产出格式（固定，不许加散文开头）：
@@ -62,11 +65,16 @@ def load_evidence(args):
     for f in (args.files or []):
         p = Path(f)
         if p.exists():
-            parts.append("文件 %s:\n%s" % (f, p.read_text(
-                encoding="utf-8", errors="replace")[:EVIDENCE_MAX // 2]))
+            body = p.read_text(encoding="utf-8", errors="replace")
+            if len(body) > FILE_MAX:
+                body = (body[:FILE_MAX]
+                        + "\n\n【证据截断标注】以上为前 %d 字符，全文件共 %d 字符——"
+                          "尾部内容未展示属证据截断，请勿判「缺失」，可建议补交全文。"
+                          % (FILE_MAX, len(body)))
+            parts.append("文件 %s:\n%s" % (f, body))
         else:
             parts.append("文件 %s: 不存在（这可能本身就是缺失证据）" % f)
-    return "\n\n".join(parts)[:EVIDENCE_MAX * 2]
+    return "\n\n".join(parts)[:EVIDENCE_MAX * 3]
 
 
 def parse_verdict(report):
