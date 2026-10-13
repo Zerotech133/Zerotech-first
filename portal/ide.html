@@ -24,6 +24,13 @@
   .hd-right a{color:var(--blue);text-decoration:none;font-size:12px;border:1px solid var(--line);
     padding:6px 12px;border-radius:8px;background:var(--panel)}
 
+  /* ── 工作区切换器（K-STOCK-346）── */
+  .wsbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .wsbtn{font-size:11.5px;padding:5px 11px;border-radius:8px;border:1px solid var(--line);
+    background:var(--panel);color:var(--dim);cursor:pointer;user-select:none}
+  .wsbtn:hover{color:var(--fg);border-color:var(--dim)}
+  .wsbtn.on{color:var(--fg);border-color:var(--purple);background:rgba(188,140,255,.13)}
+
   /* ── 五区 grid（342 设计稿）：活动栏 | 侧栏 | 编辑器 | 调试台 / 底部面板 ── */
   .main{flex:1;display:grid;min-height:0;
     grid-template-columns:44px var(--w-tree,220px) 6px 1fr 6px var(--w-dbg,400px);
@@ -126,6 +133,14 @@
     padding:9px 12px;font-size:12px}
   .dbg .target b{color:var(--blue)}
   .dbg .sysinfo{font-size:10.5px;color:var(--dim2);margin-top:4px;line-height:1.6}
+  /* 多会话 Tab 条（K-STOCK-346：每 Agent 一会话·切人保留历史） */
+  .sess{display:flex;gap:5px;flex-wrap:wrap;padding:0 14px 8px;align-items:center}
+  .schip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:12px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--dim);cursor:pointer;user-select:none}
+  .schip.on{color:var(--fg);border-color:var(--blue);background:rgba(88,166,255,.13)}
+  .schip .sx{color:var(--dim2);padding:0 2px;font-size:12px}
+  .schip .sx:hover{color:#f85149}
+  .s-note{font-size:10.5px;color:var(--dim2)}
   .chat{flex:1;overflow:auto;padding:6px 14px;min-height:0}
   .msg{margin-bottom:10px;font-size:12.5px;line-height:1.7}
   .msg .who{font-size:10.5px;color:var(--dim2);margin-bottom:3px}
@@ -185,7 +200,8 @@
 <script src="/static/nav.js" defer></script></head>
 <body>
 <header>
-  <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 五区布局</small></h1>
+  <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 多工作区</small></h1>
+  <div class="wsbar" id="wsbar"></div>
   <div class="hd-stats" id="stats"></div>
   <div class="hd-right">
     <span style="font-size:11px;color:var(--dim2);align-self:center;cursor:pointer" onclick="palOpen()" title="快捷键 Ctrl+P">⌕ Ctrl+P 搜索</span>
@@ -201,7 +217,7 @@
   <div class="ed">
     <div class="tabs" id="tabs"></div>
     <div class="edc" id="edc">
-      <div class="placeholder"><div class="big">⌨</div><div>左侧选择一个 Agent / 文件 / 工单<br>以标签页方式打开 · 可并存</div></div>
+      <div class="placeholder"><div class="big">⌨</div><div>左侧选择一个 Agent / 文件 / 工单<br>以标签页方式打开 · 可并存 · Tab 集按工作区隔离</div></div>
     </div>
   </div>
   <div class="rz-h rz-p" title="拖动调整面板高度"></div>
@@ -217,7 +233,8 @@
   </div>
   <div class="rz rz2" title="拖动调整调试台宽度"></div>
   <div class="dbg">
-    <div class="d-t">🧪 调试台 · 试运行</div>
+    <div class="d-t">🧪 调试台 · 试运行（多会话）</div>
+    <div class="sess" id="sess"><span class="s-note">无会话 · 打开 Agent 档案即建会话</span></div>
     <div class="target" id="dbg-target">未选择 Agent</div>
     <div class="chat" id="chat"></div>
     <div class="dbg-ctl">
@@ -232,7 +249,7 @@
       <textarea id="q" placeholder="给该 Agent 发一条测试消息…输入 @ 引用 Agent 或代码文件"></textarea>
       <button class="send" id="send" onclick="send()" disabled>发送</button>
     </div>
-    <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · 9b 约 10-60s · 此调试不发工单不落记忆</div>
+    <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · 9b 约 10-60s · 此调试不发工单不落记忆 · 每Agent独立会话切人保留历史</div>
   </div>
 </div>
 
@@ -246,12 +263,34 @@
 <script>
 const GRADE_CN = {E3:"30年档", E2:"20年档", E1:"10年档"};
 let B = null;
-let VIEW = localStorage.getItem("ide-view") || "org";  // 345 审计修复：恢复上一次视图
-let TABS = [];              // ③{tid,kind,key,title}
+
+/* ═══ 工作区（K-STOCK-346：工作区×身份隔离·一期骨架）═══
+   键位规划：ide-ws=当前工作区 · ide-view@<ws> / ide-tabs@<ws> / ide-dbg@<ws> / ide-chat@<ws>@<id>
+   旧键迁移：WS==="all" 时 ide-view / --w-* / panel-closed 兼容读取（345 判例：先盘点持久化键） */
+let WS = localStorage.getItem("ide-ws") || "all";
+function wsKey(base){ return base + "@" + WS; }
+function wsGet(base){
+  let v = localStorage.getItem(wsKey(base));
+  if(v===null && WS==="all") v = localStorage.getItem(base);  // 旧键兼容
+  return v;
+}
+function wsSet(base, val){ localStorage.setItem(wsKey(base), String(val)); }
+function wsGetJSON(base, def){ try{ const v=wsGet(base); return v===null?def:JSON.parse(v); }catch(e){ return def; } }
+function wsSetJSON(base, val){ wsSet(base, JSON.stringify(val)); }
+
+let VIEW = "org";            // ①当前视图（per-ws，loadState 恢复）
+let TABS = [];              // ③{tid,kind,key,title}——per-ws 隔离
 let ATAB = null;            // 激活 tab tid
 let PVIEW = "log";          // ④当前面板页
-let PLOGS = [];             // 调试日志行
 let TIDSEQ = 1;
+const LOGS = {};            // ④调试日志按工作区分流：ws → [{s,cls,t}]
+
+function projDepts(){ return ((B&&B.departments)||[]).filter(d=>d.type==="project"); }
+function wsAgents(){   // 当前工作区成员 Set；null=全部不过滤
+  if(WS==="all" || !B) return null;
+  const d = B.departments.find(x=>x.name===WS);
+  return new Set(d ? d.agents : []);
+}
 
 function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 /* 属性安全 JSON：双引号转 &quot;，防 onclick 属性被截断（343 实测判例） */
@@ -309,6 +348,32 @@ function panelToggle(){
   document.getElementById("ptoggle").textContent = closed ? "▴ 展开" : "▾ 收起";
 }
 
+/* ═══ 工作区切换器（顶栏） ═══ */
+const WS_ICONS = ["🅰","🅱","🅲","🅳","🅴","🅵"];
+function renderWs(){
+  const el = document.getElementById("wsbar");
+  let h = '<span class="wsbtn'+(WS==="all"?' on':'')+'" onclick="setWs(\'all\')" title="聚合视图（全部部门）">🌐 全部</span>';
+  projDepts().forEach((d,i)=>{
+    h += '<span class="wsbtn'+(WS===d.name?' on':'')+'" onclick="setWs('+q(d.name)+')"'
+      + ' title="'+esc((d.agents||[]).join(' / '))+'">'+(WS_ICONS[i]||"▫")+' '+esc(d.name)+'</span>';
+  });
+  el.innerHTML = h;
+}
+function setWs(name){
+  if(name===WS || !B) return;
+  WS = name;
+  localStorage.setItem("ide-ws", WS);
+  /* 工作现场整套切换：视图 / Tab 集 / 调试目标（会话历史按 ws 独立存，切回即回） */
+  DBGCUR = null;
+  VIEW = wsGet("ide-view") || "org";
+  loadTabs();
+  document.getElementById("chat").innerHTML = "";
+  document.getElementById("dbg-target").textContent = "未选择 Agent";
+  document.getElementById("send").disabled = true;
+  renderWs(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  addLog("工作区 → "+(name==="all"?"全部":name), "lg-b");
+}
+
 /* ═══ ① 活动栏 + ② 侧栏四视图 ═══ */
 const VIEWS = [
   ["org","👥","组织"],["code","💻","代码"],["task","📋","工单"],["mem","🧠","记忆"],["trace","📈","轨迹"]
@@ -319,45 +384,59 @@ function renderAct(){
 }
 function setView(v){
   VIEW = v;
-  localStorage.setItem("ide-view", v);  // 345 审计修复：视图状态持久化（340 resizer 有记忆而视图漏了）
+  wsSet("ide-view", v);  // 视图状态 per-ws 持久化（345 审计修复延续）
   renderAct(); renderSide();
 }
 
 function renderSide(){
   let h = "";
+  const wsA = wsAgents();
   if(VIEW==="org"){
-    const func = B.departments.filter(d=>d.type==="func"), proj = B.departments.filter(d=>d.type==="project");
-    h += '<div class="s-t">职能中心</div>';
-    for(const d of func){
-      h += '<div class="dep">'+d.name+'</div>';
-      for(const id of d.agents){ const a=B.agents[id];
+    if(WS==="all"){
+      const func = B.departments.filter(d=>d.type==="func"), proj = B.departments.filter(d=>d.type==="project");
+      h += '<div class="s-t">职能中心</div>';
+      for(const d of func){
+        h += '<div class="dep">'+d.name+'</div>';
+        for(const id of d.agents){ const a=B.agents[id];
+          h += sideItem("agent", id, a.grade, id, esc(a.role_profile)); }
+      }
+      h += '<div class="s-t">项目部门（矩阵制）</div>';
+      for(const d of proj){
+        h += '<div class="dep proj">'+d.name+'</div>';
+        for(const id of d.agents){ const a=B.agents[id]; if(!a) continue;
+          h += sideItem("agent", id, a.grade, id, esc(a.role_profile)); }
+      }
+    } else {
+      const d = B.departments.find(x=>x.name===WS);
+      h += '<div class="s-t">工作区成员 · '+esc(WS)+'</div>';
+      for(const id of ((d&&d.agents)||[])){ const a=B.agents[id]; if(!a) continue;
         h += sideItem("agent", id, a.grade, id, esc(a.role_profile)); }
-    }
-    h += '<div class="s-t">项目部门（矩阵制）</div>';
-    for(const d of proj){
-      h += '<div class="dep proj">'+d.name+'</div>';
-      for(const id of d.agents){ const a=B.agents[id]; if(!a) continue;
-        h += sideItem("agent", id, a.grade, id, esc(a.role_profile)); }
+      h += '<div class="s-t" style="margin-top:16px">🌐 全部 = 聚合视图<br>顶部可切换工作区</div>';
     }
   } else if(VIEW==="code"){
-    h += '<div class="s-t">平台代码（agent_platform）</div>';
+    h += '<div class="s-t">平台代码（agent_platform · 全局共享）</div>';
     (B.code_files||[]).forEach((f)=>{
       const fn = f.path.split('/').pop();
       h += '<div class="it cf'+(tabOn("code",f.path)?' on':'')+'" onclick="openTab(\'code\','+q(f.path)+')">'
         + '<span class="rid">'+esc(fn)+'</span><span class="rr">'+f.lines+' 行</span></div>';
     });
   } else if(VIEW==="task"){
-    const doing = (B.workorders||[]).filter(w=>w.status==="doing");
-    const review = (B.workorders||[]).filter(w=>w.status==="review");
-    h += '<div class="s-t">doing（'+doing.length+'）</div>';
+    const inWs = w => !wsA || (w.owner && wsA.has(w.owner));
+    const all = (B.workorders||[]);
+    const doing = all.filter(w=>w.status==="doing" && inWs(w));
+    const review = all.filter(w=>w.status==="review" && inWs(w));
+    const off = all.length - doing.length - review.length;
+    h += '<div class="s-t">'+(WS==="all"?"":"["+esc(WS)+"] ")+'doing（'+doing.length+'）</div>';
     for(const w of doing) h += sideTask(w);
     h += '<div class="s-t">review（'+review.length+'）</div>';
     for(const w of review) h += sideTask(w);
-    if(!(B.workorders||[]).length) h += '<div class="dep">无活跃工单</div>';
+    if(!all.length) h += '<div class="dep">无活跃工单</div>';
+    else if(WS!=="all" && off>0) h += '<div class="s-t" style="margin-top:10px">另有 '+off+' 条他区工单未显示</div>';
   } else if(VIEW==="mem"){
-    h += '<div class="s-t">记忆（agent/* 只读摘要）</div>';
+    h += '<div class="s-t">'+(WS==="all"?"":"["+esc(WS)+"] ")+'记忆（agent/* 只读摘要）</div>';
     let any = false;
     for(const id in B.agents){
+      if(wsA && !wsA.has(id)) continue;
       const a = B.agents[id];
       if(!a.memory) continue;
       any = true;
@@ -365,14 +444,18 @@ function renderSide(){
       h += '<div class="it'+(tabOn("mem",id)?' on':'')+'" onclick="openTab(\'mem\','+q(id)+')">'
         + '<span class="rid">'+id+'</span><span class="rr">'+cnt+' 条</span></div>';
     }
-    if(!any) h += '<div class="dep">暂无记忆活动</div>';
+    if(!any) h += '<div class="dep">'+(WS==="all"?"暂无记忆活动":"本工作区无记忆活动")+'</div>';
   } else if(VIEW==="trace"){
-    h += '<div class="s-t">编码生产线轨迹（shadow 只读）</div>';
-    (B.coder_traces||[]).forEach(t=>{
+    /* 轨迹按工单 owner 归属工作区：k_id→工单→owner；无主轨迹只在「全部」显示 */
+    const wo = {};
+    (B.workorders||[]).forEach(w=>{ wo[w.id]=w.owner; });
+    const list = (B.coder_traces||[]).filter(t=> !wsA || (wo[t.k_id] && wsA.has(wo[t.k_id])));
+    h += '<div class="s-t">'+(WS==="all"?"":"["+esc(WS)+"] ")+'编码生产线轨迹（shadow 只读）</div>';
+    list.forEach(t=>{
       h += '<div class="it'+(tabOn("trace",t.k_id)?' on':'')+'" onclick="openTab(\'trace\','+q(t.k_id)+')">'
         + '<span class="rid">'+esc(t.k_id)+'</span><span class="rr">'+t.actions+' 动作</span></div>';
     });
-    if(!(B.coder_traces||[]).length) h += '<div class="dep">暂无轨迹</div>';
+    if(!list.length) h += '<div class="dep">'+(WS==="all"?"暂无轨迹":"本工作区无轨迹")+'</div>';
   }
   document.getElementById("side").innerHTML = h;
 }
@@ -388,7 +471,16 @@ function sideTask(w){
 }
 function tabOn(kind,key){ const t=TABS.find(x=>x.kind===kind&&x.key===key); return t&&t.tid===ATAB; }
 
-/* ═══ ③ 多 Tab 编辑器 ═══ */
+/* ═══ ③ 多 Tab 编辑器（Tab 集 per-ws 隔离·ide-tabs@<ws>） ═══ */
+function loadTabs(){
+  const o = wsGetJSON("ide-tabs", {tabs:[], atab:null});
+  TABS = (o.tabs||[]).filter(t=>t && t.tid && t.kind && t.key);
+  ATAB = o.atab || null;
+  if(ATAB && !TABS.find(t=>t.tid===ATAB)) ATAB = null;
+  TIDSEQ = TABS.reduce((m,t)=>Math.max(m,t.tid),0) + 1;
+}
+function saveTabs(){ wsSetJSON("ide-tabs", {tabs:TABS, atab:ATAB}); }
+
 function openTab(kind, key){
   let t = TABS.find(x=>x.kind===kind&&x.key===key);
   if(!t){
@@ -396,6 +488,7 @@ function openTab(kind, key){
     TABS.push(t);
   }
   ATAB = t.tid;
+  saveTabs();
   renderTabs(); renderSide(); renderTab();
 }
 function tabTitle(kind,key){
@@ -415,9 +508,10 @@ function closeTab(tid, ev){
     const nxt = TABS[i] || TABS[i-1];
     ATAB = nxt ? nxt.tid : null;
   }
+  saveTabs();
   renderTabs(); renderSide(); renderTab();
 }
-function activateTab(tid){ ATAB = tid; renderTabs(); renderSide(); renderTab(); }
+function activateTab(tid){ ATAB = tid; saveTabs(); renderTabs(); renderSide(); renderTab(); }
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(t=>
     '<div class="tab'+(t.tid===ATAB?' on':'')+'" onclick="activateTab('+t.tid+')">'
@@ -426,7 +520,7 @@ function renderTabs(){
 function renderTab(){
   const c = document.getElementById("edc");
   const t = TABS.find(x=>x.tid===ATAB);
-  if(!t){ c.innerHTML = '<div class="placeholder"><div class="big">⌨</div><div>左侧选择内容以标签页打开</div></div>'; syncDbg(null); return; }
+  if(!t){ c.innerHTML = '<div class="placeholder"><div class="big">⌨</div><div>左侧选择内容以标签页打开</div></div>'; return; }
   if(t.kind==="agent") rAgent(c, t.key);
   else if(t.kind==="code") rCode(c, t.key);
   else if(t.kind==="task") rTask(c, t.key);
@@ -437,6 +531,7 @@ function renderTab(){
 /* —— Tab 内容渲染器 —— */
 function rAgent(c, id){
   const CUR = B.agents[id];
+  if(!CUR){ c.innerHTML = '<div class="dep">Agent 不存在（bundle 过期？重跑 bundle 脚本）</div>'; return; }
   const pj = (CUR.projects||[]).map(p=>'<span class="ptag">'+esc(p)+'</span>').join("");
   c.innerHTML =
     '<div class="a-head"><h2>'+CUR.id+'</h2>'
@@ -473,7 +568,7 @@ function rAgent(c, id){
     + '<span style="font-size:11px;color:var(--dim2);align-self:center">'+CUR.prompt.length+' 字符 · 修改须改 prompts/ 源文件后重跑 bundle 脚本</span></div>'
     + '<div class="prompt-box clampable">'+esc(CUR.prompt)+'</div>'
     + '<div class="clamp-bar"><button class="mini" onclick="toggleClamp(this)">▾ 展开全文</button></div></div>';
-  syncDbg(CUR);
+  dbgSelect(id);  // 打开档案 = 选中调试目标（会话历史保留，346 多会话）
 }
 function rCode(c, path){
   const f = (B.code_files||[]).find(x=>x.path===path);
@@ -559,10 +654,11 @@ function copyTxt(btn, txt){
   });
 }
 
-/* ═══ ④ 底部面板 ═══ */
+/* ═══ ④ 底部面板（日志按工作区分流·A0 日报/点评全局共享） ═══ */
 function addLog(s, cls){
-  PLOGS.push({s, cls: cls||"", t: new Date().toTimeString().slice(0,8)});
-  if(PLOGS.length > 200) PLOGS.shift();
+  const arr = LOGS[WS] || (LOGS[WS] = []);
+  arr.push({s, cls: cls||"", t: new Date().toTimeString().slice(0,8)});
+  if(arr.length > 200) arr.shift();
   if(PVIEW==="log") pRender();
 }
 function pSwitch(v){
@@ -573,8 +669,9 @@ function pSwitch(v){
 function pRender(){
   const b = document.getElementById("pbody");
   if(PVIEW==="log"){
-    b.innerHTML = PLOGS.map(l=>'<div><span class="lg-d">'+l.t+'</span> <span class="'+l.cls+'">'+esc(l.s)+'</span></div>').join("")
-      || '<span class="lg-d">暂无日志。</span>';
+    const arr = LOGS[WS] || [];
+    b.innerHTML = arr.map(l=>'<div><span class="lg-d">'+l.t+'</span> <span class="'+l.cls+'">'+esc(l.s)+'</span></div>').join("")
+      || '<span class="lg-d">暂无日志。（工作区 '+esc(WS==="all"?"全部":WS)+' 独立日志流）</span>';
   } else if(PVIEW==="daily"){
     b.innerHTML = B && B.a0_daily
       ? '<div class="md">'+esc(B.a0_daily.content)+'</div>'
@@ -586,6 +683,7 @@ function pRender(){
   } else if(PVIEW==="console"){
     b.innerHTML = !B ? '<span class="lg-d">bundle 未加载</span>' :
       '<div>bundle 生成于 <span class="lg-b">'+esc(B.generated)+'</span> · generator '+esc(B.generator)+'</div>'
+      + '<div>当前工作区 <span class="lg-b">'+esc(WS==="all"?"全部":WS)+'</span> · 成员 '+((wsAgents()||{size:B.stats.agents}).size)+' 人</div>'
       + '<div>agents <span class="lg-g">'+B.stats.agents+'</span> · departments '+B.stats.departments
       + ' · prompt '+B.stats.prompt_ok+'/'+B.stats.agents
       + ' · 工单 <span class="lg-o">'+(B.stats.workorders_doing||0)+'</span> doing / <span class="lg-o">'+(B.stats.workorders_review||0)+'</span> review</div>'
@@ -596,20 +694,58 @@ function pRender(){
   b.scrollTop = b.scrollHeight;
 }
 
-/* ═══ ⑤ 调试台（模型选择 + @引用 + 证据表） ═══ */
+/* ═══ ⑤ 调试台（多会话·346：每 Agent 一会话·切人保留历史·可同时多人对话） ═══ */
 let DBGCUR = null;
-function syncDbg(CUR){
-  DBGCUR = CUR || null;
-  document.getElementById("dbg-target").innerHTML = CUR
-    ? '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 模型 <b>'+esc(model())+'</b>'
-      + '<div class="sysinfo">system = 人设 prompt 全文（'+CUR.prompt.length+' 字符，已装载）</div>'
-    : '未选择 Agent';
-  document.getElementById("send").disabled = !CUR;
-  if(!CUR) document.getElementById("chat").innerHTML = "";
+const SESSIONS = {};   // agentId → [{cls,who,html}]（内存）· 持久化 ide-chat@<ws>@<id>
+function sessLoad(id){
+  if(!SESSIONS[id]) SESSIONS[id] = wsGetJSON("ide-chat@"+id, []);
+  return SESSIONS[id];
+}
+function sessSave(id){
+  const s = sessLoad(id);
+  if(s.length > 50) SESSIONS[id] = s.slice(-50);   // localStorage 体积保护：每会话 50 条封顶
+  wsSetJSON("ide-chat@"+id, SESSIONS[id]);
+}
+function dbgSelect(id){
+  const CUR = B.agents[id];
+  if(!CUR) return;
+  DBGCUR = CUR;
+  wsSetJSON("ide-dbg", id);
+  document.getElementById("dbg-target").innerHTML =
+    '调试目标 <b>'+CUR.id+'</b>（'+esc(CUR.role_profile)+'）· 工作区 <b>'+esc(WS==="all"?"全部":WS)+'</b> · 模型 <b>'+esc(model())+'</b>'
+    + '<div class="sysinfo">system = 人设 prompt 全文（'+CUR.prompt.length+' 字符，已装载）· 会话历史 '+sessLoad(id).length+' 条</div>';
+  document.getElementById("send").disabled = false;
+  renderChatSession(id);
+  renderSess();
+}
+function renderChatSession(id){
+  const c = document.getElementById("chat");
+  const s = sessLoad(id);
+  c.innerHTML = s.map(m=>
+      '<div class="msg '+m.cls+'"><div class="who">'+esc(m.who)+'</div><div class="bubble">'+m.html+'</div></div>').join("")
+    || '<div class="s-note" style="padding:4px 2px">会话开始——发一条测试消息（历史按 Agent 独立保存，切换不丢）</div>';
+  c.scrollTop = c.scrollHeight;
+}
+function renderSess(){
+  const el = document.getElementById("sess");
+  const wsA = wsAgents();
+  const ids = Object.keys(SESSIONS).filter(id=>B.agents[id] && (!wsA || wsA.has(id)));
+  if(DBGCUR && !ids.includes(DBGCUR.id)) ids.unshift(DBGCUR.id);
+  if(!ids.length){ el.innerHTML = '<span class="s-note">无会话 · 打开 Agent 档案即建会话</span>'; return; }
+  el.innerHTML = ids.map(id=>
+    '<span class="schip'+(DBGCUR&&DBGCUR.id===id?' on':'')+'" onclick="dbgSelect('+q(id)+')" title="切换到 '+esc(id)+' 的会话">'
+    + esc(id) + '<span class="sx" title="清空该会话" onclick="sessClear('+q(id)+',event)">×</span></span>').join("");
+}
+function sessClear(id, ev){
+  if(ev) ev.stopPropagation();
+  delete SESSIONS[id];
+  try{ localStorage.removeItem(wsKey("ide-chat@"+id)); }catch(e){}
+  if(DBGCUR && DBGCUR.id===id) document.getElementById("chat").innerHTML = "";
+  renderSess();
 }
 function model(){ return document.getElementById("model").value; }
 document.getElementById("model").addEventListener("change", ()=>{
-  if(DBGCUR) syncDbg(DBGCUR);
+  if(DBGCUR) dbgSelect(DBGCUR.id);
 });
 
 function addMsg(cls, who, html){
@@ -618,7 +754,14 @@ function addMsg(cls, who, html){
   d.className = "msg "+cls;
   d.innerHTML = '<div class="who">'+esc(who)+'</div><div class="bubble">'+html+'</div>';
   c.appendChild(d); c.scrollTop = c.scrollHeight;
-  return d.querySelector(".bubble");
+  let rec = null;
+  if(DBGCUR){          // 入当前会话（持久化·按 ws 隔离）
+    rec = {cls, who, html};
+    sessLoad(DBGCUR.id).push(rec);
+    sessSave(DBGCUR.id);
+    renderSess();
+  }
+  return {el: d.querySelector(".bubble"), rec};
 }
 /* 证据表渲染：连续 | 分隔的行 → table（342⑤） */
 function evTable(txt){
@@ -717,28 +860,33 @@ function atContext(msg){
 async function send(){
   const raw = qbox.value.trim();
   if(!raw || !DBGCUR) return;
+  const aid = DBGCUR.id;   // 捕获：推理期间切会话不串线（346）
   qbox.value = "";
-  addMsg("u", DBGCUR.id + " 的测试指令", esc(raw));
+  addMsg("u", aid + " 的测试指令", esc(raw));
   const btn = document.getElementById("send"); btn.disabled = true;
-  const bub = addMsg("a", DBGCUR.id + "（"+model()+"）· 推理中…", "…");
-  addLog("send → "+DBGCUR.id+" · model "+model()+" · "+raw.length+" 字", "lg-b");
+  const r1 = addMsg("a", aid + "（"+model()+"）· 推理中…", "…");
+  addLog("send → "+aid+" · model "+model()+" · "+raw.length+" 字", "lg-b");
   const t0 = Date.now();
   try{
     const r = await fetch("/ollama/api/chat", {
       method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ model: model(), stream:false, think:false,
         options:{num_ctx:8192},
-        messages:[{role:"system",content:DBGCUR.prompt},{role:"user",content:atContext(raw)}] })
+        messages:[{role:"system",content:B.agents[aid].prompt},{role:"user",content:atContext(raw)}] })
     });
     if(!r.ok) throw new Error("HTTP "+r.status);
     const d = await r.json();
     const txt = (d.message&&d.message.content)||"(空响应)";
     const sec = ((Date.now()-t0)/1000).toFixed(1);
-    bub.innerHTML = evTable(txt) + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · eval '+((d.eval_count||0)+" tok")+' ──</span>';
-    addLog("recv ← "+DBGCUR.id+" · "+sec+"s · eval "+(d.eval_count||0)+" tok", "lg-g");
+    const html = evTable(txt) + '<span style="color:var(--dim2);font-size:10.5px">── '+sec+'s · eval '+((d.eval_count||0)+" tok")+' ──</span>';
+    r1.el.innerHTML = html;
+    if(r1.rec){ r1.rec.html = html; sessSave(aid); }
+    addLog("recv ← "+aid+" · "+sec+"s · eval "+(d.eval_count||0)+" tok", "lg-g");
   }catch(e){
-    bub.textContent = "❌ 调用失败："+e.message+"（检查本地 Ollama 是否在跑 / nginx /ollama/ 反代）";
-    addLog("FAIL "+DBGCUR.id+" · "+e.message, "lg-o");
+    const html = "❌ 调用失败："+esc(e.message)+"（检查本地 Ollama 是否在跑 / nginx /ollama/ 反代）";
+    r1.el.innerHTML = html;
+    if(r1.rec){ r1.rec.html = html; sessSave(aid); }
+    addLog("FAIL "+aid+" · "+e.message, "lg-o");
   }
   btn.disabled = false;
 }
@@ -757,12 +905,17 @@ function palBuild(){
   PALI = [];
   if(!B) return;
   const hit = s => !kw || String(s||"").toLowerCase().includes(kw);
+  const wsA = wsAgents();
   for(const id in B.agents){
+    if(wsA && !wsA.has(id)) continue;   // 面板随工作区过滤（346）
     const a = B.agents[id];
     if(hit(id) || hit(a.role_profile)) PALI.push({kind:"agent", key:id, rr:a.role_profile||""});
   }
   (B.code_files||[]).forEach(f=>{ if(hit(f.path)) PALI.push({kind:"code", key:f.path, rr:f.lines+" 行"}); });
-  (B.workorders||[]).forEach(w=>{ if(hit(w.id)||hit(w.desc)) PALI.push({kind:"task", key:w.id, rr:w.status+" · "+String(w.desc||"").slice(0,40)}); });
+  (B.workorders||[]).forEach(w=>{
+    if(wsA && !(w.owner && wsA.has(w.owner))) return;   // 面板随工作区过滤（346·forEach 内禁 continue）
+    if(hit(w.id)||hit(w.desc)) PALI.push({kind:"task", key:w.id, rr:w.status+" · "+String(w.desc||"").slice(0,40)});
+  });
   PALS = 0;
 }
 function palPaint(){
@@ -775,7 +928,7 @@ function palPaint(){
     return '<div class="pi'+(i===PALS?' sel':'')+'" onmousemove="palSel('+i+')" onclick="palGo('+i+')">'
       + '<span>'+ico+'</span><span>'+esc(main)+'</span>'
       + '<span class="k">'+kn+'</span><span class="rr">'+esc(it.rr)+'</span></div>';
-  }).join("") : '<div class="pempty">无匹配（支持 Agent ID / 角色 / 代码路径 / 工单 ID·描述 模糊搜索）</div>';
+  }).join("") : '<div class="pempty">无匹配（支持 Agent ID / 角色 / 代码路径 / 工单 ID·描述 模糊搜索 · 随当前工作区过滤）</div>';
 }
 function palSel(i){
   PALS = i;
@@ -798,7 +951,10 @@ document.addEventListener("keydown", e=>{
   else if(e.key==="Enter"){ palGo(PALS); e.preventDefault(); }
 });
 
-/* ═══ bundle 加载 ═══ */
+/* ═══ 启动：状态恢复（per-ws） + bundle 加载 ═══ */
+loadTabs();
+VIEW = wsGet("ide-view") || "org";
+
 fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   B = d;
   document.getElementById("stats").innerHTML =
@@ -806,9 +962,11 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
     + '<span>prompt 覆盖 <b style="color:var(--green)">'+B.stats.prompt_ok+'/'+B.stats.agents+'</b></span>'
     + '<span>工单 <b style="color:var(--green)">'+(B.stats.workorders_doing||0)+'</b> doing / <b style="color:var(--amber,#d29922)">'+(B.stats.workorders_review||0)+'</b> review</span>';
   document.getElementById("gen").textContent = "bundle " + B.generated;
-  renderAct(); renderSide(); pRender();
-  addLog("bundle 加载完成 · agents "+B.stats.agents+" · code_files "+((B.code_files||[]).length)+" 件 · 工单 "+(B.stats.workorders_doing||0)+" doing", "lg-g");
+  renderWs(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  addLog("bundle 加载完成 · agents "+B.stats.agents+" · code_files "+((B.code_files||[]).length)+" 件 · 工单 "+(B.stats.workorders_doing||0)+" doing · 工作区 "+(WS==="all"?"全部":WS), "lg-g");
   if(B.a0_daily) addLog("A0 日报快照 "+B.a0_daily.date+" · 点评 "+(B.a0_review?B.a0_review.date:"无"));
+  const lastDbg = wsGet("ide-dbg");
+  if(lastDbg && B.agents[lastDbg]) dbgSelect(lastDbg);   // 恢复上次调试目标+会话
 }).catch(e=>{ document.getElementById("side").innerHTML = '<div class="dep">bundle 加载失败：'+e+'</div>'; });
 </script>
 </body>
