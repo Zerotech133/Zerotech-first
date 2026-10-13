@@ -4995,8 +4995,8 @@ def _bt2_start(rec):
         "runup_cap": _ratio("runup_cap", 0, 0.5, 0.15 if strategy == "chanlun" else 0),
         "stop_pct": _ratio("stop_pct", -0.5, 0, 0.0),
         "holding_max_days": _intv("holding_max_days", 0, 60, 5 if strategy == "double_knife" else 0),
-        # 缠论买点等级过滤（10-13 老田拍板：仅二买三买，一买不入选）
-        "buy_filter": rec.get("buy_filter") if rec.get("buy_filter") in ("23", "2", "3", "all") else "23",
+        # 缠论买点等级过滤（10-13 老田拍板：只看三买）
+        "buy_filter": rec.get("buy_filter") if rec.get("buy_filter") in ("23", "2", "3", "all") else "3",
     }
     now = datetime.datetime.now()
     jid = now.strftime("%Y%m%d-%H%M%S") + "-" + os.urandom(2).hex()

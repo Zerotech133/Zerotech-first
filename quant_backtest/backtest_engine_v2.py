@@ -432,7 +432,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "top_n": 10, "slot_pct": 0.08, "cap_mode": "regime_8050",
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
-            "holding_max_days": 0, "buy_filter": "23"}
+            "holding_max_days": 0, "buy_filter": "3"}
 
 def run_job(params: dict, job_id: str, progress=None):
     """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
@@ -503,8 +503,8 @@ if __name__ == "__main__":
     ap.add_argument("--runup-cap", type=float, default=0.15)
     ap.add_argument("--stop-pct", type=float, default=0.0)
     ap.add_argument("--holding-max", type=int, default=0)
-    ap.add_argument("--buy-filter", default="23", choices=["23", "2", "3", "all"],
-                    help="缠论买点等级：23=仅二买三买(默认·10-13拍板) all=含一买")
+    ap.add_argument("--buy-filter", default="3", choices=["23", "2", "3", "all"],
+                    help="缠论买点等级：3=仅三买(默认·10-13拍板) 23=二买+三买 all=含一买")
     ap.add_argument("--job-id", default=None)
     args = ap.parse_args()
     jid = args.job_id or ("cli-" + time.strftime("%Y%m%d-%H%M%S"))

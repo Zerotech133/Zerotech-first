@@ -63,7 +63,7 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>追高帽%</label><input name="runup_cap" type="number" value="15" min="0" max="50"></div>
   <div class="fld"><label>止损%（0关）</label><input name="stop_pct" type="number" value="0" min="-50" max="0"></div>
   <div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>
-  <div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="23">仅二买+三买（默认）</option><option value="2">仅二买</option><option value="3">仅三买</option><option value="all">一二三类全要</option></select></div>
+  <div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="3">仅三买（默认）</option><option value="23">二买+三买</option><option value="2">仅二买</option><option value="all">一二三类全要</option></select></div>
   <div class="fld" style="justify-content:flex-end"><label>&nbsp;</label><button id="go" type="submit">开始回测</button></div>
 </div></form>
 <div class="err" id="ferr"></div>
