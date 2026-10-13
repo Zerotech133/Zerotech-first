@@ -175,7 +175,7 @@
      "task": "迭代回路+自动提交（生成→lint→冒烟→stderr重试·独立commit按单可回滚）",
      "owner": "OPS1",
      "done": "2026-10-13",
-     "note": "K-ORG-036d交付·提前于计划10-15：回路核心随F3落(lint/sr_fail喂回重试max2)+commit_work只add目标文件+run()smoke钩子·dry-run冒烟过；真实全自动链随F1解禁后首工单验"
+     "note": "K-ORG-036d交付+K-ORG-036g真链首验达成(c0d0343·cloud通道全自动·最小diff2行·陌生CWD行为复检过·F3/F4回归过)：smoke失败反馈重试回路(还原原文保SR锚点)补全F4最后一环；判据「连续三工单全自动」累计1/N"
     },
     {
      "id": "F5",

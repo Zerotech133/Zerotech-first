@@ -223,12 +223,22 @@ def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420, timeout_clau
 
 
 def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
-        lint_retries=2, smoke=None, k_id=None):
+        lint_retries=2, smoke=None, k_id=None, smoke_retries=2):
     """生成→编辑协议→lint门→(带错重试)→落盘→校验→冒烟→轨迹。返回 (ok, detail)。
-    smoke: 可选 callable(out_path)，落盘后执行（如 import/py_compile/断言），
-    抛异常=FAIL（文件保留，调用方决定回退）。k_id: 工单号，轨迹按单归档。"""
+    smoke: 可选 callable(out_path)，落盘后执行；抛异常=FAIL，会还原原文后
+    带错误反馈重新生成（最多 smoke_retries 轮）——F4 迭代回路完整形态。
+    k_id: 工单号，轨迹按单归档。"""
     task = {"label": label, "prompt": prompt, "json_out": json_out}
     trace_log(k_id, "generate", "%s by %s via %s" % (label, agent_id, backend()))
+    orig_bytes = None
+    if os.path.exists(out_path):
+        orig_bytes = open(out_path, "rb").read()
+
+    def _restore():
+        if orig_bytes is not None:
+            with open(out_path, "wb") as f:
+                f.write(orig_bytes)
+
     raw = chat_auto(agent_id, task)
     if json_out:
         try:
@@ -236,15 +246,23 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             content = json.dumps(data, ensure_ascii=False, indent=1)
         except Exception as e:
             return False, "JSON 解析失败: %s | raw[:120]=%r" % (e, raw[:120])
-    else:
+        if validator:
+            ok, detail = validator(content)
+            if not ok:
+                return False, detail
+        with open(out_path, "wb") as f:
+            f.write(content.replace("\r\n", "\n").encode("utf-8"))
+        print("  -> written", out_path, len(content), "chars")
+        trace_log(k_id, "write", "%s %d chars" % (out_path, len(content)))
+        return True, "ok"
+
+    sr_err = "SEARCH/REPLACE 块未在目标文件唯一命中"
+    for attempt in range(smoke_retries + 1):
         content, mode = apply_edit_protocol(raw, out_path)
         print("  [edit-protocol] mode=%s" % mode)
         trace_log(k_id, "edit", "mode=%s" % mode)
-        err = None
-        if mode == "sr_fail":
-            err = "SEARCH/REPLACE 块未在目标文件唯一命中"
-        elif out_path.endswith(".py"):
-            err = lint_py_text(content, out_path)
+        err = sr_err if mode == "sr_fail" else (
+            lint_py_text(content, out_path) if out_path.endswith(".py") else None)
         tries = 0
         while err and tries < lint_retries:
             print("  [lint-gate] 第%d轮拦截: %s → 带错重试" % (tries + 1, err))
@@ -255,7 +273,7 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             raw = chat_auto(agent_id, task)
             content, mode = apply_edit_protocol(raw, out_path)
             if mode == "sr_fail":
-                err = "SEARCH/REPLACE 块未在目标文件唯一命中"
+                err = sr_err
             elif content is None:
                 err = "产出为空"
             elif out_path.endswith(".py"):
@@ -268,23 +286,36 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             return False, "验证门 %d 轮未过: %s" % (lint_retries, err)
         print("  [lint-gate] PASS")
         trace_log(k_id, "lint", "PASS")
-    if validator:
-        ok, detail = validator(content)
-        if not ok:
-            return False, detail
-    with open(out_path, "wb") as f:
-        f.write(content.replace("\r\n", "\n").encode("utf-8"))
-    print("  -> written", out_path, len(content), "chars")
-    trace_log(k_id, "write", "%s %d chars" % (out_path, len(content)))
-    if smoke:
+        if validator:
+            ok, detail = validator(content)
+            if not ok:
+                return False, detail
+        with open(out_path, "wb") as f:
+            f.write(content.replace("\r\n", "\n").encode("utf-8"))
+        print("  -> written", out_path, len(content), "chars")
+        trace_log(k_id, "write", "%s %d chars" % (out_path, len(content)))
+        if not smoke:
+            return True, "ok"
         try:
             smoke(out_path)
+            print("  [smoke] PASS")
+            trace_log(k_id, "smoke", "PASS")
+            return True, "ok"
         except Exception as e:
-            trace_log(k_id, "fail", "smoke: %s" % str(e)[:150])
-            return False, "smoke FAIL: %s" % str(e)[:150]
-        print("  [smoke] PASS")
-        trace_log(k_id, "smoke", "PASS")
-    return True, "ok"
+            sm = str(e)[:150]
+            trace_log(k_id, "smoke", "round%d fail: %s" % (attempt + 1, sm))
+            if attempt >= smoke_retries:
+                trace_log(k_id, "fail",
+                          "smoke %d rounds: %s" % (smoke_retries + 1, sm))
+                return False, "smoke FAIL %d 轮: %s" % (smoke_retries + 1, sm)
+            print("  [smoke] 第%d轮拦截: %s → 还原原文带错重试" % (attempt + 1, sm))
+            _restore()
+            task["prompt"] = (prompt +
+                "\n\n【上一次产出通过了语法门但未通过行为冒烟，错误：%s】"
+                "\n禁止整文件重写式重做——只允许输出 SEARCH/REPLACE 块做最小修改，"
+                "\n现有函数实现体一字不动，禁止 pass/... 占位。" % sm)
+            raw = chat_auto(agent_id, task)
+    return False, "unreachable"
 
 
 def commit_work(out_path, k_id, agent_id, label, channel=None, dry_run=False):
