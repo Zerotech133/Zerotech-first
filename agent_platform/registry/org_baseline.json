@@ -174,7 +174,8 @@
      "id": "F4",
      "task": "迭代回路+自动提交（生成→lint→冒烟→stderr重试·独立commit按单可回滚）",
      "owner": "OPS1",
-     "note": "⚠️10-15批B解禁日避开A0日报链；判据=连续三工单全自动过回路"
+     "done": "2026-10-13",
+     "note": "K-ORG-036d交付·提前于计划10-15：回路核心随F3落(lint/sr_fail喂回重试max2)+commit_work只add目标文件+run()smoke钩子·dry-run冒烟过；真实全自动链随F1解禁后首工单验"
     },
     {
      "id": "F5",

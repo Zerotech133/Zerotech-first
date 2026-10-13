@@ -206,8 +206,10 @@ def chat_auto(agent_id, task, timeout_cloud=120, timeout_local=420, timeout_clau
 
 
 def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
-        lint_retries=2):
-    """生成→编辑协议→lint门→(带错重试)→落盘→校验。返回 (ok, detail)。"""
+        lint_retries=2, smoke=None):
+    """生成→编辑协议→lint门→(带错重试)→落盘→校验→冒烟。返回 (ok, detail)。
+    smoke: 可选 callable(out_path)，落盘后执行（如 import/py_compile/断言），
+    抛异常=FAIL（文件保留，调用方决定回退）。"""
     task = {"label": label, "prompt": prompt, "json_out": json_out}
     raw = chat_auto(agent_id, task)
     if json_out:
@@ -251,7 +253,42 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
     with open(out_path, "wb") as f:
         f.write(content.replace("\r\n", "\n").encode("utf-8"))
     print("  -> written", out_path, len(content), "chars")
+    if smoke:
+        try:
+            smoke(out_path)
+        except Exception as e:
+            return False, "smoke FAIL: %s" % str(e)[:150]
+        print("  [smoke] PASS")
     return True, "ok"
+
+
+def commit_work(out_path, k_id, agent_id, label, channel=None, dry_run=False):
+    """F4: 按单自动提交（借 Aider auto-commit 范式）。
+    只 add 目标文件（禁 -A/禁 .），独立 commit 可按单回滚。
+    消息格式：K编号: 工单名 — by 岗位 via 通道。返回 (ok, detail)。"""
+    import subprocess as sp
+    if channel is None:
+        channel = backend()
+    msg = "%s: %s — by %s via %s" % (k_id, label, agent_id, channel)
+    r = sp.run(["git", "add", "--", out_path], capture_output=True, text=True,
+               encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        return False, "git add: " + (r.stderr or r.stdout or "")[:120]
+    cmd = ["git", "commit"]
+    if dry_run:
+        cmd.append("--dry-run")
+    cmd += ["-m", msg, "--", out_path]
+    r = sp.run(cmd, capture_output=True, text=True, encoding="utf-8",
+               errors="replace")
+    if r.returncode != 0:
+        return False, "git commit: " + (r.stderr or r.stdout or "")[:150]
+    if not dry_run:
+        sha = sp.run(["git", "rev-parse", "--short", "HEAD"],
+                     capture_output=True, text=True).stdout.strip()
+        print("  [commit] %s (%s)" % (sha, msg))
+        return True, sha
+    print("  [commit] dry-run ok:", msg)
+    return True, "dry-run"
 
 
 if __name__ == "__main__":
