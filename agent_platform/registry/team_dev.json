@@ -184,12 +184,12 @@
         "write": [
           "agent/ARCH1/*",
           "dept/dev/observation",
-          "domain/arch_registry"
+          "docs/adr"
         ]
       },
       "grade": "E3",
       "grade_note": "30年档：架构定夺/疑难攻关/方案终审",
-      "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录写 domain/arch_registry（版本化，对齐 model_registry 判例）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）"
+      "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录用 tools/adr.py 登记，落 docs/adr/（版本化入 git）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）"
     },
     {
       "agent_id": "OPS1",

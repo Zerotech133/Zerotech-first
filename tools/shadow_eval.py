@@ -112,10 +112,10 @@ def main(argv):
         results.append((aid, v))
         print("[eval] %-6s score=%s risk=%s" % (aid, v.get("score"), v.get("risk")))
 
-    # 报告落盘
+    # 报告落盘（文件名带时刻——同日复评永不覆盖，K-ORG-042 判例）
     day = time.strftime("%Y-%m-%d")
     rep = os.path.join(ROOT, "agent_platform", "data", "shadow",
-                       "shadow_eval_%s.md" % day)
+                       "shadow_eval_%s_%s.md" % (day, time.strftime("%H%M")))
     os.makedirs(os.path.dirname(rep), exist_ok=True)
     lines = ["# D3 影子评测报告（行为对齐人设）· %s" % day, "",
              "> 通道=%s · 每岗人设×最近%d条决策记录 · 评分锚点见工具头注"

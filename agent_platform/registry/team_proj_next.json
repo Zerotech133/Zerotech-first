@@ -33,7 +33,7 @@
       "tools": ["devtask", "events"],
       "memory_grants": {
         "read": ["domain/*", "dept/dev/*", "agent/ARCH1/*"],
-        "write": ["agent/ARCH1/*", "domain/arch_registry"]
+        "write": ["agent/ARCH1/*", "docs/adr"]
       }
     },
     {
