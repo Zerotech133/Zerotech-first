@@ -192,6 +192,27 @@
   .tl-c{color:var(--fg);line-height:1.6;word-break:break-word}
   .tl-c b{color:var(--purple);font-weight:normal;margin-right:6px}
 
+  /* ── 二期（K-STOCK-348）：分屏 / 身份视角 / 工单看板 ── */
+  .edwrap{flex:1;display:flex;min-height:0}
+  .edwrap .edc{min-width:0}
+  .edc2{border-left:1px solid var(--line);display:none}
+  .splitbtn{margin-left:auto;font-size:11px;color:var(--dim2);cursor:pointer;padding:6px 10px;
+    border-radius:7px;user-select:none;flex:none}
+  .splitbtn:hover{color:var(--fg);background:var(--panel2)}
+  .splitbtn.on{color:var(--blue);background:rgba(88,166,255,.13)}
+  .mesel{background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:11.5px;
+    border-radius:7px;padding:5px 8px;cursor:pointer}
+  .mesel:focus{outline:none;border-color:var(--blue)}
+  .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .bcol{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:100px}
+  .bcol h4{font-size:12px;color:var(--dim);margin-bottom:8px;letter-spacing:1px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:8px;
+    padding:7px 9px;margin-bottom:7px;font-size:11.5px;cursor:pointer}
+  .card:hover{border-color:var(--blue)}
+  .card.doing{border-left-color:var(--green)} .card.review{border-left-color:var(--orange)}
+  .card .cid{font-family:Consolas,monospace;color:var(--fg)}
+  .card .co{color:var(--dim2);font-size:10.5px;margin-top:2px}
+
   @media (max-width:1180px){
     .main{grid-template-columns:44px 180px 6px 1fr 0 0}
     .dbg{display:none}
@@ -202,6 +223,7 @@
 <header>
   <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 多工作区</small></h1>
   <div class="wsbar" id="wsbar"></div>
+  <select id="me" class="mesel" onchange="setMe(this.value)" title="身份视角：以某 Agent 的视角看工单与组织"></select>
   <div class="hd-stats" id="stats"></div>
   <div class="hd-right">
     <span style="font-size:11px;color:var(--dim2);align-self:center;cursor:pointer" onclick="palOpen()" title="快捷键 Ctrl+P">⌕ Ctrl+P 搜索</span>
@@ -216,8 +238,11 @@
   <div class="rz rz1" title="拖动调整侧栏宽度"></div>
   <div class="ed">
     <div class="tabs" id="tabs"></div>
-    <div class="edc" id="edc">
-      <div class="placeholder"><div class="big">⌨</div><div>左侧选择一个 Agent / 文件 / 工单<br>以标签页方式打开 · 可并存 · Tab 集按工作区隔离</div></div>
+    <div class="edwrap">
+      <div class="edc" id="edc">
+        <div class="placeholder"><div class="big">⌨</div><div>左侧选择一个 Agent / 文件 / 工单<br>以标签页方式打开 · 可并存 · Tab 集按工作区隔离</div></div>
+      </div>
+      <div class="edc edc2" id="edc2"></div>
     </div>
   </div>
   <div class="rz-h rz-p" title="拖动调整面板高度"></div>
@@ -376,7 +401,7 @@ function setWs(name){
 
 /* ═══ ① 活动栏 + ② 侧栏四视图 ═══ */
 const VIEWS = [
-  ["org","👥","组织"],["code","💻","代码"],["task","📋","工单"],["mem","🧠","记忆"],["trace","📈","轨迹"]
+  ["org","👥","组织"],["code","💻","代码"],["task","📋","工单"],["board","🗂","看板"],["mem","🧠","记忆"],["trace","📈","轨迹"]
 ];
 function renderAct(){
   document.getElementById("act").innerHTML = VIEWS.map(v=>
@@ -386,11 +411,13 @@ function setView(v){
   VIEW = v;
   wsSet("ide-view", v);  // 视图状态 per-ws 持久化（345 审计修复延续）
   renderAct(); renderSide();
+  if(v==="board") openTab("board","__board__");   // 看板=常驻单例 Tab（348 二期）
 }
 
 function renderSide(){
   let h = "";
   const wsA = wsAgents();
+  const star = id => (ME===id ? ' <span style="color:var(--orange)">★我</span>' : '');  // 348 身份视角
   if(VIEW==="org"){
     if(WS==="all"){
       const func = B.departments.filter(d=>d.type==="func"), proj = B.departments.filter(d=>d.type==="project");
@@ -398,19 +425,19 @@ function renderSide(){
       for(const d of func){
         h += '<div class="dep">'+d.name+'</div>';
         for(const id of d.agents){ const a=B.agents[id];
-          h += sideItem("agent", id, a.grade, id, esc(a.role_profile)); }
+          h += sideItem("agent", id, a.grade, id, esc(a.role_profile)+star(id)); }
       }
       h += '<div class="s-t">项目部门（矩阵制）</div>';
       for(const d of proj){
         h += '<div class="dep proj">'+d.name+'</div>';
         for(const id of d.agents){ const a=B.agents[id]; if(!a) continue;
-          h += sideItem("agent", id, a.grade, id, esc(a.role_profile)); }
+          h += sideItem("agent", id, a.grade, id, esc(a.role_profile)+star(id)); }
       }
     } else {
       const d = B.departments.find(x=>x.name===WS);
       h += '<div class="s-t">工作区成员 · '+esc(WS)+'</div>';
       for(const id of ((d&&d.agents)||[])){ const a=B.agents[id]; if(!a) continue;
-        h += sideItem("agent", id, a.grade, id, esc(a.role_profile)); }
+        h += sideItem("agent", id, a.grade, id, esc(a.role_profile)+star(id)); }
       h += '<div class="s-t" style="margin-top:16px">🌐 全部 = 聚合视图<br>顶部可切换工作区</div>';
     }
   } else if(VIEW==="code"){
@@ -423,15 +450,32 @@ function renderSide(){
   } else if(VIEW==="task"){
     const inWs = w => !wsA || (w.owner && wsA.has(w.owner));
     const all = (B.workorders||[]);
-    const doing = all.filter(w=>w.status==="doing" && inWs(w));
-    const review = all.filter(w=>w.status==="review" && inWs(w));
-    const off = all.length - doing.length - review.length;
-    h += '<div class="s-t">'+(WS==="all"?"":"["+esc(WS)+"] ")+'doing（'+doing.length+'）</div>';
-    for(const w of doing) h += sideTask(w);
-    h += '<div class="s-t">review（'+review.length+'）</div>';
-    for(const w of review) h += sideTask(w);
-    if(!all.length) h += '<div class="dep">无活跃工单</div>';
-    else if(WS!=="all" && off>0) h += '<div class="s-t" style="margin-top:10px">另有 '+off+' 条他区工单未显示</div>';
+    if(ME){
+      const mine = all.filter(w=>w.owner===ME);
+      const mD = mine.filter(w=>w.status==="doing"), mR = mine.filter(w=>w.status==="review");
+      h += '<div class="s-t" style="color:var(--orange)">★ 我的工单 · '+esc(ME)+'（'+mD.length+' doing / '+mR.length+' review）</div>';
+      for(const w of mD) h += sideTask(w);
+      for(const w of mR) h += sideTask(w);
+      if(!mine.length) h += '<div class="dep">名下无活跃工单</div>';
+      h += '<div class="s-t" style="margin-top:12px">其他'+(WS==="all"?"":"["+esc(WS)+"]")+'（'+(all.length-mine.length)+'）</div>';
+      const others = all.filter(w=>w.owner!==ME && inWs(w));
+      for(const w of others.filter(x=>x.status==="doing")) h += sideTask(w);
+      for(const w of others.filter(x=>x.status==="review")) h += sideTask(w);
+    } else {
+      const doing = all.filter(w=>w.status==="doing" && inWs(w));
+      const review = all.filter(w=>w.status==="review" && inWs(w));
+      const off = all.length - doing.length - review.length;
+      h += '<div class="s-t">'+(WS==="all"?"":"["+esc(WS)+"] ")+'doing（'+doing.length+'）</div>';
+      for(const w of doing) h += sideTask(w);
+      h += '<div class="s-t">review（'+review.length+'）</div>';
+      for(const w of review) h += sideTask(w);
+      if(!all.length) h += '<div class="dep">无活跃工单</div>';
+      else if(WS!=="all" && off>0) h += '<div class="s-t" style="margin-top:10px">另有 '+off+' 条他区工单未显示</div>';
+    }
+  } else if(VIEW==="board"){
+    h += '<div class="s-t">工单看板</div>';
+    h += '<div class="dep" style="cursor:pointer" onclick="openTab(\'board\',\'__board__\')">🗂 打开看板（按项目部门分组）</div>';
+    h += '<div class="s-t" style="margin-top:10px">点卡片可开工单 Tab<br>doing 绿条 · review 橙条</div>';
   } else if(VIEW==="mem"){
     h += '<div class="s-t">'+(WS==="all"?"":"["+esc(WS)+"] ")+'记忆（agent/* 只读摘要）</div>';
     let any = false;
@@ -497,6 +541,7 @@ function tabTitle(kind,key){
   if(kind==="task") return "📋 "+key;
   if(kind==="mem") return "🧠 "+key;
   if(kind==="trace") return "📈 "+key;
+  if(kind==="board") return "🗂 工单看板";
   return key;
 }
 function closeTab(tid, ev){
@@ -515,7 +560,9 @@ function activateTab(tid){ ATAB = tid; saveTabs(); renderTabs(); renderSide(); r
 function renderTabs(){
   document.getElementById("tabs").innerHTML = TABS.map(t=>
     '<div class="tab'+(t.tid===ATAB?' on':'')+'" onclick="activateTab('+t.tid+')">'
-    + esc(t.title) + '<span class="x" onclick="closeTab('+t.tid+',event)">×</span></div>').join('');
+    + esc(t.title) + '<span class="x" onclick="closeTab('+t.tid+',event)">×</span></div>').join('')
+    + '<span class="splitbtn'+(SPLIT.on?' on':'')+'" id="splitbtn" onclick="splitToggle()"'
+    + ' title="分屏：左=当前标签 · 右侧自选内容并排（典型：左档案·右代码）">⬓ 分屏</span>';
 }
 function renderTab(){
   const c = document.getElementById("edc");
@@ -526,10 +573,11 @@ function renderTab(){
   else if(t.kind==="task") rTask(c, t.key);
   else if(t.kind==="mem") rMem(c, t.key);
   else if(t.kind==="trace") rTrace(c, t.key);
+  else if(t.kind==="board") rBoard(c);
 }
 
 /* —— Tab 内容渲染器 —— */
-function rAgent(c, id){
+function rAgent(c, id, noDbg){
   const CUR = B.agents[id];
   if(!CUR){ c.innerHTML = '<div class="dep">Agent 不存在（bundle 过期？重跑 bundle 脚本）</div>'; return; }
   const pj = (CUR.projects||[]).map(p=>'<span class="ptag">'+esc(p)+'</span>').join("");
@@ -568,7 +616,7 @@ function rAgent(c, id){
     + '<span style="font-size:11px;color:var(--dim2);align-self:center">'+CUR.prompt.length+' 字符 · 修改须改 prompts/ 源文件后重跑 bundle 脚本</span></div>'
     + '<div class="prompt-box clampable">'+esc(CUR.prompt)+'</div>'
     + '<div class="clamp-bar"><button class="mini" onclick="toggleClamp(this)">▾ 展开全文</button></div></div>';
-  dbgSelect(id);  // 打开档案 = 选中调试目标（会话历史保留，346 多会话）
+  if(!noDbg) dbgSelect(id);  // 分屏右栏打开档案不抢调试目标（348）
 }
 function rCode(c, path){
   const f = (B.code_files||[]).find(x=>x.path===path);
@@ -683,7 +731,8 @@ function pRender(){
   } else if(PVIEW==="console"){
     b.innerHTML = !B ? '<span class="lg-d">bundle 未加载</span>' :
       '<div>bundle 生成于 <span class="lg-b">'+esc(B.generated)+'</span> · generator '+esc(B.generator)+'</div>'
-      + '<div>当前工作区 <span class="lg-b">'+esc(WS==="all"?"全部":WS)+'</span> · 成员 '+((wsAgents()||{size:B.stats.agents}).size)+' 人</div>'
+      + '<div>当前工作区 <span class="lg-b">'+esc(WS==="all"?"全部":WS)+'</span> · 成员 '+((wsAgents()||{size:B.stats.agents}).size)+' 人'
+      + ' · 身份 <span class="lg-b">'+esc(ME||"默认")+'</span> · 分屏 '+(SPLIT.on?'<span class="lg-g">开</span>':'关')+'</div>'
       + '<div>agents <span class="lg-g">'+B.stats.agents+'</span> · departments '+B.stats.departments
       + ' · prompt '+B.stats.prompt_ok+'/'+B.stats.agents
       + ' · 工单 <span class="lg-o">'+(B.stats.workorders_doing||0)+'</span> doing / <span class="lg-o">'+(B.stats.workorders_review||0)+'</span> review</div>'
@@ -891,6 +940,96 @@ async function send(){
   btn.disabled = false;
 }
 
+/* ═══ 身份视角（348 二期：ide-me 全局·工单「我的」分区+侧栏★标） ═══ */
+let ME = localStorage.getItem("ide-me") || "";
+function renderMe(){
+  const el = document.getElementById("me");
+  let h = '<option value="">🧑‍💼 默认视角</option>';
+  for(const id in B.agents) h += '<option value="'+id+'"'+(ME===id?' selected':'')+'>'+id+' 视角</option>';
+  el.innerHTML = h;
+}
+function setMe(v){
+  ME = v || "";
+  localStorage.setItem("ide-me", ME);
+  renderMe();      // 选择器回显（348 验收 2c）
+  renderSide(); pRender();
+  addLog("身份 → "+(ME||"默认视角"), "lg-b");
+}
+
+/* ═══ 分屏编辑器（348 二期：左=当前 Tab · 右=自选内容并排·典型左档案右代码） ═══ */
+let SPLIT = {on:false, kind:null, key:null};
+function splitRestore(){
+  try{
+    const sp = JSON.parse(localStorage.getItem("ide-split")||"null");
+    if(sp && sp.on){ SPLIT = sp; document.getElementById("edc2").style.display="block"; }  // CSS 默认 display:none，须显式 block
+  }catch(e){}
+}
+function splitSave(){ localStorage.setItem("ide-split", JSON.stringify(SPLIT)); }
+function splitToggle(){
+  SPLIT.on = !SPLIT.on;
+  document.getElementById("edc2").style.display = SPLIT.on ? "block" : "none";  // ""会被 .edc2{display:none} 吃掉（348 实测）
+  splitSave(); renderTabs(); renderSplit();
+  addLog("分屏 → "+(SPLIT.on?"开":"关"), "lg-b");
+}
+function renderSplit(){
+  const c = document.getElementById("edc2");
+  if(!SPLIT.on || !B){ if(c) c.innerHTML=""; return; }
+  let opts = '<option value="">— 选择右侧并排内容 —</option>';
+  for(const id in B.agents) opts += '<option value="agent:'+id+'">👤 '+id+'（'+esc(B.agents[id].role_profile)+'）</option>';
+  (B.code_files||[]).forEach(f=>{ opts += '<option value="code:'+f.path+'">📄 '+esc(f.path.split("/").pop())+'</option>'; });
+  c.innerHTML = '<div class="a-head" style="margin-bottom:10px">'
+    + '<select class="mesel" id="splitsel" style="max-width:70%" onchange="splitPick(this.value)">'+opts+'</select></div>'
+    + '<div id="splitbody"></div>';
+  if(SPLIT.kind) splitPick(SPLIT.kind+":"+SPLIT.key, true);
+  else splitPaint();
+}
+function splitPick(v, silent){
+  const i = v.indexOf(":");
+  SPLIT.kind = v.slice(0,i); SPLIT.key = v.slice(i+1);
+  splitSave(); splitPaint();
+  if(!silent) addLog("分屏右栏 → "+SPLIT.kind+":"+SPLIT.key, "lg-b");
+}
+function splitPaint(){
+  const c = document.getElementById("splitbody");
+  if(!c) return;
+  if(!SPLIT.kind){
+    c.innerHTML = '<div class="placeholder" style="height:55%"><div class="big">⬓</div><div>选择右侧并排内容<br>典型用法：左档案 · 右代码</div></div>';
+    return;
+  }
+  if(SPLIT.kind==="agent") rAgent(c, SPLIT.key, true);
+  else if(SPLIT.kind==="code") rCode(c, SPLIT.key);
+}
+
+/* ═══ 工单看板（348 二期：按项目部门分组·卡片点开工单 Tab） ═══ */
+function rBoard(c){
+  const ownerDept = {};
+  (B.departments||[]).forEach(d=>d.agents.forEach(a=>{ ownerDept[a]=d; }));
+  const wsA = wsAgents();
+  let cols;
+  if(WS==="all"){
+    cols = projDepts().map(d=>({name:d.name, test:w=>{ const od=ownerDept[w.owner]; return od && od.type==="project" && od.name===d.name; }}));
+    cols.push({name:"职能 / 未分配", test:w=>{ const od=ownerDept[w.owner]; return !od || od.type!=="project"; }});
+  } else {
+    cols = [{name:WS, test:w=>!!wsA && wsA.has(w.owner)}];
+  }
+  const all = (B.workorders||[]);
+  c.innerHTML =
+    '<div class="a-head"><h2>🗂 工单看板</h2>'
+    + '<span style="font-size:11.5px;color:var(--dim)">'+(WS==="all"?"按项目部门分组":"工作区["+esc(WS)+"]")+' · 绿条 doing / 橙条 review · 点卡片开工单 Tab</span></div>'
+    + '<div class="board">'
+    + cols.map(col=>{
+        const ws = all.filter(w=>col.test(w));
+        return '<div class="bcol"><h4>'+esc(col.name)+'（'+ws.length+'）</h4>'
+          + ws.map(w=>'<div class="card '+w.status+'" onclick="openTab(\'task\','+q(w.id)+')">'
+            + '<div class="cid">'+esc(w.id)+' <span class="st-'+w.status+'" style="font-size:9.5px;margin-left:4px">'+w.status+'</span></div>'
+            + '<div class="co">'+esc(w.owner||"未分配")+(ME&&w.owner===ME?' <span style="color:var(--orange)">★我</span>':'')+'</div>'
+            + '<div style="color:var(--dim);margin-top:3px;line-height:1.5">'+esc(String(w.desc||"").slice(0,60))+'</div></div>').join("")
+          + (ws.length ? "" : '<div class="s-note">空</div>')
+          + '</div>';
+      }).join("")
+    + '</div>';
+}
+
 /* ═══ Ctrl+P 命令面板（342 三期 · K-STOCK-344） ═══ */
 let PALI = [], PALS = 0;
 function palOpen(){
@@ -954,6 +1093,7 @@ document.addEventListener("keydown", e=>{
 /* ═══ 启动：状态恢复（per-ws） + bundle 加载 ═══ */
 loadTabs();
 VIEW = wsGet("ide-view") || "org";
+splitRestore();   // 348：分屏状态恢复（渲染在 bundle 加载后补内容）
 
 fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   B = d;
@@ -962,7 +1102,8 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
     + '<span>prompt 覆盖 <b style="color:var(--green)">'+B.stats.prompt_ok+'/'+B.stats.agents+'</b></span>'
     + '<span>工单 <b style="color:var(--green)">'+(B.stats.workorders_doing||0)+'</b> doing / <b style="color:var(--amber,#d29922)">'+(B.stats.workorders_review||0)+'</b> review</span>';
   document.getElementById("gen").textContent = "bundle " + B.generated;
-  renderWs(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  renderMe(); renderWs(); renderAct(); renderSide(); renderTabs(); renderTab(); renderSess(); pRender();
+  if(SPLIT.on) renderSplit();
   addLog("bundle 加载完成 · agents "+B.stats.agents+" · code_files "+((B.code_files||[]).length)+" 件 · 工单 "+(B.stats.workorders_doing||0)+" doing · 工作区 "+(WS==="all"?"全部":WS), "lg-g");
   if(B.a0_daily) addLog("A0 日报快照 "+B.a0_daily.date+" · 点评 "+(B.a0_review?B.a0_review.date:"无"));
   const lastDbg = wsGet("ide-dbg");
