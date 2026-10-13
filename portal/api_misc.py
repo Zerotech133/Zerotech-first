@@ -1957,6 +1957,55 @@ transition:.3s;z-index:9}
             pass
         return {"api": "ollama",
                 "model": os.environ.get("AUDIT_MODEL", "qwen3.5:9b")}
+
+    # K-STOCK-352 AI 值班经理（paper 接待大厅 · 有问必答）：复用审计模型回退链
+    # （网关→本地 Ollama→智谱），上下文=策略资产概况+前端随带的现场摘要。
+    # 只读答疑：不下单、不改配置；qwen3.5 系 thinking 模型，回复剥离 <think> 块。
+    _AI_DUTY_SYSTEM = (
+        "你是「零界」模拟交易平台的 AI 值班经理。要求：①用客户语言，不说内部工程词；"
+        "②亲切、具体、有下一步动作指引（如去哪个页签/点哪个卡）；③回复 200 字以内；"
+        "④这是模拟盘，涉及投资判断只给信息不下结论。\n【平台现状】\n%s")
+
+    def _api_ai_duty(self, raw):
+        try:
+            req = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            req = {}
+        q = str(req.get("question") or "").strip()[:800]
+        if not q:
+            self._json({"ok": False, "error": "问题为空"}, 400)
+            return
+        ctx = []
+        try:
+            reg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "strategies.json")
+            with open(reg_path, encoding="utf-8") as f:
+                ss = (json.load(f).get("strategies")) or []
+            by = {}
+            for s in ss:
+                by[s.get("status", "?")] = by.get(s.get("status", "?"), 0) + 1
+            ctx.append("在册策略 %d 个：%s" % (
+                len(ss), "；".join("%s %d 个" % (k, v) for k, v in by.items())))
+            ctx.append("代表策略：" + "、".join(
+                "%s（%s）" % (s.get("name"), s.get("status")) for s in ss[:6]))
+        except Exception:
+            pass
+        uctx = str(req.get("ctx") or "").strip()[:1200]
+        if uctx:
+            ctx.append("客户当前所在：" + uctx)
+        sysmsg = self._AI_DUTY_SYSTEM % ("\n".join(ctx) or "（暂无）")
+        try:
+            reply, backend = self._audit_chat(
+                [{"role": "system", "content": sysmsg},
+                 {"role": "user", "content": q}], timeout=90)
+            # qwen3.5 系 thinking 模型兜底：剥离 <think>…</think>（299 教训）
+            import re as _re
+            reply = _re.sub(r"<think>[\s\S]*?</think>", "", reply).strip()
+            self._json({"ok": True, "reply": reply, "backend": backend})
+        except Exception as oe:
+            self._json({"ok": False,
+                        "error": "值班经理暂时离线：%s" % str(oe)[:160]}, 502)
+
     def _devops_page(self):
         """开发指挥台页（108 原型落地版·只读）：四类计数 + 工单表 + 事件流。"""
         import html as _h
@@ -2249,7 +2298,9 @@ transition:.3s;z-index:9}
                 else ("<a href='%s' style='%s'>%s</a>" % (href, _PILL, lb))
                 for lb, href, key in _SUBS)
             # K-STOCK-036：返回键置前 + 页面级联动导航条
-            nav = self._back_link_html() + nav
+            # K-STOCK-352 修复：_back_link_html 是 api_common 模块级零参函数（import 进类体后
+            # self._xxx() 会把 self 当首参传入 → TypeError，/bt-qpzm 全页 500）。改直呼模块函数。
+            nav = _back_link_html() + nav
             # 注意：title 走纯拼接不进 % 模板（% 与 + 混用坑第四次变体）
             return ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                     "<meta name='viewport' content='width=device-width,"

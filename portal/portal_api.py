@@ -2130,6 +2130,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # K-STOCK-114e 独立安全审计 AI 对话（独立模型绑定 AUDIT_MODEL）
                 self._api_audit_chat(raw)
                 return
+            if path == "/api/ai_duty":
+                # K-STOCK-352 AI 值班经理（paper 接待大厅 · 有问必答）：复用审计模型回退链
+                self._api_ai_duty(raw)
+                return
             if path == "/api/paper_order":
                 # K-STOCK v0.2 模拟仓下单（manual BUY/SELL 或 double_knife 执行）
                 self._api_paper_order(raw)

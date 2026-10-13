@@ -64,6 +64,10 @@
   .strat-card .dyn.ok{color:var(--color-ok);}
   .strat-card .radio{position:absolute; top:12px; right:12px; width:16px; height:16px; border:2px solid var(--text-dim); border-radius:50%;}
   .strat-card.selected .radio{border-color:var(--link); background:radial-gradient(circle,var(--link) 40%,transparent 45%);}
+  /* K-STOCK-352 AI 值班经理 / 快捷问题 chip / 对话气泡 / 策略资产卡 */
+  .ai-chip{font-size:11.5px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;cursor:pointer;color:var(--text-dim);background:var(--bg-page);white-space:nowrap}
+  .ai-chip:hover{border-color:var(--link);color:var(--text)}
+  .duty-msg{font-size:12.5px;line-height:1.65;padding:8px 12px;border-radius:10px;margin-bottom:6px;white-space:pre-wrap;max-width:92%}
   .trigger-switch{display:flex; gap:0; margin-top:10px; border:1px solid var(--border); border-radius:8px; overflow:hidden; font-size:12px;}
   .trigger-opt{flex:1; text-align:center; padding:6px 0; color:var(--text-dim); background:var(--bg-surface);}
   .trigger-opt.on{background:var(--accent); color:#fff; font-weight:700;}
@@ -142,7 +146,7 @@
 <header>
   <div class="brand">
     <div class="logo">仓</div>
-    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.4</small></div>
+    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.5</small></div>
   </div>
   <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
@@ -181,6 +185,21 @@
         <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
       </div>
       <div style="font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:8px">您的进门路线：<b>① 这里听经理接待</b> → ② <a href="#" onclick="gotoTab('strategy');return false" style="color:var(--link)">策略中心选策略</a>（免费值班已含 / 订阅策略随订随退） → ③ <a href="#" onclick="document.querySelector('[data-tab=agent]').click();return false" style="color:var(--link)">交易员市场组团队</a>（选经理配操盘手 → 跑组合回测验证） → ④ 满意才上岗 → 上岗后的<b>持仓</b>与<b>历史</b>在上方页签随时看。</div>
+      <!-- K-STOCK-352 AI 值班经理 · 有问必答（接待即服务：客户进门就能问，后端复用 8091 模型回退链） -->
+      <div style="border-top:1px dashed var(--border);margin-top:10px;padding-top:10px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <b style="font-size:13px">🤖 AI 值班经理 · 有问必答</b>
+          <span class="ai-chip" onclick="askDuty('这里都有哪些服务？各自怎么收费？')">这里都有哪些服务？</span>
+          <span class="ai-chip" onclick="askDuty('你们都有什么策略？各自适合什么样的人？')">都有什么策略？</span>
+          <span class="ai-chip" onclick="askDuty('我是新手，想开始第一步做什么？')">新手怎么开始？</span>
+          <span class="ai-chip" onclick="askDuty('现在几点了？今天我该注意什么？')">今天注意什么？</span>
+        </div>
+        <div id="duty-msgs" style="display:none;margin-top:8px"></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <input id="duty-input" placeholder="问值班经理，比如：新手先订哪个策略？" style="flex:1;font-size:12.5px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-page);color:var(--text)" onkeydown="if(event.key==='Enter')askDuty()">
+          <button class="btn btn-primary" id="duty-send" onclick="askDuty()">问一句</button>
+        </div>
+      </div>
     </div>
     <!-- K-STOCK-350 今天的事（客户日常：您的钱今天怎么样。从原右栏 9 盒中拆出客户关心的五件，全宽双栏） -->
     <div class="col-title" style="margin-top:18px">📅 今天的事 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（您的钱今天怎么样：计划 · 风控 · 成交）</span></div>
@@ -324,6 +343,24 @@
       </div>
 
     </div>
+    <!-- K-STOCK-352 自然语言自建策略（/api/bt2_nl 解析 + /api/bt2_run 执行 · 解析与执行分离，299 口径） -->
+    <div class="col-title" style="margin-top:18px">🗣️ 说一句话，生成一个策略 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（自然语言回测 · 测试版：先解析成参数给您核对，再提交回测中心实跑）</span></div>
+    <div class="side-box">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <span class="ai-chip" onclick="nlFill('最近一年全市场只看三买，持仓10只，高位闸门，评分80分以上')">三买·一年·高位闸门·评分80</span>
+        <span class="ai-chip" onclick="nlFill('量子双刀最近三个月全市场，单票仓位8%">双刀·三个月</span>
+        <span class="ai-chip" onclick="nlFill('今年以来的缠论等机会回测，持仓5只')">缠论·今年·5 只</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-start">
+        <textarea id="nl-text" rows="2" placeholder="例：最近一年全市场只看三买，持仓10只，评分80分以上，高位闸门" style="flex:1;font-size:12.5px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-page);color:var(--text);resize:vertical"></textarea>
+        <button class="btn" id="nl-parse" onclick="nlParse()">🔍 解析成参数</button>
+      </div>
+      <div id="nl-out" style="display:none;margin-top:10px"></div>
+    </div>
+
+    <!-- K-STOCK-352 策略资产总览（strategies.json 单一数据源 · 12 策略全量 · /api/strategy_market 直读） -->
+    <div class="col-title" style="margin-top:18px">🗂️ 全部策略资产（12）<span style="font-weight:400;color:var(--text-dim);font-size:11px">（🟢 产线在跑 = live · 🟡 影子验证 = shadow · ⚙️ 支撑工具 = tool · 点「详情」进策略页）</span></div>
+    <div id="strat12-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div class="empty">读取中…</div></div>
   </div>
 
   <!-- ============ 持仓 ============ -->
@@ -860,6 +897,7 @@ async function loadAgents(){
     }
   }catch(e){/* 静默降级：保留档案静态卡 */}
   fillComboSelectors();   // K-STOCK-221 组合回测器下拉填充（失败静默降级）
+  loadStrategy12();       // K-STOCK-352 策略资产总览（12 策略全量，失败静默降级）
 }
 
 // ===== K-STOCK-221 组合回测器（老田拍板：回测是「选好组合之后」的动作——跑历史数据看组合的
@@ -1330,6 +1368,124 @@ async function obwSubmit(){
   }catch(e){toast('❌ 接待失败：'+OB_ESC(e.message),5000);}
   OBW.busy=false;btn.disabled=false;obwRender();
 }
+// ===== K-STOCK-352 ① AI 值班经理（接待大厅 · POST /api/ai_duty 复用 8091 模型回退链） =====
+async function askDuty(preset){
+  const inp=$('duty-input'), msgs=$('duty-msgs'), btn=$('duty-send');
+  const q=(preset||inp.value||'').trim();
+  if(!q||btn.disabled)return;
+  if(!preset)inp.value='';
+  msgs.style.display='block';
+  msgs.insertAdjacentHTML('beforeend',
+    '<div class="duty-msg" style="background:rgba(88,166,255,.10);margin-left:auto;text-align:right"><b>您：</b>'+esc(q)+'</div>'
+    +'<div class="duty-msg" id="duty-pending" style="background:var(--bg-page)">🤖 值班经理思考中…</div>');
+  btn.disabled=true;
+  try{
+    const r=await api('/api/ai_duty',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:q, ctx:'模拟仓平台 · 接待大厅'})});
+    const p=$('duty-pending'); if(p)p.remove();
+    msgs.insertAdjacentHTML('beforeend',
+      '<div class="duty-msg" style="background:var(--bg-page)"><b>🤖 值班经理：</b>'
+      +(r&&r.ok?esc(r.reply):esc((r&&r.error)||'暂时离线，请稍后再问'))+'</div>');
+  }catch(e){
+    const p=$('duty-pending'); if(p)p.remove();
+    msgs.insertAdjacentHTML('beforeend','<div class="duty-msg" style="background:var(--bg-page)">🤖 值班经理暂时离线，请稍后再问。</div>');
+  }finally{btn.disabled=false; msgs.scrollTop=msgs.scrollHeight;}
+}
+
+// ===== K-STOCK-352 ② 策略资产总览（12 策略全量 · /api/strategy_market 单一数据源） =====
+const STRAT12_ST={live:['🟢 产线','#3fb950'],shadow:['🟡 影子验证','var(--color-warn)'],tool:['⚙️ 支撑工具','var(--text-dim)'],paused:['⏸ 暂停','var(--text-dim)']};
+async function loadStrategy12(){
+  const box=$('strat12-grid'); if(!box)return;
+  try{
+    const j=await api('/api/strategy_market');
+    if(!(j&&j.ok&&j.strategies))throw 0;
+    box.innerHTML=j.strategies.map(s=>{
+      const st=STRAT12_ST[s.status]||[s.status||'?','var(--text-dim)'];
+      const exec=(s.id==='double_knife')
+        ?'<a href="#" onclick="gotoTab(\'strategy\');selStrat(\'double_knife\');return false" style="color:var(--link);font-size:11.5px">本页执行 →</a> ':'';
+      const link=s.href?'<a href="'+esc(s.href)+'" style="color:var(--link);font-size:11.5px">详情 →</a>':'';
+      return '<div class="side-box" style="margin:0">'
+        +'<div style="display:flex;align-items:center;gap:6px"><b style="font-size:13px">'+esc(s.name||s.id)+'</b>'
+        +'<span style="margin-left:auto;font-size:10.5px;color:'+st[1]+';white-space:nowrap">'+st[0]+'</span></div>'
+        +'<div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;line-height:1.5">'+esc(s.tagline||'')+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">'+esc(s.status_note||'')+'</div>'
+        +'<div style="margin-top:6px">'+exec+link+'</div></div>';
+    }).join('');
+  }catch(e){box.innerHTML='<div class="empty">策略总览暂时读不到（静默降级，刷新重试）</div>';}
+}
+function selStrat(sid){const c=document.querySelector('.strat-card[data-s="'+sid+'"]');if(c)c.click();}
+
+// ===== K-STOCK-352 ③ 自然语言自建策略（/api/bt2_nl 只解析 → 核对 → /api/bt2_run 实跑） =====
+function nlFill(t){$('nl-text').value=t;}
+let _nlParams=null, _nlPolling=false;
+async function nlParse(){
+  const t=$('nl-text').value.trim(), out=$('nl-out'), btn=$('nl-parse');
+  if(!t){toast('先说一句您的策略想法，例如：最近一年全市场只看三买');return;}
+  btn.disabled=true; out.style.display='block';
+  out.innerHTML='<div class="empty">解析中…（含大模型兜底时约 10~30 秒）</div>';
+  try{
+    const j=await api('/api/bt2_nl',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+    if(!(j&&j.ok&&j.params))throw new Error((j&&j.error)||'没能识别出参数，换个说法试试');
+    _nlParams=j.params;
+    const kv=Object.entries(j.params).map(([k,v])=>'<span class="ai-chip" style="cursor:default">'+esc(k)+' = '+esc(String(v))+'</span>').join(' ');
+    out.innerHTML='<div style="font-size:12px;margin-bottom:6px"><b>解析结果</b>（引擎：'+esc(j.engine||'规则')+'）——请核对：</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+kv+'</div>'
+      +((j.notes||[]).map(n=>'<div style="font-size:11px;color:var(--text-dim)">· '+esc(n)+'</div>').join(''))
+      +'<div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" onclick="nlRun()">⚡ 用这些参数跑回测</button>'
+      +'<span style="font-size:11.5px;color:var(--text-dim)">解析与执行分离：参数先过目，回测在回测中心引擎实跑</span></div>';
+  }catch(e){out.innerHTML='<div class="empty">'+esc(e.message||'解析失败')+'</div>';}
+  finally{btn.disabled=false;}
+}
+const NL_DEFAULTS={strategy:'chanlun',gate_mode:'off',min_score:0,slot_pct:0.08};
+async function nlRun(){
+  if(!_nlParams||_nlPolling)return;
+  const p=Object.assign({},NL_DEFAULTS,_nlParams);
+  if(!p.d0||!p.d1){toast('这句话没识别出时间窗口——补一句「最近一年」再解析');return;}
+  const out=$('nl-out');
+  out.insertAdjacentHTML('beforeend','<div id="nl-job" style="margin-top:8px;font-size:12px">提交中…</div>');
+  _nlPolling=true;
+  try{
+    // 全量透传（服务端 _bt2_start 逐键校验+默认兜底：universe/buy_filter/top_n/hist_st/limit_check 等均受支持）
+    const r=await api('/api/bt2_run',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(p)});
+    if(!(r&&r.ok&&r.job&&r.job.id))throw new Error((r&&r.error)||'提交失败');
+    $('nl-job').innerHTML='⚙️ 已提交回测引擎（单号 <code>'+esc(r.job.id)+'</code>）· <span id="nl-pct">排队中…</span>';
+    nlPoll(r.job.id);
+  }catch(e){
+    const jb=$('nl-job'); if(jb)jb.innerHTML='❌ '+esc(e.message||'提交失败');
+    _nlPolling=false;
+  }
+}
+async function nlPoll(id){
+  const out=$('nl-out');
+  for(let i=0;i<240;i++){
+    await new Promise(rs=>setTimeout(rs,2000));
+    try{
+      const lj=await api('/api/bt2_jobs');
+      const j=(lj&&lj.jobs||[]).find(x=>x.id===id);
+      if(!j)continue;
+      if(j.status==='running'){const pc=$('nl-pct'); if(pc)pc.textContent=(j.pct||0)+'% · '+(j.stage||'跑批中');continue;}
+      if(j.status==='done'){
+        _nlPolling=false;
+        const full=await api('/api/bt2_job?id='+encodeURIComponent(id)).catch(()=>null);
+        const s=full&&full.ok&&full.summary||{};
+        out.insertAdjacentHTML('beforeend','<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;font-size:12.5px">'
+          +'<b>✅ 回测完成</b>：收益 <b style="color:'+(s.total_return_pct>=0?'var(--color-up)':'var(--color-dn)')+'">'+esc(s.total_return_pct)+'%</b>'
+          +' ｜ 回撤 '+esc(s.max_drawdown_pct)+'% ｜ PF '+esc(s.profit_factor)+' ｜ '+esc(s.n_trades)+' 笔'
+          +' ｜ <a href="/bt2view" style="color:var(--link)">看完整账本 →</a></div>');
+        return;
+      }
+      if(j.status==='dead'||j.status==='fail'){
+        _nlPolling=false;
+        out.insertAdjacentHTML('beforeend','<div class="empty">❌ 回测失败：'+esc(j.error||'未知错误')+'</div>');
+        return;
+      }
+    }catch(e){/* 瞬态轮询失败下轮再取 */}
+  }
+  _nlPolling=false;
+  toast('回测超时未返回——可去回测中心（/bt2view）看任务状态');
+}
+
 (async function initOnboard(){
   try{
     const [rec,mk,pf]=await Promise.all([
