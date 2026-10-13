@@ -4990,6 +4990,8 @@ def _bt2_start(rec):
     params = {
         "strategy": strategy, "d0": d0, "d1": d1,
         "top_n": _intv("top_n", 1, 50, 10),
+        # 槽数×regime 联动（K-STOCK-317）：mid 档槽数（0=不联动）
+        "top_n_mid": _intv("top_n_mid", 0, 50, 0),
         "slot_pct": _ratio("slot_pct", 0.01, 0.5, 0.08),
         # 单票仓位分配（K-STOCK-297：固定 X% / 区间随机 a~b% / 评分权重自动调仓）
         "slot_mode": rec.get("slot_mode") if rec.get("slot_mode") in ("fixed", "random", "score") else "fixed",

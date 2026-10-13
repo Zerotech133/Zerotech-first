@@ -369,6 +369,7 @@ class BacktestConfig:
     min_holding_days: int = 0
     holding_max_days: int = 0           # 0=不限
     top_n: int = 10
+    top_n_mid: int = 0                  # K-STOCK-317 槽数×regime 联动：mid 档槽数（0=不联动·low 档被 gate 挡无需设）
     slot_pct: float = 0.08
     slot_mode: str = "fixed"            # fixed | random(区间随机) | score(评分权重)——K-STOCK-297 老田
     slot_min: float = 0.05
@@ -423,6 +424,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
     score_pending = {}       # pending_buy 买入候选的评分要素（信号日随单携带）
     holding_since = {}
     n_trim = 0
+    n_mid_slot_days = 0    # 317：mid 档联动槽数生效天数（生效证据）
     prev_eq = 1.0
     win = [d for d in cal_idx_all if cfg.d0 <= d <= cfg.d1]
     cal_saved, cal = cal, win
@@ -476,6 +478,12 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
         # A2. 开盘买入（统一 T+1 open；runup 帽 / 总仓位帽 / slot / 信号有效期）
         regime_lv, regime_why = regime_of(day)
         capv = cfg.cap_of(regime_lv)
+        # 槽数×regime 联动（K-STOCK-317·313 实锤弱市年 t5 占优）：mid 档收缩槽数，
+        # high 档满编 top_n，low 档被 gate 挡不涉及。已持仓超联动数不强制减（仅限新开仓）。
+        top_n_eff = cfg.top_n
+        if cfg.top_n_mid > 0 and regime_lv == "mid":
+            top_n_eff = min(cfg.top_n, cfg.top_n_mid)
+            n_mid_slot_days = n_mid_slot_days + 1
         eqv_open = cash + sum(p["val"] for p in pos.values())
         deployed = eqv_open - cash
         still = {}
@@ -498,17 +506,17 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                 actions.append({"type": "skip", "stock": s,
                                 "note": f"信号过期：确认后{cfg.sig_expiry}日未入场·评分{sc if sc is not None else '-'}·放弃"})
                 continue
-            if n_buy_today >= cfg.top_n:
+            if n_buy_today >= top_n_eff:
                 still[s] = added
                 continue
             if s in pos:
                 score_pending.pop(s, None); zg_pending.pop(s, None)
                 continue
-            if len(pos) >= cfg.top_n:
+            if len(pos) >= top_n_eff:
                 # 槽位已满：评分更低的候选放弃（缠论机会 T+1 是唯一入场点，不过夜追）
                 score_pending.pop(s, None); zg_pending.pop(s, None)
                 actions.append({"type": "skip", "stock": s,
-                                "note": f"槽位已满（{cfg.top_n}）·评分{sc if sc is not None else '-'}·放弃该机会"})
+                                "note": f"槽位已满（{top_n_eff}·regime={regime_lv}）·评分{sc if sc is not None else '-'}·放弃该机会"})
                 continue
             o = px(s, day, "open")
             if o is None:
@@ -706,7 +714,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                "win_rate_pct": round(len(wins_tr) / len(closed) * 100, 1) if closed else None,
                "profit_factor": round(sum(t["pnl"] for t in wins_tr) / loss_sum, 2) if closed and loss_sum > 0 else None,
                "avg_invested_pct": round(sum(e["inv_pct"] for e in equity_curve) / len(equity_curve), 1),
-               "n_trim": n_trim}
+               "n_trim": n_trim, "n_mid_slot_days": n_mid_slot_days}
     return {"meta": {"config": asdict(cfg),
                      "execution_timeline": EXEC_TIMELINE[cfg.strategy],
                      "assumptions": ASSUMPTIONS[cfg.strategy]},
@@ -717,7 +725,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 # run_job 高层入口（portal 线程 / CLI 共用）
 # ============================================================
 DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
-            "top_n": 10, "slot_pct": 0.08, "cap_mode": "regime_8050",
+            "top_n": 10, "top_n_mid": 0, "slot_pct": 0.08, "cap_mode": "regime_8050",
             "slot_mode": "fixed", "slot_min": 0.05, "slot_max": 0.10, "manual_picks": "",
             "cap_high": 0.80, "cap_mid": 0.50, "cap_low": 0.30, "cap_fixed": 0.80,
             "sig_expiry": 0,
@@ -765,6 +773,7 @@ def run_job(params: dict, job_id: str, progress=None):
             min_holding_days=1 if strategy == "double_knife" else int(p["min_holding_days"] or 0),
             holding_max_days=5 if strategy == "double_knife" else int(p["holding_max_days"] or 0),
             top_n=max(1, min(50, int(p["top_n"] or 10))),
+            top_n_mid=max(0, min(50, int(p.get("top_n_mid") or 0))),
             slot_pct=max(0.01, min(0.5, float(p["slot_pct"] or 0.08))),
             slot_mode=p["slot_mode"] if p["slot_mode"] in ("fixed", "random", "score") else "fixed",
             slot_min=max(0.005, min(0.5, _r("slot_min", 0.05))),
@@ -837,6 +846,7 @@ def run_job(params: dict, job_id: str, progress=None):
         result["meta"]["universe"] = universe
         result["meta"]["manual_picks"] = sorted(_picks)
         result["meta"]["hist_st"] = pool_info["hist_st"] if (pool_info and "hist_st" in pool_info) else None
+        result["meta"]["top_n_mid"] = int(p.get("top_n_mid") or 0)
         result["meta"]["three_fail_exit"] = bool(three_fail and strategy == "chanlun" and sig_zg)
         result["meta"]["job_id"] = job_id
         if pool_info:
@@ -914,6 +924,8 @@ if __name__ == "__main__":
     ap.add_argument("--d0", default="20251013")
     ap.add_argument("--d1", default="20261012")
     ap.add_argument("--top-n", type=int, default=10)
+    ap.add_argument("--top-n-mid", type=int, default=0,
+                    help="槽数×regime 联动（K-STOCK-317）：mid 档槽数（0=不联动；low 档被 gate 挡无需设）")
     ap.add_argument("--slot-pct", type=float, default=0.08)
     ap.add_argument("--slot-mode", default="fixed", choices=["fixed", "random", "score"],
                     help="单票仓位分配：fixed=固定X%(默认) random=区间随机(a~b%%·固定种子可复现) score=评分权重(评分/当日候选评分和×总仓位帽)")

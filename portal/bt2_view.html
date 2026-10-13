@@ -89,6 +89,7 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>样本域</label><select name="universe"><option value="market">全市场 5000+（剔ST/北交所）</option><option value="pool76">静态 76 只池</option></select></div>
   <div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="3">仅三买（默认）</option><option value="23">二买+三买</option><option value="2">仅二买</option><option value="all">一二三类全要</option></select></div>
   <div class="fld"><label>持仓槽数</label><input name="top_n" type="number" value="10" min="1" max="50"></div>
+  <div class="fld"><label>mid档槽数(0不联动·317)</label><input name="top_n_mid" type="number" value="0" min="0" max="50"></div>
 </div>
 <div class="row">
   <div class="fld"><label>仓位分配</label><select name="slot_mode" id="slot-mode"><option value="fixed">固定 X%（默认8%）</option><option value="random">区间随机 a~b%</option><option value="score">评分权重自动</option></select></div>
@@ -207,7 +208,7 @@ document.getElementById("f").onsubmit=async e=>{
   e.preventDefault();
   const fd=new FormData(e.target), o={};
   const PCT=new Set(["slot_pct","runup_cap","stop_pct","fail_buffer","cap_high","cap_mid","cap_low","cap_fixed","slot_min","slot_max","trail_activate","trail_drawdown"]);
-  const INT=new Set(["top_n","holding_max_days","sig_expiry","min_score"]);
+  const INT=new Set(["top_n","top_n_mid","holding_max_days","sig_expiry","min_score"]);
   fd.forEach((v,k)=>{o[k]= PCT.has(k)?(+v)/100 : INT.has(k)?+v : v;});
   const r=await fetch("/api/bt2_run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)}).then(x=>x.json()).catch(err=>({ok:false,error:String(err)}));
   if(!r.ok){document.getElementById("ferr").textContent=r.error||"提交失败";return;}
