@@ -5085,10 +5085,15 @@ def _bt2_nl(rec):
 
 
 def _bt2_status():
-    """GET /api/bt2_jobs：最近 20 个任务（state 合并：进度/结果/错误）。"""
+    """GET /api/bt2_jobs：最近 20 个任务（state 合并：进度/结果/错误）。
+    K-STOCK-345 修复：bt2_state 目录混有 sig_events_*.json 事件缓存与 log_*.txt
+    跑批日志（67 条目），旧逻辑 sorted(listdir)[:20] 按文件名倒序，'s'/'l' 前缀
+    永远排在 'bt2_' 之前 ⇒ 前 20 名被日志/缓存占满、任务列表恒为空（前端轮询
+    失明）。修复=先过滤 .state.json 再排序截断。"""
     out = []
     if os.path.isdir(_BT2_STATE_DIR):
-        for fn in sorted(os.listdir(_BT2_STATE_DIR), reverse=True)[:20]:
+        cands = [fn for fn in os.listdir(_BT2_STATE_DIR) if fn.endswith(".state.json")]
+        for fn in sorted(cands, reverse=True)[:20]:
             if not fn.endswith(".state.json"):
                 continue
             st = _read_json(os.path.join(_BT2_STATE_DIR, fn))

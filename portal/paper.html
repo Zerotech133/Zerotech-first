@@ -337,8 +337,8 @@
       <div class="agent-grid" id="agent-grid"><div class="empty">读取中…</div></div>
     </div>
     <div id="combo-bt-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--bg-surface)">
-      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">③ 组合回测（选好了？先跑历史数据看这个组合）</span></div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">总监默认带队（可另配经理）+ <b>选股分析师</b>（选什么股的信号源，可多选）+ 您选的操盘手（怎么买卖）组成组合，用历史行情跑回测——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。满意 → 迎宾向导完成雇佣上岗。</div>
+      <div class="toolbar" style="margin:0 0 4px"><span style="font-size:14px;font-weight:700">③ 组合回测（选好了？接入回测中心引擎实跑历史数据）</span></div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">总监默认带队（可另配经理）+ <b>选股分析师</b>（选什么股的信号源）+ 您选的操盘手（怎么买卖）组成组合，<b>由回测中心引擎（backtest v2·与 /bt2view 同引擎）实时实跑</b>历史行情——看的是<b>回测收益与回撤</b>（候选期验证），不是上岗后的战绩。当前引擎支持 <b>缠论三类买卖点</b> / <b>量子双刀</b> 信号源，其余接入中。满意 → 迎宾向导完成雇佣上岗。</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <label style="font-size:12px">带队 <select id="cbt-manager" style="padding:3px 6px"><option value="director_apex" selected>🏛️ 投资总监（默认在岗）</option></select></label>
         <label style="font-size:12px">操盘手 <select id="cbt-trader" style="padding:3px 6px"><option value="">选择操盘手…</option></select></label>
@@ -350,8 +350,8 @@
       <div style="margin-top:8px;font-size:12px">📡 选股分析师（信号源 · 可多选，来自策略市场）：
         <span id="cbt-analysts" style="display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle"><span style="color:var(--text-dim)">读取中…</span></span>
       </div>
-      <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">⏱ <b>point-in-time 口径（不泄露答案）</b>：从起始日起逐日推进，每天<b>只使用当天当时已知</b>的行情与信号做决策——绝不使用未来数据。例：2025-01-01 起跑 3 个月，回测值=该组合在当时真实可得信息下的最贴近实跑成绩。</div>
-      <div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。回测引擎产出后此处展示该组合的回测收益曲线与最大回撤。</div>
+      <div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">⏱ <b>point-in-time 口径（不泄露答案）</b>：从起始日起逐日推进，每天<b>只使用当天当时已知</b>的行情与信号做决策——绝不使用未来数据。涨跌停可成交检查（lc）与历史 ST 回溯（hist_st）默认开启，与回测中心口径一致。</div>
+      <div id="cbt-result" style="margin-top:10px;font-size:12.5px;color:var(--text-dim)">尚未发起。提交后由回测中心引擎实跑（全市场样本域·仅三买入池），完成后此处展示该组合的回测收益/回撤/盈亏比，并可跳转回测中心下钻逐日账本。</div>
     </div>
     <!-- K-STOCK-223 价目区收编：T1-T5 五大卡长图砍掉，压一行说明+折叠速览表（档位信息已随操盘手卡片徽标走） -->
     <div id="pricing-wrap" style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
@@ -858,11 +858,23 @@ async function fillComboSelectors(){
     });
     ((tr&&tr.rows)||[]).forEach(r=>{
       if(r.id==='main')return;   // 主交易台=用户自有账本，不是可选角色
+      window._cbtTraderStyle=window._cbtTraderStyle||{};   // K-STOCK-342：风格存档（防守型→保守口径映射用）
+      window._cbtTraderStyle[r.id]=r.style||'';
       const o=document.createElement('option');
       o.value=r.id; o.textContent=(r.name||r.id)+'（'+(r.style||'-')+(r.status==='live'?'·已上岗':'·候选')+'）';
       ts.appendChild(o);
     });
   }catch(e){/* 静默 */}
+}
+// K-STOCK-342（老田 10-13 深夜指令：回测模块介入交易员市场做选择做回测，替换 275 排队空壳）：
+// 分析师信号源→bt2 引擎 strategy 同名直通（chanlun/double_knife），操盘手风格→开仓闸门，
+// POST /api/bt2_run 实跑 backtest_engine_v2 → 轮询 /api/bt2_jobs → done 后 /api/bt2_job 渲染真实指标。
+// 275 排队动线（/api/combo_backtest）后端保留不删，前端不再调用。
+const CBT_ENGINE_MAP={chanlun:'缠论三类买卖点', double_knife:'量子双刀'};
+function _cbtAddMonths(dstr,m){
+  const d=new Date(dstr+'T00:00:00');
+  d.setMonth(d.getMonth()+m);
+  return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
 }
 let _cbtJobId=null, _cbtTimer=null;
 function _cbtBarHtml(){
@@ -870,36 +882,46 @@ function _cbtBarHtml(){
     +'<div style="display:flex;align-items:center;gap:8px">'
     +'<div style="flex:1;height:8px;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:var(--bg)">'
     +'<div id="cbt-bar" style="height:100%;width:2%;background:linear-gradient(90deg,#2f81f7,#3fb950);transition:width .5s"></div></div>'
-    +'<span id="cbt-pct" style="font-size:11.5px;color:var(--text-dim);min-width:150px;text-align:right">登记中…</span></div>'
-    +'<div id="cbt-stages" style="margin-top:4px;font-size:11.5px;color:var(--text-dim)">① 已登记 → ② 排队 → ③ 引擎跑批 → ④ 结果回填</div></div>';
+    +'<span id="cbt-pct" style="font-size:11.5px;color:var(--text-dim);min-width:150px;text-align:right">提交中…</span></div>'
+    +'<div id="cbt-stages" style="margin-top:4px;font-size:11.5px;color:var(--text-dim)">① 已提交 → ② 排队 → ③ 引擎跑批 → ④ 结果回填</div></div>';
 }
 function _cbtStopPoll(){ if(_cbtTimer){clearInterval(_cbtTimer);_cbtTimer=null;} }
 async function pollCbt(){
   const bar=$('cbt-bar');
   if(!bar){_cbtStopPoll();return;}
   let r=null;
-  try{ r=await api('/api/combo_backtest_jobs'); }catch(e){ return; }  // 瞬时网络错误不拆条，下轮再取
+  try{ r=await api('/api/bt2_jobs'); }catch(e){ return; }  // 瞬时网络错误不拆条，下轮再取
   if(!r||!r.ok)return;
-  const jobs=r.jobs||[];
-  const j=jobs.find(x=>x.id===_cbtJobId);
+  const j=(r.jobs||[]).find(x=>x.id===_cbtJobId);
   if(!j)return;
   const pct=$('cbt-pct'), stg=$('cbt-stages');
-  const ST={queued:'🕐 排队中',running:'⚙️ 引擎跑批中',done:'✅ 完成',dead:'❌ 失败'};
   if(j.status==='queued'){
-    bar.style.width='8%';
-    pct.textContent='排队第 '+j.queue_pos+' 位';
-    stg.innerHTML='① 已登记 ✅ → <b>② 排队中（第 '+j.queue_pos+' 位）</b> → ③ 引擎跑批 → ④ 结果回填'
-      +'｜引擎开闸 <b>'+esc(r.gate||'2026-10-16')+'</b> 后按队列自动跑批，无需重新提交';
+    bar.style.width='10%';
+    pct.textContent='排队中';
+    stg.innerHTML='① 已提交 ✅ → <b>② 排队中</b>（引擎单并发，前序任务完成后自动开跑） → ③ 引擎跑批 → ④ 结果回填';
   }else if(j.status==='running'){
-    const p=Math.max(8,Math.min(99,Math.round(j.pct||0)));
+    const p=Math.max(10,Math.min(99,Math.round(j.pct||0)));
     bar.style.width=p+'%';
     pct.textContent=p+'% · '+(j.stage||'跑批中');
-    stg.innerHTML='① 已登记 ✅ → ② 排队 ✅ → <b>③ 引擎跑批中'+(j.pct!=null?('（'+p+'%）'):'')+'</b> → ④ 结果回填';
+    stg.innerHTML='① 已提交 ✅ → ② 排队 ✅ → <b>③ 引擎跑批中'+(j.stage?('（'+esc(j.stage)+'）'):'')+'</b> → ④ 结果回填';
   }else if(j.status==='done'){
     _cbtStopPoll();
     bar.style.width='100%';
     pct.textContent='100% · 完成';
-    stg.innerHTML='①→②→③ 全部完成 ✅，<b>④ 结果已回填</b>——刷新查看收益曲线/最大回撤/年化';
+    stg.innerHTML='①→②→③ 全部完成 ✅，<b>④ 结果已回填</b>';
+    const full=await api('/api/bt2_job?id='+encodeURIComponent(_cbtJobId)).catch(()=>null);
+    if(full&&full.ok&&full.summary){
+      const s=full.summary, up=(s.total_return_pct||0)>=0, cc=up?'up':'dn';
+      out.innerHTML='<div style="margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;color:var(--text)">'
+        +'<span>回测收益 <b style="color:var(--color-'+cc+')">'+esc(s.total_return_pct)+'%</b></span>'
+        +'<span>年化 <b style="color:var(--color-'+cc+')">'+esc(s.annualized_pct)+'%</b></span>'
+        +'<span>最大回撤 <b style="color:var(--color-dn)">'+esc(s.max_drawdown_pct)+'%</b></span>'
+        +'<span>盈亏比 PF <b>'+esc(s.profit_factor)+'</b></span>'
+        +'<span>胜率 <b>'+esc(s.win_rate_pct)+'%</b></span>'
+        +'<span>成交 <b>'+esc(s.n_trades)+'</b> 笔</span>'
+        +'<span>平均仓位 <b>'+esc(s.avg_invested_pct)+'%</b></span></div>'
+        +'<div style="margin-top:4px"><a href="/bt2view" style="color:var(--link)">→ 去回测中心看逐日账本与逐笔明细（任务 <code>'+esc(_cbtJobId)+'</code>）</a></div>';
+    }
   }else{ // dead
     _cbtStopPoll();
     bar.style.width='100%'; bar.style.background='#f85149';
@@ -908,29 +930,44 @@ async function pollCbt(){
   }
 }
 async function runComboBacktest(){
-  const mid=($('cbt-manager')||{}).value||'director_apex', tid=($('cbt-trader')||{}).value;
+  const tid=($('cbt-trader')||{}).value;
   const sd=($('cbt-start')||{}).value, ln=($('cbt-len')||{}).value;
   const anas=[...document.querySelectorAll('.cbt-ana:checked')].map(c=>c.value);
   const out=$('cbt-result'); if(!out)return;
   if(!tid){toast('⚠️ 请先选择操盘手（总监默认带队），再跑组合回测');return;}
-  const LEN={ '1m':'1 个月','3m':'3 个月','6m':'半年','1y':'1 年' };
-  const lead=mid==='director_apex'?'🏛️ 投资总监（默认在岗）':('经理 <code>'+esc(mid)+'</code>');
-  const anaTxt=anas.length?('📡 选股分析师 '+anas.length+' 个（<code>'+esc(anas.join(' + '))+'</code>）'):'📡 选股分析师：未指定（默认信号池）';
+  // 信号源→引擎策略映射：多选时取第一个可回测项并明示（引擎一次跑一个策略）；全不勾=默认缠论（原「默认信号池」语义）
+  const engineOk=anas.filter(a=>CBT_ENGINE_MAP[a]);
+  const strat=engineOk[0]||(anas.length===0?'chanlun':null);
+  if(!strat){
+    out.innerHTML='⚠️ <b>所选信号源暂无回测引擎</b>：当前支持 '+Object.values(CBT_ENGINE_MAP).map(esc).join(' / ')+'（其余信号源接入中）——请勾选其一再跑。';
+    return;
+  }
+  if(!sd){toast('⚠️ 请选择起始日');return;}
+  const LEN_M={'1m':1,'3m':3,'6m':6,'1y':12}, LEN_T={'1m':'1 个月','3m':'3 个月','6m':'半年','1y':'1 年'};
+  const d0=sd.replace(/-/g,''), d1=_cbtAddMonths(sd, LEN_M[ln]||3);
+  // 操盘手风格→开仓闸门：防守型=终选保守口径（315 定稿 gate high+评分≥80·少交易高门槛）；趋势/短线/其他=全机会（gate off）
+  const style=((window._cbtTraderStyle||{})[tid])||'';
+  const defensive=style.indexOf('防守')>=0;
   let r=null;
   try{
-    r=await api('/api/combo_backtest',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({manager:mid,trader:tid,analysts:anas,start:sd,len:ln})});
+    r=await api('/api/bt2_run',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({strategy:strat, d0:d0, d1:d1,
+        gate_mode:defensive?'high':'off', min_score:defensive?80:0, slot_pct:0.08})});
   }catch(e){ r={ok:false,error:String(e.message||e)}; }
   if(!r||!r.ok){
-    out.innerHTML='❌ <b>任务登记失败</b>：'+esc((r&&r.error)||'未知错误')+'——稍后再试或联系值班。';
+    out.innerHTML='❌ <b>回测任务提交失败</b>：'+esc((r&&r.error)||'未知错误')+'——稍后再试或联系值班。';
     return;
   }
   _cbtJobId=r.job.id;
-  out.innerHTML='🕐 <b>组合回测任务已登记（'+esc(r.job.ts)+' · 单号 <code>'+esc(r.job.id)+'</code>）</b>：'
-    +lead+' × '+anaTxt+' × 操盘手 <code>'+esc(tid)+'</code> · <b>'+esc(sd)+'</b> 起跑 '+(LEN[ln]||ln)
-    +' · point-in-time 口径（逐日只用当时已知信息，不泄露未来答案）。'+_cbtBarHtml();
+  out.innerHTML='⚙️ <b>组合回测已提交回测中心引擎（单号 <code>'+esc(r.job.id)+'</code>）</b>：'
+    +'📡 信号源 <b>'+esc(CBT_ENGINE_MAP[strat])+'</b>'
+    +(anas.length>1?('（勾了 '+anas.length+' 个·引擎一次回测一个，本次用第一个可回测项）'):'')
+    +' × 操盘手 <code>'+esc(tid)+'</code>'
+    +(defensive?'（防守型 → 终选保守口径：仅高位开新仓 + 评分≥80）':'（→ 全机会口径）')
+    +' · <b>'+esc(sd)+'</b> 起跑 '+(LEN_T[ln]||ln)
+    +' · point-in-time 口径。'+_cbtBarHtml();
   pollCbt();
-  _cbtStopPoll(); _cbtTimer=setInterval(pollCbt,5000);
+  _cbtStopPoll(); _cbtTimer=setInterval(pollCbt,3000);
 }
 
 // ===== 投资经理（K-STOCK-137d S-b2：/api/manager_roster + manager_hire/fire） =====
