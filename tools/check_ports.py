@@ -72,6 +72,18 @@ def listening_ports():
 _PROC_CACHE = {}
 
 
+def _status_label(up, stream=None):
+    """返回当前输出流可编码的在线状态标签。"""
+    stream = stream or sys.stdout
+    label = "✓在线" if up else "✗离线"
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+    try:
+        label.encode(encoding)
+    except (LookupError, UnicodeEncodeError):
+        return "UP" if up else "DOWN"
+    return label
+
+
 def _powershell_proc_name(pid):
     """在 tasklist 被沙箱拒绝时，用 Get-Process 读取进程名。"""
     try:
@@ -131,7 +143,7 @@ def main():
     registered = []
     for p in sorted(REGISTRY):
         up = tcp_up(p)
-        say("  %-5d %-5s %s%s" % (p, "✓在线" if up else "✗离线",
+        say("  %-5d %-5s %s%s" % (p, _status_label(up),
                                     REGISTRY[p],
                                     "（可离线）" if p in OPTIONAL_OFFLINE
                                     else ""))

@@ -12,6 +12,21 @@ import check_ports
 
 
 class CheckPortsJsonTests(unittest.TestCase):
+    def test_gbk_console_falls_back_to_ascii_without_unicode_error(self):
+        class GbkStream(io.StringIO):
+            encoding = "gbk"
+
+        argv = ["check_ports.py"]
+        with patch.object(sys, "argv", argv), \
+             patch.object(check_ports, "tcp_up", return_value=True), \
+             patch.object(check_ports, "listening_ports", return_value={}):
+            output = GbkStream()
+            with redirect_stdout(output):
+                rc = check_ports.main()
+
+        self.assertEqual(rc, 0)
+        self.assertIn("UP", output.getvalue())
+
     def test_tdxw_third_party_process_is_not_reported_as_unknown(self):
         argv = ['check_ports.py', '--strict', '--json']
         with patch.object(sys, 'argv', argv), \
