@@ -112,8 +112,10 @@ def main():
     sym_group = stance_groups(per_symbol_latest)  # A-1: 分组并入明细
     scores, confs, rets = [], [], []
     detail = []  # 逐票明细（K-STOCK-014：评估日可读性；K-STOCK-080：加分组列）
+    skipped = []  # K-STOCK-338：决策字段缺失票可见（此前静默缩样本，读者不知 n 为何变小）
     for sym, r in per_symbol_latest.items():
         if r.get("score") is None or not r.get("price_at_decision"):
+            skipped.append(sym)
             continue
         try:
             now = quote_snapshot(sym)["price"]
@@ -133,6 +135,9 @@ def main():
         for sym, name, sc, cf, px0, px1, rt, rec, grp in sorted(detail, key=lambda d: -d[6]):
             print("  %-8s %-8s %-5s %-5s %-10s %-10s %+8.2f %-11s %s" % (
                 sym, name[:8], sc, "%.2f" % cf, px0, px1, rt, rec, grp))
+    if skipped:  # K-STOCK-338：null 决策行不入 J2（skip 容错），但必须可见
+        print("  [skip] %d 票决策字段缺失未入 J2（D1 解析失败·样本缩水非毒化）: %s"
+              % (len(skipped), ",".join(skipped)))
     if failed:  # A-1: failed 票可见（评估日不必翻账本）
         print("  failed 票（%d 行）:" % len(failed))
         for r in failed[-10:]:

@@ -35,9 +35,11 @@ PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
 ALERT_STATE = BASE / "data" / "shadow" / "p0_alert_state.json"
 
 
-def push_failed_alert(failed_rows, today):
-    """篮子跑完有 failed 时立即推飞书简讯；同日只推一次（节流）。任何异常不中断主流程。"""
-    if not failed_rows:
+def push_failed_alert(failed_rows, today, parse_fail_rows=None):
+    """篮子跑完有 failed 时立即推飞书简讯；同日只推一次（节流）。任何异常不中断主流程。
+    K-STOCK-338：parse_fail_rows（done 但决策解析失败）并入同条告警——failed 是 P0、
+    parse 失败是样本缺失（模型偶发不守格式），后者此前完全静默。"""
+    if not failed_rows and not parse_fail_rows:
         return
     try:
         st = json.loads(ALERT_STATE.read_text(encoding="utf-8")) if ALERT_STATE.exists() else {}
@@ -47,6 +49,11 @@ def push_failed_alert(failed_rows, today):
         lines = ["**[P0] 影子运行 %d 笔失败（需处置）**" % len(failed_rows)]
         for r in failed_rows:
             lines.append("- %s：%s" % (r["symbol"], r.get("error", "?")[:100]))
+        if parse_fail_rows:
+            lines.append("**[P1] %d 笔 done 但 D1 决策解析失败（评估样本缺失·不阻塞）**"
+                         % len(parse_fail_rows))
+            for r in parse_fail_rows:
+                lines.append("- %s：latency %.0fs" % (r["symbol"], r.get("latency_s", 0)))
         tmp = BASE / "data" / "shadow" / "_p0_alert_tmp.md"
         tmp.write_text("\n".join(lines), encoding="utf-8")
         r = subprocess.run(
@@ -130,6 +137,7 @@ def main():
 
     summary = []
     failed_rows = []
+    parse_fail_rows = []  # K-STOCK-338：done 但决策解析失败（评估样本缺失，此前静默）
     for symbol in BASKET:
         if already_done(today, symbol):
             print("[skip] %s 今日已入账" % symbol)
@@ -140,7 +148,9 @@ def main():
                 data_ctx = make_context(symbol)
                 t0 = time.time()
                 result = interp.run(symbol, data_ctx=data_ctx)
-                dec = parse_decision(result["decision"]) or {}
+                dec = parse_decision(result["decision"])
+                parse_ok = dec is not None  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
+                dec = dec or {}
                 price = quote_snapshot(symbol)["price"]
                 row = {
                     "date": today, "ts": time.time(), "symbol": symbol,
@@ -149,9 +159,13 @@ def main():
                     "recommendation": dec.get("recommendation"),
                     "confidence": dec.get("confidence"),
                     "score": dec.get("score"), "target_range": dec.get("target_price_range"),
+                    "parse_ok": parse_ok,
                     "degraded": any(v != "normal" for v in result["status"].values()),
                     "latency_s": round(time.time() - t0, 1),
                 }
+                if not parse_ok:
+                    print("[warn] %s D1 决策解析失败（输出无 recommendation JSON·已入账 parse_ok=false）"
+                          % symbol)
                 break
             except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
                 row = {"date": today, "ts": time.time(), "symbol": symbol,
@@ -166,9 +180,14 @@ def main():
         summary.append(row["status"])
         if row["status"] == "failed":
             failed_rows.append(row)
+        elif row.get("parse_ok") is False:
+            parse_fail_rows.append(row)
 
     print("shadow day %s done: %s" % (today, dict((s, summary.count(s)) for s in set(summary))))
-    push_failed_alert(failed_rows, today)
+    if parse_fail_rows:
+        print("parse_fail: %d（%s）" % (len(parse_fail_rows),
+                                        ",".join(r["symbol"] for r in parse_fail_rows)))
+    push_failed_alert(failed_rows, today, parse_fail_rows)
     open_failed_task(failed_rows, today)
 
 
