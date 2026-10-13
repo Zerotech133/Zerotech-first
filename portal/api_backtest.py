@@ -4925,3 +4925,136 @@ if(P){setTimeout(function(){go(P)},400)}
         self.wfile.write(body)
 
 
+
+
+# ── K-STOCK-285b 回测框架 v2（bt2 参数化回测：登记→daemon 线程跑引擎→进度落盘→轮询）──
+# 动线：前端 POST /api/bt2_run（参数表单）→ 本模块校验+登记 → daemon 线程调
+# quant_backtest/backtest_engine_v2.run_job（进度回调写 state json）→ 前端
+# GET /api/bt2_jobs 轮询 → done 后 GET /api/bt2_job?id= 取全量账本渲染。
+# 引擎跑在 portal 进程内 daemon 线程（books 只读并发安全；cal 全局窗口切换
+# 互斥——全局锁串行，一期单并发足够）。冻结口径：工程验收动线，10-16 开闸
+# 后接正式跑批（与 275 cbt 队列分开，互不影响）。
+import threading as _threading
+
+_BT2_DIR = os.path.join(STATION, "quant_backtest", "data", "bt2")
+_BT2_STATE_DIR = os.path.join(STATION, "quant_backtest", "data", "bt2_state")
+_BT2_LOCK = _threading.Lock()
+
+
+def _bt2_state_path(jid):
+    return os.path.join(_BT2_STATE_DIR, "bt2_%s.state.json" % jid)
+
+
+def _bt2_write_state(jid, **kv):
+    st = _read_json(_bt2_state_path(jid))
+    if not isinstance(st, dict) or not st:
+        st = {"id": jid}          # _read_json 缺文件返回 {}（falsy dict），必须补 id
+    st.setdefault("id", jid)
+    st.update(kv)
+    st["ts"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        os.makedirs(_BT2_STATE_DIR, exist_ok=True)
+        with open(_bt2_state_path(jid), "w", encoding="utf-8") as f:
+            json.dump(st, f, ensure_ascii=False)
+    except Exception as _e:
+        log_exc(_e)
+
+
+def _bt2_start(rec):
+    """POST /api/bt2_run：校验参数 → 登记 → daemon 线程跑引擎。"""
+    strategy = str(rec.get("strategy") or "chanlun").strip()
+    if strategy not in ("chanlun", "double_knife"):
+        return {"ok": False, "error": "strategy 须为 chanlun/double_knife"}
+    d0 = str(rec.get("d0") or "").replace("-", "").strip()
+    d1 = str(rec.get("d1") or "").replace("-", "").strip()
+    if not (re.fullmatch(r"\d{8}", d0 or "") and re.fullmatch(r"\d{8}", d1 or "") and d0 < d1):
+        return {"ok": False, "error": "d0/d1 须为 8 位日期且 d0<d1"}
+
+    def _ratio(key, lo, hi, default):
+        """比例参数（slot/runup/stop）：兼容裸百分数（8→0.08、15→0.15、-8→-0.08）。"""
+        try:
+            v = float(rec.get(key))
+        except (TypeError, ValueError):
+            return default
+        if abs(v) > 1:
+            v = v / 100.0
+        return max(lo, min(hi, v))
+
+    def _intv(key, lo, hi, default):
+        try:
+            v = int(float(rec.get(key)))
+        except (TypeError, ValueError):
+            return default
+        return max(lo, min(hi, v))
+
+    params = {
+        "strategy": strategy, "d0": d0, "d1": d1,
+        "top_n": _intv("top_n", 1, 50, 10),
+        "slot_pct": _ratio("slot_pct", 0.01, 0.5, 0.08),
+        "cap_mode": "fixed" if rec.get("cap_mode") == "fixed" else "regime_8050",
+        "runup_cap": _ratio("runup_cap", 0, 0.5, 0.15 if strategy == "chanlun" else 0),
+        "stop_pct": _ratio("stop_pct", -0.5, 0, 0.0),
+        "holding_max_days": _intv("holding_max_days", 0, 60, 5 if strategy == "double_knife" else 0),
+    }
+    now = datetime.datetime.now()
+    jid = now.strftime("%Y%m%d-%H%M%S") + "-" + os.urandom(2).hex()
+    _bt2_write_state(jid, status="queued", params=params,
+                     submitted_at=now.strftime("%Y-%m-%d %H:%M:%S"))
+    t = _threading.Thread(target=_bt2_worker, args=(jid, params), daemon=True)
+    t.start()
+    return {"ok": True, "job": {"id": jid, "status": "queued", "params": params}}
+
+
+def _bt2_worker(jid, params):
+    if not _BT2_LOCK.acquire(timeout=1):
+        # 已有任务在跑：标记排队等待（拿锁的线程跑完自动轮到下一个？一期简单拒绝）
+        _bt2_write_state(jid, status="dead", error="已有回测任务在跑，请稍后再试（一期单并发）")
+        return
+    try:
+        _bt2_write_state(jid, status="running", stage="初始化", pct=1, note="引擎载入")
+
+        def progress(stage, pct, note):
+            _bt2_write_state(jid, status="running", stage=stage, pct=pct, note=note)
+
+        qbt = os.path.join(STATION, "quant_backtest")
+        if qbt not in sys.path:
+            sys.path.insert(0, qbt)
+        import backtest_engine_v2 as eng
+        res, err = eng.run_job(params, jid, progress=progress)
+        if err:
+            _bt2_write_state(jid, status="dead", error=err[:800])
+        else:
+            _bt2_write_state(jid, status="done", pct=100, stage="完成",
+                             result=res["summary"],
+                             result_file=os.path.join(_BT2_DIR, "bt2_%s.json" % jid))
+    except Exception as _e:
+        log_exc(_e)
+        _bt2_write_state(jid, status="dead", error=repr(_e)[:800])
+    finally:
+        _BT2_LOCK.release()
+
+
+def _bt2_status():
+    """GET /api/bt2_jobs：最近 20 个任务（state 合并：进度/结果/错误）。"""
+    out = []
+    if os.path.isdir(_BT2_STATE_DIR):
+        for fn in sorted(os.listdir(_BT2_STATE_DIR), reverse=True)[:20]:
+            if not fn.endswith(".state.json"):
+                continue
+            st = _read_json(os.path.join(_BT2_STATE_DIR, fn))
+            if isinstance(st, dict) and st.get("id"):
+                out.append(st)
+    return {"ok": True, "total": len(out), "jobs": out}
+
+
+def _bt2_result(jid):
+    """GET /api/bt2_job?id=：全量账本（done 才有）。jid 白名单字符校验防穿越。"""
+    if not re.fullmatch(r"[0-9A-Za-z\-_]{4,64}", str(jid or "")):
+        return {"ok": False, "error": "bad id"}
+    fp = os.path.join(_BT2_DIR, "bt2_%s.json" % jid)
+    if not os.path.exists(fp):
+        return {"ok": False, "error": "result not found"}
+    with open(fp, encoding="utf-8") as f:
+        payload = json.load(f)
+    payload["ok"] = True
+    return payload

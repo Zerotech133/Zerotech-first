@@ -116,6 +116,9 @@ from api_backtest import (
     _bt_custom_status,
     _cbt_start,
     _cbt_status,
+    _bt2_start,
+    _bt2_status,
+    _bt2_result,
     _pulse_exit_line,
     _pulse_fresh,
     _pulse_ago,
@@ -163,6 +166,7 @@ _MUTATION_POSTS = frozenset((
     "/api/portfolio_hire",
     "/api/trader_fire",   # K-STOCK-122 投研团队：组合解聘交易员
     "/api/combo_backtest",  # K-STOCK-275 组合回测任务登记（落盘排队）
+    "/api/bt2_run",         # K-STOCK-285b 回测框架 v2 参数化回测（daemon 线程跑引擎）
     "/chanlun-anno",
     "/api/chanlun/label/save",
     "/api/report_push",
@@ -2487,6 +2491,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     self._json({"ok": False, "error": "bad json"}, 400)
                     return
                 self._json(_cbt_start(rec))
+            elif path == "/api/bt2_run":
+                # K-STOCK-285b 回测框架 v2：参数化回测（缠论等机会/量子双刀日内纪律），
+                # daemon 线程跑 backtest_engine_v2，进度落盘 state json。
+                try:
+                    rec = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    self._json({"ok": False, "error": "bad json"}, 400)
+                    return
+                self._json(_bt2_start(rec))
             elif path == "/api/batch-backtest":
                 # K255 勾选股票自定义批次回测：写批次 JSONL → 引擎子进程异步跑
                 try:
@@ -2650,6 +2663,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 _sys281.path.insert(0, r"E:/老田的AI助手/quant_backtest")
             from ops_signal_today import compute as _ops_compute
             self._json(_ops_compute())
+        elif path == "/api/bt2_jobs":
+            # K-STOCK-285b 回测框架 v2 任务清单（进度/结果/错误合并投影）
+            self._json(_bt2_status())
+        elif path == "/api/bt2_job":
+            # K-STOCK-285b 单任务全量账本（?id=，done 后可取）
+            from urllib.parse import parse_qs as _pqs
+            _q = {k: v[0] for k, v in _pqs(qs).items()} if qs else {}
+            self._json(_bt2_result(_q.get("id")))
         elif path == "/api/bt_daily_ledger":
             # K-STOCK-277 逐日回测账本只读投影（回测中心 bt_view.html 数据源）
             try:
@@ -3560,6 +3581,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/btview":
             # K-STOCK-277 回测中心（逐日账本/月历热力/AI决策流水，展示借智策 OS v2 形态）
             self._html_file(os.path.join(ROOT, "bt_view.html"))
+        elif path == "/bt2view":
+            # K-STOCK-285b 回测框架 v2（参数表单+两策略对照+逐日日历复盘）
+            self._html_file(os.path.join(ROOT, "bt2_view.html"))
         elif path == "/paper":
             # K-STOCK 模拟仓前端（K279 产出 paper.html；nginx 8080 同文件
             # 静态直出，此处读盘直出保双口径一致——K-STOCK-042 修正过时占位）
