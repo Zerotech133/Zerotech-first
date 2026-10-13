@@ -142,6 +142,50 @@
      "note": "K-ORG-027b交付：KINDS 5→9类+emit自检"
     }
    ]
+  },
+  {
+   "id": "F",
+   "name": "批F·编码Agent生产线（K-ORG-034蓝图落地·计划K-ORG-035）",
+   "deadline": "2026-10-17",
+   "status": "doing",
+   "items": [
+    {
+     "id": "F1",
+     "task": "通道合流：agent_coder 增 claude_glm backend（智谱Anthropic端点×Claude Code CLI，worker侧执行）",
+     "owner": "DEV2",
+     "note": "判据=该通道重写同级模块一个 py_compile+冒烟过；回退=环境变量切cloud"
+    },
+    {
+     "id": "F2",
+     "task": "仓库地图 repo_map.py（AST签名压缩≤2K token·按工单择邻注入prompt）",
+     "owner": "ARCH1",
+     "note": "判据=开关地图对照，开图产出引用真实文件/函数名"
+    },
+    {
+     "id": "F3",
+     "task": "编辑协议+lint门（SEARCH/REPLACE块·落盘前py_compile错喂回重试max2）",
+     "owner": "DEV2",
+     "note": "QA1定判据；注入语法错任务须拦截自愈"
+    },
+    {
+     "id": "F4",
+     "task": "迭代回路+自动提交（生成→lint→冒烟→stderr重试·独立commit按单可回滚）",
+     "owner": "OPS1",
+     "note": "⚠️10-15批B解禁日避开A0日报链；判据=连续三工单全自动过回路"
+    },
+    {
+     "id": "F5",
+     "task": "轨迹事件流（events扩code_action/observation+shadow/coder_traces/+IDE轨迹块）",
+     "owner": "OPS1",
+     "note": "DEV8做IDE视图；判据=失败工单可回放定位"
+    },
+    {
+     "id": "F6",
+     "task": "27岗子代理化（bundle人设导出--agents JSON+QA1复核升级claude -p只读审查）",
+     "owner": "ARCH1",
+     "note": "判据=对练走子代理通道DEV4仍抓真问题；10-17全线验收（三通道对比+5工单全自动链+巡检批F全绿）"
+    }
+   ]
   }
  ],
  "thresholds": {
