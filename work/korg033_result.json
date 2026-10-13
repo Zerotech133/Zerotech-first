@@ -1,0 +1,7 @@
+{
+ "task": "model_route.py",
+ "backend": "cloud",
+ "model": "glm-4-flash",
+ "smoke": true,
+ "chars": 1658
+}
