@@ -29,6 +29,13 @@ BACKFILL_LOG = os.path.join(HERE, "_325b_backfill.log")
 RESULT = os.path.join(HERE, "_325g_result.json")
 STAMP = time.strftime("%Y-%m-%d %H:%M:%S")
 
+# 子进程解释器钉系统 3.11（pandas/tushare 在位）——sys.executable 继承启动者，
+# 托管 3.13 无 pandas（325Gb 干跑预检修判例：20:39 首跑②步 ModuleNotFound rc=1 停链）
+PY311 = r"C:\Program Files\Python311\python.exe"
+PY = PY311 if os.path.exists(PY311) else sys.executable
+if not os.path.exists(PY311) and sys.executable != PY311:
+    log("WARN: 系统 3.11 不在位，子进程回退 sys.executable=%s" % sys.executable)
+
 
 def log(msg):
     line = "[%s] %s" % (STAMP, msg)
@@ -62,6 +69,15 @@ def main():
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
 
+    # 主进程自检：第④步进程内 import pandas，须 3.11 启动（fail-closed）
+    if not args.check:
+        try:
+            import pandas  # noqa: F401
+        except ImportError:
+            raise SystemExit(
+                "FAIL: 当前解释器无 pandas（%s）——请用 %s 启动本链"
+                % (sys.executable, PY311))
+
     log("== 325G 衔接链启动 ==")
     g = guard_backfill_quiet()
     log("守卫①回补静默检查: %s" % g)
@@ -71,14 +87,14 @@ def main():
         log("--check 模式到此为止")
         return
 
-    rc = run_step("②幂等补拉", [sys.executable, "-u", "_325b_backfill.py"],
+    rc = run_step("②幂等补拉", [PY, "-u", "_325b_backfill.py"],
                   os.path.join(HERE, "_325g_step2_backfill.log"))
     if rc != 0:
         log("FAIL@②补拉 rc=%d——停链（快照不基于残缺数据）" % rc)
         sys.exit(2)
 
     rc = run_step("③终版快照",
-                  [sys.executable, "-u", "dknife_snap.py", "--src", "tushare",
+                  [PY, "-u", "dknife_snap.py", "--src", "tushare",
                    "--ym0", "202606", "--ym1", "202610"],
                   os.path.join(HERE, "_325g_step3_snap.log"))
     if rc != 0:
