@@ -47,7 +47,7 @@ def get_diff(sha):
         raise RuntimeError("未找到 git 命令，请在装有 git 的环境运行") from exc
     except subprocess.CalledProcessError as exc:
         err = (exc.stderr or "").strip()[:300]
-        raise RuntimeError(f"git show {sha} 失败: {err}") from exc
+        raise RuntimeError(f"git show {sha} 失败：{err}") from exc
     diff = proc.stdout or ""
     return diff[:DIFF_MAX_CHARS]
 
@@ -55,26 +55,30 @@ def get_diff(sha):
 def build_prompt(sha, diff, note=None):
     """构造 QA1 复核 prompt：逐笔三项作答，结论只能二选一。
     note: 提交方附证（负面断言如「全库清扫」须附现值核验计数，K-ORG-042 判例）。
-    安全加固（K-ORG-043，QA1 R7 观察项a）: 附证先中性化（任意连续 >=4 个 '>' 压为 '>>>'）、
-    再截断至 NOTE_MAX_CHARS（超长加省略号"…"），保证 '>>>>' 只以模板定界符出现。"""
+    安全加固（K-ORG-043，QA1 R7 观察项 a）: 附证先中性化（任意连续 >=4 个 '>' 压为 '>>>'）、
+    再截断至 NOTE_MAX_CHARS（超长加省略号"…"），保证 '>>>>' 只以模板定界符出现。
+    diff 安全加固（K-ORG-045）: 在截断前对 diff 参数执行与 note 完全一致的中性化处理，防止恶意注入。"""
     if note:
         note = re.sub(r">{4,}", ">>>", note)
         if len(note) > NOTE_MAX_CHARS:
             note = note[:NOTE_MAX_CHARS] + "…"
     note_blk = ("\n【提交方附证（可复现现值核验）】\n<<<<\n%s\n>>>>\n" % note) if note else ""
+    
+    # 安全加固：在截断前对 diff 做中性化，防止 '>>>>' 越栏注入
+    safe_diff = re.sub(r">{4,}", ">>>", diff)
     return (
         f"你是 QA1 质检复核员，请复核以下这笔提交。\n"
         f"提交 sha: {sha}\n\n"
         f"diff（截前 {DIFF_MAX_CHARS} 字，完整 diff 可用 git show {sha} 复现）:\n"
-        f"<<<<\n{diff}\n>>>>\n{note_blk}\n"
+        f"<<<<\n{safe_diff}\n>>>>\n{note_blk}\n"
         "请逐项回答：\n"
         "1) 改动与提交消息是否相符；\n"
         "2) 有无逻辑/边界隐患；\n"
-        "3) 结论：必须明确给出「通过」或「退回+理由」。\n"
+        "3) 结论：必须明确给出「通过」或「退回 + 理由」。\n"
         "【diff 判读纪律（K-ORG-042 判例）】diff 中以 - 开头的行是被「移除的旧内容」"
         "而非提交后的现状——判定「某引用仍存在」不能以 - 行为据；"
         "负面断言（如「已清零/已全删」）以【提交方附证】的现值计数为准，"
-        "无附证且 diff 截断不足以判断时，结论给「退回+理由：需附证重提」。\n"
+        "无附证且 diff 截断不足以判断时，结论给「退回 + 理由：需附证重提」。\n"
         "输出保持简洁，结论放在最后一行。"
     )
 
@@ -86,7 +90,7 @@ def review_one(sha, note=None):
     return str(
         agent_coder.chat_auto(
             "QA1",
-            {"label": "QA1复核 " + sha, "prompt": task, "json_out": False},
+            {"label": "QA1 复核 " + sha, "prompt": task, "json_out": False},
         )
     )
 
@@ -97,7 +101,7 @@ def main(argv):
     while argv and argv[0] in ("--task", "--note"):
         opt = argv[0]
         if len(argv) < 2:
-            print("用法: python tools/qa1_review.py [--task <工单号>] [--note <附证文本>] <短sha> [<sha>...]", file=sys.stderr)
+            print("用法：python tools/qa1_review.py [--task <工单号>] [--note <附证文本>] <短sha> [<sha>...]", file=sys.stderr)
             return 2
         if opt == "--task":
             task_id = argv[1]
@@ -106,7 +110,7 @@ def main(argv):
         argv = argv[2:]
 
     if not argv:
-        print("用法: python tools/qa1_review.py <短sha> [<sha>...]", file=sys.stderr)
+        print("用法：python tools/qa1_review.py <短sha> [<sha>...]", file=sys.stderr)
         return 2
 
     rejected = False
