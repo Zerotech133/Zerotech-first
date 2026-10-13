@@ -153,6 +153,30 @@
   .at-menu .am .rr{margin-left:auto;color:var(--dim2);font-size:10.5px}
   .dbg-note{font-size:10.5px;color:var(--dim2);padding:0 14px 10px;line-height:1.6}
 
+  /* ── 三期：Ctrl+P 命令面板 ── */
+  .pal-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:none;align-items:flex-start;justify-content:center;padding-top:12vh}
+  .pal-mask.open{display:flex}
+  .pal{width:560px;max-width:92vw;background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 12px 40px rgba(0,0,0,.5);overflow:hidden}
+  .pal input{width:100%;background:transparent;border:0;outline:none;color:var(--fg);font-size:14px;
+    padding:13px 16px;border-bottom:1px solid var(--line)}
+  .pal .plist{max-height:46vh;overflow:auto}
+  .pal .pi{display:flex;gap:9px;align-items:center;padding:8px 14px;font-size:12.5px;cursor:pointer}
+  .pal .pi.sel,.pal .pi:hover{background:rgba(88,166,255,.13)}
+  .pal .pi .k{font-size:10px;color:var(--dim2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;flex:none}
+  .pal .pi .rr{margin-left:auto;color:var(--dim2);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
+  .pal .pempty{padding:14px;color:var(--dim2);font-size:12px;text-align:center}
+
+  /* ── 三期：轨迹时间线 ── */
+  .tli{display:grid;grid-template-columns:150px 14px 1fr;gap:0 10px;font-size:12px;padding:4px 0;align-items:baseline}
+  .tli:not(:last-child){border-bottom:1px dashed var(--line)}
+  .tl-t{color:var(--dim2);font-size:10.5px;font-family:Consolas,monospace}
+  .tl-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);align-self:center;justify-self:center}
+  .tl-dot.k-FILE_WRITE{background:var(--green)} .tl-dot.k-FILE_EDIT{background:var(--orange)}
+  .tl-dot.k-SHELL{background:var(--purple)} .tl-dot.k-COMMIT{background:var(--e3)}
+  .tl-c{color:var(--fg);line-height:1.6;word-break:break-word}
+  .tl-c b{color:var(--purple);font-weight:normal;margin-right:6px}
+
   @media (max-width:1180px){
     .main{grid-template-columns:44px 180px 6px 1fr 0 0}
     .dbg{display:none}
@@ -164,6 +188,7 @@
   <h1>⌨ Agent IDE<small>GENOS AGENT WORKBENCH · 五区布局</small></h1>
   <div class="hd-stats" id="stats"></div>
   <div class="hd-right">
+    <span style="font-size:11px;color:var(--dim2);align-self:center;cursor:pointer" onclick="palOpen()" title="快捷键 Ctrl+P">⌕ Ctrl+P 搜索</span>
     <span style="font-size:11px;color:var(--dim2);align-self:center" id="gen">bundle 生成于 —</span>
     <a href="/sandbox">研发沙盘</a>
     <a href="/index.html">← 门户</a>
@@ -208,6 +233,13 @@
       <button class="send" id="send" onclick="send()" disabled>发送</button>
     </div>
     <div class="dbg-note">经 nginx /ollama/ 反代直连本地 Ollama(11434) · 9b 约 10-60s · 此调试不发工单不落记忆</div>
+  </div>
+</div>
+
+<div class="pal-mask" id="palmask" onclick="if(event.target===this)palClose()">
+  <div class="pal">
+    <input id="palq" placeholder="搜索 Agent / 代码 / 工单…（↑↓ 选择 · Enter 打开 · Esc 关闭）" oninput="palPaint()">
+    <div class="plist" id="pallist"></div>
   </div>
 </div>
 
@@ -490,7 +522,15 @@ function rTrace(c, k_id){
     + '<div class="k">动作类型</div><div class="v">'+Object.entries(t.kinds).map(([k,n])=>'<span class="gr">'+esc(k)+'×'+n+'</span>').join('')+'</div>'
     + '<div class="k">最后动作</div><div class="v">'+esc(t.last)+'</div>'
     + '</div></div>'
-    + '<div class="blk"><h3>说明</h3><div class="charter" style="color:var(--dim)">轨迹源 shadow/coder_traces/ 只读投影 · 逐动作明细看仓库 trace 文件</div></div>';
+    + '<div class="blk"><h3>动作时间线（逐动作全量 · shadow/coder_traces · K-STOCK-344 三期）</h3>'
+    + '<div class="tl">'
+    + ((t.events||[]).length
+        ? (t.events||[]).slice().reverse().map(ev=>
+            '<div class="tli"><div class="tl-t">'+esc(ev.ts)+'</div>'
+            + '<div class="tl-dot k-'+esc(ev.kind)+'"></div>'
+            + '<div class="tl-c"><b>'+esc(ev.kind)+'</b>'+esc(ev.detail)+'</div></div>').join('')
+        : '<div class="dep" style="padding:0">bundle 无逐动作明细（重跑 bundle 脚本刷新）</div>')
+    + '</div></div>';
   c.scrollTop = 0;
 }
 function toggleClamp(btn){
@@ -698,6 +738,61 @@ async function send(){
   }
   btn.disabled = false;
 }
+
+/* ═══ Ctrl+P 命令面板（342 三期 · K-STOCK-344） ═══ */
+let PALI = [], PALS = 0;
+function palOpen(){
+  document.getElementById("palmask").classList.add("open");
+  const iq = document.getElementById("palq");
+  iq.value = ""; palPaint();
+  setTimeout(()=>iq.focus(), 30);
+}
+function palClose(){ document.getElementById("palmask").classList.remove("open"); }
+function palBuild(){
+  const kw = document.getElementById("palq").value.trim().toLowerCase();
+  PALI = [];
+  if(!B) return;
+  const hit = s => !kw || String(s||"").toLowerCase().includes(kw);
+  for(const id in B.agents){
+    const a = B.agents[id];
+    if(hit(id) || hit(a.role_profile)) PALI.push({kind:"agent", key:id, rr:a.role_profile||""});
+  }
+  (B.code_files||[]).forEach(f=>{ if(hit(f.path)) PALI.push({kind:"code", key:f.path, rr:f.lines+" 行"}); });
+  (B.workorders||[]).forEach(w=>{ if(hit(w.id)||hit(w.desc)) PALI.push({kind:"task", key:w.id, rr:w.status+" · "+String(w.desc||"").slice(0,40)}); });
+  PALS = 0;
+}
+function palPaint(){
+  palBuild();
+  const l = document.getElementById("pallist");
+  l.innerHTML = PALI.length ? PALI.slice(0,30).map((it,i)=>{
+    const ico = it.kind==="agent"?"👤":it.kind==="code"?"📄":"📋";
+    const kn = it.kind==="agent"?"Agent":it.kind==="code"?"代码":"工单";
+    const main = it.kind==="code"?it.key.split("/").pop():it.key;
+    return '<div class="pi'+(i===PALS?' sel':'')+'" onmousemove="palSel('+i+')" onclick="palGo('+i+')">'
+      + '<span>'+ico+'</span><span>'+esc(main)+'</span>'
+      + '<span class="k">'+kn+'</span><span class="rr">'+esc(it.rr)+'</span></div>';
+  }).join("") : '<div class="pempty">无匹配（支持 Agent ID / 角色 / 代码路径 / 工单 ID·描述 模糊搜索）</div>';
+}
+function palSel(i){
+  PALS = i;
+  document.querySelectorAll("#pallist .pi").forEach((e,j)=>e.classList.toggle("sel",j===i));
+  const cur = document.querySelector("#pallist .pi.sel");
+  if(cur) cur.scrollIntoView({block:"nearest"});
+}
+function palGo(i){
+  const it = PALI[i]; if(!it) return;
+  palClose();
+  openTab(it.kind, it.key);
+}
+document.addEventListener("keydown", e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="p"){ e.preventDefault(); palOpen(); return; }
+  const mask = document.getElementById("palmask");
+  if(!mask.classList.contains("open")) return;
+  if(e.key==="Escape"){ palClose(); }
+  else if(e.key==="ArrowDown"){ if(PALI.length) palSel((PALS+1)%PALI.length); e.preventDefault(); }
+  else if(e.key==="ArrowUp"){ if(PALI.length) palSel((PALS-1+PALI.length)%PALI.length); e.preventDefault(); }
+  else if(e.key==="Enter"){ palGo(PALS); e.preventDefault(); }
+});
 
 /* ═══ bundle 加载 ═══ */
 fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{

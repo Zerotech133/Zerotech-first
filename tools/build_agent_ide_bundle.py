@@ -47,8 +47,8 @@ TASKS = os.path.join(ROOT, ".worktrees", "tasks.json")
 MEMORY_DIR = os.path.join(ROOT, "agent_platform", "data", "memory")
 
 
-def memory_digest(agent_id, max_recent=2):
-    """岗卡记忆面板：各 namespace jsonl 行数 + 最近 N 条摘要（只读）。"""
+def memory_digest(agent_id, max_recent=8):
+    """岗卡记忆面板：各 namespace jsonl 行数 + 最近 N 条摘要（只读·K-STOCK-344 三期加深供全文查看）。"""
     ns = {}
     for kind in ("decision", "observation", "feedback"):
         fp = os.path.join(MEMORY_DIR, "agent__%s__%s.jsonl" % (agent_id, kind))
@@ -66,7 +66,7 @@ def memory_digest(agent_id, max_recent=2):
             try:
                 e = json.loads(l)
                 recent.append({"ts": e.get("ts", ""), "event": e.get("event", ""),
-                               "desc": (e.get("desc", "") or "")[:80]})
+                               "desc": (e.get("desc", "") or "")[:200]})
             except Exception:  # noqa: BLE001
                 pass
         ns[kind] = {"count": len(lines), "recent": recent}
@@ -107,7 +107,10 @@ def coder_traces_digest(max_orders=5):
                     "actions": len(recs),
                     "kinds": kinds,
                     "last_ts": last.get("ts", ""),
-                    "last": (last.get("kind", "") + ": " + (last.get("detail", "") or ""))[:100]})
+                    "last": (last.get("kind", "") + ": " + (last.get("detail", "") or ""))[:100],
+                    # K-STOCK-344 三期：逐动作时间线（全部动作，detail 截 160 字）
+                    "events": [{"ts": r.get("ts", ""), "kind": r.get("kind", "?"),
+                                "detail": (r.get("detail", "") or "")[:160]} for r in recs]})
     return out or None
 
 
