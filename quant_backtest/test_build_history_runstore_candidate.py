@@ -1,7 +1,7 @@
 import hashlib
 import json
 
-from build_history_runstore_candidate import build
+from build_history_runstore_candidate import _registry_audit, build
 
 
 def _candidate_registry():
@@ -80,3 +80,15 @@ def test_build_reads_external_receipts_without_writing_source_stage(tmp_path):
     assert {u["unit_id"] for u in plan["units"]} == {
         "ts_daily_basic:20261009", "ts_margin_detail:20261009"
     }
+
+
+def test_registry_audit_reason_matches_candidate_gate_state(tmp_path):
+    registry_path = tmp_path / "registry.json"
+    registry_path.write_text(json.dumps(_candidate_registry()), encoding="utf-8")
+
+    audit = _registry_audit(_candidate_registry(), registry_path)
+
+    assert audit["all_candidate_gates_pass"] is True
+    assert "候选来源门禁已通过" in audit["reason"]
+    assert "未允许生产发布" in audit["reason"]
+    assert "runstore_run_id" in audit["reason"]

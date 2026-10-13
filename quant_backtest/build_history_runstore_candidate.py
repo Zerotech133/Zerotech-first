@@ -34,6 +34,42 @@ def _iso(value: str | None) -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _audit_reason(checks: dict[str, dict]) -> str:
+    """根据候选门禁实际结果生成可操作的审计原因。"""
+    if all(item["gate_pass"] for item in checks.values()):
+        pending = sorted({
+            field
+            for item in checks.values()
+            for field in item.get("required_pending_fields", [])
+        })
+        pending_text = "、".join(pending) if pending else "无"
+        return (
+            "候选来源门禁已通过；生产门槛待补：%s；未允许生产发布"
+            % pending_text
+        )
+
+    failures = []
+    for table, item in checks.items():
+        reasons = []
+        if item.get("provider") != "tushare.pro":
+            reasons.append("provider")
+        if item.get("channel") != "tushare":
+            reasons.append("channel")
+        if item.get("qualification_status") != "candidate_ready":
+            reasons.append("qualification_status")
+        if item.get("production_write") is not False:
+            reasons.append("production_write")
+        if item.get("global_activation") is not False:
+            reasons.append("global_activation")
+        if not item.get("evidence_receipts"):
+            reasons.append("explicit_receipts")
+        if not item.get("reconciliation"):
+            reasons.append("reconciliation")
+        if reasons:
+            failures.append("%s(%s)" % (table, ",".join(reasons)))
+    return "候选来源门禁未通过：" + "；".join(failures)
+
+
 def _registry_audit(registry: dict, registry_path: Path = REGISTRY) -> dict:
     rows = {row.get("asset_id"): row for row in registry.get("source_registry", {}).get("physical_tables", [])}
     checks = {}
@@ -67,7 +103,7 @@ def _registry_audit(registry: dict, registry_path: Path = REGISTRY) -> dict:
         "checks": checks,
         "all_candidate_gates_pass": all(item["gate_pass"] for item in checks.values()),
         "production_publish_allowed": False,
-        "reason": "仍缺 RunStore 运行完成、资源锁释放、发布锁、发布后指纹和回读对账",
+        "reason": _audit_reason(checks),
     }
 
 
