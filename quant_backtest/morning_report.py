@@ -3,8 +3,9 @@
 
 纯模板聚合（无 LLM 依赖，定时可靠性优先）；幂等：每日一发，
 data/morning_report_state.json 记 last_date（--force 忽略水位）。
-发送复用 news_collector/send_feishu.py（临时文件+子进程，SEND_OK 口径，
-与 chanlun_scan._push_feishu_text 同机制）。
+发送（K-STOCK-356 起）：v1 互动卡优先（五节分区+台账/看板双按钮），
+卡失败降级原纯文本；卡走 card_build.push_card，文本复用
+news_collector/send_feishu.py（SEND_OK 口径）。
 
 五节内容：
   ① 大盘研判（上证多级别缠论 · 纯引擎结构化零幻觉，
@@ -188,17 +189,65 @@ def _sec_fresh():
     return "\n".join(lines)
 
 
-def build_report():
-    """聚合五节 → 晨报文本。"""
+def build_sections():
+    """五节内容（每节独立 try，失败降级占位）→ 列表。"""
     secs = []
     for fn in (_sec_market, _sec_pool, _sec_npv, _sec_events, _sec_fresh):
         try:
             secs.append(fn())
         except Exception as e:
             secs.append("%s 失败: %s" % (fn.__name__, str(e)[:80]))
+    return secs
+
+
+def build_text(secs):
+    """聚合五节 → 晨报文本（卡片失败的降级保底形态）。"""
     head = "📊 盘前晨报 %s" % datetime.now(timezone.utc).astimezone(
         ).strftime("%Y-%m-%d %H:%M")
     return head + "\n" + "\n".join(secs) + "\n" + DISCLAIMER
+
+
+def build_card_payload(secs):
+    """K-STOCK-356 五节 → v1 互动卡（首行加粗分区 + 台账/看板双按钮）。
+
+    v1 模式（不传 use_schema2）：K-STOCK-354 判例——按钮卡勿用 v2；
+    按钮域名/访问码单点收敛 portal/feishu_card_v2（K-STOCK-305 判例）。"""
+    blocks = []
+    for s in secs:
+        lines = s.split("\n")
+        lines[0] = "**%s**" % lines[0]
+        blocks.append("\n".join(lines))
+    buttons = None
+    try:
+        sys.path.insert(0, os.path.abspath(
+            os.path.join(HERE, "..", "portal")))
+        from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
+        buttons = [
+            ("💼 交易台账",
+             "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "primary"),
+            ("📈 选股看板",
+             "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY), "default"),
+        ]
+    except Exception:
+        pass  # 按钮可选组件：域名模块不可用→纯分区卡照发
+    sys.path.insert(0, NEWS_DIR)
+    from card_build import build_card
+    return build_card(
+        "📊 盘前晨报", "%s · 缠论研判 × 入池 × 事件" % datetime.now(
+            timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M"),
+        "blue", blocks,
+        footer="%s · 纯引擎结构化读数" % DISCLAIMER, buttons=buttons)
+
+
+def _send_card(card):
+    """复用 card_build.push_card 发互动卡（内部走 send_feishu interactive）。"""
+    try:
+        sys.path.insert(0, NEWS_DIR)
+        from card_build import push_card
+        return push_card(card)
+    except Exception as e:
+        print("card send error: %s" % str(e)[:120])
+        return False
 
 
 def _send(text):
@@ -235,11 +284,16 @@ def main():
         print("already sent today (%s), skip (use --force to resend)"
               % today)
         return
-    text = build_report()
+    secs = build_sections()
+    text = build_text(secs)
     print(text)
     if a.dry:
         return
-    ok = _send(text)
+    # K-STOCK-356 卡优先 → 文本降级保底（watermark 只看最终是否送达）
+    ok = _send_card(build_card_payload(secs))
+    if not ok:
+        print("card FAIL -> text fallback")
+        ok = _send(text)
     print("send: %s" % ("SEND_OK" if ok else "FAIL"))
     if ok:
         _save_state({"last_date": today,
