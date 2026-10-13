@@ -44,6 +44,31 @@ def main():
     dept_agents = {}     # dept -> [agent_id]（含项目部编制）
     projects_of = {}     # agent_id -> [项目 dept]
 
+    # 参谋长田小皮（A0）先行入编——全组织汇报顶点（K-ORG-023）
+    org = json.load(open(os.path.join(REG, "org.json"), encoding="utf-8"))
+    chief = org.get("chief", {})
+    agents["A0"] = {
+        "id": "A0",
+        "dept": "chief",
+        "name": chief.get("name", "田小皮"),
+        "role_profile": chief.get("role_profile", "chief_of_staff"),
+        "grade": "E3",
+        "grade_note": "参谋长·组织枢纽（汇报聚合/任务仲裁/记忆治理）",
+        "charter": "全组织 24 在编岗向田小皮汇报：判读各部门日报、风险优先输出判读、"
+                   "任务单仲裁、记忆治理；影子期纪律：不给买卖操作建议。",
+        "llm": chief.get("llm_binding", "ollama/qwen3.5:9b"),
+        "tools": ["events", "devtask"],
+        "grants_read": ["domain/*", "dept/*", "agent/*"],
+        "grants_write": ["chief/decision", "chief/observation"],
+        "prompt_file": "agent_platform/prompts/a0_chief.md",
+        "prompt": open(os.path.join(PROMPTS, "a0_chief.md"),
+                       encoding="utf-8").read() if os.path.exists(
+                       os.path.join(PROMPTS, "a0_chief.md")) else "",
+        "projects": [],
+        "team_desc": "参谋长（组织枢纽）· 每日 17:35 值班判读",
+    }
+    dept_agents["chief"] = ["A0"]
+
     for fn in sorted(glob.glob(os.path.join(REG, "team_*.json"))):
         base = os.path.basename(fn)
         d = json.load(open(fn, encoding="utf-8"))
@@ -73,10 +98,12 @@ def main():
             for aid in ids:
                 projects_of.setdefault(aid, []).append(dept)
 
-    # 项目标签回填 + prompt 全文
+    # 项目标签回填 + prompt 全文（chief 田小皮已在入编时装好 a0_chief.md）
     miss_prompt = []
     for aid, card in agents.items():
         card["projects"] = projects_of.get(aid, [])
+        if card["prompt"]:
+            continue
         pf = os.path.join(PROMPTS, card["role_profile"] + ".md")
         if os.path.exists(pf):
             card["prompt_file"] = "agent_platform/prompts/%s.md" % card["role_profile"]
@@ -84,14 +111,14 @@ def main():
         else:
             miss_prompt.append(aid)
 
-    # 部门视图（IDE 左树顺序：职能部在前，项目部在后）
-    order = ["invest", "dev", "trading", "data", "product", "quality",
+    # 部门视图（IDE 左树顺序：参谋长在顶，职能部居中，项目部在后）
+    order = ["chief", "invest", "dev", "trading", "data", "product", "quality",
              "proj_backtest", "proj_data", "proj_next"]
     departments = []
     for dep in order:
         if dep not in dept_agents:
             continue
-        name, typ = DEPT_META.get(dep, (dep, "func"))
+        name, typ = DEPT_META.get(dep, ("🧠 参谋长 · 田小皮", "chief" if dep == "chief" else "func"))
         departments.append({
             "id": dep, "name": name, "type": typ,
             "agents": [a for a in dept_agents[dep] if a in agents],

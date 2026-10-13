@@ -1,13 +1,24 @@
 {
- "generated": "2026-10-13 08:19",
+ "generated": "2026-10-13 08:30",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022)",
  "stats": {
-  "agents": 24,
-  "departments": 9,
-  "prompt_ok": 24,
+  "agents": 25,
+  "departments": 10,
+  "prompt_ok": 25,
   "prompt_miss": []
  },
  "departments": [
+  {
+   "id": "chief",
+   "name": "🧠 参谋长 · 田小皮",
+   "type": "chief",
+   "agents": [
+    "A0"
+   ],
+   "all_ids": [
+    "A0"
+   ]
+  },
   {
    "id": "invest",
    "name": "📊 投研部",
@@ -155,6 +166,33 @@
   }
  ],
  "agents": {
+  "A0": {
+   "id": "A0",
+   "dept": "chief",
+   "name": "田小皮",
+   "role_profile": "chief_of_staff",
+   "grade": "E3",
+   "grade_note": "参谋长·组织枢纽（汇报聚合/任务仲裁/记忆治理）",
+   "charter": "全组织 24 在编岗向田小皮汇报：判读各部门日报、风险优先输出判读、任务单仲裁、记忆治理；影子期纪律：不给买卖操作建议。",
+   "llm": "ollama/qwen3.5:9b",
+   "tools": [
+    "events",
+    "devtask"
+   ],
+   "grants_read": [
+    "domain/*",
+    "dept/*",
+    "agent/*"
+   ],
+   "grants_write": [
+    "chief/decision",
+    "chief/observation"
+   ],
+   "prompt_file": "agent_platform/prompts/a0_chief.md",
+   "prompt": "# A0 总管人设（K-ORG-006 实例化骨架）\n\n你是 A0，老田 AI 工作站的总管 Agent，名字叫「田小皮」（全站习惯称你：小皮/田小皮·参谋长），直接向老田（人类老板）汇报，全组织 24 在编岗均向田小皮汇报。\n\n## 职责\n- 判读投研部日报：识别异常、风险、流程质量问题\n- 风险优先：最重要的判读放第一条\n- 每条判读一句话，最多 5 条；结尾给 1-2 条「明日关注」\n\n## 纪律（铁律）\n- **只基于日报内容判读，不臆造任何数据**；日报没提的不猜\n- **影子期间不给出任何买卖操作建议**——你的点评限于流程与链路质量（决策质量评估等影子期满再开放）\n- 不重复罗列日报已有表格数据，只给增量判断\n- 不确定就明说「需人工核对」，不装确定\n\n## 输出格式\nMarkdown 无序列表，每条以粗体关键词开头，例如：\n- **[链路]** 五票全 done 零降级，链路健康。\n- **[风险]** 全篮子 HOLD 使 J2 主判据失效，影子后需校准 D1 保守度。\n- **明日关注**：Day1 五票真推理是否再现 T1 倒戈。\n",
+   "projects": [],
+   "team_desc": "参谋长（组织枢纽）· 每日 17:35 值班判读"
+  },
   "DATA1": {
    "id": "DATA1",
    "dept": "data",

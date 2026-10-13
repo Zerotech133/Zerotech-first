@@ -1506,7 +1506,7 @@ transition:.3s;z-index:9}
         return ("<div class='sec'><h2>📊 每日批次回测</h2>" + body + "</div>")
     # ── K-STOCK-037 组织架构图页（/org）：树形岗位图 · 对话统一走超级助手 ──
     def _org_page(self):
-        """🏛 组织架构：human → A0 参谋长 → 部门 → 岗位 树形图。
+        """🏛 组织架构：human → 田小皮 · 参谋长 → 部门 → 岗位 树形图。
         数据源 agent_platform/registry/{org,team_*}.json 与
         portal/ai_market.json（注册表存源，本页只读渲染）。
         岗位不设独立对话窗口——对话统一走 🦸 超级助手
@@ -1633,7 +1633,7 @@ transition:.3s;z-index:9}
                         sev.get("P0", "即时"), sev.get("P1", "1h")))
             + "<div style='border:2px solid #d29922;border-radius:12px;"
               "background:#161b22;padding:12px 16px;display:inline-block'>"
-              "<b style='font-size:16px'>🧠 A0 参谋长</b>"
+              "<b style='font-size:16px'>🧠 田小皮 · 参谋长</b>"
               "<span class='dim' style='font-size:12px;margin-left:8px'>"
               "%s · %s · %s</span></div>"
               % (e(str(chief.get("role_profile", ""))),
@@ -1653,7 +1653,7 @@ transition:.3s;z-index:9}
                 + self._COCKPIT_CSS + "</head><body>"
                 + pill_nav("org")
                 + "<h1>🏛 组织架构</h1><div class='dim'>"
-                "human → A0 参谋长 → 部门 → 岗位 · 注册表实时渲染"
+                "human → 田小皮 · 参谋长 → 部门 → 岗位 · 注册表实时渲染"
                 "（agent_platform/registry）</div>"
                 + banner + tree
                 + "<div class='dim' style='margin-top:20px'>数据源："
@@ -1766,7 +1766,7 @@ transition:.3s;z-index:9}
             "<div style='font-size:15px;font-weight:700'>🏛 组织架构"
             "<span class='dim' style='font-size:11.5px;margin-left:8px'>"
             "汇报对象：人（%s）</span></div>"
-            "<div style='font-size:13px;margin:8px 0'>🧠 A0 参谋长"
+            "<div style='font-size:13px;margin:8px 0'>🧠 田小皮 · 参谋长"
             "<span class='dim'>（%s · %s）</span></div>"
             "<div style='display:flex;gap:6px;flex-wrap:wrap'>%s</div>"
             "<div class='dim' style='font-size:11.5px;margin-top:8px'>"
@@ -1785,7 +1785,7 @@ transition:.3s;z-index:9}
                 + " · 聘请 AI 岗位投入商业化项目 · 本地模型驱动成本可控</div>"
                 + hub_card + secs
                 + "<div class='dim' style='margin-top:20px'>聘请方式："
-                "「在岗」岗位向 A0 参谋长提任务单（飞书日报通道）· "
+                "「在岗」岗位向 田小皮 · 参谋长提任务单（飞书日报通道）· "
                 "「即用」专项 AI 点入即用 · 货架源 portal/ai_market.json"
                 "（上新改注册表即可）· 不构成投资建议</div></body></html>")
         self._html(body)
@@ -2470,7 +2470,8 @@ def _home_org():
     try:
         d = json.loads(open(_HOME_ORG_JSON, encoding="utf-8").read())
         return {"ok": True,
-                "chief": d.get("chief", {}).get("agent_id"),
+                "chief": d.get("chief", {}).get("name")
+                         or d.get("chief", {}).get("agent_id"),
                 "depts": [{"name": x.get("name", x.get("dept")),
                            "status": x.get("status", "active"),
                            "charter": x.get("charter", "")}

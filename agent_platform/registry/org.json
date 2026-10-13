@@ -1,630 +1,632 @@
 {
-  "_note": "GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。",
-  "org": "laotian_ai",
-  "host": "GenOS",
-  "host_note": "K-ORG-019 老田拍板：GenOS=个人 OS 宿主（门户 8080/指挥大屏/组织架构页为其门面），代码开发部分全部收编于本 org——任何新开发需求=在本注册表加岗或加项目部门，不改平台。",
-  "report_to": "human",
-  "chief": {
-    "agent_id": "A0",
-    "role_profile": "chief_of_staff",
-    "llm_binding": "ollama/qwen3.5:9b",
-    "binding_note": "35b 于 2026-10-08 20:57 实测：本机显存不足溢出 CPU，2x300s 超时未完成单次判读（EXIT=2）——实时场景不可用，硬件扩容后再评估；9b 判读质量已验证（命中倒戈/假收敛/全HOLD 三要点）",
-    "status": "active",
-    "status_note": "K-ORG-015 起转 active：a0_agent.py 9b 判读 live 验证通过 + 日报 automation 17:35（K-ORG-004）实跑中 + A0 点评产线连续出稿（影子日报 10-08~10-12）"
+ "_note": "GenOS 组织架构注册表（K-ORG-001 设计 / K-STOCK-004 落地 / K-ORG-015 扩编 / K-ORG-017 研发部 v2 / K-ORG-018 矩阵制：职能中心 + 项目部门 A/B/C 并行 / K-ORG-019 完整开发团队 / K-ORG-020 职级梯队：E3·30年档坐镇-E2·20年档主力-E1·10年档执行，同方向多名开发）。本注册表即 GenOS（个人 OS）的代码开发组织层——全部代码开发收编于此。source: 菜鸟 ai_team_role 独立。运行时校验由 engine/interpreter.py 启动时执行。项目部门 type=project：跨职能抽人组队，交付完 status 改 archived 归建（K-ORG-018 §3）。",
+ "org": "laotian_ai",
+ "host": "GenOS",
+ "host_note": "K-ORG-019 老田拍板：GenOS=个人 OS 宿主（门户 8080/指挥大屏/组织架构页为其门面），代码开发部分全部收编于本 org——任何新开发需求=在本注册表加岗或加项目部门，不改平台。",
+ "report_to": "human",
+ "chief": {
+  "agent_id": "A0",
+  "role_profile": "chief_of_staff",
+  "llm_binding": "ollama/qwen3.5:9b",
+  "binding_note": "35b 于 2026-10-08 20:57 实测：本机显存不足溢出 CPU，2x300s 超时未完成单次判读（EXIT=2）——实时场景不可用，硬件扩容后再评估；9b 判读质量已验证（命中倒戈/假收敛/全HOLD 三要点）",
+  "status": "active",
+  "status_note": "K-ORG-015 起转 active：a0_agent.py 9b 判读 live 验证通过 + 日报 automation 17:35（K-ORG-004）实跑中 + A0 点评产线连续出稿（影子日报 10-08~10-12）",
+  "name": "田小皮",
+  "name_note": "老田 2026-10-13 08:28 命名：参谋长取名田小皮，全组织向其汇报（agent_id 仍为 A0，牵动记忆 namespace 与日报链不动）"
+ },
+ "departments": [
+  {
+   "dept": "invest",
+   "name": "投研部",
+   "lead": null,
+   "status": "active",
+   "charter": "选股研究·多空辩论·情绪与基本面分析·投资决策",
+   "agents": [
+    "T1",
+    "T2",
+    "N1",
+    "F1",
+    "D1"
+   ],
+   "teams": [
+    "alpha"
+   ],
+   "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板）"
   },
-  "departments": [
+  {
+   "dept": "dev",
+   "name": "研发部",
+   "lead": null,
+   "status": "active",
+   "charter": "多梯队工程交付：后端(30/20/10年三档)·前端(30/20年)·量化(20年三岗)·架构/运维(30年)·文档(20年)",
+   "agents": [
+    "DEV1",
+    "DEV6",
+    "DEV7",
+    "DEV2",
+    "DEV3",
+    "DEV4",
+    "DEV5",
+    "DEV8",
+    "ARCH1",
+    "OPS1",
+    "DOC1"
+   ],
+   "agent_profiles": [
     {
-      "dept": "invest",
-      "name": "投研部",
-      "lead": null,
-      "status": "active",
-      "charter": "选股研究·多空辩论·情绪与基本面分析·投资决策",
-      "agents": [
-        "T1",
-        "T2",
-        "N1",
-        "F1",
-        "D1"
+     "agent_id": "DEV1",
+     "role_profile": "code_engineer",
+     "charter_detail": "拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "dept/invest/decision",
+       "agent/DEV1/*"
       ],
-      "teams": [
-        "alpha"
-      ],
-      "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板）"
+      "write": [
+       "agent/DEV1/*",
+       "dept/dev/observation"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：后端主力，devtask 工具链作者位"
     },
     {
-      "dept": "dev",
-      "name": "研发部",
-      "lead": null,
-      "status": "active",
-      "charter": "多梯队工程交付：后端(30/20/10年三档)·前端(30/20年)·量化(20年三岗)·架构/运维(30年)·文档(20年)",
-      "agents": [
-        "DEV1",
-        "DEV6",
-        "DEV7",
-        "DEV2",
-        "DEV3",
-        "DEV4",
-        "DEV5",
-        "DEV8",
-        "ARCH1",
-        "OPS1",
-        "DOC1"
+     "agent_id": "DEV6",
+     "role_profile": "code_engineer",
+     "charter_detail": "E2·20年档·后端：常规功能/接口/脚本独立交付；疑难上报 DEV1",
+     "grade": "E2",
+     "grade_note": "20年档：后端独立交付主力",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "agent/DEV6/*"
       ],
-      "agent_profiles": [
-        {
-          "agent_id": "DEV1",
-          "role_profile": "code_engineer",
-          "charter_detail": "拉代码/优化代码/code review/任务单施工（工具链=tools/devtask.py 一单一线程 worktree）",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "dept/invest/decision",
-              "agent/DEV1/*"
-            ],
-            "write": [
-              "agent/DEV1/*",
-              "dept/dev/observation"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档：后端主力，devtask 工具链作者位"
-        },
-        {
-          "agent_id": "DEV6",
-          "role_profile": "code_engineer",
-          "charter_detail": "E2·20年档·后端：常规功能/接口/脚本独立交付；疑难上报 DEV1",
-          "grade": "E2",
-          "grade_note": "20年档：后端独立交付主力",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "agent/DEV6/*"
-            ],
-            "write": [
-              "agent/DEV6/*",
-              "dept/dev/observation"
-            ]
-          }
-        },
-        {
-          "agent_id": "DEV7",
-          "role_profile": "code_engineer",
-          "charter_detail": "E1·10年档·后端：标准执行/批量修改/格式化任务；产出交 E2+ 复核",
-          "grade": "E1",
-          "grade_note": "10年档：标准执行位",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "agent/DEV7/*"
-            ],
-            "write": [
-              "agent/DEV7/*",
-              "dept/dev/observation"
-            ]
-          }
-        },
-        {
-          "agent_id": "DEV2",
-          "role_profile": "model_trainer",
-          "charter_detail": "模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "ollama",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "agent/DEV2/*"
-            ],
-            "write": [
-              "agent/DEV2/*",
-              "dept/dev/observation",
-              "domain/model_registry"
-            ]
-          },
-          "grade": "E2",
-          "grade_note": "20年档：训练/评估独立交付"
-        },
-        {
-          "agent_id": "DEV3",
-          "role_profile": "strategy_engineer",
-          "charter_detail": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "dept/invest/decision",
-              "agent/DEV3/*"
-            ],
-            "write": [
-              "agent/DEV3/*",
-              "dept/dev/observation",
-              "domain/strategy_registry"
-            ]
-          },
-          "grade": "E2",
-          "grade_note": "20年档：策略研发独立交付"
-        },
-        {
-          "agent_id": "DEV4",
-          "role_profile": "backtest_engineer",
-          "charter_detail": "回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "dept/invest/decision",
-              "agent/DEV4/*"
-            ],
-            "write": [
-              "agent/DEV4/*",
-              "dept/dev/observation",
-              "domain/backtest_registry"
-            ]
-          },
-          "grade": "E2",
-          "grade_note": "20年档：回测复核独立表态"
-        },
-        {
-          "agent_id": "DEV5",
-          "role_profile": "frontend_engineer",
-          "charter_detail": "门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "agent/DEV5/*"
-            ],
-            "write": [
-              "agent/DEV5/*",
-              "dept/dev/observation"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档：tokens 设计语言作者位"
-        },
-        {
-          "agent_id": "DEV8",
-          "role_profile": "frontend_engineer",
-          "charter_detail": "E2·20年档·前端：常规页面/图表交付；tokens 纪律同 DEV5，疑难上报 DEV5",
-          "grade": "E2",
-          "grade_note": "20年档：前端页面交付主力",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "agent/DEV8/*"
-            ],
-            "write": [
-              "agent/DEV8/*",
-              "dept/dev/observation"
-            ]
-          }
-        },
-        {
-          "agent_id": "ARCH1",
-          "role_profile": "solution_architect",
-          "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录写 domain/arch_registry（版本化，对齐 model_registry 判例）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "dept/data/*",
-              "dept/product/*",
-              "agent/ARCH1/*"
-            ],
-            "write": [
-              "agent/ARCH1/*",
-              "dept/dev/observation",
-              "domain/arch_registry"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档：架构定夺/疑难攻关/方案终审"
-        },
-        {
-          "agent_id": "OPS1",
-          "role_profile": "devops_engineer",
-          "charter_detail": "DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "agent/OPS1/*"
-            ],
-            "write": [
-              "agent/OPS1/*",
-              "dept/dev/observation"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档：生产配方执法位"
-        },
-        {
-          "agent_id": "DOC1",
-          "role_profile": "tech_writer",
-          "charter_detail": "技术文档工程师：docs/plans 计划谱系维护·INDEX 索引总账·判例沉淀（撞号/行尾/回滚死引用等判例入册）·README 与宪法文档保鲜",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/dev/*",
-              "agent/DOC1/*"
-            ],
-            "write": [
-              "agent/DOC1/*",
-              "dept/dev/observation"
-            ]
-          },
-          "grade": "E2",
-          "grade_note": "20年档：判例沉淀/谱系维护"
-        }
-      ],
-      "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）"
+      "write": [
+       "agent/DEV6/*",
+       "dept/dev/observation"
+      ]
+     }
     },
     {
-      "dept": "trading",
-      "name": "交易部",
-      "lead": null,
-      "status": "active",
-      "charter": "执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）",
-      "agents": [
-        "TR1"
+     "agent_id": "DEV7",
+     "role_profile": "code_engineer",
+     "charter_detail": "E1·10年档·后端：标准执行/批量修改/格式化任务；产出交 E2+ 复核",
+     "grade": "E1",
+     "grade_note": "10年档：标准执行位",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "agent/DEV7/*"
       ],
-      "agent_profiles": [
-        {
-          "agent_id": "TR1",
-          "role_profile": "trade_executor",
-          "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）",
-          "llm_binding": "ollama/qwen3.5:4b",
-          "binding_note": "执行员轻量路由即可，设计 §10 分层原则：轻量=4b",
-          "tools": [
-            "paper_bridge",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/trading/*",
-              "dept/invest/decision",
-              "agent/TR1/*"
-            ],
-            "write": [
-              "agent/TR1/*",
-              "dept/trading/feedback"
-            ]
-          },
-          "grade": "E1",
-          "grade_note": "10年档：轻量执行位"
-        }
-      ],
-      "source": "K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）"
+      "write": [
+       "agent/DEV7/*",
+       "dept/dev/observation"
+      ]
+     }
     },
     {
-      "dept": "data",
-      "name": "数据智能部",
-      "lead": null,
-      "status": "active",
-      "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）",
-      "agents": [
-        "DATA1"
+     "agent_id": "DEV2",
+     "role_profile": "model_trainer",
+     "charter_detail": "模型训练/评估/版本登记 domain（版本化保护律：新版本登记 domain/model_registry）",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "ollama",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "agent/DEV2/*"
       ],
-      "agent_profiles": [
-        {
-          "agent_id": "DATA1",
-          "role_profile": "data_engineer",
-          "charter_detail": "数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/data/*",
-              "dept/dev/*",
-              "agent/DATA1/*"
-            ],
-            "write": [
-              "agent/DATA1/*",
-              "dept/data/observation"
-            ]
-          },
-          "grade": "E2",
-          "grade_note": "20年档：数据底座独立运维"
-        }
-      ],
-      "source": "K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属"
+      "write": [
+       "agent/DEV2/*",
+       "dept/dev/observation",
+       "domain/model_registry"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "20年档：训练/评估独立交付"
     },
     {
-      "dept": "product",
-      "name": "产品管理部",
-      "lead": null,
-      "status": "active",
-      "charter": "需求池·版本规划·验收口径·UI/UX 设计（30年主笔+10年执行双梯队）",
-      "agents": [
-        "PM1",
-        "DSGN1",
-        "DSGN2"
+     "agent_id": "DEV3",
+     "role_profile": "strategy_engineer",
+     "charter_detail": "写策略：strategies.json 注册制新增→回测判据前置自检→影子账挂载申请。纪律=回测判据不过就终止留档（缠论联立/快枪手判例入册），禁止跳过影子期直上模拟仓",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "dept/invest/decision",
+       "agent/DEV3/*"
       ],
-      "agent_profiles": [
-        {
-          "agent_id": "PM1",
-          "role_profile": "product_manager",
-          "charter_detail": "产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/product/*",
-              "dept/invest/decision",
-              "dept/dev/observation",
-              "agent/PM1/*"
-            ],
-            "write": [
-              "agent/PM1/*",
-              "dept/product/observation"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档：交付定义/验收口径裁定"
-        },
-        {
-          "agent_id": "DSGN1",
-          "role_profile": "ui_designer",
-          "charter_detail": "UI/UX 设计师：tokens.css 设计语言治理·Demo 先行流程（老田拍板后再怼生产）·风格一致化巡查（悬空 token 三分类判例执法）·驾驶舱暗色同构风守门",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/product/*",
-              "dept/dev/observation",
-              "agent/DSGN1/*"
-            ],
-            "write": [
-              "agent/DSGN1/*",
-              "dept/product/observation"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档：tokens 设计语言作者位"
-        },
-        {
-          "agent_id": "DSGN2",
-          "role_profile": "ui_designer",
-          "charter_detail": "E1·10年档·UI：切图/图标/样式批量执行；产出交 DSGN1 审定",
-          "grade": "E1",
-          "grade_note": "10年档：UI 批量执行位",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/product/*",
-              "agent/DSGN2/*"
-            ],
-            "write": [
-              "agent/DSGN2/*",
-              "dept/product/observation"
-            ]
-          }
-        }
-      ],
-      "source": "K-ORG-018 新设；K-ORG-019 +DSGN1；K-ORG-020 UI 双梯队"
+      "write": [
+       "agent/DEV3/*",
+       "dept/dev/observation",
+       "domain/strategy_registry"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "20年档：策略研发独立交付"
     },
     {
-      "dept": "quality",
-      "name": "质量工程部",
-      "lead": null,
-      "status": "active",
-      "charter": "测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计",
-      "agents": [
-        "QA1",
-        "QA2",
-        "SEC1"
+     "agent_id": "DEV4",
+     "role_profile": "backtest_engineer",
+     "charter_detail": "回测执行/判据复核：跑 BacktestEngine→按冻结判据出 Go/No-Go 结论→结果登记 domain/backtest_registry。纪律=判据冻结期内不改判据，复核意见写 agent/DEV4/decision 供 DEV3 修订",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "dept/invest/decision",
+       "agent/DEV4/*"
       ],
-      "agent_profiles": [
-        {
-          "agent_id": "QA1",
-          "role_profile": "qa_engineer",
-          "charter_detail": "质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/quality/*",
-              "dept/dev/*",
-              "dept/data/*",
-              "agent/QA1/*"
-            ],
-            "write": [
-              "agent/QA1/*",
-              "dept/quality/observation"
-            ]
-          },
-          "grade": "E3",
-          "grade_note": "30年档：验收口径裁定/三守卫裁定"
-        },
-        {
-          "agent_id": "SEC1",
-          "role_profile": "security_auditor",
-          "charter_detail": "安全审计师：凭据红线监护（X1 OAuth/QMT 凭据不入库）·注册表 grants 越权审计·危险命令面盘点（rm/checkout--/杀进程验身份判例执法）·skill/脚本引入安全审查",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/quality/*",
-              "dept/dev/*",
-              "agent/SEC1/*"
-            ],
-            "write": [
-              "agent/SEC1/*",
-              "dept/quality/observation"
-            ]
-          },
-          "grade": "E2",
-          "grade_note": "20年档：审计独立表态"
-        },
-        {
-          "agent_id": "QA2",
-          "role_profile": "qa_engineer",
-          "charter_detail": "E1·10年档·测试：用例执行/证据采集/回归跑批；结论交 QA1 裁定",
-          "grade": "E1",
-          "grade_note": "10年档：用例执行位",
-          "llm_binding": "ollama/qwen3.5:9b",
-          "tools": [
-            "devtask",
-            "events"
-          ],
-          "memory_grants": {
-            "read": [
-              "domain/*",
-              "dept/quality/*",
-              "agent/QA2/*"
-            ],
-            "write": [
-              "agent/QA2/*",
-              "dept/quality/observation"
-            ]
-          }
-        }
-      ],
-      "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队"
+      "write": [
+       "agent/DEV4/*",
+       "dept/dev/observation",
+       "domain/backtest_registry"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "20年档：回测复核独立表态"
     },
     {
-      "dept": "proj_backtest",
-      "name": "🅰 回测开发部",
-      "lead": null,
-      "type": "project",
-      "status": "active",
-      "charter": "【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建",
-      "agents": [
-        "DEV3",
-        "DEV4",
-        "QA1"
+     "agent_id": "DEV5",
+     "role_profile": "frontend_engineer",
+     "charter_detail": "门户/UI/大屏：tokens.css 单源纪律+版面架构宪法+页面宽度 var(--page-w)；改动必过 node --check + 死引用检查 + 8080 实测三关；Demo 先行老田拍板后再怼生产页",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "agent/DEV5/*"
       ],
-      "worktree_prefix": "proj_a_",
-      "source": "K-ORG-018 老田原话「部门 A 现目前在完成我们的回测的开发」"
+      "write": [
+       "agent/DEV5/*",
+       "dept/dev/observation"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：tokens 设计语言作者位"
     },
     {
-      "dept": "proj_data",
-      "name": "🅱 数据治理部",
-      "lead": null,
-      "type": "project",
-      "status": "active",
-      "charter": "【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建",
-      "agents": [
-        "DATA1",
-        "DEV1"
+     "agent_id": "DEV8",
+     "role_profile": "frontend_engineer",
+     "charter_detail": "E2·20年档·前端：常规页面/图表交付；tokens 纪律同 DEV5，疑难上报 DEV5",
+     "grade": "E2",
+     "grade_note": "20年档：前端页面交付主力",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "agent/DEV8/*"
       ],
-      "worktree_prefix": "proj_b_",
-      "source": "K-ORG-018 老田原话「部门 B 在完成我们的数据底层的治理」"
+      "write": [
+       "agent/DEV8/*",
+       "dept/dev/observation"
+      ]
+     }
     },
     {
-      "dept": "proj_next",
-      "name": "🅲 下版本设计推理部",
-      "lead": "PM1",
-      "type": "project",
-      "status": "active",
-      "charter": "【项目部门·现役】下一版本设计+推理：nl_query 图谱自然语言问答（v5 C 线启动·最小闭环先行）+ 下一版门户/大屏产品定义；PM1 出验收口径 → ARCH1 技术终审 → DEV2 推理侧",
-      "agents": [
-        "PM1",
-        "ARCH1",
-        "DEV2"
+     "agent_id": "ARCH1",
+     "role_profile": "solution_architect",
+     "charter_detail": "架构评审/技术选型/跨部门方案定稿：ADR 架构决策记录写 domain/arch_registry（版本化，对齐 model_registry 判例）；项目部门技术方案终审位（K-ORG-018 对照截图架构师角色）",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "dept/data/*",
+       "dept/product/*",
+       "agent/ARCH1/*"
       ],
-      "worktree_prefix": "proj_c_",
-      "source": "K-ORG-018 老田原话「部门 C 在完成我们下一个版本的设计。和推理」；v5 设想 C 线（图谱智能化）今日立项"
+      "write": [
+       "agent/ARCH1/*",
+       "dept/dev/observation",
+       "domain/arch_registry"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：架构定夺/疑难攻关/方案终审"
     },
     {
-      "dept": "marketing",
-      "name": "市场部",
-      "status": "planned",
-      "charter": "视频制作·宣发文案（K-ORG-001 P3 预留，AIGC 三补件落地后实例化）",
-      "agents": [],
-      "source": "K-ORG-001 §11 AIGC 松耦合扩展预留"
+     "agent_id": "OPS1",
+     "role_profile": "devops_engineer",
+     "charter_detail": "DevOps 运维工程师：docker 容器集群·计划任务·8091 重启配方（K234 幂等锁）·备份三件套·端口监护·磁盘巡检；生产操作必先验明进程身份再动手",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "agent/OPS1/*"
+      ],
+      "write": [
+       "agent/OPS1/*",
+       "dept/dev/observation"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：生产配方执法位"
+    },
+    {
+     "agent_id": "DOC1",
+     "role_profile": "tech_writer",
+     "charter_detail": "技术文档工程师：docs/plans 计划谱系维护·INDEX 索引总账·判例沉淀（撞号/行尾/回滚死引用等判例入册）·README 与宪法文档保鲜",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/dev/*",
+       "agent/DOC1/*"
+      ],
+      "write": [
+       "agent/DOC1/*",
+       "dept/dev/observation"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "20年档：判例沉淀/谱系维护"
     }
-  ],
-  "reporting": {
-    "daily_push": "17:35",
-    "daily_push_note": "automation 工作日 17:35 --push（K-ORG-004）；P0 事件不受此时刻限制（run_shadow 即时告警 K-STOCK-013 + a0_chief 强制推）。⚠ K-ORG-015：日报标题仍为投研部口径（影子期哨文件冻结），扩面待 10-15 影子解禁随 ROADMAP 批 C",
-    "severity": {
-      "P0": "immediate",
-      "P1": "1h",
-      "P2": "daily"
+   ],
+   "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）"
+  },
+  {
+   "dept": "trading",
+   "name": "交易部",
+   "lead": null,
+   "status": "active",
+   "charter": "执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）",
+   "agents": [
+    "TR1"
+   ],
+   "agent_profiles": [
+    {
+     "agent_id": "TR1",
+     "role_profile": "trade_executor",
+     "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）",
+     "llm_binding": "ollama/qwen3.5:4b",
+     "binding_note": "执行员轻量路由即可，设计 §10 分层原则：轻量=4b",
+     "tools": [
+      "paper_bridge",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/trading/*",
+       "dept/invest/decision",
+       "agent/TR1/*"
+      ],
+      "write": [
+       "agent/TR1/*",
+       "dept/trading/feedback"
+      ]
+     },
+     "grade": "E1",
+     "grade_note": "10年档：轻量执行位"
     }
+   ],
+   "source": "K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）"
+  },
+  {
+   "dept": "data",
+   "name": "数据智能部",
+   "lead": null,
+   "status": "active",
+   "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）",
+   "agents": [
+    "DATA1"
+   ],
+   "agent_profiles": [
+    {
+     "agent_id": "DATA1",
+     "role_profile": "data_engineer",
+     "charter_detail": "数据工程师：X2 实体映射/X3 血缘三表运维·incr 同步监护·X1 菜鸟接线（等凭据）·特征湖 parquet 口径守护",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/data/*",
+       "dept/dev/*",
+       "agent/DATA1/*"
+      ],
+      "write": [
+       "agent/DATA1/*",
+       "dept/data/observation"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "20年档：数据底座独立运维"
+    }
+   ],
+   "source": "K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属"
+  },
+  {
+   "dept": "product",
+   "name": "产品管理部",
+   "lead": null,
+   "status": "active",
+   "charter": "需求池·版本规划·验收口径·UI/UX 设计（30年主笔+10年执行双梯队）",
+   "agents": [
+    "PM1",
+    "DSGN1",
+    "DSGN2"
+   ],
+   "agent_profiles": [
+    {
+     "agent_id": "PM1",
+     "role_profile": "product_manager",
+     "charter_detail": "产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/product/*",
+       "dept/invest/decision",
+       "dept/dev/observation",
+       "agent/PM1/*"
+      ],
+      "write": [
+       "agent/PM1/*",
+       "dept/product/observation"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：交付定义/验收口径裁定"
+    },
+    {
+     "agent_id": "DSGN1",
+     "role_profile": "ui_designer",
+     "charter_detail": "UI/UX 设计师：tokens.css 设计语言治理·Demo 先行流程（老田拍板后再怼生产）·风格一致化巡查（悬空 token 三分类判例执法）·驾驶舱暗色同构风守门",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/product/*",
+       "dept/dev/observation",
+       "agent/DSGN1/*"
+      ],
+      "write": [
+       "agent/DSGN1/*",
+       "dept/product/observation"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：tokens 设计语言作者位"
+    },
+    {
+     "agent_id": "DSGN2",
+     "role_profile": "ui_designer",
+     "charter_detail": "E1·10年档·UI：切图/图标/样式批量执行；产出交 DSGN1 审定",
+     "grade": "E1",
+     "grade_note": "10年档：UI 批量执行位",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/product/*",
+       "agent/DSGN2/*"
+      ],
+      "write": [
+       "agent/DSGN2/*",
+       "dept/product/observation"
+      ]
+     }
+    }
+   ],
+   "source": "K-ORG-018 新设；K-ORG-019 +DSGN1；K-ORG-020 UI 双梯队"
+  },
+  {
+   "dept": "quality",
+   "name": "质量工程部",
+   "lead": null,
+   "status": "active",
+   "charter": "测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计",
+   "agents": [
+    "QA1",
+    "QA2",
+    "SEC1"
+   ],
+   "agent_profiles": [
+    {
+     "agent_id": "QA1",
+     "role_profile": "qa_engineer",
+     "charter_detail": "质量工程师：验收测试执行·三守卫（AST gate/金样本/回测判据）人化复核·review 积压单质检分派·质量红线亮牌",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/quality/*",
+       "dept/dev/*",
+       "dept/data/*",
+       "agent/QA1/*"
+      ],
+      "write": [
+       "agent/QA1/*",
+       "dept/quality/observation"
+      ]
+     },
+     "grade": "E3",
+     "grade_note": "30年档：验收口径裁定/三守卫裁定"
+    },
+    {
+     "agent_id": "SEC1",
+     "role_profile": "security_auditor",
+     "charter_detail": "安全审计师：凭据红线监护（X1 OAuth/QMT 凭据不入库）·注册表 grants 越权审计·危险命令面盘点（rm/checkout--/杀进程验身份判例执法）·skill/脚本引入安全审查",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/quality/*",
+       "dept/dev/*",
+       "agent/SEC1/*"
+      ],
+      "write": [
+       "agent/SEC1/*",
+       "dept/quality/observation"
+      ]
+     },
+     "grade": "E2",
+     "grade_note": "20年档：审计独立表态"
+    },
+    {
+     "agent_id": "QA2",
+     "role_profile": "qa_engineer",
+     "charter_detail": "E1·10年档·测试：用例执行/证据采集/回归跑批；结论交 QA1 裁定",
+     "grade": "E1",
+     "grade_note": "10年档：用例执行位",
+     "llm_binding": "ollama/qwen3.5:9b",
+     "tools": [
+      "devtask",
+      "events"
+     ],
+     "memory_grants": {
+      "read": [
+       "domain/*",
+       "dept/quality/*",
+       "agent/QA2/*"
+      ],
+      "write": [
+       "agent/QA2/*",
+       "dept/quality/observation"
+      ]
+     }
+    }
+   ],
+   "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队"
+  },
+  {
+   "dept": "proj_backtest",
+   "name": "🅰 回测开发部",
+   "lead": null,
+   "type": "project",
+   "status": "active",
+   "charter": "【项目部门·现役】回测中心开发：逐日账（K-STOCK-277 已上线）→ 组合制 v6 评审（K-ORG-015a 在途）→ 影子验收（10-14~15 S3 裁决窗）；交付完归建",
+   "agents": [
+    "DEV3",
+    "DEV4",
+    "QA1"
+   ],
+   "worktree_prefix": "proj_a_",
+   "source": "K-ORG-018 老田原话「部门 A 现目前在完成我们的回测的开发」"
+  },
+  {
+   "dept": "proj_data",
+   "name": "🅱 数据治理部",
+   "lead": null,
+   "type": "project",
+   "status": "active",
+   "charter": "【项目部门·现役】数据底层治理：X2/X3 运维·X1 等凭据接线·特征湖口径治理；交付完归建",
+   "agents": [
+    "DATA1",
+    "DEV1"
+   ],
+   "worktree_prefix": "proj_b_",
+   "source": "K-ORG-018 老田原话「部门 B 在完成我们的数据底层的治理」"
+  },
+  {
+   "dept": "proj_next",
+   "name": "🅲 下版本设计推理部",
+   "lead": "PM1",
+   "type": "project",
+   "status": "active",
+   "charter": "【项目部门·现役】下一版本设计+推理：nl_query 图谱自然语言问答（v5 C 线启动·最小闭环先行）+ 下一版门户/大屏产品定义；PM1 出验收口径 → ARCH1 技术终审 → DEV2 推理侧",
+   "agents": [
+    "PM1",
+    "ARCH1",
+    "DEV2"
+   ],
+   "worktree_prefix": "proj_c_",
+   "source": "K-ORG-018 老田原话「部门 C 在完成我们下一个版本的设计。和推理」；v5 设想 C 线（图谱智能化）今日立项"
+  },
+  {
+   "dept": "marketing",
+   "name": "市场部",
+   "status": "planned",
+   "charter": "视频制作·宣发文案（K-ORG-001 P3 预留，AIGC 三补件落地后实例化）",
+   "agents": [],
+   "source": "K-ORG-001 §11 AIGC 松耦合扩展预留"
   }
+ ],
+ "reporting": {
+  "daily_push": "17:35",
+  "daily_push_note": "automation 工作日 17:35 --push（K-ORG-004）；P0 事件不受此时刻限制（run_shadow 即时告警 K-STOCK-013 + a0_chief 强制推）。⚠ K-ORG-015：日报标题仍为投研部口径（影子期哨文件冻结），扩面待 10-15 影子解禁随 ROADMAP 批 C",
+  "severity": {
+   "P0": "immediate",
+   "P1": "1h",
+   "P2": "daily"
+  }
+ }
 }

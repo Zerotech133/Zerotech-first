@@ -932,7 +932,7 @@ gap:14px;align-items:start}}
 
     def _portal_page(self):
         """🏛 门户框架页：全站分区卡片总览——第一屏「我的入口」
-        （Hermes 超级助手 + A0 参谋长），下接 AI 市场/选股中心/行情
+        （Hermes 超级助手 + 田小皮 · 参谋长），下接 AI 市场/选股中心/行情
         工作台/情报线/实盘跟踪/创作与运维，每卡带一句话说明。"""
         import html as _h
         import urllib.request as _u
@@ -996,7 +996,7 @@ gap:14px;align-items:start}}
             "<a href='/fin' style='display:block;border:2px solid #d29922;"
             "border-radius:14px;background:#161b22;padding:20px 22px;"
             "text-decoration:none;color:#e6edf3'>"
-            "<div style='font-size:20px;font-weight:700'>🧠 A0 参谋长"
+            "<div style='font-size:20px;font-weight:700'>🧠 田小皮 · 参谋长"
             "<span style='float:right;color:#3fb950;font-size:13px'>"
             "● 每日 17:35 值班</span></div><div class='dim' style='font-size:"
             "13px;margin:8px 0'>AI 组织架构顶点 · 影子日报点评 · 任务派单"
@@ -1027,7 +1027,7 @@ gap:14px;align-items:start}}
                       "11 个可聘岗位：A0 + 投研部五岗 + 专项 AI · 本地模型"
                       "零 token 成本", "在岗 11 · 按岗聘请"),
                 _card("/org", "#8b949e", "🏛", "组织架构",
-                      "A0 参谋长 → 投研部 alpha 团队 → 汇报 human · "
+                      "田小皮 · 参谋长 → 投研部 alpha 团队 → 汇报 human · "
                       "树形架构图 · 对话统一走超级助手", "org.json 实时"),
             ])),
             _zone("🎯 选股中心 · 三产线", "".join([
@@ -3362,7 +3362,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                           len((qd_snap or {}).get("signals_recent", [])))),
                 # K-STOCK-033：AI 市场联动卡（聘请 AI 做商业化）
                 _card("/aim", "#d29922", "🤖", "AI 市场",
-                      "可聘 AI 岗位货架 · A0 参谋长 + 投研部 alpha 团队"
+                      "可聘 AI 岗位货架 · 田小皮 · 参谋长 + 投研部 alpha 团队"
                       "（T1/T2/N1/F1/D1）+ 专项 AI · 本地模型零 token 成本",
                       "11 个岗位在岗 · 按岗聘请"),
             ])
