@@ -176,13 +176,16 @@ def main():
     blocks.append("")
     blocks.append("[📄 详情文档](%s)" % doc if doc else
                   "（未配置文档 URL）")
-    # K-STOCK-353 台账按钮：公网域名+访问码单点收敛在 feishu_card_v2（K-STOCK-305 判例）
+    # K-STOCK-353/361 台账+看板双按钮：公网域名+访问码单点收敛 feishu_card_v2
+    # （K-STOCK-305 判例）；形态与晨报/KG简报判例一致（台账 primary + 看板 default）
     buttons = None
     try:
         sys.path.insert(0, os.path.join(STATION, "portal"))
         from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
         buttons = [("💼 交易台账", "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
-                    "primary")]
+                    "primary"),
+                   ("📈 选股看板", "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
+                    "default")]
     except Exception:
         pass
     card = card_build.build_card(
