@@ -45,7 +45,7 @@
   .tab .n{font-size:11px; background:var(--gray-3); border-radius:8px; padding:1px 7px; margin-left:6px; color:var(--text-dim);}
   .tabpanel{display:none; background:var(--bg-raised); border:1px solid var(--border); border-radius:0 10px 10px 10px; padding:20px;}
   .tabpanel.active{display:block;}
-  .desk{display:grid; grid-template-columns:300px 1fr 300px; gap:16px;}
+  .desk{display:grid; grid-template-columns:320px 1fr; gap:16px;}
   @media(max-width:1100px){.desk{grid-template-columns:1fr;}}
   .col-title{font-size:13px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;}
   .strat-card{border:2px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:10px; cursor:pointer; transition:all .15s; position:relative; background:var(--bg-surface);}
@@ -142,7 +142,7 @@
 <header>
   <div class="brand">
     <div class="logo">仓</div>
-    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.2</small></div>
+    <div><h1>模拟仓平台</h1><small>K-STOCK PAPER · 模拟仓域 · v0.4</small></div>
   </div>
   <div class="kpis" id="kpis"><div class="kpi"><div class="k">加载中…</div></div></div>
 </header>
@@ -155,7 +155,7 @@
 <div class="wrap">
 
   <div class="tabs">
-    <div class="tab active" data-tab="desk">交易台</div>
+    <div class="tab active" data-tab="desk">接待大厅</div>
     <div class="tab" data-tab="agent">交易员市场</div>
     <div class="tab" data-tab="pos">持仓 <span class="n" id="n-pos">0</span></div>
     <div class="tab" data-tab="hist">历史</div>
@@ -163,21 +163,27 @@
 
   <!-- ============ 交易台 ============ -->
   <div class="tabpanel active" id="tab-desk">
-    <!-- K-STOCK-194 值班经理接待前置为首屏（老田 10-12 拍板）：第一眼=接待，不是内部看板 -->
-    <div class="col-title" style="margin-bottom:8px">值班经理接待</div>
-    <div class="side-box" id="ob-box" style="display:none;margin-bottom:14px">
-      <div id="obw-dots" style="display:flex;gap:5px;margin-bottom:8px"></div>
-      <div id="obw-line" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
-      <div id="obw-body" style="font-size:12px"></div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        <button class="btn" id="obw-prev" onclick="obwPrev()" style="display:none">上一步</button>
-        <button class="btn btn-primary" id="obw-next" onclick="obwNext()">下一步</button>
+    <!-- K-STOCK-350 客户动线重排（老田 10-14 凌晨拍板：第一版面=值班经理接待，从客户进门视角整理。
+         正确方向=K-STOCK-212 口径五步：接待 → 服务选择 → 组团队（交易员市场）→ 上岗 → 持仓/历史。
+         第一屏接待全宽主卡；服务选择两栏；客户日常四件事独立成区；内部机制收折叠） -->
+    <div style="border:2px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;background:linear-gradient(135deg,rgba(88,166,255,.07),transparent 60%)">
+      <div class="col-title" style="margin-bottom:8px;font-size:14px">🧑‍💼 值班经理接待</div>
+      <!-- K-STOCK-194 值班经理接待前置为首屏（老田 10-12 拍板）：第一眼=接待，不是内部看板 -->
+      <div class="side-box" id="ob-box" style="display:none;margin-bottom:10px;border:none;background:transparent;padding:0">
+        <div id="obw-dots" style="display:flex;gap:5px;margin-bottom:8px"></div>
+        <div id="obw-line" style="font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6"></div>
+        <div id="obw-body" style="font-size:12px"></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn" id="obw-prev" onclick="obwPrev()" style="display:none">上一步</button>
+          <button class="btn btn-primary" id="obw-next" onclick="obwNext()">下一步</button>
+        </div>
+        <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
       </div>
-      <div id="obw-end" style="display:none;margin-top:6px;font-size:12px"><a href="/market-strategy">去策略市场直接建仓 →</a></div>
+      <div style="font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:8px">您的进门路线：<b>① 这里听经理接待</b> → ② 下方选服务（免费值班已含 / 订阅策略随订随退） → ③ <a href="#" onclick="document.querySelector('[data-tab=agent]').click();return false" style="color:var(--link)">交易员市场组团队</a>（选经理配操盘手 → 跑组合回测验证） → ④ 满意才上岗 → 上岗后的<b>持仓</b>与<b>历史</b>在上方页签随时看。</div>
     </div>
     <div class="desk">
       <div>
-        <div class="col-title">策略来源（选择键 ①）</div>
+        <div class="col-title">② 选服务 · 信号来源（点卡片切换，免费值班已含）</div>
 
         <div class="strat-card selected" data-s="ai_team">
           <div class="radio"></div>
@@ -216,11 +222,11 @@
           </div>
         </div>
 
-        <div class="flow-note">💡 任何策略接入后自动获得同一套执行语义：风控 → 撮合 → 账本，<b>策略永不直碰账本</b>。写操作仅限本机浏览器（局域网只读）。</div>
+        <div class="flow-note">💡 您订的每个信号来源，下单都走同一套流程：自动风控 → 模拟撮合 → 账本记账——<b>任何来源都动不了您的账本，只能提交订单</b>。写操作仅限本机浏览器（局域网只读）。</div>
       </div>
 
       <div>
-        <div class="col-title">执行区（选择键 ② 联动）</div>
+        <div class="col-title">③ 执行台（选中服务后这里出操作面板）</div>
 
         <div class="exec-panel" id="exec-ai_team">
           <div class="exec-title">🤖 AI 值班 · 每日跑批</div>
@@ -269,6 +275,11 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- K-STOCK-350 今天的事（客户日常：您的钱今天怎么样。从原右栏 9 盒中拆出客户关心的五件，全宽双栏） -->
+    <div class="col-title" style="margin-top:18px">📅 今天的事 <span style="font-weight:400;color:var(--text-dim);font-size:11px">（您的钱今天怎么样：计划 · 风控 · 成交）</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px">
       <div>
         <!-- K-STOCK-163 今日交易计划审批单（先审查再出计划：批准 Top-N + 驳回归类，纯增量，失败静默） -->
         <div class="col-title" style="display:flex;align-items:center;justify-content:space-between;gap:6px">今日交易计划（经理审批单）<select id="plan-pf-select" style="font-size:11px;max-width:132px" title="K-STOCK-169u：切换组合查看对应审批单"></select></div>
@@ -278,20 +289,33 @@
         <div class="col-title">今日挂单（pending · 全量清单已折叠）</div>
         <details><summary style="cursor:pointer;font-size:11.5px;color:var(--text-dim);margin-bottom:6px">展开全量挂单清单（审批单之外的原始 pending）</summary>
         <div class="side-box" style="margin-top:6px"><div id="pend-body"><div class="empty">读取中…</div></div></div></details>
-        <div class="col-title">选票通道（pick_bridge）</div>
-        <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">评判 Agent（judge）</div>
-        <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">今日复盘会（三 Agent）</div>
-        <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
+      </div>
+      <div>
         <div class="col-title">我的组合总览（多组合）</div>
         <div class="side-box"><div id="pf-multi-body" style="display:none"><div class="empty">读取中…</div></div></div>
-        <div class="col-title">策略源建议（strategist · 影子）</div>
-        <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
         <div class="col-title">最近成交</div>
         <div class="side-box"><div id="recent-body"><div class="empty">读取中…</div></div></div>
       </div>
     </div>
+
+    <!-- K-STOCK-350 投研机制（后台在为您工作，默认折叠——客户进门不必看内部齿轮） -->
+    <details style="margin-top:16px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--bg-surface)">
+      <summary style="cursor:pointer;font-size:13px;font-weight:700">⚙️ 投研机制（后台在为您工作 · 点开细看）</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin-top:10px">
+        <div>
+          <div class="col-title">选票通道（pick_bridge）</div>
+          <div class="side-box"><div id="pick-body"><div class="empty">读取中…</div></div></div>
+          <div class="col-title">评判 Agent（judge）</div>
+          <div class="side-box"><div id="judge-body"><div class="empty">读取中…</div></div></div>
+        </div>
+        <div>
+          <div class="col-title">今日复盘会（三 Agent）</div>
+          <div class="side-box"><div id="meet-body"><div class="empty">读取中…</div></div></div>
+          <div class="col-title">策略源建议（strategist · 影子）</div>
+          <div class="side-box"><div id="strat-body"><div class="empty">读取中…</div></div></div>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- ============ 持仓 ============ -->
@@ -1326,10 +1350,10 @@ function mgrReport(pfs){
     +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📋 我们的服务 <span style="font-weight:400;color:var(--text-dim)">（免费 / 订阅分清 · 付费均为订阅制，已订的存于您的行囊，随订随退）</span></div>'
     +'<div id="svc-menu" style="font-size:12px;line-height:1.9;color:var(--text-dim)">读取中…</div></div>'
     +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-bottom:7px">'
-    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📈 一、今日交易计划 <span style="font-weight:400;color:var(--text-dim)">（策略产物 · 完整审批单见下方右栏）</span></div>'
+    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">📈 一、今日交易计划 <span style="font-weight:400;color:var(--text-dim)">（策略产物 · 完整审批单见下方「今天的事」）</span></div>'
     +'<div id="mgr-plan" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>'
     +'<div style="border:1px solid var(--border);border-radius:8px;padding:9px 11px">'
-    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">🗒️ 二、今日复盘与经理服务 <span style="font-weight:400;color:var(--text-dim)">（会议产物 · 纪要全文见下方纪要区）</span></div>'
+    +'<div style="font-size:12.5px;font-weight:700;margin-bottom:4px">🗒️ 二、今日复盘与经理服务 <span style="font-weight:400;color:var(--text-dim)">（会议产物 · 纪要全文见下方「投研机制」折叠区）</span></div>'
     +'<div id="mgr-post" style="font-size:12px;line-height:1.8;color:var(--text-dim)">读取中…</div></div>';
   renderSvcMenu();
   api('/api/plan_review').then(r=>{
