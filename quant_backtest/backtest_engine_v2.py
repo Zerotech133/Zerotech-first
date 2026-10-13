@@ -272,10 +272,12 @@ def calc_chanlun_signals(d0, d1, progress=None, buy_filter="all"):
         pass
     return sig_buy, sig_sell, "自算(hfq+seen-ever)·%s" % BUY_FILTER_LABEL.get(buy_filter, buy_filter)
 
-def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
+def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3", hist_st=False):
     """全市场模式（K-STOCK-289 老田口径）：每日全网 5000+（剔 ST/北交所）缠论扫描，
     一/二/三买全部入池，交易只吃 buy_filter 允许的买点（默认仅三买）。
-    事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。"""
+    事件缓存由 market_scan.py 产出（多进程 32 核），缺失时报错提示先跑扫描。
+    hist_st（K-STOCK-311）：历史 ST 回溯——窗口内任一时点曾为 ST 的股票事件全剔
+    （修现名剔 ST 的幸存者偏差；零重扫·等价宇宙剔除）。"""
     cache_fp = os.path.join(BASE, "quant_backtest", "data", "bt2_state",
                             "sig_events_market_v3_%s_%s.json" % (d0, d1))
     if not os.path.exists(cache_fp):
@@ -286,6 +288,14 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
         return None, None, None, "全市场事件缓存不存在：%s\n先跑：python market_scan.py --d0 %s --d1 %s" % (cache_fp, d0, d1)
     j = json.load(open(cache_fp, encoding="utf-8"))
     events = j["events"]
+    st_set, n_drop = set(), 0
+    if hist_st:
+        import market_scan as _ms
+        st_set = _ms.hist_st_set(d0, d1)
+        if st_set:
+            before = len(events)
+            events = [ev for ev in events if ev.get("stock") not in st_set]
+            n_drop = before - len(events)
     allowed = BUY_FILTERS.get(buy_filter, BUY_FILTERS["3"])
     sig_buy, sig_sell = {}, {}
     sig_zg = {}              # day -> {stock: (zg, zd)}（三买失效离场）
@@ -316,8 +326,12 @@ def calc_chanlun_signals_market(d0, d1, progress=None, buy_filter="3"):
         progress("信号", 30, f"全市场事件缓存命中（{len(events)} 事件·{BUY_FILTER_LABEL.get(buy_filter, buy_filter)}·评分覆盖 {n_scored}）")
     src = "全市场扫描(market_scan v3·%d只·剔ST/北交所)·%s" % (j.get("meta", {}).get("universe", 0),
                                                       BUY_FILTER_LABEL.get(buy_filter, buy_filter))
+    if hist_st:
+        src += "·历史ST剔除%d只(事件%d条)" % (len(st_set), n_drop)
     return sig_buy, sig_sell, {"pool_daily": pool_daily, "scan_meta": j.get("meta", {}),
-                               "signal_source": src, "sig_zg": sig_zg, "sig_meta": sig_meta}, None
+                               "signal_source": src, "sig_zg": sig_zg, "sig_meta": sig_meta,
+                               "hist_st": {"on": bool(hist_st), "n_codes": len(st_set),
+                                           "n_events_drop": n_drop}}, None
 
 
 def calc_dknife_signals(d0, d1, profile="relaxed", progress=None):
@@ -710,7 +724,7 @@ DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "runup_cap": 0.05, "stop_pct": 0.0, "min_holding_days": 0,
             "holding_max_days": 0, "buy_filter": "3", "universe": "market",
             "three_fail_exit": True, "fail_level": "zg", "regime_gate": False, "fail_buffer": 0.0,
-            "gate_mode": "off", "min_score": 0,
+            "gate_mode": "off", "min_score": 0, "hist_st": True,
             "limit_check": True, "trail_activate": 0.0, "trail_drawdown": 0.0}
 
 def run_job(params: dict, job_id: str, progress=None):
@@ -776,7 +790,9 @@ def run_job(params: dict, job_id: str, progress=None):
         if strategy == "chanlun":
             buy_filter = p["buy_filter"] if p["buy_filter"] in BUY_FILTERS else "3"
             if universe == "market":
-                sig_buy, sig_sell, pool_info, err = calc_chanlun_signals_market(d0, d1, progress, buy_filter)
+                _hst = p.get("hist_st")
+                _hist_st = _hst is True or (isinstance(_hst, str) and _hst.strip().lower() in ("true", "1", "yes"))
+                sig_buy, sig_sell, pool_info, err = calc_chanlun_signals_market(d0, d1, progress, buy_filter, hist_st=_hist_st)
                 if err:
                     return None, err
                 src = pool_info["signal_source"]
@@ -820,6 +836,7 @@ def run_job(params: dict, job_id: str, progress=None):
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
         result["meta"]["manual_picks"] = sorted(_picks)
+        result["meta"]["hist_st"] = pool_info["hist_st"] if (pool_info and "hist_st" in pool_info) else None
         result["meta"]["three_fail_exit"] = bool(three_fail and strategy == "chanlun" and sig_zg)
         result["meta"]["job_id"] = job_id
         if pool_info:
@@ -928,6 +945,8 @@ if __name__ == "__main__":
                     help="开新仓闸门：off=不设 / weak=池指数<MA60不开 / high=仅池指数≥MA20开(301)")
     ap.add_argument("--min-score", type=int, default=0,
                     help="评分门槛：三买评分(0-100)低于此值不入场(0=不限·303)")
+    ap.add_argument("--hist-st", default="true", choices=["true", "false"],
+                    help="历史 ST 回溯（K-STOCK-311·默认开）：窗口内曾为 ST 的股票剔除（修幸存者偏差·四臂实锤全改善）")
     ap.add_argument("--limit-check", default="true", choices=["true", "false"],
                     help="涨跌停可成交检查：涨停开盘买不进/跌停开盘卖不出(307 定稿默认开·305)")
     ap.add_argument("--trail-activate", type=float, default=0.0,

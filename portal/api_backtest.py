@@ -5014,6 +5014,8 @@ def _bt2_start(rec):
         "gate_mode": rec.get("gate_mode") if rec.get("gate_mode") in ("off", "weak", "high") else "off",
         # 评分门槛（K-STOCK-303）：三买评分低于此值不入场，0=不限（量能/背驰过滤落地形态）
         "min_score": _intv("min_score", 0, 100, 0),
+        # 历史 ST 回溯（K-STOCK-311·默认开）：窗口内曾为 ST 的股票剔除（修幸存者偏差）
+        "hist_st": "false" if str(rec.get("hist_st", "")).strip().lower() in ("false", "0", "no") else "true",
         # 智策对照移植（K-STOCK-305）：涨跌停可成交检查 + 移动止损
         # 涨跌停可成交检查（307 定稿默认开·305 智策对照移植）：显式传 false 可关
         "limit_check": "false" if str(rec.get("limit_check", "")).strip().lower() in ("false", "0", "no") else "true",

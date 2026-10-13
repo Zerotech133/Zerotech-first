@@ -22,6 +22,7 @@ QBT = BASE
 DATA = os.path.join(QBT, "data", "ashare")
 NAMES_FP = os.path.join(QBT, "data", "stock_names.json")
 OUT_DIR = os.path.join(QBT, "data", "bt2_state")
+NC_FP = os.path.join(QBT, "data", "tdx", "ts_namechange.parquet")   # K-STOCK-311 历史曾用名
 WARMUP = 250
 
 sys.path.insert(0, QBT)
@@ -51,6 +52,26 @@ def market_stocks():
             continue
         out.append(code)
     return sorted(out)
+
+
+def hist_st_set(d0, d1):
+    """K-STOCK-311 历史 ST 回溯：窗口 [d0,d1] 内任一时点名称含 ST 的股票集合。
+
+    现名剔 ST 有幸存者偏差（历史被 ST 后摘帽的票一直留在宇宙）。
+    数据源 ts_namechange（股票曾用名，2020 起，4044 行），区间
+    [start_date, end_date] 与窗口有交集即命中（end_date 空=现行名称）。
+    覆盖边界：2020-01 前已戴帽且窗口内仍未摘帽的区间整段缺失——此类票
+    现名大概率仍为 ST（现名过滤已覆盖），漏网风险极小。
+    """
+    import pandas as pd
+    if not os.path.exists(NC_FP):
+        return set()
+    nc = pd.read_parquet(NC_FP)
+    nc = nc[nc["name"].astype(str).str.upper().str.contains("ST")]
+    sd = nc["start_date"].astype(str)
+    ed = nc["end_date"].fillna("99999999").astype(str)
+    hit = nc[(sd <= str(d1)) & (ed >= str(d0))]
+    return set(hit["ts_code"])
 
 
 def score_3buy(close, zg, vr, bei, bei2):

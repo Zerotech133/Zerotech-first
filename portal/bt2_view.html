@@ -133,6 +133,7 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>
   <div class="fld"><label>开新仓闸门</label><select name="gate_mode" id="gate-mode"><option value="off">不设闸（默认）</option><option value="weak">弱市闸门：指数&lt;MA60 不开新仓</option><option value="high">高位限定：仅指数≥MA20 开新仓（291 包 C）</option></select></div>
   <div class="fld"><label>涨跌停成交检查</label><select name="limit_check"><option value="true">开：涨停买不进/跌停卖不出（默认·307 定稿）</option><option value="false">关（回测偏乐观）</option></select></div>
+  <div class="fld"><label>历史ST回溯</label><select name="hist_st"><option value="true">开：窗口内曾ST全剔（默认·311 修幸存者偏差）</option><option value="false">关（仅现名剔ST）</option></select></div>
   <div class="fld"><label>移动止损启动浮盈%(0关)</label><input name="trail_activate" type="number" value="0" min="0" max="50" step="0.5"></div>
   <div class="fld"><label>移动止损峰值回撤%</label><input name="trail_drawdown" type="number" value="0" min="0" max="50" step="0.5"></div>
   <input type="hidden" name="regime_gate" value="false">
