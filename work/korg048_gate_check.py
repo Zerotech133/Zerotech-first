@@ -64,5 +64,35 @@ p1 = inspect.signature(ac.chat_auto).parameters
 p2 = inspect.signature(ac.chat_auto_meta).parameters
 assert list(p1) == list(p2), "T6 FAIL: 薄壳与 meta 签名不一致 %r vs %r" % (p1, p2)
 
+# T7a ollama 兜底档也写 _LAST_META（QA1-048 观察项①·T4 未覆盖）：gpt6/anthropic/cloud
+# 全挂→chat(ollama) 成功 → channel=ollama·attempts 三级失败链·_LAST_META 更新
+ac.backend = lambda: "gpt6"
+
+def _boom(*a, **kw):
+    raise RuntimeError("mock down")
+ac.chat_openai = _boom
+ac.chat_anthropic = _boom
+ac.chat_cloud = _boom
+ac.chat = lambda *a, **kw: "MOCK_OLLAMA"
+m3 = ac.chat_auto_meta("A1", "t")
+assert m3.channel == "ollama" and m3.content == "MOCK_OLLAMA", \
+    "T7a FAIL: %r" % m3
+assert len(m3.attempts) == 3 and m3.attempts[0][0] == "gpt6", \
+    "T7a FAIL attempts=%r" % (m3.attempts,)
+assert ac.last_channel() == "ollama", "T7a FAIL _LAST_META 未写"
+
+# T7b 非默认 timeout 双入口真实转发（T6 签名一致不能证明转发·QA1-048 观察项①）
+ac.backend = lambda: "anthropic"
+_cap = {}
+def _cap_anthropic(agent_id, task, timeout=240):
+    _cap["t"] = timeout
+    return "MOCK_CAP"
+ac.chat_anthropic = _cap_anthropic
+ac.chat_auto_meta("A1", "t", timeout_cloud=777)
+assert _cap.get("t") == 777, "T7b FAIL: meta 未转发 timeout_cloud, got %r" % _cap.get("t")
+ac.chat_auto("A1", "t", timeout_cloud=888)
+assert _cap.get("t") == 888, "T7b FAIL: 薄壳未转发 timeout_cloud, got %r" % _cap.get("t")
+
 print("PASS: T1降级channel/attempts/T2薄壳str/T3 last_channel+commit_work接线/"
-      "T4直连attempts空/T5 run()接chat_auto_meta/T6签名一致")
+      "T4直连attempts空/T5 run()接chat_auto_meta/T6签名一致/T7a ollama档LAST_META/"
+      "T7b非默认timeout双入口转发")
