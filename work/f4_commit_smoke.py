@@ -5,13 +5,14 @@ F1 claude_glm 仍 blocked → smoke 钩子用真模型免跑，走本地桩。
 import os
 import subprocess as sp
 import sys
+import time
 
 sys.path.insert(0, "tools")
 import agent_coder as ac  # noqa: E402
 
 probe = os.path.join("work", "f4_commit_probe.py")
 with open(probe, "w", encoding="utf-8") as f:
-    f.write("# K-ORG-036d F4 smoke probe\nVALUE = 42\n")
+    f.write("# K-ORG-036d F4 smoke probe\nVALUE = 42\n# run " + time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
 
 # 1) smoke 钩子：run() 落盘后回调语义（此处直接验 callable 前置条件）
 def fake_smoke(path):
@@ -22,7 +23,7 @@ fake_smoke(probe)
 print("1 smoke-hook-semantics PASS")
 
 # 2) 按单提交 dry-run：add + commit --dry-run 只动目标文件
-ok, detail = ac.commit_work(probe, "K-ORG-036d", "OPS1", "F4按单提交冒烟",
+ok, detail = ac.commit_work(probe, "K-SMOKE-F4", "OPS1", "F4按单提交冒烟",
                             channel="ollama", dry_run=True)
 assert ok, detail
 print("2 commit-dry-run PASS:", detail)
