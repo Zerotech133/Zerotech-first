@@ -4991,6 +4991,12 @@ def _bt2_start(rec):
         "strategy": strategy, "d0": d0, "d1": d1,
         "top_n": _intv("top_n", 1, 50, 10),
         "slot_pct": _ratio("slot_pct", 0.01, 0.5, 0.08),
+        # 单票仓位分配（K-STOCK-297：固定 X% / 区间随机 a~b% / 评分权重自动调仓）
+        "slot_mode": rec.get("slot_mode") if rec.get("slot_mode") in ("fixed", "random", "score") else "fixed",
+        "slot_min": _ratio("slot_min", 0.005, 0.5, 0.05),
+        "slot_max": _ratio("slot_max", 0.01, 0.5, 0.10),
+        # 手动指定票池（可手动添加）：逗号分隔代码，空=全自动评分前十
+        "manual_picks": str(rec.get("manual_picks") or "")[:2000],
         # 总仓位（K-STOCK-295 老田：档位可自定义——regime 三档各自可配或固定 X%）
         "cap_mode": "fixed" if rec.get("cap_mode") == "fixed" else "regime_8050",
         "cap_high": _ratio("cap_high", 0.05, 1.0, 0.80),

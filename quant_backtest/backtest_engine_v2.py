@@ -15,8 +15,12 @@ K-STOCK-285b · 回测框架 v2 正式版（配置驱动 · 执行时间轴 · �
 实证 10-13）而结算=hfq。信号与结算分离，两口径各安其位。
 """
 import sys, os, json, time, argparse
+import random as _random
 import pandas as pd
 from dataclasses import dataclass, asdict
+
+# 区间随机仓位的确定性随机源（固定种子：同参数重跑结果可复现）
+_RNG = _random.Random(20261013)
 
 BASE = r"E:/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
@@ -352,6 +356,9 @@ class BacktestConfig:
     holding_max_days: int = 0           # 0=不限
     top_n: int = 10
     slot_pct: float = 0.08
+    slot_mode: str = "fixed"            # fixed | random(区间随机) | score(评分权重)——K-STOCK-297 老田
+    slot_min: float = 0.05
+    slot_max: float = 0.10
     cap_mode: str = "regime_8050"       # regime_8050(三档可配) | fixed
     cap_fixed: float = 0.80             # 固定模式总仓位
     cap_high: float = 0.80              # regime 三档（K-STOCK-295 老田：总仓位档位可自定义）
@@ -444,6 +451,9 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
             m = score_pending.get(x) or {}
             sc = m.get("score")
             return (-(sc if isinstance(sc, (int, float)) else -1), x)
+        # 评分权重模式（297）：当日候选评分总和——权重占比 × 总仓位帽 = 单票仓位
+        _sc_sum = sum(((score_pending.get(x) or {}).get("score") or 60)
+                      for x in pending_buy) or 1.0
         for s in sorted(pending_buy, key=_sc_key):
             sc_m = score_pending.get(s) or {}
             sc = sc_m.get("score")
@@ -477,7 +487,16 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
                     actions.append({"type": "skip", "stock": s,
                                     "note": f"runup帽：开盘较昨收 +{(o/c_prev-1)*100:.1f}% >{cfg.runup_cap:.0%}，放弃（评分{sc if sc is not None else '-'}）"})
                     continue
-            amt = min(cash, eqv_open * cfg.slot_pct, max(0.0, eqv_open * capv - deployed))
+            # 单票仓位（297 三模式）：fixed=固定 X%；random=区间均匀随机（固定种子可复现）；
+            # score=评分权重（该票评分/当日候选评分和 × 总仓位帽，评分越高仓位越大）
+            if cfg.slot_mode == "random":
+                per = min(cfg.slot_max, max(cfg.slot_min, _RNG.uniform(cfg.slot_min, cfg.slot_max)))
+            elif cfg.slot_mode == "score":
+                sc_v = sc if isinstance(sc, (int, float)) else 60
+                per = max(0.005, min(capv, capv * sc_v / _sc_sum))
+            else:
+                per = cfg.slot_pct
+            amt = min(cash, eqv_open * per, max(0.0, eqv_open * capv - deployed))
             if amt < 0.002 * eqv_open:
                 score_pending.pop(s, None); zg_pending.pop(s, None)
                 actions.append({"type": "skip", "stock": s,
@@ -624,6 +643,7 @@ def run_backtest(cfg: BacktestConfig, sig_buy: dict, sig_sell: dict, progress=No
 # ============================================================
 DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "top_n": 10, "slot_pct": 0.08, "cap_mode": "regime_8050",
+            "slot_mode": "fixed", "slot_min": 0.05, "slot_max": 0.10, "manual_picks": "",
             "cap_high": 0.80, "cap_mid": 0.50, "cap_low": 0.30, "cap_fixed": 0.80,
             "sig_expiry": 0,
             "runup_cap": 0.15, "stop_pct": 0.0, "min_holding_days": 0,
@@ -665,6 +685,9 @@ def run_job(params: dict, job_id: str, progress=None):
             holding_max_days=5 if strategy == "double_knife" else int(p["holding_max_days"] or 0),
             top_n=max(1, min(50, int(p["top_n"] or 10))),
             slot_pct=max(0.01, min(0.5, float(p["slot_pct"] or 0.08))),
+            slot_mode=p["slot_mode"] if p["slot_mode"] in ("fixed", "random", "score") else "fixed",
+            slot_min=max(0.005, min(0.5, _r("slot_min", 0.05))),
+            slot_max=max(0.01, min(0.5, _r("slot_max", 0.10))),
             cap_mode="fixed" if p["cap_mode"] == "fixed" else "regime_8050",
             cap_fixed=max(0.05, min(1.0, _r("cap_fixed", 0.80))),
             cap_high=max(0.05, min(1.0, _r("cap_high", 0.80))),
@@ -697,6 +720,15 @@ def run_job(params: dict, job_id: str, progress=None):
             buy_filter = "all"
             sig_buy = calc_dknife_signals(d0, d1, progress=progress)
             sig_sell, src = {}, "自算(原始价·relaxed)"
+        # 手动指定票池（K-STOCK-297 老田：可手动添加）——逗号/中文逗号分隔代码，
+        # 提供后交易只吃名单内的信号（评分照常排序）；名单为空=全自动。
+        _mp_raw = str(p.get("manual_picks") or "").replace("，", ",").replace(" ", "")
+        _picks = {x.upper() for x in _mp_raw.split(",") if x}
+        if _picks:
+            _hit = sum(len(ss & _picks) for ss in sig_buy.values())
+            sig_buy = {d: (ss & _picks) for d, ss in sig_buy.items()}
+            if progress:
+                progress("信号", 35, f"手动票池过滤：名单 {len(_picks)} 只·窗口内命中信号 {_hit} 次")
         if progress:
             progress("回测", 65, "逐日执行中")
         _rg = p.get("regime_gate")
@@ -710,6 +742,7 @@ def run_job(params: dict, job_id: str, progress=None):
         result["meta"]["signal_source"] = src
         result["meta"]["buy_filter"] = buy_filter
         result["meta"]["universe"] = universe
+        result["meta"]["manual_picks"] = sorted(_picks)
         result["meta"]["three_fail_exit"] = bool(three_fail and strategy == "chanlun" and sig_zg)
         result["meta"]["job_id"] = job_id
         if pool_info:
@@ -743,9 +776,31 @@ def run_job(params: dict, job_id: str, progress=None):
             for k in se:
                 se[k].sort(key=lambda x: x["day"])
             result["meta"]["stock_events"] = se
+            # 个股基本情况（297 下钻用）：最新价/近5·20日涨幅/最近一次信号要素/信号计数
+            basics = {}
+            for s in sorted(used):
+                b = _book(s)
+                if b is None:
+                    continue
+                seg = b[b.trade_date <= d1].tail(21)
+                if seg.empty:
+                    continue
+                c_last = float(seg.iloc[-1]["close"])
+
+                def _chg(n):
+                    return round((c_last / float(seg.iloc[-1 - n]["close"]) - 1) * 100, 2) if len(seg) > n else None
+                _evs = se.get(s) or []
+                _lv = _evs[-1] if _evs else {}
+                basics[s] = {"name": _c2n.get(s), "close": round(c_last, 2),
+                             "chg5": _chg(5), "chg20": _chg(20),
+                             "last_sig": _lv.get("type"), "last_sig_day": _lv.get("day"),
+                             "score": _lv.get("score"), "vr": _lv.get("vr"),
+                             "n_sig": len(_evs)}
+            result["meta"]["stock_basics"] = basics
         except Exception:
             result["meta"]["names"] = {}
             result["meta"]["stock_events"] = {}
+            result["meta"]["stock_basics"] = {}
         os.makedirs(OUT_DIR, exist_ok=True)
         out = os.path.join(OUT_DIR, f"bt2_{job_id}.json")
         json.dump(result, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
@@ -766,6 +821,11 @@ if __name__ == "__main__":
     ap.add_argument("--d1", default="20261012")
     ap.add_argument("--top-n", type=int, default=10)
     ap.add_argument("--slot-pct", type=float, default=0.08)
+    ap.add_argument("--slot-mode", default="fixed", choices=["fixed", "random", "score"],
+                    help="单票仓位分配：fixed=固定X%(默认) random=区间随机(a~b%%·固定种子可复现) score=评分权重(评分/当日候选评分和×总仓位帽)")
+    ap.add_argument("--slot-min", type=float, default=0.05, help="随机模式下限（默认0.05）")
+    ap.add_argument("--slot-max", type=float, default=0.10, help="随机模式上限（默认0.10）")
+    ap.add_argument("--manual-picks", default="", help="手动指定票池：逗号分隔代码·交易只吃名单内信号（空=全自动）")
     ap.add_argument("--cap-mode", default="regime_8050", choices=["regime_8050", "fixed"])
     ap.add_argument("--cap-high", type=float, default=0.80, help="regime 高位总仓位帽（默认0.80）")
     ap.add_argument("--cap-mid", type=float, default=0.50, help="regime 中位总仓位帽（默认0.50）")

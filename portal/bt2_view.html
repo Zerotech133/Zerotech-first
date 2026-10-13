@@ -77,7 +77,16 @@ button:disabled{opacity:.5;cursor:default}
   <div class="fld"><label>样本域</label><select name="universe"><option value="market">全市场 5000+（剔ST/北交所）</option><option value="pool76">静态 76 只池</option></select></div>
   <div class="fld"><label>缠论买点等级</label><select name="buy_filter"><option value="3">仅三买（默认）</option><option value="23">二买+三买</option><option value="2">仅二买</option><option value="all">一二三类全要</option></select></div>
   <div class="fld"><label>持仓槽数</label><input name="top_n" type="number" value="10" min="1" max="50"></div>
-  <div class="fld"><label>单票仓位%</label><input name="slot_pct" type="number" value="8" min="1" max="50"></div>
+</div>
+<div class="row">
+  <div class="fld"><label>仓位分配</label><select name="slot_mode" id="slot-mode"><option value="fixed">固定 X%（默认8%）</option><option value="random">区间随机 a~b%</option><option value="score">评分权重自动</option></select></div>
+  <span id="slot-fixed-box"><div class="fld"><label>单票仓位%</label><input name="slot_pct" type="number" value="8" min="1" max="50"></div></span>
+  <span id="slot-random-box" style="display:none;gap:10px">
+    <div class="fld"><label>下限%</label><input name="slot_min" type="number" value="5" min="0.5" max="50" step="0.5"></div>
+    <div class="fld"><label>上限%</label><input name="slot_max" type="number" value="10" min="1" max="50" step="0.5"></div>
+  </span>
+  <div class="capprev" id="slot-preview" style="display:none">→ 每单票在区间内随机取仓位（固定种子·同参数可复现）</div>
+  <div class="fld" style="flex:1;min-width:260px"><label>手动指定票池（可选·逗号分隔代码·空=自动评分前十）</label><input name="manual_picks" placeholder="如：000004.SZ,600519.SH（留空=全自动）" style="width:100%"></div>
 </div></div>
 
 <div class="grp"><div class="grp-t">🔴 总仓位设置<span class="gt2">留多少总仓位由你定——regime 三档各自可改，或固定 X%</span></div>
@@ -133,9 +142,9 @@ button:disabled{opacity:.5;cursor:default}
 <div class="panel"><h2>⑤ 票池与个股时间轴 <span style="font-size:11px;color:var(--tx2)">（左侧=当前持仓快照；右侧=选一只票看它何时异动/何时到买点/何时买卖）</span></h2>
 <div class="grid2">
   <div><div class="h3s" id="cur-hold-title">当前持仓池</div><div id="cur-holdings" style="max-height:380px;overflow:auto"></div></div>
-  <div><div class="h3s">个股信号时间轴（异动/买点/买卖全程）</div>
+  <div><div class="h3s">个股下钻（基本情况 + 信号/买卖全程）</div>
     <select id="stock-sel"></select>
-    <div class="stl" id="stock-tl"><div class="note">选择一只股票查看时间轴</div></div></div>
+    <div class="stl" id="stock-tl"><div class="note">选择一只股票查看基本情况与时间轴</div></div></div>
 </div></div>
 <div class="panel"><h2>⑥ 逐日日历复盘</h2>
 <div id="calendar"></div>
@@ -164,10 +173,22 @@ capMode.onchange=capSync;
 document.querySelectorAll("#cap-regime-box input,#cap-fixed-box input").forEach(i=>i.oninput=capSync);
 capSync();
 
+const slotMode=document.getElementById("slot-mode");
+function slotSync(){
+  const m=slotMode.value;
+  document.getElementById("slot-fixed-box").style.display=m==="fixed"?"":"none";
+  document.getElementById("slot-random-box").style.display=m==="random"?"flex":"none";
+  document.getElementById("slot-preview").style.display=m==="score"?"":"none";
+  document.getElementById("slot-preview").textContent=m==="score"
+    ?"→ 单票仓位=该票评分 ÷ 当日候选评分总和 × 总仓位帽（评分越高仓位越大）"
+    :m==="random"?"→ 每单票在区间内随机取仓位（固定种子·同参数可复现）":"";
+}
+slotMode.onchange=slotSync; slotSync();
+
 document.getElementById("f").onsubmit=async e=>{
   e.preventDefault();
   const fd=new FormData(e.target), o={};
-  const PCT=new Set(["slot_pct","runup_cap","stop_pct","fail_buffer","cap_high","cap_mid","cap_low","cap_fixed"]);
+  const PCT=new Set(["slot_pct","runup_cap","stop_pct","fail_buffer","cap_high","cap_mid","cap_low","cap_fixed","slot_min","slot_max"]);
   const INT=new Set(["top_n","holding_max_days","sig_expiry"]);
   fd.forEach((v,k)=>{o[k]= PCT.has(k)?(+v)/100 : INT.has(k)?+v : v;});
   const r=await fetch("/api/bt2_run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(o)}).then(x=>x.json()).catch(err=>({ok:false,error:String(err)}));
@@ -210,7 +231,7 @@ function render(){
   document.getElementById("timelines").innerHTML=
     `<div class="tl-card"><h3>${c.name}（${c.strategy==="chanlun"?"🟣":"🟡"}）执行时间轴</h3>`+
     DATA.meta.execution_timeline.map((s,i)=>`<div class="tl-step"><b>${i+1}.</b><span>${s}</span></div>`).join("")+
-    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · slot=${Math.round(c.slot_pct*100)}% · <b>总仓位=${capDesc(c)}</b> · 信号有效期=${c.sig_expiry?c.sig_expiry+"日":"不限"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 失效离场=${DATA.meta.three_fail_exit?"开("+({"zg":"上沿","zd":"下沿"})[DATA.meta.fail_level||"zg"]+")":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 买点等级=${({23:"二买+三买",2:"仅二买",3:"仅三买",all:"全要"})[DATA.meta.buy_filter]||"-"} · 样本域=${DATA.meta.universe==="market"?"全市场":"76池"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
+    `<div class="note" style="margin-top:6px">参数：top_n=${c.top_n} · <b>仓位分配=${slotDesc(c)}</b> · <b>总仓位=${capDesc(c)}</b> · 信号有效期=${c.sig_expiry?c.sig_expiry+"日":"不限"} · 追高帽=${c.runup_cap?Math.round(c.runup_cap*100)+"%":"关"} · 失效离场=${DATA.meta.three_fail_exit?"开("+({"zg":"上沿","zd":"下沿"})[DATA.meta.fail_level||"zg"]+")":"关"} · 止损=${c.stop_pct||"关"} · 持有上限=${c.holding_max_days||"不限"} · 买点等级=${({23:"二买+三买",2:"仅二买",3:"仅三买",all:"全要"})[DATA.meta.buy_filter]||"-"} · 样本域=${DATA.meta.universe==="market"?"全市场":"76池"} · 票池=${(DATA.meta.manual_picks||[]).length?"手动指定 "+(DATA.meta.manual_picks||[]).length+" 只":"自动（评分前十）"} · 信号源=${DATA.meta.signal_source||"-"}</div></div>`+
     `<div class="note">口径声明：${DATA.meta.assumptions.join("；")}</div>`;
   // KPI
   const s=DATA.summary, cls=v=>v>0?"up":"dn";
@@ -228,6 +249,11 @@ function render(){
 function capDesc(c){
   if(c.cap_mode==="fixed")return "固定"+Math.round(c.cap_fixed*100)+"%";
   return `regime ${Math.round(c.cap_high*100)}/${Math.round(c.cap_mid*100)}/${Math.round(c.cap_low*100)}`;
+}
+function slotDesc(c){
+  if(c.slot_mode==="random")return `区间随机 ${Math.round(c.slot_min*100)}~${Math.round(c.slot_max*100)}%`;
+  if(c.slot_mode==="score")return "评分权重自动";
+  return "固定"+Math.round(c.slot_pct*100)+"%";
 }
 
 function drawChart(){
@@ -311,7 +337,20 @@ function drawPool(){
 }
 function showStockTl(s){
   const el=document.getElementById("stock-tl");
-  if(!s){el.innerHTML='<div class="note">选择一只股票查看时间轴</div>';return;}
+  if(!s){el.innerHTML='<div class="note">选择一只股票查看基本情况与时间轴</div>';return;}
+  // ① 基本情况卡（297 下钻）
+  const bs=(DATA.meta.stock_basics||{})[s]||{};
+  const chgCls=v=>v==null?"":v>0?"up":v<0?"dn":"";
+  let h=`<div class="tl-card" style="margin-bottom:8px"><h3>${s} ${NM(s)}</h3>
+    <div style="font-size:12px;line-height:1.9">
+    最新价 <b>${bs.close??"-"}</b>
+    · 近5日 <span class="${chgCls(bs.chg5)}">${bs.chg5==null?"-":(bs.chg5>0?"+":"")+bs.chg5+"%"}</span>
+    · 近20日 <span class="${chgCls(bs.chg20)}">${bs.chg20==null?"-":(bs.chg20>0?"+":"")+bs.chg20+"%"}</span><br>
+    最近信号 <b style="color:var(--gold)">${bs.last_sig||"-"}</b>（${bs.last_sig_day||"-"}）
+    · 评分 <b style="color:${scoreColor(bs.score)}">${SC(bs.score)}</b>
+    · 量比 ${bs.vr!=null?(+bs.vr).toFixed(2):"-"}
+    · 窗口内信号 <b>${bs.n_sig??0}</b> 次</div></div>`;
+  // ② 信号+决策时间轴
   const evs=[];
   (DATA.meta.stock_events||{})[s]&&DATA.meta.stock_events[s].forEach(e=>{
     const cn=SIG_CN[e.type]||[e.type,""];
@@ -324,10 +363,10 @@ function showStockTl(s){
       x:`${a.note||""}${a.pnl_pct!=null?`（盈亏 ${a.pnl_pct>0?"+":""}${a.pnl_pct}%）`:""}`});
   }));
   evs.sort((a,b)=>a.day.localeCompare(b.day)||0);
-  el.innerHTML=evs.length?evs.map(e=>
+  el.innerHTML=h+(evs.length?evs.map(e=>
     `<div class="ev"><span class="d">${e.day.slice(0,4)}/${e.day.slice(4,6)}/${e.day.slice(6)}</span>`+
     `<span class="t" style="color:${e.col}">${e.txt}</span><span class="x">${e.x}</span></div>`).join("")
-    :'<div class="note">该股在窗口内无信号/成交记录</div>';
+    :'<div class="note">该股在窗口内无信号/成交记录</div>');
 }
 poll(); setInterval(poll,5000);
 </script></body></html>
