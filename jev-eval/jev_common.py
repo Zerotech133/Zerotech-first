@@ -298,7 +298,15 @@ def _load_bot_creds() -> "tuple[str, str, str] | None":
     here = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
     from feishu_client import load_app_creds as _fc_creds, get_tat as _fc_tat
-    app_id, app_secret = _fc_creds()
+    # K-STOCK-368：jev 独立 app 换绑（治本单总线互抢）。env 优先——机器级
+    # JEV_CARD_APP_ID/JEV_CARD_APP_SECRET（deploy 判例同 PG-Robot 机器级
+    # LARKSUITE_CLI_*）；未配置回落 config.json apps[0]（老 app）现状不变。
+    # 全链单点：lark_env() 是发卡（jev_gate）/卡片更新（card handler）/
+    # 事件消费（consume）唯一凭据出口，此处换绑即三链同切。
+    app_id = os.environ.get("JEV_CARD_APP_ID", "").strip()
+    app_secret = os.environ.get("JEV_CARD_APP_SECRET", "").strip()
+    if not (app_id and app_secret):
+        app_id, app_secret = _fc_creds()
     if not app_id or not app_secret:
         log("静态 app 凭证缺失，bot 凭证注入降级", level="warn")
         return None
