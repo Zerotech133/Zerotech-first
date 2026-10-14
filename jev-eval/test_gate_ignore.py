@@ -6,7 +6,9 @@ import sys
 import tempfile
 from datetime import datetime, timedelta
 
-WT = r"E:\老田的AI助手\.worktrees\K-STOCK-404"
+# K-STOCK-406：路径锚相对测试文件定位（worktree 开发期/merge 后主仓均跑得动；
+# 原 .worktrees/K-STOCK-404 硬编码在 worktree 清场后失效）
+WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(WT, "jev-eval"))
 os.chdir(os.path.join(WT, "jev-eval"))
 FAIL = []
