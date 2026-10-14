@@ -753,6 +753,56 @@ background:#000'></video>
         except Exception:
             pass
         return None
+    def _feishu_unverified_alert(self):
+        """K-STOCK-397：回调未验签降级告警（同日一次，A 通道 send_feishu）。
+
+        未配 Encrypt Key 时回调不验签曾是「仅访问日志 warning」——每次
+        回调刷一条且无人可观测（K-STOCK-394 审计建议 2）。现收敛为：
+        flag 落盘计数 + 当日首次推飞书告警卡（走 send_feishu 判例链，
+        build_todays_picks 同款 subprocess 模式），推送失败不反噬回调。
+        """
+        flag = os.environ.get("FEISHU_EVENT_FLAG") or os.path.join(
+            STATION, "portal", "work", "feishu_event_unverified.flag")
+        today = time.strftime("%Y-%m-%d")
+        st = {}
+        try:
+            with open(flag, encoding="utf-8") as f:
+                st = json.load(f)
+        except Exception:
+            st = {}
+        if st.get("day") != today:
+            st = {"day": today, "count": 0, "alerted": False}
+        st["count"] = int(st.get("count") or 0) + 1
+        if not st.get("alerted"):
+            try:
+                news = os.path.join(STATION, "news_collector")
+                tmp = os.path.join(news, "outbox",
+                                   "feishu_unverified_alert.txt")
+                os.makedirs(os.path.dirname(tmp), exist_ok=True)
+                with open(tmp, "w", encoding="utf-8") as f:
+                    f.write(
+                        "⚠️ 飞书回调验签降级：/feishu/event 未配 Encrypt Key，"
+                        "收到回调但未验签（今日第 %d 次）。\n"
+                        "修复：~/.lark-cli/config.json 给回调应用补 encryptKey "
+                        "（A4 判例：apps 数组第一个带 encryptKey 的应用），"
+                        "或设环境变量 FEISHU_ENCRYPT_KEY 后重启 portal。"
+                        "本告警当日不重复。" % st["count"])
+                subprocess.run(
+                    [sys.executable, os.path.join(news, "send_feishu.py"),
+                     tmp],
+                    capture_output=True, timeout=60)
+                st["alerted"] = True
+                self.log_message(
+                    "WARNING feishu/event FEISHU_ENCRYPT_KEY 未配置，回调未验签"
+                    "（降级告警已按日触发；叠加 8091 绑回环，风险已降级）")
+            except Exception:
+                pass  # 推送失败不反噬回调处理；flag 不置 alerted，下次再试
+        try:
+            os.makedirs(os.path.dirname(flag), exist_ok=True)
+            with open(flag, "w", encoding="utf-8") as f:
+                json.dump(st, f, ensure_ascii=False)
+        except Exception:
+            pass
     def _api_feishu_event(self, raw):
         """K250 飞书事件回调入口（POST /feishu/event）。
 
@@ -766,7 +816,8 @@ background:#000'></video>
         未配置 encrypt_key 时明文直取。
 
         安全：P0-1b（2026-10-08）起——配置了 Encrypt Key 则强制
-        X-Lark-Signature 验签；未配置则保持现状并在访问日志打 warning。
+        X-Lark-Signature 验签；未配置则降级 + 当日一次飞书告警
+        （K-STOCK-397，原仅访问日志 warning 无人可观测）。
         叠加 8091 已绑 127.0.0.1（P0-1a），局域网伪造须经 nginx，风险降级。
         """
         import hashlib
@@ -781,27 +832,26 @@ background:#000'></video>
         # ── 验签（P0-1b 配套，2026-10-08：飞书回调不走 portal token）──
         # 配置了 Encrypt Key → 强制 X-Lark-Signature 校验（飞书 v2 事件签名：
         # sha256(timestamp + nonce + encrypt_key + 原始 body)）；
-        # 未配置 → 无共享密钥无法验签，保持现状，但在访问日志打 warning 留痕。
+        # 未配置 → 无共享密钥无法验签，降级 + 当日一次飞书告警（K-STOCK-397）。
         _ek = self._feishu_encrypt_key()
         if _ek:
             _ts = (self.headers.get("X-Lark-Request-Timestamp") or "").strip()
             _nc = (self.headers.get("X-Lark-Request-Nonce") or "").strip()
             _sig = (self.headers.get("X-Lark-Signature") or "").strip()
-            _calc = hashlib.sha256((_ts + _nc + _ek
-                                    + raw.decode("utf-8", "replace"))
-                                   .encode("utf-8")).hexdigest()
+            # K-STOCK-397：直接对原始字节拼接计算——原 raw.decode(
+            # "utf-8","replace") 往返在非 UTF-8 body 上会失真，验签必败；
+            # 合法 UTF-8 时与官方字符串拼接算法等价。
+            _calc = hashlib.sha256(
+                (_ts + _nc + _ek).encode("utf-8") + raw).hexdigest()
             if not _sig or not hmac.compare_digest(_sig, _calc):
                 self._json({"code": 0, "msg": "invalid signature"}, 403)
                 return
         else:
-            self.log_message(
-                "WARNING feishu/event FEISHU_ENCRYPT_KEY 未配置，回调未验签"
-                "（叠加 8091 绑回环后局域网须经 nginx 才可达，风险已降级）")
+            self._feishu_unverified_alert()
 
         # ── 解密（如启用）────────────────────────────────
         if body.get("encrypt"):
-            enc_key = self._feishu_encrypt_key()
-            if not enc_key:
+            if not _ek:  # K-STOCK-397：复用上面读到的 key，消除双读竞态
                 self._json({"code": 0, "msg": "encrypted but no key"}, 200)
                 return
             try:
@@ -809,7 +859,7 @@ background:#000'></video>
                     Cipher, algorithms, modes)
                 data = base64.b64decode(body["encrypt"])
                 iv, ct = data[:16], data[16:]
-                key = hashlib.sha256(enc_key.encode("utf-8")).digest()
+                key = hashlib.sha256(_ek.encode("utf-8")).digest()
                 dec = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
                 pt = dec.update(ct) + dec.finalize()
                 pt = pt[:-pt[-1]]                     # 去 PKCS7 padding
