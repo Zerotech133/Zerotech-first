@@ -401,6 +401,8 @@ def _sub_quote_move(sub, mode):
                          for h in hits))
     if mode == "intraday" and sub.get("_last_fp") == fp:
         return None
+    sub["_fp_new"] = fp  # K-STOCK-401：真实指纹回写（_extract_fp 的块文本与
+    # 此处格式不同，原先写读不回环 → 去重永不命中，同一异动每天推满 3 次熔断）
     blocks = ["**📈 自选股异动（%d 只）**" % len(hits)]
     for h in hits[:12]:
         code = h.get("code", "")
@@ -460,6 +462,7 @@ def _sub_buy_point(sub, mode):
         return None
     if not in_band:
         return None
+    sub["_fp_new"] = fp  # K-STOCK-401：同 quote_move——真实指纹回写
 
     if kind == "pullback_hold":
         head = "📌 买点到触发位"
@@ -538,6 +541,8 @@ def run_scan(mode, only_sub=None, force=False):
         targets = _resolve_targets(s, receivers)
         # 配额生效（仅非 internal 套餐；internal 永不拦）
         try:
+            sys.path.insert(0, STATION)  # K-STOCK-401：push_flow 在仓库根，
+            # 此前缺该行 → ModuleNotFoundError 被吞 → 配额检查静默旁路
             import push_flow as _pf
             _plan, _q, _sent, _blk = _pf.quota_check()
         except Exception:
@@ -564,17 +569,19 @@ def run_scan(mode, only_sub=None, force=False):
                              count=1, ok=ok)
         except Exception:
             pass
-        # 更新状态
+        # 更新状态（K-STOCK-401：仅成功才落去重指纹——此前失败也写
+        # last_date/last_fp，下轮去重误判「已推过」→ 当日漏推）
         st = state.get(sid) or {}
         if ok:
             _mark_pushed(state, sid)
             st = state.get(sid)
-        if built:
             st["last_date"] = _extract_date(blocks)
-            st["last_fp"] = _extract_fp(kind, blocks)
+            st["last_fp"] = s.get("_fp_new") or _extract_fp(kind, blocks)
             if kind == "alert_signal":
-                st["watch_state"] = {a.get("name"): a.get("value")
-                                     for a in (_alerts_cache() or [])}
+                _ws = _alerts_cache()
+                if _ws is not None:  # 拉取失败保持旧快照，避免全量误判变化
+                    st["watch_state"] = {a.get("name"): a.get("value")
+                                         for a in _ws}
         state[sid] = st
     _atomic(STATE_PATH, state)
     return out
