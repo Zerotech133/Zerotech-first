@@ -426,7 +426,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
             attempts.append(("cloud", str(e)[:120]))
     elif bk == "anthropic":
-        for _i in range(2 if coding else 1):
+        for _i in range(3 if coding else 1):  # coding: 首试+2 次重试(午间负载超时连发判例)
             try:
                 out = chat_anthropic(agent_id, task, timeout_cloud)
                 _LAST_META = ChatResult(out, "anthropic", bk, attempts,
@@ -517,7 +517,11 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             with open(out_path, "wb") as f:
                 f.write(orig_bytes)
 
-    meta = chat_auto_meta(agent_id, task, coding=True)
+    try:
+        meta = chat_auto_meta(agent_id, task, coding=True)
+    except Exception as e:
+        # K-ORG-068: coding 档拒降级抛错(run 侧接住返回 FAIL·判例:裸 traceback 不可诊断)
+        return False, "产码通道失败(编码档拒降级): %s" % str(e)[:200]
     raw = meta.content
     trace_log(k_id, "generate", "%s by %s via %s(requested=%s actual=%s)"
               % (label, agent_id, backend(), meta.requested, meta.channel))

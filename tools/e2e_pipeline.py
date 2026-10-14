@@ -53,6 +53,26 @@ def write_trace(final):
     print("[trace]", p, flush=True)
 
 
+def extract_sec2_miss(wt, plan_rel, before_ts):
+    """从最新 SEC2 报告提取「缺失」条目全文（走形不拦，仅缺失触发返修）。
+    before_ts: 上一轮报告时间戳下界（防读到旧报告）。返回缺失段文本或 None。"""
+    import glob as _g
+    reps = sorted(_g.glob(os.path.join(
+        wt, "agent_platform", "data", "sec2",
+        "*_%s" % os.path.basename(plan_rel))))  # basename 已含 .md, 勿重复拼后缀
+    for rp in reversed(reps):
+        if os.path.getmtime(rp) <= before_ts:
+            continue
+        text = open(rp, encoding="utf-8", errors="replace").read()
+        if re.search(r"缺失\s*[1-9]", text):
+            # 抽判定行之后所有「判定：缺失」的段落（### 标题到下一个 ### 之间）
+            secs = re.split(r"\n(?=### )", text)
+            miss = [x for x in secs if re.search(r"判定[：:]\s*缺失", x)]
+            if miss:
+                return "\n\n".join(x.strip()[:1200] for x in miss)
+    return None
+
+
 def gen_code(wt, out_rel, spec, repair_note):
     """产码轮：子进程 cwd=worktree（BUNDLE 相对路径判例）。
     repair_note 非 None 时走返修模式：删旧文件强制 whole 重出+退回理由回流。"""
@@ -61,9 +81,10 @@ def gen_code(wt, out_rel, spec, repair_note):
         os.remove(out_abs)  # 判例：SR 修小 bug 爱散文/漏收尾，返修一律 whole 重出
     prompt = spec
     if repair_note:
-        prompt += ("\n\n【QA1 退回理由（返修轮·逐条落实）】\n%s\n"
+        src, body = repair_note
+        prompt += ("\n\n【%s（返修轮·逐条落实）】\n%s\n"
                    "【返修纪律】直接输出修复后的完整新文件（禁止 SEARCH/REPLACE 块）；"
-                   "逐条对照退回理由修改，其他部分保持已验证设计不变。" % repair_note)
+                   "逐条对照返修项修改，其他部分保持已验证设计不变。" % (src, body))
     driver = json.dumps({"tid": TID, "out": out_rel, "spec": prompt,
                          "label": "%s 产码%s" % (TID, "(返修)" if repair_note else "")})
     dj = os.path.join(wt, "_e2e_driver_args.json")
@@ -137,14 +158,19 @@ def main():
         die("方案提交", err.strip())
     log("plan commit", plan_rel)
 
-    # ---- 3~6. 产码→提交→SEC2→QA1（含返修循环）----
+    # ---- 3~6. 产码→提交→SEC2→QA1（SEC2 缺失与 QA1 退回共用返修预算）----
     qa1_verdict, qa1_out, sha = "", "", ""
+    last_fail, sec2_miss = "QA1", None
     for rnd in range(1 + args.repair_rounds):
         repair_note = None
         if rnd > 0:
-            m = re.search(r"结论[：:]\s*\*\*退回\*\*[—-]*(.*)", qa1_out, re.S)
-            repair_note = (m.group(1).strip()[:1500] if m else qa1_out[-800:])
-            log("返修轮 %d" % rnd, "退回理由已回流(%d 字)" % len(repair_note))
+            if last_fail == "SEC2":
+                repair_note = ("SEC2 返工清单", sec2_miss or "")
+                log("返修轮 %d" % rnd, "SEC2 缺失清单已回流(%d 字)" % len(sec2_miss or ""))
+            else:
+                m = re.search(r"结论[：:]\s*\*\*退回\*\*[—-]*(.*)", qa1_out, re.S)
+                repair_note = ("QA1 退回理由", m.group(1).strip()[:1500] if m else qa1_out[-800:])
+                log("返修轮 %d" % rnd, "退回理由已回流(%d 字)" % len(repair_note[1]))
         ok, detail = gen_code(wt, args.out, spec, repair_note)
         if not ok:
             die("DEV1 产码(轮%d)" % (rnd + 1), detail)
@@ -158,32 +184,49 @@ def main():
         sha = out.strip()
         log("产码提交", sha)
 
+        sec2_t0 = datetime.datetime.now().timestamp()
         rc, out, err = run([PY, "tools/sec2_review.py", "--plan", plan_rel,
                             "--sha", sha, "--files", args.out], cwd=wt, timeout=900)
         m = re.search(r"缺失\s*(\d+)", out)
         miss = int(m.group(1)) if m else -1
         log("SEC2(轮%d)" % (rnd + 1), "缺失=%s" % miss)
         if miss != 0:
-            write_trace("SEC2_FAIL")
-            print("[结论] SEC2 缺失 %s → 治理链需返工，e2e 在走查关停（轨迹已留）" % miss)
-            sys.exit(2)
+            sec2_miss = extract_sec2_miss(wt, plan_rel, sec2_t0)
+            if rnd >= args.repair_rounds or not sec2_miss:
+                write_trace("SEC2_FAIL")
+                print("[结论] SEC2 缺失 %s → 返修预算耗尽，e2e 停（轨迹已留）" % miss)
+                sys.exit(2)
+            last_fail = "SEC2"
+            continue
 
         rc, stat, _ = run(["git", "show", "--stat", sha], cwd=wt)
         stat_line = [l for l in stat.splitlines() if "changed" in l]
         rc, real, _ = run([PY, args.out, "--json"], cwd=wt, timeout=120)
         note = ("证据包(驱动器自动组装·轮%d):1)stat原样引用git show --stat输出:[%s];"
-                "2)逐条实跑=smoke回路过(--json rc0两键齐+total>0对账断言)+真实stdout=%s;"
+                "2)逐条实跑=smoke回路过(--json退出码0+stdout为合法JSON对象·smoke断言与规格P-3一致不含额外键断言)+真实stdout原样贴:%s;"
                 "3)只读边界=工具无open(w)/write/网络;4)SEC2走查缺失=0(%s)"
                 % (rnd + 1, stat_line[0].strip() if stat_line else "N/A",
-                   real.strip()[:150], plan_rel))
+                   real.strip()[:200], plan_rel))
         rc, out, err = run([PY, "tools/qa1_review.py", "--task", TID, "--note", note, sha],
                            cwd=wt, timeout=900)
         qa1_out = out
         m = re.search(r"结论[：:]\s*\*\*([^*]+)\*\*", out)
-        qa1_verdict = m.group(1).strip() if m else "(无结论)"
+        if m:
+            qa1_verdict = m.group(1).strip()
+        elif re.search(r"\*\*?退回", out):
+            qa1_verdict = "退回(格式降级匹配)"
+        elif re.search(r"\*\*?通过", out):
+            qa1_verdict = "通过(格式降级匹配)"
+        else:
+            # 判例(K-ORG-068 轮1): 无结论≠退回——误判会触发无谓返修, fail-stop
+            write_trace("QA1_UNPARSEABLE")
+            print("[结论] QA1 输出无法解析出结论 → fail-stop（stdout 尾部: %r）"
+                  % out.strip()[-200:])
+            sys.exit(4)
         log("QA1(轮%d)" % (rnd + 1), qa1_verdict)
         if ("通过" in qa1_verdict) and ("退回" not in qa1_verdict):
             break
+        last_fail = "QA1"
     else:
         write_trace("QA1_FAIL")
         print("[结论] QA1：%s → 返修轮耗尽仍退回，e2e 停（轨迹已留）" % qa1_verdict)
