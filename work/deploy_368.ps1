@@ -22,22 +22,22 @@ Write-Host "machine env set: JEV_CARD_APP_ID=$APP_ID"
 #    migrate 内置 plain 幂等保护，不会反向覆盖）
 $envFile = 'E:\老田的AI助手\jev-eval\jev-gate.env.plain.ps1'
 $lines = Get-Content $envFile -Encoding UTF8
-$hit = ($lines | Select-String -SimpleMatch 'LARK_ALERT_OPEN_ID')
-if ($hit.Count -ne 1) { throw "LARK_ALERT_OPEN_ID anchor count=$($hit.Count) (expect 1)" }
+$hit = ($lines | Select-String -SimpleMatch '$env:LARK_ALERT_OPEN_ID')
+if ($hit.Count -ne 1) { throw "LARK_ALERT_OPEN_ID assign anchor count=$($hit.Count) (expect 1)" }
 $old = ($lines -match 'ou_[0-9a-f]{32}')
 if (-not $old) { throw 'old open_id (ou_) not found in plain file' }
 $new = $lines | ForEach-Object {
-    if ($_ -match 'LARK_ALERT_OPEN_ID') { $_ -replace "ou_[0-9a-f]{32}", $NEW_OPEN_ID } else { $_ }
+    if ($_ -match '\$env:LARK_ALERT_OPEN_ID') { $_ -replace "ou_[0-9a-f]{32}", $NEW_OPEN_ID } else { $_ }
 }
 Set-Content $envFile -Value $new -Encoding UTF8
 Write-Host "LARK_ALERT_OPEN_ID -> $NEW_OPEN_ID (plain)"
 
 # 3) 重加密 .enc（以 plain 为真源）+ 解密回读 verify
+#    （migrate_env_dpapi.do_migrate 入口解析 SRC=stub 会失败，用 reencrypt_368
+#     复用其底层函数走 do_migrate 第 3 步——W1-2 后置轮换路径）
 $py = 'C:/Program Files/Python311/python.exe'
-& $py 'E:\老田的AI助手\jev-eval\migrate_env_dpapi.py'
-if ($LASTEXITCODE -ne 0) { throw 'migrate_env_dpapi re-encrypt FAIL' }
-& $py 'E:\老田的AI助手\jev-eval\migrate_env_dpapi.py' --verify
-if ($LASTEXITCODE -ne 0) { throw 'DPAPI verify FAIL' }
+& $py 'E:\老田的AI助手\work\reencrypt_368.py'
+if ($LASTEXITCODE -ne 0) { throw 'DPAPI re-encrypt/verify FAIL' }
 Write-Host ".enc re-encrypted, MIGRATION_OK"
 
 # 4) 停 card handler（让 ZhiceWatchdog 下轮以新 env 拉起）
