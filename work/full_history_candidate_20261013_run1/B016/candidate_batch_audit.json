@@ -1,0 +1,57 @@
+{
+  "batch_id": "B016",
+  "run_id": "87b8e8701a3940dbbddafbe98ab7d529",
+  "dates": [
+    "20240401",
+    "20240402",
+    "20240403",
+    "20240408",
+    "20240409",
+    "20240410",
+    "20240411",
+    "20240412",
+    "20240415",
+    "20240416",
+    "20240417",
+    "20240418",
+    "20240419",
+    "20240422",
+    "20240423",
+    "20240424",
+    "20240425",
+    "20240426",
+    "20240429",
+    "20240430"
+  ],
+  "unit_count": 40,
+  "runstore_status": "succeeded",
+  "completed_units": 40,
+  "resource_lock": "released",
+  "publication_lock": "write_acquired_released+read_acquired_released",
+  "post_publish_fingerprint": {
+    "ts_daily_basic": "2b7e7740ba06b77fb1c76e53103839ee96a6f40cbc52a9a786593f809a1c2045",
+    "ts_margin_detail": "2be8b23221ffaa28a93c9aa86eeab16eb9e5a7f2c92ee543fc662d30cf9ceb28"
+  },
+  "readback_reconciliation": {
+    "status": "passed",
+    "tables": {
+      "ts_daily_basic": {
+        "files": 20,
+        "rows": 107106,
+        "unique_keys": 107106,
+        "sha256_aggregate": "2b7e7740ba06b77fb1c76e53103839ee96a6f40cbc52a9a786593f809a1c2045"
+      },
+      "ts_margin_detail": {
+        "files": 20,
+        "rows": 77632,
+        "unique_keys": 77632,
+        "sha256_aggregate": "2be8b23221ffaa28a93c9aa86eeab16eb9e5a7f2c92ee543fc662d30cf9ceb28"
+      }
+    },
+    "query_digest": "1f9b72f0189771bd8ea6477959f9721f341d5e0c21feee2d4a03e3a362361cac"
+  },
+  "production_write": false,
+  "global_activation": false,
+  "publication_allowed": false,
+  "candidate_only": true
+}

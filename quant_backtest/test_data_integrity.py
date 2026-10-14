@@ -93,6 +93,46 @@ def test_query_failure_is_reported(tmp_path):
     assert "查询路径错误" in metric(report, "query_daily_history")["details"]["error"]
 
 
+def test_default_query_reader_uses_explicit_data_root(tmp_path):
+    """显式 data_root 时，默认查询探针必须读取同一数据根。"""
+    fixture(tmp_path)
+    days = ["20230720", "20230721", "20230724", "20230725", "20230726",
+            "20230727", "20230728", "20230731", "20230801", "20230802",
+            "20230803", "20230804"]
+    daily_dir = tmp_path / "tushare" / "daily"
+    daily_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([{"ts_code": "600519.SH", "trade_date": day, "close": 1.0}
+                  for day in days]).to_parquet(daily_dir / "d_202307.parquet", index=False)
+    put(tmp_path, "cb_daily", [{"ts_code": "110075.SH", "trade_date": "20260901", "close": 1.0}], "tushare")
+    (tmp_path / "tushare" / "cb_daily" / "part_0000.parquet").rename(
+        tmp_path / "tushare" / "cb_daily" / "110075_SH.parquet")
+    put(tmp_path, "income", [{"ts_code": "600519.SH", "ann_date": "20260901",
+                               "end_date": "20260630", "value": 1.0}], "tushare")
+    (tmp_path / "tushare" / "income" / "part_0000.parquet").rename(
+        tmp_path / "tushare" / "income" / "600519_SH.parquet")
+    for table in ("top10_holders", "top10_floatholders"):
+        put(tmp_path, table, [{"ts_code": "600519.SH", "ann_date": "20260901",
+                               "end_date": "20260630", "holder_name": "甲",
+                               "holder_type": "1", "hold_amount": 1.0}], "tushare")
+        (tmp_path / "tushare" / table / "part_0000.parquet").rename(
+            tmp_path / "tushare" / table / "p_20260630.parquet")
+    tables = {}
+    for name, layout, date_col, key in [
+        ("daily", "by_date", "trade_date", ["ts_code", "trade_date"]),
+        ("cb_daily", "by_code", "trade_date", ["ts_code", "trade_date"]),
+        ("income", "by_code", "end_date", ["ts_code", "end_date"]),
+        ("top10_holders", "by_period", "ann_date", ["ts_code", "ann_date", "end_date", "holder_name", "holder_type"]),
+        ("top10_floatholders", "by_period", "ann_date", ["ts_code", "ann_date", "end_date", "holder_name", "holder_type"]),
+    ]:
+        tables[name] = {"store": str(tmp_path / "tushare" / name), "layout": layout,
+                        "date_col": date_col, "code_col": "ts_code", "primary_key": key,
+                        "done": True, "schema": []}
+    (tmp_path / "catalog.json").write_text(json.dumps({"tables": tables, "aliases": {}}, ensure_ascii=False), encoding="utf-8")
+    report = scan_integrity(tmp_path, today="20261007")
+    assert metric(report, "query_daily_history")["status"] == "OK"
+    assert metric(report, "query_cb_daily")["status"] == "OK"
+
+
 def test_corrupt_table_is_explicit_failure(tmp_path):
     fixture(tmp_path)
     (tmp_path / "tdx" / "ts_daily" / "part_0000.parquet").write_bytes(b"bad parquet")
@@ -151,6 +191,31 @@ def test_coverage_value_reports_missing_keys_instead_of_reference_size(tmp_path)
     assert entry["value"] == 9
     assert entry["details"]["20260930"]["missing_count"] == 9
     assert entry["details"]["_summary"]["latest_unique_codes"] == 1
+
+
+def test_coverage_records_window_reference_and_stable_gap_evidence(tmp_path):
+    fixture(tmp_path)
+    path = tmp_path / "tdx" / "tdx_sector_daily" / "part_0000.parquet"
+    frame = pd.read_parquet(path)
+    frame.loc[frame.trade_date.ne("20260930")].to_parquet(path, index=False)
+    entry = metric(scan_integrity(tmp_path, today="20261007", run_probes=False),
+                   "tdx_sector_daily_daily_coverage")
+    summary = entry["details"]["_summary"]
+    assert summary["window_start"] == "20260924"
+    assert summary["window_end"] == "20260930"
+    assert summary["reference_date"] == "20260929"
+    assert len(summary["gap_keys"]["missing_keys_sample"]) == 10
+    assert len(summary["gap_keys"]["missing_keys_sha256"]) == 64
+
+
+def test_empty_day_is_marked_as_source_pending(tmp_path):
+    fixture(tmp_path)
+    path = tmp_path / "tdx" / "ts_daily" / "part_0000.parquet"
+    frame = pd.read_parquet(path)
+    frame.loc[frame.trade_date.ne("20260930")].to_parquet(path, index=False)
+    entry = metric(scan_integrity(tmp_path, today="20261007", run_probes=False),
+                   "ts_daily_daily_coverage")
+    assert entry["details"]["20260930"]["source_state"] == "source_empty_pending"
 
 
 def test_suspension_evidence_is_limited_to_verified_dates(tmp_path):

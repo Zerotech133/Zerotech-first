@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-10-13T22:46:57.307700+08:00",
+  "candidate_history": {
+    "verified_units": 1820,
+    "remaining_units": 0,
+    "batches": 46,
+    "failed_batches": 0
+  },
+  "registry": {
+    "global_activation": false,
+    "production_write": false,
+    "tables": {
+      "ts_daily_basic": "candidate_ready",
+      "ts_margin_detail": "candidate_ready"
+    },
+    "all_candidate_gates_pass": true,
+    "production_publish_allowed": false
+  },
+  "main_staging_runstore": {
+    "statuses": {
+      "blocked": 26,
+      "failed": 18
+    },
+    "resource_locks": 0,
+    "latest_closure_status": "blocked"
+  },
+  "gates": {
+    "source_receipts_and_candidate_readback": "passed",
+    "runstore_candidate_batches": "passed",
+    "old_writer_takeover": "unverified",
+    "production_commit_approval": "required",
+    "production_publish": "blocked",
+    "post_publish_fingerprint": "not_started"
+  },
+  "blockers": [
+    "registry 尚未从 candidate_ready 升级 qualified",
+    "旧写者接管/写入口封存缺少完成证据",
+    "production_write=false 且 global_activation=false",
+    "板块日线 51 键与分钟 14 键仍为 blocked_source_qualification"
+  ]
+}

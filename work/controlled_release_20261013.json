@@ -1,0 +1,20 @@
+{
+  "run_id": null,
+  "status": "blocked",
+  "blocked_reasons": [
+    "source_qualification_incomplete:12937",
+    "production_write_disabled",
+    "global_activation_disabled",
+    "publication_lock_not_started",
+    "post_publish_fingerprint_not_available",
+    "readback_reconciliation_not_available"
+  ],
+  "source_receipt": "work/recent_refresh_receipts/source_receipt.jsonl",
+  "health_snapshot": "work/full_refresh_health_20261013.json",
+  "annual_snapshot": "work/annual_refresh_receipts/2023/annual_2023_manifest.json",
+  "publication_lock": "not_started",
+  "post_publish_fingerprint": "not_started",
+  "readback_reconciliation": "not_started",
+  "production_write": false,
+  "global_activation": false
+}

@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "source": "tushare",
+  "resource": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013",
+  "market": "cn",
+  "date": "20230103",
+  "selected_tables": [
+    "ts_daily_basic",
+    "ts_margin_detail"
+  ],
+  "retry_of": null,
+  "retry_units": [],
+  "registry_digest": "05ad794349bea1cdecd4a3d1bf1bb2820af6929cda1d81d64f21320f6732a6d0",
+  "targets": [
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230103.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230104.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230105.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230106.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230109.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230110.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230111.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230112.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230113.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230116.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230117.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230118.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230119.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230120.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230130.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230131.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230201.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230202.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230203.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230206.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230103.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230104.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230105.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230106.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230109.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230110.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230111.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230112.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230113.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230116.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230117.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230118.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230119.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230120.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230130.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230131.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230201.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230202.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230203.parquet",
+    "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230206.parquet"
+  ],
+  "units": [
+    {
+      "unit_id": "ts_daily_basic:20230103",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230103.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230103"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230104",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230104.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230104"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230105",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230105.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230105"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230106",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230106.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230106"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230109",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230109.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230109"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230110",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230110.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230110"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230111",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230111.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230111"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230112",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230112.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230112"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230113",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230113.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230113"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230116",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230116.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230116"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230117",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230117.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230117"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230118",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230118.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230118"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230119",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230119.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230119"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230120",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230120.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230120"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230130",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230130.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230130"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230131",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230131.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230131"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230201",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230201.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230201"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230202",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230202.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230202"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230203",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230203.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230203"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230206",
+      "table": "ts_daily_basic",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_daily_basic\\20230206.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230206"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230103",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230103.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230103"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230104",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230104.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230104"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230105",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230105.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230105"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230106",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230106.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230106"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230109",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230109.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230109"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230110",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230110.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230110"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230111",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230111.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230111"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230112",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230112.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230112"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230113",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230113.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230113"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230116",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230116.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230116"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230117",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230117.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230117"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230118",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230118.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230118"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230119",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230119.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230119"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230120",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230120.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230120"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230130",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230130.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230130"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230131",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230131.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230131"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230201",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230201.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230201"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230202",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230202.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230202"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230203",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230203.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230203"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230206",
+      "table": "ts_margin_detail",
+      "target": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\first_batch_20d_publication_20261013\\published\\ts_margin_detail\\20230206.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230206"
+      },
+      "selection_reason": "dependency"
+    }
+  ],
+  "operations": [
+    {
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "operation": "date_append_candidate"
+    },
+    {
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "operation": "date_append_candidate"
+    }
+  ],
+  "unsupported": [
+    {
+      "table": "tdx_sector_daily",
+      "missing_keys": 51,
+      "status": "blocked_source_qualification"
+    },
+    {
+      "table": "tdx_sector_min",
+      "missing_keys": 14,
+      "status": "blocked_source_qualification"
+    }
+  ],
+  "baseline_digest": "73b0501c2b31e7876abc14709f035db6330347a68e24a1af2e80e72dd26a2e4a",
+  "plan_digest": "a89843da1a8e8ab6fc3afd52cf4e4ca6a66ebf667b7232ddcacfd06b24c18302"
+}

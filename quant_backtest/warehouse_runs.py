@@ -531,3 +531,38 @@ class RunStore:
                 self._event(db, old['run_id'], 'process_checked', {'process_status': state}, now)
                 changed.append(old['run_id'])
         return changed
+
+    def reconcile_orphaned_locks(self, *, now):
+        """收口迁移后资源键漂移的无进程排队任务。
+
+        仅处理 ``queued``、无 PID 且锁键与运行记录资源不一致的孤儿锁；
+        正在运行或有进程身份的任务必须走正常回收流程。
+        """
+        _now(now)
+        with self._connect() as db:
+            candidates = db.execute(
+                """SELECT l.run_id, l.resource AS lock_resource,
+                          r.resource AS run_resource, r.status, r.pid
+                     FROM resource_locks l JOIN runs r ON r.run_id=l.run_id
+                    WHERE r.status='queued' AND r.pid IS NULL
+                      AND l.resource<>r.resource"""
+            ).fetchall()
+        changed = []
+        for candidate in candidates:
+            with self._connect() as db, immediate(db):
+                row = db.execute(
+                    """SELECT l.resource AS lock_resource,
+                              r.resource AS run_resource, r.status, r.pid
+                         FROM resource_locks l JOIN runs r ON r.run_id=l.run_id
+                        WHERE l.run_id=?""", (candidate['run_id'],)
+                ).fetchone()
+                if (row is None or row['status'] != 'queued' or row['pid'] is not None
+                        or row['lock_resource'] == row['run_resource']):
+                    continue
+                db.execute("UPDATE runs SET status='blocked', finished_at=?, exit_code=? WHERE run_id=?",
+                           (now, 1, candidate['run_id']))
+                db.execute('DELETE FROM resource_locks WHERE run_id=?', (candidate['run_id'],))
+                self._event(db, candidate['run_id'], 'finished',
+                            {'status': 'blocked', 'exit_code': 1}, now)
+                changed.append(candidate['run_id'])
+        return changed

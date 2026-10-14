@@ -271,7 +271,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
                        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
                        "<meta http-equiv='refresh' content='10'><title>数据仓</title>"
                        + self._COCKPIT_CSS + "</head><body>"
-                       + pill_nav("data-health") + "<h1>📊 数据仓</h1>"
+                       + pill_nav("data-health") + "<h1>📊 数据仓 · 全部资产</h1>"
                        + "<div class='dim'>%s</div></body></html>" % e(message))
             return
         # 文件时点色点只表示新鲜度，不代表完整度。

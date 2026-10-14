@@ -2,6 +2,7 @@
 import copy
 import json
 import os
+import sqlite3
 from pathlib import Path
 import subprocess
 import sys
@@ -79,6 +80,20 @@ def test_queued_identity_unknown_keeps_lock(store, plan):
     assert store.get_run(run)['status'] == 'queued'
     with pytest.raises(RunBusy):
         store.create_run(plan, entry='manual', request_id='b', now=999)
+
+
+def test_reconcile_orphaned_lock_path_drift_blocks_queued_run(store, plan):
+    run = store.create_run(plan, entry='manual', request_id='drift', now=100)
+    with sqlite3.connect(store.path) as db:
+        db.execute('UPDATE resource_locks SET resource=? WHERE run_id=?',
+                   ('C:/archived/warehouse', run))
+        db.commit()
+
+    assert store.reconcile_orphaned_locks(now=200) == [run]
+    current = store.get_run(run)
+    assert current['status'] == 'blocked'
+    with sqlite3.connect(store.path) as db:
+        assert db.execute('SELECT count(*) FROM resource_locks').fetchone()[0] == 0
 
 
 def test_launcher_failure_releases_and_terminal_is_immutable(store, plan):

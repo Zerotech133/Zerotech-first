@@ -1,0 +1,274 @@
+{
+  "started_at": 1791896750.1675386,
+  "production_write": false,
+  "global_activation": false,
+  "batches": [
+    {
+      "batch_id": "B003",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 170616
+    },
+    {
+      "batch_id": "B004",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 171981
+    },
+    {
+      "batch_id": "B005",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 172509
+    },
+    {
+      "batch_id": "B006",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 173693
+    },
+    {
+      "batch_id": "B007",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 175663
+    },
+    {
+      "batch_id": "B008",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 176998
+    },
+    {
+      "batch_id": "B009",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 178377
+    },
+    {
+      "batch_id": "B010",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 180047
+    },
+    {
+      "batch_id": "B011",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 181663
+    },
+    {
+      "batch_id": "B012",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 182975
+    },
+    {
+      "batch_id": "B013",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 183590
+    },
+    {
+      "batch_id": "B014",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 184025
+    },
+    {
+      "batch_id": "B015",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 184249
+    },
+    {
+      "batch_id": "B016",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 184738
+    },
+    {
+      "batch_id": "B017",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 183909
+    },
+    {
+      "batch_id": "B018",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 184021
+    },
+    {
+      "batch_id": "B019",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 184758
+    },
+    {
+      "batch_id": "B020",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 185024
+    },
+    {
+      "batch_id": "B021",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 185209
+    },
+    {
+      "batch_id": "B022",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 185738
+    },
+    {
+      "batch_id": "B023",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 186370
+    },
+    {
+      "batch_id": "B024",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 186782
+    },
+    {
+      "batch_id": "B025",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 187749
+    },
+    {
+      "batch_id": "B026",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 188860
+    },
+    {
+      "batch_id": "B027",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 188935
+    },
+    {
+      "batch_id": "B028",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 189791
+    },
+    {
+      "batch_id": "B029",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 189787
+    },
+    {
+      "batch_id": "B030",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 190142
+    },
+    {
+      "batch_id": "B031",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 190707
+    },
+    {
+      "batch_id": "B032",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 191266
+    },
+    {
+      "batch_id": "B033",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 191538
+    },
+    {
+      "batch_id": "B034",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 192291
+    },
+    {
+      "batch_id": "B035",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 193958
+    },
+    {
+      "batch_id": "B036",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 194202
+    },
+    {
+      "batch_id": "B037",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 194984
+    },
+    {
+      "batch_id": "B038",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 195687
+    },
+    {
+      "batch_id": "B039",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 196086
+    },
+    {
+      "batch_id": "B040",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 196776
+    },
+    {
+      "batch_id": "B041",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 197121
+    },
+    {
+      "batch_id": "B042",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 197579
+    },
+    {
+      "batch_id": "B043",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 198216
+    },
+    {
+      "batch_id": "B044",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 199147
+    },
+    {
+      "batch_id": "B045",
+      "status": "succeeded",
+      "unit_count": 40,
+      "rows": 199766
+    },
+    {
+      "batch_id": "B046",
+      "status": "succeeded",
+      "unit_count": 20,
+      "rows": 97630
+    }
+  ],
+  "finished_at": 1791897085.2777388,
+  "succeeded_batches": 44,
+  "failed_batches": 0
+}

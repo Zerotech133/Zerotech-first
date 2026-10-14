@@ -62,6 +62,19 @@ def test_zero_reference_is_unknown_instead_of_healthy(dashboard):
     assert model["assets"][0]["freshness"] == "unknown"
 
 
+def test_source_empty_day_is_labeled_pending_source_verification(dashboard):
+    data = report()
+    data["integrity"]["metrics"][0]["details"]["20261008"].update(
+        rows=0, unique_codes=0, reference_unique_codes=1119,
+        missing_count=1119, source_state="source_empty_pending")
+    model = dashboard.build_model(data, {"refreshing": False, "error": None})
+    day = model["coverage"][0]["days"]["20261008"]
+    assert day["source_empty_pending"] is True
+    html = dashboard.render_dashboard(data, {"refreshing": False, "error": None},
+                                      freshness_html="", graph_html="", nav="", base_css="", preview_js="")
+    assert "待来源核验" in html
+
+
 def test_reference_count_difference_is_distinct_from_qualified_missing_keys(dashboard):
     data = report()
     data["integrity"]["metrics"].append({"name": "ts_margin_detail_daily_coverage", "status": "OK", "value": 0,

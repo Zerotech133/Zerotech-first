@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-10-13 01:13:43",
+  "production_write": false,
+  "global_activation": false,
+  "cn": {
+    "count": 5596,
+    "missing_fields": [],
+    "valuation_source": {
+      "name": "ts_daily_basic",
+      "path": "E:\\老田的AI助手\\quant_backtest\\data\\tdx\\ts_daily_basic",
+      "status": "joined",
+      "rows": 852
+    },
+    "valuation_fields": {
+      "turnover": {
+        "present": 772,
+        "missing": 80,
+        "coverage": 0.906103
+      },
+      "market_cap": {
+        "present": 772,
+        "missing": 80,
+        "coverage": 0.906103
+      },
+      "pe": {
+        "present": 772,
+        "missing": 80,
+        "coverage": 0.906103
+      }
+    }
+  },
+  "news": {
+    "total": 34109,
+    "jev_pending": 23
+  },
+  "gaps": []
+}

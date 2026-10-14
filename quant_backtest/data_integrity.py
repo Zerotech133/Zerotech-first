@@ -91,6 +91,17 @@ def _metric(out, name, status, value, details):
     out.append({"name": name, "status": status, "value": value, "details": details})
 
 
+def _key_evidence(reference, actual, *, sample_size=100):
+    """返回稳定的逐键缺口摘要，避免健康报告依赖行顺序或只看数量。"""
+    missing = sorted(set(reference) - set(actual))
+    digest = hashlib.sha256("\n".join(missing).encode("utf-8")).hexdigest()
+    return {
+        "missing_keys_count": len(missing),
+        "missing_keys_sample": missing[:sample_size],
+        "missing_keys_sha256": digest,
+    }
+
+
 def _eligible_suspensions(root, day):
     path = root / "integrity" / "stock_daily_eligibility.json"
     if not path.exists():
@@ -197,6 +208,31 @@ def _probes(reader, metrics):
         execute("query_" + table, query)
 
 
+def _reader_for_root(root):
+    """为显式数据根绑定统一读层，避免探针误读当前代码副本。"""
+    catalog_path = Path(root) / "catalog.json"
+    if not catalog_path.exists():
+        return None
+    try:
+        import datamart
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        if not isinstance(catalog, dict) or not isinstance(catalog.get("tables"), dict):
+            return None
+    except (OSError, ValueError, ImportError):
+        return None
+
+    class RootReader:
+        def read(self, table, start=None, end=None, codes=None, fields=None, limit=None):
+            token = datamart._READ_CATALOG.set(catalog)
+            try:
+                return datamart.read(table, start=start, end=end, codes=codes,
+                                     fields=fields, limit=limit)
+            finally:
+                datamart._READ_CATALOG.reset(token)
+
+    return RootReader()
+
+
 def _stock_list_dates(root):
     dates, sources, invalid = {}, [], 0
     for path in _parts(root, "tushare", "stock_basic") + _parts(root, "tdx", "ts_stock_basic"):
@@ -301,11 +337,16 @@ def _margin_coverage(root, keys, counts, recent, latest):
             "prelisting_excluded": [{"ts_code": code, "list_date": listed[code]} for code in excluded],
             "delisted_excluded": delisted, "delisted_excluded_count": len(delisted),
             "unknown_list_date_missing": sorted(code for code in raw_missing if code not in listed),
-            "missing": missing, "prelisting_present": prelisting_present}
+            "missing": missing, "prelisting_present": prelisting_present,
+            "source_state": "source_empty_pending" if reference and not counts.get(day, 0) else "observed",
+            **_key_evidence(reference, actual)}
     total = sum(row["missing_count"] for row in coverage.values())
     coverage["_summary"] = {"value_unit": "近期参考集合排除已证上市前及官方调出首日后的明细缺键总数",
+        "window_start": recent[0] if recent else None, "window_end": latest,
         "reference_date": reference_day, "reference_unique_codes": len(reference),
         "latest_unique_codes": len(keys.get(latest, set())), "latest_missing_count": coverage.get(latest, {}).get("missing_count", 0),
+        "gap_keys": _key_evidence(set().union(*(set(row["missing"]) for row in coverage.values())), set()),
+        "latest_gap_keys": _key_evidence(reference, keys.get(latest, set())),
         "raw_count": sum(row["raw_count"] for row in coverage.values()),
         "raw_set": sum(row["raw_set"] for row in coverage.values()),
         "prelisting_excluded_count": sum(row["prelisting_excluded_count"] for row in coverage.values()),
@@ -346,17 +387,31 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
             elif not dates:
                 _metric(metrics, name + "_calendar_gaps", "FAIL", 0, {"error": "无有效日期"})
             base = max((len(v) for v in keys.values()), default=0)
-            coverage = {d: {"rows": counts.get(d, 0), "unique_codes": len(keys.get(d, set())),
-                            "reference_unique_codes": base,
-                            "missing_count": max(0, base - len(keys.get(d, set())))} for d in recent}
+            coverage = {}
+            for d in recent:
+                actual_keys = keys.get(d, set())
+                row = {"rows": counts.get(d, 0), "unique_codes": len(actual_keys),
+                       "reference_unique_codes": base,
+                       "missing_count": max(0, base - len(actual_keys)),
+                       "source_state": "source_empty_pending" if base and not counts.get(d, 0) else "observed"}
+                if base and row["missing_count"]:
+                    row.update(_key_evidence(set().union(*(keys.get(x, set()) for x in recent)), actual_keys))
+                coverage[d] = row
             bad = [d for d, v in coverage.items() if base and v["unique_codes"] < .9 * base]
             missing_count = sum(v["missing_count"] for v in coverage.values())
             if name == "tdx_sector_daily" and missing_count:
                 bad = [d for d, v in coverage.items() if v["missing_count"]]
+            reference_date = max(recent, key=lambda d: (len(keys.get(d, set())), d), default=latest)
+            reference_keys = keys.get(reference_date, set())
             coverage["_summary"] = {"value_unit": "相对近期最大断面的缺键总数",
+                                    "window_start": start, "window_end": latest,
+                                    "reference_date": reference_date,
                                     "reference_unique_codes": base,
                                     "latest_unique_codes": len(keys.get(latest, set())),
-                                    "latest_missing_count": max(0, base - len(keys.get(latest, set())))}
+                                    "latest_missing_count": max(0, base - len(keys.get(latest, set()))),
+                                    "gap_keys": _key_evidence(
+                                        set().union(*(set(reference_keys) - keys.get(d, set()) for d in recent)), set()),
+                                    "latest_gap_keys": _key_evidence(reference_keys, keys.get(latest, set()))}
             if name == "ts_margin_detail":
                 coverage, missing_count, failed = _margin_coverage(root, keys, counts, recent, latest)
             else:
@@ -377,10 +432,23 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
         for frame in _frames(paths, ["code"]):
             sector_def.update(frame.loc[~_null(frame.code), "code"].astype(str))
         if sector_def and "tdx_sector_daily" in tables:
-            details = {d: {"defined": len(sector_def), "actual": len(tables["tdx_sector_daily"].get(d, set())),
-                           "missing": sorted(sector_def - tables["tdx_sector_daily"].get(d, set())),
-                           "extra": sorted(tables["tdx_sector_daily"].get(d, set()) - sector_def)} for d in recent}
+            details = {}
+            for d in recent:
+                actual_keys = tables["tdx_sector_daily"].get(d, set())
+                missing_keys = sorted(sector_def - actual_keys)
+                details[d] = {"defined": len(sector_def), "actual": len(actual_keys),
+                              "missing": missing_keys,
+                              "extra": sorted(actual_keys - sector_def),
+                              "source_state": "source_empty_pending" if not actual_keys else "observed",
+                              **_key_evidence(sector_def, actual_keys)}
             absent = sum(len(v["missing"]) + len(v["extra"]) for v in details.values())
+            details["_summary"] = {"window_start": start, "window_end": latest,
+                                    "reference_date": max(recent, default=latest),
+                                    "reference_unique_codes": len(sector_def),
+                                    "gap_keys": _key_evidence(
+                                        set().union(*(sector_def - tables["tdx_sector_daily"].get(d, set()) for d in recent)), set()),
+                                    "latest_gap_keys": _key_evidence(
+                                        sector_def, tables["tdx_sector_daily"].get(latest, set()))}
             _metric(metrics, "sector_definition_key_reconciliation", "FAIL" if absent else "OK", absent, details)
         elif not paths:
             _metric(metrics, "sector_definition_key_reconciliation", "WARN", 0, {"error": "板块定义不可用，使用近期唯一代码基准"})
@@ -449,18 +517,35 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
                 {"rows": total, "missing_days": missing, "first": min(minute_days) if minute_days else None,
                  "last": max(minute_days) if minute_days else None})
         base = len(sector_def) or max((len(v) for v in minute_codes.values()), default=0)
-        details = {d: {"rows": minute_counts[d], "unique_codes": len(minute_codes[d]), "reference_unique_codes": base,
-                       "missing": sorted(sector_def - minute_codes[d]) if sector_def else [],
-                       "missing_count": len(sector_def - minute_codes[d]) if sector_def else max(0, base - len(minute_codes[d]))}
-                   for d in recent}
+        details = {}
+        for d in recent:
+            actual_codes = minute_codes[d]
+            missing_codes = sorted(sector_def - actual_codes) if sector_def else []
+            row = {"rows": minute_counts[d], "unique_codes": len(actual_codes),
+                   "reference_unique_codes": base,
+                   "missing": missing_codes,
+                   "missing_count": len(missing_codes) if sector_def else max(0, base - len(actual_codes)),
+                   "source_state": "source_empty_pending" if base and not minute_counts[d] else "observed"}
+            if base and row["missing_count"]:
+                row.update(_key_evidence(sector_def if sector_def else set().union(*minute_codes.values()), actual_codes))
+            details[d] = row
         severe = any(v["unique_codes"] < .9 * base for v in details.values()) if base else True
         missing_count = sum(v["missing_count"] for v in details.values())
         failed = bool(missing_count) if sector_def else severe
         details["_summary"] = {"value_unit": "近期分钟代码日期断面的缺键总数",
+                               "window_start": start, "window_end": latest,
+                               "reference_date": max(recent, key=lambda d: (len(minute_codes[d]), d), default=latest),
                                "reference_source": "sector_definition" if sector_def else "recent_max_unique_count",
                                "reference_unique_codes": base,
                                "latest_unique_codes": len(minute_codes[latest]),
                                "latest_missing_count": details.get(latest, {}).get("missing_count", 0),
+                               "gap_keys": _key_evidence(
+                                   set().union(*(
+                                       (sector_def - minute_codes[d]) if sector_def else
+                                       (set().union(*minute_codes.values()) - minute_codes[d])
+                                       for d in recent)), set()),
+                               "latest_gap_keys": _key_evidence(
+                                   sector_def if sector_def else set().union(*minute_codes.values()), minute_codes[latest]),
                                "policy": "定义明确的任何缺键均FAIL；无定义保留近期数量参考及90%阈值，不推定历史资格"}
         _metric(metrics, "sector_minute_daily_coverage", "FAIL" if failed else "OK", missing_count, details)
         duplicates = {day: minute_key_rows[day] - len(minute_keys[day]) for day in minute_key_rows
@@ -474,7 +559,9 @@ def scan_integrity(data_root=None, today=None, reader=None, run_probes=True):
     if run_probes:
         try:
             if reader is None:
-                import datamart as reader
+                reader = _reader_for_root(root)
+                if reader is None:
+                    raise ValueError("显式数据根缺少可绑定 catalog.json")
             _probes(reader, metrics)
         except Exception as exc:
             _metric(metrics, "query_reader", "FAIL", 0, {"error": str(exc)})
