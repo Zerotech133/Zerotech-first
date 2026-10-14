@@ -2133,7 +2133,9 @@ transition:.3s;z-index:9}
         """GET /api/duty_brief[?snapshot=1]。
         ?snapshot=1：9:15 出件任务调用——现算+原子落盘当日快照（357 判例 tmp+os.replace）；
         常规：9:15 后优先读当日快照（盘前时点口径），无快照/盘前则惰性现算。"""
-        snap = "snapshot=1" in (qs or "")
+        # K-STOCK-366 审查修复：列表段精确匹配（原 in qs 子串匹配会把
+        # snapshot=12/10 误判为出件模式）；按 & 分段后整段比对。
+        snap = "snapshot=1" in ((qs or "").split("&"))
         data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
         fp = os.path.join(data_dir, "duty_brief_%s.json" % time.strftime("%Y%m%d"))
         payload = None
