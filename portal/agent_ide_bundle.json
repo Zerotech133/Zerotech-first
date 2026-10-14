@@ -1,12 +1,12 @@
 {
- "generated": "2026-10-14 08:20",
+ "generated": "2026-10-14 08:43",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 29,
   "departments": 12,
   "prompt_ok": 29,
   "prompt_miss": [],
-  "workorders_doing": 5,
+  "workorders_doing": 4,
   "workorders_review": 19
  },
  "workorders": [
@@ -215,15 +215,6 @@
    "owner": "unknown-agent",
    "branch": "task/K-STOCK-307",
    "created": "2026-10-14 01:05:33",
-   "project": "general"
-  },
-  {
-   "id": "K-STOCK-365",
-   "desc": "JEV复核门P0修复:unreviewed补判通道+毕业条件口径统一(剔CN为准)+REJECT/CN-FOCUS样本缺位归因",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/K-STOCK-365",
-   "created": "2026-10-14 08:17:22",
    "project": "general"
   }
  ],
@@ -1028,9 +1019,22 @@
      "命令跟踪",
      "工单台账"
     ],
-    "knowledge": []
+    "knowledge": [
+     "企业分析与尽调知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:24:59",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "DATA1": {
    "id": "DATA1",
@@ -1180,7 +1184,9 @@
      "模型评估",
      "版本登记"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1195,6 +1201,16 @@
        "ts": "2026-10-13 10:30",
        "event": "deliver",
        "desc": "云端编码交付：tools/model_route.py(1658字·glm-4-flash 21s·tok in=681 out=358)——三函数·py_compile+五项冒烟全过·159配置配套加载器"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:26:02",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -1236,7 +1252,9 @@
      "回测判据",
      "策略注册"
     ],
-    "knowledge": []
+    "knowledge": [
+     "缠论技术分析知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1251,6 +1269,16 @@
        "ts": "2026-10-13 10:16",
        "event": "drill_output",
        "desc": "D2对练首轮产出(尾盘买入过滤规则)：- 时间窗：14:30 至 14:48 收盘前 12 分钟触发入场  \n- 涨幅上限：收盘价较昨日同日未收盘价跌幅超 5% 或当日涨幅超 7% 自动过滤  \n- 量能要求：最后 5 分钟成交额占总流通市值比例 < 0.3% 视为低量放弃  \n- 流动性阈值：买卖档总深度（买一档 + 卖一阶）< 1000 手强制剔除  \n- 放弃条件：若前一交易日收盘价出现“放"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:26:51",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -1292,7 +1320,9 @@
      "判据复核",
      "Go/No-Go 表态"
     ],
-    "knowledge": []
+    "knowledge": [
+     "金融专业知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1307,6 +1337,16 @@
        "ts": "2026-10-13 10:16",
        "event": "drill_review",
        "desc": "D2对练复核意见：1. 过滤规则依赖当日收盘后数据（未收盘价、最终成交额），无法在 T+0 时段实时校验，导致前视偏差。\n2. “前一交易日放量滞涨/巨震”为事后回测逻辑，缺乏可量化判据定义及实盘验证能力。\n3. **复核结论：需修改**"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:27:56",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -1345,9 +1385,22 @@
      "大屏开发",
      "版面宪法"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:29:00",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "ARCH1": {
    "id": "ARCH1",
@@ -1452,7 +1505,9 @@
      "探活",
      "故障定位"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1467,6 +1522,16 @@
        "ts": "2026-10-13 09:45",
        "event": "done",
        "desc": "E4交付：KINDS+dispatch/accept/review_verdict/patrol_verdict四类·emit实发自检过·today汇总兼容"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:33:40",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -1504,7 +1569,9 @@
      "判例沉淀",
      "索引总账"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1514,6 +1581,16 @@
        "ts": "2026-10-13 10:22",
        "event": "deliver",
        "desc": "整改交付：docs/ops/Ollama_RAG_运行手册.md(168行·五章·9b真生成61s)——QA1退回整改由主控派发在编岗DOC1代执行"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:34:33",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -1551,9 +1628,22 @@
      "接口开发",
      "脚本开发"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:30:02",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "DEV7": {
    "id": "DEV7",
@@ -1587,9 +1677,22 @@
      "批量修改",
      "格式化"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:31:10",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "DEV8": {
    "id": "DEV8",
@@ -1623,7 +1726,9 @@
      "图表开发",
      "tokens 纪律"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1638,6 +1743,16 @@
        "ts": "2026-10-13 09:45",
        "event": "done",
        "desc": "C3记忆面板交付：memory_digest烘bundle(行数+最近2条)·ide.html岗卡记忆活动块·只读纪律"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:32:39",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -1765,7 +1880,9 @@
      "选股投票",
      "交叉验证"
     ],
-    "knowledge": []
+    "knowledge": [
+     "金融专业知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1809,6 +1926,16 @@
       {
        "ts": "",
        "event": "",
+       "desc": ""
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:35:32",
+       "event": "learned",
        "desc": ""
       }
      ]
@@ -1845,7 +1972,9 @@
      "数据核验",
      "一致性检查"
     ],
-    "knowledge": []
+    "knowledge": [
+     "金融专业知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1892,6 +2021,16 @@
        "desc": ""
       }
      ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:36:30",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
     }
    }
   },
@@ -1925,7 +2064,9 @@
      "金融数据",
      "候选筛选"
     ],
-    "knowledge": []
+    "knowledge": [
+     "资本运作知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1969,6 +2110,16 @@
       {
        "ts": "",
        "event": "",
+       "desc": ""
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:37:27",
+       "event": "learned",
        "desc": ""
       }
      ]
@@ -2152,9 +2303,22 @@
      "口号纪律",
      "定位口径"
     ],
-    "knowledge": []
+    "knowledge": [
+     "企业分析与尽调知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:38:35",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "PM1": {
    "id": "PM1",
@@ -2193,9 +2357,22 @@
      "验收口径",
      "交付定义"
     ],
-    "knowledge": []
+    "knowledge": [
+     "企业分析与尽调知识库.md"
+    ]
    },
-   "memory": null,
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:39:58",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   },
    "tasks": [
     {
      "id": "proj_c_nlq_001",
@@ -2237,9 +2414,22 @@
      "Demo 先行",
      "风格巡查"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:41:14",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "DSGN2": {
    "id": "DSGN2",
@@ -2273,9 +2463,22 @@
      "图标",
      "样式执行"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:42:29",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "QA1": {
    "id": "QA1",
@@ -2434,9 +2637,22 @@
      "证据采集",
      "回归跑批"
     ],
-    "knowledge": []
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 08:43:30",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "SEC2": {
    "id": "SEC2",
