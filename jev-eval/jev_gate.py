@@ -183,7 +183,9 @@ def _build_alert_card(alert: dict, verdict: dict) -> dict:
 
 def push_feishu(alert: dict, verdict: dict) -> bool:
     """飞书交互卡片推送（lark-cli bot 身份），3 次指数退避重试。未配置 open_id 返回 False。"""
+    global _LAST_PUSH_ERR
     if not LARK_ALERT_OPEN_ID:
+        _LAST_PUSH_ERR = "LARK_ALERT_OPEN_ID 未配置"
         return False
 
     card_json = json.dumps(_build_alert_card(alert, verdict), ensure_ascii=False)
@@ -197,8 +199,11 @@ def push_feishu(alert: dict, verdict: dict) -> bool:
         return True
 
     try:
-        return with_retry(_send, retries=3, base_sec=2.0, label="推送")
+        ok = with_retry(_send, retries=3, base_sec=2.0, label="推送")
+        _LAST_PUSH_ERR = ""
+        return ok
     except Exception as e:  # noqa: BLE001
+        _LAST_PUSH_ERR = str(e)[:300]
         log(f"飞书推送最终失败: {str(e)[:200]}", level="error")
         return False
 
@@ -208,13 +213,69 @@ DEAD_LETTER = HERE / "push_dead_letter.jsonl"
 MAX_PUSH_ATTEMPTS = 5  # 连续 N 轮推送失败后放弃（防无限循环；重启进程计数归零可重试）
 
 _PUSH_FAILS: dict = {}  # alert_id → 连续失败轮数（仅内存）
+_LAST_PUSH_ERR: str = ""  # push_feishu 最近一次失败原因（死信/升级告警取证）
+
+
+def _escalate_dlq(alert: dict, reason: str) -> None:
+    """死信升级告警（K-STOCK-401）：告警通道自身失守时的「告警的告警」。
+
+    2026-09-28→10-14 实证教训：旧 lark-cli 二进制不认外部凭证注入、回落
+    apps[0] 凭证发 jev app 签发的 open_id（99992361 cross app），17 天 41
+    条紧急告警进死信零感知。故升级必须与 lark-cli 二进制解耦，双路 OpenAPI：
+      ① jev app 凭证（env JEV_CARD_APP_*）+ LARK_ALERT_OPEN_ID——app 原生
+         配对，二进制级故障期全程可用（urllib 直连不依赖 lark-cli）；
+      ② apps[0] + config.json users[0] 的同 app open_id——jev 凭证也失守
+         时的异 app 兜底（open_id 跨 app 不可用，须用各自签发的）。
+    纯文本无按钮；两路全败仅日志（不递归、不反噬主链路）。
+    """
+    txt = ("🚨 告警通道失守：jev 推送 %d 轮失败已入死信\n"
+           "%s | %s\n原因: %s" % (
+               MAX_PUSH_ATTEMPTS, alert.get("level", "?"),
+               (alert.get("title") or "")[:60],
+               (_LAST_PUSH_ERR or reason)[:160]))
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(here), "news_collector"))
+    try:
+        from feishu_client import send_msg
+    except Exception as e:  # noqa: BLE001
+        log(f"死信升级告警 import 失败: {str(e)[:80]}", level="warn")
+        return
+    # 路①：jev app 原生配对
+    app_id = os.environ.get("JEV_CARD_APP_ID", "").strip()
+    app_secret = os.environ.get("JEV_CARD_APP_SECRET", "").strip()
+    if app_id and app_secret and LARK_ALERT_OPEN_ID:
+        try:
+            ok, why = send_msg(json.dumps({"text": txt}), "text",
+                               receive_id=LARK_ALERT_OPEN_ID,
+                               app_id=app_id, app_secret=app_secret)
+            if ok:
+                log("死信升级告警(jev app 路径) 送达", alert_id=alert.get("alert_id"))
+                return
+            log(f"jev app 路径失败: {why[:80]}", level="warn")
+        except Exception as e:  # noqa: BLE001
+            log(f"jev app 路径异常: {str(e)[:80]}", level="warn")
+    # 路②：apps[0] + 同 app 自签 open_id（config.json users[0]）
+    try:
+        cfgp = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
+        users = json.load(open(cfgp, encoding="utf-8"))["apps"][0].get("users") or []
+        oid2 = next((u.get("userOpenId") for u in users if u.get("userOpenId")), "")
+        if oid2:
+            ok, why = send_msg(json.dumps({"text": txt}), "text", receive_id=oid2)
+            log("死信升级告警(apps[0] 路径) " + ("送达" if ok else f"失败: {why[:80]}"),
+                alert_id=alert.get("alert_id"),
+                level="info" if ok else "warn")
+            return
+    except Exception as e:  # noqa: BLE001
+        log(f"apps[0] 路径异常: {str(e)[:80]}", level="warn")
+    log("死信升级告警两路全败（详见上方 warn）", level="warn")
 
 
 def _append_dead_letter(alert: dict, verdict: dict, reason: str, final: bool) -> None:
     rec = {"ts": datetime.now().isoformat(timespec="seconds"),
            "alert_id": alert["alert_id"], "level": alert["level"],
            "title": alert["title"], "verdict": verdict,
-           "reason": reason, "final": final}
+           "reason": reason, "final": final,
+           "err": _LAST_PUSH_ERR[:300]}  # K-STOCK-401：失败原因入死信（此前仅日志可查）
     try:
         with DEAD_LETTER.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
@@ -234,6 +295,7 @@ def _push_with_dlq(alert: dict, verdict: dict) -> bool:
         _append_dead_letter(alert, verdict, f"attempt {n}", final=True)
         log(f"{aid} 连续 {n} 轮推送失败，放弃（死信已记终态）")
         _PUSH_FAILS.pop(aid, None)
+        _escalate_dlq(alert, f"attempt {n}")  # K-STOCK-401：终态死信必须升级
         return True
     _PUSH_FAILS[aid] = n
     _append_dead_letter(alert, verdict, f"attempt {n}", final=False)
@@ -300,7 +362,8 @@ def _handle_alert(a: dict, dry: bool) -> None:
         log("CRITICAL 直推", alert_id=a["alert_id"], title=a["title"][:40])
         if not dry and not _push_with_dlq(a, {"urgent_p": 1.0, "category": "sys", "category_p": 1.0}):
             return  # 推送失败：不标 seen，下轮重试（P1-4）
-        mark_seen(a["alert_id"])
+        if not dry:  # K-STOCK-401：dry 只演练不落状态，防真实告警被 seen 永久吞掉
+            mark_seen(a["alert_id"])
         return
 
     verdict = None
@@ -329,7 +392,8 @@ def _handle_alert(a: dict, dry: bool) -> None:
     else:
         log("抑制", alert_id=a["alert_id"], urgent_p=round(verdict["urgent_p"], 2),
             title=a["title"][:40])
-    mark_seen(a["alert_id"])
+    if not dry:  # K-STOCK-401：dry 只演练不落状态（同上）
+        mark_seen(a["alert_id"])
 
 
 def run_once(dry: bool = False) -> None:

@@ -373,17 +373,19 @@ def lark_cli_json(args: list[str], *, timeout: int = 20, kind: str = "api",
             [lark_cli_bin(), *args], capture_output=True, text=True,
             encoding="utf-8", errors="replace", env=lark_env(), timeout=timeout)
         if result.returncode != 0:
-            last_err = f"lark-cli 退出码 {result.returncode}: {result.stderr.strip()[:150]}"
+            # K-STOCK-401：150 恰切在 lark-cli 信封 error.message 之前，
+            # 诊断信息全丢（17 天故障期根因排查被阻）；放宽到 300
+            last_err = f"lark-cli 退出码 {result.returncode}: {result.stderr.strip()[:300]}"
         else:
             try:
                 payload = json.loads(result.stdout)
             except Exception:  # noqa: BLE001
-                last_err = f"lark-cli 输出非 JSON: {result.stdout.strip()[:150]}"
+                last_err = f"lark-cli 输出非 JSON: {result.stdout.strip()[:300]}"
             else:
                 if payload.get("ok") is True:
                     C_LARK.labels(_MOD["name"], kind, "1").inc()
                     return payload
-                last_err = f"飞书拒绝: {result.stdout.strip()[:150]}"
+                last_err = f"飞书拒绝: {result.stdout.strip()[:300]}"
         C_LARK.labels(_MOD["name"], kind, "0").inc()
         if i < retries - 1:
             time.sleep(2 * (i + 1))
