@@ -10,6 +10,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+# K-ORG-080/N7: 成本台账接入——cost_report 为新文件, 旧环境可能没有, ImportError 兜底
+try:
+    import cost_report
+except ImportError:
+    cost_report = None
+
 
 def _main_root():
     # 主仓根定位: worktree 内 __file__ 上溯不够(064 判例), 用 git common dir 锚定;
@@ -76,7 +82,20 @@ def main():
     args = ap.parse_args()
     if not args.json:
         ap.error("only --json is supported")
-    print(json.dumps(scan_e2e_traces(), ensure_ascii=False))
+    data = scan_e2e_traces()
+    # K-ORG-080/N7: 成本台账行+usage 字段（近 7 天汇总）; cost_report 缺失或异常时兜底 fail-open
+    usage = None
+    try:
+        if cost_report is not None:
+            total = cost_report.usage_total(7)
+            if total.get("calls", 0) > 0:
+                usage = total
+    except Exception:
+        usage = None
+    data["usage"] = usage
+    data["cost_summary"] = cost_report.summary_line(total=usage) if (
+        cost_report is not None and usage) else "成本台账: 无数据"
+    print(json.dumps(data, ensure_ascii=False))
     return 0
 
 
