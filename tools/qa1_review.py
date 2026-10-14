@@ -93,11 +93,23 @@ READ_ONLY_ADDENDUM = (
 
 # K-ORG-062a(F6b) SEC2 返工项③：只读面 fail-closed 自检（import 时执行）——
 # 工具本体与只读承诺绑死：附言或工具面一旦被改出写能力，import 即炸，质检不静默降权。
+# QA1 复核观察修正：①显式 raise（assert 在 python -O 下被剥离会静默失效=fail-open）；
+# ②白名单式校验（⊆ {Read,Grep,Glob}，新增写工具名不在黑名单也能拦住）。
 _READONLY_TOOLS = "Read,Grep,Glob"
-assert not ({"Edit", "Bash", "Write", "NotebookEdit"} & set(_READONLY_TOOLS.split(","))), \
-    "K-ORG-062a 只读面被破坏：QA1 复核工具面不得含写工具"
-assert "无 Edit/Bash/Write" in READ_ONLY_ADDENDUM, \
-    "K-ORG-062a 只读纪律附言被移除，QA1 只读承诺失据"
+
+
+def _readonly_guard():
+    allowed = {"Read", "Grep", "Glob"}
+    tools = set(_READONLY_TOOLS.split(","))
+    if tools - allowed:
+        raise RuntimeError(
+            "K-ORG-062a 只读面被破坏：QA1 复核工具面出现白名单外工具 %s"
+            % sorted(tools - allowed))
+    if "无 Edit/Bash/Write" not in READ_ONLY_ADDENDUM:
+        raise RuntimeError("K-ORG-062a 只读纪律附言被移除，QA1 只读承诺失据")
+
+
+_readonly_guard()
 
 
 def review_one(sha, note=None):
