@@ -127,10 +127,32 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--spec-file", required=True)
     ap.add_argument("--repair-rounds", type=int, default=1)
+    ap.add_argument("--incremental", action="store_true",
+                    help="增量型工单：目标文件已存在·金样本自动采集+增量纪律段")
     args = ap.parse_args()
     TID = args.tid
     spec = open(args.spec_file, encoding="utf-8").read()
     wt = os.path.join(ROOT, ".worktrees", TID)
+
+    # ---- 0. 增量模式：金样本采集（改动前真实输出·K-ORG-068 QA1 三点整改之一）----
+    golden = ""
+    if args.incremental:
+        target = os.path.join(ROOT, args.out)
+        if not os.path.isfile(target):
+            die("金样本", "增量模式要求目标文件已存在：%s" % target)
+        rc, out, err = run([sys.executable, args.out, "--json"],
+                           cwd=ROOT, timeout=120)
+        if rc != 0:
+            die("金样本", "改动前基线运行失败 rc=%s %s" % (rc, err.strip()[:150]))
+        golden = out.strip()
+        spec += ("\n\n## 增量纪律（K-ORG-070 判例·违反即 QA1 退回）\n\n"
+                 "- 目标文件 `%s` 已存在且经治理链验证：**禁止重写/重构既有函数**，"
+                 "只允许新增函数或在 main() 内做最小增量修改\n"
+                 "- 既有函数实现体一字不动；确需改动契约时必须在 P-3 显式声明"
+                 "「契约变更：旧→新」\n"
+                 "- **金样本（改动前真实 stdout 基线）**：无新参数时既有行为必须"
+                 "与金样本一致，逐字段类型不得漂移\n"
+                 "- `--json` golden=%s\n" % (args.out, golden[:400]))
 
     # ---- 1. 开单 ----
     rc, out, err = run([PY, "tools/devtask.py", "new", TID,
