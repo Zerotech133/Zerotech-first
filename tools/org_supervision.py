@@ -250,6 +250,38 @@ def check_llm_health():
     return fails, last_err
 
 
+def check_tool_audit():
+    """工具调用审计判读（K-ORG-090/T4·observe 先行）：统计 agent_platform/data/
+    llm_tool_audit.jsonl 近 24h 调用次数与 caller 分布。observe 模式只记不拦，
+    攒 3 天数据后由 087/T4 拍板白名单切 enforce（排期 10-18）。
+    fail-open：文件不存在或空返回 None（observe 零流量≠故障）。"""
+    p = os.path.join(ROOT, "agent_platform", "data", "llm_tool_audit.jsonl")
+    if not os.path.exists(p):
+        return None
+    cutoff = datetime.fromtimestamp(
+        datetime.now().timestamp() - 24 * 3600).strftime("%Y-%m-%d %H:%M:%S")
+    callers, endpoints = Counter(), Counter()
+    n, n_err = 0, 0
+    try:
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue
+                if str(e.get("ts", "")) >= cutoff:
+                    n += 1
+                    if not e.get("ok", True):
+                        n_err += 1
+                    callers[str(e.get("caller"))] += 1
+                    endpoints[str(e.get("endpoint", "?"))] += 1
+    except Exception:
+        return None
+    if n == 0:
+        return None
+    return n, n_err, callers, endpoints
+
+
 def main(push=True):
     lines = ["# 组织监督判读 %s" % datetime.now().strftime("%Y-%m-%d %H:%M"), ""]
     reds, yellows = [], []
@@ -313,6 +345,29 @@ def main(push=True):
                 "%s %d" % (k, v) for k, v in chans.most_common()))
         lines.append("- <font color='grey'>智谱积分参考: anthropic 通道单工单 ≈4~5 积分"
                      "（K-ORG-038 判例）</font>")
+    # K-ORG-080/N7: 工单成本台账（近7天·cost_report.summary_line 接线）
+    try:
+        import cost_report
+        lines.append("- <font color='grey'>工单成本台账: %s</font>"
+                     % cost_report.summary_line("近7天",
+                                                cost_report.usage_total(7)))
+    except ImportError:
+        pass  # cost_report 未部署环境降级（N7 fail-open）
+    lines.append("")
+
+    # K-ORG-090/T4: 工具调用审计（observe 段）
+    audit = check_tool_audit()
+    if audit is None:
+        lines.append("## 工具调用审计（observe·近24h）: 无记录（T4 observe 零流量）")
+    else:
+        n_a, n_err, callers, endpoints = audit
+        lines.append("## 工具调用审计（observe·近24h）: %d 次调用 · 异常 %d"
+                     % (n_a, n_err))
+        lines.append("- caller 分布: %s" % " · ".join(
+            "%s %d" % (k, v) for k, v in callers.most_common(6)))
+        lines.append("- 热点端点: %s" % " · ".join(
+            "%s %d" % (k, v) for k, v in endpoints.most_common(4)))
+        lines.append("- <font color='grey'>observe 只记不拦·白名单 10-18 拍板（087/T4）</font>")
     lines.append("")
 
     n_rules, rule_problems = check_rules()
