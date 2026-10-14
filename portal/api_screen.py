@@ -983,12 +983,15 @@ class Handler:
                             pass
                     return v
                 _eb_s = "—"
-                try:                      # tushare ebitda 单位：万元
+                try:                      # tushare ebitda 实测单位：元
+                                          # （K-STOCK-386 实证 000993.H1
+                                          # ebitda=1.2e8 → 1.20亿；旧注释
+                                          # 「万元」错，÷1e4 再标亿放大 1e4 倍）
                     _ebv = float(cur.get("ebitda") or 0)
                     if _ebv:
-                        _eb_s = (("%.2f亿" % (_ebv / 1e4))
-                                 if abs(_ebv) >= 1e4
-                                 else "%.0f万" % _ebv)
+                        _eb_s = (("%.2f亿" % (_ebv / 1e8))
+                                 if abs(_ebv) >= 1e8
+                                 else "%.0f万" % (_ebv / 1e4))
                 except (TypeError, ValueError):
                     pass
                 # K235 扩容：(组, 标签, 值) 三元组——估值/盈利/成长/健康
