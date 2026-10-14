@@ -21,8 +21,11 @@ import sys
 import urllib.request
 
 LARK_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
-USER_ID = "ou_50a95455c7dffec1090ade400886d0d4"      # bot 应用域 open_id
-USER_ID_LARK = "ou_5c9c4f3c015cbdb3475a44e49a9c1866"  # user 应用域 open_id
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+
+USER_ID = push_targets.target_id("个人") or ""  # bot 应用域 open_id（apps[0] 视角）
+USER_ID_LARK = "ou_5c9c4f3c015cbdb3475a44e49a9c1866"  # user 应用域 open_id（另一身份维度，不属收件人表）
 
 
 def find_lark_cli():

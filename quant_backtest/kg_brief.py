@@ -351,10 +351,12 @@ def _send(text):
 
 
 # K-STOCK-360 群同步目标（判例同 K-STOCK-357/358 晨报）
-SYNC_GROUPS = [
-    ("内部测试", "oc_6b97bee8b5340e071d0fc10cc6c8569f"),
-    ("量化群", "oc_16ed759795430734a90a7850ba33bec1"),
-]
+# K-STOCK-403：id 改由 push_targets 单一事实源按名解析
+sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "news_collector")))
+import push_targets  # noqa: E402
+
+SYNC_GROUPS = [(n, push_targets.target_id(n) or "")
+               for n in ("内部测试", "量化群")]
 
 
 def _build_card_payload(secs):
