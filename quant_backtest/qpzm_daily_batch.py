@@ -247,6 +247,14 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
         _bpp.run()
     except Exception as _ex:
         print("BREADTH_PARALLEL fail: %s" % str(_ex)[:120], flush=True)
+    # A1 拍板落地（20261015）：vol_target A/B 对照采集位。状态机
+    # waiting→tracking（CONFIRM_HOLD 事件流闩锁翻相），预注册判据
+    # 首日冻结 sha 防篡改；纯纸面记录零交易行为，注记式隔离。
+    try:
+        import voltarget_ab as _vab
+        _vab.advance()
+    except Exception as _ex:
+        print("VOLTARGET_AB fail: %s" % str(_ex)[:120], flush=True)
     return row
 
 

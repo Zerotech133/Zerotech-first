@@ -51,3 +51,17 @@ qpzm 一周并行对照、议题二需 HMM 影子列进周报），用户"下一
     "C:/Program Files/Python311/python.exe" breadth_parallel.py
     "C:/Program Files/Python311/python.exe" hmm_shadow.py
     "C:/Program Files/Python311/python.exe" shadow_weekly_report.py --json-only
+
+## 附：A1 拍板落地——voltarget_ab 采集位上线（2026-10-15 04:23 后）
+
+- 用户拍板 A1（按模拟口径等穿越确认建仓，零偏离）；决议②的 A/B
+  采集位随即接线：voltarget_ab.py 状态机 waiting_for_cross→tracking
+  （扫 breadth_cross_events.jsonl 的 CONFIRM_HOLD 一次性闩锁翻相，
+  状态文件无确认历史故不能只读 state）；
+- **预注册判据同日冻结**：data/voltarget_ab_config.json 首日写入
+  （split/group_a/group_b/promote_rule/eval_days=60），sha256 前 16
+  位自证此后未改，转正评审只认冻结版——防事后归因；
+- 挂载 qpzm_daily_batch 尾（第三个注记式段），纯纸面记录零交易
+  行为；4 新测试（闩锁不回退/篡改 sha 抓到/同日幂等/waiting 起始），
+  修一个经典坑：默认参数绑定定义期全局致测试桩失效，改调用时取；
+  首跑落档 waiting（sha 035b23452c619e93），16 回归全绿。
