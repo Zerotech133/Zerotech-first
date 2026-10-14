@@ -143,13 +143,18 @@ def _mutate_card(card_content: str, status_text: str, template: str,
     return json.dumps(card, ensure_ascii=False)
 
 
-def _update_card_api(token: str, card_json: str) -> str:
+def _update_card_api(message_id: str, card_json: str) -> str:
     """单次调用卡片更新 API（lark-cli 统一信封判定收敛到 jev_common）。
-    成功返回 ""，失败返回错误信息。"""
-    data = json.dumps({"token": token, "card": json.loads(card_json)}, ensure_ascii=False)
+    成功返回 ""，失败返回错误信息。
+
+    K-STOCK-369：旧版 interactive/v1/card/update（token 换更新）在 app 换绑后
+    恒报 300090（token 与发卡 app 强绑定），切换为 im/v1/messages PATCH
+    （REST 实测新旧两种卡片格式均通过，lark-cli api 通道验证 ok）。"""
+    data = json.dumps({"msg_type": "interactive", "content": json.loads(card_json)},
+                      ensure_ascii=False)
     try:
         jc.lark_cli_json(
-            ["api", "POST", "/open-apis/interactive/v1/card/update", "--as", "bot",
+            ["api", "PATCH", f"/open-apis/im/v1/messages/{message_id}", "--as", "bot",
              "--data", data],
             timeout=15, kind="card_update")
         return ""
@@ -157,11 +162,11 @@ def _update_card_api(token: str, card_json: str) -> str:
         return str(e)[:200]  # 豁免（C2批2）：错误信息随返回值上抛，update_card 重试链已有日志
 
 
-def update_card(token: str, card_content: str, status_text: str,
+def update_card(message_id: str, card_content: str, status_text: str,
                 template: str, operator_id: str) -> bool:
     """更新卡片：3 次指数退避重试。无法构造卡片时视为完成（不重试）。"""
-    if not token or not card_content:
-        log("token/card_content 为空，跳过卡片更新（仅记录操作）")
+    if not message_id or not card_content:
+        log("message_id/card_content 为空，跳过卡片更新（仅记录操作）")
         return True
     card_json = _mutate_card(card_content, status_text, template, operator_id)
     if card_json is None:
@@ -170,7 +175,7 @@ def update_card(token: str, card_content: str, status_text: str,
 
     last_err = ""
     for i in range(CARD_RETRY):
-        last_err = _update_card_api(token, card_json)
+        last_err = _update_card_api(message_id, card_json)
         if not last_err:
             log(f"卡片已更新为「{status_text}」")
             return True
@@ -184,9 +189,9 @@ def update_card(token: str, card_content: str, status_text: str,
 
 
 # ── 卡片更新 outbox：失败补偿，重启时冲刷 ───────────────────
-def append_pending(token: str, card_content: str, status_text: str,
+def append_pending(message_id: str, card_content: str, status_text: str,
                    template: str, operator_id: str) -> None:
-    rec = {"ts": datetime.now().isoformat(timespec="seconds"), "token": token,
+    rec = {"ts": datetime.now().isoformat(timespec="seconds"), "message_id": message_id,
            "card_content": card_content, "status_text": status_text,
            "template": template, "operator_id": operator_id}
     try:
@@ -212,7 +217,9 @@ def flush_pending() -> None:
             rec = json.loads(line)
         except Exception:  # noqa: BLE001
             continue  # 豁免（C2批2）：outbox 损坏行直接丢弃，正常容错
-        if update_card(rec["token"], rec["card_content"], rec["status_text"],
+        # K-STOCK-369：旧记录（token 时代）无 message_id，update_card 会记日志跳过并
+        # 返回 True（视为完成移出 outbox，避免死循环冲刷）
+        if update_card(rec.get("message_id", ""), rec["card_content"], rec["status_text"],
                        rec["template"], rec["operator_id"]):
             n_ok += 1
         else:
@@ -241,6 +248,9 @@ def handle_event(event: dict) -> None:
     alert_id = action_value.get("alert_id", "")
     source = action_value.get("source", "jev")  # jev=走 v2_alert 回写；backup=仅本地记录
     token = event.get("token", "")
+    # K-STOCK-369：卡片更新改走 im/v1/messages PATCH，主键换 message_id
+    # （token 仅留作去重键成分，30 分钟时效不再适合当更新凭据）
+    message_id = event.get("message_id", "")
     operator_id = event.get("operator_id", "")
     card_content = event.get("card_content", "")
 
@@ -299,8 +309,8 @@ def handle_event(event: dict) -> None:
     _DEDUP.add(key)
     C_ACTION.labels(action, "ok").inc()
 
-    if not update_card(token, card_content, status_text, template, operator_id):
-        append_pending(token, card_content, status_text, template, operator_id)
+    if not update_card(message_id, card_content, status_text, template, operator_id):
+        append_pending(message_id, card_content, status_text, template, operator_id)
 
 
 # ── 主循环 ──────────────────────────────────────────────────
