@@ -239,10 +239,11 @@ def main():
         rc, out, err = run([PY, "tools/qa1_review.py", "--task", TID, "--note", note, sha],
                            cwd=wt, timeout=900)
         qa1_out = out
-        # 🔴 K-ORG-071 判例: QA1 真实格式是「**结论：退回 + 理由：…**」(星号包整句)
-        # 而非「结论：**退回**」(星号只包词)——旧三级解析按后者假设, 全部落空。
-        # verdict 提取改为关键词定位格式无关: 「结论：」后最近的 退回/通过 即 verdict。
-        m = re.search(r"结论[：:]\s*\**\s*(退回|通过)", out)
+        # 🔴 K-ORG-071/072 判例: QA1 输出格式逐次漂移, verdict 锚点已见三代——
+        # 「结论：**退回**」/「**结论：退回 + 理由…**」/「8a5aba1: **退回 + 理由…」。
+        # 统一锚点: 「结论：」后 或 「**」后 紧跟 退回|通过 即 verdict（格式无关）。
+        _V = r"(?:结论[：:]\s*\**|\*\*)\s*(退回|通过)"
+        m = re.search(_V, out)
         if m:
             qa1_verdict = m.group(1)
         else:
@@ -257,7 +258,7 @@ def main():
                              "        print(e.get('detail','')[:400]);break\n"
                              % (os.path.join(ROOT, "portal", "data", "dev_events.jsonl"), TID)],
                             cwd=ROOT)
-            m2 = re.search(r"结论[：:]\s*\**\s*(退回|通过)", ev)
+            m2 = re.search(_V, ev)
             if m2:
                 qa1_verdict = m2.group(1) + "(账本兜底)"
                 qa1_ledger = ev
