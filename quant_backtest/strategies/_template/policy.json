@@ -1,0 +1,31 @@
+{
+  "strategy": "_template",
+  "version": "v1",
+  "description": "模板占位判据：复制后替换为本策略实际参数并冻结",
+  "signals": {
+    "_comment": "信号参数：12 策略各自实际字段，schema 不限定（规格 §2）。示例仿 qpzm params_snapshot。",
+    "periods": [50, 120, 250],
+    "top_n": 10
+  },
+  "thresholds": {
+    "_comment": "判定阈值（进/出/门控线）。示例仿 b 线 cross_th=0.45（voltarget_ab.py:31）。",
+    "entry_rank_max": 10,
+    "gate_cross_th": 0.45
+  },
+  "risk": {
+    "_comment": "可选：仅当策略实际带风险缩放时保留（规格 §2）。示例仿 vol_target。",
+    "enabled": false,
+    "target_vol": 0.15,
+    "lookback": 20,
+    "floor": 0.25,
+    "cap": 1.0
+  },
+  "pre_registration": {
+    "_comment": "晋级 live 前必填：影子期首日冻结进 registry（规格 §4 晋级条件 2）。字段仿 voltarget_ab PRE_REGISTRATION（voltarget_ab.py:34-43）。",
+    "frozen_at": null,
+    "eval_days": 60,
+    "promote_rule": "填本策略的机械转正判据（对照冻结版自动判定，命中后仍需老田拍板）",
+    "source": "填判据出处文档与章节"
+  },
+  "config_sha256": "PLACEHOLDER_REEVALUATE_ON_FREEZE"
+}

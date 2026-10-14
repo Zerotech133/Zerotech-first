@@ -1,0 +1,23 @@
+{
+  "name": "_template",
+  "version": "v1",
+  "status": "dev",
+  "created_at": "2026-10-15",
+  "owner": "laotian",
+  "regime_fit": {
+    "_comment": "分 regime 结论：影子期/闸门研究产出回填，未验证前保持 null（规格 §3）",
+    "bull": null,
+    "bear": null,
+    "chop": null
+  },
+  "feeder": {
+    "source": "qpzm_parquet",
+    "fields": ["breadth", "med20"]
+  },
+  "gate_history": [],
+  "deploy": {
+    "deployed": false,
+    "sha": null,
+    "deployed_at": null
+  }
+}
