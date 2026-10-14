@@ -102,6 +102,79 @@ def _persona(agent_id):
     return sp
 
 
+# K-ORG-089/T2: 证据引用协议——#ev:commit:<sha> / #ev:file:<path>@<sha> /
+# #ev:trace:<工单> 结构化引用替代散文粘贴（对标 Trae #Context）。
+# 消费端在 prompt 组装前解析：引用→自动附原文；坏引用 fail-visible 标注不掩盖。
+_EV_COMMIT = re.compile(r"#ev:commit:([0-9a-f]{7,40})")
+_EV_FILE = re.compile(r"#ev:file:([^\s@]+@([0-9a-f]{7,40}))")
+_EV_TRACE = re.compile(r"#ev:trace:([\w\-]+)")
+_EV_SECTION = "\n\n---\n[证据原文（系统自动解析，来源见引用）]"
+
+
+def resolve_evidence(text):
+    """解析 prompt 里的 #ev:* 引用，原文附尾；解析失败标注 [EV未解析] 不静默。
+    仓库根操作（__file__ 锚定），git 异常按坏引用处理不抛出。"""
+    hits = []
+    if "#ev:" not in text:
+        return text
+    root = os.path.normpath(os.path.join(_HERE, os.pardir))
+
+    def _git(args):
+        r = subprocess.run(["git", "-C", root] + args, capture_output=True,
+                           text=True, encoding="utf-8", errors="replace", timeout=30)
+        return r.stdout if r.returncode == 0 else None
+
+    def _commit(m):
+        out = _git(["show", "--stat", "--no-color", m.group(1)])
+        hits.append((m.group(0), out))
+        return ""
+
+    def _file(m):
+        sha, path = m.group(2), m.group(1).rsplit("@", 1)[0]
+        out = _git(["show", "--no-color", "%s:%s" % (sha, path)])
+        if out is not None:
+            lines = out.splitlines()
+            if len(lines) > 80:
+                out = "\n".join(lines[:80]) + "\n…[截断，共 %d 行]" % len(lines)
+        hits.append((m.group(0), out))
+        return ""
+
+    def _trace(m):
+        rows = []
+        p = os.path.join(root, "portal", "data", "dev_events.jsonl")
+        try:
+            with open(p, encoding="utf-8") as f:
+                for ln in f:
+                    try:
+                        e = json.loads(ln)
+                    except Exception:
+                        continue
+                    if e.get("task") == m.group(1):
+                        rows.append("%s %s %s %s" % (e.get("ts", ""), e.get(
+                            "kind", ""), e.get("agent", ""), str(e.get("detail", ""))[:80]))
+        except OSError:
+            pass
+        out = "\n".join(rows[-10:]) if rows else None
+        hits.append((m.group(0), out))
+        return ""
+
+    for pat, fn in ((_EV_TRACE, _trace), (_EV_FILE, _file), (_EV_COMMIT, _commit)):
+        text = pat.sub(fn, text)
+    parts = [text.rstrip()]
+    ok, bad = 0, 0
+    for ref, out in hits:
+        if out is None:
+            bad += 1
+            parts.append("[EV未解析: %s ——引用无效，不得当作证据使用]" % ref)
+        else:
+            ok += 1
+            parts.append("%s\n%s" % (ref, out))
+    if ok or bad:
+        print("[resolve_evidence] %d 解析 / %d 未解析" % (ok, bad))
+        return _EV_SECTION + "\n\n" + "\n\n".join(parts)
+    return text
+
+
 def _gpt6_key():
     key = os.environ.get("GPT6_API_KEY", "")
     if key:
@@ -125,7 +198,7 @@ def chat_openai(agent_id, task, timeout=180):
         "model": GPT6_MODEL,
         "max_tokens": task.get("max_tokens", 8192),
         "messages": [{"role": "system", "content": sys_prompt},
-                     {"role": "user", "content": task["prompt"]}],
+                     {"role": "user", "content": resolve_evidence(task["prompt"])}],
     }
     req = urllib.request.Request(GPT6_URL, data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json",
@@ -160,7 +233,7 @@ def chat_anthropic(agent_id, task, timeout=240):
         "model": ANTHROPIC_MODEL,
         "max_tokens": task.get("max_tokens", 32768),  # 038判例: thinking耗额·8192级被截断(stop=max_tokens)
         "system": sys_prompt,
-        "messages": [{"role": "user", "content": task["prompt"]}],
+        "messages": [{"role": "user", "content": resolve_evidence(task["prompt"])}],
     }
     req = urllib.request.Request(ANTHROPIC_URL, data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json",
@@ -191,7 +264,7 @@ def chat_cloud(agent_id, task, timeout=120):
         "temperature": 0.3,
         "messages": [
             {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": task["prompt"]},
+            {"role": "user", "content": resolve_evidence(task["prompt"])},
         ],
     }
     req = urllib.request.Request(ZHIPU_URL, data=json.dumps(payload).encode(),
@@ -226,7 +299,7 @@ def chat(agent_id, task, timeout=420, num_ctx=0):
         "options": {"num_ctx": num_ctx, "temperature": 0.3},
         "messages": [
             {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": task["prompt"]},
+            {"role": "user", "content": resolve_evidence(task["prompt"])},
         ],
     }).encode()
     payload = json.loads(body)
@@ -380,7 +453,7 @@ def chat_claude(agent_id, task, timeout=600):
                ANTHROPIC_AUTH_TOKEN=key,
                ANTHROPIC_MODEL=model,
                ANTHROPIC_SMALL_FAST_MODEL=model)
-    cmd = [_claude_bin(), "-p", task["prompt"],
+    cmd = [_claude_bin(), "-p", resolve_evidence(task["prompt"]),
            "--output-format", "json",
            "--append-system-prompt", sys_prompt,
            "--allowedTools", task.get("allowed_tools", "Read,Edit,Grep,Glob,Bash"),
