@@ -232,6 +232,14 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
         _gsc.collect_run(strategies=("qd", "qpzm"))
     except Exception as _ex:
         print("GATE_SHADOW fail: %s" % str(_ex)[:120], flush=True)
+    # 复盘落地（breadth-mon 20261014）：宽度 45% 穿越确认 + 5 日假穿越
+    # 防护监测。只告警不拦任何策略；首跑自动播种不回放历史。注记式
+    # try/except，监测失败不影响产线（monitor_run 自身亦不抛）。
+    try:
+        import breadth_crossing_monitor as _bcm
+        _bcm.monitor_run()
+    except Exception as _ex:
+        print("BREADTH_MONITOR fail: %s" % str(_ex)[:120], flush=True)
     return row
 
 

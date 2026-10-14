@@ -132,6 +132,7 @@ class TestSignalGold(unittest.TestCase):
         r = analyze(zigzag(PTS_B3))
         self.assertEqual(r["signals"], [{
             "type": "3买", "dt": "D050", "price": 65.0,
+            "zg": 60.0, "zd": 52.0,   # 10-13 信号流新增中枢上下沿字段（金样本同步）
             "note": "中枢上沿回踩不破",
             "bei": True, "fv": [9.0, 7.0],
             "bei2": False, "fv2": [7.0, 7.0],

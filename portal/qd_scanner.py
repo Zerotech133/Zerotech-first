@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import time
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -24,10 +25,12 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "agent_platform" / "engine"))
 
 from quant_double_knife import quant_double_knife  # noqa: E402
-from tools import quote_snapshot, make_context  # noqa: E402
+from tools import norm_symbol, quote_snapshot, make_context  # noqa: E402
 
 ASHARE = ROOT / "quant_backtest" / "data" / "ashare"
 CACHE = Path(__file__).parent / "qd_scan_cache.json"
+
+_op_qd = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # 绕系统代理直连
 
 _LAKE_AMOUNT = {}  # W1-2 任务B：{code: {td8: amount千元}} 进程内缓存
 
@@ -184,6 +187,153 @@ def apply_breadth_note(sig_now, recent, tail_signals, regime_now, enabled):
     return note, summary
 
 
+# ---- [20261014_p1_tail] 双刀多源降级（腾讯→新浪→东财，判例 W3-4 末根错日）----
+# 背景：实时行情原单依赖腾讯源，W3-4 曾因腾讯源末根错日整段不可信。
+# 原则：每源取回后先做末根时间戳校验，错日=该源失败（宁可降级不假绿）；
+#       全源失败必须显式返回，调用方跳过并留痕，绝不允许拿错日数据继续算。
+
+def _http_text(url, headers=None, timeout=10, encoding="utf-8"):
+    req = urllib.request.Request(url, headers=headers or {})
+    with _op_qd.open(req, timeout=timeout) as r:
+        return r.read().decode(encoding, "ignore")
+
+
+def _http_json(url, headers=None, timeout=10):
+    return json.loads(_http_text(url, headers=headers, timeout=timeout))
+
+
+def _secid(plain):
+    """东财 secid 前缀：sh→1，sz→0（与 tools.norm_symbol 同规则）"""
+    return ("1." if plain[0] == "6" else "0.") + plain
+
+
+def _kline_tencent(plain, n):
+    """腾讯日K（前复权）：[[date, open, close, high, low, vol], ...]"""
+    from tools import kline_daily
+    return kline_daily(plain, n=n)
+
+
+def _kline_sina(plain, n):
+    """新浪日K → 映射为腾讯行格式。坑: 新浪 volume 单位是股、腾讯是手
+    → ÷100 对齐量纲（量比/均量类特征跨源才可比）。"""
+    u = ("https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService"
+         ".getKLineData?symbol=%s&scale=240&ma=no&datalen=%d"
+         % (norm_symbol(plain), n))
+    rows = _http_json(u) or []
+    return [[d["day"], d["open"], d["close"], d["high"], d["low"],
+             float(d["volume"]) / 100.0] for d in rows]
+
+
+def _kline_east(plain, n):
+    """东财日K（fqt=1 前复权）→ 映射为腾讯行格式。
+    fields2=f51..f56 依次 date,open,close,high,low,vol(手)。"""
+    u = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=%s"
+         "&fields1=f1,f2,f3&fields2=f51,f52,f53,f54,f55,f56"
+         "&klt=101&fqt=1&end=20500101&lmt=%d" % (_secid(plain), n))
+    kl = ((_http_json(u) or {}).get("data") or {}).get("klines") or []
+    return [row.split(",")[:6] for row in kl]
+
+
+def _kline_last_day(rows):
+    """末根交易日 YYYYMMDD（错日判定用；坏结构返回空串=失败）"""
+    try:
+        return str(rows[-1][0]).replace("-", "")
+    except Exception:
+        return ""
+
+
+def kline_multisource(plain, n=150, expect_day=None, enabled=None):
+    """多源日K降级链（腾讯→新浪→东财）。返回 (rows|None, source, note)。
+
+    - enabled 显式 False → 仅腾讯（config qd_multi_source=false 回退旧行为）；
+      None → 读 config qd_multi_source（缺省 true）
+    - 每源末根时间戳必须 == expect_day（错日=该源失败，判例 W3-4）
+    - 全源失败 → (None, "all_failed", 降级链留痕)；source 命名：主源命中=
+      tencent，备选命中=sina_fallback / east_fallback（落产物 note 用）
+    """
+    if enabled is None:
+        enabled = bool(_load_cfg().get("qd_multi_source", True))
+    chain = [("tencent", _kline_tencent)]
+    if enabled:
+        chain += [("sina", _kline_sina), ("east", _kline_east)]
+    notes = []
+    for name, fn in chain:
+        try:
+            rows = fn(plain, n)
+        except Exception as e:
+            notes.append("%s:%s" % (name, type(e).__name__))
+            continue
+        if not rows:
+            notes.append("%s:empty" % name)
+            continue
+        if expect_day and _kline_last_day(rows) != expect_day:
+            notes.append("%s:last=%s" % (name, _kline_last_day(rows)))
+            continue
+        return rows, (name if name == "tencent" else name + "_fallback"), \
+            ";".join(notes)
+    return None, "all_failed", ";".join(notes) or "no_source"
+
+
+def _quote_tencent(plain):
+    """腾讯快照（tools.quote_snapshot，含 PE/PB/市值/换手——仅主源全字段）"""
+    return quote_snapshot(plain)
+
+
+def _quote_sina(plain):
+    """新浪快照 → 统一字段映射：价格/涨跌幅/成交量/时间戳。
+    坑: hq.sinajs.cn 要求 Referer，否则 407；volume 单位股→手。"""
+    txt = _http_text("https://hq.sinajs.cn/list=" + norm_symbol(plain),
+                     headers={"Referer": "https://finance.sina.com.cn"},
+                     encoding="gbk")
+    f = txt.split('"')[1].split(",")
+    price, preclose = float(f[3]), float(f[2])
+    return {"name": f[0], "price": price,
+            "change_pct": round((price / preclose - 1) * 100, 2)
+            if preclose else None,
+            "volume": float(f[8]) / 100.0,
+            "ts": ("%s %s" % (f[30], f[31])).strip()}
+
+
+def _quote_east(plain):
+    """东财快照 → 统一字段映射。fltt=2 返回已除算浮点，免手工缩放；
+    f43=价格 f47=量(手) f60=昨收 f86=时间戳(秒) f170=涨跌幅。"""
+    d = ((_http_json(
+        "https://push2.eastmoney.com/api/qt/stock/get?secid=%s"
+        "&invt=2&fltt=2&fields=f43,f47,f57,f58,f60,f86,f170"
+        % _secid(plain)) or {}).get("data") or {})
+    ts = d.get("f86")
+    try:
+        ts_s = datetime.fromtimestamp(int(ts)).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        ts_s = ""
+    return {"name": d.get("f58") or plain, "price": d.get("f43"),
+            "change_pct": d.get("f170"), "volume": d.get("f47"), "ts": ts_s}
+
+
+def quote_multisource(plain, enabled=None):
+    """多源快照降级（同 kline_multisource 纪律）。返回 (dict|None, source, note)。
+    备选源只保证 name/price/change_pct/volume/ts 五键，换手/市值等
+    主源专有字段缺失即缺失（调用方按 .get 容错，不造默认值）。"""
+    if enabled is None:
+        enabled = bool(_load_cfg().get("qd_multi_source", True))
+    chain = [("tencent", _quote_tencent)]
+    if enabled:
+        chain += [("sina", _quote_sina), ("east", _quote_east)]
+    notes = []
+    for name, fn in chain:
+        try:
+            q = fn(plain)
+        except Exception as e:
+            notes.append("%s:%s" % (name, type(e).__name__))
+            continue
+        if not q or not q.get("price"):
+            notes.append("%s:empty" % name)
+            continue
+        return q, (name if name == "tencent" else name + "_fallback"), \
+            ";".join(notes)
+    return None, "all_failed", ";".join(notes) or "no_source"
+
+
 def scan_one(fp):
     """单票扫描：返回 (code, dict) 或 None（缺列/数据不足/无信号时摘要返回）"""
     code = os.path.basename(fp).replace(".parquet", "").replace("_", ".")
@@ -210,27 +360,27 @@ def scan_one(fp):
 
 
 def intraday_recheck(candidates):
-    """尾盘两段式复核（K-STOCK-025）：候选票拉腾讯日 K（盘中最后一根=当日
-    实时 bar，qfqday 行为）→ 完整八重重算 → 当日触发即尾盘买信号。
+    """尾盘两段式复核（K-STOCK-025）：候选票拉日 K（盘中最后一根=当日
+    实时 bar）→ 完整八重重算 → 当日触发即尾盘买信号。
     量级：候选=昨日单日十字星票（通常几十~几百只），逐票 1 请求可承受。
+    [20261014_p1_tail] 行情走多源降级链（腾讯→新浪→东财），每源末根
+    时间戳校验，错日=切下家；全源失败显式跳过留 note（不假绿）。
     返回 (tail_signals, tail_checked, tail_note)
     """
     import pandas as pd  # noqa: F401  scan_one 依赖由调用方保证
-    from tools import kline_daily
     today = datetime.now().strftime("%Y%m%d")
+    multi = bool(_load_cfg().get("qd_multi_source", True))
     tail_signals, checked = [], 0
     note = ""
     for code in candidates:
         plain = code.split(".")[0]
-        try:
-            kl = kline_daily(plain, n=150)
-        except Exception:
+        kl, src, src_note = kline_multisource(plain, n=150,
+                                              expect_day=today, enabled=multi)
+        if kl is None:
+            # 全源失败/错日：该候选显式跳过（checked 不计入，note 留痕）
+            note = "全源失败/错日（%s），候选 %s 跳过（不假绿）" % (src_note, code)
             continue
         if len(kl) < 100:
-            continue
-        last_day = str(kl[-1][0]).replace("-", "")
-        if last_day != today:
-            note = "腾讯源末根=%s 非当日（非盘中/接口口径变化），本段结果不可信" % last_day
             continue
         checked += 1
         d = pd.DataFrame(kl).iloc[:, :6]
@@ -242,7 +392,9 @@ def intraday_recheck(candidates):
         # note 标注 amount_approx（不炸、不误报，量纲语义透明）
         lake = lake_amounts(code)
         d["amount"], used_lake = merge_amount(d, lake)
-        note = "盘中实时 bar 复核通过 · 14:55 执行窗口"
+        note = "盘中实时 bar 复核通过 · 14:55 执行窗口 · source=%s" % src
+        if src_note:
+            note += "（降级链：%s）" % src_note
         if not used_lake:
             note += " · amount_approx（湖缺失/末根错日，20日均额为近似口径）"
         try:
@@ -328,16 +480,24 @@ def main():
         cache["breadth_note"] = breadth_note
         cache["market_summary"] = market_summary
     # 信号票补详情（K-STOCK-026 老田反馈：名称/涨跌/市值/换手）
+    # [20261014_p1_tail] 快照同样走多源降级；备选源缺换手/市值字段时
+    # 不写该键（保持缺失语义，下游 .get 容错），不造默认值
+    quote_multi = bool(_load_cfg().get("qd_multi_source", True))
     for info in sig_now + recent:
         try:
             # norm_symbol 不认带点后缀（600887.SZ→sh600887. 坏 URL），先剥
             plain = info["code"].split(".")[0]
-            q = quote_snapshot(plain)
-            info["name"] = q["name"]
-            info["change_pct"] = q["change_pct"]
-            info["turnover_pct"] = q["turnover_pct"]
-            info["mktcap_yi"] = q["mktcap_yi"]
+            q, qsrc, _qn = quote_multisource(plain, enabled=quote_multi)
         except Exception:
+            q, qsrc = None, "tencent"
+        if q:
+            info["name"] = q["name"]
+            for k in ("change_pct", "turnover_pct", "mktcap_yi"):
+                if q.get(k) is not None:
+                    info[k] = q[k]
+            if qsrc != "tencent":
+                info["quote_source"] = qsrc  # 降级留痕（产物可见）
+        else:
             info["name"] = info.get("name", "")
     # 当日信号票加技术状态摘要（近5日票不拉，省请求）
     for info in sig_now:

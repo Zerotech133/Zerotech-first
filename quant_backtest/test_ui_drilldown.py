@@ -978,7 +978,19 @@ class TestStockOverview(unittest.TestCase):
                 json.dump(rps, f, ensure_ascii=False)
         mods = {"stock_analyze": fake_sa, "runner": fake_runner,
                 "data_loader": fake_dl, "strategies": fake_strats,
-                "cross_poll": fake_cp}
+                "cross_poll": fake_cp,
+                # 20261014_g 补漏：_bt_stock_page 的 KG 块会 import
+                # kg_portal/event_graph 直连真实 Neo4j（违反本类「全
+                # mock 零网络」契约；无 neo4j 驱动的解释器里 KgClient
+                # 抛 SystemExit 绕过产线 except Exception 致批量报错）。
+                # stub 成 None/空 → 走产线既有降级分支，零网络确定性。
+                "kg_portal": types.SimpleNamespace(stock=lambda c, days=90: None),
+                "event_graph": types.SimpleNamespace(
+                    events_for_stock=lambda c, days=30:
+                        {"code": c, "n": 0,
+                         "bias_stat": {"bull": 0, "bear": 0, "neutral": 0,
+                                       "unknown": 0, "net": 0.0, "n": 0},
+                         "events": []})}
         with mock.patch.object(self.pa.api_backtest, "_bt_resolve",
                                return_value=entry), \
              mock.patch.object(self.pa.api_backtest, "_bt_jev_news",

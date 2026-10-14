@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """OOS 首评包装器（W5b 任务A）：不改 jev_eval.py，运行时注入三件事：
   1. DPAPI 解密 JEV_API_KEY 注入环境（jev_eval 在 import 时读 env）；
-  2. QUESTIONS_FILE 指向 oos_question_set_v2.json（2026-10-14 起：v1 为开卷题已作废，
-     禁止再指向 v1）；
+  2. QUESTIONS_FILE 指向 oos_question_set_v3.json（2026-10-14 起：v1 为开卷题
+     已作废，v2 score 子卷档位偏置已修——均可经 OOS_QUESTIONS_FILE 覆盖指向
+     其他子集文件）；
   3. call_jev 加"失败重试 1 次 + 连续 5 题失败熔断"。
 评分/汇总逻辑全部沿用 jev_eval.run()（repeats=1）。
 
@@ -52,7 +53,11 @@ import urllib.error  # noqa: E402
 
 import jev_eval  # noqa: E402
 
-jev_eval.QUESTIONS_FILE = HERE / "oos_question_set_v2.json"
+# v3（2026-10-14）：默认题集升级为 oos_question_set_v3.json（score 子卷改
+# FOCUS/PASS 二分类，修 v2 档位偏置缺陷）；OOS_QUESTIONS_FILE 环境变量可指向
+# 子集文件（如 v3_score_only）控制评估预算，仅限本包装器，不动 jev_eval.py。
+jev_eval.QUESTIONS_FILE = Path(os.environ.get(
+    "OOS_QUESTIONS_FILE", str(HERE / "oos_question_set_v3.json")))
 
 _orig_call = jev_eval.call_jev
 _state = {"attempt": 0, "consec_fail": 0}  # attempt: 当前请求已试次数；consec_fail: 连续失败请求数

@@ -49,19 +49,69 @@ def load_trade_config(market=None, cfg=None):
     return out
 
 
+# vol targeting 默认参数（[20261014_voltarget]）：config backtest.vol_target
+# 缺键时逐项回退到这里；enabled 缺省 False（关闭，向后兼容）。
+VOL_TARGET_DEFAULTS = {
+    "enabled": False, "target_vol": 0.15, "lookback": 20,
+    "floor": 0.25, "cap": 1.0,
+}
+
+
+def load_vol_target_config(cfg=None):
+    """读 config backtest.vol_target（[20261014_voltarget]）。
+
+    旧 config 无该键 → enabled=False（关闭，与历史行为等价）；
+    有键但缺子键 → 逐项回退 VOL_TARGET_DEFAULTS。
+    返回 dict（enabled/target_vol/lookback/floor/cap），可直接传入 run()。"""
+    if cfg is None:
+        path = os.path.join(HERE, "config.json")
+        with open(path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    vt = (cfg.get("backtest") or {}).get("vol_target") or {}
+    out = dict(VOL_TARGET_DEFAULTS)
+    out.update(vt)
+    return out
+
+
+def _vol_scale(close, vt):
+    """信号日已实现波动率 → 仓位缩放系数（[20261014_voltarget]）。
+
+    realized_vol = 截至信号日 t 的近 lookback 个交易日收益年化波动
+    （std×sqrt(252)，rolling 窗口只含 t 及之前 → 严禁未来函数）。
+    scale = clip(target_vol / realized_vol, floor, cap)：
+    高波动 → scale<1 降仓；低波动 → scale 触 cap（默认 1.0 只降不杠杆）。
+    窗口不足（rv NaN）或 rv<=0 → scale=min(1.0, cap)（数据不足不加杠杆）。"""
+    lb = int(vt.get("lookback", 20))
+    tv = float(vt.get("target_vol", 0.15))
+    fl = float(vt.get("floor", 0.25))
+    cp = float(vt.get("cap", 1.0))
+    ret = close.pct_change()
+    rv = ret.rolling(lb).std() * np.sqrt(252)
+    scale = (tv / rv).clip(fl, cp)
+    return scale.fillna(min(1.0, cp))
+
+
 def run(df, signal, init_cash=1_000_000, cost_bps=3, slippage_bps=1,
-        t_plus_one=True):
+        t_plus_one=True, vol_target=None):
     """
     df: DataFrame with 'close' column (index=trade_date)
     signal: Series of 0/1 aligned to df.index (1=持有多头, 0=空仓)
     t_plus_one: True=信号次日生效（A股/港美股，shift(1) 防未来）；
                 False=当日生效（CRYPTO T+0，不 shift）
+    vol_target: None/{"enabled": False}=关闭（与历史行为字节级等价）；
+                {"enabled": True, ...}=波动率目标仓位缩放（见 _vol_scale）
     返回 dict: metrics + equity Series
     """
     close = df["close"]
     ret = close.pct_change().fillna(0)
+    # vol targeting：信号域先乘 scale，再走同一 T+1 shift 路径——
+    # scale 只用截至信号日数据，shift 后无未来函数（[20261014_voltarget]）
+    if vol_target and vol_target.get("enabled"):
+        sig_eff = signal.astype(float) * _vol_scale(close, vol_target)
+    else:
+        sig_eff = signal
     # 信号次日生效，避免未来函数；T+0 市场（CRYPTO）当日生效
-    pos = (signal.shift(1) if t_plus_one else signal)
+    pos = (sig_eff.shift(1) if t_plus_one else sig_eff)
     pos = pos.fillna(0).astype(float)
 
     # 策略收益率 = 持仓 × 当日收益
@@ -85,23 +135,29 @@ def run(df, signal, init_cash=1_000_000, cost_bps=3, slippage_bps=1,
 
 
 def _trade_list(pos, close):
-    """逐笔交易：开仓 = pos 0→1 当日收盘价，平仓 = 1→0 当日收盘价；
-    收尾仍持仓则按末日收盘标记未平仓。pnl 不含交易成本。"""
+    """逐笔交易：开仓 = pos 0→>0 当日收盘价，平仓 = >0→0 当日收盘价；
+    收尾仍持仓则按末日收盘标记未平仓。pnl 不含交易成本。
+    vol targeting 下 pos 为缩放仓位：单笔 pnl × 持仓期平均仓位折算
+    （[20261014_voltarget]）；未开启时 pos∈{0,1}，均值恒为 1.0，
+    pnl 与原实现精确相等。"""
     out = []
     entry = None
     for dt, p in pos.items():
         if p > 0 and entry is None:
             entry = (dt, float(close.loc[dt]))
         elif p == 0 and entry is not None:
+            # 持仓日均值（切片去平仓日——exit 日 pos=0 不计入分母）
+            avg_pos = float(pos.loc[entry[0]:dt].iloc[:-1].mean())
             out.append({"in": entry[0].strftime("%m-%d"), "in_px": entry[1],
                         "out": dt.strftime("%m-%d"), "out_px": float(close.loc[dt]),
-                        "pnl": float(close.loc[dt]) / entry[1] - 1.0})
+                        "pnl": float(close.loc[dt]) / entry[1] * avg_pos - avg_pos})
             entry = None
     if entry is not None:
+        avg_pos = float(pos.loc[entry[0]:].mean())
         out.append({"in": entry[0].strftime("%m-%d"), "in_px": entry[1],
                     "out": close.index[-1].strftime("%m-%d"),
                     "out_px": float(close.iloc[-1]),
-                    "pnl": float(close.iloc[-1]) / entry[1] - 1.0,
+                    "pnl": float(close.iloc[-1]) / entry[1] * avg_pos - avg_pos,
                     "open": True})
     return out
 
@@ -128,8 +184,10 @@ def _metrics(net_ret, equity, pos, close):
     held_ret = net_ret[pos > 0]
     win_rate = float((held_ret > 0).mean()) if len(held_ret) > 0 else 0
 
-    # 交易次数（仓位从 0→1 计一次开仓）
-    trades = int(((pos.diff() > 0).sum()))
+    # 交易次数（仓位从 0→非0 计一次开仓；vol targeting 下持仓期内
+    # scale 波动引起的 pos 增减不算新开仓——0/1 域下与旧口径计数等价）
+    trades = int(((pos.diff() > 0)
+                  & (pos.shift(1).fillna(0) == 0)).sum())
 
     # 最大连续亏损
     losses = (net_ret < 0).astype(int)

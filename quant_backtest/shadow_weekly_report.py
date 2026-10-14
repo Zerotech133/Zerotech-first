@@ -65,6 +65,8 @@ P_JEV_STATUS_PY = os.path.join(JEV, "jev_graduation_status.py")
 P_ND_HIST = os.path.join(QT, "data", "nine_dim_history.jsonl")   # k33 警报池影子库
 P_STRONG = os.path.join(QT, "reports", "strong_latest.json")     # strong 快照
 P_ASHARE = os.path.join(QT, "data", "ashare")                    # 湖个股日线
+P_BC_STATE = os.path.join(QT, "data", "breadth_cross_state.json")  # 穿越监测状态
+P_BC_EVENTS = os.path.join(QT, "data", "breadth_cross_events.jsonl")
 K33_N_TH = 30               # k33 对账样本门槛（checklist B2 同口径）
 NINEDIM_ZERO_MISS_DAYS = 20  # ninedim 零漏报观察窗（交易日）
 G3_TIMER_DAYS = 60          # G3 统一计时窗（交易日）
@@ -880,6 +882,82 @@ def render_criteria_md(crit):
     return "\n".join(L)
 
 
+# ---------- 市况·正确路径（复盘落地 20261014 breadth-mon 联动） ----------
+CROSS_TH = 0.45
+FAKE_TH = 0.40
+# 复盘静态参照（出处：历史数据全景复盘与当前正确路径_2026-10-14，156 周
+# regime_timeline 实测，非本周动态计算，仅供决策参照）
+_REGIME_REF = ("<50% 区间的历史参照（复盘 2026-10-14）：同款宽度状态后 20 日"
+               "均值 +3.9%、胜率 67.4%；<35%→45% 穿越确认后 20 日均值 "
+               "+6.4%（23 次）；口径=不抄底、等穿越确认。")
+
+
+def market_path_status():
+    """市况与正确路径状态（只读）。宽度序列 + 穿越监测状态合成一个 dict。
+
+    days_below_45：序列末尾连续 <45% 的锚数（=穿越等待已持续交易日数）；
+    monitor：breadth_cross_state.json 原样（armed/pending/last_date）；
+    指引文本按复盘口径生成（不构成任何策略行为变更）。
+    """
+    with open(P_QD_BREADTH, encoding="utf-8") as f:
+        d = json.load(f)
+    pairs = [(str(a), float(b)) for a, b in zip(d.get("dates") or [],
+                                                d.get("breadth") or [])
+             if b is not None]
+    if not pairs:
+        raise ValueError("宽度序列为空")
+    date, br = pairs[-1]
+    streak = 0
+    for _, b in reversed(pairs):
+        if b < CROSS_TH:
+            streak += 1
+        else:
+            break
+    lo20 = min(b for _, b in pairs[-20:])
+    mon = {}
+    try:
+        with open(P_BC_STATE, encoding="utf-8") as f:
+            mon = json.load(f)
+    except Exception:
+        mon = {"note": "穿越监测状态文件缺失（breadth-mon 未播种或被清理）"}
+    pending = mon.get("pending")
+    if pending:
+        guide = ("穿越观察窗第 %s 日（%s 穿越）：窗内跌破 40%% 将告警撤回，"
+                 "满 5 日告警确认保持" % (pending.get("days_since", 0) + 1,
+                                          pending.get("cross_date", "?")))
+    elif br >= CROSS_TH:
+        guide = "宽度 ≥45%：穿越态，按信号驱动入场、宽度仅作环境背景"
+    elif br < FAKE_TH:
+        guide = ("深度弱势（<40%）：总闸纪律优先，不抄底；等上穿 45% 穿越确认"
+                 "（届时飞书告警）")
+    else:
+        guide = ("40~45% 观察带：不抄底；关注能否站上 45%（穿越确认线），"
+                 "站稳 5 日才算确认")
+    return {
+        "breadth": round(br, 4), "breadth_pct": "%.2f%%" % (br * 100),
+        "as_of": date, "dist_to_cross_pp": round((CROSS_TH - br) * 100, 2),
+        "days_below_45_streak": streak, "low20": round(lo20, 4),
+        "monitor": mon, "guide": guide, "regime_ref": _REGIME_REF,
+    }
+
+
+def render_market_path_md(st):
+    """市况·正确路径 → MD 小节（第六节）。"""
+    L = []
+    L.append("## 六、市况·正确路径（复盘 2026-10-14）")
+    L.append("")
+    L.append("- 最新宽度：**%s**（锚 %s；距穿越线 45%% 还差 %.2fpp）"
+             % (st["breadth_pct"], st["as_of"], st["dist_to_cross_pp"]))
+    L.append("- 已连续 %d 个交易日 <45%%；近 20 日最低宽度 %s"
+             % (st["days_below_45_streak"],
+                "%.2f%%" % (st["low20"] * 100)))
+    L.append("- 穿越监测器：%s" % json.dumps(st["monitor"], ensure_ascii=False))
+    L.append("- 指引：%s" % st["guide"])
+    L.append("- %s" % st["regime_ref"])
+    L.append("")
+    return "\n".join(L)
+
+
 # ---------- 渲染 ----------
 def status_mark(s):
     return {"green": "🟢 绿灯", "yellow": "🟡 黄灯", "red": "🔴 红灯",
@@ -1018,19 +1096,32 @@ def main():
         criteria = {"error": {"state": "error",
                               "note": "%s: %s" % (type(e).__name__, e)}}
 
+    # [20261014_bm] 市况·正确路径（复盘落地联动 breadth-mon，只读）
+    try:
+        market_path = market_path_status()
+    except Exception as e:
+        market_path = {"state": "error",
+                       "note": "%s: %s" % (type(e).__name__, e)}
+
     payload = {"week_label": week_label, "monday": monday.isoformat(),
                "generated_at": datetime.now().isoformat(timespec="seconds"),
                "lines": lines, "issues": issues, "risks": risks,
-               "criteria": criteria}
+               "criteria": criteria, "market_path": market_path}
     os.makedirs(os.path.dirname(OUT_JSON), exist_ok=True)
     with open(OUT_JSON, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=1)
     md = render_md(week_label, monday, today, lines, issues, risks)
-    # [20261014_m] 判据度量小节插为第五节，原"触发评审"顺延为第六节
+    # [20261014_m] 判据度量小节插为第五节；[20261014_bm] 市况节第六，
+    # 原"触发评审"顺延为第七节
     marker = "## 五、触发评审的条件提醒"
     crit_md = render_criteria_md(criteria)
+    try:
+        path_md = render_market_path_md(market_path)
+    except Exception:
+        path_md = "## 六、市况·正确路径（复盘 2026-10-14）\n\n- 本节生成失败（见 JSON market_path.error）\n"
     if marker in md:
-        md = md.replace(marker, crit_md + "\n## 六、触发评审的条件提醒")
+        md = md.replace(marker, crit_md + "\n" + path_md
+                        + "## 七、触发评审的条件提醒")
     else:
         md += "\n" + crit_md
     with open(OUT_MD, "w", encoding="utf-8") as f:

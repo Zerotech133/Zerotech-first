@@ -37,6 +37,37 @@ TPL = os.path.join(HERE, "weak_track_weekly_tpl.txt")
 STATE = os.path.join(HERE, "weak_weekly_state.json")
 REP = os.path.abspath(os.path.join(HERE, "..", "reports"))
 NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
+SHADOW_SCRIPT = os.path.join(HERE, "shadow_weekly_report.py")
+
+
+def shadow_weekly_tail():
+    """[20261014_p1_tail] 任务尾部注记式追加影子对账周报（P1 尾巴小件3）。
+
+    背景：影子周报（W5 shadow-report-dev）原靠手动 CLI / WorkBuddy 周五
+    自动化，计划建议同时在产线 WeakWeeklyReport（周一 15:50）任务尾部
+    顺带刷新产物——只改代码入口，不注册/不修改计划任务。
+    注记式：subprocess 调 shadow_weekly_report.py --json-only（该脚本
+    只读外部数据、只写自己名下 reports/shadow_weekly_report_data.json
+    与 .md 两个产物，幂等零副作用、不推飞书）；超时 300s；任何失败
+    只落日志，绝不影响 §15 周报主流程。
+    回退：删除本函数与 main() 内两处调用即可（零其他耦合）。
+    """
+    if not os.path.isfile(SHADOW_SCRIPT):
+        print("SHADOW_TAIL skip：脚本不存在 %s" % SHADOW_SCRIPT)
+        return
+    try:
+        r = subprocess.run(
+            [sys.executable, SHADOW_SCRIPT, "--json-only"],
+            cwd=HERE, capture_output=True, text=True, encoding="utf-8",
+            timeout=300)
+        tail = (r.stdout or "").strip().splitlines()
+        print("SHADOW_TAIL rc=%s %s" % (
+            r.returncode, tail[-1] if tail else "(无输出)"))
+        if r.returncode != 0 and (r.stderr or "").strip():
+            print("SHADOW_TAIL stderr: %s" % r.stderr.strip()[:200])
+    except Exception as e:
+        print("SHADOW_TAIL FAIL（只落日志，不影响周报主流程）: %s: %s" % (
+            type(e).__name__, e))
 
 
 def weekly_activity(cases, rep=None, week_start=None):
@@ -169,6 +200,7 @@ def main():
     f = dict(f, recent=wcard.recent_lines(cases))
     if not f["n_open"] and not f["n_closed"]:
         print("产线空转（无在案、无已结案）——周报跳过本期（state 不更新）")
+        shadow_weekly_tail()  # 空转也顺带刷影子周报（独立于产线管道）
         return 0
     msg = build_weekly(f)
     print(msg)
@@ -185,6 +217,7 @@ def main():
             print("\n（卡片版预览，--text 可回退文本）")
             print(json.dumps(wcard.weekly_card(f),
                              ensure_ascii=False, indent=1))
+        shadow_weekly_tail()  # 预览路径同样顺带刷影子周报（注记式）
         return 0
     if not a.text:
         import weak_track_card as wcard
@@ -199,6 +232,7 @@ def main():
             [sys.executable, os.path.join(NEWS_DIR, "send_feishu.py"), tmp],
             capture_output=True, text=True, encoding="utf-8", timeout=60)
         print("\n推送：" + ((r.stdout or "").strip()[:60] or "sent"))
+    shadow_weekly_tail()  # [20261014_p1_tail] 任务尾部追加影子周报（注记式）
     return 0
 
 

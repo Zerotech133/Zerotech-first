@@ -1,4 +1,6 @@
 {
   "qd_breadth_note": true,
+  "qd_multi_source": true,
+  "_说明_qd_multi_source": "[20261014_p1_tail] 双刀实时行情多源降级：true=腾讯失败/末根错日自动切新浪→东财（note 落 source=xx_fallback）；false=回退仅腾讯旧行为。缺省 true。",
   "_说明": "W3-5b 任务B：true=扫描产出附市况宽度影子注记（只标注不拦截）；false 或删除本文件=零改动回退"
 }

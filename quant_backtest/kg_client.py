@@ -27,10 +27,13 @@ class KgClient:
                  retry=6, retry_wait=15):
         try:
             from neo4j import GraphDatabase
-        except ImportError:
-            raise SystemExit(
+        except ImportError as _ie:
+            # [20261014_fix] SystemExit→ImportError：SystemExit 不被
+            # except Exception 捕获，会绕过调用方兜底炸掉批量流程
+            # （判例 test_ui_drilldown 41 failed 根因链）。
+            raise ImportError(
                 "neo4j python driver 未装。请执行：\n"
-                "  pip install neo4j")
+                "  pip install neo4j") from _ie
         self._drv = GraphDatabase.driver(
             uri or S.NEO4J_URI,
             auth=(user or S.NEO4J_USER, password or S.NEO4J_PASSWORD))

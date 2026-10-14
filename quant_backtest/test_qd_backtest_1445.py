@@ -20,6 +20,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, "agent_platform", "engine"))
 sys.path.insert(0, HERE)
+# [20261014_fix] 卫生归档把 qd_backtest_1445.py 移入 tools/research/，
+# 动态 import 路径同步补上（测试本体逻辑不变）
+sys.path.insert(0, os.path.join(HERE, "tools", "research"))
 
 from quant_double_knife import _compute_regime, _cross_star, quant_double_knife  # noqa: E402
 

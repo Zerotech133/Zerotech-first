@@ -365,9 +365,9 @@ def write_signals_page():
 LEDGER_JSON = os.path.join(HERE, "positions.json")
 
 
-def _load_ledger():
+def _load_ledger(path=None):
     try:
-        with open(LEDGER_JSON, encoding="utf-8") as f:
+        with open(path or LEDGER_JSON, encoding="utf-8") as f:
             led = json.load(f)
     except Exception:
         led = {}
@@ -380,16 +380,41 @@ def _d8(s):
     return datetime.strptime(s, "%Y-%m-%d")
 
 
-def update_ledger(refresh_signals=True):
+def max_holding_days(cfg=None):
+    """最长持有期（交易日，[20261014_p1_tail]）：config backtest 节
+    max_holding_days，缺省 60。open 持有超过 N 个交易日强制平仓入 closed
+    并标注 forced_close（区别于信号翻空的正常平仓）。"""
+    return int((cfg or CFG).get("backtest", {}).get("max_holding_days", 60))
+
+
+def _sig_key(e):
+    """入账幂等键（[20261014_p1_tail]）：code+signal_date+strategy。
+    判例：审计发现同信号重复入账风险——同键已入账（含历史已平仓）即跳过。"""
+    return (e.get("market"), e.get("symbol"), e.get("sig_date"),
+            e.get("strategy"))
+
+
+def update_ledger(refresh_signals=True, ledger_path=None):
     """盘后账本更新（16:00 顺带）：pending 待买 → 按当日开盘建仓；
     持仓信号翻空 → 收盘平仓；当日新翻多 → 进 pending（明晨盘前卡）。
-    refresh_signals=True 时顺带刷新 /bt-signals 页（共用本次数据）。"""
+    refresh_signals=True 时顺带刷新 /bt-signals 页（共用本次数据）。
+    [20261014_p1_tail] 新增：
+      a) 入账幂等：键=code+signal_date+strategy 全节（pending/open/closed）
+         查重，重复跳过并计数落日志（dedup_skip）；
+      b) max_holding_days：open 超过 N 个交易日强制平仓入 closed 并标注
+         forced_close（持有交易日数用 bars_held 增量计数，每日新 bar +1，
+         与 marks 打点同语义；旧档无 bars_held 用 marks 长度回填，再无按
+         自然日回填——保守偏高，宁可早平不强拿）；
+      c) ledger_path 参数化：默认 positions.json，单测传 tmp 不碰生产数据。
+    """
+    led_path = ledger_path or LEDGER_JSON
+    max_hold = max_holding_days()
     rows = _collect_signals()
     if refresh_signals:
         report_page.write_signals_html(
             sorted(rows, key=lambda r: (-r["res"], r["name"])), _now())
     info = {(r["market"], r["symbol"]): r for r in rows}
-    led = _load_ledger()
+    led = _load_ledger(led_path)
 
     # 1) pending → open（出现新 bar 才按开盘价成交，否则继续等）
     still, opened = [], []
@@ -398,40 +423,75 @@ def update_ledger(refresh_signals=True):
         if r and r["date"] > e["sig_date"]:
             e.update({"entry_date": r["date"],
                       "entry_px": r["open"] or r["px"],
-                      "last_px": r["px"], "last_date": r["date"]})
+                      "last_px": r["px"], "last_date": r["date"],
+                      "bars_held": 1})  # 建仓日即第 1 个持有交易日
             opened.append(e)
         else:
             e["last_px"] = r["px"] if r else e.get("last_px")
             still.append(e)
 
-    # 2) open：翻空平仓（收盘价），否则刷新最新价
-    keep, closed = [], []
+    # 2) open：翻空平仓（收盘价）；超 max_holding_days 强平（标注
+    #    forced_close）；否则刷新最新价
+    keep, closed, forced = [], [], []
     for e in led["open"]:
         r = info.get((e["market"], e["symbol"]))
         if not r:                 # 已移出自选：保留不动
             keep.append(e)
             continue
+        # 持有交易日计数：每日新 bar 才 +1（ffill 打点同语义，重复跑同日不胀）
+        if "bars_held" not in e:
+            seed = len(e.get("marks") or [])
+            if not seed and e.get("entry_date"):
+                seed = max((_d8(e.get("last_date") or r["date"])
+                            - _d8(e["entry_date"])).days, 1)
+            e["bars_held"] = max(seed, 1)
+        elif e.get("last_date") != r["date"]:
+            e["bars_held"] += 1
         e["last_px"], e["last_date"] = r["px"], r["date"]
         if r["sigs"].get(e["strategy"]) == 0:
             e["exit_date"], e["exit_px"] = r["date"], r["px"]
             e["days"] = max((_d8(r["date"]) - _d8(e["entry_date"])).days, 0)
             e["pnl"] = (r["px"] - e["entry_px"]) / e["entry_px"]
+            e.pop("forced_close", None)  # 正常平仓不留强平标注
+            closed.append(e)
+        elif int(e["bars_held"]) >= max_hold:
+            e["exit_date"], e["exit_px"] = r["date"], r["px"]
+            e["days"] = max((_d8(r["date"]) - _d8(e["entry_date"])).days, 0)
+            e["pnl"] = (r["px"] - e["entry_px"]) / e["entry_px"]
+            e["forced_close"] = True  # 超期强平标注（审计可见）
+            forced.append(e)
             closed.append(e)
         else:
             keep.append(e)
 
     # 3) 当日新翻多 → pending（次日开盘应买入）
-    have = {(e["market"], e["symbol"], e["strategy"])
-            for e in still + opened + keep + closed}
+    # 既有持仓语义：同 code+strategy 在册（pending/open/closed 本轮）不加；
+    # 幂等键语义：同 code+signal_date+strategy 已入过账（含历史已平仓）
+    # 不重复入账，跳过计数（判例：同信号重复入账风险）
+    have_pos = {(e["market"], e["symbol"], e["strategy"])
+                for e in still + opened + keep + closed}
+    have_sig, dup_skip = set(), 0
+    for sec in ("pending", "open", "closed"):
+        for e in led[sec]:
+            k = _sig_key(e)
+            if k in have_sig:
+                dup_skip += 1  # 账内既有重复：只计数不再入账
+            else:
+                have_sig.add(k)
     for r in rows:
         for sn in report_page.SIG_STRATS:
             if (r["sigs"].get(sn) == 1
                     and r["since_full"].get(sn) == r["date"]
-                    and (r["market"], r["symbol"], sn) not in have):
+                    and (r["market"], r["symbol"], sn) not in have_pos):
+                k = (r["market"], r["symbol"], r["date"], sn)
+                if k in have_sig:
+                    dup_skip += 1
+                    continue
                 still.append({"market": r["market"], "symbol": r["symbol"],
                               "name": r["name"], "strategy": sn,
                               "sig_date": r["date"], "last_px": r["px"]})
-                have.add((r["market"], r["symbol"], sn))
+                have_pos.add((r["market"], r["symbol"], sn))
+                have_sig.add(k)
 
     led["pending"] = still
     led["open"] = keep + opened
@@ -446,13 +506,18 @@ def update_ledger(refresh_signals=True):
                           "pnl": round(e["pnl"], 5)})
             e["marks"] = marks[-60:]
     led["ts"] = _now()
-    _atomic(LEDGER_JSON, led)
+    _atomic(led_path, led)
     report_page.write_positions_html(led, _now())
     try:  # 详情看板镜像（失败不影响主流程）
         import doc_board
         doc_board.refresh()
     except Exception:
         pass
+    if dup_skip:
+        print("LEDGER dedup_skip=%d（同信号重复入账已跳过）" % dup_skip)
+    if forced:
+        print("LEDGER forced_close=%d（超 max_holding_days=%d 强平）" % (
+            len(forced), max_hold))
     print("LEDGER pending=%d open=%d closed_today=%d total_closed=%d" % (
         len(still), len(led["open"]), len(closed), len(led["closed"])))
     return led

@@ -41,6 +41,16 @@
   "use_hfq": true
  },
  "nine_dim_alert_card": true,
+ "backtest": {
+  "max_holding_days": 60,
+  "vol_target": {
+   "enabled": false,
+   "target_vol": 0.15,
+   "lookback": 20,
+   "floor": 0.25,
+   "cap": 1.0
+  }
+ },
  "qpzm": {
   "score_percentile": true
  },

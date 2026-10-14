@@ -1,0 +1,88 @@
+{
+ "strat": "trend_follow",
+ "cost": {
+  "init_cash": 1000000,
+  "cost_bps": 12,
+  "slippage_bps": 3,
+  "t_plus_one": true
+ },
+ "vt": {
+  "enabled": false,
+  "target_vol": 0.15,
+  "lookback": 20,
+  "floor": 0.25,
+  "cap": 1.0
+ },
+ "rows": [
+  {
+   "symbol": "600519.SH",
+   "bars": 854,
+   "off_ret": -0.309,
+   "on_ret": -0.2282,
+   "off_pf": 0.277,
+   "on_pf": 0.271,
+   "off_dd": -0.3555,
+   "on_dd": -0.2781,
+   "off_trades": 35,
+   "on_trades": 35,
+   "off_sharpe": -0.718,
+   "on_sharpe": -0.822
+  },
+  {
+   "symbol": "000001.SH",
+   "bars": 300,
+   "off_ret": 0.0027,
+   "on_ret": 0.0027,
+   "off_pf": Infinity,
+   "on_pf": Infinity,
+   "off_dd": -0.0124,
+   "on_dd": -0.0124,
+   "off_trades": 1,
+   "on_trades": 1,
+   "off_sharpe": 0.124,
+   "on_sharpe": 0.124
+  },
+  {
+   "symbol": "600036.SH",
+   "bars": 854,
+   "off_ret": -0.0362,
+   "on_ret": 0.0108,
+   "off_pf": 1.795,
+   "on_pf": 1.69,
+   "off_dd": -0.1874,
+   "on_dd": -0.181,
+   "off_trades": 42,
+   "on_trades": 42,
+   "off_sharpe": 0.004,
+   "on_sharpe": 0.084
+  },
+  {
+   "symbol": "000858.SZ",
+   "bars": 854,
+   "off_ret": -0.2518,
+   "on_ret": -0.1515,
+   "off_pf": 0.265,
+   "on_pf": 0.235,
+   "off_dd": -0.3051,
+   "on_dd": -0.1742,
+   "off_trades": 27,
+   "on_trades": 27,
+   "off_sharpe": -0.463,
+   "on_sharpe": -0.581
+  },
+  {
+   "symbol": "601318.SH",
+   "bars": 854,
+   "off_ret": 0.1868,
+   "on_ret": 0.1613,
+   "off_pf": 1.454,
+   "on_pf": 1.167,
+   "off_dd": -0.206,
+   "on_dd": -0.1184,
+   "off_trades": 34,
+   "on_trades": 34,
+   "off_sharpe": 0.359,
+   "on_sharpe": 0.438
+  }
+ ]
+}
