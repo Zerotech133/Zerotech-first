@@ -152,6 +152,36 @@ def _ev_precheck(desc, tasks):
     return warns
 
 
+_VAGUE_RE = re.compile(r"正确处理|合理|酌情")
+
+
+def _ears_lint(desc):
+    """K-ORG-080/N5：spec 验收判据 EARS 化 lint（模板见 knowledge_docs/spec_ears_template.md）。
+    仅当 desc 含「## 验收判据」段时检查（无段=旧式单，直接跳过返回 []）：
+      ① 判据行（"- WHEN" 开头）不足 3 条；
+      ② 判据行含模糊词（正确处理/合理/酌情/句尾「等」）→ 逐行 WARN 不可断言；
+      ③ 有验收判据段但缺「## 非目标」段（防 scope 蔓延）；
+      ④ 缺「## QA1 判读指令」段（QA1 逐条判定依赖，K-ORG-071/072）。
+    只 WARN 不拦单（fail-open，与 _ev_precheck 同款）。"""
+    if "## 验收判据" not in desc:
+        return []
+    warns = []
+    m = re.search(r"## 验收判据[^\n]*\n(.*?)(?=\n## |\Z)", desc, re.S)
+    body = m.group(1) if m else ""
+    crit = [ln for ln in body.splitlines()
+            if ln.lstrip().startswith("- WHEN")]
+    if len(crit) < 3:
+        warns.append("判据不足 3 条（N5 模板建议）")
+    for ln in crit:
+        if _VAGUE_RE.search(ln) or ln.rstrip().endswith("等"):
+            warns.append("判据不可断言（模糊词）：%s" % ln.strip()[:60])
+    if "## 非目标" not in desc:
+        warns.append("有「## 验收判据」段但缺「## 非目标」段（防 scope 蔓延）")
+    if "## QA1 判读指令" not in desc:
+        warns.append("缺「## QA1 判读指令」段（QA1 逐条判定依赖，K-ORG-071/072）")
+    return warns
+
+
 def cmd_new(tid, *desc):
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
     # 保兼容；判据3的「拒收」落在「声明了但不存在的线」上）
@@ -174,6 +204,9 @@ def cmd_new(tid, *desc):
     # K-ORG-090/T2：#ev 引用预检（只 WARN 不拦单，fail-open）
     for w in _ev_precheck(desc, tasks):
         print("[warn] 证据引用预检: %s（不拦单；产码侧 resolve_evidence 会 fail-visible 标注）" % w)
+    # K-ORG-080/N5：EARS 判据 lint（只 WARN 不拦单，fail-open）
+    for w in _ears_lint(desc):
+        print("[warn] EARS lint: %s" % w)
     branch = "task/" + tid
     wt = os.path.join(WT_DIR, tid)
     _git("worktree", "add", wt, "-b", branch)
