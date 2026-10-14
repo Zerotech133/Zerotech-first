@@ -132,16 +132,85 @@ def env_gate(above, ret20):
 
     above/ret20: DataFrame(dates × stocks)，bar 数不足 MIN_BARS_ENV 处为 NaN。
     返回 DataFrame: breadth, med20, upfrac, score(float), safe(bool)。
+
+    【2026-10-15 产线切换 K-STOCK-401】safe 判定委托 gatekeeper v3 policy
+    （policies/v3_breadth40_med20.py，sha 冻结 c42cd48fab11ab57），逐日
+    GateDecision 落 data/gate_decisions.jsonl（feeder=qpzm_wide_embedded，
+    按 market+date 去重——回测重跑不产生重复行）。等价锁：黄金基线
+    reports/_gatekeeper_golden_baseline.json 242 日逐值对照 + 等价性测试
+    tools/gatekeeper/tests/test_equivalence_golden.py 全绿。
+    口径保持：①safe 用 round 前的 raw breadth/med（与旧实现一致）；
+    ②breadth 全 NaN 日（无票可评）不调 policy、不落账，safe=True 旧语义。
+    QPZM_GATEKEEPER=0 回退旧内联判定（零账本写入）。policy sha 校验失败
+    fail-closed：raise（判据被改必须人工介入，宁炸勿静默漂移）。
     """
     a = above.notna()
     breadth = above.where(a).mean(axis=1)
     upfrac = (ret20 > 0).where(a).mean(axis=1)
     med = ret20.where(a).median(axis=1)
     score = (60 * breadth + 40 * upfrac).clip(0, 100)
-    safe = ~((breadth < 0.40) | (med < -0.03))
+    if os.environ.get("QPZM_GATEKEEPER", "1") != "0":
+        safe = _env_gate_via_gatekeeper(breadth, med, upfrac)
+    else:
+        safe = ~((breadth < 0.40) | (med < -0.03))
     return pd.DataFrame({"breadth": breadth.round(3), "med20": med.round(4),
                          "upfrac": upfrac.round(3), "score": score,
                          "safe": safe})
+
+
+def _env_gate_via_gatekeeper(breadth, med, upfrac, ledger_fp=None):
+    """逐日经 gatekeeper v3 policy 判定并落判定账本（K-STOCK-401）。
+
+    返回 safe Series（bool，索引同输入）；policy 判定与旧内联式
+    not(breadth<0.40 or med<-0.03) 逐值等价（黄金基线锁定）。
+    账本语义＝运行时**最新锚日**判定留痕（历史日判定随 env_df 进报告，
+    不入账本——回测 wide 全历史 8132 日，全量落账会刷 8100+ 行历史噪声，
+    2026-10-15 首跑实证后改为只落最后有效日；跨运行按 (market,date) 去重）。
+    ledger_fp：账本路径注入（仅测试用，None=默认 data/gate_decisions.jsonl）。
+    """
+    import sys as _sys
+    _gk = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "tools", "gatekeeper")
+    if _gk not in _sys.path:
+        _sys.path.insert(0, _gk)
+    from policies.v3_breadth40_med20 import V3Policy  # noqa: PLC0415
+    from ledger import Ledger                         # noqa: PLC0415
+
+    policy = V3Policy()
+    if not policy.intact:
+        raise RuntimeError(
+            "gatekeeper v3 policy sha 校验失败(%s)：判据疑似被改，"
+            "env_gate fail-closed 拒绝判定" % policy.sha)
+    ledger = Ledger(fp=ledger_fp)
+    seen = {str(r.get("date")) for r in ledger.query("CN")}
+    # 最新有效锚日（唯一落账日）
+    valid = [d for d in breadth.index
+             if not (pd.isna(breadth.get(d)) or pd.isna(med.get(d)))]
+    anchor = str(valid[-1]) if valid else None
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    out = {}
+    for d in breadth.index:
+        b, m = breadth.get(d), med.get(d)
+        if pd.isna(b) or pd.isna(m):
+            out[d] = True              # 无票可评：旧语义放行，不落账
+            continue
+        s, cond = policy.evaluate({"breadth": float(b), "med20": float(m)})
+        out[d] = bool(s)
+        if anchor is None or str(d) != anchor or str(d) in seen:
+            continue                   # 非锚日或已落账：只判定不追加
+        try:
+            ledger.append({
+                "market": "CN", "date": str(d), "safe": bool(s),
+                "conditions": cond,
+                "features": {"breadth": float(b), "med20": float(m),
+                             "upfrac": (None if pd.isna(upfrac.get(d))
+                                        else float(upfrac.get(d)))},
+                "policy_ver": policy.ver, "policy_sha": policy.sha,
+                "feeder": "qpzm_wide_embedded", "ts": ts})
+            seen.add(str(d))
+        except Exception as e:         # noqa: BLE001 账本失败不炸判定
+            print("[env_gate] 判定账本写入失败 %s: %s" % (d, e), flush=True)
+    return pd.Series(out, index=breadth.index, dtype=bool)
 
 
 def tech_score(longs, above20):
