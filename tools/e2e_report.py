@@ -1,82 +1,105 @@
-# K-ORG-066: e2e 彩排轨迹汇总工具（只读，--json 输出轮次/关卡/结果一览）
-# 边界: 不写文件、无网络; stdout 只输出一个 JSON 对象, 退出码 0
-# SEC2 返工对照: P-1 主仓根 git common dir 锚定+TID 连字符正则 / P-2 last_step
-# 取最后一步+终态判空缺省 / P-3 time 转字符串防 dumps TypeError / P-4 头注释
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# tools/e2e_report.py -- E2E 轨迹只读巡检报告
+# 定位：只读工具，零网络，不写任何文件；stdout 仅输出一个合法 JSON 对象；退出码恒为 0。
+# 契约：{"runs": <int>, "items": [<item>, ...]}
+#       item 字段：file / date / time / ok / fail / mtime（mtime 为 K-ORG-068 新增）。
+# K-ORG-066 首版交付：扫描 data/e2e 轨迹文件，输出 runs/items 概览。
+# K-ORG-068 迭代增量（QA1 observation 两项转工单）：
+#   P-1 items 每条新增 "mtime" 字段：取轨迹文件 os.path.getmtime，
+#       格式化为 "%Y-%m-%d %H:%M:%S" 跨日可读时间戳字符串。
+#   P-2 修复排序缺陷：原按文件名 time（仅 HHMMSS）排序，跨日时顺序错误；
+#       改为按 mtime 实际时间值倒序。datetime 对象仅在排序键中构造，
+#       不保留进 JSON 结构，防非可序列化对象破坏 stdout 契约。
+#   P-3 runs=0 守卫固化：data/e2e 目录不存在或无匹配文件时，
+#       输出 {"runs": 0, "items": []} 且退出码 0，不抛异常。
+#   P-4 既有函数结构与 --json 契约保持不变。
+# 用法：python tools/e2e_report.py [--json]
+
+import argparse
+import datetime
 import glob
 import json
 import os
 import re
-import subprocess
 import sys
-from pathlib import Path
+
+DATA_DIR = os.path.join("data", "e2e")
+TRACE_GLOB = os.path.join(DATA_DIR, "e2e_*_*.json")
+NAME_RE = re.compile(r"^e2e_(\d{8})_(\d{6})\.json$")
+FMT_FULL = "%Y-%m-%d %H:%M:%S"
 
 
-def _main_root():
-    # 主仓根定位: worktree 内 __file__ 上溯不够(064 判例), 用 git common dir 锚定;
-    # 非 git 环境降级 __file__ 上溯并以 data/e2e 目录存在性校验。
-    here = Path(__file__).resolve().parent
+def parse_name(path):
+    """从轨迹文件名解析 (date_part, time_part)，命名不匹配时返回 (None, None)。"""
+    m = NAME_RE.match(os.path.basename(path))
+    if not m:
+        return None, None
+    return m.group(1), m.group(2)
+
+
+def collect_traces():
+    """扫描轨迹文件列表；P-3 守卫：目录不存在或无匹配文件一律返回空列表，不上抛。"""
+    if not os.path.isdir(DATA_DIR):
+        return []
+    return sorted(
+        p for p in glob.glob(TRACE_GLOB)
+        if os.path.isfile(p) and NAME_RE.match(os.path.basename(p))
+    )
+
+
+def read_payload(path):
+    """只读加载轨迹 JSON；损坏或非 dict 内容降级为空 dict，不中断巡检。"""
     try:
-        r = subprocess.run(["git", "rev-parse", "--git-common-dir"],
-                           cwd=str(here), capture_output=True, text=True, timeout=10)
-        common = r.stdout.strip()
-        if r.returncode == 0 and common:
-            p = Path(common)
-            if not p.is_absolute():
-                # git 返回值相对 subprocess cwd(=here·tools/), 锚定基准须为 here
-                # (判例: 主仓返回 '../.git', 用 here.parent 拼会解析到盘根 E:\)
-                p = (here / common).resolve()
-            return p.parent
-    except Exception:
-        pass
-    root = here.parent.parent
-    if (root / "data" / "e2e").is_dir():
-        return root
-    return here.parent.parent  # 最后兜底: 保持 tools/.. 结构
+        with open(path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return payload
 
 
-def parse_trace_file(path):
-    # 终态: 首行标题括号内 DONE/ABORT/SEC2_FAIL/QA1_FAIL; 判空缺省 UNKNOWN
-    text = Path(path).read_text(encoding="utf-8", errors="replace")
-    lines = text.splitlines()
-    final = "UNKNOWN"
-    if lines:
-        m = re.search(r"[（(](DONE|ABORT|SEC2_FAIL|QA1_FAIL)[)）]", lines[0])
-        if m:
-            final = m.group(1)
-    steps = [l for l in lines if l.startswith("- [")]
-    last_step = steps[-1].strip() if steps else "(无步骤)"
-    return final, len(steps), last_step
+def get_mtime_ts(path):
+    """取文件 mtime 时间戳；竞态删除等取不到时降级 0.0，保证 runs 统计稳定。"""
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return 0.0
 
 
-def scan_e2e_traces():
-    # 文件名: <TID>_trace_<HHMMSS>.md · TID 含连字符(K-ORG-064 式)用 [\w-]+
-    root = _main_root()
-    items = []
-    for p in sorted(glob.glob(str(root / "data" / "e2e" / "K-*_trace_*.md"))):
-        base = os.path.basename(p)
-        m = re.match(r"(K-[\w-]+)_trace_(\d{6})\.md$", base)
-        if not m:
-            continue
-        tid, tm = m.group(1), m.group(2)
-        final, steps, last_step = parse_trace_file(p)
-        items.append({
-            "tid": tid,
-            "time": tm,  # P-3: 字符串, 防 json.dumps TypeError
-            "final": final,
-            "steps": steps,
-            "last_step": last_step[:120],
-        })
-    items.sort(key=lambda x: x["time"], reverse=True)
+def build_item(path):
+    """组装单条 item：既有字段口径不变，新增 mtime 可读时间戳（P-1）。"""
+    date_part, time_part = parse_name(path)
+    payload = read_payload(path)
+    mtime_ts = get_mtime_ts(path)
+    return {
+        "file": os.path.basename(path),
+        "date": date_part or "",
+        "time": time_part or "",
+        "ok": int(payload.get("ok", 0) or 0),
+        "fail": int(payload.get("fail", 0) or 0),
+        "mtime": datetime.datetime.fromtimestamp(mtime_ts).strftime(FMT_FULL),
+    }
+
+
+def build_report():
+    """组装报告：P-2 排序改为按 mtime 实际时间值倒序，datetime 仅作排序键不入 JSON。"""
+    items = [build_item(p) for p in collect_traces()]
+    items.sort(
+        key=lambda it: datetime.datetime.strptime(it["mtime"], FMT_FULL),
+        reverse=True,
+    )
     return {"runs": len(items), "items": items}
 
 
 def main():
-    ap = __import__("argparse").ArgumentParser(description="K-ORG-066 e2e report (read-only)")
-    ap.add_argument("--json", action="store_true")
-    args = ap.parse_args()
-    if not args.json:
-        ap.error("only --json is supported")
-    print(json.dumps(scan_e2e_traces(), ensure_ascii=False))
+    parser = argparse.ArgumentParser(description="E2E trace read-only report tool")
+    parser.add_argument("--json", action="store_true",
+                        help="emit a single JSON object to stdout")
+    parser.parse_args()
+    report = build_report()
+    sys.stdout.write(json.dumps(report, ensure_ascii=False) + "\n")
     return 0
 
 
