@@ -1581,8 +1581,8 @@ def write_page(data, snap):
                  "%s</table>%s<div class='dim' style='margin-top:2px'>"
                  "<a href='/bt'>共振全景（四市场榜单/环境闸门）→</a></div>"
                  % (snap.get("ts") or "—", trs, gate_note))
-    parts.append("<div class='dim' style='margin-top:26px'>每日 08:30 "
-                 "自动生成 · 源：tushare(指数/两融/北向/Shibor/CPI/PPI) + "
+    parts.append("<div class='dim' style='margin-top:26px'>每日 14:30（北京）"
+                 "/ 08:30（巴黎）自动生成 · 源：tushare(指数/两融/北向/Shibor/CPI/PPI) + "
                  "news.db(JEV) + zhice-db(美股行业) + TDX(公告/研报) + "
                  "数据仓(daily/index_daily/moneyflow/margin/cb_daily："
                  "赚钱效应/量能位置/行业资金/两融/转债 现算) · "

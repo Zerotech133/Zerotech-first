@@ -339,6 +339,7 @@ def write_page(d):
         "<div class='dim'>口径与数据源同盘前报告（daily/index_daily/"
         "moneyflow/margin/cb_daily 数据仓现算 + JEV/TDX）；涨停判定阈值 "
         "10%%/20%%/30%%（ST 5%%，幅值上限 31.5%%，新股剔除）；"
+        "每日 09:10（北京）/ 03:10（巴黎）自动生成；"
         "本报告为研究工具，不构成投资建议</div>")
     with open(os.path.join(REPORTS, "afterhours.html"), "w",
               encoding="utf-8") as f:
@@ -545,7 +546,8 @@ def push_card(d, doc_url=None):
         md_els.append({"tag": "markdown", "content": " · ".join(links)})
     md_els.append({"tag": "markdown", "text_size": "notation",
                    "content": "<font color='grey'>数据仓现算 · "
-                              "T+1 早自动生成 · %s</font>" % d["ts"]})
+                              "T+1 早 09:10（北京）自动生成 · %s</font>"
+                              % d["ts"]})
     card = {"schema": "2.0",
             "config": {"update_multi": True, "width_mode": "default"},
             "header": {"title": {"tag": "plain_text",
