@@ -130,7 +130,9 @@ _LARK_COLOR = {
 
 
 def _build_alert_card(alert: dict, verdict: dict) -> dict:
-    """构造飞书告警交互卡片 JSON（Card 2.0）。"""
+    """构造飞书告警交互卡片 JSON（v1 卡片）。
+    K-STOCK-370：schema 2.0（behaviors callback）在告警卡片助手 app 下点击
+    零投递（平台侧缺口），v1 tag:action 按钮实测端到端可用——全量降级 v1。"""
     level = alert.get("level", "INFO")
     template, bg_color, emoji = _LARK_COLOR.get(level, _LARK_COLOR["INFO"])
     cat = verdict.get("category", "unknown")
@@ -140,74 +142,42 @@ def _build_alert_card(alert: dict, verdict: dict) -> dict:
     title = alert.get("title", "")
     message = alert.get("message", "")[:300]
 
-    def _metric_col(label: str, value: str) -> dict:
+    def _btn(content, btype, action):
         return {
-            "tag": "column", "width": "weighted", "weight": 1,
-            "background_style": bg_color,
-            "padding": "12px", "vertical_spacing": "2px",
-            "elements": [
-                {"tag": "markdown", "text_size": "notation",
-                 "content": f"<font color='grey'>{label}</font>"},
-                {"tag": "markdown", "text_size": "heading-2", "content": value},
-            ],
+            "tag": "button",
+            "text": {"tag": "plain_text", "content": content},
+            "type": btype,
+            "value": {"action": action, "alert_id": alert_id},
         }
 
     return {
-        "schema": "2.0",
-        "config": {"update_multi": True, "width_mode": "default"},
+        "config": {"wide_screen_mode": True, "update_multi": True},
         "header": {
             "title": {"tag": "plain_text", "content": f"{emoji} 告警通知 · {level}"},
-            "subtitle": {"tag": "plain_text",
-                         "content": f"智策 OS v2 · Jev 网关 · {cat_label}"},
             "template": template,
         },
-        "body": {
-            "direction": "vertical",
-            "padding": "12px 12px 20px 12px",
-            "vertical_spacing": "12px",
-            "elements": [
-                # 指标卡块
-                {
-                    "tag": "column_set",
-                    "flex_mode": "none",
-                    "horizontal_spacing": "8px",
-                    "margin": "0px",
-                    "columns": [
-                        _metric_col("紧急度", f"{urgent_p:.2f}"),
-                        _metric_col("类别", cat_label),
-                        _metric_col("级别", level),
-                    ],
-                },
-                # 告警正文
-                {
-                    "tag": "markdown",
-                    "content": f"**{title}**\n\n{message}",
-                    "margin": "0px",
-                },
-                # 操作按钮
-                {
-                    "tag": "column_set",
-                    "flex_mode": "none",
-                    "horizontal_spacing": "8px",
-                    "columns": [
-                        {"tag": "column", "width": "weighted", "weight": 1,
-                         "elements": [
-                             {"tag": "button",
-                              "text": {"tag": "plain_text", "content": "✓ 已处理"},
-                              "type": "primary_filled", "width": "fill", "size": "medium",
-                              "behaviors": [{"type": "callback",
-                                             "value": {"action": "ack", "alert_id": alert_id}}]}]},
-                        {"tag": "column", "width": "weighted", "weight": 1,
-                         "elements": [
-                             {"tag": "button",
-                              "text": {"tag": "plain_text", "content": "忽略"},
-                              "type": "default", "width": "fill", "size": "medium",
-                              "behaviors": [{"type": "callback",
-                                             "value": {"action": "ignore", "alert_id": alert_id}}]}]},
-                    ],
-                },
-            ],
-        },
+        "elements": [
+            # 指标行（v1 无 2.0 指标卡块，折成一行）
+            {
+                "tag": "div",
+                "text": {"tag": "lark_md",
+                         "content": f"**紧急度** {urgent_p:.2f}　|　**类别** {cat_label}"
+                                    f"　|　**级别** {level}"},
+            },
+            # 告警正文
+            {
+                "tag": "markdown",
+                "content": f"**{title}**\n\n{message}",
+            },
+            # 操作按钮
+            {
+                "tag": "action",
+                "actions": [
+                    _btn("✓ 已处理", "primary", "ack"),
+                    _btn("忽略", "default", "ignore"),
+                ],
+            },
+        ],
     }
 
 
