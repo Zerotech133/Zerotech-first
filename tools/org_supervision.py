@@ -83,7 +83,7 @@ def check_worktrees():
     return len(glob.glob(os.path.join(ROOT, ".worktrees", "task", "*")))
 
 
-def main():
+def main(push=True):
     lines = ["# 组织监督判读 %s" % datetime.now().strftime("%Y-%m-%d %H:%M"), ""]
     reds, yellows = [], []
 
@@ -144,6 +144,59 @@ def main():
     print(report)
     print("[written]", out)
 
+    if push:
+        ok_sent, msg = push_verdict_card(report, reds, yellows,
+                                         dict(statuses), ok, full, total_agents)
+        print("[push]", "SEND_OK" if ok else "SEND_FAIL: %s" % msg)
+
+
+def build_verdict_card(statuses, ok_8093, full, total_agents, reds, yellows):
+    """B2 判读折叠卡：三段式（全局态势 / 异常项 / 处置建议），红黄绿分级头。"""
+    if reds:
+        title, tmpl = "🛡️ 田小皮监督判读 · 🔴 %d 红 %d 黄" % (len(reds), len(yellows)), "red"
+    elif yellows:
+        title, tmpl = "🛡️ 田小皮监督判读 · 🟡 %d 黄" % len(yellows), "orange"
+    else:
+        title, tmpl = "🛡️ 田小皮监督判读 · 全绿", "green"
+    stat = " ".join("%s%d" % (k, v) for k, v in sorted(statuses.items()))
+    overview = ("**工单** %s\n**服务** 8093 %s · **岗卡** 属性 %d/%d"
+                % (stat, "在位" if ok_8093 else "DOWN", full, total_agents))
+    alerts = "\n".join(("- 🔴 " + r) for r in reds) + "\n" if reds else ""
+    alerts += "\n".join(("- 🟡 " + y) for y in yellows) if yellows else ""
+    advice = "立即处置红灯项；黄灯项当日排期收尾。" if reds else \
+             "黄灯项当日排期收尾，无需升级。" if yellows else \
+             "无异常，正常推进。"
+    return {
+        "schema": "2.0", "config": {"update_multi": True},
+        "header": {"title": {"tag": "plain_text", "content": title},
+                   "template": tmpl},
+        "body": {"elements": [
+            {"tag": "markdown", "content": overview},
+            {"tag": "hr"},
+            {"tag": "markdown", "content": alerts or "（无异常项）"},
+            {"tag": "hr"},
+            {"tag": "markdown", "content": "**建议**：" + advice},
+            {"tag": "markdown", "content":
+                "<font color='grey'>零界组织监督 · 09:15 判读 · %s</font>"
+                % datetime.now().strftime("%m-%d %H:%M")},
+        ]}}
+
+
+def push_verdict_card(report, reds, yellows, statuses, ok_8093, full, total_agents):
+    """B2 判读结果推老田飞书折叠卡；fail-open（推送失败不影响体检结论）。"""
+    try:
+        here = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, os.path.join(here, "..", "portal"))
+        from feishu_card_v2 import send_card  # noqa: E402 复用凭证链（实测 SEND_OK 通道）
+        card = build_verdict_card(statuses, ok_8093, full, total_agents, reds, yellows)
+        return send_card(card)
+    except Exception as e:  # noqa: BLE001 推送链任何异常都不阻断体检
+        return False, repr(e)
+
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser(description="组织监督判读（可推飞书折叠卡）")
+    ap.add_argument("--no-push", action="store_true", help="只落报告不推卡")
+    a = ap.parse_args()
+    main(push=not a.no_push)
