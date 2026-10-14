@@ -1,5 +1,0 @@
-{"case_id": "E-CHAN-301-P01", "course_id": "CHAN-301", "query": "缠论三类买点 第一类买点 第二类买点 第三类买点 走势终完美", "expected_relative_paths": ["knowledge_docs/缠论技术分析知识库.md"], "required_terms": ["第一类买点", "第二类买点", "第三类买点"], "split": "evaluation_only"}
-{"case_id": "E-TRD-401-P01", "course_id": "TRD-401", "query": "交易员回答买什么 怎么买 买多少 何时卖", "expected_relative_paths": ["docs/plans/2026-10-09_交易员训练与上岗体系v0.3.md"], "required_terms": ["买什么", "怎么买", "买多少", "何时卖"], "split": "evaluation_only"}
-{"case_id": "E-PORTAL-101-P01", "course_id": "TOOL-301", "query": "策略注册表九维选股漏斗 ninedim live", "expected_relative_paths": ["portal/strategies.json"], "required_terms": ["ninedim", "live"], "split": "evaluation_only"}
-{"case_id": "E-CORE-101-N01", "course_id": "CORE-101", "query": "未登记来源中的虚构规则应如何确认", "expected_relative_paths": [], "required_terms": ["这条证据不存在"], "split": "evaluation_only", "expected_decision": "refuse_missing_evidence"}
-{"case_id": "E-CORE-101-T01", "course_id": "CORE-101", "query": "在决策时点之后出现的证据是否可用于回答", "expected_relative_paths": [], "required_terms": ["这条证据不存在"], "split": "evaluation_only", "as_of": "2026-10-10", "expected_decision": "refuse_missing_evidence"}

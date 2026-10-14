@@ -1,6 +1,0 @@
-### Result
-"FS-BAR OK: 📌 结论🌅 盘前分析 2026-10-08 14:31买/涨 163避/跌 72综合开盘倾向 -7 · 开盘溢价概率 31% · 中性（按个股信号执行）"
-### Ran Playwright code
-```js
-await page.evaluate('() => (document.getElementById(\'fs-bar\') ? \'FS-BAR OK: \'+document.getElementById(\'fs-bar\').textContent.replace(/\\s+/g,\' \').slice(0,150) : \'NO FS-BAR\')');
-```

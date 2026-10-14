@@ -1,8 +1,0 @@
-{
-  "stage_root": "E:\\老田的AI助手\\quant_backtest\\data\\tushare_staging\\history_3y",
-  "total_count": 1820,
-  "complete_count": 1820,
-  "missing": [],
-  "production_write": false,
-  "global_activation": false
-}

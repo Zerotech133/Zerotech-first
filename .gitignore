@@ -146,3 +146,23 @@ prototypes/ai_chat_web/*.db
 
 # ===== 本地密钥（K-ORG-039：绝不进版本库）=====
 config/*.local.json
+
+# picks 发布链运行态文件（2026-10-14 安全审计 F-002）
+portal/work/
+
+# ===== 合流日第一步提前量（K-STOCK-373·2026-10-14：360 台账②运行时数据/③临时工件/④memory 三类消噪）=====
+# ③ 临时工件：work/ 台账~112 个（工作卡/证据包/inline js·并行会话缓冲区）
+work/
+.playwright-cli/
+# ② 运行时数据（磁盘保留·翻腾假 M 治理 B3 同款）
+quant_backtest/weak_weekly_state.json
+portal/qd_scan_cache.json
+news_collector/ai_brief.json
+k_stock/paper/minutes.json
+k_stock/paper/minutes_inbox.json
+k_stock/data/judge_reviews/
+k_stock/data/review_minutes/
+jev-eval/alerts/pending_msg.txt
+# ④ memory 运行态（各层 .workbuddy/memory 不进版本库）
+.workbuddy/memory/
+**/.workbuddy/memory/

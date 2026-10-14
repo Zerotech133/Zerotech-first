@@ -1,6 +1,0 @@
-### Result
-"{\"env\":0,\"grid\":0,\"secGrid\":0,\"sec\":0,\"kpi\":0,\"h1\":\"🚦 全池策略信号（明日执行参照）\"}"
-### Ran Playwright code
-```js
-await page.evaluate('() => (JSON.stringify({env:document.querySelectorAll(\'.env\').length, grid:document.querySelectorAll(\'.grid\').length, secGrid:document.querySelectorAll(\'section .grid\').length, sec:document.querySelectorAll(\'section\').length, kpi:document.querySelectorAll(\'.kpi\').length, h1:document.querySelector(\'h1\')?document.querySelector(\'h1\').textContent:\'\'}))');
-```
