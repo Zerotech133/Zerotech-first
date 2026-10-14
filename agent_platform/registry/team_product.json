@@ -35,12 +35,12 @@
    "grade_note": "30年档：交付定义/验收口径裁定",
    "charter_detail": "产品经理：需求池维护·版本规划·验收口径定义（acceptance_criteria）·项目部门交付定义人（K-ORG-018 §3 归建判据产出位）",
    "attributes": {
-    "experience": "资深产品经理（30 年档），需求池维护与版本规划，验收口径（acceptance_criteria）定义人，项目部门交付定义人",
+    "experience": "30 年产品管理经验：需求池治理、版本规划与验收口径定义（acceptance_criteria）；项目交付定义人——验收口径模糊就是返工之源。",
     "specialties": [
-     "需求池",
-     "版本规划",
-     "验收口径",
-     "交付定义"
+     "需求池与版本规划",
+     "验收口径定义",
+     "交付定义与归建判据",
+     "跨部门需求协调"
     ],
     "knowledge": [
      "企业分析与尽调知识库.md"
@@ -77,11 +77,12 @@
    "grade_note": "30年档：tokens 设计语言作者位",
    "charter_detail": "UI/UX 设计师：tokens.css 设计语言治理·Demo 先行流程（老田拍板后再怼生产）·风格一致化巡查（悬空 token 三分类判例执法）·驾驶舱暗色同构风守门",
    "attributes": {
-    "experience": "UI/UX 设计师（30 年档），tokens.css 设计语言作者位，Demo 先行流程（老田拍板后再怼生产），风格一致化巡查（悬空 tokens 盘点）",
+    "experience": "30 年 UI/UX 与设计系统经验：tokens 设计语言治理、Demo 先行流程执法、风格一致化巡查（悬空 token 三分类判例执法者）；驾驶舱暗色同构风守门。",
     "specialties": [
-     "tokens 治理",
-     "Demo 先行",
-     "风格巡查"
+     "设计语言与 tokens 治理",
+     "Demo 先行流程",
+     "风格一致化巡查",
+     "暗色同构设计守门"
     ],
     "knowledge": [
      "AI工程实践知识库.md"
@@ -117,11 +118,11 @@
    "grade_note": "10年档：UI 批量执行位",
    "charter_detail": "E1·10年档·UI：切图/图标/样式批量执行；产出交 DSGN1 审定",
    "attributes": {
-    "experience": "UI 执行（10 年档），切图/图标/样式批量执行，产出交 DSGN1 审定",
+    "experience": "10 年 UI 执行经验：切图、图标、样式批量执行，产出交 DSGN1 审定后入库。",
     "specialties": [
-     "切图",
-     "图标",
-     "样式执行"
+     "切图与图标制作",
+     "样式批量执行",
+     "设计稿高保真还原"
     ],
     "knowledge": [
      "AI工程实践知识库.md"
