@@ -36,6 +36,8 @@ AUDIT = os.path.join(ROOT, "agent_platform", "data", "org_registry_audit.jsonl")
 KDOCS = os.path.join(ROOT, "knowledge_docs")          # 知识库文档源
 MEMDIR = os.path.join(ROOT, "agent_platform", "data", "memory")  # 岗位专属记忆空间
 PORT = 8093
+TASKS_JSON = os.path.join(ROOT, ".worktrees", "tasks.json")   # K-ORG-093/G5 军团连接器
+DEVTASK = os.path.join(ROOT, "tools", "devtask.py")
 
 GRADE = {  # 工作年限档（老田口径：年限即档位）
     "E1": ("10年档", "E1·10年档"),
@@ -483,6 +485,45 @@ def audit_log(n, written):
     return rec
 
 
+# ── K-ORG-093/G5：军团连接器端点（Hermes 门面 → 底座开工单） ──
+
+def task_load():
+    """读 .worktrees/tasks.json（devtask 工单账本）；fail-open 空账。"""
+    try:
+        return json.load(open(TASKS_JSON, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def task_create(p):
+    """转调 devtask.py new 开工单（subprocess 隔离，不 import devtask
+    避免 CLI 内部状态与本进程 LOCK 互相纠缠）。返回 (err, result)。"""
+    desc = str(p.get("desc", "")).strip()
+    if not desc:
+        return "desc 必填（工单描述）", None
+    tid = str(p.get("tid", "")).strip()
+    if not tid:
+        tid = "legion-" + time.strftime("%m%d%H%M%S")
+    if not re.fullmatch(r"[\w\-]{3,40}", tid):
+        return "tid 非法（限 3~40 位字母数字-_）", None
+    project = str(p.get("project", "")).strip()
+    args = [sys.executable, "-u", DEVTASK, "new", tid, desc]
+    if project:
+        args += ["--project", project]
+    try:
+        # cwd=ROOT：devtask 的 _git 依赖仓库根（SYSTEM 进程 cwd 在 System32）
+        r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=120, cwd=ROOT)
+    except subprocess.TimeoutExpired:
+        return "devtask new 超时（120s）", None
+    if r.returncode != 0:
+        return "devtask new 失败: %s" % ((r.stderr or r.stdout or "").strip()[:150]), None
+    t = task_load().get(tid, {})
+    return None, {"tid": tid, "branch": t.get("branch", ""),
+                  "worktree": t.get("worktree", ""),
+                  "owner": t.get("owner", ""), "desc": desc}
+
+
 # ── K-ORG-057：项目线注册（工作区内二级维度；与部门注册同构） ──
 PROJ_REG = os.path.join(REG, "projects.json")
 
@@ -586,6 +627,21 @@ class Handler(BaseHTTPRequestHandler):
             kdocs = sorted(os.listdir(KDOCS)) if os.path.isdir(KDOCS) else []
             self._json(200, {"bundle": bundle, "org": org, "audit_tail": tail,
                              "knowledge_docs": kdocs})
+        elif self.path.startswith("/api/task/status"):
+            q = dict(p.split("=", 1) for p in self.path.split("?", 1)[1].split("&")
+                     if "=" in p)
+            tid = q.get("task", "")
+            t = task_load().get(tid)
+            if not t:
+                self._json(404, {"ok": False, "error": "工单 %s 不存在" % tid})
+                return
+            self._json(200, {"ok": True, "task": {"k": tid, **t}})
+        elif self.path == "/api/task/list":
+            tasks = task_load()
+            slim = {k: {kk: v.get(kk) for kk in ("desc", "status", "branch",
+                                                 "project", "created", "owner")}
+                    for k, v in tasks.items()}
+            self._json(200, {"ok": True, "tasks": slim})
         elif self.path.startswith("/api/agent/knowledge"):
             q = dict(p.split("=", 1) for p in self.path.split("?", 1)[1].split("&")
                      if "=" in p)
@@ -603,7 +659,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path not in ("/api/preview", "/api/register",
                              "/api/agent/update", "/api/agent/learn",
-                             "/api/project/preview", "/api/project/register"):
+                             "/api/project/preview", "/api/project/register",
+                             "/api/task/create"):
             self._json(404, {"ok": False, "error": "not found"})
             return
         try:
@@ -613,6 +670,11 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"ok": False, "error": "bad json: %s" % e})
             return
         with LOCK:
+            if self.path == "/api/task/create":
+                err, result = task_create(p)   # K-ORG-093/G5 军团连接器
+                self._json(400 if err else 200,
+                           {"ok": not err, **({"error": err} if err else result)})
+                return
             if self.path == "/api/agent/update":
                 err, result = agent_update(p)
                 self._json(400 if err else 200,
