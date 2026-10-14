@@ -148,8 +148,41 @@ def _render_quote(ts_code, q, candles, limits):
 
 # ---------------- ② 信号区 ----------------
 
+def _render_basic(ts_code):
+    """② 基本面 · 基本情况（K-STOCK-384）：复用 api_screen Handler 的
+    _stock_fundamental（估值/盈利/成长/健康四组·classmethod 类直调，
+    382 装饰器修复后才可用），四组栅格布局，每区 try 降级。"""
+    h = ['<section class="card"><h3>② 基本面 · 基本情况</h3>']
+    try:
+        from api_screen import Handler as _SH
+        rows, note = _SH._stock_fundamental(ts_code)
+    except Exception:  # noqa: BLE001
+        rows, note = [], "基本面数据暂不可用"
+    if not rows:
+        h.append(f'<div class="empty">{_esc(note or "暂无基本面数据")}</div>')
+    else:
+        groups = {}
+        for g, k, v in rows:
+            groups.setdefault(g, []).append((k, v))
+        parts = []
+        for g in ("估值", "盈利", "成长", "健康"):
+            items = groups.get(g)
+            if not items:
+                continue
+            cells = "".join(
+                f'<div class="bsi"><span class="bsk">{_esc(k)}</span>'
+                f'<span class="bsv">{_esc(v)}</span></div>' for k, v in items)
+            parts.append(f'<div class="bsg"><div class="bsgh">{_esc(g)}</div>'
+                         f'{cells}</div>')
+        h.append('<div class="bsgrid">' + "".join(parts) + "</div>")
+        if note:
+            h.append(f'<div class="t" style="margin-top:8px">{_esc(note)}</div>')
+    h.append("</section>")
+    return "".join(h)
+
+
 def _render_signals(kg_data, paper_orders):
-    h = ['<section class="card"><h3>② 信号</h3>']
+    h = ['<section class="card"><h3>③ 信号</h3>']
     st = kg_data.get("structures") or []
     if st:
         h.append('<div class="mini-h">缠论结构（KG，近 60）</div>'
@@ -198,7 +231,7 @@ def _paper_ledger(ts_code):
 
 
 def _render_ledger(pl):
-    h = ['<section class="card"><h3>③ 账本</h3>']
+    h = ['<section class="card"><h3>④ 账本</h3>']
     if pl.get("err"):
         h.append(f'<div class="empty">paper.db 不可读：{_esc(pl["err"])}</div>')
     elif not pl["pos"] and not pl["snap"]:
@@ -227,7 +260,7 @@ def _render_ledger(pl):
 # ---------------- ④ 事件区 ----------------
 
 def _render_events(kg_data):
-    h = ['<section class="card"><h3>④ 事件</h3>']
+    h = ['<section class="card"><h3>⑤ 事件</h3>']
     drive = kg_data.get("drive_groups") or []
     if drive:
         h.append('<div class="mini-h">驱动事件组</div><ul class="mini">'
@@ -277,7 +310,7 @@ def _news_list(ts_code, limit=15):
 
 
 def _render_news(ts_code, rows):
-    h = ['<section class="card"><h3>⑤ 新闻</h3>']
+    h = ['<section class="card"><h3>⑥ 新闻</h3>']
     if not rows:
         h.append(f'<div class="empty">近库 {_esc(ts_code)} 无关联新闻'
                  f'（采集库 27,809 条中带标的关联 3,537 条）</div>')
@@ -408,7 +441,7 @@ def _tl_conclusion(tl):
 
 
 def _render_timeline(ts_code, tl):
-    h = ['<section class="card"><h3>⑥ 时空 · 五日演化</h3>']
+    h = ['<section class="card"><h3>⑦ 时空 · 五日演化</h3>']
     if not tl["days"]:
         h.append('<div class="empty">行情湖暂无该票日线（A股行情湖覆盖）</div>')
     else:
@@ -476,6 +509,15 @@ _STYLE = """
   .qgrid { display:flex; gap:16px; margin-top:8px; color:var(--text-dim);
            font-family:Consolas,monospace; font-size:12.5px; flex-wrap:wrap; }
   .up { color:var(--color-up); } .dn { color:var(--color-dn); }
+  .bsgrid { display:flex; gap:18px; flex-wrap:wrap; }
+  .bsg { flex:1 1 180px; min-width:170px; }
+  .bsgh { font-size:11px; color:var(--text-dim); letter-spacing:1px;
+          margin-bottom:6px; border-bottom:1px solid var(--border-weak);
+          padding-bottom:4px; }
+  .bsi { display:flex; justify-content:space-between; gap:8px;
+         font-size:12.5px; padding:3px 0; }
+  .bsk { color:var(--text-dim); }
+  .bsv { font-family:var(--font-mono); }
   .mini-h { margin:12px 0 6px; font-size:12px; color:var(--text-dim); }
   ul.mini { list-style:none; font-size:12.5px; line-height:1.9; }
   ul.mini li { border-bottom:1px dashed var(--border-weak); padding:2px 0; }
@@ -572,8 +614,9 @@ def render_card(ts_code, days=120):
       <a href="/paper">模拟仓</a>
     </span>
   </div>
-  <div class="t" style="padding:0 0 4px">统一详情卡（六区制）· 生成 {now} · 数据源：KG/news_collector/paper.db/行情湖</div>
+  <div class="t" style="padding:0 0 4px">统一详情卡（七区制）· 生成 {now} · 数据源：KG/news_collector/paper.db/行情湖</div>
   {_render_quote(ts_code, quote_info.get("quote"), quote_info.get("candles"), quote_info.get("limits"))}
+  {_render_basic(ts_code)}
   {_render_signals(kg_data, paper_orders)}
   {_render_ledger(_paper_ledger(ts_code))}
   {_render_events(kg_data)}
