@@ -181,9 +181,19 @@ def chat_cloud(agent_id, task, timeout=120):
     return out
 
 
-def chat(agent_id, task, timeout=420, num_ctx=6144):
-    """本地 Ollama 生成（兜底通道，逻辑保持 032 原样）。"""
+def chat(agent_id, task, timeout=420, num_ctx=0):
+    """本地 Ollama 生成（兜底通道，逻辑保持 032 原样）。
+
+    K-ORG-063：num_ctx=0（缺省）时按人设+任务长度动态估算——
+    _persona() 注入身份卡后最长 ~1.3K tokens（QA1 挂账观察②），
+    固定 6144 在长任务（复核降级带大 diff）下会挤占输出窗口。
+    估算 = 字符数/2（中英混合保守）+ 2048 输出余量，向上取 1024 倍数，
+    下限 6144 保持旧行为；显式传参仍优先。
+    """
     sys_prompt = _persona(agent_id)
+    if num_ctx <= 0:
+        est = (len(sys_prompt) + len(task.get("prompt", ""))) // 2 + 2048
+        num_ctx = max(6144, ((est + 1023) // 1024) * 1024)
     body = json.dumps({
         "model": "qwen3.5:9b", "stream": False, "think": False,
         "format": "json" if task.get("json_out") else None,
