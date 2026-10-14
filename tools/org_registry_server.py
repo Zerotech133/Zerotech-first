@@ -109,6 +109,29 @@ def _find_team_entry(agent_id):
     return None, None, None
 
 
+def _sync_projection(aid, entry):
+    """本体→org.json 投影卡同步（llm_binding + attributes）。
+    083 判例：原同步块只写 llm_binding，attributes 漏同步——073 经 API 落库的
+    28 岗人设在投影卡（门户组织图 /api/org 数据源）上全空，此处补齐并供后续复用。"""
+    org_path = os.path.join(REG, "org.json")
+    org = json.load(open(org_path, encoding="utf-8"))
+    hit = False
+    for d in org.get("departments", []):
+        for prof in d.get("agent_profiles", []) or []:
+            if prof.get("agent_id") != aid:
+                continue
+            if entry.get("llm_binding"):
+                prof["llm_binding"] = entry["llm_binding"]
+            at = entry.get("attributes") or {}
+            if at.get("experience") or at.get("specialties") or at.get("knowledge"):
+                prof["attributes"] = at
+            hit = True
+    if hit:
+        json.dump(org, open(org_path, "w", encoding="utf-8"),
+                  ensure_ascii=False, indent=1)
+    return hit
+
+
 def agent_update(p):
     """K-ORG-054: 属性编辑 + 模型选配。{agent_id, experience?, specialties?, model?, tool_preset?}"""
     aid = (p.get("agent_id") or "").strip().upper()
@@ -146,15 +169,8 @@ def agent_update(p):
     if not changed:
         return "没有要改的字段", None
     json.dump(team, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    # org.json 内联卡同步（有 agent_profiles 的部门）
-    org_path = os.path.join(REG, "org.json")
-    org = json.load(open(org_path, encoding="utf-8"))
-    for d in org.get("departments", []):
-        for prof in d.get("agent_profiles", []) or []:
-            if prof.get("agent_id") == aid:
-                prof["llm_binding"] = entry["llm_binding"]
-    json.dump(org, open(org_path, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    # org.json 内联卡同步（llm_binding + attributes，083 修复）
+    _sync_projection(aid, entry)
     _rebake_and_reexport()
     rec = audit_log({"kind": "update", "agent_id": aid, "dept": entry.get("dept", ""),
                      "grade": entry.get("grade"), "model": p.get("model"),
@@ -204,6 +220,7 @@ def agent_learn(p):
         klist.append(doc)
         json.dump(team, open(path, "w", encoding="utf-8"),
                   ensure_ascii=False, indent=1)
+        _sync_projection(aid, entry2)  # 083：knowledge 沉淀同步投影卡
     _rebake_and_reexport()
     audit_log({"kind": "learn", "agent_id": aid, "dept": entry2.get("dept", ""),
                "grade": entry2.get("grade"), "model": None,
@@ -564,8 +581,8 @@ class Handler(BaseHTTPRequestHandler):
                                      encoding="utf-8"))
             tail = []
             if os.path.exists(AUDIT):
-                lines = [l for l in open(AUDIT, encoding="utf-8") if l.strip()]
-                tail = [json.loads(l) for l in lines[-20:]]
+                lines = [ln for ln in open(AUDIT, encoding="utf-8") if ln.strip()]
+                tail = [json.loads(ln) for ln in lines[-20:]]
             kdocs = sorted(os.listdir(KDOCS)) if os.path.isdir(KDOCS) else []
             self._json(200, {"bundle": bundle, "org": org, "audit_tail": tail,
                              "knowledge_docs": kdocs})
@@ -576,9 +593,9 @@ class Handler(BaseHTTPRequestHandler):
             fp = os.path.join(MEMDIR, "agent__%s__knowledge.jsonl" % aid)
             rows = []
             if os.path.exists(fp):
-                for l in open(fp, encoding="utf-8"):
-                    if l.strip():
-                        rows.append(json.loads(l))
+                for ln in open(fp, encoding="utf-8"):
+                    if ln.strip():
+                        rows.append(json.loads(ln))
             self._json(200, {"ok": True, "agent_id": aid, "items": rows[-30:]})
         else:
             self._json(404, {"ok": False, "error": "not found"})
