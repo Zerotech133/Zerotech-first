@@ -115,7 +115,12 @@ def test_build_gaps_reports_valuation_nulls_and_jev_reconciliation():
     assert any("JEV staging/新闻库对账失败" in gap for gap in gaps)
 
 
-def test_scan_warehouse_exposes_health_gaps_from_fields_and_artifacts(monkeypatch):
+def test_scan_warehouse_exposes_health_gaps_from_fields_and_artifacts(tmp_path, monkeypatch):
+    # K-STOCK-372: 环境脆弱修复——_annotate_cn_sample 对 DATA/tdx/ts_daily_basic
+    # 的存在性敏感（真机上目录存在→读 mock 假文件抛异常→except 不设
+    # missing_fields→gap 消失；无数据目录的 worktree 里反而过）。把 DATA
+    # 指到空 tmp_path，走 elif missing 分支，任何机器/数据状态结果稳定。
+    monkeypatch.setattr(data_health, "DATA", str(tmp_path))
     data_health._WCACHE["t"], data_health._WCACHE["d"] = 0, None
     monkeypatch.setattr(data_health, "_scan_kline", lambda market: {
         "count": 1, "exists": True, "size_mb": 1})
