@@ -54,6 +54,19 @@ ANTHROPIC_MODEL = os.environ.get("CODER_ANTHROPIC_MODEL", "glm-4.6")
 GPT6_URL = os.environ.get("GPT6_URL", "https://itokengate.com/v1/chat/completions")
 GPT6_MODEL = os.environ.get("GPT6_MODEL", "gpt-6-sol")
 
+# K-ORG-087/T1: 组织铁律机器化注入——org_rules.md 模块级一次性读（__file__ 锚定
+# 沿 079 判例），fail-open（缺文件/解析失败只告警不阻断产码）。岗级 rules 字段
+# （list[str]，BUNDLE 可选）在 _persona() 内拼接。
+_ORG_RULES = ""
+try:
+    _rules_path = os.path.join(_HERE, os.pardir, "agent_platform", "rules", "org_rules.md")
+    _raw = open(_rules_path, encoding="utf-8").read()
+    _lines = [ln.strip()[1:].strip() for ln in _raw.splitlines()
+              if ln.strip().startswith("- ")]
+    _ORG_RULES = "\n".join("- " + ln for ln in _lines)
+except OSError:
+    print("[agent_coder] WARN org_rules.md 缺失，铁律未注入（fail-open）")
+
 
 def _persona(agent_id):
     """K-ORG-061a: 人设=部门共享 prompt + 岗专属身份卡。
@@ -75,9 +88,17 @@ def _persona(agent_id):
         extra.append("从业经验：%s" % at["experience"])
     if at.get("specialties"):
         extra.append("擅长：%s" % "、".join(at["specialties"]))
+    # K-ORG-087/T1: 岗级规则（可选 list[str]）——QA1 只读 fail-closed 等岗专属细则
+    for r in (a.get("rules") or []):
+        if isinstance(r, str) and r.strip():
+            extra.append("- " + r.strip())
     if extra:
         sp = (sp + "\n\n## 岗位身份卡（K-ORG-061a·以本卡为准回答身份类问题）\n"
               + "\n".join(extra) + "\n")
+    # K-ORG-087/T1: 组织铁律第 6 通道——全岗统一注入，排在身份卡之后
+    if _ORG_RULES:
+        sp = (sp + "\n## 组织铁律（org_rules·违反即事故，任何输出不得违背）\n"
+              + _ORG_RULES + "\n")
     return sp
 
 

@@ -123,6 +123,43 @@ def check_projection():
     return len(proj), mism
 
 
+def check_rules():
+    """规则分层体检（K-ORG-087/T1）：三项黄级检查——
+    ① org_rules.md 在位且铁律 ≤50 行（防规则膨胀，086 拍板）
+    ② 29 岗 rules 字段类型合法（缺省或 list[str]）
+    ③ 抽验 3 岗 persona 拼接含「组织铁律」锚行（注入链通断）"""
+    problems = []
+    rules_path = os.path.join(ROOT, "agent_platform", "rules", "org_rules.md")
+    n_rules = 0
+    if not os.path.exists(rules_path):
+        problems.append("org_rules.md 缺失（铁律未注入，fail-open 静默降级中）")
+    else:
+        n_rules = sum(1 for ln in open(rules_path, encoding="utf-8")
+                      if ln.strip().startswith("- "))
+        if n_rules == 0:
+            problems.append("org_rules.md 零铁律条目（格式错误？）")
+        elif n_rules > 50:
+            problems.append("org_rules.md %d 条超 50 上限（需蒸馏进 knowledge_docs）" % n_rules)
+    b = _read_json(os.path.join(ROOT, "portal", "agent_ide_bundle.json"), {}) or {}
+    agents = b.get("agents", {})
+    bad = [aid for aid, a in agents.items()
+           if not (a.get("rules") is None
+                   or (isinstance(a.get("rules"), list)
+                       and all(isinstance(r, str) for r in a["rules"])))]
+    if bad:
+        problems.append("rules 字段类型非法: %s" % ",".join(sorted(bad)[:8]))
+    # ③ 抽验注入链（import agent_coder 触发 _ORG_RULES 模块级加载）
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import agent_coder  # noqa: PLC0415
+        for aid in ("QA1", "DEV1", "D1"):
+            if aid in agents and "组织铁律" not in agent_coder._persona(aid):
+                problems.append("%s persona 未含铁律锚行（注入链断）" % aid)
+    except Exception as e:  # noqa: BLE001 体检自身异常不误报岗
+        problems.append("persona 抽验失败: %s" % str(e)[:50])
+    return n_rules, problems
+
+
 def main(push=True):
     lines = ["# 组织监督判读 %s" % datetime.now().strftime("%Y-%m-%d %H:%M"), ""]
     reds, yellows = [], []
@@ -172,6 +209,15 @@ def main(push=True):
         yellows.append("投影同步缺口 %d 项（083 判例：本体落库≠投影同步，需回填或重启 8093 接管写路径）"
                        % len(proj_mism))
     lines.append("- 范围注记: A0A+投研5岗(D1/F1/N1/T1/T2)本体在册、组织图不展示属设计范围")
+    lines.append("")
+
+    n_rules, rule_problems = check_rules()
+    lines.append("## 规则分层（org_rules %d 条）: %s"
+                 % (n_rules, "通过" if not rule_problems else "%d 项异常" % len(rule_problems)))
+    if rule_problems:
+        lines += ["- " + p for p in rule_problems[:6]]
+        yellows.append("规则分层异常 %d 项（087/T1：铁律未注入=岗行为靠主控人脑带，需修复注入链）"
+                       % len(rule_problems))
 
     lines.append("## 判读")
     if reds:
