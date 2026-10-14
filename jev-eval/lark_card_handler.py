@@ -151,7 +151,9 @@ def _update_card_api(message_id: str, card_json: str) -> str:
     K-STOCK-369：旧版 interactive/v1/card/update（token 换更新）在 app 换绑后
     恒报 300090（token 与发卡 app 强绑定），切换为 im/v1/messages PATCH
     （REST 实测新旧两种卡片格式均通过，lark-cli api 通道验证 ok）。"""
-    data = json.dumps({"msg_type": "interactive", "content": json.loads(card_json)},
+    # K-STOCK-370 fix：PATCH 的 content 字段要求是 JSON 字符串而非嵌套对象
+    # （对象形态报 9499 Invalid parameters；REST 手测时用的是字符串所以通过）
+    data = json.dumps({"msg_type": "interactive", "content": card_json},
                       ensure_ascii=False)
     try:
         jc.lark_cli_json(
