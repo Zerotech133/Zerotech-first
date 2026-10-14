@@ -568,3 +568,74 @@ ths 827 交易日 / dc 1596 交易日的断流（10-01~10-14 共 7 日）已在 
 - 未改`tushare_sync.py`（D-Day 冻结对象）✅
 - 未删历史分区、未改既有表结构 ✅
 - 未动任何回收站操作（无脏分区）✅
+
+---
+
+## 十二、K-STOCK-399 · 按计划实施（07:50~07:56，D-1 纪律下完成）
+
+老田指令：「按计划实施」。实施范围＝把打板情绪线从「数据就绪」推到「体系内可见可用」。
+**D-1 冻结纪律遵守情况**：全程零触碰核心链（`open1016_run` / `bt2` / `tushare_sync.py` 未动）、
+零触碰门户服务进程（只读校验 `strategy_market.market()`）。
+
+### 12.1 数据表登记进目录（`build_catalog.py`）
+
+`build_catalog.py` 的 `TABLE_DEFS` 加两条（紧邻 `ts_rt_min`）：
+
+| 表 | 登记内容 |
+|---|---|
+| `ts_emotion_daily` | 日频面板 · `date_col=trade_date` · `freq=D` · `layout=single` |
+| `ts_emotion_ladder` | 连板梯队 · `date_col=trade_date` · `freq=D` · `layout=single` |
+
+### 12.2 🔴 踩了两个目录形态的坑（都改了实现而非将就）
+
+**坑 1：落错目录**。首版写 `data/emotion/` → 但 `build_catalog.py` 的 `WAREHOUSES`
+只扫 `data/tdx` + `data/tushare` 两仓（`:32-35`），`data/emotion` **扫不到**。
+→ 改落 `data/tdx/ts_emotion_*`（与 `ts_ths_daily` 等生产表同级）。
+
+**坑 2：裸parquet 扫不到**。改到 `data/tdx/` 后仍不进目录——`:494-498` 的扫描是
+`os.listdir(root)` 取**子目录**且 `os.path.isdir` 为真才收，我写的是**文件**。
+→ 改目录形态 `data/tdx/ts_emotion_daily/part_0000.parquet`（与生产表完全一致）。
+
+**坑 3（连带发现）**：`catalog.json` 里 `rows=null` ——
+`build_catalog.py` 的 `readiness_basis` 默认 `file_presence`，manifest 缺条目则不统计行数。
+→ 情绪脚本加 `_write_manifest()`（写 `data/tdx/_manifest.json`，
+格式对齐 `ts_ths_daily` 的 `{offset, part, rows, done}`，另附 `updated`/`latest`/`producer`）。
+
+**三个坑全修完的实测结果**：
+```
+目录表总数 = 198
+ts_emotion_daily     rows=268      freshness=20261014   done=True
+ts_emotion_ladder    rows=3489     freshness=20261014   done=True
+```
+读层校验：`tdx_read.table_ready()` 两表均 `True`；`read_all('ts_emotion_daily')` 直出末5 行面板。
+
+### 12.3 策略上架（362 制度·必带 since）
+
+`portal/strategies.json` 新增第 13 条：
+
+| 字段 | 值 |
+|---|---|
+| `id` / `name` | `emotion` / 打板情绪周期 |
+| `status` | **`tool`**（数据底座在产，信号规则未拍板——不冒充 signal） |
+| `since` | **2026-10-15**（60 交易日考核起算） |
+| `badge` | 情绪 |
+| metrics 四项 | 数据源（limit_list_d 自算·不依赖打板套餐）/ 产出（268日 + 3489行梯队）/ 指标（封板率·晋级率·最高连板·封单额）/ 刷新（每日 08:20 e10169ba） |
+
+**门户校验**：`strategy_market.market()` 返回 `ok=True count=13 live=6 shadow=3`，
+`emotion` 卡正常输出。`href=""` 属现有惯例（`strong` 也是空 href 的 live 条目），
+门户按 status 渲染徽标不强制链接。`TAG_MAP` 未动——它是「信号 tag → 策略 id」归因表，
+打板线尚无信号规则，**不硬凑标签**。
+
+### 12.4 交付状态
+
+| 项 | 状态 |
+|---|---|
+| 两张情绪表入湖 + 进目录 | ✅ `rows=268` / `rows=3489`，`freshness=20261014` |
+| 读层可用 | ✅ `table_ready=True` + `read_all` 直出 |
+| 策略上架 | ✅ 第 13 条，`status=tool`，`since=2026-10-15` |
+| 每日刷新 | ✅ automation `e10169ba`（08:20 ACTIVE）第 2 项 |
+| 信号规则 | ⏳ **待老田拍板**（涨停家数阈值 / 封板率 / 晋级率 / 最高板 的进出场规则） |
+| 打板套餐 3199 | **建议不买** —— 数据面已自足 |
+
+**⇒ 下一步等你一句话**：情绪信号规则怎么定（哪些指标进可买/观望/回避三档）。
+或者维持现状当研究底座挂着也不错——表在产、口径可审计、每日自动刷新，不产信号零风险。

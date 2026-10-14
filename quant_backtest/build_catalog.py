@@ -175,6 +175,13 @@ for _market, _label in (('hk', '港股'), ('us', '美股')):
             'desc': _label + _label_table + '（Tushare）', 'date_col': 'end_date', 'freq': 'Q'}
 TABLE_DEFS['ts_rt_min'] = {'desc': '实时分钟行情（xtcloud，按实际 time 字段核验）',
                           'date_col': 'time', 'freq': '1min'}
+# K-STOCK-398（10-15）：打板情绪周期底座。源limit_list_d 自算，不依赖 tushare 打板套餐。
+TABLE_DEFS['ts_emotion_daily'] = {
+    'desc': '打板情绪周期日频面板（涨停/炸板/最高板/封板率/晋级率/封单额）',
+    'date_col': 'trade_date', 'freq': 'D', 'layout': 'single'}
+TABLE_DEFS['ts_emotion_ladder'] = {
+    'desc': '连板梯队明细（≥2板：连板数/炸板/封单额/首末封/流通市值）',
+    'date_col': 'trade_date', 'freq': 'D', 'layout': 'single'}
 for _name in ('tdx_sector_def', 'tdx_sector_member', 'ts_ths_member',
               'stock_company', 'sw_classify_l1', 'sw_l1_member'):
     TABLE_DEFS[_name]['date_col'] = None

@@ -34,6 +34,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import glob
 import os
 import sys
@@ -46,7 +47,9 @@ sys.stdout.reconfigure(encoding="utf-8")
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "data", "tushare", "limit_list_d")
 CAL = os.path.join(HERE, "data", "tushare", "trade_cal")
-OUT = os.path.join(HERE, "data", "emotion")
+# K-STOCK-398：落 data/tdx/ 与生产 tdx 表同级 —— build_catalog.py 的 WAREHOUSES
+# 只扫 data/tdx + data/tushare 两仓，落 data/emotion 会被目录构建器漏掉。
+OUT = os.path.join(HERE, "data", "tdx")
 
 
 def trading_days() -> set[str]:
@@ -122,6 +125,35 @@ def build(df: pd.DataFrame):
     return g, ladder
 
 
+def _write_manifest(tbl: str, rows: int, df: pd.DataFrame) -> None:
+    """写 data/tdx/_manifest.json 条目。
+
+    🔴 判例：build_catalog.py 的 readiness_basis 默认 `file_presence`，
+    manifest 缺条目时 catalog.json 里 `rows` 为 null（实测 ts_emotion_* 即如此）。
+    写入后 catalog 才能报出真实行数。
+    """
+    mp = os.path.join(OUT, "_manifest.json")
+    m = {}
+    if os.path.exists(mp):
+        try:
+            m = json.load(open(mp, encoding="utf-8"))
+        except Exception:
+            m = {}
+    m[tbl] = {
+        "offset": 0,
+        "part": len(glob.glob(os.path.join(OUT, tbl, "part_*.parquet"))),
+        "rows": int(rows),
+        "done": True,
+        "updated": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "latest": str(df["trade_date"].max()) if "trade_date" in df.columns else None,
+        "producer": "emotion_cycle.py (K-STOCK-398)",
+    }
+    tmp = mp + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(m, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, mp)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="打板情绪周期指标底座（只读计算）")
     ap.add_argument("--dryrun", action="store_true")
@@ -158,14 +190,17 @@ def main() -> int:
         print("\nDRY 未写盘")
         return 0
 
-    os.makedirs(OUT, exist_ok=True)
-    p1 = os.path.join(OUT, "ts_emotion_daily.parquet")
-    p2 = os.path.join(OUT, "ts_emotion_ladder.parquet")
-    panel.to_parquet(p1, index=False)
-    ladder.to_parquet(p2, index=False)
+    # K-STOCK-398 修正：build_catalog.py 的扫描是「取 data/tdx 下的子**目录**」
+    # （os.path.isdir 为真才收，跳过 `_` 开头），故产出必须是目录形态
+    # （与 ts_ths_daily 等生产表一致），不能是裸 parquet 文件，否则目录构建器扫不到。
     print("\n已写：")
-    print("  %s  rows=%d" % (p1, len(panel)))
-    print("  %s  rows=%d" % (p2, len(ladder)))
+    for tbl, df in (("ts_emotion_daily", panel), ("ts_emotion_ladder", ladder)):
+        tdir = os.path.join(OUT, tbl)
+        os.makedirs(tdir, exist_ok=True)
+        fp = os.path.join(tdir, "part_0000.parquet")
+        df.to_parquet(fp, index=False)
+        print("  %s  rows=%d  %s" % (fp, len(df), time.strftime("%H:%M:%S")))
+        _write_manifest(tbl, len(df), df)
     print("完成 %s" % time.strftime("%H:%M:%S"))
     return 0
 
