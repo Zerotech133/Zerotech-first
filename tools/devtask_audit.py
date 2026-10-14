@@ -9,6 +9,22 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# K-ORG-064 返工(QA1退回项①): worktree 内运行时 __file__ 上溯到的是 worktree 根,
+# 而 .worktrees/tasks.json 只存在于主仓——用 git common dir 锚定主仓根。
+def _main_root():
+    r = subprocess.run(
+        ["git", "rev-parse", "--git-common-dir"],
+        cwd=str(ROOT), capture_output=True, text=True,
+    )
+    common = r.stdout.strip()
+    if r.returncode == 0 and common:
+        p = Path(common)
+        if not p.is_absolute():
+            p = (ROOT / common).resolve()
+        return p.parent  # .../<主仓>/.git -> 主仓根
+    return ROOT  # 非 git 环境降级(保持旧行为)
+
+ROOT = _main_root()
 TASKS_FILE = ROOT / ".worktrees" / "tasks.json"
 
 
@@ -37,7 +53,10 @@ def is_merged(tid):
         capture_output=True,
         text=True,
     )
-    return proc.returncode == 0 and "merge task/{}".format(tid) in proc.stdout
+    # K-ORG-064 返工(QA1退回项②): 裸子串有前缀撞号误判——"merge task/K-STOCK-136"
+    # 会命中 K-STOCK-1361 的提交; 实际 merge 消息格式为 "merge task/<TID>: ..."
+    # (git log 实证), 以冒号锚定消除前缀歧义。
+    return proc.returncode == 0 and "merge task/{}:".format(tid) in proc.stdout
 
 
 def audit():
