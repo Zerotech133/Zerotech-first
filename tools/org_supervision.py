@@ -160,6 +160,35 @@ def check_rules():
     return n_rules, problems
 
 
+def check_persona_size():
+    """Persona 体积体检（K-ORG-090 token 总闸）：盯防注入增量膨胀——
+    岗卡铁律段（T1≈268t）+ 记忆回注段（G1≤150t）+ 岗级 rules 合计折算 token
+    （1.5 字/t 保守口径），>600t 黄灯（087 预算 350t + G1 150t + 裕量）。
+    返回 (最大增量 tokens, 超阈岗列表, 异常项)。"""
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import agent_coder  # noqa: PLC0415
+    except Exception as e:  # noqa: BLE001
+        return None, [], ["persona 体积探测失败: %s" % str(e)[:50]]
+    over, worst = [], 0
+    for aid in agent_coder.BUNDLE["agents"]:
+        try:
+            p = agent_coder._persona(aid)
+        except Exception:  # noqa: BLE001
+            continue
+        inc = 0
+        if "## 组织铁律" in p:
+            inc += len(p[p.index("## 组织铁律"):])
+        if "## 本岗近期判断" in p:
+            end = p.index("## 组织铁律") if "## 组织铁律" in p else len(p)
+            inc += len(p[p.index("## 本岗近期判断"):end])
+        tok = int(inc / 1.5)
+        worst = max(worst, tok)
+        if tok > 600:
+            over.append("%s≈%dt" % (aid, tok))
+    return worst, over, []
+
+
 def check_usage():
     """LLM 用量台账判读（K-ORG-038 判例配套）：统计 portal/data/llm_usage.jsonl
     近 24h（ts 字符串比较，格式可排序）调用次数 / token 总量 / channel 分布。
@@ -293,6 +322,13 @@ def main(push=True):
         lines += ["- " + p for p in rule_problems[:6]]
         yellows.append("规则分层异常 %d 项（087/T1：铁律未注入=岗行为靠主控人脑带，需修复注入链）"
                        % len(rule_problems))
+    # 090 token 总闸：注入增量体积盯防
+    worst_tok, over_jobs, size_problems = check_persona_size()
+    if worst_tok is not None and not size_problems:
+        lines.append("- 注入增量峰值: ≈%dt/岗（阈 600t·090 总闸）%s"
+                     % (worst_tok, "，超阈: " + " ".join(over_jobs[:4]) if over_jobs else ""))
+        if over_jobs:
+            yellows.append("persona 注入增量超 600t: %s（087 防膨胀红线，需蒸馏）" % " ".join(over_jobs))
     lines.append("")
 
     health = check_llm_health()
