@@ -281,6 +281,40 @@ def _append_dead_letter(alert: dict, verdict: dict, reason: str, final: bool) ->
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except Exception as e:  # noqa: BLE001
         log(f"死信写入失败: {e}")
+    _trim_dead_letter()  # R12：追加后顺带按日节流轮转
+
+
+# ── 死信轮转（R12：仅追加的审计日志，无生产读方，TTL 清理）───
+DEAD_LETTER_TTL_DAYS = 30  # K-STOCK-401 事故复盘需 17 天跨度，30 天留足余量
+_last_trim = ""            # 最近一次清理日（按日节流，避免每次追加都全量重写）
+
+
+def _trim_dead_letter() -> None:
+    """按 ts 保留近 DEAD_LETTER_TTL_DAYS 天，其余清理。
+
+    按日节流（进程内）；坏/缺 ts 保守保留不误删。重写用原子写防截断。
+    """
+    global _last_trim
+    today = datetime.now().date().isoformat()
+    if _last_trim == today or not DEAD_LETTER.exists():
+        return
+    _last_trim = today
+    cutoff = datetime.now() - timedelta(days=DEAD_LETTER_TTL_DAYS)
+    keep, drop = [], 0
+    for line in DEAD_LETTER.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            ts = json.loads(line).get("ts", "")
+            if ts and datetime.fromisoformat(ts) < cutoff:
+                drop += 1
+                continue
+        except Exception:  # noqa: BLE001
+            pass  # 坏/缺 ts：保守保留
+        keep.append(line)
+    if drop:
+        jc.atomic_write_text(DEAD_LETTER, "\n".join(keep) + "\n")
+        log(f"死信轮转清理 {drop} 条（保留 {len(keep)} 条，TTL {DEAD_LETTER_TTL_DAYS} 天）")
 
 
 def _push_with_dlq(alert: dict, verdict: dict) -> bool:
@@ -551,6 +585,7 @@ def main() -> None:
     set_module("gate")
     args = sys.argv[1:]
     if "--once" in args or "--dry" in args:
+        _trim_dead_letter()  # R12：一次性模式也顺带轮转（历史积压在此清理）
         run_once(dry="--dry" in args)
         return
     if not API_KEY:
@@ -560,6 +595,7 @@ def main() -> None:
     log(f"网关启动 模式={mode} 轮询={POLL_SEC}s 阈值={URGENT_THRESHOLD} "
         f"metrics=127.0.0.1:{METRICS_PORT} "
         f"飞书推送={'已配置' if LARK_ALERT_OPEN_ID else '未配置(仅日志)'}")
+    _trim_dead_letter()  # R12：常驻启动时轮转一次（历史积压在此清理）
     if mode == "事件驱动":
         event_loop()
     else:
