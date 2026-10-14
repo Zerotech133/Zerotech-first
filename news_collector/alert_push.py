@@ -136,9 +136,10 @@ def build_blocks(res, morning, idx):
     return blocks
 
 
-def push_card_multi(card, qr_portal=None, targets=None):
+def push_card_multi(card, qr_portal=None, targets=None, kind="daily:alert"):
     """多目标推送：首目标（个人）走 card_build 完整通道（二维码+回退），
-    其余目标 OpenAPI 直连；返回 {目标名: ok}。"""
+    其余目标 OpenAPI 直连；返回 {目标名: ok}。
+    kind：统一发送流水分类（daily:alert 预警 / daily:report 统一日报）。"""
     import card_build
     from send_feishu import send_content_to
     targets = targets or [{"name": "个人", "type": "open_id", "id": None}]
@@ -152,6 +153,17 @@ def push_card_multi(card, qr_portal=None, targets=None):
                 t["id"], t["type"], card_json, "interactive")
         except Exception:
             results[t["name"]] = False
+    # 统一发送流水（商业化计费依据；fail-safe）
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        import push_flow
+        push_flow.record(kind=kind, channel="feishu",
+                         target=",".join(t["name"] for t in targets),
+                         count=1,
+                         ok=any(v for k, v in results.items()
+                                if not k.startswith("_")))
+    except Exception:
+        pass
     return results
 
 

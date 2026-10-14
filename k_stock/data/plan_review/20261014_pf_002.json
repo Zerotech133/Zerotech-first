@@ -1,0 +1,81 @@
+{
+ "schema": "k-stock-163/plan-review-v0.1",
+ "pf_id": "pf_002",
+ "manager_id": "laotian_pm",
+ "source": "pf_002",
+ "date": "20261014",
+ "generated_at": "2026-10-14T09:20:23",
+ "provider": "zhipu-fallback",
+ "parsed": true,
+ "approved": [
+  {
+   "stock": "688203.SH",
+   "reason": "全清单唯一T1，conf=0.90显著高于其余标的(0.70)，且与账本taishan中ai_team挂单(qty=6000)方向一致；但影子未出分、科创板波动大，故仓位压至8%，影子出分前不追加",
+   "weight": "8%"
+  },
+  {
+   "stock": "000736.SZ",
+   "reason": "九维已出分（信号完成验证），conf=0.70 T2，挂单qty=23200与策略产物一致，可建仓",
+   "weight": "6%"
+  },
+  {
+   "stock": "002162.SZ",
+   "reason": "九维已出分，conf=0.70 T2，挂单qty=25200与策略产物一致，可建仓",
+   "weight": "6%"
+  },
+  {
+   "stock": "001317.SZ",
+   "reason": "九维已出分，conf=0.70 T2，挂单qty=1600敞口较小，验证信号下适度建仓",
+   "weight": "4%"
+  },
+  {
+   "stock": "000993.SZ",
+   "reason": "九维已出分，conf=0.70 T2，挂单qty=200极小，仅给试探性仓位",
+   "weight": "3%"
+  }
+ ],
+ "rejected": [
+  {
+   "stock": "300741.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "603248.SH",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "600892.SH",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "603721.SH",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "000011.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "000560.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "002285.SZ",
+   "reason_code": "风险敞口"
+  },
+  {
+   "stock": "002811.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "301231.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "600059.SH",
+   "reason_code": "信心不足"
+  }
+ ],
+ "summary": "今日仅批准5只合计27%仓位：唯一T1的688203.SH(8%)加4只九维出分标的，10只影子未出分的T2标的全部驳回（信心不足7只、大额挂单敞口3只），其余T3层205笔低信心意图一并按信心不足不予批准，单票仓位均未超20%。",
+ "body": "{\"approved\": [{\"stock\": \"688203.SH\", \"reason\": \"全清单唯一T1，conf=0.90显著高于其余标的(0.70)，且与账本taishan中ai_team挂单(qty=6000)方向一致；但影子未出分、科创板波动大，故仓位压至8%，影子出分前不追加\", \"weight\": \"8%\"}, {\"stock\": \"000736.SZ\", \"reason\": \"九维已出分（信号完成验证），conf=0.70 T2，挂单qty=23200与策略产物一致，可建仓\", \"weight\": \"6%\"}, {\"stock\": \"002162.SZ\", \"reason\": \"九维已出分，conf=0.70 T2，挂单qty=25200与策略产物一致，可建仓\", \"weight\": \"6%\"}, {\"stock\": \"001317.SZ\", \"reason\": \"九维已出分，conf=0.70 T2，挂单qty=1600敞口较小，验证信号下适度建仓\", \"weight\": \"4%\"}, {\"stock\": \"000993.SZ\", \"reason\": \"九维已出分，conf=0.70 T2，挂单qty=200极小，仅给试探性仓位\", \"weight\": \"3%\"}], \"rejected\": [{\"stock\": \"300741.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"603248.SH\", \"reason_code\": \"信心不足\"}, {\"stock\": \"600892.SH\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"603721.SH\", \"reason_code\": \"信心不足\"}, {\"stock\": \"000011.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"000560.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"002285.SZ\", \"reason_code\": \"风险敞口\"}, {\"stock\": \"002811.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"301231.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"600059.SH\", \"reason_code\": \"信心不足\"}], \"summary\": \"今日仅批准5只合计27%仓位：唯一T1的688203.SH(8%)加4只九维出分标的，10只影子未出分的T2标的全部驳回（信心不足7只、大额挂单敞口3只），其余T3层205笔低信心意图一并按信心不足不予批准，单票仓位均未超20%。\"}"
+}

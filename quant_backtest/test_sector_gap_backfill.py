@@ -7,6 +7,7 @@ from sector_gap_backfill import (
     probe_sector_daily,
     reconcile_sector_definition,
     stage_sector_daily,
+    stage_sector_daily_by_date,
     validate_sector_daily_response,
 )
 
@@ -76,4 +77,14 @@ def test_reconcile_definition_uses_validity_window_for_historical_rows():
     result = reconcile_sector_definition(definitions, daily, validity)
     assert result["missing"] == []
     assert result["extra"] == [("880001", "20200101")]
+
+
+def test_stage_by_date_uses_full_day_response_and_marks_missing_source_empty(tmp_path):
+    payload = reply(rows=[["880001", "20261001", 1, 2, 1, 2, 10, 20]], total=1)
+    result = stage_sector_daily_by_date(
+        [key("880001"), key("880002")], tmp_path,
+        fetch_day=lambda day: payload,
+    )
+    assert result["counts"] == {"added": 1, "blocked": 1, "rejected": 0, "source_empty": 1}
+    assert result["production_write"] is False
 

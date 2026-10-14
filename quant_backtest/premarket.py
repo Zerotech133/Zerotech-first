@@ -1985,5 +1985,20 @@ def main():
         raise
 
 
+def run_premarket_once(run_date: str, dry_run: bool = True) -> dict:
+    """盘前产物单次门禁；dry_run 默认只检查新鲜度，不写报告或推送。"""
+    latest = os.path.join(REPORTS, "premarket_latest.json")
+    artifact_exists = os.path.exists(latest)
+    age_hours = None
+    if artifact_exists:
+        age_hours = max(0.0, (datetime.now() - datetime.fromtimestamp(os.path.getmtime(latest))).total_seconds() / 3600.0)
+    result = {"run_date": str(run_date), "dry_run": bool(dry_run), "production_write": False,
+              "artifact": latest, "artifact_exists": artifact_exists, "age_hours": age_hours,
+              "status": "ready" if artifact_exists and age_hours is not None and age_hours <= 26 else "stale"}
+    if dry_run:
+        return result
+    raise RuntimeError("盘前正式运行必须由现有 main 门禁和调度器触发；先完成 dry_run 验收")
+
+
 if __name__ == "__main__":
     main()

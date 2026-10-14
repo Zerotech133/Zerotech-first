@@ -44,8 +44,10 @@ def _arr(vals):
                     dtype=float)
 
 
-def plot_one(r, out_png):
-    """r = linkage.series(...) 的返回。写 PNG + json 侧车。"""
+def plot_one(r, out_png, sig=None):
+    """r = linkage.series(...) 的返回。写 PNG + json 侧车。
+    sig 可传外部已判结果（20261014 linkage-dev：gen_all 复用同一判定，
+    侧车展示与 collector 留档分离）。"""
     per = r["period"]
     n = r["n"]
     x = np.arange(n)
@@ -122,11 +124,21 @@ def plot_one(r, out_png):
     plt.close(fig)
 
     # 五信号标注（linkage_signals 纯读判定，进侧车供门户展示）
+    if sig is None:
+        try:
+            from linkage_signals import judge_series
+            sig = judge_series(r)
+        except Exception:
+            sig = {"signals": [], "ctx": {}}
+    # 20261014 linkage-dev：展示层开关——⑤ 隐藏时侧车 signals 不含⑤
+    # （判定与 collector 留档照旧，完整判定由 gen_all 直传 collect）
+    disp = list(sig.get("signals", []))
     try:
-        from linkage_signals import judge_series
-        sig = judge_series(r)
+        from linkage_signals import sig5_hidden
+        if sig5_hidden():
+            disp = [s for s in disp if str(s.get("tag")) != "5"]
     except Exception:
-        sig = {"signals": [], "ctx": {}}
+        pass
     sidecar = {
         "code": r["code"], "name": r.get("name"), "period": per,
         "n": n, "base_dt": r.get("base_dt"), "meta": m,
@@ -134,7 +146,7 @@ def plot_one(r, out_png):
         "last_pct": {k: (r[k][-1] if r.get(k) else None)
                      for k in ("stock", "index", "block")},
         "stock_last_close": r.get("stock_last_close"),
-        "signals": sig.get("signals", []),
+        "signals": disp,
         "sig_ctx": sig.get("ctx", {}),
         "generated_at": __import__("time").strftime("%Y-%m-%d %H:%M:%S"),
     }
@@ -158,7 +170,25 @@ def gen_all(code, periods=LK.PERIODS, last=None, block=None,
             continue
         png = os.path.join(OUT_DIR, "%s_%s.png" % (
             r["code"].replace("/", "_"), per))
-        out[per] = plot_one(r, png)
+        # 20261014 linkage-dev：判定一次，侧车展示（开关过滤）与
+        # collector 留档（完整 signals，不受展示开关影响）分离
+        try:
+            from linkage_signals import judge_series
+            sig_full = judge_series(r)
+        except Exception:
+            sig_full = {"signals": [], "ctx": {}}
+        out[per] = plot_one(r, png, sig=sig_full)
+        # 20261014 linkage-dev：五信号影子采集（只记不推，失败不影响产线）
+        try:
+            from linkage_collector import collect
+            collect(r["code"], {per: {
+                "signals": sig_full.get("signals", []),
+                "ctx": sig_full.get("ctx", {}),
+                "last_pct": out[per].get("last_pct"),
+                "stock_last_dt": (r.get("dts") or [""])[-1] or None,
+            }}, name=r.get("name"), source="linkage_plot")
+        except Exception:
+            pass
     return out
 
 

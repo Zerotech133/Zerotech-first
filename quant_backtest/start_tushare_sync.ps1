@@ -21,7 +21,7 @@ try {
     if ($null -eq $rc) { $rc = 1 }  # null 兜底：宁可误告警不可假绿
     ('tushare_sync exit=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if ($rc -ne 0) {
-        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py tushare_sync $rc C:\Temp\tushare_sync_err.log 1>$null 2>$null
+        & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\alert_fail.py tushare_sync $rc C:\Temp\tushare_sync_err.log 1>$null 2>$null
     }
     exit $rc
 } catch {

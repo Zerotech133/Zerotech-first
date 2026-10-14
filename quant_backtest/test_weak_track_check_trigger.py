@@ -20,7 +20,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from weak_track_check import (  # noqa: E402
-    stood_on, trig_ex_converge, trig_pool_new_sig, trend_tag, TRIG_EX_TH)
+    stood_on, trig_ex_converge, trig_pool_new_sig, trig_pivot_break,
+    trend_tag, TRIG_EX_TH)
 
 
 class TestStoodOn(unittest.TestCase):
@@ -84,6 +85,29 @@ class TestTrigPoolNewSig(unittest.TestCase):
     def test_datetime_string_compares_lexically(self):
         """池内 detect_date 带时间尾串时仍按字符串比较成立。"""
         self.assertTrue(trig_pool_new_sig("2026-10-02 15:00", "2026-10-02"))
+
+
+class TestTrigPivotBreak(unittest.TestCase):
+    """§6 触发4：破左侧关键位（px < pivot，边界相等=未破，缺失不触发）。"""
+
+    def test_break_triggers(self):
+        """现价 < 左侧关键位 → 触发（首例实测：16.06 < 16.12）。"""
+        self.assertTrue(trig_pivot_break(16.06, 16.12))
+
+    def test_boundary_equal_not_break(self):
+        """边界相等：px == pivot → 未破（>= 站上口径对偶）。"""
+        self.assertFalse(trig_pivot_break(16.12, 16.12))
+
+    def test_above_not_break(self):
+        self.assertFalse(trig_pivot_break(16.27, 16.12))
+
+    def test_none_px_no_trigger(self):
+        """现价不可算（None）→ 不触发。"""
+        self.assertFalse(trig_pivot_break(None, 16.12))
+
+    def test_none_pivot_no_trigger(self):
+        """关键位缺失（空 pivots）→ 不触发。"""
+        self.assertFalse(trig_pivot_break(16.06, None))
 
 
 class TestTrendTag(unittest.TestCase):

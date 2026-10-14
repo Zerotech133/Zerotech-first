@@ -42,10 +42,12 @@ class OllamaClient:
         with self._request("/api/tags") as resp: result = self._json_response(resp)
         return [m.get("name", "") for m in result.get("models", []) if isinstance(m, dict) and m.get("name")]
 
-    def chat_stream(self, messages, model=DEFAULT_CHAT_MODEL, think=None):
+    def chat_stream(self, messages, model=DEFAULT_CHAT_MODEL, think=False, keep_alive="30m"):
         payload = {"model": model, "messages": messages, "stream": True}
         if think is not None:
             payload["think"] = bool(think)
+        if keep_alive is not None:
+            payload["keep_alive"] = keep_alive
         with self._request("/api/chat", payload, "POST") as resp:
             for raw in resp:
                 line = raw.decode("utf-8", "replace").strip()
@@ -57,8 +59,8 @@ class OllamaClient:
                 if text: yield text
                 if chunk.get("done"): break
 
-    def chat(self, messages, model=DEFAULT_CHAT_MODEL, think=None):
-        return "".join(self.chat_stream(messages, model, think=think))
+    def chat(self, messages, model=DEFAULT_CHAT_MODEL, think=False, keep_alive="30m"):
+        return "".join(self.chat_stream(messages, model, think=think, keep_alive=keep_alive))
 
     def embed(self, texts, model=EMBED_MODEL):
         single = isinstance(texts, str); items = [texts] if single else list(texts)

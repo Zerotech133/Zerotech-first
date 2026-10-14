@@ -1,0 +1,5 @@
+{
+  "_comment": "linkage 信号开关（20261014 linkage-dev）。缺文件/缺键=旧行为全开（回退：删除本文件即可）。sig4_disabled=true: 信号④孤军深入完全不判定、不展示、不落档；sig5_display_only=false: 信号⑤三共振判定与 linkage_collector 留档照旧、产线展示/推送/页面隐藏（true 或缺省=照常展示）。",
+  "sig4_disabled": true,
+  "sig5_display_only": false
+}

@@ -95,14 +95,19 @@ def main():
         if not os.path.exists(src_path):
             errors.append("源缺失: %s" % rel_src)
             continue
-        action, _ = classify(src_path, dst_path)
-        if action == "skip":
-            stats["skip"] += 1
-            print("[跳过] %s (hash 相同)" % rel_dst)
-        else:
-            stats[action] += 1
-            print("[%s] %s" % ("新增" if action == "add" else "更新", rel_dst))
-            atomic_copy(src_path, dst_path, args.dry_run)
+        try:
+            action, _ = classify(src_path, dst_path)
+            if action == "skip":
+                stats["skip"] += 1
+                print("[跳过] %s (hash 相同)" % rel_dst)
+            else:
+                stats[action] += 1
+                print("[%s] %s" % ("新增" if action == "add" else "更新", rel_dst))
+                atomic_copy(src_path, dst_path, args.dry_run)
+        except OSError as e:
+            # 审计 P2-4（2026-10-14）：单文件被占用/读失败不再炸全链，记错误继续
+            errors.append("%s: %s" % (rel_dst, e))
+            print("[错误] %s: %s" % (rel_dst, e))
 
     # --- pick_details 差异同步 ---
     src_dir = os.path.join(SRC, DETAILS_SUBDIR)
@@ -115,12 +120,16 @@ def main():
     for name in src_files:
         src_path = os.path.join(src_dir, name)
         dst_path = os.path.join(dst_dir, name)
-        action, _ = classify(src_path, dst_path)
-        if action == "skip":
-            stats["skip"] += 1
-        else:
-            stats[action] += 1
-            atomic_copy(src_path, dst_path, args.dry_run)
+        try:
+            action, _ = classify(src_path, dst_path)
+            if action == "skip":
+                stats["skip"] += 1
+            else:
+                stats[action] += 1
+                atomic_copy(src_path, dst_path, args.dry_run)
+        except OSError as e:
+            # 审计 P2-4（2026-10-14）：单文件被占用/读失败不再炸全链，记错误继续
+            errors.append("%s: %s" % (name, e))
 
     # 源没有而目标有的历史文件：保留不删，只计数
     src_set = set(src_files)

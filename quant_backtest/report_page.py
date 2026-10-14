@@ -527,8 +527,107 @@ table{border-collapse:collapse;width:100%%;font-size:13px}
 
 POSITIONS = os.path.join(HERE, "reports", "positions.html")
 
+# ── W1-2：九维警报池命中检测（供盘前作战卡 / 持仓页共用） ──────────
+# 放在本模块而非 runner：runner 已 import report_page，反向 import 会成环，
+# 且 nine_dim.py 拖 tushare/pandas 全家桶，账本页不值得为读一个 jsonl 加载。
+# 判例 K32/K33：九维 score≥75 为拥挤警报（反指实证，前向收益显著为负），
+# 持仓/待买命中 = 提醒风险，非买入信号。
+NINE_DIM_HIST = os.path.join(HERE, "data", "nine_dim_history.jsonl")
+NINE_DIM_RECENT_N = 20  # 只看池内最近 20 个交易日（约一个月）的记录，过期警报不再提醒
 
-def write_positions_html(led, gen_ts):
+POOL_ROW_BG = ' style="background:#3a1d1d"'  # 命中行醒目暗红底（同 opt 当前参数行风格）
+
+
+def _cfg_flag(key, default=True):
+    """W1-2：读 config.json 顶层布尔开关；读不到按 default（fail-open）。"""
+    try:
+        with open(os.path.join(HERE, "config.json"), encoding="utf-8") as f:
+            return bool(json.load(f).get(key, default))
+    except Exception:
+        return default
+
+
+def nine_dim_cn_code(market, symbol):
+    """账本 (market, symbol) → 警报池全码；非 CN 返回 None（九维只覆盖 A 股）。
+    池内 code 一律带后缀（600519.SH，见 nine_dim.py 入池段）；账本 CN 亦是全码，
+    直接对齐；裸 6 位码兜底按首位推断后缀（6→SH，4/8/9→BJ，其余→SZ）。"""
+    if (market or "").upper() != "CN" or not symbol:
+        return None
+    s = str(symbol).strip().upper()
+    if "." in s:
+        return s
+    return s + (".SH" if s[0] == "6" else
+                ".BJ" if s[0] in "489" else ".SZ")
+
+
+def nine_dim_alert_check(codes, path=None, recent_n=NINE_DIM_RECENT_N):
+    """W1-2：代码集合命中九维警报池检测。
+    codes: 全码可迭代（600519.SH / 000045.SZ）；path 可注入（单测用）。
+    返回 {code: (dt, score, band)}，同码取最近 dt（YYYYMMDD）。
+    大文件按行流式读 + code 集合过滤，不整读；
+    「最近 N 个交易日」= 池内出现过的 dt 降序前 N（免依赖交易日历）。
+    fail-open（K98 同款纪律）：文件缺失/损坏 = 无提醒，不炸卡不炸页。"""
+    hits = {}
+    try:
+        want = {c for c in (codes or ()) if c}
+        if not want:
+            return hits
+        dts, rows = set(), []
+        with open(path or NINE_DIM_HIST, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except Exception:
+                    continue          # 坏行跳过，不因单行损坏丢弃全池
+                if r.get("pool_type") != "alert":
+                    continue          # 只认警报池（键=code+dt，见 nine_dim 入池段）
+                dts.add(str(r.get("dt") or ""))
+                c = str(r.get("code") or "")
+                if c in want:
+                    rows.append(r)
+        recent = set(sorted(dts, reverse=True)[:recent_n])
+        for r in rows:
+            dt = str(r.get("dt") or "")
+            if dt not in recent:
+                continue
+            old = hits.get(r["code"])
+            if not old or dt > old[0]:
+                hits[r["code"]] = (dt, r.get("score"), r.get("band"))
+        return hits
+    except Exception:
+        return {}                     # 文件缺失等一律 fail-open
+
+
+def _ledger_alert_hits(entries, alert_hits=None):
+    """W1-2：账本条目列表 → 命中映射。alert_hits 非 None 时直接透传（单测注入）；
+    None 则按开关 nine_dim_alert_card 现算。"""
+    if alert_hits is not None:
+        return alert_hits
+    if not _cfg_flag("nine_dim_alert_card", True):
+        return {}
+    codes = {c for c in (nine_dim_cn_code(e.get("market"), e.get("symbol"))
+                         for e in entries) if c}
+    return nine_dim_alert_check(codes)
+
+
+def _alert_deco(e, hits):
+    """W1-2：单条账本条目 → (行属性, 徽标 html)。未命中返回 ("","")。"""
+    c = nine_dim_cn_code(e.get("market"), e.get("symbol"))
+    h = hits.get(c) if c else None
+    if not h:
+        return "", ""
+    tip = ("九维警报池命中 %s-%s-%s · 分数 %s（%s）· 高分=拥挤警报，非买入信号"
+           % (h[0][:4], h[0][4:6], h[0][6:8], h[1], h[2] or "alert"))
+    return (POOL_ROW_BG,
+            "<span title='%s' style='background:#b62324;color:#fff;"
+            "border-radius:4px;padding:0 5px;font-size:11px;"
+            "margin-left:6px'>⚠️警报池</span>" % tip)
+
+
+def write_positions_html(led, gen_ts, alert_hits=None):
     """纸面持仓跟踪页（/bt-positions）：待买入 / 持仓中 / 已平仓。
     led = {"pending":[], "open":[], "closed":[]}（runner.update_ledger 维护）。
     全表可下钻：点标的 → 个股全景 /bt/stock · 点策略 → 策略纵切页。"""
@@ -554,23 +653,30 @@ def write_positions_html(led, gen_ts):
     open_ = led.get("open") or []
     closed = (led.get("closed") or [])[:30]
 
-    p_rows = "".join(
-        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%.4g</td></tr>" % (
-            _stock_link(e["name"], e.get("symbol")), e["market"],
-            _strat_link(e["strategy"]),
-            e.get("sig_date", ""), e.get("last_px") or 0)
-        for e in pend) or "<tr><td colspan=5>—</td></tr>"
+    # W1-2：九维警报池命中标记（与盘前作战卡同源同开关；closed 不标，已成历史）
+    hits = _ledger_alert_hits(pend + open_, alert_hits)
 
-    o_rows = "".join(
-        "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
-        "<td>%.4g</td><td>%.4g</td>%s<td>%d</td>%s</tr>" % (
-            _stock_link(e["name"], e.get("symbol")), e["market"],
-            _strat_link(e["strategy"]),
-            e.get("entry_date", ""), e["entry_px"],
-            e.get("last_px") or e["entry_px"], pct_td(e.get("pnl", 0)),
-            e.get("days", 0), trail_td(e))
-        for e in sorted(open_, key=lambda x: -x.get("pnl", 0))
-    ) or "<tr><td colspan=9>—</td></tr>"
+    p_rows = ""
+    for e in pend:
+        bg, badge = _alert_deco(e, hits)
+        p_rows += ("<tr%s><td>%s%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                   "<td>%.4g</td></tr>" % (
+                       bg, _stock_link(e["name"], e.get("symbol")), badge,
+                       e["market"], _strat_link(e["strategy"]),
+                       e.get("sig_date", ""), e.get("last_px") or 0))
+    p_rows = p_rows or "<tr><td colspan=5>—</td></tr>"
+
+    o_rows = ""
+    for e in sorted(open_, key=lambda x: -x.get("pnl", 0)):
+        bg, badge = _alert_deco(e, hits)
+        o_rows += ("<tr%s><td>%s%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                   "<td>%.4g</td><td>%.4g</td>%s<td>%d</td>%s</tr>" % (
+                       bg, _stock_link(e["name"], e.get("symbol")), badge,
+                       e["market"], _strat_link(e["strategy"]),
+                       e.get("entry_date", ""), e["entry_px"],
+                       e.get("last_px") or e["entry_px"], pct_td(e.get("pnl", 0)),
+                       e.get("days", 0), trail_td(e)))
+    o_rows = o_rows or "<tr><td colspan=9>—</td></tr>"
 
     c_rows = "".join(
         "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s → %s</td>"
@@ -591,6 +697,11 @@ def write_positions_html(led, gen_ts):
              "（等权单笔，不含手续费）" % (
                  n_all, wins * 100.0 / n_all if n_all else 0,
                  avg * 100, tot * 100))
+    # W1-2：命中时页脚标注数据源与口径（未命中不加，免噪音）
+    alert_foot = (" · ⚠️ 警报池标记：data/nine_dim_history.jsonl"
+                  "（九维 score≥75 拥挤反指，近 %d 个池内交易日）· "
+                  "高分=拥挤警报，非买入信号" % NINE_DIM_RECENT_N
+                  ) if hits else ""
 
     page = """<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -615,11 +726,11 @@ table{border-collapse:collapse;width:100%%;font-size:13px}
 <span class="dim">%d 笔 · 点击展开</span></summary><div class="sec-body">
 <table class="sticky"><tr><th>标的</th><th>市场</th><th>策略</th><th>买入 → 卖出</th>
 <th>买价 → 卖价</th><th>盈亏</th><th>持有</th></tr>%s</table></div></details>
-<div class="leg">纸面模拟：信号 T+1 开盘建仓、翻空收盘平仓 · 点标的 → 个股全景（行情/信号/共振/AI展望）· 点策略 → 策略纵切页（宽度/回测/寻优）· 不构成投资建议</div>
+<div class="leg">纸面模拟：信号 T+1 开盘建仓、翻空收盘平仓 · 点标的 → 个股全景（行情/信号/共振/AI展望）· 点策略 → 策略纵切页（宽度/回测/寻优）· 不构成投资建议%s</div>
 </div></body></html>""" % (CSS, gen_ts, stats,
                            _nav_html(exclude="positions"),
                            len(pend), p_rows, len(open_), o_rows,
-                           len(closed), c_rows)
+                           len(closed), c_rows, alert_foot)
     os.makedirs(os.path.dirname(POSITIONS), exist_ok=True)
     tmp = POSITIONS + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:

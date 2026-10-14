@@ -7,7 +7,9 @@
   B. 日线趋势三线（20/60 双均线：多=last>ma20>ma60，空=last<ma20<ma60）；
   C. 250 日超额现值（个股-板块，与 /bt-linkage 同源口径）；
   D. §6 复评触发判定：① 超额收敛至 -5pp 以内 ② 池内新信号
-     （detect_date > --since）③ 归因反转=人工项不机查。
+     （detect_date > --since）③ 归因反转=人工项不机查 ④ 破左侧关键位
+     （px < pivots[0]，§5 情景 B 前置——20261014 补机查，破位此前
+     只展示不触发，复评链不会被激活=首案结案卡点）。
 
 板块日线滞后时自动「分钟尾巴刷新 → 30m 聚合补日」。
 状态追加 reports/weak_track_<code6>.jsonl（每日一行）。
@@ -54,6 +56,15 @@ def trig_ex_converge(ex, th=TRIG_EX_TH):
     ex=None（超额不可算）不触发。
     """
     return ex is not None and ex >= th
+
+
+def trig_pivot_break(px, pivot):
+    """§6 触发4：破左侧关键位（px < pivot，边界相等=未破）。
+
+    px 或 pivot 缺失不触发。§5 情景 B 前置条件（破 16.12 类破位）
+    补进机查——此前破位只在 §4 打印展示，不进 trig，链路零感知。
+    """
+    return px is not None and pivot is not None and px < pivot
 
 
 def trig_pool_new_sig(detect_date, since):
@@ -173,6 +184,9 @@ def main():
     print("\n=== D. §6 复评触发判定 ===")
     if trig_ex_converge(ex):
         trig.append("超额收敛至 %+.1fpp（≥-5pp，触发1）" % ex)
+    if trig_pivot_break(px, pivots[0] if pivots else None):
+        trig.append("破左侧关键位 %.2f（现价 %.2f，情景B前置·触发4）"
+                    % (pivots[0], px))
     new_sig = []
     if os.path.exists(POOL):
         with open(POOL, encoding="utf-8") as f:
@@ -197,6 +211,11 @@ def main():
     print("  触发2（池内新信号，detect>%s）：%s" % (
         a.since, "；".join(new_sig) if new_sig else "无"))
     print("  触发3（归因反转）：人工项，不机查")
+    print("  触发4（破左侧关键位 %s）：%s" % (
+        "%.2f" % pivots[0] if pivots else "—",
+        "命中：%.2f < %s" % (px, "%.2f" % pivots[0])
+        if trig_pivot_break(px, pivots[0] if pivots else None)
+        else ("未命中（现价 %.2f）" % px if px else "现价不可算")))
     # 状态统一构造（推送+落盘共用）
     state = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "code": code,

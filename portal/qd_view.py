@@ -210,6 +210,10 @@ def render_workspace(snap, css, base=None):
         % (len(snap.get("signals_now", [])),
            len(snap.get("signals_recent", [])),
            snap.get("scanned", 0), e(rg_txt or "—")))
+    # W3-5b 任务B：市况摘要行（缓存无此键时不渲染，向后兼容）
+    msum = snap.get("market_summary") or ""
+    msum_html = ("<div class='dim' style='margin:0 0 10px'>%s</div>" % e(msum)) \
+        if msum else ""
     return ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<title>量子双刀 · 选股中心</title>" + css
@@ -220,7 +224,7 @@ def render_workspace(snap, css, base=None):
             "⚠ 研究态：策略未回测验证（T-20261009-009 结论前不构成选股依据 · "
             "不构成投资建议）· 已注册策略中心（shadow）· 尾盘策略："
             "每日 14:40 全市场扫描 → 14:55 执行窗口</div>"
-            + TOOLS_QD + cards
+            + TOOLS_QD + cards + msum_html
             + "<div class='sec'><h2 style='font-size:16px;margin:0 0 10px'>"
             "⏱ 今日尾盘候选（%d · 14:40 盘中实时 bar 复核 → 14:55 执行窗口）</h2>"
             "<table style='border-collapse:collapse;min-width:520px'>"

@@ -85,6 +85,38 @@ class WebChatTests(unittest.TestCase):
         self.assertTrue(json.loads(urlopen.call_args.args[0].data)['stream'])
 
     @patch.object(web_chat, 'urlopen')
+    def test_chat_defaults_to_fast_thinking_and_model_keep_alive(self, urlopen):
+        urlopen.return_value = Response(b'{"done":true}\n')
+        response, _ = self.request('POST', '/api/chat', {'message': 'hi'})
+        self.assertEqual(response.status, 200)
+        payload = json.loads(urlopen.call_args.args[0].data)
+        self.assertFalse(payload['think'])
+        self.assertEqual(payload['keep_alive'], '30m')
+
+    @patch.object(web_chat, 'urlopen')
+    def test_chat_can_enable_deep_thinking(self, urlopen):
+        urlopen.return_value = Response(b'{"done":true}\n')
+        response, _ = self.request('POST', '/api/chat', {'message': 'hi', 'think': True})
+        self.assertEqual(response.status, 200)
+        self.assertTrue(json.loads(urlopen.call_args.args[0].data)['think'])
+
+    @patch.object(web_chat, 'urlopen')
+    def test_history_is_trimmed_to_character_budget(self, urlopen):
+        urlopen.return_value = Response(b'{"done":true}\n')
+        history = [
+            {'role': 'user', 'content': 'a' * 5000},
+            {'role': 'assistant', 'content': 'b' * 5000},
+            {'role': 'user', 'content': 'c' * 5000},
+            {'role': 'assistant', 'content': 'd' * 5000},
+        ]
+        response, _ = self.request('POST', '/api/chat', {'message': 'hi', 'history': history})
+        self.assertEqual(response.status, 200)
+        payload = json.loads(urlopen.call_args.args[0].data)
+        sent_history = payload['messages'][1:-1]
+        self.assertLessEqual(sum(len(item['content']) for item in sent_history), web_chat.MAX_HISTORY_CHARS)
+        self.assertEqual(sent_history[-1]['content'], 'd' * 5000)
+
+    @patch.object(web_chat, 'urlopen')
     def test_chat_payload_carries_profile_and_bounded_history(self, urlopen):
         urlopen.return_value = Response(b'{"message":{"content":"a"}}\n{"done":true}\n')
         history = [{"role": "user", "content": "旧问题"}, {"role": "assistant", "content": "旧回答"}]

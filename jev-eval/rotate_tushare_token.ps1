@@ -7,7 +7,9 @@
 # 作用：
 #   1. （可选）打开 Tushare 官网让用户重新生成 token
 #   2. 调用 Tushare API 验证新 token 有效性（trade_cal 接口，低积分消耗）
-#   3. 原子更新 jev-gate.env.ps1 的 TUSHARE_TOKEN 行（保留 BOM 防止中文注释乱码）
+#   3. 原子更新 jev-gate.env.plain.ps1 的 TUSHARE_TOKEN 行（保留 BOM），
+#      随后重跑 migrate_env_dpapi.py 重建 .enc（DPAPI）并 --verify
+#      （W1-2 适配 2026-10-14：env 已 stub 化，更新目标从 stub 改为 plain）
 #   4. 重启 signal_review_gate.py（唯一使用 TUSHARE_TOKEN 的进程）
 #   5. 验证重启后日志正常
 param(
@@ -60,8 +62,14 @@ try {
     exit 1
 }
 
-# ── 3. 原子更新 jev-gate.env.ps1 ──────────────────────────
+# ── 3. 原子更新 plain + 重跑 DPAPI 迁移 ───────────────────
+# W1-2（2026-10-14）：jev-gate.env.ps1 已 stub 化（优先 .enc DPAPI、缺失回退
+# plain 明文）。更新目标改为 plain 明文副本，成功后重跑 migrate_env_dpapi.py
+# 重建 .enc 并校验。回滚：还原 rotate_tushare_token.ps1.bak_20261014。
+$StubFile = "$PSScriptRoot\jev-gate.env.ps1"   # stub（重启段加载用）
+$EnvFile  = "$PSScriptRoot\jev-gate.env.plain.ps1"   # 更新目标（明文副本）
 if (-not (Test-Path $EnvFile)) { Write-Error "找不到 $EnvFile"; exit 1 }
+if (-not (Test-Path $StubFile)) { Write-Error "找不到 stub $StubFile"; exit 1 }
 
 # 用 [System.IO.File] 处理 BOM（PS5.1 中文注释需要 UTF-8 BOM）
 $utf8Bom  = New-Object System.Text.UTF8Encoding $true
@@ -90,6 +98,22 @@ if ($content -match [regex]::Escape($Token)) {
     "  ✅ 已更新 $EnvFile"
 }
 
+# ── 3b. 重跑 DPAPI 迁移，重建 .enc ─────────────────────────
+# 迁移失败不阻断轮换：stub 会回退 plain 明文加载（功能可用、安全降级），
+# 但必须醒目告警人工排查——否则 .enc 一直停留在旧 token。
+$Migrate = Join-Path $PSScriptRoot "migrate_env_dpapi.py"
+& $JevPy $Migrate
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "DPAPI 迁移失败（.enc 未更新）——stub 回退 plain 加载，请排查 migrate_env_dpapi.py"
+} else {
+    & $JevPy $Migrate --verify
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "DPAPI --verify 未过（.enc 与 plain 不一致）——stub 回退 plain 加载，请排查"
+    } else {
+        "  ✅ DPAPI .enc 已重建并校验通过"
+    }
+}
+
 # ── 4. 重启 signal_review_gate.py ─────────────────────────
 if ($SkipRestart) {
     "跳过重启（-SkipRestart）"
@@ -97,14 +121,15 @@ if ($SkipRestart) {
     "  Get-CimInstance Win32_Process -Filter `"Name='python.exe'`" | "
     "    Where-Object { `$_.CommandLine -match 'signal_review_gate' } | "
     "    ForEach-Object { Stop-Process -Id `$_.ProcessId -Force }"
-    "  & `"$EnvFile`""
+    "  & `"$StubFile`""
     "  Start-Process 'C:\Program Files\Python311\python.exe' -ArgumentList `"$PSScriptRoot\signal_review_gate.py`",'--loop'"
     exit 0
 }
 
 "重启 signal_review_gate.py..."
-# 加载新 env
-. $EnvFile
+# 加载新 env：dot-source stub（优先 .enc DPAPI；迁移失败时自动回退 plain+WARN）——
+# 顺带端到端验证 stub 加载链路，加载的值与 plain 一致
+. $StubFile
 
 # 停旧进程
 $old = Get-CimInstance Win32_Process -Filter "Name='python.exe'" |

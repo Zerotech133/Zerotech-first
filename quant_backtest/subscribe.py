@@ -536,9 +536,34 @@ def run_scan(mode, only_sub=None, force=False):
             out[sid] = ("card_err:%s" % str(e)[:120], {})
             continue
         targets = _resolve_targets(s, receivers)
+        # 配额生效（仅非 internal 套餐；internal 永不拦）
+        try:
+            import push_flow as _pf
+            _plan, _q, _sent, _blk = _pf.quota_check()
+        except Exception:
+            _blk = False
+        if _blk:
+            out[sid] = ("quota_block", {})
+            try:
+                _pf.record(kind="quota_block:subscribe:%s" % kind,
+                           channel="feishu", target=",".join(
+                               t["name"] for t in targets),
+                           count=1, ok=False)
+            except Exception:
+                pass
+            continue
         tres = _push_card(card, targets)
         ok = any(v for k, v in tres.items() if not k.startswith("_"))
         out[sid] = ("ok" if ok else "fail", tres)
+        # 统一发送流水（商业化计费依据；fail-safe，不影响主链路）
+        try:
+            sys.path.insert(0, STATION)
+            import push_flow
+            push_flow.record(kind="subscribe:%s" % kind, channel="feishu",
+                             target=",".join(t["name"] for t in targets),
+                             count=1, ok=ok)
+        except Exception:
+            pass
         # 更新状态
         st = state.get(sid) or {}
         if ok:

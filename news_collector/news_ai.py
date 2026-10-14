@@ -140,10 +140,26 @@ _SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品"
 
 
 def _jev_key():
-    """JEV_API_KEY：环境变量优先，否则解析 jev-eval/jev-gate.env.ps1。"""
+    """JEV_API_KEY：环境变量优先 → DPAPI 加密库 → 明文 ps1 兜底。"""
     key = os.environ.get("JEV_API_KEY", "")
     if key:
         return key
+    # 2026-10-14 DPAPI 迁移（W1-2 任务A）：stub 化后本文件的正则解析
+    # 读不到明文 key，故在明文兜底之前先走 .enc 加载器（解密失败返回
+    # ""，自然落明文兜底——链路不断只退化，同 C2批2 豁免哲学）
+    try:
+        import importlib.util
+        _loader_fp = os.path.join(os.path.dirname(JEV_ENV_PS1),
+                                  "load_env_dpapi.py")
+        spec = importlib.util.spec_from_file_location("load_env_dpapi",
+                                                      _loader_fp)
+        _mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_mod)
+        key = _mod.get_secret("JEV_API_KEY")
+        if key:
+            return key
+    except Exception:
+        pass
     import re
     try:
         with open(JEV_ENV_PS1, encoding="utf-8") as f:

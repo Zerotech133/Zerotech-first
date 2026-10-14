@@ -175,6 +175,76 @@ def stage_sector_daily(keys: Sequence[Mapping[str, Any]], stage_root: str | Path
             "counts": counts, "receipt_path": str(root / "receipt.json"), "rows": receipt_rows}
 
 
+def stage_sector_daily_by_date(keys: Sequence[Mapping[str, Any]], stage_root: str | Path,
+                              fetch_day: Callable[[str], Mapping[str, Any]] | None = None) -> dict[str, Any]:
+    """按交易日拉取完整响应，再从响应中严格筛选目标代码。
+
+    该路径用于远端忽略 ``code`` 参数的情况；只有响应日期完全一致、目标代码
+    唯一存在且字段合同通过时才进入 staging。目标代码不存在记为 source_empty。
+    """
+    root = Path(stage_root); raw_dir = root / "raw"; data_dir = root / "tdx_sector_daily"
+    raw_dir.mkdir(parents=True, exist_ok=True); data_dir.mkdir(parents=True, exist_ok=True)
+    grouped: dict[str, list[Mapping[str, Any]]] = {}
+    for key in keys:
+        grouped.setdefault(str(key.get("trade_date", "")), []).append(key)
+    candidates: list[dict[str, Any]] = []; receipt_rows: list[dict[str, Any]] = []
+    counts = {"added": 0, "blocked": 0, "rejected": 0, "source_empty": 0}
+    for day, day_keys in sorted(grouped.items()):
+        try:
+            if fetch_day is None:
+                import tdx_sync
+                payload = tdx_sync._get("/api/data/table/tdx_sector_daily", {"start_date": day, "end_date": day, "limit": 5000, "offset": 0})
+            else:
+                payload = fetch_day(day)
+            if not isinstance(payload, Mapping):
+                raise ValueError("响应不是对象")
+            raw_path = raw_dir / f"{day}.json"
+            raw_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            response_sha = _payload_sha(payload)
+            rows, columns, total = payload.get("rows"), payload.get("columns"), payload.get("total")
+            if not isinstance(rows, list) or not isinstance(columns, list) or len(columns) != len(set(columns)):
+                raise ValueError("响应行列合同无效")
+            if not isinstance(total, int) or isinstance(total, bool) or total != len(rows):
+                raise ValueError("响应 total 与行数不一致")
+            if not REQUIRED_COLUMNS.issubset(set(columns)) or any(len(row) != len(columns) for row in rows):
+                raise ValueError("响应字段合同不完整")
+            date_index = columns.index("trade_date")
+            if any(str(row[date_index]) != day for row in rows):
+                raise ValueError("整日响应包含越界日期")
+            code_index = columns.index("code")
+            by_code: dict[str, list[list[Any]]] = {}
+            for row in rows:
+                by_code.setdefault(str(row[code_index]), []).append(row)
+            for key in sorted(day_keys, key=lambda item: str(item.get("code", ""))):
+                code = str(key.get("code", "")); matches = by_code.get(code, [])
+                if not matches:
+                    counts["blocked"] += 1; counts["source_empty"] += 1
+                    receipt_rows.append({"code": code, "trade_date": day, "status": "source_empty", "reason": "source_empty", "source_response_json_sha256": response_sha})
+                    continue
+                if len(matches) != 1:
+                    counts["rejected"] += 1
+                    receipt_rows.append({"code": code, "trade_date": day, "status": "invalid_source", "reason": "duplicate_code_in_day", "source_response_json_sha256": response_sha})
+                    continue
+                checked = validate_sector_daily_response(key, {"total": 1, "columns": columns, "rows": matches})
+                if checked.get("status") != "candidate_ready":
+                    counts["rejected"] += 1
+                    receipt_rows.append({"code": code, "trade_date": day, "status": "invalid_source", "reason": checked.get("reason"), "source_response_json_sha256": response_sha})
+                    continue
+                row = dict(checked["row"])
+                row.update({"actual_received_at": checked.get("captured_at_utc"), "source_provider": "tdx-trading-table", "source_endpoint": "/api/data/table/tdx_sector_daily?start_date=end_date", "source_request_parameters": json.dumps({"start_date": day, "end_date": day, "limit": 5000, "offset": 0}, sort_keys=True), "source_response_json_sha256": response_sha})
+                candidates.append(row); counts["added"] += 1
+                receipt_rows.append({"code": code, "trade_date": day, "status": "candidate_ready", "reason": "source_verified_by_day", "source_response_json_sha256": response_sha})
+        except Exception as exc:
+            for key in day_keys:
+                counts["blocked"] += 1
+                receipt_rows.append({"code": str(key.get("code", "")), "trade_date": day, "status": "blocked", "reason": f"day_probe_error:{type(exc).__name__}"})
+    if candidates:
+        pd.DataFrame(candidates).sort_values(["trade_date", "code"]).to_parquet(data_dir / "part_0000.parquet", index=False)
+    receipt = {"table": "tdx_sector_daily", "mode": "date_bulk_fallback", "production_write": False, "global_activation": False, "counts": counts, "rows": receipt_rows}
+    (root / "receipt.json").write_text(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return {"table": "tdx_sector_daily", "mode": "date_bulk_fallback", "production_write": False, "global_activation": False, "counts": counts, "receipt_path": str(root / "receipt.json"), "rows": receipt_rows}
+
+
 def reconcile_sector_definition(definition_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
                                daily_rows: Iterable[Mapping[str, Any]] | pd.DataFrame,
                                validity_rows: Iterable[Mapping[str, Any]] | pd.DataFrame) -> dict[str, Any]:

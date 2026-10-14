@@ -189,6 +189,7 @@ class RagWebService:
                 "source": match.get("source", ""),
                 "score": round(float(match.get("score", 0)), 2),
                 "document_hash": match.get("document_hash", ""),
+                "text": match.get("text", ""),
                 "index_version": self._kb.index_version,
             }
             for match in matches

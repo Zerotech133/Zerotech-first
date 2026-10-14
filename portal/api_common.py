@@ -312,6 +312,8 @@ DOMAIN_NAV_GROUPS = {
             ("🏢 公司 360", "/kg/company", "kgcompany"),
             ("📚 图谱词条", "/kg/lexicon", "kglexicon"),
             ("📄 图谱文档", "/kg/doc", "kgdoc"))),
+        ("💼 情报变现", (
+            ("🛰 推送中台", "http://127.0.0.1:8097", "pushhub"),)),
     ),
     "creator": ((None, (
         ("🎬 创作专项", "/creator", "creator"),
@@ -346,6 +348,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "sellpoint": "quant", "paper": "quant",
                 "aim": "quant",
                 "intel": "intel",
+                "pushhub": "intel",
                 "jev": "intel", "brief": "intel", "kg": "intel",
                 "kgcanvas": "intel", "kgask": "intel",
                 "kgmap": "intel", "kgshadow": "intel",

@@ -29,6 +29,160 @@ from tools import quote_snapshot, make_context  # noqa: E402
 ASHARE = ROOT / "quant_backtest" / "data" / "ashare"
 CACHE = Path(__file__).parent / "qd_scan_cache.json"
 
+_LAKE_AMOUNT = {}  # W1-2 任务B：{code: {td8: amount千元}} 进程内缓存
+
+
+def lake_amounts(code):
+    """湖 amount 序列（准确千元口径，W1-2 任务B）。缺失/坏行 → None。
+
+    坑: 湖是 tushare daily 不复权口径，但 amount 是实际成交额，与复权
+    无关——可与腾讯 qfq 实时 bar 直接拼接。"""
+    import pandas as pd  # noqa: F401  顶部不 import：让 --help 也不依赖 venv
+    if code in _LAKE_AMOUNT:
+        return _LAKE_AMOUNT[code]
+    out = None
+    fp = ASHARE / (code.replace(".", "_") + ".parquet")
+    try:
+        df = pd.read_parquet(fp, columns=["trade_date", "amount"])
+        if len(df) and df["amount"].notna().any():
+            out = {str(t)[:8]: float(a) for t, a in
+                   zip(df["trade_date"], df["amount"]) if a == a}
+    except Exception:
+        out = None
+    _LAKE_AMOUNT[code] = out
+    return out
+
+
+def merge_amount(d, lake):
+    """构造 amount 序列（千元，W1-2 任务B）：湖口径优先——历史根逐日
+    用湖 amount（准确），仅当日实时 bar 用 vol*close/1000 估算增量
+    （占比 ~1/20，临界票误判从 ~5% 降到 ~0.3%）。
+    降级：湖缺失 / 湖末根错日（≠实时序列前一日）/ 历史日期未全覆盖
+    → 全序列退回近似（旧行为）。
+    返回 (pd.Series, used_lake: bool)。"""
+    import pandas as pd  # noqa: F401  顶部不 import：让 --help 也不依赖 venv
+    approx = d["vol"] * d["close"] / 1000.0
+    if not lake:
+        return approx, False
+    dates = [str(x).replace("-", "") for x in d["date"]]
+    hist = dates[:-1]
+    # 判例: 湖末根必须等于实时序列的历史末根（昨日），否则湖断更/口径
+    # 错位，20 日窗口混入错位数据比全近似更糟 → 整体退回
+    if max(lake) != hist[-1]:
+        return approx, False
+    if not all(x in lake for x in hist):
+        return approx, False
+    vals = [lake[x] for x in hist] + [float(approx.iloc[-1])]
+    return pd.Series(vals, index=d.index), True
+
+
+# ---- W3-5b 任务B：市况宽度影子注记（只标注不拦截，不改信号/过滤/推送行为）----
+
+def _load_cfg():
+    """qd_scanner 配置（最小机制）：portal/qd_scanner_config.json。
+    文件缺失/坏 JSON → {}（所有开关默认关 = 零改动回退）。"""
+    fp = Path(__file__).parent / "qd_scanner_config.json"
+    try:
+        return json.loads(fp.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def breadth_bucket(pct):
+    """宽度三档分桶（参考 cross/qpzm 环境闸门 40% 档）：<40 / 40-50 / ≥50"""
+    if pct is None:
+        return ""
+    if pct < 40:
+        return "<40"
+    if pct < 50:
+        return "40-50"
+    return ">=50"
+
+
+def gate_would_block(pct):
+    """按 40% 档门控假设本单是否会被拦（只标注不拦截）：宽度<40 → True"""
+    return pct is not None and pct < 40
+
+
+def regime_majority(regime_now):
+    """市况摘要用：当日全市场 regime 分布多数派（空分布返回空串）"""
+    if not regime_now:
+        return ""
+    return max(regime_now.items(), key=lambda kv: kv[1])[0]
+
+
+def market_summary_line(breadth_pct, bucket, regime):
+    """市况摘要行，如：市况: breadth=43.2% [40-50] regime=range"""
+    if breadth_pct is None:
+        return ""
+    return "市况: breadth=%.1f%% [%s] regime=%s" % (breadth_pct, bucket, regime)
+
+
+def lake_breadth(lake_dir=None):
+    """湖锚 T-1 全市场宽度：close>MA20 占比（湖内最后交易日锚定）。
+
+    14:40 时点当日湖未更新 → 湖末根即 T-1，注记 breadth_ref=T-1；
+    与回测当日宽度口径存在已知差异（留痕 docs/changes/20261014_shadow_dev_changes.md）。
+    计入口径对齐 qpzm_backtest.env_gate：≥20 根 bar 才计入，MA20 为含锚日
+    20 根收盘均值。锚日取湖末根众数（个别断更票自动剔除）。返回 dict 或 None。
+    """
+    import pandas as pd  # 顶部不 import：与全文件惯例一致
+    from collections import Counter
+    lake_dir = Path(lake_dir) if lake_dir else ASHARE
+    rows = []
+    for fp in sorted(glob.glob(str(lake_dir / "*.parquet"))):
+        try:
+            df = pd.read_parquet(fp, columns=["trade_date", "close"])
+        except Exception:
+            continue
+        if len(df) < 20:
+            continue
+        c = pd.to_numeric(df["close"], errors="coerce")
+        close = float(c.iloc[-1])
+        ma20 = float(c.iloc[-20:].mean())
+        if close != close or ma20 != ma20:  # NaN 守卫
+            continue
+        rows.append((str(df["trade_date"].iloc[-1])[:8], close > ma20))
+    if not rows:
+        return None
+    anchor = Counter(d for d, _ in rows).most_common(1)[0][0]
+    valid = [a for d, a in rows if d == anchor]
+    n_above = sum(1 for a in valid if a)
+    n_total = len(valid)
+    pct = round(100.0 * n_above / n_total, 1) if n_total else None
+    return {"breadth": pct, "bucket": breadth_bucket(pct),
+            "breadth_ref": "T-1", "ref_date": anchor,
+            "n_above": n_above, "n_total": n_total}
+
+
+def annotate_breadth(signals, note):
+    """给信号 dict 附加宽度注记（全部为新增键，下游 qd_view/qd_adapter
+    用 .get() 读缺失键不炸；不触碰任何信号判定字段）"""
+    for info in signals:
+        info["breadth"] = note["breadth"]
+        info["breadth_bucket"] = note["bucket"]
+        info["breadth_ref"] = note["breadth_ref"]
+        info["gate_would_block"] = gate_would_block(note["breadth"])
+
+
+def apply_breadth_note(sig_now, recent, tail_signals, regime_now, enabled):
+    """W3-5b 注记主入口。enabled=False → 原样返回 (None, "")，零改动回退。
+    返回 (breadth_note, market_summary)。"""
+    if not enabled:
+        return None, ""
+    note = lake_breadth()
+    if not note:
+        return None, ""
+    annotate_breadth(sig_now, note)
+    annotate_breadth(recent, note)
+    annotate_breadth(tail_signals, note)
+    summary = market_summary_line(note["breadth"], note["bucket"],
+                                  regime_majority(regime_now))
+    note["market_summary"] = summary
+    note["note"] = ("breadth_ref=T-1：14:40 时点当日湖未更新，用 T-1 锚宽度，"
+                    "与回测当日口径存在已知差异")
+    return note, summary
+
 
 def scan_one(fp):
     """单票扫描：返回 (code, dict) 或 None（缺列/数据不足/无信号时摘要返回）"""
@@ -83,9 +237,14 @@ def intraday_recheck(candidates):
         d.columns = ["date", "open", "close", "high", "low", "vol"]
         for c in ("open", "close", "high", "low", "vol"):
             d[c] = pd.to_numeric(d[c], errors="coerce")
-        # 腾讯日 K 无成交额：vol(手)*close/1000≈千元（当日 bar 近似，影响
-        # 20 日成交额和约 1/20≈5%，候选复核可容忍；正式口径仍以湖 amt 为准）
-        d["amount"] = d["vol"] * d["close"] / 1000.0
+        # W1-2 任务B 量纲修复：湖口径优先——历史 19 根用湖 amount（准确
+        # 千元），仅当日实时 bar 估算增量；湖缺失/末根错日退回全近似并在
+        # note 标注 amount_approx（不炸、不误报，量纲语义透明）
+        lake = lake_amounts(code)
+        d["amount"], used_lake = merge_amount(d, lake)
+        note = "盘中实时 bar 复核通过 · 14:55 执行窗口"
+        if not used_lake:
+            note += " · amount_approx（湖缺失/末根错日，20日均额为近似口径）"
         try:
             out = quant_double_knife(d.set_index("date"), profile="strict")
         except Exception:
@@ -96,7 +255,7 @@ def intraday_recheck(candidates):
                 "code": code,
                 "close": round(float(d["close"].iloc[-1]), 2),
                 "regime": str(last["regime_label"]),
-                "note": "盘中实时 bar 复核通过 · 14:55 执行窗口",
+                "note": note,
             })
     return tail_signals, checked, note
 
@@ -145,6 +304,10 @@ def main():
         star_candidates = sorted(set(star_candidates) | set(star_pool))
     if intraday:
         tail_signals, tail_checked, tail_note = intraday_recheck(star_candidates)
+    # W3-5b 任务B：市况宽度影子注记（qd_breadth_note 开关，关=零改动回退）
+    breadth_note, market_summary = apply_breadth_note(
+        sig_now, recent, tail_signals, regime_now,
+        bool(_load_cfg().get("qd_breadth_note", False)))
     cache = {
         "ts": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "elapsed_s": round(time.time() - t0, 1),
@@ -160,6 +323,10 @@ def main():
         "tail_note": tail_note,
         "disclaimer": "研究态：未回测验证（T-20261009-009 结论前不构成选股依据）",
     }
+    # W3-5b 注记键：仅开关开启且湖宽度可用时新增（向后兼容，下游 .get()）
+    if breadth_note:
+        cache["breadth_note"] = breadth_note
+        cache["market_summary"] = market_summary
     # 信号票补详情（K-STOCK-026 老田反馈：名称/涨跌/市值/换手）
     for info in sig_now + recent:
         try:
@@ -197,10 +364,11 @@ def main():
 
     CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=1), encoding="utf-8")
     print("[done] 扫描 %d 只（跳过 %d）：当日信号 %d，近 %d 日有信号 %d，"
-          "尾盘候选池 %d，尾盘复核 %d 只→信号 %d %s，耗时 %.0fs → %s"
+          "尾盘候选池 %d，尾盘复核 %d 只→信号 %d %s，耗时 %.0fs → %s%s"
           % (cache["scanned"], skipped, len(sig_now), args.recent_window,
              len(recent), len(star_pool), tail_checked, len(tail_signals),
-             ("(%s)" % tail_note) if tail_note else "", cache["elapsed_s"], CACHE))
+             ("(%s)" % tail_note) if tail_note else "", cache["elapsed_s"], CACHE,
+             (" · " + market_summary) if market_summary else ""))
 
 
 if __name__ == "__main__":

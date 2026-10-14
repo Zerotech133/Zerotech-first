@@ -39,10 +39,10 @@
 - `write_key_manifest(snapshot: dict, path: Path) -> None`
 - `qualify_source(table: str, keys: list[dict], probe: Callable) -> dict`
 
-- [ ] **Step 1: Write failing tests** for extracting the exact 51 sector-day keys, 14 sector-minute keys, 12,858 margin coverage candidates and 14 listed-stock candidates from metric details.
-- [ ] **Step 2: Run `pytest quant_backtest/test_gap_remediation.py -q` and confirm failure because the module is absent.
-- [ ] **Step 3: Implement deterministic key extraction, sorted manifests, source/market/date metadata and explicit blocked reasons; never convert empty responses to success.
-- [ ] **Step 4: Run the focused tests and write `work/gap_baseline_20261012.json`; assert `production_write=false`.
+- [x] **Step 1: Write failing tests** for extracting the exact 51 sector-day keys, 14 sector-minute keys, 12,858 margin coverage candidates and 14 listed-stock candidates from metric details.
+- [x] **Step 2: Run `pytest quant_backtest/test_gap_remediation.py -q` and confirm failure because the module is absent.
+- [x] **Step 3: Implement deterministic key extraction, sorted manifests, source/market/date metadata and explicit blocked reasons; never convert empty responses to success.
+- [x] **Step 4: Run the focused tests and write `work/gap_baseline_20261012.json`; assert `production_write=false`.
 
 ### Task 2: 补齐 51 个板块日线键和 51 个板块定义对账键
 
@@ -57,11 +57,11 @@
 - `stage_sector_daily(keys: list[dict], stage_root: Path) -> dict`
 - `reconcile_sector_definition(definition_rows, daily_rows, validity_rows) -> dict`
 
-- [ ] **Step 1: Add failing tests** for exact `/api/data/table/tdx_sector_daily` responses: one matching row passes; `total != 1`, code/date mismatch, missing required columns, null OHLCV, and duplicate keys fail.
-- [ ] **Step 2: Run the focused tests and verify the expected failures.
-- [ ] **Step 3: Probe all 51 keys with `limit=2`, record request/response hashes and remote supply status, then stage only rows that match the requested code/date and schema.
-- [ ] **Step 4: Reconcile against `tdx_sector_def` using validity windows; classify historical retired/new codes instead of forcing current definitions onto old dates.
-- [ ] **Step 5: Run key uniqueness, daily coverage, definition reconciliation and readback queries; produce a candidate receipt with `added`, `blocked`, `rejected`, `source_empty` counts.
+- [x] **Step 1: Add failing tests** for exact `/api/data/table/tdx_sector_daily` responses: one matching row passes; `total != 1`, code/date mismatch, missing required columns, null OHLCV, and duplicate keys fail.
+- [x] **Step 2: Run the focused tests and verify the expected failures.
+- [x] **Step 3: Probe all 51 keys with `limit=2`, record request/response hashes and remote supply status, then stage only rows that match the requested code/date and schema.
+- [x] **Step 4: Reconcile against `tdx_sector_def` using validity windows; classify historical retired/new codes instead of forcing current definitions onto old dates.
+- [x] **Step 5: Run key uniqueness, daily coverage, definition reconciliation and readback queries; produce a candidate receipt with `added`, `blocked`, `rejected`, `source_empty` counts.
 
 ### Task 3: 补齐 14 个板块分钟断面和 14,771 个分钟字段空值
 
@@ -76,11 +76,11 @@
 - `validate_sector_minute_frame(frame: DataFrame) -> dict`
 - `stage_sector_minute(keys: list[dict], stage_root: Path) -> dict`
 
-- [ ] **Step 1: Write failing tests** for `code/trade_date/trade_time` uniqueness, required OHLCV/amount null counting, valid time ordering, and date boundary checks.
-- [ ] **Step 2: Verify focused tests fail before implementation.
-- [ ] **Step 3: Probe the remote minute table for each of 14 missing code/date surfaces; use bounded pagination and preserve `trade_time` exactly.
-- [ ] **Step 4: Separate legitimate no-supply windows from malformed rows; never fill volume/amount with zero, and retain rejected rows in the receipt.
-- [ ] **Step 5: Recompute `sector_minute_daily_coverage`, `sector_minute_required_nulls`, duplicate keys and calendar gaps from staging, then compare against the pre-run snapshot.
+- [x] **Step 1: Write failing tests** for `code/trade_date/trade_time` uniqueness, required OHLCV/amount null counting, valid time ordering, and date boundary checks.
+- [x] **Step 2: Verify focused tests fail before implementation.
+- [x] **Step 3: Probe the remote minute table for each of 14 missing code/date surfaces; use bounded pagination and preserve `trade_time` exactly.
+- [x] **Step 4: Separate legitimate no-supply windows from malformed rows; never fill volume/amount with zero, and retain rejected rows in the receipt.
+- [x] **Step 5: Recompute `sector_minute_daily_coverage`, `sector_minute_required_nulls`, duplicate keys and calendar gaps from staging, then compare against the pre-run snapshot.
 
 ### Task 4: 修复融资融券覆盖、关键字段空值和股票最新覆盖
 
@@ -95,11 +95,11 @@
 - `reconcile_margin_dates(expected_dates, receipts, eligibility) -> dict`
 - `reconcile_latest_stock_coverage(trade_date, daily, stock_basic, suspend_d) -> dict`
 
-- [ ] **Step 1: Add failing tests** for margin-eligible, suspended, delisted and non-margin stocks; assert null `rzye/rzrqye` is classified rather than replaced.
-- [ ] **Step 2: Verify the tests fail for the current unclassified gap output.
+- [x] **Step 1: Add failing tests** for margin-eligible, suspended, delisted and non-margin stocks; assert null `rzye/rzrqye` is classified rather than replaced.
+- [x] **Step 2: Verify the tests fail for the current unclassified gap output.
 - [ ] **Step 3: Build a date-level expected set from `trade_cal`, `stock_basic`, official suspension/delisting evidence and margin eligibility; request only unresolved dates/codes from Tushare.
-- [ ] **Step 4: Validate raw response, primary keys, field nulls and date coverage; keep source-empty/blocked receipts separate from valid rows.
-- [ ] **Step 5: Recompute the 12,858 coverage candidates, 2 required-field nulls and 14 latest-stock warnings; require unexplained counts to reach zero before qualification.
+- [x] **Step 4: Validate raw response, primary keys, field nulls and date coverage; keep source-empty/blocked receipts separate from valid rows.
+- [x] **Step 5: Recompute the 12,858 coverage candidates, 2 required-field nulls and 14 latest-stock warnings; require unexplained counts to reach zero before qualification.
 
 ### Task 5: 补齐 A 股估值字段、JEV 队列和盘前产物
 

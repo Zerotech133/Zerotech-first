@@ -95,14 +95,26 @@ def fmt_status(m, df, sig):
         px, d_last, day_chg * 100, holding, flip_s)
 
 
-def compare_strategies(df, mark_name=None, color=False):
-    """同一标的同一区间跑全部策略，返回对比行列表。"""
+def cost_note(market=None):
+    """成本口径标注行：让下游看到回测用的成本/T+1 假设（口径变化可见）。"""
+    tc = backtest.load_trade_config(market or "CN")
+    t1 = "T+1" if tc["t_plus_one"] else "T+0"
+    return "成本假设 %s=%dbps（成本%d+滑点%d）· %s" % (
+        market or "CN", tc["cost_bps"] + tc["slippage_bps"],
+        tc["cost_bps"], tc["slippage_bps"], t1)
+
+
+def compare_strategies(df, mark_name=None, color=False, market=None):
+    """同一标的同一区间跑全部策略，返回对比行列表。
+    market：标的所属市场（CN/US/HK/CRYPTO），成本按市场分层取；
+    拿不到市场时按 CN 保守口径。"""
+    tc = backtest.load_trade_config(market or "CN")
     rows = []
     for sname in strat.REGISTRY:
         p = dict(CFG["strategies"].get(sname, {}))
         try:
             s = strat.REGISTRY[sname](df, p)
-            mm = backtest.run(df, s, **CFG["trade"])
+            mm = backtest.run(df, s, **tc)
         except Exception:
             continue
         ret = _c_pct(mm["total_return"]) if color else "%+.1f%%" % (
@@ -113,7 +125,8 @@ def compare_strategies(df, mark_name=None, color=False):
     return rows
 
 
-def report_markdown(name, strat_name, params, m, bh, window, df, sig):
+def report_markdown(name, strat_name, params, m, bh, window, df, sig,
+                    market=None):
     """单股报告 → 卡片 markdown 块列表（每块一个元素，块间自动 hr）。"""
     emoji = "📈" if m["total_return"] >= 0 else "📉"
     excess = m["total_return"] - bh["total_return"]
@@ -131,8 +144,9 @@ def report_markdown(name, strat_name, params, m, bh, window, df, sig):
             bh["total_return"] * 100, bh["sharpe"], bh["max_drawdown"] * 100,
             _c_pct(excess)),
         "**四策略同期对比**\n" + "\n".join(
-            compare_strategies(df, strat_name, color=True)),
+            compare_strategies(df, strat_name, color=True, market=market)),
         "**近 %d 笔交易**\n" % _trades_shown() + fmt_trades(m, color=True),
+        "<font color='grey'>" + cost_note(market) + "</font>",
     ]
     return md
 
@@ -254,9 +268,10 @@ def _card_actions(report_file=None, news_name=None):
     return [("📄 回测文档", doc, "primary_filled")], None
 
 
-def optimize_run(df, strat_name, cap=10):
+def optimize_run(df, strat_name, cap=10, market=None):
     """网格参数寻优：网格在 config opt_grids；按夏普降序返回前 cap 行。
-    样本内寻优，仅供参数敏感性参考。"""
+    样本内寻优，仅供参数敏感性参考。成本按 market 分层（拿不到按 CN）。"""
+    tc = backtest.load_trade_config(market or "CN")
     grids = CFG.get("opt_grids", {}).get(strat_name)
     if not grids:
         return []
@@ -267,7 +282,7 @@ def optimize_run(df, strat_name, cap=10):
     for c in combos:
         try:
             s = strat.REGISTRY[strat_name](df, c)
-            mm = backtest.run(df, s, **CFG["trade"])
+            mm = backtest.run(df, s, **tc)
             rows.append({"params": c, "ret": mm["total_return"],
                          "sharpe": mm["sharpe"], "dd": mm["max_drawdown"],
                          "trades": mm["trades"]})
@@ -476,6 +491,34 @@ def morning_push():
                 report_page.OPT_HEAD.get(e["strategy"], e["strategy"]),
                 e.get("last_px") or 0))
         blocks.append("\n".join(lines))
+    # W1-2：持仓/待买命中九维警报池 → 卡片加警示块（反指实证 K32/K33：
+    # score≥75 前向收益显著为负，≥85 段 r20 -71.5%；命中=风险提醒非买入信号）
+    # 开关 nine_dim_alert_card（config.json 顶层，默认开）；fail-open 不炸卡
+    if CFG.get("nine_dim_alert_card", True):
+        try:
+            codes = {c for c in (
+                report_page.nine_dim_cn_code(e.get("market"), e.get("symbol"))
+                for e in pend + open_) if c}
+            hits = report_page.nine_dim_alert_check(codes)
+        except Exception:
+            hits = {}
+        if hits:
+            by_code = {}
+            for e in pend + open_:   # 同码待买优先展示（pending 在前）
+                c = report_page.nine_dim_cn_code(e.get("market"),
+                                                 e.get("symbol"))
+                if c in hits and c not in by_code:
+                    by_code[c] = e
+            lines = ["**⚠️ 警报池命中（九维反指）**"]
+            for c, e in sorted(by_code.items()):
+                dt, score, band = hits[c]
+                lines.append("· [%s] %s · 命中 %s-%s-%s · 分数 %s（%s）" % (
+                    e["market"], e["name"],
+                    dt[:4], dt[4:6], dt[6:8], score, band or "alert"))
+            lines.append("提示：高分=拥挤警报，非买入信号")
+            blocks.append("\n".join(lines))
+            print("MORNING nine_dim_alert hits=%d: %s" % (
+                len(hits), " ".join(sorted(by_code))))
     if open_:
         lines = ["**持仓中（信号未翻空前继续持有）**"]
         for e in sorted(open_, key=lambda x: -x.get("pnl", 0)):
@@ -610,7 +653,8 @@ def _chart_png(tag, m, bh):
         return None
 
 
-def _page_section(name, strat_name, params, m, bh, window, df, sig):
+def _page_section(name, strat_name, params, m, bh, window, df, sig,
+                  market=None):
     """报告页 section 数据（净值降采样 + 交易表 + 对比）。"""
     return {
         "name": name, "strategy": strat_name, "window": window,
@@ -624,13 +668,13 @@ def _page_section(name, strat_name, params, m, bh, window, df, sig):
         "dd": report_page._downsample(m["equity"] / m["equity"].cummax() - 1),
         "bench_dd": report_page._downsample(
             bh["equity"] / bh["equity"].cummax() - 1),
-        "opt": optimize_run(df, strat_name),
+        "opt": optimize_run(df, strat_name, market=market),
         "opt_base": _effective_params(strat_name, params),
         "monthly": _monthly(m["equity"], bh["equity"]),
         "heat": _heat(m["equity"], sig),
         "png": _chart_png(name, m, bh),
         "trades": (m.get("trade_list") or [])[-30:][::-1],
-        "compare": compare_strategies(df, strat_name),
+        "compare": compare_strategies(df, strat_name, market=market),
         "last_px": float(df["close"].iloc[-1]),
         "last_date": df.index[-1].strftime("%m-%d"),
         "day_chg": (float(df["close"].iloc[-1]) / float(df["close"].iloc[-2]) - 1.0
@@ -659,7 +703,8 @@ def push_report_card(name, strat_name, params, m, bh, window, df, sig,
                                   df=df, sig=sig))
 
 
-def fmt_report(symbol, strat_name, params, m, bh, window, df=None, sig=None):
+def fmt_report(symbol, strat_name, params, m, bh, window, df=None, sig=None,
+               market=None):
     lines = [
         "📊 量化回测报告",
         "标的 %s · 策略 %s" % (symbol, strat_name),
@@ -685,9 +730,11 @@ def fmt_report(symbol, strat_name, params, m, bh, window, df=None, sig=None):
     ]
     if df is not None:
         lines += ["", "四策略同期对比:"] + [
-            "  " + r for r in compare_strategies(df, strat_name)]
+            "  " + r for r in compare_strategies(df, strat_name,
+                                                 market=market)]
         lines += ["", "近 %d 笔交易:" % _trades_shown()] + [
             "  " + x for x in fmt_trades(m).splitlines()]
+    lines.append("成本口径: " + cost_note(market))
     lines.append("—— 量化回测域 · 仅回测参考，不构成投资建议")
     return "\n".join(lines)
 
@@ -704,7 +751,8 @@ def run_single(strategy_name, symbol, market, start, end, push=False):
 
     params = dict(CFG["strategies"].get(strategy_name, {}))
     sig = strat.REGISTRY[strategy_name](df, params)
-    m = backtest.run(df, sig, **CFG["trade"])
+    tc = backtest.load_trade_config(market)   # 成本按市场分层（CN/US/HK/CRYPTO）
+    m = backtest.run(df, sig, **tc)
     bh = backtest.buy_and_hold(df)
 
     window = "%s ~ %s" % (df.index[0].strftime("%Y-%m-%d"),
@@ -725,14 +773,14 @@ def run_single(strategy_name, symbol, market, start, end, push=False):
     try:
         title = "单股回测 · %s" % symbol
         sec = _page_section(symbol, strategy_name, params, m, bh,
-                            window, df, sig)
+                            window, df, sig, market=market)
         report_page.write_report_html(title, [sec])
         snap_file = report_page.write_snapshot(title, [sec], tag=symbol)
     except Exception:
         pass
 
     report = fmt_report(symbol, strategy_name, params, m, bh, window,
-                        df=df, sig=sig)
+                        df=df, sig=sig, market=market)
     sent = False
     news_name = None
     try:
@@ -807,7 +855,8 @@ def run_scan(strategy_name, market, start, end, push=False):
     results = []
     for (mkt, sym), df in frames.items():
         sig = strat.REGISTRY[strategy_name](df, params)
-        m = backtest.run(df, sig, **CFG["trade"])
+        tc = backtest.load_trade_config(mkt)   # 成本按市场分层
+        m = backtest.run(df, sig, **tc)
         bh = backtest.buy_and_hold(df)
         results.append({
             "market": mkt, "symbol": sym, "name": name_of.get((mkt, sym), sym),
@@ -824,6 +873,9 @@ def run_scan(strategy_name, market, start, end, push=False):
         lines.append("· [%s] %s 夏普%.2f 收益%+.1f%% 回撤%.1f%% 基准%+.1f%%" % (
             r["market"], r["name"], r["sharpe"], r["total_return"] * 100,
             r["max_drawdown"] * 100, r["benchmark_return"] * 100))
+    # 成本口径标注：让下游看到各市场回测假设（口径变化可见）
+    mkts = sorted({r["market"] for r in results})
+    lines.append("—— " + " · ".join(cost_note(m) for m in mkts))
     lines.append("—— 量化回测域")
     txt = "\n".join(lines)
     sent = False
@@ -861,15 +913,16 @@ def run_daily():
             continue
         df = got[r["symbol"]]
         sig = strat.REGISTRY[strategy_name](df, params)
-        m = backtest.run(df, sig, **CFG["trade"])
+        tc = backtest.load_trade_config(r["market"])   # 成本按市场分层
+        m = backtest.run(df, sig, **tc)
         bh = backtest.buy_and_hold(df)
         window = "%s ~ %s" % (df.index[0].strftime("%Y-%m-%d"),
                               df.index[-1].strftime("%Y-%m-%d"))
         name = "[%s] %s" % (r["market"], r["name"])
         blocks += report_markdown(name, strategy_name, params, m, bh,
-                                  window, df, sig)
+                                  window, df, sig, market=r["market"])
         page_secs.append(_page_section(name, strategy_name, params, m, bh,
-                                       window, df, sig))
+                                       window, df, sig, market=r["market"]))
         n_ok += 1
     if not n_ok:
         return
@@ -899,13 +952,14 @@ def run_daily():
                 continue
             df = got[r["symbol"]]
             sig = strat.REGISTRY[strategy_name](df, params)
-            m = backtest.run(df, sig, **CFG["trade"])
+            tc = backtest.load_trade_config(r["market"])   # 成本按市场分层
+            m = backtest.run(df, sig, **tc)
             bh = backtest.buy_and_hold(df)
             window = "%s ~ %s" % (df.index[0].strftime("%Y-%m-%d"),
                                   df.index[-1].strftime("%Y-%m-%d"))
             texts.append(fmt_report("[%s] %s" % (r["market"], r["name"]),
                                     strategy_name, params, m, bh, window,
-                                    df=df, sig=sig))
+                                    df=df, sig=sig, market=r["market"]))
         if texts and push_feishu("\n\n────────────\n\n".join(texts)):
             print("TOP_REPORTS pushed %d (text fallback)" % len(texts))
 

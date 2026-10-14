@@ -21,6 +21,7 @@
   python linkage_signals.py 301216.SZ --periods 1d --lo-win 60 --hi-win 120
 """
 import argparse
+import json
 import os
 import sys
 
@@ -34,6 +35,41 @@ NAMES = {
     "1": "抗跌", "2": "滞涨(弱于板块)", "3": "共振底",
     "4": "孤军深入", "5": "三共振",
 }
+
+# 20261014 linkage-dev：信号开关（④⑤下线拍板）。缺文件/缺键=旧行为全开。
+CONFIG_PATH = os.path.join(HERE, "linkage_config.json")
+_cfg_cache = None
+
+
+def load_config(path=None):
+    """读 linkage_config.json；缺文件/坏 JSON → {}（旧行为全开，保证回退）。"""
+    global _cfg_cache
+    p = path or CONFIG_PATH
+    if path is None and _cfg_cache is not None:
+        return _cfg_cache
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+    except Exception:
+        cfg = {}
+    if not isinstance(cfg, dict):
+        cfg = {}
+    if path is None:
+        _cfg_cache = cfg
+    return cfg
+
+
+def sig4_off(cfg=None):
+    """④ 孤军深入 完全下线开关（true=不判定不展示不落档）。"""
+    return bool((cfg if cfg is not None else load_config())
+                .get("sig4_disabled", False))
+
+
+def sig5_hidden(cfg=None):
+    """⑤ 三共振 展示隐藏开关：键存在且为 false → 判定与 collector 留档
+    照旧、产线展示/推送/页面隐藏；true 或缺省 → 旧行为照常展示。"""
+    v = (cfg if cfg is not None else load_config()).get("sig5_display_only")
+    return v is False
 
 
 def _last(arr):
@@ -50,8 +86,9 @@ def _extreme(arr, win, fn):
     return fn(v[-int(win):])
 
 
-def judge_series(r, gap=GAP, lo_win=LO_WIN, hi_win=HI_WIN):
-    """单周期判定。r = linkage.series(...) 返回。纯读 r，无 IO。"""
+def judge_series(r, gap=GAP, lo_win=LO_WIN, hi_win=HI_WIN, cfg=None):
+    """单周期判定。r = linkage.series(...) 返回。纯读 r，无 IO。
+    cfg 缺省读 linkage_config.json（④ 下线时不判定不落档）。"""
     keys = [k for k in ("stock", "index", "block") if r.get(k)]
     if "stock" not in keys:
         return {"signals": [], "ctx": {"error": "无个股线"}}
@@ -87,9 +124,11 @@ def judge_series(r, gap=GAP, lo_win=LO_WIN, hi_win=HI_WIN):
             sigs.append({"tag": "5", "note": "三线同破前高（%s）"
                          % "/".join("%+.1f" % rv[k] for k in need)})
         elif brk_hi["stock"]:
-            laggard = [k for k in ("index", "block") if not brk_hi[k]]
-            sigs.append({"tag": "4", "note": "个股独破前高，%s 未破"
-                         % "、".join(laggard)})
+            # 20261014 linkage-dev：④ 孤军深入下线开关（完全不判定）
+            if not sig4_off(cfg):
+                laggard = [k for k in ("index", "block") if not brk_hi[k]]
+                sigs.append({"tag": "4", "note": "个股独破前高，%s 未破"
+                             % "、".join(laggard)})
     for s in sigs:
         s["name"] = NAMES[s["tag"]]
     return {"signals": sigs, "ctx": ctx}
@@ -108,14 +147,18 @@ def judge(code, periods=LK.PERIODS, last=None, block=None, block_name=None,
         out[per] = judge_series(r, gap=gap, lo_win=lo_win, hi_win=hi_win)
         out[per]["last_pct"] = {k: (r[k][-1] if r.get(k) else None)
                                 for k in ("stock", "index", "block")}
+        # 20261014 linkage-dev：附加字段（影子采集 ref_date 用），不影响判定
+        out[per]["stock_last_dt"] = (r.get("dts") or [""])[-1] or None
     return out
 
 
-def report(res, code):
-    """判定结果 → 人读报告文本。"""
+def report(res, code, cfg=None):
+    """判定结果 → 人读报告文本。cfg 控制展示开关（⑤ 隐藏时判定不受影响）。"""
     L = ["== 五信号标注 · %s ==" % code,
          "阈值：超额±%.0fpp｜前低 %d 根 / 前高 %d 根（close 口径，排除最新一根）"
          % (GAP, LO_WIN, HI_WIN)]
+    hide5 = sig5_hidden(cfg)
+    hid5_any = False
     for per, d in res.items():
         if "error" in d:
             L.append("[%s] 取数失败：%s" % (per, d["error"]))
@@ -126,10 +169,16 @@ def report(res, code):
         L.append(head)
         if d["signals"]:
             for s in d["signals"]:
+                if hide5 and str(s.get("tag")) == "5":
+                    hid5_any = True          # ⑤ 只藏展示，判定/留档照旧
+                    continue
                 L.append("  ⚑ 信号%s %s —— %s" % (s["tag"], s["name"],
                                                    s["note"]))
         else:
             L.append("  无信号")
+    if hid5_any:
+        L.append("  (信号⑤ 三共振已隐藏：判定与影子留档照旧，见 "
+                 "linkage_config.json)")
     return "\n".join(L)
 
 
@@ -149,6 +198,13 @@ def main():
                 block=a.block, block_name=a.block_name, index=a.index,
                 gap=a.gap, lo_win=a.lo_win, hi_win=a.hi_win)
     print(report(res, a.code))
+    # 20261014 linkage-dev：五信号影子采集（只记不推，失败不影响产线）
+    try:
+        from linkage_collector import collect
+        n = len(collect(a.code, res, source="linkage_signals"))
+        print("shadow +%d -> data/linkage_shadow.jsonl" % n)
+    except Exception as e:
+        print("shadow collect skip: %s" % e)
     return 0
 
 

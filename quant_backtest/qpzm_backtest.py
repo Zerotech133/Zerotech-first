@@ -623,6 +623,18 @@ def run_backtest(args):
         "summary": {},
     }
     report["summary"] = build_summary(report, env_df.loc[in_win])
+    if args.killed_details:
+        payload = build_killed_payload(args, wide, env_df, tech_w, mix_cur,
+                                       in_win, bench_by_hold, jev_mat)
+        payload["meta"]["holds"] = holds
+        payload["meta"]["anchor_check"] = {
+            v["label"]: v["n_buy_in_window"] for v in variants
+            if v["label"] in ("w_cur_th7550_gate_on", "w_cur_th7550_gate_off")}
+        atomic_write_json(args.killed_out, payload)
+        md_path = os.path.splitext(args.killed_out)[0] + "_summary.md"
+        with open(md_path, "w", encoding="utf-8") as f:
+            f.write(build_killed_md(payload) + "\n")
+        print("killed -> %s" % args.killed_out, flush=True)
     return report
 
 
@@ -670,6 +682,288 @@ def _pct(x, is_ratio=False):
     return ("%+.2f%%" if not is_ratio else "%.1f%%") % (x * 100)
 
 
+# ── 错杀清单导出（20261014 追加：仅 --killed-details 启用，默认关闭，
+#    不触碰上面任何既有计算路径） ─────────────────────────────
+KILLED_GROUP_ORDER = ("gate_breadth", "gate_med20", "gate_both", "gate_other",
+                      "unfill", "entry_nobar", "rps_missing", "min_bars")
+KILLED_GROUP_NOTE = {
+    "gate_breadth": "环境闸门否决·仅 breadth<0.40 触发",
+    "gate_med20": "环境闸门否决·仅 med20<-3% 触发",
+    "gate_both": "环境闸门否决·双条件同时触发",
+    "gate_other": "环境闸门否决·条件字段异常（预期 0 条）",
+    "unfill": "闸门放行但 T+1 一字板无法成交（K254 剔除）",
+    "entry_nobar": "闸门放行但 T+1 无价可成交（停牌/未上市）",
+    "rps_missing": "RPS 缺维（renorm 打分过买阈但 hr 不成立，不产生信号）",
+    "min_bars": "bar 数<55 不入池（假想口径 tech+env 归一打分，非产线行为）",
+}
+
+
+def _fwd_ret(open_px, close_px, n, cost):
+    """T+1 开盘买（假想可成交）、持有 n 日收盘卖的前向净收益矩阵。"""
+    entry = open_px.shift(-1)
+    return close_px.ffill().shift(-n) / entry - 1.0 - cost
+
+
+def _killed_group_stats(rows, def_th, ref_n):
+    """按剔除原因分组统计（ref_n=错杀判定持有期）。"""
+    rk = "r%d" % ref_n
+    out = {}
+    for g in KILLED_GROUP_ORDER:
+        sub = [r for r in rows if r["reason"] == g]
+        if not sub:
+            out[g] = {"n_killed": 0}
+            continue
+        vals = [r[rk] for r in sub if r[rk] is not None]
+        mis = [v for v in vals if v >= def_th]
+        r5 = [r["r5"] for r in sub if r.get("r5") is not None]
+        r20 = [r["r20"] for r in sub if r.get("r20") is not None]
+        out[g] = {
+            "n_killed": len(sub),
+            "n_with_fwd": len(vals),
+            "mean_%s" % rk: round(float(np.mean(vals)), 6) if vals else None,
+            "median_%s" % rk: round(float(np.median(vals)), 6) if vals else None,
+            "win_%s" % rk: round(float(np.mean([v > 0 for v in vals])), 4)
+            if vals else None,
+            "n_miskill": len(mis),
+            "miskill_rate": round(len(mis) / len(vals), 4) if vals else None,
+            "miskill_mean_%s" % rk: round(float(np.mean(mis)), 6)
+            if mis else None,
+            "total_%s" % rk: round(float(np.sum(vals)), 4) if vals else None,
+            "mean_r5": round(float(np.mean(r5)), 6) if r5 else None,
+            "mean_r20": round(float(np.mean(r20)), 6) if r20 else None,
+        }
+    return out
+
+
+def gate_counterfactual(args, wide, env_df, tech_w, mix_cur, in_win,
+                        bench_by_hold, jev_mat):
+    """闸门三条件逐条放宽/收紧/移除的反事实回放（hold 网格口径）。"""
+    br, md, uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
+    bth, oth = TH_CUR
+    configs = [
+        ("base_b40_m-3",   0.40, -0.03, None),
+        ("breadth_30",     0.30, -0.03, None),
+        ("breadth_35",     0.35, -0.03, None),
+        ("breadth_45",     0.45, -0.03, None),
+        ("breadth_50",     0.50, -0.03, None),
+        ("med20_m5",       0.40, -0.05, None),
+        ("med20_m4",       0.40, -0.04, None),
+        ("med20_m2",       0.40, -0.02, None),
+        ("med20_0",        0.40,  0.00, None),
+        ("drop_breadth",   None, -0.03, None),
+        ("drop_med20",     0.40, None,  None),
+        ("drop_both",      None, None,  None),
+        ("add_upfrac30",   0.40, -0.03, 0.30),
+        ("add_upfrac40",   0.40, -0.03, 0.40),
+    ]
+    rows = []
+    for label, b_cf, m_cf, u_cf in configs:
+        if b_cf is None and m_cf is None:
+            safe = pd.Series(True, index=env_df.index)
+        elif b_cf is None:
+            safe = ~(md < m_cf)
+        elif m_cf is None:
+            safe = ~(br < b_cf)
+        else:
+            safe = ~((br < b_cf) | (md < m_cf))
+        if u_cf is not None:
+            safe = safe & ~(uf < u_cf)
+        env_cf = env_df.copy()
+        env_cf["safe"] = safe
+        _sc, buy, _ob = combine_score(
+            tech_w, mix_cur, env_cf, buy_th=bth, obs_th=oth, gate_on=True,
+            eligible=wide["eligible"], jev_mode=args.jev_mode,
+            jev_mat=jev_mat)
+        buy_w = buy.loc[in_win]
+        v = {"label": label, "breadth_th": b_cf, "med20_th": m_cf,
+             "upfrac_veto": u_cf, "n_buy": int(buy_w.sum().sum()),
+             "unsafe_days": int((~safe.loc[in_win]).sum()), "holds": {}}
+        for n in args.holds:
+            v["holds"][str(n)] = eval_hold(
+                buy_w, wide["open"].loc[in_win], wide["close"].loc[in_win],
+                n, args.cost, bench_ret=bench_by_hold[n],
+                unfill=wide.get("unfill"))
+        rows.append(v)
+        h0 = v["holds"][str(args.holds[0])]
+        print("  cf %-14s buy=%6d hold%d mean=%s dd=%s" % (
+            label, v["n_buy"], args.holds[0], h0["mean"], h0["max_dd"]),
+            flush=True)
+    return rows
+
+
+def build_killed_payload(args, wide, env_df, tech_w, mix_cur, in_win,
+                         bench_by_hold, jev_mat):
+    """错杀清单 + 分组统计 + 闸门反事实（只读，全部在窗口内）。
+
+    错杀定义：被剔除信号的 r10 ≥ max(5%, 2×放行成交样本 r10 均值)
+    （ref_n=10；若 --hold 未含 10 则退化为第一个持有期）。
+    """
+    cost = args.cost
+    holds = args.holds
+    ref_n = 10 if 10 in holds else holds[0]
+    bth, oth = TH_CUR
+    open_px, close_px = wide["open"], wide["close"]
+    eligible = wide["eligible"]
+
+    score, buy_on, _ = combine_score(
+        tech_w, mix_cur, env_df, buy_th=bth, obs_th=oth, gate_on=True,
+        eligible=eligible, jev_mode=args.jev_mode, jev_mat=jev_mat)
+    _s2, buy_off, _ = combine_score(
+        tech_w, mix_cur, env_df, buy_th=bth, obs_th=oth, gate_on=False,
+        eligible=eligible, jev_mode=args.jev_mode, jev_mat=jev_mat)
+
+    # 错杀判定阈值（放行成交样本 r10 均值）
+    adm_ret, _drop = trade_returns(
+        buy_on.loc[in_win], open_px.loc[in_win], close_px.loc[in_win],
+        ref_n, cost, unfill=wide.get("unfill"))
+    adm_mean = float(adm_ret.mean()) if len(adm_ret) else 0.0
+    def_th = max(0.05, 2.0 * adm_mean)
+
+    br, md, uf = env_df["breadth"], env_df["med20"], env_df["upfrac"]
+    veto_w = (buy_off & ~buy_on).loc[in_win]
+    on_w = buy_on.loc[in_win]
+    unf_t1 = wide["unfill"].shift(-1).fillna(False).loc[in_win]
+    entry_na = open_px.shift(-1).isna().loc[in_win]
+    safe_w = env_df["safe"].loc[in_win]
+    hr_ok = mix_cur.notna().loc[in_win]
+
+    def _bcast(s_bool):
+        """日频布尔 Series 广播到 (dates×stocks)（df&series 会错位到列名）。"""
+        if isinstance(s_bool, pd.DataFrame):
+            return s_bool
+        return pd.DataFrame(
+            np.broadcast_to(s_bool.to_numpy(dtype=bool)[:, None],
+                            veto_w.shape),
+            index=veto_w.index, columns=veto_w.columns)
+
+    is_br_b = _bcast(br.loc[in_win] < 0.40)
+    is_md_b = _bcast(md.loc[in_win] < -0.03)
+    safe_b, hr_b = _bcast(safe_w), _bcast(hr_ok)
+    # min_bars 假想口径：tech+env 归一（显式非产线行为）
+    env_sc = pd.DataFrame(
+        np.broadcast_to(env_df["score"].to_numpy(dtype=float)[:, None],
+                        tech_w.shape),
+        index=tech_w.index, columns=tech_w.columns)
+    pseudo = (tech_w * W4["tech"] + env_sc * W4["env"]) \
+        / (W4["tech"] + W4["env"])
+    masks = {
+        "gate_both": veto_w & is_br_b & is_md_b,
+        "gate_breadth": veto_w & is_br_b & ~is_md_b,
+        "gate_med20": veto_w & ~is_br_b & is_md_b,
+        "gate_other": veto_w & ~(is_br_b | is_md_b),
+        "unfill": on_w & unf_t1,
+        "entry_nobar": on_w & entry_na,
+        "rps_missing": (score.loc[in_win] >= bth) & eligible.loc[in_win] \
+            & ~hr_b & safe_b,
+        "min_bars": (pseudo.loc[in_win] >= bth) & ~eligible.loc[in_win] \
+            & safe_b,
+    }
+
+    r_win = {n: _fwd_ret(open_px, close_px, n, cost).loc[in_win]
+             for n in holds}
+    r_arr = {n: r_win[n].to_numpy(dtype=float) for n in holds}
+    ind = {k: env_df[k].loc[in_win].to_numpy(dtype=float)
+           for k in ("breadth", "med20", "upfrac")}
+    sc_a = score.loc[in_win].to_numpy(dtype=float)
+    win_dates = [str(int(d)) for d in wide["dates"][in_win]]
+    codes = wide["codes"]
+
+    def _v(x, nd=6):
+        return None if (x is None or np.isnan(x)) else round(float(x), nd)
+
+    rows = []
+    for g in KILLED_GROUP_ORDER:
+        a = masks[g].to_numpy(dtype=bool)
+        for d_i, s_i in np.argwhere(a):
+            row = {"date": win_dates[d_i], "code": codes[s_i], "reason": g,
+                   "breadth": _v(ind["breadth"][d_i], 4),
+                   "med20": _v(ind["med20"][d_i], 4),
+                   "upfrac": _v(ind["upfrac"][d_i], 4),
+                   "score": _v(sc_a[d_i, s_i], 1)}
+            for n in holds:
+                row["r%d" % n] = _v(r_arr[n][d_i, s_i])
+            rows.append(row)
+
+    cf = gate_counterfactual(args, wide, env_df, tech_w, mix_cur, in_win,
+                             bench_by_hold, jev_mat)
+    payload = {
+        "meta": {
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "window": {"start": args.start, "end": args.end,
+                       "signal_days": int(in_win.sum())},
+            "n_stocks": wide["close"].shape[1],
+            "cost_roundtrip": cost, "jev_mode": args.jev_mode,
+            "weights": "w_cur", "thresholds": list(TH_CUR),
+            "group_note": KILLED_GROUP_NOTE,
+        },
+        "killed_definition": {
+            "rule": "r%d >= max(5%%, 2×放行成交样本 r%d 均值)"
+                    % (ref_n, ref_n),
+            "abs_th": 0.05, "rel_multiple": 2.0,
+            "admitted_mean_r%d" % ref_n: round(adm_mean, 6),
+            "threshold_used": round(def_th, 6),
+        },
+        "group_stats": _killed_group_stats(rows, def_th, ref_n),
+        "counterfactual": cf,
+        "rows": rows,
+    }
+    return payload
+
+
+def build_killed_md(payload):
+    """错杀清单人类可读摘要。"""
+    m = payload["meta"]
+    d = payload["killed_definition"]
+    ref_n = 10 if 10 in m.get("holds", [5, 10, 20]) else 5
+    lines = ["# 青萍之末错杀清单摘要", ""]
+    lines.append("- 窗口: %s ~ %s（%d 信号日，%d 股）；成本往返 %.2f%%"
+                 % (m["window"]["start"], m["window"]["end"] or "数据尾",
+                    m["window"]["signal_days"], m["n_stocks"],
+                    m["cost_roundtrip"] * 100))
+    lines.append("- 错杀定义: %s（本窗阈值 %+.2f%%）"
+                 % (d["rule"], d["threshold_used"] * 100))
+    lines.append("")
+    lines.append("## 按剔除原因分组")
+    lines.append("")
+    lines.append("| 剔除原因 | 被剔除数 | 有前向收益 | r10均值 | r10胜率 "
+                 "| 错杀数 | 错杀率 | 总r10代价 |")
+    lines.append("|---|---|---|---|---|---|---|---|")
+    rk = "mean_r%d" % ref_n
+    wk = "win_r%d" % ref_n
+    for g, s in payload["group_stats"].items():
+        if not s.get("n_killed"):
+            continue
+        lines.append("| %s | %d | %s | %s | %s | %s | %s | %s |" % (
+            g, s["n_killed"], s.get("n_with_fwd"),
+            _pct(s.get(rk)), _pct(s.get(wk), True), s.get("n_miskill"),
+            _pct(s.get("miskill_rate"), True), _pct(s.get(
+                "total_r%d" % ref_n))))
+    lines.append("")
+    lines.append("## 闸门反事实（hold5/10/20 均值与最大回撤）")
+    lines.append("")
+    lines.append("| 配置 | breadth阈 | med20阈 | 收紧天数 | 买入信号 "
+                 "| h5均值 | h10均值 | h20均值 | h10回撤 | h20回撤 |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+    for v in payload["counterfactual"]:
+        h = v["holds"]
+        lines.append("| %s | %s | %s | %d | %d | %s | %s | %s | %s | %s |" % (
+            v["label"],
+            "—" if v["breadth_th"] is None else "%d%%" % (
+                v["breadth_th"] * 100),
+            "—" if v["med20_th"] is None else "%d%%" % (v["med20_th"] * 100),
+            v["unsafe_days"], v["n_buy"],
+            _pct(h.get("5", {}).get("mean")),
+            _pct(h.get("10", {}).get("mean")),
+            _pct(h.get("20", {}).get("mean")),
+            _pct(h.get("10", {}).get("max_dd")),
+            _pct(h.get("20", {}).get("max_dd"))))
+    lines.append("")
+    return "\n".join(lines)
+
+
+
+
+
 def atomic_write_json(path, payload):
     """tempfile + os.replace 原子写（同产线 _atomic_write_json 风格）。"""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -702,6 +996,13 @@ def parse_args(argv=None):
                          "neutral50=50 中性分进权重；w015=权重重组 "
                          "tech.40/rps.30/jev.15/env.15；replay=消费 "
                          "jev_replay_series.json 逐日截面（覆盖外日期自然缺维）")
+    ap.add_argument("--killed-details", action="store_true",
+                    help="追加导出被剔除信号错杀清单（闸门否决/一字板/缺维"
+                         "分组 + 前向收益 + 闸门反事实网格），默认关闭，"
+                         "不改既有行为")
+    ap.add_argument("--killed-out", default=os.path.join(
+        REPORTS, "qpzm_killed_signals.json"),
+        help="错杀清单 JSON 输出路径（--killed-details 时生效）")
     args = ap.parse_args(argv)
     args.holds = sorted({int(x) for x in str(args.hold).split(",") if x})
     return args

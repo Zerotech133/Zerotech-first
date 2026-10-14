@@ -1237,6 +1237,94 @@ def write_strategy_pages(strat_data, res, latest):
     print("STRAT pages x%d" % len(STRAT_CN))
 
 
+# ── W3-4 分位数口径：原始共振分强右偏（中位数全档为负），分高≠能买， ──
+#    要看分位。历史分布基准 = 日批归档（rps_daily_batches.jsonl）live 行
+#    滚动 60 交易日的候选分集合；replay 行 score 恒 None 不参与。
+def load_hist_scores(batches_path, window=60, exclude_date=None):
+    """日批归档 → 滚动 window 个交易日的 live 打分集合（历史分布基准）。
+
+    口径（判例式）：
+      · 只取 source=live 行（replay 行 score=None，纯三维复算不进基准）；
+      · 按日期升序取「最后 window 个交易日」，窗口内全部候选分入池
+        （不足 window 日则全部可得——回退路径，上线初期归档仅数日）；
+      · exclude_date 排除当日（今日批次在推送之后才归档，双保险防自含）；
+      · 无历史 → 空列表，调用方不加 percentile 字段（fail-open 不炸卡）。
+    """
+    rows = []
+    try:
+        with open(batches_path, encoding="utf-8") as f:
+            for ln in f:
+                ln = ln.strip()
+                if not ln:
+                    continue
+                try:
+                    r = json.loads(ln)
+                except Exception:
+                    continue
+                if r.get("source") != "live":
+                    continue
+                d = str(r.get("date") or "")
+                if not d or d == str(exclude_date or ""):
+                    continue
+                rows.append((d, r.get("picks") or []))
+    except OSError:
+        return []
+    dates = sorted({d for d, _ in rows})[-int(window):]   # 滚动窗口
+    dset = set(dates)
+    out = []
+    for d, picks in rows:
+        if d not in dset:
+            continue
+        for p in picks:
+            s = p.get("score")
+            if s is not None:
+                try:
+                    out.append(float(s))
+                except (TypeError, ValueError):
+                    continue
+    return out
+
+
+def score_percentile(score, hist):
+    """单票原始分 → 当日全市场分位 P0~P100（一位小数）。
+
+    定义 = 严格低于该分的历史分占比×100（并列计高位，判例：分位看
+    「比过去多少日子里的票强」，同分不抬轿）。hist 空 → None。
+    """
+    if not hist:
+        return None
+    pct = 100.0 * sum(1 for h in hist if h < float(score)) / len(hist)
+    return round(min(100.0, max(0.0, pct)), 1)
+
+
+def annotate_percentile(res, batches_path=None, cfg=None):
+    """打分产物逐候选注入 percentile 字段（W3-4 推送口径）。
+
+    开关 config.json qpzm.score_percentile（缺省 true，判例：口径提示
+    类开关默认开、关掉即回退原卡片）；无历史基准或单票算不出分位时不
+    加字段（不硬凑），页面/卡片渲染按无分位处理。
+    """
+    cfg = cfg if cfg is not None else json.load(open(
+        os.path.join(HERE, "config.json"), encoding="utf-8"))
+    if not (cfg.get("qpzm") or {}).get("score_percentile", True):
+        return res
+    batches_path = batches_path or os.path.join(
+        REPORTS, "rps_daily_batches.jsonl")
+    hist = load_hist_scores(batches_path)
+    if not hist:
+        print("PERCENTILE: 无 live 历史基准，跳过分位注入")
+        return res
+    n = 0
+    for r in res:
+        p = score_percentile(r.get("score"), hist)
+        if p is not None:
+            r["percentile"] = p
+            n += 1
+    print("PERCENTILE: %d/%d 注入（基准 %d 分/滚动60日）" % (
+        n, len(res), len(hist)))
+    return res
+
+
 def push_daily_card(snap):
     top, res = snap["tops"].get("CN", []), snap["res"]
     env_lines = "\n".join(
@@ -1259,9 +1347,17 @@ def push_daily_card(snap):
                       ("港股", snap["tops"].get("HK", [])),
                       ("加密", snap["tops"].get("CRYPTO", []))) if t)
     hot = [r for r in res if r["score"] >= 50][:6]
+    # W3-4：分旁挂当日全市场分位（有字段才挂，开关关/无基准时卡片同旧版）
     res_lines = "\n".join(
-        "· %s %d分 %s［%s］" % (r["name"], r["score"], r["action"],
-        r["dims"]) for r in hot) or "（暂无 ≥50 分标的）"
+        "· %s %d分%s %s［%s］" % (r["name"], r["score"],
+        ("(P%.1f)" % r["percentile"]) if r.get("percentile") is not None
+        else "", r["action"], r["dims"]) for r in hot) or "（暂无 ≥50 分标的）"
+    # W3-4 头部说明行：口径提示（仅当本次卡片带分位时出现，避免口径与
+    # 内容脱节——开关关掉后提示同步消失，不留「有说明无数据」的孤儿文案）
+    has_pct = any(r.get("percentile") is not None for r in res)
+    caliber = [{"tag": "markdown", "text_size": "notation", "content":
+                "<font color='grey'>分数为原始共振分（右偏分布），"
+                "括号内为当日全市场分位</font>"}] if has_pct else []
     card = {
         "config": {"update_multi": True, "width_mode": "default"},
         "header": {"title": {"tag": "plain_text",
@@ -1271,7 +1367,7 @@ def push_daily_card(snap):
                        len(snap.get("envs", [])) - gates_closed,
                        max(len(snap.get("envs", [])), 1), snap["latest"])},
                    "template": "blue" if gates_closed == 0 else "grey"},
-        "elements": [
+        "elements": caliber + [
             {"tag": "markdown", "content":
                 "**环境闸门（全市场宽度）**\n%s\n%s" % (env_lines, jev_line)},
             {"tag": "hr"},
@@ -1547,6 +1643,13 @@ def run_daily(push=True):
     print("RPS A股 %d stocks, env=%d safe=%s" % (
         len(rps_df), env["score"], env["safe"]))
     res, pool_envs = resonance_watchlist(rps_df, env, full_envs, full_rps)
+    # W3-4：分位注入须在 write_pages 之前——percentile 随 res 落
+    # rps_latest.json，推卡/日批归档读同一份快照，口径单一来源
+    try:
+        annotate_percentile(res)
+    except Exception as _ex:
+        # fail-open：分位算不出不影响主链，卡片按无分位渲染
+        print("PERCENTILE fail: %s" % str(_ex)[:120])
     env_by_key = {"cn": ("A股全市场(%d只)" % len(rps_df), env)}
     for k, m in (("us", "US"), ("hk", "HK"), ("crypto", "CRYPTO")):
         if m in full_envs:

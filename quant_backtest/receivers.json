@@ -11,6 +11,12 @@
    "type": "chat_id",
    "id": "oc_6b97bee8b5340e071d0fc10cc6c8569f",
    "note": "飞书『家人群』"
+  },
+  {
+   "name": "量化群",
+   "type": "chat_id",
+   "id": "oc_16ed759795430734a90a7850ba33bec1",
+   "note": "同步自 news push_targets"
   }
  ]
 }

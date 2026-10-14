@@ -22,7 +22,9 @@ def _main_root():
         if r.returncode == 0 and common:
             p = Path(common)
             if not p.is_absolute():
-                p = (here.parent / common).resolve()
+                # git 返回值相对 subprocess cwd(=here·tools/), 锚定基准须为 here
+                # (判例: 主仓返回 '../.git', 用 here.parent 拼会解析到盘根 E:\)
+                p = (here / common).resolve()
             return p.parent
     except Exception:
         pass

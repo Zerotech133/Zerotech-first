@@ -94,6 +94,126 @@ SIDES = ("mbei", "bei", "bei2", "vv", "tbe")   # True 子集型侧面
 # TDX 兜底（ashare 滞后时由 _check_fresh 填充：缺失交易日 → {ts_code: OHLCV}）
 TDX_RESCUE = {}
 
+# ── 后复权（W1-2 任务A 20261014）──────────────────────────
+# 背景: data/ashare/*.parquet 为 tushare daily 不复权价，除权缺口产生
+# 假分型污染笔/中枢/三类买卖点。开关: config.json chanlun.use_hfq
+# （键缺失/读取失败 = false 保持旧行为；产线显式置 true）。
+# 回退: 该键改 false 即一键回退，无需动代码。
+# 判例: 归一基准 = 全序列最后一根因子 → 最新根价格 = 不复权真实价，
+# 每日扫描检出信号的 price/entry_px 推送语义零漂移；历史根等比缩放，
+# 与 tushare hfq 比值口径一致（跨除权收益可比）。
+HFQ_FALLBACK = set()       # 降级票（因子缺失 → 退回不复权），scan 后落盘
+_HFQ_CFG = None            # None=读 config.json；测试/进程内可显式覆盖
+_ADJ_CACHE = None          # {ts_code: (td8 ndarray, factor ndarray)} 懒加载一次
+
+
+def _use_hfq():
+    """chanlun.use_hfq 开关（惰性读一次）。
+
+    坑: 键缺失默认 False（旧行为）——老计划任务在 config 未升级的
+    过渡期行为零变化；config.json 已显式写 true 才启用。"""
+    global _HFQ_CFG
+    if _HFQ_CFG is None:
+        try:
+            with open(os.path.join(HERE, "config.json"),
+                      encoding="utf-8") as f:
+                cfg = json.load(f)
+            _HFQ_CFG = bool((cfg.get("chanlun") or {}).get("use_hfq", False))
+        except Exception:
+            _HFQ_CFG = False
+    return _HFQ_CFG
+
+
+def _adj_map():
+    """湖 ts_adj_factor 全表懒加载（adj_factor_sync 每日 18:10 增量入湖，
+    后复权累积因子，历史值固定）。表未就绪/读取失败 → {}（全局降级）。
+
+    坑: 全表 ~420 万行，只取 3 列转 per-code ndarray（内存 ~百MB 级），
+    勿转 {code: {date: f}} 字典（Python 对象开销放大 5 倍以上）。"""
+    global _ADJ_CACHE
+    if _ADJ_CACHE is None:
+        try:
+            import tdx_read as tdxr
+            if not tdxr.table_ready("ts_adj_factor"):
+                _ADJ_CACHE = {}
+            else:
+                df = tdxr.read_range(
+                    "ts_adj_factor",
+                    columns=["ts_code", "trade_date", "adj_factor"])
+                m = {}
+                if df is not None and not df.empty:
+                    g_all = df.assign(
+                        _td=df["trade_date"].astype(str).str[:8],
+                        _fa=pd.to_numeric(df["adj_factor"],
+                                          errors="coerce")).dropna(
+                        subset=["_fa"])
+                    for code, g in g_all.groupby("ts_code", sort=False):
+                        td = g["_td"].to_numpy()
+                        fa = g["_fa"].to_numpy(dtype=float)
+                        o = td.argsort()
+                        m[code] = (td[o], fa[o])
+                _ADJ_CACHE = m
+        except Exception:
+            _ADJ_CACHE = {}
+    return _ADJ_CACHE
+
+
+def _chain_ratio(prev_c, pc, inverse=False):
+    """pre_close 链单步比率（K254 口径，出界守卫 0.05~20）。
+
+    正向: r = c(t-1)/pre_close(t)；逆向（头部回补）: r = pre_close(t+1)/c(t)。
+    坑: pre_close 缺失/非正 → r=1（继承前根因子，不修代错修——除权恰逢
+    pc 缺失概率低，次日因子表同步后自愈）。"""
+    if not prev_c or not pc or pc <= 0:
+        return 1.0
+    r = (prev_c / pc) if not inverse else (pc / prev_c)
+    return r if 0.05 <= r <= 20.0 else 1.0
+
+
+def _hfq_scale(bars, code):
+    """bars（升序 [{dt,o,h,l,c,v,pc}]）就地后复权（最新根=1 基准）。
+
+    因子源: 湖 ts_adj_factor；头部/尾部/内部无因子日以 pre_close 链接续
+    （正向 f(t)=f(t-1)*c(t-1)/pc(t)，逆向 f(t)=f(t+1)*pc(t+1)/c(t)）。
+    OHLC 与 pc 同乘 f/f_base（pc 复权后除权缺口消失 → _exdiv_between
+    对已复权序列自然不触发，评估不再误剔跨除权样本）；v 不动。
+    降级: 该票因子表整段缺失（fmap 无此码 / 全序列无命中 / 末根因子
+    非正）→ 原样返回 False 并记 HFQ_FALLBACK；个别日期缺失走链接续
+    不降级。返回 True=已复权。"""
+    fmap = _adj_map().get(code)
+    if not fmap or not bars:
+        HFQ_FALLBACK.add(code)
+        return False
+    n = len(bars)
+    ds, fs = fmap
+    f = [None] * n
+    for i, b in enumerate(bars):
+        j = int(ds.searchsorted(b["dt"].replace("-", "")))
+        if j < len(ds) and ds[j] == b["dt"].replace("-", ""):
+            f[i] = float(fs[j])
+    k0 = next((i for i, v in enumerate(f) if v is not None), None)
+    if k0 is None:
+        HFQ_FALLBACK.add(code)
+        return False
+    for i in range(k0 - 1, -1, -1):        # 头部回补（逆向链）
+        f[i] = f[i + 1] * _chain_ratio(bars[i + 1].get("pc"), bars[i]["c"],
+                                       inverse=True)
+    for i in range(k0 + 1, n):             # 尾部/内部接续（正向链）
+        if f[i] is None:
+            f[i] = f[i - 1] * _chain_ratio(bars[i - 1]["c"],
+                                           bars[i].get("pc"))
+    base = f[-1]
+    if not base or base <= 0:
+        HFQ_FALLBACK.add(code)
+        return False
+    for i, b in enumerate(bars):
+        k = f[i] / base
+        for key in ("o", "h", "l", "c"):
+            b[key] = round(b[key] * k, 6)
+        if b.get("pc") is not None:
+            b["pc"] = b["pc"] * k
+    return True
+
 from chanlun_signal import analyze            # noqa: E402
 from chanlun_gray import enrich as _gray_enrich   # noqa: E402  v4 灰度层
 from chanlun_backtest import _dir_ret, TYPES  # noqa: E402
@@ -160,6 +280,9 @@ def _bars_from_parquet(path, limit=0):
         o, h, l, c, v, pc = rows[dt]
         out.append({"dt": dt, "o": o, "h": h, "l": l, "c": c,
                     "v": v, "pc": pc})
+    # 后复权（仅 CN；US/HK 无因子源且文件名非 ts_code 形态）
+    if _use_hfq() and _CUR_MKT == "CN":
+        _hfq_scale(out, os.path.basename(path)[:-8].replace("_", "."))
     return out
 
 
@@ -466,7 +589,25 @@ def _tdx_topup(bars, code, maps):
         pc = rec.get("pre_close")
         added.append({"dt": dt, "o": o, "h": h, "l": l, "c": c, "v": v,
                       "pc": None if pc is None or pc != pc else float(pc)})
-    return bars + added if added else bars
+    if not added:
+        return bars
+    # 后复权口径下补尾 bar 需链接续因子（K254 正向链），否则补入的
+    # 不复权价会在接缝处撕开序列。坑: 基准=原末根（_hfq_scale 归一后
+    # f=1）；raw_c 跟踪原始价链，缩放后不再参与比率。
+    if _use_hfq() and _CUR_MKT == "CN" and bars:
+        f, raw_c = 1.0, bars[-1]["c"]
+        for b in added:
+            f *= _chain_ratio(raw_c, b.get("pc"))
+            raw_c = b["c"]
+            b["o"], b["h"], b["l"], b["c"] = (round(b["o"] * f, 6),
+                                              round(b["h"] * f, 6),
+                                              round(b["l"] * f, 6),
+                                              round(b["c"] * f, 6))
+            if b.get("pc") is not None:
+                b["pc"] = b["pc"] * f
+            bars.append(b)
+        return bars
+    return bars + added
 
 
 # ── 初始回填（一次性） ────────────────────────────────────
@@ -612,6 +753,16 @@ def scan_all():
         except Exception as e:
             print("ml score skip: %s" % str(e)[:120])
         _commit_new_rows(new_rows)          # 锁内读-改-写（与手动推池互斥）
+    if _use_hfq() and _CUR_MKT == "CN":
+        if HFQ_FALLBACK:                    # W1-2 任务A：降级清单落盘留痕
+            _write_json(os.path.join(HERE, "data",
+                                     "chanlun_hfq_fallback.json"),
+                        {"updated_at": _now_iso(), "n": len(HFQ_FALLBACK),
+                         "codes": sorted(HFQ_FALLBACK)})
+            print("hfq fallback: %d 只无因子退回不复权 → "
+                  "data/chanlun_hfq_fallback.json" % len(HFQ_FALLBACK))
+        else:
+            print("hfq on: 全市场因子覆盖正常")
     print("scan done: ok=%d new=%d pool=%d" % (n_ok, len(new_rows),
                                                len(_load_pool())))
     return new_rows
@@ -933,14 +1084,22 @@ def pool_eval():
             "all": _stats(a["all"]), "closed_n": a["closed_n"],
             "sides": {s: _stats(a[s]) for s in list(SIDES) + ["reg"]},
             "comp": comp_out}
+    # W1-2 任务A：口径标注随 use_hfq 开关走（后复权开启时跨除权样本
+    # 由复权收益修正而非剔除；降级票仍是不复权 → adj_flag 照旧剔除）
+    if _use_hfq() and _CUR_MKT == "CN":
+        mode = "后复权口径（ts_adj_factor·最新日=1基准）"
+        if HFQ_FALLBACK:
+            mode += "·降级不复权%d只" % len(HFQ_FALLBACK)
+    else:
+        mode = "不复权口径（跨除权剔除）"
     cache = {"generated_at": _now_iso(), "hold_days": HOLD_DAYS,
              "n_pool": len(_load_pool()), "n_open": len(led.get("open", [])),
              "n_closed": len(led.get("closed", [])),
              "types": out_types,
-             "note": "检出日收盘入场·%d交易日持有·不复权口径（跨除权剔除）·"
+             "note": "检出日收盘入场·%d交易日持有·%s·"
                      "卖点为方向统计非做空损益·影子观察 n<10 不构成结论·"
                      "复合叠加=全部因子同时成立，任一不可判记 None 不计"
-                     "可判数（comp 区，只评估不拦截）" % HOLD_DAYS}
+                     "可判数（comp 区，只评估不拦截）" % (HOLD_DAYS, mode)}
     _write_json(POOL_EVAL, cache)
     print("pool_eval refreshed: %s" % cache["generated_at"])
     return cache

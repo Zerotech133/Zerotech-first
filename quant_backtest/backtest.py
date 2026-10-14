@@ -1,23 +1,68 @@
 # -*- coding: utf-8 -*-
 """向量化回测引擎 + 绩效指标。
 
-假设：仅做多、T+1 信号（position 在当日收盘后决策，次日生效），
+假设：仅做多、默认 T+1 信号（position 在当日收盘后决策，次日生效），
 交易成本 = 换手 × cost_bps，滑点在换手时额外扣除 slippage_bps。
+成本/T+1 口径按市场分层（config trade.by_market），CRYPTO 无 T+1：
+判例——统一 cost_bps=3 对 A 股严重偏乐观，各市场必须用各自口径回测。
 """
+import json
+import os
+
 import numpy as np
 import pandas as pd
 
+HERE = os.path.dirname(os.path.abspath(__file__))
 
-def run(df, signal, init_cash=1_000_000, cost_bps=3, slippage_bps=1):
+
+def load_trade_config(market=None, cfg=None):
+    """按市场读取交易成本口径（config trade 分层结构）。
+
+    判例：旧 config 是扁平 {"init_cash","cost_bps","slippage_bps"}，
+    无 by_market 键时回退旧行为（全市场同口径 + T+1），保持向后兼容。
+    market 取值 CN/US/HK/CRYPTO；拿不到（None 或不在 by_market 里）
+    默认按 CN 保守口径（A 股成本最高，宁可高估成本不低估）。
+    t_plus_one：市场在 T_plus_one_markets 列表里 → True（信号次日生效）；
+    CRYPTO 等不在列表 → False（当日生效，T+0）。
+    返回 dict 可直接 ** 展开进 run()：init_cash/cost_bps/slippage_bps/t_plus_one。
+    """
+    if cfg is None:
+        path = os.path.join(HERE, "config.json")
+        with open(path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    trade = cfg.get("trade", {})
+    out = {"init_cash": trade.get("init_cash", 1_000_000)}
+    by_mkt = trade.get("by_market")
+    if not by_mkt:
+        # 旧扁平 config：无分层 → 旧行为（统一成本 + T+1）
+        out["cost_bps"] = trade.get("cost_bps", 3)
+        out["slippage_bps"] = trade.get("slippage_bps", 1)
+        out["t_plus_one"] = True
+        return out
+    mkt_cfg = by_mkt.get(market) if market else None
+    if mkt_cfg is None:                      # 未指定/未知市场 → CN 保守口径
+        mkt_cfg = by_mkt.get("CN", {})
+    out["cost_bps"] = int(mkt_cfg.get("cost_bps", 3))
+    out["slippage_bps"] = int(mkt_cfg.get("slippage_bps", 1))
+    t1 = by_mkt.get("T_plus_one_markets", ["CN", "US", "HK"])
+    out["t_plus_one"] = market in t1 if market else True
+    return out
+
+
+def run(df, signal, init_cash=1_000_000, cost_bps=3, slippage_bps=1,
+        t_plus_one=True):
     """
     df: DataFrame with 'close' column (index=trade_date)
     signal: Series of 0/1 aligned to df.index (1=持有多头, 0=空仓)
+    t_plus_one: True=信号次日生效（A股/港美股，shift(1) 防未来）；
+                False=当日生效（CRYPTO T+0，不 shift）
     返回 dict: metrics + equity Series
     """
     close = df["close"]
     ret = close.pct_change().fillna(0)
-    # 信号次日生效，避免未来函数
-    pos = signal.shift(1).fillna(0).astype(float)
+    # 信号次日生效，避免未来函数；T+0 市场（CRYPTO）当日生效
+    pos = (signal.shift(1) if t_plus_one else signal)
+    pos = pos.fillna(0).astype(float)
 
     # 策略收益率 = 持仓 × 当日收益
     strat_ret = pos * ret

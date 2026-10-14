@@ -1,0 +1,87 @@
+{
+ "schema": "k-stock-163/plan-review-v0.1",
+ "pf_id": "pf_002",
+ "manager_id": "laotian_pm",
+ "source": "pf_002",
+ "date": "20261013",
+ "generated_at": "2026-10-13T09:09:25",
+ "provider": "zhipu-fallback",
+ "parsed": true,
+ "approved": [
+  {
+   "stock": "000993.SZ",
+   "reason": "九维出分且入Top信心清单（conf=0.70，T2），无重复pending挂单，可独立新建仓",
+   "weight": "8%"
+  },
+  {
+   "stock": "000011.SZ",
+   "reason": "九维出分（conf=0.70，T2），pending挂单仅300股，按原意图小仓位试探建仓",
+   "weight": "6%"
+  },
+  {
+   "stock": "000736.SZ",
+   "reason": "九维出分（conf=0.70，T2），pending挂单22400股与策略意图一致，去重后放行",
+   "weight": "8%"
+  },
+  {
+   "stock": "001317.SZ",
+   "reason": "九维出分（conf=0.70，T2），pending挂单1700股规模较小，小仓位跟进",
+   "weight": "6%"
+  },
+  {
+   "stock": "300189.SZ",
+   "reason": "九维出分（conf=0.70，T2），pending挂单17700股与意图一致",
+   "weight": "8%"
+  },
+  {
+   "stock": "600026.SH",
+   "reason": "九维出分（conf=0.70，T2），pending挂单5000股适中，作为核心配置给予略高权重",
+   "weight": "10%"
+  },
+  {
+   "stock": "600127.SH",
+   "reason": "九维出分（conf=0.70，T2），pending挂单7800股与意图一致",
+   "weight": "8%"
+  }
+ ],
+ "rejected": [
+  {
+   "stock": "300740.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "600613.SH",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "603188.SH",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "000560.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "002285.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "002696.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "002811.SZ",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "600059.SH",
+   "reason_code": "信心不足"
+  },
+  {
+   "stock": "600189.SH",
+   "reason_code": "信心不足"
+  }
+ ],
+ "summary": "今日批准7只均为'九维出分'Top信心标的（conf=0.70，T2），建议合计仓位54%、单票不超10%符合≤20%规则；驳回9只信心不足标的（8只影子未出分、600189.SH未入Top信心清单），其对应pending挂单须同步作废以防重复撮合。",
+ "body": "{\"approved\": [{\"stock\": \"000993.SZ\", \"reason\": \"九维出分且入Top信心清单（conf=0.70，T2），无重复pending挂单，可独立新建仓\", \"weight\": \"8%\"}, {\"stock\": \"000011.SZ\", \"reason\": \"九维出分（conf=0.70，T2），pending挂单仅300股，按原意图小仓位试探建仓\", \"weight\": \"6%\"}, {\"stock\": \"000736.SZ\", \"reason\": \"九维出分（conf=0.70，T2），pending挂单22400股与策略意图一致，去重后放行\", \"weight\": \"8%\"}, {\"stock\": \"001317.SZ\", \"reason\": \"九维出分（conf=0.70，T2），pending挂单1700股规模较小，小仓位跟进\", \"weight\": \"6%\"}, {\"stock\": \"300189.SZ\", \"reason\": \"九维出分（conf=0.70，T2），pending挂单17700股与意图一致\", \"weight\": \"8%\"}, {\"stock\": \"600026.SH\", \"reason\": \"九维出分（conf=0.70，T2），pending挂单5000股适中，作为核心配置给予略高权重\", \"weight\": \"10%\"}, {\"stock\": \"600127.SH\", \"reason\": \"九维出分（conf=0.70，T2），pending挂单7800股与意图一致\", \"weight\": \"8%\"}], \"rejected\": [{\"stock\": \"300740.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"600613.SH\", \"reason_code\": \"信心不足\"}, {\"stock\": \"603188.SH\", \"reason_code\": \"信心不足\"}, {\"stock\": \"000560.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"002285.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"002696.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"002811.SZ\", \"reason_code\": \"信心不足\"}, {\"stock\": \"600059.SH\", \"reason_code\": \"信心不足\"}, {\"stock\": \"600189.SH\", \"reason_code\": \"信心不足\"}], \"summary\": \"今日批准7只均为'九维出分'Top信心标的（conf=0.70，T2），建议合计仓位54%、单票不超10%符合≤20%规则；驳回9只信心不足标的（8只影子未出分、600189.SH未入Top信心清单），其对应pending挂单须同步作废以防重复撮合。\"}"
+}

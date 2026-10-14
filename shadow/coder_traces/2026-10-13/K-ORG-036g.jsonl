@@ -1,0 +1,40 @@
+{"ts": "11:09:31", "k_id": "K-ORG-036g", "kind": "generate", "detail": "model_route绝对路径重写 by DEV2 via cloud"}
+{"ts": "11:09:36", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=whole"}
+{"ts": "11:09:36", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:09:36", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 523 chars"}
+{"ts": "11:09:36", "k_id": "K-ORG-036g", "kind": "fail", "detail": "smoke: "}
+{"ts": "11:09:59", "k_id": "K-ORG-036g", "kind": "generate", "detail": "model_route绝对路径重写 by DEV2 via cloud"}
+{"ts": "11:10:12", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=whole"}
+{"ts": "11:10:12", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:10:12", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 1118 chars"}
+{"ts": "11:10:12", "k_id": "K-ORG-036g", "kind": "fail", "detail": "smoke: [WinError 3] 系统找不到指定的路径。"}
+{"ts": "11:11:00", "k_id": "K-ORG-036g", "kind": "generate", "detail": "model_route绝对路径重写 by DEV2 via cloud"}
+{"ts": "11:11:13", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=whole"}
+{"ts": "11:11:13", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:11:13", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 1129 chars"}
+{"ts": "11:11:13", "k_id": "K-ORG-036g", "kind": "fail", "detail": "smoke: embed 路由错"}
+{"ts": "11:11:34", "k_id": "K-ORG-036g", "kind": "generate", "detail": "model_route绝对路径重写 by DEV2 via cloud"}
+{"ts": "11:11:41", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=whole"}
+{"ts": "11:11:41", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:11:41", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 574 chars"}
+{"ts": "11:11:41", "k_id": "K-ORG-036g", "kind": "fail", "detail": "smoke: embed 路由错"}
+{"ts": "11:12:33", "k_id": "K-ORG-036g", "kind": "generate", "detail": "model_route绝对路径重写 by DEV2 via cloud"}
+{"ts": "11:12:43", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=whole"}
+{"ts": "11:12:43", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:12:43", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 574 chars"}
+{"ts": "11:12:43", "k_id": "K-ORG-036g", "kind": "smoke", "detail": "round1 fail: embed 路由错"}
+{"ts": "11:12:51", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=sr"}
+{"ts": "11:12:51", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:12:51", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 1668 chars"}
+{"ts": "11:12:51", "k_id": "K-ORG-036g", "kind": "smoke", "detail": "round2 fail: Configuration file not found at config/ollama_model_route.json"}
+{"ts": "11:12:55", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=sr"}
+{"ts": "11:12:55", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:12:55", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 1668 chars"}
+{"ts": "11:12:55", "k_id": "K-ORG-036g", "kind": "smoke", "detail": "round3 fail: Configuration file not found at config/ollama_model_route.json"}
+{"ts": "11:12:55", "k_id": "K-ORG-036g", "kind": "fail", "detail": "smoke 3 rounds: Configuration file not found at config/ollama_model_route.json"}
+{"ts": "11:13:18", "k_id": "K-ORG-036g", "kind": "generate", "detail": "model_route绝对路径重写 by DEV2 via cloud"}
+{"ts": "11:13:41", "k_id": "K-ORG-036g", "kind": "edit", "detail": "mode=sr"}
+{"ts": "11:13:41", "k_id": "K-ORG-036g", "kind": "lint", "detail": "PASS"}
+{"ts": "11:13:41", "k_id": "K-ORG-036g", "kind": "write", "detail": "tools\\model_route.py 1746 chars"}
+{"ts": "11:13:41", "k_id": "K-ORG-036g", "kind": "smoke", "detail": "PASS"}
+{"ts": "11:13:48", "k_id": "K-ORG-036g", "kind": "commit", "detail": "c0d0343 K-ORG-036g: model_route绝对路径重写 — by DEV2 via cloud"}

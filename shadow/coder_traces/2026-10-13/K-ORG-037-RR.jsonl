@@ -1,0 +1,7 @@
+{"ts": "11:49:07", "k_id": "K-ORG-037-RR", "kind": "commit", "detail": "e8e20c9 K-ORG-037-RR: 按单回滚演练 — by OPS1 via cloud"}
+{"ts": "11:49:34", "k_id": "K-ORG-037-RR", "kind": "add", "detail": "work\\f_rr_probe.py"}
+{"ts": "11:49:34", "k_id": "K-ORG-037-RR", "kind": "fail", "detail": "git commit: On branch master\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git"}
+{"ts": "11:49:51", "k_id": "K-ORG-037-RR", "kind": "add", "detail": "work\\f_rr_probe.py"}
+{"ts": "11:49:55", "k_id": "K-ORG-037-RR", "kind": "commit", "detail": "a00ce7e K-ORG-037-RR: 按单回滚演练 — by OPS1 via cloud"}
+{"ts": "11:50:21", "k_id": "K-ORG-037-RR", "kind": "add", "detail": "work\\f_rr_probe.py"}
+{"ts": "11:50:24", "k_id": "K-ORG-037-RR", "kind": "commit", "detail": "bca320a K-ORG-037-RR: 按单回滚演练 — by OPS1 via cloud"}

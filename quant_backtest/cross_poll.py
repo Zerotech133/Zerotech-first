@@ -15,6 +15,18 @@
 · 四策略信号  同上 res[].sigs（trend_follow/ma_cross/rsi_reversal/boll_breakout）
 · 缠论预警池  data/chanlun_pool.jsonl     近 90 天最新信号/票 + 侧面标签
 · 九维评分    data/nine_dim_scores.json   rows[].code/name/score/cov（观察工具）
+
+W3-4 韧性改造（20261014 cross-resilience-dev）：
+· 源状态显式化：build_cross 产物带 src_state（每源 ok/missing/error）与
+  degraded 标注——单源失败按"该源缺席"继续聚合，不再静默空集；
+· sig4 解耦：longs 字段缺失时从 res[].sigs（四策略 0/1）现算持仓数，
+  不再与 qpzm 完全共命运（同一 rps_latest.json，字段级互备）；
+· k=3 门槛降档（W3-4 网格结论 k=3 为硬门槛，不自动降 k 防放水）：
+  正常模式 k=3；degraded 且可用源=3 保持 k=3；可用源<3 → topn 产空
+  结果 + 醒目 DEGRADED 说明（blocked 模式）；
+· 源健康检查 source_health()：四源 ok/stale/missing 三态 + 数据锚日期，
+  stale/missing 时可经 runner.push_feishu 发告警（config cross 节
+  source_health_alert 开关，测试走 dry 模式不真推）。
 """
 import json
 import os
@@ -28,8 +40,19 @@ REPORTS = os.path.join(HERE, "reports")
 CHANLUN_LOOKBACK_DAYS = 90      # 缠论信号有效窗口（检出日起）
 NINE_DIM_LONG = 80              # 九维展示阈值（观察工具口径，非买入建议）
 SIG4_LONG = 3                   # 四策略持仓数 ≥3 记 long
-_CACHE = {"t": 0, "d": None}
+K_RES = 3                       # W3-4 网格结论：k=3 共振硬门槛（degraded 不降档防放水）
+TOPN_DEFAULT = 10               # k 门槛后 TopN 条数（对齐 cross_grid_backtest.TOPN）
 CACHE_TTL = 60                  # 门户请求级缓存（秒）
+_CACHE = {"t": 0, "d": None}    # 门户请求级缓存状态（test_ui_drilldown mock 点）
+CONFIG_FP = os.path.join(HERE, "config.json")
+
+# 源健康过期阈值（日历日近似；交易日精确判定见文档遗留风险）
+STALE_DAYS = {
+    "qpzm": 3,     # 日批缺失（容一个周末）
+    "sig4": 5,     # ≈3 交易日未更新（W3-4 口径）
+    "chanlun": 4,  # 扫描断档（容周末+批处理延迟）
+    "9dim": 8,     # 锚超 8 日（周频口径）
+}
 
 
 def norm_code(raw):
@@ -89,11 +112,29 @@ def _src_qpzm():
     return out
 
 
+def _sig4_count(r):
+    """sig4 解耦取数（W3-4）：优先 res[].longs，缺失时从 res[].sigs
+    （四策略 0/1 dict）现算持仓数——字段级互备，不再与 qpzm 完全共命运。
+    两路皆缺 → None（该票无四策略信号，跳过，不装作 neutral）。"""
+    n = r.get("longs")
+    if n is None:
+        sigs = r.get("sigs") or {}
+        if not sigs:
+            return None
+        n = sum(1 for v in sigs.values() if v)
+    try:
+        return int(n)
+    except (TypeError, ValueError):
+        return None
+
+
 def _src_sig4():
     snap = _load_json(os.path.join(REPORTS, "rps_latest.json"))
     out = {}
     for r in snap.get("res", []):
-        n = int(r.get("longs") or 0)
+        n = _sig4_count(r)
+        if n is None:
+            continue
         out[norm_code(r.get("code"))] = {
             "dir": "long" if n >= SIG4_LONG else "neutral",
             "label": "4策略%d/4" % n,
@@ -151,7 +192,11 @@ def _src_chanlun_load():
 
 
 def _src_9dim():
-    snap = _load_json(os.path.join(DATA, "nine_dim_scores.json"))
+    fp = os.path.join(DATA, "nine_dim_scores.json")
+    if not os.path.exists(fp):
+        # 判例式：文件缺=源缺失（missing），不许静默当合法空集
+        raise FileNotFoundError(fp)
+    snap = _load_json(fp)
     out = {}
     for r in snap.get("rows", []):
         sc = r.get("score")
@@ -177,22 +222,49 @@ STRATEGIES = [
      "icon": "🧭", "url": "/bt-chanlun-pool", "markets": "CN",
      "loader": _src_chanlun},
     {"id": "9dim", "name": "九维评分", "badge": "九维", "color": "#d29922",
-     "icon": "🧮", "url": "/bt-9dim", "markets": "CN", "loader": _src_9dim},
+     "icon": "🧮", "url": "/bt-9dim", "markets": "CN", "loader": _src_9dim,
+     # 阈值过滤型源：score≥80 无票是合法结果，空集不算源缺失
+     "allow_empty": True},
 ]
 
 
 def build_cross(force=False):
-    """聚合全部注册策略 → {generated_at, strategies, stocks, matrix}。
+    """聚合全部注册策略 → {generated_at, strategies, stocks, matrix, ...}。
     stocks[]: code/name/market/hits[{sid,dir,label,url,badge,color}]/n_hit/
-    n_long/n_short/state(long=全多 short=全空 mixed=冲突 solo=单策略)"""
+    n_long/n_short/state(long=全多 short=全空 mixed=冲突 solo=单策略)
+
+    W3-4 韧性字段：
+    · src_state:  {sid: {status: ok/missing/error, n: 票数, detail}}
+      ——ok=有数据；missing=产物缺/空集；error=取数器抛异常（判例式：
+      加载失败≠市场无信号，必须显式区分，不许静默当空集）；
+    · degraded:   任一源非 ok 即 True；degrade_note 为中文降级说明；
+    · k_gate:     {k, n_sources_ok, mode, note}——mode∈normal（4 源全在，
+      k=3）/ degraded_k3（可用源=3，仍 k=3）/ blocked（可用源<3，k=3
+      数学不可达，topn 产空 + 醒目 DEGRADED，不自动降 k 防放水）；
+    · topn:       n_hit≥k 的票按命中数排序取前 TOPN_DEFAULT（blocked 时 []）。
+    """
     if not force and _CACHE["d"] and time.time() - _CACHE["t"] < CACHE_TTL:
         return _CACHE["d"]
     per = {}
+    src_state = {}
     for s in STRATEGIES:
+        sid = s["id"]
         try:
-            per[s["id"]] = s["loader"]()
-        except Exception:
-            per[s["id"]] = {}
+            per[sid] = s["loader"]()
+            # 空集语义分流：allow_empty 源（9dim 阈值过滤）空=合法 ok；
+            # 其余源空集=missing；loader 抛异常=error（显式三态，
+            # 加载失败≠市场无信号，不许静默当空集）
+            if per[sid]:
+                st = "ok"
+            elif s.get("allow_empty"):
+                st = "ok"
+            else:
+                st = "missing"
+            src_state[sid] = {"status": st, "n": len(per[sid]), "detail": ""}
+        except Exception as ex:
+            per[sid] = {}
+            src_state[sid] = {"status": "error", "n": 0,
+                              "detail": str(ex)[:120]}
     stocks = {}
     for s in STRATEGIES:
         sid = s["id"]
@@ -222,16 +294,167 @@ def build_cross(force=False):
         for a in sids:
             for b in sids:
                 matrix[a][b] += 1
+    # k 门槛降档（不自动降 k）：可用源数决定 normal / degraded_k3 / blocked
+    bad = [sid for sid, v in src_state.items() if v["status"] != "ok"]
+    n_ok = len(STRATEGIES) - len(bad)
+    if not bad:
+        k_mode, k_note = "normal", "四源齐整，k=%d 共振正常" % K_RES
+    elif n_ok >= K_RES:
+        k_mode, k_note = ("degraded_k3", "源缺失[%s]，可用 %d 源仍保持 k=%d "
+                          "（不降门槛）" % (",".join(sorted(bad)), n_ok, K_RES))
+    else:
+        k_mode, k_note = ("blocked", "DEGRADED：可用源 %d <%d，k=%d 共振数学"
+                          "不可达，TopN 产空（不降门槛放水）；缺失[%s]"
+                          % (n_ok, K_RES, K_RES, ",".join(sorted(bad))))
+    k_gate = {"k": K_RES, "n_sources_ok": n_ok, "mode": k_mode, "note": k_note}
+    topn = sorted((st for st in stocks.values() if st["n_hit"] >= K_RES),
+                  key=lambda x: (-x["n_hit"], -x["n_long"], x["code"]))
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
            "strategies": [{k: v for k, v in s.items() if k != "loader"}
                           for s in STRATEGIES],
            "n_per": {sid: len(v) for sid, v in per.items()},
+           "src_state": src_state,
+           "degraded": bool(bad),
+           "degrade_note": ("全部源正常" if not bad else
+                            "DEGRADED：源缺失/异常[%s]，%s"
+                            % (",".join(sorted(bad)), k_note)),
+           "k_gate": k_gate,
+           "topn": topn[:TOPN_DEFAULT],
            "stocks": sorted(stocks.values(),
                             key=lambda x: (-x["n_hit"], -x["n_long"],
                                            x["code"])),
            "matrix": matrix}
     _CACHE["t"], _CACHE["d"] = time.time(), out
     return out
+
+
+# ── W3-4 源健康检查（三态 ok/stale/missing + 数据锚日期） ──────
+def _anchor_age_days(anchor):
+    """锚日期（YYYY-MM-DD 或 YYYYMMDD）距今天数；解析失败返回 None。"""
+    a = str(anchor or "").strip()
+    if len(a) == 8 and a.isdigit():
+        a = "%s-%s-%s" % (a[:4], a[4:6], a[6:])
+    try:
+        d = datetime.strptime(a[:10], "%Y-%m-%d")
+    except ValueError:
+        return None
+    return (datetime.now() - d).total_seconds() / 86400.0
+
+
+def _health_status(anchor, stale_days):
+    """三态判定：锚缺 → missing；锚龄 > stale_days → stale；否则 ok。"""
+    age = _anchor_age_days(anchor)
+    if age is None:
+        return "missing", None
+    if age > stale_days:
+        return "stale", round(age, 1)
+    return "ok", round(age, 1)
+
+
+def source_health(now=None):
+    """四源健康检查 → {sid: {status: ok/stale/missing, anchor, age_days,
+    stale_after, detail}}（合成数据可测：只读产物，不碰网络/数据库）。
+
+    判例式规则（STALE_DAYS）：
+    · qpzm   rps_latest.json ts 日批；>3 日历日 stale（容一个周末）
+    · sig4   同文件四策略信号（longs/sigs 任一在即算有数据）；
+             >5 日历日 stale（≈W3-4 口径 3 交易日）
+    · chanlun 池内最新 detect_date/dt；>4 日历日 stale（扫描断档）
+    · 9dim   nine_dim_scores.json trade_date；>8 日历日 stale（周频锚）
+    """
+    del now  # 预留：测试注入时钟用；当前以 datetime.now() 为准
+    h = {}
+    # qpzm / sig4 同源 rps_latest.json，字段级分别判（解耦后互不连坐）
+    snap = _load_json(os.path.join(REPORTS, "rps_latest.json"))
+    res = snap.get("res") or []
+    ts = str(snap.get("ts") or "")[:10]
+    q_ok = bool(res and any(r.get("action") for r in res))
+    h["qpzm"] = dict(zip(("status", "age_days"),
+                         _health_status(ts if q_ok else "", STALE_DAYS["qpzm"])))
+    h["qpzm"].update({"anchor": ts if q_ok else "", "stale_after":
+                      STALE_DAYS["qpzm"],
+                      "detail": "" if q_ok else "res 空/无 action"})
+    s_ok = bool(res and any(_sig4_count(r) is not None for r in res))
+    h["sig4"] = dict(zip(("status", "age_days"),
+                         _health_status(ts if s_ok else "", STALE_DAYS["sig4"])))
+    h["sig4"].update({"anchor": ts if s_ok else "", "stale_after":
+                      STALE_DAYS["sig4"],
+                      "detail": "" if s_ok else "res 无 longs/sigs"})
+    # chanlun：池内最新检出日
+    ch_anchor = ""
+    try:
+        pool = _src_chanlun_load()
+        for r in pool:
+            dd = str(r.get("detect_date") or r.get("dt") or "")
+            if dd > ch_anchor:
+                ch_anchor = dd[:10] if len(dd) >= 10 else dd
+    except Exception as ex:
+        h["chanlun"] = {"status": "missing", "anchor": "", "age_days": None,
+                        "stale_after": STALE_DAYS["chanlun"],
+                        "detail": "error: %s" % str(ex)[:80]}
+    else:
+        st, age = _health_status(ch_anchor, STALE_DAYS["chanlun"])
+        h["chanlun"] = {"status": st, "anchor": ch_anchor, "age_days": age,
+                        "stale_after": STALE_DAYS["chanlun"],
+                        "detail": "" if ch_anchor else "信号池空"}
+    # 9dim：最新锚 trade_date
+    n9 = _load_json(os.path.join(DATA, "nine_dim_scores.json"))
+    n_anchor = str(n9.get("trade_date") or n9.get("generated_at") or "")[:10]
+    st, age = _health_status(n_anchor, STALE_DAYS["9dim"])
+    h["9dim"] = {"status": st, "anchor": n_anchor, "age_days": age,
+                 "stale_after": STALE_DAYS["9dim"],
+                 "detail": "" if n9.get("rows") else "rows 空/文件缺"}
+    return h
+
+
+def health_summary_line(health=None):
+    """每日 cross 扫描汇总输出的"源健康"一行：
+    源健康: qpzm ok(2026-10-13) | sig4 stale(2026-10-08) | ... | 可用源 2/4"""
+    h = health or source_health()
+    parts = ["%s %s%s" % (sid, v["status"],
+                          "(%s)" % v["anchor"] if v["anchor"] else "")
+             for sid, v in h.items()]
+    n_ok = sum(1 for v in h.values() if v["status"] == "ok")
+    return "源健康: %s | 可用源 %d/%d" % (" | ".join(parts), n_ok, len(h))
+
+
+def push_source_health_alert(health=None, send=None):
+    """源缺失/过期告警（复用 cross 现有推送通道 runner.push_feishu）。
+
+    · 开关：config.json cross.source_health_alert（默认关——防未配置环境
+      误推；判例式：告警必须显式开启）；
+    · send=None 按开关；send=True 强推；send=False dry 模式（测试路径，
+      不写 outbox 不真推）；
+    · 全源 ok → 不告警，返回 (False, "")。
+    返回 (是否发送, 文本)。
+    """
+    h = health or source_health()
+    bad = {sid: v for sid, v in h.items() if v["status"] != "ok"}
+    n_ok = len(h) - len(bad)
+    lines = ["⚠️ cross 源健康告警 · %s" %
+             datetime.now().strftime("%Y-%m-%d %H:%M"),
+             health_summary_line(h)]
+    for sid, v in h.items():
+        lines.append("· %-8s %-8s 锚=%-10s %s" %
+                     (sid, v["status"], v["anchor"] or "无",
+                      v["detail"] or ("数据龄 %.1f 天" % v["age_days"]
+                                      if v["age_days"] is not None else "")))
+    if n_ok < K_RES:
+        lines.append("→ 可用源 %d <%d，k=%d 共振不可达，cross 降级（TopN 空）"
+                     % (n_ok, K_RES, K_RES))
+    text = "\n".join(lines)
+    if not bad:
+        return False, ""
+    if send is None:
+        cfg = _load_json(CONFIG_FP, default={}).get("cross") or {}
+        send = bool(cfg.get("source_health_alert"))
+    if not send:
+        return False, text            # 开关关 / dry：只返回文本不推
+    try:
+        import runner
+        return bool(runner.push_feishu(text)), text
+    except Exception as ex:
+        return False, text + "\n[push error: %s]" % str(ex)[:80]
 
 
 if __name__ == "__main__":
@@ -243,3 +466,10 @@ if __name__ == "__main__":
     for s in multi[:15]:
         print(" ", s["code"], s["name"], s["state"],
               " | ".join(h["label"] for h in s["hits"]))
+    # W3-4：每日汇总输出带源健康行 + k 门槛状态
+    print(health_summary_line())
+    kg = d["k_gate"]
+    print("k 门槛: mode=%s k=%d 可用源=%d | %s" %
+          (kg["mode"], kg["k"], kg["n_sources_ok"], kg["note"]))
+    if d["degraded"]:
+        print("[DEGRADED] %s" % d["degrade_note"])

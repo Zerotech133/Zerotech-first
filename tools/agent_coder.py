@@ -390,7 +390,8 @@ class ChatResult:
 _LAST_META = None  # 最近一次 chat_auto_meta 结果（非线程安全）
 
 
-def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
+def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600,
+                    coding=False):
     """按 CODER_BACKEND 路由；逐级降级。
     gpt6(GPT-6.0·老田密钥) | anthropic(包年GLM-4.6·纯API) | claude_glm(CLI·blocked)
     | cloud | ollama。gpt6/anthropic 失败均降级 cloud→ollama。
@@ -425,14 +426,20 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
             attempts.append(("cloud", str(e)[:120]))
     elif bk == "anthropic":
-        try:
-            out = chat_anthropic(agent_id, task, timeout_cloud)
-            _LAST_META = ChatResult(out, "anthropic", bk, attempts,
-                                    round(time.time() - _t0, 1))
-            return _LAST_META
-        except Exception as e:
-            print("[anthropic FAIL -> fallback cloud]", str(e)[:120])
-            attempts.append(("anthropic", str(e)[:120]))
+        for _i in range(2 if coding else 1):
+            try:
+                out = chat_anthropic(agent_id, task, timeout_cloud)
+                _LAST_META = ChatResult(out, "anthropic", bk, attempts,
+                                        round(time.time() - _t0, 1))
+                return _LAST_META
+            except Exception as e:
+                print("[anthropic FAIL%s]" % (" (coding retry %d/1)" % (_i + 1) if coding else " -> fallback cloud"), str(e)[:120])
+                attempts.append(("anthropic", str(e)[:120]))
+        if coding:
+            # K-ORG-065 判例：编码任务降级 flash=残缺（043），闸门必拦但浪费三轮——
+            # 拒绝降级直接失败，由调用方决策（强档重试优于残缺放行）。
+            raise RuntimeError("coding 档拒绝降级 cloud flash（043 判例）· attempts=%s"
+                               % attempts)
         try:
             out = chat_cloud(agent_id, task, timeout_cloud)
             _LAST_META = ChatResult(out, "cloud", bk, attempts,
@@ -473,16 +480,20 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
     return _LAST_META
 
 
-def chat_auto(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
+def chat_auto(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600,
+              coding=False):
     """K-ORG-048 兼容薄壳：只回 content，旧调用方零改动。"""
     return _chat_auto_impl(agent_id, task, timeout_cloud,
-                           timeout_local, timeout_claude).content
+                           timeout_local, timeout_claude, coding).content
 
 
-def chat_auto_meta(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600):
-    """K-ORG-048: 返回完整 ChatResult（content/channel/requested/attempts/latency_s）。"""
+def chat_auto_meta(agent_id, task, timeout_cloud=240, timeout_local=420, timeout_claude=600,
+                   coding=False):
+    """K-ORG-048: 返回完整 ChatResult（content/channel/requested/attempts/latency_s）。
+    K-ORG-065: coding=True 产码档——anthropic 失败先重试 1 次（read timeout 多为偶发），
+    仍败则拒绝降级 cloud（043 判例：flash 产码=残缺，闸门必拦但浪费三轮）。"""
     return _chat_auto_impl(agent_id, task, timeout_cloud,
-                           timeout_local, timeout_claude)
+                           timeout_local, timeout_claude, coding)
 
 
 def last_channel():
@@ -506,7 +517,7 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             with open(out_path, "wb") as f:
                 f.write(orig_bytes)
 
-    meta = chat_auto_meta(agent_id, task)
+    meta = chat_auto_meta(agent_id, task, coding=True)
     raw = meta.content
     trace_log(k_id, "generate", "%s by %s via %s(requested=%s actual=%s)"
               % (label, agent_id, backend(), meta.requested, meta.channel))
@@ -547,7 +558,7 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
             task["prompt"] = (prompt +
                 "\n\n【上一次产出未通过验证门，错误：%s】"
                 "\n请重新输出修正后的完整文件内容（或修正的 SEARCH/REPLACE 块）。" % err)
-            meta = chat_auto_meta(agent_id, task)
+            meta = chat_auto_meta(agent_id, task, coding=True)
             raw = meta.content
             content, mode = apply_edit_protocol(raw, out_path)
             if mode.startswith("sr_fail"):
@@ -603,7 +614,7 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
                     "\n\n【上一次产出通过了语法门但未通过行为冒烟，错误：%s】"
                     "\n禁止整文件重写式重做——只允许输出 SEARCH/REPLACE 块做最小修改，"
                     "\n现有函数实现体一字不动，禁止 pass/... 占位。" % sm)
-            meta = chat_auto_meta(agent_id, task)
+            meta = chat_auto_meta(agent_id, task, coding=True)
             raw = meta.content
     return False, "unreachable"
 
