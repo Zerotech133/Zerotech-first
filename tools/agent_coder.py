@@ -95,6 +95,25 @@ def _persona(agent_id):
     if extra:
         sp = (sp + "\n\n## 岗位身份卡（K-ORG-061a·以本卡为准回答身份类问题）\n"
               + "\n".join(extra) + "\n")
+    # K-ORG-090/G1: 记忆回注第 7 通道——岗卡 memory.decision.recent 最近 3 条，
+    # 让岗位「记得自己做过什么判断」；desc 截 60 字防膨胀，预算 ≤150 tokens 递减条数。
+    dec = ((a.get("memory") or {}).get("decision") or {}).get("recent") or []
+    mem_lines = []
+    for it in dec:
+        if not isinstance(it, dict):
+            continue
+        d = str(it.get("desc", "")).strip()
+        if not d:
+            continue
+        d = d[:60]
+        ts = str(it.get("ts", ""))[5:10]  # MM-DD
+        mem_lines.append("- [%s] %s" % (ts, d) if ts else "- %s" % d)
+        if len("\n".join(mem_lines)) > 195:  # 150t×1.5=225 含段头~25字，正文留 195+裕量
+            mem_lines.pop()
+            break
+    if mem_lines:
+        sp = (sp + "\n## 本岗近期判断（memory 回注·供延续先前决策）\n"
+              + "\n".join(mem_lines) + "\n")
     # K-ORG-087/T1: 组织铁律第 6 通道——全岗统一注入，排在身份卡之后
     if _ORG_RULES:
         sp = (sp + "\n## 组织铁律（org_rules·违反即事故，任何输出不得违背）\n"
@@ -186,6 +205,35 @@ def _gpt6_key():
         return ""
 
 
+def _log_usage(agent_id, channel, label, in_tok=0, out_tok=0, elapsed=0.0, chars=0):
+    """K-ORG-090/G3: 五通道统一 usage 台账——落 portal/data/llm_usage.jsonl。
+    无 usage 的通道（ollama/claude CLI）记 chars 兜底；fail-open 记账失败不影响产码。"""
+    try:
+        rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "agent": agent_id,
+               "channel": channel, "label": str(label)[:60],
+               "in_tok": in_tok, "out_tok": out_tok,
+               "elapsed": round(elapsed, 1), "chars": chars}
+        p = os.path.join(_HERE, os.pardir, "portal", "data", "llm_usage.jsonl")
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except OSError as e:
+        print("[log_usage] WARN 台账写入失败: %s" % e)
+
+
+def _fail(agent_id, channel, msg, attempts):
+    """K-ORG-090/G2: 通道失败事件落 llm_health.jsonl（健康观测，供判读卡
+    「通道健康」段消费）；attempts 内存链同步追加，fail-open 不影响降级。"""
+    attempts.append((channel, msg))
+    try:
+        rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+               "agent": agent_id, "channel": channel, "err": msg}
+        p = os.path.join(_HERE, os.pardir, "portal", "data", "llm_health.jsonl")
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
 def chat_openai(agent_id, task, timeout=180):
     """GPT-6.0 自定义 OpenAI 兼容端点（K-ORG-039·实测 10~19s/轮）。
     探测判据：tool_call 正确出参、编码探针一次写对；
@@ -217,6 +265,8 @@ def chat_openai(agent_id, task, timeout=180):
                            % (d.get("choices") or [{}])[0].get("finish_reason"))
     print("[gpt6:%s %s %.1fs] %d chars"
           % (agent_id, task.get("label", ""), time.time() - t0, len(out)))
+    _log_usage(agent_id, "gpt6", task.get("label", ""),
+               elapsed=time.time() - t0, chars=len(out))
     return out
 
 
@@ -249,6 +299,10 @@ def chat_anthropic(agent_id, task, timeout=240):
     print("[anthropic:%s %s %.1fs] %d chars (stop=%s)"
           % (agent_id, task.get("label", ""), time.time() - t0, len(out),
              d.get("stop_reason")))
+    _u = d.get("usage") or {}
+    _log_usage(agent_id, "anthropic", task.get("label", ""),
+               _u.get("input_tokens", 0), _u.get("output_tokens", 0),
+               time.time() - t0)
     return out
 
 
@@ -277,6 +331,9 @@ def chat_cloud(agent_id, task, timeout=120):
     print("[cloud:%s %s %.1fs] %d chars (tok in=%s out=%s)"
           % (agent_id, task.get("label", ""), time.time() - t0, len(out),
              u.get("prompt_tokens"), u.get("completion_tokens")))
+    _log_usage(agent_id, "cloud", task.get("label", ""),
+               u.get("prompt_tokens", 0), u.get("completion_tokens", 0),
+               time.time() - t0)
     return out
 
 
@@ -312,6 +369,8 @@ def chat(agent_id, task, timeout=420, num_ctx=0):
     d = json.load(OP.open(req, timeout=timeout))
     out = (d.get("message") or {}).get("content", "").strip()
     print("[%s %s %.0fs] %d chars" % (agent_id, task.get("label", ""), time.time() - t0, len(out)))
+    _log_usage(agent_id, "ollama", task.get("label", ""),
+               elapsed=time.time() - t0, chars=len(out))
     return out
 
 
@@ -470,6 +529,8 @@ def chat_claude(agent_id, task, timeout=600):
     print("[claude_glm:%s %s %.0fs turns=%s cost=%s] %d chars"
           % (agent_id, task.get("label", ""), time.time() - t0,
              d.get("num_turns"), d.get("total_cost_usd"), len(out)))
+    _log_usage(agent_id, "claude", task.get("label", ""),
+               elapsed=time.time() - t0, chars=len(out))
     return out
 
 
@@ -505,7 +566,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             return _LAST_META
         except Exception as e:
             print("[gpt6 FAIL -> fallback anthropic]", str(e)[:120])
-            attempts.append(("gpt6", str(e)[:120]))
+            _fail(agent_id, "gpt6", str(e)[:120], attempts)
         try:
             out = chat_anthropic(agent_id, task, timeout_cloud)
             _LAST_META = ChatResult(out, "anthropic", bk, attempts,
@@ -513,7 +574,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             return _LAST_META
         except Exception as e:
             print("[anthropic FAIL -> fallback cloud]", str(e)[:120])
-            attempts.append(("anthropic", str(e)[:120]))
+            _fail(agent_id, "anthropic", str(e)[:120], attempts)
         try:
             out = chat_cloud(agent_id, task, timeout_cloud)
             _LAST_META = ChatResult(out, "cloud", bk, attempts,
@@ -521,7 +582,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
-            attempts.append(("cloud", str(e)[:120]))
+            _fail(agent_id, "cloud", str(e)[:120], attempts)
     elif bk == "anthropic":
         for _i in range(3 if coding else 1):  # coding: 首试+2 次重试(午间负载超时连发判例)
             try:
@@ -531,7 +592,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
                 return _LAST_META
             except Exception as e:
                 print("[anthropic FAIL%s]" % (" (coding retry %d/1)" % (_i + 1) if coding else " -> fallback cloud"), str(e)[:120])
-                attempts.append(("anthropic", str(e)[:120]))
+                _fail(agent_id, "anthropic", str(e)[:120], attempts)
         if coding:
             # K-ORG-065 判例：编码任务降级 flash=残缺（043），闸门必拦但浪费三轮——
             # 拒绝降级直接失败，由调用方决策（强档重试优于残缺放行）。
@@ -544,7 +605,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
-            attempts.append(("cloud", str(e)[:120]))
+            _fail(agent_id, "cloud", str(e)[:120], attempts)
     elif bk == "claude_glm":
         try:
             out = chat_claude(agent_id, task, timeout_claude)
@@ -553,7 +614,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             return _LAST_META
         except Exception as e:
             print("[claude_glm FAIL -> fallback cloud]", str(e)[:120])
-            attempts.append(("claude_glm", str(e)[:120]))
+            _fail(agent_id, "claude_glm", str(e)[:120], attempts)
         try:
             out = chat_cloud(agent_id, task, timeout_cloud)
             _LAST_META = ChatResult(out, "cloud", bk, attempts,
@@ -561,7 +622,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
-            attempts.append(("cloud", str(e)[:120]))
+            _fail(agent_id, "cloud", str(e)[:120], attempts)
     elif bk == "cloud":
         try:
             out = chat_cloud(agent_id, task, timeout_cloud)
@@ -570,7 +631,7 @@ def _chat_auto_impl(agent_id, task, timeout_cloud=240, timeout_local=420, timeou
             return _LAST_META
         except Exception as e:
             print("[cloud FAIL -> fallback ollama]", str(e)[:120])
-            attempts.append(("cloud", str(e)[:120]))
+            _fail(agent_id, "cloud", str(e)[:120], attempts)
     out = chat(agent_id, task, timeout_local)
     _LAST_META = ChatResult(out, "ollama", bk, attempts,
                             round(time.time() - _t0, 1))

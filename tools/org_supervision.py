@@ -160,6 +160,67 @@ def check_rules():
     return n_rules, problems
 
 
+def check_usage():
+    """LLM 用量台账判读（K-ORG-038 判例配套）：统计 portal/data/llm_usage.jsonl
+    近 24h（ts 字符串比较，格式可排序）调用次数 / token 总量 / channel 分布。
+    fail-open：台账不存在或为空返回 None（G3 未接线或零调用，不算异常不告警）；
+    坏行跳过不抛异常。"""
+    p = os.path.join(ROOT, "portal", "data", "llm_usage.jsonl")
+    if not os.path.exists(p):
+        return None
+    # now-24h 截断线（ts 格式可排序，字符串比较即可）；不加导入，用 timestamp 回退一天
+    cutoff = datetime.fromtimestamp(
+        datetime.now().timestamp() - 24 * 3600).strftime("%Y-%m-%d %H:%M:%S")
+    n, in_tok, out_tok = 0, 0, 0
+    chans = Counter()
+    parsed = 0
+    try:
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue  # 坏行跳过
+                parsed += 1
+                if str(e.get("ts", "")) >= cutoff:
+                    n += 1
+                    in_tok += int(e.get("in_tok") or 0)
+                    out_tok += int(e.get("out_tok") or 0)
+                    chans[e.get("channel", "?")] += 1
+    except Exception:
+        return None  # 台账不可读等同无台账，fail-open
+    if parsed == 0:
+        return None  # 空文件/全坏行视为无台账
+    return n, in_tok, out_tok, chans
+
+
+def check_llm_health():
+    """通道健康判读（K-ORG-090/G2）：统计 portal/data/llm_health.jsonl 近 24h
+    各通道失败次数。fail-open：文件不存在返回 None（零降级事件≠故障）。
+    默认请求档 anthropic（K-ORG-050）连续失败 ≥3 次 = 已在依赖降级链，黄灯。"""
+    p = os.path.join(ROOT, "portal", "data", "llm_health.jsonl")
+    if not os.path.exists(p):
+        return None
+    cutoff = datetime.fromtimestamp(
+        datetime.now().timestamp() - 24 * 3600).strftime("%Y-%m-%d %H:%M:%S")
+    fails = Counter()
+    last_err = {}
+    try:
+        with open(p, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue
+                if str(e.get("ts", "")) >= cutoff:
+                    ch = e.get("channel", "?")
+                    fails[ch] += 1
+                    last_err[ch] = str(e.get("err", ""))[:60]
+    except Exception:
+        return None
+    return fails, last_err
+
+
 def main(push=True):
     lines = ["# 组织监督判读 %s" % datetime.now().strftime("%Y-%m-%d %H:%M"), ""]
     reds, yellows = [], []
@@ -211,6 +272,20 @@ def main(push=True):
     lines.append("- 范围注记: A0A+投研5岗(D1/F1/N1/T1/T2)本体在册、组织图不展示属设计范围")
     lines.append("")
 
+    usage = check_usage()
+    if usage is None:
+        lines.append("## LLM 用量（近24h）: 无台账（G3 未接线或零调用）")
+    else:
+        n_calls, u_in, u_out, chans = usage
+        lines.append("## LLM 用量（近24h）: %d 次调用 · in %d tok · out %d tok"
+                     % (n_calls, u_in, u_out))
+        if n_calls:
+            lines.append("- 通道分布: %s" % " · ".join(
+                "%s %d" % (k, v) for k, v in chans.most_common()))
+        lines.append("- <font color='grey'>智谱积分参考: anthropic 通道单工单 ≈4~5 积分"
+                     "（K-ORG-038 判例）</font>")
+    lines.append("")
+
     n_rules, rule_problems = check_rules()
     lines.append("## 规则分层（org_rules %d 条）: %s"
                  % (n_rules, "通过" if not rule_problems else "%d 项异常" % len(rule_problems)))
@@ -218,6 +293,20 @@ def main(push=True):
         lines += ["- " + p for p in rule_problems[:6]]
         yellows.append("规则分层异常 %d 项（087/T1：铁律未注入=岗行为靠主控人脑带，需修复注入链）"
                        % len(rule_problems))
+    lines.append("")
+
+    health = check_llm_health()
+    lines.append("## 通道健康（近24h 降级事件）: %s"
+                 % ("零失败" if health is None
+                    else "%d 次失败" % sum(health[0].values())))
+    if health is not None:
+        fails, last_err = health
+        for ch, cnt in fails.most_common():
+            lines.append("- %s 失败 %d 次（末次: %s）" % (ch, cnt, last_err[ch]))
+        if fails.get("anthropic", 0) >= 3:
+            yellows.append("anthropic（默认产码档）24h 失败 %d 次——已在依赖降级链，"
+                           "需排查包年端点（限额/网络）" % fails["anthropic"])
+    lines.append("")
 
     lines.append("## 判读")
     if reds:
