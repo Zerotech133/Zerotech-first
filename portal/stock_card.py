@@ -48,6 +48,39 @@ def _fmt_pct(v):
         return "—"
 
 
+_NAT = {"youzi": "游资", "quant": "量化", "org": "机构",
+        "retail": "散户", "other": "普通"}
+
+
+def _amt(v):
+    """金额（元）→ 亿/万 可读串（对齐 KG 事件页口径）。"""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return "—"
+    if abs(v) >= 1e8:
+        return f"{v / 1e8:+.2f}亿" if v < 0 else f"{v / 1e8:.2f}亿"
+    return f"{v / 1e4:+.0f}万" if v < 0 else f"{v / 1e4:.0f}万"
+
+
+def _pc_ratio(v, signed=True):
+    """比率 0.012 → +1.20%（ret1/gr 存比率，_fmt_pct 直用会差 100 倍）。"""
+    try:
+        v = float(v) * 100
+        return f"{v:+.2f}%" if signed else f"{v:.1f}%"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _fmt_vol(v):
+    """volume（手）→ 万手。"""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return "—"
+    return f"{v / 1e4:.1f}万手" if v >= 1e4 else f"{v:.0f}手"
+
+
 def _prefix_code(ts_code):
     """600853.SH -> sh600853（quotes/paper 前缀码）。"""
     try:
@@ -109,7 +142,7 @@ def _sec_quote(ts_code):
     return out
 
 
-def _render_quote(ts_code, q, candles, limits):
+def _render_quote(ts_code, q, candles, limits, vr=None):
     h = ['<section class="card"><h3>① 行情</h3>']
     if q:
         h.append(
@@ -120,7 +153,8 @@ def _render_quote(ts_code, q, candles, limits):
             f'<div class="qgrid">'
             f'<span>开 {_esc(q["open"])}</span><span>高 {_esc(q["high"])}</span>'
             f'<span>低 {_esc(q["low"])}</span><span>量 {_esc(q["vol"])}</span>'
-            f'<span>额 {_esc(q["amount"])}</span></div>')
+            f'<span>额 {_esc(q["amount"])}</span>'
+            + (f'<span>量能 {vr:.1f}×</span>' if vr else "") + '</div>')
     else:
         h.append('<div class="empty">quotes 暂无该票快照</div>')
     if limits:
@@ -282,12 +316,25 @@ def _render_events(kg_data):
                  + "".join(f'<li>{_esc(r)}</li>' for r in holders[:10]) + "</ul>")
     tg = kg_data.get("topgaps") or []
     if tg:
-        h.append('<div class="mini-h">榜后差额（近 8）</div><ul class="mini">'
+        h.append('<div class="mini-h">榜后差额（前五买卖差 × 席位性质 '
+                 '× 次日穿透 · 近 8）</div>')
+        h.append('<table class="tbl"><tr><th>日期</th><th>差额</th>'
+                 '<th>占成交额</th><th>主导性质</th><th>量化占比</th>'
+                 '<th>次日收益</th><th>穿透</th><th>上榜原因</th></tr>'
                  + "".join(
-                     f'<li>{_esc(r.get("date"))} gap {_esc(r.get("gap"))} '
-                     f'({_esc(r.get("gr"))}) 次日 <span class="{_pct_cls(r.get("ret1"))}">'
-                     f'{_fmt_pct(r.get("ret1"))}</span></li>'
-                     for r in tg[:8]) + "</ul>")
+                     f'<tr><td>{_esc(r.get("date"))}</td>'
+                     f'<td class="{_pct_cls(r.get("gap"))}">{_esc(_amt(r.get("gap")))}</td>'
+                     f'<td>{_esc(_pc_ratio(r.get("gr"), signed=False))}</td>'
+                     f'<td>{_esc(_NAT.get(r.get("nat") or "other", "普通"))}</td>'
+                     f'<td>{_esc(_pc_ratio(r.get("qr"), signed=False))}</td>'
+                     f'<td class="{_pct_cls(r.get("ret1"))}">'
+                     f'{_esc(_pc_ratio(r.get("ret1")))}</td>'
+                     f'<td>{"✅" if r.get("pen") == 1 else ("—" if r.get("pen") is None else "✗")}</td>'
+                     f'<td class="t">{_esc((r.get("reason") or "")[:20])}</td></tr>'
+                     for r in tg[:8]) + "</table>")
+        h.append('<div class="t">差额=买方前五-卖方前五；穿透=差额方向与'
+                 '次日收盘同向（近端事件次日未到为 —）· 与 KG 事件页同口径'
+                 '</div>')
     if not (drive or hm or holders or tg):
         h.append('<div class="empty">KG 暂无事件记录</div>')
     h.append("</section>")
@@ -365,12 +412,21 @@ def _timeline_data(ts_code, kg_data, paper_orders):
     if pq and os.path.exists(pq):
         try:
             import pandas as pd
-            df = pd.read_parquet(pq).tail(6)
-            for _, r in df.iterrows():
+            df = pd.read_parquet(pq).tail(11)
+            vols = ([None if pd.isna(v) else float(v) for v in df["volume"]]
+                    if "volume" in df else [])
+            for i, r in enumerate(df.to_dict("records")):
                 pct = r.get("pct_chg")
+                vol = vols[i] if i < len(vols) else None
+                vr = None
+                if vol:
+                    prev = [v for v in vols[max(0, i - 5):i] if v]
+                    if len(prev) >= 3:
+                        vr = vol / (sum(prev) / len(prev))
                 days.append({"date": _norm_date(r.get("trade_date")),
                              "pct": None if pd.isna(pct) else float(pct),
-                             "close": None if pd.isna(r.get("close")) else float(r["close"])})
+                             "close": None if pd.isna(r.get("close")) else float(r["close"]),
+                             "vol": vol, "vr": vr})
         except Exception:  # noqa: BLE001
             days = []
     days = days[-5:]
@@ -378,7 +434,8 @@ def _timeline_data(ts_code, kg_data, paper_orders):
     if not days:
         cand = sorted({_norm_date(c.get("date")) for c in (kg_data.get("candles") or [])},
                       reverse=True)[:5]
-        days = [{"date": d, "pct": None, "close": None} for d in reversed(cand)]
+        days = [{"date": d, "pct": None, "close": None,
+                 "vol": None, "vr": None} for d in reversed(cand)]
     sig_b = _bucket_by_date(kg_data.get("structures"))
     can_b = _bucket_by_date(kg_data.get("candles"))
     lim_b = _bucket_by_date(kg_data.get("limits"))
@@ -457,8 +514,11 @@ def _render_timeline(ts_code, tl):
             for lm in x["limits"][:1]:
                 tags.append(f'⬆涨停连{_esc(lm.get("lt"))}' if (lm.get("lt") or 0) > 0
                             else '⬆涨停')
-            if x["gaps"]:
-                tags.append('榜后差额')
+            for g in x["gaps"][:1]:
+                _gt = f'榜后差额 {_amt(g.get("gap"))}'
+                if g.get("pen") == 1:
+                    _gt += "·穿透"
+                tags.append(_gt)
             if x["hm"]:
                 tags.append('游资活跃')
             for o in x["orders"][:2]:
@@ -474,11 +534,24 @@ def _render_timeline(ts_code, tl):
                 wd = _WEEK[datetime.strptime(x["date"], "%Y-%m-%d").weekday()]
             except ValueError:
                 wd = ""
+            vr = x.get("vr")
+            vol_txt = _fmt_vol(x.get("vol")) if x.get("vol") else ""
+            if vr is not None:
+                vcls = ("up" if vr >= 2 else
+                        ("t" if vr <= 0.6 else "dc-close"))
+                vhtml = (f'<div class="dc-vol {vcls}">量 {vol_txt} · '
+                         f'量能 {vr:.1f}×</div>' if vol_txt else
+                         f'<div class="dc-vol {vcls}">量能 {vr:.1f}×</div>')
+            elif vol_txt:
+                vhtml = f'<div class="dc-vol dc-close">量 {vol_txt}</div>'
+            else:
+                vhtml = ""
             h.append(
                 f'<div class="daycard">'
                 f'<div class="dc-date">{_esc(x["date"][5:])} {wd}</div>'
                 f'<div class="dc-pct {_pct_cls(x["pct"])}">{_fmt_pct(x["pct"])}</div>'
                 f'<div class="dc-close">收 {_esc(round(x["close"], 2) if x["close"] else "—")}</div>'
+                f'{vhtml}'
                 f'<div class="dc-tags">{tag_html or "—"}</div></div>')
         h.append("</div>")
     h.append(f'<div class="tlconcl">{_tl_conclusion(tl)}</div>')
@@ -539,6 +612,7 @@ _STYLE = """
   .dc-date { font-size:11.5px; color:var(--text-dim); }
   .dc-pct { font-size:19px; font-weight:800; font-family:Consolas,monospace; margin:2px 0; }
   .dc-close { font-size:12px; font-family:Consolas,monospace; color:var(--text-dim); }
+  .dc-vol { font-size:12px; font-family:var(--font-mono); color:var(--text-dim); }
   .dc-tags { margin-top:6px; font-size:11.5px; line-height:1.8;
              border-top:1px dashed var(--border-weak); padding-top:6px; }
   .tlconcl { margin-top:10px; font-size:12.5px; line-height:1.9;
@@ -592,6 +666,9 @@ def render_card(ts_code, days=120):
         pass
 
     now = datetime.now().strftime("%F %T")
+    tl = _timeline_data(ts_code, kg_data, paper_orders)
+    _vr = (tl["days"][-1].get("vr")
+           if tl.get("days") and tl["days"][-1].get("vr") else None)
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -615,13 +692,13 @@ def render_card(ts_code, days=120):
     </span>
   </div>
   <div class="t" style="padding:0 0 4px">统一详情卡（七区制）· 生成 {now} · 数据源：KG/news_collector/paper.db/行情湖</div>
-  {_render_quote(ts_code, quote_info.get("quote"), quote_info.get("candles"), quote_info.get("limits"))}
+  {_render_quote(ts_code, quote_info.get("quote"), quote_info.get("candles"), quote_info.get("limits"), _vr)}
   {_render_basic(ts_code)}
   {_render_signals(kg_data, paper_orders)}
   {_render_ledger(_paper_ledger(ts_code))}
   {_render_events(kg_data)}
   {_render_news(ts_code, _news_list(ts_code))}
-  {_render_timeline(ts_code, _timeline_data(ts_code, kg_data, paper_orders))}
+  {_render_timeline(ts_code, tl)}
 </div>
 </body>
 </html>"""
