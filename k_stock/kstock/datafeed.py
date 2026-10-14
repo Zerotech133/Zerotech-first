@@ -111,20 +111,43 @@ def build_context(code: str) -> dict[str, str]:
     return out
 
 
+def _lake_code(code: str) -> str | None:
+    """quotes 代码归一化为湖点分式；不可归一化（美股 gb_* 等）返回 None。
+
+    2026-10-15 修复（BUG 审计）：quotes 表存小写前缀式 'sz300750'，而湖
+    文件是 '300750_SZ.parquet'（_code_to_file 期望 '300750.SZ'）——格式
+    错位导致 exists() 恒 False、watchlist 恒空、07:05 主 PoC 聚合连续
+    空跑（10-12/13/15 三日实证）。北交所 'bj920028' 湖内有
+    '920028_BJ.parquet'，同样归一化；'gb_*' 美股非 A 股湖语义，跳过。
+    """
+    c = (code or "").strip().lower()
+    for pfx, suf in (("sh", "SH"), ("sz", "SZ"), ("bj", "BJ")):
+        if c.startswith(pfx) and len(c) == 8 and c[2:].isdigit():
+            return "%s.%s" % (c[2:], suf)
+    if code and "." in code and len(code.split(".", 1)[0]) == 6:
+        return code.upper()          # 已是点分式（兼容旧数据）
+    return None
+
+
 def watchlist_from_quotes(limit: int = 10) -> list[str]:
     """默认 watchlist：news.db quotes 监控池（80 只）∩ 特征湖覆盖，按成交额取前 N。"""
     con = sqlite3.connect(str(NEWS_DB))
     try:
+        # 取额扩到 limit*6：gb_* 等不可归一化代码会占名额（2026-10-15 实测
+        # TOP30 全被占），过滤后余量不足会再次空跑
         rows = con.execute(
             "SELECT code, MAX(amount) AS amt FROM quotes GROUP BY code "
-            "ORDER BY amt DESC LIMIT ?", (limit * 3,),
+            "ORDER BY amt DESC LIMIT ?", (limit * 6,),
         ).fetchall()
     finally:
         con.close()
     out = []
     for code, _ in rows:
-        if _code_to_file(code).exists():
-            out.append(code)
+        lake = _lake_code(code)
+        if lake is None:
+            continue
+        if _code_to_file(lake).exists():
+            out.append(lake)
         if len(out) >= limit:
             break
     return out
