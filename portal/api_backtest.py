@@ -4992,6 +4992,18 @@ def _api_my_strategies(req):
         if not clean.get("strategy") or not (clean.get("d0") and clean.get("d1")):
             return {"ok": False, "error": "参数集不完整（缺策略/窗口）"}
         lst = _my_strat_load()
+        # 368：带 id 且存在 → upsert（编辑后保存，保留原 id 与创建语义）
+        sid_in = str(req.get("id") or "")
+        if sid_in:
+            for x in lst:
+                if x.get("id") == sid_in:
+                    x["name"] = name
+                    x["params"] = clean
+                    x["note"] = note
+                    x["ts"] = time.strftime("%Y-%m-%d %H:%M") + " 编辑"
+                    _my_strat_save(lst)
+                    return {"ok": True, "id": sid_in, "total": len(lst), "updated": True}
+            return {"ok": False, "error": "策略不存在"}
         sid = "my_" + time.strftime("%Y%m%d%H%M%S") + "_%d" % (len(lst) + 1)
         lst.append({"id": sid, "name": name, "params": clean, "note": note,
                     "ts": time.strftime("%Y-%m-%d %H:%M")})

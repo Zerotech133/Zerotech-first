@@ -322,10 +322,13 @@
 
         <div class="exec-panel" id="exec-mystrat" style="display:none">
           <div class="exec-title" id="mystrat-name">🧩 我的策略</div>
-          <div class="exec-sub">您保存的回测口径 · 点重跑用同一套参数再次验证（回测结果出现在下方「说一句话」区）</div>
+          <div class="exec-sub">您保存的回测口径 · 可直接微调参数后保存，或点重跑验证（结果出现在下方「说一句话」区）</div>
           <div id="mystrat-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div>
           <div class="btn-row">
             <button class="btn btn-primary" onclick="myRunBtn()">⚡ 重跑回测</button>
+            <button class="btn btn-primary" onclick="mySaveEdit()">💾 保存修改</button>
+            <button class="btn btn-gray" onclick="myExport()">📤 导出</button>
+            <button class="btn btn-gray" onclick="myShare()">🔗 复制分享</button>
             <button class="btn btn-gray" onclick="myDelBtn()">🗑 删除</button>
           </div>
         </div>
@@ -535,7 +538,8 @@ function showExecPanel(sid){
   if(target==='mystrat'){
     const m=MY_STRATS[String(sid)]||{};
     $('mystrat-name').textContent='🧩 '+(m.name||'我的策略');
-    $('mystrat-chips').innerHTML=Object.entries(m.params||{}).map(([k,v])=>'<span class="ai-chip" style="cursor:default">'+esc(k)+' = '+esc(String(v))+'</span>').join(' ');
+    // 368：参数直接可编辑（行内 input·白名单键·保存修改/导出/分享都取当前面板值）
+    $('mystrat-chips').innerHTML=Object.entries(m.params||{}).map(([k,v])=>'<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-dim)">'+esc(k)+'<input class="nl-edit" data-k="'+esc(k)+'" value="'+esc(String(v))+'" style="width:90px;font-size:11px;padding:2px 6px;border:1px dashed var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>').join(' ');
   }
 }
 bindStratCards();
@@ -1511,9 +1515,57 @@ async function nlSave(){
 function myRunBtn(){
   const m=MY_STRATS[String(S.cur||'')];
   if(!m){toast('先在卡墙点选一个「我的策略」');return;}
-  _nlParams=Object.assign({},m.params);
+  // 368：重跑用面板当前编辑值（改了没保存也能先试跑）
+  _nlParams=Object.assign({},myParamsFromPanel()||m.params);
   nlRun();
   $('nl-out').scrollIntoView({behavior:'smooth',block:'center'});
+}
+// ===== K-STOCK-368 我的策略增强：保存修改/导出/复制分享 =====
+const MY_NUMK={min_score:1,slot_pct:1,top_n:1};
+function myParamsFromPanel(){
+  const m=MY_STRATS[String(S.cur||'')];
+  if(!m)return null;
+  const p=Object.assign({},m.params);
+  document.querySelectorAll('#mystrat-chips .nl-edit').forEach(el=>{
+    const k=el.dataset.k;if(!k)return;
+    let v=String(el.value).trim();
+    if(MY_NUMK[k]&&v!==''){const n=Number(v);if(!isNaN(n))v=n;}
+    p[k]=v;
+  });
+  return p;
+}
+async function mySaveEdit(){
+  const mid=String(S.cur||''),m=MY_STRATS[mid];
+  if(!m){toast('先在卡墙点选一个「我的策略」');return;}
+  const p=myParamsFromPanel();
+  const name=prompt('策略名：',m.name||'');
+  if(!name)return;
+  try{
+    const j=await api('/api/my_strategies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',id:mid,name:name,params:p,note:m.note||''})});
+    if(!(j&&j.ok))throw new Error((j&&j.error)||'保存失败');
+    toast(j.updated?'已保存修改':'已保存');
+    await loadStrategy12();selStrat(mid);
+  }catch(e){toast('❌ '+e.message);}
+}
+function myExport(){
+  const m=MY_STRATS[String(S.cur||'')];
+  if(!m){toast('先在卡墙点选一个「我的策略」');return;}
+  const data={name:m.name,params:myParamsFromPanel(),note:m.note||'',exported_from:'零界门户',ver:1};
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=((m.name||'我的策略')+'.json').replace(/[\\/:*?"<>|]/g,'_');
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+async function myShare(){
+  const m=MY_STRATS[String(S.cur||'')];
+  if(!m){toast('先在卡墙点选一个「我的策略」');return;}
+  const txt='【零界·我的策略】'+(m.name||'')+'\n'+JSON.stringify(myParamsFromPanel());
+  try{
+    await navigator.clipboard.writeText(txt);
+    toast('已复制到剪贴板——粘贴给朋友即可复现同款参数');
+  }catch(e){prompt('浏览器未授权剪贴板，请手动复制：',txt);}
 }
 async function myDelBtn(){
   const mid=String(S.cur||'');
