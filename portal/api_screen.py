@@ -930,6 +930,8 @@ class Handler:
         except Exception:
             return [], []
         return anns, rpts
+
+    @classmethod
     def _stock_fundamental(cls, code):
         """个股基本面核心指标 → (rows, note)；rows=[(标签,值)]。
         A股：估值（1日缓存）+ 财务（nine_dim._fina 5日缓存，ROE/毛利
@@ -1041,6 +1043,8 @@ class Handler:
             return rows, note
         except Exception:
             return [], "基本面数据暂不可用"
+
+    @classmethod
     def _stock_valuation(cls, ts_code):
         """A股估值（tushare daily_basic 单股）：pe_ttm/总市值/换手率，
         portal 侧独立 1 日小缓存，命中零 API。"""
