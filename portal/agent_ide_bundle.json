@@ -1,12 +1,12 @@
 {
- "generated": "2026-10-14 16:44",
+ "generated": "2026-10-14 16:50",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 29,
   "departments": 12,
   "prompt_ok": 29,
   "prompt_miss": [],
-  "workorders_doing": 3,
+  "workorders_doing": 2,
   "workorders_review": 15
  },
  "workorders": [
@@ -162,15 +162,6 @@
    "branch": "task/K-STOCK-374",
    "created": "2026-10-14 13:55:56",
    "project": "portal"
-  },
-  {
-   "id": "K-STOCK-386",
-   "desc": "策略扫描推送卡片化:38只榜单着色+奖牌+超额列+nan修复,文本降级保底",
-   "status": "doing",
-   "owner": "unknown-agent",
-   "branch": "task/K-STOCK-386",
-   "created": "2026-10-14 16:39:08",
-   "project": "general"
   }
  ],
  "coder_traces": [
@@ -2467,7 +2458,8 @@
      "质量红线亮牌"
     ],
     "knowledge": [
-     "AI工程实践知识库.md"
+     "AI工程实践知识库.md",
+     "测试规范知识库.md"
     ]
    },
    "memory": {
@@ -2492,10 +2484,15 @@
      ]
     },
     "knowledge": {
-     "count": 1,
+     "count": 2,
      "recent": [
       {
        "ts": "2026-10-14 07:53:33",
+       "event": "learned",
+       "desc": ""
+      },
+      {
+       "ts": "2026-10-14 16:50:30",
        "event": "learned",
        "desc": ""
       }
