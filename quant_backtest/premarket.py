@@ -1615,6 +1615,17 @@ def _lark_exe():
     return None
 
 
+def _drill(name, code):
+    """镜像文档股票名 → 门户个股全景页下钻（K-STOCK-389，复用 388
+    runner._stock_drill；portal_url 缺省回落纯文本）。局部 import
+    runner 同 push_card 判例，防模块级循环依赖。"""
+    try:
+        import runner
+        return runner._stock_drill(name, code)
+    except Exception:
+        return str(name or "")
+
+
 def build_doc_md(d):
     """盘前报告完整 markdown（飞书镜像文档用，比卡片更详细）。"""
     L = ["# 🌅 盘前分析 · A股开盘倾向", "",
@@ -1640,12 +1651,15 @@ def build_doc_md(d):
     if j:
         L += ["", "近3天政策类新闻 JEV：%d 条 · 利多 %d / 利空 %d / 中性 %d"
               % (j["n"], j["bull"], j["bear"], j["neu"]), ""]
-        L += ["| 新闻 | 判断 | 置信度 |", "|---|---|---|"]
+        L += ["| 新闻 | 判断 | 置信度 | 关联个股 |", "|---|---|---|---|"]
         for nw in d["l2"].get("news", []):
             c = nw.get("conf") or 0
-            L.append("| %s | %s | %d%% |" % (
+            stk = " ".join(
+                _drill((x[:6] if x.endswith((".SH", ".SZ")) else x), x)
+                for x in (nw.get("stocks") or [])[:6])
+            L.append("| %s | %s | %d%% | %s |" % (
                 nw["title"], nw.get("bias_cn") or "—",
-                round(c * 100) if c <= 1 else round(c)))
+                round(c * 100) if c <= 1 else round(c), stk or "—"))
     L.append("")
 
     l3 = d["l3"]
@@ -1755,8 +1769,8 @@ def build_doc_md(d):
                   "|---|---|---|---|"]
             for t in mo["top"]:
                 L.append("| %s%s | %+.2f%% | %d 板 | %s 亿 |"
-                         % (t["name"], t["code"], t["pct"], t["streak"],
-                            t["amt_yi"]))
+                         % (_drill(t["name"], t["code"]), t["code"],
+                            t["pct"], t["streak"], t["amt_yi"]))
     L.append("")
 
     l6 = d.get("l6") or {}
@@ -1768,8 +1782,8 @@ def build_doc_md(d):
         for a in l6.get("announcements", []):
             tag = {"bull": "🔴", "bear": "🟢"}.get(a["cat"], "⚪")
             L.append("- %s %s %s：%s（%s）%s"
-                     % (tag, a["code"][:10], a["name"], a["title"][:60],
-                        a["date"],
+                     % (tag, a["code"][:10], _drill(a["name"], a["code"]),
+                        a["title"][:60], a["date"],
                         "[原文](%s)" % a["url"] if a.get("url") else ""))
         L.append("")
     unl = l6.get("unlock") or []
@@ -1777,8 +1791,8 @@ def build_doc_md(d):
         L += ["## 六+、解禁提醒（近7天）", ""]
         for u in unl:
             L.append("- 🟢 %s %s：%s（%s）%s"
-                     % (u["code"][:10], u["name"], u["title"][:56],
-                        u["date"],
+                     % (u["code"][:10], _drill(u["name"], u["code"]),
+                        u["title"][:56], u["date"],
                         "[原文](%s)" % u["url"] if u.get("url") else ""))
         L.append("")
     rp = l6.get("rpt_stats")
@@ -1788,9 +1802,10 @@ def build_doc_md(d):
               % (rp["total"], rp["rated"], rp["buy"], rp["hold"], rp["sell"]),
               ""]
         for r in l6.get("reports", []):
-            L.append("- %s %s｜%s｜%s：%s（%s）%s"
+            # 修存量潜伏 bug：原格式串 7 占位符对 6 参数（该分支空数据未触发）
+            L.append("- %s %s｜%s｜%s：%s（%s）"
                      % (r["code"][:10], r["org"], r["rating"],
-                        r["name"][:50], r["date"],
+                        _drill(r["name"], r["code"]), r["date"],
                         "[全文](%s)" % r["url"] if r.get("url") else ""))
         L.append("")
 
