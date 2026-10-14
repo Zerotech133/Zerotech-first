@@ -845,9 +845,9 @@ def scan_text(strategy_name, results, mkts):
     for r in results:
         bench = ("—" if _is_nan(r["benchmark_return"])
                  else "%+.1f%%" % (r["benchmark_return"] * 100))
-        lines.append("· [%s] %s 夏普%.2f 收益%+.1f%% 回撤%.1f%% 基准%s" % (
+        lines.append("· [%s] %s 夏普%.2f 收益%+.1f%% 基准%s 回撤%.1f%%" % (
             r["market"], r["name"], r["sharpe"], r["total_return"] * 100,
-            r["max_drawdown"] * 100, bench))
+            bench, r["max_drawdown"] * 100))
     # 成本口径标注：让下游看到各市场回测假设（口径变化可见）
     lines.append("—— " + " · ".join(cost_note(m) for m in mkts))
     lines.append("—— 量化回测域")
@@ -857,7 +857,7 @@ def scan_text(strategy_name, results, mkts):
 def scan_card(strategy_name, results, mkts, ts):
     """扫描榜单卡（K-STOCK-386）：复用单票卡判例（schema2 + 红涨绿跌 _c_pct）。
     结构：顶部三列指标（跑赢基准/平均夏普/最深回撤）→ 正负夏普分区榜单 →
-    成本口径灰字尾注。榜单行=奖牌|#名次 名称[市场灰标]｜夏普｜收益｜超额｜回撤；
+    成本口径灰字尾注。榜单行=奖牌|#名次 名称[市场灰标]｜夏普｜收益｜基准｜超额｜回撤；
     超额=收益-基准（基准 nan 时以 — 展示，不出现 nan%）。"""
     beat = sum(1 for r in results
                if not _is_nan(r["benchmark_return"])
@@ -869,12 +869,13 @@ def scan_card(strategy_name, results, mkts, ts):
     def line(i, r):
         rank = _SCAN_MEDALS[i] if i < 3 else "#%d" % (i + 1)
         bench = r["benchmark_return"]
+        b = ("<font color='grey'>—</font>" if _is_nan(bench) else _c_pct(bench))
         exc = ("<font color='grey'>—</font>" if _is_nan(bench)
                else _c_pct(r["total_return"] - bench))
         return ("%s **%s** <font color='grey'>[%s]</font>｜夏普 **%.2f**"
-                "｜收益 %s｜超额 %s｜回撤 %.1f%%") % (
+                "｜收益 %s｜基准 %s｜超额 %s｜回撤 %.1f%%") % (
             rank, r["name"], r["market"], r["sharpe"],
-            _c_pct(r["total_return"]), exc, r["max_drawdown"] * 100)
+            _c_pct(r["total_return"]), b, exc, r["max_drawdown"] * 100)
 
     md = []
     pos = [line(i, r) for i, r in enumerate(results) if r["sharpe"] >= 0]

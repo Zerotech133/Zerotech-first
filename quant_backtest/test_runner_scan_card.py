@@ -48,6 +48,10 @@ def test_scan_card_structure():
         assert m in joined                           # 前三奖牌
     assert "#4" in joined and "#5" in joined         # 奖牌外 #名次
     assert "正夏普区（4 只）" in joined and "负夏普区（1 只）" in joined
+    # K-STOCK-387 列序：基准列在收益后（夏普｜收益｜基准｜超额｜回撤）
+    sample = joined.split("\n")[2]
+    assert (sample.index("｜收益") < sample.index("｜基准")
+            < sample.index("｜超额") < sample.index("｜回撤"))
     cols = [e for e in card["body"]["elements"] if e.get("tag") == "column_set"]
     assert cols, "顶部三列指标缺失"
 
