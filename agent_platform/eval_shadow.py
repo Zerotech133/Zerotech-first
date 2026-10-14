@@ -6,6 +6,13 @@
   J1 无人干预：账本中 done 行覆盖 篮子×交易日，且无连续 failed
   J2 秩相关>0：D1 打分（score，辅以 confidence）与决策日后验收益的 Spearman 秩相关
   J3 lineage 可追溯：每笔 done 决策的 run_id 在 checkpoints.db 中能查到辩论 trace
+
+K-STOCK-397（2026-10-15）J2 采样修复——此前 per_symbol_latest 只取每票最近
+一行，而产线决策行在盘后记账（决策价=当日收盘），同日评估快照价与决策价同源
+同值 → 持有期恒为 0、后验收益恒 +0.00、rho 永远不可算（10-14 正式跑实锤，
+5 票后验全 0）。改为逐行（交易日×票）后验：基准=决策日 K 线收盘（权威价，
+快照价仅兜底），出场=最新收盘；决策日=最新 bar（零持有期）的行跳过并计入
+pending 计数；全部后验为 0 时打价格源告警（防"失败不发声"复发）。
 """
 import argparse
 import json
@@ -16,7 +23,7 @@ from pathlib import Path
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
-from tools import quote_snapshot  # noqa: E402
+from tools import quote_snapshot, kline_daily  # noqa: E402
 
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
 DB = BASE / "data" / "checkpoints.db"
@@ -60,6 +67,27 @@ def spearman(xs, ys):
     num = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
     den = (sum((a - mx) ** 2 for a in rx) * sum((b - my) ** 2 for b in ry)) ** 0.5
     return num / den if den else None
+
+
+def posterior_row(bars, dec_date, price_at_decision, sym):
+    """单行后验：决策日→最新收盘的累计收益。
+
+    返回 (ret_pct, horizon_trading_days, base_price, exit_price)；
+    零持有期（决策日=最新 bar）返回 ("pending", 0, base, base)；
+    决策日不在 K 线内（停牌/超窗）用 price_at_decision 作基准、
+    快照作出场兜底，horizon 返回 None。
+    """
+    dates = [b[0] for b in bars]
+    if dates and dec_date in dates:
+        i = dates.index(dec_date)
+        if i >= len(dates) - 1:
+            return ("pending", 0, float(bars[i][2]), float(bars[i][2]))
+        base = float(bars[i][2])
+        exit_px = float(bars[-1][2])
+        return ((exit_px / base - 1) * 100, len(dates) - 1 - i, base, exit_px)
+    now = quote_snapshot(sym)["price"]
+    base = float(price_at_decision)
+    return ((now / base - 1) * 100, None, base, now)
 
 
 def stance_groups(per_symbol_latest: dict) -> dict:
@@ -108,36 +136,53 @@ def main():
 
     per_symbol_latest = {}
     for r in done:
-        per_symbol_latest[r["symbol"]] = r  # 每票取最近一次决策
+        per_symbol_latest[r["symbol"]] = r  # 每票取最近一次决策（仅用于 T1 分组）
     sym_group = stance_groups(per_symbol_latest)  # A-1: 分组并入明细
     scores, confs, rets = [], [], []
-    detail = []  # 逐票明细（K-STOCK-014：评估日可读性；K-STOCK-080：加分组列）
-    skipped = []  # K-STOCK-338：决策字段缺失票可见（此前静默缩样本，读者不知 n 为何变小）
-    for sym, r in per_symbol_latest.items():
+    detail = []  # 逐行明细（K-STOCK-397：交易日×票，含持有窗口列）
+    skipped = []  # K-STOCK-338：决策字段缺失行可见（此前静默缩样本，读者不知 n 为何变小）
+    pending_rows = 0  # K-STOCK-397：零持有期行（决策日=最新 bar，后验窗口未开）
+    kline_cache = {}  # sym -> bars（每次评估每票只拉一次 K 线）
+    for r in done:  # K-STOCK-397：逐行后验（原 per-symbol-latest 采样恒落零持有期）
+        sym, d = r["symbol"], r["date"]
         if r.get("score") is None or not r.get("price_at_decision"):
-            skipped.append(sym)
+            skipped.append("%s/%s" % (d, sym))
             continue
+        if sym not in kline_cache:
+            try:
+                kline_cache[sym] = kline_daily(sym, 40)
+            except Exception as e:  # noqa: BLE001
+                print("  [warn] %s 日K获取失败: %s" % (sym, e))
+                kline_cache[sym] = []
         try:
-            now = quote_snapshot(sym)["price"]
-            ret = (now / r["price_at_decision"] - 1) * 100
+            ret, hz, base, now = posterior_row(
+                kline_cache[sym], d, r["price_at_decision"], sym)
+            if ret == "pending":
+                pending_rows += 1
+                continue
             scores.append(r["score"])
             confs.append(r.get("confidence") or 0)
             rets.append(ret)
-            detail.append((sym, r.get("name", ""), r["score"], r.get("confidence") or 0,
-                           r["price_at_decision"], now, ret, r.get("recommendation", "?"),
+            detail.append((d, sym, r.get("name", ""), r["score"], r.get("confidence") or 0,
+                           base, now, ret, hz, r.get("recommendation", "?"),
                            sym_group.get(sym, "?")))
         except Exception as e:  # noqa: BLE001
-            print("  [warn] %s 后验价获取失败: %s" % (sym, e))
+            print("  [warn] %s %s 后验价获取失败: %s" % (d, sym, e))
     if detail:
-        print("  逐票明细（按后验收益降序）:")
-        print("  %-8s %-8s %-5s %-5s %-10s %-10s %-8s %-11s %s" % (
-            "票", "名称", "score", "conf", "决策价", "现价", "后验%", "决策", "T1组"))
-        for sym, name, sc, cf, px0, px1, rt, rec, grp in sorted(detail, key=lambda d: -d[6]):
-            print("  %-8s %-8s %-5s %-5s %-10s %-10s %+8.2f %-11s %s" % (
-                sym, name[:8], sc, "%.2f" % cf, px0, px1, rt, rec, grp))
+        print("  逐行明细（按后验收益降序，窗口=决策日→最新收盘）:")
+        print("  %-10s %-8s %-8s %-5s %-5s %-9s %-9s %-8s %-5s %-11s %s" % (
+            "决策日", "票", "名称", "score", "conf", "决策价", "现价", "后验%", "窗口", "决策", "T1组"))
+        for d, sym, name, sc, cf, px0, px1, rt, hz, rec, grp in sorted(detail, key=lambda x: -x[7]):
+            print("  %-10s %-8s %-8s %-5s %-5s %-9s %-9s %+8.2f %-5s %-11s %s" % (
+                d, sym, name[:8], sc, "%.2f" % cf, px0, px1, rt,
+                ("%s日" % hz) if hz is not None else "?", rec, grp))
+    if pending_rows:  # K-STOCK-397：零持有期行可见（今日决策，下一评估日自动入样）
+        print("  [pending] %d 行零持有期未入 J2（决策日=最新 bar）" % pending_rows)
     if skipped:  # K-STOCK-338：null 决策行不入 J2（skip 容错），但必须可见
-        print("  [skip] %d 票决策字段缺失未入 J2（D1 解析失败·样本缩水非毒化）: %s"
+        print("  [skip] %d 行决策字段缺失未入 J2（D1 解析失败·样本缩水非毒化）: %s"
               % (len(skipped), ",".join(skipped)))
+    if rets and all(abs(x) < 1e-9 for x in rets):  # K-STOCK-397：零方差=价格源哨
+        print("  [warn] 全部后验收益=0：价格源疑似未刷新（K线与决策价同值），J2 判读无效")
     if failed:  # A-1: failed 票可见（评估日不必翻账本）
         print("  failed 票（%d 行）:" % len(failed))
         for r in failed[-10:]:
@@ -153,20 +198,12 @@ def main():
     # 分组判读（K-STOCK-017，B9 定性落地）：坚守/倒戈两组分别算 conf-vs-ret——
     # 倒戈票的低 conf 语义已变（角色自弃拉低），混算会污染整体 rho 解读
     # K-STOCK-080：分组查询收敛到 stance_groups()，明细行与分组判读共用一份
+    # K-STOCK-397：分组样本直接复用逐行明细（同一套后验口径，不再二次拉快照）
     try:
         groups = {"坚守": ([], []), "倒戈": ([], [])}
-        for sym, r in per_symbol_latest.items():
-            if sym_group.get(sym) != "倒戈":
-                g = "坚守"
-            else:
-                g = "倒戈"
-            if r.get("price_at_decision"):
-                try:
-                    now = quote_snapshot(sym)["price"]
-                    groups[g][0].append(r.get("confidence") or 0)
-                    groups[g][1].append((now / r["price_at_decision"] - 1) * 100)
-                except Exception:  # noqa: BLE001
-                    pass
+        for d, sym, name, sc, cf, px0, px1, rt, hz, rec, grp in detail:
+            groups[grp if grp in groups else "坚守"][0].append(cf)
+            groups[grp if grp in groups else "坚守"][1].append(rt)
         for g, (gs, gr) in groups.items():
             rho_g = spearman(gs, gr) if len(gs) >= 3 else None
             print("  [%s组] n=%d conf-vs-ret rho=%s" % (
