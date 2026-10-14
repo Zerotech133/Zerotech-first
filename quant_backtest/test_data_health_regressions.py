@@ -86,6 +86,22 @@ def test_jev_reconciliation_rejects_receipt_queue_mismatch(tmp_path):
     assert result["decided_without_receipt"] == ["2"]
 
 
+def test_jev_reconciliation_marks_pending_queue_as_fail(tmp_path):
+    db_path = tmp_path / "news.db"
+    db = sqlite3.connect(db_path)
+    db.execute("CREATE TABLE news (id INTEGER PRIMARY KEY, jev TEXT)")
+    db.execute("INSERT INTO news(id, jev) VALUES (1, NULL)")
+    db.commit()
+    db.close()
+    queue = tmp_path / "queue.json"
+    queue.write_text(json.dumps([{"id": "1", "status": "pending"}]), encoding="utf-8")
+
+    result = data_health._scan_jev_reconciliation(news_db_path=db_path, queue_paths=[queue])
+
+    assert result["queue_pending"] == 1
+    assert result["status"] == "FAIL"
+
+
 def test_build_gaps_reports_valuation_nulls_and_jev_reconciliation():
     kline = {"cn": {"count": 1, "exists": True,
                      "valuation_fields": {"pe": {"missing": 2}, "turnover": {"missing": 0}}},

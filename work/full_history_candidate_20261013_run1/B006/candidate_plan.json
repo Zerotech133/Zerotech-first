@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "source": "tushare",
+  "resource": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\full_history_candidate_20261013_run1\\B006",
+  "market": "cn",
+  "date": "20230605",
+  "selected_tables": [
+    "ts_daily_basic",
+    "ts_margin_detail"
+  ],
+  "retry_of": null,
+  "retry_units": [],
+  "registry_digest": "05ad794349bea1cdecd4a3d1bf1bb2820af6929cda1d81d64f21320f6732a6d0",
+  "targets": [
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230605.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230606.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230607.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230608.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230609.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230612.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230613.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230614.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230615.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230616.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230619.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230620.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230621.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230626.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230627.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230628.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230629.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230630.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230703.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230704.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230605.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230606.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230607.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230608.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230609.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230612.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230613.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230614.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230615.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230616.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230619.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230620.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230621.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230626.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230627.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230628.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230629.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230630.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230703.parquet",
+    "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230704.parquet"
+  ],
+  "units": [
+    {
+      "unit_id": "ts_daily_basic:20230605",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230605.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230605"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230606",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230606.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230606"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230607",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230607.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230607"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230608",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230608.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230608"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230609",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230609.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230609"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230612",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230612.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230612"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230613",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230613.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230613"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230614",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230614.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230614"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230615",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230615.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230615"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230616",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230616.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230616"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230619",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230619.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230619"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230620",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230620.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230620"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230621",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230621.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230621"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230626",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230626.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230626"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230627",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230627.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230627"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230628",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230628.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230628"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230629",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230629.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230629"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230630",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230630.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230630"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230703",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230703.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230703"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_daily_basic:20230704",
+      "table": "ts_daily_basic",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_daily_basic\\20230704.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230704"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230605",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230605.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230605"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230606",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230606.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230606"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230607",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230607.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230607"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230608",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230608.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230608"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230609",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230609.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230609"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230612",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230612.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230612"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230613",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230613.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230613"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230614",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230614.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230614"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230615",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230615.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230615"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230616",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230616.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230616"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230619",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230619.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230619"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230620",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230620.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230620"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230621",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230621.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230621"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230626",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230626.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230626"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230627",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230627.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230627"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230628",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230628.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230628"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230629",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230629.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230629"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230630",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230630.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230630"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230703",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230703.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230703"
+      },
+      "selection_reason": "dependency"
+    },
+    {
+      "unit_id": "ts_margin_detail:20230704",
+      "table": "ts_margin_detail",
+      "target": "work\\full_history_candidate_20261013_run1\\B006\\published\\ts_margin_detail\\20230704.parquet",
+      "kind": "date",
+      "scope": {
+        "trade_date": "20230704"
+      },
+      "selection_reason": "dependency"
+    }
+  ],
+  "operations": [
+    {
+      "table": "ts_daily_basic",
+      "api_name": "daily_basic",
+      "operation": "date_append_candidate"
+    },
+    {
+      "table": "ts_margin_detail",
+      "api_name": "margin_detail",
+      "operation": "date_append_candidate"
+    }
+  ],
+  "unsupported": [
+    {
+      "table": "tdx_sector_daily",
+      "missing_keys": 51,
+      "status": "blocked_source_qualification"
+    },
+    {
+      "table": "tdx_sector_min",
+      "missing_keys": 14,
+      "status": "blocked_source_qualification"
+    }
+  ],
+  "baseline_digest": "73b0501c2b31e7876abc14709f035db6330347a68e24a1af2e80e72dd26a2e4a",
+  "plan_digest": "5862388d60c66290dba422758b723780f0cd442957809bc775dac1ae9a1c7391"
+}

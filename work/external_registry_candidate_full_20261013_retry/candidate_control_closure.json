@@ -1,0 +1,24 @@
+{
+  "run_id": "8de0593471d8403ebc569ff3948fa8d2",
+  "runstore_status": "blocked",
+  "runstore_total_units": 1820,
+  "runstore_completed_units": 0,
+  "resource_lock": "released",
+  "publication_lock": "read_acquired_released",
+  "staging_fingerprint": {
+    "ts_daily_basic": "700d5b4931c5a2c4771870556b7e314fbdbb44739ccbed48c5e396015f37e320",
+    "ts_margin_detail": "9e40f6db8cc042a0901cc0f07fbdeada21caa5383bab25d6cda9ce9c1abcfeea"
+  },
+  "post_publish_fingerprint": "not_started",
+  "readback_reconciliation": "staging_verified",
+  "post_publish_readback": "not_started",
+  "production_write": false,
+  "global_activation": false,
+  "publication_allowed": false,
+  "block_reason": "候选回执已完成只读回读，但没有生产物化与发布，因此不生成发布后指纹，不升级 qualified",
+  "evidence": {
+    "runstore_closure": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\external_registry_candidate_full_20261013_retry\\runstore_candidate_closure.json",
+    "readback": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\external_registry_candidate_full_20261013_retry\\staging_readback_reconciliation.json",
+    "registry_audit": "E:\\老田的AI助手\\.worktrees\\K-STOCK-211\\work\\external_registry_candidate_full_20261013_retry\\runstore_candidate_audit.json"
+  }
+}

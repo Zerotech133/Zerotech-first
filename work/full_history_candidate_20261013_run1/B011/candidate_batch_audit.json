@@ -1,0 +1,57 @@
+{
+  "batch_id": "B011",
+  "run_id": "84ba35e3626e4b6bba64fac6896f3c40",
+  "dates": [
+    "20231102",
+    "20231103",
+    "20231106",
+    "20231107",
+    "20231108",
+    "20231109",
+    "20231110",
+    "20231113",
+    "20231114",
+    "20231115",
+    "20231116",
+    "20231117",
+    "20231120",
+    "20231121",
+    "20231122",
+    "20231123",
+    "20231124",
+    "20231127",
+    "20231128",
+    "20231129"
+  ],
+  "unit_count": 40,
+  "runstore_status": "succeeded",
+  "completed_units": 40,
+  "resource_lock": "released",
+  "publication_lock": "write_acquired_released+read_acquired_released",
+  "post_publish_fingerprint": {
+    "ts_daily_basic": "b7515559b736d5b8185c709df5534e9768b432433a8ad11669ef1e51cfd91d82",
+    "ts_margin_detail": "71c8a087401be7d2627f5cb67d5ed1ba6df0c788ac9c66563fe78dcd1f63ce35"
+  },
+  "readback_reconciliation": {
+    "status": "passed",
+    "tables": {
+      "ts_daily_basic": {
+        "files": 20,
+        "rows": 106100,
+        "unique_keys": 106100,
+        "sha256_aggregate": "b7515559b736d5b8185c709df5534e9768b432433a8ad11669ef1e51cfd91d82"
+      },
+      "ts_margin_detail": {
+        "files": 20,
+        "rows": 75563,
+        "unique_keys": 75563,
+        "sha256_aggregate": "71c8a087401be7d2627f5cb67d5ed1ba6df0c788ac9c66563fe78dcd1f63ce35"
+      }
+    },
+    "query_digest": "a0457e413ca867e1d42a1598be27b969cbfb4caec992730c6bcaf7735a1e5b26"
+  },
+  "production_write": false,
+  "global_activation": false,
+  "publication_allowed": false,
+  "candidate_only": true
+}
