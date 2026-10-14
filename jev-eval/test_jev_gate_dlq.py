@@ -7,7 +7,9 @@ import sys
 import tempfile
 import types
 
-WT = r"E:\老田的AI助手\.worktrees\K-STOCK-401"
+# K-STOCK-406：路径锚相对测试文件定位（worktree 开发期/merge 后主仓均跑得动；
+# 原 .worktrees/K-STOCK-401 硬编码在 worktree 清场后失效）
+WT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAIL = []
 
 def check(name, cond):
