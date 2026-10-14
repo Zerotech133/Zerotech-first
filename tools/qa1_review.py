@@ -83,16 +83,41 @@ def build_prompt(sha, diff, note=None):
     )
 
 
+# K-ORG-062a(F6b): 只读审查纪律附言——QA1 经 claude -p 拿到 Read/Grep/Glob 三件套，
+# 可直读仓库核现状（根治 K-ORG-042 判例「diff - 行是被移除旧内容、不能据以判现状」）。
+READ_ONLY_ADDENDUM = (
+    "\n【只读审查纪律（K-ORG-062a）】你配有只读工具 Read/Grep/Glob（无 Edit/Bash/Write，"
+    "不得也不可修改任何文件）。判定「现状是什么」以你读到的文件为准，"
+    "diff 中 - 开头的行只是被移除的旧内容；【提交方附证】中的现值计数可用 Grep 抽查复核。"
+)
+
+
 def review_one(sha, note=None):
-    """复核单笔提交，返回 QA1 模型结论文本。"""
+    """复核单笔提交，返回 QA1 模型结论文本。
+    K-ORG-062a(F6b): 主路径=claude -p 只读审查（allowed_tools=Read,Grep,Glob，
+    无写面）；CLI 缺失/超时/rc 非零等异常降级 chat_auto 并留痕。"""
     diff = get_diff(sha)
     task = build_prompt(sha, diff, note)
-    return str(
-        agent_coder.chat_auto(
-            "QA1",
-            {"label": "QA1 复核 " + sha, "prompt": task, "json_out": False},
+    try:
+        return str(
+            agent_coder.chat_claude(
+                "QA1",
+                {"label": "QA1 复核 " + sha,
+                 "prompt": task + READ_ONLY_ADDENDUM,
+                 "allowed_tools": "Read,Grep,Glob",
+                 "max_turns": 15},
+                timeout=600,
+            )
         )
-    )
+    except Exception as exc:  # 降级链：只读审查通道不可用时不挡质检
+        print("[qa1_review] claude 只读通道不可用，降级 chat_auto: %s"
+              % str(exc)[:160], file=sys.stderr)
+        return str(
+            agent_coder.chat_auto(
+                "QA1",
+                {"label": "QA1 复核 " + sha, "prompt": task, "json_out": False},
+            )
+        )
 
 
 def main(argv):
