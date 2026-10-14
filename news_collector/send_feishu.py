@@ -26,6 +26,12 @@ USER_ID_LARK = "ou_5c9c4f3c015cbdb3475a44e49a9c1866"  # user 应用域 open_id
 
 
 def find_lark_cli():
+    # K-STOCK-396 exe 解耦：仓库 bin/ 固定副本优先（不受 Trae 插件目录
+    # 升级/清除影响，2026-10-13 巡检判例），插件目录扫描降为回退。
+    _bin = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "bin", "lark-cli.exe")
+    if os.path.isfile(_bin):
+        return _bin
     if not os.path.isdir(LARK_ROOT):
         return None
     for d in sorted(os.listdir(LARK_ROOT), reverse=True):

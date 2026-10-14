@@ -1598,8 +1598,13 @@ def write_page(data, snap):
 
 
 def _lark_exe():
-    """定位 lark-cli（PATH 优先，插件目录回退，计划任务上下文可用）。"""
+    """定位 lark-cli（仓库 bin/ 固定副本优先 K-STOCK-396，PATH 次之，
+    插件目录回退，计划任务上下文可用）。"""
     import shutil
+    _bin = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "bin", "lark-cli.exe")
+    if os.path.isfile(_bin):
+        return _bin
     try:
         p = shutil.which("lark-cli")
         if p:

@@ -43,6 +43,9 @@ portal/static/uploads/
 # 第三方二进制
 tools/ffmpeg-9.0.2-essentials_build/
 tools/out/
+# K-STOCK-396：lark-cli 解耦固定副本（49MB 第三方 exe 不入库；来源=Trae
+# Lark 插件 bin，缺失时晨检 [4.6] 报警，从插件目录拷贝恢复）
+bin/lark-cli.exe
 
 # ===== 密钥与环境（绝不入库）=====
 .env

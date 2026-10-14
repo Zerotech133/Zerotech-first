@@ -324,6 +324,24 @@ def _load_bot_creds() -> "tuple[str, str, str] | None":
     return None
 
 
+def lark_cli_bin() -> str:
+    """lark-cli 可执行路径（K-STOCK-396 解耦）：仓库 bin/ 固定副本优先
+    （不受 Trae 插件目录升级/清除影响，2026-10-13 巡检判例），插件目录
+    版本扫描回退，最后裸名（PATH 侥幸，不可靠）。"""
+    _bin = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "bin", "lark-cli.exe")
+    if os.path.isfile(_bin):
+        return _bin
+    root = os.path.join(os.path.expanduser("~"), ".trae-cn", "plugins",
+                        "trae-remote-official", "lark")
+    if os.path.isdir(root):
+        for d in sorted(os.listdir(root), reverse=True):
+            p = os.path.join(root, d, "bin", "lark-cli.exe")
+            if os.path.isfile(p):
+                return p
+    return "lark-cli"
+
+
 def lark_env() -> dict:
     """四件套注入（p_g_robot._bot_env 已验证模式）。
 
@@ -352,7 +370,7 @@ def lark_cli_json(args: list[str], *, timeout: int = 20, kind: str = "api",
     last_err = ""
     for i in range(max(1, retries)):
         result = subprocess.run(
-            ["lark-cli", *args], capture_output=True, text=True,
+            [lark_cli_bin(), *args], capture_output=True, text=True,
             encoding="utf-8", errors="replace", env=lark_env(), timeout=timeout)
         if result.returncode != 0:
             last_err = f"lark-cli 退出码 {result.returncode}: {result.stderr.strip()[:150]}"
