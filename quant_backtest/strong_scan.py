@@ -239,6 +239,24 @@ def main():
     if not ok_g:
         print("[守卫] 数据新鲜度未过：%s —— 拦截退出（防 T-1 静默名单）"
               % msg, flush=True)
+        # 2026-10-14 告警闭环（alert-loop P0-2）：正确的拦截不再静默——
+        # 今晨 StrongEod 06:30 exit 3 无告警教训；注记式调用，告警异常
+        # 不改变拦截退出码；--dry 不真推不写状态（演练路径）
+        try:
+            import re as _re_a
+            import guard_alert as _ga
+            _dates = _re_a.findall(r"\d{4}-\d{2}-\d{2}", msg)
+            _ga.guard_alert(
+                "StrongEod", msg,
+                anchors={"板块锚 %s" % GUARD_BLOCK: g_basis or "无",
+                         "个股锚": next((d for d in _dates if d != g_basis),
+                                        g_basis or "见拦截原因")},
+                suggest="核查 TdxSync 与凌晨 zhice 补数；补齐后 "
+                        "--force 重扫 StrongEod（10-13 板块仓停教训判例）",
+                send=not a.dry)
+        except Exception as _e:
+            print("[守卫] 告警推送异常（不影响拦截退出）: %s" % str(_e)[:120],
+                  flush=True)
         return 3
     print("[守卫] %s" % msg, flush=True)
 

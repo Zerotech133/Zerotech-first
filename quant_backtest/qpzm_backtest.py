@@ -38,6 +38,7 @@ sector_effect.py；打分公式按产线逐条复刻（见 DESIGN 注释与单�
 import argparse
 import json
 import os
+import re
 import sys
 import tempfile
 import time
@@ -152,26 +153,51 @@ def tech_score(longs, above20):
     return (longs * 25 + bonus).clip(0, 100)
 
 
+def normalize_jev_key(code):
+    """归档键归一化为 wide 同款全码形态，无法识别返回 None。
+
+    W5c 键形态修复：sh688025 → 688025.SH，sz301047 → 301047.SZ，
+    bj430047 → 430047.BJ；已是全码形态（688025.SH）幂等返回；
+    其余（gb_nvda / BTC/USDT 等非 A 股键）→ None（跳过并计数）。
+    """
+    s = str(code).strip()
+    m = re.match(r"^(sh|sz|bj)(\d{6})$", s, re.IGNORECASE)
+    if m:
+        return "%s.%s" % (m.group(2), m.group(1).upper())
+    m = re.match(r"^(\d{6})\.(sh|sz|bj)$", s, re.IGNORECASE)
+    if m:
+        return "%s.%s" % (m.group(1), m.group(2).upper())
+    return None
+
+
 def load_jev_replay(path=JEV_REPLAY_PATH):
     """读 jev_replay_series.json → (score DataFrame dates×codes, meta)。
 
-    日期键 'YYYY-MM-DD' 转成 int64 YYYYMMDD 与 wide 索引对齐；只有归档
-    覆盖内的 (date, code) 有分，其余为 NaN（自然缺维，预期行为）。
+    日期键 'YYYY-MM-DD' 转成 int64 YYYYMMDD 与 wide 索引对齐；归档键经
+    normalize_jev_key 归一化为 wide 同款全码形态（688025.SH），reindex
+    才能命中；无法识别的键跳过并在 meta 计数。只有归档覆盖内的
+    (date, code) 有分，其余为 NaN（自然缺维，预期行为）。
     """
     with open(path, encoding="utf-8") as f:
         payload = json.load(f)
     rows = {}
+    n_skipped = 0
+    skipped_keys = set()
     for d, by_code in payload.get("series", {}).items():
         d_int = int(d.replace("-", ""))
         for code, rec in by_code.items():
-            # 审查 P0（077l）：replay 归档键是 sz301047/gb_nvda 市场形态，
-            # 回测 wide 列是 6 位数字码——双形态都写入，命中为准
-            c6 = str(code).split(".")[0][-6:]
-            rows.setdefault(d_int, {})[c6] = float(rec.get("score", 50.0))
-            if str(code) != c6:
-                rows[d_int][str(code)] = float(rec.get("score", 50.0))
+            wide_code = normalize_jev_key(code)
+            if wide_code is None:
+                n_skipped += 1
+                skipped_keys.add(str(code))
+                continue
+            rows.setdefault(d_int, {})[wide_code] = float(
+                rec.get("score", 50.0))
     mat = pd.DataFrame.from_dict(rows, orient="index").sort_index()
     meta = payload.get("meta", {})
+    if n_skipped:
+        meta["unrecognized_keys_skipped"] = n_skipped
+        meta["unrecognized_keys"] = sorted(skipped_keys)
     # 审查 P2-1（077l）：末日为重放时刻前部分数据，剔除防半日偏置
     if meta.get("partial_last_day") and len(mat) > 1:
         mat = mat.iloc[:-1]

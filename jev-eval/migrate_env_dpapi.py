@@ -94,7 +94,8 @@ VALUE_RE = re.compile(r"""^(["'])(.*)\1(?:\s*#.*)?$""", re.S)
 
 
 def parse_plain(path=PLAIN_FILE):
-    """解析明文 ps1 → {键: 值}；无法解析的键报错（只报键名）。"""
+    """解析明文 ps1 → (out, lines) 元组（out={键: 值}，lines=原始行）；
+    无法解析的键报错（只报键名）。"""
     with open(path, encoding="utf-8-sig") as f:   # 判例：rotate 脚本保留 BOM
         lines = f.read().splitlines()
     out, bad = {}, []
@@ -102,7 +103,7 @@ def parse_plain(path=PLAIN_FILE):
         m = ASSIGN_RE.match(ln)
         if not m:
             continue
-        key, rhs = m.group(1), ln[m.end(1) + 1:].strip()
+        key = m.group(1)
         # rhs 从 '=' 后取（ASSIGN_RE 吃到键名，剩余串再剥引号）
         rhs = ln.split("=", 1)[1].strip()
         vm = VALUE_RE.match(rhs)

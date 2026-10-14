@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import statistics
 import sys
 import time
@@ -171,7 +172,12 @@ def run(repeats: int, dry_run: bool) -> None:
             try:
                 resp, latency = call_jev(body)
             except urllib.error.HTTPError as e:
-                print(f"[{i}/{len(qs)}] {q['id']} 第{r+1}遍 HTTP {e.code}: {e.read()[:200]!r}")
+                # 审计修复（2026-10-14）：响应体只截前 80 字符，且含
+                # key/token/sk- 字样的片段不打印（防凭据进日志）
+                _body = e.read()[:80].decode("utf-8", errors="replace")
+                if re.search(r"key|token|sk-", _body, re.IGNORECASE):
+                    _body = "[REDACTED：响应体含凭据字样，不打印]"
+                print(f"[{i}/{len(qs)}] {q['id']} 第{r+1}遍 HTTP {e.code}: {_body!r}")
                 preds.append(None)
                 confs.append(None)
                 continue

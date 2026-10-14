@@ -18,7 +18,8 @@ param(
     [switch]$SkipBrowser
 )
 
-$EnvFile = "$PSScriptRoot\jev-gate.env.ps1"
+# 审计修复（2026-10-14）：删除原第 21 行死变量初值 $EnvFile = stub 路径
+#（第 70 行会以 plain 路径覆盖，初值从未被读取）
 $GateLog = "$env:TEMP\zhice-jev-gate.log"
 $JevPy = "C:\Program Files\Python311\python.exe"   # 产线解释器（双 Python 治理：禁止裸 python）
 
@@ -76,6 +77,7 @@ $utf8Bom  = New-Object System.Text.UTF8Encoding $true
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 $content  = [System.IO.File]::ReadAllText($EnvFile, $utf8Bom)
 
+$bak = $null
 # 检查 token 是否已在文件中（避免重复更新）
 if ($content -match [regex]::Escape($Token)) {
     "  ⚠️  token 与文件中现有值一致，跳过更新"
@@ -111,6 +113,17 @@ if ($LASTEXITCODE -ne 0) {
         Write-Warning "DPAPI --verify 未过（.enc 与 plain 不一致）——stub 回退 plain 加载，请排查"
     } else {
         "  ✅ DPAPI .enc 已重建并校验通过"
+        # 审计修复（2026-10-14）：轮换成功（verify 通过）后删除本次轮换的
+        # 带时间戳 bak（含旧 token 明文，不留过期凭据副本）；
+        # 失败现场（verify 未过/迁移失败）保留 bak 便于回退；清理失败仅 WARN 不阻塞
+        if ($bak -and (Test-Path $bak)) {
+            try {
+                Remove-Item $bak -Force -ErrorAction Stop
+                "  🧹 已清理轮换前备份（含旧 token）: $bak"
+            } catch {
+                Write-Warning "轮换前备份清理失败（保留现场，不阻塞）: $($_.Exception.Message)"
+            }
+        }
     }
 }
 

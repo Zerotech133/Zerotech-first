@@ -7,7 +7,11 @@
   2. runner 的 watchlist —— 数据源：../news_collector/news_config.json
      的 watchlist，CN 归一化逻辑与 runner.resolve_watchlist 同款
      （sh/sz/bj 前缀 → .SH/.SZ/.BJ）；
-  3. cross 每日 TopN —— 现无落盘产物，本版跳过（见留痕文档遗留事项）。
+  3. cross 每日 TopN —— [20261014_m metrics-dev 挂载] cross_poll
+     无落盘产物（build_cross 结果仅进程内缓存），故本采集器运行时
+     进程内调 cross_poll.build_cross() 取 topn（k≥3 共振、缺省 10 条），
+     过滤 CN 格式代码（*.SH/*.SZ/*.BJ）。取源失败/超时 → 该路为空，
+     不阻塞其余两路（fail-open，见留痕 20261014_metrics_dev_changes）。
 
 行为：
   · 逐票调 linkage_collector._judge_and_collect(code, ["1d"])
@@ -68,10 +72,32 @@ def pool_watchlist():
     return out
 
 
+def pool_cross_topn():
+    """[20261014_m] cross 每日 TopN 的 CN 票。
+
+    cross_poll 无落盘产物 → 运行时进程内调 build_cross()（内部带
+    缓存）；topn 代码为 norm_code 统一格式，只取 *.SH/*.SZ/*.BJ。
+    任何异常 → 返回空列表（fail-open，不阻塞持仓/watchlist 两路）。
+    """
+    out = []
+    try:
+        import cross_poll
+        res = cross_poll.build_cross()
+        for st in (res or {}).get("topn") or []:
+            code = str(st.get("code") or "")
+            name = st.get("name") or ""
+            if code.endswith((".SH", ".SZ", ".BJ")):
+                out.append((code, name))
+    except Exception as e:
+        print("CROSS_POOL skip: %s" % e)
+    return out
+
+
 def build_pool():
-    """三路并集去重（保序：持仓优先，其次 watchlist）。返回 [(code,name)]。"""
+    """三路并集去重（保序：持仓优先，其次 watchlist，最后 cross TopN）。
+    返回 [(code,name)]。"""
     pool, seen = [], set()
-    for code, name in pool_positions() + pool_watchlist():
+    for code, name in pool_positions() + pool_watchlist() + pool_cross_topn():
         if code not in seen:
             seen.add(code)
             pool.append((code, name))

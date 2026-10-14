@@ -437,9 +437,10 @@ def market_env(closes):
             above.append(c[-1] > c[-20:].mean())
             ret20.append(c[-1] / c[-21] - 1)
     if len(above) < POOL_GATE_MIN:
-        return {"score": 50, "breadth": 0, "ret20": 0, "safe": None,
+        return {"score": 50, "breadth": 0, "ret20": 0, "upfrac": None,
+                "safe": None,
                 "state": "数据缺失（有效样本 %d <%d，环境维缺维降权）"
-                % (len(above), POOL_GATE_MIN)}
+                         % (len(above), POOL_GATE_MIN)}
     breadth = sum(above) / len(above)
     med = float(pd.Series(ret20).median())
     upfrac = sum(r > 0 for r in ret20) / len(ret20)
@@ -457,7 +458,11 @@ def market_env(closes):
             breadth * 100, med * 100)
         safe = True
     return {"score": score, "breadth": round(breadth, 3),
-            "ret20": round(med, 4), "safe": safe, "state": state}
+            "ret20": round(med, 4),
+            # [20261014_m metrics-dev] upfrac 落快照：三档影子对照
+            # gate_shadow_collect.read_qpzm 读此字段；纯增量、不影响打分
+            "upfrac": round(upfrac, 4),
+            "safe": safe, "state": state}
 
 
 def _jev_market(entries, scope):
@@ -1683,6 +1688,24 @@ def run_daily(push=True):
         _qdb.spawn_backtest()
     except Exception as _ex:
         print("BATCH fail: %s" % str(_ex)[:120])
+    # 2026-10-14 源缺失告警（alert-loop P1）：cross 四源健康挂每日批
+    # 产出口之后——任一源 stale/missing 不再静默（复用韧性改造写好的
+    # source_health/push_source_health_alert，此前仅门户请求可见）。
+    # 去重复用 guard_alert 12h 状态（键=坏源清单，状态变化即新告警，
+    # 键前缀 cross_src_ 与守卫拦截告警区分）；巡检异常不反噬日批 rc。
+    try:
+        import cross_poll as _cp
+        import guard_alert as _ga
+        _h = _cp.source_health()
+        print("源健康巡检: %s" % _cp.health_summary_line(_h), flush=True)
+        _sent_probe, _txt = _cp.push_source_health_alert(_h, send=False)
+        if _txt:  # 有坏源（全 ok 时 _txt 为空不告警）
+            _key = "cross_src_" + ",".join(sorted(
+                "%s:%s" % (_sid, _v["status"]) for _sid, _v in _h.items()
+                if _v["status"] != "ok"))
+            _ga.alert_once(_key, _txt, send=True)
+    except Exception as _ex:
+        print("SRC-HEALTH alert fail: %s" % str(_ex)[:120])
 
 
 if __name__ == "__main__":

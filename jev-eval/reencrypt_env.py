@@ -15,9 +15,16 @@ import sys
 from migrate_env_dpapi import (PLAIN_FILE, ENC_FILE, parse_plain,
                                dpapi_protect, atomic_write_json, do_verify)
 
-secrets, _ = parse_plain(PLAIN_FILE)
-enc = {k: base64.b64encode(dpapi_protect(v.encode("utf-8"))).decode("ascii")
-       for k, v in secrets.items()}
-atomic_write_json(ENC_FILE, enc)
-print("re-encrypt done: %d keys -> %s" % (len(enc), ENC_FILE))
-sys.exit(do_verify())
+def main() -> int:
+    # 审计修复（2026-10-14）：重加密逻辑包进 main，import 本模块不再有副作用
+    #（原先模块级即执行 DPAPI 重加密 + 覆盖 .enc，被误 import 会重写密钥库）
+    secrets, _ = parse_plain(PLAIN_FILE)
+    enc = {k: base64.b64encode(dpapi_protect(v.encode("utf-8"))).decode("ascii")
+           for k, v in secrets.items()}
+    atomic_write_json(ENC_FILE, enc)
+    print("re-encrypt done: %d keys -> %s" % (len(enc), ENC_FILE))
+    return do_verify()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

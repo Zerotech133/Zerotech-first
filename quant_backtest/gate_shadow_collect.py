@@ -182,12 +182,14 @@ def read_qd(qd_cache=QD_CACHE, series_fp=SERIES_FP):
 
 
 def read_qpzm(snap_fp=QPZM_SNAP):
-    """青萍源 → (date, codes, breadth, med20, src)。闸门前口径。
+    """青萍源 → (date, codes, breadth, med20, upfrac, src)。闸门前口径。
 
     判例（rps_resonance.market_env）：env.breadth=close>MA20 占比、
-    ret20=全市场 20 日涨幅中位（即 med20）、upfrac 参与打分但快照未落
-    → upfrac 恒 None。虚拟闸门 = breadth<θ 或 med20<-0.03（med20 条件
-    与产线一致不动，只虚拟宽度档）。
+    ret20=全市场 20 日涨幅中位（即 med20）、upfrac=20 日上涨占比
+    [20261014_m 起 market_env 已落快照；旧快照无此字段 → None，
+    待次日批自然落盘]。
+    虚拟闸门 = breadth<θ 或 med20<-0.03（med20 条件与产线一致不动，
+    只虚拟宽度档）。
     """
     with open(snap_fp, encoding="utf-8") as f:
         s = json.load(f)
@@ -201,6 +203,12 @@ def read_qpzm(snap_fp=QPZM_SNAP):
     br = float(env_cn["breadth"])
     med = env_cn.get("ret20")
     med = float(med) if med is not None else None
+    # [20261014_m metrics-dev] upfrac 透传（缺失/非法 → None，不阻塞）
+    try:
+        upf = env_cn.get("upfrac")
+        upf = float(upf) if upf is not None else None
+    except Exception:
+        upf = None
     codes = []
     for r in (s.get("res") or []):
         if r.get("market") != "CN":
@@ -208,7 +216,7 @@ def read_qpzm(snap_fp=QPZM_SNAP):
         # 闸门前信号全集：买入/观察/回避（环境闸门）都算命中过
         if str(r.get("action", "")).startswith(("买入", "观察", "回避")):
             codes.append(str(r.get("code")))
-    return date, sorted(codes), br, med, str(snap_fp)
+    return date, sorted(codes), br, med, upf, str(snap_fp)
 
 
 def read_cross(cross_glob=CROSS_GLOB, series_fp=SERIES_FP):
@@ -260,7 +268,8 @@ def blocked_at(theta, codes, breadth=None, med20=None, strategy="qd"):
     return (len(codes), list(codes)) if hit else (0, [])
 
 
-def _mk_rows(date, strategy, n_total, codes, breadth, med20, src):
+def _mk_rows(date, strategy, n_total, codes, breadth, med20, src,
+             upfrac=None):
     rows = []
     for th in THETAS:
         nb, bc = blocked_at(th, codes, breadth, med20, strategy)
@@ -271,7 +280,8 @@ def _mk_rows(date, strategy, n_total, codes, breadth, med20, src):
             "blocked_codes": sorted(bc),
             "breadth": None if breadth is None else round(breadth, 4),
             "med20": None if med20 is None else round(med20, 4),
-            "upfrac": None,               # 产线快照未落 upfrac，占位
+            # [20261014_m] qpzm 源透传 upfrac；qd/cross 无此字段保持 None
+            "upfrac": None if upfrac is None else round(upfrac, 4),
             "source_status": "ok", "src": str(src), "fwd": None,
         })
     return rows
@@ -307,9 +317,9 @@ def collect_run(strategies=("qd", "qpzm", "cross"), out=SHADOW,
                     rows = _mk_rows(date, st, len(codes), codes, br,
                                     None, src)
                 elif st == "qpzm":
-                    date, codes, br, med, src = read_qpzm(qpzm_snap)
+                    date, codes, br, med, upf, src = read_qpzm(qpzm_snap)
                     rows = _mk_rows(date, st, len(codes), codes, br,
-                                    med, src)
+                                    med, src, upfrac=upf)
                 elif st == "cross":
                     date, codes, br, src = read_cross(cross_glob, series_fp)
                     rows = _mk_rows(date, st, len(codes), codes, br,

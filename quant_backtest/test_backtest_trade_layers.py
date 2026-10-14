@@ -7,6 +7,8 @@
 import os
 import sys
 
+import pytest
+
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
