@@ -440,7 +440,9 @@ def handle_cmd(text, message_id, open_id=""):
         elif low.startswith("选股"):
             tier = "T1"
             for t in ("T1", "T2", "全部"):
-                if t in text:
+                # K-STOCK-400：在 low 里匹配——原对 text 匹配，小写
+                # "选股 t2" 命不中 T2，静默回退 T1 清单。
+                if t.lower() in low:
                     tier = t
             reply_card(card_picks(tier), message_id)
         elif low.startswith("详情"):

@@ -101,7 +101,12 @@ def send_content(content, msg_type):
                  "--content", content],
                 capture_output=True, text=True, encoding="utf-8", timeout=30)
             try:
-                ok = json.loads(r.stdout).get("ok") is True
+                # K-STOCK-400：取末行 JSON——lark-cli stdout 若混入告警/
+                # 版本提示/BOM，整体解析必败 → 误判失败 → 换 user 域重发
+                # → 用户双收。取末行与 feishu_bot_ws._er_cli 判例对齐。
+                ok = json.loads(
+                    (r.stdout or "").strip().splitlines()[-1]
+                ).get("ok") is True
             except Exception:
                 ok = False
             if ok:

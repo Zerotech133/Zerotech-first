@@ -53,6 +53,12 @@ def normalize_code(code):
     if m:
         return m.group(2) + m.group(1)
     if c.isdigit() and len(c) == 6:
+        # K-STOCK-400：920 段=北交所 2024-05 起新股号段（原缺映射默认
+        # 落 sz，下钻查错市场）；900 段仍为沪市 B 股，维持 sh。
+        if c[:2] == "92":
+            return "bj" + c
+        if c[:2] == "90":
+            return "sh" + c
         return {"6": "sh", "5": "sh", "0": "sz", "3": "sz",
                 "4": "bj", "8": "bj"}.get(c[0], "sz") + c
     return c

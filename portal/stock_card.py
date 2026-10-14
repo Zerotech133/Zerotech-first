@@ -104,7 +104,9 @@ def normalize_code(raw):
     if low[:2] in ("sh", "sz", "bj") and len(low) >= 8:
         return f"{low[2:8]}.{low[:2].upper()}"
     if len(raw) == 6 and raw.isdigit():
-        suf = "SH" if raw[0] == "6" else ("BJ" if raw[0] in "48" else "SZ")
+        # K-STOCK-400：920 段=北交所（同 quote_snapshot.normalize_code 根修）
+        suf = "SH" if raw[0] == "6" else (
+            "BJ" if raw[0] in "48" or raw[:2] == "92" else "SZ")
         return f"{raw}.{suf}"
     return raw.upper()
 
