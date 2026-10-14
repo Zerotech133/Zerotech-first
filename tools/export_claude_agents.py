@@ -62,15 +62,40 @@ def scope_block(agent):
     return "\n".join(lines)
 
 
+def profile_block(agent):
+    """【从业画像】段：attributes 注入 prompt 文本（K-ORG-076·F6a 验收
+    「任意岗可拉起子代理·人设与注册表一致」——消费端只读 prompt 也能拿到
+    从业经验/擅长/已学知识库，不依赖结构化字段是否被读取）。"""
+    at = agent.get("attributes") or {}
+    exp = (at.get("experience") or "").strip()
+    spec = [s for s in (at.get("specialties") or []) if str(s).strip()]
+    kn = [k for k in (at.get("knowledge") or []) if str(k).strip()]
+    if not (exp or spec or kn):
+        return ""
+    lines = ["", "## 从业画像"]
+    if exp:
+        lines.append("- 从业经验：%s" % exp)
+    if spec:
+        lines.append("- 擅长：%s" % "、".join(spec))
+    if kn:
+        lines.append("- 已学知识库：%s" % "、".join(kn))
+    return "\n".join(lines)
+
+
 def main():
     bundle = json.load(open(BUNDLE_PATH, encoding="utf-8"))
     out = {}
     for aid, a in bundle["agents"].items():
+        parts = [(a.get("prompt") or "").rstrip()]
+        pb = profile_block(a)
+        if pb:
+            parts.append(pb)
+        parts.append(scope_block(a))
         out[aid] = {
             "description": "%s·%s·%s" % (a.get("name", aid),
                                          a.get("grade", ""),
                                          a.get("team_desc") or a.get("grade_note", "")),
-            "prompt": (a.get("prompt") or "").rstrip() + "\n" + scope_block(a),
+            "prompt": "\n".join(parts),
             "tools": tools_for(a),
             "model": model_for(a),
             # K-ORG-059: 属性透传（从业经验/擅长/知识库）——F6a 子代理化消费面
@@ -86,6 +111,7 @@ def main():
     for aid, e in out.items():
         assert all(e.get(k) for k in ("description", "prompt", "tools", "model")), aid
         assert "工作边界" in e["prompt"], aid
+        assert "从业画像" in e["prompt"], aid  # K-ORG-076: 属性已入 prompt 文本
     assert out["QA1"]["tools"] == AUDIT_TOOLS and out["SEC1"]["tools"] == AUDIT_TOOLS
     assert out["SEC2"]["tools"] == AUDIT_TOOLS  # K-ORG-052: 走形检查岗只读
     assert out["A0A"]["model"] == LITE and out["SEC2"]["model"] == SMART
