@@ -40,7 +40,9 @@ REGISTRY = {
     11434: "Ollama",
     3307: "菜鸟MySQL(Docker)",
     8093: "数据仓管理预览(daily_ui_preview_server.py)",
-    8096: "Codex实验·智能体学院签名审核(Documents,非平台栈)",
+    8096: "KM飞书联动(km_feishu_hub.py)",  # K-STOCK-394 归因纠正：原登记 Codex实验已废弃，实际长期持有者=km_hub
+    8095: "picks定时发布调度(publish_schedule_server.py)",
+    8097: "推送中台总览(push_admin_server.py)",
     8123: "claudemind server(桌面第三方,非平台栈)",
 }
 
@@ -109,15 +111,19 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "weixin", "wechat", "gameviewer", "tailscale", "dubbo",
              "nvidia", "qq", "feishu", "dingtalk", "quark", "tdxw",
              "yundetect", "vmms", "wpscloudsvr", "sgtool",
-             "sogoucloud", "baidunetdiskhost")
+             "sogoucloud", "baidunetdiskhost", "trae")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
+# 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免
+# 否则 IDE 在线期间 check_ports --strict 必挂评审门。
 
 
 # 注册但允许离线的口（手动/按需型服务：strict 只防被抢，不因闲置判负）
 # 9104 lark_card 于 2026-10-12 老田拍板转 OPTIONAL_OFFLINE（无启动链，
 # 卡片回调疑被 feishu_bot_ws 长连接替代；转按需语义，strict 仍防被抢）
-OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8899, 9104}
+# 2026-10-14 K-STOCK-394：8787 Hermes WebUI 无 keepalive 链，start_hermes_bg.py
+# 幂等按需拉起（K271 配方），同 lark_card 按需语义入列，否则 strict 必挂。
+OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8787, 8899, 9104}
 
 
 def main():

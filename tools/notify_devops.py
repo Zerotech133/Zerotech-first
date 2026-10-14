@@ -25,7 +25,7 @@ from feishu_card_v2 import send_card  # noqa: E402  复用凭证链与 OpenAPI �
 sys.path.insert(0, HERE)
 from events import today_summary  # noqa: E402
 
-PORTAL_BASE = "http://100.110.192.72:8080"  # Tailscale 跨设备直达（指挥台经 nginx 反代）
+PORTAL_BASE = "http://127.0.0.1:8734"  # K-STOCK-113 立宪唯一入口；K-STOCK-140 判例：8080 随 052 收敛死链禁用（PC 端飞书直达；手机未入 Tailscale 属已知判例死路）
 
 _KD = {"task_start": ("🚀 建单", "blue"), "commit": ("📝 提交", "grey"),
        "blocked": ("⛔ 卡壳", "red"), "merge_done": ("✅ 合并", "green"),
