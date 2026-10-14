@@ -327,6 +327,7 @@
           <div class="btn-row">
             <button class="btn btn-primary" onclick="myRunBtn()">⚡ 重跑回测</button>
             <button class="btn btn-primary" onclick="mySaveEdit()">💾 保存修改</button>
+            <button class="btn btn-gray" onclick="cmpStart()">⚖️ 对比</button>
             <button class="btn btn-gray" onclick="myExport()">📤 导出</button>
             <button class="btn btn-gray" onclick="myShare()">🔗 复制分享</button>
             <button class="btn btn-gray" onclick="myDelBtn()">🗑 删除</button>
@@ -513,6 +514,8 @@ function bindStratCards(){
   document.querySelectorAll('.strat-card:not(.disabled)').forEach(c=>{
     if(c._bound)return; c._bound=true;
     c.addEventListener('click',()=>{
+      // 369：对比模式下点 my_ 卡=勾选/取消勾选（不切面板）
+      if(window._cmpMode&&String(c.dataset.s||'').startsWith('my_')){cmpToggleSel(c.dataset.s);return;}
       document.querySelectorAll('.strat-card').forEach(x=>x.classList.remove('selected'));
       c.classList.add('selected');S.cur=c.dataset.s;
       showExecPanel(S.cur);
@@ -1567,6 +1570,108 @@ async function myShare(){
     toast('已复制到剪贴板——粘贴给朋友即可复现同款参数');
   }catch(e){prompt('浏览器未授权剪贴板，请手动复制：',txt);}
 }
+
+// ===== K-STOCK-369 回测结果对比视图：我的策略多选 → 串行真跑 → delta 表 =====
+// 🔴 必须用 var（挂 window）：onclick/handler 跨作用域读 window._cmpMode，let 全局不挂 window（判例）
+var _cmpMode=false, _cmpSel=[], _cmpBusy=false;
+function cmpStart(){
+  if(_cmpBusy){toast('对比跑批中…');return;}
+  _cmpMode=true; _cmpSel=[];
+  const m=MY_STRATS[String(S.cur||'')];
+  if(m)_cmpSel.push(String(S.cur));
+  cmpPaintCards(); cmpBar();
+  toast('对比模式：再点其他「我的策略」卡加入（2~4 条为宜），点浮条「开始对比」');
+}
+function cmpExit(){
+  _cmpMode=false; _cmpSel=[];
+  cmpPaintCards(); const b=$('cmp-bar'); if(b)b.remove();
+}
+function cmpToggleSel(sid){
+  const i=_cmpSel.indexOf(sid);
+  if(i>=0)_cmpSel.splice(i,1); else if(_cmpSel.length<4)_cmpSel.push(sid); else {toast('最多对比 4 条');return;}
+  cmpPaintCards(); cmpBar();
+}
+function cmpPaintCards(){
+  document.querySelectorAll('.strat-card').forEach(c=>{
+    const on=_cmpSel.includes(c.dataset.s);
+    c.classList.toggle('cmp-on',on);
+    c.style.outline=on?'2px solid var(--link)':'';
+  });
+}
+function cmpBar(){
+  let b=$('cmp-bar');
+  if(!b){
+    b=document.createElement('div'); b.id='cmp-bar';
+    b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99;background:var(--bg-panel,#1a1f2a);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 6px 24px rgba(0,0,0,.35);font-size:12.5px';
+    document.body.appendChild(b);
+  }
+  b.innerHTML='<b>⚖️ 对比 ('+_cmpSel.length+' 条)</b>'
+    +'<button class="btn btn-primary" onclick="cmpRun()" '+( _cmpSel.length<2?'disabled style="opacity:.5"':'')+'>开始对比</button>'
+    +'<button class="btn btn-gray" onclick="cmpExit()">取消</button>';
+}
+async function cmpRun(){
+  if(_cmpBusy)return;
+  if(_cmpSel.length<2){toast('至少选 2 条');return;}
+  _cmpBusy=true;
+  const sids=_cmpSel.slice();   // 369：先存副本——cmpExit 会清空 _cmpSel
+  cmpExit();
+  const out=$('nl-out');
+  out.style.display='block';   // 369：nl-out 初始 display:none——对比结果也要可见（nlParse 之外的入口都得自己开）
+  out.insertAdjacentHTML('beforeend','<div id="cmp-prog" style="margin-top:10px;border-top:1px dashed var(--border);padding-top:8px;font-size:12.5px">⚖️ 对比开始（'+sids.length+' 条串行真跑，每条约 35s~1min）…</div>');
+  out.scrollIntoView({behavior:'smooth',block:'center'});
+  const rows=[];
+  try{
+    for(const sid of sids){
+      const m=MY_STRATS[sid]; if(!m)continue;
+      const prog=$('cmp-prog');
+      if(prog)prog.innerHTML='⚖️ 正在跑 <b>'+esc(m.name||sid)+'</b>（'+(rows.length+1)+'/'+sids.length+'）…';
+      const p=Object.assign({},NL_DEFAULTS,m.params||{});
+      const r=await api('/api/bt2_run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+      if(!(r&&r.ok&&r.job&&r.job.id))throw new Error('提交失败: '+((r&&r.error)||'?'));
+      const s=await cmpPollOne(r.job.id,m.name||sid);
+      rows.push({name:m.name||sid,s:s});
+    }
+    cmpRender(out,rows);
+  }catch(e){
+    const pr=$('cmp-prog'); if(pr)pr.innerHTML='❌ 对比中断：'+esc(e.message||String(e));
+  }finally{_cmpBusy=false;}
+}
+async function cmpPollOne(id,label){
+  for(let i=0;i<240;i++){
+    await new Promise(rs=>setTimeout(rs,2000));
+    const lj=await api('/api/bt2_jobs').catch(()=>null);
+    const j=(lj&&lj.jobs||[]).find(x=>x.id===id);
+    if(!j)continue;
+    if(j.status==='running')continue;
+    if(j.status==='done'){
+      const full=await api('/api/bt2_job?id='+encodeURIComponent(id)).catch(()=>null);
+      if(full&&full.ok&&full.summary)return full.summary;
+      throw new Error(label+' 结果读取失败');
+    }
+    throw new Error(label+' 跑批 '+j.status);
+  }
+  throw new Error(label+' 轮询超时（8min）');
+}
+function cmpRender(out,rows){
+  const base=rows[0];
+  const fmt=(v,unit)=>esc(String(v))+ (unit||'');
+  const lines=rows.map((r,idx)=>{
+    const s=r.s||{}; const d=idx===0?'—':(function(){const v=Math.round(((s.total_return_pct||0)-(base.s.total_return_pct||0))*100)/100;return (v>=0?'+':'')+v+'pp';})();
+    return '<tr><td style="padding:4px 8px">'+esc(r.name)+'</td>'
+      +'<td style="padding:4px 8px;text-align:right;color:var(--text)"><b>'+fmt(s.total_return_pct,'%')+'</b></td>'
+      +'<td style="padding:4px 8px;text-align:right">'+d+'</td>'
+      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.profit_factor,'')+'</td>'
+      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.n_trades,'')+'</td>'
+      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.max_drawdown_pct,'%')+'</td>'
+      +'<td style="padding:4px 8px;text-align:right">'+fmt(s.avg_invested_pct,'%')+'</td></tr>';
+  }).join('');
+  const pr=$('cmp-prog');
+  if(pr)pr.outerHTML='<div style="margin-top:10px;border-top:1px dashed var(--border);padding-top:8px;font-size:12.5px">'
+    +'<b>⚖️ 对比结果</b>（基准＝第 1 条「'+esc(base.name)+'」，delta=收益差 pp）'
+    +'<table style="width:100%;border-collapse:collapse;margin-top:6px;font-size:12px">'
+    +'<tr style="color:var(--text-dim)"><th style="text-align:left;padding:4px 8px">策略</th><th style="text-align:right;padding:4px 8px">收益%</th><th style="text-align:right;padding:4px 8px">delta</th><th style="text-align:right;padding:4px 8px">PF</th><th style="text-align:right;padding:4px 8px">笔数</th><th style="text-align:right;padding:4px 8px">回撤%</th><th style="text-align:right;padding:4px 8px">仓位%</th></tr>'
+    +lines+'</table></div>';
+}
 async function myDelBtn(){
   const mid=String(S.cur||'');
   if(!MY_STRATS[mid]){toast('先在卡墙点选一个「我的策略」');return;}
@@ -1627,6 +1732,7 @@ async function nlRun(){
   const p=Object.assign({},NL_DEFAULTS,_nlParams);
   if(!p.d0||!p.d1){toast('这句话没识别出时间窗口——补一句「最近一年」再解析');return;}
   const out=$('nl-out');
+  out.style.display='block';   // 369：重跑/保存外的直接入口也要打开输出区（隐性 bug：nl-out 初始 display:none）
   out.insertAdjacentHTML('beforeend','<div id="nl-job" style="margin-top:8px;font-size:12px">提交中…</div>');
   _nlPolling=true;
   try{
