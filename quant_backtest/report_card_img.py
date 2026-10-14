@@ -39,6 +39,10 @@ _PLOT_LOCK = threading.Lock()
 
 
 def _find_cli():
+    # K-STOCK-396 exe 解耦：仓库 bin/ 固定副本优先，插件目录扫描回退。
+    _bin = os.path.join(os.path.dirname(HERE), "bin", "lark-cli.exe")
+    if os.path.isfile(_bin):
+        return _bin
     if not os.path.isdir(LARK_ROOT):
         return None
     for d in sorted(os.listdir(LARK_ROOT), reverse=True):

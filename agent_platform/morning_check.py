@@ -142,6 +142,18 @@ def main():
     if stale:
         print("    **[警示]** %d 项产物断言未过：%s" % (len(stale), "、".join(stale)))
 
+    # 4.6 lark-cli 解耦副本存在性（K-STOCK-396 A1：bin/ 固定副本不受 Trae
+    #     插件目录升级/清除影响；缺失则 B 线回退插件扫描，插件目录一消失即断链）
+    print("\n[4.6] lark-cli 解耦副本（bin/lark-cli.exe）：")
+    _cli = BASE.parent / "bin" / "lark-cli.exe"
+    if _cli.exists():
+        print("    ✅ 存在（%.1f MB，晨检口径只验存在性）"
+              % (_cli.stat().st_size / 1048576))
+    else:
+        print("    ❌ 缺失——B 线回退插件目录，产线断链风险（10-13 巡检判例），"
+              "从插件 bin 拷贝回 bin/ 即恢复")
+        stale.append("lark-cli 解耦副本缺失")
+
     # 5. 三判据快照（复用 eval_shadow CLI，联网取现价；审计修正 K-STOCK-021：
     #    eval 超时/异常不得崩掉整个晨检——否则 --push 简报也发不出）
     print("\n[5] 三判据快照：")

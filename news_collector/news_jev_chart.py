@@ -156,16 +156,23 @@ def render(now, items):
     plt.close(fig)
 
 
+def _find_cli():
+    """lark-cli 解析（K-STOCK-396 解耦）：仓库 bin/ 固定副本优先，
+    插件目录版本扫描回退。找不到返回 None。"""
+    _bin = os.path.join(os.path.dirname(HERE), "bin", "lark-cli.exe")
+    if os.path.isfile(_bin):
+        return _bin
+    if os.path.isdir(LARK_ROOT):
+        for d in sorted(os.listdir(LARK_ROOT), reverse=True):
+            p = os.path.join(LARK_ROOT, d, "bin", "lark-cli.exe")
+            if os.path.isfile(p):
+                return p
+    return None
+
+
 def upload_key():
     """PNG → lark-cli 上传 → image_key（失败 None）。"""
-    if not os.path.isdir(LARK_ROOT):
-        return None
-    exe = None
-    for d in sorted(os.listdir(LARK_ROOT), reverse=True):
-        p = os.path.join(LARK_ROOT, d, "bin", "lark-cli.exe")
-        if os.path.isfile(p):
-            exe = p
-            break
+    exe = _find_cli()
     if not exe:
         return None
     try:
@@ -188,7 +195,8 @@ def upload_key():
 
 
 def _lark(args, timeout=90):
-    r = subprocess.run(["lark-cli"] + args, capture_output=True,
+    r = subprocess.run([(_find_cli() or "lark-cli")] + args,
+                       capture_output=True,
                        text=True, encoding="utf-8", timeout=timeout)
     t = r.stdout or ""
     i = t.find("{")
@@ -328,13 +336,14 @@ def refresh_doc(now, items):
     except Exception:
         cfg = {}
     doc = cfg.get("jev_doc_url") or ""
+    exe = _find_cli() or "lark-cli"  # K-STOCK-396：解耦副本优先
     tmp = os.path.join(HERE, "_jev_doc_tmp.md")
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(_md_h5(now, items))
     try:
         if not doc:  # 首次建文档
             r = subprocess.run(
-                ["lark-cli", "docs", "+create", "--as", "user",
+                [exe, "docs", "+create", "--as", "user",
                  "--doc-format", "markdown", "--content", "@./_jev_doc_tmp.md",
                  "--format", "json"],
                 capture_output=True, text=True, timeout=120, cwd=HERE)
@@ -348,7 +357,7 @@ def refresh_doc(now, items):
                 json.dump(cfg, f, ensure_ascii=False, indent=2)
         else:
             r = subprocess.run(
-                ["lark-cli", "docs", "+update", "--as", "user", "--doc", doc,
+                [exe, "docs", "+update", "--as", "user", "--doc", doc,
                  "--command", "overwrite", "--doc-format", "markdown",
                  "--content", "@./_jev_doc_tmp.md", "--format", "json"],
                 capture_output=True, text=True, timeout=120, cwd=HERE)
@@ -356,7 +365,7 @@ def refresh_doc(now, items):
                     and '"ok":true' not in (r.stdout or ""):
                 return None
         subprocess.run(  # 文档尾部插图表 PNG（4 步编排，失败不影响表格）
-            ["lark-cli", "docs", "+media-insert", "--as", "user",
+            [exe, "docs", "+media-insert", "--as", "user",
              "--doc", doc, "--file", PNG, "--align", "center",
              "--caption", "JEV 判断图表", "--format", "json"],
             capture_output=True, text=True, timeout=120, cwd=HERE)

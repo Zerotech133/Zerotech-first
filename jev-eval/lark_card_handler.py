@@ -333,7 +333,8 @@ def main() -> int:
     log("飞书卡片回调监听器启动")
 
     proc = subprocess.Popen(
-        ["lark-cli", "event", "consume", "card.action.trigger", "--as", "bot"],
+        [jc.lark_cli_bin(), "event", "consume",
+         "card.action.trigger", "--as", "bot"],  # K-STOCK-396：bin/ 固定副本优先
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,  # 合并单流：防 stderr 缓冲填满导致子进程阻塞死锁
         stdin=subprocess.PIPE,     # 保持 stdin 管道打开，防止 lark-cli EOF 退出
@@ -372,6 +373,10 @@ def main() -> int:
             ready = True
             log("事件监听就绪")
             break
+        if line.strip():
+            # K-STOCK-396 A2：启动期诊断行落 card.log——10-13 事故中
+            # stderr 的 token_missing 错误信封被 continue 吞掉，排障多耗数轮。
+            log(f"cli-diag {line.strip()[:300]}")
     if not ready:
         log(f"等待 ready 标记超时（{READY_TIMEOUT_SEC}s），终止子进程退出", level="error")
         try:
@@ -402,7 +407,10 @@ def main() -> int:
             continue
         event = _looks_like_event(line)
         if event is None:
-            continue  # 诊断行（ready/心跳/诊断日志），忽略
+            # K-STOCK-396 A2：诊断行落 card.log（原 continue 丢弃吞错——
+            # 错误信封/WARN drop 混在合并流里，量少可全量落盘）
+            log(f"cli-diag {line[:300]}")
+            continue
         try:
             with new_trace("card"):  # P1-2：单事件处理链路串联（鉴权→DB→卡片）
                 handle_event(event)

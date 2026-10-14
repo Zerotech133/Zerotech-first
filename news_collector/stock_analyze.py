@@ -28,8 +28,13 @@ LOG = os.path.join(HERE, "logs", "analyze.log")
 
 
 def _lark_exe():
-    """lark-cli 解析：PATH 优先；计划任务 PATH 无插件目录时按插件
-    版本通配回退（trae-remote lark 插件 bin 路径带版本号会漂移）。"""
+    """lark-cli 解析：仓库 bin/ 固定副本优先（K-STOCK-396 解耦）；PATH
+    次之；计划任务 PATH 无插件目录时按插件版本通配回退（trae-remote
+    lark 插件 bin 路径带版本号会漂移）。"""
+    _bin = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "bin", "lark-cli.exe")
+    if os.path.isfile(_bin):
+        return _bin
     p = shutil.which("lark-cli")
     if p:
         return p

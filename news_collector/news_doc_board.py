@@ -16,6 +16,22 @@ DB = os.path.join(HERE, "news.db")
 CFG_PATH = os.path.join(HERE, "news_config.json")
 
 
+def _find_cli():
+    """lark-cli 解析（K-STOCK-396 解耦）：仓库 bin/ 固定副本优先，
+    插件目录版本扫描回退，找不到回退裸名（PATH 侥幸）。"""
+    _bin = os.path.join(os.path.dirname(HERE), "bin", "lark-cli.exe")
+    if os.path.isfile(_bin):
+        return _bin
+    root = os.path.join(os.path.expanduser("~"), ".trae-cn", "plugins",
+                        "trae-remote-official", "lark")
+    if os.path.isdir(root):
+        for d in sorted(os.listdir(root), reverse=True):
+            p = os.path.join(root, d, "bin", "lark-cli.exe")
+            if os.path.isfile(p):
+                return p
+    return "lark-cli"
+
+
 def _cfg():
     try:
         with open(CFG_PATH, encoding="utf-8") as f:
@@ -199,7 +215,7 @@ def refresh():
         with open(tmp, "w", encoding="utf-8") as f:
             f.write(build_md())
         r = subprocess.run(
-            ["lark-cli", "docs", "+update", "--as", "user", "--doc", doc,
+            [_find_cli(), "docs", "+update", "--as", "user", "--doc", doc,
              "--command", "overwrite", "--doc-format", "markdown",
              "--content", "@./_board_tmp.md", "--format", "json"],
             capture_output=True, text=True, timeout=120, cwd=HERE)
