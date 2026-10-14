@@ -34,6 +34,11 @@
    "attributes": {
     "knowledge": [
      "金融专业知识库.md"
+    ],
+    "experience": "投研部选股团队成员（成长档），参与多模型投票选股与盘后复盘，具备独立判断记录",
+    "specialties": [
+     "选股投票",
+     "盘面复盘"
     ]
    }
   },
@@ -63,6 +68,14 @@
      "agent/T2/*",
      "dept/invest/observation"
     ]
+   },
+   "attributes": {
+    "experience": "投研部选股团队成员（成长档），多模型投票与候选池交叉验证",
+    "specialties": [
+     "选股投票",
+     "交叉验证"
+    ],
+    "knowledge": []
    }
   },
   {
@@ -91,6 +104,14 @@
      "agent/N1/*",
      "dept/invest/observation"
     ]
+   },
+   "attributes": {
+    "experience": "投研部选股团队校验岗，候选票数据核验与投票一致性检查",
+    "specialties": [
+     "数据核验",
+     "一致性检查"
+    ],
+    "knowledge": []
    }
   },
   {
@@ -119,6 +140,14 @@
      "agent/F1/*",
      "dept/invest/observation"
     ]
+   },
+   "attributes": {
+    "experience": "投研部选股团队成员，金融数据分析与候选筛选",
+    "specialties": [
+     "金融数据",
+     "候选筛选"
+    ],
+    "knowledge": []
    }
   },
   {
@@ -158,6 +187,11 @@
    "attributes": {
     "knowledge": [
      "缠论技术分析知识库.md"
+    ],
+    "experience": "投研部技术分析岗，缠论结构识别与技术面研判辅助",
+    "specialties": [
+     "缠论分析",
+     "技术面研判"
     ]
    }
   }

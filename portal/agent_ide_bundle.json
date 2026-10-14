@@ -1,12 +1,12 @@
 {
- "generated": "2026-10-14 08:00",
+ "generated": "2026-10-14 08:20",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 29,
   "departments": 12,
   "prompt_ok": 29,
   "prompt_miss": [],
-  "workorders_doing": 4,
+  "workorders_doing": 5,
   "workorders_review": 19
  },
  "workorders": [
@@ -215,6 +215,15 @@
    "owner": "unknown-agent",
    "branch": "task/K-STOCK-307",
    "created": "2026-10-14 01:05:33",
+   "project": "general"
+  },
+  {
+   "id": "K-STOCK-365",
+   "desc": "JEV复核门P0修复:unreviewed补判通道+毕业条件口径统一(剔CN为准)+REJECT/CN-FOCUS样本缺位归因",
+   "status": "doing",
+   "owner": "unknown-agent",
+   "branch": "task/K-STOCK-365",
+   "created": "2026-10-14 08:17:22",
    "project": "general"
   }
  ],
@@ -1165,8 +1174,12 @@
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "20 年从业经验（20年档：训练/评估独立交付）",
-    "specialties": [],
+    "experience": "模型训练/评估工程师（20 年档），模型训练与评估独立交付，执行版本化保护律（新版本登记 domain/model_registry）",
+    "specialties": [
+     "模型训练",
+     "模型评估",
+     "版本登记"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1217,8 +1230,12 @@
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "20 年从业经验（20年档：策略研发独立交付）",
-    "specialties": [],
+    "experience": "量化策略研发（20 年档），strategies.json 注册制新增，回测判据前置自检——判据不过即终止留档",
+    "specialties": [
+     "策略研发",
+     "回测判据",
+     "策略注册"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1269,8 +1286,12 @@
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "20 年从业经验（20年档：回测复核独立表态）",
-    "specialties": [],
+    "experience": "回测工程师（20 年档），BacktestEngine 执行与冻结判据复核，Go/No-Go 结论独立表态",
+    "specialties": [
+     "回测执行",
+     "判据复核",
+     "Go/No-Go 表态"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1317,8 +1338,13 @@
    "projects": [],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "30 年从业经验（30年档：tokens 设计语言作者位）",
-    "specialties": [],
+    "experience": "前端架构师（30 年档），tokens.css 设计语言作者位，门户/大屏版面架构宪法执行，改动必过 node 校验",
+    "specialties": [
+     "前端架构",
+     "tokens 纪律",
+     "大屏开发",
+     "版面宪法"
+    ],
     "knowledge": []
    },
    "memory": null
@@ -1472,8 +1498,12 @@
    "projects": [],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "20 年从业经验（20年档：判例沉淀/谱系维护）",
-    "specialties": [],
+    "experience": "技术文档工程师（20 年档），docs/plans 计划谱系与 INDEX 索引总账维护，判例（撞号/行尾/回滚死引用）入册沉淀",
+    "specialties": [
+     "计划谱系",
+     "判例沉淀",
+     "索引总账"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1515,8 +1545,12 @@
    "projects": [],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "20 年从业经验（20年档：后端独立交付主力）",
-    "specialties": [],
+    "experience": "后端开发（20 年档），常规功能/接口/脚本独立交付主力，疑难上报 DEV1",
+    "specialties": [
+     "后端交付",
+     "接口开发",
+     "脚本开发"
+    ],
     "knowledge": []
    },
    "memory": null
@@ -1547,8 +1581,12 @@
    "projects": [],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "10 年从业经验（10年档：标准执行位）",
-    "specialties": [],
+    "experience": "后端开发（10 年档），标准执行/批量修改/格式化任务，产出交 E2+ 复核",
+    "specialties": [
+     "标准执行",
+     "批量修改",
+     "格式化"
+    ],
     "knowledge": []
    },
    "memory": null
@@ -1579,8 +1617,12 @@
    "projects": [],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "20 年从业经验（20年档：前端页面交付主力）",
-    "specialties": [],
+    "experience": "前端开发（20 年档），常规页面/图表交付主力，tokens 纪律同 DEV5，疑难上报 DEV5",
+    "specialties": [
+     "前端页面",
+     "图表开发",
+     "tokens 纪律"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1628,6 +1670,11 @@
    "attributes": {
     "knowledge": [
      "金融专业知识库.md"
+    ],
+    "experience": "投研部选股团队成员（成长档），参与多模型投票选股与盘后复盘，具备独立判断记录",
+    "specialties": [
+     "选股投票",
+     "盘面复盘"
     ]
    },
    "memory": {
@@ -1713,8 +1760,11 @@
    "projects": [],
    "team_desc": "投研部选股团队（菜鸟 ai_team_role 独立版）",
    "attributes": {
-    "experience": "",
-    "specialties": [],
+    "experience": "投研部选股团队成员（成长档），多模型投票与候选池交叉验证",
+    "specialties": [
+     "选股投票",
+     "交叉验证"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1790,8 +1840,11 @@
    "projects": [],
    "team_desc": "投研部选股团队（菜鸟 ai_team_role 独立版）",
    "attributes": {
-    "experience": "",
-    "specialties": [],
+    "experience": "投研部选股团队校验岗，候选票数据核验与投票一致性检查",
+    "specialties": [
+     "数据核验",
+     "一致性检查"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1867,8 +1920,11 @@
    "projects": [],
    "team_desc": "投研部选股团队（菜鸟 ai_team_role 独立版）",
    "attributes": {
-    "experience": "",
-    "specialties": [],
+    "experience": "投研部选股团队成员，金融数据分析与候选筛选",
+    "specialties": [
+     "金融数据",
+     "候选筛选"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1948,6 +2004,11 @@
    "attributes": {
     "knowledge": [
      "缠论技术分析知识库.md"
+    ],
+    "experience": "投研部技术分析岗，缠论结构识别与技术面研判辅助",
+    "specialties": [
+     "缠论分析",
+     "技术面研判"
     ]
    },
    "memory": {
@@ -2036,6 +2097,13 @@
    "attributes": {
     "knowledge": [
      "企业分析与尽调知识库.md"
+    ],
+    "experience": "资深法务（30 年档·独立表态·一票否决权），政府材料与宣发文稿发布前三态审查（通过/修改后通过/驳回），四条对外口径裁定权，爬虫采集合规红线",
+    "specialties": [
+     "发布前审查",
+     "口径裁定",
+     "采集合规",
+     "政府材料"
     ]
    },
    "memory": {
@@ -2077,8 +2145,13 @@
    "projects": [],
    "team_desc": "市场部：统一口号纪律·内容宣发(经LEG1审查)·开源社区影响面·在研文稿协同",
    "attributes": {
-    "experience": "20 年从业经验（20年档：内容与社区运营独立交付）",
-    "specialties": [],
+    "experience": "市场运营（20 年档），统一口号纪律执法，宣发文案/视频脚本，开源社区高 star 项目对比报告，对外定位口径维护",
+    "specialties": [
+     "宣发文案",
+     "社区运营",
+     "口号纪律",
+     "定位口径"
+    ],
     "knowledge": []
    },
    "memory": null
@@ -2113,8 +2186,13 @@
    ],
    "team_desc": "产品与设计部：产品经理 + UI 双梯队(30年主笔+10年执行)",
    "attributes": {
-    "experience": "30 年从业经验（30年档：交付定义/验收口径裁定）",
-    "specialties": [],
+    "experience": "资深产品经理（30 年档），需求池维护与版本规划，验收口径（acceptance_criteria）定义人，项目部门交付定义人",
+    "specialties": [
+     "需求池",
+     "版本规划",
+     "验收口径",
+     "交付定义"
+    ],
     "knowledge": []
    },
    "memory": null,
@@ -2153,8 +2231,12 @@
    "projects": [],
    "team_desc": "产品与设计部：产品经理 + UI 双梯队(30年主笔+10年执行)",
    "attributes": {
-    "experience": "30 年从业经验（30年档：tokens 设计语言作者位）",
-    "specialties": [],
+    "experience": "UI/UX 设计师（30 年档），tokens.css 设计语言作者位，Demo 先行流程（老田拍板后再怼生产），风格一致化巡查（悬空 tokens 盘点）",
+    "specialties": [
+     "tokens 治理",
+     "Demo 先行",
+     "风格巡查"
+    ],
     "knowledge": []
    },
    "memory": null
@@ -2185,8 +2267,12 @@
    "projects": [],
    "team_desc": "产品与设计部：产品经理 + UI 双梯队(30年主笔+10年执行)",
    "attributes": {
-    "experience": "10 年从业经验（10年档：UI 批量执行位）",
-    "specialties": [],
+    "experience": "UI 执行（10 年档），切图/图标/样式批量执行，产出交 DSGN1 审定",
+    "specialties": [
+     "切图",
+     "图标",
+     "样式执行"
+    ],
     "knowledge": []
    },
    "memory": null
@@ -2342,7 +2428,7 @@
    "projects": [],
    "team_desc": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计(SEC1合规红线·SEC2研发质量对抗)",
    "attributes": {
-    "experience": "10 年软件测试：用例执行/证据采集/回归跑批，结论交 QA1 裁定",
+    "experience": "测试工程师（10 年档），用例执行/证据采集/回归跑批，结论交 QA1 裁定",
     "specialties": [
      "用例执行",
      "证据采集",
@@ -2431,6 +2517,12 @@
    "attributes": {
     "knowledge": [
      "金融专业知识库.md"
+    ],
+    "experience": "交易执行员（10 年档），消费策略产出经 paper 链下单，成交/滑点写 feedback，复盘数据供策略部",
+    "specialties": [
+     "paper 下单",
+     "滑点记录",
+     "交易复盘"
     ]
    },
    "memory": {

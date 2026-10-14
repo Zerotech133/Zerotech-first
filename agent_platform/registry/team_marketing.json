@@ -1,37 +1,47 @@
 {
-  "_note": "市场部注册表（K-ORG-024：27满编收官，marketing 从 planned 转 active）",
-  "team": "mktcore",
-  "dept": "marketing",
-  "description": "市场部：统一口号纪律·内容宣发(经LEG1审查)·开源社区影响面·在研文稿协同",
-  "agents": [
-    {
-      "agent_id": "MKT1",
-      "role_profile": "mkt1_marketer",
-      "analysis_type": "marketing_ops",
-      "node_key": "mkt1_ops",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [
-        "events"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/marketing/*",
-          "dept/legal/*",
-          "agent/MKT1/*"
-        ],
-        "write": [
-          "agent/MKT1/*",
-          "dept/marketing/observation"
-        ]
-      },
-      "grade": "E2",
-      "grade_note": "20年档：内容与社区运营独立交付",
-      "charter_detail": "E2·20年档·市场运营：统一口号纪律执法·宣发文案/视频脚本·开源社区高star项目对比报告·在研文稿协同；对外定位=能力平台，禁Tokens售卖标签"
-    }
-  ]
+ "_note": "市场部注册表（K-ORG-024：27满编收官，marketing 从 planned 转 active）",
+ "team": "mktcore",
+ "dept": "marketing",
+ "description": "市场部：统一口号纪律·内容宣发(经LEG1审查)·开源社区影响面·在研文稿协同",
+ "agents": [
+  {
+   "agent_id": "MKT1",
+   "role_profile": "mkt1_marketer",
+   "analysis_type": "marketing_ops",
+   "node_key": "mkt1_ops",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/marketing/*",
+     "dept/legal/*",
+     "agent/MKT1/*"
+    ],
+    "write": [
+     "agent/MKT1/*",
+     "dept/marketing/observation"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "20年档：内容与社区运营独立交付",
+   "charter_detail": "E2·20年档·市场运营：统一口号纪律执法·宣发文案/视频脚本·开源社区高star项目对比报告·在研文稿协同；对外定位=能力平台，禁Tokens售卖标签",
+   "attributes": {
+    "experience": "市场运营（20 年档），统一口号纪律执法，宣发文案/视频脚本，开源社区高 star 项目对比报告，对外定位口径维护",
+    "specialties": [
+     "宣发文案",
+     "社区运营",
+     "口号纪律",
+     "定位口径"
+    ],
+    "knowledge": []
+   }
+  }
+ ]
 }
