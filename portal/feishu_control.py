@@ -118,14 +118,24 @@ def alert_state():
 
 def _alert_ack(alert_id, ignore=False, operator=""):
     """ACK 单条（lark_card_handler 同款语义：已处理/忽略都置 ACKED，
-    差异=忽略额外入 gate_ignored.json，jev_gate 不再重复弹卡）。"""
+    差异=忽略额外入 gate_ignored.json（带 title，K-STOCK-404）——jev_gate
+    据此按 title 抑制同类新告警 14 天，到期自动恢复推送）。"""
     n = _db().db_execute(
         "UPDATE v2_alert SET status='ACKED', acked_at=now() "
         "WHERE alert_id=%s AND status='OPEN'", (alert_id,))
     if ignore:
+        title = ""
+        try:
+            rows = _db().db_rows(
+                "SELECT title FROM v2_alert WHERE alert_id=%s", (alert_id,))
+            title = (rows[0][0] or "") if rows else ""
+        except Exception:  # noqa: BLE001
+            pass  # 查询失败降级仅记 alert_id（同 lark_card_handler）
         ign = _read_json(IGNORE_FILE, [])
-        if alert_id not in ign:
-            ign.append(alert_id)
+        if isinstance(ign, list):
+            from datetime import datetime as _dt
+            ign.append({"alert_id": alert_id, "title": title,
+                        "ts": _dt.now().isoformat(timespec="seconds")})
             _atomic(IGNORE_FILE, ign[-2000:])
     audit(operator, "alert_ignore" if ignore else "alert_ack", alert_id)
     return n
