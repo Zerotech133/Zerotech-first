@@ -13,6 +13,7 @@
 结果落盘: backtest_results.jsonl（全量）+ last_backtest.json（最新，供门户）。
 """
 import json
+import math
 import os
 import subprocess
 import sys
@@ -827,6 +828,75 @@ def resolve_watchlist(wl):
     return out
 
 
+_SCAN_MEDALS = ("🥇", "🥈", "🥉")
+
+
+def _is_nan(v):
+    """基准 nan 守卫（停牌/退市标的 buy_and_hold 可能返回 nan）。"""
+    try:
+        return v is None or math.isnan(float(v))
+    except (TypeError, ValueError):
+        return False
+
+
+def scan_text(strategy_name, results, mkts):
+    """扫描文本版（卡片推送失败时的降级面；基准 nan 以 — 展示）。"""
+    lines = ["🔍 策略扫描 %s（%d 只 · 按夏普排名）" % (strategy_name, len(results))]
+    for r in results:
+        bench = ("—" if _is_nan(r["benchmark_return"])
+                 else "%+.1f%%" % (r["benchmark_return"] * 100))
+        lines.append("· [%s] %s 夏普%.2f 收益%+.1f%% 回撤%.1f%% 基准%s" % (
+            r["market"], r["name"], r["sharpe"], r["total_return"] * 100,
+            r["max_drawdown"] * 100, bench))
+    # 成本口径标注：让下游看到各市场回测假设（口径变化可见）
+    lines.append("—— " + " · ".join(cost_note(m) for m in mkts))
+    lines.append("—— 量化回测域")
+    return "\n".join(lines)
+
+
+def scan_card(strategy_name, results, mkts, ts):
+    """扫描榜单卡（K-STOCK-386）：复用单票卡判例（schema2 + 红涨绿跌 _c_pct）。
+    结构：顶部三列指标（跑赢基准/平均夏普/最深回撤）→ 正负夏普分区榜单 →
+    成本口径灰字尾注。榜单行=奖牌|#名次 名称[市场灰标]｜夏普｜收益｜超额｜回撤；
+    超额=收益-基准（基准 nan 时以 — 展示，不出现 nan%）。"""
+    beat = sum(1 for r in results
+               if not _is_nan(r["benchmark_return"])
+               and r["total_return"] > r["benchmark_return"])
+    avg_sharpe = (sum(r["sharpe"] for r in results) / len(results)
+                  if results else 0.0)
+    worst_dd = min((r["max_drawdown"] for r in results), default=0.0)
+
+    def line(i, r):
+        rank = _SCAN_MEDALS[i] if i < 3 else "#%d" % (i + 1)
+        bench = r["benchmark_return"]
+        exc = ("<font color='grey'>—</font>" if _is_nan(bench)
+               else _c_pct(r["total_return"] - bench))
+        return ("%s **%s** <font color='grey'>[%s]</font>｜夏普 **%.2f**"
+                "｜收益 %s｜超额 %s｜回撤 %.1f%%") % (
+            rank, r["name"], r["market"], r["sharpe"],
+            _c_pct(r["total_return"]), exc, r["max_drawdown"] * 100)
+
+    md = []
+    pos = [line(i, r) for i, r in enumerate(results) if r["sharpe"] >= 0]
+    neg = [line(i, r) for i, r in enumerate(results) if r["sharpe"] < 0]
+    if pos:
+        md.append("**📈 正夏普区（%d 只）**\n" % len(pos) + "\n".join(pos))
+    if neg:
+        md.append("**📉 负夏普区（%d 只）**\n" % len(neg) + "\n".join(neg))
+    footer = ("<font color='grey'>%s</font>\n"
+              "<font color='grey'>仅回测参考，不构成投资建议 · 量化回测域</font>"
+              % " · ".join(cost_note(m) for m in mkts))
+    return build_card(
+        "🔍 策略扫描 · %s" % strategy_name,
+        "%d 只 · 按夏普排名 · %s" % (len(results), ts),
+        "turquoise" if avg_sharpe >= 0 else "red",
+        md, footer=footer,
+        columns=[("跑赢基准", "%d/%d" % (beat, len(results)), "wathet-50"),
+                 ("平均夏普", "%.2f" % avg_sharpe, "wathet-50"),
+                 ("最深回撤", "%.1f%%" % (worst_dd * 100), "orange-50")],
+        use_schema2=True)
+
+
 def run_scan(strategy_name, market, start, end, push=False):
     wl = json.load(open(os.path.join(NEWS_DIR, "news_config.json"),
                         encoding="utf-8")).get("watchlist", [])
@@ -868,19 +938,14 @@ def run_scan(strategy_name, market, start, end, push=False):
     out = {"ts": _now(), "strategy": strategy_name, "market": market or "ALL",
            "mode": "scan", "results": results}
     _atomic(LAST_JSON, out)
-    lines = ["🔍 策略扫描 %s（%d 只 · 按夏普排名）" % (strategy_name, len(results))]
-    for r in results:
-        lines.append("· [%s] %s 夏普%.2f 收益%+.1f%% 回撤%.1f%% 基准%+.1f%%" % (
-            r["market"], r["name"], r["sharpe"], r["total_return"] * 100,
-            r["max_drawdown"] * 100, r["benchmark_return"] * 100))
-    # 成本口径标注：让下游看到各市场回测假设（口径变化可见）
     mkts = sorted({r["market"] for r in results})
-    lines.append("—— " + " · ".join(cost_note(m) for m in mkts))
-    lines.append("—— 量化回测域")
-    txt = "\n".join(lines)
+    txt = scan_text(strategy_name, results, mkts)
     sent = False
     if push and CFG["feishu"].get("push", True):
-        sent = push_feishu(txt)
+        card = scan_card(strategy_name, results, mkts, out["ts"])
+        # 卡片优先，失败降级文本（同单票卡 push_report_card 判例）
+        sent = (push_feishu(json.dumps(card, ensure_ascii=False), card=True)
+                or push_feishu(txt))
     print("SCAN done %d stocks sent=%s" % (len(results), sent))
     if not push:
         print(txt)
