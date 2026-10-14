@@ -13,7 +13,7 @@
 |---|---|---|---|
 | P1 | 产物面干净（🔴 367 判例：残留产物会全 skip 出假结果） | `ls quant_backtest/data/bt2/bt2_open1016_*.json 2>/dev/null \| wc -l` | **= 0**（非 0 → 先归档移走再跑） |
 | P2 | 数据进湖 | 查 `data/tdx/ts_daily/` 最新 trade_date | **= 20261016**（D-Day 当日收盘数据） |
-| P3 | 冻结基线自证 | `git describe --tags` + `git diff --stat open1016-frozen-d2 -- quant_backtest` | describe=`open1016-frozen-d2-*` **且** diff 输出为空（describe 只证 tag 存在，diff 才证工作区无漂移——378 联检补强） |
+| P3 | 冻结基线自证 | `git describe --tags` + `git diff --stat open1016-frozen-d2 -- quant_backtest` | describe=`open1016-frozen-d2-*` **且** diff 输出为空（describe 只证 tag 存在，diff 才证工作区无漂移——378 联检补强）。🔴 **10-14 12:30 取证已漂移（并行会话 K-STOCK-211 merge + gate-shadow W5 未提交挂载·核心链 open1016_run/bt2 零改动）**：按方案 A 处置后 P3 判据改用重打的新 tag（`open1016-frozen-d2b`）；处置详见 **K-STOCK-380 备忘**，D-Day 前须先有主理人拍板结果 |
 | P4 | 解释器 | 统一用 `C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Scripts\python.exe` | 🔴 裸 3.13.12 无 pandas |
 
 **🔴 P2 独立前置（378 联检升格）**：增量拉数是当天最大单点（远端走 7890 代理）——**起跑前 ~1 小时单独执行并确认成功**（`start_tdx_sync.ps1` 或 venv `tdx_sync.py --tables ts_daily`），不要等起跑预检时才发现代理失败。口径统一：一律以本卡 P2 = **20261016** 为准（367 报告中「确认 d1=1015」是 D-1 日程表述，勿混淆）。
