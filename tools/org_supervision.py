@@ -8,7 +8,6 @@
 import glob
 import json
 import os
-import time
 import urllib.request
 from collections import Counter
 from datetime import datetime

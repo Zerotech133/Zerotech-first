@@ -229,7 +229,7 @@ def main():
             continue
 
         rc, stat, _ = run(["git", "show", "--stat", sha], cwd=wt)
-        stat_line = [l for l in stat.splitlines() if "changed" in l]
+        stat_line = [ln for ln in stat.splitlines() if "changed" in ln]
         rc, real, _ = run([PY, args.out, "--json"], cwd=wt, timeout=120)
         note = ("证据包(驱动器自动组装·轮%d):1)stat原样引用git show --stat输出:[%s];"
                 "2)逐条实跑=smoke回路过(--json退出码0+stdout为合法JSON对象·smoke断言与规格P-3一致不含额外键断言)+真实stdout原样贴:%s;"

@@ -29,14 +29,19 @@ import ast
 import json
 from dataclasses import dataclass
 import os
+import re
 import shutil
 import subprocess
-import sys
 import time
 import urllib.request
 
 OP = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-BUNDLE = json.load(open("portal/agent_ide_bundle.json", encoding="utf-8"))
+# K-ORG-079: bundle 路径锚定 __file__ 上溯——原相对路径依赖 cwd=仓库根,
+# 从 tools/ 目录 import 即 FileNotFoundError(审计实测)。worktree 内 import
+# 时读 worktree 自身快照, 与原 cwd=worktree 根行为一致。
+_HERE = os.path.dirname(os.path.abspath(__file__))
+BUNDLE = json.load(open(os.path.join(_HERE, os.pardir, "portal", "agent_ide_bundle.json"),
+                        encoding="utf-8"))
 
 ZHIPU_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 CLOUD_MODEL = os.environ.get("CODER_CLOUD_MODEL", "glm-4-flash")
@@ -222,8 +227,6 @@ def backend():
 
 
 # ---------- F3: 编辑协议 + lint 门（K-ORG-035 批F·借 Aider/SWE-agent 范式） ----------
-
-import re
 
 SR_RE = re.compile(
     r"<<<<<<< SEARCH\r?\n(.*?)\r?\n?=======\r?\n(.*?)\r?\n?>>>>>>> REPLACE\r?\n?",
@@ -541,7 +544,6 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
         trace_log(k_id, "write", "%s %d chars" % (out_path, len(content)))
         return True, "ok"
 
-    sr_err = "SEARCH/REPLACE 块未在目标文件唯一命中"
     for attempt in range(smoke_retries + 1):
         content, mode = apply_edit_protocol(raw, out_path)
         print("  [edit-protocol] mode=%s" % mode)

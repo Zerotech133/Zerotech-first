@@ -43,7 +43,7 @@ def parse_trace_file(path):
         m = re.search(r"[（(](DONE|ABORT|SEC2_FAIL|QA1_FAIL)[)）]", lines[0])
         if m:
             final = m.group(1)
-    steps = [l for l in lines if l.startswith("- [")]
+    steps = [ln for ln in lines if ln.startswith("- [")]
     last_step = steps[-1].strip() if steps else "(无步骤)"
     return final, len(steps), last_step
 
