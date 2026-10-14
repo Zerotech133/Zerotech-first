@@ -626,6 +626,10 @@ def main():
 
     handler = (lark.EventDispatcherHandler.builder("", "")
                .register_p2_im_message_receive_v1(on_msg)
+               # K-STOCK-367：app 后台订阅了已读回执（im.message.message_read_v1）
+               # 但无业务消费方——不注册处理器 SDK 每条报「processor not found」
+               # ERROR（10-07 起累计 1099 条纯噪音），no-op 注册消噪。
+               .register_p2_im_message_message_read_v1(lambda data: None)
                .register_p2_card_action_trigger(on_card).build())
     cli = Client(app_id, app_secret, event_handler=handler,
                  log_level=lark.LogLevel.INFO)
