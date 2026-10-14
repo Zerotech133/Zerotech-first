@@ -879,8 +879,13 @@ background:#000'></video>
             header = body.get("header") or {}
             et = header.get("event_type") or body.get("type") or ""
             ev = body.get("event") or body
+            # K-STOCK-399（397 留档 F2 收紧）：兜底分支要求 action 为
+            # dict 且携带 value 键——我方卡按钮回调必带 value；外来
+            # 事件含字符串 action 字段（如 "action":"created"）不再
+            # 误路由进订阅处理器。
+            _act = ev.get("action")
             if et in ("card.action.trigger", "card_action_trigger") \
-                    or ev.get("action"):
+                    or (isinstance(_act, dict) and "value" in _act):
                 self._handle_card_action(ev)
                 return
         except Exception as ex:

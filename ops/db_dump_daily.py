@@ -87,11 +87,14 @@ def dump_one(item, out_dir, timeout=900):
 
 
 def recycle_delete(paths):
-    """删除走回收站（可逆）；返回值不可信 → exists 逐个复核。"""
+    """删除走回收站（可逆）；返回值不可信 → exists 逐个复核。
+
+    K-STOCK-399：修复历史坏占位——原首行 ctypes.c_struct() 属性不存在，
+    轮转触发即 AttributeError 崩溃，14 天轮转从未真正删过文件。
+    """
     leftover = []
     # 双 NUL 结尾的多路径列表
     buf = "\0".join(paths) + "\0\0"
-    op = ctypes.c_struct()  # 占位避免直接构造 SHFILEOPSTRUCT 复杂布局
     class SHFILEOPSTRUCT(ctypes.Structure):
         _fields_ = [("hwnd", ctypes.c_void_p), ("wFunc", ctypes.c_uint),
                     ("pFrom", ctypes.c_wchar_p), ("pTo", ctypes.c_wchar_p),

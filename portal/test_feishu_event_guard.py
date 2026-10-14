@@ -60,4 +60,45 @@ print("T3 跨日重置 OK")
 with open(flag, "w", encoding="utf-8") as f:
     json.dump({"day": "1970-01-01", "count": 0, "alerted": True}, f)
 del os.environ["FEISHU_EVENT_FLAG"]
+
+# ── T4（K-STOCK-399 F2 收紧）：事件分发路由 ───────────
+def _fake_handler():
+    resp, routed = [], []
+    h = types.SimpleNamespace(
+        headers={}, _json=lambda obj, code=200: resp.append((obj, code)),
+        _handle_card_action=lambda ev: routed.append(ev),
+        _feishu_encrypt_key=lambda: None,
+        _feishu_unverified_alert=lambda: None,
+        log_message=lambda *a, **k: None)
+    return h, resp, routed
+
+# T4a：外来事件含字符串 action 字段（如 contact/approval 变更）→ 不误路由
+h, resp, routed = _fake_handler()
+H._api_feishu_event(h, json.dumps({
+    "header": {"event_type": "contact.user.updated_v3"},
+    "event": {"action": "created", "obj": {}}}).encode("utf-8"))
+assert not routed, "字符串 action 不得进卡片处理器"
+assert resp and resp[0][1] == 200, resp
+
+# T4b：旧 schema 卡按钮（body 顶层 action.value）→ 正常路由
+h, resp, routed = _fake_handler()
+H._api_feishu_event(h, json.dumps({
+    "action": {"value": {"tag": "subscribe", "kind": "intraday"}}}
+).encode("utf-8"))
+assert len(routed) == 1 and routed[0]["action"]["value"]["tag"] == "subscribe"
+
+# T4c：v2 schema card.action.trigger → 正常路由
+h, resp, routed = _fake_handler()
+H._api_feishu_event(h, json.dumps({
+    "header": {"event_type": "card.action.trigger"},
+    "event": {"action": {"value": {"tag": "subscribe"}}, "operator": {}}
+}).encode("utf-8"))
+assert len(routed) == 1
+
+# T4d：含 dict action 但无 value 键的外来事件 → 不误路由（收紧核心）
+h, resp, routed = _fake_handler()
+H._api_feishu_event(h, json.dumps({
+    "event": {"action": {"type": "unknown", "form": []}}}).encode("utf-8"))
+assert not routed and resp and resp[0][1] == 200, resp
+print("T4 分发收紧 OK（字符串/无value action 不误路由；两种卡schema 正常路由）")
 print("ALL PASS")
