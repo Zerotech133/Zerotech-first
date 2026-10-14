@@ -1,4 +1,6 @@
-# K-ORG-071 e2e 彩排单（增量型）：e2e_report 增加 --csv 导出
+# K-ORG-072 e2e 正验单（增量型）：e2e_report 增加 --csv 导出
+
+> 工单=K-ORG-072；本需求自 K-ORG-071 顺延（071 为彩排轮，072 为正验轮），目标文件同为 tools/e2e_report.py。
 
 P-1 新增 build_csv(items) 纯函数：接收 scan_e2e_traces() 的 items 列表，
 返回 CSV 文本（表头 tid,time,final,steps,last_step；字段含逗号/换行时用双引号包裹转义）；
