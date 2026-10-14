@@ -58,8 +58,81 @@ def _recent_hits(db, limit=20):
     return out
 
 
+# K-STOCK-362 表格化渲染：对齐 doc_board.py（量化实战·详情看板）判例——
+# 结构化数据一律 Markdown 表格、零码块；news_ai.format_* 保留给飞书卡纯文本降级。
+IDX_GRPS = ("A股", "港股", "美股", "商品", "汇率")
+
+
+def _pct_cell(pct):
+    """涨跌单元格：▲+1.25% / ▼0.43% / —（None）。"""
+    if pct is None:
+        return "—"
+    if pct > 0:
+        return "▲%+.2f%%" % pct
+    if pct < 0:
+        return "▼%.2f%%" % abs(pct)
+    return "0.00%"
+
+
+def _markets_tables(markets):
+    """全球市场速览 → 指数表 + 自选表（自选数量多，独立小节）。"""
+    idx = [m for m in markets if m.get("grp") in IDX_GRPS]
+    watch = [m for m in markets if m.get("grp") not in IDX_GRPS]
+    lines = []
+    if idx:
+        lines += ["| 市场 | 指数 | 点位 | 涨跌 |",
+                  "| --- | --- | --- | --- |"]
+        lines += ["| %s | %s | %s | %s |" % (
+            m["grp"], m["name"],
+            ("%." + str(m["dec"]) + "f") % m["price"],
+            _pct_cell(m.get("pct"))) for m in idx]
+    if watch:
+        lines += ["", "### 自选速览", "",
+                  "| 标的 | 现价 | 涨跌 |",
+                  "| --- | --- | --- |"]
+        lines += ["| %s | %s | %s |" % (
+            m["name"], ("%." + str(m["dec"]) + "f") % m["price"],
+            _pct_cell(m.get("pct"))) for m in watch]
+    return lines
+
+
+def _sectors_tables(sectors, ts, top_n=6):
+    """板块热力 → 广度一句话 + 领涨/领跌合并表（方向列）。"""
+    if not sectors:
+        return []
+    up = sum(1 for s in sectors if s["pct"] > 0)
+    dn = sum(1 for s in sectors if s["pct"] < 0)
+    mood = "普涨" if up * 3 > len(sectors) * 2 else (
+        "普跌" if up * 3 < len(sectors) else "分化")
+    lines = ["全行业 %d 个：%d 涨 / %d 跌（上涨占比 %d%%，%s）" % (
+        len(sectors), up, dn, round(up * 100 / len(sectors)), mood), "",
+        "| 方向 | 板块 | 涨跌 |",
+        "| --- | --- | --- |"]
+    lines += ["| 🔴 领涨 | %s | %+.2f%% |" % (s["name"], s["pct"])
+              for s in sectors[:top_n]]
+    lines += ["| 🟢 领跌 | %s | %.2f%% |" % (s["name"], s["pct"])
+              for s in list(reversed(sectors))[:top_n]]
+    return lines  # ts 由调用方拼进小节标题
+
+
+_SRC_NAME = {"wallstreetcn": "见闻", "sina": "新浪", "eastmoney": "东财"}
+
+
+def _hits_table(items):
+    """关注命中 → 表格（时间取 HH:MM，标题前缀【关联股】）。"""
+    lines = ["| 时间 | 来源 | 标题 |",
+             "| --- | --- | --- |"]
+    for it in items:
+        t = (it.get("ts") or "")
+        t = t[-5:] if len(t) >= 5 else t  # "2026-10-14 07:21" → "07:21"
+        tag = ("【%s】" % "/".join(it["stocks"])) if it.get("stocks") else ""
+        lines.append("| %s | %s | %s%s |" % (
+            t, _SRC_NAME.get(it["source"], it["source"]),
+            tag, (it.get("title") or "").replace("|", "／")[:70]))
+    return lines
+
+
 def _report_section(db, table, title, with_sectors=False):
-    import news_ai
     lines = ["## %s" % title, ""]
     row = _latest_report(db, table)
     if not row:
@@ -73,18 +146,19 @@ def _report_section(db, table, title, with_sectors=False):
     except Exception:
         markets = []
     if markets:
-        lines += ["", "### 全球市场速览", "", "```",
-                  news_ai.format_markets(markets), "```"]
+        lines += ["", "### 全球市场速览", ""]
+        lines += _markets_tables(markets)
     if with_sectors:
         try:
             with open(os.path.join(HERE, "sectors.json"), encoding="utf-8") as f:
                 sec = json.load(f)
-            st = news_ai.format_sectors(sec.get("items") or [])
+            st_lines = _sectors_tables(sec.get("items") or [],
+                                       sec.get("ts", ""))
         except Exception:
-            st = ""
-        if st:
-            lines += ["", "### 行业板块热力（%s）" % sec.get("ts", ""), "",
-                      "```", st, "```"]
+            st_lines = []
+        if st_lines:
+            lines += ["", "### 行业板块热力（%s）" % sec.get("ts", ""), ""]
+            lines += st_lines
     lines += ["", brief or "（无正文）"]
     return lines
 
@@ -108,8 +182,8 @@ def build_md():
         hits = _recent_hits(db)
         if hits:
             lines += ["", "---", "",
-                      "## ⭐ 最新关注命中（近 24h）", "", "```",
-                      news_ai.format_news(list(reversed(hits))), "```"]
+                      "## ⭐ 最新关注命中（近 24h）", ""]
+            lines += _hits_table(list(reversed(hits)))
     finally:
         db.close()
     return "\n".join(lines)
