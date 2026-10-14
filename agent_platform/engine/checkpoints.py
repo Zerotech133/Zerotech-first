@@ -3,6 +3,9 @@
 
 借鉴 LangGraph 思想：节点级状态快照——崩溃后可从最后完成节点恢复（菜鸟缺的能力）。
 接口对齐未来 PG 迁移：start_run / save_node / trace / get_run_states。
+
+K-ORG-090/G4：工单线（devtask）checkpoint 扩展——task_checkpoints 表 +
+save_task_node / get_task_states / task_trace 三接口，服务工单链续跑。
 """
 import json
 import sqlite3
@@ -32,6 +35,10 @@ class Checkpointer:
                 run_id TEXT, node_key TEXT, agent_id TEXT, phase TEXT,
                 round INTEGER, output TEXT, similarity REAL,
                 status TEXT, latency_ms REAL, ts REAL);
+            CREATE TABLE IF NOT EXISTS task_checkpoints(
+                task_id TEXT, node_key TEXT, agent_id TEXT,
+                state_json TEXT, ts REAL,
+                PRIMARY KEY(task_id, node_key));
             """
         )
         self.conn.commit()
@@ -76,3 +83,34 @@ class Checkpointer:
                 "SELECT node_key, state_json FROM checkpoints WHERE run_id=?", (run_id,)
             )
             return {k: json.loads(v) for k, v in cur.fetchall()}
+
+    # ---- K-ORG-090/G4：工单线（devtask）checkpoint ----
+
+    def save_task_node(self, task_id, node_key, agent_id, state):
+        """工单节点状态快照：同 (task_id, node_key) 覆盖写（INSERT OR REPLACE）。"""
+        with self._lock:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO task_checkpoints VALUES(?,?,?,?,?)",
+                (task_id, node_key, agent_id,
+                 json.dumps(state, ensure_ascii=False), time.time()),
+            )
+            self.conn.commit()
+
+    def get_task_states(self, task_id):
+        """按 node_key 取工单全部节点最新状态，返回 {node_key: state_dict}。"""
+        with self._lock:
+            cur = self.conn.execute(
+                "SELECT node_key, state_json FROM task_checkpoints WHERE task_id=?",
+                (task_id,),
+            )
+            return {k: json.loads(v) for k, v in cur.fetchall()}
+
+    def task_trace(self, task_id):
+        """工单轨迹按 ts 升序，返回 [(node_key, agent_id, ts, state_dict)]，无则空列表。"""
+        with self._lock:
+            cur = self.conn.execute(
+                "SELECT node_key, agent_id, ts, state_json FROM task_checkpoints"
+                " WHERE task_id=? ORDER BY ts ASC",
+                (task_id,),
+            )
+            return [(k, a, ts, json.loads(v)) for k, a, ts, v in cur.fetchall()]
