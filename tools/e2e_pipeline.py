@@ -182,6 +182,7 @@ def main():
 
     # ---- 3~6. 产码→提交→SEC2→QA1（SEC2 缺失与 QA1 退回共用返修预算）----
     qa1_verdict, qa1_out, sha = "", "", ""
+    qa1_ledger = None
     last_fail, sec2_miss = "QA1", None
     for rnd in range(1 + args.repair_rounds):
         repair_note = None
@@ -190,9 +191,11 @@ def main():
                 repair_note = ("SEC2 返工清单", sec2_miss or "")
                 log("返修轮 %d" % rnd, "SEC2 缺失清单已回流(%d 字)" % len(sec2_miss or ""))
             else:
-                m = re.search(r"结论[：:]\s*\*\*退回\*\*[—-]*(.*)", qa1_out, re.S)
-                repair_note = ("QA1 退回理由", m.group(1).strip()[:1500] if m else qa1_out[-800:])
-                log("返修轮 %d" % rnd, "退回理由已回流(%d 字)" % len(repair_note[1]))
+                # stdout 解析失败时回流源优先级: 主仓账本 detail(结构化完整) > stdout 尾部
+                body = (qa1_ledger or "").strip()[:1500] or qa1_out[-800:]
+                repair_note = ("QA1 退回理由", body)
+                log("返修轮 %d" % rnd, "退回理由已回流(%d 字·来源=%s)"
+                    % (len(body), "账本" if qa1_ledger else "stdout尾部"))
         ok, detail = gen_code(wt, args.out, spec, repair_note)
         if not ok:
             die("DEV1 产码(轮%d)" % (rnd + 1), detail)
@@ -242,15 +245,20 @@ def main():
         else:
             # 终极兜底(K-ORG-068 d段): stdout 格式漂移时, review_verdict 落账
             # 必有「结论：**X**」格式——账本是结论的最终事实源。
+            # 🔴 K-ORG-071 判例: 账本在主仓工作区, 必须绝对路径锚定 ROOT——
+            # cwd=wt 时相对路径读到的是 worktree 的 git HEAD 快照, 无本笔落账。
             rc, ev, _ = run([PY, "-c",
                              "import json\n"
-                             "for L in reversed(open(r'portal/data/dev_events.jsonl',encoding='utf-8')):\n"
+                             "for L in reversed(open(r'%s',encoding='utf-8')):\n"
                              "    e=json.loads(L)\n"
                              "    if e.get('kind')=='review_verdict' and e.get('task')==%r:\n"
-                             "        print(e.get('detail','')[:400]);break\n" % TID])
+                             "        print(e.get('detail','')[:400]);break\n"
+                             % (os.path.join(ROOT, "portal", "data", "dev_events.jsonl"), TID)],
+                            cwd=ROOT)
             m2 = re.search(r"结论[：:]\s*\*\*([^*]+)\*\*", ev)
             if m2:
                 qa1_verdict = m2.group(1).strip() + "(账本兜底)"
+                qa1_ledger = ev
             else:
                 # 判例(K-ORG-068 轮1): 无结论≠退回——误判会触发无谓返修, fail-stop
                 write_trace("QA1_UNPARSEABLE")
