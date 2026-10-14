@@ -45,7 +45,12 @@ def stats(days=7):
     start = (today - dt.timedelta(days=days - 1)).isoformat()
     by_day, today_by_kind = {}, {}
     try:
-        with open(FLOW_PATH, encoding="utf-8") as f:
+        # K-STOCK-400：errors="replace"——半行交错若切断多字节字符，
+        # 原 for 迭代内解码抛 UnicodeDecodeError（在下方内层 try 之外）
+        # 整体逃逸 → 调用方 except 兜住后 quota_check 持续走异常分支
+        # fail-open，配额保护静默失效。replace 后坏行 json.loads 失败
+        # 被 continue 吞掉，恢复「降级为空」承诺。
+        with open(FLOW_PATH, encoding="utf-8", errors="replace") as f:
             for line in f:
                 try:
                     r = json.loads(line)
