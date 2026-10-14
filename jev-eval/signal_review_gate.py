@@ -28,6 +28,7 @@
 用法：
   python signal_review_gate.py --once          # 复核最近交易日候选
   python signal_review_gate.py --backfill      # 回填已到期的 N 日收益
+  python signal_review_gate.py --retry         # 补判 unreviewed（451 等，隔天快照滚动后重试）
   python signal_review_gate.py --report        # 影子期收益差报告
   python signal_review_gate.py --loop          # 常驻（盘中每 10 分钟查新候选）
 环境变量：JEV_API_KEY（必需）；TUSHARE_TOKEN 可选（zhice .env.local 有则可复用）
@@ -74,6 +75,8 @@ REJECT_NEWS_P = float(os.environ.get("REVIEW_NEWS_THRESHOLD", "0.7"))
 REJECT_CROWD_P = float(os.environ.get("REVIEW_CROWD_THRESHOLD", "0.7"))
 FOCUS_QUALITY_P = float(os.environ.get("REVIEW_FOCUS_THRESHOLD", "0.7"))
 WATCH_OVERLAP_P = float(os.environ.get("REVIEW_WATCH_THRESHOLD", "0.7"))
+# K-STOCK-365 P0-A：unreviewed 单条最多补判次数，超过标 jev_perm 永久放弃
+RETRY_MAX = int(os.environ.get("REVIEW_RETRY_MAX", "3"))
 
 # 优雅退出 / 原子写 / 重试 / 日志（P1-1：收敛到 jev_common）
 _STOP = install_stop()
@@ -256,10 +259,32 @@ def jev_ask(state: str, questions: dict) -> dict:
         with urllib.request.urlopen(req, timeout=20) as resp:
             return json.loads(resp.read()).get("answers", {})
 
+    # K-STOCK-365 P0-A：401/403/451 是内容级确定性拒绝（TypeSafe 合规过滤——
+    # 2026-10-09 起生产日志证实：同池候选部分成功部分 451，与限流/网络无关），
+    # 指数退避重试必然同错，白烧 6s/条与 API 配额 → 立即上抛交由 unreviewed +
+    # --retry 补判通道隔天换快照再战。其余异常保持 with_retry 语义（3 次 0/2/4s）。
+    # jev_common.with_retry 无豁免机制且为公共库（gate/bridge 在用）不扩，
+    # 故本文件内联等价循环，退避参数与日志格式对齐原版。
     try:
-        ans = with_retry(_call, retries=3, base_sec=2.0, label="jev ")
-        C_JEV.labels("review", "1").inc()
-        return ans
+        last: Exception | None = None
+        for i in range(3):
+            try:
+                ans = _call()
+                C_JEV.labels("review", "1").inc()
+                return ans
+            except urllib.error.HTTPError as e:
+                if e.code in (401, 403, 451):
+                    raise
+                last = e
+            except Exception as e:  # noqa: BLE001
+                last = e
+            if i < 2:
+                wait = 2.0 * (2 ** i)
+                log(f"jev 重试 {i + 1}/2（{wait:.0f}s）: {str(last)[:80]}",
+                    level="warn")
+                time.sleep(wait)
+        assert last is not None
+        raise last
     except Exception:
         C_JEV.labels("review", "0").inc()
         raise
@@ -486,6 +511,96 @@ def run_backfill() -> int:
     return filled
 
 
+def fetch_candidates_by_ids(ids: list[str]) -> dict[str, dict]:
+    """按 candidate_id 批量回查候选（含 pool_date）——补判通道专用。"""
+    if not ids:
+        return {}
+    ph = ", ".join(["%s"] * len(ids))  # 纯占位拼接，值全参数化（P1-7 纪律）
+    rows = psql(
+        "SELECT a.candidate_id, a.ts_code, a.market, "
+        "coalesce(a.candidate_score,0), coalesce(a.candidate_reason,''), p.pool_date "
+        "FROM v2_candidate_asset a JOIN v2_candidate_pool p ON a.pool_id = p.pool_id "
+        "WHERE a.candidate_id IN (%s)" % ph, tuple(ids))
+    return {r[0]: {"candidate_id": r[0], "ts_code": r[1], "market": r[2],
+                   "score": float(r[3] or 0), "reason": r[4], "pool_date": r[5]}
+            for r in rows if len(r) == 6}
+
+
+def run_retry(dry: bool = False) -> int:
+    """K-STOCK-365 P0-A 补判通道：unreviewed（jev_error/no_key）重建快照重新判定。
+
+    背景：2026-10-09 起 TypeSafe 对部分候选快照稳定返回 451（内容级合规过滤），
+    10-12~14 每天丢 20~60 条判定（影子期样本流失）。451 虽确定性，但快照本身
+    时变（公告窗口 14 天滚动、持仓变化），隔天重建后重试有真实解除概率。
+    策略：复用 review_candidate（公告探测/快照/五判断/影子决策全套同款）；
+    成功 → 原记录就地更新判定字段并标 retried=1（保留原 ts 与 retry 轨迹）；
+    失败 → retry_count+1，超 RETRY_MAX 标 reason=jev_perm 永久放弃。
+    近似口径：held/regime 取当前值（原判定时点不可精确复原），retried 字段
+    已区分两轮判定，报告消费侧可识别。
+    """
+    if not TRIPLES.exists():
+        return 0
+    lines = TRIPLES.read_text(encoding="utf-8").splitlines()
+    targets: list[tuple[int, dict]] = []
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+        except Exception:  # noqa: BLE001
+            continue
+        if (r.get("status") == "unreviewed"
+                and r.get("reason") in ("jev_error", "no_key")
+                and r.get("retry_count", 0) < RETRY_MAX
+                and r.get("candidate_id")):
+            targets.append((i, r))
+    log(f"补判候选 {len(targets)} 条"
+        + ("（dry 跳过）" if dry else ""))
+    if not targets or dry:
+        return 0
+    if not API_KEY:
+        log("无 JEV_API_KEY，补判跳过", level="warn")
+        return 0
+    cand_map = fetch_candidates_by_ids([r["candidate_id"] for _, r in targets])
+    probe_ann_source()
+    held = fetch_positions()
+    regime_p = regime_ok_today()
+    ok = fail = perm = miss = 0
+    for i, r in targets:
+        if _STOP["flag"]:
+            break  # 信号到达：已处理行随末尾原子写保留，未处理下次再来
+        c = cand_map.get(r["candidate_id"])
+        if not c:
+            miss += 1  # 候选已被池清理：保留原记录不动
+            continue
+        try:
+            new = review_candidate(c, held, regime_p)
+        except Exception as e:  # noqa: BLE001
+            log(f"补判 {r.get('ts_code')} 异常: {str(e)[:80]}", level="warn")
+            new = {"status": "unreviewed", "reason": "jev_error"}
+        r["retry_count"] = r.get("retry_count", 0) + 1
+        if new.get("status") == "reviewed":
+            ok += 1
+            for k in ("status", "news_p", "overlap_p", "quality", "quality_p",
+                      "crowd", "crowd_p", "regime_p", "decision",
+                      "decision_why"):
+                if k in new:
+                    r[k] = new[k]
+            r["retried"] = 1
+            r["retried_at"] = datetime.now().isoformat(timespec="seconds")
+        elif r["retry_count"] >= RETRY_MAX:
+            perm += 1
+            r["reason"] = "jev_perm"
+        else:
+            fail += 1
+            r["reason"] = new.get("reason", "jev_error")
+        lines[i] = json.dumps(r, ensure_ascii=False)
+        time.sleep(0.3)  # 温和限速（对齐 run_once）
+    atomic_write_text(TRIPLES, "\n".join(lines) + "\n")
+    log(f"补判完成：成功 {ok} 失败 {fail} 永久放弃 {perm} 候选缺失 {miss}")
+    return ok
+
+
 def coverage_guard() -> float:
     """P1-1 覆盖率守卫：到期记录中已回填占比 < COVERAGE_MIN → 飞书提醒。
 
@@ -566,7 +681,7 @@ def run_report() -> None:
     if focus and pass_:
         diff = (sum(x["ret_nd"] for x in focus) / len(focus)) - \
                (sum(x["ret_nd"] for x in pass_) / len(pass_))
-        print(f"FOCUS-PASS 收益差: {diff:+.2%}")
+        print(f"FOCUS-PASS 收益差: {diff:+.2%}（全量混合口径，含市场构成偏差）")
         def _mkt(x):
             tc = str(x.get("ts_code") or "")
             if tc.endswith((".SH", ".SZ", ".BJ")) or x.get("market") == "CN":
@@ -574,9 +689,19 @@ def run_report() -> None:
             if "/USDT" in tc:
                 return "CRYPTO"
             return x.get("market") or "?"
+        pe = [x for x in pass_ if _mkt(x) != "CN"]
+        fe = [x for x in focus if _mkt(x) != "CN"]
+        dd_ex = ((sum(x["ret_nd"] for x in fe) / len(fe)) -
+                 (sum(x["ret_nd"] for x in pe) / len(pe))) if pe and fe else None
         n_rej = len(groups.get("REJECT", []))
-        print(f"毕业① 收益差≥+1%: {'✓' if diff >= 0.01 else '✗'}"
-              "（持续性需连续两份周报达标）")
+        # K-STOCK-365 P0-B：毕业①勾只认「同市场域(剔CN)」口径（2026-10-07 辛普森
+        # 悖论判例：全量混合口径的收益差主要由市场构成贡献，PASS 含 CN 大跌票而
+        # FOCUS CN=0，不可比）。此前判定行按全量打勾与脚注口径打架，本修统一。
+        ok1 = dd_ex is not None and dd_ex >= 0.01
+        d1 = f"{dd_ex:+.2%}" if dd_ex is not None else "-"
+        print(f"毕业① 收益差≥+1%: {'✓' if ok1 else '✗'}"
+              f"（剔CN同市场域 {d1} 为勾判口径；全量 {diff:+.2%} 仅参考；"
+              "持续性需连续两份周报达标）")
         print(f"毕业② FOCUS n≥300: {'✓' if len(focus) >= 300 else '✗'}"
               f"（当前 {len(focus)}）")
         # 毕业③口径（2026-10-07 晚拍板，brief §八 #1）：原「REJECT n≥30」攒样
@@ -612,13 +737,17 @@ def run_report() -> None:
                   if fm else "  -  ")
             print(f"  {m:<7} PASS {len(pm):>3} {ps} | "
                   f"FOCUS {len(fm):>3} {fs}")
-        pe = [x for x in pass_ if _mkt(x) != "CN"]
-        fe = [x for x in focus if _mkt(x) != "CN"]
         if pe and fe:
-            dd = (sum(x["ret_nd"] for x in fe) / len(fe)) - \
-                 (sum(x["ret_nd"] for x in pe) / len(pe))
-            print(f"  同市场域(剔CN) FOCUS-PASS: {dd:+.2%}"
-                  "（毕业①以此口径为准）")
+            print(f"  同市场域(剔CN) FOCUS-PASS: {dd_ex:+.2%}"
+                  "（= 毕业①勾判口径）")
+        if not any(_mkt(x) == "CN" for x in focus):
+            # K-STOCK-365 P0-B 结构性标注：CN 候选 quality 历史分布 mid/high
+            # 双占（low=0），FOCUS 唯一入口 quality=low 从未在 CN 触发——
+            # FOCUS 组全在 US/HK/CRYPTO，剔CN口径是被迫而非可选；Jev 对 CN
+            # 候选的 quality 判定倾向值得人工抽检（非代码 bug，模型行为）。
+            print("⚠ 结构性缺位：CN 组 quality 从未判 low（FOCUS 唯一入口），"
+                  "FOCUS 全部来自 US/HK/CRYPTO——剔CN口径为被迫；"
+                  "FOCUS 在 A 股的价值主张尚无样本支撑")
     else:
         print("判读：FOCUS/PASS 组数据不足，继续影子观察")
 
@@ -629,28 +758,31 @@ def main() -> None:
     if "--backfill" in args:
         run_backfill()
         coverage_guard()
+    elif "--retry" in args:
+        run_retry(dry="--dry" in args)
     elif "--report" in args:
         run_report()
     elif "--loop" in args:
         if not API_KEY:
             sys.exit("常驻模式需要 JEV_API_KEY")
         jc.start_metrics(METRICS_PORT)
-        log("复核门常驻启动（影子模式，10 分钟轮询；每日 20:05 自动回填到期收益）")
+        log("复核门常驻启动（影子模式，10 分钟轮询；每日 20:05 自动回填+补判）")
         last_backfill = ""
         while not _STOP["flag"]:
             try:
                 run_once()
             except Exception as e:  # noqa: BLE001
                 log(f"轮询异常: {e}")
-            # 每日一次自动回填（收盘后数据已入库的晚间时段）
+            # 每日一次自动回填+补判（收盘后数据已入库的晚间时段）
             today = date.today().isoformat()
             if datetime.now().hour >= 20 and last_backfill != today:
                 last_backfill = today
                 try:
                     run_backfill()
                     coverage_guard()
+                    run_retry()
                 except Exception as e:  # noqa: BLE001
-                    log(f"自动回填异常: {e}")
+                    log(f"自动回填/补判异常: {e}")
             # 分段 sleep 以便信号到达时能尽快退出
             for _ in range(600):
                 if _STOP["flag"]:
