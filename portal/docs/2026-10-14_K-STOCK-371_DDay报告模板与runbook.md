@@ -7,6 +7,8 @@
 
 ## 一、执行前预检（5 分钟，全过才起跑）
 
+> ✅ **命令级预演已验证（K-STOCK-375·10-14）**：P1 返回 0、P2 分片可查、P3 describe 正常、P4 venv python 及 pandas/pyarrow import OK——四条命令可直接照抄执行。D-Day 当天 P2 判据 = 分片内最新 trade_date = 20261016。
+
 | # | 预检项 | 命令 | PASS 判据 |
 |---|---|---|---|
 | P1 | 产物面干净（🔴 367 判例：残留产物会全 skip 出假结果） | `ls quant_backtest/data/bt2/bt2_open1016_*.json 2>/dev/null \| wc -l` | **= 0**（非 0 → 先归档移走再跑） |
