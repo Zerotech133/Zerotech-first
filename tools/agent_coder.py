@@ -591,10 +591,18 @@ def run(label, agent_id, out_path, prompt, validator=None, json_out=False,
                 return False, "smoke FAIL %d 轮: %s" % (smoke_retries + 1, sm)
             print("  [smoke] 第%d轮拦截: %s → 还原原文带错重试" % (attempt + 1, sm))
             _restore()
-            task["prompt"] = (prompt +
-                "\n\n【上一次产出通过了语法门但未通过行为冒烟，错误：%s】"
-                "\n禁止整文件重写式重做——只允许输出 SEARCH/REPLACE 块做最小修改，"
-                "\n现有函数实现体一字不动，禁止 pass/... 占位。" % sm)
+            if orig_bytes is None:
+                # K-ORG-064 彩排判例：新文件场景还原后为空文件，SR 对空文件
+                # hit=0 必败——指示模型 whole 模式重出完整文件。
+                task["prompt"] = (prompt +
+                    "\n\n【上一次产出通过了语法门但未通过行为冒烟，错误：%s】"
+                    "\n目标文件已还原为空，请直接输出修复后的完整新文件"
+                    "（禁止 SEARCH/REPLACE 块，整文件输出）。" % sm)
+            else:
+                task["prompt"] = (prompt +
+                    "\n\n【上一次产出通过了语法门但未通过行为冒烟，错误：%s】"
+                    "\n禁止整文件重写式重做——只允许输出 SEARCH/REPLACE 块做最小修改，"
+                    "\n现有函数实现体一字不动，禁止 pass/... 占位。" % sm)
             meta = chat_auto_meta(agent_id, task)
             raw = meta.content
     return False, "unreachable"
