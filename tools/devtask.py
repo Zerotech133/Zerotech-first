@@ -15,7 +15,6 @@
 """
 import json
 import os
-import socket
 import subprocess
 import sys
 import time
@@ -24,6 +23,32 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WT_DIR = os.path.join(REPO, ".worktrees")
 TASKS = os.path.join(WT_DIR, "tasks.json")
 PROJECTS = os.path.join(REPO, "agent_platform", "registry", "projects.json")
+
+
+CPT_DB = os.path.join(REPO, "agent_platform", "data", "checkpoints.db")
+_CKPT = None
+
+
+def _checkpointer():
+    """K-ORG-090/G4：工单 checkpoint 惰性单例——第一次用到才连 db，
+    避免每次 CLI 调用（list/board 等不挂线的命令）都开连接。"""
+    global _CKPT
+    if _CKPT is None:
+        sys.path.insert(0, os.path.join(REPO, "agent_platform"))
+        from engine.checkpoints import Checkpointer
+        _CKPT = Checkpointer(CPT_DB)
+    return _CKPT
+
+
+def _ckpt(tid, node_key, owner, state):
+    """挂线快照（K-ORG-090/G4）：DEVTASK_CHECKPOINT=0 时跳过（回退开关）；
+    任何异常只 WARN 不阻断——devtask 是产码主链，挂线零行为差异。"""
+    if os.environ.get("DEVTASK_CHECKPOINT", "") == "0":
+        return
+    try:
+        _checkpointer().save_task_node(tid, node_key, owner, state)
+    except Exception as e:  # noqa: BLE001  fail-open：快照失败不挡工单
+        print("[WARN] checkpoint 写入失败（不阻断主流程）：%s" % e)
 
 
 def _load_projects():
@@ -123,6 +148,9 @@ def cmd_new(tid, *desc):
                   "project": project,
                   "owner": os.environ.get("AGENT_NAME", "unknown-agent")}
     _save(tasks)
+    _ckpt(tid, "kai", tasks[tid]["owner"],
+          {"desc": desc, "branch": branch, "worktree": wt,
+           "project": project})
     _emit("task_start", tid, "%s（owner=%s·project=%s）"
           % (desc, tasks[tid]["owner"], project))
     print("工单 %s 已开：%s（分支 %s）owner=%s project=%s"
@@ -227,6 +255,7 @@ def cmd_merge(tid):
     t["status"] = "done"
     t["merged"] = time.strftime("%F %T")
     _save(tasks)
+    _ckpt(tid, "merge", t.get("owner", "devtask"), {"status": "done"})
     _emit("merge_done", tid, "三守卫全绿，已合并 master")
     print("工单 %s 已合并清场 ✓" % tid)
     return 0
