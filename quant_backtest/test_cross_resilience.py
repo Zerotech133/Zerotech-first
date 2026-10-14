@@ -91,11 +91,14 @@ class TestSig4Decouple(_Base):
 
     def test_sig4_from_sigs_when_longs_missing(self):
         """longs 缺失 → 从 sigs 现算持仓数（3/4 → long）。"""
+        def sig4_hit(d, code):
+            st = {s["code"]: s for s in d["stocks"]}[code]
+            return next(h for h in st["hits"] if h["sid"] == "sig4")
+
         d = cross_poll.build_cross(force=True)
-        st = {s["code"]: s for s in d["stocks"]}
-        self.assertEqual(st["300750.SZ"]["n_long"], 1)   # sigs 4/4 → long
-        self.assertEqual(st["000001.SZ"]["n_long"], 0)   # sigs 1/4 → neutral
-        self.assertEqual(st["600519.SH"]["n_long"], 1)   # longs=4 直读
+        self.assertEqual(sig4_hit(d, "300750.SZ")["dir"], "long")    # sigs 4/4
+        self.assertEqual(sig4_hit(d, "000001.SZ")["dir"], "neutral")  # sigs 1/4
+        self.assertEqual(sig4_hit(d, "600519.SH")["dir"], "long")     # longs=4
 
     def test_single_source_error_degrades_no_crash(self):
         """sig4 loader 抛异常 → 整体不崩，src_state=error，其余源照常。"""
@@ -193,11 +196,14 @@ class TestSourceHealth(_Base):
 
     def test_stale_by_age(self):
         """sig4 锚超阈值（>5 日历日）→ stale；qpzm 超 3 日 → stale。"""
-        self._stale_rps(days_ago=6)
+        days = 6
+        self._stale_rps(days_ago=days)
         h = cross_poll.source_health()
         self.assertEqual(h["qpzm"]["status"], "stale")
         self.assertEqual(h["sig4"]["status"], "stale")
-        self.assertEqual(h["qpzm"]["anchor"], self.ts[:10])
+        self.assertEqual(h["qpzm"]["anchor"],
+                         (datetime.now() - timedelta(days=days))
+                         .strftime("%Y-%m-%d"))
 
     def test_missing_when_file_absent(self):
         """rps 产物缺失 → qpzm/sig4 missing（锚空）；9dim 文件缺 → missing。"""

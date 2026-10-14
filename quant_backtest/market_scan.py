@@ -196,6 +196,14 @@ def scan_market(d0, d1, workers=None, progress=None):
     fp = os.path.join(OUT_DIR, "sig_events_market_v3_%s_%s.json" % (d0, d1))
     json.dump({"meta": meta, "events": events}, open(fp, "w", encoding="utf-8"),
               ensure_ascii=False)
+    # W5 影子采集（gate-shadow-dev 20261014）：cross 三档虚拟对照
+    # θ∈{40,45,50}，只记不改——读本产物 meta.d1 当日事件 + 宽度序列锚。
+    # 注记式 try/except，采集失败不影响扫描产线；collect_run 自身亦不抛。
+    try:
+        import gate_shadow_collect as _gsc
+        _gsc.collect_run(strategies=("cross",))
+    except Exception as _ex:
+        print("GATE_SHADOW fail: %s" % str(_ex)[:100], flush=True)
     if progress:
         progress("扫描", 100, f"完成：{len(stocks)} 只 · {len(events)} 事件 · {meta['seconds']}s")
     return events, meta

@@ -166,7 +166,8 @@
     ]
   },
   "cross": {
-    "source_health_alert": true
+    "source_health_alert": true,
+    "sort_key": "net"
   },
   "opt_discipline_gate": true
 }

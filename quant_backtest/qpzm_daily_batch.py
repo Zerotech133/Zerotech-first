@@ -223,6 +223,15 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
     n_sel = len(_sel_picks(row["picks"]))
     print("BATCH archive: %s live picks=%d CN买入/观察=%d" % (
         date, len(row["picks"]), n_sel), flush=True)
+    # W5 影子采集（gate-shadow-dev 20261014）：环境闸门三档虚拟对照
+    # θ∈{40,45,50}，只记不改——双刀直接读 qd_scan_cache 产物（不改
+    # qd_scanner），cross 由 market_scan 挂载点自采。注记式 try/except，
+    # 采集失败不影响产线；collect_run 自身亦不抛（双保险）。
+    try:
+        import gate_shadow_collect as _gsc
+        _gsc.collect_run(strategies=("qd", "qpzm"))
+    except Exception as _ex:
+        print("GATE_SHADOW fail: %s" % str(_ex)[:120], flush=True)
     return row
 
 

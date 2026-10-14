@@ -218,11 +218,23 @@ def main():
         elif re.search(r"\*\*?通过", out):
             qa1_verdict = "通过(格式降级匹配)"
         else:
-            # 判例(K-ORG-068 轮1): 无结论≠退回——误判会触发无谓返修, fail-stop
-            write_trace("QA1_UNPARSEABLE")
-            print("[结论] QA1 输出无法解析出结论 → fail-stop（stdout 尾部: %r）"
-                  % out.strip()[-200:])
-            sys.exit(4)
+            # 终极兜底(K-ORG-068 d段): stdout 格式漂移时, review_verdict 落账
+            # 必有「结论：**X**」格式——账本是结论的最终事实源。
+            rc, ev, _ = run([PY, "-c",
+                             "import json\n"
+                             "for L in reversed(open(r'portal/data/dev_events.jsonl',encoding='utf-8')):\n"
+                             "    e=json.loads(L)\n"
+                             "    if e.get('kind')=='review_verdict' and e.get('task')==%r:\n"
+                             "        print(e.get('detail','')[:400]);break\n" % TID])
+            m2 = re.search(r"结论[：:]\s*\*\*([^*]+)\*\*", ev)
+            if m2:
+                qa1_verdict = m2.group(1).strip() + "(账本兜底)"
+            else:
+                # 判例(K-ORG-068 轮1): 无结论≠退回——误判会触发无谓返修, fail-stop
+                write_trace("QA1_UNPARSEABLE")
+                print("[结论] QA1 stdout+账本均无法解析出结论 → fail-stop（stdout 尾部: %r）"
+                      % out.strip()[-200:])
+                sys.exit(4)
         log("QA1(轮%d)" % (rnd + 1), qa1_verdict)
         if ("通过" in qa1_verdict) and ("退回" not in qa1_verdict):
             break

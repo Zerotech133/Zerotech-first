@@ -27,6 +27,17 @@ W3-4 韧性改造（20261014 cross-resilience-dev）：
 · 源健康检查 source_health()：四源 ok/stale/missing 三态 + 数据锚日期，
   stale/missing 时可经 runner.push_feishu 发告警（config cross 节
   source_health_alert 开关，测试走 dry 模式不真推）。
+
+W5 净向分排序（20261014 cross-netdev，v1.1 计划滚动项）：
+· 排序键切换 sort_key（config.json cross 节，缺省 "net"；设 "raw" 一键
+  回退旧长票计数排序）：net_score = Σ(源方向分×源权重)/Σ(可用源权重)，
+  方向分 long=+1/short=-1/neutral=0，归一化使口径在降级日保持 [-1,1]；
+· 9dim 反指显式处理（W3-4 网格结论 + W5 批准口径）：方向取反 × 权重
+  0.5（贡献 -0.5）——改前聚合把 9dim 当普通 long 计入 n_long，未体现
+  反指语义，本版在净向分中显式处理并留痕（W3-4 网格 down0.5 为 +0.5、
+  reverse 为 -1.0，W5 批准的 -0.5 为两者折中的保守口径）；
+· 单源缺失（src_state 非 ok）时该源不计入分子、权重同步剔除出分母
+  （归一化），与韧性降级语义共存；k 门槛/买入观望分级阈值不动。
 """
 import json
 import os
@@ -45,6 +56,16 @@ TOPN_DEFAULT = 10               # k 门槛后 TopN 条数（对齐 cross_grid_ba
 CACHE_TTL = 60                  # 门户请求级缓存（秒）
 _CACHE = {"t": 0, "d": None}    # 门户请求级缓存状态（test_ui_drilldown mock 点）
 CONFIG_FP = os.path.join(HERE, "config.json")
+
+# ── W5 净向分排序参数（公式对齐 cross_grid_backtest：Σ dir×w） ──
+SORT_KEY_DEFAULT = "net"        # 排序键缺省：net（W5 直上）；"raw" 回退旧行为
+SRC_W = {                       # 源权重（W3-4 网格口径：qpzm/sig4/chanlun=1.0）
+    "qpzm": 1.0, "sig4": 1.0, "chanlun": 1.0,
+    "9dim": 0.5,                # 9dim 降权 0.5（共振内削弱单源噪声）
+}
+SRC_DIR_SIGN = {"9dim": -1.0}   # 9dim 反指：方向取反（long 计 -1），
+                                # 贡献 = -1×0.5 = -0.5（W5 批准口径，见模块头注释）
+_DIR_VAL = {"long": 1.0, "short": -1.0, "neutral": 0.0}
 
 # 源健康过期阈值（日历日近似；交易日精确判定见文档遗留风险）
 STALE_DAYS = {
@@ -228,6 +249,40 @@ STRATEGIES = [
 ]
 
 
+def _sort_key_cfg():
+    """读 config cross.sort_key（缺省 net；非法值按缺省处理不炸）。"""
+    cfg = _load_json(CONFIG_FP, default={}).get("cross") or {}
+    sk = str(cfg.get("sort_key") or SORT_KEY_DEFAULT).strip().lower()
+    return sk if sk in ("net", "raw") else SORT_KEY_DEFAULT
+
+
+def net_score_of(st, src_state):
+    """单票净向分：Σ(源方向分×源权重×源方向符号) / Σ(可用源权重)。
+
+    · 方向分：long=+1 / short=-1 / neutral=0（未命中的可用源贡献 0）；
+    · 9dim 反指：方向取反 × 权重 0.5 → 命中贡献 -0.5（SRC_DIR_SIGN）；
+    · 单源缺失（src_state 非 ok）：该源不进分子、权重剔出分母（归一化，
+      使降级日分数口径保持 [-1,1] 可比）；分母为 0（极端：全源缺失）→ 0.0。
+    """
+    num, den = 0.0, 0.0
+    for sid, w in SRC_W.items():
+        if (src_state or {}).get(sid, {}).get("status") != "ok":
+            continue                      # 缺失源：分子分母同步剔除
+        den += w
+        for h in st.get("hits", ()):
+            if h["sid"] == sid:
+                num += SRC_DIR_SIGN.get(sid, 1.0) * _DIR_VAL[h["dir"]] * w
+    return round(num / den, 4) if den > 0 else 0.0
+
+
+def _sort_stocks(stocks, sort_key):
+    """按排序键排序（降序）。net=净向分（平票按 code 稳定序，对齐网格
+    lexsort 口径）；raw=旧长票计数（-n_hit,-n_long,code），一键回退。"""
+    if sort_key == "net":
+        return sorted(stocks, key=lambda x: (-x["net_score"], x["code"]))
+    return sorted(stocks, key=lambda x: (-x["n_hit"], -x["n_long"], x["code"]))
+
+
 def build_cross(force=False):
     """聚合全部注册策略 → {generated_at, strategies, stocks, matrix, ...}。
     stocks[]: code/name/market/hits[{sid,dir,label,url,badge,color}]/n_hit/
@@ -241,7 +296,9 @@ def build_cross(force=False):
     · k_gate:     {k, n_sources_ok, mode, note}——mode∈normal（4 源全在，
       k=3）/ degraded_k3（可用源=3，仍 k=3）/ blocked（可用源<3，k=3
       数学不可达，topn 产空 + 醒目 DEGRADED，不自动降 k 防放水）；
-    · topn:       n_hit≥k 的票按命中数排序取前 TOPN_DEFAULT（blocked 时 []）。
+    · topn:       n_hit≥k 的票按排序键（cross.sort_key，缺省 net 净向分）
+      降序取前 TOPN_DEFAULT（blocked 时 []）；net 模式下每票带 net_score
+      字段（[-1,1] 归一化净向分），输出带 sort_key 口径标注供下游识别。
     """
     if not force and _CACHE["d"] and time.time() - _CACHE["t"] < CACHE_TTL:
         return _CACHE["d"]
@@ -307,8 +364,14 @@ def build_cross(force=False):
                           "不可达，TopN 产空（不降门槛放水）；缺失[%s]"
                           % (n_ok, K_RES, K_RES, ",".join(sorted(bad))))
     k_gate = {"k": K_RES, "n_sources_ok": n_ok, "mode": k_mode, "note": k_note}
-    topn = sorted((st for st in stocks.values() if st["n_hit"] >= K_RES),
-                  key=lambda x: (-x["n_hit"], -x["n_long"], x["code"]))
+    # W5 排序键：net=净向分（每票带 net_score 字段）；raw=旧长票计数回退
+    sort_key = _sort_key_cfg()
+    if sort_key == "net":
+        for st in stocks.values():
+            st["net_score"] = net_score_of(st, src_state)
+    srt = _sort_stocks(list(stocks.values()), sort_key)
+    # k 门槛过滤（判例式：排序键只改序，不放水——blocked/degraded 同此口径）
+    topn = [st for st in srt if st["n_hit"] >= K_RES]
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
            "strategies": [{k: v for k, v in s.items() if k != "loader"}
                           for s in STRATEGIES],
@@ -319,10 +382,9 @@ def build_cross(force=False):
                             "DEGRADED：源缺失/异常[%s]，%s"
                             % (",".join(sorted(bad)), k_note)),
            "k_gate": k_gate,
+           "sort_key": sort_key,
            "topn": topn[:TOPN_DEFAULT],
-           "stocks": sorted(stocks.values(),
-                            key=lambda x: (-x["n_hit"], -x["n_long"],
-                                           x["code"])),
+           "stocks": srt,
            "matrix": matrix}
     _CACHE["t"], _CACHE["d"] = time.time(), out
     return out
@@ -471,5 +533,9 @@ if __name__ == "__main__":
     kg = d["k_gate"]
     print("k 门槛: mode=%s k=%d 可用源=%d | %s" %
           (kg["mode"], kg["k"], kg["n_sources_ok"], kg["note"]))
+    # W5：排序键口径标注（下游/推送卡可见）
+    sk_note = ("净向分 net=Σ(dir×w)/Σw（9dim 反向×0.5）"
+               if d["sort_key"] == "net" else "长票计数（旧行为）")
+    print("排序键: sort_key=%s（%s）" % (d["sort_key"], sk_note))
     if d["degraded"]:
         print("[DEGRADED] %s" % d["degrade_note"])

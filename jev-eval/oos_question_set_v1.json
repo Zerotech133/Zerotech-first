@@ -1,0 +1,1197 @@
+{
+  "meta": {
+    "name": "jev-oos-question-set",
+    "version": "v1",
+    "generated_at": "2026-10-14T12:50:07",
+    "generator": "jev_oos_question_gen.py",
+    "seed": 20261014,
+    "purpose": "OOS 防过拟合题集：全部题目来自未参与过任何评估的候选池事件",
+    "exclusion_rules": [
+      "排除 review_data/triples.jsonl 中的 candidate_id（影子门校准已用）",
+      "排除 replay/replay-20260922-*.jsonl 中的 (ts_code, pool_date)（v2 影子决策设计已用）",
+      "排除 candidate_score<=0（评分缺失，HK v1 通道）"
+    ],
+    "sampling_rules": [
+      "层 = 市场域×评分段（low<0.5 / mid 0.5-0.7 / high>=0.7）",
+      "市场域配额 ∝ sqrt(域样本量)，每域至少 4；域内按评分段比例分层，小段不足给多少算多少、余量回补大段",
+      "目标 36 事件 × 2 题 = 72 题",
+      "固定种子可复现；事件内 candidate_id 排序后抽样，防 DB 返回序漂移"
+    ],
+    "question_rules": [
+      "每事件 2 题：noul（对 state 事实真/假陈述，4 循环均衡答案）+ choice（市场域四选一，正确项位置轮转）或 score（评分三档）交替",
+      "答案全部由源数据确定性推导，无人工标注；每题 src 字段可回溯事件",
+      "state 不含题目答案之外的评价性内容（防泄题）"
+    ],
+    "stratum_base": {
+      "by_market": {
+        "CN": 1201,
+        "CRYPTO": 102,
+        "US": 212,
+        "HK": 84
+      },
+      "by_band": {
+        "high": 1481,
+        "low": 63,
+        "mid": 55
+      }
+    },
+    "answer_distribution": {
+      "noul_true_false": [
+        18,
+        18
+      ],
+      "choice_answer_index": {
+        "0": 7,
+        "2": 5,
+        "3": 3,
+        "1": 3
+      },
+      "score_answer_level": {
+        "2": 16,
+        "0": 1,
+        "1": 1
+      }
+    },
+    "known_limits": [
+      "mid 段（0.5-0.7）在 fresh 池内天然稀薄，score 题 answer_level 分布随数据偏置（已在 answer_distribution 披露），判读时注意",
+      "加密域事件少，配额下限保证其存在但样本代表性有限"
+    ],
+    "how_to_run": "评估执行需将 jev_eval.py QUESTIONS_FILE 指向本文件；是否跑、何时跑由老田拍板（本生成不消耗 AI 调用）"
+  },
+  "questions": [
+    {
+      "id": "oos-n001",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-07，CN（A股），池类型 PREMARKET）：标的 300836.SZ，策略评分 0.5556。信号理由：均值回归: close=49.80 低于MA20=55.52 10.3%, 20日=-27.5%, 当日=-1.27%",
+      "question": "该候选的策略评分为 0.5556。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cn_asset_989",
+        "pool_date": "2026-08-07",
+        "market": "CN",
+        "score": 0.5556
+      }
+    },
+    {
+      "id": "oos-c001",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-07，CN（A股），池类型 PREMARKET）：标的 300836.SZ，策略评分 0.5556。信号理由：均值回归: close=49.80 低于MA20=55.52 10.3%, 20日=-27.5%, 当日=-1.27%",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 0,
+      "src": {
+        "candidate_id": "cn_asset_989",
+        "pool_date": "2026-08-07",
+        "market": "CN",
+        "score": 0.5556
+      }
+    },
+    {
+      "id": "oos-n002",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-18，CN（A股），池类型 PREMARKET）：标的 002428.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[78.00,82.76](8笔), 量价背驰强, 量价同步",
+      "question": "该候选的策略评分为 0.9500。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-002428.SZ-2026-09-18",
+        "pool_date": "2026-09-18",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s001",
+      "type": "score",
+      "state": "候选信号事件（2026-09-18，CN（A股），池类型 PREMARKET）：标的 002428.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[78.00,82.76](8笔), 量价背驰强, 量价同步",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-002428.SZ-2026-09-18",
+        "pool_date": "2026-09-18",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n003",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-15，CN（A股），池类型 PREMARKET）：标的 000026.SZ，策略评分 0.8800。信号理由：缠论三买, 中枢[14.90,15.49](11笔), 量价背驰中, 量价同步",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-000026.SZ-2026-09-15",
+        "pool_date": "2026-09-15",
+        "market": "CN",
+        "score": 0.88
+      }
+    },
+    {
+      "id": "oos-c002",
+      "type": "choice",
+      "state": "候选信号事件（2026-09-15，CN（A股），池类型 PREMARKET）：标的 000026.SZ，策略评分 0.8800。信号理由：缠论三买, 中枢[14.90,15.49](11笔), 量价背驰中, 量价同步",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 2,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-000026.SZ-2026-09-15",
+        "pool_date": "2026-09-15",
+        "market": "CN",
+        "score": 0.88
+      }
+    },
+    {
+      "id": "oos-n004",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-22，CN（A股），池类型 PREMARKET）：标的 603283.SH，策略评分 0.9886。信号理由：均值回归: close=45.86 低于MA20=64.05 28.4%, 20日=-34.4%, 当日=8.75%",
+      "question": "该候选信号属于 US（美股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cn_asset_621",
+        "pool_date": "2026-07-22",
+        "market": "CN",
+        "score": 0.9886
+      }
+    },
+    {
+      "id": "oos-s002",
+      "type": "score",
+      "state": "候选信号事件（2026-07-22，CN（A股），池类型 PREMARKET）：标的 603283.SH，策略评分 0.9886。信号理由：均值回归: close=45.86 低于MA20=64.05 28.4%, 20日=-34.4%, 当日=8.75%",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cn_asset_621",
+        "pool_date": "2026-07-22",
+        "market": "CN",
+        "score": 0.9886
+      }
+    },
+    {
+      "id": "oos-n005",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-28，CN（A股），池类型 PREMARKET）：标的 603211.SH，策略评分 0.9831。信号理由：均值回归: close=24.95 低于MA20=32.01 22.0%, 20日=-29.7%, 当日=2.67%",
+      "question": "该候选的策略评分为 0.9831。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cn_asset_743",
+        "pool_date": "2026-07-28",
+        "market": "CN",
+        "score": 0.9831
+      }
+    },
+    {
+      "id": "oos-c003",
+      "type": "choice",
+      "state": "候选信号事件（2026-07-28，CN（A股），池类型 PREMARKET）：标的 603211.SH，策略评分 0.9831。信号理由：均值回归: close=24.95 低于MA20=32.01 22.0%, 20日=-29.7%, 当日=2.67%",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 0,
+      "src": {
+        "candidate_id": "cn_asset_743",
+        "pool_date": "2026-07-28",
+        "market": "CN",
+        "score": 0.9831
+      }
+    },
+    {
+      "id": "oos-n006",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-14，CN（A股），池类型 PREMARKET）：标的 603093.SH，策略评分 1.0000。信号理由：均值回归: close=12.20 低于MA20=16.02 23.8%, 20日=-26.4%, 当日=-2.63%",
+      "question": "该候选的策略评分为 0.9500。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cn_asset_1275",
+        "pool_date": "2026-08-14",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s003",
+      "type": "score",
+      "state": "候选信号事件（2026-08-14，CN（A股），池类型 PREMARKET）：标的 603093.SH，策略评分 1.0000。信号理由：均值回归: close=12.20 低于MA20=16.02 23.8%, 20日=-26.4%, 当日=-2.63%",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cn_asset_1275",
+        "pool_date": "2026-08-14",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n007",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-11，CN（A股），池类型 PREMARKET）：标的 300192.SZ，策略评分 0.9969。信号理由：均值回归: close=11.34 低于MA20=16.13 29.7%, 20日=-29.9%, 当日=-1.13%",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cn_asset_191",
+        "pool_date": "2026-07-11",
+        "market": "CN",
+        "score": 0.9969
+      }
+    },
+    {
+      "id": "oos-c004",
+      "type": "choice",
+      "state": "候选信号事件（2026-07-11，CN（A股），池类型 PREMARKET）：标的 300192.SZ，策略评分 0.9969。信号理由：均值回归: close=11.34 低于MA20=16.13 29.7%, 20日=-29.9%, 当日=-1.13%",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 2,
+      "src": {
+        "candidate_id": "cn_asset_191",
+        "pool_date": "2026-07-11",
+        "market": "CN",
+        "score": 0.9969
+      }
+    },
+    {
+      "id": "oos-n008",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-10，CN（A股），池类型 PREMARKET）：标的 300461.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[19.58,20.33](14笔), 量价背驰强, 量价同步",
+      "question": "该候选信号属于 US（美股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cn_asset_117",
+        "pool_date": "2026-07-10",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s004",
+      "type": "score",
+      "state": "候选信号事件（2026-07-10，CN（A股），池类型 PREMARKET）：标的 300461.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[19.58,20.33](14笔), 量价背驰强, 量价同步",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cn_asset_117",
+        "pool_date": "2026-07-10",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n009",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-29，CN（A股），池类型 PREMARKET）：标的 002850.SZ，策略评分 0.9200。信号理由：缠论三买, 中枢[108.11,121.80](3笔), 量价背驰强, 量价同步",
+      "question": "该候选的策略评分为 0.9200。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cn_asset_814",
+        "pool_date": "2026-07-29",
+        "market": "CN",
+        "score": 0.92
+      }
+    },
+    {
+      "id": "oos-c005",
+      "type": "choice",
+      "state": "候选信号事件（2026-07-29，CN（A股），池类型 PREMARKET）：标的 002850.SZ，策略评分 0.9200。信号理由：缠论三买, 中枢[108.11,121.80](3笔), 量价背驰强, 量价同步",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 0,
+      "src": {
+        "candidate_id": "cn_asset_814",
+        "pool_date": "2026-07-29",
+        "market": "CN",
+        "score": 0.92
+      }
+    },
+    {
+      "id": "oos-n010",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-11，CN（A股），池类型 PREMARKET）：标的 603308.SH，策略评分 1.0000。信号理由：缠论三买, 中枢[39.89,44.44](6笔), 量价背驰强, 量价同步",
+      "question": "该候选的策略评分为 0.9500。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cn_asset_177",
+        "pool_date": "2026-07-11",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s005",
+      "type": "score",
+      "state": "候选信号事件（2026-07-11，CN（A股），池类型 PREMARKET）：标的 603308.SH，策略评分 1.0000。信号理由：缠论三买, 中枢[39.89,44.44](6笔), 量价背驰强, 量价同步",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cn_asset_177",
+        "pool_date": "2026-07-11",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n011",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-22，CN（A股），池类型 PREMARKET）：标的 000506.SZ，策略评分 0.9000。信号理由：缠论三买, 中枢[15.20,15.79](7笔), 量价背驰强",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-000506.SZ-2026-09-22",
+        "pool_date": "2026-09-22",
+        "market": "CN",
+        "score": 0.9
+      }
+    },
+    {
+      "id": "oos-c006",
+      "type": "choice",
+      "state": "候选信号事件（2026-09-22，CN（A股），池类型 PREMARKET）：标的 000506.SZ，策略评分 0.9000。信号理由：缠论三买, 中枢[15.20,15.79](7笔), 量价背驰强",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 2,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-000506.SZ-2026-09-22",
+        "pool_date": "2026-09-22",
+        "market": "CN",
+        "score": 0.9
+      }
+    },
+    {
+      "id": "oos-n012",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-30，CN（A股），池类型 PREMARKET）：标的 603308.SH，策略评分 1.0000。信号理由：缠论三买, 中枢[39.89,44.44](6笔), 量价背驰强, 量价同步",
+      "question": "该候选信号属于 US（美股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cn_asset_885",
+        "pool_date": "2026-07-30",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s006",
+      "type": "score",
+      "state": "候选信号事件（2026-07-30，CN（A股），池类型 PREMARKET）：标的 603308.SH，策略评分 1.0000。信号理由：缠论三买, 中枢[39.89,44.44](6笔), 量价背驰强, 量价同步",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cn_asset_885",
+        "pool_date": "2026-07-30",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n013",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-17，CN（A股），池类型 PREMARKET）：标的 300442.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[47.01,51.75](14笔), 量价背驰强, 量价同步",
+      "question": "该候选的策略评分为 1.0000。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cn_asset_455",
+        "pool_date": "2026-07-17",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-c007",
+      "type": "choice",
+      "state": "候选信号事件（2026-07-17，CN（A股），池类型 PREMARKET）：标的 300442.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[47.01,51.75](14笔), 量价背驰强, 量价同步",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 0,
+      "src": {
+        "candidate_id": "cn_asset_455",
+        "pool_date": "2026-07-17",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n014",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-10，CN（A股），池类型 PREMARKET）：标的 002969.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[3.45,3.62](13笔), 量价背驰强, 量价同步",
+      "question": "该候选的策略评分为 0.9500。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cn_asset_114",
+        "pool_date": "2026-07-10",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s007",
+      "type": "score",
+      "state": "候选信号事件（2026-07-10，CN（A股），池类型 PREMARKET）：标的 002969.SZ，策略评分 1.0000。信号理由：缠论三买, 中枢[3.45,3.62](13笔), 量价背驰强, 量价同步",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cn_asset_114",
+        "pool_date": "2026-07-10",
+        "market": "CN",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n015",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-09，CN（A股），池类型 PREMARKET）：标的 600785.SH，策略评分 0.9925。信号理由：均值回归: close=9.49 低于MA20=12.59 24.6%, 20日=-34.6%, 当日=-0.32%",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cn_asset_48",
+        "pool_date": "2026-07-09",
+        "market": "CN",
+        "score": 0.9925
+      }
+    },
+    {
+      "id": "oos-c008",
+      "type": "choice",
+      "state": "候选信号事件（2026-07-09，CN（A股），池类型 PREMARKET）：标的 600785.SH，策略评分 0.9925。信号理由：均值回归: close=9.49 低于MA20=12.59 24.6%, 20日=-34.6%, 当日=-0.32%",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 2,
+      "src": {
+        "candidate_id": "cn_asset_48",
+        "pool_date": "2026-07-09",
+        "market": "CN",
+        "score": 0.9925
+      }
+    },
+    {
+      "id": "oos-n016",
+      "type": "noul",
+      "state": "候选信号事件（2026-07-17，CN（A股），池类型 PREMARKET）：标的 300492.SZ，策略评分 0.9823。信号理由：均值回归: close=23.56 低于MA20=30.36 22.4%, 20日=-34.9%, 当日=1.77%",
+      "question": "该候选信号属于 US（美股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cn_asset_448",
+        "pool_date": "2026-07-17",
+        "market": "CN",
+        "score": 0.9823
+      }
+    },
+    {
+      "id": "oos-s008",
+      "type": "score",
+      "state": "候选信号事件（2026-07-17，CN（A股），池类型 PREMARKET）：标的 300492.SZ，策略评分 0.9823。信号理由：均值回归: close=23.56 低于MA20=30.36 22.4%, 20日=-34.9%, 当日=1.77%",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cn_asset_448",
+        "pool_date": "2026-07-17",
+        "market": "CN",
+        "score": 0.9823
+      }
+    },
+    {
+      "id": "oos-n017",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-15，CN（A股），池类型 PREMARKET）：标的 688147.SH，策略评分 0.9000。信号理由：缠论三买, 中枢[66.00,76.55](10笔), 量价背驰强",
+      "question": "该候选的策略评分为 0.9000。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-688147.SH-2026-09-15",
+        "pool_date": "2026-09-15",
+        "market": "CN",
+        "score": 0.9
+      }
+    },
+    {
+      "id": "oos-c009",
+      "type": "choice",
+      "state": "候选信号事件（2026-09-15，CN（A股），池类型 PREMARKET）：标的 688147.SH，策略评分 0.9000。信号理由：缠论三买, 中枢[66.00,76.55](10笔), 量价背驰强",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 0,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-688147.SH-2026-09-15",
+        "pool_date": "2026-09-15",
+        "market": "CN",
+        "score": 0.9
+      }
+    },
+    {
+      "id": "oos-n018",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-17，CN（A股），池类型 PREMARKET）：标的 601677.SH，策略评分 0.9400。信号理由：缠论三买, 中枢[13.04,14.14](8笔), MACD底背驰确认, 量价背驰中, 量价同步",
+      "question": "该候选的策略评分为 0.9900。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-601677.SH-2026-09-17",
+        "pool_date": "2026-09-17",
+        "market": "CN",
+        "score": 0.94
+      }
+    },
+    {
+      "id": "oos-s009",
+      "type": "score",
+      "state": "候选信号事件（2026-09-17，CN（A股），池类型 PREMARKET）：标的 601677.SH，策略评分 0.9400。信号理由：缠论三买, 中枢[13.04,14.14](8笔), MACD底背驰确认, 量价背驰中, 量价同步",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cand-v1-cn-sv-7-601677.SH-2026-09-17",
+        "pool_date": "2026-09-17",
+        "market": "CN",
+        "score": 0.94
+      }
+    },
+    {
+      "id": "oos-n019",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-11，US（美股），池类型 PREMARKET）：标的 LITE，策略评分 1.0000。信号理由：ma_cross=33.8475",
+      "question": "该候选信号属于 US（美股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "us_asset_61",
+        "pool_date": "2026-08-11",
+        "market": "US",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-c010",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-11，US（美股），池类型 PREMARKET）：标的 LITE，策略评分 1.0000。信号理由：ma_cross=33.8475",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 3,
+      "src": {
+        "candidate_id": "us_asset_61",
+        "pool_date": "2026-08-11",
+        "market": "US",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n020",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-17，US（美股），池类型 PREMARKET）：标的 MSFT，策略评分 1.0000。信号理由：ma_cross=48.6750",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "us_asset_239",
+        "pool_date": "2026-08-17",
+        "market": "US",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s010",
+      "type": "score",
+      "state": "候选信号事件（2026-08-17，US（美股），池类型 PREMARKET）：标的 MSFT，策略评分 1.0000。信号理由：ma_cross=48.6750",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "us_asset_239",
+        "pool_date": "2026-08-17",
+        "market": "US",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n021",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-18，US（美股），池类型 PREMARKET）：标的 MU，策略评分 1.0000。信号理由：ma_cross=45.2435",
+      "question": "该候选的策略评分为 1.0000。",
+      "answer": true,
+      "src": {
+        "candidate_id": "us_asset_297",
+        "pool_date": "2026-08-18",
+        "market": "US",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-c011",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-18，US（美股），池类型 PREMARKET）：标的 MU，策略评分 1.0000。信号理由：ma_cross=45.2435",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 1,
+      "src": {
+        "candidate_id": "us_asset_297",
+        "pool_date": "2026-08-18",
+        "market": "US",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n022",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-13，US（美股），池类型 PREMARKET）：标的 ACN，策略评分 0.9466。信号理由：趋势动量: close=180.14>MA20=160.63, MA5>MA10>MA20多头排列, MA20向上, 20日动量=31.5%, 20日均额=11.30亿",
+      "question": "该候选的策略评分为 0.9966。",
+      "answer": false,
+      "src": {
+        "candidate_id": "us_asset_159",
+        "pool_date": "2026-08-13",
+        "market": "US",
+        "score": 0.9466
+      }
+    },
+    {
+      "id": "oos-s011",
+      "type": "score",
+      "state": "候选信号事件（2026-08-13，US（美股），池类型 PREMARKET）：标的 ACN，策略评分 0.9466。信号理由：趋势动量: close=180.14>MA20=160.63, MA5>MA10>MA20多头排列, MA20向上, 20日动量=31.5%, 20日均额=11.30亿",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "us_asset_159",
+        "pool_date": "2026-08-13",
+        "market": "US",
+        "score": 0.9466
+      }
+    },
+    {
+      "id": "oos-n023",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-12，US（美股），池类型 PREMARKET）：标的 ZBRA，策略评分 0.8964。信号理由：趋势动量: close=364.24>MA20=285.09, MA5>MA10>MA20多头排列, MA20向上, 20日动量=33.6%, 20日均额=2.62亿",
+      "question": "该候选信号属于 US（美股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "us_asset_107",
+        "pool_date": "2026-08-12",
+        "market": "US",
+        "score": 0.8964
+      }
+    },
+    {
+      "id": "oos-c012",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-12，US（美股），池类型 PREMARKET）：标的 ZBRA，策略评分 0.8964。信号理由：趋势动量: close=364.24>MA20=285.09, MA5>MA10>MA20多头排列, MA20向上, 20日动量=33.6%, 20日均额=2.62亿",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 3,
+      "src": {
+        "candidate_id": "us_asset_107",
+        "pool_date": "2026-08-12",
+        "market": "US",
+        "score": 0.8964
+      }
+    },
+    {
+      "id": "oos-n024",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-11，US（美股），池类型 PREMARKET）：标的 IT，策略评分 0.9034。信号理由：趋势动量: close=184.82>MA20=149.40, MA5>MA10>MA20多头排列, MA20向上, 20日动量=39.3%, 20日均额=2.35亿",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "us_asset_47",
+        "pool_date": "2026-08-11",
+        "market": "US",
+        "score": 0.9034
+      }
+    },
+    {
+      "id": "oos-s012",
+      "type": "score",
+      "state": "候选信号事件（2026-08-11，US（美股），池类型 PREMARKET）：标的 IT，策略评分 0.9034。信号理由：趋势动量: close=184.82>MA20=149.40, MA5>MA10>MA20多头排列, MA20向上, 20日动量=39.3%, 20日均额=2.35亿",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "us_asset_47",
+        "pool_date": "2026-08-11",
+        "market": "US",
+        "score": 0.9034
+      }
+    },
+    {
+      "id": "oos-n025",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-17，US（美股），池类型 PREMARKET）：标的 CRWV，策略评分 0.9886。信号理由：趋势动量: close=105.26>MA20=83.71, MA5>MA10>MA20多头排列, MA20向上, 20日动量=43.8%, 20日均额=27.91亿",
+      "question": "该候选的策略评分为 0.9886。",
+      "answer": true,
+      "src": {
+        "candidate_id": "us_asset_215",
+        "pool_date": "2026-08-17",
+        "market": "US",
+        "score": 0.9886
+      }
+    },
+    {
+      "id": "oos-c013",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-17，US（美股），池类型 PREMARKET）：标的 CRWV，策略评分 0.9886。信号理由：趋势动量: close=105.26>MA20=83.71, MA5>MA10>MA20多头排列, MA20向上, 20日动量=43.8%, 20日均额=27.91亿",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 1,
+      "src": {
+        "candidate_id": "us_asset_215",
+        "pool_date": "2026-08-17",
+        "market": "US",
+        "score": 0.9886
+      }
+    },
+    {
+      "id": "oos-n026",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-13，US（美股），池类型 PREMARKET）：标的 SAP，策略评分 0.9220。信号理由：趋势动量: close=204.15>MA20=179.98, MA5>MA10>MA20多头排列, MA20向上, 20日动量=30.9%, 20日均额=6.24亿",
+      "question": "该候选的策略评分为 0.9720。",
+      "answer": false,
+      "src": {
+        "candidate_id": "us_asset_163",
+        "pool_date": "2026-08-13",
+        "market": "US",
+        "score": 0.922
+      }
+    },
+    {
+      "id": "oos-s013",
+      "type": "score",
+      "state": "候选信号事件（2026-08-13，US（美股），池类型 PREMARKET）：标的 SAP，策略评分 0.9220。信号理由：趋势动量: close=204.15>MA20=179.98, MA5>MA10>MA20多头排列, MA20向上, 20日动量=30.9%, 20日均额=6.24亿",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "us_asset_163",
+        "pool_date": "2026-08-13",
+        "market": "US",
+        "score": 0.922
+      }
+    },
+    {
+      "id": "oos-n027",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-18，HK（港股），池类型 PREMARKET）：标的 01024，策略评分 1.0000。信号理由：rsi=35.9307",
+      "question": "该候选信号属于 HK（港股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "hk_asset_40",
+        "pool_date": "2026-08-18",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-c014",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-18，HK（港股），池类型 PREMARKET）：标的 01024，策略评分 1.0000。信号理由：rsi=35.9307",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 0,
+      "src": {
+        "candidate_id": "hk_asset_40",
+        "pool_date": "2026-08-18",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n028",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-12，HK（港股），池类型 PREMARKET）：标的 03690，策略评分 0.8500。信号理由：趋势动量: close=93.05>MA20=89.55, MA5>MA10>MA20多头排列, MA20向上, 20日动量=17.5%, 20日均额=46.64亿",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "hk_asset_7",
+        "pool_date": "2026-08-12",
+        "market": "HK",
+        "score": 0.85
+      }
+    },
+    {
+      "id": "oos-s014",
+      "type": "score",
+      "state": "候选信号事件（2026-08-12，HK（港股），池类型 PREMARKET）：标的 03690，策略评分 0.8500。信号理由：趋势动量: close=93.05>MA20=89.55, MA5>MA10>MA20多头排列, MA20向上, 20日动量=17.5%, 20日均额=46.64亿",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "hk_asset_7",
+        "pool_date": "2026-08-12",
+        "market": "HK",
+        "score": 0.85
+      }
+    },
+    {
+      "id": "oos-n029",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-17，HK（港股），池类型 PREMARKET）：标的 00939，策略评分 1.0000。信号理由：rsi=41.0072",
+      "question": "该候选的策略评分为 1.0000。",
+      "answer": true,
+      "src": {
+        "candidate_id": "hk_asset_27",
+        "pool_date": "2026-08-17",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-c015",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-17，HK（港股），池类型 PREMARKET）：标的 00939，策略评分 1.0000。信号理由：rsi=41.0072",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 2,
+      "src": {
+        "candidate_id": "hk_asset_27",
+        "pool_date": "2026-08-17",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n030",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-13，HK（港股），池类型 PREMARKET）：标的 03988，策略评分 1.0000。信号理由：rsi=42.6573",
+      "question": "该候选的策略评分为 0.9500。",
+      "answer": false,
+      "src": {
+        "candidate_id": "hk_asset_17",
+        "pool_date": "2026-08-13",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-s015",
+      "type": "score",
+      "state": "候选信号事件（2026-08-13，HK（港股），池类型 PREMARKET）：标的 03988，策略评分 1.0000。信号理由：rsi=42.6573",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "hk_asset_17",
+        "pool_date": "2026-08-13",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n031",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-12，HK（港股），池类型 PREMARKET）：标的 00883，策略评分 1.0000。信号理由：rsi=44.2244",
+      "question": "该候选信号属于 HK（港股） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "hk_asset_10",
+        "pool_date": "2026-08-12",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-c016",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-12，HK（港股），池类型 PREMARKET）：标的 00883，策略评分 1.0000。信号理由：rsi=44.2244",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 0,
+      "src": {
+        "candidate_id": "hk_asset_10",
+        "pool_date": "2026-08-12",
+        "market": "HK",
+        "score": 1.0
+      }
+    },
+    {
+      "id": "oos-n032",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-24，CRYPTO（加密货币），池类型 PREMARKET）：标的 APT/USDT，策略评分 0.4947。信号理由：趋势动量: close=0.81>MA20=0.66, MA5>MA10>MA20多头排列, MA20向上, 20日动量=39.9%, 20日均额=0.12亿",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cand-v1-crypto-sv-1-APT/USDT-2026-09-24",
+        "pool_date": "2026-09-24",
+        "market": "CRYPTO",
+        "score": 0.4947
+      }
+    },
+    {
+      "id": "oos-s016",
+      "type": "score",
+      "state": "候选信号事件（2026-09-24，CRYPTO（加密货币），池类型 PREMARKET）：标的 APT/USDT，策略评分 0.4947。信号理由：趋势动量: close=0.81>MA20=0.66, MA5>MA10>MA20多头排列, MA20向上, 20日动量=39.9%, 20日均额=0.12亿",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 0,
+      "src": {
+        "candidate_id": "cand-v1-crypto-sv-1-APT/USDT-2026-09-24",
+        "pool_date": "2026-09-24",
+        "market": "CRYPTO",
+        "score": 0.4947
+      }
+    },
+    {
+      "id": "oos-n033",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-16，CRYPTO（加密货币），池类型 PREMARKET）：标的 BNB/USDT，策略评分 0.5333。信号理由：趋势动量: close=607.26>MA20=595.51, MA5>MA10>MA20多头排列, MA20向上, 20日动量=7.2%, 20日均额=0.53亿",
+      "question": "该候选的策略评分为 0.5333。",
+      "answer": true,
+      "src": {
+        "candidate_id": "crypto_asset_11",
+        "pool_date": "2026-08-16",
+        "market": "CRYPTO",
+        "score": 0.5333
+      }
+    },
+    {
+      "id": "oos-c017",
+      "type": "choice",
+      "state": "候选信号事件（2026-08-16，CRYPTO（加密货币），池类型 PREMARKET）：标的 BNB/USDT，策略评分 0.5333。信号理由：趋势动量: close=607.26>MA20=595.51, MA5>MA10>MA20多头排列, MA20向上, 20日动量=7.2%, 20日均额=0.53亿",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "CN（A股）",
+        "US（美股）",
+        "HK（港股）",
+        "CRYPTO（加密货币）"
+      ],
+      "answer_index": 3,
+      "src": {
+        "candidate_id": "crypto_asset_11",
+        "pool_date": "2026-08-16",
+        "market": "CRYPTO",
+        "score": 0.5333
+      }
+    },
+    {
+      "id": "oos-n034",
+      "type": "noul",
+      "state": "候选信号事件（2026-08-18，CRYPTO（加密货币），池类型 PREMARKET）：标的 ZEC/USDT，策略评分 0.6500。信号理由：趋势动量: close=515.70>MA20=493.50, MA5>MA10>MA20多头排列, MA20向上, 20日动量=10.3%, 20日均额=0.34亿",
+      "question": "该候选的策略评分为 0.7000。",
+      "answer": false,
+      "src": {
+        "candidate_id": "crypto_asset_55",
+        "pool_date": "2026-08-18",
+        "market": "CRYPTO",
+        "score": 0.65
+      }
+    },
+    {
+      "id": "oos-s017",
+      "type": "score",
+      "state": "候选信号事件（2026-08-18，CRYPTO（加密货币），池类型 PREMARKET）：标的 ZEC/USDT，策略评分 0.6500。信号理由：趋势动量: close=515.70>MA20=493.50, MA5>MA10>MA20多头排列, MA20向上, 20日动量=10.3%, 20日均额=0.34亿",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 1,
+      "src": {
+        "candidate_id": "crypto_asset_55",
+        "pool_date": "2026-08-18",
+        "market": "CRYPTO",
+        "score": 0.65
+      }
+    },
+    {
+      "id": "oos-n035",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-17，CRYPTO（加密货币），池类型 PREMARKET）：标的 NEAR/USDT，策略评分 0.5500。信号理由：趋势动量: close=2.73>MA20=2.24, MA5>MA10>MA20多头排列, MA20向上, 20日动量=49.6%, 20日均额=0.52亿",
+      "question": "该候选信号属于 CRYPTO（加密货币） 市场域。",
+      "answer": true,
+      "src": {
+        "candidate_id": "cand-v1-crypto-sv-1-NEAR/USDT-2026-09-17",
+        "pool_date": "2026-09-17",
+        "market": "CRYPTO",
+        "score": 0.55
+      }
+    },
+    {
+      "id": "oos-c018",
+      "type": "choice",
+      "state": "候选信号事件（2026-09-17，CRYPTO（加密货币），池类型 PREMARKET）：标的 NEAR/USDT，策略评分 0.5500。信号理由：趋势动量: close=2.73>MA20=2.24, MA5>MA10>MA20多头排列, MA20向上, 20日动量=49.6%, 20日均额=0.52亿",
+      "question": "该候选信号属于哪个市场域？",
+      "options": [
+        "HK（港股）",
+        "CRYPTO（加密货币）",
+        "CN（A股）",
+        "US（美股）"
+      ],
+      "answer_index": 1,
+      "src": {
+        "candidate_id": "cand-v1-crypto-sv-1-NEAR/USDT-2026-09-17",
+        "pool_date": "2026-09-17",
+        "market": "CRYPTO",
+        "score": 0.55
+      }
+    },
+    {
+      "id": "oos-n036",
+      "type": "noul",
+      "state": "候选信号事件（2026-09-19，CRYPTO（加密货币），池类型 PREMARKET）：标的 UNI/USDT，策略评分 0.7000。信号理由：趋势动量: close=8.70>MA20=6.65, MA5>MA10>MA20多头排列, MA20向上, 20日动量=69.5%, 20日均额=0.75亿",
+      "question": "该候选信号属于 CN（A股） 市场域。",
+      "answer": false,
+      "src": {
+        "candidate_id": "cand-v1-crypto-sv-1-UNI/USDT-2026-09-19",
+        "pool_date": "2026-09-19",
+        "market": "CRYPTO",
+        "score": 0.7
+      }
+    },
+    {
+      "id": "oos-s018",
+      "type": "score",
+      "state": "候选信号事件（2026-09-19，CRYPTO（加密货币），池类型 PREMARKET）：标的 UNI/USDT，策略评分 0.7000。信号理由：趋势动量: close=8.70>MA20=6.65, MA5>MA10>MA20多头排列, MA20向上, 20日动量=69.5%, 20日均额=0.75亿",
+      "question": "该候选策略评分所处的档位是？",
+      "levels": [
+        "低（0-0.5）",
+        "中（0.5-0.7）",
+        "高（0.7-1）"
+      ],
+      "answer_level": 2,
+      "src": {
+        "candidate_id": "cand-v1-crypto-sv-1-UNI/USDT-2026-09-19",
+        "pool_date": "2026-09-19",
+        "market": "CRYPTO",
+        "score": 0.7
+      }
+    }
+  ]
+}
