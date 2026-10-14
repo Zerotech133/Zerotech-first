@@ -456,7 +456,10 @@ def _render_timeline(ts_code, tl):
 # ---------------- 页面组装 ----------------
 
 _STYLE = """
-  .scwrap { max-width: 980px; margin: 0 auto; padding: 0 26px 48px; }
+  body { background:var(--bg-page); color:var(--text); margin:0; }
+  a { color:var(--link); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .scwrap { max-width: var(--page-w); margin: 0 auto; padding: 0 26px 48px; }
   .schead { display:flex; align-items:center; gap:12px; padding:20px 0 12px; flex-wrap:wrap; }
   .schead h1 { font-size:18px; }
   .schead .code { font-family:Consolas,monospace; color:var(--text-dim); }
@@ -554,6 +557,7 @@ def render_card(ts_code, days=120):
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{_esc(name)} {_esc(ts_code)} · 统一详情卡</title>
 <link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
 <link rel="icon" href="data:,">
 <style>{_STYLE}</style>
 </head>
