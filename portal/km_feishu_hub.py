@@ -38,7 +38,7 @@ WORK = os.path.join(HERE, "work")
 CONFIG_PATH = os.path.join(WORK, "km_config.json")
 SNAP_DIR = os.path.join(WORK, "km_snapshots")
 STATS_PATH = os.path.join(WORK, "km_stats.jsonl")
-LOG_PATH = os.path.join(WORK, "publish_watchdog.log")  # 复用既有巡检日志流
+LOG_PATH = os.path.join(WORK, "km_hub.out")  # 本服务日志尾巴（log() 写入处）；旧读 publish_watchdog.log 属跨服务串台，K-STOCK-394 纠偏
 NEWS_CFG = os.path.join(NEWS, "news_config.json")
 
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
