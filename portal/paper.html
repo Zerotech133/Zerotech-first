@@ -909,7 +909,14 @@ function renderAgents(j, board){
       if(t&&t.price_month!=null)
         tchip=` <span class="badge b-dk" style="font-size:10.5px">${esc(t.tier)} ${esc(t.tier_label||'')} · ¥${t.price_month}/月 · 引擎 ${esc((t.llm_binding||'').split('/').pop()||'-')}</span>`;
     }
-    return `<div class="agent-card ${cardCls}"><div class="nm">${c.icon} ${c.nm} ${st}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div></div>`;
+    /* K-STOCK-370 动线打磨：grade 徽标 + 「下一步」引导（候选→雇佣入口；已上岗→持仓/历史） */
+    let guide='';
+    if(c.id&&r){
+      guide = r.status==='live'
+        ? '<div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">🟢 已上岗 '+(r.days||0)+' 天——<a href="#" onclick="gotoTab(\'pos\');return false" style="color:var(--link)">持仓</a> / <a href="#" onclick="gotoTab(\'hist\');return false" style="color:var(--link)">历史</a> 页签随时查看战绩明细</div>'
+        : '<div style="font-size:11.5px;color:var(--text-dim);margin-top:6px">🎓 实习中 · 雇佣动线：<a href="/market-strategy" style="color:var(--link)">策略市场</a>订阅策略 → 迎宾向导完成上岗 → 实仓后战绩逐日留痕</div>';
+    }
+    return `<div class="agent-card ${cardCls}"><div class="nm">${c.icon} ${c.nm} ${st}${(c.id&&r&&r.grade)?' <span class="badge">'+esc(r.grade)+'</span>':''}${tchip}</div><div class="role">${c.role}</div><div class="agent-stats">${stats}</div>${guide}</div>`;
   }).join('');
 }
 
