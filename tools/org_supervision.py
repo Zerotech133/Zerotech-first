@@ -8,6 +8,7 @@
 import glob
 import json
 import os
+import sys
 import urllib.request
 from collections import Counter
 from datetime import datetime
@@ -83,6 +84,45 @@ def check_worktrees():
     return len(glob.glob(os.path.join(ROOT, ".worktrees", "task", "*")))
 
 
+def check_projection():
+    """投影一致性守卫（K-ORG-083 判例固化）：本体 team_*.json vs org.json 内联卡
+    双向抽验 agent_id 集合 + llm_binding + attributes。判例：本体落库成功≠投影已同步。"""
+    reg = os.path.join(ROOT, "agent_platform", "registry")
+    org = _read_json(os.path.join(reg, "org.json"), {}) or {}
+    proj = {}
+    for d in org.get("departments", []):
+        for p in d.get("agent_profiles", []) or []:
+            proj[p.get("agent_id")] = p
+    body = {}
+    for fp in glob.glob(os.path.join(reg, "team_*.json")):
+        if "team_proj_" in os.path.basename(fp):
+            continue  # 059 判例：proj 副本非本体，同名岗以本体为准
+        t = _read_json(fp, {}) or {}
+        for a in t.get("agents", []):
+            body[a.get("agent_id")] = a
+    mism = []
+    only_body = sorted(set(body) - set(proj))
+    only_proj = sorted(set(proj) - set(body))
+    # 投影设计面=22 职能岗；A0A(首席助理)+投研 5 岗本体/bundle 全量在册、图上不展示属设计范围
+    real_missing = [a for a in only_body
+                    if a not in ("A0A", "D1", "F1", "N1", "T1", "T2")]
+    if real_missing:
+        mism.append("投影缺岗: %s" % ",".join(real_missing))
+    if only_proj:
+        mism.append("投影多岗: %s" % ",".join(only_proj))
+    for aid in sorted(set(body) & set(proj)):
+        b, p = body[aid], proj[aid]
+        if (b.get("llm_binding") or {}) != (p.get("llm_binding") or {}):
+            mism.append("%s llm_binding 不一致" % aid)
+        ba = b.get("attributes") or {}
+        pa = p.get("attributes") or {}
+        for k in ("experience", "specialties", "knowledge"):
+            if (ba.get(k) or None) != (pa.get(k) or None):
+                mism.append("%s attributes.%s 不一致" % (aid, k))
+                break
+    return len(proj), mism
+
+
 def main(push=True):
     lines = ["# 组织监督判读 %s" % datetime.now().strftime("%Y-%m-%d %H:%M"), ""]
     reds, yellows = [], []
@@ -123,6 +163,15 @@ def main(push=True):
     if wt > 3:
         yellows.append("worktree 残留 %d 个（>3，需 devtask 清场或人工核对）" % wt)
     lines.append("")
+
+    n_proj, proj_mism = check_projection()
+    lines.append("## 投影一致性（org.json %d 卡 vs 本体）: %s"
+                 % (n_proj, "一致" if not proj_mism else "%d 项差异" % len(proj_mism)))
+    if proj_mism:
+        lines += ["- " + m for m in proj_mism[:8]]
+        yellows.append("投影同步缺口 %d 项（083 判例：本体落库≠投影同步，需回填或重启 8093 接管写路径）"
+                       % len(proj_mism))
+    lines.append("- 范围注记: A0A+投研5岗(D1/F1/N1/T1/T2)本体在册、组织图不展示属设计范围")
 
     lines.append("## 判读")
     if reds:
