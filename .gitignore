@@ -68,6 +68,8 @@ Thumbs.db
 
 # 密钥载体（不入库）
 jev-eval/jev-gate.env.ps1
+jev-eval/env_fallback.flag
+jev-eval/jev-gate.env.plain.ps1
 quantdinger/backend.env
 quantdinger/backend.env.orig
 
