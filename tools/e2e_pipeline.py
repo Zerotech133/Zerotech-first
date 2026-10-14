@@ -191,11 +191,15 @@ def main():
                 repair_note = ("SEC2 返工清单", sec2_miss or "")
                 log("返修轮 %d" % rnd, "SEC2 缺失清单已回流(%d 字)" % len(sec2_miss or ""))
             else:
-                # stdout 解析失败时回流源优先级: 主仓账本 detail(结构化完整) > stdout 尾部
-                body = (qa1_ledger or "").strip()[:1500] or qa1_out[-800:]
+                # stdout 解析失败时回流源优先级: 主仓账本 detail(结构化完整)
+                # > stdout 结论段 > stdout 尾部
+                i = qa1_out.find("结论")
+                body = ((qa1_ledger or "").strip()[:1500]
+                        or (qa1_out[i:i + 1500] if i >= 0 else "")
+                        or qa1_out[-800:])
                 repair_note = ("QA1 退回理由", body)
                 log("返修轮 %d" % rnd, "退回理由已回流(%d 字·来源=%s)"
-                    % (len(body), "账本" if qa1_ledger else "stdout尾部"))
+                    % (len(body), "账本" if qa1_ledger else ("stdout结论段" if i >= 0 else "stdout尾部")))
         ok, detail = gen_code(wt, args.out, spec, repair_note)
         if not ok:
             die("DEV1 产码(轮%d)" % (rnd + 1), detail)
@@ -235,17 +239,15 @@ def main():
         rc, out, err = run([PY, "tools/qa1_review.py", "--task", TID, "--note", note, sha],
                            cwd=wt, timeout=900)
         qa1_out = out
-        m = re.search(r"结论[：:]\s*\*\*([^*]+)\*\*", out)
+        # 🔴 K-ORG-071 判例: QA1 真实格式是「**结论：退回 + 理由：…**」(星号包整句)
+        # 而非「结论：**退回**」(星号只包词)——旧三级解析按后者假设, 全部落空。
+        # verdict 提取改为关键词定位格式无关: 「结论：」后最近的 退回/通过 即 verdict。
+        m = re.search(r"结论[：:]\s*\**\s*(退回|通过)", out)
         if m:
-            qa1_verdict = m.group(1).strip()
-        elif re.search(r"\*\*?退回", out):
-            qa1_verdict = "退回(格式降级匹配)"
-        elif re.search(r"\*\*?通过", out):
-            qa1_verdict = "通过(格式降级匹配)"
+            qa1_verdict = m.group(1)
         else:
-            # 终极兜底(K-ORG-068 d段): stdout 格式漂移时, review_verdict 落账
-            # 必有「结论：**X**」格式——账本是结论的最终事实源。
-            # 🔴 K-ORG-071 判例: 账本在主仓工作区, 必须绝对路径锚定 ROOT——
+            # 账本兜底: review_verdict 落账是结论最终事实源。
+            # 🔴 路径判例: 账本在主仓工作区, 必须绝对路径锚定 ROOT——
             # cwd=wt 时相对路径读到的是 worktree 的 git HEAD 快照, 无本笔落账。
             rc, ev, _ = run([PY, "-c",
                              "import json\n"
@@ -255,9 +257,9 @@ def main():
                              "        print(e.get('detail','')[:400]);break\n"
                              % (os.path.join(ROOT, "portal", "data", "dev_events.jsonl"), TID)],
                             cwd=ROOT)
-            m2 = re.search(r"结论[：:]\s*\*\*([^*]+)\*\*", ev)
+            m2 = re.search(r"结论[：:]\s*\**\s*(退回|通过)", ev)
             if m2:
-                qa1_verdict = m2.group(1).strip() + "(账本兜底)"
+                qa1_verdict = m2.group(1) + "(账本兜底)"
                 qa1_ledger = ev
             else:
                 # 判例(K-ORG-068 轮1): 无结论≠退回——误判会触发无谓返修, fail-stop
