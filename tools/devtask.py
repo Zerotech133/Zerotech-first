@@ -15,6 +15,7 @@
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -121,6 +122,36 @@ def _save(tasks):
               ensure_ascii=False, indent=1)
 
 
+_EV_RE = re.compile(r"#ev:(commit|file|trace):([^\s，。；,;]+)")
+
+
+def _ev_precheck(desc, tasks):
+    """K-ORG-090/T2：开单 desc 中 #ev 证据引用预检（087/T2 spec 模板侧）。
+    commit→git cat-file -e 校验 sha；file@sha→cat-file -e sha:path；
+    trace→tasks.json 在册。只 WARN 不拦单（fail-open）——坏引用到产码侧
+    由 agent_coder.resolve_evidence fail-visible 标注，此处提前一层暴露给开单人。"""
+    warns = []
+    for kind, ref in _EV_RE.findall(desc):
+        if kind == "commit":
+            r = subprocess.run(["git", "cat-file", "-e", ref + "^{commit}"],
+                               cwd=REPO, capture_output=True)
+            if r.returncode != 0:
+                warns.append("#ev:commit:%s 不在仓库（检查 sha）" % ref)
+        elif kind == "file":
+            path, _, sha = ref.rpartition("@")  # rpartition 返回 (head, sep, tail)：head=路径 tail=sha
+            if not sha or not path:
+                warns.append("#ev:file:%s 格式应为 路径@sha" % ref)
+                continue
+            r = subprocess.run(["git", "cat-file", "-e", "%s:%s" % (sha, path)],
+                               cwd=REPO, capture_output=True)
+            if r.returncode != 0:
+                warns.append("#ev:file:%s@%s 该提交下不存在" % (path, sha))
+        else:  # trace
+            if ref not in tasks:
+                warns.append("#ev:trace:%s 不在工单账本" % ref)
+    return warns
+
+
 def cmd_new(tid, *desc):
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
     # 保兼容；判据3的「拒收」落在「声明了但不存在的线」上）
@@ -140,6 +171,9 @@ def cmd_new(tid, *desc):
     tasks = _tasks()
     if tid in tasks:
         raise SystemExit("工单 %s 已存在" % tid)
+    # K-ORG-090/T2：#ev 引用预检（只 WARN 不拦单，fail-open）
+    for w in _ev_precheck(desc, tasks):
+        print("[warn] 证据引用预检: %s（不拦单；产码侧 resolve_evidence 会 fail-visible 标注）" % w)
     branch = "task/" + tid
     wt = os.path.join(WT_DIR, tid)
     _git("worktree", "add", wt, "-b", branch)
