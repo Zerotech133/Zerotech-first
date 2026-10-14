@@ -50,6 +50,32 @@ GPT6_URL = os.environ.get("GPT6_URL", "https://itokengate.com/v1/chat/completion
 GPT6_MODEL = os.environ.get("GPT6_MODEL", "gpt-6-sol")
 
 
+def _persona(agent_id):
+    """K-ORG-061a: 人设=部门共享 prompt + 岗专属身份卡。
+    prompts/<role_profile>.md 是部门级共享文档（DEV 线多岗同一份），
+    岗卡里的工号/档位/专属职责/属性过去从未注入——探针实锤 DEV7 自报 DEV1、
+    QA2 自报 QA1。此函数把岗卡专属段拼到共享人设尾部，全通道统一走这里。"""
+    a = BUNDLE["agents"][agent_id]
+    sp = a["prompt"]
+    extra = []
+    grade = a.get("grade") or ""
+    note = a.get("grade_note") or ""
+    if grade or note:
+        extra.append("你的工号是 %s（%s %s），不是同部门其他工号。"
+                     % (agent_id, grade, note))
+    if a.get("charter"):
+        extra.append("本岗专属职责：%s" % a["charter"])
+    at = a.get("attributes") or {}
+    if at.get("experience"):
+        extra.append("从业经验：%s" % at["experience"])
+    if at.get("specialties"):
+        extra.append("擅长：%s" % "、".join(at["specialties"]))
+    if extra:
+        sp = (sp + "\n\n## 岗位身份卡（K-ORG-061a·以本卡为准回答身份类问题）\n"
+              + "\n".join(extra) + "\n")
+    return sp
+
+
 def _gpt6_key():
     key = os.environ.get("GPT6_API_KEY", "")
     if key:
@@ -68,7 +94,7 @@ def chat_openai(agent_id, task, timeout=180):
     key = _gpt6_key()
     if not key:
         raise RuntimeError("GPT6 key 未配置(env GPT6_API_KEY 或 config/model_keys.local.json)")
-    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    sys_prompt = _persona(agent_id)
     payload = {
         "model": GPT6_MODEL,
         "max_tokens": task.get("max_tokens", 8192),
@@ -103,7 +129,7 @@ def chat_anthropic(agent_id, task, timeout=240):
     key = os.environ.get("GLM_API_KEY", "")
     if not key:
         raise RuntimeError("GLM_API_KEY 未设置")
-    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    sys_prompt = _persona(agent_id)
     payload = {
         "model": ANTHROPIC_MODEL,
         "max_tokens": task.get("max_tokens", 32768),  # 038判例: thinking耗额·8192级被截断(stop=max_tokens)
@@ -132,7 +158,7 @@ def chat_cloud(agent_id, task, timeout=120):
     key = os.environ.get("GLM_API_KEY", "")
     if not key:
         raise RuntimeError("GLM_API_KEY 未设置")
-    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    sys_prompt = _persona(agent_id)
     payload = {
         "model": CLOUD_MODEL,
         "max_tokens": task.get("max_tokens", 4096),
@@ -157,7 +183,7 @@ def chat_cloud(agent_id, task, timeout=120):
 
 def chat(agent_id, task, timeout=420, num_ctx=6144):
     """本地 Ollama 生成（兜底通道，逻辑保持 032 原样）。"""
-    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    sys_prompt = _persona(agent_id)
     body = json.dumps({
         "model": "qwen3.5:9b", "stream": False, "think": False,
         "format": "json" if task.get("json_out") else None,
@@ -313,7 +339,7 @@ def chat_claude(agent_id, task, timeout=600):
     key = os.environ.get("GLM_API_KEY") or os.environ.get("ZHIPUAI_API_KEY")
     if not key:
         raise RuntimeError("GLM_API_KEY/ZHIPUAI_API_KEY 未设置")
-    sys_prompt = BUNDLE["agents"][agent_id]["prompt"]
+    sys_prompt = _persona(agent_id)
     model = os.environ.get("CODER_CLAUDE_MODEL", "glm-4.6")
     env = dict(os.environ)
     env.update(ANTHROPIC_BASE_URL=ANTHROPIC_BASE,
