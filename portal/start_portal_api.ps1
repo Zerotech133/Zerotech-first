@@ -41,7 +41,11 @@ try {
         ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
     Start-Sleep -Seconds 1
     ('starting ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
-    & 'C:\Program Files\Python311\python.exe' 'C:\aios\portal\portal_api.py' 1> 'C:\Temp\portal_api_out.log' 2> 'C:\Temp\portal_api_err.log'
+    # K382 (10-14): append-mode for out/err - overwrite mode erased every bounce
+    # scene (08:25/09:24 code=1 root cause unreadable). Session separator first.
+    ('===== session start ' + (Get-Date -Format s) + ' =====') |
+        Out-File 'C:\Temp\portal_api_err.log' -Append -Encoding utf8
+    & 'C:\Program Files\Python311\python.exe' 'C:\aios\portal\portal_api.py' 1>> 'C:\Temp\portal_api_out.log' 2>> 'C:\Temp\portal_api_err.log'
     $rc = $LASTEXITCODE
     if ($null -eq $rc -or '' -eq "$rc") { $rc = 1 }  # guard: alarm better than fake green
     ('python exited code=' + $rc + ' ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
