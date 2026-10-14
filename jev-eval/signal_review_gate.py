@@ -56,6 +56,7 @@ HERE = Path(__file__).parent
 DATA = HERE / "review_data"
 DATA.mkdir(exist_ok=True)
 TRIPLES = DATA / "triples.jsonl"      # (快照, 判定) 三元组流
+ARCHIVE = DATA / "triples_archive.jsonl"  # R12：终端记录归档（毕业统计仍全量读取）
 REGIME_CACHE = DATA / "regime.json"   # regime_fit 每日一判缓存
 SEEN_FILE = DATA / "seen.json"        # 已复核 candidate_id
 
@@ -474,6 +475,62 @@ def weekdays_after(d: date, today: date) -> int:
     return n
 
 
+# ── 三元组轮转归档（R12：防活文件无界增长） ──────────────────
+_ARCHIVE_TTL_DAYS = 30  # 终端记录保留 30 天后归档
+_last_archive = ""      # 最近归档日（按日节流）
+
+
+def _maybe_archive_triples() -> int:
+    """终端记录（status=reviewed 且 ret_nd 已回填）超 30 天移到归档文件。
+
+    分工：毕业统计 run_report 改读归档+活文件（样本不丢）；run_backfill 保持
+    只读活文件（10min 热路径全量读改写，内存受界）；coverage_guard 只看活文件
+    （近窗数据源健康，未回填记录永不归档→真实断档继续告警）。按日节流；
+    缺/坏 ts 保守保留不归档。返回归档条数。
+    """
+    global _last_archive
+    today = date.today()
+    if _last_archive == today.isoformat() or not TRIPLES.exists():
+        return 0
+    _last_archive = today.isoformat()
+    cutoff = today - timedelta(days=_ARCHIVE_TTL_DAYS)
+    arch, keep = [], []
+    for line in dedup_triples(TRIPLES.read_text(encoding="utf-8").splitlines()):
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+            if r.get("status") == "reviewed" and r.get("ret_nd") is not None:
+                ts = r.get("ts", "")
+                if ts and datetime.fromisoformat(ts).date() < cutoff:
+                    arch.append(line)
+                    continue
+        except Exception:  # noqa: BLE001
+            pass  # 坏行/坏 ts：保留不归档
+        keep.append(line)
+    if arch:
+        with ARCHIVE.open("a", encoding="utf-8") as f:
+            f.write("\n".join(arch) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        atomic_write_text(TRIPLES, "\n".join(keep) + "\n")
+        log(f"三元组归档 {len(arch)} 条（活文件 {len(keep)} 条，TTL {_ARCHIVE_TTL_DAYS} 天）")
+    return len(arch)
+
+
+def _iter_triples() -> list:
+    """活文件+归档合并去重（归档在前，活文件在后→同 candidate 活文件胜出）。
+
+    R12：run_report 毕业统计需要全量终端样本，归档后样本不丢失。
+    """
+    lines = []
+    if ARCHIVE.exists():
+        lines += ARCHIVE.read_text(encoding="utf-8").splitlines()
+    if TRIPLES.exists():
+        lines += TRIPLES.read_text(encoding="utf-8").splitlines()
+    return dedup_triples(lines)
+
+
 # ── 三种运行模式 ────────────────────────────────────────────
 def run_once(dry: bool = False) -> int:
     """复核最近候选池未处理候选。返回本轮复核数。"""
@@ -520,6 +577,7 @@ def run_backfill() -> int:
     if not TRIPLES.exists():
         log("无三元组记录")
         return 0
+    _maybe_archive_triples()  # R12：每日归档后重新读活文件（终端记录已出活文件）
     cutoff_today = date.today()
     lines = dedup_triples(  # K-STOCK-402：崩溃窗口重复行自愈（重写即去重）
         TRIPLES.read_text(encoding="utf-8").splitlines())
@@ -703,12 +761,11 @@ def coverage_guard() -> float:
 
 def run_report() -> None:
     """影子期报告：Jev 决策分组 vs 真实 N 日收益——阶段 2 的唯一放行依据。"""
-    if not TRIPLES.exists():
+    if not TRIPLES.exists() and not ARCHIVE.exists():
         log("无三元组记录")
         return
     groups: dict[str, list[dict]] = {}
-    for line in dedup_triples(  # K-STOCK-402 BUG-3：去重后计数，防毕业样本虚增
-            TRIPLES.read_text(encoding="utf-8").splitlines()):
+    for line in _iter_triples():  # R12：归档+活文件全量（毕业统计样本不丢）
         r = json.loads(line)
         if r.get("ret_nd") is not None:
             groups.setdefault(r.get("decision", "?"), []).append(r)
