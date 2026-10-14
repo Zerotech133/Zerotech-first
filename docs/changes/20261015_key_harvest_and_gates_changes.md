@@ -64,3 +64,17 @@
 ## 验证
 - 语法 AST 全过（6 个改动文件）；pytest 回归：check_format_args 5 +
   tdx 9 全绿；DPAPI 前后双验 OK；gate1 收集 1193 用例 PASS。
+
+## 附：PytestWeekly 注册完成（2026-10-15 04:05，用户指示执行）
+- deploy_pytest_weekly.ps1 管理员执行成功：Register-ScheduledTask
+  SYSTEM/HighestAvailable，周六 09:00（下次 2026-10-17），PT30M 限
+  （全量实测 5m23s 富余），重跑可幂等（先 Unregister）；任务描述
+  同步改为全量两级门禁口径（原 51-case 字样过时）；
+- **端到端验证**：Start-ScheduledTask 手动触发真实跑通——collect
+  绊线 PASS（1193 用例）+ 全量 **1175 passed / 18 skipped / 0
+  failed / 323s**，LastTaskResult=0x0，日志
+  C:/aios/quant_backtest/logs/pytest_weekly.out；
+- skipped 18 vs 此前 7：为依赖网络/环境外置用例在计划任务 SYSTEM
+  上下文的预期跳过（sentiment/jev 等触网类），0 失败不受影响；
+- 沙箱注记：Register/Start-ScheduledTask 需解除沙箱执行（本节为
+  首个计划任务注册在 agent 侧完成的判例，此后同类可循）。

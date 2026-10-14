@@ -31,7 +31,7 @@ if (-not (Test-Path $pyPath)) { throw "python not found: $pyPath" }
 if (-not (Test-Path $logDir)) { New-Item -Path $logDir -ItemType Directory -Force | Out-Null }
 
 $desc = [System.Security.SecurityElement]::Escape(
-    'Core gold-sample tests weekly (chanlun 13 + weak 17 + strong 21 = 51 cases). C3 guard: signal-layer regressions caught weekly, not just written.')
+    'Full-suite two-level weekly gate (K-STOCK-393, W9): collection tripwire + full pytest run (~1200 cases). Collection crashes and cross-test pollution caught weekly, not just written.')
 
 $xml = @"
 <?xml version="1.0" encoding="UTF-16"?>
