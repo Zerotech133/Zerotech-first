@@ -61,6 +61,9 @@ SEEN_FILE = DATA / "seen.json"        # 已复核 candidate_id
 
 API_KEY = os.environ.get("JEV_API_KEY", "")
 BASE_URL = os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
+# K-STOCK-366（084 判例）：CF 对大陆出口 geo-block → typesafe 全端点 451（edge
+# 层、key 校验之前）。出站统一走 TS_PROXY（默认本机 7890 SG 出口，news_ai 同款）。
+TS_PROXY = os.environ.get("TS_PROXY", "http://127.0.0.1:7890")
 TUSHARE_TOKEN = os.environ.get("TUSHARE_TOKEN", "")
 METRICS_PORT = 9102  # P1-6 Prometheus /metrics 端点
 
@@ -256,7 +259,13 @@ def jev_ask(state: str, questions: dict) -> dict:
                      "Authorization": f"Bearer {API_KEY}"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        # K-STOCK-366：出站走 TS_PROXY（urllib 无 requests 的 proxies 参数，
+        # 用 ProxyHandler opener 等价实现）。代理不可达 → 连接异常走重试/
+        # unreviewed+补判链，链路不断只退化（对齐 083/084 链路哲学）。
+        # timeout 25s：7890 首次建连偶发 >15s（K-STOCK-084 实测）。
+        opener = urllib.request.build_opener(
+            urllib.request.ProxyHandler({"http": TS_PROXY, "https": TS_PROXY}))
+        with opener.open(req, timeout=25) as resp:
             return json.loads(resp.read()).get("answers", {})
 
     # K-STOCK-365 P0-A：401/403/451 是内容级确定性拒绝（TypeSafe 合规过滤——
