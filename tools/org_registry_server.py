@@ -18,6 +18,9 @@
   - agent_id 全局唯一、正则 ^[A-Z][A-Z0-9]{1,3}$
   - grants 最小化：write 默认只给 agent/<id>/*（quality 部附加部门 observation）
   - 每次落盘追加 agent_platform/data/org_registry_audit.jsonl
+
+K-ORG-090/T4：observe 调用审计先行（087/T4 判例：工具二维矩阵「岗×操作」，
+observe 只记录不拦截，攒 3 天数据后由 087/T4 拍板白名单再 enforce）。
 """
 import json
 import os
@@ -33,6 +36,8 @@ REG = os.path.join(ROOT, "agent_platform", "registry")
 PROMPTS = os.path.join(ROOT, "agent_platform", "prompts")
 HTML = os.path.join(ROOT, "portal", "org.html")
 AUDIT = os.path.join(ROOT, "agent_platform", "data", "org_registry_audit.jsonl")
+# K-ORG-090/T4 observe 调用审计（新文件，与 org_registry_audit.jsonl 分开）
+TOOL_AUDIT = os.path.join(ROOT, "agent_platform", "data", "llm_tool_audit.jsonl")
 KDOCS = os.path.join(ROOT, "knowledge_docs")          # 知识库文档源
 MEMDIR = os.path.join(ROOT, "agent_platform", "data", "memory")  # 岗位专属记忆空间
 PORT = 8093
@@ -176,7 +181,8 @@ def agent_update(p):
     _rebake_and_reexport()
     rec = audit_log({"kind": "update", "agent_id": aid, "dept": entry.get("dept", ""),
                      "grade": entry.get("grade"), "model": p.get("model"),
-                     "files": [path]}, changed)
+                     "files": [path]}, changed,
+                    caller=(p.get("caller") or "laotian@org-chart"))
     return None, {"updated": aid, "changed": changed, "audit": rec,
                   "headcount": len(load_registry()[0])}
 
@@ -226,7 +232,8 @@ def agent_learn(p):
     _rebake_and_reexport()
     audit_log({"kind": "learn", "agent_id": aid, "dept": entry2.get("dept", ""),
                "grade": entry2.get("grade"), "model": None,
-               "files": [doc]}, ["知识沉淀 %d 字" % len(note)])
+               "files": [doc]}, ["知识沉淀 %d 字" % len(note)],
+              caller=(p.get("caller") or "laotian@org-chart"))
     return None, {"agent_id": aid, "doc": doc, "digest_len": len(note),
                   "digest": note}
 
@@ -473,16 +480,31 @@ def apply_plan(n):
     return written
 
 
-def audit_log(n, written):
+def audit_log(n, written, caller="laotian@org-chart"):
+    """K-ORG-090：加 caller（调岗身份，body 可选字段，默认 laotian@org-chart）。"""
     os.makedirs(os.path.dirname(AUDIT), exist_ok=True)
     rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-           "operator": "laotian@org-chart", "kind": n["kind"],
-           "agent_id": n.get("agent_id"), "dept": n["dept"],
+           "operator": "laotian@org-chart", "caller": caller,
+           "kind": n["kind"], "agent_id": n.get("agent_id"), "dept": n["dept"],
            "grade": n.get("grade"), "model": n.get("model"),
            "files": [os.path.relpath(w, ROOT).replace("\\", "/") for w in written]}
     with open(AUDIT, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     return rec
+
+
+def _observe(caller, endpoint, method, ok):
+    """K-ORG-090/T4 observe 调用审计（087/T4 判例：observe 先行攒 3 天数据，
+    白名单后由 087/T4 拍板再 enforce——本阶段只记录不拦截，fail-open：
+    写失败只 print WARN 不影响主流程）。"""
+    try:
+        os.makedirs(os.path.dirname(TOOL_AUDIT), exist_ok=True)
+        rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "caller": caller,
+               "endpoint": endpoint, "method": method, "ok": ok}
+        with open(TOOL_AUDIT, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:  # noqa: BLE001
+        print("[warn] K-ORG-090 observe 写失败（fail-open 不影响主流程）: %s" % e)
 
 
 # ── K-ORG-093/G5：军团连接器端点（Hermes 门面 → 底座开工单） ──
@@ -608,6 +630,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        # K-ORG-090 observe：读操作也计入权限矩阵（只记录不拦截，路由分发前调用）
+        path, _, qs = self.path.partition("?")
+        _observe(dict(p.split("=", 1) for p in qs.split("&") if "=" in p)
+                 .get("caller"), path, "GET", True)
         if self.path in ("/", "/org.html"):
             html = open(HTML, "rb").read()
             self.send_response(200)
@@ -636,7 +662,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(404, {"ok": False, "error": "工单 %s 不存在" % tid})
                 return
             self._json(200, {"ok": True, "task": {"k": tid, **t}})
-        elif self.path == "/api/task/list":
+        elif path == "/api/task/list":  # 剥离 query 后匹配（observe caller 经 query 传入）
             tasks = task_load()
             slim = {k: {kk: v.get(kk) for kk in ("desc", "status", "branch",
                                                  "project", "created", "owner")}
@@ -657,17 +683,22 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            p = json.loads(self.rfile.read(length).decode("utf-8"))
+        except Exception as e:  # noqa: BLE001
+            # K-ORG-090 observe：body 解析失败 caller 提取不到，记 null（fail-open）
+            _observe(None, self.path, "POST", False)
+            self._json(400, {"ok": False, "error": "bad json: %s" % e})
+            return
+        # K-ORG-090 observe：入口记录（只记录不拦截；caller 提取不到记 null）
+        _observe(p.get("caller") if isinstance(p, dict) else None,
+                 self.path, "POST", True)
         if self.path not in ("/api/preview", "/api/register",
                              "/api/agent/update", "/api/agent/learn",
                              "/api/project/preview", "/api/project/register",
                              "/api/task/create"):
             self._json(404, {"ok": False, "error": "not found"})
-            return
-        try:
-            length = int(self.headers.get("Content-Length", 0))
-            p = json.loads(self.rfile.read(length).decode("utf-8"))
-        except Exception as e:  # noqa: BLE001
-            self._json(400, {"ok": False, "error": "bad json: %s" % e})
             return
         with LOCK:
             if self.path == "/api/task/create":
@@ -711,7 +742,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(500, {"ok": False,
                                  "error": "落盘失败（注册表可能已部分写入，勿重复提交）: %s" % e})
                 return
-            rec = audit_log(n, written)
+            rec = audit_log(n, written,
+                            caller=(p.get("caller") or "laotian@org-chart"))
             agents, _, _ = load_registry()
             # load_registry 含 chief（A0 只在 org.json）→ 字典长度即在编数
             self._json(200, {"ok": True, "mode": "registered",
