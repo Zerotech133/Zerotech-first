@@ -240,6 +240,13 @@ def archive_daily_batch(snap_path=SNAP_PATH, batches_path=BATCHES_PATH):
         _bcm.monitor_run()
     except Exception as _ex:
         print("BREADTH_MONITOR fail: %s" % str(_ex)[:120], flush=True)
+    # W8 议题一前置（20261015）：qpzm 自口径 vs 湖口径宽度并行对照，
+    # 只记不改，攒一周以上供口径统一评审；同日幂等，注记式隔离。
+    try:
+        import breadth_parallel as _bpp
+        _bpp.run()
+    except Exception as _ex:
+        print("BREADTH_PARALLEL fail: %s" % str(_ex)[:120], flush=True)
     return row
 
 

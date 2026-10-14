@@ -920,6 +920,14 @@ def market_path_status():
             mon = json.load(f)
     except Exception:
         mon = {"note": "穿越监测状态文件缺失（breadth-mon 未播种或被清理）"}
+    # W8 议题二前置（20261015）：HMM 软闸门影子读数。研究口径只读，
+    # 失败不炸市况节（hmm 影子字典带 error 时渲染侧降级为一行）。
+    hmm = {}
+    try:
+        import hmm_shadow as _hsh
+        hmm = _hsh.compute_shadow()
+    except Exception as e:
+        hmm = {"error": "%s: %s" % (type(e).__name__, str(e)[:100])}
     pending = mon.get("pending")
     if pending:
         guide = ("穿越观察窗第 %s 日（%s 穿越）：窗内跌破 40%% 将告警撤回，"
@@ -938,6 +946,7 @@ def market_path_status():
         "as_of": date, "dist_to_cross_pp": round((CROSS_TH - br) * 100, 2),
         "days_below_45_streak": streak, "low20": round(lo20, 4),
         "monitor": mon, "guide": guide, "regime_ref": _REGIME_REF,
+        "hmm": hmm,
     }
 
 
@@ -954,6 +963,17 @@ def render_market_path_md(st):
     L.append("- 穿越监测器：%s" % json.dumps(st["monitor"], ensure_ascii=False))
     L.append("- 指引：%s" % st["guide"])
     L.append("- %s" % st["regime_ref"])
+    # HMM 影子小行（W8 议题二前置，研究口径）
+    hmm = st.get("hmm") or {}
+    if hmm.get("error"):
+        L.append("- HMM 影子：不可用（%s）" % hmm["error"])
+    else:
+        L.append("- HMM 影子（研究口径，非交易信号）：K=%d（窗 %d 日）"
+                 "风险态后验=%.2f%%、迟滞门 %s；硬阈值线 45%%/40%% 并列"
+                 "——两口径背离即 W8 议题二核心观察点"
+                 % (hmm.get("K", 0), hmm.get("window_days", 0),
+                    hmm.get("p_risk_filtered", 0.0) * 100,
+                    "ON" if hmm.get("hysteresis_on") else "off"))
     L.append("")
     return "\n".join(L)
 
