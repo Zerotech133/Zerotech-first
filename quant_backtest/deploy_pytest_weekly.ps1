@@ -1,7 +1,8 @@
-# Deploy PytestWeekly scheduled task: core gold-sample tests run weekly.
-# Every Saturday 09:00 Beijing (01:00 UTC): pytest on the three core
-# signal-layer gold-sample files (chanlun 13 + weak 17 + strong 21 = 51
-# cases, pure synthetic, zero DB / zero network, ~5s runtime).
+# Deploy PytestWeekly scheduled task: FULL suite via run_weekly_gate.py
+# Every Saturday 09:00 Beijing (01:00 UTC): two-level gate
+# (K-STOCK-393, W9): 1) pytest --collect-only over ALL test_*.py
+# (collection-crash tripwire); 2) full pytest run (~1200 cases, ~4min).
+# Supersedes the 51-case gold-sample subset (kept inside full suite).
 # Mirror of deploy_strong.ps1 pattern:
 #   - XML registration via Register-ScheduledTask -Xml
 #   - StartBoundary with Z suffix = UTC anchor (no DST drift)
@@ -25,7 +26,6 @@ $pyPath   = 'C:\Program Files\Python311\python.exe'
 $workDir  = 'C:\aios\quant_backtest'
 $logDir   = 'C:\aios\quant_backtest\logs'
 $taskName = 'PytestWeekly'
-$tests    = 'test_chanlun_signal_gold.py test_weak_track_check_trigger.py test_strong_track_gold.py'
 
 if (-not (Test-Path $pyPath)) { throw "python not found: $pyPath" }
 if (-not (Test-Path $logDir)) { New-Item -Path $logDir -ItemType Directory -Force | Out-Null }
@@ -67,7 +67,7 @@ $xml = @"
     <Hidden>false</Hidden>
     <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
     <WakeToRun>false</WakeToRun>
-    <ExecutionTimeLimit>PT10M</ExecutionTimeLimit>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
     <RestartOnFailure>
       <Interval>PT5M</Interval>
@@ -77,7 +77,7 @@ $xml = @"
   <Actions Context="Author">
     <Exec>
       <Command>cmd.exe</Command>
-      <Arguments>/c ""$pyPath" -m pytest $tests -q --tb=short &gt;&gt; "$logDir\pytest_weekly.out" 2&gt;&amp;1"</Arguments>
+      <Arguments>/c ""$pyPath" -X utf8 "$workDir\run_weekly_gate.py" &gt;&gt; "$logDir\pytest_weekly.out" 2&gt;&amp;1"</Arguments>
       <WorkingDirectory>$workDir</WorkingDirectory>
     </Exec>
   </Actions>

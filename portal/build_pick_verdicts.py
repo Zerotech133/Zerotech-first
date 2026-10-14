@@ -295,8 +295,12 @@ def main():
     out = {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
            "summary": summary, "per_code": per_code}
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w", encoding="utf-8") as f:
+    # K-STOCK-393（20261015 原子写补齐）：api_misc 请求路径并发读此
+    # 文件，直写可被读到半截 JSON（sync_publish 判例：tmp+os.replace）
+    tmp = OUT + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False)
+    os.replace(tmp, OUT)
     print("[verdicts] 归档 %d 份 | 覆盖 %d 票 | asof %s" %
           (n_arch, len(per_code), today))
     for w in WINDOWS:

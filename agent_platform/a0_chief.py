@@ -74,7 +74,12 @@ def debate_stats(run_id):
         n, avg_sim = cur.fetchone()
         conn.close()
         return n or 0, avg_sim
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        # K-STOCK-393（20261015 告警补盲）：勿静默返假 0——DB 损坏/
+        # 锁死时 0 与"真 0 轮"不可分，报告失真。stderr WARN 显形，
+        # 返回形状不变（消费方元组解包兼容）。
+        print("[WARN] debate_stats query failed: %s" % str(exc)[:120],
+              file=sys.stderr)
         return 0, None
 
 
@@ -98,8 +103,9 @@ def debate_health(run_id):
         if row:
             out["sim_last"] = row[0]
         conn.close()
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        # K-STOCK-393：勿静默——显式 error 键（dict 加键对消费方安全）
+        out["error"] = str(exc)[:80]
     return out
 
 

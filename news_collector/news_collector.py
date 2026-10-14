@@ -567,7 +567,11 @@ def main():
     db.close()
     log("collect done ok=%s new=%d hits=%d pushed=%d" % (ok, new_total, len(hits), push_count))
     print("COLLECT %s new=%d hits=%d pushed=%d" % (ok, new_total, len(hits), push_count))
+    # K-STOCK-393（20261015 告警补盲）：ok 必须传到退出码——审计实证
+    # 全源失败 rc 恒 0，start_news_collect.ps1 的 alert_fail_wrap
+    # （rc!=0 才触发）永不告警，"所有上游全挂"静默。
+    return bool(ok)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(0 if main() else 1)

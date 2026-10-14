@@ -166,9 +166,26 @@ def _jev_key():
             txt = f.read()
         m = re.search(r'JEV_API_KEY"\s*=\s*"([^"]+)"', txt) \
             or re.search(r'JEV_API_KEY\s*=\s*"([^"]+)"', txt)
-        return m.group(1) if m else ""
+        if m:
+            return m.group(1)
     except Exception:
-        return ""  # 豁免（C2批2）：与"未配置 key"同一出口，jev_judge_one 侧按无 key 跳过
+        pass
+    # K-STOCK-393（20261015 密钥收口）：env/DPAPI(.enc)/stub 全落空
+    # 勿静默——审计实证 stub 化后此出口零提示，jev 云判定静默降级
+    # 无人知晓。stderr WARN + env_fallback.flag（同 load_env_dpapi
+    # 判例），仍按"无 key"豁免退出（链路不断只退化，C2批2 哲学不变）。
+    print("[WARN] JEV_API_KEY unresolved: env/DPAPI(.enc)/stub 全落空，"
+          "jev 云判定将跳过（本地回落不受影响）", file=sys.stderr)
+    try:
+        flag = os.path.join(os.path.dirname(JEV_ENV_PS1),
+                            "env_fallback.flag")
+        if not os.path.exists(flag):
+            with open(flag, "w", encoding="ascii") as f:
+                f.write("news_ai._jev_key unresolved %s\n"
+                        % time.strftime("%Y-%m-%d %H:%M:%S"))
+    except Exception:
+        pass
+    return ""  # 豁免（C2批2）：与"未配置 key"同一出口，jev_judge_one 侧按无 key 跳过
 
 
 def _jev_judge_one_cloud(title, stocks, timeout=15):

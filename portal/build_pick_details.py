@@ -81,8 +81,11 @@ def main():
             f["tier"] = r["tier"]
             f["n_hit"] = r["n_hit"]
             f["sources"] = r["sources"]
-            with open(fp, "w", encoding="utf-8") as fh:
+            # K-STOCK-393：原子写（tmp+os.replace，sync_publish 判例）
+            tmp = fp + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(f, fh, ensure_ascii=False, indent=1)
+            os.replace(tmp, fp)
             done += 1
             print("[%s] %d/%d %s %s ok %.0fs" %
                   (tier or ("shard" if shard else "all"), k + 1, len(rows),
