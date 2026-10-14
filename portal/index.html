@@ -357,6 +357,24 @@
         </div>
       </a>
 
+      <!-- ①d 策略预警（盯盘机器人 · 8001，零界风格统一 tokens） -->
+      <a class="dm" href="javascript:void(0)" onclick="yaOpen()">
+        <div class="head">
+          <div class="ic">🛡️</div>
+          <div><div class="t">策略预警</div><div class="s">通用策略预警平台 · 任何策略三行接入</div></div>
+        </div>
+        <div class="desc">行情/信号/风控三类告警 + 账户级熔断；三风格（激进/中立/保守）阈值引擎，多策略隔离、多渠道推送；商业化三档套餐已闭环。</div>
+        <div class="ms">
+          <span>规则 <b id="ya-rules">—</b></span>
+          <span>交易日 <b id="ya-day">—</b></span>
+          <span>引擎 <b id="ya-engine">—</b></span>
+        </div>
+        <div class="foot">
+          <span class="st"><span class="dot unknown" id="ya-dot"></span><span id="ya-note">探测中…</span></span>
+          <span class="enter">打开预警台 →</span>
+        </div>
+      </a>
+
       <!-- ② 情报中枢 -->
       <!-- ③ 内容创作 -->
       <!-- ④ 开发者：基建状态板已上线（D4） -->
@@ -794,6 +812,35 @@
     } catch { set('m-ollama', '就绪'); }
   }
   countModels();
+
+  // ── 策略预警（盯盘机器人 8001）：hostname 自适应（本机/局域网）+ CORS 已在 8001 放行 ──
+  function yaBase() {
+    return 'http://' + (location.hostname || '127.0.0.1') + ':8001';
+  }
+  function yaOpen() {
+    window.open(yaBase() + '/alerts/ui', '_blank');
+  }
+  async function yaProbe() {
+    const dot = document.getElementById('ya-dot');
+    const note = document.getElementById('ya-note');
+    try {
+      const ctl = new AbortController(); setTimeout(() => ctl.abort(), 4000);
+      const r = await fetch(yaBase() + '/alerts/status', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      const on = !!d.running;
+      dot.className = 'dot' + (on ? '' : ' off');
+      note.textContent = on ? '引擎在线 · ' + (d.rule_count ?? 0) + ' 条规则' : '引擎已停';
+      set('ya-rules', String(d.rule_count ?? '—'));
+      set('ya-day', d.trading_day ? '是' : '否');
+      set('ya-engine', on ? '在线' : '已停');
+    } catch {
+      dot.className = 'dot off';
+      note.textContent = '8001 离线 · tools/alerts_shadow.py start';
+      set('ya-engine', '离线');
+    }
+  }
+  yaProbe(); setInterval(yaProbe, 60000);
 
 </script>
 <script src="/static/cainiao.js" defer></script>
