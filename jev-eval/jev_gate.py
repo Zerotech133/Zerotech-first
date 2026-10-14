@@ -23,7 +23,7 @@ import os
 import sys
 import time
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import jev_common as jc
@@ -354,6 +354,45 @@ def mark_seen(alert_id: str) -> None:
                (alert_id,))
 
 
+# ── 用户忽略模式（K-STOCK-404 R3 闭环） ─────────────────────
+IGNORE_FILE = HERE / "gate_ignored.json"
+IGNORE_TTL_DAYS = 14  # 忽略项过期恢复推送（防无限期静默漏告警；到期可再忽略）
+_IGN: set = set()  # 本轮 run_once 生效的忽略 title 集（每轮刷新）
+
+
+def _ignored_titles() -> set:
+    """读 gate_ignored.json 取未过期且带 title 的忽略模式集。
+
+    R3 闭环背景：该文件原先只有写入方（卡片「忽略」/控制中枢）而无任何
+    读取方——按 alert_id 忽略也无意义（点击时 DB 已 ACKED，天然不重推）。
+    现语义=按 title 精确匹配抑制**同类新告警**（告警 title 为模板化前缀，
+    同规则反复产生新 alert_id）。每轮 run_once 调用一次（60s 轮询，忽略
+    生效延迟≤1 分钟，文件小无需缓存）。
+    """
+    if not IGNORE_FILE.exists():
+        return set()
+    try:
+        raw = json.loads(IGNORE_FILE.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        log(f"gate_ignored.json 读取失败（忽略集按空处理）: {str(e)[:80]}",
+            level="warn")
+        return set()
+    titles, cutoff = set(), datetime.now() - timedelta(days=IGNORE_TTL_DAYS)
+    for it in raw if isinstance(raw, list) else []:
+        if not isinstance(it, dict):
+            continue  # 旧格式 str 元素：无 title 无抑制能力，跳过
+        t = (it.get("title") or "").strip()
+        if not t:
+            continue
+        try:
+            if datetime.fromisoformat(it.get("ts") or "") < cutoff:
+                continue  # 过期：恢复推送
+        except ValueError:
+            pass  # ts 缺失/坏值：保守视为未过期（宁可多推不漏推）
+        titles.add(t)
+    return titles
+
+
 # ── 主循环 ──────────────────────────────────────────────────
 def _handle_alert(a: dict, dry: bool) -> None:
     """单告警处理链路（P1-2：调用方以 new_trace 包裹，日志全程携带同一 trace_id）。"""
@@ -363,6 +402,15 @@ def _handle_alert(a: dict, dry: bool) -> None:
         if not dry and not _push_with_dlq(a, {"urgent_p": 1.0, "category": "sys", "category_p": 1.0}):
             return  # 推送失败：不标 seen，下轮重试（P1-4）
         if not dry:  # K-STOCK-401：dry 只演练不落状态，防真实告警被 seen 永久吞掉
+            mark_seen(a["alert_id"])
+        return
+
+    # K-STOCK-404：用户忽略的同类告警（title 匹配）不再推送/不再消耗 Jev
+    # 额度。仅豁免 CRITICAL（上方已 return）——告警安全侧：宁可多推不漏推。
+    if _IGN and a["title"] in _IGN:
+        log("用户已忽略该类告警，抑制", alert_id=a["alert_id"],
+            title=a["title"][:40])
+        if not dry:
             mark_seen(a["alert_id"])
         return
 
@@ -397,8 +445,10 @@ def _handle_alert(a: dict, dry: bool) -> None:
 
 
 def run_once(dry: bool = False) -> None:
+    global _IGN
     if not ensure_seen_table():
         return  # 表建不起来 = DB 不可用，本轮放弃（fetch 同样会失败）
+    _IGN = _ignored_titles()  # K-STOCK-404：每轮刷新（忽略生效延迟≤1 轮询周期）
     seen = load_seen()
     alerts = fetch_open_alerts()
     fresh = [a for a in alerts if a["alert_id"] not in seen]

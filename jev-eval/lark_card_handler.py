@@ -64,20 +64,43 @@ def _load_allowed_operators() -> set:
 ALLOWED_OPERATORS = _load_allowed_operators()
 
 
-# ── 忽略集合持久化 ──────────────────────────────────────────
-def load_ignored() -> set:
+# ── 忽略集合持久化（K-STOCK-404：升级为模式列表） ───────────
+# 元素格式：{"alert_id": str, "title": str, "ts": ISO8601}。
+# 旧格式（纯 alert_id 字符串列表）读取时归一为 title="" 的 dict（仅保留
+# alert_id 匹配的兼容语义，新写入一律带 title）。
+def load_ignored() -> list:
     if IGNORE_FILE.exists():
         try:
-            return set(json.loads(IGNORE_FILE.read_text(encoding="utf-8")))
+            raw = json.loads(IGNORE_FILE.read_text(encoding="utf-8"))
+            out = []
+            for it in raw if isinstance(raw, list) else []:
+                if isinstance(it, dict):
+                    out.append(it)
+                elif isinstance(it, str):  # 旧格式归一
+                    out.append({"alert_id": it, "title": "", "ts": ""})
+            return out
         except Exception as e:  # noqa: BLE001
-            log(f"ignored.jsonl 解析失败，忽略集清零（已忽略告警会重复弹卡）: {str(e)[:80]}",
+            log(f"gate_ignored.json 解析失败，忽略集清零（已忽略告警恢复推送）: {str(e)[:80]}",
                 level="warn")  # C2批2
-            return set()
-    return set()
+            return []
+    return []
 
 
-def save_ignored(ignored: set) -> None:
-    atomic_write_text(IGNORE_FILE, json.dumps(list(ignored)[-2000:], ensure_ascii=False))
+def save_ignored(ignored: list) -> None:
+    atomic_write_text(IGNORE_FILE,
+                      json.dumps(ignored[-2000:], ensure_ascii=False))
+
+
+def fetch_alert_title(alert_id: str) -> str:
+    """查 v2_alert.title 供忽略模式记录（K-STOCK-404）。查询失败返回 ''。"""
+    try:
+        rows = jc.db_rows("SELECT title FROM v2_alert WHERE alert_id=%s",
+                          (alert_id,))
+        return (rows[0][0] or "") if rows else ""
+    except Exception as e:  # noqa: BLE001
+        log("忽略记录查 title 失败（降级仅记 alert_id）", alert_id=alert_id,
+            err=str(e)[:100], level="warn")
+        return ""
 
 
 # ── 事件去重（有界内存集合，DB ack 成功后才记录） ───────────
@@ -280,8 +303,12 @@ def handle_event(event: dict) -> None:
     elif action == "ignore":
         log("告警忽略", alert_id=alert_id, operator=operator_id)
         if source != "backup":  # 备份告警无 gate 实体，不写 gate_ignored.json
+            # K-STOCK-404：记录升级为 {alert_id, title, ts}——jev_gate 按
+            # title 抑制同类新告警（alert_id 抑制无意义：点击时 DB 已 ACKED）
             ignored = load_ignored()
-            ignored.add(alert_id)
+            ignored.append({"alert_id": alert_id,
+                            "title": fetch_alert_title(alert_id),
+                            "ts": datetime.now().isoformat(timespec="seconds")})
             save_ignored(ignored)
         status_text, template = "已忽略", "grey"
     else:
