@@ -13,19 +13,19 @@ sys.path.insert(0, HERE)
 import runner                                    # noqa: E402
 
 
-def _mk(sharpe, ret, dd, bench, mkt="CN", name="x"):
-    return {"market": mkt, "symbol": name, "name": name,
+def _mk(sharpe, ret, dd, bench, mkt="CN", name="x", symbol=None):
+    return {"market": mkt, "symbol": symbol or name, "name": name,
             "sharpe": sharpe, "total_return": ret, "max_drawdown": dd,
             "win_rate": 0.5, "benchmark_return": bench}
 
 
 # 复刻真实推送里的边界样本：前三（奖牌区）/ nan 基准（五洲医疗型）/ 负夏普（创业黑马型）
 RESULTS = [
-    _mk(3.33, 0.688, -0.084, 0.499, "CRYPTO", "Solana"),
-    _mk(3.03, 0.933, -0.193, 1.493, "US", "派拓网络"),
-    _mk(2.90, 0.636, -0.049, 0.452, "CRYPTO", "以太坊"),
-    _mk(1.59, 1.024, -0.174, float("nan"), "CN", "五洲医疗"),
-    _mk(-0.82, -0.256, -0.326, 0.071, "CN", "创业黑马"),
+    _mk(3.33, 0.688, -0.084, 0.499, "CRYPTO", "Solana", "SOL/USDT"),
+    _mk(3.03, 0.933, -0.193, 1.493, "US", "派拓网络", "PANW"),
+    _mk(2.90, 0.636, -0.049, 0.452, "CRYPTO", "以太坊", "ETH/USDT"),
+    _mk(1.59, 1.024, -0.174, float("nan"), "CN", "五洲医疗", "301532.SZ"),
+    _mk(-0.82, -0.256, -0.326, 0.071, "CN", "创业黑马", "300688.SZ"),
 ]
 
 
@@ -75,3 +75,23 @@ def test_scan_text_nan_safe():
 def test_is_nan_guard():
     assert runner._is_nan(float("nan")) and runner._is_nan(None)
     assert not runner._is_nan(0.499) and not runner._is_nan("bad")
+
+
+def test_stock_drill(monkeypatch):
+    # 配置了 portal_url → 名称变下钻链接（CN 去后缀/CRYPTO 斜杠编码）
+    monkeypatch.setitem(runner.CFG["report"], "portal_url",
+                        "http://192.168.0.3:8080/")
+    assert runner._stock_drill("五洲医疗", "301532.SZ") == \
+        "[五洲医疗](http://192.168.0.3:8080/kg/stock/301532)"
+    assert runner._stock_drill("Solana", "SOL/USDT") == \
+        "[Solana](http://192.168.0.3:8080/kg/stock/SOL%2FUSDT)"
+    assert runner._stock_drill("派拓网络", "PANW") == \
+        "[派拓网络](http://192.168.0.3:8080/kg/stock/PANW)"
+    # portal_url 未配置 → 纯文本回落（K42-c 判例默认面）
+    monkeypatch.setitem(runner.CFG["report"], "portal_url", "")
+    assert runner._stock_drill("五洲医疗", "301532.SZ") == "五洲医疗"
+    # 卡内集面：有配置时榜单行出链接
+    monkeypatch.setitem(runner.CFG["report"], "portal_url",
+                        "http://192.168.0.3:8080/")
+    joined = _md_joined(runner.scan_card("tf", RESULTS, ["CN"], "t"))
+    assert "[Solana](http://192.168.0.3:8080/kg/stock/SOL%2FUSDT)" in joined
