@@ -431,6 +431,49 @@ def append_triples(records: list[dict]) -> None:
         os.fsync(f.fileno())
 
 
+def dedup_triples(lines: list[str]) -> list[str]:
+    """按 candidate_id 去重（保留末次行，位置取首现次序）。
+
+    K-STOCK-402（四轮审计 BUG-3）：run_once 落盘顺序 append_triples →
+    save_seen 之间存在崩溃窗口——triples 已写而 seen 未写，下轮对同
+    candidate 重新复核并再次追加；报告/毕业条件/覆盖率按行计数不查重
+    → 样本虚增可提前满足毕业门槛（②FOCUS n≥300）。消费侧统一过本
+    函数；run_backfill 全量重写文件时顺带自愈物理重复行。
+    （不反转落盘顺序——seen 先写会变成「triples 永丢失」，比重复更糟。）
+    """
+    keep: dict[str, str] = {}
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        try:
+            cid = json.loads(line).get("candidate_id") or f"__idx{i}"
+        except Exception:  # noqa: BLE001
+            cid = f"__idx{i}"  # 坏行保留不丢（历史数据卫生问题不扩大化）
+        keep[cid] = line
+    return list(keep.values())
+
+
+def weekdays_after(d: date, today: date) -> int:
+    """d 之后（不含）到 today（含）的工作日数——交易日近似。
+
+    K-STOCK-402（四轮审计 BUG-4）：覆盖率守卫/回填预滤原先按日历日判
+    到期，而收益回填需 N_OUTCOME_DAYS 根**交易日** bar——周五池周三即
+    计入 due 分母（实际仅 3 个交易日、必然未回填），长假后首日整批
+    「假欠账」触发误报告警。周末口径足以消除系统性误报；法定假日仅使
+    due 判定更晚（安全侧：宁可晚报不误报）。
+    """
+    if today <= d:
+        return 0
+    days = (today - d).days
+    full_weeks, rem = divmod(days, 7)
+    n = full_weeks * 5
+    wd = d.weekday()
+    for i in range(1, rem + 1):
+        if (wd + i) % 7 < 5:
+            n += 1
+    return n
+
+
 # ── 三种运行模式 ────────────────────────────────────────────
 def run_once(dry: bool = False) -> int:
     """复核最近候选池未处理候选。返回本轮复核数。"""
@@ -477,8 +520,9 @@ def run_backfill() -> int:
     if not TRIPLES.exists():
         log("无三元组记录")
         return 0
-    cutoff = date.today() - timedelta(days=N_OUTCOME_DAYS)
-    lines = TRIPLES.read_text(encoding="utf-8").splitlines()
+    cutoff_today = date.today()
+    lines = dedup_triples(  # K-STOCK-402：崩溃窗口重复行自愈（重写即去重）
+        TRIPLES.read_text(encoding="utf-8").splitlines())
     out, filled, pending = [], 0, 0
     for line in lines:
         if _STOP["flag"]:
@@ -492,7 +536,9 @@ def run_backfill() -> int:
             out.append(line)
             continue
         pool_d = date.fromisoformat(pd_)
-        if pool_d > cutoff:
+        # K-STOCK-402（BUG-4）：交易日口径预滤（原日历日，周末/长假必然
+        # 查不到 N+1 根 bar 白打一次 DB）；最终判定仍是下方 bar 计数
+        if weekdays_after(pool_d, cutoff_today) < N_OUTCOME_DAYS:
             pending += 1
             out.append(line)
             continue
@@ -617,9 +663,10 @@ def coverage_guard() -> float:
     """
     if not TRIPLES.exists():
         return 1.0
-    cutoff = date.today() - timedelta(days=N_OUTCOME_DAYS)
+    today = date.today()
     due = filled = 0
-    for line in TRIPLES.read_text(encoding="utf-8").splitlines():
+    for line in dedup_triples(  # K-STOCK-402 BUG-3：重复行不重复计数
+            TRIPLES.read_text(encoding="utf-8").splitlines()):
         if not line.strip():
             continue
         try:
@@ -628,7 +675,10 @@ def coverage_guard() -> float:
             continue
         if r.get("status") != "reviewed" or not r.get("pool_date"):
             continue
-        if date.fromisoformat(r["pool_date"]) > cutoff:
+        # K-STOCK-402 BUG-4：due 判定改交易日口径（原日历日 cutoff，
+        # 周五池周三即入分母但实际仅 3 个交易日无法回填 → 系统性误报）
+        if weekdays_after(date.fromisoformat(r["pool_date"]), today) \
+                < N_OUTCOME_DAYS:
             continue
         due += 1
         if r.get("ret_nd") is not None:
@@ -657,7 +707,8 @@ def run_report() -> None:
         log("无三元组记录")
         return
     groups: dict[str, list[dict]] = {}
-    for line in TRIPLES.read_text(encoding="utf-8").splitlines():
+    for line in dedup_triples(  # K-STOCK-402 BUG-3：去重后计数，防毕业样本虚增
+            TRIPLES.read_text(encoding="utf-8").splitlines()):
         r = json.loads(line)
         if r.get("ret_nd") is not None:
             groups.setdefault(r.get("decision", "?"), []).append(r)
