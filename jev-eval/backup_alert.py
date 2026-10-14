@@ -56,80 +56,51 @@ def parse_fields(text):
 
 
 def build_backup_card(fields, with_buttons=True):
-    """Card 2.0 for backup failure; buttons carry source=backup so the card
+    """v1 卡片 for backup failure; buttons carry source=backup so the card
     handler skips the v2_alert DB write (backup alerts have no DB entity).
-    with_buttons=False drops the button row (webhook channel: no callbacks)."""
+    with_buttons=False drops the button row (webhook channel: no callbacks).
+    K-STOCK-370：schema 2.0（behaviors callback）在告警卡片助手 app 下点击
+    零投递（平台侧缺口，事件日志检索无任何推送记录），v1 tag:action 按钮
+    实测端到端可用（2026-10-14 V1TEST368 四条回调全到）——全量降级 v1。"""
     stamp = fields.get("stamp", "unknown")
     failed = fields.get("failed_count", "?")
     log_path = fields.get("backup_log", "(unknown)")
     alert_id = ("BACKUP_" + stamp)[:64]
 
-    def _metric_col(label, value, size):
-        return {
-            "tag": "column", "width": "weighted", "weight": 1,
-            "background_style": "red-50",
-            "padding": "12px", "vertical_spacing": "2px",
-            "elements": [
-                {"tag": "markdown", "text_size": "notation",
-                 "content": "<font color='grey'>" + label + "</font>"},
-                {"tag": "markdown", "text_size": size, "content": value},
-            ],
-        }
-
     def _btn(content, btype, action):
         return {
-            "tag": "column", "width": "weighted", "weight": 1,
-            "elements": [
-                {"tag": "button",
-                 "text": {"tag": "plain_text", "content": content},
-                 "type": btype, "width": "fill", "size": "medium",
-                 "behaviors": [{"type": "callback",
-                                "value": {"source": "backup", "action": action,
-                                          "alert_id": alert_id}}]}],
+            "tag": "button",
+            "text": {"tag": "plain_text", "content": content},
+            "type": btype,
+            "value": {"source": "backup", "action": action, "alert_id": alert_id},
         }
 
     return {
-        "schema": "2.0",
-        "config": {"update_multi": True, "width_mode": "default"},
+        "config": {"wide_screen_mode": True, "update_multi": True},
         "header": {
             "title": {"tag": "plain_text",
                       "content": "\U0001f6a8 AI\u5de5\u4f5c\u7ad9\u6bcf\u65e5\u5907\u4efd\u5931\u8d25"},
-            "subtitle": {"tag": "plain_text",
-                         "content": "\u5907\u4efd\u5931\u8d25\u544a\u8b66 \u00b7 " + stamp},
             "template": "red",
         },
-        "body": {
-            "direction": "vertical",
-            "padding": "12px 12px 20px 12px",
-            "vertical_spacing": "12px",
-            "elements":
-                [
-                    {
-                        "tag": "column_set",
-                        "flex_mode": "none",
-                        "horizontal_spacing": "8px",
-                        "margin": "0px",
-                        "columns": [
-                            _metric_col("\u5931\u8d25\u9879\u6570", str(failed), "heading-2"),
-                            _metric_col("\u65f6\u95f4\u6233", stamp, "heading-3"),
-                        ],
-                    },
-                    {
-                        "tag": "markdown",
-                        "content": "**\u6709\u5907\u4efd\u9879\u672a\u5b8c\u6210\uff0c\u8bf7\u68c0\u67e5\u5907\u4efd\u65e5\u5fd7\uff1a**\n\n`"
-                                   + log_path + "`",
-                        "margin": "0px",
-                    },
-                ] + ([{
-                    "tag": "column_set",
-                    "flex_mode": "none",
-                    "horizontal_spacing": "8px",
-                    "columns": [
-                        _btn("\u2713 \u786e\u8ba4\u77e5\u6653", "primary_filled", "ack"),
-                        _btn("\u5ffd\u7565", "default", "ignore"),
-                    ],
-                }] if with_buttons else []),
-        },
+        "elements":
+            [
+                {
+                    "tag": "div",
+                    "text": {"tag": "lark_md",
+                             "content": "**\u5931\u8d25\u9879\u6570\uff1a**{0}\u3000\u3000**\u65f6\u95f4\u6233\uff1a**{1}".format(failed, stamp)},
+                },
+                {
+                    "tag": "markdown",
+                    "content": "**\u6709\u5907\u4efd\u9879\u672a\u5b8c\u6210\uff0c\u8bf7\u68c0\u67e5\u5907\u4efd\u65e5\u5fd7\uff1a**\n\n`"
+                               + log_path + "`",
+                },
+            ] + ([{
+                "tag": "action",
+                "actions": [
+                    _btn("\u2713 \u786e\u8ba4\u77e5\u6653", "primary", "ack"),
+                    _btn("\u5ffd\u7565", "default", "ignore"),
+                ],
+            }] if with_buttons else []),
     }
 
 

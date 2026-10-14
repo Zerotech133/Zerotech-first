@@ -126,19 +126,20 @@ def ack_alert_in_db(alert_id: str) -> bool:
 # ── 卡片更新（带重试） ──────────────────────────────────────
 def _mutate_card(card_content: str, status_text: str, template: str,
                  operator_id: str) -> str | None:
-    """把原始卡片 JSON 改为终态（header 变色 + 按钮区替换为状态文本）。"""
+    """把原始卡片 JSON 改为终态（header 变色 + 按钮区替换为状态文本）。
+    K-STOCK-370：双格式兼容——v1 卡（elements）与 2.0 卡（body.elements）
+    的按钮区都是最后一个元素，替换逻辑同构。"""
     try:
         card = json.loads(card_content)
     except Exception:  # noqa: BLE001
         return None  # 豁免（C2批2）：调用方 update_card 已落日志（card_content 解析失败）
     if "header" in card:
         card["header"]["template"] = template
-    elements = card.get("body", {}).get("elements", [])
+    elements = card.get("elements") or card.get("body", {}).get("elements") or []
     if elements:
         elements[-1] = {
             "tag": "markdown",
             "content": f"**{status_text}** · by {operator_id}",
-            "margin": "0px",
         }
     return json.dumps(card, ensure_ascii=False)
 
