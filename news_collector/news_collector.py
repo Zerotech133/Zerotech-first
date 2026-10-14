@@ -38,8 +38,13 @@ DISAMBIG_SUFFIX = ("银行", "证券", "基金", "人寿", "产险", "信托", "
                    "健康", "好医生", "科技", "不动产", "养老", "镇", "市", "区")
 
 # K-STOCK-355 金融新闻速报同步目标：内部测试群（飞书实名，owner=本人；
-# 与 news_config.push_targets 中 oc_6b97… 同群，该处注释「家人群」系命名漂移已修正）
-TEST_GROUP_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"
+# 与 news_config.push_targets「内部测试」同群，该处旧注释「家人群」系命名漂移）
+# K-STOCK-403：id 改由 push_targets 单一事实源按名解析
+try:
+    import push_targets
+    TEST_GROUP_ID = push_targets.target_id("内部测试") or ""
+except ImportError:  # 独立分发场景兜底为空（发送失败可见）
+    TEST_GROUP_ID = ""
 
 
 def term_in(term, text):

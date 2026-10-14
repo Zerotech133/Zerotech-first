@@ -11,8 +11,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from feishu_card_v2 import send_card, PORTAL_BASE, PORTAL_KEY  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
+import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
 
-GROUP_CHAT_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"  # 家人群（news_config.push_targets[1]）
+GROUP_CHAT_ID = push_targets.target_id("内部测试") or ""  # 家人群
 
 
 def build_card():

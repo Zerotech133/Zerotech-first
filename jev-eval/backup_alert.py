@@ -19,10 +19,14 @@ import subprocess
 import sys
 
 LARK_PLUGIN_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
-DEFAULT_USER_ID = "ou_50a95455c7dffec1090ade400886d0d4"
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "news_collector"))
+import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
+
+DEFAULT_USER_ID = push_targets.target_id("个人") or ""
 # group alert (family group, bot cli_aa3e4f1b58f85cdd is a member so it can
 # post via OpenAPI chat_id). Override with LARK_ALERT_GROUP_ID, '' disables.
-DEFAULT_GROUP_ID = "oc_6b97bee8b5340e071d0fc10cc6c8569f"
+DEFAULT_GROUP_ID = push_targets.target_id("内部测试") or ""
 
 
 def find_lark_cli():

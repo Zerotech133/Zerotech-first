@@ -40,9 +40,11 @@ def main():
         print("already running")
         return
     # K-STOCK-122 M7 白名单：止盈止损指令仅限老田（env 注入子进程）
+    sys.path.insert(0, os.path.join(os.path.dirname(HERE), "news_collector"))
+    import push_targets  # K-STOCK-403：收件人单一事实源
     env = dict(os.environ)
     env.setdefault("EXIT_ALLOW_OPEN_IDS",
-                   "ou_50a95455c7dffec1090ade400886d0d4")  # 老田 bot 域 open_id
+                   push_targets.target_id("个人") or "")  # 老田 bot 域 open_id
     with open(LOG, "ab") as fo:
         subprocess.Popen(
             [PY, "-u", BOT], stdin=subprocess.DEVNULL, stdout=fo,
