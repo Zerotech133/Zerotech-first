@@ -125,6 +125,13 @@ check("命中格点 replay 分与 missing 分不同",
 
 # ── 汇总 ─────────────────────────────────────────────────────
 
-n_fail = sum(1 for _, ok in PASS if not ok)
-print("\n%d checks, %d failed" % (len(PASS), n_fail))
-sys.exit(1 if n_fail else 0)
+def test_all():
+    """pytest 入口：模块级 check 已在 import 时执行完。"""
+    n_fail = sum(1 for _, ok in PASS if not ok)
+    assert n_fail == 0, "%d/%d checks failed" % (n_fail, len(PASS))
+
+
+if __name__ == "__main__":
+    n_fail = sum(1 for _, ok in PASS if not ok)
+    print("\n%d checks, %d failed" % (len(PASS), n_fail))
+    sys.exit(1 if n_fail else 0)

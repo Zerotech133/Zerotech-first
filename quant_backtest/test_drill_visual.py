@@ -753,8 +753,16 @@ class TestSeatPage(unittest.TestCase):
         self.assertIn("无上榜记录", h)
 
     def test_missing_param(self):
-        """缺 ex 参数 → 进入席位画像榜；无产物时给出明确回退。"""
-        h = self._seat("")
+        """缺 ex 参数 → 进入席位画像榜；无产物时给出明确回退。
+
+        打桩 api_backtest._read_json（方法定义处命名空间）：产物
+        portal/data/seat_profiles.json 已由日更管线真实产出
+        （20261014 起 52KB），不打桩则本用例依赖文件系统状态、
+        产物存在即恒挂。"""
+        import api_backtest as _ab
+        from unittest.mock import patch as _patch
+        with _patch.object(_ab, "_read_json", return_value={}):
+            h = self._seat("")
         self.assertIn("席位画像未生成", h)
 
 

@@ -330,6 +330,49 @@ def status():
           if os.path.exists(INFO_DB) else "no info db yet")
 
 
+CORE_LOCK = os.path.join(os.environ.get("TEMP", r"C:\Temp"),
+                         "tdx_sync_core.lock")
+_CORE_LOCK_MAX_AGE_S = 2 * 3600      # 2h 视为陈锁（任务上限 2h）
+
+
+def _core_lock_acquire():
+    """进程级互斥锁：防多链路并发直跑本脚本（K-STOCK-391 实证冲突：
+    ps1 锁只护 v2 启动器，外部直跑绕锁抢写同一 out.log）。
+
+    返回 True=拿到锁；False=已有活跃实例（打印 SKIP、调用方应静默退 0
+    ——与 start_tdx_sync.ps1 v2 的 SKIP-already-running 判例一致，
+    不触发失败告警链）。陈锁（age>=2h）强夺。"""
+    import time as _t
+    while True:
+        try:
+            fd = os.open(CORE_LOCK,
+                         os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            with os.fdopen(fd, "w", encoding="ascii") as handle:
+                handle.write("%d %d\n" % (os.getpid(), int(_t.time())))
+            return True
+        except FileExistsError:
+            try:
+                age = _t.time() - os.path.getmtime(CORE_LOCK)
+            except OSError:
+                continue                    # 锁刚好被释放，重试
+            if age < _CORE_LOCK_MAX_AGE_S:
+                print("[lock] SKIP: another tdx_sync running "
+                      "(lock age %ds < %ds)" % (age, _CORE_LOCK_MAX_AGE_S))
+                return False
+            print("[lock] steal stale lock (age %ds)" % age)
+            try:
+                os.remove(CORE_LOCK)
+            except OSError:
+                pass
+
+
+def _core_lock_release():
+    try:
+        os.remove(CORE_LOCK)
+    except OSError:
+        pass
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--all", action="store_true")
@@ -360,6 +403,15 @@ def main():
         status()
         return
     remote = _remote_tables()
+    if not _core_lock_acquire():
+        return                      # 已有实例在跑：静默退 0（SKIP 判例）
+    try:
+        _run_sync(a, remote)
+    finally:
+        _core_lock_release()
+
+
+def _run_sync(a, remote):
     if a.tables:
         tables = [t.strip() for t in a.tables.split(",") if t.strip()]
     else:

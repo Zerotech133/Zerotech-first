@@ -263,14 +263,20 @@ class TestAlertToggle(_Base):
                 return True
 
         sys_mod = sys.modules
-        sys.modules["runner"] = _FakeRunner
+        # 存原模块、finally 还原（判例=drill_visual._fake_modules）。
+        # 只 pop 不还原 → 后续懒加载 import runner 全新导入真模块
+        # （真实 CFG portal_url），污染 test_doc_drill_fallback 等
+        # 任何函数内 import runner 的用例（20261014 全量审计实锤）。
+        _orig_runner = sys_mod.get("runner", _MISSING := object())
+        sys_mod["runner"] = _FakeRunner
         try:
             h = cross_poll.source_health()            # chanlun missing
             sent, _ = cross_poll.push_source_health_alert(h, send=None)
         finally:
-            sys.modules.pop("runner", None)
-            sys.modules.update({k: v for k, v in sys_mod.items()
-                                if k != "runner"} if False else {})
+            if _orig_runner is _MISSING:
+                sys_mod.pop("runner", None)
+            else:
+                sys_mod["runner"] = _orig_runner
         self.assertTrue(sent)
         self.assertEqual(len(calls), 1)
         self.assertIn("chanlun missing", calls[0])    # 推送含各源锚状态

@@ -63,5 +63,6 @@ def test_doc_drill_links(monkeypatch):
 def test_doc_drill_fallback(monkeypatch):
     monkeypatch.setitem(runner.CFG["report"], "portal_url", "")
     md = premarket.build_doc_md(_fixture())
-    assert "/kg/stock/" not in md                       # 回落纯文本
+    bad = [ln for ln in md.splitlines() if "/kg/stock/" in ln]
+    assert not bad, "回落纯文本被破坏，残留链接行: %r" % bad[:3]
     assert "光智科技" in md and "宁德时代" in md
