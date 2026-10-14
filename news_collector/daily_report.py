@@ -31,8 +31,10 @@ def _j(path):
 
 
 def _green(v, fmt="%+.2f%%"):
-    return "<font color='green'>%s</font>" % (fmt % v) if v >= 0 \
-        else "<font color='red'>%s</font>" % (fmt % v)
+    """A股红涨绿跌：涨(>=0)→红，跌(<0)→绿（K-STOCK-359/363 判例，勿再反）。
+    注意：函数名保留 _green 仅因历史调用，内部已是红涨绿跌语义。"""
+    return "<font color='red'>%s</font>" % (fmt % v) if v >= 0 \
+        else "<font color='green'>%s</font>" % (fmt % v)
 
 
 def _sentiment_block():
