@@ -91,6 +91,14 @@ READ_ONLY_ADDENDUM = (
     "diff 中 - 开头的行只是被移除的旧内容；【提交方附证】中的现值计数可用 Grep 抽查复核。"
 )
 
+# K-ORG-062a(F6b) SEC2 返工项③：只读面 fail-closed 自检（import 时执行）——
+# 工具本体与只读承诺绑死：附言或工具面一旦被改出写能力，import 即炸，质检不静默降权。
+_READONLY_TOOLS = "Read,Grep,Glob"
+assert not ({"Edit", "Bash", "Write", "NotebookEdit"} & set(_READONLY_TOOLS.split(","))), \
+    "K-ORG-062a 只读面被破坏：QA1 复核工具面不得含写工具"
+assert "无 Edit/Bash/Write" in READ_ONLY_ADDENDUM, \
+    "K-ORG-062a 只读纪律附言被移除，QA1 只读承诺失据"
+
 
 def review_one(sha, note=None):
     """复核单笔提交，返回 QA1 模型结论文本。
@@ -104,7 +112,7 @@ def review_one(sha, note=None):
                 "QA1",
                 {"label": "QA1 复核 " + sha,
                  "prompt": task + READ_ONLY_ADDENDUM,
-                 "allowed_tools": "Read,Grep,Glob",
+                 "allowed_tools": _READONLY_TOOLS,
                  "max_turns": 15},
                 timeout=600,
             )
