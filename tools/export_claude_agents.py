@@ -73,6 +73,8 @@ def main():
             "prompt": (a.get("prompt") or "").rstrip() + "\n" + scope_block(a),
             "tools": tools_for(a),
             "model": model_for(a),
+            # K-ORG-059: 属性透传（从业经验/擅长/知识库）——F6a 子代理化消费面
+            "attributes": a.get("attributes") or {},
         }
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8", newline="\n") as f:

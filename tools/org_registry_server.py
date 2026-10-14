@@ -86,14 +86,23 @@ def _rebake_and_reexport():
 
 
 def _find_team_entry(agent_id):
-    """定位工号所在 team 文件与条目（含 org.json chief 兜底）。返回 (path, entry, team)。"""
+    """定位工号所在 team 文件与条目（含 org.json chief 兜底）。返回 (path, entry, team)。
+    K-ORG-059: 跳过 team_proj_*（项目部=成员投影，只承载项目标签）——
+    同名岗在职能部与项目部并存时，属性必须写职能部本体，
+    否则 build 岗卡读职能部永远拿不到投影里写的属性（QA1 判例）。"""
+    proj_hit = None
     for fn in sorted(os.listdir(REG)):
         if fn.startswith("team_") and fn.endswith(".json"):
+            if fn.startswith("team_proj_"):
+                proj_hit = fn  # 本体找不到时的诊断线索，不作为写入目标
+                continue
             p = os.path.join(REG, fn)
             team = json.load(open(p, encoding="utf-8"))
             for e in team.get("agents", []):
                 if e.get("agent_id") == agent_id:
                     return p, e, team
+    if proj_hit:
+        print("[warn] %s 仅见于投影 %s（职能部本体缺失）" % (agent_id, proj_hit))
     org = json.load(open(os.path.join(REG, "org.json"), encoding="utf-8"))
     if org.get("chief", {}).get("agent_id") == agent_id:
         return None, None, None  # A0 属性走 org.json chief 段（现状编辑面不含 A0）

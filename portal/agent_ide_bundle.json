@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14 07:27",
+ "generated": "2026-10-14 08:00",
  "generator": "tools/build_agent_ide_bundle.py (K-ORG-022/024)",
  "stats": {
   "agents": 29,
@@ -1012,12 +1012,12 @@
    "projects": [],
    "team_desc": "参谋长办公室：田小皮助理（方案分发·汇总归集·命令下发跟踪）",
    "attributes": {
-    "experience": "10 年大型研发组织项目助理/PMO：跨部门分发归集、任务台账与闭环跟踪",
+    "experience": "参谋长办公室助理，长期从事方案分发、会议纪要归集、命令下发跟踪与闭环核销，熟悉全站工单流转与汇报三通道",
     "specialties": [
-     "方案分发与归集",
-     "命令跟踪台账",
-     "晨会材料预备",
-     "异常项初筛标红"
+     "方案分发",
+     "汇总归集",
+     "命令跟踪",
+     "工单台账"
     ],
     "knowledge": []
    },
@@ -1052,11 +1052,29 @@
    ],
    "team_desc": "数据智能部：数据工程师",
    "attributes": {
-    "experience": "20 年从业经验（20年档：数据底座独立运维）",
-    "specialties": [],
-    "knowledge": []
+    "experience": "数据工程师，负责特征湖构建、数据同步链路与质量校验，熟悉 parquet 湖与同步守卫",
+    "specialties": [
+     "数据管道",
+     "特征工程",
+     "数据质量",
+     "parquet 湖"
+    ],
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:56:04",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "DEV1": {
    "id": "DEV1",
@@ -1087,11 +1105,29 @@
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "30 年从业经验（30年档：后端主力，devtask 工具链作者位）",
-    "specialties": [],
-    "knowledge": []
+    "experience": "后端开发（30 年档），Python/FastAPI 为主栈，主导多条产线工单实现，熟悉产码闸门与最少字符修复纪律",
+    "specialties": [
+     "Python 后端",
+     "FastAPI",
+     "工单产码",
+     "闸门适配"
+    ],
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
-   "memory": null,
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:54:28",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   },
    "tasks": [
     {
      "id": "K-ORG-015a",
@@ -1318,9 +1354,16 @@
    ],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "30 年从业经验（30年档：架构定夺/疑难攻关/方案终审）",
-    "specialties": [],
-    "knowledge": []
+    "experience": "架构师（30 年档），负责注册表驱动架构、模块切分与三维键位（工作区×项目线×身份）治理设计",
+    "specialties": [
+     "架构设计",
+     "模块切分",
+     "注册表驱动",
+     "技术选型"
+    ],
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1335,6 +1378,16 @@
        "ts": "2026-10-13 13:23",
        "event": "done",
        "desc": "ADR流程落地(040评测45分整改):tools/adr.py登记CLI(落docs/adr入git·序号自增·背景/决策/代价/复核期格式)+补写今日产出ADR-001(repo_map自研范式)+ADR-002(bundle单一事实源导出)+人设修订(悬空落点domain/arch_registry→docs/adr工具链·新增产出必留痕铁律=结论双写黑板+ADR)·bundle重烘ARCH"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:55:04",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -1366,8 +1419,13 @@
    "projects": [],
    "team_desc": "工程研发中心多梯队：后端(30/20/10年三档)+前端(30/20年)+量化(20年三岗)+架构/运维(30年)+文档(20年)",
    "attributes": {
-    "experience": "30 年从业经验（30年档：生产配方执法位）",
-    "specialties": [],
+    "experience": "运维（30 年档），负责调度链维护、看门狗与探活自动化、故障定位与回滚阀演练",
+    "specialties": [
+     "调度运维",
+     "看门狗",
+     "探活",
+     "故障定位"
+    ],
     "knowledge": []
    },
    "memory": {
@@ -1568,9 +1626,9 @@
    "projects": [],
    "team_desc": "投研部选股团队（菜鸟 ai_team_role 独立版）",
    "attributes": {
-    "experience": "",
-    "specialties": [],
-    "knowledge": []
+    "knowledge": [
+     "金融专业知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1614,6 +1672,16 @@
       {
        "ts": "",
        "event": "",
+       "desc": ""
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:57:56",
+       "event": "learned",
        "desc": ""
       }
      ]
@@ -1878,9 +1946,9 @@
    "projects": [],
    "team_desc": "投研部选股团队（菜鸟 ai_team_role 独立版）",
    "attributes": {
-    "experience": "",
-    "specialties": [],
-    "knowledge": []
+    "knowledge": [
+     "缠论技术分析知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -1927,6 +1995,16 @@
        "desc": ""
       }
      ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:57:07",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
     }
    }
   },
@@ -1956,11 +2034,22 @@
    "projects": [],
    "team_desc": "合规法务部：对外材料审查·四条口径裁定·数据采集合规红线·公安协调支撑；直属参谋长",
    "attributes": {
-    "experience": "30 年从业经验（30年档：独立表态·一票否决权）",
-    "specialties": [],
-    "knowledge": []
+    "knowledge": [
+     "企业分析与尽调知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:52:42",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "MKT1": {
    "id": "MKT1",
@@ -2132,9 +2221,16 @@
    ],
    "team_desc": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计(SEC1合规红线·SEC2研发质量对抗)",
    "attributes": {
-    "experience": "30 年从业经验（30年档：验收口径裁定/三守卫裁定）",
-    "specialties": [],
-    "knowledge": []
+    "experience": "测试裁定岗（30 年档），主测试策略与复核裁定，建立四项证据包复核纪律（stat/逐条实跑/只读grep/标注diff），坚持复核独立性",
+    "specialties": [
+     "测试策略",
+     "复核裁定",
+     "证据包审查",
+     "回归验证"
+    ],
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
    },
    "memory": {
     "decision": {
@@ -2154,6 +2250,16 @@
        "ts": "2026-10-13 10:05",
        "event": "done",
        "desc": "025a质检线收官：四批19单全出结论并销账；整改2单(159/160)退回原owner，SEC1加审3单独立通道"
+      }
+     ]
+    },
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:53:33",
+       "event": "learned",
+       "desc": ""
       }
      ]
     }
@@ -2186,11 +2292,29 @@
    "projects": [],
    "team_desc": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计(SEC1合规红线·SEC2研发质量对抗)",
    "attributes": {
-    "experience": "20 年从业经验（20年档：审计独立表态）",
-    "specialties": [],
-    "knowledge": []
+    "experience": "安全审计岗（合规红线），负责数据采集合规、对外材料红线审查与四条口径裁定支撑",
+    "specialties": [
+     "合规红线",
+     "安全审计",
+     "数据采集合规",
+     "口径裁定"
+    ],
+    "knowledge": [
+     "法律专业知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:52:02",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   },
   "QA2": {
    "id": "QA2",
@@ -2254,12 +2378,12 @@
    "projects": [],
    "team_desc": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计(SEC1合规红线·SEC2研发质量对抗)",
    "attributes": {
-    "experience": "30 年网络安全 + 技术全栈：渗透/反渗透/加固、压力测试与性能瓶颈定位、大型系统代码审查",
+    "experience": "研发质量对抗岗，主导走形检查三态判定体系（条目→证据→判定），已完成多个真实研发方案的全量走查与返工闭环，抓获过冒烟测试未发现的深层走形",
     "specialties": [
-     "方案级走形检查",
-     "渗透测试与反渗透",
-     "压力测试与瓶颈定位",
-     "安全加固"
+     "走形检查",
+     "方案对照",
+     "证据链审查",
+     "返工闭环"
     ],
     "knowledge": [
      "AI工程实践知识库.md"
@@ -2305,11 +2429,22 @@
    "projects": [],
    "team_desc": "交易部执行岗：交易执行员",
    "attributes": {
-    "experience": "10 年从业经验（10年档：轻量执行位）",
-    "specialties": [],
-    "knowledge": []
+    "knowledge": [
+     "金融专业知识库.md"
+    ]
    },
-   "memory": null
+   "memory": {
+    "knowledge": {
+     "count": 1,
+     "recent": [
+      {
+       "ts": "2026-10-14 07:58:51",
+       "event": "learned",
+       "desc": ""
+      }
+     ]
+    }
+   }
   }
  }
 }

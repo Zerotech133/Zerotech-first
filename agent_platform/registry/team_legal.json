@@ -1,37 +1,42 @@
 {
-  "_note": "合规法务部注册表（K-ORG-024 新设：直属参谋长田小皮，E3 独立表态一票否决）",
-  "team": "legalcore",
-  "dept": "legal",
-  "description": "合规法务部：对外材料审查·四条口径裁定·数据采集合规红线·公安协调支撑；直属参谋长",
-  "agents": [
-    {
-      "agent_id": "LEG1",
-      "role_profile": "leg1_legal",
-      "analysis_type": "legal_compliance",
-      "node_key": "leg1_review",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [
-        "events"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/legal/*",
-          "dept/marketing/*",
-          "agent/LEG1/*"
-        ],
-        "write": [
-          "agent/LEG1/*",
-          "dept/legal/review"
-        ]
-      },
-      "grade": "E3",
-      "grade_note": "30年档：独立表态·一票否决权",
-      "charter_detail": "E3·30年档·合规法务：政府材料/宣发文稿发布前审查(通过/修改后通过/驳回)·四条对外口径裁定权·爬虫采集合规红线·军方背景与涉政一票驳回"
-    }
-  ]
+ "_note": "合规法务部注册表（K-ORG-024 新设：直属参谋长田小皮，E3 独立表态一票否决）",
+ "team": "legalcore",
+ "dept": "legal",
+ "description": "合规法务部：对外材料审查·四条口径裁定·数据采集合规红线·公安协调支撑；直属参谋长",
+ "agents": [
+  {
+   "agent_id": "LEG1",
+   "role_profile": "leg1_legal",
+   "analysis_type": "legal_compliance",
+   "node_key": "leg1_review",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/legal/*",
+     "dept/marketing/*",
+     "agent/LEG1/*"
+    ],
+    "write": [
+     "agent/LEG1/*",
+     "dept/legal/review"
+    ]
+   },
+   "grade": "E3",
+   "grade_note": "30年档：独立表态·一票否决权",
+   "charter_detail": "E3·30年档·合规法务：政府材料/宣发文稿发布前审查(通过/修改后通过/驳回)·四条对外口径裁定权·爬虫采集合规红线·军方背景与涉政一票驳回",
+   "attributes": {
+    "knowledge": [
+     "企业分析与尽调知识库.md"
+    ]
+   }
+  }
+ ]
 }

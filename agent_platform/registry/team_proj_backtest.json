@@ -1,56 +1,103 @@
 {
-  "_note": "🅰 回测开发部·项目编制（K-ORG-018 项目部门 type=project）。成员为职能岗引用（跨职能抽人组队），交付完 status 改 archived 归建。worktree 前缀 proj_a_。",
-  "team": "proj-backtest",
-  "dept": "proj_backtest",
-  "description": "项目部门 A：回测中心开发（DEV3 策略 + DEV4 回测 + QA1 质量）",
-  "agents": [
-    {
-      "agent_id": "DEV3",
-      "role_profile": "strategy_engineer",
-      "analysis_type": "strategy_research",
-      "node_key": "proj_a_dev3",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["devtask", "events"],
-      "memory_grants": {
-        "read": ["domain/*", "dept/dev/*", "dept/invest/decision", "agent/DEV3/*"],
-        "write": ["agent/DEV3/*", "dept/dev/observation"]
-      }
-    },
-    {
-      "agent_id": "DEV4",
-      "role_profile": "backtest_engineer",
-      "analysis_type": "backtest_review",
-      "node_key": "proj_a_dev4",
-      "parent_node_keys": ["proj_a_dev3"],
-      "level": 2,
-      "is_parallel": false,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["devtask", "events"],
-      "memory_grants": {
-        "read": ["domain/*", "dept/dev/*", "agent/DEV4/*"],
-        "write": ["agent/DEV4/*", "dept/dev/observation"]
-      }
-    },
-    {
-      "agent_id": "QA1",
-      "role_profile": "qa_engineer",
-      "analysis_type": "quality_assurance",
-      "node_key": "proj_a_qa1",
-      "parent_node_keys": ["proj_a_dev4"],
-      "level": 3,
-      "is_parallel": false,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["devtask", "events"],
-      "memory_grants": {
-        "read": ["domain/*", "dept/quality/*", "agent/QA1/*"],
-        "write": ["agent/QA1/*", "dept/quality/observation"]
-      }
-    }
-  ]
+ "_note": "🅰 回测开发部·项目编制（K-ORG-018 项目部门 type=project）。成员为职能岗引用（跨职能抽人组队），交付完 status 改 archived 归建。worktree 前缀 proj_a_。",
+ "team": "proj-backtest",
+ "dept": "proj_backtest",
+ "description": "项目部门 A：回测中心开发（DEV3 策略 + DEV4 回测 + QA1 质量）",
+ "agents": [
+  {
+   "agent_id": "DEV3",
+   "role_profile": "strategy_engineer",
+   "analysis_type": "strategy_research",
+   "node_key": "proj_a_dev3",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "devtask",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/dev/*",
+     "dept/invest/decision",
+     "agent/DEV3/*"
+    ],
+    "write": [
+     "agent/DEV3/*",
+     "dept/dev/observation"
+    ]
+   }
+  },
+  {
+   "agent_id": "DEV4",
+   "role_profile": "backtest_engineer",
+   "analysis_type": "backtest_review",
+   "node_key": "proj_a_dev4",
+   "parent_node_keys": [
+    "proj_a_dev3"
+   ],
+   "level": 2,
+   "is_parallel": false,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "devtask",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/dev/*",
+     "agent/DEV4/*"
+    ],
+    "write": [
+     "agent/DEV4/*",
+     "dept/dev/observation"
+    ]
+   }
+  },
+  {
+   "agent_id": "QA1",
+   "role_profile": "qa_engineer",
+   "analysis_type": "quality_assurance",
+   "node_key": "proj_a_qa1",
+   "parent_node_keys": [
+    "proj_a_dev4"
+   ],
+   "level": 3,
+   "is_parallel": false,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "devtask",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/quality/*",
+     "agent/QA1/*"
+    ],
+    "write": [
+     "agent/QA1/*",
+     "dept/quality/observation"
+    ]
+   },
+   "attributes": {
+    "experience": "测试裁定岗（30 年档），主测试策略与复核裁定，建立四项证据包复核纪律（stat/逐条实跑/只读grep/标注diff），坚持复核独立性",
+    "specialties": [
+     "测试策略",
+     "复核裁定",
+     "证据包审查",
+     "回归验证"
+    ],
+    "knowledge": [
+     "AI工程实践知识库.md"
+    ]
+   }
+  }
+ ]
 }

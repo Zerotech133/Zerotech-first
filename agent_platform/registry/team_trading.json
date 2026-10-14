@@ -1,38 +1,43 @@
 {
-  "_note": "交易部注册表（K-ORG-015 实例化，影子模式）。TR1 常驻执行岗：消费策略产出→paper 链下单→feedback 回写。schema 对齐 team_invest.json 以复用 interpreter 校验；enforce 下单仍走既有 paper 链不变（K-ORG-015 影子纪律）。",
-  "team": "tradeexec",
-  "dept": "trading",
-  "description": "交易部执行岗：交易执行员",
-  "agents": [
-    {
-      "agent_id": "TR1",
-      "role_profile": "trade_executor",
-      "analysis_type": "trade_execution",
-      "node_key": "tr1_exec",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": false,
-      "llm_binding": "ollama/qwen3.5:4b",
-      "tools": [
-        "paper_bridge",
-        "events"
-      ],
-      "memory_grants": {
-        "read": [
-          "domain/*",
-          "dept/trading/*",
-          "dept/invest/decision",
-          "agent/TR1/*"
-        ],
-        "write": [
-          "agent/TR1/*",
-          "dept/trading/feedback"
-        ]
-      },
-      "grade": "E1",
-      "grade_note": "10年档：轻量执行位",
-      "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）"
-    }
-  ]
+ "_note": "交易部注册表（K-ORG-015 实例化，影子模式）。TR1 常驻执行岗：消费策略产出→paper 链下单→feedback 回写。schema 对齐 team_invest.json 以复用 interpreter 校验；enforce 下单仍走既有 paper 链不变（K-ORG-015 影子纪律）。",
+ "team": "tradeexec",
+ "dept": "trading",
+ "description": "交易部执行岗：交易执行员",
+ "agents": [
+  {
+   "agent_id": "TR1",
+   "role_profile": "trade_executor",
+   "analysis_type": "trade_execution",
+   "node_key": "tr1_exec",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:4b",
+   "tools": [
+    "paper_bridge",
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/trading/*",
+     "dept/invest/decision",
+     "agent/TR1/*"
+    ],
+    "write": [
+     "agent/TR1/*",
+     "dept/trading/feedback"
+    ]
+   },
+   "grade": "E1",
+   "grade_note": "10年档：轻量执行位",
+   "charter_detail": "交易执行员：消费策略产出→paper 链下单→成交/滑点写 agent/TR1/feedback→复盘数据供策略部 ST1（预留）",
+   "attributes": {
+    "knowledge": [
+     "金融专业知识库.md"
+    ]
+   }
+  }
+ ]
 }

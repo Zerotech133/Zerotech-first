@@ -1,103 +1,165 @@
 {
-  "_note": "投研部 alpha 团队执行拓扑（K-STOCK-004）。字段对齐菜鸟 ai_team_role DDL：node_key/parent_node_keys/level/analysis_type/is_parallel/wait_all_complete/debate_partner_key/max_debate_rounds。D1 为 L2 汇总决策，上游=T1/T2 辩论结论+N1/F1 并行产出。",
-  "team": "alpha",
-  "dept": "invest",
-  "description": "投研部选股团队（菜鸟 ai_team_role 独立版）",
-  "agents": [
-    {
-      "agent_id": "T1",
-      "role_profile": "t1_bull",
-      "analysis_type": "market_technical",
-      "node_key": "t1_market",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": true,
-      "is_debate_node": true,
-      "debate_partner_key": "t2_market",
-      "max_debate_rounds": 2,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["tdx_kline"],
-      "memory_grants": {
-        "read": ["domain/*", "dept/invest/*", "agent/T1/*"],
-        "write": ["agent/T1/*", "dept/invest/observation"]
-      }
-    },
-    {
-      "agent_id": "T2",
-      "role_profile": "t2_bear",
-      "analysis_type": "market_technical",
-      "node_key": "t2_market",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": true,
-      "is_debate_node": true,
-      "debate_partner_key": "t1_market",
-      "max_debate_rounds": 2,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["tdx_kline"],
-      "memory_grants": {
-        "read": ["domain/*", "dept/invest/*", "agent/T2/*"],
-        "write": ["agent/T2/*", "dept/invest/observation"]
-      }
-    },
-    {
-      "agent_id": "N1",
-      "role_profile": "n1_sentiment",
-      "analysis_type": "news_event",
-      "node_key": "n1_news",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": true,
-      "is_debate_node": false,
-      "debate_partner_key": null,
-      "max_debate_rounds": 0,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["news_feed"],
-      "memory_grants": {
-        "read": ["domain/*", "dept/invest/*", "agent/N1/*"],
-        "write": ["agent/N1/*", "dept/invest/observation"]
-      }
-    },
-    {
-      "agent_id": "F1",
-      "role_profile": "f1_fundamental",
-      "analysis_type": "fundamental",
-      "node_key": "f1_fundamental",
-      "parent_node_keys": [],
-      "level": 1,
-      "is_parallel": true,
-      "wait_all_complete": true,
-      "is_debate_node": false,
-      "debate_partner_key": null,
-      "max_debate_rounds": 0,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": ["stock_fundamentals"],
-      "memory_grants": {
-        "read": ["domain/*", "dept/invest/*", "agent/F1/*"],
-        "write": ["agent/F1/*", "dept/invest/observation"]
-      }
-    },
-    {
-      "agent_id": "D1",
-      "role_profile": "d1_decision",
-      "analysis_type": "final_decision",
-      "node_key": "d1_decision",
-      "parent_node_keys": ["t1_market", "t2_market", "n1_news", "f1_fundamental"],
-      "level": 2,
-      "is_parallel": false,
-      "wait_all_complete": true,
-      "is_debate_node": false,
-      "debate_partner_key": null,
-      "max_debate_rounds": 0,
-      "llm_binding": "ollama/qwen3.5:9b",
-      "tools": [],
-      "memory_grants": {
-        "read": ["domain/*", "dept/invest/*", "agent/D1/*", "agent/T1/*", "agent/T2/*", "agent/N1/*", "agent/F1/*"],
-        "write": ["agent/D1/*", "dept/invest/decision"]
-      }
-    }
-  ]
+ "_note": "投研部 alpha 团队执行拓扑（K-STOCK-004）。字段对齐菜鸟 ai_team_role DDL：node_key/parent_node_keys/level/analysis_type/is_parallel/wait_all_complete/debate_partner_key/max_debate_rounds。D1 为 L2 汇总决策，上游=T1/T2 辩论结论+N1/F1 并行产出。",
+ "team": "alpha",
+ "dept": "invest",
+ "description": "投研部选股团队（菜鸟 ai_team_role 独立版）",
+ "agents": [
+  {
+   "agent_id": "T1",
+   "role_profile": "t1_bull",
+   "analysis_type": "market_technical",
+   "node_key": "t1_market",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": true,
+   "is_debate_node": true,
+   "debate_partner_key": "t2_market",
+   "max_debate_rounds": 2,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "tdx_kline"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/T1/*"
+    ],
+    "write": [
+     "agent/T1/*",
+     "dept/invest/observation"
+    ]
+   },
+   "attributes": {
+    "knowledge": [
+     "金融专业知识库.md"
+    ]
+   }
+  },
+  {
+   "agent_id": "T2",
+   "role_profile": "t2_bear",
+   "analysis_type": "market_technical",
+   "node_key": "t2_market",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": true,
+   "is_debate_node": true,
+   "debate_partner_key": "t1_market",
+   "max_debate_rounds": 2,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "tdx_kline"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/T2/*"
+    ],
+    "write": [
+     "agent/T2/*",
+     "dept/invest/observation"
+    ]
+   }
+  },
+  {
+   "agent_id": "N1",
+   "role_profile": "n1_sentiment",
+   "analysis_type": "news_event",
+   "node_key": "n1_news",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": true,
+   "is_debate_node": false,
+   "debate_partner_key": null,
+   "max_debate_rounds": 0,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "news_feed"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/N1/*"
+    ],
+    "write": [
+     "agent/N1/*",
+     "dept/invest/observation"
+    ]
+   }
+  },
+  {
+   "agent_id": "F1",
+   "role_profile": "f1_fundamental",
+   "analysis_type": "fundamental",
+   "node_key": "f1_fundamental",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": true,
+   "is_debate_node": false,
+   "debate_partner_key": null,
+   "max_debate_rounds": 0,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "stock_fundamentals"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/F1/*"
+    ],
+    "write": [
+     "agent/F1/*",
+     "dept/invest/observation"
+    ]
+   }
+  },
+  {
+   "agent_id": "D1",
+   "role_profile": "d1_decision",
+   "analysis_type": "final_decision",
+   "node_key": "d1_decision",
+   "parent_node_keys": [
+    "t1_market",
+    "t2_market",
+    "n1_news",
+    "f1_fundamental"
+   ],
+   "level": 2,
+   "is_parallel": false,
+   "wait_all_complete": true,
+   "is_debate_node": false,
+   "debate_partner_key": null,
+   "max_debate_rounds": 0,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/D1/*",
+     "agent/T1/*",
+     "agent/T2/*",
+     "agent/N1/*",
+     "agent/F1/*"
+    ],
+    "write": [
+     "agent/D1/*",
+     "dept/invest/decision"
+    ]
+   },
+   "attributes": {
+    "knowledge": [
+     "缠论技术分析知识库.md"
+    ]
+   }
+  }
+ ]
 }
