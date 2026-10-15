@@ -173,6 +173,17 @@ def agent_update(p):
         entry["tools"] = tools
         entry["claude_tools"] = claude_tools
         changed.append("能力档")
+    if "tools_allowed" in p:
+        # K-ORG-080/N9: 工具白名单矩阵登记——形态硬校验，danger 必须 deny（087/T4 安全红线）
+        ta = p.get("tools_allowed")
+        if (not isinstance(ta, dict) or set(ta) != {"read", "write", "execute", "danger"}
+                or ta.get("danger") != "deny"
+                or not isinstance(ta.get("write"), list)
+                or not isinstance(ta.get("execute"), list)
+                or not isinstance(ta.get("read"), list)):
+            return "tools_allowed 形态非法（需 read/write/execute list + danger=deny）", None
+        attrs["tools_allowed"] = ta
+        changed.append("工具白名单")
     if not changed:
         return "没有要改的字段", None
     json.dump(team, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

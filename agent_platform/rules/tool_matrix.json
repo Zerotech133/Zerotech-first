@@ -1,0 +1,459 @@
+{
+  "_note": "K-ORG-080/N9 · 087/T4 二维矩阵 · observe 校准 10-18 | 设计出处：087「Trae 一维黑名单 → 本组织 岗×操作级二维」；T4 拍板 llm_tool_audit.jsonl observe 阶段只报不拦，本矩阵即 enforce 时的白名单依据 | 原则：默认 deny、白名单放行；QA1 只读判例迁移为首条；danger 级全岗 deny（回收站删除例外沿铁律，见 operations.danger.exception）| 拿不准的岗保守配（read-only+docs），宁可先紧后松，observe 3 天后校准 | 29 岗名单源：portal/agent_ide_bundle.json agents 键",
+  "operations": {
+    "read": {
+      "desc": "读取文件/路径（fnmatch 通配匹配；\"*\" 表示全放行）"
+    },
+    "write": {
+      "desc": "写入/创建/修改文件（fnmatch 白名单，未命中即 deny）"
+    },
+    "execute": {
+      "desc": "执行命令/工具（白名单精确匹配）"
+    },
+    "danger": {
+      "desc": "危险操作：rm/del/格式化/注册表写入等——全岗固定 deny，矩阵内无任何白名单",
+      "exception": "回收站删除例外沿 K-ORG 铁律：仅经主控特批通道单独执行，不在本矩阵放行（087 设计原文单独标注）"
+    },
+    "default": "deny（未登记岗/未命中规则一律 DENIED，fail-visible——087 判例）"
+  },
+  "matrix": {
+    "QA1": {
+      "read": [
+        "*"
+      ],
+      "write": [],
+      "execute": [
+        "qa_run"
+      ],
+      "danger": "deny"
+    },
+    "QA2": {
+      "read": [
+        "*"
+      ],
+      "write": [],
+      "execute": [
+        "qa_run"
+      ],
+      "danger": "deny"
+    },
+    "DEV1": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DEV2": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DEV3": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DEV4": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DEV5": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DEV6": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DEV7": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DEV8": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "tools/**",
+        "portal/**",
+        "agent_platform/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "ARCH1": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        ".worktrees/**",
+        "docs/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "OPS1": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "config/**",
+        "ops/**",
+        "tools/**"
+      ],
+      "execute": [
+        "git",
+        "python",
+        "pytest"
+      ],
+      "danger": "deny"
+    },
+    "DOC1": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [
+        "git"
+      ],
+      "danger": "deny"
+    },
+    "A0": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "agent_platform/registry/**",
+        "docs/**"
+      ],
+      "execute": [
+        "devtask"
+      ],
+      "danger": "deny"
+    },
+    "A0A": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "agent_platform/registry/**",
+        "docs/**"
+      ],
+      "execute": [
+        "devtask"
+      ],
+      "danger": "deny"
+    },
+    "T1": {
+      "read": [
+        "k_stock/**",
+        "data/**",
+        "reports/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "write": [
+        "reports/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "T2": {
+      "read": [
+        "k_stock/**",
+        "data/**",
+        "reports/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "write": [
+        "reports/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "N1": {
+      "read": [
+        "news_collector/**",
+        "data/**",
+        "reports/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "write": [
+        "reports/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "F1": {
+      "read": [
+        "data/**",
+        "reports/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "write": [
+        "reports/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "D1": {
+      "read": [
+        "reports/**",
+        "data/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "write": [
+        "reports/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "DATA1": {
+      "read": [
+        "data/**",
+        "k_stock/**",
+        "reports/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "write": [
+        "knowledge_docs/**",
+        "docs/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "LEG1": {
+      "read": [
+        "docs/**",
+        "knowledge_docs/**",
+        "deliverables/**",
+        "data/**"
+      ],
+      "write": [
+        "knowledge_docs/**",
+        "docs/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "MKT1": {
+      "read": [
+        "gzh/**",
+        "reports/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "write": [
+        "gzh/**",
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [],
+      "danger": "deny"
+    },
+    "PM1": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "docs/**",
+        "deliverables/**"
+      ],
+      "execute": [
+        "devtask"
+      ],
+      "danger": "deny"
+    },
+    "DSGN1": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "portal/**",
+        "docs/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "DSGN2": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "portal/**",
+        "docs/**",
+        ".worktrees/**"
+      ],
+      "execute": [
+        "git",
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "SEC1": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "SEC2": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "docs/**",
+        "knowledge_docs/**"
+      ],
+      "execute": [
+        "pytest",
+        "python"
+      ],
+      "danger": "deny"
+    },
+    "TR1": {
+      "read": [
+        "reports/**",
+        "data/**",
+        "docs/**"
+      ],
+      "write": [],
+      "execute": [],
+      "danger": "deny"
+    }
+  },
+  "platform_callers": {
+    "_note": "K-ORG-080/N9·非岗位 caller（G5 连接器等平台级）——read+devtask 转发，无写权",
+    "hermes-legion": {
+      "read": [
+        "*"
+      ],
+      "write": [],
+      "execute": [
+        "devtask"
+      ],
+      "danger": "deny"
+    }
+  }
+}
