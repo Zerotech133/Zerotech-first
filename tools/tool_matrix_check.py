@@ -62,14 +62,20 @@ def map_endpoint(endpoint: str) -> str | None:
 
 
 def check(matrix: dict, agent: str, op: str, target: str) -> tuple[bool, str]:
-    """核心判定：返回 (是否放行, 命中/拒绝原因)。默认 deny、白名单放行（087）。"""
+    """核心判定：返回 (是否放行, 命中/拒绝原因)。默认 deny、白名单放行（087）。
+    K-ORG-108：岗未命中 matrix 段时回退查 platform_callers（G5 连接器等
+    平台级 caller 的合法登记位）——否则 enforce 后平台调用全部假越权。"""
     if op == "danger":
         # danger 级全岗 deny；回收站删除例外沿铁律走主控特批通道，不在矩阵放行
         return False, "danger 全岗 deny（087：危险操作=全局禁）"
     rules = matrix.get("matrix", {}).get(agent)
+    section = "matrix"
     if rules is None:
-        # fail-visible：未登记岗默认 deny（087 判例，绝不 fail-open 放行）
-        return False, f"岗 {agent} 未登记，默认 deny（fail-visible）"
+        rules = matrix.get("platform_callers", {}).get(agent)
+        section = "platform_callers"
+    if rules is None:
+        # fail-visible：未登记 caller 默认 deny（087 判例，绝不 fail-open 放行）
+        return False, f"caller {agent} 未登记（matrix+platform_callers 均无），默认 deny（fail-visible）"
     tg = norm(target)
     allowed = rules.get(op, [])
     if op == "read" and "*" in allowed:
@@ -93,18 +99,30 @@ def run_check(args) -> int:
 
 
 def run_audit() -> int:
-    """observe 阶段只报不拦（T4 拍板）：越权调用列清单，退出码恒 0。"""
+    """observe 阶段只报不拦（T4 拍板）：越权调用列清单，退出码恒 0。
+    K-ORG-108 修正判定口径——observe 账本只含 endpoint，无仓库目标路径，
+    read/write 拿 endpoint 做 fnmatch 会大面积假越权，故分三层：
+      ① caller 是否已登记（matrix + platform_callers 双段，K-ORG-108）
+      ② execute：endpoint→工具归一（/api/task/* → devtask）后精确匹配白名单
+      ③ read/write：白名单非空粗判放行 / 空（如 QA1 write=[]）判越权——
+         target 级判定留给 --check（调用方自报真实路径）与 enforce 时。
+    另输出 caller 归因率等统计（10-18 校准决策的核心口径）。"""
     matrix = load_matrix()
     if not AUDIT_PATH.exists():
         print(f"[fail-open] 审计台账缺失：{AUDIT_PATH}，跳过（exit 0）")
         return 0
     violations, unknown_caller, unmapped = [], [], []
+    ok_rows, caller_stat, ep_stat = [], {}, {}
+    total = 0
     for line in AUDIT_PATH.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue
         rec = json.loads(line)
+        total += 1
         caller, ep = rec.get("caller"), rec.get("endpoint", "")
+        caller_stat[caller] = caller_stat.get(caller, 0) + 1
+        ep_stat[ep] = ep_stat.get(ep, 0) + 1
         op = map_endpoint(ep)
         if op is None:
             unmapped.append(rec)
@@ -112,17 +130,35 @@ def run_audit() -> int:
         if caller is None:
             unknown_caller.append(rec)  # 未标注 caller 无法归岗，observe 阶段仅提示
             continue
-        ok, why = check(matrix, caller, op, ep)
-        if not ok:
-            violations.append((rec, op, why))
+        rules = (matrix.get("matrix", {}).get(caller)
+                 or matrix.get("platform_callers", {}).get(caller))
+        if rules is None:
+            violations.append((rec, op, "caller 未登记（默认 deny·fail-visible）"))
+            continue
+        allowed = rules.get(op, [])
+        if op == "execute":
+            tool = "devtask" if ep.startswith("/api/task/") else ep
+            if tool in allowed:
+                ok_rows.append(rec)
+            else:
+                violations.append((rec, op, f"execute 未命中白名单（允许：{allowed or '空'}·归一工具={tool}）"))
+        else:
+            # endpoint 级粗判：账本无仓库路径，白名单非空即视为授权形态存在
+            if allowed:
+                ok_rows.append(rec)
+            else:
+                violations.append((rec, op, f"{op} 白名单为空（如 QA1 只读判例）"))
     print("== K-ORG-080/N9 audit（observe 只报不拦 · T4 拍板 10-18 校准）==")
-    print(f"越权调用：{len(violations)} 条")
+    print(f"总量 {total} | 放行 {len(ok_rows)} | 越权 {len(violations)} | caller 缺失 {len(unknown_caller)} | endpoint 未映射 {len(unmapped)}")
+    attributed = total - len(unknown_caller)
+    print(f"caller 归因率：{attributed}/{total} = {attributed * 100 // max(total, 1)}%"
+          "（归因靠调用方 body/query 带 caller——晨检/自动化探活建议统一带 caller）")
+    print("caller 分布：", json.dumps(caller_stat, ensure_ascii=False))
+    print("endpoint 分布：", json.dumps(ep_stat, ensure_ascii=False))
     for rec, op, why in violations:
-        print(f"  [{rec['ts']}] caller={rec['caller']} {rec['method']} {rec['endpoint']} → op={op} | {why}")
-    print(f"caller 缺失（无法归岗，仅提示）：{len(unknown_caller)} 条")
-    print(f"endpoint 未映射操作（需人工归类）：{len(unmapped)} 条")
+        print(f"  [越权][{rec['ts']}] caller={rec.get('caller')} {rec['method']} {rec['endpoint']} → op={op} | {why}")
     for rec in unmapped:
-        print(f"  [{rec['ts']}] {rec['method']} {rec['endpoint']}")
+        print(f"  [未映射][{rec['ts']}] {rec['method']} {rec['endpoint']}")
     return 0
 
 
@@ -135,7 +171,10 @@ def run_plan() -> int:
     print(f"== K-ORG-080/N9 --plan：登记命令清单（只打印，由主控逐岗 POST {API_BASE}/api/agent/update）==")
     for agent, rules in matrix.get("matrix", {}).items():
         info = bundle.get(agent, {})
-        body = {"agent_id": agent, "attributes": {"tools_allowed": rules}}
+        # K-ORG-108 修正：body 必须顶层 tools_allowed（agent_update 只认顶层固定字段，
+        # 嵌套 {attributes:{...}} 报「没有要改的字段」静默无效——105 判例，--plan 生成器同步修正）
+        body = {"agent_id": agent, "tools_allowed": rules,
+                "caller": "laotian@matrix-plan"}
         curl = (
             f"curl -s -X POST {API_BASE}/api/agent/update "
             f"-H \"Content-Type: application/json\" -d '{json.dumps(body, ensure_ascii=False)}'"
