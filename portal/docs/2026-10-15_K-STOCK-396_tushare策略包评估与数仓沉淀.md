@@ -1311,3 +1311,84 @@ git diff --name-only open1016-frozen-d2 HEAD -- \
 
 > ⚠️ 注意 ①② 属于「消噪」会让 `git diff --stat d2 HEAD` 数值变化，但**不影响 A 臂复验**
 > （两者都不在链路闭包内）。
+---
+
+## 二十一、K-STOCK-408 · 冻结 tag 消噪落地（10:12~10:35，D-1 纪律内·只动 git 索引）
+
+老田授权执行 407 取证结论的 ①② 两项。提交 `293f476`（2016 files changed,
+**11 insertions / 656603 deletions** —— 后者是取消跟踪的产物量，不是磁盘删除）。
+
+### 21.1 ① 密钥规则补漏（C 档）
+
+**根因（真实规则缺口）**：`.gitignore:51-53` 只排 `.env` / `.env.*`，
+`.env.*` 是**前缀通配**（匹配 `.env` 开头），**匹配不到 `.enc` 结尾** ⇒
+`jev-eval/jev-gate.env.enc` 一直漏网入库。
+而 70-72 行早已显式排除 `jev-gate.env.ps1` / `.plain.ps1` / `env_fallback.flag`
+⇒ **加密版被漏、明文版被排**，正好漏了最该排的那个。
+
+**修法**：
+```
+*.env.enc
+jev-eval/jev-gate.env.enc
+```
+
+🔴 **判例：不能用全局 `*.enc`** —— 实测 `backups/2026-10-1X_0300/*.sql.gz.enc`
+是**加密备份归档**（qd_db / quant_db / webui_data / zhice_db 四库每日加密备份），
+属**该入库的资产**。全局规则会误伤备份的可追溯性。
+⇒ **密钥规则要精确到「文件名语义」，不能只按扩展名扫。**
+已用 `git check-ignore -v` 复核：`backups/...gz.enc` 命中的是 `.gitignore:2 backups/`
+（本来就排除），我新增的两条**零误伤**。
+
+### 21.2 ② `work/` 消噪（B 档最大项）
+
+| 项 | 值 |
+|---|---|
+| git 已跟踪 | **2014 个**（1821 `.parquet` + 139 审计 `json` + 47 `.lock` + 7 `jsonl`） |
+| 磁盘真实文件 | **2996 个** |
+| 处置 | `.gitignore` 加 `work/` + `git rm -r --cached work/` |
+| 磁盘文件 | **2996 → 2996 完全一致** ✅（parquet 抽样复核 1821 个仍在） |
+
+**理由**：`work/` 是临时工作区，全是过程产物与数据文件，
+与 `quant_backtest/data/` 被正确 gitignore 的既有惯例**不一致**。
+
+### 21.3 ★ 磁盘零改动自证（本次操作的核心安全判据）
+
+执行前后逐目录递归计数：
+
+| 目录 | 执行前 | 执行后 | 结论 |
+|---|---|---|---|
+| `work/` | 2996 | **2996** | ✅ 完全一致 |
+| `jev-eval/` | 172 | **172** | ✅ 完全一致 |
+| `jev-gate.env.enc` 存在 | True | **True** | ✅ |
+| `work/**/*.parquet` | — | **1821 个仍在** | ✅ |
+
+**只用 `git rm --cached`**（不动磁盘），完全可逆（`git add` 即恢复跟踪）。
+
+### 21.4 消噪后三项关键复验（全部通过）
+
+| 复验项 | 结果 |
+|---|---|
+| **A 臂六路链路 vs tag** | ✅ **0 差异**（闸门仍有效） |
+| **传递依赖闭包三项签收** | ✅ 仍 3 漂移（与 407 取证一致，未因消噪而变） |
+| **D-1 S0 前置**（`quant_backtest` 脏文件） | ✅ **0** |
+| 全仓跟踪文件数 | 4795 → **2780**（净减 2015） |
+
+### 21.5 🔴 纠正 407 的一处取证错误
+
+407 第 20.5 节把「`.workbuddy/memory/*.md` ×4」列为 B 档待摘项—— **错的**。
+
+复核（`git ls-files -z` 全量搜索 + `ls-tree HEAD`）证实：
+`.workbuddy` 目录**当前 0 个跟踪文件**，HEAD 里也不存在；
+那 4 个是 `diff open1016-frozen-d2 HEAD` 里的**删除项**（tag 里有、HEAD 已删）
+⇒ **K-STOCK-373 早就做过了这个消噪**（`.gitignore:176` 的 `.workbuddy/memory/` 规则）。
+
+⇒ 真正待摘的只有两类：**`.env.enc` ×1**（C 档）+ **`work/` ×2014**（B 档）。
+这条已写进 408 提交信息，避免下一轮又把它当待办。
+
+### 21.6 剩余待摘（D-Day 后做，涉及改仓库结构）
+
+`quant_backtest/` 根目录 21 个一次性脚本/产物
+（`_patch_bt2view_*.py`×4、`_test_buffer*.py`×2、`_*_result.json`×3、`_327_universe.txt`、
+`_325b_progress.json`、`_v7_stream_cache.json`、`_voltarget_ab_*` 等）。
+**它们已入库、会进 tag，但都不在 A 臂链路闭包里 ⇒ 不影响 S3 复验**，
+只是「冻结 tag 纯度」问题。改仓库结构在冻结期不动。
