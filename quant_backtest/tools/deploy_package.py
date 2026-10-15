@@ -93,6 +93,16 @@ def deploy(name, force=False):
 
 
 def list_packages(name):
+    if name is None:
+        # 无参 --list：列全部已部署包及版本
+        if not os.path.isdir(DEPLOY_DIR) or not os.listdir(DEPLOY_DIR):
+            print("（无部署记录）")
+            return 0
+        rc = 0
+        for pkg in sorted(os.listdir(DEPLOY_DIR)):
+            print("== %s ==" % pkg)
+            rc |= list_packages(pkg)
+        return rc
     base = os.path.join(DEPLOY_DIR, name)
     if not os.path.isdir(base):
         print("（无部署记录）")
@@ -109,7 +119,7 @@ def list_packages(name):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("name")
+    ap.add_argument("name", nargs="?")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
