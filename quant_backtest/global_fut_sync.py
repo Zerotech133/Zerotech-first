@@ -34,13 +34,18 @@ MANIFEST = os.path.join(OUT_DIR, "_manifest.json")
 #   push2his.eastmoney.com 单 host 独立限流 —— 05:16 直打成功，05:43 起连 lmt=6 也
 #   RemoteDisconnected；同期 push2.eastmoney.com 实时快照仍通（HG00Y 现价 6.6150 自证）。
 #   ⇒ 不是 IP 被封、不是 payload 大小，是 host 级频控。解法＝多 host 轮转 + 退避。
+#
+# 🔴 K-STOCK-411（10-15 11:10）修正：**用「每次重试换 host」而非「按重试序号取模」**。
+#   原写法 `KLINE_HOSTS[a % len]` 虽能轮转，但主 host 占 2 个槽位 ⇒
+#   在 retry=4 时主 host 仍被试 2 次、后备只轮到 1 次，
+#   叠加指数退避（2/4/8/16s）总窗口 ~30s 时**最可能被限的后备窗口已过**。
+#   11:00 实测：`push2his` 断但 `1.push2his` 通 —— 有序遍历优先命中可用 host。
 KLINE_HOSTS = [
-    "push2his.eastmoney.com",
-    "push2his.eastmoney.com",   # 主 host 权重最高：先试它
-    "1.push2his.eastmoney.com",
+    "1.push2his.eastmoney.com",   # 🔴 11:00 实测唯一可通，置首
     "7.push2his.eastmoney.com",
     "82.push2his.eastmoney.com",
     "48.push2his.eastmoney.com",
+    "push2his.eastmoney.com",
 ]
 KLINE_TPL = ("https://{host}/api/qt/stock/kline/get"
              "?secid={secid}&fields1=f1,f2,f3,f4,f5,f6"
@@ -54,17 +59,27 @@ _UA = {
 }
 _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
-# ── secid 常量表（东财市场 101 = 外盘期货）────────────────────
-# 实测 05:16 PASS：101.HG00Y = COMEX 铜连续，日线 461 根 2025-01-02~2026-10-14
+# ── secid 常量表 ────────────────────────────��────────────
+# 🔴 K-STOCK-411（10-15 11:00-11:20 实测纠错）：原表 7 个 secid 里 **5 个无效**
+#   （返回空数据而非报错 ⇒ 静默浪费每轮 4 次重试 + 最长 40s 退避）。
+#   根因：**东财按交易所给不同 market 前缀**，我原先一律用 101。
+# 实测方法：market 前缀 {100..107,133} × 品种代码 全组合 126 组探针，
+#   判据 = `bars>0`（连通且有数据），并核 `name` 排除同代码误命中。
+#
+# ✅ 实测有效（bars>0 + name 核对）：
+#   101.HG00Y = COMEX铜     101.GC00Y = COMEX黄金
+#   102.CL00Y = NYMEX原油    102.PA00Y = NYMEX钯金
+#
+# ⚠️ 已剔除的误命中：
+#   105.AHD → name='GraniteShares Autocallable HOOD'（**美股**，与 LME 铝同代码撞号）
+#   101.SI00Y / 101.ZSD / 101.CAD / 101.CL00Y → 实测 bars≤0（secid 不存在）
+#   ⇒ COMEX银 / LME 铝 / LME 锌 / LME 铜 在东财**当前无有效 secid**，
+#     已从常量表移除（不占采集轮次）；需要时走 stooq/新浪外盘或改为个股页 secid 反查。
 GLOBAL_FUT = {
     "COMEX铜":      {"secid": "101.HG00Y",  "qcode": "HG00Y", "unit": "美元/磅"},
     "COMEX金":      {"secid": "101.GC00Y",  "qcode": "GC00Y", "unit": "美元/盎司"},
-    "COMEX银":      {"secid": "101.SI00Y",  "qcode": "SI00Y", "unit": "美元/盎司"},
-    "LME铝":        {"secid": "101.AHD",    "qcode": "AHD",   "unit": "美元/吨"},
-    "LME锌":        {"secid": "101.ZSD",    "qcode": "ZSD",   "unit": "美元/吨"},
-    "LME铜":        {"secid": "101.CAD",    "qcode": "CAD",   "unit": "美元/吨"},
-    "NYMEX原油":    {"secid": "101.CL00Y",  "qcode": "CL00Y", "unit": "美元/桶"},
-    "COMEX黄金连续": {"secid": "101.GC00Y",  "qcode": "GC00Y", "unit": "美元/盎司"},
+    "NYMEX原油":    {"secid": "102.CL00Y",  "qcode": "CL00Y", "unit": "美元/桶"},
+    "NYMEX钯金":    {"secid": "102.PA00Y",  "qcode": "PA00Y", "unit": "美元/盎司"},
 }
 # 去重（同 secid 只拉一次）
 _seen = set()
