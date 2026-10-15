@@ -98,14 +98,36 @@ def run_check(args) -> int:
     return 0 if ok else 1  # 退出码 0/1 供脚本判定
 
 
+def judge(matrix: dict, caller: str | None, ep: str) -> tuple[bool, str]:
+    """K-ORG-111：endpoint 级三层判定（单一事实源）——run_audit 与 8093
+    enforce 接线共用。observe 账本/服务端入口只有 endpoint 无仓库路径：
+      ① caller 归属（matrix + platform_callers 双段，未登记默认 deny·fail-visible）
+      ② execute：endpoint→工具归一（/api/task/* → devtask）后精确匹配白名单
+      ③ read/write：白名单非空粗判放行 / 空（如 QA1 write=[]）判越权
+    target 级 fnmatch 判定留给 --check（调用方自报真实路径）。"""
+    op = map_endpoint(ep)
+    if op is None:
+        return False, "endpoint 未映射操作级，默认拒绝"
+    if caller is None or caller == "":
+        return False, "caller 未标注（无法归岗，默认 deny）"
+    rules = (matrix.get("matrix", {}).get(caller)
+             or matrix.get("platform_callers", {}).get(caller))
+    if rules is None:
+        return False, "caller 未登记（默认 deny·fail-visible）"
+    allowed = rules.get(op, [])
+    if op == "execute":
+        tool = "devtask" if ep.startswith("/api/task/") else ep
+        if tool in allowed:
+            return True, f"execute 白名单命中：{tool}"
+        return False, f"execute 未命中白名单（允许：{allowed or '空'}·归一工具={tool}）"
+    if allowed:
+        return True, f"{op} 白名单非空（endpoint 级粗判放行）"
+    return False, f"{op} 白名单为空（如 QA1 只读判例）"
+
+
 def run_audit() -> int:
     """observe 阶段只报不拦（T4 拍板）：越权调用列清单，退出码恒 0。
-    K-ORG-108 修正判定口径——observe 账本只含 endpoint，无仓库目标路径，
-    read/write 拿 endpoint 做 fnmatch 会大面积假越权，故分三层：
-      ① caller 是否已登记（matrix + platform_callers 双段，K-ORG-108）
-      ② execute：endpoint→工具归一（/api/task/* → devtask）后精确匹配白名单
-      ③ read/write：白名单非空粗判放行 / 空（如 QA1 write=[]）判越权——
-         target 级判定留给 --check（调用方自报真实路径）与 enforce 时。
+    判定口径见 judge()（K-ORG-108 定型、111 抽出共用）；
     另输出 caller 归因率等统计（10-18 校准决策的核心口径）。"""
     matrix = load_matrix()
     if not AUDIT_PATH.exists():
@@ -123,31 +145,17 @@ def run_audit() -> int:
         caller, ep = rec.get("caller"), rec.get("endpoint", "")
         caller_stat[caller] = caller_stat.get(caller, 0) + 1
         ep_stat[ep] = ep_stat.get(ep, 0) + 1
-        op = map_endpoint(ep)
-        if op is None:
+        if map_endpoint(ep) is None:
             unmapped.append(rec)
             continue
         if caller is None:
             unknown_caller.append(rec)  # 未标注 caller 无法归岗，observe 阶段仅提示
             continue
-        rules = (matrix.get("matrix", {}).get(caller)
-                 or matrix.get("platform_callers", {}).get(caller))
-        if rules is None:
-            violations.append((rec, op, "caller 未登记（默认 deny·fail-visible）"))
-            continue
-        allowed = rules.get(op, [])
-        if op == "execute":
-            tool = "devtask" if ep.startswith("/api/task/") else ep
-            if tool in allowed:
-                ok_rows.append(rec)
-            else:
-                violations.append((rec, op, f"execute 未命中白名单（允许：{allowed or '空'}·归一工具={tool}）"))
+        ok, why = judge(matrix, caller, ep)
+        if ok:
+            ok_rows.append(rec)
         else:
-            # endpoint 级粗判：账本无仓库路径，白名单非空即视为授权形态存在
-            if allowed:
-                ok_rows.append(rec)
-            else:
-                violations.append((rec, op, f"{op} 白名单为空（如 QA1 只读判例）"))
+            violations.append((rec, map_endpoint(ep), why))
     print("== K-ORG-080/N9 audit（observe 只报不拦 · T4 拍板 10-18 校准）==")
     print(f"总量 {total} | 放行 {len(ok_rows)} | 越权 {len(violations)} | caller 缺失 {len(unknown_caller)} | endpoint 未映射 {len(unmapped)}")
     attributed = total - len(unknown_caller)

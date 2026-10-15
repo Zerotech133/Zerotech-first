@@ -518,6 +518,31 @@ def _observe(caller, endpoint, method, ok):
         print("[warn] K-ORG-090 observe 写失败（fail-open 不影响主流程）: %s" % e)
 
 
+def _enforce(caller, endpoint):
+    """K-ORG-111: T4 enforce 接线（K-ORG-110 预案第三节·默认关）。
+    环境变量 ORG_MATRIX_ENFORCE=1 时开启：未过矩阵判定的 /api/* 调用
+    返回拒绝原因（403）。判定口径单一事实源 = tool_matrix_check.judge
+    （108 三层：登记校验/execute 归一/read-write 粗判）。页面与静态资源
+    不经矩阵（只管 API 工具调用）。矩阵文件缺失/判定异常 → fail-open
+    放行（与 tool_matrix_check.load_matrix 的任务书例外同款；
+    deny 判定本身绝不 fail-open，087 安全红线）。返回 None=放行。"""
+    if os.environ.get("ORG_MATRIX_ENFORCE") != "1":
+        return None
+    if not endpoint.startswith("/api/"):
+        return None
+    try:
+        import tool_matrix_check as tmc
+        matrix = json.load(open(tmc.MATRIX_PATH, encoding="utf-8"))
+        ok, why = tmc.judge(matrix, caller, endpoint)
+    except FileNotFoundError:
+        print("[warn] enforce: 矩阵文件缺失，fail-open 放行")
+        return None
+    except Exception as e:  # noqa: BLE001
+        print("[warn] enforce 判定异常 fail-open: %s" % e)
+        return None
+    return None if ok else why
+
+
 # ── K-ORG-093/G5：军团连接器端点（Hermes 门面 → 底座开工单） ──
 
 def task_load():
@@ -643,8 +668,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         # K-ORG-090 observe：读操作也计入权限矩阵（只记录不拦截，路由分发前调用）
         path, _, qs = self.path.partition("?")
-        _observe(dict(p.split("=", 1) for p in qs.split("&") if "=" in p)
-                 .get("caller"), path, "GET", True)
+        caller = dict(p.split("=", 1) for p in qs.split("&") if "=" in p).get("caller")
+        _observe(caller, path, "GET", True)
+        deny = _enforce(caller, path)  # K-ORG-111: 默认 None（observe 期）
+        if deny:
+            self._json(403, {"ok": False, "error": "工具白名单 deny: %s" % deny})
+            return
         if self.path in ("/", "/org.html"):
             html = open(HTML, "rb").read()
             self.send_response(200)
@@ -703,13 +732,17 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"ok": False, "error": "bad json: %s" % e})
             return
         # K-ORG-090 observe：入口记录（只记录不拦截；caller 提取不到记 null）
-        _observe(p.get("caller") if isinstance(p, dict) else None,
-                 self.path, "POST", True)
+        _caller = p.get("caller") if isinstance(p, dict) else None
+        _observe(_caller, self.path, "POST", True)
         if self.path not in ("/api/preview", "/api/register",
                              "/api/agent/update", "/api/agent/learn",
                              "/api/project/preview", "/api/project/register",
                              "/api/task/create"):
             self._json(404, {"ok": False, "error": "not found"})
+            return
+        deny = _enforce(_caller, self.path)  # K-ORG-111: 默认 None（observe 期）
+        if deny:
+            self._json(403, {"ok": False, "error": "工具白名单 deny: %s" % deny})
             return
         with LOCK:
             if self.path == "/api/task/create":
