@@ -18,6 +18,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,14 +113,41 @@ def _git(*args, cwd=REPO):
 
 def _tasks():
     if os.path.exists(TASKS):
-        return json.load(open(TASKS, encoding="utf-8"))
+        with open(TASKS, encoding="utf-8") as f:
+            return json.load(f)
     return {}
 
 
-def _save(tasks):
+def _save(tasks, *, drop_keys=()):
+    """原子保存并保留并发进程已登记的工单。
+
+    ``new``/``review``/``merge`` 都是「读→改→写」短命 CLI；若另一进程
+    在本进程读完后先写入新工单，直接覆盖会丢单。保存时把磁盘上较新的
+    键合并回来，显式 drop_keys 才允许删除（原子替换防半文件）。
+    """
     os.makedirs(WT_DIR, exist_ok=True)
-    json.dump(tasks, open(TASKS, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    current = {}
+    if os.path.exists(TASKS):
+        try:
+            with open(TASKS, encoding="utf-8") as f:
+                current = json.load(f)
+        except (OSError, ValueError):
+            current = {}
+    merged = dict(current)
+    merged.update(tasks)
+    for key in drop_keys:
+        merged.pop(key, None)
+    fd, tmp = tempfile.mkstemp(prefix="tasks.", suffix=".tmp", dir=WT_DIR)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(merged, f, ensure_ascii=False, indent=1)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, TASKS)
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
 
 
 _EV_RE = re.compile(r"#ev:(commit|file|trace):([^\s，。；,;]+)")
@@ -341,7 +369,7 @@ def cmd_drop(tid, *reason):
     t["status"] = "aborted"
     t["abort_reason"] = " ".join(reason) or "(未填)"
     tasks[tid + "-aborted-" + time.strftime("%H%M%S")] = t
-    _save(tasks)
+    _save(tasks, drop_keys=(tid,))
     print("工单 %s 已放弃：%s" % (tid, t["abort_reason"]))
     return 0
 
