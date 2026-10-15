@@ -43,7 +43,24 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -87,7 +104,24 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -130,7 +164,24 @@
     ],
     "knowledge": [
      "缠论技术分析知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -175,7 +226,24 @@
     ],
     "knowledge": [
      "金融专业知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -216,7 +284,24 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -260,7 +345,22 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      ".worktrees/**",
+      "docs/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -301,7 +401,23 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "config/**",
+      "ops/**",
+      "tools/**"
+     ],
+     "execute": [
+      "git",
+      "python",
+      "pytest"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -342,7 +458,20 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [
+      "git"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -382,7 +511,24 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -422,7 +568,24 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -462,7 +625,24 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "tools/**",
+      "portal/**",
+      "agent_platform/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   }
  ]

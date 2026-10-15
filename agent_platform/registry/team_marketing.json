@@ -42,7 +42,22 @@
     ],
     "knowledge": [
      "企业分析与尽调知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "gzh/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "write": [
+      "gzh/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   }
  ]

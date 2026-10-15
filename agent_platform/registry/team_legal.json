@@ -42,7 +42,21 @@
      "对外口径裁定",
      "采集合规红线",
      "涉政涉军一票否决"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "docs/**",
+      "knowledge_docs/**",
+      "deliverables/**",
+      "data/**"
+     ],
+     "write": [
+      "knowledge_docs/**",
+      "docs/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   }
  ]

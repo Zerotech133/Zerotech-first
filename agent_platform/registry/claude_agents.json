@@ -28,7 +28,20 @@
    ],
    "knowledge": [
     "企业分析与尽调知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "agent_platform/registry/**",
+     "docs/**"
+    ],
+    "execute": [
+     "devtask"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DATA1": {
@@ -46,7 +59,22 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "data/**",
+     "k_stock/**",
+     "reports/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "write": [
+     "knowledge_docs/**",
+     "docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "DEV1": {
@@ -64,7 +92,24 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DEV2": {
@@ -82,7 +127,24 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DEV3": {
@@ -100,7 +162,24 @@
    ],
    "knowledge": [
     "缠论技术分析知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DEV4": {
@@ -118,7 +197,24 @@
    ],
    "knowledge": [
     "金融专业知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DEV5": {
@@ -136,7 +232,24 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "ARCH1": {
@@ -154,7 +267,22 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     ".worktrees/**",
+     "docs/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "OPS1": {
@@ -172,7 +300,23 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "config/**",
+     "ops/**",
+     "tools/**"
+    ],
+    "execute": [
+     "git",
+     "python",
+     "pytest"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DOC1": {
@@ -190,7 +334,20 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [
+     "git"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DEV6": {
@@ -207,7 +364,24 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DEV7": {
@@ -224,7 +398,24 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DEV8": {
@@ -241,7 +432,24 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "tools/**",
+     "portal/**",
+     "agent_platform/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "T1": {
@@ -258,7 +466,22 @@
     "成长股与产业趋势研究",
     "产能/订单拐点研判",
     "多头论据构建"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "k_stock/**",
+     "data/**",
+     "reports/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "write": [
+     "reports/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "T2": {
@@ -275,7 +498,22 @@
    ],
    "knowledge": [
     "金融专业知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "k_stock/**",
+     "data/**",
+     "reports/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "write": [
+     "reports/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "N1": {
@@ -292,7 +530,22 @@
    ],
    "knowledge": [
     "金融专业知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "news_collector/**",
+     "data/**",
+     "reports/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "write": [
+     "reports/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "F1": {
@@ -309,7 +562,21 @@
    ],
    "knowledge": [
     "资本运作知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "data/**",
+     "reports/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "write": [
+     "reports/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "D1": {
@@ -326,7 +593,20 @@
     "多空证据加权裁决",
     "仓位与风险预算",
     "决策记录可追溯"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "reports/**",
+     "data/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "write": [
+     "reports/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "LEG1": {
@@ -344,7 +624,21 @@
     "对外口径裁定",
     "采集合规红线",
     "涉政涉军一票否决"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "docs/**",
+     "knowledge_docs/**",
+     "deliverables/**",
+     "data/**"
+    ],
+    "write": [
+     "knowledge_docs/**",
+     "docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "MKT1": {
@@ -362,7 +656,22 @@
    ],
    "knowledge": [
     "企业分析与尽调知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "gzh/**",
+     "reports/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "write": [
+     "gzh/**",
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  },
  "PM1": {
@@ -380,7 +689,20 @@
    ],
    "knowledge": [
     "企业分析与尽调知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "docs/**",
+     "deliverables/**"
+    ],
+    "execute": [
+     "devtask"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DSGN1": {
@@ -398,7 +720,23 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "portal/**",
+     "docs/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "DSGN2": {
@@ -415,7 +753,23 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "portal/**",
+     "docs/**",
+     ".worktrees/**"
+    ],
+    "execute": [
+     "git",
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "QA1": {
@@ -434,7 +788,17 @@
    "knowledge": [
     "AI工程实践知识库.md",
     "测试规范知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [],
+    "execute": [
+     "qa_run"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "SEC1": {
@@ -452,7 +816,21 @@
    ],
    "knowledge": [
     "法律专业知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "QA2": {
@@ -469,7 +847,17 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [],
+    "execute": [
+     "qa_run"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "SEC2": {
@@ -487,7 +875,21 @@
    ],
    "knowledge": [
     "AI工程实践知识库.md"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "*"
+    ],
+    "write": [
+     "docs/**",
+     "knowledge_docs/**"
+    ],
+    "execute": [
+     "pytest",
+     "python"
+    ],
+    "danger": "deny"
+   }
   }
  },
  "TR1": {
@@ -504,7 +906,17 @@
     "订单执行与 paper 链下单",
     "成交/滑点数据回写",
     "执行复盘数据整理"
-   ]
+   ],
+   "tools_allowed": {
+    "read": [
+     "reports/**",
+     "data/**",
+     "docs/**"
+    ],
+    "write": [],
+    "execute": [],
+    "danger": "deny"
+   }
   }
  }
 }

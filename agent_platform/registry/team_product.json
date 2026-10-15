@@ -44,7 +44,20 @@
     ],
     "knowledge": [
      "企业分析与尽调知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "docs/**",
+      "deliverables/**"
+     ],
+     "execute": [
+      "devtask"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -86,7 +99,23 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "portal/**",
+      "docs/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -126,7 +155,23 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "portal/**",
+      "docs/**",
+      ".worktrees/**"
+     ],
+     "execute": [
+      "git",
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   }
  ]

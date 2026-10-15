@@ -45,7 +45,17 @@
     "knowledge": [
      "AI工程实践知识库.md",
      "测试规范知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [],
+     "execute": [
+      "qa_run"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -87,7 +97,21 @@
     ],
     "knowledge": [
      "法律专业知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -127,7 +151,17 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [],
+     "execute": [
+      "qa_run"
+     ],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -169,7 +203,21 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [
+      "pytest",
+      "python"
+     ],
+     "danger": "deny"
+    }
    }
   }
  ]

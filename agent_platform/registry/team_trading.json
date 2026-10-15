@@ -42,7 +42,17 @@
      "订单执行与 paper 链下单",
      "成交/滑点数据回写",
      "执行复盘数据整理"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "reports/**",
+      "data/**",
+      "docs/**"
+     ],
+     "write": [],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   }
  ]

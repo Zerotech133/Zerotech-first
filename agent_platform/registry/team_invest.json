@@ -40,7 +40,22 @@
      "成长股与产业趋势研究",
      "产能/订单拐点研判",
      "多头论据构建"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "k_stock/**",
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "write": [
+      "reports/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -79,7 +94,22 @@
     ],
     "knowledge": [
      "金融专业知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "k_stock/**",
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "write": [
+      "reports/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -118,7 +148,22 @@
     ],
     "knowledge": [
      "金融专业知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "news_collector/**",
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "write": [
+      "reports/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -157,7 +202,21 @@
     ],
     "knowledge": [
      "资本运作知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "write": [
+      "reports/**",
+      "knowledge_docs/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   },
   {
@@ -203,7 +262,20 @@
      "多空证据加权裁决",
      "仓位与风险预算",
      "决策记录可追溯"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "reports/**",
+      "data/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "write": [
+      "reports/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   }
  ]

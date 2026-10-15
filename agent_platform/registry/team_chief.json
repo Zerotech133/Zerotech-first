@@ -41,7 +41,20 @@
     ],
     "knowledge": [
      "企业分析与尽调知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "*"
+     ],
+     "write": [
+      "agent_platform/registry/**",
+      "docs/**"
+     ],
+     "execute": [
+      "devtask"
+     ],
+     "danger": "deny"
+    }
    }
   }
  ]

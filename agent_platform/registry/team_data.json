@@ -43,7 +43,22 @@
     ],
     "knowledge": [
      "AI工程实践知识库.md"
-    ]
+    ],
+    "tools_allowed": {
+     "read": [
+      "data/**",
+      "k_stock/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+     ],
+     "write": [
+      "knowledge_docs/**",
+      "docs/**"
+     ],
+     "execute": [],
+     "danger": "deny"
+    }
    }
   }
  ]
