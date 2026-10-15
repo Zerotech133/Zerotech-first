@@ -53,6 +53,9 @@ finally:
 # ── ② 校验侧：server_gate 双口令 ───────────────────────────
 import server_gate as SG  # noqa: E402
 
+_PROD_NEW_PW = SG.NEW_PW  # K-STOCK-410：留生产值——②节 monkeypatch 双口令
+# 分叉场景会污染模块属性，④节两源一致性必须比对这个
+
 SG.NEW_PW, SG.OLD_PW = "new-code", "old-code"  # 双口令分叉场景
 check("_key_ok 新码", SG._key_ok("new-code"))
 check("_key_ok 旧码（兼容期）", SG._key_ok("old-code"))
@@ -100,7 +103,8 @@ cfg_real = os.path.join(HERE, "work", "portal_key.json")
 if os.path.exists(cfg_real):
     with open(cfg_real, encoding="utf-8") as f:
         cfg_key = (json.load(f).get("key") or "").strip()
-    check("两源一致（work 配置 == server_gate.NEW_PW）", cfg_key == SG.NEW_PW)
+    # K-STOCK-410：比 _PROD_NEW_PW（import 时原值），不吃②节 monkeypatch 污染
+    check("两源一致（work 配置 == server_gate.NEW_PW）", cfg_key == _PROD_NEW_PW)
 else:
     print("SKIP 两源一致性（portal/work/portal_key.json 尚未创建——轮换动作落地时生效）")
 
