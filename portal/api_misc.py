@@ -846,6 +846,19 @@ background:#000'></video>
             if not _sig or not hmac.compare_digest(_sig, _calc):
                 self._json({"code": 0, "msg": "invalid signature"}, 403)
                 return
+            # K-STOCK-407（审计 F1）：时间戳新鲜度窗口防重放——合法签名
+            # 只证来源不证新鲜，截获的完整回调（头+body 原样重发）仍能
+            # 通过验签。窗口外一律 403，与验签失败同响应（不泄露校验细节）。
+            # 默认 ±300s：飞书重推为秒级、容忍本机时钟偏差；握手/事件
+            # /卡片回调统一生效。FEISHU_EVENT_TOLERANCE（秒）可覆盖。
+            _tol = int(os.environ.get("FEISHU_EVENT_TOLERANCE", "300"))
+            try:
+                _fresh = abs(time.time() - int(_ts)) <= _tol
+            except ValueError:
+                _fresh = False  # 时间戳非数字：按超窗拒（int() 失败）
+            if not _fresh:
+                self._json({"code": 0, "msg": "invalid signature"}, 403)
+                return
         else:
             self._feishu_unverified_alert()
 
