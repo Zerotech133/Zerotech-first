@@ -307,7 +307,7 @@ function showDetail(id){
   ui("mDetail",1);
 }
 function loadKnowledge(id){
-  fetch("/api/agent/knowledge?id="+id).then(function(r){return r.json()}).then(function(j){
+  fetch("/api/agent/knowledge?id="+id+"&caller=laotian@org-chart").then(function(r){return r.json()}).then(function(j){
     var el=$("kList");if(!el)return;
     if(!j.items||!j.items.length){el.innerHTML='<div style="color:var(--dim);font-size:11.5px;margin-top:6px">（专属空间暂无沉淀笔记）</div>';return}
     el.innerHTML=j.items.slice().reverse().map(function(r){
@@ -346,6 +346,7 @@ function payload(kind){
   return p;
 }
 function post(path,p,cb){
+  p=Object.assign({},p,{caller:"laotian@org-chart"});  /* K-ORG-109: observe 归因（body caller） */
   fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)})
     .then(function(r){return r.json().then(function(j){cb(j,r.status)})})
     .catch(function(e){cb({ok:false,error:String(e)},0)});
@@ -383,7 +384,7 @@ function doRegister(){
   });
 }
 function load(){
-  fetch("/api/org").then(function(r){return r.json()}).then(function(j){
+  fetch("/api/org?caller=laotian@org-chart").then(function(r){return r.json()}).then(function(j){
     B=j.bundle;ORG=j.org;AUDIT=j.audit_tail||[];KDOCS=j.knowledge_docs||[];render();
   }).catch(function(e){$("stats").textContent="加载失败："+e});
 }
