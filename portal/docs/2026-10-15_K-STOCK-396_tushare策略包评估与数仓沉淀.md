@@ -1160,3 +1160,154 @@ git tag -f open1016-frozen-d2b && git describe --tags
 
 **⇒ 我的强烈建议：现在就把执行卡 S2 判据改掉**（改 1 行命令 + 2 行判据），
 否则今晚 18:30 那班会拿到一个「恒 PASS」的自证，等于没验。
+---
+
+## 二十、K-STOCK-407 · 冻结 tag 准入取证（10:00~10:20）—— 🔴 抓到闸门判据的传递依赖盲区
+
+老田指令：「这些并行产出是否都在 D-Day 开闸的可接受范围内？如果有哪部分不该进冻结 tag，
+现在是最后能摘出来的时机。」
+
+**结论先给**：
+- **A 臂复验结论 ✅ 可信**（虽然我上一节的闸门判据有缺陷，但补查后闭包内三项漂移全是**纯新增**）
+- **有 4 类东西不该进冻结 tag**，其中**密钥类 1 个是硬问题**
+- 🔴 但更重要的是：**我上一节给的 S2 闸门判据有传递依赖盲区，必须补正**
+
+取证脚本 4 件（只读）：`work/_407_{tag_admission,tag_admission}.py` /
+`_407c_market_scan.py` / `_407d_transitive.py`
+
+---
+
+### 20.1 先纠正规模认知：漂移是 2788 文件，不是 194
+
+| 目录 | 差异文件 |
+|---|---|
+| **`work/`** | 🔴 **2250**（其中 **1821 个 `.parquet`**） |
+| `quant_backtest/` | 194 |
+| `portal/` | 50 |
+| `docs/` + 其他 | ~294 |
+| **合计** | **2788** |
+
+`work/` 下 **1821 个 parquet 数据文件已被 git 跟踪**（`git ls-files work` = 2014 个已跟踪），
+且 `work` **不在 .gitignore** 里。
+⇒ **打tag 会把 1821 个 parquet 数据文件永久封进冻结 tag**。
+这与 `quant_backtest/data/` 被正确 gitignore 的做法**不一致**（数据不入库的既有惯例）。
+
+### 20.2 A 臂闸门判据的盲区（本轮最重要发现）
+
+406 节我给的判据是：`git diff --name-only d2 HEAD -- <六个链路路径>` 必须为 0 行。实测确实是 0。
+
+**但这个判据是错的** —— 它只看**链路文件自身**，不看**链路 import 的模块**。
+
+补做传递依赖闭包（BFS 收集仓库内 import）后：
+
+```
+闭包内 py 文件 = 20 个
+其中相对 tag 有漂移 = 3 个：
+  quant_backtest/gate_shadow_collect.py   +403 行（全新文件）
+  quant_backtest/market_scan.py            +8 行（全新文件）
+  quant_backtest/warehouse_runs.py         +35 行（纯新增方法）
+```
+
+**引入路径**：`backtest_engine_v2.py`（A 臂链路核心）L126 / L293 / L363 三处
+`import market_scan` ⇒`market_scan` 在闭包里 ⇒ 它变了对复验有影响可能。
+
+**⇒ 「链路自身零差异」≠「链路行为零变化」。这是闸门判据设计上的真实缺陷。**
+
+### 20.3 ✅ 三项漂移逐个核实：全部纯新增，不改既有路径
+
+####① `market_scan.py` +8 行
+
+在 `scan_market()` 函数**末尾**追加：
+
+```python
+# W5 影子采集（gate-shadow-dev20261014）：cross 三档虚拟对照
+# θ∈{40,45,50}，只记不改——读本产物 meta.d1 当日事件 + 宽度序列锚。
+try:
+    import gate_shadow_collect as _gsc
+    _gsc.collect_run(strategies=("cross",))
+except Exception as _ex:
+    print("GATE_SHADOW fail: %s" % str(_ex)[:100], flush=True)
+```
+
+**风险核查**：
+- ✅**不返回任何值**（`_gsc.collect_run` 返回值未被接收，函数返回路径不变）
+- ✅ **完整 try/except 包裹**，失败只 print，扫描产线不受影响
+- ⚠️ 有副作用：写 `gate_shadow_3tier.jsonl`（影子账本）、读 `qd_scan_cache.json` /
+  `rps_latest.json` / `qd_breadth_series.json`
+- ✅ **不碰回测输入**（不写 summary、不改 metrics、不改订单）
+
+#### ② `gate_shadow_collect.py` +403 行（全新文件）
+
+`collect_run()` 自证设计良好：
+- 「任一策略源读失败 → 该策略落 missing 行，**不阻塞其他策略**」
+- 「**本函数自身不抛异常**（挂载点 try/except 之外的最后一道防线）」
+- 三档影子只读（qd/qpzm/cross 源），写 `gate_shadow_3tier.jsonl`
+
+#### ③ `warehouse_runs.py` +35 行（纯新增方法）
+
+`reconcile_orphaned_locks()` —— 新增一个**未被既有代码调用**的方法，
+用于收口迁移后资源键漂移的孤儿排队锁（把 `queued` 且锁键不一致的 run 标 blocked）。
+**不修改任何既有方法体。**
+
+### 20.4 ★ S3 复验结论：可信
+
+| 检查 | 结果 |
+|---|---|
+| A 臂六路链路自身 | ✅ 0 差异 |
+| 链路传递依赖闭包（20 文件） | ⚠ 3 个漂移，**但全为纯新增、不改既有路径、不写回测输入** |
+| 漂移配置文件 ∩ 链路读取 | ✅ 空 |
+| 链路读取的配置清单 | `bt2_311y1hst_base.json` / `bt2_315y3high.json` / `stock_names.json` 等 10 个 —— **全部无漂移** |
+| ⇒ **同窗复验对照 311 基线（-21.90% / 768 笔）** | ✅ **\|Δret\|≤1pp、笔数≤1% 判据可信** |
+
+### 20.5 🔴 四类不该进冻结 tag的东西（老田要的「摘出来」清单）
+
+| 档 | 数量 | 内容 | 处置建议 |
+|---|---|---|---|
+| **C 档·必须摘** | **1** | 🔴 **`jev-eval/jev-gate.env.enc`**（已跟踪，会进 tag）| 移出版本库，改用环境变量/密钥管理器注入。**`.enc` 加密文件进 git 一旦密钥泄漏即永久泄漏** |
+| B 档·强烈建议摘 | **1821** | `work/*.parquet` 数据文件 + 236 个 json/lock 等 | 加 `work/` 到 `.gitignore` + `git rm --cached`（磁盘文件保留，与 K-STOCK-373 消噪同款做法） |
+| B 档·建议摘 | **21** | `quant_backtest/` 根目录一次性脚本/产物（`_patch_*.py`×4、`_test_buffer*.py`、`_*_result.json`×3、`_327_universe.txt` 等） | 移到 `quant_backtest/tools/scratch/` 或移出版本库；这些名字以下划线开头，本就是"临时"约定 |
+| B 档·建议摘 | **4** | `.workbuddy/memory/*.md`（工具会话记忆） | 与被冻结的量化体系无关，属工具产物 |
+
+另：`quant_backtest/ts_global_fut/_manifest.json` 已在库（405 节提过的"每日一颗雷"）。
+
+### 20.6 三个新增脚本也在漂移里（我自己要说明）
+
+今天新增的 8 个脚本全部在 `quant_backtest/` 根目录、已入库、会进 tag：
+`corpus_incr_sync.py` / `emotion_cycle.py` / `emotion_threshold_draft.py` /
+`emotion_gate_validate.py` / `regime_emotion_matrix.py` / `gate_effectiveness.py` /
+`limit_list_fix_sync.py` / `ths_dc_incr_sync.py` / `global_fut_sync.py`（9 个）
+
+**但它们都不在 A 臂链路闭包里**（闭包 20 个文件已逐个列出）⇒ **不影响复验结论**，
+且它们是**每日自动化要跑的采集器**，进 tag 反而是必要的（否则 tag 状态无法复现采集）。
+
+### 20.7 ★ 建议修正执行卡 S2 的闸门判据（补传递依赖）
+
+把 406 节的单层判据替换为**两层**：
+
+```bash
+# ① 链路自身零差异
+git diff --name-only open1016-frozen-d2 HEAD -- \
+  quant_backtest/bt2 quant_backtest/open1016_run.py \
+  quant_backtest/backtest_engine_v2.py quant_backtest/channel_engine.py \
+  quant_backtest/chanlun portal/bt2_run
+# 实测 0 行 ✅
+
+# ② ★新增：链路传递依赖闭包零漂移（从三入口 BFS 收集仓内 import）
+# 取证脚本：work/_407d_transitive.py（可复跑）
+# 实测：闭包 20 文件，其中 3 个纯新增漂移 → 逐个签收后放行
+```
+
+**更稳的做法**：S3 复验前把链路闭包 checkout 到 tag 版本再跑，
+或至少在S2 记录「闭包 = 20 文件 / 漂移 3 个（纯新增已签收）」。
+
+### 20.8 摘出动作的时机建议
+
+| 动作 | 建议时机 | 理由 |
+|---|---|---|
+| ① `jev-gate.env.enc` 移出版本库 | **可现在做**（D-1 纪律允许纯 gitignore 消噪） | C 档硬问题，且不碰任何代码逻辑 |
+| ② `work/` 加 gitignore + `git rm --cached` | **可现在做**（同 K-STOCK-373 消噪做法，磁盘文件全保留） | 防止 1821 个 parquet 进 tag |
+| ③ `quant_backtest/` 根目录一次性脚本搬家 | **D-Day 验收后** | 涉及改仓库结构，冻结期不动 |
+| ④ S2 判据补传递依赖 | **现在可做**（改文档判据不改代码） | 18:30 那班要用 |
+
+> ⚠️ 注意 ①② 属于「消噪」会让 `git diff --stat d2 HEAD` 数值变化，但**不影响 A 臂复验**
+> （两者都不在链路闭包内）。
