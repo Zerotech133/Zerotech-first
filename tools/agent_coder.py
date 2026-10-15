@@ -205,15 +205,27 @@ def _gpt6_key():
         return ""
 
 
+def _data_dir():
+    """K-ORG-112: 台账落盘目录——主仓 portal/data。e2e/devtask 产码子进程
+    cwd=worktree，import 的是 worktree 副本 agent_coder，若按 _HERE/.. 落盘
+    则健康/用量记录全部写进临时 worktree、清场蒸发（10-15 10:01 三连超时
+    三条 _fail 随 K-ORG-072 worktree 消失实锤）。产码驱动（e2e_pipeline）
+    注入 ORG_AI_HOME=主仓根，子进程据此归账；直接跑主仓时无该变量走原路径。"""
+    root = os.environ.get("ORG_AI_HOME")
+    if root and os.path.isdir(root):
+        return os.path.join(root, "portal", "data")
+    return os.path.join(_HERE, os.pardir, "portal", "data")
+
+
 def _log_usage(agent_id, channel, label, in_tok=0, out_tok=0, elapsed=0.0, chars=0):
-    """K-ORG-090/G3: 五通道统一 usage 台账——落 portal/data/llm_usage.jsonl。
+    """K-ORG-090/G3: 五通道统一 usage 台账——落主仓 portal/data/llm_usage.jsonl。
     无 usage 的通道（ollama/claude CLI）记 chars 兜底；fail-open 记账失败不影响产码。"""
     try:
         rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "agent": agent_id,
                "channel": channel, "label": str(label)[:60],
                "in_tok": in_tok, "out_tok": out_tok,
                "elapsed": round(elapsed, 1), "chars": chars}
-        p = os.path.join(_HERE, os.pardir, "portal", "data", "llm_usage.jsonl")
+        p = os.path.join(_data_dir(), "llm_usage.jsonl")
         with open(p, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except OSError as e:
@@ -221,13 +233,13 @@ def _log_usage(agent_id, channel, label, in_tok=0, out_tok=0, elapsed=0.0, chars
 
 
 def _fail(agent_id, channel, msg, attempts):
-    """K-ORG-090/G2: 通道失败事件落 llm_health.jsonl（健康观测，供判读卡
+    """K-ORG-090/G2: 通道失败事件落主仓 llm_health.jsonl（健康观测，供判读卡
     「通道健康」段消费）；attempts 内存链同步追加，fail-open 不影响降级。"""
     attempts.append((channel, msg))
     try:
         rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
                "agent": agent_id, "channel": channel, "err": msg}
-        p = os.path.join(_HERE, os.pardir, "portal", "data", "llm_health.jsonl")
+        p = os.path.join(_data_dir(), "llm_health.jsonl")
         with open(p, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     except OSError:

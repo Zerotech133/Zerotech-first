@@ -30,8 +30,12 @@ def log(step, detail):
     print(line, flush=True)
 
 
-def run(cmd, cwd=ROOT, timeout=900):
-    r = subprocess.run(cmd, cwd=cwd, capture_output=True, timeout=timeout)
+def run(cmd, cwd=ROOT, timeout=900, extra_env=None):
+    env = None
+    if extra_env:
+        env = dict(os.environ)
+        env.update(extra_env)
+    r = subprocess.run(cmd, cwd=cwd, capture_output=True, timeout=timeout, env=env)
     out = (r.stdout or b"").decode("utf-8", "replace")
     err = (r.stderr or b"").decode("utf-8", "replace")
     return r.returncode, out, err
@@ -108,7 +112,8 @@ def gen_code(wt, out_rel, spec, repair_note):
         "ok,detail=agent_coder.run(a['label'],'DEV1',a['out'],a['spec'],smoke=smoke,k_id=a['tid'])\n"
         "print('E2E_CODE',ok,detail)\n"
     )
-    rc, out, err = run([PY, "-c", code], cwd=wt, timeout=1800)
+    rc, out, err = run([PY, "-c", code], cwd=wt, timeout=1800,
+                       extra_env={"ORG_AI_HOME": ROOT})  # K-ORG-112: 健康用量归账主仓
     os.remove(dj)
     if "E2E_CODE True" not in out:
         return False, (out + err).strip()[:800]
@@ -215,7 +220,8 @@ def main():
 
         sec2_t0 = datetime.datetime.now().timestamp()
         rc, out, err = run([PY, "tools/sec2_review.py", "--plan", plan_rel,
-                            "--sha", sha, "--files", args.out], cwd=wt, timeout=900)
+                            "--sha", sha, "--files", args.out], cwd=wt, timeout=900,
+                           extra_env={"ORG_AI_HOME": ROOT})  # K-ORG-112 归账主仓
         m = re.search(r"缺失\s*(\d+)", out)
         miss = int(m.group(1)) if m else -1
         log("SEC2(轮%d)" % (rnd + 1), "缺失=%s" % miss)
@@ -237,7 +243,8 @@ def main():
                 % (rnd + 1, stat_line[0].strip() if stat_line else "N/A",
                    real.strip()[:200], plan_rel))
         rc, out, err = run([PY, "tools/qa1_review.py", "--task", TID, "--note", note, sha],
-                           cwd=wt, timeout=900)
+                           cwd=wt, timeout=900,
+                           extra_env={"ORG_AI_HOME": ROOT})  # K-ORG-112 归账主仓
         qa1_out = out
         # 🔴 K-ORG-071/072 判例: QA1 输出格式逐次漂移, verdict 锚点已见三代——
         # 「结论：**退回**」/「**结论：退回 + 理由…**」/「8a5aba1: **退回 + 理由…」。
