@@ -101,4 +101,60 @@ H._api_feishu_event(h, json.dumps({
     "event": {"action": {"type": "unknown", "form": []}}}).encode("utf-8"))
 assert not routed and resp and resp[0][1] == 200, resp
 print("T4 分发收紧 OK（字符串/无value action 不误路由；两种卡schema 正常路由）")
+
+# ── T5（K-STOCK-407 F1）：时间戳新鲜度窗口防重放 ───────────
+# 场景：攻击者截获一条完整合法回调（头+body 原样重发）——验签必过，
+# 只有时间戳窗口能拦。用真 encrypt key + 正确签名构造各时间偏移。
+import hashlib as _hl
+import time as _tm
+
+_EK407 = "test-encrypt-key-407"
+os.environ["FEISHU_ENCRYPT_KEY"] = _EK407  # _feishu_encrypt_key 读 env
+
+
+def _probe(body_dict, ts):
+    """构造 (handler, resp)——ts 为时间戳字符串，签名按官方字节算法算。"""
+    nc, raw = "nonce407", json.dumps(body_dict).encode("utf-8")
+    sig = _hl.sha256((ts + nc + _EK407).encode("utf-8") + raw).hexdigest()
+    resp, routed = [], []
+    hh = types.SimpleNamespace(
+        headers={"X-Lark-Request-Timestamp": ts, "X-Lark-Request-Nonce": nc,
+                 "X-Lark-Signature": sig},
+        _json=lambda obj, code=200: resp.append((obj, code)),
+        _handle_card_action=lambda ev: routed.append(ev),
+        _feishu_encrypt_key=lambda: _EK407,
+        _feishu_unverified_alert=lambda: None,
+        log_message=lambda *a, **k: None)
+    return hh, resp, routed
+
+
+_body407 = {"type": "url_verification", "challenge": "fresh407"}
+
+# T5a：新鲜时间戳 + 正确签名 → 200 challenge 回显（不误伤真回调）
+h, resp, _ = _probe(_body407, str(int(_tm.time())))
+H._api_feishu_event(h, json.dumps(_body407).encode("utf-8"))
+assert resp and resp[0][1] == 200 and resp[0][0].get("challenge") == "fresh407", resp
+
+# T5b：1 小时前（合法签名的重放）→ 403
+h, resp, _ = _probe(_body407, str(int(_tm.time()) - 3600))
+H._api_feishu_event(h, json.dumps(_body407).encode("utf-8"))
+assert resp and resp[0][1] == 403, resp
+
+# T5c：未来 1 小时（时钟偏移攻击面同样封死）→ 403
+h, resp, _ = _probe(_body407, str(int(_tm.time()) + 3600))
+H._api_feishu_event(h, json.dumps(_body407).encode("utf-8"))
+assert resp and resp[0][1] == 403, resp
+
+# T5d：时间戳非数字（带匹配签名）→ 403
+h, resp, _ = _probe(_body407, "not-a-number")
+H._api_feishu_event(h, json.dumps(_body407).encode("utf-8"))
+assert resp and resp[0][1] == 403, resp
+
+# T5e：窗口边缘内（-290s，默认 300s 窗）→ 放行（容忍边界）
+h, resp, _ = _probe(_body407, str(int(_tm.time()) - 290))
+H._api_feishu_event(h, json.dumps(_body407).encode("utf-8"))
+assert resp and resp[0][1] == 200, resp
+
+del os.environ["FEISHU_ENCRYPT_KEY"]
+print("T5 防重放窗口 OK（新鲜200 / 过去403 / 未来403 / 非数字403 / 边界内200）")
 print("ALL PASS")
