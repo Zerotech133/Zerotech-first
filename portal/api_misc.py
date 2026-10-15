@@ -2366,18 +2366,24 @@ transition:.3s;z-index:9}
             mk = _env_market_key(ev.get("label", ""))
             if not mk:
                 continue
-            safe = bool(ev.get("safe"))
+            _raw = ev.get("safe")
+            safe = bool(_raw)
             gates.append(
                 "<a class='gate %s' href='/bt/m/%s'><b>%s</b>"
-                "<span style='float:right;font-size:16px;font-weight:700'>"
-                "%s</span><div class='dim' style='margin-top:6px'>%s</div>"
+                "<span class='g-state' style='float:right;font-size:14px;"
+                "font-weight:700'>%s</span>"
+                "<div class='dim' style='margin-top:6px'>%s</div>"
                 "<div style='margin-top:6px;font-size:12.5px;color:%s'>%s"
                 "</div></a>"
-                % ("g-on" if safe else "g-off", mk, MKT_LABEL[mk],
+                % (("g-na" if _raw is None else ("g-on" if safe else "g-off")),
+                   mk, MKT_LABEL[mk],
                    e(str(ev.get("score", "—"))),
                    e(str(ev.get("state", ""))),
-                   "#3fb950" if safe else "#f85149",
-                   "✅ 放行 · 可开新仓" if safe else "⛔ 收紧 · 一票否决"))
+                   ("var(--color-gate-na,#5b7a99)" if _raw is None
+                    else ("var(--color-gate-ok,#2f9e8f)" if safe
+                          else "var(--color-gate-bad,#c98a1e)")),
+                   ("— 缺维降权 · 不误杀" if _raw is None
+                    else ("✅ 放行建仓" if safe else "⛔ 否决建仓"))))
         gates_html = ("<div class='gates'>%s</div>" % "".join(gates)
                       if gates else "<div class='dim'>暂无快照</div>")
 

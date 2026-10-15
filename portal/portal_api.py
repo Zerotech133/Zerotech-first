@@ -725,7 +725,36 @@ th{color:var(--text-dim,#8b949e);font-weight:500;font-size:12px}
 .gates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
 .gate{border:1px solid var(--border,#30363d);border-radius:10px;padding:12px 13px;
 background:var(--bg-raised,#161b22);display:block;color:var(--text,#e6edf3)}
-.g-on{border-color:var(--color-ok,#2ea043)}.g-off{border-color:var(--color-err,#f85149)}
+/* K-STOCK-403（10-15）：闸门专用语义色 + 整条横幅。
+   🔴 判例：原 .g-on/.g-off 直接复用 --color-ok/--color-err（绿/红），
+   与个股信号卡片的绿/红**同一套语义** ⇒ 老田 08:25 看到
+   「30%不能买」与「绿色可买入」同时出现，误以为自相矛盾。
+   实为两层语义：闸门=「能不能新建仓」（全局），信号=「这只票买不买」（局部）。
+   改法：① 闸门改用**专属三色**（琥珀=否决/青=放行/灰蓝=缺维），与信号色系隔离；
+        ② 闸门容器加 .gatebar 整条底色，横幅化、视觉主权独立。 */
+.gate.g-on{border-color:var(--color-gate-ok,#2f9e8f);
+background:linear-gradient(0deg,rgba(47,158,143,.10),rgba(47,158,143,.10)),
+var(--bg-raised,#161b22)}
+.gate.g-off{border-color:var(--color-gate-bad,#c98a1e);
+background:linear-gradient(0deg,rgba(201,138,30,.12),rgba(201,138,30,.12)),
+var(--bg-raised,#161b22)}
+.gate.g-na{border-color:var(--color-gate-na,#5b7a99);
+background:linear-gradient(0deg,rgba(91,122,153,.10),rgba(91,122,153,.10)),
+var(--bg-raised,#161b22)}
+/* 闸门整条横幅：整行一条，不与下方个股卡片混读 */
+.gatebar{border:1px solid var(--border,#30363d);border-radius:12px;
+padding:13px 16px;margin:0 0 14px;background:var(--bg-surface,#0f141c)}
+.gatebar .gb-title{font-size:15px;font-weight:600;margin:0 0 2px}
+.gatebar .gb-note{font-size:11.5px;color:var(--text-dim,#8b949e);margin:0 0 10px;line-height:1.5}
+.gatebar .gates{margin-top:0}
+.gatebar.gb-on{border-color:var(--color-gate-ok,#2f9e8f)}
+.gatebar.gb-off{border-color:var(--color-gate-bad,#c98a1e)}
+.gatebar.gb-na{border-color:var(--color-gate-na,#5b7a99)}
+/* 闸门卡片内的状态文字同步换色（不硬编码 hex 撞信号色） */
+.gate .g-state{font-weight:700}
+.gate.g-on .g-state{color:var(--color-gate-ok,#2f9e8f)}
+.gate.g-off .g-state{color:var(--color-gate-bad,#c98a1e)}
+.gate.g-na .g-state{color:var(--color-gate-na,#5b7a99)}
 .tp{display:inline-block;margin:4px 6px 0 0;padding:7px 13px;
 border:1px solid var(--border,#30363d);border-radius:16px;font-size:12.5px;
 background:var(--bg-raised,#161b22)}

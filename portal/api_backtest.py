@@ -4464,24 +4464,53 @@ class Handler:  # Mixin 壳：经基座多继承并入
             "<div style='margin-top:6px'><a href='/premarket'>盘前详情 →</a></div>"
             % (verdict, prob_txt, dim_chips, sector_note, summary_line))
 
-        # A3 四市场闸门（今天能买吗）
+        # A3 四市场闸门（今天能不能新建仓）
+        # K-STOCK-403：三态渲染（放行/否决/缺维降权）
+        # + 整条横幅容器。语义与个股信号分离：
+        #   闸门答「今天能不能新建仓」，信号答「这只票买不买」。
+        #   缺维（safe=None，feeder 无源）必须区别于否决——不误杀（api.py safe 三值语义）。
         gates = []
+        any_off = any_na = False
         for ev in snap.get("envs", []):
             mk = _env_market_key(ev.get("label", ""))
             if not mk:
                 continue
-            safe = bool(ev.get("safe"))
+            raw = ev.get("safe")
+            if raw is None:
+                cls, state = "g-na", "— 缺维降权"
+                any_na = True
+            elif raw:
+                cls, state = "g-on", "✅ 放行建仓"
+            else:
+                cls, state = "g-off", "⛔ 否决建仓"
+                any_off = True
             gates.append(
                 "<a class='gate %s' href='/bt/m/%s'><b>%s</b>"
-                "<span style='float:right;font-size:15px;font-weight:700'>"
-                "%s</span><div style='margin-top:5px;font-size:12.5px;"
-                "color:%s'>%s</div></a>"
-                % ("g-on" if safe else "g-off", mk, MKT_LABEL[mk],
-                   e(str(ev.get("score", "—"))),
-                   "#3fb950" if safe else "#f85149",
-                   "✅ 放行" if safe else "⛔ 否决"))
-        gates_html = ("<div class='gates'>%s</div>" % "".join(gates)
-                      if gates else "<div class='dim'>暂无快照</div>")
+                "<span class='g-state' style='float:right;font-size:14px;"
+                "font-weight:700'>%s</span>"
+                "<div style='margin-top:5px;font-size:12.5px;"
+                "color:var(--text-dim,#8b949e)'>环境分%s</div></a>"
+                % (cls, mk, MKT_LABEL[mk], state, e(str(ev.get("score", "—")))))
+        if any_na and not any_off:
+            bar_cls = "gb-na"
+            verdict = "部分市场数据缺维（不误杀，可建仓但无闸门保护）"
+        elif any_off:
+            bar_cls = "gb-off"
+            verdict = "存在否决市场 —— 今日<b>暂停新建仓</b>，已持仓不受影响"
+        else:
+            bar_cls = "gb-on"
+            verdict = "全市场放行 —— 今日<b>允许新建仓</b>"
+        gates_html = (
+            "<div class='gatebar %s'><p class='gb-title'>"
+            "🚦 市场闸门 · 今天能不能新建仓</p>"
+            "<p class='gb-note'>%s<br>闸门只管「现在能不能新建仓」；"
+            "下方个股信号是另一层判断，"
+            "<b>两者不冲突</b>——"
+            "闸门否决时，下方仍会显示观察名单"
+            "（仅供研究，不构成建仓指令）。</p>"
+            "<div class='gates'>%s</div></div>"
+            % (bar_cls, verdict, "".join(gates))
+            if gates else "<div class='dim'>暂无快照</div>")
 
         # A4 今日机会（共振"买入" Top5）
         res = snap.get("res", [])
@@ -4611,13 +4640,12 @@ class Handler:  # Mixin 壳：经基座多继承并入
                 # A 区：今日全景（一屏，默认展开）
                 + "<div class='sec'><h2>🔍 分析一只股票</h2>" + sa_blk
                 + "</div>"
+                + gates_html
                 + "<div class='duo'>"
                 + "<div class='sec'><h2>🌅 今日市场一句话</h2>" + pre_blk
                 + "</div>"
                 + "<div class='sec'><h2>💡 今日机会 · 买什么</h2>" + opp_blk
                 + "</div></div>"
-                + "<div class='sec'><h2>🚦 四市场闸门 · 今天能买吗</h2>"
-                + gates_html + "</div>"
                 # B 区：策略动态（一屏，默认展开）
                 + "<div class='sec'><h2>🧭 策略动态 · 各方法论今天在干嘛"
                 "</h2>" + strat_dyn + "</div>"
