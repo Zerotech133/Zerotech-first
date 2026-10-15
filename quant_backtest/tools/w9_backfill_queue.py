@@ -18,6 +18,7 @@
 - Windows 计划任务/自动化均可调，退出码=失败步骤数。
 """
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -83,11 +84,22 @@ def step_cross(force=False):
     if os.path.exists(GRID_RESULT_1Y) and not force:
         log("cross 1y 产物已存在，跳过（--force 重跑）: %s" % GRID_RESULT_1Y)
         return 0
-    # 1) 备份两年整窗产物（幂等）
-    bak = GRID_RESULT.replace(".json", "_2y_20240902_20260918.json")
-    if os.path.exists(GRID_RESULT) and not os.path.exists(bak):
-        shutil.copy2(GRID_RESULT, bak)
-        log("已备份两年窗产物 → %s" % bak)
+    # 1) 备份两年整窗产物（幂等；备份名从产物 meta 动态读，防硬编码撒谎）
+    bak = None
+    if os.path.exists(GRID_RESULT):
+        try:
+            with open(GRID_RESULT, encoding="utf-8") as f:
+                meta = (json.load(f).get("meta") or {})
+            bak = GRID_RESULT.replace(".json", "_2y_%s_%s.json"
+                                      % (meta.get("d0"), meta.get("d1")))
+        except Exception as e:                      # noqa: BLE001
+            log("读取两年窗 meta 失败(%s)，回退硬编码名" % e)
+            bak = GRID_RESULT.replace(".json", "_2y_20240902_20260918.json")
+        if not os.path.exists(bak):
+            shutil.copy2(GRID_RESULT, bak)
+            log("已备份两年窗产物 → %s" % bak)
+        else:
+            log("两年窗备份已存在，跳过备份: %s" % bak)
     # 2) 根目录临时副本（修复 HERE 断链，零侵入原脚本）
     shutil.copy2(GRID_SCRIPT, GRID_COPY)
     try:
@@ -121,10 +133,14 @@ def main():
     a = ap.parse_args()
     log("=== W9 批处理队列启动 pid=%d only=%s force=%s ===" % (os.getpid(), a.only, a.force))
     fails = 0
-    if a.only in (None, "qpzm"):
-        fails += 1 if step_qpzm(a.force) != 0 else 0
-    if a.only in (None, "cross"):
-        fails += 1 if step_cross(a.force) != 0 else 0
+    try:
+        if a.only in (None, "qpzm"):
+            fails += 1 if step_qpzm(a.force) != 0 else 0
+        if a.only in (None, "cross"):
+            fails += 1 if step_cross(a.force) != 0 else 0
+    except Exception as e:                          # noqa: BLE001 异常也留日志收尾行+非零退出
+        log("STEP 异常未捕获: %r" % e)
+        fails += 1
     log("=== 队列结束 fails=%d ===" % fails)
     _logf.close()
     sys.exit(fails)
