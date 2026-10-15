@@ -42,6 +42,9 @@ SINGLE_FILES = [
     (os.path.join("static", "tokens.css"), os.path.join("static", "tokens.css")),
     (os.path.join("data", "todays_picks.json"), os.path.join("data", "todays_picks.json")),
     (os.path.join("data", "ledger.json"), os.path.join("data", "ledger.json")),  # K-STOCK-353
+    # K-STOCK-408：网关源头纳管——server_gate.py（git 跟踪）→ server.py
+    # （快照内，随 deploy 上线）。改动从此走评审门，不再游离版本管理外。
+    ("server_gate.py", "server.py"),
 ]
 DETAILS_SUBDIR = os.path.join("data", "pick_details")
 

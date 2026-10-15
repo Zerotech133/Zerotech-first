@@ -26,7 +26,32 @@ from send_feishu import _load_app_creds, USER_ID  # noqa: E402
 # 2026-10-13 外部网络实测 /picks.html 全页可达。注意：/kg/stock/<code> 个股页
 # 被腾讯云 WAF 拦（403），不可用于卡片按钮。8734 仍是本机/在网设备唯一入口（K-STOCK-113）。
 PORTAL_BASE = "https://quant-picks-board.app.workbuddy.host"  # 公网鉴权站（访问码门禁）
-PORTAL_KEY = "picks-15fdb9"  # 访问码（泄露在服务端改口令即时作废）
+
+
+def _load_portal_key():
+    """K-STOCK-408：访问码（发码侧）唯一事实源 = portal/work/portal_key.json
+    （gitignored，轮换只改该文件即全链生效；daily_report/news_digest/
+    kg_brief/morning_report/push_picks_* 等 7+ 消费方均经本模块取码）。
+    优先级：env PORTAL_KEY（测试/应急覆盖）> 配置文件 > 空串。
+    空串时卡片按钮带 ?key= 打到 401 手输页——fail-safe，不裸奔旧码。
+    校验侧事实源 = portal/server_gate.py（sync_publish 映射为
+    picks_public/server.py），两源一致性由 test_portal_key_rotation.py 守卫。
+    """
+    env_k = os.environ.get("PORTAL_KEY")
+    if env_k:
+        return env_k
+    try:
+        with open(os.path.join(HERE, "work", "portal_key.json"),
+                  encoding="utf-8") as f:
+            k = (json.load(f).get("key") or "").strip()
+            if k:
+                return k
+    except Exception:
+        pass  # 文件缺失/坏 JSON：空码 fail-safe（守卫测试有专项告警断言）
+    return ""
+
+
+PORTAL_KEY = _load_portal_key()  # 访问码（泄露应急：改配置+deploy 即作废）
 
 
 def _fmt_quote(facts):
