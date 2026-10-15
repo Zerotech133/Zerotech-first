@@ -1089,3 +1089,74 @@ bbf4393 K-STOCK-401: qpzm产线 env_gate 切 gatekeeper（等价锁护航）
 
 D-Day（10-16）当天冻结纪律仍在，**建议 D-Day 验收后再执行 A**；在此之前若 08:20 采集跑过，
 S0 检查前先 `git status --porcelain quant_backtest` 看一眼即可。
+
+---
+
+## 十九、K-STOCK-406 · D-1 执行卡判据预检（09:53~10:05）——🔴 抓到 S2 假绿灯
+
+老田指令「下一步」。D-1 执行卡 18:30 起手，先把「会不会 FAIL / 会不会给假 PASS」算清楚。
+取证脚本：`work/_406_d1_precheck.py`（只读，临时探针 tag 已清理）。
+
+### 19.1 🔴🔴 S2 自证判据形同虚设 —— 今晚必然给假 PASS
+
+**卡上原文（S2）**：
+```bash
+git tag -f open1016-frozen-d2b && git describe --tags
+# 随即自证：git diff --stat open1016-frozen-d2b -- quant_backtest 必须为空
+```
+
+**实测复演（临时 tag `_k406_probe` 打给 HEAD）**：
+
+```
+按卡上写法 git diff --stat _k406_probe -- quant_backtest
+  输出：(空)  ⇒ ★恒空 ⇒ 恒 PASS
+```
+
+**根因**：`git diff --stat <tag> -- <path>` 是「**tag 与工作区**」的差异；
+而 `tag -f` 刚打在 HEAD 上、且 S0 已保证工作区干净 ⇒ 两端恒等 ⇒ **恒为空**。
+该判据**测不出任何东西**，无论漂移多大都会 PASS。
+
+**真正该验的两条（实测值）**：
+
+| 判据 | 命令 | 实测 |
+|---|---|---|
+| ① 累积漂移量 | `git diff --stat open1016-frozen-d2 HEAD -- quant_backtest` | **194 files changed, 31533 insertions(+), 285 deletions(-)** |
+| ①b 受影响文件数 | 同上去 `--name-only | wc -l` | **194 个文件** |
+| ② 提交数 | `git log --oneline open1016-frozen-d2..HEAD -- quant_backtest` | **58 个提交**（04:20 ~ 09:27，横跨 K-STOCK-395~403 + 并行会话）|
+| ③ **A 臂链路零差异**（真判据） | 见 19.3 | **全部 0 差异 ✅** |
+
+⇒ **建议替换卡上判据为①③两条**：①用于「记录在案」（漂移是方案 A 要处置的对象，不是失败），
+③用于「闸门」（S3 复验链路必须零漂移）。
+
+### 19.2 S1 #16 `ts_daily` 未达标属正常
+
+实测`ts_daily` 最新 `trade_date = 20261014`，卡上判据 `= 20261015`。
+今日为盘中（09:53），当日数据须**17:00 收盘后**才有 ⇒ **非故障**，到点自动满足。
+
+### 19.3 ✅ A 臂复验链路仍零漂移（S3 结论可信）
+
+| 路径 | 与 `open1016-frozen-d2 HEAD` 差异 |
+|---|---|
+| `quant_backtest/bt2` | ✅ 0 |
+| `quant_backtest/open1016_run.py` | ✅ 0 |
+| `quant_backtest/backtest_engine_v2.py` | ✅ 0 |
+| `quant_backtest/channel_engine.py` | ✅ 0 |
+| `quant_backtest/chanlun` | ✅ 0 |
+| `portal/bt2_run` | ✅ 0 |
+
+⇒ S3 的同窗复验判据（|Δret|≤1pp、笔数≤1%）**可信**。
+
+### 19.4 S0 前置已满足
+
+`git status --porcelain quant_backtest = 0 行` ✅（已在 405 节修掉 manifest 那一处）。
+
+### 19.5 待老田拍板（18:30 前必须定，否则那班会照旧判据走）
+
+| # | 事项 | 建议 |
+|---|---|---|
+| 1 | **S2 判据是否改** | **改成①③两条**（累积漂移记录在案 + A 臂链路零差异当闸门）。不改则今晚必然假 PASS，白跑一轮 |
+| 2 | 58 个提交 / 194 文件的漂移 | 属并行会话正常产出（K-STOCK-395~403），**记录在案即可，不是失败**；但需要老田明确「这些产出是否都在 D-Day 开闸的可接受范围内」 |
+| 3 | `ts_global_fut/_manifest.json` 每日改写 | 405 节隐患 A 方案（D-Day 后迁目录），今晚先靠 08:20 已过、S0 已干净 |
+
+**⇒ 我的强烈建议：现在就把执行卡 S2 判据改掉**（改 1 行命令 + 2 行判据），
+否则今晚 18:30 那班会拿到一个「恒 PASS」的自证，等于没验。
