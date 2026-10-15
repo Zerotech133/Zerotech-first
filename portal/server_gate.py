@@ -34,10 +34,10 @@ from urllib.parse import urlparse, parse_qs
 
 PORT = int(os.environ.get("PORT", "3000"))
 USERNAME = os.environ.get("PICKS_USER", "lao")
-# ── 口令默认值（轮换 2026-10-15 起两值暂同，deploy 后改 NEW 为新码）──
-NEW_PW = os.environ.get("PICKS_PW", "picks-15fdb9")
+# ── 口令默认值（K-STOCK-409 轮换执行 2026-10-15：NEW 已换新码）──
+NEW_PW = os.environ.get("PICKS_PW", "picks-6d8b1507")
 OLD_PW = os.environ.get("PICKS_PW_OLD", "picks-15fdb9")
-OLD_PW_EXPIRE = "2026-10-29"  # 旧码作废日（14 天兼容期截止）
+OLD_PW_EXPIRE = "2026-10-29"  # 旧码作废日（到期删本行+OLD 默认值，sync+deploy 即作废）
 PASSWORD = NEW_PW  # 兼容旧变量名（日志/说明引用）
 COOKIE = "picks_key"
 HERE = os.path.dirname(os.path.abspath(__file__))
