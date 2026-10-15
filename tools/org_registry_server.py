@@ -664,9 +664,10 @@ class Handler(BaseHTTPRequestHandler):
             kdocs = sorted(os.listdir(KDOCS)) if os.path.isdir(KDOCS) else []
             self._json(200, {"bundle": bundle, "org": org, "audit_tail": tail,
                              "knowledge_docs": kdocs})
-        elif self.path.startswith("/api/task/status"):
-            q = dict(p.split("=", 1) for p in self.path.split("?", 1)[1].split("&")
-                     if "=" in p)
+        elif path.startswith("/api/task/status"):
+            # K-ORG-107 修复：改用 observe 已解析的 path/qs——原 self.path.split("?",1)[1]
+            # 在无 query 时 IndexError 未捕获→连接裸断（RemoteDisconnected·141 判例形态）
+            q = dict(p.split("=", 1) for p in qs.split("&") if "=" in p)
             tid = q.get("task", "")
             t = task_load().get(tid)
             if not t:
@@ -679,9 +680,8 @@ class Handler(BaseHTTPRequestHandler):
                                                  "project", "created", "owner")}
                     for k, v in tasks.items()}
             self._json(200, {"ok": True, "tasks": slim})
-        elif self.path.startswith("/api/agent/knowledge"):
-            q = dict(p.split("=", 1) for p in self.path.split("?", 1)[1].split("&")
-                     if "=" in p)
+        elif path.startswith("/api/agent/knowledge"):
+            q = dict(p.split("=", 1) for p in qs.split("&") if "=" in p)
             aid = q.get("id", "")
             fp = os.path.join(MEMDIR, "agent__%s__knowledge.jsonl" % aid)
             rows = []
