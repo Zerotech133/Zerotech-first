@@ -1497,3 +1497,77 @@ ret/笔数/胜率/PF **逐位相同**，开关前后无任何差异。
 层3 配置漂移       ✅ 阻塞 0（config.json 已实证签收 + 2 项 advisory）
 产物类            临时工作区 242 / 运行清单 1（记录在案）
 ```
+---
+
+## 二十三、K-STOCK-410 · D-1 执行卡 S1 十七项逐项实证（10:39~11:00）
+
+### 23.1 起因：S1 的"静态项 8/8 PASS"是隔日结论，从没实证跑过
+
+执行卡 S1 段写着「✅ 预核记录（**10-14 13:45** 命令级预演）：静态项已提前核过——
+#8/#9/#1/#2/#11/#17/#14/#15 ✅」，
+并断言「**明晚 S1 实际只剩 #16 + 工作区状态**」。
+
+**但 10-14 13:45 之后发生了**：今天新增 9 个脚本进 `quant_backtest/`、
+406/407/408/409 四轮连续动过 `config.json` / `build_catalog.py` / 4 个门户文件 / `.gitignore`。
+沿用隔日预演 = 把未验证的结论当既成事实。
+
+### 23.2 🔴 首轮跑出 5 个 FAIL —— 其中 4 个是**判据自己的正则 bug**
+
+| # | 首轮判据 | 真实代码 | 首轮为何误判 |
+|---|---|---|---|
+| **#1** | 按字典数 `name:` 计臂 | `ARMS` 是**列表** `[(suffix, d0, extra), ...]`（`open1016_run.py:41-49`） | 结构假设错，数出 0 个 |
+| **#8** | 判 `git grep -c` 输出串是否含臂名 | 卡上原命令 `grep -c "y3_base\|y1_base"` **实际返回 5**（判据 ≥1 应 PASS） | git grep 输出含 `文件名:5`，我整串判不命中 |
+| **#10** | 正则要求 `if os.path.exists(...): continue\|return` | 真实形态 `if os.path.exists(out_fp) and not FORCE:` **单行 + 下一行 `print("skip (exists):")`** | 同行尾必须有 continue/return |
+| **#13** | grep 下划线 `min_score` | 代码里是 **`--min-score`（连字符 CLI 参数）**，命中 2 处 | 连字符 vs 下划线 |
+| **#12** | grep `lock\|serial\|mutex` 字面量 | 串行 = **`for suf,d0,extra in ARMS:` 内逐臂 `run_guarded()`**（2 处调用）+ `_run_guard.py` 的 watchdog taskkill 杀灭；**全仓无 lock 字面量属正常** | token 判据抓不到架构性串行 |
+
+⇒ **4 个 FAIL 全是我的判据写错，不是代码问题。**
+
+**🔴 判例（已写进工具 docstring）：写核查判据前必须先读真实代码形态，不能凭想象写正则。**
+假 FAIL 比不检查更坏——它会让人去"修"没坏的代码。
+
+### 23.3 ✅ 修正判据后的实证结果（13 项 12 PASS）
+
+| # | 项 | 判定 | 证据 |
+|---|---|---|---|
+| 8 | 卡上 grep 判据 | ✅ | 原命令返回 **5** ≥1 |
+| 1 | ARMS 七臂完整 | ✅ | 解析到 7 臂：`y3_base/y3_weak/y3_high/y3_hsc/y3_final/y1_base/y1_final` |
+| 7 | 臂名与基线锚一致 | ✅ | 含卡上提到的 y3_base/y3_final/y1_base |
+| 2 | 终选臂 y3_final | ✅ | 逐字匹配 `Y3_D0 + gate high + --min-score 80` |
+| 9 | MIN_D1 | ✅ | `= 20261012`（L37） |
+| 11 | run_guarded | ✅ | import 1 处 + 调用 2 处 |
+| 17 | _run_guard.py | ✅ | 存在且已入库 |
+| 10 | 幂等保护 | ✅ | L109 `exists and not FORCE → skip(exists)`，FORCE 开关在位 |
+| 12 | 串行/看门狗 | ✅ | 逐臂 `run_guarded()` + `_run_guard` watchdog taskkill |
+| 13 | min-score | ✅ | `--min-score "80"` 命中 2 处 |
+| 14 | v3 缓存 3年窗 | ✅ | 4,692,521 B |
+| 15 | v3 缓存 1年窗 | ✅ | 2,277,270 B |
+| **16** | **ts_daily 至 20261015** | **★ FAIL** | 最新 **20261014**；现在 10:46，**A股 15:00 收盘 / 17:00 后入库 ⇒ 盘中正常，18:30 那班自动满足** |
+
+**⇒ S1 不阻塞。** 唯一 FAIL 是卡上已预判的盘中现象。
+
+### 23.4 ✅ 固化为主仓工具 `quant_backtest/tools/d1_s1_precheck.py`
+
+- 可复跑、有退出码（0 = 全过或仅 #16 盘中；1 = 有真 FAIL）；
+- docstring 里写明第一轮 4 个判据 bug 的成因，避免后人重踩；
+- 顺手消除 docstring 的 `invalid escape sequence '\|'` SyntaxWarning（改 `r"""`）；
+- 已从主仓路径复跑验证：`exit=0`、0 warning。
+
+### 23.5 顺带踩的坑
+
+脚本里用 `sh('date +%H:%M')` 取时间，**该命令挂死 240s 超时**——
+`subprocess(shell=True, cwd=REPO)` 在 Windows 下把 `date` 当目录查找。
+（与记忆里 Git Bash 缺 coreutils 的坑同源。）
+**改用 `time.strftime("%H:%M")`** 后正常。
+⇒ **判例：Windows 上不要用 `date`/`ls`/`head` 这类 Unix 命令做 subprocess 取值，Python 自身 API 更快更稳。**
+
+### 23.6 D-1 前置总状态（10:46 实测）
+
+| 步骤 | 状态 |
+|---|---|
+| **S0** 工作区 `quant_backtest` 干净 | ✅ 0 脏文件（408 已修） |
+| **S1** 十七项 | ✅ 13 项中 12 PASS，仅 #16 盘中未满足（17:00 后自动过） |
+| **S2** 冻结 tag 闸门 | ✅ 工具 `tools/frozen_tag_gate.py` **exit=0 PASS**（双向验证非恒绿灯） |
+| **S3** 同窗复验 | ✅ A 臂链路零漂移 + 闭包 3 漂移全签收 + `use_hfq` 实证零影响 |
+| **S4** 锁定开闸 | 待 18:30 执行 |
+| **S5** 简报 | 待 18:30 执行 |
