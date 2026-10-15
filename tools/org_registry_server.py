@@ -681,7 +681,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(html)))
             self.end_headers()
             self.wfile.write(html)
-        elif self.path == "/api/org":
+        elif path == "/api/org":  # K-ORG-114: 剥 query 匹配（107 同类漏网——
+            # 原 self.path=="/api/org" 带 ?caller= 归因心跳时 404，探针实锤）
             agents, teams, org = load_registry()
             bundle = json.load(open(os.path.join(ROOT, "portal",
                                                  "agent_ide_bundle.json"),
