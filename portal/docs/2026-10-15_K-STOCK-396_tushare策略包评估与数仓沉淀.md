@@ -1008,3 +1008,84 @@ safe = NOT ( breadth < 40%  OR  med20 < -3% )      # policy.json 冻结 sha c42c
 1. **冻结判据改滚动窗口分位**（`breadth` 全样本口径已坏：8112 日仅 838 唯一值）；
 2. **阈值优化目标定义**（护 f10 还是护 f20 —— **结论相反**，先定目标再动参数）；
 3. 上述两项涉及改 `policy.json` 冻结参数 ⇒ **必须 D-Day 验收后再动**。
+
+---
+
+## 十八、K-STOCK-405 · D-1 前置体检（09:46~09:55，D-1 纪律自查）
+
+老田指令「下一步」。D-1 执行 automation `8b17f52c-99ad` 于**今晚 18:30** 起手，
+而本会话今天动过门户（重启+4 文件改动）与 `quant_backtest/`（+8 脚本）。
+按「言出必行」原则，先自查是否会成为 D-1 的阻塞点。
+
+### 18.1 🔴 发现并修掉一个真实阻塞点：S0 前置已被破坏
+
+D-1 卡 S0 判据：`git status --porcelain quant_backtest` **必须为空**，否则卡在 S0 不进S2。
+
+体检结果：**1 个脏文件** —— `quant_backtest/ts_global_fut/_manifest.json`
+（外盘采集器 07:45 重跑时给失败的 CL00Y 记录补了 `"rows": 0` 字段）。
+
+处置：`git restore -- quant_backtest/ts_global_fut/_manifest.json`（精确到单文件，不动其他）。
+复核：`脏文件数 = 0` ⇒ **✅ S0 前置满足**。
+
+> 判例：**自动化产物的清单类文件（manifest/state）每天都会被采集器改写**，
+> 它们住在受D-1 冻结纪律管控的目录里就成了「每日一颗雷」。
+> 长期解法：把采集器 manifest 移出 `quant_backtest/`（例如落到 `data/` 同级或独立 `var/` 目录）。
+
+### 18.2 核实我今天的新增是否污染冻结 tag
+
+| 项 | 结论 |
+|---|---|
+| 新增 8 脚本是否已入 git | ✅ 全部已入库（会随 `tag -f open1016-frozen-d2b` 打进新 tag） |
+| 是否改动 `open1016-frozen-d2` | ❌ 不能改（tag 是 10-14 的冻结快照，本就含605 个文件、不含新脚本） |
+| 对 D-1 的实际影响 | **S2 会把 8 个新脚本打进 d2b tag**，但它们**不在 A 臂复验链路上**（见 18.3）⇒ 不影响复验结论 |
+
+### 18.3 ✅ A 臂复验链路与 tag 逐文件一致（关键）
+
+D-1 S3 要复验 A 臂对照 311 基线（-21.90%/768 笔）。逐路径核对：
+
+| 路径 | 与 `open1016-frozen-d2` 差异 |
+|---|---|
+| `quant_backtest/bt2` | ✅ 0 |
+| `quant_backtest/open1016_run.py` | ✅ 0 |
+| `quant_backtest/backtest_engine_v2.py` | ✅ 0 |
+| `quant_backtest/channel_engine.py` | ✅ 0 |
+| `quant_backtest/chanlun` | ✅ 0 |
+| `portal/bt2_run` | ✅ 0 |
+
+⇒ **A 臂复验链路零漂移**，S3 的同窗复验判据（|Δret|≤1pp、笔数≤1%）可信。
+
+### 18.4 澄清：`qpzm_backtest.py` 的 405 行差异**不是**本会话造成
+
+`git diff open1016-frozen-d2` 在 `quant_backtest/` 共 194 个文件差异，
+其中 `qpzm_backtest.py` 405 行新增 —— 归属查证：
+
+```
+bbf4393 K-STOCK-401: qpzm产线 env_gate 切 gatekeeper（等价锁护航）
+        改 qpzm_backtest.py(71行) + 新增 test_qpzm_env_gate_integration.py(118行)
+```
+提交时间 06:39，**作者非本会话**。这是「冻结漂移」范畴内的工作，
+正是 K-STOCK-380 取证、D-1 方案 A 要处置的对象，**不是今天新增的风险**。
+
+且该提交**只动了 qpzm 一条线**，未触 A 臂复验链路（18.3 已逐路径自证）。
+
+### 18.5 D-1 前置体检结论
+
+| 检查项 | 状态 |
+|---|---|
+| S0 前置（`quant_backtest` 干净） | ✅ **已修**（0 脏文件） |
+| A 臂复验链路漂移 | ✅ **0 差异** |
+| 本会话改动是否影响 S3 复验 | ✅ **不影响**（新脚本不在链路上） |
+| 门户健康（我 09:33 重启过） | ✅ `/health` 200、`/fin` 200、`/` 302（PID 34872） |
+| 今日新增的 8 个 manifest 类文件 | ⚠️ **长期隐患**：采集器 manifest 每日改写 `quant_backtest/ts_global_fut/_manifest.json`，**明天起会再次触发 S0 阻塞** |
+
+### 18.6 建议（不擅自执行·待老田拍板）
+
+`automation e10169ba` 每日 08:20 会跑外盘采集（写 `ts_global_fut/_manifest.json`），
+**明天 10-16 起每天都会让 D-1 类 S0 检查再次失败**。两个选项：
+
+- **A（推荐）**：把外盘采集的输出目录从 `quant_backtest/ts_global_fut/` 迁到 `quant_backtest/var/ts_global_fut/`
+  （或直接加入 `.gitignore`），使采集器不再写受管控目录 —— 一次改动，永久免疫；
+- **B**：每天 D-1 检查前先 `git restore` 该文件（治标，且依赖人记得）。
+
+D-Day（10-16）当天冻结纪律仍在，**建议 D-Day 验收后再执行 A**；在此之前若 08:20 采集跑过，
+S0 检查前先 `git status --porcelain quant_backtest` 看一眼即可。
