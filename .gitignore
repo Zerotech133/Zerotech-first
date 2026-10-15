@@ -54,6 +54,10 @@ bin/lark-cli.exe
 *_key.txt
 *webhook*.txt
 .lark-cli/
+# K-STOCK-407：密钥材料加密后缀漏网（.env.* 只匹配 .env 开头，匹配不到 .enc 结尾）
+# ⚠️ 用精确后缀而非全局 *.enc —— backups/*.sql.gz.enc 是加密备份归档，属该入库的资产
+*.env.enc
+jev-eval/jev-gate.env.enc
 
 # ===== 系统杂物 =====
 *.manifest.json
@@ -170,4 +174,11 @@ k_stock/data/review_minutes/
 jev-eval/alerts/pending_msg.txt
 # ④ memory 运行态（各层 .workbuddy/memory 不进版本库）
 .workbuddy/memory/
+
+# ===== K-STOCK-407：work/ 临时工作区消噪（磁盘文件全保留）=====
+# 实测10-15 10:25：work/ 下 2014 个文件已跟踪，其中 1821 个 .parquet +
+# 139 个审计 json + 47 个 .lock，全是过程产物/数据文件。
+# 与 quant_backtest/data/ 的既有惯例一致（数据不入库）。
+# 只做 git rm --cached，不删磁盘文件。
+work/
 **/.workbuddy/memory/
