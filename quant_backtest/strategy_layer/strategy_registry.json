@@ -1,0 +1,13 @@
+{
+  "enabled": [
+    "kg_boost",
+    "chan_monitor"
+  ],
+  "weights": {
+    "kg_boost": 0.5,
+    "chan_monitor": 0.5
+  },
+  "top_n": {
+    "kg_boost": 50
+  }
+}
