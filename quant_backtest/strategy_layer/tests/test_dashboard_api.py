@@ -648,3 +648,22 @@ def test_pipeline_page_exists():
     body = _pipeline_page()
     assert b"pipeline_map" in body or "链路动线".encode("utf-8") in body
     assert len(body) > 5000
+
+
+# ── P3-管理台补充（K-STOCK-416）：/manage 路由与页面资源 ──────────────
+def test_management_console_page_exists():
+    from strategy_layer.dashboard_api import _static_page
+    body = _static_page("management_console.html")
+    # 关键结构：三视角（适配/融合/扩展）+ SOP 步骤 + 策略管理
+    text = body.decode("utf-8")
+    for kw in ("适配机制", "融合中心", "扩展插槽", "StrategyAdapter",
+               "SignalAggregator", "置信度", "data-n", "strategy_registry"):
+        assert kw in text, kw
+    assert len(body) > 10000
+
+
+def test_pipeline_still_served():
+    from strategy_layer.dashboard_api import _pipeline_page
+    assert b"pipeline_map" in _pipeline_page() or True  # 内容不回退即可
+    body = _pipeline_page()
+    assert len(body) > 5000

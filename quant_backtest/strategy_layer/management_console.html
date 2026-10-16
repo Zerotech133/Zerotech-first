@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>多策略管理台 · 适配与融合</title>
+<style>
+:root{
+  --bg:#f5f7fa; --card:#ffffff; --line:#e2e8f0; --ink:#1e293b; --sub:#64748b;
+  --blue:#2563eb; --blue-bg:#eff6ff; --green:#059669; --green-bg:#ecfdf5;
+  --orange:#d97706; --orange-bg:#fffbeb; --red:#dc2626; --red-bg:#fef2f2;
+  --purple:#7c3aed; --purple-bg:#f5f3ff; --teal:#0d9488; --teal-bg:#f0fdfa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px}
+header .tag{font-size:12px;color:var(--sub);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:2px 10px}
+header a.jump{margin-left:auto;font-size:13px;color:var(--blue);text-decoration:none;border:1px solid var(--blue);border-radius:8px;padding:5px 12px}
+nav{display:flex;gap:8px;padding:12px 24px 0}
+nav button{border:1px solid var(--line);background:var(--card);border-radius:8px 8px 0 0;padding:8px 18px;cursor:pointer;font-size:14px;color:var(--sub)}
+nav button.on{color:var(--blue);border-bottom:2px solid var(--blue);font-weight:600}
+main{padding:16px 24px 40px;max-width:1280px;margin:0 auto}
+.sec{display:none}.sec.on{display:block}
+.grid{display:grid;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h3{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.card h3 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.muted{color:var(--sub);font-size:12px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi .card{text-align:left}
+.kpi b{font-size:22px;display:block}
+.kpi span{font-size:12px;color:var(--sub)}
+/* 流程图节点 */
+.flow{display:flex;flex-direction:column;gap:0;overflow-x:auto}
+.frow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;padding:6px 0}
+.fnode{border:1px solid var(--line);border-radius:10px;padding:8px 14px;background:var(--card);min-width:150px;text-align:center;position:relative}
+.fnode b{display:block;font-size:13px}
+.fnode small{color:var(--sub);font-size:11px}
+.fnode.live{border-color:var(--green);box-shadow:0 0 0 2px var(--green-bg)}
+.fnode.slot{border-style:dashed;color:var(--sub);background:var(--bg)}
+.fnode.hub{border-color:var(--purple);background:var(--purple-bg)}
+.fnode.l4{border-color:var(--orange);background:var(--orange-bg)}
+.farr{display:flex;justify-content:center;color:#94a3b8;font-size:16px;line-height:1;padding:2px 0}
+.farr .lbl{font-size:11px;color:var(--sub);margin-left:6px;align-self:center}
+/* 契约代码块 */
+pre.code{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px;font-size:12px;line-height:1.65;overflow-x:auto;font-family:Consolas,monospace}
+pre.code .k{color:#93c5fd}.code .s{color:#86efac}.code .c{color:#64748b}
+/* 规则卡 */
+.rule{border-left:3px solid;padding:10px 12px;border-radius:6px;background:var(--bg)}
+.rule b{font-size:13px}.rule p{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.6}
+.rule.r1{border-color:var(--green)}.rule.r2{border-color:var(--orange)}.rule.r3{border-color:var(--red)}
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg);text-align:left;padding:8px 10px;font-weight:600;border-bottom:1px solid var(--line)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.badge{display:inline-block;border-radius:10px;padding:1px 9px;font-size:12px}
+.b-buy{background:var(--red-bg);color:var(--red)}
+.b-sell{background:var(--green-bg);color:var(--green)}
+.b-hold,.b-watch{background:var(--bg);color:var(--sub)}
+.b-high{background:var(--green-bg);color:var(--green)}
+.b-mid{background:var(--orange-bg);color:var(--orange)}
+.b-low{background:var(--red-bg);color:var(--red)}
+.b-div{background:var(--purple-bg);color:var(--purple)}
+/* 策略管理 */
+.strat-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.strat-row:last-child{border-bottom:0}
+.strat-row b{min-width:130px}
+.switch{position:relative;width:42px;height:22px;flex:none}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#cbd5e1;border-radius:22px;cursor:pointer;transition:.2s}
+.slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked+.slider{background:var(--green)}
+.switch input:checked+.slider:before{transform:translateX(20px)}
+input[type=range]{flex:1;min-width:140px;accent-color:var(--blue)}
+.wval{min-width:48px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+button.btn{border:1px solid var(--blue);color:var(--blue);background:var(--card);border-radius:8px;padding:4px 14px;cursor:pointer;font-size:13px}
+button.btn:hover{background:var(--blue-bg)}
+button.btn.save{background:var(--blue);color:#fff}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:8px;padding:10px 20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+/* SOP 步骤 */
+.sop{display:flex;gap:0;align-items:stretch;flex-wrap:wrap}
+.step{flex:1;min-width:180px;position:relative;padding:14px 16px 14px 34px;background:var(--card);border:1px solid var(--line);margin-right:26px;margin-bottom:10px;border-radius:10px}
+.step:before{content:attr(data-n);position:absolute;left:10px;top:12px;width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center}
+.step:after{content:"→";position:absolute;right:-20px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:16px}
+.step:last-child:after{display:none}
+.step b{font-size:13px;display:block;margin-bottom:4px}
+.step p{font-size:12px;color:var(--sub);line-height:1.55}
+.slot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.slot{border:1px dashed var(--line);border-radius:10px;padding:12px;background:var(--bg)}
+.slot.on{border:1px solid var(--green);background:var(--card)}
+.slot b{font-size:13px}.slot p{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.55}
+.slot .st{float:right;font-size:11px;border-radius:8px;padding:1px 8px}
+.slot.on .st{background:var(--green-bg);color:var(--green)}
+.slot:not(.on) .st{background:var(--bg);color:var(--sub);border:1px solid var(--line)}
+.mini-flow{font-size:12px;color:var(--sub);background:var(--bg);border-radius:8px;padding:8px 12px;margin-top:10px;font-family:Consolas,monospace;overflow-x:auto;white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎛 多策略管理台</h1>
+  <span class="tag">适配机制</span><span class="tag">融合路径</span><span class="tag">置信度血缘纽带</span>
+  <a class="jump" href="/pipeline">↗ 全景动线图</a>
+  <a class="jump" href="/" style="margin-left:8px">↗ 数据主屏</a>
+</header>
+<nav>
+  <button id="navFit" class="on" onclick="setTab('fit')">适配机制</button>
+  <button id="navFuse" onclick="setTab('fuse')">融合中心</button>
+  <button id="navExt" onclick="setTab('ext')">扩展插槽 · 接入 SOP</button>
+  <button id="navOps" onclick="setTab('ops')">策略管理</button>
+</nav>
+<main>
+
+<!-- ═══ Tab 1 适配机制 ═══ -->
+<section id="secFit" class="sec on">
+  <div class="card" style="margin-bottom:14px">
+    <h3><span class="dot" style="background:var(--purple)"></span>适配原理：数据层是策略无关的统一插座</h3>
+    <p class="muted" style="line-height:1.7">任何选股策略（缠论、图谱、机器学习、LLM、人工经验）只要能产出统一 <b>Signal</b>，就能挂进同一条链路——<b>数据、情报、置信度三层完全复用，策略只写自己的翻译器（Adapter）</b>。这就是"不断融合其他方案"的结构性保证：新方案接入零改主干。</p>
+    <div class="flow" style="margin-top:12px">
+      <div class="frow">
+        <div class="fnode"><b>数仓 / Neo4j / 缠论池</b><small>策略无关的数据插座</small></div>
+        <div class="fnode hub"><b>置信度传播引擎</b><small>数据→信息→情报的血缘纽带</small></div>
+      </div>
+      <div class="farr">↓<span class="lbl">各策略各取所需，互不干扰</span></div>
+      <div class="frow">
+        <div class="fnode live"><b>kg_boost Adapter</b><small>图谱社区 pagerank</small></div>
+        <div class="fnode live"><b>chan_monitor Adapter</b><small>缠论信号池</small></div>
+        <div class="fnode slot"><b>dual_blade Adapter</b><small>预留</small></div>
+        <div class="fnode slot"><b>llm_agent Adapter</b><small>预留</small></div>
+      </div>
+      <div class="farr">↓<span class="lbl">统一翻译为 Signal</span></div>
+      <div class="frow">
+        <div class="fnode l4"><b>SignalAggregator 融合</b><small>加权 + 分歧标注 → signals_combined</small></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1.2fr 1fr">
+    <div class="card">
+      <h3><span class="dot" style="background:var(--blue)"></span>StrategyAdapter 契约（接入方只需实现这两个方法）</h3>
+<pre class="code"><span class="c"># 策略侧唯一义务：实现 Protocol + 产出 frozen Signal</span>
+<span class="k">class</span> StrategyAdapter(Protocol):
+    <span class="k">def</span> available(trade_date) -> <span class="k">bool</span>: ...
+    <span class="k">def</span> generate(trade_date) -> <span class="k">list</span>[Signal]: ...
+
+<span class="k">@dataclass</span>(frozen=<span class="k">True</span>)
+<span class="k">class</span> Signal:
+    symbol: <span class="k">str</span>        <span class="c"># 000026.SZ</span>
+    action: <span class="k">str</span>        <span class="c"># buy / sell / hold / watch</span>
+    score: <span class="k">float</span>       <span class="c"># 策略原始分</span>
+    confidence: <span class="k">float</span>  <span class="c"># 0~1 置信度</span>
+    rationale: <span class="k">str</span>     <span class="c"># 人话依据（前端悬浮展示）</span>
+    strategy: <span class="k">str</span>     <span class="c"># adapter id</span>
+    trade_date: <span class="k">str</span>   <span class="c"># YYYYMMDD</span></pre>
+      <p class="muted" style="margin-top:8px">Registry 负责：发现 / 启停 / 权重 / top-N 截断（防排序型策略全市场灌库）。</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--teal)"></span>置信度三规则（异构信号统一标尺）</h3>
+      <div class="grid" style="gap:10px">
+        <div class="rule r1"><b>① 融合增益</b><p>双源同向 ×1.15（封顶 1.0）· 冲突 ×0.7——多策略互证自动加分</p></div>
+        <div class="rule r2"><b>② 时间衰减</b><p>半衰期：quote 4h · news 24h · fundamental 168h · kg 720h，下限 0.1——旧情报自动降温</p></div>
+        <div class="rule r3"><b>③ 事故惩罚</b><p>×(1−p)——负面事件直接扣减血缘置信度</p></div>
+      </div>
+      <div class="mini-flow">data ─溯源→ information ─衰减/增益→ intelligence ─→ confidence ∈ [0.1, 1.0]</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Tab 2 融合中心 ═══ -->
+<section id="secFuse" class="sec">
+  <div class="kpi" id="fuseKpi"></div>
+  <div class="card" style="margin-bottom:14px">
+    <h3><span class="dot" style="background:var(--orange)"></span>融合公式与流向</h3>
+    <div class="mini-flow" style="margin:0 0 10px">combined_score = Σ ( weight_i × conf_i × score_i ) &nbsp;→&nbsp; 组合动作 = 多数派 · 分歧标记 = 动作不一致 · 存 strategy.signals_combined（PK: trade_date+symbol，重跑幂等 upsert）</div>
+    <p class="muted">融合结果每日 07:30 由 StrategyDaily 编排器产出；下方为实时数据（可指定交易日）。</p>
+  </div>
+  <div class="card">
+    <h3><span class="dot" style="background:var(--blue)"></span>融合信号实时视图
+      <input id="fuseDate" placeholder="YYYYMMDD" style="margin-left:auto;border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:12px;width:110px">
+      <button class="btn" onclick="loadFuse()">查询</button>
+    </h3>
+    <table id="fuseTable"><thead><tr>
+      <th>标的</th><th>组合动作</th><th>组合分</th><th>置信</th><th>各策略贡献</th><th>分歧</th><th>依据</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- ═══ Tab 3 扩展插槽 ═══ -->
+<section id="secExt" class="sec">
+  <div class="card" style="margin-bottom:14px">
+    <h3><span class="dot" style="background:var(--green)"></span>新方案接入 SOP：四步注册即融合，主干零改动</h3>
+    <div class="sop">
+      <div class="step" data-n="1"><b>实现 Adapter</b><p>写一个 Python 文件：实现 <code>available/generate</code>，把你的方案输出翻译成 Signal 列表（含 rationale 人话依据）。</p></div>
+      <div class="step" data-n="2"><b>Registry 注册</b><p>strategy_registry.json 登记策略 id，设初始权重与 top_n；或经管理台直接启用。</p></div>
+      <div class="step" data-n="3"><b>自动进融合</b><p>次日 07:30 编排器自动拉取你的信号，与其他策略加权融合、分歧标注、落库。</p></div>
+      <div class="step" data-n="4"><b>反馈进化</b><p>人工反馈 + 次日收益双通道进入 WeightUpdater，每周日 20:00 自动演化权重。</p></div>
+    </div>
+    <p class="muted">✳ 置信度传播（三规则）、upsert 幂等、top-N 截断、前端展示——全部自动继承，新策略无感获得同等待遇。</p>
+  </div>
+  <div class="card">
+    <h3><span class="dot" style="background:var(--purple)"></span>当前插槽全景</h3>
+    <div class="slot-grid">
+      <div class="slot on"><span class="st">已接入</span><b>kg_boost</b><p>知识图谱社区 pagerank 百分位打分，Security→Concept 映射实探后实现。</p></div>
+      <div class="slot on"><span class="st">已接入</span><b>chan_monitor</b><p>缠论信号池（A 股/美股分市场选日），read chanlun_pool*.jsonl。</p></div>
+      <div class="slot"><span class="st">预留</span><b>dual_blade（量子双刀）</b><p>Scanner→Screener→Signal 三阶段流水线，Phase3 收口后按 SOP 接入。</p></div>
+      <div class="slot"><span class="st">预留</span><b>llm_agent</b><p>Ollama + MCP 工具面（11 工具）驱动的 LLM 选股，槽位已留。</p></div>
+      <div class="slot"><span class="st">规划</span><b>RiskGuard L4</b><p>风控从盯盘系统解耦为共享裁决位，与 10-20 满窗裁决会合。</p></div>
+      <div class="slot"><span class="st">开放</span><b>外部策略 API</b><p>任何能产出 Signal JSON 的外部方案（含人工经验）均可按 SOP 挂载。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Tab 4 策略管理 ═══ -->
+<section id="secOps" class="sec">
+  <div class="grid" style="grid-template-columns:1.1fr 1fr">
+    <div class="card">
+      <h3><span class="dot" style="background:var(--green)"></span>启停与权重（保存即写回，次日 07:30 生效）</h3>
+      <div id="opsList"></div>
+      <div style="margin-top:12px;text-align:right"><button class="btn save" onclick="saveAll()">保存全部调整</button></div>
+      <p class="muted" style="margin-top:8px">权重范围 0~1；系统自动归一化并在 [0.1, 0.7] 内 clamp（注水法，Σ=1 硬约束）。</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot" style="background:var(--orange)"></span>反馈与进化（P4 权重进化器数据源）</h3>
+      <p class="muted" style="line-height:1.8">
+        · <b>显式通道</b>：多策略页签逐策略「采纳/驳回/静默」→ strategy.feedback<br>
+        · <b>隐式通道</b>：各策略贡献分 vs 次交易日收益（后复权基准）<br>
+        · <b>进化器</b>：WeightUpdater 每周日 20:00 运行，EWMA α=0.3 平滑，当前处于<b>影子期（dry-run）</b>——只出建议表不动权重，数据满窗后切换 --apply
+      </p>
+      <div class="mini-flow">feedback + 次日收益 → target = 0.5·norm(ret)+0.5·norm(fb) → EWMA → clamp[0.1,0.7] → weights</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <h3><span class="dot" style="background:var(--sub)"></span>运行要点备忘</h3>
+    <table><thead><tr><th>环节</th><th>调度</th><th>说明</th></tr></thead><tbody>
+      <tr><td>ChanlunScan</td><td>每日 05:50</td><td>全市场缠论扫描约 45 分钟，产出 chanlun_pool*.jsonl</td></tr>
+      <tr><td>XmapSync</td><td>每日 06:00</td><td>跨市场映射与水位推进</td></tr>
+      <tr><td>KGAnalysis</td><td>每日 07:00</td><td>图谱分析出图，供 kg_boost 消费</td></tr>
+      <tr><td>StrategyDaily</td><td>每日 07:30</td><td>编排器：发现→生成→融合→落库 signals_combined</td></tr>
+      <tr><td>WeightUpdater</td><td>周日 20:00</td><td>权重进化（影子期 dry-run）</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+</main>
+<div class="toast" id="toast"></div>
+<script>
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+function setTab(v){for(const s of["fit","fuse","ext","ops"]){document.getElementById("sec"+s[0].toUpperCase()+s.slice(1)).style.display=s===v?"":"none";document.getElementById("nav"+s[0].toUpperCase()+s.slice(1)).className=s===v?"on":""}
+ if(v==="fuse")loadFuse();if(v==="ops")loadOps()}
+/* ── 融合中心 ── */
+function actBadge(a){const c={buy:"b-buy",sell:"b-sell",hold:"b-hold",watch:"b-watch"}[a]||"b-hold";const t={buy:"买",sell:"卖",hold:"持",watch:"观察"}[a]||a;return `<span class="badge ${c}">${t}</span>`}
+function confBadge(c){const cls=c>=0.75?"b-high":c>=0.5?"b-mid":"b-low";return `<span class="badge ${cls}">${(+c).toFixed(2)}</span>`}
+async function loadFuse(){
+  const d=document.getElementById("fuseDate").value.trim();
+  try{
+    const r=await fetch("/api/signals"+(d?"?date="+d:""));const j=await r.json();
+    const rows=(j.signals||[]).slice(0,60);const tb=document.querySelector("#fuseTable tbody");tb.innerHTML="";
+    for(const s of rows){
+      const contrib=(s.contributions||{});const parts=Object.entries(contrib).map(([k,v])=>`${k}:${(+v.score).toFixed(2)}`).join(" · ");
+      const div=(s.divergence||(Object.keys(contrib).length>1&&new Set(Object.values(contrib).map(v=>v.action)).size>1))?'<span class="badge b-div">分歧</span>':"";
+      tb.insertAdjacentHTML("beforeend",`<tr><td><b>${s.symbol}</b></td><td>${actBadge(s.action)}</td><td>${(+s.score).toFixed(3)}</td><td>${confBadge(s.confidence)}</td><td class="muted">${parts}</td><td>${div}</td><td class="muted" style="max-width:280px" title="${(s.rationale||"").replace(/"/g,"&quot;")}">${(s.rationale||"").slice(0,50)}</td></tr>`);
+    }
+    if(!rows.length)tb.innerHTML='<tr><td colspan="7" class="muted">暂无数据（07:30 编排后生成，可输入 YYYYMMDD 回查历史）</td></tr>';
+    const kd=(j.date||d||"今日");
+    document.getElementById("fuseKpi").innerHTML=
+      `<div class="card"><b>${rows.length}</b><span>融合信号 · ${kd}</span></div>`+
+      `<div class="card"><b>${new Set(rows.map(s=>s.symbol)).size}</b><span>覆盖标的</span></div>`+
+      `<div class="card"><b>${rows.filter(s=>s.action==="buy").length}</b><span>买入信号</span></div>`+
+      `<div class="card"><b>${rows.filter(s=>(s.contributions&&Object.keys(s.contributions).length>1&&new Set(Object.values(s.contributions).map(v=>v.action)).size>1)).length}</b><span>策略分歧标的</span></div>`;
+  }catch(e){toast("加载失败："+e.message)}
+}
+/* ── 策略管理 ── */
+let REG=null;const pending={};
+async function loadOps(){
+  try{
+    const j=await(await fetch("/api/strategies")).json();REG=j;
+    const box=document.getElementById("opsList");box.innerHTML="";
+    for(const s of(j.strategies||[])){
+      box.insertAdjacentHTML("beforeend",`<div class="strat-row"><b>${s.strategy_id}</b>
+        <label class="switch"><input type="checkbox" ${s.enabled?"checked":""} onchange="pending[this.closest('.strat-row').querySelector('b').textContent+'_en']=this.checked"><span class="slider"></span></label>
+        <input type="range" min="0" max="1" step="0.05" value="${s.weight}" oninput="this.closest('.strat-row').querySelector('.wval').textContent=(+this.value).toFixed(2);pending[this.closest('.strat-row').querySelector('b').textContent+'_w']=+this.value">
+        <span class="wval">${(+s.weight).toFixed(2)}</span>
+        <span class="muted">top_n=${s.top_n||"—"}</span></div>`);
+    }
+    if(!(j.strategies||[]).length)box.innerHTML='<p class="muted">注册表为空</p>';
+  }catch(e){toast("加载失败："+e.message)}
+}
+async function saveAll(){
+  const ids=new Set();for(const k in pending)ids.add(k.split("_")[0]==="pending"?k:k.split("_en")[0].split("_w")[0]);
+  const items=new Set();for(const k in pending){items.add(k.replace(/_(en|w)$/,""))}
+  if(!items.size){toast("没有待保存的调整");return}
+  for(const id of items){
+    const body={strategy_id:id};
+    if(pending[id+"_en"]!==undefined)body.enabled=pending[id+"_en"];
+    if(pending[id+"_w"]!==undefined)body.weight=pending[id+"_w"];
+    try{
+      const r=await fetch("/api/strategies/adjust",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const j=await r.json();if(!j.ok){toast("保存失败："+(j.error||id));return}
+    }catch(e){toast("保存失败："+e.message);return}
+  }
+  for(const k of Object.keys(pending))delete pending[k];
+  toast("已写回 strategy_registry.json，次日 07:30 编排生效");loadOps();
+}
+window.addEventListener("DOMContentLoaded",()=>{loadFuse()});
+</script>
+</body>
+</html>

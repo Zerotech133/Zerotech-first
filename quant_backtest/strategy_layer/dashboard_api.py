@@ -448,12 +448,15 @@ def adjust_strategy(body: Any) -> tuple:
              "note": "已写回 strategy_registry.json，下轮 07:30 编排生效"}, 200)
 
 
-# ── 静态页：GET /pipeline（链路动线图；每次现读，改页面即生效）─────────
-def _pipeline_page() -> bytes:
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "pipeline_map.html")
+# ── 静态页：GET /pipeline /manage（每次现读，改页面即生效）─────────────
+def _static_page(filename: str) -> bytes:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
     with open(path, "rb") as fh:
         return fh.read()
+
+
+def _pipeline_page() -> bytes:
+    return _static_page("pipeline_map.html")
 
 
 # ── 路由注册（零侵入包装）─────────────────────────────────────────────
@@ -476,9 +479,11 @@ def register_routes(server_or_app: Any) -> Any:
 
     def do_GET(self):  # noqa: N802 — http.server 协议方法名
         u = urlparse(self.path)
-        if u.path == "/pipeline":
+        if u.path in ("/pipeline", "/manage"):
             try:
-                body = _pipeline_page()
+                fname = ("pipeline_map.html" if u.path == "/pipeline"
+                         else "management_console.html")
+                body = _static_page(fname)
             except OSError as exc:
                 return _send_json(self, {"ok": False,
                                          "error": str(exc)[:200]}, 500)
