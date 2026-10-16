@@ -29,7 +29,11 @@ from tools import make_context, quote_snapshot  # noqa: E402
 
 BASKET = ["600519", "000858", "601318", "300750", "600036"]  # 茅台/五粮液/平安/宁德/招行
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
-REC_SCORE = {"STRONG_BUY": 2, "BUY": 1, "HOLD": 0, "SELL": -1, "STRONG_SELL": -2}
+# K-ORG-129 / T-20261008-003（B8：全篮子 HOLD 使 J2 失效）：score 基数表——
+# 枚举档 × confidence 连续落账（见 parse_decision），HOLD=0 中性锚不动；
+# WATCH 新档 -0.5：L4 存疑观察＝弱负证据，低于 HOLD、高于 SELL，不再与 HOLD 同分
+REC_SCORE = {"STRONG_BUY": 2.0, "BUY": 1.0, "HOLD": 0.0, "WATCH": -0.5,
+             "SELL": -1.0, "STRONG_SELL": -2.0}
 # failed 即时告警（K-STOCK-013）：复用已验证推送链；P0 语义=不等 17:35 日报
 PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
 ALERT_STATE = BASE / "data" / "shadow" / "p0_alert_state.json"
@@ -76,7 +80,15 @@ def parse_decision(text):
         return None
     try:
         j = json.loads(m.group(0))
-        j["score"] = REC_SCORE.get(str(j.get("recommendation", "")).upper(), 0)
+        # K-ORG-129：score 连续化＝枚举基数 × confidence——
+        # 此前纯枚举（HOLD 恒 0、18/25 并列零）致 J2 Spearman 无分辨（B8）；
+        # HOLD 基数 0 保持中性（0×c 仍 0），confidence 解析失败按 0 容错不毒化
+        base = REC_SCORE.get(str(j.get("recommendation", "")).upper(), 0.0)
+        try:
+            conf = float(j.get("confidence") or 0.0)
+        except (TypeError, ValueError):
+            conf = 0.0
+        j["score"] = round(base * conf, 3)
         return j
     except json.JSONDecodeError:
         return None

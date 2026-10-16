@@ -194,6 +194,16 @@ def main():
     print("[J2 秩相关] %s（score-vs-ret rho=%s, conf-vs-ret rho=%s, n=%d）" % (
         "PASS" if j2 else "WAIT/FAIL", None if rho_s is None else round(rho_s, 3),
         None if rho_c is None else round(rho_c, 3), len(scores)))
+    # K-ORG-129 / T-20261008-003（B8 第三条 EARS）：并列零显性化——
+    # 全篮子 HOLD 时 scores 大面积并列 0，rho 对该子群无分辨；
+    # 判读必须看到本行再决定采信与否，不再静默失效
+    if scores:
+        zeros = sum(1 for s in scores if s == 0)
+        if zeros and zeros / len(scores) > 0.5:
+            print("  [warn] score 并列零占比 %.0f%%（%d/%d）——HOLD/中性密集，"
+                  "J2 对该子群无分辨，rho 解读须排除并列零后验读（score 连续化"
+                  "（K-ORG-129）新行起缓解，存量 0/1 行不重写）" % (
+                      100 * zeros / len(scores), zeros, len(scores)))
 
     # 分组判读（K-STOCK-017，B9 定性落地）：坚守/倒戈两组分别算 conf-vs-ret——
     # 倒戈票的低 conf 语义已变（角色自弃拉低），混算会污染整体 rho 解读
