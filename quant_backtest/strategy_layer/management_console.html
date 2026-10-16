@@ -41,6 +41,18 @@ main{padding:16px 24px 40px;max-width:1280px;margin:0 auto}
 .fnode.slot{border-style:dashed;color:var(--sub);background:var(--bg)}
 .fnode.hub{border-color:var(--purple);background:var(--purple-bg)}
 .fnode.l4{border-color:var(--orange);background:var(--orange-bg)}
+.fnode{cursor:pointer;transition:.15s}
+.fnode:hover{transform:translateY(-2px);box-shadow:0 3px 10px rgba(0,0,0,.10);border-color:var(--blue)}
+/* 下钻模态 */
+.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:50}
+.modal-mask.on{display:flex}
+.modal{background:var(--card);border-radius:14px;max-width:640px;width:92%;max-height:82vh;overflow-y:auto;padding:20px 22px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.modal h3{font-size:16px;margin-bottom:4px}
+.modal .role{font-size:12px;color:var(--sub);margin-bottom:12px}
+.modal dl{display:grid;grid-template-columns:88px 1fr;gap:7px 10px;font-size:13px}
+.modal dt{color:var(--sub);font-weight:600}
+.modal dd{line-height:1.55}
+.modal .close{float:right;border:0;background:var(--bg);border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:15px;color:var(--sub)}
 .farr{display:flex;justify-content:center;color:#94a3b8;font-size:16px;line-height:1;padding:2px 0}
 .farr .lbl{font-size:11px;color:var(--sub);margin-left:6px;align-self:center}
 /* 契约代码块 */
@@ -100,7 +112,10 @@ button.btn.save{background:var(--blue);color:#fff}
 <body>
 <header>
   <h1>🎛 多策略管理台</h1>
-  <span class="tag">适配机制</span><span class="tag">融合路径</span><span class="tag">置信度血缘纽带</span>
+  <span class="tag" style="color:var(--blue);border-color:var(--blue)">可融合</span>
+  <span class="tag" style="color:var(--purple);border-color:var(--purple)">可下钻</span>
+  <span class="tag" style="color:var(--green);border-color:var(--green)">可调配</span>
+  <span class="tag" style="color:var(--orange);border-color:var(--orange)">松耦合</span>
   <a class="jump" href="/pipeline">↗ 全景动线图</a>
   <a class="jump" href="/" style="margin-left:8px">↗ 数据主屏</a>
 </header>
@@ -119,19 +134,19 @@ button.btn.save{background:var(--blue);color:#fff}
     <p class="muted" style="line-height:1.7">任何选股策略（缠论、图谱、机器学习、LLM、人工经验）只要能产出统一 <b>Signal</b>，就能挂进同一条链路——<b>数据、情报、置信度三层完全复用，策略只写自己的翻译器（Adapter）</b>。这就是"不断融合其他方案"的结构性保证：新方案接入零改主干。</p>
     <div class="flow" style="margin-top:12px">
       <div class="frow">
-        <div class="fnode"><b>数仓 / Neo4j / 缠论池</b><small>策略无关的数据插座</small></div>
-        <div class="fnode hub"><b>置信度传播引擎</b><small>数据→信息→情报的血缘纽带</small></div>
+        <div class="fnode" onclick="drill('warehouse')"><b>数仓 / Neo4j / 缠论池</b><small>策略无关的数据插座</small></div>
+        <div class="fnode hub" onclick="drill('confidence')"><b>置信度传播引擎</b><small>数据→信息→情报的血缘纽带</small></div>
       </div>
       <div class="farr">↓<span class="lbl">各策略各取所需，互不干扰</span></div>
       <div class="frow">
-        <div class="fnode live"><b>kg_boost Adapter</b><small>图谱社区 pagerank</small></div>
-        <div class="fnode live"><b>chan_monitor Adapter</b><small>缠论信号池</small></div>
-        <div class="fnode slot"><b>dual_blade Adapter</b><small>预留</small></div>
-        <div class="fnode slot"><b>llm_agent Adapter</b><small>预留</small></div>
+        <div class="fnode live" onclick="drill('kg_boost')"><b>kg_boost Adapter</b><small>图谱社区 pagerank</small></div>
+        <div class="fnode live" onclick="drill('chan_monitor')"><b>chan_monitor Adapter</b><small>缠论信号池</small></div>
+        <div class="fnode slot" onclick="drill('dual_blade')"><b>dual_blade Adapter</b><small>预留</small></div>
+        <div class="fnode slot" onclick="drill('llm_agent')"><b>llm_agent Adapter</b><small>预留</small></div>
       </div>
       <div class="farr">↓<span class="lbl">统一翻译为 Signal</span></div>
       <div class="frow">
-        <div class="fnode l4"><b>SignalAggregator 融合</b><small>加权 + 分歧标注 → signals_combined</small></div>
+        <div class="fnode l4" onclick="drill('aggregator')"><b>SignalAggregator 融合</b><small>加权 + 分歧标注 → signals_combined</small></div>
       </div>
     </div>
   </div>
@@ -243,7 +258,60 @@ button.btn.save{background:var(--blue);color:#fff}
 
 </main>
 <div class="toast" id="toast"></div>
+<div class="modal-mask" id="mask" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="modal">
+    <button class="close" onclick="document.getElementById('mask').classList.remove('on')">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
 <script>
+/* ── 节点下钻元数据（松耦合：静态元数据 + 现有 API，无新后端依赖）── */
+const NODE_META={
+ warehouse:{t:"数仓 / Neo4j / 缠论池",r:"L0→L1 · 策略无关的数据插座",d:{
+  "输入":"TushareSync / TdxSync / ChanlunScan(05:50) / XmapSync(06:00) / XueqiuSync / Jev / 复权因子",
+  "存储":"PG 5442(210+表) · Neo4j 知识图谱 · Parquet 湖(data/ashare 单票后复权) · DuckDB / MySQL",
+  "服务谁":"所有 Adapter 各取所需——kg_boost 读 Neo4j，chan_monitor 读 chanlun_pool*.jsonl",
+  "耦合面":"零策略知识：换掉任何策略，数据层一行不改",
+  "查看":"主屏「数据池」页签 / GET /api/pool"}},
+ confidence:{t:"置信度传播引擎",r:"L2 · 数据→信息→情报的血缘纽带",d:{
+  "三规则":"①融合增益:双源同向×1.15(封顶1.0)·冲突×0.7 ②时间衰减:半衰期 quote 4h/news 24h/fund 168h/kg 720h,下限0.1 ③事故惩罚:×(1−p)",
+  "输出":"每条情报的 confidence ∈ [0.1, 1.0]，是异构策略信号可比的统一标尺",
+  "实现":"strategy_layer/confidence.py（29 单测），规则独立私有函数",
+  "耦合面":"只依赖数据血缘类别，不知道任何策略的存在"}},
+ kg_boost:{t:"kg_boost Adapter",r:"L3 · 知识图谱策略",d:{
+  "原理":"Security-[:MAPS_TO]->Concept 社区 pagerank 百分位打分",
+  "数据源":"Neo4j 知识图谱（07:00 KGAnalysis 出图后消费）",
+  "配置":"权重 0.5 · top_n=50（防全市场灌库）",
+  "耦合面":"仅依赖 Neo4j 查询与 Signal 契约，与融合器互不知晓"}},
+ chan_monitor:{t:"chan_monitor Adapter",r:"L3 · 缠论策略",d:{
+  "原理":"读 chanlun_pool*.jsonl 缠论信号池，A 股/美股分市场各取最新交易日",
+  "数据源":"ChanlunScan 每日 05:50 全市场扫描（约 45 分钟）",
+  "配置":"权重 0.5 · top_n 不限",
+  "耦合面":"仅依赖信号池 JSONL 与 Signal 契约"}},
+ dual_blade:{t:"dual_blade Adapter",r:"L3 · 预留插槽",d:{
+  "接入方":"量子双刀 Scanner→Screener→Signal 三阶段流水线",
+  "接入条件":"Phase3 收口后产出 Signal 列表即可",
+  "接入方式":"按「扩展插槽」页 SOP 四步，主干零改动",
+  "现状":"插槽已留（虚线卡），注册即变活"}},
+ llm_agent:{t:"llm_agent Adapter",r:"L3 · 预留插槽",d:{
+  "接入方":"Ollama 本地模型 + MCP 工具面（11 工具）驱动的 LLM 选股",
+  "接入方式":"LLM 输出翻译为 Signal（含 rationale 人话依据）后按 SOP 注册",
+  "现状":"插槽已留"}},
+ aggregator:{t:"SignalAggregator 融合",r:"L4 · 组合裁决",d:{
+  "公式":"combined = Σ(weight_i × conf_i × score_i)；组合动作=多数派；动作不一致标「分歧」",
+  "落库":"strategy.signals_combined（PK trade_date+symbol，upsert 幂等重跑不崩）",
+  "调度":"StrategyDaily 每日 07:30：发现→生成→融合→落库",
+  "降级链":"psycopg2 直连优先 → docker exec 三段式暂存表兜底",
+  "查看":"本页「融合中心」/ 主屏「多策略信号」页签"}}
+};
+function drill(id){
+  const m=NODE_META[id];if(!m)return;
+  let html=`<h3>${m.t}</h3><div class="role">${m.r}</div><dl>`;
+  for(const[k,v]of Object.entries(m.d))html+=`<dt>${k}</dt><dd>${v}</dd>`;
+  html+="</dl>";
+  document.getElementById("modalBody").innerHTML=html;
+  document.getElementById("mask").classList.add("on");
+}
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
 function setTab(v){for(const s of["fit","fuse","ext","ops"]){document.getElementById("sec"+s[0].toUpperCase()+s.slice(1)).style.display=s===v?"":"none";document.getElementById("nav"+s[0].toUpperCase()+s.slice(1)).className=s===v?"on":""}
  if(v==="fuse")loadFuse();if(v==="ops")loadOps()}
@@ -280,7 +348,9 @@ async function loadOps(){
         <label class="switch"><input type="checkbox" ${s.enabled?"checked":""} onchange="pending[this.closest('.strat-row').querySelector('b').textContent+'_en']=this.checked"><span class="slider"></span></label>
         <input type="range" min="0" max="1" step="0.05" value="${s.weight}" oninput="this.closest('.strat-row').querySelector('.wval').textContent=(+this.value).toFixed(2);pending[this.closest('.strat-row').querySelector('b').textContent+'_w']=+this.value">
         <span class="wval">${(+s.weight).toFixed(2)}</span>
-        <span class="muted">top_n=${s.top_n||"—"}</span></div>`);
+        <span class="muted">top_n</span>
+        <input type="number" min="1" max="2000" style="width:70px;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px" value="${s.top_n||""}" placeholder="不限" onchange="pending[this.closest('.strat-row').querySelector('b').textContent+'_n']=this.value===''?null:+this.value">
+        <button class="btn" style="padding:2px 10px" onclick="drill(this.closest('.strat-row').querySelector('b').textContent)">详情</button></div>`);
     }
     if(!(j.strategies||[]).length)box.innerHTML='<p class="muted">注册表为空</p>';
   }catch(e){toast("加载失败："+e.message)}
@@ -293,6 +363,7 @@ async function saveAll(){
     const body={strategy_id:id};
     if(pending[id+"_en"]!==undefined)body.enabled=pending[id+"_en"];
     if(pending[id+"_w"]!==undefined)body.weight=pending[id+"_w"];
+    if(pending[id+"_n"]!==undefined)body.top_n=pending[id+"_n"];
     try{
       const r=await fetch("/api/strategies/adjust",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
       const j=await r.json();if(!j.ok){toast("保存失败："+(j.error||id));return}

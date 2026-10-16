@@ -667,3 +667,28 @@ def test_pipeline_still_served():
     assert b"pipeline_map" in _pipeline_page() or True  # 内容不回退即可
     body = _pipeline_page()
     assert len(body) > 5000
+
+
+# ── K-STOCK-417：可下钻/可调配(top_n)增强 ─────────────────────────────
+def test_adjust_strategy_top_n_write(tmp_path, monkeypatch):
+    # top_n 写回链路：只验证参数校验分支（写盘由 Registry 单测覆盖）
+    from strategy_layer.dashboard_api import adjust_strategy
+    p, c = adjust_strategy({"strategy_id": "kg_boost", "top_n": 0})
+    assert c == 400
+    p, c = adjust_strategy({"strategy_id": "kg_boost", "top_n": "abc"})
+    assert c == 400
+
+
+def test_adjust_strategy_top_n_null_ok():
+    from strategy_layer.dashboard_api import adjust_strategy
+    # null = 清除截断，应为合法请求（404/200 均可，不允许 400）
+    p, c = adjust_strategy({"strategy_id": "kg_boost", "top_n": None})
+    assert c in (200, 404)
+
+
+def test_console_has_drill_and_ton():
+    from strategy_layer.dashboard_api import _static_page
+    text = _static_page("management_console.html").decode("utf-8")
+    for kw in ("NODE_META", "drill(", "top_n", "可融合", "可下钻",
+               "可调配", "松耦合", "modal"):
+        assert kw in text, kw

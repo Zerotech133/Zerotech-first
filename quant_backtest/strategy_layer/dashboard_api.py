@@ -423,8 +423,9 @@ def adjust_strategy(body: Any) -> tuple:
         return ({"ok": False, "error": "strategy_id 含非法字符"}, 400)
     enabled = body.get("enabled", None)
     weight = body.get("weight", None)
-    if enabled is None and weight is None:
-        return ({"ok": False, "error": "enabled 与 weight 至少给一项"}, 400)
+    top_n = body.get("top_n", "__absent__")
+    if enabled is None and weight is None and top_n == "__absent__":
+        return ({"ok": False, "error": "enabled / weight / top_n 至少给一项"}, 400)
     try:
         from strategy_layer import Registry, bootstrap_default_adapters
         registry = bootstrap_default_adapters(Registry())
@@ -439,12 +440,24 @@ def adjust_strategy(body: Any) -> tuple:
                 return ({"ok": False,
                          "error": "weight 需在 0~1 之间"}, 400)
             registry.set_weight(sid, w)
+        if top_n != "__absent__":
+            if top_n is None:
+                registry.set_top_n(sid, None)
+            else:
+                n = int(top_n)
+                if not (1 <= n <= 2000):
+                    return ({"ok": False,
+                             "error": "top_n 需在 1..2000 或 null"}, 400)
+                registry.set_top_n(sid, n)
+    except (TypeError, ValueError):
+        return ({"ok": False, "error": "weight/top_n 需为数字"}, 400)
     except Exception as exc:  # noqa: BLE001 — 写回失败降级报错
         return ({"ok": False, "error": str(exc)[:200]}, 500)
     return ({"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
              "strategy_id": sid,
              "enabled": registry.is_enabled(sid),
              "weight": round(registry.get_weight(sid), 4),
+             "top_n": registry.top_n(sid),
              "note": "已写回 strategy_registry.json，下轮 07:30 编排生效"}, 200)
 
 
