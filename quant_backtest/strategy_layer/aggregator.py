@@ -129,9 +129,14 @@ def _persist_psycopg2(rows: list) -> bool:
 
     P2-20261017：原 INSERT 同日重跑撞 PK 整批失败（QA 实证），改
     ON CONFLICT DO UPDATE——同 (trade_date, symbol) 以新值覆盖。
+    K-STOCK-420：同日重跑只覆盖不删除→旧账残留（20261017 首秀实证：
+    坏跑 5597 条残 5540 条），落库前先按当日 DELETE 权威替换，同事务。
     """
     import psycopg2.extras
 
+    dates = sorted({str(r["trade_date"]) for r in rows})
+    if not all(d.isdigit() and len(d) == 8 for d in dates):
+        raise ValueError("trade_date 含非数字，拒绝删除替换: %r" % dates[:3])
     sql = ("INSERT INTO %s (%s) VALUES %%s "
            "ON CONFLICT (trade_date, symbol) DO UPDATE SET "
            "action = EXCLUDED.action, score = EXCLUDED.score, "
@@ -150,6 +155,8 @@ def _persist_psycopg2(rows: list) -> bool:
     try:
         with conn:
             with conn.cursor() as cur:
+                cur.execute("DELETE FROM %s WHERE trade_date = ANY(%%s)"
+                            % COMBINED_TABLE, (dates,))
                 psycopg2.extras.execute_values(cur, sql, tuples,
                                                page_size=200)
     finally:
@@ -162,6 +169,8 @@ def _persist_docker_exec(rows: list) -> bool:
 
     P2-20261017：\\\\copy 无 upsert 语义，改三段式中转——清空暂存表 →
     \\\\copy 灌入 → INSERT..ON CONFLICT..DO UPDATE 合并后清暂存。
+    K-STOCK-420：合并前先 DELETE 当日旧账（权威替换语义，与 psycopg2
+    主路径一致；date 仅接受 8 位数字内联，杜绝注入面）。
     """
     buf = io.StringIO()
     writer = csv.writer(buf, quoting=csv.QUOTE_MINIMAL, lineterminator="\n")
@@ -174,6 +183,10 @@ def _persist_docker_exec(rows: list) -> bool:
             r["rationale"],
         ])
     stg = STAGING_TABLE
+    dates = sorted({str(r["trade_date"]) for r in rows})
+    if not all(d.isdigit() and len(d) == 8 for d in dates):
+        raise ValueError("trade_date 含非数字，拒绝删除替换: %r" % dates[:3])
+    date_list = ",".join("'%s'" % d for d in dates)
     merge_sql = (
         "INSERT INTO %s (%s) SELECT %s FROM %s "
         "ON CONFLICT (trade_date, symbol) DO UPDATE SET "
@@ -185,6 +198,8 @@ def _persist_docker_exec(rows: list) -> bool:
         % (COMBINED_TABLE, ",".join(COMBINED_COLS),
            ",".join(COMBINED_COLS), stg, stg))
     steps = ["TRUNCATE %s" % stg,
+             "DELETE FROM %s WHERE trade_date IN (%s)"
+             % (COMBINED_TABLE, date_list),
              "\\copy %s(%s) FROM STDIN WITH (FORMAT csv)" % (
                  stg, ",".join(COMBINED_COLS)),
              merge_sql]

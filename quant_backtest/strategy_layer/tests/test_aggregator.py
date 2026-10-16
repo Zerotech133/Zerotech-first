@@ -301,6 +301,10 @@ class TestUpsertPersist:
             def __exit__(self, *a):
                 return False
 
+            def execute(self, sql, params=None):
+                captured["delete_sql"] = sql
+                captured["delete_params"] = params
+
             def execute_values(self, sql, tuples, page_size=200):
                 captured["sql"] = sql
                 captured["tuples"] = tuples
@@ -335,6 +339,10 @@ class TestUpsertPersist:
         assert aggregator._persist_psycopg2([row]) is True
         assert "ON CONFLICT (trade_date, symbol) DO UPDATE" in captured["sql"]
         assert "created_at = now()" in captured["sql"]
+        # K-STOCK-420：落库前按当日权威替换
+        assert "DELETE FROM" in captured["delete_sql"]
+        assert captured["delete_params"] == (["20260101"],) or \
+            captured["delete_params"] == (("20260101",),)
 
     def test_docker_exec_three_step_upsert(self, monkeypatch):
         steps_seen = []
@@ -352,11 +360,15 @@ class TestUpsertPersist:
                "score": 1.0, "confidence": 0.5, "contributions": {},
                "divergence": False, "rationale": "r"}
         assert aggregator._persist_docker_exec([row]) is True
-        assert len(steps_seen) == 3
+        # K-STOCK-420：TRUNCATE → DELETE 当日 → \copy → merge，四段式
+        assert len(steps_seen) == 4
         assert steps_seen[0] == "TRUNCATE strategy._stg_combined"
-        assert steps_seen[1].startswith("\\copy strategy._stg_combined")
-        assert "ON CONFLICT (trade_date, symbol) DO UPDATE" in steps_seen[2]
-        assert "TRUNCATE strategy._stg_combined" in steps_seen[2]
+        assert steps_seen[1] == ("DELETE FROM strategy.signals_combined "
+                                 "WHERE trade_date IN ('20260101')")
+        assert steps_seen[2].startswith("\\copy strategy._stg_combined")
+        assert "ON CONFLICT (trade_date, symbol) DO UPDATE" in steps_seen[3]
+        # merge 步骤末尾仍带清暂存
+        assert "TRUNCATE strategy._stg_combined" in steps_seen[3]
 
 
 class TestTopNTruncation:
@@ -410,3 +422,25 @@ class TestTopNTruncation:
         )
         agg = aggregator.SignalAggregator(registry=reg)
         assert len(agg.run("20260101").combined) == 2
+
+
+# ── K-STOCK-420：同日重跑权威替换语义 ─────────────────────────────────
+def test_persist_psycopg2_rejects_bad_trade_date():
+    """trade_date 非纯数字时拒绝删除替换（注入面防线）。"""
+    import pytest as _pytest
+    from strategy_layer.aggregator import _persist_psycopg2
+    row = {"trade_date": "2026-10-17'; DROP TABLE x; --", "symbol": "000001.SZ",
+           "action": "buy", "score": 1.0, "confidence": 0.5,
+           "contributions": {}, "divergence": False, "rationale": "t"}
+    with _pytest.raises(ValueError):
+        _persist_psycopg2([row])
+
+
+def test_persist_docker_exec_rejects_bad_trade_date():
+    from strategy_layer.aggregator import _persist_docker_exec
+    row = {"trade_date": "2026101; DELETE", "symbol": "000001.SZ",
+           "action": "buy", "score": 1.0, "confidence": 0.5,
+           "contributions": {}, "divergence": False, "rationale": "t"}
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        _persist_docker_exec([row])
