@@ -25,6 +25,29 @@ from llm import similarity  # noqa: E402
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
 
 
+def converge_state(a_text, b_text):
+    """K-ORG-131 / T-20261008-002（B10 假收敛链）：收敛双条件——
+    sim 超阈值且双方立场仍对立才算真提前收敛。
+    立场提取口径对齐 eval_shadow.stance_groups（首 200 字首个「看多/看空」命中）。
+    返回 (sim, converged, collapsed)：
+    - converged=sim 超阈值且立场对立（真收敛）
+    - collapsed=sim 超阈值但立场同向/缺失（立场塌缩：一方倒戈→表述趋同，非共识）——
+      按轮次上限收场并标记 collapsed；Day0 判例：601318 末轮 0.78 距阈值 0.02，
+      倒戈致立场塌缩险被误判为共识提前终止"""
+    import re as _re
+    sim = similarity(a_text, b_text)
+
+    def _stance(t):
+        m = _re.search(r"看多|看空", t[:200])
+        return m.group(0) if m else None
+
+    sa, sb = _stance(a_text), _stance(b_text)
+    opposed = bool(sa) and bool(sb) and sa != sb
+    converged = sim > SIM_CONVERGE and opposed
+    collapsed = sim > SIM_CONVERGE and not opposed
+    return sim, converged, collapsed
+
+
 class TopologyError(Exception):
     """注册表拓扑非法（无环/辩论互指/父节点缺失等）"""
 
@@ -190,8 +213,7 @@ class Interpreter:
                       output=b_text, status=st_b)
 
         rounds = int(na.get("max_debate_rounds") or 2)
-        sim = similarity(a_text, b_text)
-        converged = sim > SIM_CONVERGE
+        sim, converged, collapsed = converge_state(a_text, b_text)
         for r in range(1, rounds + 1):
             if converged:
                 break
@@ -203,26 +225,28 @@ class Interpreter:
                 b_reb, st_b = self._chat(nb, self._build_user(nb, ctx, extra=a_reb))
             except Exception as e:  # noqa: BLE001
                 b_reb, st_b = "[降级] %s" % e, "degraded"
-            sim = similarity(a_reb, b_reb)
-            converged = sim > SIM_CONVERGE
+            sim, converged, collapsed = converge_state(a_reb, b_reb)
             self.cp.trace(run_id, na["node_key"], na["agent_id"], "debate_rebuttal", round_=r,
                           output=a_reb, similarity_=sim, status=st_a)
             self.cp.trace(run_id, nb["node_key"], nb["agent_id"], "debate_rebuttal", round_=r,
                           output=b_reb, similarity_=sim, status=st_b)
             a_text, b_text = a_reb, b_reb
 
+        verdict = ("提前收敛" if converged
+                   else "立场塌缩collapsed（表述趋同但立场同向/缺失，非共识）" if collapsed
+                   else "达轮次上限")
         merged = (
             "多空辩论结论（%s轮，末轮相似度%.2f，%s）：多头[%s]：%s ‖ 空头[%s]：%s"
-            % (r, sim, "提前收敛" if converged else "达轮次上限",
+            % (r, sim, verdict,
                na["agent_id"], a_text, nb["agent_id"], b_text)
         )
         # 各自记忆：私有 decision + 团队 observation（RBAC 校验在 MemoryStore 内）
         for node, text, st in ((na, a_text, st_a), (nb, b_text, st_b)):
             self._record(node, ctx, run_id, phase="debate_final", output=text, status=st,
                          similarity_=sim, latency_ms=(time.time() - t0) * 1000)
-        # 辩论对共享同一份合并结论，供 D1 汇总（parent 引用两节点）
-        self.cp.save_node(run_id, na["node_key"], na["agent_id"], {"merged": merged, "rounds": r, "sim": sim})
-        self.cp.save_node(run_id, nb["node_key"], nb["agent_id"], {"merged": merged, "rounds": r, "sim": sim})
+        # 辩论对共享同一份合并结论，供 D1 汇总（parent 引用两节点）；collapsed 供 D1/评估者识别假收敛
+        self.cp.save_node(run_id, na["node_key"], na["agent_id"], {"merged": merged, "rounds": r, "sim": sim, "collapsed": collapsed})
+        self.cp.save_node(run_id, nb["node_key"], nb["agent_id"], {"merged": merged, "rounds": r, "sim": sim, "collapsed": collapsed})
         return [(na["node_key"], merged, st_a), (nb["node_key"], merged, st_b)]
 
     # ---------- 落库 ----------
