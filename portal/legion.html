@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>军团作战大屏 · LEGION-OPS</title>
+<style>
+  :root { --bg:#0b1220; --card:#121a2b; --line:#1e2a44; --txt:#dde6f5; --dim:#7a8aa8;
+          --green:#22c55e; --yellow:#eab308; --red:#ef4444; --blue:#3b82f6; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--txt); font:14px/1.5 "Microsoft YaHei",system-ui; padding:18px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  .sub { color:var(--dim); font-size:12px; margin-bottom:14px; }
+  .grid { display:grid; grid-template-columns: 380px 1fr; gap:14px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .panel h2 { font-size:14px; color:var(--dim); margin-bottom:10px; font-weight:600; }
+  .stats { display:flex; gap:10px; margin-bottom:12px; }
+  .stat { flex:1; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .stat b { font-size:22px; display:block; }
+  .stat span { color:var(--dim); font-size:12px; }
+  /* 编制墙 */
+  .wall { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; max-height:70vh; overflow:auto; }
+  .m { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:#0e1626; border:1px solid var(--line); }
+  .dot { width:10px; height:10px; border-radius:50%; flex:none; }
+  .dot.active { background:var(--green); box-shadow:0 0 6px var(--green); }
+  .dot.warm { background:var(--yellow); }
+  .dot.idle { background:#334155; }
+  .m .id { font-weight:700; font-size:13px; }
+  .m .nm { color:var(--dim); font-size:11px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dept-tag { font-size:10px; color:var(--blue); border:1px solid var(--line); padding:0 4px; border-radius:4px; }
+  /* 活动流 */
+  .feed { max-height:46vh; overflow:auto; font-size:13px; }
+  .feed .row { display:flex; gap:8px; padding:5px 6px; border-bottom:1px solid var(--line); }
+  .feed .ts { color:var(--dim); font-size:11px; flex:none; width:70px; }
+  .feed .who { color:var(--blue); font-weight:700; flex:none; width:110px; }
+  .feed .what { flex:1; color:var(--txt); }
+  /* 工单泳道 */
+  .lanes { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .lane h3 { font-size:12px; color:var(--dim); margin-bottom:6px; }
+  .tk { background:#0e1626; border:1px solid var(--line); border-radius:6px; padding:6px 8px; margin-bottom:6px; font-size:12px; }
+  .tk b { color:var(--yellow); }
+  .legend { margin-top:10px; color:var(--dim); font-size:11px; }
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<h1>⚔️ 军团作战大屏 <span style="font-size:12px;color:var(--dim)">LEGION-OPS · K-ORG-121</span></h1>
+<div class="sub">👁 观察 · ⚡ 指挥 · 🤝 协同 ｜ 30s 刷新 ｜ 编制墙(观察) · 派工/复盘(指挥) · 活动流/工单(协同)</div>
+
+<div class="stats">
+  <div class="stat"><b id="s-total">-</b><span>在册成员</span></div>
+  <div class="stat"><b id="s-active" style="color:var(--green)">-</b><span>🟢 在岗（1h 心跳）</span></div>
+  <div class="stat"><b id="s-warm" style="color:var(--yellow)">-</b><span>🟡 近期活动（24h）</span></div>
+  <div class="stat"><b id="s-doing">-</b><span>工单 doing</span></div>
+</div>
+
+<div class="grid">
+  <div class="panel"><h2>编制墙（全员状态灯）</h2><div class="wall" id="wall">加载中…</div></div>
+  <div>
+    <div class="panel"><h2>实时活动流（近 6h）</h2><div class="feed" id="feed">—</div></div>
+    <div class="panel" style="margin-top:14px"><h2>🤝 今日复盘速览（三问）</h2><div class="feed" id="review-drawer" style="max-height:140px">—</div></div>
+    <div class="panel" style="margin-top:14px"><h2>🎓 研究院课题台账</h2><div class="feed" id="academy-topics" style="max-height:180px">加载中…</div></div>
+    <div class="panel" style="margin-top:14px"><h2>工单泳道</h2>
+      <div class="lanes">
+        <div class="lane"><h3>DOING</h3><div id="lane-doing">—</div></div>
+        <div class="lane"><h3>REVIEW</h3><div id="lane-review">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="legend">图例：🟢 在岗（1h 内账本心跳）｜🟡 近期（24h）｜⚪ 待命 ｜ 活动流 caller=军团成员/工具代号</div>
+
+<script>
+let API = "/legion-api/api/legion/ops";
+let API2 = "/legion-api";
+let apiReady = (async ()=>{
+  try{ const t = await fetch("/legion-api/api/legion/ops", {cache:"no-store"}); if(!t.ok) throw 0; }
+  catch(e){ API = "http://127.0.0.1:8096/api/legion/ops"; API2 = "http://127.0.0.1:8096"; }
+})();
+async function tick(){
+  try{
+    const d = await (await fetch(API)).json();
+    const r = d.roster;
+    document.getElementById("s-total").textContent = r.n;
+    document.getElementById("s-active").textContent = r.n_active;
+    document.getElementById("s-warm").textContent = r.members.filter(m=>m.state==="warm").length;
+    const doing = d.tasks.filter(t=>t.status==="doing");
+    const review = d.tasks.filter(t=>t.status==="review");
+    const academy = d.academy || {};
+    document.getElementById("s-doing").textContent = doing.length;
+    // v4: 组织架构树渲染（K-ORG-123）
+    const tree = r.tree;
+    if (tree) {
+      let h = '<div style="grid-column:1/-1;background:#13203a;border:1px solid var(--blue);border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="drill(\'' + tree.id + '\')">';
+      h += '<span style="font-size:16px">🧠</span><b>' + tree.name + '</b><span style="color:var(--dim);font-size:11px">参谋长 · 军团总指挥</span>';
+      h += '<span style="margin-left:auto;color:var(--dim);font-size:11px">' + r.n + '员在册 · ' + r.n_active + '在岗</span></div>';
+      tree.children.forEach(function(d) {
+        const isAcademy = d.dept === "academy";
+        h += '<div style="grid-column:1/-1;margin:2px 0 0 0">';
+        h += '<div style="display:flex;align-items:center;gap:6px;padding:3px 6px;background:#0d1524;border-left:3px solid ' + (isAcademy ? 'var(--yellow)' : 'var(--blue)') + ';border-radius:4px">';
+        h += '<b style="font-size:12px">' + d.name + (isAcademy ? ' · 研究课题中枢' : '') + '</b>';
+        h += '<span style="color:var(--dim);font-size:10px">部长 ' + d.lead + ' · ' + d.children.length + '员</span></div>';
+        h += '<div style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 6px 14px">';
+        d.children.forEach(function(m) {
+          const rv = (window._reviews || {})[m.id];
+          const badge = rv ? (rv.has_task ? '<span style="color:var(--green);font-size:9px">✓</span>' : '<span style="color:var(--red);font-size:9px">✗</span>') : '';
+          h += '<span style="cursor:pointer;display:inline-flex;align-items:center;gap:3px;background:#0e1626;border:1px solid var(--line);border-radius:12px;padding:2px 8px;font-size:11px" onclick="drill(\'' + m.id + '\')">';
+          h += '<span class="dot ' + m.state + '" style="width:7px;height:7px"></span>' + (m.name || m.id) + '·' + m.id + badge + '</span>';
+        });
+        h += '</div></div>';
+      });
+      if (academy && academy.operating_plan) {
+        h += '<div style="grid-column:1/-1;margin-top:6px;background:#171b2c;border:1px solid #6b5b1c;border-radius:7px;padding:8px;font-size:11px;color:var(--dim)">';
+        h += '<b style="color:var(--yellow)">研究院工作链：</b>' + academy.operating_plan.stages.join(' → ');
+        h += '<br><span>负责人：司马徽（' + (academy.lead || '—') + '）｜KPI：' + (academy.kpi || []).slice(0,2).join('；') + '</span>';
+        if (academy.research_language) h += '<br><span>研究语言：问题→对象→假设→证据→验证→结论→行动→风险</span>';
+        if (academy.directions) h += '<br><span>研究方向：' + academy.directions.map(x=>x.name).join('｜') + '</span>';
+        h += '</div>';
+      }
+      document.getElementById("wall").innerHTML = h;
+      loadReviews();
+      return;
+    }
+    document.getElementById("wall").innerHTML = r.members.map(m =>
+      (()=>{ const rv=(window._reviews||{})[m.id]; const badge=rv?(rv.has_task?'<span style="color:var(--green);font-size:10px">✓任</span>':'<span style="color:var(--red);font-size:10px">✗任</span>'):''; return `<div class="m" style="cursor:pointer" onclick="drill('${m.id}')"><span class="dot ${m.state}"></span><span class="id">${m.id}</span><span class="nm">${m.name}</span>${badge}<span class="dept-tag">${m.dept}</span></div>`; })()).join("");
+    loadReviews();
+    loadAcademyTopics();
+    document.getElementById("feed").innerHTML = d.feed.length
+      ? d.feed.slice().reverse().map(f => `<div class="row"><span class="ts">${(f.ts||"").slice(11)}</span><span class="who">${f.caller||"?"}</span><span class="what">${f.action} · ${(f.detail||"").slice(0,60)}</span></div>`).join("")
+      : "<div style='color:var(--dim)'>近 6h 无军团活动</div>";
+    document.getElementById("lane-doing").innerHTML = doing.map(t=>`<div class="tk" style="cursor:pointer" onclick="reviewTk('${t.id}')"><b>${t.id}</b> ${t.desc}</div>`).join("") || "<div style='color:var(--dim)'>无</div>";
+    document.getElementById("lane-review").innerHTML = review.map(t=>`<div class="tk" style="cursor:pointer" onclick="reviewTk('${t.id}')"><b>${t.id}</b> ${t.desc}</div>`).join("") || "<div style='color:var(--dim)'>无</div>";
+  }catch(e){ document.getElementById("feed").textContent = "数据源不可达: "+e.message; }
+}
+apiReady.then(()=>{ tick(); setInterval(tick, 30000); });
+</script>
+
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;width:560px;max-height:80vh;overflow:auto">
+    <div id="modal-body">…</div>
+  </div>
+</div>
+
+<script>
+
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+async function drill(id){
+  const m = document.getElementById("modal");
+  m.style.display="flex";
+  document.getElementById("modal-body").innerHTML = "加载中…";
+  try{
+    const d = await (await fetch(`${API2}/api/legion/agent?id=${encodeURIComponent(id)}`)).json();
+    const acts = (d.recent_acts||[]).map(a=>`<div class="row"><span class="ts">${(a.ts||"").slice(11)}</span><span class="what">${a.action} · ${(a.detail||"").slice(0,50)}</span></div>`).join("") || "<div style='color:var(--dim)'>14 天无活动</div>";
+    const tks = (d.tasks||[]).map(t=>`<div class="tk" style="cursor:pointer" onclick="reviewTk('${t.tid}')"><b>${t.tid}</b> [${t.status}] ${t.desc}</div>`).join("") || "<div style='color:var(--dim)'>名下无工单</div>";
+    document.getElementById("modal-body").innerHTML = `
+      <h2 style="font-size:16px;margin-bottom:8px">${d.name} <span style="color:var(--dim);font-size:12px">${d.agent_id} · ${d.dept} · ${d.title} · ${d.rank}${d.mode==="shadow"?" · 💤影子":""}</span></h2>
+      <div style="color:var(--dim);font-size:12px;margin-bottom:10px">入职 ${d.onboarded||"?"} ｜ 14 天活动 ${d.acts_14d} 次 ｜ ${d.state==="active"?"🟢 在岗":"⚪ 待命"}</div>
+      <h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">📝 赋予属性（30年经验程序员 / 擅长什么——直接编辑，保存即写回档案）</h3>
+      <div style="display:grid;gap:6px;margin-bottom:8px">
+        <input id="ed-exp" value="${(d.editable&&d.editable.experience)||""}" placeholder="经验背景（如：30 年后端开发，参与过亿级系统）" style="background:#0e1626;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:6px 8px;font-size:12px">
+        <input id="ed-skills" value="${(d.editable&&d.editable.skills)||""}" placeholder="技能（逗号分隔，如：Python架构, 高并发, 量化系统）" style="background:#0e1626;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:6px 8px;font-size:12px">
+        <input id="ed-stmt" value="${(d.editable&&d.editable.self_statement)||""}" placeholder="自述/工作哲学（一句话）" style="background:#0e1626;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:6px 8px;font-size:12px">
+        <button onclick="saveAttrs('${d.agent_id}')" style="background:var(--green);color:#04140b;border:0;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700;width:120px">保存属性</button>
+      </div>
+      <h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">📋 今日复盘三问</h3>
+      <div style="font-size:12px;background:#0e1626;border:1px solid var(--line);border-radius:8px;padding:8px;line-height:1.8">
+        ①${((window._reviews||{})[d.agent_id]||{}).q1||"—"}<br>②${((window._reviews||{})[d.agent_id]||{}).q2||"—"}<br>③${((window._reviews||{})[d.agent_id]||{}).q3||"—"}
+      </div>
+      <h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">最近活动</h3><div class="feed" style="max-height:180px">${acts}</div>
+      <h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">名下工单</h3>${tks}
+      <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)">
+        <h3 style="font-size:13px;color:var(--dim);margin-bottom:6px">⚡ 派工给 ${d.agent_id}</h3>
+        <div style="display:flex;gap:6px">
+          <input id="dp-desc" placeholder="工单描述（如：复盘 600337 今日走势）" style="flex:1;background:#0e1626;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:6px 8px">
+          <button onclick="dispatchTo('${d.agent_id}')" style="background:var(--blue);color:#fff;border:0;border-radius:6px;padding:6px 14px;cursor:pointer">派出</button>
+        </div>
+      </div>`;
+  }catch(e){ document.getElementById("modal-body").textContent = "下钻失败: "+e.message; }
+}
+async function dispatchTo(agent){
+  const desc = document.getElementById("dp-desc").value.trim();
+  if(!desc){ alert("请填工单描述"); return; }
+  try{
+    const r = await (await fetch(API2+"/api/legion/dispatch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({agent,desc})})).json();
+    alert(r.ok ? `已派出 ✓ 工单号 ${r.task.tid}${r.shadow?"\n（影子期：只落盘分析）":""}` : "派工失败: "+r.err);
+    if(r.ok){ closeModal(); tick(); }
+  }catch(e){ alert("派工失败: "+e.message); }
+}
+async function saveAttrs(agent){
+  try{
+    const r = await (await fetch(API2+"/api/legion/agent/update",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({agent, experience:document.getElementById("ed-exp").value, skills:document.getElementById("ed-skills").value, self_statement:document.getElementById("ed-stmt").value})})).json();
+    alert(r.ok ? "✓ 属性已写回 "+agent+" 的档案（经验+技能+自述），路由匹配将随之生效" : "保存失败: "+r.err);
+    if(r.ok) drill(agent);
+  }catch(e){ alert("保存失败: "+e.message); }
+}
+async function loadAcademyTopics(){
+  try{
+    const d = await (await fetch(`${API2}/api/legion/academy/topics`)).json();
+    const box = document.getElementById("academy-topics");
+    if (!box) return;
+    box.innerHTML = (d.topics||[]).map(t => `<div class="row"><span class="who" style="width:125px">${t.topic_id}</span><span class="what"><b>${t.title}</b>｜${t.status}｜负责人 ${t.owner}</span></div>`).join("") || "<div style='color:var(--dim)'>暂无课题</div>";
+  }catch(e){ const box=document.getElementById("academy-topics"); if(box) box.textContent="课题台账不可达"; }
+}
+async function loadReviews(){
+  try{
+    const d = await (await fetch(`${API2}/api/legion/reviews/today`)).json();
+    window._reviews = d.reviews || {};
+    const box = document.getElementById("review-drawer");
+    if (box) box.innerHTML = Object.values(window._reviews).slice(0,8).map(r =>
+      `<div class="row"><span class="who" style="width:60px">${r.agent_id}</span><span class="what">${r.q1}｜${(r.q2||"—").slice(0,36)}</span></div>`).join("");
+  }catch(e){}
+}
+async function reviewTk(tid){
+  const m = document.getElementById("modal");
+  m.style.display="flex";
+  document.getElementById("modal-body").innerHTML = "复盘加载中…";
+  try{
+    const d = await (await fetch(`${API2}/api/legion/review?tid=${encodeURIComponent(tid)}`)).json();
+    if(!d.ok){ document.getElementById("modal-body").textContent = d.err; return; }
+    document.getElementById("modal-body").innerHTML = `
+      <h2 style="font-size:15px;margin-bottom:8px">📋 工单复盘 · ${d.tid}</h2>
+      <div style="font-size:13px;line-height:2">
+        描述：${d.desc}<br>状态：<b style="color:var(--yellow)">${d.status}</b> ｜ 负责人：${d.owner||"—"}<br>
+        创建：${d.created||"—"} ｜ 更新：${d.updated||"—"}<br>
+        分支：${d.branch||"—"}
+      </div>
+      <h3 style="font-size:13px;color:var(--dim);margin:10px 0 4px">执行判读</h3>
+      ${d.findings.map(f=>`<div class="tk">${f}</div>`).join("")}`;
+  }catch(e){ document.getElementById("modal-body").textContent = "复盘失败: "+e.message; }
+}
+</script>
+</body>
+</html>
