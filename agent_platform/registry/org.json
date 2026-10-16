@@ -42,7 +42,7 @@
     {
       "dept": "invest",
       "name": "投研部",
-      "lead": null,
+      "lead": "D1",
       "status": "active",
       "charter": "选股研究·多空辩论·情绪与基本面分析·投资决策",
       "agents": [
@@ -55,12 +55,13 @@
       "teams": [
         "alpha"
       ],
-      "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板）"
+      "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板）",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
     },
     {
       "dept": "dev",
       "name": "研发部",
-      "lead": null,
+      "lead": "ARCH1",
       "status": "active",
       "charter": "多梯队工程交付：后端(30/20/10年三档)·前端(30/20年)·量化(20年三岗)·架构/运维(30年)·文档(20年)",
       "agents": [
@@ -649,12 +650,13 @@
           }
         }
       ],
-      "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）"
+      "source": "K-ORG-015 实例化；K-ORG-017/018 扩编；K-ORG-020 职级梯队（后端三档/前端双档）",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
     },
     {
       "dept": "trading",
       "name": "交易部",
-      "lead": null,
+      "lead": "TR1",
       "status": "active",
       "charter": "执行策略产出→模拟仓下单→成交/滑点写 feedback（K-ORG-015 实例化，影子模式）",
       "agents": [
@@ -708,12 +710,13 @@
           }
         }
       ],
-      "source": "K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）"
+      "source": "K-ORG-001 组织设计，2026-10-13 K-ORG-015 实例化（影子模式：仅登记+feedback 通道，enforce 下单仍走既有 paper 链不变）",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
     },
     {
       "dept": "data",
       "name": "数据智能部",
-      "lead": null,
+      "lead": "DATA1",
       "status": "active",
       "charter": "数据底层治理·实体映射·血缘运维·特征湖治理（K-ORG-018 新设，v5 B 线承接）",
       "agents": [
@@ -772,12 +775,13 @@
           }
         }
       ],
-      "source": "K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属"
+      "source": "K-ORG-018 矩阵制新设：v5 B 线（数据一体化）常设归属",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
     },
     {
       "dept": "product",
       "name": "产品管理部",
-      "lead": null,
+      "lead": "PM1",
       "status": "active",
       "charter": "需求池·版本规划·验收口径·UI/UX 设计（30年主笔+10年执行双梯队）",
       "agents": [
@@ -939,12 +943,13 @@
           }
         }
       ],
-      "source": "K-ORG-018 新设；K-ORG-019 +DSGN1；K-ORG-020 UI 双梯队"
+      "source": "K-ORG-018 新设；K-ORG-019 +DSGN1；K-ORG-020 UI 双梯队",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
     },
     {
       "dept": "quality",
       "name": "质量工程部",
-      "lead": null,
+      "lead": "QA1",
       "status": "active",
       "charter": "测试（30年裁定+10年执行双梯队）·三守卫·质量红线·安全审计（SEC1合规红线·SEC2研发质量对抗/走形检查）",
       "agents": [
@@ -1146,7 +1151,8 @@
           }
         }
       ],
-      "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队；K-ORG-052 +SEC2（田小皮治理模型·研发质量对抗线）"
+      "source": "K-ORG-018 新设；K-ORG-019 +SEC1；K-ORG-020 测试双梯队；K-ORG-052 +SEC2（田小皮治理模型·研发质量对抗线）",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
     },
     {
       "dept": "proj_backtest",
@@ -1252,12 +1258,14 @@
             }
           }
         }
-      ]
+      ],
+      "lead": "MKT1",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
     },
     {
       "dept": "legal",
       "name": "合规法务部",
-      "lead": null,
+      "lead": "LEG1",
       "status": "active",
       "charter": "对外材料合规审查·口径裁定(四原则)·数据与采集合规红线·公安协调支撑；直属参谋长田小皮，独立表态",
       "agents": [
@@ -1317,7 +1325,195 @@
       "teams": [
         "team_legal"
       ],
-      "source": "K-ORG-024 新设（27满编收官）：直属参谋长，E3 一票否决"
+      "source": "K-ORG-024 新设（27满编收官）：直属参谋长，E3 一票否决",
+      "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）"
+    },
+    {
+      "dept": "ops_runtime",
+      "name": "运行体部",
+      "lead": "A0A",
+      "status": "active",
+      "charter": "常驻运行体的编制归属与守护归口：只调度不决策；endpoint 必填可探活；K-ORG-116/119 收编",
+      "agents": [
+        "JEV_GATE",
+        "JEV_REVIEW",
+        "JEV_QD",
+        "LARK_CARDS",
+        "COWBRIDGE",
+        "HERMES_UI",
+        "WATCH_TOWER"
+      ],
+      "teams": [],
+      "source": "K-ORG-116 一批收编（2026-10-16）：Jev四件套/cowbridge记忆桥/Hermes WebUI；kind=runtime，代码进程零改动"
+    },
+    {
+      "dept": "academy",
+      "name": "研究院",
+      "lead": "ACAD1",
+      "status": "active",
+      "charter": "策略研究与商业化逻辑研究：交易策略研发与回测验证、AI能力方法论提炼、商业化路径探索（算法商品/策略市场/对外服务）、竞争情报对标——军团的知识发动机",
+      "research_language": {
+        "principle": "先定义问题，再定义证据；先形成假设，再设计验证；先判定能否复现，再讨论能否商业化。",
+        "mandatory_fields": [
+          "研究问题：要解释、预测或改进什么",
+          "研究对象：股票、策略、Agent能力、产品或外部市场",
+          "核心假设：可证伪、可度量、可复现",
+          "证据口径：数据来源、时间范围、样本、指标和版本",
+          "验证方法：回测、对照实验、访谈、竞品拆解或压力测试",
+          "结论等级：事实、推断、暂定结论、否定结论",
+          "行动建议：继续研究、进入试点、产品化、入库或终止",
+          "风险边界：数据风险、模型风险、合规风险、商业风险"
+        ],
+        "evidence_states": ["事实", "佐证", "证伪", "存疑", "未知"],
+        "decision_words": ["立项", "补证", "Go", "No-Go", "试点", "产品化", "入库", "终止"]
+      },
+      "directions": [
+        {
+          "id": "strategy_lab",
+          "name": "策略与交易研究",
+          "owner": "STRAT1",
+          "support": ["BACK1", "T1", "T2", "R1", "R2", "R3"],
+          "scope": "图形推演、因子研究、交易策略、左侧/右侧、风控参数和实盘反馈",
+          "outputs": ["策略假设卡", "回测任务单", "样本外报告", "策略判例", "Go/No-Go结论"]
+        },
+        {
+          "id": "data_ai_lab",
+          "name": "数据与智能研究",
+          "owner": "AI1",
+          "support": ["DATA1", "DEV1", "DEV6"],
+          "scope": "数据血缘、特征工程、Agent能力、评测体系、路由和知识反哺",
+          "outputs": ["数据口径卡", "能力登记", "评测集", "Prompt变更提案", "知识条目"]
+        },
+        {
+          "id": "market_intelligence_lab",
+          "name": "行业与竞争情报研究",
+          "owner": "INTEL1",
+          "support": ["N1", "F1", "COMM1", "MKT1", "LEG1"],
+          "scope": "行业趋势、竞品、开源社区、政策环境、客户需求和商业模式",
+          "outputs": ["情报简报", "竞品矩阵", "机会/威胁清单", "事实与推断分层报告"]
+        },
+        {
+          "id": "commercialization_lab",
+          "name": "商业化与产品化研究",
+          "owner": "COMM1",
+          "support": ["PROD1", "PM1", "MKT1", "LEG1"],
+          "scope": "算法商品、策略市场、对外服务、客户场景、交付边界、定价与试点",
+          "outputs": ["商业模式卡", "客户画像", "交付清单", "试点方案", "合规边界卡"]
+        },
+        {
+          "id": "methodology_lab",
+          "name": "方法论与组织学习研究",
+          "owner": "ACAD1",
+          "support": ["AI1", "D1", "A0A"],
+          "scope": "研究规范、评审制度、复盘机制、知识工程和军团能力升级",
+          "outputs": ["研究标准", "评审意见", "复盘判例", "能力升级提案", "周度研究院报告"]
+        }
+      ],
+      "agents": [
+        "ACAD1",
+        "STRAT1",
+        "BACK1",
+        "COMM1",
+        "INTEL1",
+        "AI1",
+        "PROD1"
+      ],
+      "teams": [
+        "academy_strategy",
+        "academy_commercial",
+        "academy_intelligence",
+        "academy_methodology"
+      ],
+      "operating_plan": {
+        "intake": "投研部、数据智能部、产品部或田小皮提出研究课题",
+        "stages": [
+          "研究立项",
+          "数据与假设登记",
+          "回测或商业化论证",
+          "研究院评审",
+          "跨部门联评",
+          "田小皮拍板",
+          "知识入库或产品化"
+        ],
+        "meetings": [
+          "周一 09:30 研究院立项会",
+          "周三 15:00 策略/商业化专题评审",
+          "周五 16:00 军团例会汇报"
+        ],
+        "handoffs": {
+          "invest": "提供策略需求、市场假设与实盘问题",
+          "data": "提供数据、血缘、特征与可复现口径",
+          "dev": "实现策略、回测工具与 AI 方法",
+          "product": "定义算法商品、策略市场和服务形态",
+          "marketing": "商业化包装与对外内容",
+          "legal": "外部发布、数据使用与合规审查"
+        }
+      },
+      "kpi": [
+        "每周完成不少于 1 个可复现研究课题",
+        "策略必须有数据口径、回测证据和 Go/No-Go 结论",
+        "每周沉淀不少于 2 条可复用方法论或判例",
+        "商业化课题必须形成目标客户、交付形态和合规边界",
+        "研究结论进入知识环后可被路由和复用"
+      ],
+      "source": "K-ORG-124/125 老田拍板设立并完成首批编制（2026-10-17）：研究策略 + 商业化逻辑",
+      "lead_duty": "院长监督四个研究组；每日汇总课题进度报 A0；周五提交研究院周报；研究结论未经评审不得进入产品化"
+    },
+    {
+      "dept": "chief_line",
+      "name": "直属参谋长线",
+      "lead": "A0",
+      "status": "active",
+      "charter": "直属参谋长田小皮，独立表态（LEG1 判例）；MASS 喂养体系归口：流程优化（OPT1）与成对判读（A0 评估者席位）",
+      "agents": [
+        "OPT1"
+      ],
+      "agent_profiles": [
+        {
+          "agent_id": "OPT1",
+          "role_profile": "opt1_workflow_optimizer",
+          "charter_detail": "E2·影子期·流程优化师：不执行不评判只改工作流（MASS 优化者席位）；依据 A0 判读产出候选提案，只写候选区，生产注册表只读",
+          "llm_binding": "glm/glm-4.6",
+          "tools": [],
+          "memory_grants": {
+            "read": [
+              "domain/*",
+              "dept/chief_line/*",
+              "agent/OPT1/*"
+            ],
+            "write": [
+              "agent/OPT1/*"
+            ]
+          },
+          "grade": "E2",
+          "grade_note": "影子期起步（K-ORG-120 老田拍板）；转正待首例 promoted 候选",
+          "attributes": {
+            "knowledge": [],
+            "experience": "源自 Sakana AI MASS 多智能体自监督体系（pub.sakana.ai/mass）优化者角色引进：文本空间工作流搜索（Role/Instruction/Contract/Hop 四组件），RSI 瓶颈在优化者——强模型放改流程位",
+            "specialties": [
+              "工作流四组件优化",
+              "候选提案（rationale 必引 A0 判读原句）",
+              "冠军保留制运维"
+            ],
+            "tools_allowed": {
+              "read": [
+                "registry/**",
+                "prompts/**",
+                "data/shadow/**",
+                "hr/**"
+              ],
+              "write": [
+                "registry/workflow_candidates/**"
+              ],
+              "execute": [],
+              "danger": "deny"
+            }
+          }
+        }
+      ],
+      "teams": [],
+      "source": "K-ORG-120 老田拍板（2026-10-17）：MASS 喂养体系批次1——优化者席位入职，直属参谋长线（LEG1 判例）；动态注册新部门免改码（K-ORG-053）",
+      "lead_duty": "直属参谋长线（A0 兼管）：OPT1 候选提案须经 A0 成对判读 + 老田终审方可晋升；宪法见 registry/workflow_candidates/README.md"
     }
   ],
   "reporting": {

@@ -1,0 +1,104 @@
+{
+  "$comment": "K-ORG-120 工作流候选 schema v1。四块：workflow（改什么）/ proposal（OPT1 提案）/ judgement（A0 判读）/ review（老田终审）。字段值为示例说明，非真实数据。",
+  "type": "object",
+  "required": ["cand_id", "status", "ticket", "workflow", "proposal"],
+  "properties": {
+    "cand_id": {
+      "type": "string",
+      "description": "候选编号，与文件名一致，如 cand_a0_daily_review_20261017_01"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "in_shadow", "promoted", "rejected"],
+      "description": "draft=OPT1已写未挂影子；in_shadow=挂工单+成对判读进行中；promoted/rejected=老田已终审"
+    },
+    "ticket": {
+      "type": "string",
+      "description": "8093 工单号（.worktrees/tasks.json 键），如 K-ORG-121"
+    },
+    "workflow": {
+      "type": "object",
+      "description": "目标工作流（MASS 内环四组件：Role/Instruction/Contract/Hop）",
+      "required": ["target", "champion_ref", "components"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "工作流标识，如 a0_daily_review"
+        },
+        "champion_ref": {
+          "type": "string",
+          "description": "当前冠军指针（生产文件路径+版本），如 prompts/a0_chief.md@prompt_versions.json版本号"
+        },
+        "champion_snapshot": {
+          "type": "string",
+          "description": "晋升后旧冠军全文快照（回滚用），draft 阶段可空"
+        },
+        "components": {
+          "type": "object",
+          "description": "四组件的改动后全文（未改的组件照抄冠军，保持候选自包含）",
+          "properties": {
+            "role": { "type": "string", "description": "谁来做（岗位与模型绑定）" },
+            "instruction": { "type": "string", "description": "怎么做（人设/提示词全文）" },
+            "contract": { "type": "string", "description": "交付什么（输入输出契约，可检查的）" },
+            "hop": { "type": "string", "description": "接力点（上下游交接方式）" }
+          }
+        }
+      }
+    },
+    "proposal": {
+      "type": "object",
+      "description": "OPT1 提案块（唯一写手 OPT1）",
+      "required": ["author", "date", "changes", "rationale", "risk"],
+      "properties": {
+        "author": { "type": "string", "const": "OPT1" },
+        "date": { "type": "string", "description": "提案日期 YYYY-MM-DD" },
+        "changes": {
+          "type": "array",
+          "description": "改动清单，逐组件列出，未改组件不出条目",
+          "items": {
+            "type": "object",
+            "required": ["component", "from", "to", "why"],
+            "properties": {
+              "component": { "type": "string", "enum": ["role", "instruction", "contract", "hop"] },
+              "from": { "type": "string", "description": "冠军原句（可追溯）" },
+              "to": { "type": "string", "description": "候选新句" },
+              "why": { "type": "string", "description": "一句话改因，须引 A0 判读原句" }
+            }
+          }
+        },
+        "rationale": {
+          "type": "string",
+          "description": "总依据：必须引用 A0 成对判读/日报判读的原句，禁止凭空优化（同构循环红线）"
+        },
+        "risk": {
+          "type": "string",
+          "description": "最坏情况与回滚方式"
+        }
+      }
+    },
+    "judgement": {
+      "type": "object",
+      "description": "A0 成对判读块（成对判读产出后由流程追加，A0 席位）",
+      "required": ["compare_ref", "winner", "confidence", "date"],
+      "properties": {
+        "compare_ref": {
+          "type": "string",
+          "description": "判读产出指针，如 data/shadow/a0_compare_2026-10-17_a0_daily_review.json"
+        },
+        "winner": { "type": "string", "enum": ["candidate", "champion", "tie"] },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "date": { "type": "string", "description": "判读日期" }
+      }
+    },
+    "review": {
+      "type": "object",
+      "description": "老田终审块（拍板后追加，人是最终权限）",
+      "required": ["decision", "date"],
+      "properties": {
+        "decision": { "type": "string", "enum": ["promoted", "rejected"] },
+        "date": { "type": "string", "description": "拍板日期" },
+        "note": { "type": "string", "description": "拍板备注，可空" }
+      }
+    }
+  }
+}
