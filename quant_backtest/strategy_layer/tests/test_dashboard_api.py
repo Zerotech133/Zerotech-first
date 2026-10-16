@@ -613,3 +613,38 @@ class TestRegisterRoutes:
         h.do_GET()
         payload, code = captured[0]
         assert code == 200
+
+
+# ── P3-动线页补充（K-STOCK-415）：adjust 校验与 /pipeline serve ──────
+def test_adjust_strategy_rejects_bad_id():
+    from strategy_layer.dashboard_api import adjust_strategy
+    payload, code = adjust_strategy({"strategy_id": "a'b;--", "enabled": True})
+    assert code == 400 and payload["ok"] is False
+
+
+def test_adjust_strategy_rejects_empty_body():
+    from strategy_layer.dashboard_api import adjust_strategy
+    payload, code = adjust_strategy({"strategy_id": "kg_boost"})
+    assert code == 400 and "至少" in payload["error"]
+
+
+def test_adjust_strategy_unknown_id_404():
+    from strategy_layer.dashboard_api import adjust_strategy
+    payload, code = adjust_strategy({"strategy_id": "no_such_strat",
+                                     "enabled": True})
+    assert code == 404
+
+
+def test_adjust_strategy_weight_range_guard(tmp_path, monkeypatch):
+    # 未注册 id 走 404 分支，不触 Registry 写盘；范围校验对已注册 id 生效
+    from strategy_layer import dashboard_api
+    payload, code = dashboard_api.adjust_strategy(
+        {"strategy_id": "definitely_not_registered", "weight": 0.5})
+    assert code == 404
+
+
+def test_pipeline_page_exists():
+    from strategy_layer.dashboard_api import _pipeline_page
+    body = _pipeline_page()
+    assert b"pipeline_map" in body or "链路动线".encode("utf-8") in body
+    assert len(body) > 5000

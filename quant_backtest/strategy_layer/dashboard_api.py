@@ -405,6 +405,57 @@ def register_feedback(body: Any) -> tuple:
              "feedback": row}, 200)
 
 
+# ── 端点 4：POST /api/strategies/adjust（动线页策略调整）───────────────
+_ID_RE = re.compile(r"[A-Za-z0-9_\-]{1,32}")
+
+
+def adjust_strategy(body: Any) -> tuple:
+    """调整单策略启停/权重（动线页「可调整」闭环）。
+
+    body: {"strategy_id": str, "enabled"?: bool, "weight"?: float 0~1}
+    经 Registry 类写回 strategy_registry.json（与 StrategyDaily 同源），
+    下轮 07:30 编排即生效。返回 (payload, http_code)。
+    """
+    if not isinstance(body, dict):
+        return ({"ok": False, "error": "请求体需为 JSON 对象"}, 400)
+    sid = str(body.get("strategy_id", "") or "").strip()
+    if not _ID_RE.fullmatch(sid):
+        return ({"ok": False, "error": "strategy_id 含非法字符"}, 400)
+    enabled = body.get("enabled", None)
+    weight = body.get("weight", None)
+    if enabled is None and weight is None:
+        return ({"ok": False, "error": "enabled 与 weight 至少给一项"}, 400)
+    try:
+        from strategy_layer import Registry, bootstrap_default_adapters
+        registry = bootstrap_default_adapters(Registry())
+        if sid not in registry.list_ids():
+            return ({"ok": False,
+                     "error": "策略未注册: %s" % sid}, 404)
+        if enabled is not None:
+            registry.set_enabled(sid, bool(enabled))
+        if weight is not None:
+            w = float(weight)
+            if not (0.0 <= w <= 1.0):
+                return ({"ok": False,
+                         "error": "weight 需在 0~1 之间"}, 400)
+            registry.set_weight(sid, w)
+    except Exception as exc:  # noqa: BLE001 — 写回失败降级报错
+        return ({"ok": False, "error": str(exc)[:200]}, 500)
+    return ({"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+             "strategy_id": sid,
+             "enabled": registry.is_enabled(sid),
+             "weight": round(registry.get_weight(sid), 4),
+             "note": "已写回 strategy_registry.json，下轮 07:30 编排生效"}, 200)
+
+
+# ── 静态页：GET /pipeline（链路动线图；每次现读，改页面即生效）─────────
+def _pipeline_page() -> bytes:
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "pipeline_map.html")
+    with open(path, "rb") as fh:
+        return fh.read()
+
+
 # ── 路由注册（零侵入包装）─────────────────────────────────────────────
 def register_routes(server_or_app: Any) -> Any:
     """把三个端点包装进 http.server Handler 类（或 HTTPServer 实例）。
@@ -425,6 +476,19 @@ def register_routes(server_or_app: Any) -> Any:
 
     def do_GET(self):  # noqa: N802 — http.server 协议方法名
         u = urlparse(self.path)
+        if u.path == "/pipeline":
+            try:
+                body = _pipeline_page()
+            except OSError as exc:
+                return _send_json(self, {"ok": False,
+                                         "error": str(exc)[:200]}, 500)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+            return None
         if u.path == "/api/strategies":
             try:
                 return _send_json(self, strategies_payload())
@@ -464,6 +528,27 @@ def register_routes(server_or_app: Any) -> Any:
                                          "error": "非法 JSON 请求体"}, 400)
             try:
                 payload, code = register_feedback(body)
+            except Exception as exc:  # noqa: BLE001
+                return _send_json(self, {"ok": False,
+                                         "error": str(exc)[:200]}, 500)
+            return _send_json(self, payload, code)
+        if u.path == "/api/strategies/adjust":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except (TypeError, ValueError):
+                length = 0
+            if length <= 0 or length > 512:
+                return _send_json(self, {
+                    "ok": False, "error": "请求体缺失或超长（1..512 字节）"},
+                    400)
+            try:
+                body = json.loads(
+                    self.rfile.read(length).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                return _send_json(self, {"ok": False,
+                                         "error": "非法 JSON 请求体"}, 400)
+            try:
+                payload, code = adjust_strategy(body)
             except Exception as exc:  # noqa: BLE001
                 return _send_json(self, {"ok": False,
                                          "error": str(exc)[:200]}, 500)
