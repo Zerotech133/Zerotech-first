@@ -47,12 +47,19 @@ class TaskStore:
         return self.base / ("tasks_%s.jsonl" % stamp)
 
     def _load_index(self):
-        """task_id → 最新快照行（读全部月度文件，按行序后者覆盖）"""
+        """task_id → 最新快照行（读全部月度文件，按行序后者覆盖）
+
+        K-ORG-128：跳过事件行（含 "event" 键，如 task_start/commit 流程日志）——
+        它们不是任务快照，混入轻则 KeyError 挂看板（K-STOCK-162 判例：10-12 起
+        a0_chief 看板 t["severity"] 连挂 3 天、10 张 open 单不可见），重则覆盖
+        同 id 的真快照。append-only 纪律：不删行，读侧过滤。"""
         idx = {}
         for f in sorted(self.base.glob("tasks_*.jsonl")):
             for line in f.read_text(encoding="utf-8").splitlines():
                 try:
                     r = json.loads(line)
+                    if "event" in r:
+                        continue
                     idx[r["task_id"]] = r
                 except (json.JSONDecodeError, KeyError):
                     continue

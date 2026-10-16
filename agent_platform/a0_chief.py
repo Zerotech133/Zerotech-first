@@ -199,8 +199,8 @@ def build(today):
         if open_tasks:
             for t in open_tasks:
                 lines.append("- [%s] `%s` %s（→%s · %s）" % (
-                    t["severity"], t["task_id"], t["title"][:42],
-                    t["assigned_dept"], t["status"]))
+                    t.get("severity", "?"), t["task_id"], t.get("title", "")[:42],
+                    t.get("assigned_dept", "?"), t["status"]))
         else:
             lines.append("无未闭环任务单。")
     except Exception as e:  # noqa: BLE001
