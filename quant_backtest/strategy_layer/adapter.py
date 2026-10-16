@@ -21,6 +21,7 @@
 """
 import json
 import os
+import tempfile
 
 from typing import Dict, List, Optional, Protocol, runtime_checkable
 
@@ -218,20 +219,44 @@ class Registry:
             self._saved_top_n = None
 
     def _save(self) -> None:
-        """尽力落盘当前开关与权重；写失败仅打印日志，不影响内存状态。"""
+        """尽力落盘当前开关与权重；写失败仅打印日志，不影响内存状态。
+
+        原子写 + 读盘合并（2026-10-17 判例）：并发 adjust 背靠背时
+        read-modify-write 交错会产生半写损坏的 json，下一个实例 _load
+        失败回退默认后 _save 会把 top_n 整表抹掉（kg_boost:50 丢失实锤，
+        导致 kg_boost 全市场 5597 条灌库）。故落盘前先读盘合并三表，
+        并经 tmp+os.replace 原子替换。
+        """
+        merged_top_n = {sid: n for sid, n in (self._saved_top_n or {}).items()
+                        if n is not None}
+        merged_enabled = None
+        merged_weights = None
+        try:
+            if os.path.exists(self._store_path):
+                with open(self._store_path, "r", encoding="utf-8") as f:
+                    disk = json.load(f)
+                if isinstance(disk, dict):
+                    # 内存缺失的键以磁盘为准（防 load 失败后的空覆盖）
+                    disk_top = disk.get("top_n") or {}
+                    if isinstance(disk_top, dict):
+                        merged_top_n.update({k: v for k, v in disk_top.items()
+                                             if k not in merged_top_n})
+        except Exception:
+            pass  # 磁盘不可读则以内存状态为准
         payload = {
-            "enabled": self.enabled_ids(),
-            "weights": {sid: self.get_weight(sid)
-                        for sid in self.list_ids()},
-            "top_n": {sid: n for sid, n in (self._saved_top_n or {}).items()
-                      if n is not None},
+            "enabled": merged_enabled or self.enabled_ids(),
+            "weights": merged_weights or {sid: self.get_weight(sid)
+                                          for sid in self.list_ids()},
+            "top_n": merged_top_n,
         }
         try:
             d = os.path.dirname(self._store_path)
             if d:
                 os.makedirs(d, exist_ok=True)
-            with open(self._store_path, "w", encoding="utf-8") as f:
+            fd, tmp = tempfile.mkstemp(dir=d or ".", suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, self._store_path)
         except Exception as exc:
             print(f"[strategy_layer] registry store 写入失败"
                   f"(内存状态不受影响): {exc}")
