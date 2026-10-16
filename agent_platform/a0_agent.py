@@ -109,13 +109,14 @@ def parse_json_block(text):
         return None, "JSON 解析失败：%s" % e
 
 
-def compare_quality_check(verdict, cand_text, champ_text):
+def compare_quality_check(verdict, cand_text, champ_text, ev_text=""):
     """K-ORG-120：成对判读质量自检（对齐 prompts/a0_compare.md 契约），返回 (ok, reasons)。
 
     ① winner/confidence 枚举合法；reasons ≥2 条且每条 side/point/evidence 齐全
     ② 理由文本不含操作建议黑名单词（影子期红线，同日报点评线）
     ③ evidence 可追溯：理由中出现的数字必须能在两份产出文本里找到
-    ④ tie 时 missing 必填非空；非 tie 时 missing 应为空串
+       （K-ORG-127 重判起：附补证档时，补证档数字同为合法引用源）
+    ④ tie 时 missing 必填非空；非 tie 时 missing 应为空
     """
     import re as _re
     reasons = []
@@ -127,7 +128,7 @@ def compare_quality_check(verdict, cand_text, champ_text):
     if not isinstance(rs, list) or len(rs) < 2:
         reasons.append("理由<2条(仅%s条)" % (len(rs) if isinstance(rs, list) else 0))
     else:
-        src_nums = set(_re.findall(r"\d+(?:\.\d+)?", cand_text + champ_text))
+        src_nums = set(_re.findall(r"\d+(?:\.\d+)?", cand_text + champ_text + ev_text))
         for i, r in enumerate(rs):
             if r.get("side") not in ("candidate", "champion", "both"):
                 reasons.append("理由%d side 非法:%r" % (i + 1, r.get("side")))
@@ -162,6 +163,7 @@ def main():
     ap.add_argument("--target", default="wf", help="成对判读的工作流标识（用于输出文件名）")
     ap.add_argument("--persona", default=None, help="覆盖人设文件（K-ORG-127 影子对比：候选跑，输出加 _cand 后缀防覆盖冠军档）")
     ap.add_argument("--with-prev", action="store_true", help="附昨日点评档入上下文（K-ORG-127 候选hop：首条[回看]段的依据）")
+    ap.add_argument("--evidence", default=None, help="执行反馈补证档路径（K-ORG-127 重判：附入判读上下文补齐 missing 证据）")
     args = ap.parse_args()
 
     if args.candidate or args.champion:
@@ -234,6 +236,14 @@ def run_compare(args):
         "以下是同一任务的两份产出，请按人设裁定并输出严格 JSON。\n\n"
         "【候选工作流产出】\n" + cand + "\n\n【冠军工作流产出】\n" + champ
     )
+    ev_text = ""
+    if args.evidence:  # K-ORG-127 重判：补证档附入（中立事实，供判读补齐此前 missing 的执行反馈）
+        ev_p = Path(args.evidence)
+        if not ev_p.exists():
+            print("[A0·判读] 补证档不存在：%s" % ev_p)
+            sys.exit(1)
+        ev_text = ev_p.read_text(encoding="utf-8")
+        user += "\n\n【执行反馈补证档（事后补齐的事实证据）】\n" + ev_text
 
     if args.live:
         model = args.model or chief_model()
@@ -258,7 +268,7 @@ def run_compare(args):
         print("[A0·判读] mock 模式（结构验证）")
 
     elapsed = time.time() - t0
-    ok, reasons = compare_quality_check(verdict, cand, champ)
+    ok, reasons = compare_quality_check(verdict, cand, champ, ev_text)
     print("[A0·判读] 推理耗时 %.1fs · 质量自检：%s" % (elapsed, "PASS" if ok else "FAIL（%s）" % ";".join(reasons)))
 
     out = BASE / "data" / "shadow" / ("a0_compare_%s_%s.json" % (args.date, args.target))

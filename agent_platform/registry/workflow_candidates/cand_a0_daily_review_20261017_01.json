@@ -40,10 +40,14 @@
     "risk": "①回看段在无昨日档时按人设跳过，不臆造（铁律兜底）；②severity 是建议级标注，不自动开单——开单仍走人工/8093，防评估越权执行；③quality_check 未同步加「缺陷类判读须含 [P?]」检查，若 promoted 随同工单补代码判据；④回滚=恢复 prompts/a0_chief.md + 执行器去掉 --with-prev 默认行为（本案 --with-prev 本就是显式参数，不污染冠军路径）"
   },
   "judgement": {
-    "compare_ref": "data/shadow/a0_compare_2026-10-17_a0_daily_review.json（判读机制 K-ORG-120 · 首案归属 K-ORG-127 · qwen3.5:9b live 11.9s · 质量自检 PASS · 首次输出 JSON 无效自动重发后成功）",
-    "winner": "tie",
-    "confidence": "medium",
+    "compare_ref": "data/shadow/a0_compare_2026-10-17_a0_daily_review.json（判读机制 K-ORG-120 · 首案归属 K-ORG-127 · qwen3.5:9b live · 补证档 data/shadow/evidence_20261017_d1_taskfix.md）",
+    "winner": "champion",
+    "confidence": "high",
     "date": "2026-10-17",
-    "note": "候选优势=回看闭环+具体数据（末轮相似度 0.45）；冠军优势=决策分布离散识别；tie 因=两份产出均无风险处理的执行反馈。missing：需「D1 保守度校准是否执行」「任务单修复进度」反馈数据方可裁——已暴露下一案方向：日报缺反馈环。终审待老田（promoted/rejected/补证重判）"
+    "history": [
+      {"round": 1, "winner": "tie", "confidence": "medium", "note": "无补证档。missing：缺执行反馈数据。暴露下一案方向（日报缺反馈环）"},
+      {"round": 2, "winner": "champion", "confidence": "high", "note": "补证档附入（老田指令补 D1 校准+任务单修复反馈）后重判，自检 PASS；两次 JSON 无效均自动重发成功"}
+    ],
+    "review_note": "田丰席复核（不重裁，只记复核发现）：round2 两条核心理由与补证档事实对照表冲突——①理由1称候选『错误判定未闭环』，但 T-20261008-003 open=未执行=未闭环，候选判定与账本一致；②理由3将补证档根因（事件行 KeyError）归功冠军产出，冠军产出原文并无此内容。机器判 champion/high 存疑，终审请人工细看 round2 判读档；亦印证 MASS 结论——评估者席位（9b）在补证档复杂上下文下出现归因混淆，后续可评估判读席位换强模型"
   }
 }
