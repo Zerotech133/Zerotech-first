@@ -13,12 +13,16 @@
     python a0_agent.py --candidate c.md --champion p.md --target <workflow>
         [--live] [--model ...]        # 对比候选/冠军两份产出，裁定 winner
 
+    判读席位升级（K-ORG-130 · MASS「评估者弱成瓶颈」判例落地）：
+    python a0_agent.py --live --model glm/glm-4.6 ...   # 走智谱包年通道，Ollama 本地默认不变
+
 输出：data/shadow/a0_review_<date>.md
       data/shadow/a0_compare_<date>_<target>.json（成对判读，含质量自检结果）
 纪律：不挂 automation（上线时机待老田拍板）；影子期间点评不含操作建议（人设铁律）。
 """
 import argparse
 import json
+import os
 import sys
 import time
 from datetime import datetime, timedelta
@@ -32,6 +36,47 @@ from llm import LLMError, OllamaLLM  # noqa: E402
 PERSONA = BASE / "prompts" / "a0_chief.md"
 COMPARE_PERSONA = BASE / "prompts" / "a0_compare.md"  # K-ORG-120 成对判读人设
 ORG = BASE / "registry" / "org.json"
+
+
+def glm_chat(persona, user, model="glm/glm-4.6", timeout=240):
+    """K-ORG-130：判读席位 glm 通道——智谱包年 Anthropic 兼容端点（glm-4.6）。
+
+    动机：K-ORG-127 round2 复核实录——9b 评估者在补证档复杂上下文下两处归因
+    错误，印证 MASS 结论「评估者弱成瓶颈」，判读席位需可挂强模型。
+    判例（与 tools/agent_coder.py chat_anthropic 同源）：
+    - glm-4.6 是思考型，content 为 [thinking, text] 块数组，正文只拼 type=text；
+    - max_tokens 须给足（8k 级会被 thinking 吞成空回，表面 stop=max_tokens）；
+    - 爱先写说明文字再上围栏——围栏由 parse_json_block 兜底剥离。
+    返回 (text, "ok") 与 OllamaLLM().chat 同构。"""
+    import urllib.request
+    key = os.environ.get("GLM_API_KEY", "")
+    if not key:
+        raise LLMError("GLM_API_KEY 未设置（智谱包年通道不可用；不降档静默——席位模型是判读有效性的组成部分）")
+    payload = {
+        "model": model.split("/", 1)[1] if "/" in model else model,
+        "max_tokens": 16384,
+        "system": persona,
+        "messages": [{"role": "user", "content": user}],
+    }
+    req = urllib.request.Request(
+        "https://open.bigmodel.cn/api/anthropic/v1/messages",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json",
+                 "x-api-key": key,
+                 "anthropic-version": "2023-06-01"})
+    d = json.load(urllib.request.urlopen(req, timeout=timeout))
+    out = "".join(b.get("text", "") for b in d.get("content", [])
+                  if b.get("type") == "text").strip()
+    if not out:
+        raise LLMError("glm 空回（thinking 吞 content? stop=%s）" % d.get("stop_reason"))
+    return out, "ok"
+
+
+def route_chat(persona, user, model):
+    """K-ORG-130：模型路由——glm/* 走智谱包年通道，其余走本地 Ollama（默认不变）。"""
+    if model.startswith("glm/"):
+        return glm_chat(persona, user, model=model)
+    return OllamaLLM().chat(persona, user, model=model)
 
 MOCK_REVIEW = (
     "- **[链路]**（mock）五票全 done 零降级，链路健康。\n"
@@ -189,7 +234,7 @@ def main():
     if args.live:
         model = args.model or chief_model()
         try:
-            review, status = OllamaLLM().chat(persona, user, model=model)
+            review, status = route_chat(persona, user, model=model)  # K-ORG-130：glm/* 走智谱通道
         except LLMError as e:
             print("[A0] LLM 失败：%s（可用 --model qwen3.5:9b 降档重试）" % e)
             sys.exit(2)
@@ -250,7 +295,7 @@ def run_compare(args):
         verdict, err, raw = None, None, ""
         for attempt in range(1, 4):  # K-ORG-127：小模型严格JSON不稳，解析失败重发至多3次（不放松契约）
             try:
-                raw, status = OllamaLLM().chat(persona, user, model=model)
+                raw, status = route_chat(persona, user, model=model)  # K-ORG-130：glm/* 走智谱通道
             except LLMError as e:
                 print("[A0·判读] LLM 失败：%s（可用 --model qwen3.5:9b 降档重试）" % e)
                 sys.exit(2)
