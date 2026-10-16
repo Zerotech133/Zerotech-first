@@ -41,6 +41,10 @@ DEC_F = os.path.join(SNAP, "decisions.jsonl")
 FACT_F = os.path.join(SNAP, "facts.jsonl")
 PREC_CACHE_F = os.path.join(SNAP, "precedents_cache.json")
 ZHEM = "BAAI/bge-small-zh-v1.5"
+# 模型缓存固定到项目内稳定目录（2026-10-17 判例：默认 %TEMP%\fastembed_cache
+# 会被系统清理/迁移丢弃，event_graph 嵌入 10061 实锤）；同时规避快照
+# symlink 在 Windows 无权限时的静默失败（真身落在 blobs、快照空）。
+FE_CACHE = os.path.join(HERE, ".models", "fastembed")
 
 
 def _now_iso():
@@ -52,7 +56,7 @@ _emb = None
 def embedder():
     global _emb
     if _emb is None:
-        _emb = TextEmbedding(model_name=ZHEM)
+        _emb = TextEmbedding(model_name=ZHEM, cache_dir=FE_CACHE)
     return _emb
 
 

@@ -310,12 +310,18 @@ def _seed_reports():
 
 
 # ── build（水位增量 + 向量矩阵重建） ─────────────────────────
-def build(notice_days=NOTICE_DAYS, dryrun=False):
+def build(notice_days=NOTICE_DAYS, dryrun=False, rebuild=False):
     from semantica_mvp import embed        # 惰性：建图才加载 fastembed
     st = _load_state()
     seen = {e["id"] for e in _load_events()}
+    if rebuild:
+        # 全量重建：忽略 seen 过滤（孤儿事件救治通道——事件已入 jsonl
+        # 但向量缺失时，正常 build 会误判「无新增」直接推水位，向量永缺）
+        seen = set()
+        print("=== event_graph REBUILD 全量重建 ===", flush=True)
     print("=== event_graph build 水位=%s 现有=%d ==="
-          % ({k: v for k, v in st.items() if k != "updated_at"}, len(seen)),
+          % ({k: v for k, v in st.items() if k != "updated_at"},
+             len(_load_events())),
           flush=True)
 
     # 1) news.db 已判定行（jev 偏性优先）
@@ -374,13 +380,13 @@ def build(notice_days=NOTICE_DAYS, dryrun=False):
         _save_state(st)
         return
 
-    # 3) 合并 + 滚动窗口裁剪 + 原子写
+    # 3) 向量矩阵重建（批量嵌入，进度打印）
+    #    一致性纪律（2026-10-17 判例）：必须先嵌入成功、再写 events.jsonl——
+    #    若先写事件后嵌失败，下轮会因 id 幂等判「无新增」直接推进水位，
+    #    导致这批事件进了图但向量永久缺失（检索不可见）。
     all_rows = _load_events() + events
     cutoff = (datetime.now() - timedelta(days=KEEP_DAYS)).strftime("%Y-%m-%d")
     all_rows = [e for e in all_rows if (e.get("ts") or "")[:10] >= cutoff]
-    _atomic_jsonl(EVENT_F, all_rows)
-
-    # 4) 向量矩阵重建（批量嵌入，进度打印）
     texts = [_event_text(e) for e in all_rows]
     print("  嵌入 %d 条事件…" % len(texts), flush=True)
     t0 = time.time()
@@ -392,8 +398,9 @@ def build(notice_days=NOTICE_DAYS, dryrun=False):
               flush=True)
     mat = np.vstack(mats) if len(mats) > 1 else mats[0]
     _atomic_npy(VEC_F, mat)
+    _atomic_jsonl(EVENT_F, all_rows)
 
-    # 5) 水位落盘
+    # 4) 水位落盘
     st.update(wm_news_rowid=wm_rowid, updated_at=_now())
     if wm_notice:
         st["wm_notice"] = wm_notice
@@ -536,6 +543,8 @@ def main():
     b = sub.add_parser("build")
     b.add_argument("--notice-days", type=int, default=NOTICE_DAYS)
     b.add_argument("--dryrun", action="store_true")
+    b.add_argument("--rebuild", action="store_true",
+                   help="全量重建：忽略 id 幂等，重嵌全部事件（孤儿救治）")
     s = sub.add_parser("stock")
     s.add_argument("code")
     s.add_argument("days", nargs="?", type=int, default=30)
@@ -550,7 +559,8 @@ def main():
 
     if args.cmd == "build" or args.cmd is None:
         build(getattr(args, "notice_days", NOTICE_DAYS),
-              getattr(args, "dryrun", False))
+              getattr(args, "dryrun", False),
+              getattr(args, "rebuild", False))
     elif args.cmd == "stock":
         r_ = events_for_stock(args.code, args.days)
         s = r_["bias_stat"]
@@ -573,4 +583,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    from linreg import run_with_lineage
+    run_with_lineage("kg_daily_sync", "evt_build", main)
