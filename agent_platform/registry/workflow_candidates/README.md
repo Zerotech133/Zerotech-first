@@ -36,6 +36,6 @@ MASS 喂养体系的「新工作流候选区」：OPT1（流程优化师）提�
 | 角色 | 席位 | 在本目录的权限 |
 |---|---|---|
 | OPT1 流程优化师 | 优化者 | 写 workflow/proposal 块（唯一写手） |
-| A0 田小皮 | 评估者 | 追加 judgement 块（成对判读，`--compare` 产出指针） |
+| A0 田丰 | 评估者 | 追加 judgement 块（成对判读，`--compare` 产出指针） |
 | 老田 | 终审 | 追加 review 块（拍板 promoted/rejected） |
 | 生产注册表 | — | OPT1 只读（danger=deny，见 hr/OPT1/appointment.yaml） |

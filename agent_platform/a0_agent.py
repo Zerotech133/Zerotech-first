@@ -21,7 +21,7 @@ import argparse
 import json
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 BASE = Path(__file__).parent
@@ -160,6 +160,8 @@ def main():
     ap.add_argument("--candidate", default=None, help="候选工作流产出的文件路径（成对判读模式）")
     ap.add_argument("--champion", default=None, help="冠军工作流产出的文件路径（成对判读模式）")
     ap.add_argument("--target", default="wf", help="成对判读的工作流标识（用于输出文件名）")
+    ap.add_argument("--persona", default=None, help="覆盖人设文件（K-ORG-127 影子对比：候选跑，输出加 _cand 后缀防覆盖冠军档）")
+    ap.add_argument("--with-prev", action="store_true", help="附昨日点评档入上下文（K-ORG-127 候选hop：首条[回看]段的依据）")
     args = ap.parse_args()
 
     if args.candidate or args.champion:
@@ -171,8 +173,16 @@ def main():
         sys.exit(1)
     daily = report.read_text(encoding="utf-8")
     t0 = time.time()  # K-STOCK-120 判据④：推理耗时起点（含读输入后全过程）
-    persona = PERSONA.read_text(encoding="utf-8")
+    persona = (Path(args.persona) if args.persona else PERSONA).read_text(encoding="utf-8")
     user = "以下是今日投研部日报，请给出判读：\n\n" + daily
+    if args.with_prev:  # K-ORG-127 候选 hop：回看段需要昨日点评档作输入
+        prev_date = (datetime.strptime(args.date, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+        prev = BASE / "data" / "shadow" / ("a0_review_%s.md" % prev_date)
+        if prev.exists():
+            user += "\n\n以下是昨日点评档（首条[回看]请核对昨日「明日关注」是否在今日日报中闭环）：\n\n" + prev.read_text(encoding="utf-8")
+            print("[A0] 已附昨日点评档：%s" % prev.name)
+        else:
+            print("[A0] 无昨日点评档（%s），[回看]段按人设跳过" % prev.name)
 
     if args.live:
         model = args.model or chief_model()
@@ -186,7 +196,8 @@ def main():
         review = MOCK_REVIEW
         print("[A0] mock 模式（结构验证）")
 
-    out = BASE / "data" / "shadow" / ("a0_review_%s.md" % args.date)
+    suffix = "_cand" if args.persona else ""  # 候选跑不覆盖冠军档（成对判读要引用冠军原产出）
+    out = BASE / "data" / "shadow" / ("a0_review_%s%s.md" % (args.date, suffix))
     elapsed = time.time() - t0  # K-STOCK-120 判据④：推理耗时（仅记录，不自检）
     print("[A0] 推理耗时 %.1fs" % elapsed)
     # K-STOCK-120：写文件前执行质量四判据自检（①②③），不过则头部加警告行但不阻塞（人工复核用）
@@ -226,15 +237,21 @@ def run_compare(args):
 
     if args.live:
         model = args.model or chief_model()
-        try:
-            raw, status = OllamaLLM().chat(persona, user, model=model)
-        except LLMError as e:
-            print("[A0·判读] LLM 失败：%s（可用 --model qwen3.5:9b 降档重试）" % e)
-            sys.exit(2)
-        print("[A0·判读] live 模型=%s 状态=%s" % (model, status))
-        verdict, err = parse_json_block(raw)
+        verdict, err, raw = None, None, ""
+        for attempt in range(1, 4):  # K-ORG-127：小模型严格JSON不稳，解析失败重发至多3次（不放松契约）
+            try:
+                raw, status = OllamaLLM().chat(persona, user, model=model)
+            except LLMError as e:
+                print("[A0·判读] LLM 失败：%s（可用 --model qwen3.5:9b 降档重试）" % e)
+                sys.exit(2)
+            if attempt == 1:
+                print("[A0·判读] live 模型=%s 状态=%s" % (model, status))
+            verdict, err = parse_json_block(raw)
+            if not err:
+                break
+            print("[A0·判读] 第%d次输出 JSON 无效：%s" % (attempt, err))
         if err:
-            print("[A0·判读] %s；原文前200字：%s" % (err, raw[:200]))
+            print("[A0·判读] 3 次仍未得合法 JSON；末次原文前200字：%s" % raw[:200])
             sys.exit(3)
     else:
         verdict, model = dict(MOCK_COMPARE), "mock"
