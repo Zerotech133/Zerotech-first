@@ -36,7 +36,9 @@ ADMINS_PATH = os.path.join(HERE, "work", "tune_admins.json")
 _lock = threading.Lock()
 
 # 可审批状态（submit 之后、终态之前）
-PENDING_STAGES = ("received", "parsed")
+PENDING_STAGES = ("received", "parsed", "verified", "pending_manual")
+# K-PUSH-010 延续：verified/pending_manual（人工对比中）允许 reject 归档关闭——
+# 对比判定不达标或测试单结清时可驳回，不强制走 deploy 写 VIP
 
 # ── 意图解析（轻量规则版；LLM 升级位=P3 Hermes 上岗后接管） ──────────
 _INTENT_RULES = [
@@ -260,6 +262,12 @@ def approve(req_id, operator="", open_id="", note=""):
     import feedback_flow
     if open_id and not is_admin(open_id):
         return {"ok": False, "error": "无审批权限（tune_admins.json 白名单）"}
+    # K-PUSH-010 延续：approve 仅待审单（received/parsed）可走，
+    # 防 PENDING_STAGES 放宽后已通过单重复审批
+    view = feedback_flow.requests_view().get(req_id)
+    if view and view["stage"] not in ("received", "parsed"):
+        return {"ok": False, "error":
+                "状态 %s 不可重复审批（仅待审单可操作）" % view["stage"]}
     doc, err = _pending_doc(req_id)
     if err:
         return {"ok": False, "error": err}
