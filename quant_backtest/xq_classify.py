@@ -186,23 +186,30 @@ def run(limit: int) -> int:
             % con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0])
         con.close()
         return 0
-    ok = hard = 0
+    ok = hard = consec = 0
     for i, row in enumerate(rows):
         if classify_one(con, row):
             ok += 1
+            consec = 0
         else:
             hard += 1
-            if hard >= 5 and hard > i // 2:
-                log("ABORT hard-fail majority (model/network down?)")
+            consec += 1
+            if consec >= 8:
+                # 熔断看「连续失败」而非累计占比：前期成功抬高占比分母会让
+                # 后期超时空转数小时（07-18 实证：385 ok 后每条 60s 超时，
+                # 旧条件需再熬 200 条才触发）
+                log("ABORT %d consecutive hard-fails (model/network busy?)"
+                    % consec)
                 break
         con.commit()
         if (i + 1) % 25 == 0:
             log("progress %d/%d" % (i + 1, len(rows)))
     total_c = con.execute("SELECT COUNT(*) FROM xq_status_classified").fetchone()[0]
+    rc = 1 if consec >= 8 else 0
     log("round end rc=%d labeled_this=%d hard_fail=%d derived_total=%d"
-        % (0 if hard < 5 else 1, ok, hard, total_c))
+        % (rc, ok, hard, total_c))
     con.close()
-    return 0 if hard < 5 else 1
+    return rc
 
 
 def show_status() -> int:
