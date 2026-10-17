@@ -129,6 +129,10 @@ from api_backtest import (
     _bt_resolve,
     _bt_jev_news)
 # ==== 批6 导入结束 ====
+# ==== F1：api_flow 显式导入（动作流中心：统一事件流聚合/预览/重跑）====
+import api_flow  # 模块名绑定（多继承基类引用）
+from watch_tower_snapshot import SnapshotAggregator
+# ==== F1 导入结束 ====
 
 
 
@@ -154,8 +158,22 @@ PORT = 8091
 
 
 _PORTAL_TOKEN = _portal_token()
+_WATCH_TOWER_SNAPSHOT = SnapshotAggregator(ROOT, STATION)
 
 
+def _replay_query_value(query: str):
+    """Read replay_at while tolerating an unescaped timezone ``+``.
+
+    ``parse_qs`` follows form encoding and turns a literal plus into a space.
+    Only this one parameter is normalized; all other query parameters retain
+    standard parsing behavior. An already encoded ``%2B`` remains ``+``.
+    """
+    from urllib.parse import parse_qs
+
+    value = (parse_qs(query, keep_blank_values=True).get("replay_at") or [None])[0]
+    if value is not None and "T" in value and " " in value:
+        value = value.replace(" ", "+")
+    return value
 
 
 _load_cainiao_env()
@@ -199,6 +217,8 @@ _MUTATION_POSTS = frozenset((
     "/api/manager_fire",  # K-STOCK-137d S-b2 经理解雇（子进程 manager.py fire）
     "/api/paper_direct_open",  # K-STOCK-137f S-d 轻量直订动线（策略市场直接建仓）
     "/api/onboard",       # K-STOCK-159 S-e 迎宾向导四问落账（建组合+雇佣链）
+    "/api/ctl/alert",     # K-ORG-113 Hermes alerts 连接器写面（ack/ignore/ack_all）
+    "/api/flow/rerun",    # F1 动作流中心：白名单只读产线任务重跑（schtasks /Run）
 ))
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
@@ -250,6 +270,18 @@ def _rate_hit(key, max_per_min, window_sec=60.0):
 
 _lock = threading.Lock()
 _cache = {"t": 0.0, "data": None}
+
+# P1 总览门户（2026-10-17 前端重规划）：/api/health 七口探活 + 五守护任务
+# 60s TTL 缓存（30s 前端轮询 × netstat/schtasks 子进程，不缓存会打爆）
+_hcache = {"t": 0.0, "data": None}
+
+# P2 四件套观测页：/api/jev-stack 聚合（metrics+换血+死信）30s TTL
+_jcache = {"t": 0.0, "data": None}
+_JEV_PORTS = [("gate", 9101), ("review", 9102), ("qd bridge", 9103),
+              ("card", 9104)]
+_JEV_LOG = os.path.join(ROOT, "..", "jev-eval", "logs", "jev-stack.log")
+_JEV_DLQ = os.path.join(ROOT, "..", "jev-eval",
+                        "push_dead_letter.jsonl")
 
 # K-STOCK-037 全站超级助手浮动图标（非 _COCKPIT_CSS 页的内联版）
 _HERMES_UP_CACHE = (0.0, False)  # (ts, up) 30s TTL 探活缓存 K-STOCK-101
@@ -511,7 +543,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -705,6 +737,242 @@ class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler,
         self.end_headers()
         self.wfile.write(body)
 
+    def _api_health(self):
+        """P1 总览门户健康聚合（JSON）：七口探活（端口判活=判例3 正源）
+        + PID 侧写（netstat，S4U 下 Win32_Process 不可信）+ 五守护任务
+        schtasks 状态。60s TTL 缓存，探测全部线程池并发。"""
+        import socket as _sk
+        import subprocess as _sp
+        import urllib.request as _u
+        from concurrent.futures import ThreadPoolExecutor
+
+        with _lock:
+            if (_hcache["data"] is not None
+                    and time.time() - _hcache["t"] <= 60):
+                self._json(_hcache["data"])
+                return
+
+        def probe(spec):
+            name, port, http_path = spec
+            t0 = time.time()
+            try:
+                if http_path:
+                    ok = _u.urlopen("http://127.0.0.1:%d%s"
+                                    % (port, http_path),
+                                    timeout=2.5).status == 200
+                else:
+                    s = _sk.create_connection(("127.0.0.1", port),
+                                              timeout=2)
+                    s.close()
+                    ok = True
+            except Exception:
+                ok = False
+            return {"name": name, "port": port, "ok": ok,
+                    "ms": int((time.time() - t0) * 1000)}
+
+        _spec = [("portal api", 8091, "/health"),
+                 ("push hub", 8097, None),
+                 ("hermes", 8787, None),
+                 ("gate", 9101, None),
+                 ("review", 9102, None),
+                 ("qd bridge", 9103, None),
+                 ("card", 9104, None)]
+        with ThreadPoolExecutor(max_workers=7) as _ex:
+            services = list(_ex.map(probe, _spec))
+
+        # PID 侧写：一次 netstat 全量滤七口（judge 判例3：S4U 会话
+        # Win32_Process born/CommandLine 查询 DENIED，端口侧写唯一可信）
+        # ⚠️ Hidden 会话链路判例：subprocess.run+text 对 netstat 偶发
+        # stdout=None（TypeError 被吞）；Popen+bytes+容错解码稳定。
+        def _run_bytes(argv):
+            try:
+                p = _sp.Popen(argv, stdout=_sp.PIPE, stderr=_sp.PIPE)
+                so, _ = p.communicate(timeout=10)
+                # 中文系统 netstat/schtasks 输出为 OEM 936(GBK)；
+                # utf-8 解码会毁掉中文列名（「上次结果」→乱码→pick 失配）
+                return (so or b"").decode("gbk", "replace")
+            except Exception:
+                return ""
+
+        pid_by_port = {}
+        for ln in _run_bytes(["netstat", "-ano", "-p", "tcp"]).splitlines():
+            m = re.match(r"\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)",
+                         ln)
+            if m:
+                pid_by_port.setdefault(int(m.group(1)),
+                                       int(m.group(2)))
+        for s in services:
+            s["pid"] = pid_by_port.get(s["port"])
+
+        # 五守护任务单查并行（csv /v 单任务输出小；中文系统列名本地化，
+        # 用子串双名兼容，拿不到的字段置 "?" 不阻塞主流程）
+        _TASKS = ["JevStack", "JevBackfill", "JevFeed-Daily",
+                  "TushareSync", "HermesWebUI-Guard"]
+
+        def task_one(tn):
+            info = {"name": tn, "state": "?", "last_result": "?",
+                    "last_run": "?", "next_run": "?"}
+            try:
+                import csv as _csv
+                import io as _io
+                out = _run_bytes(["schtasks", "/query", "/tn", "\\" + tn,
+                                  "/fo", "csv", "/v"])
+                lines = [x for x in out.splitlines() if x.strip()]
+                if len(lines) >= 2:
+                    rows = list(_csv.reader(_io.StringIO("\n".join(lines))))
+                    d = dict(zip(rows[0], rows[1]))
+
+                    def pick(*keys):
+                        for k in keys:
+                            for hk in d:
+                                if k in hk:
+                                    return d[hk]
+                        return "?"
+
+                    # schtasks /v 双语列名（服务会话中文/交互会话英文，
+                    # 实测抓取 2026-10-17）：Status=「模式」(值:就绪)；
+                    # 「登录状态」=Logon Mode、「计划任务状态」=Enabled——
+                    # 勿用「状态」子串（撞「登录状态」→显示交互方式/后台方式）
+                    info.update({
+                        "state": pick("Status", "模式"),
+                        "last_result": pick("Last Result", "上次结果"),
+                        "last_run": pick("Last Run Time", "上次运行时间"),
+                        "next_run": pick("Next Run Time", "下次运行时间"),
+                    })
+            except Exception:
+                pass
+            return info
+
+        with ThreadPoolExecutor(max_workers=5) as _ex:
+            tasks = list(_ex.map(task_one, _TASKS))
+
+        data = {"ok": all(s["ok"] for s in services),
+                "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "services": services, "tasks": tasks}
+        with _lock:
+            _hcache["t"] = time.time()
+            _hcache["data"] = data
+        self._json(data)
+
+    def _api_jev_stack(self):
+        """P2 四件套观测页聚合（JSON）：四服务探活+PID+业务指标
+        （/metrics 解析 jev_db_queries/jev_calls + created 算存活）、
+        jev-stack.log 换血时间轴（尾 40 行）、死信队列统计+最近样本。
+        30s TTL。"""
+        import socket as _sk
+        import urllib.request as _u
+        from concurrent.futures import ThreadPoolExecutor
+
+        with _lock:
+            if (_jcache["data"] is not None
+                    and time.time() - _jcache["t"] <= 30):
+                self._json(_jcache["data"])
+                return
+
+        def _sub_out(argv):
+            import subprocess as _sp
+            try:
+                p = _sp.Popen(argv, stdout=_sp.PIPE, stderr=_sp.PIPE)
+                so, _ = p.communicate(timeout=10)
+                return (so or b"").decode("gbk", "replace")
+            except Exception:
+                return ""
+
+        # PID 侧写（判例3：端口判活唯一可信）
+        pid_by_port = {}
+        for ln in _sub_out(["netstat", "-ano", "-p", "tcp"]).splitlines():
+            m = re.match(r"\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)",
+                         ln)
+            if m:
+                pid_by_port.setdefault(int(m.group(1)),
+                                       int(m.group(2)))
+
+        def probe(svc):
+            name, port = svc
+            out = {"name": name, "port": port, "up": False,
+                   "pid": pid_by_port.get(port), "metrics": {}}
+            try:
+                s = _sk.create_connection(("127.0.0.1", port), timeout=2)
+                s.close()
+                out["up"] = True
+            except Exception:
+                return out
+            try:
+                body = _u.urlopen("http://127.0.0.1:%d/metrics" % port,
+                                  timeout=4).read().decode("utf-8",
+                                                           "replace")
+                met = out["metrics"]
+                for ln in body.splitlines():
+                    m2 = re.match(r'^(jev_db_queries_total|jev_calls_total)'
+                                  r'\{[^}]*ok="(\d)"\}\s+([\d.eE+]+)', ln)
+                    if m2:
+                        key = ("db_ok" if m2.group(1).startswith("jev_db")
+                               else "call_ok") if m2.group(2) == "1" else (
+                          "db_err" if m2.group(1).startswith("jev_db")
+                          else "call_err")
+                        met[key] = float(m2.group(3))
+                    m3 = re.match(r'^jev_db_queries_created\{[^}]*ok="1"\}'
+                                  r'\s+([\d.eE+]+)', ln)
+                    if m3:
+                        # created 时间戳 = 进程业务起点 → 存活时长
+                        alive = time.time() - float(m3.group(1))
+                        if alive > 0:
+                            met["alive_s"] = int(alive)
+            except Exception:
+                pass
+            return out
+
+        with ThreadPoolExecutor(max_workers=4) as _ex:
+            services = list(_ex.map(probe, _JEV_PORTS))
+
+        # 换血时间轴（尾 40 行）
+        restarts = []
+        try:
+            with open(_JEV_LOG, encoding="utf-8", errors="replace") as f:
+                tail = f.readlines()[-40:]
+            for ln in tail:
+                m4 = re.match(r"\[([\d\- :]+)\]\s+(force-restart:.+|"
+                              r"pulled up:.+)", ln.strip())
+                if m4:
+                    kind = ("blood" if "force-restart" in m4.group(2)
+                            else "pull")
+                    restarts.append({"ts": m4.group(1), "kind": kind,
+                                     "detail": m4.group(2)})
+            restarts.reverse()  # 最新在前
+        except Exception:
+            pass
+
+        # 死信队列：总数 + 最近 8 条（err 截断，防大 JSON）
+        dlq = {"count": 0, "recent": []}
+        try:
+            with open(_JEV_DLQ, encoding="utf-8", errors="replace") as f:
+                lines = [x for x in f if x.strip()]
+            dlq["count"] = len(lines)
+            for ln in lines[-8:]:
+                try:
+                    d = json.loads(ln)
+                    dlq["recent"].append({
+                        "ts": d.get("ts", ""),
+                        "level": d.get("level", ""),
+                        "title": d.get("title", "")[:40],
+                        "urgent_p": (d.get("verdict") or {}
+                                     ).get("urgent_p"),
+                        "reason": d.get("reason", ""),
+                        "final": d.get("final", False),
+                        "err": (d.get("err") or "")[:120]})
+                except Exception:
+                    pass
+            dlq["recent"].reverse()
+        except Exception:
+            pass
+
+        data = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "services": services, "restarts": restarts, "dlq": dlq}
+        with _lock:
+            _jcache["t"] = time.time()
+            _jcache["data"] = data
+        self._json(data)
+
 
 
     # ── L1 金融驾驶舱（任务导向：查一只股票 / 今天能买吗 / 买什么） ──
@@ -897,7 +1165,7 @@ gap:14px;align-items:start}}
 	/* K-STOCK-037 超级助手浮动图标：全站右下角常驻 */
 	try{if(!document.getElementById('_hermesfab')){
 	var f=document.createElement('a');
-	f.id='_hermesfab';f.href='http://127.0.0.1:8787';f.target='_blank';
+	f.id='_hermesfab';f.href='/hermes/';f.target='_blank';
 	f.rel='noopener';f.title='超级助手：对话即调度全部 AI 岗位';
 	f.appendChild(document.createTextNode('\U0001F9B8'));
 	document.body.appendChild(f);}}catch(e){}};
@@ -966,7 +1234,7 @@ gap:14px;align-items:start}}
 
     def _portal_page(self):
         """🏛 门户框架页：全站分区卡片总览——第一屏「我的入口」
-        （Hermes 超级助手 + 田小皮 · 参谋长），下接 AI 市场/选股中心/行情
+        （Hermes 超级助手 + 田丰 · 参谋长），下接 AI 市场/选股中心/行情
         工作台/情报线/实盘跟踪/创作与运维，每卡带一句话说明。"""
         import html as _h
         import urllib.request as _u
@@ -1017,7 +1285,7 @@ gap:14px;align-items:start}}
         hero = (
             "<div style='display:grid;grid-template-columns:repeat("
             "auto-fit,minmax(320px,1fr));gap:14px;margin-top:14px'>"
-            "<a href='http://127.0.0.1:8787' target='_blank' style='display:"
+            "<a href='/hermes/' target='_blank' style='display:"
             "block;border:2px solid #58a6ff;border-radius:14px;background:"
             "#161b22;padding:20px 22px;text-decoration:none;color:#e6edf3'>"
             "<div style='font-size:20px;font-weight:700'>🦸 Hermes 超级助手"
@@ -1025,12 +1293,12 @@ gap:14px;align-items:start}}
             "</div><div class='dim' style='font-size:13px;margin:8px 0'>"
             "<b style='color:#e6edf3'>我的主入口</b> · 对话即调度：通过它"
             "指挥 A0 与全部 AI 岗位 · 执行/记忆/插件网关</div>"
-            "<div style='font-size:14px'><b>http://127.0.0.1:8787</b>"
+            "<div style='font-size:14px'><b>经门户直达 /hermes/</b>"
             " <span class='dim'>← 点卡片直接进入对话</span></div></a>"
             "<a href='/fin' style='display:block;border:2px solid #d29922;"
             "border-radius:14px;background:#161b22;padding:20px 22px;"
             "text-decoration:none;color:#e6edf3'>"
-            "<div style='font-size:20px;font-weight:700'>🧠 田小皮 · 参谋长"
+            "<div style='font-size:20px;font-weight:700'>🧠 田丰 · 参谋长"
             "<span style='float:right;color:#3fb950;font-size:13px'>"
             "● 每日 17:35 值班</span></div><div class='dim' style='font-size:"
             "13px;margin:8px 0'>AI 组织架构顶点 · 影子日报点评 · 任务派单"
@@ -1061,7 +1329,7 @@ gap:14px;align-items:start}}
                       "11 个可聘岗位：A0 + 投研部五岗 + 专项 AI · 本地模型"
                       "零 token 成本", "在岗 11 · 按岗聘请"),
                 _card("/org", "#8b949e", "🏛", "组织架构",
-                      "田小皮 · 参谋长 → 投研部 alpha 团队 → 汇报 human · "
+                      "田丰 · 参谋长 → 投研部 alpha 团队 → 汇报 human · "
                       "树形架构图 · 对话统一走超级助手", "org.json 实时"),
             ])),
             _zone("🎯 选股中心 · 三产线", "".join([
@@ -1813,6 +2081,34 @@ color:#fff;font-size:13.5px;cursor:pointer}
         except Exception as e:
             self._json({"ok": False, "error": repr(e)}, 500)
 
+    def _api_ctl_alert(self, raw):
+        """K-ORG-113 Hermes alerts 连接器写面（body JSON 转调）。
+
+        body: {action: ack|ignore|ack_all, alert_id?, caller?}
+        业务复用 feishu_control.ctl_http → handle_ctl 的 ctl:alert_*
+        分支——与飞书控制卡按钮同一条代码路径、同一落点
+        （v2_alert + gate_ignored.json + control_ops.jsonl）。
+        本机放行/局域网 X-Portal-Token（_MUTATION_POSTS 闸门）。
+        """
+        try:
+            rec = json.loads(raw.decode("utf-8")) if raw else {}
+        except Exception:
+            self._json({"ok": False, "error": "bad json"}, 400)
+            return
+        action = str(rec.get("action") or "").strip()
+        alert_id = str(rec.get("alert_id") or "").strip()
+        operator = str(rec.get("caller") or "").strip() or "hermes-console"
+        if action not in ("ack", "ignore", "ack_all"):
+            self._json({"ok": False,
+                        "error": "action 非法（ack|ignore|ack_all）"}, 400)
+            return
+        if action in ("ack", "ignore") and not alert_id:
+            self._json({"ok": False, "error": "alert_id is required"}, 400)
+            return
+        import feishu_control
+        ok, text = feishu_control.ctl_http(action, alert_id, operator)
+        self._json({"ok": ok, "text": text, "operator": operator}, 200 if ok else 400)
+
     def _api_onboard(self, raw):
         """K-STOCK-159 S-e 迎宾向导四问落账。
         body: {plan: free_manual|free_auto|paid_auto, strategies?: [sid..],
@@ -2158,6 +2454,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # K-STOCK-114e 独立安全审计 AI 对话（独立模型绑定 AUDIT_MODEL）
                 self._api_audit_chat(raw)
                 return
+            if path == "/api/flow/rerun":
+                # F1 动作流中心：白名单产线任务重跑（body: {"task": "..."}）
+                try:
+                    body = json.loads(raw.decode("utf-8")) if raw else {}
+                except Exception:
+                    body = {}
+                self._flow_rerun(body)
+                return
             if path == "/api/ai_duty":
                 # K-STOCK-352 AI 值班经理（paper 接待大厅 · 有问必答）：复用审计模型回退链
                 self._api_ai_duty(raw)
@@ -2185,6 +2489,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             if path == "/api/onboard":
                 # K-STOCK-159 S-e 迎宾向导四问落账（建组合+雇佣链）
                 self._api_onboard(raw)
+                return
+            if path == "/api/ctl/alert":
+                # K-ORG-113 Hermes alerts 连接器写面（与飞书控制卡同源同落点）
+                self._api_ctl_alert(raw)
                 return
             if path == "/feishu/event":
                 # K250 飞书事件回调（卡按钮点击 / url_verification 握手）
@@ -2573,6 +2881,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/data/daily' or path.startswith('/api/data/runs/'):
             self._warehouse_update_request('GET',path,qs)
             return
+        if path in ('/api/flow/stats', '/api/flow/events', '/api/flow/artifact'):
+            # F1 动作流中心：统计/事件流/产物预览（全部只读聚合）
+            if path == '/api/flow/stats':
+                self._flow_stats(qs)
+            elif path == '/api/flow/events':
+                self._flow_events(qs)
+            else:
+                self._flow_artifact(qs)
+            return
         # C1a：GET 动作端点鉴权闸门（与写端点同规则）。本机（回环直连/
         # 本机浏览器）放行；反代+局域网须 X-Portal-Token，缺失/不匹配
         # 返回 403，防止匿名 GET 触发后台子进程与飞书推送。
@@ -2599,6 +2916,27 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._json(data)
         elif path == "/health":
             self._json({"ok": True, "ts": time.strftime("%Y-%m-%d %H:%M:%S")})
+        elif path in ("/api/watch-tower/snapshot", "/api/watchtower/overview"):
+            # Watch Tower snapshot v1; compatibility alias remains read-only.
+            # replay_at is deliberately parsed here so malformed user input is
+            # a stable 400 rather than an internal server error.
+            from watch_tower_snapshot import ReplayArgumentError, parse_replay_at
+            replay_value = _replay_query_value(qs)
+            try:
+                replay_at = parse_replay_at(replay_value)
+                snapshot = _WATCH_TOWER_SNAPSHOT.snapshot(replay_at=replay_at)
+                replay_partial = bool(snapshot.get("replay") and any(
+                    item.get("error_code") for item in snapshot.get("sources", [])
+                    if item.get("required")))
+                self._json(snapshot, 206 if replay_partial else 200)
+            except ReplayArgumentError as exc:
+                self._json({"error": "invalid_replay_at", "message": str(exc)}, 400)
+        elif path == "/api/health":
+            # P1 总览门户：七口探活 + 五守护任务（60s TTL，见 _api_health）
+            self._api_health()
+        elif path == "/api/jev-stack":
+            # P2 四件套观测页：metrics+换血时间轴+死信聚合（30s TTL，见 _api_jev_stack）
+            self._api_jev_stack()
         elif path == "/api/audit_status":
             # M6 最小接线（2026-10-08 定位拍板 C 混合态）：审计线状态面，
             # 只读、无鉴权、全体 unverified（拍板原文，鉴权/对账/调度缓行）。
@@ -2613,6 +2951,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
             except Exception as _e:  # 数据层异常也如实暴露（fail loud）
                 self._json({"ok": False, "verified": False,
                             "error": repr(_e)}, 500)
+        elif path == "/api/ctl/alerts":
+            # K-ORG-113 Hermes alerts 连接器只读面：OPEN 队列（控制卡口径，
+            # 无时间窗）。复用 feishu_control.alert_state，与飞书卡同源。
+            import feishu_control
+            al, err = feishu_control.alert_state()
+            if al is None:
+                self._json({"ok": False, "error": "告警库不可达：%s" % err}, 502)
+            else:
+                self._json(dict({"ok": True}, **al))
         elif path == "/api/duty_brief":
             # K-STOCK-364 值班经理盘前简报（只读·复用当日上下文·零模型调用；
             # ?snapshot=1 由 9:15 出件任务调用：现算+原子落盘当日快照）
@@ -3420,7 +3767,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                           len((qd_snap or {}).get("signals_recent", [])))),
                 # K-STOCK-033：AI 市场联动卡（聘请 AI 做商业化）
                 _card("/aim", "#d29922", "🤖", "AI 市场",
-                      "可聘 AI 岗位货架 · 田小皮 · 参谋长 + 投研部 alpha 团队"
+                      "可聘 AI 岗位货架 · 田丰 · 参谋长 + 投研部 alpha 团队"
                       "（T1/T2/N1/F1/D1）+ 专项 AI · 本地模型零 token 成本",
                       "11 个岗位在岗 · 按岗聘请"),
             ])
@@ -3642,6 +3989,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/bt2view":
             # K-STOCK-285b 回测框架 v2（参数表单+两策略对照+逐日日历复盘）
             self._html_file(os.path.join(ROOT, "bt2_view.html"))
+        elif path == "/flow":
+            # F1 动作流中心（统一事件流聚合/预览/重跑 + JEV 健康条）
+            self._html_file(os.path.join(ROOT, "flow.html"))
         elif path == "/paper":
             # K-STOCK 模拟仓前端（K279 产出 paper.html；nginx 8080 同文件
             # 静态直出，此处读盘直出保双口径一致——K-STOCK-042 修正过时占位）

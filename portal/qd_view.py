@@ -148,7 +148,7 @@ def _tail_rows(snap, base=None):
 
 
 # K-STOCK-037 全站超级助手浮动图标（qd 页独立 CSS，不走 _COCKPIT_CSS）
-FAB_HERMES = ("<a id='_hermesfab' href='http://127.0.0.1:8787' "
+FAB_HERMES = ("<a id='_hermesfab' href='/hermes/' "
               "target='_blank' rel='noopener' "
               "title='超级助手：对话即调度全部 AI 岗位' "
               "style='position:fixed;right:18px;bottom:70px;width:46px;"

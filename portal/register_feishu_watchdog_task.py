@@ -7,13 +7,16 @@
     python register_feishu_watchdog_task.py          # 注册并立即触发一次
     python register_feishu_watchdog_task.py --no-run # 仅注册
 """
+import os
 import subprocess
 import sys
 import time
 
 TASK = "FeishuBotWatchdog"
-PY = r"C:\Program Files\Python311\python.exe"
-BOT = r"E:\老田的AI助手\portal\start_feishu_bot.py"
+# 审核#3：绝对路径硬编码改 __file__ 相对推导——仓库迁移后重跑本脚本即恢复
+HERE = os.path.dirname(os.path.abspath(__file__))
+PY = os.path.join(os.path.dirname(HERE), "CowAgent", "venv", "Scripts", "python.exe")
+BOT = os.path.join(HERE, "start_feishu_bot.py")
 
 
 def run(cmd, timeout=60):

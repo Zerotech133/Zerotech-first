@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🩺 四件套观测 · 零界工作站</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:"Microsoft YaHei",Arial,sans-serif;margin:0;padding:0 0 40px}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 20px 0}
+h1{font-size:20px;margin:14px 0 4px;color:#e6edf3}
+h1 .sub{font-size:12px;color:#8b949e;font-weight:400;margin-left:10px}
+h2{font-size:14px;color:#8b949e;margin:26px 0 10px;letter-spacing:.5px}
+h2 .badge{margin-left:8px;font-weight:400}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+section{margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:10px}
+.card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:12px 14px;transition:border-color .15s}
+.card:hover{border-color:#30363d}
+.card.bad{border-color:#f8514966}
+.card .top{display:flex;justify-content:space-between;align-items:center}
+.card .name{font-size:13.5px;font-weight:600;color:#e6edf3}
+.card .role{font-size:11px;color:#8b949e;margin-top:3px;line-height:1.5}
+.card .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:1px}
+.dot.ok{background:#3fb950;box-shadow:0 0 6px #3fb95088}
+.dot.bad{background:#f85149;box-shadow:0 0 6px #f8514988;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.35}}
+.mrow{display:flex;justify-content:space-between;font-size:11px;font-family:Consolas,monospace;color:#8b949e;margin-top:6px}
+.mrow b{color:#c9d1d9;font-weight:600}
+.mrow .ok{color:#3fb950}.mrow .err{color:#f85149}.mrow .warn{color:#d29922}
+.nom{font-size:11px;color:#484f58;margin-top:8px;font-style:italic}
+.timeline{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:10px 16px}
+.tl-item{display:flex;gap:12px;font-size:12px;padding:6px 0;border-bottom:1px solid #21262d;font-family:Consolas,monospace}
+.tl-item:last-child{border-bottom:none}
+.tl-item .ts{color:#8b949e;white-space:nowrap}
+.tl-item .tag{white-space:nowrap;font-weight:700;border-radius:4px;padding:0 6px}
+.tag.blood{color:#f85149;background:#f8514922}
+.tag.pull{color:#3fb950;background:#3fb95022}
+.tl-item .detail{color:#c9d1d9;word-break:break-all}
+.tl-empty{color:#484f58;font-size:12px;padding:8px 0;font-style:italic}
+.dlq-head{display:flex;align-items:baseline;gap:14px;margin-bottom:10px}
+.dlq-head .big{font-size:34px;font-weight:700;color:#e6edf3;font-family:Consolas,monospace}
+.dlq-head .note{font-size:12px;color:#8b949e}
+table{width:100%;border-collapse:collapse;background:#161b22;border:1px solid #21262d;border-radius:10px;overflow:hidden;font-size:12px}
+th{color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #21262d;font-weight:600;white-space:nowrap}
+td{padding:7px 12px;border-bottom:1px solid #21262d;color:#c9d1d9}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:Consolas,monospace;color:#8b949e;white-space:nowrap}
+.lvl{font-weight:700}
+.lvl.high,.lvl.critical{color:#f85149}
+.lvl.medium{color:#d29922}
+.lvl.low{color:#8b949e}
+.final{color:#f85149;font-weight:700}
+.up{color:#d29922}
+.loading{color:#8b949e;font-size:12px}
+footer{margin-top:34px;color:#484f58;font-size:11px;text-align:center}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<script src="/static/nav.js?v=20261017-p4"></script>
+<div class="wrap">
+<h1>🩺 四件套观测 <span class="sub">Jev 评估栈 · 闸门/复核/双刀桥/卡片 · 30s 自动刷新</span></h1>
+
+<section>
+<h2>A · 四件套服务 <span class="badge loading" id="sstate">加载中…</span></h2>
+<div class="grid" id="cards"></div>
+</section>
+
+<section>
+<h2>B · 换血时间轴 <span class="badge">jev-stack.log 尾 40 行 · 最新在前</span></h2>
+<div class="timeline" id="timeline"><span class="loading">加载中…</span></div>
+</section>
+
+<section>
+<h2>C · 死信队列 <span class="badge">push_dead_letter.jsonl · 推送失败告警的安放处</span></h2>
+<div class="dlq-head"><span class="big" id="dlqn">—</span><span class="note" id="dlqnote">加载中…</span></div>
+<div style="overflow-x:auto"><table id="dlqt">
+<thead><tr><th>时间</th><th>级别</th><th>标题</th><th>紧急度</th><th>死因</th><th>终局</th><th>错误</th></tr></thead>
+<tbody></tbody></table></div>
+</section>
+
+<footer>四件套观测页 P2 · 2026-10-17 前端重规划 · 数据源 /api/jev-stack（metrics+换血+死信聚合，30s TTL）· <a href="/">← 返回总览</a></footer>
+</div>
+
+<script>
+/* 四件套角色说明（与 home.html SVC 一致，源自各模块 docstring） */
+var ROLE={
+ 'gate':'9101 · 告警降噪网关：轮询 OPEN 告警→判紧急度/方向→达标推企微',
+ 'review':'9102 · 信号复核门（影子模式）：只标注不拦截',
+ 'qd bridge':'9103 · Jev⇄QuantDinger 桥：复核判定同步 QD',
+ 'card':'9104 · 飞书卡片处理：推演卡等消息卡片生成投递'};
+var ZH={'gate':'闸门','review':'复核','qd bridge':'双刀桥','card':'卡片'};
+
+function fmtAlive(s){
+  if(s==null)return '—';
+  var d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  if(d)return d+'天'+h+'时';
+  if(h)return h+'时'+m+'分';
+  return m+'分'+(s%60)+'秒';
+}
+function fmtRate(ok,err){
+  var t=(ok||0)+(err||0);
+  if(!t)return null;
+  return (100*(ok||0)/t).toFixed(1)+'%';
+}
+
+function draw(d){
+  /* A · 服务卡片 */
+  document.getElementById('cards').innerHTML=d.services.map(function(s){
+    var m=s.metrics||{};
+    var rate=fmtRate(m.call_ok,m.call_err);
+    var rows='';
+    if(m.db_ok!=null||m.db_err!=null||m.call_ok!=null||m.call_err!=null){
+      rows+='<div class="mrow"><span>DB 查询</span><span><b class="ok">✓'+(m.db_ok||0)+'</b> <b class="err">✗'+(m.db_err||0)+'</b></span></div>'
+        +'<div class="mrow"><span>评估调用</span><span><b class="ok">✓'+(m.call_ok||0)+'</b> <b class="err">✗'+(m.call_err||0)+'</b></span></div>'
+        +'<div class="mrow"><span>调用成功率</span><b>'+(rate||'—')+'</b></div>';
+    }else{
+      rows+='<div class="nom">无业务指标（仅探活）</div>';
+    }
+    return '<div class="card'+(s.up?'':' bad')+'">'
+      +'<div class="top"><span class="name"><span class="dot '+(s.up?'ok':'bad')+'"></span>Jev '+(ZH[s.name]||s.name)+'</span>'
+      +'<span class="mrow" style="margin:0">'+s.port+'</span></div>'
+      +'<div class="role">'+(ROLE[s.name]||'')+'</div>'
+      +'<div class="mrow"><span>状态 / PID</span><span><b class="'+(s.up?'ok':'err')+'">'+(s.up?'UP':'DOWN')+'</b> · pid '+(s.pid||'?')+'</span></div>'
+      +'<div class="mrow"><span>业务存活</span><b>'+fmtAlive(m.alive_s)+'</b></div>'
+      +rows+'</div>';
+  }).join('');
+  document.getElementById('sstate').textContent='更新 '+d.ts;
+
+  /* B · 换血时间轴 */
+  var tl=document.getElementById('timeline');
+  if(!d.restarts||!d.restarts.length){
+    tl.innerHTML='<div class="tl-empty">近期无换血/拉活记录（尾 40 行内）——栈很稳</div>';
+  }else{
+    tl.innerHTML=d.restarts.map(function(r){
+      return '<div class="tl-item"><span class="ts">'+r.ts+'</span>'
+        +'<span class="tag '+r.kind+'">'+(r.kind==='blood'?'🩸 换血':'🌱 拉活')+'</span>'
+        +'<span class="detail">'+r.detail+'</span></div>';
+    }).join('');
+  }
+
+  /* C · 死信队列 */
+  document.getElementById('dlqn').textContent=d.dlq.count;
+  var n=d.dlq.count||0;
+  document.getElementById('dlqnote').textContent=n
+    ?'条死信 · 最近 8 条如下（final=终局，不再重试）'
+    :'队列为空 · 所有推送均成功';
+  var tb=document.querySelector('#dlqt tbody');
+  if(!n){tb.innerHTML='<tr><td colspan="7" style="color:#484f58;font-style:italic">无死信</td></tr>';return;}
+  tb.innerHTML=d.dlq.recent.map(function(x){
+    var p=x.urgent_p!=null?x.urgent_p:'—';
+    return '<tr><td class="mono">'+(x.ts||'')+'</td>'
+      +'<td><span class="lvl '+(x.level||'')+'">'+(x.level||'?')+'</span></td>'
+      +'<td>'+esc(x.title)+'</td>'
+      +'<td class="mono">'+(p>=0.7?'<span class="final">'+p+'</span>':p)+'</td>'
+      +'<td>'+esc(x.reason)+'</td>'
+      +'<td>'+(x.final?'<span class="final">是</span>':'<span class="up">否</span>')+'</td>'
+      +'<td class="mono" title="'+esc(x.err)+'">'+esc((x.err||'').slice(0,60))+'</td></tr>';
+  }).join('');
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+function load(){
+  fetch('/api/jev-stack').then(function(r){return r.json()}).then(draw)
+  .catch(function(e){
+    document.getElementById('sstate').textContent='获取失败：'+e;
+  });
+}
+load();
+setInterval(load,30000);
+</script>
+</body>
+</html>

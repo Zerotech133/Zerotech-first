@@ -5,7 +5,7 @@ $ErrorActionPreference = "Stop"
 if ($PSVersionTable.PSVersion.Major -ge 7) { $PSNativeCommandUseErrorActionPreference = $false }
 
 $Name   = "ai-portal"
-$Portal = "E:\老田的AI助手\portal"      # 挂载源唯一事实源
+$Portal = "C:\项目\老田的AI助手\portal"   # 挂载源唯一事实源（换机恢复：E: -> C:\项目）
 $Image  = "nginx:alpine"
 $Port   = "8080:80"
 
@@ -18,7 +18,8 @@ for ($i = 1; $i -le 30; $i++) {
 }
 
 Write-Host "[2/4] 重建容器 $Name（挂载源：$Portal）…" -ForegroundColor Cyan
-docker rm -f $Name *> $null
+$exists = docker ps -a --format "{{.Names}}" | Select-String -X $Name
+if ($exists) { docker rm -f $Name *> $null }
 docker run -d --name $Name --restart unless-stopped -p $Port `
     -v "${Portal}:/usr/share/nginx/html:ro" `
     -v "${Portal}\nginx.conf:/etc/nginx/conf.d/default.conf:ro" `

@@ -150,6 +150,20 @@ def order_activate(order_no, machine_fp="", days=365):
 
 
 # ── events ───────────────────────────────────────────────────────────
+def trace_payload(trace_id, fact_hash=None, decision_id=None,
+                  idempotency_key=None, payload=None):
+    """统一拼接跨 shadow/paper/performance 的追踪字段。"""
+    body = dict(payload or {})
+    values = {"trace_id": trace_id, "fact_hash": fact_hash,
+              "decision_id": decision_id, "idempotency_key": idempotency_key}
+    for name, value in values.items():
+        if value is not None:
+            if type(value) is not str or not value.strip():
+                raise ValueError(f"{name} 必须是非空字符串")
+            body[name] = value
+    return body
+
+
 def add_event(trace_id, source, kind, payload=None):
     with _conn() as con:
         con.execute(
@@ -157,6 +171,12 @@ def add_event(trace_id, source, kind, payload=None):
             "VALUES(?,?,?,?,?)",
             (_now(), trace_id, source, kind,
              json.dumps(payload, ensure_ascii=False) if payload else None))
+
+
+def add_trace_event(trace_id, source, kind, payload=None, *, fact_hash=None,
+                    decision_id=None, idempotency_key=None):
+    add_event(trace_id, source, kind, trace_payload(
+        trace_id, fact_hash, decision_id, idempotency_key, payload))
 
 
 # ── CLI ──────────────────────────────────────────────────────────────

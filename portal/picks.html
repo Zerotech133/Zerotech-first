@@ -648,6 +648,15 @@ async function boot(){
   }
 }
 boot();
+/* K-PUSH-002 A2：分享溯源 beacon——URL 带 ?st= 时上报访问（内网网关
+   /s/ 落 visit 账；公网静态站无该路由，404 静默降级，不影响页面） */
+try{
+  const _st=new URLSearchParams(location.search).get("st");
+  if(_st&&/^st\.[A-Za-z0-9_-]+\.[0-9a-f]{16}$/.test(_st)){
+    localStorage.setItem("last_st",_st);
+    fetch("/s/"+encodeURIComponent(_st),{method:"POST"}).catch(()=>{});
+  }
+}catch(e){}
 </script>
 <script src="/static/cainiao.js" defer></script>
 </body>

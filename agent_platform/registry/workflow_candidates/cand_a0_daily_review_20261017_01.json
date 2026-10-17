@@ -1,11 +1,11 @@
 {
   "cand_id": "cand_a0_daily_review_20261017_01",
-  "status": "in_shadow",
+  "status": "promoted",
   "ticket": "K-ORG-127",
   "workflow": {
     "target": "a0_daily_review",
     "champion_ref": "prompts/a0_chief.md（K-ORG-006 实例化骨架，qwen3.5:9b live 出稿 10-08~10-14）",
-    "champion_snapshot": "",
+    "champion_snapshot": "# A0 总管人设（K-ORG-006 实例化骨架）\n\n你是 A0，老田 AI 工作站的总管 Agent，名字叫「田丰」（全站习惯称你：小皮/田丰·参谋长），直接向老田（人类老板）汇报，全组织 24 在编岗均向田丰汇报。\n\n## 职责\n- 判读投研部日报：识别异常、风险、流程质量问题\n- 风险优先：最重要的判读放第一条\n- 每条判读一句话，最多 5 条；结尾给 1-2 条「明日关注」\n\n## 纪律（铁律）\n- **只基于日报内容判读，不臆造任何数据**；日报没提的不猜\n- **影子期间不给出任何买卖操作建议**——你的点评限于流程与链路质量（决策质量评估等影子期满再开放）\n- 不重复罗列日报已有表格数据，只给增量判断\n- 不确定就明说「需人工核对」，不装确定\n\n## 输出格式\nMarkdown 无序列表，每条以粗体关键词开头，例如：\n- **[链路]** 五票全 done 零降级，链路健康。\n- **[风险]** 全篮子 HOLD 使 J2 主判据失效，影子后需校准 D1 保守度。\n- **明日关注**：Day1 五票真推理是否再现 T1 倒戈。\n",
     "components": {
       "role": "A0 田丰（参谋长，ollama/qwen3.5:9b）——与冠军相同，本案不动模型绑定",
       "instruction": "# A0 总管人设（候选 cand_a0_daily_review_20261017_01 · K-ORG-127）\n\n你是 A0，老田 AI 工作站的总管 Agent，名字叫「田丰」（全站习惯称你：小皮/田丰·参谋长），直接向老田（人类老板）汇报，全组织 24 在编岗均向田丰汇报。\n\n## 职责\n- 判读投研部日报：识别异常、风险、流程质量问题\n- **首条固定「[回看]」：核对昨日「明日关注」是否在今日闭环**（输入含昨日点评档时逐条给结论：已闭环/未闭环/日报未提；无昨日点评档则整段跳过，不出此条）\n- 风险优先：最重要的判读放第一条（[回看]之后）\n- 每条判读一句话，最多 5 条；结尾给 1-2 条「明日关注」\n\n## 纪律（铁律）\n- **只基于日报内容判读，不臆造任何数据**；日报没提的不猜\n- **影子期间不给出任何买卖操作建议**——你的点评限于流程与链路质量（决策质量评估等影子期满再开放）\n- 不重复罗列日报已有表格数据，只给增量判断\n- 不确定就明说「需人工核对」，不装确定\n\n## 输出格式\nMarkdown 无序列表，每条以粗体关键词开头；**链路/脚本缺陷类判读（读取失败/字段缺失/超时等）末尾附 [P0|P1|P2] 建议级别（P0=立即处理 P1=1小时内 P2=当日），供开 8093 工单定级参考**，例如：\n- **[回看]** 昨日关注「任务单读取失败」——今日日报已修复闭环。\n- **[链路]** 任务单读取失败（severity 字段缺失）[P1]。\n- **[风险]** 全篮子 HOLD 使 J2 主判据失效，影子后需校准 D1 保守度。\n- **明日关注**：Day1 五票真推理是否再现 T1 倒戈。",
@@ -40,14 +40,47 @@
     "risk": "①回看段在无昨日档时按人设跳过，不臆造（铁律兜底）；②severity 是建议级标注，不自动开单——开单仍走人工/8093，防评估越权执行；③quality_check 未同步加「缺陷类判读须含 [P?]」检查，若 promoted 随同工单补代码判据；④回滚=恢复 prompts/a0_chief.md + 执行器去掉 --with-prev 默认行为（本案 --with-prev 本就是显式参数，不污染冠军路径）"
   },
   "judgement": {
-    "compare_ref": "data/shadow/a0_compare_2026-10-17_a0_daily_review.json（判读机制 K-ORG-120 · 首案归属 K-ORG-127 · qwen3.5:9b live · 补证档 data/shadow/evidence_20261017_d1_taskfix.md）",
-    "winner": "champion",
+    "compare_ref": "data/shadow/a0_compare_2026-10-17_a0_daily_review.json（判读机制 K-ORG-120 · 首案归属 K-ORG-127 · round4 glm/glm-5.3 智谱 coding 端点 · 补证档 data/shadow/evidence_20261017_d1_taskfix.md）",
+    "winner": "candidate",
     "confidence": "high",
     "date": "2026-10-17",
     "history": [
-      {"round": 1, "winner": "tie", "confidence": "medium", "note": "无补证档。missing：缺执行反馈数据。暴露下一案方向（日报缺反馈环）"},
-      {"round": 2, "winner": "champion", "confidence": "high", "note": "补证档附入（老田指令补 D1 校准+任务单修复反馈）后重判，自检 PASS；两次 JSON 无效均自动重发成功"}
+      {
+        "round": 1,
+        "winner": "tie",
+        "confidence": "medium",
+        "note": "无补证档。missing：缺执行反馈数据。暴露下一案方向（日报缺反馈环）"
+      },
+      {
+        "round": 2,
+        "winner": "champion",
+        "confidence": "high",
+        "note": "补证档附入（老田指令补 D1 校准+任务单修复反馈）后重判，自检 PASS；两次 JSON 无效均自动重发成功"
+      },
+      {
+        "round": 3,
+        "winner": "candidate",
+        "confidence": "high",
+        "note": "席位升级重判（K-ORG-130 glm 通道，glm-4.6 因 coding 计划 key 资源包限制 429，降改 glm-4-flash 双端点通用档）：同两份产出同补证档控制变量只换判读模型，判定反转。四条理由与补证档事实自洽——候选「未闭环」判定与账本一致（T-003 open=未执行）、P1 定级准确、冠军仅指出问题无定级无跟踪。round2 两处归因错误（田丰席复核发现）均被纠正。判读耗时 19.6s，自检 PASS"
+      },
+      {
+        "round": 4,
+        "winner": "candidate",
+        "confidence": "high",
+        "note": "席位再升级复核（K-ORG-136：glm_chat 切 coding 端点 + zhipu_key，4.6 资源包 429 问题转 glm-5.3 思考型）。同两份产出同补证档，控制变量只换席位模型（4-flash→5.3）。判定稳定 candidate/high，举证质量显著提升：①回看判定锚定账本（T-003 open=未执行=未闭环）②[P1] 定级与工单吻合③明日关注承接未闭环项④冠军零回看与补证档证据三一致，且诚实标注补证档未覆盖标的（300750/招行/茅台）无法分高下。推理 127.5s，自检 PASS。round3 结论获 5.3 席位复核支持——升级无漂移。"
+      }
     ],
-    "review_note": "田丰席复核（不重裁，只记复核发现）：round2 两条核心理由与补证档事实对照表冲突——①理由1称候选『错误判定未闭环』，但 T-20261008-003 open=未执行=未闭环，候选判定与账本一致；②理由3将补证档根因（事件行 KeyError）归功冠军产出，冠军产出原文并无此内容。机器判 champion/high 存疑，终审请人工细看 round2 判读档；亦印证 MASS 结论——评估者席位（9b）在补证档复杂上下文下出现归因混淆，后续可评估判读席位换强模型"
+    "review_note": "田丰席复核（不重裁，只记复核发现）：round2 两条核心理由与补证档事实对照表冲突——①理由1称候选『错误判定未闭环』，但 T-20261008-003 open=未执行=未闭环，候选判定与账本一致；②理由3将补证档根因（事件行 KeyError）归功冠军产出，冠军产出原文并无此内容。机器判 champion/high 存疑，终审请人工细看 round2 判读档；亦印证 MASS 结论——评估者席位（9b）在补证档复杂上下文下出现归因混淆，后续可评估判读席位换强模型。〔round3 后记：复核存疑已被 round3 证实——换强模型（glm-4-flash）后同证据判定反转为 candidate/high，两处归因错误均纠正。评估者席位=判读有效性组成部分的判例闭环。终审待老田三选一〕〔round4 后记：K-ORG-136 席位升级 glm-5.3 后同证据复核，判定与 round3 一致（candidate/high），四点举证全部锚定补证档事实并诚实标注证据未覆盖范围——升级无漂移，判读有效性进一步提升〕"
+  },
+  "review": {
+    "reviewer": "老田",
+    "date": "2026-10-17",
+    "decision": "promoted",
+    "basis": "round3 判读 candidate/high 与账本事实自洽（候选未闭环判定对 T-003 open、P1 定级对 severity 缺失）；round2 两处归因错误经田丰席复核与 round3 强模型重判双重证实；MASS 闭环意义——执行反馈环（回看+定级）正是本案补证档所暴露的缺口本体。终审选项：promoted / rejected / 存疑再议，选 promoted（推荐项）。",
+    "promotion": {
+      "new_champion": "prompts/a0_chief.md 已替换为候选 instruction（标题改注 promoted · K-ORG-127）",
+      "rollback": "champion_snapshot 即旧冠军全文（K-ORG-006 骨架），恢复即回滚",
+      "followup_ticket": "quality_check 补「缺陷类判读须含 [P?]」代码判据（proposal.risk ③ 的随同工单，待开）"
+    }
   }
 }

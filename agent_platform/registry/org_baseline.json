@@ -1,7 +1,7 @@
 {
- "_note": "田小皮监督回路的计划基线（K-ORG-026）。机器可读：tools/chief_patrol.py 只读 diff 本基线 vs tasks.json+dev_events 实际执行，产出四色判读。改计划=改本文件+重跑巡检。",
+ "_note": "田丰监督回路的计划基线（K-ORG-026）。机器可读：tools/chief_patrol.py 只读 diff 本基线 vs tasks.json+dev_events 实际执行，产出四色判读。改计划=改本文件+重跑巡检。",
  "org": "GenOS/老田AI工作站",
- "chief": "A0 田小皮",
+ "chief": "A0 田丰",
  "updated": "2026-10-14",
  "batches": [
   {
@@ -12,7 +12,7 @@
    "items": [
     {
      "id": "A1",
-     "task": "参谋长命名田小皮全链落地",
+     "task": "参谋长命名田丰全链落地",
      "owner": "A0",
      "done": "2026-10-13"
     },
@@ -33,7 +33,7 @@
    "items": [
     {
      "id": "B1",
-     "task": "全员日报扩面→田小皮判读",
+     "task": "全员日报扩面→田丰判读",
      "owner": "A0"
     },
     {
@@ -43,7 +43,7 @@
     },
     {
      "id": "B3",
-     "task": "devtask 加 approve 字段（跨部门单田小皮批）",
+     "task": "devtask 加 approve 字段（跨部门单田丰批）",
      "owner": "DOC1"
     }
    ]
@@ -114,7 +114,7 @@
   },
   {
    "id": "E",
-   "name": "批E·田小皮监督回路（K-ORG-026）",
+   "name": "批E·田丰监督回路（K-ORG-026）",
    "deadline": "2026-10-16",
    "status": "doing",
    "items": [
@@ -198,7 +198,7 @@
   },
   {
    "id": "G",
-   "name": "批G·田小皮中枢治理模型（K-ORG-051 设计·K-ORG-052 P1 落地）",
+   "name": "批G·田丰中枢治理模型（K-ORG-051 设计·K-ORG-052 P1 落地）",
    "deadline": "2026-10-20",
    "status": "doing",
    "items": [
@@ -221,7 +221,7 @@
      "task": "P2 首次端到端走查：拿一个真实研发方案全链试跑(分发→归集→走形检查→直批)",
      "owner": "A0A",
      "done": "2026-10-14",
-     "note": "K-ORG-054 首次端到端走查实跑：方案=K-ORG-051设计稿 vs 实现=b35ef75，SEC2 判定完善3·走形1·缺失3，报告 agent_platform/data/sec2/20261014_0154_*.md（走形项=田小皮修改命令输入，直推晨巡判读）"
+     "note": "K-ORG-054 首次端到端走查实跑：方案=K-ORG-051设计稿 vs 实现=b35ef75，SEC2 判定完善3·走形1·缺失3，报告 agent_platform/data/sec2/20261014_0154_*.md（走形项=田丰修改命令输入，直推晨巡判读）"
     },
     {
      "id": "G4",

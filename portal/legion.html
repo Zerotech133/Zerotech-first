@@ -57,6 +57,7 @@
   <div>
     <div class="panel"><h2>实时活动流（近 6h）</h2><div class="feed" id="feed">—</div></div>
     <div class="panel" style="margin-top:14px"><h2>🤝 今日复盘速览（三问）</h2><div class="feed" id="review-drawer" style="max-height:140px">—</div></div>
+    <div class="panel" style="margin-top:14px"><h2>⚖️ 三方会议（A0 田丰 · AI1 诸葛亮）</h2><div class="feed" id="tri-party-meetings" style="max-height:260px">加载中…</div></div>
     <div class="panel" style="margin-top:14px"><h2>🎓 研究院课题台账</h2><div class="feed" id="academy-topics" style="max-height:180px">加载中…</div></div>
     <div class="panel" style="margin-top:14px"><h2>工单泳道</h2>
       <div class="lanes">
@@ -122,6 +123,7 @@ async function tick(){
     document.getElementById("wall").innerHTML = r.members.map(m =>
       (()=>{ const rv=(window._reviews||{})[m.id]; const badge=rv?(rv.has_task?'<span style="color:var(--green);font-size:10px">✓任</span>':'<span style="color:var(--red);font-size:10px">✗任</span>'):''; return `<div class="m" style="cursor:pointer" onclick="drill('${m.id}')"><span class="dot ${m.state}"></span><span class="id">${m.id}</span><span class="nm">${m.name}</span>${badge}<span class="dept-tag">${m.dept}</span></div>`; })()).join("");
     loadReviews();
+    loadTriPartyMeetings();
     loadAcademyTopics();
     document.getElementById("feed").innerHTML = d.feed.length
       ? d.feed.slice().reverse().map(f => `<div class="row"><span class="ts">${(f.ts||"").slice(11)}</span><span class="who">${f.caller||"?"}</span><span class="what">${f.action} · ${(f.detail||"").slice(0,60)}</span></div>`).join("")
@@ -191,6 +193,43 @@ async function saveAttrs(agent){
     alert(r.ok ? "✓ 属性已写回 "+agent+" 的档案（经验+技能+自述），路由匹配将随之生效" : "保存失败: "+r.err);
     if(r.ok) drill(agent);
   }catch(e){ alert("保存失败: "+e.message); }
+}
+function escHtml(value){
+  return String(value==null?"":value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+async function loadTriPartyMeetings(){
+  const box = document.getElementById("tri-party-meetings");
+  if (!box) return;
+  try{
+    const d = await (await fetch(`${API2}/api/legion/tri-party/meetings`)).json();
+    const rows = d.meetings || [];
+    box.innerHTML = rows.map(r => `<div class="row" style="cursor:pointer" onclick="openTriPartyMeeting('${escHtml(r.meeting_id)}')"><span class="who" style="width:155px">${escHtml(r.meeting_id)}</span><span class="what"><b>${escHtml(r.subject||"未命名会议")}</b>｜${escHtml(r.status)}｜确认 ${escHtml(r.confirmation&&r.confirmation.status||"pending")}｜分歧 ${escHtml(r.disagreement_count||0)}</span></div>`).join("") || "<div style='color:var(--dim)'>暂无三方会议</div>";
+  }catch(e){ box.textContent = "三方会议数据不可达"; }
+}
+async function openTriPartyMeeting(meetingId){
+  const m = document.getElementById("modal");
+  m.style.display="flex";
+  document.getElementById("modal-body").innerHTML = "会议加载中…";
+  try{
+    const d = await (await fetch(`${API2}/api/legion/tri-party/meeting?meeting_id=${encodeURIComponent(meetingId)}`)).json();
+    if(!d.ok){ document.getElementById("modal-body").textContent = d.err; return; }
+    const x = d.meeting;
+    const view = aid => {
+      const v = x.views[aid] || {};
+      const safeList = key => (v[key]||[]).map(item => `<li>${escHtml(item)}</li>`).join("") || "<li>—</li>";
+      return `<div class="tk"><b>${escHtml(v.name||aid)} · ${escHtml(aid)}</b><br><span style="color:var(--dim)">结论：</span>${escHtml(v.conclusion||"—")}<br><span style="color:var(--dim)">观点：</span>${escHtml(v.position||"—")}<br><span style="color:var(--dim)">证据：</span><ul>${safeList("evidence")}</ul><span style="color:var(--dim)">风险：</span><ul>${safeList("risks")}</ul><details><summary>完整模型文本</summary><pre style="white-space:pre-wrap;font:12px/1.5 inherit">${escHtml(v.full_text||"")}</pre></details></div>`;
+    };
+    const diffs = (x.disagreements||[]).map(v => `<div class="tk"><b>${escHtml(v.label)}</b> · ${escHtml(v.kind)}<br>A0：${escHtml(v.a0)}<br>AI1：${escHtml(v.ai1)}</div>`).join("") || "<div class='tk'>暂无结构化分歧</div>";
+    document.getElementById("modal-body").innerHTML = `<h2 style="font-size:16px;margin-bottom:8px">⚖️ ${escHtml(x.subject)}</h2><div style="color:var(--dim);font-size:12px;margin-bottom:8px">状态：${escHtml(x.status)}｜用户确认：${escHtml(x.confirmation.status)}｜默认不自动派工</div><h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">A0 / AI1 双观点</h3>${view("A0")}${view("AI1")}<h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">分歧拆解</h3>${diffs}<div style="margin-top:10px;display:flex;gap:6px"><button onclick="confirmTriParty('${x.meeting_id}','confirmed')" style="background:var(--green);border:0;border-radius:6px;padding:6px 12px;cursor:pointer">用户确认</button><button onclick="confirmTriParty('${x.meeting_id}','rejected')" style="background:var(--red);color:#fff;border:0;border-radius:6px;padding:6px 12px;cursor:pointer">退回补证</button></div>`;
+  }catch(e){ document.getElementById("modal-body").textContent = "会议加载失败: "+e.message; }
+}
+async function confirmTriParty(meetingId, status){
+  const note = status === "confirmed" ? "用户确认会议材料" : "用户要求补证";
+  try{
+    const r = await (await fetch(`${API2}/api/legion/tri-party/confirm`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({meeting_id:meetingId,status,confirmed_by:"用户",note})})).json();
+    if(!r.ok){ alert("确认失败: "+r.err); return; }
+    closeModal(); loadTriPartyMeetings();
+  }catch(e){ alert("确认失败: "+e.message); }
 }
 async function loadAcademyTopics(){
   try{

@@ -255,7 +255,7 @@ DOMAIN_NAV_GROUPS = {
             ("💬 查数", "/nl", "nl"))),
         ("🚀 指挥", (
             ("🚀 驾驶舱", "/bridge", "bridge"),
-            ("🦸 超级助手", "http://127.0.0.1:8787", "hermes"),
+            ("🦸 超级助手", "/hermes/", "hermes"),
             ("🐴 CowAgent", "http://127.0.0.1:9899", "cowagent"),
             ("🧠 智策 OS", "http://127.0.0.1:5175", "zhice"),
             ("🤖 AI 市场", "/aim", "aim"),
@@ -297,7 +297,8 @@ DOMAIN_NAV_GROUPS = {
         ("📡 情报流", (
             ("🏠 情报工场", "/intel", "intel"),
             ("🤖 AI 晨报", "/bt-brief", "brief"),
-            ("⚖️ JEV 判断", "/bt-jev", "jev"))),
+            ("⚖️ JEV 判断", "/bt-jev", "jev"),
+            ("🩺 四件套观测", "/stack", "jevstack"))),
         ("🕸 知识图谱", (
             ("🎯 知识画布", "/kg/canvasv2", "kgcanvas"),
             ("🗺 作战地图", "/kg/battle", "kgbattle"),
@@ -313,7 +314,7 @@ DOMAIN_NAV_GROUPS = {
             ("📚 图谱词条", "/kg/lexicon", "kglexicon"),
             ("📄 图谱文档", "/kg/doc", "kgdoc"))),
         ("💼 情报变现", (
-            ("🛰 推送中台", "http://127.0.0.1:8097", "pushhub"),)),
+            ("🛰 推送中台", "/push/", "pushhub"),)),
     ),
     "creator": ((None, (
         ("🎬 创作专项", "/creator", "creator"),
@@ -325,6 +326,7 @@ DOMAIN_NAV_GROUPS = {
     ),
     "ops": ((None, (
         ("🎛 OS 控制台", "/ops", "opshome"),
+        ("⚡ 动作流中心", "/flow", "flow"),
         ("🛡 审计状态", "/audit", "audit"),
         ("🖥 系统自检", "/sys-health", "sys"))),),
 }
@@ -336,6 +338,7 @@ SECTION_PAGES = {k: [it for _, its in groups for it in its]
 
 PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "afterhours": "quant",
+                "flow": "ops",
                 "strategies": "quant", "screen": "quant",
                 "qpzm": "quant", "9dim": "quant", "chanlun": "quant",
                 "subscribe": "quant",
@@ -350,6 +353,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "intel": "intel",
                 "pushhub": "intel",
                 "jev": "intel", "brief": "intel", "kg": "intel",
+                "jevstack": "intel",
                 "kgcanvas": "intel", "kgask": "intel",
                 "kgmap": "intel", "kgshadow": "intel",
                 "kgbattle": "intel",
@@ -1285,7 +1289,7 @@ def _council_pending():
 _council_cache = {"t": 0.0, "d": None}
 
 # ==== 批7-BT 随行：_HERMES_FAB_HTML（strategies 页共用悬浮卡）====
-_HERMES_FAB_HTML = ("<a id='_hermesfab' href='http://127.0.0.1:8787' "
+_HERMES_FAB_HTML = ("<a id='_hermesfab' href='/hermes/' "
                     "target='_blank' rel='noopener' "
                     "title='超级助手：对话即调度全部 AI 岗位' "
                     "style='position:fixed;right:18px;bottom:70px;width:46px;"
