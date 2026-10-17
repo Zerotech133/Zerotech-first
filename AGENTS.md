@@ -32,6 +32,7 @@
 - **一单一事、单据先行**：无任务单不写码。
 - 每个 Agent 在**独立 git worktree** 干活：`python tools/devtask.py new <TID> <一句话>`——自动建 `.worktrees/<TID>/` + 分支 `task/<TID>`。禁止在 master 直接开发。
 - 完工合并必须过评审门：`python tools/devtask.py merge <TID>`（内置三守卫，门不过不合并）。
+- **共享数据根互斥（2026-10-17 立章）**：对数据根（`quant_backtest/data` 等 KG_DATA_ROOT 指向目录）做结构性操作（还原/迁移/清理/换根/重建 catalog）前，**必须先读 `C:\Temp\kg_sync_task.log` 尾部**确认无其他会话的进行中操作；操作完成后**必须补记该日志**。违反=评审门拒绝合并。（教训：2026-10-17 KGDataRoot 17.7GB 因两会话同时「清理 vs 还原」反复拉锯一上午）
 
 ## 4. 任务单纪律
 
