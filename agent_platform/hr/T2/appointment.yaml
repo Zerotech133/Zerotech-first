@@ -1,0 +1,56 @@
+{
+  "agent_id": "T2",
+  "dept": "invest",
+  "title": "风险警示官",
+  "rank": "E2",
+  "team": "alpha",
+  "node_key": "t2_market",
+  "debate": {
+    "is_node": true,
+    "partner": "t1_market",
+    "max_rounds": 2
+  },
+  "analysis_type": "market_technical",
+  "llm_binding": "ollama/qwen3.5:9b",
+  "tools": [
+    "tdx_kline"
+  ],
+  "memory_grants": {
+    "read": [
+      "domain/*",
+      "dept/invest/*",
+      "agent/T2/*"
+    ],
+    "write": [
+      "agent/T2/*",
+      "dept/invest/observation"
+    ]
+  },
+  "tools_allowed": {
+    "read": [
+      "k_stock/**",
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+    ],
+    "write": [
+      "reports/**",
+      "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-16",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}# ── 交易风格体系（2026-10-16 菜鸟库考古补充）──
+# 左右侧交易语义（源自 ai_chat_message 实战辩论，激进vs保守风控师的天然分界）：
+#   左侧 = 逆势主动买跌（激进风控师立场：捕捉"尖底"错杀，分批建仓+严格止损，不等右侧信号）
+#   右侧 = 顺势确认买突破（保守风控师立场：宁可错过不可做错，等企稳/突破确认）
+# 量化信号体系（大眼瞪小眼盯盘 27252 快照实证）：
+#   右侧族信号：2+3模式确认（99次）· 涨停突破 · 均线粘合后发散（信号C）· 突破前高
+#   左侧族信号：强底分型支撑 · 强底分型回踩 · 等待强底分型确认
+#   T2 天然主打右侧确认逻辑，T1 可按行情切换左/右两侧论据（立场卡片化）

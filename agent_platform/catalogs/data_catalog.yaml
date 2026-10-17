@@ -1,0 +1,102 @@
+# 数据册 v1 种子（K-ORG-119 批1）——全部条目来自 2026-10-16 实战验证的真实位置
+# 登记官：DATA1 ｜ 纪律：新数据源上线不登记=黑户；条目变更走 git
+resources:
+  - id: ashare_kline
+    kind: parquet
+    uri: quant_backtest/data/ashare/{code}_{mkt}.parquet   # mkt=SH|SZ；相对主仓根
+    what: A股日K全量（OHLCV/涨跌幅/换手，845日级深度）
+    freshness: 每日17:00后（ts_daily 入库）
+    access: "产线311 + pandas.read_parquet(uri)"
+    owner: DATA1
+    grants: [invest, trading, quality, ops_runtime]
+    verified: 2026-10-16（600337 实测）
+
+  - id: kg_graph
+    kind: neo4j
+    uri: bolt://127.0.0.1:7687
+    creds: quant_backtest/.env.local 的 KG_* 键
+    what: 全市场知识图谱（147.5万节点：席位/游资/机构/概念/形态/事件/intel）
+    freshness: 每日 06:20 KgDailySync 22步链
+    query_recipe:
+      seats: "MATCH (seat:Seat)-[t:TRADED_ON]->(:Security {symbol:{code}}) RETURN seat.name,t.net_buy,t.buy,t.sell"
+      events: "MATCH (:Security {symbol:{code}})-[:HAS_PATTERN|HAS_TOPGAP|HAS_VOL_EVENT]->(me) RETURN me.kind,me.date,me.type,me.vol_ratio ORDER BY me.date DESC"
+      holders: "MATCH (org:Organization)-[h:HOLDS]->(:Security {symbol:{code}}) RETURN org.name"
+      concepts: "MATCH (:Security {symbol:{code}})-[:MAPS_TO]->(c:Concept) RETURN c.name"
+    owner: DATA1
+    grants: [invest, quality]
+    verified: 2026-10-16
+
+  - id: news_db
+    kind: sqlite
+    uri: news_collector/news.db
+    table: news
+    columns: [id, source, ts, title, content, hit, pushed, digested, stocks, jev]
+    what: 新闻/公告库（财联社等源，含股票关联与 jev 标记）
+    freshness: 实时采集（NewsCollect 计划任务）
+    access: "sqlite3，按 ts 倒序；标题模糊匹配 '美克'/'600337'"
+    owner: N1（业务） / DATA1（登记）
+    grants: [invest, legal, ops_runtime]
+    verified: 2026-10-16
+
+  - id: cainiao_legacy
+    kind: mysql
+    uri: 127.0.0.1:3307/thunder_model
+    creds: .env.local 的 CAINIAO_MYSQL_DSN
+    what: 菜鸟遗产（42角色人设/六维24因子/27252盯盘快照/风格策略）——已考古提取，待dump封存
+    status: read-only-archived
+    owner: DATA1
+    grants: []   # 封存后不再授权
+    verified: 2026-10-16（考古完成）
+
+  - id: kg_dataroot
+    kind: parquet
+    uri: "C:/项目/KGDataRoot（KG_DATA_ROOT）"
+    what: KG 特征库全量 parquet（209k 文件）
+    freshness: 随 KgDailySync
+    owner: DATA1
+    grants: [invest]
+    verified: 2026-10-16
+
+  - id: tdx_quote
+    kind: process
+    uri: C:/项目/new_tdx64/TdxW.exe（14571/17709 白名单）
+    what: 通达信实时行情
+    owner: OPS1
+    grants: [trading, invest]
+    verified: 2026-10-16（check_ports 判例）
+
+  - id: weak_state
+    kind: jsonl
+    uri: quant_backtest/data/weak_*.json + reports/weak_track_*.jsonl
+    what: weak 产线状态与三线跟踪记录
+    freshness: 每日 15:30 WeakTrackCheck
+    owner: T1（业务）
+    grants: [invest, trading]
+    verified: 2026-10-16（301216 触发实证）
+
+  - id: paper_db
+    kind: sqlite
+    uri: k_stock/paper/paper.db
+    what: 模拟仓（订单/成交/快照，验收五判据）
+    freshness: 每交易日
+    owner: TR1
+    grants: [trading, quality]
+    verified: 2026-10-16（acceptance_check 全 PASS）
+
+  - id: strategy_registry
+    kind: json
+    uri: agent_platform/data/academy/research_topics.json
+    what: 研究院策略与课题台账（问题、假设、证据、验证、结论和行动）
+    freshness: 每次课题流转
+    owner: ACAD1 / STRAT1
+    grants: [academy, invest, data, dev, product, marketing, legal]
+    verified: 2026-10-17
+
+  - id: backtest_registry
+    kind: jsonl
+    uri: agent_platform/data/academy/backtests.jsonl
+    what: 研究院回测登记（数据版本、参数、样本外、成本压力测试和 Go/No-Go）
+    freshness: 每次回测完成
+    owner: BACK1 / DATA1
+    grants: [academy, invest, quality]
+    verified: 2026-10-17

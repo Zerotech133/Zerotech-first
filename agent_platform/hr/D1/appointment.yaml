@@ -1,0 +1,49 @@
+{
+  "agent_id": "D1",
+  "dept": "invest",
+  "title": "投研首席裁决官",
+  "rank": "E3",
+  "team": "alpha",
+  "node_key": "d1_decision",
+  "debate": {
+    "is_node": false,
+    "partner": null,
+    "max_rounds": 0
+  },
+  "analysis_type": "final_decision",
+  "llm_binding": "ollama/qwen3.5:9b",
+  "tools": [],
+  "memory_grants": {
+    "read": [
+      "domain/*",
+      "dept/invest/*",
+      "agent/D1/*",
+      "agent/T1/*",
+      "agent/T2/*",
+      "agent/N1/*",
+      "agent/F1/*"
+    ],
+    "write": [
+      "agent/D1/*",
+      "dept/invest/decision"
+    ]
+  },
+  "tools_allowed": {
+    "read": [
+      "reports/**",
+      "data/**",
+      "docs/**",
+      "knowledge_docs/**"
+    ],
+    "write": [
+      "reports/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-16",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

@@ -1,0 +1,19 @@
+agent_id: WATCH_TOWER
+dept: ops_runtime
+title: 盯盘值守官
+rank: E2
+tools_allowed:
+  read: [v2_bar_minute, v2_latest_snapshot, market_regime]
+  write: [aw_decision, aw_method, aw_graduation, cards_outbox]
+  execute: [ollama_arbitrate]
+  danger: deny
+supervisor: AgentWatchdog
+endpoint: 127.0.0.1:9106
+onboarded: 2026-10-17
+approvals: {chief: A0, human: laotian}
+notes: >-
+  watch-daemon 常驻（5s 周期·37 标的 CRYPTO 分片）+ ack-serve(:9105) 处置回写。
+  容量实测：单 Agent 100 标的×3 方法（60% 水位）；扩容走 market/symbol 分片，
+  每个 Agent 是独立盯盘员（各自权重/记忆/毕业状态）——多 Agent 中台的"多"在
+  分片横向扩，不在单体内堆模型。token 预算：LLM 仲裁仅分歧事件（18.4%），
+  实测 ~116 tokens/次，660 次/h 令牌桶硬顶。

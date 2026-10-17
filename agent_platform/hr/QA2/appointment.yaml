@@ -1,0 +1,16 @@
+{
+  "agent_id": "QA2",
+  "dept": "quality",
+  "title": "质量与安全保障部：测试双梯队(30年裁定+10年执行) + 安全审计(SEC1合规红线·SEC2研发质量对抗)",
+  "rank": "E1",
+  "tools_allowed": {
+    "read": [],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-08（补办登记 2026-10-16）",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

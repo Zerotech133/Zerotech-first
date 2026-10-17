@@ -1,0 +1,16 @@
+{
+  "agent_id": "DEV4",
+  "dept": "dev",
+  "title": "工程研发中心·工程师",
+  "rank": "E2",
+  "tools_allowed": {
+    "read": [],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-08（补办登记 2026-10-16）",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

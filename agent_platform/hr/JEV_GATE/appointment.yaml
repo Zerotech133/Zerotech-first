@@ -1,0 +1,13 @@
+agent_id: JEV_GATE
+dept: ops_runtime
+title: 告警判读官
+rank: E2
+tools_allowed:
+  read: [v2_alert]
+  write: [gate_ignored]
+  execute: [none]
+  danger: deny
+supervisor: JevStack
+endpoint: 127.0.0.1:9103
+onboarded: 2026-10-16
+approvals: {chief: A0, human: laotian}

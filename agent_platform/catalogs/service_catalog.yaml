@@ -1,0 +1,91 @@
+# 接口册 v1 种子（K-ORG-119 批1）——今日全部实测可达
+services:
+  - id: lark_push
+    kind: cli
+    endpoint: lark-cli / news_collector/send_feishu.py <file>
+    what: 飞书推送（卡片/文本，产线封装 SEND_OK 实证）
+    owner: MKT1 / ops_runtime
+    verified: 2026-10-16
+
+  - id: org_registry_api
+    kind: http
+    endpoint: 127.0.0.1:8093
+    what: 军团骨干（devtask 工单 create/status/list + observe 账本）
+    recipe: "POST /api/task/create {desc, caller}  # caller 必填归因"
+    owner: A0A
+    verified: 2026-10-16
+
+  - id: portal_api
+    kind: http
+    endpoint: 127.0.0.1:8091
+    what: 门户 API（看门狗守护，health 探活）
+    owner: OPS1
+    verified: 2026-10-16
+
+  - id: legion_ops_api
+    kind: http
+    endpoint: 127.0.0.1:8096
+    what: 数字军团作战大屏（编制、派工、复盘、研究院课题台账）
+    owner: A0A
+    supervisor: LegionOps
+    verified: 2026-10-17
+
+  - id: km_feishu_hub
+    kind: http
+    endpoint: 127.0.0.1:8099
+    what: 知识库飞书联动枢纽（目录扫描、摘要卡和统计）
+    owner: DATA1 / MKT1
+    supervisor: AI工作站CowAgent看门狗
+    verified: 2026-10-17
+
+  - id: hermes_facade
+    kind: http
+    endpoint: 127.0.0.1:8787
+    what: PC 总控门面（只转调，K-ORG-112 边界）
+    supervisor: HermesWebUI-Guard（30min 幂等）
+    owner: ops_runtime
+    verified: 2026-10-16
+
+  - id: jev_stack
+    kind: http
+    endpoint: 127.0.0.1:9103
+    what: Jev 四件套（告警降噪/信号复核/QD桥/卡片回调）
+    supervisor: JevStack 任务
+    owner: ops_runtime
+    verified: 2026-10-16
+
+  - id: ollama_local
+    kind: http
+    endpoint: 127.0.0.1:11434
+    what: 本地 LLM（qwen3.5:9b / qwen3.6:35b / bge-m3 / nomic 等 7 模型）
+    owner: OPS1
+    verified: 2026-10-16
+
+  - id: neo4j_http
+    kind: http
+    endpoint: 127.0.0.1:7474（bolt 7687）
+    what: Neo4j 浏览器/图谱库（容器 neo4j-kg）
+    owner: DATA1
+    verified: 2026-10-16
+
+  - id: osint_queue
+    kind: http
+    endpoint: 127.0.0.1:8300
+    what: OSINT 链接队列（T01，128 测试全绿）
+    owner: ops_runtime
+    verified: 2026-10-16
+
+  - id: ffmpeg_toolkit
+    kind: cli
+    endpoint: tools/ffmpeg/bin/ffmpeg.exe（已入用户 PATH）
+    what: 视频抽帧/转码（OSINT T03 前置）
+    owner: ops_runtime
+    verified: 2026-10-16（OCR 冒烟 PASS）
+
+  - id: backup_chain
+    kind: cli
+    endpoint: jev-eval/backup_daily.ps1（密钥 ~/.backup_aes_key）
+    what: 每日03:00 全量备份（AES加密+镜像+PRUNE）
+    supervisor: BackupDaily 任务
+    owner: OPS1
+    verified: 2026-10-16（DONE failed=0）

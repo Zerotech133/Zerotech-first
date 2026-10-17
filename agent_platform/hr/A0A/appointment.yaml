@@ -1,0 +1,16 @@
+{
+  "agent_id": "A0A",
+  "dept": "chief",
+  "title": "参谋长办公室：田丰助理（方案分发·汇总归集·命令下发跟踪）",
+  "rank": "E1",
+  "tools_allowed": {
+    "read": [],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-08（补办登记 2026-10-16）",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

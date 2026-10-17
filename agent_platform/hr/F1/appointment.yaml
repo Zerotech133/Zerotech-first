@@ -1,0 +1,48 @@
+{
+  "agent_id": "F1",
+  "dept": "invest",
+  "title": "财务鉴证官",
+  "rank": "E2",
+  "team": "alpha",
+  "node_key": "f1_fundamental",
+  "debate": {
+    "is_node": false,
+    "partner": null,
+    "max_rounds": 0
+  },
+  "analysis_type": "fundamental",
+  "llm_binding": "ollama/qwen3.5:9b",
+  "tools": [
+    "stock_fundamentals"
+  ],
+  "memory_grants": {
+    "read": [
+      "domain/*",
+      "dept/invest/*",
+      "agent/F1/*"
+    ],
+    "write": [
+      "agent/F1/*",
+      "dept/invest/observation"
+    ]
+  },
+  "tools_allowed": {
+    "read": [
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+    ],
+    "write": [
+      "reports/**",
+      "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-16",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}
