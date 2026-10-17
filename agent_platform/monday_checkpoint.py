@@ -20,6 +20,7 @@ import atexit
 import json
 import subprocess
 import sys
+import time
 from datetime import date, datetime
 from pathlib import Path
 
@@ -95,6 +96,15 @@ def _tee_log():
     atexit.register(_close_log)
 
 
+def _flush_log():
+    """重试等待前刷盘——日志即时可见（判例：巡检证据链看字节增长）。"""
+    if _LOG_HANDLE is not None and not _LOG_HANDLE.closed:
+        try:
+            _LOG_HANDLE.flush()
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def check(name, ok, detail=""):
     RESULTS.append((name, bool(ok), detail))
     print("[%s] %s%s" % ("PASS" if ok else "FAIL", name,
@@ -130,8 +140,26 @@ def main():
         days = sorted({r.get("date") for r in rows if r.get("date")})
         latest = days[-1] if days else None
         # 周一观察点时间窗外首跑未发生=PENDING 中性（不拉低退出码）；
-        # 周一当天首跑仍未发生=真 FAIL（观察点门未兑现）
+        # 周一当天首跑仍未发生=真 FAIL（观察点门未兑现）。
+        # ★时序加固：run_shadow 5 篮子实测均值 6.6 分钟/最坏 9.7 分钟
+        # （账本 25 行 latency_s 分布），首跑慢时 17:25 巡检会撞上未完成
+        # ——周一 PENDING 先等 90s 重试，最多 3 次（覆盖 ~4.5 分钟缓冲）。
         is_monday = date.today().weekday() == 0
+        pending_wait = 0
+        while True:
+            days = sorted({r.get("date") for r in rows if r.get("date")})
+            latest = days[-1] if days else None
+            if not (is_monday and (latest is None
+                                   or latest <= LAST_V0_DAY)):
+                break  # 非周一，或首跑已落账
+            if pending_wait >= 3:
+                break
+            pending_wait += 1
+            print("[wait] 首跑未落账（第 %d/3 次重试前等 90s——run_shadow"
+                  " 可能仍在跑，最坏 ~9.7 分钟）" % pending_wait)
+            _flush_log()
+            time.sleep(90)
+            rows = load_jsonl(LEDGER)
         if latest is None or latest <= LAST_V0_DAY:
             check("影子首跑已发生（最新交易日 > %s）" % LAST_V0_DAY,
                   not is_monday,
