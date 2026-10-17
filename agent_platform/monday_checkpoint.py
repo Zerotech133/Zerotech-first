@@ -34,12 +34,39 @@ PERF = BASE / "data" / "perf_ledger.jsonl"
 LOG = BASE / "data" / "shadow" / "monday_checkpoint.log"
 BASKET_N = 5  # 茅台/五粮液/平安/宁德/招行（run_shadow.BASKET）
 LAST_V0_DAY = "2026-10-14"  # 存量 v0 行末日：最新交易日未超过它=首跑未发生
+WAIT_SECONDS = 90            # 首跑未完成时的重试间隔
+MAX_WAIT_ROUNDS = 14         # 21 分钟：17:25 起可等到 ~17:46（预演实测全程 28 分钟）
 
 DK_FIELDS = ("dk_signal", "dk_regime", "dk_profile",
              "dk_blocked", "dk_reason", "dk_error")
 
 RESULTS = []
 _LOG_HANDLE = None
+
+
+def _today_done(rows, latest):
+    """latest 交易日的 done 行数（＝首跑进度）。"""
+    if not latest:
+        return 0
+    return sum(1 for r in rows
+               if r.get("date") == latest and r.get("status") == "done")
+
+
+def _needs_wait(rows, latest, is_monday):
+    """周一巡检是否应继续等首跑完成。
+
+    **等待条件必须与最终断言同源**：断言是「latest 日 done 行数 == BASKET_N」，
+    所以等待条件也必须是「该日 done 行数 < BASKET_N」。只等「完全没有新行」
+    会漏掉「部分落账」这个真实危险窗口——真实时序是先落 1 行，`latest` 立刻
+    越过 v0 日期，旧条件随即 break，然后带着 2-3/5 行去断言 ==5 判 FAIL
+    （10-17 隔离预演实测：5 篮子全程 27m55s > 17:10→17:25 的 15 分钟窗口）。
+    非周一不阻塞（时间窗外只查健康，PENDING 中性）。
+    """
+    if not is_monday:
+        return False
+    if latest is None or latest <= LAST_V0_DAY:
+        return True  # 首跑尚未落任何新行
+    return _today_done(rows, latest) < BASKET_N
 
 
 class _Tee:
@@ -141,24 +168,31 @@ def main():
         latest = days[-1] if days else None
         # 周一观察点时间窗外首跑未发生=PENDING 中性（不拉低退出码）；
         # 周一当天首跑仍未发生=真 FAIL（观察点门未兑现）。
-        # ★时序加固：run_shadow 5 篮子实测均值 6.6 分钟/最坏 9.7 分钟
-        # （账本 25 行 latency_s 分布），首跑慢时 17:25 巡检会撞上未完成
-        # ——周一 PENDING 先等 90s 重试，最多 3 次（覆盖 ~4.5 分钟缓冲）。
+        # ★时序加固 v2（10-17 隔离预演实测 27m55s/5 篮子，均值 5.6 分钟最坏 5.8）：
+        # 旧重试只在「完全没有新行」（latest 仍 <= LAST_V0_DAY）时等待——而真实
+        # 时序是**先落 1 行**，latest 立刻越过 v0 日期、循环随即 break，于是带着
+        # 2-3/5 行去断言 ==5 直接判 FAIL。危险窗口恰是「部分落账」，旧条件完全
+        # 不覆盖（判例：等待条件必须与最终断言同源，否则等的是另一件事）。
         is_monday = date.today().weekday() == 0
         pending_wait = 0
         while True:
             days = sorted({r.get("date") for r in rows if r.get("date")})
             latest = days[-1] if days else None
-            if not (is_monday and (latest is None
-                                   or latest <= LAST_V0_DAY)):
-                break  # 非周一，或首跑已落账
-            if pending_wait >= 3:
+            if not _needs_wait(rows, latest, is_monday):
+                break  # 非周一，或首跑已完成/无待等
+            if pending_wait >= MAX_WAIT_ROUNDS:
+                print("[wait] 已达等待上限 %d 轮（%.0f 分钟），按现状判定"
+                      % (MAX_WAIT_ROUNDS, MAX_WAIT_ROUNDS * WAIT_SECONDS / 60.0))
                 break
             pending_wait += 1
-            print("[wait] 首跑未落账（第 %d/3 次重试前等 90s——run_shadow"
-                  " 可能仍在跑，最坏 ~9.7 分钟）" % pending_wait)
+            done_n = _today_done(rows, latest)
+            print("[wait] 首跑未完成（%s，第 %d/%d 次重试前等 %ds——run_shadow"
+                  " 预演实测 5 篮子约 28 分钟，17:25 巡检会撞上未完成）"
+                  % ("尚未落账" if latest is None or latest <= LAST_V0_DAY
+                     else "当日 %d/%d 行" % (done_n, BASKET_N),
+                     pending_wait, MAX_WAIT_ROUNDS, WAIT_SECONDS))
             _flush_log()
-            time.sleep(90)
+            time.sleep(WAIT_SECONDS)
             rows = load_jsonl(LEDGER)
         if latest is None or latest <= LAST_V0_DAY:
             check("影子首跑已发生（最新交易日 > %s）" % LAST_V0_DAY,
