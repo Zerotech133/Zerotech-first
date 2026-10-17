@@ -12,6 +12,7 @@
 用法: python news_ai.py [review] [--dry]
 """
 import json
+import math
 import os
 import sqlite3
 import subprocess
@@ -137,6 +138,10 @@ JEV_NEWS_QUESTIONS = {
 _BIAS_CN = {"bull": "利多", "bear": "利空", "neutral": "中性"}
 _SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
              "crypto": "加密", "macro": "宏观"}
+# K-ORG-157：低置信阈值与时效衰减（实证支撑 K-ORG-156——0.5-0.7 段
+# 方向命中仅 32-43%，0.7+ 才稳定在 41-54%；净倾向按半衰期 6h 衰减加权）
+_JEV_LOW_CONF = 0.7
+_JEV_LAMBDA_H = 0.1155   # ln2/6，w=exp(-λ·Δt小时)
 
 
 _JEV_KEY_MEMO = None   # 2026-10-16 审计：进程内 memo（backfill 每判一条
@@ -347,17 +352,24 @@ def jev_judge_batch(items):
 
 
 def jev_summary(db, hours=24):
-    """近 N 小时已判断新闻的 JEV 分布文本（无数据返回空）。"""
+    """近 N 小时已判断新闻的 JEV 分布文本（无数据返回空）。
+
+    K-ORG-157：低置信（conf<70%）单列计数、不参与净倾向；净倾向仅计入
+    高置信方向判定（bull +1/bear -1），并按时效衰减加权 w=exp(-λ·Δt小时)
+    （半衰期 6h）——实证 0.5-0.7 段命中仅 32-43%，0.7+ 才稳定。
+    """
     since = (now_cst() - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M")
     try:
         rows = db.execute(
-            "SELECT jev FROM news WHERE jev IS NOT NULL AND jev!='' "
-            "AND created_at>=?", (since,)).fetchall()
+            "SELECT jev, created_at FROM news WHERE jev IS NOT NULL "
+            "AND jev!='' AND created_at>=?", (since,)).fetchall()
     except Exception as e:
         log("jev_summary 查询失败，JEV 分布降级为空: %s" % str(e)[:100])  # C2批2
         return ""
     bias_cnt, scope_cnt = {}, {}
-    for (j,) in rows:
+    low_conf, hi_dir, net = 0, 0, 0.0
+    now = now_cst()
+    for j, created_at in rows:
         try:
             d = json.loads(j)
         except Exception:
@@ -365,6 +377,22 @@ def jev_summary(db, hours=24):
         bias_cnt[d.get("bias", "?")] = bias_cnt.get(d.get("bias", "?"), 0) + 1
         sc = d.get("scope") or "?"
         scope_cnt[sc] = scope_cnt.get(sc, 0) + 1
+        conf = d.get("conf")
+        if isinstance(conf, (int, float)):
+            if conf < _JEV_LOW_CONF:
+                low_conf += 1
+                continue  # 低置信不参与净倾向
+            if d.get("bias") in ("bull", "bear"):
+                age_h = 0.0
+                try:
+                    age_h = max(0.0, (now - datetime.strptime(
+                        str(created_at or "")[:16],
+                        "%Y-%m-%d %H:%M")).total_seconds() / 3600.0)
+                except Exception:
+                    pass  # 豁免（C2批2）：时间坏值按 0h（权重 1）计
+                net += math.exp(-_JEV_LAMBDA_H * age_h) \
+                    * (1.0 if d.get("bias") == "bull" else -1.0)
+                hi_dir += 1
     if not bias_cnt:
         return ""
     total = sum(bias_cnt.values())
@@ -375,10 +403,14 @@ def jev_summary(db, hours=24):
         if scope_cnt.get(sc):
             parts.append("%s %d（多%d/空%d）" % (
                 _SCOPE_CN[sc], scope_cnt[sc],
-                sum(1 for (j,) in rows if _bias_of(j) == "bull"
+                sum(1 for (j, _ca) in rows if _bias_of(j) == "bull"
                     and _scope_of(j) == sc),
-                sum(1 for (j,) in rows if _bias_of(j) == "bear"
+                sum(1 for (j, _ca) in rows if _bias_of(j) == "bear"
                     and _scope_of(j) == sc)))
+    if low_conf:
+        parts.append("低置信%d条(<70%%)" % low_conf)
+    if hi_dir:
+        parts.append("净倾向(时衰×高置信)%+.1f" % net)
     return " · ".join(parts)
 
 
