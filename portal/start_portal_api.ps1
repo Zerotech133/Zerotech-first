@@ -46,6 +46,23 @@ if ($h -eq 1) {
         Out-File $log -Append -Encoding utf8
     exit 0
 }
+# K-ORG-155 (10-17): cold-start linkage guard. Parallel portal rework can
+# leave the tree with broken imports (api_misc deleted / job_spec_registry
+# missing / chanlun_data removed -> cold start crashes the whole portal
+# line at boot). Before killing orphans and starting, run an import smoke
+# of portal_api; a broken tree => refuse to start, alert, exit 1. Re-run
+# when the tree is healthy. Restart-flag path also passes through here.
+$smoke = (& 'C:\Program Files\Python311\python.exe' -X utf8 -c "import sys; sys.path.insert(0, r'C:\aios\portal'); import portal_api" 2>&1 | Out-String).Trim()
+$smoke_rc = $LASTEXITCODE
+if ($smoke_rc -ne 0) {
+    ('cold-start guard BLOCKED: portal_api import failed rc=' + $smoke_rc + ' ' + (Get-Date -Format s)) |
+        Out-File $log -Append -Encoding utf8
+    $smoke | Out-File 'C:\Temp\portal_api_err.log' -Append -Encoding utf8
+    & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py portal_api $smoke_rc C:\Temp\portal_api_err.log 1>$null 2>$null
+    exit 1
+}
+('cold-start guard OK: portal_api import smoke passed ' + (Get-Date -Format s)) |
+    Out-File $log -Append -Encoding utf8
 try {
     # task Stop cannot kill the child; clear orphans first
     # K186: WQL server-side filter (was full Win32Process enum - K132 hang root)

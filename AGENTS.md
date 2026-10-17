@@ -65,6 +65,7 @@
 - 杀进程前先辨认是不是线上服务（按启动时间+端口归属）；
 - **修复写盘 ≠ 生效（2026-10-16 P0 实锤）**：改常驻服务代码后必须杀旧进程换血——「缺则拉」型守护器（start_jev_stack.ps1 类）不认 mtime，旧进程会带旧码跑到天荒地老；验证=新进程出生时间 > 文件 mtime + 日志出现新分支特征行；
 - **S4U/Session0 进程只信端口判活（2026-10-16 双实证）**：CIM/Win32_Process 枚举漏列+CommandLine 全 null；找 PID 用 `Get-NetTCPConnection -LocalPort`，杀进程要 UAC taskkill（`Start-Process cmd -Verb RunAs`，降权 token Access denied）。
+- **8091 冷启动断链守卫（2026-10-17 K-ORG-155 临时红线）**：portal 并行改版期间 `portal_api.py` 顶层 import 链（api_misc/job_spec_registry/chanlun_data 等）可能中途断裂——**冷启动即整线下线**。`portal/start_portal_api.ps1` 已内置 import 冒烟预检：断链时**拒绝拉起并告警（exit 1）**，任何人不得绕过该预检直接裸启 8091；断链处置=按公告板登记意图恢复/落盘相应模块后再启。portal 改版收口后经用户确认解除本条。
 
 ## 8. 工程命名与别名注册表（2026-10-17 立章）
 
