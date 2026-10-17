@@ -692,3 +692,39 @@ def test_console_has_drill_and_ton():
     for kw in ("NODE_META", "drill(", "top_n", "可融合", "可下钻",
                "可调配", "松耦合", "modal"):
         assert kw in text, kw
+
+
+# ── K-STOCK-421：/api/risk 风控桥路由 ─────────────────────────────────
+def test_api_risk_route_degrades_gracefully(monkeypatch):
+    # 契约：risk_payload 如实上抛，do_GET 的 /api/risk 分支兜底降级
+    import inspect
+    import pytest as _pytest
+    from strategy_layer import dashboard_api
+    monkeypatch.setitem(
+        __import__("sys").modules, "strategy_layer.risk_bridge",
+        type("M", (), {"risk_context": staticmethod(
+            lambda: (_ for _ in ()).throw(RuntimeError("boom")))})())
+    with _pytest.raises(RuntimeError):
+        dashboard_api.risk_payload()
+    src = inspect.getsource(dashboard_api.Handler.do_GET
+                            if hasattr(dashboard_api, "Handler")
+                            else dashboard_api.register_routes)
+    assert "/api/risk" in src
+
+
+def test_api_risk_route_happy(monkeypatch):
+    from strategy_layer import dashboard_api
+    monkeypatch.setitem(
+        __import__("sys").modules, "strategy_layer.risk_bridge",
+        type("M", (), {"risk_context": staticmethod(
+            lambda: {"available": True, "rules": {}})})())
+    payload, code = dashboard_api.risk_payload()
+    assert code == 200 and payload["risk"]["available"] is True
+
+
+def test_console_has_risk_card():
+    from strategy_layer.dashboard_api import _static_page
+    text = _static_page("management_console.html").decode("utf-8")
+    for kw in ("riskCard", "loadRisk", "/api/risk", "已接·影子",
+               "RiskGuard L4"):
+        assert kw in text, kw

@@ -329,6 +329,16 @@ def _parse_psql_rows(text: str) -> list:
     return rows
 
 
+def risk_payload() -> tuple:
+    """RiskGuard 影子水位（K-STOCK-421）。
+
+    risk_bridge 只读跨仓账本+快照，缺失降级 available=false
+    （前端隐藏风控卡而非报错）。返回 (payload, http_code)。
+    """
+    from strategy_layer.risk_bridge import risk_context
+    return ({"ok": True, "risk": risk_context()}, 200)
+
+
 def signals_payload(date: str = "") -> tuple:
     """当日/指定日组合信号。返回 (payload, http_code)。"""
     d = _normalize_date(date)
@@ -507,6 +517,15 @@ def register_routes(server_or_app: Any) -> Any:
             self.end_headers()
             self.wfile.write(body)
             return None
+        if u.path == "/api/risk":
+            try:
+                payload, code = risk_payload()
+            except Exception as exc:  # noqa: BLE001 — 桥失败降级
+                payload = {"ok": True,
+                           "risk": {"available": False,
+                                    "error": str(exc)[:200]}}
+                code = 200
+            return _send_json(self, payload, code)
         if u.path == "/api/strategies":
             try:
                 return _send_json(self, strategies_payload())

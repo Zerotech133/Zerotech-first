@@ -184,6 +184,12 @@ button.btn.save{background:var(--blue);color:#fff}
 <!-- ═══ Tab 2 融合中心 ═══ -->
 <section id="secFuse" class="sec">
   <div class="kpi" id="fuseKpi"></div>
+  <div class="card" style="margin-bottom:14px" id="riskCard">
+    <h3><span class="dot" style="background:var(--red,#d9534f)"></span>🛡 RiskGuard 风控水位（影子账本 · 只记不拦）</h3>
+    <div class="kpi" id="riskKpi" style="margin:8px 0"><span class="muted">加载中…</span></div>
+    <div class="mini-flow" id="riskGate" style="margin:0 0 6px"></div>
+    <p class="muted" id="riskNote"></p>
+  </div>
   <div class="card" style="margin-bottom:14px">
     <h3><span class="dot" style="background:var(--orange)"></span>融合公式与流向</h3>
     <div class="mini-flow" style="margin:0 0 10px">combined_score = Σ ( weight_i × conf_i × score_i ) &nbsp;→&nbsp; 组合动作 = 多数派 · 分歧标记 = 动作不一致 · 存 strategy.signals_combined（PK: trade_date+symbol，重跑幂等 upsert）</div>
@@ -219,7 +225,7 @@ button.btn.save{background:var(--blue);color:#fff}
       <div class="slot on"><span class="st">已接入</span><b>chan_monitor</b><p>缠论信号池（A 股/美股分市场选日），read chanlun_pool*.jsonl。</p></div>
       <div class="slot"><span class="st">预留</span><b>dual_blade（量子双刀）</b><p>Scanner→Screener→Signal 三阶段流水线，Phase3 收口后按 SOP 接入。</p></div>
       <div class="slot"><span class="st">预留</span><b>llm_agent</b><p>Ollama + MCP 工具面（11 工具）驱动的 LLM 选股，槽位已留。</p></div>
-      <div class="slot"><span class="st">规划</span><b>RiskGuard L4</b><p>风控从盯盘系统解耦为共享裁决位，与 10-20 满窗裁决会合。</p></div>
+      <div class="slot on"><span class="st">已接·影子</span><b>RiskGuard L4</b><p>风控桥已通：/api/risk 提炼影子账本水位（R1 市场质量/R2 流动性/R3 事件风险/R4 仓位），只记不拦，10-20 满窗裁决后议 enforce。</p></div>
       <div class="slot"><span class="st">开放</span><b>外部策略 API</b><p>任何能产出 Signal JSON 的外部方案（含人工经验）均可按 SOP 挂载。</p></div>
     </div>
   </div>
@@ -314,7 +320,29 @@ function drill(id){
 }
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
 function setTab(v){for(const s of["fit","fuse","ext","ops"]){document.getElementById("sec"+s[0].toUpperCase()+s.slice(1)).style.display=s===v?"":"none";document.getElementById("nav"+s[0].toUpperCase()+s.slice(1)).className=s===v?"on":""}
- if(v==="fuse")loadFuse();if(v==="ops")loadOps()}
+ if(v==="fuse"){loadFuse();loadRisk()}if(v==="ops")loadOps()}
+
+async function loadRisk(){
+  try{
+    const j=await(await fetch("/api/risk")).json();
+    const r=j.risk||{};
+    if(!r.available){document.getElementById("riskKpi").innerHTML='<span class="muted">RiskGuard 账本不可达（影子桥降级）</span>';return}
+    const R=r.rules||{};
+    const kpi=(id,v,c)=>`<div class="kcard"><div style="font-size:11px;color:var(--sub)">${id}</div><b style="color:${c||"inherit"}">${v}</b></div>`;
+    document.getElementById("riskKpi").innerHTML=
+      kpi("R1 市场质量", `${R.R1.pass}/${R.R1.block} pass/block`, (R.R1.block>R.R1.pass)?"#d9534f":"#2e9e5b")+
+      kpi("R2 流动性", `${R.R2.pass}/${R.R2.block}`)+
+      kpi("R3 事件风险", `${R.R3.pass}/${R.R3.block}`)+
+      kpi("R4 仓位集中", `${R.R4.pass}/${R.R4.block}`)+
+      kpi("衰竭标的(快照"+(r.snapshot.day||"—")+")", r.snapshot.exhausted_n)+
+      kpi("账本尾部", r.tail_lines+" 行");
+    const g=r.market_gate;
+    document.getElementById("riskGate").textContent=g?
+      (`市场级闸：健康占比 ${g.score} → ${g.action}（${g.reason}）`):
+      "市场级闸：最近批次未触发";
+    document.getElementById("riskNote").textContent=r.note||"";
+  }catch(e){document.getElementById("riskKpi").innerHTML='<span class="muted">风控桥加载失败</span>'}
+}
 /* ── 融合中心 ── */
 function actBadge(a){const c={buy:"b-buy",sell:"b-sell",hold:"b-hold",watch:"b-watch"}[a]||"b-hold";const t={buy:"买",sell:"卖",hold:"持",watch:"观察"}[a]||a;return `<span class="badge ${c}">${t}</span>`}
 function confBadge(c){const cls=c>=0.75?"b-high":c>=0.5?"b-mid":"b-low";return `<span class="badge ${cls}">${(+c).toFixed(2)}</span>`}
