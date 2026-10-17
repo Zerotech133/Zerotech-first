@@ -182,6 +182,12 @@ class Interpreter:
             base += "\n[数据]\n%s\n" % data
         if extra:
             base += "\n对方观点：\n%s\n" % extra
+        # 决策节点与其它节点的输出契约不同：D1 的 system 要求「输出 JSON」，而旧实现
+        # 给**所有**节点追加「3 句以内结论」——与 system 直接冲突，模型采信 user 时
+        # 只写散文，parse_decision 拿不到 JSON（K-STOCK-338 偶发 parse_ok=false 的
+        # 根因之一：10-17 隔离预演 600519 复现 123 字散文无 JSON）。决策节点单独收口。
+        if node.get("analysis_type") == "final_decision":
+            return base + "\n请严格只输出一个 JSON 对象，不要任何解释文字、不要代码块围栏。"
         return base + "\n请基于以上数据给出简要分析结论（3 句以内，引用具体数据）。"
 
     # ---------- 单节点 ----------

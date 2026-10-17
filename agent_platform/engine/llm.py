@@ -41,6 +41,7 @@ class OllamaLLM:
         self.host = host.rstrip("/")
         self.timeout = timeout
         self.retries = retries
+        self.last_meta = None  # 最近一次调用元信息（done_reason/eval_count），供排障
 
     def chat(self, system, user, model="qwen3.5:9b"):
         """返回 (text, status)；重试耗尽抛 LLMError（由解释器转降级）"""
@@ -65,7 +66,16 @@ class OllamaLLM:
                 )
                 with op.open(req, timeout=self.timeout) as r:
                     d = json.load(r)
-                return d["message"]["content"], "normal"
+                # 保留生成元信息：旧实现只要 content，done_reason 被丢掉——
+                # 于是「被 num_predict 截断」与「模型没守格式」两种故障在证据上
+                # 完全无法区分（10-17 排障时只能靠外部探针反推）。
+                self.last_meta = {k: d.get(k) for k in
+                                  ("done_reason", "eval_count", "prompt_eval_count",
+                                   "total_duration")}
+                # done_reason=="length"：生成被上限截断，内容不完整（JSON 常在尾部，
+                # 截断必致 parse 失败）→ 显式降级，不当作正常样本入库。
+                status = "degraded" if d.get("done_reason") == "length" else "normal"
+                return d["message"]["content"], status
             except Exception as e:  # noqa: BLE001
                 last = e
                 time.sleep(1.5)
