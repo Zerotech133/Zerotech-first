@@ -428,6 +428,9 @@ class TestTopNTruncation:
 def test_persist_psycopg2_rejects_bad_trade_date():
     """trade_date 非纯数字时拒绝删除替换（注入面防线）。"""
     import pytest as _pytest
+    _pytest.importorskip("psycopg2.extras",
+                         reason="本环境未装 psycopg2（生产/判例环境有），"
+                                "依赖缺失应 skip 而非 fail 污染基线")
     from strategy_layer.aggregator import _persist_psycopg2
     row = {"trade_date": "2026-10-17'; DROP TABLE x; --", "symbol": "000001.SZ",
            "action": "buy", "score": 1.0, "confidence": 0.5,

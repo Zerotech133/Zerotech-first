@@ -198,9 +198,14 @@ def merge_evidence(root: Path, tid: str, task: dict,
     if not check_git:
         return False
     try:
+        # ★锚定防洗白（K-ORG-064 判例同步：devtask_audit.is_merged 同款）：
+        # --grep 是子串匹配，裸 "merge task/<TID>" 会前缀撞号——tid=K-ORG-15
+        # 命中 "merge task/K-ORG-155: ..."（真仓实测 4 条误命中），approve done
+        # 的合并证据门被前缀工单的 merge 提交误开。cmd_merge 标题格式恒为
+        # "merge task/<TID>: ..."，-F 固定串 + 冒号锚定（-F 防 tid 含正则元字符）。
         r = subprocess.run(
-            ["git", "log", "--all", "--grep=%s%s" % (MERGE_MARKER, tid),
-             "--oneline"],
+            ["git", "log", "--all", "-F",
+             "--grep=%s%s:" % (MERGE_MARKER, tid), "--oneline"],
             cwd=str(root), capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=15)
         return r.returncode == 0 and bool(r.stdout.strip())

@@ -69,7 +69,9 @@ REC_SCORE = {"STRONG_BUY": 2.0, "BUY": 1.0, "HOLD": 0.0, "WATCH": -0.5,
              "SELL": -1.0, "STRONG_SELL": -2.0}
 # failed 即时告警（K-STOCK-013）：复用已验证推送链；P0 语义=不等 17:35 日报
 PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
-ALERT_STATE = DATA_ROOT / "shadow" / "p0_alert_state.json"
+# ★判例对齐：p0_alert_state 不立并列常量（读侧 95 行走 _data_root() 运行时反推，
+# 写侧曾用模块级 ALERT_STATE——monkeypatch/隔离场景读写分裂「只隔离一半」）。
+# 统一：读写都经 _data_root()/shadow/p0_alert_state.json。
 
 
 def _data_root():
@@ -115,6 +117,7 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
         print("[alert] failed 即时告警推送：%s" % (out.splitlines()[-1] if out else "无输出"))
         tmp.unlink(missing_ok=True)
         if ok:
+            alert_state = _data_root() / "shadow" / "p0_alert_state.json"
             alert_state.write_text(json.dumps({"date": today, "pushed": True}), encoding="utf-8")
     except Exception as e:  # noqa: BLE001
         print("[alert] 告警推送异常（不中断主流程）：%s" % e)

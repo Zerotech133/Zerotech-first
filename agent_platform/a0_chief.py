@@ -222,17 +222,27 @@ def build(today):
 def main():
     push = "--push" in sys.argv
     global LEDGER
+    rehearsal = False
     if "--ledger" in sys.argv:  # P0 演练通道：注入临时假账本，不碰真账本
         LEDGER = Path(sys.argv[sys.argv.index("--ledger") + 1])
+        rehearsal = True
         print("[A0] 演练模式：账本=%s" % LEDGER)
     today = datetime.now().strftime("%Y-%m-%d")
     report, p0 = build(today)
-    out = BASE / "data" / "shadow" / ("daily_report_%s.md" % today)
+    # 演练隔离必须完整：账本不碰真仓只是半个隔离——日报文件若仍写真名，
+    # 演练内容会覆盖当日真日报（17:35 生产日报被假数据顶掉）；且演练账本
+    # 里的 failed 会触发 p0>0 → 强制真飞书推送假 P0 告警（外部副作用不可撤回）。
+    # 判例同源：opt-out 非 fail-safe，演练侧默认拒绝外部副作用。
+    suffix = "_rehearsal" if rehearsal else ""
+    out = BASE / "data" / "shadow" / ("daily_report_%s%s.md" % (today, suffix))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(report, encoding="utf-8")
     print("[A0] 日报已生成：%s%s" % (out, "  [P0!]" if p0 else ""))
-    # 推送策略：--push 显式推送；P0 存在时无论开关强制推（K-ORG-001 事件通道语义）
-    if push or p0:
+    # 推送策略：--push 显式推送；P0 存在时无论开关强制推（K-ORG-001 事件通道语义）；
+    # 演练模式一律不推（真飞书是外部副作用，演练数据无推送资格）
+    if rehearsal:
+        print("[A0] 演练模式：跳过飞书推送（含 P0 强推语义，外部副作用禁发）")
+    elif push or p0:
         ok, _ = push_to_feishu(out)
         if p0 and not ok:
             print("[A0] 警告：P0 事件但推送失败，需人工介入检查飞书链路")

@@ -99,6 +99,7 @@ def stance_groups(per_symbol_latest: dict) -> dict:
     groups = {}
     if not DB.exists():
         return groups
+    conn = None
     try:
         conn = sqlite3.connect(str(DB), check_same_thread=False)
         for sym, r in per_symbol_latest.items():
@@ -109,9 +110,15 @@ def stance_groups(per_symbol_latest: dict) -> dict:
             import re as _re
             m = _re.search(r"看多|看空", head)
             groups[sym] = "倒戈" if (m and m.group(0) == "看空") else "坚守"
-        conn.close()
     except Exception:  # noqa: BLE001
         pass
+    finally:
+        # 异常路径也要还连接（查询中途炸时旧实现泄漏 sqlite 句柄）
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:  # noqa: BLE001
+                pass
     return groups
 
 
