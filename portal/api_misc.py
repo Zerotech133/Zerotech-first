@@ -1573,7 +1573,7 @@ transition:.3s;z-index:9}
                        meta.get("n_batches") or len(batches),
                        e(str(meta.get("generated_at", "—")))))
         return ("<div class='sec'><h2>📊 每日批次回测</h2>" + body + "</div>")
-    # ── K-STOCK-037 组织架构图页（/org）：树形岗位图 · 对话统一走超级助手 ──
+    # ── K-STOCK-037 组织架构图页（历史 SSR，已由新版 org.html 替代） ──
     def _org_page(self):
         """🏛 组织架构：human → 田丰 · 参谋长 → 部门 → 岗位 树形图。
         数据源 agent_platform/registry/{org,team_*}.json 与

@@ -30,15 +30,45 @@ def _load_pw():
 
 
 PROJ = "kg_core"
-# 核心分析子图：主体（公司/证券/人/机构/产品/主题/概念），跳过海量事件明细节点
-# K-STOCK-426：Concept 纳入投影——此前 Concept 被标签过滤排除，其 MAPS_TO
-# 边随之出局，pagerank/社区从未覆盖概念枢纽；补算后 kg_boost 概念热度可
-# 从 MAPS_TO 入度升级为 Concept pagerank 分位（图谱结构升级，社区划分随
-# 之语义化，属预期收益；先冒烟对比再入 07:00 例行）。
-NODE_LABELS = ["Company", "Security", "Person", "Organization", "Product", "Theme", "Concept"]
+# 核心分析子图：主体（公司/证券/人/机构/产品/主题），跳过海量事件明细节点
+# K-STOCK-426 教训与定稿：Concept 曾一次性并入投影——430 个概念枢纽把
+# Louvain 吸成巨社区（Security.community_id 全域漂移），kg_boost 冒烟
+# 5596 条 buy（权威账 57 条），社区分位区分度塌方，已回滚。定稿方案：
+# 主投影维持 6 标签（社区结构稳定）；Concept pagerank 走独立子投影
+# （Security+Concept+MAPS_TO 有向图 stream 写回 Concept.pagerank），
+# parquet 导出后拼装 Concept 行（community_id=-1 占位）——kg_boost 概念
+# 热度从 MAPS_TO 入度升级为 pagerank 分位，社区打分零行为变化。
+NODE_LABELS = ["Company", "Security", "Person", "Organization", "Product", "Theme"]
 REL_TYPES = ["HOLDS", "SERVES_AS", "USES_TECH", "PRODUCES", "INVOLVES",
              "TRADED_ON", "MAPS_TO", "SUBSIDIARY_OF", "SUPPLIES_TO", "COMPETES_WITH"]
 OUT_DIR = os.path.join(HERE, "data", "kg_analysis")
+
+
+def _concept_pagerank(s):
+    """Concept pagerank 独立子投影（K-STOCK-426 定稿）。
+
+    Security+Concept+MAPS_TO 有向图 → pageRank.stream → 仅写回
+    Concept.pagerank。主投影社区结构零扰动；概念热度升级为图谱
+    重要性分位（kg_boost 消费），旧 MAPS_TO 入度保留为降级路径。
+    """
+    cproj = "kg_concept"
+    s.run(f"CALL gds.graph.exists('{cproj}') YIELD exists "
+          "WITH exists WHERE exists CALL gds.graph.drop($p) "
+          "YIELD graphName RETURN graphName", p=cproj).consume()
+    proj = s.run(
+        f"CALL gds.graph.project('{cproj}', ['Security','Concept'], ['MAPS_TO']) "
+        "YIELD nodeCount, relationshipCount "
+        "RETURN nodeCount, relationshipCount").single()
+    print(f"[concept-proj] {cproj}: {proj['nodeCount']} nodes / "
+          f"{proj['relationshipCount']} rels")
+    out = s.run(
+        f"CALL gds.pageRank.stream('{cproj}') "
+        "YIELD nodeId, score "
+        "WITH gds.util.asNode(nodeId) AS n, score "
+        "WHERE n:Concept SET n.pagerank = score "
+        "RETURN count(n) AS written").single()
+    s.run(f"CALL gds.graph.drop('{cproj}')").consume()
+    print(f"[concept] Concept.pagerank 写回 {out['written']} 个（独立子投影，社区零扰动）")
 
 
 def main(dry_run=False):
@@ -96,6 +126,9 @@ def main(dry_run=False):
                    "YIELD nodePropertiesWritten RETURN nodePropertiesWritten").single()
         print(f"[algo] louvain: {lou['communityCount']} 社区 (modularity={lou['modularity']:.4f}) | "
               f"pagerank 写回 {pr['nodePropertiesWritten']} | degree 写回 {dg['nodePropertiesWritten']}")
+
+        # 2.5) Concept pagerank 独立子投影（K-STOCK-426 定稿）
+        _concept_pagerank(s)
 
         # 3) 导出 top 快照 → parquet 湖
         os.makedirs(OUT_DIR, exist_ok=True)

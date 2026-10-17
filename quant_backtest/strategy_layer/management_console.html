@@ -124,6 +124,7 @@ button.btn.save{background:var(--blue);color:#fff}
   <button id="navFuse" onclick="setTab('fuse')">融合中心</button>
   <button id="navExt" onclick="setTab('ext')">扩展插槽 · 接入 SOP</button>
   <button id="navOps" onclick="setTab('ops')">策略管理</button>
+  <button id="navChain" onclick="setTab('chain')">链路值守</button>
 </nav>
 <main>
 
@@ -233,6 +234,11 @@ button.btn.save{background:var(--blue);color:#fff}
 
 <!-- ═══ Tab 4 策略管理 ═══ -->
 <section id="secOps" class="sec">
+  <div class="card" style="margin-bottom:14px">
+    <h3><span class="dot" style="background:var(--purple)"></span>待确认提案（提案制：Agent 提案，确认后才落盘生效）</h3>
+    <div id="propList"><p class="muted">加载中…</p></div>
+    <p class="muted" style="margin-top:8px">Agent 经 MCP 工具 strategy_adjust 只能创建提案；「确认执行」逐条写回 strategy_registry.json（次日 07:30 编排生效），「拒绝」作废提案。本页「保存全部调整」同样走提案制。</p>
+  </div>
   <div class="grid" style="grid-template-columns:1.1fr 1fr">
     <div class="card">
       <h3><span class="dot" style="background:var(--green)"></span>启停与权重（保存即写回，次日 07:30 生效）</h3>
@@ -259,6 +265,21 @@ button.btn.save{background:var(--blue);color:#fff}
       <tr><td>StrategyDaily</td><td>每日 07:30</td><td>编排器：发现→生成→融合→落库 signals_combined</td></tr>
       <tr><td>WeightUpdater</td><td>周日 20:00</td><td>权重进化（影子期 dry-run）</td></tr>
     </tbody></table>
+  </div>
+</section>
+
+<!-- ═══ Tab 5 链路值守（K-STOCK-424 P1）═══ -->
+<section id="secChain" class="sec">
+  <div class="kpi" id="chainOverall" style="margin-bottom:12px">
+    <span class="muted">加载中…</span>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr" id="chainGrid"></div>
+  <div class="card" style="margin-top:14px">
+    <h3><span class="dot" style="background:var(--orange)"></span>每日简报（07:45 生成 · 双通道之仪表盘）</h3>
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="btn" onclick="loadBrief(true)">重新生成</button>
+    </div>
+    <pre id="briefBox" style="white-space:pre-wrap;font-size:12px;line-height:1.7;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:420px;overflow:auto"></pre>
   </div>
 </section>
 
@@ -319,8 +340,8 @@ function drill(id){
   document.getElementById("mask").classList.add("on");
 }
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
-function setTab(v){for(const s of["fit","fuse","ext","ops"]){document.getElementById("sec"+s[0].toUpperCase()+s.slice(1)).style.display=s===v?"":"none";document.getElementById("nav"+s[0].toUpperCase()+s.slice(1)).className=s===v?"on":""}
- if(v==="fuse"){loadFuse();loadRisk()}if(v==="ops")loadOps()}
+function setTab(v){for(const s of["fit","fuse","ext","ops","chain"]){document.getElementById("sec"+s[0].toUpperCase()+s.slice(1)).style.display=s===v?"":"none";document.getElementById("nav"+s[0].toUpperCase()+s.slice(1)).className=s===v?"on":""}
+ if(v==="fuse"){loadFuse();loadRisk()}if(v==="ops"){loadOps();loadProposals()}if(v==="chain"){loadChain();loadBrief(false)}}
 
 async function loadRisk(){
   try{
@@ -365,6 +386,40 @@ async function loadFuse(){
       `<div class="card"><b>${rows.filter(s=>(s.contributions&&Object.keys(s.contributions).length>1&&new Set(Object.values(s.contributions).map(v=>v.action)).size>1)).length}</b><span>策略分歧标的</span></div>`;
   }catch(e){toast("加载失败："+e.message)}
 }
+/* ── 链路值守（K-STOCK-424 P1）── */
+const CH_BADGE={ok:["var(--green)","健康"],stale:["var(--orange)","过期/待首跑"],fail:["var(--red)","失败"],unknown:["var(--sub)","未知"]};
+function chBadge(h){const c=CH_BADGE[h]||CH_BADGE.unknown;return `<span class="badge" style="background:${c[0]}1a;color:${c[0]};border:1px solid ${c[0]}55">${c[1]}</span>`}
+async function loadChain(){
+  try{
+    const j=await(await fetch("/api/chain")).json();
+    if(!j.ok){document.getElementById("chainOverall").innerHTML='<span class="muted">链路查询失败：'+(j.error||"")+'</span>';return}
+    const oc=CH_BADGE[j.overall]||CH_BADGE.unknown;
+    document.getElementById("chainOverall").innerHTML=
+      `<div class="card"><b style="color:${oc[0]}">${oc[1]}</b><span>全链总状态</span></div>`+
+      `<div class="card"><b>${j.ts||""}</b><span>状态采集时间</span></div>`+
+      `<div class="card"><b>${(j.batt_pending||[]).length}</b><span>电池豁免缺口（提权批补待办）</span></div>`;
+    const grid=document.getElementById("chainGrid");grid.innerHTML="";
+    for(const[key,ch]of Object.entries(j.chains||{})){
+      let rows="";
+      for(const s of ch.steps||[]){
+        const c=CH_BADGE[s.status]||CH_BADGE.unknown;
+        rows+=`<tr><td><b>${s.task}</b></td><td>${chBadge(s.status)}</td>`+
+          `<td class="muted">${s.last_run||"从未运行"}</td>`+
+          `<td class="muted">${s.detail||""}${s.note?'<br><span style="color:var(--orange)">⚠ '+s.note+"</span>":""}</td></tr>`;
+      }
+      grid.insertAdjacentHTML("beforeend",
+        `<div class="card"><h3><span class="dot" style="background:${(CH_BADGE[ch.health]||CH_BADGE.unknown)[0]}"></span>${ch.name} ${chBadge(ch.health)}</h3>`+
+        `<p class="muted" style="margin:2px 0 8px">${ch.sla||""}</p>`+
+        `<table><thead><tr><th>环节</th><th>状态</th><th>上次运行</th><th>详情</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+    }
+  }catch(e){document.getElementById("chainOverall").innerHTML='<span class="muted">链路看板加载失败</span>'}
+}
+async function loadBrief(force){
+  try{
+    const j=await(await fetch("/api/brief"+(force?"?force=1":""))).json();
+    document.getElementById("briefBox").textContent=j.ok?(j.brief||""):"生成失败："+(j.error||"");
+  }catch(e){document.getElementById("briefBox").textContent="简报加载失败："+e.message}
+}
 /* ── 策略管理 ── */
 let REG=null;const pending={};
 async function loadOps(){
@@ -372,7 +427,7 @@ async function loadOps(){
     const j=await(await fetch("/api/strategies")).json();REG=j;
     const box=document.getElementById("opsList");box.innerHTML="";
     for(const s of(j.strategies||[])){
-      box.insertAdjacentHTML("beforeend",`<div class="strat-row"><b>${s.strategy_id}</b>
+      box.insertAdjacentHTML("beforeend",`<div class="strat-row"><b>${s.id}</b>
         <label class="switch"><input type="checkbox" ${s.enabled?"checked":""} onchange="pending[this.closest('.strat-row').querySelector('b').textContent+'_en']=this.checked"><span class="slider"></span></label>
         <input type="range" min="0" max="1" step="0.05" value="${s.weight}" oninput="this.closest('.strat-row').querySelector('.wval').textContent=(+this.value).toFixed(2);pending[this.closest('.strat-row').querySelector('b').textContent+'_w']=+this.value">
         <span class="wval">${(+s.weight).toFixed(2)}</span>
@@ -398,7 +453,46 @@ async function saveAll(){
     }catch(e){toast("保存失败："+e.message);return}
   }
   for(const k of Object.keys(pending))delete pending[k];
-  toast("已写回 strategy_registry.json，次日 07:30 编排生效");loadOps();
+  toast("提案已登记，等待管理台确认");loadOps();loadProposals();
+}
+/* ── 待确认提案（提案制确认闭环）── */
+const PROP_BADGE={pending:["var(--orange)","待确认"],applied:["var(--green)","已执行"],rejected:["var(--sub)","已拒绝"]};
+function propChangeSummary(ch){
+  const parts=[];
+  if(ch.enabled!==undefined)parts.push(ch.enabled?"启用":"停用");
+  if(ch.weight!==undefined)parts.push("权重="+(+ch.weight).toFixed(2));
+  if(ch.top_n!==undefined)parts.push("top_n="+(ch.top_n===null?"不限":ch.top_n));
+  return "<b>"+ch.strategy_id+"</b>："+(parts.join(" · ")||"无变更");
+}
+async function loadProposals(){
+  const box=document.getElementById("propList");
+  try{
+    const j=await(await fetch("/api/strategies/proposals")).json();
+    const ps=j.proposals||[];
+    if(!ps.length){box.innerHTML='<p class="muted">暂无提案</p>';return}
+    let html="";
+    for(const p of ps){
+      const b=PROP_BADGE[p.status]||PROP_BADGE.pending;
+      const acts=p.status==="pending"?
+        `<button class="btn save" style="padding:2px 10px" onclick="decide('${p.id}','apply')">确认执行</button> <button class="btn" style="padding:2px 10px;border-color:var(--red);color:var(--red)" onclick="decide('${p.id}','reject')">拒绝</button>`:"";
+      html+=`<div class="strat-row"><b style="min-width:150px;flex:none;font-variant-numeric:tabular-nums">${p.created_at||""}</b>`+
+        `<span class="badge" style="flex:none;background:${b[0]}1a;color:${b[0]}">${b[1]}</span>`+
+        `<span class="muted" style="flex:1">${(p.changes||[]).map(propChangeSummary).join("；")} <span style="color:var(--sub)">· 来源 ${p.source||"—"} · ${p.id}</span></span>${acts}</div>`;
+    }
+    box.innerHTML=html;
+  }catch(e){box.innerHTML='<p class="muted">提案加载失败</p>'}
+}
+async function decide(id,decision){
+  try{
+    const r=await fetch("/api/strategies/proposals/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:id,decision:decision})});
+    const j=await r.json();
+    if(!j.ok){toast("操作失败："+(j.error||""));loadProposals();return}
+    if(decision==="apply"){
+      const bad=(j.results||[]).filter(x=>!x.ok);
+      toast(bad.length?("部分变更执行失败："+bad.map(x=>x.error).join("；")):"提案已执行落盘，次日 07:30 编排生效");
+    }else{toast("提案已拒绝")}
+    loadOps();loadProposals();
+  }catch(e){toast("操作失败："+e.message)}
 }
 window.addEventListener("DOMContentLoaded",()=>{loadFuse()});
 </script>

@@ -4,197 +4,219 @@
   "date": "2026-10-17",
   "title": "Anthropic重金融资背后的芯片焦虑",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-17-Anthropic重金融资背后的芯片焦虑.md",
-  "ts": "10-17 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-17-22:draft>reviewed#r2"
  },
  {
   "id": "2026-10-16-21",
   "date": "2026-10-16",
   "title": "AI 投资实战：军工与算力资金为何逢低大举涌入？",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-16-AI-投资实战-军工与算力资金为何逢低大举涌入.md",
-  "ts": "10-16 11:25"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-16-21:draft>reviewed"
  },
  {
   "id": "2026-10-15-20",
   "date": "2026-10-15",
   "title": "AI 降温下的量化交易新逻辑",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-15-AI-降温下的量化交易新逻辑.md",
-  "ts": "10-15 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-15-20:draft>reviewed"
  },
  {
   "id": "2026-10-14-19",
   "date": "2026-10-14",
   "title": "AI 芯片与数据合规新基建",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-14-AI-芯片与数据合规新基建.md",
-  "ts": "10-14 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-14-19:draft>reviewed"
  },
  {
   "id": "2026-10-13-18",
   "date": "2026-10-13",
   "title": "AI基建遇冷：融资收紧与巨头策略调整",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-13-AI基建遇冷-融资收紧与巨头策略调整.md",
-  "ts": "10-13 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-13-18:draft>reviewed"
  },
  {
   "id": "2026-10-11-17",
   "date": "2026-10-11",
   "title": "AI基建成本揭秘",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-11-AI基建成本揭秘.md",
-  "ts": "10-11 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-11-17:draft>reviewed"
  },
  {
   "id": "2026-10-10-16",
   "date": "2026-10-10",
   "title": "金价上涨背后的资金流向与避险逻辑",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-10-金价上涨背后的资金流向与避险逻辑.md",
-  "ts": "10-10 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-10-16:draft>reviewed"
  },
  {
   "id": "2026-10-09-15",
   "date": "2026-10-09",
   "title": "AI硬件销售新赛道：三一重工甘肃公司实战观察",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-09-AI硬件销售新赛道-三一重工甘肃公司实战观察.md",
-  "ts": "10-09 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-09-15:draft>reviewed"
  },
  {
   "id": "2026-10-08-14",
   "date": "2026-10-08",
   "title": "AI 算力缺电与硬件利润暴增的底层逻辑",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-08-AI-算力缺电与硬件利润暴增的底层逻辑.md",
-  "ts": "10-08 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-08-14:draft>reviewed"
  },
  {
   "id": "2026-10-05-13",
   "date": "2026-10-05",
   "title": "AI对货币政策影响初现",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-05-AI对货币政策影响初现.md",
-  "ts": "10-05 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-05-13:draft>reviewed"
  },
  {
   "id": "2026-10-04-12",
   "date": "2026-10-04",
   "title": "AI安全动态",
   "col": "AI工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-04-AI安全动态.md",
-  "ts": "10-04 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-04-12:draft>reviewed"
  },
  {
   "id": "2026-10-03-11",
   "date": "2026-10-03",
   "title": "OpenAI安全团队变动",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-03-OpenAI安全团队变动.md",
-  "ts": "10-03 20:27"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-03-11:draft>reviewed"
  },
  {
   "id": "2026-10-03-10",
   "date": "2026-10-03",
   "title": "美联储转向信号明显",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-03-美联储转向信号明显.md",
-  "ts": "10-03 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-03-10:draft>reviewed"
  },
  {
   "id": "2026-10-02-09",
   "date": "2026-10-02",
   "title": "黄金白银承压，趋势如何？",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-02-黄金白银承压-趋势如何.md",
-  "ts": "10-02 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-02-09:draft>reviewed"
  },
  {
   "id": "2026-10-01-08",
   "date": "2026-10-01",
   "title": "日经指数异动背后逻辑",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-10-01-日经指数异动背后逻辑.md",
-  "ts": "10-01 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-10-01-08:draft>reviewed"
  },
  {
   "id": "2026-09-30-07",
   "date": "2026-09-30",
   "title": "AI模型推理加速落地",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-09-30-AI模型推理加速落地.md",
-  "ts": "09-30 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-09-30-07:draft>reviewed"
  },
  {
   "id": "2026-09-29-06",
   "date": "2026-09-29",
   "title": "AI+机器人产业生态加速成型",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-09-29-AI-机器人产业生态加速成型.md",
-  "ts": "09-29 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-09-29-06:draft>reviewed"
  },
  {
   "id": "2026-09-28-05",
   "date": "2026-09-28",
   "title": "黄金下跌与加息预期升温",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-09-28-黄金下跌与加息预期升温.md",
-  "ts": "09-28 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-09-28-05:draft>reviewed"
  },
  {
   "id": "2026-09-27-04",
   "date": "2026-09-27",
   "title": "AI算力景气度攀升",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-09-27-AI算力景气度攀升.md",
-  "ts": "09-27 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-09-27-04:draft>reviewed"
  },
  {
   "id": "2026-09-26-03",
   "date": "2026-09-26",
   "title": "英伟达GPU租赁价格下跌",
   "col": "AI 工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-09-26-英伟达GPU租赁价格下跌.md",
-  "ts": "09-26 09:30"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-09-26-03:draft>reviewed"
  },
  {
   "id": "2026-09-25-02",
   "date": "2026-09-25",
   "title": "AI投资趋势加速",
   "col": "AI工作流",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-09-25-AI投资趋势加速.md",
-  "ts": "09-25 16:58"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-09-25-02:draft>reviewed"
  },
  {
   "id": "2026-09-25-01",
   "date": "2026-09-25",
   "title": "AI投资趋势",
   "col": "量化观察",
-  "status": "draft",
+  "status": "reviewed",
   "md": "2026-09-25-AI投资趋势.md",
-  "ts": "09-25 16:57"
+  "ts": "10-17 14:43",
+  "last_wiring_key": "gzh:2026-09-25-01:draft>reviewed"
  }
 ]

@@ -53,9 +53,14 @@ def _get(path, params=None, timeout=60):
             r = SESS.get(BASE + path, params=params or {}, timeout=timeout)
             if r.status_code == 200:
                 return r.json()
-            err = r.json().get("error", r.status_code)
-        except Exception as e:
-            err = e
+            # 诊断增强（K-STOCK-425）：保留状态码与响应体头部，
+            # 不再让 r.json() 二次抛异常吞掉真实原因（曾致日志只见
+            # "Expecting value" 无法区分 502/超时页/空响应）。
+            err = "HTTP %s body=%r" % (r.status_code, r.content[:120])
+        except requests.RequestException as e:
+            err = "%s: %s" % (type(e).__name__, str(e)[:150])
+        except ValueError as e:
+            err = "non-JSON response: %s" % str(e)[:80]
         time.sleep(1.5 * (i + 1))
     raise RuntimeError("GET %s failed: %s" % (path, err))
 
@@ -402,13 +407,34 @@ def main():
     if a.status:
         status()
         return
-    remote = _remote_tables()
+    remote = _remote_tables_with_retry()
     if not _core_lock_acquire():
         return                      # 已有实例在跑：静默退 0（SKIP 判例）
     try:
         _run_sync(a, remote)
     finally:
         _core_lock_release()
+
+
+def _remote_tables_with_retry(tries=5, gap=30):
+    """远端元数据探针（K-STOCK-425 根因修复）。
+
+    慢性病实证：10-13~14 的 exit=1 全部死于本探针未被包裹——远端
+    /api/data/status 抖动一次整个进程即死（wrapper 3 attempt 亦全灭
+    同处）。表级失败 _run_sync 本就吞错续跑，探针才是唯一断链点。
+    现加长重试：5 次 × 30s 间隔（覆盖远端重启窗口），仍失败才抛。
+    """
+    last = None
+    for i in range(tries):
+        try:
+            return _remote_tables()
+        except Exception as e:  # noqa: BLE001 — 探针失败可重试
+            last = e
+            print("[probe] /api/data/status attempt %d/%d failed: %s"
+                  % (i + 1, tries, str(e)[:200]))
+            if i < tries - 1:
+                time.sleep(gap)
+    raise last
 
 
 def _run_sync(a, remote):

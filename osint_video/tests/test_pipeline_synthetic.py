@@ -118,25 +118,37 @@ class TestFfmpegCalls:
 # ---------------------------------------------------------------------------
 # 2. 模型缺失的降级语义（延迟导入设计验证）
 # ---------------------------------------------------------------------------
+@pytest.fixture
+def missing_model_dependencies(monkeypatch: pytest.MonkeyPatch):
+    """Make optional ASR/OCR imports fail without changing the environment.
+
+    The media test environment may have FunASR/PaddleOCR installed.  Injecting a
+    temporary ``None`` module entry exercises each production ImportError handler
+    deterministically, without uninstalling packages or downloading models.
+    """
+    monkeypatch.setitem(sys.modules, "funasr", None)
+    monkeypatch.setitem(sys.modules, "paddleocr", None)
+
+
 class TestModelUnavailableDegrade:
-    def test_asr_missing_raises_clear_error(self, synth_videos, tmp_path):
-        """funasr 未装：transcribe 抛 ASRModelUnavailableError（含安装指引），非 ImportError。"""
+    def test_asr_missing_raises_clear_error(self, synth_videos, tmp_path, missing_model_dependencies):
+        """Missing funasr is translated to ASRModelUnavailableError, not ImportError."""
         wav = extract_wav16k(synth_videos["plain"], tmp_path / "a.wav")
         with pytest.raises(ASRModelUnavailableError, match=r"funasr|FunASR"):
             transcribe(wav)
 
-    def test_ocr_missing_raises_clear_error(self):
-        """paddleocr 未装：引擎构造抛 OCREngineUnavailableError，非 ImportError。"""
+    def test_ocr_missing_raises_clear_error(self, missing_model_dependencies):
+        """Missing paddleocr is translated to OCREngineUnavailableError, not ImportError."""
         with pytest.raises(OCREngineUnavailableError, match=r"[Pp]addleOCR"):
             _create_engine()
 
-    def test_pipeline_double_missing_extraction_error(self, synth_videos):
+    def test_pipeline_double_missing_extraction_error(self, synth_videos, missing_model_dependencies):
         """双通道模型全缺 → ExtractionError（双通道均无文字产出），进程不崩。"""
         vid = _uid("degrade")
         with pytest.raises(ExtractionError, match=r"双通道均无文字产出"):
             run(synth_videos["sub"], vid, enable_asr=True, enable_ocr=True)
 
-    def test_checkpoints_survive_failure(self, synth_videos):
+    def test_checkpoints_survive_failure(self, synth_videos, missing_model_dependencies):
         """失败运行的中间检查点（wav/帧索引）留存 → 修复模型后可断点续跑。"""
         vid = _uid("ckpt_fail")
         with pytest.raises(ExtractionError):

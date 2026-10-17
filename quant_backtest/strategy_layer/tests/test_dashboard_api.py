@@ -86,7 +86,8 @@ class TestStrategiesPayload:
         # 引导 temp Registry + 正式 Registry 各一次，bootstrap 一次
         assert calls == ["init", "boot", "init"], calls
         assert out == [{"id": "kg_boost", "name": "图谱社区打分",
-                        "weight": pytest.approx(0.5), "enabled": True}]
+                        "weight": pytest.approx(0.5), "enabled": True,
+                        "top_n": None}]
 
         # 第二次调用不再引导（进程内一次性）
         calls.clear()
@@ -151,7 +152,8 @@ class TestStrategiesPayload:
         # 引导 temp Registry + 正式 Registry 各一次，bootstrap 一次
         assert calls == ["init", "boot", "init"], calls
         assert out == [{"id": "kg_boost", "name": "图谱社区打分",
-                        "weight": pytest.approx(0.5), "enabled": True}]
+                        "weight": pytest.approx(0.5), "enabled": True,
+                        "top_n": None}]
 
         # 第二次调用不再引导（进程内一次性）
         calls.clear()
@@ -679,9 +681,12 @@ def test_adjust_strategy_top_n_write(tmp_path, monkeypatch):
     assert c == 400
 
 
-def test_adjust_strategy_top_n_null_ok():
+def test_adjust_strategy_top_n_null_ok(tmp_path, monkeypatch):
     from strategy_layer.dashboard_api import adjust_strategy
     # null = 清除截断，应为合法请求（404/200 均可，不允许 400）
+    # 提案制改造后成功路径会创建提案文件——patch 到 tmp 目录隔离
+    monkeypatch.setattr(dashboard_api, "PROPOSALS_PATH",
+                        str(tmp_path / "strategy_proposals.json"))
     p, c = adjust_strategy({"strategy_id": "kg_boost", "top_n": None})
     assert c in (200, 404)
 
@@ -728,3 +733,291 @@ def test_console_has_risk_card():
     for kw in ("riskCard", "loadRisk", "/api/risk", "已接·影子",
                "RiskGuard L4"):
         assert kw in text, kw
+
+
+def test_console_has_proposal_card():
+    """管理台「待确认提案」卡片：列表 + 确认/拒绝动作 + 提案接口对接。"""
+    from strategy_layer.dashboard_api import _static_page
+    text = _static_page("management_console.html").decode("utf-8")
+    for kw in ("propList", "loadProposals", "decide", "待确认提案",
+               "/api/strategies/proposals", "提案已登记",
+               "确认执行", "拒绝"):
+        assert kw in text, kw
+
+
+# ── strategy_adjust 提案制确认闭环（agent 提案 → 管理台确认 → 落盘）────
+class FakeRegistry:
+    """Registry 替身：内存态启停/权重/top_n，验证提案 apply 是否真正落盘。"""
+
+    def __init__(self):
+        self._ids = ["kg_boost", "chan_monitor"]
+        self._enabled = {i: True for i in self._ids}
+        self._weights = {i: 0.5 for i in self._ids}
+        self._top_n = {}
+
+    def list_ids(self):
+        return list(self._ids)
+
+    def is_enabled(self, sid):
+        return self._enabled.get(sid, False)
+
+    def get_weight(self, sid):
+        return self._weights.get(sid, 0.0)
+
+    def top_n(self, sid):
+        return self._top_n.get(sid)
+
+    def set_enabled(self, sid, v):
+        if sid not in self._ids:
+            raise KeyError(sid)
+        self._enabled[sid] = bool(v)
+
+    def set_weight(self, sid, w):
+        if sid not in self._ids:
+            raise KeyError(sid)
+        if w < 0:
+            raise ValueError("weight 不能为负")
+        self._weights[sid] = float(w)
+
+    def set_top_n(self, sid, n):
+        if sid not in self._ids:
+            raise KeyError(sid)
+        if n is None:
+            self._top_n.pop(sid, None)
+        else:
+            self._top_n[sid] = int(n)
+
+
+@pytest.fixture()
+def proposal_env(tmp_path, monkeypatch):
+    """隔离提案文件路径到 tmp + 替换 Registry 获取入口（不触真实落盘）。"""
+    monkeypatch.setattr(dashboard_api, "PROPOSALS_PATH",
+                        str(tmp_path / "strategy_proposals.json"))
+    reg = FakeRegistry()
+    monkeypatch.setattr(dashboard_api, "_open_registry", lambda: reg)
+    return reg
+
+
+class TestProposalFlow:
+    """提案生命周期：创建（不落盘）→ confirm apply（落盘）/ reject。"""
+
+    def test_create_proposal_pending_no_registry_change(self, proposal_env):
+        reg = proposal_env
+        payload, code = dashboard_api.create_proposal(
+            {"strategy_id": "kg_boost", "weight": 0.8})
+        assert code == 200 and payload["ok"] is True
+        assert payload["status"] == "pending"
+        assert payload["proposal_id"]
+        assert payload["message"] == "提案已登记，等待管理台确认"
+        # 不落盘：registry 权重保持原值
+        assert reg.get_weight("kg_boost") == pytest.approx(0.5)
+        # 提案已写入文件，status=pending
+        with open(dashboard_api.PROPOSALS_PATH, "r",
+                  encoding="utf-8") as fh:
+            data = json.load(fh)
+        assert len(data["proposals"]) == 1
+        prop = data["proposals"][0]
+        assert prop["id"] == payload["proposal_id"]
+        assert prop["status"] == "pending"
+        assert prop["source"] == "agent"
+        assert prop["created_at"]
+        assert prop["changes"] == [{"strategy_id": "kg_boost",
+                                    "weight": 0.8}]
+
+    def test_confirm_apply_writes_registry_then_locked(self, proposal_env):
+        reg = proposal_env
+        payload, _ = dashboard_api.create_proposal(
+            {"strategy_id": "kg_boost", "weight": 0.8, "enabled": False})
+        pid = payload["proposal_id"]
+        out, code = dashboard_api.confirm_proposal(
+            {"id": pid, "decision": "apply"})
+        assert code == 200 and out["ok"] is True
+        assert out["status"] == "applied"
+        assert len(out["results"]) == 1
+        assert out["results"][0]["ok"] is True
+        assert out["results"][0]["strategy_id"] == "kg_boost"
+        # registry 真正变更
+        assert reg.get_weight("kg_boost") == pytest.approx(0.8)
+        assert reg.is_enabled("kg_boost") is False
+        # 提案状态 applied + applied_at
+        items = dashboard_api._load_proposals()
+        assert items[0]["status"] == "applied"
+        assert items[0]["applied_at"]
+        # 二次 confirm 被拒（非 pending），registry 不再变化
+        out2, code2 = dashboard_api.confirm_proposal(
+            {"id": pid, "decision": "apply"})
+        assert code2 == 409 and out2["ok"] is False
+        assert reg.get_weight("kg_boost") == pytest.approx(0.8)
+
+    def test_confirm_reject_keeps_registry(self, proposal_env):
+        reg = proposal_env
+        payload, _ = dashboard_api.create_proposal(
+            {"strategy_id": "chan_monitor", "top_n": 30})
+        pid = payload["proposal_id"]
+        out, code = dashboard_api.confirm_proposal(
+            {"id": pid, "decision": "reject"})
+        assert code == 200 and out["ok"] is True
+        assert out["status"] == "rejected"
+        assert out["results"] == []
+        assert reg.top_n("chan_monitor") is None  # 未落盘
+        items = dashboard_api._load_proposals()
+        assert items[0]["status"] == "rejected"
+        # 拒绝后不可再 apply
+        out2, code2 = dashboard_api.confirm_proposal(
+            {"id": pid, "decision": "apply"})
+        assert code2 == 409
+        assert reg.top_n("chan_monitor") is None
+
+    def test_proposal_unknown_strategy_rejected(self, proposal_env):
+        """白名单外 strategy_id：提案创建即被拒（404），不写提案文件。"""
+        payload, code = dashboard_api.create_proposal(
+            {"strategy_id": "ghost_strat", "enabled": True})
+        assert code == 404 and payload["ok"] is False
+        assert "未注册" in payload["error"]
+        assert dashboard_api._load_proposals() == []
+
+    def test_proposal_bad_values_rejected(self, proposal_env):
+        """范围/形状校验不通过 → 400，不写提案文件。"""
+        bad_bodies = (
+            {"strategy_id": "kg_boost", "weight": 1.5},
+            {"strategy_id": "kg_boost", "top_n": 0},
+            {"strategy_id": "kg_boost", "weight": "abc"},
+            {"strategy_id": "kg_boost"},                      # 无变更字段
+            {"strategy_id": "a'b;--", "enabled": True},       # 非法字符
+            {"enabled": True},                                # 缺 strategy_id
+            "not a dict",
+        )
+        for body in bad_bodies:
+            payload, code = dashboard_api.create_proposal(body)
+            assert code == 400, body
+        assert dashboard_api._load_proposals() == []
+
+    def test_confirm_bad_requests(self, proposal_env):
+        dashboard_api.create_proposal(
+            {"strategy_id": "kg_boost", "weight": 0.6})
+        cases = (
+            ({"id": "", "decision": "apply"}, 400),
+            ({"decision": "apply"}, 400),                     # 缺 id
+            ({"id": "x", "decision": "destroy"}, 400),        # decision 非法
+            ({"id": "no_such", "decision": "apply"}, 404),    # 提案不存在
+            ("junk", 400),                                    # 非 dict
+        )
+        for body, expect in cases:
+            out, code = dashboard_api.confirm_proposal(body)
+            assert code == expect, body
+        # 校验失败不影响既有提案状态
+        items = dashboard_api._load_proposals()
+        assert len(items) == 1 and items[0]["status"] == "pending"
+
+    def test_proposals_payload_newest_first_and_cap(self, proposal_env,
+                                                    monkeypatch):
+        for w in (0.6, 0.7, 0.8):
+            dashboard_api.create_proposal(
+                {"strategy_id": "kg_boost", "weight": w})
+        monkeypatch.setattr(dashboard_api, "PROPOSALS_LIST_MAX", 2)
+        out = dashboard_api.proposals_payload()
+        assert out["ok"] is True and out["count"] == 2
+        # 最新的在前：最后创建（0.8）排第一
+        weights = [p["changes"][0]["weight"] for p in out["proposals"]]
+        assert weights == [pytest.approx(0.8), pytest.approx(0.7)]
+
+
+class TestProposalRoutes:
+    """register_routes 包装层：adjust→提案 / proposals 列表 / confirm。"""
+
+    def setup_method(self):
+        self.handler_cls = type("Handler", (FakeHandler,), {
+            "do_GET": FakeHandler.do_GET,
+            "do_POST": FakeHandler.do_POST,
+        })
+
+    def _send_capture(self, monkeypatch):
+        captured = []
+
+        def fake_send(handler, obj, code=200):
+            captured.append((obj, code))
+
+        monkeypatch.setattr(dashboard_api, "_send_json", fake_send)
+        return captured
+
+    def _post(self, h, body):
+        h.headers = {"Content-Length": str(len(body))}
+        h.rfile = io.BytesIO(body)
+        h.do_POST()
+
+    def test_adjust_route_creates_proposal_list_and_confirm(
+            self, monkeypatch, tmp_path):
+        monkeypatch.setattr(dashboard_api, "PROPOSALS_PATH",
+                            str(tmp_path / "strategy_proposals.json"))
+        reg = FakeRegistry()
+        monkeypatch.setattr(dashboard_api, "_open_registry", lambda: reg)
+        captured = self._send_capture(monkeypatch)
+        register_routes(self.handler_cls)
+        # 1) POST /api/strategies/adjust → 创建提案，不落盘
+        body = json.dumps({"strategy_id": "kg_boost",
+                           "weight": 0.9}).encode("utf-8")
+        h = self.handler_cls("/api/strategies/adjust", "POST", body)
+        self._post(h, body)
+        payload, code = captured[0]
+        assert code == 200 and payload["status"] == "pending"
+        pid = payload["proposal_id"]
+        assert reg.get_weight("kg_boost") == pytest.approx(0.5)
+        # 2) GET /api/strategies/proposals → 列表含该提案
+        h = self.handler_cls("/api/strategies/proposals", "GET")
+        h.do_GET()
+        payload, code = captured[1]
+        assert code == 200 and payload["count"] == 1
+        assert payload["proposals"][0]["id"] == pid
+        # 3) POST confirm apply → 落盘生效
+        body2 = json.dumps({"id": pid, "decision": "apply"}).encode("utf-8")
+        h = self.handler_cls("/api/strategies/proposals/confirm",
+                             "POST", body2)
+        self._post(h, body2)
+        payload, code = captured[2]
+        assert code == 200 and payload["status"] == "applied"
+        assert reg.get_weight("kg_boost") == pytest.approx(0.9)
+
+    def test_adjust_route_bad_json_400(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(dashboard_api, "PROPOSALS_PATH",
+                            str(tmp_path / "strategy_proposals.json"))
+        captured = self._send_capture(monkeypatch)
+        register_routes(self.handler_cls)
+        h = self.handler_cls("/api/strategies/adjust", "POST", b"{not json")
+        self._post(h, b"{not json")
+        payload, code = captured[0]
+        assert code == 400 and payload["ok"] is False
+
+
+class TestProposalConcurrency:
+    """并发创建提案不丢失（K-STOCK-427：read-modify-write 必须持锁）。"""
+
+    def test_concurrent_creates_no_loss(self, proposal_env):
+        import threading
+        n_threads, per_thread = 4, 6
+        total = n_threads * per_thread
+        barrier = threading.Barrier(total)
+        codes = [None] * total
+
+        def worker(idx):
+            barrier.wait()
+            payload, code = dashboard_api.create_proposal(
+                {"strategy_id": "kg_boost",
+                 "weight": round(0.6 + idx * 0.001, 4)})
+            codes[idx] = code
+
+        threads = [threading.Thread(target=worker, args=(i,))
+                   for i in range(total)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # 全部返回 200，且落盘条数与 200 次数一致（一条不丢）
+        ok_count = sum(1 for c in codes if c == 200)
+        assert ok_count == total, "并发创建出现非 200: %s" % codes
+        with open(dashboard_api.PROPOSALS_PATH, "r",
+                  encoding="utf-8") as fh:
+            data = json.load(fh)
+        assert len(data["proposals"]) == ok_count
+        ids = [p["id"] for p in data["proposals"]]
+        assert len(set(ids)) == len(ids), "提案 id 出现重复"

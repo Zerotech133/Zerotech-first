@@ -22,6 +22,7 @@ BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
 from checkpoints import Checkpointer  # noqa: E402
+from idem_hook import DualTrackHook  # noqa: E402  M0 P4 双轨幂等
 from interpreter import Interpreter, Team  # noqa: E402
 from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
@@ -74,7 +75,7 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
 
 
 def _balanced_objects(text):
-    """花括号计数法提取 text 中所有配平的 JSON 对象块（K-ORG-137）。
+    r"""花括号计数法提取 text 中所有配平的 JSON 对象块（K-ORG-137）。
 
     旧实现 `\{[^{}]*recommendation[^{}]*\}` 禁止对象内出现花括号——D1
     rationale 含嵌套 { } 时失配 → parse_ok=false 样本静默缩水。计数法
@@ -178,10 +179,30 @@ def main():
     summary = []
     failed_rows = []
     parse_fail_rows = []  # K-STOCK-338：done 但决策解析失败（评估样本缺失，此前静默）
+    # M0 P4 双轨幂等：date+symbol+done JSONL 仍是权威；并行写统一账本
+    # （scope=shadow_daily，死信窗 1h——单票耗时分钟级，超 1h 视为进程已死）。
+    hook = DualTrackHook("shadow_daily", stale_seconds=3600)
     for symbol in BASKET:
         if already_done(today, symbol):
             print("[skip] %s 今日已入账" % symbol)
             continue
+        claim = hook.claim("daily_decision", "%s|%s" % (today, symbol),
+                           {"date": today, "symbol": symbol, "strategy": "basket_v2"})
+        attempt_id = claim.get("attempt_id", "")
+        if claim["outcome"] == "completed":
+            print("[skip] %s 幂等账本已完成（result_ref=%s）"
+                  % (symbol, claim.get("result_ref", "")))
+            continue
+        if claim["outcome"] == "in_progress":
+            print("[skip] %s 幂等账本执行中（另一进程在跑）" % symbol)
+            continue
+        if claim["outcome"] == "conflict":
+            print("[warn] %s 幂等账本冲突（跳过）：%s"
+                  % (symbol, claim.get("conflict_reason", "?")))
+            continue
+        if claim["outcome"] == "unavailable":
+            print("[idem] 账本不可用（fail-open 继续旧链）：%s"
+                  % claim.get("error", "?"))
         row = None
         for attempt in (1, 2):  # 脚本内重试一次（Ollama 偶发超时；幂等不受影响，done 才跳过）
             try:
@@ -215,6 +236,10 @@ def main():
                     time.sleep(3)
         with open(LEDGER, "a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        if attempt_id:  # 双轨回写：done→completed；failed→允许下次死信后重试
+            hook.complete(attempt_id, ok=(row["status"] == "done"),
+                          result_ref=str(row.get("run_id", "")),
+                          error=str(row.get("error", ""))[:200])
         print("[%s] %s %s %s" % (row["status"], symbol, row.get("recommendation", ""),
                                  row.get("run_id", row.get("error", ""))))
         summary.append(row["status"])

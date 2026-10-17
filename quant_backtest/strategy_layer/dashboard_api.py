@@ -45,6 +45,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
 from typing import Any, Optional
@@ -181,6 +182,7 @@ def _load_registry() -> Any:
         weights = getattr(reg, "weights", None)
         weights = weights() if callable(weights) else (weights or {})
         out = []
+        top_n_fn = getattr(reg, "top_n", None)
         for sid in ids:
             meta = {}
             try:
@@ -189,11 +191,16 @@ def _load_registry() -> Any:
                     meta = getattr(got, "meta", None) or {}
             except Exception:  # noqa: BLE001 — meta 缺失不影响面板
                 meta = {}
+            try:
+                tn = top_n_fn(sid) if callable(top_n_fn) else None
+            except Exception:  # noqa: BLE001 — top_n 缺失不阻断
+                tn = None
             out.append({
                 "id": sid,
                 "name": str(meta.get("name", sid)),
                 "weight": float(weights.get(sid, 1.0)),
                 "enabled": bool(enabled_fn(sid)),
+                "top_n": int(tn) if tn else None,
             })
         if out:
             return out
@@ -220,19 +227,25 @@ def _load_registry() -> Any:
                 and isinstance(data.get("weights"), dict):
             # store 形（adapter-dev Registry._save 落盘格式）
             enabled_set = {str(x) for x in data["enabled"]}
+            top_n_map = (data.get("top_n") or {}) \
+                if isinstance(data.get("top_n"), dict) else {}
             for sid, w in data["weights"].items():
+                tn = top_n_map.get(str(sid))
                 out.append({
                     "id": str(sid),
                     "name": str(sid),
                     "weight": float(w),
                     "enabled": str(sid) in enabled_set,
+                    "top_n": int(tn) if tn else None,
                 })
             # enabled 但无权重的 id 补行（防 weights 漏记）
             known = {r["id"] for r in out}
             for sid in data["enabled"]:
                 if str(sid) not in known:
+                    tn = top_n_map.get(str(sid))
                     out.append({"id": str(sid), "name": str(sid),
-                                "weight": 1.0, "enabled": True})
+                                "weight": 1.0, "enabled": True,
+                                "top_n": int(tn) if tn else None})
             if out:
                 return out
             continue  # store 形但全空 → 试下一个候选
@@ -240,21 +253,25 @@ def _load_registry() -> Any:
         if isinstance(rows, dict):
             for sid, meta in rows.items():
                 meta = meta if isinstance(meta, dict) else {}
+                tn = meta.get("top_n")
                 out.append({
                     "id": sid,
                     "name": str(meta.get("name", sid)),
                     "weight": float(meta.get("weight", 1.0)),
                     "enabled": bool(meta.get("enabled", True)),
+                    "top_n": int(tn) if tn else None,
                 })
         elif isinstance(rows, list):
             for item in rows:
                 if not isinstance(item, dict) or "id" not in item:
                     continue
+                tn = item.get("top_n")
                 out.append({
                     "id": str(item["id"]),
                     "name": str(item.get("name", item["id"])),
                     "weight": float(item.get("weight", 1.0)),
                     "enabled": bool(item.get("enabled", True)),
+                    "top_n": int(tn) if tn else None,
                 })
         if out:
             return out
@@ -539,6 +556,14 @@ def _build_change(sid: str, enabled: Any, weight: Any,
 
 
 # ── 提案文件读写（原子写：tmp + os.replace，与 Registry._save 同款）────
+# 进程内互斥锁：create/confirm 的 load→改→save 是 read-modify-write，
+# 无锁并发会互相覆盖丢提案（QA 并发实测最高丢 50%，K-STOCK-427）。
+_PROPOSALS_LOCK = threading.Lock()
+
+# os.replace 在 Windows 上偶发 WinError 5（瞬时共享冲突），小间隔重试兜底
+_REPLACE_RETRIES = 3
+
+
 def _load_proposals() -> list:
     """读提案文件；缺失/损坏/结构不符一律回落空列表（不 raise）。"""
     try:
@@ -560,7 +585,14 @@ def _save_proposals(items: list) -> None:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump({"proposals": items}, fh, ensure_ascii=False, indent=2)
-        os.replace(tmp, PROPOSALS_PATH)
+        for attempt in range(_REPLACE_RETRIES):
+            try:
+                os.replace(tmp, PROPOSALS_PATH)
+                break
+            except OSError:
+                if attempt == _REPLACE_RETRIES - 1:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
     except Exception:
         try:
             os.unlink(tmp)
@@ -598,9 +630,10 @@ def create_proposal(body: Any) -> tuple:
         "status": "pending",
     }
     try:
-        items = _load_proposals()
-        items.append(proposal)
-        _save_proposals(items)
+        with _PROPOSALS_LOCK:
+            items = _load_proposals()
+            items.append(proposal)
+            _save_proposals(items)
     except Exception as exc:  # noqa: BLE001 — 落盘失败降级报错
         return ({"ok": False,
                  "error": "提案写入失败: %s" % str(exc)[:150]}, 500)
@@ -649,48 +682,49 @@ def confirm_proposal(body: Any) -> tuple:
         return ({"ok": False,
                  "error": "decision 需为 %s 之一"
                           % "/".join(PROPOSAL_DECISIONS)}, 400)
-    items = _load_proposals()
-    prop = next((p for p in items
-                 if isinstance(p, dict) and p.get("id") == pid), None)
-    if prop is None:
-        return ({"ok": False, "error": "提案不存在: %s" % pid}, 404)
-    if prop.get("status") != "pending":
-        return ({"ok": False,
-                 "error": "提案非 pending 状态（当前: %s），不可重复操作"
-                          % prop.get("status"),
-                 "proposal_status": prop.get("status")}, 409)
-    results = []
-    all_ok = True
-    if decision == "reject":
-        prop["status"] = "rejected"
-        prop["decided_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-    else:  # apply
-        for ch in prop.get("changes", []):
-            if not isinstance(ch, dict) or not ch.get("strategy_id"):
-                all_ok = False
-                results.append({"strategy_id": None, "ok": False,
-                                "error": "提案变更项缺少 strategy_id"})
-                continue
-            top_n = ch["top_n"] if "top_n" in ch else _ABSENT
-            state, ch_err = _apply_adjust_to_registry(
-                str(ch.get("strategy_id")), ch.get("enabled"),
-                ch.get("weight"), top_n)
-            if ch_err is not None:
-                all_ok = False
-                results.append({"strategy_id": ch.get("strategy_id"),
-                                "ok": False,
-                                "error": str(ch_err[0].get("error", ""))[:200]})
-            else:
-                results.append({"strategy_id": state["strategy_id"],
-                                "ok": True, "state": state})
-        if all_ok:
-            prop["status"] = "applied"
-            prop["applied_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-    try:
-        _save_proposals(items)
-    except Exception as exc:  # noqa: BLE001 — 状态写回失败降级报错
-        return ({"ok": False,
-                 "error": "提案状态写回失败: %s" % str(exc)[:150]}, 500)
+    with _PROPOSALS_LOCK:  # 读-改-写全程持锁，防并发互覆
+        items = _load_proposals()
+        prop = next((p for p in items
+                     if isinstance(p, dict) and p.get("id") == pid), None)
+        if prop is None:
+            return ({"ok": False, "error": "提案不存在: %s" % pid}, 404)
+        if prop.get("status") != "pending":
+            return ({"ok": False,
+                     "error": "提案非 pending 状态（当前: %s），不可重复操作"
+                              % prop.get("status"),
+                     "proposal_status": prop.get("status")}, 409)
+        results = []
+        all_ok = True
+        if decision == "reject":
+            prop["status"] = "rejected"
+            prop["decided_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        else:  # apply
+            for ch in prop.get("changes", []):
+                if not isinstance(ch, dict) or not ch.get("strategy_id"):
+                    all_ok = False
+                    results.append({"strategy_id": None, "ok": False,
+                                    "error": "提案变更项缺少 strategy_id"})
+                    continue
+                top_n = ch["top_n"] if "top_n" in ch else _ABSENT
+                state, ch_err = _apply_adjust_to_registry(
+                    str(ch.get("strategy_id")), ch.get("enabled"),
+                    ch.get("weight"), top_n)
+                if ch_err is not None:
+                    all_ok = False
+                    results.append({"strategy_id": ch.get("strategy_id"),
+                                    "ok": False,
+                                    "error": str(ch_err[0].get("error", ""))[:200]})
+                else:
+                    results.append({"strategy_id": state["strategy_id"],
+                                    "ok": True, "state": state})
+            if all_ok:
+                prop["status"] = "applied"
+                prop["applied_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        try:
+            _save_proposals(items)
+        except Exception as exc:  # noqa: BLE001 — 状态写回失败降级报错
+            return ({"ok": False,
+                     "error": "提案状态写回失败: %s" % str(exc)[:150]}, 500)
     return ({"ok": True, "proposal_id": pid, "decision": decision,
              "status": prop["status"], "results": results}, 200)
 
