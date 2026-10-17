@@ -15,6 +15,9 @@ K-STOCK-285b · 回测框架 v2 正式版（配置驱动 · 执行时间轴 · �
 实证 10-13）而结算=hfq。信号与结算分离，两口径各安其位。
 """
 import sys, os, json, time, argparse
+from datetime import datetime, date, time as dt_time, timedelta, timezone
+from zoneinfo import ZoneInfo
+from market_policy import timezone_for
 import random as _random
 import pandas as pd
 from dataclasses import dataclass, asdict
@@ -27,6 +30,7 @@ DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")
 LEDGER = os.path.join(BASE, "quant_backtest", "data", "daily_ledger", "ledger_20251013_20261012.json")
 OUT_DIR = os.path.join(BASE, "quant_backtest", "data", "bt2")
+MINUTE_OUT_DIR = os.path.join(BASE, "quant_backtest", "data", "minute_exec")
 COST = 0.0015
 D0_MIN = "20231010"          # 273 体检诚实上限（因子湖 2023-07 起连续，池指数预热再往前）
 
@@ -778,8 +782,114 @@ DEFAULTS = {"strategy": "chanlun", "d0": "20251013", "d1": "20261012",
             "gate_mode": "off", "min_score": 0, "hist_st": True,
             "limit_check": True, "trail_activate": 0.0, "trail_drawdown": 0.0}
 
+def _parse_minute_datetime(value, field_name):
+    """Parse an aware ISO-8601 datetime and normalize it to UTC."""
+    if value is None or value == "":
+        return None
+    text = str(value).strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    parsed = datetime.fromisoformat(text)
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return parsed.astimezone(timezone.utc)
+
+
+def _minute_query_from_params(params, market="CN", timezone_name="Asia/Shanghai"):
+    """Build a canonical BarQuery from explicit request fields or d0/d1."""
+    from bar_dto import BarQuery
+    explicit = any(params.get(key) not in (None, "") for key in ("start_at", "end_at"))
+    if explicit and ((params.get("start_at") in (None, "")) or (params.get("end_at") in (None, ""))):
+        raise ValueError("INVALID_ARGUMENT: start_at and end_at must be provided together")
+    d0 = str(params.get("d0") or "").replace("-", "")
+    d1 = str(params.get("d1") or "").replace("-", "")
+    if explicit and (d0 or d1):
+        raise ValueError("INVALID_ARGUMENT: d0/d1 conflict with explicit time fields")
+    if explicit:
+        start = _parse_minute_datetime(params.get("start_at"), "start_at")
+        end = _parse_minute_datetime(params.get("end_at"), "end_at")
+    else:
+        if not (len(d0) == 8 and len(d1) == 8):
+            raise ValueError("INVALID_ARGUMENT: minute_store requires a bounded window")
+        local_tz = timezone_for(str(timezone_name))
+        start = datetime.combine(date.fromisoformat(f"{d0[:4]}-{d0[4:6]}-{d0[6:]}"), dt_time.min, local_tz).astimezone(timezone.utc)
+        end_local = datetime.combine(date.fromisoformat(f"{d1[:4]}-{d1[4:6]}-{d1[6:]}"), dt_time.min, local_tz) + timedelta(days=1, microseconds=-1)
+        end = end_local.astimezone(timezone.utc)
+    as_of = _parse_minute_datetime(params.get("as_of"), "as_of")
+    now = datetime.now(timezone.utc)
+    if end is not None and end > now:
+        raise ValueError("INVALID_ARGUMENT: end_at cannot be in the future")
+    if as_of is not None and as_of > now:
+        raise ValueError("INVALID_ARGUMENT: as_of cannot be in the future")
+    if start is not None and end is not None and start > end:
+        raise ValueError("INVALID_ARGUMENT: start_at must not exceed end_at")
+    if as_of is not None and start is not None and as_of < start:
+        raise ValueError("INVALID_ARGUMENT: as_of must not precede start_at")
+    if params.get("closed_only") not in (None, "") and not isinstance(params.get("closed_only"), bool):
+        raise ValueError("INVALID_ARGUMENT: closed_only must be boolean")
+    closed_only = params.get("closed_only", True)
+    if closed_only is not True:
+        raise ValueError("INVALID_ARGUMENT: closed_only must be true")
+    return BarQuery(start=start, end=end, as_of=as_of, closed_only=True)
+
+
+def _run_minute_store_job(params: dict, job_id: str, progress=None):
+    """Run the explicit BarStore execution mode without touching daily legacy state."""
+    try:
+        from bar_dto import BarQuery
+        from execution_engine import ExecutionConfig, OrderIntent, run_from_store
+        store = params.get("bar_store")
+        if store is None:
+            return None, "minute_store requires explicit bar_store injection"
+        intents = tuple(params.get("order_intents") or params.get("intents") or ())
+        if not all(isinstance(item, OrderIntent) for item in intents):
+            return None, "minute_store requires OrderIntent objects"
+        cfg = params.get("execution_config")
+        if cfg is None:
+            cfg = ExecutionConfig(
+                initial_cash=float(params.get("initial_cash", 0.0) or 0.0),
+                fee_bps=float(params.get("fee_bps", 0.0) or 0.0),
+                slippage_bps=float(params.get("slippage_bps", 0.0) or 0.0),
+                lot_size=int(params.get("lot_size", 1) or 1),
+                market=params.get("market"), timeframe=params.get("timeframe"),
+                t_plus_one=params.get("t_plus_one", False),
+                policy_ref=params.get("policy_ref"),
+            )
+        if not isinstance(cfg, ExecutionConfig):
+            return None, "execution_config must be ExecutionConfig"
+        if params.get("bar_query") is not None or params.get("query") is not None:
+            return None, "INVALID_ARGUMENT: client bar_query injection denied"
+        query = _minute_query_from_params(
+            params,
+            market=str(params.get("market") or "CN"),
+            timezone_name=str(params.get("timezone") or "Asia/Shanghai"),
+        )
+        result = run_from_store(store, intents, cfg, query=query,
+                                limit_provider=params.get("limit_provider") or (lambda *args: {"known": True}),
+                                status_provider=params.get("status_provider") or (lambda *args: "TRADING"))
+        payload = {
+            "schema": result.schema,
+            "job_id": job_id,
+            "fills": [asdict(item) for item in result.fills],
+            "audits": [asdict(item) for item in result.audits],
+            "orders": [asdict(item) for item in result.orders],
+            "cash": result.cash, "positions": dict(result.positions), "equity": result.equity,
+            "metrics": dict(result.metrics), "source_metadata": dict(result.source_metadata),
+            "query_metadata": dict(result.query_metadata),
+            "artifact": os.path.join(MINUTE_OUT_DIR, f"minute_{job_id}.json"),
+        }
+        os.makedirs(MINUTE_OUT_DIR, exist_ok=True)
+        out = os.path.join(MINUTE_OUT_DIR, f"minute_{job_id}.json")
+        json.dump(payload, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+        return payload, None
+    except Exception as exc:
+        return None, repr(exc)
+
+
 def run_job(params: dict, job_id: str, progress=None):
-    """参数 dict → 校验 → 信号 → 回测 → 落 data/bt2/<job_id>.json。返回 (result, error)。"""
+    """Dispatch explicit minute_store mode; preserve daily_legacy default behavior."""
+    if (params or {}).get("execution_mode", "daily_legacy") == "minute_store":
+        return _run_minute_store_job(params or {}, job_id, progress)
     try:
         p = dict(DEFAULTS)
         p.update({k: v for k, v in (params or {}).items() if v not in (None, "")})

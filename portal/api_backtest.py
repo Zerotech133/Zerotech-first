@@ -4963,10 +4963,131 @@ if(P){setTimeout(function(){go(P)},400)}
 # 互斥——全局锁串行，一期单并发足够）。冻结口径：工程验收动线，10-16 开闸
 # 后接正式跑批（与 275 cbt 队列分开，互不影响）。
 import threading as _threading
+from job_spec_registry import JobSpecDescriptor, JobSpecRegistry, utc_now_iso
 
 _BT2_DIR = os.path.join(STATION, "quant_backtest", "data", "bt2")
 _BT2_STATE_DIR = os.path.join(STATION, "quant_backtest", "data", "bt2_state")
 _BT2_LOCK = _threading.Lock()
+# Explicitly registered, process-local minute sources. JSON clients may only
+# reference these opaque ids; arbitrary filesystem paths/connections are denied.
+_MINUTE_SOURCE_REGISTRY = {}
+_MINUTE_SOURCE_FACTORIES = {}
+_MINUTE_MARKET_POLICIES = {
+    "CN": {"timezone": "Asia/Shanghai", "t_plus_one": True, "policy_ref": "registry:market-cn", "lot_size": 100},
+    "US": {"timezone": "America/New_York", "t_plus_one": False, "policy_ref": "registry:market-us"},
+    "HK": {"timezone": "Asia/Hong_Kong", "t_plus_one": False, "policy_ref": "registry:market-hk"},
+    "CRYPTO": {"timezone": "UTC", "t_plus_one": False, "policy_ref": "registry:market-crypto"},
+}
+_JOB_SPEC_CATALOG = os.path.join(STATION, "data", "runtime", "minute_job_specs.json")
+_JOB_SPEC_REGISTRY = JobSpecRegistry(_JOB_SPEC_CATALOG)
+
+
+def _rehydrate_minute_source(source_ref):
+    """Rebuild one process-local source through an explicitly registered factory."""
+    ref = str(source_ref)
+    descriptor = _JOB_SPEC_REGISTRY.get(ref)
+    if descriptor is None:
+        return False, "SOURCE_UNAVAILABLE"
+    if _JOB_SPEC_REGISTRY.catalog_status == "invalid":
+        return False, "SOURCE_UNAVAILABLE"
+    try:
+        # Unavailable descriptors may be retried after a trusted factory is
+        # registered; expiry remains terminal until a new descriptor is saved.
+        if _JOB_SPEC_REGISTRY.is_expired(ref):
+            _JOB_SPEC_REGISTRY.mark_unavailable(ref, "SOURCE_UNAVAILABLE")
+            return False, "SOURCE_UNAVAILABLE"
+        factory = _MINUTE_SOURCE_FACTORIES.get(ref)
+        if factory is None:
+            _JOB_SPEC_REGISTRY.mark_unavailable(ref, "SOURCE_UNAVAILABLE")
+            return False, "SOURCE_UNAVAILABLE"
+        spec = factory(descriptor)
+        if not isinstance(spec, dict):
+            raise TypeError("factory must return source spec")
+        store = spec.get("bar_store")
+        bars = store.all() if hasattr(store, "all") else ()
+        if bars:
+            actual_market = str(getattr(bars[0], "market", "")).upper()
+            actual_timeframe = str(getattr(bars[0], "timeframe", "")).lower()
+            if actual_market != str(descriptor.market).upper() or actual_timeframe != str(descriptor.timeframe).lower():
+                raise ValueError("SOURCE_UNAVAILABLE")
+        _MINUTE_SOURCE_REGISTRY[ref] = spec
+        _JOB_SPEC_REGISTRY.mark_available(ref)
+        return True, None
+    except Exception as exc:
+        log_exc(exc)
+        _JOB_SPEC_REGISTRY.mark_unavailable(ref, "SOURCE_UNAVAILABLE")
+        return False, "SOURCE_UNAVAILABLE"
+
+
+def _rehydrate_catalog_sources():
+    """Attempt startup recovery; unavailable sources remain visible, never dropped."""
+    for source_ref in _JOB_SPEC_REGISTRY.descriptors():
+        _rehydrate_minute_source(source_ref)
+
+
+# Startup recovery is intentionally conservative: no factory means unavailable.
+_rehydrate_catalog_sources()
+
+
+def register_minute_factory(source_ref, factory):
+    """Register a trusted in-process rehydration factory (never persisted)."""
+    ref = str(source_ref or "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", ref) or not callable(factory):
+        raise ValueError("invalid source factory")
+    _MINUTE_SOURCE_FACTORIES[ref] = factory
+    return _rehydrate_minute_source(ref)
+
+
+def register_minute_source(source_ref, bar_store, order_intents=(),
+                           status_provider=None, limit_provider=None,
+                           market="CN", timezone="Asia/Shanghai", timeframe="1m",
+                           policy_ref=None, expires_at=None):
+    """Register a complete server-side minute job spec under an opaque id."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(source_ref or "")):
+        raise ValueError("invalid source_ref")
+    from bar_store import BarStore
+    if not isinstance(bar_store, BarStore):
+        raise TypeError("bar_store must be BarStore")
+    from execution_engine import OrderIntent
+    intents = tuple(order_intents or ())
+    if not all(isinstance(item, OrderIntent) for item in intents):
+        raise TypeError("order_intents must contain OrderIntent")
+    if status_provider is None or limit_provider is None:
+        raise ValueError("status_provider and limit_provider are required")
+    market = str(market or "CN").upper()
+    policy = _MINUTE_MARKET_POLICIES.get(market)
+    if policy is None:
+        raise ValueError("INVALID_ARGUMENT: unsupported market policy")
+    timezone = str(timezone or policy["timezone"])
+    if timezone != policy["timezone"]:
+        raise ValueError("INVALID_ARGUMENT: timezone conflicts with market policy")
+    timeframe = str(timeframe or "1m").lower()
+    if not re.fullmatch(r"[A-Za-z_]+(?:/[A-Za-z_]+)+", timezone):
+        raise ValueError("invalid timezone")
+    if not market or not timeframe:
+        raise ValueError("market/timeframe required")
+    spec = {
+        "bar_store": bar_store,
+        "order_intents": intents,
+        "status_provider": status_provider,
+        "limit_provider": limit_provider,
+    }
+    ref = str(source_ref)
+    _MINUTE_SOURCE_REGISTRY[ref] = spec
+    canonical_policy_ref = policy["policy_ref"]
+    if policy_ref is not None and str(policy_ref) != canonical_policy_ref:
+        raise ValueError("POLICY_MISMATCH")
+    descriptor = JobSpecDescriptor(
+        source_ref=ref, source_version="v1", source_kind="bar_store",
+        market=market, timezone=timezone, timeframe=timeframe,
+        store_config_ref=f"runtime:{ref}",
+        intent_batch_ref=f"runtime:{ref}-intents",
+        provider_policy_ref=str(policy_ref or policy["policy_ref"]),
+        registered_at=utc_now_iso(), expires_at=expires_at)
+    _JOB_SPEC_REGISTRY.register(descriptor)
+    # The closure is process-local and never enters the persisted descriptor.
+    _MINUTE_SOURCE_FACTORIES[ref] = lambda _descriptor: dict(spec)
+    return descriptor.as_dict()
 
 
 def _bt2_state_path(jid):
@@ -5064,13 +5185,57 @@ def _bt2_write_state(jid, **kv):
 
 
 def _bt2_start(rec):
-    """POST /api/bt2_run：校验参数 → 登记 → daemon 线程跑引擎。"""
-    strategy = str(rec.get("strategy") or "chanlun").strip()
-    if strategy not in ("chanlun", "double_knife"):
+    """POST /api/bt2_run: validate, register, and start one worker."""
+    mode = str(rec.get("execution_mode") or "daily_legacy").strip()
+    if mode not in ("daily_legacy", "minute_store"):
+        return {"ok": False, "error": "execution_mode 须为 daily_legacy/minute_store"}
+    if mode == "minute_store":
+        source_ref = str(rec.get("source_ref") or "").strip()
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", source_ref):
+            return {"ok": False, "error": "minute_store requires valid source_ref"}
+        descriptor = _JOB_SPEC_REGISTRY.get(source_ref)
+        if descriptor is None:
+            return {"ok": False, "error": "SOURCE_UNAVAILABLE: source_ref unavailable", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
+        if descriptor.availability != "available" or _JOB_SPEC_REGISTRY.is_expired(source_ref):
+            if descriptor.availability == "available":
+                _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, "SOURCE_UNAVAILABLE")
+            return {"ok": False, "error": "SOURCE_UNAVAILABLE", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
+        spec = _MINUTE_SOURCE_REGISTRY.get(source_ref)
+        if not isinstance(spec, dict):
+            ok, error = _rehydrate_minute_source(source_ref)
+            spec = _MINUTE_SOURCE_REGISTRY.get(source_ref) if ok else None
+        if not isinstance(spec, dict) or not spec.get("order_intents"):
+            _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, "SOURCE_UNAVAILABLE")
+            return {"ok": False, "error": "SOURCE_UNAVAILABLE", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
+        if spec.get("status_provider") is None or spec.get("limit_provider") is None:
+            _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, "SOURCE_UNAVAILABLE")
+            return {"ok": False, "error": "SOURCE_UNAVAILABLE", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
+        requested_timezone = str(rec.get("timezone") or descriptor.timezone)
+        if requested_timezone != descriptor.timezone:
+            return {"ok": False, "error": "TIMEZONE_MISMATCH", "error_code": "TIMEZONE_MISMATCH"}
+        requested_market = str(rec.get("market") or descriptor.market).upper()
+        requested_timeframe = str(rec.get("timeframe") or descriptor.timeframe).lower()
+        if requested_market != descriptor.market or requested_timeframe != descriptor.timeframe:
+            return {"ok": False, "error": "SOURCE_UNAVAILABLE"}
+        if str(rec.get("strategy") or "minute_store") not in ("minute_store", "chanlun"):
+            return {"ok": False, "error": "minute_store strategy unsupported"}
+    strategy = str(rec.get("strategy") or ("minute_store" if mode == "minute_store" else "chanlun")).strip()
+    if mode == "minute_store" and strategy == "minute_store":
+        pass
+    elif strategy not in ("chanlun", "double_knife"):
         return {"ok": False, "error": "strategy 须为 chanlun/double_knife"}
     d0 = str(rec.get("d0") or "").replace("-", "").strip()
     d1 = str(rec.get("d1") or "").replace("-", "").strip()
-    if not (re.fullmatch(r"\d{8}", d0 or "") and re.fullmatch(r"\d{8}", d1 or "") and d0 < d1):
+    explicit_window = rec.get("start_at") not in (None, "") or rec.get("end_at") not in (None, "")
+    if mode == "minute_store":
+        if explicit_window:
+            if rec.get("start_at") in (None, "") or rec.get("end_at") in (None, ""):
+                return {"ok": False, "error": "TIME_INVALID: start_at/end_at required", "error_code": "TIME_INVALID"}
+            if d0 or d1:
+                return {"ok": False, "error": "TIME_INVALID: d0/d1 conflicts with explicit window", "error_code": "TIME_INVALID"}
+        elif not (re.fullmatch(r"\d{8}", d0 or "") and re.fullmatch(r"\d{8}", d1 or "") and d0 <= d1):
+            return {"ok": False, "error": "TIME_INVALID: d0/d1 required", "error_code": "TIME_INVALID"}
+    elif not (re.fullmatch(r"\d{8}", d0 or "") and re.fullmatch(r"\d{8}", d1 or "") and d0 < d1):
         return {"ok": False, "error": "d0/d1 须为 8 位日期且 d0<d1"}
 
     def _ratio(key, lo, hi, default):
@@ -5091,7 +5256,11 @@ def _bt2_start(rec):
         return max(lo, min(hi, v))
 
     params = {
-        "strategy": strategy, "d0": d0, "d1": d1,
+        "execution_mode": mode, "strategy": strategy, "d0": d0, "d1": d1,
+        "source_ref": str(rec.get("source_ref") or "") if mode == "minute_store" else None,
+        "timezone": str(rec.get("timezone") or (_JOB_SPEC_REGISTRY.get(str(rec.get("source_ref") or "")).timezone if mode == "minute_store" and _JOB_SPEC_REGISTRY.get(str(rec.get("source_ref") or "")) else "Asia/Shanghai")) if mode == "minute_store" else None,
+        "market": str(rec.get("market") or (_JOB_SPEC_REGISTRY.get(str(rec.get("source_ref") or "")).market if mode == "minute_store" and _JOB_SPEC_REGISTRY.get(str(rec.get("source_ref") or "")) else "CN")).upper() if mode == "minute_store" else None,
+        "timeframe": str(rec.get("timeframe") or (_JOB_SPEC_REGISTRY.get(str(rec.get("source_ref") or "")).timeframe if mode == "minute_store" and _JOB_SPEC_REGISTRY.get(str(rec.get("source_ref") or "")) else "1m")).lower() if mode == "minute_store" else None,
         "top_n": _intv("top_n", 1, 50, 10),
         # 槽数×regime 联动（K-STOCK-317）：mid 档槽数（0=不联动）
         "top_n_mid": _intv("top_n_mid", 0, 50, 0),
@@ -5134,6 +5303,48 @@ def _bt2_start(rec):
         # 样本域（10-13 老田拍板：全市场 5000+ 剔 ST/北交所，一二三买入池·仅三买交易）
         "universe": rec.get("universe") if rec.get("universe") in ("market", "pool76") else "market",
     }
+    if mode == "minute_store":
+        descriptor = _JOB_SPEC_REGISTRY.get(str(rec.get("source_ref") or ""))
+        policy = _MINUTE_MARKET_POLICIES.get(str(params.get("market") or "CN").upper())
+        if descriptor is not None and policy is not None and descriptor.provider_policy_ref != policy["policy_ref"]:
+            return {"ok": False, "error": "POLICY_MISMATCH", "error_code": "POLICY_MISMATCH"}
+        if "t_plus_one" in rec and type(rec.get("t_plus_one")) is not bool:
+            return {"ok": False, "error": "POLICY_MISMATCH", "error_code": "POLICY_MISMATCH"}
+        if "t_plus_one" in rec and rec.get("t_plus_one") != policy["t_plus_one"]:
+            return {"ok": False, "error": "POLICY_MISMATCH", "error_code": "POLICY_MISMATCH"}
+        if "lot_size" in rec and rec.get("lot_size") != policy.get("lot_size", 1):
+            return {"ok": False, "error": "POLICY_MISMATCH", "error_code": "POLICY_MISMATCH"}
+        params.update({
+            "start_at": rec.get("start_at"),
+            "end_at": rec.get("end_at"),
+            "as_of": rec.get("as_of"),
+            "closed_only": rec.get("closed_only", True),
+            "initial_cash": rec.get("initial_cash", 0),
+            "fee_bps": rec.get("fee_bps", 0),
+            "slippage_bps": rec.get("slippage_bps", 0),
+            "lot_size": policy.get("lot_size", 1),
+            "t_plus_one": (policy["t_plus_one"] if policy is not None else True),
+            "policy_ref": (policy["policy_ref"] if policy is not None else None),
+            "execution_query": None,
+        })
+        try:
+            qbt = os.path.join(STATION, "quant_backtest")
+            if qbt not in sys.path:
+                sys.path.insert(0, qbt)
+            from backtest_engine_v2 import _minute_query_from_params
+            normalized_query = _minute_query_from_params(
+                params, market=params.get("market") or "CN",
+                timezone_name=params.get("timezone") or "Asia/Shanghai")
+            params["query_metadata"] = {
+                "start": normalized_query.start.isoformat() if normalized_query.start else None,
+                "end": normalized_query.end.isoformat() if normalized_query.end else None,
+                "as_of": normalized_query.as_of.isoformat() if normalized_query.as_of else None,
+                "closed_only": True,
+            }
+        except ValueError as exc:
+            message = str(exc)
+            code = "TIME_INVALID" if "TIME" in message or "time" in message or "window" in message else "INVALID_ARGUMENT"
+            return {"ok": False, "error": message, "error_code": code}
     now = datetime.datetime.now()
     jid = now.strftime("%Y%m%d-%H%M%S") + "-" + os.urandom(2).hex()
     _bt2_write_state(jid, status="queued", params=params,
@@ -5158,13 +5369,57 @@ def _bt2_worker(jid, params):
         if qbt not in sys.path:
             sys.path.insert(0, qbt)
         import backtest_engine_v2 as eng
-        res, err = eng.run_job(params, jid, progress=progress)
+        worker_params = dict(params)
+        if params.get("execution_mode") == "minute_store":
+            source_ref = params.get("source_ref")
+            descriptor = _JOB_SPEC_REGISTRY.get(source_ref)
+            if (descriptor is None or descriptor.availability != "available" or
+                    _JOB_SPEC_REGISTRY.is_expired(source_ref)):
+                _bt2_write_state(
+                    jid, status="dead", error="SOURCE_UNAVAILABLE",
+                    error_code="SOURCE_UNAVAILABLE", source_ref=source_ref,
+                    source_availability="source_unavailable",
+                    source_error="SOURCE_UNAVAILABLE",
+                )
+                return
+            spec = _MINUTE_SOURCE_REGISTRY.get(source_ref)
+            if not isinstance(spec, dict):
+                ok, _ = _rehydrate_minute_source(source_ref)
+                spec = _MINUTE_SOURCE_REGISTRY.get(source_ref) if ok else None
+            if not isinstance(spec, dict):
+                _bt2_write_state(jid, status="dead", error="SOURCE_UNAVAILABLE", error_code="SOURCE_UNAVAILABLE", source_ref=source_ref, source_availability="source_unavailable", source_error="SOURCE_UNAVAILABLE")
+                return
+            worker_params["bar_store"] = spec["bar_store"]
+            worker_params["order_intents"] = spec["order_intents"]
+            worker_params["status_provider"] = spec["status_provider"]
+            worker_params["limit_provider"] = spec["limit_provider"]
+        res, err = eng.run_job(worker_params, jid, progress=progress)
         if err:
-            _bt2_write_state(jid, status="dead", error=err[:800])
+            _bt2_write_state(jid, status="dead", error=err[:800], error_code="EXECUTION_ERROR", source_ref=params.get("source_ref"), source_availability="available")
         else:
-            _bt2_write_state(jid, status="done", pct=100, stage="完成",
-                             result=res["summary"],
-                             result_file=os.path.join(_BT2_DIR, "bt2_%s.json" % jid))
+            if params.get("execution_mode") == "minute_store":
+                artifact = res.get("artifact")
+                if not artifact or not os.path.isfile(artifact):
+                    artifact = os.path.join(eng.MINUTE_OUT_DIR, "minute_%s.json" % jid)
+                artifact = os.path.abspath(artifact)
+                _bt2_write_state(
+                    jid,
+                    status="done",
+                    pct=100,
+                    stage="完成",
+                    schema=res.get("schema", "minute-exec-v1"),
+                    metrics=res.get("metrics", {}),
+                    result_file=artifact,
+                )
+            else:
+                _bt2_write_state(
+                    jid,
+                    status="done",
+                    pct=100,
+                    stage="完成",
+                    result=res["summary"],
+                    result_file=os.path.join(_BT2_DIR, "bt2_%s.json" % jid),
+                )
     except Exception as _e:
         log_exc(_e)
         _bt2_write_state(jid, status="dead", error=repr(_e)[:800])
@@ -5201,18 +5456,75 @@ def _bt2_status():
                 continue
             st = _read_json(os.path.join(_BT2_STATE_DIR, fn))
             if isinstance(st, dict) and st.get("id"):
+                params = st.get("params") if isinstance(st.get("params"), dict) else {}
+                source_ref = params.get("source_ref")
+                descriptor = _JOB_SPEC_REGISTRY.get(source_ref) if source_ref else None
+                if descriptor:
+                    st["source_availability"] = descriptor.availability
+                    st["source_error"] = descriptor.error
+                    st["source_descriptor"] = descriptor.as_dict()
+                elif params.get("execution_mode") == "minute_store":
+                    st["source_availability"] = "source_unavailable"
+                    st["source_error"] = "SOURCE_UNAVAILABLE"
                 out.append(st)
     return {"ok": True, "total": len(out), "jobs": out}
 
 
 def _bt2_result(jid):
-    """GET /api/bt2_job?id=：全量账本（done 才有）。jid 白名单字符校验防穿越。"""
+    """GET /api/bt2_job?id=: project state before reading a done artifact."""
     if not re.fullmatch(r"[0-9A-Za-z\-_]{4,64}", str(jid or "")):
         return {"ok": False, "error": "bad id"}
-    fp = os.path.join(_BT2_DIR, "bt2_%s.json" % jid)
+    state = _read_json(_bt2_state_path(jid))
+    if not isinstance(state, dict) or not state:
+        return {"ok": False, "error": "job not found"}
+    mode = state.get("params", {}).get("execution_mode", "daily_legacy")
+    source_ref = state.get("source_ref") or state.get("params", {}).get("source_ref")
+    descriptor = _JOB_SPEC_REGISTRY.get(source_ref) if source_ref else None
+    projected = {
+        "source_ref": source_ref,
+        "source_availability": descriptor.availability if descriptor else state.get("source_availability"),
+        "source_error": descriptor.error if descriptor else state.get("source_error"),
+        "error_code": state.get("error_code"),
+    }
+    if state.get("status") != "done":
+        if projected["source_availability"] == "source_unavailable" or state.get("error_code") == "SOURCE_UNAVAILABLE":
+            projected["ok"] = False
+            projected["error"] = projected["source_error"] or "SOURCE_UNAVAILABLE"
+            projected["error_code"] = "SOURCE_UNAVAILABLE"
+            return projected
+        return {**projected, "ok": False, "error": state.get("error", "job not completed")}
+    if isinstance(state, dict) and state.get("result_file"):
+        candidate = str(state.get("result_file"))
+        if os.path.isfile(candidate):
+            fp = candidate
+        else:
+            fp = ""
+    else:
+        fp = ""
+    if not fp:
+        if mode == "minute_store":
+            fp = os.path.join(STATION, "quant_backtest", "data", "minute_exec", "minute_%s.json" % jid)
+        else:
+            fp = os.path.join(_BT2_DIR, "bt2_%s.json" % jid)
     if not os.path.exists(fp):
         return {"ok": False, "error": "result not found"}
+    if mode == "minute_store":
+        expected_name = "minute_%s.json" % jid
+        if os.path.basename(os.path.abspath(fp)) != expected_name:
+            return {"ok": False, "error": "invalid minute artifact path"}
     with open(fp, encoding="utf-8") as f:
         payload = json.load(f)
     payload["ok"] = True
+    payload.update({key: value for key, value in projected.items() if value is not None})
+    if isinstance(state, dict):
+        params = state.get("params") if isinstance(state.get("params"), dict) else {}
+        source_ref = params.get("source_ref")
+        descriptor = _JOB_SPEC_REGISTRY.get(source_ref) if source_ref else None
+        if descriptor:
+            payload["source_availability"] = descriptor.availability
+            payload["source_error"] = descriptor.error
+            payload["source_descriptor"] = descriptor.as_dict()
+        elif params.get("execution_mode") == "minute_store":
+            payload["source_availability"] = "source_unavailable"
+            payload["source_error"] = "SOURCE_UNAVAILABLE"
     return payload
