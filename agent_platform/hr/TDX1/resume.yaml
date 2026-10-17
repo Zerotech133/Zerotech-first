@@ -1,0 +1,19 @@
+agent_id: TDX1
+name: 太史·行情通讯史官
+kind: runtime
+identity:
+  origin: 数字军团情报部（K-ORG-165）——TDX 行情终端三表采集线收编化身（quant_backtest tdx 影子库）
+  model: 规则采集（无 LLM 依赖）
+  born: 2026-10-17
+experience:
+  - org: 数字军团情报部
+    role: 行情通讯采集史官（news/notice/report 三表影子库）
+    span: 2026.10~
+    kpi: 新闻 305,288 / 公告 138,011 / 研报 147,568 条持续入库（10-17 实证 notice 单日 +1176）
+skills: [多源资讯采集, 增量同步, 时序落库, 影子库治理]
+self_statement: 天下大事必记于档——新闻、公告、研报三表是市场的起居注。
+cn_name: 太史
+cn_origin: 司马迁为太史令，记天下大事——行情通讯三表即市场的起居注。
+role_profile: market_feed_historian
+charter_detail: TDX 行情终端新闻/公告/研报三表采集与影子库治理，供基本面与事件驱动研究取数。
+grade: E2

@@ -1,0 +1,30 @@
+{
+  "agent_id": "BEACON1",
+  "dept": "intel",
+  "title": "烽燧·平台巡检哨",
+  "rank": "E2",
+  "tools_allowed": {
+    "read": [
+      "agent_platform/**",
+      "docs/audit/**"
+    ],
+    "write": [
+      "agent_platform/data/**",
+      "docs/audit/**"
+    ],
+    "execute": [
+      "monday_checkpoint",
+      "shadow_automation",
+      "eval_shadow"
+    ],
+    "danger": "deny"
+  },
+  "supervisor": "A0A",
+  "endpoint": "schtask:AgentMondayCheckpoint+AgentShadowDaily+AgentShadowEvalWeekly+AgentWatchdog",
+  "onboarded": "2026-10-18",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian",
+    "human_note": "老田 2026-10-18 会话拍板「AI在数字军团取名注册登记，归属情报」= 终审授权，dept 订正为新建情报部（工具建议 dev/data/ops_runtime 因 DEPT_CHARTERS 无 intel 部）"
+  }
+}

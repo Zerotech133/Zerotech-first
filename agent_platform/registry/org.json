@@ -1461,6 +1461,20 @@
       "lead_duty": "院长监督四个研究组；每日汇总课题进度报 A0；周五提交研究院周报；研究结论未经评审不得进入产品化"
     },
     {
+      "dept": "intel",
+      "name": "情报部",
+      "lead": "A0A",
+      "status": "active",
+      "charter": "情报三线归口：舆情线（雪球社媒 14212 帖库）、通讯线（TDX 新闻/公告/研报三表 59 万行）、内务线（平台巡检告警四任务）；只采集只报实况不决策，情报裁决走 intel 域审批（Agent 建议权+人工裁决权）；K-ORG-165 收编",
+      "agents": [
+        "XQ1",
+        "TDX1",
+        "BEACON1"
+      ],
+      "teams": [],
+      "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian"
+    },
+    {
       "dept": "chief_line",
       "name": "直属参谋长线",
       "lead": "A0",
