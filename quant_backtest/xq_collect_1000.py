@@ -39,8 +39,8 @@ URL_TIMELINE = SOCIAL + "/v4/statuses/public_timeline_by_category.json"
 CATS = (102, 104, 105, 111)
 COUNT = 20
 MAX_BLOCK_STREAK = 5
-MAX_PAGES_PER_CAT = 60                 # 单类目游标步数上限（1000/4 类目≈13 步，留 4 倍余量）
-MAX_REQUESTS = 320
+MAX_PAGES_PER_CAT = 120                # 单类目游标步数上限（10-18 深挖 2018 前历史：60 步已见顶，单步净增衰减 5-11 条/步，放宽挖更深年代）
+MAX_REQUESTS = 640
 
 STATUS_FIELDS = ("view_count", "comment_count", "retweet_count",
                  "like_count", "reward_count")
