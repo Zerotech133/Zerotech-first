@@ -39,37 +39,57 @@ COMPARE_PERSONA = BASE / "prompts" / "a0_compare.md"  # K-ORG-120 成对判读�
 ORG = BASE / "registry" / "org.json"
 
 
-def glm_chat(persona, user, model="glm/glm-4.6", timeout=240):
-    """K-ORG-130：判读席位 glm 通道——智谱包年 Anthropic 兼容端点（glm-4.6）。
+def _glm_key():
+    """智谱 key 优先级：audit_ai_config.json 的 zhipu_key > GLM_API_KEY。
+
+    K-ORG-136 判例：旧 GLM_API_KEY 为 coding 计划 key 的 flash 档（5.3 系 429），
+    项目内 audit_ai_config.json（不入库）的 zhipu_key 实测 coding 端点 5.3/5.3-flash
+    全通——席位升级取项目内 key，环境变量兜底。"""
+    try:
+        import json as _json
+        from pathlib import Path as _P
+        p = _P(__file__).resolve().parent.parent / "portal" / "audit_ai_config.json"
+        if p.exists():
+            zk = _json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
+            if zk:
+                return zk
+    except Exception:
+        pass
+    return os.environ.get("GLM_API_KEY", "")
+
+
+def glm_chat(persona, user, model="glm/glm-5.3", timeout=240):
+    """K-ORG-130→136：判读席位 glm 通道——智谱 coding 计划端点（glm-5.3）。
 
     动机：K-ORG-127 round2 复核实录——9b 评估者在补证档复杂上下文下两处归因
     错误，印证 MASS 结论「评估者弱成瓶颈」，判读席位需可挂强模型。
-    判例（与 tools/agent_coder.py chat_anthropic 同源）：
-    - glm-4.6 是思考型，content 为 [thinking, text] 块数组，正文只拼 type=text；
-    - max_tokens 须给足（8k 级会被 thinking 吞成空回，表面 stop=max_tokens）；
-    - 爱先写说明文字再上围栏——围栏由 parse_json_block 兜底剥离。
+    K-ORG-136 升级：anthropic 端点（原 4.6）对 coding 计划 key 报 429/404；
+    实测 coding 端点（/api/coding/paas/v4，OpenAI 兼容）glm-5.3 / 5.3-flash 全通，
+    席位模型升 5.3（思考型：content 为文本，reasoning_content 只算思考不拼正文）。
     返回 (text, "ok") 与 OllamaLLM().chat 同构。"""
     import urllib.request
-    key = os.environ.get("GLM_API_KEY", "")
+    key = _glm_key()
     if not key:
-        raise LLMError("GLM_API_KEY 未设置（智谱包年通道不可用；不降档静默——席位模型是判读有效性的组成部分）")
+        raise LLMError("智谱 key 未配置（audit_ai_config.json zhipu_key / GLM_API_KEY 均空；"
+                       "不降档静默——席位模型是判读有效性的组成部分）")
     payload = {
         "model": model.split("/", 1)[1] if "/" in model else model,
         "max_tokens": 16384,
-        "system": persona,
-        "messages": [{"role": "user", "content": user}],
+        "messages": [{"role": "system", "content": persona},
+                     {"role": "user", "content": user}],
+        "stream": False,
     }
     req = urllib.request.Request(
-        "https://open.bigmodel.cn/api/anthropic/v1/messages",
+        "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json",
-                 "x-api-key": key,
-                 "anthropic-version": "2023-06-01"})
+                 "Authorization": "Bearer " + key})
     d = json.load(urllib.request.urlopen(req, timeout=timeout))
-    out = "".join(b.get("text", "") for b in d.get("content", [])
-                  if b.get("type") == "text").strip()
+    out = ((d.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+    out = out.strip()
     if not out:
-        raise LLMError("glm 空回（thinking 吞 content? stop=%s）" % d.get("stop_reason"))
+        raise LLMError("glm 空回（思考型吞 content? finish=%s）"
+                       % d.get("finish_reason"))
     return out, "ok"
 
 
