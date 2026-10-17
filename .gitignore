@@ -220,3 +220,9 @@ zerobound-kg/
 # 每日高频追加/覆写产生持续 diff 噪音，不入主仓
 news_collector/sa_history.jsonl
 jev-eval/n1_check.txt
+
+# ===== 运行时规格目录（2026-10-17 K-P4）=====
+# minute_job_specs.json 为计划任务动态生成规格，翻腾型运行态不入主仓
+data/runtime/
+outputs/
+quant_backtest/tmp/
