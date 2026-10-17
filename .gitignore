@@ -182,3 +182,15 @@ jev-eval/alerts/pending_msg.txt
 # 只做 git rm --cached，不删磁盘文件。
 work/
 **/.workbuddy/memory/
+
+# ===== 存量收编盘点（2026-10-17 K-ORG-142）建议新增 =====
+vendor/
+quant_backtest/.models/
+tools/ffmpeg/
+db_migration/log_*.txt
+jev-eval/gate_ignored.json
+guard_setup_result.txt
+s4u_result.txt
+task_actions_backup_*.txt
+# 已跟踪运行态 → 需 git rm --cached 后生效
+news_collector/sa_push_queue.jsonl
