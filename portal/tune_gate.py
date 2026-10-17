@@ -224,6 +224,7 @@ def submit(text, customer="匿名客户", plan="internal", source="text"):
            "created": datetime.now().isoformat(timespec="seconds")}
     feedback_flow.record(rid, "received", customer=doc["customer"],
                          plan=doc["plan"], source=doc["source"],
+                         scope=p["scope"],
                          note="语音受理（飞书客户端转文字）"
                          if source == "voice" else "文字受理")
     feedback_flow.record(rid, "parsed", customer=doc["customer"],
@@ -279,8 +280,14 @@ def approve(req_id, operator="", open_id="", note=""):
              % (draft["created"], operator or open_id or "管理台"))
     feedback_flow.record(req_id, "verified", note="草案就绪·bt2人工跑",
                          intent=p["intent"], scope=p["scope"])
+    # K-PUSH-010：人工对比阶段显形——沙盒草案就绪后落入 pending_manual，
+    # 语义与 feedback_flow L20 注释一致（沙盒需人工跑，不 block 审批流）
+    feedback_flow.record(req_id, "pending_manual",
+                         note="草案就绪·人工跑bt2对比中",
+                         intent=p["intent"], scope=p["scope"])
     _send_card(_receipt_card(req_id, True, extra), to_group=False)
-    feedback_flow.record(req_id, "receipt", note="通过回执已发")
+    feedback_flow.record(req_id, "receipt", note="通过回执已发",
+                         intent=p["intent"], scope=p["scope"])
     return {"ok": True, "req_id": req_id, "draft": draft,
             "scope": p["scope"], "code": p["code"]}
 
@@ -299,7 +306,8 @@ def reject(req_id, operator="", open_id="", reason=""):
     _send_card(_receipt_card(
         req_id, False, "原因：%s\n操作人：%s" % (reason, operator or "管理台")),
         to_group=False)
-    feedback_flow.record(req_id, "receipt", note="驳回回执已发")
+    feedback_flow.record(req_id, "receipt", note="驳回回执已发",
+                         scope=doc.get("scope", "private"))
     return {"ok": True, "req_id": req_id}
 
 
@@ -312,9 +320,12 @@ def deploy(req_id, operator="", open_id="", params=None):
     view = feedback_flow.requests_view().get(req_id)
     if not view:
         return {"ok": False, "error": "请求单不存在：%s" % req_id}
-    if view["stage"] != "verified":
+    # K-PUSH-010：前置放宽——approve 后私有单落入 pending_manual（人工对比中），
+    # 旧单（stage=verified）与新单均允许落地，零破坏
+    if view["stage"] not in ("verified", "pending_manual"):
         return {"ok": False, "error":
-                "状态 %s 不可落地（须先 approve 至 verified）" % view["stage"]}
+                "状态 %s 不可落地（须先 approve 至 verified/pending_manual）"
+                % view["stage"]}
     doc = _load_store(req_id) or {}
     scope = view.get("scope", "private")
     if scope == "private":
@@ -323,6 +334,13 @@ def deploy(req_id, operator="", open_id="", params=None):
                    operator or open_id or "管理台")
         feedback_flow.record(req_id, "deployed", operator=operator or open_id,
                              note="VIP 私有参数空间已写入")
+        # K-PUSH-010：落地回执——私有单部署成功即发（fail-safe 吞错）
+        extra = ("参数空间已写入（VIP）。对比结论：%s"
+                 % ((doc.get("draft") or {}).get("bt2_params_hint")
+                    or "见参数空间"))
+        _send_card(_receipt_card(req_id, True, extra), to_group=False)
+        feedback_flow.record(req_id, "receipt", note="落地回执已发",
+                             scope=scope)
         return {"ok": True, "req_id": req_id, "scope": scope,
                 "customer": view.get("customer")}
     feedback_flow.record(req_id, "pending_manual", operator=operator or open_id,

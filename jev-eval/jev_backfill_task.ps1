@@ -1,4 +1,4 @@
-﻿﻿﻿﻿# VERSION: jev_backfill_task v2 (2026-10-11, traceback-full-log fix)
+﻿# VERSION: jev_backfill_task v2 (2026-10-11, traceback-full-log fix)
 $ErrorActionPreference = 'Stop'
 # 2026-10-16 审计修复：C:\ 根日志 15:00 起被拒写（Access denied，ACL 却允许，
 # 疑受控文件夹访问拦截）→ 16:00 后每轮 rc=1 且零日志、backlog 停摆 5h。

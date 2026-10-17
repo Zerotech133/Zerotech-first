@@ -401,12 +401,22 @@ class Handler(BaseHTTPRequestHandler):
                 import sys as _sys
                 _sys.path.insert(0, STATION)
                 import feedback_flow
+                # K-PUSH-010：action_needed 聚合——待人工对比（私有）vs 挂账（共享）
+                _tune_rows = tune_gate.list_requests(limit=50)
                 tune = {"stats": feedback_flow.stats(7),
-                        "requests": tune_gate.list_requests(limit=20),
-                        "vip": tune_gate.vip_overrides()}
+                        "requests": _tune_rows,
+                        "vip": tune_gate.vip_overrides(),
+                        "action_needed": {
+                            "wait_compare": [r for r in _tune_rows
+                                             if r.get("stage") in ("verified", "pending_manual")
+                                             and r.get("scope") == "private"],
+                            "on_hold": [r for r in _tune_rows
+                                        if r.get("stage") == "pending_manual"
+                                        and r.get("scope") == "shared"]}}
             except Exception:
                 tune = {"stats": {"by_day": [], "today_by_stage": {}},
-                        "requests": [], "vip": {}}
+                        "requests": [], "vip": {},
+                        "action_needed": {"wait_compare": [], "on_hold": []}}
             try:
                 import share_tokens as _st
                 share = _st.stats(7)
