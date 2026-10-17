@@ -27,7 +27,7 @@ from valuation_field_reconcile import join_daily_basic_from_dir, valuation_field
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "data")
 NEWS_DB = os.path.join(HERE, "..", "news_collector", "news.db")
-DAILY_BASIC_DIRNAME = os.path.join("tdx", "ts_daily_basic")
+DAILY_BASIC_DIRNAME = os.path.join("tushare", "daily_basic")   # 2026-10-17 切生产受控仓（tdx 湖 ts_daily_basic 停更 20261014 致估值 81 行未匹配）
 
 # 已知策略产物清单：(相对目录, 文件名) → 中文名 + 所属工作台 URL
 ARTIFACT_MANIFEST = [
@@ -364,7 +364,7 @@ def _annotate_cn_sample(kline):
             coverage = valuation_field_coverage(view)
             cn["valuation_fields"] = coverage["fields"]
             cn["valuation_source"] = {
-                "name": "ts_daily_basic",
+                "name": "tushare_daily_basic_prod",
                 "path": source_dir,
                 "status": "joined",
                 "rows": int(len(view)),
@@ -375,7 +375,7 @@ def _annotate_cn_sample(kline):
             cn["missing_fields"] = []
         except Exception as exc:
             cn["valuation_source"] = {
-                "name": "ts_daily_basic", "path": source_dir,
+                "name": "tushare_daily_basic_prod", "path": source_dir,
                 "status": "error", "error": str(exc),
             }
     elif missing:
