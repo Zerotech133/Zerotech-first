@@ -19,6 +19,7 @@ import sqlite3
 import subprocess
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 import requests
@@ -214,6 +215,39 @@ def _validate_jev(d):
             companies.append(str(c))
     d["companies"] = companies
     return d
+
+
+# K-ORG-163（A1）：自一致性重采样校准（借鉴 Self-Consistency / FinAbstain）。
+# 实证（K-ORG-156/158）：conf 右偏 0.9+ 占 75%、与方向命中仅弱正相关，低置信
+# 段命中率更不可信。对本地判定 conf<0.7 样本触发 K=3 重采样，以多数票一致率
+# 重算 conf：3/3 一致→0.8，2:1→0.6，全分散→中性/0.3（分歧降权，治右偏）。
+_JEV_RECALIB_CONF = 0.7
+_JEV_AGREE_CONF = {3: 0.8, 2: 0.6}   # 多数票数 → 校准后 conf
+
+
+def _resample_consistency(ask_fn, first_bias, k=3):
+    """自一致性重采样：K 次判定多数票 bias + 一致率映射 conf。
+
+    重采样失败票跳过（C2批2：链路不断只退化）；有效票不足 K 时按多数
+    比例归档。返回 (bias, conf)。
+    """
+    votes = [first_bias]
+    for _ in range(k - 1):
+        try:
+            j2 = ask_fn()
+        except Exception:   # noqa: BLE001  豁免（C2批2）：重采样失败不阻断
+            continue
+        if isinstance(j2, dict):
+            b2 = (j2.get("bias") or "").strip().lower()
+            if b2 in _BIAS_CN:
+                votes.append(b2)
+    cnt = Counter(votes)
+    maj, n = cnt.most_common(1)[0]
+    if n == len(votes) and len(cnt) == 1:
+        return maj, _JEV_AGREE_CONF[3]     # 全一致 → 高可信
+    if n >= 2:
+        return maj, _JEV_AGREE_CONF[2]     # 2:1 多数 → 中可信
+    return "neutral", 0.3                   # 全分散 → 中性低置信
 
 
 _JEV_KEY_MEMO = None   # 2026-10-16 审计：进程内 memo（backfill 每判一条
@@ -414,6 +448,13 @@ def jev_judge_one_local(title, stocks, timeout=60):
     except ValueError as e:
         log("jev_judge_local schema FAIL %s" % str(e)[:100])
         return None
+    # K-ORG-163（A1）：低置信本地判定触发自一致性重采样校准
+    if j["conf"] < _JEV_RECALIB_CONF:
+        _bias2, _conf2 = _resample_consistency(lambda: _ask(base), j["bias"])
+        if _bias2 != j["bias"] or _conf2 != j["conf"]:
+            log("jev_judge_local recalib %s conf %.2f->%.2f bias %s->%s"
+                % (title[:40], j["conf"], _conf2, j["bias"], _bias2))
+        j["bias"], j["conf"] = _bias2, _conf2
     scope = j.get("scope", "")
     d = {"bias": j["bias"], "bias_cn": _BIAS_CN[j["bias"]],
          "conf": j["conf"], "scope": scope,
