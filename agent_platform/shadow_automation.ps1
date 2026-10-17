@@ -12,7 +12,17 @@ $here = 'C:\aios\agent_platform'
 $env:PYTHONUTF8 = '1'
 $py = 'C:\Program Files\Python311\python.exe'
 if ($Mode -eq 'run') {
-    & $py -X utf8 (Join-Path $here 'run_shadow.py') 1> (Join-Path $here 'data\shadow\last_run.log') 2>&1
+    # cmd /c byte-level redirect — 与 eval 分支同款形态。理由(2026-10-18 形态探针):
+    # PS 5.1 的 `1>` 会把 native stdout 按 GBK 解码再以 UTF-16LE 重写, 实测复刻
+    # 形态产出的日志前 3 字节 = FF FE(BOM), 中文全乱(`中文测试` -> `��-N�eKm`),
+    # 退出码虽正确透传但日志失去排障价值。cmd /c 形态实测: 退出码 3 正常透传,
+    # 日志首字节 E4 B8 AD = UTF-8「中」, 中文完好。
+    # 决策依据不是探针本身而是**生产实证**: AgentShadowEvalWeekly 用同款 cmd /c
+    # 真实跑过(LastTaskResult=0), eval_last_run.log 为纯 UTF-8 且中文正常;
+    # 而 `1>` 形态在生产从未跑过(AgentShadowDaily LastTaskResult=267011 尚未运行)。
+    # 注意: Arguments 不变(仍 -Mode run), 无需重注册计划任务, 触发时间面零影响。
+    $log = Join-Path $here 'data\shadow\last_run.log'
+    cmd /c "`"$py`" -X utf8 `"$here\run_shadow.py`" > `"$log`" 2>&1"
     exit $LASTEXITCODE
 }
 elseif ($Mode -eq 'eval') {
