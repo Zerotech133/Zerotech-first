@@ -19,7 +19,10 @@ from warehouse_update import build_plan, metadata_digest, plan_digest
 
 
 ADAPTERS = {'tdx': ('tdx_parquet_v1', {'paged_full', 'paged_incremental'}),
-            'tushare': ('tushare_frame_v1', {'full_replace', 'per_code_incremental'})}
+            'tushare': ('tushare_frame_v1', {'full_replace', 'per_code_incremental'}),
+            # 数据地基模块章程 §2（2026-10-16 收编）：雪球 L1 走受控框架。
+            # snap/northbound 按日落片=full_replace，kline/forecast 逐码增量。
+            'xueqiu': ('xueqiu_frame_v1', {'full_replace', 'per_code_incremental'})}
 PARAMS = {'code', 'ts_code', 'start_date', 'end_date', 'trade_date', 'date', 'exchange',
           'market', 'list_status', 'src', 'lv', 'period'}
 _claim_lock = threading.Lock()
@@ -229,7 +232,8 @@ def qualify_execution_plan(plan, *, registry):
         if (not isinstance(api_name, str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,127}', api_name)
                 or plan['source'] == 'tdx' and api_name != unit['table']):
             raise ValueError('接口映射不合格')
-        expected_channel = {'tdx', 'xtcloud'} if plan['source'] == 'tdx' else {'tushare'}
+        from warehouse_update import PROVIDER_CHANNELS  # 章程 §2 唯一登记处
+        expected_channel = PROVIDER_CHANNELS[plan['source']]
         if row['channel'] not in expected_channel:
             raise ValueError('source_mapping_mismatch')
         scope = unit['scope']
@@ -491,7 +495,8 @@ def run_frozen_plan(plan, *, store, entry, request_id, resource, state_reader, r
             qualify_execution_plan(plan, registry=state['registry'])
             for unit in plan['units']:
                 meta = state['catalog']['tables'].get(unit['table'], {})
-                source_channels = {'tdx', 'xtcloud'} if plan['source'] == 'tdx' else {'tushare'}
+                from warehouse_update import PROVIDER_CHANNELS  # 章程 §2
+                source_channels = PROVIDER_CHANNELS[plan['source']]
                 if (meta.get('source') not in source_channels or meta.get('layout') == 'sqlite'
                         or not meta.get('store') or Path(meta['store']).resolve() != root / unit['table']):
                     raise ValueError('物理来源或存储布局未接管')

@@ -22,6 +22,14 @@ register_routes() 以装饰器方式包装 Handler 的 do_GET/do_POST，
                                     verdict} → 写 strategy.feedback
                                     verdict 枚举: accept/reject/mute
                                     （以 PG CHECK 约束为权威）
+  POST /api/strategies/adjust   → body JSON {strategy_id, enabled?,
+                                    weight?, top_n?} → **创建待确认提案**
+                                    （提案制：不直接落 registry，需管理台
+                                    confirm 后才写 strategy_registry.json）
+  GET  /api/strategies/proposals → 全部提案（最新在前，最多 50 条）
+  POST /api/strategies/proposals/confirm → body JSON {id, decision}
+                                    decision=apply → 逐条落盘并标记 applied
+                                    decision=reject → 标记 rejected
 
 数据库访问：psycopg2（XMAP_PG_* env/.env.local，主机 5442）优先，
 docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一律 10s。
@@ -36,7 +44,9 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
+import uuid
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
 
@@ -63,6 +73,13 @@ SIGNALS_COLS = ("trade_date", "symbol", "action", "score", "confidence",
                 "contributions", "divergence", "rationale")
 DOCKER_PSQL_BASE = ("docker", "exec", "quant-pg", "psql",
                     "-U", "quant_user", "-d", "quant_system")
+
+# ── 提案制（确认制闭环）常量 ──────────────────────────────────────────
+# 提案持久化文件（模块级变量，测试可 patch 到 tmp 目录隔离）
+PROPOSALS_PATH = os.path.join(QUANT_BT, "data", "strategy_proposals.json")
+PROPOSALS_LIST_MAX = 50        # GET /api/strategies/proposals 返回上限
+_ABSENT = "__absent__"         # top_n 缺省哨兵（区别于显式 null=清除截断）
+PROPOSAL_DECISIONS = ("apply", "reject")
 
 # bootstrap_default_adapters 进程内一次性引导标记（幂等，防重复注册开销）
 _BOOTSTRAP_DONE = {"flag": False}
@@ -415,60 +432,267 @@ def register_feedback(body: Any) -> tuple:
              "feedback": row}, 200)
 
 
-# ── 端点 4：POST /api/strategies/adjust（动线页策略调整）───────────────
+# ── 端点 4：POST /api/strategies/adjust（提案制确认闭环）──────────────
 _ID_RE = re.compile(r"[A-Za-z0-9_\-]{1,32}")
 
 
-def adjust_strategy(body: Any) -> tuple:
-    """调整单策略启停/权重（动线页「可调整」闭环）。
+def _open_registry():
+    """获取已引导内置适配器的 Registry。
 
-    body: {"strategy_id": str, "enabled"?: bool, "weight"?: float 0~1}
-    经 Registry 类写回 strategy_registry.json（与 StrategyDaily 同源），
-    下轮 07:30 编排即生效。返回 (payload, http_code)。
+    独立成函数便于测试注入替身（monkeypatch _open_registry），
+    生产路径与原 adjust_strategy 行为一致：bootstrap 幂等注册内置策略。
+    """
+    from strategy_layer import Registry, bootstrap_default_adapters
+    return bootstrap_default_adapters(Registry())
+
+
+def _parse_adjust_body(body: Any) -> tuple:
+    """解析并校验 adjust / 提案共用请求体（字段存在性与白名单字符）。
+
+    返回 (sid, enabled, weight, top_n, None)；校验失败时前四项为 None、
+    末项为 (payload, http_code)。top_n 缺省以 _ABSENT 哨兵标记。
     """
     if not isinstance(body, dict):
-        return ({"ok": False, "error": "请求体需为 JSON 对象"}, 400)
+        return (None, None, None, _ABSENT,
+                ({"ok": False, "error": "请求体需为 JSON 对象"}, 400))
     sid = str(body.get("strategy_id", "") or "").strip()
     if not _ID_RE.fullmatch(sid):
-        return ({"ok": False, "error": "strategy_id 含非法字符"}, 400)
+        return (None, None, None, _ABSENT,
+                ({"ok": False, "error": "strategy_id 含非法字符"}, 400))
     enabled = body.get("enabled", None)
     weight = body.get("weight", None)
-    top_n = body.get("top_n", "__absent__")
-    if enabled is None and weight is None and top_n == "__absent__":
-        return ({"ok": False, "error": "enabled / weight / top_n 至少给一项"}, 400)
+    top_n = body.get("top_n", _ABSENT)
+    if enabled is None and weight is None and top_n == _ABSENT:
+        return (None, None, None, _ABSENT,
+                ({"ok": False,
+                  "error": "enabled / weight / top_n 至少给一项"}, 400))
+    return (sid, enabled, weight, top_n, None)
+
+
+def _validate_change_values(enabled: Any, weight: Any,
+                            top_n: Any) -> Optional[tuple]:
+    """变更值范围校验（不触 Registry）：weight 0~1；top_n 1..2000 或 null。
+
+    返回 None 表示通过；否则返回 (payload, http_code) 错误元组。
+    """
     try:
-        from strategy_layer import Registry, bootstrap_default_adapters
-        registry = bootstrap_default_adapters(Registry())
-        if sid not in registry.list_ids():
-            return ({"ok": False,
-                     "error": "策略未注册: %s" % sid}, 404)
-        if enabled is not None:
-            registry.set_enabled(sid, bool(enabled))
         if weight is not None:
             w = float(weight)
             if not (0.0 <= w <= 1.0):
+                return ({"ok": False, "error": "weight 需在 0~1 之间"}, 400)
+        if top_n != _ABSENT and top_n is not None:
+            n = int(top_n)
+            if not (1 <= n <= 2000):
                 return ({"ok": False,
-                         "error": "weight 需在 0~1 之间"}, 400)
-            registry.set_weight(sid, w)
-        if top_n != "__absent__":
-            if top_n is None:
-                registry.set_top_n(sid, None)
-            else:
-                n = int(top_n)
-                if not (1 <= n <= 2000):
-                    return ({"ok": False,
-                             "error": "top_n 需在 1..2000 或 null"}, 400)
-                registry.set_top_n(sid, n)
+                         "error": "top_n 需在 1..2000 或 null"}, 400)
     except (TypeError, ValueError):
         return ({"ok": False, "error": "weight/top_n 需为数字"}, 400)
+    return None
+
+
+def _apply_adjust_to_registry(sid: str, enabled: Any, weight: Any,
+                              top_n: Any) -> tuple:
+    """单条变更落盘核心（提案 confirm apply 与直调链路共用，不复制校验）。
+
+    top_n 以 _ABSENT 哨兵表示「未提供」。返回 (状态 dict, None) 或
+    (None, (payload, http_code))——调用方原样透传即可。
+    经 Registry 类写回 strategy_registry.json（与 StrategyDaily 同源），
+    下轮 07:30 编排即生效。
+    """
+    err = _validate_change_values(enabled, weight, top_n)
+    if err is not None:
+        return (None, err)
+    try:
+        registry = _open_registry()
+        if sid not in registry.list_ids():
+            return (None, ({"ok": False,
+                            "error": "策略未注册: %s" % sid}, 404))
+        if enabled is not None:
+            registry.set_enabled(sid, bool(enabled))
+        if weight is not None:
+            registry.set_weight(sid, float(weight))
+        if top_n != _ABSENT:
+            registry.set_top_n(sid, None if top_n is None else int(top_n))
+    except (TypeError, ValueError):
+        return (None, ({"ok": False, "error": "weight/top_n 需为数字"}, 400))
     except Exception as exc:  # noqa: BLE001 — 写回失败降级报错
+        return (None, ({"ok": False, "error": str(exc)[:200]}, 500))
+    return ({
+        "strategy_id": sid,
+        "enabled": registry.is_enabled(sid),
+        "weight": round(registry.get_weight(sid), 4),
+        "top_n": registry.top_n(sid),
+    }, None)
+
+
+def _build_change(sid: str, enabled: Any, weight: Any,
+                  top_n: Any) -> dict:
+    """把已校验的变更字段收敛为提案 changes 元素（只保留显式给出的键）。"""
+    change = {"strategy_id": sid}
+    if enabled is not None:
+        change["enabled"] = bool(enabled)
+    if weight is not None:
+        change["weight"] = float(weight)
+    if top_n != _ABSENT:
+        change["top_n"] = None if top_n is None else int(top_n)
+    return change
+
+
+# ── 提案文件读写（原子写：tmp + os.replace，与 Registry._save 同款）────
+def _load_proposals() -> list:
+    """读提案文件；缺失/损坏/结构不符一律回落空列表（不 raise）。"""
+    try:
+        with open(PROPOSALS_PATH, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        if isinstance(data, dict) and isinstance(data.get("proposals"), list):
+            return data["proposals"]
+    except (OSError, ValueError):
+        pass
+    return []
+
+
+def _save_proposals(items: list) -> None:
+    """原子写提案文件；失败抛异常由调用方降级为 500。"""
+    d = os.path.dirname(PROPOSALS_PATH)
+    if d:
+        os.makedirs(d, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=d or ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump({"proposals": items}, fh, ensure_ascii=False, indent=2)
+        os.replace(tmp, PROPOSALS_PATH)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def create_proposal(body: Any) -> tuple:
+    """创建待确认提案（adjust 端点新语义：调用即提案，不直接落 registry）。
+
+    校验链保留原 adjust 全量逻辑：请求体形状 → strategy_id 白名单字符 →
+    字段至少一项 → 值范围（weight/top_n）→ 策略已注册（白名单）。
+    校验通过后把提案追加写入 data/strategy_proposals.json（status=pending）。
+    返回 (payload, http_code)。
+    """
+    sid, enabled, weight, top_n, err = _parse_adjust_body(body)
+    if err is not None:
+        return err
+    err = _validate_change_values(enabled, weight, top_n)
+    if err is not None:
+        return err
+    # 白名单校验：strategy_id 必须是已注册策略（与原 adjust 一致）
+    try:
+        registry = _open_registry()
+        if sid not in registry.list_ids():
+            return ({"ok": False, "error": "策略未注册: %s" % sid}, 404)
+    except Exception as exc:  # noqa: BLE001 — 引导失败降级报错
         return ({"ok": False, "error": str(exc)[:200]}, 500)
-    return ({"ok": True, "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
-             "strategy_id": sid,
-             "enabled": registry.is_enabled(sid),
-             "weight": round(registry.get_weight(sid), 4),
-             "top_n": registry.top_n(sid),
-             "note": "已写回 strategy_registry.json，下轮 07:30 编排生效"}, 200)
+    proposal = {
+        "id": time.strftime("%Y%m%d%H%M%S") + "-" + uuid.uuid4().hex[:6],
+        "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "source": "agent",
+        "changes": [_build_change(sid, enabled, weight, top_n)],
+        "status": "pending",
+    }
+    try:
+        items = _load_proposals()
+        items.append(proposal)
+        _save_proposals(items)
+    except Exception as exc:  # noqa: BLE001 — 落盘失败降级报错
+        return ({"ok": False,
+                 "error": "提案写入失败: %s" % str(exc)[:150]}, 500)
+    return ({"ok": True, "proposal_id": proposal["id"],
+             "status": "pending",
+             "message": "提案已登记，等待管理台确认"}, 200)
+
+
+def adjust_strategy(body: Any) -> tuple:
+    """POST /api/strategies/adjust 入口（提案制改造后 = 创建提案）。
+
+    保留原函数名以兼容既有调用方与测试；语义见 create_proposal。
+    """
+    return create_proposal(body)
+
+
+def proposals_payload() -> dict:
+    """全部提案列表：最新的在前，最多 PROPOSALS_LIST_MAX 条。"""
+    items = _load_proposals()
+    newest_first = list(reversed(items))[:PROPOSALS_LIST_MAX]
+    return {
+        "ok": True,
+        "count": len(newest_first),
+        "proposals": newest_first,
+    }
+
+
+def confirm_proposal(body: Any) -> tuple:
+    """确认/拒绝提案（POST /api/strategies/proposals/confirm）。
+
+    body: {"id": str, "decision": "apply" | "reject"}
+    - apply：逐条执行 _apply_adjust_to_registry（复用校验+落盘核心），
+      全部成功才标记 applied（记录 applied_at）；任一失败保持 pending
+      供重试，执行明细在 results 中逐条返回。
+    - reject：直接标记 rejected。
+    - 非 pending 提案（已 applied/rejected）拒绝重复操作（409）。
+    返回 (payload, http_code)。
+    """
+    if not isinstance(body, dict):
+        return ({"ok": False, "error": "请求体需为 JSON 对象"}, 400)
+    pid = str(body.get("id", "") or "").strip()
+    decision = str(body.get("decision", "") or "").strip()
+    if not pid:
+        return ({"ok": False, "error": "缺少必填字段: id"}, 400)
+    if decision not in PROPOSAL_DECISIONS:
+        return ({"ok": False,
+                 "error": "decision 需为 %s 之一"
+                          % "/".join(PROPOSAL_DECISIONS)}, 400)
+    items = _load_proposals()
+    prop = next((p for p in items
+                 if isinstance(p, dict) and p.get("id") == pid), None)
+    if prop is None:
+        return ({"ok": False, "error": "提案不存在: %s" % pid}, 404)
+    if prop.get("status") != "pending":
+        return ({"ok": False,
+                 "error": "提案非 pending 状态（当前: %s），不可重复操作"
+                          % prop.get("status"),
+                 "proposal_status": prop.get("status")}, 409)
+    results = []
+    all_ok = True
+    if decision == "reject":
+        prop["status"] = "rejected"
+        prop["decided_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    else:  # apply
+        for ch in prop.get("changes", []):
+            if not isinstance(ch, dict) or not ch.get("strategy_id"):
+                all_ok = False
+                results.append({"strategy_id": None, "ok": False,
+                                "error": "提案变更项缺少 strategy_id"})
+                continue
+            top_n = ch["top_n"] if "top_n" in ch else _ABSENT
+            state, ch_err = _apply_adjust_to_registry(
+                str(ch.get("strategy_id")), ch.get("enabled"),
+                ch.get("weight"), top_n)
+            if ch_err is not None:
+                all_ok = False
+                results.append({"strategy_id": ch.get("strategy_id"),
+                                "ok": False,
+                                "error": str(ch_err[0].get("error", ""))[:200]})
+            else:
+                results.append({"strategy_id": state["strategy_id"],
+                                "ok": True, "state": state})
+        if all_ok:
+            prop["status"] = "applied"
+            prop["applied_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        _save_proposals(items)
+    except Exception as exc:  # noqa: BLE001 — 状态写回失败降级报错
+        return ({"ok": False,
+                 "error": "提案状态写回失败: %s" % str(exc)[:150]}, 500)
+    return ({"ok": True, "proposal_id": pid, "decision": decision,
+             "status": prop["status"], "results": results}, 200)
 
 
 # ── 静态页：GET /pipeline /manage（每次现读，改页面即生效）─────────────
@@ -526,6 +750,30 @@ def register_routes(server_or_app: Any) -> Any:
                                     "error": str(exc)[:200]}}
                 code = 200
             return _send_json(self, payload, code)
+        if u.path == "/api/chain":
+            try:
+                from strategy_layer.chain_watch import chain_payload
+                payload, code = chain_payload()
+            except Exception as exc:  # noqa: BLE001
+                payload, code = ({"ok": False,
+                                  "error": str(exc)[:200]}, 503)
+            return _send_json(self, payload, code)
+        if u.path == "/api/brief":
+            try:
+                from strategy_layer.chain_watch import brief_payload
+                force = parse_qs(u.query, keep_blank_values=True).get(
+                    "force", [""])[0] == "1"
+                payload, code = brief_payload(force=force)
+            except Exception as exc:  # noqa: BLE001
+                payload, code = ({"ok": False,
+                                  "error": str(exc)[:200]}, 503)
+            return _send_json(self, payload, code)
+        if u.path == "/api/strategies/proposals":
+            try:
+                return _send_json(self, proposals_payload())
+            except Exception as exc:  # noqa: BLE001
+                return _send_json(self, {"ok": False,
+                                         "error": str(exc)[:200]}, 500)
         if u.path == "/api/strategies":
             try:
                 return _send_json(self, strategies_payload())
@@ -545,47 +793,45 @@ def register_routes(server_or_app: Any) -> Any:
             return orig_get(self)
         return _send_json(self, {"ok": False, "error": "未知路由"}, 404)
 
+    def _read_json_body(self, limit: int):
+        """读取并解析 JSON 请求体；失败时返回 (None, (payload, code))。"""
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            length = 0
+        if length <= 0 or length > limit:
+            return (None, ({"ok": False,
+                            "error": "请求体缺失或超长（1..%d 字节）" % limit},
+                           400))
+        try:
+            body = json.loads(
+                self.rfile.read(length).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return (None, ({"ok": False, "error": "非法 JSON 请求体"}, 400))
+        return (body, None)
+
     def do_POST(self):  # noqa: N802
         u = urlparse(self.path)
         if u.path == "/api/feedback":
-            try:
-                length = int(self.headers.get("Content-Length") or 0)
-            except (TypeError, ValueError):
-                length = 0
-            if length <= 0 or length > MAX_BODY_BYTES:
-                return _send_json(self, {
-                    "ok": False,
-                    "error": "请求体缺失或超长（1..%d 字节）" % MAX_BODY_BYTES,
-                }, 400)
-            try:
-                body = json.loads(
-                    self.rfile.read(length).decode("utf-8"))
-            except (ValueError, UnicodeDecodeError):
-                return _send_json(self, {"ok": False,
-                                         "error": "非法 JSON 请求体"}, 400)
+            body, err = self._read_json_body(MAX_BODY_BYTES)
+            if err is not None:
+                return _send_json(self, err[0], err[1])
             try:
                 payload, code = register_feedback(body)
             except Exception as exc:  # noqa: BLE001
                 return _send_json(self, {"ok": False,
                                          "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
-        if u.path == "/api/strategies/adjust":
+        if u.path in ("/api/strategies/adjust",
+                      "/api/strategies/proposals/confirm"):
+            body, err = self._read_json_body(512)
+            if err is not None:
+                return _send_json(self, err[0], err[1])
             try:
-                length = int(self.headers.get("Content-Length") or 0)
-            except (TypeError, ValueError):
-                length = 0
-            if length <= 0 or length > 512:
-                return _send_json(self, {
-                    "ok": False, "error": "请求体缺失或超长（1..512 字节）"},
-                    400)
-            try:
-                body = json.loads(
-                    self.rfile.read(length).decode("utf-8"))
-            except (ValueError, UnicodeDecodeError):
-                return _send_json(self, {"ok": False,
-                                         "error": "非法 JSON 请求体"}, 400)
-            try:
-                payload, code = adjust_strategy(body)
+                if u.path == "/api/strategies/adjust":
+                    payload, code = adjust_strategy(body)
+                else:
+                    payload, code = confirm_proposal(body)
             except Exception as exc:  # noqa: BLE001
                 return _send_json(self, {"ok": False,
                                          "error": str(exc)[:200]}, 500)
@@ -597,9 +843,11 @@ def register_routes(server_or_app: Any) -> Any:
 
     handler_cls.do_GET = do_GET
     handler_cls.do_POST = do_POST
+    handler_cls._read_json_body = _read_json_body  # POST 分支共用读体助手
     handler_cls._dashboard_api_wrapped = True  # type: ignore[attr-defined]
     return handler_cls
 
 
 __all__ = ["register_routes", "strategies_payload", "signals_payload",
-           "register_feedback", "VERDICTS"]
+           "register_feedback", "VERDICTS", "adjust_strategy",
+           "create_proposal", "proposals_payload", "confirm_proposal"]

@@ -128,7 +128,7 @@ NODE_TYPES = {
         writer="kg_build_cl1/kg_candle/kg_bclass/kg_dt_gap/"
                "K190-P1 pattern（evt_id=code:kind:date）",
         desc="盘面博弈事件：candle/limit/topgap/volume/chanlun/pattern"),
-    # 情报推理域（转正域，写入器在 E:\\KGStockAnalysis）
+    # 情报推理域（转正域，写入器在 C:\\项目\\zerobound-kg）
     "Event": dict(
         domain="情报推理", key="id", date_field="date",
         source="rule_keyword+llm_local", trust="B",
@@ -137,17 +137,17 @@ NODE_TYPES = {
     "IntelItem": dict(
         domain="情报推理", key="item_id", date_field="published",
         source="jev_feed+llm_local", trust="C",
-        writer="E:\\KGStockAnalysis 情报线（转正域）",
+        writer="C:\\项目\\zerobound-kg 情报线（转正域）",
         desc="情报条目（事实层，LLM 抽取后人审转正）"),
     "Source": dict(
         domain="情报推理", key="name", date_field=None,
         source="human_curation", trust="A",
-        writer="E:\\KGStockAnalysis 情报线（转正域）",
+        writer="C:\\项目\\zerobound-kg 情报线（转正域）",
         desc="情报来源（事实层）"),
     "Hypothesis": dict(
         domain="情报推理", key="hid", date_field=None,
         source="llm_local", trust="C",
-        writer="E:\\KGStockAnalysis Z2 假设线（转正域）",
+        writer="C:\\项目\\zerobound-kg Z2 假设线（转正域）",
         desc="假设（事实层，SUPPORTS/CONTRADICTS 论证终点）"),
     # 情报本体域（K201 人工情报录入）
     "Theme": dict(
@@ -169,32 +169,32 @@ NODE_TYPES = {
     "EXP_IntelItem": dict(
         domain="实验域", key="item_id", date_field="published",
         source="llm_local", trust="C",
-        writer="E:\\KGStockAnalysis\\kg_ann_history_link.py",
+        writer="C:\\项目\\zerobound-kg\\kg_ann_history_link.py",
         desc="LLM 抽取情报条目（影子层，最大节点）"),
     "EXP_Security": dict(
         domain="实验域", key="ts_code", date_field=None,
         source="llm_local", trust="C",
-        writer="E:\\KGStockAnalysis 情报线",
+        writer="C:\\项目\\zerobound-kg 情报线",
         desc="证券镜像（推理层，ts_code 同锚）"),
     "EXP_Event": dict(
         domain="实验域", key="id", date_field="date",
         source="llm_local", trust="C",
-        writer="E:\\KGStockAnalysis 情报线",
+        writer="C:\\项目\\zerobound-kg 情报线",
         desc="事件镜像（推理层）"),
     "EXP_Hypothesis": dict(
         domain="实验域", key="hid", date_field=None,
         source="llm_local", trust="C",
-        writer="E:\\KGStockAnalysis Z2 线",
+        writer="C:\\项目\\zerobound-kg Z2 线",
         desc="假设（推理层）"),
     "EXP_Assessment": dict(
         domain="实验域", key="aid", date_field=None,
         source="llm_local", trust="C",
-        writer="E:\\KGStockAnalysis Z2 线",
+        writer="C:\\项目\\zerobound-kg Z2 线",
         desc="评估（推理层，EXP_ASSESSES 挂假设）"),
     "EXP_Source": dict(
         domain="实验域", key="name", date_field=None,
         source="llm_local", trust="C",
-        writer="E:\\KGStockAnalysis 情报线",
+        writer="C:\\项目\\zerobound-kg 情报线",
         desc="情报来源（推理层）"),
     "EXP_Community": dict(
         domain="实验域", key="cid", date_field=None,
@@ -337,19 +337,19 @@ EDGE_TYPES = {
                    desc="公告事件涉入标的（validStart=事件日）"),
     "MENTIONS": _e(domain="情报", frm="IntelItem", to="Security",
                    date_field=None, source="llm_local", trust="C",
-                   writer="E:\\KGStockAnalysis\\kg_mentions_rebuild.py",
+                   writer="C:\\项目\\zerobound-kg\\kg_mentions_rebuild.py",
                    desc="情报提及标的（事实层）"),
     "REPORTED_BY": _e(domain="情报", frm="IntelItem", to="Source",
                       date_field=None, source="llm_local", trust="C",
-                      writer="E:\\KGStockAnalysis 情报线",
+                      writer="C:\\项目\\zerobound-kg 情报线",
                       desc="情报溯源（事实层）"),
     "SUPPORTS": _e(domain="推理", frm="IntelItem/Event", to="Hypothesis",
                    date_field=None, source="llm_local", trust="C",
-                   writer="E:\\KGStockAnalysis Z2 印证表 d=True",
+                   writer="C:\\项目\\zerobound-kg Z2 印证表 d=True",
                    desc="印证（事实层）"),
     "CONTRADICTS": _e(domain="推理", frm="IntelItem/Event", to="Hypothesis",
                       date_field=None, source="llm_local", trust="C",
-                      writer="E:\\KGStockAnalysis Z2 印证表 d=False",
+                      writer="C:\\项目\\zerobound-kg Z2 印证表 d=False",
                       desc="反证（事实层）"),
     # ── 情报本体（K201-C/D + K265）──
     "CONDUCTION": _e(domain="情报本体", frm="Theme", to="Segment",
@@ -378,24 +378,24 @@ EDGE_TYPES = {
     # ── 实验域（EXP_ 影子推理）──
     "EXP_MENTIONS": _e(domain="实验域", frm="EXP_IntelItem", to="EXP_Security",
                        date_field=None, source="llm_local", trust="C",
-                       writer="E:\\KGStockAnalysis 情报线", desc="提及（影子）"),
+                       writer="C:\\项目\\zerobound-kg 情报线", desc="提及（影子）"),
     "EXP_REPORTED_BY": _e(domain="实验域", frm="EXP_IntelItem",
                           to="EXP_Source", date_field=None,
                           source="llm_local", trust="C",
-                          writer="E:\\KGStockAnalysis 情报线",
+                          writer="C:\\项目\\zerobound-kg 情报线",
                           desc="溯源（影子）"),
     "EXP_SUPPORTS": _e(domain="实验域", frm="EXP_IntelItem",
                        to="EXP_Hypothesis", date_field=None,
                        source="llm_local", trust="C",
-                       writer="E:\\KGStockAnalysis Z2 线", desc="印证（影子）"),
+                       writer="C:\\项目\\zerobound-kg Z2 线", desc="印证（影子）"),
     "EXP_CONTRADICTS": _e(domain="实验域", frm="EXP_IntelItem",
                           to="EXP_Hypothesis", date_field=None,
                           source="llm_local", trust="C",
-                          writer="E:\\KGStockAnalysis Z2 线", desc="反证（影子）"),
+                          writer="C:\\项目\\zerobound-kg Z2 线", desc="反证（影子）"),
     "EXP_ASSESSES": _e(domain="实验域", frm="EXP_Assessment",
                        to="EXP_Hypothesis", date_field=None,
                        source="llm_local", trust="C",
-                       writer="E:\\KGStockAnalysis Z2 线",
+                       writer="C:\\项目\\zerobound-kg Z2 线",
                        desc="评估挂假设（影子；≠ASSESSED 派系评估）"),
     "IN_GROUP": _e(domain="实验域", frm="Seat", to="EXP_Community",
                    date_field=None, source="cooccur_stat", trust="C",
@@ -605,33 +605,38 @@ def export(cli=None):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description="L1 本体注册表")
-    ap.add_argument("--export", action="store_true", help="快照+对账落盘")
-    ap.add_argument("--validate", action="store_true", help="仅对账打印")
-    ap.add_argument("--json", action="store_true", help="打印注册表 JSON")
-    a = ap.parse_args()
-    try:
-        if a.export:
-            export()
-        elif a.validate:
-            for lv, kind, sub, msg in validate():
-                print("[%s] %s/%s %s" % (lv, kind, sub, msg))
-        elif a.json:
-            print(json.dumps(registry_json(), ensure_ascii=False, indent=1))
-        else:
-            r = registry_json()
-            print("=== L1 本体注册表 v%s（%s）===" % (VERSION, REGISTRY_TS))
-            print("节点类型 %d / 边类型 %d" % (r["counts"]["node_types"],
-                                              r["counts"]["edge_types"]))
-            by_dom = {}
-            for lbl, m in r["node_types"].items():
-                by_dom.setdefault(m["domain"], []).append(lbl)
-            for dom in sorted(by_dom):
-                print("[%s] %s" % (dom, " ".join(by_dom[dom])))
-            print("trust 档位：A%d B%d C%d D%d" % tuple(
-                sum(1 for m in list(r["node_types"].values())
-                    + list(r["edge_types"].values()) if m["trust"] == g)
-                for g in "ABCD"))
-    except Exception as ex:
-        # warn-only：每日链本体快照步任何异常不得阻断后续 brief
-        print("[SKIP] ontology %s" % str(ex)[:120])
+    from linreg import run_with_lineage
+
+    def _cli():
+        ap = argparse.ArgumentParser(description="L1 本体注册表")
+        ap.add_argument("--export", action="store_true", help="快照+对账落盘")
+        ap.add_argument("--validate", action="store_true", help="仅对账打印")
+        ap.add_argument("--json", action="store_true", help="打印注册表 JSON")
+        a = ap.parse_args()
+        try:
+            if a.export:
+                export()
+            elif a.validate:
+                for lv, kind, sub, msg in validate():
+                    print("[%s] %s/%s %s" % (lv, kind, sub, msg))
+            elif a.json:
+                print(json.dumps(registry_json(), ensure_ascii=False, indent=1))
+            else:
+                r = registry_json()
+                print("=== L1 本体注册表 v%s（%s）===" % (VERSION, REGISTRY_TS))
+                print("节点类型 %d / 边类型 %d" % (r["counts"]["node_types"],
+                                                  r["counts"]["edge_types"]))
+                by_dom = {}
+                for lbl, m in r["node_types"].items():
+                    by_dom.setdefault(m["domain"], []).append(lbl)
+                for dom in sorted(by_dom):
+                    print("[%s] %s" % (dom, " ".join(by_dom[dom])))
+                print("trust 档位：A%d B%d C%d D%d" % tuple(
+                    sum(1 for m in list(r["node_types"].values())
+                        + list(r["edge_types"].values()) if m["trust"] == g)
+                    for g in "ABCD"))
+        except Exception as ex:
+            # warn-only：每日链本体快照步任何异常不得阻断后续 brief
+            print("[SKIP] ontology %s" % str(ex)[:120])
+
+    run_with_lineage("kg_daily_sync", "ontology_snap", _cli)

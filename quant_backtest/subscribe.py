@@ -186,13 +186,43 @@ def _strip_md_card(card):
     return "\n".join(parts)
 
 
-def _build_card(title, sub, blocks, template="blue", footer=None):
+def _portal_link(kind="subscribe_push"):
+    """K-PUSH-002 A2：卡片深链 = 公网看板 + 访问码 + 分享溯源 token。
+    token 每次推送现签（jti 唯一）→ 哪张卡带来的流量可追溯；签发失败
+    降级为不带 st 的带码直达（fail-safe，不挡推送）。"""
+    try:
+        sys.path.insert(0, os.path.join(STATION, "portal"))
+        import share_tokens
+        from feishu_card_v2 import PORTAL_BASE, _load_portal_key
+        url = "%s/picks.html?key=%s" % (PORTAL_BASE, _load_portal_key())
+        tok = share_tokens.gen(kind=kind, ttl_hours=72)
+        if tok:
+            url += "&st=" + tok
+        return url
+    except Exception:
+        return ""
+
+
+def _build_card(title, sub, blocks, template="blue", footer=None,
+                url_button=None):
     sys.path.insert(0, NEWS_DIR)
     import card_build
-    return card_build.build_card(
+    card = card_build.build_card(
         title, sub, template, blocks,
         footer=footer or "AI工作站 · 订阅推送 · 不构成投资建议",
         use_schema2=True)
+    # K-PUSH-002 A2：2.0 卡深链按钮。坑位判例 K-STOCK-354：card_build
+    # 的 buttons 参数走 v1 tag=action，2.0 卡下实测拒发——必须原生
+    # button 元素 + behaviors.open_url（push_picks_public_link 实证可点）。
+    # 插在尾部 hr+footer 之前（按钮在灰脚注上方）。
+    if url_button:
+        label, url = url_button
+        els = card["body"]["elements"]
+        els.insert(max(len(els) - 2, 0), {
+            "tag": "button", "type": "primary", "size": "medium",
+            "text": {"tag": "plain_text", "content": label},
+            "behaviors": [{"type": "open_url", "default_url": url}]})
+    return card
 
 
 def _cnpct(v):
@@ -534,7 +564,10 @@ def run_scan(mode, only_sub=None, force=False):
             continue
         title, sub2, blocks, tpl = built
         try:
-            card = _build_card(title, sub2, blocks, template=tpl)
+            # K-PUSH-002 A2：订阅卡统一挂「看板直达」深链按钮（带码+st）
+            link = _portal_link("subscribe_push")
+            card = _build_card(title, sub2, blocks, template=tpl,
+                               url_button=("看板直达", link) if link else None)
         except Exception as e:
             out[sid] = ("card_err:%s" % str(e)[:120], {})
             continue

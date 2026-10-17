@@ -428,11 +428,11 @@ def main(push=True):
 def build_verdict_card(statuses, ok_8093, full, total_agents, reds, yellows):
     """B2 判读折叠卡：三段式（全局态势 / 异常项 / 处置建议），红黄绿分级头。"""
     if reds:
-        title, tmpl = "🛡️ 田小皮监督判读 · 🔴 %d 红 %d 黄" % (len(reds), len(yellows)), "red"
+        title, tmpl = "🛡️ 田丰监督判读 · 🔴 %d 红 %d 黄" % (len(reds), len(yellows)), "red"
     elif yellows:
-        title, tmpl = "🛡️ 田小皮监督判读 · 🟡 %d 黄" % len(yellows), "orange"
+        title, tmpl = "🛡️ 田丰监督判读 · 🟡 %d 黄" % len(yellows), "orange"
     else:
-        title, tmpl = "🛡️ 田小皮监督判读 · 全绿", "green"
+        title, tmpl = "🛡️ 田丰监督判读 · 全绿", "green"
     stat = " ".join("%s%d" % (k, v) for k, v in sorted(statuses.items()))
     overview = ("**工单** %s\n**服务** 8093 %s · **岗卡** 属性 %d/%d"
                 % (stat, "在位" if ok_8093 else "DOWN", full, total_agents))

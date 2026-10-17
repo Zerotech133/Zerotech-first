@@ -410,7 +410,10 @@ def cmd_order(args) -> int:
                                         getattr(args, "asof", None))
                 r = e.plan_bridge_buy(args.stock, args.qty, pd,
                                       args.ref or f"bridge#{args.stock}#{pd}",
-                                      strategy=args.strategy or "pick_bridge")
+                                      strategy=args.strategy or "pick_bridge",
+                                      trace_id=args.trace_id or None, fact_hash=args.fact_hash or None,
+                                      decision_id=args.decision_id or None,
+                                      idempotency_key=args.idempotency_key or None)
             else:
                 r = e.buy(args.stock, args.qty, args.price, force=args.force)
             if args.stop_price is not None:
@@ -534,6 +537,10 @@ def main(argv=None) -> int:
     p.add_argument("--asof", default=None,
                    help="d2 基准日（缺省今天），格式 YYYYMMDD")
     p.add_argument("--ref", default=None, help="pending 单幂等键（选票桥传 trace_id）")
+    p.add_argument("--trace-id", dest="trace_id", default=None)
+    p.add_argument("--fact-hash", dest="fact_hash", default=None)
+    p.add_argument("--decision-id", dest="decision_id", default=None)
+    p.add_argument("--idempotency-key", dest="idempotency_key", default=None)
     p.add_argument("--strategy", default=None,
                    help="pending 单策略标签（缺省 pick_bridge）")
     p.add_argument("--json", action="store_true")

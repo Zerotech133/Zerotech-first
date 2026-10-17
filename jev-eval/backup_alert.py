@@ -18,7 +18,10 @@ import os
 import subprocess
 import sys
 
-LARK_PLUGIN_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
+# 2026-10-16 换机修复：旧机硬编码 C:\Users\Administrator\... 新机不存在
+# （K-STOCK-414 send_feishu 同款判例）——expanduser 跟随当前用户。
+LARK_PLUGIN_ROOT = os.path.join(os.path.expanduser("~"), ".trae-cn",
+                                "plugins", "trae-remote-official", "lark")
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "news_collector"))
 import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
@@ -123,7 +126,10 @@ def load_app_creds():
         with open(cfg, encoding='utf-8') as f:
             apps = json.load(f).get('apps') or []
         if apps:
-            return apps[0].get('appId'), apps[0].get('appSecret')
+            aid, sec = apps[0].get('appId'), apps[0].get('appSecret')
+            # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
+            if aid and isinstance(sec, str):
+                return aid, sec
     except Exception:
         pass  # 豁免（C2批2）：lark-cli 凭证文件缺失属常态（计划任务无注入），返回 None 走外部兜底
     return None, None
@@ -247,8 +253,20 @@ def main():
             "--user-id", user_id, "--msg-type", msg_type, "--content", content]
     r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", timeout=60)
     ok = False
+    # K-STOCK-400（2026-10-16 移植 send_feishu）：整体 json.loads 遇新版
+    # lark-cli pretty-print 多行 JSON/混入提示行必败 → 误判失败。
+    # 从末个 "{" 行拼接解析，成功即 ok。
     try:
-        ok = json.loads(r.stdout).get("ok") is True
+        lines = (r.stdout or "").strip().splitlines()
+        for i in range(len(lines) - 1, -1, -1):
+            seg = "\n".join(lines[i:]).strip()
+            if not seg.startswith("{"):
+                continue
+            try:
+                ok = json.loads(seg).get("ok") is True
+                break
+            except Exception:
+                continue
     except Exception:
         pass  # 豁免（C2批2）：stdout 非 JSON → ok=False，错误内容随 ALERT_FAIL 打印，未掩盖
     if ok:

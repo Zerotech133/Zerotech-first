@@ -5,6 +5,14 @@
 $log = 'C:\Temp\fut_daily_task.log'
 $py = "$env:APPDATA\uv\tools\tradingview-mcp-server\Scripts\python.exe"
 try {
+    # K-mig (10-16): cn_fut needs TUSHARE_TOKEN for bare ts.pro_api();
+    # XT_DATA_KEY doubles as the tushare pro token (see index_daily.py _token P0-4)
+    $envFile = 'C:\aios\quant_backtest\.env.local'
+    if (Test-Path $envFile) {
+        Get-Content $envFile -Encoding UTF8 | ForEach-Object {
+            if ($_ -match '^XT_DATA_KEY=') { $env:TUSHARE_TOKEN = ($_ -split '=', 2)[1].Trim() }
+        }
+    }
     ('starting ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     if (-not (Test-Path $py)) {
         ('ERR uv tool python missing: ' + $py) | Out-File $log -Append -Encoding utf8

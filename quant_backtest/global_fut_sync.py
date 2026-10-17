@@ -27,7 +27,9 @@ import pandas as pd
 sys.stdout.reconfigure(encoding="utf-8")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT_DIR = os.path.join(HERE, "ts_global_fut")
+# 2026-10-16 收编（数据地基模块章程 §1）：迁回 data/ 仓内，与 docstring
+# 声明一致；旧位置 HERE/ts_global_fut 已废弃，verify_incr_state 双探测兼容。
+OUT_DIR = os.path.join(HERE, "data", "tdx", "ts_global_fut")
 MANIFEST = os.path.join(OUT_DIR, "_manifest.json")
 
 # ⚠️ 2026-10-15 05:43 判例（重要）：

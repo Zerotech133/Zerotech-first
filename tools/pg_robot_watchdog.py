@@ -26,7 +26,9 @@ ROBOT_LOG = r"C:\Temp\pg_robot_system.log"
 WD_LOG = r"C:\Temp\pg_robot_watchdog.log"
 STATE_FILE = r"C:\Temp\pg_robot_watchdog_state.json"
 ALERT_FILE = r"C:\Temp\pg_robot_watchdog_alert.txt"
-SEND_FEISHU = r"E:\老田的AI助手\news_collector\send_feishu.py"
+# K-PUSH-001 P0：换机路径残留（旧机 E 盘）→ __file__ 动态推导
+SEND_FEISHU = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "news_collector", "send_feishu.py")
 STUCK_MIN = 5           # 重连卡死判定阈值（分钟）
 ALERT_COOLDOWN_SEC = 1800  # 同因告警冷却（30 分钟）
 VERIFY_WAIT_SEC = 8     # 重启后等进程起来的时间

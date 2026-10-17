@@ -116,4 +116,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    from linreg import run_with_lineage
+    run_with_lineage("kg_daily_sync", "pull_global_idx", main)

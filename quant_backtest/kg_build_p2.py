@@ -157,17 +157,14 @@ def build_managers(dryrun=False):
     None 会删属性）。
     """
     now = _now()
-    # 直读 parquet 绕过 datamart：_normalize 按 (ts_code, ann_date) 去重
-    # 会把同日批量公告多名高管的行折叠（57.5万→12万），事件表无时序唯一键
-    mg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "data", "tushare", "stk_managers")
-    parts = sorted(glob.glob(os.path.join(mg_dir, "part_*.parquet")))
-    if not parts:
+    # 2026-10-16 收编回读层：catalog 已为 stk_managers 声明事件级主键
+    # （ts_code+name+title+ann_date+begin_date+end_date），dm.read 不再折叠
+    # 同日批量公告多名高管的行（57.5万行口径实测保持）。
+    df = dm.read("stk_managers")
+    if df is None or df.empty:
         raise SystemExit("stk_managers 为空，先跑 "
                          "tushare_sync.py --batch managers")
-    df = pd.concat([pd.read_parquet(p) for p in parts],
-                   ignore_index=True)
-    print("  源数据: %d 行（直读 %d 个 part）" % (len(df), len(parts)))
+    print("  源数据: %d 行（dm.read）" % len(df))
     df_comp = dm.read("stock_company")
     tc2com = {str(r.ts_code): str(r.com_id)
               for r in df_comp[["ts_code", "com_id"]].dropna().itertuples()}

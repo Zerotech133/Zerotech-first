@@ -8,10 +8,11 @@
 后续（P2）：paper.db 实际成交接入后，本脚本增加 per_trade 明细段，
            events trace_id 从 pick 贯穿到 trade。
 
-CLI：python tools/build_performance_ledger.py [--pv 路径] [--out 路径]
+CLI：python tools/build_performance_ledger.py [--pv 路径] [--out 路径] [--paper-db 路径]
 """
 import json
 import os
+import sqlite3
 import sys
 import time
 from collections import defaultdict
@@ -20,6 +21,30 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PV_DEFAULT = os.path.join(ROOT, "portal", "data", "pick_verdicts.json")
 OUT_DEFAULT = os.path.join(ROOT, "portal", "data", "performance_ledger.json")
 WINDOWS = ("1", "3", "5")
+PAPER_DB_DEFAULT = os.path.join(ROOT, "k_stock", "data", "paper.db")
+
+
+def _paper_trades(paper_db):
+    if not paper_db or not os.path.exists(paper_db):
+        return []
+    with sqlite3.connect(paper_db) as con:
+        con.row_factory = sqlite3.Row
+        if not con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='orders'").fetchone():
+            return []
+        columns = {row[1] for row in con.execute("PRAGMA table_info(orders)")}
+        fields = ["id", "account_id", "stock", "side", "qty", "filled_price", "fee", "fill_date"]
+        fields += [name for name in ("trace_id", "fact_hash", "decision_id", "idempotency_key")
+                   if name in columns]
+        rows = con.execute(
+            "SELECT " + ", ".join(fields) +
+            " FROM orders WHERE status='filled' ORDER BY id").fetchall()
+    result = []
+    for row in rows:
+        item = dict(row)
+        for name in ("trace_id", "fact_hash", "decision_id", "idempotency_key"):
+            item.setdefault(name, None)
+        result.append(item)
+    return result
 
 
 def _agg(rows):
@@ -36,7 +61,7 @@ def _agg(rows):
     return out
 
 
-def build(pv_path=PV_DEFAULT, out_path=OUT_DEFAULT):
+def build(pv_path=PV_DEFAULT, out_path=OUT_DEFAULT, paper_db=PAPER_DB_DEFAULT):
     pv = json.load(open(pv_path, encoding="utf-8"))
     per_code = pv.get("per_code", {})
     caliber = (pv.get("summary", {}) or {}).get("caliber", {})
@@ -50,9 +75,16 @@ def build(pv_path=PV_DEFAULT, out_path=OUT_DEFAULT):
         for s in rec.get("strategies", []) or ["none"]:
             by_strategy[s].append(row)
 
+    paper_trades = _paper_trades(paper_db)
     ledger = {
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "asof": (pv.get("summary", {}) or {}).get("asof"),
+        "paper": {
+            "paper_db": os.path.abspath(paper_db) if paper_db else None,
+            "trade_count": len(paper_trades),
+            "per_trade": paper_trades,
+            "trace_fields": ["trace_id", "fact_hash", "decision_id", "idempotency_key"],
+        },
         "caliber": caliber,
         "totals": {"picks": len(per_code), **_agg(list(per_code.values()))},
         "per_tier": {t: {"n": len(rows), **_agg(rows)}
@@ -73,7 +105,8 @@ def main():
     args = sys.argv[1:]
     pv = args[args.index("--pv") + 1] if "--pv" in args else PV_DEFAULT
     out = args[args.index("--out") + 1] if "--out" in args else OUT_DEFAULT
-    led = build(pv, out)
+    paper_db = args[args.index("--paper-db") + 1] if "--paper-db" in args else PAPER_DB_DEFAULT
+    led = build(pv, out, paper_db)
     print("performance_ledger →", out)
     print("totals:", json.dumps(led["totals"], ensure_ascii=False))
     for t, v in led["per_tier"].items():

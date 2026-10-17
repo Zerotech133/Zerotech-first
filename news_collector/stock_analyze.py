@@ -176,7 +176,7 @@ def outlook(name, px_s, stat_s, news_lines):
     news = "\n".join("· %s" % t for t in news_lines[:6]) or "（近7天无直接关联新闻）"
     try:
         r = requests.post(news_ai.OLLAMA, json={
-            "model": cfg.get("ai_model", "qwen3:8b-8k"),
+            "model": cfg.get("ai_model", "qwen3.5:9b"),
             "messages": [{"role": "user", "content":
                 "你是量化分析师。基于以下信息给出「%s」短期（1-2周）展望，"
                 "80~150字：先给方向判断（偏多/偏空/震荡），再讲2-3条逻辑，"

@@ -90,7 +90,8 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
     if df is None or df.empty:
         return 0, 0, None
     if len(df) >= cap:
-        print("  WARN %s 拉满 cap=%d（截断，水位不推进，下轮重拉）" % (kind, cap))
+        print("  WARN %s 拉满 cap=%d（截断；水位推进策略见主循环 ADV 行）"
+              % (kind, cap))
     db = sqlite3.connect(DB)
     try:
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -104,6 +105,13 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
                           _pick(row, "pub_time"))
             if ts is None:
                 continue
+            # max_date 统计全部可解析行（含已存在重复）：修复活锁——
+            # 若仅统计已插入行，截断轮 inserted=0 时 max_date=None，
+            # 水位永不前进，同一窗口无限重拉（2026-10-16 实证两轮
+            # fetched=500/inserted=0 卡死，日增量无法进窗）。
+            d = ts[:10].replace("-", "")
+            if max_date is None or d > max_date:
+                max_date = d
             cur = db.execute("SELECT 1 FROM news WHERE id=?", (nid,)).fetchone()
             if cur:
                 continue
@@ -117,9 +125,6 @@ def feed_source(alias, kind, wm_date, days, cap, dryrun=False):
                  str(_pick(row, "content")), now,
                  json.dumps(stocks, ensure_ascii=False)))
             n_ins += 1
-            d = ts[:10].replace("-", "")
-            if max_date is None or d > max_date:
-                max_date = d
         db.commit()
     finally:
         db.close()
@@ -178,8 +183,18 @@ def main():
         n_ins, n_fetched, max_date = feed_source(
             alias, kind, wm.get(kind), args.days, args.cap,
             dryrun=args.dryrun)
-        # 截断不推进水位（下轮重拉）；未截断推进到本轮最大日期
-        if not args.dryrun and max_date and n_fetched < args.cap:
+        # 水位推进策略（2026-10-16 活锁修复）：
+        #   未截断 → 推进到本轮 max_date（原行为）；
+        #   截断且有新插入 → 推进（存量积压排水：INSERT OR IGNORE +
+        #     1 天重叠兜底回看）；
+        #   截断且零插入 → 也推进（活锁破除：整窗全为重复/坏日期行，
+        #     不推进则永远卡死，实证 21:24/23:55 两轮 fetched=500
+        #     inserted=0 无限重拉）。
+        if not args.dryrun and max_date:
+            if n_fetched >= args.cap:
+                print("  ADV %s 截断轮推进水位→%s（插入=%d，%s）"
+                      % (kind, max_date, n_ins,
+                         "排水" if n_ins else "活锁破除"))
             summary["wm"][kind] = max_date
         summary["src"][kind] = {"inserted": n_ins, "fetched": n_fetched}
         total_ins += n_ins

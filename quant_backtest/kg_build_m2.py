@@ -219,6 +219,11 @@ def main():
 
 
 if __name__ == "__main__":
-    t0 = time.time()
-    main()
-    print("耗时 %.1fs" % (time.time() - t0))
+    from linreg import run_with_lineage
+
+    def _main_timed():
+        t0 = time.time()
+        main()
+        print("耗时 %.1fs" % (time.time() - t0))
+
+    run_with_lineage("kg_daily_sync", "m2_drive_sync", _main_timed)

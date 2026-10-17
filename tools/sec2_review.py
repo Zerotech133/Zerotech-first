@@ -11,7 +11,7 @@
     3. 构造走形检查 prompt（固定产出格式：方案条目→实现证据→判定(完善/走形/缺失)→建议命令），
        调 agent_coder.chat_auto("SEC2", prompt)——智谱包年 glm-4.6（K-ORG-050 通道，审查类单约 4~5 积分）；
     4. 解析判定计数，报告落 agent_platform/data/sec2/，emit deviation_report 事件；
-    5. 有走形/缺失 → exit 2（提示老田/田小皮下发修改命令）；全完善 → exit 0。
+    5. 有走形/缺失 → exit 2（提示老田/田丰下发修改命令）；全完善 → exit 0。
 """
 
 import argparse
@@ -43,7 +43,7 @@ FORMAT_RULES = """你是 SEC2 网络安全工程师（30年网安+全栈）。�
 - 实现证据：<文件:行为或提交中的证据>
 - 判定：完善 | 走形 | 缺失（三选一）
 - 说明：<一两句>
-- 建议命令：<走形/缺失时给田小皮的下发命令建议；完善写"无">
+- 建议命令：<走形/缺失时给田丰的下发命令建议；完善写"无">
 （逐条目重复；最后加一行统计：`统计：完善 N · 走形 N · 缺失 N`）"""
 
 
@@ -143,7 +143,7 @@ def main(argv=None):
     emit_event("SEC2走查:" + plan_name,
                "报告=%s 完善=%d 走形=%d 缺失=%d%s"
                % (out.name, ok, dev, miss,
-                  " → 建议田小皮下发修改命令" if (dev or miss) else " → 建议归档结案"))
+                  " → 建议田丰下发修改命令" if (dev or miss) else " → 建议归档结案"))
     return 2 if (dev or miss) else 0
 
 

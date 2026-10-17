@@ -2,7 +2,7 @@
  "default_model": "qwen3.5:9b",
  "fallback_chain": {
   "主模型": [
-   "qwen3.5:4b",
+   "qwen3.5-trae",
    "qwen3.5:9b"
   ]
  },
@@ -10,26 +10,70 @@
   {
    "task_type": "embedding",
    "model": "bge-m3",
-   "reason": "嵌入专用，语义检索最优"
+   "reason": "嵌入专用，1024 维，中文语义区分度优于 nomic 5.5 倍"
   },
   {
    "task_type": "complex_reasoning",
-   "model": "qwen3.5:9b",
-   "reason": "主力模型，平衡性能与显存"
+   "model": "qwen3.6:35b-a3b",
+   "reason": "重型推理（MoE 22G，Vulkan 实测 34-36 tok/s）；注意思考模型需给足 num_predict"
   },
   {
    "task_type": "light_task",
-   "model": "qwen3.5:4b",
-   "reason": "轻量任务，降低延迟"
+   "model": "qwen3.5-trae",
+   "reason": "轻量任务（16K ctx 固化参数，与 qwen3.5:9b 共享权重零额外磁盘）"
   },
   {
    "task_type": "default",
    "model": "qwen3.5:9b",
-   "reason": "默认路由，避免 35b 显存溢出"
+   "reason": "默认路由：news_collector/CowAgent/RAG 四类消费者共同主力，双模型槽位下最稳"
   }
  ],
+ "nova_provider": {
+  "enabled": true,
+  "base_url": "http://127.0.0.1:3001/v1",
+  "protocol": "OpenAI 兼容（llamacpp 引擎，每模型独立端口 8080-8089/1234 段，3001 是管理口）",
+  "health_check": "GET http://127.0.0.1:3001/api/health -> {status:ok}",
+  "route_rules": [
+   {
+    "task_type": "coding",
+    "model": "Qwen3.8-27B-DFlash2",
+    "quantization": "ROCmFP4-FAST",
+    "status": "cpu_only_fallback",
+    "benchmarked_2026-10-17": "CPU 回退实测 ~10 tok/s（279tok/29.8s），draft acceptance 28%",
+    "verdict": "不推荐用于编程——Ollama:qwen3.6-trae GPU 34-36 tok/s 仍是最优",
+    "root_cause": "gfx1151+Adrenalin 26.9.2 下 HIP 全线崩溃（hipGetDevice unspecified launch failure，与 Ollama ROCm 同根因）；vulkan/通用 rocm 构建读不了 ROCmFP4 自定义量化；Qwenox 引擎需 .hgn 格式。vendor 宣称的 50 tok/s 需其支持的驱动环境",
+    "note": "待 Adrenalin 驱动更新修复 ROCm 后可重测（届时 27B 稠密 FP4 + 投机解码潜力 ~50 tok/s）"
+   },
+   {
+    "task_type": "vision",
+    "model": "Qwen3.5-35B",
+    "status": "not_downloaded",
+    "size_gb": 20.5,
+    "quantization": "Q4_K_M（标准量化，vulkan 引擎可读）",
+    "reason": "项目唯一视觉能力缺口：图像输入+长上下文；NovaMax vulkan 构建或 Ollama 导入均可 GPU 跑",
+    "next_step": "下载后优先用 NovaMax vulkan 引擎路径验证"
+   },
+   {
+    "task_type": "news_structuring",
+    "model": "Qwen3-30B-Instruct-2507",
+    "status": "not_downloaded",
+    "size_gb": 17.3,
+    "quantization": "标准量化（vulkan 可读）",
+    "reason": "非思考指令模型，news_collector 结构化判断最优解"
+   }
+  ],
+  "engine_findings_2026-10-17": "llamacpp 变体实测：hip_qwen3.8(rocmfpx)=HIP崩→CPU回退；rocm_202609291528(ROCm10.2a)=读不了FP4；vulkan_202609291528=读不了FP4；gfx1151_engine(Qwenox)=.hgn格式不适用。已安装 rocm/gfx1151_engine 备用",
+  "coexistence_note": "Ollama(qwen3.5:9b 占 7.3GB VRAM) 与 NovaMax 实例可共存；NovaMax 单模型管理端口 3001，模型服务端口独立",
+  "fallback": "NovaMax 未运行时所有任务回落 Ollama 侧 route_rules，零侵入"
+ },
  "constraints": {
-  "显存约束": "禁止使用 qwen3.5:35b（实测溢出至 CPU，禁用于实时场景）；所有模型加载需预留 2GB 缓冲",
-  "上下文约束": "长文本处理优先启用 4b 模型或分段策略，防止 Ollama 上下文窗口超限"
+  "显存约束": "GPU 可用约 97GB（Vulkan）；MAX_LOADED_MODELS=2，qwen3.6 驻留时第二模型可共存；gpt-oss:120b (65G) 必须单跑",
+  "上下文约束": "长文本优先 qwen3.6-trae (32K ctx)；qwen3.5 系 16K；注意 Hermes 曾用 65-73K 巨型 prompt 触发旧版调度死锁，0.40.5 已修复",
+  "已移除": "qwen3.5:4b（从未安装，原 fallback 首环必失败）、qwen3.5:35b（已由 qwen3.6:35b-a3b 替代）"
+ },
+ "library_inventory_2026-10-17": {
+  "core": ["qwen3.5:9b", "bge-m3", "qwen3.6:35b-a3b", "qwen3.6-trae", "qwen3.5-trae"],
+  "standby": ["gpt-oss:120b", "glm-4.7-flash", "huihui_ai/Qwen3.8-abliterated"],
+  "deleted_2026-10-17": ["qwen2.5:7b", "qwen3:8b", "nomic-embed-text"]
  }
 }

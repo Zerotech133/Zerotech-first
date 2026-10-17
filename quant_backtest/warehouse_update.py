@@ -26,6 +26,20 @@ UNIT_DONE = frozenset({'succeeded', 'source_empty', 'failed', 'interrupted', 'bl
                        'no_local_file', 'unsupported', 'rejected'})
 UNIT_FAILURES = UNIT_DONE - {'succeeded', 'source_empty'}
 
+# 数据地基模块章程 §2：provider→adapter 名唯一登记处（warehouse_sync_runtime
+# 的 ADAPTERS 名字侧与此对齐；新 provider 只允许在这里加条目，禁止散落硬编码）。
+ADAPTER_NAMES = {'tdx': 'tdx_parquet_v1',
+                 'tushare': 'tushare_frame_v1',
+                 'xueqiu': 'xueqiu_frame_v1'}
+
+# 章程 §2：provider→可信 channel 集（build_plan 白名单与资格校验共用；
+# 2026-10-16 审计修复：xueqiu 此前仅在 ADAPTER_NAMES 登记，plan 白名单与
+# channel 映射散落硬编码会全链路拒绝。xueqiu 采集执行器未对接、
+# warehouse_registry.json 无 qualified 行前，资格校验仍会拒绝——fail-closed 保留。
+PROVIDER_CHANNELS = {'tdx': {'tdx', 'xtcloud'},
+                     'tushare': {'tushare'},
+                     'xueqiu': {'xueqiu'}}
+
 
 def metadata_digest(value):
     """规范 JSON 摘要；禁止 NaN、隐式对象序列化及调用方可变引用。"""
@@ -127,7 +141,7 @@ def _resource(source, catalog, registry):
             if not isinstance(explicit[source], str) or not os.path.isabs(explicit[source]):
                 raise ValueError('registry.resource 必须为绝对路径')
             roots.add(str(Path(explicit[source]).resolve()))
-    channels = {'tdx': {'tdx', 'xtcloud'}, 'tushare': {'tushare'}}[source]
+    channels = PROVIDER_CHANNELS[source]
     for meta in catalog['tables'].values():
         if not isinstance(meta, dict) or meta.get('source') not in channels:
             continue
@@ -268,7 +282,10 @@ def _retry(source, retry_of, retry_units):
 def _adapter_ready(source, policy):
     """只使用可信登记，布尔executable不是授予资格的依据。"""
     adapter = policy.get('execution_adapter', {})
-    name = 'tdx_parquet_v1' if source == 'tdx' else 'tushare_frame_v1'
+    # 章程 §2：adapter 名查 ADAPTER_NAMES 登记表；未登记 provider 一律不合格。
+    name = ADAPTER_NAMES.get(source)
+    if name is None:
+        return False
     return (policy.get('qualification_status') == 'qualified'
             and policy.get('supported_scope') == 'frozen_units_v1'
             and isinstance(adapter, dict) and adapter.get('name') == name and adapter.get('version') == 1
@@ -370,7 +387,7 @@ def _frozen_scopes(source, op, target, policy, meta, state, resource):
 def build_plan(source, market, date, *, now, catalog, registry, baseline,
                remote_tables=None, selected_tables=None, retry_of=None, retry_units=None):
     requested, now = _day(date), _now(now)
-    if source not in ('tdx', 'tushare') or market not in ('all', 'cn', 'hk', 'us'):
+    if source not in PROVIDER_CHANNELS or market not in ('all', 'cn', 'hk', 'us'):
         raise ValueError('source 或 market 不在白名单中')
     if source == 'tdx' and market not in ('all', 'cn'):
         raise ValueError('TDX 市场范围不支持')

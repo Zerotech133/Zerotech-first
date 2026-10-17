@@ -107,8 +107,12 @@ def main():
         if fired:
             pushed = int(prev.get("pushed") or 0)
             if pushed < DAILY_CAP:
-                hits.append((nm, fired, a))
+                # K-STOCK-414：暂不推进基线——推送成功才写（见下方），
+                # 否则失败轮次后 prev==cur 永不再触发，预警正文永久丢失
+                hits.append((nm, fired, a, num, raw))
                 prev["pushed"] = pushed + 1
+                routes[nm] = prev
+                continue
             # 达熔断也更新基线，避免次日放开后拿旧值狂补
         prev["num"], prev["raw"] = num, raw
         routes[nm] = prev
@@ -131,6 +135,10 @@ def main():
                 "⚡ 即时预警 " + time.strftime("%m-%d %H:%M") + "\n"
                 + "\n".join(lines), targets)
             ok = any(tres.values())
+        if ok:  # K-STOCK-414：成功才推进已触发路由基线（失败保旧基线下轮重比）
+            for nm2, _f, _a, num2, raw2 in hits:
+                p2 = routes.setdefault(nm2, {})
+                p2["num"], p2["raw"] = num2, raw2
         _save_state(st)
         print("ALERT_WATCH_FIRED %d routes ok=%s %s" % (
             len(hits), ok, json.dumps(tres, ensure_ascii=False)))

@@ -6,12 +6,18 @@ K267（2026-10-08）：补日志落盘——原实现只有 print，计划任务
 日志全丢（根因排查 E4，见 docs/ops/2026-10-08_Ollama任务根因排查.md）。
 """
 import os
+import shutil
 import sys
 import time
 import urllib.request
 
-OLLAMA = r"C:/Users/Administrator/AppData/Local/Programs/Ollama/ollama.exe"
-MODELS = r"D:/ollama-models/models"
+# K-STOCK-414：旧机 Administrator/D 盘硬编码换机即死 → 动态定位：
+# 优先 PATH 中的 ollama，回退当前用户默认安装位；模型用默认 ~/.ollama/models。
+OLLAMA = (shutil.which("ollama")
+          or os.path.join(os.path.expanduser("~"), "AppData", "Local",
+                          "Programs", "Ollama", "ollama.exe"))
+MODELS = os.environ.get("OLLAMA_MODELS") or os.path.join(
+    os.path.expanduser("~"), ".ollama", "models")
 LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wrapper.log")
 
 
@@ -24,6 +30,11 @@ def _log(msg):
             f.write(line + "\n")
     except OSError:
         pass
+
+
+if not os.path.exists(OLLAMA):
+    _log("FATAL: ollama.exe not found (%s)" % OLLAMA)
+    sys.exit(1)
 
 
 op = urllib.request.build_opener(urllib.request.ProxyHandler({}))

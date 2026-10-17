@@ -15,7 +15,9 @@ import urllib.request
 import pandas as pd
 
 DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "crypto")
-API = "https://api.binance.com/api/v3/klines"
+# K-mig (10-16): 本机直连 api.binance.com 不可达（GFW），改用官方行情专用镜像
+# data-api.binance.vision（与 data.binance.vision 同域可达，API 路径完全一致）
+API = "https://data-api.binance.vision/api/v3/klines"
 
 
 def _kl(sym, start_ms):

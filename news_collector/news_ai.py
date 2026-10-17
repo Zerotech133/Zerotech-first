@@ -139,10 +139,18 @@ _SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品"
              "crypto": "加密", "macro": "宏观"}
 
 
+_JEV_KEY_MEMO = None   # 2026-10-16 审计：进程内 memo（backfill 每判一条
+                       # 调一次 _jev_key，原每次都 DPAPI 解密+正则读盘）
+
+
 def _jev_key():
     """JEV_API_KEY：环境变量优先 → DPAPI 加密库 → 明文 ps1 兜底。"""
+    global _JEV_KEY_MEMO
+    if _JEV_KEY_MEMO:
+        return _JEV_KEY_MEMO
     key = os.environ.get("JEV_API_KEY", "")
     if key:
+        _JEV_KEY_MEMO = key
         return key
     # 2026-10-14 DPAPI 迁移（W1-2 任务A）：stub 化后本文件的正则解析
     # 读不到明文 key，故在明文兜底之前先走 .enc 加载器（解密失败返回
@@ -157,6 +165,7 @@ def _jev_key():
         spec.loader.exec_module(_mod)
         key = _mod.get_secret("JEV_API_KEY")
         if key:
+            _JEV_KEY_MEMO = key
             return key
     except Exception:
         pass
@@ -167,6 +176,7 @@ def _jev_key():
         m = re.search(r'JEV_API_KEY"\s*=\s*"([^"]+)"', txt) \
             or re.search(r'JEV_API_KEY\s*=\s*"([^"]+)"', txt)
         if m:
+            _JEV_KEY_MEMO = m.group(1)
             return m.group(1)
     except Exception:
         pass
@@ -243,7 +253,7 @@ def jev_reason(title, bias_cn, scope_cn, timeout=20):
     except Exception:
         pass  # 豁免（C2批2）：配置缺省→环境变量/默认模型兜底，常态容错
     if not model:
-        model = os.environ.get("OLLAMA_MODEL", "qwen3:8b-8k")
+        model = os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
     try:
         r = requests.post(OLLAMA, json={
             "model": model,
@@ -680,7 +690,7 @@ def push_message(text):
 def run(mode, dry):
     m = MODES[mode]
     cfg = json.load(open(CFG_PATH, encoding="utf-8"))
-    model = cfg.get("ai_model", "qwen3:8b-8k")
+    model = cfg.get("ai_model", "qwen3.5:9b")
     window = int(cfg.get(m["win_cfg"], m["win_def"]))
     limit = int(cfg.get("ai_max_news", 50))
     watchlist = cfg.get("watchlist", [])
@@ -694,14 +704,17 @@ def run(mode, dry):
         "CREATE TABLE IF NOT EXISTS ai_reviews ("
         "date TEXT PRIMARY KEY, ts TEXT, model TEXT, ok INTEGER, "
         "markets TEXT, brief TEXT, pushed INTEGER DEFAULT 0)")
-    try:
-        db.execute("ALTER TABLE news ADD COLUMN stocks TEXT")
-    except sqlite3.OperationalError:
-        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
-    try:
-        db.execute("ALTER TABLE news ADD COLUMN jev TEXT")
-    except sqlite3.OperationalError:
-        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
+    def _add_col(col):
+        # 2026-10-16 审计：原 except OperationalError: pass 连 "database
+        # is locked" 等真故障一并吞掉（迁移静默假成功）；仅豁免
+        # duplicate column（幂等迁移的预期异常），其余上抛。
+        try:
+            db.execute("ALTER TABLE news ADD COLUMN %s TEXT" % col)
+        except sqlite3.OperationalError as e:
+            if "duplicate column" not in str(e).lower():
+                raise
+    _add_col("stocks")
+    _add_col("jev")
 
     try:
         from quote_snapshot import normalize_code
@@ -810,6 +823,12 @@ def run(mode, dry):
             log("card build FAIL %s" % str(e)[:120])
     sent = sent or push_message(msg) if not dry else True
 
+    if dry:
+        # 2026-10-16 审计：dry 演练不落库——原 INSERT OR REPLACE 覆盖当日
+        # 生产记录并虚标 pushed=1，还回灌 runs 表污染运行统计。
+        db.close()
+        log("dry 模式：跳过 DB 落库（%s）" % m["table"])
+        return
     db.execute(
         "INSERT OR REPLACE INTO %s(date,ts,model,ok,markets,brief,pushed) "
         "VALUES(?,?,?,?,?,?,?)" % m["table"],

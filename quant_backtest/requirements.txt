@@ -17,6 +17,7 @@ pandas==3.0.1
 pyarrow==20.0.0
 requests==2.34.2
 tushare==1.4.29
+pysnowball==0.1.8            # xueqiu_sync 雪球 L1（full:277 已声明，瘦文件补登）
 psycopg2-binary==2.9.13      # import psycopg2（chanlun_data 等）
 python-dotenv==1.2.3         # import dotenv
 

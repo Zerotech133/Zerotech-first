@@ -409,7 +409,7 @@ def prompt_md(n):
 - 结论/产出留痕 `agent/{aid}/decision`，带证据。
 
 ## 上游/下游
-- 上游：{dept} 部门负责人与 A0 参谋长（田小皮）
+- 上游：{dept} 部门负责人与 A0 参谋长（田丰）
 - 下游：产出门进部门 observation 与 A0 日报链
 """.format(aid=n["agent_id"], role=n["role_profile"], dept=n["dept"],
            grade_label=grade_label, charter=n["charter"], persona=persona,
@@ -569,17 +569,41 @@ def task_create(p):
     if project:
         args += ["--project", project]
     try:
-        # cwd=ROOT：devtask 的 _git 依赖仓库根（SYSTEM 进程 cwd 在 System32）
+        # cwd=ROOT：devtask 的 _git 依赖仓库根（SYSTEM 进程 cwd 在 System32）。
+        # 让工单账本 owner 与派工成员一致，避免所有 Legion 工单落成 unknown-agent。
+        env = dict(os.environ)
+        if p.get("agent"):
+            env["AGENT_NAME"] = str(p["agent"]).strip().upper()
         r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
                            errors="replace", timeout=120, cwd=ROOT)
     except subprocess.TimeoutExpired:
         return "devtask new 超时（120s）", None
     if r.returncode != 0:
         return "devtask new 失败: %s" % ((r.stderr or r.stdout or "").strip()[:150]), None
-    t = task_load().get(tid, {})
+    tasks = task_load()
+    t = tasks.get(tid, {})
+    # Legion Worker 显式接入：只有 worker=true 的工单允许被自动执行，
+    # 避免把传统 devtask 产码单误交给模型执行器。
+    if p.get("worker"):
+        t["legion_worker"] = True
+        t["execution_status"] = "queued"
+        t["execution_attempts"] = 0
+        t["agent"] = str(p.get("agent") or t.get("owner") or "").strip().upper()
+        t["acceptance"] = p.get("acceptance") or [
+            "产出文件存在且非空",
+            "产出包含任务结论和证据/限制",
+            "执行过程有 heartbeat 记录",
+        ]
+        tasks[tid] = t
+        tmp = TASKS_JSON + ".worker.tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(tasks, f, ensure_ascii=False, indent=1)
+            f.write("\n")
+        os.replace(tmp, TASKS_JSON)
     return None, {"tid": tid, "branch": t.get("branch", ""),
                   "worktree": t.get("worktree", ""),
-                  "owner": t.get("owner", ""), "desc": desc}
+                  "owner": t.get("owner", ""), "agent": t.get("agent", ""),
+                  "worker": bool(t.get("legion_worker")), "desc": desc}
 
 
 # ── K-ORG-057：项目线注册（工作区内二级维度；与部门注册同构） ──

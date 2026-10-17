@@ -18,7 +18,7 @@ import io
 import sys
 import time
 
-TARGET = r"E:\老田的AI助手\jev-eval\backup_daily.ps1"
+TARGET = r"C:\aios\jev-eval\backup_daily.ps1"
 REG_KEY = r"SOFTWARE\AIStation\BackupDeploy"
 LOG = r"C:\Temp\backup_daily_regen.log"
 
@@ -48,14 +48,19 @@ def reg_source():
 
 def main():
     force = "--force" in sys.argv
+    # 2026-10-16 machine swap: new machine has no registry authority and no
+    # git - the on-disk file IS the source of truth (v11 deviation note in
+    # backup_daily.ps1). Without a registry source there is nothing to
+    # self-heal FROM: report disabled and exit 0 so N1 check 0a stays green
+    # (visible as "disabled" in its log line, not silent).
     try:
         src = reg_source()
     except OSError as e:
-        log("FATAL registry source unreadable: %r" % e)
-        return 2
+        log("DISABLED registry source absent (new machine, disk is authority): %r" % e)
+        return 0
     if not src:
-        log("FATAL registry source empty")
-        return 2
+        log("DISABLED registry source empty (new machine, disk is authority)")
+        return 0
     try:
         disk = io.open(TARGET, "rb").read()
     except OSError:

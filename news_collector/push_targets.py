@@ -38,7 +38,9 @@ def targets() -> list:
         except Exception as e:  # noqa: BLE001
             print("[push_targets] news_config.json 读取失败: %r" % e,
                   file=sys.stderr)
-            _TARGETS = []
+            # 2026-10-16 审计：不缓存失败结果——原 _TARGETS=[] 落缓存后，
+            # 长驻进程（gate/qd_bridge）瞬态读取失败变永久 miss。
+            return []
     return _TARGETS
 
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""chief_patrol — 田小皮监督回路巡检器（K-ORG-026 批E1）。
+"""chief_patrol — 田丰监督回路巡检器（K-ORG-026 批E1）。
 
-田小皮 = 平行空间的老田：严格按 org_baseline.json 计划基线，只读巡检三源执行数据，
+田丰 = 平行空间的老田：严格按 org_baseline.json 计划基线，只读巡检三源执行数据，
 产出四色判读（超前/正常/滞后/阻塞）+ 建议动作。判读落 memory 黑板（chief observation），
 不代跑任何执行动作（merge/派单执行权在各岗与团队线）。
 
@@ -87,7 +87,7 @@ def patrol():
     rev_n = len(ts["review"])
     rev_warn = th.get("review_backlog_warn", 20)
     lines = []
-    lines.append("# 田小皮巡检判读 %s" % time.strftime("%Y-%m-%d %H:%M"))
+    lines.append("# 田丰巡检判读 %s" % time.strftime("%Y-%m-%d %H:%M"))
     lines.append("")
     lines.append("> 依据：org_baseline.json 计划基线 × 三源执行数据（工单库/事件流/黑板）。只读监督，不代跑执行。")
     lines.append("")
@@ -116,7 +116,7 @@ def patrol():
     lines.append("## 三、风险与建议动作")
     risks = []
     if rev_n >= th.get("review_backlog_p0", 30):
-        risks.append((RED, "review 积压 %d 单达 P0 线" % rev_n, "田小皮直接干预：冻结新单派发，全员清 review"))
+        risks.append((RED, "review 积压 %d 单达 P0 线" % rev_n, "田丰直接干预：冻结新单派发，全员清 review"))
     elif rev_n >= rev_warn:
         risks.append((AMBER, "review 积压 %d 单越过警戒线（%d）" % (rev_n, rev_warn),
                       "QA1 四批质检（K-ORG-025a）按序推进，本周期内须清至 <10"))
@@ -124,7 +124,7 @@ def patrol():
         for t in ts["doing_stalled"]:
             risks.append((AMBER, "doing 单 %s 已 %dh 无流转（%s）"
                           % (t["id"], t["_stall_h"], t.get("owner", "?")),
-                          "田小皮点名：owner 说明进度或转 blocked"))
+                          "田丰点名：owner 说明进度或转 blocked"))
     gate_b = [b for b in base.get("batches", []) if str(b.get("status", "")).startswith("blocked")]
     for b in gate_b:
         risks.append(("🧊", "%s 被 [%s] 冻结" % (b["name"], b.get("gate", "")),
@@ -135,7 +135,7 @@ def patrol():
         lines.append("- %s **%s** → %s" % (color, risk, act))
     lines.append("")
     lines.append("---")
-    lines.append("*判读人：田小皮（A0）· 工具 tools/chief_patrol.py 只读产出 · 飞书推送随批 B 解禁（E3）*")
+    lines.append("*判读人：田丰（A0）· 工具 tools/chief_patrol.py 只读产出 · 飞书推送随批 B 解禁（E3）*")
     return "\n".join(lines), ts, rev_n
 
 

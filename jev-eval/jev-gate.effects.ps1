@@ -26,13 +26,8 @@
 New-Item -ItemType Directory -Path $env:JEV_LOG_DIR -Force | Out-Null
 
 # lark-cli 注入 PATH：计划任务/服务上下文无 Trae 注入的用户 PATH，card-handler 启动即 Popen lark-cli，
-# 找不到会立刻崩溃（WinError 2）。
-# K-STOCK-396 exe 解耦：仓库 bin/ 固定副本优先（$PSScriptRoot 相对定位，不受 Trae 插件
-# 目录升级/清除影响，2026-10-13 巡检判例）；插件目录扫描降为回退。
-$_repoBin = Join-Path $PSScriptRoot '..\bin'
-if (Test-Path (Join-Path $_repoBin 'lark-cli.exe')) {
-  $env:PATH = "$_repoBin;$env:PATH"
-} elseif (-not (Get-Command lark-cli -ErrorAction SilentlyContinue)) {
+# 找不到会立刻崩溃（WinError 2）。自动探测插件目录下最新版本，插件升级后无需改这里。
+if (-not (Get-Command lark-cli -ErrorAction SilentlyContinue)) {
   $larkRoot = Join-Path $env:USERPROFILE '.trae-cn\plugins\trae-remote-official\lark'
   if (Test-Path $larkRoot) {
     $larkBin = Get-ChildItem $larkRoot -Directory |
@@ -42,3 +37,4 @@ if (Test-Path (Join-Path $_repoBin 'lark-cli.exe')) {
     if ($larkBin) { $env:PATH = "$($larkBin.FullName)\bin;$env:PATH" }
   }
 }
+

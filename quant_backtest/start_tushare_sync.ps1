@@ -1,12 +1,17 @@
-# tushare daily incremental sync launcher (ASCII only, enumerate Chinese path)
+﻿# tushare daily incremental sync launcher (ASCII only, enumerate Chinese path)
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
 $log = 'C:\Temp\tushare_sync_task.log'
 try {
-    # locate workspace root by marker (Chinese dir name never on cmdline)
-    $root = (Get-ChildItem E:\ -Directory |
-        Where-Object { Test-Path (Join-Path $_.FullName 'quant_backtest\tushare_sync.py') } |
-        Select-Object -First 1).FullName
+    # 20261016换机：优先 C:\aios junction（ASCII 路径直用），保留旧机 E:\ 扫描兜底
+    $root = $null
+    if (Test-Path 'C:\aios\quant_backtest\tushare_sync.py') {
+        $root = 'C:\aios'
+    } else {
+        $root = (Get-ChildItem E:\ -Directory -ErrorAction SilentlyContinue |
+            Where-Object { Test-Path (Join-Path $_.FullName 'quant_backtest\tushare_sync.py') } |
+            Select-Object -First 1).FullName
+    }
     if (-not $root) { throw 'workspace root not found' }
     $wd = Join-Path $root 'quant_backtest'
     $p = Start-Process -FilePath 'C:\Program Files\Python311\python.exe' `

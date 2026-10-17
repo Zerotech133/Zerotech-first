@@ -43,7 +43,11 @@ OUT_JSON = HERE / "review_data" / "graduation_status_v2.json"
 V2_N_MIN = 30     # n_eff 门槛（唯一 ts_code 计数）
 V2_PP = 0.01      # 聚类均值门槛：> +1pp
 # 域级特殊规则（正式口径）
-DOMAIN_NO_FOCUS = {"CN": "FOCUS 入口缺位（quality 从未判 low），不设 FOCUS 判据；修 quality 在 CN 的触发是前置课题"}
+# 2026-10-16 P1-1：CN 由"入口缺位"升级为"FOCUS_CN 影子积累中"——signal_review_gate
+# 以 CN 域 quality_p 相对刻度（30 分位 0.53）开独立影子组 FOCUS_CN，不进生产 FOCUS 组；
+# 影子期 CN 不参与毕业判定（pass 恒 False），攒 n_eff>=30 且均值达标后人工转正。
+DOMAIN_NO_FOCUS = {}  # CN 已有影子入口，不再硬编码"入口缺位"
+DOMAIN_SHADOW_FOCUS = {"CN": "FOCUS_CN 影子组积累中（2026-10-16 起，CN 相对临界 quality_p<=0.53）；不参与毕业判定，达标后人工转正"}
 DOMAIN_EXCLUDED = {"CRYPTO": "过渡期剔除出毕业判定（处置A），单独监控；quality 模型对 crypto 有区分度后自动并入（处置C）"}
 # live 域 = 参与毕业判定的常规域（v2 下当前为 US / HK 及未来新增域）
 
@@ -63,6 +67,21 @@ def judge_domain(n_eff, cluster_mean, gap, domain):
     # 常规 live 域：n_eff ≥ 30 且 聚类均值 > +1pp 两条同时满足
     ok_n = n_eff is not None and n_eff >= V2_N_MIN
     ok_mean = cluster_mean is not None and cluster_mean > V2_PP
+    if domain in DOMAIN_SHADOW_FOCUS:
+        # 影子域（FOCUS_CN）：按同判据统计但 pass 恒 False，转正需人工
+        if not ok_n:
+            state = "影子积累中"
+        elif ok_mean:
+            state = "影子达标（待转正）"
+        else:
+            state = "影子未达标"
+        aux = "辅助FOCUS_CN−PASS>0 ✓" if (gap is not None and gap > 0) else "辅助FOCUS_CN−PASS>0 ✗"
+        return {"pass": False, "state": state,
+                "note": "影子组 n_eff≥%d %s（当前 %s）；聚类均值>+%.0fpp %s；%s。%s" % (
+                    V2_N_MIN, "✓" if ok_n else "✗",
+                    n_eff if n_eff is not None else 0,
+                    V2_PP * 100, "✓" if ok_mean else "✗", aux,
+                    DOMAIN_SHADOW_FOCUS[domain])}
     passed = ok_n and ok_mean
     if passed:
         state = "达标"
@@ -93,12 +112,16 @@ def compute() -> dict:
     """读数据源，产出 v2 全域状态（只读）。"""
     recs = load_all()
     fo = [r for r in recs if r["decision"] == "FOCUS"]
-    found = {r["market"] for r in fo}
-    domain_list = sorted(found | set(DOMAIN_NO_FOCUS) | set(DOMAIN_EXCLUDED))
+    fo_shadow = [r for r in recs if r["decision"] == "FOCUS_CN"]
+    found = {r["market"] for r in fo} | {r["market"] for r in fo_shadow}
+    domain_list = sorted(found | set(DOMAIN_NO_FOCUS)
+                         | set(DOMAIN_SHADOW_FOCUS) | set(DOMAIN_EXCLUDED))
 
     domains = {}
     for m in domain_list:
-        st = domain_stats(fo, recs, m)
+        # 影子域（CN）用 FOCUS_CN 影子组做 FOCUS 侧统计；PASS 基线不变（domain_stats 内部取）
+        focus_side = fo_shadow if m in DOMAIN_SHADOW_FOCUS else fo
+        st = domain_stats(focus_side, recs, m)
         n_eff = st["n_unique_codes"]
         cluster = st["ret5_cluster"]
         gap = st["focus_minus_pass"]
@@ -123,7 +146,7 @@ def compute() -> dict:
             "n_eff_min": V2_N_MIN, "n_eff_by": "唯一 ts_code 计数",
             "cluster_mean_pp_min": V2_PP, "mean_basis": "标的聚类（先按标的求均值再等权）",
             "aux": "同域 FOCUS−PASS > 0（无硬门槛）",
-            "special": {"CN": "入口缺位，不设 FOCUS 判据",
+            "special": {"CN": "FOCUS_CN 影子组积累中（2026-10-16 起），不参与毕业判定",
                         "CRYPTO": "过渡期剔除（A），单独监控，quality 修复后自动并入（C）"},
             "source": "docs/changes/20261014_jev_v2_adoption_changes.md",
         },

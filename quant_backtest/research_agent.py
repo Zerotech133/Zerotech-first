@@ -48,13 +48,13 @@ PROMPT = """你是个人量化研究系统的个股研判助手。只基于以�
 
 
 def _norm_code(code):
-    s = str(code or "").strip().upper()
-    if "." in s:
-        return s
-    if len(s) == 6 and s.isdigit():
-        suf = "SH" if s[0] == "6" else "BJ" if s[0] in "48" else "SZ"
-        return "%s.%s" % (s, suf)
-    return s
+    """代码归一（2026-10-16 章程 §4.3 收编）：判定委托 codes.normalize_code
+    唯一权威；非 A 股形态原样返回。"""
+    from codes import normalize_code
+    n = normalize_code(code)
+    if n is not None:
+        return n
+    return str(code or "").strip().upper()
 
 
 def _today8():

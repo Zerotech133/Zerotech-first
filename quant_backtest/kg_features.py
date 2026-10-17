@@ -118,13 +118,12 @@ def main():
     if args.top:
         for col in [c for c in df.columns if c.startswith(("deg", "peer", "person", "n_"))]:
             top = df.nlargest(args.top, col)[["ts_code", col]]
-            basic = pd.read_parquet(os.path.join(
-                HERE, "data", "tdx", "ts_stock_basic",
-                "part_0000.parquet"), columns=["ts_code", "name"])
+            basic = dm.read("ts_stock_basic", fields=["ts_code", "name"])
             top = top.merge(basic, on="ts_code", how="left")
             print("\n%s Top%d:" % (col, args.top))
             print(top.to_string(index=False))
 
 
 if __name__ == "__main__":
-    main()
+    from linreg import run_with_lineage
+    run_with_lineage("kg_daily_sync", "kg_features", main)

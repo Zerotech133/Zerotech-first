@@ -1,6 +1,12 @@
-﻿# VERSION: jev_backfill_task v2 (2026-10-11, traceback-full-log fix)
+﻿﻿﻿﻿# VERSION: jev_backfill_task v2 (2026-10-11, traceback-full-log fix)
 $ErrorActionPreference = 'Stop'
-$log = 'C:\jev_backfill_task.log'
+# 2026-10-16 审计修复：C:\ 根日志 15:00 起被拒写（Access denied，ACL 却允许，
+# 疑受控文件夹访问拦截）→ 16:00 后每轮 rc=1 且零日志、backlog 停摆 5h。
+# 迁至项目内 review_data（S4U 任务已验证可写），并保留旧日志搬运。
+$log = Join-Path $PSScriptRoot 'review_data\jev_backfill_task.log'
+if (-not (Test-Path -LiteralPath $log) -and (Test-Path -LiteralPath 'C:\jev_backfill_task.log')) {
+    try { Copy-Item 'C:\jev_backfill_task.log' $log -ErrorAction Stop } catch {}
+}
 function W([string]$m) {
     ("[{0}] {1}" -f (Get-Date -Format 'MM-dd HH:mm:ss'), $m) |
         Out-File -LiteralPath $log -Append -Encoding utf8
@@ -10,7 +16,7 @@ try {
     W 'P0 start'
     # locate Chinese-path news_collector via marker file (ASCII cmdline rule)
     $dir = $null
-    foreach ($drv in @('E:\', 'D:\', 'C:\')) {
+    foreach ($drv in @('C:\', 'E:\', 'D:\')) {  # 2026-10-16 换机：C 盘优先
         if (-not (Test-Path -LiteralPath $drv)) { continue }
         $hit = Get-ChildItem -LiteralPath $drv -Directory -ErrorAction SilentlyContinue |
             ForEach-Object {
@@ -18,6 +24,10 @@ try {
                 if (Test-Path -LiteralPath (Join-Path $sub 'jev_backfill.py')) { $sub }
             } | Select-Object -First 1
         if ($hit) { $dir = $hit; break }
+    }
+    # 换机重建（2026-10-16）：junction 直接命中（C:\aios -> C:\项目\老田的AI助手）
+    if (-not $dir -and (Test-Path -LiteralPath 'C:\aios\news_collector\jev_backfill.py')) {
+        $dir = 'C:\aios\news_collector'
     }
     if (-not $dir) { throw 'news_collector dir not found on E:/D:/C:' }
     W ('P1 dir=' + $dir)

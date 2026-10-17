@@ -1,23 +1,16 @@
-# -*- coding: utf-8 -*-
-"""知识图谱 Phase 1 Schema：实体节点 + 时序关系边 + Cypher DDL。
+import os as _os_kgschema
+_KG_NEO4J_URI = _os_kgschema.environ.get("KG_NEO4J_URI", "bolt://localhost:7687")
 
-依据《股票量化知识图谱设计文档》Phase 1 范围：
-  · 实体：标的(Security) + 公司(Company) + 行业(Industry) + 申万一级(SwL1Industry) + 区域(Region)
-  · 关系：OF_COMPANY / INDUSTRY_OF / AREA_OF（均带 validStart/validEnd 时序区间）
-  · 数据源：stock_basic + stock_company + sw_classify_l1（已落库 parquet）
-  · 不依赖未拉完的 cashflow/fina_indicator（Phase 2 才接质量因子）
-
-铁律：所有关系边必须带 validStart/validEnd；当前在市 → validEnd=9999-12-31。
-Phase 2 后续接入：人物/产品/事件/产业链/跨市场实体。
-"""
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ── Neo4j 连接 ────────────────────────────────────────────────
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "kg_pwd_2026"      # 与 docker run -e NEO4J_AUTH 一致（11 位符合 5.x 要求）
+NEO4J_URI = _KG_NEO4J_URI
+# 凭据优先读 .env.local 的 KG_NEO4J_USER/KG_NEO4J_PASSWORD（start_kg_sync.ps1 等已注入），
+# 兜底值与 neo4j-kg 容器 NEO4J_AUTH 保持一致（2026-10-16 换机后新容器凭据）
+NEO4J_USER = _os_kgschema.environ.get("KG_NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = _os_kgschema.environ.get("KG_NEO4J_PASSWORD", "KgNeo4j2026!")
 NEO4J_DB = "neo4j"                  # community 版只有默认 db
 
 # ── 节点标签 ──────────────────────────────────────────────────
@@ -76,7 +69,7 @@ REL_SUPPLIES = "SUPPLIES"           # Concept -[SUPPLIES {conf,reason,overlap,ba
 REL_DRIVES = "DRIVES"               # Concept -[DRIVES {conf,reason,overlap,batch}]-> Concept 需求带动（K265-P1，source=concept_llm_v1；qwen 判向+buyer 自检+人审抽样，conf≥0.95 入图）
 
 # ── K264 跨项目共图收录（2026-10-08）────────────────────────
-# 情报线边族（写入器在 E:\KGStockAnalysis：kg_ann_history_link/kg_corroborate_edges/
+# 情报线边族（写入器在 C:\项目\zerobound-kg：kg_ann_history_link/kg_corroborate_edges/
 # kg_annotation 等）——图内实核 ≈100.5 万条，本侧此前零注册（检查器/统计不可见）。
 # 双版本为设计：EXP_ 前缀=实验/候选域，无前缀=转正域（kg_annotation.py 的
 # rel[4:] 去前缀映射即两域桥）。保鲜检查按域分治：情报线 lag 由 KGStockAnalysis

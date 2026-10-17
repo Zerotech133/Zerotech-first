@@ -73,6 +73,10 @@ CREATE TABLE IF NOT EXISTS orders(
   strategy TEXT NOT NULL DEFAULT 'manual',   -- v0.2 策略来源: ai_team|double_knife|qingping|manual|stop_loss
   account_id TEXT NOT NULL DEFAULT 'main',   -- v0.3 多账户
   order_kind TEXT NOT NULL DEFAULT 'market', -- market | stop（止损触发单）
+  trace_id TEXT,
+  fact_hash TEXT,
+  decision_id TEXT,
+  idempotency_key TEXT,
   created_at TEXT NOT NULL
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_orders_ref ON orders(ref) WHERE ref != '';
@@ -95,7 +99,11 @@ CREATE TABLE IF NOT EXISTS ledger(
   amount REAL NOT NULL,            -- 净现金流（买入为负含费，卖出为正扣费）
   cash_after REAL NOT NULL,
   order_id INTEGER,
-  account_id TEXT NOT NULL DEFAULT 'main'
+  account_id TEXT NOT NULL DEFAULT 'main',
+  trace_id TEXT,
+  fact_hash TEXT,
+  decision_id TEXT,
+  idempotency_key TEXT
 );
 CREATE TABLE IF NOT EXISTS equity_marks(
   date TEXT NOT NULL,              -- 自然日 YYYY-MM-DD（同日重跑覆盖）
@@ -107,6 +115,10 @@ CREATE TABLE IF NOT EXISTS equity_marks(
   pending INTEGER NOT NULL,
   verify_ok INTEGER NOT NULL,
   ts TEXT NOT NULL,
+  trace_id TEXT,
+  fact_hash TEXT,
+  decision_id TEXT,
+  idempotency_key TEXT,
   PRIMARY KEY(date, account_id)
 );
 CREATE TABLE IF NOT EXISTS positions_snapshot(
@@ -129,11 +141,23 @@ _MIGRATIONS = [
     ("orders", "strategy", "TEXT NOT NULL DEFAULT 'manual'"),
     ("orders", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
     ("orders", "order_kind", "TEXT NOT NULL DEFAULT 'market'"),
+    ("orders", "trace_id", "TEXT"),
+    ("orders", "fact_hash", "TEXT"),
+    ("orders", "decision_id", "TEXT"),
+    ("orders", "idempotency_key", "TEXT"),
     ("positions", "strategy", "TEXT NOT NULL DEFAULT 'manual'"),
     ("positions", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
     ("positions", "stop_price", "REAL"),
     ("ledger", "account_id", "TEXT NOT NULL DEFAULT 'main'"),   # v0.3 对账分账户
+    ("ledger", "trace_id", "TEXT"),
+    ("ledger", "fact_hash", "TEXT"),
+    ("ledger", "decision_id", "TEXT"),
+    ("ledger", "idempotency_key", "TEXT"),
     ("equity_marks", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
+    ("equity_marks", "trace_id", "TEXT"),
+    ("equity_marks", "fact_hash", "TEXT"),
+    ("equity_marks", "decision_id", "TEXT"),
+    ("equity_marks", "idempotency_key", "TEXT"),
     ("positions_snapshot", "strategy", "TEXT NOT NULL DEFAULT 'manual'"),
     ("positions_snapshot", "account_id", "TEXT NOT NULL DEFAULT 'main'"),
 ]
@@ -180,6 +204,15 @@ def _ref_of(base: str, account_id: str) -> str:
     return f"{head}@{account_id}#{tail}"
 
 
+def _trace_values(trace_id=None, fact_hash=None, decision_id=None,
+                  idempotency_key=None):
+    values = (trace_id, fact_hash, decision_id, idempotency_key)
+    for name, value in zip(("trace_id", "fact_hash", "decision_id", "idempotency_key"), values):
+        if value is not None and (type(value) is not str or not value.strip()):
+            raise Reject(f"{name} 必须是非空字符串")
+    return values
+
+
 class Reject(Exception):
     """下单被拒（风控/规则/数据缺失），message 为人类可读原因。"""
 
@@ -192,7 +225,9 @@ class PaperEngine:
         self.cfg = {**_DEFAULTS, **(config or {})}
         self.acct = str(account or "main")   # 实例级默认账户（方法可覆盖）
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.con = sqlite3.connect(str(self.db_path))
+        # K-STOCK-414：多进程并发（automation/飞书指令/portal）默认 busy 5s 易抛
+        # "database is locked" 中断当日闭环 → timeout 提到 30s
+        self.con = sqlite3.connect(str(self.db_path), timeout=30)
         self.con.row_factory = sqlite3.Row
         self._migrate_v03()                  # 多账户结构迁移（幂等，须在 _SCHEMA 前）
         self.con.executescript(_SCHEMA)
@@ -638,12 +673,16 @@ class PaperEngine:
 
     def plan_bridge_buy(self, stock: str, qty: int, plan_date: str, ref: str,
                         dry_run: bool = False, strategy: str = "pick_bridge",
-                        account_id: str | None = None) -> dict:
+                        account_id: str | None = None, trace_id: str | None = None,
+                        fact_hash: str | None = None, decision_id: str | None = None,
+                        idempotency_key: str | None = None) -> dict:
         """选票桥（pick_bridge）落 pending 单：固定股数，按 plan_date 开盘撮合。
         与 _plan_buy 区别：股数由桥按预算算好（不用引擎按 conf 定仓），
         口径=D+2 开盘，与 pick_verdicts win 口径对齐（K-STOCK-097 必改①）。
         幂等：ref 查重，重复落单返回 skipped（防 events 后写窗口期重复下单）。"""
         aid = account_id or self.acct
+        trace_id, fact_hash, decision_id, idempotency_key = _trace_values(
+            trace_id, fact_hash, decision_id, idempotency_key)
         stock = _norm_stock(stock)
         if not stock:
             raise Reject(f"无效代码: {stock}")
@@ -661,10 +700,11 @@ class PaperEngine:
         if not dry_run:
             cur = self.con.execute(
                 "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,"
-                "status,reason,strategy,account_id,created_at) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "status,reason,strategy,account_id,trace_id,fact_hash,decision_id,"
+                "idempotency_key,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (_now(), "ai", ref, stock, "BUY", qty, plan_date, "open",
-                 "pending", reason, strategy, aid, _now()))
+                 "pending", reason, strategy, aid, trace_id, fact_hash, decision_id,
+                 idempotency_key or ref, _now()))
             plan["order_id"] = cur.lastrowid
             self.con.commit()
         return plan
@@ -722,11 +762,22 @@ class PaperEngine:
                 continue
             if dry_run:
                 out["filled"].append({"id": od["id"], "stock": od["stock"], "qty": qty,
-                                      "price": price, "fee": fee, "dry": True})
+                                      "price": price, "fee": fee, "dry": True,
+                                      "trace_id": od["trace_id"],
+                                      "fact_hash": od["fact_hash"],
+                                      "decision_id": od["decision_id"],
+                                      "idempotency_key": od["idempotency_key"]})
                 continue
-            rec = self._settle_fill(od["stock"], od["side"], qty, price, fee, plan_date,
+            # K-STOCK-414：fill_date 必须用实际成交 bar 的交易日——plan_date 遇节
+            # 假日被 first_bar_on_or_after 纠偏后仍传 plan_date 会令 available_qty
+            # 的 fill_date==last_trading_day 冻结漏冻该笔 → T+1 被绕过。
+            rec = self._settle_fill(od["stock"], od["side"], qty, price, fee,
+                                    bar["trade_date"],
                                     od["source"], od["ref"], "open", od["conf"], od["id"],
-                                    strategy=od["strategy"] or "manual", account_id=aid)
+                                    strategy=od["strategy"] or "manual", account_id=aid,
+                                    trace_id=od["trace_id"], fact_hash=od["fact_hash"],
+                                    decision_id=od["decision_id"],
+                                    idempotency_key=od["idempotency_key"])
             out["filled"].append(rec)
         self.con.commit()
         return out
@@ -742,9 +793,21 @@ class PaperEngine:
     def _settle_fill(self, stock: str, side: str, qty: int, price: float, fee: float,
                      fill_date: str, source: str, ref: str, price_base: str,
                      conf: float | None, pending_id: int | None,
-                     strategy: str = "manual",
-                     account_id: str | None = None) -> dict:
+                     strategy: str = "manual", account_id: str | None = None,
+                     trace_id: str | None = None, fact_hash: str | None = None,
+                     decision_id: str | None = None, idempotency_key: str | None = None) -> dict:
         aid = account_id or self.acct
+        trace_id, fact_hash, decision_id, idempotency_key = _trace_values(
+            trace_id, fact_hash, decision_id, idempotency_key)
+        if pending_id is not None:
+            existing = self.con.execute(
+                "SELECT trace_id,fact_hash,decision_id,idempotency_key FROM orders WHERE id=?",
+                (pending_id,)).fetchone()
+            if existing:
+                trace_id = trace_id or existing["trace_id"]
+                fact_hash = fact_hash or existing["fact_hash"]
+                decision_id = decision_id or existing["decision_id"]
+                idempotency_key = idempotency_key or existing["idempotency_key"]
         acc = self.con.execute(
             "SELECT cash FROM account WHERE account_id=?", (aid,)).fetchone()
         cash = float(acc["cash"])
@@ -788,24 +851,32 @@ class PaperEngine:
             ledger_amt = amount - fee
         self.con.execute("UPDATE account SET cash=? WHERE account_id=?", (cash, aid))
         self.con.execute(
-            "INSERT INTO ledger(ts,type,stock,qty,amount,cash_after,order_id,account_id) "
-            "VALUES(?,?,?,?,?,?,?,?)",
-            (ts, side.lower(), stock, qty, ledger_amt, cash, pending_id, aid))
+            "INSERT INTO ledger(ts,type,stock,qty,amount,cash_after,order_id,account_id,"
+            "trace_id,fact_hash,decision_id,idempotency_key) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            (ts, side.lower(), stock, qty, ledger_amt, cash, pending_id, aid,
+             trace_id, fact_hash, decision_id, idempotency_key))
         if pending_id is not None:
             self.con.execute(
-                "UPDATE orders SET status='filled',fill_date=?,filled_price=?,filled_qty=?,fee=? WHERE id=?",
-                (fill_date, price, qty, fee, pending_id))
+                "UPDATE orders SET status='filled',fill_date=?,filled_price=?,filled_qty=?,fee=?,"
+                "trace_id=COALESCE(trace_id,?),fact_hash=COALESCE(fact_hash,?),"
+                "decision_id=COALESCE(decision_id,?),idempotency_key=COALESCE(idempotency_key,?) WHERE id=?",
+                (fill_date, price, qty, fee, trace_id, fact_hash, decision_id,
+                 idempotency_key, pending_id))
         else:
             self.con.execute(
                 "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,manual_price,"
-                "status,fill_date,filled_price,filled_qty,fee,conf,strategy,account_id,created_at) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "status,fill_date,filled_price,filled_qty,fee,conf,strategy,account_id,"
+                "trace_id,fact_hash,decision_id,idempotency_key,created_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (ts, source, ref, stock, side, qty, None, price_base, price,
-                 "filled", fill_date, price, qty, fee, conf, strategy, aid, ts))
+                 "filled", fill_date, price, qty, fee, conf, strategy, aid,
+                 trace_id, fact_hash, decision_id, idempotency_key or ref, ts))
         self.con.commit()
         return {"stock": stock, "side": side, "qty": qty, "price": price, "fee": fee,
                 "fill_date": fill_date, "cash_after": round(cash, 2),
-                "order_id": pending_id, "account_id": aid}
+                "order_id": pending_id, "account_id": aid,
+                "trace_id": trace_id, "fact_hash": fact_hash,
+                "decision_id": decision_id, "idempotency_key": idempotency_key}
 
     # ---------------- 对账 ----------------
 
@@ -834,9 +905,13 @@ class PaperEngine:
 
     # ---------------- 权益日快照（S1 判据链证据） ----------------
 
-    def mark(self, day: str | None = None, account_id: str | None = None) -> dict:
+    def mark(self, day: str | None = None, account_id: str | None = None,
+             trace_id: str | None = None, fact_hash: str | None = None,
+             decision_id: str | None = None, idempotency_key: str | None = None) -> dict:
         """记录当日权益快照（同账户同日重跑覆盖）。供 automation 每日收尾调用。"""
         aid = account_id or self.acct
+        trace_id, fact_hash, decision_id, idempotency_key = _trace_values(
+            trace_id, fact_hash, decision_id, idempotency_key)
         eq = self.equity(aid)
         v = self.verify(aid)
         day = day or datetime.now().strftime("%Y-%m-%d")
@@ -845,12 +920,18 @@ class PaperEngine:
             (aid,)).fetchone()[0]
         self.con.execute(
             "INSERT INTO equity_marks(date,account_id,total,cash,market_value,pos_pct,"
-            "pending,verify_ok,ts) VALUES(?,?,?,?,?,?,?,?,?) "
+            "pending,verify_ok,ts,trace_id,fact_hash,decision_id,idempotency_key) "
+            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(date,account_id) DO UPDATE SET total=excluded.total,cash=excluded.cash,"
             "market_value=excluded.market_value,pos_pct=excluded.pos_pct,"
-            "pending=excluded.pending,verify_ok=excluded.verify_ok,ts=excluded.ts",
+            "pending=excluded.pending,verify_ok=excluded.verify_ok,ts=excluded.ts,"
+            "trace_id=COALESCE(excluded.trace_id,equity_marks.trace_id),"
+            "fact_hash=COALESCE(excluded.fact_hash,equity_marks.fact_hash),"
+            "decision_id=COALESCE(excluded.decision_id,equity_marks.decision_id),"
+            "idempotency_key=COALESCE(excluded.idempotency_key,equity_marks.idempotency_key)",
             (day, aid, eq["total"], eq["cash"], eq["market_value"], eq["pos_pct"],
-             int(pend), int(v["ok"]), _now()))
+             int(pend), int(v["ok"]), _now(), trace_id, fact_hash, decision_id,
+             idempotency_key))
         # 持仓明细快照（前端展示用：行情依赖数据在快照时点固化，portal 零 pandas 依赖）
         self.con.execute(
             "DELETE FROM positions_snapshot WHERE date=? AND account_id=?", (day, aid))
@@ -863,7 +944,9 @@ class PaperEngine:
                  p.get("strategy", "manual")))
         self.con.commit()
         return {"date": day, "account_id": aid, "total": eq["total"],
-                "pos_pct": eq["pos_pct"], "pending": int(pend), "verify_ok": v["ok"]}
+                "pos_pct": eq["pos_pct"], "pending": int(pend), "verify_ok": v["ok"],
+                "trace_id": trace_id, "fact_hash": fact_hash,
+                "decision_id": decision_id, "idempotency_key": idempotency_key}
 
     def curve(self, account_id: str | None = None) -> list[dict]:
         aid = account_id or self.acct

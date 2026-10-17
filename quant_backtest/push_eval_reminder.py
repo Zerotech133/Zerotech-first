@@ -4,11 +4,14 @@
 发飞书私聊提醒评估「推送出口统一到量化问答机器人」，发送后自删计划任务。
 依据：docs/plans/2026-10-13_推送联动收口_K-STOCK-304.md §C 挂账决定。
 """
+import os
 import subprocess
 import sys
 
 TASK = "K-STOCK-304-C-Eval"
-SEND_FEISHU = r"E:\老田的AI助手\news_collector\send_feishu.py"
+# K-PUSH-001 P0：换机路径残留（旧机 E 盘）→ __file__ 动态推导
+SEND_FEISHU = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "news_collector", "send_feishu.py")
 ALERT_FILE = r"C:\Temp\push_eval_reminder.txt"
 
 MSG = ("【K-STOCK-304 · C 项评估日】推送出口统一到「量化问答机器人」的观察期"

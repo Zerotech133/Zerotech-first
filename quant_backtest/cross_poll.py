@@ -78,12 +78,14 @@ STALE_DAYS = {
 
 def norm_code(raw):
     """watchlist/tushare 代码 → 统一格式（sh600519→600519.SH、
-    gb_pltr→PLTR、rt_hk00700→00700；其余原样）。"""
+    gb_pltr→PLTR、rt_hk00700→00700；其余原样）。
+    2026-10-16 章程 §4.3 收编：A 股判定（含裸 6 位补后缀）委托
+    codes.normalize_code 唯一权威；港美股分支本模块自有。"""
+    from codes import normalize_code
     c = str(raw or "").strip()
-    if c.startswith("sh"):
-        return c[2:] + ".SH"
-    if c.startswith("sz") or c.startswith("bj"):
-        return c[2:] + "." + c[:2].upper()
+    n = normalize_code(c)
+    if n is not None:
+        return n
     if c.startswith("rt_hk"):
         try:
             return "%05d" % int(c[5:])

@@ -18,6 +18,7 @@
 """
 import ctypes
 import datetime
+import gzip
 import json
 import os
 import subprocess
@@ -29,28 +30,30 @@ OUT_BASE = os.path.join(ROOT, "backups", "db")
 LOG_PATH = os.path.join(OUT_BASE, "dump_latest.log")
 KEEP_DAYS = 14
 
-# 容器内执行的 dump 命令（引用容器 env，零明文；gzip 容器侧压缩）
+# 容器内执行的 dump 命令（引用容器 env，零明文）。
+# K-STOCK-414：原 `... 2>/dev/null | gzip` 管道形态下 rc 是 gzip 的，
+# dump 半途失败仍判 OK，且 stderr 被吞；且 postgres/neo4j 容器 sh=dash
+# 不支持 pipefail。改为容器内纯 dump、宿主侧 gzip 收流（见 dump_one）。
 DUMPS = [
     {"key": "cainiao_mysql", "container": "cainiao-mysql-local",
      "cmd": 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction '
-            '--all-databases --routines --triggers 2>/dev/null | gzip',
-     "file": "cainiao_mysql_alldb.sql.gz",
-     "must": True},
+            '--all-databases --routines --triggers',
+     "file": "cainiao_mysql_alldb.sql.gz", "must": True},
     {"key": "zhice_pg", "container": "zhice-db",
-     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner 2>/dev/null | gzip',
+     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner',
      "file": "zhice_os_v2.sql.gz", "must": True},
     {"key": "quantdinger_pg", "container": "quantdinger-db",
-     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner 2>/dev/null | gzip',
+     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner',
      "file": "quantdinger.sql.gz", "must": True},
     {"key": "nqs2_pg", "container": "newquantsystem_v2-postgres-1",
-     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner 2>/dev/null | gzip',
+     "cmd": 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner',
      "file": "quant_system.sql.gz", "must": True},
     # Neo4j community 在线 dump 不可用（需停库）——先尝试，失败记 PENDING 不算硬失败
     {"key": "kg_neo4j", "container": "neo4j-kg",
-     "cmd": 'neo4j-admin database dump neo4j --to-stdout 2>/dev/null | gzip',
+     "cmd": 'neo4j-admin database dump neo4j --to-stdout',
      "file": "kg_neo4j.dump.gz", "must": False},
     {"key": "zerobound_neo4j", "container": "zerobound-neo4j-independent",
-     "cmd": 'neo4j-admin database dump neo4j --to-stdout 2>/dev/null | gzip',
+     "cmd": 'neo4j-admin database dump neo4j --to-stdout',
      "file": "zerobound_neo4j.dump.gz", "must": False},
 ]
 
@@ -66,12 +69,16 @@ def log(msg):
 
 
 def dump_one(item, out_dir, timeout=900):
-    """单库 dump：stdout 重定向落文件（长跑纪律），rc 与字节数双验证。"""
+    """单库 dump：容器内纯 dump，宿主 gzip 收流落文件（长跑纪律）。
+
+    K-STOCK-414：rc 直接来自容器内 dump 工具（无中间管道），stderr 保留
+    供 FAIL 日志；压缩在宿主侧完成（gzip 模块，无需容器/宿主装 gzip）。
+    """
     dst = os.path.join(out_dir, item["file"])
     t0 = time.time()
     cmd = ["docker", "exec", item["container"], "sh", "-c", item["cmd"]]
     try:
-        with open(dst, "wb") as f:
+        with gzip.open(dst, "wb") as f:
             p = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE,
                                timeout=timeout)
         size = os.path.getsize(dst)

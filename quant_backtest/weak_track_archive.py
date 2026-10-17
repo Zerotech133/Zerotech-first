@@ -49,7 +49,11 @@ _CNAME = {"A": "情景A兑现", "B": "情景B立案·滚动新案", "C": "利空
 def _cfg():
     cfg = json.load(open(os.path.expanduser("~/.lark-cli/config.json"),
                          encoding="utf-8"))
-    return cfg["apps"][0]["appId"], cfg["apps"][0]["appSecret"]
+    aid, sec = cfg["apps"][0]["appId"], cfg["apps"][0]["appSecret"]
+    # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
+    if not isinstance(sec, str):
+        sec = None
+    return aid, sec
 
 
 def _token():

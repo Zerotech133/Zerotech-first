@@ -4,7 +4,9 @@
 # 061 自愈：挂机先跑 backup_daily_regen.py（第四次丢失误删防护，缺失/漂移自动处理）
 $log = 'C:\Temp\auto_verify_jobs.log'
 function W($m){ $s = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'; "$s  $m" | Tee-Object -FilePath $log -Append }
-python "E:\老田的AI助手\jev-eval\backup_daily_regen.py" 2>&1 | ForEach-Object { W("regen: $_") }
+# 2026-10-16 换机修复：E: 盘已不存在；裸 python 违反产线铁律（会解析到 PATH 的 3.12）。
+# 改为显式 Python311 + C:\aios junction 路径。
+& 'C:\Program Files\Python311\python.exe' -X utf8 "C:\aios\jev-eval\backup_daily_regen.py" 2>&1 | ForEach-Object { W("regen: $_") }
 function Wait-Until($t, $desc){
     while((Get-Date) -lt $t){ Start-Sleep 60 }
     Start-Sleep 300   # 任务触发后给 5 分钟余量让结果落定

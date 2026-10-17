@@ -18,12 +18,15 @@ import sys
 import time
 from datetime import datetime
 
-HERMES_PS1 = r"E:\老田的AI助手\Hermes\start-hermes.ps1"
-HERMES_HOME = r"C:\Users\Administrator\.hermes"
-HERMES_SERVER = r"E:\老田的AI助手\Hermes\hermes-webui\server.py"
-HERMES_STATE = r"E:\老田的AI助手\Hermes\webui-state"
-COW_DIR = r"E:\老田的AI助手\CowAgent"
-COW_PY = COW_DIR + r"\venv\Scripts\python.exe"
+# K-STOCK-414：旧机 E:\ / Administrator 硬编码换机即死（守护一崩双服务连坐
+# 失守，2026-10-16 实测 8787/9899 双双下线）→ 全部按本文件位置/当前用户推导。
+STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 仓库根
+HERMES_PS1 = os.path.join(STATION, "Hermes", "start-hermes.ps1")
+HERMES_HOME = os.path.join(os.path.expanduser("~"), ".hermes")
+HERMES_SERVER = os.path.join(STATION, "Hermes", "hermes-webui", "server.py")
+HERMES_STATE = os.path.join(STATION, "Hermes", "webui-state")
+COW_DIR = os.path.join(STATION, "CowAgent")
+COW_PY = os.path.join(COW_DIR, "venv", "Scripts", "python.exe")
 
 LOG_KA = r"C:\Temp\keepalive.log"
 LOG_HERMES = r"C:\Temp\hermes_webui.log"
@@ -62,10 +65,22 @@ def port_open(port: int) -> bool:
 
 
 def spawn(kind: str) -> None:
+    # K-STOCK-414：spawn 整体包 try——旧实现 venv 缺失等 FileNotFoundError
+    # 直接炸出 while True，另一服务连坐失守；现单服务故障仅留痕。
+    try:
+        _spawn(kind)
+    except Exception as e:  # noqa: BLE001
+        log(f"spawn {kind} FAILED: {e!r}")
+
+
+def _spawn(kind: str) -> None:
+    os.makedirs(os.path.dirname(LOG_KA), exist_ok=True)
     if kind == "hermes":
         # 纯 python 链（powershell 中继在沙箱内被静默掐死，2026-10-08 实测）；
         # 环境变量与 start-hermes.ps1 默认值一致
         env = dict(os.environ)
+        # K-STOCK-414：删除旧机代理端口 54654 硬编码回退（本机无此代理，
+        # 会把外部请求引向黑洞）；仅沿用已有代理变量，不凭空制造。
         env.update({
             "PYTHONUTF8": "1",
             "HERMES_HOME": HERMES_HOME,
@@ -74,8 +89,6 @@ def spawn(kind: str) -> None:
             "HERMES_WEBUI_PORT": "8787",
             "HERMES_WEBUI_STATE_DIR": HERMES_STATE,
             "HERMES_WEBUI_AGENT_DIR": HERMES_HOME + r"\hermes-agent",
-            "HTTP_PROXY": env.get("HTTPS_PROXY") or "http://127.0.0.1:54654",
-            "HTTPS_PROXY": env.get("HTTPS_PROXY") or "http://127.0.0.1:54654",
             "NO_PROXY": "localhost,127.0.0.1,itokengate.com",
         })
         logf = open(LOG_HERMES, "ab")
@@ -86,6 +99,7 @@ def spawn(kind: str) -> None:
             cwd=os.path.dirname(HERMES_SERVER),
             stdin=subprocess.DEVNULL, stdout=logf, stderr=subprocess.STDOUT,
             creationflags=DETACHED, close_fds=True, env=env)
+        logf.close()  # K-STOCK-414：子进程已继承句柄，父侧及时回收
     else:
         logf = open(LOG_COW, "ab")
         logf.write(f"\n=== keepalive launch cowagent {datetime.now()} ===\n".encode())
@@ -95,6 +109,7 @@ def spawn(kind: str) -> None:
             cwd=COW_DIR,
             stdin=subprocess.DEVNULL, stdout=logf, stderr=subprocess.STDOUT,
             creationflags=DETACHED, close_fds=True)
+        logf.close()
 
 
 def main() -> int:

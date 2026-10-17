@@ -25,7 +25,9 @@ from datetime import datetime
 WD_LOG = r"C:\Temp\push_liveness.log"
 STATE_FILE = r"C:\Temp\push_liveness_state.json"
 ALERT_FILE = r"C:\Temp\push_liveness_alert.txt"
-SEND_FEISHU = r"E:\老田的AI助手\news_collector\send_feishu.py"
+# K-PUSH-001 P0：换机路径残留（旧机 E 盘）→ __file__ 动态推导
+SEND_FEISHU = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "news_collector", "send_feishu.py")
 GRACE_MIN = 45          # 时点后宽限（分钟）：过宽限仍无签名才告警
 
 ALERT_TASK_LOG = r"C:\Temp\alert_push_task.log"
