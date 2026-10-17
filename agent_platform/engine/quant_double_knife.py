@@ -130,6 +130,11 @@ def quant_double_knife(df: pd.DataFrame, profile: str = "strict") -> pd.DataFram
     else:
         price_trend_ok = close > close.shift(2)
 
+    # M6 拍板 B（2026-10-18，f5e49abe 规划）：价带 [6,200] 是双刀信号的
+    # 标的准入设计——dk_signal 定义为「低价带标的专用信号」，高价股
+    # （如茅台 ~1700 / 宁德 ~260）恒 False 是设计语义而非缺陷。
+    # 巡检不因 dk_signal=False 告警；若未来需覆盖高价股，走 M6 方案 A
+    # 价带参数化（须老田重新确认信号口径）。
     price_ok = price_trend_ok & (close >= open_) & close.between(6, 200)
 
     amount_20d = amount.rolling(20, min_periods=20).sum()

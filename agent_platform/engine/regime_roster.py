@@ -54,6 +54,10 @@ def dk_snapshot(daily_df, profile: Optional[str] = None) -> Optional[Dict]:
     返回 {"dk_error": ...}（调用方据此填 dk_error 字段）。
     profile 显式传入时跳过阵容选择（人工指定阵容的实验路径，选择依据
     = caller override 留痕）。
+
+    M6 拍板 B（2026-10-18）：dk_signal 是「低价带标的专用信号」——双刀
+    价带 [6,200] 对高价股恒 False 属设计语义（非缺陷），巡检/告警侧不得
+    将其视为异常。
     """
     try:
         import pandas as pd
