@@ -52,6 +52,8 @@ def _load_portal_key():
 
 
 PORTAL_KEY = _load_portal_key()  # 访问码（泄露应急：改配置+deploy 即作废）
+# K-STOCK-414：本值仅供外部一次性脚本 import；长跑进程（WS bot 等）发卡
+# 走 _load_portal_key() 现读，保证轮换 portal_key.json 即时生效、无需重启。
 
 
 def _fmt_quote(facts):
@@ -104,7 +106,7 @@ def build_drill_card(code, facts, sections, title_extra="",
         "text": {"tag": "plain_text", "content": "门户详情页"},
         "behaviors": [{"type": "open_url",
                        "default_url": "%s/picks.html?key=%s" % (
-                           PORTAL_BASE, PORTAL_KEY)}]})
+                           PORTAL_BASE, _load_portal_key())}]})  # K-STOCK-414 现读
     elements.append({
         "tag": "markdown", "content":
             "<font color='grey'>老田的AI工作站 · 缠论引擎K78+K246 · "
@@ -126,3 +128,90 @@ def send_card(card, receive_id=None, receive_id_type="open_id"):
     from feishu_client import send_msg  # NEWS 已挂 path（K-STOCK-228 出口收敛）
     return send_msg(json.dumps(card, ensure_ascii=False), "interactive",
                     receive_id, receive_id_type)
+
+
+# ── K-PUSH-004：卡片 v3 域色模板（统一构件规范）──────────────
+# 构件：品牌 header（域色+来源）+ 标题行 + 键值区 + 动作区（仅注册按钮）
+#       + footer（#tags · 来源 · 时间 · act 审计号）
+# 域色规范（原型 tpl 分区拍板）：蓝媒（资讯）/ 紫交互（审批·双向）/
+# 绿例行（日报）/ 金回执（凭证）/ 红预警（critical，不受静默限制）。
+V3_DOMAINS = {
+    "news":     ("blue",   "📰", "资讯"),
+    "interact": ("violet", "⚖", "交互"),
+    "daily":    ("green",  "🌅", "例行"),
+    "receipt":  ("yellow", "🧾", "回执"),
+    "alert":    ("red",    "🚨", "预警"),
+}
+
+
+def v3_audit_id(title):
+    import hashlib
+    import time
+    return hashlib.md5(("%s|%s" % (title, time.time())).encode(
+        "utf-8", "replace")).hexdigest()[:4]
+
+
+def build_v3(domain, title, source, rows=None, md=None, buttons=None,
+             tags="", audit=None):
+    """v3 统一卡 → (card, audit_id)。
+
+    rows:     [(label, value_md), ...] 键值区（value 支持 markdown 着色）
+    md:       正文 markdown（与 rows 可同用，rows 在前）
+    buttons:  [(label, spec, style)] —— spec 二选一：
+              ("action", action_id, payload_dict)  回调按钮（须已注册，否则拒造）
+              ("url", url)                          URL 跳转按钮
+              style: primary / default / danger
+    tags:     footer 左侧 #标签（如 "#tune #pending"）
+    audit:    审计号（None 自动生成 4 位，进 footer 右侧）
+    """
+    import datetime
+    if domain not in V3_DOMAINS:
+        raise ValueError("未知域：%s（可用 %s）" % (domain, "/".join(V3_DOMAINS)))
+    tpl, emoji, dname = V3_DOMAINS[domain]
+    audit = audit or v3_audit_id(title)
+    now = datetime.datetime.now()
+
+    els = [{"tag": "markdown", "content": "**%s**" % title}]
+    if rows:
+        els.append({"tag": "hr"})
+        for label, val in rows:
+            els.append({"tag": "markdown",
+                        "content": "**%s**　%s" % (label, val)})
+    if md:
+        els.append({"tag": "hr"})
+        els.append({"tag": "markdown", "content": md})
+
+    if buttons:
+        els.append({"tag": "hr"})
+        import card_actions
+        for label, spec, style in buttons:
+            if spec[0] == "action":
+                _, aid, payload = spec
+                info = card_actions.lookup(aid)
+                if not info:
+                    raise ValueError("按钮动作未注册：%s（先到按钮归档登记）" % aid)
+                if not info["enabled"]:
+                    raise ValueError("按钮动作已禁用：%s" % aid)
+                val = {"action_id": aid}
+                val.update(payload or {})
+                els.append({"tag": "button", "type": style or "primary",
+                            "text": {"tag": "plain_text", "content": label},
+                            "behaviors": [{"type": "callback", "value": val}]})
+            elif spec[0] == "url":
+                els.append({"tag": "button", "type": style or "default",
+                            "text": {"tag": "plain_text", "content": label},
+                            "behaviors": [{"type": "open_url",
+                                           "default_url": spec[1]}]})
+            else:
+                raise ValueError("未知按钮 spec：%r" % (spec[0],))
+
+    els.append({"tag": "markdown", "content":
+                "<font color='grey'>%s · %s · %s · act:%s</font>" % (
+                    (tags or ("#%s" % domain)), source,
+                    now.strftime("%m-%d %H:%M"), audit)})
+    card = {"schema": "2.0", "config": {"update_multi": True},
+            "header": {"title": {"tag": "plain_text",
+                                 "content": "%s %s · %s" % (emoji, dname, title)},
+                       "template": tpl},
+            "body": {"elements": els}}
+    return card, audit

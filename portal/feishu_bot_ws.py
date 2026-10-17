@@ -186,6 +186,8 @@ HELP_MD = """**指令表**
 · `止盈单` — 当前全部持仓线位快照
 · `撤线 605100 tp` — 撤止盈（sl=撤止损）
 · `控制` — 控制中枢卡：推送开关/参数档位/告警处置/工单看板
+· `调优 <想法>` — 模型调优反馈（K-PUSH-002 闭环入口，语音输入亦可）
+· `审批 <req_id> 通过|驳回 [原因]` — 调优请求审批（仅管理员）
 · `帮助` — 本表
 按钮下钻：主卡各折叠层展开 + 顶部按钮跳门户详情页。"""
 
@@ -327,16 +329,35 @@ def _card_sender_id(ev):
 
 
 # ── 发送 ────────────────────────────────────────────────────
+_cli_lock = threading.Lock()
+_cli_cache = {}  # {(app_id, app_secret): lark.Client}——凭证轮换自动重建
+
+
+def _lark_client():
+    """复用 lark.Client。原 reply_card/send_text 每条消息新建：build() 装配
+    ~58 个 Service 对象（纯构造、无网络 IO），纯属重复分配；Client 跨线程
+    共享安全（_config 只读，token 走 SDK 全局缓存）。每次仍读 config.json
+    取凭证——键控缓存，凭证轮换后自动重建。"""
+    import lark_oapi as lark
+    app_id, app_secret = _creds()
+    key = (app_id, app_secret)
+    with _cli_lock:
+        cli = _cli_cache.get(key)
+        if cli is None:
+            _cli_cache.clear()  # 单应用部署：只留当前凭证的实例
+            cli = (lark.Client.builder().app_id(app_id)
+                   .app_secret(app_secret).build())
+            _cli_cache[key] = cli
+        return cli
+
+
 def reply_card(card, message_id):
     from feishu_card_v2 import send_card  # noqa: F401  通道复用
-    import lark_oapi as lark
     # K-STOCK-141：类名实为 ReplyMessageRequestBody（原 ReplyMessageBody
     # 在已装 lark_oapi 中不存在，import 即炸→卡片回复从未送达）
     from lark_oapi.api.im.v1 import (ReplyMessageRequest,
                                      ReplyMessageRequestBody)
-    app_id, app_secret = _creds()
-    cli = lark.Client.builder().app_id(app_id).app_secret(
-        app_secret).build()
+    cli = _lark_client()
     body = ReplyMessageRequestBody.builder().content(
         json.dumps({"msg_type": "interactive",
                     "content": json.dumps(card, ensure_ascii=False)})
@@ -359,13 +380,10 @@ def send_text(text, message_id=None):
     if not message_id:
         from send_feishu import send_text as _sf_send_text
         return _sf_send_text(text)
-    import lark_oapi as lark
     # K-STOCK-141：同 reply_card——正确类名 ReplyMessageRequestBody
     from lark_oapi.api.im.v1 import (ReplyMessageRequest,
                                      ReplyMessageRequestBody)
-    app_id, app_secret = _creds()
-    cli = lark.Client.builder().app_id(app_id).app_secret(
-        app_secret).build()
+    cli = _lark_client()
     body = (ReplyMessageRequestBody.builder()
             .content(json.dumps({"text": text}, ensure_ascii=False))
             .msg_type("text").build())
@@ -435,6 +453,38 @@ def handle_cmd(text, message_id, open_id=""):
                 send_text("无权限：控制中枢仅限白名单用户。", message_id)
                 return
             reply_card(feishu_control.build_control_card(), message_id)
+        elif low.startswith("调优"):
+            # K-PUSH-002 B4：客户反馈调优闭环入口——语音输入经飞书客户端
+            # 自带转文字后同样落此指令（零自建 ASR，绕开公网静态站约束
+            # K-STOCK-411）。customer=open_id（VIP 私有空间的唯一键）。
+            body = text[2:].strip()
+            if len(body) < 5:
+                send_text("用法：调优 <您的想法>\n例：调优 我对缠论中枢的理解"
+                          "和你们不一样，二买应该在…", message_id)
+                return
+            import tune_gate
+            rid = tune_gate.submit(body, customer=open_id or "飞书客户",
+                                   plan="internal", source="text")
+            send_text("✅ 已受理 %s\n流程：审核 → 沙盒回测对比 → 落地您的"
+                      "专属参数空间。结果将以回执卡通知。" % rid, message_id)
+        elif low.startswith("审批"):
+            # K-PUSH-002 B2：审批闸门 bot 通道（管理员白名单 =
+            # work/tune_admins.json；空=内测开放，上线收费前必须配置）
+            parts = text.split()
+            if len(parts) < 3 or parts[2] not in ("通过", "驳回"):
+                send_text("用法：审批 <req_id> 通过|驳回 [原因]", message_id)
+                return
+            import tune_gate
+            if not tune_gate.is_admin(open_id):
+                send_text("无权限：调优审批仅限管理员。", message_id)
+                return
+            if parts[2] == "通过":
+                r = tune_gate.approve(parts[1], operator=open_id or "飞书审批")
+            else:
+                r = tune_gate.reject(parts[1], operator=open_id or "飞书审批",
+                                     reason=" ".join(parts[3:]))
+            send_text(("✅ " if r.get("ok") else "❌ ")
+                      + (r.get("error") or ("已处理 " + parts[1])), message_id)
         elif low.startswith("帮助") or low in ("help", "?", "？"):
             send_text(HELP_MD, message_id)
         elif low.startswith("选股"):
@@ -493,6 +543,16 @@ def _handle_card(val, sender):
     import（reply_card 同款模式）。"""
     try:
         from feishu_card_v2 import send_card  # K-STOCK-138：闭包平移补名
+        # K-PUSH-004：v3 统一注册表分发入口（value 带 action_id 字段即走
+        # card_actions.dispatch：注册校验 + 审计流水 + handler 执行）。
+        # 老前缀（dim:/er:/ctl:）继续走下方原链，兼容存量在飞卡。
+        aid = val.get("action_id") if isinstance(val, dict) else None
+        if aid:
+            import card_actions
+            ok, msg = card_actions.dispatch(str(aid), val, sender)
+            send_text(("✅ " if ok else "❌ ") + str(msg)[:150])
+            log("card v3:%s ok=%s (sender=%s)" % (aid, ok, sender))
+            return
         tag = val.get("tag", "")
         if tag.startswith("dim:"):
             _, dim, code = tag.split(":", 2)

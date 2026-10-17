@@ -3,7 +3,7 @@
 
 板块定位（2026-10-14 产品化）：独立板块（横切能力，内容供给方挂导航）：
   总览（KPI + 内容源健康 + 底座能力盘点）｜推送管理（本页原生）
-  ｜知识库联动（iframe 8096）｜定时发布（iframe 8095）｜商业化·底座（租户/套餐/配额/API Key）
+  ｜知识库联动（iframe 8099）｜定时发布（iframe 8095）｜商业化·底座（租户/套餐/配额/API Key）
 
 管辖范围（推送内容的执行者仍是既有管道，本平台做 配置+触发+统计）：
   A. 日报类计划任务（时间点可改/立即执行/状态）：
@@ -46,9 +46,10 @@ KM_STATS = os.path.join(WORK, "km_stats.jsonl")
 SUB_PY = os.path.join(STATION, "quant_backtest", "subscribe.py")
 TEST_LOG = os.path.join(WORK, "push_admin_test.log")
 BIZ_PATH = os.path.join(WORK, "commercial.json")
+SCHEDULE_PATH = os.path.join(WORK, "schedule.json")  # K-PUSH-003 静默时段配置
 
 # 内容源模块（推送中台的内容供给方），总览页做健康探针
-SOURCES = [("推送中台（本服务）", 8097), ("知识库联动", 8096), ("定时发布", 8095)]
+SOURCES = [("推送中台（本服务）", 8097), ("知识库联动", 8099), ("定时发布", 8095)]
 PLANS = ["internal", "trial", "standard", "pro"]
 
 PORT = 8097
@@ -355,6 +356,23 @@ class Handler(BaseHTTPRequestHandler):
                 flow = push_flow.stats(7)
             except Exception:
                 flow = {"by_day": [], "today_by_kind": {}}
+            try:  # K-PUSH-002：调优闭环 + 分享令牌概览（读侧降级为空）
+                import tune_gate
+                import share_tokens
+                import sys as _sys
+                _sys.path.insert(0, STATION)
+                import feedback_flow
+                tune = {"stats": feedback_flow.stats(7),
+                        "requests": tune_gate.list_requests(limit=20),
+                        "vip": tune_gate.vip_overrides()}
+            except Exception:
+                tune = {"stats": {"by_day": [], "today_by_stage": {}},
+                        "requests": [], "vip": {}}
+            try:
+                import share_tokens as _st
+                share = _st.stats(7)
+            except Exception:
+                share = {"by_day": [], "today_visit_by_kind": {}}
             self._json({
                 "heartbeat": heartbeat_ok(),
                 "tasks": manageable + readonly,
@@ -368,7 +386,12 @@ class Handler(BaseHTTPRequestHandler):
                 "running": _state["running"],
                 "sources": source_health(),
                 "biz": load_biz(),
-                "flow": flow})
+                "flow": flow,
+                "flowmx": flow_matrix(),   # K-PUSH-003：今日动线矩阵（源/触点/闸门/拦截）
+                "actmx": _actions_stats(),   # K-PUSH-004：按钮归档注册表 + 审计
+                "tune": tune,   # K-PUSH-002：调优闭环概览
+                "share": share,   # K-PUSH-002：分享令牌概览
+                "shadow": _shadow_stats()})  # P3：FOCUS_CN 影子组毕业统计（300s 缓存）
         elif p == "/api/open/stats":
             # 开放 API（只读）——商业化接入点：X-API-Key 头或 ?key= 均可
             biz = load_biz()
@@ -411,7 +434,22 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "not found"}, 404)
 
     def do_POST(self):
-        if urllib.parse.urlparse(self.path).path != "/api/act":
+        p = urllib.parse.urlparse(self.path).path
+        if p == "/api/send":
+            # K-PUSH-003 推送中台统一入口：闸门（静默/配额）→ 直发 → 统一流水
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                if not (0 < n <= BODY_CAP):
+                    return self._json({"ok": False, "error": "body 大小非法"}, 400)
+                req = json.loads(self.rfile.read(n).decode("utf-8"))
+            except (ValueError, OSError) as e:
+                return self._json({"ok": False, "error": "请求体解析失败: %s" % e}, 400)
+            try:
+                self._json(api_send(req))
+            except Exception as e:  # noqa: BLE001
+                self._json({"ok": False, "error": "%s" % e}, 500)
+            return
+        if p != "/api/act":
             return self._json({"ok": False, "error": "not found"}, 404)
         try:
             n = int(self.headers.get("Content-Length") or 0)
@@ -426,8 +464,218 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ok": False, "error": "%s" % e}, 500)
 
 
+# ---------- K-PUSH-003 统一发送闸门 ----------
+
+def load_schedule():
+    """静默时段配置。默认空 = 不拦任何推送（P1 安全默认）。"""
+    try:
+        with open(SCHEDULE_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"silent_start": "", "silent_end": ""}
+
+
+def _in_silent_window(now=None):
+    s = load_schedule()
+    a, b = (s.get("silent_start") or "").strip(), (s.get("silent_end") or "").strip()
+    if not a or not b:
+        return False
+    cur = (now or datetime.now()).strftime("%H:%M")
+    if a <= b:                      # 同日窗口，如 12:00-13:30
+        return a <= cur < b
+    return cur >= a or cur < b      # 跨午夜窗口，如 23:00-07:00
+
+
+def _flow_gate_deny(kind, target, why):
+    """闸门拦截也落流水（ok=false，可追溯）。why 并入 kind（record 无 note 位）。"""
+    try:
+        sys.path.insert(0, STATION)
+        import push_flow
+        push_flow.record("%s|deny:%s" % (kind or "hub", why)[:80],
+                         "hub-gate", target, 1, False)
+    except Exception:
+        pass
+
+
+def api_send(req):
+    """/api/send 统一入口：静默（critical 豁免）→ 配额 → 直发 → 流水。
+
+    feishu_client.send_msg(via_hub=True) 全站自动过闸；hub 不可达时调用方
+    回落原直发路径（通知不丢）。闸内转发必须 via_hub=False 防环。
+    """
+    content = req.get("content")
+    msg_type = req.get("msg_type") or "text"
+    rid = req.get("receive_id")
+    rtype = req.get("receive_id_type") or "open_id"
+    kind = (req.get("kind") or "").strip() or None
+    critical = bool(req.get("critical"))
+    if not content or not rid:
+        return {"ok": False, "error": "missing content/receive_id"}
+
+    # 闸 1：静默时段（预警类豁免——风险提示不可吞）
+    if not critical and _in_silent_window():
+        _flow_gate_deny(kind, rid, "silent window")
+        return {"ok": False, "error": "silent window"}
+
+    # 闸 2：套餐配额（internal 永不拦，承 push_flow.quota_check 判例）
+    try:
+        sys.path.insert(0, STATION)
+        import push_flow
+        plan, quota, sent, blocked = push_flow.quota_check()
+        if blocked:
+            _flow_gate_deny(kind, rid, "quota %d/%d" % (sent, quota))
+            return {"ok": False,
+                    "error": "quota block: plan=%s sent=%d quota=%d" % (
+                        plan, sent, quota)}
+    except Exception:
+        pass  # 配额判定异常不拦发送（fail-safe）
+
+    # 闸 3（K-PUSH-004）：卡片按钮注册校验——未注册/禁用动作的按钮，
+    # warn 模式仅记观察流水，enforce 模式拒发（按钮统一归档的强制入口）
+    if msg_type == "interactive":
+        try:
+            import card_actions
+            card = json.loads(content) if isinstance(content, str) else content
+            ok3, why3, bad = card_actions.check_card(card)
+            if not ok3:
+                _flow_gate_deny(kind, rid, "unregistered-btn %s" % ",".join(bad)[:40])
+                return {"ok": False, "error": why3, "via": "hub"}
+        except Exception:
+            pass  # 解析异常不拦发送（fail-safe）
+
+    # 直发（via_hub=False 防环；kind 透传让流水归准）
+    news_dir = os.path.join(STATION, "news_collector")
+    if news_dir not in sys.path:
+        sys.path.insert(0, news_dir)
+    from feishu_client import send_msg
+    ok, why = send_msg(content, msg_type, rid, rtype, kind=kind,
+                       via_hub=False)
+    return {"ok": bool(ok), "why": why, "via": "hub"}
+
+
+# ---------- K-PUSH-003 动线总览数据 ----------
+
+def _actions_stats():
+    """K-PUSH-004：按钮归档数据（读侧降级为空，页面不崩）。"""
+    try:
+        import card_actions
+        return card_actions.stats()
+    except Exception:
+        return {"actions": [], "total": 0, "enforce": False, "events": []}
+
+
+def _kind_group(k):
+    k = str(k or "")
+    if "news" in k:
+        return "新闻资讯"
+    if "daily_report" in k or k == "daily:report":
+        return "日报任务"
+    if "alert" in k:
+        return "预警推送"
+    if k.startswith("subscribe:"):
+        return "订阅引擎"
+    if "km" in k:
+        return "知识库KM"
+    if "jev" in k:
+        return "盯盘JEV"
+    if "bot" in k or "push_admin" in k or "tune" in k:
+        return "调优/bot"
+    if "send_feishu" in k:
+        return "文本通道"
+    return "其他"
+
+
+def _target_group(t):
+    t = str(t or "")
+    if t.startswith("ou_50a95455"):
+        return "个人"
+    if t.startswith("oc_6b97"):
+        return "家人群"
+    if t.startswith("oc_16e"):
+        return "量化群"
+    if "," in t:
+        return "多目标"
+    if t.startswith("oc_"):
+        return "其他群"
+    return t[:12] or "?"
+
+
+_shadow_cache = {"t": 0.0, "data": None}
+
+
+def _shadow_stats():
+    """P3 观测面板：FOCUS_CN 影子组毕业统计（调 jev-eval CLI，300s 缓存）。
+
+    subprocess 判例：Popen+bytes+手动 decode；-X utf8 强制管道输出 utf-8
+    （Windows 管道默认 GBK，ensure_ascii=False 的中文/数学负号会炸）。
+    """
+    if (_shadow_cache["data"] is not None
+            and time.time() - _shadow_cache["t"] <= 300):
+        return _shadow_cache["data"]
+    jev_dir = os.path.join(STATION, "jev-eval")
+    try:
+        p = subprocess.Popen(
+            [sys.executable, "-X", "utf8", "jev_graduation_status.py",
+             "--json"],
+            cwd=jev_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        so, _ = p.communicate(timeout=30)
+        data = json.loads(so.decode("utf-8", "replace"))
+        _shadow_cache["t"] = time.time()
+        _shadow_cache["data"] = data
+        return data
+    except Exception:
+        return _shadow_cache["data"]  # 降级：无数据/旧数据
+
+
+def flow_matrix():
+    """今日动线矩阵：源归组计数 / 触点归组计数 / 拦截明细（真实流水聚合）。"""
+    import datetime as dt
+    today = dt.date.today().isoformat()
+    flow_path = os.path.join(WORK, "push_flow.jsonl")
+    src, dst, deny = {}, {}, []
+    try:
+        with open(flow_path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if r.get("date") != today:
+                    continue
+                c = int(r.get("count", 1))
+                ok = bool(r.get("ok", True))
+                k = str(r.get("kind", ""))
+                src[_kind_group(k)] = src.get(_kind_group(k), 0) + c
+                dst[_target_group(r.get("target", ""))] = \
+                    dst.get(_target_group(r.get("target", "")), 0) + c
+                if not ok or "deny" in k:
+                    deny.append({"ts": r.get("ts", "")[-8:], "kind": k[:40],
+                                 "target": _target_group(r.get("target", "")),
+                                 "note": "拦截" if "deny" in k else "发送失败"})
+    except OSError:
+        pass
+    import push_flow
+    try:
+        plan, daily, sent, blocked = push_flow.quota_check()
+        quota = {"plan": plan, "daily": daily, "sent": sent, "blocked": blocked}
+    except Exception:
+        quota = {}
+    return {"sources": src, "targets": dst, "deny": deny[-8:],
+            "gate": {"silent": load_schedule(), "hub": "on", "quota": quota}}
+
+
 def dispatch(req):
     act = req.get("action")
+
+    if act == "toggle_action":   # K-PUSH-004：按钮归档启停
+        import card_actions
+        on = card_actions.toggle(req.get("id"), bool(req.get("enabled")))
+        return {"ok": True, "enabled": on}
+
+    if act == "set_action_enforce":   # K-PUSH-004：未注册按钮 warn/enforce
+        import card_actions
+        return {"ok": True, "enforce": card_actions.set_enforce(
+            bool(req.get("on")))}
 
     if act == "toggle_sub":
         subs = load_subs()
@@ -528,6 +776,52 @@ def dispatch(req):
     if act == "test_sub":
         return test_sub(req.get("id") or "")
 
+    # ---------- K-PUSH-002：调优闸门 + 分享令牌（tune_gate/share_tokens） ----------
+    if act == "tune_submit":
+        # 受理一条调优请求（bot 指令之外的第二入口：API/管理台测试）
+        import tune_gate
+        if not (req.get("text") or "").strip():
+            return {"ok": False, "error": "text 必填（客户反馈原文）"}
+        rid = tune_gate.submit(req["text"],
+                               customer=req.get("customer") or "API提交",
+                               plan=req.get("plan") or "internal",
+                               source=req.get("source") or "text")
+        return {"ok": True, "req_id": rid}
+
+    if act == "tune_approve":
+        import tune_gate
+        return tune_gate.approve(req.get("req_id") or "",
+                                 operator=req.get("operator") or "8097管理台",
+                                 note=req.get("note") or "")
+
+    if act == "tune_reject":
+        import tune_gate
+        r = tune_gate.reject(req.get("req_id") or "",
+                             operator=req.get("operator") or "8097管理台",
+                             reason=req.get("reason") or "")
+        return r
+
+    if act == "tune_deploy":
+        import tune_gate
+        return tune_gate.deploy(req.get("req_id") or "",
+                                operator=req.get("operator") or "8097管理台",
+                                params=req.get("params"))
+
+    if act == "tune_list":
+        import tune_gate
+        return {"ok": True,
+                "requests": tune_gate.list_requests(req.get("status"))}
+
+    if act == "share_gen":
+        # 签发一枚分享 token（订阅卡片深链用；也可手动签发测试）
+        import share_tokens
+        tok = share_tokens.gen(code=req.get("code") or "",
+                               kind=req.get("kind") or "manual",
+                               ttl_hours=int(req.get("ttl_hours") or 72))
+        if not tok:
+            return {"ok": False, "error": "share_secret 不可用（见 work/）"}
+        return {"ok": True, "token": tok}
+
     return {"ok": False, "error": "unknown action: %s" % act}
 
 
@@ -571,10 +865,20 @@ input[type=time]{width:90px}
 .trend .bar{flex:1;background:var(--blue);border-radius:4px 4px 0 0;min-height:3px;position:relative;opacity:.85}
 .trend .bar span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--dim)}
 .trend .bar em{position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:11px;font-style:normal;color:var(--ink)}
+.flowgrid{display:grid;grid-template-columns:1fr 330px 1fr;gap:14px}
+.frow{display:flex;align-items:center;gap:8px;margin:7px 0}
+.fname{flex:0 0 120px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ftrack{flex:1;background:#0f141c;border:1px solid var(--line);border-radius:5px;height:16px;overflow:hidden}
+.fbar{height:100%;background:var(--blue);border-radius:4px;min-width:4px}
+.frow b{flex:0 0 36px;text-align:right;font-size:13px}
+.frow.dst .fbar{background:var(--green)}
 </style></head><body>
 <aside class="nav">
 <div class="brand">🛰 推送中台<span>情报变现 · 消息触达底座</span></div>
 <a class="navi on" data-s="overview" onclick="show('overview')">总览</a>
+<a class="navi" data-s="flow" onclick="show('flow')">动线总览</a>
+<a class="navi" data-s="obs" onclick="show('obs')">🔍 观测</a>
+<a class="navi" data-s="btns" onclick="show('btns')">按钮归档</a>
 <a class="navi" data-s="push" onclick="show('push')">推送管理</a>
 <a class="navi" data-s="km" onclick="show('km')">知识库联动</a>
 <a class="navi" data-s="picks" onclick="show('picks')">定时发布</a>
@@ -599,6 +903,30 @@ input[type=time]{width:90px}
 </table></div>
 </div>
 
+<div id="sec-flow" class="sec" style="display:none">
+<h1>动线总览</h1><div class="sub">今日全部出站消息动线：源 → HUB 统一闸门 → 飞书触点（push_flow 真实流水聚合，5 秒自动刷新）</div>
+<div class="card"><h2>今日链路拓扑（桑基 · 带宽 = 条数占比）</h2><div id="sankey"></div></div>
+<div class="flowgrid">
+<div class="card"><h2>📥 源（谁在推）</h2><div id="fmsrc"></div></div>
+<div class="card"><h2>🛰 HUB 统一闸门</h2><div id="fmgate"></div></div>
+<div class="card"><h2>📤 触点（推给谁）</h2><div id="fmdst"></div></div>
+</div>
+<div class="card"><h2>今日拦截 / 失败明细（闸门拦截同样落流水，可追溯）</h2><table id="fmdeny"></table></div>
+</div>
+
+<div id="sec-obs" class="sec" style="display:none">
+<h1>观测</h1><div class="sub">P3 增量：FOCUS_CN 影子组毕业进度 + 守护触发器状态 —— 影子转正纪律与守护覆盖一眼可见</div>
+<div class="card"><h2>FOCUS_CN 影子组（2026-10-16 起 · CN 相对临界 quality_p≤0.53 · 只积累不拦截，转正需人工）</h2><div id="shadowbox"><span class=dim>加载中…（jev-eval 毕业统计，首次 5-10s）</span></div></div>
+<div class="card"><h2>守护触发器状态（next 触发 + 24h 轴 · 数据源 8091 /api/health，经门户 :8080/push/ 访问可见）</h2><div id="guardbox"><span class=dim>加载中…</span></div></div>
+</div>
+
+<div id="sec-btns" class="sec" style="display:none">
+<h1>按钮归档</h1><div class="sub">交互动作统一注册表 —— 全站按钮/指令/H5 动作单一事实源；未注册动作默认 warn 观察，开启 enforce 后 HUB 拒发；每次触发全审计（action_log.jsonl）</div>
+<div class="card"><h2>注册表（<span id="acttotal">0</span> 项） <button id="enfbtn" onclick="toggleEnforce()"></button></h2>
+<table id="acttbl"></table></div>
+<div class="card"><h2>触发审计流水（who · when · card · result）</h2><table id="actlog"></table></div>
+</div>
+
 <div id="sec-push" class="sec" style="display:none">
 
 <div class="card"><h2>今日推送总览</h2><div class="kpis" id="kpis2"></div></div>
@@ -621,7 +949,7 @@ input[type=time]{width:90px}
 <div class="card"><h2>试推日志</h2><pre id="tlog" style="font-size:11px;color:var(--dim);white-space:pre-wrap"></pre></div>
 </div>
 
-<div id="sec-km" class="sec" style="display:none"><iframe id="f_km" data-src="http://127.0.0.1:8096/" title="知识库联动"></iframe></div>
+<div id="sec-km" class="sec" style="display:none"><iframe id="f_km" data-src="http://127.0.0.1:8099/" title="知识库联动"></iframe></div>
 <div id="sec-picks" class="sec" style="display:none"><iframe id="f_picks" data-src="http://127.0.0.1:8095/" title="定时发布"></iframe></div>
 
 <div id="sec-biz" class="sec" style="display:none">
@@ -648,9 +976,117 @@ input[type=time]{width:90px}
 const $=id=>document.getElementById(id);
 function msg(t,bad){const m=$('msg');m.textContent=t;m.style.display='block';m.style.color=bad?'var(--red)':'var(--green)';setTimeout(()=>m.style.display='none',5000)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-async function act(body){try{const r=await fetch('/api/act',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.ok)msg(d.error||'失败',true);return d}catch(e){msg('请求失败：'+e,true);return{ok:false}}}
+async function act(body){try{const r=await fetch('api/act',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.ok)msg(d.error||'失败',true);return d}catch(e){msg('请求失败：'+e,true);return{ok:false}}}
 const OK=['金融新闻日报','AI工作站统一日报','AI工作站预警推送晨','AI工作站预警推送'];
-async function refresh(){try{const d=await(await fetch('/api/state')).json();
+function inSilent(s){const a=String(s.silent_start||'').trim(),b=String(s.silent_end||'').trim();if(!a||!b)return false;const c=new Date().toTimeString().slice(0,5);return a<=b?(a<=c&&c<b):(c>=a||c<b)}
+function fbars(o,cls){const ks=Object.keys(o||{}),m=Math.max(1,...ks.map(k=>o[k]));
+ return ks.length?ks.map(k=>'<div class="frow '+(cls||'')+'"><span class=fname title="'+esc(k)+'">'+esc(k)+'</span><div class=ftrack><div class=fbar style="width:'+Math.max(4,Math.round(o[k]/m*100))+'%"></div></div><b>'+o[k]+'</b></div>').join(''):'<span class=dim>今日暂无发送</span>'}
+function renderFlow(mx){if(!mx)return;
+renderSankey(mx);
+$('fmsrc').innerHTML=fbars(mx.sources);
+$('fmdst').innerHTML=fbars(mx.targets,'dst');
+const g=mx.gate||{},s=g.silent||{},q=g.quota||{};
+const sil=s.silent_start&&s.silent_end,inS=inSilent(s);
+$('fmgate').innerHTML='<table>'
+ +'<tr><th>闸门</th><td><span class=ok>● 运行中</span> <span class=dim>8097 · /api/send 统一收口（卡片+文本全自动过闸）</span></td></tr>'
+ +'<tr><th>静默时段</th><td>'+(sil?esc(s.silent_start)+' – '+esc(s.silent_end)+(inS?' <span class=warn>（当前静默中 · critical 直通）</span>':' <span class=ok>（当前放行）</span>'):'<span class=dim>未配置 = 不拦（P1 安全默认）</span>')+'</td></tr>'
+ +'<tr><th>今日配额</th><td>'+(q.plan?esc(q.plan)+' · 已发 <b>'+q.sent+'</b>'+(q.daily>0?' / '+q.daily+' 条':'（internal 不限）')+(q.blocked?' <span class=err>已达额拦截</span>':''):'<span class=dim>—</span>')+'</td></tr>'
+ +'<tr><th>回落</th><td class=dim>hub 不可达时自动回落直发 · 通知不丢（fail-safe）</td></tr></table>';
+const dn=mx.deny||[];
+$('fmdeny').innerHTML='<thead><tr><th>时间</th><th>kind</th><th>触点</th><th>结果</th></tr></thead><tbody>'
+ +(dn.length?dn.map(x=>'<tr><td class=dim>'+esc(x.ts)+'</td><td>'+esc(x.kind)+'</td><td>'+esc(x.target)+'</td><td><span class=err>'+esc(x.note)+'</span></td></tr>').join(''):'<tr><td colspan=4 class=dim>今日无拦截 / 失败记录</td></tr>')+'</tbody>';}
+/* ── P3 观测：桑基拓扑（源→HUB→触点，纯 SVG 手绘无依赖） ── */
+function renderSankey(mx){
+ const el=$('sankey');if(!el)return;
+ const S=(mx&&mx.sources)||{},T=(mx&&mx.targets)||{};
+ if(!Object.keys(S).length&&!Object.keys(T).length){el.innerHTML='<span class=dim>今日暂无真实发送（流水只记真实发送，跳过/熔断不记）</span>';return;}
+ const sk=Object.entries(S).sort((a,b)=>b[1]-a[1]),tk=Object.entries(T).sort((a,b)=>b[1]-a[1]);
+ const sT=sk.reduce((a,x)=>a+x[1],0)||1,tT=tk.reduce((a,x)=>a+x[1],0)||1;
+ const H=Math.max(220,Math.max(sk.length,tk.length)*30+56),pt=26,ih=H-pt-10;
+ const W=800,lw=200,rw=200,x0=lw,x1=W-rw,hx=x0+80,hw=x1-x0-160;
+ let g='<rect x="'+hx+'" y="'+pt+'" width="'+hw+'" height="'+ih+'" rx="4" fill="#1f6feb22" stroke="#58a6ff" stroke-opacity=".45"/>'
+  +'<text x="'+(hx+hw/2)+'" y="'+(pt+15)+'" text-anchor="middle" font-size="12" fill="#58a6ff">HUB 统一闸门 :8097</text>'
+  +'<text x="'+(hx+hw/2)+'" y="'+(pt+31)+'" text-anchor="middle" font-size="11" fill="#8b949e">今日出站 '+Math.max(sT,1)+' 条</text>';
+ let sy=pt,hy=pt,ty=pt,lb='';
+ sk.forEach(x=>{const h=Math.max(3,x[1]/sT*ih);
+  g+='<rect x="'+(x0-12)+'" y="'+sy+'" width="12" height="'+h+'" rx="2" fill="#58a6ff" opacity=".85"/>';
+  lb+='<text x="'+(x0-18)+'" y="'+(sy+h/2+4)+'" text-anchor="end" font-size="11" fill="#c9d1d9">'+esc(String(x[0]).slice(0,12))+' <tspan fill="#8b949e">'+x[1]+'</tspan></text>';
+  const my=hy+h/2;
+  g+='<path d="M'+x0+' '+sy+' C'+hx+' '+sy+' '+hx+' '+my+' '+hx+' '+my+'" stroke="#58a6ff" stroke-opacity=".3" stroke-width="'+h+'" fill="none"/>';
+  sy+=h+6;hy+=h;});
+ ty=pt;hy=pt;
+ tk.forEach(x=>{const h=Math.max(3,x[1]/tT*ih);
+  g+='<rect x="'+x1+'" y="'+ty+'" width="12" height="'+h+'" rx="2" fill="#3fb950" opacity=".85"/>';
+  lb+='<text x="'+(x1+18)+'" y="'+(ty+h/2+4)+'" font-size="11" fill="#c9d1d9">'+esc(String(x[0]).slice(0,12))+' <tspan fill="#8b949e">'+x[1]+'</tspan></text>';
+  const my=hy+h/2,ex=hx+hw;
+  g+='<path d="M'+ex+' '+my+' C'+ex+' '+my+' '+x1+' '+ty+' '+x1+' '+ty+'" stroke="#3fb950" stroke-opacity=".3" stroke-width="'+h+'" fill="none"/>';
+  ty+=h+6;hy+=h;});
+ el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">'+g+lb+'</svg>';
+}
+/* ── P3 观测：FOCUS_CN 影子组面板（数据源 /api/state.shadow ← jev-eval 毕业统计） ── */
+function renderShadow(sh){
+ const el=$('shadowbox');if(!el)return;
+ if(!sh){el.innerHTML='<span class=dim>影子组统计不可用（jev-eval 调用降级，稍后自动重试）</span>';return;}
+ const cn=(sh.domains||{}).CN;
+ if(!cn){el.innerHTML='<span class=dim>无 CN 域数据（影子组尚未产生判定记录）</span>';return;}
+ const n=cn.n_eff||0,N=30,LEFT=Math.max(0,N-n),pct=Math.min(100,Math.round(n/N*100));
+ const pp=v=>v==null?'—':(v>0?'+':'')+v+'pp';
+ el.innerHTML='<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">'
+ +'<div class="kpi" style="min-width:150px"><b>'+n+' <span style="font-size:12px;color:var(--dim)">/ '+N+'</span></b><span>影子样本 n_eff（唯一 ts_code）</span></div>'
+ +'<div class="kpi" style="min-width:150px"><b style="color:'+(cn.cluster_mean_pp>1?'var(--green)':'var(--amber)')+'">'+pp(cn.cluster_mean_pp)+'</b><span>聚类均值（转正门槛 &gt;+1pp）</span></div>'
+ +'<div class="kpi" style="min-width:150px"><b>'+pp(cn.focus_pass_gap_pp)+'</b><span>FOCUS−PASS 差（辅助证据）</span></div>'
+ +'</div><div style="margin-top:10px;background:#0f141c;border:1px solid var(--line);border-radius:8px;height:14px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,#1f6feb,#58a6ff)"></div></div>'
+ +'<div class=dim style="font-size:11px;margin-top:6px">quality_p 刻度：CN 域相对临界 ≤0.53（triples.jsonl 30 分位标定） · '
+ +(LEFT?'转正还差 <b style="color:var(--amber)">'+LEFT+'</b> 个标的（n_eff≥30 且聚类&gt;+1pp 后人工转正，不自动上生产）':'<span class=ok>样本量已达标</span>，待聚类达标后人工转正')
+ +' · '+esc(cn.state||'')+' · 窗口 '+esc((sh.sample&&sh.sample.window)||'—')+' · 计算于 '+esc(String(sh.computed_at||'').replace('T',' '))+'</div>';
+}
+/* ── P3 观测：守护触发器（8091 /api/health 同源；直连 8097 时降级提示） ── */
+var _gT=0;
+function loadGuard(){
+ const el=$('guardbox');if(!el)return;
+ if(el.dataset.done&&Date.now()-_gT<60000)return;
+ fetch('/api/health').then(r=>r.json()).then(h=>{
+  _gT=Date.now();el.dataset.done=1;
+  const ts=(h.tasks||[]).filter(t=>/Guard|JevStack|TushareSync/.test(t.name));
+  const hm=s=>{const m=/([0-9]{1,2}):([0-9]{2})/.exec(String(s||''));return m?(+m[1])*60+(+m[2]):null};
+  const dots=ts.map(t=>{const nx=hm(t.next_run),lx=hm(t.last_run),a=[];
+   if(nx!=null)a.push('<div title="'+esc(t.name)+' 下次 '+esc(t.next_run)+'" style="position:absolute;left:'+(nx/1440*100)+'%;top:-3px;width:8px;height:8px;border-radius:50%;background:#58a6ff;box-shadow:0 0 4px #58a6ff88"></div>');
+   if(lx!=null)a.push('<div title="'+esc(t.name)+' 上次 '+esc(t.last_run)+'" style="position:absolute;left:'+(lx/1440*100)+'%;top:4px;width:6px;height:6px;border-radius:50%;background:#3fb950"></div>');
+   return a.join('')}).join('');
+  el.innerHTML='<table><thead><tr><th>守护</th><th>状态</th><th>上次运行</th><th>下次运行</th><th>上次结果</th></tr></thead><tbody>'
+   +ts.map(t=>'<tr><td><b>'+esc(t.name)+'</b></td><td>'+(t.state==='就绪'||t.state==='Ready'?'<span class=ok>就绪</span>':esc(t.state))+'</td><td class=dim>'+esc(t.last_run||'-')+'</td><td class=dim>'+esc(t.next_run||'-')+'</td><td>'+(t.last_result==='0'?'<span class=ok>✔ 0</span>':'<span class=err>✘ '+esc(t.last_result)+'</span>')+'</td></tr>').join('')
+   +'</tbody></table>'
+   +'<div class=dim style="font-size:11px;margin:12px 0 4px">今日 24h 触发轴（<span style="color:#58a6ff">●</span> 下次触发 · <span style="color:#3fb950">●</span> 上次运行）：</div>'
+   +'<div style="position:relative;height:14px;background:#0f141c;border:1px solid var(--line);border-radius:7px">'
+   +'<div style="position:absolute;left:25%;top:0;bottom:0;border-left:1px dashed #30363d"></div><div style="position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #30363d"></div><div style="position:absolute;left:75%;top:0;bottom:0;border-left:1px dashed #30363d"></div>'+dots+'</div>'
+   +'<div class=dim style="font-size:10px;display:flex;justify-content:space-between"><span>0点</span><span>6点</span><span>12点</span><span>18点</span><span>24点</span></div>'
+  /* 2026-10-17 翻案：旧「白天裸奔」为误判——schtasks CLI 建的任务 Repetition 无
+     Duration 节点 = 无限期重复（非"当天止"）。实测白天 09:42 JevStack 正常轮转。
+     改为动态停摆判定：next_run 落后当前 >2h 才是真停摆（JevStack/Guard 的 next
+     恒在 10/30 分钟内的未来，仅跨天任务 next 可能落凌晨，2h 阈值不误伤）。 */
+  +(function(){
+   const now=new Date(),cm=now.getHours()*60+now.getMinutes();
+   const stale=ts.filter(function(t){const nx=hm(t.next_run);return nx!=null&&cm-nx>120}).map(function(t){return t.name});
+   return stale.length
+    ?'<div class=warn style="font-size:11px;margin-top:8px">⚠ 触发停摆：'+stale.map(esc).join(' / ')+'（下次触发已落后当前 2h+，检查 schtasks 触发器）</div>'
+    :'<div class=ok style="font-size:11px;margin-top:8px">✅ 全天守护健康：JevStack 每 10 分钟、HermesWebUI-Guard 每 30 分钟无限重复触发（实测白天正常轮转）</div>';
+  })();
+ }).catch(()=>{el.innerHTML='<span class=dim>守护数据不可用：需经门户 <a href="http://127.0.0.1:8080/push/" target=_blank>:8080/push/</a> 同源访问（直连 8097 时无 /api/health）</span>'});
+}
+function renderActions(ax){if(!ax)return;
+$('acttotal').textContent=ax.total||0;window._enf=!!ax.enforce;
+const eb=$('enfbtn');if(eb)eb.textContent=ax.enforce?'关闭 enforce（回 warn 观察）':'开启 enforce（未注册按钮拒发）';
+const kd={card:'卡片按钮',h5:'H5 动作',cmd:'文本指令'};
+$('acttbl').innerHTML='<thead><tr><th>action_id</th><th>名称</th><th>归属域</th><th>类型</th><th>回调</th><th>今日</th><th>状态</th><th>操作</th></tr></thead><tbody>'
+ +(ax.actions||[]).map(a=>'<tr><td class=key>'+esc(a.id)+'</td><td>'+esc(a.name)+'</td><td>'+esc(a.domain)+'</td>'
+  +'<td><span class=tag>'+esc(kd[a.kind]||a.kind)+'</span></td><td class=dim style="font-size:11px">'+esc(a.handler)+'</td><td><b>'+(a.today||0)+'</b></td>'
+  +'<td>'+(a.enabled?'<span class=ok>启用</span>':'<span class=err>禁用</span>')+'</td>'
+  +'<td><button onclick="act({action:\\'toggle_action\\',id:\\''+esc(a.id)+'\\',enabled:'+(a.enabled?'false':'true')+'}).then(refresh)">'+(a.enabled?'禁用':'启用')+'</button></td></tr>').join('')
+ +'</tbody>';
+$('actlog').innerHTML='<thead><tr><th>时间</th><th>动作</th><th>操作者</th><th>关联单/卡</th><th>结果</th></tr></thead><tbody>'
+ +((ax.events||[]).length?ax.events.map(e=>'<tr><td class=dim>'+esc((e.ts||'').slice(5))+'</td><td class=key>'+esc(e.action)+'</td><td class=dim>'+esc(String(e.who||'').slice(0,14))+'</td><td class=dim>'+esc(e.card)+'</td><td>'+esc(e.result)+'</td></tr>').join(''):'<tr><td colspan=5 class=dim>暂无触发记录（按钮/指令触发后在此审计）</td></tr>')+'</tbody>';}
+async function toggleEnforce(){const d=await act({action:'set_action_enforce',on:!window._enf});if(!d.ok){msg('切换失败',true);return}refresh();}
+async function refresh(){try{const d=await(await fetch('api/state')).json();
 $('sub').textContent='服务 '+(d.heartbeat?'✅':'❌ 心跳丢失')+(d.running?' · 试推进行中…':'');
 const kpiHtml='<div class=kpi><b>'+d.today.total+'</b><span>今日推送合计</span></div>'
  +'<div class=kpi><b>'+d.today.sub_sent+'</b><span>订阅推送（今日次数）</span></div>'
@@ -670,6 +1106,8 @@ $('trend').innerHTML=bd.map(x=>'<div class="bar" style="height:'+Math.max(3,Math
 const tk=fl.today_by_kind||{};
 $('flowkinds').innerHTML='<thead><tr><th>今日分类（kind）</th><th>条数</th></tr></thead><tbody>'
  +(Object.keys(tk).length?Object.keys(tk).map(k=>'<tr><td>'+esc(k)+'</td><td><b>'+tk[k]+'</b></td></tr>').join(''):'<tr><td colspan=2 class=dim>今日暂无真实发送（流水只记真实发送，跳过/熔断不记）</td></tr>')+'</tbody>';
+renderFlow(d.flowmx);
+renderActions(d.actmx);
 $('tasks').innerHTML='<thead><tr><th>任务</th><th>时间点</th><th>状态</th><th>上次运行</th><th>结果</th><th>操作</th></tr></thead><tbody>'+
  d.tasks.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.manage?'':' <span class=dim>（只读）</span>')+'</td>'
  +'<td>'+(t.manage?'<input type=time value="'+esc(t.time||'')+'" onchange="setTime(\\''+esc(t.name)+'\\',this.value)">':esc(t.time||'-'))+'</td>'
@@ -691,7 +1129,7 @@ $('recvs').innerHTML='<thead><tr><th>名称</th><th>类型</th><th>ID</th><th>�
  +'<td><button class=danger onclick="if(confirm(\\'删除接收人 '+esc(r.name)+' ？\\'))act({action:\\'remove_receiver\\',name:\\''+esc(r.name)+'\\'}).then(refresh)">删除</button></td></tr>').join('')
  ||'<tr><td colspan=5 class=dim>空</td></tr>';
 const lt=d.last_test;$('tlog').textContent=lt?('最近试推：'+lt.id+' @ '+lt.ts+' 状态='+lt.status+(lt.rc!=null?(' rc='+lt.rc):'')+(lt.tail?('\\n'+lt.tail):'')+(lt.error?('\\n错误：'+lt.error):'')):'尚无试推记录';
-}catch(e){$('sub').textContent='状态获取失败：'+e}}
+renderShadow(d.shadow);loadGuard();}catch(e){$('sub').textContent='状态获取失败：'+e}}
 async function setTime(name,v){if(!v)return msg('时间不能为空',true);const d=await act({action:'set_task_time',name:name,time:v});if(d.ok){msg('已改为 '+v+'（即时生效）');refresh()}}
 async function addRecv(){const d=await act({action:'add_receiver',receiver:{name:$('r_name').value.trim(),id:$('r_id').value.trim(),type:$('r_type').value,note:$('r_note').value.trim()}});
  if(d.ok){msg('接收人已添加（可在订阅里勾选）');['r_name','r_id','r_note'].forEach(i=>$(i).value='');refresh()}}
@@ -712,10 +1150,14 @@ def main():
     args = parser.parse_args()
 
     if args.bg:
-        out = open(os.path.join(WORK, "push_admin.out"), "ab")
+        # K271 死亡实验判例（2026-10-16 换机实证）：DETACHED + 文件句柄重定向
+        # → server 1-2 分钟静默死（launcher 退出后继承句柄失效，缓冲 flush 炸
+        # 解释器，stderr 同坏=零 traceback；watchdog 日志 10-14 起 4 分钟 4 次
+        # spawn 的僵尸循环即此）。勿改回文件重定向；观测走 /health +
+        # watchdog_9899.log 的 spawn 记录。
         import subprocess as sp
         sp.Popen([sys.executable, os.path.abspath(__file__), "--port", str(args.port)],
-                 cwd=HERE, stdin=subprocess.DEVNULL, stdout=out, stderr=out,
+                 cwd=HERE, stdin=sp.DEVNULL, stdout=sp.DEVNULL, stderr=sp.DEVNULL,
                  creationflags=sp.DETACHED_PROCESS | sp.CREATE_NEW_PROCESS_GROUP)
         print("[ok] 已后台驻留：http://127.0.0.1:%d/" % args.port)
         return 0
