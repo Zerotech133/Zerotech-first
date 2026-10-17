@@ -103,8 +103,10 @@ def _mask_cookies(cookies: list[dict]) -> list[str]:
 
 
 async def _login_async(user: str, password: str, headless: bool,
-                       wait_human: int) -> tuple[str, list[dict]]:
-    """登录并返回 (xq_a_token, cookies)。失败 raise RuntimeError。"""
+                       wait_human: int, mode: str = "pwd") -> tuple[
+                           str, list[dict]]:
+    """登录并返回 (xq_a_token, cookies)。mode=pwd 账号密码+极验；
+    mode=qr 二维码扫码（用户雪球 App 扫窗内码，免滑块免验证码）。"""
     from playwright.async_api import async_playwright
     _safe_name = "u" + re.sub(r"\D", "", user)[-4:]   # 账号脱敏（后 4 位数字）
     async with async_playwright() as p:
@@ -158,7 +160,33 @@ async def _login_async(user: str, password: str, headless: bool,
                 raise RuntimeError("登录入口未找到（首页无「登录」可点）")
             await page.wait_for_timeout(2500)
 
-        # 2) 切「账号密码登录」tab（若有验证码 tab）
+        # 2) mode=qr：二维码扫码早退路径（密码流程零改动）
+        if mode == "qr":
+            for txt in ("二维码登录", "扫码登录"):
+                try:
+                    loc = page.get_by_text(txt, exact=False).first
+                    await loc.click(timeout=2500)
+                    print("[login] 已切到二维码 tab：%s" % txt)
+                    break
+                except Exception:
+                    continue
+            await page.wait_for_timeout(2500)
+            await page.screenshot(
+                path="C:/Temp/xq_login_qr_%d.png" % int(time.time()))
+            print("[login]" + "!" * 60)
+            print("[login] ⚠ 请用雪球 App 扫描屏幕上浏览器窗口中的二维码")
+            print("[login]   确认后脚本自动检测登录态并继续（窗口 %ds）"
+                  % wait_human)
+            print("[login]" + "!" * 60)
+            got = await _wait_login_feature(ctx, pre,
+                                            time.time() + wait_human)
+            if not got:
+                await page.screenshot(
+                    path="C:/Temp/xq_login_fail_%d.png" % int(time.time()))
+                raise RuntimeError("扫码登录未成功（窗口超时）")
+            return await _export_login(ctx, pre, _safe_name, browser)
+
+        # 2p) 切「账号密码登录」tab（若有验证码 tab）
         for txt in ("账号密码登录", "密码登录", "账号密码"):
             try:
                 loc = page.get_by_text(txt, exact=False).first
@@ -256,14 +284,21 @@ async def _login_async(user: str, password: str, headless: bool,
             except Exception:
                 pass
             if has_slider:
-                for i in range(2):
-                    print("[login] 检测到滑块元素，尝试自动拖动 %d/2"
-                          % (i + 1))
+                for i in range(3):
+                    print("[login] 极验自动尝试 %d/3" % (i + 1))
                     ok = await _try_slider(page)
                     got = await _wait_login_feature(ctx, pre,
-                                                    time.time() + 8)
+                                                    time.time() + 6)
                     if got:
                         break
+                    if ok and i < 2:            # 拖了但没过 → 刷新换图
+                        try:
+                            await page.locator(
+                                "[class*=geetest_refresh]").first.click(
+                                timeout=2000)
+                            await page.wait_for_timeout(1200)
+                        except Exception:
+                            pass
             if not got:
                 print("[login]" + "!" * 60)
                 print("[login] ⚠ 请人工辅助（窗口 %ds）：" % wait_human)
@@ -279,27 +314,33 @@ async def _login_async(user: str, password: str, headless: bool,
                 path="C:/Temp/xq_login_fail_%d.png" % int(time.time()))
             raise RuntimeError("登录未成功（未见登录态 cookie）")
 
-        cookies = await ctx.cookies()
-        tok = next((c["value"] for c in cookies
-                    if c["name"] == "xq_a_token" and c.get("value")), "")
-        if not tok:
-            raise RuntimeError("登录态 cookie 存在但无 xq_a_token")
-        print("[login] 登录成功：cookie %d 项，xq_a_token=%s"
-              % (len(cookies), _mask(tok)))
-        # 全套登录态 cookie 备份落盘（token 失效时可人工回灌，免重登）
-        try:
-            bak = os.path.join(HERE, "config",
-                               "xq_login_cookies_%s.json" % _safe_name)
-            with open(bak + ".tmp", "w", encoding="utf-8") as f:
-                json.dump({"saved_at": time.time(), "user": _safe_name,
-                           "cookies": cookies}, f, ensure_ascii=False)
-            os.replace(bak + ".tmp", bak)
-            print("[login] 登录态 cookie 已备份 config/xq_login_cookies_%s.json"
-                  % _safe_name)
-        except Exception as e:
-            print("[login] cookie 备份失败（忽略）：%s" % str(e)[:60])
-        await browser.close()
-        return tok, cookies
+        return await _export_login(ctx, pre, _safe_name, browser)
+
+
+async def _export_login(ctx, pre: dict, _safe_name: str,
+                        browser) -> tuple[str, list[dict]]:
+    """登录成功后共用导出：提取 xq_a_token + 全套 cookie 备份落盘。"""
+    cookies = await ctx.cookies()
+    tok = next((c["value"] for c in cookies
+                if c["name"] == "xq_a_token" and c.get("value")), "")
+    if not tok:
+        raise RuntimeError("登录态 cookie 存在但无 xq_a_token")
+    print("[login] 登录成功：cookie %d 项，xq_a_token=%s"
+          % (len(cookies), _mask(tok)))
+    # 全套登录态 cookie 备份落盘（token 失效时可人工回灌，免重登）
+    try:
+        bak = os.path.join(HERE, "config",
+                           "xq_login_cookies_%s.json" % _safe_name)
+        with open(bak + ".tmp", "w", encoding="utf-8") as f:
+            json.dump({"saved_at": time.time(), "user": _safe_name,
+                       "cookies": cookies}, f, ensure_ascii=False)
+        os.replace(bak + ".tmp", bak)
+        print("[login] 登录态 cookie 已备份 config/xq_login_cookies_%s.json"
+              % _safe_name)
+    except Exception as e:
+        print("[login] cookie 备份失败（忽略）：%s" % str(e)[:60])
+    await browser.close()
+    return tok, cookies
 
 
 async def _wait_login_feature(ctx, pre_map: dict, deadline: float) -> bool:
@@ -327,54 +368,109 @@ async def _wait_login_feature(ctx, pre_map: dict, deadline: float) -> bool:
     return False
 
 
+async def _geetest_gap(page) -> dict:
+    """极验缺口检测：读 geetest_canvas_bg 像素，列亮度 8px 窗差分
+    取最强边缘 = 缺口左缘（canvas 同源可 getImageData，无需 PIL）。"""
+    return await page.evaluate(
+        """() => {
+            const c = document.querySelector('.geetest_canvas_bg');
+            if (!c) return {err: 'no-canvas'};
+            const ctx = c.getContext('2d');
+            if (!ctx) return {err: 'no-ctx'};
+            const w = c.width, h = c.height;
+            const img = ctx.getImageData(0, 0, w, h).data;
+            const colLum = new Array(w).fill(0);
+            for (let x = 0; x < w; x++) {
+                let s = 0;
+                for (let y = 0; y < h; y++) {
+                    const i = (y * w + x) * 4;
+                    s += 0.299 * img[i] + 0.587 * img[i + 1]
+                       + 0.114 * img[i + 2];
+                }
+                colLum[x] = s / h;
+            }
+            const sm = colLum.map((v, i) =>
+                (colLum[Math.max(0, i - 1)] + v +
+                 colLum[Math.min(w - 1, i + 1)]) / 3);
+            let best = -1, bestDiff = 0;
+            for (let x = 12; x < w * 0.9; x++) {
+                const d = Math.abs(sm[x] - sm[x - 8]);
+                if (d > bestDiff) { bestDiff = d; best = x; }
+            }
+            return {w: w, h: h, gapX: best, diff: bestDiff};
+        }""")
+
+
+def _human_track(dist: float) -> list[float]:
+    """人类拖动轨迹（相对位移序列）：连续速度模型——分相速度平滑趋近
+    （加速 25% → 巡航 → 末端爬行 1.6px/帧），噪声速度扰动，过冲回拉。"""
+    import random
+    over = dist + random.uniform(3, 6)
+    pts: list[float] = []
+    pos, v = 0.0, 0.0
+    while pos < over and len(pts) < 220:
+        phase = pos / over
+        vmax = (random.uniform(7, 10) if phase < 0.25
+                else random.uniform(5, 7) if phase < 0.75 else 1.6)
+        v += (vmax - v) * 0.3 + random.uniform(-0.4, 0.4)
+        v = max(0.8, v)
+        pos = min(over, pos + v)
+        pts.append(pos)
+    pts.append(dist + 2)
+    pts.append(dist - random.uniform(2, 3.5))
+    return pts
+
+
 async def _try_slider(page) -> bool:
-    """滑块自动拖：以「拖动滑块完成拼图」文本为锚定轨道，几何抓柄
-    （圆柄必在轨道左端 ~22px 中心），物理轨迹拖动 + 诊断输出。"""
+    """极验拼图自动拖：canvas 缺口检测 → 比例换算拖距 → 仿真轨迹。
+    弹窗若是「网络不给力」错误面板，先点「重试」重开拼图。"""
     try:
-        geo = await page.evaluate(
-            """() => {
-                const out = {iframes: [...document.querySelectorAll('iframe')]
-                             .map(f => (f.src || '').slice(0, 80))};
-                const all = [...document.querySelectorAll('*')]
-                    .filter(e => /拖动滑块完成拼图/.test(e.textContent || ''));
-                out.bar_n = all.length;
-                if (!all.length) { out.stage = 'no-bar'; return out; }
-                const leaf = all.find(e =>
-                    (e.textContent || '').length < 30) || all[all.length - 1];
-                out.leaf = {tag: leaf.tagName,
-                            cls: String(leaf.className || '').slice(0, 60)};
-                const track = leaf.closest('div[class]') ||
-                              leaf.parentElement;
-                if (!track) { out.stage = 'no-track'; return out; }
-                const tr = track.getBoundingClientRect();
-                out.stage = 'ok';
-                out.track = {cls: String(track.className || '').slice(0, 60),
-                             x: tr.x, y: tr.y, w: tr.width, h: tr.height};
-                return out;
-            }""")
-        print("[login] 滑块诊断：%s" % json.dumps(geo, ensure_ascii=False)[:300])
-        if not isinstance(geo, dict) or geo.get("stage") != "ok":
+        btn = page.locator(".geetest_slider_button").first
+        try:
+            await btn.wait_for(state="visible", timeout=2500)
+        except Exception:
+            # 错误面板 → 点重试重开
+            try:
+                rst = page.get_by_text("重试", exact=False).first
+                if await rst.is_visible(timeout=1200):
+                    await rst.click(timeout=2000)
+                    print("[login] 错误面板已点重试，重开拼图")
+                    await page.wait_for_timeout(1500)
+            except Exception:
+                pass
+        box = await btn.bounding_box(timeout=4000)
+        if not box:
+            print("[login] 无 geetest_slider_button")
             return False
-        tr = geo["track"]
-        sx = tr["x"] + 22                      # 圆柄中心：轨道左端 ~22px
-        sy = tr["y"] + tr["h"] / 2
-        dist = max(120, tr["w"] - 55)
-        print("[login] 几何抓柄 (%.0f,%.0f) 拖距 %.0fpx" % (sx, sy, dist))
+        gap = await _geetest_gap(page)
+        if not gap or gap.get("err") or gap.get("gapX", -1) < 0:
+            print("[login] 缺口检测失败：%s" % json.dumps(
+                gap, ensure_ascii=False)[:120])
+            return False
+        bg = page.locator(".geetest_canvas_bg").first
+        bbox = await bg.bounding_box(timeout=3000)
+        if not bbox:
+            return False
+        scale = bbox["width"] / gap["w"]        # canvas 像素 → 显示 px
+        dist = gap["gapX"] * scale
+        print("[login] 缺口 x=%d/%dpx diff=%.1f 比例=%.2f → 拖距 %.0fpx"
+              % (gap["gapX"], gap["w"], gap["diff"], scale, dist))
+        if gap["diff"] < 5:
+            print("[login] 边缘差过弱（%.1f<5），疑似无缺口特征" % gap["diff"])
+            return False
         import random
+        sx = box["x"] + box["width"] / 2
+        sy = box["y"] + box["height"] / 2
         await page.mouse.move(sx, sy)
         await page.mouse.down()
-        steps = 30
-        for i in range(steps):
-            r = (i + 1) / steps
-            ease = 1 - (1 - r) ** 2
-            await page.mouse.move(sx + dist * ease,
-                                  sy + random.uniform(-2, 2))
-            await page.wait_for_timeout(random.randint(8, 25))
-        await page.mouse.move(sx + dist + 3, sy)
-        await page.wait_for_timeout(120)
-        await page.mouse.move(sx + dist - 2, sy)   # 过冲回弹
+        yoff = 0.0
+        for px in _human_track(dist):
+            yoff = yoff * 0.9 + random.uniform(-1, 1)
+            await page.mouse.move(sx + px, sy + yoff)
+            await page.wait_for_timeout(random.randint(12, 20))
+        await page.wait_for_timeout(random.randint(120, 260))
         await page.mouse.up()
-        print("[login] 滑块轨迹拖放完成")
+        print("[login] 滑块轨迹拖放完成（缺口 %.0fpx）" % dist)
         return True
     except Exception as e:
         print("[login] 滑块自动拖失败：%s" % str(e)[:60])
@@ -427,23 +523,36 @@ def main() -> int:
                     help="token 池条目名（如 tok-u-150）")
     ap.add_argument("--headless", action="store_true")
     ap.add_argument("--no-pool", action="store_true")
+    ap.add_argument("--qr", action="store_true",
+                    help="扫码登录（雪球 App 扫窗内二维码，免滑块）")
     ap.add_argument("--wait-human", type=int, default=180)
     a = ap.parse_args()
 
     if a.probe:
         asyncio.run(_probe_async(headless=a.headless))
         return 0
-    if not (a.user and a.password and a.name):
-        print("需要 --user --password --name（或 --probe）")
-        return 1
-
-    try:
-        tok, _cookies = asyncio.run(_login_async(
-            a.user, a.password, headless=a.headless,
-            wait_human=a.wait_human))
-    except Exception as e:
-        print("[FATAL] 登录失败：%s" % str(e)[:200])
-        return 2
+    if a.qr:
+        if not a.name:
+            print("扫码模式需要 --name")
+            return 1
+        try:
+            tok, _cookies = asyncio.run(_login_async(
+                "", "", headless=a.headless, wait_human=a.wait_human,
+                mode="qr"))
+        except Exception as e:
+            print("[FATAL] 扫码登录失败：%s" % str(e)[:200])
+            return 2
+    else:
+        if not (a.user and a.password and a.name):
+            print("需要 --user --password --name（或 --probe/--qr）")
+            return 1
+        try:
+            tok, _cookies = asyncio.run(_login_async(
+                a.user, a.password, headless=a.headless,
+                wait_human=a.wait_human, mode="pwd"))
+        except Exception as e:
+            print("[FATAL] 登录失败：%s" % str(e)[:200])
+            return 2
 
     tp = verify_token(tok)
     print("[verify] token_probe ok=%s valid=%s latency=%dms err=%s"
