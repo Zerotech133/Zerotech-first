@@ -35,7 +35,12 @@ LOG = BASE / "data" / "shadow" / "monday_checkpoint.log"
 BASKET_N = 5  # 茅台/五粮液/平安/宁德/招行（run_shadow.BASKET）
 LAST_V0_DAY = "2026-10-14"  # 存量 v0 行末日：最新交易日未超过它=首跑未发生
 WAIT_SECONDS = 90            # 首跑未完成时的重试间隔
-MAX_WAIT_ROUNDS = 14         # 21 分钟：17:25 起可等到 ~17:46（预演实测全程 28 分钟）
+# 30 分钟：17:25 起可等到 ~17:55。依据＝预演实测全程 27m55s（17:10 起跑 →
+# ~17:38 结束），原 14 轮（21 分钟）只留 8 分钟余量（29%）——冷启模型加载、
+# Ollama 排队、行情源抖动任一项超预期即触发**假 FAIL**，而假 FAIL 与真 FAIL
+# 在日志形态上一模一样，是门 3 最难判的一类风险。放宽只影响「本来就该等」的
+# 坏情况，正常路径（首跑 ~17:38 完成）第 1 轮就 break，零延迟代价。
+MAX_WAIT_ROUNDS = 20         # 30 分钟
 
 DK_FIELDS = ("dk_signal", "dk_regime", "dk_profile",
              "dk_blocked", "dk_reason", "dk_error")
@@ -52,11 +57,25 @@ def _today_done(rows, latest):
                if r.get("date") == latest and r.get("status") == "done")
 
 
+def _basket_complete(todays):
+    """当日 done 行是否已覆盖整个篮子：行数 >= BASKET_N **且**标的齐全。
+
+    与 _needs_wait 同源——等待在行数达到 BASKET_N 即停，断言就必须是
+    「够不够」而不是「是不是正好 5」。写成 `== BASKET_N` 时，一旦账本多出
+    重复行（run_shadow 双跑），等待会正常结束而断言判 FAIL，且 FAIL 文案
+    与真正的失败无法区分。
+    标的集合校验则比 `==` 更严：4 个标的 + 1 条重复（共 5 行）旧实现会 PASS。
+    """
+    return (len(todays) >= BASKET_N
+            and len({r.get("symbol") for r in todays}) == BASKET_N)
+
+
 def _needs_wait(rows, latest, is_monday):
     """周一巡检是否应继续等首跑完成。
 
-    **等待条件必须与最终断言同源**：断言是「latest 日 done 行数 == BASKET_N」，
-    所以等待条件也必须是「该日 done 行数 < BASKET_N」。只等「完全没有新行」
+    **等待条件必须与最终断言同源**：断言是「latest 日 done 行数 >= BASKET_N
+    且不同标的数 == BASKET_N」，所以等待条件也必须是「该日 done 行数
+    < BASKET_N」（到量即走，不再多等）。只等「完全没有新行」
     会漏掉「部分落账」这个真实危险窗口——真实时序是先落 1 行，`latest` 立刻
     越过 v0 日期，旧条件随即 break，然后带着 2-3/5 行去断言 ==5 判 FAIL
     （10-17 隔离预演实测：5 篮子全程 27m55s > 17:10→17:25 的 15 分钟窗口）。
@@ -232,10 +251,20 @@ def main():
         else:
             todays = [r for r in rows if r.get("date") == latest
                       and r.get("status") == "done"]
+            # 断言上界必须与等待条件同源：等待在「done 行数 >= BASKET_N」即
+            # 停止（_needs_wait 返回 False），若此处仍写 `== BASKET_N`，一旦
+            # 账本多出重复行（run_shadow 双跑）就会「等到 6 行 → 断言 ==5 →
+            # 判 FAIL」，而 FAIL 文案与真正的失败无法区分。
+            # 改为「>= BASKET_N 且不同标的数 == BASKET_N」：既与等待同源，
+            # 又比原来的 == 更严——4 个标的 + 1 条重复（共 5 行）旧码会 PASS。
+            syms = {r.get("symbol") for r in todays}
             check("最新交易日 %s done 行数=%d（预期 %d）"
                   % (latest, len(todays), BASKET_N),
-                  len(todays) == BASKET_N,
-                  "账本总行数 %d（v0 存量 + 新行）" % len(rows))
+                  _basket_complete(todays),
+                  "不同标的 %d 个；账本总行数 %d（v0 存量 + 新行）%s"
+                  % (len(syms), len(rows),
+                     "" if len(todays) == BASKET_N else
+                     "；行数>篮子数=疑似重复写入，须查 run_shadow 是否双跑"))
             m5_rows = [r for r in todays
                        if r.get("schema_version") == "m5.v1"]
             check("首跑行全带 schema_version=m5.v1",

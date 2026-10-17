@@ -73,10 +73,45 @@ def test_non_monday_never_blocks():
 
 
 def test_wait_budget_covers_rehearsal_window():
-    """等待预算必须覆盖预演实测全程（28 分钟）减去 17:10→17:25 的 15 分钟。"""
+    """等待预算必须覆盖预演实测全程（28 分钟）减去 17:10→17:25 的 15 分钟，
+    并留足余量：冷启模型加载/Ollama 排队/行情抖动任一超预期都会造**假 FAIL**，
+    而假 FAIL 与真 FAIL 在日志形态上无法区分（门 3 最难判的一类风险）。
+    原 21 分钟只给 8 分钟余量（29%）→ 抬到 30 分钟。"""
     budget_min = mc.MAX_WAIT_ROUNDS * mc.WAIT_SECONDS / 60.0
     assert budget_min >= 13, "预算 %.1f 分钟不足以覆盖 17:25 后的剩余 %.0f 分钟" % (
         budget_min, 28 - 15)
+    assert budget_min >= 25, (
+        "预算 %.1f 分钟对 13 分钟实际需求余量不足 2 倍——假 FAIL 风险" % budget_min)
+
+
+# ------------------------------------------------- 断言与等待同源（篮子齐备）
+
+def test_basket_complete_normal():
+    assert mc._basket_complete(_rows(mc.BASKET_N)) is True
+
+
+def test_basket_complete_duplicate_row_still_complete():
+    """★双跑留下 6 行（5 标的 + 1 重复）不该判 FAIL——与 _needs_wait 同源。
+    旧断言 `len(todays) == BASKET_N` 在此处会判 FAIL，而等待循环早已正常
+    结束（>= 到量即走），FAIL 文案与真正的失败一模一样。"""
+    rows = _rows(mc.BASKET_N)
+    rows.append(dict(rows[0]))  # 同一标的重复落账
+    assert len(rows) == mc.BASKET_N + 1
+    assert mc._basket_complete(rows) is True
+
+
+def test_basket_complete_missing_symbol_fails():
+    """5 行但只覆盖 4 个标的（有重复）＝篮子没齐，必须判 FAIL。
+    旧断言按行数 ==5 会误判 PASS。"""
+    rows = _rows(mc.BASKET_N - 1)
+    rows.append(dict(rows[0]))
+    assert len(rows) == mc.BASKET_N
+    assert mc._basket_complete(rows) is False
+
+
+def test_basket_complete_partial_and_empty():
+    for n in (0, 1, 4):
+        assert mc._basket_complete(_rows(n)) is False, "n=%d 不应判齐备" % n
 
 
 if __name__ == "__main__":
