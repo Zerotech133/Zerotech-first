@@ -1108,6 +1108,7 @@
           "grade": "E3",
           "grade_note": "30年档：方案级走形裁定·渗透/反渗透·压测与瓶颈定位（研发质量对抗线）",
           "llm_binding": "glm/glm-4.6",
+          "binding_note": "模型名=注册语义，实际通道由调用方 key 决定（P0-4 判例 2026-10-17）：zhipu_key(6546) 包年——anthropic 端点 /api/anthropic/v1/messages glm-4.6 实测可用、coding 端点 /api/coding/paas/v4 glm-5.3/5.3-flash 全通；GLM_API_KEY(379b) 已 429[1113]余额不足勿用；若某 key 请求 4.6 静默降档为 5.3-flash 即 key 档位不足信号。调用方统一 zhipu_key 优先（a0_agent.py 已同口径）",
           "tools": [
             "devtask",
             "events"
@@ -1474,6 +1475,7 @@
           "role_profile": "opt1_workflow_optimizer",
           "charter_detail": "E2·影子期·流程优化师：不执行不评判只改工作流（MASS 优化者席位）；依据 A0 判读产出候选提案，只写候选区，生产注册表只读",
           "llm_binding": "glm/glm-4.6",
+          "binding_note": "模型名=注册语义，实际通道由调用方 key 决定（P0-4 判例 2026-10-17）：zhipu_key(6546) 包年——anthropic 端点 /api/anthropic/v1/messages glm-4.6 实测可用、coding 端点 /api/coding/paas/v4 glm-5.3/5.3-flash 全通；GLM_API_KEY(379b) 已 429[1113]余额不足勿用；若某 key 请求 4.6 静默降档为 5.3-flash 即 key 档位不足信号。调用方统一 zhipu_key 优先（a0_agent.py 已同口径）",
           "tools": [],
           "memory_grants": {
             "read": [
