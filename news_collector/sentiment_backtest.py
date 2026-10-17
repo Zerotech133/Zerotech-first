@@ -122,7 +122,9 @@ def _parse_day(ts, created_at):
 
 
 def _load_samples():
-    """news.db → 去重前原始 A 股判定列表 [{code, day, bias, conf}]。"""
+    """news.db → 去重前原始 A 股判定列表 [{code, day, bias, conf, scope}]。
+
+    K-ORG-156：追加捕获 scope（scope 分布统计用；一码一日去重口径不变）。"""
     if not os.path.exists(DB):
         return []
     wnames = _watch_names()
@@ -141,6 +143,7 @@ def _load_samples():
             continue  # 豁免（C2批2）：jev 坏行跳过，正常容错
         bias = j.get("bias")
         conf = j.get("conf")
+        scope = j.get("scope") or ""
         if bias not in SCORE or not isinstance(conf, (int, float)):
             continue
         codes = set()
@@ -164,7 +167,7 @@ def _load_samples():
                     codes.add(m.group(1) + suf)
         for c in codes:
             raw.append({"code": c, "day": day, "bias": bias,
-                        "conf": float(conf)})
+                        "conf": float(conf), "scope": scope})
     conn.close()
     # 一码一日取最高置信（同置信 bear 优先，保守口径）
     rank = {"bear": 0, "bull": 1, "neutral": 2}
@@ -258,51 +261,69 @@ def run():
     print("BT daily panel %s ~ %s ..." % (start, end))
     close, pct, mkt = _daily_panel(start, end)
 
+    def _day_pct(d_cur, d_prev):
+        """单交易日涨跌%：优先 ts_daily pct_chg（除权校正），回退收盘比值。"""
+        if not (d_cur and d_prev):
+            return None
+        p = pct.get(r["code"], {}).get(d_cur)
+        if p is not None:
+            return round(p * 100, 2)
+        cc = close.get(r["code"], {}).get(d_cur)
+        cp = close.get(r["code"], {}).get(d_prev)
+        if cc and cp and cp > 0:
+            return round((cc / cp - 1) * 100, 2)
+        return None
+
     rows, drop_no_px = [], 0
     for r in samples:
         b = base_of(r["day"])
         t1 = next_of(b) if b else None
         t2 = next_of(t1) if t1 else None
+        t3 = next_of(t2) if t2 else None
+        t4 = next_of(t3) if t3 else None
+        t5 = next_of(t4) if t4 else None
         cb = close.get(r["code"], {}).get(b) if b else None
         c1 = close.get(r["code"], {}).get(t1) if t1 else None
-        c2 = close.get(r["code"], {}).get(t2) if t2 else None
         if not (cb and c1 and cb > 0):
             drop_no_px += 1
             continue
         row = dict(r)
-        # T+1/T+2 涨跌：优先 ts_daily pct_chg（除权校正），回退收盘比值
-        p1 = pct.get(r["code"], {}).get(t1)
-        row["pct1"] = round((p1 if p1 is not None else (c1 / cb - 1)) * 100,
-                            2)
-        p2 = pct.get(r["code"], {}).get(t2) if t2 else None
-        row["pct2"] = round((p2 if p2 is not None else
-                             (c2 / c1 - 1 if c2 and c1 > 0 else 0)) * 100, 2) \
-            if (p2 is not None or (c2 and c1 > 0)) else None
+        # T+1/2/3/5 涨跌（K-ORG-156 扩到 1/3/5 日窗口，借鉴 Qlib 事件研究）
+        row["pct1"] = _day_pct(t1, b)
+        row["pct2"] = _day_pct(t2, t1)
+        row["pct3"] = _day_pct(t3, t2)
+        row["pct5"] = _day_pct(t5, t4)
         row["mkt1"] = round(mkt.get(t1, 0.0) * 100, 2) if t1 in mkt else None
         row["mkt2"] = round(mkt.get(t2, 0.0) * 100, 2) \
             if (t2 and t2 in mkt) else None
+        row["mkt3"] = round(mkt.get(t3, 0.0) * 100, 2) \
+            if (t3 and t3 in mkt) else None
+        row["mkt5"] = round(mkt.get(t5, 0.0) * 100, 2) \
+            if (t5 and t5 in mkt) else None
+        # 逐行超额收益（vs 当日全市场均值，tiers/scope 分层用）
+        row["vs_mkt1"] = round(row["pct1"] - row["mkt1"], 2) \
+            if row["mkt1"] is not None else None
         row["t1"] = t1
         rows.append(row)
 
-    # ── 分组统计 ─────────────────────────────────────────
+    # ── 分组统计（K-ORG-156 含 T+3/T+5 窗口）────────────────
     groups = {}
     for b in ("bull", "bear", "neutral"):
         sub = [r for r in rows if r["bias"] == b]
         n = len(sub)
         g = {"n": n}
         if n:
-            g["pct1_avg"] = round(sum(r["pct1"] for r in sub) / n, 2)
-            m1 = [r["mkt1"] for r in sub if r["mkt1"] is not None]
-            g["vs_mkt1"] = round(g["pct1_avg"] - sum(m1) / len(m1), 2) \
-                if m1 else None
-            sub2 = [r for r in sub if r["pct2"] is not None]
-            if sub2:
-                g["pct2_avg"] = round(
-                    sum(r["pct2"] for r in sub2) / len(sub2), 2)
-                m2 = [r["mkt2"] for r in sub2 if r["mkt2"] is not None]
-                g["vs_mkt2"] = round(
-                    g["pct2_avg"] - sum(m2) / len(m2), 2) if m2 else None
-                g["pct2_n"] = len(sub2)
+            for k in (1, 2, 3, 5):
+                subk = [r for r in sub if r.get("pct%d" % k) is not None]
+                if not subk:
+                    continue
+                g["pct%d_avg" % k] = round(
+                    sum(r["pct%d" % k] for r in subk) / len(subk), 2)
+                mk = [r["mkt%d" % k] for r in subk
+                      if r.get("mkt%d" % k) is not None]
+                g["vs_mkt%d" % k] = round(
+                    g["pct%d_avg" % k] - sum(mk) / len(mk), 2) if mk else None
+                g["pct%d_n" % k] = len(subk)
         groups[b] = g
 
     xs = [SCORE[r["bias"]] * r["conf"] for r in rows]
@@ -311,6 +332,53 @@ def run():
     hi = [r for r in rows if r["conf"] >= 0.8]
     corr_hi = _corr([SCORE[r["bias"]] * r["conf"] for r in hi],
                     [r["pct1"] for r in hi]) if len(hi) >= 3 else None
+
+    # ── conf 分层命中率验证（K-ORG-156，借鉴 finBERT 置信度分层）──
+    # 逐档统计方向样本（多头+空头）的 T+1 方向命中率与 vs 市场一致性，
+    # 回答核心问题：conf 越高，判定是否真的越准（单调性）。
+    CONF_TIERS = ((0.5, 0.6), (0.6, 0.7), (0.7, 0.8), (0.8, 0.9), (0.9, 1.01))
+    DIRS = {"bull": 1.0, "bear": -1.0}
+    tiers = []
+    for tlo, thi in CONF_TIERS:
+        sub = [r for r in rows if tlo <= r["conf"] < thi]
+        dr = [r for r in sub if r["bias"] in DIRS]
+        t = {"tier": "%.1f~%.1f" % (tlo, thi), "n": len(sub), "n_dir": len(dr)}
+        if dr:
+            hit = sum(1 for r in dr if r["pct1"] is not None
+                      and DIRS[r["bias"]] * r["pct1"] > 0)
+            t["hit_pct1"] = round(hit / len(dr) * 100, 1)
+            vm = [r for r in dr if r.get("vs_mkt1") is not None]
+            if vm:
+                t["dir_vs_mkt1"] = round(
+                    sum(DIRS[r["bias"]] * r["vs_mkt1"] for r in vm) / len(vm),
+                    2)
+            t["corr_pct1"] = _corr(
+                [DIRS[r["bias"]] * r["conf"] for r in dr],
+                [r["pct1"] for r in dr])
+        tiers.append(t)
+    seq = [t["hit_pct1"] for t in tiers if t.get("hit_pct1") is not None]
+    mono = all(b >= a for a, b in zip(seq, seq[1:])) if len(seq) >= 2 else None
+
+    # ── scope 分布（K-ORG-156）：全样本分布 + 可成交样本按 scope 分组 ──
+    scope_dist = {}
+    for r in samples:
+        sc = r.get("scope") or "?"
+        scope_dist[sc] = scope_dist.get(sc, 0) + 1
+    scope_groups = {}
+    for r in rows:
+        sc = r.get("scope") or "?"
+        g = scope_groups.setdefault(sc, {"n": 0, "s1": 0.0, "s2": 0.0,
+                                         "vm_n": 0})
+        g["n"] += 1
+        if r["pct1"] is not None:
+            g["s1"] += r["pct1"]
+        if r.get("vs_mkt1") is not None:
+            g["s2"] += r["vs_mkt1"]
+            g["vm_n"] += 1
+    for sc, g in scope_groups.items():
+        g["pct1_avg"] = round(g.pop("s1") / g["n"], 2)
+        vm_n = g.pop("vm_n")
+        g["vs_mkt1"] = round(g.pop("s2") / vm_n, 2) if vm_n else None
 
     result = {
         "generated_at": _now_iso(),
@@ -322,6 +390,10 @@ def run():
         "corr_score_pct1": corr_all,
         "n_high_conf": len(hi),
         "corr_score_pct1_high_conf": corr_hi,
+        "conf_tiers": tiers,
+        "conf_monotone": mono,
+        "scope_dist": scope_dist,
+        "scope_groups": scope_groups,
         "rows": rows,
     }
 
@@ -333,17 +405,38 @@ def run():
     print("（缺 T+1 行情剔除 %d 条，多为节后(10-08)才补行情的新样本）"
           % drop_no_px)
     print("-" * 62)
-    print("%-6s %6s %10s %10s %10s %10s"
-          % ("组别", "n", "T+1均值%", "vs市场%", "T+2均值%", "vs市场%"))
+    print("%-6s %6s %10s %10s %10s %10s %10s %10s"
+          % ("组别", "n", "T+1均值%", "vs市场%", "T+2均值%", "T+3均值%",
+             "T+5均值%", "vs市场5%"))
     for b in ("bull", "bear", "neutral"):
         g = groups[b]
-        print("%-6s %6d %10s %10s %10s %10s" % (
+        print("%-6s %6d %10s %10s %10s %10s %10s %10s" % (
             SCORE_CN[b], g["n"],
             g.get("pct1_avg", "-"), g.get("vs_mkt1", "-"),
-            g.get("pct2_avg", "-"), g.get("vs_mkt2", "-")))
+            g.get("pct2_avg", "-"), g.get("pct3_avg", "-"),
+            g.get("pct5_avg", "-"), g.get("vs_mkt5", "-")))
     print("-" * 62)
     print("corr(情绪加权分, T+1) = %s   高置信(≥0.8) n=%d corr = %s"
           % (corr_all, len(hi), corr_hi))
+    print("-" * 62)
+    print("conf 分层（方向样本 T+1 命中率/一致性/相关）  单调=%s"
+          % (mono is True and "是" or (mono is False and "否" or "样本不足")))
+    print("%-10s %5s %6s %9s %12s %8s"
+          % ("conf档", "n", "方向n", "命中%", "方向vs市场", "corr"))
+    for t in tiers:
+        print("%-10s %5d %6d %9s %12s %8s" % (
+            t["tier"], t["n"], t["n_dir"],
+            ("%.1f%%" % t["hit_pct1"]) if t.get("hit_pct1") is not None else "-",
+            _sgn(t.get("dir_vs_mkt1"), "pp"),
+            t.get("corr_pct1", "-")))
+    if scope_dist:
+        print("-" * 62)
+        print("scope 分布：%s"
+              % " ".join("%s=%d" % (sc, n) for sc, n in scope_dist.items()))
+        if scope_groups:
+            print("可成交按 scope：%s" % " ".join(
+                "%s n=%d T+1 %s" % (sc, gg["n"], _sgn(gg.get("pct1_avg")))
+                for sc, gg in scope_groups.items()))
     print("=" * 62)
 
     _write_json(RESULT, result)
@@ -382,8 +475,20 @@ def build_bt_card(result):
                 _sgn(gg.get("pct1_avg")), _sgn(gg.get("vs_mkt1"), "pp"),
                 _sgn(gg.get("pct2_avg")), _sgn(gg.get("vs_mkt2"), "pp")))
     md3 = ("**corr**(情绪加权分 × T+1) = **%s** ｜ 高置信(≥0.8) n=%d，"
-           "corr = %s" % (result["corr_score_pct1"], result["n_high_conf"],
-                          result["corr_score_pct1_high_conf"]))
+           "corr = %s\n\n" % (result["corr_score_pct1"], result["n_high_conf"],
+                             result["corr_score_pct1_high_conf"]))
+    # K-ORG-156：conf 分层命中率摘要（方向样本 T+1 命中率随置信档变化）
+    conf_line = []
+    for t in result.get("conf_tiers", []):
+        if t.get("hit_pct1") is not None and t["n_dir"] >= 5:
+            conf_line.append("%s档 %s%%(n=%d)"
+                             % (t["tier"], t["hit_pct1"], t["n_dir"]))
+    if conf_line:
+        mono = result.get("conf_monotone")
+        md3 += ("conf分层T+1命中：%s%s" % (
+            " → ".join(conf_line),
+            "（单调↑）" if mono is True else
+            ("（非单调）" if mono is False else "")))
     footer = ("口径：一码一日去重 · T+1 可成交 · pct_chg 除权校正 ｜ "
               "%s 生成 · StockCorrBacktest 每日 20:35 自动刷新"
               % result["generated_at"][:16].replace("T", " "))
@@ -396,21 +501,28 @@ def build_bt_card(result):
 def _plain_msg(result):
     """纯文本降级模板（卡片发送失败时用）。"""
     g = result["groups"]
-    return ("📊 情绪×次日涨跌 回测刷新（n=%d，新闻 %s~%s）\n"
-            "偏多 n=%d T+1 %s（vs市场 %s）\n"
-            "偏空 n=%d T+1 %s（vs市场 %s）\n"
-            "中性 n=%d T+1 %s\n"
-            "corr=%s｜高置信 n=%d corr=%s\n"
-            "口径：一码一日去重、T+1 可成交、缺行情剔除"
-            % (result["n"], result["news_day_range"][0],
-               result["news_day_range"][1],
-               g["bull"]["n"], _sgn(g["bull"].get("pct1_avg")),
-               _sgn(g["bull"].get("vs_mkt1"), "pp"),
-               g["bear"]["n"], _sgn(g["bear"].get("pct1_avg")),
-               _sgn(g["bear"].get("vs_mkt1"), "pp"),
-               g["neutral"]["n"], _sgn(g["neutral"].get("pct1_avg")),
-               result["corr_score_pct1"], result["n_high_conf"],
-               result["corr_score_pct1_high_conf"]))
+    msg = ("📊 情绪×次日涨跌 回测刷新（n=%d，新闻 %s~%s）\n"
+           "偏多 n=%d T+1 %s（vs市场 %s）\n"
+           "偏空 n=%d T+1 %s（vs市场 %s）\n"
+           "中性 n=%d T+1 %s\n"
+           "corr=%s｜高置信 n=%d corr=%s\n"
+           "口径：一码一日去重、T+1 可成交、缺行情剔除"
+           % (result["n"], result["news_day_range"][0],
+              result["news_day_range"][1],
+              g["bull"]["n"], _sgn(g["bull"].get("pct1_avg")),
+              _sgn(g["bull"].get("vs_mkt1"), "pp"),
+              g["bear"]["n"], _sgn(g["bear"].get("pct1_avg")),
+              _sgn(g["bear"].get("vs_mkt1"), "pp"),
+              g["neutral"]["n"], _sgn(g["neutral"].get("pct1_avg")),
+              result["corr_score_pct1"], result["n_high_conf"],
+              result["corr_score_pct1_high_conf"]))
+    conf_line = []
+    for t in result.get("conf_tiers", []):
+        if t.get("hit_pct1") is not None and t["n_dir"] >= 5:
+            conf_line.append("%s档%s%%" % (t["tier"], t["hit_pct1"]))
+    if conf_line:
+        msg += "\nconf分层命中：%s" % " / ".join(conf_line)
+    return msg
 
 
 def _maybe_push(result):
