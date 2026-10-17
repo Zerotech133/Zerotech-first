@@ -37,7 +37,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "data" / "xueqiu" / "xueqiu_info.db"
-LOG_DIR = HERE / "logs"
+LOG_DIR = Path(r"C:\aios\automation_runs") / "xq_classify"   # 定时任务产物统一根（2026-10-18 老田拍板）
 STATUS_LOG = LOG_DIR / "xq_classify_status.log"
 
 MODEL = "qwen3.5:9b"

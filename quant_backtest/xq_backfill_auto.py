@@ -2,7 +2,7 @@
 """雪球深挖自动轮 wrapper：定时任务入口。
 
 职责：
-  1. 读状态文件 data/xueqiu/backfill_state.json——done=true 直接退出（深挖已补完，
+  1. 读状态文件 C:/aios/automation_runs/xq_backfill/backfill_state.json——done=true 直接退出（深挖已补完，
      日常增量走 18:00 XueqiuCrawl 生产轮，本 wrapper 不再发请求）；
   2. 跑一轮 xq_collect_1000.py --target 500（输出独立文件，不碰生产日志）；
   3. 解析本轮净增：>=50 视为空间存活（重置低产计数）；<50 累计低产计数；
@@ -21,10 +21,11 @@ import time
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-STATE_PATH = os.path.join(HERE, "data", "xueqiu", "backfill_state.json")
-LOCK_PATH = os.path.join(HERE, "data", "xueqiu", "backfill.lock")
+RUNS_ROOT = r"C:\aios\automation_runs"   # 定时任务产物统一根（2026-10-18 老田拍板：产物/日志/临时文件不再散落）
+STATE_PATH = os.path.join(RUNS_ROOT, "xq_backfill", "backfill_state.json")
+LOCK_PATH = os.path.join(RUNS_ROOT, "xq_backfill", "backfill.lock")
 LOCK_STALE_SEC = 45 * 60    # 锁超过 45 分钟视为残留（正常轮 10-20 分钟），自愈抢断
-LOG_DIR = os.path.join(HERE, "logs")
+LOG_DIR = os.path.join(RUNS_ROOT, "xq_backfill")
 STATUS_LOG = os.path.join(LOG_DIR, "xq_backfill_status.log")
 PY = r"C:\Program Files\Python311\python.exe"
 TARGET = 500

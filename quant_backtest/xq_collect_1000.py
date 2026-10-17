@@ -41,7 +41,8 @@ COUNT = 20
 MAX_BLOCK_STREAK = 5
 MAX_PAGES_PER_CAT = 120                # 单类目每轮步数上限（续翻后每轮全部花在新鲜区）
 MAX_REQUESTS = 640
-CURSOR_PATH = os.path.join(HERE, "data", "xueqiu", "backfill_cursor.json")
+CURSOR_PATH = os.path.join(r"C:\aios\automation_runs", "xq_backfill",
+                           "backfill_cursor.json")   # 定时任务产物统一根（2026-10-18）
 
 STATUS_FIELDS = ("view_count", "comment_count", "retweet_count",
                  "like_count", "reward_count")
