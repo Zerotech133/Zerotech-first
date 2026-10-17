@@ -115,11 +115,33 @@ def stance_groups(per_symbol_latest: dict) -> dict:
     return groups
 
 
+def persist_eval_rows(persist_rows, persist_root):
+    """M4-P5：绩效入账 + 阵容校准起草。M5-P2 安全阀后本函数只持显式 root 调用
+    （persist_root 必非空——拒写判定在 main 侧，此处双保险防直接调用绕过）。"""
+    if persist_root is None:
+        raise ValueError("[安全阀 M5-P2] persist_root 必须显式（演示永不落真仓）")
+    from adapters.trace_link import LinkStore
+    from engine.perf_ledger import record_perf_rows, auto_draft_roster
+    rep = record_perf_rows(persist_rows, source="eval-shadow", root=persist_root,
+                           link_store=LinkStore(persist_root / "trace" / "trace_links.jsonl"),
+                           declared_at=datetime.now().isoformat(timespec="seconds"))
+    print("[J4 perf] 沉淀 recorded=%d replayed=%d skipped=%d findings=%d"
+          % (rep["recorded"], rep["replayed"], rep["skipped"],
+             len(rep["findings"])))
+    for f in rep["findings"][:3]:
+        print("  [perf-finding] %s" % f)
+    drafted, df = auto_draft_roster(root=persist_root)
+    return rep, drafted, df
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min-days", type=int, default=5)
     ap.add_argument("--no-persist", action="store_true",
                     help="M4-P5：跳过 perf_ledger 入账与阵容校准起草")
+    ap.add_argument("--persist-root", default="",
+                    help="M5-P2 安全阀：persist 需显式账本根目录（生产=agent_platform"
+                         " 目录；演示=tmp）。缺省拒写（演示永不落真仓）")
     args = ap.parse_args()
 
     rows = load_ledger()
@@ -237,19 +259,18 @@ def main():
 
     # M4-P5：绩效入账 + 阵容校准起草（fail-open——影子主判读零依赖，
     # 起草是 intel draft 建议权，adopt 仍人工凭据）
-    if not args.no_persist and persist_rows:
+    # M5-P2 演示隔离安全阀：persist 需显式 --persist-root，缺省拒写
+    # （污染判例：验收演示未隔离 root，构造行落真仓，10-17 两次复发）。
+    # fail-safe 取向：计划任务若未同步传参会静默少沉淀（不出错账），宁可误拒。
+    if args.no_persist:
+        pass
+    elif not args.persist_root:
+        print("[安全阀 M5-P2] persist 已拒：无显式 --persist-root（演示永不落真仓）。"
+              "生产=--persist-root %s；演示=--persist-root <tmp> 或 --no-persist"
+              % BASE)
+    elif persist_rows:
         try:
-            from adapters.trace_link import LinkStore
-            from engine.perf_ledger import record_perf_rows, auto_draft_roster
-            rep = record_perf_rows(persist_rows, source="eval-shadow",
-                                   link_store=LinkStore(),
-                                   declared_at=datetime.now().isoformat(timespec="seconds"))
-            print("[J4 perf] 沉淀 recorded=%d replayed=%d skipped=%d findings=%d"
-                  % (rep["recorded"], rep["replayed"], rep["skipped"],
-                     len(rep["findings"])))
-            for f in rep["findings"][:3]:
-                print("  [perf-finding] %s" % f)
-            drafted, df = auto_draft_roster()
+            rep, drafted, df = persist_eval_rows(persist_rows, Path(args.persist_root))
             if drafted:
                 for dft in drafted:
                     print("  [roster-draft] %s %s (%s)"

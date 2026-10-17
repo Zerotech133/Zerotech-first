@@ -43,5 +43,46 @@ class DemoGuardTests(unittest.TestCase):
         self.assertEqual(before, after)
 
 
+class EvalShadowGuardTests(unittest.TestCase):
+    """M5-P2 补口：eval_shadow persist 段安全阀（污染源本体——并行会话 62cca0e
+    只阀了 perf_ledger CLI stats，eval_shadow --limit 演示跑仍可落真仓）。"""
+
+    def test_argparse_default_deny(self):
+        # --persist-root 缺省空串 = main 侧拒写分支前提（subprocess 验 --help）
+        import subprocess
+        r = subprocess.run(
+            [sys.executable, str(AP / "eval_shadow.py"), "--help"],
+            capture_output=True, text=True, encoding="utf-8", timeout=30)
+        self.assertIn("--persist-root", r.stdout)
+
+    def test_persist_eval_rows_with_tmp_root(self):
+        # 显式 tmp root：正常落账（perf_ledger + trace_links 链挂接）
+        import eval_shadow as ES
+        root = Path(tempfile.mkdtemp(prefix="m5p2es_"))
+        row = {
+            "date": "2026-10-16", "symbol": "600519", "run_id": "run-es-1",
+            "score": 3.2, "confidence": 0.7, "ret_pct": 1.25, "horizon": 3,
+            "base": 1500.0, "exit": 1518.75, "recommendation": "buy",
+            "stance": "坚守", "dk_regime": "rotation", "dk_profile": "relaxed",
+            "dk_blocked": False,
+        }
+        import io
+        from contextlib import redirect_stdout
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rep, drafted, df = ES.persist_eval_rows([row], root)
+        self.assertEqual(rep["recorded"], 1)
+        self.assertTrue((root / "data" / "perf_ledger.jsonl").exists()
+                        or (root / "perf_ledger.jsonl").exists()
+                        or PL.load_perf_rows(root))  # 落账位置随引擎布局
+        self.assertTrue((root / "trace" / "trace_links.jsonl").exists())
+
+    def test_persist_eval_rows_rejects_empty_root(self):
+        # 防呆：persist_eval_rows 本体不接受空 root（拒写判定在 main，双保险）
+        import eval_shadow as ES
+        with self.assertRaises(Exception):
+            ES.persist_eval_rows([], None)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,8 @@ elseif ($Mode -eq 'eval') {
     # cmd /c byte-level redirect: PS 5.1 native-stdout redirect mangles UTF-8
     # Chinese through GBK decode + UTF-16 rewrite (19:51 log mojibake verdict).
     $log = Join-Path $here 'data\shadow\eval_last_run.log'
-    cmd /c "`"$py`" -X utf8 `"$here\eval_shadow.py`" > `"$log`" 2>&1"
+    # M5-P2 demo guard: persist requires explicit --persist-root (default=deny)
+    cmd /c "`"$py`" -X utf8 `"$here\eval_shadow.py`" --persist-root `"$here`" > `"$log`" 2>&1"
     exit $LASTEXITCODE
 }
 else {
