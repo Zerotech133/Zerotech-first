@@ -320,8 +320,17 @@ def _brief_markdown() -> str:
         lin = _http_get_json("%s/api/kg/lineage?view=breaks" % _PORTAL_API)
         d = lin.get("data") or {}
         broken = d.get("broken") or []
-        lines.append("## 五、数据血缘体检：%d 表在册，断链 %d"
-                     % (d.get("tracked_tables", 0), len(broken)))
+        # P1-A 新鲜度维度：API 附 freshness 汇总时加报 stale（沉默断链：
+        # status=ok 但数据超过 cadence+grace 交易日未更新，管道绿数据馊）
+        fr = d.get("freshness") or {}
+        stale = fr.get("stale") or []
+        if broken or stale:
+            lines.append("## 五、数据血缘体检：%d 表在册，断链 %d，陈旧 %d"
+                         % (d.get("tracked_tables", 0), len(broken),
+                            len(stale)))
+        else:
+            lines.append("## 五、数据血缘体检：%d 表在册，断链 %d"
+                         % (d.get("tracked_tables", 0), len(broken)))
         for r in broken[:6]:
             lines.append("- 🚨 %s [%s]（%s/%s @ %s）"
                          % (r.get("output_table"), r.get("status"),
@@ -329,6 +338,11 @@ def _brief_markdown() -> str:
                             (r.get("started_at") or "")[:19]))
         if len(broken) > 6:
             lines.append("- …共 %d 张断链（详见 /lineage.html）" % len(broken))
+        for r in stale[:4]:
+            lines.append("- 🟡 陈旧 %s（已 %s 个交易日未更新）"
+                         % (r.get("table"), r.get("age_trade_days", "?")))
+        if len(stale) > 4:
+            lines.append("- …共 %d 张陈旧（详见 /lineage.html）" % len(stale))
     except Exception as exc:  # noqa: BLE001
         lines.append("## 五、数据血缘体检：不可达（%s）" % str(exc)[:80])
 

@@ -133,6 +133,8 @@ from api_backtest import (
 import api_flow  # 模块名绑定（多继承基类引用）
 from watch_tower_snapshot import SnapshotAggregator
 # ==== F1 导入结束 ====
+import api_lineage  # 血缘只读 mixin（数据血缘归情报板块，2026-10-17）
+
 
 
 
@@ -543,7 +545,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2878,6 +2880,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         raw = self.path
         path = raw.split("?", 1)[0]
         qs = raw.split("?", 1)[1] if "?" in raw else ""
+        if path == '/api/kg/lineage':
+            # 数据血缘只读端点（情报板块 /lineage.html 数据面）
+            self._lineage(qs)
+            return
         if path == '/api/data/daily' or path.startswith('/api/data/runs/'):
             self._warehouse_update_request('GET',path,qs)
             return

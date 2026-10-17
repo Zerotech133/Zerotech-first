@@ -73,10 +73,32 @@ def verdict_id_for(table_urn: str, job_run_id: str, rnd: int = 1) -> str:
 
 
 # ----------------------------------------------------------------------
+_POOL_PATH_NAME = ("data", "intel_verdicts.jsonl")
+
+
+def pool_path(root: Path = None) -> Path:
+    return (Path(root) if root else _AGENT_PLATFORM).joinpath(
+        *_POOL_PATH_NAME)
+
+
+def hash_entry(entry: Dict) -> str:
+    """裁决条目内容指纹（M3-P3 同构）：canonical JSON → sha256 前 16 位。
+
+    - 排除 content_hash 自身（防自引用）与 `_` 前缀测试辅助字段
+      （load_pool 注入的 _line/_error 不参与指纹）；
+    - 语义：draft 落池盖章 → adopt/reject 凭据绑定 → audit 复核现池行。
+      池行 adopt 后被改写 = 凭据指纹对不上 = 裁决门旁路，audit 亮红。
+    """
+    body = {k: v for k, v in entry.items()
+            if k != "content_hash" and not str(k).startswith("_")}
+    payload = json.dumps(body, ensure_ascii=False, sort_keys=True,
+                         separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
 def load_pool(root: Path = None) -> List[Dict]:
     """裁决池只读加载（行号随行返回，供定位）。"""
-    p = (Path(root) if root else _AGENT_PLATFORM) / "data" / \
-        "intel_verdicts.jsonl"
+    p = pool_path(root)
     if not p.exists():
         return []
     out = []
@@ -122,6 +144,7 @@ def draft(root: Path, entry: Dict, by: str) -> Dict:
     rec = dict(entry)
     rec["drafted_by"] = by
     rec.setdefault("impact", [])
+    rec["content_hash"] = hash_entry(rec)   # 落池盖章（P1-B 裁决门指纹）
     p = (Path(root) if root else _AGENT_PLATFORM) / "data" / \
         "intel_verdicts.jsonl"
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -211,6 +234,8 @@ def auto_draft_from_lineage(root: Path = None,
 
     - 数据源：8091 /api/kg/lineage?view=breaks（fail-visible：网络/接口
       异常返回 {"ok": False, "error": ...}，不抛不吞）；
+    - 断链行（status!=ok）+ 新鲜度 stale 行（P1-A：status=ok 但数据太老
+      = 沉默断链，API 附 freshness 字段时纳入，kind=stale→watch）；
     - 影响面：逐断链表查 view=upstream 取 DISTINCT output_table（以该表
       为输入的产出边 = 真实下游受损面）；
     - 幂等：同 (table, job_run_key) 已在池 → 跳过（重跑零副作用）。
@@ -226,11 +251,18 @@ def auto_draft_from_lineage(root: Path = None,
         return {"ok": False, "drafted": [], "skipped": 0,
                 "error": "lineage API 返回异常: %s"
                          % json.dumps(rep, ensure_ascii=False)[:200]}
-    broken = rep.get("data", {}).get("broken", [])
+    body = rep.get("data", {})
+    broken = list(body.get("broken", []))
+    # P1-A：新鲜度 stale 的 ok 行（沉默断链）也进裁决池（fail-open：
+    # API 未附 freshness 字段时行为与旧版完全一致）
+    stale_ok = [r for r in body.get("all_latest", [])
+                if r.get("freshness") == "stale" and r.get("status") == "ok"]
+    broken_total = len(broken)
+    stale_total = len(stale_ok)
     existing = {e.get("verdict_id") for e in load_pool(root)
                 if "_error" not in e}
     drafted, skipped, errors = [], 0, []
-    for row in broken:
+    for row in broken + stale_ok:
         urn = row.get("output_table", "")
         vid = verdict_id_for(urn, _job_run_key(row))
         if vid in existing:
@@ -249,7 +281,7 @@ def auto_draft_from_lineage(root: Path = None,
         except Exception as exc:  # noqa: BLE001
             errors.append("%s: %s" % (urn or "?", exc))
     out = {"ok": not errors, "drafted": drafted, "skipped": skipped,
-           "broken_total": len(broken)}
+           "broken_total": broken_total, "stale_total": stale_total}
     if errors:
         out["errors"] = errors
     return out
@@ -274,11 +306,14 @@ def adopt(root: Path, vid: str, by: str, reason: str = "",
     own = store is None
     store = store or ApprovalStore(APPROVALS_DB)
     try:
+        # P1-B：凭据绑定内容指纹（旧条目无 hash 则补算现值，等价锚定）
+        entry_hash = entry.get("content_hash") or hash_entry(entry)
         approval, replayed = store.record(Approval(
             target_type="workitem",
             target_id="intel:%s" % vid,
             from_status="pending", to_status="adopted",
             decision="approved", decided_by=by, reason=reason,
+            content_hash=entry_hash,
             idempotency_key="intel:%s:adopt" % vid))
         ms = MemoryStore(root / "data" / "memory", enforce=False)
         if _intel_has(ms, vid):
@@ -296,16 +331,19 @@ def reject(root: Path, vid: str, by: str, reason: str = "",
     if not by:
         raise IntelWiringError("否决人 by 必填")
     root = Path(root) if root else _AGENT_PLATFORM
-    if _pool_entry(load_pool(root), vid) is None:
+    entry = _pool_entry(load_pool(root), vid)
+    if entry is None:
         raise IntelWiringError("裁决池无此 verdict_id：%s" % vid)
     own = store is None
     store = store or ApprovalStore(APPROVALS_DB)
     try:
+        entry_hash = entry.get("content_hash") or hash_entry(entry)
         approval, replayed = store.record(Approval(
             target_type="workitem",
             target_id="intel:%s" % vid,
             from_status="pending", to_status="rejected",
             decision="rejected", decided_by=by, reason=reason,
+            content_hash=entry_hash,
             idempotency_key="intel:%s:reject" % vid))
         return approval, replayed
     finally:
@@ -339,6 +377,23 @@ def audit_report(root: Path = None) -> Dict:
             findings.append("pool 行 %d JSON 损坏" % e["_line"])
             continue
         vid = e.get("verdict_id", "")
+        cred_adopt = next((c for c in creds
+                           if c.idempotency_key == "intel:%s:adopt" % vid),
+                          None)
+        cred_reject = next((c for c in creds
+                            if c.idempotency_key == "intel:%s:reject" % vid),
+                           None)
+        # P1-B 裁决门旁路检测：凭据绑定指纹 vs 现池行重算指纹。
+        # 池行 adopt/reject 后被改写 = 凭据锚的是 A 实际是 B = 亮红。
+        if (cred_adopt or cred_reject) is not None:
+            cred = cred_adopt or cred_reject
+            if cred.content_hash:
+                now_hash = hash_entry(e)
+                if now_hash != cred.content_hash:
+                    findings.append(
+                        "pool_tampered: %s 池行指纹 %s 与凭据 %s 不一致"
+                        "（adopt/reject 后池行被改写，裁决门旁路）"
+                        % (vid, now_hash, cred.content_hash))
         if "intel:%s:adopt" % vid in cred_keys:
             ok = _intel_has(ms, vid)
             states.append({"line": e["_line"], "verdict_id": vid,

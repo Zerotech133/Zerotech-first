@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import urllib.parse as _urlparse
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +32,34 @@ _QBT_DIR = os.path.join(os.path.dirname(_HERE), "quant_backtest")
 _DEFAULT_DSN = "host=127.0.0.1 port=5442 user=quant_user dbname=quant_system"
 
 _VALID_VIEWS = ("breaks", "runs", "upstream", "downstream")
+
+
+def _freshness_mod():
+    """P1-A 新鲜度纯函数模块（agent_platform/adapters）惰性加载。
+
+    fail-open：模块缺失/损坏 → None，亮牌契约不附 freshness 字段，
+    断链亮牌不受影响。
+    """
+    global _FRESHNESS_MOD
+    if _FRESHNESS_MOD is not None:
+        return _FRESHNESS_MOD if _FRESHNESS_MOD is not False else None
+    try:
+        import importlib.util
+        p = os.path.join(os.path.dirname(_HERE), "agent_platform",
+                         "adapters", "lineage_freshness.py")
+        spec = importlib.util.spec_from_file_location(
+            "lineage_freshness_portal", p)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _FRESHNESS_MOD = mod
+    except Exception as _exc:
+        print("[lineage] freshness mod load failed: %r" % (_exc,),
+              file=sys.stderr, flush=True)
+        _FRESHNESS_MOD = False      # 缓存失败态，避免每次请求重试
+    return _FRESHNESS_MOD if _FRESHNESS_MOD else None
+
+
+_FRESHNESS_MOD = None
 
 
 def _lineage_password() -> str:
@@ -128,6 +157,21 @@ class Handler:
                             " WHERE ended_at IS NULL OR status NOT IN ('ok')")
                         total_runs = cur.fetchone()[0]
                         broken = [r for r in latest if r.get("status") != "ok"]
+                        # P1-A 新鲜度维度：ok 但太老 = 沉默断链（管道绿数据馊）。
+                        # fail-open：评估异常不破坏既有亮牌契约，只是不附字段。
+                        freshness_summary = None
+                        try:
+                            _lf = _freshness_mod()
+                            if _lf is not None and latest:
+                                enhanced = _lf.assess(latest,
+                                                      cfg=_lf.load_cadence())
+                                latest = enhanced
+                                freshness_summary = _lf.summarize(enhanced)
+                        except Exception as _exc:
+                            # fail-open 但不盲吞：诊断落 stderr（err log 可查）
+                            print("[lineage] freshness enhance failed: %r"
+                                  % (_exc,), file=sys.stderr, flush=True)
+                            freshness_summary = None
                         # 汇总视图：亮牌清单 + 全量健康度
                         data = {
                             "broken": broken,
@@ -136,6 +180,8 @@ class Handler:
                             "runs_not_ok": total_runs,
                             "all_latest": latest,
                         }
+                        if freshness_summary is not None:
+                            data["freshness"] = freshness_summary
             finally:
                 conn.close()
 

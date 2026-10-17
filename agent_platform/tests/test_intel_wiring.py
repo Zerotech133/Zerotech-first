@@ -224,6 +224,107 @@ class AutoDraftTests(unittest.TestCase):
         self.assertIn("不可达", out["error"])
         self.assertEqual(len(IW.load_pool(self.root)), 0)
 
+    def test_auto_draft_stale_ok_rows_become_watch(self):
+        # P1-A：freshness=stale 且 status=ok 的行（沉默断链）→ watch 裁决
+        ok_row = {"output_table": "parquet:tdx/ts_min5", "job": "cl2",
+                  "step": "s", "status": "ok",
+                  "started_at": "2026-10-10T07:45:00",
+                  "freshness": "stale", "age_trade_days": 5}
+        def fake(url, timeout=15.0):
+            if "view=breaks" in url:
+                payload = self._breaks_payload()
+                payload["data"]["all_latest"] = [ok_row]
+                return payload
+            return {"ok": True, "data": []}
+        with mock.patch.object(IW, "_fetch_json", side_effect=fake):
+            out = IW.auto_draft_from_lineage(self.root)
+        # 1 broken（degrade）+ 1 stale ok（watch）
+        self.assertEqual(len(out["drafted"]), 2)
+        self.assertEqual(out["broken_total"], 1)
+        self.assertEqual(out["stale_total"], 1)
+        kinds = {e["table_urn"]: (e["break_kind"], e["decision"])
+                 for e in out["drafted"]}
+        self.assertEqual(kinds["parquet:tdx/ts_min5"], ("stale", "watch"))
+        self.assertEqual(kinds["parquet:tdx/ts_daily"], ("broken", "degrade"))
+
+    def test_auto_draft_no_freshness_field_unchanged(self):
+        # fail-open：API 未附 all_latest/freshness → 行为与旧版一致
+        def fake(url, timeout=15.0):
+            if "view=breaks" in url:
+                return self._breaks_payload()
+            return {"ok": True, "data": []}
+        with mock.patch.object(IW, "_fetch_json", side_effect=fake):
+            out = IW.auto_draft_from_lineage(self.root)
+        self.assertEqual(len(out["drafted"]), 1)
+        self.assertEqual(out["stale_total"], 0)
+
+
+class ContentHashGateTests(unittest.TestCase):
+    """P1-B：裁决门 content_hash 绑定（与 M3-P3 证据仓同构）。"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.root = Path(self.tmp.name)
+        self.store = ApprovalStore(
+            self.root / "data" / "approvals" / "approvals.db")
+
+    def tearDown(self):
+        self.store.close()
+        self.tmp.cleanup()
+
+    def test_draft_stamps_content_hash(self):
+        rec = IW.draft(self.root, _entry(), by="agent-hermes")
+        self.assertTrue(rec.get("content_hash"))
+        expect = IW.hash_entry({k: v for k, v in rec.items()
+                                if k != "content_hash"})
+        self.assertEqual(rec["content_hash"], expect)
+        # 指纹对内容敏感（改一个字段 → 指纹变）
+        other = dict(rec)
+        other["decision"] = "watch"
+        self.assertNotEqual(rec["content_hash"], IW.hash_entry(other))
+
+    def test_adopt_binds_pool_fingerprint(self):
+        rec = IW.draft(self.root, _entry(), by="agent-hermes")
+        ap_, _, _ = IW.adopt(self.root, rec["verdict_id"], by="老田",
+                             store=self.store)
+        self.assertEqual(ap_.content_hash, rec["content_hash"])
+
+    def test_adopt_legacy_entry_without_hash(self):
+        # 旧条目（无 content_hash）兼容：adopt 补算现值锚定，不拒绝
+        entry = _entry(vid="legacy:jr-0#r1")
+        p = self.root / "data" / "intel_verdicts.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        entry.pop("content_hash", None)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        ap_, _, replayed = IW.adopt(self.root, entry["verdict_id"],
+                                    by="老田", store=self.store)
+        self.assertFalse(replayed)
+        self.assertEqual(ap_.content_hash, IW.hash_entry(entry))
+
+    def test_audit_detects_pool_tamper_after_adopt(self):
+        # 裁决门旁路：adopt 后池行被改写 → audit 亮红 pool_tampered
+        rec = IW.draft(self.root, _entry(), by="agent-hermes")
+        IW.adopt(self.root, rec["verdict_id"], by="老田", store=self.store)
+        pool_path = self.root / "data" / "intel_verdicts.jsonl"
+        lines = pool_path.read_text(encoding="utf-8").splitlines()
+        tampered = json.loads(lines[0])
+        tampered["decision"] = "watch"          # 批 A 之后改 B
+        lines[0] = json.dumps(tampered, ensure_ascii=False, sort_keys=True)
+        pool_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        rep = IW.audit_report(self.root)
+        self.assertTrue(any(f.startswith("pool_tampered")
+                            for f in rep["findings"]))
+        self.assertEqual(rep["verdict"], "FAIL")
+
+    def test_audit_clean_when_pool_untouched(self):
+        rec = IW.draft(self.root, _entry(), by="agent-hermes")
+        IW.adopt(self.root, rec["verdict_id"], by="老田", store=self.store)
+        rep = IW.audit_report(self.root)
+        self.assertNotIn("pool_tampered",
+                         [f.split(":")[0] for f in rep["findings"]])
+        self.assertEqual(rep["verdict"], "PASS")
+
 
 if __name__ == "__main__":
     unittest.main()
