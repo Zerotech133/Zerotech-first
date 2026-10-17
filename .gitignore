@@ -194,3 +194,6 @@ s4u_result.txt
 task_actions_backup_*.txt
 # 已跟踪运行态 → 需 git rm --cached 后生效
 news_collector/sa_push_queue.jsonl
+
+# ===== K-ORG-144：雪球真凭据落盘防入库（2026-10-17，盘点后 xueqiu 工具链生成）=====
+quant_backtest/config/xq_*.json
