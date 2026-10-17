@@ -112,23 +112,18 @@ def judge(alert: dict) -> dict | None:
 
 
 # ── 推送 ────────────────────────────────────────────────────
-_EMOJI = {"CRITICAL": "🚨", "WARN": "⚠️", "INFO": "ℹ️"}
 _CAT_LABEL = {"risk": "交易风控", "data": "数据质量", "sys": "系统运行", "info": "例行", "unknown": "未分类"}
 
 
-_LARK_COLOR = {
-    "CRITICAL": ("red", "red-50", "🚨"),
-    "WARN": ("yellow", "yellow-50", "⚠️"),
-    "INFO": ("blue", "blue-50", "ℹ️"),
-}
-
-
 def _build_alert_card(alert: dict, verdict: dict) -> dict:
-    """构造飞书告警交互卡片 JSON（v1 卡片）。
-    K-STOCK-370：schema 2.0（behaviors callback）在告警卡片助手 app 下点击
-    零投递（平台侧缺口），v1 tag:action 按钮实测端到端可用——全量降级 v1。"""
+    """构造飞书告警交互卡片（K-PUSH-009：v3 红域统一卡）。
+
+    K-STOCK-370 判例翻案（2026-10-17 14:25 实证）：jev 卡片域 2.0
+    behaviors callback 点击正常投递（lark-cli consume 链实收事件，
+    当时"平台侧零投递"为 SDK 丢 CARD 帧同期误诊）——卡面升 v3，
+    按钮双键 value（action_id=jev_ack/jev_ignore 供 bot ws dispatch
+    审计 + action=ack/ignore 供 lark_card_handler 老链零改动消费）。"""
     level = alert.get("level", "INFO")
-    template, bg_color, emoji = _LARK_COLOR.get(level, _LARK_COLOR["INFO"])
     cat = verdict.get("category", "unknown")
     cat_label = _CAT_LABEL.get(cat, cat)
     urgent_p = verdict.get("urgent_p", 0.0)
@@ -136,43 +131,27 @@ def _build_alert_card(alert: dict, verdict: dict) -> dict:
     title = alert.get("title", "")
     message = alert.get("message", "")[:300]
 
-    def _btn(content, btype, action):
-        return {
-            "tag": "button",
-            "text": {"tag": "plain_text", "content": content},
-            "type": btype,
-            "value": {"action": action, "alert_id": alert_id},
-        }
+    _portal = os.path.join(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))), "portal")
+    if _portal not in sys.path:
+        sys.path.insert(0, _portal)
+    from feishu_card_v2 import build_v3
 
-    return {
-        "config": {"wide_screen_mode": True, "update_multi": True},
-        "header": {
-            "title": {"tag": "plain_text", "content": f"{emoji} 告警通知 · {level}"},
-            "template": template,
-        },
-        "elements": [
-            # 指标行（v1 无 2.0 指标卡块，折成一行）
-            {
-                "tag": "div",
-                "text": {"tag": "lark_md",
-                         "content": f"**紧急度** {urgent_p:.2f}　|　**类别** {cat_label}"
-                                    f"　|　**级别** {level}"},
-            },
-            # 告警正文
-            {
-                "tag": "markdown",
-                "content": f"**{title}**\n\n{message}",
-            },
-            # 操作按钮
-            {
-                "tag": "action",
-                "actions": [
-                    _btn("✓ 已处理", "primary", "ack"),
-                    _btn("忽略", "default", "ignore"),
-                ],
-            },
-        ],
-    }
+    card, _audit = build_v3(
+        "alert", "告警通知 · %s" % level,
+        source="jev-eval 盯盘预警",
+        rows=[("紧急度", "%.2f" % urgent_p),
+              ("类别", cat_label),
+              ("级别", level)],
+        md="**%s**\n\n%s" % (title, message),
+        buttons=[("✓ 已处理", ("action", "jev_ack",
+                              {"alert_id": alert_id, "action": "ack"}),
+                  "primary"),
+                 ("忽略", ("action", "jev_ignore",
+                           {"alert_id": alert_id, "action": "ignore"}),
+                  "default")],
+        tags="#jev #alert")
+    return card
 
 
 def push_feishu(alert: dict, verdict: dict) -> bool:
