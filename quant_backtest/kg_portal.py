@@ -2057,7 +2057,7 @@ def _records_jev(here):
 def _records_riskguard(here):
     """层4 RiskGuard：影子账本按 rule_id 聚合（pass/影子拦截计数）。"""
     base = os.path.normpath(os.path.join(here, "..", "..",
-                                         "KGStockAnalysis"))
+                                         "zerobound-kg"))
     agg = {}
     with open(os.path.join(base, "riskguard_ledger", "ledger.jsonl"),
               encoding="utf-8") as f:

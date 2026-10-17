@@ -13,6 +13,7 @@ _DECISION_FIELDS = frozenset({
     "schema_version", "environment", "code", "period", "as_of", "fact_hash", "versions",
     "action", "evidence_ids", "rationale", "valid_until", "confidence", "execution_allowed", "decision_id",
 })
+_DECISION_TRACE_FIELDS = frozenset({"trace_id", "idempotency_key"})
 # 仅拦截已知后验字段；任意 data 仍需来源与可用时点审核。
 _POSTERIOR_FIELDS = frozenset({
     "post", "forward_return", "label", "outcome",
@@ -109,7 +110,8 @@ def _validate_pack(pack):
     return frozen
 
 
-def make_shadow_decision(pack: dict, action: str, evidence_ids: list[str], rationale: str, valid_until: str) -> dict:
+def make_shadow_decision(pack: dict, action: str, evidence_ids: list[str], rationale: str,
+                         valid_until: str, trace_id=None, idempotency_key=None) -> dict:
     frozen = _validate_pack(pack)
     if type(action) is not str or action not in _ACTIONS:
         raise ValueError("action 仅支持 observe、candidate_buy、candidate_sell 或 abstain")
@@ -132,23 +134,45 @@ def make_shadow_decision(pack: dict, action: str, evidence_ids: list[str], ratio
     result.update(action=action, evidence_ids=_freeze(evidence_ids), rationale=rationale,
                   valid_until=expiry, confidence=None, execution_allowed=False)
     result["decision_id"] = _hash(result)
+    if trace_id is not None:
+        _nonempty(trace_id, "trace_id")
+        result["trace_id"] = trace_id
+    if idempotency_key is not None:
+        _nonempty(idempotency_key, "idempotency_key")
+        result["idempotency_key"] = idempotency_key
     return result
 
 
 def record_shadow_decision(store, pack, decision) -> dict:
     frozen_pack = _validate_pack(pack)
-    _fields(decision, _DECISION_FIELDS, "影子决策")
+    if type(decision) is not dict or set(decision) - (_DECISION_FIELDS | _DECISION_TRACE_FIELDS):
+        raise ValueError("影子决策包含未知字段")
+    if not _DECISION_FIELDS.issubset(decision):
+        raise ValueError("影子决策必须是字段完整的 JSON 对象")
     frozen_decision = _freeze(decision)
     rebuilt = make_shadow_decision(frozen_pack, frozen_decision["action"], frozen_decision["evidence_ids"],
-                                   frozen_decision["rationale"], frozen_decision["valid_until"])
+                                   frozen_decision["rationale"], frozen_decision["valid_until"],
+                                   frozen_decision.get("trace_id"),
+                                   frozen_decision.get("idempotency_key"))
     if canonical_json(frozen_decision) != canonical_json(rebuilt):
         raise ValueError("影子决策与事实包重建结果不符，内容或 decision_id 可能被篡改")
     provenance = {"schema_version": 1, "environment": "shadow", "source": "ai_operator.shadow",
                   "occurred_at": frozen_pack["as_of"], "available_at": frozen_pack["as_of"]}
+    trace_id = frozen_decision.get("trace_id")
+    idempotency_key = frozen_decision.get("idempotency_key")
     # append_event 各自提交；第二次失败后重试会复用已落库的事实事件。
+    fact_payload = dict(frozen_pack)
+    decision_payload = dict(rebuilt, fact_event_id=None)
+    if trace_id is not None:
+        fact_payload["trace_id"] = trace_id
+        decision_payload["trace_id"] = trace_id
+    if idempotency_key is not None:
+        decision_payload["idempotency_key"] = idempotency_key
     fact_event_id = store.append_event(dict(provenance, kind="shadow.fact_pack",
-                                           source_id=frozen_pack["fact_hash"], payload=frozen_pack))
+                                           source_id=frozen_pack["fact_hash"],
+                                           payload=fact_payload))
+    decision_payload["fact_event_id"] = fact_event_id
     decision_event_id = store.append_event(dict(provenance, kind="shadow.decision",
                                                source_id=rebuilt["decision_id"],
-                                               payload=dict(rebuilt, fact_event_id=fact_event_id)))
+                                               payload=decision_payload))
     return {"fact_event_id": fact_event_id, "decision_event_id": decision_event_id}

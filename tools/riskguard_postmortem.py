@@ -7,7 +7,7 @@ kg_riskguard.py L438 注明「复算下轮做」——本工具即该复算的�
 产出 S3 复核（16:10 automation / 规则校准拍板）所需的对账数字。
 
 数据面（全程只读，不写任何账本）：
-- 拦截事件账：E:/KGStockAnalysis/riskguard_ledger/ledger.jsonl
+- 拦截事件账：C:/项目/zerobound-kg/riskguard_ledger/ledger.jsonl
   （32078 行：shadow_block 11567 / pass 20511，字段 security/ts/ref_px/
   action/rule_id/reason/score/mode/data_version）
 - 日线价格：E:/KGDataRoot/tdx/ts_daily/part_*.parquet（44 分片，
@@ -36,7 +36,7 @@ import os
 from bisect import bisect_left
 from collections import defaultdict
 
-LEDGER = "E:/KGStockAnalysis/riskguard_ledger/ledger.jsonl"
+LEDGER = "C:/项目/zerobound-kg/riskguard_ledger/ledger.jsonl"
 TS_DAILY_GLOB = "E:/KGDataRoot/tdx/ts_daily/part_*.parquet"
 REPORT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                       os.pardir, "docs", "dev",

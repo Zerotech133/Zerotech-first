@@ -32,10 +32,28 @@ HERE = Path(__file__).resolve().parent
 ASHARE_DIR = HERE / "data" / "ashare"
 SNAP_DIR = HERE.parent / "portal" / "qd_daily_data"
 
+def _xmap_pg_password():
+    """XMAP_PG_PASSWORD 回落链：env → 同目录 .env.local（止血 2026-10-16：
+    移除源码明文兜底，缺密码 fail-closed）。"""
+    pwd = os.environ.get("XMAP_PG_PASSWORD", "").strip()
+    if pwd:
+        return pwd
+    p = HERE / ".env.local"
+    if p.is_file():
+        try:
+            for ln in open(p, encoding="utf-8"):
+                ln = ln.strip()
+                if ln.startswith("XMAP_PG_PASSWORD=") and not ln.startswith("#"):
+                    return ln.split("=", 1)[1].strip()
+        except OSError:
+            pass
+    raise RuntimeError("XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
+
+
 PG = dict(host=os.environ.get("XMAP_PG_HOST", "127.0.0.1"),
           port=int(os.environ.get("XMAP_PG_PORT", "5442")),
           user=os.environ.get("XMAP_PG_USER", "quant_user"),
-          password=os.environ.get("XMAP_PG_PASSWORD", "quant_password_123"),
+          password=_xmap_pg_password(),
           dbname=os.environ.get("XMAP_PG_DB", "quant_system"))
 
 

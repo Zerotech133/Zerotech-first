@@ -6,7 +6,7 @@ WorkBuddy 会话结束会被 Job 连坐收割，服务随即裸奔。本脚本�
 「AI工作站CowAgent看门狗」每 5 分钟跑一次，任务宿主稳定不受会话影响。
 
 2026-10-14 起 8095（picks 定时发布管理页 publish_schedule_server.py）、
-8096（KM 知识库飞书联动 km_feishu_hub.py）与 8097（推送管理中心
+8099（KM 知识库飞书联动 km_feishu_hub.py）与 8097（推送管理中心
 push_admin_server.py）并入本守护：同一稳定宿主，一次任务跑四个探针，
 注册层零改动（新增计划任务会被安全中心 schtasks 黑名单拦，改既有任务
 脚本不需要）。
@@ -26,13 +26,16 @@ import time
 from datetime import datetime
 
 PORT = 9899
-COW_DIR = r"E:\老田的AI助手\CowAgent"
-COW_PY = COW_DIR + r"\venv\Scripts\python.exe"
+# K-STOCK-414：旧机 E:\ 硬编码换机即死（cwd 不存在 → Popen 抛 FileNotFoundError
+# → 本脚本崩溃，四端口守护连坐失守）→ 按本文件位置推导仓库根。
+STATION = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+COW_DIR = os.path.join(STATION, "CowAgent")
+COW_PY = os.path.join(COW_DIR, "venv", "Scripts", "python.exe")
 PICKS_PORT = 8095
-PORTAL_DIR = r"E:\老田的AI助手\portal"
-SYS_PY = r"C:\Program Files\Python311\python.exe"
-# 8096 KM 知识库飞书联动（km_feishu_hub.py）——同配方并入本守护
-KM_PORT = 8096
+PORTAL_DIR = os.path.join(STATION, "portal")
+SYS_PY = r"C:\Program Files\Python311\python.exe"  # 2026-10-16 实测在位
+# 8099 KM 知识库飞书联动（km_feishu_hub.py）——与 Legion 8096 分离
+KM_PORT = 8099
 # 8097 推送管理中心（push_admin_server.py）
 PA_PORT = 8097
 LOG = r"C:\Temp\watchdog_9899.log"
@@ -81,14 +84,21 @@ def guard_port(port, script_args, log_name, grace_iters, tag):
     if alive_on(port):
         return  # 抖动
     log("%s:%d DOWN x2 -> spawn" % (tag, port))
-    logf = open(log_name, "ab")
-    logf.write(f"\n=== watchdog spawn {datetime.now()} ===\n".encode())
-    logf.flush()
-    subprocess.Popen([SYS_PY] + script_args,
-                     cwd=PORTAL_DIR,
-                     stdin=subprocess.DEVNULL, stdout=logf,
-                     stderr=subprocess.STDOUT, creationflags=DETACHED,
-                     close_fds=True)
+    # K-STOCK-414：拉起段包 try——单端口故障（解释器缺失/脚本崩）不再连坐
+    # 后续端口守护；logf 句柄父侧及时回收（子进程已继承）。
+    try:
+        logf = open(log_name, "ab")
+        logf.write(f"\n=== watchdog spawn {datetime.now()} ===\n".encode())
+        logf.flush()
+        subprocess.Popen([SYS_PY] + script_args,
+                         cwd=PORTAL_DIR,
+                         stdin=subprocess.DEVNULL, stdout=logf,
+                         stderr=subprocess.STDOUT, creationflags=DETACHED,
+                         close_fds=True)
+        logf.close()
+    except Exception as e:  # noqa: BLE001
+        log("%s SPAWN_FAILED: %r" % (tag, e))
+        return
     for i in range(grace_iters):
         time.sleep(3)
         if alive_on(port):
@@ -104,7 +114,7 @@ def guard_picks_sched():
 
 
 def guard_km_hub():
-    """8096 KM 知识库飞书联动：掉线则分离拉起（--bg）。"""
+    """8099 KM 知识库飞书联动：掉线则分离拉起（--bg）。"""
     guard_port(KM_PORT, ["km_feishu_hub.py", "--bg"],
                r"C:\Temp\km_hub_wd.log", 5, "km_hub")
 
@@ -122,13 +132,18 @@ def guard_cow():
     if alive():
         sys.exit(0)  # 抖动
     log("DOWN x2 -> spawn CowAgent")
-    logf = open(r"C:\Temp\cowagent_wd.log", "ab")
-    logf.write(f"\n=== watchdog spawn {datetime.now()} ===\n".encode())
-    logf.flush()
-    subprocess.Popen([COW_PY, "app.py"], cwd=COW_DIR,
-                     stdin=subprocess.DEVNULL, stdout=logf,
-                     stderr=subprocess.STDOUT, creationflags=DETACHED,
-                     close_fds=True)
+    try:  # K-STOCK-414：同 guard_port，spawn 故障留痕不裸炸
+        logf = open(r"C:\Temp\cowagent_wd.log", "ab")
+        logf.write(f"\n=== watchdog spawn {datetime.now()} ===\n".encode())
+        logf.flush()
+        subprocess.Popen([COW_PY, "app.py"], cwd=COW_DIR,
+                         stdin=subprocess.DEVNULL, stdout=logf,
+                         stderr=subprocess.STDOUT, creationflags=DETACHED,
+                         close_fds=True)
+        logf.close()
+    except Exception as e:  # noqa: BLE001
+        log("cow SPAWN_FAILED: %r" % e)
+        sys.exit(1)
     for i in range(20):  # 宽限 60s
         time.sleep(3)
         if alive():

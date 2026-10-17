@@ -44,7 +44,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 # 复用 send_feishu 的 lark-cli 定位
-LARK_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
+# K-PUSH-001 P0：旧机 Administrator 硬编码换机断链 → expanduser 动态推导
+LARK_ROOT = os.path.join(
+    os.path.expanduser("~"), ".trae-cn", "plugins",
+    "trae-remote-official", "lark")
 
 _APP_CREDS = None
 

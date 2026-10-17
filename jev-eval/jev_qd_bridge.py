@@ -42,6 +42,9 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
 
 HERE = Path(__file__).parent
 DATA = HERE / "review_data"
+# 2026-10-16 审计：review_data 缺失时 QD_REVIEW.open("a") 直接
+# FileNotFoundError 炸进程——启动即确保目录存在
+DATA.mkdir(exist_ok=True)
 TRIPLES = DATA / "triples.jsonl"          # 复核门三元组（正向数据源）
 QD_REVIEW = DATA / "qd_review.jsonl"      # 反向复核判定流
 QD_PUSHED = DATA / "qd_pushed.json"       # 已推送 QD 的 (market,symbol) 集合
@@ -72,6 +75,20 @@ def _normalize_symbol(qd_market: str, symbol: str) -> str:
     仅对 USStock 做转换；Crypto 用 '/' 分隔符、HK 无下划线，原样返回。"""
     if qd_market == "USStock" and "_" in symbol:
         return symbol.replace("_", ".")
+    return symbol
+
+
+def _ts_code_of(qd_market: str, symbol: str) -> str:
+    """反向归一化（QD symbol → zhice ts_code，2026-10-16 审计修复）。
+
+    known 表以 triples 的 ts_code 为键（US 下划线、HK 带 .HK 后缀）；
+    QD 侧 US 用点号、HK 不带后缀——原 known.get(item.symbol) 对
+    BRK.B / 00700 这类标的永远 miss，反向复核一直拿不到已知信号。
+    """
+    if qd_market == "USStock" and "." in symbol:
+        return symbol.replace(".", "_")
+    if qd_market == "HKStock" and not symbol.endswith(".HK"):
+        return symbol + ".HK"
     return symbol
 
 
@@ -358,7 +375,12 @@ def review_qd_watchlist(force: bool = False) -> None:
             if prev and not force and (now - datetime.fromisoformat(prev)).total_seconds() < 86400:
                 n_skip += 1
                 continue
-            state = build_review_state(item, known.get(item.get("symbol", "")))
+            # 2026-10-16 审计：QD symbol → ts_code 反向归一化后查 known
+            #（原 BRK.B/00700 永远 miss）；原样直查保留为回退。
+            sym = item.get("symbol", "")
+            rec_known = known.get(_ts_code_of(item.get("market", ""), sym)) \
+                or known.get(sym)
+            state = build_review_state(item, rec_known)
             record = {
                 "ts": now.isoformat(timespec="seconds"),
                 "market": item.get("market", "?"),
@@ -367,21 +389,12 @@ def review_qd_watchlist(force: bool = False) -> None:
                 "state_len": len(state),
             }
             try:
-                body = {"model": "jev-latest", "state": state,
-                        "questions": REVIEW_QUESTIONS}
-
-                def _call() -> dict:
-                    req = urllib.request.Request(
-                        JEV_BASE + "/systemone",
-                        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-                        headers={"Content-Type": "application/json; charset=utf-8",
-                                 "Authorization": f"Bearer {API_KEY}"},
-                        method="POST")
-                    with urllib.request.urlopen(req, timeout=20) as resp:
-                        return json.loads(resp.read()).get("answers", {})
-
                 try:
-                    ans = with_retry(_call, retries=3, base_sec=2.0, label="jev ")
+                    # 2026-10-16: 后端分发收敛到 jev_common.jev_ask_backend
+                    # （JEV_BACKEND=ollama 走本地模型，typesafe.ai 451 屏蔽）
+                    ans = with_retry(
+                        lambda: jc.jev_ask_backend(state, REVIEW_QUESTIONS),
+                        retries=3, base_sec=2.0, label="jev ")
                     C_JEV.labels("qdbridge", "1").inc()
                 except Exception:
                     C_JEV.labels("qdbridge", "0").inc()

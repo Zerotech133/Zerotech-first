@@ -139,18 +139,18 @@ def main():
     dept_agents = {}     # dept -> [agent_id]（含项目部编制）
     projects_of = {}     # agent_id -> [项目 dept]
 
-    # 参谋长田小皮（A0）先行入编——全组织汇报顶点（K-ORG-023）
+    # 参谋长田丰（A0）先行入编——全组织汇报顶点（K-ORG-023）
     org = json.load(open(os.path.join(REG, "org.json"), encoding="utf-8"))
     chief = org.get("chief", {})
     agents["A0"] = {
         "id": "A0",
         "dept": "chief",
-        "name": chief.get("name", "田小皮"),
+        "name": chief.get("name", "田丰"),
         "role_profile": chief.get("role_profile", "chief_of_staff"),
         "grade": "E3",
         "grade_note": "参谋长·组织枢纽（汇报聚合/任务仲裁/记忆治理）",
         # 在编数尾段回填（K-ORG-053：组织图动态注册后岗数随实际，不再硬编码）
-        "charter": "全组织 {N} 在编岗向田小皮汇报：判读各部门日报、风险优先输出判读、"
+        "charter": "全组织 {N} 在编岗向田丰汇报：判读各部门日报、风险优先输出判读、"
                    "任务单仲裁、记忆治理；影子期纪律：不给买卖操作建议。",
         "llm": chief.get("llm_binding", "ollama/qwen3.5:9b"),
         "tools": ["events", "devtask"],
@@ -203,7 +203,7 @@ def main():
             for aid in ids:
                 projects_of.setdefault(aid, []).append(dept)
 
-    # 项目标签回填 + prompt 全文（chief 田小皮已在入编时装好 a0_chief.md）
+    # 项目标签回填 + prompt 全文（chief 田丰已在入编时装好 a0_chief.md）
     miss_prompt = []
     for aid, card in agents.items():
         card["projects"] = projects_of.get(aid, [])
@@ -232,7 +232,7 @@ def main():
             continue
         od = org_dept_meta.get(dep, {})
         if dep == "chief":
-            name, typ = "🧠 参谋长 · 田小皮", "chief"
+            name, typ = "🧠 参谋长 · 田丰", "chief"
         elif dep in DEPT_META:
             name, typ = DEPT_META[dep]
         else:  # 动态注册部门：显示名与类型全部取 org.json

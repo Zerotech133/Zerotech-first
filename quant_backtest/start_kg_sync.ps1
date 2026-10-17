@@ -1,4 +1,4 @@
-# kg daily sync launcher (ASCII only, junction path)
+﻿# kg daily sync launcher (ASCII only, junction path)
 # 0) catalog rebuild (G7: freshness ground truth)  0.5) semantica events build
 # 0.7) notice LLM shadow judge + backfill (G6b)
 # 1) global index increment   2) events -> Neo4j
@@ -26,19 +26,83 @@
 # NOTE: intel_link + mentions_rebuild steps (added 2026-09-30, approved by
 #       laotian) run KGStockAnalysis dev scripts via absolute path, EXP_
 #       layer only; intel_link exits 1 on main-graph drift (fail-closed).
+# NOTE: 2026-10-16 machine-migration repair (kg-graph-storage-design 6):
+#       - $kg_root variable replaces the dead E:\KGStockAnalysis hardcode
+#         (E: drive does not exist on this machine; junction not viable).
+#       - new step intel_xq_guba inserted after intel_link (registry-based
+#         xueqiu+guba intel backfill/increment, MERGE idempotent).
+#       - KG env credentials loaded from .env.local (KG_* keys only,
+#         machine-level env intentionally not used, fail-closed).
+#       - KG_DATA_ROOT degrades to KG_DATA_ROOT_FALLBACK when the new-root
+#         shell lacks catalog.json (design 1.2); both missing = fail fast.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
+# KG unified credentials (design 2.4): load KG_* lines from .env.local only
+# [20261016收编] 去 C:\aios junction 依赖，一律本机真实路径（章程 §5 治理契约）
+$envFile = 'C:\项目\老田的AI助手\quant_backtest\.env.local'
+if (Test-Path $envFile) {
+    # [20261016换机] 必须 UTF8：默认 GBK 解码中文注释时奇数字节吞换行，
+    # 会把紧随的 KG_NEO4J_URI 行并入注释导致 URI 永远加载不上
+    Get-Content $envFile -Encoding UTF8 | ForEach-Object {
+        if ($_ -match '^KG_[A-Z0-9_]+=') {
+            $k, $v = $_ -split '=', 2
+            Set-Item -Path ("Env:" + $k) -Value $v.Trim()
+        }
+    }
+}
+# KG_DATA_ROOT fallback degradation (design 1.2): new root is an empty shell
+# on this machine -> use quant_backtest/data; both missing catalog -> abort
+# [20261017探针加固] 仅凭 catalog.json 存在性判根不足：KGDataRoot 回收当日曾出现
+# 删除竞态写出的 tables:{} 空壳清单，若被选根，每日链会把空仓当数据根。
+# 判据升级：catalog 存在且 tables 非空才算可用根；空壳根降级 fallback 并记 WARN。
+function Test-CatalogUsable([string]$root) {
+    $cat = Join-Path $root 'catalog.json'
+    if (-not (Test-Path $cat)) { return $false }
+    try {
+        $j = Get-Content $cat -Raw -Encoding UTF8 | ConvertFrom-Json
+        $t = $j.tables
+        if ($null -eq $t) { return $false }
+        return (@($t.PSObject.Properties).Count -gt 0)
+    } catch { return $false }
+}
+$kg_new_root = 'C:\项目\KGDataRoot'
+$kg_fallback = 'C:\项目\老田的AI助手\quant_backtest\data'
+if (Test-CatalogUsable $kg_new_root) {
+    $env:KG_DATA_ROOT = $kg_new_root
+} elseif (Test-CatalogUsable $kg_fallback) {
+    $env:KG_DATA_ROOT = $kg_fallback
+    $env:KG_DATA_ROOT_FALLBACK = $kg_fallback
+    if (Test-Path (Join-Path $kg_new_root 'catalog.json')) {
+        ('kg_sync WARN: new root catalog is an empty shell (tables empty), degraded to fallback: ' + $kg_fallback) | Out-File 'C:\Temp\kg_sync_task.log' -Append -Encoding utf8
+    }
+} else {
+    ('kg_sync ABORT: no usable catalog.json (missing or tables empty) in either data root: ' + $kg_new_root + ' / ' + $kg_fallback) | Out-File 'C:\Temp\kg_sync_task.log' -Append -Encoding utf8
+    exit 1
+}
+$kg_root = 'C:\项目\zerobound-kg'
+# 换机适配(2026-10-16): kg_intel_link.py 默认 news.db 指向旧机 E:/ 路径,
+# 用 KG_NEWS_DB 覆盖为新机 junction 内真实库
+$env:KG_NEWS_DB = 'C:\项目\老田的AI助手\news_collector\news.db'
+# [20261016换机] xueqiu/guba 数据在爬虫产物区（quant_backtest\data），不在 KGDataRoot
+$env:KG_XQ_DB = 'C:\项目\老田的AI助手\quant_backtest\data\xueqiu\xueqiu_info.db'
+$env:KG_GUBA_DIR = 'C:\项目\老田的AI助手\quant_backtest\data\guba'
+if (-not (Test-Path (Join-Path $kg_root 'kg_intel_link.py'))) {
+    ('kg_sync ABORT: KG root missing: ' + $kg_root) | Out-File 'C:\Temp\kg_sync_task.log' -Append -Encoding utf8
+    exit 1
+}
 # OPS-1014 (2026-10-09): evt_build died with httpx ConnectTimeout to
 # huggingface.co - fastembed re-validates the model online on every start and
 # its default cache lives in %TEMP% (wiped by temp cleaners -> forced re-download
 # -> blocked direct HF access from the task session). Fix: persistent cache
 # (pre-warmed 2026-10-09 via hf-mirror, dim=512 verified) + hard offline mode.
-$env:FASTEMBED_CACHE_PATH = 'C:\aios\quant_backtest\.fastembed_cache'
+$env:FASTEMBED_CACHE_PATH = 'C:\项目\老田的AI助手\quant_backtest\.fastembed_cache'
 $env:HF_HUB_OFFLINE = '1'
 $env:HF_HUB_DISABLE_SYMLINKS_WARNING = '1'
 $log = 'C:\Temp\kg_sync_task.log'
 $py = 'C:\Program Files\Python311\python.exe'
-$wd = 'C:\aios\quant_backtest'
+$wd = 'C:\项目\老田的AI助手\quant_backtest'
+# [20261016血缘收编] KGStockAnalysis 侧脚本经此变量桥接 import linreg（章程 §4.4）
+$env:QUANT_BACKTEST_ROOT = $wd
 try {
     foreach ($step in @(
         @{name='catalog_build';     script='build_catalog.py';       arg=''},
@@ -46,8 +110,9 @@ try {
         @{name='notice_llm';       script='kg_notice_llm.py';       arg='--backfill'},
         @{name='pull_global_idx';  script='pull_global_idx.py';     arg=''},
         @{name='kg_evt_sync';      script='kg_build_p3_evt.py';     arg=''},
-        @{name='intel_link';       script='E:\KGStockAnalysis\kg_intel_link.py';       arg='--write'},
-        @{name='mentions_rebuild'; script='E:\KGStockAnalysis\kg_mentions_rebuild.py'; arg='--live --src daily-chain'},
+        @{name='intel_link';       script="$kg_root\kg_intel_link.py";       arg='--write'},
+        @{name='intel_xq_guba';    script="$kg_root\kg_intel_xq_guba.py";    arg=''},
+        @{name='mentions_rebuild'; script="$kg_root\kg_mentions_rebuild.py"; arg='--live --src daily-chain'},
         @{name='cl1_sync';         script='kg_build_cl1.py';        arg=''},
         @{name='m2_drive_sync';    script='kg_build_m2.py';         arg=''},
         @{name='candle_sync';      script='kg_candle.py';           arg='sync'},
@@ -78,7 +143,7 @@ try {
         if ($code -ne 0) {
             ('kg_sync ABORT at ' + $step.name) | Out-File $log -Append -Encoding utf8
             $errL = "C:\Temp\kg_" + $step.name + "_err.log"
-            & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\news_collector\alert_fail_wrap.py ("kg_sync:" + $step.name) $code $errL 1>$null 2>$null
+            & 'C:\Program Files\Python311\python.exe' -X utf8 C:\项目\老田的AI助手\news_collector\alert_fail_wrap.py ("kg_sync:" + $step.name) $code $errL 1>$null 2>$null
             exit 1
         }
     }

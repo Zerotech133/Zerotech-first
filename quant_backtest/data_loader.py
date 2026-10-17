@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """行情数据加载：zhice-db v2_bar_daily → pandas.DataFrame。
 
-直连 127.0.0.1:5432，失败自动降级 docker exec zhice-db psql。
+直连 127.0.0.1:5446（本机 zhice-db 实际映射；5432 被 RAGFlow infinity 占用，
+2026-10-16 审计修正），失败自动降级 docker exec zhice-db psql。
 返回 DataFrame（index=trade_date, columns=open/high/low/close/volume/turnover/pre_close）。
 """
 import json
@@ -13,6 +14,24 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_CFG = json.load(open(os.path.join(HERE, "config.json"), encoding="utf-8"))["db"]
+
+
+def _db_password():
+    """ZHICE_DB_PASSWORD 回落链：env → 同目录 .env.local（2026-10-16 审计：
+    从 config.json 明文迁出，模式对齐 linreg._lineage_password）。"""
+    pwd = os.environ.get("ZHICE_DB_PASSWORD", "").strip()
+    if pwd:
+        return pwd
+    p = os.path.join(HERE, ".env.local")
+    if os.path.isfile(p):
+        try:
+            for line in open(p, encoding="utf-8"):
+                line = line.strip()
+                if line.startswith("ZHICE_DB_PASSWORD=") and not line.startswith("#"):
+                    return line.split("=", 1)[1].strip()
+        except OSError:
+            pass
+    return DB_CFG.get("password") or ""
 
 # P1-1：模块级单连接被 ThreadingHTTPServer 多线程并发使用（非线程安全，
 # 会出现协议错乱/连接假死）。改为 threading.local() 每线程独立连接，
@@ -28,7 +47,7 @@ def _direct_conn():
     if c is None:
         c = psycopg2.connect(
             host=DB_CFG["host"], port=DB_CFG["port"],
-            user=DB_CFG["user"], password=DB_CFG["password"],
+            user=DB_CFG["user"], password=_db_password(),
             dbname=DB_CFG["dbname"])
         c.autocommit = True
         _tls.conn = c
@@ -119,6 +138,53 @@ def load_bars(market, symbols, start=None, end=None):
         df = df.dropna(subset=["close"])
         out[sym] = df
     return out
+
+
+def load_table(start=None, end=None, symbols=None, limit=None):
+    """v2_bar_daily 扁平读取 → DataFrame（数据地基模块章程 §3：PG 入册读路径）。
+
+    与 load_bars（按市场分 {symbol: DataFrame}，策略侧专用）不同，本函数
+    返回单一 DataFrame 供 datamart layout "pg" 路由消费；symbol 保持库内
+    形态（datamart 只做列名归一，不转换代码形态）。直连失败走 docker 兜底。
+    """
+    sql = ("SELECT symbol, market, trade_date, open, high, low, close, "
+           "volume, turnover, pre_close FROM v2_bar_daily")
+    params, where = [], []
+    if symbols:
+        if isinstance(symbols, str):
+            symbols = [symbols]
+        where.append("symbol = ANY(%s)")
+        params.append(list(symbols))
+    if start:
+        where.append("trade_date >= %s")
+        params.append(start)
+    if end:
+        where.append("trade_date <= %s")
+        params.append(end)
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    # 与 dm.read 尾部 dcol(trade_date) 稳定排序后 head(limit) 的语义对齐：
+    # 日期优先排序，limit 下推时取到的才是"最早 N 行"而非字典序前 N 行。
+    sql += " ORDER BY trade_date, symbol"
+    if limit:
+        sql += " LIMIT %d" % int(limit)
+    try:
+        cols, rows = _query_direct(sql, params)
+    except Exception:
+        cols, rows = _query_docker(sql, params)
+    recs = []
+    for row in rows:
+        if len(row) < 10:
+            continue
+        td = str(row[2]).replace("-", "")[:8]
+        recs.append({"symbol": row[0], "market": row[1], "trade_date": td,
+                     "open": _to_float(row[3]), "high": _to_float(row[4]),
+                     "low": _to_float(row[5]), "close": _to_float(row[6]),
+                     "volume": _to_float(row[7]), "turnover": _to_float(row[8]),
+                     "pre_close": _to_float(row[9])})
+    return pd.DataFrame(recs, columns=["symbol", "market", "trade_date",
+                                       "open", "high", "low", "close",
+                                       "volume", "turnover", "pre_close"])
 
 
 def available_symbols(market, limit=None):

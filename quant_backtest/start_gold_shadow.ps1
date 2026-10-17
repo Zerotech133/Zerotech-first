@@ -4,6 +4,11 @@
 $log = 'C:\Temp\gold_shadow_task.log'
 $out = 'C:\Temp\gold_shadow_out.log'
 $err = 'C:\Temp\gold_shadow_err.log'
+# 20261016换机：gold_signal_shadow 走 tushare pro，注入 TUSHARE_TOKEN（值取自 .env.local 的 XT_DATA_KEY）
+try {
+    $envLine = Get-Content 'C:\aios\quant_backtest\.env.local' -Encoding UTF8 | Where-Object { $_ -match '^XT_DATA_KEY=' } | Select-Object -First 1
+    if ($envLine) { $env:TUSHARE_TOKEN = $envLine.Substring('XT_DATA_KEY='.Length).Trim() }
+} catch {}
 try {
     ('starting ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
     & 'C:\Program Files\Python311\python.exe' -X utf8 'C:\aios\quant_backtest\gold_signal_shadow.py' 1> $out 2> $err

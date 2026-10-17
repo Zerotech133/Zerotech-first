@@ -25,7 +25,9 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "portal"))
+sys.path.insert(0, os.path.join(ROOT, "agent_platform", "engine"))
 import portal_db as pdb  # noqa: E402
+from idem_hook import DualTrackHook  # noqa: E402  M0 P4 双轨幂等
 
 PY = sys.executable
 CLI = os.path.join(ROOT, "k_stock", "paper", "cli.py")
@@ -49,12 +51,26 @@ def _paper(*args, db=None):
 def _trace_done(trace_id):
     with sqlite3.connect(pdb.DB) as con:
         row = con.execute("SELECT 1 FROM events WHERE trace_id=? AND "
-                          "kind='ingested' LIMIT 1", (trace_id,)).fetchone()
+                          "kind='paper.order.planned' LIMIT 1", (trace_id,)).fetchone()
     return row is not None
 
 
+_IDEM_HOOK = None
+
+
+def _idem_hook():
+    """进程内复用 DualTrackHook（scope=paper_bridge，死信窗 1h）。"""
+    global _IDEM_HOOK
+    if _IDEM_HOOK is None:
+        _IDEM_HOOK = DualTrackHook("paper_bridge", stale_seconds=3600)
+    return _IDEM_HOOK
+
+
 def _mark_ingested(trace_id, payload):
-    pdb.add_event(trace_id, "paper", "ingested", payload)
+    pdb.add_trace_event(trace_id, "paper", "paper.order.planned", payload,
+                        fact_hash=payload.get("fact_hash"),
+                        decision_id=payload.get("decision_id"),
+                        idempotency_key=payload.get("idempotency_key"))
 
 
 def _lookup_close(code):
@@ -80,6 +96,9 @@ def ingest(date=None, db=None, dry_run=False):
     opened, skipped = [], []
     for code, rec in tickets:
         trace_id = "pick-%s-%s" % (code, date)
+        fact_hash = rec.get("fact_hash")
+        decision_id = rec.get("decision_id")
+        idempotency_key = rec.get("idempotency_key") or trace_id
         if _trace_done(trace_id):
             skipped.append(code)
             print("  ↷ %s 已入过（幂等跳过）" % code)
@@ -94,19 +113,53 @@ def ingest(date=None, db=None, dry_run=False):
             qty = max(100, int(BUDGET_PER_POS / price // 100) * 100)
         else:
             qty = 100  # 无价参考时最小单（A 股一手口径，CLI 强制 100 整数倍）
+        # M0 P4 双轨幂等：旧 events trace + orders.ref 链仍是权威；此处并行
+        # 写统一 IdempotencyStore（fail-open，异常不阻断）。completed/conflict
+        # 提前跳过；claimed/in_progress 继续走引擎 ref 查重（订单已写/事件未写
+        # 的崩溃窗口靠引擎 ref 幂等补齐事件）。
+        hook = _idem_hook()
+        claim = hook.claim("ingest_order", idempotency_key, {
+            "date": date, "code": code, "qty": qty,
+            "fact_hash": fact_hash, "decision_id": decision_id,
+        })
+        attempt_id = claim.get("attempt_id", "")
+        if claim["outcome"] == "completed":
+            skipped.append(code)
+            print("  ↷ %s 幂等账本已完成（result_ref=%s）"
+                  % (code, claim.get("result_ref", "")))
+            continue
+        if claim["outcome"] == "conflict":
+            skipped.append(code)
+            print("  ⚠ %s 幂等账本冲突（跳过）：%s"
+                  % (code, claim.get("conflict_reason", "?")))
+            continue
+        if claim["outcome"] == "unavailable":
+            print("  [idem] 账本不可用（fail-open 继续旧链）：%s"
+                  % claim.get("error", "?"))
         # pending 单：plan_date=d2（asof 后第 2 个交易日）开盘撮合，
         # ref=trace_id 引擎级幂等，落 pick_bridge 子账本。
         rc, out = _paper("order", "--side", "BUY", "--stock", code,
                          "--qty", str(qty), "--plan-date", "d2", "--asof", date,
-                         "--ref", trace_id,
+                         "--ref", idempotency_key,
+                         "--trace-id", trace_id,
+                         "--fact-hash", fact_hash or "",
+                         "--decision-id", decision_id or "",
+                         "--idempotency-key", idempotency_key,
                          "--strategy", BRIDGE_STRATEGY,
                          "--account", BRIDGE_ACCOUNT, "--json", db=db)
         if rc != 0:
+            if attempt_id:
+                hook.complete(attempt_id, ok=False, error=out[-120:])
             print("  ❌ %s 落 pending 单失败 rc=%d：%s" % (code, rc, out[-120:]))
             continue
+        if attempt_id:
+            hook.complete(attempt_id, ok=True, result_ref=idempotency_key)
         _mark_ingested(trace_id, {"code": code, "name": rec.get("name"),
                                   "qty": qty, "plan_date": "d2",
-                                  "strategies": rec.get("strategies")})
+                                  "strategies": rec.get("strategies"),
+                                  "trace_id": trace_id, "fact_hash": fact_hash,
+                                  "decision_id": decision_id,
+                                  "idempotency_key": idempotency_key})
         opened.append(code)
         print("  ✅ %s pending 单已落（D+2 开盘）" % code)
     return {"date": date, "tickets": len(tickets), "opened": opened,
@@ -116,6 +169,7 @@ def ingest(date=None, db=None, dry_run=False):
 def smoke():
     """离线 fixture 冒烟：临时 db + 假 events 表，验幂等、dry-run 与真单 pending 链。"""
     import tempfile
+    os.environ["IDEMPOTENCY_DISABLED"] = "1"  # 冒烟绝不写统一幂等账本
     tmp = tempfile.mkdtemp(prefix="paper_bridge_smoke_")
     db = os.path.join(tmp, "paper.db")
     pdb.DB = os.path.join(tmp, "portal_events.db")

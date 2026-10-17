@@ -1,9 +1,9 @@
 {
  "db": {
   "host": "127.0.0.1",
-  "port": 5432,
+  "port": 5446,
   "user": "zhice",
-  "password": "zhice_pass",
+  "password": "",
   "dbname": "zhice_os_v2",
   "container": "zhice-db"
  },

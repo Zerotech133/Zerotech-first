@@ -14,7 +14,9 @@ X2 实体 ID 映射同步脚本（零界 PG schema xmap）
   mysql://readonly_user:pass@rookie-host:3306/thunder_model?charset=utf8mb4
 凭据缺失/驱动缺失时干净退出（exit 3），不抛栈。
 
-PG 连接：默认 127.0.0.1:5442 quant_user/quant_system（零界 docker newquantsystem_v2-postgres-1），
+PG 连接：默认 127.0.0.1:5442 quant_user/quant_system（Docker 容器 quant-pg，
+同容器还挂 quant_meta 库；2026-10-16 勘误：5442 并非残留占用，系 quant-pg 容器
+真实映射，此前误判曾短暂切 5443 已回滚），
 可用环境变量 XMAP_PG_HOST / XMAP_PG_PORT / XMAP_PG_USER / XMAP_PG_PASSWORD / XMAP_PG_DB 覆盖。
 """
 
@@ -49,12 +51,35 @@ EXIT_MISSING_CREDENTIAL = 3
 
 
 # ── PG 连接 ───────────────────────────────────────────────────────────
+def _load_env_local_pg_password():
+    """XMAP_PG_PASSWORD 回落链：env 未设时读同目录 .env.local（止血 2026-10-16：
+    移除源码明文兜底，缺密码 fail-closed，同 _load_env_local_dsn 模式，只填空不覆盖显式 env）。"""
+    if os.environ.get("XMAP_PG_PASSWORD", "").strip():
+        return
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = os.path.join(here, ".env.local")
+    if not os.path.isfile(p):
+        return
+    try:
+        for line in open(p, encoding="utf-8"):
+            line = line.strip()
+            if line.startswith("XMAP_PG_PASSWORD=") and not line.startswith("#"):
+                os.environ["XMAP_PG_PASSWORD"] = line.split("=", 1)[1].strip()
+                return
+    except OSError:
+        pass
+
+
 def pg_connect():
+    _load_env_local_pg_password()
+    pwd = os.environ.get("XMAP_PG_PASSWORD", "").strip()
+    if not pwd:
+        raise RuntimeError("XMAP_PG_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
     return psycopg2.connect(
         host=os.environ.get("XMAP_PG_HOST", "127.0.0.1"),
         port=int(os.environ.get("XMAP_PG_PORT", "5442")),
         user=os.environ.get("XMAP_PG_USER", "quant_user"),
-        password=os.environ.get("XMAP_PG_PASSWORD", "quant_password_123"),
+        password=pwd,
         dbname=os.environ.get("XMAP_PG_DB", "quant_system"),
         connect_timeout=5,
     )

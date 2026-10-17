@@ -44,6 +44,18 @@ REGISTRY = {
     8095: "picks定时发布调度(publish_schedule_server.py)",
     8097: "推送中台总览(push_admin_server.py)",
     8123: "claudemind server(桌面第三方,非平台栈)",
+    # 2026-10-16 数据仓止血入册：PG/Neo4j 容器口此前仅靠 dockerd 豁免（治理盲区）。
+    # 2026-10-16 审计修正：5432 实为 RAGFlow infinity；zhice-db 真实映射 5446。
+    # 2026-10-16 二次勘误：5442 并非残留占用，实为 quant-pg 容器
+    # （quant_system=xmap 基准+lineage 血缘、quant_meta=P1 迁移库）；
+    # 曾误建 5443（quant-system-pg）已删除。
+    5432: "RAGFlow infinity(Docker,非数据仓)",
+    5442: "quant-pg PostgreSQL(Docker,quant_system+quant_meta)",
+    5446: "zhice-db PostgreSQL(Docker,v2_bar_daily)",
+    7474: "neo4j-kg HTTP(Docker,时序知识图谱)",
+    7687: "neo4j-kg Bolt(Docker,时序知识图谱)",
+    17474: "zerobound Neo4j HTTP(Docker,独立图谱)",
+    17687: "zerobound Neo4j Bolt(Docker,独立图谱)",
 }
 
 
@@ -124,6 +136,10 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
 # 2026-10-14 K-STOCK-394：8787 Hermes WebUI 无 keepalive 链，start_hermes_bg.py
 # 幂等按需拉起（K271 配方），同 lark_card 按需语义入列，否则 strict 必挂。
 OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8787, 8899, 9104}
+# 2026-10-16 数据仓止血：PG/Neo4j 容器按需启停，
+# strict 语义=防抢占不判离线；库内健康由 kg_check / freshness_report / xmap 水位各自监控。
+# 2026-10-16 二次勘误：5442 实为 quant-pg 容器口；5443 误建容器已删、条目移除。
+OPTIONAL_OFFLINE |= {5432, 5442, 5446, 7474, 7687, 17474, 17687}
 
 
 def main():

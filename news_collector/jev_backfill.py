@@ -81,7 +81,9 @@ def main():
     ap.add_argument("--alert-threshold", type=int, default=100,
                     help="剩余积压告警阈值（0=不告警）")
     args = ap.parse_args()
-    db = sqlite3.connect(os.path.join(HERE, "news.db"))
+    # 2026-10-16 审计：timeout=30 防与速报链写库竞争立刻抛 locked
+    #（默认 5s 偏短；配合下方组级回滚兜底）
+    db = sqlite3.connect(os.path.join(HERE, "news.db"), timeout=30)
     rows = db.execute(
         "SELECT id, title, stocks FROM news "
         "WHERE (jev IS NULL OR jev='') ORDER BY ts DESC LIMIT ?",
@@ -117,10 +119,18 @@ def main():
             deadline_hit = 1
             break
         judges = news_ai.jev_judge_batch(items[i:i + 8])
-        for nid, j in judges.items():
-            db.execute("UPDATE news SET jev=? WHERE id=?",
-                       (json.dumps(j, ensure_ascii=False), nid))
-        db.commit()
+        try:
+            for nid, j in judges.items():
+                db.execute("UPDATE news SET jev=? WHERE id=?",
+                           (json.dumps(j, ensure_ascii=False), nid))
+            db.commit()
+        except sqlite3.OperationalError as e:
+            # 2026-10-16 审计：写库瞬态失败（locked/busy）原炸整个轮次，
+            # 本组判定全丢；回滚留待下轮重判（jev 判定幂等）。
+            db.rollback()
+            print("BACKFILL group commit FAIL %r（跳过本组，下轮重判）" % e,
+                  file=sys.stderr)
+            continue
         judged += len(judges)
         # 云侧故障短路：连续 3 组（24 条）全军覆没即收工。背景：typesafe
         # systemone 451 自 10-09 09:18 起持续，旧逻辑每轮空转 25-30 分钟

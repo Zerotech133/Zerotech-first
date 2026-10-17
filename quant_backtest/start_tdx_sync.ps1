@@ -1,11 +1,11 @@
-# tdx warehouse daily incremental sync launcher v2 (ASCII only, junction path)
+﻿# tdx warehouse daily incremental sync launcher v2 (ASCII only, junction path)
 # v2: process-level retry (3 attempts, 120s gap) + lock file (no double-run)
 #     + append-mode out/err logs with session separator (ref K-STOCK-382b/389)
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
-$env:HTTP_PROXY = 'http://127.0.0.1:7890'
-$env:HTTPS_PROXY = 'http://127.0.0.1:7890'
-$env:NO_PROXY = 'localhost,127.0.0.1'
+# 20261016换机：新机无本地代理(7890)，且数据源 rookie.xtcloud-tech.com 为国内
+# 自有服务器直连可达（实测 HTTP 200），故不再注入代理环境变量。
+$env:NO_PROXY = '*'
 $log = 'C:\Temp\tdx_sync_task.log'
 $out = 'C:\Temp\tdx_sync_out.log'
 $err = 'C:\Temp\tdx_sync_err.log'

@@ -6,9 +6,15 @@
 $ErrorActionPreference = 'Continue'
 $pyExe  = 'C:\Program Files\Python311\python.exe'
 
+# 2026-10-16 machine swap: prefer C:\aios junction (new machine), E:\ scan kept as old-machine fallback
 $BaseDir = $null
-foreach ($d in (Get-ChildItem 'E:\' -Directory)) {
-    if (Test-Path (Join-Path $d.FullName 'jev-eval\backup_alert.py')) { $BaseDir = $d.FullName; break }
+if (Test-Path 'C:\aios\jev-eval\backup_alert.py') {
+    $BaseDir = 'C:\aios'
+}
+if (-not $BaseDir) {
+    foreach ($d in (Get-ChildItem 'E:\' -Directory -ErrorAction SilentlyContinue)) {
+        if (Test-Path (Join-Path $d.FullName 'jev-eval\backup_alert.py')) { $BaseDir = $d.FullName; break }
+    }
 }
 if (-not $BaseDir) { exit 1 }
 

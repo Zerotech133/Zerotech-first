@@ -22,7 +22,7 @@ import json
 import os
 import re
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -33,10 +33,40 @@ WAREHOUSES = [  # (source, 数据根, manifest 路径)
      os.path.join(HERE, "data", "tdx", "_manifest.json")),
     ("tushare", os.path.join(HERE, "data", "tushare"),
      os.path.join(HERE, "data", "tushare", "_manifest.json")),
+    # 雪球仓（xueqiu-collector，设计 xueqiu-collector-design-2026-10-16 §3.3）
+    ("xueqiu", os.path.join(HERE, "data", "xueqiu"),
+     os.path.join(HERE, "data", "xueqiu", "_manifest.json")),
 ]
 LEGACY_US = os.path.join(HERE, "data", "us")       # 旧美股逐股（deprecated）
 CRYPTO_DIR = os.path.join(HERE, "data", "crypto")  # 加密货币日线
 INFO_DB = os.path.join(HERE, "data", "tdx", "tdx_info.db")
+XQ_INFO_DB = os.path.join(HERE, "data", "xueqiu", "xueqiu_info.db")  # 雪球舆情库
+GUBA_DIR = os.path.join(HERE, "data", "guba")  # guba 150 码 jsonl（kg-graph-storage-design §3.1）
+# 设计 §3.2：三个新扫描分支对应的雪球 parquet 表（采集器首跑前目录不存在 → 占位注册）
+XQ_PARQUET_TABLES = ["xq_quote_snap", "xq_kline_d", "xq_capital_flow",
+                     "xq_northbound", "xq_earningforecast", "xq_hot_deal",
+                     "xq_inner_trade"]
+
+# 数据地基模块章程 §3（2026-10-16）：外部库表登记（代码即契约）。
+# PG/Neo4j 等物理独立存储不搬数据，只在 catalog 登记元数据让读层可路由；
+# 每次重建自动并入，不依赖手工编辑 JSON。v2_bar_daily 读路径=datamart
+# layout "pg" → data_loader.load_table（直连 5432 zhice-db，失败 docker 兜底）。
+EXTERNAL_TABLES = {
+    "v2_bar_daily": {
+        "source": "pg", "store": "pg://zhice-db:5446/zhice_os_v2/v2_bar_daily",
+        "layout": "pg", "schema": ["symbol", "market", "trade_date", "open",
+                                   "high", "low", "close", "volume",
+                                   "turnover", "pre_close"],
+        "date_col": "trade_date", "code_col": "symbol",
+        "primary_key": ["symbol", "trade_date"],
+        "freq": "D", "priority": 3, "manifest": None,
+        "freshness": None, "rows": None, "files": 0,
+        "done": True, "deprecated": False,
+        "desc": "PG zhice-db 日线（zhice-os v2，多市场；symbol 为库内形态）",
+        "readiness_basis": "external_db", "verification_status": "unknown",
+        "manifest_status": "not_applicable", "status": "registered",
+    },
+}
 
 # tdx_read 同款口径：财务类日期列 end_date
 END_DATE_TABLES = {"ts_income", "ts_balancesheet", "ts_cashflow",
@@ -93,6 +123,10 @@ TABLE_DEFS = {
     "index_global":    {"date_col": "trade_date", "code_col": "ts_code",
                         "freq": "D", "manifest": None,
                         "desc": "全球指数日线（20 指数 HSI/SPX/DJI/IXIC/N225 等，逐指数单文件）"},
+    "ts_global_fut":   {"date_col": "trade_date", "code_col": "ts_code",
+                        "freq": "D", "manifest": None,
+                        "desc": "外盘商品期货日线（GF_CL00Y/GC00Y/HG00Y 逐品种单文件，"
+                                "global_fut_sync 维护；2026-10-16 收编回 data/）"},
     "news":            {"date_col": "datetime", "freq": "D",
                         "desc": "新闻快讯（tushare）"},
     "major_news":      {"date_col": "pub_time", "freq": "D",
@@ -175,6 +209,27 @@ for _market, _label in (('hk', '港股'), ('us', '美股')):
             'desc': _label + _label_table + '（Tushare）', 'date_col': 'end_date', 'freq': 'Q'}
 TABLE_DEFS['ts_rt_min'] = {'desc': '实时分钟行情（xtcloud，按实际 time 字段核验）',
                           'date_col': 'time', 'freq': '1min'}
+# ── 雪球仓（xueqiu，设计 §3.3：7 张 parquet 表）──
+TABLE_DEFS.update({
+    "xq_quote_snap":      {"date_col": "trade_date", "code_col": "ts_code",
+                           "freq": "D",
+                           "desc": "雪球收盘快照（quotec 免 token，缠论池）"},
+    "xq_kline_d":         {"date_col": "timestamp", "code_col": "ts_code",
+                           "freq": "D",
+                           "desc": "雪球前复权日线（逐码，交叉验证源）"},
+    "xq_capital_flow":    {"date_col": "trade_date", "code_col": "ts_code",
+                           "freq": "D", "desc": "雪球个股资金流"},
+    "xq_northbound":      {"date_col": "trade_date", "code_col": "ts_code",
+                           "freq": "D", "desc": "雪球北向持股（空日不落片）"},
+    "xq_earningforecast": {"date_col": "ann_date", "code_col": "ts_code",
+                           "freq": "W", "desc": "券商盈利预测（雪球）"},
+    "xq_hot_deal":        {"date_col": "trade_date", "code_col": "ts_code",
+                           "freq": "D",
+                           "desc": "雪球热度交易榜（akshare 补充源）"},
+    "xq_inner_trade":     {"date_col": "trade_date", "code_col": "ts_code",
+                           "freq": "D",
+                           "desc": "雪球内部交易/高管增减持（akshare）"},
+})
 # K-STOCK-398（10-15）：打板情绪周期底座。源limit_list_d 自算，不依赖 tushare 打板套餐。
 TABLE_DEFS['ts_emotion_daily'] = {
     'desc': '打板情绪周期日频面板（涨停/炸板/最高板/封板率/晋级率/封单额）',
@@ -195,6 +250,11 @@ for _tbl in ("income", "balancesheet", "cashflow", "fina_indicator"):
             "comp_type", "end_type", "update_flag"]
 for _tbl in ("anns_d", "research_report", "news", "major_news", "npr"):
     TABLE_DEFS[_tbl]["primary_key"] = []
+# 高管事件表无时序唯一键：同日公告多名高管/一人多职都是独立事件行，
+# 主键必须覆盖姓名+职务+任期，否则 dm.read 去重会折叠（57.5万→12万判例）。
+# 不在 schema 的列扫描时自动剔除（_scan_dir L456 同款过滤）。
+TABLE_DEFS.setdefault("stk_managers", {})["primary_key"] = [
+    "ts_code", "name", "title", "ann_date", "begin_date", "end_date"]
 
 # §5.3 逻辑别名（resolves 按真源优先级排序）
 ALIASES = {
@@ -377,6 +437,29 @@ def _freshness(store, layout, dcol, files):
         return None
 
 
+def _verify_status(e, stale_before):
+    """catalog 条目 verification_status 推导（2026-10-17 实装，结束全 unknown）。
+
+    有序判定：schema_error > verified_external > placeholder_empty >
+    manifest_missing > verified_stale > verified。依据全部来自本次重建
+    实测信号（schema_errors/readiness_basis/rows/files/manifest_status/
+    freshness），不引入额外 IO；stale_before=YYYYMMDD（7 天口径，与
+    治理统计一致）。各写入点的 'unknown' 仅为初始值，build() 统一覆盖。
+    """
+    if e.get("schema_errors"):
+        return 'schema_error'
+    if e.get("readiness_basis") == 'external_db':
+        return 'verified_external'
+    if not ((e.get("rows") or 0) > 0 or (e.get("files") or 0) > 0):
+        return 'placeholder_empty'
+    if e.get("manifest_status") == 'missing':
+        return 'manifest_missing'
+    f = str(e.get("freshness") or "")
+    if f[:8].isdigit() and f[:8] < stale_before:
+        return 'verified_stale'
+    return 'verified'
+
+
 def _scan_dir(source, root, mpath, tbl, mf, store=None):
     """扫单个表目录 → catalog 条目。store 可覆盖（us_legacy→data/us）。"""
     store = store or os.path.join(root, tbl)
@@ -481,6 +564,217 @@ def _scan_sqlite(mf):
     return out
 
 
+def _scan_xq_info_db(mf):
+    """xueqiu_info.db 三表 → catalog 条目（layout=sqlite，仿 _scan_sqlite）。
+
+    三表：xq_status/xq_hot_post（pk=status_id）、xq_comment
+    （pk=comment_id，复合索引 symbol+created_at）；date_col=created_at，
+    freshness=MAX(created_at)（设计 §3.3 ③）。
+    """
+    out = {}
+    if not os.path.exists(XQ_INFO_DB):
+        return out
+    dcol = {"xq_status": "created_at", "xq_hot_post": "created_at",
+            "xq_comment": "created_at"}
+    desc = {"xq_status": "雪球分类帖流（L3 直爬，讨论热度原始层）",
+            "xq_hot_post": "雪球全站热帖（L3 直爬，含 hot_rank）",
+            "xq_comment": "雪球个股讨论帖（L3 直爬，池内活跃股）"}
+    fresh, schemas, rows = {}, {}, {}
+    try:
+        conn = sqlite3.connect(
+            'file:' + XQ_INFO_DB.replace('\\', '/') + '?mode=ro',
+            uri=True, timeout=10)
+        for t, c in dcol.items():
+            try:
+                schemas[t] = [r[1] for r in
+                              conn.execute('PRAGMA table_info(%s)' % t)]
+                rows[t] = conn.execute(
+                    'SELECT COUNT(*) FROM %s' % t).fetchone()[0]
+                v = conn.execute(
+                    "SELECT MAX(%s) FROM %s" % (c, t)).fetchone()
+                s = str(v[0]) if v and v[0] else ""
+                fresh[t] = s[:10].replace("-", "") if s[:4].isdigit() \
+                    else None
+            except sqlite3.OperationalError:
+                pass
+        conn.close()
+    except Exception:
+        pass
+    xq_mf = (os.path.join(HERE, "data", "xueqiu", "_manifest.json")
+             ).replace("\\", "/")
+    for t in ("xq_status", "xq_hot_post", "xq_comment"):
+        ent = mf.get(t) or {}
+        out[t] = {
+            "source": "xueqiu", "store": XQ_INFO_DB.replace("\\", "/"),
+            "layout": "sqlite", "schema": schemas.get(t, []),
+            "date_col": dcol[t],
+            "schema_scope": 'sqlite_pragma' if schemas.get(t) else 'unknown',
+            "code_col": "ts_code", "freq": "D", "priority": 1,
+            "primary_key": [], "manifest": xq_mf,
+            "freshness": fresh.get(t), "rows": rows.get(t),
+            "files": 0, "done": bool(ent.get("done")),
+            "deprecated": False, "desc": desc[t],
+            "readiness_basis": 'manifest' if ent else 'sqlite_table_presence',
+            "verification_status": 'unknown',
+            "manifest_status": ('closed' if ent.get('done') else
+                                'open' if t in mf else 'missing'),
+        }
+    return out
+
+
+def _empty_entry(name, source, store, layout, desc=""):
+    """空数据占位 entry（设计 §3.2：采集器首跑前目录/库不存在不 fail）。
+
+    status='empty' 标记占位；done=False → datamart.ready()=False，
+    读层自动跳过，注册本身可见可查。
+    """
+    return {
+        "source": source, "store": str(store).replace("\\", "/"),
+        "layout": layout, "schema": [], "date_col": None, "code_col": None,
+        "schema_scope": "unknown", "schema_files_inspected": 0,
+        "schema_errors": [], "date_status": "unknown", "primary_key": [],
+        "freq": TABLE_DEFS.get(name, {}).get("freq", "D"),
+        "priority": TABLE_DEFS.get(name, {}).get("priority", 1),
+        "manifest": None, "freshness": None, "rows": None, "files": 0,
+        "done": False, "deprecated": False, "desc": desc,
+        "readiness_basis": "placeholder_empty", "verification_status": "unknown",
+        "manifest_status": "missing", "status": "empty",
+    }
+
+
+def scan_parquet_dir(root, logical_name):
+    """设计 §3.2 分支 1：雪球 parquet 表目录扫描（签名照设计）。
+
+    目录存在且有 parquet → 复用 _scan_dir（读首个 parquet schema 推断）；
+    目录缺失/空 → 注册占位 entry（status='empty'），不 fail（雪球采集器
+    本机从未跑过，data/xueqiu 可能尚不存在——占位注册正好符合设计）。
+    """
+    if os.path.isdir(root) and glob.glob(os.path.join(root, "*.parquet")):
+        parent = os.path.dirname(root)
+        mf = {}
+        mpath = os.path.join(parent, "_manifest.json")
+        if os.path.exists(mpath):
+            try:
+                mf = json.load(open(mpath, encoding="utf-8"))
+            except Exception:
+                mf = {}
+        ent = _scan_dir("xueqiu", parent, mpath, logical_name, mf)
+        ent["status"] = "registered"
+        return ent
+    return _empty_entry(logical_name, "xueqiu", root, "parquet",
+                        TABLE_DEFS.get(logical_name, {}).get("desc", ""))
+
+
+def scan_sqlite_tables(db_path, table_pattern="xq_"):
+    """设计 §3.2 分支 2：sqlite_master 枚举按前缀过滤（签名照设计）。
+
+    每表一条 entry；db 存在时委托 _scan_xq_info_db（既有实现，store=db
+    路径，与 datamart sqlite 读层路由兼容；设计原文 'path 记 db::表名'
+    的表名信息由 layout=sqlite + 已知表名清单承载，读层可达优先）。
+    db 缺失/空 → 三个已知舆情表各注册一条占位 entry，不 fail。
+    """
+    entries = {}
+    if os.path.exists(db_path):
+        entries.update(_scan_xq_info_db({}))
+        for e in entries.values():
+            e["status"] = "registered"
+    known = {"xq_status": "雪球分类帖流（L3 直爬，讨论热度原始层）",
+             "xq_hot_post": "雪球全站热帖（L3 直爬，含 hot_rank）",
+             "xq_comment": "雪球个股讨论帖（L3 直爬，池内活跃股）"}
+    for t, desc in known.items():
+        if t.startswith(table_pattern) and t not in entries:
+            entries[t] = _empty_entry(t, "xueqiu", db_path, "sqlite", desc)
+    return entries
+
+
+def scan_jsonl_glob(root, logical_name):
+    """设计 §3.2 分支 3：*.jsonl glob 聚合为一逻辑表（签名照设计）。
+
+    按首行 schema 推断；额外记录 file_count / total_lines；脏行跳过计数
+    （设计 §8 风险表：guba 150 码文件无统一 schema）。symbol 不在行内，
+    由读层从文件名（6 位股码）注入。无文件/全空 → 占位 entry。
+    """
+    files = sorted(glob.glob(os.path.join(root, "*.jsonl")))
+    if not files:
+        return {"guba_posts": _empty_entry(
+            logical_name, "guba", root, "jsonl",
+            "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）")}
+    schema, total_lines, bad_lines = [], 0, 0
+    for fp in files:
+        try:
+            with open(fp, encoding="utf-8") as f:
+                for ln in f:
+                    ln = ln.strip()
+                    if not ln:
+                        continue
+                    total_lines += 1
+                    if schema:          # schema 已推断出：只计数
+                        continue
+                    try:
+                        row = json.loads(ln)
+                    except ValueError:
+                        bad_lines += 1
+                        continue
+                    schema.extend(row.keys())   # 首有效行 schema 推断
+        except OSError:
+            continue
+    if not total_lines:
+        return {"guba_posts": _empty_entry(
+            logical_name, "guba", root, "jsonl",
+            "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）")}
+    ent = {
+        "source": "guba", "store": root.replace("\\", "/"),
+        "layout": "jsonl", "schema": schema, "date_col": "ts",
+        "code_col": None, "schema_scope": "sampled",
+        "schema_files_inspected": 1, "schema_errors": [],
+        "date_status": "registered", "primary_key": ["post_id"],
+        "freq": "D", "priority": 1, "manifest": None,
+        "freshness": None, "rows": total_lines, "files": len(files),
+        "done": True, "deprecated": False,
+        "desc": "东方财富股吧帖（150 码轮转 jsonl，symbol=文件名）",
+        "readiness_basis": "file_presence", "verification_status": "unknown",
+        "manifest_status": "missing", "status": "registered",
+        "file_count": len(files), "total_lines": total_lines,
+        "bad_lines": bad_lines,
+    }
+    return {"guba_posts": ent}
+
+
+def _register_intel_tables():
+    """设计 §3.1：xq_* 10 表 + guba_posts 统一注册入口（占位容错）。"""
+    tables = {}
+    xq_root = os.path.join(HERE, "data", "xueqiu")
+    for tbl in XQ_PARQUET_TABLES:
+        tables[tbl] = scan_parquet_dir(os.path.join(xq_root, tbl), tbl)
+    tables.update(scan_sqlite_tables(XQ_INFO_DB, "xq_"))
+    tables.update(scan_jsonl_glob(GUBA_DIR, "guba_posts"))
+    return tables
+
+
+def _changelog(prev_tables, new_tables, version, path=None):
+    """catalog_changelog 追加一条（注册/注销表集变化记录，设计 §3.2）。
+
+    path 缺省跟随 OUT 同目录（生产=HERE/data/catalog_changelog.jsonl，
+    行为不变）；测试注入 out_path 时随其目录落盘，避免污染生产审计日志
+    （Bug：写死 HERE/data，warehouse fixture 触发 56 条垃圾记录）。
+    """
+    added = sorted(set(new_tables) - set(prev_tables))
+    removed = sorted(set(prev_tables) - set(new_tables))
+    if not added and not removed:
+        return None
+    path = path or os.path.join(os.path.dirname(OUT),
+                                "catalog_changelog.jsonl")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    entry = {
+        "ts": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "version": version, "added": added, "removed": removed,
+        "note": "kg-graph-storage-design §3 catalog 注册 xq_* 10 表 + guba_posts",
+    }
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return entry
+
+
 def build(data_root=None, out_path=None):
     """扫描两仓 → catalog dict（并原子落盘）。测试可传自定义根目录。"""
     tables = {}
@@ -503,6 +797,8 @@ def build(data_root=None, out_path=None):
             tables[tbl] = _scan_dir(source, root, mpath, tbl, mf)
         if data_root is None and source == "xtcloud":   # tdx 信息库三表
             tables.update(_scan_sqlite(mf))
+        if data_root is None and source == "xueqiu":    # 雪球舆情库三表
+            tables.update(_scan_xq_info_db(mf))
     if data_root is None and os.path.isdir(LEGACY_US):
         tables["us_legacy"] = _scan_dir(
             "legacy", os.path.dirname(LEGACY_US), None, "us_legacy", {},
@@ -511,8 +807,30 @@ def build(data_root=None, out_path=None):
         tables["crypto_daily"] = _scan_dir(
             "crypto", os.path.dirname(CRYPTO_DIR), None, "crypto_daily", {},
             store=CRYPTO_DIR)
+    # 设计 §3：xq_* 10 表 + guba_posts 注册（空数据占位，不 fail）
+    prev_tables = {}
+    prev_version = 0
+    try:
+        with open(OUT, encoding="utf-8") as f:
+            _prev = json.load(f)
+        prev_tables = set(_prev.get("tables") or {})
+        prev_version = int(_prev.get("version") or 0)
+    except (OSError, ValueError):
+        pass
+    intel = _register_intel_tables()
+    tables.update(intel)
+    tables.update(EXTERNAL_TABLES)   # 章程 §3：外部库表（PG 等）并入目录
+    # 验证体系：全表统一推导 verification_status（此前 222 表全 unknown，
+    # catalog 仅有登记没有可信度判定——2026-10-17 治理补齐）
+    stale_before = (datetime.now() - timedelta(days=7)).strftime("%Y%m%d")
+    for e in tables.values():
+        e["verification_status"] = _verify_status(e, stale_before)
+    version = prev_version + 1 if set(tables) != prev_tables else max(prev_version, 1)
+    _changelog(prev_tables, tables, version,
+               os.path.join(os.path.dirname(out_path or OUT),
+                            "catalog_changelog.jsonl"))
     cat = {
-        "version": 1,
+        "version": version,
         "updated": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "tables": tables,
         "aliases": ALIASES,
@@ -540,4 +858,6 @@ def _summarize(cat):
 
 
 if __name__ == "__main__":
-    _summarize(build())
+    from linreg import run_with_lineage
+    run_with_lineage("kg_daily_sync", "catalog_build",
+                     lambda: _summarize(build()))

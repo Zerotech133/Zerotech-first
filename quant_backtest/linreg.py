@@ -22,6 +22,9 @@ from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 ERR_LOG = os.path.join(HERE, "logs", "lineage_err.log")
 
+# 2026-10-16 勘误回滚：5442 实为 quant-pg 容器真实映射（此前误判为 wsl-bootstrap
+# 残留占用而新建 5443，已废弃）。quant_system（xmap 基准 stock_basic + lineage 三表）
+# 统一回 quant-pg。env LINEAGE_DSN 可覆盖。
 _DEFAULT_DSN = "host=127.0.0.1 port=5442 user=quant_user dbname=quant_system"
 
 
@@ -35,14 +38,29 @@ def _log_err(where, exc):
         pass
 
 
+def _lineage_password():
+    """LINEAGE_PASSWORD 回落链：env → 同目录 .env.local（止血 2026-10-16：
+    移除源码明文兜底，缺密码抛错由 _silent 记 logs/lineage_err.log，best-effort 纪律不变）。"""
+    pwd = os.environ.get("LINEAGE_PASSWORD", "").strip()
+    if pwd:
+        return pwd
+    p = os.path.join(HERE, ".env.local")
+    if os.path.isfile(p):
+        try:
+            for line in open(p, encoding="utf-8"):
+                line = line.strip()
+                if line.startswith("LINEAGE_PASSWORD=") and not line.startswith("#"):
+                    return line.split("=", 1)[1].strip()
+        except OSError:
+            pass
+    raise RuntimeError("LINEAGE_PASSWORD 未配置（env 或 quant_backtest/.env.local）")
+
+
 def _get_conn():
     import psycopg2  # 沿产线既有依赖（psycopg2-binary），不引新包
     dsn = os.environ.get("LINEAGE_DSN")
     if not dsn:
-        dsn = _DEFAULT_DSN
-        # 密码兜底沿 xmap_sync.py 产线同款口径（计划任务无 env 时静默断链修复）
-        dsn += " password=" + os.environ.get(
-            "LINEAGE_PASSWORD", "quant_password_123")
+        dsn = _DEFAULT_DSN + " password=" + _lineage_password()
     return psycopg2.connect(dsn, connect_timeout=5)
 
 
@@ -181,3 +199,22 @@ class JobRun:
 def noop():
     """占位：埋点被禁用时替换用（保持 with 语法不变）。"""
     yield None
+
+
+def run_with_lineage(job, step, fn, *args, **kwargs):
+    """__main__ 入口血缘包装（章程 §4.4：KgDailySync 22 步全覆盖）。
+
+    不侵入 fn 函数体；退出码如实登记：正常返回/SystemExit(0)→ok，
+    SystemExit(非 0)/异常→fail，进程被杀→__del__ 兜底记 lost。
+    best-effort 纪律不变：linreg 自身任何异常吞掉落 lineage_err.log。
+    """
+    jr = JobRun(job, step).__enter__()
+    try:
+        fn(*args, **kwargs)
+    except SystemExit as e:
+        jr.finish("ok" if e.code in (0, None) else "fail")
+        raise
+    except BaseException:
+        jr.finish("fail")
+        raise
+    jr.finish("ok")

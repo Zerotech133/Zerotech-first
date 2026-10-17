@@ -20,7 +20,10 @@ import subprocess
 import sys
 import urllib.request
 
-LARK_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
+# K-STOCK-414：旧机用户 Administrator 硬编码换机断链 → expanduser 动态推导
+LARK_ROOT = os.path.join(
+    os.path.expanduser("~"), ".trae-cn", "plugins",
+    "trae-remote-official", "lark")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
 
@@ -45,13 +48,18 @@ def find_lark_cli():
 
 
 def _load_app_creds():
-    """读 ~/.lark-cli/config.json 静态凭证（backup_alert.load_app_creds 同款）。"""
+    """读 ~/.lark-cli/config.json 静态凭证（backup_alert.load_app_creds 同款）。
+
+    20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
+    → (None, None)，通道 1 干净失败走 lark-cli 回退（feishu_client 同款）。"""
     cfg = os.path.join(os.path.expanduser("~"), ".lark-cli", "config.json")
     try:
         with open(cfg, encoding="utf-8") as f:
             apps = json.load(f).get("apps") or []
         if apps:
-            return apps[0].get("appId"), apps[0].get("appSecret")
+            aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
+            if aid and isinstance(sec, str):
+                return aid, sec
     except Exception:
         pass  # 豁免（C2批2）：凭证文件缺失→(None,None)，调用方以 SEND_FAIL no app creds 呈现
     return None, None
@@ -76,6 +84,20 @@ def send_content_to(receive_id, receive_id_type, content, msg_type):
     return ok
 
 
+def _flow_record(ok, target):
+    """K-PUSH-001 底座埋点：lark-cli 回退通道结果落 push_flow 追溯账
+    （OpenAPI 通道由 feishu_client.send_msg 埋点，本函数只记回退路）。
+    fail-safe：任何异常吞掉，绝不影响发送主链路。"""
+    try:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        import push_flow
+        push_flow.record(push_flow.infer_kind(), "lark-cli", target, 1, ok)
+    except Exception:
+        pass
+
+
 def send_text(text):
     return send_content(json.dumps({"text": text}, ensure_ascii=False), "text")
 
@@ -93,6 +115,7 @@ def send_content(content, msg_type):
         return True
     exe = find_lark_cli()
     if not exe:
+        _flow_record(False, USER_ID)  # K-PUSH-001 埋点：openapi败且无回退
         print("SEND_FAIL openapi:%s no lark-cli" % why)
         return False
     last = why
@@ -104,20 +127,32 @@ def send_content(content, msg_type):
                  "--content", content],
                 capture_output=True, text=True, encoding="utf-8", timeout=30)
             try:
-                # K-STOCK-400：取末行 JSON——lark-cli stdout 若混入告警/
+                # K-STOCK-400：末尾 JSON 优先——lark-cli stdout 若混入告警/
                 # 版本提示/BOM，整体解析必败 → 误判失败 → 换 user 域重发
-                # → 用户双收。取末行与 feishu_bot_ws._er_cli 判例对齐。
-                ok = json.loads(
-                    (r.stdout or "").strip().splitlines()[-1]
-                ).get("ok") is True
+                # → 用户双收。20261016换机补充：新版 lark-cli 输出 pretty-
+                # print 多行 JSON（末行仅 "}"），需从末个 "{" 行拼接解析。
+                out = (r.stdout or "").strip()
+                ok = False
+                lines = out.splitlines()
+                for i in range(len(lines) - 1, -1, -1):
+                    seg = "\n".join(lines[i:]).strip()
+                    if not seg.startswith("{"):
+                        continue
+                    try:
+                        ok = json.loads(seg).get("ok") is True
+                        break
+                    except Exception:
+                        continue
             except Exception:
                 ok = False
             if ok:
+                _flow_record(True, uid)  # K-PUSH-001 埋点：回退成功
                 print("SEND_OK")
                 return True
             last = (r.stdout or r.stderr or "")[:200]
         except Exception as e:
             last = str(e)[:200]
+    _flow_record(False, USER_ID)  # K-PUSH-001 埋点：回退双身份均失败
     print("SEND_FAIL " + last)
     return False
 

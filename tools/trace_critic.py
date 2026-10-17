@@ -10,7 +10,7 @@ Ollama 直连 11434 不走；35b 已证伪勿用）做三维度打分：
      （判例 K-STOCK-141：批7切割丢 _council_page 尾行 self._html(body)
        → 服务端零异常 + 客户端裸 socket）
 三维度任一 ≤4 分 → verdict=REVIEW（升级 QA1 深审清单）。
-边界：打分只做升级触发器，不直接裁决（裁决权在 QA1/田小皮）。
+边界：打分只做升级触发器，不直接裁决（裁决权在 QA1/田丰）。
 
 用法：
   python tools/trace_critic.py                # 最新 30 条轨迹打分
@@ -157,7 +157,7 @@ def score_one(summary, timeout):
             return {"tid": summary["tid"], "scores": None,
                     "verdict": "UNPARSED",
                     "reason": "维度分缺失/非整数", "raw": raw[:200]}
-    # 升级规则：任一维度 ≤4 → REVIEW（只做升级触发器，裁决权在 QA1/田小皮）
+    # 升级规则：任一维度 ≤4 → REVIEW（只做升级触发器，裁决权在 QA1/田丰）
     verdict = "REVIEW" if min(scores.values()) <= REVIEW_THRESHOLD else "PASS"
     return {"tid": summary["tid"], "scores": scores, "verdict": verdict,
             "reason": str(obj.get("reason", ""))[:120], "raw": raw[:200]}

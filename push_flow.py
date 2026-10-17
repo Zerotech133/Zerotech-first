@@ -3,13 +3,20 @@
 
 写入方：quant_backtest/subscribe.py（订阅推送，_push_card 后）
         portal/km_feishu_hub.py（知识库摘要卡，push_lib 内）
+        K-PUSH-001 底座埋点（自动，kind 带 auto: 前缀）：
+          news_collector/feishu_client.send_msg（OpenAPI 通道全量）
+          news_collector/send_feishu.send_content（lark-cli 回退通道）
 读  方：portal/push_admin_server.py（今日用量 + 近 7 天趋势 → 推送中台总览）
 行格式：{"ts","date","kind","channel","target","count","ok","tenant"}
 原则：fail-safe——记录失败只吞掉，绝不影响推送主链路；只记"真实发送"，
       跳过（无变更/熔断/停用）不记。
+计费口径：auto: 前缀行是底座追溯账（全量覆盖、kind 从主脚本名推断），
+      stats()/quota_check() 不计入——与业务方手动 record（计费账）隔离，
+      防双计；后续批次收编手动记账后再并账。
 """
 import json
 import os
+import sys
 import threading
 
 FLOW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -38,6 +45,17 @@ def record(kind, channel, target, count=1, ok=True, tenant="default"):
         pass
 
 
+def infer_kind():
+    """K-PUSH-001 底座埋点用 kind 推断：取主脚本名（进程内 import 场景
+    即业务脚本名，如 news_digest；子进程 send_feishu 场景退化为发送器
+    名）。一律加 auto: 前缀——追溯账标记，stats 不计费防双计。"""
+    try:
+        stem = os.path.splitext(os.path.basename(sys.argv[0] or ""))[0]
+        return "auto:" + (stem or "unknown")
+    except Exception:
+        return "auto:unknown"
+
+
 def stats(days=7):
     """近 N 天统计：逐日成功发送条数 + 今日按 kind 汇总（读侧容错降级为空）。"""
     import datetime as dt
@@ -55,6 +73,10 @@ def stats(days=7):
                 try:
                     r = json.loads(line)
                 except ValueError:
+                    continue
+                # K-PUSH-001：auto: 追溯账不计入计费统计（防与业务手动
+                # record 双计）——并账在手动记账收编批次再做
+                if str(r.get("kind", "")).startswith("auto:"):
                     continue
                 d = r.get("date", "")
                 if not (start <= d <= today.isoformat()):

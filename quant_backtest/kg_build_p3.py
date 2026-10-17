@@ -86,13 +86,10 @@ def load_returns():
     idx = dm.read("index_daily", fields=["ts_code", "trade_date", "close"])
     idx = idx[idx["ts_code"].isin(A_IDX)]
     frames.append(idx)
-    # 全球指数
-    for f in sorted(glob.glob(os.path.join(
-            HERE, "data", "tushare", "index_global", "*.parquet"))):
-        code = os.path.basename(f).replace(".parquet", "")
-        if code in GLOBAL_IDX:
-            df = pd.read_parquet(f, columns=["ts_code", "trade_date", "close"])
-            frames.append(df)
+    # 全球指数（2026-10-16 收编：dm.read 读层替代逐文件 glob；文件内含
+    # ts_code 列，身份不再依赖文件名）
+    gidx = dm.read("index_global", fields=["ts_code", "trade_date", "close"])
+    frames.append(gidx[gidx["ts_code"].isin(GLOBAL_IDX)])
     px = pd.concat(frames, ignore_index=True)
     # 去重（同日同码取最后）+ pivot
     px = px.drop_duplicates(subset=["ts_code", "trade_date"], keep="last")

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 
 ENVIRONMENTS = frozenset({"shadow", "paper", "advisory", "legacy"})
+TRACE_FIELDS = ("trace_id", "fact_hash", "decision_id", "idempotency_key")
 EVENT_FIELDS = frozenset({
     "schema_version", "kind", "environment", "source", "source_id",
     "occurred_at", "available_at", "payload",
@@ -61,6 +62,38 @@ def normalize_time(value) -> str:
 
 def utc_now() -> str:
     return normalize_time(datetime.now(timezone.utc))
+
+
+def trace_payload(trace_id=None, fact_hash=None, decision_id=None,
+                  idempotency_key=None, **payload) -> dict:
+    """返回只含已提供追踪字段的 payload 副本，避免各层自行拼字段。"""
+    values = {
+        "trace_id": trace_id,
+        "fact_hash": fact_hash,
+        "decision_id": decision_id,
+        "idempotency_key": idempotency_key,
+    }
+    for name, value in values.items():
+        if value is not None:
+            if type(value) is not str or not value.strip():
+                raise ValueError(f"{name} 必须是非空字符串")
+            payload[name] = value
+    return json.loads(canonical_json(payload))
+
+
+def trace_event(kind, environment, source, source_id, occurred_at,
+                payload=None, available_at=None, **trace):
+    """构造统一事件；追踪字段同时落在事件 payload，旧事件字段不变。"""
+    body = dict(payload or {})
+    for name in TRACE_FIELDS:
+        if name in trace:
+            body[name] = trace[name]
+    body = trace_payload(**{name: body.pop(name, None) for name in TRACE_FIELDS}, **body)
+    return validate_event({
+        "schema_version": 1, "kind": kind, "environment": environment,
+        "source": source, "source_id": source_id, "occurred_at": occurred_at,
+        "available_at": available_at, "payload": body,
+    })
 
 
 def validate_event(event) -> dict:

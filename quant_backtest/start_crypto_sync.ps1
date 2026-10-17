@@ -1,10 +1,12 @@
 # crypto_daily daily incremental sync launcher (ASCII only, junction path)
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$env:PYTHONUTF8 = '1'
 $log = 'C:\Temp\crypto_sync_task.log'
+# K-mig (10-16): entry probe - locate silent death before python launch
+('wrapper entered ' + (Get-Date -Format s)) | Out-File $log -Append -Encoding utf8
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+$env:PYTHONUTF8 = '1'
 try {
     Push-Location 'C:\aios\quant_backtest'
-    & 'C:\Program Files\Python311\python.exe' -X utf8 C:\aios\quant_backtest\crypto_sync.py `
+    & 'C:\Program Files\Python311\python.exe' -X utf8 -u C:\aios\quant_backtest\crypto_sync.py `
         1> C:\Temp\crypto_sync_out.log 2> C:\Temp\crypto_sync_err.log
     $rc = $LASTEXITCODE
     Pop-Location

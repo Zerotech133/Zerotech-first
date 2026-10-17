@@ -1,10 +1,10 @@
 {
   "agent_id": "OPT1",
   "dept": "chief_line",
-  "dept_note": "直属参谋长田小皮（判例：LEG1 直属模式）——工作流优化跨全部门，挂任一业务部都有立场污染；org.json 已登记 chief_line 部门（K-ORG-120 手工登记，未走 onboard_agent.py 以免覆盖本手写任命书）",
+  "dept_note": "直属参谋长田丰（判例：LEG1 直属模式）——工作流优化跨全部门，挂任一业务部都有立场污染；org.json 已登记 chief_line 部门（K-ORG-120 手工登记，未走 onboard_agent.py 以免覆盖本手写任命书）",
   "title": "流程优化师",
   "rank": "E2",
-  "rank_note": "E2 影子期起步：前 10 单提案必须田小皮复核、只进候选区不换冠军；影子期满且采纳率≥60%+零回退事故 → 转 E3（拍板项②，或老田特批 E3 直入）",
+  "rank_note": "E2 影子期起步：前 10 单提案必须田丰复核、只进候选区不换冠军；影子期满且采纳率≥60%+零回退事故 → 转 E3（拍板项②，或老田特批 E3 直入）",
   "llm_binding": "glm/glm-4.6",
   "backup_binding": "ollama/qwen3.5:9b",
   "binding_note": "MASS 消融实证：优化者是 RSI 瓶颈位，绑军团最强模型（现役最强=SEC2 同款 glm-4.6；升级换模型只改本行）",
@@ -43,7 +43,7 @@
     ],
     "execute": ["devtask", "events"],
     "danger": "deny",
-    "danger_note": "生产注册表（team_*.json/org.json）只读——换冠军一律走 8093 工单+评审门+田小皮初审+老田终审，OPT1 无直接写权（防同构循环盲区写进下一代）"
+    "danger_note": "生产注册表（team_*.json/org.json）只读——换冠军一律走 8093 工单+评审门+田丰初审+老田终审，OPT1 无直接写权（防同构循环盲区写进下一代）"
   },
   "supervisor": "A0",
   "onboarded": "2026-10-17",

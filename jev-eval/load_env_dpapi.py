@@ -39,11 +39,18 @@ def _unprotect(blob: bytes) -> bytes:
     buf = ctypes.create_string_buffer(blob, len(blob))
     fin = _Blob(len(blob), ctypes.cast(buf, ctypes.c_void_p))
     fout = _Blob()
-    ok = ctypes.windll.crypt32.CryptUnprotectData(
-        ctypes.byref(fin), None, None, None, None, 0x1, ctypes.byref(fout))
+    # 判例（2026-10-16 新机）：计划任务 S4U 登录不加载用户 profile，
+    # CurrentUser 作用域（0x1）必然解不开 → .enc 改由 LocalMachine 作用域
+    #（0x4）重加密后，非交互任务也能解。双作用域依次尝试保持向后兼容。
+    ok = 0
+    for flags in (0x1, 0x5):  # UI_FORBIDDEN / UI_FORBIDDEN|LOCAL_MACHINE
+        ok = ctypes.windll.crypt32.CryptUnprotectData(
+            ctypes.byref(fin), None, None, None, None, flags, ctypes.byref(fout))
+        if ok:
+            break
     if not ok:
-        raise OSError("CryptUnprotectData 失败 err=%d（CurrentUser 作用域，"
-                      "异账户/异机不可解）" % ctypes.GetLastError())
+        raise OSError("CryptUnprotectData 失败 err=%d（CurrentUser/LocalMachine "
+                      "两作用域均不可解）" % ctypes.GetLastError())
     try:
         return ctypes.string_at(fout.pbData, fout.cbData)
     finally:

@@ -2,14 +2,15 @@
 # 作用：自动跑 --report 存档 + 飞书消息推送摘要（替代原 Popup 阻塞）
 # 注意：路径写死绝对路径（$MyInvocation 在 -File 计划任务下不可靠）
 $ErrorActionPreference = 'Continue'
-$here = 'E:\老田的AI助手\jev-eval'
+# 2026-10-16 换机修复：E: 盘不存在 → C:\aios junction；裸 python 违反产线铁律 → 显式 Python311
+$here = 'C:\aios\jev-eval'
 $out = "$here\review_data\report-20260928.txt"
 $env:PYTHONIOENCODING = 'utf-8'
 
 # 加载飞书配置（LARK_ALERT_OPEN_ID + lark-cli PATH）
 . (Join-Path $here 'jev-gate.env.ps1')
 
-python (Join-Path $here 'signal_review_gate.py') --report *> $out
+& 'C:\Program Files\Python311\python.exe' -X utf8 (Join-Path $here 'signal_review_gate.py') --report *> $out
 
 # 摘要截取前 45 行，飞书文本消息长度有限，超长截断
 $summary = (Get-Content $out -Encoding UTF8 | Select-Object -First 45) -join "`n"

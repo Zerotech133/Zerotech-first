@@ -184,7 +184,10 @@ def _app_creds():
         with open(cfg, encoding="utf-8") as f:
             apps = json.load(f).get("apps") or []
         if apps:
-            return apps[0].get("appId"), apps[0].get("appSecret")
+            aid, sec = apps[0].get("appId"), apps[0].get("appSecret")
+            # 20261016换机：appSecret 非 str（1.0.5+ 外置引用 dict）即不可用
+            if aid and isinstance(sec, str):
+                return aid, sec
     except Exception:
         pass
     return None, None

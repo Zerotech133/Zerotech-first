@@ -18,27 +18,27 @@ from rag_web_backend import RagWebService  # noqa: E402
 
 class ModelRoutingTests(unittest.TestCase):
     def test_chat_accepts_only_supported_models(self):
-        self.assertEqual(select_model("chat", "qwen3.5:4b").model, "qwen3.5:4b")
+        self.assertEqual(select_model("chat", "qwen3.5-trae").model, "qwen3.5-trae")
         self.assertEqual(select_model("chat", "qwen3.5:9b").model, "qwen3.5:9b")
-        self.assertEqual(select_model("chat", "qwen3.5:35b").model, "qwen3.5:35b")
-        self.assertEqual(tuple(CHAT_MODELS), ("qwen3.5:4b", "qwen3.5:9b", "qwen3.5:35b"))
+        self.assertEqual(select_model("chat", "qwen3.6:35b-a3b").model, "qwen3.6:35b-a3b")
+        self.assertEqual(tuple(CHAT_MODELS), ("qwen3.5-trae", "qwen3.5:9b", "qwen3.6:35b-a3b"))
         with self.assertRaises(ModelRoutingError):
             select_model("chat", "qwen3.5:1b")
 
     def test_missing_default_chat_model_falls_back_with_hint(self):
-        selection = select_model("chat", installed=["qwen3.5:4b"])
-        self.assertEqual(selection.model, "qwen3.5:4b")
+        selection = select_model("chat", installed=["qwen3.5-trae"])
+        self.assertEqual(selection.model, "qwen3.5-trae")
         self.assertTrue(selection.degraded)
         self.assertIn("qwen3.5:9b", selection.message)
-        self.assertIn("qwen3.5:4b", selection.message)
+        self.assertIn("qwen3.5-trae", selection.message)
 
-    def test_rag_is_fixed_to_9b_without_silent_4b_fallback(self):
-        selection = select_model("rag", installed=["qwen3.5:4b"])
+    def test_rag_is_fixed_to_9b_without_silent_light_fallback(self):
+        selection = select_model("rag", installed=["qwen3.5-trae"])
         self.assertEqual(selection.model, RAG_CHAT_MODEL)
         self.assertTrue(selection.degraded)
         self.assertIn("qwen3.5:9b", selection.message)
         with self.assertRaises(ModelRoutingError):
-            select_model("rag", "qwen3.5:4b")
+            select_model("rag", "qwen3.5-trae")
 
     def test_embedding_is_fixed_to_bge_m3(self):
         selection = select_model("embedding", installed=["qwen3.5:9b"])
@@ -58,7 +58,7 @@ class ModelRoutingTests(unittest.TestCase):
 
     def test_rag_rejects_non_contract_model_overrides(self):
         with self.assertRaises(ModelRoutingError):
-            RagWebService(chat_model="qwen3.5:4b")
+            RagWebService(chat_model="qwen3.5:35b")
         with self.assertRaises(ModelRoutingError):
             RagWebService(embed_model="nomic-embed-text")
 

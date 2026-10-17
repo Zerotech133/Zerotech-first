@@ -22,7 +22,7 @@ K线与量能是市场参与者博弈留下的**痕迹（证据）**；缠论结
 ### L1 数据底座（单底座单读层）
 | 资产 | 规模 | 状态 |
 |------|------|------|
-| catalog 统一目录 | 71 表 / 4 数据源 @09-28 立项快照 → **2026-10-08 实核 83 表**（xtcloud 31 + tushare 50 + legacy 1 + crypto 1）/ 4 数据源吻合；现值见 data/catalog.json | ✅ freshness 时点校对 |
+| catalog 统一目录 | 71 表 / 4 数据源 @09-28 立项快照 → 83 表 @10-08 实核 → **2026-10-17 治理实核 223 表 v5**（xtcloud 159 + tushare 50 + xueqiu 10 占位 + legacy 1 + crypto 1 + guba 1 + pg 1）/ 7 数据源；verification_status 全量判级@10-17（ok 级 145 = verified 144 + external 1 / stale 41 / manifest_gap 28 / 占位 9，build_catalog.py `_verify_status` 实装，7 天口径）；磁盘侧另有 meta.disk_health 告警账本（disk_health_check.py@10-17，断供≥7 天自动升 persistent_no_data）；现值见 data/catalog.json | ✅ freshness 时点校对 + verification 判级 |
 | 行情 | ts_daily(至今) / us / hk / crypto / index_global 20 指数 | ✅ 每日自动 |
 | 资金 | ts_moneyflow / ts_margin_detail / **ts_top_inst 席位明细 3 年（42.7 万行）** | ✅ 席位归因已入图（CL-1）|
 | 财报 | income/balancesheet/cashflow/fina_indicator 各 5569 | ✅ 已收口 |

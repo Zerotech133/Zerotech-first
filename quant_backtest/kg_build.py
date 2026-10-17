@@ -151,18 +151,21 @@ def build(dryrun=False):
     # 1) 读源数据
     print("[1/5] 读源数据…")
     df_basic = dm.read("stock_basic")
-    # datamart 优先返回 tdx 仓 ts_stock_basic（5908 行含退市，但缺 4 字段）
-    # 从 tushare parquet 按 ts_code merge 补齐 market/cnspell/act_name/act_ent_type
-    tu_basic = os.path.join(HERE, "data", "tushare", "stock_basic",
-                            "part_0000.parquet")
-    if os.path.exists(tu_basic):
-        df_tu = pd.read_parquet(tu_basic)
-        extra = [c for c in ["market", "cnspell", "act_name", "act_ent_type"]
-                 if c in df_tu.columns and c not in df_basic.columns]
-        if extra:
-            df_basic = df_basic.merge(df_tu[["ts_code"] + extra],
-                                      on="ts_code", how="left")
-            print("  补 tushare 字段: %s" % extra)
+    # 别名合并会把 tushare 列并入但值保真源（NaN）——原"列不在才补"判定
+    # 恒为空，4 字段从未补上（2026-10-16 收编时发现的存量 bug）。
+    # 改为 NaN 填充：真源有值保留，缺失从 tushare 物理表补。
+    df_tu = dm.read_physical("stock_basic")
+    extra = [c for c in ("market", "cnspell", "act_name", "act_ent_type")
+             if c in df_tu.columns]
+    if extra:
+        tu_idx = (df_tu.drop_duplicates("ts_code", keep="first")
+                  .set_index("ts_code")[extra])
+        for c in extra:
+            cur = (df_basic[c] if c in df_basic.columns else
+                   pd.Series(pd.NA, index=df_basic.index))
+            df_basic[c] = cur.where(cur.notna(),
+                                    df_basic["ts_code"].map(tu_idx[c]))
+        print("  补 tushare 字段(NaN 填充): %s" % extra)
     df_company = dm.read("stock_company")
     df_sw = dm.read("sw_classify_l1")
     print("  stock_basic: %d 行 × %d 列" % df_basic.shape)

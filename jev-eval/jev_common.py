@@ -64,7 +64,8 @@ def new_trace(prefix: str = "t"):
 
 def log(msg: str, level: str = "info", **fields) -> None:
     rec = {"ts": datetime.now().isoformat(timespec="milliseconds"),
-           "level": level, "mod": _MOD["name"], "msg": msg}
+           "level": level, "mod": _MOD["name"], "msg": msg,
+           "pid": os.getpid()}  # 2026-10-16: 多实例排障（451 来源追踪）
     if _TRACE.get():
         rec["trace_id"] = _TRACE.get()
     rec.update(fields)
@@ -125,6 +126,103 @@ def install_stop() -> dict:
     return stop
 
 
+# ── Jev 后端分发（2026-10-16：typesafe.ai 对当前出口 451 地区屏蔽） ──
+# JEV_BACKEND=ollama 走本地 Ollama（/api/chat + format:json 强制 JSON），
+# 输出归一化到 systemone answers 协议；gate / qd_bridge 共用本入口。
+_JEV_OLLAMA_SYS = (
+    "你是交易与投研系统的告警/持仓判定器。只输出一个 JSON 对象，"
+    "禁止输出任何其他文字。数值题型输出 {\"<键名>\": {\"noul\": <0到1小数>}}；"
+    "选择题输出 {\"<键名>\": {\"choice\": \"<选项>\", "
+    "\"probabilities\": {\"<选项>\": <0-1小数>, ...}}}。"
+)
+
+
+def _jev_ask_ollama(state: str, questions: dict) -> dict:
+    """本地 Ollama 后端：逐题判定，答案归一化到 systemone answers 协议。"""
+    o_model = os.environ.get("JEV_OLLAMA_MODEL", "qwen2.5:7b").strip() or "qwen2.5:7b"
+    o_url = os.environ.get("JEV_OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
+    log(f"ollama 后端调用 model={o_model} url={o_url}")
+    lines = [f"待判定内容：\n{state}", "题目："]
+    for qname, q in questions.items():
+        if not isinstance(q, dict):
+            continue
+        lines.append(f"[{qname}] {q.get('instructions', '')}")
+        crit = q.get("criteria")
+        if crit:
+            lines.extend(f"  选项 {k}: {v}" for k, v in crit.items())
+        if q.get("type") == "choice":
+            keys = "、".join(str(k) for k in (crit or {}).keys()) or "题目给定选项"
+            lines.append(f"  → 输出键 {qname}.choice 必须取：{keys} 之一，并附 probabilities")
+        else:
+            lines.append(f"  → 输出键 {qname}.noul = 0~1 概率小数")
+    body = {
+        "model": o_model,
+        "messages": [{"role": "system", "content": _JEV_OLLAMA_SYS},
+                     {"role": "user", "content": "\n".join(lines)}],
+        "stream": False,
+        "format": "json",
+        "options": {"temperature": 0, "num_predict": 512},
+    }
+    req = urllib.request.Request(
+        o_url + "/api/chat",
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        log(f"ollama 请求异常 url={req.full_url} proxies={urllib.request.getproxies()} "
+            f"err={str(e)[:120]}", level="warn")
+        raise
+    ans = json.loads((data.get("message") or {}).get("content", "") or "{}")
+
+    out: dict = {}
+    for qname, q in questions.items():
+        if not isinstance(q, dict):
+            continue
+        raw = ans.get(qname)
+        if q.get("type") == "choice":
+            if isinstance(raw, dict):
+                choice = str(raw.get("choice", "unknown")).strip().lower()
+                probs = raw.get("probabilities") or {}
+            else:
+                choice, probs = str(raw or "").strip().lower(), {}
+            crit = q.get("criteria") or {}
+            if crit and choice not in {str(k).strip().lower() for k in crit}:
+                choice = "unknown"
+            out[qname] = {"choice": choice, "probabilities": probs}
+        else:
+            try:
+                p = float(raw.get("noul")) if isinstance(raw, dict) else float(raw)
+            except (TypeError, ValueError):
+                p = 0.0
+            out[qname] = {"noul": min(max(p, 0.0), 1.0)}
+    return out
+
+
+def jev_ask_backend(state: str, questions: dict) -> dict:
+    """systemone 协议统一后端分发（gate / qd_bridge 共用）。
+
+    JEV_BACKEND=ollama → 本地模型；默认 → TypeSafe /systemone。
+    返回 answers：{qname: {"noul": p} | {"choice": c, "probabilities": {...}}}。
+    """
+    backend = os.environ.get("JEV_BACKEND", "typesafe").strip().lower()
+    log(f"backend dispatch: {backend} (pid {os.getpid()})")
+    if backend == "ollama":
+        return _jev_ask_ollama(state, questions)
+    log(f"typesafe 后端调用 base={os.environ.get('JEV_BASE_URL', '')[:40]}")
+    body = {"model": "jev-latest", "state": state, "questions": questions}
+    req = urllib.request.Request(
+        os.environ.get("JEV_BASE_URL",
+                       "https://api.typesafe.ai/v1").rstrip("/") + "/systemone",
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json; charset=utf-8",
+                 "Authorization": "Bearer %s" % os.environ.get("JEV_API_KEY", "")},
+        method="POST")
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read()).get("answers", {})
+
+
 # ── Prometheus 指标（P1-6，prometheus_client 可选依赖） ─────
 class _NoOp:  # noqa: D401
     """prometheus_client 缺失时的 no-op 占位。"""
@@ -162,7 +260,9 @@ def start_metrics(port: int) -> bool:
 # ── DB 直连（P1-7）：psycopg2 参数化，降级 docker exec psql ──
 DB_DSN = {
     "host": os.environ.get("ZHICE_PG_HOST", "127.0.0.1"),
-    "port": int(os.environ.get("ZHICE_PG_PORT", "5432")),
+    # 2026-10-16 换机：zhice-db 宿主端口 5446（5432 被 infinity 容器占用，
+    # 误连报语法错）；env 仍可覆盖
+    "port": int(os.environ.get("ZHICE_PG_PORT", "5446")),
     "user": os.environ.get("ZHICE_PG_USER", "zhice"),
     "password": os.environ.get("ZHICE_PG_PASSWORD", "zhice_pass"),
     "dbname": os.environ.get("ZHICE_PG_DB", "zhice_os_v2"),

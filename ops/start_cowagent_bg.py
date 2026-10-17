@@ -14,14 +14,17 @@
 schtasks 在安全黑名单）——请在自己的终端运行本脚本，进程即常驻。
 """
 import json
+import os
 import socket
 import subprocess
 import sys
 import time
 import urllib.request
 
-COW_DIR = r"E:\老田的AI助手\CowAgent"
-PY = COW_DIR + r"\venv\Scripts\python.exe"
+# K-STOCK-414：旧机 E:\ 硬编码换机即死 → 按本文件位置推导
+COW_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                       "CowAgent")
+PY = os.path.join(COW_DIR, "venv", "Scripts", "python.exe")
 LOG = r"C:\Temp\cowagent_bg.log"
 PORT = 9899
 HEALTH = f"http://127.0.0.1:{PORT}/api/health"
@@ -56,18 +59,26 @@ def main() -> int:
         return 0
 
     flags = 0x00000008 | 0x00000200  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
-    logf = open(LOG, "ab")
-    logf.write(f"\n=== launch {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n".encode())
-    logf.flush()
-    p = subprocess.Popen(
-        [PY, "app.py"],
-        cwd=COW_DIR,
-        stdin=subprocess.DEVNULL,
-        stdout=logf,
-        stderr=subprocess.STDOUT,
-        creationflags=flags,
-        close_fds=True,
-    )
+    if not os.path.exists(PY):  # K-STOCK-414：venv 缺失给可读错误而非裸 traceback
+        print(f"FATAL: venv python not found: {PY}")
+        return 2
+    os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    try:
+        logf = open(LOG, "ab")
+        logf.write(f"\n=== launch {time.strftime('%Y-%m-%d %H:%M:%S')} ===\n".encode())
+        logf.flush()
+        p = subprocess.Popen(
+            [PY, "app.py"],
+            cwd=COW_DIR,
+            stdin=subprocess.DEVNULL,
+            stdout=logf,
+            stderr=subprocess.STDOUT,
+            creationflags=flags,
+            close_fds=True,
+        )
+    except OSError as e:
+        print(f"FATAL: launch failed: {e!r}; see {LOG}")
+        return 2
     print(f"spawned pid={p.pid}, waiting for {PORT} ...")
 
     for i in range(60):

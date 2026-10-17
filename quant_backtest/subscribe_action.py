@@ -54,18 +54,15 @@ def _atomic(path, obj):
 
 
 def _norm_code(code):
-    """统一成 sz000993 / sh603268 形态（门户/订阅引擎口径）。"""
-    c = str(code or "").strip().lower().replace(".", "")
-    if len(c) == 8 and c[:2] in ("sz", "sh", "bj"):
-        return c
-    if len(c) == 6:
-        if c[0] == "6":
-            return "sh" + c
-        if c[0] in ("0", "3"):
-            return "sz" + c
-        if c[0] == "8" or c[:2] == "43":
-            return "bj" + c
-    return c
+    """统一成 sz000993 / sh603268 形态（门户/订阅引擎口径）。
+    2026-10-16 章程 §4.3 收编：判定委托 codes.normalize_code 唯一权威
+    （4 开头北交所等边缘判定随之修复），此处只做 TS→小写前缀形态转换。"""
+    from codes import normalize_code
+    ts = normalize_code(code)
+    if ts is None:
+        return str(code or "").strip().lower().replace(".", "")
+    six, suf = ts.split(".")
+    return suf.lower() + six
 
 
 def _code6(code):

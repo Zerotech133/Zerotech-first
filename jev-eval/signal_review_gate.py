@@ -79,6 +79,13 @@ REJECT_NEWS_P = float(os.environ.get("REVIEW_NEWS_THRESHOLD", "0.7"))
 REJECT_CROWD_P = float(os.environ.get("REVIEW_CROWD_THRESHOLD", "0.7"))
 FOCUS_QUALITY_P = float(os.environ.get("REVIEW_FOCUS_THRESHOLD", "0.7"))
 WATCH_OVERLAP_P = float(os.environ.get("REVIEW_WATCH_THRESHOLD", "0.7"))
+# K-STOCK-365 P0-B 后续（2026-10-16）：CN 域 FOCUS 入口缺位修复——影子组 FOCUS_CN。
+# 数据真相：CN 候选 quality 从未判 low（0/494，mid 93% 独占），非代码 bug 是模型行为：
+# quality 题测的是上游信号理由充实度，CN（缠论/RPS）理由全充实，US/HK/CRYPTO（QD）简短。
+# 方案：CN 用 quality_p 域内相对刻度定义"临界"（30 分位=0.53，triples.jsonl n=459 标定），
+# 独立影子组 FOCUS_CN 只落 jsonl 不进生产 FOCUS 组（保持 v2 已验证基线纯净），
+# 影子期攒 n_eff>=30 后以 T+5 决定转正或废弃。
+CN_MID_LOW_P = float(os.environ.get("REVIEW_CN_MID_LOW_P", "0.53"))
 # K-STOCK-365 P0-A：unreviewed 单条最多补判次数，超过标 jev_perm 永久放弃
 RETRY_MAX = int(os.environ.get("REVIEW_RETRY_MAX", "3"))
 
@@ -250,24 +257,11 @@ REGIME_QUESTION = {
 
 
 def jev_ask(state: str, questions: dict) -> dict:
-    body = {"model": "jev-latest", "state": state, "questions": questions}
-
     def _call() -> dict:
-        req = urllib.request.Request(
-            BASE_URL + "/systemone",
-            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-            headers={"Content-Type": "application/json; charset=utf-8",
-                     "Authorization": f"Bearer {API_KEY}"},
-            method="POST",
-        )
-        # K-STOCK-366：出站走 TS_PROXY（urllib 无 requests 的 proxies 参数，
-        # 用 ProxyHandler opener 等价实现）。代理不可达 → 连接异常走重试/
-        # unreviewed+补判链，链路不断只退化（对齐 083/084 链路哲学）。
-        # timeout 25s：7890 首次建连偶发 >15s（K-STOCK-084 实测）。
-        opener = urllib.request.build_opener(
-            urllib.request.ProxyHandler({"http": TS_PROXY, "https": TS_PROXY}))
-        with opener.open(req, timeout=25) as resp:
-            return json.loads(resp.read()).get("answers", {})
+        # 2026-10-16: 后端分发收敛到 jev_common.jev_ask_backend
+        # （JEV_BACKEND=ollama 走本地模型直连；typesafe.ai 451 地区屏蔽）。
+        # ollama 分支不经 TS_PROXY（本地 127.0.0.1 直连，urllib 实测无劫持）。
+        return jc.jev_ask_backend(state, questions)
 
     # K-STOCK-365 P0-A：401/403/451 是内容级确定性拒绝（TypeSafe 合规过滤——
     # 2026-10-09 起生产日志证实：同池候选部分成功部分 451，与限流/网络无关），
@@ -390,6 +384,11 @@ def review_candidate(cand: dict, held: list[str], regime_p: float) -> dict:
         decision, why = "FOCUS", f"quality=low({quality_p:.2f}) 临界信号加分"
     elif quality == "low":
         decision, why = "FOCUS", f"quality=low({quality_p:.2f})"
+    elif (cand.get("market") == "CN" and quality == "mid"
+          and quality_p <= CN_MID_LOW_P):
+        # CN 相对临界影子组（K-STOCK-365 P0-B 后续）：不进生产 FOCUS 组，
+        # 独立 FOCUS_CN 档位仅供毕业统计对照，影子期不参与任何拦截/推送决策
+        decision, why = "FOCUS_CN", f"CN相对临界 mid({quality_p:.2f})"
     elif overlap_p >= WATCH_OVERLAP_P:
         decision, why = "WATCH", f"overlap={overlap_p:.2f} 概念集中标注"
     else:
@@ -585,7 +584,13 @@ def run_backfill() -> int:
     for line in lines:
         if _STOP["flag"]:
             break  # 信号到达，跳出（已读 lines 未写入，下次重新读全量）
-        r = json.loads(line)
+        # 2026-10-16 审计：单条坏行/坏日期原炸整轮回填（全量三元组滞留
+        # 无法出结果）——坏行原样保留，跳过继续。
+        try:
+            r = json.loads(line)
+        except Exception:  # noqa: BLE001
+            out.append(line)
+            continue
         if r.get("outcome") or r.get("status") != "reviewed":
             out.append(line)
             continue
@@ -593,7 +598,11 @@ def run_backfill() -> int:
         if not pd_:
             out.append(line)
             continue
-        pool_d = date.fromisoformat(pd_)
+        try:
+            pool_d = date.fromisoformat(pd_)
+        except ValueError:
+            out.append(line)
+            continue
         # K-STOCK-402（BUG-4）：交易日口径预滤（原日历日，周末/长假必然
         # 查不到 N+1 根 bar 白打一次 DB）；最终判定仍是下方 bar 计数
         if weekdays_after(pool_d, cutoff_today) < N_OUTCOME_DAYS:
@@ -733,29 +742,54 @@ def coverage_guard() -> float:
             continue
         if r.get("status") != "reviewed" or not r.get("pool_date"):
             continue
+        try:
+            pool_d = date.fromisoformat(r["pool_date"])
+        except ValueError:
+            continue  # 2026-10-16 审计：坏日期并入豁免（原炸整个守卫）
         # K-STOCK-402 BUG-4：due 判定改交易日口径（原日历日 cutoff，
         # 周五池周三即入分母但实际仅 3 个交易日无法回填 → 系统性误报）
-        if weekdays_after(date.fromisoformat(r["pool_date"]), today) \
-                < N_OUTCOME_DAYS:
+        if weekdays_after(pool_d, today) < N_OUTCOME_DAYS:
             continue
         due += 1
         if r.get("ret_nd") is not None:
             filled += 1
     pct = filled / due if due else 1.0
     log(f"回填覆盖率 {filled}/{due} = {pct:.1%}（阈值 {COVERAGE_MIN:.0%}）")
-    if due and pct < COVERAGE_MIN and LARK_ALERT_OPEN_ID:
+    if due and pct < COVERAGE_MIN:
+        # 2026-10-16（K-STOCK-401 判例对齐 jev_gate.push_feishu）：lark-cli
+        # 注入凭证发其他 app 签发 open_id 必 99992361——改 OpenAPI 直连优先
+        #（apps[0] + push_targets("个人") 自洽配对），lark-cli 降为回退。
+        _text = json.dumps({"text": (
+            f"[Jev复核门] 回填覆盖率告警：{filled}/{due} = {pct:.0%}"
+            f"（阈值 {COVERAGE_MIN:.0%}）。到期未回填多为 bar 断档，"
+            f"请核查 v2_bar_daily 数据源覆盖。")}, ensure_ascii=False)
+        sent = False
         try:
-            jc.lark_cli_json(
-                ["im", "+messages-send", "--as", "bot",
-                 "--user-id", LARK_ALERT_OPEN_ID,
-                 "--msg-type", "text",
-                 "--content", json.dumps({"text": (
-                     f"[Jev复核门] 回填覆盖率告警：{filled}/{due} = {pct:.0%}"
-                     f"（阈值 {COVERAGE_MIN:.0%}）。到期未回填多为 bar 断档，"
-                     f"请核查 v2_bar_daily 数据源覆盖。")}, ensure_ascii=False)],
-                timeout=20, kind="push")
+            _root = os.path.dirname(os.path.abspath(__file__))
+            _nc = os.path.join(os.path.dirname(_root), "news_collector")
+            if _nc not in sys.path:
+                sys.path.insert(0, _nc)
+            import push_targets
+            from feishu_client import send_msg
+            _oid = push_targets.target_id("个人")
+            if _oid:
+                sent, _why = send_msg(_text, "text", receive_id=_oid)
+                if not sent:
+                    log(f"覆盖率告警 OpenAPI 直连失败: {str(_why)[:120]}",
+                        level="warn")
         except Exception as e:  # noqa: BLE001
-            log(f"覆盖率告警推送失败: {str(e)[:150]}", level="warn")
+            log(f"覆盖率告警 OpenAPI 直连异常: {str(e)[:150]}", level="warn")
+        if not sent and LARK_ALERT_OPEN_ID:
+            try:
+                jc.lark_cli_json(
+                    ["im", "+messages-send", "--as", "bot",
+                     "--user-id", LARK_ALERT_OPEN_ID,
+                     "--msg-type", "text", "--content", _text],
+                    timeout=20, kind="push")
+                sent = True
+            except Exception as e:  # noqa: BLE001
+                log(f"覆盖率告警 lark-cli 回退失败: {str(e)[:150]}",
+                    level="warn")
     return pct
 
 
@@ -766,7 +800,10 @@ def run_report() -> None:
         return
     groups: dict[str, list[dict]] = {}
     for line in _iter_triples():  # R12：归档+活文件全量（毕业统计样本不丢）
-        r = json.loads(line)
+        try:
+            r = json.loads(line)
+        except Exception:  # noqa: BLE001
+            continue  # 2026-10-16 审计：坏行不炸整份报告
         if r.get("ret_nd") is not None:
             groups.setdefault(r.get("decision", "?"), []).append(r)
     if not any(groups.values()):
@@ -775,7 +812,8 @@ def run_report() -> None:
     print("\n===== Jev 信号复核门 · 影子期报告 =====")
     print(f"{'决策':<8}{'样本':<6}{'胜率':<8}{'均值N日收益':<12}{'中位数':<10}")
     # v2 修复：组名与影子决策 v2 对齐（FOCUS/WATCH 为 v2 新组，HUMAN 是 v1 遗留仅兼容老数据）
-    for d in ("FOCUS", "PASS", "WATCH", "REJECT", "HUMAN"):
+    # FOCUS_CN 为 2026-10-16 新增 CN 相对临界影子组，单列统计不并入 FOCUS
+    for d in ("FOCUS", "FOCUS_CN", "PASS", "WATCH", "REJECT", "HUMAN"):
         rs = groups.get(d, [])
         if not rs:
             continue

@@ -300,16 +300,17 @@ def init_db():
       id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, ts TEXT,
       ok INTEGER, new_count INTEGER, push_count INTEGER, detail TEXT);
     """)
-    # 自选股关联标注（老库平滑升级，幂等）
-    try:
-        db.execute("ALTER TABLE news ADD COLUMN stocks TEXT")
-    except sqlite3.OperationalError:
-        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
-    # JEV 市场影响判断结果 JSON（bias/conf/scope，速报推送时写入）
-    try:
-        db.execute("ALTER TABLE news ADD COLUMN jev TEXT")
-    except sqlite3.OperationalError:
-        pass  # 豁免（C2批2）：幂等迁移，列已存在即此异常，属预期
+    # 自选股关联标注 + JEV 判定列（老库平滑升级，幂等）
+    def _add_col(col):
+        # 2026-10-16 审计：仅豁免 duplicate column（幂等预期异常）；
+        # 其余 OperationalError（如 locked）原 pass 会吞真故障，上抛
+        try:
+            db.execute("ALTER TABLE news ADD COLUMN %s TEXT" % col)
+        except sqlite3.OperationalError as e:
+            if "duplicate column" not in str(e).lower():
+                raise
+    _add_col("stocks")
+    _add_col("jev")
     db.commit()
     return db
 
@@ -363,7 +364,10 @@ def push_message(text):
 
 
 # --- K266 桥接：新新闻批次落 txt → inbox/docs/pending（词云管线自动摄取） ---
-K266_PENDING = r"e:\老田的AI助手\inbox\docs\pending"
+# K-STOCK-414：原硬编码 e:\老田的AI助手\...（旧机 E 盘），换机后 makedirs
+# 每轮抛 FileNotFoundError → K266 词云桥接整体死亡且逐轮 FAIL。
+# 改为按本仓库根（HERE 上级）推导，仓库迁到哪跟到哪。
+K266_PENDING = os.path.join(os.path.dirname(HERE), "inbox", "docs", "pending")
 K266_STATE = os.path.join(HERE, "k266_state.json")
 K266_BATCH_CHARS = 5000  # 单批字符预算（M3 结构化截断 6000 字，留余量防丢条）
 
@@ -488,7 +492,7 @@ def main():
         try:
             import news_ai
             judge = news_ai.quick_judge(
-                cfg.get("ai_model", "qwen3:8b-8k"), shown)
+                cfg.get("ai_model", "qwen3.5:9b"), shown)
         except Exception as e:
             log("quick_judge import FAIL %s" % str(e)[:100])
         if judge:

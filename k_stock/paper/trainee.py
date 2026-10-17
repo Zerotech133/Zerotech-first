@@ -119,12 +119,22 @@ def stop_dist_for(account: str) -> float | None:
     return float(dist) if dist else None
 
 
+# K-STOCK-414：ai_team 通道排除面补全（qd/qpzm/qpzmus 通道产物 + pf 组合并集
+# + adapter 适配器产物——字典序 poc_pf_* 恒大于日期戳文件名，混入即喂错信号源）
+_NON_AI_PREFIXES = ("poc_qd_", "poc_qpzm_", "poc_qpzmus_", "poc_pf_", "poc_adapter_")
+
+
+def _newest_by_mtime(paths) -> Path:
+    """按文件 mtime 取最新（替代字典序：前缀字母恒大于日期戳的排序陷阱）。"""
+    return max(paths, key=lambda p: p.stat().st_mtime)
+
+
 def _newest_ai_run() -> Path:
-    runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
-                  if not x.name.startswith(("poc_qd_", "poc_qpzm_", "poc_qpzmus_")))
+    runs = [x for x in DATA_DIR.glob("poc_*.json")
+            if not x.name.startswith(_NON_AI_PREFIXES)]
     if not runs:
         raise Reject("k_stock/data/ 下无 poc_*.json（AI 通道）")
-    return runs[-1]
+    return _newest_by_mtime(runs)
 
 
 # ---------------- 雇佣交互（A3/K-STOCK-042：配置面，门户永不直接下单） ----------------
@@ -195,13 +205,13 @@ def _newest_run_for(source: str) -> Path:
     """按策略源取最新产物（qd=poc_qd_* / qpzm=poc_qpzm_* / ai_team=其余 poc_*）。"""
     prefix = {"qd": "poc_qd_", "qpzm": "poc_qpzm_"}.get(source)
     if prefix is None:
-        runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
-                      if not x.name.startswith(("poc_qd_", "poc_qpzm_")))
+        runs = [x for x in DATA_DIR.glob("poc_*.json")
+                if not x.name.startswith(_NON_AI_PREFIXES)]
     else:
-        runs = sorted(DATA_DIR.glob(prefix + "*.json"))
+        runs = list(DATA_DIR.glob(prefix + "*.json"))
     if not runs:
         raise Reject(f"k_stock/data/ 下无 {source} 源产物（{prefix or 'poc_*'}）")
-    return runs[-1]
+    return _newest_by_mtime(runs)  # K-STOCK-414：mtime 取最新，替代字典序
 
 
 def _hired_profiles(source: str) -> list[dict]:

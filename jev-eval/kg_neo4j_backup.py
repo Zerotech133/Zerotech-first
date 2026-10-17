@@ -21,10 +21,10 @@ from datetime import datetime
 CONTAINER = "neo4j-kg"
 IMAGE = "neo4j:5-community"
 VOLUME = "neo4j-kg-data"
-BACKUP_DIR = r"E:\KGStockAnalysis\backups\neo4j"
+BACKUP_DIR = r"C:\项目\zerobound-kg\backups\neo4j"
 LOG = r"C:\Temp\kg_neo4j_backup.log"
 KEEP = 4
-NEWS_COLLECTOR = r"E:\老田的AI助手\news_collector"
+NEWS_COLLECTOR = r"C:\项目\老田的AI助手\news_collector"
 
 
 def log(msg):

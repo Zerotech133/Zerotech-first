@@ -24,14 +24,13 @@ sys.path.insert(0, HERE)
 
 
 def _norm_code(code):
-    """6 位裸代码 → 尽力补交易所后缀（6→SH，0/3→SZ，4/8→BJ）。"""
-    s = str(code or "").strip().upper()
-    if "." in s:
-        return s
-    if len(s) == 6 and s.isdigit():
-        suf = "SH" if s[0] == "6" else "BJ" if s[0] in "48" else "SZ"
-        return "%s.%s" % (s, suf)
-    return s
+    """代码归一（2026-10-16 章程 §4.3 收编）：判定委托 codes.normalize_code
+    唯一权威（92/8/4→BJ 修复，替代旧 6→SH 简化判定）；非 A 股形态原样返回。"""
+    from codes import normalize_code
+    n = normalize_code(code)
+    if n is not None:
+        return n
+    return str(code or "").strip().upper()
 
 
 _NAME_MAP = None   # 进程内缓存：code(带后缀) → 股票名称（chanlun_pool.jsonl）

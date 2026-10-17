@@ -21,6 +21,7 @@ CLI（feishu_bot_ws 经子进程调用，--json 单行输出）：
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -69,8 +70,12 @@ def _load() -> dict:
 
 
 def _save(d: dict) -> None:
-    RULES_PATH.write_text(
-        json.dumps(d, ensure_ascii=False, indent=1), encoding="utf-8")
+    # K-STOCK-414：原子写（tmp+replace）——半截 JSON 会让 _load 抛异常，
+    # set/clear/check 全线不可用（routine 吞成 tp_error=止盈链静默瘫痪）
+    tmp = str(RULES_PATH) + ".tmp%d" % os.getpid()
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(json.dumps(d, ensure_ascii=False, indent=1))
+    os.replace(tmp, str(RULES_PATH))
 
 
 def _engine(account: str) -> PaperEngine:
@@ -265,14 +270,8 @@ def main(argv=None) -> int:
     p.add_argument("--kind", required=True, choices=["tp", "sl"])
     sub.add_parser("check", parents=[common])
     a, _unk = ap.parse_known_args(argv)
-    if a.cmd == "list":
-        r = list_lines(a.account)
-    elif a.cmd == "set":
-        r = set_line(a.account, a.code, a.kind, a.pct)
-    elif a.cmd == "clear":
-        r = clear_line(a.account, a.code, a.kind)
-    else:
-        r = check_tps(a.account, dry_run=a.dry_run)
+    # K-STOCK-414：删除复制粘贴的重复分发块（set/clear/check 全部双跑：
+    # clear sl 持仓已清时第二次抛 Reject → 成功操作也报错退出码 1）
     if a.cmd == "list":
         r = list_lines(a.account)
     elif a.cmd == "set":

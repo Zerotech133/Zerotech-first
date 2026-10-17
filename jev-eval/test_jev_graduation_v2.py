@@ -59,10 +59,17 @@ class TestJudgeDomain(unittest.TestCase):
             self.assertEqual(r["state"], "过渡期剔除")
 
     def test_cn_entry_missing(self):
-        """CN 入口缺位：不设 FOCUS 判据，状态单列。"""
+        """CN 影子组（2026-10-16 P1-1）：FOCUS_CN 积累期状态与转正纪律。
+        n_eff=0 → 影子积累中；达标 → 影子达标（待转正）；pass 恒 False。"""
         r = judge_domain(0, None, None, "CN")
         self.assertFalse(r["pass"])
-        self.assertEqual(r["state"], "入口缺位")
+        self.assertEqual(r["state"], "影子积累中")
+        r2 = judge_domain(35, 0.02, 0.01, "CN")
+        self.assertFalse(r2["pass"])  # 影子组不自动毕业，转正需人工
+        self.assertEqual(r2["state"], "影子达标（待转正）")
+        r3 = judge_domain(35, -0.005, 0.0, "CN")
+        self.assertFalse(r3["pass"])
+        self.assertEqual(r3["state"], "影子未达标")
 
     def test_boundary_n_eff_30(self):
         """边界：n_eff=30 恰好达标（≥30）。"""

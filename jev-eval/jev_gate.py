@@ -42,6 +42,10 @@ URGENT_THRESHOLD = float(os.environ.get("GATE_URGENT_THRESHOLD", "0.8"))  # noul
 
 API_KEY = os.environ.get("JEV_API_KEY", "")
 BASE_URL = os.environ.get("JEV_BASE_URL", "https://api.typesafe.ai/v1").rstrip("/")
+log(f"启动环境: JEV_BACKEND={os.environ.get('JEV_BACKEND','')} "
+    f"proxies={urllib.request.getproxies()}")
+# 2026-10-16: Jev 后端分发已收敛到 jev_common.jev_ask_backend
+# （JEV_BACKEND=ollama 走本地 qwen2.5:7b；typesafe.ai 451 地区屏蔽）
 LARK_ALERT_OPEN_ID = os.environ.get("LARK_ALERT_OPEN_ID", "")
 METRICS_PORT = 9101  # P1-6 Prometheus /metrics 端点
 NOTIFY_CHANNEL = "jev_new_alert"  # P2-1 事件驱动通道（v2_alert INSERT 触发）
@@ -67,22 +71,12 @@ def fetch_open_alerts() -> list[dict]:
 # ── Jev 判定 ────────────────────────────────────────────────
 def jev_ask(state: str, questions: dict) -> dict:
     """单次 Jev 调用，返回 answers 字典。失败抛异常。
-    含 3 次指数退避重试（2/4 秒），缓解短暂网络抖动导致的整轮跳过。"""
-    body = {"model": "jev-latest", "state": state, "questions": questions}
-
-    def _call() -> dict:
-        req = urllib.request.Request(
-            BASE_URL + "/systemone",
-            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
-            headers={"Content-Type": "application/json; charset=utf-8",
-                     "Authorization": f"Bearer {API_KEY}"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read()).get("answers", {})
-
+    含 3 次指数退避重试（2/4 秒），缓解短暂网络抖动导致的整轮跳过。
+    2026-10-16: 后端分发收敛到 jev_common.jev_ask_backend
+    （JEV_BACKEND=ollama 走本地模型，typesafe.ai 451 屏蔽）。"""
     try:
-        ans = with_retry(_call, retries=3, base_sec=2.0, label="jev ")
+        ans = with_retry(lambda: jc.jev_ask_backend(state, questions),
+                         retries=3, base_sec=2.0, label="jev ")
         C_JEV.labels("gate", "1").inc()
         return ans
     except Exception:
@@ -182,13 +176,41 @@ def _build_alert_card(alert: dict, verdict: dict) -> dict:
 
 
 def push_feishu(alert: dict, verdict: dict) -> bool:
-    """飞书交互卡片推送（lark-cli bot 身份），3 次指数退避重试。未配置 open_id 返回 False。"""
-    global _LAST_PUSH_ERR
-    if not LARK_ALERT_OPEN_ID:
-        _LAST_PUSH_ERR = "LARK_ALERT_OPEN_ID 未配置"
-        return False
+    """飞书交互卡片推送，双通道（K-STOCK-401/403 判例对齐 backup_alert）。
 
+    ① OpenAPI 直连：apps[0] 凭证 + push_targets("个人") 的 apps[0] 签发
+       open_id——app 维度自洽配对。2026-10-16 换机后 JEV_CARD_APP_* 未部署，
+       lark-cli 注入 apps[0] 凭证发 jev 签发 open_id 必 99992361（15:08 实证）。
+    ② lark-cli 回退：LARK_ALERT_OPEN_ID（jev 签发）——待 jev app 凭证
+       部署本机后 lark_env 注入即成正确配对，届时可升回主通道。
+    双路全败 → False（调用方重试 → 死信 → _escalate_dlq 升级）。
+    """
+    global _LAST_PUSH_ERR
     card_json = json.dumps(_build_alert_card(alert, verdict), ensure_ascii=False)
+
+    # 路① OpenAPI 直连（apps[0] + push_targets 自洽配对，无 lark-cli 依赖）
+    try:
+        _root = os.path.dirname(os.path.abspath(__file__))
+        if os.path.join(os.path.dirname(_root), "news_collector") not in sys.path:
+            sys.path.insert(0, os.path.join(os.path.dirname(_root), "news_collector"))
+        import push_targets
+        from feishu_client import send_msg
+        _oid = push_targets.target_id("个人")
+        if _oid:
+            _ok, _why = send_msg(card_json, "interactive", receive_id=_oid)
+            if _ok:
+                _LAST_PUSH_ERR = ""
+                return True
+            log(f"OpenAPI 直连失败: {str(_why)[:120]}", level="warn")
+        else:
+            log("push_targets 无 '个人' 收件人，OpenAPI 路跳过", level="warn")
+    except Exception as e:  # noqa: BLE001
+        log(f"OpenAPI 直连异常: {str(e)[:120]}", level="warn")
+
+    # 路② lark-cli 回退（原通道：3 次指数退避重试）
+    if not LARK_ALERT_OPEN_ID:
+        _LAST_PUSH_ERR = "OpenAPI 直连失败且 LARK_ALERT_OPEN_ID 未配置"
+        return False
 
     def _send() -> bool:
         jc.lark_cli_json(
@@ -460,10 +482,11 @@ def _handle_alert(a: dict, dry: bool) -> None:
         verdict = {"urgent_p": -1, "category": "dry", "category_p": 0}
 
     if verdict is None:
-        # 无 key：保守起见不推，等配置
-        log("无 Jev key，跳过", alert_id=a["alert_id"], level=a["level"],
+        # 无 key：保守起见不推，等配置。2026-10-16 审计：原 mark_seen 会
+        # 把告警永久吞掉（key 恢复后也不再重判）——不标 seen，留待重判。
+        log("无 Jev key，跳过（不标 seen，留待 key 就绪重判）",
+            alert_id=a["alert_id"], level=a["level"],
             title=a["title"][:40])
-        mark_seen(a["alert_id"])
         return
 
     if verdict["urgent_p"] >= URGENT_THRESHOLD:

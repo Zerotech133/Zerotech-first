@@ -10,12 +10,12 @@ from dataclasses import dataclass
 from typing import Iterable
 
 
-CHAT_MODELS = ("qwen3.5:4b", "qwen3.5:9b", "qwen3.5:35b")
+CHAT_MODELS = ("qwen3.5-trae", "qwen3.5:9b", "qwen3.6:35b-a3b")
 DEFAULT_CHAT_MODEL = "qwen3.5:9b"
 RAG_CHAT_MODEL = "qwen3.5:9b"
 EMBED_MODEL = "bge-m3"
 # 语义别名便于调用方按角色读取，实际值仍由上面的单一常量维护。
-CHAT_MODEL_4B, CHAT_MODEL_9B, CHAT_MODEL_35B = CHAT_MODELS
+CHAT_MODEL_LIGHT, CHAT_MODEL_MAIN, CHAT_MODEL_HEAVY = CHAT_MODELS
 RAG_MODEL = RAG_CHAT_MODEL
 EMBEDDING_MODEL = EMBED_MODEL
 MODEL_ROUTES = {
@@ -73,8 +73,8 @@ def select_model(
 ) -> ModelSelection:
     """按能力选择模型；``installed`` 为空时只做静态校验。
 
-    普通聊天可在 9b 缺失时降级到已安装的 4b。RAG 和嵌入保持固定模型，缺失时
-    返回 ``degraded=True`` 与提示，绝不静默改用其他模型。
+    普通聊天可在 9b 缺失时降级到已安装的轻量模型（qwen3.5-trae）。RAG 和嵌入保持
+    固定模型，缺失时返回 ``degraded=True`` 与提示，绝不静默改用其他模型。
     """
     if capability not in {"chat", "rag", "embedding"}:
         raise ModelRoutingError(f"未知模型能力：{capability}")
@@ -87,7 +87,7 @@ def select_model(
             target = normalize_model(requested)
             if target not in CHAT_MODELS:
                 raise ModelRoutingError(
-                    f"普通聊天仅支持 {CHAT_MODELS[0]} 或 {CHAT_MODELS[1]}，收到 {target}"
+                    f"普通聊天仅支持 {'、'.join(CHAT_MODELS)}，收到 {target}"
                 )
         if available is None or target in available:
             return ModelSelection(capability, target, requested)
@@ -120,9 +120,9 @@ __all__ = [
     "DEFAULT_CHAT_MODEL",
     "RAG_CHAT_MODEL",
     "EMBED_MODEL",
-    "CHAT_MODEL_4B",
-    "CHAT_MODEL_9B",
-    "CHAT_MODEL_35B",
+    "CHAT_MODEL_LIGHT",
+    "CHAT_MODEL_MAIN",
+    "CHAT_MODEL_HEAVY",
     "RAG_MODEL",
     "EMBEDDING_MODEL",
     "MODEL_ROUTES",

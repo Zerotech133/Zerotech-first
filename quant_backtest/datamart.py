@@ -54,6 +54,8 @@ def _publication_roots(cat, names):
     roots = []
     for name in names:
         e = cat.get('tables', {}).get(name) or {}
+        if e.get('layout') == 'pg':
+            continue  # 章程 §3：外部库无本地目录，发布锁不适用（库内事务自保证）
         if e.get('store'):
             roots.append(Path(e['store']).parent)
         if e.get('manifest'):
@@ -519,9 +521,21 @@ def _read_sqlite(tbl, start, end, codes, limit):
                                        limit=limit or 200, since=start))
 
 
+def _read_pg(store, dcol, ccol, start, end, codes, fields, cols=None,
+             limit=None):
+    """章程 §3：PG 表委托 data_loader（直连失败其内部 docker 兜底）；
+    store 为描述性 DSN，实际连接配置在 data_loader/config.json。
+    limit 下推（2026-10-16 审计修复）：避免 328 万行大表全量拉取后
+    才在 DataFrame 层截断。"""
+    del store, dcol, ccol, fields, cols  # 过滤由 read() 尾部统一归一/选列
+    import data_loader
+    return data_loader.load_table(start=start, end=end, symbols=codes,
+                                  limit=limit)
+
+
 _READERS = {"part": _read_part, "by_code": _read_by_code,
             "by_code_month": _read_by_code_month, "by_date": _read_by_date,
-            "by_period": _read_by_period}
+            "by_period": _read_by_period, "pg": _read_pg}
 
 
 def _read_one(tbl, start, end, codes, fields, limit):
@@ -535,6 +549,10 @@ def _read_one(tbl, start, end, codes, fields, limit):
         filter_cols = [c for c in ("ts_code", "con_code", "code", "symbol")
                        if c in (e.get("schema") or [])]
         fields = list(dict.fromkeys(list(fields) + (e.get("primary_key") or []) + filter_cols))
+    if e.get("layout") == "pg":  # 大表路由：limit 随 SQL 下推（审计修复）
+        return _read_pg(e.get("store"), e.get("date_col"), e.get("code_col"),
+                        start, end, codes, fields, _read_columns(e, fields),
+                        limit=limit)
     return fn(e.get("store"), e.get("date_col"), e.get("code_col"),
               start, end, codes, fields, _read_columns(e, fields))
 
@@ -572,6 +590,33 @@ def _normalize(df, entries):
     cols = ["ts_code"] + ([dcol] if dcol else []) + \
         [c for c in df.columns if c not in ("ts_code", dcol)]
     return df[[c for c in cols if c in df.columns]].reset_index(drop=True)
+
+
+@_guard_table
+def read_physical(table, start=None, end=None, codes=None, fields=None,
+                  limit=None):
+    """物理表直读（章程 §4.1）：跳过别名仲裁与跨源去重，table 必须是
+    catalog.tables 里的物理表名。用于消费方需要特定源全部列的场景
+    （如别名合并保真源整行时，另一源的补齐字段需读物理表获得）。"""
+    cat = _catalog()
+    e = cat.get("tables", {}).get(table)
+    if e is None or not _ready_one(table):
+        return pd.DataFrame()
+    try:
+        df = _read_one(table, start, end, codes, fields, limit)
+    except PublicationPending:
+        raise
+    except Exception:
+        return pd.DataFrame()
+    if df is None or df.empty:
+        return pd.DataFrame()
+    df = _normalize(df, [e])
+    dcol = e.get("date_col")
+    if dcol and dcol in df.columns:
+        df = df.sort_values(dcol, kind="stable")
+    if limit is not None and not df.empty:
+        df = df.head(limit)
+    return _pick_fields(df, fields, "ts_code", dcol).reset_index(drop=True)
 
 
 @_guard_table

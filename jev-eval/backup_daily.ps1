@@ -1,7 +1,7 @@
 # =====================================================================
 # backup_daily.ps1 - AI workstation daily backup (hardened)
-# 4 postgres dumps + 8 archives, gzip verify, AES-256-CBC+HMAC-SHA256
-# encryption of sensitive dumps, mirror to D:\backups_mirror, keep-4
+# 1 postgres dump + 4 archives, gzip verify, AES-256-CBC+HMAC-SHA256
+# encryption of sensitive dumps, mirror to C:\backups_mirror, keep-4
 # retention (OPS-1008, count-based; see section 5).
 # OPS-0930d: added quant_data.tar.gz (quant knowledge state assets) and
 # neo4j_kg.tar.gz (neo4j-kg graph volume). Raw vendor dirs stay excluded.
@@ -17,7 +17,22 @@
 # git is the audit record. To change this script: edit disk -> push
 # registry -> commit git. All three, every time - pushing registry
 # without committing git caused the git drift found on 2026-10-08.
-# VERSION: v10 2026-10-09
+# VERSION: v11 2026-10-16
+# v11 (machine swap): new machine has a single C: drive (no D:/E:), user is
+# "t" (old: Administrator on E:). Changes:
+#   - base dir auto-locate: C:\aios junction (new) instead of E:\ scan
+#   - mirror root: C:\backups_mirror (root-isolated, outside project tree)
+#   - dropped 4 items whose sources no longer exist on this machine:
+#     quant_db (newquantsystem_v2-postgres-1), webui_data (dev-assistant),
+#     quant_src (D: quant source tree), qd_db (quantdinger-db).
+#     Kept core-5: zhice_db, jev_eval, quant_data, neo4j_kg, quant_code.
+#   - EncryptTargets narrowed to zhice_db.sql.gz.
+# DEVIATION NOTE (K269 v9 authority rule): new machine has no
+# HKLM:\SOFTWARE\AIStation\BackupDeploy registry key and no git - this
+# on-disk file is now the source of truth until registry push is rebuilt.
+# v10 original preserved as backup_daily.ps1.v10.bak; swap recorded in
+# .workbuddy/memory/MEMORY.md. AES key regenerated for this machine
+# (old-machine .enc are not readable here and are not carried over).
 # v10 (OPS-1009): quant_db "empty" incident root-caused - quant_system db is
 # an unpopulated shell (all tables 0 rows, only lineage_edge 29 rows), so its
 # full pg_dump gzips to ~25KB. The pipeline was never broken. Quality gate
@@ -29,14 +44,14 @@ $ErrorActionPreference = "Continue"
 
 # base dir: parent of script folder, or auto-located when run in-memory
 if ($PSScriptRoot) { $BaseDir = Split-Path -Parent $PSScriptRoot }
-else { $BaseDir = (Get-ChildItem 'E:\' -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'jev-eval\jev_gate.py') } | Select-Object -First 1).FullName }
+else { $BaseDir = Split-Path -Parent (Split-Path -Parent 'C:\项目\老田的AI助手\jev-eval\backup_daily.ps1') }
 $BackupRoot  = Join-Path $BaseDir "backups"
-$MirrorRoot  = "D:\backups_mirror"
-# quant source tree root on D: (Chinese dir name via char codes)
-$QuantSrc    = "D:\" + [char]0x7F20 + [char]0x8BBA + [char]0x9009 + [char]0x80A1 + "+" + [char]0x76EF + [char]0x76D8
+# v11: single C: drive - mirror at drive root, isolated from project tree
+$MirrorRoot  = "C:\backups_mirror"
 $KeepCount   = 4
 $AesKeyFile  = Join-Path $env:USERPROFILE ".backup_aes_key"
-$EncryptTargets = @("zhice_db.sql.gz","qd_db.sql.gz","quant_db.sql.gz","webui_data.tar.gz")
+# v11: only zhice_db dump remains sensitive (qd/quant/webui sources dropped)
+$EncryptTargets = @("zhice_db.sql.gz")
 # OPS-1007: dify stack decommissioned (containers removed) - drop dify_db
 # from encryption targets along with the 3 dify backup items below.
 
@@ -48,7 +63,8 @@ $script:Failed = 0
 function Log([string]$msg) {
     $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $msg
     Write-Output $line
-    Add-Content -Path $LogFile -Value $line -Encoding ASCII
+    # 2026-10-16 审计修复：ASCII 把中文日志写成 ??（高位丢字）；每日新文件无混编码风险
+    Add-Content -Path $LogFile -Value $line -Encoding UTF8
 }
 function LogOk([string]$what)   { Log ("OK   " + $what) }
 function LogFail([string]$what) { $script:Failed++; Log ("FAIL " + $what) }
@@ -200,16 +216,9 @@ function Backup-TarDir([string]$container, [string]$dir, [string]$name) {
 }
 
 # ---------------- 1. dumps and archives ----------------
-# OPS-1007: dify 3 items removed (containers docker-db_postgres-1 /
-# docker-api-1 / docker-qdrant-1 decommissioned; last good copy in
-# backups/2026-10-05_0300).
-Backup-Db "newquantsystem_v2-postgres-1" "quant_user" "quant_system" "quant_db.sql.gz"
-Backup-TarDir "dev-assistant" "/app/backend/data" "webui_data.tar.gz"
-
-$qsrc = Join-Path $DayDir "quant_src.tar.gz"
-& tar.exe czf $qsrc -C $QuantSrc newquantsystem_v2
-if ($LASTEXITCODE -eq 0 -and (Test-Path $qsrc)) { LogOk "quant_src.tar.gz" } else { LogFail "quant_src.tar.gz" }
-
+# v11 machine swap: quant_db / webui_data / quant_src / qd_db dropped -
+# their containers and the D: source tree do not exist on this machine.
+# Last good old-machine copies remain in pre-swap backup sets.
 Backup-Db "zhice-db" "zhice" "zhice_os_v2" "zhice_db.sql.gz"
 
 $jev = Join-Path $DayDir "jev_eval.tar.gz"
@@ -221,8 +230,6 @@ if ($LASTEXITCODE -ne 0) {
 if (Test-Path $tmpJ) { Remove-Item $tmpJ -Recurse -Force -ErrorAction SilentlyContinue }
 }
 if ($LASTEXITCODE -eq 0 -and (Test-Path $jev) -and ((Get-Item $jev).Length -gt 20000)) { LogOk "jev_eval.tar.gz" } else { LogFail "jev_eval.tar.gz" }
-
-Backup-Db "quantdinger-db" "quantdinger" "quantdinger" "qd_db.sql.gz"
 
 # ---------------- 1b. quant knowledge state assets (OPS-0930d) ----------------
 # state assets only; raw vendor dirs (ashare/tdx/tushare/us ~10.7GB) are
@@ -318,7 +325,7 @@ foreach ($name in $EncryptTargets) {
 $PlainLeft = @(Get-ChildItem $DayDir -Filter "*.sql.gz" -File -ErrorAction SilentlyContinue)
 foreach ($pf in $PlainLeft) { LogFail ("PLAINTEXT residue " + $pf.Name + " (not encrypted)") }
 
-# ---------------- 4. mirror to D ----------------
+# ---------------- 4. mirror to C:\backups_mirror ----------------
 try {
     New-Item -ItemType Directory -Path $MirrorRoot -Force | Out-Null
     $mdest = Join-Path $MirrorRoot $stamp
@@ -347,7 +354,7 @@ foreach ($root in @($BackupRoot, $MirrorRoot)) {
 
 Log ("DONE failed=" + $script:Failed)
 
-# failure alert: write flag file; forwarder task (Administrator) sends it via Feishu
+# failure alert: write flag file; forwarder task (AlertPush) sends it via Feishu
 if ($script:Failed -gt 0) {
     try {
         $alertDir = Join-Path $BaseDir "jev-eval\alerts"

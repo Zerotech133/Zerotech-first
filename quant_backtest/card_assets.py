@@ -9,7 +9,9 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASSET_DIR = os.path.join(HERE, "assets")
 CACHE = os.path.join(ASSET_DIR, "qr_cache.json")
-LARK_ROOT = r"C:\Users\Administrator\.trae-cn\plugins\trae-remote-official\lark"
+# 20261016换机：不再硬编码旧机 Administrator 路径，跟随当前用户动态定位
+LARK_ROOT = os.path.join(os.path.expanduser("~"),
+                         r".trae-cn\plugins\trae-remote-official\lark")
 PYLIBS = os.path.abspath(os.path.join(HERE, "..", "pylibs"))
 
 

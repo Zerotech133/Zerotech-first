@@ -61,4 +61,6 @@
 - 长跑命令输出必须落文件；
 - portal_api.py 是 23k 行巨石——**只改不扩**，新 handler 一律新文件（P4 批 0 后启用拒收闸）；
 - 替换补丁前断言锚点 count==1，替换后断言新串存在；
-- 杀进程前先辨认是不是线上服务（按启动时间+端口归属）。
+- 杀进程前先辨认是不是线上服务（按启动时间+端口归属）；
+- **修复写盘 ≠ 生效（2026-10-16 P0 实锤）**：改常驻服务代码后必须杀旧进程换血——「缺则拉」型守护器（start_jev_stack.ps1 类）不认 mtime，旧进程会带旧码跑到天荒地老；验证=新进程出生时间 > 文件 mtime + 日志出现新分支特征行；
+- **S4U/Session0 进程只信端口判活（2026-10-16 双实证）**：CIM/Win32_Process 枚举漏列+CommandLine 全 null；找 PID 用 `Get-NetTCPConnection -LocalPort`，杀进程要 UAC taskkill（`Start-Process cmd -Verb RunAs`，降权 token Access denied）。
