@@ -205,6 +205,37 @@ def _gpt6_key():
         return ""
 
 
+def _glm_key():
+    """智谱 key 优先级：audit_ai_config.json 的 zhipu_key > GLM_API_KEY。
+
+    K-ORG-136/P0-4 判例（2026-10-17）：GLM_API_KEY(379b) 包年资源包已耗尽——
+    anthropic 端点实测 429[1113]余额不足；项目内 audit_ai_config.json（不入库）
+    的 zhipu_key(6546) 包年双通道实测全通（anthropic 4.6 + coding 5.3/5.3-flash）。
+    收敛单 key 体系：调用方统一 zhipu_key 优先，环境变量兜底。
+    audit_ai_config.json 是 gitignored 文件只存主仓——产码子进程 cwd=worktree
+    时须经 ORG_AI_HOME（主仓根，K-ORG-112 同款归账）定位；直接跑主仓走 _HERE/..
+    （主仓 tools/.. = 主仓根）；worktree 跑且未注入 ORG_AI_HOME 时逐级上溯
+    （.worktrees/<TID>/tools/.. = worktree 根、../.. = .worktrees、../../.. = 主仓根）。"""
+    candidates = []
+    if os.environ.get("ORG_AI_HOME"):
+        candidates.append(os.environ["ORG_AI_HOME"])
+    candidates.append(os.path.join(_HERE, os.pardir))          # 主仓 tools/.. = 主仓根
+    candidates.append(os.path.join(_HERE, os.pardir, os.pardir))  # worktree tools/../.. = .worktrees
+    candidates.append(os.path.join(_HERE, os.pardir, os.pardir, os.pardir))  # worktree tools/../../.. = 主仓根
+    for root in candidates:
+        if not root:
+            continue
+        p = os.path.join(os.path.abspath(root), "portal", "audit_ai_config.json")
+        if os.path.exists(p):
+            try:
+                zk = json.load(open(p, encoding="utf-8")).get("zhipu_key", "")
+                if zk:
+                    return zk
+            except (OSError, ValueError):
+                pass
+    return os.environ.get("GLM_API_KEY", "")
+
+
 def _data_dir():
     """K-ORG-112: 台账落盘目录——主仓 portal/data。e2e/devtask 产码子进程
     cwd=worktree，import 的是 worktree 副本 agent_coder，若按 _HERE/.. 落盘
@@ -287,9 +318,9 @@ def chat_anthropic(agent_id, task, timeout=240):
     ⚠️ 判例：glm-4.6 是思考型，content 为 [thinking, text] 块数组——
     正文只拼 type=text 块；max_tokens 须给足（64 级会被 thinking 吞成空回，
     stop=max_tokens 表面成功）。"""
-    key = os.environ.get("GLM_API_KEY", "")
+    key = _glm_key()
     if not key:
-        raise RuntimeError("GLM_API_KEY 未设置")
+        raise RuntimeError("GLM_API_KEY 未设置（audit_ai_config.json zhipu_key 与环境变量均空）")
     sys_prompt = _persona(agent_id)
     payload = {
         "model": ANTHROPIC_MODEL,
@@ -320,9 +351,9 @@ def chat_anthropic(agent_id, task, timeout=240):
 
 def chat_cloud(agent_id, task, timeout=120):
     """智谱官方 API 生成（免费档 flash，人设 system 照用）。"""
-    key = os.environ.get("GLM_API_KEY", "")
+    key = _glm_key()
     if not key:
-        raise RuntimeError("GLM_API_KEY 未设置")
+        raise RuntimeError("GLM_API_KEY 未设置（audit_ai_config.json zhipu_key 与环境变量均空）")
     sys_prompt = _persona(agent_id)
     payload = {
         "model": CLOUD_MODEL,
@@ -514,9 +545,9 @@ def chat_claude(agent_id, task, timeout=600):
     能自己看仓库、改文件、跑验证——SWE-agent 判例「接口>模型」的落地形态。
     人设经 --append-system-prompt 注入；max_turns 限步数防失控。
     """
-    key = os.environ.get("GLM_API_KEY") or os.environ.get("ZHIPUAI_API_KEY")
+    key = _glm_key() or os.environ.get("ZHIPUAI_API_KEY")
     if not key:
-        raise RuntimeError("GLM_API_KEY/ZHIPUAI_API_KEY 未设置")
+        raise RuntimeError("GLM_API_KEY 未设置（audit_ai_config.json zhipu_key 与环境变量均空）")
     sys_prompt = _persona(agent_id)
     model = os.environ.get("CODER_CLAUDE_MODEL", "glm-4.6")
     env = dict(os.environ)
