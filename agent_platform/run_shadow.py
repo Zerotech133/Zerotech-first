@@ -73,25 +73,53 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
         print("[alert] 告警推送异常（不中断主流程）：%s" % e)
 
 
+def _balanced_objects(text):
+    """花括号计数法提取 text 中所有配平的 JSON 对象块（K-ORG-137）。
+
+    旧实现 `\{[^{}]*recommendation[^{}]*\}` 禁止对象内出现花括号——D1
+    rationale 含嵌套 { } 时失配 → parse_ok=false 样本静默缩水。计数法
+    逐块配平，支持嵌套，语义不变（仍只认含 recommendation 的对象）。"""
+    objs = []
+    i = 0
+    while True:
+        i = text.find("{", i)
+        if i < 0:
+            break
+        depth, j = 0, i
+        while j < len(text):
+            if text[j] == "{":
+                depth += 1
+            elif text[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            j += 1
+        if depth == 0:  # 配平才收录；未配平（截断输出）跳过
+            objs.append(text[i:j + 1])
+        i = j + 1
+    return objs
+
+
 def parse_decision(text):
     """从 D1 输出提取 JSON 决策；失败返回 None（评估时计为解析失败样本）"""
-    m = re.search(r"\{[^{}]*recommendation[^{}]*\}", text, re.S)
-    if not m:
-        return None
     try:
-        j = json.loads(m.group(0))
-        # K-ORG-129：score 连续化＝枚举基数 × confidence——
-        # 此前纯枚举（HOLD 恒 0、18/25 并列零）致 J2 Spearman 无分辨（B8）；
-        # HOLD 基数 0 保持中性（0×c 仍 0），confidence 解析失败按 0 容错不毒化
-        base = REC_SCORE.get(str(j.get("recommendation", "")).upper(), 0.0)
-        try:
-            conf = float(j.get("confidence") or 0.0)
-        except (TypeError, ValueError):
-            conf = 0.0
-        j["score"] = round(base * conf, 3)
-        return j
+        for block in _balanced_objects(text):
+            j = json.loads(block)
+            if "recommendation" not in j:
+                continue  # 非决策对象（如解释段里的 JSON 引用）跳过
+            # K-ORG-129：score 连续化＝枚举基数 × confidence——
+            # 此前纯枚举（HOLD 恒 0、18/25 并列零）致 J2 Spearman 无分辨（B8）；
+            # HOLD 基数 0 保持中性（0×c 仍 0），confidence 解析失败按 0 容错不毒化
+            base = REC_SCORE.get(str(j.get("recommendation", "")).upper(), 0.0)
+            try:
+                conf = float(j.get("confidence") or 0.0)
+            except (TypeError, ValueError):
+                conf = 0.0
+            j["score"] = round(base * conf, 3)
+            return j
     except json.JSONDecodeError:
         return None
+    return None
 
 
 def already_done(today, symbol):
