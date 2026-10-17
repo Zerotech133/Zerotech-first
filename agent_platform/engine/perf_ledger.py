@@ -310,8 +310,21 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_ls.add_argument("--limit", type=int, default=20)
     ap.add_argument("--root", default="")
     args, rest = ap.parse_known_args(argv)
+    if not args.root and "--root" in rest:  # 子命令后位置的 --root 兼容
+        i = rest.index("--root")
+        if i + 1 < len(rest):
+            args.root = rest[i + 1]
     root = Path(args.root) if args.root else None
     if args.cmd == "stats":
+        # M5-P2 演示隔离安全阀：stats 含写侧起草（auto_draft_roster 会落
+        # intel_verdicts + trace_links），无显式 --root 拒绝执行，防止验收
+        # 演示污染真仓（复发两次的判例：演示永不落真仓红线）。
+        if not args.root:
+            print("[安全阀 M5-P2] stats 含写侧起草（auto_draft_roster），"
+                  "无显式 --root 拒绝落真仓。生产判读：--root "
+                  "<agent_platform 根>；演示：--root <tmp 目录>",
+                  file=sys.stderr)
+            return 2
         rows = load_perf_rows(root)
         print("perf_ledger rows=%d" % len(rows))
         for prof, s in by_profile(rows).items():
