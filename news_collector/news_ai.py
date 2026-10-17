@@ -14,6 +14,7 @@
 import json
 import math
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -132,6 +133,29 @@ JEV_NEWS_QUESTIONS = {
             "macro": "宏观全局/跨市场",
         },
     },
+    # K-ORG-159（M1）：事件类型（借鉴 FEED 金融事件抽取——事件维度是
+    # 舆情分布监控最强载体）。choice 枚举，兼容 TypeSafe 限制。
+    "event_type": {
+        "type": "choice",
+        "instructions": "这条财经快讯所属的事件类别（选最相关的一个）。",
+        "criteria": {
+            "earnings": "业绩/财报",
+            "policy": "政策/监管",
+            "rate": "利率/货币",
+            "trade": "贸易/关税",
+            "supply": "供给冲击",
+            "demand": "需求扩张",
+            "price": "价格调整",
+            "ma": "并购/重组",
+            "equity": "股权/回购/分红",
+            "credit": "债务/信用",
+            "risk": "诉讼/处罚/风险事件",
+            "tech": "技术/研发进展",
+            "macro": "宏观数据",
+            "geo": "地缘/国际",
+            "other": "其他",
+        },
+    },
     # 坑: JEV TypeSafe 仅支持 choice 问题，text 类型 → 400 Invalid request
     #     （已实测）。判断依据由 jev_reason() 用本地 Ollama 单独生成。
 }
@@ -142,6 +166,47 @@ _SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品"
 # 方向命中仅 32-43%，0.7+ 才稳定在 41-54%；净倾向按半衰期 6h 衰减加权）
 _JEV_LOW_CONF = 0.7
 _JEV_LAMBDA_H = 0.1155   # ln2/6，w=exp(-λ·Δt小时)
+
+# K-ORG-159（M1）：事件类型枚举 + 公司绑定（借鉴 FEED/DocFEE/FNSPID——
+# 金融事件抽取、(公司,事件) 是舆情分布监控的最强载体）。云/本地判定
+# 均输出 event_type（choice/枚举），本地回落另自报 companies（A股代码）。
+_EVENT_TYPES = (
+    "earnings", "policy", "rate", "trade", "supply", "demand", "price",
+    "ma", "equity", "credit", "risk", "tech", "macro", "geo", "other",
+)
+_EVENT_CN = {"earnings": "业绩", "policy": "政策", "rate": "利率",
+             "trade": "贸易", "supply": "供给", "demand": "需求",
+             "price": "价格", "ma": "并购", "equity": "股权",
+             "credit": "债务", "risk": "风险", "tech": "技术",
+             "macro": "宏观", "geo": "地缘", "other": "其他"}
+
+
+def _validate_jev(d):
+    """K-ORG-159（M8）：JEV 判定 schema 校验（借鉴 Instructor/Outlines
+    结构化校验哲学）。
+
+    校验项：bias 枚举 / conf∈[0,1] / event_type 枚举（缺省 other）/
+    companies A股代码格式（6 位数字，滤非法）。不可修复项（bias 非法、
+    conf 非数字）抛 ValueError → 判定侧走重发/降级链（C2批2：链路不断
+    只退化）。可修复项（event_type 缺省/companies 清洗）就地修正返回。
+    """
+    bias = d.get("bias")
+    if bias not in _BIAS_CN:
+        raise ValueError("bias=%r 不在枚举内" % (bias,))
+    conf = d.get("conf")
+    if not isinstance(conf, (int, float)):
+        raise ValueError("conf=%r 非数字" % (conf,))
+    d["conf"] = round(min(max(float(conf), 0.0), 1.0), 2)
+    et = d.get("event_type") or "other"
+    if str(et).strip().lower() not in _EVENT_TYPES:
+        et = "other"  # 可修复：缺省/非法类别降级 other，不阻断判定
+    d["event_type"] = et
+    companies = []
+    for c in (d.get("companies") or []) if isinstance(d.get("companies"), list) else []:
+        if re.match(r"^\d{6}$", str(c)):
+            companies.append(str(c))
+    d["companies"] = companies
+    return d
 
 
 _JEV_KEY_MEMO = None   # 2026-10-16 审计：进程内 memo（backfill 每判一条
@@ -238,11 +303,21 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
             conf = (ans.get("bias") or {}).get("confidence", 0.0)
         if bias not in _BIAS_CN:
             return None
-        return {"bias": bias, "bias_cn": _BIAS_CN[bias],
-                "conf": round(float(conf or 0), 2),
-                "scope": scope, "scope_cn": _SCOPE_CN.get(scope, ""),
-                "reason": jev_reason(title, _BIAS_CN[bias],
-                                     _SCOPE_CN.get(scope, scope))}
+        d = {"bias": bias, "bias_cn": _BIAS_CN[bias],
+             "conf": round(float(conf or 0), 2),
+             "scope": scope, "scope_cn": _SCOPE_CN.get(scope, ""),
+             "companies": list(stocks or []),  # K-ORG-159：云侧公司绑定=输入标的
+             "src": "cloud"}
+        try:
+            d["event_type"] = (ans.get("event_type") or {}) \
+                .get("choice", "other")
+            d = _validate_jev(d)
+        except ValueError as e:
+            log("jev_judge cloud schema FAIL %s" % str(e)[:100])
+            return None
+        d["reason"] = jev_reason(title, _BIAS_CN[bias],
+                                 _SCOPE_CN.get(scope, scope))
+        return d
     except Exception as e:
         log("jev_judge FAIL %s" % str(e)[:100])
         return None
@@ -282,39 +357,64 @@ _CLOUD_FAIL_UNTIL = 0.0   # 云失败后此 epoch 前直接走本地，防 451 �
 def jev_judge_one_local(title, stocks, timeout=60):
     """本地回落判定（qwen3.5:9b + format json，v2 资产价格口径）。
 
-    prompt 口径与盲测 v2 逐字一致（a3_blindtest.py，一致率 86.7%、反向误判 0）。
+    K-ORG-159（M1/M8）：在盲测 v2 口径之上扩展输出 event_type + companies
+    （事件维度是分布监控最强载体）；解析失败带错重发 1 次（借鉴
+    Instructor 重试哲学），schema 校验不过走降级链（C2批2：链路不断只退化）。
     失败返回 None（与云路径同契约，绝不抛出）。
     """
     if not title:
         return None
     tag = ("（关联标的：%s）" % "/".join(stocks)) if stocks else ""
-    prompt = (
+    base = (
         "财经快讯：%s%s\n判断该快讯对相关市场【资产价格】的短期影响方向，只输出 JSON："
-        '{"bias":"bull|bear|neutral","conf":0.0到1.0}，不要输出其他内容。'
+        '{"bias":"bull|bear|neutral","conf":0.0到1.0,'
+        '"event_type":"<事件类别枚举>","companies":["相关A股代码"]}，不要输出其他内容。'
+        "event_type 枚举：earnings业绩/policy政策/rate利率/trade贸易/supply供给/"
+        "demand需求/price价格/ma并购/equity股权/credit债务/risk风险/tech技术/"
+        "macro宏观/geo地缘/other其他。companies 只填明确关联的A股代码（6位数字），"
+        "无则空数组。"
         "口径：只看对资产价格的直接影响——外交会晤、一般性产业与技术进展、常规信息披露、"
         "国债/政策性金融债发行供给等属 neutral；明确的需求扩张、超预期业绩、降息等利好才判 bull；"
         "明确的供给冲击、业绩暴雷、加息、制裁等才判 bear。" % (title[:100], tag))
-    try:
+
+    def _ask(prompt):
         r = requests.post(OLLAMA, json={
             "model": os.environ.get("OLLAMA_MODEL", "qwen3.5:9b"),
             "messages": [{"role": "user", "content": prompt}],
             "stream": False, "think": False, "format": "json",
-            "options": {"temperature": 0.1, "num_predict": 60},
+            "options": {"temperature": 0.1, "num_predict": 80},
         }, timeout=timeout)
         r.raise_for_status()
-        j = json.loads(r.json()["message"]["content"])
-        bias = (j.get("bias") or "").strip().lower()
-        if bias not in _BIAS_CN:
-            return None
-        scope = (j.get("scope") or "").strip().lower()
-        conf = min(max(float(j.get("conf") or 0.5), 0.0), 1.0)
-        bias_cn, scope_cn = _BIAS_CN[bias], _SCOPE_CN.get(scope, scope or "")
-        return {"bias": bias, "bias_cn": bias_cn, "conf": round(conf, 2),
-                "scope": scope, "scope_cn": scope_cn, "src": "local",
-                "reason": jev_reason(title, bias_cn, scope_cn)}
+        return json.loads(r.json()["message"]["content"])
+
+    try:
+        j = _ask(base)
     except Exception as e:
-        log("jev_judge_local FAIL %s" % str(e)[:100])
+        log("jev_judge_local parse FAIL %s" % str(e)[:100])
+        try:
+            # M8：带错重发 1 次，仍败走降级链（C2批2）
+            j = _ask(base + "（注意：上次输出无法解析，请只输出合法 JSON，不要任何多余文字）")
+        except Exception as e2:
+            log("jev_judge_local retry FAIL %s" % str(e2)[:100])
+            return None
+    if not isinstance(j, dict):
+        log("jev_judge_local schema FAIL 非对象")
         return None
+    try:
+        j["bias"] = (j.get("bias") or "").strip().lower()
+        j["scope"] = (j.get("scope") or "").strip().lower()
+        j = _validate_jev(j)
+    except ValueError as e:
+        log("jev_judge_local schema FAIL %s" % str(e)[:100])
+        return None
+    scope = j.get("scope", "")
+    d = {"bias": j["bias"], "bias_cn": _BIAS_CN[j["bias"]],
+         "conf": j["conf"], "scope": scope,
+         "scope_cn": _SCOPE_CN.get(scope, scope or ""),
+         "event_type": j["event_type"], "event_cn": _EVENT_CN[j["event_type"]],
+         "companies": j["companies"], "src": "local"}
+    d["reason"] = jev_reason(title, d["bias_cn"], d["scope_cn"])
+    return d
 
 
 def jev_judge_one(title, stocks, timeout=15):
@@ -366,7 +466,7 @@ def jev_summary(db, hours=24):
     except Exception as e:
         log("jev_summary 查询失败，JEV 分布降级为空: %s" % str(e)[:100])  # C2批2
         return ""
-    bias_cnt, scope_cnt = {}, {}
+    bias_cnt, scope_cnt, event_cnt = {}, {}, {}
     low_conf, hi_dir, net = 0, 0, 0.0
     now = now_cst()
     for j, created_at in rows:
@@ -377,6 +477,10 @@ def jev_summary(db, hours=24):
         bias_cnt[d.get("bias", "?")] = bias_cnt.get(d.get("bias", "?"), 0) + 1
         sc = d.get("scope") or "?"
         scope_cnt[sc] = scope_cnt.get(sc, 0) + 1
+        et = d.get("event_type")
+        if et:   # K-ORG-159：仅统计携带 event_type 的新判定，
+                 # 存量旧数据无此键不污染「其他」桶
+            event_cnt[et] = event_cnt.get(et, 0) + 1
         conf = d.get("conf")
         if isinstance(conf, (int, float)):
             if conf < _JEV_LOW_CONF:
@@ -411,6 +515,10 @@ def jev_summary(db, hours=24):
         parts.append("低置信%d条(<70%%)" % low_conf)
     if hi_dir:
         parts.append("净倾向(时衰×高置信)%+.1f" % net)
+    if event_cnt:
+        top = sorted(event_cnt.items(), key=lambda kv: -kv[1])[:3]
+        parts.append("事件:%s" % " ".join(
+            "%s%d" % (_EVENT_CN.get(k, k), v) for k, v in top))
     return " · ".join(parts)
 
 
