@@ -213,3 +213,10 @@ osint_video/logs/
 # 3611 文件/3.7GB 含 .env.local 密钥面 + logs/data/outputs/backups 运行态，
 # 主仓 git 不递归其内容；整目录忽略不入主仓（不采用 submodule 方案）
 zerobound-kg/
+
+# ===== 存量收编·留痕处置 untrack+ignore（2026-10-17 K-ORG-150）=====
+# 老田拍板：判读历史流水 + 晨检报告为翻腾型运行态留痕，磁盘保留、
+# 版本库 untrack（与 n1_report_*.txt / sa_push_queue.jsonl 同族 B3 治理惯例）
+# 每日高频追加/覆写产生持续 diff 噪音，不入主仓
+news_collector/sa_history.jsonl
+jev-eval/n1_check.txt
