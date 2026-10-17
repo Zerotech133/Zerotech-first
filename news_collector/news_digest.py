@@ -35,7 +35,7 @@ HI_CONF = 0.80
 SIGNAL_TOP = 4
 
 sys.path.insert(0, HERE)
-from card_build import build_card, push_card  # noqa: E402
+from card_build import build_card, build_card3, push_card  # noqa: E402
 
 
 def log(msg):
@@ -225,10 +225,9 @@ def push_card_flow(db, since, day, n_total, sec_blocks, hit_rows, dry):
     url = _picks_url()
     if url:
         buttons.append(("今日选股看板", url, "primary"))
-    card = build_card(
-        "📰 金融新闻日报 · %s" % day,
-        "近 24 小时 · %d 条 · 信息采集域" % n_total,
-        "turquoise", blocks,
+    card = build_card3(  # K-PUSH-008：v3 蓝域资讯（url 按钮升 2.0 原生 behaviors）
+        "news", "📰 金融新闻日报 · %s" % day,
+        "近 24 小时 · %d 条 · 信息采集域" % n_total, blocks,
         footer="AI 工作站 · 信息采集域 · 每日 08:30 · 发送失败自动降级文本",
         buttons=buttons)
     if dry:

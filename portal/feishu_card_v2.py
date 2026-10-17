@@ -152,17 +152,19 @@ def v3_audit_id(title):
 
 
 def build_v3(domain, title, source, rows=None, md=None, buttons=None,
-             tags="", audit=None):
+             tags="", audit=None, subtitle=None, extra_els=None):
     """v3 统一卡 → (card, audit_id)。
 
-    rows:     [(label, value_md), ...] 键值区（value 支持 markdown 着色）
-    md:       正文 markdown（与 rows 可同用，rows 在前）
-    buttons:  [(label, spec, style)] —— spec 二选一：
-              ("action", action_id, payload_dict)  回调按钮（须已注册，否则拒造）
-              ("url", url)                          URL 跳转按钮
-              style: primary / default / danger
-    tags:     footer 左侧 #标签（如 "#tune #pending"）
-    audit:    审计号（None 自动生成 4 位，进 footer 右侧）
+    rows:       [(label, value_md), ...] 键值区（value 支持 markdown 着色）
+    md:         正文 markdown（与 rows 可同用，rows 在前）
+    buttons:    [(label, spec, style)] —— spec 二选一：
+                ("action", action_id, payload_dict)  回调按钮（须已注册，否则拒造）
+                ("url", url)                          URL 跳转按钮
+                style: primary / default / danger
+    tags:       footer 左侧 #标签（如 "#tune #pending"）
+    audit:      审计号（None 自动生成 4 位，进 footer 右侧）
+    subtitle:   header 副标题（K-PUSH-008：news/km 迁移保副标题信息）
+    extra_els:  追加 2.0 元素列表（md 之后、buttons 之前；collapsible_panel 等）
     """
     import datetime
     if domain not in V3_DOMAINS:
@@ -180,6 +182,9 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
     if md:
         els.append({"tag": "hr"})
         els.append({"tag": "markdown", "content": md})
+    if extra_els:
+        els.append({"tag": "hr"})
+        els.extend(extra_els)
 
     if buttons:
         els.append({"tag": "hr"})
@@ -214,4 +219,7 @@ def build_v3(domain, title, source, rows=None, md=None, buttons=None,
                                  "content": "%s %s · %s" % (emoji, dname, title)},
                        "template": tpl},
             "body": {"elements": els}}
+    if subtitle:
+        card["header"]["subtitle"] = {"tag": "plain_text",
+                                      "content": subtitle}
     return card, audit

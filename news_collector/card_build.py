@@ -70,6 +70,32 @@ def build_card(title, subtitle, template, md_blocks, footer=None,
     return card
 
 
+# ── K-PUSH-008：v3 统一卡适配（存量发卡方迁移） ─────────────
+# 域色规范见 portal/feishu_card_v2.V3_DOMAINS：alert(红 预警)/
+# news(蓝 资讯)/daily(绿 例行)/interact(紫 交互)/receipt(金 回执)。
+# 按钮 (label, url, type) → build_v3 url 型（behaviors open_url，
+# 2.0 原生可点——顺带修 v1 按钮手机端兼容坑，K-STOCK-354 判例翻新）。
+def build_card3(domain, title, subtitle, md_blocks, footer=None, buttons=None):
+    """v3 统一卡 → card dict（发卡仍走 push_card，链路不变）。
+
+    footer 原文案并入 source 位（v3 footer 格式 #tags · source · 时间 · act）。
+    判例：v3 卡为 schema 2.0，禁带 img 二维码（200621 拒发）——
+    push_card(qr_portal=...) 与 v3 卡互斥，迁移方勿传。
+    """
+    sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..", "portal")))
+    from feishu_card_v2 import build_v3
+    els = []
+    for i, md in enumerate(md_blocks):
+        if i:
+            els.append({"tag": "hr"})
+        els.append({"tag": "markdown", "content": md})
+    btns = [(label, ("url", url), btype) for label, url, btype in (buttons or [])]
+    card, _audit = build_v3(domain, title, source=footer or "信息采集域",
+                            extra_els=els, buttons=btns or None,
+                            subtitle=subtitle or None)
+    return card
+
+
 def _qr_key(portal_url):
     """复用量化域 card_assets 的二维码上传/缓存（lark-cli images create）。"""
     try:

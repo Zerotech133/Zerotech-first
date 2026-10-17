@@ -123,11 +123,11 @@ def main():
         targets = alert_push._targets(alert_push._cfg())
         # K42-c：不做内网接入——卡内不放下钻按钮/门户二维码（外网飞书点不开）
         lines = ["**%s** %s" % (nm, fired) for nm, fired, _ in hits]
-        card = card_build.build_card(
-            "⚡ 即时预警", time.strftime("%Y-%m-%d %H:%M") + " · 关键变化触发",
-            "red", ["\n".join(lines)],
-            footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议",
-            use_schema2=True)
+        card = card_build.build_card3(  # K-PUSH-008：v3 红域预警
+            "alert", "⚡ 即时预警",
+            time.strftime("%Y-%m-%d %H:%M") + " · 关键变化触发",
+            ["\n".join(lines)],
+            footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议")
         tres = alert_push.push_card_multi(card, targets=targets)
         ok = any(tres.values())
         if not ok:  # 文本兜底

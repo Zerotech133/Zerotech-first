@@ -178,35 +178,34 @@ def scan_lib(lib, commit=True):
 
 def build_card(lib, res, trigger):
     n_add, n_chg = len(res["added"]), res.get("n_changed", len(res["changed"]))
-    color = "blue" if n_add or n_chg else "grey"
+    # K-PUSH-008：v3 统一卡（有更新=蓝域资讯，无更新=绿域例行）
+    domain = "news" if (n_add or n_chg) else "daily"
     head = "**新增 %d · 更新 %d · 库存量 %d**%s" % (
         n_add, n_chg, res["total"],
         "（文件数超上限，未全扫）" if res.get("truncated") else "")
     if n_add + n_chg == 0:
         head += "\n本次无新增/更新。"
-    elements = [{"tag": "markdown", "content": head}, {"tag": "hr"}]
+    extra = [{"tag": "markdown", "content": head}]
     if res["categories"]:
         cat_md = " ｜ ".join("**%s** ×%d" % (k, v) for k, v in res["categories"].items())
-        elements.append({"tag": "markdown", "content": "**分类** " + cat_md})
+        extra.append({"tag": "hr"})
+        extra.append({"tag": "markdown", "content": "**分类** " + cat_md})
     items = res["added"][:10] + res["changed"][:5]
     if items:
         lines = "\n".join("- " + i for i in items)
-        elements.append({"tag": "collapsible_panel", "expanded": False,
-                         "header": {"title": {"tag": "plain_text",
-                                              "content": "本次变更清单（前 15）"}},
-                         "border": {"color": "grey"}, "padding": "8px 12px",
-                         "elements": [{"tag": "markdown", "content": lines}]})
-    elements.append({"tag": "markdown", "content":
-                     "<font color='grey'>老田的AI工作站 · KM 知识库联动 · "
-                     "%s（%s）· 路径 %s</font>" % (
-                         datetime.now().strftime("%Y-%m-%d %H:%M"),
-                         "手动" if trigger == "manual" else "定时",
-                         lib["path"])})
-    return {"schema": "2.0", "config": {"update_multi": True},
-            "header": {"title": {"tag": "plain_text",
-                                 "content": "📚 %s · 知识库摘要" % lib["name"]},
-                       "template": color},
-            "body": {"elements": elements}}
+        extra.append({"tag": "hr"})
+        extra.append({"tag": "collapsible_panel", "expanded": False,
+                      "header": {"title": {"tag": "plain_text",
+                                           "content": "本次变更清单（前 15）"}},
+                      "border": {"color": "grey"}, "padding": "8px 12px",
+                      "elements": [{"tag": "markdown", "content": lines}]})
+    from feishu_card_v2 import build_v3
+    card, _audit = build_v3(
+        domain, "%s · 知识库摘要" % lib["name"],
+        source="老田的AI工作站 · KM 知识库联动 · %s · 路径 %s" % (
+            "手动" if trigger == "manual" else "定时", lib["path"]),
+        extra_els=extra)
+    return card
 
 
 def push_lib(lib, trigger):

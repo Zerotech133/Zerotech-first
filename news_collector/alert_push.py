@@ -227,10 +227,9 @@ def main():
             ititle, isub = "⚠️ 预警日报 · 盘后", now + " · 五路预警今日均为空"
         empty_res = {"alerts": [], "empty": True}
         blocks = build_blocks(empty_res, morning, fetch_index())
-        card = card_build.build_card(
-            ititle, isub, "grey", blocks,
-            footer="AI工作站 · 飞书预警输出 · 不构成投资建议",
-            use_schema2=True)
+        card = card_build.build_card3(  # K-PUSH-008：空报走 v3 绿域例行
+            "daily", ititle, isub, blocks,
+            footer="AI工作站 · 飞书预警输出 · 不构成投资建议")
         try:
             tres = push_card_multi(card, targets=targets)
         except Exception as e:
@@ -262,10 +261,9 @@ def main():
     else:
         title, sub = "⚠️ 预警日报 · 盘后", now + " · 大盘 + 五路预警全量"
 
-    card = card_build.build_card(
-        title, sub, "orange", blocks,
-        footer="AI工作站 · 飞书预警输出 · 不构成投资建议",
-        use_schema2=True)
+    card = card_build.build_card3(  # K-PUSH-008：全量报走 v3 红域预警
+        "alert", title, sub, blocks,
+        footer="AI工作站 · 飞书预警输出 · 不构成投资建议")
     try:
         tres = push_card_multi(card, targets=targets)
     except Exception as e:
