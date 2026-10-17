@@ -207,3 +207,9 @@ osint_video/admin_ui/tsconfig.tsbuildinfo
 osint_video/data/
 # 运行日志目录（*.log 已被全局规则覆盖，此处收口目录级）
 osint_video/logs/
+
+# ===== 存量收编·zerobound-kg 整目录 ignore（2026-10-17 K-ORG-149）=====
+# 嵌入式独立 git 仓库（自带 .git）：源码 kg_* 系已由仓内自管理版本控制，
+# 3611 文件/3.7GB 含 .env.local 密钥面 + logs/data/outputs/backups 运行态，
+# 主仓 git 不递归其内容；整目录忽略不入主仓（不采用 submodule 方案）
+zerobound-kg/
