@@ -67,6 +67,7 @@ def glm_chat(persona, user, model="glm/glm-5.3", timeout=240):
     实测 coding 端点（/api/coding/paas/v4，OpenAI 兼容）glm-5.3 / 5.3-flash 全通，
     席位模型升 5.3（思考型：content 为文本，reasoning_content 只算思考不拼正文）。
     返回 (text, "ok") 与 OllamaLLM().chat 同构。"""
+    import urllib.error
     import urllib.request
     key = _glm_key()
     if not key:
@@ -84,7 +85,14 @@ def glm_chat(persona, user, model="glm/glm-5.3", timeout=240):
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json",
                  "Authorization": "Bearer " + key})
-    d = json.load(urllib.request.urlopen(req, timeout=timeout))
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            d = json.load(resp)
+    except (urllib.error.HTTPError, urllib.error.URLError, OSError,
+            json.JSONDecodeError) as e:  # K-ORG-137：429/404/超时/非JSON一律转
+        # LLMError——此前裸抛 urllib 异常，main() 的 except LLMError 捕不到，
+        # 降档提示（sys.exit(2)）失效、直接裸 traceback
+        raise LLMError("glm 通道调用失败：%s" % e) from e
     out = ((d.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
     out = out.strip()
     if not out:
@@ -354,7 +362,10 @@ def run_compare(args):
         user += "\n\n【执行反馈补证档（事后补齐的事实证据）】\n" + ev_text
 
     if args.live:
-        model = args.model or chief_model()
+        # K-ORG-137：评估者席位缺省强模型 glm-5.3——此前缺省回退 chief_model()
+        # （org.json 仍绑 9b），round2 9b 两处归因错误（K-ORG-130 实录）在例行
+        # 判读会复发；点评主链（main）仍走 chief binding，9b 出稿冠军不动
+        model = args.model or "glm/glm-5.3"
         verdict, err, raw = None, None, ""
         for attempt in range(1, 4):  # K-ORG-127：小模型严格JSON不稳，解析失败重发至多3次（不放松契约）
             try:
