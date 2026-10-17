@@ -1,0 +1,35 @@
+# ============================================================
+# osint_video Python 依赖清单（架构 §6，分组安装）
+#
+# 分组说明：
+#   [核心]   T01 队列/配置/日志必需，体积小，所有部署机必装
+#   [抽取]   T03 抽取管线重依赖，仅抽取机安装（见下方独立安装命令）
+#   [后续]   T05 合规入库阶段依赖，PoC 阶段注释保留
+#
+# 安装：
+#   pip install -r requirements.txt          # 仅安装本文件未注释的包（核心组）
+#   抽取组请按 README §2.2 的 ② 单独安装（torch/paddle 需选 CPU/NPU 轮子源）
+# ============================================================
+
+# ---------- [核心] T01：队列 API / 配置 / 日志 / PG ----------
+fastapi>=0.115.0          # 队列 API（Starlette TestClient 与 httpx 0.28+ 兼容）
+uvicorn>=0.29             # ASGI 服务器
+httpx>=0.28.0             # 飞书 webhook / 后续解析链 HTTP 客户端
+psycopg[binary]>=3.1      # PG 驱动（SQLAlchemy psycopg3 方言 + init_db 直连）
+sqlalchemy>=2.0           # 连接池 + Core（text SQL）
+pydantic-settings>=2.2    # .env 配置加载（含限速硬下限校验）
+cryptography>=42.0        # Cookie Fernet 加密入库
+pyyaml>=6.0               # whitelist.yaml 解析（T05 生效，先行安装无害）
+
+# ---------- [抽取] T03：重依赖，不写入本文件（避免 pip install -r 误装） ----------
+# 按需单独安装：
+#   pip install "funasr>=1.1"
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+#   pip install "paddlepaddle>=2.6" "paddleocr>=2.7"
+#   pip install opencv-python-headless numpy
+
+# ---------- [后续] T05：合规入库 + 向量化 ----------
+# Qdrant 是可选派生索引；未启动时 PG 查询仍可用
+qdrant-client>=1.9
+# datasketch>=1.6       # MinHash 文本去重
+# tenacity>=8.2         # T02 下载重试

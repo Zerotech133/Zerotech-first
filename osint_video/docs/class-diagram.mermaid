@@ -1,0 +1,174 @@
+classDiagram
+    class LinkTask {
+      +int id
+      +string sph_url
+      +string url_hash
+      +string status
+      +string route
+      +string video_id
+      +transition(new_status)
+      +claim(worker_id)
+    }
+    class CreatorProfile {
+      +int creator_id
+      +string platform
+      +string finder_id
+      +string nickname
+      +string source_type
+      +bool enabled
+      +upsert_from_link(metadata)
+    }
+    class InterestSignal {
+      +int signal_id
+      +int creator_id
+      +string signal_type
+      +string subject_id
+      +float score
+      +string evidence_unit_id
+      +datetime observed_at
+    }
+    class KnowledgeResource {
+      +string resource_id
+      +string video_id
+      +int target_id
+      +string source_url
+      +string lifecycle_status
+      +string index_status
+      +review()
+      +publish()
+      +quarantine()
+    }
+    class MediaAsset {
+      +string media_id
+      +string resource_id
+      +string storage_uri
+      +string sha256
+      +datetime retention_deadline
+      +string lifecycle_status
+      +purge(reason)
+    }
+    class KnowledgeUnit {
+      +string unit_id
+      +string resource_id
+      +int target_id
+      +string unit_version
+      +string unit_type
+      +string title
+      +string text
+      +string normalized_text
+      +string time_range
+      +float confidence
+      +string status
+      +string extractor
+      +string model_version
+      +normalize()
+      +new_version()
+      +mask_pii()
+    }
+    class Topic {
+      +int topic_id
+      +string name
+      +string slug
+      +string taxonomy_version
+    }
+    class Entity {
+      +int entity_id
+      +string entity_type
+      +string canonical_name
+      +string aliases_json
+    }
+    class TimelineEvent {
+      +string event_id
+      +string unit_id
+      +datetime event_time
+      +string event_type
+      +string summary
+      +float confidence
+    }
+    class Evidence {
+      +string evidence_id
+      +string unit_id
+      +string resource_id
+      +int link_task_id
+      +int target_id
+      +string source_channel
+      +float start_sec
+      +float end_sec
+      +string quote
+      +string quote_hash
+      +float channel_confidence
+      +string source_url
+      +string validity
+      +validate_locator(duration)
+    }
+    class Strategy {
+      +int strategy_id
+      +string name
+      +string objective
+      +string status
+      +evaluate(context)
+    }
+    class StrategyEvidence {
+      +int strategy_id
+      +string evidence_id
+      +string relation
+      +string rationale
+      +float weight
+    }
+    class CollectionJob {
+      +string job_id
+      +string stage
+      +string state
+      +int attempt
+      +string error_code
+      +claim()
+      +retry()
+    }
+    class VectorIndex {
+      +string collection
+      +string point_id
+      +string unit_id
+      +upsert(unit)
+      +search(query, filters)
+    }
+    class KnowledgeGraph {
+      +string node_id
+      +string edge_id
+      +upsert_node(node)
+      +upsert_edge(src, predicate, dst)
+      +neighbors(node_id)
+    }
+    class KnowledgeService {
+      +create_unit(input)
+      +update_unit(unit_id, patch)
+      +search(query, filters)
+      +link_strategy(strategy_id, evidence_id)
+    }
+    class AdminAPI {
+      +submit_link(request)
+      +get_creator(creator_id)
+      +list_units(filters)
+      +get_timeline(filters)
+      +get_strategy_evidence(strategy_id)
+    }
+    LinkTask "1" --> "0..1" KnowledgeResource : creates
+    LinkTask "1" --> "0..1" MediaAsset : produces
+    LinkTask "1" --> "0..1" CreatorProfile : discovers
+    CreatorProfile "1" --> "0..*" InterestSignal : emits
+    InterestSignal "0..*" --> "1" KnowledgeUnit : supported_by
+    KnowledgeResource "1" --> "0..1" MediaAsset : transient_media
+    KnowledgeResource "1" --> "1..*" KnowledgeUnit : contains
+    KnowledgeResource "1" --> "1" CreatorProfile : target
+    CreatorProfile "1" --> "0..*" KnowledgeUnit : publishes
+    KnowledgeUnit "0..*" --> "0..*" Topic : classified_as
+    KnowledgeUnit "0..*" --> "0..*" Entity : mentions
+    KnowledgeUnit "1" --> "0..*" TimelineEvent : has_events
+    KnowledgeUnit "1" --> "1..*" Evidence : has_provenance
+    Strategy "1" --> "0..*" StrategyEvidence : uses
+    StrategyEvidence "0..*" --> "1" Evidence : cites
+    KnowledgeUnit "1" --> "0..*" CollectionJob : processing_history
+    KnowledgeUnit "1" --> "0..*" VectorIndex : indexed_as
+    KnowledgeUnit "0..*" --> "0..*" KnowledgeGraph : represented_in
+    AdminAPI --> KnowledgeService : calls
+    KnowledgeService --> VectorIndex : indexes
+    KnowledgeService --> KnowledgeGraph : updates

@@ -197,3 +197,13 @@ news_collector/sa_push_queue.jsonl
 
 # ===== K-ORG-144：雪球真凭据落盘防入库（2026-10-17，盘点后 xueqiu 工具链生成）=====
 quant_backtest/config/xq_*.json
+
+# ===== 存量收编·osint_video 剥离式（2026-10-17 K-ORG-147）=====
+# 依赖与构建产物
+osint_video/admin_ui/node_modules/
+osint_video/admin_ui/dist/
+osint_video/admin_ui/tsconfig.tsbuildinfo
+# 运行态数据（含 browser_profile Cookies/Login Data 等敏感运行态，绝不可入库）
+osint_video/data/
+# 运行日志目录（*.log 已被全局规则覆盖，此处收口目录级）
+osint_video/logs/
