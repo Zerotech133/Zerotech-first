@@ -127,20 +127,29 @@ SEV_PAT = re.compile(r"\[P[012]\]")
 def defect_check(text):
     """K-ORG-133：缺陷类判读定级检查——按行扫描，命中缺陷关键词的行若缺 [P0|P1|P2] 即违规。
 
-    豁免：① **[回看]** 段（闭环状态追踪，非缺陷判读）；② 行内含「已修复/已闭环」等闭环结论；
-          ③ 否定语境（「无异常/无失败/无超时」等前缀「无」+关键词——非缺陷陈述）。
+    豁免（K-ORG-135 全量语料实证）：① **[回看]** 段（含 `- **[回看]**` 列表前缀，闭环追踪非判读）；
+          ② **明日关注** 段（计划/追问，非缺陷判读）；③ 章节标题（`#` 开头）；
+          ④ 机器日志引用（[warn]/[skip] 前缀）；⑤ 否定/条件语境——
+          行内「无/零/若 + 间隔≤10字 + 关键词」（如「无 P0/P1 异常」「若未执行」）非缺陷陈述；
+          ⑥ 行内含「已修复/已闭环」等闭环结论。
     返回 (ok, reasons)。"""
     reasons = []
+    _kw = "|".join(re.escape(k) for k in DEFECT_KEYWORDS)
     for ln in text.splitlines():
-        if ln.lstrip().startswith("**[回看]**"):
+        s = ln.lstrip()
+        if s.startswith("- "):  # 剥列表前缀：- **[回看]** / - [warn] 同裸前缀处理
+            s = s[2:].lstrip()
+        if s.startswith(("#", "**[回看]**", "[warn]", "[skip]")):
+            continue
+        if "**明日关注**" in s:
             continue
         if any(k in ln for k in DEFECT_KEYWORDS):
             if SEV_PAT.search(ln):
                 continue
             if any(w in ln for w in DEFECT_EXEMPT):
                 continue
-            if any(("无" + k) in ln for k in DEFECT_KEYWORDS):
-                continue  # 否定语境（无异常/无失败/无超时…）非缺陷
+            if re.search(r"(?:无|零|若)[^，。；]{0,10}(?:%s)" % _kw, ln):
+                continue  # 否定/条件语境（无 P0/P1 异常、若未执行…）非缺陷
             reasons.append("缺陷类判读缺定级:%s" % ln.strip()[:60])
     return (len(reasons) == 0, reasons)
 
