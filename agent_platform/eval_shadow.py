@@ -123,7 +123,8 @@ def persist_eval_rows(persist_rows, persist_root):
     from adapters.trace_link import LinkStore
     from engine.perf_ledger import record_perf_rows, auto_draft_roster
     rep = record_perf_rows(persist_rows, source="eval-shadow", root=persist_root,
-                           link_store=LinkStore(persist_root / "trace" / "trace_links.jsonl"),
+                           link_store=LinkStore(persist_root / "data" / "trace"
+                                                / "trace_links.jsonl"),
                            declared_at=datetime.now().isoformat(timespec="seconds"))
     print("[J4 perf] 沉淀 recorded=%d replayed=%d skipped=%d findings=%d"
           % (rep["recorded"], rep["replayed"], rep["skipped"],

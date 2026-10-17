@@ -72,10 +72,11 @@ class EvalShadowGuardTests(unittest.TestCase):
         with redirect_stdout(buf):
             rep, drafted, df = ES.persist_eval_rows([row], root)
         self.assertEqual(rep["recorded"], 1)
-        self.assertTrue((root / "data" / "perf_ledger.jsonl").exists()
-                        or (root / "perf_ledger.jsonl").exists()
-                        or PL.load_perf_rows(root))  # 落账位置随引擎布局
-        self.assertTrue((root / "trace" / "trace_links.jsonl").exists())
+        self.assertTrue(PL.load_perf_rows(root))  # perf 落账（root=AP 根→data/）
+        # 链必须落 data/trace/（真仓约定：persist_root/"data"/"trace"/trace_links.jsonl；
+        # 曾错拼 persist_root/"trace" 致链落 agent_platform/trace/ 错位目录，幂等救场无污染）
+        self.assertTrue((root / "data" / "trace" / "trace_links.jsonl").exists())
+        self.assertFalse((root / "trace" / "trace_links.jsonl").exists())
 
     def test_persist_eval_rows_rejects_empty_root(self):
         # 防呆：persist_eval_rows 本体不接受空 root（拒写判定在 main，双保险）
