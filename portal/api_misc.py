@@ -1399,7 +1399,7 @@ transition:.3s;z-index:9}
             + _push_ms +
             "<div class='itools'>"
             "<a href='/api/alert/push'>📨 立即推送全量</a>"
-            "<a href='http://127.0.0.1:8097'>🛰 推送中台 · 情报变现 →</a>"
+            "<a href='/push/'>🛰 推送中台 · 情报变现 →</a>"
             "<a href='/quant'>📊 预警速览 →</a></div>"
             "<div class='ifoot'><span class='ist'>"
             "<i class='idot%s'></i>%s</span><span class='ienter'>"
@@ -1575,7 +1575,7 @@ transition:.3s;z-index:9}
         return ("<div class='sec'><h2>📊 每日批次回测</h2>" + body + "</div>")
     # ── K-STOCK-037 组织架构图页（/org）：树形岗位图 · 对话统一走超级助手 ──
     def _org_page(self):
-        """🏛 组织架构：human → 田小皮 · 参谋长 → 部门 → 岗位 树形图。
+        """🏛 组织架构：human → 田丰 · 参谋长 → 部门 → 岗位 树形图。
         数据源 agent_platform/registry/{org,team_*}.json 与
         portal/ai_market.json（注册表存源，本页只读渲染）。
         岗位不设独立对话窗口——对话统一走 🦸 超级助手
@@ -1702,7 +1702,7 @@ transition:.3s;z-index:9}
                         sev.get("P0", "即时"), sev.get("P1", "1h")))
             + "<div style='border:2px solid #d29922;border-radius:12px;"
               "background:#161b22;padding:12px 16px;display:inline-block'>"
-              "<b style='font-size:16px'>🧠 田小皮 · 参谋长</b>"
+              "<b style='font-size:16px'>🧠 田丰 · 参谋长</b>"
               "<span class='dim' style='font-size:12px;margin-left:8px'>"
               "%s · %s · %s</span></div>"
               % (e(str(chief.get("role_profile", ""))),
@@ -1713,8 +1713,8 @@ transition:.3s;z-index:9}
             "<div class='sec' style='border-color:#58a6ff'>"
             "🦸 <b>对话统一入口</b>：各岗位均<b>不设独立对话窗口</b>——"
             "通过超级助手直接对话即可调度全部岗位（全站右下角浮动图标，"
-            "或 <a href='http://127.0.0.1:8787' target='_blank' "
-            "rel='noopener'>127.0.0.1:8787</a>）· 聘请/派单走 "
+            "或 <a href='/hermes/' target='_blank' "
+            "rel='noopener'>超级助手 /hermes/</a>）· 聘请/派单走 "
             "<a href='/aim'>AI 市场货架</a></div>")
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,"
@@ -1722,7 +1722,7 @@ transition:.3s;z-index:9}
                 + self._COCKPIT_CSS + "</head><body>"
                 + pill_nav("org")
                 + "<h1>🏛 组织架构</h1><div class='dim'>"
-                "human → 田小皮 · 参谋长 → 部门 → 岗位 · 注册表实时渲染"
+                "human → 田丰 · 参谋长 → 部门 → 岗位 · 注册表实时渲染"
                 "（agent_platform/registry）</div>"
                 + banner + tree
                 + "<div class='dim' style='margin-top:20px'>数据源："
@@ -1818,7 +1818,7 @@ transition:.3s;z-index:9}
             "<div class='sec'><h2>🦸 超级助手 · AI 组织架构总入口</h2>"
             "<div style='display:grid;grid-template-columns:repeat("
             "auto-fit,minmax(300px,1fr));gap:12px'>"
-            "<a href='http://127.0.0.1:8787' target='_blank' style='display:"
+            "<a href='/hermes/' target='_blank' style='display:"
             "block;border:1px solid #58a6ff;border-radius:12px;"
             "background:#161b22;padding:16px 18px;text-decoration:none;"
             "color:#e6edf3'>"
@@ -1828,14 +1828,14 @@ transition:.3s;z-index:9}
             "<div class='dim' style='font-size:12.5px;margin:6px 0 10px'>"
             "与超级助手对话即可调度下方全部 AI 岗位 · 执行/记忆/插件网关"
             "</div>"
-            "<div style='font-size:13px'><b>http://127.0.0.1:8787</b></div>"
+            "<div style='font-size:13px'><b>经门户直达 /hermes/</b></div>"
             "</a>"
             "<div style='border:1px solid #30363d;border-radius:12px;"
             "background:#161b22;padding:16px 18px'>"
             "<div style='font-size:15px;font-weight:700'>🏛 组织架构"
             "<span class='dim' style='font-size:11.5px;margin-left:8px'>"
             "汇报对象：人（%s）</span></div>"
-            "<div style='font-size:13px;margin:8px 0'>🧠 田小皮 · 参谋长"
+            "<div style='font-size:13px;margin:8px 0'>🧠 田丰 · 参谋长"
             "<span class='dim'>（%s · %s）</span></div>"
             "<div style='display:flex;gap:6px;flex-wrap:wrap'>%s</div>"
             "<div class='dim' style='font-size:11.5px;margin-top:8px'>"
@@ -1854,7 +1854,7 @@ transition:.3s;z-index:9}
                 + " · 聘请 AI 岗位投入商业化项目 · 本地模型驱动成本可控</div>"
                 + hub_card + secs
                 + "<div class='dim' style='margin-top:20px'>聘请方式："
-                "「在岗」岗位向 田小皮 · 参谋长提任务单（飞书日报通道）· "
+                "「在岗」岗位向 田丰 · 参谋长提任务单（飞书日报通道）· "
                 "「即用」专项 AI 点入即用 · 货架源 portal/ai_market.json"
                 "（上新改注册表即可）· 不构成投资建议</div></body></html>")
         self._html(body)

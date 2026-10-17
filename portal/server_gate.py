@@ -52,6 +52,9 @@ ROUTES = [
     (re.compile(r"^/data/ledger\.json$"), "data/ledger.json"),  # K-STOCK-353
 ]
 DETAIL_RE = re.compile(r"^/data/pick_details/([A-Za-z0-9_.\-]+)\.json$")
+# K-PUSH-002 A1：分享令牌访问收口（token 即 72h 限时凭证——商业化
+# 「分享试看」语义；内网链路落 visit 账，公网静态站无此路由降级 404）
+SHARE_RE = re.compile(r"^/s/(st\.[A-Za-z0-9_\-]+\.[0-9a-f]{16})$")
 MIME = {".html": "text/html; charset=utf-8",
         ".css": "text/css; charset=utf-8",
         ".json": "application/json; charset=utf-8"}
@@ -141,6 +144,22 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/login":
             self._send(200, LOGIN_HTML.encode("utf-8"), "text/html; charset=utf-8")
             return
+        # K-PUSH-002 A1：分享链接访问收口——token 校验通过即落 visit 账
+        # 并 302 带码进板（与「带访问码直达」同安全口径：码已在卡片 URL
+        # 流转，token 额外带 72h 时限+溯源 jti）；过期/坏 token 引导去登录页
+        m = SHARE_RE.match(path)
+        if m:
+            try:
+                import share_tokens
+                payload = share_tokens.visit(m.group(1))
+            except Exception:
+                payload = None
+            if payload:
+                loc = "/picks.html?key=%s" % NEW_PW
+                self._send(302, b"", extra=[("Location", loc)])
+            else:
+                self._send(302, b"", extra=[("Location", "/login")])
+            return
         if not self._gate_ok():
             body = ("需要访问码。请从带 ?key= 的链接进入，"
                     "或打开 <a href='/login'>/login</a> 输入访问码。").encode("utf-8")
@@ -178,6 +197,21 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Length", "0")
         self.end_headers()
+
+    def do_POST(self):
+        # K-PUSH-002 A2：picks.html 前端 ?st= beacon——校验+落 visit 账后
+        # 204（fetch fire-and-forget，不跟重定向不取响应体）；公网静态站
+        # 无此路由 → 前端 catch 静默，降级口径见 share_tokens 模块头
+        m = SHARE_RE.match(urlparse(self.path).path)
+        if m:
+            try:
+                import share_tokens
+                share_tokens.visit(m.group(1))
+            except Exception:
+                pass
+            self._send(204, b"")
+            return
+        self._send(404, b"404 not found")
 
     def log_message(self, fmt, *args):  # noqa: A003
         pass  # 静默访问日志（公开服务不留请求明细）

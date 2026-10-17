@@ -307,6 +307,25 @@ def handle_ctl(val, operator=""):
         return False, "处理失败：%s" % str(e)[:100], None
 
 
+# ── HTTP 面（K-ORG-113：Hermes alerts 连接器复用，同源同落点）──
+def ctl_http(action, alert_id="", operator="hermes-console"):
+    """HTTP 版告警动作入口（portal_api /api/ctl/alert 调用）。
+
+    复用 handle_ctl 的 ctl:alert_* 分支——与飞书控制卡按钮同一条代码
+    路径、同一落点（v2_alert + gate_ignored.json + control_ops.jsonl），
+    遵循 K-ORG-112 原则 2「双表面同源同落点，禁止第二本账」。
+    返回 (ok, text)；follow_card 对 HTTP 面无意义，丢弃。
+    """
+    tag = {"ack": "ctl:alert_ack", "ignore": "ctl:alert_ignore",
+           "ack_all": "ctl:alert_ack_all"}.get(action)
+    if not tag:
+        return False, "未知动作 %s（支持 ack/ignore/ack_all）" % action
+    if tag in ("ctl:alert_ack", "ctl:alert_ignore") and not alert_id:
+        return False, "alert_id is required for ack/ignore"
+    ok, text, _card = handle_ctl({"tag": tag, "alert_id": alert_id}, operator)
+    return ok, text
+
+
 if __name__ == "__main__":
     # 冒烟：只读路径（建卡 + 状态读取），不做任何写动作
     card = build_control_card()

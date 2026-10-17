@@ -3,82 +3,183 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>原型 v1 · 盘中实时监控面板 · 待拍板</title>
+<title>Watch Tower · 实时快照</title>
 <style>
-  :root{--bg:#0b0f14;--panel:#11161d;--panel2:#161d26;--line:#212a35;--fg:#e6edf3;--dim:#8b949e;
-    --blue:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922}
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--fg);font-family:"Microsoft YaHei",sans-serif;padding:18px 22px;width:100%}
-  .proto-banner{background:rgba(210,153,34,.12);border:1px dashed var(--orange);color:var(--orange);
-    border-radius:10px;padding:9px 16px;font-size:12.5px;margin-bottom:16px}
-  h1{font-size:20px} h1 small{font-size:11px;color:var(--dim);letter-spacing:2px;font-weight:normal;display:block;margin-top:3px}
-  .sub{color:var(--dim);font-size:12px;margin-bottom:16px}
-  .kpi-line{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-  .k{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
-  .k .v{font-size:22px;font-weight:700} .k .t{font-size:11px;color:var(--dim);margin-top:2px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
-  .panel h3{font-size:13px;color:var(--dim);margin-bottom:10px;letter-spacing:1px}
-  .feed{font-size:12.5px;line-height:2.05;font-family:Consolas,monospace}
-  .feed .t{color:var(--dim2);margin-right:10px}
-  .feed .ok{color:var(--green)} .feed .warn{color:var(--orange)}
-  .beat{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(33,42,53,.5);font-size:12.5px}
-  .beat:last-child{border:0}
-  .pulse{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}
-  .p-g{background:var(--green);box-shadow:0 0 6px var(--green)}
-  .p-o{background:var(--orange);box-shadow:0 0 6px var(--orange)}
-  .up{color:var(--red)} .dn{color:var(--green)}
-  @media(max-width:1000px){.row{grid-template-columns:1fr}}
+:root{--bg:#0b0f14;--panel:#11161d;--panel2:#161d26;--line:#212a35;--fg:#e6edf3;--dim:#8b949e;--blue:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--fg);font-family:"Microsoft YaHei",sans-serif;padding:18px 22px;width:100%}.banner{background:rgba(88,166,255,.1);border:1px solid var(--line);color:var(--dim);border-radius:10px;padding:9px 16px;font-size:12.5px;margin-bottom:16px}h1{font-size:20px}h1 small{font-size:11px;color:var(--dim);letter-spacing:2px;font-weight:normal;display:block;margin-top:3px}.sub{color:var(--dim);font-size:12px;margin:8px 0 16px}.kpi-line{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.k{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}.k .v{font-size:20px;font-weight:700}.k .t{font-size:11px;color:var(--dim);margin-top:4px}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}.panel h3{font-size:13px;color:var(--dim);margin-bottom:10px;letter-spacing:1px}.feed{font-size:12px;line-height:1.8;font-family:Consolas,monospace}.feed .t{color:var(--dim);margin-right:10px}.feed .ok{color:var(--green)}.feed .warn{color:var(--orange)}.beat{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(33,42,53,.5);font-size:12.5px}.beat:last-child{border:0}.pulse{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}.healthy{background:var(--green);box-shadow:0 0 6px var(--green)}.degraded,.stale,.unknown{background:var(--orange);box-shadow:0 0 6px var(--orange)}.down{background:var(--red);box-shadow:0 0 6px var(--red)}.state-healthy{color:var(--green)}.state-degraded,.state-stale,.state-unknown{color:var(--orange)}.state-down{color:var(--red)}.muted{color:var(--dim)}.error{color:var(--red)}.timeline-controls{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px}.timeline-controls button{background:var(--panel2);border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:5px 10px;cursor:pointer}.timeline-controls button:disabled{opacity:.45;cursor:not-allowed}.timeline-panel input[type=range]{width:100%;accent-color:var(--blue);margin:4px 0 10px}.timeline{max-height:220px;overflow:auto;font-size:12px;line-height:1.7}.timeline-item{display:grid;grid-template-columns:150px 70px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid rgba(33,42,53,.5)}.timeline-kind{color:var(--blue)}.error{color:var(--red)}.replay-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px}.replay-controls label{color:var(--dim)}.replay-controls input,.replay-controls button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--fg);padding:6px 9px;font:inherit}.replay-controls button{cursor:pointer}.replay-controls button:hover{border-color:var(--blue)}.replay-controls button:focus-visible,.replay-controls input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.replay-note{font-size:11px;margin-top:10px}.replay-panel.is-replay{border-color:var(--orange)}@media(max-width:1000px){.row{grid-template-columns:1fr}}@media(max-width:680px){body{padding:12px}.kpi-line{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<div class="proto-banner">📐 UI 原型 v1（K-ORG-021 沙盘下钻评审用）· 占位数据 · 老田拍板后 DEV5/DEV8 怼生产页</div>
-<h1>📡 盘中实时监控面板<small>REALTIME INGEST MONITOR · 数据智能部 × 工程部</small></h1>
-<div class="sub">盯盘行情（605/100 等）实时回流 → 分钟级入库 → 延迟与断流监控 → 异常告警飞书推送</div>
-
+<div class="banner" id="banner">Watch Tower 只读实时快照 · 数据加载中</div>
+<h1>盘中实时监控面板<small>WATCH TOWER SNAPSHOT · POLL MODE</small></h1>
+<div class="sub">服务端快照轮询；数据源状态、过期时间和错误均按真实接口返回展示。</div>
 <div class="kpi-line">
-  <div class="k"><div class="v" style="color:var(--green)">正常</div><div class="t">采集链路心跳</div></div>
-  <div class="k"><div class="v">2.1s</div><div class="t">行情→入库平均延迟</div></div>
-  <div class="k"><div class="v">18,442</div><div class="t">今日入库 bar 数</div></div>
-  <div class="k"><div class="v" style="color:var(--blue)">1</div><div class="t">断流事件（已自愈）</div></div>
+  <div class="k"><div class="v muted" id="overall">loading</div><div class="t">聚合状态</div></div>
+  <div class="k"><div class="v muted" id="generated">—</div><div class="t">快照生成时间</div></div>
+  <div class="k"><div class="v muted" id="source-count">—</div><div class="t">数据源数量</div></div>
+  <div class="k"><div class="v muted" id="warning-count">—</div><div class="t">告警/缺口</div></div>
 </div>
-
+<div class="panel replay-panel">
+  <h3>历史回放</h3>
+  <div class="replay-controls">
+    <label for="replay-at">回放时间（北京时间）</label>
+    <input id="replay-at" type="datetime-local" step="1" aria-label="历史回放时间">
+    <button id="replay-load" type="button">加载历史</button>
+    <button id="replay-live" type="button">返回实时</button>
+    <span id="replay-mode" class="muted">实时模式</span>
+  </div>
+  <div class="muted replay-note">历史模式只读取可用历史源，不会使用当前实时行情或扫描缓存；历史模式停止自动轮询。</div>
+  <div id="replay-status" class="muted replay-note" aria-live="polite">实时数据请求中</div>
+</div>
 <div class="row">
   <div>
-    <div class="panel">
-      <h3>数据源心跳（605 / 100 等盯盘源）</h3>
-      <div class="beat"><span><span class="pulse p-g"></span>605 主源 · 全市场快照</span><span>延迟 <b class="up">1.8s</b> · 正常</span></div>
-      <div class="beat"><span><span class="pulse p-g"></span>100 副源 · 分钟线增量</span><span>延迟 <b class="up">2.4s</b> · 正常</span></div>
-      <div class="beat"><span><span class="pulse p-g"></span>板块资金流 · 5s 轮询</span><span>延迟 <b class="up">3.1s</b> · 正常</span></div>
-      <div class="beat"><span><span class="pulse p-o"></span>L2 备源 · 凭据待开通</span><span><b class="warn">待接线（X1）</b></span></div>
-    </div>
-    <div class="panel">
-      <h3>告警阈值（OPS1 端口监护同款纪律）</h3>
-      <div class="beat"><span>断流判定</span><span>连续 3 个心跳周期无数据 → 飞书告警</span></div>
-      <div class="beat"><span>延迟判定</span><span>&gt; 10s 持续 60s → 降级告警</span></div>
-      <div class="beat"><span>入库校验</span><span>bar 数分钟环比骤降 &gt; 50% → 异常</span></div>
-    </div>
+    <div class="panel"><h3>数据源状态</h3><div id="sources"><div class="muted">loading…</div></div></div>
+    <div class="panel"><h3>快照告警与限制</h3><div id="warnings"><div class="muted">loading…</div></div></div>
   </div>
   <div>
-    <div class="panel">
-      <h3>入库流水（tail - 占位）</h3>
-      <div class="feed">
-        <div><span class="t">14:52:05</span><span class="ok">✓</span> 605 快照 5412 只 → parquet 分区 20261013/1450</div>
-        <div><span class="t">14:52:02</span><span class="ok">✓</span> 分钟 bar 落库 4412 条（含 tdx_sector_min 尾巴）</div>
-        <div><span class="t">14:51:58</span><span class="ok">✓</span> 板块资金流 86 板块 → market.json 刷新</div>
-        <div><span class="t">14:51:12</span><span class="warn">⚠</span> 100 副源延迟 8.2s（阈值内，未告警）</div>
-        <div><span class="t">14:50:41</span><span class="ok">✓</span> 断流自愈：605 重连成功（累计中断 26s）</div>
-        <div><span class="t">14:47:30</span><span class="ok">✓</span> 新闻采集批 128 条 → news.db（去重后 96）</div>
-      </div>
-    </div>
-    <div class="panel">
-      <h3>下游消费方（谁在吃这批数据）</h3>
-      <div class="beat"><span>盯盘机器人 · quant_engine</span><span>分钟线 + 板块流</span></div>
-      <div class="beat"><span>尾盘买入策略（在研）</span><span>14:30 候选池扫描</span></div>
-      <div class="beat"><span>特征湖 · 5596 只</span><span>日频落盘 + 实时校验</span></div>
-      <div class="beat"><span>门户 picks / market 页</span><span>选股与行情投影</span></div>
-    </div>
+    <div class="panel timeline-panel"><h3>历史事件时间轴</h3><div class="timeline-controls"><button id="timeline-play" type="button" disabled>播放</button><button id="timeline-reset" type="button" disabled>重置</button><span id="timeline-status" class="muted">仅历史模式可播放</span></div><input id="timeline-progress" type="range" min="0" max="0" value="0" disabled aria-label="历史事件时间轴进度"><div id="timeline-events" class="timeline"><div class="muted">实时模式暂无历史时间轴</div></div></div>
+    <div class="panel"><h3>事件流水</h3><div class="feed" id="events"><div class="muted">loading…</div></div></div>
+    <div class="panel"><h3>轮询信息</h3><div class="beat"><span>下一次建议轮询</span><span id="poll-after" class="muted">—</span></div><div class="beat"><span>快照 ID</span><span id="snapshot-id" class="muted">—</span></div><div class="beat"><span>接口</span><span>/api/watch-tower/snapshot</span></div></div>
   </div>
 </div>
+<script>
+(() => {
+  'use strict';
+  const API = window.WATCH_TOWER_SNAPSHOT_API || '/api/watch-tower/snapshot';
+  const POLL_MS = 15000;
+  let timer = null;
+  let replayAt = null;
+  const el = id => document.getElementById(id);
+  const replayPanel = document.querySelector('.replay-panel');
+  const replayMode = el('replay-mode');
+  function setMode(value) {
+    if (requestController) { requestController.abort(); requestController = null; }
+    replayAt = value || null;
+    const active = Boolean(replayAt);
+    replayPanel.classList.toggle('is-replay', active);
+    replayMode.textContent = active ? `历史模式 · ${replayAt}` : '实时模式';
+    replayMode.className = active ? 'state-degraded' : 'muted';
+    if (active && timer) { clearInterval(timer); timer = null; }
+    if (!active && !document.hidden) schedule();
+  }
+  function replayQuery() {
+    if (!replayAt) return '';
+    const local = replayAt.length === 16 ? `${replayAt}:00` : replayAt;
+    return `?replay_at=${encodeURIComponent(`${local}+08:00`)}&_=${Date.now()}`;
+  }
+  const esc = value => String(value == null ? '—' : value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const stateClass = state => `state-${String(state || 'unknown').toLowerCase()}`;
+  let responseStatus = 200;
+  let requestController = null;
+  let timelineEvents = [];
+  let timelineIndex = 0;
+  let timelineTimer = null;
+  function renderTimeline() {
+    const active = Boolean(replayAt) && timelineEvents.length > 0;
+    const progress = el('timeline-progress');
+    const play = el('timeline-play');
+    const reset = el('timeline-reset');
+    progress.disabled = !active;
+    play.disabled = !active;
+    reset.disabled = !active;
+    progress.max = String(Math.max(0, timelineEvents.length - 1));
+    progress.value = String(Math.min(timelineIndex, Math.max(0, timelineEvents.length - 1)));
+    el('timeline-status').textContent = replayAt ? (timelineEvents.length ? `${timelineIndex + 1}/${timelineEvents.length} 条事件` : '该时段无可播放事件') : '仅历史模式可播放';
+    el('timeline-events').innerHTML = timelineEvents.length ? timelineEvents.slice(0, timelineIndex + 1).map(item => {
+      const ts = item && (item.ts || item.date || item.created_at) || '时间未知';
+      const kind = item && (item.kind || item.run_kind) || 'event';
+      const title = item && (item.title || item.message || item.detail || item.name) || JSON.stringify(item);
+      return `<div class="timeline-item"><span class="t">${esc(ts)}</span><span class="timeline-kind">${esc(kind)}</span><span>${esc(title)}</span></div>`;
+    }).join('') : '<div class="muted">实时模式暂无历史时间轴或来源未提供</div>';
+  }
+  function stopTimeline() { if (timelineTimer) { clearInterval(timelineTimer); timelineTimer = null; } }
+  function resetTimeline() { stopTimeline(); timelineIndex = timelineEvents.length ? 0 : 0; renderTimeline(); }
+  function render(snapshot, status = 200) {
+    responseStatus = status;
+    const sources = Array.isArray(snapshot.sources) ? snapshot.sources : [];
+    const warnings = Array.isArray(snapshot.warnings) ? snapshot.warnings : [];
+    const events = Array.isArray(snapshot.events) ? snapshot.events : [];
+    timelineEvents = snapshot.replay ? events.slice().sort((a, b) => String((a && (a.ts || a.date)) || '').localeCompare(String((b && (b.ts || b.date)) || ''))) : [];
+    timelineIndex = timelineEvents.length ? timelineEvents.length - 1 : 0;
+    stopTimeline();
+    renderTimeline();
+    el('overall').textContent = snapshot.overall || 'unknown'; el('overall').className = `v ${stateClass(snapshot.overall)}`;
+    el('generated').textContent = snapshot.generated_at || '—'; el('source-count').textContent = String(sources.length); el('warning-count').textContent = String(warnings.length);
+    el('snapshot-id').textContent = snapshot.snapshot_id || '—'; el('poll-after').textContent = snapshot.poll_after_sec == null ? '—' : `${snapshot.poll_after_sec}s`;
+    const modeLabel = snapshot.replay ? `历史回放 ${snapshot.replay_at || '时间未知'}` : '实时';
+    el('banner').textContent = `Watch Tower 只读${modeLabel}快照 · ${snapshot.schema || 'schema unavailable'} · ${snapshot.overall || 'unknown'}`;
+    if (snapshot.replay && snapshot.replay_at && replayAt !== snapshot.replay_at) {
+      replayMode.textContent = `历史模式 · ${snapshot.replay_at}`;
+    }
+    el('sources').innerHTML = sources.length ? sources.map(source => `<div class="beat"><span><span class="pulse ${esc(source.state || 'unknown')}"></span>${esc(source.name)}${source.required ? ' · required' : ''}</span><span class="${stateClass(source.state)}">${esc(source.state)}${source.age_sec == null ? '' : ` · age ${esc(source.age_sec)}s`}</span></div>`).join('') : '<div class="muted">source unavailable</div>';
+    const missingSources = sources.filter(source => String(source.state || '').toLowerCase() === 'unknown');
+    const partial = responseStatus === 206 || Boolean(snapshot.replay && warnings.length);
+    el('replay-status').textContent = snapshot.replay
+      ? `历史回放已加载${partial ? ' · 部分数据缺失' : ''} · ${snapshot.replay_at || '时间未知'}`
+      : `实时模式 · ${partial ? '部分数据缺失' : '来源状态按接口返回'}`;
+    el('warnings').innerHTML = warnings.length ? warnings.map(item => `<div class="beat"><span class="warn">!</span><span class="error">${esc(item)}</span></div>`).join('') : '<div class="muted">暂无告警</div>';
+    if (missingSources.length) {
+      el('warnings').innerHTML += missingSources.map(source => `<div class="beat"><span class="warn">?</span><span class="muted">${esc(source.name)} · unknown（历史数据不可用）</span></div>`).join('');
+    }
+    el('events').innerHTML = events.length ? events.slice(-100).map(item => `<div><span class="t">${esc(item && item.kind ? item.kind : 'event')}</span><span class="ok">·</span> ${esc(typeof item === 'string' ? item : JSON.stringify(item))}</div>`).join('') : '<div class="muted">暂无事件或来源未提供</div>';
+  }
+  async function poll() {
+    if (document.hidden) return;
+    if (requestController) requestController.abort();
+    requestController = new AbortController();
+    const controller = requestController;
+    el('replay-status').textContent = replayAt ? '正在加载历史回放…' : '实时数据请求中';
+    try {
+      const response = await fetch(`${API}${replayQuery() || `?_=${Date.now()}`}`, {headers:{Accept:'application/json'}, cache:'no-store', signal: controller.signal});
+      const payload = await response.json();
+      if (!response.ok && response.status !== 206) {
+        const detail = payload && payload.message ? ` · ${payload.message}` : '';
+        throw new Error(`HTTP ${response.status}${detail}`);
+      }
+      render(payload, response.status);
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      el('overall').textContent='down'; el('overall').className='v state-down';
+      el('banner').textContent=`Watch Tower 快照不可用 · ${error.message}`;
+      el('replay-status').textContent = replayAt ? '历史回放不可用（未回退实时）' : '实时快照不可用';
+      el('sources').innerHTML='<div class="error">snapshot unavailable</div>';
+      el('warnings').innerHTML='<div class="error">无法读取快照，请稍后重试</div>';
+    } finally {
+      if (requestController === controller) requestController = null;
+    }
+  }
+  function schedule() { if (timer) clearInterval(timer); timer = replayAt ? null : setInterval(poll, POLL_MS); }
+  el('replay-load').addEventListener('click', () => {
+    const value = el('replay-at').value;
+    if (!value) { el('replay-mode').textContent = '请选择历史时间'; return; }
+    setMode(value);
+    poll();
+  });
+  el('replay-live').addEventListener('click', () => {
+    el('replay-at').value = '';
+    timelineEvents = [];
+    stopTimeline();
+    setMode(null);
+    renderTimeline();
+    poll();
+  });
+  el('timeline-progress').addEventListener('input', event => { stopTimeline(); timelineIndex = Number(event.target.value) || 0; renderTimeline(); });
+  el('timeline-reset').addEventListener('click', resetTimeline);
+  el('timeline-play').addEventListener('click', () => {
+    if (!timelineEvents.length) return;
+    if (timelineTimer) { stopTimeline(); el('timeline-play').textContent = '播放'; return; }
+    if (timelineIndex >= timelineEvents.length - 1) timelineIndex = 0;
+    el('timeline-play').textContent = '暂停';
+    timelineTimer = setInterval(() => {
+      timelineIndex += 1;
+      renderTimeline();
+      if (timelineIndex >= timelineEvents.length - 1) { stopTimeline(); el('timeline-play').textContent = '播放'; }
+    }, 700);
+    renderTimeline();
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { poll(); schedule(); } else if (timer) { clearInterval(timer); timer = null; } });
+  poll(); schedule();
+})();
+</script>
 </body>
 </html>

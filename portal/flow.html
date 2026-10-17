@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动作流中心 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg,#0f1216);color:var(--text,#e8eaf0);font-size:14px}
+.wrap{max-width:960px;margin:0 auto;padding:14px 14px 60px}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.head h1{font-size:20px;margin:0}
+.head small{color:var(--text-dim,#8a93a6);font-size:12px}
+.btn{background:var(--card2,#202735);border:1px solid var(--border,#2a3242);border-radius:7px;color:var(--text,#e8eaf0);padding:5px 12px;font-size:12.5px;cursor:pointer}
+.btn:hover{border-color:#4f8ef7}
+.btn.pri{background:#24406e;border-color:#3d6dc4}
+select,input[type=date],input[type=search]{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:7px;color:var(--text,#e8eaf0);padding:5px 9px;font-size:12.5px}
+input[type=search]{flex:1;min-width:120px}
+/* 统计卡 */
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+.card{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:9px 11px;cursor:pointer}
+.card.on{border-color:#4f8ef7;background:var(--card2,#202735)}
+.card .k{font-size:11.5px;color:var(--text-dim,#8a93a6)}
+.card .v{font-size:22px;font-weight:700;margin-top:2px}
+.card .t{font-size:10.5px;color:var(--text-dim,#8a93a6);opacity:.8}
+/* 7日迷你柱图 */
+.chart{display:flex;align-items:flex-end;gap:6px;height:64px;background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:8px 10px 4px;margin-bottom:12px}
+.chart .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:pointer;border-radius:4px 4px 0 0}
+.chart .col:hover{outline:1px dashed #4f8ef7}
+.chart .col .seg{width:100%}
+.chart .lbl{font-size:9.5px;color:var(--text-dim,#8a93a6);text-align:center;margin-top:3px}
+/* 进行中 */
+.live{background:var(--card,#1a1f27);border:1px solid #3d6dc4;border-radius:9px;padding:8px 12px;margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px}
+.dot{width:9px;height:9px;border-radius:50%;background:#4f8ef7;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(79,142,247,.5)}50%{opacity:.55;box-shadow:0 0 0 6px rgba(79,142,247,0)}}
+.lt{background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.4);border-radius:6px;padding:2px 9px;font-size:12px}
+/* JEV 健康条 */
+.jev{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:8px 12px;margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;cursor:pointer}
+.jev:hover{border-color:#4f8ef7}
+.jdot{width:9px;height:9px;border-radius:50%;flex:none}
+.jc{color:var(--text-dim,#8a93a6);font-size:12px}
+.jc b{color:var(--text,#e8eaf0);font-weight:600;font-variant-numeric:tabular-nums}
+.jc.w{color:#e8a33d}.jc.w b{color:#eec06a}
+/* 工具行 */
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 10px}
+.tab{padding:6px 14px;border-radius:16px;background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);cursor:pointer;font-size:12.5px;color:var(--text-dim,#8a93a6)}
+.tab.on{color:#fff;font-weight:600;background:#24406e;border-color:#3d6dc4}
+/* 时间线 */
+.day-h{margin:16px 0 6px;font-size:13px;color:var(--text-dim,#8a93a6);display:flex;gap:10px;align-items:baseline}
+.day-h b{color:var(--text,#e8eaf0);font-size:14px}
+.ev{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;gap:10px;align-items:flex-start}
+.ev .lft{width:3px;align-self:stretch;border-radius:2px;flex:none}
+.ev .bd{flex:1;min-width:0}
+.ev .r1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.badge{font-size:11px;padding:1px 8px;border-radius:5px;flex:none}
+.actor{font-size:12.5px;font-weight:600}
+.act{font-size:12.5px;color:var(--text-dim,#8a93a6)}
+.ts{font-size:11px;color:var(--text-dim,#8a93a6);margin-left:auto;flex:none;font-variant-numeric:tabular-nums}
+.sum{font-size:12.5px;color:var(--text-dim,#8a93a6);margin-top:3px;word-break:break-all}
+.st{font-size:10.5px;padding:0 6px;border-radius:4px;flex:none}
+.st.ok{color:#2fbf71;background:rgba(47,191,113,.1)}
+.st.fail{color:#f0524d;background:rgba(240,82,77,.12)}
+.st.warn{color:#e8a33d;background:rgba(232,163,61,.12)}
+.arts{margin-top:5px;display:flex;gap:6px;flex-wrap:wrap}
+.art{font-size:11.5px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.35);color:#9ec1ff;border-radius:5px;padding:2px 8px;cursor:pointer}
+.art:hover{background:rgba(79,142,247,.22)}
+.empty{padding:26px;text-align:center;color:var(--text-dim,#8a93a6);background:var(--card,#1a1f27);border:1px dashed var(--border,#2a3242);border-radius:8px}
+/* 模态预览 */
+.mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:50;overflow:auto;padding:24px 12px}
+.mask.on{display:block}
+.modal{max-width:860px;margin:0 auto;background:var(--card2,#202735);border:1px solid var(--border,#2a3242);border-radius:11px;overflow:hidden}
+.mhead{display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border,#2a3242);font-size:12.5px;flex-wrap:wrap}
+.mhead b{font-size:13.5px}
+.mhead .meta{color:var(--text-dim,#8a93a6);font-size:11.5px}
+.mhead .x{margin-left:auto;cursor:pointer;font-size:17px;color:var(--text-dim,#8a93a6);padding:0 4px}
+.mbody{padding:12px 14px;max-height:70vh;overflow:auto}
+.mbody pre{margin:0;white-space:pre-wrap;word-break:break-all;font-size:11.8px;line-height:1.55;font-family:ui-monospace,Consolas,monospace;color:#c6d2e8}
+.mbody iframe{width:100%;height:560px;border:1px solid var(--border,#2a3242);border-radius:7px;background:#fff}
+.mbody img{max-width:100%;border-radius:7px}
+/* toast */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#24406e;border:1px solid #3d6dc4;color:#fff;padding:8px 18px;border-radius:9px;font-size:13px;z-index:99;opacity:0;transition:opacity .25s;pointer-events:none;max-width:88vw}
+.toast.on{opacity:1}
+.toast.err{background:#5e2320;border-color:#a04038}
+/* kind 色系 */
+.k-run{background:rgba(79,142,247,.16);color:#7fabff}
+.k-push{background:rgba(47,191,113,.14);color:#54d191}
+.k-analysis{background:rgba(232,163,61,.14);color:#eec06a}
+.k-archive{background:rgba(157,123,255,.14);color:#bda3ff}
+.k-tune{background:rgba(240,98,146,.14);color:#f28caf}
+.b-run{background:#4f8ef7}.b-push{background:#2fbf71}.b-analysis{background:#e8a33d}
+.b-archive{background:#9d7bff}.b-tune{background:#f06292}
+@media (max-width:700px){
+  .wrap{padding:10px 8px 60px}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .card:nth-child(5){grid-column:span 2}
+  .ts{margin-left:0;width:100%}
+}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>⚡ 动作流中心</h1>
+    <small id="ts">加载中…</small>
+    <span style="margin-left:auto;display:flex;gap:6px">
+      <select id="rerunSel" title="白名单产线任务"></select>
+      <button class="btn pri" id="rerunBtn" onclick="rerun()">立即重跑</button>
+      <button class="btn" onclick="refresh(true)">刷新</button>
+    </span>
+  </div>
+
+  <div class="cards" id="cards"></div>
+  <div class="chart" id="chart"></div>
+  <div class="live" id="live" style="display:none"></div>
+  <div class="jev" id="jev" style="display:none" onclick="jevDrill()" title="点击查看 JEV 相关事件流"></div>
+
+  <div class="tools">
+    <input type="date" id="dayPick" onchange="onDay()">
+    <button class="btn" onclick="clearDay()">近48h</button>
+    <input type="search" id="q" placeholder="搜索：产线/动作/摘要…" oninput="onQ()">
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="flow"></div>
+  <p style="font-size:11px;color:var(--text-dim,#8a93a6);margin-top:16px">
+    统一事件流：执行 / 推送 / 分析 / 归档 / 调优 · 事件 schema 即数据池对接契约 · 60s 自动刷新
+  </p>
+</div>
+
+<div class="mask" id="mask" onclick="if(event.target===this)closePrev()">
+  <div class="modal">
+    <div class="mhead">
+      <b id="mname"></b><span class="meta" id="mmeta"></span>
+      <span class="x" onclick="closePrev()">✕</span>
+    </div>
+    <div class="mbody" id="mbody">加载中…</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtTs=s=>String(s??'').replace('T',' ').slice(0,16);
+const $=id=>document.getElementById(id);
+const KINDS=[["run","执行"],["push","推送"],["analysis","分析"],["archive","归档"],["tune","调优"]];
+const KCN=Object.fromEntries(KINDS);
+let STATS=null,EVS=[],curKind="",curQ="",curDay="",timer=null,qT=null;
+
+/* ---------- 数据加载 ---------- */
+async function jget(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()}
+async function refresh(manual){
+  try{
+    const [st,ev]=await Promise.all([
+      jget('/api/flow/stats?days=7'),
+      jget('/api/flow/events?limit=600'+(curDay?'&day='+curDay:''))
+    ]);
+    STATS=st;EVS=ev.events||[];
+    render();$('ts').textContent='更新 '+ev.cached_at+' · 共 '+ev.count+' 条';
+    if(manual)toast('已刷新');
+  }catch(e){$('ts').textContent='加载失败：'+e.message+'（重试中）'}
+}
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className='toast on'+(err?' err':'');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',2600)}
+async function rerun(){
+  const task=$('rerunSel').value;if(!task)return toast('请先选择任务',1);
+  if(!confirm('立即触发计划任务「'+task+'」？'))return;
+  try{
+    const r=await fetch('/api/flow/rerun',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({task})});
+    const j=await r.json();
+    toast(j.ok?('已触发 '+task+(j.out?' · '+j.out:'')):('触发失败：'+(j.error||j.out||'未知')),!j.ok);
+    if(j.ok)setTimeout(()=>refresh(false),4000);
+  }catch(e){toast('请求失败：'+e.message,1)}
+}
+
+/* ---------- 渲染 ---------- */
+function render(){renderCards();renderChart();renderLive();renderJev();renderTabs();renderFlow();renderRerun()}
+function renderJev(){
+  const j=STATS.jev;
+  if(!j){$('jev').style.display='none';return}
+  const LC={ok:'#2fbf71',warn:'#e8a33d',bad:'#f0524d'},LT={ok:'健康',warn:'关注',bad:'异常'};
+  const f=j.feed||{},a=j.ai||{};
+  const chip=(t,v,w)=>`<span class="jc${w?' w':''}">${t} <b>${v}</b></span>`;
+  let s='';
+  s+=chip('待复核',`${j.unreviewed} / ${j.triples_total}`,j.unreviewed>300);
+  s+=chip('今日新增',j.triples_today??0);
+  if(j.err7_ratio!=null)s+=chip('7日err',(j.err7_ratio*100).toFixed(0)+'%',j.err7_ratio>0.5);
+  s+=chip('投喂',f.last_ts?`${fmtTs(f.last_ts)} +${f.last_new??0}`:'无记录',j.feed_age_h!=null&&j.feed_age_h>24);
+  s+=chip('AI判定',a.last_ts?`${fmtTs(a.last_ts)} ${a.last_ok?'✓':'✗'}`:'无记录',a.last_ok===false);
+  if(j.outcome)s+=chip('后验校准',`${j.outcome.count} · ${fmtTs(j.outcome.last_at)}`);
+  if(j.graduation)s+=chip('毕业',`${j.graduation.adopted||'?'} @${fmtTs(j.graduation.computed_at)}`);
+  if(j.gate_seen)s+=chip('gate_seen',j.gate_seen.count);
+  const c=LC[j.lamp]||'#8a93a6';
+  $('jev').style.display='flex';
+  $('jev').innerHTML=`<span class="jdot" style="background:${c};box-shadow:0 0 6px ${c}"></span>`+
+    `<b style="color:${c}">JEV ${LT[j.lamp]||j.lamp}</b>`+s;
+}
+function jevDrill(){curKind='';$('q').value='jev';curQ='jev';renderTabs();renderFlow();
+  document.querySelector('.tabs').scrollIntoView({behavior:'smooth'})}
+function renderRerun(){
+  const sel=$('rerunSel'),cur=sel.value,wl=STATS.rerun_whitelist||[];
+  if(sel.dataset.n===String(wl.length))return;
+  sel.innerHTML='<option value="">选择产线任务…</option>'+wl.map(t=>`<option>${esc(t)}</option>`).join('');
+  if(cur&&wl.includes(cur))sel.value=cur;
+  sel.dataset.n=String(wl.length);
+}
+function renderCards(){
+  const SKEY={run:'runs',push:'pushes',analysis:'analyses',archive:'archives',tune:'tunes'};
+  const t=STATS.totals||{},td=STATS.today||{};
+  $('cards').innerHTML=KINDS.map(([k,cn])=>
+    `<div class="card${curKind===k?' on':''}" onclick="pickKind('${k}')">
+       <div class="k">${cn}</div>
+       <div class="v" style="color:var(--text,#e8eaf0)">${td[SKEY[k]]??0}</div>
+       <div class="t">7日 ${t[SKEY[k]]??0}</div>
+     </div>`).join('');
+}
+function renderChart(){
+  const days=STATS.days||[],mx=Math.max(1,...days.map(d=>d.runs+d.pushes+d.analyses+d.archives+d.tunes));
+  $('chart').innerHTML=days.map(d=>{
+    const tot=d.runs+d.pushes+d.analyses+d.archives+d.tunes;
+    const seg=(n,cls)=>n?`<div class="seg ${cls}" style="height:${(n/mx*100).toFixed(1)}%"></div>`:'';
+    return `<div style="flex:1;display:flex;flex-direction:column;height:100%" onclick="jumpDay('${d.date}')">
+      <div class="col" title="${d.date} · 共${tot}（执行${d.runs} 推送${d.pushes} 分析${d.analyses} 归档${d.archives} 调优${d.tunes}）">
+        ${seg(d.runs,'b-run')}${seg(d.pushes,'b-push')}${seg(d.analyses,'b-analysis')}${seg(d.archives,'b-archive')}${seg(d.tunes,'b-tune')}
+      </div><div class="lbl">${d.date.slice(5)} · ${tot}</div></div>`;
+  }).join('');
+}
+function renderLive(){
+  const run=STATS.running||[];
+  if(!run.length){$('live').style.display='none';return}
+  $('live').style.display='flex';
+  $('live').innerHTML=`<span class="dot"></span><b>正在执行 ${run.length}</b>`+
+    run.map(t=>`<span class="lt">${esc(t)}</span>`).join('');
+}
+function renderTabs(){
+  const cnt={};EVS.forEach(e=>cnt[e.kind]=(cnt[e.kind]||0)+1);
+  $('tabs').innerHTML=`<div class="tab${curKind===''?' on':''}" onclick="pickKind('')">全部 ${EVS.length}</div>`+
+    KINDS.map(([k,cn])=>`<div class="tab${curKind===k?' on':''}" onclick="pickKind('${k}')">${cn} ${cnt[k]||0}</div>`).join('');
+}
+function renderFlow(){
+  let evs=EVS;
+  if(curKind)evs=evs.filter(e=>e.kind===curKind);
+  if(curQ){const q=curQ.toLowerCase();
+    evs=evs.filter(e=>(e.actor+' '+e.action+' '+(e.summary||'')).toLowerCase().includes(q))}
+  if(!evs.length){$('flow').innerHTML=`<div class="empty">该筛选下没有事件</div>`;return}
+  const byDay={};evs.forEach(e=>{(byDay[String(e.ts).slice(0,10)]=byDay[String(e.ts).slice(0,10)]||[]).push(e)});
+  let html='';
+  for(const d of Object.keys(byDay).sort().reverse()){
+    const list=byDay[d],c={};list.forEach(e=>c[e.kind]=(c[e.kind]||0)+1);
+    html+=`<div class="day-h"><b>${d}</b><span>${KINDS.map(([k,cn])=>c[k]?cn+' '+c[k]:'').filter(Boolean).join(' · ')}</span></div>`;
+    html+=list.map(evCard).join('');
+  }
+  $('flow').innerHTML=html;
+}
+function evCard(e){
+  const st=String(e.status||'');
+  const stCls=st==='ok'?'ok':(st==='fail'?'fail':'warn');
+  const arts=(e.artifacts||[]).map(a=>
+    `<span class="art" onclick="preview('${esc((a.path||'').replace(/'/g,""))}')">📄 ${esc(a.name)} · ${(a.size/1024).toFixed(1)}K</span>`).join('');
+  return `<div class="ev">
+    <div class="lft b-${e.kind}"></div>
+    <div class="bd">
+      <div class="r1">
+        <span class="badge k-${e.kind}">${KCN[e.kind]||e.kind}</span>
+        <span class="actor">${esc(e.actor)}</span>
+        <span class="act">${esc(e.action)}</span>
+        <span class="st ${stCls}">${esc(st)}</span>
+        <span class="ts">${esc(fmtTs(e.ts))}</span>
+      </div>
+      ${e.summary?`<div class="sum">${esc(e.summary)}</div>`:''}
+      ${arts?`<div class="arts">${arts}</div>`:''}
+    </div></div>`;
+}
+
+/* ---------- 交互 ---------- */
+function pickKind(k){curKind=(curKind===k)?'':k;render()}
+function onQ(){clearTimeout(qT);qT=setTimeout(()=>{curQ=$('q').value.trim();renderFlow()},220)}
+function onDay(){curDay=$('dayPick').value;refresh(false)}
+function clearDay(){curDay='';$('dayPick').value='';refresh(false)}
+function jumpDay(d){curDay=d;$('dayPick').value=d;refresh(false)}
+
+/* ---------- 产物预览 ---------- */
+async function preview(p){
+  if(!p)return;
+  $('mask').classList.add('on');$('mname').textContent=p.split('/').pop();
+  $('mmeta').textContent='加载中…';$('mbody').textContent='';
+  try{
+    const j=await jget('/api/flow/artifact?p='+encodeURIComponent(p));
+    $('mmeta').textContent=`${(j.size/1024).toFixed(1)} KB · ${j.mtime} · ${j.path}`;
+    const b=$('mbody');
+    if(j.type==='image'){b.innerHTML=`<img src="${j.data}" alt="">`}
+    else if(j.type==='json'||j.type==='jsonl'){
+      const arr=j.type==='jsonl'?j.data:[j.data];
+      b.innerHTML=arr.slice(0,300).map((o,i)=>
+        `<div style="margin-bottom:6px"><span style="color:#5a6b8c">#${i+1}</span> `+
+        `<pre>${esc(JSON.stringify(o,null,2).slice(0,20000))}</pre></div>`).join('')+
+        (arr.length>300?`<div class="sum">… 仅显示前 300 条 / 共 ${arr.length}</div>`:'');
+    }else if(j.type==='html'){
+      b.innerHTML=`<iframe sandbox="" srcdoc="${esc(j.data.slice(0,400000))}"></iframe>`;
+    }else{b.innerHTML=`<pre>${esc(String(j.data).slice(0,120000))}</pre>`}
+  }catch(e){$('mmeta').textContent='';$('mbody').innerHTML=`<div class="empty">读取失败：${esc(e.message)}</div>`}
+}
+function closePrev(){$('mask').classList.remove('on')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePrev()});
+
+/* ---------- 启动 ---------- */
+refresh(false);
+timer=setInterval(()=>{if(!document.hidden&&$('mask').className.indexOf('on')<0)refresh(false)},60000);
+</script>
+</body>
+</html>

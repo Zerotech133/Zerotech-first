@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""KM 知识库飞书联动枢纽（127.0.0.1:8096）。
+"""KM 知识库飞书联动枢纽（127.0.0.1:8099）。
 
 职能：本地知识目录 → 飞书摘要卡 定时推送 + 每日统计展示。
   - 库管理：页面增删改知识库（目录路径 + 分类方式 + 目标 + 发送时间）
@@ -33,7 +33,7 @@ NEWS = os.path.join(os.path.dirname(HERE), "news_collector")
 sys.path.insert(0, HERE)
 sys.path.insert(0, NEWS)
 
-PORT = 8096
+PORT = 8099
 WORK = os.path.join(HERE, "work")
 CONFIG_PATH = os.path.join(WORK, "km_config.json")
 SNAP_DIR = os.path.join(WORK, "km_snapshots")
@@ -248,10 +248,15 @@ def push_lib(lib, trigger):
                         if not t:
                             continue
                         try:
-                            ok = send_card(card, receive_id=t["id"],
-                                           receive_id_type=t["type"])
+                            # K-STOCK-414：send_card 返回 (ok, why) 二元组，
+                            # 误用单值接收时非空元组恒真→失败恒计成功（污染计费）
+                            ok, _why = send_card(
+                                card, receive_id=t["id"],
+                                receive_id_type=t["type"])
                         except Exception as e:  # noqa: BLE001
-                            ok, err = False, "%s: %s" % (tn, e)
+                            ok = False
+                            print("km_card send fail %s: %r" % (tn, e),
+                                  file=sys.stderr)
                         if ok:
                             sent_ok += 1
                             sent_targets.append(tn)

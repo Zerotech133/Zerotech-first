@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🏛 总览 · 零界工作站</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:"Microsoft YaHei",Arial,sans-serif;margin:0;padding:0 0 40px}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 20px 0}
+h1{font-size:20px;margin:14px 0 4px;color:#e6edf3}
+h1 .sub{font-size:12px;color:#8b949e;font-weight:400;margin-left:10px}
+h2{font-size:14px;color:#8b949e;margin:26px 0 10px;letter-spacing:.5px}
+h2 .badge{margin-left:8px;font-weight:400}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+section{margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
+.card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s}
+.card:hover{border-color:#30363d}
+.card .top{display:flex;justify-content:space-between;align-items:center}
+.card .name{font-size:13.5px;font-weight:600;color:#e6edf3}
+.card .port{font-size:11px;color:#8b949e;font-family:Consolas,monospace}
+.card .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px}
+.dot.ok{background:#3fb950;box-shadow:0 0 6px #3fb95088}
+.dot.bad{background:#f85149;box-shadow:0 0 6px #f8514988;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.35}}
+.card .meta{font-size:11px;color:#8b949e;margin-top:7px;font-family:Consolas,monospace}
+.card.bad{border-color:#f8514966}
+.tasks{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px}
+.task{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:7px 12px;font-size:12px;display:flex;justify-content:space-between;gap:10px}
+.task .tn{color:#c9d1d9;font-weight:600}
+.task .tv{color:#8b949e;font-family:Consolas,monospace;font-size:11px}
+.task .rc{font-weight:700}
+.rc.zero{color:#3fb950}.rc.nz{color:#d29922}
+.flow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.pill{display:inline-block;padding:5px 13px;border:1px solid #30363d;border-radius:999px;color:#8b949e;font-size:12.5px}
+.pill:hover{color:#e6edf3;border-color:#58a6ff;text-decoration:none}
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:12px}
+.gbox{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:11px 14px}
+.gbox .gt{color:#e6edf3;font-size:13px;font-weight:600;margin-bottom:7px}
+.gbox .gt small{color:#8b949e;font-weight:400;margin-left:6px;font-size:11px}
+.gbox a{display:block;font-size:12.5px;line-height:1.3;padding:4px 0;color:#58a6ff}
+.gbox a .d{display:block;color:#8b949e;font-size:11px}
+#digest{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:12px 16px;font-size:13px;line-height:2}
+#digest b{color:#e6edf3}
+#digest .warn{color:#f85149}
+.loading{color:#8b949e;font-size:12px}
+footer{margin-top:34px;color:#484f58;font-size:11px;text-align:center}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<script src="/static/nav.js?v=20261017-p4"></script>
+<div class="wrap">
+<h1>🏛 总览 <span class="sub">零界工作站 · 每天打开的第一个页面 · 30s 自动刷新</span></h1>
+
+<section>
+<h2>A · 健康总览 <span class="badge loading" id="hstate">加载中…</span></h2>
+<div class="grid" id="cards"></div>
+<div class="tasks" id="tasks"></div>
+</section>
+
+<section>
+<h2>B · 快捷入口</h2>
+<div class="flow" id="flow"></div>
+<div class="groups">
+  <div class="gbox"><div class="gt">📡 情报 <small>Jev 管理系统 · 评估与投递</small></div>
+    <a href="/bt-jev">⚖️ JEV 判断<span class="d">Jev 中文财经场景评估主页面：对告警/信号判紧急度与方向</span></a>
+    <a href="/stack">🩺 四件套观测<span class="d">闸门/复核/双刀桥/卡片四服务健康：业务指标+换血时间轴+死信队列</span></a>
+    <a href="/mission">🛰 任务控制<span class="d">Hermes Agent 任务编排与技能总览：追踪各情报任务在做什么</span></a>
+    <a href="/console">🎛 净化与指挥台<span class="d">Hermes Console：数据净化与指挥调度</span></a>
+    <a href="/bt-brief">🤖 AI 晨报<span class="d">每天早上自动生成的情报晨报</span></a>
+    <a href="/intel">🏠 情报工场<span class="d">情报生产线：采集、加工、沉淀</span></a>
+    <a href="/kg">🕸 知识图谱<span class="d">情报知识库：游资/事件/公司关联图谱</span></a>
+    <a href="/push">🛰 推送中台<span class="d">情报变现投递：企微/飞书推送调度与死信管理</span></a></div>
+  <div class="gbox"><div class="gt">🎯 交易 <small>盘前到盘后</small></div>
+    <a href="/picks.html">今日选股<span class="d">策略池今日候选清单</span></a>
+    <a href="/bt-signals">信号<span class="d">策略触发买卖信号流</span></a>
+    <a href="/bt-positions">持仓<span class="d">当前持仓与变动</span></a>
+    <a href="/paper">模拟仓<span class="d">纸上交易记录</span></a>
+    <a href="/screen">数据大屏<span class="d">盘面实时监控大屏</span></a></div>
+  <div class="gbox"><div class="gt">🔬 研究 <small>选股与数据</small></div>
+    <a href="/bt">选股中心<span class="d">选股策略与回测入口</span></a>
+    <a href="/strong">板块强弱<span class="d">板块轮动强弱对比</span></a>
+    <a href="/nl">自然语言查数<span class="d">用一句话查数据仓</span></a>
+    <a href="/bt-data-health">数据仓<span class="d">210 表数据质量体检</span></a></div>
+  <div class="gbox"><div class="gt">💬 对话 <small>AI 助手</small></div>
+    <a href="/hermes/">🦸 Hermes 超级助手<span class="d">主对话界面：本地大模型驱动的工作助手</span></a>
+    <a href="/academy">🎓 零界学院<span class="d">使用教程与技巧沉淀</span></a></div>
+  <div class="gbox"><div class="gt">⚙️ 运维 <small>系统与守护</small></div>
+    <a href="/sys-health">🖥 系统自检<span class="d">全部服务实时探活与计划任务快照</span></a>
+    <a href="/audit">🛡 审计状态<span class="d">动作流审计与安全记录</span></a>
+    <a href="/ops">🎛 OS 控制台<span class="d">工作站系统运维入口</span></a>
+    <a href="/flow">⚡ 动作流中心<span class="d">自动化动作编排</span></a>
+    <a href="/hall">🏛 旧门面（AI 听堂）<span class="d">原首页，零丢失保留</span></a>
+    <a href="/portal">🗂 总入口门户<span class="d">按场景组织的全站入口页</span></a></div>
+</div>
+</section>
+
+<section>
+<h2>C · 当日摘要 <span class="badge loading" id="dstate">加载中…</span></h2>
+<div id="digest"><span class="loading">正在聚合（首次可能 10-20s）…</span></div>
+</section>
+
+<footer>总览门户 P1 · 2026-10-17 前端重规划 · 数据源 /api/health + /api/overview</footer>
+</div>
+
+<script>
+var FLOW=[['🤖 晨报','/bt-brief'],['🌅 盘前','/premarket'],['🚦 信号','/bt-signals'],
+['📺 大屏','/screen'],['🌇 盘后','/afterhours'],['🧾 模拟仓','/paper'],
+['🏛 门面','/hall'],['🗂 门户','/portal']];
+document.getElementById('flow').innerHTML=FLOW.map(function(f){
+return '<a class="pill" href="'+f[1]+'">'+f[0]+'</a>'}).join('');
+
+/* 七口中文名 + 职责说明（源自各模块 docstring，悬停可见） */
+var SVC={
+ 'portal api':['门户 API','8091 · 本站所有页面与聚合接口的后端服务'],
+ 'push hub':['推送中台','8097 · 情报投递调度：企微/飞书推送与死信管理'],
+ 'hermes':['Hermes','8787 · 本地大模型 AI 助手（qwen2.5:7b 经 Ollama）'],
+ 'gate':['Jev 闸门','9101 · 告警降噪网关：轮询 OPEN 告警→判紧急度/方向→达标推企微'],
+ 'review':['Jev 复核','9102 · 信号复核门（影子模式）：候选池信号语义复核，只标注不拦截'],
+ 'qd bridge':['Jev 双刀桥','9103 · Jev⇄QuantDinger：复核判定同步 QD，反向复核 watchlist'],
+ 'card':['Jev 卡片','9104 · 飞书卡片处理：推演卡等消息卡片生成投递']};
+/* 五守护任务职责说明 */
+var TASKDESC={
+ 'JevStack':'Jev 四件套（闸门/复核/双刀桥/卡片）常驻栈守护，死则拉活、marker 换血',
+ 'JevBackfill':'Jev 历史数据回填：补评估缺口（10-16 曾停摆，已修复）',
+ 'JevFeed-Daily':'每日情报投喂：23:45 给 Jev 喂当日题集/素材',
+ 'TushareSync':'数据仓同步：每晚 23:30 拉 Tushare 50 表（断点续传）',
+ 'HermesWebUI-Guard':'Hermes(8787) 看门狗：宕则重启'};
+
+function el(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'?':s).replace(/[&<>"]/g,function(c){
+return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+function renderHealth(d){
+  el('hstate').textContent='更新 '+d.ts;
+  el('hstate').style.color=d.ok?'#3fb950':'#f85149';
+  el('cards').innerHTML=d.services.map(function(s){
+    var bad=!s.ok;
+    var sv=SVC[s.name]||[s.name,s.port+' · 服务'];
+    return '<div class="card'+(bad?' bad':'')+'" onclick="location.href=\'/sys-health\'" title="'+esc(sv[1])+' · 点击进入系统自检">'
+      +'<div class="top"><span class="name"><span class="dot '+(bad?'bad':'ok')+'"></span>'+esc(sv[0])+'</span>'
+      +'<span class="port">:'+s.port+'</span></div>'
+      +'<div class="meta">'+esc(sv[1].split(' · ')[1]||sv[1])+' · pid '+(s.pid||'—')+' · '+s.ms+'ms</div></div>';
+  }).join('');
+  el('tasks').innerHTML=d.tasks.map(function(t){
+    var rc=String(t.last_result||'?');
+    var rcCls=rc==='0'||rc==='0x0'?'zero':'nz';
+    var desc=TASKDESC[t.name]||'';
+    return '<div class="task" title="'+esc(desc)+'"><span class="tn">'+esc(t.name)+'</span>'
+      +'<span class="tv">'+esc(t.state)+' · rc <span class="rc '+rcCls+'">'+esc(rc)+'</span> · next '+esc(t.next_run)+'</span></div>';
+  }).join('');
+}
+
+function renderDigest(d){
+  el('dstate').textContent='更新 '+d.ts;
+  el('dstate').style.color='#8b949e';
+  var c=d.containers||{},parts=[];
+  Object.keys(c).forEach(function(k){
+    var v=c[k],ex=(v.exited||[]).length;
+    parts.push('<b>'+esc(k)+'</b>：'+v.running+'/'+v.total+' 运行'
+      +(ex?' <span class="warn">退出 '+ex+'（'+esc(v.exited.join('、'))+'）</span>':''));
+  });
+  if(d.backups)parts.push('<b>备份</b>：最新 '+(d.backups.latest||'—')
+    +' · 失败 <span class="'+(d.backups.failed&&d.backups.failed!=='0'?'warn':'')+'">'+d.backups.failed+'</span>');
+  if(d.alerts)parts.push('<b>告警</b>：待处理 <span class="'+(d.alerts.pending?'warn':'')+'">'+d.alerts.pending+'</span>');
+  (d.tasks||[]).slice(0,3).forEach(function(t){
+    parts.push('<b>'+esc(t.name)+'</b>：'+esc(t.state)+' · 上次 '+esc(t.lastrun)+' (rc='+t.last+') · 下次 '+esc(t.next));
+  });
+  el('digest').innerHTML=parts.join('<br>')||'暂无数据';
+}
+
+function loadHealth(){
+  fetch('/api/health').then(function(r){return r.json()}).then(renderHealth)
+    .catch(function(){el('hstate').textContent='接口不可达';el('hstate').style.color='#f85149'});
+}
+function loadDigest(){
+  fetch('/api/overview').then(function(r){return r.json()}).then(renderDigest)
+    .catch(function(){el('digest').innerHTML='<span class="loading">/api/overview 不可达</span>'});
+}
+loadHealth();loadDigest();
+setInterval(loadHealth,30000);
+setInterval(loadDigest,120000);
+</script>
+</body>
+</html>
