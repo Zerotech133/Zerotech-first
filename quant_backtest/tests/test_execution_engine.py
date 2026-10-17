@@ -8,13 +8,37 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from bar_dto import Bar, BarQuery
 from bar_store import BarStore
-from execution_engine import ExecutionConfig, OrderIntent, run_from_store
+from execution_engine import ExecutionConfig, InventoryLot, OrderIntent, run_from_store
+from market_rules import RuleDecision
 
 
 def make_bar(symbol, minute, open_price, close_price=None, market="CN", timeframe="1m", closed=True, adjustment="none"):
     dt = datetime(2026, 10, 16, 1, minute, tzinfo=timezone.utc)
     close = close_price if close_price is not None else open_price
     return Bar(symbol, market, timeframe, dt, date(2026, 10, 16), open_price, open_price, open_price, close, 100, 100, dt, dt, closed, "fixture", "v1", adjustment, "observed", ("fixture",))
+
+
+def test_execution_config_positional_arguments_remain_compatible():
+    config = ExecutionConfig(2000, {}, 10, 20, 100, True, True, "registry:market-cn", None, "CN", "1m", None, None, False, False, None)
+    assert config.initial_cash == 2000
+    assert config.fee_bps == 10
+    assert config.slippage_bps == 20
+    assert config.lot_size == 100
+    assert config.initial_lots == ()
+
+
+def test_initial_positions_and_initial_lots_fail_fast():
+    lot = InventoryLot("000001.SZ", "CN", "SZSE", "equity", date(2026, 10, 15), date(2026, 10, 16), 100, "lot-1")
+    try:
+        ExecutionConfig(initial_positions={"000001.SZ": 100}, initial_lots=(lot,), policy_ref="registry:market-cn")
+    except ValueError as exc:
+        assert "mutually exclusive" in str(exc)
+    else:
+        raise AssertionError("duplicate initial inventory must be rejected")
+
+
+def test_rule_decision_false_defaults_to_blocked():
+    assert RuleDecision(False).reason == "BLOCKED"
 
 
 def test_next_bar_fee_slippage_lot_and_audit():
@@ -28,6 +52,40 @@ def test_next_bar_fee_slippage_lot_and_audit():
     assert result.schema == "minute-exec-v1"
     assert result.metrics["unfilled_rate"] == 0
     assert result.source_metadata["sources"] == ["fixture"]
+
+
+def test_initial_positions_unknown_age_is_audited():
+    bars = [make_bar("000001.SZ", 30, 10), make_bar("000001.SZ", 31, 10)]
+    result = run_from_store(
+        BarStore(bars), [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt)],
+        ExecutionConfig(initial_cash=2000, initial_positions={"000001.SZ": 100}, policy_ref="registry:market-cn"),
+        status_provider=lambda *args: "TRADING",
+    )
+    assert result.unfilled[0].reason == "INVENTORY_AGE_UNKNOWN"
+
+
+def test_cross_market_same_symbol_isolated_instrument_positions():
+    bars = [make_bar("000001.SZ", 30, 10, market="CN"), make_bar("000001.SZ", 31, 10, market="CN")]
+    lot = InventoryLot("000001.SZ", "US", "NYSE", "equity", date(2026, 10, 15), date(2026, 10, 16), 100, "us-lot")
+    result = run_from_store(
+        BarStore(bars), [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt, market="CN", exchange="SZSE")],
+        ExecutionConfig(initial_lots=(lot,), initial_cash=2000, policy_ref="registry:market-cn"),
+        status_provider=lambda *args: "TRADING",
+    )
+    assert result.unfilled[0].reason == "INSUFFICIENT_POSITION"
+    assert result.instrument_positions[("US", "NYSE", "equity", "000001.SZ")] == 100
+
+
+def test_t_plus_one_false_uses_complete_instrument_identity():
+    bars = [make_bar("000001.SZ", 30, 10, market="CN"), make_bar("000001.SZ", 31, 10, market="CN")]
+    us_lot = InventoryLot("000001.SZ", "US", "NYSE", "equity", date(2026, 10, 15), date(2026, 10, 16), 100, "us-lot")
+    result = run_from_store(
+        BarStore(bars), [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt, market="CN", exchange="SZSE")],
+        ExecutionConfig(initial_lots=(us_lot,), initial_cash=2000, t_plus_one=False, policy_ref="registry:market-cn"),
+        status_provider=lambda *args: "TRADING",
+    )
+    assert result.unfilled[0].reason == "INSUFFICIENT_POSITION"
+    assert result.instrument_positions[("US", "NYSE", "equity", "000001.SZ")] == 100
 
 
 def test_t_plus_one_uses_session_date_and_unfilled_rate():

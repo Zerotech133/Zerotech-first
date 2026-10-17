@@ -41,7 +41,8 @@ CHALLENGE_WAIT_MS = 10_000
 LOGIN_FEATURE_COOKIES = {"xq_r_token", "xqat", "xq_id", "xq_or_token"}
 # token 值形态：40 位 hex（与匿名同形，靠登录态伴生 cookie 区分）
 
-FAIL_SHOT_DIR = "C:/Temp"
+FAIL_SHOT_DIR = os.path.join(HERE, "tmp")
+os.makedirs(FAIL_SHOT_DIR, exist_ok=True)
 
 
 def _mask(tok: str) -> str:
@@ -92,8 +93,9 @@ async def _probe_async(headless: bool) -> None:
             print("   <%s cls=%r text=%r href=%r>"
                   % (c["tag"], str(c["cls"])[:60], c["text"], c["href"][:60]))
         print("== 页面内 password 输入框：%s" % (cands["pws"] or "无"))
-        await page.screenshot(path="C:/Temp/xq_probe_home.png")
-        print("== 截图 C:/Temp/xq_probe_home.png")
+        _shot = os.path.join(FAIL_SHOT_DIR, "xq_probe_home.png")
+        await page.screenshot(path=_shot)
+        print("== 截图 %s" % _shot)
         await browser.close()
 
 
@@ -151,8 +153,9 @@ async def _login_async(user: str, password: str, headless: bool,
             if not opened:
                 try:
                     await page.screenshot(
-                        path="C:/Temp/xq_login_noentry_%d.png"
-                             % int(time.time()))
+                        path=os.path.join(
+                            FAIL_SHOT_DIR,
+                            "xq_login_noentry_%d.png" % int(time.time())))
                     waf = _looks_waf(await page.content())
                     print("[login] 入口未现（WAF 挑战页=%s），截图已存" % waf)
                 except Exception:
@@ -172,7 +175,8 @@ async def _login_async(user: str, password: str, headless: bool,
                     continue
             await page.wait_for_timeout(2500)
             await page.screenshot(
-                path="C:/Temp/xq_login_qr_%d.png" % int(time.time()))
+                path=os.path.join(
+                    FAIL_SHOT_DIR, "xq_login_qr_%d.png" % int(time.time())))
             print("[login]" + "!" * 60)
             print("[login] ⚠ 请用雪球 App 扫描屏幕上浏览器窗口中的二维码")
             print("[login]   确认后脚本自动检测登录态并继续（窗口 %ds）"
@@ -182,7 +186,9 @@ async def _login_async(user: str, password: str, headless: bool,
                                             time.time() + wait_human)
             if not got:
                 await page.screenshot(
-                    path="C:/Temp/xq_login_fail_%d.png" % int(time.time()))
+                    path=os.path.join(
+                        FAIL_SHOT_DIR,
+                        "xq_login_fail_%d.png" % int(time.time())))
                 raise RuntimeError("扫码登录未成功（窗口超时）")
             return await _export_login(ctx, pre, _safe_name, browser)
 
@@ -311,7 +317,9 @@ async def _login_async(user: str, password: str, headless: bool,
                                                 time.time() + wait_human)
         if not got:
             await page.screenshot(
-                path="C:/Temp/xq_login_fail_%d.png" % int(time.time()))
+                path=os.path.join(
+                    FAIL_SHOT_DIR,
+                    "xq_login_fail_%d.png" % int(time.time())))
             raise RuntimeError("登录未成功（未见登录态 cookie）")
 
         return await _export_login(ctx, pre, _safe_name, browser)
@@ -485,6 +493,21 @@ def verify_token(tok: str) -> dict:
     return token_probe("SH600519")
 
 
+def _is_market_ip_blacklist_error(probe: dict) -> bool:
+    """仅识别 token_probe 明确标注的行情域 IP 黑名单错误。"""
+    if not isinstance(probe, dict):
+        return False
+    detail = probe.get("error")
+    if not isinstance(detail, dict):
+        return False
+    domain = str(detail.get("domain") or detail.get("host") or "").lower()
+    code = str(detail.get("code") or detail.get("error_code") or "").upper()
+    reason = str(detail.get("reason") or detail.get("type") or "").upper()
+    return (domain in {"stock.xueqiu.com", "行情域"}
+            and code in {"403", "HTTP_403", "IP_BLACKLIST"}
+            and reason in {"IP_BLACKLIST", "IP_BLOCKED", "BLACKLIST"})
+
+
 def save_to_pool(name: str, tok: str) -> bool:
     """同名替换 / 追加 → 原子落盘。"""
     from xq_tokens import load_tokens
@@ -558,8 +581,11 @@ def main() -> int:
     print("[verify] token_probe ok=%s valid=%s latency=%dms err=%s"
           % (tp["ok"], tp.get("valid"), tp["latency_ms"], tp["err"] or "-"))
     if not (tp["ok"] and tp.get("valid")):
-        print("[FATAL] token 验活未通过，不灌池")
-        return 3
+        if _is_market_ip_blacklist_error(tp):
+            print("[verify] 行情域 IP 黑名单错误，继续入池")
+        else:
+            print("[FATAL] token_probe 未明确通过，不灌池")
+            return 3
     if not a.no_pool:
         save_to_pool(a.name, tok)
     print("[done] %s 验活通过%s" % (a.name, "" if a.no_pool else "，已入池"))

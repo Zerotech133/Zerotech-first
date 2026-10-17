@@ -164,9 +164,9 @@ _BT2_URL = "http://127.0.0.1:8091/btview"
 
 
 def _sandbox_draft(doc, p):
-    """审批通过 → 回测参数草案（结构供 bt2 预填，人工点跑对比）。
-    重计算复用现有回测台（backtest_engine_v2 可编程，但首期不自动跑：
-    数据环境重、跑批时长不可控——钩子留好，P3 治理循环再自动并行）。"""
+    """审批通过 → 回测参数草案（结构供 bt2 预填/自动跑，人工点跑对比）。
+    重计算复用现有回测台（backtest_engine_v2 可编程；K-PUSH-011 起
+    chanlun/risk/param 意图自动跑对比，freq/opinion 仅人工）。"""
     intent_cn = {"chanlun": "缠论中枢参数", "risk": "止损/仓位风控",
                  "freq": "推送频率", "param": "策略阈值",
                  "opinion": "观点校准"}[p["intent"]]
@@ -179,6 +179,21 @@ def _sandbox_draft(doc, p):
         "run_url": _BT2_URL,
         "created": datetime.now().isoformat(timespec="seconds"),
     }
+    # K-PUSH-011：规则模板 → 具体参数覆盖（deploy 落地取用；无模板意图不给）
+    try:
+        from quant_backtest import bt2_tune_compare as _btc
+        _tpl = _btc.RULE_TEMPLATES.get(p["intent"]) or {}
+        if _tpl:
+            _ov = {}
+            _base = dict(_btc.eng.DEFAULTS)
+            for _k, _v in _tpl.items():
+                if _k.endswith("_delta"):
+                    _ov[_k[:-6]] = float(_base.get(_k[:-6], 0)) + _v
+                else:
+                    _ov[_k] = _v
+            draft["bt2_params_override"] = _ov
+    except Exception:
+        pass  # 引擎不可用不影响审批（降级为纯人工对比）
     return draft
 
 
@@ -296,8 +311,84 @@ def approve(req_id, operator="", open_id="", note=""):
     _send_card(_receipt_card(req_id, True, extra), to_group=False)
     feedback_flow.record(req_id, "receipt", note="通过回执已发",
                          intent=p["intent"], scope=p["scope"])
+    # K-PUSH-011：有规则模板的意图 → 独立进程自动跑 bt2 对比（不阻塞审批流）
+    if p["intent"] in ("chanlun", "risk", "param"):
+        try:
+            draft["bt2_result"] = {"status": "running",
+                                   "started_at": datetime.now().isoformat(
+                                       timespec="seconds")}
+            doc["draft"] = draft
+            _save_store(doc)
+            _spawn_auto_compare(req_id)
+        except Exception:
+            pass  # 自动跑批拉起失败不影响审批（降级纯人工，盘后批次兜底）
     return {"ok": True, "req_id": req_id, "draft": draft,
             "scope": p["scope"], "code": p["code"]}
+
+
+def _spawn_auto_compare(req_id):
+    """K-PUSH-011 v2：subprocess 拉起自动对比（fire-and-forget）。
+    不用 daemon 线程：长任务（全窗口 2 次回测≈2.5min）在服务进程内跑，进程
+    重启（8097 换血）即杀线程、store 永卡 running 导致 deploy 不可用；且与
+    服务器争 GIL/CPU。独立进程 + DETACHED_PROCESS，父进程退出不带走。"""
+    try:
+        import subprocess
+        entry = os.path.join(STATION, "quant_backtest", "bt2_auto_compare.py")
+        subprocess.Popen([sys.executable, "-X", "utf8", entry, req_id],
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL,
+                         creationflags=0x00000008)  # DETACHED_PROCESS
+    except Exception:
+        pass
+
+
+def _auto_compare(req_id):
+    """K-PUSH-011：审批后后台跑 bt2 对比 → 回写 draft.bt2_result + 状态流转。
+    达标→pending_manual（带对比数）；不达标→rejected（带对比数）；
+    引擎错误/样本不足→pending_manual（可重跑，防误杀）。"""
+    import traceback
+    import feedback_flow
+    try:
+        from quant_backtest import bt2_tune_compare as _btc
+        doc = _load_store(req_id) or {}
+        if ((doc.get("draft") or {}).get("bt2_result") or {}
+                .get("status") == "done"):
+            return
+        try:
+            vip = vip_overrides()
+        except Exception:
+            vip = {}
+        r = _btc.run_compare(req_id, doc, vip)
+        doc2 = _load_store(req_id) or {}
+        draft = doc2.setdefault("draft", {})
+        draft["bt2_result"] = dict(r, status="done",
+                                   finished_at=datetime.now().isoformat(
+                                       timespec="seconds"))
+        _save_store(doc2)
+        intent = doc2.get("intent", "opinion")
+        scope = doc2.get("scope", "private")
+        note = "自动回测%s：%s（%ss）" % (
+            r.get("verdict", "?"), r.get("reason", ""), r.get("elapsed", "?"))
+        if r.get("verdict") == "pass":
+            feedback_flow.record(req_id, "pending_manual",
+                                 note=note[:200], intent=intent, scope=scope)
+        elif r.get("verdict") == "fail":
+            feedback_flow.record(req_id, "rejected", operator="auto-bt2",
+                                 note=note[:200], intent=intent, scope=scope)
+        else:  # inconclusive：留待人工/批次重跑
+            feedback_flow.record(req_id, "pending_manual",
+                                 note=(note + "（可重跑）")[:200],
+                                 intent=intent, scope=scope)
+    except Exception:
+        try:
+            doc3 = _load_store(req_id) or {}
+            feedback_flow.record(req_id, "pending_manual",
+                                 note=("自动对比异常：" +
+                                       traceback.format_exc()[-90:])[:200],
+                                 intent=doc3.get("intent", "opinion"),
+                                 scope=doc3.get("scope", "private"))
+        except Exception:
+            pass
 
 
 def reject(req_id, operator="", open_id="", reason=""):
@@ -335,17 +426,27 @@ def deploy(req_id, operator="", open_id="", params=None):
                 "状态 %s 不可落地（须先 approve 至 verified/pending_manual）"
                 % view["stage"]}
     doc = _load_store(req_id) or {}
+    _bt2r = (doc.get("draft") or {}).get("bt2_result") or {}
+    if view.get("scope", "private") == "private":
+        if not isinstance(_bt2r, dict) or str(_bt2r.get("status", "")).lower() == "running":
+            return {"ok": False, "error": "回测结果缺失或仍在运行，不可落地"}
+        verdict = str(_bt2r.get("verdict", "")).strip().lower()
+        if not re.search(r"(?:^|[^a-z])pass(?:$|[^a-z])", verdict):
+            return {"ok": False, "error": "回测结论非 pass，不可落地"}
     scope = view.get("scope", "private")
     if scope == "private":
-        pv = params or (doc.get("draft") or {}).get("bt2_params_hint") or {}
+        # K-PUSH-011：落地参数优先取规则模板 override（无则回退 hint）
+        pv = (params or (doc.get("draft") or {}).get("bt2_params_override")
+              or (doc.get("draft") or {}).get("bt2_params_hint") or {})
         _vip_write(view.get("customer", "?"), pv, req_id,
                    operator or open_id or "管理台")
         feedback_flow.record(req_id, "deployed", operator=operator or open_id,
                              note="VIP 私有参数空间已写入")
         # K-PUSH-010：落地回执——私有单部署成功即发（fail-safe 吞错）
         extra = ("参数空间已写入（VIP）。对比结论：%s"
-                 % ((doc.get("draft") or {}).get("bt2_params_hint")
-                    or "见参数空间"))
+                 % (_bt2r.get("reason")
+                    or ((doc.get("draft") or {}).get("bt2_params_hint")
+                        or "见参数空间")))
         _send_card(_receipt_card(req_id, True, extra), to_group=False)
         feedback_flow.record(req_id, "receipt", note="落地回执已发",
                              scope=scope)

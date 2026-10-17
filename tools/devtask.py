@@ -339,6 +339,13 @@ def cmd_list(*args):
     print("%-10s %-8s %-10s %-20s %-24s %s" %
           ("工单", "状态", "项目线", "owner/分支", "描述", "ahead/behind·末提交"))
     for tid, t in sorted(tasks.items()):
+        # 兼容历史/外部登记项：缺少分支时仍展示工单信息，不做 Git 统计。
+        if "branch" not in t:
+            print("%-10s %-8s %-10s %-20s %-24s %s"
+                  % (tid, t.get("status", "?"), t.get("project", "general")[:8],
+                     t.get("owner", "历史项")[:8] + "/历史项",
+                     t.get("desc", "")[:22], "无分支"))
+            continue
         ahead, behind = _ahead_behind(t["branch"])
         try:
             last = _git("log", "-1", "--format=%ar", t["branch"])
@@ -346,8 +353,8 @@ def cmd_list(*args):
             last = "?"
         print("%-10s %-8s %-10s %-20s %-24s +%d/-%d · %s"
               % (tid, t["status"], t.get("project", "general")[:8],
-                 t["owner"][:8] + "/" + t["branch"][5:15],
-                 t["desc"][:22], ahead, behind, last))
+                 t.get("owner", "?")[:8] + "/" + t["branch"][5:15],
+                 t.get("desc", "")[:22], ahead, behind, last))
     if not tasks:
         print("（无任务单——先 devtask.py new）")
     return 0
@@ -460,7 +467,7 @@ def cmd_board(out=None):
             "aborted": "#8b949e"}
     for tid, t in sorted(tasks.items(),
                          key=lambda kv: (kv[1]["status"], kv[0])):
-        ahead, behind = _ahead_behind(t["branch"])
+        ahead, behind = _ahead_behind(t["branch"]) if t.get("branch") else (0, 0)
         rows += ("<tr><td><b>%s</b></td><td><span style='color:%s'>●"
                  "</span> %s</td><td>%s</td><td>%s</td><td>+%d/-%d</td>"
                  "<td>%s</td></tr>"

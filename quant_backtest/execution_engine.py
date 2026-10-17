@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import math
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple
 
 from bar_dto import Bar, BarQuery, ensure_utc
 from bar_store import BarStore
+from market_rules import MarketRuleProvider
 
 Provider = Callable[..., Any]
 SCHEMA = "minute-exec-v1"
@@ -17,11 +18,21 @@ SAME_BAR_POLICY_REF = "same_bar_inclusive_v1"
 
 
 def _calendar_bar_gate(provider: Any, bar: Bar) -> None:
-    """Require explicit open-session coverage for one bar."""
+    """Require explicit open-session coverage and segment membership for a bar."""
     try:
         if not provider.is_open(bar.session_date):
             raise ValueError("CALENDAR_UNAVAILABLE: CLOSED_SESSION")
-        provider.session_bounds(bar.session_date)
+        bounds = provider.session_bounds(bar.session_date)
+        if not provider.is_in_session(bar.dt, session_date=bar.session_date):
+            raise ValueError("CALENDAR_UNAVAILABLE: OUT_OF_SESSION")
+        segments = tuple(getattr(bounds, "segments", ()) or ())
+        if not segments:
+            segments = (bounds,)
+        matching = tuple(segment for segment in segments if segment.open_at <= bar.dt < segment.close_at)
+        if not matching:
+            raise ValueError("CALENDAR_UNAVAILABLE: OUT_OF_SESSION")
+        if bar.close_at is not None and bar.close_at > matching[0].close_at:
+            raise ValueError("CALENDAR_UNAVAILABLE: BAR_CLOSE_AFTER_SESSION")
     except ValueError as exc:
         text = str(exc)
         if text.startswith("CALENDAR_"):
@@ -61,6 +72,34 @@ def _json_value(value: Any) -> Any:
 
 
 @dataclass(frozen=True)
+class InventoryLot:
+    """One auditable inventory lot with session-based availability."""
+
+    symbol: str
+    market: str
+    exchange: str
+    asset_class: str
+    acquisition_session: Optional[date]
+    available_session: Optional[date]
+    quantity: float
+    lot_id: str
+
+    def __post_init__(self) -> None:
+        if not str(self.symbol).strip() or not str(self.market).strip() or not str(self.exchange).strip():
+            raise ValueError("InventoryLot identity fields are required")
+        if not str(self.asset_class).strip() or not str(self.lot_id).strip():
+            raise ValueError("InventoryLot asset_class and lot_id are required")
+        for name in ("acquisition_session", "available_session"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, date) or isinstance(value, datetime)):
+                raise ValueError(f"{name} must be a date or None")
+        if self.acquisition_session is not None and self.available_session is not None and self.available_session < self.acquisition_session:
+            raise ValueError("available_session must not precede acquisition_session")
+        if float(self.quantity) <= 0 or not math.isfinite(float(self.quantity)):
+            raise ValueError("InventoryLot quantity must be finite and positive")
+
+
+@dataclass(frozen=True)
 class ExecutionConfig:
     """Execution policy for one market/timeframe stream."""
 
@@ -78,13 +117,18 @@ class ExecutionConfig:
     calendar_ref: Optional[str] = None
     calendar_version: Optional[str] = None
     calendar_required: bool = False
+    # New fields trail every historical positional argument.
+    market_rules_required: bool = False
     # Kept only as a source-compatible alias; normalized to fee_bps below.
     fee_rate: Optional[float] = None
+    initial_lots: Tuple[InventoryLot, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not math.isfinite(float(self.initial_cash)) or self.initial_cash < 0:
             raise ValueError("initial_cash must be finite and non-negative")
         fee_bps = float(self.fee_bps)
+        if self.fee_rate is False:
+            object.__setattr__(self, "fee_rate", None)
         if self.fee_rate is not None:
             if fee_bps and not math.isclose(fee_bps, float(self.fee_rate) * 10000.0):
                 raise ValueError("fee_bps and fee_rate disagree")
@@ -98,6 +142,14 @@ class ExecutionConfig:
             raise ValueError("t_plus_one must be boolean")
         if type(self.calendar_required) is not bool:
             raise ValueError("calendar_required must be boolean")
+        if self.market_rules_required is None:
+            object.__setattr__(self, "market_rules_required", False)
+        if type(self.market_rules_required) is not bool:
+            raise ValueError("market_rules_required must be boolean")
+        # Legacy positional callers used the former trailing boolean slot;
+        # normalize ``calendar_version=False`` to an absent identity.
+        if self.calendar_ref is None and self.calendar_version is False:
+            object.__setattr__(self, "calendar_version", None)
         if (self.calendar_ref is None) != (self.calendar_version is None):
             raise ValueError("CALENDAR_MISMATCH: calendar_ref and calendar_version must be paired")
         if self.policy_ref:
@@ -116,6 +168,12 @@ class ExecutionConfig:
         for symbol, quantity in self.initial_positions.items():
             if not str(symbol) or float(quantity) < 0 or not math.isfinite(float(quantity)):
                 raise ValueError("initial_positions must contain non-negative finite quantities")
+        if self.initial_lots is None:
+            object.__setattr__(self, "initial_lots", ())
+        elif not isinstance(self.initial_lots, tuple) or any(not isinstance(lot, InventoryLot) for lot in self.initial_lots):
+            raise ValueError("initial_lots must contain InventoryLot values")
+        if self.initial_positions and self.initial_lots:
+            raise ValueError("initial_positions and initial_lots are mutually exclusive")
 
 
 @dataclass(frozen=True)
@@ -133,6 +191,8 @@ class OrderIntent:
     signal_at: Optional[datetime] = None
     order_type: str = "MARKET"
     stop_price: Optional[float] = None
+    exchange: Optional[str] = None
+    asset_class: str = "equity"
 
     def __post_init__(self) -> None:
         if not self.symbol:
@@ -211,6 +271,8 @@ class ExecutionResult:
     orders: Tuple[OrderIntent, ...] = ()
     metrics: Mapping[str, Any] = field(default_factory=dict)
     schema: str = SCHEMA
+    inventory_lots: Tuple[InventoryLot, ...] = ()
+    instrument_positions: Mapping[Tuple[str, str, str, str], float] = field(default_factory=dict)
 
     @property
     def unfilled(self) -> Tuple[OrderAudit, ...]:
@@ -281,6 +343,21 @@ def _quantity(value: float, lot_size: int) -> float:
     return math.floor(float(value) / lot_size) * lot_size
 
 
+def _instrument_identity(symbol: str, market: str, exchange: Optional[str] = None,
+                         asset_class: Optional[str] = None) -> Tuple[str, str, str, str]:
+    normalized_symbol = str(symbol).upper()
+    normalized_market = str(market or "UNKNOWN").upper()
+    if exchange:
+        normalized_exchange = str(exchange).upper()
+    elif normalized_market == "CN" and normalized_symbol.endswith(".SH"):
+        normalized_exchange = "SSE"
+    elif normalized_market == "CN" and normalized_symbol.endswith(".SZ"):
+        normalized_exchange = "SZSE"
+    else:
+        normalized_exchange = "UNKNOWN"
+    return normalized_market, normalized_exchange, str(asset_class or "equity").lower(), normalized_symbol
+
+
 def run_from_store(
     store: BarStore,
     intents: Iterable[OrderIntent],
@@ -290,6 +367,7 @@ def run_from_store(
     limit_provider: Optional[Provider] = None,
     status_provider: Optional[Provider] = None,
     calendar_provider: Optional[Any] = None,
+    market_rule_provider: Optional[MarketRuleProvider] = None,
 ) -> ExecutionResult:
     """Execute sorted intents against canonical bars, with no network or writes."""
     if not isinstance(store, BarStore):
@@ -351,8 +429,22 @@ def run_from_store(
             continue
         key = (bar.symbol.upper(), bar.market.upper(), bar.timeframe.lower())
         by_key[key] = by_key.get(key, tuple()) + (bar,)
+    # Keep inventory identity market+exchange+asset class scoped internally;
+    # ``positions`` remains symbol-keyed for source compatibility.
     positions: Dict[str, float] = {str(k): float(v) for k, v in policy.initial_positions.items()}
+    inventory = []
+    explicit_inventory = bool(policy.initial_lots)
     bought_lots: Dict[Tuple[str, date], float] = {}
+    lot_counter = 0
+    default_market = (policy.market or (policy.policy_ref.rsplit("-", 1)[-1] if policy.policy_ref else "UNKNOWN")).upper()
+    for symbol, quantity in policy.initial_positions.items():
+        if float(quantity) > 0:
+            lot_counter += 1
+            market, exchange, asset_class, _ = _instrument_identity(str(symbol), default_market)
+            inventory.append(InventoryLot(str(symbol), market, exchange, asset_class, None, None, float(quantity), f"initial-{lot_counter}"))
+    for lot in policy.initial_lots:
+        inventory.append(lot)
+        positions[lot.symbol] = positions.get(lot.symbol, 0.0) + float(lot.quantity)
     cash = float(policy.initial_cash)
     fills = []
     audits = []
@@ -389,12 +481,6 @@ def run_from_store(
             audits.append(OrderAudit(status="unfilled", reason="NO_NEXT_BAR", eligible_at=None, fill_at=None, **common)); continue
         if eligible.o is None or not math.isfinite(float(eligible.o)) or float(eligible.o) <= 0:
             audits.append(OrderAudit(status="unfilled", reason="DATA_GAP", eligible_at=eligible.dt, fill_at=None, **common)); continue
-        status_reason = _status_reason(
-            _provider_call(status_provider, intent.symbol, eligible.dt, eligible)
-            if status_provider is not None else None
-        )
-        if status_reason:
-            audits.append(OrderAudit(status="unfilled", reason=status_reason, eligible_at=eligible.dt, fill_at=None, **common)); continue
         raw_price = float(eligible.o)
         if intent.order_type == "STOP":
             if intent.side != "SELL" or intent.stop_price is None:
@@ -402,20 +488,54 @@ def run_from_store(
             if eligible.o > intent.stop_price and (eligible.l is None or eligible.l > intent.stop_price):
                 audits.append(OrderAudit(status="unfilled", reason="STOP_NOT_TRIGGERED", eligible_at=eligible.dt, fill_at=None, **common)); continue
             raw_price = float(eligible.o) if eligible.o <= intent.stop_price else float(intent.stop_price)
-        if limit_provider is not None:
-            limit_reason = _limit_reason(_provider_call(limit_provider, intent.symbol, eligible.dt, eligible), intent.side, raw_price)
-            if limit_reason:
-                audits.append(OrderAudit(status="unfilled", reason=limit_reason, eligible_at=eligible.dt, fill_at=None, **common)); continue
+        if market_rule_provider is not None or policy.market_rules_required:
+            rule_provider = market_rule_provider or MarketRuleProvider(
+                status_provider=status_provider, limit_provider=limit_provider,
+                market=intent.market or policy.market or getattr(eligible, "market", "")
+            )
+            rule_decision = rule_provider.decide(intent.symbol, eligible.dt, eligible, intent.side, raw_price)
+            common["source_trace"] = tuple(dict.fromkeys(tuple(common["source_trace"]) + tuple(rule_decision.source_trace)))
+            common["query_metadata"] = {**query_metadata, "rule_ref": rule_decision.rule_ref,
+                                         "rule_version": rule_decision.rule_version,
+                                         "rule_snapshot": rule_decision.snapshot,
+                                         "rule_source_trace": list(rule_decision.source_trace)}
+            if not rule_decision.allowed:
+                audits.append(OrderAudit(status="unfilled", reason=rule_decision.reason, eligible_at=eligible.dt, fill_at=None, **common)); continue
+        else:
+            status_reason = _status_reason(
+                _provider_call(status_provider, intent.symbol, eligible.dt, eligible)
+                if status_provider is not None else None
+            )
+            if status_reason:
+                audits.append(OrderAudit(status="unfilled", reason=status_reason, eligible_at=eligible.dt, fill_at=None, **common)); continue
+            if limit_provider is not None:
+                limit_reason = _limit_reason(_provider_call(limit_provider, intent.symbol, eligible.dt, eligible), intent.side, raw_price)
+                if limit_reason:
+                    audits.append(OrderAudit(status="unfilled", reason=limit_reason, eligible_at=eligible.dt, fill_at=None, **common)); continue
         quantity = _quantity(intent.quantity, policy.lot_size)
         if quantity <= 0:
             audits.append(OrderAudit(status="unfilled", reason="BELOW_LOT", eligible_at=eligible.dt, fill_at=None, **common)); continue
-        if intent.side == "SELL" and policy.t_plus_one:
-            same_or_later_buys = sum(qty for (symbol, session), qty in bought_lots.items()
-                                     if symbol == intent.symbol and session >= eligible.session_date)
-            if quantity > positions.get(intent.symbol, 0.0) - same_or_later_buys + 1e-9:
-                audits.append(OrderAudit(status="unfilled", reason="T_PLUS_ONE", eligible_at=eligible.dt, fill_at=None, **common)); continue
-        if intent.side == "SELL" and quantity > positions.get(intent.symbol, 0.0) + 1e-9:
-            audits.append(OrderAudit(status="unfilled", reason="INSUFFICIENT_POSITION", eligible_at=eligible.dt, fill_at=None, **common)); continue
+        if intent.side == "SELL":
+            sell_identity = _instrument_identity(
+                intent.symbol, intent.market or policy.market or default_market,
+                intent.exchange, intent.asset_class
+            )
+            matching = [lot for lot in inventory if _instrument_identity(
+                lot.symbol, lot.market, lot.exchange, lot.asset_class
+            ) == sell_identity]
+            total_inventory = sum(float(lot.quantity) for lot in matching)
+            if not matching and not explicit_inventory and intent.symbol in positions and positions[intent.symbol] > 0:
+                total_inventory = float(positions[intent.symbol])
+            if quantity > total_inventory + 1e-9:
+                audits.append(OrderAudit(status="unfilled", reason="INSUFFICIENT_POSITION", eligible_at=eligible.dt, fill_at=None, **common)); continue
+            if policy.t_plus_one:
+                known_available = sum(float(lot.quantity) for lot in matching
+                                      if lot.available_session is not None and lot.available_session <= eligible.session_date)
+                has_unknown_age = any(lot.available_session is None for lot in matching)
+                if not matching and not explicit_inventory and intent.symbol in positions and positions[intent.symbol] > 0:
+                    known_available = float(positions[intent.symbol])
+                if quantity > known_available + 1e-9:
+                    audits.append(OrderAudit(status="unfilled", reason="INVENTORY_AGE_UNKNOWN" if has_unknown_age and matching else "T_PLUS_ONE", eligible_at=eligible.dt, fill_at=None, **common)); continue
         direction = 1.0 if intent.side == "BUY" else -1.0
         price = raw_price * (1.0 + direction * float(policy.slippage_bps) / 10000.0)
         gross = price * quantity
@@ -425,26 +545,77 @@ def run_from_store(
             audits.append(OrderAudit(status="unfilled", reason="INSUFFICIENT_CASH", eligible_at=eligible.dt, fill_at=None, **common)); continue
         cash += -total if intent.side == "BUY" else total
         positions[intent.symbol] = positions.get(intent.symbol, 0.0) + (quantity if intent.side == "BUY" else -quantity)
+        if intent.side == "SELL":
+            remaining = quantity
+            sell_identity = _instrument_identity(
+                intent.symbol, intent.market or policy.market or default_market,
+                intent.exchange, intent.asset_class
+            )
+            candidates_lots = sorted(
+                (lot for lot in inventory
+                 if _instrument_identity(lot.symbol, lot.market, lot.exchange, lot.asset_class)
+                 == sell_identity
+                 and (not policy.t_plus_one or (lot.available_session is not None and lot.available_session <= eligible.session_date))),
+                key=lambda lot: (lot.acquisition_session is None, lot.acquisition_session or date.max, lot.lot_id),
+            )
+            for lot in candidates_lots:
+                consumed = min(float(lot.quantity), remaining)
+                remaining -= consumed
+                inventory[inventory.index(lot)] = InventoryLot(
+                    lot.symbol, lot.market, lot.exchange, lot.asset_class, lot.acquisition_session,
+                    lot.available_session, float(lot.quantity) - consumed, lot.lot_id,
+                ) if float(lot.quantity) > consumed else None
+                if remaining <= 1e-9:
+                    break
+            inventory[:] = [lot for lot in inventory if lot is not None and lot.quantity > 1e-9]
         if intent.side == "BUY":
+            market, exchange, asset_class, _ = _instrument_identity(
+                intent.symbol, intent.market or policy.market or default_market, intent.exchange, intent.asset_class
+            )
+            available_session = eligible.session_date
+            if policy.t_plus_one:
+                if calendar_provider is None:
+                    available_session = eligible.session_date + timedelta(days=1)
+                else:
+                    try:
+                        available_session = calendar_provider.next_open_session(eligible.session_date, inclusive=False)
+                    except Exception:
+                        # A production calendar must not synthesize a trading day.
+                        # Keep the fill auditable, but leave settlement unknown so
+                        # a later sell is fail-closed with INVENTORY_AGE_UNKNOWN.
+                        available_session = None
+            lot_counter += 1
+            inventory.append(InventoryLot(intent.symbol, market, exchange, asset_class, eligible.session_date,
+                                          available_session if policy.t_plus_one else eligible.session_date,
+                                          quantity, f"fill-{order_id}-{lot_counter}"))
             bought_lots[(intent.symbol, eligible.session_date)] = bought_lots.get((intent.symbol, eligible.session_date), 0.0) + quantity
         fills.append(Fill(order_id, intent.symbol, intent.side, quantity, price, gross, fee,
                           abs(price - raw_price) * quantity, eligible.dt, eligible.source))
         audits.append(OrderAudit(status="filled", reason="FILLED", eligible_at=eligible.dt, fill_at=eligible.dt, **common))
-    mark: Dict[Tuple[str, str, str], float] = {}
+    mark: Dict[Tuple[str, str, str, str], float] = {}
     for bar in bars:
         if policy.market and bar.market.upper() != policy.market.upper():
             continue
         if policy.timeframe and bar.timeframe.lower() != policy.timeframe.lower():
             continue
-        mark[(bar.symbol.upper(), bar.market.upper(), bar.timeframe.lower())] = float(
-            bar.c if bar.c is not None else bar.o or 0.0
-        )
+        identity = _instrument_identity(bar.symbol, bar.market)
+        mark[identity] = float(bar.c if bar.c is not None else bar.o or 0.0)
     equity = cash
-    for symbol, quantity in positions.items():
-        matching = [price for key, price in mark.items() if key[0] == symbol.upper()]
-        equity += quantity * (matching[-1] if matching else 0.0)
+    for lot in inventory:
+        identity = _instrument_identity(lot.symbol, lot.market, lot.exchange, lot.asset_class)
+        equity += float(lot.quantity) * mark.get(identity, 0.0)
+    if not explicit_inventory:
+        for symbol, quantity in positions.items():
+            identity = _instrument_identity(symbol, default_market)
+            if not any(_instrument_identity(lot.symbol, lot.market, lot.exchange, lot.asset_class) == identity for lot in inventory):
+                equity += quantity * mark.get(identity, 0.0)
     metrics = {"submitted": len(ordered_intents), "filled": len(fills),
                "unfilled": len(ordered_intents) - len(fills),
                "unfilled_rate": (len(ordered_intents) - len(fills)) / len(ordered_intents) if ordered_intents else 0.0}
+    instrument_positions: Dict[Tuple[str, str, str, str], float] = {}
+    for lot in inventory:
+        key = _instrument_identity(lot.symbol, lot.market, lot.exchange, lot.asset_class)
+        instrument_positions[key] = instrument_positions.get(key, 0.0) + float(lot.quantity)
     return ExecutionResult(tuple(fills), tuple(audits), cash, dict(positions), equity,
-                           _json_value({**store.explain(), **({"calendar": calendar_identity} if calendar_identity else {})}), query_metadata, ordered_intents, metrics, SCHEMA)
+                           _json_value({**store.explain(), **({"calendar": calendar_identity} if calendar_identity else {})}), query_metadata, ordered_intents, metrics, SCHEMA,
+                           tuple(inventory), dict(instrument_positions))
