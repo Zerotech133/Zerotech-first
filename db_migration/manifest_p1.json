@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-10-16 18:10 (UTC+8)",
+  "sources": {
+    "news": {
+      "db": "C:/aios/news_collector/news.db",
+      "schema": "news",
+      "snapshot": "C:/aios/db_migration/snapshots/news_snap.db",
+      "seconds": 27.9,
+      "tables": [
+        {
+          "table": "ai_briefs",
+          "rows": 21,
+          "load_seconds": 0.0
+        },
+        {
+          "table": "ai_reviews",
+          "rows": 13,
+          "load_seconds": 0.0
+        },
+        {
+          "table": "news",
+          "rows": 45118,
+          "load_seconds": 25.8
+        },
+        {
+          "table": "quotes",
+          "rows": 28749,
+          "load_seconds": 0.6
+        },
+        {
+          "table": "runs",
+          "rows": 1832,
+          "load_seconds": 0.1
+        }
+      ]
+    },
+    "quant": {
+      "db": "C:/aios/quant_backtest/data/quant.db",
+      "schema": "quant",
+      "snapshot": "C:/aios/db_migration/snapshots/quant_snap.db",
+      "seconds": 434.4,
+      "tables": [
+        {
+          "table": "chanlun_pool",
+          "rows": 10339,
+          "load_seconds": 0.6
+        },
+        {
+          "table": "nine_dim_fc",
+          "rows": 4413,
+          "load_seconds": 2.8
+        },
+        {
+          "table": "nine_dim_fc_meta",
+          "rows": 1,
+          "load_seconds": 0.1
+        },
+        {
+          "table": "nine_dim_fina",
+          "rows": 4718,
+          "load_seconds": 108.0
+        },
+        {
+          "table": "nine_dim_rc",
+          "rows": 4413,
+          "load_seconds": 319.4
+        },
+        {
+          "table": "nine_dim_rc_meta",
+          "rows": 1,
+          "load_seconds": 0.1
+        }
+      ]
+    },
+    "tdx_info": {
+      "db": "C:/aios/quant_backtest/data/tdx/tdx_info.db",
+      "schema": "tdx_info",
+      "snapshot": "C:/aios/db_migration/snapshots/tdx_info_snap.db",
+      "seconds": 93.1,
+      "tables": [
+        {
+          "table": "stock_news",
+          "rows": 301084,
+          "load_seconds": 62.1
+        },
+        {
+          "table": "stock_notice",
+          "rows": 133118,
+          "load_seconds": 12.6
+        },
+        {
+          "table": "stock_report",
+          "rows": 147528,
+          "load_seconds": 12.4
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,38 @@
+# quant_backtest 产线最小依赖集（C7 · 2026-10-07 拆分）
+#
+# 生成方式：AST 扫描 quant_backtest/*.py 全部 import，排除标准库与
+# 本地跨目录模块（portal_api=../portal、card_build/quote_snapshot/
+# send_feishu=../news_collector），反推直接第三方依赖；版本钉当前
+# 生产环境 freeze（requirements-python311-full.txt，401 包全量）。
+# 传递依赖由 pip 自动解析，不在此列。
+# 再生成：AST 扫描脚本见当日研发记录，或
+#   python -c "import ast,os,sys; ..." （对比 full freeze 取版本）
+#
+# 注意：qrcode 为软依赖（card_assets.py try/except 内可选导入，缺失
+# 时二维码卡片降级跳过，不影响主链路），且不在全量 freeze 中。
+
+# ── 数据层 ──────────────────────────────────────────────
+numpy==2.4.4
+pandas==3.0.1
+pyarrow==20.0.0
+requests==2.34.2
+tushare==1.4.29
+psycopg2-binary==2.9.13      # import psycopg2（chanlun_data 等）
+python-dotenv==1.2.3         # import dotenv
+
+# ── 策略 / ML ───────────────────────────────────────────
+scikit-learn==1.8.0          # import sklearn（chanlun_mlf）
+lightgbm==4.6.0              # chanlun_mlf 影子打分
+networkx==3.6.1              # kg_analytics 知识图谱
+neo4j==6.3.1                 # kg_client
+fastembed==0.8.1             # semantica_mvp 向量嵌入
+semantica==0.7.0             # kg_distill
+
+# ── 图表 / 卡片 ─────────────────────────────────────────
+matplotlib==3.10.8           # chanlun_plot 等
+Pillow==12.3.0               # import PIL（report_card_img）
+qrcode                       # 可选：card_assets 二维码（软导入）
+
+# ── 文档解析 / 测试 ─────────────────────────────────────
+pypdf==6.7.5                 # report_fetch
+pytest==9.0.2                # 测试套件

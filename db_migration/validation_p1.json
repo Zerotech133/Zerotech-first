@@ -1,0 +1,222 @@
+{
+  "validated_at": "2026-10-16 18:27:54",
+  "sources": {
+    "news": {
+      "counts": [
+        {
+          "table": "ai_briefs",
+          "sqlite": 21,
+          "pg": 21,
+          "match": true
+        },
+        {
+          "table": "ai_reviews",
+          "sqlite": 13,
+          "pg": 13,
+          "match": true
+        },
+        {
+          "table": "news",
+          "sqlite": 45118,
+          "pg": 45118,
+          "match": true
+        },
+        {
+          "table": "quotes",
+          "sqlite": 28749,
+          "pg": 28749,
+          "match": true
+        },
+        {
+          "table": "runs",
+          "sqlite": 1832,
+          "pg": 1832,
+          "match": true
+        }
+      ],
+      "deep": [
+        {
+          "table": "news",
+          "match": true,
+          "sqlite": [
+            45118,
+            45118,
+            "ann:AN202609241829871037",
+            "xd:notice:fb70102a1a01"
+          ],
+          "pg": [
+            45118,
+            45118,
+            "ann:AN202609241829871037",
+            "xd:notice:fb70102a1a01"
+          ]
+        },
+        {
+          "table": "news",
+          "compared": 1000,
+          "mismatch": 0,
+          "match": true
+        },
+        {
+          "table": "quotes",
+          "match": true,
+          "sqlite": [
+            28749,
+            28749,
+            "bj920028",
+            "sz301520",
+            "2026-09-24 15:34:59",
+            "2026-10-16 15:05:04"
+          ],
+          "pg": [
+            28749,
+            28749,
+            "bj920028",
+            "sz301520",
+            "2026-09-24 15:34:59",
+            "2026-10-16 15:05:04"
+          ]
+        },
+        {
+          "table": "quotes",
+          "compared": 1000,
+          "mismatch": 0,
+          "match": true
+        }
+      ],
+      "ok": true
+    },
+    "quant": {
+      "counts": [
+        {
+          "table": "chanlun_pool",
+          "sqlite": 10339,
+          "pg": 10339,
+          "match": true
+        },
+        {
+          "table": "nine_dim_fc",
+          "sqlite": 4413,
+          "pg": 4413,
+          "match": true
+        },
+        {
+          "table": "nine_dim_fc_meta",
+          "sqlite": 1,
+          "pg": 1,
+          "match": true
+        },
+        {
+          "table": "nine_dim_fina",
+          "sqlite": 4718,
+          "pg": 4718,
+          "match": true
+        },
+        {
+          "table": "nine_dim_rc",
+          "sqlite": 4413,
+          "pg": 4413,
+          "match": true
+        },
+        {
+          "table": "nine_dim_rc_meta",
+          "sqlite": 1,
+          "pg": 1,
+          "match": true
+        }
+      ],
+      "deep": [
+        {
+          "table": "chanlun_pool",
+          "match": true,
+          "sqlite": [
+            10339,
+            10339,
+            "000001.SH",
+            "920992.BJ",
+            "1买",
+            "3卖",
+            "2025-07-17",
+            "2026-09-30"
+          ],
+          "pg": [
+            10339,
+            10339,
+            "000001.SH",
+            "920992.BJ",
+            "1买",
+            "3卖",
+            "2025-07-17",
+            "2026-09-30"
+          ]
+        },
+        {
+          "table": "chanlun_pool",
+          "compared": 1000,
+          "mismatch": 0,
+          "match": true
+        },
+        {
+          "table": "nine_dim_fina",
+          "match": true,
+          "sqlite": [
+            4718,
+            4718,
+            "000001.SZ",
+            "920992.BJ"
+          ],
+          "pg": [
+            4718,
+            4718,
+            "000001.SZ",
+            "920992.BJ"
+          ]
+        },
+        {
+          "table": "nine_dim_fina",
+          "compared": 1000,
+          "mismatch": 0,
+          "match": true
+        }
+      ],
+      "ok": true
+    },
+    "tdx_info": {
+      "counts": [
+        {
+          "table": "stock_news",
+          "sqlite": 301084,
+          "pg": 301084,
+          "match": true
+        },
+        {
+          "table": "stock_notice",
+          "sqlite": 133118,
+          "pg": 133118,
+          "match": true
+        },
+        {
+          "table": "stock_report",
+          "sqlite": 147528,
+          "pg": 147528,
+          "match": true
+        }
+      ],
+      "deep": [
+        {
+          "table": "stock_news",
+          "compared": 301084,
+          "mismatch": 0,
+          "match": true
+        },
+        {
+          "table": "stock_report",
+          "compared": 147528,
+          "mismatch": 0,
+          "match": true
+        }
+      ],
+      "ok": true
+    }
+  }
+}
