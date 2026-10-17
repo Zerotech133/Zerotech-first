@@ -43,6 +43,7 @@ REGISTRY = {
     8096: "KM飞书联动(km_feishu_hub.py)",  # K-STOCK-394 归因纠正：原登记 Codex实验已废弃，实际长期持有者=km_hub
     8095: "picks定时发布调度(publish_schedule_server.py)",
     8097: "推送中台总览(push_admin_server.py)",
+    8100: "datamart-api(数仓读层HTTP门面,K-STOCK-415)",
     8123: "claudemind server(桌面第三方,非平台栈)",
     # 2026-10-16 数据仓止血入册：PG/Neo4j 容器口此前仅靠 dockerd 豁免（治理盲区）。
     # 2026-10-16 审计修正：5432 实为 RAGFlow infinity；zhice-db 真实映射 5446。
