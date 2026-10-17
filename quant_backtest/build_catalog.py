@@ -791,8 +791,10 @@ def build(data_root=None, out_path=None):
             except Exception:
                 mf = {}
         for tbl in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+            # 点前缀=隐藏目录（.git 等 VCS 残留），误收会产出 placeholder
+            # 垃圾表（2026-10-17 实证 data/tushare/.git 被收为 228 表之一）
             if not os.path.isdir(os.path.join(root, tbl)) or \
-                    tbl.startswith("_"):
+                    tbl.startswith(("_", ".")):
                 continue
             tables[tbl] = _scan_dir(source, root, mpath, tbl, mf)
         if data_root is None and source == "xtcloud":   # tdx 信息库三表
