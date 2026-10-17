@@ -46,7 +46,46 @@ KM_STATS = os.path.join(WORK, "km_stats.jsonl")
 SUB_PY = os.path.join(STATION, "quant_backtest", "subscribe.py")
 TEST_LOG = os.path.join(WORK, "push_admin_test.log")
 BIZ_PATH = os.path.join(WORK, "commercial.json")
-SCHEDULE_PATH = os.path.join(WORK, "schedule.json")  # K-PUSH-003 静默时段配置
+SCHEDULE_PATH = os.path.join(WORK, "schedule.json")  # K-PUSH-007 调度全量配置
+
+# K-PUSH-007：调度矩阵缺省（schema 进库；work/schedule.json 缺失时回落并写盘）。
+# kind 匹配：精确相等，或 "前缀:*" 通配；task=TASK_MANAGEABLE 内计划任务名
+# （保存时联动改计划任务时间）；exempt=静默豁免（风险提示不可吞）。
+DEFAULT_SCHEDULE = {
+    "silent_start": "23:00",
+    "silent_end": "07:00",
+    "note": "K-PUSH-007 调度全量：全局静默 + 源矩阵。闸门可执行=silent+exempt；"
+            "time/freq/window/excess 为描述性配置（面板展示，任务时间经 task 联动计划任务）。",
+    "sources": [
+        {"id": "daily_report", "name": "统一日报", "kind": "daily:report",
+         "task": "AI工作站统一日报", "time": "03:00", "freq": "daily",
+         "window": "", "exempt": False, "excess": "", "enabled": True},
+        {"id": "alert_morning", "name": "预警 · 晨", "kind": "daily:alert",
+         "task": "AI工作站预警推送晨", "time": "07:10", "freq": "daily",
+         "window": "盘前", "exempt": True, "excess": "", "enabled": True},
+        {"id": "news_digest", "name": "新闻日报", "kind": "daily:news_digest",
+         "task": "金融新闻日报", "time": "08:30", "freq": "daily",
+         "window": "开盘前", "exempt": False, "excess": "", "enabled": True},
+        {"id": "intraday", "name": "订阅 · 盘中", "kind": "subscribe:*",
+         "task": "", "time": "", "freq": "30min",
+         "window": "09:30-15:00", "exempt": True, "excess": "同标的 30min 去重",
+         "enabled": True},
+        {"id": "alert_evening", "name": "预警 · 晚", "kind": "daily:alert",
+         "task": "AI工作站预警推送", "time": "16:05", "freq": "daily",
+         "window": "收盘后", "exempt": True, "excess": "", "enabled": True},
+        {"id": "picks", "name": "精选发布", "kind": "",
+         "task": "", "time": "16:45", "freq": "daily",
+         "window": "", "exempt": False, "excess": "", "enabled": True},
+        {"id": "news_hit", "name": "新闻命中推送", "kind": "auto:news_collector",
+         "task": "", "time": "", "freq": "15min",
+         "window": "全天", "exempt": False, "excess": "同源 10min 去重",
+         "enabled": True},
+        {"id": "tune_bt", "name": "调优回测批次", "kind": "tune:*",
+         "task": "", "time": "20:00", "freq": "daily",
+         "window": "盘后", "exempt": False, "excess": "",
+         "enabled": False},
+    ],
+}
 
 # 内容源模块（推送中台的内容供给方），总览页做健康探针
 SOURCES = [("推送中台（本服务）", 8097), ("知识库联动", 8099), ("定时发布", 8095)]
@@ -391,6 +430,10 @@ class Handler(BaseHTTPRequestHandler):
                 "actmx": _actions_stats(),   # K-PUSH-004：按钮归档注册表 + 审计
                 "tune": tune,   # K-PUSH-002：调优闭环概览
                 "share": share,   # K-PUSH-002：分享令牌概览
+                "sched": {   # K-PUSH-007：调度中心（矩阵+任务时间实况+当前静默态）
+                    "schedule": load_schedule(),
+                    "in_silent_now": _in_silent_window(),
+                    "tasks": tasks_snapshot()},
                 "shadow": _shadow_stats()})  # P3：FOCUS_CN 影子组毕业统计（300s 缓存）
         elif p == "/api/open/stats":
             # 开放 API（只读）——商业化接入点：X-API-Key 头或 ?key= 均可
@@ -467,15 +510,45 @@ class Handler(BaseHTTPRequestHandler):
 # ---------- K-PUSH-003 统一发送闸门 ----------
 
 def load_schedule():
-    """静默时段配置。默认空 = 不拦任何推送（P1 安全默认）。"""
+    """K-PUSH-007 调度全量配置。缺文件/坏文件回落 DEFAULT_SCHEDULE 并写盘
+    （首次自愈，schema 见常量注释）。load 每次即时读 = 天然热加载。"""
+    s = None
     try:
         with open(SCHEDULE_PATH, encoding="utf-8") as f:
-            return json.load(f)
+            s = json.load(f)
     except Exception:
-        return {"silent_start": "", "silent_end": ""}
+        s = None
+    if not isinstance(s, dict) or "sources" not in s:
+        s = json.loads(json.dumps(DEFAULT_SCHEDULE))  # 深拷贝防常量被污
+        try:
+            atomic_write_json(SCHEDULE_PATH, s)
+            log("[sched] schedule.json 缺失/损坏，已写缺省矩阵（静默 23:00-07:00，预警/盘中豁免）")
+        except Exception:
+            pass  # 写盘失败不挡服务（下次读仍回落内存缺省）
+    return s
 
 
-def _in_silent_window(now=None):
+def _kind_exempt(kind, sched=None):
+    """K-PUSH-007：kind 命中静默豁免名单（exempt 且 enabled）。
+    匹配规则：精确相等，或 kind_pattern 形如 "前缀:*" 的前缀通配。"""
+    kind = (kind or "").strip()
+    if not kind:
+        return False
+    for src in (sched or load_schedule()).get("sources") or []:
+        if not src.get("enabled", True) or not src.get("exempt"):
+            continue
+        pat = (src.get("kind") or "").strip()
+        if not pat:
+            continue
+        if pat == kind or (pat.endswith(":*") and kind.startswith(pat[:-1])):
+            return True
+    return False
+
+
+def _in_silent_window(now=None, kind=""):
+    """全局静默窗口 + per-kind 豁免（K-PUSH-007：预警/盘中类不吞）。"""
+    if _kind_exempt(kind):
+        return False
     s = load_schedule()
     a, b = (s.get("silent_start") or "").strip(), (s.get("silent_end") or "").strip()
     if not a or not b:
@@ -512,8 +585,8 @@ def api_send(req):
     if not content or not rid:
         return {"ok": False, "error": "missing content/receive_id"}
 
-    # 闸 1：静默时段（预警类豁免——风险提示不可吞）
-    if not critical and _in_silent_window():
+    # 闸 1：静默时段（K-PUSH-007：per-kind 豁免——预警/盘中类风险提示不可吞）
+    if not critical and _in_silent_window(kind=kind):
         _flow_gate_deny(kind, rid, "silent window")
         return {"ok": False, "error": "silent window"}
 
@@ -741,6 +814,55 @@ def dispatch(req):
         ok, err = ps_set_task_time(req.get("name") or "", req.get("time") or "")
         return {"ok": ok, **({"error": err} if err else {})}
 
+    if act == "save_schedule":
+        # K-PUSH-007 调度全量保存：silent 两键 + sources 矩阵原子写盘；
+        # apply_tasks=true 时对带 task 的行联动改 Windows 计划任务时间。
+        cur = load_schedule()
+        ns = req.get("silent_start", cur.get("silent_start", ""))
+        ne = req.get("silent_end", cur.get("silent_end", ""))
+        for v in (ns, ne):
+            if v and not TIME_RE.match(str(v)):
+                return {"ok": False, "error": "静默时段格式非法（HH:MM）：%s" % v}
+        rows = req.get("sources")
+        if not isinstance(rows, list):
+            return {"ok": False, "error": "sources 必须是数组"}
+        by_id = {s.get("id"): s for s in cur.get("sources") or []}
+        clean = []
+        for r in rows:
+            rid_ = (r.get("id") or "").strip()
+            base = by_id.get(rid_) or {}
+            t = (r.get("time") or base.get("time") or "").strip()
+            if t and not TIME_RE.match(t):
+                return {"ok": False, "error": "%s 时间格式非法：%s" % (rid_, t)}
+            clean.append({
+                "id": rid_, "name": r.get("name", base.get("name", "")),
+                "kind": r.get("kind", base.get("kind", "")),
+                "task": r.get("task", base.get("task", "")),
+                "time": t, "freq": r.get("freq", base.get("freq", "")),
+                "window": r.get("window", base.get("window", "")),
+                "exempt": bool(r.get("exempt", base.get("exempt", False))),
+                "excess": r.get("excess", base.get("excess", "")),
+                "enabled": bool(r.get("enabled", base.get("enabled", True))),
+            })
+        out = {"silent_start": str(ns), "silent_end": str(ne),
+               "note": cur.get("note", ""),
+               "updated_at": datetime.now().isoformat(timespec="seconds"),
+               "sources": clean}
+        atomic_write_json(SCHEDULE_PATH, out)
+        applied, errs = [], []
+        if req.get("apply_tasks"):
+            for row in clean:
+                if not row["task"] or not row["time"]:
+                    continue
+                ok2, err2 = ps_set_task_time(row["task"], row["time"])
+                (applied if ok2 else errs).append(
+                    "%s->%s" % (row["task"], row["time"]) if ok2
+                    else "%s: %s" % (row["task"], err2))
+        log("[sched] 保存调度矩阵（%d 源%s）" % (
+            len(clean), "，联动任务 %d 项" % len(applied) if applied else ""))
+        return {"ok": True, "applied_tasks": applied, "task_errors": errs,
+                "schedule": out}
+
     if act == "set_biz":
         biz = load_biz()
         plan = req.get("plan") or biz.get("plan") or "internal"
@@ -872,11 +994,21 @@ input[type=time]{width:90px}
 .fbar{height:100%;background:var(--blue);border-radius:4px;min-width:4px}
 .frow b{flex:0 0 36px;text-align:right;font-size:13px}
 .frow.dst .fbar{background:var(--green)}
+.tlwrap{position:relative;height:56px;background:#0f141c;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tlsil{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#161b22,#161b22 6px,#21262d 6px,#21262d 12px);border-left:1px solid #30363d;border-right:1px solid #30363d}
+.tlhour{position:absolute;top:0;bottom:0;border-left:1px solid #21262d;opacity:.6}
+.tlhour span{position:absolute;bottom:2px;left:3px;font-size:10px;color:var(--dim)}
+.tldot{position:absolute;top:6px;width:11px;height:11px;border-radius:50%;background:var(--blue);border:2px solid #0f141c;cursor:default}
+.tldot.ex{background:var(--amber)}
+.tldot.off{background:#30363d}
+.tldot i{position:absolute;top:14px;left:-20px;width:52px;text-align:center;font-style:normal;font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden}
+.tlnow{position:absolute;top:0;bottom:0;width:2px;background:var(--green);box-shadow:0 0 6px var(--green)}
 </style></head><body>
 <aside class="nav">
 <div class="brand">🛰 推送中台<span>情报变现 · 消息触达底座</span></div>
 <a class="navi on" data-s="overview" onclick="show('overview')">总览</a>
 <a class="navi" data-s="flow" onclick="show('flow')">动线总览</a>
+<a class="navi" data-s="sched" onclick="show('sched')">调度中心</a>
 <a class="navi" data-s="obs" onclick="show('obs')">🔍 观测</a>
 <a class="navi" data-s="btns" onclick="show('btns')">按钮归档</a>
 <a class="navi" data-s="push" onclick="show('push')">推送管理</a>
@@ -912,6 +1044,22 @@ input[type=time]{width:90px}
 <div class="card"><h2>📤 触点（推给谁）</h2><div id="fmdst"></div></div>
 </div>
 <div class="card"><h2>今日拦截 / 失败明细（闸门拦截同样落流水，可追溯）</h2><table id="fmdeny"></table></div>
+</div>
+
+<div id="sec-sched" class="sec" style="display:none">
+<h1>调度中心</h1><div class="sub" id="schedsub">加载中…</div>
+<div class="card"><h2>24 小时推送分布 <span class=dim>（斜纹 = 全局静默时段 · 圆点 = 各源时间点：蓝=跟随静默 · 琥珀=豁免 · 灰=停用 · 绿线=当前时刻）</span></h2>
+<div class="tlwrap" id="tlwrap"></div></div>
+<div class="card"><h2>时间矩阵（schedule.json · 保存即热加载，闸门与面板即时生效）</h2>
+<div style="margin:6px 0 10px;font-size:12px;color:var(--dim)">全局静默：
+<input type=time id=sc_ss style="color-scheme:dark"> — <input type=time id=sc_se style="color-scheme:dark">
+（留空 = 不拦；预警/盘中等勾选「豁免」的源不受静默限制）</div>
+<table id="schedtbl"></table>
+<div style="margin-top:10px">
+<button class="pri" onclick="saveSched(false)">保存调度配置</button>
+<button class="pri" onclick="saveSched(true)">保存并联动计划任务时间</button>
+<span class=dim style="font-size:11px;margin-left:8px">联动 = 把带任务名的行同步写入 Windows 计划任务（仅白名单 4 任务）</span>
+</div></div>
 </div>
 
 <div id="sec-obs" class="sec" style="display:none">
@@ -1108,6 +1256,7 @@ $('flowkinds').innerHTML='<thead><tr><th>今日分类（kind）</th><th>条数</
  +(Object.keys(tk).length?Object.keys(tk).map(k=>'<tr><td>'+esc(k)+'</td><td><b>'+tk[k]+'</b></td></tr>').join(''):'<tr><td colspan=2 class=dim>今日暂无真实发送（流水只记真实发送，跳过/熔断不记）</td></tr>')+'</tbody>';
 renderFlow(d.flowmx);
 renderActions(d.actmx);
+renderSched(d.sched);
 $('tasks').innerHTML='<thead><tr><th>任务</th><th>时间点</th><th>状态</th><th>上次运行</th><th>结果</th><th>操作</th></tr></thead><tbody>'+
  d.tasks.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.manage?'':' <span class=dim>（只读）</span>')+'</td>'
  +'<td>'+(t.manage?'<input type=time value="'+esc(t.time||'')+'" onchange="setTime(\\''+esc(t.name)+'\\',this.value)">':esc(t.time||'-'))+'</td>'
@@ -1131,6 +1280,42 @@ $('recvs').innerHTML='<thead><tr><th>名称</th><th>类型</th><th>ID</th><th>�
 const lt=d.last_test;$('tlog').textContent=lt?('最近试推：'+lt.id+' @ '+lt.ts+' 状态='+lt.status+(lt.rc!=null?(' rc='+lt.rc):'')+(lt.tail?('\\n'+lt.tail):'')+(lt.error?('\\n错误：'+lt.error):'')):'尚无试推记录';
 renderShadow(d.shadow);loadGuard();}catch(e){$('sub').textContent='状态获取失败：'+e}}
 async function setTime(name,v){if(!v)return msg('时间不能为空',true);const d=await act({action:'set_task_time',name:name,time:v});if(d.ok){msg('已改为 '+v+'（即时生效）');refresh()}}
+function _tlpct(hhmm){const p=hhmm.split(':');return ((+p[0])*60+(+p[1]))/1440*100}
+function renderSched(sc){if(!sc||!sc.schedule){$('schedsub').textContent='调度配置读取失败';return}
+const s=sc.schedule,srcs=s.sources||[];
+const inSil=sc.in_silent_now;
+$('schedsub').innerHTML='全局静默 <b>'+(s.silent_start&&s.silent_end?s.silent_start+'-'+s.silent_end:'未配置')+'</b>'
+ +(inSil?' · <span class=warn>当前处于静默窗口（豁免源照发）</span>':' · <span class=ok>当前非静默</span>')
+ +(s.updated_at?' · 上次保存 '+esc(s.updated_at.slice(5,16)):'');
+$('sc_ss').value=s.silent_start||'';$('sc_se').value=s.silent_end||'';
+let h='';for(let i=0;i<=24;i+=3)h+='<div class=tlhour style=left:'+(i/24*100)+'%>'+(i<24?'<span>'+String(i).padStart(2,'0')+':00</span>':'')+'</div>';
+if(s.silent_start&&s.silent_end){const a=_tlpct(s.silent_start),b=_tlpct(s.silent_end);
+ if(a<b)h+='<div class=tlsil style=left:'+a+'%;width:'+(b-a)+'%></div>';
+ else{h+='<div class=tlsil style=left:'+a+'%;width:'+(100-a)+'%></div><div class=tlsil style=left:0%;width:'+b+'%></div>';}}
+srcs.forEach(x=>{if(!x.time)return;const l=_tlpct(x.time);
+ h+='<div class="tldot'+(x.enabled?(x.exempt?' ex':''):' off')+'" style=left:calc('+l+'% - 6px)" title="'+esc(x.name)+' '+esc(x.time)+(x.exempt?'（静默豁免）':'')+'"><i>'+esc(x.name)+'</i></div>';});
+const now=new Date();h+='<div class=tlnow style=left:'+((now.getHours()*60+now.getMinutes())/1440*100)+'%></div>';
+$('tlwrap').innerHTML=h;
+const tk=sc.tasks||{};
+$('schedtbl').innerHTML='<thead><tr><th>通知源</th><th>时间</th><th>频率</th><th>窗口约束</th><th>静默豁免</th><th>超额策略</th><th>计划任务实况</th><th>状态</th></tr></thead><tbody>'
+ +srcs.map(x=>{const t=x.task?(tk[x.task]||{}):null;
+ return '<tr><td><b>'+esc(x.name)+'</b><br><span class=dim style="font-size:11px">'+esc(x.kind||'—')+(x.task?' · '+esc(x.task):'')+'</span></td>'
+ +'<td><input type=time value="'+esc(x.time||'')+'" data-si='+esc(x.id)+' data-f=time style="color-scheme:dark"></td>'
+ +'<td><span class=tag>'+esc(x.freq||'—')+'</span></td><td class=dim>'+esc(x.window||'—')+'</td>'
+ +'<td style="text-align:center"><input type=checkbox data-si='+esc(x.id)+' data-f=exempt '+(x.exempt?'checked':'')+'></td>'
+ +'<td class=dim>'+esc(x.excess||'—')+'</td>'
+ +'<td>'+(t&&t.time?'<span class=key>'+esc(t.time)+'</span> '+(t.state==='Ready'?'<span class=ok>就绪</span>':esc(t.state||'?')):'<span class=dim>—</span>')+'</td>'
+ +'<td style="text-align:center"><input type=checkbox data-si='+esc(x.id)+' data-f=enabled '+(x.enabled?'checked':'')+'></td></tr>'}).join('')
+ +'</tbody>';}
+async function saveSched(apply){const srcs=[...document.querySelectorAll('#schedtbl tbody tr')].map(tr=>{
+ const g=f=>tr.querySelector('[data-f='+f+']');const o={id:g('time').dataset.si};
+ o.time=g('time').value;o.exempt=g('exempt').checked;o.enabled=g('enabled').checked;return o});
+const d=await act({action:'save_schedule',silent_start:$('sc_ss').value,silent_end:$('sc_se').value,sources:srcs,apply_tasks:apply});
+if(!d.ok)return msg('保存失败：'+(d.error||''),true);
+let m='调度已保存（闸门即时热加载）';
+if(apply&&d.applied_tasks&&d.applied_tasks.length)m+='；计划任务已联动：'+d.applied_tasks.join('、');
+if(apply&&d.task_errors&&d.task_errors.length)m+='；联动失败：'+d.task_errors.join('；');
+msg(m);refresh();}
 async function addRecv(){const d=await act({action:'add_receiver',receiver:{name:$('r_name').value.trim(),id:$('r_id').value.trim(),type:$('r_type').value,note:$('r_note').value.trim()}});
  if(d.ok){msg('接收人已添加（可在订阅里勾选）');['r_name','r_id','r_note'].forEach(i=>$(i).value='');refresh()}}
 function editRecv(sid){const v=prompt('输入接收人名称，逗号分隔（可多选）。留空=缺省（个人+家人群）：\\n可选：'+(window._recvNames||''),'');if(v===null)return;act({action:'set_sub_receivers',id:sid,receivers:v.split(',').map(s=>s.trim()).filter(Boolean)}).then(refresh);}
