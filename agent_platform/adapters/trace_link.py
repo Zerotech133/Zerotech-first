@@ -229,7 +229,7 @@ def _cli(argv: List[str]) -> int:
     if args.cmd == "ls":
         for row in store.all():
             chain_desc = " -> ".join(
-                "%s(%s)" % (seg, link_key(seg, ref).split(":", 1)[1])
+                "%s(%s)" % (seg, link_key(seg, row["chain"][seg]).split(":", 1)[1])
                 for seg in SEG_ORDER if seg in row["chain"])
             print(row["link_id"], "|", chain_desc)
         return 0
