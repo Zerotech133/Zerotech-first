@@ -39,8 +39,9 @@ URL_TIMELINE = SOCIAL + "/v4/statuses/public_timeline_by_category.json"
 CATS = (102, 104, 105, 111)
 COUNT = 20
 MAX_BLOCK_STREAK = 5
-MAX_PAGES_PER_CAT = 120                # 单类目游标步数上限（10-18 深挖 2018 前历史：60 步已见顶，单步净增衰减 5-11 条/步，放宽挖更深年代）
+MAX_PAGES_PER_CAT = 120                # 单类目每轮步数上限（续翻后每轮全部花在新鲜区）
 MAX_REQUESTS = 640
+CURSOR_PATH = os.path.join(HERE, "data", "xueqiu", "backfill_cursor.json")
 
 STATUS_FIELDS = ("view_count", "comment_count", "retweet_count",
                  "like_count", "reward_count")
@@ -64,6 +65,32 @@ def load_seen(table: str, pk: str) -> set:
         return ids
     except Exception:
         return set()
+
+
+def load_cursors() -> dict:
+    """读每类目深翻断点：{cat: {"max_id": str|None, "exhausted": bool}}。
+
+    max_id 为状态 ID 型游标（按 ID 翻页永不过期），持久化后每轮从断点
+    续翻，重叠区重走成本归零；exhausted=true 的类目直接跳过（已到底）。
+    """
+    try:
+        with open(CURSOR_PATH, "r", encoding="utf-8") as f:
+            d = json.load(f)
+        out = {}
+        for k, v in (d or {}).items():
+            if isinstance(v, dict):
+                out[str(k)] = {"max_id": v.get("max_id"),
+                               "exhausted": bool(v.get("exhausted"))}
+        return out
+    except Exception:
+        return {}
+
+
+def save_cursors(d: dict) -> None:
+    tmp = CURSOR_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False)
+    os.replace(tmp, CURSOR_PATH)
 
 
 def clean_junk() -> int:
@@ -118,7 +145,7 @@ def parse_item(it: dict, cat: int) -> dict | None:
 
 
 class Collector:
-    def __init__(self, target: int) -> None:
+    def __init__(self, target: int, fresh: bool = False) -> None:
         self.c = XqCrawler()
         self.target = target
         self.new = 0
@@ -126,6 +153,8 @@ class Collector:
         self.rotations = 0
         self.block_streak = 0
         self.seen = load_seen("xq_status", "status_id")
+        self.cursors = {} if fresh else load_cursors()
+        self.fresh = fresh
         print("[collect] 已有 status_id %d 个" % len(self.seen))
 
     def rotate(self, reason: str) -> None:
@@ -168,7 +197,16 @@ class Collector:
 
     def run(self) -> None:
         for cat in CATS:
-            cursor = None                 # None=首页
+            key = str(cat)
+            state = self.cursors.get(key) or {}
+            if state.get("exhausted"):
+                print("[cat %d] 已到底（存档 exhausted），跳过" % cat)
+                continue
+            cursor = state.get("max_id")          # None=首页
+            resumed = cursor is not None
+            if resumed:
+                print("[cat %d] 从存档游标续翻（%s...）"
+                      % (cat, str(cursor)[:16]))
             for step in range(MAX_PAGES_PER_CAT):
                 if self.new >= self.target or self.requests >= MAX_REQUESTS:
                     return
@@ -182,7 +220,17 @@ class Collector:
                     break
                 items = (data or {}).get("list") or (data or {}).get("items") or []
                 if not items:
-                    break               # 到底
+                    if resumed:
+                        # 续翻到空页 = 走到既往已达的底部 → 类目挖尽
+                        self.cursors[key] = {"max_id": None,
+                                             "exhausted": True}
+                        save_cursors(self.cursors)
+                        print("[cat %d] step %d 空页（续翻），类目已到底"
+                              % (cat, step))
+                    else:
+                        print("[cat %d] step %d 空页（非续翻不停档，如周末真空）"
+                              % (cat, step))
+                    break                         # 到底/暂空
                 rows = []
                 for it in items:
                     r = parse_item(it, cat)
@@ -197,10 +245,23 @@ class Collector:
                       % (cat, step, len(items), len(rows),
                          self.new, self.target))
                 if self.new >= self.target:
+                    if nxt and nxt != cursor:     # 断点存档后停机
+                        self.cursors[key] = {"max_id": nxt,
+                                             "exhausted": False}
+                        save_cursors(self.cursors)
                     return
                 if not nxt or nxt == cursor:
-                    break               # 游标耗尽/卡死
+                    # 游标耗尽 = 到底。仅续翻或深走（step>=10）才判 exhausted，
+                    # 防周末短 feed 被误标永久跳过
+                    if resumed or step >= 10:
+                        self.cursors[key] = {"max_id": None,
+                                             "exhausted": True}
+                        save_cursors(self.cursors)
+                        print("[cat %d] 游标耗尽，类目已到底" % cat)
+                    break
                 cursor = nxt
+                self.cursors[key] = {"max_id": nxt, "exhausted": False}
+                save_cursors(self.cursors)
                 X.jitter_sleep()
 
 
@@ -209,12 +270,14 @@ def main() -> int:
     ap.add_argument("--target", type=int, default=1000)
     ap.add_argument("--clean-junk", action="store_true",
                     help="先清理 v1 空壳行（created_at=''）")
+    ap.add_argument("--fresh", action="store_true",
+                    help="忽略深翻断点存档，从顶部全量重走（seen 去重防重）")
     a = ap.parse_args()
     t0 = time.time()
     if a.clean_junk:
         clean_junk()
     base = db_count("xq_status")
-    col = Collector(a.target)
+    col = Collector(a.target, fresh=a.fresh)
     print("[collect] 基线 xq_status=%d，目标新增 %d" % (base, a.target))
     try:
         col.run()

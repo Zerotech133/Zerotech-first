@@ -22,6 +22,8 @@ from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATE_PATH = os.path.join(HERE, "data", "xueqiu", "backfill_state.json")
+LOCK_PATH = os.path.join(HERE, "data", "xueqiu", "backfill.lock")
+LOCK_STALE_SEC = 45 * 60    # 锁超过 45 分钟视为残留（正常轮 10-20 分钟），自愈抢断
 LOG_DIR = os.path.join(HERE, "logs")
 STATUS_LOG = os.path.join(LOG_DIR, "xq_backfill_status.log")
 PY = r"C:\Program Files\Python311\python.exe"
@@ -61,12 +63,41 @@ def db_count() -> int:
     return n
 
 
+def lock_acquire() -> bool:
+    """非阻塞互斥锁：存在且新鲜则拒绝并发轮；残留旧锁自愈抢断。"""
+    import time as _t
+    try:
+        if os.path.exists(LOCK_PATH):
+            age = _t.time() - os.path.getmtime(LOCK_PATH)
+            if age < LOCK_STALE_SEC:
+                return False
+            status("stale lock age=%dmin, break it" % (age // 60))
+        os.makedirs(os.path.dirname(LOCK_PATH), exist_ok=True)
+        with open(LOCK_PATH, "w", encoding="ascii") as f:
+            f.write(datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        return True
+    except Exception as e:
+        status("lock error: %r (fail-visible, skip round)" % e)
+        return False
+
+
+def lock_release() -> None:
+    try:
+        if os.path.exists(LOCK_PATH):
+            os.remove(LOCK_PATH)
+    except Exception:
+        pass
+
+
 def main() -> int:
     os.makedirs(LOG_DIR, exist_ok=True)
     st = load_state()
     if st.get("done"):
         status("skip done=true (backfill finished, daily 18:00 job covers)"
                " total=%d" % db_count())
+        return 0
+    if not lock_acquire():
+        status("skip lock held (another round active or fresh)")
         return 0
     base = db_count()
     stamp = datetime.now().strftime("%m%d_%H%M")
@@ -84,6 +115,7 @@ def main() -> int:
     status("round end rc=%d added=%d total=%d" % (rc, added, after))
     if rc not in (0, 1):
         status("round abnormal rc=%d (crash), no state change" % rc)
+        lock_release()
         return 1
     st.setdefault("rounds", []).append(
         {"at": datetime.now().strftime("%m-%d %H:%M"), "added": added})
@@ -99,6 +131,7 @@ def main() -> int:
         status("BACKFILL DONE (cursor exhausted after %d low rounds)"
                % LOW_LIMIT)
     save_state(st)
+    lock_release()
     return 0
 
 
