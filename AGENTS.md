@@ -76,7 +76,7 @@
 | `C:\项目\老田的AI助手` | 零界主站（个人 OS，本仓） | `C:\aios` | 在用 |
 | `C:\项目\zerobound-kg` | 图谱引擎（KG） | `C:\项目\老田的AI助手\zerobound-kg`（→物理目录，链式成 `C:\aios\zerobound-kg`） | 2026-10-17 由 `KGStockAnalysis` 物理改名（判例：引用链排查→junction 过渡→48 处归一同一批提交） |
 | `C:\项目\portal` | 零界门户（8734 唯一入口） | — | 在用 |
-| `C:\项目\知识图谱` | 待定 | — | 待命名收编 |
+| `C:\项目\zerobound-kg-snapshots` | KG 施工快照归档（KGStockAnalysis 时代 2026-10-02~05 审计证据：S0-S5/W/C/G3 批次 snapshot+manifest+GateA 签收，159 文件 12.5MB，保留） | — | 2026-10-17 由 `知识图谱` 改名（原名名不副实；零引用实证后改名） |
 | `C:\项目\zhice-os-v2-windows-20260920` | 智策 OS | — | 目录带版本后缀，待定 |
 | `C:\项目\new_tdx64` | 通达信数据侧 | — | atom 候选 |
 | `C:\项目\res-downloader-py` | 资源下载器 | — | atom 候选 |
