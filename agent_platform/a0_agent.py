@@ -23,6 +23,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timedelta
@@ -113,14 +114,41 @@ def chief_model():
 # K-STOCK-120：点评质量四判据自检——黑名单操作建议词（含变体，如"建议买入"）
 BLACKLIST_WORDS = ("买入", "卖出", "加仓", "清仓", "止损位")
 
+# K-ORG-133：链路/脚本缺陷类判读须含 [P0|P1|P2] 定级（K-ORG-127 promoted 输出契约）
+DEFECT_KEYWORDS = ("读取失败", "字段缺失", "超时", "失败", "异常",
+                   "无响应", "未修复", "不可见", "损坏", "卡死")
+DEFECT_EXEMPT = ("已修复", "已闭环", "已处理", "修复闭环")  # 闭环结论非待办缺陷
+SEV_PAT = re.compile(r"\[P[012]\]")
+
+
+def defect_check(text):
+    """K-ORG-133：缺陷类判读定级检查——按行扫描，命中缺陷关键词的行若缺 [P0|P1|P2] 即违规。
+
+    豁免：① **[回看]** 段（闭环状态追踪，非缺陷判读）；② 行内含「已修复/已闭环」等闭环结论；
+          ③ 否定语境（「无异常/无失败/无超时」等前缀「无」+关键词——非缺陷陈述）。
+    返回 (ok, reasons)。"""
+    reasons = []
+    for ln in text.splitlines():
+        if ln.lstrip().startswith("**[回看]**"):
+            continue
+        if any(k in ln for k in DEFECT_KEYWORDS):
+            if SEV_PAT.search(ln):
+                continue
+            if any(w in ln for w in DEFECT_EXEMPT):
+                continue
+            if any(("无" + k) in ln for k in DEFECT_KEYWORDS):
+                continue  # 否定语境（无异常/无失败/无超时…）非缺陷
+            reasons.append("缺陷类判读缺定级:%s" % ln.strip()[:60])
+    return (len(reasons) == 0, reasons)
+
 
 def quality_check(text, source_report):
-    """K-STOCK-120：对点评文本执行质量判据①②③，返回 (ok, reasons)。
+    """K-STOCK-120：对点评文本执行质量判据①②③④，返回 (ok, reasons)。
 
     ① 不含操作建议（黑名单词命中即违规）
     ② 引用了当日 ≥2 个真实数字（从输入日报中出现的数字算）
     ③ 正文长度 100-500 字（中文字符计）
-    判据④（推理耗时）在 main 里记录，不在此自检。
+    ④ 缺陷类判读须含 [P0|P1|P2] 定级（K-ORG-133；推理耗时判据仍在 main 记录，不在此自检）
     """
     reasons = []
     # ① 黑名单词检查（子串匹配即可覆盖"建议买入"等变体）
@@ -128,7 +156,6 @@ def quality_check(text, source_report):
         if w in text:
             reasons.append("黑名单词命中:%s" % w)
     # ② 统计点评中出现的、且在输入日报里出现过的数字（≥2 个才算通过）
-    import re
     src_nums = set(re.findall(r"\d+(?:\.\d+)?", source_report))
     cited = [n for n in re.findall(r"\d+(?:\.\d+)?", text) if n in src_nums]
     if len(set(cited)) < 2:
@@ -137,6 +164,10 @@ def quality_check(text, source_report):
     cn = len(re.findall(r"[\u4e00-\u9fff]", text))
     if not (100 <= cn <= 500):
         reasons.append("中文字符数%d不在100-500" % cn)
+    # ④ 缺陷类判读须含 [P0|P1|P2] 定级（K-ORG-133）
+    d_ok, d_reasons = defect_check(text)
+    if not d_ok:
+        reasons.extend(d_reasons)
     return (len(reasons) == 0, reasons)
 
 
