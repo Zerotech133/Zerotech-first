@@ -53,6 +53,15 @@ from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
 
 DECKS_FILE = _AGENT_PLATFORM / "data" / "pitch" / "decks.json"
 
+
+def _decks_file(root=None) -> Path:
+    """T1 尾巴收口：路径函数化（root 显式注入供测试/tmp 隔离）。
+    缺省分支运行时读模块属性 DECKS_FILE——兼容既有测试直接
+    setattr(pw.DECKS_FILE, tmp) 的 patch 面（闭包定值会绕过 patch，判例重演）。"""
+    if root is not None:
+        return Path(root) / "data" / "pitch" / "decks.json"
+    return DECKS_FILE
+
 STAGES = ("outline", "drafted", "fact_check", "reviewed",
           "approved", "delivered")
 LEGAL_TRANSITIONS = {
@@ -84,20 +93,21 @@ def _now_cn() -> str:
     return time.strftime("%Y-%m-%d %H:%M")
 
 
-def load_decks() -> List[dict]:
+def load_decks(root=None) -> List[dict]:
     try:
-        rows = json.loads(DECKS_FILE.read_text(encoding="utf-8"))
+        rows = json.loads(_decks_file(root).read_text(encoding="utf-8"))
     except FileNotFoundError:
         return []
     return rows if isinstance(rows, list) else []
 
 
-def save_decks(rows: List[dict]) -> None:
-    DECKS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = DECKS_FILE.with_suffix(".json.tmp")
+def save_decks(rows: List[dict], root=None) -> None:
+    f = _decks_file(root)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    tmp = f.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(rows, ensure_ascii=False, indent=2),
                    encoding="utf-8")
-    tmp.replace(DECKS_FILE)
+    tmp.replace(f)
 
 
 def find_deck(deck_id: str) -> Optional[dict]:

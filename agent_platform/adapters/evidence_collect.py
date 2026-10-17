@@ -146,10 +146,18 @@ def _collect_pitch(root: Path):
     items = data if isinstance(data, list) else data.get("decks", [])
     for d in items:
         art = d.get("artifact") or {}
+        if isinstance(art, dict):
+            art_sha = art.get("sha256", "")
+        else:
+            # 脏行防御（真仓 decks.json 曾被演示写入 artifact=str 路径串，
+            # 读侧 .get 崩溃拉穿整条 collect）——fail-visible：显式 finding 不中断
+            art_sha = "malformed:%s" % str(art)[:60]
+            findings.append("pitch.decks %s artifact 非 dict（脏行，sha 记为 malformed）"
+                            % d.get("deck_id", "?"))
         evs.append(Evidence(
             source="pitch.decks", source_ref="pitch:%s" % d.get("deck_id", ""),
             statement="status=%s artifact_sha256=%s"
-                      % (d.get("status", ""), art.get("sha256", "")),
+                      % (d.get("status", ""), art_sha),
             payload={"domain": "pitch", "kind": "artifact_fingerprint",
                      "title": d.get("title", "")}))
     return evs, findings
