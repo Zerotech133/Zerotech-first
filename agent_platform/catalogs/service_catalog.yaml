@@ -28,7 +28,7 @@ services:
     what: 数仓读层 HTTP 门面（datamart 单入口纪律：read/latest/ready/columns/explain/freshness，只读）
     recipe: "GET /dm/health | /dm/latest?table=daily | /dm/read?table=daily&limit=5&fields=ts_code,close"
     owner: DATA1
-    supervisor: start_datamart_api.ps1（幂等启动，守护链待建）
+    supervisor: start_datamart_api.ps1（幂等启动）+ 计划任务 datamart_api_keepalive（每 5 分钟保活，注册脚本 zerobound-kg/install_datamart_keepalive.ps1）
     verified: 2026-10-17
 
   - id: legion_ops_api
