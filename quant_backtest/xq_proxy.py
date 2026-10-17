@@ -164,11 +164,183 @@ def load_pool(path: str | None = None) -> ProxyPool:
 _POOL: ProxyPool | None = None
 
 
-def get_pool() -> ProxyPool:
-    """进程内单例（首调加载配置，之后缓存——配置热更需重启进程）。"""
+# ── 动态代理池（快代理隧道 API，2026-10-17 用户供给）──────────────
+# 静态池（config/xq_proxies.json）为空时启用：从 API 按需拉取出口，
+# 单 IP 寿命 1-5 分钟，策略=「用到被封/到期再换下一个」：
+#   - 403 拉黑 → notify_blocked → rotate 立即拉新（不等 TTL）；
+#   - TTL 到期 → current() 下次取用时被动换新；
+#   - 拉取失败 → 60s 限频冷却后重试，期间直连降级（绝不刷爆配额）。
+DYNAMIC_CONFIG_PATH = os.path.join(HERE, "config", "xq_proxy_api.json")
+DYNAMIC_TTL_SEC = 240          # 1-5 分钟寿命取保守主动换值
+FETCH_COOLDOWN_SEC = 60        # API 拉取失败后的限频冷却
+VERIFY_TIMEOUT = 8             # 新出口验活超时（秒）
+VERIFY_URL = "https://xueqiu.com/robots.txt"   # 轻量端点（雪球自判可达性）
+
+
+def load_dynamic_config(path: str | None = None) -> dict:
+    """读动态池配置；缺失/坏文件返回 {}（调用方降级直连）。"""
+    p = path or DYNAMIC_CONFIG_PATH
+    if not os.path.exists(p):
+        return {}
+    try:
+        with open(p, encoding="utf-8-sig") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def parse_proxy_line(line: str) -> str:
+    """ip:port[:user:pass] → requests 代理 url；非法返回 ""。
+
+    认证段允许含冒号外的任意字符；user:pass 中冒号只按第一个拆
+    （快代理格式固定四段）。绝不打印原文（含密码）。
+    """
+    s = str(line or "").strip()
+    if not s:
+        return ""
+    parts = s.split(":")
+    if len(parts) == 2:                     # ip:port（免认证）
+        ip, port = parts
+    elif len(parts) >= 4:                   # ip:port:user:pass
+        ip, port, user, pwd = parts[0], parts[1], parts[2], ":".join(parts[3:])
+        if not user or not re_match_ip_port(ip, port):
+            return ""
+        return "http://%s:%s@%s:%s" % (user, pwd, ip, port)
+    else:
+        return ""
+    if not re_match_ip_port(ip, port):
+        return ""
+    return "http://%s:%s" % (ip, port)
+
+
+def re_match_ip_port(ip: str, port: str) -> bool:
+    import re as _re
+    if not (_re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip or "")
+            and _re.match(r"^\d{1,5}$", port or "")):
+        return False
+    return all(int(o) <= 255 for o in ip.split(".")) and int(port) <= 65535
+
+
+class DynamicPool:
+    """快代理动态出口池：与 ProxyPool 同 duck-type 接口。
+
+    - current()：无出口/TTL 过期 → 拉新（验活通过才启用，最多试 2 个）；
+    - rotate()：强制拉新（403 熔断联动入口）；
+    - mark_fail()：仅记 fails 计数（动态 IP 寿命极短，冷却无意义）；
+    - 拉取失败/全坏 → current() 返回 None 直连降级 + FETCH_COOLDOWN
+      限频（防刷爆 API 配额）。
+    纪律：打印只打 ip:port（entry.name），绝不打印带密码 url；
+    拉取 API 本身用 trust_env=False 独立会话（防环境变量代理回环）。
+    """
+
+    def __init__(self, api_url: str, ttl_sec: int = DYNAMIC_TTL_SEC,
+                 fetch_timeout: int = 15) -> None:
+        self.api_url = api_url
+        self.ttl_sec = max(30, int(ttl_sec))
+        self.fetch_timeout = max(5, int(fetch_timeout))
+        self._entry: ProxyEntry | None = None
+        self._expires: float = 0.0
+        self._fetch_cooldown_until: float = 0.0
+        self.rotations = 0
+
+    def enabled(self) -> bool:
+        return bool(self.api_url)
+
+    def _fetch_raw(self) -> str:
+        """调供应商 API 拉一个出口原始串；失败/限频返回 ""。"""
+        if time.time() < self._fetch_cooldown_until:
+            return ""
+        try:
+            import requests as _rq
+            sess = _rq.Session()
+            sess.trust_env = False          # 绕开 HTTP(S)_PROXY 环境变量
+            r = sess.get(self.api_url, timeout=self.fetch_timeout)
+            return r.text.strip() if r.status_code == 200 else ""
+        except Exception as e:
+            print("[proxy] 动态拉取失败: %s" % str(e)[:80])
+            return ""
+
+    def _fetch_new(self, reason: str) -> ProxyEntry | None:
+        """拉新出口 + 雪球验活（最多 2 个候选），全坏/失败返回 None。"""
+        for _ in range(2):
+            raw = self._fetch_raw()
+            if not raw:
+                self._fetch_cooldown_until = (
+                    time.time() + FETCH_COOLDOWN_SEC)
+                return None
+            url = parse_proxy_line(raw.splitlines()[0] if raw else "")
+            if not url:
+                continue                    # 格式坏：再试一个候选
+            ip_port = url.split("@")[-1]
+            entry = ProxyEntry(name="kdl-%s" % ip_port, url=url)
+            if self._verify(entry):
+                self._entry = entry
+                self._expires = time.time() + self.ttl_sec
+                self.rotations += 1
+                print("[proxy] 动态出口就绪（%s）→ %s" % (reason, entry.name))
+                return entry
+        self._fetch_cooldown_until = time.time() + FETCH_COOLDOWN_SEC
+        print("[proxy] 动态出口连续验活失败 → 直连降级 %ds" % FETCH_COOLDOWN_SEC)
+        return None
+
+    def _verify(self, entry: ProxyEntry) -> bool:
+        """轻量验活：经代理 GET 雪球轻端点，网络通且非 blacklisted。"""
+        try:
+            import requests as _rq
+            sess = _rq.Session()
+            sess.trust_env = False
+            r = sess.get(VERIFY_URL, timeout=VERIFY_TIMEOUT,
+                         proxies={"http": entry.url, "https": entry.url},
+                         headers={"User-Agent": ua_for(entry)})
+            body = str(getattr(r, "text", "") or "")[:200].lower()
+            if r.status_code == 403 and "blacklisted" in body:
+                return False                # 出口 IP 也被雪球拉黑
+            return True                     # 200/挑战页/其他状态=网络通
+        except Exception:
+            return False                    # 代理连不通/超时
+
+    def current(self) -> ProxyEntry | None:
+        """当前出口；无/TTL 过期 → 被动拉新；不可得 → None 直连。"""
+        if self._entry is not None and time.time() < self._expires:
+            return self._entry
+        return self._fetch_new("ttl-expired" if self._entry else "cold")
+
+    def rotate(self, reason: str = "") -> ProxyEntry | None:
+        """强制拉新出口（notify_blocked 熔断联动）。"""
+        return self._fetch_new(reason or "rotate")
+
+    def mark_fail(self, entry: ProxyEntry | None = None,
+                  cooldown: int = 0) -> None:
+        """记失败计数（动态 IP 寿命短，不做长冷却——rotate 换新即可）。"""
+        e = entry or self._entry
+        if e is not None:
+            e.fails += 1
+
+    def proxies(self) -> dict | None:
+        """requests Session.proxies 形态；直连返回 None（不注入）。"""
+        e = self.current()
+        return {"http": e.url, "https": e.url} if e else None
+
+
+def get_pool() -> ProxyPool | DynamicPool:
+    """进程内单例：静态池优先（有手填出口用静态）→ 动态 API → 空池直连。"""
     global _POOL
     if _POOL is None:
-        _POOL = load_pool()
+        static = load_pool()
+        if static.enabled():
+            _POOL = static
+            return _POOL
+        cfg = load_dynamic_config()
+        api = str(cfg.get("api_url") or "")
+        if api:
+            _POOL = DynamicPool(
+                api, ttl_sec=int(cfg.get("ttl_sec") or DYNAMIC_TTL_SEC),
+                fetch_timeout=int(cfg.get("fetch_timeout") or 15))
+            print("[proxy] 动态出口池已启用（快代理 API，TTL %ds）"
+                  % _POOL.ttl_sec)
+        else:
+            _POOL = static                  # 空静态池=直连（原行为）
     return _POOL
 
 
