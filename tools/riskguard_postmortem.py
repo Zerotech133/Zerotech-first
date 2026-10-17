@@ -10,8 +10,9 @@ kg_riskguard.py L438 注明「复算下轮做」——本工具即该复算的�
 - 拦截事件账：C:/项目/zerobound-kg/riskguard_ledger/ledger.jsonl
   （32078 行：shadow_block 11567 / pass 20511，字段 security/ts/ref_px/
   action/rule_id/reason/score/mode/data_version）
-- 日线价格：E:/KGDataRoot/tdx/ts_daily/part_*.parquet（44 分片，
-  列 ts_code/trade_date(YYYYMMDD int)/close，per-kg_paths.get_data_root()）
+- 日线价格：C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_daily/part_*.parquet
+  （46 分片@20261017，列 ts_code/trade_date(YYYYMMDD int)/close；
+  20261017 换机改指 live 根——原 E:/KGDataRoot 已随数据根回收删除）
 
 口径（v0.1 双基准，分节呈现不混桶）：
 - 决策日 d = ts 的日期部分；个股交易日历用其自身日线序列（停牌顺延）；
@@ -37,7 +38,7 @@ from bisect import bisect_left
 from collections import defaultdict
 
 LEDGER = "C:/项目/zerobound-kg/riskguard_ledger/ledger.jsonl"
-TS_DAILY_GLOB = "E:/KGDataRoot/tdx/ts_daily/part_*.parquet"
+TS_DAILY_GLOB = "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_daily/part_*.parquet"  # 20261017 换机：E:/KGDataRoot 已回收，改指 live 根
 REPORT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                       os.pardir, "docs", "dev",
                       "2026-10-15_S3误杀复算报告_K-ORG-113.md")
