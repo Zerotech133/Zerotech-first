@@ -88,6 +88,20 @@ class TestPerfBoard:
         api_perf.Handler._perf_board(h, {"limit": ["abc"]})   # 非数字
         assert h.status == 400
 
+    def test_endpoint_raw_query_string_form(self, tmp_repo):
+        """真实 HTTP 形态：portal_api do_GET 传原始 query string（str）
+        而非 parse_qs dict——str.get 不存在曾致 AttributeError 静默断连
+        （2026-10-17 端点验收实测，stub 全 dict 形态漏网）。"""
+        h = _stub()
+        api_perf.Handler._perf_board(h, "")                   # 无参数 → 默认 limit
+        assert h.status == 200 and h.payload is not None
+        api_perf.Handler._perf_board(h, "limit=3")            # 带参数
+        assert h.status == 200
+        api_perf.Handler._perf_board(h, "limit=abc")          # str 形态参数白名单
+        assert h.status == 400
+        api_perf.Handler._perf_replay(h, "")                  # replay 缺 ref
+        assert h.status == 400 and h.payload["error"]
+
 
 class TestPerfReplay:
     def test_ref_required(self, tmp_repo):

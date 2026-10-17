@@ -136,7 +136,17 @@ def build_perf_replay(target: str, root: Path = None) -> dict:
 class Handler:
     """/api/perf/* 只读端点。"""
 
+    @staticmethod
+    def _norm_qs(qs):
+        """portal_api do_GET 分发传原始 query string（str），归一为
+        parse_qs dict——stub 测试传 dict、真实 HTTP 传 str，双形态兼容
+        （str.get 不存在=AttributeError 静默断连，2026-10-17 端点验收实测）。"""
+        if isinstance(qs, str):
+            return parse_qs(qs, keep_blank_values=True)
+        return qs or {}
+
     def _perf_board(self, qs):
+        qs = self._norm_qs(qs)
         raw = (qs.get("limit") or ["20"])[0]
         try:
             limit = int(raw)
@@ -150,6 +160,7 @@ class Handler:
         self._json(build_perf_board(limit_recent=limit))
 
     def _perf_replay(self, qs):
+        qs = self._norm_qs(qs)
         ref = (qs.get("ref") or [""])[0].strip()
         if not ref:
             self._json({"error": "ref 必填（run_id/trace_id/order_id/"

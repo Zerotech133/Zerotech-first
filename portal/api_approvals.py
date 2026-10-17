@@ -17,6 +17,20 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 _QUERY_FIELDS = ("target_type", "target_id", "decided_by", "limit", "order")
 
 
+def _scrub_repo_paths(obj, root_str: str):
+    """P1 安全口径（2026-10-17 端点验收实测）：出口脱敏——响应中的仓库
+    绝对路径（root/source.path 等）替换为相对路径，防本机目录结构外泄。
+    递归覆盖 dict/list/str；空结果回退 "."。"""
+    if isinstance(obj, dict):
+        return {k: _scrub_repo_paths(v, root_str) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_scrub_repo_paths(v, root_str) for v in obj]
+    if isinstance(obj, str) and root_str and root_str in obj:
+        rel = obj.replace(root_str, "").lstrip("\\/").strip()
+        return rel or "."
+    return obj
+
+
 class Handler:
     """Approval 注册表 mixin（模块名绑定：portal_api 里 import api_approvals）。"""
 
@@ -44,4 +58,4 @@ class Handler:
         except Exception as exc:  # fail loud
             self._json({"error": "registry_failed", "message": repr(exc)}, 500)
             return
-        self._json(registry)
+        self._json(_scrub_repo_paths(registry, str(_REPO_ROOT)))
