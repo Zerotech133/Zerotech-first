@@ -624,6 +624,72 @@ def _handle_card(val, sender):
 
 
 # ── ws 主程序 ───────────────────────────────────────────────
+def _patch_ws_card_route():
+    """K-PUSH-005 核心修复（翻 K-PUSH-004「后台订阅断」结论）：
+    本 venv 的 lark_oapi ws client 收到 CARD 帧（MessageType.CARD）
+    直接 `return` 静默丢弃（ws/client.py _handle_data_frame 原文
+    `elif message_type == MessageType.CARD: return`）——
+    register_p2_card_action_trigger 注册的 handler 永远收不到
+    事件，卡片按钮零回调的真凶在 SDK，非飞书后台订阅。
+    dispatcher 侧（_do_without_validation）本就完整支持
+    p2.card.action.trigger 键路由 callback 派发器，天然分流，
+    这里只需方法级替换 _handle_data_frame 让 CARD 与 EVENT
+    同路派发（照抄原函数，仅改 CARD 分支一行语义）。"""
+    import base64
+    import http as _http
+    import time as _time
+
+    from lark_oapi.core.const import UTF_8
+    from lark_oapi.core.json import JSON
+    from lark_oapi.ws import client as _wsc
+    from lark_oapi.ws.enum import MessageType
+    from lark_oapi.ws.model import Response
+
+    async def _fixed(self, frame):
+        try:
+            hs = frame.headers
+            msg_id = _wsc._get_by_key(hs, _wsc.HEADER_MESSAGE_ID)
+            trace_id = _wsc._get_by_key(hs, _wsc.HEADER_TRACE_ID)
+            sum_ = int(_wsc._get_by_key(hs, _wsc.HEADER_SUM))
+            seq = int(_wsc._get_by_key(hs, _wsc.HEADER_SEQ))
+            type_ = _wsc._get_by_key(hs, _wsc.HEADER_TYPE)
+            pl = frame.payload
+            if sum_ > 1:
+                pl = self._combine(msg_id, sum_, seq, pl)
+                if pl is None:
+                    return
+            message_type = MessageType(type_)
+            resp = Response(code=_http.HTTPStatus.OK)
+            try:
+                start = int(round(_time.time() * 1000))
+                # 原版此处 CARD 分支直接 return 丢弃——唯一改动点
+                if message_type in (MessageType.EVENT, MessageType.CARD):
+                    result = self._event_handler._do_without_validation(pl)
+                else:
+                    return
+                end = int(round(_time.time() * 1000))
+                header = hs.add()
+                header.key = _wsc.HEADER_BIZ_RT
+                header.value = str(end - start)
+                if result is not None:
+                    resp.data = base64.b64encode(
+                        JSON.marshal(result).encode(UTF_8))
+            except Exception as e:  # noqa: BLE001
+                _wsc.logger.error(
+                    self._fmt_log(
+                        "handle message failed, message_type: {}, "
+                        "message_id: {}, trace_id: {}, err: {}",
+                        message_type.value, msg_id, trace_id, e))
+                resp = Response(code=_http.HTTPStatus.INTERNAL_SERVER_ERROR)
+            frame.payload = JSON.marshal(resp).encode(UTF_8)
+            await self._write_message(frame.SerializeToString())
+        except Exception as e:  # noqa: BLE001
+            _wsc.logger.error(self._fmt_log(
+                "handle data frame failed, err: {}", e))
+
+    _wsc.Client._handle_data_frame = _fixed
+
+
 def main():
     import lark_oapi as lark
     from lark_oapi.api.im.v1 import P2ImMessageReceiveV1
@@ -644,8 +710,13 @@ def main():
             content = json.loads(msg.content or "{}")
             text = content.get("text", "")
             sender_id = ""
-            try:  # M7 白名单用：sender → sender_id → open_id（多层防御取值）
-                sender_id = (msg.sender.sender_id.open_id or "")
+            try:  # K-PUSH-005 修复：sender 与 message 平级（SDK 实证
+                # P2ImMessageReceiveV1Data._types={"sender","message"}，
+                # 正确路径 data.event.sender.sender_id.open_id）。旧代码从
+                # msg.sender 取——EventMessage 无 sender 字段，
+                # AttributeError 被 except 吞 → 恒空（recv 日志恒
+                # sender=- 的根因，白名单被迫降级空开放的根源）。
+                sender_id = (data.event.sender.sender_id.open_id or "")
             except Exception:  # noqa: BLE001
                 pass
             # K-STOCK-299：群消息只响应 @本bot 的（content 渲染为 @_user_N
@@ -680,6 +751,10 @@ def main():
             val = getattr(action, "value", None) or {}
             if isinstance(val, str):
                 val = json.loads(val)
+            # K-PUSH-005：入口留痕——此前 on_card 成功路径零日志，断链时
+            # 分不清「CARD 帧未达」还是「解析后静默」。
+            log("card cb recv: val=%r op=%s"
+                % (str(val)[:80], _card_sender_id(ev) or "-"))
             threading.Thread(target=_handle_card,
                              args=(val, _card_sender_id(ev)),
                              daemon=True).start()
@@ -695,6 +770,7 @@ def main():
                .register_p2_card_action_trigger(on_card).build())
     cli = Client(app_id, app_secret, event_handler=handler,
                  log_level=lark.LogLevel.INFO)
+    _patch_ws_card_route()  # K-PUSH-005：CARD 帧路由（须在 start 前）
     log("bot ws starting (app=%s)" % app_id)
     cli.start()
 
