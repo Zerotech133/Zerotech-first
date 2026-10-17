@@ -1,0 +1,16 @@
+[
+  {
+    "name": "tok-1",
+    "token": "在这里粘贴第一条xq_a_token值（浏览器 F12 → Application → Cookies → xueqiu.com → xq_a_token）",
+    "last_used": 0,
+    "fail_count": 0,
+    "cooldown_until": 0
+  },
+  {
+    "name": "tok-2",
+    "token": "第二条token（可选，多账号分摊请求压力）",
+    "last_used": 0,
+    "fail_count": 0,
+    "cooldown_until": 0
+  }
+]

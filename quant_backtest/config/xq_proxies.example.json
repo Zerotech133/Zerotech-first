@@ -1,0 +1,11 @@
+[
+  {
+    "_comment": "雪球出口代理池模板（P0-3）。复制为 xq_proxies.json 即启用；删除本文件所在配置则降级直连。url 形如 http://[user:pass@]host:port（认证可选）。403 拉黑时当前出口自动进 30 分钟冷却并轮换到下一个健康出口，下轮任务生效。",
+    "name": "home-line-1",
+    "url": "http://user:pass@192.168.1.10:7890"
+  },
+  {
+    "name": "vps-line-1",
+    "url": "http://user:pass@203.0.113.10:8080"
+  }
+]
