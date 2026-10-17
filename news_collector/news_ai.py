@@ -61,7 +61,10 @@ BRIEF_RULES = (
     "利多因素：（结合新闻与行情，列1-3条；确实没有才写「暂无明显新增利多」）\n"
     "利空因素：（结合新闻与行情，列1-3条，指数普跌/商品剧烈波动等行情事实须纳入；确实没有才写「暂无明显新增利空」）\n"
     "待观察：（1-3条，不得留空）\n"
-    "【今日重点关注】\n（2-4条事件/数据/风险点；新闻中没有就写「无明确新增事项」）"
+    "【今日重点关注】\n（2-4条事件/数据/风险点；新闻中没有就写「无明确新增事项」）\n"
+    # K-ORG-161（M4）：引用溯源——claim 必须带快讯编号出处，无对应快讯写明
+    "【引用规则】关键主题/今日重点关注 每条后标注（来源 #序号，序号=上方财经快讯编号）；"
+    "确实无法对应任何快讯的（如纯行情驱动）写「暂无明确信息来源」。"
 )
 
 REVIEW_RULES = (
@@ -69,11 +72,15 @@ REVIEW_RULES = (
     "【大盘复盘】\n（一句话，40字以内，概括今日A股/港股主要指数与行业板块表现、盘面情绪）\n"
     "【盘面驱动】\n（3-6条，每条一行：序号. 事件/主题 — 如何影响今日盘面或板块，"
     "须把新闻与指数/行业板块/商品涨跌对应起来）\n"
-    "【明日关注】\n（2-4条，基于今日新闻与外盘提示明日需跟踪的事件、数据或风险）"
+    "【明日关注】\n（2-4条，基于今日新闻与外盘提示明日需跟踪的事件、数据或风险）\n"
+    # K-ORG-161（M4）：引用溯源
+    "【引用规则】盘面驱动/明日关注 每条后标注（来源 #序号，序号=上方财经快讯编号）；"
+    "确实无法对应任何快讯的（如纯行情驱动）写「暂无明确信息来源」。"
 )
 STOCK_RULE = (
     "\n另外，若「自选股相关」区块非空，在最后追加一节：\n"
-    "【关注个股动态】\n（按股票名分条，客观转述相关新闻事实；没有新增信息的股票不要写）"
+    "【关注个股动态】\n（按股票名分条，客观转述相关新闻事实；没有新增信息的股票不要写）\n"
+    "（关注个股动态每一条后标注（来源 #序号）；无对应快讯写「暂无明确信息来源」）"
 )
 
 QUICK_RULES = (
@@ -732,16 +739,18 @@ def format_sectors(sectors, top_n=6):
 def fetch_news(db, window_hours, limit):
     since = (now_cst() - timedelta(hours=window_hours)).strftime("%Y-%m-%d %H:%M")
     rows = db.execute(
-        "SELECT source, ts, title, hit, COALESCE(stocks,'') FROM news "
+        # K-ORG-161（M4）：rowid 作 news_id 带出，供报告引用溯源映射
+        "SELECT rowid, source, ts, title, hit, COALESCE(stocks,'') FROM news "
         "WHERE created_at>=? ORDER BY created_at DESC, ts DESC LIMIT ?",
         (since, limit)).fetchall()
     out = []
     for r in reversed(rows):
         try:
-            stocks = json.loads(r[4]) if r[4] else []
+            stocks = json.loads(r[5]) if r[5] else []
         except Exception:
             stocks = []
-        out.append(dict(source=r[0], ts=r[1], title=r[2], hit=r[3], stocks=stocks))
+        out.append(dict(news_id=r[0], source=r[1], ts=r[2], title=r[3],
+                        hit=r[4], stocks=stocks))
     return out
 
 
@@ -771,6 +780,38 @@ def format_stock_block(items, watchlist):
         for it in rel[-4:]:
             lines.append("  · %s" % (it["title"] or "")[:70])
     return "\n".join(lines)
+
+
+# K-ORG-161（M4）：报告引用溯源——受审计的 claim 区块（这些区块的每条
+# claim 必须带「来源 #序号」或已自声明无来源；其余区块为行情/提示性内容）
+_AUDIT_SECS = {"关键主题", "盘面驱动", "关注个股动态", "今日重点关注", "明日关注"}
+
+
+def _audit_citations(text, news_count):
+    """引用溯源守卫：无「来源 #N」且未声明「暂无明确信息来源」的 claim
+    补标「暂无明确信息来源」（LLM 偶忘引用规则的兜底，不重写原文）。
+
+    借鉴开源 RAG 引用溯源哲学：可验证的 claim 必须带证据锚点，无证据
+    的 claim 显式标记而非默认信任。
+    """
+    out = []
+    sec = ""
+    for ln in (text or "").splitlines():
+        s = ln.strip()
+        if not s:
+            out.append(ln)
+            continue
+        if s.startswith("【") and "】" in s:
+            sec = s[1:s.index("】")]  # 仅受审计区块进入 claim 校验
+            out.append(ln)
+            continue
+        if (sec in _AUDIT_SECS and not s.startswith("（")
+                and "来源 #" not in s
+                and "暂无明确信息来源" not in s):
+            out.append(ln + "（暂无明确信息来源）")
+            continue
+        out.append(ln)
+    return "\n".join(out)
 
 
 def call_llm(model, market_text, news_text, stock_text, rules, sector_text=""):
@@ -909,6 +950,7 @@ def run(mode, dry):
         ai_ok = 0
         brief = fallback_brief(news_items)
         log("llm FAIL %s -> fallback" % str(e)[:150])
+    brief = _audit_citations(brief, len(news_items))  # K-ORG-161（M4）：引用溯源守卫
 
     today = now_cst().strftime("%Y-%m-%d")
     header = "%s · %s（%s %d条快讯/%dh）" % (
@@ -1024,6 +1066,9 @@ def run(mode, dry):
         "news_count": len(news_items), "market_count": len(markets),
         "headline": headline[:120],
     }
+    # K-ORG-161（M4）：引用溯源映射——报告「来源 #序号」→ 快讯 news_id(rowid)
+    payload["news_refs"] = {str(i + 1): it["news_id"]
+                            for i, it in enumerate(news_items)}
     if sectors:
         up_cnt = sum(1 for s in sectors if s["pct"] > 0)
         payload["sectors"] = {
