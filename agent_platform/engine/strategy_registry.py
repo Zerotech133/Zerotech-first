@@ -14,6 +14,10 @@ Codex bridge / Hermes gateway 后续走 adapters/ 对接，不重造幂等账本
   下单归 K-STOCK execution 线，本域不持有任何凭据。
 """
 from dataclasses import dataclass, field
+import hashlib
+import json
+import time
+from pathlib import Path
 
 RECOMMENDATIONS = ("strong_buy", "buy", "hold", "sell", "strong_sell")
 STANCES = ("bull", "bear", "neutral")
@@ -107,3 +111,76 @@ class StrategyRegistry:
             raise StrategyError("%s propose 产出 strategy_id=%r 与注册 ID 不符"
                                 % (sid, v.strategy_id))
         return v.validate()
+
+
+# ---------------------------------------------------------------- 账本（M6 wiring）
+
+STRATEGY_DIR_NAME = "strategy"
+STRATEGY_LEDGER_NAME = "strategy_runs.jsonl"
+
+
+def _ledger_path(root):
+    """账本路径：root=数据根（run_shadow 的 DATA_ROOT，尊重 SHADOW_DATA_ROOT
+    隔离根）。root 显式必填——M5 刀 2 判例平移：无显式 root 拒绝落盘。"""
+    if not root:
+        raise StrategyError("root 缺失：strategy 账本拒绝落盘（安全阀）")
+    return Path(root) / STRATEGY_DIR_NAME / STRATEGY_LEDGER_NAME
+
+
+def verdict_key(strategy_id, symbol, trade_date):
+    """幂等键：strategy_id|symbol|trade_date（同键同值=幂等回放）。"""
+    raw = "%s|%s|%s" % (strategy_id, symbol, trade_date)
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def record_verdicts(verdicts, root, trade_date, run_id=""):
+    """Verdict 批量入账（append-only + 幂等键防重）。root=数据根，显式必填。
+    先全量校验后开写——坏批零副作用（不落半批/不建空文件）。"""
+    p = _ledger_path(root)
+    for v in verdicts:
+        v.validate()
+    seen = set()
+    if p.exists():
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    seen.add(json.loads(line).get("verdict_key"))
+                except json.JSONDecodeError:
+                    continue
+    recorded = replayed = 0
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "a", encoding="utf-8") as f:
+        for v in verdicts:
+            k = verdict_key(v.strategy_id, v.symbol, trade_date)
+            if k in seen:
+                replayed += 1
+                continue
+            row = {"verdict_key": k, "strategy_id": v.strategy_id,
+                   "symbol": v.symbol, "recommendation": v.recommendation,
+                   "confidence": round(float(v.confidence), 4),
+                   "stance": v.stance, "score": v.score,
+                   "rationale": v.rationale[:200], "trace_id": v.trace_id,
+                   "run_id": run_id, "trade_date": trade_date,
+                   "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            seen.add(k)
+            recorded += 1
+    return {"recorded": recorded, "replayed": replayed, "path": str(p)}
+
+
+def load_verdicts(root):
+    """读侧：坏行容忍（跳过不入账），返回 dict 行列表。"""
+    p = _ledger_path(root)
+    if not p.exists():
+        return []
+    rows = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return rows

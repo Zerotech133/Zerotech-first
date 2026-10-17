@@ -323,11 +323,33 @@ def main():
                     print("[warn] %s D1 决策解析失败（输出无 recommendation JSON·已入账 parse_ok=false）"
                           % symbol)
                 # M4-P3 双刀阵容观测（fail-open：dk 异常不影响影子主链）
+                bars = None
                 try:
-                    snap = dk_snapshot(bars_to_df(kline_daily(symbol, 30)))
+                    bars = kline_daily(symbol, 30)
+                    snap = dk_snapshot(bars_to_df(bars))
                 except Exception as _dke:  # noqa: BLE001
                     snap = {"dk_error": str(_dke)[:120]}
                 row = enrich_row(row, snap)
+                # M6 strategy 域挂接（K-ORG-167，fail-open：策略产出为影子
+                # 并行参考，主链零依赖；root=DATA_ROOT 尊重隔离根预演阀）
+                if bars:
+                    try:
+                        from shadow_strategies import build_default_registry
+                        from strategy_registry import record_verdicts
+                        reg = build_default_registry()
+                        sctx = {"symbol": symbol,
+                                "closes": [float(b[2]) for b in bars
+                                           if len(b) > 2 and b[2] is not None]}
+                        vs = [reg.run(sid, sctx) for sid in reg.list_ids()]
+                        srep = record_verdicts(vs, root=DATA_ROOT,
+                                               trade_date=today,
+                                               run_id=result["run_id"])
+                        print("[strategy] %s 产出 %d 条 recorded=%d replayed=%d"
+                              % (symbol, len(vs), srep["recorded"],
+                                 srep["replayed"]))
+                    except Exception as _se:  # noqa: BLE001
+                        print("[warn] strategy 域降级（影子主链不受影响）：%s"
+                              % str(_se)[:120])
                 break
             except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
                 row = {"date": today, "ts": time.time(), "symbol": symbol,

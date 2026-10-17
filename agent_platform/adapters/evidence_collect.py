@@ -43,7 +43,7 @@ from engine.evidence import EvidenceStore, fact_hash  # noqa: E402
 EVIDENCE_DB = _AGENT_PLATFORM / "data" / "evidence" / "evidence.db"
 
 ALL_DOMAINS = ["gzh", "academy", "personal", "dev", "invest", "pitch",
-               "shadow", "artifact", "paper"]
+               "shadow", "artifact", "paper", "strategy"]
 
 
 # ----------------------------------------------------------------------
@@ -280,11 +280,41 @@ def _collect_paper(root: Path):
     return evs, findings
 
 
+def _collect_strategy(root):
+    """strategy 域（第十一域，K-ORG-167）：军团三策略影子产出的 verdict 指纹。
+    账本=agent_platform/data/strategy/strategy_runs.jsonl（幂等键 verdict_key）。
+    statement 含 strategy_id/recommendation/stance/run_id 指纹，可对账可回放。"""
+    evs, findings = [], []
+    p = root / "agent_platform" / "data" / "strategy" / "strategy_runs.jsonl"
+    if not p.exists():
+        return evs, findings
+    for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError as exc:
+            findings.append("strategy: 第 %d 行解析失败: %s" % (i, exc))
+            continue
+        evs.append(Evidence(
+            source="strategy.runs",
+            source_ref="strategy:%s" % r.get("verdict_key", ""),
+            statement="strategy=%s symbol=%s rec=%s stance=%s run_id=%s"
+                      % (r.get("strategy_id", ""), r.get("symbol", ""),
+                         r.get("recommendation", ""), r.get("stance", ""),
+                         r.get("run_id", "")),
+            payload={"domain": "strategy", "kind": "strategy_verdict_fingerprint",
+                     "idempotency_key": r.get("verdict_key", ""),
+                     "trade_date": r.get("trade_date", "")}))
+    return evs, findings
+
+
 _COLLECTORS = {"gzh": _collect_gzh, "academy": _collect_academy,
                "personal": _collect_personal, "dev": _collect_dev,
                "invest": _collect_invest, "pitch": _collect_pitch,
                "shadow": _collect_shadow, "artifact": _collect_artifact,
-               "paper": _collect_paper}
+               "paper": _collect_paper, "strategy": _collect_strategy}
 
 
 # ----------------------------------------------------------------------
