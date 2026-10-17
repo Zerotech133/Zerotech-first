@@ -132,6 +132,32 @@ def _flush_log():
             pass
 
 
+def _tasks_schema_observe():
+    """附加观察：devtask 真源 tasks.json 语义健康线（M6 观察季）。
+
+    **不计入 RESULTS / 不影响退出码**——门 3 的验收判据严格是上面 7 项，
+    本段只往巡检日志里留一条健康线（ERROR/WARN 计数 + 前几条明细）。
+    理由：临门改门口径会让此前所有 PASS 失去可比性（判例：验收口径
+    中途漂移 = 观察线作废）。观察满一个周期再决定是否升为正式门。
+    """
+    path = BASE.parent / ".worktrees" / "tasks.json"
+    tools = str(BASE.parent / "tools")
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    try:
+        from validate_json import check_tasks_doc
+        obj = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001  观察项永不阻断巡检
+        print("[observe] tasks.json schema：不可读/不可校验（%s）——观察项，"
+              "不计入退出码" % str(exc)[:100])
+        return
+    errors, warns = check_tasks_doc(obj)
+    print("[observe] tasks.json schema：%d 工单 / ERROR %d / WARN %d"
+          "——观察项，不计入退出码" % (len(obj), len(errors), len(warns)))
+    for item in (["ERROR: " + e for e in errors] + ["WARN: " + w for w in warns])[:8]:
+        print("          · %s" % item)
+
+
 def check(name, ok, detail=""):
     RESULTS.append((name, bool(ok), detail))
     print("[%s] %s%s" % ("PASS" if ok else "FAIL", name,
@@ -282,6 +308,9 @@ def main():
                       "" if ran_today else "（今日未到/未跑，仅查健康）"))
     except Exception as exc:  # noqa: BLE001
         check("计划任务状态查询", False, str(exc)[:120])
+
+    # ---- 附加观察（不计入 7 项门/不影响退出码；M6 观察季）----
+    _tasks_schema_observe()
 
     # ---- 汇总 ----
     fails = [n for n, ok, _ in RESULTS if not ok]

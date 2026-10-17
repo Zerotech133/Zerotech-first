@@ -55,9 +55,19 @@ from typing import Dict, List, Optional, Tuple
 _AGENT_PLATFORM = Path(__file__).resolve().parents[1]
 if str(_AGENT_PLATFORM) not in sys.path:
     sys.path.insert(0, str(_AGENT_PLATFORM))
+_TOOLS_DIR = _AGENT_PLATFORM.parent / "tools"
+if str(_TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TOOLS_DIR))
 
 from contracts.objects import Approval, Artifact, WorkItem  # noqa: E402
 from engine.approvals import ApprovalStore  # noqa: E402
+
+try:                                    # 写侧语义校验（M6：tasks.json 接 validate_json）
+    from validate_json import check_tasks_doc  # noqa: E402
+except ImportError as _exc:             # fail-open 必配诊断（判例）
+    check_tasks_doc = None              # type: ignore[assignment]
+    print("[devtask_wiring] 警告：tools/validate_json.py 不可导入（%s），"
+          "写侧语义校验降级为仅 loads 校验" % _exc, file=sys.stderr)
 from adapters.credential_trace import cross_check, verdict_for  # noqa: E402
 
 SCHEMA_VERSION = "1.0"
@@ -100,12 +110,47 @@ def load_tasks(root: Path) -> Dict[str, dict]:
         raise DevtaskWiringError(
             "tasks.json 顶层必须是 dict（键=工单 ID），实际 %s"
             % type(raw).__name__)
+    # 值非 dict 的条目：早期实现静默丢弃（`if isinstance(v, dict)`），
+    # 结果「工单凭空消失」而调用方毫无感知——比报错更危险（判例：
+    # 静默降级比显式失败更容易被当成正常态）。改为显式告警后仍跳过：
+    # 降级不崩（读侧要为看板/巡检供数），但证据留在 stderr。
+    dropped = [k for k, v in raw.items() if not isinstance(v, dict)]
+    if dropped:
+        print("[devtask_wiring] 警告：tasks.json 有 %d 条非 dict 工单已跳过：%s"
+              % (len(dropped), dropped[:10]), file=sys.stderr)
     return {k: v for k, v in raw.items() if isinstance(v, dict)}
 
 
 def save_tasks(root: Path, tasks: Dict[str, dict]) -> None:
-    """原子写回（保持 devtask indent=1 风格）。"""
+    """原子写回（保持 devtask indent=1 风格）。
+
+    **写前语义校验（M6：接 validate_json profile=tasks，增量口径）**：
+    只校验本次**新增/变更**的工单，存量 grandfather 不重判——真源里有
+    历史遗留的 WARN 级瑕疵（手写近似时间 `2026-10-17 20:1x`、推送域
+    无 branch 的空壳完工单），若全量判 ERROR 会让写入方寸步难行，
+    「存量瑕疵阻断新增」属范畴错误。谁改谁负责：改到哪条就校验哪条。
+    ERROR（缺 status/created、status 非法、值非 dict）→ 拒写；
+    WARN → 放行并打 stderr（降级）。
+    """
     path = _tasks_path(root)
+    if check_tasks_doc is not None:
+        try:
+            disk = load_tasks(root)
+        except DevtaskWiringError:
+            disk = {}       # 首次创建/真源不可读：全量视为新增
+        changed = {tid: t for tid, t in tasks.items() if disk.get(tid) != t}
+        removed = [tid for tid in disk if tid not in tasks]
+        if removed:
+            print("[devtask_wiring] 警告：本次写回将删除 %d 条工单：%s"
+                  % (len(removed), removed[:10]), file=sys.stderr)
+        if changed:
+            errors, warns = check_tasks_doc(changed)
+            for w in warns:
+                print("[devtask_wiring] WARN %s" % w, file=sys.stderr)
+            if errors:
+                raise DevtaskWiringError(
+                    "tasks.json 写前校验失败（%d 条变更中 %d 项结构性错误），"
+                    "已拒写：%s" % (len(changed), len(errors), "；".join(errors[:5])))
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = str(path) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
