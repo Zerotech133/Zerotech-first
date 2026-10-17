@@ -55,7 +55,7 @@ def _audit_reason(checks: dict[str, dict]) -> str:
             reasons.append("provider")
         if item.get("channel") != "tushare":
             reasons.append("channel")
-        if item.get("qualification_status") != "candidate_ready":
+        if item.get("qualification_status") not in {"candidate_ready", "qualified"}:
             reasons.append("qualification_status")
         if item.get("production_write") is not False:
             reasons.append("production_write")
@@ -89,7 +89,7 @@ def _registry_audit(registry: dict, registry_path: Path = REGISTRY) -> dict:
         checks[table]["gate_pass"] = bool(
             row.get("provider") == "tushare.pro"
             and row.get("channel") == "tushare"
-            and row.get("qualification_status") == "candidate_ready"
+            and row.get("qualification_status") in {"candidate_ready", "qualified"}
             and registry.get("production_write") is False
             and registry.get("global_activation") is False
             and evidence.get("explicit_receipts")
