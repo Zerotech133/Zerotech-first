@@ -160,9 +160,11 @@ class TestRealUvicorn:
     PORT = 8391
 
     @pytest.fixture(scope="class", autouse=True)
-    def uvicorn_server(self, request: pytest.FixtureRequest) -> Iterator[str]:
-        if not _port_free(self.PORT):
-            pytest.skip(f"端口 {self.PORT} 被占用")
+    @classmethod
+    def uvicorn_server(cls, request: pytest.FixtureRequest) -> Iterator[str]:
+        port = cls.PORT
+        if not _port_free(port):
+            pytest.skip(f"端口 {port} 被占用")
         env = {
             **os.environ,
             "PG_HOST": "127.0.0.1", "PG_PORT": "1",
@@ -176,7 +178,7 @@ class TestRealUvicorn:
         proc = subprocess.Popen(
             [
                 sys.executable, "-m", "uvicorn", "queue_link.api:app",
-                "--host", "127.0.0.1", "--port", str(self.PORT), "--log-level", "warning",
+                "--host", "127.0.0.1", "--port", str(port), "--log-level", "warning",
             ],
             cwd=str(PROJECT_ROOT),
             env=env,
@@ -199,7 +201,7 @@ class TestRealUvicorn:
 
         request.addfinalizer(_cleanup)
         try:
-            base = f"http://127.0.0.1:{self.PORT}"
+            base = f"http://127.0.0.1:{port}"
             # ① TCP 层探测 uvicorn 端口就绪（socket 绕开代理与 HTTP 语义）
             deadline = time.time() + 30
             tcp_ready = False
@@ -208,7 +210,7 @@ class TestRealUvicorn:
                     err = (proc.stderr.read() or b"").decode("utf-8", "replace")
                     pytest.fail(f"uvicorn 进程提前退出（exit={proc.returncode}）：{err[-1500:]}")
                 try:
-                    with socket.create_connection(("127.0.0.1", self.PORT), timeout=0.5):
+                    with socket.create_connection(("127.0.0.1", port), timeout=0.5):
                         tcp_ready = True
                         break
                 except OSError:

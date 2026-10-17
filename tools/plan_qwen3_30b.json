@@ -1,0 +1,11 @@
+{
+ "dest_dir": "C:/LingLong/NovaStudio/NovaMax/data/models_dir/llm/unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF",
+ "files": [
+  {
+   "name": "Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf",
+   "url": "https://www.modelscope.cn/models/unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF/resolve/master/Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf",
+   "size": 18556686752,
+   "sha256": "6c997b8af17debdfb01d890214400ccbab00db6acc0ba8da5de1cc906c4774d0"
+  }
+ ]
+}

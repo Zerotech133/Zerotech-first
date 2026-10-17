@@ -3,6 +3,18 @@
 # family as morning; "python exited code= " x5 today, alert argv collapsed:
 # log path shifted into code slot). Use & + $LASTEXITCODE instead.
 $log = 'C:\Temp\portal_api_task.log'
+# K-RESTART (10-17): sentinel flag bypassing the K234 health-lock for a
+# controlled restart. Flag present => kill orphans first, then fall through
+# to the normal start branch (probe fails => fresh start with current code).
+# One-shot: flag is consumed by the next script run.
+if (Test-Path 'C:\Temp\PORTAL_API_RESTART.flag') {
+    Remove-Item 'C:\Temp\PORTAL_API_RESTART.flag' -Force -ErrorAction SilentlyContinue
+    ('restart-flag: killing orphans ' + (Get-Date -Format s)) |
+        Out-File $log -Append -Encoding utf8
+    Get-CimInstance -Query "SELECT ProcessId FROM Win32_Process WHERE Name = 'python.exe' AND CommandLine LIKE '%portal_api%'" |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    Start-Sleep -Seconds 1
+}
 # K234 idempotent lock: if 8091 already serves /health, SKIP entirely.
 # Root cause of the 18:0x kill loop (6x code=-1 in 18min): every trigger of
 # this script (DockerWatchdog v2.1 health guard / E107 grid fallback / manual)

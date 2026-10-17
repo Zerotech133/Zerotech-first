@@ -13,6 +13,7 @@ from typing import Any, Callable
 
 from knowledge.creator_workers import DailyScanWorker, HistoryBackfillWorker, WorkerResult
 from store import repository as store_repository
+from workers.composition import CompositionError, WorkerComposition, compose_worker_dependencies
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,12 @@ def run(
     fetcher: Callable[..., Any] | None = None,
     processor: Callable[..., Any] | None = None,
     adapter: Callable[..., Any] | None = None,
+    composition: WorkerComposition | None = None,
+    browser_adapter: Any | None = None,
+    browser_fetcher: Any | None = None,
+    repository: Any | None = None,
+    health_probe: Callable[[], Any] | None = None,
+    processing_run_key: str | None = None,
     run_id: int | None = None,
     limit: int = 50,
     max_items: int = 1000,
@@ -47,6 +54,33 @@ def run(
     not claim a run or fabricate a successful result.
     """
     normalized = str(mode or "").strip().lower().replace("_", "-")
+    # Runtime hosts may inject the complete composition or its explicit raw
+    # dependencies.  Direct fetcher/processor injection remains supported for
+    # tests and legacy callers, but never creates a platform dependency.
+    if normalized in {"daily-scan", "history-backfill"}:
+        if composition is not None:
+            try:
+                composition.assert_authenticated()
+            except CompositionError as exc:
+                return _missing(normalized, f"{exc.code}: {exc}")
+            fetcher = composition.fetcher
+            processor = composition.processor
+        elif browser_adapter is not None or browser_fetcher is not None or repository is not None or adapter is not None:
+            try:
+                composition = compose_worker_dependencies(
+                    repository=repository,
+                    # ``adapter`` is retained as the historical index-replay
+                    # argument; in creator modes it may also be the explicit
+                    # browser adapter supplied by a runtime host.
+                    adapter=browser_adapter if browser_adapter is not None else adapter,
+                    browser_fetcher=browser_fetcher,
+                    health_probe=health_probe,
+                    processing_run_key=processing_run_key,
+                )
+            except CompositionError as exc:
+                return _missing(normalized, f"{exc.code}: {exc}")
+            fetcher = composition.fetcher
+            processor = composition.processor
     if normalized == "daily-scan":
         if not callable(fetcher) or not callable(processor):
             return _missing(normalized, "daily-scan requires callable fetcher and processor")

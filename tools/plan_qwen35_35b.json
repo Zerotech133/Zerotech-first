@@ -1,0 +1,17 @@
+{
+ "dest_dir": "C:/LingLong/NovaStudio/NovaMax/data/models_dir/llm/unsloth/Qwen3.5-35B-A3B-GGUF",
+ "files": [
+  {
+   "name": "Qwen3.5-35B-A3B-Q4_K_M.gguf",
+   "url": "https://www.modelscope.cn/models/unsloth/Qwen3.5-35B-A3B-GGUF/resolve/master/Qwen3.5-35B-A3B-Q4_K_M.gguf",
+   "size": 22016023168,
+   "sha256": "3b46d1066bc91cc2d613e3bc22ce691dd77e6f0d33c9060690d24ce6de494375"
+  },
+  {
+   "name": "mmproj-BF16.gguf",
+   "url": "https://www.modelscope.cn/models/unsloth/Qwen3.5-35B-A3B-GGUF/resolve/master/mmproj-BF16.gguf",
+   "size": 902822592,
+   "sha256": "abe81a7212be307a7723ab47a51a87e5c46d0622273ccb04a6a6feba18b21d63"
+  }
+ ]
+}

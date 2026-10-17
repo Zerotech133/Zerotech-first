@@ -27,6 +27,11 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+try:
+    from bar_dto import BarQuery
+except ImportError:  # pragma: no cover - package import fallback
+    from .bar_dto import BarQuery
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_CFG = json.load(open(os.path.join(HERE, "config.json"), encoding="utf-8"))["db"]
 QP_ENV = r"D:\青萍之末2\.env"
@@ -339,12 +344,65 @@ def _binance(pair, interval, limit):
                  k[1], k[2], k[3], k[4], k[5], TZ_CN) for k in data]
 
 
-def load_kline(code, period="1d", limit=500):
+def _bar_store_result(code, period, limit, bar_store, as_of=None, start=None,
+                      end=None, closed_only=False, explain=False):
+    """Adapt an explicitly injected BarStore to the legacy K-line contract."""
+    market_symbol = _norm(code)
+    if not market_symbol:
+        return {"ok": False, "error": "未识别「%s」" % code}
+    market, symbol = market_symbol
+    normalized_period = str(period or "1d").lower()
+    if normalized_period not in PERIODS:
+        return {"ok": False,
+                "error": "period 仅支持 1d / 60m / 30m / 5m，收到「%s」" % normalized_period}
+    try:
+        requested_limit = max(1, int(limit or 500))
+    except (TypeError, ValueError):
+        requested_limit = 500
+    try:
+        query = BarQuery(start=start, end=end, as_of=as_of,
+                         closed_only=bool(closed_only))
+    except (TypeError, ValueError) as exc:
+        return {"ok": False, "error": "加载失败：%s" % str(exc)[:120]}
+    try:
+        bars = bar_store.query(query)
+    except Exception as exc:
+        return {"ok": False, "error": "加载失败：%s" % str(exc)[:120]}
+    selected = [bar for bar in bars
+                if str(bar.symbol).upper() == str(symbol).upper()
+                and str(bar.market).upper() == str(market).upper()
+                and str(bar.timeframe).lower() == normalized_period]
+    selected = selected[-requested_limit:] if selected else []
+    tz = TZ_US if market == "US" else TZ_CN
+    daily = normalized_period == "1d"
+    legacy_bars = []
+    for bar in selected:
+        local_dt = bar.dt.astimezone(tz)
+        legacy_bars.append({
+            "dt": local_dt.strftime("%Y-%m-%d" if daily else "%Y-%m-%d %H:%M"),
+            "o": _f(bar.o), "h": _f(bar.h), "l": _f(bar.l), "c": _f(bar.c),
+            "v": round(float(bar.v), 3) if bar.v is not None else 0,
+        })
+    result = {"ok": True, "code": symbol, "market": market,
+              "period": normalized_period, "source": "BarStore",
+              "bars": legacy_bars}
+    if explain:
+        metadata = getattr(bar_store, "explain", lambda: {})()
+        if isinstance(metadata, dict):
+            result["metadata"] = metadata
+    return result
+
+
+def load_kline(code, period="1d", limit=500, *, bar_store=None, as_of=None,
+               start=None, end=None, closed_only=False, explain=False):
     """统一入口：任意形态代码 + 周期 → K 线 dict（见模块 docstring）。"""
+    if bar_store is not None:
+        return _bar_store_result(code, period, limit, bar_store, as_of, start,
+                                 end, closed_only, explain)
     period = str(period or "1d").lower()
     if period not in PERIODS:
         return {"ok": False,
-                "error": "period 仅支持 1d / 60m / 30m，收到「%s」" % period}
+                "error": "period 仅支持 1d / 60m / 30m / 5m，收到「%s」" % period}
     nm = _norm(code)
     if not nm:
         return {"ok": False,
