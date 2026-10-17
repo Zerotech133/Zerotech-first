@@ -321,6 +321,21 @@ def cmd_merge(tid):
     t = tasks.get(tid)
     if not t:
         raise SystemExit("无此工单")
+    # 防呆（K-ORG-139 / P0-1）：分支无提交即拒绝合并，保留 worktree。
+    # 亲历事故：K-ORG-137 在 worktree 改了文件但未 commit 就跑 merge——
+    # 分支指向 master 使 `git merge --no-ff` 空转（Already up to date），
+    # 随后 --force 清场直接删除未提交改动，修复内容全丢。
+    ahead, _ = _ahead_behind(t["branch"])
+    if ahead == 0:
+        print("== 评审门 ==")
+        print("  ✗ 防呆：分支 %s 无提交（master..%s = 0）——未 commit 即 merge "
+              "会空转并被 --force 清场丢内容" % (t["branch"], t["branch"]))
+        print("  已拒绝合并，worktree 保留。请在 worktree 内先 commit，再重跑 merge。")
+        t["status"] = "review"
+        _save(tasks)
+        _emit("guard_fail", tid, "分支无提交（master..%s=0），防呆拒绝合并，worktree 保留"
+              % t["branch"])
+        return 1
     print("== 评审门 ==")
     for name, cmd in GATES:
         r = subprocess.run(cmd, capture_output=True, text=True,
