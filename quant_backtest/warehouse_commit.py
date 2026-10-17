@@ -66,13 +66,39 @@ def publication_guard(resource, *, mode):
     """read 为共享锁，write 为排他锁；崩溃持有者由 OS 自动释放。
 
 read 必须在 with 内完成枚举和读取物化，不能返回惰性迭代器。
-本候选只支持 Windows，其他平台拒绝，避免假装获得发布保护。
+Windows 走 LockFileEx，POSIX 走 fcntl.flock，两者语义等价
+（共享读/排他写、崩溃由内核或系统自动释放、read 拿到锁后再查 pending）。
 """
     if mode not in {'read', 'write'}:
         raise ValueError('mode只允许read或write')
     root = _root(resource)
     if os.name != 'nt':
-        raise RuntimeError('发布锁仅支持Windows LockFileEx')
+        # POSIX：fcntl.flock 提供与 LockFileEx 等价的语义
+        # （LOCK_SH 共享读 / LOCK_EX 排他写、进程崩溃由内核自动释放、read 锁定后再查 pending）。
+        # 原先直接拒绝非 Windows 平台，会让 Linux 侧的数据仓消费者（freshness 等）全部 500。
+        import fcntl
+
+        lock_path = root / '.warehouse-publication.lock'
+        if lock_path.is_symlink():
+            raise ValueError('发布锁不可为符号链接')
+        descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        locked = False
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX if mode == 'write' else fcntl.LOCK_SH)
+            locked = True
+            # 与 Windows 分支一致：拿到共享锁之后再检查待恢复发布，避免枚举与发布竞态。
+            if mode == 'read':
+                _ensure_clear(root)
+            yield root
+        finally:
+            if locked:
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_UN)
+                except OSError:
+                    pass
+            os.close(descriptor)
+        return
+
     import msvcrt
     from ctypes import wintypes
 
