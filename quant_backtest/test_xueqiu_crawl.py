@@ -4,6 +4,7 @@
 覆盖：养 cookie / 429 退避 / SQLite 幂等 upsert
 （设计 §2.1 测试项 test_warm_session/test_429_backoff/test_comment_upsert）。
 """
+import json
 import os
 import sys
 import tempfile
@@ -210,6 +211,61 @@ class TestCommentUpsert(_TmpEnv):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["status_id"], "st1")
         self.assertEqual(rows[0]["category"], 102)
+
+    def test_fetch_timeline_nested_data(self):
+        """P3 嵌套结构（2026-10-17 实测判例）：外层 id=feed 壳，真实帖
+        在内层 data JSON——解析内层得真实 status_id/时间/标题/计数，
+        created_at 非空（旧解析落库全空壳行的回归锁）。"""
+        inner = {"id": 172229155, "title": "一分钟读懂招股书",
+                 "description": "正文摘要", "created_at": 1613812244000,
+                 "user": {"id": 7961123322}, "view_count": 3454919,
+                 "reply_count": 88, "retweet_count": 3, "like_count": 21,
+                 "source": "xueqiu.com"}
+        body = {"list": [{"id": "feed1", "data": json.dumps(inner)}],
+                "next_max_id": "257156"}
+        with mock.patch.object(C.X, "xq_get", return_value=body):
+            c = self._crawler()
+            rows = c.fetch_timeline(category=102, count=20, max_pages=1)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["status_id"], "172229155")  # 内层真 id
+        self.assertEqual(rows[0]["title"], "一分钟读懂招股书")
+        self.assertRegex(rows[0]["created_at"], r"^\d{4}-\d{2}-\d{2} ")
+        self.assertEqual(rows[0]["user_id"], "7961123322")
+        self.assertEqual(rows[0]["view_count"], 3454919)
+        self.assertEqual(rows[0]["comment_count"], 88)  # reply_count 归一
+
+    def test_fetch_timeline_nested_bad_data_skipped(self):
+        """data 解析失败宁缺毋滥：不回退外层壳 id（防空壳行回流）。"""
+        body = {"list": [{"id": "feed1", "data": "{bad json"}]}
+        with mock.patch.object(C.X, "xq_get", return_value=body):
+            c = self._crawler()
+            rows = c.fetch_timeline(category=102, count=20, max_pages=1)
+        self.assertEqual(rows, [])
+
+    def test_fetch_timeline_cursor_pagination(self):
+        """P3 游标翻页：匿名 page 无效，按官方 next_max_id 推进；
+        游标耗尽自然终止；跨步 status_id 去重。"""
+        inner1 = {"id": 1, "title": "新帖", "created_at": 1760582400000}
+        inner2 = {"id": 2, "title": "次新帖", "created_at": 1760496000000}
+        bodies = [
+            {"list": [{"id": "f1", "data": json.dumps(inner1)}],
+             "next_max_id": "257156"},
+            {"list": [{"id": "f2", "data": json.dumps(inner2)}]},
+        ]
+        calls = []
+
+        def fake_xq_get(sess, url, params=None, **kw):
+            calls.append(dict(params or {}))
+            return bodies[len(calls) - 1]
+
+        with mock.patch.object(C.X, "xq_get", side_effect=fake_xq_get), \
+                mock.patch.object(X, "jitter_sleep", lambda *a: None):
+            c = self._crawler()
+            rows = c.fetch_timeline(category=102, count=20, max_pages=3)
+        self.assertEqual([r["status_id"] for r in rows], ["1", "2"])
+        self.assertEqual(len(calls), 2)              # 游标耗尽即停
+        self.assertNotIn("max_id", calls[0])         # 首步不带游标
+        self.assertEqual(calls[1]["max_id"], "257156")  # 官方游标推进
 
     def test_crawl_all_end_to_end(self):
         """timeline+hot 全链（mock HTTP）→ SQLite 落库 + manifest。"""

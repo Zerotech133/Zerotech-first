@@ -20,6 +20,7 @@
   python xueqiu_crawl.py --mode takeover                  # L1 失效手动接管
 """
 import argparse
+import json
 import os
 import sys
 from datetime import datetime
@@ -111,37 +112,95 @@ class XqCrawler:
             row.update(extra)
         return row
 
+    @staticmethod
+    def _parse_feed_item(it: dict, category: int) -> dict | None:
+        """feed 项 → 真实帖行（P3 嵌套结构，2026-10-17 实测判例）。
+
+        实测响应为嵌套：外层 {id, data:"{…}"}——外层 id 是 feed 壳，
+        真实帖（id/title/description/text/user/created_at/计数）在内层
+        data JSON 串。旧 _row 取外层 id → 落库全空壳行（created_at=''）。
+        data 存在但解析失败 → None（宁缺毋滥，不落空壳）；外层扁平结构
+        （无 data 键）由调用方回退 _row 兼容。
+        """
+        d = it.get("data")
+        if isinstance(d, str):
+            try:
+                d = json.loads(d)
+            except Exception:
+                return None
+        if not isinstance(d, dict) or not d.get("id"):
+            return None
+        row = {
+            "status_id": str(d["id"]),
+            "created_at": X.ms_to_dt(d.get("created_at")),
+            "title": str(d.get("title") or "")[:120],
+            "desc": str(d.get("description") or d.get("text") or "")[:2000],
+            "user_id": str(d.get("user_id") or
+                           (d.get("user") or {}).get("id") or ""),
+            "target": str(d.get("target") or ""),
+            "source": str(d.get("source") or d.get("client") or "")[:60],
+            "category": category,
+            "fetched_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        row["comment_count"] = (d.get("comment_count")
+                                or d.get("reply_count") or 0)
+        for f in ("view_count", "retweet_count", "like_count",
+                  "reward_count"):
+            row[f] = d.get(f) or 0
+        return row
+
     # ── 三类抓取 ────────────────────────────────────────────
     def fetch_timeline(self, category: int = 102, count: int = 20,
                        max_pages: int = 1) -> list[dict] | None:
         """v4 分类帖流（102 沪深/104 港股/105 美股/111 基金）→ 帖行列表。
 
-        首页请求失败（429 到顶/风控/400016）返回 None（错误信号，区别于
-        真空空页 []）；后续页失败保留已采行返回部分结果。
+        P3 升级（2026-10-17 实测判例）：匿名态 `page` 参数无效（每页
+        返回同批 16-17 条）——改走官方 `next_max_id` 游标（max_id 实测
+        两页重叠 0，可深翻历史）；max_pages 语义=游标步数（硬上限
+        X.MAX_PAGES）。响应嵌套：真实帖在内层 data JSON，经
+        _parse_feed_item 解析；外层扁平结构（无 data 键）回退 _row。
+
+        首步请求失败（429 到顶/风控/400016）返回 None（错误信号，区别
+        于真空空页 []）；后续步失败保留已采行（部分成功）。游标耗尽
+        （next_max_id 缺失）或卡死（与前次相同）自然终止；跨步按
+        status_id 去重。
         """
         rows: list[dict] = []
+        seen: set = set()
         url = SOCIAL + "/v4/statuses/public_timeline_by_category.json"
-        for page in range(1, min(max_pages, X.MAX_PAGES) + 1):
-            data = X.xq_get(self.sess, url, params={
-                "category": category, "count": count, "page": page,
-                "source": "user"})
+        cursor = None
+        for step in range(1, min(max_pages, X.MAX_PAGES) + 1):
+            params = {"category": category, "count": count, "page": 1,
+                      "source": "user"}
+            if cursor:
+                params["max_id"] = cursor
+            data = X.xq_get(self.sess, url, params=params)
             if data is None:
                 # P1 修复（审计）：xq_get None=请求失败（重试到顶/风控/
-                # 400016 token 失效），不可与真空空页混同——首页失败返回
+                # 400016 token 失效），不可与真空空页混同——首步失败返回
                 # None 信号，调用方记 manifest failed（fail 而非伪成功）
-                if page == 1:
+                if step == 1:
                     return None
-                break                   # 后续页失败：保留已采行（部分成功）
-            items = (data or {}).get("items") or \
-                (data or {}).get("list") or []
+                break                   # 后续步失败：保留已采行（部分成功）
+            items = (data or {}).get("list") or \
+                (data or {}).get("items") or []
             if not items:
                 break                       # 空页：自然终止
             for it in items:
-                row = self._row(it, category)
-                if row["status_id"]:
+                if "data" in it:
+                    row = self._parse_feed_item(it, category)
+                else:
+                    row = self._row(it, category)   # 旧扁平结构兼容
+                if row and row["status_id"] and \
+                        row["status_id"] not in seen:
+                    seen.add(row["status_id"])
                     rows.append(row)
-            if page < min(max_pages, X.MAX_PAGES):
-                X.jitter_sleep()            # 页间强制限速
+            if step < min(max_pages, X.MAX_PAGES):
+                nxt = (data or {}).get("next_max_id")
+                if not nxt or nxt == cursor:
+                    break                   # 游标耗尽/卡死：自然终止
+                cursor = nxt
+                X.jitter_sleep()            # 步间强制限速
         return rows
 
     def fetch_hot(self, count: int = 30) -> list[dict] | None:
