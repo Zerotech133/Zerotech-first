@@ -26,7 +26,8 @@ from idem_hook import DualTrackHook  # noqa: E402  M0 P4 双轨幂等
 from interpreter import Interpreter, Team  # noqa: E402
 from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
-from tools import make_context, quote_snapshot  # noqa: E402
+from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
+from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402  M4-P3 双刀阵容
 
 BASKET = ["600519", "000858", "601318", "300750", "600036"]  # 茅台/五粮液/平安/宁德/招行
 LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
@@ -38,6 +39,53 @@ REC_SCORE = {"STRONG_BUY": 2.0, "BUY": 1.0, "HOLD": 0.0, "WATCH": -0.5,
 # failed 即时告警（K-STOCK-013）：复用已验证推送链；P0 语义=不等 17:35 日报
 PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
 ALERT_STATE = BASE / "data" / "shadow" / "p0_alert_state.json"
+
+
+def _dk_fields(symbol):
+    """M4-P3 双刀信号 + Regime 阵容增量字段（纯增量，fail-open）。
+
+    - Regime→profile 阵容选择器落账（dk_profile/dk_selection_rationale，
+      选择依据可回放）；blocked_regimes 命中显式 dk_profile_blocked=true；
+    - dk_signal 与 LLM score 是两套独立口径：同存不覆盖（桥接=并列落账，
+      断言互不混算——dk_signal 来自八重过滤，score 来自枚举×confidence）；
+    - 任何异常只留 dk_error 不中断影子主流程（影子是主链，双刀是观测增量）。
+    """
+    try:
+        import pandas as pd
+        from quant_double_knife import (
+            _compute_regime, quant_double_knife, select_profile)
+        bars = kline_daily(symbol, 60)
+        if len(bars) < 55:
+            return {"dk_error": "kline 不足 55 根（%d）" % len(bars)}
+
+        def _f(v):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return None
+
+        rows = []
+        for b in bars:
+            o, c, h, l, v = _f(b[1]), _f(b[2]), _f(b[3]), _f(b[4]), _f(b[5])
+            amt = _f(b[6]) if len(b) > 6 else None
+            if not amt or amt <= 0:
+                amt = (v or 0.0) * 100 * (c or 0.0)  # 手×100股×价 近似额
+            rows.append((o, h, l, c, amt))
+        df = pd.DataFrame(rows, columns=["open", "high", "low", "close", "amount"])
+        regime_frame = _compute_regime(df["close"], df["high"], df["low"], df["amount"])
+        regime = str(regime_frame["regime_label"].iloc[-1])
+        sel = select_profile(regime)
+        out = quant_double_knife(df, profile=sel["profile"])
+        last = out.iloc[-1]
+        return {
+            "dk_regime": regime,
+            "dk_profile": sel["profile"],
+            "dk_profile_blocked": sel["blocked"],
+            "dk_selection_rationale": sel["rationale"],
+            "dk_signal": bool(last["double_knife_signal"]),
+        }
+    except Exception as e:  # noqa: BLE001
+        return {"dk_error": "%s: %s" % (type(e).__name__, str(e)[:120])}
 
 
 def push_failed_alert(failed_rows, today, parse_fail_rows=None):
@@ -224,9 +272,16 @@ def main():
                     "degraded": any(v != "normal" for v in result["status"].values()),
                     "latency_s": round(time.time() - t0, 1),
                 }
+                row.update(_dk_fields(symbol))  # M4-P3：双刀+Regime 增量（fail-open）
                 if not parse_ok:
                     print("[warn] %s D1 决策解析失败（输出无 recommendation JSON·已入账 parse_ok=false）"
                           % symbol)
+                # M4-P3 双刀阵容观测（fail-open：dk 异常不影响影子主链）
+                try:
+                    snap = dk_snapshot(bars_to_df(kline_daily(symbol, 30)))
+                except Exception as _dke:  # noqa: BLE001
+                    snap = {"dk_error": str(_dke)[:120]}
+                row = enrich_row(row, snap)
                 break
             except Exception as e:  # noqa: BLE001  无人干预要求：失败入账不中断
                 row = {"date": today, "ts": time.time(), "symbol": symbol,
