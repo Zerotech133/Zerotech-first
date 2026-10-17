@@ -275,6 +275,30 @@ def cross_check(log_path):
           extra=True)
 
 
+def _warn_early_run(rows, day, is_monday):
+    """在「还没跑完」的时候提醒别把 FAIL 当真失败。
+
+    本工具**不等待**（这正是它与巡检的分工：巡检等到整批落地再判，
+    复核立即给出现状）。所以周一 17:25 刚起跑几十秒就跑一遍，必然看到
+    当日 done 行不足——那是「正在跑」，不是「跑坏了」。
+    两条判据形态一样但结论相反，是最容易误判的一类，必须显式提示。
+    """
+    if not is_monday:
+        return
+    days = sorted({r.get("date") for r in rows if r.get("date")})
+    latest = days[-1] if days else None
+    if not latest or latest <= LAST_V0_DAY:
+        return
+    todays = [r for r in rows if r.get("date") == latest and r.get("status") == "done"]
+    if len(todays) >= BASKET_N:
+        return
+    print()
+    print("  ⚠ 注意：当日 done %d/%d 票。巡检在本时段会**继续等待**整批落地"
+          "（窗口 17:25 起，硬上限 180 分钟）。" % (len(todays), BASKET_N))
+    print("     若 run_shadow 进程仍在跑（last_run.log 或进程列表可见），"
+          "这个 FAIL 只是「还没跑完」——请等巡检出结论后再复核一次。")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="门 3 独立复核（只读，第二意见）")
     ap.add_argument("--base", default=str(DEFAULT_BASE),
@@ -331,6 +355,7 @@ def main(argv=None):
         if fails:
             print("复核结论: FAIL %d/%d（%s）"
                   % (total - len(fails), total, ", ".join(fails)))
+            _warn_early_run(rows, args.date, is_monday)
         else:
             print("复核结论: 核心 %d/%d 全过，但增补项 FAIL（%s）"
                   % (total, total, ", ".join(extra_fails)))

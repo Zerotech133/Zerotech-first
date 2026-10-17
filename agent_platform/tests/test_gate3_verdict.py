@@ -240,6 +240,27 @@ def test_load_jsonl_missing_file_is_empty(tmp_path):
     assert rows == [] and bad == 0
 
 
+# ------------------------------------------------------------ 早跑误判防护
+
+def test_early_run_warning_on_monday_with_partial_basket(capsys):
+    """周一只有 3 票时，工具会判 FAIL——必须显式提示「这可能只是还没跑完」。
+    两条判据形态一样、结论相反，是门 3 最容易误判的一类。"""
+    gv._warn_early_run(_basket(3), MONDAY, is_monday=True)
+    out = capsys.readouterr().out
+    assert "还没跑完" in out and "3/5" in out
+
+
+def test_early_run_warning_silent_when_basket_complete(capsys):
+    gv._warn_early_run(_basket(5), MONDAY, is_monday=True)
+    assert capsys.readouterr().out == ""
+
+
+def test_early_run_warning_silent_on_non_monday(capsys):
+    """非周一没有「首跑窗口」概念，不该弹这个提示。"""
+    gv._warn_early_run(_basket(3), "2026-10-18", is_monday=False)
+    assert capsys.readouterr().out == ""
+
+
 # ------------------------------------------------------------ CLI + 只读红线
 
 def _run_cli(*args):
