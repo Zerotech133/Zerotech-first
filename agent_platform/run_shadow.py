@@ -41,51 +41,6 @@ PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
 ALERT_STATE = BASE / "data" / "shadow" / "p0_alert_state.json"
 
 
-def _dk_fields(symbol):
-    """M4-P3 双刀信号 + Regime 阵容增量字段（纯增量，fail-open）。
-
-    - Regime→profile 阵容选择器落账（dk_profile/dk_selection_rationale，
-      选择依据可回放）；blocked_regimes 命中显式 dk_profile_blocked=true；
-    - dk_signal 与 LLM score 是两套独立口径：同存不覆盖（桥接=并列落账，
-      断言互不混算——dk_signal 来自八重过滤，score 来自枚举×confidence）；
-    - 任何异常只留 dk_error 不中断影子主流程（影子是主链，双刀是观测增量）。
-    """
-    try:
-        import pandas as pd
-        from quant_double_knife import (
-            _compute_regime, quant_double_knife, select_profile)
-        bars = kline_daily(symbol, 60)
-        if len(bars) < 55:
-            return {"dk_error": "kline 不足 55 根（%d）" % len(bars)}
-
-        def _f(v):
-            try:
-                return float(v)
-            except (TypeError, ValueError):
-                return None
-
-        rows = []
-        for b in bars:
-            o, c, h, l, v = _f(b[1]), _f(b[2]), _f(b[3]), _f(b[4]), _f(b[5])
-            amt = _f(b[6]) if len(b) > 6 else None
-            if not amt or amt <= 0:
-                amt = (v or 0.0) * 100 * (c or 0.0)  # 手×100股×价 近似额
-            rows.append((o, h, l, c, amt))
-        df = pd.DataFrame(rows, columns=["open", "high", "low", "close", "amount"])
-        regime_frame = _compute_regime(df["close"], df["high"], df["low"], df["amount"])
-        regime = str(regime_frame["regime_label"].iloc[-1])
-        sel = select_profile(regime)
-        out = quant_double_knife(df, profile=sel["profile"])
-        last = out.iloc[-1]
-        return {
-            "dk_regime": regime,
-            "dk_profile": sel["profile"],
-            "dk_profile_blocked": sel["blocked"],
-            "dk_selection_rationale": sel["rationale"],
-            "dk_signal": bool(last["double_knife_signal"]),
-        }
-    except Exception as e:  # noqa: BLE001
-        return {"dk_error": "%s: %s" % (type(e).__name__, str(e)[:120])}
 
 
 def push_failed_alert(failed_rows, today, parse_fail_rows=None):
@@ -272,7 +227,6 @@ def main():
                     "degraded": any(v != "normal" for v in result["status"].values()),
                     "latency_s": round(time.time() - t0, 1),
                 }
-                row.update(_dk_fields(symbol))  # M4-P3：双刀+Regime 增量（fail-open）
                 if not parse_ok:
                     print("[warn] %s D1 决策解析失败（输出无 recommendation JSON·已入账 parse_ok=false）"
                           % symbol)
