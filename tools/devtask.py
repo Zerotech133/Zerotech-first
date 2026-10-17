@@ -111,10 +111,70 @@ def _git(*args, cwd=REPO):
     return r.stdout.strip()
 
 
+def _heal_trailing_commas(text):
+    """移除 JSON 中对象/数组末尾的尾逗号（引号感知，K-ORG-149/151/152 三现自愈）。
+
+    并行会话手工写 tasks.json 常留 ``"note": "...",\n }`` 尾逗号 → JSONDecodeError
+    使 ``new/merge`` 崩溃。仅当逗号在字符串外、且其后非空白字符是 ``}`` 或 ``]``
+    才移除；字符串内的 ``,`` 不动（esc 处理 ``\\`` 转义）。
+    """
+    out = []
+    i = 0
+    n = len(text)
+    in_str = False
+    esc = False
+    while i < n:
+        ch = text[i]
+        if in_str:
+            out.append(ch)
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            i += 1
+            continue
+        if ch == '"':
+            in_str = True
+            out.append(ch)
+            i += 1
+            continue
+        if ch == ",":
+            j = i + 1
+            while j < n and text[j] in " \t\r\n":
+                j += 1
+            if j < n and text[j] in "}]":
+                i += 1  # 尾逗号：跳过不输出
+                continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def _load_tasks_json():
+    """读 tasks.json 并自愈尾逗号；非尾逗号类结构损坏照常抛错（fail-visible）。
+
+    自愈只移除尾逗号，不写盘——本仓任何写路径（new/review/merge/drop）都会经
+    ``_save`` 原子固化；只读路径（list/board）无需回写，避免再引发写竞争。
+    """
+    with open(TASKS, encoding="utf-8") as f:
+        raw = f.read()
+    try:
+        return json.loads(raw)
+    except ValueError:
+        healed = _heal_trailing_commas(raw)
+        if healed == raw:
+            raise
+        try:
+            return json.loads(healed)
+        except ValueError:
+            raise
+
+
 def _tasks():
     if os.path.exists(TASKS):
-        with open(TASKS, encoding="utf-8") as f:
-            return json.load(f)
+        return _load_tasks_json()
     return {}
 
 
@@ -129,8 +189,7 @@ def _save(tasks, *, drop_keys=()):
     current = {}
     if os.path.exists(TASKS):
         try:
-            with open(TASKS, encoding="utf-8") as f:
-                current = json.load(f)
+            current = _load_tasks_json()
         except (OSError, ValueError):
             current = {}
     merged = dict(current)
