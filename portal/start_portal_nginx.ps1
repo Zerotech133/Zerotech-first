@@ -1,4 +1,4 @@
-﻿# ai-portal 反代容器启动脚本（挂载源钉死 E:\老田的AI助手\portal）
+# ai-portal 反代容器启动脚本（挂载源钉死 E:\老田的AI助手\portal）
 # 用法：powershell -ExecutionPolicy Bypass -File start_portal_nginx.ps1
 # 行为：等引擎就绪 -> 幂等重建容器 -> nginx -t 自检 -> 打印状态与 resolver 核对
 $ErrorActionPreference = "Stop"
@@ -18,7 +18,7 @@ for ($i = 1; $i -le 30; $i++) {
 }
 
 Write-Host "[2/4] 重建容器 $Name（挂载源：$Portal）…" -ForegroundColor Cyan
-$exists = docker ps -a --format "{{.Names}}" | Select-String -X $Name
+$exists = docker ps -a --format "{{.Names}}" | Select-String -SimpleMatch $Name
 if ($exists) { docker rm -f $Name *> $null }
 docker run -d --name $Name --restart unless-stopped -p $Port `
     -v "${Portal}:/usr/share/nginx/html:ro" `
