@@ -80,7 +80,7 @@
 | `C:\项目\zerobound-kg-snapshots` | KG 施工快照归档（KGStockAnalysis 时代 2026-10-02~05 审计证据：S0-S5/W/C/G3 批次 snapshot+manifest+GateA 签收，159 文件 12.5MB，保留） | — | 2026-10-17 由 `知识图谱` 改名（原名名不副实；零引用实证后改名） |
 | `C:\项目\zhice-os-v2-windows-20260920` | 智策 OS v2 活部署（快照包无 git：5175 前端 + zhice-db 5446 + zhice-redis 6380 在跑） | — | **2026-10-17 拍板不动**：活系统+py312 editable 安装指向此路径+zhice.ps1 引用，改名断链风险>收益；目录名保留快照语义（含日期）以示其出身；引用此工程一律走现名或先立项改名（停服→改名→修引用→重装 editable→验证） |
 | `C:\项目\new_tdx64` | **第三方外部软件**（通达信终端 TdxW.exe 完整安装，自 D 盘迁入；非自研工程，atom 体系不适用） | — | **不动**（2026-10-17 拍板）：data_catalog.yaml 白名单活引用 + 通达信升级器/配置记忆安装路径；手动启动的行情终端，按需开关 |
-| `C:\项目\res-downloader-py` | 资源下载器 | — | atom 候选 |
+| `C:\项目\res-downloader-py` | 自研资源嗅探下载器（FastAPI/uvicorn，站点规则 196 条；atom 候选名 `atom-download-media`） | — | **活跃开发中·暂不改名**（2026-10-17 拍板）：8898/18899 服务在跑+当日多提交（并行会话不干预铁律）；主站集成走纯 HTTP（osint_video/resdl_adapter 零路径引用），改名不断主站。**改名执行清单（开发收尾后）**：停 8898/18899 → Rename → 改 config.json save_dir 自引用 → 重启验证 |
 
 - **数据根不在此表**：唯一 live 数据根 = `C:/项目/老田的AI助手/quant_backtest/data`（zerobound-kg/AGENTS.md §1 立章，KGDataRoot 空壳已废）。
 - **改名纪律**：①先查引用链（计划任务/junction/硬编码路径，含 E:\ 历史死路径）；②物理改名 + 引用归一**同一批提交**；③可选旧名兼容 junction，必须在本表标注过期日期；④新代码一律引用物理名或注册表内别名，禁私建未注册 junction。
