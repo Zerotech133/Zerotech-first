@@ -267,6 +267,38 @@ def auto_draft_roster(root: Path = None, by: str = "agent",
     return drafted, findings
 
 
+# ---------------------------------------------------------------- 全链回放
+
+def perf_chain_view(store, target: str, root: Path = None) -> Dict:
+    """四环全链回放（M4-P5 总验收句的 perf 版）。
+
+    target = run_id / trace_id / order_id / perf_key 任一锚点值 →
+    trace_link 命中链聚合 + perf 行明细 + 阵容分组快照。
+    verdict: OK / NOT_FOUND；perf 行按命中的 perf_key 关联（无行留
+    perf_rows=[]，不伪造——链上锚点是登记态，明细以账本为准）。
+    """
+    from adapters.trace_link import replay_trace
+    rep = replay_trace(store, target)
+    if rep.get("verdict") != "OK":
+        return {"verdict": rep["verdict"], "matches": [],
+                "perf_rows": [], "profile_stats": {},
+                "findings": rep.get("findings", [])}
+    hit_keys = set()
+    for m in rep["matches"]:
+        ref = m["chain"].get("perf") or {}
+        if ref.get("perf_key"):
+            hit_keys.add(ref["perf_key"])
+    all_rows = load_perf_rows(root)
+    perf_rows = [r for r in all_rows if r["perf_key"] in hit_keys]
+    return {
+        "verdict": "OK",
+        "matches": rep["matches"],
+        "perf_rows": perf_rows,
+        "profile_stats": by_profile(perf_rows),
+        "findings": [],
+    }
+
+
 # ---------------------------------------------------------------- CLI
 
 def main(argv: Optional[List[str]] = None) -> int:

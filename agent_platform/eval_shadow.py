@@ -18,6 +18,7 @@ import argparse
 import json
 import sqlite3
 import sys
+from datetime import datetime
 from pathlib import Path
 
 BASE = Path(__file__).parent
@@ -117,6 +118,8 @@ def stance_groups(per_symbol_latest: dict) -> dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--min-days", type=int, default=5)
+    ap.add_argument("--no-persist", action="store_true",
+                    help="M4-P5：跳过 perf_ledger 入账与阵容校准起草")
     args = ap.parse_args()
 
     rows = load_ledger()
@@ -143,6 +146,7 @@ def main():
     skipped = []  # K-STOCK-338：决策字段缺失行可见（此前静默缩样本，读者不知 n 为何变小）
     pending_rows = 0  # K-STOCK-397：零持有期行（决策日=最新 bar，后验窗口未开）
     kline_cache = {}  # sym -> bars（每次评估每票只拉一次 K 线）
+    persist_rows = []  # M4-P5：perf_ledger 沉淀行（含 run_id/dk_* 锚点）
     for r in done:  # K-STOCK-397：逐行后验（原 per-symbol-latest 采样恒落零持有期）
         sym, d = r["symbol"], r["date"]
         if r.get("score") is None or not r.get("price_at_decision"):
@@ -166,6 +170,16 @@ def main():
             detail.append((d, sym, r.get("name", ""), r["score"], r.get("confidence") or 0,
                            base, now, ret, hz, r.get("recommendation", "?"),
                            sym_group.get(sym, "?")))
+            persist_rows.append({
+                "date": d, "symbol": sym, "run_id": r.get("run_id", ""),
+                "score": r.get("score"), "confidence": r.get("confidence"),
+                "ret_pct": ret, "horizon": hz, "base": base, "exit": now,
+                "recommendation": r.get("recommendation", "?"),
+                "stance": sym_group.get(sym, "?"),
+                "dk_regime": r.get("dk_regime"),
+                "dk_profile": r.get("dk_profile"),
+                "dk_blocked": r.get("dk_blocked"),
+            })
         except Exception as e:  # noqa: BLE001
             print("  [warn] %s %s 后验价获取失败: %s" % (d, sym, e))
     if detail:
@@ -220,6 +234,30 @@ def main():
                 g, len(gs), "n<3 不计算" if rho_g is None else round(rho_g, 3)))
     except Exception as e:  # noqa: BLE001
         print("  [warn] 分组判读失败: %s" % e)
+
+    # M4-P5：绩效入账 + 阵容校准起草（fail-open——影子主判读零依赖，
+    # 起草是 intel draft 建议权，adopt 仍人工凭据）
+    if not args.no_persist and persist_rows:
+        try:
+            from adapters.trace_link import LinkStore
+            from engine.perf_ledger import record_perf_rows, auto_draft_roster
+            rep = record_perf_rows(persist_rows, source="eval-shadow",
+                                   link_store=LinkStore(),
+                                   declared_at=datetime.now().isoformat(timespec="seconds"))
+            print("[J4 perf] 沉淀 recorded=%d replayed=%d skipped=%d findings=%d"
+                  % (rep["recorded"], rep["replayed"], rep["skipped"],
+                     len(rep["findings"])))
+            for f in rep["findings"][:3]:
+                print("  [perf-finding] %s" % f)
+            drafted, df = auto_draft_roster()
+            if drafted:
+                for dft in drafted:
+                    print("  [roster-draft] %s %s (%s)"
+                          % (dft["decision"], dft["verdict_id"], dft["impact"]))
+            for f in df[:3]:
+                print("  [roster-finding] %s" % f)
+        except Exception as e:  # noqa: BLE001
+            print("  [warn] perf 入账降级（评估结论不受影响）: %s" % e)
 
     if DB.exists() and done:
         conn = sqlite3.connect(str(DB), check_same_thread=False)

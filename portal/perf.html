@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投研绩效看板 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg,#0f1216);color:var(--text,#e8eaf0);font-size:14px}
+.wrap{max-width:1180px;margin:0 auto;padding:14px 14px 60px}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.head h1{font-size:20px;margin:0}
+.head small{color:var(--text-dim,#8a93a6);font-size:12px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.btn{background:var(--card2,#202735);border:1px solid var(--border,#2a3242);border-radius:7px;color:var(--text,#e8eaf0);padding:5px 12px;font-size:12.5px;cursor:pointer}
+.btn:hover{border-color:#4f8ef7}
+input{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:7px;color:var(--text,#e8eaf0);padding:5px 10px;font-size:12.5px;width:280px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.card{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:9px 11px}
+.card .k{font-size:11.5px;color:var(--text-dim,#8a93a6)}
+.card .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.card .t{font-size:10.5px;color:var(--text-dim,#8a93a6);opacity:.8;margin-top:2px}
+.sect{margin:16px 0 6px;font-size:14.5px;font-weight:700}
+.sect small{font-weight:400;color:var(--text-dim,#8a93a6);font-size:11.5px;margin-left:8px}
+table{width:100%;border-collapse:collapse;background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;overflow:hidden}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--border,#2a3242);font-size:12.5px;vertical-align:top}
+th{color:var(--text-dim,#8a93a6);font-weight:600;font-size:11.5px;white-space:nowrap;background:var(--card2,#202735)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(79,142,247,.05)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--text-dim,#8a93a6);word-break:break-all}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;border:1px solid var(--border,#2a3242)}
+.tag.up{color:#e86971;border-color:rgba(232,105,113,.4);background:rgba(232,105,113,.08)}
+.tag.down{color:#5dd39e;border-color:rgba(93,211,158,.4);background:rgba(93,211,158,.08)}
+.tag.warn{color:#d9a44a;border-color:rgba(217,164,74,.4);background:rgba(217,164,74,.08)}
+.pos{color:#e86971;font-variant-numeric:tabular-nums}
+.neg{color:#5dd39e;font-variant-numeric:tabular-nums}
+.empty{padding:26px;text-align:center;color:var(--text-dim,#8a93a6);font-size:13px}
+.err{background:rgba(232,105,113,.08);border:1px solid rgba(232,105,113,.4);border-radius:9px;padding:10px 12px;margin:10px 0;font-size:12.5px;color:#e86971}
+.meta{color:var(--text-dim,#8a93a6);font-size:11.5px;margin:6px 2px}
+.note{color:var(--text-dim,#8a93a6);font-size:11.5px;margin:8px 2px;line-height:1.8}
+.chain{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.9;word-break:break-all;background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:9px 11px;margin:8px 0}
+.chain .arrow{color:#4f8ef7;font-weight:600;padding:0 4px}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>投研绩效看板</h1>
+    <small>perf_ledger × trace_link 四环回放 · 只读聚合 · M4-P5</small>
+  </div>
+  <div class="tools">
+    <button class="btn" id="btn-refresh">刷新</button>
+    <input id="ref" placeholder="回放锚点：run_id / trace_id / order_id / perf_key">
+    <button class="btn" id="btn-replay">全链回放</button>
+    <span class="meta" id="gen-at"></span>
+  </div>
+  <div id="stats" class="cards"></div>
+  <div id="err"></div>
+  <div id="replay-out"></div>
+
+  <div class="sect">阵容分组后验 <small>by_profile：dk_* 阵容字段分组 · none=存量行（P3 前决策）· 纯观测无门</small></div>
+  <table><thead><tr><th>阵容</th><th>样本 n</th><th>后验均值</th><th>胜率</th><th>判读</th></tr></thead>
+  <tbody id="profiles"></tbody></table>
+
+  <div class="sect">阵容校准裁决 <small>intel 裁决池 agent_platform/perf_ledger 条目 · draft 无凭据建议权，adopt 须人工</small></div>
+  <table><thead><tr><th>verdict_id</th><th>决策</th><th>作业键</th><th>理由</th></tr></thead>
+  <tbody id="verdicts"></tbody></table>
+
+  <div class="sect">最近沉淀明细 <small>最新 20 条 · perf_key = sha1(date|symbol|run_id)[:16] · 同键异值拒绝（后验漂移须人工判读）</small></div>
+  <table><thead><tr><th>交易日</th><th>标的</th><th>score</th><th>后验</th><th>持有日</th><th>建议</th><th>阵容</th><th>perf_key</th></tr></thead>
+  <tbody id="rows"></tbody></table>
+
+  <div class="note">校准阈值：组样本 ≥ <b id="th-n"></b> 且后验均值 &lt; <b id="th-r"></b> 个百分点触发起草（relaxed→degrade 收回放宽 / strict→watch 只观察）。红线：本看板纯只读观测面，无任何交易通道。</div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const fmt = (v, d=2) => (v==null ? '—' : Number(v).toFixed(d));
+const retTag = v => {
+  if (v==null) return '—';
+  const n = Number(v);
+  return '<span class="'+(n>0?'pos':'neg')+'">'+(n>0?'+':'')+n.toFixed(2)+'%</span>';
+};
+async function load(){
+  $('#err').textContent='';
+  try{
+    const r = await fetch('/api/perf/board');
+    const b = await r.json();
+    $('#th-n').textContent = b.thresholds ? b.thresholds.min_samples : '—';
+    $('#th-r').textContent = b.thresholds ? b.thresholds.mean_ret_floor : '—';
+    $('#gen-at').textContent = '账本' + (b.ledger_exists ? ('· ' + b.total + ' 行') : '未建（绿地）');
+    const cards = [['沉淀行', b.total||0, 'perf_key 幂等']];
+    const ps = b.profile_stats||{};
+    const profs = Object.keys(ps);
+    if (profs.length){
+      for (const p of profs) cards.push([p+' 组均值', fmt(ps[p].mean_ret)+'%',
+        'n='+ps[p].n+' · 胜率 '+(ps[p].win_rate*100).toFixed(0)+'%']);
+    } else { cards.push(['阵容分组', '—', 'dk 字段周一首跑后出现']); }
+    $('#stats').innerHTML = cards.slice(0,4).map(c =>
+      '<div class="card"><div class="k">'+c[0]+'</div><div class="v">'+c[1]+'</div><div class="t">'+c[2]+'</div></div>').join('');
+    $('#profiles').innerHTML = profs.length ? profs.map(p => {
+      const s = ps[p];
+      const judge = p==='none' ? '<span class="tag">存量观测</span>'
+        : (s.mean_ret < (b.thresholds?b.thresholds.mean_ret_floor:0) && s.n >= (b.thresholds?b.thresholds.min_samples:5)
+          ? '<span class="tag warn">触发起草线</span>' : '<span class="tag ok">正常</span>');
+      return '<tr><td>'+p+'</td><td>'+s.n+'</td><td>'+retTag(s.mean_ret)+'</td><td>'+(s.win_rate*100).toFixed(0)+'%</td><td>'+judge+'</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="empty">无分组数据（dk 字段周一首跑后出现）</td></tr>';
+    $('#verdicts').innerHTML = (b.roster_verdicts||[]).length ? b.roster_verdicts.map(v =>
+      '<tr><td class="mono">'+v.verdict_id+'</td><td><span class="tag '+(v.decision==='degrade'?'warn':'')+'">'+v.decision+'</span></td><td class="mono">'+(v.job_run_id||'—')+'</td><td>'+v.rationale+'</td></tr>').join('')
+      : '<tr><td colspan="4" class="empty">暂无阵容校准裁决（阈值未触发=正常）</td></tr>';
+    $('#rows').innerHTML = (b.recent||[]).length ? b.recent.map(x =>
+      '<tr><td>'+x.date+'</td><td>'+x.symbol+'</td><td>'+fmt(x.score,1)+'</td><td>'+retTag(x.ret_pct)+'</td><td>'+(x.horizon_days??'—')+'</td><td>'+(x.recommendation||'—')+'</td><td>'+(x.dk_profile||'none')+'</td><td class="mono">'+(x.perf_key||'').slice(0,16)+'</td></tr>').join('')
+      : '<tr><td colspan="8" class="empty">暂无沉淀行（周一 17:10 观察点后自动出现）</td></tr>';
+  }catch(e){ $('#err').innerHTML = '<div class="err">看板加载失败：'+e+'</div>'; }
+}
+async function replay(){
+  const ref = $('#ref').value.trim();
+  if (!ref) return;
+  $('#err').textContent='';
+  try{
+    const r = await fetch('/api/perf/replay?ref='+encodeURIComponent(ref));
+    const b = await r.json();
+    let html = '<div class="sect">全链回放 · <span class="mono">'+ref+'</span> <small>verdict='+b.verdict+'</small></div>';
+    if (b.verdict === 'OK'){
+      html += (b.matches||[]).map(m => {
+        const segs = ['shadow','paper','execution','perf'];
+        return '<div class="chain">' + segs.map(s =>
+          m.chain[s] ? '<b>'+s+'</b> <span class="mono">'+Object.values(m.chain[s]).join('|')+'</span>'
+                     : '<span style="opacity:.45">'+s+'(缺环)</span>'
+        ).join('<span class="arrow">→</span>') + '</div>';
+      }).join('');
+      if ((b.perf_rows||[]).length){
+        html += '<table><thead><tr><th>交易日</th><th>标的</th><th>后验</th><th>持有日</th><th>阵容</th></tr></thead><tbody>'
+          + b.perf_rows.map(x => '<tr><td>'+x.date+'</td><td>'+x.symbol+'</td><td>'+retTag(x.ret_pct)+'</td><td>'+(x.horizon_days??'—')+'</td><td>'+(x.dk_profile||'none')+'</td></tr>').join('')
+          + '</tbody></table>';
+      }
+    } else {
+      html += '<div class="err">'+(b.findings||[]).join('；')+'</div>';
+    }
+    $('#replay-out').innerHTML = html;
+  }catch(e){ $('#err').innerHTML = '<div class="err">回放失败：'+e+'</div>'; }
+}
+$('#btn-refresh').onclick = load;
+$('#btn-replay').onclick = replay;
+$('#ref').addEventListener('keydown', e => { if (e.key==='Enter') replay(); });
+load();
+</script>
+</body>
+</html>

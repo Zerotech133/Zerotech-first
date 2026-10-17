@@ -134,6 +134,13 @@ import api_flow  # 模块名绑定（多继承基类引用）
 from watch_tower_snapshot import SnapshotAggregator
 # ==== F1 导入结束 ====
 import api_lineage  # 血缘只读 mixin（数据血缘归情报板块，2026-10-17）
+# ==== M1-M4 平台 mixin 显式导入（统一投影/回放/审批/能力看板/绩效看板）====
+import api_unified      # M1/M2 统一投影 + 跨账本回放 + 证据/知识/Skill/使用读侧
+import api_replay       # M1 /api/platform/replay
+import api_approvals    # M1/M2 /api/platform/approvals
+import api_capability   # M3-P5 /api/capability/board
+import api_perf         # M4-P5 /api/perf/board + /api/perf/replay
+# ==== M1-M4 导入结束 ====
 
 
 
@@ -545,7 +552,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2884,6 +2891,44 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 数据血缘只读端点（情报板块 /lineage.html 数据面）
             self._lineage(qs)
             return
+        if path == '/api/perf/board':
+            # M4-P5 投研绩效看板（perf_ledger 只读投影）
+            self._perf_board(qs)
+            return
+        if path == '/api/perf/replay':
+            # M4-P5 四环全链回放（影子→Paper→成交→绩效）
+            self._perf_replay(qs)
+            return
+        if path == '/api/capability/board':
+            # M3-P5 能力看板（产物登记仓+审批注册表只读聚合）
+            self._capability_board()
+            return
+        if path in ('/api/platform/approvals', '/api/platform/replay',
+                    '/api/platform/trace'):
+            # M1/M2 平台读面（审批注册表/统一投影/回放/证据/知识/
+            # Skill/使用账本——api_unified/api_replay/api_approvals 各 mixin）
+            if path == '/api/platform/approvals':
+                self._platform_approvals(qs)
+            elif path == '/api/platform/replay':
+                self._platform_replay(qs)
+            else:
+                self._platform_replay(qs)
+            return
+        if path in ('/api/unified/evidence', '/api/unified/knowledge',
+                    '/api/unified/skills', '/api/unified/usage',
+                    '/api/unified/replay'):
+            # M1/M2 统一投影读侧四端点 + 跨账本串线回放
+            if path == '/api/unified/replay':
+                self._unified_replay(qs)
+            elif path == '/api/unified/evidence':
+                self._unified_evidence(qs)
+            elif path == '/api/unified/knowledge':
+                self._unified_knowledge()
+            elif path == '/api/unified/skills':
+                self._unified_skills()
+            else:
+                self._unified_usage(qs)
+            return
         if path == '/api/data/daily' or path.startswith('/api/data/runs/'):
             self._warehouse_update_request('GET',path,qs)
             return
@@ -4053,6 +4098,18 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/audit-ai":
             # K-STOCK-114e 独立安全审计 AI 对话页
             self._audit_ai_page()
+        elif path == "/approvals":
+            # M1 审批注册表页（数据走 /api/platform/approvals 只读面）
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "approvals.html"))
+        elif path == "/capability":
+            # M3-P5 能力看板页（数据走 /api/capability/board）
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "capability.html"))
+        elif path == "/perf":
+            # M4-P5 投研绩效看板页（数据走 /api/perf/board 与 /api/perf/replay）
+            self._html_file(os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "perf.html"))
         elif path == "/api/devops":
             # K-STOCK-113 开发指挥台数据口：dev_events.jsonl 只读投影
             self._json(self._devops_data())

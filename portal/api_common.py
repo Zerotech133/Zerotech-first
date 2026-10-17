@@ -328,6 +328,9 @@ DOMAIN_NAV_GROUPS = {
         ("🎛 OS 控制台", "/ops", "opshome"),
         ("⚡ 动作流中心", "/flow", "flow"),
         ("🛡 审计状态", "/audit", "audit"),
+        ("✅ 审批注册表", "/approvals", "approvals"),
+        ("🧩 能力看板", "/capability", "capability"),
+        ("📈 投研绩效", "/perf", "perf"),
         ("🖥 系统自检", "/sys-health", "sys"))),),
 }
 
