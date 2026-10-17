@@ -1,0 +1,50 @@
+GOV-FIX-006 端口只读核验记录
+
+核验日期：2026-10-17
+核验范围：netsh interface portproxy、8080/8734/8787/8788 监听与 HTTP、7897 监听进程归属
+执行纪律：仅只读查询；未修改白名单、端口映射、生产服务，未重启任何进程。
+
+一、时间戳
+
+- 开始时间（本地）：2026-10-17T19:28:26.4356331+08:00
+- 完成时间（本地）：2026-10-17T19:29:10.9597568+08:00
+
+二、portproxy
+
+命令：`netsh interface portproxy show all`
+结果：命令退出码 0；无任何输出（`(no output)`）。
+结论：未观察到 portproxy 规则；8080/8734 之间未发现现存端口转发规则。
+
+三、目标端口监听（PowerShell Get-NetTCPConnection，netstat 交叉核验）
+
+| 端口 | 监听结果 | 地址/进程 |
+|---:|---|---|
+| 8080 | 有监听 | Get-NetTCPConnection：`::1:8080` PID 30796、`[::]:8080` PID 22776；netstat 交叉结果：`0.0.0.0:8080` PID 22776 |
+| 8734 | 无监听 | Get-NetTCPConnection 未找到匹配对象；netstat 未发现监听 |
+| 8787 | 有监听 | `127.0.0.1:8787` PID 28032 |
+| 8788 | 有监听 | `127.0.0.1:8788` PID 35756 |
+
+进程归属（只读）：
+
+- PID 30796：`wslrelay.exe`，路径 `C:\Program Files\WSL\wslrelay.exe`，命令行 `--mode 2 --vm-id {2617527f-76ad-4579-a0c0-647c4a5ac5fe} --handle 2308`。
+- PID 22776：`com.docker.backend.exe`，路径 `C:\Program Files\Docker\Docker\resources\com.docker.backend.exe`，命令行 `"C:\Program Files\Docker\Docker\resources\com.docker.backend.exe" services`。
+- PID 28032：`python.exe`；Get-Process 可读到进程名，但 Path、StartTime 为空；CIM 查询可读到 Name=`python.exe`，ExecutablePath、CommandLine 为空（权限/进程信息不可用部分已如实记录）。
+- PID 35756：`python.exe`，路径 `C:\Users\t\.hermes\tools\python-3.14.7+20260901-win32-x64\python.exe`；命令行为 `C:\Users\t\.hermes\installs\4cc1a9b84685bce9\environments\da53ff63c8bf44f54a7dfc492507ed00d\venv\Scripts\python.exe -X utf8 C:\aios\Hermes\hermes-webui-next\server.py`。
+
+四、HTTP 只读探测
+
+目标：`http://127.0.0.1:<port>/`；超时 3 秒；未跟随重定向（MaximumRedirection=0）。
+
+- 8080：HTTP 200 OK，响应内容长度约 11,624（PowerShell Out-String 计数）。
+- 8734：连接失败，`System.Net.WebException`，无法连接到远程服务器。
+- 8787：HTTP 200 OK，响应内容长度约 227,827。
+- 8788：HTTP 200 OK，响应内容长度约 227,827。
+
+五、7897 进程归属
+
+- `Get-NetTCPConnection -LocalPort 7897` 未找到任何匹配的监听对象。
+- 因无监听连接，未发现可关联的 OwningProcess；无进程归属可报告。
+
+六、结论
+
+本次只读核验显示：portproxy 当前无规则；8080、8787、8788 正在监听且 HTTP 返回 200；8734 未监听且 HTTP 连接失败；7897 未监听。所有权限/信息缺失均已在本记录中原样记录；未对系统状态做任何变更。

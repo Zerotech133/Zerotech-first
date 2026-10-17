@@ -1,0 +1,170 @@
+# 门户门禁只读证据（GOV-FIX-005）
+
+- 日期：2026-10-17
+- 执行目录：`C:/项目/老田的AI助手`
+- 时区：UTC（命令输出中的 `START_UTC`/`END_UTC`）
+- 约束：仅执行只读检查；未执行 `--probe`；未修改 `route_baseline.json`、mixin 基线、nginx 或生产服务。
+
+## 1. 导航一致性
+
+完整命令：
+```text
+cd "C:/项目/老田的AI助手" && python tools/unify_nav.py --check
+```
+
+- START_UTC：2026-10-17T11:18:16Z
+- END_UTC：2026-10-17T11:18:17Z
+- 退出码：0
+- 关键输出：
+```text
+守卫 PASS：28 静态页全带统一顶栏，nav.js 与源零漂移
+```
+
+## 2. Mixin 完整性
+
+完整命令：
+```text
+cd "C:/项目/老田的AI助手" && python tools/_mixin_integrity.py --check
+```
+
+- START_UTC：2026-10-17T11:18:15Z
+- END_UTC：2026-10-17T11:18:17Z
+- 退出码：0
+- 关键输出：
+```text
+⚠️ 新增 Handler 方法 26: ['_api_ai_duty', '_api_ctl_alert', '_api_duty_brief', '_api_health', '_api_jev_stack', '_authorized_mutation', '_capability_board', '_duty_brief_payload', '_duty_brief_phase', '_feishu_unverified_alert']
+ℹ️ 新增模块级函数 57: ['_ap_db', '_ap_import', '_api_my_strategies', '_approval_projection', '_artifact_events', '_artifact_projection', '_bt2_nl', '_bt2_result', '_bt2_start', '_bt2_state_path']
+✅ INTEGRITY OK: 147 methods / 155 funcs 与基线零 diff
+```
+
+## 3. 路由基线
+
+完整命令：
+```text
+cd "C:/项目/老田的AI助手" && python portal/route_baseline.py --check
+```
+
+- START_UTC：2026-10-17T11:18:15Z
+- END_UTC：2026-10-17T11:18:16Z
+- 退出码：0
+- 关键输出：
+```text
+基线 72 条 vs 当前 94 条
+⚠️ 新增路由:
+  /api/ai_duty
+  /api/bt2_job
+  /api/bt2_jobs
+  /api/bt2_nl
+  /api/bt2_run
+  /api/bt_daily_ledger
+  /api/combo_backtest
+  /api/combo_backtest_jobs
+  /api/ctl/alert
+  /api/ctl/alerts
+  /api/duty_brief
+  /api/flow/artifact
+  /api/flow/events
+  /api/flow/rerun
+  /api/flow/stats
+  /api/health
+  /api/jev-stack
+  /api/my_strategies
+  /api/ops_today
+  /api/os
+  /api/watch-tower/snapshot
+  /api/watchtower/overview
+```
+
+## 4. 端口严格 JSON 检查
+
+完整命令：
+```text
+cd "C:/项目/老田的AI助手" && python tools/check_ports.py --strict --json
+```
+
+- START_UTC：2026-10-17T11:18:15Z
+- END_UTC：2026-10-17T11:18:35Z
+- 退出码：0
+- 关键输出（完整 JSON）：
+```json
+{
+  "strict": true,
+  "registered": [
+    {"port": 1234, "name": "llama-server(8030 同族,手动)", "up": false, "optional_offline": true},
+    {"port": 1238, "name": "llama-server(8030 同族,手动)", "up": false, "optional_offline": true},
+    {"port": 3000, "name": "Open WebUI(Docker)", "up": false, "optional_offline": true},
+    {"port": 3001, "name": "图谱studio(学习仓)", "up": true, "optional_offline": true},
+    {"port": 3307, "name": "菜鸟MySQL(Docker)", "up": true, "optional_offline": false},
+    {"port": 5050, "name": "灵拢NovaStudio(桌面第三方,非平台栈)", "up": true, "optional_offline": false},
+    {"port": 5175, "name": "智策OS前端(zhice)", "up": true, "optional_offline": false},
+    {"port": 5432, "name": "RAGFlow infinity(Docker,非数据仓)", "up": true, "optional_offline": true},
+    {"port": 5442, "name": "quant-pg PostgreSQL(Docker,quant_system+quant_meta)", "up": true, "optional_offline": true},
+    {"port": 5446, "name": "zhice-db PostgreSQL(Docker,v2_bar_daily)", "up": true, "optional_offline": true},
+    {"port": 7474, "name": "neo4j-kg HTTP(Docker,时序知识图谱)", "up": true, "optional_offline": true},
+    {"port": 7687, "name": "neo4j-kg Bolt(Docker,时序知识图谱)", "up": true, "optional_offline": true},
+    {"port": 8030, "name": "llamacpp 35b(手动)", "up": false, "optional_offline": true},
+    {"port": 8080, "name": "nginx ai-portal(Docker)", "up": true, "optional_offline": false},
+    {"port": 8091, "name": "零界门户API(portal_api.py)", "up": true, "optional_offline": false},
+    {"port": 8093, "name": "数据仓管理预览(daily_ui_preview_server.py)", "up": true, "optional_offline": true},
+    {"port": 8095, "name": "picks定时发布调度(publish_schedule_server.py)", "up": false, "optional_offline": true},
+    {"port": 8096, "name": "KM飞书联动(km_feishu_hub.py)", "up": true, "optional_offline": true},
+    {"port": 8097, "name": "推送中台总览(push_admin_server.py)", "up": true, "optional_offline": false},
+    {"port": 8100, "name": "zerobound-kg 数据市集API(datamart_api.py)", "up": true, "optional_offline": true},
+    {"port": 8102, "name": "智策OS API(zhice)", "up": true, "optional_offline": false},
+    {"port": 8123, "name": "claudemind server(桌面第三方,非平台栈)", "up": false, "optional_offline": true},
+    {"port": 8734, "name": "零界首页(portproxy→8080,K-STOCK-107收编)", "up": false, "optional_offline": true},
+    {"port": 8787, "name": "Hermes WebUI", "up": true, "optional_offline": true},
+    {"port": 8788, "name": "Hermes WebUI v2(hermes-webui-next)", "up": true, "optional_offline": true},
+    {"port": 8791, "name": "图谱数据看板(kg_data_dashboard.py)", "up": true, "optional_offline": true},
+    {"port": 8888, "name": "QuantDinger前端(Docker)", "up": false, "optional_offline": true},
+    {"port": 8898, "name": "res-downloader 自用工具(uvicorn)", "up": true, "optional_offline": true},
+    {"port": 8899, "name": "本地 Ollama Web 聊天(AI/111111/web_chat.py)", "up": false, "optional_offline": true},
+    {"port": 9101, "name": "jev_gate", "up": true, "optional_offline": false},
+    {"port": 9102, "name": "signal_review", "up": true, "optional_offline": false},
+    {"port": 9103, "name": "QD桥(jev_qd_bridge)", "up": true, "optional_offline": false},
+    {"port": 9104, "name": "飞书卡片回调(lark_card)", "up": true, "optional_offline": true},
+    {"port": 9899, "name": "CowAgent console", "up": false, "optional_offline": true},
+    {"port": 11434, "name": "Ollama", "up": true, "optional_offline": false},
+    {"port": 11440, "name": "Ollama 模型看板(model_dashboard)", "up": true, "optional_offline": true},
+    {"port": 15000, "name": "QuantDinger API(Docker)", "up": false, "optional_offline": true},
+    {"port": 15048, "name": "灵拢NovaStudio(桌面第三方,非平台栈)", "up": true, "optional_offline": false},
+    {"port": 15432, "name": "QuantDinger DB(Docker)", "up": false, "optional_offline": true},
+    {"port": 16379, "name": "QuantDinger Redis(Docker)", "up": false, "optional_offline": true},
+    {"port": 17474, "name": "zerobound Neo4j HTTP(Docker,独立图谱)", "up": false, "optional_offline": true},
+    {"port": 17687, "name": "zerobound Neo4j Bolt(Docker,独立图谱)", "up": false, "optional_offline": true},
+    {"port": 18899, "name": "res-downloader 自用工具(uvicorn)", "up": true, "optional_offline": true}
+  ],
+  "offline": [1234, 1238, 3000, 8030, 8095, 8123, 8734, 8888, 8899, 9899, 15000, 15432, 16379, 17474, 17687],
+  "unknown": [],
+  "summary": {"registered_total": 43, "offline": 15, "unregistered": 0},
+  "strict_fail": false,
+  "rc": 0
+}
+```
+
+## 5. 端口 JSON 测试
+
+完整命令：
+```text
+cd "C:/项目/老田的AI助手" && python tools/test_check_ports_json.py
+```
+
+- START_UTC：2026-10-17T11:18:15Z
+- END_UTC：2026-10-17T11:18:17Z
+- 退出码：0
+- 关键输出（stderr）：
+```text
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
+
+OK
+```
+
+## 风险与结论
+
+1. 所有指定检查命令退出码均为 0。
+2. `route_baseline.py --check` 报告基线 72 条、当前 94 条，并列出 22 条新增路由；本次未修改基线，需按 GOV-FIX-005 流程由负责人确认是否纳入。
+3. `_mixin_integrity.py --check` 提示新增 Handler 方法 26、模块级函数 57，但最终 `INTEGRITY OK` 且与基线零 diff；新增项需按治理流程审阅。
+4. 端口检查 `strict_fail=false`、`unknown=[]`、`unregistered=0`；15 个离线端口均为登记项且标记 `optional_offline=true`，严格检查通过。
+5. 未执行 `--probe`，因此没有触发探测写入风险；未接触生产服务、nginx、route_baseline.json 或 mixin 基线。

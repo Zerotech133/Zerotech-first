@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数字军团 · WATCH_TOWER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-mark">A0</div>
+        <div>
+          <div class="brand-title">数字军团 <span>/</span> 组织管理</div>
+          <div class="brand-subtitle">LEGION ADMIN CONSOLE</div>
+        </div>
+      </div>
+      <div class="top-meta">
+        <div class="top-stat"><span class="meta-label">在线实体</span><strong class="unavailable">—</strong><span class="meta-unit">/ 未提供</span></div>
+        <div class="top-divider"></div>
+        <div class="status-chip unavailable">状态未提供</div>
+        <div class="top-divider"></div>
+        <div class="profile"><div class="avatar">—</div><div><b class="unavailable">loading…</b><small class="unavailable">最高上级 · 未提供</small></div><span class="chevron">⌄</span></div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-header"><div class="eyebrow">ORGANIZATION</div><button class="icon-btn" aria-label="收起导航">‹</button></div>
+        <div class="search-box"><span>⌕</span><input type="text" placeholder="搜索组织或 Agent" id="org-search" /></div>
+        <nav class="org-tree" id="org-tree">
+          <div class="tree-group">
+            <button class="tree-row root expanded" data-target="root"><span class="tree-caret">⌄</span><span class="node-icon root-icon">✦</span><span class="tree-label">组织数据加载中</span><span class="node-count unavailable">—</span></button>
+            <div class="tree-children">
+              <button class="tree-row" data-target="a0a"><span class="tree-indent"></span><span class="tree-caret">⌄</span><span class="node-icon dept-icon">⌘</span><span class="tree-label">部门加载中</span><span class="node-count unavailable">—</span></button>
+              <div class="tree-children nested"></div>
+                          </div>
+          </div>
+        </nav>
+        <div class="sidebar-bottom"><div class="legend"><span class="legend-dot online"></span>online <span class="legend-dot standby"></span>unknown <span class="legend-dot paused"></span>offline</div><button class="add-adapter" id="open-adapter"><span>＋</span> 新增适配 / 注册 Agent</button></div>
+      </aside>
+
+      <main class="main-content">
+        <div class="breadcrumb"><span>组织来源</span><i>›</i><span>registry / HR</span><i>›</i><strong id="breadcrumb-current">WATCH_TOWER</strong><span class="live-tag unavailable">SOURCE</span></div>
+        <section class="hero-row">
+          <div><div class="section-kicker">AGENT PROFILE · 只读来源</div><h1 id="agent-title">WATCH_TOWER</h1><p class="hero-description" id="agent-description">等待 registry / HR 真实数据。</p></div>
+          <div class="hero-actions"><button class="btn btn-ghost" id="audit-btn"><span>↗</span> P0 未开放 · 审计</button><button class="btn btn-danger" id="pause-btn" disabled>P0 未开放 · 暂停/恢复</button><button class="btn btn-primary" id="restart-btn" disabled>P0 未开放 · 重启</button></div>
+        </section>
+
+        <section class="identity-card card"><div class="card-header"><div><h2>身份信息</h2><span class="card-caption">IDENTITY &amp; HIERARCHY</span></div><span class="verified unavailable">来源待验证</span></div><div class="identity-grid"><div class="identity-item primary-id"><label>AGENT ID</label><div class="mono-value"><span id="identity-id">loading…</span> <button class="copy-btn" title="复制 ID">▣</button></div></div><div class="identity-item"><label>名称 / 职务</label><strong id="identity-name">loading…</strong><span id="identity-title" class="unavailable">loading…</span></div><div class="identity-item"><label>等级</label><strong class="level-pill unavailable" id="identity-rank">loading…</strong></div><div class="identity-item"><label>Endpoint</label><div class="mono-value unavailable" id="identity-endpoint">loading…</div></div><div class="identity-item"><label>注册日期</label><strong class="unavailable" id="identity-onboarded">loading…</strong><span class="muted">未提供</span></div><div class="identity-item"><label>直属守护 Agent</label><strong class="link-value unavailable" id="identity-supervisor">loading…</strong><span class="muted">未提供</span></div><div class="identity-item"><label>部门归口</label><strong class="link-value unavailable" id="identity-department">loading…</strong><span class="muted">未提供</span></div><div class="identity-item"><label>最高上级</label><strong class="unavailable" id="identity-chief">loading…</strong><span class="muted">未提供</span></div></div></section>
+
+        <div class="dashboard-grid">
+          <section class="card status-card"><div class="card-header"><div><h2>运行状态</h2><span class="card-caption">RUNTIME STATUS</span></div><span class="status-badge"><span class="pulse-dot"></span><span id="status-text">unavailable</span></span></div><div class="status-main"><div class="ring-wrap"><div class="status-ring"><div class="ring-value unavailable" id="availability-value">—</div><small>可用性未提供</small></div></div><div class="status-metrics"><div><span>今日请求</span><strong class="unavailable">unavailable</strong><em>暂无 P0 数据源</em></div><div><span>平均响应</span><strong class="unavailable">unavailable</strong><em>暂无 P0 数据源</em></div><div><span>心跳状态</span><strong class="unavailable" id="heartbeat-status">unavailable</strong><em>来源未提供</em></div></div></div><div class="last-heartbeat"><span class="mini-wave">⌁</span> 最后心跳 <b id="heartbeat-relative">unavailable</b><span class="heartbeat-line"></span><span class="mono-text" id="heartbeat-ts">unavailable</span></div></section>
+
+          <section class="card shard-card"><div class="card-header"><div><h2>市场分片</h2><span class="card-caption">MARKET SHARDS</span></div><span class="unavailable">P0 unavailable</span></div><div class="empty-state">暂无真实市场分片数据源，禁止展示演示指标。</div></section>
+        </div>
+
+        <div class="dashboard-grid lower-grid">
+          <section class="card plugins-card"><div class="card-header"><div><h2>方法插件</h2><span class="card-caption">METHOD PLUGINS</span></div><span class="unavailable">P0 unavailable</span></div><div class="empty-state">暂无真实插件注册表数据源，禁止展示演示插件。</div></section>
+          <section class="card permissions-card"><div class="card-header"><div><h2>权限矩阵</h2><span class="card-caption">PERMISSION MATRIX</span></div><span class="unavailable">来源待加载</span></div><div class="permission-list" id="permission-list"><div class="empty-state">暂无真实权限数据源</div></div></section>
+        </div>
+
+        <section class="bottom-row"><div class="alert-strip"><div class="alert-icon">!</div><div><strong>告警策略</strong><span class="unavailable">来源不可用 · P0 未提供告警数据源</span></div><button class="text-btn" disabled>P0 未开放</button></div><div class="graduation-card"><div class="graduation-head"><div><span class="card-caption">GRADUATION WEIGHT</span><strong>毕业权重</strong></div><b class="unavailable">—</b></div><div class="graduation-bar"><i style="width:0%"></i></div><div class="graduation-foot"><span class="unavailable">未提供真实指标</span><span class="unavailable">来源不可用</span></div></div></section>
+        <footer class="main-footer"><span>LEGION ADMIN CONSOLE · P0 READ-ONLY</span><span>刷新时间未提供 · 来源 unavailable</span></footer>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="adapter-modal"><div class="modal"><button class="modal-close" id="close-modal">×</button><div class="modal-icon">＋</div><div class="section-kicker">ADAPTER REGISTRATION</div><h2>新增适配 / 注册 Agent</h2><p>接入新的运行体，扩展数字军团的能力边界。</p><div class="prototype-note"><span>⌁</span><div><strong>原型预览</strong><span>注册流程将在后续版本开放，当前仅展示入口与信息架构。</span></div></div><div class="modal-fields"><label>运行体名称<input type="text" placeholder="例如：DATA_SCOUT" disabled></label><label>归属部门<select disabled><option>部门来源待加载</option></select></label></div><button class="btn btn-primary full" id="modal-confirm">知道了</button></div></div>
+  <div class="toast" id="toast"><span class="toast-icon">✓</span><span id="toast-text">操作已完成</span></div>
+  <script>window.LEGION_ADMIN_API_BASE = window.LEGION_ADMIN_API_BASE || '/api/v1';</script>
+  <script src="app.js"></script>
+</body>
+</html>

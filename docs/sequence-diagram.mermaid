@@ -1,0 +1,63 @@
+sequenceDiagram
+    autonumber
+    participant Lead as Team Lead
+    participant WO as WorkOrder
+    participant RW as ResourceWindow
+    participant IDX as EvidenceIndexer
+    participant ROOT as RootSelectorTester
+    participant PATH as PathAuditor
+    participant PORTAL as PortalRegressionRunner
+    participant LEDGER as LedgerProjector
+    participant RUNBOOK as RunbookBuilder
+    participant PLATFORM as PlatformGate
+    participant FS as ReadOnly Filesystem
+    participant APPROVAL as ApprovalDecision
+
+    Lead->>WO: create GOV-MIN-001..007 with scope and forbidden paths
+    WO->>RW: validate existing read-only governance window
+    RW-->>WO: allow read-only docs/code scans; deny production writes
+
+    par Independent read-only work
+        WO->>IDX: execute GOV-MIN-001
+        IDX->>FS: scan docs/governance and referenced evidence
+        FS-->>IDX: paths, existence, mtimes, hashes
+        IDX-->>WO: evidence-index report (MISSING preserved)
+    and
+        WO->>ROOT: execute GOV-MIN-002 in temp fixture
+        ROOT->>FS: create isolated fixture roots
+        FS-->>ROOT: catalog/root scenarios
+        ROOT-->>WO: selector coverage matrix; no production launcher
+    and
+        WO->>PATH: execute GOV-MIN-003
+        PATH->>FS: search hard-coded E: paths and call sites
+        FS-->>PATH: locations and context
+        PATH-->>WO: migration matrix; uncertain rows blocked
+    and
+        WO->>PORTAL: execute GOV-MIN-004
+        PORTAL->>FS: read route source, baseline, export_nav, mixin tests
+        FS-->>PORTAL: route diff and source/export comparison
+        PORTAL-->>WO: regression report; no baseline rebuild
+    and
+        WO->>LEDGER: execute GOV-MIN-005
+        LEDGER->>FS: read ledger snapshots and calculate hashes
+        FS-->>LEDGER: raw/current records
+        LEDGER-->>WO: external projection; source immutable
+    and
+        WO->>RUNBOOK: execute GOV-MIN-006
+        RUNBOOK->>FS: read verified port/process/health evidence
+        FS-->>RUNBOOK: facts and timestamps
+        RUNBOOK-->>WO: runbook drafts with UNVERIFIED markers
+    and
+        WO->>PLATFORM: execute GOV-MIN-007
+        PLATFORM->>FS: probe independent zhice-os-v2 tree and pytest
+        FS-->>PLATFORM: environment availability
+        PLATFORM-->>WO: test matrix or BLOCKED report
+    end
+
+    WO->>WO: validate deliverables, reproducibility, no runtime writes
+    alt production/shared write requested
+        WO->>APPROVAL: request explicit decision and window
+        APPROVAL-->>WO: blocked until signed approval + snapshot + rollback
+    else read-only deliverable complete
+        WO-->>Lead: close with evidence paths and rollback instructions
+    end

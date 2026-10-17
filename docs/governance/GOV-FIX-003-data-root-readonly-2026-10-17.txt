@@ -1,0 +1,87 @@
+GOV-FIX-003 数据根目录只读审查
+生成时间：2026-10-17（本地时间 19:30 左右）
+审查范围：C:/Temp/kg_sync_task.log；quant_backtest/start_kg_sync.ps1 的 KGDataRoot 与 quant_backtest/data 选择逻辑。
+纪律：本次仅读取/静态审查；未执行启动器、未触发同步、未写入 live 数据、未修改启动器或任何既有数据文件。
+
+一、当前现场证据（只读）
+
+1. C:/Temp/kg_sync_task.log
+- 文件存在；本次读取到的文件大小 51,414 bytes，SHA-256：fd66ce8437943b9db0e154bea5c224e43c1cb2d84da365f5522a20998073d509。
+- 最新记录为 2026-10-17 19:27:16（文件 mtime）；末尾完整记录未显示本次审查触发的新同步。
+- 关键历史记录：
+  - 2026-10-16 09:53 左右曾记录“no catalog.json in either data root”，说明当时两根均未通过旧探针。
+  - 2026-10-17 10:11 记录 KGDataRoot 二次回收及空壳目录删除；同记录称 live 根被设为 quant_backtest/data。
+  - 2026-10-17 11:14 记录探针加固：Test-CatalogUsable 要求 catalog.json 存在且 tables 非空；空壳根降级 fallback 并记 WARN。
+  - 2026-10-17 11:20 记录 KGDataRoot 清理最终闭环；11:58—12:24 记录多会话并行写入来源及共享数据根互斥治理。
+  - 2026-10-17 14:00 左右记录 live 根与同步链对账；19:08 记录 KgLeiden 固化，未声称 KGDataRoot 恢复。
+- 日志属于历史运行账本；不能仅凭其中“已删除/已闭环”文字证明当前运行环境未被外部会话再次改变。
+
+2. 当前路径探针（本次只读）
+- C:/项目/KGDataRoot：不存在（目录与 catalog.json 均不存在）。
+- C:/项目/老田的AI助手/quant_backtest/data：存在。
+- C:/项目/老田的AI助手/quant_backtest/data/catalog.json：存在，可按 UTF-8/UTF-8-SIG 解析；version=6，updated=2026-10-17T18:23:31，tables 属性数=230（非空）。
+- 由脚本当前判据推导：KGDataRoot 不可用；quant_backtest/data 可用，因此应选择 fallback（未实际运行脚本，仅静态推导）。
+- 本次读取的启动器文件大小 9,639 bytes，mtime=2026-10-17T17:51:32，SHA-256：877a72c9ac9a7052e782e5a2bc3883b6a7ed0d321fff794f0476bb52f2a158cc。
+
+二、启动器选择逻辑证据
+
+文件：quant_backtest/start_kg_sync.ps1
+
+1. 判定函数（第 58—67 行）
+- Test-CatalogUsable(root) 拼接 root/catalog.json。
+- catalog 不存在直接返回 false。
+- 读取 JSON（UTF-8）并 ConvertFrom-Json；解析异常返回 false。
+- 要求 j.tables 非空且 PSObject.Properties 数量大于 0；因此 tables:{} 空壳返回 false。
+
+2. 根路径与优先级（第 68—81 行）
+- $kg_new_root = C:\项目\KGDataRoot。
+- $kg_fallback = C:\项目\老田的AI助手\quant_backtest\data。
+- 第 70—71 行：新根通过 Test-CatalogUsable 时优先设置 $env:KG_DATA_ROOT 为 KGDataRoot。
+- 第 72—74 行：否则仅当 fallback 通过判定时，设置 $env:KG_DATA_ROOT 与 $env:KG_DATA_ROOT_FALLBACK 为 quant_backtest/data。
+- 第 75—77 行：若 fallback 被选且新根仍存在 catalog.json，则追加 WARN。
+- 第 78—80 行：两根均未通过时追加 ABORT 日志并 exit 1。
+- 因此当前现场的静态结果是“fallback 可用、KGDataRoot 缺失”，即预期选择 quant_backtest/data。
+
+3. 其他相关路径（第 82—105 行）
+- KG 代码根固定为 C:\项目\zerobound-kg；缺失则中止。
+- KG_NEWS_DB、KG_XQ_DB、KG_GUBA_DIR 明确指向当前仓/quant_backtest/data 下的业务数据；xueqiu/guba 不从 KGDataRoot 读取。
+- 工作目录 $wd 为 C:\项目\老田的AI助手\quant_backtest；QUANT_BACKTEST_ROOT 也桥接到该路径。
+
+4. 同步执行方式（第 106—155 行，仅静态观察）
+- 脚本随后顺序执行 catalog_build、事件/索引/图谱及 brief 等步骤，并在任一步非零时记录 ABORT。
+- 本次没有执行这些步骤；不能据此断言运行时所有子脚本都只读或都遵循 KG_DATA_ROOT。
+
+三、审查结论
+
+- 当前可见物理事实与启动器判据一致：KGDataRoot 不存在，quant_backtest/data 有可解析且 tables 非空的 catalog.json；静态选择结论为 fallback/live 根 quant_backtest/data。
+- 探针已针对历史 tables:{} 空壳劫持增加非空 tables 校验，降低“空壳优先级”风险。
+- 发现一个口径风险（未改动）：第 75 行仅用 Test-Path 判断新根 catalog.json 是否存在，第 76 行固定写“catalog is an empty shell”。若新根 catalog 存在但 JSON 损坏、tables 缺失或其他不可用原因，WARN 文案仍会误称为空壳；这不改变根选择，但会降低故障诊断准确性。是否修正文案/条件必须人工批准后另行处理。
+- 当前报告不把历史日志中的“清理闭环”当作永久保证；共享工作区存在多会话并行操作记录，后续运行前仍需互斥。
+
+四、未验证项
+
+1. 未运行 PowerShell 启动器，未验证 PowerShell 解析、环境变量实际注入及子进程继承。
+2. 未验证启动器运行期间根目录是否被其他会话/计划任务重建或写入。
+3. 未逐一审查 20 余个子脚本对 KG_DATA_ROOT、KG_DATA_ROOT_FALLBACK 的读取/覆盖行为。
+4. 未验证 catalog.json 的 230 个表与所有物理目录、manifest、数据新鲜度逐表一致；本报告只验证 JSON 可解析及 tables 非空。
+5. 未验证日志写入是否存在编码/并发追加竞态，也未验证任务计划的实际动作路径。
+6. 未执行任何同步、数据库写入、回收站操作或删除操作；故不能给出端到端同步成功结论。
+
+五、人工批准要求（在任何变更前）
+
+- 在修改 start_kg_sync.ps1、改变新根/ fallback 优先级、修正文案或重新创建 KGDataRoot 前，须由用户明确批准，并先记录变更前路径、catalog、hash 与回滚路径。
+- 在删除、恢复、迁移或重建任一数据根前，须完成源/目标逐表、行数/哈希及消费者映射核验；不得仅凭 Test-Path 或日志文字作删除决定。
+- 共享工作区中一次只允许一个会话/任务操作数据根；其他会话应暂停写入并登记 owner、时间窗、范围与回滚方案。
+- 若需验证启动器，应在明确批准后使用隔离/模拟目录或只读 dry-run；不得直接触发生产同步。
+
+六、可复现只读命令（未触发同步）
+
+```text
+python -c "import json,pathlib,hashlib; ..."
+# 读取 C:/Temp/kg_sync_task.log、两个根路径、两个 catalog.json，输出存在性、hash、tables 数量。
+
+# 静态审查：
+# 读取 C:/项目/老田的AI助手/quant_backtest/start_kg_sync.ps1 第 53—81 行。
+```
+
+报告结论：PASS（只读静态判定）；附带观察项：fallback 当前生效，KGDataRoot 缺失；WARN 文案条件存在诊断口径风险，留待人工批准处理。

@@ -1,0 +1,116 @@
+classDiagram
+    class WorkOrder {
+        +string id
+        +string title
+        +string status
+        +string risk_level
+        +string rollout_mode
+        +list~string~ allowed_paths
+        +list~string~ forbidden_paths
+        +list~string~ dependencies
+        +validate_scope() bool
+        +is_engineer_executable() bool
+    }
+
+    class EvidenceRecord {
+        +string evidence_id
+        +string source_path
+        +string generated_at_utc
+        +string sha256
+        +string scope
+        +string status
+        +string reproducible_command
+        +verify() bool
+    }
+
+    class ResourceWindow {
+        +string resource
+        +string ticket
+        +string owner
+        +string window
+        +string mode
+        +string scope
+        +string rollback
+        +string result
+        +is_expired() bool
+        +allows(path, operation) bool
+    }
+
+    class ApprovalDecision {
+        +string decision_id
+        +string choice
+        +string approver
+        +string executor
+        +string window
+        +string status
+        +list~string~ prerequisites
+        +is_released() bool
+    }
+
+    class AuditReport {
+        +string report_path
+        +string report_type
+        +list~EvidenceRecord~ evidence
+        +list~string~ findings
+        +list~string~ blocked_items
+        +render_markdown() string
+    }
+
+    class RollbackPlan {
+        +string trigger
+        +list~string~ steps
+        +string verification
+        +execute_dry_run() bool
+    }
+
+    class EvidenceIndexer {
+        +scan_governance_dir() list~EvidenceRecord~
+        +index_missing_items() AuditReport
+    }
+
+    class PathAuditor {
+        +scan_hardcoded_paths() AuditReport
+        +classify_read_write(path) string
+    }
+
+    class LedgerProjector {
+        +read_snapshot(path) list~dict~
+        +project_candidates() AuditReport
+        +verify_hash(path, expected) bool
+    }
+
+    class RootSelectorTester {
+        +build_fixture(name) string
+        +run_matrix() AuditReport
+    }
+
+    class PortalRegressionRunner {
+        +compare_routes() AuditReport
+        +check_nav_export() bool
+        +run_readonly_smoke() AuditReport
+    }
+
+    class RunbookBuilder {
+        +build_for_port(port) AuditReport
+        +mark_unverified(fact) string
+    }
+
+    class PlatformGate {
+        +probe_environment() AuditReport
+        +build_contract_matrix() AuditReport
+        +is_testable() bool
+    }
+
+    WorkOrder "1" --> "0..*" EvidenceRecord : produces
+    WorkOrder "1" --> "0..*" ResourceWindow : registers
+    WorkOrder "0..1" --> "0..1" ApprovalDecision : requires
+    WorkOrder "1" --> "1" RollbackPlan : owns
+    AuditReport "1" o-- "1..*" EvidenceRecord : cites
+    EvidenceIndexer ..> AuditReport : creates
+    PathAuditor ..> AuditReport : creates
+    LedgerProjector ..> AuditReport : creates
+    RootSelectorTester ..> AuditReport : creates
+    PortalRegressionRunner ..> AuditReport : creates
+    RunbookBuilder ..> AuditReport : creates
+    PlatformGate ..> AuditReport : creates
+    ApprovalDecision --> ResourceWindow : releases only after
