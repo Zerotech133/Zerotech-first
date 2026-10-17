@@ -9,8 +9,13 @@
   - 幂等：同日同票已入账则跳过（防手动重跑污染 5 日样本）
   - 健壮：单票失败记 failed 行，不中断整篮（无人干预要求）
   - 落文件：stdout/stderr 由计划任务重定向 data/shadow/last_run.log（长跑不依赖管道）
+  - 隔离：`--root <dir>` 或 `SHADOW_DATA_ROOT` 把**全部存储**（账本/checkpoints/
+    memory/幂等库/p0_alert_state/org tasks）重定向到该根；配合 `--rehearsal`
+    （或 SHADOW_REHEARSAL=1）时数据根若仍解析为真仓 data/ → **拒绝执行 exit 2**，
+    且禁用飞书推送。用于周一前对 run 路径做零污染预演。
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -30,7 +35,33 @@ from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
 from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402  M4-P3 双刀阵容
 
 BASKET = ["600519", "000858", "601318", "300750", "600036"]  # 茅台/五粮液/平安/宁德/招行
-LEDGER = BASE / "data" / "shadow" / "shadow_ledger.jsonl"
+
+
+def _cli_opt(flag, argv=None):
+    """取 CLI 选项值（flag value 形态）；argv 缺省 sys.argv[1:]。
+    pytest 的 argv 不含本脚本私有 flag，故 import 期解析不会误伤测试。"""
+    a = list(sys.argv[1:] if argv is None else argv)
+    if flag in a:
+        i = a.index(flag)
+        if i + 1 < len(a):
+            return a[i + 1]
+    return None
+
+
+_CLI_ROOT = _cli_opt("--root")
+if _CLI_ROOT:
+    os.environ.setdefault("SHADOW_DATA_ROOT", _CLI_ROOT)
+if "--rehearsal" in sys.argv:
+    os.environ.setdefault("SHADOW_REHEARSAL", "1")
+
+# ---- 数据根注入（M5 缺口收口：run 路径此前无隔离根，无法预演）------------
+# 默认真仓 data/；设 SHADOW_DATA_ROOT 或 --root <dir> 即整体隔离。
+# 纪律：**所有存储路径都从 LEDGER 反推（_data_root()）**，不另立并列常量——
+#   否则 monkeypatch LEDGER 的测试面与隔离阀之间会出现「只隔离一半」的裂缝
+#   （判例重演：闭包定值绕过 setattr patch 致 26 红）。
+REHEARSAL = os.environ.get("SHADOW_REHEARSAL") == "1"
+DATA_ROOT = Path(os.environ.get("SHADOW_DATA_ROOT") or (BASE / "data"))
+LEDGER = DATA_ROOT / "shadow" / "shadow_ledger.jsonl"
 # K-ORG-129 / T-20261008-003（B8：全篮子 HOLD 使 J2 失效）：score 基数表——
 # 枚举档 × confidence 连续落账（见 parse_decision），HOLD=0 中性锚不动；
 # WATCH 新档 -0.5：L4 存疑观察＝弱负证据，低于 HOLD、高于 SELL，不再与 HOLD 同分
@@ -38,7 +69,13 @@ REC_SCORE = {"STRONG_BUY": 2.0, "BUY": 1.0, "HOLD": 0.0, "WATCH": -0.5,
              "SELL": -1.0, "STRONG_SELL": -2.0}
 # failed 即时告警（K-STOCK-013）：复用已验证推送链；P0 语义=不等 17:35 日报
 PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
-ALERT_STATE = BASE / "data" / "shadow" / "p0_alert_state.json"
+ALERT_STATE = DATA_ROOT / "shadow" / "p0_alert_state.json"
+
+
+def _data_root():
+    """当前账本所属数据根——运行时读 LEDGER 模块属性，monkeypatch 后整体重定向。
+    存储路径一律经此反推，保证「账本在哪，附属存储就在哪」。"""
+    return Path(LEDGER).resolve().parent.parent
 
 
 
@@ -49,8 +86,14 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
     parse 失败是样本缺失（模型偶发不守格式），后者此前完全静默。"""
     if not failed_rows and not parse_fail_rows:
         return
+    if REHEARSAL:
+        # 预演阀：飞书推送是**真实外部副作用**，预演一律不发（只报本地统计）
+        print("[alert] 预演模式：跳过飞书推送（failed=%d parse_fail=%d）"
+              % (len(failed_rows), len(parse_fail_rows or [])))
+        return
     try:
-        st = json.loads(ALERT_STATE.read_text(encoding="utf-8")) if ALERT_STATE.exists() else {}
+        alert_state = _data_root() / "shadow" / "p0_alert_state.json"
+        st = json.loads(alert_state.read_text(encoding="utf-8")) if alert_state.exists() else {}
         if st.get("date") == today and st.get("pushed"):
             print("[alert] 今日 failed 告警已推过（节流），跳过")
             return
@@ -62,7 +105,7 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
                          % len(parse_fail_rows))
             for r in parse_fail_rows:
                 lines.append("- %s：latency %.0fs" % (r["symbol"], r.get("latency_s", 0)))
-        tmp = BASE / "data" / "shadow" / "_p0_alert_tmp.md"
+        tmp = _data_root() / "shadow" / "_p0_alert_tmp.md"
         tmp.write_text("\n".join(lines), encoding="utf-8")
         r = subprocess.run(
             [sys.executable, str(PUSH_SCRIPT), str(tmp)],
@@ -72,7 +115,7 @@ def push_failed_alert(failed_rows, today, parse_fail_rows=None):
         print("[alert] failed 即时告警推送：%s" % (out.splitlines()[-1] if out else "无输出"))
         tmp.unlink(missing_ok=True)
         if ok:
-            ALERT_STATE.write_text(json.dumps({"date": today, "pushed": True}), encoding="utf-8")
+            alert_state.write_text(json.dumps({"date": today, "pushed": True}), encoding="utf-8")
     except Exception as e:  # noqa: BLE001
         print("[alert] 告警推送异常（不中断主流程）：%s" % e)
 
@@ -174,7 +217,7 @@ def open_failed_task(failed_rows, today, store=None):
         return None
     try:
         from tasks import TaskStore  # noqa: E402  engine path 已在顶部注入
-        ts = store or TaskStore(BASE / "data" / "org" / "tasks")
+        ts = store or TaskStore(_data_root() / "org" / "tasks")
         title = "影子运行 failed 处置（%s）" % today
         dup = [t for t in ts.ls(dept="dev") if t["title"] == title]
         if dup:
@@ -191,7 +234,25 @@ def open_failed_task(failed_rows, today, store=None):
         return None
 
 
+def _assert_not_real_root(data_root):
+    """预演默认拒绝阀：REHEARSAL 下数据根解析为真仓 data/ 时直接拒绝执行。
+
+    判例：opt-out 型安全阀不是 fail-safe。演示污染已复发三次，凡是「先跑再说」
+    的默认路径都会在某次手滑里落到真仓——所以预演必须显式给隔离根，
+    且给错了要在**写任何字节之前**撞墙。"""
+    if not REHEARSAL:
+        return True
+    if Path(data_root).resolve() == (BASE / "data").resolve():
+        print("[FATAL] 预演模式拒绝写真实数据根 %s —— "
+              "请设 SHADOW_DATA_ROOT 或 --root <隔离目录>" % data_root)
+        return False
+    return True
+
+
 def main():
+    data_root = _data_root()
+    if not _assert_not_real_root(data_root):
+        return 2
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     if not sys.stdout.isatty():
         # 计划任务无终端：输出自重定向落文件（长跑纪律，不依赖管道）
@@ -199,11 +260,14 @@ def main():
         sys.stdout = log_f
         sys.stderr = log_f
         print("===== shadow run start %s =====" % datetime.now())
+    if REHEARSAL:
+        print("[rehearsal] 隔离模式 data_root=%s（真仓 data/ 零写入；飞书推送已禁）"
+              % data_root)
     today = datetime.now().strftime("%Y-%m-%d")
     team = Team(BASE / "registry" / "team_invest.json")
     grants = {a["agent_id"]: a["memory_grants"] for a in team.agents}
-    memory = MemoryStore(BASE / "data" / "memory", grants_by_agent=grants, enforce=True)
-    cp = Checkpointer(BASE / "data" / "checkpoints.db")
+    memory = MemoryStore(data_root / "memory", grants_by_agent=grants, enforce=True)
+    cp = Checkpointer(data_root / "checkpoints.db")
     llm = OllamaLLM()
     interp = Interpreter(team, llm, memory, cp)
 
@@ -212,7 +276,11 @@ def main():
     parse_fail_rows = []  # K-STOCK-338：done 但决策解析失败（评估样本缺失，此前静默）
     # M0 P4 双轨幂等：date+symbol+done JSONL 仍是权威；并行写统一账本
     # （scope=shadow_daily，死信窗 1h——单票耗时分钟级，超 1h 视为进程已死）。
-    hook = DualTrackHook("shadow_daily", stale_seconds=3600)
+    hook = DualTrackHook(
+        "shadow_daily", stale_seconds=3600,
+        # 真仓保持原行为（None→默认库/IDEMPOTENCY_DB）；隔离时才改指本根
+        db_path=(None if data_root == (BASE / "data").resolve()
+                 else data_root / "idempotency" / "idempotency.db"))
     for symbol in BASKET:
         if already_done(today, symbol):
             print("[skip] %s 今日已入账" % symbol)
@@ -287,4 +355,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)
