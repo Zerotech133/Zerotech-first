@@ -377,8 +377,12 @@ def cmd_drop(tid, *reason):
     if not t:
         raise SystemExit("无此工单")
     try:
-        _git("worktree", "remove", t["worktree"], "--force")
-        _git("branch", "-D", t["branch"])
+        wt = t.get("worktree")
+        if wt:
+            _git("worktree", "remove", wt, "--force")
+        br = t.get("branch")
+        if br:
+            _git("branch", "-D", br)
     except SystemExit:
         pass
     t["status"] = "aborted"
