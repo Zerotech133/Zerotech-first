@@ -35,14 +35,23 @@ LOG = BASE / "data" / "shadow" / "monday_checkpoint.log"
 BASKET_N = 5  # 茅台/五粮液/平安/宁德/招行（run_shadow.BASKET）
 LAST_V0_DAY = "2026-10-14"  # 存量 v0 行末日：最新交易日未超过它=首跑未发生
 WAIT_SECONDS = 90            # 首跑未完成时的重试间隔
-# 90 分钟：17:25 起可等到 ~18:55。依据不是「乐观基线」而是**实测分布**：
-#   · 空载预演（2026-10-17，venv py3.13）：5 票 27m55s = 5.6 分钟/票；
-#   · 有竞争（2026-10-18 03:29，生产 py311，同时有 22GB 大模型占显存 →
-#     9b 被挤到 CPU，runner WS 7.64GB）：首票 latency_s = 1101s = 18.4 分钟/票。
-# 按竞争态推算 5 票 ≈ 92 分钟（17:10 起跑 → ~18:42），30 分钟预算必然假 FAIL。
-# 放宽只影响「本来就该等」的坏情况：正常路径首轮即 break，零延迟代价；
-# 等待期间每 90 秒打印一次「当日 N/5 行」，人看日志就知道在推进而非卡死。
-MAX_WAIT_ROUNDS = 60         # 90 分钟
+# 180 分钟：17:25 起可等到 ~20:25。依据是**实测分布**而非乐观基线：
+#   · 空载（2026-10-17 venv py3.13）：5 票 27m55s = 5.6 分钟/票；
+#   · 竞争态（2026-10-18 03:29 生产 py311，同时有 22GB 大模型占显存 →
+#     9b 被挤到 CPU，runner WS 7.64GB）：5 票 4116s = 68.6 分钟，单票
+#     latency_s = 1101 / 2283 / 227 / 253 / 237 秒——**双峰**，最慢一票 38 分钟。
+# 5 票都按实测最慢跑 = 190 分钟；180 分钟覆盖 4.7 个这样的票，而真实总时长
+# 取决于当天有没有别的模型抢显存（不可预知的量）。
+#
+# 为什么不用「N 分钟无新行」做停滞判据：竞争态下单票要跑 38 分钟，期间账本
+# **一行都不落**，任何停滞判据都会把「正在算」误判成「已死」——这是本文件
+# 已犯过一次的同类错误（等待条件必须与断言同源，不能拿别的信号近似）。
+# 停滞在这个系统里没有可用的观测面（last_run.log 只在每票完成时写一行），
+# 所以只能给足上限。
+#
+# 代价可控：任务 IgnoreNew + PT72H，后面没有依赖它的任务；等待期间每 90 秒
+# 打印一次进度，人看日志能区分「在推进」与「没动静」。正常路径首轮即 break。
+MAX_WAIT_ROUNDS = 120        # 180 分钟
 
 DK_FIELDS = ("dk_signal", "dk_regime", "dk_profile",
              "dk_blocked", "dk_reason", "dk_error")
@@ -51,12 +60,18 @@ RESULTS = []
 _LOG_HANDLE = None
 
 
-def _today_done(rows, latest):
-    """latest 交易日的 done 行数（＝首跑进度）。"""
+def _today_counts(rows, latest):
+    """latest 日的 (done 行数, failed 行数)。
+
+    failed 也要数：判断「今天这一批是否已经跑完」不能只看 done——全失败的一天
+    done 恒为 0，若只看 done 就会把「跑完了但全挂」当成「还没跑完」而白等到
+    上限（门 3 的 FAIL 来得越晚，人工介入的窗口越小）。
+    """
     if not latest:
-        return 0
-    return sum(1 for r in rows
-               if r.get("date") == latest and r.get("status") == "done")
+        return 0, 0
+    todays = [r for r in rows if r.get("date") == latest]
+    return (sum(1 for r in todays if r.get("status") == "done"),
+            sum(1 for r in todays if r.get("status") == "failed"))
 
 
 def _basket_complete(todays):
@@ -75,19 +90,26 @@ def _basket_complete(todays):
 def _needs_wait(rows, latest, is_monday):
     """周一巡检是否应继续等首跑完成。
 
-    **等待条件必须与最终断言同源**：断言是「latest 日 done 行数 >= BASKET_N
-    且不同标的数 == BASKET_N」，所以等待条件也必须是「该日 done 行数
-    < BASKET_N」（到量即走，不再多等）。只等「完全没有新行」
-    会漏掉「部分落账」这个真实危险窗口——真实时序是先落 1 行，`latest` 立刻
-    越过 v0 日期，旧条件随即 break，然后带着 2-3/5 行去断言 ==5 判 FAIL
-    （10-17 隔离预演实测：5 篮子全程 27m55s > 17:10→17:25 的 15 分钟窗口）。
+    **等的必须是「这批跑完了没有」，不是「够不够时间」**（判例：等待条件必须与
+    最终断言同源）。run_shadow 对篮子 5 票是串行处理、每票恰好写一行
+    （run_shadow.py:287 循环、:338 落账；失败也在两次尝试后落 failed 行），
+    所以「当日已落地行数（done+failed）达到 BASKET_N」与「这批跑完了」等价——
+    这是唯一可靠的完成信号，且不依赖当天机器负载。
+
+    历史两版都被时间/近似信号带偏：
+      · v1 只等「完全没有新行」→ 先落 1 行就 break，带着 2-3/5 去断言判 FAIL；
+      · v2 等「done < 5」→ 4 done + 1 failed 时永远等不到，白等满上限才判
+        FAIL；且「done 到量」比「整批落地」晚，纯失败的一天要等满。
+    现在 done/failed 一起数：已落地即不再等，成不成篮交给断言判。
+
     非周一不阻塞（时间窗外只查健康，PENDING 中性）。
     """
     if not is_monday:
         return False
     if latest is None or latest <= LAST_V0_DAY:
         return True  # 首跑尚未落任何新行
-    return _today_done(rows, latest) < BASKET_N
+    done_n, failed_n = _today_counts(rows, latest)
+    return (done_n + failed_n) < BASKET_N
 
 
 class _Tee:
@@ -234,17 +256,20 @@ def main():
             days = sorted({r.get("date") for r in rows if r.get("date")})
             latest = days[-1] if days else None
             if not _needs_wait(rows, latest, is_monday):
-                break  # 非周一，或首跑已完成/无待等
+                break  # 非周一，或首跑已完成/整批已落地
+            done_n, failed_n = _today_counts(rows, latest)
             if pending_wait >= MAX_WAIT_ROUNDS:
                 print("[wait] 已达等待上限 %d 轮（%.0f 分钟），按现状判定"
-                      % (MAX_WAIT_ROUNDS, MAX_WAIT_ROUNDS * WAIT_SECONDS / 60.0))
+                      "（当日 done %d / failed %d）"
+                      % (MAX_WAIT_ROUNDS, MAX_WAIT_ROUNDS * WAIT_SECONDS / 60.0,
+                         done_n, failed_n))
                 break
             pending_wait += 1
-            done_n = _today_done(rows, latest)
-            print("[wait] 首跑未完成（%s，第 %d/%d 次重试前等 %ds——run_shadow"
-                  " 预演实测 5 篮子约 28 分钟，17:25 巡检会撞上未完成）"
+            print("[wait] 首跑未完成（%s，第 %d/%d 次重试前等 %ds——首跑实测"
+                  "空载 28 分钟 / 竞争态 69 分钟，17:25 巡检必撞上未完成）"
                   % ("尚未落账" if latest is None or latest <= LAST_V0_DAY
-                     else "当日 %d/%d 行" % (done_n, BASKET_N),
+                     else "当日 done %d / failed %d（共 %d 票）"
+                          % (done_n, failed_n, BASKET_N),
                      pending_wait, MAX_WAIT_ROUNDS, WAIT_SECONDS))
             _flush_log()
             time.sleep(WAIT_SECONDS)
@@ -261,20 +286,24 @@ def main():
         else:
             todays = [r for r in rows if r.get("date") == latest
                       and r.get("status") == "done"]
-            # 断言上界必须与等待条件同源：等待在「done 行数 >= BASKET_N」即
-            # 停止（_needs_wait 返回 False），若此处仍写 `== BASKET_N`，一旦
-            # 账本多出重复行（run_shadow 双跑）就会「等到 6 行 → 断言 ==5 →
-            # 判 FAIL」，而 FAIL 文案与真正的失败无法区分。
-            # 改为「>= BASKET_N 且不同标的数 == BASKET_N」：既与等待同源，
+            # 断言上界必须与等待条件同源：等待在「整批已落地（done+failed
+            # >= BASKET_N）」即停（_needs_wait 返回 False），所以断言不能写
+            # `== BASKET_N`——账本多出重复行（run_shadow 双跑）时会「等到 6 行
+            # → 断言 ==5 → 判 FAIL」，而 FAIL 文案与真正的失败无法区分。
+            # 现为「>= BASKET_N 且不同标的数 == BASKET_N」：既与等待同源，
             # 又比原来的 == 更严——4 个标的 + 1 条重复（共 5 行）旧码会 PASS。
             syms = {r.get("symbol") for r in todays}
+            _dn, _fn = _today_counts(rows, latest)
             check("最新交易日 %s done 行数=%d（预期 %d）"
                   % (latest, len(todays), BASKET_N),
                   _basket_complete(todays),
-                  "不同标的 %d 个；账本总行数 %d（v0 存量 + 新行）%s"
-                  % (len(syms), len(rows),
-                     "" if len(todays) == BASKET_N else
-                     "；行数>篮子数=疑似重复写入，须查 run_shadow 是否双跑"))
+                  "不同标的 %d 个；当日 failed %d 票；账本总行数 %d"
+                  "（v0 存量 + 新行）%s"
+                  % (len(syms), _fn, len(rows),
+                     "；行数>篮子数=疑似重复写入，须查 run_shadow 是否双跑"
+                     if len(todays) > BASKET_N else
+                     ("；有 failed 票=P0，见 last_run.log 与飞书告警"
+                      if _fn else "")))
             m5_rows = [r for r in todays
                        if r.get("schema_version") == "m5.v1"]
             check("首跑行全带 schema_version=m5.v1",

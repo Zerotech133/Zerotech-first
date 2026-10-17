@@ -32,19 +32,24 @@ def _rows(n_done, day=DAY, n_failed=0):
 
 # ---------------------------------------------------------------- 计数
 
-def test_today_done_counts_only_done():
+def test_today_counts_splits_done_and_failed():
     rows = _rows(2, n_failed=3)
-    assert mc._today_done(rows, DAY) == 2
+    assert mc._today_counts(rows, DAY) == (2, 3)
 
 
-def test_today_done_empty_latest():
-    assert mc._today_done([], None) == 0
+def test_today_counts_empty_latest():
+    assert mc._today_counts([], None) == (0, 0)
+
+
+def test_today_counts_ignores_other_days():
+    rows = _rows(5, day="2026-10-14") + _rows(2, n_failed=1)
+    assert mc._today_counts(rows, DAY) == (2, 1)
 
 
 # ---------------------------------------------------------------- 等待条件
 
 def test_partial_day_must_wait():
-    """★核心回归：部分落账（1..4 行）必须继续等待——旧实现此处返回 False。"""
+    """★核心回归：部分落账（1..4 行）必须继续等待——v1 实现此处返回 False。"""
     for n in (1, 2, 3, 4):
         assert mc._needs_wait(_rows(n), DAY, True) is True, "n=%d 应等待" % n
 
@@ -53,9 +58,25 @@ def test_full_day_does_not_wait():
     assert mc._needs_wait(_rows(mc.BASKET_N), DAY, True) is False
 
 
-def test_failed_rows_do_not_count_as_progress():
-    """failed 行不算完成：4 done + 1 failed 仍须等待。"""
-    assert mc._needs_wait(_rows(4, n_failed=1), DAY, True) is True
+def test_batch_landed_with_failure_does_not_wait():
+    """4 done + 1 failed = 这批已跑完，不能继续等。
+
+    run_shadow 每票恰好写一行、失败也在两次尝试后落 failed 行（run_shadow.py
+    :338），所以「已落地 5 行」= 「这批结束」。v2 实现按 done<5 判断，此处会
+    白等满上限（最长 180 分钟）才判 FAIL——FAIL 越晚，人工介入窗口越小。
+    """
+    assert mc._needs_wait(_rows(4, n_failed=1), DAY, True) is False
+
+
+def test_all_failed_day_does_not_wait():
+    """全失败的一天：done 恒为 0，但整批已落地，必须立刻判定而不是等满上限。"""
+    assert mc._needs_wait(_rows(0, n_failed=5), DAY, True) is False
+
+
+def test_partial_landing_with_failures_still_waits():
+    """1 failed + 4 未落地：这批还在跑，必须继续等（failed 不能推动提前结束）。"""
+    assert mc._needs_wait(_rows(0, n_failed=1), DAY, True) is True
+    assert mc._needs_wait(_rows(3, n_failed=1), DAY, True) is True
 
 
 def test_no_new_rows_must_wait():
@@ -72,23 +93,31 @@ def test_non_monday_never_blocks():
     assert mc._needs_wait([], None, False) is False
 
 
-def test_wait_budget_covers_rehearsal_window():
-    """等待预算必须覆盖**两种实测速度**里慢的那种。
+def test_wait_budget_covers_measured_worst_case():
+    """等待预算必须覆盖**实测最慢**，而不是最乐观。
 
-    · 空载（2026-10-17 预演）：5 票 27m55s → 17:25 后只需再等 13 分钟；
-    · 有竞争（2026-10-18 03:29 生产 py311 实测）：首票 latency_s=1101s
-      = 18.4 分钟/票（22GB 大模型占显存 → 9b 被挤到 CPU），5 票≈92 分钟
-      → 17:25 后要再等约 77 分钟。
+    三次实测（同代码、同机器，只有负载不同）：
+    · 空载 2026-10-17（venv py3.13）：5 票 27m55s = 5.6 分钟/票；
+    · 竞争 2026-10-18 03:29（生产 py311，22GB 大模型占显存 → 9b 被挤到 CPU）：
+      5 票 4116s = 68.6 分钟，单票 latency_s = 1101 / 2283 / 227 / 253 / 237s
+      ——**双峰**，最慢一票 38 分钟。
+    5 票都按最慢一票跑 = 190 分钟。
 
-    假 FAIL 与真 FAIL 在日志形态上一模一样，是门 3 最难判的一类风险，
+    假 FAIL 与真 FAIL 在日志形态上一模一样，是门 3 最难判的一类风险；
     而放宽预算在正常路径上零成本（首轮即 break）——所以按慢的算。
     """
     budget_min = mc.MAX_WAIT_ROUNDS * mc.WAIT_SECONDS / 60.0
     assert budget_min >= 13, "预算 %.1f 分钟不足以覆盖 17:25 后的剩余 %.0f 分钟" % (
         budget_min, 28 - 15)
-    assert budget_min >= 75, (
-        "预算 %.1f 分钟覆盖不了竞争态（首票实测 18.4 分钟 × 5 票 ≈ 92 分钟，"
-        "17:25 后仍需等约 77 分钟）——会假 FAIL" % budget_min)
+    assert budget_min >= 68.6, (
+        "预算 %.1f 分钟连**实测**的竞争态全程（68.6 分钟）都不够——必假 FAIL"
+        % budget_min)
+    # 实测最慢单票 2283s=38.05 分钟；预算应能容纳 4 张以上这样的票，
+    # 而不是只够「按最慢票跑 2 张」。
+    worst_ticket_min = 2283 / 60.0
+    assert budget_min / worst_ticket_min >= 4, (
+        "预算只够 %.1f 张实测最慢票（%.0f 分钟/票）——上限对竞争态没有意义"
+        % (budget_min / worst_ticket_min, worst_ticket_min))
 
 
 # ------------------------------------------------- 断言与等待同源（篮子齐备）
@@ -119,6 +148,83 @@ def test_basket_complete_missing_symbol_fails():
 def test_basket_complete_partial_and_empty():
     for n in (0, 1, 4):
         assert mc._basket_complete(_rows(n)) is False, "n=%d 不应判齐备" % n
+
+
+# --------------------------------------------- 集成：真跑 main() 的等待行为
+
+def test_main_does_not_sleep_when_batch_landed_with_failure(tmp_path, monkeypatch, capsys):
+    """★集成回归：4 done + 1 failed 时 main() 必须**立刻**判定，不进等待循环。
+
+    只测谓词不够——上一版 bug 就出在 main() 的循环与断言之间（等待条件与断言
+    上界不同源）。这里真跑 main()，把 sleep 换成记录器：任何一次 sleep 都说明
+    巡检又去「等一个永远不会再落账的日子」。
+    """
+    import datetime as _dt
+    import json as _json
+
+    rows = _rows(4, n_failed=1)
+    ledger = tmp_path / "shadow_ledger.jsonl"
+    ledger.write_text("".join(_json.dumps(r, ensure_ascii=False) + "\n"
+                              for r in rows), encoding="utf-8")
+
+    class _Monday(_dt.date):
+        @classmethod
+        def today(cls):
+            return _dt.date(2026, 10, 19)
+
+    sleeps = []
+    monkeypatch.setattr(mc, "LEDGER", ledger)
+    monkeypatch.setattr(mc, "PERF", tmp_path / "perf.jsonl")
+    monkeypatch.setattr(mc, "LOG", tmp_path / "cp.log")
+    monkeypatch.setattr(mc, "_LOG_HANDLE", None)
+    monkeypatch.setattr(mc, "date", _Monday)
+    monkeypatch.setattr(mc.time, "sleep", lambda s: sleeps.append(s))
+
+    mc.main()
+    mc._close_log()
+    out = capsys.readouterr().out
+
+    assert sleeps == [], "整批已落地仍在等待（sleep %d 次）——FAIL 会被推迟到上限" % len(sleeps)
+    assert "done 行数=4（预期 5）" in out
+    assert "当日 failed 1 票" in out, "FAIL 文案必须点明有 failed 票，否则会被误读成「还没跑完」"
+
+
+def test_main_waits_then_stops_at_ceiling(tmp_path, monkeypatch, capsys):
+    """整批**未**落地时必须真的进等待循环，并到上限停下（不能死等）。
+
+    这是「等待」的另一半契约：上面那个用例证明「已落地就不等」，这里证明
+    「未落地会等且必定终止」。两半缺一，周一要么假 FAIL、要么任务永不返回。
+    """
+    import datetime as _dt
+    import json as _json
+
+    rows = _rows(2)  # 只有 2 票落地，剩 3 票还在跑
+    ledger = tmp_path / "shadow_ledger.jsonl"
+    ledger.write_text("".join(_json.dumps(r, ensure_ascii=False) + "\n"
+                              for r in rows), encoding="utf-8")
+
+    class _Monday(_dt.date):
+        @classmethod
+        def today(cls):
+            return _dt.date(2026, 10, 19)
+
+    sleeps = []
+    monkeypatch.setattr(mc, "LEDGER", ledger)
+    monkeypatch.setattr(mc, "PERF", tmp_path / "perf.jsonl")
+    monkeypatch.setattr(mc, "LOG", tmp_path / "cp.log")
+    monkeypatch.setattr(mc, "_LOG_HANDLE", None)
+    monkeypatch.setattr(mc, "date", _Monday)
+    monkeypatch.setattr(mc, "MAX_WAIT_ROUNDS", 3)
+    monkeypatch.setattr(mc.time, "sleep", lambda s: sleeps.append(s))
+
+    mc.main()
+    mc._close_log()
+    out = capsys.readouterr().out
+
+    assert len(sleeps) == 3, "应等满 3 轮后停止，实际 %d 轮" % len(sleeps)
+    assert "已达等待上限 3 轮" in out
+    assert "当日 done 2 / failed 0（共 5 票）" in out, "等待日志必须显示进度，人才分得清「在推进」与「卡死」"
+    assert "done 行数=2（预期 5）" in out
 
 
 if __name__ == "__main__":
