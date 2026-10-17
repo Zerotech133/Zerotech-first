@@ -35,12 +35,14 @@ LOG = BASE / "data" / "shadow" / "monday_checkpoint.log"
 BASKET_N = 5  # 茅台/五粮液/平安/宁德/招行（run_shadow.BASKET）
 LAST_V0_DAY = "2026-10-14"  # 存量 v0 行末日：最新交易日未超过它=首跑未发生
 WAIT_SECONDS = 90            # 首跑未完成时的重试间隔
-# 30 分钟：17:25 起可等到 ~17:55。依据＝预演实测全程 27m55s（17:10 起跑 →
-# ~17:38 结束），原 14 轮（21 分钟）只留 8 分钟余量（29%）——冷启模型加载、
-# Ollama 排队、行情源抖动任一项超预期即触发**假 FAIL**，而假 FAIL 与真 FAIL
-# 在日志形态上一模一样，是门 3 最难判的一类风险。放宽只影响「本来就该等」的
-# 坏情况，正常路径（首跑 ~17:38 完成）第 1 轮就 break，零延迟代价。
-MAX_WAIT_ROUNDS = 20         # 30 分钟
+# 90 分钟：17:25 起可等到 ~18:55。依据不是「乐观基线」而是**实测分布**：
+#   · 空载预演（2026-10-17，venv py3.13）：5 票 27m55s = 5.6 分钟/票；
+#   · 有竞争（2026-10-18 03:29，生产 py311，同时有 22GB 大模型占显存 →
+#     9b 被挤到 CPU，runner WS 7.64GB）：首票 latency_s = 1101s = 18.4 分钟/票。
+# 按竞争态推算 5 票 ≈ 92 分钟（17:10 起跑 → ~18:42），30 分钟预算必然假 FAIL。
+# 放宽只影响「本来就该等」的坏情况：正常路径首轮即 break，零延迟代价；
+# 等待期间每 90 秒打印一次「当日 N/5 行」，人看日志就知道在推进而非卡死。
+MAX_WAIT_ROUNDS = 60         # 90 分钟
 
 DK_FIELDS = ("dk_signal", "dk_regime", "dk_profile",
              "dk_blocked", "dk_reason", "dk_error")
@@ -187,13 +189,21 @@ def load_jsonl(p):
     if not p.exists():
         return []
     rows = []
+    bad = 0
     for line in p.read_text(encoding="utf-8").splitlines():
         line = line.strip()
-        if line:
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                pass
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            bad += 1
+    if bad:
+        # 观察面是最后一道网（判例：手编辑绕过一切写侧校验）——账本半行
+        # （append 中断/手编辑损坏）静默跳过会让「账本损坏」对巡检失明，
+        # 门 1 行数判读被静默稀释。显式告警，证据留在巡检日志。
+        print("[observe] %s 有 %d 行损坏（半行/手编辑），已跳过不计入判读"
+              % (p.name, bad))
     return rows
 
 
