@@ -43,7 +43,7 @@ from engine.evidence import EvidenceStore, fact_hash  # noqa: E402
 EVIDENCE_DB = _AGENT_PLATFORM / "data" / "evidence" / "evidence.db"
 
 ALL_DOMAINS = ["gzh", "academy", "personal", "dev", "invest", "pitch",
-               "shadow", "artifact"]
+               "shadow", "artifact", "paper"]
 
 
 # ----------------------------------------------------------------------
@@ -240,10 +240,43 @@ def _collect_artifact(root: Path, explicit: bool = False):
     return evs, findings
 
 
+def _collect_paper(root: Path):
+    """paper 事件观测（M4-P2）：paper_events.jsonl 逐条 → Evidence。
+
+    绿地域：账本未建属正常起点（首个 ai_operator paper 事件才落盘），
+    不进 findings。statement 含 fact_hash/decision_id 指纹，可对账。
+    """
+    evs, findings = [], []
+    p = root / "agent_platform" / "data" / "invest" / "paper_events.jsonl"
+    if not p.exists():
+        return evs, findings
+    for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError as exc:
+            findings.append("paper: 第 %d 行解析失败: %s" % (i, exc))
+            continue
+        evs.append(Evidence(
+            source="invest.paper_events",
+            source_ref="paper:%s" % r.get("trace_id", ""),
+            statement="env=%s action=%s code=%s fact_hash=%s decision_id=%s"
+                      % (r.get("environment", ""), r.get("action", ""),
+                         r.get("code", ""), r.get("fact_hash", ""),
+                         r.get("decision_id", "")),
+            payload={"domain": "paper", "kind": "paper_event_fingerprint",
+                     "idempotency_key": r.get("idempotency_key", ""),
+                     "proposed_real": bool(r.get("proposed_real"))}))
+    return evs, findings
+
+
 _COLLECTORS = {"gzh": _collect_gzh, "academy": _collect_academy,
                "personal": _collect_personal, "dev": _collect_dev,
                "invest": _collect_invest, "pitch": _collect_pitch,
-               "shadow": _collect_shadow, "artifact": _collect_artifact}
+               "shadow": _collect_shadow, "artifact": _collect_artifact,
+               "paper": _collect_paper}
 
 
 # ----------------------------------------------------------------------

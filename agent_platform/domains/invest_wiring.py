@@ -462,6 +462,149 @@ def _by_status(entries: List[dict]) -> Dict[str, int]:
 
 
 # ----------------------------------------------------------------------
+# Paper 事件入账（M4-P2）：ai_operator 决策事件 → 平台账本
+# ----------------------------------------------------------------------
+# 环境白名单**严格**：M4 只收 paper 模拟事件。shadow 有独立影子账本
+# （run_shadow.py），advisory/legacy 是观察名单只读不新增，真实通道不存在。
+ALLOWED_PAPER_ENVIRONMENTS = {"paper"}
+# ai_operator TRACE_FIELDS 四元组 + 业务必填（无源字段不伪造）
+PAPER_EVENT_REQUIRED = ("trace_id", "decision_id", "fact_hash",
+                        "idempotency_key", "code", "action", "as_of",
+                        "environment")
+
+
+def _paper_events_path(root: Path) -> Path:
+    return Path(root) / "agent_platform" / "data" / "invest" / "paper_events.jsonl"
+
+
+def load_paper_events(root: Path) -> List[dict]:
+    """paper 事件账本只读加载。缺文件=绿地空账（合法初态，非异常）。"""
+    path = _paper_events_path(root)
+    if not path.exists():
+        return []
+    events, findings = [], []
+    for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            findings.append("paper_events 第 %d 行解析失败: %s" % (i, exc))
+            continue
+        if isinstance(row, dict):
+            events.append(row)
+    return events
+
+
+def find_paper_event(root: Path, trace_id: str) -> dict:
+    for e in load_paper_events(root):
+        if e.get("trace_id") == trace_id:
+            return e
+    raise InvestWiringError(
+        "trace_id=%s 无 paper 事件（无源 ID 不伪造，先 record）" % trace_id)
+
+
+def record_paper_event(root: Path, event: dict, link_store=None
+                       ) -> Tuple[dict, bool, List[str]]:
+    """一条 ai_operator 决策事件入账（幂等键=trace_id）。
+
+    返回 (entry, replayed, findings)。findings 非阻断（链失败留痕，
+    账本先行——事件入账是客观登记，登记不设门判例）。
+    红线三道闸：
+      1. environment 白名单严格（非 paper 即拒——含真实通道）；
+      2. execution_allowed 必须显式 False（缺字段也拒，宁可误拒）；
+      3. 建议转移只注册不批准（见 propose_real_transition）。
+    """
+    if not isinstance(event, dict):
+        raise InvestWiringError("event 必须是 dict")
+    env = event.get("environment")
+    if env not in ALLOWED_PAPER_ENVIRONMENTS:
+        raise InvestWiringError(
+            "environment=%r 不在白名单 %s（M4 红线：只收 paper 模拟事件）"
+            % (env, sorted(ALLOWED_PAPER_ENVIRONMENTS)))
+    if event.get("execution_allowed") is not False:
+        raise InvestWiringError(
+            "execution_allowed 必须显式 False（paper 事件禁止携带真实"
+            "下单许可；缺字段同样拒绝）")
+    missing = [f for f in PAPER_EVENT_REQUIRED
+               if not str(event.get(f) or "").strip()]
+    if missing:
+        raise InvestWiringError("事件缺必填字段: %s（无源字段不伪造）" % missing)
+
+    root = Path(root)
+    events = load_paper_events(root)
+    trace_id = str(event["trace_id"]).strip()
+    for e in events:
+        if e.get("trace_id") == trace_id:
+            # 重放校验：fact_hash/decision_id 漂移 = 事件被改写
+            if (e.get("fact_hash") != event.get("fact_hash")
+                    or e.get("decision_id") != event.get("decision_id")):
+                raise InvestWiringError(
+                    "paper 事件 %s 已入账但 fact_hash/decision_id 漂移"
+                    "（同 trace_id 异内容，拒绝覆盖）" % trace_id)
+            return e, True, []
+
+    entry = {k: event[k] for k in event}    # 浅拷贝原样留痕
+    entry["recorded_at"] = _now_iso()
+    events.append(entry)
+    path = _paper_events_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = str(path) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        for e in events:
+            f.write(json.dumps(e, ensure_ascii=False, separators=(",", ":")) + "\n")
+    os.replace(tmp, path)
+
+    # trace 链挂接（M4-P1 映射层）：账本已落，链失败只留痕
+    findings: List[str] = []
+    if link_store is not None:
+        chain = {"paper": {"trace_id": trace_id}}
+        sr = str(event.get("shadow_run_id") or "").strip()
+        if sr:
+            chain["shadow"] = {"run_id": sr,
+                               "symbol": str(event.get("code", "")),
+                               "trade_date": str(event.get("as_of", ""))[:10]}
+        try:
+            link_store.record(chain, source="m4p2-paper",
+                              declared_at=entry["recorded_at"])
+        except ValueError as exc:
+            findings.append("trace 链挂接失败（事件已入账）: %s" % exc)
+    return entry, False, findings
+
+
+def propose_real_transition(root: Path, trace_id: str, by: str,
+                            reason: str = "") -> dict:
+    """「建议转移为真实决策」注册口——M4 红线：**只注册不批准**。
+
+    落事件账本内留痕（proposed_real），不写 Approval 凭据（凭据语义=
+    记录裁决，不记录中间态）、不改任何状态、不触发任何下单通道。
+    真实转移通道在 M4 范围内不存在；本函数是 P5 之后人工流程的入口桩。
+    """
+    if not by:
+        raise InvestWiringError("提议人 by 必填（可追溯）")
+    root = Path(root)
+    events = load_paper_events(root)
+    for e in events:
+        if e.get("trace_id") == trace_id:
+            if e.get("proposed_real"):
+                return e                      # 幂等：已提议原样返回
+            e["proposed_real"] = {"by": by, "reason": reason,
+                                  "at": _now_iso(),
+                                  "note": "M4 红线：仅注册，批准流程未开放"}
+            path = _paper_events_path(root)
+            tmp = str(path) + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                for r in events:
+                    f.write(json.dumps(r, ensure_ascii=False,
+                                       separators=(",", ":")) + "\n")
+            os.replace(tmp, path)
+            return e
+    raise InvestWiringError(
+        "trace_id=%s 无 paper 事件（无源 ID 不伪造，先 record）" % trace_id)
+
+
+# ----------------------------------------------------------------------
 # CLI
 # ----------------------------------------------------------------------
 def main(argv=None) -> int:
@@ -480,6 +623,11 @@ def main(argv=None) -> int:
                       choices=["reviewed", "adopted", "drafted"])
     p_ap.add_argument("--by", required=True)
     p_ap.add_argument("--reason", default="")
+    p_pe = sub.add_parser("paper-events", parents=[common])
+    p_pr = sub.add_parser("propose-real", parents=[common])
+    p_pr.add_argument("trace_id")
+    p_pr.add_argument("--by", required=True)
+    p_pr.add_argument("--reason", default="")
 
     args = ap.parse_args(argv)
     root = Path(args.root)
@@ -509,6 +657,21 @@ def main(argv=None) -> int:
             approval.from_status, approval.to_status,
             "" if not replayed else "（凭据 %s 已存在，真源未重复变更）"
             % approval.approval_id[:12]))
+        return 0
+    if args.cmd == "paper-events":
+        evs = load_paper_events(root)
+        for e in evs:
+            pr = e.get("proposed_real")
+            print("%s %-14s %-9s as_of=%s%s" % (
+                e.get("trace_id", ""), e.get("action", ""),
+                e.get("code", ""), e.get("as_of", ""),
+                " [已提议真实转移]" if pr else ""))
+        print("共 %d 条 paper 事件" % len(evs))
+        return 0
+    if args.cmd == "propose-real":
+        e = propose_real_transition(root, args.trace_id, args.by, args.reason)
+        print("[invest_wiring] %s 建议已注册（M4 红线：仅注册，"
+              "批准流程未开放）" % args.trace_id)
         return 0
     return 1
 
