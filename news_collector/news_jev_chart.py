@@ -8,6 +8,7 @@
 挂在 news_ai.py 晨报/复盘推送成功后自动触发（Popen 后台，不阻塞）。
 """
 import json
+import math
 import os
 import sqlite3
 import subprocess
@@ -33,6 +34,11 @@ BJ = {"bull": "利多", "bear": "利空", "neutral": "中性"}
 SC = {"cn": "A股", "hk": "港股", "us": "美股",
       "commodity": "商品", "crypto": "加密", "macro": "宏观"}
 C_BULL, C_BEAR, C_NEUT, C_GRID = "#3fb950", "#f85149", "#8b949e", "#e3e5e8"
+# K-ORG-157：低置信阈值与时效衰减（实证 K-ORG-156——0.5-0.7 段命中仅
+# 32-43%，0.7+ 才稳定在 41-54%；净倾向半衰期 6h 衰减加权）
+LOW_CONF = 0.7
+LAMBDA_H = 0.1155   # ln2/6，w=exp(-λ·Δt小时)
+C_LOW = "#a3adb8"   # 低置信灰段
 
 
 def load(hours=24 * 7):
@@ -80,20 +86,35 @@ def render(now, items):
         for s in ("top", "right"):
             ax.spines[s].set_visible(False)
 
-    # 1) 24h 方向计数
+    # 1) 24h 方向计数（K-ORG-157：高置信实色 + 低置信灰叠段，低置信不参与
+    #    方向信号，仅展示数量）
     ax = axes[0][0]
-    cnt = {b: sum(1 for x in day if x["bias"] == b)
-           for b in ("bull", "bear", "neutral")}
+    hi_cnt = {b: sum(1 for x in day if x["bias"] == b
+                     and x["conf"] >= LOW_CONF)
+              for b in ("bull", "bear", "neutral")}
+    lo_cnt = {b: sum(1 for x in day if x["bias"] == b and x["conf"] < LOW_CONF)
+              for b in ("bull", "bear", "neutral")}
     ys = range(3)
-    ax.barh(list(ys), [cnt["bull"], cnt["bear"], cnt["neutral"]],
+    ax.barh(list(ys), [hi_cnt["bull"], hi_cnt["bear"], hi_cnt["neutral"]],
             color=[C_BULL, C_BEAR, C_NEUT], height=0.55)
+    ax.barh(list(ys),
+            [lo_cnt["bull"], lo_cnt["bear"], lo_cnt["neutral"]],
+            left=[hi_cnt["bull"], hi_cnt["bear"], hi_cnt["neutral"]],
+            color=C_LOW, height=0.55, label="低置信<70%")
     ax.set_yticks(list(ys))
     ax.set_yticklabels(["利多", "利空", "中性"])
-    ax.set_title("近 24h 方向分布", fontsize=11, loc="left")
+    ax.set_title("近 24h 方向分布（灰=低置信<70%）", fontsize=11, loc="left")
     for i, b in enumerate(("bull", "bear", "neutral")):
-        ax.text(cnt[b] + max(cnt.values()) * 0.02, i, str(cnt[b]),
+        tot = hi_cnt[b] + lo_cnt[b]
+        ax.text(tot + max(tot for tot in
+                          (hi_cnt[x] + lo_cnt[x] for x in ("bull", "bear",
+                                                          "neutral")))
+                * 0.02, i, str(tot) if not lo_cnt[b] else
+                "%d(%d低)" % (tot, lo_cnt[b]),
                 va="center", fontsize=10, fontweight="bold")
-    ax.set_xlim(0, max(cnt.values()) + 1.5)
+    ax.set_xlim(0, max(hi_cnt[x] + lo_cnt[x] for x in
+                       ("bull", "bear", "neutral")) * 1.2 + 2)
+    ax.legend(fontsize=8, loc="lower right")
 
     # 2) 市场分组多空（近7天，左空右多）
     ax = axes[0][1]
@@ -130,17 +151,29 @@ def render(now, items):
            color=C_NEUT, label="中性")
     ax.set_xticks(los)
     ax.set_xticklabels(["%d%%" % lo for lo in los])
-    ax.set_title("置信度分布（近7天）", fontsize=11, loc="left")
+    # K-ORG-157：70% 待观察线（实证：0.5-0.7 段命中仅 32-43%，0.7+ 才稳定）
+    ax.axvline(LOW_CONF * 100, color="#f0883e", lw=1.2, ls="--")
+    ax.text(LOW_CONF * 100 + 1.5,
+            max(b_bull[i] + b_bear[i] + b_neut[i] for i in range(len(los)))
+            * 0.97 if any(b_bull[i] + b_bear[i] + b_neut[i]
+                          for i in range(len(los))) else 1,
+            "待观察<70%", fontsize=8, color="#f0883e", va="top")
+    ax.set_title("置信度分布（近7天 · 竖线=待观察线）", fontsize=11, loc="left")
     ax.legend(fontsize=8, loc="upper left")
 
-    # 4) 24h 净倾向时间轴（2h 桶）
+    # 4) 24h 净倾向时间轴（2h 桶，K-ORG-157：低置信不参与 + 时衰加权）
+    #    w=exp(-λ·Δt小时)，半衰期 6h → 近 6h 新闻权重≈1，24h 边缘≈0.06
     ax = axes[1][1]
-    bkt = [0] * 12
+    bkt = [0.0] * 12
     for x in day:
+        if x["conf"] < LOW_CONF:
+            continue  # 低置信不参与方向信号
         h = int((now - x["t"]).total_seconds() // 7200)
         if 0 <= h < 12:
-            bkt[11 - h] += (1 if x["bias"] == "bull"
-                            else -1 if x["bias"] == "bear" else 0)
+            age_h = max(0.0, (now - x["t"]).total_seconds() / 3600.0)
+            w = math.exp(-LAMBDA_H * age_h)
+            bkt[11 - h] += w * (1 if x["bias"] == "bull"
+                                else -1 if x["bias"] == "bear" else 0)
     ax.bar(range(12), bkt, width=0.7,
            color=[C_BULL if v > 0 else C_BEAR if v < 0 else C_NEUT
                   for v in bkt])
@@ -148,7 +181,7 @@ def render(now, items):
     ax.set_xticks(range(12))
     ax.set_xticklabels([(now - timedelta(hours=(11 - i) * 2)).strftime("%H")
                         for i in range(12)], fontsize=7)
-    ax.set_title("净倾向时间轴（24h · 多-空）", fontsize=11, loc="left")
+    ax.set_title("净倾向时间轴（24h · 时衰×高置信）", fontsize=11, loc="left")
 
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     os.makedirs(os.path.dirname(PNG), exist_ok=True)
@@ -281,6 +314,8 @@ def _md_h5(now, items):
           "| 利多 | 利空 | 中性 | 合计 |", "|---|---|---|---|",
          "| %d | %d | %d | %d |" % (
              cnt["bull"], cnt["bear"], cnt["neutral"], len(day)),
+         "*低置信（<70%）%d 条不参与净倾向 · 净倾向按 6h 半衰期时衰加权*"
+         % sum(1 for x in day if x["conf"] < LOW_CONF),
          "", "## 按市场（近 7 天）", "",
          "| 市场 | 利多 | 利空 | 中性 | 合计 |", "|---|---|---|---|---|"]
     scopes = {}
