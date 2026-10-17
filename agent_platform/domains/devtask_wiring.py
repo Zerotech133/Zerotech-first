@@ -152,10 +152,26 @@ def save_tasks(root: Path, tasks: Dict[str, dict]) -> None:
                     "tasks.json 写前校验失败（%d 条变更中 %d 项结构性错误），"
                     "已拒写：%s" % (len(changed), len(errors), "；".join(errors[:5])))
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = str(path) + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(tasks, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, path)
+    # P2 清仓（2026-10-18）：tmp 名加 pid+时间戳唯一化——固定 ".tmp" 名在
+    # 并发 read-modify-write 窗口会被另一进程截断/顶替（A 写一半 B 重开同
+    # 名 tmp），os.replace 换上的可能是别人的半截内容。
+    tmp = "%s.tmp.%d.%s" % (path, os.getpid(),
+                            datetime.now().strftime("%H%M%S%f"))
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(tasks, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, path)
+    except PermissionError as exc:
+        # Windows 目标被占用（并发读句柄/杀软扫描）→ 原子替换失败：清掉
+        # 本进程残留 tmp，包装为显式域错误（不裸 traceback，调用方按
+        # DevtaskWiringError 统一处理）。
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise DevtaskWiringError(
+            "tasks.json 写回失败（目标被占用 PermissionError，稍后重试）: %s"
+            % exc) from exc
 
 
 def find_task(root: Path, tid: str) -> dict:

@@ -22,6 +22,8 @@ GET /api/capability/board
 
 from __future__ import annotations
 
+import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -201,8 +203,249 @@ def build_capability_board() -> dict:
     }
 
 
+# ══ 观察季看板（M5 刀4 追加段）═════════════════════════════════════
+#
+# GET /api/platform/observe —— 影子决策账本链只读投影，供 Hermes 8787
+# console 页「观察季 Shadow」卡片经 K-ORG-112 转调消费（Hermes 永不
+# 直读数据文件，本端点是唯一数据面）。
+#
+# 聚合五源（全部只读）：
+#   shadow/shadow_ledger.jsonl    影子账本（JSONL，半行容错）
+#   shadow/monday_checkpoint.log  周一巡检 7 门（取最后一次巡检块）
+#   shadow/eval_last_run.log      eval 三判据（J1/J2/J3/J4）
+#   perf_ledger.jsonl             后验账本（JSONL，半行容错）
+#   shadow/daily_report_*.md      首席日报（取最新，首段 300 字）
+#
+# fail-visible：某源文件不存在 → 对应段 {"missing": true}，不静默空、
+# 不抛异常；JSONL 损坏/半行跳过并计入 corrupt_lines。
+
+_GATE_RE = re.compile(r"^\[(PASS|FAIL|PENDING|SKIP)\]\s*(.*)$")
+_VERDICT_RE = re.compile(r"^\[(J\d[^\]]*)\]\s*(.*)$")
+_RUN_HEADER_MARK = "护航巡检 2"  # 巡检块标题行（含时间戳）
+
+
+def _read_jsonl(path: Path):
+    """JSONL 只读逐行解析（损坏/半行跳过并计数，绝不整文件崩）。
+
+    Returns (rows, corrupt_lines)；文件不存在 → None（上层 fail-visible）。
+    """
+    if not path.exists():
+        return None
+    rows: list = []
+    corrupt = 0
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                corrupt += 1
+                continue
+            if isinstance(obj, dict):
+                rows.append(obj)
+            else:
+                corrupt += 1
+    return rows, corrupt
+
+
+def _file_mtime(path: Path):
+    try:
+        return datetime.fromtimestamp(
+            path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+    except OSError:
+        return None
+
+
+def _shadow_projection() -> dict:
+    """影子账本投影：规模/损坏计数/最新交易日进度/parse_ok 率/最近 5 行。"""
+    got = _read_jsonl(_ap_db("shadow/shadow_ledger.jsonl"))
+    if got is None:
+        return {"missing": True}
+    rows, corrupt = got
+    dates: set = set()
+    latest_done = latest_failed = ""
+    parse_ok = parse_fail = 0
+    for r in rows:
+        d = str(r.get("date") or "")
+        st = str(r.get("status") or "")
+        if d:
+            dates.add(d)
+        if st == "done" and d > latest_done:
+            latest_done = d
+        elif st == "failed" and d > latest_failed:
+            latest_failed = d
+        # parse_ok 仅旧样本缺字段——只对显式布尔计数，缺位不入分母
+        if r.get("parse_ok") is True:
+            parse_ok += 1
+        elif r.get("parse_ok") is False:
+            parse_fail += 1
+    latest_date = max(dates) if dates else None
+    latest_rows = ([r for r in rows if str(r.get("date") or "") == latest_date]
+                   if latest_date else [])
+    latest_done_count = sum(1 for r in latest_rows
+                            if r.get("status") == "done")
+    return {
+        "ledger_rows": len(rows),
+        "corrupt_lines": corrupt,
+        "latest_date": latest_date,
+        "latest_date_done": latest_done or None,
+        "latest_date_failed": latest_failed or None,
+        "latest_date_rows": len(latest_rows),
+        "latest_date_done_count": latest_done_count,
+        "parse_ok_count": parse_ok,
+        "parse_fail_count": parse_fail,
+        "recent": [
+            {"date": r.get("date"), "symbol": r.get("symbol"),
+             "status": r.get("status"), "parse_ok": r.get("parse_ok"),
+             "score": r.get("score")}
+            for r in rows[-5:]],
+    }
+
+
+def _checkpoint_projection() -> dict:
+    """周一巡检投影：取日志中最后一次巡检块的 7 门状态。"""
+    path = _ap_db("shadow/monday_checkpoint.log")
+    if not path.exists():
+        return {"missing": True}
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {"missing": True}
+    lines = text.splitlines()
+    start = max((i for i, l in enumerate(lines) if _RUN_HEADER_MARK in l),
+                default=None)
+    if start is None:
+        return {"log_mtime": _file_mtime(path), "no_run_found": True,
+                "gates": [], "summary": ""}
+    m = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", lines[start])
+    gates: list = []
+    summary = ""
+    for line in lines[start + 1:]:
+        s = line.strip()
+        if not s:
+            continue
+        if set(s) == {"="}:
+            continue  # 块内/块间 ===== 分隔线（标题行两侧各一条，直接跳过）
+        if _RUN_HEADER_MARK in s:
+            break  # 进入下一个巡检块，收束
+        gm = _GATE_RE.match(s)
+        if gm:
+            status, rest = gm.group(1), gm.group(2).strip()
+            name, _, detail = rest.partition("——")
+            gates.append({"name": name.strip(), "status": status,
+                          "detail": detail.strip()})
+            continue
+        if s.startswith("结论:"):
+            summary = s[len("结论:"):].strip()
+    return {"log_mtime": _file_mtime(path),
+            "run_at": m.group(1) if m else "",
+            "gates": gates, "summary": summary}
+
+
+def _eval_projection() -> dict:
+    """eval 三判据投影：[J*] 判据行 + 结论行。"""
+    path = _ap_db("shadow/eval_last_run.log")
+    if not path.exists():
+        return {"missing": True}
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {"missing": True}
+    verdicts: list = []
+    conclusion = ""
+    for line in text.splitlines():
+        s = line.strip()
+        vm = _VERDICT_RE.match(s)
+        if vm:
+            crit, rest = vm.group(1).strip(), vm.group(2).strip()
+            st_m = re.match(r"^(PASS|FAIL|PENDING|WARN|SKIP)\b", rest)
+            verdicts.append({"criterion": crit,
+                             "status": st_m.group(1) if st_m else None,
+                             "text": rest})
+            continue
+        if s.startswith("影子评估结论"):
+            conclusion = s
+    return {"log_mtime": _file_mtime(path), "verdicts": verdicts,
+            "conclusion": conclusion}
+
+
+def _perf_projection(limit_recent: int = 5) -> dict:
+    """后验账本投影：行数/损坏计数/最近 5 行摘要。"""
+    got = _read_jsonl(_ap_db("perf_ledger.jsonl"))
+    if got is None:
+        return {"missing": True}
+    rows, corrupt = got
+    return {
+        "rows": len(rows),
+        "corrupt_lines": corrupt,
+        "recent": [
+            {"date": r.get("date"), "symbol": r.get("symbol"),
+             "recommendation": r.get("recommendation"),
+             "score": r.get("score"), "confidence": r.get("confidence"),
+             "ret_pct": r.get("ret_pct"), "source": r.get("source")}
+            for r in rows[-limit_recent:]],
+    }
+
+
+def _report_projection() -> dict:
+    """首席日报投影：最新一份 daily_report_*.md 首段 300 字。"""
+    d = _ap_db("shadow")
+    if not d.is_dir():
+        return {"missing": True}
+    reports = sorted(d.glob("daily_report_*.md"))
+    if not reports:
+        return {"missing": True}
+    path = reports[-1]
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {"missing": True}
+    # 首段 300 字：剔除标题行后取正文开头
+    body = "\n".join(l for l in text.splitlines()
+                     if not l.startswith("#")).strip()
+    return {"latest_date": path.stem.replace("daily_report_", "", 1),
+            "path": path.name, "excerpt": body[:300]}
+
+
+def build_observe_state() -> dict:
+    """观察季看板聚合主入口（供 mixin 与测试共用）。"""
+    shadow = _shadow_projection()
+    perf = _perf_projection()
+    report = _report_projection()
+    latest_trade_date = None
+    if not shadow.get("missing"):
+        latest_trade_date = shadow.get("latest_date")
+    if not latest_trade_date and not report.get("missing"):
+        latest_trade_date = report.get("latest_date")
+    return {
+        "read_only": True,
+        "generated_at": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"),
+        "latest_trade_date": latest_trade_date,
+        "shadow": shadow,
+        "checkpoint": _checkpoint_projection(),
+        "eval": _eval_projection(),
+        "perf": perf,
+        "report": report,
+        "note": {
+            "architecture": "K-ORG-112：8091 只读 agent_platform 数据文件，"
+                            "Hermes 8787 仅转调本端点，永不直读数据文件",
+            "fail_visible": "missing:true = 源文件不存在；corrupt_lines = "
+                            "JSONL 损坏/半行跳过计数",
+        },
+    }
+
+
 class Handler:
     """能力看板 mixin（模块名绑定：portal_api 里 import api_capability）。"""
 
     def _capability_board(self):
         self._json(build_capability_board())
+
+    def _platform_observe(self, qs):
+        # 观察季看板（影子账本/巡检/eval/perf/日报 只读聚合）。
+        # Hermes 8787 /api/observe/state 经 K-ORG-112 转调至此，
+        # Hermes 永不直读 agent_platform 数据文件。
+        self._json(build_observe_state())

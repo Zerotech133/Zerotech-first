@@ -2903,6 +2903,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # M3-P5 能力看板（产物登记仓+审批注册表只读聚合）
             self._capability_board()
             return
+        if path == '/api/platform/observe':
+            # M5 刀4 观察季看板（影子账本/巡检/eval/perf/日报 只读聚合）
+            self._platform_observe(qs)
+            return
         if path in ('/api/platform/approvals', '/api/platform/replay',
                     '/api/platform/trace'):
             # M1/M2 平台读面（审批注册表/统一投影/回放/证据/知识/

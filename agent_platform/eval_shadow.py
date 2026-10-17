@@ -44,6 +44,18 @@ def load_ledger():
     return rows
 
 
+def _norm_float(v):
+    """P2 清仓（2026-10-18）：confidence/score 归一为 float——D1 若输出字符串
+    置信度，旧代码 "%.2f" % cf 直接 TypeError、spearman 混型比较崩。
+    None 原样返回；不可解析返回 None（调用方置 0 并计 skipped 显形）。"""
+    if v is None:
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
 def spearman(xs, ys):
     """零依赖 Spearman 秩相关（平均秩处理并列）"""
     def ranks(v):
@@ -155,8 +167,11 @@ def main():
     rows = load_ledger()
     done = [r for r in rows if r.get("status") == "done"]
     failed = [r for r in rows if r.get("status") == "failed"]
-    days = sorted({r["date"] for r in done})
-    symbols = sorted({r["symbol"] for r in done})
+    # P2 清仓（2026-10-18）：done 行缺 date/symbol 键（手工编辑/schema 漂移）
+    # 此前 r["date"] KeyError 全局崩——统一 get 化，缺键行不入聚合（J2 段
+    # 逐行处再计 skipped 显形）
+    days = sorted({r.get("date") for r in done if r.get("date")})
+    symbols = sorted({r.get("symbol") for r in done if r.get("symbol")})
     print("=" * 62)
     print("影子账本：done=%d failed=%d 交易日=%d 票数=%d" % (len(done), len(failed), len(days), len(symbols)))
     print("交易日:", ", ".join(days))
@@ -169,7 +184,8 @@ def main():
 
     per_symbol_latest = {}
     for r in done:
-        per_symbol_latest[r["symbol"]] = r  # 每票取最近一次决策（仅用于 T1 分组）
+        if r.get("symbol"):  # P2 清仓：缺 symbol 键行跳过（不再 KeyError）
+            per_symbol_latest[r["symbol"]] = r  # 每票取最近一次决策（仅用于 T1 分组）
     sym_group = stance_groups(per_symbol_latest)  # A-1: 分组并入明细
     scores, confs, rets = [], [], []
     detail = []  # 逐行明细（K-STOCK-397：交易日×票，含持有窗口列）
@@ -178,10 +194,24 @@ def main():
     kline_cache = {}  # sym -> bars（每次评估每票只拉一次 K 线）
     persist_rows = []  # M4-P5：perf_ledger 沉淀行（含 run_id/dk_* 锚点）
     for r in done:  # K-STOCK-397：逐行后验（原 per-symbol-latest 采样恒落零持有期）
-        sym, d = r["symbol"], r["date"]
-        if r.get("score") is None or not r.get("price_at_decision"):
+        sym, d = r.get("symbol"), r.get("date")
+        if not sym or not d or not r.get("run_id"):
+            # P2 清仓：缺 date/symbol/run_id 键行（手工编辑/schema 漂移）
+            # 计 skipped 显形，不再 KeyError 全局崩
+            skipped.append("%s/%s(缺键)" % (d or "?", sym or "?"))
+            continue
+        score = _norm_float(r.get("score"))
+        raw_conf = r.get("confidence")
+        conf = _norm_float(raw_conf)
+        if score is None or not r.get("price_at_decision"):
             skipped.append("%s/%s" % (d, sym))
             continue
+        if conf is None:
+            # P2 清仓：confidence 缺失/不可解析（如 D1 输出字符串置信度）→
+            # 置 0（spearman 混型比较会崩）；非 None 但不可解析的计 skipped 显形
+            conf = 0.0
+            if raw_conf is not None:
+                skipped.append("%s/%s(conf不可解析)" % (d, sym))
         if sym not in kline_cache:
             try:
                 kline_cache[sym] = kline_daily(sym, 40)
@@ -194,15 +224,15 @@ def main():
             if ret == "pending":
                 pending_rows += 1
                 continue
-            scores.append(r["score"])
-            confs.append(r.get("confidence") or 0)
+            scores.append(score)
+            confs.append(conf)
             rets.append(ret)
-            detail.append((d, sym, r.get("name", ""), r["score"], r.get("confidence") or 0,
+            detail.append((d, sym, r.get("name", ""), score, conf,
                            base, now, ret, hz, r.get("recommendation", "?"),
                            sym_group.get(sym, "?")))
             persist_rows.append({
                 "date": d, "symbol": sym, "run_id": r.get("run_id", ""),
-                "score": r.get("score"), "confidence": r.get("confidence"),
+                "score": score, "confidence": conf,
                 "ret_pct": ret, "horizon": hz, "base": base, "exit": now,
                 "recommendation": r.get("recommendation", "?"),
                 "stance": sym_group.get(sym, "?"),
@@ -289,15 +319,33 @@ def main():
             print("  [warn] perf 入账降级（评估结论不受影响）: %s" % e)
 
     if DB.exists() and done:
-        conn = sqlite3.connect(str(DB), check_same_thread=False)
-        traced = sum(
-            1 for r in done
-            if conn.execute("SELECT COUNT(*) FROM traces WHERE run_id=?",
-                            (r["run_id"],)).fetchone()[0] > 0
-        )
-        conn.close()
-        j3 = traced == len(done)
-        print("[J3 lineage] %s（%d/%d 决策可回查辩论 trace）" % ("PASS" if j3 else "FAIL", traced, len(done)))
+        # P2 清仓（2026-10-18）：checkpoints.db 损坏/traces 表缺失此前直接
+        # sqlite3.OperationalError 炸整个评估——J3 是主判读最末端一段，崩这里
+        # 連结论行都出不来。降级语义：异常 → stderr 告警 + J3 判 FAIL（宁严
+        # 勿假 PASS），评估主流程走完出结论；缺 run_id 键行跳过查询（自然
+        # 不可回查，计入分母使 j3 不可能假 PASS）。
+        valid = [r for r in done if r.get("run_id")]
+        no_key = len(done) - len(valid)
+        try:
+            conn = sqlite3.connect(str(DB), check_same_thread=False)
+            try:
+                traced = sum(
+                    1 for r in valid
+                    if conn.execute("SELECT COUNT(*) FROM traces WHERE run_id=?",
+                                    (r["run_id"],)).fetchone()[0] > 0
+                )
+            finally:
+                conn.close()
+            j3 = traced == len(done)
+            print("[J3 lineage] %s（%d/%d 决策可回查辩论 trace%s）" % (
+                "PASS" if j3 else "FAIL", traced, len(done),
+                "；%d 行缺 run_id 键" % no_key if no_key else ""))
+        except sqlite3.Error as e:
+            print("[warn] J3 checkpoints.db 读取失败，判据降级: %s" % e,
+                  file=sys.stderr)
+            j3 = False
+            print("[J3 lineage] DEGRADED（checkpoints.db 异常，%d/%d 待人工回查）"
+                  % (0, len(done)))
     else:
         j3 = False
         print("[J3 lineage] WAIT（无账本或无 checkpoint 库）")
