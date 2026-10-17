@@ -25,6 +25,17 @@ from llm import similarity  # noqa: E402
 SIM_CONVERGE = 0.8  # 菜鸟 bull/bear 辩论收敛阈值
 
 
+def _infer_role(role_profile):
+    """控辩审契约（V2 思路 2）：从 role_profile 后缀推断立场角色。
+    显式 role 字段优先于本推断；无法定性返回 None（校验跳过，向后兼容）。"""
+    rp = (role_profile or "").lower()
+    if rp.endswith("_bull") or rp.startswith("bull_"):
+        return "bull"
+    if rp.endswith("_bear") or rp.startswith("bear_"):
+        return "bear"
+    return None
+
+
 def converge_state(a_text, b_text):
     """K-ORG-131 / T-20261008-002（B10 假收敛链）：收敛双条件——
     sim 超阈值且双方立场仍对立才算真提前收敛。
@@ -89,6 +100,15 @@ class Team:
                 partner = self.by_node[partner_key]
                 if partner.get("debate_partner_key") != a["node_key"]:
                     raise TopologyError("%s 与 %s 未互指为辩论对手" % (a["node_key"], partner_key))
+                # 控辩审契约（V2 思路 2 / K-ORG-166）：辩论对必须立场互补。
+                # role 显式字段优先，缺省从 role_profile 后缀（_bull/_bear）推断；
+                # 双方都无法定性时跳过（最小测试团队向后兼容），能定性且相同=配置错误。
+                ra = a.get("role") or _infer_role(a.get("role_profile", ""))
+                rb = partner.get("role") or _infer_role(partner.get("role_profile", ""))
+                if ra and rb and ra == rb:
+                    raise TopologyError(
+                        "%s(%s) 与 %s(%s) 立场相同——控辩审辩论对必须 bull/bear 互补"
+                        % (a["node_key"], ra, partner_key, rb))
 
     def prompt(self, agent):
         """人设外置（对齐菜鸟 ai_chat_role 配置化模式）：prompts/{role_profile}.md"""
@@ -241,18 +261,23 @@ class Interpreter:
         verdict = ("提前收敛" if converged
                    else "立场塌缩collapsed（表述趋同但立场同向/缺失，非共识）" if collapsed
                    else "达轮次上限")
+        # 控辩审契约：结论携带显式角色（显式 role 字段优先，缺省从 role_profile 推断）
+        ra = na.get("role") or _infer_role(na.get("role_profile", "")) or "bull?"
+        rb = nb.get("role") or _infer_role(nb.get("role_profile", "")) or "bear?"
         merged = (
-            "多空辩论结论（%s轮，末轮相似度%.2f，%s）：多头[%s]：%s ‖ 空头[%s]：%s"
+            "多空辩论结论（%s轮，末轮相似度%.2f，%s）：多头[%s·%s]：%s ‖ 空头[%s·%s]：%s"
             % (r, sim, verdict,
-               na["agent_id"], a_text, nb["agent_id"], b_text)
+               ra, na["agent_id"], a_text, rb, nb["agent_id"], b_text)
         )
         # 各自记忆：私有 decision + 团队 observation（RBAC 校验在 MemoryStore 内）
         for node, text, st in ((na, a_text, st_a), (nb, b_text, st_b)):
             self._record(node, ctx, run_id, phase="debate_final", output=text, status=st,
                          similarity_=sim, latency_ms=(time.time() - t0) * 1000)
         # 辩论对共享同一份合并结论，供 D1 汇总（parent 引用两节点）；collapsed 供 D1/评估者识别假收敛
-        self.cp.save_node(run_id, na["node_key"], na["agent_id"], {"merged": merged, "rounds": r, "sim": sim, "collapsed": collapsed})
-        self.cp.save_node(run_id, nb["node_key"], nb["agent_id"], {"merged": merged, "rounds": r, "sim": sim, "collapsed": collapsed})
+        payload = {"merged": merged, "rounds": r, "sim": sim, "collapsed": collapsed,
+                   "roles": [ra, rb]}
+        self.cp.save_node(run_id, na["node_key"], na["agent_id"], payload)
+        self.cp.save_node(run_id, nb["node_key"], nb["agent_id"], payload)
         return [(na["node_key"], merged, st_a), (nb["node_key"], merged, st_b)]
 
     # ---------- 落库 ----------
