@@ -56,6 +56,18 @@ REGISTRY = {
     7687: "neo4j-kg Bolt(Docker,时序知识图谱)",
     17474: "zerobound Neo4j HTTP(Docker,独立图谱)",
     17687: "zerobound Neo4j Bolt(Docker,独立图谱)",
+    # 2026-10-17 K-STOCK-211 任务4集成门禁：全量 netstat 归因后入册
+    # （此前仅靠进程未撞豁免名单而未报，属注册表治理盲区收编）。
+    8100: "zerobound-kg 数据市集API(datamart_api.py)",
+    8788: "Hermes WebUI v2(hermes-webui-next)",
+    8791: "图谱数据看板(kg_data_dashboard.py)",
+    8898: "res-downloader 自用工具(uvicorn)",
+    18899: "res-downloader 自用工具(uvicorn)",
+    11440: "Ollama 模型看板(model_dashboard)",
+    1234: "llama-server(8030 同族,手动)",
+    1238: "llama-server(8030 同族,手动)",
+    5050: "灵拢NovaStudio(桌面第三方,非平台栈)",
+    15048: "灵拢NovaStudio(桌面第三方,非平台栈)",
 }
 
 
@@ -123,7 +135,13 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              "weixin", "wechat", "gameviewer", "tailscale", "dubbo",
              "nvidia", "qq", "feishu", "dingtalk", "quark", "tdxw",
              "yundetect", "vmms", "wpscloudsvr", "sgtool",
-             "sogoucloud", "baidunetdiskhost", "trae")
+             "sogoucloud", "baidunetdiskhost", "trae",
+             # 2026-10-17 K-STOCK-211 任务4：随机口第三方/系统组件豁免
+             # novaairouter/model-router-plugin=灵拢生态路由组件；
+             # leishensdk_yyb=雷神加速器SDK；mqsvc=MSMQ 消息队列(系统服务)；
+             # androwsstore/androwssvr=Androws 安卓引擎组件。
+             "novaairouter", "model-router-plugin", "leishensdk_yyb",
+             "mqsvc", "androwsstore", "androwssvr")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免
@@ -140,6 +158,18 @@ OPTIONAL_OFFLINE = {3001, 8030, 8093, 8096, 8787, 8899, 9104}
 # strict 语义=防抢占不判离线；库内健康由 kg_check / freshness_report / xmap 水位各自监控。
 # 2026-10-16 二次勘误：5442 实为 quant-pg 容器口；5443 误建容器已删、条目移除。
 OPTIONAL_OFFLINE |= {5432, 5442, 5446, 7474, 7687, 17474, 17687}
+# 2026-10-17 K-STOCK-211 任务4：新入册 8 口均为手动/按需型（无 systemd 级
+# keepalive 链），语义同 8030/8787——strict 只防抢占，不因闲置判负。
+# 5050/15048 NovaStudio 为常驻桌面应用，同 8123 claudemind 先例不入列。
+OPTIONAL_OFFLINE |= {8100, 8788, 8791, 8898, 18899, 11440, 1234, 1238}
+# 2026-10-17 K-STOCK-211 任务4 strict 首跑归因（全部按 10-16 按需先例收编）：
+# 3000 Open WebUI 容器已删；8888/15000/15432/16379 QuantDinger 全家容器已删
+# （防抢占语义保留，容器若重建仍受注册表管辖）；
+# 8123 claudemind 桌面应用用户未开；9899 CowAgent 无 keepalive 链按需；
+# 8095 picks 调度为按需拉起型（TodaysPicks 计划任务在位）；
+# 8734 portproxy→8080 规则已被系统 reset 清空（v4tov4 空），8080 本体在线，
+# 规则若重建仍防抢占。
+OPTIONAL_OFFLINE |= {3000, 8095, 8123, 8734, 8888, 9899, 15000, 15432, 16379}
 
 
 def main():

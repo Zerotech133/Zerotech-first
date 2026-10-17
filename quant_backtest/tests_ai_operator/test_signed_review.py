@@ -1,5 +1,9 @@
 """以临时 Ed25519 密钥和真实工程事件验证离线审核策略。"""
 
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # importlib 收集模式下兄弟模块不可隐式发现
+
 import builtins
 import copy
 from concurrent.futures import ThreadPoolExecutor

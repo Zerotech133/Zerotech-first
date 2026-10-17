@@ -10,11 +10,17 @@ import pytest
 
 
 SOURCE = Path(os.environ.get(
-    "HEALTH_MODULE", "E:/老田的AI助手/quant_backtest/data_health.py"))
+    "HEALTH_MODULE",
+    str(Path(__file__).resolve().parent / "data_health.py")))
 
 
 @pytest.fixture
 def health():
+    # data_health.py 以绝对导入引用同目录 valuation_field_reconcile，
+    # 按路径加载被测模块前需把其目录挂进 sys.path（幂等）。
+    src_dir = str(SOURCE.resolve().parent)
+    if src_dir not in sys.path:
+        sys.path.insert(0, src_dir)
     spec = importlib.util.spec_from_file_location("health_under_test", SOURCE)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

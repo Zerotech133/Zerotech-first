@@ -3,15 +3,22 @@
 
 用临时沙盒目录（monkeypatch 模块常量），不触碰真实 strategies/。
 """
+import importlib.util
 import json
 import os
-import sys
 import unittest
 from unittest import mock
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from tools import deploy_package as DP
+# 顶层名 `tools` 会被先收集的 test_qd_backtest_1445 等（module 级
+# sys.path.insert(agent_platform/engine)，engine/tools.py 同名文件）
+# 毒化为 sys.modules['tools'] 劫持——按文件路径直接加载被测模块，
+# 绕开顶层名解析（K-STOCK-211 任务 4，2026-10-17）。
+_here = os.path.dirname(os.path.abspath(__file__))
+_spec = importlib.util.spec_from_file_location(
+    "deploy_package_under_test",
+    os.path.join(os.path.dirname(_here), "deploy_package.py"))
+DP = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(DP)
 
 FROZEN_SHA_BODY = {
     "strategy": "t1", "version": "v2",
