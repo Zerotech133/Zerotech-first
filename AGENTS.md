@@ -65,3 +65,21 @@
 - 杀进程前先辨认是不是线上服务（按启动时间+端口归属）；
 - **修复写盘 ≠ 生效（2026-10-16 P0 实锤）**：改常驻服务代码后必须杀旧进程换血——「缺则拉」型守护器（start_jev_stack.ps1 类）不认 mtime，旧进程会带旧码跑到天荒地老；验证=新进程出生时间 > 文件 mtime + 日志出现新分支特征行；
 - **S4U/Session0 进程只信端口判活（2026-10-16 双实证）**：CIM/Win32_Process 枚举漏列+CommandLine 全 null；找 PID 用 `Get-NetTCPConnection -LocalPort`，杀进程要 UAC taskkill（`Start-Process cmd -Verb RunAs`，降权 token Access denied）。
+
+## 8. 工程命名与别名注册表（2026-10-17 立章）
+
+- **品牌体系**：平台=**零界**（zerobound）；旗下工程 `zerobound-<角色>`；独立小工具/采集器 `atom-<能力>-<对象>`（原子层，角度各异、可独立存在）。
+- **唯一权威映射表 = 本节**（同端口铁律的 REGISTRY 先例：改它必须与工程改名同一提交）：
+
+| 物理目录 | 角色 | ASCII 别名（junction） | 状态 |
+|---|---|---|---|
+| `C:\项目\老田的AI助手` | 零界主站（个人 OS，本仓） | `C:\aios` | 在用 |
+| `C:\项目\zerobound-kg` | 图谱引擎（KG） | `C:\项目\老田的AI助手\zerobound-kg`（→物理目录，链式成 `C:\aios\zerobound-kg`） | 2026-10-17 由 `KGStockAnalysis` 物理改名（判例：引用链排查→junction 过渡→48 处归一同一批提交） |
+| `C:\项目\portal` | 零界门户（8734 唯一入口） | — | 在用 |
+| `C:\项目\知识图谱` | 待定 | — | 待命名收编 |
+| `C:\项目\zhice-os-v2-windows-20260920` | 智策 OS | — | 目录带版本后缀，待定 |
+| `C:\项目\new_tdx64` | 通达信数据侧 | — | atom 候选 |
+| `C:\项目\res-downloader-py` | 资源下载器 | — | atom 候选 |
+
+- **数据根不在此表**：唯一 live 数据根 = `C:/项目/老田的AI助手/quant_backtest/data`（zerobound-kg/AGENTS.md §1 立章，KGDataRoot 空壳已废）。
+- **改名纪律**：①先查引用链（计划任务/junction/硬编码路径，含 E:\ 历史死路径）；②物理改名 + 引用归一**同一批提交**；③可选旧名兼容 junction，必须在本表标注过期日期；④新代码一律引用物理名或注册表内别名，禁私建未注册 junction。
