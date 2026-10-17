@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Approval 注册表 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="icon" href="data:,">
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg,#0f1216);color:var(--text,#e8eaf0);font-size:14px}
+.wrap{max-width:1080px;margin:0 auto;padding:14px 14px 60px}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.head h1{font-size:20px;margin:0}
+.head small{color:var(--text-dim,#8a93a6);font-size:12px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+select,input[type=search]{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:7px;color:var(--text,#e8eaf0);padding:5px 9px;font-size:12.5px}
+input[type=search]{flex:1;min-width:140px}
+.btn{background:var(--card2,#202735);border:1px solid var(--border,#2a3242);border-radius:7px;color:var(--text,#e8eaf0);padding:5px 12px;font-size:12.5px;cursor:pointer}
+.btn:hover{border-color:#4f8ef7}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.card{background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;padding:9px 11px}
+.card .k{font-size:11.5px;color:var(--text-dim,#8a93a6)}
+.card .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.card .t{font-size:10.5px;color:var(--text-dim,#8a93a6);opacity:.8;margin-top:2px}
+table{width:100%;border-collapse:collapse;background:var(--card,#1a1f27);border:1px solid var(--border,#2a3242);border-radius:9px;overflow:hidden}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--border,#2a3242);font-size:12.5px;vertical-align:top}
+th{color:var(--text-dim,#8a93a6);font-weight:600;font-size:11.5px;white-space:nowrap;background:var(--card2,#202735)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(79,142,247,.05)}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--text-dim,#8a93a6);word-break:break-all}
+.arrow{color:#4f8ef7;font-weight:600;padding:0 3px}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;border:1px solid var(--border,#2a3242)}
+.tag.approved{color:#5dd39e;border-color:rgba(93,211,158,.4);background:rgba(93,211,158,.08)}
+.tag.rejected{color:#e86971;border-color:rgba(232,105,113,.4);background:rgba(232,105,113,.08)}
+.tag.other{color:var(--text-dim,#8a93a6)}
+.meta{color:var(--text-dim,#8a93a6);font-size:11.5px;margin:6px 2px}
+.empty{padding:26px;text-align:center;color:var(--text-dim,#8a93a6);font-size:13px}
+.err{background:rgba(232,105,113,.08);border:1px solid rgba(232,105,113,.4);border-radius:9px;padding:10px 12px;margin:10px 0;font-size:12.5px;color:#e86971}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Approval 注册表</h1>
+    <small>agent_platform 审批门凭据 · 只读 · append-only</small>
+  </div>
+  <div class="tools">
+    <select id="f-type"><option value="">全部 target_type</option></select>
+    <input type="search" id="f-search" placeholder="按 target_id / decided_by / reason 过滤…">
+    <button class="btn" id="btn-refresh">刷新</button>
+  </div>
+  <div id="stats" class="cards"></div>
+  <div id="err"></div>
+  <div id="meta" class="meta"></div>
+  <table id="tbl">
+    <thead><tr>
+      <th>决定时间</th><th>目标</th><th>转移</th><th>决定</th>
+      <th>操作者</th><th>理由</th><th>幂等键 / trace</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" class="empty" hidden>暂无凭据——审批门尚未通电，或过滤条件过严。</div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let RAW = null;
+
+function fmtTime(iso){
+  if(!iso) return '—';
+  return esc(String(iso).replace('T',' ').slice(0,19));
+}
+
+function render(){
+  if(!RAW) return;
+  const errors = RAW.errors || [];
+  $('#err').innerHTML = errors.length
+    ? errors.map(e => `<div class="err">⚠ ${esc(e.kind)}：${esc(e.path || e.detail || '')}</div>`).join('')
+    : '';
+  const byDomain = RAW.by_domain || {};
+  const sel = $('#f-type');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全部 target_type</option>' +
+    Object.keys(byDomain).map(d => `<option${d===cur?' selected':''}>${esc(d)}</option>`).join('');
+  const total = RAW.total || 0;
+  $('#stats').innerHTML = `
+    <div class="card"><div class="k">凭据总数</div><div class="v">${total}</div><div class="t">满足当前过滤</div></div>
+    <div class="card"><div class="k">域分布</div><div class="v">${Object.keys(byDomain).length}</div><div class="t">${Object.entries(byDomain).slice(0,2).map(([k,v])=>esc(k)+':'+v).join(' / ')||'—'}</div></div>
+    <div class="card"><div class="k">approved</div><div class="v">${(RAW.by_decision||{}).approved||0}</div><div class="t">rejected: ${(RAW.by_decision||{}).rejected||0}</div></div>
+    <div class="card"><div class="k">首末凭据</div><div class="v" style="font-size:12px;line-height:1.6">${esc((RAW.first_seen||'—').slice(0,10))} →<br>${esc((RAW.last_seen||'—').slice(0,10))}</div></div>`;
+  const kw = ($('#f-search').value || '').trim().toLowerCase();
+  const ttype = sel.value;
+  let rows = RAW.records || [];
+  if(ttype) rows = rows.filter(r => (r.target_type||'') === ttype);
+  if(kw) rows = rows.filter(r =>
+    [r.target_id, r.decided_by, r.reason, r.idempotency_key, r.trace_id]
+      .some(v => String(v||'').toLowerCase().includes(kw)));
+  $('#meta').textContent = total ? `显示 ${rows.length} / ${total} 条 · ${RAW.truncated ? '（API 层截断，请细化过滤）' : ''}last_seen ${fmtTime(RAW.last_seen)}` : '';
+  $('#empty').hidden = rows.length > 0;
+  $('#rows').innerHTML = rows.map(r => {
+    const dec = r.decision === 'approved' ? 'approved' : (r.decision === 'rejected' ? 'rejected' : 'other');
+    const trace = r.trace_id ? `<div class="mono">trace: ${esc(r.trace_id)}</div>` : '';
+    return `<tr>
+      <td class="mono">${fmtTime(r.decided_at)}</td>
+      <td><div>${esc(r.target_id)}</div><div class="mono">${esc(r.target_type)}</div></td>
+      <td><span>${esc(r.from_status||'∅')}</span><span class="arrow">→</span><span>${esc(r.to_status||'∅')}</span></td>
+      <td><span class="tag ${dec}">${esc(r.decision)}</span></td>
+      <td>${esc(r.decided_by||'—')}</td>
+      <td style="max-width:220px">${esc(r.reason||'—')}</td>
+      <td><div class="mono">${esc(r.idempotency_key||'—')}</div>${trace}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function load(){
+  try{
+    const r = await fetch('/api/platform/approvals?limit=500');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    RAW = await r.json();
+    render();
+  }catch(e){
+    $('#err').innerHTML = `<div class="err">加载失败：${esc(e.message)}（8091 未重启生效前此端点 404 属预期——见 M1 审计文档 8091 热更新死结）</div>`;
+  }
+}
+$('#f-type').addEventListener('change', render);
+$('#f-search').addEventListener('input', render);
+$('#btn-refresh').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

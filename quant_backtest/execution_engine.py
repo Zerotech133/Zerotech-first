@@ -16,6 +16,21 @@ ELIGIBILITY_POLICY_REF = "strict_next_bar_v1"
 SAME_BAR_POLICY_REF = "same_bar_inclusive_v1"
 
 
+def _calendar_bar_gate(provider: Any, bar: Bar) -> None:
+    """Require explicit open-session coverage for one bar."""
+    try:
+        if not provider.is_open(bar.session_date):
+            raise ValueError("CALENDAR_UNAVAILABLE: CLOSED_SESSION")
+        provider.session_bounds(bar.session_date)
+    except ValueError as exc:
+        text = str(exc)
+        if text.startswith("CALENDAR_"):
+            raise
+        raise ValueError(f"CALENDAR_UNAVAILABLE: {text}") from exc
+    except Exception as exc:
+        raise ValueError(f"CALENDAR_UNAVAILABLE: {exc}") from exc
+
+
 def _bar_visible_at(bar: Bar, execution_time: datetime) -> bool:
     """Return whether a bar is closed and fully observable by execution time.
 
@@ -60,6 +75,9 @@ class ExecutionConfig:
     gap_stop_pct: Optional[float] = None
     market: Optional[str] = None
     timeframe: Optional[str] = None
+    calendar_ref: Optional[str] = None
+    calendar_version: Optional[str] = None
+    calendar_required: bool = False
     # Kept only as a source-compatible alias; normalized to fee_bps below.
     fee_rate: Optional[float] = None
 
@@ -78,6 +96,10 @@ class ExecutionConfig:
             raise ValueError("slippage_bps must be finite and non-negative")
         if type(self.t_plus_one) is not bool:
             raise ValueError("t_plus_one must be boolean")
+        if type(self.calendar_required) is not bool:
+            raise ValueError("calendar_required must be boolean")
+        if (self.calendar_ref is None) != (self.calendar_version is None):
+            raise ValueError("CALENDAR_MISMATCH: calendar_ref and calendar_version must be paired")
         if self.policy_ref:
             from market_policy import get_policy
             policy = get_policy(self.market) if self.market else None
@@ -267,6 +289,7 @@ def run_from_store(
     query: Optional[BarQuery] = None,
     limit_provider: Optional[Provider] = None,
     status_provider: Optional[Provider] = None,
+    calendar_provider: Optional[Any] = None,
 ) -> ExecutionResult:
     """Execute sorted intents against canonical bars, with no network or writes."""
     if not isinstance(store, BarStore):
@@ -274,6 +297,28 @@ def run_from_store(
     policy = config or ExecutionConfig()
     if not policy.policy_ref:
         raise ValueError("POLICY_MISMATCH: policy_ref required")
+    calendar_identity = None
+    if policy.calendar_required:
+        try:
+            from calendar_provider import require_production_provider, validate_identity
+            identity = require_production_provider(calendar_provider)
+            if policy.calendar_ref is None or policy.calendar_version is None:
+                raise ValueError("CALENDAR_MISMATCH: calendar identity required")
+            if identity.calendar_ref != policy.calendar_ref or identity.version != policy.calendar_version:
+                raise ValueError("CALENDAR_MISMATCH: calendar identity differs")
+            if policy.market and identity.market.upper() != policy.market.upper():
+                raise ValueError("CALENDAR_MISMATCH: calendar market differs")
+            store.validate_calendar_identity(policy.calendar_ref, policy.calendar_version)
+            from market_policy import get_policy
+            market_policy = get_policy(policy.market or identity.market)
+            if identity.timezone != market_policy.timezone:
+                raise ValueError("CALENDAR_MISMATCH: calendar timezone differs")
+            calendar_identity = {"calendar_ref": identity.calendar_ref, "calendar_version": identity.version,
+                                 "market": identity.market, "timezone": identity.timezone}
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise ValueError(f"CALENDAR_UNAVAILABLE: {exc}") from exc
     selected_query = query or BarQuery()
     bars = store.query(selected_query)
     ordered_intents = tuple(sorted(tuple(intents), key=lambda item: (item.signal_at, item.submitted_at, item.order_id)))
@@ -296,7 +341,8 @@ def run_from_store(
     query_metadata = _json_value({"start": selected_query.start, "end": selected_query.end,
                                   "as_of": selected_query.as_of, "closed_only": selected_query.closed_only,
                                   "rows": len(bars), "market": policy.market, "timeframe": policy.timeframe,
-                                  "eligibility_policy_ref": eligibility_policy_ref})
+                                  "eligibility_policy_ref": eligibility_policy_ref,
+                                  "calendar": calendar_identity})
     by_key: Dict[Tuple[str, str, str], Tuple[Bar, ...]] = {}
     for bar in bars:
         if policy.market and bar.market.upper() != policy.market.upper():
@@ -318,6 +364,8 @@ def run_from_store(
                       and (not key_timeframe or key[2] == key_timeframe) for bar in values]
         candidates.sort(key=lambda item: item.dt)
         signal = next((bar for bar in candidates if bar.dt == intent.signal_at), None)
+        if policy.calendar_required and signal is not None:
+            _calendar_bar_gate(calendar_provider, signal)
         order_id = intent.order_id or f"order-{index + 1}"
         common = dict(order_id=order_id, symbol=intent.symbol, side=intent.side,
                       requested_quantity=float(intent.quantity), submitted_at=intent.submitted_at,
@@ -330,12 +378,13 @@ def run_from_store(
             eligible = next((bar for bar in candidates
                              if bar.dt > intent.signal_at
                              and bar.dt >= intent.submitted_at
-                             and _bar_visible_at(bar, bar.dt)), None)
+                             and _bar_visible_at(bar, bar.dt)
+                             and (not policy.calendar_required or _calendar_bar_gate(calendar_provider, bar) is None)), None)
         else:
             # Same-bar execution is an explicit, strict policy: the signal
             # bar timestamp must equal the submission timestamp.  A later
             # submission within that bar cannot use already-observed OHLC.
-            eligible = signal if signal.dt == intent.submitted_at and _bar_visible_at(signal, intent.submitted_at) else None
+            eligible = signal if signal.dt == intent.submitted_at and _bar_visible_at(signal, intent.submitted_at) and (not policy.calendar_required or _calendar_bar_gate(calendar_provider, signal) is None) else None
         if eligible is None:
             audits.append(OrderAudit(status="unfilled", reason="NO_NEXT_BAR", eligible_at=None, fill_at=None, **common)); continue
         if eligible.o is None or not math.isfinite(float(eligible.o)) or float(eligible.o) <= 0:
@@ -398,4 +447,4 @@ def run_from_store(
                "unfilled": len(ordered_intents) - len(fills),
                "unfilled_rate": (len(ordered_intents) - len(fills)) / len(ordered_intents) if ordered_intents else 0.0}
     return ExecutionResult(tuple(fills), tuple(audits), cash, dict(positions), equity,
-                           _json_value(store.explain()), query_metadata, ordered_intents, metrics, SCHEMA)
+                           _json_value({**store.explain(), **({"calendar": calendar_identity} if calendar_identity else {})}), query_metadata, ordered_intents, metrics, SCHEMA)

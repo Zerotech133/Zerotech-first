@@ -37,6 +37,8 @@ class Bar:
     adjustment: str
     quality: str
     source_trace: Tuple[str, ...] = ()
+    calendar_ref: Optional[str] = None
+    calendar_version: Optional[str] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "dt", ensure_utc(self.dt, "dt"))
@@ -53,6 +55,12 @@ class Bar:
         if self.amount is not None and self.amount < 0:
             raise ValueError("amount cannot be negative")
         object.__setattr__(self, "source_trace", tuple(str(item) for item in self.source_trace))
+        if (self.calendar_ref is None) != (self.calendar_version is None):
+            raise ValueError("calendar_ref and calendar_version must be provided together")
+        for name in ("calendar_ref", "calendar_version"):
+            value = getattr(self, name)
+            if value is not None and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"{name} must be a non-empty string")
 
 
 @dataclass(frozen=True)

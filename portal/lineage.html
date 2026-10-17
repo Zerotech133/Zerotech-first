@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧬 管道血缘 · 零界工作站</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:"Microsoft YaHei",Arial,sans-serif;margin:0;padding:0 0 40px}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 0}
+h1{font-size:20px;margin:14px 0 4px;color:#e6edf3}
+h1 .sub{font-size:12px;color:#8b949e;font-weight:400;margin-left:10px}
+.tabs{display:flex;gap:8px;margin:16px 0 14px;flex-wrap:wrap}
+.tab{padding:6px 14px;border:1px solid #30363d;border-radius:999px;color:#8b949e;font-size:12.5px;cursor:pointer;background:#0d1117}
+.tab:hover{color:#e6edf3;border-color:#58a6ff}
+.tab.on{color:#e6edf3;border-color:#58a6ff;font-weight:600;background:#161b22}
+.stat{display:inline-block;margin:0 18px 8px 0;font-size:12px;color:#8b949e}
+.stat b{color:#e6edf3;font-size:15px;margin-left:4px}
+.card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.card.bad{border-color:#f8514966}
+.card.warn{border-color:#d2992255}
+.ttl{font-size:13px;font-weight:600;color:#e6edf3;word-break:break-all}
+.meta{font-size:11px;font-family:Consolas,monospace;color:#8b949e;margin-top:5px;line-height:1.7;word-break:break-all}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:10.5px;margin-left:6px;vertical-align:1px}
+.pill.ok{background:#238636;color:#fff}
+.pill.fail{background:#b62324;color:#fff}
+.pill.lost,.pill.running{background:#9e6a03;color:#fff}
+.pill.partial,.pill.skipped{background:#30363d;color:#8b949e}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th{color:#8b949e;text-align:left;padding:5px 8px;border-bottom:1px solid #21262d;font-weight:400;white-space:nowrap}
+td{padding:5px 8px;border-bottom:1px solid #161b22;font-family:Consolas,monospace;word-break:break-all}
+td a{color:#58a6ff;text-decoration:none;cursor:pointer}
+td a:hover{text-decoration:underline}
+.search{display:flex;gap:8px;margin:6px 0 12px}
+.search input{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;padding:8px 12px;font-size:13px;outline:none}
+.search input:focus{border-color:#58a6ff}
+.search button{background:#238636;border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:13px;cursor:pointer}
+.empty{color:#8b949e;font-size:12.5px;padding:20px 0;text-align:center}
+.err{background:#b6232433;border:1px solid #f85149;border-radius:8px;color:#f85149;padding:10px 14px;font-size:12.5px;margin-bottom:10px}
+.backlink{font-size:11.5px;color:#8b949e}
+.backlink a{color:#58a6ff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧬 管道血缘<span class="sub">表是谁算出来的 · 这张表挂了影响谁 · quant-pg lineage 三表只读</span></h1>
+  <div class="backlink">数据资产三件套：<a href="/bt-data-health">🗄 数据仓健康</a> · 本页 🧬 管道血缘 · <a href="http://127.0.0.1:8585" target="_blank">🏛 数据治理 OpenMetadata</a></div>
+  <div class="tabs" id="tabs">
+    <span class="tab on" data-v="breaks">🚨 断链亮牌</span>
+    <span class="tab" data-v="runs">🕰 作业时间线</span>
+    <span class="tab" data-v="upstream">⬆ 上游溯源</span>
+    <span class="tab" data-v="downstream">⬇ 下游影响面</span>
+  </div>
+  <div id="stats"></div>
+  <div class="search" id="searchbar" style="display:none">
+    <input id="tbl" placeholder="输入逻辑表 URN，如 neo4j:TRADED_ON / parquet:tdx/ts_top_inst / jsonl:chanlun_pool" spellcheck="false">
+    <button onclick="doSearch()">查询</button>
+  </div>
+  <div id="errbox"></div>
+  <div id="main"><div class="empty">加载中…</div></div>
+</div>
+<script src="/static/nav.js" defer></script>
+<script>
+let VIEW='breaks', LASTTABLE='';
+const $=s=>document.querySelector(s);
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function pill(st){return `<span class="pill ${esc(st)}">${esc(st)}</span>`}
+function link(t){return `<a onclick="jump('${esc(t).replace(/'/g,"\\'")}')">${esc(t)}</a>`}
+function jump(t){VIEW='downstream';LASTTABLE=t;$('#tbl').value=t;setTab('downstream');load();}
+document.querySelectorAll('.tab').forEach(el=>el.onclick=()=>setTab(el.dataset.v));
+function setTab(v){VIEW=v;document.querySelectorAll('.tab').forEach(e=>e.classList.toggle('on',e.dataset.v===v));
+  $('#searchbar').style.display=(v==='upstream'||v==='downstream')?'flex':'none';
+  if((v==='upstream'||v==='downstream')&&!$('#tbl').value&&LASTTABLE)$('#tbl').value=LASTTABLE;
+  load();}
+async function load(){
+  $('#errbox').innerHTML='';
+  const p=new URLSearchParams({view:VIEW});
+  const t=$('#tbl').value.trim();
+  if((VIEW==='upstream'||VIEW==='downstream')&&!t){$('#main').innerHTML='<div class="empty">请输入表 URN 再查询</div>';$('#stats').innerHTML='';return;}
+  if(t){LASTTABLE=t;p.set('table',t);}
+  let j;
+  try{
+    const r=await fetch('/api/kg/lineage?'+p,{cache:'no-store'});
+    j=await r.json();
+  }catch(e){$('#main').innerHTML='';$('#errbox').innerHTML=`<div class="err">请求失败：${esc(e)}</div>`;return;}
+  if(j.error){$('#main').innerHTML='';$('#errbox').innerHTML=`<div class="err">${esc(j.error)}</div>`;return;}
+  render(j);
+}
+function render(j){
+  const d=j.data, out=[];
+  if(j.view==='breaks'){
+    const b=d.broken||[];
+    $('#stats').innerHTML=`<span class="stat">在册表<b>${d.tracked_tables}</b></span><span class="stat">健康<b style="color:#3fb950">${d.healthy_count}</b></span><span class="stat">断链亮牌<b style="color:${b.length?'#f85149':'#3fb950'}">${b.length}</b></span><span class="stat">历史非 ok 运行<b>${d.runs_not_ok}</b></span>`;
+    if(!b.length)out.push('<div class="empty">✅ 全部产出表最近一次作业均 ok，无断链</div>');
+    b.sort((x,y)=>String(y.started_at).localeCompare(String(x.started_at))).forEach(r=>{
+      out.push(`<div class="card bad"><div class="ttl">${esc(r.output_table)} ${pill(r.status)}</div>
+        <div class="meta">最近作业 ${esc(r.job)} / ${esc(r.step)} · 开始 ${esc(r.started_at)} · 结束 ${esc(r.ended_at||'—')} · 写入 ${esc(r.rows_written==null?'—':r.rows_written)} 行</div></div>`);});
+    if(d.all_latest&&d.all_latest.length){
+      out.push('<table><tr><th>产出表</th><th>状态</th><th>最近作业</th><th>开始时间</th></tr>');
+      d.all_latest.forEach(r=>out.push(`<tr><td>${link(r.output_table)}</td><td>${pill(r.status)}</td><td>${esc(r.job)} / ${esc(r.step)}</td><td>${esc(r.started_at)}</td></tr>`));
+      out.push('</table>');}
+  }else if(j.view==='runs'){
+    $('#stats').innerHTML=`<span class="stat">最近作业<b>${d.length}</b> 条</span>`;
+    if(!d.length)out.push('<div class="empty">暂无作业记录</div>');
+    out.push('<table><tr><th>状态</th><th>作业 / 步骤</th><th>开始</th><th>结束</th><th>写入行数</th><th>git</th></tr>');
+    d.forEach(r=>out.push(`<tr><td>${pill(r.status)}</td><td>${esc(r.job)} / ${esc(r.step)}</td><td>${esc(r.started_at)}</td><td>${esc(r.ended_at||'—')}</td><td>${esc(r.rows_written==null?'—':r.rows_written)}</td><td>${esc(r.git_sha||'—')}</td></tr>`));
+    out.push('</table>');
+  }else{
+    $('#stats').innerHTML=`<span class="stat">${j.view==='upstream'?'⬆ 谁产出过':'⬇ 下游依赖'}<b>${esc(LASTTABLE||$('#tbl').value.trim())}</b></span><span class="stat">命中<b>${d.length}</b> 条边</span>`;
+    if(!d.length)out.push('<div class="empty">无血缘边命中——该表未在 lineage_edge 登记（可能未插桩或 URN 拼写不符）</div>');
+    else{
+      out.push('<table><tr><th>'+(j.view==='upstream'?'产出方':'下游表')+'</th><th>对端表</th><th>变换</th><th>作业</th><th>状态</th><th>时间</th></tr>');
+      d.forEach(r=>{
+        const a=j.view==='upstream'?r.output_table:(r.input_table||r.output_table);
+        const b=j.view==='upstream'?r.input_table:r.output_table;
+        out.push(`<tr><td>${link(a)}</td><td>${esc(b)}</td><td>${esc(r.transform||'—')}</td><td>${esc(r.job)} / ${esc(r.step)}</td><td>${pill(r.status)}</td><td>${esc(r.started_at||r.created_at)}</td></tr>`);});
+      out.push('</table>');}
+  }
+  $('#main').innerHTML=out.join('');
+}
+function doSearch(){load()}
+$('#tbl').addEventListener('keydown',e=>{if(e.key==='Enter')load()});
+setTab('breaks');
+</script>
+</body>
+</html>

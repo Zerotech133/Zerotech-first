@@ -20,6 +20,34 @@ class BarStore:
         for bar in self._bars:
             if not isinstance(bar, Bar):
                 raise TypeError("BarStore accepts only Bar instances")
+        identities = {(bar.calendar_ref, bar.calendar_version) for bar in self._bars}
+        if len(identities) > 1:
+            raise ValueError("CALENDAR_IDENTITY_MISMATCH: mixed calendar identity")
+        ref = self._metadata.get("calendar_ref")
+        version = self._metadata.get("calendar_version")
+        if (ref is None) != (version is None):
+            raise ValueError("CALENDAR_IDENTITY_MISMATCH: incomplete metadata identity")
+        if ref is not None and identities and identities != {(ref, version)}:
+            raise ValueError("CALENDAR_IDENTITY_MISMATCH: metadata identity differs")
+
+    def calendar_identity(self) -> Tuple[str, str] | None:
+        """Return the homogeneous identity bound to this store, if any."""
+        ref = self._metadata.get("calendar_ref")
+        version = self._metadata.get("calendar_version")
+        if ref is not None:
+            return str(ref), str(version)
+        identities = {(bar.calendar_ref, bar.calendar_version) for bar in self._bars}
+        if identities and identities != {(None, None)}:
+            return next(iter(identities))
+        return None
+
+    def validate_calendar_identity(self, calendar_ref: str, calendar_version: str) -> None:
+        """Require the store identity to match the expected calendar snapshot."""
+        actual = self.calendar_identity()
+        if actual is None:
+            raise ValueError("CALENDAR_UNAVAILABLE: calendar identity missing")
+        if actual != (calendar_ref, calendar_version):
+            raise ValueError("CALENDAR_IDENTITY_MISMATCH: calendar identity differs")
 
     def add(self, bar: Bar) -> "BarStore":
         """Return a new store with one bar; the current store is unchanged."""
