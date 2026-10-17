@@ -98,6 +98,13 @@ def init_ball(mf: X.XqManifest) -> dict:
     token 缺失：打印警告（不 raise），token 批由各 sync_* 统一
     skip_no_token，token_probe 无需探测（肯定无效）。
     """
+    # 2026-10-17 判例：雪球 kline 要求完整 cookie 集，pysnowball 纯
+    # token header 返回空 items——先挂完整 cookie 补丁（幂等/降级安全）
+    try:
+        from xq_cookie_patch import patch_pysnowball_cookies
+        patch_pysnowball_cookies()
+    except Exception:
+        pass
     # P1-4：token 池（config/xq_tokens.json）优先；未启用/全冷却降级
     # 三级链（L1 .env.local → L2 浏览器 → L3 空），零配置行为不变。
     pool = None
