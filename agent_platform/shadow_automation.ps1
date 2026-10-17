@@ -34,6 +34,12 @@ elseif ($Mode -eq 'eval') {
     exit $LASTEXITCODE
 }
 else {
-    & $py -X utf8 (Join-Path $here 'a0_chief.py') --push 1> (Join-Path $here 'data\shadow\chief_last_run.log') 2>&1
+    # cmd /c byte-level redirect — 与 run/eval 两分支同款形态(2026-10-18 形态探针):
+    # PS 5.1 的 `1>` 把 native stdout 按 GBK 解码后以 UTF-16LE 重写(首 3 字节
+    # FF FE), 中文全乱。本分支是唯一记录飞书 SEND_OK/SEND_FAIL 的日志面,
+    # 乱码即失去排障价值。AgentChiefPush 从未运行过(LastTaskResult=267011),
+    # 周一 17:35 是首跑, 不拿首跑去赌未验证形态。
+    $log = Join-Path $here 'data\shadow\chief_last_run.log'
+    cmd /c "`"$py`" -X utf8 `"$here\a0_chief.py`" --push > `"$log`" 2>&1"
     exit $LASTEXITCODE
 }
