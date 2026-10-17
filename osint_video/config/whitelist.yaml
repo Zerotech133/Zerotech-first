@@ -1,0 +1,41 @@
+# ============================================================
+# 合规白名单配置（骨架，T05 ComplianceFilter 生效；T01 先行占位）
+#
+# 原则（架构 §0.5 / §2.5）：
+#   - v1 只采白名单：未命中 → compliance.quarantine=true，
+#     数据入 PG 隔离区但**不入** Qdrant / 训练语料导出；
+#   - 账号命中优先于题材命中；两者皆未命中才进隔离区。
+# ============================================================
+
+# 总开关：false 时所有内容一律进隔离区（安全默认由代码兜底，本文件缺失同理）
+enabled: true
+
+# ---------- 账号白名单：命中任一条目即视为白名单账号 ----------
+# finder_id（账号唯一标识）优先于 nickname 精确匹配
+accounts: []
+#  - nickname: "某财经观察"          # 精确昵称（区分大小写）
+#    finder_id: "v2_0xABC123"       # 可选；填写后以 finder_id 为准
+#    rule: "finance_commentary/*"   # 命中规则名，写入 compliance.whitelist_rule 便于审计
+#  - nickname: "宏观策略复盘"
+#    rule: "finance_commentary/*"
+
+# ---------- 题材白名单：视频文本（标题/ASR/OCR）命中任一正则 → 白名单 ----------
+# Python re 语法，命中方式为 re.search
+topics: []
+#  - "^(化债|地方债|特别国债)"
+#  - "(四季度|中央经济工作会议|宏观|基建)"
+
+# 规则说明（仅供人类阅读，程序不解析）
+rules_doc:
+  finance_commentary: "财经时事口播类——事实性表达，法务圈定的低风险首发类目（架构 §8-3 建议初版范围）"
+
+# ---------- 隔离区策略（T05 生效） ----------
+quarantine:
+  keep_raw_days: 0         # 隔离区原始视频不保留（默认即删，降低版权敞口）
+  whitelist_keep_days: 90  # 白名单内视频保留 90 天备复提/纠错（架构 §8-7 建议）
+
+# ---------- PII 脱敏开关（T05 compliance/pii_mask.py 生效） ----------
+pii_mask:
+  phone: true       # 手机号 → [REDACTED:PHONE]
+  wechat_id: true   # 微信号 → [REDACTED:WECHAT]
+  id_card: true     # 身份证 → [REDACTED:IDCARD]

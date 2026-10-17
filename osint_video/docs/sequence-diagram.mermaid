@@ -1,0 +1,61 @@
+sequenceDiagram
+    autonumber
+    actor User as 管理员/分析员
+    participant UI as Admin Web UI
+    participant API as AdminAPI
+    participant Q as LinkQueueRepository
+    participant C as CollectorWorker
+    participant E as ExtractionWorker
+    participant K as KnowledgeService
+    participant PG as PostgreSQL
+    participant QD as Qdrant
+    participant KG as KnowledgeGraph
+
+    User->>UI: 粘贴分享链接/编辑主题
+    UI->>API: POST /api/v1/links
+    API->>Q: submit_links(urls, creator)
+    Q->>PG: INSERT osint_link_task (url_hash幂等)
+    PG-->>Q: task_id/status
+    Q-->>API: {code,data,message}
+    API-->>UI: 投递结果
+
+    loop 状态机 worker
+      C->>Q: claim_next(stage=collect)
+      Q->>PG: SELECT FOR UPDATE SKIP LOCKED
+      PG-->>Q: pending task
+      C->>C: 解析/下载/解密(限速、Cookie)
+      C->>Q: transition(parsed/downloaded/decrypted|failed)
+      Q->>PG: UPDATE task + audit_log
+    end
+
+    C->>PG: upsert osint_target (finder_id优先，source_type=link/source_link)
+    C->>PG: create KnowledgeResource(candidate) + MediaAsset(acquired)
+    C->>Q: transition(extracted)
+    E->>Q: claim_next(stage=extract)
+    E->>E: ASR+OCR+subtitle独立通道/对齐/质量评分
+    E->>PG: update resource extraction_succeeded|failed
+    E->>K: create_unit(StructuredDoc, provenance)
+    K->>K: 脱敏/切分知识单元/抽取主题实体事件
+    K->>PG: INSERT knowledge_unit/topic/entity/timeline/evidence
+    K->>PG: validate Evidence (0<=start<end<=duration)
+    K->>PG: INSERT outbox(index knowledge resource/unit)
+    K->>QD: upsert dense+sparse vector (payload过滤字段)
+    K->>KG: upsert nodes/edges with evidence_id
+    K->>PG: update index_status/index_error (可见失败)
+    K->>Q: transition(done) only after PG+index task registered
+
+    User->>UI: 搜索主题/博主兴趣/时间线
+    UI->>API: GET /api/v1/knowledge/search?q=&filters
+    API->>K: search(query, filters)
+    K->>QD: vector search + metadata filter
+    K->>PG: fetch provenance/timeline/creator
+    K->>KG: expand related entities (可选)
+    K-->>API: units + evidence + confidence
+    API-->>UI: 结果及引用链接
+
+    User->>UI: 创建策略并绑定证据
+    UI->>API: POST /api/v1/strategies/{id}/evidence
+    API->>K: link_strategy(strategy_id,evidence_id)
+    K->>PG: INSERT strategy_evidence (关系/权重/理由)
+    K-->>API: 策略证据链版本
+    API-->>UI: 可审计策略链
