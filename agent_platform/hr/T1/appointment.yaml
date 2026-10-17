@@ -1,0 +1,49 @@
+{
+  "agent_id": "T1",
+  "dept": "invest",
+  "title": "多头研究官",
+  "rank": "E2",
+  "team": "alpha",
+  "node_key": "t1_market",
+  "debate": {
+    "is_node": true,
+    "partner": "t2_market",
+    "max_rounds": 2
+  },
+  "analysis_type": "market_technical",
+  "llm_binding": "ollama/qwen3.5:9b",
+  "tools": [
+    "tdx_kline"
+  ],
+  "memory_grants": {
+    "read": [
+      "domain/*",
+      "dept/invest/*",
+      "agent/T1/*"
+    ],
+    "write": [
+      "agent/T1/*",
+      "dept/invest/observation"
+    ]
+  },
+  "tools_allowed": {
+    "read": [
+      "k_stock/**",
+      "data/**",
+      "reports/**",
+      "docs/**",
+      "knowledge_docs/**"
+    ],
+    "write": [
+      "reports/**",
+      "knowledge_docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-16",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

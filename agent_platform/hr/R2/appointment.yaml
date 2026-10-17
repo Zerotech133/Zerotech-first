@@ -1,0 +1,27 @@
+{
+  "agent_id": "R2",
+  "dept": "invest",
+  "title": "风控辩论·保守席",
+  "rank": "E2",
+  "team": "risk_council",
+  "debate": {
+    "is_node": true,
+    "partner": "R1",
+    "max_rounds": 1
+  },
+  "input_contract": "D1裁决JSON + 三线报告",
+  "output_contract": "riskStance/maxPositionPercent/stopLossPercent/takeProfitPercent/keyRisks/tradeSide",
+  "tools_allowed": {
+    "read": [
+      "reports/**"
+    ],
+    "write": [],
+    "danger": "deny"
+  },
+  "mode": "shadow",
+  "onboarded": "2026-10-16",
+  "approvals": {
+    "chief": "A0",
+    "human": "PENDING"
+  }
+}

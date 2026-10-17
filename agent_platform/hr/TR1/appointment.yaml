@@ -1,0 +1,16 @@
+{
+  "agent_id": "TR1",
+  "dept": "trading",
+  "title": "交易部执行岗：交易执行员",
+  "rank": "E1",
+  "tools_allowed": {
+    "read": [],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-08（补办登记 2026-10-16）",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

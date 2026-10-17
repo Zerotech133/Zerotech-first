@@ -1,0 +1,20 @@
+{
+  "agent_id": "HERMES_UI",
+  "dept": "ops_runtime",
+  "title": "门面总管",
+  "rank": "E2",
+  "kind": "runtime",
+  "supervisor": "JevStack/看门狗（按组件）",
+  "tools_allowed": {
+    "read": [
+      "*"
+    ],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-16",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

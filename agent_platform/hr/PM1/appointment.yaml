@@ -1,0 +1,16 @@
+{
+  "agent_id": "PM1",
+  "dept": "product",
+  "title": "产品与设计部：产品经理 + UI 双梯队(30年主笔+10年执行)",
+  "rank": "E3",
+  "tools_allowed": {
+    "read": [],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-08（补办登记 2026-10-16）",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}

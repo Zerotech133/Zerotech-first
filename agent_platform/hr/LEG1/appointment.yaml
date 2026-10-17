@@ -1,0 +1,16 @@
+{
+  "agent_id": "LEG1",
+  "dept": "legal",
+  "title": "合规法务部：对外材料审查·四条口径裁定·数据采集合规红线·公安协调支撑；直属参谋长",
+  "rank": "E3",
+  "tools_allowed": {
+    "read": [],
+    "write": [],
+    "danger": "deny"
+  },
+  "onboarded": "2026-10-08（补办登记 2026-10-16）",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian"
+  }
+}
