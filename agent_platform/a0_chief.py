@@ -112,6 +112,8 @@ def debate_health(run_id):
 def build(today):
     done, failed = load_today(today)
     day_n = shadow_progress()
+    # M5 刀 1：degraded 扩义＝数据源异常 ∪ 决策解析失败（run_shadow.build_ledger_row
+    # 起 m5.v1 行生效；v0 旧行语义不变）——P1 计数自此覆盖 parse 失败行，不再失明
     degraded = [r for r in done if r.get("degraded")]
     p0 = len(failed)
     p1 = len(degraded)
@@ -120,7 +122,11 @@ def build(today):
     rec_set = set(recs)
     confs = [r.get("confidence") or 0 for r in done]
     lines = []
-    lines.append("# 投研部日报 %s（影子第 %d/%d 交易日）" % (today, day_n, SHADOW_DAYS))
+    if day_n <= SHADOW_DAYS:
+        lines.append("# 投研部日报 %s（影子第 %d/%d 交易日）" % (today, day_n, SHADOW_DAYS))
+    else:
+        lines.append("# 投研部日报 %s（影子续观察 第%d日·基线%d日已满）"
+                     % (today, day_n, SHADOW_DAYS))
     lines.append("")
     lines.append("## 一、今日产出")
     lines.append("")
@@ -187,7 +193,9 @@ def build(today):
     if remain > 0:
         lines.append("- 影子继续：明日 17:10 自动运行（剩 %d 个交易日），决策链路冻结不改；" % remain)
     else:
-        lines.append("- 影子期满：运行 eval_shadow.py 出三判据结论（J1 无人干预 / J2 秩相关 / J3 lineage）。")
+        lines.append("- 影子基线已满（%d 交易日）：三判据已 PASS（2026-10-17 eval_shadow："
+                     "J1 无人干预/J2 秩相关/J3 lineage），续影子攒 J2 显著性"
+                     "（K-ORG-129 连续化 score 新样本）；转产/收口拍板待老田。" % SHADOW_DAYS)
     lines.append("- A0 日报通道：飞书已通（17:35 automation 定时 --push；P0 强制即时推）；A0 点评骨架 a0_agent.py 已立（automation 接入待拍板）。")
     lines.append("")
     lines.append("## 五、任务单看板（未闭环）")

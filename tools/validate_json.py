@@ -41,25 +41,50 @@ def _snippet(text: str, pos: int) -> str:
         if hi > pos else ("…%s[EOF]" % text[lo:])
 
 
-def validate_file(path: Path) -> bool:
-    """校验单个文件；.jsonl 按行独立 loads（devtask 真源主格式）。"""
+def validate_file(path: Path, profile: str | None = None) -> bool:
+    """校验单个文件；.jsonl 按行独立 loads（devtask 真源主格式）。
+    profile="shadow"：语法 PASS 后再做影子账本行级语义校验（M5 刀 1）。"""
     try:
         raw = path.read_text(encoding="utf-8")
     except OSError as exc:
         print("FAIL %s · 不可读：%s" % (path, exc))
         return False
     if path.suffix.lower() == ".jsonl":
-        return _validate_jsonl(raw, str(path))
+        return _validate_jsonl(raw, str(path), profile=profile)
     return _validate_text(raw, str(path))
 
 
-def _validate_jsonl(raw: str, label: str) -> bool:
+def _validate_shadow_row(obj, lineno: int, label: str) -> bool:
+    """影子账本行级语义规则（M5 刀 1）。两代并存：仅 schema_version=="m5.v1"
+    新行做语义校验；无标记=v0 旧行冻结不重写（K-ORG-129），跳过语义只做语法。"""
+    errs = []
+    if obj.get("schema_version") is None:
+        return True  # v0 旧行：不重写原则，语义豁免
+    if obj.get("schema_version") != "m5.v1":
+        errs.append("未知 schema_version: %r（合法值：m5.v1）" % (obj.get("schema_version"),))
+    po = obj.get("parse_ok")
+    if obj.get("status") == "done" and po is None:
+        errs.append("done 行缺 parse_ok（m5.v1 起必填）")
+    if po is True and not obj.get("recommendation"):
+        errs.append("parse_ok=true 但 recommendation 空（一致性破坏）")
+    if po is False and any(obj.get(k) is not None
+                           for k in ("recommendation", "confidence", "score")):
+        errs.append("parse_ok=false 但 recommendation/confidence/score 非空"
+                    "（解析失败行不得残留决策字段）")
+    if "degraded" not in obj:
+        errs.append("m5.v1 行缺 degraded（扩义=数据源异常∪解析失败）")
+    for e in errs:
+        print("FAIL %s · 第 %d 行 语义：%s" % (label, lineno, e))
+    return not errs
+
+
+def _validate_jsonl(raw: str, label: str, profile: str | None = None) -> bool:
     ok = True
     for lineno, line in enumerate(raw.splitlines(), 1):
         if not line.strip():
             continue  # 空行容忍（append-only 账本尾行惯例）
         try:
-            json.loads(line)
+            obj = json.loads(line)
         except json.JSONDecodeError as exc:
             print("FAIL %s · 第 %d 行 列 %s：%s" % (
                 label, lineno, exc.colno, exc.msg))
@@ -68,9 +93,13 @@ def _validate_jsonl(raw: str, label: str) -> bool:
         except ValueError as exc:
             print("FAIL %s · 第 %d 行：%s" % (label, lineno, exc))
             ok = False
+        else:
+            if profile == "shadow" and isinstance(obj, dict):
+                ok = _validate_shadow_row(obj, lineno, label) and ok
     if ok:
-        print("PASS %s · %d 行" % (label, len(
-            [l for l in raw.splitlines() if l.strip()])))
+        print("PASS %s · %d 行%s" % (label, len(
+            [l for l in raw.splitlines() if l.strip()]),
+            "（profile=shadow）" if profile == "shadow" else ""))
     return ok
 
 
@@ -106,6 +135,9 @@ def main(argv=None) -> int:
                     help="从 stdin 读内容校验（写入方保存前自检管道）")
     ap.add_argument("--jsonl", action="store_true",
                     help="stdin/无后缀文件按 JSONL 逐行校验（.jsonl 后缀自动识别）")
+    ap.add_argument("--profile", choices=["shadow"],
+                    help="行级语义校验档案：shadow=影子账本（仅 m5.v1 新行，"
+                         "v0 旧行语义豁免——不重写原则）")
     args = ap.parse_args(argv)
 
     ok = True
@@ -113,7 +145,7 @@ def main(argv=None) -> int:
     if args.stdin:
         raw = sys.stdin.read()
         if args.jsonl:
-            ok = _validate_jsonl(raw, "<stdin>")
+            ok = _validate_jsonl(raw, "<stdin>", profile=args.profile)
         else:
             ok = _validate_text(raw, "<stdin>")
         checked = 1
@@ -124,7 +156,7 @@ def main(argv=None) -> int:
             return 2
         for p in _iter_json_files(root):
             checked += 1
-            ok = validate_file(p) and ok
+            ok = validate_file(p, profile=args.profile) and ok
     for f in args.files:
         p = Path(f)
         if not p.is_file():
@@ -133,7 +165,7 @@ def main(argv=None) -> int:
             checked += 1
             continue
         checked += 1
-        ok = validate_file(p) and ok
+        ok = validate_file(p, profile=args.profile) and ok
     if checked == 0:
         ap.print_help()
         return 2

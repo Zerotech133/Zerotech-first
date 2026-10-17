@@ -126,6 +126,34 @@ def parse_decision(text):
     return None
 
 
+def build_ledger_row(today, symbol, name, run_id, price_at_decision, dec,
+                     parse_ok, source_status, latency_s, ts=None):
+    """落账行构造（M5 刀 1：影子账本 schema 收口）。
+
+    - schema_version="m5.v1" 起新行携带；存量 20 行无标记=v0 冻结不重写
+      （K-ORG-129 连续化两代并存，旧行随样本积累自然滑出评估窗口）；
+    - degraded 扩义＝数据源异常 ∪ 决策解析失败——此前 parse_ok=false 行
+      degraded=False（10-17 实测唯一 false 案例即此缺口），a0_chief 日报
+      P1 计数与 morning_check 对解析失败行失明；
+    - dec 为 parse_decision 结果（解析失败时 {}）。
+    """
+    if ts is None:
+        ts = time.time()
+    src_bad = any(v != "normal" for v in (source_status or {}).values())
+    return {
+        "date": today, "ts": ts, "symbol": symbol,
+        "name": name, "status": "done",
+        "run_id": run_id, "price_at_decision": price_at_decision,
+        "recommendation": dec.get("recommendation"),
+        "confidence": dec.get("confidence"),
+        "score": dec.get("score"), "target_range": dec.get("target_price_range"),
+        "parse_ok": bool(parse_ok),
+        "degraded": (not parse_ok) or src_bad,
+        "schema_version": "m5.v1",
+        "latency_s": latency_s,
+    }
+
+
 def already_done(today, symbol):
     if not LEDGER.exists():
         return False
@@ -216,17 +244,10 @@ def main():
                 parse_ok = dec is not None  # K-STOCK-338：解析失败显式记录，不再静默吞成 {}
                 dec = dec or {}
                 price = quote_snapshot(symbol)["price"]
-                row = {
-                    "date": today, "ts": time.time(), "symbol": symbol,
-                    "name": data_ctx.get("name", ""), "status": "done",
-                    "run_id": result["run_id"], "price_at_decision": price,
-                    "recommendation": dec.get("recommendation"),
-                    "confidence": dec.get("confidence"),
-                    "score": dec.get("score"), "target_range": dec.get("target_price_range"),
-                    "parse_ok": parse_ok,
-                    "degraded": any(v != "normal" for v in result["status"].values()),
-                    "latency_s": round(time.time() - t0, 1),
-                }
+                row = build_ledger_row(
+                    today, symbol, data_ctx.get("name", ""), result["run_id"],
+                    price, dec, parse_ok, result["status"],
+                    round(time.time() - t0, 1))  # M5 刀 1：schema_version+degraded 扩义
                 if not parse_ok:
                     print("[warn] %s D1 决策解析失败（输出无 recommendation JSON·已入账 parse_ok=false）"
                           % symbol)
