@@ -1,4 +1,4 @@
-﻿# K-PUSH-011 tune_bt daily batch launcher (ASCII only, junction path)
+﻿﻿# K-PUSH-011 tune_bt daily batch launcher (ASCII only, junction path)
 $log = 'C:\Temp\tune_bt_batch.log'
 try {
     $p = Start-Process -FilePath 'C:\Program Files\Python311\python.exe' `

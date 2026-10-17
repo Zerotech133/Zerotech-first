@@ -351,8 +351,11 @@ def _auto_compare(req_id):
     try:
         from quant_backtest import bt2_tune_compare as _btc
         doc = _load_store(req_id) or {}
-        if ((doc.get("draft") or {}).get("bt2_result") or {}
-                .get("status") == "done"):
+        # 注意：不能内联 `((...).get("bt2_result") or {}.get("status") == "done")`——
+        # == 优先级高于 or，会解析成 (bt2_result or (None == "done"))，bt2_result
+        # 只要存在（running 也算）即 True → running 单被误判 done 跳过。先取值再判。
+        _bt2r = (doc.get("draft") or {}).get("bt2_result") or {}
+        if _bt2r.get("status") == "done":
             return
         try:
             vip = vip_overrides()

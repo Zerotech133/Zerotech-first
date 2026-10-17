@@ -81,9 +81,9 @@ DEFAULT_SCHEDULE = {
          "window": "全天", "exempt": False, "excess": "同源 10min 去重",
          "enabled": True},
         {"id": "tune_bt", "name": "调优回测批次", "kind": "tune:*",
-         "task": "", "time": "20:00", "freq": "daily",
+         "task": "AI工作站调优回测批次", "time": "20:00", "freq": "daily",
          "window": "盘后", "exempt": False, "excess": "",
-         "enabled": False},
+         "enabled": True},
     ],
 }
 
@@ -98,7 +98,8 @@ BODY_CAP = 65536
 
 # 可管理时间点/立即执行的任务白名单（只动这几个既有任务，不建不删）
 TASK_MANAGEABLE = ["金融新闻日报", "AI工作站统一日报",
-                   "AI工作站预警推送晨", "AI工作站预警推送"]
+                   "AI工作站预警推送晨", "AI工作站预警推送",
+                   "AI工作站调优回测批次"]
 # 只读展示的生态任务
 TASK_READONLY = ["TodaysPicks", "自选股行情快照",
                  "AI工作站预警监听", "AI工作站持仓异动监控"]
