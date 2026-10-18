@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "updated": "2026-10-18",
+  "note": "R6 事件总线白名单（manifest 即白名单）。一条 source = 一条产线接入：8091 ingest 端点自动放行；8787 代理与 console 卡片为约定生效。schema 口径见 docs/design/2026-10-18_事件总线R6设计稿.md §3.2；type 枚举冻结于 M1（§2.2），扩枚举=改本文件+评审门。match_task 对照 portal/execution_manifest.json（R1 拉式投影白名单，两文件以 match_task 交叉审计）。M1 首批收编 7 线（§6）。",
+  "sources": [
+    {
+      "source": "agent_shadow_daily",
+      "match_task": "AgentShadowDaily",
+      "event_types": ["task_run", "task_fail", "task_recovered", "brief_ready"],
+      "card": { "panel": "observe", "title": "影子链事件" },
+      "proxy_route": { "path": "/api/event/agent_shadow_daily", "upstream": "/api/events/query?source=agent_shadow_daily" },
+      "enabled": true,
+      "note": "首批收编：影子链四事件（设计稿 §3.2 示例原样）"
+    },
+    {
+      "source": "agent_chief_push",
+      "match_task": "AgentChiefPush",
+      "event_types": ["task_run", "task_fail", "artifact_ready"],
+      "card": { "panel": "observe", "title": "主理人推送事件" },
+      "proxy_route": { "path": "/api/event/agent_chief_push", "upstream": "/api/events/query?source=agent_chief_push" },
+      "enabled": true,
+      "note": "M2 首批接入：chief 推送线（fail_scan 口径 SEND_FAIL → task_fail P1）"
+    },
+    {
+      "source": "agent_shadow_eval",
+      "match_task": "AgentShadowEvalWeekly",
+      "event_types": ["task_run", "task_fail", "brief_ready"],
+      "card": { "panel": "observe", "title": "影子评估事件" },
+      "proxy_route": { "path": "/api/event/agent_shadow_eval", "upstream": "/api/events/query?source=agent_shadow_eval" },
+      "enabled": true,
+      "note": "M2 首批接入：每周五评估线（评估结论 FAIL → task_fail P1）"
+    },
+    {
+      "source": "watchdog",
+      "match_task": "AgentWatchdog",
+      "event_types": ["task_recovered", "task_recover_failed"],
+      "card": { "panel": "observe", "title": "守护拉活事件" },
+      "proxy_route": { "path": "/api/event/watchdog", "upstream": "/api/events/query?source=watchdog" },
+      "enabled": true,
+      "note": "R3 自愈链：拉活成功 P2 / 拉活失败 P0（R3 自愈失败升级判例）；AgentWatchdog2 冗余守护共用本 source"
+    },
+    {
+      "source": "alert_chain",
+      "match_task": "AlertPush",
+      "event_types": ["alert_open", "alert_close", "task_fail"],
+      "card": { "panel": "observe", "title": "告警链事件" },
+      "proxy_route": { "path": "/api/event/alert_chain", "upstream": "/api/events/query?source=alert_chain" },
+      "enabled": true,
+      "note": "R3 告警链：AlertWatch 探测/AlertPush 推送共用；alert_open P0/P1、alert_close P2（§2.2 分发口径）"
+    },
+    {
+      "source": "push_admin",
+      "match_task": "AI工作站推送中台守护8097",
+      "event_types": ["task_run", "task_fail", "artifact_ready"],
+      "card": { "panel": "observe", "title": "推送中台事件" },
+      "proxy_route": { "path": "/api/event/push_admin", "upstream": "/api/events/query?source=push_admin" },
+      "enabled": true,
+      "note": "推送中台 8097 守护线上报（触达侧健康快讯）；事件汇聚仍在 8091，8097 定位不扩（§1.4）"
+    },
+    {
+      "source": "retrospect_brief",
+      "match_task": "AgentRetrospectBrief",
+      "event_types": ["brief_ready", "task_run", "task_fail"],
+      "card": { "panel": "observe", "title": "复盘简报事件" },
+      "proxy_route": { "path": "/api/event/retrospect_brief", "upstream": "/api/events/query?source=retrospect_brief" },
+      "enabled": true,
+      "note": "R5 复盘回流：brief_ready 驱动观察季卡快讯"
+    }
+  ]
+}
