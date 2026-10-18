@@ -186,6 +186,8 @@ tr:hover td{background:#182028}
 .bgrid{display:grid;grid-template-columns:1.55fr 1fr;gap:12px;align-items:start}
 .dcards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .dcard{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;cursor:pointer;transition:border-color .15s}
+a.dcard{display:block;color:inherit;text-decoration:none}
+a.dcard:hover{text-decoration:none}
 .dcard:hover{border-color:var(--blue)}
 .dcard b{display:block;font-size:12.5px;margin-bottom:3px}
 .dcard span{color:var(--sub);font-size:11px;line-height:1.55;display:block}
@@ -631,7 +633,7 @@ tr:hover td{background:#182028}
         ['策略域','/quant/scanner','Scanner 扫描 → Screener 筛选 → Signal 信号，三阶段流水线'],
         ['盯盘双池','/quant/watch','池 A 上游多策略 / 池 B 用户指定；只观察/预警/候选触发'],
         ['模拟仓','/quant/paper','Phase3 订单/状态机；四模式隔离；零真实资金'],
-        ['仪表盘','127.0.0.1:8791','8791 健康聚合 + 门户 8091 /api/kg/lineage']
+        ['仪表盘','/dashboard','8791 只读总览（302 外跳本机真实服务）']
       ]
     },
     intel: {
@@ -792,6 +794,7 @@ tr:hover td{background:#182028}
       issues:[
         ['P1','AgentWatchdog 0x8007010b：fix 脚本待管理员执行'],
         ['P1','zeroq stage12 卡点 = CowAgent LLM key'],
+        ['P1','8791 反复宕机（10-19 05:29-05:36 实证）：DashboardGuard 05:30:27 自动重启成功（health-ok），新实例约 4 分钟内无声死亡（无 traceback = 外部信号杀掉，疑沙箱 job-kill 收割 detached 子进程）；已升级老田，勿从代理会话手动拉起'],
         ['P2','C:\\aios\\portal 为 junction；旧 KgDataDashboard 停用待裁决']
       ],
       decisions:[
@@ -801,6 +804,7 @@ tr:hover td{background:#182028}
       drills:[
         ['OS 控制台','/ops','计划任务矩阵 + 服务健康'],
         ['系统健康','/sys-health','各服务探针三态'],
+        ['数据仪表盘','/dashboard','8791 只读总览（302 外跳；05:36 实证目标宕机中，探针落 unk 不假绿）'],
         ['审计','/audit','门禁/巡检留痕'],
         ['生产服务器','zeroq 远程','SSH paramiko remote.py']
       ]
@@ -889,10 +893,10 @@ tr:hover td{background:#182028}
         ['对口径','对外传播统一口号，不多线 slogan']
       ],
       drills:[
-        ['缠论课件','/learn/chanlun','交互课件 + 学习报告'],
-        ['CZSC 评估','/learn/czsc','工具链评估'],
-        ['助理雷达','/learn/radar','四大开源助理架构对比'],
-        ['方法库','/learn/methods','特征工程/回测方法笔记']
+        ['缠论课件','/chanlun-learn-report/chanlun-learn-report.html','交互课件 + 学习报告（已入 webroot）'],
+        ['CZSC 评估','/czsc-eval/czsc-p0-eval.html','P0 评估 + Phase1 计划/报告'],
+        ['助理雷达','/radar','四大开源助理架构对比（专页已上线）'],
+        ['方法库','/methods','特征工程/回测方法笔记（专页已上线）']
       ]
     },
     more: {
@@ -976,7 +980,30 @@ tr:hover td{background:#182028}
          其余（8791/11434）跨域直连，不可达 → unk 诚实降级，绝不假绿 ---- */
   var HEALTH_MAP = { 'p-8091':'portal api', 'p-8787':'hermes', 'p-8097':'push hub',
                      'q-8091':'portal api', 'i-8091':'portal api', 'i-8787':'hermes',
-                     'h-8787':'hermes', 'o-8091':'portal api' };
+                     'h-8787':'hermes', 'l-8787':'hermes', 'o-8091':'portal api' };
+  /* S5/S4 收口（2026-10-19）：8791 与 11434 不在 8091 /api/health 覆盖内，
+     且真实端点与 8091 口径不同（8791=/health；11434=/api/tags）——走同源代理路由探测：
+     /probe/dash（nginx → 8791/health）与 /ollama/api/tags（nginx ^~ /ollama/ → 11434）。
+     探测不可达 → unk 诚实降级，绝不假绿。 */
+  var PROBE_SPECIAL = {
+    'p-8791': { url:'/probe/dash',   name:'kg_data_dashboard' },
+    'o-8791': { url:'/probe/dash',   name:'kg_data_dashboard' },
+    'p-11434':{ url:'/ollama/api/tags', name:'ollama' },
+    'd-11434':{ url:'/ollama/api/tags', name:'ollama' },
+    'n-11434':{ url:'/ollama/api/tags', name:'ollama' }
+  };
+  function probeSameOrigin(id, path, name){
+    var el = document.getElementById(id); if (!el) return;
+    fetch(path, { cache:'no-store' }).then(function(r){
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json().catch(function(){ return { ok:true }; }); /* 11434 /api/tags 无 ok 字段，200 即在产 */
+    }).then(function(d){
+      if (d && d.ok === false) throw new Error('svc not ok');
+      el.className = 'dot ok'; el.title = name + ' OK（同源 ' + path + '）';
+    }).catch(function(){
+      el.className = 'dot unk'; el.title = '同源探测不可达 → 未探测态（不假绿）';
+    });
+  }
   var HEALTH_CACHE = null;
   function fetchHealth(){
     if (HEALTH_CACHE) return HEALTH_CACHE;
@@ -995,6 +1022,7 @@ tr:hover td{background:#182028}
     });
   }
   function probeAny(id, url){
+    if (PROBE_SPECIAL[id]) { probeSameOrigin(id, PROBE_SPECIAL[id].url, PROBE_SPECIAL[id].name); return; }
     if (HEALTH_MAP[id]) { probeViaHealth(id, HEALTH_MAP[id]); } else { probe(id, url); }
   }
   [{id:'p-8091',url:'http://127.0.0.1:8091/api/health'},{id:'p-8791',url:'http://127.0.0.1:8791/api/health'},
@@ -1007,7 +1035,7 @@ tr:hover td{background:#182028}
     var b = BOARDS[id];
     if (!b) { location.hash = '#/overview'; return; }
     $('b-drill').innerHTML = '<b>个人 OS</b><span class="sep">›</span><span style="color:var(--blue)">' + esc(b.name) +
-      '</span><span class="sep">›</span><span class="cur">板块全貌</span><span class="sep">›</span>子项目 / 域 / 策略 / 标的（演示稿标注目标路由）';
+      '</span><span class="sep">›</span><span class="cur">板块全貌</span><span class="sep">›</span>子项目 / 域 / 策略 / 标的（出口卡 = 真实路由，可点直达）';
     $('b-head').innerHTML =
       '<div class="row1"><span class="bicon" style="background:' + b.color + '">' + b.icon + '</span>' +
       '<div><h2>' + esc(b.name) + ' <span class="badge ' + b.badge[1] + '" style="margin-left:8px;vertical-align:4px">' + b.badge[0] + '</span></h2>' +
@@ -1032,7 +1060,13 @@ tr:hover td{background:#182028}
     $('b-subs').innerHTML = subs;
 
     $('b-drills').innerHTML = b.drills.map(function(d){
-      return '<div class="dcard" title="下钻目标（演示稿）：' + esc(d[1]) + '"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + esc(d[1]) + '</span></div>';
+      /* S5 收口：/ 开头的目标路由均为已实测可达的真实路由 → 渲染为真链接；
+         非 / 目标（zeroq 远程 / agent_platform / 127.0.0.1:8791 等）保持展示卡，诚实不装链接 */
+      var rt = esc(d[1]);
+      if (d[1] && d[1].charAt(0) === '/') {
+        return '<a class="dcard" href="' + rt + '" title="下钻目标（真实路由，已实测可达）"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + rt + ' ↗</span></a>';
+      }
+      return '<div class="dcard" title="下钻目标（非门户路由 · 演示标注）"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + rt + '</span></div>';
     }).join('');
 
     if (b.probes.length) {
