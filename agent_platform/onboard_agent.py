@@ -147,6 +147,173 @@ def onboard(resume_path: Path) -> None:
         pass
 
 
+def _yaml_scalar(v) -> str:
+    """标量/列表 → 行内标量（JSON 字符串/数组即合法 YAML 标量子集）。"""
+    if isinstance(v, list):
+        return json.dumps(v, ensure_ascii=False)
+    return json.dumps(str(v), ensure_ascii=False)
+
+
+def _yaml_block(doc: dict) -> str:
+    """极简 YAML 生成（简历模板结构：一层嵌套 dict + dict 列表 + 标量/行内列表）。"""
+    lines = []
+    for k, v in doc.items():
+        if isinstance(v, dict):
+            lines.append(f"{k}:")
+            for k2, v2 in v.items():
+                lines.append(f"  {k2}: {_yaml_scalar(v2)}")
+        elif isinstance(v, list) and v and all(isinstance(i, dict) for i in v):
+            lines.append(f"{k}:")
+            for item in v:
+                for i, (k2, v2) in enumerate(item.items()):
+                    lines.append(f"{'- ' if i == 0 else '  '}{k2}: {_yaml_scalar(v2)}")
+        else:
+            lines.append(f"{k}: {_yaml_scalar(v)}")
+    return "\n".join(lines) + "\n"
+
+
+def _team_facts(aid: str):
+    """辅助事实源：在 registry/team_*.json 中交叉定位 agent。返回 (file, team, entry)。"""
+    for f in sorted((ROOT / "registry").glob("team_*.json")):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        for a in data.get("agents", []):
+            if isinstance(a, dict) and a.get("agent_id") == aid:
+                return f, data, a
+    return None, None, None
+
+
+def backfill(aid: str) -> None:
+    """存量补办：为「org 在册且 hr 缺档」的 agent 从事实源生成档案（禁编造）。
+
+    闸门：① 不在 org.json 名册 → 拒绝（新员工走 --resume）；
+         ② hr 已有档案 → 拒绝（防覆盖，变更走 appointment 流程）；
+         ③ org.json 无 agent_profiles 事实档案 → 拒绝（禁编造）。
+    无法从事实源得出的字段一律写 PENDING 占位并打印待补清单。
+    """
+    reg = load_registry()
+    # 定位事实源（org.json 主源）
+    profile, dept, where = None, None, ""
+    chief = reg.get("chief", {})
+    if chief.get("agent_id") == aid:
+        profile = chief
+        dept = {"dept": "chief", "name": "幕府", "lead": ""}
+        where = "chief"
+    else:
+        for d in reg.get("departments", []):
+            if aid in d.get("agents", []):
+                dept, where = d, f"departments[{d.get('dept')}].agents"
+                for p in d.get("agent_profiles", []):
+                    if p.get("agent_id") == aid:
+                        profile = p
+                break
+    if profile is None and dept is None:
+        fail(f"{aid} 不在 org.json 名册——backfill 仅限在册补档（新员工请走 --resume 全流程）")
+    hr_dir = HR_DIR / aid
+    if (hr_dir / "resume.yaml").exists() or (hr_dir / "appointment.yaml").exists():
+        fail(f"{aid} 已有 hr 档案——backfill 拒绝（防覆盖；岗位变更请走 appointment 变更流程）")
+    if profile is None:
+        fail(f"{aid} 在册（{where}）但 org.json 无 agent_profiles 事实档案——禁编造，请人工建档")
+    # 辅助事实源交叉核对（org.json 为准，不一致只告警不臆断）
+    team_file, team_data, team_entry = _team_facts(aid)
+    srcs = [f"registry/org.json#{where}" + ("" if where == "chief" else ".agent_profiles")]
+    if team_file:
+        srcs.append(f"registry/{team_file.name}")
+    warns = []
+    if team_entry:
+        for k in ("role_profile", "grade", "llm_binding"):
+            if profile.get(k) and team_entry.get(k) and profile[k] != team_entry[k]:
+                warns.append(f"org.json 与 {team_file.name} 的 {k} 不一致（{profile[k]} vs {team_entry[k]}）——以 org.json 为准")
+    # 派生字段（全部取自事实源，禁编造）
+    attrs = profile.get("attributes", {}) or {}
+    charter = profile.get("charter_detail") or ""
+    title = charter.split("：")[0].split(":")[0].strip() or profile.get("role_profile") or aid
+    # 待补清单（事实源得不出 → PENDING 占位）
+    pending = []
+    if not profile.get("llm_binding"):
+        pending.append("identity.model / appointment.llm_binding")
+    if not attrs.get("specialties"):
+        pending.append("resume.skills")
+    if not profile.get("grade"):
+        pending.append("appointment.rank")
+    pending += [
+        "resume.identity.born（注册批次日期）",
+        "resume.education（可选）",
+        "resume.self_statement（人审补充）",
+        "resume.cn_name / cn_origin（待授名）",
+        "appointment.endpoint",
+        "appointment.approvals.human=PENDING（待老田终审）",
+    ]
+    # 生成简历（字段对齐既有档案模板）
+    resume_doc = {
+        "agent_id": aid,
+        "name": title,
+        "kind": "staff",
+        "identity": {
+            "origin": f"org.json 在册补档（--backfill）：{dept.get('name', '')}·{title}，注册依据见 org.json source",
+            "model": profile.get("llm_binding") or "PENDING",
+            "born": "PENDING（待人工补：注册批次日期见 org.json source）",
+        },
+        "education": [
+            {"program": "PENDING（待人工补）", "source": "PENDING（待人工补）", "graduated": "PENDING（待人工补）"}
+        ],
+        "experience": [
+            {
+                "org": f"{dept.get('name', '')}（dept={dept.get('dept')}）",
+                "role": title,
+                "span": "PENDING（注册批次日期见 org.json source）",
+                "kpi": charter or "PENDING",
+            }
+        ],
+        "skills": attrs.get("specialties") or [],
+        "self_statement": f"（backfill 初稿占位——由 onboard_agent.py --backfill 于 {date.today()} 生成，待人审补充）",
+        "cn_name": "PENDING（待人工授名）",
+        "cn_origin": "PENDING（待人工授名）",
+    }
+    # 生成交办书（结构对齐 OPT1/A0 任命书）
+    appt = {
+        "agent_id": aid,
+        "dept": dept.get("dept"),
+        "dept_note": f"{dept.get('name', '')}（org.json 事实源）" + (f"，team={team_data.get('team')}" if team_data else ""),
+        "title": title,
+        "rank": profile.get("grade") or "PENDING",
+        "rank_note": profile.get("grade_note") or "",
+        "llm_binding": profile.get("llm_binding") or "PENDING",
+        "tools": profile.get("tools") or [],
+        "memory_grants": profile.get("memory_grants") or {},
+        "tools_allowed": attrs.get("tools_allowed") or {"read": [], "write": [], "execute": [], "danger": "deny"},
+        "supervisor": dept.get("lead") or "",
+        "endpoint": "",
+        "onboarded": f"补办登记 {date.today()}",
+        "approvals": {"chief": reg.get("chief", {}).get("agent_id") or "", "human": "PENDING"},
+        "backfill_note": (
+            f"--backfill 于 {date.today()} 生成，事实源={' + '.join(srcs)}；"
+            f"kind=staff 按 agent_profile 在册惯例；待终审字段见 backfill 输出清单"
+        ),
+    }
+    hr_dir.mkdir(parents=True, exist_ok=True)
+    (hr_dir / "resume.yaml").write_text(_yaml_block(resume_doc), encoding="utf-8")
+    (hr_dir / "appointment.yaml").write_text(
+        json.dumps(appt, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[OK] {aid} 补档完成（org 在册事实源生成，名册未动）")
+    print(f"     事实源: {' + '.join(srcs)}")
+    print(f"     档案: {hr_dir}")
+    for w in warns:
+        print(f"[WARN] {w}")
+    print("     待补/待终审字段:")
+    for p in pending:
+        print(f"       - {p}")
+    print("     下一步: 人审两份 yaml（born/cn_name/endpoint 等待补）→ approvals.human=laotian")
+    try:
+        import sys as _s; _s.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+        from legion_pulse import heartbeat
+        heartbeat("HR_BACKFILL", "draft", f"{aid} 补档 draft rank={appt['rank']} dept={appt['dept']}")
+    except Exception:
+        pass
+
+
 def check() -> None:
     """体检：名册成员 100% 有 HR 档案。"""
     reg = load_registry()
@@ -165,9 +332,14 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="数字军团入职工具（K-ORG-117）")
     ap.add_argument("--resume", type=Path, help="新员工简历 yaml")
     ap.add_argument("--check", action="store_true", help="体检：档案覆盖率")
+    ap.add_argument("--backfill", metavar="AGENT_ID[,AGENT_ID...]",
+                    help="存量补办：为 org 在册但缺 hr 档案的 agent 从事实源补建档案（已有档案则拒绝防覆盖）")
     args = ap.parse_args()
     if args.check:
         check()
+    elif args.backfill:
+        for aid in [a.strip() for a in args.backfill.split(",") if a.strip()]:
+            backfill(aid)
     elif args.resume:
         onboard(args.resume)
     else:

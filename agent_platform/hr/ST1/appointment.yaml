@@ -1,0 +1,63 @@
+{
+  "agent_id": "ST1",
+  "dept": "invest",
+  "dept_note": "量化交易部（org.json 事实源），team=strategy",
+  "title": "缠论分析师·策略部首席",
+  "rank": "E2",
+  "rank_note": "20年档：量化交易部策略部首席（缠论分析师），学习环与理论输出双责",
+  "llm_binding": "glm/glm-5.3",
+  "tools": [
+    "tgraph_slots",
+    "tgraph_eval",
+    "tgraph_left_tail",
+    "tgraph_fps",
+    "signal_precedents",
+    "signal_enrich",
+    "events_for_stock",
+    "related_events",
+    "event_summary",
+    "recent_events",
+    "datamart_read",
+    "datamart_latest",
+    "datamart_ready",
+    "market_snapshot",
+    "data_health",
+    "pool_rows",
+    "stock_info",
+    "paper_positions",
+    "events"
+  ],
+  "memory_grants": {
+    "read": [
+      "domain/*",
+      "dept/invest/*",
+      "agent/ST1/*"
+    ],
+    "write": [
+      "agent/ST1/*",
+      "dept/invest/observation",
+      "dept/invest/thesis"
+    ]
+  },
+  "tools_allowed": {
+    "read": [
+      "reports/**",
+      "data/**",
+      "docs/**",
+      "quant_backtest/**"
+    ],
+    "write": [
+      "docs/**"
+    ],
+    "execute": [],
+    "danger": "deny"
+  },
+  "supervisor": "D1",
+  "endpoint": "",
+  "onboarded": "补办登记 2026-10-19",
+  "approvals": {
+    "chief": "A0",
+    "human": "PENDING"
+  },
+  "backfill_note": "--backfill 于 2026-10-19 生成，事实源=registry/org.json#departments[invest].agents.agent_profiles + registry/team_quant_strategy.json；kind=staff 按 agent_profile 在册惯例；待终审字段见 backfill 输出清单"
+}
