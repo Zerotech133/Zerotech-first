@@ -56,7 +56,7 @@
   },
   "anchors": {
     "guojia": {"path": "news_collector/data/guojia/summary.json", "rule": "mtime_today", "min_mtime": "07:25", "enabled": true},
-    "jev": {"path": "news_collector/data/jev_drift/last_run.log", "rule": "mtime_today", "min_mtime": "07:10", "enabled": false, "_note": "jev_drift 产物路径待实核后启用"},
-    "picks": {"path": "picks_public/data/todays_picks.json", "rule": "mtime_today", "min_mtime": "00:00", "enabled": false, "_note": "picks 本地快照路径待实核后启用"}
+    "jev": {"path": "jev-eval/review_data/jev_drift_task.log", "rule": "mtime_today", "min_mtime": "07:10", "enabled": true, "_note": "2026-10-19 实核：JevDriftDaily 07:10 包装器日志，任务完成必写 P0/P1 行"},
+    "picks": {"path": "portal/data/todays_picks.json", "rule": "mtime_today", "min_mtime": "00:00", "enabled": true, "_note": "2026-10-19 实核：锚源数据（跑批凌晨更新）；picks_public 快照依赖 WorkBuddy 发布链，其滞后由 x5-picks-publish-check 巡检兜底，职责分离"}
   }
 }
