@@ -67,7 +67,16 @@ def test_offline_missing_cache_does_not_fetch_or_touch_legacy(tmp_path, monkeypa
     assert result["funnel"]["classified_posts"] == 5
     assert result["funnel"]["a_stock_posts"] == 5
     assert result["funnel"]["forward_return_observations"] == 2
+    assert result["funnel"]["cache_subset_computable_ic_sections"]["v1.3"]["senti"] == 0
     assert result["funnel"]["valid_ic_sections"]["v1.3"]["senti"] == 0
+    assert result["funnel"]["diagnostic_only"] is True
+    assert "非因子有效性" in result["funnel"]["ic_count_unit"]
+    assert "INCONCLUSIVE" in result["diagnostic_labels"]["ic.n"]
+    assert "INCONCLUSIVE" in result["diagnostic_labels"]["valid_ic_sections"]
+    assert "不代表因子有效性" in result["diagnostic_labels"]["cache_subset_computable_sections"]
+    assert result["versions"]["v1.3"]["senti"]["ic"]["diagnostic_only"] is True
+    assert result["versions"]["v1.3"]["senti"]["ic"]["n"] == 0
+    assert "非因子有效性" in result["versions"]["v1.3"]["senti"]["ic"]["count_unit"]
     assert result["versions"]["v1.3"]["senti"]["ic"]["ic_mean"] is None
     assert result["versions"]["v1.3"]["senti"]["quintiles"] == []
     assert result["cache_symbol_ranges"][stocks[2]]["first"] == "20261102"

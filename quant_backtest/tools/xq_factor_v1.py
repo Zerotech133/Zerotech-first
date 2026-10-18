@@ -492,10 +492,15 @@ def offline_audit(posts: list, cache: dict, db_path: str,
     for stats in result["versions"].values():
         for factor in ("senti", "mention"):
             if factor in stats:
+                stats[factor]["ic"]["cache_subset_computable_sections"] = \
+                    stats[factor]["ic"]["n"]
+                stats[factor]["ic"]["diagnostic_only"] = True
+                stats[factor]["ic"]["count_unit"] = \
+                    "当前缓存子集可计算截面（非因子有效性）"
                 stats[factor]["ic"]["ic_mean"] = None
                 stats[factor]["ic"]["icir"] = None
                 stats[factor]["ic"]["exploratory_ic"] = None
-                stats[factor]["ic"]["evidence"] = "audit_only_incomplete_cache"
+                stats[factor]["ic"]["evidence"] = "INCONCLUSIVE_cache_subset"
                 stats[factor]["ic_detail"] = []
                 stats[factor]["quintiles"] = []
                 stats[factor]["monotonicity"] = None
@@ -508,17 +513,32 @@ def offline_audit(posts: list, cache: dict, db_path: str,
                         "cache_saved_at": cache.get("_meta", {}).get("saved_at"),
                         "cache_days_hint_not_coverage": cache.get("_meta", {}).get("days")}
     result["algorithm_version"] = OFFLINE_ALGORITHM_VERSION
+    result["diagnostic_labels"] = {
+        "diagnostic_only": True,
+        "count_unit": "当前缓存子集可计算截面（非因子有效性）",
+        "ic.n": "兼容字段；INCONCLUSIVE，仅当前缓存子集可计算截面数量",
+        "valid_ic_sections": "兼容字段；INCONCLUSIVE，仅当前缓存子集可计算截面数量",
+        "cache_subset_computable_sections": "当前缓存可计算的截面数量，仅覆盖诊断，不代表因子有效性",
+        "matched_week_symbol_pairs": "有缓存前史且次周收益可用的去重周股对，不等于完整股票池",
+        "normalization_backlog": "2024年及以后旧标注归一化NULL未回填，与行情缓存缺口独立"}
     result["generated_at"] = datetime.now().astimezone().isoformat()
     result["funnel"] = {"classified_posts": len(posts),
                         "a_stock_posts": sum(bool(p["stocks"]) for p in posts),
                         "forward_return_observations": sum(
                             v.get("n_obs", 0) for v in result["versions"].values()),
-                        "valid_ic_sections": {v: {f: stats[f]["ic"]["n"]
-                                                  for f in ("senti", "mention")}
-                                              for v, stats in result["versions"].items()
-                                              if "senti" in stats},
+                        "cache_subset_computable_ic_sections": {
+                            v: {f: stats[f]["ic"]["cache_subset_computable_sections"]
+                                for f in ("senti", "mention")}
+                            for v, stats in result["versions"].items()
+                            if "senti" in stats},
+                        "valid_ic_sections": {
+                            v: {f: stats[f]["ic"]["n"] for f in ("senti", "mention")}
+                            for v, stats in result["versions"].items()
+                            if "senti" in stats},
                         "candidate_symbols": len(symbols),
                         "cached_candidate_symbols": len(set(symbols) & set(daily))}
+    result["funnel"]["diagnostic_only"] = True
+    result["funnel"]["ic_count_unit"] = "当前缓存子集可计算截面（非因子有效性）"
     result["cache_gaps"] = {"count_unit": "(version, ISO_week, symbol) 去重候选对",
                             "counts": gap_counts, "details": gaps,
                             "unique_missing_symbols": sorted({r["symbol"] for r in gaps["missing_symbol"]}),
@@ -533,8 +553,13 @@ def offline_audit(posts: list, cache: dict, db_path: str,
             stats["funnel"] = {"classified_posts": stats["n_posts"],
                                "a_stock_posts": stats["n_stock_posts"],
                                "forward_return_observations": stats["n_obs"],
+                               "cache_subset_computable_ic_sections": {
+                                   f: stats[f]["ic"]["cache_subset_computable_sections"]
+                                   for f in ("senti", "mention")},
                                "valid_ic_sections": {f: stats[f]["ic"]["n"]
                                                      for f in ("senti", "mention")},
+                               "diagnostic_only": True,
+                               "count_unit": "当前缓存子集可计算截面（非因子有效性）",
                                "matched_week_symbol_pairs": matched[v]}
     return result
 
