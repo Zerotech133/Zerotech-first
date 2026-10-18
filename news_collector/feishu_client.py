@@ -19,6 +19,7 @@ import os
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 import urllib.error
 
@@ -134,7 +135,8 @@ def _hub_key():
 
 def _hub_send(content, msg_type, receive_id, receive_id_type,
               kind=None, critical=False, timeout=8):
-    """→ (ok, why) 闸门结果；hub 不可达也返回失败，不直发。"""
+    """→ (ok, why, message_id) 闸门结果；hub 不可达也返回失败，不直发。
+    K-ORG-201 W38：hub 响应含 message_id（闸内直发回执）时透出，缺则 None。"""
     try:
         body = json.dumps({"content": content, "msg_type": msg_type,
                            "receive_id": receive_id,
@@ -143,21 +145,23 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
                           ).encode("utf-8")
         key = _hub_key()
         if not key:
-            return False, "hub authorization not configured"
+            return False, "hub authorization not configured", None
         rq = urllib.request.Request(
             HUB_SEND_URL, data=body,
             headers={"Content-Type": "application/json", "X-Push-Hub-Key": key})
         with urllib.request.urlopen(rq, timeout=timeout) as r:
             resp = json.loads(r.read().decode("utf-8"))
         if resp.get("ok"):
-            return True, str(resp.get("why") or "hub ok")
-        return False, str(resp.get("error") or "hub deny")
+            mid = resp.get("message_id")
+            return True, str(resp.get("why") or "hub ok"), (
+                str(mid) if mid else None)
+        return False, str(resp.get("error") or "hub deny"), None
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
-            return False, "hub authorization denied"
-        return False, "hub HTTP %d" % e.code
+            return False, "hub authorization denied", None
+        return False, "hub HTTP %d" % e.code, None
     except Exception:
-        return False, "hub unavailable or invalid response"
+        return False, "hub unavailable or invalid response", None
 
 
 def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
@@ -169,19 +173,37 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
     K-PUSH-003：via_hub=True 时先过 8097 闸门（鉴权/静默/配额/显式 kind
     流水）；8097 闸内转发自身调用必须传 via_hub=False（防环）。
     K-PUSH-012：hub 不可达/拒绝时 fail-closed 不回落直发（闸门唯一通路）。
-    critical=True 为预警类（豁免静默，风险提示不可吞）。"""
+    critical=True 为预警类（豁免静默，风险提示不可吞）。
+    K-ORG-201 W38：内部委托 send_msg_tracked 丢掉第三元 message_id，
+    在役调用方签名与返回完全零感知。"""
+    ok, why, _mid = send_msg_tracked(content, msg_type, receive_id,
+                                     receive_id_type, app_id, app_secret,
+                                     kind, critical, via_hub)
+    return ok, why
+
+
+def send_msg_tracked(content, msg_type, receive_id=None,
+                     receive_id_type="open_id", app_id=None, app_secret=None,
+                     kind=None, critical=False, via_hub=True,
+                     flow_record=True):
+    """W38 送达证据版发消息 → (ok, why, message_id or None)。参数同 send_msg。
+
+    message_id 口径：直发=飞书 im/v1/messages 响应 data.message_id；
+    经 hub=hub /api/send 响应顶层 message_id（hub 侧闸内直发回执透传）。
+    flow_record=False 供 8097 闸内直发自管流水（evidence 证据账）时抑止
+    内部 K-PUSH-001 埋点，防同一发送双行双计。"""
     if via_hub:
         return _hub_send(content, msg_type, receive_id, receive_id_type,
                          kind, critical)
     if not app_id or not app_secret:
         app_id, app_secret = load_app_creds()
         if not app_id or not app_secret:
-            return False, "no app creds"
+            return False, "no app creds", None
     if not receive_id:
-        return False, "no receive_id"
+        return False, "no receive_id", None
     tok = get_tat(app_id, app_secret)
     if not tok:
-        return False, "no tenant token"
+        return False, "no tenant token", None
     body = json.dumps({"receive_id": receive_id, "msg_type": msg_type,
                        "content": content}).encode("utf-8")
 
@@ -192,6 +214,15 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
                                 "Authorization": "Bearer " + _tok})
         with urllib.request.urlopen(rq, timeout=15) as r:
             return json.loads(r.read().decode("utf-8"))
+
+    def _fr(ok):
+        if flow_record:
+            _flow_record(ok, receive_id, kind=kind)
+
+    def _mid_of(resp):
+        mid = (resp.get("data") or {}).get("message_id") \
+            if resp.get("code") == 0 else None
+        return str(mid) if mid else None
 
     try:
         resp = _post(tok)
@@ -204,9 +235,9 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
             if tok:
                 resp = _post(tok)
         ok = resp.get("code") == 0
-        _flow_record(ok, receive_id, kind=kind)  # K-PUSH-001 埋点
+        _fr(ok)  # K-PUSH-001 埋点
         return ok, ("openapi code=%s %s" % (
-            resp.get("code"), str(resp.get("msg"))[:120]))
+            resp.get("code"), str(resp.get("msg"))[:120])), _mid_of(resp)
     except urllib.error.HTTPError as e:
         # K-PUSH-004 判例：HTTP 4xx/5xx 须读响应体拿飞书原始 code/msg
         # （hub 侧 400 只见"Bad Request"无从定位——08-17 卡片 400 排障实证）
@@ -232,17 +263,43 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
                 try:
                     resp = _post(tok2)
                     ok = resp.get("code") == 0
-                    _flow_record(ok, receive_id, kind=kind)  # K-PUSH-001
+                    _fr(ok)  # K-PUSH-001
                     return ok, ("openapi code=%s %s" % (
-                        resp.get("code"), str(resp.get("msg"))[:120]))
+                        resp.get("code"), str(resp.get("msg"))[:120])), \
+                        _mid_of(resp)
                 except Exception as e2:
-                    _flow_record(False, receive_id, kind=kind)
-                    return False, ("openapi err " + str(e2))[:150]
-        _flow_record(False, receive_id, kind=kind)  # K-PUSH-001 埋点
-        return False, ("openapi err %s %s" % (e, detail))[:400]
+                    _fr(False)
+                    return False, ("openapi err " + str(e2))[:150], None
+        _fr(False)  # K-PUSH-001 埋点
+        return False, ("openapi err %s %s" % (e, detail))[:400], None
     except Exception as e:
-        _flow_record(False, receive_id, kind=kind)  # K-PUSH-001 埋点
-        return False, ("openapi err " + str(e))[:150]
+        _fr(False)  # K-PUSH-001 埋点
+        return False, ("openapi err " + str(e))[:150], None
+
+
+def verify_message(message_id, app_id=None, app_secret=None):
+    """W38 接收端核实：GET /im/v1/messages/{message_id} 反查消息真实存在。
+    只读查询：code==0 → True；404/其他业务码/凭证缺失/任何异常 → False
+    （不清 TAT 缓存、不重试、不抛）。"""
+    if not message_id:
+        return False
+    if not app_id or not app_secret:
+        app_id, app_secret = load_app_creds()
+        if not app_id or not app_secret:
+            return False
+    tok = get_tat(app_id, app_secret)
+    if not tok:
+        return False
+    try:
+        rq = urllib.request.Request(
+            OPEN + "/im/v1/messages/" + urllib.parse.quote(str(message_id),
+                                                           safe=""),
+            headers={"Authorization": "Bearer " + tok})
+        with urllib.request.urlopen(rq, timeout=5) as r:
+            resp = json.loads(r.read().decode("utf-8"))
+        return resp.get("code") == 0
+    except Exception:
+        return False
 
 
 def upload_image(raw, filename="img.png", image_type="message",

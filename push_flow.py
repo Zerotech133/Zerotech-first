@@ -23,15 +23,27 @@ FLOW_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          "portal", "work", "push_flow.jsonl")
 _lock = threading.Lock()
 
+# W38 送达证据分级白名单（与 portal/notify_contracts.EVIDENCE_DELIVERY 对齐；
+# 不直接 import：本模块被 4 个独立进程以不同 sys.path 姿态导入，须零依赖）。
+_EVIDENCE_DELIVERY = ("api_accepted", "receiver_verified", "dead_letter")
 
-def record(kind, channel, target, count=1, ok=True, tenant="default"):
-    """追加一行流水。任何异常吞掉（计费依据丢失可容忍，推送中断不可容忍）。"""
+
+def record(kind, channel, target, count=1, ok=True, tenant="default",
+           evidence=None):
+    """追加一行流水。任何异常吞掉（计费依据丢失可容忍，推送中断不可容忍）。
+
+    W38：evidence 非 None 时行内多写 "evidence" 键（值须在
+    EVIDENCE_DELIVERY 内，非法值醒目写 "dead_letter"）；None 时行结构与
+    历史完全一致（向后兼容）。"""
     try:
         from datetime import datetime
         row = {"ts": datetime.now().isoformat(timespec="seconds"),
                "date": datetime.now().strftime("%Y-%m-%d"),
                "kind": kind, "channel": channel, "target": str(target)[:120],
                "count": int(count), "ok": bool(ok), "tenant": str(tenant)[:40]}
+        if evidence is not None:
+            ev = str(evidence).strip()
+            row["evidence"] = ev if ev in _EVIDENCE_DELIVERY else "dead_letter"
         data = (json.dumps(row, ensure_ascii=False) + "\n").encode("utf-8")
         with _lock:
             # 跨进程原子追加：O_APPEND + 单次 os.write 整行（本文件被 4 个独立

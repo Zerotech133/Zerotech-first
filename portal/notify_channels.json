@@ -1,0 +1,98 @@
+{
+  "_note": "K-ORG-201 轨道A：频道×决策红线显式登记表（单一事实源）。红线条目为自然语言红线描述，仅供展示与队列依据弹窗引用，不做机器判定；机器判定仍在各闸门（8097 静默窗/频控、notification_decision preview、push_matrix_send DRYRUN 双门禁）。evidence_level 为该频道当前的交付证据级别（W36 证据分级：设计≠代码验证≠演练≠真实发送≠自然定时首跑），随实装进度人工更新。",
+  "version": 1,
+  "channels": [
+    {
+      "id": "matrix_daily",
+      "name": "市场矩阵日报",
+      "kinds": ["matrix:cn", "matrix:hk", "matrix:us", "matrix:commodity", "matrix:crypto", "matrix:fx"],
+      "autonomy": "auto",
+      "red_lines": [
+        "仅预授权六市场×三锚（jev/picks/guojia）在策略内自动决策",
+        "DRYRUN 默认锁：dryrun_default=true 时一切发送止步预览、零 HTTP",
+        "live 双门禁：env MATRIX_SEND_LIVE=1 且 chat_id 非空",
+        "静默窗 22:00-07:30（critical 豁免）、日频控按市场封顶"
+      ],
+      "evidence_level": "live_sent"
+    },
+    {
+      "id": "matrix_critical",
+      "name": "市场矩阵预警档",
+      "kinds": ["matrix:critical"],
+      "autonomy": "auto",
+      "red_lines": [
+        "critical 豁免静默窗（风险提示类不可吞判例）",
+        "窄口径 critical 定义（W34 拍板）：仅风险提示类",
+        "同一目标 2 次日封顶"
+      ],
+      "evidence_level": "live_sent"
+    },
+    {
+      "id": "decision_announcement",
+      "name": "管理公告",
+      "kinds": ["decision:announcement"],
+      "autonomy": "approval_required",
+      "red_lines": [
+        "必须老田审批（approve 需独立 admin_ui 凭证）后才可执行",
+        "execute 全口径开关 PUSH_DECISION_EXECUTE 默认关，开启需拍板",
+        "目标必须与已配置群身份配对，不匹配阻断不猜"
+      ],
+      "evidence_level": "drilled"
+    },
+    {
+      "id": "decision_alert",
+      "name": "预警",
+      "kinds": ["decision:alert"],
+      "autonomy": "auto",
+      "red_lines": [
+        "仅名单内目标、preview/record/execute 三段式留痕",
+        "critical 豁免静默窗"
+      ],
+      "evidence_level": "drilled"
+    },
+    {
+      "id": "decision_daily",
+      "name": "固定 AI 金融日报",
+      "kinds": ["decision:ai_finance_daily"],
+      "autonomy": "auto",
+      "red_lines": ["仅名单内目标、三段式留痕、静默窗约束"],
+      "evidence_level": "drilled"
+    },
+    {
+      "id": "decision_watch",
+      "name": "盯盘策略",
+      "kinds": ["decision:watch_strategy"],
+      "autonomy": "auto",
+      "red_lines": ["仅名单内目标、三段式留痕、静默窗约束"],
+      "evidence_level": "drilled"
+    },
+    {
+      "id": "decision_os",
+      "name": "OS 系统通知",
+      "kinds": ["decision:os"],
+      "autonomy": "record_only",
+      "red_lines": ["默认仅记录不发送，不豁免静默（K-PUSH-012 在役口径）"],
+      "evidence_level": "code_verified"
+    },
+    {
+      "id": "feishu_hub",
+      "name": "8097 闸门统一通路",
+      "kinds": ["auto:*", "feishu_client 直发埋点"],
+      "autonomy": "auto",
+      "red_lines": [
+        "fail-closed：8097 不可达/鉴权失败不回落直发（K-PUSH-012）",
+        "闸门是静默/配额/审计唯一执行点",
+        "auto: 前缀行为底座追溯账，不计入计费统计"
+      ],
+      "evidence_level": "live_sent"
+    },
+    {
+      "id": "subscriber_push",
+      "name": "订阅推送（量化）",
+      "kinds": ["subscribe:*", "card:*"],
+      "autonomy": "auto",
+      "red_lines": ["仅订阅名单内目标、quota 配额拦截、fail-safe 埋点"],
+      "evidence_level": "live_sent"
+    }
+  ]
+}

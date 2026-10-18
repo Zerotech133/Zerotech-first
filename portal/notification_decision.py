@@ -15,6 +15,17 @@ from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DB_PATH = os.path.join(HERE, "work", "notification_decisions.sqlite3")
+SUBSCRIBERS_PATH = os.path.join(HERE, "push_subscribers.json")
+
+# W38 送达证据分级白名单（notify_contracts 单一事实源；包/扁平两种导入
+# 姿态兜底，与 push_flow._EVIDENCE_DELIVERY 同值）
+try:
+    from notify_contracts import EVIDENCE_DELIVERY as _EVIDENCE_DELIVERY
+except ImportError:  # 以 portal.* 包路径导入时
+    from portal.notify_contracts import EVIDENCE_DELIVERY as _EVIDENCE_DELIVERY
+
+# W37 老田身份配对：卡片「确认」操作者 open_id 必须与授权名单一致
+LAOTIAN_OPEN_ID_ENV = "LAOTIAN_OPEN_ID"
 
 # K-PUSH-012 供钥：env 优先，portal/work/push_secrets.json 文件兜底
 # （work/ 已 gitignore；60s 缓存。计划任务宿主环境通常无 PUSH_DECISION_*）。
@@ -76,11 +87,97 @@ def _db():
         executed_at TEXT, outcome TEXT, agent_source TEXT NOT NULL DEFAULT 'legacy_unknown',
         caller TEXT NOT NULL DEFAULT 'legacy_unknown', operator TEXT NOT NULL DEFAULT '',
         basis TEXT NOT NULL DEFAULT '')""")
-    for column in ("agent_source", "caller", "operator", "basis"):
+    for column in ("agent_source", "caller", "operator", "basis",
+                   "evidence", "message_id"):
         if column not in {r[1] for r in db.execute("PRAGMA table_info(decisions)")}:
             default = "legacy_unknown" if column in ("agent_source", "caller") else ""
             db.execute("ALTER TABLE decisions ADD COLUMN %s TEXT NOT NULL DEFAULT '%s'" % (column, default))
+    db.execute("""CREATE TABLE IF NOT EXISTS announcement_approvals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, decision_id TEXT NOT NULL,
+        content TEXT NOT NULL, target_name TEXT NOT NULL, target_id TEXT NOT NULL,
+        send_at TEXT NOT NULL, operator TEXT NOT NULL, approved_at TEXT NOT NULL,
+        caller TEXT NOT NULL)""")
     return db
+
+
+def _laotian_open_id():
+    """W37 老田本人 open_id：env 优先，缺省读 push_subscribers.json
+    laotian_self（仅 chat_id_type=open_id 口径才认）。都无 → None
+    （身份配对 fail-closed：配不上就阻断，不猜）。"""
+    v = (os.environ.get(LAOTIAN_OPEN_ID_ENV) or "").strip()
+    if v:
+        return v
+    try:
+        with open(SUBSCRIBERS_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        groups = data.get("groups") if isinstance(data, dict) else None
+        entry = groups.get("laotian_self") if isinstance(groups, dict) else None
+    except (OSError, ValueError):
+        return None
+    if isinstance(entry, dict) and \
+            str(entry.get("chat_id_type") or "") == "open_id":
+        cid = str(entry.get("chat_id") or "").strip()
+        if cid.startswith("ou_"):
+            return cid
+    return None
+
+
+def approve_from_card(req, operator_open_id):
+    """W37 卡片「确认」：身份配对 + 行核对 → 写 announcement_approvals 留痕。
+
+    - operator_open_id 必须严格等于 _laotian_open_id()，否则阻断（fail-closed）；
+    - 行须 category=announcement 且 status=recorded；
+    - req 中显式携带的 content/target_name/target_id/send_at 须与行一致
+      （卡片链只传 id：approve_from_card 自己读行核对）；
+    - 通过后 status 保持 recorded——**不自动执行**，execute 开关仍拦；
+    - 幂等：同 id 已卡片确认过 → {"ok": False, "duplicate": True}。"""
+    expected = _laotian_open_id()
+    got = str(operator_open_id or "").strip()
+    if not expected or not got or got != expected:
+        return {"ok": False, "error": "操作者身份与授权名单不匹配，阻断"}
+    with _lock, _db() as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT * FROM decisions WHERE id=?",
+                         (req.get("id"),)).fetchone()
+        if row is None:
+            return {"ok": False, "error": "待审批公告决策不存在"}
+        dup = db.execute("""SELECT id FROM announcement_approvals
+            WHERE decision_id=? AND caller='feishu_card_laotian'
+            ORDER BY id DESC LIMIT 1""", (row["id"],)).fetchone()
+        if dup:
+            return {"ok": False, "duplicate": True}
+        if row["category"] != "announcement" or row["status"] != "recorded":
+            return {"ok": False, "error": "待审批公告决策不存在或不可审批"}
+        for k in ("content", "target_name", "target_id", "send_at"):
+            if req.get(k) is not None and req[k] != row[k]:
+                return {"ok": False,
+                        "error": "审批内容、目标或发送时间与已登记决策不一致"}
+        db.execute("""INSERT INTO announcement_approvals
+            (decision_id,content,target_name,target_id,send_at,operator,approved_at,caller)
+            VALUES (?,?,?,?,?,?,?,?)""",
+            (row["id"], row["content"], row["target_name"], row["target_id"],
+             row["send_at"], got[:8] + "(飞书卡片)",
+             datetime.now(timezone.utc).isoformat(), "feishu_card_laotian"))
+    return {"ok": True, "decision_id": row["id"]}
+
+
+def update_send_evidence(decision_id, message_id, evidence):
+    """W38：执行端点回写送达证据（evidence 须在 EVIDENCE_DELIVERY，否则拒；
+    message_id 真值才覆盖，防把已知 mid 抹空）。"""
+    if evidence not in _EVIDENCE_DELIVERY:
+        return {"ok": False, "error": "非法送达证据级别：%s" % (evidence,)}
+    with _lock, _db() as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT id FROM decisions WHERE id=?",
+                         (decision_id,)).fetchone()
+        if row is None:
+            return {"ok": False, "error": "决策不存在"}
+        db.execute("UPDATE decisions SET evidence=? WHERE id=?",
+                   (evidence, decision_id))
+        if message_id:
+            db.execute("UPDATE decisions SET message_id=? WHERE id=?",
+                       (str(message_id)[:128], decision_id))
+    return {"ok": True}
 
 
 def _public(row):
@@ -214,6 +311,7 @@ def execute(decision_id, sender):
         db.execute("UPDATE decisions SET status='attempted', executed_at=? WHERE id=?",
                    (datetime.now(timezone.utc).isoformat(), decision_id))
         db.commit()
+        result = None
         try:
             result = sender({"content": json.dumps({"text": row["content"]}, ensure_ascii=False),
                              "msg_type": "text", "receive_id": row["target_id"],
@@ -223,6 +321,10 @@ def execute(decision_id, sender):
         except Exception:
             outcome = "unknown_after_attempt"
         db.execute("UPDATE decisions SET status=?, outcome=? WHERE id=?", (outcome, outcome, decision_id))
+        # W38：sender 回执带 message_id 则顺手落列（evidence 列由外部端点写）
+        if outcome == "sent" and isinstance(result, dict) and result.get("message_id"):
+            db.execute("UPDATE decisions SET message_id=? WHERE id=?",
+                       (str(result["message_id"])[:128], decision_id))
         db.commit()
         return {"ok": outcome == "sent", "decision": _public(
             db.execute("SELECT * FROM decisions WHERE id=?", (decision_id,)).fetchone())}
