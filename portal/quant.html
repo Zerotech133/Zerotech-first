@@ -302,10 +302,10 @@
       const r = await fetch('/api/alerts', { signal: ctl.signal, cache: 'no-store' });
       if (!r.ok) return;
       const d = await r.json();
-      document.getElementById('al-ts').textContent = '快照 ' + (d.ts || '') + ' · 共 ' + items.length + ' 条';
+      const items = Array.isArray(d?.alerts) ? d.alerts : [];
+      document.getElementById('al-ts').textContent = '快照 ' + (d?.ts || '') + ' · 共 ' + items.length + ' 条';
       const ka = document.getElementById('k-alerts');
       if (ka) ka.textContent = items.length + ' 条';
-      const items = d.alerts || [];
       document.getElementById('al-list').innerHTML = items.map(a => {
         let dl = '';
         if (a.delta != null && a.delta !== 0) {
