@@ -15,9 +15,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from xq_classify import extract_tickers, _TICKER_VERSION
 
 
-def test_version_is_v13():
-    # v1.3：港股裸 5 位三通道判定（唯一被迫动的既有用例——版本断言必须跟随升级）
-    assert _TICKER_VERSION == "v1.3"
+def test_version_is_v16():
+    # v1.6：港股裸 5 位点位语境硬排除扩展（xq-quality-dev 刀二实证驱动）。
+    # 版本谱系：v1.4 已被 --retry-degraded 语义占用、v1.5 已被速率旋钮占用，
+    # ticker 谱系自 v1.3 直接跳 v1.6。
+    assert _TICKER_VERSION == "v1.6"
 
 
 # ── ① 中文紧贴挖掘（v1.1 漏提病根） ──────────────────────────
@@ -114,8 +116,9 @@ def test_contextless_bare_5digit_rejected():
     assert extract_tickers("活动编号 10676 已登记", "") == []
 
 def test_context_cooccurrence_hit():
-    # 语境共现放行：孤立裸 5 位 + 港股语境词在整条文本中出现
-    assert extract_tickers("港股这边，指数站上 20000 关口", "") == ["20000"]
+    # v1.6 翻转（原 v1.3 用例锚死了误收行为）：「站上 20000 关口」是点位语境
+    # 而非代码——「关」入后缀排除集后不再收（lead 观察项实证落锤 103804289 同款）
+    assert extract_tickers("港股这边，指数站上 20000 关口", "") == []
 
 def test_hk_contextless_verb_adjacent_rejected():
     # 动词+数字紧贴（「赚了18000」）不算中文紧贴名，且无语境 → 拒
@@ -127,3 +130,43 @@ def test_hk_index_points_and_range_rejected():
     text = ("$恒生指数(HKHSI)$ 1、港股现在有多低估？底部恒指10676点，"
             "涨到现在23200点，如今在18000-20000之间。")
     assert extract_tickers(text, "") == []
+
+
+# ── ⑤ 港股点位语境硬排除扩展（v1.6，xq-quality-dev 刀二实证驱动，
+#      全量 19991 行只读扫描实证 103 条「收码∧点位语境」共现） ──
+
+def test_decimal_index_level_rejected():
+    # 144660897 实证：「触及22669.04点」——v1.3 的「点」后缀排除被小数部分
+    # （.04）隔断而失效；裸/cashtag 通道加「小数前瞻」堵死所有 NNNNN.dd 形
+    text = "今日港股表现尤为亮眼，恒生指数盘中一度大涨4.42%，触及22669.04点。内房股集体大涨"
+    assert extract_tickers(text, "") == []
+    # 140221805 同款：「恒生指数收盘报26312.63点」
+    assert extract_tickers("午后翻绿。恒生指数收盘报26312.63点，跌幅0.52%", "") == []
+
+def test_decimal_amount_adjacent_rejected():
+    # 112510264 实证：「住房公积金11116.27亿元」——紧贴名通道把「金11116」
+    # 当公司名紧贴误收；小数前瞻 + 「.27亿元」金额语义双堵
+    text = "北京地区住房公积金累计归集住房公积金11116.27亿元，首次突破万亿大关"
+    assert extract_tickers(text, "") == []
+
+def test_guankou_suffix_rejected():
+    # 103804289 实证：「恒指险守31000关口」「回撤至31000整数关口附近」
+    # ——后缀排除集补「关」（关口/大关）
+    assert extract_tickers("港股复盘：腾讯重挫 恒指险守31000关口 美联储今晨加息", "") == []
+    assert extract_tickers("恒指下跌1%，回撤至31000整数关口附近", "") == []
+
+def test_fujin_suffix_rejected():
+    # 107875256/130710432 实证：「恒指退守到关键点位30500附近」「回到25500附近」
+    # ——后缀排除集补「附」（附近）
+    assert extract_tickers("港股上周走势再度先扬后抑，恒指退守到关键点位30500附近", "") == []
+    assert extract_tickers("2019年8月6日恒指重新回到25500附近，pe約為12", "") == []
+
+def test_legit_forms_survive_v16():
+    # v1.6 红线回归：显式意图通道（.HK 后缀/港股前缀/cashtag）与紧贴名形态零影响
+    assert extract_tickers("00700.HK 创历史新高", "") == ["00700"]
+    assert extract_tickers("港股02331 中报超预期", "") == ["02331"]
+    assert extract_tickers("$腾讯控股(00700)$ 发布财报", "") == ["00700"]
+    assert extract_tickers("腾讯00700 业绩超预期", "") == ["00700"]
+    assert extract_tickers("美团03690 订单强劲", "") == ["03690"]
+    # 紧贴名 + 语境共现仍放行（v1.3 主力形态不回退）
+    assert extract_tickers("港股焦点：腾讯00700 回购注销", "") == ["00700"]
