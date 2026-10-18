@@ -29,10 +29,12 @@
     python subscribe.py --test <sub_id>     # 试推某订阅（门户一键试推）
 """
 import json
+import math
 import os
 import sys
 import time
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
@@ -82,25 +84,31 @@ def load_receivers():
     return out
 
 
-def _resolve_targets(sub, receivers):
-    """订阅的接收人 → push_targets 结构。
+def _valid_target(target):
+    """仅接受显式有效的同一身份域目标，不让发送器隐式选择个人。"""
+    return (isinstance(target, dict) and
+            target.get("type") in ("open_id", "chat_id") and
+            isinstance(target.get("id"), str) and
+            target["id"].startswith("ou_" if target["type"] == "open_id" else "oc_") and
+            isinstance(target.get("name"), str) and bool(target["name"].strip()))
 
-    缺省（未指定 receiver）= 沿用 news_config.json 的 push_targets（个人+家人群）。
-    """
-    names = sub.get("receivers") or []
-    if not names:
-        try:
-            cfg = _read_json(os.path.join(NEWS_DIR, "news_config.json"), {})
-            return cfg.get("push_targets") or [
-                {"name": "个人", "type": "open_id", "id": None}]
-        except Exception:
-            return [{"name": "个人", "type": "open_id", "id": None}]
-    targets = []
-    for n in names:
-        r = receivers.get(n)
-        if r:
-            targets.append({"name": n, "type": r["type"], "id": r["id"]})
-    return targets or [{"name": "个人", "type": "open_id", "id": None}]
+
+def _resolve_targets(sub, receivers):
+    """解析全部指定收件人；任何缺失或不合法均整组失败关闭。"""
+    names = sub.get("receivers")
+    if names is None or names == []:
+        cfg = _read_json(os.path.join(NEWS_DIR, "news_config.json"), {})
+        targets = cfg.get("push_targets") if isinstance(cfg, dict) else None
+    elif isinstance(names, list) and all(isinstance(n, str) for n in names):
+        targets = [dict(name=n, **receivers[n]) if n in receivers else None
+                   for n in names]
+    else:
+        return []
+    if (not isinstance(targets, list) or not targets or
+            not all(_valid_target(t) for t in targets) or
+            len({t["name"] for t in targets}) != len(targets)):
+        return []
+    return targets
 
 
 # ---------------------------------------------------------------- 状态 / 熔断
@@ -133,41 +141,41 @@ def _mark_pushed(state, sub_id):
 # ---------------------------------------------------------------- 推送
 
 def _push_card(card, targets):
-    """多目标推卡片（复用 alert_push.push_card_multi）；失败全 False 则不兜底文本。"""
+    """所有消息均按目标显式发送；逐目标卡片失败才回退文本。"""
+    if not targets or not all(_valid_target(t) for t in targets):
+        return {"_err": "invalid_targets"}
     try:
         sys.path.insert(0, NEWS_DIR)
-        import card_build
-        from send_feishu import send_content_to, send_text
+        from send_feishu import send_content_to
     except Exception as e:
         return {"_err": "import fail %s" % str(e)[:100]}
 
     results = {}
-    primary = targets[0]
-    try:
-        results[primary["name"]] = card_build.push_card(card)
-    except Exception as e:
-        results[primary["name"]] = False
-        results["_carderr"] = str(e)[:100]
     card_json = json.dumps(card, ensure_ascii=False)
-    for t in targets[1:]:
+    for t in targets:
         try:
-            results[t["name"]] = send_content_to(
-                t["id"], t["type"], card_json, "interactive")
+            sent = send_content_to(t["id"], t["type"], card_json, "interactive")
+            results[t["name"]] = sent is True
         except Exception as e:
             results[t["name"]] = False
-    # 卡片全失败 → 纯文本兜底
-    if not any(v for k, v in results.items() if not k.startswith("_")):
-        try:
-            txt = _strip_md_card(card)
-            results["_textfb_" + primary["name"]] = send_text(txt)
-            for t in targets[1:]:
-                from send_feishu import send_content_to as _sc
-                results["_textfb_" + t["name"]] = _sc(
-                    t["id"], t["type"],
-                    json.dumps({"text": txt}, ensure_ascii=False), "text")
-        except Exception as e:
-            results["_texterr"] = str(e)[:100]
+            results["_carderr_" + t["name"]] = str(e)[:100]
+        if not results[t["name"]]:
+            try:
+                text = json.dumps({"text": _strip_md_card(card)}, ensure_ascii=False)
+                sent = send_content_to(t["id"], t["type"], text, "text")
+                results["_textfb_" + t["name"]] = sent is True
+            except Exception as e:
+                results["_textfb_" + t["name"]] = False
+                results["_texterr_" + t["name"]] = str(e)[:100]
     return results
+
+
+def _delivery_ok(results):
+    """全部目标各自卡片或同 ID 文本回执 True 才推进订阅去重状态。"""
+    names = [k for k in results if not k.startswith("_")]
+    return bool(names) and all(results[name] is True or
+                               results.get("_textfb_" + name) is True
+                               for name in names)
 
 
 def _strip_md_card(card):
@@ -364,151 +372,134 @@ def _batch_perf_line(date):
     return None
 
 
+_ALERT_SOURCES = {"盘前倾向": "premarket", "缠论信号": "chanlun",
+                  "九维警报池": "nine_dim", "弱于板块在案": "weak",
+                  "共振做多": "cross", "🏛 投委会": "council"}
+_CST = timezone(timedelta(hours=8))
+
+
+def _fresh_time(value, minutes=15):
+    """仅接受带时区且落在当前近窗内的生产时间，不能以本机文件时间代替。"""
+    if not isinstance(value, str):
+        return False
+    try:
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        age = datetime.now(_CST) - stamp
+        return stamp.utcoffset() is not None and timedelta(0) <= age <= timedelta(minutes=minutes)
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
 def _sub_alert_signal(sub, mode):
-    """预警信号触发：复用 alert_watch 的变化规则（比对门户 /api/alerts）。"""
+    """只展示有可信来源的聚合速览变化，不将卡片计数称作买卖点。"""
     try:
         with urllib.request.urlopen(ALERT_URL, timeout=90) as r:
             res = json.loads(r.read().decode("utf-8"))
     except Exception:
         return None
-    alerts = res.get("alerts") or []
-    if not alerts:
+    if not isinstance(res, dict):
+        return None
+    health = res.get("source_health")
+    if not isinstance(health, dict) or health.get("version") != 1 or not _fresh_time(
+            health.get("checked_at"), minutes=5):
+        return None
+    sources = health.get("sources")
+    alerts = res.get("alerts")
+    if not isinstance(sources, dict) or not isinstance(alerts, list):
+        return None
+    # 聚合卡只报告六源速览；缺任一核心源时无法宣称完整变化。
+    for source_name in ("premarket", "chanlun", "nine_dim", "weak", "cross"):
+        source = sources.get(source_name)
+        if (not isinstance(source, dict) or
+                source.get("status") not in ("ok", "empty") or
+                not _fresh_time(source.get("as_of"), minutes=5)):
+            return None
+    trusted = []
+    for a in alerts:
+        if not isinstance(a, dict):
+            return None
+        nm, val = a.get("name"), a.get("value")
+        source = sources.get(_ALERT_SOURCES.get(nm))
+        if (not isinstance(nm, str) or not isinstance(source, dict) or
+                source.get("status") != "ok" or
+                not _fresh_time(source.get("as_of"), minutes=5) or
+                not isinstance(val, str) or not val.strip()):
+            continue
+        trusted.append(a)
+    if not trusted:
         return None
     state = sub.get("_watch_state") or {}
-    changed = []
-    for a in alerts:
-        nm = a.get("name", "—")
-        val = a.get("value")
-        prev = state.get(nm)
-        if prev is None or prev != val:
-            changed.append(a)
-    # intraday：无变化不推；eod：推全量
+    if not isinstance(state, dict):
+        state = {}
+    changed = [a for a in trusted if state.get(a["name"]) != a["value"]]
     if mode == "intraday" and not changed:
         return None
-    shown = changed if mode == "intraday" else alerts
+    shown = changed if mode == "intraday" else trusted
     blocks = []
     for a in shown[:12]:
-        ln = "**%s** %s —— %s" % (a.get("name", "—"), a.get("value", "—"),
-                                  a.get("sub") or "")
+        ln = "**%s** %s —— %s" % (a["name"], a["value"], a.get("sub") or "")
         d = a.get("delta")
-        if isinstance(d, int):
+        if isinstance(d, int) and not isinstance(d, bool):
             ln += " <font color='%s'>（较前日 %s%d）</font>" % (
                 "red" if d >= 0 else "green", "+" if d >= 0 else "", d)
         blocks.append(ln)
-    if not blocks:
-        return None
-    title = "⚡ 预警信号" + ("变化" if mode == "intraday" else "汇总")
-    sub2 = time.strftime("%Y-%m-%d %H:%M") + (
-        " · %d 路变化" % len(changed) if mode == "intraday" else " · 全量")
+    sub["_alerts_new"] = {a["name"]: a["value"] for a in trusted}
+    title = "⚡ 预警速览" + ("变化" if mode == "intraday" else "汇总")
+    sub2 = time.strftime("%Y-%m-%d %H:%M") + " · 已验证来源的展示卡变化，非盘中买卖点"
     return (title, sub2, blocks, "orange")
 
 
-def _sub_quote_move(sub, mode):
-    """自选股异动：读 quote_alert 状态/快照，筛超阈标的。"""
+def _quote_time(value):
+    """行情生产者以 CST 无时区分钟字符串落盘；只接受当前近窗。"""
     try:
-        sys.path.insert(0, NEWS_DIR)
-        qs = os.path.join(NEWS_DIR, "quote_alert_state.json")
-        st = _read_json(qs, {})
-    except Exception:
-        st = {}
+        stamp = datetime.strptime(value, "%Y-%m-%d %H:%M").replace(tzinfo=_CST)
+        age = datetime.now(_CST) - stamp
+        return timedelta(minutes=-1) <= age <= timedelta(minutes=15)
+    except (TypeError, ValueError):
+        return False
+
+
+def _sub_quote_move(sub, mode):
+    """依赖健康的 quotes_status.items 实测涨跌幅；冷却状态不是行情。"""
+    st = _read_json(os.path.join(NEWS_DIR, "quotes_status.json"), None)
+    if (not isinstance(st, dict) or st.get("ok") is not True or
+            not _quote_time(st.get("updated")) or
+            not isinstance(st.get("items"), list) or
+            type(st.get("count")) is not int or st["count"] != len(st["items"])):
+        return None
+    threshold = st.get("alert_threshold")
+    if (type(threshold) not in (int, float) or not math.isfinite(threshold) or
+            threshold <= 0):
+        return None
     hits = []
-    # quote_alert_state 结构：{code: {last_pct, ...}} 或 {alerts:[...]}
-    arr = st.get("alerts") if isinstance(st, dict) else None
-    if arr:
-        for a in arr:
-            hits.append(a)
-    elif isinstance(st, dict):
-        for code, v in st.items():
-            if not isinstance(v, dict):
-                continue
-            pct = v.get("last_pct")
-            if isinstance(pct, (int, float)) and abs(float(pct)) >= 3.0:
-                hits.append({"code": code, "pct": float(pct)})
+    for item in st["items"]:
+        if not isinstance(item, dict):
+            return None
+        code, pct = item.get("code"), item.get("pct")
+        if not isinstance(code, str) or not code.strip() or not _quote_time(item.get("ts")):
+            return None
+        if pct is None:
+            continue
+        if type(pct) not in (int, float) or not math.isfinite(pct):
+            return None
+        if abs(pct) >= threshold:
+            hits.append({"code": code, "pct": float(pct)})
     if not hits:
         return None
-    # intraday 去重：按值指纹
-    fp = ",".join(sorted("%s:%.1f" % (h.get("code", ""), float(h.get("pct", 0)))
-                         for h in hits))
+    fp = ",".join(sorted("%s:%.2f" % (h["code"], h["pct"]) for h in hits))
     if mode == "intraday" and sub.get("_last_fp") == fp:
         return None
-    sub["_fp_new"] = fp  # K-STOCK-401：真实指纹回写（_extract_fp 的块文本与
-    # 此处格式不同，原先写读不回环 → 去重永不命中，同一异动每天推满 3 次熔断）
-    blocks = ["**📈 自选股异动（%d 只）**" % len(hits)]
+    sub["_fp_new"] = fp
+    blocks = ["**📈 自选股行情涨跌幅达到 %.1f%%（%d 只）**" % (threshold, len(hits))]
     for h in hits[:12]:
-        code = h.get("code", "")
-        pct = float(h.get("pct", 0) or 0)
-        blocks.append("%s %s" % (code, _cnpct(pct)))
-    title = "📈 自选股异动"
-    sub2 = time.strftime("%Y-%m-%d %H:%M") + " · %d 只超阈" % len(hits)
-    return (title, sub2, blocks, "purple")
+        blocks.append("%s %s" % (h["code"], _cnpct(h["pct"])))
+    sub2 = time.strftime("%Y-%m-%d %H:%M") + " · 快照涨跌幅，非独立买卖点"
+    return ("📈 自选股行情变动", sub2, blocks, "purple")
 
 
 def _sub_buy_point(sub, mode):
-    """K250 买点/卖点提醒：价格触及卡片订阅时约定的触发位即推。
-
-    params: {code, trigger_px, trigger_kind, trigger_label}
-    trigger_kind:
-      pullback_hold  买点——回踩到 trigger_px 附近（±SUBP_BAND%）且未跌破 → 提醒
-      break_down     卖点/放弃——跌破 trigger_px → 提醒
-    intraday 去重：按「是否处于触发带」的布尔指纹（进了带推一次，
-      离开带后再进才再推），避免同一位置反复轰炸。
-    """
-    from subscribe_action import _norm_code, stock_name, _code6
-    params = sub.get("params") or {}
-    code = _norm_code(params.get("code"))
-    px_trig = params.get("trigger_px")
-    if not code or not px_trig:
-        return None
-    kind = params.get("trigger_kind") or "pullback_hold"
-    label = params.get("trigger_label") or ""
-    px_trig = float(px_trig)
-    band = SUBP_BAND_PCT / 100.0
-
-    # 现价：日线最后一根收盘（够用；盘中异动另有 quote_move 订阅兜）
-    try:
-        import data_loader as DL
-        sym = _code6(code) + ("." + code[:2].upper() if len(code) == 8
-                              else "")
-        res = DL.load_bars("CN", [sym], "2026-01-01", None)
-        df = (res or {}).get(sym)
-        if df is None or len(df) == 0:
-            return None
-        last = df.iloc[-1]
-        px = float(last["close"])
-        dt = str(df.index[-1])[:10]
-    except Exception:
-        return None
-    if not px:
-        return None
-
-    name = stock_name(_code6(code)) or _code6(code)
-    if kind == "pullback_hold":
-        in_band = (px_trig * (1 - band)) <= px <= (px_trig * (1 + band))
-    else:  # break_down
-        in_band = px < px_trig
-    # 去重指纹：进/出带
-    fp = "%s:%s" % (kind, "1" if in_band else "0")
-    if mode == "intraday" and sub.get("_last_fp") == fp:
-        return None
-    if not in_band:
-        return None
-    sub["_fp_new"] = fp  # K-STOCK-401：同 quote_move——真实指纹回写
-
-    if kind == "pullback_hold":
-        head = "📌 买点到触发位"
-        tpl = "green"
-        line = ("**%s（%s）** 现价 **%.2f** 已回踩至约定位 **%.2f**（%s）附近。"
-                % (name, code, px, px_trig, label or "回踩不破"))
-    else:
-        head = "📌 触发转弱位"
-        tpl = "orange"
-        line = ("**%s（%s）** 现价 **%.2f** 已跌破约定位 **%.2f**（%s）。"
-                % (name, code, px, px_trig, label or "跌破转弱"))
-    blocks = [line,
-              "数据日：%s · 触发带 ±%.1f%%" % (dt, SUBP_BAND_PCT),
-              "提醒为纸面研究辅助，不构成投资建议。"]
-    sub2 = time.strftime("%Y-%m-%d %H:%M") + " · 价触提醒"
-    return (head, sub2, blocks, tpl)
+    """暂无可信盘中逐笔与回踩确认契约，买卖触发不可判定，不发送。"""
+    return None
 
 
 _BUILDERS = {
@@ -572,6 +563,9 @@ def run_scan(mode, only_sub=None, force=False):
             out[sid] = ("card_err:%s" % str(e)[:120], {})
             continue
         targets = _resolve_targets(s, receivers)
+        if not targets:
+            out[sid] = ("invalid_targets", {})
+            continue
         # 配额生效（仅非 internal 套餐；internal 永不拦）
         try:
             sys.path.insert(0, STATION)  # K-STOCK-401：push_flow 在仓库根，
@@ -591,7 +585,7 @@ def run_scan(mode, only_sub=None, force=False):
                 pass
             continue
         tres = _push_card(card, targets)
-        ok = any(v for k, v in tres.items() if not k.startswith("_"))
+        ok = _delivery_ok(tres)
         out[sid] = ("ok" if ok else "fail", tres)
         # 统一发送流水（商业化计费依据；fail-safe，不影响主链路）
         try:
@@ -610,22 +604,11 @@ def run_scan(mode, only_sub=None, force=False):
             st = state.get(sid)
             st["last_date"] = _extract_date(blocks)
             st["last_fp"] = s.get("_fp_new") or _extract_fp(kind, blocks)
-            if kind == "alert_signal":
-                _ws = _alerts_cache()
-                if _ws is not None:  # 拉取失败保持旧快照，避免全量误判变化
-                    st["watch_state"] = {a.get("name"): a.get("value")
-                                         for a in _ws}
+            if kind == "alert_signal" and s.get("_alerts_new") is not None:
+                st["watch_state"] = s["_alerts_new"]
         state[sid] = st
     _atomic(STATE_PATH, state)
     return out
-
-
-def _alerts_cache():
-    try:
-        with urllib.request.urlopen(ALERT_URL, timeout=30) as r:
-            return (json.loads(r.read().decode("utf-8"))).get("alerts") or []
-    except Exception:
-        return None
 
 
 def _extract_date(blocks):
