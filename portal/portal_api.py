@@ -151,6 +151,7 @@ import api_tickets      # 工单只读投影 /api/org/tasks（驾驶舱一期 20
 import api_evolution    # 进化舱只读投影 /api/evolution/summary（驾驶舱二期 2026-10-18）
 import api_gate         # 周一门判只读投影 /api/gate/checkpoint（驾驶舱二期 2026-10-18）
 import api_brief        # 复盘简报只读投影 /api/brief/*（联动层二期 R5 2026-10-18）
+import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，2026-10-19）
 
 
 
@@ -562,7 +563,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2913,6 +2914,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         qs = raw.split("?", 1)[1] if "?" in raw else ""
         if path == '/api/intel/evidence-targets':
             self._intel_evidence_targets(qs)
+            return
+        if path == '/api/notify/queue':
+            # K-ORG-201 通知指挥四态队列（三本账只读聚合，零写入 2026-10-19）
+            self.notify_queue(qs)
             return
         if path == '/api/kg/lineage':
             # 数据血缘只读端点（情报板块 /lineage.html 数据面）

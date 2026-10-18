@@ -36,6 +36,10 @@ DEFAULT_ACTIONS = {
     # 调优闭环（v3 新链：value {"action_id":"tune_approve","req_id":...}）
     "tune_approve":  ("审批 · 通过", "调优闭环", "card", "bot ws → dispatch → tune_gate.approve"),
     "tune_reject":   ("审批 · 驳回", "调优闭环", "card", "bot ws → dispatch → tune_gate.reject"),
+    # 通知指挥（W37 公告审批：value {"action_id":"decision_*","req_id":<决策id>}）
+    "decision_approve": ("公告审批 · 确认", "通知指挥", "card",
+                         "bot ws → dispatch → approval_card.handle_card_action"),
+    "decision_reject":  ("公告审批 · 驳回", "通知指挥", "card", "同上"),
     # 盯盘止盈 er 域（老链：feishu_bot_ws tag 前缀）
     "er:list":   ("止盈 · 列表", "盯盘止盈", "card", "bot ws 老链"),
     "er:help":   ("止盈 · 帮助", "盯盘止盈", "card", "bot ws 老链"),
@@ -304,6 +308,14 @@ def dispatch(action_id, payload=None, who=""):
             log_event(action_id, who=who, card=rid, result=res)
             return bool(r.get("ok")), r.get("error") or (
                 "已通过，见回执卡" if action_id == "tune_approve" else "已驳回，见回执卡")
+        if action_id in ("decision_approve", "decision_reject"):
+            import approval_card  # 函数内 import 防环（approval_card ← 本模块）
+            ok2, msg2 = approval_card.handle_card_action(
+                action_id, payload.get("req_id") or "", who)
+            log_event(action_id, who=who,
+                      card=str(payload.get("req_id") or "")[:60],
+                      result=("ok" if ok2 else str(msg2))[:80])
+            return bool(ok2), msg2
         # 已注册但尚未迁入统一分发（老链自行处理）
         log_event(action_id, who=who, result="dispatch: 老链动作，无统一 handler")
         return True, "已注册（%s），由老链处理" % info["handler"]

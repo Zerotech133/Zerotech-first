@@ -47,6 +47,9 @@ SUB_PY = os.path.join(STATION, "quant_backtest", "subscribe.py")
 TEST_LOG = os.path.join(WORK, "push_admin_test.log")
 BIZ_PATH = os.path.join(WORK, "commercial.json")
 SCHEDULE_PATH = os.path.join(WORK, "schedule.json")  # K-PUSH-007 调度全量配置
+# K-ORG-201 W38：授权名单（targets CRUD 数据源）与名单变更审计
+SUBSCRIBERS_PATH = os.path.join(HERE, "push_subscribers.json")
+TARGET_AUDIT_PATH = os.path.join(WORK, "target_audit.jsonl")
 
 # K-PUSH-007：调度矩阵缺省（schema 进库；work/schedule.json 缺失时回落并写盘）。
 # kind 匹配：精确相等，或 "前缀:*" 通配；task=TASK_MANAGEABLE 内计划任务名
@@ -522,6 +525,12 @@ class Handler(BaseHTTPRequestHandler):
                           "enabled": s.get("enabled", True)} for s in subs],
                 "receivers": len(load_receivers()),
                 "generated_at": datetime.now().isoformat(timespec="seconds")})
+        elif p == "/api/targets":
+            # W38：授权名单只读全量（人数字段诚实置 None，实核走
+            # /api/decision-groups 群资料接口）
+            if not admin_authorized(self.headers.get("X-Push-Admin-Key")):
+                return self._json({"ok": False, "error": "未授权"}, 403)
+            return self._json(targets_view())
         elif p == "/health":
             self._json({"ok": True, "ts": datetime.now().isoformat(timespec="seconds")})
         elif p == "/":
@@ -554,12 +563,40 @@ class Handler(BaseHTTPRequestHandler):
             if p == "/api/decisions/preview":
                 return self._json(nd.preview(req, caller=caller))
             if p == "/api/decisions/record":
-                return self._json(nd.record(req, caller=caller))
+                out = nd.record(req, caller=caller)
+                if out.get("ok") and req.get("category") == "announcement":
+                    # W37：公告登记成功 → best-effort 推老田审批卡
+                    # （不阻断 record 主链路；卡片确认只留痕不执行）
+                    try:
+                        import approval_card
+                        card_req = dict(req)
+                        card_req.update(out.get("decision") or {})
+                        approval_card.push_review_card(card_req)
+                    except Exception:
+                        pass
+                return self._json(out)
             if caller != "admin_ui":
                 return self._json({"ok": False, "error": "审批或执行需人工管理凭证"}, 403)
             if p == "/api/decisions/approve":
                 return self._json(nd.approve(req, caller=caller))
-            return self._json(nd.execute(req.get("id"), api_send))
+            return self._json(_execute_decision(req.get("id")))
+        if p in ("/api/targets/upsert", "/api/targets/delete"):
+            # W38：授权名单在线增改/删除（原子写 + .bak + 审计行）
+            if not admin_authorized(self.headers.get("X-Push-Admin-Key")):
+                return self._json({"ok": False, "error": "未授权"}, 403)
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                if not (0 < n <= BODY_CAP):
+                    return self._json({"ok": False, "error": "body 大小非法"}, 400)
+                req = json.loads(self.rfile.read(n).decode("utf-8"))
+            except (ValueError, OSError) as e:
+                return self._json({"ok": False, "error": "请求体解析失败: %s" % e}, 400)
+            try:
+                payload, code = (targets_upsert(req) if p.endswith("upsert")
+                                 else targets_delete(req))
+            except Exception as e:  # noqa: BLE001
+                payload, code = {"ok": False, "error": "%s" % e}, 500
+            return self._json(payload, code)
         if p == "/api/send":
             if not send_authorized(self.headers.get("X-Push-Hub-Key")):
                 return self._json({"ok": False, "error": "未授权"}, 403)
@@ -704,14 +741,182 @@ def api_send(req):
         except Exception:
             pass  # 解析异常不拦发送（fail-safe）
 
-    # 直发（via_hub=False 防环；kind 透传让流水归准）
+    # 直发（via_hub=False 防环；W38 起改走 tracked 版拿 message_id，
+    # flow_record=False 由本函数统一落 evidence 证据账，防同一发送双行）
     news_dir = os.path.join(STATION, "news_collector")
     if news_dir not in sys.path:
         sys.path.insert(0, news_dir)
-    from feishu_client import send_msg
-    ok, why = send_msg(content, msg_type, rid, rtype, kind=kind,
-                       via_hub=False)
-    return {"ok": bool(ok), "why": why, "via": "hub"}
+    from feishu_client import send_msg_tracked, verify_message
+    ok, why, mid = send_msg_tracked(content, msg_type, rid, rtype, kind=kind,
+                                    via_hub=False, flow_record=False)
+    # W38 送达证据分级：api_accepted ≠ receiver_verified ≠ dead_letter
+    if ok and mid:
+        try:
+            evidence = "receiver_verified" if verify_message(mid) \
+                else "api_accepted"
+        except Exception:
+            evidence = "api_accepted"
+    else:
+        evidence = "api_accepted" if ok else "dead_letter"
+    try:
+        sys.path.insert(0, STATION)
+        import push_flow
+        push_flow.record(kind or "hub", "openapi", rid, 1, bool(ok),
+                         evidence=evidence)
+    except Exception:
+        pass
+    if not ok:
+        # 直发失败 → 死信登记（闸门拒绝不算死信，走 _flow_gate_deny）
+        try:
+            sys.path.insert(0, HERE)
+            import dead_letter
+            dead_letter.register(kind or "hub", "openapi", rid, why)
+        except Exception:
+            pass
+    resp = {"ok": bool(ok), "why": why, "via": "hub", "evidence": evidence}
+    if mid:
+        resp["message_id"] = mid
+    return resp
+
+
+def _execute_decision(decision_id):
+    """W37/W38：决策三段式终点。execute 开关（PUSH_DECISION_EXECUTE）与
+    语义原样；发送成功且回执带 message_id → 回写 evidence/message_id；
+    attempt 失败（gate_or_send_failed / unknown_after_attempt）→ 死信登记
+    （未到时间/开关未开等闸级拒绝不是死信）。"""
+    import notification_decision as nd
+    captured = {}
+
+    def sender(payload):
+        r = api_send(payload)
+        captured["resp"] = r
+        return r
+
+    out = nd.execute(decision_id, sender)
+    dec = out.get("decision") or {}
+    if out.get("ok"):
+        r = captured.get("resp") or {}
+        if r.get("message_id"):
+            try:
+                nd.update_send_evidence(decision_id, r["message_id"],
+                                        r.get("evidence") or "api_accepted")
+            except Exception:
+                pass  # 证据回写失败不拦 execute 结果
+    elif dec.get("outcome") in ("gate_or_send_failed", "unknown_after_attempt"):
+        try:
+            import dead_letter
+            dead_letter.register("decision:%s" % (dec.get("category") or "?"),
+                                 "openapi", dec.get("target_id") or "",
+                                 str(dec.get("outcome")),
+                                 decision_id=decision_id)
+        except Exception:
+            pass  # 死信登记失败不拦 execute 结果
+    return out
+
+
+# ---------- W38 授权名单（targets）CRUD ----------
+
+def targets_view():
+    """/api/targets：只读本地授权名单配置全量。人数字段诚实置 None
+    （读不到不猜，实核走 /api/decision-groups 群资料接口）。"""
+    data = _read_json(SUBSCRIBERS_PATH, {})
+    if not isinstance(data, dict):
+        data = {}
+    groups = data.get("groups")
+    if not isinstance(groups, dict):
+        groups = {}
+    rows = []
+    for gid, entry in groups.items():
+        rows.append({"group_id": gid,
+                     **(entry if isinstance(entry, dict) else {}),
+                     "member_count": None,
+                     "member_count_note": "未知（读不到不猜，实核走 /api/decision-groups）"})
+    return {"ok": True, "version": data.get("version"),
+            "dryrun_default": data.get("dryrun_default"), "groups": rows}
+
+
+def _save_subscribers_snapshot(data, operator, group_id, action, before, after):
+    """原子写 push_subscribers.json（先留 .bak 一份，再 .tmp → os.replace）
+    + 审计行追加 target_audit.jsonl（审计失败不拦主写）。"""
+    os.makedirs(os.path.dirname(SUBSCRIBERS_PATH), exist_ok=True)
+    if os.path.exists(SUBSCRIBERS_PATH):
+        try:
+            with open(SUBSCRIBERS_PATH, "rb") as f:
+                raw = f.read()
+            with open(SUBSCRIBERS_PATH + ".bak", "wb") as f:
+                f.write(raw)
+        except OSError:
+            pass  # .bak 失败不拦主写（主写仍 .tmp→replace 原子）
+    tmp = SUBSCRIBERS_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, SUBSCRIBERS_PATH)
+    try:
+        rec = {"ts": datetime.now().isoformat(timespec="seconds"),
+               "operator": str(operator)[:100], "group_id": str(group_id)[:60],
+               "action": action, "before": before, "after": after}
+        with open(TARGET_AUDIT_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+def _targets_operator(req):
+    operator = req.get("operator")
+    if not isinstance(operator, str) or not operator.strip() \
+            or len(operator.strip()) > 100:
+        return None
+    return operator.strip()
+
+
+def targets_upsert(req):
+    """POST /api/targets/upsert：{group_id, entry, operator}。校验不过
+    → 400 带错误列表；过 → 原子写 + 审计（action=upsert，记 before/after）。"""
+    operator = _targets_operator(req)
+    if not operator:
+        return {"ok": False, "error": "operator 必填且不超过 100 字"}, 400
+    import notify_contracts as nc
+    group_id, entry = req.get("group_id"), req.get("entry")
+    errors = nc.validate_subscriber_entry(group_id, entry)
+    if errors:
+        return {"ok": False, "error": "授权名单条目校验未通过",
+                "errors": errors}, 400
+    data = _read_json(SUBSCRIBERS_PATH, None)
+    if not isinstance(data, dict):
+        return {"ok": False,
+                "error": "push_subscribers.json 缺失或损坏，拒绝在线改（先人工修复）"}, 500
+    groups = data.get("groups")
+    if not isinstance(groups, dict):
+        groups = {}
+        data["groups"] = groups
+    before = groups.get(group_id)
+    groups[group_id] = entry
+    _save_subscribers_snapshot(data, operator, group_id, "upsert",
+                               before, entry)
+    return {"ok": True, "group_id": group_id, "before": before,
+            "after": entry}, 200
+
+
+def targets_delete(req):
+    """POST /api/targets/delete：{group_id, operator}。存在才删；同原子写
+    + 审计（action=delete，记 before）。"""
+    operator = _targets_operator(req)
+    if not operator:
+        return {"ok": False, "error": "operator 必填且不超过 100 字"}, 400
+    group_id = req.get("group_id")
+    if not isinstance(group_id, str) or not group_id.strip():
+        return {"ok": False, "error": "group_id 必填"}, 400
+    data = _read_json(SUBSCRIBERS_PATH, None)
+    groups = data.get("groups") if isinstance(data, dict) else None
+    if not isinstance(groups, dict):
+        return {"ok": False,
+                "error": "push_subscribers.json 缺失或损坏，拒绝在线改（先人工修复）"}, 500
+    if group_id not in groups:
+        return {"ok": False, "error": "group_id 不存在：%s" % group_id}, 404
+    before = groups.pop(group_id)
+    _save_subscribers_snapshot(data, operator, group_id, "delete",
+                               before, None)
+    return {"ok": True, "group_id": group_id, "before": before}, 200
 
 
 # ---------- K-PUSH-003 动线总览数据 ----------
