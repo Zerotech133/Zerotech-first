@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "updated": "2026-10-18",
+  "note": "R1 执行健康总线白名单（manifest 即白名单：只投影本清单任务，系统其余任务不在投影面）。cadence/grace 为 2026-10-18 Get-ScheduledTask 逐条实测回填值（核对表见 docs/runbooks 联动层一期验收演练）。宽限缺省=cadence*0.5；周末/登录触发类显式放宽。",
+  "tasks": [
+    {
+      "name": "AgentShadowDaily",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "log_path": "agent_platform/data/shadow/last_run.log",
+      "enabled": true,
+      "note": "影子链每日 17:10（工作日，DaysOfWeek=62 实测 Mon-Fri）；grace*3 周末放宽"
+    },
+    {
+      "name": "AgentMondayCheckpoint",
+      "cadence_minutes": 10080,
+      "grace_minutes": 14400,
+      "enabled": true,
+      "note": "每周一 17:25（MSFT_TaskWeeklyTrigger days=2 实测）"
+    },
+    {
+      "name": "AgentChiefPush",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "enabled": true,
+      "note": "工作日 17:35（DaysOfWeek=62 实测）；grace*3 周末放宽"
+    },
+    {
+      "name": "AgentShadowEvalWeekly",
+      "cadence_minutes": 10080,
+      "grace_minutes": 14400,
+      "enabled": true,
+      "note": "每周五 17:45（days=32 实测）"
+    },
+    {
+      "name": "AgentWatchdog",
+      "cadence_minutes": 5,
+      "grace_minutes": 5,
+      "fail_scan": {
+        "log": "C:/项目/zhice-os-v2-windows-20260920/code/logs/aw-stack.log",
+        "pattern": "FAILED:",
+        "window_hours": 24
+      },
+      "enabled": true,
+      "note": "每 5 分钟（rep=PT5M 实测）；fail_scan 扫 aw-stack 自愈失败"
+    },
+    {
+      "name": "AgentWatchdog2",
+      "cadence_minutes": 5,
+      "grace_minutes": 5,
+      "enabled": true,
+      "note": "每 5 分钟（rep=PT5M 实测，双守护冗余）"
+    },
+    {
+      "name": "HermesWebUI-Guard",
+      "cadence_minutes": 30,
+      "grace_minutes": 30,
+      "enabled": true,
+      "note": "每 30 分钟（rep=PT30M 实测）"
+    },
+    {
+      "name": "HermesWebUI-Guard2",
+      "cadence_minutes": 30,
+      "grace_minutes": 30,
+      "enabled": true,
+      "note": "每 30 分钟 + 登录触发（rep=PT30M+LogonTrigger 实测）"
+    },
+    {
+      "name": "HermesWebUI-Next-Guard",
+      "cadence_minutes": 30,
+      "grace_minutes": 30,
+      "enabled": true,
+      "note": "每 30 分钟（rep=PT30M 实测）"
+    },
+    {
+      "name": "AI工作站门户API",
+      "cadence_minutes": 5,
+      "grace_minutes": 10,
+      "enabled": true,
+      "note": "每 5 分钟（rep=PT5M 实测）"
+    },
+    {
+      "name": "AI工作站门户Nginx",
+      "cadence_minutes": 1440,
+      "grace_minutes": 10080,
+      "enabled": true,
+      "note": "登录触发（MSFT_TaskLogonTrigger 实测，无重复间隔）；grace 放宽到一周"
+    },
+    {
+      "name": "AI工作站推送中台守护8097",
+      "cadence_minutes": 5,
+      "grace_minutes": 10,
+      "enabled": true,
+      "note": "每 5 分钟（rep=PT5M 实测）"
+    },
+    {
+      "name": "AI工作站调优回测批次",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "enabled": true,
+      "note": "每日 20:00（MSFT_TaskDailyTrigger 实测）"
+    },
+    {
+      "name": "HermesBriefPush",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "enabled": true,
+      "note": "每日 08:30（MSFT_TaskDailyTrigger 实测）；267014 良性（被终止）"
+    },
+    {
+      "name": "N1Check",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "enabled": true,
+      "note": "每日 07:30（MSFT_TaskDailyTrigger 实测）"
+    },
+    {
+      "name": "A0Patrol",
+      "cadence_minutes": 30,
+      "grace_minutes": 60,
+      "enabled": true,
+      "note": "每 30 分钟（rep=PT30M 实测）"
+    },
+    {
+      "name": "AlertWatch",
+      "cadence_minutes": 30,
+      "grace_minutes": 60,
+      "enabled": true,
+      "note": "每 30 分钟（rep=PT30M 实测）"
+    },
+    {
+      "name": "AlertPush",
+      "cadence_minutes": 30,
+      "grace_minutes": 60,
+      "enabled": true,
+      "note": "每 30 分钟（rep=PT30M 实测）"
+    },
+    {
+      "name": "AlertPushMorning",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "enabled": true,
+      "note": "每日 07:10（MSFT_TaskDailyTrigger 实测）；主理人清单 Morning 的实测真名"
+    },
+    {
+      "name": "OllamaWatchdog",
+      "cadence_minutes": 5,
+      "grace_minutes": 10,
+      "enabled": true,
+      "note": "每 5 分钟（rep=PT5M 实测）"
+    }
+  ]
+}

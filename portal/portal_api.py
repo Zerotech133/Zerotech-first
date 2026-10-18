@@ -141,6 +141,7 @@ import api_approvals    # M1/M2 /api/platform/approvals
 import api_capability   # M3-P5 /api/capability/board
 import api_perf         # M4-P5 /api/perf/board + /api/perf/replay
 # ==== M1-M4 导入结束 ====
+import api_execution    # R1 执行健康总线 /api/execution/health（联动层一期 2026-10-18）
 
 
 
@@ -552,7 +553,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_execution.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2906,6 +2907,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/platform/observe':
             # M5 刀4 观察季看板（影子账本/巡检/eval/perf/日报 只读聚合）
             self._platform_observe(qs)
+            return
+        if path == '/api/execution/health':
+            # R1 执行健康总线（Windows 计划任务只读投影，联动层一期 2026-10-18）
+            self._execution_health(qs)
             return
         if path in ('/api/platform/approvals', '/api/platform/replay',
                     '/api/platform/trace'):
