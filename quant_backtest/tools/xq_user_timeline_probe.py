@@ -311,10 +311,19 @@ def main():
                 report["results"][uid] = entry
                 print("[%s] uid=%s outcome=%s posts=%s err=%s" % (
                     now_str(), uid, outcome, len(posts) if posts is not None else None, err))
-                if outcome != "a":
+                if outcome == "b":
+                    # 滑块：红线停批（等人工），批量回填保守语义保留
                     overall_outcome = outcome
                     report["error"] = err
                     break
+                if outcome != "a":
+                    # c 类（页面正常但 timeline 空/API 变体）：2026-10-19 判例
+                    # ——页面 title 正常≠封禁，中止整批会浪费其余号段；
+                    # 记录后继续下一个 uid（首探语义用 --uids 单人即等价）
+                    if overall_outcome != "b":
+                        overall_outcome = outcome
+                    report["error"] = report.get("error") or err
+                    continue
             report["outcome"] = overall_outcome
         finally:
             ctx.close()
