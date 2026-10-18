@@ -227,7 +227,11 @@ def collect_shadow(day):
         with open(SHADOW_LEDGER, "r", encoding="utf-8", errors="replace") as f:
             for line in f:
                 line = line.strip()
-                if not line or day not in line[:64]:
+                # 粗筛必须整行匹配：ledger 键序 action/data_version/mode/reason
+                # 在前，ts 键排在行尾——按 line[:64] 截断时当日日期永不在窗内，
+                # 当日行全部被跳过 → n_today 恒 0 → shadow 项永远 UNKNOWN
+                # （2026-10-18 复盘实证修复；ts[:10] 精判仍在下方兜底）。
+                if not line or day not in line:
                     continue
                 try:
                     row = json.loads(line)
