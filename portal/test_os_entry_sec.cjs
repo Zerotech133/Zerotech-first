@@ -281,6 +281,61 @@ var navjs = fs.readFileSync(path.join(__dirname, 'static', 'nav.js'), 'utf8');
 ok(navjs.indexOf("data-wb-nav") > 0, 'nav.js 含 data-wb-nav 幂等护栏（双引入不叠栏）');
 ok(navjs.indexOf("getAttribute('data-wb-nav')==='1'") > 0, '护栏判据落在 IIFE 首行（return 早退）');
 
+/* ---------- K. 普查修复：market_strategy jsAttr/gradeCls + data_guojia at（自包含函数，抽取求值） ---------- */
+/* 注：抽取正则必须行尾锚定（.* 不跨行）——替换串 '&amp;' 自带分号，[^;]+ 会被拦腰截断（本测试自身踩坑实录） */
+console.log('\n[K] 普查修复函数（内联事件处理器 + class 白名单）');
+function extractExpr(file, re) {
+  var src = fs.readFileSync(path.join(__dirname, file), 'utf8');
+  var mm = src.match(re);
+  if (!mm) { ok(false, file + ' 未抽取到目标（' + re + '）'); return null; }
+  try { return vm.runInNewContext(mm[1], {}); } catch (e) { ok(false, file + ' 抽取求值抛错：' + e.message); return null; }
+}
+var jsAttr = extractExpr('market_strategy.html', /const jsAttr=(.*);/);
+/* gradeCls 依赖 GRADE_CLS——整段抽取后包 IIFE 返回函数 */
+var gradeCls = null;
+{
+  var ms0 = fs.readFileSync(path.join(__dirname, 'market_strategy.html'), 'utf8');
+  var gseg = ms0.match(/const GRADE_CLS=(\{[^}]+\});\s*const gradeCls=(.*);/);
+  if (gseg) {
+    try {
+      gradeCls = vm.runInNewContext(
+        '(function(){var GRADE_CLS=' + gseg[1] + ';return (' + gseg[2] + ');})()', {});
+    } catch (e) { ok(false, 'market_strategy gradeCls 抽取求值抛错：' + e.message); }
+  } else ok(false, 'market_strategy.html 未抽取到 GRADE_CLS/gradeCls');
+}
+var atFn = null;
+{
+  var dg0 = fs.readFileSync(path.join(__dirname, 'data_guojia.html'), 'utf8');
+  var aseg = dg0.match(/function at\(a\)\{return.*\}/);
+  if (aseg) { try { atFn = vm.runInNewContext('(' + aseg[0] + ')', {}); } catch (e) { ok(false, 'data_guojia at() 抽取求值抛错：' + e.message); } }
+  else ok(false, 'data_guojia.html 未抽取到 at()');
+}
+if (jsAttr) {
+  /* 输入 a'b"c<d>e&f\g → \ 与 ' 做 JS 串转义、& " < > 做 HTML 实体转义 */
+  eq(jsAttr("a'b\"c<d>e&f\\g"), "a\\'b&quot;c&lt;d&gt;e&amp;f\\\\g", 'jsAttr 双上下文全转义（\\ \' & " < >）');
+  eq(jsAttr(null), '', 'jsAttr null → 空串');
+  eq(jsAttr("normal-id_01"), 'normal-id_01', 'jsAttr 普通 ID 无损透传');
+  eq(jsAttr("x'onmouseover='alert(1)"), "x\\'onmouseover=\\'alert(1)", 'jsAttr 单引号 breakout 被转义（精确匹配）');
+  eq(jsAttr('x" onclick="alert(1)'), 'x&quot; onclick=&quot;alert(1)', 'jsAttr 双引号属性 breakout 被实体化（精确匹配）');
+}
+if (gradeCls) {
+  eq(gradeCls('live'), 'live', 'gradeCls live 透传');
+  eq(gradeCls('training'), 'training', 'gradeCls training 透传');
+  eq(gradeCls('ops'), 'ops', 'gradeCls ops 透传');
+  eq(gradeCls('evil'), '', 'gradeCls 非枚举 → 空（中性不加类）');
+  eq(gradeCls('live" onclick="alert(1)'), '', 'gradeCls 注入串 → 空');
+  eq(gradeCls(undefined), '', 'gradeCls undefined → 空');
+}
+if (atFn) {
+  eq(atFn("a'b\"c<d>e&f\\g"), "a\\'b&quot;c&lt;d&gt;e&amp;f\\\\g", 'at() 补 HTML 属性转义（与 jsAttr 同口径）');
+  eq(atFn("x' y"), "x\\' y", 'at() 阻断 onclick 单引号 breakout（精确匹配）');
+}
+/* 源码级断言：修复后的调用点确实用了新函数（防「写好阀≠阀生效」） */
+var msSrc = fs.readFileSync(path.join(__dirname, 'market_strategy.html'), 'utf8');
+ok(msSrc.indexOf("openTrader(\\''+jsAttr(t.id)+'\\')") > 0, '调用点已换 jsAttr(t.id)（openTrader）');
+ok((msSrc.match(/gradeCls\(t\.status\)/g) || []).length === 2, '两处 status 调用点均已换 gradeCls');
+ok(msSrc.indexOf("class=\"grade '+t.status+'\"") < 0, '无残留裸插 t.status');
+
 /* ---------- 汇总 ---------- */
 console.log('\n========== 汇总：PASS ' + PASS + ' / FAIL ' + FAIL + ' ==========');
 process.exit(FAIL ? 1 : 0);

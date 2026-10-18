@@ -244,7 +244,12 @@ var SCOPE_CN2={cn:'A股',hk:'港股',us:'美股',commodity:'商品',crypto:'加�
 var VD_CN={hit:'命中',miss:'未中',skip:'中性',flat:'平盘',no_bar:'无K线'};
 var DR={scope:'',verdict:'hit'};
 function q(s){return encodeURIComponent(String(s==null?'':s))}
-function at(a){return String(a).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+/* 2026-10-19 审计修复（396dc7d2 后续普查）：原版只做 JS 串转义（\ 与 '），
+   不防 HTML 属性 breakout——值含 " 会提前闭合 onclick="..." 属性、注入新属性（XSS）。
+   实体名来自 KG/账本数据（新闻正负实体，字符不可控）。补 HTML 实体转义：
+   先 JS 串转义，再 HTML 实体转义，两组互不产生对方字符（\' 不含 & " < >；
+   &amp;/&quot;/&lt;/&gt; 解码后落进单引号 JS 串内均 inert）。 */
+function at(a){return String(a).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function chip(label,on,fn,arg){
  return '<span class="chip'+(on?' on':'')+'" onclick="'+fn+'(\''+at(arg)+'\')">'+label+'</span>'}
 function drillBar(){

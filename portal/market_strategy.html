@@ -100,6 +100,14 @@
 <script>
 let DATA=null, SUBS=new Set();
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* 2026-10-19 审计修复（396dc7d2 后续普查）：内联事件处理器上下文
+   onclick="openTrader('...')" —— t.id 来自 /api/trader_roster API 数据，裸插单引号 JS 串：
+   值含 ' → JS 串 breakout；值含 " → HTML 属性 breakout。双上下文双重转义
+   （先 JS 串转义 \ 与 '，再 HTML 实体转义 & " < >，两组互不产生对方字符）。 */
+const jsAttr=s=>String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+/* class 上下文白名单：status 枚举对应 CSS .grade.live/.training/.ops，非枚举一律中性（不加类） */
+const GRADE_CLS={live:1,training:1,ops:1};
+const gradeCls=s=>GRADE_CLS[s]?s:'';
 async function apiPost(url,body){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   return r.json();}
@@ -186,8 +194,8 @@ function renderTeam(){
   const el=document.getElementById('team');
   if(!TEAM.length){el.innerHTML='<div class="tl">名册为空</div>';return;}
   el.innerHTML=TEAM.map(t=>
-    '<div class="tcard" onclick="openTrader(\''+t.id+'\')">'
-    +'<h4>'+esc(t.name||t.id)+' <span class="grade '+t.status+'">'+esc(t.grade)+'</span>'
+    '<div class="tcard" onclick="openTrader(\''+jsAttr(t.id)+'\')">'
+    +'<h4>'+esc(t.name||t.id)+' <span class="grade '+gradeCls(t.status)+'">'+esc(t.grade)+'</span>'
     +(t.hired_pf?'<span class="hired-dot">● 组合在岗</span>':'')+'</h4>'
     +'<div class="meta">'+(t.style?('风格：'+esc(t.style)+' · '):'')
     +'运行 '+t.days+' 天</div>'
@@ -225,7 +233,7 @@ async function openTrader(id){
   const rec=(d.recent||[]).map(o=>
     '<div class="sample"><span>'+esc(o.fill_date)+' <b>'+esc(o.stock)+'</b> '+esc(o.side)+' ×'+o.qty+'</span>'
     +'<span>'+(o.filled_price?('@'+Number(o.filled_price).toFixed(2)):'-')+'</span></div>').join('');
-  b.innerHTML='<h2>'+esc(t.name||t.id)+' <span class="grade '+t.status+'">'+esc(t.grade)+'</span>'
+  b.innerHTML='<h2>'+esc(t.name||t.id)+' <span class="grade '+gradeCls(t.status)+'">'+esc(t.grade)+'</span>'
     +(t.hired_pf?'<span class="hired-dot">● 组合在岗</span>':'')+'</h2>'
     +'<div class="tl" style="margin-top:8px;">'+(t.style?('风格：'+esc(t.style)+' · '):'')+'运行 '+t.days+' 天 · 成交 '+d.filled_total+' 笔'
     +(t.verify_ok!=null?(' · 验证 '+(t.verify_ok?'✅':'⚠')):'')+'</div>'
