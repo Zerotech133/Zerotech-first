@@ -147,6 +147,7 @@ import api_execution    # R1 执行健康总线 /api/execution/health（联动�
 import api_tickets      # 工单只读投影 /api/org/tasks（驾驶舱一期 2026-10-18）
 import api_evolution    # 进化舱只读投影 /api/evolution/summary（驾驶舱二期 2026-10-18）
 import api_gate         # 周一门判只读投影 /api/gate/checkpoint（驾驶舱二期 2026-10-18）
+import api_brief        # 复盘简报只读投影 /api/brief/*（联动层二期 R5 2026-10-18）
 
 
 
@@ -2965,6 +2966,27 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json(api_gate.load_gate())
             except Exception as e:  # fail-visible：恒 200 携错误体
                 self._json({"ok": False, "available": False,
+                            "errors": [repr(e)]})
+            return
+        if path == '/api/brief/latest':
+            # 复盘简报最新一条（联动层二期 R5 复盘回流，2026-10-18）
+            try:
+                self._json(api_brief.load_brief_latest())
+            except Exception as e:  # fail-visible：恒 200 携错误体
+                self._json({"ok": False, "available": False,
+                            "errors": [repr(e)]})
+            return
+        if path == '/api/brief/list':
+            # 复盘简报历史列表（append-only 可回看，2026-10-18）
+            try:
+                _lp = dict(p.split('=', 1) for p in qs.split('&') if '=' in p)
+                try:
+                    _lim = min(int(_lp.get('limit', '20')), 50)
+                except ValueError:
+                    _lim = 20
+                self._json(api_brief.load_brief_list(limit=max(_lim, 1)))
+            except Exception as e:  # fail-visible：恒 200 携错误体
+                self._json({"ok": False, "items": [],
                             "errors": [repr(e)]})
             return
         if path in ('/api/platform/approvals', '/api/platform/replay',

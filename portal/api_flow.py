@@ -12,7 +12,11 @@
   GET  /api/flow/stats?days=7                 按日统计 + 进行中任务 + JEV 健康块 + 白名单产线
   GET  /api/flow/events?day=YYYY-MM-DD&kind=  当日事件流（缺省近 48h，倒序）
   GET  /api/flow/artifact?p=<相对路径>        产物预览（白名单根内）
-  POST /api/flow/rerun {"task": ...}          白名单产线立即重跑（走 _MUTATION_POSTS 鉴权）
+  POST /api/flow/rerun {"task": ..., "caller": ...}
+                                      白名单产线立即重跑（走 _MUTATION_POSTS 鉴权）。
+                                      R4：幂等阀前置（当日已有产出/非运行窗拒绝，
+                                      响应带 blocked 字段）；caller 归因入 observe
+                                      账本（agent_platform/data/llm_tool_audit.jsonl）
 
 数据源：
   news.db runs 表（执行）· work/push_flow.jsonl（推送）· work/tune_requests.jsonl（调优）
@@ -23,6 +27,7 @@ import re
 import json
 import time
 import sqlite3
+import subprocess
 import datetime as _dt
 
 from api_common import ROOT, STATION, REPORTS_DIR, run, NO_WINDOW
@@ -76,12 +81,124 @@ RERUN_OK = {
     "ChanlunScan", "ChanlunScanHK", "ChanlunScanUS", "SeatProfile",
     "MorningReport", "DailyReport", "AI盘前分析", "QuoteSnapshot",
     "TushareSync", "JevFeed-Daily", "KG-QuantMorning", "NewsAI",
+    # R4 扩容（影子链三任务，均带幂等阀，见 _rerun_blocked）：
+    # AgentMondayCheckpoint 复盘档只读（报告红线），明确不进白名单。
+    "AgentShadowDaily", "AgentChiefPush", "AgentShadowEvalWeekly",
 }
+
+# ---- R4 幂等阀数据面（影子链产出/日志面；STATION 下 agent_platform/data）----
+_AP_DATA = os.path.join(STATION, "agent_platform", "data")
+SHADOW_LEDGER = os.path.join(_AP_DATA, "shadow", "shadow_ledger.jsonl")
+CHIEF_LOG = os.path.join(_AP_DATA, "shadow", "chief_last_run.log")
+EVAL_LOG = os.path.join(_AP_DATA, "shadow", "eval_last_run.log")
+# observe 账本（与 8093 org_registry_server.TOOL_AUDIT 同一文件，写侧单源不另立账）
+OBSERVE_AUDIT = os.path.join(_AP_DATA, "llm_tool_audit.jsonl")
 
 _KIND_CN = {"run": "执行", "push": "推送", "analysis": "分析", "archive": "归档",
             "tune": "调优", "live": "进行中"}
 _FLOW_CACHE = {"t": 0, "events": [], "stats": None}
 _FLOW_TTL = 30
+
+
+# ---- R4 幂等阀（重跑安全阀：当日已有产出/非运行窗 → 拒绝，绝不真触发）----
+
+
+def _ledger_has_date(path, today):
+    """jsonl 账本已有 date==today 的行 → True；路径不存在/坏行 → False（宁放行）。
+
+    只读探测（逐行 json 解析，坏行跳过——与 eval_shadow.load_ledger 同款容错）。
+    """
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                ln = ln.strip()
+                if not ln:
+                    continue
+                try:
+                    o = json.loads(ln)
+                except Exception:
+                    continue
+                if str(o.get("date") or "")[:10] == today:
+                    return True
+    except OSError:
+        return False
+    return False
+
+
+def _log_today_has(path, today, needle=None):
+    """日志 mtime 为当日且（可选）含标记串 → True；缺文件/读失败 → False。
+
+    mtime 当日口径：产线日志是覆盖重写（shadow_automation.ps1 的 cmd /c
+    重定向），文件存在即「最近一次运行」留痕，mtime 当日 = 当日跑过。
+    """
+    try:
+        st = os.stat(path)
+        if _dt.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d") != today:
+            return False
+        if needle is None:
+            return True
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return needle in f.read()
+    except OSError:
+        return False
+
+
+def _rerun_blocked(task, now=None):
+    """幂等阀判定：返回拦截原因（str）或 None=放行。只读探测，绝不真触发。
+
+    口径表（R4 验收②）：
+      AgentShadowDaily      ① now 为周六/周日 → 拒（排程仅周一~五；周末重跑
+                              会污染 5 日观察账本——「无交易日判断会污染」判例）
+                            ② shadow_ledger.jsonl 已有当日行 → 拒（同日同票幂等
+                              先例 run_shadow.py；重跑=当日第二份样本）
+      AgentChiefPush        chief_last_run.log 当日 mtime 且含 SEND_OK → 拒
+                            （门3 判据：SEND_OK=飞书已推，重跑=重复推送）
+      AgentShadowEvalWeekly eval_last_run.log 当日 mtime → 拒（当日已出件）
+    路径不存在/不可读一律视为无产出放行（宁重跑勿误拦）；既有 17 任务
+    返回 None（沿用无阀语义，不改变既有行为）。
+    """
+    now = now or _dt.datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    if task == "AgentShadowDaily":
+        if now.weekday() >= 5:  # 周一=0 … 周六=5 周日=6
+            return "影子日巡排程仅周一~五（今日为周末，拒绝重跑：防污染 5 日观察账本）"
+        if _ledger_has_date(SHADOW_LEDGER, today):
+            return ("当日影子账本已有产出行（shadow_ledger.jsonl date=%s），"
+                    "重跑将产生重复当日样本" % today)
+        return None
+    if task == "AgentChiefPush":
+        if _log_today_has(CHIEF_LOG, today, "SEND_OK"):
+            return ("当日日报已推送成功（chief_last_run.log 今日含 SEND_OK），"
+                    "重跑将重复推送飞书")
+        return None
+    if task == "AgentShadowEvalWeekly":
+        if _log_today_has(EVAL_LOG, today):
+            return "当日周评已出件（eval_last_run.log 今日 mtime），重跑将覆盖当日评估"
+        return None
+    return None
+
+
+def _observe_rerun(caller, task, ok, blocked=None):
+    """rerun 归因入 observe 账本（R4 验收③）。
+
+    落点=agent_platform/data/llm_tool_audit.jsonl——与 8093
+    org_registry_server._observe 同文件同 schema（ts/caller/endpoint/method/
+    ok），追加 task/blocked 两键；写侧单源，不另立 rerun 专属审计文件
+    （K-ORG-112 §3 第 2 条）。fail-open：写失败只 WARN 不影响主流程（判例同款）。
+    """
+    try:
+        d = os.path.dirname(OBSERVE_AUDIT)
+        if d:
+            os.makedirs(d, exist_ok=True)
+        rec = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "caller": caller,
+               "endpoint": "/api/flow/rerun", "method": "POST",
+               "ok": bool(ok), "task": task}
+        if blocked:
+            rec["blocked"] = blocked
+        with open(OBSERVE_AUDIT, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:  # noqa: BLE001
+        print("[warn] flow rerun observe 写失败（fail-open 不影响主流程）: %s" % e)
 
 
 def _today():
@@ -540,19 +657,35 @@ class Handler:
         self._json(resp)
 
     def _flow_rerun(self, body):
-        task = str((body or {}).get("task", "")).strip()
+        b = body or {}
+        task = str(b.get("task", "")).strip()
+        # caller 归因（K-ORG-112 ④ 缺省注入口径）：body 可选，缺省 portal-console
+        caller = (str(b.get("caller") or "").strip()[:64]) or "portal-console"
         if task not in RERUN_OK:
             self._json({"error": "task not in whitelist",
-                        "whitelist": sorted(RERUN_OK)}, 400)
+                        "whitelist": sorted(RERUN_OK), "caller": caller}, 400)
+            return
+        # R4 幂等阀（安全阀）：当日已有产出/非运行窗 → 拒绝，绝不真触发 schtasks
+        blocked = _rerun_blocked(task)
+        if blocked:
+            _observe_rerun(caller, task, False, blocked)
+            self._json({"ok": False, "task": task, "blocked": blocked,
+                        "caller": caller})
             return
         try:
+            # NO_WINDOW 是 creationflags 整型（api_common.run 同款用法）——
+            # 原实现 **NO_WINDOW 把整型当 kwargs 解包必 TypeError（潜伏 bug 修复）
             r = subprocess.run(["schtasks", "/Run", "/TN", task],
-                               capture_output=True, timeout=20, **NO_WINDOW)
+                               capture_output=True, timeout=20,
+                               creationflags=NO_WINDOW)
             ok = r.returncode == 0
-            self._json({"ok": ok, "task": task,
+            _observe_rerun(caller, task, ok)
+            self._json({"ok": ok, "task": task, "caller": caller,
                         "out": (r.stdout or b"").decode("gbk", "replace").strip()[:200]})
         except Exception as exc:
-            self._json({"ok": False, "task": task, "error": str(exc)}, 500)
+            _observe_rerun(caller, task, False)
+            self._json({"ok": False, "task": task, "caller": caller,
+                        "error": str(exc)}, 500)
 
 
 def _json_size(obj):

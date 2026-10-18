@@ -155,6 +155,14 @@
       "grace_minutes": 20,
       "enabled": true,
       "note": "R3 失败必响巡检（2026-10-18 注册，每 10 分钟）；总线在白名单内自观测"
+    },
+    {
+      "name": "AgentRetrospectBrief",
+      "cadence_minutes": 1440,
+      "grace_minutes": 4320,
+      "log_path": "automation_runs/retro_brief/last_run.json",
+      "enabled": true,
+      "note": "R5 复盘回流（2026-10-18 登记，每日 18:05）；简报 append-only 落 automation_runs/retro_brief/briefs/"
     }
   ]
 }
