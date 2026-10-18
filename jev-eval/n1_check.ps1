@@ -1,4 +1,4 @@
-# N1Check v1.8 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal; v1.6.1 K-STOCK-071 KEY_LOST 只查 pending 不算 sent 归档; v1.7 K-STOCK-076 neo4j 周备新鲜度)
+﻿# N1Check v1.9 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal; v1.6.1 K-STOCK-071 KEY_LOST 只查 pending 不算 sent 归档; v1.7 K-STOCK-076 neo4j 周备新鲜度; v1.9 联动层一期 R3 必响链失联可探)
 # v1.8 2026-10-16 换机适配（单 C 盘 / 用户 t / 无注册表权威）：
 #   - mirror 根 D:\backups_mirror -> C:\backups_mirror
 #   - OneDrive C:\Users\Administrator -> C:\Users\t
@@ -19,6 +19,10 @@
 #      (v1.8: 新机三件套任务未重建前此检查按设计 FAIL 响亮提醒)
 #  (7) jev judgment backlog (K-NEWS-001): latest P2 left= line fresh & <= threshold
 #  (8) neo4j weekly dump (K-STOCK-075): latest *.dump mtime within 8 days
+#  (9) execution watchdog heartbeat (v1.9 / 联动层一期 R3 必响链失联可探):
+#      automation_runs\execution_watchdog\last_run.json mtime within 30min
+#      AND exit=0 + task "AI工作站执行失败巡检" RC benign
+#      (告警链自身失联必须可被 N1 探出——巡检器哑火不能静默)
 # FAIL -> N1_CHECK_FAIL flag (alert forwarder pushes to Feishu) + report file.
 $ErrorActionPreference = 'Continue'
 $day = (Get-Date).ToString('yyyy-MM-dd')
@@ -252,6 +256,37 @@ if (-not $nbLatest) {
     Report ('[OK] neo4j dump fresh: ' + $nbLatest[0].Name + ' @ ' +
         $nbLatest[0].LastWriteTime)
 }
+
+# --- 9. execution watchdog heartbeat (v1.9 / 联动层一期 R3 必响链失联可探) ---
+# 「AI工作站执行失败巡检」每 10min 跑 tools/execution_watchdog.py，写
+# automation_runs\execution_watchdog\last_run.json（exit=0 心跳）。巡检器
+# 哑火（任务禁用/脚本丢失/自身异常 exit!=0）在此暴露——告警链自身失联
+# 必须可探（R3 验收判据②）。新鲜度阈值 30min = 3 个巡检周期。
+$ExWdLog = 'C:\aios\automation_runs\execution_watchdog\last_run.json'
+if (-not (Test-Path $ExWdLog)) {
+    Fail ('exwd: ' + $ExWdLog + ' missing (必响链从未跑过或脚本丢失)')
+} else {
+    $ageMin = ((Get-Date) - (Get-Item $ExWdLog).LastWriteTime).TotalMinutes
+    if ($ageMin -gt 30) {
+        Fail ('exwd: last_run.json STALE (' + [math]::Round($ageMin,0) + 'min > 30min) - 必响巡检器失联（任务禁用/主机休眠/脚本异常）')
+    } else {
+        try {
+            $exwd = Get-Content $ExWdLog -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json
+            if ($exwd.exit -ne 0) {
+                Fail ('exwd: last exit=' + $exwd.exit + ' at ' + $exwd.ran_at + ' - 巡检自身异常（总线轮询失败/推送失败），见 automation_runs\execution_watchdog\')
+            } else {
+                Report ('[OK] exwd heartbeat fresh (' + [math]::Round($ageMin,1) + 'min) exit=0 alerted=' + @($exwd.alerted).Count)
+            }
+        } catch { Fail ('exwd: last_run.json unparsable: ' + $_.Exception.Message) }
+    }
+}
+$exwdTask = Get-ScheduledTask -TaskName 'AI工作站执行失败巡检' -ErrorAction SilentlyContinue
+if ($exwdTask) {
+    $eti = $exwdTask | Get-ScheduledTaskInfo
+    if ($eti.LastTaskResult -eq 0 -or $eti.LastTaskResult -eq 267011 -or $eti.LastTaskResult -eq 267009) {
+        Report ('[OK] exwd task RC=' + $eti.LastTaskResult + ' LastRun=' + $eti.LastRunTime)
+    } else { Fail ('exwd task RC=' + $eti.LastTaskResult + ' LastRun=' + $eti.LastRunTime) }
+} else { Fail 'exwd task "AI工作站执行失败巡检" not found (必响链计划任务丢失)' }
 
 # --- summary ---
 if ($fail -eq 0) { $report += 'N1 ALL PASS' } else { $report += ('N1 FAILURES=' + $fail) }
