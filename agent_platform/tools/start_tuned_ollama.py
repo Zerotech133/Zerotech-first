@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Ollama 守护启动器（tuned 配置）—— 2026-10-18 建立
+r"""Ollama 守护启动器（tuned 配置）—— 2026-10-18 建立
 
 背景（为什么需要这个脚本，别再用别的方式启动）
 --------------------------------------------------
@@ -35,10 +35,28 @@ Ollama 在本机有一套 tuned 参数，原始载体是启动文件夹里的
 用法
 ----
     python start_tuned_ollama.py            # 检查；不在则用 tuned 配置启动
-    python start_tuned_ollama.py --status    # 只查状态，不启动
+    python start_tuned_ollama.py --status    # 只查状态 + 校验配置，不启动
     python start_tuned_ollama.py --restart   # 强制重启（会短暂中断推理）
 
-退出码：0=已在跑或启动成功；1=启动失败；2=参数错误
+退出码
+------
+默认模式 / --restart：0=已在跑或启动成功；1=启动失败；2=参数错误
+--status（**当闸门用**）：
+    0 = 服务在跑 且 配置已核验为 tuned（ctx 达 65536）
+    1 = 服务在跑 但 配置不是 tuned（或端口不通）→ 需要 --restart
+    2 = 无法判定（日志缺 config 行、也未取到 /api/ps）
+
+为什么 --status 会返回 1/2 而不是恒 0
+------------------------------------
+本脚本 2026-10-18 首版把 --status 写成「打印完就 return 0」，等于校验器永远报健康。
+实际踩到：当日实例是 ollama_watchdog.py 拉起的，日志写 `%LOCALAPPDATA%\Programs\Ollama\tuned.log`，
+而首版只读自己的 `automation_runs\ollama_guard\serve_tuned.log`（该文件从未存在），
+于是永远打印「无 serve 日志」并退 0 —— 与「配置正确」无法区分。故改为：
+  · 多候选日志（自己的 → watchdog 的 tuned.log → App 的 server.log）
+  · 按行内 `time=` 取**全局最新**的那条 config（server.log 是桌面 App 写的，
+    常留着上一次实例的旧行，只读它会拿到过期值）
+  · 再用 /api/ps 的 context_length 交叉验证（显式禁代理：会话沙箱注入 HTTP_PROXY 时，
+    连 127.0.0.1 也会走代理，裸 urllib 会被代理返 502 而误判服务已死）
 """
 
 from __future__ import annotations
@@ -46,6 +64,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -62,6 +81,17 @@ LOG_DIR = Path(os.environ.get("OLLAMA_GUARD_LOG_DIR", r"C:\aios\automation_runs\
 SERVE_LOG = LOG_DIR / "serve_tuned.log"
 GUARD_LOG = LOG_DIR / "guard.log"
 
+# config 行的候选来源（按可信度排序，但取「时间戳最新」的那条为准，不按文件顺序）
+#   1) 本脚本自己写的 serve 日志（若本脚本启动过实例）
+#   2) ollama_watchdog.py 定版的 tuned 日志（当前生产实例多由它拉起）
+#   3) 桌面 App 写的 server.log —— 会残留旧实例的 config 行，只作兜底，命中时告警
+_APPDATA_LOCAL = Path(os.environ.get("LOCALAPPDATA", r"C:\Users\t\AppData\Local"))
+CONFIG_LOG_CANDIDATES = [
+    SERVE_LOG,
+    _APPDATA_LOCAL / "Programs" / "Ollama" / "tuned.log",
+    _APPDATA_LOCAL / "Ollama" / "server.log",
+]
+
 TUNED_ENV = {
     "OLLAMA_FLASH_ATTENTION": "1",
     "OLLAMA_KV_CACHE_TYPE": "q8_0",
@@ -73,6 +103,17 @@ TUNED_ENV = {
 
 DETACHED_PROCESS = 0x00000008
 CREATE_NEW_PROCESS_GROUP = 0x00000200
+
+# 判定 tuned 的「关键参数」（keep_alive 只影响重载延迟、不影响正确性，仅作信息项）
+TUNED_CRITICAL = (
+    "OLLAMA_CONTEXT_LENGTH",
+    "OLLAMA_KV_CACHE_TYPE",
+    "OLLAMA_FLASH_ATTENTION",
+    "OLLAMA_NUM_PARALLEL",
+    "OLLAMA_IGPU_ENABLE",
+)
+# ctx 达标线：默认 4096，tuned 65536；取 32768 容忍 watchdog 定版差异
+CTX_OK_FLOOR = 32768
 
 
 def log(msg: str) -> None:
@@ -98,26 +139,89 @@ def port_open(timeout: float = 2.0) -> bool:
         s.close()
 
 
-def server_config() -> dict:
-    """从 serve 自己的日志里取最新一条 server config 的 env 值。"""
-    if not SERVE_LOG.exists():
-        return {}
+def _parse_ts(line: str) -> str:
+    """从日志行取 time= 的值（空串表示无时间戳，排序时视为最旧）。"""
+    m = re.search(r"time=([^\s]+)", line)
+    return m.group(1) if m else ""
+
+
+def server_config():
+    """扫描所有候选日志，取**全局最新**一条 server config 行的 env 值。
+
+    返回 (cfg, src_path, ts_str)；找不到时返回 ({}, None, None)。
+
+    为什么不按文件顺序取第一个：桌面 App 写的 server.log 常残留上一次实例的旧
+    config 行，按顺序取会拿到过期值（这正是首版 --status 判不出来的原因之一）。
+    """
+    best = None  # (sort_key, cfg, path, ts)
+    for idx, path in enumerate(CONFIG_LOG_CANDIDATES):
+        if not path.exists():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        # config 是**启动那一刻**写的一行，服务跑久后它早被挤出文件尾部
+        # （tuned.log 20 分钟就到 1.1MB），所以头尾都要扫；中间是请求日志，无 config。
+        lines = text.splitlines()
+        if len(lines) > 8000:
+            lines = lines[:4000] + lines[-4000:]
+        for ln in lines:
+            if "server config" not in ln:
+                continue
+            cfg = {}
+            for key in TUNED_ENV:
+                marker = key + ":"
+                pos = ln.find(marker)
+                if pos >= 0:
+                    rest = ln[pos + len(marker):]
+                    cfg[key] = rest.split(" ")[0].split("]")[0]
+            if not cfg:
+                continue
+            ts = _parse_ts(ln)
+            key = (ts, -idx)  # 时间戳升序取最大；同戳时靠前的候选优先
+            if best is None or key > best[0]:
+                best = (key, cfg, path, ts)
+    if best is None:
+        return {}, None, None
+    return best[1], best[2], best[3]
+
+
+def api_ps(timeout: float = 6.0):
+    """查 /api/ps。返回 models 列表；无法判定时返回 None（区别于 [] = 无模型加载）。
+
+    **必须显式禁代理**：会话沙箱会注入 HTTP_PROXY，此时 urllib 连 127.0.0.1 也走代理，
+    代理会返回 502 而不是 ConnectionRefused，从而把「服务活着」误判成「服务已死」。
+    """
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     try:
-        text = SERVE_LOG.read_text(encoding="utf-8", errors="replace")
+        raw = opener.open("http://%s:%d/api/ps" % (HOST, PORT), timeout=timeout).read()
+        return json.loads(raw).get("models", [])
     except Exception:
-        return {}
-    cfgs = [ln for ln in text.splitlines() if "server config" in ln]
-    if not cfgs:
-        return {}
-    last = cfgs[-1]
-    out = {}
-    for key in TUNED_ENV:
-        marker = key + ":"
-        idx = last.find(marker)
-        if idx >= 0:
-            rest = last[idx + len(marker):]
-            out[key] = rest.split(" ")[0].split("]")[0]
-    return out
+        return None
+
+
+def tuned_deviations(cfg: dict) -> list:
+    """返回关键参数的偏差列表；空列表 = 关键参数全达标。"""
+    bad = []
+    for key in TUNED_CRITICAL:
+        want = TUNED_ENV[key]
+        got = cfg.get(key)
+        if got is None:
+            bad.append("%s 缺失" % key)
+            continue
+        if key == "OLLAMA_FLASH_ATTENTION":
+            ok = str(got).lower() in ("true", "1")
+        elif key == "OLLAMA_CONTEXT_LENGTH":
+            try:
+                ok = int(got) >= CTX_OK_FLOOR
+            except Exception:
+                ok = False
+        else:
+            ok = str(got) == want
+        if not ok:
+            bad.append("%s=%s(应 %s)" % (key, got, want))
+    return bad
 
 
 def ollama_procs() -> list[str]:
@@ -172,19 +276,69 @@ def main(argv=None) -> int:
 
     if args.status:
         log("STATUS port_open=%s processes=%d" % (running, len(procs)))
-        cfg = server_config()
+        cfg, src, ts = server_config()
+        ps = api_ps() if running else None
+        ps_ctx = None
+        if ps:
+            # 取已加载模型里**最大**的 ctx：客户端可按请求下发小 num_ctx（如分类链 2048），
+            # 单个模型的小 ctx 不能证明服务端配置低
+            ctxs = [m.get("context_length") for m in ps
+                    if isinstance(m.get("context_length"), int)]
+            if ctxs:
+                ps_ctx = max(ctxs)
+
         if cfg:
+            log("STATUS source=%s ts=%s" % (src.name if src else "?", ts or "?"))
+            if src is not None and src.name == "server.log":
+                log("WARN server.log 由桌面 App 写入，可能残留旧实例 config 行"
+                    "（以 tuned.log 或 /api/ps 为准）")
             log("STATUS config=" + json.dumps(cfg, ensure_ascii=False))
         else:
-            log("STATUS 无 serve 日志（可能是桌面 App 起的实例，配置未经本脚本校验）")
-        return 0
+            log("STATUS 候选日志中未找到 server config 行（候选: %s）"
+                % ", ".join(p.name for p in CONFIG_LOG_CANDIDATES))
+        if ps_ctx is not None:
+            log("STATUS api_ps: 已加载 %d 个模型，最大 ctx=%d" % (len(ps or []), ps_ctx))
+        elif running and ps is None:
+            log("STATUS api_ps 不可用（禁代理后仍失败）→ 真实 ctx 无法判定")
+
+        # ---- 判定：这是本脚本当闸门用的关键，不能恒 0 ----
+        # 优先级：/api/ps 的实时 ctx 是**真相**（服务此刻的真实配置）；
+        #        config 日志行只说明「它是怎么被启动的」，可能是旧行或别的实例留下的。
+        # 两者冲突时以实测为准，并告警——否则会误报 NOT_TUNED 让人去重启在跑的服务。
+        if not running:
+            log("VERDICT NOT_RUNNING（端口 %d 不通）→ 需要启动" % PORT)
+            return 1
+
+        if ps_ctx is not None:
+            if ps_ctx >= CTX_OK_FLOOR:
+                if cfg:
+                    bad = tuned_deviations(cfg)
+                    if bad:
+                        log("WARN 日志行与实测冲突：%s；但 /api/ps ctx=%d 证明服务已 tuned，"
+                            "该日志行应为旧实例残留，忽略" % ("; ".join(bad), ps_ctx))
+                log("VERDICT TUNED（实测 /api/ps 最大 ctx=%d ≥ %d）" % (ps_ctx, CTX_OK_FLOOR))
+                return 0
+            log("VERDICT NOT_TUNED（实测 /api/ps 最大 ctx=%d < %d，疑为默认 4096）"
+                "→ 建议 --restart" % (ps_ctx, CTX_OK_FLOOR))
+            return 1
+
+        # /api/ps 取不到（无模型加载或探针失败）→ 退回日志行判定
+        if cfg:
+            bad = tuned_deviations(cfg)
+            if bad:
+                log("VERDICT NOT_TUNED（仅据日志行）→ " + "; ".join(bad) + "（建议 --restart）")
+                return 1
+            log("VERDICT TUNED（仅据日志行 %s，/api/ps 未取到 ctx）" % (ts or "?"))
+            return 0
+        log("VERDICT UNKNOWN（无 config 行且无 /api/ps ctx）→ 建议 --restart 或查服务日志")
+        return 2
 
     if running and not args.restart:
         log("ALREADY RUNNING（不重启）")
-        cfg = server_config()
-        if cfg and cfg.get("OLLAMA_CONTEXT_LENGTH") not in (None, "65536", "0"):
-            log("WARN 当前实例 ctx=%s，不是 tuned 的 65536；需要 tuned 请 --restart"
-                % cfg.get("OLLAMA_CONTEXT_LENGTH"))
+        cfg, _, _ = server_config()
+        bad = tuned_deviations(cfg) if cfg else []
+        if bad:
+            log("WARN 当前实例关键参数不达标：%s；需要 tuned 请 --restart" % "; ".join(bad))
         return 0
 
     if args.restart or not running:
@@ -196,7 +350,7 @@ def main(argv=None) -> int:
 
     ok = start()
     if ok:
-        cfg = server_config()
+        cfg, src, _ = server_config()
         log("DONE config=" + json.dumps(cfg, ensure_ascii=False) if cfg else "DONE（无 config 行）")
         return 0
     return 1
