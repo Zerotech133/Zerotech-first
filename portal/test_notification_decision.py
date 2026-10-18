@@ -46,6 +46,7 @@ def test_preview_validation_and_record_idempotency(isolated):
     assert not nd.record(isolated, caller="trusted_client")["ok"]
     row = nd.recent()["decisions"][0]
     assert row["agent_source"] == "human" and row["caller"] == "admin_ui"
+    assert "approval_state" not in row
     assert all(k not in row for k in ("content", "reason", "basis", "operator", "target_id", "target_name"))
     with nd._db() as db:
         saved = db.execute("SELECT operator,basis,reason FROM decisions").fetchone()
@@ -81,6 +82,69 @@ def test_legacy_migration(isolated):
         db.execute("CREATE TABLE decisions (id TEXT PRIMARY KEY, category TEXT, target_name TEXT, target_id TEXT, send_at TEXT, reason TEXT, content TEXT, created_at TEXT, status TEXT, executed_at TEXT, outcome TEXT)")
     assert nd.record(isolated, caller="admin_ui")["ok"]
     assert nd.recent()["decisions"][0]["agent_source"] == "human"
+
+
+def test_announcement_requires_explicit_bound_approval(isolated, monkeypatch):
+    announcement = {**isolated, "category": "announcement", "agent_source": "hermes",
+                    "operator": "Hermes"}
+    assert nd.record(announcement, caller="hermes_internal")["ok"]
+    assert nd.recent()["decisions"][0]["approval_state"] == "pending"
+    sent = []
+    sender = lambda payload: sent.append(payload) or {"ok": True}
+    monkeypatch.setenv("PUSH_DECISION_EXECUTE", "1")
+    monkeypatch.setattr(nd, "group_info", lambda: {"groups": [{"target_name": "测试群", "verified": True}]})
+    assert not nd.execute(announcement["id"], sender)["ok"] and not sent
+    approval = {k: announcement[k] for k in ("id", "content", "target_name", "send_at")}
+    approval.update(target_id="oc_mock", operator="人工审批员")
+    assert not nd.approve(approval, caller="hermes_internal")["ok"]
+    assert not nd.approve({**approval, "operator": " "}, caller="admin_ui")["ok"]
+    for field, value in (("id", str(uuid.uuid4())), ("content", "篡改内容"),
+                         ("target_name", "其他群"), ("target_id", "oc_other"),
+                         ("send_at", "2000-01-01T00:00:00+00:00")):
+        assert not nd.approve({**approval, field: value}, caller="admin_ui")["ok"]
+    assert nd.approve(approval, caller="admin_ui")["ok"]
+    with nd._db() as db:
+        evidence = db.execute("SELECT * FROM announcement_approvals WHERE decision_id=?",
+                              (announcement["id"],)).fetchone()
+    assert evidence["operator"] == "人工审批员" and evidence["caller"] == "admin_ui"
+    assert evidence["content"] == announcement["content"] and evidence["target_id"] == "oc_mock"
+    assert nd.recent()["decisions"][0]["approval_state"] == "credential_approved"
+    assert not sent
+    assert nd.execute(announcement["id"], sender)["ok"] and len(sent) == 1
+    assert sent[0]["kind"] == "decision:announcement"
+    assert not nd.execute(announcement["id"], sender)["ok"] and len(sent) == 1
+
+
+@pytest.mark.parametrize("field,value", [("content", "审批后修改"), ("target_id", "oc_other"),
+                                        ("target_name", "其他群"),
+                                        ("send_at", "2000-01-01T00:00:00+00:00")])
+def test_announcement_approval_invalidated_by_change(isolated, monkeypatch, field, value):
+    announcement = {**isolated, "category": "announcement"}
+    assert nd.record(announcement, caller="admin_ui")["ok"]
+    approval = {k: announcement[k] for k in ("id", "content", "target_name", "send_at")}
+    assert nd.approve({**approval, "target_id": "oc_mock", "operator": "人工审批员"}, caller="admin_ui")["ok"]
+    with nd._db() as db:
+        db.execute("UPDATE decisions SET %s=? WHERE id=?" % field, (value, announcement["id"]))
+    assert nd.recent()["decisions"][0]["approval_state"] == "pending"
+    monkeypatch.setenv("PUSH_DECISION_EXECUTE", "1")
+    assert not nd.execute(announcement["id"], lambda _: pytest.fail("审批失效不可发送"))["ok"]
+
+
+def test_legacy_announcement_unapproved_after_migration(isolated, monkeypatch):
+    with sqlite3.connect(nd.DB_PATH) as db:
+        db.execute("""CREATE TABLE decisions (id TEXT PRIMARY KEY, category TEXT, target_name TEXT,
+            target_id TEXT, send_at TEXT, reason TEXT, content TEXT, created_at TEXT,
+            status TEXT, executed_at TEXT, outcome TEXT)""")
+        db.execute("INSERT INTO decisions VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                   (isolated["id"], "announcement", "测试群", "oc_mock", isolated["send_at"],
+                    "旧理由", "旧公告", "2020-01-01", "recorded", None, None))
+    monkeypatch.setenv("PUSH_DECISION_EXECUTE", "1")
+    with nd._db() as db:
+        row = db.execute("SELECT * FROM decisions WHERE id=?", (isolated["id"],)).fetchone()
+        assert row["content"] == "旧公告" and row["caller"] == "legacy_unknown"
+        assert db.execute("SELECT count(*) FROM announcement_approvals").fetchone()[0] == 0
+    assert nd.recent()["decisions"][0]["approval_state"] == "pending"
+    assert not nd.execute(isolated["id"], lambda _: pytest.fail("旧公告未经审批不可发送"))["ok"]
 
 
 def test_execution_fail_closed_and_at_most_once(isolated, monkeypatch):
@@ -215,6 +279,45 @@ def test_decision_http_reads_and_preview_require_key(isolated, monkeypatch):
             urllib.request.urlopen(req, timeout=2)
         assert error.value.code == 403
         error.value.close()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_announcement_http_approve_requires_admin_key(isolated, monkeypatch):
+    announcement = {**isolated, "category": "announcement", "agent_source": "hermes",
+                    "operator": "Hermes"}
+    assert nd.record(announcement, caller="hermes_internal")["ok"]
+    approval = {k: announcement[k] for k in ("id", "content", "target_name", "send_at")}
+    approval.update(target_id="oc_mock", operator="人工审批员")
+    monkeypatch.setenv("PUSH_DECISION_EXECUTE", "1")
+    monkeypatch.setattr(nd, "group_info", lambda: {"groups": [{"target_name": "测试群", "verified": True}]})
+    sent = []
+    monkeypatch.setattr(admin, "api_send", lambda payload: sent.append(payload) or {"ok": True})
+    server = ThreadingHTTPServer(("127.0.0.1", 0), admin.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = "http://127.0.0.1:%d" % server.server_port
+        def post(path, body, key):
+            req = urllib.request.Request(base + path, data=json.dumps(body).encode(),
+                                         headers={"X-Decision-Key": key})
+            try:
+                with urllib.request.urlopen(req, timeout=2) as response:
+                    return response.status, json.load(response)
+            except urllib.error.HTTPError as error:
+                with error:
+                    return error.code, json.load(error)
+        for key in ("test-hermes-key", "test-client-key", "wrong"):
+            status, result = post("/api/decisions/approve", approval, key)
+            assert status == 403 and not result["ok"]
+        assert not post("/api/decisions/execute", {"id": announcement["id"]}, "test-only-key")[1]["ok"]
+        assert not sent
+        status, result = post("/api/decisions/approve", approval, "test-only-key")
+        assert status == 200 and result["ok"] and not sent
+        assert post("/api/decisions/execute", {"id": announcement["id"]}, "test-only-key")[1]["ok"]
+        assert len(sent) == 1
     finally:
         server.shutdown()
         server.server_close()
