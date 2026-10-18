@@ -231,7 +231,28 @@ def test_freshness_full_mode_wired(tmp_path):
 
 # ---------- 动态版本抓取 ----------
 
-def test_load_expected_pipeline_fallback():
+def test_load_expected_pipeline_fallback(monkeypatch):
+    # 回归修（2026-10-19）：原名 fallback 但未屏蔽动态抓取源——xq_classify
+    # 可导入时必得 v1.6 而非兜底 v1.3，假红判「产品坏」实为「测试测错路径」。
+    # 现显式模拟导入失败环境，专测兜底三元组。
+    import builtins
+    real_import = builtins.__import__
+
+    def _blocked(name, *a, **k):
+        if name == "xq_classify":
+            raise ImportError("blocked for fallback-path test")
+        return real_import(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", _blocked)
     ver, model, _prompt = vdr.load_expected_pipeline()
     assert ver == "v1.3"
     assert model == "qwen3.5:9b"
+
+
+def test_load_expected_pipeline_dynamic_matches_source():
+    # 动态路径契约：三元组必须与 xq_classify 源码事实逐位一致——
+    # 版本演进（v1.3→v1.6）不再破测试，破的只有「源码与动态抓取失联」。
+    import xq_classify
+    ver, model, _prompt = vdr.load_expected_pipeline()
+    assert ver == str(xq_classify._TICKER_VERSION)
+    assert model == str(xq_classify.MODEL)
