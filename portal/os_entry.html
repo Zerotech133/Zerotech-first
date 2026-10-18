@@ -117,6 +117,15 @@ a:hover{text-decoration:underline}
 .tl-item.r .t{color:var(--up)}
 .tl-item b{font-size:13px}
 .tl-item p{margin:3px 0 0;color:var(--sub);font-size:11.5px;line-height:1.6}
+/* 时点感知：past=已过 dim+✓ / now=进行中脉冲高亮 / upcoming=待办（默认） */
+.tl-item.past{opacity:.45}
+.tl-item.past:before{background:#4a5b66!important}
+.tl-item.past .t:after{content:" ✓";color:var(--teal)}
+.tl-item.now{background:linear-gradient(90deg,rgba(248,81,79,.10),transparent 70%);border-radius:8px;box-shadow:inset 2px 0 0 var(--up)}
+.tl-item.now:before{background:var(--up)!important;animation:pulse 1.6s ease-in-out infinite}
+.tl-item.now b{color:var(--up)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,81,79,.55)}50%{box-shadow:0 0 0 6px rgba(248,81,79,0)}}
+.nexttp{font:600 10.5px Consolas,monospace;color:var(--up);background:rgba(248,81,79,.12);border:1px solid rgba(248,81,79,.35);border-radius:5px;padding:1px 7px;margin-left:auto;white-space:nowrap}
 .mini{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px}
 .mini h4{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:7px}
 .mini h4 .n{font:700 11px Consolas,monospace;color:var(--accent)}
@@ -318,12 +327,13 @@ a.dcard:hover{text-decoration:none}
 
       <div class="split" style="margin-top:14px">
         <div class="mini">
-          <h4>🕐 今日要事 <span class="n">2026-10-19 周一 · 门3 外部触发日</span></h4>
+          <h4>🕐 今日要事 <span class="n">2026-10-19 周一 · 门3 外部触发日</span><span class="nexttp" id="next-tp">时点时钟加载中…</span></h4>
           <div class="tl">
-            <div class="tl-item"><span class="t">16:40</span><b>AgentTriggerChainPrecheck</b><p>自动预检（5 条判据，含 e_code_importable）——无需人工动作。</p></div>
-            <div class="tl-item r"><span class="t">17:10</span><b>AgentShadowDaily 影子首跑</b><p>第一个真实数据日：影子建议→账本落账。<b>不要手动跑</b>；17:10 后先跑 pre_observation 一键件（d52a3d32）。</p></div>
-            <div class="tl-item"><span class="t">17:25</span><b>AgentMondayCheckpoint</b><p>检查点核账；与 17:10 影子账本首行对拍。</p></div>
-            <div class="tl-item"><span class="t">17:35</span><b>AgentChiefPush</b><p>chief_last_run.log 须 SEND_OK；缺 err 文件 = MISSING_ERR_SENTINEL 失败可见。</p></div>
+            <div class="tl-item" data-time="13:30"><span class="t">13:30</span><b>Ollama 参数窗口截止</b><p>NUM_PARALLEL=2 + KEEP_ALIVE=2h 重启一次（拍板项 1）——过期顺延，不阻塞观察点。</p></div>
+            <div class="tl-item" data-time="16:40"><span class="t">16:40</span><b>AgentTriggerChainPrecheck</b><p>自动预检（5 条判据，含 e_code_importable）——无需人工动作。</p></div>
+            <div class="tl-item" data-time="17:10"><span class="t">17:10</span><b>AgentShadowDaily 影子首跑</b><p>第一个真实数据日：影子建议→账本落账。<b>不要手动跑</b>；17:10 后先跑 pre_observation 一键件（d52a3d32）。</p></div>
+            <div class="tl-item" data-time="17:25"><span class="t">17:25</span><b>AgentMondayCheckpoint</b><p>检查点核账；与 17:10 影子账本首行对拍。</p></div>
+            <div class="tl-item" data-time="17:35"><span class="t">17:35</span><b>AgentChiefPush</b><p>chief_last_run.log 须 SEND_OK；缺 err 文件 = MISSING_ERR_SENTINEL 失败可见。</p></div>
             <div class="tl-item w"><span class="t">周五 17:45</span><b>AgentShadowWeekly 首判读</b><p>eval 链真实数据第二点；判读卡已备。</p></div>
           </div>
         </div>
@@ -1132,6 +1142,56 @@ a.dcard:hover{text-decoration:none}
   $('b-alert').addEventListener('click', jumpAlerts);
   renderAlerts();
   route();
+
+  /* ================= 时点时钟：今日要事 past/now/upcoming + 下一个时点倒计时 ================= */
+  /* 规则：past = 已到时点+20min；now 窗 = [时点前 10min, 时点后 20min]；
+     唯一性竞选——多个落窗时保留「最晚已到时点（正在进行）」，否则保留「最近未来时点」，其余降 upcoming；
+     倒计时优先指向最近 future 时点；无 future 但有正在进行的时点 → 显示「正在进行」；全 past → 全部完成。 */
+  function applyTimelineClock(){
+    var now = new Date();
+    var nowMin = now.getHours() * 60 + now.getMinutes();
+    var nodes = [], running = null, nextFuture = null;
+    Array.prototype.forEach.call(document.querySelectorAll('.tl-item[data-time]'), function(el){
+      var p = el.getAttribute('data-time').split(':');
+      var tMin = parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+      var label = (el.querySelector('b') || {}).textContent || el.getAttribute('data-time');
+      var state = 'upcoming';
+      if (nowMin >= tMin + 20) state = 'past';
+      else if (nowMin >= tMin - 10 && nowMin <= tMin + 20) state = 'now';
+      el.classList.remove('past', 'now');
+      if (state === 'past') el.classList.add('past');
+      var node = { el: el, tMin: tMin, label: label, state: state };
+      nodes.push(node);
+      if (state !== 'past' && tMin <= nowMin && (!running || tMin > running.tMin)) running = node;
+      if (tMin > nowMin && (!nextFuture || tMin < nextFuture.tMin)) nextFuture = { tMin: tMin, label: label };
+    });
+    // 唯一性竞选（keep 必须是 nodes 元素本体，引用同一性否则 now 全被误降级——本判例由单测抓出）
+    var keep = running;
+    if (!keep) {
+      nodes.forEach(function(n){
+        if (n.state === 'now' && (!keep || n.tMin < keep.tMin)) keep = n;
+      });
+    }
+    nodes.forEach(function(n){
+      if (n.state === 'now' && (!keep || n !== keep)) { n.state = 'upcoming'; n.el.classList.remove('now'); }
+      else if (n.state === 'now') n.el.classList.add('now');
+    });
+    var tp = document.getElementById('next-tp');
+    if (tp) {
+      if (nextFuture) {
+        var diff = nextFuture.tMin - nowMin;
+        var h = Math.floor(diff / 60), m = diff % 60;
+        tp.textContent = (diff <= 15 ? '即将到时 ' : '下一个时点 ') + (h ? h + 'h' : '') + m + 'm 后：' + nextFuture.label;
+      } else if (running) {
+        tp.textContent = '正在进行：' + running.label;
+      } else {
+        tp.textContent = '今日时点已全部完成';
+      }
+      tp.title = '时点时钟按本机时间判定（past=已过 20min / now=前后 10~20min 窗口，同时只高亮一个当前时段）；护航期 16:40-17:35 全员只读';
+    }
+  }
+  applyTimelineClock();
+  setInterval(applyTimelineClock, 60000);
 })();
 </script>
 </body>
