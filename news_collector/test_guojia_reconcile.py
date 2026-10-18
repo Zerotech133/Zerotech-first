@@ -158,3 +158,89 @@ class TestAggregate:
         assert roll[-1]["rate"] == 0.0              # 末窗全 miss
         assert roll[10] == {"day": "2026-09-15", "n": 15, "rate": 0.6667}
         assert roll[15] == {"day": "2026-09-20", "n": 20, "rate": 0.5}
+
+
+class TestEnrich:
+    """K-ORG-193 账本富化：title 截断 + ents 解析（stocks 主源 ∪
+    companies 兜底）+ 富化不改变对账数学。tmp sqlite 全 schema 建表，
+    created_at 取当前时间避免用例时钟耦合。"""
+
+    def _db(self, tmp_path, news_rows):
+        import sqlite3
+        p = tmp_path / "news.db"
+        con = sqlite3.connect(p)
+        # 列序与生产 news.db 实证一致（id..jev）
+        con.execute(
+            "CREATE TABLE news (id INTEGER PRIMARY KEY, source TEXT,"
+            " ts TEXT, title TEXT, content TEXT, hit INTEGER, pushed"
+            " INTEGER, digested INTEGER, created_at TEXT, stocks TEXT,"
+            " jev TEXT)")
+        con.executemany(
+            "INSERT INTO news (id, source, ts, title, content, hit,"
+            " pushed, digested, created_at, stocks, jev)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?)", news_rows)
+        con.commit()
+        con.close()
+        return str(p)
+
+    @staticmethod
+    def _news(rid, title, stocks, jev_raw):
+        created = gr.now_iso()[:19].replace("T", " ")
+        return (rid, "sina", "2026-10-13 09:59:00", title, "正文", 0, 0, 0,
+                created, stocks, jev_raw)
+
+    @staticmethod
+    def _jev(scope="cn", bias="bull", conf=0.9, companies=None):
+        j = {"scope": scope, "bias": bias, "conf": conf, "event_type": None}
+        if companies is not None:
+            j["companies"] = companies
+        return json.dumps(j, ensure_ascii=False)
+
+    def _load(self, tmp_path, rows):
+        sigs, _ = gr.load_signals(self._db(tmp_path, rows), 180)
+        return sigs
+
+    def test_title_truncated(self, tmp_path):
+        sigs = self._load(tmp_path, [self._news(1, "涨" * 100, "[]",
+                                                self._jev())])
+        assert sigs[0]["title"] == "涨" * gr.TITLE_MAX
+
+    def test_ents_dedup_order(self, tmp_path):
+        sigs = self._load(tmp_path, [self._news(
+            1, "标题", '["特斯拉","宁德时代","特斯拉"]',
+            self._jev(companies=["特斯拉", "比亚迪"]))])
+        assert sigs[0]["ents"] == ["特斯拉", "宁德时代", "比亚迪"]
+
+    def test_bad_stocks_json_fallback(self, tmp_path):
+        sigs = self._load(tmp_path, [self._news(
+            1, "标题", "特斯拉概念股", self._jev())])
+        assert sigs[0]["ents"] == ["特斯拉概念股"]
+
+    def test_empty_and_none_stocks(self, tmp_path):
+        sigs = self._load(tmp_path, [self._news(1, "a", "[]", self._jev()),
+                                     self._news(2, "b", None, self._jev())])
+        assert sigs[0]["ents"] == [] and sigs[0]["title"] == "a"
+        assert sigs[1]["ents"] == [] and sigs[1]["title"] == "b"
+
+    def test_companies_fallback_when_no_stocks(self, tmp_path):
+        sigs = self._load(tmp_path, [self._news(
+            1, "标题", None, self._jev(companies=["英伟达"]))])
+        assert sigs[0]["ents"] == ["英伟达"]
+
+    def test_ents_cap8(self, tmp_path):
+        names = ["实体%d号" % i for i in range(10)]
+        sigs = self._load(tmp_path, [self._news(
+            1, "标题", json.dumps(names, ensure_ascii=False), self._jev())])
+        assert sigs[0]["ents"] == names[:gr.ENTS_MAX]
+
+    def test_verdict_math_unchanged_with_enrich(self):
+        # 富化字段不改变判定数学：同输入 → 同 verdict/t1_pct，title/ents 带出
+        bars = {"cn": _bars([("2026-10-13", "100"), ("2026-10-14", "102")])}
+        sig = _sig(1, "2026-10-13", bias="bull")
+        sig.update({"title": "某公司利好", "ents": ["某公司"]})
+        merged, _ = gr.reconcile([sig], bars, {})
+        v = merged[(1, "2026-10-13", "cn")]
+        assert v["verdict"] == "hit" and v["t1_pct"] == 2.0
+        assert v["title"] == "某公司利好" and v["ents"] == ["某公司"]
+        old = gr._verdict(_sig(2, "2026-10-13"), "nx", 2.0, "hit")
+        assert old["title"] is None and old["ents"] == []  # 旧夹具容错

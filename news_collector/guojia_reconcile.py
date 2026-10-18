@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""郭嘉·预判对账司 — 市场级信号对账（K-ORG-191）
+"""郭嘉·预判对账司 — 市场级信号对账（K-ORG-191）· 账本富化（K-ORG-193）
 
 命名取自三国郭嘉（军师祭酒）：十胜十败论=预判框架，遗计定辽东=留一本
 身后可对账的账本。职责一句话：把 JEV 每日判定的方向预判按市场细分
@@ -20,6 +20,9 @@ K-ORG-180 收口后挂汇报链）。
   - scope ∈ {cn,hk,us,commodity,crypto,fx} 参与对账；macro 不对账
     （口径太泛）；空 scope 入待收编计数。
   - fx 为枚举扩容新市场（K-ORG-191），自扩容日起产生信号，历史无数据。
+  - 账本富化（K-ORG-193）：行内携带 title（截断 80 字）与 ents（实体名，
+    主源 news.stocks 列 ∪ jev.companies 兜底，去重上限 8），支撑门户
+    /api/guojia/drill 智能下钻；对账数学（T+1/命中/聚合）零改动。
 
 基准映射（2026-10-18 探针实证，全部免费公开接口）：
   cn        sh000001   上证指数        sina getKLineData scale=240
@@ -72,6 +75,8 @@ BENCHMARKS = {
 ROLLING_WINDOW = 20     # 过往能力曲线滚动窗口（按方向样本数计）
 ROLLING_MIN = 5         # 样本 <5 不出点（小样本不输出结论铁律）
 NO_BAR_GRACE_DAYS = 40  # 信号日后 40 日仍无基准 K 线 → no_bar 终止重试
+TITLE_MAX = 80          # 账本富化：下钻行标题截断（K-ORG-193）
+ENTS_MAX = 8            # 账本富化：实体名去重上限（K-ORG-193）
 
 
 def now_iso():
@@ -180,25 +185,61 @@ def fetch_bars(scope):
         return None, str(e)[:120]
 
 
+def _norm_title(raw):
+    """标题归一：去空白 + 截断 TITLE_MAX（K-ORG-193 账本富化）。"""
+    return str(raw or "").strip()[:TITLE_MAX] or None
+
+
+def _parse_ents(raw_stocks, companies):
+    """新闻实体表（K-ORG-193）：news.stocks 列（实体名 JSON 数组，主源，
+    实证 8754 条）∪ jev.companies（生产常空，兜底）→ 去重保序，上限
+    ENTS_MAX。坏 stocks 列容错：非 JSON 整串降级为单实体。"""
+    ents = []
+
+    def _push(v):
+        v = str(v or "").strip()
+        if v and v not in ents:
+            ents.append(v)
+
+    if isinstance(raw_stocks, str) and raw_stocks.strip():
+        try:
+            arr = json.loads(raw_stocks)
+        except Exception:  # noqa: BLE001  老数据存在非 JSON 值
+            arr = raw_stocks
+        if isinstance(arr, list):
+            for x in arr:
+                _push(x)
+        else:
+            _push(arr)
+    elif isinstance(raw_stocks, list):
+        for x in raw_stocks:
+            _push(x)
+    if isinstance(companies, list):
+        for x in companies:
+            _push(x)
+    return ents[:ENTS_MAX]
+
+
 def load_signals(db_path, window_days):
     """扫窗口内 JEV 方向信号 → (signals, counts)。
 
-    signals: [{rowid, day, ts, scope, bias, conf, event_type}]（仅
-    scope∈SCOPES 且 bias∈{bull,bear,neutral}）；其余入 counts 观测。
+    signals: [{rowid, day, ts, scope, bias, conf, event_type, title,
+    ents}]（仅 scope∈SCOPES 且 bias∈{bull,bear,neutral}）；其余入
+    counts 观测。title/ents 为 K-ORG-193 富化字段（下钻消费）。
     """
     since = (datetime.now(CST) - timedelta(days=window_days)).strftime(
         "%Y-%m-%d") + " 00:00"
     con = sqlite3.connect("file:%s?mode=ro" % db_path, uri=True)
     try:
         rows = con.execute(
-            "SELECT rowid, created_at, jev FROM news "
+            "SELECT rowid, created_at, jev, title, stocks FROM news "
             "WHERE created_at >= ? AND jev IS NOT NULL AND jev != ''",
             (since,)).fetchall()
     finally:
         con.close()
     signals, counts = [], {"total_jev": 0, "bad_jev": 0, "macro": 0,
                            "empty_scope": 0, "other_scope": 0}
-    for rowid, created_at, raw in rows:
+    for rowid, created_at, raw, n_title, n_stocks in rows:
         counts["total_jev"] += 1
         try:
             j = json.loads(raw)
@@ -224,6 +265,8 @@ def load_signals(db_path, window_days):
             "ts": str(created_at or ""), "scope": scope, "bias": bias,
             "conf": conf if isinstance(conf, (int, float)) else None,
             "event_type": (j.get("event_type") or "").strip() or None,
+            "title": _norm_title(n_title),
+            "ents": _parse_ents(n_stocks, j.get("companies")),
         })
     signals.sort(key=lambda s: (s["day"], s["rowid"]))
     return signals, counts
@@ -289,10 +332,12 @@ def _shift_day(day, ndays):
 
 
 def _verdict(s, t1_day, t1_pct, verdict):
+    # title/ents 为 K-ORG-193 富化字段：.get 容错旧测试夹具/存量信号
     return {"rowid": s["rowid"], "day": s["day"], "ts": s["ts"],
             "scope": s["scope"], "bias": s["bias"], "conf": s["conf"],
             "event_type": s["event_type"], "t1_day": t1_day,
-            "t1_pct": t1_pct, "verdict": verdict, "at": now_iso()}
+            "t1_pct": t1_pct, "verdict": verdict, "at": now_iso(),
+            "title": s.get("title"), "ents": s.get("ents") or []}
 
 
 def write_verdicts(path, merged):

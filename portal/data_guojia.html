@@ -43,6 +43,16 @@ td.num{font-family:var(--font-mono)}
 .curves{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
 .curve{background:var(--bg-raised);border:1px solid var(--border-weak);border-radius:var(--r-s);padding:10px 12px}
 .curve .t{font-size:var(--fs-xs);color:var(--text-dim);display:flex;justify-content:space-between}
+/* K-ORG-193 智能下钻：chips 与对账新闻行 */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;align-items:center}
+.chip{display:inline-block;border:1px solid var(--border);border-radius:var(--r-s);padding:3px 10px;font-size:var(--fs-xs);cursor:pointer;background:var(--bg-raised);color:var(--text);user-select:none;white-space:nowrap}
+.chip.on{border-color:var(--link);color:var(--link);font-weight:600}
+.chip.ent:hover{border-color:var(--link)}
+.nrow{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--bg-raised);font-size:var(--fs-s)}
+.nrow .t{flex:1 1 260px;min-width:200px}
+.nrow .d{font-family:var(--font-mono);color:var(--text-dim);font-size:var(--fs-xs);white-space:nowrap}
+.badge.hit{color:var(--color-ok);border-color:var(--color-ok)}
+.badge.miss{color:var(--color-err);border-color:var(--color-err)}
 /* K-ORG-184 同款移动端钳制：shortscreen 固顶节导航条防撑破 */
 #ss-bar{max-width:calc(100vw - 24px) !important;overflow-x:auto}
 @media (max-width:640px){
@@ -77,7 +87,9 @@ a{color:var(--link)}
 
 <section><h2>五 · 管道体检（行情源与跑批）</h2><div class="panel" id="pipeline"><span class="empty">加载中…</span></div></section>
 
-<footer>K-ORG-191 郭嘉预判对账司 · 2026-10-18 · 出口 /api/guojia/data（只读）· 跑批 guojia_reconcile.py · 情报板块 · 向 Hermes 汇报（K-ORG-180 收口后挂链）</footer>
+<section><h2>六 · 智能下钻（高命中新闻 → 个股 → 板块）</h2><div class="panel" id="drill"><span class="empty">加载中…</span></div></section>
+
+<footer>K-ORG-191 郭嘉预判对账司 · 2026-10-18 · 出口 /api/guojia/data（只读）· 跑批 guojia_reconcile.py · 情报板块 · 向 Hermes 汇报（K-ORG-180 收口后挂链）· 下钻 /api/guojia/drill（K-ORG-193，仅本地）</footer>
 </div>
 
 <script>
@@ -160,7 +172,7 @@ function render(d){
  var g=d.guojia||{};
  if(!g.exists){
   el('metrics').innerHTML='<span class="empty">'+esc(g.error||g.hint||'郭嘉账本未生成——先跑 python news_collector/guojia_reconcile.py')+'</span>';
-  ['scoreboard','lines','curves','caliber','pipeline'].forEach(function(id){
+  ['scoreboard','lines','curves','caliber','pipeline','drill'].forEach(function(id){
    el(id).innerHTML='<span class="empty">（等首次跑批）</span>'});
   return;
  }
@@ -227,11 +239,84 @@ function render(d){
   +'<div class="legend" style="margin-top:8px">跑批 '+esc(pl.ran_at||'—')+' · 待补 T+1 '+esc(cnt.pending||0)+' 条（下一轮自动补账）· 行情源：新浪/腾讯/gate 免费公开接口</div>';
 }
 
+/* ── 六 智能下钻（K-ORG-193，仅本地）：A 排行 / B 个股 / C 板块 ── */
+var SCOPE_CN2={cn:'A股',hk:'港股',us:'美股',commodity:'商品',crypto:'加密',fx:'外汇'};
+var VD_CN={hit:'命中',miss:'未中',skip:'中性',flat:'平盘',no_bar:'无K线'};
+var DR={scope:'',verdict:'hit'};
+function q(s){return encodeURIComponent(String(s==null?'':s))}
+function at(a){return String(a).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function chip(label,on,fn,arg){
+ return '<span class="chip'+(on?' on':'')+'" onclick="'+fn+'(\''+at(arg)+'\')">'+label+'</span>'}
+function drillBar(){
+ return '<div class="chips">'+chip('全部市场',!DR.scope,'drillScope','')
+  +SCOPES.map(function(s){return chip((SCOPE_EMOJI[s]||'')+' '+(SCOPE_CN2[s]||s),DR.scope===s,'drillScope',s)}).join('')
+  +'<span class="dim">｜</span>'+chip('全部判定',!DR.verdict,'drillVerdict','')
+  +chip('命中',DR.verdict==='hit','drillVerdict','hit')
+  +chip('未中',DR.verdict==='miss','drillVerdict','miss')
+  +chip('平盘',DR.verdict==='flat','drillVerdict','flat')+'</div>';
+}
+function drillScope(s){DR.scope=s||'';drillList()}
+function drillVerdict(v){DR.verdict=v||'';drillList()}
+function drillRows(rows){
+ return rows.map(function(r){
+  var p=r.t1_pct,pt=p==null?'—':(p>0?'+':'')+(100*p).toFixed(2)+'%';
+  var ents=(r.ents||[]).map(function(e){
+   return '<span class="chip ent" onclick="drillStock(\''+at(e)+'\')">'+esc(e)+'</span>'}).join('');
+  return '<div class="nrow"><span class="badge '+esc(r.verdict)+'">'+esc(VD_CN[r.verdict]||r.verdict)+'</span>'
+   +'<span class="d">'+esc(r.day||'')+' '+(SCOPE_EMOJI[r.scope]||'')+esc(SCOPE_CN2[r.scope]||r.scope||'')+' '+esc(CN_BIAS[r.bias]||'')+'</span>'
+   +'<span class="t">'+esc(r.title||'（旧行无标题）')+'</span>'
+   +'<span class="d">T+1 <b class="'+(p==null?'dim':p>=0?'up':'dn')+'">'+pt+'</b></span>'
+   +(ents?'<span class="chips" style="margin:0">'+ents+'</span>':'')+'</div>';
+ }).join('')||'<span class="empty">（无匹配对账行）</span>';
+}
+function drillList(){
+ el('drill').innerHTML='<span class="empty">加载中…</span>';
+ fetch('/api/guojia/drill?limit=30'+(DR.scope?'&scope='+q(DR.scope):'')+(DR.verdict?'&verdict='+q(DR.verdict):''))
+  .then(function(r){return r.json()}).then(function(d){
+   if(d.error){el('drill').innerHTML=drillBar()+'<span class="err">'+esc(d.error)+'</span>';return}
+   el('drill').innerHTML=drillBar()
+    +'<div class="legend">排行 · |T+1 涨跌| 降序 · 共 <b>'+d.total+'</b> 行 · 点新闻里的实体标签下钻个股 → 点所属板块下钻成分股</div>'
+    +drillRows(d.rows||[]);
+  }).catch(function(e){el('drill').innerHTML=drillBar()+'<span class="err">/api/guojia/drill 不可达：'+esc(e)+'</span>'});
+}
+function drillStock(code){
+ el('drill').innerHTML='<span class="empty">加载中…</span>';
+ fetch('/api/guojia/drill?code='+q(code)).then(function(r){return r.json()}).then(function(d){
+  var back='<span class="chip" onclick="drillList()">← 返回排行</span>';
+  if(d.error){el('drill').innerHTML=back+'<div class="err">'+esc(d.error)+'</div>';return}
+  var st=d.stock||{},s=d.stats||{};
+  var secs=(d.sectors||[]).map(function(x){
+   return '<span class="chip ent" onclick="drillSector(\''+at(x.sector)+'\')">'+esc(x.sector)+(x.rps50!=null?' · RPS50 '+esc(x.rps50):'')+'</span>'}).join('');
+  el('drill').innerHTML=back
+   +'<div class="legend" style="margin-top:8px">个股 <b>'+esc(st.name||st.q)+'</b>'+(st.mapped&&st.code?'（'+esc(st.code)+'）':'')
+   +' · 方向样本 <b>'+esc(s.n_dir||0)+'</b> · 命中 <b style="color:'+OK+'">'+esc(s.n_hit||0)+'</b> · 未中 <b style="color:'+ERR+'">'+esc(s.n_miss||0)+'</b> · 命中率 <b>'+pct(s.hit_rate)+'</b></div>'
+   +(secs?'<div class="chips">所属板块：'+secs+'</div>':'')
+   +drillRows(d.rows||[]);
+ }).catch(function(e){el('drill').innerHTML='<span class="chip" onclick="drillList()">← 返回排行</span><div class="err">'+esc(e)+'</div>'});
+}
+function drillSector(sec){
+ el('drill').innerHTML='<span class="empty">加载中…</span>';
+ fetch('/api/guojia/drill?sector='+q(sec)).then(function(r){return r.json()}).then(function(d){
+  var back='<span class="chip" onclick="drillList()">← 返回排行</span>';
+  if(d.error){el('drill').innerHTML=back+'<div class="err">'+esc(d.error)+'</div>';return}
+  var sx=d.sector||{},mem=(d.members||[]).map(function(m){
+   return '<span class="chip ent" onclick="drillStock(\''+String(m.code).replace(/'/g,'')+'\')">'+esc(m.name||m.code)+'</span>'}).join('');
+  el('drill').innerHTML=back
+   +'<div class="legend" style="margin-top:8px">板块 <b>'+esc(sx.name)+'</b>'+(sx.idx?'（'+esc(sx.idx)+'）':'')+(sx.rps50!=null?' · RPS50 '+esc(sx.rps50):'')
+   +' · 成分 <b>'+esc(sx.n_members||0)+'</b> 只 · 标题含板块名对账行 <b>'+d.total+'</b> 条</div>'
+   +(mem?'<div class="chips">成分股：'+mem+'</div>':'')
+   +drillRows(d.rows||[]);
+ }).catch(function(e){el('drill').innerHTML='<span class="chip" onclick="drillList()">← 返回排行</span><div class="err">'+esc(e)+'</div>'});
+}
+function initDrill(){drillList()}
+
 if (window.__EMBED__) { /* 公网快照模式：构建器注入聚合 JSON，不发 fetch */
   render(window.__EMBED__);
+  el('drill').innerHTML='<span class="empty">公网快照仅含聚合战绩；逐条新闻/个股/板块下钻请访问本地门户</span>';
 } else {
   fetch('/api/guojia/data').then(function(r){return r.json()}).then(render)
    .catch(function(e){el('metrics').innerHTML='<span class="err">/api/guojia/data 不可达：'+esc(e)+'</span>'});
+  initDrill();
 }
 </script>
 </body>
