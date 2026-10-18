@@ -257,6 +257,46 @@ def load_biz():
                 "quota_daily": 0, "apikey": "", "note": ""}
 
 
+# K-PUSH-012 密钥供给：env 优先，portal/work/push_secrets.json 文件兜底
+# （work/ 已 gitignore 不入库；60s 缓存降读盘频次；SYSTEM 计划任务宿主
+# 环境无 PUSH_* 变量时文件兜底保证 8097 鉴权可用——供钥链闭环 P0 修复）。
+SECRETS_PATH = os.path.join(WORK, "push_secrets.json")
+_SECRET_CACHE = {"ts": 0.0, "data": {}}
+
+
+def _secrets():
+    now = time.time()
+    if now - _SECRET_CACHE["ts"] > 60.0:
+        try:
+            with open(SECRETS_PATH, encoding="utf-8") as f:
+                _SECRET_CACHE["data"] = json.load(f)
+        except (OSError, ValueError):
+            _SECRET_CACHE["data"] = {}
+        _SECRET_CACHE["ts"] = now
+    return _SECRET_CACHE["data"]
+
+
+def _secret(env_key, file_key):
+    v = (os.environ.get(env_key) or "").strip()
+    if v:
+        return v
+    return str(_secrets().get(file_key) or "").strip()
+
+
+def admin_authorized(key):
+    secret = _secret("PUSH_ADMIN_KEY", "push_admin_key")
+    return bool(secret and key and hmac.compare_digest(secret, key))
+
+
+def send_authorized(key):
+    secret = _secret("PUSH_HUB_KEY", "push_hub_key")
+    return bool(secret and key and hmac.compare_digest(secret, key))
+
+
+def public_biz(biz):
+    return {k: v for k, v in biz.items() if k != "apikey"}
+
+
 def save_biz(biz):
     tmp = BIZ_PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -363,6 +403,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = urllib.parse.urlparse(self.path).path
+        if p == "/api/state" and not admin_authorized(self.headers.get("X-Push-Admin-Key")):
+            return self._json({"ok": False, "error": "未授权"}, 403)
+        if p in ("/api/decisions", "/api/decision-groups"):
+            import notification_decision as nd
+            if not nd.authorized(self.headers.get("X-Decision-Key")):
+                return self._json({"ok": False, "error": "未授权"}, 403)
+            return self._json(nd.recent() if p == "/api/decisions" else nd.group_info())
         if p == "/api/state":
             subs = load_subs()
             recvs = load_receivers()
@@ -435,7 +482,7 @@ class Handler(BaseHTTPRequestHandler):
                 "last_test": _state.get("last_test"),
                 "running": _state["running"],
                 "sources": source_health(),
-                "biz": load_biz(),
+                "biz": public_biz(load_biz()),
                 "flow": flow,
                 "flowmx": flow_matrix(),   # K-PUSH-003：今日动线矩阵（源/触点/闸门/拦截）
                 "actmx": _actions_stats(),   # K-PUSH-004：按钮归档注册表 + 审计
@@ -489,7 +536,30 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         p = urllib.parse.urlparse(self.path).path
+        if p in ("/api/decisions/preview", "/api/decisions/record", "/api/decisions/execute"):
+            import notification_decision as nd
+            caller = nd.caller_for_key(self.headers.get("X-Decision-Key"))
+            if not caller:
+                return self._json({"ok": False, "error": "未授权"}, 403)
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                if not 0 < n <= BODY_CAP:
+                    raise ValueError("body 大小非法")
+                req = json.loads(self.rfile.read(n).decode("utf-8"))
+                if not isinstance(req, dict):
+                    raise ValueError("body 必须是对象")
+            except (ValueError, OSError, UnicodeError):
+                return self._json({"ok": False, "error": "请求体非法"}, 400)
+            if p == "/api/decisions/preview":
+                return self._json(nd.preview(req, caller=caller))
+            if p == "/api/decisions/record":
+                return self._json(nd.record(req, caller=caller))
+            if caller != "admin_ui":
+                return self._json({"ok": False, "error": "执行需人工管理凭证"}, 403)
+            return self._json(nd.execute(req.get("id"), api_send))
         if p == "/api/send":
+            if not send_authorized(self.headers.get("X-Push-Hub-Key")):
+                return self._json({"ok": False, "error": "未授权"}, 403)
             # K-PUSH-003 推送中台统一入口：闸门（静默/配额）→ 直发 → 统一流水
             try:
                 n = int(self.headers.get("Content-Length") or 0)
@@ -505,6 +575,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if p != "/api/act":
             return self._json({"ok": False, "error": "not found"}, 404)
+        if not admin_authorized(self.headers.get("X-Push-Admin-Key")):
+            return self._json({"ok": False, "error": "未授权"}, 403)
         try:
             n = int(self.headers.get("Content-Length") or 0)
             if not (0 < n <= BODY_CAP):
@@ -582,10 +654,12 @@ def _flow_gate_deny(kind, target, why):
 
 
 def api_send(req):
-    """/api/send 统一入口：静默（critical 豁免）→ 配额 → 直发 → 流水。
+    """/api/send 统一入口：鉴权 → 静默（critical 豁免）→ 配额 → 直发 → 流水。
 
-    feishu_client.send_msg(via_hub=True) 全站自动过闸；hub 不可达时调用方
-    回落原直发路径（通知不丢）。闸内转发必须 via_hub=False 防环。
+    feishu_client.send_msg(via_hub=True) 全站自动过闸；K-PUSH-012 起闸门
+    为唯一通路：hub 不可达/鉴权失败时调用方 fail-closed 不回落直发
+    （防绕过静默/配额/审计，语义反转已经老田授权收口拍板）。闸内转发
+    必须 via_hub=False 防环。
     """
     content = req.get("content")
     msg_type = req.get("msg_type") or "text"
@@ -899,14 +973,14 @@ def dispatch(req):
             import secrets
             biz["apikey"] = "pk_" + secrets.token_hex(16)
         save_biz(biz)
-        return {"ok": True, "biz": biz}
+        return {"ok": True, "biz": public_biz(biz)}
 
     if act == "regen_apikey":
         import secrets
         biz = load_biz()
         biz["apikey"] = "pk_" + secrets.token_hex(16)
         save_biz(biz)
-        return {"ok": True, "biz": biz}
+        return {"ok": True, "biz": public_biz(biz)}
 
     if act == "run_task":
         ok, err = ps_run_task(req.get("name") or "")
@@ -1026,6 +1100,7 @@ input[type=time]{width:90px}
 <a class="navi on" data-s="overview" onclick="show('overview')">总览</a>
 <a class="navi" data-s="flow" onclick="show('flow')">动线总览</a>
 <a class="navi" data-s="sched" onclick="show('sched')">调度中心</a>
+<a class="navi" data-s="decision" onclick="show('decision')">通知决策</a>
 <a class="navi" data-s="obs" onclick="show('obs')">🔍 观测</a>
 <a class="navi" data-s="btns" onclick="show('btns')">按钮归档</a>
 <a class="navi" data-s="push" onclick="show('push')">推送管理</a>
@@ -1035,6 +1110,7 @@ input[type=time]{width:90px}
 <div class="slogan">软硬一体 · 云边协同<br>定位：能力平台<br>127.0.0.1 · 仅本机访问</div>
 </aside>
 <main class="main">
+<div class="card"><label>管理授权 <input id="admin-key" type="password" autocomplete="off" placeholder="PUSH_ADMIN_KEY"></label> <button onclick="refresh()">授权读取</button><span class="dim"> 仅在本页内存保留；独立于开放统计 API Key 和发送密钥。</span></div>
 
 <div id="sec-overview" class="sec">
 <h1>总览</h1><div class="sub" id="sub">加载中…</div>
@@ -1077,6 +1153,22 @@ input[type=time]{width:90px}
 <button class="pri" onclick="saveSched(true)">保存并联动计划任务时间</button>
 <span class=dim style="font-size:11px;margin-left:8px">联动 = 把带任务名的行同步写入 Windows 计划任务（仅白名单 4 任务）</span>
 </div></div>
+</div>
+
+<div id="sec-decision" class="sec" style="display:none">
+<h1>通知决策</h1><div class="sub">支持独立内部 Hermes 凭证登记决策（Hermes 门面尚未接线）；8097 负责既有发送闸门；记录不触发发送。</div>
+<div class="card"><div class="row"><label>只读/决策授权密钥 <input id="dec-key" type="password" autocomplete="off"></label><button onclick="loadDecisions()">授权读取</button></div><span class="dim">密钥仅保存在本页内存，关闭页面即失效；请勿在共享设备上使用。</span></div>
+<div class="card"><h2>决策预览</h2><div class="row">
+<label>分类 <select id="dec-category"></select></label><label>已配置群 <select id="dec-target"></select></label>
+<label>发送时间（本地） <input type="datetime-local" id="dec-time"></label></div>
+<div class="row"><label>人工操作者 <input id="dec-operator" maxlength="100"></label>
+<label>选择依据 <input id="dec-basis" maxlength="500" style="width:320px"></label></div>
+<div class="row"><label>理由 <input id="dec-reason" maxlength="500" style="width:320px"></label>
+<label>内容 <input id="dec-content" maxlength="4000" style="width:320px"></label></div>
+<div class="row"><button onclick="decisionPreview()">预览（不发送）</button><button onclick="decisionRecord()">记录决策（需授权）</button></div>
+<p class="dim" id="dec-preview">执行 API 仅在显式授权及启用后可用；页面不提供发送按钮。</p></div>
+<div class="card"><h2>已配置群 · 生产 bot 只读实况</h2><table id="dec-groups"></table></div>
+<div class="card"><h2>通知决策流水（来源可核查）</h2><table id="dec-rows"></table></div>
 </div>
 
 <div id="sec-obs" class="sec" style="display:none">
@@ -1141,7 +1233,7 @@ input[type=time]{width:90px}
 const $=id=>document.getElementById(id);
 function msg(t,bad){const m=$('msg');m.textContent=t;m.style.display='block';m.style.color=bad?'var(--red)':'var(--green)';setTimeout(()=>m.style.display='none',5000)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-async function act(body){try{const r=await fetch('api/act',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.ok&&body.action!=='save_schedule')msg(d.error||'失败',true);return d}catch(e){const error='请求失败：'+e;if(body.action!=='save_schedule')msg(error,true);return{ok:false,error}}}
+async function act(body){try{const r=await fetch('api/act',{method:'POST',headers:{'Content-Type':'application/json','X-Push-Admin-Key':$('admin-key').value},body:JSON.stringify(body)});const d=await r.json();if(!d.ok&&body.action!=='save_schedule')msg(d.error||'失败',true);return d}catch(e){const error='请求失败：'+e;if(body.action!=='save_schedule')msg(error,true);return{ok:false,error}}}
 const OK=['金融新闻日报','AI工作站统一日报','AI工作站预警推送晨','AI工作站预警推送'];
 function inSilent(s){const a=String(s.silent_start||'').trim(),b=String(s.silent_end||'').trim();if(!a||!b)return false;const c=new Date().toTimeString().slice(0,5);return a<=b?(a<=c&&c<b):(c>=a||c<b)}
 function fbars(o,cls){const ks=Object.keys(o||{}),m=Math.max(1,...ks.map(k=>o[k]));
@@ -1251,7 +1343,7 @@ $('acttbl').innerHTML='<thead><tr><th>action_id</th><th>名称</th><th>归属域
 $('actlog').innerHTML='<thead><tr><th>时间</th><th>动作</th><th>操作者</th><th>关联单/卡</th><th>结果</th></tr></thead><tbody>'
  +((ax.events||[]).length?ax.events.map(e=>'<tr><td class=dim>'+esc((e.ts||'').slice(5))+'</td><td class=key>'+esc(e.action)+'</td><td class=dim>'+esc(String(e.who||'').slice(0,14))+'</td><td class=dim>'+esc(e.card)+'</td><td>'+esc(e.result)+'</td></tr>').join(''):'<tr><td colspan=5 class=dim>暂无触发记录（按钮/指令触发后在此审计）</td></tr>')+'</tbody>';}
 async function toggleEnforce(){const d=await act({action:'set_action_enforce',on:!window._enf});if(!d.ok){msg('切换失败',true);return}refresh();}
-async function refresh(){try{const d=await(await fetch('api/state')).json();
+async function refresh(){try{const r=await fetch('api/state',{headers:{'X-Push-Admin-Key':$('admin-key').value}});if(!r.ok)throw Error('HTTP '+r.status+'（请输入管理授权密钥）');const d=await r.json();
 $('sub').textContent='服务 '+(d.heartbeat?'✅':'❌ 心跳丢失')+(d.running?' · 试推进行中…':'');
 const kpiHtml='<div class=kpi><b>'+d.today.total+'</b><span>今日推送合计</span></div>'
  +'<div class=kpi><b>'+d.today.sub_sent+'</b><span>订阅推送（今日次数）</span></div>'
@@ -1263,8 +1355,8 @@ $('srcs').innerHTML='<thead><tr><th>模块</th><th>端口</th><th>健康</th></t
   +(s.ok?'<span class=ok>● 在线</span>':'<span class=err>● 离线（看门狗 5 分钟内自动拉起）</span>')+'</td></tr>').join('')+'</tbody>';
 const b=d.biz||{};
 if(!$('b_tenant').value){$('b_tenant').value=b.tenant||'';$('b_plan').value=b.plan||'internal';$('b_quota').value=b.quota_daily||0;}
-$('bizinfo').innerHTML='<tr><th>API Key</th><td>'+(b.apikey?'<span class=key>'+esc(b.apikey)+'</span> <span class=dim>（开放 API 接入预留，勿外传）</span>':'<span class=dim>未生成（保存套餐时自动生成）</span>')+'</td></tr>'
- +'<tr><th>开放 API（只读）</th><td><span class=key>GET /api/open/stats</span> 请求头 <span class=key>X-API-Key: &lt;上方 Key&gt;</span>，返回今日用量 / 7 天趋势 / 订阅与接收人概览</td></tr>'
+$('bizinfo').innerHTML='<tr><th>API Key</th><td><span class=dim>密钥不在状态接口返回；管理员通过受控配置渠道管理。</span></td></tr>'
+ +'<tr><th>开放 API（只读）</th><td><span class=key>GET /api/open/stats</span> 请求头 <span class=key>X-API-Key: &lt;开放统计密钥&gt;</span>，返回今日用量 / 7 天趋势 / 订阅与接收人概览</td></tr>'
  +'<tr><th>当日用量 / 配额</th><td><b>'+d.today.total+'</b> / '+(b.quota_daily>0?b.quota_daily+' 条':'不限（internal）')+(d.flow&&d.flow.today_by_kind?' <span class=dim>（流水真实发送 '+Object.values(d.flow.today_by_kind).reduce((a,c)=>a+c,0)+' 条）</span>':'')+'</td></tr>';
 const fl=d.flow||{},bd=fl.by_day||[],mx=Math.max(1,...bd.map(x=>x.count));
 $('trend').innerHTML=bd.map(x=>'<div class="bar" style="height:'+Math.max(3,Math.round(x.count/mx*70))+'px" title="'+esc(x.date)+'：'+x.count+' 条"><em>'+(x.count||'')+'</em><span>'+esc(x.date.slice(5))+'</span></div>').join('');
@@ -1336,11 +1428,17 @@ msg(m,!d.ok);refresh();}
 async function addRecv(){const d=await act({action:'add_receiver',receiver:{name:$('r_name').value.trim(),id:$('r_id').value.trim(),type:$('r_type').value,note:$('r_note').value.trim()}});
  if(d.ok){msg('接收人已添加（可在订阅里勾选）');['r_name','r_id','r_note'].forEach(i=>$(i).value='');refresh()}}
 function editRecv(sid){const v=prompt('输入接收人名称，逗号分隔（可多选）。留空=缺省（个人+家人群）：\\n可选：'+(window._recvNames||''),'');if(v===null)return;act({action:'set_sub_receivers',id:sid,receivers:v.split(',').map(s=>s.trim()).filter(Boolean)}).then(refresh);}
+function decisionBody(){const date=$('dec-time').value,when=date?new Date(date):null;return {category:$('dec-category').value,target_name:$('dec-target').value,send_at:when&&!Number.isNaN(when.getTime())?when.toISOString():'',reason:$('dec-reason').value,content:$('dec-content').value,agent_source:'human',operator:$('dec-operator').value,basis:$('dec-basis').value}}
+async function decisionRequest(path,body,key){const r=await fetch('api/decisions/'+path,{method:'POST',headers:{'Content-Type':'application/json',...(key?{'X-Decision-Key':key}:{})},body:JSON.stringify(body)});if(!r.ok&&r.status!==403)throw Error('HTTP '+r.status);return r.json()}
+async function decisionPreview(){try{const d=await decisionRequest('preview',decisionBody(),$('dec-key').value);$('dec-preview').textContent=d.ok?('预览：'+d.category_name+' → '+d.target_name+' · '+d.send_at+' · '+d.reason+'；不自动发送'):(d.error||'预览失败')}catch(e){$('dec-preview').textContent='预览接口失败：'+e}}
+async function decisionRecord(){const body=decisionBody();if(!body.send_at){$('dec-preview').textContent='请填写有效发送时间';return}if(!body.target_name){$('dec-preview').textContent='请先选择已配置群';return}const confirmed=prompt('再次输入群名称以确认目标：'+body.target_name);if(confirmed===null)return;body.confirmed_target=confirmed;if(confirmed!==body.target_name){$('dec-preview').textContent='群目标二次确认不一致';return}const key=$('dec-key').value;if(!key){$('dec-preview').textContent='请先输入决策授权密钥';return}body.id=crypto.randomUUID();try{const d=await decisionRequest('record',body,key);$('dec-preview').textContent=d.ok?('已记录 '+d.decision.id+'，未发送'):(d.error||'记录失败');if(d.ok)loadDecisions()}catch(e){$('dec-preview').textContent='记录接口失败：'+e}}
+async function loadDecisions(){const key=$('dec-key').value;if(!key){$('dec-preview').textContent='输入授权密钥后读取群和决策';return}try{const headers={'X-Decision-Key':key};const r=await fetch('api/decisions',{headers});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();if(!d.ok)throw Error(d.error||'读取失败');$('dec-category').innerHTML=d.categories.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>').join('');$('dec-target').innerHTML=d.targets.map(x=>'<option value="'+esc(x.name)+'">'+esc(x.name)+'</option>').join('');$('dec-rows').innerHTML='<tr><th>时间</th><th>分类</th><th>来源</th><th>计划发送</th><th>状态</th></tr>'+d.decisions.map(x=>'<tr><td>'+esc(x.created_at)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.agent_source)+' / '+esc(x.caller)+'</td><td>'+esc(x.send_at)+'</td><td>'+esc(x.status)+' '+esc(x.outcome||'')+'</td></tr>').join('');const gr=await fetch('api/decision-groups',{headers});if(!gr.ok)throw Error('HTTP '+gr.status);const g=await gr.json();if(!g.ok)throw Error(g.error||'群资料读取失败');$('dec-groups').innerHTML='<tr><th>群名称</th><th>成员数</th><th>数据来源</th><th>更新时间</th><th>状态</th></tr>'+g.groups.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+(x.member_count===null?'未知':x.member_count)+'</td><td>'+esc(x.source)+'</td><td>'+esc(x.updated_at)+'</td><td>'+esc(x.reason||'已读取')+'</td></tr>').join('')}catch(e){$('dec-category').innerHTML='';$('dec-target').innerHTML='';$('dec-rows').innerHTML='';$('dec-groups').innerHTML='';$('dec-preview').textContent='决策数据接口失败：'+e}}
 function show(s){document.querySelectorAll('.navi').forEach(a=>a.classList.toggle('on',a.dataset.s===s));
  document.querySelectorAll('.sec').forEach(el=>el.style.display=el.id==='sec-'+s?'':'none');
+ if(s==='decision')loadDecisions();
  if(s==='km'||s==='picks'){const f=$('f_'+s);if(f&&!f.src)f.src=f.dataset.src;}}
 async function saveBiz(){const d=await act({action:'set_biz',tenant:$('b_tenant').value.trim(),plan:$('b_plan').value,quota_daily:parseInt($('b_quota').value||'0',10)});
- if(d.ok){msg('已保存'+(d.biz&&d.biz.apikey?'，API Key 已生成':''));refresh()}}
+ if(d.ok){msg('已保存；开放统计密钥仅通过受控配置渠道管理');refresh()}}
 refresh();setInterval(refresh,5000);
 </script></body></html>"""
 
