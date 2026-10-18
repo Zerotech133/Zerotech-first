@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import urllib.request
+import urllib.error
 
 OPEN = "https://open.feishu.cn/open-apis"
 
@@ -104,30 +105,59 @@ def _flow_record(ok, target, channel="openapi", kind=None):
 
 # ── K-PUSH-003 推送中台闸门（hub 统一入口客户端侧）─────────────────
 # 语义：所有 OpenAPI 消息先过 8097 /api/send 闸门（静默时段/配额/统一
-# 流水 kind）；hub 不可达 → None → 调用方回落原直发（通知不丢，fail-safe）；
-# hub 明确拒绝（如静默拦截）→ (False, 原因)，不回落（闸门语义生效）。
+# 流水 kind）；hub 不可达/超时/拒绝 → (False, 原因)，绝不回落直发。
 HUB_SEND_URL = "http://127.0.0.1:8097/api/send"
+
+# K-PUSH-012 供钥：PUSH_HUB_KEY env 优先，portal/work/push_secrets.json
+# 兜底（gitignore 不入库；60s 缓存降读盘频次）。各跑批计划任务宿主环境
+# 通常无 PUSH_* 变量，文件兜底保证生产者能过 8097 鉴权闸（供钥链闭环）。
+HUB_SECRETS_FILE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "portal", "work", "push_secrets.json")
+_HUB_KEY_CACHE = {"ts": 0.0, "key": ""}
+
+
+def _hub_key():
+    k = (os.environ.get("PUSH_HUB_KEY") or "").strip()
+    if k:
+        return k
+    if time.time() - _HUB_KEY_CACHE["ts"] > 60.0:
+        try:
+            with open(HUB_SECRETS_FILE, encoding="utf-8") as f:
+                _HUB_KEY_CACHE["key"] = str(
+                    json.load(f).get("push_hub_key") or "").strip()
+        except (OSError, ValueError):
+            _HUB_KEY_CACHE["key"] = ""
+        _HUB_KEY_CACHE["ts"] = time.time()
+    return _HUB_KEY_CACHE["key"]
 
 
 def _hub_send(content, msg_type, receive_id, receive_id_type,
               kind=None, critical=False, timeout=8):
-    """→ (ok, why) 闸门结果；hub 不可达返回 None（回落直发）。"""
+    """→ (ok, why) 闸门结果；hub 不可达也返回失败，不直发。"""
     try:
         body = json.dumps({"content": content, "msg_type": msg_type,
                            "receive_id": receive_id,
                            "receive_id_type": receive_id_type or "open_id",
                            "kind": kind, "critical": critical}
                           ).encode("utf-8")
+        key = _hub_key()
+        if not key:
+            return False, "hub authorization not configured"
         rq = urllib.request.Request(
             HUB_SEND_URL, data=body,
-            headers={"Content-Type": "application/json"})
+            headers={"Content-Type": "application/json", "X-Push-Hub-Key": key})
         with urllib.request.urlopen(rq, timeout=timeout) as r:
             resp = json.loads(r.read().decode("utf-8"))
         if resp.get("ok"):
             return True, str(resp.get("why") or "hub ok")
         return False, str(resp.get("error") or "hub deny")
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            return False, "hub authorization denied"
+        return False, "hub HTTP %d" % e.code
     except Exception:
-        return None  # hub 挂了/超时/坏响应 → 回落直发
+        return False, "hub unavailable or invalid response"
 
 
 def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
@@ -136,14 +166,13 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
     """发消息/卡片 → (ok, why)。why 文本兼容 send_feishu 判例
     （no app creds / openapi code=N / openapi err ...）。
 
-    K-PUSH-003：via_hub=True 时先过 8097 闸门（静默/配额/显式 kind 流水）；
-    8097 闸内转发自身调用必须传 via_hub=False（防环）。critical=True 为
-    预警类（豁免静默，风险提示不可吞）。"""
-    if via_hub and not os.environ.get("HUB_BYPASS"):
-        r = _hub_send(content, msg_type, receive_id, receive_id_type,
-                      kind, critical)
-        if r is not None:
-            return r
+    K-PUSH-003：via_hub=True 时先过 8097 闸门（鉴权/静默/配额/显式 kind
+    流水）；8097 闸内转发自身调用必须传 via_hub=False（防环）。
+    K-PUSH-012：hub 不可达/拒绝时 fail-closed 不回落直发（闸门唯一通路）。
+    critical=True 为预警类（豁免静默，风险提示不可吞）。"""
+    if via_hub:
+        return _hub_send(content, msg_type, receive_id, receive_id_type,
+                         kind, critical)
     if not app_id or not app_secret:
         app_id, app_secret = load_app_creds()
         if not app_id or not app_secret:
