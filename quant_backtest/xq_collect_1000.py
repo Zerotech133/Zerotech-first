@@ -43,6 +43,8 @@ MAX_PAGES_PER_CAT = 120                # 单类目每轮步数上限（续翻后
 MAX_REQUESTS = 640
 CURSOR_PATH = os.path.join(r"C:\aios\automation_runs", "xq_backfill",
                            "backfill_cursor.json")   # 定时任务产物统一根（2026-10-18）
+SEED_CURSOR_PATH = os.path.join(r"C:\aios\automation_runs", "xq_backfill",
+                                "seed_cursor.json")  # 播种轮独立断点档（与常规轮隔离）
 
 STATUS_FIELDS = ("view_count", "comment_count", "retweet_count",
                  "like_count", "reward_count")
@@ -66,6 +68,36 @@ def load_seen(table: str, pk: str) -> set:
         return ids
     except Exception:
         return set()
+
+
+def load_seed_cursors(seed: int) -> dict:
+    """读播种断点：{"<cat>": {"max_id": ..., "exhausted": bool}}（该 seed 的）。"""
+    try:
+        with open(SEED_CURSOR_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get(str(seed), {}) or {}
+    except Exception:
+        return {}
+
+
+def save_seed_cursor(seed: int, cat: int, state: dict) -> None:
+    """播种断点原子落盘：seed_cursor.json 顶层 key=<seed>，内层 key=<cat>。"""
+    try:
+        data = {}
+        if os.path.exists(SEED_CURSOR_PATH):
+            with open(SEED_CURSOR_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        bucket = data.get(str(seed)) or {}
+        bucket[str(cat)] = {"max_id": state.get("max_id"),
+                            "exhausted": bool(state.get("exhausted")),
+                            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        data[str(seed)] = bucket
+        tmp = SEED_CURSOR_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, SEED_CURSOR_PATH)
+    except Exception as e:
+        print("[seed-cursor] 落档异常（不阻断采集）：%s" % str(e)[:60])
 
 
 def load_cursors() -> dict:
@@ -158,20 +190,30 @@ class Collector:
         self.cursors = {} if fresh else load_cursors()
         self.fresh = fresh
         # 播种轮（号段跳挖）：feed 序号空间任意起点，4 类目同区段扫；
-        # 断点不落档（save 屏蔽），与常规轮游标存档完全隔离——
-        # 实证锚点：30000→2015-03 / 60000→2017-05 / 150000→2018-04（探针 v0.2）
+        # 断点写独立档 seed_cursor.json（key="<seed>_<cat>"），与常规轮
+        # 游标存档完全隔离——同 seed 重跑自动续挖，exhausted 后整 cat 跳过。
+        # 实证锚点：30000→2015-03 / 45000→2015末-2016 / 60000→2017-05 /
+        # 150000→2018-04 / 250000→2020-03（探针 v0.2）
         self.seed = seed
         if seed:
-            self.cursors = {str(cat): {"max_id": str(seed), "exhausted": False}
-                            for cat in CATS}
+            saved = load_seed_cursors(seed)
+            self.cursors = {}
+            for cat in CATS:
+                st = saved.get(str(cat))
+                self.cursors[str(cat)] = st or {"max_id": str(seed),
+                                                "exhausted": False}
         print("[collect] 已有 status_id %d 个%s"
               % (len(self.seen),
                  "，播种起点 max_id=%s" % seed if seed else ""))
 
     def _save(self) -> None:
         if self.seed:
+            for cat in CATS:
+                st = self.cursors.get(str(cat))
+                if st:
+                    save_seed_cursor(self.seed, cat, st)
             return
-        self._save()
+        save_cursors(self.cursors)
 
     def rotate(self, reason: str) -> None:
         try:
