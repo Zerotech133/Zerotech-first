@@ -103,6 +103,9 @@ def _send_json(handler: Any, obj: dict, code: int = 200) -> None:
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))
     handler.send_header("Cache-Control", "no-store")
+    # CORS：本机只读状态 API，允许 file:// 与任意本地端口页面直连
+    # （量化首页 v3 / 个人 OS 大屏 os_entry 均从其他源取数，无此头则浏览器静默拦截）
+    handler.send_header("Access-Control-Allow-Origin", "*")
     handler.end_headers()
     handler.wfile.write(body)
 
@@ -1308,6 +1311,16 @@ def register_routes(server_or_app: Any) -> Any:
         return _send_json(self, {"ok": False,
                                  "error": "只读服务不接受该 POST"}, 405)
 
+    def do_OPTIONS(self):  # noqa: N802 — CORS 预检（只读 GET 面）
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    if "do_OPTIONS" not in handler_cls.__dict__:
+        handler_cls.do_OPTIONS = do_OPTIONS  # type: ignore[attr-defined]
     handler_cls.do_GET = do_GET
     handler_cls.do_POST = do_POST
     handler_cls._read_json_body = _read_json_body  # POST 分支共用读体助手

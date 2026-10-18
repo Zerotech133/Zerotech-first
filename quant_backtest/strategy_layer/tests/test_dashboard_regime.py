@@ -123,6 +123,8 @@ class FakeHandler:
         self.method = method
         self.body = body or b""
         self.sent = []
+        self.headers = []
+        self._code = None
         self.orig_called = False
 
     def do_GET(self):
@@ -135,7 +137,7 @@ class FakeHandler:
         self._code = code
 
     def send_header(self, k, v):
-        pass
+        self.headers.append((k, v))
 
     def end_headers(self):
         pass
@@ -198,6 +200,56 @@ class TestRegimeRoute:
         h.do_GET()
         assert h.orig_called is True
         assert captured == []
+
+
+class TestCors:
+    """CORS 头 = file:// 与跨端口页面直连 8791 的生命线。
+
+    缺此头时浏览器静默拦截响应（fetch 照常发出、前端拿不到数据），
+    首页 v3 大盘条/六环徽标/探针会全数假绿防线外失败（2026-10-19 P0）。
+    """
+
+    def setup_method(self):
+        self.handler_cls = type("Handler", (FakeHandler,), {
+            "do_GET": FakeHandler.do_GET,
+            "do_POST": FakeHandler.do_POST,
+        })
+
+    def test_send_json_carries_cors(self):
+        h = self.handler_cls("/api/regime", "GET")
+        dashboard_api._send_json(h, {"ok": True})
+        assert ("Access-Control-Allow-Origin", "*") in h.headers
+
+    def test_options_preflight_injected(self):
+        dashboard_api.register_routes(self.handler_cls)
+        assert "do_OPTIONS" in self.handler_cls.__dict__
+        h = self.handler_cls("/api/regime", "OPTIONS")
+        h.do_OPTIONS()
+        assert h._code == 204
+        assert ("Access-Control-Allow-Origin", "*") in h.headers
+        assert ("Access-Control-Allow-Methods", "GET, OPTIONS") in h.headers
+
+    def test_existing_options_not_shadowed(self):
+        """宿主 Handler 已有 do_OPTIONS 时不得覆盖（包裹器幂等纪律）。"""
+        marker = {"called": False}
+
+        def orig_options(self):
+            marker["called"] = True
+
+        cls = type("Handler2", (FakeHandler,), {
+            "do_GET": FakeHandler.do_GET,
+            "do_POST": FakeHandler.do_POST,
+            "do_OPTIONS": orig_options,
+        })
+        dashboard_api.register_routes(cls)
+        h = cls("/x", "OPTIONS")
+        h.do_OPTIONS()
+        assert marker["called"] is True
+
+    def test_double_register_idempotent(self):
+        dashboard_api.register_routes(self.handler_cls)
+        dashboard_api.register_routes(self.handler_cls)
+        assert self.handler_cls._dashboard_api_wrapped is True
 
 
 if __name__ == "__main__":
