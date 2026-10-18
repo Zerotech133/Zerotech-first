@@ -151,6 +151,8 @@ AI/111111/*
 !AI/111111/test_chat_profiles.py
 !AI/111111/model_routing.py
 !AI/111111/test_model_routing.py
+!AI/111111/a9_supervision.py
+!AI/111111/test_a9_supervision.py
 .worktrees/
 portal/audit_ai_config.json
 prototypes/ai_chat_web/*.db
@@ -228,3 +230,7 @@ jev-eval/n1_check.txt
 data/runtime/
 outputs/
 quant_backtest/tmp/
+
+# ===== CZSC 影子旁路 venv（K-ORG-202：第三方独立运行态，不进版本控制）=====
+# czsc==1.0.2 仅存此 venv，主仓零依赖；误收编将引入大体积二进制与闭源 wheel
+quant_backtest/.venv_czsc/
