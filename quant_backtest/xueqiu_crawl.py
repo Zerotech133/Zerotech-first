@@ -50,6 +50,10 @@ class XqCrawler:
         # load，三个流程函数全部受益。
         self.mf.load()
         self.sess = requests.Session()
+        # 护栏：禁宿主代理注入（trust_env），判例 2026-10-18 假403/假502
+        # （WorkBuddy automation 曾注入代理 env 致「假快+假403/假502」；
+        #   P0-3 出口代理池为显式 proxies.update，不受 trust_env 影响）
+        self.sess.trust_env = False
         # P0-3：出口代理池注入（空配置=直连，行为与之前一致）；
         # fetch_* 与首页 warm 全部经 self.sess，自动走当前出口。
         # P2-7 出口-指纹粘性：UA 随出口绑定（同出口恒同 UA，换出口

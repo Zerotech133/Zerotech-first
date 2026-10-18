@@ -170,3 +170,17 @@ def test_legit_forms_survive_v16():
     assert extract_tickers("美团03690 订单强劲", "") == ["03690"]
     # 紧贴名 + 语境共现仍放行（v1.3 主力形态不回退）
     assert extract_tickers("港股焦点：腾讯00700 回购注销", "") == ["00700"]
+
+
+# ── ⑥ 量词后缀「笔/币」（v1.6-b3，2026-10-19，20000×2 类残留实证） ──
+
+def test_bi_counter_suffix_rejected():
+    # 「成交2万笔」形：展开位「20000笔」不得当港股码捕获——后缀排除集补「笔」
+    assert extract_tickers("成交2万笔，人气爆棚", "") == []
+    assert extract_tickers("港股成交 20000笔，人气爆棚", "") == []
+
+def test_bi_coin_suffix_rejected():
+    # 「链上3万币」形：展开位「30000币」同堵——后缀排除集补「币」
+    # （「上」紧贴名通道不放行，唯有「币」后缀硬排除兜底）
+    assert extract_tickers("链上3万币 铭文火热", "") == []
+    assert extract_tickers("链上30000币 铭文火热", "") == []
