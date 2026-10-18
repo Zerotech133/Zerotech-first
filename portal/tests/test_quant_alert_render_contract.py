@@ -1,5 +1,7 @@
 """Offline assertions for the real quant portal alert loader (Node.js required)."""
 
+from html.parser import HTMLParser
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -32,6 +34,8 @@ async function render(events) {
   };
   const context = {
     AbortController,
+    URL,
+    location: { origin: 'https://portal.example.test' },
     setTimeout: () => 0,
     fetch,
     document: { getElementById: id => elements[id] },
@@ -53,18 +57,45 @@ async function render(events) {
   assert.match(normal['al-ts'].textContent, /快照 2026-10-19 10:00 · 共 1 条/);
   assert.equal(normal['k-alerts'].textContent, '1 条');
   assert.match(normal['al-list'].innerHTML, /真实预警/);
-  assert.match(normal['al-list'].innerHTML, /href='\/watch'/);
+  assert.match(normal['al-list'].innerHTML, /href="\/watch"/);
 
+  // Parse the actual attribute boundaries, not only an escaped substring.
+  const attributeNames = html => [...html.matchAll(/<a\s+([^>]*)>/g)]
+    .flatMap(match => [...match[1].matchAll(/([^\s=]+)="([^"]*)"/g)]
+      .map(attribute => attribute[1]));
+  const producedRows = [];
   for (const hostileHref of [
-    "/watch' onclick='alert(1)", 'javascript:alert(1)',
-    '//attacker.example', '/watch%27%20onclick%3Dalert(1)', '/watch\\evil'
+    "/watch' onclick='alert(1)", 'javascript:alert(1)', 'data:text/html,attack',
+    '//attacker.example', '/watch%27%20onclick%3Dalert(1)', '/watch\\evil',
+    '/watch\n', '/watch%0aonclick=attack', '/%2f%2fattacker.example',
+    '/watch%2e%2e/evil', 'https://attacker.example/watch',
+    'https://portal.example.test.evil/watch'
   ]) {
     const hostile = await render([{ data: { ts: '不可信链接', alerts: [{ ...row, href: hostileHref }] } }]);
-    assert.match(hostile['al-list'].innerHTML, /href='#'/);
+    assert.match(hostile['al-list'].innerHTML, /href="#"/);
+    assert.deepEqual(attributeNames(hostile['al-list'].innerHTML), ['class', 'href']);
     assert.doesNotMatch(hostile['al-list'].innerHTML, /onclick|javascript:|attacker\.example/);
+    producedRows.push({ html: hostile['al-list'].innerHTML, expectedHref: '#' });
   }
   const safeQuery = await render([{ data: { ts: '站内下钻', alerts: [{ ...row, href: '/watch?id=1&pool=main' }] } }]);
-  assert.match(safeQuery['al-list'].innerHTML, /href='\/watch\?id=1&amp;pool=main'/);
+  assert.match(safeQuery['al-list'].innerHTML, /href="\/watch\?id=1&amp;pool=main"/);
+  const sameOrigin = await render([{ data: { alerts: [{ ...row, href: 'https://portal.example.test/watch?id=2' }] } }]);
+  assert.match(sameOrigin['al-list'].innerHTML, /href="\/watch\?id=2"/);
+  assert.deepEqual(attributeNames(sameOrigin['al-list'].innerHTML), ['class', 'href']);
+  producedRows.push({ html: normal['al-list'].innerHTML, expectedHref: '/watch' });
+  producedRows.push({ html: safeQuery['al-list'].innerHTML, expectedHref: '/watch?id=1&pool=main' });
+  producedRows.push({ html: sameOrigin['al-list'].innerHTML, expectedHref: '/watch?id=2' });
+
+  for (const badDelta of ["1' onclick='alert(1)", 'NaN', Infinity, -Infinity, 1000001, -1000001]) {
+    const result = await render([{ data: { alerts: [{ ...row, delta: badDelta }] } }]);
+    assert.equal(result['k-alerts'].textContent, '1 条');
+    assert.doesNotMatch(result['al-list'].innerHTML, /class='delta|onclick|Infinity|NaN/);
+  }
+  for (const delta of [-3, 5]) {
+    const result = await render([{ data: { alerts: [{ ...row, delta }] } }]);
+    assert.match(result['al-list'].innerHTML, /class='delta (up|dn)'/);
+    assert.match(result['al-list'].innerHTML, new RegExp((delta > 0 ? '↗' : '↘') + Math.abs(delta)));
+  }
 
   const empty = await render([{ data: { ts: '空快照', alerts: [] } }]);
   assert.match(empty['al-ts'].textContent, /共 0 条/);
@@ -86,8 +117,22 @@ async function render(events) {
     assert.match(unavailable['al-list'].innerHTML, /预警服务离线或响应异常/);
     assert.doesNotMatch(unavailable['al-list'].innerHTML, /真实预警|暂无预警数据/);
   }
+  console.log(JSON.stringify(producedRows));
 })().catch(error => { console.error(error); process.exitCode = 1; });
 """
+
+
+class _AlertLinkParser(HTMLParser):
+    """Collect parsed anchor attributes to detect HTML attribute injection."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.anchors: list[list[tuple[str, str | None]]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Record browser-like parsed anchor attributes."""
+        if tag == "a":
+            self.anchors.append(attrs)
 
 
 def test_quant_alert_loader_offline() -> None:
@@ -104,3 +149,9 @@ def test_quant_alert_loader_offline() -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+    for rendered in json.loads(result.stdout):
+        parser = _AlertLinkParser()
+        parser.feed(rendered["html"])
+        assert parser.anchors == [
+            [("class", "arow"), ("href", rendered["expectedHref"])]
+        ]
