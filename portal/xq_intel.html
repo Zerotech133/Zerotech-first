@@ -57,7 +57,7 @@ footer{margin-top:30px;color:#484f58;font-size:11px;text-align:center}
 
 <section><h2>五 · 热门标的</h2><div class="panel" id="hot"><span class="empty">加载中…</span></div><div id="tickerCard"></div></section>
 
-<section><h2>六 · 管道体检</h2><div class="panel" id="health"><span class="empty">加载中…</span></div></section>
+<section><h2>六 · 管道体检</h2><div class="panel" id="health"><span class="empty">加载中…</span></div><div class="panel" id="coverageCard" style="display:none"></div></section>
 
 <footer>雪球情报日报 P2a · 2026-10-18 · 生成器 xq_daily_report.py（每日 19:00）· 出口 api_xq_intel.py</footer>
 </div>
@@ -186,9 +186,28 @@ function loadDates(){
   el('dchips').style.display='';
  }).catch(function(){/* 静默隐藏零干扰：日期导航失败不影响主渲染 */});
 }
+
+/* —— 分类覆盖进度卡（coverage-dev 2026-10-18，源 /api/xq/intel/coverage 快照投影）—— */
+function fmt(n){return (typeof n==='number')?n.toLocaleString('en-US'):esc(n)}
+function loadCoverage(){
+ fetch('/api/xq/intel/coverage').then(function(r){return r.json()}).then(function(j){
+  if(!j||j.snapshot_exists===false||j.error)return; /* 空态/坏快照静默隐藏整卡零干扰 */
+  var pct=(typeof j.coverage_pct==='number')?j.coverage_pct:0;
+  var sprint=(typeof j.sprint_last==='string'&&j.sprint_last)?'<div class="legend" style="margin-top:4px">sprint 尾行：'+esc(j.sprint_last)+'</div>':'';
+  var status=(typeof j.status_last==='string'&&j.status_last)?'<div class="legend">status 尾行：'+esc(j.status_last)+'</div>':'';
+  el('coverageCard').innerHTML=
+   '<div class="legend">分类覆盖进度（xq_status_classified / xq_status 存量）：</div>'
+   +'<div class="bar"><span style="width:'+Math.min(pct,100)+'%;background:#1f6feb"></span></div>'
+   +'<div class="legend"><b>分类覆盖 '+fmt(j.classified)+'/'+fmt(j.total)+' ('+pct+'%)</b> · v1.3 语义 '+fmt(j.v13_count)+' ('+j.v13_pct+'%) · 有码 '+fmt(j.with_tickers)+' · 解析ok '+fmt(j.parse_ok_count)+'</div>'
+   +sprint+status
+   +'<div class="legend" style="margin-top:4px">快照 '+esc(j.generated_at||'—')+' · 源 <a href="/api/xq/intel/coverage" style="color:#58a6ff">/api/xq/intel/coverage</a></div>';
+  el('coverageCard').style.display='';
+ }).catch(function(){/* 静默隐藏零干扰：覆盖卡失败不影响主渲染 */});
+}
 el('d').value=new Date().toLocaleDateString('sv-SE');
 load();
 loadDates();
+loadCoverage();
 </script>
 <script src="/static/dataops_link.js" data-entity="page:xq_intel" defer></script>
 </body>

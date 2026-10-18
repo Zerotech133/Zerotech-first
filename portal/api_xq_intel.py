@@ -14,6 +14,12 @@ GET /api/xq/intel/ticker?code=600519&days=7
       高置信命中条目（按日期降序）、异动信号、情绪计数；纯文件聚合只读，
       不查 SQLite、不 import quant_backtest（门户不进库契约）。
 
+GET /api/xq/intel/coverage
+    → 分类覆盖进度卡（读 automation_runs/xq_classify/coverage_snapshot.json，
+      由生成器侧 quant_backtest/tools/classify_coverage.py 定期落盘）；
+      纯文件读，不查 SQLite、不 import quant_backtest（门户不进库契约）；
+      快照缺失返回 snapshot_exists=false 合法空态，坏 JSON 带 error fail-visible。
+
 只读纪律（沿 api_capability 判例）：mode=ro / no-store / fail-visible——
 报告未生成返回 report_exists=false 投影而非 500（观测面，首跑前为常态）；
 坏 JSON 返回 error 字段（不吞异常）；date 非法 400。
@@ -28,6 +34,7 @@ import re
 from pathlib import Path
 
 REPORT_ROOT = Path(r"C:/aios/automation_runs/xq_report")
+COVERAGE_SNAPSHOT = Path(r"C:/aios/automation_runs/xq_classify/coverage_snapshot.json")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _TICKER_CODE_RE = re.compile(r"^[0-9A-Za-z]{4,6}$")
 _TICKER_DAYS_RE = re.compile(r"^\d{1,2}$")
@@ -138,6 +145,27 @@ def read_xq_intel_ticker(code: str, days: int = 7) -> dict:
         return out
 
 
+def read_xq_intel_coverage() -> dict:
+    """分类覆盖进度卡（纯文件读快照，fail-visible）。
+
+    快照由生成器侧 classify_coverage.py 落盘（门户只消费 JSON 不进库）；
+    文件缺失是合法空态（首跑前），返回 snapshot_exists=false；
+    解析失败带 error 键不吞异常。
+    """
+    if not COVERAGE_SNAPSHOT.exists():
+        return {"snapshot_exists": False,
+                "hint": "快照由 quant_backtest/tools/classify_coverage.py 生成"}
+    try:
+        data = json.loads(COVERAGE_SNAPSHOT.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        return {"snapshot_exists": True, "source": COVERAGE_SNAPSHOT.name,
+                "error": "bad json: %r" % e}
+    if isinstance(data, dict):
+        data["snapshot_exists"] = True
+        data["source"] = COVERAGE_SNAPSHOT.name
+    return data
+
+
 class Handler:
     def _xq_intel(self, qs):
         args = self._norm_qs(qs)
@@ -175,3 +203,10 @@ class Handler:
         else:
             days = 7
         self._json(read_xq_intel_ticker(code, days))
+
+    def _xq_intel_coverage(self, qs):
+        # 分类覆盖进度卡出口：零参数白名单，带任何参数走 400（api_perf 判例）
+        if self._norm_qs(qs):
+            self._json({"error": "本出口不接受任何参数"}, 400)
+            return
+        self._json(read_xq_intel_coverage())

@@ -2932,6 +2932,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 雪球情报标的下钻（近 N 日日报按 code 纯文件聚合，只读 2026-10-18）
             self._xq_intel_ticker(qs)
             return
+        if path == '/api/xq/intel/coverage':
+            # 分类覆盖进度卡（coverage_snapshot.json 纯文件读，只读零参数 2026-10-18）
+            self._xq_intel_coverage(qs)
+            return
         if path == '/api/dataops/overview':
             # 数据运营指挥台（采集动线+数据池+管道调度聚合，只读）
             self._dataops(qs)
@@ -3126,7 +3130,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 数据层 k_stock/paper/portal_status.py（纯标准库 sqlite ro，零 pandas），
             # CLI 自测 python k_stock/paper/portal_status.py。
             import sys as _sysp
-            _ksdir = r"E:\老田的AI助手\k_stock"
+            _ksdir = api_portfolio._REPO_ROOT / "k_stock"
+            _ksdir = str(_ksdir)
             if _ksdir not in _sysp.path:
                 _sysp.path.insert(0, _ksdir)
             try:
@@ -3175,7 +3180,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     self._json({"ok": False,
                                 "error": "pf_id 非法（仅字母数字下划线）"}, 400)
                     return
-                _fp = os.path.join(r"E:\老田的AI助手\k_stock\data\plan_review",
+                _fp = os.path.join(api_portfolio._PAPER_DATA_DIR,
+                                   "plan_review",
                                    time.strftime("%Y%m%d") + "_" + _pf + ".json")
                 _rev = None
                 if os.path.exists(_fp):
@@ -3187,7 +3193,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/paper_history":
             # K-STOCK v0.2 历史回看（只读）：?day=YYYY-MM-DD，缺省=最新快照日
             import sys as _sysp
-            _ksdir = r"E:\老田的AI助手\k_stock"
+            _ksdir = str(api_portfolio._REPO_ROOT / "k_stock")
             if _ksdir not in _sysp.path:
                 _sysp.path.insert(0, _ksdir)
             try:
@@ -3206,8 +3212,9 @@ color:#fff;font-size:13.5px;cursor:pointer}
         elif path == "/api/ops_today":
             # K-STOCK-281 每日运营真实状态（数据新鲜度/买卖点/执行状态；按数据日缓存幂等）
             import sys as _sys281
-            if r"E:/老田的AI助手/quant_backtest" not in _sys281.path:
-                _sys281.path.insert(0, r"E:/老田的AI助手/quant_backtest")
+            _qbt_dir = str(api_portfolio._REPO_ROOT / "quant_backtest")
+            if _qbt_dir not in _sys281.path:
+                _sys281.path.insert(0, _qbt_dir)
             from ops_signal_today import compute as _ops_compute
             self._json(_ops_compute())
         elif path == "/api/bt2_jobs":
@@ -3283,7 +3290,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     os.path.dirname(os.path.abspath(__file__)),
                     "data", "strategy_subscriptions.json")
                 hires_p = os.path.join(
-                    r"E:\老田的AI助手\k_stock\paper", "hires.json")
+                    api_portfolio._PAPER_DIR, "hires.json")
                 _all_pfs = []
                 if os.path.exists(subs_p):
                     with open(subs_p, encoding="utf-8") as _f:
@@ -3292,7 +3299,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 if os.path.exists(hires_p):
                     with open(hires_p, encoding="utf-8") as _f:
                         _hires = (_j2.load(_f).get("hires") or [])
-                con = _sq2.connect(r"E:\老田的AI助手\k_stock\data\paper.db")
+                con = _sq2.connect(
+                    f"file:{api_portfolio._PAPER_DB}?mode=ro", uri=True)
                 con.row_factory = _sq2.Row
                 pf_rows = []
                 try:
@@ -3301,7 +3309,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                         traders = [h.get("trader") for h in _hires
                                    if h.get("source") == _pid
                                    and h.get("status") == "active"]
-                        pend, poss, eq = [], [], None
+                        pend, poss, equities = [], [], []
                         for t in traders:
                             pend += [dict(r) for r in con.execute(
                                 "SELECT stock,side,qty,plan_date,status,"
@@ -3317,15 +3325,18 @@ color:#fff;font-size:13.5px;cursor:pointer}
                                 "WHERE account_id=? ORDER BY date DESC "
                                 "LIMIT 1", (t,)).fetchone()
                             if r:
-                                eq = {"account": t, "date": r["date"],
-                                      "total": r["total"]}
+                                equities.append({"account": t, "date": r["date"],
+                                                 "total": r["total"]})
                         pf_rows.append({
                             "id": _pid, "name": _p.get("name"),
                             "strategies": _p.get("strategies") or [],
                             "trader": _p.get("trader"),
                             "note": _p.get("note"),
                             "traders": traders, "pending": pend,
-                            "positions": poss, "equity": eq})
+                            "positions": poss, "equities": equities,
+                            "equity": ({"date": max(x["date"] for x in equities),
+                                        "total": sum(x["total"] for x in equities)}
+                                       if equities else None)})
                 finally:
                     con.close()
                 self._json({"ok": True, "portfolios": pf_rows})
@@ -3337,7 +3348,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
             try:
                 import json as _j3
                 hires_p = os.path.join(
-                    r"E:\老田的AI助手\k_stock\paper", "hires.json")
+                    api_portfolio._PAPER_DIR, "hires.json")
                 r = self._paper_run_json(
                     [self._PAPER_PY,
                      os.path.join(self._PAPER_DIR, "trainee.py"),
@@ -3357,8 +3368,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # K-STOCK-167 C3 文案收编：擅长/风格文案改由档案投影驱动，
                 # 从 trainees/*.json 读真档案 desc，前端不再内置硬编码。
                 _faces = {}
-                _tdir = os.path.join(
-                    r"E:\老田的AI助手\k_stock\paper", "trainees")
+                _tdir = os.path.join(api_portfolio._PAPER_DIR, "trainees")
                 for _fn in sorted(glob.glob(os.path.join(_tdir, "*.json"))):
                     try:
                         with open(_fn, encoding="utf-8") as _f:
@@ -3396,7 +3406,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     self._json({"ok": False, "error": "no trader: %s" % _tid})
                     return
                 con = _sq3.connect(
-                    r"E:\老田的AI助手\k_stock\data\paper.db")
+                    f"file:{api_portfolio._PAPER_DB}?mode=ro", uri=True)
                 con.row_factory = _sq3.Row
                 eq, recent, n_filled = [], [], 0
                 try:
@@ -3431,7 +3441,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     return
                 import glob as _glob
                 mdir = os.path.join(
-                    r"E:\老田的AI助手\k_stock\data", "review_minutes")
+                    api_portfolio._PAPER_DATA_DIR, "review_minutes")
                 fp = (os.path.join(mdir, "%s.json" % _d) if _d
                       else max(_glob.glob(os.path.join(mdir, "*.json")),
                                default=None))
