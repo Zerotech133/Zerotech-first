@@ -161,7 +161,7 @@ def render(day, tac, ing, summ_t, anomalies) -> str:
     L.append("## 三-B、内容形态分布（当日新帖 · v1.2 分类维度）")
     L.append("")
     CTN = {"tech": "技术面分析", "community": "社区探讨", "news": "个股资讯",
-           "fundamental": "基本面逻辑", "(待补)": "（待补标）"}
+           "fundamental": "基本面逻辑", "edu": "投教科普", "ad": "广告活动", "(待补)": "（待补标）"}
     if summ_t["ctype"]:
         ctot = sum(summ_t["ctype"].values())
         for k, v in summ_t["ctype"].most_common():
@@ -261,8 +261,11 @@ def main() -> int:
         jp = os.path.join(OUT_ROOT, "daily", stem + ".json")
         open(dp, "w", encoding="utf-8").write(md)
         json.dump(payload, open(jp, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-        for ext, src in ((".md", md), (".json", json.dumps(payload, ensure_ascii=False, indent=1))):
-            open(os.path.join(OUT_ROOT, "latest" + ext), "w", encoding="utf-8").write(src)
+        # latest 仅由"今天"的报告更新：历史日期回填/验证运行不得覆盖消费锚点
+        # （2026-10-18 判例：seed 播种后 --date 2020-05-13 验证把 latest 打回历史）
+        if day == time.strftime("%Y-%m-%d"):
+            for ext, src in ((".md", md), (".json", json.dumps(payload, ensure_ascii=False, indent=1))):
+                open(os.path.join(OUT_ROOT, "latest" + ext), "w", encoding="utf-8").write(src)
 
         with open(os.path.join(OUT_ROOT, "report_status.log"), "a", encoding="ascii",
                   errors="backslashreplace") as f:

@@ -41,25 +41,27 @@ LOG_DIR = Path(r"C:\aios\automation_runs") / "xq_classify"   # 定时任务产�
 STATUS_LOG = LOG_DIR / "xq_classify_status.log"
 
 MODEL = "qwen3.5:9b"
-PROMPT_VERSION = "v1.2"    # v1.2：+content_type 内容形态四分类（老田 2026-10-18：技术面/社区探讨/个股资讯/基本面）
+PROMPT_VERSION = "v1.3"    # v1.3：+ad/edu 出口、tech 定义收紧（实效检验揪出广告污染 98 条，老田拍板 2026-10-18）
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 TIMEOUT_SEC = 60           # think:false 后单条 ~1s；60s 纯兜底
 BODY_CHARS = 300           # 正文截断（短文本分类足够）
 
 EVENT_TYPES = ["行情观点", "个股研判", "宏观政策", "基金理财", "交易策略", "广告推广", "闲聊杂谈"]
 SENTIMENTS = ["bullish", "bearish", "neutral"]
-CONTENT_TYPES = ["tech", "community", "news", "fundamental"]
+CONTENT_TYPES = ["tech", "community", "news", "fundamental", "edu", "ad"]
 
 CONTENT_TYPE_DESC = {
-    "tech": "技术面分析（讲K线/均线/形态/指标/缠论/量价/点位/图形/买卖点）",
+    "tech": "技术面分析（只收K线/均线/形态/指标/缠论/量价/点位/图形/买卖点的技术性讨论；投教科普不在此类）",
     "community": "社区探讨（散户交流/情绪表达/争论吐槽/求点评/打卡跟风，无论据链）",
     "news": "个股资讯（事实性转述：公告/业绩/订单/政策/新闻，少主观判断）",
     "fundamental": "基本面逻辑（业绩/行业/估值/商业模式/竞争格局论证）",
+    "edu": "投教科普（方法论教学：怎么选基金/怎么打新/概念科普/投资入门）",
+    "ad": "广告活动（悬赏/竞猜/红包/课程推广/平台活动，直接归此类）",
 }
 
 SYSTEM_PROMPT = (
     "你是金融舆情分类器。只输出一行 JSON，不要任何其他文字："
-    '{"event_type":"<七选一>","content_type":"<四选一>",'
+    '{"event_type":"<七选一>","content_type":"<六选一>",'
     '"sentiment":"<三选一>","confidence":<0到1小数>}。'
     "event_type 只能取：" + "、".join(EVENT_TYPES) + "。"
     "content_type 只能取（内容形态，与 event_type 正交）：" +
@@ -185,6 +187,10 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
         parse_ok = 1 if (event_type and sentiment) else 0
     except Exception:
         parse_ok = 0
+    # v1.3 规则短路（优先于 LLM）：event_type=广告推广 → content_type 强制 'ad'
+    # 实效检验实证：v1.2 四类无出口，98 条广告帖被迫污染 fundamental/community
+    if event_type == "广告推广":
+        content_type = "ad"
     if not parse_ok:
         log("DEGRADED %s: unparseable=%r" % (status_id, answer[:80]))
 
