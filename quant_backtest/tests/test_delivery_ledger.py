@@ -288,8 +288,127 @@ class DeliveryLedgerTests(unittest.TestCase):
         finally:
             db.close()
         self.assertIsNone(self.claim())
-        with self.assertRaisesRegex(ValueError, "identity conflict"):
+        with self.assertRaisesRegex(ValueError, "legacy deliveries"):
             self.register()
+        with self.assertRaisesRegex(ValueError, "legacy deliveries"):
+            self.register(50)
+
+    def test_legacy_v1_upgrade_retains_claimed_sent_unknown_and_receipts(self) -> None:
+        legacy_path = Path(self.temp.name) / "legacy-v1.sqlite3"
+        db = sqlite3.connect(legacy_path)
+        try:
+            db.executescript("""
+                CREATE TABLE delivery_events (
+                    event_key TEXT PRIMARY KEY, sub_id TEXT NOT NULL, kind TEXT NOT NULL,
+                    mode TEXT NOT NULL, fingerprint TEXT NOT NULL, source_anchor TEXT NOT NULL,
+                    created_at TEXT NOT NULL, cancelled_at TEXT);
+                CREATE TABLE delivery_targets (
+                    event_key TEXT NOT NULL REFERENCES delivery_events(event_key),
+                    target_key TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL,
+                    state TEXT NOT NULL CHECK (state IN
+                    ('READY','CLAIMED','SENT','FAILED','UNKNOWN','CANCELLED')),
+                    attempt_id TEXT, route TEXT, receipt_id TEXT, trace_id TEXT,
+                    claimed_at TEXT, expires_at TEXT, updated_at TEXT NOT NULL,
+                    PRIMARY KEY(event_key,target_key));
+                CREATE TABLE delivery_attempts (
+                    attempt_id TEXT PRIMARY KEY, event_key TEXT NOT NULL,
+                    target_key TEXT NOT NULL, route TEXT NOT NULL,
+                    claimed_at TEXT NOT NULL, expires_at TEXT NOT NULL,
+                    outcome TEXT NOT NULL CHECK(outcome IN ('CLAIMED','SENT','FAILED','UNKNOWN')),
+                    completed_at TEXT, receipt_id TEXT, trace_id TEXT,
+                    FOREIGN KEY(event_key,target_key)
+                    REFERENCES delivery_targets(event_key,target_key));
+                CREATE INDEX delivery_attempts_target_idx
+                    ON delivery_attempts(event_key,target_key);
+                PRAGMA user_version=1;
+            """)
+            timestamp = self.clock().isoformat()
+            for number, state in enumerate(("CLAIMED", "SENT", "UNKNOWN")):
+                event = f"legacy-{number}"
+                target = f"legacy-target-{number}"
+                attempt = f"legacy-attempt-{number}"
+                receipt = "old-provider-message" if state == "SENT" else None
+                db.execute("INSERT INTO delivery_events VALUES (?,?,?,?,?,?,?,NULL)",
+                           (event, "subscription-17", "quote-alert", "live", "digest",
+                            "old-source", timestamp))
+                db.execute("INSERT INTO delivery_targets VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                           (event, target, "feishu_open_id", str(number), state, attempt,
+                            "route", receipt, "old-trace", timestamp, timestamp, timestamp))
+                db.execute("INSERT INTO delivery_attempts VALUES (?,?,?,?,?,?,?,?,?,?)",
+                           (attempt, event, target, "route", timestamp, timestamp,
+                            state, timestamp if state != "CLAIMED" else None,
+                            receipt, "old-trace"))
+            db.commit()
+        finally:
+            db.close()
+        restarted = DeliveryLedger(legacy_path, clock=self.clock)
+        restarted.set_subscription_control("subscription-17", enabled=True, epoch=1)
+        for number, state in enumerate(("CLAIMED", "SENT", "UNKNOWN")):
+            row = restarted.get(f"legacy-{number}", f"legacy-target-{number}")
+            self.assertEqual(state, row["state"])
+            self.assertEqual("old-provider-message" if state == "SENT" else None,
+                             row["receipt_id"])
+            self.assertIsNone(restarted.claim(f"legacy-{number}", f"legacy-target-{number}",
+                                                "route", expected_epoch=1))
+        with self.assertRaisesRegex(ValueError, "legacy deliveries"):
+            restarted.register("subscription-17", "quote-alert", "live", "new", "new-source",
+                               "feishu_open_id", "new-target", source_at=self.clock(),
+                               payload="new", valid_until=self.clock() + timedelta(hours=1),
+                               expected_epoch=1)
+        restarted.set_subscription_control("subscription-17", enabled=False, epoch=2)
+        self.assertEqual("UNKNOWN", restarted.get("legacy-0", "legacy-target-0")["state"])
+        self.assertEqual("SENT", restarted.get("legacy-1", "legacy-target-1")["state"])
+        self.assertEqual("old-provider-message",
+                         restarted.get("legacy-1", "legacy-target-1")["receipt_id"])
+
+    def test_unknown_occupies_third_daily_slot_after_midnight(self) -> None:
+        third = self.register(2)
+        fourth = self.register(3)
+        first = self.claim(lease=timedelta(seconds=1))
+        self.assertIsNotNone(self.claim(*self.register(1)))
+        third_claim = self.claim(*third)
+        self.assertIsNotNone(third_claim)
+        self.clock.advance(seconds=2)
+        self.assertEqual(1, self.ledger.expire())
+        self.assertTrue(self.ledger.finish(third_claim, outcome="SENT",
+                                           receipt=provider_receipt(third_claim, self.clock())))
+        self.assertIsNone(self.claim(*fourth))
+        self.assertIsNone(self.claim(retry_failed=True))
+        self.clock.advance(days=1)
+        self.assertIsNone(self.claim(*fourth))
+        self.assertEqual(0, len(self.ledger.attempts(*fourth)))
+        next_day = self.register(4)
+        self.assertIsNotNone(self.claim(*next_day))
+
+    def test_revoke_competes_with_claim_in_one_sqlite_write_order(self) -> None:
+        candidate = self.register(1)
+        barrier = threading.Barrier(2)
+        observations: list[Claim | None] = []
+        lock = threading.Lock()
+
+        def claim_worker() -> None:
+            barrier.wait(timeout=5)
+            result = DeliveryLedger(self.path, clock=self.clock).claim(
+                *candidate, "route", expected_epoch=1)
+            with lock:
+                observations.append(result)
+
+        def revoke_worker() -> None:
+            barrier.wait(timeout=5)
+            DeliveryLedger(self.path, clock=self.clock).set_subscription_control(
+                "subscription-17", enabled=False, epoch=2)
+
+        threads = [threading.Thread(target=claim_worker), threading.Thread(target=revoke_worker)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10)
+            self.assertFalse(thread.is_alive())
+        self.assertEqual(1, len(observations))
+        self.assertIn(self.ledger.get(*candidate)["state"], {"CANCELLED", "UNKNOWN"})
+        if observations[0] is not None:
+            self.assertEqual("UNKNOWN", self.ledger.get(*candidate)["state"])
+        self.assertIsNone(self.ledger.claim(*candidate, "route", expected_epoch=1))
 
 
 if __name__ == "__main__":

@@ -277,6 +277,12 @@ class DeliveryLedger:
                                  (sub_id,)).fetchone()
             if control is None or not control["enabled"] or control["epoch"] != expected_epoch:
                 raise ValueError("subscription authorization missing, revoked or stale")
+            # A pre-v2 event has no trustworthy source day or control epoch. Do
+            # not let fresh events consume slots while old deliveries are unknown.
+            if db.execute("""SELECT 1 FROM delivery_events WHERE sub_id=?
+                    AND (source_day_cst IS NULL OR control_epoch IS NULL) LIMIT 1""",
+                    (sub_id,)).fetchone() is not None:
+                raise ValueError("legacy deliveries require offline reconciliation")
             row = db.execute("SELECT * FROM delivery_events WHERE event_key=?", (event,)).fetchone()
             if row is not None:
                 if (row["cancelled_at"] is not None or row["control_epoch"] != expected_epoch
