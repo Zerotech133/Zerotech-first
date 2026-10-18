@@ -107,8 +107,23 @@ def collect_crawl(day, now):
                      "收集异常: %r" % e, ev)
 
 
+def report_is_fresh(mtime_ts: float, day: str) -> bool:
+    """日报 JSON 新鲜度：mtime >= 当日 18:50 视为今晚 19:00 日报新产物。
+
+    防"旧 JSON 过 15 键 → 假绿"：18:00 爬虫前人工冒烟/残留产物同样能
+    过键齐备性校验，但其数据不是当晚生产链产出。阈值取 18:50（18:00
+    爬虫之后、19:00 日报之前的保守下界）。
+    """
+    threshold = datetime.strptime(day + " 18:50:00", "%Y-%m-%d %H:%M:%S")
+    return datetime.fromtimestamp(mtime_ts) >= threshold
+
+
 def collect_report(day):
-    """② 今日日报 JSON。复用 tools/verify_daily_report.py 校验逻辑。"""
+    """② 今日日报 JSON。复用 tools/verify_daily_report.py 校验逻辑。
+
+    判定序：文件缺失=UNKNOWN；15 键/语义不过=FAIL；过但 mtime<当日
+    18:50=UNKNOWN（旧产物，19:00 日报生成未确认，不判 PASS 假绿）。
+    """
     sys.path.insert(0, os.path.join(REPO, "tools"))
     import verify_daily_report as vdr  # noqa: E402
     daily_json = os.path.join(OUT_ROOT, "daily",
@@ -126,10 +141,18 @@ def collect_report(day):
             why = "; ".join("%s: %s" % (n, w) for n, w in fails)
             return _item("report", "今日日报 JSON", STATUS_FAIL,
                          "check_payload %d 项失败：%s" % (len(fails), why), ev)
+        mt = datetime.fromtimestamp(os.path.getmtime(daily_json))
+        if not report_is_fresh(os.path.getmtime(daily_json), day):
+            return _item("report", "今日日报 JSON", STATUS_UNKNOWN,
+                         "15 键齐备但报告 JSON 为 18:50 前旧产物（冒烟/残留，"
+                         "mtime=%s），19:00 日报生成未确认——不判 PASS 防假绿"
+                         % mt.strftime("%Y-%m-%d %H:%M:%S"), ev)
         return _item("report", "今日日报 JSON", STATUS_PASS,
-                     "15 键齐备 + 语义校验全过（verify_daily_report.check_payload）"
-                     "｜ posts_today=%s ingested_today=%s"
-                     % (data.get("posts_today"), data.get("ingested_today")), ev)
+                     "15 键齐备 + 语义校验全过 + mtime 新鲜（%s，>=当日 18:50）"
+                     "（verify_daily_report.check_payload）｜ posts_today=%s "
+                     "ingested_today=%s"
+                     % (mt.strftime("%Y-%m-%d %H:%M:%S"),
+                        data.get("posts_today"), data.get("ingested_today")), ev)
     except Exception as e:
         return _item("report", "今日日报 JSON", STATUS_UNKNOWN,
                      "收集异常: %r" % e, ev)
