@@ -1091,6 +1091,196 @@ def _stock_sector_rows(code, limit=4):
 CACHE_TTL = 20
 
 
+def _alert_business_day(value):
+    """Parse an explicit business date, never an observation or file timestamp."""
+    if not isinstance(value, str):
+        return None
+    try:
+        if re.fullmatch(r"\d{8}", value):
+            day = datetime.datetime.strptime(value, "%Y%m%d").date()
+        elif re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            day = datetime.date.fromisoformat(value)
+        else:
+            return None
+    except ValueError:
+        return None
+    return day
+
+
+def _alert_source_health():
+    """Report independently verified source evidence, not display-card counts.
+
+    Business dates validate a period but do not themselves establish as_of.
+    Only a producer-provided, timezone-aware completion timestamp corroborated
+    by the business date can be trusted. Filesystem mtime and aggregator clocks
+    are never substitutes for producer evidence.
+    """
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+    today = now.date()
+    sources = {name: {"status": "error", "as_of": None,
+                      "reason": "missing"} for name in
+               ("premarket", "chanlun", "nine_dim", "weak", "cross",
+                "council")}
+
+    def mark(name, status, reason, anchor=None):
+        sources[name] = {"status": status,
+                         "as_of": anchor.astimezone(now.tzinfo).isoformat()
+                         if anchor is not None else None,
+                         "reason": reason}
+
+    def producer_time(value):
+        """Require a source-supplied ISO datetime with an explicit UTC offset."""
+        if isinstance(value, datetime.datetime):
+            return value if value.utcoffset() is not None else None
+        if (not isinstance(value, str) or not re.fullmatch(
+                r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})", value)):
+            return None
+        try:
+            parsed = datetime.datetime.fromisoformat(value)
+            return parsed if parsed.utcoffset() is not None else None
+        except ValueError:
+            return None
+
+    def dated(name, raw_day, raw_time=None, empty=False):
+        day = _alert_business_day(raw_day)
+        anchor = producer_time(raw_time)
+        if day is None:
+            mark(name, "error", "invalid_schema")
+        elif day > today:
+            mark(name, "error", "future_anchor")
+        elif anchor is None:
+            mark(name, "stale", "unproven_completion")
+        elif anchor.astimezone(now.tzinfo).date() < day:
+            mark(name, "error", "invalid_anchor")
+        elif anchor > now + datetime.timedelta(minutes=5):
+            mark(name, "error", "future_anchor")
+        elif (day != today or anchor.astimezone(now.tzinfo).date() != today or
+              now - anchor > datetime.timedelta(minutes=5)):
+            # Without a per-source schedule/completion proof, a same-calendar-
+            # day but older batch is not necessarily the due/current batch.
+            mark(name, "stale", "stale_anchor", anchor)
+        else:
+            mark(name, "empty" if empty else "ok", None, anchor)
+
+    def read(name, path):
+        try:
+            with open(path, encoding="utf-8") as handle:
+                data = json.load(handle)
+        except FileNotFoundError:
+            mark(name, "error", "missing")
+            return None
+        except (OSError, UnicodeError, ValueError):
+            mark(name, "error", "invalid_json")
+            return None
+        if not isinstance(data, dict):
+            mark(name, "error", "invalid_schema")
+            return None
+        return data
+
+    pre = read("premarket", os.path.join(REPORTS_DIR,
+                                          "premarket_latest.json"))
+    if pre is not None:
+        verdict = pre.get("verdict")
+        if (not isinstance(verdict, str) or not verdict.strip() or
+                verdict.strip() in ("—", "-", "暂无", "未知")):
+            mark("premarket", "error", "invalid_schema")
+        elif pre.get("blocked") or pre.get("status") == "blocked":
+            mark("premarket", "error", "upstream_blocked")
+        elif "trade_date" in pre:
+            dated("premarket", pre["trade_date"], pre.get("ts"))
+        else:
+            mark("premarket", "stale", "unproven_completion")
+
+    pool_path = os.path.join(QBT_DIR, "data", "chanlun_pool.jsonl")
+    try:
+        with open(pool_path, encoding="utf-8") as handle:
+            pool = [json.loads(line) for line in handle if line.strip()]
+        if any(not isinstance(row, dict) or
+               _alert_business_day(row.get("detect_date")) is None
+               for row in pool):
+            mark("chanlun", "error", "invalid_schema")
+        elif not pool:
+            mark("chanlun", "stale", "unproven_completion")
+        else:
+            last_day = max(row["detect_date"] for row in pool)
+            latest = [row for row in pool if row["detect_date"] == last_day]
+            anchors = [producer_time(row.get("completed_at")) for row in latest]
+            # Signal dates alone cannot establish that this scan finished.
+            dated("chanlun", last_day,
+                  max(anchors) if anchors and all(anchors) else None)
+    except FileNotFoundError:
+        mark("chanlun", "error", "missing")
+    except (OSError, UnicodeError, ValueError):
+        mark("chanlun", "error", "invalid_json")
+
+    nine = read("nine_dim", os.path.join(QBT_DIR, "data",
+                                          "nine_dim_scores.json"))
+    if nine is not None:
+        generated = nine.get("generated_at")
+        n_alert = nine.get("n_alert")
+        if (not isinstance(n_alert, int) or isinstance(n_alert, bool) or
+                n_alert < 0 or not _alert_business_day(nine.get("trade_date"))):
+            mark("nine_dim", "error", "invalid_schema")
+        elif nine.get("blocked") or nine.get("status") == "blocked":
+            mark("nine_dim", "error", "upstream_blocked")
+        else:
+            dated("nine_dim", nine["trade_date"], generated,
+                  empty=n_alert == 0)
+
+    weak_paths = [path for path in glob.glob(os.path.join(
+        STATION, "reports", "weak_track_*.jsonl"))
+                  if ".closed_" not in os.path.basename(path)]
+    if not weak_paths:
+        mark("weak", "stale", "unproven_completion")
+    else:
+        try:
+            for path in weak_paths:
+                with open(path, encoding="utf-8") as handle:
+                    rows = [json.loads(line) for line in handle if line.strip()]
+                if not rows or not all(isinstance(row, dict) and row.get("ts")
+                                       for row in rows):
+                    raise TypeError("invalid weak status stream")
+            # A case's ts proves only that case was written, not that a full
+            # current-period scan completed (including a zero-case scan).
+            mark("weak", "stale", "unproven_completion")
+        except (OSError, UnicodeError, ValueError, TypeError):
+            mark("weak", "error", "invalid_json")
+
+    try:
+        if QBT_DIR not in sys.path:
+            sys.path.insert(0, QBT_DIR)
+        import cross_poll
+        cross = cross_poll.build_cross()
+        if not isinstance(cross, dict) or not isinstance(cross.get("stocks"), list):
+            mark("cross", "error", "invalid_schema")
+        elif cross.get("blocked") or (cross.get("k_gate") or {}).get("mode") == "blocked":
+            mark("cross", "error", "upstream_blocked")
+        elif (cross.get("degraded") or
+              (cross.get("k_gate") or {}).get("mode") == "degraded_k3" or
+              any(not isinstance(state, dict) or state.get("status") != "ok"
+                  for state in (cross.get("src_state") or {}).values())):
+            mark("cross", "error", "upstream_degraded")
+        else:
+            # generated_at is the aggregator's wall clock, not a trade date.
+            mark("cross", "stale", "unproven_completion")
+    except Exception:
+        mark("cross", "error", "source_error")
+
+    # Council is optional and is not one of the five mandatory signal feeds.
+    try:
+        council = _council_stats()
+        if not isinstance(council, dict):
+            mark("council", "error", "invalid_schema")
+        elif council.get("d"):
+            dated("council", council["d"], council.get("ts"))
+        else:
+            mark("council", "stale", "unproven_completion")
+    except Exception:
+        mark("council", "error", "source_error")
+    return {"version": 1, "checked_at": now.isoformat(timespec="seconds"),
+            "sources": sources}
+
+
 def build_alerts():
     """量化域首页「今日预警速览」数据源：盘前/缠论/九维/weak/共振。
     全部读产线落盘快照（与各专项页同源同口径），单项失败即缺项不拖垮整体。
@@ -1098,11 +1288,12 @@ def build_alerts():
     out = []
     # ① 盘前倾向（premarket_latest.json：verdict + 六度分值 + 溢价概率）
     pre = _read_json(os.path.join(REPORTS_DIR, "premarket_latest.json"))
+    pre = pre if isinstance(pre, dict) else {}
     if pre.get("verdict"):
-        vals = pre.get("vals") or {}
-        l6 = pre.get("l6") or {}
-        an6 = l6.get("ann_stats") or {}
-        rp6 = l6.get("rpt_stats") or {}
+        vals = pre.get("vals") if isinstance(pre.get("vals"), dict) else {}
+        l6 = pre.get("l6") if isinstance(pre.get("l6"), dict) else {}
+        an6 = l6.get("ann_stats") if isinstance(l6.get("ann_stats"), dict) else {}
+        rp6 = l6.get("rpt_stats") if isinstance(l6.get("rpt_stats"), dict) else {}
         six = [{"k": k, "v": vals.get(k)} for k in
                ("外围", "政策", "流动性", "板块", "情绪")]
         six.append({"k": "公告研报", "v": None,
@@ -1126,14 +1317,17 @@ def build_alerts():
                 except Exception:
                     pass
         days = sorted({r.get("detect_date", "") for r in rows
-                       if r.get("detect_date")})
+                       if isinstance(r, dict) and isinstance(r.get("detect_date"), str)
+                       and r.get("detect_date")})
         if days:
             def _nb(dd):
-                return sum(1 for r in rows if r.get("detect_date") == dd
-                           and str(r.get("type", "")).endswith("买"))
+                return sum(1 for r in rows if isinstance(r, dict) and
+                           r.get("detect_date") == dd and
+                           str(r.get("type", "")).endswith("买"))
             last = days[-1]
-            ns = sum(1 for r in rows if r.get("detect_date") == last
-                     and str(r.get("type", "")).endswith("卖"))
+            ns = sum(1 for r in rows if isinstance(r, dict) and
+                     r.get("detect_date") == last and
+                     str(r.get("type", "")).endswith("卖"))
             out.append({"name": "缠论信号",
                         "value": "买 %d · 卖 %d" % (_nb(last), ns),
                         "sub": "检出日 %s" % last,
@@ -1144,7 +1338,7 @@ def build_alerts():
         log_exc("build_alerts:chanlun_pool.jsonl")  # C2批1
     # ③ 九维警报池（nine_dim_scores.json：n_alert 阈值入池数）
     snap = _read_json(os.path.join(QBT_DIR, "data", "nine_dim_scores.json"))
-    if snap:
+    if isinstance(snap, dict) and snap:
         out.append({"name": "九维警报池",
                     "value": "%s 只" % snap.get("n_alert",
                                                 snap.get("n_buy", 0)),
@@ -1169,8 +1363,11 @@ def build_alerts():
         if QBT_DIR not in sys.path:
             sys.path.insert(0, QBT_DIR)
         import cross_poll
-        stocks = cross_poll.build_cross().get("stocks", [])
-        n_long = sum(1 for s in stocks if s.get("n_hit", 0) >= 2
+        cross_display = cross_poll.build_cross()
+        stocks = cross_display.get("stocks", []) if isinstance(cross_display, dict) else []
+        stocks = stocks if isinstance(stocks, list) else []
+        n_long = sum(1 for s in stocks if isinstance(s, dict) and
+                     s.get("n_hit", 0) >= 2
                      and s.get("state") == "long"
                      and s.get("n_long", 0) >= 2)
         out.append({"name": "共振做多", "value": "%d 只" % n_long,
@@ -1201,7 +1398,8 @@ def build_alerts():
                         "href": "/council", "delta": None})
     except Exception:
         log_exc("build_alerts:council_stats")  # C2批1
-    return {"ts": time.strftime("%Y-%m-%d %H:%M"), "alerts": out}
+    return {"ts": time.strftime("%Y-%m-%d %H:%M"), "alerts": out,
+            "source_health": _alert_source_health()}
 
 
 # ── K41 个股基本面 / 公告研报取数（_bt_stock_page 专用 helper，批7拍板#2 提级顶层）──

@@ -3758,7 +3758,7 @@ color:#fff;font-size:13.5px;cursor:pointer}
                       "/kg/ontology") or path.startswith(
                 ("/kg/stock/", "/kg/hotmoney/", "/kg/trace/",
                  "/kg/objectview/",                   # L2 扇区体检 JSON
-                 "/kg/company360/", "/kg/csearch/", "/kg/cexpand/", "/kg/chist/",
+                 "/kg/company360/", "/kg/csearch/", "/kg/cexpand/", "/kg/ctimeline/", "/kg/chist/",
                  "/kg/cask/",
                  "/kg/timeline/", "/kg/batch/",   # K262 作战地图
                  "/kg/records/",                   # K262 战绩层（四源聚合）
@@ -3783,13 +3783,40 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json(kg_portal.api("overview"))
             else:
                 parts = path.split("/", 3)   # ["", "kg", kind, arg]
-                qp = _pqkg(qs)
+                qp = _pqkg(qs, keep_blank_values=True)
                 days = (qp.get("days") or [None])[0]
                 per = (qp.get("per") or [None])[0]
                 # arg 段可缺省（/kg/ontology 等无参 kind，越界即崩线程断连）
-                self._json(kg_portal.api(
-                    parts[2], _uqkg(parts[3]) if len(parts) > 3 else None,
-                    days, per))
+                kind = parts[2]
+                arg = _uqkg(parts[3]) if len(parts) > 3 else None
+                if kind == "ctimeline":
+                    try:
+                        result = kg_portal.api(
+                            kind, arg, per=(qp.get("to") or [None])[0],
+                            scope={"from": (qp.get("from") or [None])[0],
+                                   "limit": (qp.get("limit") or [None])[0]})
+                        self._json(result)
+                    except ValueError as exc:
+                        self._json({"ok": False, "error": str(exc)}, 400)
+                    except Exception:
+                        self._json({"ok": False, "error": "图谱查询失败"}, 500)
+                elif kind in ("gx", "cexpand"):
+                    scope = {}
+                    types = (qp.get("types") or [""])[0].strip()
+                    at = (qp.get("at") or [""])[0].strip()
+                    if types:
+                        scope["types"] = [t.strip() for t in types.split(",")]
+                    if at:
+                        scope["at"] = at
+                    try:
+                        self._json(kg_portal.api(kind, arg, days, per,
+                                                 scope=scope or None))
+                    except ValueError as exc:
+                        self._json({"ok": False, "error": str(exc)}, 400)
+                    except Exception:
+                        self._json({"ok": False, "error": "图谱查询失败"}, 500)
+                else:
+                    self._json(kg_portal.api(kind, arg, days, per))
         elif path == "/fin":
             # L1 金融驾驶舱（任务导向：查股票/闸门/今日机会/工具）
             self._fin_page()
