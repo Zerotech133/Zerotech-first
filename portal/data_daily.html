@@ -218,8 +218,12 @@ function render(d){
   :'<span class="empty">（无产物清单）</span>';
 }
 
-fetch('/api/daily/data').then(function(r){return r.json()}).then(render)
- .catch(function(e){el('metrics').innerHTML='<span class="err">/api/daily/data 不可达：'+esc(e)+'</span>'});
+if (window.__EMBED__) { /* 公网快照模式：build_daily_data_public.py 注入当日聚合 JSON，不发 fetch */
+  render(window.__EMBED__);
+} else {
+  fetch('/api/daily/data').then(function(r){return r.json()}).then(render)
+   .catch(function(e){el('metrics').innerHTML='<span class="err">/api/daily/data 不可达：'+esc(e)+'</span>'});
+}
 </script>
 </body>
 </html>
