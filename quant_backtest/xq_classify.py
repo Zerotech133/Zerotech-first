@@ -35,6 +35,7 @@ import re
 import sqlite3
 import sys
 import time
+import traceback
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -324,15 +325,24 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     if not parse_ok:
         log("DEGRADED %s: unparseable=%r" % (status_id, answer[:80]))
 
-    con.execute(
-        """INSERT OR REPLACE INTO xq_status_classified
-           (status_id, event_type, sentiment, tickers, confidence,
-            parse_ok, model, prompt_version, labeled_at, content_type)
-           VALUES (?,?,?,?,?,?,?,?,?,?)""",
-        (str(status_id), event_type, sentiment,
-         json.dumps(extract_tickers(title, desc), ensure_ascii=False),
-         confidence, parse_ok, MODEL, PROMPT_VERSION,
-         datetime.now().strftime("%Y-%m-%d %H:%M:%S"), content_type))
+    # v1.4.2 DB 写段异常隔离（15:24 静默死亡实证：LLM 成功后 DB 段抛异常会
+    # 直接穿出循环，round/retry 轮无收行死亡）——DB 故障与硬失败同语义：
+    # 计 hard 不杀轮，stderr 留诊断，下一轮幂等重跑。
+    try:
+        con.execute(
+            """INSERT OR REPLACE INTO xq_status_classified
+               (status_id, event_type, sentiment, tickers, confidence,
+                parse_ok, model, prompt_version, labeled_at, content_type)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (str(status_id), event_type, sentiment,
+             json.dumps(extract_tickers(title, desc), ensure_ascii=False),
+             confidence, parse_ok, MODEL, PROMPT_VERSION,
+             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), content_type))
+    except Exception as e:
+        sys.stderr.write("[xq_classify] DB-FAIL %s: %s: %s\n"
+                         % (status_id, type(e).__name__, str(e)[:120]))
+        traceback.print_exc()
+        return False
     if parse_ok:
         log("OK %s cat=%s %s/%s | %s conf=%s %.1fs"
             % (status_id, category, event_type, content_type or "-", sentiment, confidence, dt))
@@ -430,32 +440,40 @@ def retry_degraded(limit: int) -> int:
         con.close()
         return 0
     upgraded = still = hard = consec = 0
-    for status_id, old_retry, title, desc, category in rows:
-        if not classify_one(con, (status_id, title, desc, category)):
-            hard += 1
-            consec += 1
-            log("RETRY-HARD-FAIL %s" % status_id)
-            if consec >= 8:
-                log("RETRY-ABORT %d consecutive hard-fails (model/network busy?)"
-                    % consec)
-                break
+    # v1.4.2 轮级兜底（15:24 静默死亡实证）：循环/收尾任何异常都不得吞掉
+    # end 收行——收行是让路探测与巡检的消费契约；异常走 stderr 全栈 +
+    # RETRY-ABORT-ERROR 新行型（不改既有行格式），degraded_left=-1 表异常取数。
+    try:
+        for status_id, old_retry, title, desc, category in rows:
+            if not classify_one(con, (status_id, title, desc, category)):
+                hard += 1
+                consec += 1
+                log("RETRY-HARD-FAIL %s" % status_id)
+                if consec >= 8:
+                    log("RETRY-ABORT %d consecutive hard-fails (model/network busy?)"
+                        % consec)
+                    break
+                con.commit()
+                continue
+            consec = 0
+            cur = con.execute(
+                "SELECT parse_ok FROM xq_status_classified WHERE status_id=?",
+                (str(status_id),)).fetchone()
+            if cur and cur[0] == 1:
+                upgraded += 1   # 升级：classify_one 的 REPLACE 已把 retry_count 归零
+            else:
+                still += 1      # 仍截断：保持 degraded，累加计次
+                con.execute(
+                    "UPDATE xq_status_classified SET retry_count=? WHERE status_id=?",
+                    ((old_retry or 0) + 1, str(status_id)))
             con.commit()
-            continue
-        consec = 0
-        cur = con.execute(
-            "SELECT parse_ok FROM xq_status_classified WHERE status_id=?",
-            (str(status_id),)).fetchone()
-        if cur and cur[0] == 1:
-            upgraded += 1   # 升级：classify_one 的 REPLACE 已把 retry_count 归零
-        else:
-            still += 1      # 仍截断：保持 degraded，累加计次
-            con.execute(
-                "UPDATE xq_status_classified SET retry_count=? WHERE status_id=?",
-                ((old_retry or 0) + 1, str(status_id)))
         con.commit()
-    con.commit()
-    n_left = con.execute(
-        "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=0").fetchone()[0]
+        n_left = con.execute(
+            "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=0").fetchone()[0]
+    except Exception as e:
+        traceback.print_exc()
+        log("RETRY-ABORT-ERROR %s: %s" % (type(e).__name__, str(e)[:120]))
+        n_left = -1
     con.close()
     log("retry-degraded end rc=0 upgraded=%d still_degraded=%d hard_fail=%d degraded_left=%d"
         % (upgraded, still, hard, n_left))
@@ -482,25 +500,34 @@ def run(limit: int) -> int:
         con.close()
         return 0
     ok = hard = consec = 0
-    for i, row in enumerate(rows):
-        if classify_one(con, row):
-            ok += 1
-            consec = 0
-        else:
-            hard += 1
-            consec += 1
-            if consec >= 8:
-                # 熔断看「连续失败」而非累计占比：前期成功抬高占比分母会让
-                # 后期超时空转数小时（07-18 实证：385 ok 后每条 60s 超时，
-                # 旧条件需再熬 200 条才触发）
-                log("ABORT %d consecutive hard-fails (model/network busy?)"
-                    % consec)
-                break
-        con.commit()
-        if (i + 1) % 25 == 0:
-            log("progress %d/%d" % (i + 1, len(rows)))
-    total_c = con.execute("SELECT COUNT(*) FROM xq_status_classified").fetchone()[0]
-    rc = 1 if consec >= 8 else 0
+    # v1.4.2 轮级兜底（与 retry_degraded 同刀）：异常不吞 round end 收行，
+    # ABORT-ERROR 新行型留因，rc=1（异常按需关注语义复用）。
+    try:
+        for i, row in enumerate(rows):
+            if classify_one(con, row):
+                ok += 1
+                consec = 0
+            else:
+                hard += 1
+                consec += 1
+                if consec >= 8:
+                    # 熔断看「连续失败」而非累计占比：前期成功抬高占比分母会让
+                    # 后期超时空转数小时（07-18 实证：385 ok 后每条 60s 超时，
+                    # 旧条件需再熬 200 条才触发）
+                    log("ABORT %d consecutive hard-fails (model/network busy?)"
+                        % consec)
+                    break
+            con.commit()
+            if (i + 1) % 25 == 0:
+                log("progress %d/%d" % (i + 1, len(rows)))
+        total_c = con.execute("SELECT COUNT(*) FROM xq_status_classified").fetchone()[0]
+    except Exception as e:
+        traceback.print_exc()
+        log("ABORT-ERROR %s: %s" % (type(e).__name__, str(e)[:120]))
+        total_c = -1
+        rc = 1
+    else:
+        rc = 1 if consec >= 8 else 0
     log("round end rc=%d labeled_this=%d hard_fail=%d derived_total=%d"
         % (rc, ok, hard, total_c))
     con.close()
