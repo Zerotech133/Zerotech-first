@@ -20,8 +20,12 @@ from pathlib import Path
 from typing import Callable, Iterator, Optional
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 STATES = frozenset({"READY", "CLAIMED", "SENT", "FAILED", "UNKNOWN", "CANCELLED"})
+CST = timezone(timedelta(hours=8))
+DAILY_EVENT_CAP = 3
+MAX_ATTEMPTS = 3
+RETRY_BASE = timedelta(minutes=1)
 
 
 def _utc(value: datetime) -> str:
@@ -111,8 +115,8 @@ class DeliveryLedger:
     prefix, local trace id, or HTTP status. Missing or throwing verifiers fail
     closed to UNKNOWN. This class never sends or fetches evidence; a callback
     returning True for fabricated evidence is NOT independent verification.
-    This isolated ledger is not production-ready: authorization, daily caps,
-    retries/backoff and underlying provider message_id must be supplied upstream.
+    This isolated ledger is not production-ready: externally authenticated
+    authorization and underlying provider message_id must be supplied upstream.
     Ambiguous network failures cannot provide exactly-once provider delivery.
     """
 
@@ -129,9 +133,10 @@ class DeliveryLedger:
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             version = db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, SCHEMA_VERSION):
+            if version not in (0, 1, SCHEMA_VERSION):
                 raise RuntimeError(f"unsupported delivery ledger schema version {version}")
             if version == 0:
+                # No existing tables need preservation for a new database.
                 db.executescript("""
                     CREATE TABLE delivery_events (
                         event_key TEXT PRIMARY KEY, sub_id TEXT NOT NULL,
@@ -160,6 +165,24 @@ class DeliveryLedger:
                     CREATE INDEX delivery_attempts_target_idx
                         ON delivery_attempts(event_key,target_key);
                 """)
+                db.execute("BEGIN IMMEDIATE")
+            if version < SCHEMA_VERSION:
+                # execute(), unlike executescript(), does not silently commit the
+                # surrounding migration before all changes succeed.
+                for statement in (
+                    """CREATE TABLE subscription_control (
+                        sub_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL CHECK (enabled IN (0,1)),
+                        epoch INTEGER NOT NULL CHECK (epoch > 0), updated_at TEXT NOT NULL)""",
+                    "ALTER TABLE delivery_events ADD COLUMN source_at TEXT",
+                    "ALTER TABLE delivery_events ADD COLUMN source_day_cst TEXT",
+                    "ALTER TABLE delivery_events ADD COLUMN payload TEXT",
+                    "ALTER TABLE delivery_events ADD COLUMN payload_hash TEXT",
+                    "ALTER TABLE delivery_events ADD COLUMN valid_until TEXT",
+                    "ALTER TABLE delivery_events ADD COLUMN control_epoch INTEGER",
+                    "ALTER TABLE delivery_targets ADD COLUMN retry_after TEXT",
+                    "CREATE INDEX delivery_events_day_idx ON delivery_events(sub_id,source_day_cst)",
+                ):
+                    db.execute(statement)
                 db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             db.commit()
 
@@ -184,22 +207,90 @@ class DeliveryLedger:
     def _now(self) -> str:
         return _utc(self.clock())
 
-    def register(self, sub_id: str, kind: str, mode: str, fingerprint: str,
-                 source_anchor: str, target_type: str, target_id: str) -> tuple[str, str]:
-        """Idempotently register exactly one event/target; reject cancelled events."""
-        event = event_key(sub_id, kind, mode, fingerprint, source_anchor)
-        target = target_key(target_type, target_id)
+    def set_subscription_control(self, sub_id: str, *, enabled: bool,
+                                 epoch: int) -> None:
+        """Persist an externally authorized control decision; epochs only advance.
+
+        The caller MUST authenticate subscription ownership independently. Revoking
+        a claim records UNKNOWN, since an already forwarded message is not recalled.
+        """
+        _text(sub_id, "sub_id")
+        if type(enabled) is not bool or type(epoch) is not int or epoch <= 0:
+            raise ValueError("enabled must be boolean and epoch must be positive integer")
         now = self._now()
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            db.execute("""INSERT OR IGNORE INTO delivery_events
-                (event_key,sub_id,kind,mode,fingerprint,source_anchor,created_at)
-                VALUES (?,?,?,?,?,?,?)""",
-                (event, sub_id, kind, mode, fingerprint, source_anchor, now))
-            row = db.execute("SELECT cancelled_at FROM delivery_events WHERE event_key=?",
-                             (event,)).fetchone()
-            if row["cancelled_at"] is not None:
-                raise ValueError("event has been cancelled")
+            old = db.execute("SELECT enabled,epoch FROM subscription_control WHERE sub_id=?",
+                             (sub_id,)).fetchone()
+            if old is not None:
+                if epoch < old["epoch"] or (epoch == old["epoch"] and enabled != bool(old["enabled"])):
+                    raise ValueError("stale or conflicting subscription control")
+                if epoch == old["epoch"]:
+                    return
+            db.execute("""INSERT INTO subscription_control(sub_id,enabled,epoch,updated_at)
+                VALUES (?,?,?,?) ON CONFLICT(sub_id) DO UPDATE SET
+                enabled=excluded.enabled,epoch=excluded.epoch,updated_at=excluded.updated_at""",
+                (sub_id, int(enabled), epoch, now))
+            if old is not None:
+                # Epoch rotation invalidates every unsent target, even on re-enable.
+                attempts = db.execute("""SELECT t.attempt_id FROM delivery_targets t
+                    JOIN delivery_events e ON e.event_key=t.event_key
+                    WHERE e.sub_id=? AND t.state='CLAIMED'""", (sub_id,)).fetchall()
+                for attempt in attempts:
+                    db.execute("""UPDATE delivery_attempts SET outcome='UNKNOWN',completed_at=?
+                        WHERE attempt_id=? AND outcome='CLAIMED'""", (now, attempt["attempt_id"]))
+                db.execute("""UPDATE delivery_targets SET state='UNKNOWN',updated_at=?
+                    WHERE state='CLAIMED' AND event_key IN
+                    (SELECT event_key FROM delivery_events WHERE sub_id=?)""", (now, sub_id))
+                db.execute("""UPDATE delivery_targets SET state='CANCELLED',updated_at=?
+                    WHERE state IN ('READY','FAILED') AND event_key IN
+                    (SELECT event_key FROM delivery_events WHERE sub_id=?)""", (now, sub_id))
+            db.commit()
+
+    def register(self, sub_id: str, kind: str, mode: str, fingerprint: str,
+                 source_anchor: str, target_type: str, target_id: str, *,
+                 source_at: Optional[datetime] = None, payload: Optional[str] = None,
+                 valid_until: Optional[datetime] = None,
+                 expected_epoch: Optional[int] = None) -> tuple[str, str]:
+        """Register frozen content under the current authorization epoch.
+
+        Legacy callers lacking explicit source, content and epoch fail closed. The
+        source instant, rather than send time, defines the Beijing business day.
+        """
+        event = event_key(sub_id, kind, mode, fingerprint, source_anchor)
+        target = target_key(target_type, target_id)
+        if (source_at is None or valid_until is None or payload is None
+                or type(expected_epoch) is not int or expected_epoch <= 0):
+            raise ValueError("source_at, payload, valid_until and expected_epoch are required")
+        source_utc = _utc(source_at)
+        until = _utc(valid_until)
+        now = self._now()
+        if source_utc > now or until <= now or until <= source_utc:
+            raise ValueError("future source or expired event")
+        if not isinstance(payload, str) or not payload:
+            raise ValueError("payload must be nonempty text")
+        day = source_at.astimezone(CST).date().isoformat()
+        payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        with self._connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            control = db.execute("SELECT enabled,epoch FROM subscription_control WHERE sub_id=?",
+                                 (sub_id,)).fetchone()
+            if control is None or not control["enabled"] or control["epoch"] != expected_epoch:
+                raise ValueError("subscription authorization missing, revoked or stale")
+            row = db.execute("SELECT * FROM delivery_events WHERE event_key=?", (event,)).fetchone()
+            if row is not None:
+                if (row["cancelled_at"] is not None or row["control_epoch"] != expected_epoch
+                        or row["source_at"] != source_utc or row["source_day_cst"] != day
+                        or row["payload_hash"] != payload_hash or row["payload"] != payload
+                        or row["valid_until"] != until):
+                    raise ValueError("event identity conflict or cancelled event")
+            else:
+                db.execute("""INSERT INTO delivery_events
+                    (event_key,sub_id,kind,mode,fingerprint,source_anchor,created_at,
+                     source_at,source_day_cst,payload,payload_hash,valid_until,control_epoch)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (event, sub_id, kind, mode, fingerprint, source_anchor, now,
+                     source_utc, day, payload, payload_hash, until, expected_epoch))
             db.execute("""INSERT OR IGNORE INTO delivery_targets
                 (event_key,target_key,target_type,target_id,state,updated_at)
                 VALUES (?,?,?,?,'READY',?)""",
@@ -216,13 +307,16 @@ class DeliveryLedger:
 
     def claim(self, event: str, target: str, route: str, *,
               lease: timedelta = timedelta(minutes=5),
-              retry_failed: bool = False) -> Optional[Claim]:
+              retry_failed: bool = False,
+              expected_epoch: Optional[int] = None) -> Optional[Claim]:
         """Atomically claim READY, or FAILED only under an explicit retry policy.
 
         UNKNOWN is NEVER claimable, even after its lease expires. There is no
         automatic assumption that a timed-out send failed at the provider.
         """
         _text(route, "route")
+        if type(expected_epoch) is not int or expected_epoch <= 0:
+            raise ValueError("claim requires a positive expected_epoch")
         if not isinstance(lease, timedelta) or lease <= timedelta(0):
             raise ValueError("lease must be a positive timedelta")
         claimed_at = self._now()
@@ -232,9 +326,36 @@ class DeliveryLedger:
         states = ("READY", "FAILED") if retry_failed else ("READY",)
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            event_row = db.execute("SELECT cancelled_at FROM delivery_events WHERE event_key=?",
-                                   (event,)).fetchone()
-            if event_row is None or event_row["cancelled_at"] is not None:
+            event_row = db.execute("""SELECT e.cancelled_at,e.sub_id,e.source_day_cst,
+                e.valid_until,e.control_epoch,c.enabled,c.epoch
+                FROM delivery_events e LEFT JOIN subscription_control c ON c.sub_id=e.sub_id
+                WHERE e.event_key=?""", (event,)).fetchone()
+            if (event_row is None or event_row["cancelled_at"] is not None
+                    or event_row["control_epoch"] != expected_epoch
+                    or event_row["enabled"] != 1 or event_row["epoch"] != expected_epoch
+                    or event_row["valid_until"] is None or claimed_at >= event_row["valid_until"]
+                    or expires_at > event_row["valid_until"]):
+                return None
+            target_row = db.execute("""SELECT state,retry_after FROM delivery_targets
+                WHERE event_key=? AND target_key=?""", (event, target)).fetchone()
+            if target_row is None or target_row["state"] not in states:
+                return None
+            count = db.execute("""SELECT count(*) FROM delivery_attempts
+                WHERE event_key=? AND target_key=?""", (event, target)).fetchone()[0]
+            if count >= MAX_ATTEMPTS:
+                return None
+            if target_row["state"] == "FAILED" and (
+                    target_row["retry_after"] is None or claimed_at < target_row["retry_after"]):
+                return None
+            occupied = db.execute("""SELECT count(DISTINCT e.event_key)
+                FROM delivery_events e JOIN delivery_targets t ON t.event_key=e.event_key
+                WHERE e.sub_id=? AND e.source_day_cst=? AND e.event_key<>?
+                    AND t.state IN ('CLAIMED','UNKNOWN','SENT')""",
+                (event_row["sub_id"], event_row["source_day_cst"], event)).fetchone()[0]
+            self_occupied = db.execute("""SELECT 1 FROM delivery_targets
+                WHERE event_key=? AND state IN ('CLAIMED','UNKNOWN','SENT') LIMIT 1""",
+                (event,)).fetchone() is not None
+            if occupied >= DAILY_EVENT_CAP and not self_occupied:
                 return None
             markers = ",".join("?" for _ in states)
             changed = db.execute(f"""UPDATE delivery_targets
@@ -302,10 +423,16 @@ class DeliveryLedger:
                     except Exception:
                         actual = "UNKNOWN"
             receipt_id = receipt.receipt_id if actual == "SENT" and isinstance(receipt, ProviderReceipt) else None
+            retry_after = None
+            if actual == "FAILED":
+                count = db.execute("""SELECT count(*) FROM delivery_attempts
+                    WHERE event_key=? AND target_key=?""",
+                    (claim.event_key, claim.target_key)).fetchone()[0]
+                retry_after = _utc(datetime.fromisoformat(now) + RETRY_BASE * (2 ** (count - 1)))
             changed = db.execute("""UPDATE delivery_targets
-                SET state=?, receipt_id=?, updated_at=?
+                SET state=?, receipt_id=?, retry_after=?, updated_at=?
                 WHERE event_key=? AND target_key=? AND attempt_id=? AND state='CLAIMED'""",
-                (actual, receipt_id, now, claim.event_key, claim.target_key, claim.attempt_id))
+                (actual, receipt_id, retry_after, now, claim.event_key, claim.target_key, claim.attempt_id))
             if changed.rowcount != 1:
                 return False
             db.execute("""UPDATE delivery_attempts SET outcome=?, completed_at=?, receipt_id=?
