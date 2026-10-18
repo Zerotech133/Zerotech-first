@@ -259,6 +259,10 @@ def insert_db(posts, uid):
 def main():
     uids = DEFAULT_UIDS
     do_insert = "--insert" in sys.argv
+    # --headless（2026-10-19 老田令）：无窗口模式，桌面零干扰。
+    # 依据：首探实证页内 API 对持久化 profile 直接 200，不依赖可见窗口；
+    # headless 下显式 viewport（viewport=None 依赖窗口尺寸，无头态不稳）。
+    do_headless = "--headless" in sys.argv
     for i, a in enumerate(sys.argv):
         if a == "--uids" and i + 1 < len(sys.argv):
             uids = [u.strip() for u in sys.argv[i + 1].split(",") if u.strip()]
@@ -279,8 +283,8 @@ def main():
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(
             user_data_dir=str(PROFILE_DIR),
-            headless=False,
-            viewport=None,
+            headless=do_headless,
+            viewport=None if not do_headless else {"width": 1440, "height": 900},
             locale="zh-CN",
             args=["--disable-blink-features=AutomationControlled"],
         )
