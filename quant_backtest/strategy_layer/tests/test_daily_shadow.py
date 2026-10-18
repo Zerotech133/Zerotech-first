@@ -176,6 +176,7 @@ def test_resolve_prev_trading_day_t_plus_1():
     # 周一(2026-10-19)盘前跑 → 上一交易日应为周五 20261016
     td = ds.resolve_prev_trading_day(
         today=pd.Timestamp("2026-10-19").date(),
+        pool=POOL,
         loader=_fake_loader(["2026-10-13", "2026-10-14", "2026-10-15",
                              "2026-10-16", "2026-10-19"]))
     assert td == "20261016"   # end=参考日-1，10-19 的 bar 被截掉
@@ -184,7 +185,7 @@ def test_resolve_prev_trading_day_t_plus_1():
 def test_resolve_no_data_fail_visible():
     with pytest.raises(ds.DailyShadowError) as ei:
         ds.resolve_prev_trading_day(today=pd.Timestamp("2026-10-18").date(),
-                                    loader=_fake_loader([]))
+                                    pool=POOL, loader=_fake_loader([]))
     assert ei.value.code == "no_data"
 
 
@@ -193,7 +194,7 @@ def test_resolve_stale_fail_visible():
     with pytest.raises(ds.DailyShadowError) as ei:
         ds.resolve_prev_trading_day(
             today=pd.Timestamp("2026-11-15").date(),
-            loader=_fake_loader(["2026-10-16"]))
+            pool=POOL, loader=_fake_loader(["2026-10-16"]))
     assert ei.value.code == "stale"
 
 

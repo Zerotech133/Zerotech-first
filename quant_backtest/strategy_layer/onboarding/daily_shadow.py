@@ -7,9 +7,12 @@ skipped_non_event）→ 汇总 recorded/replayed/skipped_non_event →
 compute_shadow_stats 落 stats JSON（只统计不判 gate 升降级，gate 人工
 评审纪律，见 shadow_report_template.md）。
 
-影子池口径：BATCH1_DOSIER.md（S1 档案）未定影子池；S4 离线彩排
-（s4_rehearsal_classic_20261018）采用单标的 600519.SH，本脚本沿用同款。
-影子池待扩容拍板：拍板后改 SHADOW_POOL 常量即可，采集幂等键
+影子池口径（2026-10-18 拍板定案）：扩容至 327 只活跃标的冻结快照——
+来源=chanlun_pool.jsonl 中 dt>=2026-09-18 的 CN A 股标的（产线 chan_monitor
+日常追踪域，数据完备性由生产验证），清单冻结落
+data/shadow_onboarding/shadow_pool.json，启动时加载（缺失回落 600519.SH
+并 WARN）。影子期为固定评估窗，样本集冻结不随池文件漂移；扩容/换池=
+改 shadow_pool.json 后重跑干跑。采集幂等键
 strategy_id|symbol|trade_date 含 symbol，扩容不冲历史档。
 
 交易日历：不硬编码日期。判例 bar_store/calendar_provider——日历必须是
@@ -69,14 +72,39 @@ from strategy_layer.onboarding.classic_adapter import (  # noqa: E402
 )
 
 # ---------------------------------------------------------------------- #
-# 常量（影子池待扩容拍板，见模块 docstring）
+# 常量（影子池定案 2026-10-18 拍板：扩容至 327 只活跃标的冻结快照）
 # ---------------------------------------------------------------------- #
 STRATEGIES = ("ma_cross", "trend_follow", "rsi_reversal", "boll_breakout")
 MARKET = "CN"
-SHADOW_POOL: List[str] = ["600519.SH"]
+SHADOW_POOL: List[str] = ["600519.SH"]     # 回落默认（shadow_pool.json 缺失时）
 STALE_DAYS = 15          # 最近 bar 距参考日的最大容忍自然日（覆盖春节长假）
 EXIT_OK, EXIT_ARGS, EXIT_NO_DATA, EXIT_STALE, EXIT_ZERO, EXIT_ERROR = \
     0, 2, 3, 4, 6, 7
+
+# 影子池定案：优先读 data/shadow_onboarding/shadow_pool.json（冻结快照，
+# 来源=chanlun_pool.jsonl 中 dt>=2026-09-18 的 CN A 股标的，2026-10-18 冻结，
+# 327 只——产线 chan_monitor 日常追踪域，数据完备性由生产验证）。影子期为
+# 固定评估窗，样本集冻结不再随池文件漂移；文件缺失/坏构回落 600519.SH
+# 并 WARN（fail-visible 不静默）。扩容/换池=改 shadow_pool.json 后重跑干跑。
+_POOL_FILE = os.path.join(shadow_collect.SHADOW_DIR, "shadow_pool.json")
+
+
+def _load_shadow_pool() -> List[str]:
+    try:
+        with open(_POOL_FILE, "r", encoding="utf-8") as f:
+            d = json.load(f)
+        syms = [str(s) for s in d.get("symbols") or [] if s]
+        if syms:
+            return syms
+        warn("shadow_pool.json 无有效标的，回落默认池 %s" % SHADOW_POOL)
+    except FileNotFoundError:
+        warn("shadow_pool.json 缺失，回落默认池 %s" % SHADOW_POOL)
+    except Exception as exc:
+        warn("shadow_pool.json 解析失败(%r)，回落默认池 %s" % (exc, SHADOW_POOL))
+    return list(SHADOW_POOL)
+
+
+SHADOW_POOL_ACTIVE: List[str] = _load_shadow_pool()
 
 
 class DailyShadowError(Exception):
@@ -116,7 +144,7 @@ def resolve_prev_trading_day(
     STALE_DAYS → DailyShadowError("stale")（疑似采集断流，不静默）。
     """
     loader = loader or _default_day_loader
-    pool = list(pool or SHADOW_POOL)
+    pool = list(pool or SHADOW_POOL_ACTIVE)
     ref = today or date.today()
     end_dash = (ref - timedelta(days=1)).isoformat()
     try:
@@ -161,7 +189,7 @@ def build_bar_fwd(
     None（compute_shadow_stats 回落缺省通道，r5/r20 置 None 不致命）。
     """
     loader = loader or _default_day_loader
-    pool = list(pool or SHADOW_POOL)
+    pool = list(pool or SHADOW_POOL_ACTIVE)
     ref = today or date.today()
     try:
         frames = loader(MARKET, pool, None, ref.isoformat()) or {}
@@ -194,7 +222,7 @@ def build_bar_fwd(
 # ---------------------------------------------------------------------- #
 def build_adapters(pool: Optional[Sequence[str]] = None) -> List[Any]:
     """逐策略构造 ClassicStrategyAdapter（参数回落 PARAM_DEFAULTS）。"""
-    pool = list(pool or SHADOW_POOL)
+    pool = list(pool or SHADOW_POOL_ACTIVE)
     return [ClassicStrategyAdapter(name, pool, market=MARKET)
             for name in STRATEGIES]
 
