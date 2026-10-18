@@ -1,7 +1,7 @@
 {
   "version": 1,
   "updated": "2026-10-18",
-  "note": "R1 执行健康总线白名单（manifest 即白名单：只投影本清单任务，系统其余任务不在投影面）。cadence/grace 为 2026-10-18 Get-ScheduledTask 逐条实测回填值（核对表见 docs/runbooks 联动层一期验收演练）。宽限缺省=cadence*0.5；周末/登录触发类显式放宽。断点7 收口（2026-10-18）：分散日志统一入总线心跳——有明确成败日志语义的任务一律配 fail_scan={log,pattern,window_hours}（window_hours=(cadence+grace)/60 推导），由 /api/execution/health 聚合为 fail_scan_hit 进 R3 必响。",
+  "note": "R1 执行健康总线白名单（manifest 即白名单：只投影本清单任务，系统其余任务不在投影面）。cadence/grace 为 2026-10-18 Get-ScheduledTask 逐条实测回填值（核对表见 docs/runbooks 联动层一期验收演练）。宽限缺省=cadence*0.5；周末/登录触发类显式放宽。断点7 收口（2026-10-18）：分散日志统一入总线心跳——有明确成败日志语义的任务一律配 fail_scan={log,pattern,window_hours}（window_hours=(cadence+grace)/60 推导），由 /api/execution/health 聚合为 fail_scan_hit 进 R3 必响。；判例：fail_scan 仅适用单次覆写型日志，append-only 多块日志禁用 tail 子串口径（T-015 误报 2026-10-18）",
   "tasks": [
     {
       "name": "AgentShadowDaily",
@@ -21,13 +21,8 @@
       "cadence_minutes": 10080,
       "grace_minutes": 14400,
       "log_path": "agent_platform/data/shadow/monday_checkpoint.log",
-      "fail_scan": {
-        "log": "agent_platform/data/shadow/monday_checkpoint.log",
-        "pattern": "EXIT=1",
-        "window_hours": 408
-      },
       "enabled": true,
-      "note": "每周一 17:25（MSFT_TaskWeeklyTrigger days=2 实测）；fail_scan 探观察点门 EXIT=1（断点7 收口 2026-10-18）"
+      "note": "每周一 17:25（MSFT_TaskWeeklyTrigger days=2 实测）；不配 fail_scan——monday_checkpoint.log 为 append-only 多块日志，尾 500 行子串必命中历史块 EXIT=1 残留（T-20261018-015 误报实证，判例 2026-10-18）"
     },
     {
       "name": "AgentChiefPush",

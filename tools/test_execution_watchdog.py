@@ -303,14 +303,29 @@ class TestManifestFailScan:
         return json.loads(mp.read_text(encoding="utf-8"))
 
     #: 断点7 收口后应配 fail_scan 的任务全集（名称 → 期望 pattern）
+    #: AgentMondayCheckpoint 已撤（T-20261018-015 误报实证）：
+    #: monday_checkpoint.log 为 append-only 多块日志，尾 500 行子串必命中
+    #: 历史块 EXIT=1 残留——判例：fail_scan 仅适用单次覆写型日志。
     EXPECTED_FAIL_SCAN = {
         "AgentWatchdog": "FAILED:",
         "AgentShadowDaily": "Traceback (most recent call last)",
-        "AgentMondayCheckpoint": "EXIT=1",
         "AgentChiefPush": "SEND_FAIL",
         "AgentShadowEvalWeekly": "影子评估结论：FAIL",
         "AgentRetrospectBrief": '"exit": 1',
     }
+
+    def test_no_fail_scan_on_append_only_multiblock_logs(self):
+        """append-only 多块日志禁止 tail 子串 fail_scan（T-015 误报判例固化）。"""
+        m = self._load_manifest()
+        for t in m["tasks"]:
+            fs = t.get("fail_scan")
+            if not fs:
+                continue
+            assert t["name"] != "AgentMondayCheckpoint", (
+                "monday_checkpoint.log 为 append-only 多块日志，禁止 fail_scan"
+            )
+            log = str(fs.get("log", ""))
+            assert "monday_checkpoint" not in log, t["name"]
 
     def test_manifest_loads_with_unique_names(self):
         m = self._load_manifest()
