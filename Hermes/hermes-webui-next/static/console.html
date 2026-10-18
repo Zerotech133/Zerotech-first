@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>中枢驾驶舱 · Hermes Console</title>
+<style>
+  :root{
+    --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#e6edf3;
+    --muted:#8b949e; --green:#3fb950; --red:#f85149; --yellow:#d29922;
+    --blue:#58a6ff; --accent:#1f6feb; --purple:#a371f7; --idle:#6e7681;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);
+    font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;padding:20px}
+  h1{font-size:20px;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:12px;margin-bottom:14px}
+  .bp-bar{background:#3d1618;border:1px solid var(--red);color:#ffb0ab;
+    border-radius:8px;padding:8px 14px;margin-bottom:16px;font-size:13px;display:none}
+  nav{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  nav button{background:var(--card);color:var(--muted);border:1px solid var(--border);
+    border-radius:8px;padding:6px 18px;font-size:13px;cursor:pointer}
+  nav button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+    gap:14px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px}
+  .card h2{font-size:14px;color:var(--blue);margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+  .what{font-size:11px;color:var(--muted);font-weight:400}
+  .what b{color:var(--green);font-weight:400}
+  .badge{font-size:11px;padding:1px 8px;border-radius:10px;border:1px solid var(--border)}
+  .badge.ok{color:var(--green);border-color:var(--green)}
+  .badge.warn{color:var(--yellow);border-color:var(--yellow)}
+  .badge.bad{color:var(--red);border-color:var(--red)}
+  .badge.info{color:var(--purple);border-color:var(--purple)}
+  .badge.idle{color:var(--idle);border-color:var(--idle)}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex:none}
+  .lamp{display:flex;gap:10px;align-items:center}
+  .lamp .t{font-weight:700;font-size:13.5px}
+  .lamp .d{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{padding:4px 8px;border-bottom:1px solid var(--border);text-align:left;
+    vertical-align:top}
+  th{color:var(--muted);font-weight:600;white-space:nowrap}
+  .muted{color:var(--muted)}
+  .mono{font-family:Consolas,monospace;font-size:12px}
+  .num{font-size:22px;font-weight:700}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:6px;
+    padding:3px 12px;font-size:12px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .btn.danger{background:#b62324}
+  .btn:hover{filter:brightness(1.15)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  input[type=time],input[type=text]{background:var(--bg);color:var(--text);
+    border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:12px}
+  .lvl-CRITICAL{color:var(--red);font-weight:700}
+  .lvl-WARN{color:var(--yellow)}
+  .lvl-INFO{color:var(--blue)}
+  #toast{position:fixed;bottom:20px;right:20px;background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:10px 16px;
+    font-size:13px;display:none;max-width:420px;z-index:9}
+  .kv{display:flex;justify-content:space-between;padding:2px 0;font-size:13px}
+  a{color:var(--blue);text-decoration:none}
+  details{border-top:1px dashed var(--border);padding:6px 0 2px;margin-top:8px}
+  details summary{cursor:pointer;color:var(--blue);font-size:12px;user-select:none}
+  details[open] summary{margin-bottom:6px}
+  details details{border-top:1px dotted var(--border);margin-left:14px}
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+  .cnode{border:1px solid var(--border);border-radius:8px;padding:3px 10px;
+    font-size:12px;background:var(--bg)}
+  .cnode.hot{background:#122a47;border-color:var(--blue);color:var(--blue)}
+  .arr{color:var(--muted)}
+  .kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .kpi .v{font-size:20px;font-weight:700}
+  .kpi .k{color:var(--muted);font-size:12px}
+  section.hidden{display:none}
+</style>
+</head>
+<body>
+<h1>中枢驾驶舱</h1>
+<div class="sub">Hermes Console · 五舱一链 · K-ORG-113 ·
+  <a href="/mission">总控页</a> ·
+  <a href="/hermes/">Hermes 主面板</a> ·
+  <span class="muted" id="ts"></span></div>
+
+<div class="bp-bar" id="bpbar"></div>
+
+<nav>
+  <button class="on" data-tab="tab1">① 总览</button>
+  <button data-tab="tab2">② 动线</button>
+  <button data-tab="tab3">③ 数据</button>
+  <button data-tab="tab4">④ 进化</button>
+  <button data-tab="tab5">⑤ 复盘</button>
+</nav>
+
+<!-- ═══ 舱1 总览 ═══ -->
+<section id="tab1">
+  <div class="grid">
+    <div class="card"><h2>执行面 <span class="what">｜<b>干嘛</b>：看定时任务跑没跑成</span> <span class="badge" id="lt-ex">…</span></h2>
+      <div class="lamp" id="lt-ex-body"><span class="dot idle"></span><div><div class="t">加载中</div><div class="d">—</div></div></div>
+      <details><summary>看过程：异常任务</summary><div id="lt-ex-detail" class="muted">—</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/execution/health ← manifest 白名单 20 任务 · Get-ScheduledTask 批量轮询</div></details>
+    </div>
+    <div class="card"><h2>数据面 <span class="what">｜<b>干嘛</b>：看账本坏没坏、新不新</span> <span class="badge" id="lt-ob">…</span></h2>
+      <div class="lamp" id="lt-ob-body"><span class="dot idle"></span><div><div class="t">加载中</div><div class="d">—</div></div></div>
+      <details><summary>看过程：账本体检</summary><div id="lt-ob-detail" class="muted">—</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/platform/observe ← shadow_ledger / trace_links / perf_ledger 只读聚合</div></details>
+    </div>
+    <div class="card"><h2>进化面 <span class="what">｜<b>干嘛</b>：看系统有没有在变强</span> <span class="badge" id="lt-ev">…</span></h2>
+      <div class="lamp" id="lt-ev-body"><span class="dot idle"></span><div><div class="t">加载中</div><div class="d">—</div></div></div>
+      <details><summary>看过程：自进化四步</summary>
+        <table>
+          <tr><td>① 影子试跑</td><td class="muted">5票×3策略/日只记账</td><td id="ev-s1">—</td></tr>
+          <tr><td>② 周五评估</td><td class="muted">11 项判据出结论</td><td id="ev-s2">—</td></tr>
+          <tr><td>③ 策略晋级</td><td class="muted">连续达标才上真仓</td><td class="muted">未开</td></tr>
+          <tr><td>④ 风控校准</td><td class="muted">误杀样本回流修阈值</td><td class="muted">校准中</td></tr>
+        </table>
+      </details>
+      <details><summary>看凭证</summary><div class="mono muted">strategy_runs（幂等 run_id/verdict_key）· strategy_registry 三策略插件</div></details>
+    </div>
+    <div class="card"><h2>服务面 <span class="what">｜<b>干嘛</b>：看服务活着没有</span> <span class="badge" id="lt-sv">…</span></h2>
+      <div class="lamp" id="lt-sv-body"><span class="dot idle"></span><div><div class="t">加载中</div><div class="d">—</div></div></div>
+      <details><summary>看过程：探活明细</summary>
+        <table>
+          <tr><td>Hermes 8787</td><td>本页可打开即活</td><td><span class="badge ok">ok</span></td></tr>
+          <tr><td>portal 8091</td><td>observe/总线转调</td><td id="sv-8091">…</td></tr>
+          <tr><td>推送 8097</td><td>pulse 心跳</td><td id="sv-8097">…</td></tr>
+        </table>
+      </details>
+      <details><summary>看凭证</summary><div class="mono muted">fail-visible：任一源挂=对应灯黄/红，绝不静默空白</div></details>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>今日动线时间线 <span class="what">｜<b>干嘛</b>：今天系统都干了啥</span></h2>
+      <table id="tl-body"><tr><td class="muted">加载中</td></tr></table>
+      <details><summary>看凭证</summary><div class="mono muted">时间线 = R1 总线 last_run 今日聚合（就近 8 条倒序）</div></details>
+    </div>
+    <div class="card"><h2>P0 工单速览 <span class="what">｜<b>干嘛</b>：必须现在处理的事</span> <span class="badge" id="tkb">…</span></h2>
+      <div id="tk-top" class="muted">加载中</div>
+      <details><summary>看过程：全部工单</summary><div class="muted">完整工单卡在「⑤ 复盘」舱</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/tickets/open ← TaskStore OPEN 工单前 5 条 · 完整账本按月 jsonl（⑤ 复盘舱同源）</div></details>
+    </div>
+    <div class="card"><h2>资产速览 <span class="what">｜<b>干嘛</b>：家底一眼</span></h2>
+      <div class="row" style="gap:10px">
+        <div class="kpi" style="flex:1"><div class="v" id="as-ledger">—</div><div class="k">影子账本行/损坏</div></div>
+        <div class="kpi" style="flex:1"><div class="v" id="as-open">—</div><div class="k">OPEN 告警</div></div>
+        <div class="kpi" style="flex:1"><div class="v" id="as-tasks">—</div><div class="k">白名单任务</div></div>
+      </div>
+      <details><summary>看过程：逐项明细</summary><div class="muted">账本体检 → ① 总览「数据面」灯 · 告警 → ⑤「告警指挥台」 · 任务 → ②「任务执行明细」（均为同源投影，不重复造数）</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">observe.shadow.ledger_rows/corrupt_lines · alerts.queue · execution.manifest_count</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 舱2 动线 ═══ -->
+<section id="tab2" class="hidden">
+  <div class="card">
+    <h2>五链动线 <span class="what">｜<b>干嘛</b>：看每条自动化流水线走到哪一步</span></h2>
+    <div class="what" style="margin-bottom:8px">一条链 = 从定时调度到最终落账的完整流程。点开每条链看凭证。</div>
+    <div class="chain"><span class="cnode hot">影子链 17:10 调度</span><span class="arr">→</span><span class="cnode">run_shadow</span><span class="arr">→</span><span class="cnode">证据 11 源</span><span class="arr">→</span><span class="cnode">账本落行</span><span class="arr">→</span><span class="cnode">周五评估</span>
+      <details><summary>看凭证</summary><div class="mono muted">agent_platform/data/shadow/last_run.log · shadow_ledger.jsonl（append-only）</div></details></div>
+    <div class="chain"><span class="cnode hot">守护链 每5min 双守护</span><span class="arr">→</span><span class="cnode">自愈栈</span><span class="arr">→</span><span class="cnode">fail_scan</span><span class="arr">→</span><span class="cnode">必响</span>
+      <details><summary>看凭证</summary><div class="mono muted">zhice-os-v2/code/logs/aw-stack.log（fail_scan 扫 FAILED:）</div></details></div>
+    <div class="chain"><span class="cnode hot">情报链 xq 分类/回填</span><span class="arr">→</span><span class="cnode">情报日报</span><span class="arr">→</span><span class="cnode">8091 intel 口</span><span class="arr">→</span><span class="cnode">08:30 晨报</span>
+      <details><summary>看凭证</summary><div class="mono muted">automation_runs/xq_classify/ · /api/xq/intel</div></details></div>
+    <div class="chain"><span class="cnode hot">回测链 20:00 调度</span><span class="arr">→</span><span class="cnode">回测引擎</span><span class="arr">→</span><span class="cnode">perf 账本</span>
+      <details><summary>看凭证</summary><div class="mono muted">perf_ledger.jsonl · run_id=12 位 hex</div></details></div>
+    <div class="chain"><span class="cnode hot">必响链 每10min 巡检</span><span class="arr">→</span><span class="cnode">异常判定</span><span class="arr">→</span><span class="cnode">24h 节流</span><span class="arr">→</span><span class="cnode">飞书+开单</span><span class="arr">→</span><span class="cnode">晨检探活</span>
+      <details><summary>看凭证</summary><div class="mono muted">automation_runs/execution_watchdog/last_run.json（N1 第(9)项探心跳）</div></details></div>
+  </div>
+  <div class="card" id="c-ex"><h2>任务执行明细 <span class="what">｜<b>干嘛</b>：20 个白名单任务逐个看</span> <span class="badge" id="exb">…</span> <span class="muted" id="ex-at"></span></h2><div id="ex-body" class="muted">加载中</div>
+    <!-- 联动层二期 R4（2026-10-18）：一键重跑结果条（绿成功/红拒绝/黄幂等阀） -->
+    <div id="ex-rerun"></div>
+    <details><summary>看凭证</summary><div class="mono muted">8091 /api/execution/health ← Get-ScheduledTask 批量轮询 · manifest 白名单 20 任务 · 一键重跑 POST /api/flow/rerun（白名单 17 项 · 归因 hermes-console）</div></details></div>
+  <div class="card">
+    <h2>推送调度台（8097 转调）<span class="what">｜<b>干嘛</b>：管推送任务的时点与触发</span> <span class="badge" id="psb">…</span></h2>
+    <div class="grid" style="margin-bottom:10px">
+      <div><div class="kv"><span>心跳</span><b id="p-hb">—</b></div>
+           <div class="kv"><span>今日推送</span><b id="p-today">—</b></div></div>
+      <div><div class="kv"><span>内容源 8097/8096/8095</span><b id="p-src">—</b></div>
+           <div class="kv"><span>近 7 日流水</span><b id="p-flow">—</b></div></div>
+    </div>
+    <table id="p-tasks"><thead><tr><th>任务</th><th>状态</th><th>时点</th><th>最近结果</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <details><summary>看过程：内容源探活明细</summary><div id="p-src-detail" class="muted">—</div></details>
+    <details><summary>看凭证</summary><div class="mono muted">8097 /api/pulse/state（本页转调）· 内容源 8097/8096/8095 逐个探活 · 任务操作 POST /api/pulse/act（set_task_time / run_task）</div></details>
+  </div>
+  <!-- ═══ 联动层三期 R6 M1（2026-10-18）：通用事件流卡（manifest 枚举 source，新产线零成本默认展示） ═══ -->
+  <div class="card"><h2>事件总线 · 通用事件流 <span class="what">｜<b>干嘛</b>：各产线最新事件快讯（新产线接 manifest 即自动上墙）</span> <span class="badge" id="evfb">…</span></h2>
+    <div id="evf-body" class="muted">加载中</div>
+    <details><summary>看过程：source 逐个探活</summary><div id="evf-src" class="muted">—</div></details>
+    <details><summary>看凭证</summary><div class="mono muted">8787 /api/event/&lt;source&gt; → 8091 /api/events/query（白名单=portal/event_manifest.json 现读 · 首批 7 source）· severity：P0 红 / P1 黄 / P2 灰 · Gate 0 后 8091 挂载 /api/events 自动点亮</div></details>
+  </div>
+</section>
+
+<!-- ═══ 舱3 数据 ═══ -->
+<section id="tab3" class="hidden">
+  <div class="card">
+    <h2>数据资产 <span class="what">｜<b>干嘛</b>：每类数据有多少、新不新、坏没坏</span> <span class="badge" id="dab">…</span></h2>
+    <table id="da-body"><tr><td class="muted">加载中</td></tr></table>
+    <details><summary>看过程：账本体检</summary><div class="muted">影子账本逐项体检在 ① 总览「数据面」灯 · 数据源 <span class="mono">8091 /api/observe/state</span></div></details>
+    <details><summary>看凭证</summary><div class="mono muted">observe.state（账本新鲜度/损坏行）· automation_runs 落点约定（10-18 拍板）· catalog.json 数据目录</div></details>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>血缘体检 <span class="what">｜<b>干嘛</b>：数字对不对得上源头</span> <span class="badge" id="lg-b">…</span></h2>
+      <div id="lg-body" class="muted">加载中</div>
+      <details><summary>看过程：门行明细</summary><div id="lg-gates" class="muted">—</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">晨报第五段体检（chain_watch）+ MCP 两工具 + SOUL.md 快路径 · PG5442 血缘三表</div></details>
+    </div>
+    <div class="card"><h2>退役口子 <span class="what">｜<b>干嘛</b>：老数据源封了没有</span> <span class="badge" id="heb">…</span></h2>
+      <div id="hebody" class="muted">加载中</div>
+      <details><summary>看过程：数据源</summary><div class="mono muted">8091 /api/purify/overview（health 段：retired / successor 字段只读投影）</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">health_latest.json deprecated:true · exit 2 断旧 · 6 消费方收口（d1dc7853）</div></details>
+    </div>
+    <div class="card"><h2>断点登记 <span class="what">｜<b>干嘛</b>：有没有悬而未决的隐患旗</span> <span class="badge" id="bpb">…</span></h2>
+      <div id="bpbody" class="muted">加载中</div>
+      <details><summary>看凭证</summary><div class="mono muted">purify.overview.breakpoints（AES 密钥/自愈停用/盲旗/死信 final）</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 舱4 进化 ═══ -->
+<section id="tab4" class="hidden">
+  <div class="card" style="grid-column:1/-1">
+    <h2>自进化回路 <span class="what">｜<b>干嘛</b>：系统怎么自己变强（四步闭环）</span></h2>
+    <div class="chain">
+      <span class="cnode hot">① 影子试跑</span><span class="arr">→</span>
+      <span class="cnode">② 周五评估</span><span class="arr">→</span>
+      <span class="cnode">③ 策略晋级</span><span class="arr">→</span>
+      <span class="cnode">④ 风控校准</span><span class="arr">→</span>
+      <span class="cnode">回到① 阈值升级后继续试跑</span>
+    </div>
+    <div class="what">当前阶段 = ① 观察季（影子试跑，零真仓风险）。下方为影子链实时投影。</div>
+    <details><summary>看凭证</summary><div class="mono muted">实时投影 8091 /api/observe/state · 判据产物 monday_checkpoint.log · 评估产物 eval_last_run.log · 账本 shadow_ledger.jsonl</div></details>
+  </div>
+  <div class="card" style="grid-column:1/-1">
+    <h2>观察季 Shadow（8091 转调 · 影子决策账本投影）
+      <span class="what">｜<b>干嘛</b>：看影子账本今天跑到哪、干不干净</span>
+      <span class="row">
+        <span class="badge" id="obb">…</span>
+        <span class="muted" id="ob-at"></span>
+      </span></h2>
+    <div class="grid" style="margin-bottom:10px">
+      <div><div class="kv"><span>最新交易日</span><b id="ob-date">—</b></div>
+           <div class="kv"><span>当日进度 done</span><b id="ob-done">—</b></div>
+           <div class="kv"><span>parse_ok 率</span><b id="ob-parse">—</b></div></div>
+      <div><div class="kv"><span>巡检结论</span><b id="ob-check">—</b></div>
+           <div class="kv"><span>账本行 / 损坏行</span><b id="ob-rows">—</b></div>
+           <div class="kv"><span>perf 后验账本</span><b id="ob-perf">—</b></div></div>
+    </div>
+    <div id="ob-gates" class="row" style="margin-bottom:8px"></div>
+    <div id="ob-eval" class="mono" style="margin-bottom:8px"></div>
+    <div id="ob-report" class="mono muted"></div>
+    <details><summary>看凭证</summary><div class="mono muted">8091 /api/platform/observe ← shadow_ledger / monday_checkpoint.log / eval_last_run.log / perf_ledger / observe_report</div></details>
+  </div>
+  <!-- ═══ 进化舱二期数据面（2026-10-18）：告警闭环率 / 影子试跑统计 ═══ -->
+  <div class="grid" style="grid-column:1/-1">
+    <div class="card"><h2>告警闭环率 <span class="what">｜<b>干嘛</b>：告警有没有人管到关——自进化核心 KPI</span> <span class="badge" id="evb">…</span></h2>
+      <div id="ev-al-body"><div class="row"><span class="num" id="ev-rate">—</span><span class="muted" id="ev-ct">—</span></div></div>
+      <details><summary>看过程：近期告警闭环明细</summary><div id="ev-al-recent" class="muted">—</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/evolution/summary ← 告警闭环账本只读聚合（必响链开单 → 处理 → 关单全闭环）</div></details>
+    </div>
+    <div class="card"><h2>影子试跑统计 <span class="what">｜<b>干嘛</b>：新策略先在影子账本试跑，不碰真仓</span> <span class="badge" id="evsh">…</span></h2>
+      <div class="row" style="margin-bottom:8px"><span class="num" id="sh-rows">—</span><span class="muted">行影子账本</span></div>
+      <div class="row" id="sh-verdicts" style="margin-bottom:6px"></div>
+      <div class="mono muted" id="sh-meta">—</div>
+      <div id="sh-eval" class="muted" style="font-size:12px;margin-top:4px"></div>
+      <details><summary>看过程：最新 run</summary><div class="mono muted">最新交易日 / run_id / verdict 四态即上方展示行 · 数据源 8091 /api/evolution/summary（shadow 段：rows / by_verdict / latest_run_id / latest_date）</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/evolution/summary ← shadow_ledger.jsonl append-only（5票×3策略/日，verdict 幂等 run_id）</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 舱5 复盘 ═══ -->
+<section id="tab5" class="hidden">
+  <div class="card">
+    <h2>工单复盘 <span class="what">｜<b>干嘛</b>：出过什么事、怎么收的尾</span> <span class="badge" id="tkfb">…</span></h2>
+    <div id="tk-body" class="muted">加载中</div>
+    <details><summary>看凭证</summary><div class="mono muted">8091 /api/org/tasks ← TaskStore 按月 jsonl（只读投影，写侧单源=TaskStore；开单人 system/execution-watchdog）</div></details>
+  </div>
+  <!-- ═══ 进化舱二期数据面（2026-10-18）：周一门判（判据数量以后端返回 items 为准） ═══ -->
+  <div class="card"><h2>周一门判 <span class="what">｜<b>干嘛</b>：每周一 17:25 五项判据全过才算守住基线</span> <span class="badge" id="gtb">…</span></h2>
+    <div id="gt-latest" class="muted">加载中</div>
+    <div class="row" id="gt-badges" style="margin:6px 0"></div>
+    <details><summary>看过程：判据明细全文</summary><div id="gt-items" class="muted">—</div></details>
+    <details><summary>看过程：历史门判</summary><div id="gt-history" class="muted">—</div></details>
+    <details><summary>看凭证</summary><div class="mono muted">8091 /api/gate/checkpoint ← monday_checkpoint 产物只读投影（写侧单源=8091 门判脚本）</div></details>
+  </div>
+  <!-- ═══ 联动层二期数据面（2026-10-18）R5：复盘简报（latest 大卡 + 历史简报 append-only 回看） ═══ -->
+  <div class="card"><h2>复盘简报 <span class="what">｜<b>干嘛</b>：影子链跑完自动生成复盘，P1 问题自动开单</span> <span class="badge" id="bfb">…</span></h2>
+    <div id="bf-latest" class="muted">加载中</div>
+    <details><summary>看过程：历史简报</summary><div id="bf-history" class="muted">—</div></details>
+    <details><summary>看凭证</summary><div class="mono muted">8091 /api/brief/latest · /api/brief/list ← 影子链复盘产物只读投影（写侧单源=8091 复盘脚本，append-only 不覆盖，历史从 details 回看）</div></details>
+  </div>
+  <div class="card">
+    <h2>告警指挥台（8091 转调 · 与飞书卡同源落点）
+      <span class="what">｜<b>干嘛</b>：处理待办告警</span>
+      <span class="row">
+        <span class="badge" id="aqb">…</span>
+        <button class="btn danger" onclick="alertAct('ack_all','')">全部确认</button>
+      </span></h2>
+    <table id="a-queue"><thead><tr><th>级别</th><th>alert_id</th><th>标题</th><th>操作</th></tr></thead><tbody></tbody></table>
+    <details><summary>看过程：闭环侧明细</summary><div class="muted">本台只列 OPEN 队列 · 已闭环（closed）明细在 ④ 进化「告警闭环率」卡 · 看过程</div></details>
+    <details><summary>看凭证</summary><div class="mono muted">8091 /api/alerts/queue（OPEN 只读）· 操作 POST /api/alerts/act（ack / ignore / ack_all · 写 v2_alert 与飞书卡同源）</div></details>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>N1 晨检 <span class="what">｜<b>干嘛</b>：每天 07:30 全局体检</span> <span class="badge" id="n1b">…</span></h2><div id="n1body" class="muted">加载中</div>
+      <details><summary>看过程：晨检输出全文</summary><div id="n1-tail" class="mono muted">—</div></details>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/purify/overview（n1 段：report_exists / pending_flags / blind_flags / tail）· 报告路径见上方「报告」行</div></details></div>
+    <div class="card"><h2>推送死信 <span class="what">｜<b>干嘛</b>：没送出去的通知</span> <span class="badge" id="dlb">…</span></h2><div id="dlbody" class="muted">加载中</div>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/purify/overview（dead_letter 段：today / final_true / recent · final:true=永久丢失）</div></details></div>
+    <div class="card"><h2>jev 判定积压 <span class="what">｜<b>干嘛</b>：待判定的事件堆了多少</span> <span class="badge" id="bkb">…</span></h2><div id="bkbody" class="muted">加载中</div>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/purify/overview（backlog 段：pending / judged / last_task_line）</div></details></div>
+    <div class="card"><h2>v11 备份链 <span class="what">｜<b>干嘛</b>：昨夜备份做没做</span> <span class="badge" id="bub">…</span></h2><div id="bubody" class="muted">加载中</div>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/purify/overview（backup 段：last_done_line / last_backup_log / offsite_last）</div></details></div>
+    <div class="card"><h2>健康快照（已退役） <span class="what">｜<b>干嘛</b>：旧口子提示</span> <span class="badge" id="heb2">…</span></h2><div id="hebody2" class="muted">加载中</div>
+      <details><summary>看凭证</summary><div class="mono muted">8091 /api/purify/overview（health 段：retired / successor）· 旧端点 health_latest.json 已 deprecated 断写</div></details></div>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+function toast(msg,ok){const t=$("toast");t.textContent=msg;
+  t.style.borderColor=ok?"var(--green)":"var(--red)";t.style.display="block";
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",4000);}
+function badge(el,cls,txt){el.className="badge "+cls;el.textContent=txt;}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+let csrfToken="";
+async function hermesCsrf(){
+  const r=await fetch("/hermes/",{cache:"no-store",credentials:"same-origin"});
+  if(!r.ok)throw Error("Hermes 认证页不可达");
+  const shell=await r.text();
+  const match=shell.match(/\bcsrfToken\s*:\s*(['"])([0-9a-f]{64})\1/i);
+  if(!match)throw Error("Hermes session 未就绪，请先登录主面板");
+  return match[2];
+}
+async function api(path,body){
+  const connector=path.startsWith("/console-api/api/");
+  const opt=body?{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body),credentials:"same-origin"}:{};
+  if(body&&connector){
+    if(!csrfToken)csrfToken=await hermesCsrf();
+    opt.headers["X-Hermes-CSRF-Token"]=csrfToken;
+  }
+  const r=await fetch(path,opt);
+  if(r.status===403&&body&&connector)csrfToken="";
+  return {status:r.status,data:await r.json().catch(()=>({error:"non-json"}))};}
+const hc=path=>"/console-api/api/"+path;
+const pc=path=>"/api/"+path;
+
+/* ── 舱切换 ─────────────────────────────── */
+const tabs=document.querySelectorAll("nav button");
+tabs.forEach(b=>b.addEventListener("click",()=>{
+  tabs.forEach(x=>x.classList.remove("on"));b.classList.add("on");
+  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+  $(b.dataset.tab).classList.remove("hidden");
+}));
+
+/* ── 净化总览（复盘舱 + 数据舱断点/退役卡共用数据源） ── */
+async function loadPurify(){
+  try{
+    const {data:d}=await api(hc("purify/overview"));
+    $("ts").textContent="刷新 "+(d.generated_at||"");
+    const bp=d.breakpoints||{};
+    const hits=Object.entries(bp).filter(([k,v])=>typeof v==="boolean"&&v).map(([k])=>k);
+    $("bpbar").style.display=hits.length?"block":"none";
+    $("bpbar").textContent="⚠ 断点："+hits.join(" · ")+"（详见③ 数据舱断点卡）";
+    badge($("bpb"),hits.length?"bad":"ok",hits.length?hits.length+" 项":"无断点");
+    $("bpbody").innerHTML=Object.entries(bp).map(([k,v])=>{
+      const bad=v===true;
+      return `<div class="kv"><span>${{aes_key_missing:"AES 密钥缺失（异地 .enc 不可解）",
+        regen_disabled:"backup_daily_regen 自愈停用",n1_blind:"N1 失明盲旗存在",
+        dead_letter_final:"死信存在 final:true（永久丢失）"}[k]||k}</span>
+        <b style="color:${bad?"var(--red)":"var(--green)"}">${v===true?"⚠ 是":"否"}</b></div>`
+      +(k==="regen_last_line"?`<div class="muted mono">${esc(v)}</div>`:"");
+    }).join("");
+
+    const n1=d.n1||{};
+    const n1ok=n1.report_exists&&!n1.blind_flags&&!n1.pending_flags;
+    badge($("n1b"),n1ok?"ok":"warn",n1.report_exists?"已出报":"未出报");
+    $("n1body").innerHTML=
+      `<div class="kv"><span>报告</span><b class="mono">${esc(n1.report_file)}</b></div>
+       <div class="kv"><span>待处理旗标 / 盲旗</span><b>${n1.pending_flags||0} / ${n1.blind_flags||0}</b></div>
+       ${(n1.tail||[]).slice(-4).map(l=>`<div class="mono muted">${esc(l)}</div>`).join("")}`;
+    /* 三原则补齐（2026-10-18）：N1 晨检「看过程」= tail 全文（结果区只展示末 4 行） */
+    $("n1-tail").innerHTML=(n1.tail||[]).map(l=>`<div>${esc(l)}</div>`).join("")
+      ||"<div class='muted'>无输出行</div>";
+
+    const dl=d.dead_letter||{};
+    const dlok=!(dl.final_true>0)&&!(dl.today>0);
+    badge($("dlb"),dlok?"ok":"bad",`今日+${dl.today||0} / final ${dl.final_true||0}`);
+    $("dlbody").innerHTML=(dl.recent||[]).map(r=>
+      `<div class="mono">${r.final?'<span class="lvl-CRITICAL">[FINAL]</span>':
+      '<span class="lvl-WARN">[retry]</span>'} ${esc(r.ts)} [${esc(r.level)}] ${esc(r.title)}
+       ${r.err?`<div class="muted">↳ ${esc(r.err)}</div>`:""}</div>`).join("")||"<div class='muted'>无记录</div>";
+
+    const bk=d.backlog||{};
+    badge($("bkb"),bk.warn?"warn":"ok",bk.pending==null?"n/a":`待判 ${bk.pending}`);
+    $("bkbody").innerHTML=
+      `<div class="row"><span class="num" style="color:${bk.warn?"var(--yellow)":"var(--green)"}">${bk.pending??"?"}</span>
+        <span class="muted">待判 / 已判 ${bk.judged??"?"}</span></div>
+       <div class="mono muted">${esc(bk.last_task_line||"无 backfill 轮记录")}</div>`;
+
+    const bu=d.backup||{};
+    const buok=!!bu.last_done_line;
+    badge($("bub"),buok?"ok":"bad",bu.last_backup_log||"无备份集");
+    $("bubody").innerHTML=
+      `<div class="mono">${bu.last_done_line?esc(bu.last_done_line):'<span class="lvl-CRITICAL">未见 DONE 行</span>'}</div>
+       <div class="mono muted">异地：${esc(bu.offsite_last||"无记录")}</div>`;
+
+    const he=d.health||{};
+    badge($("heb2"),he.retired?"idle":"warn",he.retired?"已退役":"未知态");
+    $("hebody2").innerHTML=he.retired?
+      `<div class="muted">健康快照已退役（陈旧第二本账收口）<br>后继数据源：<span class="mono">${esc(he.successor||"/api/execution/health")}</span></div>`:
+      `<div class="muted">health 段未含退役标记（旧版后端？）</div>`;
+    /* 舱3 退役口子卡（同源数据第二渲染面） */
+    badge($("heb"),he.retired?"idle":"warn",he.retired?"已收口":"未知态");
+    $("hebody").innerHTML=he.retired?
+      `<div class="muted">health_latest.json 已退役（陈旧第二本账收口）</div>
+       <div class="mono muted">后继：${esc(he.successor||"/api/execution/health")} · 6 消费方全改走新总线</div>`:
+      `<div class="muted">health 段未含退役标记（旧版后端？）</div>`;
+  }catch(e){$("ts").textContent="净化总览加载失败："+e;}
+}
+
+/* ── 推送调度 ─────────────────────────────── */
+async function loadPulse(){
+  try{
+    const {status,data:d}=await api(hc("pulse/state"));
+    if(!d||d.error){badge($("psb"),"bad","8097 不可达");
+      $("p-hb").textContent=esc(d&&d.error||status);
+      $("p-src-detail").textContent="—";
+      badge($("sv-8097")||{className:"badge",textContent:""}, "bad", "down");return;}
+    badge($("psb"),d.heartbeat?"ok":"bad",d.heartbeat?"心跳正常":"心跳丢失");
+    const sv=$("sv-8097");if(sv)sv.innerHTML='<span class="badge '+(d.heartbeat?"ok":"bad")+'">'+(d.heartbeat?"ok":"down")+"</span>";
+    $("p-hb").textContent=d.heartbeat?"正常":"丢失";
+    const t=d.today||{};
+    $("p-today").textContent=`sub ${t.sub_sent??0} / km ${t.km_sent??0} / 任务 ${t.tasks_ran??0}`;
+    $("p-src").textContent=(d.sources||[]).map(s=>`${s.port}:${s.ok?"ok":"down"}`).join(" ");
+    $("p-flow").textContent=(d.flow&&d.flow.by_day||[]).map(x=>`${(x.date||"").slice(5)}:${x.count}`).join(" ");
+    /* 三原则补齐（2026-10-18）：推送台「看过程」= 内容源逐个探活明细（结果区只给一行汇总） */
+    $("p-src-detail").innerHTML=(d.sources||[]).map(s=>
+      `<div class="kv"><span class="mono">${esc(s.port)}</span>
+        <b style="color:${s.ok?"var(--green)":"var(--red)"}">${s.ok?"ok":"down"}</b></div>`).join("")
+      ||"<div class='muted'>无内容源上报</div>";
+    const tb=$("p-tasks").querySelector("tbody");tb.innerHTML="";
+    (d.tasks||[]).forEach(tk=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td>${esc(tk.name)}</td>
+        <td class="muted">${esc(tk.state)}</td>
+        <td>${tk.manage?`<input type="time" id="tm-${esc(tk.name)}" value="${esc(tk.time||"")}" onchange="setTaskTime('${esc(tk.name)}',this.value)">`:esc(tk.time||"—")}</td>
+        <td class="mono muted">${esc((tk.result||"").slice(0,40))}</td>
+        <td>${tk.manage?`<button class="btn ghost" onclick="runTask('${esc(tk.name)}')">立即执行</button>`:"<span class='muted'>只读</span>"}</td>`;
+      tb.appendChild(tr);
+    });
+  }catch(e){badge($("psb"),"bad","加载失败");$("p-src-detail").textContent="—";}
+}
+async function setTaskTime(name,time){
+  if(!time||!/^[01]\d|2[0-3]:[0-5]\d$/.test(time))return toast("时点格式非法",false);
+  const {status,data:d}=await api(hc("pulse/act"),{action:"set_task_time",name,time});
+  toast(`${name} → ${time}：${d.ok?"成功":("失败 "+(d.error||status))}`,!!d.ok);
+  loadPulse();
+}
+async function runTask(name){
+  if(!confirm(`立即执行「${name}」？（真实触发推送）`))return;
+  const {status,data:d}=await api(hc("pulse/act"),{action:"run_task",name});
+  toast(`${name} 触发：${d.ok?"成功":("失败 "+(d.error||status))}`,!!d.ok);
+  setTimeout(loadPulse,2000);
+}
+
+/* ── 告警队列 ─────────────────────────────── */
+async function loadAlerts(){
+  try{
+    const {status,data:d}=await api(hc("alerts/queue"));
+    if(!d||!d.ok){badge($("aqb"),"bad",d&&d.error?("8091："+d.error):"不可达");return;}
+    badge($("aqb"),d.total>0?"warn":"ok",`OPEN ${d.total}`);
+    $("as-open").textContent=d.total??"—";
+    const tb=$("a-queue").querySelector("tbody");tb.innerHTML="";
+    (d.items||[]).forEach(a=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td class="lvl-${esc(a.level)}">${esc(a.level)}</td>
+        <td class="mono muted">${esc(a.alert_id)}</td>
+        <td>${esc(a.title)}</td>
+        <td class="row">
+          <button class="btn" onclick="alertAct('ack','${esc(a.alert_id)}')">已处理</button>
+          <button class="btn ghost" onclick="alertAct('ignore','${esc(a.alert_id)}')">忽略</button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+    if(!(d.items||[]).length)tb.innerHTML="<tr><td colspan=4 class='muted'>无 OPEN 告警</td></tr>";
+  }catch(e){badge($("aqb"),"bad","加载失败");}
+}
+async function alertAct(action,alert_id){
+  const label=action==="ack_all"?"全部确认":(action==="ignore"?"忽略":`处理 ${alert_id}`);
+  if(!confirm(`确认「${label}」？（写 v2_alert${action==="ignore"?" + gate_ignored":""}，与飞书卡同源）`))return;
+  const {status,data:d}=await api(hc("alerts/act"),{action,alert_id});
+  toast(`${label}：${d.ok?esc(d.text):("失败 "+(d.error||status))}`,!!d.ok);
+  loadAlerts();
+}
+
+/* ── 观察季 Shadow（8091 转调）────────────── */
+const OB_BASKET=5;
+function obGateCls(s){return s==="PASS"?"ok":s==="FAIL"?"bad":"idle";}
+function obGateColor(s){return s==="PASS"?"var(--green)":s==="FAIL"?"var(--red)":"var(--yellow)";}
+async function loadObserve(){
+  try{
+    const {status,data:d}=await api(hc("observe/state"));
+    badge($("sv-8091")||{className:"badge",textContent:""},"ok","ok");
+    if(!d||d.error){badge($("obb"),"bad","8091 不可达");
+      $("ob-date").textContent=esc(d&&d.error||String(status));
+      badge($("lt-ob"),"bad","8091 不可达");return;}
+    $("ob-at").textContent=d.generated_at||"";
+    const sh=d.shadow||{};
+    /* 舱1 数据面灯 */
+    if(sh.missing){badge($("lt-ob"),"bad","账本缺失");
+      $("lt-ob-body").innerHTML='<span class="dot" style="background:var(--red)"></span><div><div class="t">shadow_ledger 不存在</div><div class="d">影子链未初始化</div></div>';}
+    else{
+      const corrupt=sh.corrupt_lines??0;
+      badge($("lt-ob"),corrupt?"warn":"ok",corrupt?`损坏 ${corrupt}`:"账本健康");
+      $("lt-ob-body").innerHTML=`<span class="dot" style="background:${corrupt?"var(--yellow)":"var(--green)"}"></span>
+        <div><div class="t">账本 ${sh.ledger_rows??0} 行 · 损坏 ${corrupt}</div>
+        <div class="d">最新交易日 ${esc(d.latest_trade_date||"—")} · done ${sh.latest_date_done_count??0}/${OB_BASKET}</div></div>`;
+      $("lt-ob-detail").innerHTML=`账本行 ${sh.ledger_rows} · 损坏 ${corrupt} · 当日 done ${sh.latest_date_done_count??0} / failed ${sh.latest_date_failed??"0"}`;
+      $("as-ledger").textContent=`${sh.ledger_rows??0}/${corrupt}`;
+    }
+    /* 舱1 进化面灯 */
+    const ev=d.eval||{};
+    const evOk=ev.verdicts&&ev.verdicts.length&&!ev.missing;
+    badge($("lt-ev"),evOk?"ok":"idle",evOk?"评估有结论":"等待首评");
+    $("lt-ev-body").innerHTML=`<span class="dot" style="background:${evOk?"var(--green)":"var(--idle)"}"></span>
+      <div><div class="t">${evOk?"周五评估已出结论":"观察季 · 等待首周数据"}</div>
+      <div class="d">影子账本最新 ${esc(sh.latest_date||"—")}</div></div>`;
+    $("ev-s1").textContent=sh.missing?"未初始化":(sh.latest_date_done_count??0)>0?"进行中":"今日 17:10";
+    $("ev-s2").textContent=evOk?"已出":"周五 17:45";
+    if(sh.missing){
+      badge($("obb"),"bad","账本缺失");
+      $("ob-date").textContent="shadow_ledger.jsonl 不存在";
+      $("ob-gates").innerHTML="";$("ob-eval").textContent="";
+      $("ob-report").textContent="";$("ob-done").textContent="—";
+      $("ob-parse").textContent="—";$("ob-rows").textContent="—";
+      return;}
+    $("ob-date").textContent=esc(d.latest_trade_date||"—");
+    $("ob-done").textContent=`${sh.latest_date_done_count??0}/${OB_BASKET}（${esc(sh.latest_date||"—")}）`;
+    const pk=(sh.parse_ok_count||0)+(sh.parse_fail_count||0);
+    $("ob-parse").textContent=pk?`${sh.parse_ok_count}/${pk}（${Math.round(100*sh.parse_ok_count/pk)}%）`:"—";
+    $("ob-rows").textContent=`${sh.ledger_rows??0} / 损坏 ${sh.corrupt_lines??0}`;
+    const pf=d.perf||{};
+    $("ob-perf").textContent=pf.missing?"perf_ledger.jsonl 不存在":`${pf.rows??0} 行`;
+    const cp=d.checkpoint||{};
+    const rp=d.report||{};
+    if(cp.missing){
+      $("ob-check").textContent="巡检日志缺失";
+      $("ob-gates").innerHTML='<span class="muted">monday_checkpoint.log 不存在</span>';}
+    else{
+      const gates=cp.gates||[];
+      const nf=gates.filter(g=>g.status==="FAIL").length;
+      badge($("obb"),nf?"warn":"ok",`${cp.run_at||"巡检"} · FAIL ${nf}`);
+      $("ob-check").textContent=cp.summary||"—";
+      $("ob-gates").innerHTML=gates.map(g=>
+        `<span class="badge ${obGateCls(g.status)}" title="${esc(g.detail||"")}"
+           style="color:${obGateColor(g.status)};border-color:${obGateColor(g.status)}">
+         ${g.status==="PASS"?"✔":g.status==="FAIL"?"✘":"…"} ${esc(g.name)}</span>`).join("")||"<span class='muted'>本块无门行</span>";}
+    $("ob-eval").innerHTML=ev.missing?'<span class="muted">eval_last_run.log 不存在</span>':
+      (ev.verdicts||[]).map(v=>
+        `<div><b style="color:${obGateColor(v.status)}">${esc(v.criterion)}${v.status?" "+esc(v.status):""}</b> ${esc(v.text||"")}</div>`).join("")
+      +(ev.conclusion?`<div style="color:var(--blue)">${esc(ev.conclusion)}</div>`:"");
+    $("ob-report").innerHTML=rp.missing?"无日报":
+      `<div class="kv"><span>最新日报</span><b class="mono">${esc(rp.latest_date||"")}（${esc(rp.path||"")}）</b></div>
+       <div style="white-space:pre-wrap">${esc(rp.excerpt||"")}</div>`;
+  }catch(e){badge($("obb"),"bad","加载失败");badge($("lt-ob"),"bad","加载失败");}
+}
+
+/* ── 任务执行（R1 执行健康总线 8091 转调）────── */
+function exColor(s){return s==="ok"?"var(--green)":s==="fail"?"var(--red)":
+  (s==="stale"||s==="never")?"var(--yellow)":"var(--muted)";}
+function exBadgeWorst(w){return w==="fail"?"bad":(w==="stale"||w==="never")?"warn":"ok";}
+async function loadExecution(){
+  try{
+    const {status,data:d}=await api(hc("execution/health"));
+    if(status<200||status>=300||!d||d.error||d.ok===false){
+      badge($("exb"),"bad","8091 不可达");
+      $("ex-at").textContent="";
+      $("ex-body").innerHTML='<div style="color:var(--red);border:1px solid var(--red);border-radius:6px;padding:8px 12px">'
+        +`总线不可达（${esc(d&&d.error||String(status))}）——总线挂≠执行面挂，计划任务本身可能仍在正常跑</div>`;
+      badge($("lt-ex"),"bad","总线不可达");
+      $("lt-ex-body").innerHTML='<span class="dot" style="background:var(--red)"></span><div><div class="t">总线不可达</div><div class="d">'+esc(d&&d.error||String(status))+"</div></div>";
+      $("lt-ex-detail").textContent="总线不可达";
+      $("as-tasks").textContent="—";
+      $("tl-body").innerHTML="<tr><td class='muted'>总线不可达</td></tr>";
+      return;}
+    $("ex-at").textContent=d.generated_at||"";
+    const s=d.summary||{}, tasks=Array.isArray(d.tasks)?d.tasks:[];
+    const counts=["ok","fail","stale","never","disabled"];
+    const complete=d.ps_ok===true&&d.manifest_ok===true&&
+      Number.isInteger(d.manifest_count)&&d.manifest_count>0&&tasks.length===d.manifest_count&&
+      counts.every(k=>Number.isInteger(s[k])&&s[k]>=0)&&
+      counts.reduce((n,k)=>n+s[k],0)===tasks.length&&
+      counts.every(k=>tasks.filter(t=>t.status===k).length===s[k])&&
+      (s.worst===(s.fail?"fail":s.stale?"stale":s.never?"never":null));
+    const worst=s.worst;
+    const healthy=complete&&s.ok>0&&!worst;
+    const issue=d.ps_ok!==true?"轮询失败（ps_ok=false）："+(d.ps_error||"?"):
+      d.manifest_ok!==true?"manifest 异常："+(d.manifest_error||"?"):
+      "执行摘要为空或不完整";
+    if(!complete){
+      badge($("exb"),"bad","数据不完整");
+      badge($("lt-ex"),"bad","数据不完整");
+      $("lt-ex-body").innerHTML=`<span class="dot" style="background:var(--red)"></span><div><div class="t">执行状态不可确认</div><div class="d">${esc(issue)}</div></div>`;
+      $("lt-ex-detail").textContent=issue;
+      $("ex-body").innerHTML=`<div class="mono" style="color:var(--red)">${esc(issue)}</div>`;
+      $("as-tasks").textContent="—";
+      $("tl-body").innerHTML="<tr><td class='muted'>执行数据不完整</td></tr>";
+      return;
+    }
+    if(healthy){badge($("exb"),"ok",`全绿 ${s.ok}/${d.manifest_count}`);}
+    else if(worst==="fail"){badge($("exb"),"bad",`FAIL ${s.fail}`);}
+    else{badge($("exb"),"warn",worst?`${worst.toUpperCase()} ${s[worst]}`:"无启用任务");}
+    $("as-tasks").textContent=d.manifest_count;
+    /* 舱1 执行面灯 */
+    if(healthy){badge($("lt-ex"),"ok","全绿");
+      $("lt-ex-body").innerHTML=`<span class="dot" style="background:var(--green)"></span>
+        <div><div class="t">全绿 ${s.ok} 任务</div><div class="d">无 fail/stale/never</div></div>`;
+      $("lt-ex-detail").innerHTML="<div class='muted'>无异常任务</div>";}
+    else{badge($("lt-ex"),worst?exBadgeWorst(worst):"warn",worst?worst.toUpperCase()+" "+s[worst]:"无启用任务");
+      const bads=tasks.filter(t=>t.status!=="ok"&&t.status!=="disabled");
+      $("lt-ex-body").innerHTML=`<span class="dot" style="background:${worst==="fail"?"var(--red)":"var(--yellow)"}"></span>
+        <div><div class="t">FAIL ${s.fail} · STALE ${s.stale} · NEVER ${s.never}</div>
+        <div class="d">ok ${s.ok} / disabled ${s.disabled}</div></div>`;
+      $("lt-ex-detail").innerHTML=bads.map(t=>
+        `<div class="kv"><span>${esc(t.name)}</span><b style="color:${exColor(t.status)}">${esc(t.status)}${t.last_result!=null?" · rc="+t.last_result:""}</b></div>`).join("")
+        ||"<div class='muted'>无</div>";}
+    const rows=tasks.map(t=>
+      `<tr><td>${esc(t.name)}</td><td class="mono">${esc(t.expected_cadence||"—")}</td>
+       <td class="mono">${esc(t.last_run||"—")}</td>
+       <td class="mono">${t.last_result==null?"—":t.last_result}</td>
+       <td class="mono">${t.stale_min==null?"—":t.stale_min}</td>
+       <td><b style="color:${exColor(t.status)}">${esc(t.status)}</b>${t.fail_scan_hit?' <span class="badge warn">自愈失败</span>':""}</td>
+       <td>${RERUN_OK.includes(t.name)?`<button class="btn ghost" onclick="rerunTask('${esc(t.name)}')">重跑</button>`:""}</td></tr>`).join("");
+    $("ex-body").innerHTML=
+      `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+       <tr class="muted" style="text-align:left"><th>任务</th><th>节奏</th><th>最近运行</th><th>结果码</th><th>陈旧分钟</th><th>状态</th><th>操作</th></tr>${rows}</table>`
+      +`<div class="muted" style="margin-top:6px">ps ${d.ps_elapsed_ms}ms · via ${esc(d.via||"direct")} · 白名单 ${d.manifest_count} 任务（manifest 即白名单，宁少勿假）</div>`;
+    /* 舱1 时间线：今日 last_run 就近 8 条 */
+    const today=new Date().toISOString().slice(0,10);
+    const tl=(d.tasks||[]).filter(t=>t.last_run&&t.last_run.slice(0,10)===today)
+      .sort((a,b)=>(b.last_run||"").localeCompare(a.last_run||"")).slice(0,8);
+    $("tl-body").innerHTML=tl.length?tl.map(t=>
+      `<tr><td class="mono">${esc((t.last_run||"").slice(11))}</td><td>${esc(t.name)}</td>
+       <td><b style="color:${exColor(t.status)}">${esc(t.status)}</b></td></tr>`).join("")
+      :"<tr><td class='muted'>今日暂无任务运行记录（周末常态）</td></tr>";
+  }catch(e){
+    badge($("exb"),"bad","加载失败");
+    $("ex-at").textContent="";
+    $("ex-body").innerHTML='<div style="color:var(--red);border:1px solid var(--red);border-radius:6px;padding:8px 12px">'
+      +`加载异常（${esc(String(e&&e.message||e))}）——30s 后自动重试</div>`;
+    badge($("lt-ex"),"bad","加载失败");
+    $("lt-ex-body").textContent="执行状态不可确认";
+    $("lt-ex-detail").textContent="加载失败";
+    $("as-tasks").textContent="—";
+    $("tl-body").innerHTML="<tr><td class='muted'>加载失败</td></tr>";}
+}
+
+/* ── 工单（8091 /api/org/tasks 转调，驾驶舱一期）────── */
+const TK_SEV={"P0":"bad","P1":"warn","P2":"info"};
+async function loadTickets(){
+  try{
+    const {status,data:d}=await api(hc("tickets/open"));
+    if(!d||d.ok===false||d.error){
+      badge($("tkb"),"bad","8091 不可达");badge($("tkfb"),"bad","8091 不可达");
+      $("tk-top").textContent=esc(d&&d.error||String(status));
+      $("tk-body").innerHTML=`<div style="color:var(--red)">工单投影不可达：${esc(d&&d.error||String(status))}——TaskStore 账本本身可能正常</div>`;
+      return;}
+    const n=d.count??0;
+    badge($("tkb"),n?"warn":"ok",`${n} 单`);
+    const sc=d.status_counts||{};
+    const openN=(sc.open||0)+(sc.doing||0);
+    badge($("tkfb"),openN?"warn":"ok",`在办 ${openN} / 累计 ${n}`);
+    $("tk-top").innerHTML=(d.tasks||[]).slice(0,5).map(t=>
+      `<div class="kv"><span class="mono">${esc(t.task_id)}</span>
+        <span><span class="badge ${TK_SEV[t.severity]||"idle"}">${esc(t.severity||"—")}</span>
+        <span class="badge ${t.status==="done"?"ok":t.status==="doing"?"warn":"idle"}">${esc(t.status||"—")}</span></span></div>
+       <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(t.title||"")}</div>`).join("")
+      ||"<div class='muted'>近期无工单</div>";
+    $("tk-body").innerHTML=(d.tasks||[]).map(t=>
+      `<details style="border-top:1px solid var(--border)"><summary>
+        <span class="mono">${esc(t.task_id)}</span>
+        <span class="badge ${TK_SEV[t.severity]||"idle"}">${esc(t.severity||"—")}</span>
+        <span class="badge ${t.status==="done"?"ok":t.status==="doing"?"warn":"idle"}">${esc(t.status||"—")}</span>
+        ${esc((t.title||"").slice(0,40))}</summary>
+       <div class="mono muted">开单人 ${esc(t.opened_by||"—")} · 部门 ${esc(t.assigned_dept||"—")} · 创建 ${esc(t.created_at||"—")}${t.due?" · 截止 "+esc(t.due):""}</div>
+       <div style="font-size:13px;margin-top:4px">${esc(t.title||"")}</div></details>`).join("")
+      ||"<div class='muted'>近期无工单</div>";
+  }catch(e){badge($("tkb"),"bad","加载失败");badge($("tkfb"),"bad","加载失败");}
+}
+
+/* ── 进化舱二期数据面（2026-10-18）：自进化汇总（8091 转调）────── */
+const EV_VERDICT_CLS={pass:"ok",fail:"bad",pending:"warn",other:"idle"};
+const EV_VERDICT_TXT={pass:"PASS",fail:"FAIL",pending:"PENDING",other:"OTHER"};
+function failBar(msg){return '<div style="color:var(--red);border:1px solid var(--red);'
+  +'border-radius:6px;padding:8px 12px">'+esc(msg)+"</div>";}
+function greyBar(msg){return '<div class="muted" style="border:1px solid var(--border);'
+  +'border-radius:6px;padding:8px 12px">'+esc(msg)+"</div>";}
+async function loadEvolution(){
+  try{
+    const {status,data:d}=await api(hc("evolution/summary"));
+    if(!d||d.ok===false||d.error){
+      badge($("evb"),"bad","8091 不可达");badge($("evsh"),"bad","8091 不可达");
+      $("ev-al-body").innerHTML=failBar("进化汇总不可达："
+        +(d&&d.error||String(status))+"——告警/影子链本身可能仍在正常跑");
+      $("ev-rate").textContent="—";$("ev-ct").textContent="";
+      $("ev-al-recent").textContent="—";
+      $("sh-rows").textContent="—";$("sh-verdicts").innerHTML="";
+      $("sh-meta").textContent="—";$("sh-eval").textContent="";
+      return;}
+    /* 卡1：告警闭环率（fetch 失败或 available:false → 红条/体面文案） */
+    const al=d.alert_closure||{};
+    if(d.available===false||al.total==null){
+      badge($("evb"),"warn","未就绪");
+      $("ev-al-body").innerHTML=greyBar("告警闭环数据未就绪"
+        +(d.errors?("："+esc(String(d.errors))):"（8091 侧聚合尚未产出）"));
+      $("ev-rate").textContent="—";$("ev-ct").textContent="";
+      $("ev-al-recent").textContent="—";
+    }else{
+      const rate=al.rate_pct;
+      badge($("evb"),(al.open||0)>0?"warn":"ok",
+        `闭环 ${rate==null?"—":rate+"%"} · OPEN ${al.open??0}`);
+      const rateColor=rate==null?"var(--muted)":
+        rate>=80?"var(--green)":rate>=50?"var(--yellow)":"var(--red)";
+      $("ev-al-body").innerHTML=`<div class="row">
+        <span class="num" style="color:${rateColor}">${rate==null?"—":rate+"%"}</span>
+        <span class="muted">closed ${al.closed??0} / total ${al.total??0} · OPEN ${al.open??0}</span></div>`;
+      const recent=al.recent||[];
+      $("ev-al-recent").innerHTML=recent.length?
+        `<table style="font-size:12px"><tr class="muted" style="text-align:left">
+         <th>日期</th><th>任务</th><th>rc</th><th>工单</th><th>状态</th></tr>`
+        +recent.map(r=>`<tr><td class="mono">${esc(r.date)}</td><td>${esc(r.task)}</td>
+          <td class="mono">${r.rc==null?"—":r.rc}</td>
+          <td class="mono">${esc(r.ticket_id||"—")}</td>
+          <td><span class="badge ${r.status==="closed"?"ok":r.status==="open"?"warn":"idle"}">${esc(r.status)}</span></td></tr>`).join("")
+        +"</table>"
+        :"<div class='muted'>近期无告警闭环记录</div>";
+    }
+    /* 卡2：影子试跑统计（rows + by_verdict 四态 + latest） */
+    const sh=d.shadow||{};
+    badge($("evsh"),sh.rows?"ok":"idle",sh.rows?`${sh.rows} 行`:"暂无账本");
+    $("sh-rows").textContent=sh.rows??"—";
+    const bv=sh.by_verdict||{};
+    $("sh-verdicts").innerHTML=["pass","fail","pending","other"].map(k=>
+      `<span class="badge ${EV_VERDICT_CLS[k]}">${EV_VERDICT_TXT[k]} ${bv[k]??0}</span>`).join("");
+    $("sh-meta").textContent=`最新交易日 ${sh.latest_date||"—"} · run ${sh.latest_run_id||"—"}`;
+    /* eval 段：available:false → 灰字占位（reason） */
+    const ev=d.eval||{};
+    $("sh-eval").innerHTML=ev.available===false?
+      `评估面：${esc(ev.reason||"未就绪（周五 17:45 出结论）")}`
+      :"评估面：在管";
+  }catch(e){
+    badge($("evb"),"bad","加载失败");badge($("evsh"),"bad","加载失败");
+    $("ev-al-body").innerHTML=failBar("加载异常（"
+      +String(e&&e.message||e)+"）——30s 后自动重试");
+  }
+}
+
+/* ── 进化舱二期数据面（2026-10-18）：周一门判（8091 转调）──────── */
+async function loadGate(){
+  try{
+    const {status,data:d}=await api(hc("gate/checkpoint"));
+    if(!d||d.ok===false||d.error){
+      badge($("gtb"),"bad","8091 不可达");
+      $("gt-latest").innerHTML=failBar("门判投影不可达："
+        +(d&&d.error||String(status))+"——周一门判本身可能仍在正常跑");
+      $("gt-badges").innerHTML="";$("gt-items").textContent="—";
+      $("gt-history").textContent="—";return;}
+    if(d.available===false||!d.latest){
+      badge($("gtb"),"idle","未判");
+      $("gt-latest").innerHTML=greyBar("周一 17:25 门判后自动点亮"
+        +(d.reason?("（"+d.reason+"）"):""));
+      $("gt-badges").innerHTML="";$("gt-items").textContent="—";
+      $("gt-history").textContent=(d.history||[]).length?"—":"暂无历史门判";
+      return;}
+    const lt=d.latest;
+    const pass=lt.verdict==="PASS";
+    const items=lt.items||[];
+    const nOk=items.filter(i=>i.ok).length;
+    badge($("gtb"),pass?"ok":"bad",
+      `${lt.date||"—"} · ${pass?"全过":`判据 ${nOk}/${items.length}`}`);
+    /* latest.verdict 大状态 + items 逐条 ok 绿/否则红（小徽章行） */
+    $("gt-latest").innerHTML=`<div class="row">
+      <span class="num" style="color:${pass?"var(--green)":"var(--red)"}">${pass?"✔ PASS":"✘ "+(lt.verdict||"FAIL")}</span>
+      <span class="muted">${esc(lt.date||"—")} · 判据 ${nOk}/${items.length} 过</span></div>`;
+    $("gt-badges").innerHTML=items.map(i=>
+      `<span class="badge ${i.ok?"ok":"bad"}" title="${esc(i.detail||"")}">${i.ok?"✔":"✘"} ${esc(i.name)}</span>`).join("")
+      ||"<span class='muted'>本次门判无判据行</span>";
+    /* 下钻：detail 全文 */
+    $("gt-items").innerHTML=items.length?items.map(i=>
+      `<div class="kv"><span>${i.ok?'<b style="color:var(--green)">✔</b>':'<b style="color:var(--red)">✘</b>'} ${esc(i.name)}
+        <span class="mono muted">${esc(i.key||"")}</span></span></div>
+       <div class="mono muted" style="margin:0 0 6px 16px">${esc(i.detail||"—")}</div>`).join("")
+      :"<div class='muted'>本次门判无判据行</div>";
+    /* history 折叠列表 */
+    const hs=d.history||[];
+    $("gt-history").innerHTML=hs.length?
+      hs.map(h=>`<div class="kv"><span class="mono">${esc(h.date)}</span>
+        <span class="badge ${h.verdict==="PASS"?"ok":"bad"}">${esc(h.verdict)}</span></div>`).join("")
+      :"<div class='muted'>暂无历史门判</div>";
+  }catch(e){
+    badge($("gtb"),"bad","加载失败");
+    $("gt-latest").innerHTML=failBar("加载异常（"
+      +String(e&&e.message||e)+"）——30s 后自动重试");
+  }
+}
+
+/* ── 联动层二期（2026-10-18）R4：一键重跑（POST /api/flow/rerun 转调 8091）── */
+/* 与 8091 portal/api_flow.py 的 RERUN_OK 白名单同源（读码提取 2026-10-18），改需双处同步 */
+const RERUN_OK=["TodaysPicks","StrongEod","RpsDaily","NineDimScan","WeakScan",
+  "ChanlunScan","ChanlunScanHK","ChanlunScanUS","SeatProfile",
+  "MorningReport","DailyReport","AI盘前分析","QuoteSnapshot",
+  "TushareSync","JevFeed-Daily","KG-QuantMorning","NewsAI"];
+function rerunBar(kind,msg){const c=kind==="ok"?"var(--green)":
+  kind==="refused"?"var(--red)":"var(--yellow)";
+  return '<div style="color:'+c+';border:1px solid '+c+';border-radius:6px;'
+    +'padding:8px 12px;margin-top:8px">'+esc(msg)+"</div>";}
+async function rerunTask(name){
+  if(!RERUN_OK.includes(name))return toast("「"+name+"」不在重跑白名单",false);
+  if(!confirm(`确认重跑「${name}」？（真实触发计划任务 · 归因：hermes-console 一键重跑）`))return;
+  $("ex-rerun").innerHTML='<div class="muted" style="margin-top:8px">触发中…</div>';
+  try{
+    const {status,data:d}=await api(pc("flow/rerun"),{task:name,caller:"hermes-console"});
+    if(!d||d.error||d.ok===false&&!d.refused&&!d.blocked){
+      $("ex-rerun").innerHTML=rerunBar("refused",
+        "重跑失败：「"+name+"」（"+(d&&d.error||status)+"）");
+      toast("重跑失败："+(d&&d.error||status),false);return;}
+    if(d.refused){ /* 三态② 白名单外 → 红条（403 语义） */
+      $("ex-rerun").innerHTML=rerunBar("refused",
+        "已拒绝：「"+name+"」不在重跑白名单（"+d.refused+"）");
+      toast("已拒绝："+name+" 不在白名单",false);return;}
+    if(d.blocked){ /* 三态③ 幂等阀拦截 → 黄条 */
+      $("ex-rerun").innerHTML=rerunBar("blocked",
+        "幂等阀拦截：「"+name+"」"+d.blocked);
+      toast("幂等阀拦截："+d.blocked,false);return;}
+    /* 三态① 成功 → 绿条 + 5s 后自动刷新执行健康卡看新落点 */
+    $("ex-rerun").innerHTML=rerunBar("ok",
+      "已触发重跑「"+name+"」· 归因 hermes-console 一键重跑"
+      +(d.out?(" · "+d.out):""));
+    toast("已触发重跑「"+name+"」（5s 后刷新执行健康卡）",true);
+    setTimeout(loadExecution,5000);
+  }catch(e){
+    $("ex-rerun").innerHTML=rerunBar("refused",
+      "重跑请求异常："+String(e&&e.message||e));
+  }
+}
+
+/* ── 联动层二期（2026-10-18）R5：复盘简报（8091 /api/brief/* 转调）──── */
+const BF_VERDICT_CLS={PASS:"ok",FAIL:"bad",WARN:"warn"};
+function briefTextBlk(txt){return '<div class="mono muted" style="white-space:pre-wrap;'
+  +'font-size:12px;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px">'
+  +esc(txt)+"</div>";}
+async function loadBrief(){
+  try{
+    /* latest + list 并行拉取（仿 loadTickets/loadGate 的 badge+红条+定时重试模式） */
+    const [{status:s1,data:lat},{status:s2,data:lst}]=await Promise.all([
+      api(hc("brief/latest")),api(hc("brief/list"))]);
+    if(!lat||lat.ok===false||lat.error){
+      badge($("bfb"),"bad","8091 不可达");
+      $("bf-latest").innerHTML=failBar("简报投影不可达："
+        +(lat&&lat.error||String(s1))+"——影子链复盘本身可能仍在正常跑");
+      $("bf-history").textContent="—";return;}
+    if(lat.available===false||!lat.brief){
+      /* available:false → 灰条 reason（影子链未跑完属常态，不算故障） */
+      badge($("bfb"),"idle","未就绪");
+      $("bf-latest").innerHTML=greyBar("复盘简报未生成"
+        +(lat.reason?("（"+lat.reason+"）"):"（影子链跑完自动生成）"));
+    }else{
+      const b=lat.brief;
+      const v=b.verdict||"—";
+      const vc=BF_VERDICT_CLS[v]||"idle";
+      const js=b.j_summary||{};
+      badge($("bfb"),vc==="ok"?"ok":vc==="bad"?"bad":"warn",
+        `${b.date||"—"} · ${v}`);
+      $("bf-latest").innerHTML=
+        `<div class="row" style="margin-bottom:6px">
+          <span class="badge ${vc}" style="font-size:13px">${esc(v)}</span>
+          <span class="muted">${esc(b.date||"—")} · ${esc(b.kind||"—")}</span>
+          <span class="badge ${js.pass===js.total?"ok":"warn"}">判据 ${js.pass??"—"}/${js.total??"—"} 过</span></div>`
+        +(b.anomalies&&b.anomalies.length?
+          `<div style="margin:4px 0"><b style="font-size:12px;color:var(--yellow)">异常项 ${b.anomalies.length}</b>`
+          +b.anomalies.map(a=>`<div class="mono" style="font-size:12px">· ${esc(typeof a==="string"?a:JSON.stringify(a))}</div>`).join("")+"</div>"
+          :'<div class="muted" style="font-size:12px">无异常项</div>')
+        +(b.p1_tickets&&b.p1_tickets.length?
+          `<div class="row" style="margin:4px 0"><span class="muted" style="font-size:12px">P1 工单</span>`
+          +b.p1_tickets.map(t=>`<span class="badge warn mono">${esc(typeof t==="string"?t:JSON.stringify(t))}</span>`).join("")+"</div>"
+          :'<div class="muted" style="font-size:12px">本次无 P1 开单</div>')
+        +(b.brief_text?briefTextBlk(b.brief_text):"");
+    }
+    /* 历史简报 append-only 列表：逐条展开回看（不覆盖 latest 大卡） */
+    const items=(lst&&lst.ok!==false&&(lst.items||[]))||[];
+    $("bf-history").innerHTML=items.length?
+      items.map(h=>
+        `<details style="border-top:1px solid var(--border)"><summary>
+          <span class="mono">${esc(h.date||"—")}</span>
+          <span class="badge ${BF_VERDICT_CLS[h.verdict]||"idle"}">${esc(h.verdict||"—")}</span>
+          <span class="badge info">${esc(h.kind||"—")}</span>
+          <span class="badge ${h.p1_count?"bad":"idle"}">P1 ${h.p1_count??0}</span></summary>
+         ${h.brief_text?briefTextBlk(h.brief_text):'<div class="muted" style="font-size:12px;margin-top:4px">（本条历史全文未随列表下发）</div>'}
+        </details>`).join("")
+      :"<div class='muted'>暂无历史简报</div>";
+  }catch(e){
+    badge($("bfb"),"bad","加载失败");
+    $("bf-latest").innerHTML=failBar("加载异常（"
+      +String(e&&e.message||e)+"）——30s 后自动重试");
+  }
+}
+
+/* ── 联动层三期 R6 M1（2026-10-18）：通用事件流卡（/api/event/<source> 转调）── */
+/* EV_SOURCES 与 portal/event_manifest.json 同步（RERUN_OK 同款镜像判例）：
+   manifest 加一条新 source 后此处补一行即可上墙，其余零改动 */
+const EV_SOURCES=["agent_shadow_daily","agent_chief_push","agent_shadow_eval",
+  "watchdog","alert_chain","push_admin","retrospect_brief"];
+const EV_SEV_CLS={P0:"bad",P1:"warn",P2:"idle"}; /* P0 红 P1 黄 P2 灰 */
+async function loadEvents(){
+  try{
+    /* 7 source 并行拉取；单 source 失败不拖垮整卡 */
+    const rs=await Promise.all(EV_SOURCES.map(async s=>{
+      try{return {s,...await api(hc("event/"+s))};}
+      catch(e){return {s,status:0,data:{error:String(e&&e.message||e)}};}
+    }));
+    /* 未上线态一等公民：全部 not_ready/不可达 → 中性灰态（不是报错红卡） */
+    const ready=rs.filter(r=>r.data&&r.data.ok!==false&&r.data.error==null);
+    if(!ready.length){
+      badge($("evfb"),"idle","Gate 0 后点亮");
+      const d0=rs[0]&&rs[0].data||{};
+      $("evf-body").innerHTML=greyBar("事件总线 · Gate 0 后点亮"
+        +(d0.hint?("（"+d0.hint+"）"):"——8091 挂载 /api/events 后本卡自动出数据"));
+      $("evf-src").textContent="—";return;}
+    badge($("evfb"),"ok",`${ready.length}/${EV_SOURCES.length} source 在线`);
+    /* source 逐个探活明细 */
+    $("evf-src").innerHTML=rs.map(r=>{
+      const ok=r.data&&r.data.ok!==false&&r.data.error==null;
+      const why=ok?`${(r.data.events||r.data.items||[]).length} 条`
+        :esc((r.data&&(r.data.error||r.data.reason))||String(r.status||"fail"));
+      return `<div class="kv"><span class="mono">${esc(r.s)}</span>
+        <span class="badge ${ok?"ok":"idle"}">${why}</span></div>`;}).join("");
+    /* 合并全部 source 事件，按 ts 倒序统一行式渲染 */
+    const rows=ready.flatMap(r=>(r.data.events||r.data.items||[]).map(e=>({
+      ts:e.ts||e.time||"—",source:e.source||r.s,type:e.type||"—",
+      sev:(e.payload&&e.payload.severity)||e.severity||"—",
+      run_key:(e.payload&&e.payload.run_key)||e.run_key||"—",
+      summary:(e.payload&&e.payload.summary)||e.summary||""})))
+      .sort((a,b)=>String(b.ts).localeCompare(String(a.ts))).slice(0,20);
+    $("evf-body").innerHTML=rows.length?
+      `<table style="font-size:12px"><tr class="muted" style="text-align:left">
+       <th>时间</th><th>source</th><th>type</th><th>级别</th><th>run_key</th><th>摘要</th></tr>`
+      +rows.map(e=>`<tr><td class="mono">${esc(String(e.ts).slice(5,19))}</td>
+        <td class="mono">${esc(e.source)}</td><td class="mono">${esc(e.type)}</td>
+        <td><span class="badge ${EV_SEV_CLS[e.sev]||"idle"}">${esc(e.sev)}</span></td>
+        <td class="mono muted">${esc(e.run_key)}</td>
+        <td class="muted">${esc(String(e.summary).slice(0,60))}</td></tr>`).join("")
+      +"</table>"
+      :"<div class='muted'>在线 source 暂无事件（产线 emit 接入后出数据，M2）</div>";
+  }catch(e){
+    badge($("evfb"),"bad","加载失败");
+    $("evf-body").innerHTML=failBar("事件流加载异常（"
+      +String(e&&e.message||e)+"）——30s 后自动重试");
+  }
+}
+
+/* ── 数据资产卡（observe 推导 + 静态清单）────── */
+async function loadAssets(){
+  try{
+    const {data:d}=await api(hc("observe/state"));
+    const sh=d&&d.shadow||{};
+    const rows=[
+      ["执行账本三件套",sh.missing?"缺失":`${sh.ledger_rows??0} 行`,sh.missing?"bad":(sh.corrupt_lines?"warn":"ok"),sh.missing?"缺失":`损坏 ${sh.corrupt_lines??0}`],
+      ["行情仓 ashare parquet","26.3 GB","ok","生产机字节一致"],
+      ["知识库 8 域","8 md","ok","pending 队列在管"],
+      ["org 工单账本","按月 jsonl","ok","今日 4 单在办"],
+      ["自动化产物","5 目录","ok","统一落点（10-18 约定）"],
+    ];
+    $("da-body").innerHTML=rows.map(r=>
+      `<tr><td>${esc(r[0])}</td><td class="mono">${esc(r[1])}</td>
+       <td><span class="badge ${r[2]}">${esc(r[3])}</span></td></tr>`).join("");
+    badge($("dab"),sh.missing?"bad":"ok",sh.missing?"账本缺失":"在管");
+    const cp=d&&d.checkpoint||{};
+    if(cp.log_mtime){badge($("lg-b"),"ok","今日在位");
+      $("lg-body").innerHTML=`<div class="kv"><span>最近体检</span><b class="mono">${esc(cp.log_mtime)}</b></div>
+        <div class="kv"><span>结论</span><b>${esc(cp.summary||"—")}</b></div>`;}
+    else{badge($("lg-b"),"warn","无体检记录");$("lg-body").innerHTML="<div class='muted'>monday_checkpoint.log 未落</div>";}
+    /* 三原则补齐（2026-10-18）：血缘体检「看过程」= 体检门行逐条明细（PASS 绿 / FAIL 红） */
+    const lgg=cp.gates||[];
+    $("lg-gates").innerHTML=lgg.length?lgg.map(g=>
+      `<div class="kv"><span>${g.status==="PASS"?'<b style="color:var(--green)">✔</b>':g.status==="FAIL"?'<b style="color:var(--red)">✘</b>':'<b style="color:var(--yellow)">…</b>'} ${esc(g.name)}</span>
+       <span class="mono muted">${esc(g.detail||"")}</span></div>`).join("")
+      :"<div class='muted'>本次体检无门行（monday_checkpoint 未含 gates 段）</div>";
+  }catch(e){badge($("dab"),"bad","加载失败");badge($("lg-b"),"bad","加载失败");$("lg-gates").textContent="—";}
+}
+
+loadPurify();loadPulse();loadAlerts();loadObserve();loadExecution();loadTickets();loadAssets();loadEvolution();loadGate();loadBrief();loadEvents();
+setInterval(loadPurify,10000);setInterval(loadPulse,5000);setInterval(loadAlerts,10000);
+setInterval(loadObserve,30000);setInterval(loadExecution,30000);
+setInterval(loadTickets,60000);setInterval(loadAssets,30000);
+setInterval(loadEvolution,60000);setInterval(loadGate,60000);setInterval(loadBrief,60000);
+setInterval(loadEvents,30000);
+</script>
+</body>
+</html>

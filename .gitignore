@@ -130,6 +130,12 @@ jev-eval/replay/
 # ===== Hermes（K273 自 D:\Hermes 搬入：第三方 webui+运行时态，不进版本控制）=====
 # 注意用 /* 而非 Hermes/：目录级排除后子路径 ! 豁免无效
 Hermes/*
+# K-ORG-180：仅纳管总控单页，不放行 Hermes 第三方目录其余文件
+!Hermes/hermes-webui-next/
+Hermes/hermes-webui-next/*
+!Hermes/hermes-webui-next/static/
+Hermes/hermes-webui-next/static/*
+!Hermes/hermes-webui-next/static/console.html
 # cowbridge 豁免纳管（K275/V6-5 拍板：桥本体+设计稿入主仓）
 !Hermes/cowbridge/
 Hermes/cowbridge/shadow/
