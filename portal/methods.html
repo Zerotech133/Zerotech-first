@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>量化方法库 · Quant Methods · 方法资产与引擎档案 · 零界</title>
+<style>
+/* ============ 设计基线：对齐 os_entry.html / learn.html（2026-10-19） ============
+   定位：量化方法库专页（/methods）——量子双刀量化交易系统的方法资产与引擎档案，
+        与量化板块 /quant、学习板块 /learn 联动。
+   铁律：固定单屏分区、页面级禁下拉长图（body overflow:hidden + 分区内滚）；
+        顶栏三态灯不假绿；方法库候选须与量化板块联动验证后才进策略层；
+        学习产物可回指原始证据；四模式物理隔离；金融配色涨红跌绿，货币默认 ¥。 */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#11161d;
+  --border:#2a3140; --txt:#e6edf3; --sub:#8b949e; --dim:#57606a;
+  --accent:#e3b341; --blue:#58a6ff; --teal:#39d2c0; --purple:#bc8cff;
+  --up:#f8514f; --down:#3fb950; /* 中国约定：涨红跌绿 */
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  font-size:14px; overflow:hidden; /* 单屏铁律：页面级禁滚动，分区内滚 */
+  background-image:radial-gradient(1200px 500px at 70% -10%, rgba(188,140,255,.06), transparent),
+                   radial-gradient(900px 400px at 10% 110%, rgba(227,179,65,.05), transparent);
+}
+.wrap{min-width:1180px;max-width:1440px;height:calc(100vh - 48px);margin:0 auto;padding:10px 22px 12px;display:flex;flex-direction:column}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ============ 顶栏 ============ */
+.topbar{display:flex;align-items:center;gap:14px;padding:6px 4px 10px;border-bottom:1px solid var(--border);flex-wrap:nowrap}
+.brand{font-size:19px;font-weight:700;letter-spacing:1px;white-space:nowrap}
+.brand .os{color:var(--purple)}
+.brand small{color:var(--sub);font-weight:400;font-size:11.5px;margin-left:10px;letter-spacing:0}
+.backlink{font-size:12px;color:var(--blue);white-space:nowrap;border:1px solid var(--border);border-radius:7px;padding:4px 11px;background:var(--panel)}
+.backlink:hover{border-color:var(--blue);text-decoration:none}
+.demo-flag{border:1px dashed var(--accent);color:var(--accent);border-radius:6px;padding:3px 9px;font-size:11px;white-space:nowrap}
+.sysdots{display:flex;gap:12px;margin-left:auto;flex-wrap:nowrap;align-items:center}
+.sysdot{display:flex;align-items:center;gap:6px;color:var(--sub);font-size:12px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)}
+.dot.ok{background:var(--down);box-shadow:0 0 6px var(--down)}
+.dot.warn{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.dot.err{background:var(--up);box-shadow:0 0 6px var(--up)}
+.dot.unk{background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)} /* 探测不可信：不假绿 */
+.datechip{color:var(--dim);font-size:12px;white-space:nowrap;font-family:Consolas,monospace}
+
+/* ============ 口径条（顶栏下方 · 方法库纪律） ============ */
+.rulebar{background:#1d2230;border:1px solid #33405c;border-radius:var(--radius);padding:8px 15px;margin-top:10px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:#aac1dc}
+.rulebar b{color:var(--accent);font-size:12.5px;letter-spacing:.05em;white-space:nowrap}
+.rulebar .r{white-space:nowrap}
+.rulebar .r:before{content:"▪ ";color:var(--purple)}
+.rulebar .hl{color:var(--accent);font-weight:600}
+
+/* ============ 主区（分区内滚） ============ */
+.main{flex:1;min-height:0;overflow:auto;padding:0 2px 2px}
+.main::-webkit-scrollbar{width:8px;height:8px}
+.main::-webkit-scrollbar-thumb{background:#2a3140;border-radius:4px}
+.sect{display:flex;align-items:baseline;gap:10px;margin:11px 0 7px;flex-wrap:wrap}
+.sect.first{margin-top:6px}
+.sect h2{font-size:14.5px;font-weight:600;letter-spacing:.04em}
+.sect small{color:var(--dim);font-size:10.5px;font-weight:400}
+
+/* ============ 区块一：三阶段流水线 ============ */
+.pipeline{display:grid;grid-template-columns:1fr 20px 1fr 20px 1fr 20px 1fr;gap:8px}
+.flowarr{align-self:center;justify-self:center;color:var(--dim);font-size:15px;font-weight:700}
+.stage{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:9px 11px}
+.stage .ph{font:700 10px Consolas,monospace;letter-spacing:.08em;color:var(--accent);display:block}
+.stage h3{font-size:13px;font-weight:600;margin:2px 0 3px}
+.stage p{color:var(--sub);font-size:10.8px;line-height:1.55}
+.stage.exec{border-color:#4a4225;background:linear-gradient(160deg,#1a221d,var(--panel))}
+.stage.exec .ph{color:var(--teal)}
+
+/* ============ 双栏分区 ============ */
+.colsplit{display:grid;gap:12px;align-items:start}
+.colsplit.c21{grid-template-columns:1.15fr 1fr}
+.colsplit.c12{grid-template-columns:1fr 1.05fr}
+.colsplit.c31{grid-template-columns:0.85fr 2fr}
+
+/* ============ 区块二：特征与模型资产 ============ */
+.grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.acard{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.acard .ah{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.acard .ah b{font-size:12px}
+.acard .ah .en{font:9px Consolas,monospace;color:var(--dim);margin-left:auto}
+.acard p{color:var(--sub);font-size:10.5px;line-height:1.5}
+.ic{font-size:13px;flex:none}
+
+/* ============ 区块三：引擎与四模式 ============ */
+.engines{display:flex;gap:8px;margin-bottom:8px}
+.eng{flex:1;background:#1c2b36;border:1px solid #2e4454;border-radius:9px;padding:7px 10px}
+.eng b{color:var(--blue);font-size:12px;display:block}
+.eng .en2{font-size:10px;color:#7d95a8}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.mode .m{font:700 10.5px Consolas,monospace;letter-spacing:.05em;color:var(--teal);display:block;margin-bottom:2px}
+.mode.b1 .m{color:var(--blue)}
+.mode.b2 .m{color:var(--purple)}
+.mode.b3 .m{color:var(--accent)}
+.mode.b3{border-color:#4a4225;background:linear-gradient(160deg,#1e1c14,var(--panel2))}
+.mode p{color:var(--sub);font-size:10.5px;line-height:1.5}
+
+/* ============ 区块四：RiskGuard 四规则 + 误杀校准 ============ */
+.rules{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rule{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.rule .rh{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.rule .rh b{font-size:12px}
+.rule p{color:var(--sub);font-size:10.5px;line-height:1.5}
+.calib{margin-top:8px;background:#2a1a1c;border:1px solid #5c2b2e;border-radius:var(--radius);padding:10px 14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.cmain{flex:1;min-width:250px}
+.cmain b{color:#f0a9a4;font-size:12.5px;display:block;margin-bottom:3px}
+.cmain p{font-size:11px;color:#d8b6b2;line-height:1.6}
+.cmain .cs{font-size:10px;color:#b08f8b;margin-top:2px}
+.cmain .up{color:var(--up);font-weight:700}
+.cmain .down{color:var(--down);font-weight:700}
+.cnums{display:flex;gap:14px;flex:none}
+.cnum{text-align:center;background:#3a1d1f;border:1px solid #5c2b2e;border-radius:10px;padding:7px 13px;min-width:112px}
+.cnum b{font:700 20px Consolas,monospace;display:block}
+.cnum span{font-size:9.5px;color:#b89a97;line-height:1.35;display:block;margin-top:2px}
+.cnum.up b{color:var(--up)}
+.cnum.down{background:#162b1b;border-color:#2c5c39}
+.cnum.down b{color:var(--down)}
+.cnum.down span{color:#8fb89d}
+
+/* ============ 区块五：盯盘双池 ============ */
+.pools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pool{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.pool .ph2{display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap}
+.pool .ph2 b{font-size:12px}
+.pool .tag{font-size:9.5px;background:#2b2440;border:1px solid #4a3d6b;color:#c9a8e8;border-radius:5px;padding:1px 7px;white-space:nowrap}
+.pool p{color:var(--sub);font-size:10.5px;line-height:1.55}
+.pool p b{color:var(--txt)}
+.wlst{margin-top:7px;display:flex;flex-direction:column;gap:3px}
+.wi{font-size:10.5px;color:var(--sub);line-height:1.5;padding-left:13px;position:relative}
+.wi:before{content:"▸";position:absolute;left:0;color:var(--purple)}
+.wi b{color:var(--txt)}
+
+/* ============ 区块六：数据源 ============ */
+.srcs{display:flex;flex-direction:column;gap:7px}
+.src{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:7px 10px}
+.src .pri{font:700 9.5px Consolas,monospace;border-radius:4px;padding:2px 7px;flex:none}
+.src .pri.p1{background:#1f3524;color:#9fd8a8;border:1px solid #2c5c39}
+.src .pri.p2{background:#3f2d20;color:#f0c78a;border:1px solid #6b4d2a}
+.src .pri.p3{background:#2b3645;color:#aac1dc;border:1px solid #3d4c61}
+.src b{font-size:12px;white-space:nowrap}
+.src p{color:var(--sub);font-size:10.3px;margin-left:auto;text-align:right;line-height:1.4}
+
+/* ============ 区块七：QT 关键路径缩略 ============ */
+.qtpath{display:flex;flex-wrap:wrap;gap:6px}
+.qtnode{flex:1 1 118px;min-width:0;background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:6px 9px}
+.qtnode .q{font:700 10px Consolas,monospace;color:var(--accent);display:block}
+.qtnode p{color:var(--sub);font-size:10px;line-height:1.45;margin-top:1px}
+.qtnode.m8{border-style:dashed;background:#141a12}
+.qtnode.m8 .q{color:var(--dim)}
+
+/* ============ 入口链接 ============ */
+.links{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:10px}
+.lcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;display:flex;flex-direction:column;gap:3px}
+.lcard .lt{font-size:12.5px;font-weight:600}
+.lcard a{font-size:11.5px}
+.lcard p{color:var(--sub);font-size:10.5px;line-height:1.55}
+.lcard.loop{background:linear-gradient(120deg,rgba(227,179,65,.09),rgba(57,210,192,.05));border-color:#4a4225}
+.lcard.loop .lt{color:var(--accent)}
+
+/* ============ 底栏 ============ */
+.foot{margin-top:9px;padding-top:7px;border-top:1px solid var(--border);display:flex;gap:12px;color:var(--dim);font-size:10.5px;flex-wrap:wrap;flex:none}
+.foot b{color:var(--sub);font-weight:600}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<style>/* 门户落位适配：nav.js 统一顶栏注入后让出高度，单屏铁律不变 */
+.wrap{height:calc(100vh - 48px)}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 顶栏 ============ -->
+  <div class="topbar">
+    <div class="brand"><span class="os">📊 量化方法库</span><small>QUANT METHODS · 量子双刀量化交易系统 · 方法资产与引擎档案</small></div>
+    <a class="backlink" href="/os-entry">← 返回 OS 总览</a>
+    <span class="demo-flag">方法库专页 · 候选须联动验证后进策略层</span>
+    <div class="sysdots">
+      <span class="sysdot"><span class="dot" id="p-8091"></span>门户 api</span>
+      <span class="sysdot"><span class="dot" id="p-8787"></span>Hermes</span>
+      <span class="sysdot"><span class="dot" id="p-11434"></span>Ollama</span>
+      <span class="datechip" id="datechip"></span>
+    </div>
+  </div>
+
+  <!-- ============ 口径条 ============ -->
+  <div class="rulebar">
+    <b>📐 方法库口径</b>
+    <span class="r hl">方法库专页 · 候选须联动验证后进策略层 · 误杀校准数据为 213 样本后验实证</span>
+    <span class="r">学习产物可回指原始证据</span>
+    <span class="r">四模式物理隔离（BACKTEST / REPLAY / SHADOW / SIM_MARKET）</span>
+    <span class="r">状态灯三态 · 不假绿</span>
+  </div>
+
+  <!-- ============ 主区（分区内滚） ============ -->
+  <div class="main">
+
+    <!-- 区块一 · 三阶段流水线 -->
+    <div class="sect first"><h2>🧬 三阶段流水线</h2><small>Scanner → Screener → Signal，Phase3 订单 / 经纪 / 状态机承接执行 · 量子双刀量化交易系统产线</small></div>
+    <div class="pipeline">
+      <div class="stage">
+        <span class="ph">① SCANNER · 扫描</span>
+        <h3>扫描器</h3>
+        <p>全市场行情初筛：缠论 ChanlunScan / 九维 K33 / weak 产线 + 三线联动 + 雪球线，产出原始候选池。</p>
+      </div>
+      <span class="flowarr">→</span>
+      <div class="stage">
+        <span class="ph">② SCREENER · 筛选</span>
+        <h3>筛选器</h3>
+        <p>候选过特征与模型打分（XGBoost + LightGBM / PCA / Regime 分层），压缩至可管理规模。</p>
+      </div>
+      <span class="flowarr">→</span>
+      <div class="stage">
+        <span class="ph">③ SIGNAL · 信号</span>
+        <h3>信号器</h3>
+        <p>Score 排序产出策略信号，进策略插件注册表：15+ 插件统一超时包裹 + 影子账本（策略是插件，不是框架）。</p>
+      </div>
+      <span class="flowarr">→</span>
+      <div class="stage exec">
+        <span class="ph">④ PHASE3 · 执行承接</span>
+        <h3>订单 / 状态机</h3>
+        <p>订单 / 经纪 / 状态机承接信号流转；4 个模拟账户运行，零真实资金。</p>
+      </div>
+    </div>
+
+    <!-- 区块二 + 区块三 -->
+    <div class="colsplit c21">
+      <div>
+        <div class="sect"><h2>🧠 特征与模型资产</h2><small>方法笔记可回指实验批次 · 候选方法经联动验证后才进策略层</small></div>
+        <div class="grid6">
+          <div class="acard">
+            <div class="ah"><span class="ic">🤖</span><b>XGBoost</b><span class="en">XGB</span></div>
+            <p>梯度提升主力模型之一：40+ 特征进、Score 出，每次推断落影子账本留痕。</p>
+          </div>
+          <div class="acard">
+            <div class="ah"><span class="ic">🌳</span><b>LightGBM</b><span class="en">LGBM</span></div>
+            <p>直方图算法互补模型，与 XGBoost 双轨对照，防单模型偏置。</p>
+          </div>
+          <div class="acard">
+            <div class="ah"><span class="ic">📦</span><b>40+ 特征</b><span class="en">FEATURES</span></div>
+            <p>价量 / 结构 / 舆情多维特征工程资产池，方法笔记可回指实验批次。</p>
+          </div>
+          <div class="acard">
+            <div class="ah"><span class="ic">🧮</span><b>PCA 降维</b><span class="en">PCA</span></div>
+            <p>高维特征去冗余降维、压噪音防过拟合，保留主成分进模型。</p>
+          </div>
+          <div class="acard">
+            <div class="ah"><span class="ic">🏷</span><b>Score 排序</b><span class="en">SCORE</span></div>
+            <p>模型打分唯一出口：Score → 排序 → 分层，信号强度分级的唯一入口。</p>
+          </div>
+          <div class="acard">
+            <div class="ah"><span class="ic">🗂</span><b>Regime 分层</b><span class="en">REGIME</span></div>
+            <p>按市场状态分层训练与评估，禁止跨 Regime 混算口径。</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sect"><h2>⚙️ 引擎与四模式隔离</h2><small>双引擎底座 · 四模式物理隔离，禁跨模式串数据</small></div>
+        <div class="engines">
+          <div class="eng"><b>BacktestEngine</b><span class="en2">回测引擎 · 滚动回测 + 绩效归因底座</span></div>
+          <div class="eng"><b>T0Engine</b><span class="en2">T0 引擎 · 日内回转场景专用执行</span></div>
+        </div>
+        <div class="modes">
+          <div class="mode b1"><span class="m">BACKTEST</span><p>历史数据重放：零时效压力，方法筛选第一关，出滚动回测报告。</p></div>
+          <div class="mode b2"><span class="m">REPLAY</span><p>事件账本逐笔复盘：可复现每一次决策路径，归因 / 退出的证据源。</p></div>
+          <div class="mode b3"><span class="m">SHADOW</span><p>真数据零真钱：只出建议不出指令，执行组只认 risk_passed 件。</p></div>
+          <div class="mode b4"><span class="m">SIM_MARKET</span><p>模拟市场：模拟撮合 + 账户结算，与真市场物理隔离。</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 区块四 + 区块五 -->
+    <div class="colsplit c12">
+      <div>
+        <div class="sect"><h2>🛡 RiskGuard 四规则</h2><small>风控四规则 + 误杀校准实锤 · 拦截样本后验收益反超放行 → 亟需重新校准</small></div>
+        <div class="rules">
+          <div class="rule">
+            <div class="rh"><span class="ic">📊</span><b>市场质量</b></div>
+            <p>流动性枯竭 / 极端波动时整体收紧或停发信号。</p>
+          </div>
+          <div class="rule">
+            <div class="rh"><span class="ic">💧</span><b>流动性冲击</b></div>
+            <p>预估下单对盘口的冲击成本，超阈值降级或拒单。</p>
+          </div>
+          <div class="rule">
+            <div class="rh"><span class="ic">📰</span><b>事件风险</b></div>
+            <p>财报 / 公告 / 黑天鹅事件窗口期自动升险级。</p>
+          </div>
+          <div class="rule">
+            <div class="rh"><span class="ic">⚖️</span><b>仓位集中度</b></div>
+            <p>单标的 / 单策略 / 组合三层集中度上限管控。</p>
+          </div>
+        </div>
+        <div class="calib">
+          <div class="cmain">
+            <b>🧨 误杀校准实锤（P1 · 周二校准拍板会）</b>
+            <p>RiskGuard critical 拦截 213 样本后验收益 <span class="up">+0.65%</span> vs 放行样本 <span class="down">-0.25%</span>——拦截反而高于放行，四规则存在方向性误杀，亟需重新校准。</p>
+            <p class="cs">口径：校准样本量 ≥30 才进灰度；本数字为 213 样本后验实证；配色遵中国约定涨红跌绿（--up 红=涨 / --down 绿=跌）。</p>
+          </div>
+          <div class="cnums">
+            <div class="cnum up"><b>+0.65%</b><span>critical 拦截 213 样本后验</span></div>
+            <div class="cnum down"><b>-0.25%</b><span>放行样本后验</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sect"><h2>👀 盯盘双池</h2><small>池 A 上游多策略已选股票 · 池 B 用户指定股票 · 只观察 / 预警 / 候选触发</small></div>
+        <div class="pools">
+          <div class="pool">
+            <div class="ph2"><b>池 A · 上游多策略候选池</b><span class="tag">张郃候选 Agent</span></div>
+            <p>股票来自上游多策略已选集合；Agent 只盯买点 / 异动，<b>不选股</b>。</p>
+          </div>
+          <div class="pool">
+            <div class="ph2"><b>池 B · 用户指定股票池</b><span class="tag">人工指定</span></div>
+            <p>用户手动指定的股票；独立盯买卖关注点，与池 A 互不串味。</p>
+          </div>
+        </div>
+        <div class="wlst">
+          <div class="wi"><b>策略命中 ≠ 持久成员 ≠ 模拟持仓 ≠ 组合订阅</b></div>
+          <div class="wi">当前无可验逐策略退出事件账本 → 自动退出默认关闭</div>
+          <div class="wi">前端固定单屏分区 · 逐级下钻：总览 → 池 → 策略 → 标的 → 归因 / 退出</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 区块六 + 区块七 -->
+    <div class="colsplit c31">
+      <div>
+        <div class="sect"><h2>🗄 数据源</h2><small>优先级链 · 主源不可达才降备</small></div>
+        <div class="srcs">
+          <div class="src"><span class="pri p1">P1 · 主源</span><b>tushare</b><p>实测 522ms · token 已配（当前默认行情源）</p></div>
+          <div class="src"><span class="pri p2">P2 · 备源</span><b>akshare</b><p>主源不可达时切换</p></div>
+          <div class="src"><span class="pri p3">P3 · 离线</span><b>本地 TDX</b><p>.day 为空 · 待盘后下载补数</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="sect"><h2>🗺 QT 关键路径缩略</h2><small>QT-M0 周二开工会（QP-001 Schema / QP-005 映射表派工）· M8 按研发计划 §七（待验证）</small></div>
+        <div class="qtpath">
+          <div class="qtnode"><span class="q">QT-M0</span><p>资产映射与 MVP 切片</p></div>
+          <div class="qtnode"><span class="q">M1</span><p>领域契约 / 事件账本 / 授权 / 模拟账本</p></div>
+          <div class="qtnode"><span class="q">M1.5</span><p>数据质量门 / 时钟门 / 版本联锁 / 四模式隔离 / 恢复演练</p></div>
+          <div class="qtnode"><span class="q">M2</span><p>股票池与滚动回测</p></div>
+          <div class="qtnode"><span class="q">M3</span><p>情报盯盘触发升级</p></div>
+          <div class="qtnode"><span class="q">M4</span><p>投研授权 / Regime / 组合预算 / 冲突仲裁</p></div>
+          <div class="qtnode"><span class="q">M5</span><p>单风格模拟执行</p></div>
+          <div class="qtnode"><span class="q">M6</span><p>多 Agent 路由</p></div>
+          <div class="qtnode"><span class="q">M7</span><p>反事实 / 报告 / 策略评价 / 蒸馏样本</p></div>
+          <div class="qtnode m8"><span class="q">M8</span><p>按研发计划 §七（待验证）</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 入口链接 -->
+    <div class="sect"><h2>🔗 板块联动入口</h2><small>方法库候选 → 策略层验证 → 回测证据回写学习环（闭环）</small></div>
+    <div class="links">
+      <div class="lcard">
+        <span class="lt">📈 量化板块</span>
+        <a href="/quant">→ /quant 策略候选入口</a>
+        <p>方法库候选进策略层联动验证；验证结论回写本页档案。</p>
+      </div>
+      <div class="lcard">
+        <span class="lt">📚 学习板块</span>
+        <a href="/learn">→ /learn 学习成长</a>
+        <p>学习产物可回指原始证据；方法笔记与课件同源归档。</p>
+      </div>
+      <div class="lcard loop">
+        <span class="lt">🔁 闭环口径</span>
+        <p>方法库候选 → 量化板块策略层验证 → 回测证据回写学习环 → 再回方法库迭代；未联动验证的候选不得标「已验证」。</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ 底栏 ============ -->
+  <div class="foot">
+    <span>🧭 定位 <b>学习板块 · 量化方法库专页 /methods</b></span><span>│</span>
+    <span>📐 口径 <b>方法库专页 · 候选须联动验证后进策略层 · 误杀校准数据为 213 样本后验实证</b></span><span>│</span>
+    <span>🚦 状态灯 <b>三态 · 不假绿</b></span><span>│</span>
+    <span>💰 货币口径 <b>¥（人民币）</b></span><span>│</span>
+    <span>📅 2026-10-19 · v1 · 实证口径源自量化路线图 10-18 与研发文档</span>
+  </div>
+</div>
+
+<script src="/static/nav.js"></script>
+<script>
+(function(){
+  /* 顶栏三态灯：8091/8787 走同源 /api/health 拿真实状态；11434 跨域 → unk 不假绿 */
+  var HEALTH_MAP = { 'p-8091':'portal api', 'p-8787':'hermes' };
+  function probe(id, svc){
+    var el = document.getElementById(id); if(!el) return;
+    fetch('/api/health', { cache:'no-store' }).then(function(r){ return r.json(); }).then(function(d){
+      var s = null; (d.services||[]).forEach(function(x){ if(x.name===svc) s = x; });
+      if (s && s.ok) { el.className = 'dot ok'; el.title = svc + ' OK · ' + s.ms + 'ms（同源 /api/health）'; }
+      else if (s) { el.className = 'dot warn'; el.title = svc + ' 在线但状态异常'; }
+      else { el.className = 'dot unk'; el.title = 'health 未覆盖 → 未探测态'; }
+    }).catch(function(){ el.className = 'dot unk'; el.title = '/api/health 不可达 → 未探测态'; });
+  }
+  probe('p-8091','portal api'); probe('p-8787','hermes');
+  (function(){ var el = document.getElementById('p-11434');
+    el.className = 'dot unk'; el.title = '跨域直连不可达 → 未探测态（S4 后转实）'; })();
+  var d = new Date();
+  document.getElementById('datechip').textContent =
+    d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+})();
+</script>
+</body>
+</html>

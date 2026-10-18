@@ -342,6 +342,8 @@ DOMAIN_NAV_GROUPS = {
         ("⚙️ 系统运维", (
             ("🖥 个人 OS 入口", "/os-entry", "os-entry"),
             ("📚 学习成长", "/learn", "learn"),
+            ("🛰 助理雷达", "/radar", "radar"),
+            ("📊 方法库", "/methods", "methods"),
             ("🎛 OS 控制台", "/ops", "opshome"),
             ("⚡ 动作流中心", "/flow", "flow"),
             ("🖥 系统自检", "/sys-health", "sys"),)),

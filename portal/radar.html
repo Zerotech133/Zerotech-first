@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>开源助理雷达 · 学习成长板块专页 · 零界</title>
+<style>
+/* ============ 设计基线：对齐 learn.html / os_entry.html（2026-10-19） ============
+   定位：学习成长板块下钻专页——开源个人 AI 助理四对标雷达（/learn › radar）。
+   铁律：固定单屏分区、页面级禁下拉长图；状态灯三态不假绿；
+        对标只纳留痕结论；未验证项显式标注，不用占位链接假装可达。 */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#11161d;
+  --border:#2a3140; --txt:#e6edf3; --sub:#8b949e; --dim:#57606a;
+  --accent:#e3b341; --blue:#58a6ff; --teal:#39d2c0; --purple:#bc8cff;
+  --up:#f8514f; --down:#3fb950; /* 中国约定：涨红跌绿 */
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  font-size:14px; overflow:hidden;
+  background-image:radial-gradient(1200px 500px at 70% -10%, rgba(188,140,255,.06), transparent),
+                   radial-gradient(900px 400px at 10% 110%, rgba(227,179,65,.05), transparent);
+}
+.wrap{min-width:1180px;max-width:1440px;height:calc(100vh - 48px);margin:0 auto;padding:10px 22px 12px;display:flex;flex-direction:column}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ============ 顶栏 ============ */
+.topbar{display:flex;align-items:center;gap:16px;padding:6px 4px 10px;border-bottom:1px solid var(--border);flex-wrap:nowrap}
+.brand{font-size:20px;font-weight:700;letter-spacing:1px;white-space:nowrap}
+.brand .os{color:var(--purple)}
+.brand small{color:var(--sub);font-weight:400;font-size:12px;margin-left:10px;letter-spacing:0}
+.backlink{font-size:12px;color:var(--blue);white-space:nowrap;border:1px solid var(--border);border-radius:7px;padding:4px 11px;background:var(--panel)}
+.backlink:hover{border-color:var(--blue);text-decoration:none}
+.sysdots{display:flex;gap:13px;margin-left:auto;flex-wrap:nowrap;align-items:center}
+.sysdot{display:flex;align-items:center;gap:6px;color:var(--sub);font-size:12px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)}
+.dot.ok{background:var(--down);box-shadow:0 0 6px var(--down)}
+.dot.warn{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.dot.unk{background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)}
+.datechip{color:var(--dim);font-size:12px;white-space:nowrap;font-family:Consolas,monospace}
+.demo-flag{border:1px dashed var(--accent);color:var(--accent);border-radius:6px;padding:3px 9px;font-size:11px;white-space:nowrap}
+
+/* ============ 对标铁律条 ============ */
+.rulebar{background:#1d2230;border:1px solid #33405c;border-radius:var(--radius);padding:9px 15px;margin-top:12px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:#aac1dc}
+.rulebar b{color:var(--purple);font-size:12.5px;letter-spacing:.05em;white-space:nowrap}
+.rulebar .r{white-space:nowrap}
+.rulebar .r:before{content:"▪ ";color:var(--purple)}
+
+/* ============ 内容区（单屏 · 分区内滚） ============ */
+.content{flex:1;min-height:0;overflow:auto;padding:0 2px 2px}
+
+/* ============ 分区标题 ============ */
+.sect{display:flex;align-items:baseline;gap:10px;margin:15px 0 9px;flex-wrap:wrap}
+.sect h2{font-size:15px;font-weight:600;letter-spacing:.05em}
+.sect small{color:var(--dim);font-size:11px;font-weight:400}
+
+/* ============ 四对标卡 ============ */
+.radars{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.rc{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 13px 11px;display:flex;flex-direction:column;transition:border-color .15s}
+.rc:hover{border-color:var(--purple)}
+.rc .dh{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.dicon{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:none;background:#2b2440}
+.rc h3{font-size:14px;font-weight:600;flex:1;white-space:nowrap}
+.rc .en{display:block;color:var(--dim);font-size:9.5px;font-family:Consolas,monospace;letter-spacing:.05em;margin:4px 0 0 39px;white-space:nowrap}
+.rc p{color:var(--sub);font-size:11.5px;line-height:1.6;margin:8px 0 8px}
+.rc p b{color:var(--txt);font-weight:600}
+.rc .st{display:flex;flex-wrap:wrap;gap:4px 5px}
+.rc .st i{font-style:normal;font-size:10px;background:#1c2b36;border:1px solid #2e4454;color:#a9cbd8;border-radius:5px;padding:2px 7px;white-space:nowrap}
+.rc .rows{margin-top:9px;padding-top:8px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:5px}
+.rc .row{font-size:11px;color:var(--sub);line-height:1.6}
+.rc .row b{color:var(--purple);font-weight:600;margin-right:5px}
+.rc .row.hot b{color:var(--accent)}
+.rc .row .mono{font:11px Consolas,monospace;color:var(--blue)}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:5px;white-space:nowrap;font-weight:400;flex:none}
+.b-live{background:#1f3524;color:#9fd8a8}
+.b-run{background:#3f2d20;color:#f0c78a}
+.b-plan{background:#2b3645;color:#aac1dc}
+.b-wait{background:#33273d;color:#c9a8e8}
+
+/* ============ 整合架构判据区 ============ */
+.judge{display:grid;grid-template-columns:1.5fr 1fr 1.2fr;gap:12px}
+.jc{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 15px}
+.jc h4{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:7px;color:var(--txt)}
+.jc h4 small{color:var(--dim);font-weight:400;font-size:10.5px;margin-left:auto}
+.jc.north{background:linear-gradient(120deg,rgba(188,140,255,.10),rgba(57,210,192,.06));border-color:#4a4225;font-size:12.5px;line-height:1.85;color:#e8dfc8}
+.jc.north b{color:var(--purple)}
+.jc ol{margin-left:17px;font-size:11.5px;color:var(--sub);line-height:1.9}
+.jc ol b{color:var(--txt)}
+.jc .no{font:700 10px Consolas,monospace;color:var(--accent);margin-right:6px}
+.jc .track{display:flex;flex-direction:column;gap:7px;font-size:11.5px;color:var(--sub);line-height:1.6}
+.jc .track .t{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.jc .track .t b{color:var(--txt)}
+.jc .track .rule{margin-top:2px;padding-top:8px;border-top:1px dashed var(--border);font-size:11px;color:var(--dim);line-height:1.7}
+
+/* ============ 待验证问题清单 ============ */
+.verifys{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.vf{display:flex;gap:9px;align-items:flex-start;background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:11.5px;color:var(--sub);line-height:1.6}
+.vf .vt{flex:none;font:700 10px Consolas,monospace;background:#33273d;color:#c9a8e8;border:1px solid #4a3a5e;border-radius:4px;padding:1px 7px;margin-top:2px}
+.vf b{color:var(--txt)}
+
+/* ============ 底栏 ============ */
+.foot{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:14px;color:var(--dim);font-size:11px;flex-wrap:wrap;flex:none}
+.foot b{color:var(--sub);font-weight:600}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<style>/* 门户落位适配：nav.js 统一顶栏注入后让出高度，单屏铁律不变 */
+.wrap{height:calc(100vh - 48px)}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 顶栏 ============ -->
+  <div class="topbar">
+    <div class="brand"><span class="os">🛰 开源助理雷达</span><small>个人 OS · 学习成长板块 /learn › 四对标专页</small></div>
+    <a class="backlink" href="/os-entry">← 返回 OS 总览</a>
+    <div class="sysdots">
+      <span class="sysdot"><span class="dot" id="p-8091"></span>门户 api</span>
+      <span class="sysdot"><span class="dot" id="p-8787"></span>Hermes</span>
+      <span class="sysdot"><span class="dot" id="p-11434"></span>Ollama</span>
+      <span class="datechip" id="datechip"></span>
+      <span class="demo-flag">板块专页 · 对标结论以留痕为准 · 未验证项显式标注</span>
+    </div>
+  </div>
+
+  <!-- ============ 对标铁律条 ============ -->
+  <div class="rulebar">
+    <b>📐 对标铁律（老田拍板口径）</b>
+    <span class="r">对标只纳留痕结论</span>
+    <span class="r">对外统一口号，不多线 slogan</span>
+    <span class="r">影子只有建议权</span>
+    <span class="r">策略是插件不是框架</span>
+  </div>
+
+  <!-- ============ 内容区（单屏 · 分区内滚） ============ -->
+  <div class="content">
+
+    <div class="sect"><h2>🧭 四对标雷达</h2><small>Hermes · OpenClaw · CowAgent · Khoj —— 服务「集成超级助理」目标；状态与卡点均为 2026-10-19 留痕口径</small></div>
+    <div class="radars">
+
+      <div class="rc">
+        <div class="dh">
+          <span class="dicon" style="background:rgba(88,166,255,.14);color:var(--blue)">🦸</span>
+          <h3>Hermes</h3>
+          <span class="badge b-live">已整合·在产</span>
+        </div>
+        <span class="en">HERMES · AGENT SPINE</span>
+        <p><b>Agent 执行/记忆脊柱</b>：Kanban / Gateway / cron / 记忆 / branch 沙盘；agent 数据持久化。</p>
+        <div class="st"><i>Python + vanilla JS</i><i>WebUI 8787</i><i>MCP 18 工具</i><i>qwen3.5:9b@11434</i><i>PG5442 血缘三表</i></div>
+        <div class="rows">
+          <div class="row"><b>链路</b>WebUI 8787 → MCP（18 工具）→ 8791 仪表盘 → 8091 <span class="mono">/api/kg/lineage</span> → PG5442 血缘三表</div>
+          <div class="row"><b>模型纪律</b>本地 <span class="mono">qwen3.5:9b@11434</span>，<b style="color:var(--accent)">stream:false 必留</b></div>
+          <div class="row"><b>军团角色</b>军师府田丰 profile 管执行</div>
+          <div class="row"><b>入口</b><span class="mono">/hermes/</span> · <span class="mono">/console</span> · <span class="mono">/mission</span></div>
+        </div>
+      </div>
+
+      <div class="rc">
+        <div class="dh">
+          <span class="dicon" style="background:rgba(188,140,255,.14);color:var(--purple)">🦅</span>
+          <h3>OpenClaw</h3>
+          <span class="badge b-plan">规划·P1 上线周 10-26~11-01</span>
+        </div>
+        <span class="en">OPENCLAW · GATEWAY / PLUGIN</span>
+        <p><b>网关/插件</b>定位：军团运营部 + 军师府诸葛亮（OpenClaw + 云端 GPT 6.0）反向质询，<b>零执行权</b>。</p>
+        <div class="st"><i>反向质询</i><i>零执行权</i><i>沙盘只读仓</i><i>只读工具集</i></div>
+        <div class="rows">
+          <div class="row"><b>闭环</b>田丰 → Kanban → 诸葛亮 → 回卡</div>
+          <div class="row"><b>降级</b>跨境断链 → 降级田丰自审，不阻塞主链</div>
+          <div class="row"><b>落位</b>P1 军团上线周（10-26 ~ 11-01）</div>
+        </div>
+      </div>
+
+      <div class="rc">
+        <div class="dh">
+          <span class="dicon" style="background:rgba(227,179,65,.14);color:var(--accent)">🐄</span>
+          <h3>CowAgent</h3>
+          <span class="badge b-run">卡点·M4 能力层 11-16~11-30</span>
+        </div>
+        <span class="en">COWAGENT · 3-LAYER MEMORY</span>
+        <p><b>三层中文记忆</b>；M4 能力层接入（11-16 ~ 11-30）。</p>
+        <div class="st"><i>三层中文记忆</i><i>M4 能力层</i><i>LLM API key 卡点</i></div>
+        <div class="rows">
+          <div class="row hot"><b>卡点</b>LLM API key——org.json 双 key 错配：379b… 耗尽会静默降档 5.3-flash</div>
+          <div class="row hot"><b>方案</b>方案 A 最小改动待老田拍板</div>
+          <div class="row"><b>同卡点</b>zeroq 生产机 stage12</div>
+        </div>
+      </div>
+
+      <div class="rc">
+        <div class="dh">
+          <span class="dicon" style="background:rgba(57,210,192,.14);color:var(--teal)">🔍</span>
+          <h3>Khoj</h3>
+          <span class="badge b-plan">规划·M4 能力层</span>
+        </div>
+        <span class="en">KHOJ · KNOWLEDGE RETRIEVAL</span>
+        <p><b>知识检索</b>；MCP 接入规划中（M4 能力层）。</p>
+        <div class="st"><i>知识检索</i><i>MCP 接入规划中</i><i>M4 能力层</i></div>
+        <div class="rows">
+          <div class="row hot"><b>状态</b>规划位——MCP 工具清单未盘点（待验证）</div>
+          <div class="row"><b>纳入口径</b>出一条留痕结论后才进对标结论区</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sect"><h2>🧩 整合架构判据</h2><small>目标架构 + 三铁律 + 雷达跟踪口径——判据不随单卡状态漂移</small></div>
+    <div class="judge">
+      <div class="jc north">
+        <h4>🎯 目标架构（一句话）</h4>
+        <b>Hermes Agent 执行/记忆</b> + <b>OpenClaw 网关/插件</b> + <b>CowAgent 三层中文记忆</b> + <b>Khoj 知识检索</b> —— 四层合流，服务「集成超级助理」目标；对外统一口号，不多线 slogan。
+      </div>
+      <div class="jc">
+        <h4>⚖️ 三铁律</h4>
+        <ol>
+          <li><span class="no">01</span><b>策略是插件</b>不是框架</li>
+          <li><span class="no">02</span><b>影子只有建议权</b></li>
+          <li><span class="no">03</span><b>研究·执行·风控</b>物理分离</li>
+        </ol>
+      </div>
+      <div class="jc">
+        <h4>📡 雷达跟踪口径 <small>每季一检</small></h4>
+        <div class="track">
+          <div class="t"><span class="badge b-live">已整合</span><b>Hermes</b>——链路 / 军团角色见上卡</div>
+          <div class="t"><span class="badge b-run">跟踪中</span><b>OpenClaw / CowAgent / Khoj</b>——余三款未出留痕结论</div>
+          <div class="rule">纳入判据：每款每季至少出一条<b>留痕结论</b>才纳入对标结论区；未验证项显式标注，不假装可达。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sect"><h2>🧯 待验证问题清单</h2><small>诚实标注：未验证项不纳入结论；不阻塞主链的按默认推进，阻塞项列拍板</small></div>
+    <div class="verifys">
+      <div class="vf"><span class="vt">待验证</span><span><b>OpenClaw 与 Hermes 的 Kanban 协议映射</b>：未验证（田丰 → Kanban → 诸葛亮 → 回卡闭环的协议面）。</span></div>
+      <div class="vf"><span class="vt">待验证</span><span><b>CowAgent key 方案 A</b>（补 binding_note 最小改动）：待老田拍板；379b… 静默降档 5.3-flash 隐患待消除。</span></div>
+      <div class="vf"><span class="vt">待验证</span><span><b>Khoj MCP 工具清单</b>：未盘点——MCP 接入停留在规划位。</span></div>
+      <div class="vf"><span class="vt">待验证</span><span><b>zeroq 生产机 stage12</b>：与 CowAgent 同卡点（LLM API key），解锁条件待验证。</span></div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <span>🧭 定位 <b>开源助理雷达专页 · 学习成长板块下钻 /learn › radar</b></span><span>│</span>
+    <span>口径 <b>板块专页 · 对标结论以留痕为准 · 未验证项显式标注</b></span><span>│</span>
+    <span>🚦 状态灯 <b>三态 · 探测不可信不假绿</b></span><span>│</span>
+    <span><a href="/learn">← 返回学习成长板块</a></span><span>│</span>
+    <span>2026-10-19 · v1 雷达专页</span>
+  </div>
+</div>
+
+<script src="/static/nav.js"></script>
+<script>
+(function(){
+  /* 顶栏三态灯：8091/8787 走同源 /api/health 拿真实状态；11434 跨域 → unk 不假绿 */
+  var HEALTH_MAP = { 'p-8091':'portal api', 'p-8787':'hermes' };
+  function probe(id, svc){
+    var el = document.getElementById(id); if(!el) return;
+    fetch('/api/health', { cache:'no-store' }).then(function(r){ return r.json(); }).then(function(d){
+      var s = null; (d.services||[]).forEach(function(x){ if(x.name===svc) s = x; });
+      if (s && s.ok) { el.className = 'dot ok'; el.title = svc + ' OK · ' + s.ms + 'ms（同源 /api/health）'; }
+      else if (s) { el.className = 'dot warn'; el.title = svc + ' 在线但状态异常'; }
+      else { el.className = 'dot unk'; el.title = 'health 未覆盖 → 未探测态'; }
+    }).catch(function(){ el.className = 'dot unk'; el.title = '/api/health 不可达 → 未探测态'; });
+  }
+  probe('p-8091','portal api'); probe('p-8787','hermes');
+  (function(){ var el = document.getElementById('p-11434');
+    el.className = 'dot unk'; el.title = '跨域直连不可达 → 未探测态（S4 后转实）'; })();
+  var d = new Date();
+  document.getElementById('datechip').textContent =
+    d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+})();
+</script>
+</body>
+</html>
