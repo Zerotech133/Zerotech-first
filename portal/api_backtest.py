@@ -4965,6 +4965,8 @@ if(P){setTimeout(function(){go(P)},400)}
 import threading as _threading
 from job_spec_registry import JobSpecDescriptor, JobSpecRegistry, utc_now_iso
 
+_CALENDAR_VERSION_PATTERN = re.compile(r"[0-9a-f]{64}")
+
 _BT2_DIR = os.path.join(STATION, "quant_backtest", "data", "bt2")
 _BT2_STATE_DIR = os.path.join(STATION, "quant_backtest", "data", "bt2_state")
 _BT2_LOCK = _threading.Lock()
@@ -4972,6 +4974,9 @@ _BT2_LOCK = _threading.Lock()
 # reference these opaque ids; arbitrary filesystem paths/connections are denied.
 _MINUTE_SOURCE_REGISTRY = {}
 _MINUTE_SOURCE_FACTORIES = {}
+# Calendar providers are trusted, process-local runtime objects.  Only their
+# opaque identity is persisted in JobSpec descriptors.
+_MINUTE_CALENDAR_FACTORIES = {}
 _MINUTE_MARKET_POLICIES = {
     "CN": {"timezone": "Asia/Shanghai", "t_plus_one": True, "policy_ref": "registry:market-cn", "lot_size": 100},
     "US": {"timezone": "America/New_York", "t_plus_one": False, "policy_ref": "registry:market-us"},
@@ -4980,6 +4985,47 @@ _MINUTE_MARKET_POLICIES = {
 }
 _JOB_SPEC_CATALOG = os.path.join(STATION, "data", "runtime", "minute_job_specs.json")
 _JOB_SPEC_REGISTRY = JobSpecRegistry(_JOB_SPEC_CATALOG)
+
+
+def _calendar_error_code(exc):
+    text = str(exc)
+    if "CALENDAR_MISMATCH" in text:
+        return "CALENDAR_MISMATCH"
+    return "CALENDAR_UNAVAILABLE"
+
+
+def _descriptor_failure(descriptor):
+    error = str(getattr(descriptor, "error", "") or "")
+    if error in {"CALENDAR_UNAVAILABLE", "CALENDAR_MISMATCH"}:
+        return error
+    return "SOURCE_UNAVAILABLE"
+
+
+def _calendar_provider_for(source_ref, descriptor):
+    factory = _MINUTE_CALENDAR_FACTORIES.get(str(source_ref))
+    if factory is None:
+        raise ValueError("CALENDAR_UNAVAILABLE: provider factory unavailable")
+    provider = factory(descriptor)
+    if provider is None:
+        raise ValueError("CALENDAR_UNAVAILABLE: provider unavailable")
+    return provider
+
+
+def _validate_runtime_calendar(source_ref, descriptor, spec):
+    if not descriptor.calendar_ref:
+        raise ValueError("CALENDAR_UNAVAILABLE: calendar identity missing")
+    provider = spec.get("calendar_provider")
+    if provider is None:
+        provider = _calendar_provider_for(source_ref, descriptor)
+        spec["calendar_provider"] = provider
+    from calendar_provider import require_production_provider
+    identity = require_production_provider(provider)
+    if identity.calendar_ref != descriptor.calendar_ref or identity.version != descriptor.calendar_version:
+        raise ValueError("CALENDAR_MISMATCH: calendar identity differs")
+    store = spec.get("bar_store")
+    if hasattr(store, "validate_calendar_identity"):
+        store.validate_calendar_identity(identity.calendar_ref, identity.version)
+    return provider
 
 
 def _rehydrate_minute_source(source_ref):
@@ -5011,12 +5057,15 @@ def _rehydrate_minute_source(source_ref):
             if actual_market != str(descriptor.market).upper() or actual_timeframe != str(descriptor.timeframe).lower():
                 raise ValueError("SOURCE_UNAVAILABLE")
         _MINUTE_SOURCE_REGISTRY[ref] = spec
+        if descriptor.calendar_ref:
+            _validate_runtime_calendar(ref, descriptor, spec)
         _JOB_SPEC_REGISTRY.mark_available(ref)
         return True, None
     except Exception as exc:
         log_exc(exc)
-        _JOB_SPEC_REGISTRY.mark_unavailable(ref, "SOURCE_UNAVAILABLE")
-        return False, "SOURCE_UNAVAILABLE"
+        code = _calendar_error_code(exc) if descriptor.calendar_ref else "SOURCE_UNAVAILABLE"
+        _JOB_SPEC_REGISTRY.mark_unavailable(ref, code)
+        return False, code
 
 
 def _rehydrate_catalog_sources():
@@ -5027,6 +5076,28 @@ def _rehydrate_catalog_sources():
 
 # Startup recovery is intentionally conservative: no factory means unavailable.
 _rehydrate_catalog_sources()
+
+
+def register_minute_calendar_factory(source_ref, factory):
+    """Bind a trusted calendar provider factory to a source (runtime only)."""
+    ref = str(source_ref or "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", ref) or not callable(factory):
+        raise ValueError("invalid calendar factory")
+    _MINUTE_CALENDAR_FACTORIES[ref] = factory
+    descriptor = _JOB_SPEC_REGISTRY.get(ref)
+    if descriptor is None or not descriptor.calendar_ref:
+        return False, "CALENDAR_UNAVAILABLE"
+    try:
+        spec = _MINUTE_SOURCE_REGISTRY.get(ref)
+        if isinstance(spec, dict):
+            _validate_runtime_calendar(ref, descriptor, spec)
+            _JOB_SPEC_REGISTRY.mark_available(ref)
+            return True, None
+        return _rehydrate_minute_source(ref)
+    except Exception as exc:
+        code = _calendar_error_code(exc)
+        _JOB_SPEC_REGISTRY.mark_unavailable(ref, code)
+        return False, code
 
 
 def register_minute_factory(source_ref, factory):
@@ -5040,8 +5111,11 @@ def register_minute_factory(source_ref, factory):
 
 def register_minute_source(source_ref, bar_store, order_intents=(),
                            status_provider=None, limit_provider=None,
+                           market_rule_provider=None,
                            market="CN", timezone="Asia/Shanghai", timeframe="1m",
-                           policy_ref=None, expires_at=None):
+                           policy_ref=None, expires_at=None, calendar_ref=None,
+                           calendar_version=None, calendar_provider=None,
+                           calendar_factory=None):
     """Register a complete server-side minute job spec under an opaque id."""
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(source_ref or "")):
         raise ValueError("invalid source_ref")
@@ -5066,11 +5140,21 @@ def register_minute_source(source_ref, bar_store, order_intents=(),
         raise ValueError("invalid timezone")
     if not market or not timeframe:
         raise ValueError("market/timeframe required")
+    if (calendar_ref is None) != (calendar_version is None):
+        raise ValueError("CALENDAR_UNAVAILABLE: calendar_ref/calendar_version required together")
+    if calendar_ref is not None and not re.fullmatch(r"registry:[A-Za-z0-9_-]{1,64}", str(calendar_ref)):
+        raise ValueError("CALENDAR_UNAVAILABLE: invalid calendar_ref")
+    if calendar_version is not None and not _CALENDAR_VERSION_PATTERN.fullmatch(str(calendar_version)):
+        raise ValueError("CALENDAR_UNAVAILABLE: invalid calendar_version")
+    if market_rule_provider is not None and not callable(getattr(market_rule_provider, "decide", None)):
+        raise ValueError("INVALID_ARGUMENT: market_rule_provider must implement decide()")
     spec = {
         "bar_store": bar_store,
         "order_intents": intents,
         "status_provider": status_provider,
         "limit_provider": limit_provider,
+        "market_rule_provider": market_rule_provider,
+        "calendar_provider": calendar_provider,
     }
     ref = str(source_ref)
     _MINUTE_SOURCE_REGISTRY[ref] = spec
@@ -5083,10 +5167,16 @@ def register_minute_source(source_ref, bar_store, order_intents=(),
         store_config_ref=f"runtime:{ref}",
         intent_batch_ref=f"runtime:{ref}-intents",
         provider_policy_ref=str(policy_ref or policy["policy_ref"]),
-        registered_at=utc_now_iso(), expires_at=expires_at)
+        registered_at=utc_now_iso(), expires_at=expires_at,
+        calendar_ref=str(calendar_ref) if calendar_ref is not None else None,
+        calendar_version=str(calendar_version) if calendar_version is not None else None)
     _JOB_SPEC_REGISTRY.register(descriptor)
     # The closure is process-local and never enters the persisted descriptor.
     _MINUTE_SOURCE_FACTORIES[ref] = lambda _descriptor: dict(spec)
+    if calendar_factory is not None:
+        register_minute_calendar_factory(ref, calendar_factory)
+    if calendar_ref is not None:
+        _validate_runtime_calendar(ref, descriptor, spec)
     return descriptor.as_dict()
 
 
@@ -5197,9 +5287,10 @@ def _bt2_start(rec):
         if descriptor is None:
             return {"ok": False, "error": "SOURCE_UNAVAILABLE: source_ref unavailable", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
         if descriptor.availability != "available" or _JOB_SPEC_REGISTRY.is_expired(source_ref):
+            failure = _descriptor_failure(descriptor)
             if descriptor.availability == "available":
-                _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, "SOURCE_UNAVAILABLE")
-            return {"ok": False, "error": "SOURCE_UNAVAILABLE", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
+                _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, failure)
+            return {"ok": False, "error": failure, "error_code": failure, "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": failure}
         spec = _MINUTE_SOURCE_REGISTRY.get(source_ref)
         if not isinstance(spec, dict):
             ok, error = _rehydrate_minute_source(source_ref)
@@ -5210,6 +5301,16 @@ def _bt2_start(rec):
         if spec.get("status_provider") is None or spec.get("limit_provider") is None:
             _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, "SOURCE_UNAVAILABLE")
             return {"ok": False, "error": "SOURCE_UNAVAILABLE", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
+        if descriptor.calendar_ref:
+            for key in ("calendar_ref", "calendar_version"):
+                if key in rec and rec.get(key) not in (None, "", getattr(descriptor, key)):
+                    return {"ok": False, "error": "CALENDAR_MISMATCH", "error_code": "CALENDAR_MISMATCH"}
+            try:
+                _validate_runtime_calendar(source_ref, descriptor, spec)
+            except Exception as exc:
+                code = _calendar_error_code(exc)
+                _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, code)
+                return {"ok": False, "error": code, "error_code": code, "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": code}
         requested_timezone = str(rec.get("timezone") or descriptor.timezone)
         if requested_timezone != descriptor.timezone:
             return {"ok": False, "error": "TIMEZONE_MISMATCH", "error_code": "TIMEZONE_MISMATCH"}
@@ -5325,6 +5426,9 @@ def _bt2_start(rec):
             "lot_size": policy.get("lot_size", 1),
             "t_plus_one": (policy["t_plus_one"] if policy is not None else True),
             "policy_ref": (policy["policy_ref"] if policy is not None else None),
+            "calendar_ref": descriptor.calendar_ref if descriptor is not None else None,
+            "calendar_version": descriptor.calendar_version if descriptor is not None else None,
+            "calendar_required": bool(descriptor is not None and descriptor.calendar_ref),
             "execution_query": None,
         })
         try:
@@ -5393,6 +5497,56 @@ def _bt2_worker(jid, params):
             worker_params["order_intents"] = spec["order_intents"]
             worker_params["status_provider"] = spec["status_provider"]
             worker_params["limit_provider"] = spec["limit_provider"]
+            # 统一市场规则路径：注册了 market_rule_provider 的 source 强制走
+            # 规则判定（market_rules_required=True），不静默回退旧双 provider 分支。
+            rule_provider = spec.get("market_rule_provider")
+            rules_required = rule_provider is not None
+            if rules_required:
+                worker_params["market_rule_provider"] = rule_provider
+                worker_params["market_rules_required"] = True
+            descriptor = _JOB_SPEC_REGISTRY.get(source_ref)
+            if descriptor is not None and descriptor.calendar_ref:
+                try:
+                    worker_params["calendar_provider"] = _validate_runtime_calendar(source_ref, descriptor, spec)
+                    worker_params["calendar_ref"] = descriptor.calendar_ref
+                    worker_params["calendar_version"] = descriptor.calendar_version
+                    worker_params["calendar_required"] = True
+                    from execution_engine import ExecutionConfig
+                    worker_params["execution_config"] = ExecutionConfig(
+                        initial_cash=float(worker_params.get("initial_cash", 0.0) or 0.0),
+                        fee_bps=float(worker_params.get("fee_bps", 0.0) or 0.0),
+                        slippage_bps=float(worker_params.get("slippage_bps", 0.0) or 0.0),
+                        lot_size=int(worker_params.get("lot_size", 1) or 1),
+                        market=worker_params.get("market"),
+                        timeframe=worker_params.get("timeframe"),
+                        t_plus_one=worker_params.get("t_plus_one", False),
+                        policy_ref=worker_params.get("policy_ref"),
+                        calendar_ref=descriptor.calendar_ref,
+                        calendar_version=descriptor.calendar_version,
+                        calendar_required=True,
+                        market_rules_required=rules_required,
+                    )
+                except Exception as exc:
+                    code = _calendar_error_code(exc)
+                    _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, code)
+                    _bt2_write_state(jid, status="dead", error=code, error_code=code,
+                                     source_ref=source_ref, source_availability="source_unavailable",
+                                     source_error=code, calendar_ref=descriptor.calendar_ref,
+                                     calendar_version=descriptor.calendar_version)
+                    return
+            elif rules_required:
+                from execution_engine import ExecutionConfig
+                worker_params["execution_config"] = ExecutionConfig(
+                    initial_cash=float(worker_params.get("initial_cash", 0.0) or 0.0),
+                    fee_bps=float(worker_params.get("fee_bps", 0.0) or 0.0),
+                    slippage_bps=float(worker_params.get("slippage_bps", 0.0) or 0.0),
+                    lot_size=int(worker_params.get("lot_size", 1) or 1),
+                    market=worker_params.get("market"),
+                    timeframe=worker_params.get("timeframe"),
+                    t_plus_one=worker_params.get("t_plus_one", False),
+                    policy_ref=worker_params.get("policy_ref"),
+                    market_rules_required=True,
+                )
         res, err = eng.run_job(worker_params, jid, progress=progress)
         if err:
             _bt2_write_state(jid, status="dead", error=err[:800], error_code="EXECUTION_ERROR", source_ref=params.get("source_ref"), source_availability="available")
@@ -5463,6 +5617,8 @@ def _bt2_status():
                     st["source_availability"] = descriptor.availability
                     st["source_error"] = descriptor.error
                     st["source_descriptor"] = descriptor.as_dict()
+                    st["calendar_ref"] = descriptor.calendar_ref
+                    st["calendar_version"] = descriptor.calendar_version
                 elif params.get("execution_mode") == "minute_store":
                     st["source_availability"] = "source_unavailable"
                     st["source_error"] = "SOURCE_UNAVAILABLE"
@@ -5484,6 +5640,9 @@ def _bt2_result(jid):
         "source_ref": source_ref,
         "source_availability": descriptor.availability if descriptor else state.get("source_availability"),
         "source_error": descriptor.error if descriptor else state.get("source_error"),
+        "calendar_ref": descriptor.calendar_ref if descriptor else state.get("calendar_ref"),
+        "calendar_version": descriptor.calendar_version if descriptor else state.get("calendar_version"),
+        "source_descriptor": descriptor.as_dict() if descriptor else None,
         "error_code": state.get("error_code"),
     }
     if state.get("status") != "done":

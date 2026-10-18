@@ -10,6 +10,7 @@ from calendar_provider import (
     CalendarContractError,
     CalendarIdentity,
     CalendarSession,
+    SessionSegment,
     FrozenCalendarProvider,
     require_production_provider,
 )
@@ -91,3 +92,55 @@ def test_future_as_of_is_rejected_and_provider_is_immutable():
         cal.is_open(date(2026, 10, 16), as_of=future)
     with pytest.raises(TypeError):
         cal._days[date(2026, 10, 16)] = False
+
+
+def split_provider():
+    """SSE split session: 09:30-11:30 / 13:00-15:00 Asia/Shanghai (UTC+8)."""
+    morning = SessionSegment(
+        datetime(2026, 10, 16, 1, 30, tzinfo=timezone.utc),
+        datetime(2026, 10, 16, 3, 30, tzinfo=timezone.utc),
+    )
+    afternoon = SessionSegment(
+        datetime(2026, 10, 16, 5, 0, tzinfo=timezone.utc),
+        datetime(2026, 10, 16, 7, 0, tzinfo=timezone.utc),
+    )
+    next_day = SessionSegment(
+        datetime(2026, 10, 17, 1, 30, tzinfo=timezone.utc),
+        datetime(2026, 10, 17, 3, 30, tzinfo=timezone.utc),
+    )
+    sessions = [
+        CalendarSession(date(2026, 10, 16), segments=(morning, afternoon)),
+        CalendarSession(date(2026, 10, 17), segments=(next_day,)),
+    ]
+    return FrozenCalendarProvider(identity(), {
+        date(2026, 10, 16): True,
+        date(2026, 10, 17): True,
+    }, sessions)
+
+
+def test_split_session_next_open_at_returns_afternoon_segment():
+    cal = split_provider()
+    # 午休 12:00 本地（04:00 UTC）→ 下午段 13:00（05:00 UTC），而非上午段 09:30
+    assert cal.next_open_at(datetime(2026, 10, 16, 4, 0, tzinfo=timezone.utc)) == \
+        datetime(2026, 10, 16, 5, 0, tzinfo=timezone.utc)
+    # 上午收盘后 11:40 本地（03:40 UTC）→ 下午段开盘
+    assert cal.next_open_at(datetime(2026, 10, 16, 3, 40, tzinfo=timezone.utc)) == \
+        datetime(2026, 10, 16, 5, 0, tzinfo=timezone.utc)
+    # 下午段内 14:00 本地（06:00 UTC）→ 当前段开盘（与单段语义一致）
+    assert cal.next_open_at(datetime(2026, 10, 16, 6, 0, tzinfo=timezone.utc)) == \
+        datetime(2026, 10, 16, 5, 0, tzinfo=timezone.utc)
+    # 当日收盘后 15:30 本地（07:30 UTC）→ 次日开盘
+    assert cal.next_open_at(datetime(2026, 10, 16, 7, 30, tzinfo=timezone.utc)) == \
+        datetime(2026, 10, 17, 1, 30, tzinfo=timezone.utc)
+
+
+def test_split_session_is_in_session_and_bounds():
+    cal = split_provider()
+    bounds = cal.session_bounds(date(2026, 10, 16))
+    assert bounds.open_at == datetime(2026, 10, 16, 1, 30, tzinfo=timezone.utc)
+    assert bounds.close_at == datetime(2026, 10, 16, 7, 0, tzinfo=timezone.utc)
+    # 午休时段不在交易段内
+    assert cal.is_in_session(datetime(2026, 10, 16, 4, 0, tzinfo=timezone.utc)) is False
+    # 两个分段都在交易段内
+    assert cal.is_in_session(datetime(2026, 10, 16, 2, 0, tzinfo=timezone.utc)) is True
+    assert cal.is_in_session(datetime(2026, 10, 16, 6, 0, tzinfo=timezone.utc)) is True

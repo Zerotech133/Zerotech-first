@@ -72,3 +72,23 @@ def test_non_opaque_refs_are_rejected(tmp_path, value):
     with pytest.raises(ValueError, match="REF_NOT_OPAQUE"):
         registry.register(descriptor)
     assert not (tmp_path / "catalog.json").exists()
+
+
+def test_calendar_version_must_be_sha256(tmp_path):
+    """registry 与 CalendarIdentity 契约统一：version 只接受 64 位小写 SHA-256。"""
+    registry = JobSpecRegistry(str(tmp_path / "catalog.json"))
+    for bad in ("v1", "V1", "1.0.0", "a" * 63, "a" * 65, "A" * 64):
+        descriptor = JobSpecDescriptor(**{
+            **_descriptor().as_dict(),
+            "calendar_ref": "registry:calendar-cn-sse",
+            "calendar_version": bad,
+        })
+        with pytest.raises(ValueError, match="calendar_version"):
+            registry.register(descriptor)
+    good = JobSpecDescriptor(**{
+        **_descriptor().as_dict(),
+        "calendar_ref": "registry:calendar-cn-sse",
+        "calendar_version": "a" * 64,
+    })
+    registry.register(good)
+    assert registry.get("fixture").calendar_version == "a" * 64

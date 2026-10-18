@@ -854,6 +854,7 @@ def _run_minute_store_job(params: dict, job_id: str, progress=None):
                 market=params.get("market"), timeframe=params.get("timeframe"),
                 t_plus_one=params.get("t_plus_one", False),
                 policy_ref=params.get("policy_ref"),
+                market_rules_required=bool(params.get("market_rules_required", False)),
             )
         if not isinstance(cfg, ExecutionConfig):
             return None, "execution_config must be ExecutionConfig"
@@ -864,9 +865,13 @@ def _run_minute_store_job(params: dict, job_id: str, progress=None):
             market=str(params.get("market") or "CN"),
             timezone_name=str(params.get("timezone") or "Asia/Shanghai"),
         )
-        result = run_from_store(store, intents, cfg, query=query,
-                                limit_provider=params.get("limit_provider") or (lambda *args: {"known": True}),
-                                status_provider=params.get("status_provider") or (lambda *args: "TRADING"))
+        result = run_from_store(
+            store, intents, cfg, query=query,
+            calendar_provider=params.get("calendar_provider"),
+            market_rule_provider=params.get("market_rule_provider"),
+            limit_provider=params.get("limit_provider"),
+            status_provider=params.get("status_provider"),
+        )
         payload = {
             "schema": result.schema,
             "job_id": job_id,
