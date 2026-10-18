@@ -3789,7 +3789,8 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 策略中心（K36）：注册表全景记分卡 + 生命周期 + 上新 SOP
             self._strategies_page()
         elif path == "/intel":
-            # L1 情报驾驶舱（今日情报流/JEV 多空/文档枢纽）
+            self._html_file(os.path.join(ROOT, "intel_workbench.html"))
+        elif path == "/intel/stream":
             self._intel_page()
         elif path == "/gzh":
             # 公众号草稿库（内容生产域）

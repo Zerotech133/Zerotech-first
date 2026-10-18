@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>情报工作台｜零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{color-scheme:dark;--teal:var(--color-ok);--blue:var(--link);--amber:var(--color-warn);--surface:var(--bg-raised);--line:var(--border);--muted:var(--text-dim)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}body{background:radial-gradient(circle at 78% -25%,var(--bg-surface),transparent 48%),var(--bg-page);color:var(--text);font:14px/1.6 var(--font-ui)}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid var(--teal);outline-offset:3px}a{color:var(--link)}[hidden]{display:none!important}.main{max-width:1180px;margin:auto;padding:22px clamp(18px,3vw,42px) 55px}.crumb{font-size:12px;color:var(--muted)}.crumb button{border:0;background:transparent;padding:0;color:var(--link)}.crumb span{color:var(--text)}.eyebrow{font:700 11px var(--font-mono);letter-spacing:.18em;color:var(--teal);margin:28px 0 10px}h1{font-size:clamp(29px,3.7vw,48px);letter-spacing:-.04em;line-height:1.2;margin:0 0 10px}.lead{margin:0;color:var(--gray-6);font-size:14px;max-width:790px;line-height:1.85}.section-title{font-size:13px;color:var(--gray-6);font-weight:600;letter-spacing:.08em;margin:25px 0 12px}.home-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,1fr);gap:12px}.spotlight{background:linear-gradient(140deg,var(--bg-raised),var(--bg-surface));border:1px solid var(--border);border-radius:var(--r-l);padding:23px}.micro{color:var(--teal);font:700 11px var(--font-mono);letter-spacing:.12em}.spotlight h2{font-size:24px;line-height:1.3;margin:15px 0 8px}.spotlight p{color:var(--gray-6);margin:0 0 16px;font-size:12px;line-height:1.8}.primary{border:0;background:var(--teal);color:var(--bg-page);font-weight:700;padding:9px 15px;border-radius:var(--r-s)}.stack{display:grid;gap:12px}.quick,.tile,.item,.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);color:var(--text)}.quick,.tile,.item{text-align:left}.quick{padding:16px;min-height:105px}.quick small,.tile small{display:block;color:var(--blue);font:700 10px var(--font-mono);letter-spacing:.12em}.quick strong{display:block;font-size:16px;margin:5px 0}.quick span,.tile p{color:var(--muted);font-size:11px}.quick:hover,.tile:hover,.item:hover{border-color:var(--teal);background:var(--bg-surface)}.domain-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}.tile{padding:17px;min-height:145px;display:flex;flex-direction:column}.tile strong{font-size:17px;margin:7px 0 3px}.tile p{margin:0;line-height:1.7}.tile em{font-style:normal;color:var(--teal);font-size:11px;margin-top:auto;padding-top:9px}.category-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end}.count{color:var(--muted);font:11px var(--font-mono);white-space:nowrap}.summary{margin:22px 0 11px;color:var(--gray-6);font-size:12px}.item-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.item{padding:16px;min-height:116px;display:flex;flex-direction:column}.item-top{display:flex;gap:12px;justify-content:space-between;align-items:center}.item strong{font-size:15px}.item p{margin:7px 0 9px;color:var(--muted);font-size:11px;line-height:1.7}.arrow{margin-top:auto;color:var(--teal);font-size:11px}.badge{display:inline-block;font-size:10px;padding:3px 7px;border-radius:5px;white-space:nowrap;color:var(--gray-6);background:var(--gray-3)}.badge.plan{color:var(--amber)}.badge.split{color:var(--blue)}.detail{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(240px,.75fr);gap:12px;margin-top:22px}.panel{padding:20px}.panel h2{font-size:17px;margin:0 0 11px}.panel p{color:var(--gray-6);font-size:12px;line-height:1.8;margin:0 0 14px}.meta{border-top:1px solid var(--line);padding:11px 0;display:flex;justify-content:space-between;gap:12px;font-size:12px}.meta span{color:var(--muted)}.meta b{font-weight:500;text-align:right;overflow-wrap:anywhere}.route{font:11px var(--font-mono);color:var(--blue);background:var(--bg-surface);border:1px solid var(--border);padding:6px 8px;border-radius:var(--r-s);display:inline-block;overflow-wrap:anywhere}.note{color:var(--amber)!important}.back{background:transparent;border:1px solid var(--border);color:var(--teal);border-radius:var(--r-s);padding:8px 12px;margin-top:15px}.empty{border:1px dashed var(--border);color:var(--gray-6);border-radius:var(--r-m);padding:14px;font-size:12px;line-height:1.8}.foot{border-top:1px solid var(--line);color:var(--muted);font-size:11px;margin-top:30px;padding-top:15px;line-height:1.8}@media(max-width:800px){.home-grid{grid-template-columns:1fr}.stack{grid-template-columns:1fr 1fr}.domain-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.main{padding:18px 16px 40px}.home-grid,.stack,.domain-grid,.item-grid,.detail{grid-template-columns:1fr}.category-head{align-items:flex-start}.count{margin-top:30px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main class="main"><div class="crumb" id="crumb" aria-label="面包屑"></div><div id="view" aria-live="polite"></div><div class="foot">这里是功能入口与边界说明，不代表服务在线、采集健康、数据已核验或人工已审批。链接均为同源页面；CLI、接口及规划能力仅展示位置，不直接调用。</div></main>
+<script>
+const groups=[
+{id:'evidence',name:'情报流与研判',number:'01',tag:'READ & JUDGE',intro:'从新闻和日报进入，先读原文，再看结构化判断与模型理由。',items:[
+{name:'新闻证据流',status:'既有动态页面',route:'/intel/stream',link:'/intel/stream',desc:'既有新闻证据流与今日四卡入口。',boundary:'页面承接旧 /intel 动态内容；是否有当日证据以实际产出为准。'},
+{name:'AI 晨报',status:'既有页面',route:'/bt-brief',link:'/bt-brief',desc:'新闻晨报与复盘内容的阅读入口。',boundary:'是否有当期简报取决于实际产出；不展示虚构最新数据。'},
+{name:'JEV 判断',status:'既有页面',route:'/bt-jev',link:'/bt-jev',desc:'方向、范围、事件类型与影响等结构化新闻判断。',boundary:'模型判断与生成理由不等于独立事实核验。'},
+{name:'四件套观测',status:'既有页面',route:'/stack',link:'/stack',desc:'JEV 四件套的现有观测页面。',boundary:'代码接线不证明此刻服务在线。'},
+{name:'雪球情报日报',status:'既有页面',route:'/xq_intel.html',link:'/xq_intel.html',desc:'查看雪球舆情日报与相关维度。',boundary:'页面允许演示数据切换；演示内容不能当实时入库。'},
+{name:'多维数据日报',status:'既有页面',route:'/data_daily.html',link:'/data_daily.html',desc:'现有多维数据日报入口。',boundary:'日报是输出视图，不是情报域的唯一首页。'}]},
+{id:'events',name:'事件与路径',number:'02',tag:'EVENTS & PATHS',intro:'事件关系、原文回查与拓扑路径分开下钻；不自动解释成传播因果。',items:[
+{name:'事件图谱',status:'既有页面',route:'/kg/events',link:'/kg/events',desc:'浏览文档抽取的事件关系、图、列表及原文。',boundary:'DOC_EVENT 关系不等于经核验的完整传播路径。'},
+{name:'图谱路径探索',status:'画布内功能',route:'/kg/canvasv2',link:'/kg/canvasv2',desc:'在知识画布内探索连接关系及通用路径。',boundary:'通用最短路径是不限定关系类型的无向拓扑查询；非事件因果链。'},
+{name:'时序路径分析',status:'CLI 能力',route:'kg_semantica.py --paths',desc:'独立的时序路径分析命令行能力。',boundary:'尚不是 /kg/events 的专用逐跳路径页面。'},
+{name:'逐跳证据回放',status:'规划能力',route:'待设计',desc:'按每一步关系追溯原始材料、时间与确认状态。',boundary:'当前不能声称已有完整事件传播证据链。'}]},
+{id:'graph',name:'知识图谱',number:'03',tag:'KNOWLEDGE GRAPH',intro:'将图谱工具按探索、研判和维护收纳；来源、条目与实体关系不混作血缘。',items:[
+{name:'知识画布',status:'既有页面',route:'/kg/canvasv2',link:'/kg/canvasv2',desc:'可视化图谱探索与分析入口。',boundary:'页面接线与图谱数据完备性需分别验证。'},
+{name:'图谱探索',status:'既有页面',route:'/kg',link:'/kg',desc:'图谱入口与通用探索。',boundary:'不同 KG 服务之间不能默认视为同一套已联通系统。'},
+{name:'作战地图',status:'既有页面',route:'/kg/battle',link:'/kg/battle',desc:'图谱作战地图视角。',boundary:'视觉关联不代表真实因果。'},
+{name:'图谱问答',status:'既有页面',route:'/kg/ask',link:'/kg/ask',desc:'以问答方式探索图谱内容。',boundary:'回答需回查依据。'},
+{name:'游资地图',status:'既有页面',route:'/kg/map',link:'/kg/map',desc:'游资关系地图入口。',boundary:'以实际服务和数据为准。'},
+{name:'板块工单',status:'既有页面',route:'/kg/flow',link:'/kg/flow',desc:'图谱板块工单视图。',boundary:'页面导航登记不证明业务流程已完成。'},
+{name:'画图标注',status:'既有页面',route:'/kg/label',link:'/kg/label',desc:'图谱标注工作入口。',boundary:'标注与审批不是同一件事。'},
+{name:'推演卡',status:'既有页面',route:'/kg/card',link:'/kg/card',desc:'关联信息的推演卡视图。',boundary:'推演不是事实确认。'},
+{name:'影子面板',status:'既有页面',route:'/kg/shadow',link:'/kg/shadow',desc:'候选与影子关系视角。',boundary:'EXP_ 候选关系不能混作正图事实。'},
+{name:'公司 360',status:'既有页面',route:'/kg/company',link:'/kg/company',desc:'公司关联信息聚合视图。',boundary:'以可回查原始来源为准。'},
+{name:'图谱词条',status:'既有页面',route:'/kg/lexicon',link:'/kg/lexicon',desc:'图谱术语与词条入口。',boundary:'词条说明不替代事实证据。'},
+{name:'图谱文档',status:'既有页面',route:'/kg/doc',link:'/kg/doc',desc:'文档视角与内容回查入口。',boundary:'文档抽取结果须与原文区分。'}]},
+{id:'lineage',name:'数据血缘',number:'04',tag:'DATA LINEAGE',intro:'追问数据怎样生产：作业运行、显式输入输出边、上下游和缺边。',items:[
+{name:'血缘总览',status:'既有页面',route:'/lineage.html',link:'/lineage.html',desc:'静态血缘页，现纳入情报导航。',boundary:'只读观察，以页面实际记录为准；不把运行记录当作完整输入输出边。'},
+{name:'作业运行',status:'已有只读接口',route:'/api/kg/lineage?view=runs',desc:'查看 PG 中记录的作业运行；请通过血缘总览观察。',boundary:'记录运行不意味着记录了输入→输出边。'},
+{name:'断点与缺边',status:'已有只读接口',route:'/api/kg/lineage?view=breaks',desc:'从已有血缘边观察断点；请通过血缘总览观察。',boundary:'失败运行若没有登记边，可能不在该视图里。'},
+{name:'上下游查询',status:'已有只读接口',route:'/api/kg/lineage?view=upstream',desc:'按表查询上下游关系；请通过血缘总览观察。',boundary:'现有 SQL 过滤方向待校核；界面不预设查询结果正确。'}]},
+{id:'sources',name:'来源与采集',number:'05',tag:'SOURCE REGISTRY',intro:'各产线拥有原文和调度；这里放来源入口、取证指针与未来接入契约。',items:[
+{name:'财经新闻',status:'现有来源',route:'/intel/stream',link:'/intel/stream',desc:'新闻采集与 JEV 新闻证据流。',boundary:'新闻判断、采集健康和来源可靠性是不同指标。'},
+{name:'雪球：状态 / 热帖 / 个股讨论',status:'独立采集产线',route:'/xq_intel.html',link:'/xq_intel.html',desc:'三类雪球内容分层呈现，日报另作阅读出口。',boundary:'来源观察细分代码仍在隔离工作树，不可称已集成。'},
+{name:'股吧',status:'独立采集产线',route:'暂无独立情报入口',desc:'帖子线索与原文指针；可在来源层登记。',boundary:'续读与 JSONL 重写语义需核对。'},
+{name:'行情 / TDX',status:'独立数据产线',route:'暂无独立情报入口',desc:'行情与资讯仓作为研判背景，区别于新闻源。',boundary:'不能将行情入库直接算情报事实核验。'},
+{name:'链接 / 视频 OSINT',status:'独立服务代码',route:'Hermes /api/osint/*',desc:'已有队列与代理的局部能力，预留情报接入位。',boundary:'尚未核实主门户的 OSINT 情报专页及服务在线状态。'},
+{name:'图谱来源评级',status:'已有 JSON 接口',route:'/kg/sources',desc:'图谱来源可靠性评级只读产物。',boundary:'这不是独立情报来源观测页面。'},
+{name:'情报来源观察',status:'隔离工作树',route:'/api/intel/sources',desc:'来源目录、只读采样与独立子源观察方案。',boundary:'独立工作树方案尚未集成；不作为本工作台可访问页面。'},
+{name:'未来爬虫接入',status:'规划能力',route:'待设计',desc:'以来源身份、采集时间、原文位置、运行责任为接入契约。',boundary:'不预置未确认的来源或虚构健康灯。'}]},
+{id:'output',name:'输出与授权',number:'06',tag:'DELIVERY & REVIEW',intro:'情报形成交付之前，要分清推送、复核、审批登记与真正授权。',items:[
+{name:'推送中台',status:'独立上游',route:'/push/',link:'/push/',desc:'情报输出与推送的既有入口。',boundary:'代理至独立上游服务；此工作台不保证上游在线，不在此触发推送。'},
+{name:'审批登记',status:'运维域只读页面',route:'/approvals',link:'/approvals',desc:'审批注册表的只读查看入口，作为跨域参照。',boundary:'不是在此页面执行批准或授权的功能。'},
+{name:'人工复核关口',status:'规划能力',route:'待设计',desc:'对原文、判断、证据与拟输出对象逐项复核。',boundary:'模型结论、推送动作均不等于人工批准。'}]}
+];
+const view=document.querySelector('#view'),crumb=document.querySelector('#crumb');const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function statusClass(s){return /规划|隔离/.test(s)?'plan':/独立|CLI|运维/.test(s)?'split':''}
+function button(target,label,cl=''){return `<button type="button" class="${cl}" data-go="${target}">${safe(label)}</button>`}
+function render(){const [id,index]=location.hash.slice(1).split('/');const group=groups.find(g=>g.id===id);const item=group&&/^\d+$/.test(index||'')?group.items[Number(index)]:null;crumb.innerHTML=`<a href="/portal">门户</a>　/　${group?button('home','情报工作台'):'<span>情报工作台</span>'}${group?`　/　${item?button(group.id,group.name):`<span>${safe(group.name)}</span>`}`:''}${item?`　/　<span>${safe(item.name)}</span>`:''}`;
+if(!group){view.innerHTML=`<div class="eyebrow">INTELLIGENCE / WORKBENCH</div><h1>情报，从线索到证据。</h1><p class="lead">选一个工作台，进入具体功能，再回到对应的来源、判断或原始证据。</p><div class="section-title">当前工作主线</div><div class="home-grid"><article class="spotlight"><span class="micro">START HERE / EVIDENCE FIRST</span><h2>先看研判，再回查证据。</h2><p>新闻与雪球日报是阅读入口；事件关系、图谱和血缘分别帮助解释“发生了什么”“关联到谁”“数据怎么来的”。</p>${button('evidence','进入情报流与研判 →','primary')}</article><div class="stack"><button type="button" class="quick" data-go="events"><small>02 / EVENTS</small><strong>事件与路径</strong><span>浏览关系、原文与路径边界</span></button><button type="button" class="quick" data-go="graph"><small>03 / GRAPH</small><strong>知识图谱</strong><span>探索实体与来源关系</span></button></div></div><div class="section-title">六个工作台 · 点击进入</div><div class="domain-grid">${groups.map(g=>`<button class="tile" type="button" data-go="${g.id}"><small>${g.number} / ${g.tag}</small><strong>${safe(g.name)}</strong><p>${safe(g.intro)}</p><em>进入 ${g.items.length} 个功能 →</em></button>`).join('')}</div><div class="section-title">边界</div><div class="empty">这是功能入口，不显示虚构实时计数或健康状态。独立服务、隔离工作树、只读接口及规划能力均在详情中说明。</div>`}
+else if(!item){view.innerHTML=`<div class="category-head"><div><div class="eyebrow">${safe(group.number)} / ${safe(group.tag)}</div><h1>${safe(group.name)}</h1></div><div class="count">${group.items.length} 个功能</div></div><p class="lead">${safe(group.intro)}</p><div class="summary">选择一个功能，查看用途、既有位置与实现边界。</div><div class="item-grid">${group.items.map((x,i)=>`<button type="button" class="item" data-go="${group.id}/${i}"><div class="item-top"><strong>${safe(x.name)}</strong><span class="badge ${statusClass(x.status)}">${safe(x.status)}</span></div><p>${safe(x.desc)}</p><span class="arrow">查看功能详情 →</span></button>`).join('')}</div>`}
+else{view.innerHTML=`<div class="eyebrow">${safe(group.number)} / ${safe(group.tag)} · FUNCTION DETAIL</div><h1>${safe(item.name)}</h1><p class="lead">${safe(item.desc)}</p><div class="detail"><section class="panel"><h2>这里负责什么</h2><p>${safe(item.desc)}</p><div class="meta"><span>所属工作台</span><b>${safe(group.name)}</b></div><div class="meta"><span>实现口径</span><b><span class="badge ${statusClass(item.status)}">${safe(item.status)}</span></b></div><div class="meta"><span>相关位置</span><b><span class="route">${safe(item.route)}</span></b></div>${item.link?`<p><a href="${item.link}">打开现有页面 →</a></p>`:'<p>此项仅供说明，无可点击页面入口。</p>'}</section><aside class="panel"><h2>使用边界</h2><p class="note">${safe(item.boundary)}</p><div class="empty">页面入口不等于实时状态、事实核验或人工授权；请回查对应产线证据。</div>${button(group.id,'← 返回功能列表','back')}</aside></div>`}
+document.title=`${item?item.name+' · ':group?group.name+' · ':''}情报工作台｜零界`;window.scrollTo(0,0)}
+function go(target){if(location.hash.slice(1)===target)render();else location.hash=target}document.addEventListener('click',e=>{const b=e.target.closest('button[data-go]');if(b)go(b.dataset.go)});addEventListener('hashchange',render);render();
+</script>
+</body>
+</html>
