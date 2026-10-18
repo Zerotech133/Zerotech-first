@@ -96,6 +96,7 @@ class NonAcceptanceProof:
     attempt_id: str
     route: str
     trace_id: str
+    evidence_type: str
     reason: str
     observed_at: datetime
 
@@ -290,7 +291,10 @@ class DeliveryLedger:
                 evidence = (non_acceptance.event_key, non_acceptance.target_key,
                             non_acceptance.attempt_id, non_acceptance.route,
                             non_acceptance.trace_id)
-                if evidence == identity and isinstance(non_acceptance.reason, str) and non_acceptance.reason.strip():
+                if (evidence == identity
+                        and non_acceptance.evidence_type in ("provider_rejected", "hub_not_forwarded")
+                        and isinstance(non_acceptance.reason, str)
+                        and non_acceptance.reason.strip()):
                     try:
                         actual = "FAILED" if (self.non_acceptance_verifier is not None
                                               and _utc(non_acceptance.observed_at)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 import sys
+from dataclasses import replace
 import tempfile
 import threading
 import unittest
@@ -40,7 +41,8 @@ def provider_receipt(claim: Claim, observed_at: datetime) -> ProviderReceipt:
 def non_acceptance_proof(claim: Claim, observed_at: datetime) -> NonAcceptanceProof:
     """Create a test-only synthetic provider definitive-rejection envelope."""
     return NonAcceptanceProof(claim.event_key, claim.target_key, claim.attempt_id,
-                              claim.route, claim.trace_id, "provider-rejected", observed_at)
+                              claim.route, claim.trace_id, "provider_rejected",
+                              "provider-rejected", observed_at)
 
 
 class DeliveryLedgerTests(unittest.TestCase):
@@ -180,6 +182,29 @@ class DeliveryLedgerTests(unittest.TestCase):
         self.assertTrue(self.ledger.finish(claim, outcome="FAILED"))
         self.assertEqual("UNKNOWN", self.ledger.get(self.event, self.target)["state"])
         self.assertIsNone(self.ledger.claim(self.event, self.target, "r", retry_failed=True))
+
+    def test_unrecognized_failure_type_cannot_enable_retry_even_with_naive_verifier(self) -> None:
+        naive = DeliveryLedger(self.path, clock=self.clock,
+                               non_acceptance_verifier=lambda proof: True)
+        claim = naive.claim(self.event, self.target, "r")
+        forged = replace(non_acceptance_proof(claim, self.clock()),
+                         evidence_type="timeout")
+        self.assertTrue(naive.finish(claim, outcome="FAILED", non_acceptance=forged))
+        self.assertEqual("UNKNOWN", naive.get(self.event, self.target)["state"])
+        self.assertIsNone(naive.claim(self.event, self.target, "r", retry_failed=True))
+
+    def test_true_verifier_is_trust_injection_not_proof_of_provider_authenticity(self) -> None:
+        unsafe = DeliveryLedger(self.path, clock=self.clock,
+                                receipt_verifier=lambda receipt: True)
+        claim = unsafe.claim(self.event, self.target, "r")
+        fabricated = replace(provider_receipt(claim, self.clock()),
+                             receipt_id="fabricated-local-message-id")
+        self.assertTrue(unsafe.finish(claim, outcome="SENT", receipt=fabricated))
+        self.assertEqual("SENT", unsafe.get(self.event, self.target)["state"])
+        # A lambda-True verifier has explicitly assumed the trust boundary; this
+        # test proves the ledger cannot authenticate provider evidence by itself.
+        self.assertEqual("fabricated-local-message-id",
+                         unsafe.get(self.event, self.target)["receipt_id"])
 
     def test_forged_trace_and_verifier_exception_fail_closed(self) -> None:
         claim = self.ledger.claim(self.event, self.target, "r")
