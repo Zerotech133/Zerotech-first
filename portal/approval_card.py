@@ -75,10 +75,13 @@ def push_review_card(decision):
     if not receive_id:
         return False, "老田 open_id 未配置（LAOTIAN_OPEN_ID / push_subscribers）"
     card = build_review_card(decision)
+    # critical=True：审批卡是发给老田本人的动作请求（非群广播），静默窗吞卡
+    # 会让审批流 22:00-07:30 瘫痪；走闸门既有 critical 豁免（K-ORG-201 冒烟判例）。
     return feishu_client.send_msg(json.dumps(card, ensure_ascii=False),
                                   "interactive", receive_id,
                                   receive_id_type="open_id",
-                                  kind="decision:announcement")
+                                  kind="decision:announcement",
+                                  critical=True)
 
 
 def handle_card_action(action_id, req_id, operator_open_id):
