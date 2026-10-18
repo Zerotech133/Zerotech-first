@@ -259,14 +259,82 @@ def recent_events(n=8, days=7):
 
 
 # ── ④ 数据中台读层（datamart） ───────────────────────────────
+_PQ_ENGINE = None   # 进程内缓存：parquet 引擎探测结果（"pyarrow" / "none"）
+
+
+def _parquet_engine():
+    """parquet 引擎自检（进程内缓存，零网络零副作用）。
+
+    datamart 的 parquet 读取路径强依赖 pyarrow（ParquetFile/谓词下推/
+    row-group 统计均直接 import pyarrow，缺引擎时读层异常被逐层吞掉、
+    静默返回空表——S4 彩排 2026-10-18 判例）。探测结果供 datamart_read/
+    datamart_ready 做可观测性标注与不可用态判定。
+    """
+    global _PQ_ENGINE
+    if _PQ_ENGINE is None:
+        try:
+            import pyarrow  # noqa: F401
+            _PQ_ENGINE = "pyarrow"
+        except Exception:
+            _PQ_ENGINE = "none"
+    return _PQ_ENGINE
+
+
+def _dm_ready_safe(dm, table):
+    """dm.ready 容错包装：探测异常按未就绪处理（不向上抛）。"""
+    try:
+        return bool(dm.ready(table))
+    except Exception:
+        return False
+
+
 @tool
 def datamart_read(table, start=None, end=None, codes=None, fields=None,
                   limit=0):
-    """读层统一入口：真源命中即止+别名降级+日期/代码归一（codes 自动纠后缀）。"""
-    import datamart as dm
-    df = dm.read(table, start=start, end=end, codes=_fix_codes(codes),
-                 fields=fields, limit=limit)
-    return {"n": len(df), "rows": df.to_dict("records")}
+    """读层统一入口：真源命中即止+别名降级+日期/代码归一（codes 自动纠后缀）。
+
+    可观测性（S4 开闸① 2026-10-18）：datamart 模块导入失败/读取异常/
+    空结果/引擎缺失时打 WARN 到 stderr（fail-open 必配诊断判例），返回值
+    附加 engine（"pyarrow"/"none"）与 empty_reason（None=有数据；否则
+    datamart_import_error / read_error:<Exc> / no_parquet_engine /
+    table_not_ready / empty）。n/rows 语义不变，旧消费方不受影响。
+    """
+    eng = _parquet_engine()
+    try:
+        import datamart as dm
+    except Exception as e:
+        sys.stderr.write(
+            "[datamart_read] WARN datamart 模块导入失败: %s: %s\n"
+            % (type(e).__name__, str(e)[:160]))
+        return {"ok": False,
+                "err": "datamart import failed: %s" % type(e).__name__,
+                "n": 0, "rows": [], "engine": eng,
+                "empty_reason": "datamart_import_error"}
+    try:
+        df = dm.read(table, start=start, end=end, codes=_fix_codes(codes),
+                     fields=fields, limit=limit)
+    except Exception as e:
+        sys.stderr.write(
+            "[datamart_read] WARN 读取异常 table=%s: %s: %s\n"
+            % (table, type(e).__name__, str(e)[:160]))
+        return {"ok": False,
+                "err": "read failed: %s: %s" % (type(e).__name__,
+                                                str(e)[:160]),
+                "n": 0, "rows": [], "engine": eng,
+                "empty_reason": "read_error:%s" % type(e).__name__}
+    n = len(df) if df is not None else 0
+    if n == 0:
+        reason = ("no_parquet_engine" if eng == "none"
+                  else "table_not_ready" if not _dm_ready_safe(dm, table)
+                  else "empty")
+        sys.stderr.write(
+            "[datamart_read] WARN 空结果 table=%s engine=%s reason=%s "
+            "start=%s end=%s codes=%s\n"
+            % (table, eng, reason, start, end,
+               ",".join(str(c) for c in codes) if codes else None))
+        return {"n": 0, "rows": [], "engine": eng, "empty_reason": reason}
+    return {"n": n, "rows": df.to_dict("records"),
+            "engine": eng, "empty_reason": None}
 
 
 @tool
@@ -278,10 +346,31 @@ def datamart_latest(table):
 
 @tool
 def datamart_ready(table):
-    """表/别名可用性：ready + 真源 + schema 说明。"""
-    import datamart as dm
-    r = bool(dm.ready(table))
-    return {"table": table, "ready": r,
+    """表/别名可用性：ready + 真源 + schema 说明（含 parquet 引擎自检）。
+
+    引擎缺失时返回明确的不可用态 ready=False + reason=no_parquet_engine
+    （而非误报可用），WARN 到 stderr；供影子统计/调度探活区分
+    「表没就绪」与「环境坏了」。常规路径附加 engine 字段，ready/explain
+    语义不变。
+    """
+    eng = _parquet_engine()
+    if eng == "none":
+        sys.stderr.write(
+            "[datamart_ready] WARN parquet 引擎缺失（需 pyarrow）"
+            "table=%s\n" % table)
+        return {"table": table, "ready": False, "engine": None,
+                "explain": None, "reason": "no_parquet_engine"}
+    try:
+        import datamart as dm
+        r = bool(dm.ready(table))
+    except Exception as e:
+        sys.stderr.write(
+            "[datamart_ready] WARN datamart 探测异常 table=%s: %s: %s\n"
+            % (table, type(e).__name__, str(e)[:160]))
+        return {"table": table, "ready": False, "engine": eng,
+                "explain": None,
+                "reason": "datamart_error:%s" % type(e).__name__}
+    return {"table": table, "ready": r, "engine": eng,
             "explain": dm.explain(table) if r else None}
 
 
