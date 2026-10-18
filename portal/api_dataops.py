@@ -61,6 +61,84 @@ TODAY_COL = {"xq_status": "fetched_at", "stock_notice": "_fetched_at"}
 
 PARQUET_DIRS = ["tdx/ts_daily", "tdx/ts_monthly", "tdx/ts_weekly", "tdx/ts_index_daily"]
 
+# ── 定时任务职能分组（2026-10-18 全量清点，系统噪音 AMD/WPS/OneDrive 不入册）──
+# 平台规划总案：docs/2026-10-18_数据平台规划总案.md §3
+TASK_GROUPS = [
+    ("行情/数据同步", ["TushareSync", "TushareIncrementGuard", "TdxSync", "AdjFactorSync",
+                       "QuantMetaSync", "XmapSync", "Quote", "QuoteSnapshot", "CryptoSync",
+                       "FutQuant", "KgCl1Sync", "KgDailySync", "NoticeBackfill",
+                       "TriplesBackfill", "JevBackfill"]),
+    ("舆情/资讯采集", ["XueqiuCrawl", "XueqiuSync", "XueqiuTokenRefresh", "GubaCrawl",
+                       "NewsCollect", "NewsAI", "NewsReview"]),
+    ("策略扫描", ["BtScan", "ChanlunScan", "ChanlunScanHK", "ChanlunScanUS", "NineDimScan",
+                  "WeakScan", "WeakTrackCheck", "RpsDaily", "SeatProfile", "NameChange",
+                  "StrongEod", "PickMonitor", "TodaysPicks", "StrategyDaily", "TbeStats",
+                  "QuantWatch"]),
+    ("告警/晨报/推送", ["AlertPush", "AlertPushMorning", "AlertWatch", "SubPushEod",
+                        "SubPushIntraday", "HermesBriefPush", "KgResonanceNotify",
+                        "FutQuantNotify", "KgDigest", "DailyBrief0745", "DailyReport",
+                        "MorningReport"]),
+    ("KG/知识工程", ["KGAnalysis", "KgChainWatchdog", "KgEventShadow", "KgExtractShadow",
+                     "KgLeiden", "KgLeidenSummary", "KG-Neo4jWeeklyDump", "KG-QuantMorning",
+                     "KG-QuantRetune", "KgDataDashboard"]),
+    ("弱者体系", ["WeakDailyHealth", "WeakMonthlyArchive", "WeakMonthlyGuide",
+                  "WeakMonthlyLearn", "WeakMonthlyReview", "WeakMonthlySummary",
+                  "WeakWeeklyReport"]),
+    ("Hermes/门户守护", ["HermesWebUI-Guard", "HermesWebUI-Guard2", "HermesWebUI-Next-Guard",
+                         "AI工作站门户API", "AI工作站门户Nginx", "datamart_api_keepalive",
+                         "AI工作站推送中台守护8097"]),
+    ("数字军团/agent", ["AgentShadowDaily", "AgentMondayCheckpoint", "AgentChiefPush",
+                        "AgentShadowEvalWeekly", "AgentWatchdog", "AgentWatchdog2",
+                        "A0Patrol", "LegionDailyReview", "LegionMorningMeeting",
+                        "LegionOps", "LegionScheduler"]),
+    ("风控/影子评估", ["RiskGuardR3Weekly", "RiskGuardShadowDaily", "K33ShadowCheck",
+                       "GoldShadow"]),
+    ("运维/守护", ["BackupDaily", "OffsiteSync", "OllamaWatchdog", "AI工作站执行失败巡检",
+                   "AI工作站调优回测批次", "PytestWeekly", "ColAudit", "MissCheck", "N1Check",
+                   "P5cRecheck", "PG-Robot", "JevDriftDaily", "JevFeed-Daily",
+                   "JevFeed-Verify", "JevStack"]),
+]
+
+
+def _task_groups(errors):
+    """全量计划任务按职能分组探测（Enabled + 每日触发时刻）。"""
+    groups = []
+    armed_total = 0
+    seen = set()
+    for gname, names in TASK_GROUPS:
+        rows = []
+        for n in names:
+            seen.add(n)
+            t = _read_task(n)
+            h = "armed" if t.get("enabled") else ("unknown" if t.get("enabled") is None else "disabled")
+            if t.get("enabled"):
+                armed_total += 1
+            rows.append({"name": n, "health": h, "at": t.get("at", ""),
+                         "error": t.get("error")})
+        groups.append({"group": gname, "count": len(rows), "armed": sum(1 for r in rows if r["health"] == "armed"), "tasks": rows})
+    return {"groups": groups, "total": sum(g["count"] for g in groups),
+            "armed_total": armed_total}
+
+
+def _catalog_summary(errors):
+    """行情仓 catalog.json 聚合（233 表 × source × layout，登记真源）。"""
+    try:
+        cat = json.load(open(os.path.join(DATA, "catalog.json"), encoding="utf-8"))
+        tables = cat.get("tables", {})
+        by_source = {}
+        for t in tables.values():
+            s = t.get("source", "?")
+            d = by_source.setdefault(s, {"count": 0, "layouts": {}})
+            d["count"] += 1
+            d["layouts"][t.get("layout", "?")] = d["layouts"].get(t.get("layout", "?"), 0) + 1
+        return {"version": cat.get("version"), "updated": cat.get("updated"),
+                "table_count": len(tables), "by_source": by_source,
+                "hint": "catalog.json 为行情仓登记真源（source/store/schema/layout），"
+                        "由 warehouse 进程自动刷新；v3 逐表新鲜度在 store mtime 上做"}
+    except Exception as e:
+        errors.append("catalog: %s" % str(e)[:60])
+        return {"error": str(e)[:80]}
+
 
 def _ro(db_path):
     return sqlite3.connect("file:%s?mode=ro" % db_path, uri=True)
@@ -200,6 +278,9 @@ def overview():
             parquet.append({"dir": rel, "shards": n})
     # 管道
     pipes = _pipeline_states(errors)
+    # 全量定时任务分组 + 行情仓 catalog 聚合
+    task_groups = _task_groups(errors)
+    catalog = _catalog_summary(errors)
     # 采集源
     collectors = []
     active = 0
@@ -265,7 +346,7 @@ def overview():
                     "xq_total": xq_total, "xq_classified": xq_done,
                     "active_collectors": active, "alerts": alerts},
         "collectors": collectors, "pools": pools, "parquet": parquet,
-        "pipelines": pipes,
+        "pipelines": pipes, "task_groups": task_groups, "catalog": catalog,
         "governance": {"model_dist": model_dist,
                        "hint": "打标 lineage 字段 model/prompt_version 支持版本换代 A/B；"
                                "Hermes/调度系统直接 GET 本接口（fail-visible JSON）即得全局数据地图"},

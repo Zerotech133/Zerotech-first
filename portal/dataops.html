@@ -66,7 +66,13 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 </tr></thead><tbody></tbody></table>
 <div class="sub" id="poolmeta" style="margin-top:8px"></div>
 
-<h2>④ 治理与自进化观测</h2>
+<h2>④ 定时拔取任务总表 —— <span id="tstat" class="muted" style="font-size:13px"></span></h2>
+<div id="taskgroups"></div>
+
+<h2>⑤ 行情仓 catalog —— <span id="cstat" class="muted" style="font-size:13px"></span></h2>
+<div class="pipe" id="catalog"></div>
+
+<h2>⑥ 治理与自进化观测</h2>
 <div class="pipe" id="gov"></div>
 
 <div class="foot">
@@ -139,6 +145,29 @@ function render(d){
   document.getElementById('poolmeta').innerHTML=
     'Parquet 池：'+(d.parquet||[]).map(x=>esc(x.dir)+'（'+x.shards+' 片）').join(' · ')+
     ' ｜ 库文件 mtime 为该库最近写入时刻';
+
+  const tg=d.task_groups||{groups:[]};
+  document.getElementById('tstat').textContent='共 '+(tg.total??'?')+' 个计划任务 · 在岗 '+(tg.armed_total??'?');
+  document.getElementById('taskgroups').innerHTML=(tg.groups||[]).map(g=>{
+    const rows=g.tasks.map(t=>
+      '<tr><td>'+esc(t.name)+'</td><td>'+HB(t.health)+'</td><td class="muted">'+esc(t.at||'—')+'</td>'+
+      (t.error?'<td style="color:var(--bad)">'+esc(t.error)+'</td>':'')+'</tr>').join('');
+    return '<details'+(g.armed?'':' closed')+' style="margin-bottom:8px">'+
+      '<summary style="cursor:pointer;padding:8px 12px;background:var(--panel);border:1px solid var(--bd);border-radius:8px;font-weight:600">'+
+      esc(g.group)+' <span class="muted" style="font-weight:normal">'+g.armed+'/'+g.count+' 在岗</span></summary>'+
+      '<table style="margin-top:4px"><tbody>'+rows+'</tbody></table></details>';
+  }).join('');
+
+  const c=d.catalog||{};
+  document.getElementById('cstat').textContent=c.table_count?('v'+c.version+' · '+c.table_count+' 表 · 更新于 '+c.updated):'不可用';
+  const bs=Object.entries(c.by_source||{});
+  const maxc=Math.max(1,...bs.map(x=>x[1].count));
+  document.getElementById('catalog').innerHTML=(c.error?'<span style="color:var(--bad)">'+esc(c.error)+'</span>':
+    bs.map(([src,v])=>
+      '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:13px">'+
+      '<b>'+esc(src)+'</b><span class="muted">'+v.count+' 表 · '+Object.entries(v.layouts).map(x=>esc(x[0])+'×'+x[1]).join(' ')+'</span></div>'+
+      '<div class="bar" style="height:10px"><div style="width:'+(v.count/maxc*100).toFixed(0)+'%"></div></div></div>').join('')+
+    '<div class="muted" style="font-size:12px">'+esc(c.hint||'')+'</div>');
 
   const g=d.governance||{};
   const md=Object.entries(g.model_dist||{});
