@@ -30,6 +30,11 @@ register_routes() 以装饰器方式包装 Handler 的 do_GET/do_POST，
   POST /api/strategies/proposals/confirm → body JSON {id, decision}
                                     decision=apply → 逐条落盘并标记 applied
                                     decision=reject → 标记 rejected
+  GET  /api/health              → 健康探针：逐项探测 127.0.0.1 依赖服务
+                                    （portal 8091 HTTP / gateway 8098 TCP /
+                                    quantapi 8001 TCP / ollama 11434 TCP），
+                                    自身 8791 直接 ok 不自探测；恒 200，
+                                    健康态由 checks 逐项表达（首页三态灯）
 
 数据库访问：psycopg2（XMAP_PG_* env/.env.local，主机 5442）优先，
 docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一律 10s。
@@ -729,6 +734,105 @@ def confirm_proposal(body: Any) -> tuple:
              "status": prop["status"], "results": results}, 200)
 
 
+# ── 端点 N：GET /api/health 健康探针（只读零副作用）──────────────────
+# 探测目标默认值，可用环境变量 / .env.local 的 HEALTH_*_PORT 覆盖；
+# 全部探测固定走 127.0.0.1（不碰外网）。DASHBOARD 仅用于回显自身端口。
+HEALTH_HOST = "127.0.0.1"
+HEALTH_SPECS = (
+    # (env 键, 默认端口, 名称, 探测方式, 超时秒)
+    ("PORTAL",    8091,  "portal",   "http", 0.8),  # HTTP GET /
+    ("GATEWAY",   8098,  "gateway",  "tcp",  0.5),
+    ("QUANTAPI",  8001,  "quantapi", "tcp",  0.5),
+    ("OLLAMA",    11434, "ollama",   "tcp",  0.5),
+)
+HEALTH_DASHBOARD_PORT = 8791   # 自身：能收到本请求即活，不做自我探测防递归
+
+
+def _load_health_env_local() -> None:
+    """读 .env.local 中 HEALTH_* 键（setdefault，同 _load_env_local 惯例）。"""
+    env_local = os.path.join(QUANT_BT, ".env.local")
+    if not os.path.isfile(env_local):
+        return
+    try:
+        with open(env_local, "r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, val = line.partition("=")
+                if key.strip().startswith("HEALTH_"):
+                    os.environ.setdefault(key.strip(), val.strip())
+    except OSError:
+        pass
+
+
+def _health_env_port(env_key: str, default: int) -> int:
+    raw = os.environ.get("HEALTH_%s_PORT" % env_key, "").strip()
+    try:
+        return int(raw) if raw else default
+    except ValueError:
+        return default
+
+
+def _probe_tcp(port: int, timeout: float) -> int:
+    """TCP 探测：connect 成功即存活，返回耗时 ms；失败抛异常由调用方捕获。"""
+    import socket
+    t0 = time.perf_counter()
+    sock = socket.create_connection((HEALTH_HOST, port), timeout=timeout)
+    try:
+        sock.close()
+    except OSError:
+        pass
+    return int((time.perf_counter() - t0) * 1000)
+
+
+def _probe_http(port: int, timeout: float) -> int:
+    """HTTP 探测（GET /）：收到任何完整应答即视为服务存活（端口级探针，
+    语义层健康不在此判定）。失败抛异常由调用方捕获。"""
+    import http.client
+    t0 = time.perf_counter()
+    conn = http.client.HTTPConnection(HEALTH_HOST, port, timeout=timeout)
+    try:
+        conn.request("GET", "/")
+        resp = conn.getresponse()
+        resp.read()
+    finally:
+        conn.close()
+    return int((time.perf_counter() - t0) * 1000)
+
+
+def health_payload() -> dict:
+    """GET /api/health：逐项探测依赖服务，恒返回 200 可用 JSON。
+
+    健康态由 checks 逐项表达（ok/latency_ms/err），端点自身 ok 恒 true
+    ——能执行到这里即管理台存活；首页据此渲染三态灯（亮/暗/灰）。
+
+    并发取舍：选**串行短超时**而非 threading——四项超时上限合计
+    0.8+0.5×3=2.3s < 2.5s 总预算，refused 连接瞬时失败、仅防火墙吞包
+    才吃满超时；串行免线程同步与结果汇聚，实现最简单。单项异常独立
+    捕获为 ok:false + err，互不阻塞。
+    """
+    _load_health_env_local()
+    checks = []
+    for env_key, dflt_port, name, mode, timeout in HEALTH_SPECS:
+        entry = {"port": _health_env_port(env_key, dflt_port),
+                 "name": name, "ok": False, "latency_ms": None, "err": None}
+        try:
+            probe = _probe_http if mode == "http" else _probe_tcp
+            entry["latency_ms"] = probe(entry["port"], timeout)
+            entry["ok"] = True
+        except Exception as exc:  # noqa: BLE001 — 单项失败不阻塞整体
+            entry["err"] = (str(exc).strip() or exc.__class__.__name__)[:120]
+        checks.append(entry)
+    checks.append({"port": _health_env_port("DASHBOARD",
+                                            HEALTH_DASHBOARD_PORT),
+                   "name": "dashboard", "ok": True,
+                   "latency_ms": 0, "err": None})
+    return {"ok": True,
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "checks": checks}
+
+
 # ── 静态页：GET /pipeline /manage（每次现读，改页面即生效）─────────────
 def _static_page(filename: str) -> bytes:
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
@@ -802,6 +906,17 @@ def register_routes(server_or_app: Any) -> Any:
                 payload, code = ({"ok": False,
                                   "error": str(exc)[:200]}, 503)
             return _send_json(self, payload, code)
+        if u.path == "/api/health":
+            # 探针自身恒 200：health_payload 按设计不抛，此处兜底仍回
+            # 200（error 字段说明），避免探针故障放大为 5xx 假暗灯
+            try:
+                return _send_json(self, health_payload())
+            except Exception as exc:  # noqa: BLE001
+                return _send_json(self, {"ok": True,
+                                         "ts": time.strftime(
+                                             "%Y-%m-%dT%H:%M:%S"),
+                                         "checks": [],
+                                         "error": str(exc)[:200]}, 200)
         if u.path == "/api/strategies/proposals":
             try:
                 return _send_json(self, proposals_payload())
@@ -884,4 +999,5 @@ def register_routes(server_or_app: Any) -> Any:
 
 __all__ = ["register_routes", "strategies_payload", "signals_payload",
            "register_feedback", "VERDICTS", "adjust_strategy",
-           "create_proposal", "proposals_payload", "confirm_proposal"]
+           "create_proposal", "proposals_payload", "confirm_proposal",
+           "health_payload"]
