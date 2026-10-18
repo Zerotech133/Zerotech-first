@@ -17,7 +17,7 @@ ip_block_trip 全局冷却（动态池时代熔断=换 IP 非停轮）。
 
 合规：只读 GET、页间 2-4s 抖动、官方游标、不登录隐私数据（四红线）。
 
-用法：python xq_collect_1000.py [--target 1000] [--clean-junk]
+用法：python xq_collect_1000.py [--target 1000] [--clean-junk] [--cursor-file PATH]
 """
 import argparse
 import json
@@ -81,7 +81,11 @@ def load_seed_cursors(seed: int) -> dict:
 
 
 def save_seed_cursor(seed: int, cat: int, state: dict) -> None:
-    """播种断点原子落盘：seed_cursor.json 顶层 key=<seed>，内层 key=<cat>。"""
+    """播种断点原子落盘：seed_cursor.json 顶层 key=<seed>，内层 key=<cat>。
+
+    双实例并行必须经 --cursor-file 分片传参（seed_cursor_A/B.json）防互踩
+    ——本函数是整文件读改写，两实例共写同一档必相互覆盖丢断点。
+    """
     try:
         data = {}
         if os.path.exists(SEED_CURSOR_PATH):
@@ -333,7 +337,14 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=None,
                     help="号段播种起点（feed 序号，如 30000=2015-03 区段）；"
                          "播种轮断点不落档，与常规轮隔离")
+    ap.add_argument("--cursor-file", default=None,
+                    help="播种断点档路径覆盖（双实例并行必须分片传参，如 "
+                         "seed_cursor_A.json/_B.json，防整文件读改写互踩）；"
+                         "缺省用默认 seed_cursor.json，行为不变")
     a = ap.parse_args()
+    if a.cursor_file:                     # 双实例分片：覆盖模块级断点档路径
+        global SEED_CURSOR_PATH
+        SEED_CURSOR_PATH = a.cursor_file
     t0 = time.time()
     if a.clean_junk:
         clean_junk()
