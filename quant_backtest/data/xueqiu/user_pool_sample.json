@@ -1,0 +1,846 @@
+{
+  "generated_at": "2026-10-18",
+  "db_snapshot_count": 23474,
+  "db_range": [
+    "2012-06-28 14:08:21",
+    "2023-11-11 14:52:10"
+  ],
+  "criteria": {
+    "c1_2023_active": "created_at in [2023-01-01, 2023-11-11], group by user_id, top50 by post count (only 31 distinct users exist in that window, all taken)",
+    "c2_alltime_quality": "all-time top50 user_id by SUM(view_count+comment_count+like_count+retweet_count)"
+  },
+  "pool": [
+    {
+      "user_id": "5679199459",
+      "sources": [
+        "c1_2023_active",
+        "c2_alltime_quality"
+      ],
+      "posts_2023": 4,
+      "avg_interaction_2023": 1196812.5,
+      "posts_total": 12,
+      "total_interaction": 49062319,
+      "first_post": "2021-12-02 10:08:21",
+      "last_post": "2023-09-29 15:25:51",
+      "sample_title": "过去五年业绩优秀且有自购的百亿基金经理"
+    },
+    {
+      "user_id": "9411213320",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 3,
+      "avg_interaction_2023": 1666965.7,
+      "last_post": "2023-10-27 18:37:48",
+      "sample_title": "三季报速览——捉摸不透的徐彦"
+    },
+    {
+      "user_id": "9600110938",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 3,
+      "avg_interaction_2023": 1283313.0,
+      "last_post": "2023-06-04 19:51:20",
+      "sample_title": "“超额收益为王”：优秀主动管理基金硬核测评"
+    },
+    {
+      "user_id": "6403447880",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 2,
+      "avg_interaction_2023": 1926578.0,
+      "last_post": "2023-06-17 12:54:54",
+      "sample_title": "量化基金观察录：初识「主动量化」第一梯队"
+    },
+    {
+      "user_id": "1340904670",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 2,
+      "avg_interaction_2023": 1773285.5,
+      "last_post": "2023-11-11 14:52:10",
+      "sample_title": "A股第一支指数基金教给我们3个经验"
+    },
+    {
+      "user_id": "3179670287",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 2,
+      "avg_interaction_2023": 1759602.5,
+      "last_post": "2023-10-03 20:20:25",
+      "sample_title": "找出8只债基的“抗跌”基因，构建固收＋基金的“抗跌风格”细分"
+    },
+    {
+      "user_id": "6146592061",
+      "sources": [
+        "c1_2023_active",
+        "c2_alltime_quality"
+      ],
+      "posts_2023": 2,
+      "avg_interaction_2023": 1743989.0,
+      "posts_total": 101,
+      "total_interaction": 79780118,
+      "first_post": "2018-10-02 07:54:00",
+      "last_post": "2023-09-02 10:37:07",
+      "sample_title": "从基金公司的角度选基金"
+    },
+    {
+      "user_id": "8554675668",
+      "sources": [
+        "c1_2023_active",
+        "c2_alltime_quality"
+      ],
+      "posts_2023": 2,
+      "avg_interaction_2023": 1049937.0,
+      "posts_total": 88,
+      "total_interaction": 52601093,
+      "first_post": "2018-09-27 21:55:50",
+      "last_post": "2023-04-16 20:42:05",
+      "sample_title": "蜜糖&毒药，基金管理规模的那些事儿"
+    },
+    {
+      "user_id": "5525339011",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 7486314.0,
+      "last_post": "2023-05-20 11:41:35",
+      "sample_title": "今天起，开个小茶馆吧 20230520"
+    },
+    {
+      "user_id": "8833808060",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 3502320.0,
+      "last_post": "2023-01-24 14:04:43",
+      "sample_title": "我还继续坚持看好港股，还有一个原因：<br/>前面看多港股的一批卖方策略，甚至有些买方，都把港股卖了"
+    },
+    {
+      "user_id": "8736280376",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2924519.0,
+      "last_post": "2023-04-15 18:46:26",
+      "sample_title": "港股是地狱，还是天堂？"
+    },
+    {
+      "user_id": "7810790448",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2760111.0,
+      "last_post": "2023-04-05 11:30:26",
+      "sample_title": "坏到最坏不能再坏，不灭亡就意味着机会"
+    },
+    {
+      "user_id": "2217395043",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2683641.0,
+      "last_post": "2023-07-16 13:43:57",
+      "sample_title": "反转、反转、还是要看反转！"
+    },
+    {
+      "user_id": "1183560953",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2682454.0,
+      "last_post": "2023-06-21 14:04:31",
+      "sample_title": "今年偏股基金指数怎么了"
+    },
+    {
+      "user_id": "4354731086",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2403358.0,
+      "last_post": "2023-09-27 20:46:59",
+      "sample_title": "市场下跌之后，要买什么样的基金（股基续篇）"
+    },
+    {
+      "user_id": "8207849818",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2350753.0,
+      "last_post": "2023-11-01 20:10:16",
+      "sample_title": "一文深扒：近1年涨幅10%的定开债基，到底值不值得买？"
+    },
+    {
+      "user_id": "8663769490",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2296785.0,
+      "last_post": "2023-10-27 18:46:34",
+      "sample_title": "上一轮基金赎回潮，持续了整整三年"
+    },
+    {
+      "user_id": "1564041804",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2245203.0,
+      "last_post": "2023-07-29 19:50:53",
+      "sample_title": "什么才是小而美？这只基金给了答案"
+    },
+    {
+      "user_id": "4298742847",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2205174.0,
+      "last_post": "2023-09-02 12:03:52",
+      "sample_title": "稳健型偏债基金观察（2023第二季度+中报）"
+    },
+    {
+      "user_id": "2144421443",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2145327.0,
+      "last_post": "2023-07-22 16:48:51",
+      "sample_title": "指数基金选红利"
+    },
+    {
+      "user_id": "6600162011",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2093194.0,
+      "last_post": "2023-10-02 08:39:26",
+      "sample_title": "深入探讨中证红利指数基金的四大投资策略"
+    },
+    {
+      "user_id": "5278830487",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 2045313.0,
+      "last_post": "2023-07-30 16:28:22",
+      "sample_title": "选择指数基金是承认自己投资能力不足吗？"
+    },
+    {
+      "user_id": "8894046612",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 1818308.0,
+      "last_post": "2023-07-02 20:43:37",
+      "sample_title": "关于上半年基金投资的三点思考"
+    },
+    {
+      "user_id": "8653750491",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 1724144.0,
+      "last_post": "2023-01-24 13:22:59",
+      "sample_title": "行业主动基金清单！"
+    },
+    {
+      "user_id": "6354539217",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 1472742.0,
+      "last_post": "2023-01-24 14:06:49",
+      "sample_title": "公募、私募、量化该怎么买，怎么避坑，我的一些看法"
+    },
+    {
+      "user_id": "1689987310",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 1237134.0,
+      "last_post": "2023-01-29 07:11:55",
+      "sample_title": "公募基金2022年四季报全面解析"
+    },
+    {
+      "user_id": "8258019402",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 1199754.0,
+      "last_post": "2023-01-14 10:55:49",
+      "sample_title": "注意性价比"
+    },
+    {
+      "user_id": "3819982580",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 1157853.0,
+      "last_post": "2023-02-24 20:57:37",
+      "sample_title": "聊聊基金投资中的“长期主义”"
+    },
+    {
+      "user_id": "2443086428",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 1044639.0,
+      "last_post": "2023-06-04 14:19:51",
+      "sample_title": "成长与价值俱佳的金牛基金经理杜洋和工银战略转型股票A(000991)深度测评"
+    },
+    {
+      "user_id": "4076736586",
+      "sources": [
+        "c1_2023_active"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 857994.0,
+      "last_post": "2023-05-20 16:48:34",
+      "sample_title": "我的2022年顶级牛基精选名单"
+    },
+    {
+      "user_id": "6827215131",
+      "sources": [
+        "c1_2023_active",
+        "c2_alltime_quality"
+      ],
+      "posts_2023": 1,
+      "avg_interaction_2023": 734613.0,
+      "posts_total": 54,
+      "total_interaction": 21146787,
+      "first_post": "2016-04-11 06:44:31",
+      "last_post": "2023-05-13 21:23:05",
+      "sample_title": "多只“渣男”基金变“学霸，咋办？科技牛基赏析"
+    },
+    {
+      "user_id": "9485866208",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 180,
+      "total_interaction": 292956738,
+      "first_post": "2017-04-07 10:10:34",
+      "last_post": "2020-07-20 11:13:12",
+      "sample_title": "只炒股是不够的，你还需要一个基金账户！"
+    },
+    {
+      "user_id": "6571616571",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 2256,
+      "total_interaction": 199062452,
+      "first_post": "2017-04-11 15:47:41",
+      "last_post": "2019-10-09 14:01:52",
+      "sample_title": "”股坛长毛“一出手，多少股价跌到呕？"
+    },
+    {
+      "user_id": "8152922548",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 217,
+      "total_interaction": 181179944,
+      "first_post": "2014-12-02 13:52:13",
+      "last_post": "2021-04-22 19:50:04",
+      "sample_title": "【悬赏】港股年后两天下跌超5个点，当前是该抄底还是卖出？有哪些股票值得买？"
+    },
+    {
+      "user_id": "7489073227",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 140,
+      "total_interaction": 128018869,
+      "first_post": "2017-03-20 14:15:24",
+      "last_post": "2021-02-16 08:33:31",
+      "sample_title": "雪盈合伙人——火热招募进行中！"
+    },
+    {
+      "user_id": "4579887327",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 211,
+      "total_interaction": 122094407,
+      "first_post": "2018-05-31 08:57:26",
+      "last_post": "2022-10-16 16:53:13",
+      "sample_title": "月涨44%，新东方带火了教育ETF！"
+    },
+    {
+      "user_id": "1057622343",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 217,
+      "total_interaction": 108974794,
+      "first_post": "2018-01-10 12:07:59",
+      "last_post": "2020-06-18 20:52:01",
+      "sample_title": "【港股打新周记20200110】——静候高潮"
+    },
+    {
+      "user_id": "1062883669",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 148,
+      "total_interaction": 106266604,
+      "first_post": "2015-08-21 14:27:43",
+      "last_post": "2022-01-15 13:02:54",
+      "sample_title": "说个判断：ETF独占的时代结束了"
+    },
+    {
+      "user_id": "1448459094",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 96,
+      "total_interaction": 101911418,
+      "first_post": "2018-10-14 22:40:20",
+      "last_post": "2022-12-30 21:10:36",
+      "sample_title": "今天害怕了吗？节后怎么办？我有几句话送你"
+    },
+    {
+      "user_id": "6230394736",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 49,
+      "total_interaction": 97222217,
+      "first_post": "2017-12-11 10:02:10",
+      "last_post": "2020-04-23 17:37:31",
+      "sample_title": "【招募倒计时】用指数玩转资产配置，基金Club又双叒来啦！6月29日相约杭州不见不散！"
+    },
+    {
+      "user_id": "3079173340",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 93,
+      "total_interaction": 58830255,
+      "first_post": "2015-10-28 21:06:44",
+      "last_post": "2020-05-13 22:00:43",
+      "sample_title": "指数基金真正在市场中占比越来越高的原因，是因为低成本。<br/>举个例子<br/>1.全部沪深300"
+    },
+    {
+      "user_id": "2860692072",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 73,
+      "total_interaction": 54423886,
+      "first_post": "2019-03-08 12:35:54",
+      "last_post": "2020-05-27 18:04:54",
+      "sample_title": "2020华山论剑初级系列-中国太平 by 积木投资"
+    },
+    {
+      "user_id": "5720355864",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 159,
+      "total_interaction": 53706368,
+      "first_post": "2017-02-13 09:23:42",
+      "last_post": "2019-06-26 08:37:05",
+      "sample_title": "昨天！楼市变天了，此政策一出 ！ 以后将不再有刚需"
+    },
+    {
+      "user_id": "7315353232",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 79,
+      "total_interaction": 52270066,
+      "first_post": "2013-11-25 17:41:18",
+      "last_post": "2020-05-05 08:54:07",
+      "sample_title": "【与@朱酒 兄探讨一下恒大分红那些事（一）：不是恒大派息高，而是其他地产商派息太低】"
+    },
+    {
+      "user_id": "4718449033",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 77,
+      "total_interaction": 51438843,
+      "first_post": "2017-10-07 20:00:55",
+      "last_post": "2020-04-23 21:14:46",
+      "sample_title": "从黄金坑走出来创新高的某地产龙头贵吗？简谈其投资逻辑"
+    },
+    {
+      "user_id": "-1",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 493,
+      "total_interaction": 50231910,
+      "first_post": "2013-06-04 21:42:01",
+      "last_post": "2020-03-16 16:54:07",
+      "sample_title": "中国平安 公告及通告 - [更换董事或重要行政职能或职责的变更] 变更董事 <a href=\"htt"
+    },
+    {
+      "user_id": "6888930039",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 62,
+      "total_interaction": 44512508,
+      "first_post": "2019-01-02 10:43:42",
+      "last_post": "2020-06-15 15:11:52",
+      "sample_title": "云端酷选房，京投发展TOD智慧生态圈置业大赏"
+    },
+    {
+      "user_id": "6525735836",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 96,
+      "total_interaction": 40789006,
+      "first_post": "2018-05-20 16:04:34",
+      "last_post": "2020-04-15 22:16:09",
+      "sample_title": "基金的周期，接下来什么类型的基金会火爆？"
+    },
+    {
+      "user_id": "5168112720",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 412,
+      "total_interaction": 39254167,
+      "first_post": "2017-06-27 09:05:00",
+      "last_post": "2019-09-16 11:27:45",
+      "sample_title": "争夺险资百年人寿？ 奥园32.6亿入股与绿城去留猜想"
+    },
+    {
+      "user_id": "5171159182",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 21,
+      "total_interaction": 38075693,
+      "first_post": "2015-04-10 11:35:48",
+      "last_post": "2020-08-06 09:36:26",
+      "sample_title": "【悬赏8888】明星ETF组合赛大奖5万,报名还可得三重红包！"
+    },
+    {
+      "user_id": "9290769077",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 52,
+      "total_interaction": 38032653,
+      "first_post": "2019-02-13 20:27:42",
+      "last_post": "2021-11-01 20:06:22",
+      "sample_title": "关于九雾组合向@肖志刚请教几个问题"
+    },
+    {
+      "user_id": "2356382715",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 8,
+      "total_interaction": 37655047,
+      "first_post": "2021-03-08 11:21:26",
+      "last_post": "2022-11-26 11:50:21",
+      "sample_title": "投资消费行业指数基金，看这一篇就够了"
+    },
+    {
+      "user_id": "2552920054",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 54,
+      "total_interaction": 36132903,
+      "first_post": "2013-09-27 12:30:07",
+      "last_post": "2021-07-13 17:28:18",
+      "sample_title": "#乘风破浪的组合#攻守兼备团猜涨跌赢好礼"
+    },
+    {
+      "user_id": "4582184481",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 98,
+      "total_interaction": 35899447,
+      "first_post": "2017-11-07 14:52:48",
+      "last_post": "2020-06-30 13:21:42",
+      "sample_title": "7只新股IPO分析+申购策略（更新至6月30日）"
+    },
+    {
+      "user_id": "6623660105",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 30,
+      "total_interaction": 35756799,
+      "first_post": "2017-05-15 20:17:17",
+      "last_post": "2021-08-23 09:10:20",
+      "sample_title": "腾讯的估值：合理"
+    },
+    {
+      "user_id": "6654628252",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 53,
+      "total_interaction": 35368796,
+      "first_post": "2013-09-16 10:06:54",
+      "last_post": "2020-02-11 13:51:36",
+      "sample_title": "当下是买腾讯的好时机吗？"
+    },
+    {
+      "user_id": "8522447024",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 35,
+      "total_interaction": 35048633,
+      "first_post": "2019-12-30 00:21:35",
+      "last_post": "2020-06-16 09:45:54",
+      "sample_title": "康方生物网传接近16400的入场费，中签率可能就10%，这要这么玩？"
+    },
+    {
+      "user_id": "1333325987",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 162,
+      "total_interaction": 34769370,
+      "first_post": "2014-08-01 08:47:28",
+      "last_post": "2020-08-15 10:24:58",
+      "sample_title": "三年亏损75亿，股价复牌腰斩，又一手机巨头消失于江湖！"
+    },
+    {
+      "user_id": "4314464026",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 195,
+      "total_interaction": 34187705,
+      "first_post": "2017-06-21 16:05:53",
+      "last_post": "2019-08-01 16:44:25",
+      "sample_title": "投资买房&全市租金：关于上海房产投资回报率的研究"
+    },
+    {
+      "user_id": "7961123322",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 18,
+      "total_interaction": 31862072,
+      "first_post": "2014-07-22 11:07:28",
+      "last_post": "2021-03-09 10:20:09",
+      "sample_title": "一分钟读懂招股书 | 子公司有赞科技港股IPO，母公司中国有赞将私有化退市"
+    },
+    {
+      "user_id": "9573340019",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 62,
+      "total_interaction": 31667779,
+      "first_post": "2018-05-02 10:15:46",
+      "last_post": "2020-06-16 08:52:28",
+      "sample_title": "#港股ipo#大喜屋06813.HK：日料好吃，生不逢时！"
+    },
+    {
+      "user_id": "7500022239",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 159,
+      "total_interaction": 31433275,
+      "first_post": "2016-09-16 22:25:12",
+      "last_post": "2019-11-03 19:08:21",
+      "sample_title": "中国神华(1088)巨额分红，下一个是中移动(941)?"
+    },
+    {
+      "user_id": "1762638610",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 22,
+      "total_interaction": 28382603,
+      "first_post": "2018-09-30 18:43:51",
+      "last_post": "2022-08-20 16:54:57",
+      "sample_title": "姜诚、袁玮、张翼飞……盘点创新高的基金"
+    },
+    {
+      "user_id": "6920534270",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 54,
+      "total_interaction": 27193536,
+      "first_post": "2019-01-07 08:14:16",
+      "last_post": "2020-06-04 11:29:37",
+      "sample_title": "3只医药聪明指数分析：医药100、医药50、医药健康100省心躺赢"
+    },
+    {
+      "user_id": "1731685223",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 24,
+      "total_interaction": 26223645,
+      "first_post": "2019-11-18 22:12:58",
+      "last_post": "2020-06-19 09:37:51",
+      "sample_title": "天马蛋卷定投组合正式上线！"
+    },
+    {
+      "user_id": "3037882447",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 40,
+      "total_interaction": 26136669,
+      "first_post": "2013-12-06 23:20:29",
+      "last_post": "2020-03-19 07:51:18",
+      "sample_title": "天上掉钻石，您敢要吗？"
+    },
+    {
+      "user_id": "9887656769",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 19,
+      "total_interaction": 25961686,
+      "first_post": "2014-01-06 17:10:07",
+      "last_post": "2020-03-13 07:50:15",
+      "sample_title": "我昨天放的那张恒指图说明，任何危机来临时候都会恐慌，都会造成流动性缺失杀跌，港股尤其明显。但是过一年"
+    },
+    {
+      "user_id": "6180156458",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 66,
+      "total_interaction": 25733700,
+      "first_post": "2015-08-11 15:31:00",
+      "last_post": "2020-10-30 13:14:10",
+      "sample_title": "港股现在是最差的时机，也是最好的机会；"
+    },
+    {
+      "user_id": "9315034509",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 58,
+      "total_interaction": 25014037,
+      "first_post": "2016-09-09 14:17:32",
+      "last_post": "2020-03-30 17:16:07",
+      "sample_title": "旗舰机小米10定价3999起，小米10会提振小米股价吗？"
+    },
+    {
+      "user_id": "7607677791",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 51,
+      "total_interaction": 24641495,
+      "first_post": "2015-02-17 13:39:09",
+      "last_post": "2020-04-01 09:42:56",
+      "sample_title": "当下人们对于房事的种种心态"
+    },
+    {
+      "user_id": "9148433633",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 13,
+      "total_interaction": 24388998,
+      "first_post": "2019-03-04 22:33:50",
+      "last_post": "2020-05-27 20:33:18",
+      "sample_title": "如何才能做到吸引购房者在线上购房？有什么好的针对性的营销策略？向广大球友请教。<img src=\"/"
+    },
+    {
+      "user_id": "6254918995",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 22,
+      "total_interaction": 23305974,
+      "first_post": "2015-09-29 12:54:44",
+      "last_post": "2020-01-26 18:31:49",
+      "sample_title": "小兵新春杂谈"
+    },
+    {
+      "user_id": "6056806984",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 10,
+      "total_interaction": 22910837,
+      "first_post": "2019-06-01 21:06:06",
+      "last_post": "2020-02-10 20:31:38",
+      "sample_title": "疫情之后，谁最需要买房？"
+    },
+    {
+      "user_id": "6123409880",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 2,
+      "total_interaction": 22145043,
+      "first_post": "2018-05-11 11:01:34",
+      "last_post": "2018-07-10 11:08:12",
+      "sample_title": "雪球10.7|港股经纪商队列 美股OTC行情齐上线"
+    },
+    {
+      "user_id": "1063849664",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 101,
+      "total_interaction": 21720641,
+      "first_post": "2017-06-15 15:15:39",
+      "last_post": "2019-09-17 19:44:33",
+      "sample_title": "未来5年，中国投资型商铺将死一半以上，一铺&#34;坑&#34;三代将常态化！"
+    },
+    {
+      "user_id": "2742791177",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 32,
+      "total_interaction": 20906020,
+      "first_post": "2019-12-19 22:37:16",
+      "last_post": "2020-06-30 19:40:38",
+      "sample_title": "股市老司机都不知道的港股分红制度"
+    },
+    {
+      "user_id": "3915115654",
+      "sources": [
+        "c2_alltime_quality"
+      ],
+      "posts_total": 45,
+      "total_interaction": 20872657,
+      "first_post": "2014-01-26 18:36:08",
+      "last_post": "2022-05-01 16:12:02",
+      "sample_title": "雪球资管林庆云： 当前市场，可通过低波均衡FOF进行多资产、多策略配置"
+    }
+  ]
+}
