@@ -21,7 +21,9 @@ Windows 编码判例（§8.4）：
 
 import copy
 import json
+import os
 import subprocess
+import sys
 import threading
 import time
 from datetime import datetime
@@ -52,6 +54,122 @@ _PS = "powershell.exe"
 #: 30s TTL 缓存（Lock 保护；R3 force=True 显式绕过）
 _CACHE = {"ts": 0.0, "data": None}
 _LOCK = threading.Lock()
+
+
+# ── 后台预热线程（D1 处置 2026-10-18）────────────────────────────────────
+#
+# 缺陷：冷缓存首个请求同步调 poll_tasks（PS Get-ScheduledTask 冷启实测
+# 48.7s），console.html 30s 轮询 timeout=60s 逼近超时。
+# 处置：懒启动 daemon 线程按 CACHE_TTL-5s 周期锁内刷新 _CACHE——稳态下
+# 所有前台请求命中温缓存（毫秒级），仅进程冷启动的首个请求慢一次。
+# 红线：前台 build_execution_health 对外签名/返回契约/深拷贝语义零变化；
+# 后台刷新异常吞掉记 stderr（fail-open：后台失败不影响前台同步兜底）。
+
+#: 预热提前量：后台每 CACHE_TTL-_WARM_SLACK 秒刷一次，保证 _CACHE 的 ts
+#: 恒在 TTL 内。下限 0.05s 供测试 monkeypatch CACHE_TTL 小值时仍可运行。
+_WARM_SLACK = 5.0
+
+#: 环境变量闸：置 "0" 禁用预热线程（pytest / R3 脚本 import 场景防误启）。
+#: 未设置或非 "0" = 启用（生产 portal_api 默认启用，本文件不依赖 portal_api）。
+_WARMER_ENV = "PORTAL_HEALTH_WARMER"
+
+#: 预热线程句柄与停机旗标（懒启动一次；测试夹具复位）
+_WARMER_THREAD = None
+_WARMER_STOP = threading.Event()
+
+
+def _warm_interval():
+    """后台预热间隔（秒）：CACHE_TTL-5，下限 0.05s 兜底。"""
+    return max(CACHE_TTL - _WARM_SLACK, 0.05)
+
+
+def _warmer_enabled():
+    """env 闸判定（_WARMER_ENV 置 "0" 时禁用）。"""
+    return os.environ.get(_WARMER_ENV, "1") != "0"
+
+
+def _refresh_locked():
+    """锁内全量刷新并写 _CACHE（前台同步路径与后台预热线程共用一份逻辑）。
+
+    调用方必须已持有 _LOCK（单飞语义：并发前台请求与后台刷新串行化，
+    一次冷启只付一次 PS 开销）。manifest 坏/PS 挂走 fail-visible 字段，
+    不抛不编造。
+    """
+    now = datetime.now()
+    tasks_cfg, manifest_ok, manifest_err = load_manifest()
+    names = [c["name"] for c in tasks_cfg]
+    if manifest_ok and names:
+        rows, ps_ok, ps_error, elapsed_ms = poll_tasks(names)
+    else:
+        # manifest 缺失/坏 JSON：没有白名单就没有轮询面，宁少勿假
+        rows, ps_ok, ps_error, elapsed_ms = {}, True, None, 0
+
+    entries = []
+    for cfg in tasks_cfg:
+        try:
+            entries.append(classify(cfg, rows.get(cfg["name"]), now))
+        except Exception as e:  # noqa: BLE001  单行坏不拖垮整卡
+            entries.append({
+                "name": cfg.get("name", "?"),
+                "expected_cadence": "?", "last_run": None,
+                "last_result": None, "result_ok": None,
+                "log_mtime": None, "stale_min": None, "in_system": None,
+                "fail_scan_hit": False,
+                "status": "never",
+                "error": "classify 异常: %s" % e,
+            })
+
+    payload = {
+        "read_only": True,
+        "generated_at": now.isoformat(timespec="seconds"),
+        "manifest_ok": manifest_ok,
+        "manifest_path": "portal/execution_manifest.json",
+        "manifest_count": len(entries),
+        "manifest_error": manifest_err,
+        "ps_ok": ps_ok,
+        "ps_error": ps_error,
+        "ps_elapsed_ms": elapsed_ms,
+        "tasks": entries,
+        "summary": _summary_of(entries),
+    }
+    _CACHE["ts"] = time.monotonic()
+    _CACHE["data"] = payload
+
+
+def _warmer_loop(stop):
+    """后台预热主循环（daemon）：睡 _warm_interval() → 锁内刷新缓存。
+
+    fail-open 判例：任何一轮刷新异常吞掉记 stderr，绝不冒泡终止线程——
+    前台遇冷缓存仍走原有同步 poll 兜底，后台失败只是退回旧行为。
+    stop 置位即退出（pytest 夹具清理 / 预留优雅停机）。
+    """
+    while not stop.wait(_warm_interval()):
+        try:
+            with _LOCK:
+                _refresh_locked()
+        except Exception as e:  # noqa: BLE001  fail-open：后台失败不冒泡
+            sys.stderr.write(
+                "[api_execution] 预热线程刷新失败(前台同步兜底不受影响): "
+                "%s: %s\n" % (type(e).__name__, e))
+            sys.stderr.flush()
+
+
+def _ensure_warmer_started():
+    """懒启动防重入：首个 build_execution_health 调用者触发，仅 spawn 一次。
+
+    调用方持有 _LOCK（本函数只做句柄检查与 Thread.start，无阻塞操作）；
+    env 闸关闭时静默跳过（测试/巡检脚本 import 场景防误启真线程）。
+    """
+    global _WARMER_THREAD
+    if not _warmer_enabled():
+        return
+    if _WARMER_THREAD is not None and _WARMER_THREAD.is_alive():
+        return
+    _WARMER_STOP.clear()
+    _WARMER_THREAD = threading.Thread(
+        target=_warmer_loop, args=(_WARMER_STOP,),
+        name="execution-health-warmer", daemon=True)
+    _WARMER_THREAD.start()
 
 
 # ── manifest 加载 ─────────────────────────────────────────────────────────
@@ -314,10 +432,14 @@ def _summary_of(entries):
 
 
 def build_execution_health(force=False):
-    """构建 GET /api/execution/health 只读载荷（30s TTL 缓存，Lock 保护）。
+    """构建 GET /api/execution/health 只读载荷（30s TTL 缓存 + 后台预热）。
 
     fail-visible 契约：manifest 坏 → manifest_ok:false；PS 挂 → ps_ok:false。
     两者都不改 HTTP 状态码（HTTP 500 只留给未捕获异常）。
+
+    D1 处置（2026-10-18）：首次调用懒启动 daemon 预热线程（env 闸可禁），
+    周期锁内刷新 _CACHE——稳态下本函数全部温缓存命中，仅进程冷启动的
+    首个请求付一次同步 PS 轮询。对外签名/返回契约/深拷贝语义零变化。
 
     Args:
         force: True 绕缓存强制新鲜轮询（R3 巡检专用）。
@@ -325,54 +447,17 @@ def build_execution_health(force=False):
     Returns:
         dict: 端点契约载荷（read_only 恒为 true）。
     """
-    now = datetime.now()
     with _LOCK:
         if not force and _CACHE["data"] is not None \
                 and (time.monotonic() - _CACHE["ts"]) < CACHE_TTL:
             return copy.deepcopy(_CACHE["data"])
 
-        tasks_cfg, manifest_ok, manifest_err = load_manifest()
-        names = [c["name"] for c in tasks_cfg]
-        if manifest_ok and names:
-            rows, ps_ok, ps_error, elapsed_ms = poll_tasks(names)
-        else:
-            # manifest 缺失/坏 JSON：没有白名单就没有轮询面，宁少勿假
-            rows, ps_ok, ps_error, elapsed_ms = {}, True, None, 0
-
-        entries = []
-        for cfg in tasks_cfg:
-            try:
-                entries.append(classify(cfg, rows.get(cfg["name"]), now))
-            except Exception as e:  # noqa: BLE001  单行坏不拖垮整卡
-                entries.append({
-                    "name": cfg.get("name", "?"),
-                    "expected_cadence": "?", "last_run": None,
-                    "last_result": None, "result_ok": None,
-                    "log_mtime": None, "stale_min": None, "in_system": None,
-                    "fail_scan_hit": False,
-                    "status": "never",
-                    "error": "classify 异常: %s" % e,
-                })
-
-        payload = {
-            "read_only": True,
-            "generated_at": now.isoformat(timespec="seconds"),
-            "manifest_ok": manifest_ok,
-            "manifest_path": "portal/execution_manifest.json",
-            "manifest_count": len(entries),
-            "manifest_error": manifest_err,
-            "ps_ok": ps_ok,
-            "ps_error": ps_error,
-            "ps_elapsed_ms": elapsed_ms,
-            "tasks": entries,
-            "summary": _summary_of(entries),
-        }
-        _CACHE["ts"] = time.monotonic()
-        _CACHE["data"] = payload
+        _refresh_locked()
+        _ensure_warmer_started()
         # 返回深拷贝：调用方（R3 watchdog 的演练注入 _apply_injections）会
         # 原地改 tasks 条目——dict() 浅拷贝与缓存共享嵌套对象，会污染缓存。
         # （2026-10-18 审查收口：浅拷贝缓存污染隐患）
-        return copy.deepcopy(payload)
+        return copy.deepcopy(_CACHE["data"])
 
 
 # ── 8091 Handler mixin ────────────────────────────────────────────────────

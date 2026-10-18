@@ -127,7 +127,7 @@ $PY = "C:\Program Files\Python311\python.exe"; cd e:\老田的AI助手\quant_bac
 | `知识图谱/` | 席位/关联图谱研究（快照、SQL、study） |
 | `gzh/` | 公众号撰文产线（config + gzh_writer） |
 | `video/` | 视频产线（pipeline） |
-| `ops/` | 健康检查（health_check.py + health_latest.json） |
+| `ops/` | 健康检查（health_check.py；health_latest.json 已退役——2026-10-18 起不再落盘，后继数据源 GET :8091/api/execution/health（R1 总线）） |
 | `prototypes/` | 仪表盘原型（HTML） |
 | `quantdinger/` | QuantDinger 部署（docker-compose） |
 | `dify/`、`dify-backup/` | Dify 平台及其数据备份 |
@@ -164,7 +164,7 @@ $PY = "C:\Program Files\Python311\python.exe"; cd e:\老田的AI助手\quant_bac
 3. **jsonl/JSON 读不出**：BOM 判例——读取前 `lstrip("\ufeff")`。
 4. **门户改了代码**：kill python 进程 → `schtasks /run /tn "AI工作站门户API"`（换血判例）。
 5. **结案/推送类命令**：默认预览，`--send` 才真发（双段式防误触判例）。
-6. 健康总检：`& $PY ops\health_check.py`（结果落 ops/health_latest.json）。
+6. 健康总检：`& $PY ops\health_check.py`（ops/health_latest.json 已退役，2026-10-18 起结果不再落盘；执行健康后继数据源 GET :8091/api/execution/health（R1 总线））。
 7. **装了包还报 ModuleNotFoundError / 行为不对**：本机有两个 Python——**产线唯一解释器 `C:\Program Files\Python311`**（全部任务/脚本已显式引用），用户 Python312 仅限个人交互实验、产线不依赖。产线装依赖只装 3.11；新脚本/新任务一律写显式完整路径，**禁止裸 `python`**（它会走 PATH 解析到 3.12，card-handler 判例）。
 
 ---

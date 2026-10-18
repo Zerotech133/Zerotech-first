@@ -10,6 +10,7 @@
 import json
 import sys
 import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -71,6 +72,24 @@ def tmp_manifest(tmp_path, monkeypatch):
 def _reset_cache(monkeypatch):
     """每个用例独立缓存（monkeypatch.setattr 还原，不污染真实模块态）。"""
     monkeypatch.setattr(api_execution, "_CACHE", {"ts": 0.0, "data": None})
+
+
+@pytest.fixture(autouse=True)
+def _reset_warmer(monkeypatch):
+    """预热线程隔离（D1 处置配套）：
+
+    ① 默认 env 闸关闭——任何用例都不会误启真预热线程（判例：测试不读
+    真仓也不启真线程）； warmer 专项用例自行 monkeypatch.setenv 开闸。
+    ② 用例结束停掉可能被启起的线程并复位模块态，防跨用例串味。
+    """
+    monkeypatch.setenv(api_execution._WARMER_ENV, "0")
+    yield
+    th = api_execution._WARMER_THREAD
+    if th is not None and th.is_alive():
+        api_execution._WARMER_STOP.set()
+        th.join(2.0)
+    api_execution._WARMER_THREAD = None
+    api_execution._WARMER_STOP = threading.Event()
 
 
 NOW = datetime(2026, 10, 18, 10, 0, 0)
@@ -415,3 +434,117 @@ class TestHandlerMixin:
         h._execution_health("")
         assert h.status == 200
         assert h.payload["manifest_ok"] is False
+
+
+# ----------------------------------------------------------------------
+# 后台预热线程（D1 处置 2026-10-18）
+# ----------------------------------------------------------------------
+class TestWarmer:
+    """预热线程懒启动/防重入/fail-open/温缓存命中。
+
+    时序判例：monkeypatch CACHE_TTL 小值 → _warm_interval() 落到 0.05s
+    下限，全部用事件/条件等待同步，无固定 sleep，总时长 <5s。
+    """
+
+    def test_lazy_start_only_once(self, tmp_manifest, monkeypatch):
+        """懒启动：首个 build_execution_health 调用 spawn 一次，重复调用不重复。"""
+        monkeypatch.setenv(api_execution._WARMER_ENV, "1")
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        monkeypatch.setattr(
+            api_execution, "poll_tasks",
+            lambda names, force=False: ({names[0]: _row()}, True, None, 1))
+        api_execution.build_execution_health()
+        t1 = api_execution._WARMER_THREAD
+        assert t1 is not None and t1.is_alive() and t1.daemon
+        api_execution.build_execution_health()  # 第二次调用不得再 spawn
+        assert api_execution._WARMER_THREAD is t1
+
+    def test_disabled_by_env_gate(self, tmp_manifest, monkeypatch):
+        """env 闸关闭（默认测试态）→ 不 spawn 线程。"""
+        monkeypatch.delenv(api_execution._WARMER_ENV, raising=False)
+        monkeypatch.setenv(api_execution._WARMER_ENV, "0")
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        monkeypatch.setattr(
+            api_execution, "poll_tasks",
+            lambda names, force=False: ({names[0]: _row()}, True, None, 1))
+        api_execution.build_execution_health()
+        assert api_execution._WARMER_THREAD is None
+
+    def test_background_refresh_serves_warm_cache(self, tmp_manifest,
+                                                  monkeypatch):
+        """温缓存命中：后台刷新更新 _CACHE 后，前台调用不触发同步 poll。
+
+        后台轮次的行带 last_result=267009（良性运行中码）作指纹，
+        前台命中即返回后台数据 → 证明前台消费的是后台预热结果。
+        """
+        monkeypatch.setenv(api_execution._WARMER_ENV, "1")
+        monkeypatch.setattr(api_execution, "CACHE_TTL", 0.4)  # → 间隔 0.05s
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        called = {"n": 0}
+        bg_refreshed = threading.Event()
+
+        def _fake(names, force=False):
+            called["n"] += 1
+            rc = 0 if called["n"] == 1 else 267009  # 第 2 次=后台轮次指纹
+            if called["n"] >= 2:
+                bg_refreshed.set()
+            return {names[0]: _row(last_result=rc)}, True, None, 1
+
+        monkeypatch.setattr(api_execution, "poll_tasks", _fake)
+        first = api_execution.build_execution_health()   # 冷启同步轮询 n=1
+        assert first["tasks"][0]["last_result"] == 0
+        assert bg_refreshed.wait(5.0)                    # 后台完成一轮 n=2
+        # 停线程消除竞态：后续不再有后台刷新动 counter/缓存
+        api_execution._WARMER_STOP.set()
+        api_execution._WARMER_THREAD.join(2.0)
+        # 保底新鲜（后台刷新时刻到此刻 < TTL=0.4s，此处显式刷新防调度抖动）
+        api_execution._CACHE["ts"] = time.monotonic()
+        called["n"] = 0
+        d = api_execution.build_execution_health()       # 必须温缓存命中
+        assert called["n"] == 0                          # 未触发同步 poll
+        assert d["tasks"][0]["last_result"] == 267009    # 返回后台刷新数据
+
+    def test_warmer_exception_swallowed(self, tmp_manifest, monkeypatch,
+                                        capsys):
+        """fail-open：后台刷新异常吞掉记 stderr，线程存活不冒泡。"""
+        monkeypatch.setenv(api_execution._WARMER_ENV, "1")
+        monkeypatch.setattr(api_execution, "CACHE_TTL", 0.2)  # → 间隔 0.05s
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+
+        def _boom(names, force=False):
+            raise RuntimeError("ps exploded")
+
+        monkeypatch.setattr(api_execution, "poll_tasks", _boom)
+        api_execution._ensure_warmer_started()  # 直接触发懒启动（绕开前台）
+        th = api_execution._WARMER_THREAD
+        assert th is not None and th.is_alive()
+        # 轮询等 stderr 出现诊断（capsys 跨线程捕获 sys.stderr 全局替换）
+        deadline = time.monotonic() + 5.0
+        err = ""
+        while time.monotonic() < deadline:
+            err += capsys.readouterr().err
+            if "ps exploded" in err:
+                break
+            time.sleep(0.02)
+        assert "ps exploded" in err, "后台异常未记 stderr: %r" % err
+        assert th.is_alive(), "后台异常不得终止预热线程"
+        assert api_execution._CACHE["data"] is None  # 失败轮次不写坏缓存
+
+    def test_warmer_stops_on_stop_event(self, tmp_manifest, monkeypatch):
+        """stop 事件置位 → 线程优雅退出（夹具清理/未来停机依赖此语义）。"""
+        monkeypatch.setenv(api_execution._WARMER_ENV, "1")
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        monkeypatch.setattr(
+            api_execution, "poll_tasks",
+            lambda names, force=False: ({names[0]: _row()}, True, None, 1))
+        api_execution.build_execution_health()
+        th = api_execution._WARMER_THREAD
+        assert th is not None
+        api_execution._WARMER_STOP.set()
+        th.join(2.0)
+        assert not th.is_alive()
