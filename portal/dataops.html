@@ -97,31 +97,34 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 <div id="tab-list" style="display:none">
 <div class="cards" id="cards"></div>
 
-<h2>① 采集动线 —— 什么时间拔、谁在拔、最近拔了多少</h2>
+<h2>⭐ ① 每日采拿多少数据 <span class="muted" style="font-size:12px;font-weight:normal">第一标准 · 近 14 天按入库时间戳回溯，跨采集源合计</span></h2>
+<div class="pipe" id="intake"></div>
+
+<h2>⭐ ② 采集工具是否在运行 <span class="muted" style="font-size:12px;font-weight:normal">第二标准 · <span id="unarmed"></span></span></h2>
 <table id="collectors"><thead><tr>
 <th>数据源</th><th>载体</th><th>节奏</th><th>配置时刻</th><th>健康</th><th>最近动态</th>
 </tr></thead><tbody></tbody></table>
 
-<h2>② 管道调度 —— 队列进度 · 让路状态 · 日报产出</h2>
+<h2>③ 管道调度 —— 队列进度 · 让路状态 · 日报产出</h2>
 <div class="grid2">
   <div class="pipe" id="pipe-seed"></div>
   <div class="pipe" id="pipe-classify"></div>
 </div>
 <div class="pipe" id="pipe-report"></div>
 
-<h2>③ 数据池 —— 存量 · 今日增量 · 结构化程度</h2>
+<h2>④ 数据池 —— 存量 · 今日增量 · 结构化程度</h2>
 <table id="pools"><thead><tr>
 <th>库</th><th>表</th><th class="num-r">存量行数</th><th class="num-r">今日入库</th><th>说明</th>
 </tr></thead><tbody></tbody></table>
 <div class="sub" id="poolmeta" style="margin-top:8px"></div>
 
-<h2>④ 定时拔取任务总表 —— <span id="tstat" class="muted" style="font-size:13px"></span></h2>
+<h2>⑤ 定时拔取任务总表 —— <span id="tstat" class="muted" style="font-size:13px"></span></h2>
 <div id="taskgroups"></div>
 
-<h2>⑤ 行情仓 catalog —— <span id="cstat" class="muted" style="font-size:13px"></span></h2>
+<h2>⑥ 行情仓 catalog —— <span id="cstat" class="muted" style="font-size:13px"></span></h2>
 <div class="pipe" id="catalog"></div>
 
-<h2>⑥ 治理与自进化观测</h2>
+<h2>⑦ 治理与自进化观测</h2>
 <div class="pipe" id="gov"></div>
 
 <div class="foot">
@@ -145,22 +148,56 @@ backoff:'b-backoff',done:'b-done',complete:'b-complete',ok:'b-ok',unknown:'b-unk
 const HB=h=>'<span class="badge '+(B[h]||'b-unknown')+'">'+h+'</span>';
 const esc=s=>String(s??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
 
+function renderIntake(di){
+  const el = document.getElementById('intake');
+  if(!di.series || !di.series.length){ el.innerHTML='<span class="muted">采拿序列不可用</span>'; return; }
+  const max = Math.max(1, ...di.series.map(r=>r.total));
+  const bars = di.series.map(r=>{
+    const h = Math.max(2, Math.round(r.total/max*110));
+    const isToday = r.date === di.series[di.series.length-1].date;
+    const zero = r.total===0;
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px" '+
+           'title="'+r.date+'：'+r.total.toLocaleString()+' 条">'+
+      '<span style="font-size:11px;color:'+(isToday?'var(--ok)':'var(--dim)')+'">'+(r.total?r.total.toLocaleString():'')+'</span>'+
+      '<div style="width:70%;height:'+h+'px;border-radius:4px 4px 0 0;transition:height .5s;'+
+        'background:'+(zero?'#21262d':(isToday?'linear-gradient(180deg,#2ea043,#1f6feb)':'linear-gradient(180deg,#1f6feb,#14305a)'))+'"></div>'+
+      '<span style="font-size:10px;color:var(--dim)">'+r.date.slice(5)+'</span></div>';
+  }).join('');
+  const srcs = di.sources||[];
+  const rows = di.series.slice().reverse().map(r=>
+    '<tr'+(r.date===di.series[di.series.length-1].date?' style="background:#12261e"':'')+'>'+
+    '<td'+(r.date===di.series[di.series.length-1].date?' style="color:var(--ok);font-weight:700"':'')+'>'+r.date+'</td>'+
+    srcs.map(s0=>'<td class="num-r">'+((r[s0]||0)?r[s0].toLocaleString():'<span class="muted">·</span>')+'</td>').join('')+
+    '<td class="num-r"><b>'+r.total.toLocaleString()+'</b></td></tr>').join('');
+  el.innerHTML =
+    '<div style="display:flex;align-items:flex-end;gap:2px;height:150px;padding:0 4px">'+bars+'</div>'+
+    '<div class="muted" style="font-size:12px;margin:6px 2px 10px">蓝=历史 · 绿蓝渐变=今日 · 深灰=当日零采拿（采集工具停摆信号，对照下方第二标准排查）</div>'+
+    '<table><thead><tr><th>日期</th>'+srcs.map(s0=>'<th class="num-r">'+esc(s0)+'</th>').join('')+'<th class="num-r">合计</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
 function render(d){
   document.getElementById('gen').textContent='（生成于 '+d.generated_at+'）';
   const s=d.summary||{};
   const alerts=s.alerts||[];
+  const di=d.daily_intake||{};
   document.getElementById('cards').innerHTML=[
-    ['数据池总存量', (s.total_rows??0).toLocaleString(), 'blue'],
-    ['今日入库', (s.ingested_today??0).toLocaleString(), 'green'],
-    ['舆情结构化率', s.structured_rate!=null?(s.structured_rate*100).toFixed(1)+'%':'—', 'warn'],
-    ['在岗采集源', (s.active_collectors??0)+' / '+((d.collectors||[]).length), 'blue'],
+    ['⭐ 今日采拿', (di.today??s.ingested_today??0).toLocaleString(), 'green'],
+    ['近 7 天日均', (di.avg7??0).toLocaleString(), 'blue'],
+    ['近 14 天累计', (di.sum14??0).toLocaleString(), 'blue'],
+    ['采集工具在岗', (s.active_collectors??0)+' / '+((d.collectors||[]).length), (s.active_collectors??0)===((d.collectors||[]).length)?'green':'warn'],
     ['待办告警', alerts.length, alerts.length?'warn':'green'],
   ].map(c=>'<div class="card"><div class="k">'+c[0]+'</div><div class="v '+c[2]+'">'+c[1]+'</div></div>').join('');
+
+  renderIntake(di);
 
   document.querySelector('#collectors tbody').innerHTML=(d.collectors||[]).map(c=>
     '<tr><td><b>'+esc(c.name)+'</b> <span class="muted">'+esc(c.key)+'</span></td>'+
     '<td>'+esc(c.carrier)+'</td><td>'+esc(c.schedule)+'</td><td class="muted">'+esc(c.at||'—')+'</td>'+
     '<td>'+HB(c.health)+'</td><td class="muted">'+esc(c.detail||'—')+'</td></tr>').join('');
+  const unarmed=(d.collectors||[]).filter(c=>!['running','ok','complete','done','armed'].includes(c.health));
+  document.getElementById('unarmed').innerHTML = unarmed.length
+    ? '<span style="color:var(--warn)">⚠ 未在岗 '+unarmed.length+' 个：'+unarmed.map(c=>esc(c.name)+'('+esc(c.health)+')').join('、')+'</span>'
+    : '<span style="color:var(--ok)">全部在岗 ✓</span>';
 
   const p=d.pipelines||{};
   const seed=p.seed||{};

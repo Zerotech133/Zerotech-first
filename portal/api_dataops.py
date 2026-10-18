@@ -60,6 +60,46 @@ POOLS = [
 # 各表「今日入库」时间列（无则不算增量，靠库文件 mtime 近似）
 TODAY_COL = {"xq_status": "fetched_at", "stock_notice": "_fetched_at"}
 
+# 每日采拿量回溯源（2026-10-18 老田定标准：第一标准=每天采多少，第二标准=工具在不在跑）
+# (库路径, 表, 入库时间列, 源标签)——时间列格式均为 'YYYY-MM-DD HH:MM:SS'，可 GROUP BY 日期回溯
+INTAKE_SOURCES = [
+    (os.path.join(DATA, "xueqiu", "xueqiu_info.db"), "xq_status",     "fetched_at",   "雪球帖"),
+    (os.path.join(DATA, "tdx",     "tdx_info.db"),   "stock_notice", "_fetched_at",  "公告"),
+    (os.path.join(DATA, "tdx",     "tdx_info.db"),   "stock_news",   "_fetched_at",  "个股新闻"),
+    (os.path.join(DATA, "tdx",     "tdx_info.db"),   "stock_report", "_fetched_at",  "研报"),
+]
+
+
+def _daily_intake(errors, days=14):
+    """每日采拿量：近 N 天按入库时间戳列回溯，跨源合计（第一标准的数据底座）。"""
+    dates = [time.strftime("%Y-%m-%d", time.localtime(time.time() - 86400 * i))
+             for i in range(days - 1, -1, -1)]
+    per_source = {}
+    for db, t, col, label in INTAKE_SOURCES:
+        try:
+            con = _ro(db)
+            for d, n in con.execute(
+                    "SELECT substr(%s,1,10) d, COUNT(*) FROM %s WHERE %s >= ? GROUP BY d"
+                    % (col, t, col), (dates[0] + " 00:00:00",)):
+                per_source.setdefault(label, {})[d] = n
+            con.close()
+        except Exception as e:
+            errors.append("intake %s: %s" % (label, str(e)[:50]))
+    series = []
+    for d in dates:
+        row = {"date": d, "total": 0}
+        for label in per_source:
+            n = per_source[label].get(d, 0)
+            row[label] = n
+            row["total"] += n
+        series.append(row)
+    last7 = [r["total"] for r in series[-7:]]
+    return {"days": days, "series": series, "sources": list(per_source.keys()),
+            "today": series[-1]["total"] if series else 0,
+            "yesterday": series[-2]["total"] if len(series) > 1 else 0,
+            "avg7": round(sum(last7) / max(1, len(last7)), 1),
+            "sum14": sum(r["total"] for r in series)}
+
 PARQUET_DIRS = ["tdx/ts_daily", "tdx/ts_monthly", "tdx/ts_weekly", "tdx/ts_index_daily"]
 
 # ── 定时任务职能分组（2026-10-18 全量清点，系统噪音 AMD/WPS/OneDrive 不入册）──
@@ -279,6 +319,8 @@ def overview():
             parquet.append({"dir": rel, "shards": n})
     # 管道
     pipes = _pipeline_states(errors)
+    # 每日采拿量（第一标准数据底座）
+    daily = _daily_intake(errors)
     # 全量定时任务分组 + 行情仓 catalog 聚合
     task_groups = _task_groups(errors)
     catalog = _catalog_summary(errors)
@@ -348,6 +390,7 @@ def overview():
                     "active_collectors": active, "alerts": alerts},
         "collectors": collectors, "pools": pools, "parquet": parquet,
         "pipelines": pipes, "task_groups": task_groups, "catalog": catalog,
+        "daily_intake": daily,
         "governance": {"model_dist": model_dist,
                        "hint": "打标 lineage 字段 model/prompt_version 支持版本换代 A/B；"
                                "Hermes/调度系统直接 GET 本接口（fail-visible JSON）即得全局数据地图"},
