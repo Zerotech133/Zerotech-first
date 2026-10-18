@@ -206,15 +206,22 @@ class TestMain:
 
     def test_dry_run_no_side_effects(self, tmp_state, tmp_store,
                                      monkeypatch):
-        """--dry-run 只打印不写状态不推送不开单。"""
+        """--dry-run 零写副作用：不写 last_run.json/节流状态，不开单不推送。"""
         code, pushed = self._run(
             monkeypatch, _payload([_entry(name="X")]),
             argv=["--dry-run"])
         assert code == 0 and pushed["n"] == 0
-        assert list(tmp_state.glob("*.json")) == [] or not (
-            tmp_state / "X.json").exists()
+        assert list(tmp_state.glob("*.json")) == []  # 含 last_run.json
         assert not list((tmp_store / "agent_platform" / "data" / "org" /
                          "tasks").glob("tasks_*.jsonl"))
+
+    def test_dry_run_ps_failure_writes_nothing(self, tmp_state, monkeypatch):
+        """QA 风险①收口：dry-run + 总线挂 也不写 last_run.json（不喂假心跳）。"""
+        code, pushed = self._run(
+            monkeypatch, {"ps_ok": False, "ps_error": "boom", "tasks": []},
+            argv=["--dry-run"])
+        assert code == 1 and pushed["n"] == 0
+        assert list(tmp_state.glob("*.json")) == []
 
     def test_ps_failure_exit1(self, tmp_state, monkeypatch):
         """总线轮询失败 → exit 1 且 last_run.json 照写（fail-visible）。"""

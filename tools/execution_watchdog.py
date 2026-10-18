@@ -214,6 +214,9 @@ def _parse_inject(argv):
 def main(argv=None):
     """巡检主入口。返回退出码：0=正常（含有条异常已响）、1=自身异常。
 
+    --dry-run：全路径零写副作用——不写 last_run.json、不写节流状态、
+    不推送、不开单（QA 风险①收口 2026-10-18）。
+
     自证：
         python -X utf8 tools/execution_watchdog.py --dry-run
     """
@@ -228,17 +231,21 @@ def main(argv=None):
     try:
         payload = api_execution.build_execution_health(force=True)
         _apply_injections(payload, inject)
+        # dry-run 全路径零写副作用（QA 风险①收口）：心跳/节流状态一律不落盘，
+        # 否则会覆写真实巡检留痕、并把 N1 v1.9 心跳喂成假新鲜。
         if not payload.get("ps_ok"):
             # 总线轮询失败 = 巡检失能 → exit 1（N1 v1.9 探出），
             # last_run.json 照写（fail-visible 链路最末端也要可见）。
             print("[exwd] 总线轮询失败: %s" % payload.get("ps_error"))
             alerted.append({"name": "(总线)", "error": payload.get("ps_error"),
                             "pushed": False, "ticket": None})
-            _write_last_run(ran_at, 1, alerted, skipped)
+            if not dry:
+                _write_last_run(ran_at, 1, alerted, skipped)
             return 1
         if not payload.get("manifest_ok"):
             print("[exwd] manifest 异常: %s" % payload.get("manifest_error"))
-            _write_last_run(ran_at, 1, alerted, skipped)
+            if not dry:
+                _write_last_run(ran_at, 1, alerted, skipped)
             return 1
 
         today = now.strftime("%Y-%m-%d")
@@ -271,12 +278,17 @@ def main(argv=None):
                 exit_code = 1
             alerted.append({"name": name, "error_code": code,
                             "pushed": pushed, "ticket": tid})
-        _write_last_run(ran_at, exit_code, alerted, skipped)
+        if not dry:
+            _write_last_run(ran_at, exit_code, alerted, skipped)
+        else:
+            print("[dry-run] 心跳/节流状态未写（零副作用），本轮汇总："
+                  "将响 %d · 节流跳过 %d" % (len(alerted), len(skipped)))
         return exit_code
     except Exception as e:  # noqa: BLE001  自身异常 → exit 1（N1 可探）
         print("[exwd] 巡检自身异常: %s" % e)
         try:
-            _write_last_run(ran_at, 1, [{"error": str(e)}], skipped)
+            if not dry:
+                _write_last_run(ran_at, 1, [{"error": str(e)}], skipped)
         except OSError:
             pass
         return 1
