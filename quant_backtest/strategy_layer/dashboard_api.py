@@ -833,6 +833,219 @@ def health_payload() -> dict:
             "checks": checks}
 
 
+# ── 端点 N：GET /api/sixring 六环状态徽标聚合（只读零副作用）─────────
+# 首页「板块联动全景」六节点（底座→情报→策略插件→聚合中枢→风控→执行）
+# 当日实况徽标数据源。铁律：任一环缺源标灰不假绿——每环独立 available
+# 标志，缺源不报错不编造；单环异常降级 available=false + err，绝不
+# 传染、绝不整体 500。全环数据源均为本地文件/库，逐环计时入 detail。
+SIXRING_POOL_PATH = os.path.join(QUANT_BT, "data", "chanlun_pool.jsonl")
+SIXRING_WATCH_PATH = os.path.join(QUANT_BT, "reports",
+                                  "council_watch.jsonl")
+SIXRING_REVIEWS_PATH = os.path.join(QUANT_BT, "reports",
+                                    "council_reviews.jsonl")
+SIXRING_PORTFOLIO_PATH = os.path.join(QUANT_BT, "reports",
+                                      "portfolio.json")
+# approvals.db 在仓库根 data/（实探 2026-10-19：QUANT_BT 上级目录）
+SIXRING_APPROVALS_DB = os.path.join(os.path.dirname(QUANT_BT), "data",
+                                    "approvals", "approvals.db")
+
+
+def _sixring_pool() -> dict:
+    """环①入池：chanlun_pool.jsonl 最近批次（detect_date）与标的数。"""
+    from collections import Counter
+    cnt = Counter()
+    with open(SIXRING_POOL_PATH, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            d = str((r or {}).get("detect_date") or "")
+            if d:
+                cnt[d] += 1
+    if not cnt:
+        return {"available": False, "value": None,
+                "detail": "入池账本无有效行",
+                "source": "data/chanlun_pool.jsonl"}
+    latest = max(cnt)
+    return {"available": True,
+            "value": {"date": latest, "count": cnt[latest]},
+            "detail": "最近批次 %s · %d 只入池" % (latest, cnt[latest]),
+            "source": "data/chanlun_pool.jsonl"}
+
+
+def _sixring_watch() -> dict:
+    """环②盯盘：council_watch.jsonl watch 记录在盯标的数与最近盯盘日。"""
+    codes = set()
+    latest_d = ""
+    n_rows = 0
+    with open(SIXRING_WATCH_PATH, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            if (r or {}).get("type") != "watch":
+                continue
+            n_rows += 1
+            code = str(r.get("code") or "")
+            if code:
+                codes.add(code)
+            d = str(r.get("d") or (r.get("ts") or "")[:10] or "")
+            if d > latest_d:
+                latest_d = d
+    return {"available": True, "value": {"count": len(codes),
+                                         "latest": latest_d or None},
+            "detail": ("在盯 %d 只 · watch %d 条 · 最近 %s"
+                       % (len(codes), n_rows, latest_d or "无")),
+            "source": "reports/council_watch.jsonl"}
+
+
+def _sixring_auth() -> dict:
+    """环③待授权：投研核实授权队列（data/approvals/approvals.db 只读）。
+
+    授权账本未建（库缺失/空表）→ available=false 诚实标灰，不编造。
+    """
+    if not os.path.isfile(SIXRING_APPROVALS_DB):
+        raise FileNotFoundError("approvals.db 缺失")
+    import sqlite3
+    uri = "file:%s?mode=ro" % SIXRING_APPROVALS_DB.replace("\\", "/")
+    conn = sqlite3.connect(uri, uri=True, timeout=0.5)
+    try:
+        cur = conn.execute("SELECT COUNT(*), MAX(decided_at) FROM approvals")
+        n, last_at = cur.fetchone()
+    finally:
+        conn.close()
+    n = int(n or 0)
+    if n == 0:
+        return {"available": False, "value": None,
+                "detail": "授权账本未建（approvals.db 空表）",
+                "notes": "投研核实授权账本未建，暂无待授权数据",
+                "source": "data/approvals/approvals.db"}
+    return {"available": True, "value": {"count": n},
+            "detail": "授权决定 %d 条 · 最近 %s" % (n, str(last_at or "")),
+            "source": "data/approvals/approvals.db"}
+
+
+def _sixring_risk() -> dict:
+    """环④风控：复用 /api/risk 的 risk_bridge 只读账本（R1-R4+市场级闸）。"""
+    from strategy_layer.risk_bridge import risk_context
+    ctx = risk_context()
+    if not ctx.get("available"):
+        return {"available": False, "value": None,
+                "detail": "风控账本不可达",
+                "notes": str(ctx.get("error") or "ledger 缺失"),
+                "source": "riskguard_ledger/ledger.jsonl"}
+    rules = ctx.get("rules") or {}
+    blocks = {k: int((rules.get(k) or {}).get("block") or 0)
+              for k in ("R1", "R2", "R3", "R4")}
+    mg = ctx.get("market_gate") or {}
+    mg_action = str(mg.get("action") or "无")
+    return {"available": True,
+            "value": {"blocks": blocks, "market_gate": mg_action},
+            "detail": ("R1-R4 拦截 %d/%d/%d/%d · 市场级闸 %s"
+                       % (blocks["R1"], blocks["R2"], blocks["R3"],
+                          blocks["R4"], mg_action)),
+            "source": "strategy_layer/risk_bridge.py → riskguard_ledger"}
+
+
+def _sixring_trade() -> dict:
+    """环⑤成交：模拟盘台账 portfolio.json 最近交易日成交笔数与累计。"""
+    with open(SIXRING_PORTFOLIO_PATH, "r", encoding="utf-8") as fh:
+        pf = json.load(fh)
+    accounts = pf.get("accounts") or {}
+    latest_d = ""
+    trades = []
+    for sid, a in accounts.items():
+        if not isinstance(a, dict):
+            continue
+        for tr in list(a.get("open") or []) + list(a.get("closed") or []):
+            d = str((tr or {}).get("entry_date") or "")
+            if not d:
+                continue
+            trades.append((sid, d))
+            if d > latest_d:
+                latest_d = d
+    n_today = sum(1 for _, d in trades if d == latest_d) if latest_d else 0
+    return {"available": True,
+            "value": {"date": latest_d or None, "count": n_today,
+                      "total": len(trades)},
+            "detail": ("最近成交 %s · 当日 %d 笔 · %d 账户累计 %d 笔"
+                       % (latest_d or "无", n_today, len(accounts),
+                          len(trades))),
+            "source": "reports/portfolio.json"}
+
+
+def _sixring_review() -> dict:
+    """环⑥复盘：council_reviews.jsonl 最近复盘日期。"""
+    latest_ts = ""
+    n = 0
+    with open(SIXRING_REVIEWS_PATH, "r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                r = json.loads(line)
+            except ValueError:
+                continue
+            n += 1
+            ts = str((r or {}).get("ts") or "")
+            if ts > latest_ts:
+                latest_ts = ts
+    if n == 0:
+        return {"available": False, "value": None,
+                "detail": "暂无复盘记录", "notes": "复盘账本为空",
+                "source": "reports/council_reviews.jsonl"}
+    return {"available": True, "value": {"date": latest_ts[:10] or None,
+                                         "count": n},
+            "detail": "最近复盘 %s · 共 %d 条" % (latest_ts or "无", n),
+            "source": "reports/council_reviews.jsonl"}
+
+
+SIXRING_RING_FUNCS = (
+    ("pool", "_sixring_pool"),      # 环①入池
+    ("watch", "_sixring_watch"),    # 环②盯盘
+    ("auth", "_sixring_auth"),      # 环③待授权
+    ("risk", "_sixring_risk"),      # 环④风控
+    ("trade", "_sixring_trade"),    # 环⑤成交
+    ("review", "_sixring_review"),  # 环⑥复盘
+)
+
+
+def sixring_payload() -> dict:
+    """GET /api/sixring：六环状态徽标聚合，恒 200 可用 JSON。
+
+    每环独立 try/except：单环缺源/异常 → available=false + err，
+    其余环照常返回（缺源标灰不假绿，绝不整体 500）。各环数据源全为
+    本地文件/库（只读短超时），逐环耗时（ms）写进 detail 与 elapsed_ms。
+    """
+    g = globals()
+    rings = {}
+    for key, fn_name in SIXRING_RING_FUNCS:
+        t0 = time.perf_counter()
+        try:
+            ring = dict(g[fn_name]())
+        except Exception as exc:  # noqa: BLE001 — 单环缺源降级标灰
+            ring = {"available": False, "value": None,
+                    "detail": "缺源", "source": "",
+                    "err": (str(exc).strip()
+                            or exc.__class__.__name__)[:200]}
+        ring["elapsed_ms"] = int((time.perf_counter() - t0) * 1000)
+        ring["detail"] = "%s · %dms" % (ring.get("detail") or "",
+                                        ring["elapsed_ms"])
+        rings[key] = ring
+    return {"ok": True,
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "rings": rings}
+
+
 # ── 静态页：GET /pipeline /manage（每次现读，改页面即生效）─────────────
 def _static_page(filename: str) -> bytes:
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
@@ -938,6 +1151,17 @@ def register_routes(server_or_app: Any) -> Any:
                 return _send_json(self, {"ok": False,
                                          "error": str(exc)[:200]}, 500)
             return _send_json(self, payload, code)
+        if u.path == "/api/sixring":
+            # 六环徽标聚合：payload 逐环自兜底不抛，此处兜底仍回 200
+            # （聚合器故障不放大为 5xx，前端徽标整体置灰即可）
+            try:
+                return _send_json(self, sixring_payload())
+            except Exception as exc:  # noqa: BLE001
+                return _send_json(self, {"ok": True,
+                                         "ts": time.strftime(
+                                             "%Y-%m-%dT%H:%M:%S"),
+                                         "rings": {},
+                                         "error": str(exc)[:200]}, 200)
         if orig_get is not None:
             return orig_get(self)
         return _send_json(self, {"ok": False, "error": "未知路由"}, 404)
@@ -1000,4 +1224,4 @@ def register_routes(server_or_app: Any) -> Any:
 __all__ = ["register_routes", "strategies_payload", "signals_payload",
            "register_feedback", "VERDICTS", "adjust_strategy",
            "create_proposal", "proposals_payload", "confirm_proposal",
-           "health_payload"]
+           "health_payload", "sixring_payload"]
