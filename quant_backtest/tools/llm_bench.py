@@ -54,9 +54,9 @@ def probe_ollama(host: str = "127.0.0.1", port: int = 11434, timeout: float = 3.
         s.close()
 
 
-def pick_evenly(items: list, n: int) -> list:
+def pick_evenly(items: list, n: int, key=None) -> list:
     """按长度排序后均匀百分位取样（保证短/中/长混合，两端必覆盖）。"""
-    items = sorted(items)
+    items = sorted(items, key=key) if key else sorted(items)
     if len(items) <= n:
         return items
     idx = [round(i * (len(items) - 1) / (n - 1)) for i in range(n)]
@@ -92,7 +92,7 @@ def fetch_sample_rows(db_path: Path, n: int = SAMPLE_N) -> list:
         have = {p["status_id"] for p in pool}
         pool += [_mk_sample(r) for r in rows2 if str(r[0]) not in have]
     con.close()
-    return pick_evenly(pool, n)
+    return pick_evenly(pool, n, key=lambda p: p["chars"])
 
 
 def _mk_sample(row: tuple) -> dict:
