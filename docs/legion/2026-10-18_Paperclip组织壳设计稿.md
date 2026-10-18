@@ -98,6 +98,8 @@ def transition(wo, to_state):
 
 硬停语义：**拒绝即停**，不做部分扣减、不做赊账；硬停事件本身写入审计表供复盘。
 
+> **【勘误回写 2026-10-18，MM 路施工发现 + m1-harden 016c434 固化】**上图伪代码中 `audit_append("budget.hard_stop", ...)` 与 `raise` 同处一个 `with sqlite_conn()` 事务内——异常抛出会回滚主事务，**硬停审计随回滚丢失**。实装修复：硬停事件改为**独立事务落盘**（meter 端点在捕获 `BudgetHardStop` 的 except 分支内调用 `audit_hard_stop` 独立写审计，余额分文不动、工单状态留原态）。设计稿留此勘误供 M1+ 复盘口径统一；以 paperclip/app.py 实装为准。
+
 ## 4. 审批流（工单状态机）
 
 ### 4.1 状态机
