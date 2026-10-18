@@ -1,0 +1,13 @@
+before: triggers=1
+  old trigger[1]: type=2 start=2026-10-19T13:30:00
+registered.
+NextRunTime: pywintypes.datetime(2026, 10, 19, 13, 30, tzinfo=TimeZoneInfo('GMT Standard Time', True))
+NextRunTime==2026-10-19 13:30: True
+triggers count=1 (anchor==1: True)
+  trigger[1]: type=2 start=2026-10-19T13:30:00 enabled=True
+  repetition: interval='' duration=''
+XML anchors: ScheduleByDay+DaysInterval1=True boundary=True calendar_trigger_count=1
+ExecutionTimeLimit in XML: True
+Principal: t logon=3 runlevel=0
+Action: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\项目\老田的AI助手\quant_backtest\start_backfill_sprint.ps1"
+RESULT: PASS
