@@ -347,7 +347,11 @@ class TestGuojiaDigest:
 class TestLoadAndCli:
     def test_shipped_subs_locked_dryrun(self):
         s = ms.load_subscribers(HERE / "push_subscribers.json")
-        assert s["groups"] == {} and s["dryrun_default"] is True  # 三重门锁
+        assert s["dryrun_default"] is True  # 三重门锁：出厂必 DRYRUN
+        # 2026-10-19 拍板灰度首群 laotian_self 入册（K-ORG-197 遗留口径
+        # 同步，随 K-ORG-199 收口）；入册群 chat_id 必须非空，live 仍受
+        # env MATRIX_SEND_LIVE + chat_id 双门禁约束。
+        assert s["groups"]["laotian_self"]["chat_id"]
 
     def test_bad_subs_visible(self, tmp_path):
         p = tmp_path / "s.json"

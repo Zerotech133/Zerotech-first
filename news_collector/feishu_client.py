@@ -210,10 +210,34 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
     except urllib.error.HTTPError as e:
         # K-PUSH-004 判例：HTTP 4xx/5xx 须读响应体拿飞书原始 code/msg
         # （hub 侧 400 只见"Bad Request"无从定位——08-17 卡片 400 排障实证）
+        raw = ""
         try:
-            detail = e.read().decode("utf-8", "replace")[:250]
+            raw = e.read().decode("utf-8", "replace")
         except Exception:
-            detail = ""
+            pass
+        detail = raw[:250]
+        # K-ORG-199：HTTP 4xx 包裹的 TAT 失效码同样自愈——2026-10-19
+        # 试发排障实证：hub 进程持坏 TAT，飞书 400 包 99991663 走到本
+        # 分支原只读详情不刷新，只能干等 TTL（最长 6600s）自然过期。
+        # 与上方 200 分支同口径：清缓存强刷重发一次，不递归。
+        try:
+            ecode = json.loads(raw).get("code")
+        except Exception:
+            ecode = None
+        if ecode in _TAT_INVALID_CODES:
+            with _TAT_LOCK:
+                _TAT_CACHE.pop((app_id, app_secret), None)
+            tok2 = get_tat(app_id, app_secret, use_cache=False)
+            if tok2:
+                try:
+                    resp = _post(tok2)
+                    ok = resp.get("code") == 0
+                    _flow_record(ok, receive_id, kind=kind)  # K-PUSH-001
+                    return ok, ("openapi code=%s %s" % (
+                        resp.get("code"), str(resp.get("msg"))[:120]))
+                except Exception as e2:
+                    _flow_record(False, receive_id, kind=kind)
+                    return False, ("openapi err " + str(e2))[:150]
         _flow_record(False, receive_id, kind=kind)  # K-PUSH-001 埋点
         return False, ("openapi err %s %s" % (e, detail))[:400]
     except Exception as e:
