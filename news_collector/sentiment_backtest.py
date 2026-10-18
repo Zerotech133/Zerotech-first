@@ -147,9 +147,9 @@ def _load_samples():
         bias = j.get("bias")
         conf = j.get("conf")
         scope = j.get("scope") or ""
-        impact = str(j.get("impact") or "low").strip().lower()
+        impact = str(j.get("impact") or "unknown").strip().lower()
         if impact not in ("low", "medium", "high"):
-            impact = "low"
+            impact = "unknown"
         if bias not in SCORE or not isinstance(conf, (int, float)):
             continue
         codes = set()
@@ -192,7 +192,10 @@ def _trade_days():
     """datamart trade_cal → 升序交易日列表 'YYYYMMDD'。"""
     import datamart
     df = datamart.read("trade_cal")
-    df = df[df["is_open"].astype(float) == 1]
+    if df is None or df.empty or "cal_date" not in df.columns:
+        return []
+    if "is_open" in df.columns:
+        df = df[df["is_open"].astype(float) == 1]
     return sorted(str(v)[:8].replace("-", "") for v in df["cal_date"])
 
 
