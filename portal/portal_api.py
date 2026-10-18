@@ -141,6 +141,7 @@ import api_approvals    # M1/M2 /api/platform/approvals
 import api_capability   # M3-P5 /api/capability/board
 import api_perf         # M4-P5 /api/perf/board + /api/perf/replay
 import api_xq_intel     # 两线预案 M-RT3 /api/xq/intel 情报日报出口（2026-10-18）
+import api_dataops      # 数据运营指挥台 /api/dataops/overview（采集动线+数据池+管道，2026-10-18）
 # ==== M1-M4 导入结束 ====
 import api_execution    # R1 执行健康总线 /api/execution/health（联动层一期 2026-10-18）
 
@@ -554,7 +555,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_execution.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_execution.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2918,6 +2919,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/xq/intel':
             # 两线预案 M-RT3 雪球情报日报出口（automation_runs 只读投影）
             self._xq_intel(qs)
+            return
+        if path == '/api/dataops/overview':
+            # 数据运营指挥台（采集动线+数据池+管道调度聚合，只读）
+            self._dataops(qs)
             return
         if path == '/api/capability/board':
             # M3-P5 能力看板（产物登记仓+审批注册表只读聚合）

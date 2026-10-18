@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数据运营指挥台 · 零界</title>
+<link rel="stylesheet" href="/static/nav.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2333;--bd:#2d333b;--fg:#e6edf3;--dim:#8b949e;
+      --acc:#58a6ff;--ok:#3fb950;--warn:#d29922;--bad:#f85149;--purple:#bc8cff;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 "Microsoft YaHei",system-ui,sans-serif;padding:24px}
+h1{font-size:22px;margin:0 0 4px} h1 small{color:var(--dim);font-size:13px;font-weight:normal}
+.sub{color:var(--dim);font-size:12px;margin-bottom:18px}
+h2{font-size:15px;margin:26px 0 10px;color:var(--acc);border-bottom:1px solid var(--bd);padding-bottom:6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:8px;padding:12px 14px}
+.card .k{color:var(--dim);font-size:12px}.card .v{font-size:24px;font-weight:700;margin-top:2px}
+.card .v.blue{color:var(--acc)}.card .v.green{color:var(--ok)}.card .v.warn{color:var(--warn)}
+table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:8px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--bd);text-align:left;font-size:13px}
+th{background:var(--panel2);color:var(--dim);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600}
+.b-armed{background:#12261e;color:var(--ok)} .b-running{background:#122642;color:var(--acc)}
+.b-yielding{background:#2a2410;color:var(--warn)} .b-blocked{background:#2a1512;color:#ffa198}
+.b-backoff{background:#2a2410;color:var(--warn)} .b-done{background:#26123a;color:var(--purple)}
+.b-complete{background:#12261e;color:var(--ok)} .b-ok{background:#12261e;color:var(--ok)}
+.b-unknown,.b-disabled{background:#24292f;color:var(--dim)}
+.bar{height:14px;background:var(--panel2);border-radius:7px;overflow:hidden;border:1px solid var(--bd)}
+.bar>div{height:100%;background:linear-gradient(90deg,#1f6feb,#58a6ff);transition:width .6s}
+.pipe{background:var(--panel);border:1px solid var(--bd);border-radius:8px;padding:14px;margin-bottom:12px}
+.pipe .t{display:flex;justify-content:space-between;margin-bottom:8px}
+.pipe .num{color:var(--dim);font-size:12px}
+.log{background:#0a0e14;border:1px solid var(--bd);border-radius:6px;padding:8px 10px;
+     font:12px/1.7 Consolas,monospace;color:#9aa4b2;white-space:pre-wrap;word-break:break-all;max-height:90px;overflow:auto}
+.alert{background:#2a1512;border:1px solid #67221c;color:#ffa198;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px}
+.muted{color:var(--dim)} .num-r{text-align:right;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.foot{margin-top:24px;color:var(--dim);font-size:12px}
+code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#79c0ff}
+</style>
+</head>
+<body>
+<h1>🎛 数据运营指挥台 <small>采集动线 · 数据池 · 管道调度</small></h1>
+<div class="sub">Hermes 与调度系统消费入口：<code>GET /api/dataops/overview</code>（全量）· <code>?view=summary</code>（轻量）· 只读 · 60s 自动刷新 <span id="gen"></span></div>
+
+<div class="cards" id="cards"></div>
+
+<h2>① 采集动线 —— 什么时间拔、谁在拔、最近拔了多少</h2>
+<table id="collectors"><thead><tr>
+<th>数据源</th><th>载体</th><th>节奏</th><th>配置时刻</th><th>健康</th><th>最近动态</th>
+</tr></thead><tbody></tbody></table>
+
+<h2>② 管道调度 —— 队列进度 · 让路状态 · 日报产出</h2>
+<div class="grid2">
+  <div class="pipe" id="pipe-seed"></div>
+  <div class="pipe" id="pipe-classify"></div>
+</div>
+<div class="pipe" id="pipe-report"></div>
+
+<h2>③ 数据池 —— 存量 · 今日增量 · 结构化程度</h2>
+<table id="pools"><thead><tr>
+<th>库</th><th>表</th><th class="num-r">存量行数</th><th class="num-r">今日入库</th><th>说明</th>
+</tr></thead><tbody></tbody></table>
+<div class="sub" id="poolmeta" style="margin-top:8px"></div>
+
+<h2>④ 治理与自进化观测</h2>
+<div class="pipe" id="gov"></div>
+
+<div class="foot">
+血缘体检：<a href="/kg-lineage.html" style="color:var(--acc)">/api/kg/lineage 血缘视图</a> ·
+情报日报：<a href="/xq_intel.html" style="color:var(--acc)">xq_intel.html</a> ·
+本页只读聚合 automation_runs 状态 + 三库 ro 计数 + 计划任务 XML，零写操作
+</div>
+
+<script>
+const B={armed:'b-armed',running:'b-running',yielding:'b-yielding',blocked:'b-blocked',
+backoff:'b-backoff',done:'b-done',complete:'b-complete',ok:'b-ok',unknown:'b-unknown',disabled:'b-disabled'};
+const HB=h=>'<span class="badge '+(B[h]||'b-unknown')+'">'+h+'</span>';
+const esc=s=>String(s??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+function render(d){
+  document.getElementById('gen').textContent='（生成于 '+d.generated_at+'）';
+  const s=d.summary||{};
+  const alerts=s.alerts||[];
+  document.getElementById('cards').innerHTML=[
+    ['数据池总存量', (s.total_rows??0).toLocaleString(), 'blue'],
+    ['今日入库', (s.ingested_today??0).toLocaleString(), 'green'],
+    ['舆情结构化率', s.structured_rate!=null?(s.structured_rate*100).toFixed(1)+'%':'—', 'warn'],
+    ['在岗采集源', (s.active_collectors??0)+' / '+((d.collectors||[]).length), 'blue'],
+    ['待办告警', alerts.length, alerts.length?'warn':'green'],
+  ].map(c=>'<div class="card"><div class="k">'+c[0]+'</div><div class="v '+c[2]+'">'+c[1]+'</div></div>').join('');
+
+  document.querySelector('#collectors tbody').innerHTML=(d.collectors||[]).map(c=>
+    '<tr><td><b>'+esc(c.name)+'</b> <span class="muted">'+esc(c.key)+'</span></td>'+
+    '<td>'+esc(c.carrier)+'</td><td>'+esc(c.schedule)+'</td><td class="muted">'+esc(c.at||'—')+'</td>'+
+    '<td>'+HB(c.health)+'</td><td class="muted">'+esc(c.detail||'—')+'</td></tr>').join('');
+
+  const p=d.pipelines||{};
+  const seed=p.seed||{};
+  const qi=seed.queue_idx||0, ql=seed.queue_len||11;
+  document.getElementById('pipe-seed').innerHTML=
+    '<div class="t"><b>🌱 历史播种队列</b>'+HB(seed.done?'done':((seed.blocked_streak||0)>0?'blocked':'running'))+'</div>'+
+    '<div class="bar"><div style="width:'+(Math.min(qi,ql)/ql*100).toFixed(0)+'%"></div></div>'+
+    '<div class="num">段位 '+Math.min(qi+1,ql)+'/'+ql+'（seed='+(seed.current_seed??'—')+
+    '，挖穿类目 '+(seed.exhausted_cats??'—')+'/4）'+
+    ((seed.blocked_streak||0)>0?' · 限流让路中（blocked_streak='+seed.blocked_streak+'）':'')+'</div>'+
+    '<div class="log">'+esc(((seed.last||{}).at||'')+' | seed='+(seed.last||{}).seed+' added='+(seed.last||{}).added)+'</div>';
+
+  const cl=p.classify||{};
+  const pend=cl.pending;
+  document.getElementById('pipe-classify').innerHTML=
+    '<div class="t"><b>🧪 舆情分类追平</b>'+(pend===0?HB('complete'):HB('yielding'))+'</div>'+
+    '<div class="bar"><div style="width:'+(cl.total?((cl.done/cl.total)*100).toFixed(1):0)+'%"></div></div>'+
+    '<div class="num">已打标 '+(cl.done??'—').toLocaleString()+' / '+(cl.total??'—').toLocaleString()+
+    ' · pending '+(pend??'—').toLocaleString()+'（Ollama 空闲窗口自动连跑，被占自动让路）</div>'+
+    '<div class="log">'+esc((cl.log_tail||[]).join('\n'))+'</div>';
+
+  const rp=p.report||{};
+  document.getElementById('pipe-report').innerHTML=
+    '<div class="t"><b>📰 情报日报</b>'+HB(rp.posts_today!=null?'ok':'unknown')+'</div>'+
+    '<div class="num">今日 posts='+(rp.posts_today??'—')+' · ingested='+(rp.ingested_today??'—')+
+    '（18:00 生产首跑后 posts>0）· <a href="/xq_intel.html" style="color:var(--acc)">打开日报页</a></div>'+
+    '<div class="log">'+esc((rp.log_tail||[]).join('\n'))+'</div>';
+
+  let rows='';
+  (d.pools||[]).forEach(pool=>{
+    (pool.tables||[]).forEach(t=>{
+      rows+='<tr><td class="muted">'+esc(pool.db)+'<br><span style="font-size:11px">'+(pool.size_mb!=null?pool.size_mb+' MB · '+esc(pool.mtime||''):'')+'</span></td>'+
+        '<td><b>'+esc(t.name)+'</b>'+(t.error?'<br><span style="color:var(--bad)">'+esc(t.error)+'</span>':'')+'</td>'+
+        '<td class="num-r">'+(t.rows!=null?t.rows.toLocaleString():'—')+'</td>'+
+        '<td class="num-r">'+(t.today!=null?'+ '+t.today.toLocaleString():'<span class="muted">—</span>')+'</td>'+
+        '<td class="muted">'+esc(t.note||'')+'</td></tr>';
+    });
+  });
+  document.querySelector('#pools tbody').innerHTML=rows;
+  document.getElementById('poolmeta').innerHTML=
+    'Parquet 池：'+(d.parquet||[]).map(x=>esc(x.dir)+'（'+x.shards+' 片）').join(' · ')+
+    ' ｜ 库文件 mtime 为该库最近写入时刻';
+
+  const g=d.governance||{};
+  const md=Object.entries(g.model_dist||{});
+  document.getElementById('gov').innerHTML=
+    '<b>打标模型版本分布</b>（lineage：model / prompt_version 支持换代 A/B，升级不重写原表）<br>'+
+    (md.length?md.map(x=>esc(x[0])+'：<b>'+x[1]+'</b> 条').join(' · '):'<span class="muted">暂无打标数据</span>')+
+    '<br><span class="muted">'+esc(g.hint||'')+'</span>';
+}
+
+async function load(){
+  try{
+    const r=await fetch('/api/dataops/overview',{cache:'no-store'});
+    render(await r.json());
+  }catch(e){
+    document.getElementById('cards').innerHTML='<div class="alert">指挥台数据源不可达：'+esc(e.message)+'（8091 API 未就绪？）</div>';
+  }
+}
+load(); setInterval(load,60000);
+</script>
+</body>
+</html>

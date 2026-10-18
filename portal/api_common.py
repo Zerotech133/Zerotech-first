@@ -326,14 +326,20 @@ DOMAIN_NAV_GROUPS = {
         (None, (("💻 开发者专项", "/dev", "dev"),)),
         ("🎓 零界学院", (("🎓 零界学院", "/academy", "academy"),)),
     ),
-    "ops": ((None, (
-        ("🎛 OS 控制台", "/ops", "opshome"),
-        ("⚡ 动作流中心", "/flow", "flow"),
-        ("🛡 审计状态", "/audit", "audit"),
-        ("✅ 审批注册表", "/approvals", "approvals"),
-        ("🧩 能力看板", "/capability", "capability"),
-        ("📈 投研绩效", "/perf", "perf"),
-        ("🖥 系统自检", "/sys-health", "sys"))),),
+    "ops": (
+        ("🛰 数据运营", (
+            ("🎛 数据指挥台", "/dataops", "dataops"),)),
+        ("🪖 军团", (
+            ("🏛 组织架构 🚧", "/org", "org"),
+            ("✅ 审批注册表", "/approvals", "approvals"),
+            ("🧩 能力看板", "/capability", "capability"),
+            ("📈 投研绩效", "/perf", "perf"),
+            ("🛡 审计状态", "/audit", "audit"),)),
+        ("⚙️ 系统运维", (
+            ("🎛 OS 控制台", "/ops", "opshome"),
+            ("⚡ 动作流中心", "/flow", "flow"),
+            ("🖥 系统自检", "/sys-health", "sys"),)),
+    ),
 }
 
 
