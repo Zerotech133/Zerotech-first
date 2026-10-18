@@ -411,6 +411,104 @@ def test_l4_weekly_output(env):
     assert "缠论结构观察" in text and "影子铁律" in text
 
 
+# ── E-01 左尾观察增强（K-ORG-195：S1 周记哨兵 + S2 tail_flag） ──
+def _seed_tail_env(env):
+    """S2 fixture：
+    触发组 25 行 2卖 T+20 ret=-15（p10≤-10 且 n≥20 → tail_flag）；
+    对照组 10 行 3卖 T+20 ret=-15（n<20 → 不标注）；
+    另 3 行 1买 T+10（主口径行永不标注）。"""
+    specs = [("t%02d" % i, "600001.SH", "2卖", "mid", 20, -15.0)
+             for i in range(25)] + \
+            [("c%02d" % i, "000002.SZ", "3卖", "low", 20, -15.0)
+             for i in range(10)] + \
+            [("m%02d" % i, "600001.SH", "1买", "high", 10, 5.0)
+             for i in range(3)]
+    for k, (sid, code, t, regime, h, ret) in enumerate(specs):
+        r = {"sig_id": sid, "code": code, "type": t, "regime": regime,
+             "conf": 0.55, "level": "bi",
+             "fingerprint": {"npv": 3, "bis6": "D", "amp": "con",
+                             "pv": "below"},
+             "dt": DTS[k], "found_day": str(DTS[k]),
+             "conf_parts": {"beichi": False, "vv": False,
+                            "multi_hub": False},
+             "n_prior": 2, "entry_px": 10.0, "declared_at": ""}
+        v = {"verify_key": "vk_" + sid, "sig_id": sid, "code": code,
+             "type": t, "horizon": h, "dt": DTS[k],
+             "verify_dt": DTS[k + h], "ret_pct": ret, "declared_at": ""}
+        cl._append_line(cl.ledger_path(env["learn"]), r)
+        cl._append_line(cl.verify_path(env["learn"]), v)
+
+
+def test_l3_tail_flag_observation_only(env):
+    """E-01 S2：T+20 行左尾观察标注 + 双红线（不进 verdict / 不进 L4 出口）。"""
+    _seed_tail_env(env)
+    rep = cl.l3_run(learn_dir=env["learn"], as_of="20261018")
+    assert rep["recorded"] > 0
+    rows = cl._read_jsonl(cl.attribution_path(env["learn"]))
+    flag = [r for r in rows if r.get("tail_flag")]
+    assert flag, "type/regime 级触发 cell 应被标注"
+    assert all(r["horizon"] == 20 and r["p10"] <= -10 and r["n"] >= 20
+               and r["tail_flag"] == "左尾观察" for r in flag)
+    # 未触发行零标注：主口径行 / n<20 行
+    assert all("tail_flag" not in r for r in rows if r["horizon"] == 10)
+    ctrl = [r for r in rows if r["horizon"] == 20 and r["n"] < 20
+            and r["cell"].startswith("type=3卖")]
+    assert ctrl and all("tail_flag" not in r for r in ctrl)
+    # 红线 1：标注不改判读——触发 cell n=25<30 仍 observation_only
+    tcell = next(r for r in flag if r["cell"] == "type=2卖")
+    assert tcell["verdict"] == "observation_only"
+    # 红线 2：L4 出口 A 只吃 T+10 主口径行，标注行不触发任何草案
+    from datetime import datetime
+    d = cl.l4_drafts(learn_dir=env["learn"], now=datetime(2026, 10, 18))
+    assert d["drafted"] == 0
+    # 幂等：含标注行的同指纹重放零新增
+    h1 = _file_hash(cl.attribution_path(env["learn"]))
+    rep2 = cl.l3_run(learn_dir=env["learn"], as_of="20261019")
+    assert rep2["recorded"] == 0
+    assert _file_hash(cl.attribution_path(env["learn"])) == h1
+
+
+def test_l4_weekly_left_tail_sentinel(env):
+    """E-01 S1：周记 T+20 左尾哨兵段——案例清单 + 卖向滚动读数（手算对账）。"""
+    vp = cl.verify_path(env["learn"])
+    rows = [   # as_of=2026-10-18 → week_ago=20261011
+        {"sig_id": "A", "code": "600001.SH", "type": "2卖",
+         "horizon": 20, "verify_dt": 20261015, "ret_pct": -18.5},
+        {"sig_id": "B", "code": "000002.SZ", "type": "3卖",
+         "horizon": 20, "verify_dt": 20261012, "ret_pct": -11.0},
+        {"sig_id": "C", "code": "600001.SH", "type": "1卖",
+         "horizon": 20, "verify_dt": 20260901, "ret_pct": -20.0},   # 旧账
+        {"sig_id": "D", "code": "600001.SH", "type": "2卖",
+         "horizon": 20, "verify_dt": 20261014, "ret_pct": 3.0},     # 非深亏
+        {"sig_id": "E", "code": "000002.SZ", "type": "3卖",
+         "horizon": 20, "verify_dt": 20261016, "ret_pct": -12.0},   # 无 T+10
+    ]
+    for r in rows:
+        r.update({"verify_key": "vk_" + r["sig_id"], "dt": 20260000,
+                  "declared_at": ""})
+        cl._append_line(vp, r)
+    ret10 = {"A": -2.0, "B": 1.0, "C": 5.0}
+    for r in rows[:3]:                               # E 故意缺 T+10 → n/a
+        cl._append_line(vp, dict(r, horizon=10,
+                                 verify_key="vk10_" + r["sig_id"],
+                                 ret_pct=ret10[r["sig_id"]]))
+    text = cl.l4_weekly(learn_dir=env["learn"],
+                        as_of="2026-10-18")      # 字符串锚点（CLI 同款）
+    assert "## T+20 左尾哨兵" in text
+    assert "案例：3 条" in text
+    # 深亏在前排序 + 标的/类型/ret20/ret10 全要素
+    assert "600001.SH 2卖 ret20=-18.50% ret10=-2.00%" in text
+    assert "000002.SZ 3卖 ret20=-12.00% ret10=n/a" in text
+    assert "000002.SZ 3卖 ret20=-11.00% ret10=+1.00%" in text
+    sec = text.split("## T+20 左尾哨兵")[1].split("- 卖向")[0]
+    assert "1卖" not in sec                          # C 旧账不入本周清单
+    # 卖向 T+20 滚动读数（全量窗口，含旧账）：手算对账
+    # 2卖=[-18.5,+3.0] 3卖=[-11,-12] 1卖=[-20]
+    assert "2卖：n=2，win=50.0%，avg=-7.75%，p10=-18.5%" in text
+    assert "3卖：n=2，win=0.0%，avg=-11.5%，p10=-12.0%" in text
+    assert "1卖：n=1，win=0.0%，avg=-20.0%，p10=-20.0%" in text
+
+
 # ── memory_store() 构造 ─────────────────────────────────────
 def test_memory_store_loads_grants_from_org(tmp_path):
     org = {"departments": [{"dept": "invest", "name": "量化交易部",
