@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📊 数据日报 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+/* K-ORG-183 数据日报 · 配色一律读 tokens 语义层，禁自绘 hex（设计宪法 §2） */
+*{box-sizing:border-box}
+body{background:var(--bg-page);color:var(--text);font-family:var(--font-ui);margin:0;padding:0 0 40px}
+.wrap{max-width:var(--page-w);margin:0 auto;padding:18px 20px 0}
+h1{font-size:var(--fs-xl);margin:14px 0 4px;color:var(--text)}
+h1 .sub{font-size:var(--fs-xs);color:var(--text-dim);font-weight:400;margin-left:10px}
+h2{font-size:var(--fs-m);color:var(--text-dim);margin:26px 0 10px;letter-spacing:.5px;font-weight:600}
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.metric{background:var(--bg-raised);border:1px solid var(--border-weak);border-radius:var(--r-m);padding:12px 14px}
+.metric .k{font-size:var(--fs-xs);color:var(--text-dim)}
+.metric .v{font-size:20px;font-weight:600;color:var(--text);margin-top:4px;font-family:var(--font-mono)}
+.metric .v.warn{color:var(--color-warn)}.metric .v.bad{color:var(--color-err)}.metric .v.good{color:var(--color-ok)}
+.panel{background:var(--bg-surface);border:1px solid var(--border-weak);border-radius:var(--r-m);padding:13px 16px;margin-bottom:12px;overflow-x:auto}
+.bar{display:flex;height:16px;border-radius:var(--r-s);overflow:hidden;margin:8px 0 4px;background:var(--border-weak)}
+.bar span{display:block;height:100%}
+.legend{font-size:var(--fs-xs);color:var(--text-dim);margin-top:2px}
+.legend b{color:var(--text);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-s)}
+th{color:var(--text-dim);text-align:left;font-weight:400;padding:5px 8px;border-bottom:1px solid var(--border-weak);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--bg-raised);white-space:nowrap}
+td.num{font-family:var(--font-mono)}
+.up{color:var(--color-up);font-weight:600}.dn{color:var(--color-dn);font-weight:600}.dim{color:var(--text-dim)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-pill);padding:3px 11px;font-size:var(--fs-xs);color:var(--text)}
+.chip b{color:var(--link);font-weight:600;font-family:var(--font-mono)}
+.badge{display:inline-block;border-radius:var(--r-s);padding:2px 8px;font-size:var(--fs-xs);font-weight:600;border:1px solid var(--border)}
+.badge.ok{color:var(--color-ok);border-color:var(--color-ok)}
+.badge.warn{color:var(--color-warn);border-color:var(--color-warn)}
+.badge.err{color:var(--color-err);border-color:var(--color-err)}
+.empty{color:var(--text-dim);font-size:var(--fs-s);padding:8px 0}
+.err{color:var(--color-err);font-size:var(--fs-s)}
+.trend{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:10px}
+.trend .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.trend .stk{display:flex;flex-direction:column-reverse;width:100%;border-radius:3px;overflow:hidden}
+.trend .stk i{display:block;width:100%}
+.trend .d{font-size:10px;color:var(--text-dim);text-align:center;margin-top:3px;white-space:nowrap}
+footer{margin-top:30px;color:var(--text-dim);font-size:var(--fs-xs);text-align:center;opacity:.7}
+a{color:var(--link)}
+</style>
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>📊 数据日报 <span class="sub">JEV 多维数据 · 情绪×次日实证 · 冲击力分层 · 漂移哨兵 · 管道体检 · 源 /api/daily/data</span></h1>
+
+<section><h2>〇 · 指标带</h2><div class="metrics" id="metrics"><span class="empty">加载中…</span></div></section>
+
+<section><h2>一 · 舆情分布（当日 JEV 判定）</h2>
+  <div class="panel" id="dist"><span class="empty">加载中…</span></div>
+  <div class="panel" id="trend"><span class="empty">加载中…</span></div></section>
+
+<section><h2>二 · 情绪 × 次日涨跌实证（全量回测口径）</h2><div class="panel" id="bt"><span class="empty">加载中…</span></div></section>
+
+<section><h2>三 · 冲击力分层（impact × CAR，E3 观察中）</h2><div class="panel" id="impact"><span class="empty">加载中…</span></div></section>
+
+<section><h2>四 · 判定漂移哨兵（JS 散度 · 周窗口对比）</h2><div class="panel" id="drift"><span class="empty">加载中…</span></div></section>
+
+<section><h2>五 · 管道体检（产物新鲜度）</h2><div class="panel" id="health"><span class="empty">加载中…</span></div></section>
+
+<footer>K-ORG-183 数据日报 M1 · 2026-10-18 · 聚合出口 /api/daily/data（只读）· 上游：sentiment_backtest / jev_impact / jev_drift / xq_daily_report</footer>
+</div>
+
+<script>
+function el(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'—':s).replace(/[&<>"]/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function num(v,fmt,suf){return (v==null||isNaN(v))?'—':((fmt?fmt(v):v)+(suf||''))}
+function sgn(v,suf){ /* 中式着色：正=红(涨/多) 负=绿(跌/空)，判例 K-STOCK-359/363 */
+ if(v==null||isNaN(v))return '<span class="dim">—</span>';
+ var t=(v>0?'+':'')+(suf==='pp'?v.toFixed(1)+'pp':v.toFixed(2)+'%');
+ return '<span class="'+(v>=0?'up':'dn')+'">'+t+'</span>'}
+function metric(k,v,cls){return '<div class="metric"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div></div>'}
+function stackBar(parts){ /* parts:[[n,colorVar],...] → 占比条 */
+ var tot=0;parts.forEach(function(p){tot+=p[0]});
+ if(!tot)return '';
+ return '<div class="bar">'+parts.map(function(p){return p[0]?
+  '<span style="width:'+(100*p[0]/tot)+'%;background:'+p[1]+'"></span>':''}).join('')+'</div>'}
+var CN_BIAS={bull:'利多',bear:'利空',neutral:'中性'};
+var CN_SCOPE={cn:'A股',hk:'港股',us:'美股',commodity:'商品',crypto:'加密',macro:'宏观'};
+var CN_IMPACT={low:'low 轻微',medium:'medium 中等',high:'high 强'};
+function chipMap(m,cn){var ks=Object.keys(m).sort(function(a,b){return m[b]-m[a]});
+ return ks.length?'<div class="chips">'+ks.map(function(k){
+  return '<span class="chip">'+esc(cn&&cn[k]||k)+' <b>'+m[k]+'</b></span>'}).join('')+'</div>'
+ :'<div class="empty">（无）</div>'}
+
+function render(d){
+ if(d.error){el('metrics').innerHTML='<span class="err">'+esc(d.error)+'</span>';return}
+ var ds=d.dist||{},bt=d.bt||{},im=d.impact||{},dr=d.drift||{},hl=d.health||{};
+ /* ── 〇 指标带 ── */
+ var tot=ds.total||0,bias=ds.bias||{};
+ var skew=tot?(bias.bull||0)-(bias.bear||0):null;
+ var openN=dr.exists?dr.open_count:null;
+ el('metrics').innerHTML=
+  metric('当日 JEV 判定',tot,tot?'':'dim')
+ +metric('多空偏斜（利多−利空）',skew==null?'—':(skew>0?'+':'')+skew,
+   skew==null?'dim':(skew>10?'up':(skew<-10?'dn':'')))
+ +metric('回测样本 n',bt.exists?bt.n:'—',bt.exists?'':'dim')
+ +metric('corr(情绪分,T+1)',bt.exists?num(bt.corr_score_pct1,function(v){return v.toFixed(3)}):'—','')
+ +metric('漂移 OPEN 告警',openN==null?'—':openN,openN>0?'bad':'good')
+ +metric('bias_probs 覆盖',ds.exists?(ds.bias_probs_n||0)+' 条':'—',ds.exists?'':'dim');
+ /* ── 一 舆情分布 ── */
+ if(!ds.exists){
+  el('dist').innerHTML='<span class="empty">'+esc(ds.error||'news.db 无当日判定')+'</span>';
+ }else{
+  var b=bias;
+  el('dist').innerHTML=
+   stackBar([[b.bull||0,'var(--color-up)'],[b.neutral||0,'var(--text-dim)'],[b.bear||0,'var(--color-dn)']])
+  +'<div class="legend">利多 <b>'+(b.bull||0)+'</b> · 中性 <b>'+(b.neutral||0)+'</b> · 利空 <b>'+(b.bear||0)+'</b>（共 '+tot+'，坏行 '+esc(ds.bad_jev_rows||0)+'）</div>';
+  var cf=ds.conf_buckets||{};
+  el('dist').innerHTML+='<div class="legend" style="margin-top:12px">置信分层（低&lt;0.7 / 中0.7-0.9 / 高≥0.9，对齐 K-ORG-157）：</div>'
+   +stackBar([[cf.low||0,'var(--color-warn)'],[cf.mid||0,'var(--link)'],[cf.high||0,'var(--color-ok)']])
+   +'<div class="legend">低 <b>'+(cf.low||0)+'</b> · 中 <b>'+(cf.mid||0)+'</b> · 高 <b>'+(cf.high||0)+'</b></div>';
+  if(ds.bias_probs_avg){var p=ds.bias_probs_avg;
+   el('dist').innerHTML+='<div class="legend" style="margin-top:12px">bias_probs 全量分布均值（K-ORG-176 · 覆盖 '+esc(ds.bias_probs_n)+' 条）：</div>'
+    +stackBar([[p.bull,'var(--color-up)'],[p.neutral,'var(--text-dim)'],[p.bear,'var(--color-dn)']])
+    +'<div class="legend">利多 <b>'+(100*p.bull).toFixed(1)+'%</b> · 中性 <b>'+(100*p.neutral).toFixed(1)+'%</b> · 利空 <b>'+(100*p.bear).toFixed(1)+'%</b></div>'}
+  el('dist').innerHTML+='<div class="legend" style="margin-top:12px">scope 市场分布：</div>'+chipMap(ds.scope||{},CN_SCOPE);
+  el('dist').innerHTML+='<div class="legend" style="margin-top:10px">事件类型分布：</div>'+chipMap(ds.event_type||{});
+ }
+ /* 7 日趋势（堆叠柱：利多红/中性灰/利空绿，纯 CSS 无图表库） */
+ var t7=ds.trend7||[];
+ if(t7.length){var mx=Math.max.apply(null,t7.map(function(x){return x.total}))||1;
+  el('trend').innerHTML='<div class="legend">近 7 日判定量趋势（当日 '+esc(ds.day)+'）：</div><div class="trend">'
+   +t7.map(function(x){var h=100*x.total/mx;
+    return '<div class="col" title="'+esc(x.day)+' 共 '+x.total+'（利多'+x.bull+'/利空'+x.bear+'）">'
+     +'<div class="stk" style="height:'+Math.max(h,2)+'%">'
+     +'<i style="height:'+(x.total?100*(x.bull||0)/x.total:0)+'%;background:var(--color-up)"></i>'
+     +'<i style="height:'+(x.total?100*(x.neutral||0)/x.total:0)+'%;background:var(--text-dim)"></i>'
+     +'<i style="height:'+(x.total?100*(x.bear||0)/x.total:0)+'%;background:var(--color-dn)"></i></div>'
+     +'<div class="d">'+esc(x.day.slice(5))+'</div></div>'}).join('')+'</div>';
+ }else{el('trend').innerHTML='<span class="empty">（无趋势数据）</span>'}
+ /* ── 二 情绪×次日实证 ── */
+ if(!bt.exists){el('bt').innerHTML='<span class="empty">'+esc(bt.error||bt.hint||'sentiment_bt_result 未生成')+'</span>'}
+ else{
+  var g=bt.groups||{};
+  var row=function(k,cn){var x=g[k]||{};
+   return '<tr><td class="'+(k==='bull'?'up':(k==='bear'?'dn':'dim'))+'">'+cn+'</td>'
+    +['n','pct1_avg','vs_mkt1','pct3_avg','pct5_avg','vs_mkt5'].map(function(f){
+      if(f==='n')return '<td class="num">'+esc(x.n||0)+'</td>';
+      if(f.indexOf('vs_mkt')===0)return '<td class="num">'+sgn(x[f],'pp')+'</td>';
+      return '<td class="num">'+sgn(x[f])+'</td>'}).join('')+'</tr>'};
+  var html='<table><tr><th>组别</th><th>n</th><th>T+1均值</th><th>vs市场</th><th>T+3均值</th><th>T+5均值</th><th>vs市场5d</th></tr>'
+   +row('bull','偏多')+row('bear','偏空')+row('neutral','中性')+'</table>';
+  html+='<div class="legend" style="margin-top:8px">corr(情绪加权分, T+1)=<b>'+esc(bt.corr_score_pct1)+'</b> · 高置信(≥0.8) n='+esc(bt.n_high_conf)+' corr=<b>'+esc(bt.corr_score_pct1_high_conf)+'</b> · 样本窗口 '+esc((bt.news_day_range||[]).join(' ~ '))+'（新闻日期口径）</div>';
+  var tiers=bt.conf_tiers||[];
+  if(tiers.length){
+   html+='<div class="legend" style="margin-top:12px">conf 分层（方向样本命中/一致性）· 单调性 <b>'+esc(bt.conf_monotone===true?'是':(bt.conf_monotone===false?'否':'样本不足'))+'</b></div>';
+   html+='<table><tr><th>conf 档</th><th>n</th><th>方向n</th><th>T+1命中</th><th>方向vs市场</th><th>corr</th></tr>'
+    +tiers.map(function(t){return '<tr><td>'+esc(t.tier)+'</td><td class="num">'+esc(t.n)+'</td><td class="num">'+esc(t.n_dir)+'</td>'
+     +'<td class="num">'+(t.hit_pct1==null?'—':t.hit_pct1.toFixed(1)+'%')+'</td>'
+     +'<td class="num">'+sgn(t.dir_vs_mkt1,'pp')+'</td><td class="num">'+esc(t.corr_pct1==null?'—':t.corr_pct1)+'</td></tr>'}).join('')+'</table>'}
+  var sg=bt.scope_groups||{},sk=Object.keys(sg);
+  if(sk.length){html+='<div class="legend" style="margin-top:12px">可成交按 scope：</div><div class="chips">'
+   +sk.map(function(k){var x=sg[k]||{};return '<span class="chip">'+esc(CN_SCOPE[k]||k)+' n=<b>'+esc(x.n)+'</b> T+1 '+
+    (x.pct1_avg==null?'—':(x.pct1_avg>=0?'+':'')+x.pct1_avg+'%')+'</b></span>'}).join('')+'</div>'}
+  el('bt').innerHTML=html;
+ }
+ /* ── 三 冲击力分层 ── */
+ if(!im.exists){el('impact').innerHTML='<span class="empty">'+esc(im.error||im.hint||'jev_impact 未生成')+'</span>'}
+ else{
+  var ig=im.groups||{},ap=im.applied||{};
+  var html='<table><tr><th>impact</th><th>n</th><th>CAR1均值%</th><th>CAR1胜率</th><th>CAR3均值%</th><th>方向CAR1%</th><th>复评门槛</th></tr>';
+  ['low','medium','high'].forEach(function(k){var x=ig[k]||{};
+   html+='<tr><td>'+esc(CN_IMPACT[k]||k)+'</td><td class="num">'+esc(x.n||0)+'</td>'
+    +'<td class="num">'+esc(x.car1_avg==null?'—':x.car1_avg)+'</td>'
+    +'<td class="num">'+esc(x.car1_pos_pct==null?'—':x.car1_pos_pct+'%')+'</td>'
+    +'<td class="num">'+esc(x.car3_avg==null?'—':x.car3_avg)+'</td>'
+    +'<td class="num">'+esc(x.dir_car1_avg==null?'—':x.dir_car1_avg)+'</td>'
+    +'<td>'+(k==='low'?'<span class="badge ok">基准组</span>'
+      :(ap[k]?'<span class="badge err">已触发复评</span>':'<span class="badge warn">观察中</span>'))+'</td></tr>'});
+  html+='</table><div class="legend" style="margin-top:8px">'+esc(im.hint||'')+'（方向样本 ≥30 且 CAR1 相对 low 组增益 ≥1pp 才建议复评，样本不足不改生产策略）· impact 分布 '+esc(JSON.stringify(im.impact_dist||{}))+'</div>';
+  el('impact').innerHTML=html;
+ }
+ /* ── 四 漂移哨兵 ── */
+ if(!dr.exists){el('drift').innerHTML='<span class="err">'+esc(dr.error||'v2_alert 不可达')+'</span>'}
+ else{
+  var als=dr.alerts||[];
+  var html='<div class="legend">OPEN 漂移告警 <b>'+esc(dr.open_count)+'</b> 条（近 20 条记录 · JS 阈值 0.05 · 样本门槛 100 · jev_drift 每日 07:10）</div>';
+  html+=als.length?'<table><tr><th>告警</th><th>状态</th><th>时间</th></tr>'+als.map(function(a){
+   return '<tr><td><b>'+esc(a.title)+'</b><div class="legend" style="white-space:normal">'+esc((a.message||'').split('\n').slice(0,3).join(' · '))+'</div></td>'
+    +'<td>'+(a.status==='OPEN'?'<span class="badge err">OPEN</span>':'<span class="badge ok">'+esc(a.status)+'</span>')+'</td>'
+    +'<td class="num dim">'+esc((a.created_at||'').replace('T',' ').slice(0,19))+'</td></tr>'}).join('')+'</table>'
+   :'<div class="empty">（无记录——分布稳定或未达样本门槛）</div>';
+  el('drift').innerHTML=html;
+ }
+ /* ── 五 管道体检 ── */
+ var items=hl.items||[];
+ el('health').innerHTML=items.length?'<table><tr><th>产物</th><th>状态</th><th>mtime</th><th>时效</th><th>内嵌 generated_at</th></tr>'
+  +items.map(function(x){
+   var cls=x.exists?(x.age_hours<26?'ok':(x.age_hours<50?'warn':'err')):'err';
+   var label=!x.exists?'缺失':(x.age_hours<26?'新鲜':(x.age_hours<50?'偏旧':'过期'));
+   return '<tr><td class="mono">'+esc(x.name)+'</td><td><span class="badge '+cls+'">'+label+'</span></td>'
+    +'<td class="num dim">'+esc(x.mtime||'—')+'</td><td class="num">'+esc(x.age_hours==null?'—':x.age_hours+'h')+'</td>'
+    +'<td class="num dim">'+esc(x.generated_at||'—')+'</td></tr>'}).join('')+'</table>'
+  +'<div class="legend" style="margin-top:8px">检查于 '+esc(hl.checked_at||'—')+' · 阈值：&lt;26h 新鲜 / &lt;50h 偏旧 / 其余过期（计划任务节奏：回测盘后、drift 07:10、xq 19:00）</div>'
+  :'<span class="empty">（无产物清单）</span>';
+}
+
+fetch('/api/daily/data').then(function(r){return r.json()}).then(render)
+ .catch(function(e){el('metrics').innerHTML='<span class="err">/api/daily/data 不可达：'+esc(e)+'</span>'});
+</script>
+</body>
+</html>
