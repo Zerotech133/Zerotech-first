@@ -60,6 +60,49 @@ def test_alerts_missing_unhealthy_and_card_count_do_not_trigger(monkeypatch):
     assert subscribe._sub_alert_signal({"_watch_state": subscription["_alerts_new"]}, "intraday") is None
 
 
+def test_alerts_reject_boolean_version_and_empty_nonzero_mixture(monkeypatch):
+    """布尔版本不是 v1；empty 非零卡即使其它源正常也必须整包拒绝。"""
+    payload = {"alerts": [{"name": "盘前倾向", "value": "偏多"},
+                          {"name": "九维警报池", "value": "8 只"}],
+               "source_health": {"version": 1, "checked_at": stamp(),
+                                 "sources": {name: {"status": "ok", "as_of": stamp()}
+                                             for name in ("premarket", "chanlun", "nine_dim",
+                                                          "weak", "cross")}}}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(payload).encode("utf-8")
+
+    monkeypatch.setattr(subscribe.urllib.request, "urlopen", lambda *args, **kwargs: Response())
+    assert subscribe._sub_alert_signal({}, "intraday") is not None
+    payload["source_health"]["version"] = True
+    assert subscribe._sub_alert_signal({}, "intraday") is None
+    payload["source_health"]["version"] = 1
+    payload["source_health"]["sources"]["nine_dim"]["status"] = "empty"
+    assert subscribe._sub_alert_signal({}, "intraday") is None
+    payload["alerts"][1]["value"] = "0 只"
+    accepted = subscribe._sub_alert_signal({}, "intraday")
+    assert accepted is not None and len(accepted[2]) == 1
+    assert "盘前倾向" in accepted[2][0]
+    for name, value in (("缠论信号", "买 2 · 卖 0"),
+                        ("弱于板块在案", "1 案"),
+                        ("共振做多", "2 只"),
+                        ("盘前倾向", "偏多")):
+        route = subscribe._ALERT_SOURCES[name]
+        payload["source_health"]["sources"]["nine_dim"]["status"] = "ok"
+        payload["source_health"]["sources"][route]["status"] = "empty"
+        payload["alerts"] = [{"name": "九维警报池", "value": "8 只"},
+                             {"name": name, "value": value}]
+        assert subscribe._sub_alert_signal({}, "intraday") is None
+        payload["source_health"]["sources"][route]["status"] = "ok"
+
+
 def test_quotes_use_status_not_direction_cooldown(tmp_path, monkeypatch):
     """冷却方向戳不包含幅度；只取实际健康行情快照。"""
     monkeypatch.setattr(subscribe, "NEWS_DIR", str(tmp_path))
@@ -77,8 +120,15 @@ def test_quotes_use_status_not_direction_cooldown(tmp_path, monkeypatch):
     assert built is not None and "sh600000" in built[2][1]
     assert "非独立买卖点" in built[1]
     assert subscribe._sub_quote_move({"_last_fp": subscription["_fp_new"]}, "intraday") is None
+    boundary = {**data, "items": [{**data["items"][0], "pct": 25.0}]}
+    path.write_text(json.dumps(boundary), encoding="utf-8")
+    assert subscribe._sub_quote_move({}, "intraday") is not None
     for patch in ({"ok": False}, {"updated": quote_stamp(30)},
                   {"items": [{**data["items"][0], "ts": quote_stamp(30)}]},
+                  {"updated": quote_stamp(-1)},
+                  {"items": [{**data["items"][0], "ts": quote_stamp(-1)}]},
+                  {"items": [{**data["items"][0], "pct": 1000000}]},
+                  {"items": [{**data["items"][0], "pct": -25.01}]},
                   {"alert_threshold": None}, {"count": 0}):
         path.write_text(json.dumps({**data, **patch}), encoding="utf-8")
         assert subscribe._sub_quote_move({}, "intraday") is None

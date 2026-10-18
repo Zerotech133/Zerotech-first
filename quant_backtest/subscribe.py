@@ -31,6 +31,7 @@
 import json
 import math
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -400,8 +401,9 @@ def _sub_alert_signal(sub, mode):
     if not isinstance(res, dict):
         return None
     health = res.get("source_health")
-    if not isinstance(health, dict) or health.get("version") != 1 or not _fresh_time(
-            health.get("checked_at"), minutes=5):
+    if (not isinstance(health, dict) or type(health.get("version")) is not int or
+            health["version"] != 1 or not _fresh_time(
+                health.get("checked_at"), minutes=5)):
         return None
     sources = health.get("sources")
     alerts = res.get("alerts")
@@ -419,7 +421,21 @@ def _sub_alert_signal(sub, mode):
         if not isinstance(a, dict):
             return None
         nm, val = a.get("name"), a.get("value")
-        source = sources.get(_ALERT_SOURCES.get(nm))
+        source_name = _ALERT_SOURCES.get(nm)
+        source = sources.get(source_name)
+        if isinstance(source, dict) and source.get("status") == "empty":
+            # 完成的零结果源与非零展示卡矛盾：整包拒绝，不能只删矛盾卡。
+            zero_pattern = {"chanlun": r"\s*买\s*0\s*·\s*卖\s*0\s*",
+                            "nine_dim": r"\s*0\s*只\s*",
+                            "weak": r"\s*0\s*案\s*",
+                            "cross": r"\s*0\s*只\s*"}.get(source_name)
+            if source_name == "premarket":
+                if not isinstance(val, str) or val.strip() not in ("", "—", "-", "暂无"):
+                    return None
+            elif zero_pattern is None or not isinstance(val, str) or re.fullmatch(
+                    zero_pattern, val) is None:
+                return None
+            continue
         if (not isinstance(nm, str) or not isinstance(source, dict) or
                 source.get("status") != "ok" or
                 not _fresh_time(source.get("as_of"), minutes=5) or
@@ -454,7 +470,8 @@ def _quote_time(value):
     try:
         stamp = datetime.strptime(value, "%Y-%m-%d %H:%M").replace(tzinfo=_CST)
         age = datetime.now(_CST) - stamp
-        return timedelta(minutes=-1) <= age <= timedelta(minutes=15)
+        # 分钟取整的本分钟合法（秒级正龄）；下一个整分钟必为未来。
+        return timedelta(0) <= age <= timedelta(minutes=15)
     except (TypeError, ValueError):
         return False
 
@@ -480,7 +497,8 @@ def _sub_quote_move(sub, mode):
             return None
         if pct is None:
             continue
-        if type(pct) not in (int, float) or not math.isfinite(pct):
+        if (type(pct) not in (int, float) or not math.isfinite(pct) or
+                abs(pct) > 25.0):
             return None
         if abs(pct) >= threshold:
             hits.append({"code": code, "pct": float(pct)})
