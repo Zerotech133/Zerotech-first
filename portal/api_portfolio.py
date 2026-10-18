@@ -3,6 +3,39 @@
 Handler 壳经基座多继承并入（禁 import *）。
 """
 import glob, json, os, re, subprocess, sys, threading, time
+
+from pathlib import Path
+import msvcrt
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_PAPER_DIR_ROOT = str(_REPO_ROOT / "k_stock" / "paper")
+_PAPER_DATA_DIR_ROOT = str(_REPO_ROOT / "k_stock" / "data")
+_PAPER_DB_ROOT = os.path.join(_PAPER_DATA_DIR_ROOT, "paper.db")
+_PAPER_QD_LOCK_FILE = os.path.join(_PAPER_DATA_DIR_ROOT, ".double_knife.lock")
+
+
+def _acquire_paper_qd_lock():
+    os.makedirs(_PAPER_DATA_DIR_ROOT, exist_ok=True)
+    lock = open(_PAPER_QD_LOCK_FILE, "a+b")
+    try:
+        lock.seek(0, os.SEEK_END)
+        if lock.tell() == 0:
+            lock.write(b"0")
+            lock.flush()
+        lock.seek(0)
+        msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+    except OSError:
+        lock.close()
+        return None
+    return lock
+
+
+def _release_paper_qd_lock(lock):
+    try:
+        lock.seek(0)
+        msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+    finally:
+        lock.close()
 from api_common import (
     _read_json,
     log_exc,
@@ -1590,14 +1623,16 @@ class Handler:
                 + self._COCKPIT_CSS + self._KG_CSS + "</head><body>"
                 + pill_nav("council") + content + cjs + "</body></html>")
         self._html(body)   # K-STOCK-141 修复：批7搬运切割丢失收尾行（handler 算完 body 不发响应即 return → /council 空连接断开）
-    _PAPER_QD_LOCK = threading.Lock()   # 双刀执行互斥（防连点并发落两套单）
-    _PAPER_DIR = r"E:\老田的AI助手\k_stock\paper"
+    _PAPER_QD_LOCK = threading.Lock()   # 进程内快速拒绝重复点击
+    _PAPER_DIR = _PAPER_DIR_ROOT
+    _PAPER_DATA_DIR = _PAPER_DATA_DIR_ROOT
+    _PAPER_DB = _PAPER_DB_ROOT
     # ---------------- K-STOCK 模拟仓写路径（v0.2 平台化 2026-10-09） ----------------
     # 设计：portal_api 保持纯标准库——引擎调用一律 subprocess CLI（py311 绝对
     # 路径，带 pandas；与 07:05 automation 同一口径）。每次下单一个干净子进程，
     # 门户进程零 pandas / 零第二写连接 / 零共享账本状态。鉴权：端点已入
     # _MUTATION_POSTS（本机放行；局域网与脚本须 X-Portal-Token，同全站口径）。
-    _PAPER_PY = r"C:\Program Files\Python311\python.exe"
+    _PAPER_PY = sys.executable
 
     def _api_paper_stop(self, raw):
         try:
@@ -1640,10 +1675,16 @@ class Handler:
                     self._json({"ok": False,
                                 "error": "双刀执行进行中，请勿重复提交"}, 409)
                     return
+                _qd_file_lock = _acquire_paper_qd_lock()
+                if _qd_file_lock is None:
+                    self._PAPER_QD_LOCK.release()
+                    self._json({"ok": False,
+                                "error": "双刀执行进行中，请勿重复提交"}, 409)
+                    return
                 try:
                     import sqlite3 as _sq3
-                    _db = "E:/老田的AI助手/k_stock/data/paper.db"
-                    con = _sq3.connect(f"file:{_db}?mode=ro", uri=True)
+                    con = _sq3.connect(
+                        f"file:{self._PAPER_DB}?mode=ro", uri=True)
                     try:
                         n = con.execute(
                             "SELECT COUNT(*) FROM orders "
@@ -1660,6 +1701,7 @@ class Handler:
                          os.path.join(self._PAPER_DIR, "qd_adapter.py"),
                          "--json"], timeout=60)
                 finally:
+                    _release_paper_qd_lock(_qd_file_lock)
                     self._PAPER_QD_LOCK.release()
             else:
                 side = str(rec.get("side") or "").upper()
@@ -1709,7 +1751,7 @@ class Handler:
             try:  # 与下单防重同口径：查账本（文件存在≠已执行）
                 import sqlite3 as _sq3
                 con = _sq3.connect(
-                    "file:E:/老田的AI助手/k_stock/data/paper.db?mode=ro", uri=True)
+                    f"file:{self._PAPER_DB}?mode=ro", uri=True)
                 try:
                     out["qd_ran_today"] = bool(con.execute(
                         "SELECT COUNT(*) FROM orders "

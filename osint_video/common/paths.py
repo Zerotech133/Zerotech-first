@@ -17,7 +17,16 @@ from __future__ import annotations
 
 import datetime as _dt
 import os
+import re
 from pathlib import Path
+
+_SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
+
+
+def _validate_video_id(video_id: str) -> str:
+    if not isinstance(video_id, str) or not _SAFE_ID.fullmatch(video_id):
+        raise ValueError("video_id must be a safe filesystem identifier")
+    return video_id
 
 #: 项目根目录（osint_video/）
 PROJECT_ROOT: Path = Path(__file__).resolve().parents[1]
@@ -65,6 +74,9 @@ def raw_dir_for(video_id: str, month: str | None = None) -> Path:
     """
     if month is None:
         month = _dt.datetime.now().strftime("%Y-%m")
+    _validate_video_id(video_id)
+    if not re.fullmatch(r"\d{4}-\d{2}", month):
+        raise ValueError("month must use YYYY-MM format")
     target = DATA_RAW / month / video_id
     target.mkdir(parents=True, exist_ok=True)
     return target
@@ -75,6 +87,7 @@ def work_dir_for(video_id: str) -> Path:
 
     管线逐阶段在此落盘检查点（wav / frames / *.json），重跑安全（架构 §7.9）。
     """
+    _validate_video_id(video_id)
     target = DATA_WORK / video_id
     target.mkdir(parents=True, exist_ok=True)
     return target
