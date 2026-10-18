@@ -471,13 +471,18 @@ class Member:
 
 @dataclass(frozen=True)
 class BatchDecision:
-    """Visible outcome including unverified hits without promoting them to members."""
+    """Visible outcome; fingerprint keys rejected decisions by the entire payload."""
 
     batch_id: str
     strategy: StrategyId
     kind: DecisionKind
     reason: str
     unverified_hits: tuple[Hit, ...] = ()
+    batch_fingerprint: str = ""
+
+    def __post_init__(self) -> None:
+        if self.batch_fingerprint:
+            _sha256_text(self.batch_fingerprint, "decision batch fingerprint")
 
 
 @dataclass(frozen=True)
@@ -512,16 +517,20 @@ def reduce_batch(state: PoolState, batch: ScanBatch, receipt: CoverageReceipt | 
                  approval: CoverageApproval | None = None) -> PoolState:
     """Apply only a verified, nonconflicting new trading-day coverage boundary."""
     _utc(as_of)
+    fingerprint = batch_fingerprint(batch)
+
     def decided(kind: DecisionKind, reason: str, unverified: bool = False) -> PoolState:
+        """Append a distinct rejection once per batch identity, payload and cause."""
         decision = BatchDecision(batch.batch_id, batch.strategy, kind, reason,
-                                 batch.hits if unverified else ())
+                                 batch.hits if unverified else (), fingerprint)
+        if decision in state.decisions:
+            return state
         return PoolState(state.members, state.events, state.accepted, state.last_dates,
                          state.decisions + (decision,))
 
     if (batch.produced_at > as_of or batch.trade_date > as_of.date() or
             any(hit.evidence.observed_at > as_of for hit in batch.hits)):
         return decided(DecisionKind.UNVERIFIED, "future batch or evidence", True)
-    fingerprint = batch_fingerprint(batch)
     previous = next((entry for entry in state.accepted
                      if entry[0] == batch.strategy and entry[1] == batch.batch_id), None)
     if previous is not None and previous[3] != fingerprint:
@@ -582,7 +591,8 @@ def reduce_batch(state: PoolState, batch: ScanBatch, receipt: CoverageReceipt | 
                                   for (strategy, market), day in updated_last.items())),
                      state.decisions + (BatchDecision(batch.batch_id, batch.strategy,
                                                        DecisionKind.ACCEPTED,
-                                                       "independently verified"),))
+                                                       "independently verified", (),
+                                                       fingerprint),))
 
 
 def set_manual_hold(state: PoolState, strategy: StrategyId, security: SecurityId,

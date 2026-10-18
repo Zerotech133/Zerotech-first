@@ -217,6 +217,61 @@ def test_raw_artifact_byte_replacement_never_reuses_old_receipt():
     assert frozen.members[0].consecutive_absences == 0
 
 
+def test_identical_invalid_replay_is_fully_idempotent_even_after_acceptance():
+    batch = make_batch()
+    raw, parsed, observation, approval = trusted_inputs(batch)
+    receipt = verify_runner_batch(batch, observation, approval, KEY, raw, parsed)
+    valid = apply(PoolState(), batch, receipt, raw=raw, parsed=parsed,
+                  observation=observation, approval=approval)
+    bad = apply(valid, batch, receipt, raw=raw + b" ", parsed=parsed,
+                observation=observation, approval=approval)
+    assert bad.decisions[-1].kind is DecisionKind.UNVERIFIED
+    for _ in range(3):
+        replay = apply(bad, batch, receipt, raw=raw + b" ", parsed=parsed,
+                       observation=observation, approval=approval)
+        assert replay is bad
+        bad = replay
+    assert bad.members == valid.members and bad.events == valid.events
+    assert bad.accepted == valid.accepted and len(bad.decisions) == len(valid.decisions) + 1
+    # An invalid replay must never short-circuit back to the earlier accepted state.
+    assert bad != valid
+
+
+def test_rejection_identity_includes_full_batch_payload_and_reason():
+    batch = make_batch()
+    rejected = apply(PoolState(), batch)
+    assert apply(rejected, batch) is rejected
+    revised = replace(batch, hits=())  # Same run ID, different producer payload.
+    changed = apply(rejected, revised)
+    assert changed.decisions[-1].batch_fingerprint != rejected.decisions[-1].batch_fingerprint
+    assert len(changed.decisions) == 2
+    assert apply(changed, revised) is changed
+    # A trusted batch can be promoted after an earlier unverified display.
+    raw, parsed, observation, approval = trusted_inputs(batch)
+    receipt = verify_runner_batch(batch, observation, approval, KEY, raw, parsed)
+    promoted = apply(rejected, batch, receipt, raw=raw, parsed=parsed,
+                     observation=observation, approval=approval)
+    assert promoted.decisions[-1].kind is DecisionKind.ACCEPTED
+    assert len(promoted.members) == 1 and len(promoted.events) == 1
+    # A later conflicting run ID is audited once, not conflated with prior absence.
+    conflict = apply(promoted, revised)
+    assert conflict.decisions[-1].kind is DecisionKind.CONFLICT
+    assert conflict.decisions[-1].batch_fingerprint != promoted.decisions[-1].batch_fingerprint
+    assert apply(conflict, revised) is conflict
+    further_change = replace(revised, status=BatchStatus.PARTIAL)
+    assert len(apply(conflict, further_change).decisions) == len(conflict.decisions) + 1
+
+
+def test_rejection_reason_changes_are_distinct_but_each_is_idempotent():
+    batch = make_batch()
+    rejected = apply(PoolState(), batch)
+    early = reduce_batch(rejected, batch, None, KEY, BASE - timedelta(hours=1))
+    assert early.decisions[-1].reason != rejected.decisions[-1].reason
+    assert len(early.decisions) == 2
+    again = reduce_batch(early, batch, None, KEY, BASE - timedelta(hours=1))
+    assert again is early
+
+
 def test_seal_row_count_size_and_original_parse_mismatch_fail_closed():
     batch = make_batch()
     raw, parsed, observation, approval = trusted_inputs(batch)
