@@ -87,17 +87,19 @@ def load_receivers():
 
 def _valid_target(target):
     """仅接受显式有效的同一身份域目标，不让发送器隐式选择个人。"""
-    return (isinstance(target, dict) and
-            target.get("type") in ("open_id", "chat_id") and
-            isinstance(target.get("id"), str) and
-            target["id"].startswith("ou_" if target["type"] == "open_id" else "oc_") and
+    if not isinstance(target, dict) or target.get("type") not in ("open_id", "chat_id"):
+        return False
+    identifier = target.get("id")
+    prefix = "ou_" if target["type"] == "open_id" else "oc_"
+    return (isinstance(identifier, str) and identifier.startswith(prefix) and
+            bool(identifier[len(prefix):].strip()) and
             isinstance(target.get("name"), str) and bool(target["name"].strip()))
 
 
 def _resolve_targets(sub, receivers):
     """解析全部指定收件人；任何缺失或不合法均整组失败关闭。"""
     names = sub.get("receivers")
-    if names is None or names == []:
+    if names is None:
         cfg = _read_json(os.path.join(NEWS_DIR, "news_config.json"), {})
         targets = cfg.get("push_targets") if isinstance(cfg, dict) else None
     elif isinstance(names, list) and all(isinstance(n, str) for n in names):
@@ -107,7 +109,8 @@ def _resolve_targets(sub, receivers):
         return []
     if (not isinstance(targets, list) or not targets or
             not all(_valid_target(t) for t in targets) or
-            len({t["name"] for t in targets}) != len(targets)):
+            len({t["name"] for t in targets}) != len(targets) or
+            len({(t["type"], t["id"]) for t in targets}) != len(targets)):
         return []
     return targets
 
@@ -145,6 +148,9 @@ def _push_card(card, targets):
     """所有消息均按目标显式发送；逐目标卡片失败才回退文本。"""
     if not targets or not all(_valid_target(t) for t in targets):
         return {"_err": "invalid_targets"}
+    if len({(t["type"], t["id"]) for t in targets}) != len(targets) or len(
+            {t["name"] for t in targets}) != len(targets):
+        return {"_err": "duplicate_targets"}
     try:
         sys.path.insert(0, NEWS_DIR)
         from send_feishu import send_content_to
@@ -235,9 +241,9 @@ def _build_card(title, sub, blocks, template="blue", footer=None,
 
 
 def _cnpct(v):
-    """A 股着色：涨红跌绿。"""
+    """行情生产者 pct 已经是百分数单位，不再做比例转换。"""
     return ("<font color='%s'>%+.2f%%</font>"
-            % ("red" if v >= 0 else "green", v * 100 if abs(v) < 1.5 else v))
+            % ("red" if v >= 0 else "green", v))
 
 
 # ---------------------------------------------------------------- 订阅构造器
@@ -414,6 +420,7 @@ def _sub_alert_signal(sub, mode):
         source = sources.get(source_name)
         if (not isinstance(source, dict) or
                 source.get("status") not in ("ok", "empty") or
+                source.get("reason") is not None or
                 not _fresh_time(source.get("as_of"), minutes=5)):
             return None
     trusted = []
@@ -430,14 +437,15 @@ def _sub_alert_signal(sub, mode):
                             "weak": r"\s*0\s*案\s*",
                             "cross": r"\s*0\s*只\s*"}.get(source_name)
             if source_name == "premarket":
-                if not isinstance(val, str) or val.strip() not in ("", "—", "-", "暂无"):
+                if (source.get("reason") is not None or not isinstance(val, str) or
+                        val.strip() not in ("", "—", "-", "暂无")):
                     return None
             elif zero_pattern is None or not isinstance(val, str) or re.fullmatch(
                     zero_pattern, val) is None:
                 return None
             continue
         if (not isinstance(nm, str) or not isinstance(source, dict) or
-                source.get("status") != "ok" or
+                source.get("status") != "ok" or source.get("reason") is not None or
                 not _fresh_time(source.get("as_of"), minutes=5) or
                 not isinstance(val, str) or not val.strip()):
             continue
@@ -493,7 +501,11 @@ def _sub_quote_move(sub, mode):
         if not isinstance(item, dict):
             return None
         code, pct = item.get("code"), item.get("pct")
-        if not isinstance(code, str) or not code.strip() or not _quote_time(item.get("ts")):
+        # 港美行情无源事件时间，生产者会用本机 updated 回填 ts；整包拒绝。
+        # A 股缺原生时间时生产者亦可能回填，消费端无法辨别，尚不可生产放行。
+        if (not isinstance(code, str) or
+                re.fullmatch(r"(?:sh|sz|bj)\d{6}", code) is None or
+                not _quote_time(item.get("ts"))):
             return None
         if pct is None:
             continue
@@ -508,11 +520,11 @@ def _sub_quote_move(sub, mode):
     if mode == "intraday" and sub.get("_last_fp") == fp:
         return None
     sub["_fp_new"] = fp
-    blocks = ["**📈 自选股行情涨跌幅达到 %.1f%%（%d 只）**" % (threshold, len(hits))]
+    blocks = ["**📈 A 股自选行情涨跌幅达到 %.1f%%（%d 只）**" % (threshold, len(hits))]
     for h in hits[:12]:
         blocks.append("%s %s" % (h["code"], _cnpct(h["pct"])))
-    sub2 = time.strftime("%Y-%m-%d %H:%M") + " · 快照涨跌幅，非独立买卖点"
-    return ("📈 自选股行情变动", sub2, blocks, "purple")
+    sub2 = time.strftime("%Y-%m-%d %H:%M") + " · A 股快照涨跌幅，非独立买卖点"
+    return ("📈 A 股自选行情变动", sub2, blocks, "purple")
 
 
 def _sub_buy_point(sub, mode):

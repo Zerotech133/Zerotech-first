@@ -50,6 +50,9 @@ def test_alerts_missing_unhealthy_and_card_count_do_not_trigger(monkeypatch):
     payload["source_health"]["sources"]["nine_dim"]["status"] = "stale"
     assert subscribe._sub_alert_signal({}, "intraday") is None
     payload["source_health"]["sources"]["nine_dim"]["status"] = "ok"
+    payload["source_health"]["sources"]["nine_dim"]["reason"] = "upstream_blocked"
+    assert subscribe._sub_alert_signal({}, "intraday") is None
+    payload["source_health"]["sources"]["nine_dim"].pop("reason")
     payload["source_health"]["sources"]["nine_dim"]["as_of"] = stamp(30)
     assert subscribe._sub_alert_signal({}, "intraday") is None
     payload["source_health"]["sources"]["nine_dim"]["as_of"] = stamp()
@@ -118,8 +121,23 @@ def test_quotes_use_status_not_direction_cooldown(tmp_path, monkeypatch):
     subscription = {}
     built = subscribe._sub_quote_move(subscription, "intraday")
     assert built is not None and "sh600000" in built[2][1]
+    assert "+3.50%" in built[2][1]
     assert "非独立买卖点" in built[1]
+    data["items"][0]["pct"] = 1.4
+    data["alert_threshold"] = 1.0
+    path.write_text(json.dumps(data), encoding="utf-8")
+    assert "+1.40%" in subscribe._sub_quote_move({}, "intraday")[2][1]
+    assert "+140.00%" not in subscribe._sub_quote_move({}, "intraday")[2][1]
+    data["items"][0]["pct"] = 3.5
+    data["alert_threshold"] = 3.0
+    path.write_text(json.dumps(data), encoding="utf-8")
     assert subscribe._sub_quote_move({"_last_fp": subscription["_fp_new"]}, "intraday") is None
+    for invalid_code in ("rt_hk00700", "gb_aapl", "sh", "bj12345"):
+        foreign = {**data, "count": 2, "items": [data["items"][0],
+                   {**data["items"][0], "code": invalid_code, "ts": quote_stamp()}]}
+        path.write_text(json.dumps(foreign), encoding="utf-8")
+        assert subscribe._sub_quote_move({}, "intraday") is None
+    path.write_text(json.dumps(data), encoding="utf-8")
     boundary = {**data, "items": [{**data["items"][0], "pct": 25.0}]}
     path.write_text(json.dumps(boundary), encoding="utf-8")
     assert subscribe._sub_quote_move({}, "intraday") is not None
@@ -147,9 +165,21 @@ def test_targets_fail_closed_and_fallback_keeps_identity(tmp_path, monkeypatch):
     monkeypatch.setattr(subscribe, "NEWS_DIR", str(tmp_path))
     assert subscribe._resolve_targets({"receivers": ["失效"]}, {}) == []
     assert subscribe._resolve_targets({}, {}) == []
+    assert subscribe._resolve_targets({"receivers": []}, {}) == []
     (tmp_path / "news_config.json").write_text(json.dumps({"push_targets": [
         {"name": "无 ID", "type": "open_id", "id": None}]}), encoding="utf-8")
     assert subscribe._resolve_targets({}, {}) == []
+    (tmp_path / "news_config.json").write_text(json.dumps({"push_targets": [
+        {"name": "默认人", "type": "open_id", "id": "ou_default"}]}), encoding="utf-8")
+    assert subscribe._resolve_targets({"receivers": []}, {}) == []
+    assert subscribe._resolve_targets({}, {})[0]["id"] == "ou_default"
+    assert subscribe._resolve_targets({"receivers": ["空 ID"]}, {
+        "空 ID": {"type": "open_id", "id": "ou_"}}) == []
+    assert subscribe._resolve_targets({"receivers": ["空群"]}, {
+        "空群": {"type": "chat_id", "id": "oc_"}}) == []
+    assert subscribe._resolve_targets({"receivers": ["别名1", "别名2"]}, {
+        "别名1": {"type": "chat_id", "id": "oc_same"},
+        "别名2": {"type": "chat_id", "id": "oc_same"}}) == []
     targets = subscribe._resolve_targets({"receivers": ["群", "人"]}, {
         "群": {"type": "chat_id", "id": "oc_test"},
         "人": {"type": "open_id", "id": "ou_test"}})
@@ -163,6 +193,10 @@ def test_targets_fail_closed_and_fallback_keeps_identity(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "send_feishu", types.SimpleNamespace(send_content_to=fake_send))
     card = {"header": {"title": {"content": "标题"}},
             "elements": [{"tag": "markdown", "content": "正文"}]}
+    assert subscribe._push_card(card, [{"name": "别名1", "type": "chat_id", "id": "oc_same"},
+                                       {"name": "别名2", "type": "chat_id", "id": "oc_same"}]) == {
+                                           "_err": "duplicate_targets"}
+    assert sent == []
     result = subscribe._push_card(card, targets)
     assert sent == [("oc_test", "chat_id", "interactive"),
                     ("oc_test", "chat_id", "text"),
