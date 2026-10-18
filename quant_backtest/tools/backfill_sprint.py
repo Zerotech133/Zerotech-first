@@ -41,10 +41,15 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))          # 项目根，import xq_classify
 import xq_classify                            # noqa: E402
 
-RUN_DIR = Path(r"C:\aios\automation_runs\xq_classify")
+# 本任务自有产物根（lock/sprint log），对齐 2026-10-18 拍板「定时任务产物
+# 统一落 <任务名> 目录」，与 wrapper 日志同处 automation_runs/XueqiuBackfillSprint。
+# 【红线】STATUS_LOG（让路探测对象）必须留在 xq_classify 的共享状态日志原地
+# automation_runs/xq_classify/——它是 automation 与本 runner 的共享写日志，
+# 挪走探测就永久失效；两个常量相互独立，禁止合并/联动。
+RUN_DIR = Path(r"C:\aios\automation_runs\XueqiuBackfillSprint")
 LOCK_PATH = RUN_DIR / "backfill_sprint.lock"
 SPRINT_LOG = RUN_DIR / "backfill_sprint.log"
-STATUS_LOG = xq_classify.STATUS_LOG           # 共享状态日志（让路探测对象）
+STATUS_LOG = xq_classify.STATUS_LOG           # 共享状态日志（让路探测对象，原地不动）
 DB_PATH = xq_classify.DB_PATH
 
 DEFAULT_WINDOW = "13:30-17:30"

@@ -123,6 +123,35 @@ class TestShouldYield(unittest.TestCase):
         self.assertTrue(BS.should_yield(1001.0, 1000.0, 2000.0))
 
 
+class TestRunDirProbeSeparation(unittest.TestCase):
+    """RUN_DIR 迁移红线（2026-10-18 拍板：定时任务产物统一落 <任务名> 目录）：
+    自有产物目录与让路探测对象路径必须相互独立——后者是 automation 与本
+    runner 的共享状态日志，挪走即探测永久失效。"""
+
+    def test_run_dir_aligned_to_task_folder(self):
+        self.assertEqual(str(BS.RUN_DIR),
+                         r"C:\aios\automation_runs\XueqiuBackfillSprint")
+
+    def test_own_artifacts_under_run_dir(self):
+        self.assertEqual(BS.LOCK_PATH.parent, BS.RUN_DIR)
+        self.assertEqual(BS.SPRINT_LOG.parent, BS.RUN_DIR)
+        self.assertEqual(BS.LOCK_PATH.name, "backfill_sprint.lock")
+        self.assertEqual(BS.SPRINT_LOG.name, "backfill_sprint.log")
+
+    def test_probe_log_path_unchanged(self):
+        # 让路探测对象 = xq_classify 共享状态日志，路径逐字节不变
+        self.assertEqual(BS.STATUS_LOG, BS.xq_classify.STATUS_LOG)
+        self.assertEqual(
+            str(BS.STATUS_LOG),
+            r"C:\aios\automation_runs\xq_classify\xq_classify_status.log")
+
+    def test_probe_log_not_under_run_dir(self):
+        # 探测对象绝不与自有产物目录合并/联动
+        self.assertNotEqual(BS.STATUS_LOG.parent, BS.RUN_DIR)
+        self.assertTrue(str(BS.STATUS_LOG).startswith(
+            r"C:\aios\automation_runs\xq_classify"))
+
+
 class TestSprintLoop(unittest.TestCase):
     """分片循环编排：全 mock，不碰真库真锁真 LLM。"""
 
