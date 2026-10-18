@@ -42,6 +42,19 @@ td.num{font-family:var(--font-mono)}
 .trend .stk{display:flex;flex-direction:column-reverse;width:100%;border-radius:3px;overflow:hidden}
 .trend .stk i{display:block;width:100%}
 .trend .d{font-size:10px;color:var(--text-dim);text-align:center;margin-top:3px;white-space:nowrap}
+/* K-ORG-184 移动端修复：shortscreen 固顶节导航条 #ss-bar（共享组件，桌面 46vw
+   在窄视口实测撑破 body ~480px）——页面级钳制到视口宽，条内横向滚动；
+   panel 内宽表保持 overflow-x:auto 内滚（移动端可接受的宽表形态） */
+#ss-bar{max-width:calc(100vw - 24px) !important;overflow-x:auto}
+@media (max-width:640px){
+  .wrap{padding:12px 12px 0}
+  h1{font-size:18px}h1 .sub{display:block;margin:4px 0 0}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .metric .v{font-size:17px}
+  .metric,.panel{padding:10px 11px}
+  th,td{padding:4px 6px}
+  .trend{gap:3px}.trend .d{font-size:9px}
+}
 footer{margin-top:30px;color:var(--text-dim);font-size:var(--fs-xs);text-align:center;opacity:.7}
 a{color:var(--link)}
 </style>
