@@ -24,11 +24,13 @@
   python xq_classify.py --status           # 只读看进度
   python xq_classify.py --reticker         # 提取器升级后重算存量 tickers（秒级）
   python xq_classify.py --recontent --limit 1200   # v1.3 语义存量补标
+  python xq_classify.py --retry-degraded   # v1.4 degraded 行重标（LLM 截断行捞回，retry_count<3 封顶）
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sqlite3
 import sys
@@ -47,6 +49,44 @@ PROMPT_VERSION = "v1.3"    # v1.3：+ad/edu 出口、tech 定义收紧（实效�
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 TIMEOUT_SEC = 60           # think:false 后单条 ~1s；60s 纯兜底
 BODY_CHARS = 300           # 正文截断（短文本分类足够）
+DEGRADED_MAX_RETRY = 3     # v1.4 degraded 重试封顶：≥3 次不再重试（防死循环耗 token）
+
+# v1.5 速率旋钮（rate-opt 工位 2026-10-18）：环境变量可覆盖 LLM options，
+# 未设置时取值与现状完全一致（默认行为零变化——追平轮进行中，红线）。
+DEFAULT_NUM_CTX = 2048
+DEFAULT_NUM_PREDICT = 256
+
+
+def _resolve_int_knob(raw, default: int, name: str) -> int:
+    """旋钮解析：None/空串=默认；正整数=覆盖；非法=回落默认+stderr 告警。"""
+    if raw is None or str(raw).strip() == "":
+        return default
+    try:
+        v = int(str(raw).strip())
+        if v <= 0:
+            raise ValueError(v)
+        return v
+    except ValueError:
+        sys.stderr.write("[xq_classify] WARN invalid %s=%r, fallback to %d\n"
+                         % (name, raw, default))
+        return default
+
+
+def build_llm_options(num_ctx=None, num_predict=None) -> dict:
+    """构造 Ollama options（唯一入口，可单测）。
+
+    优先级：显式实参 > 环境变量 XQ_LLM_NUM_CTX / XQ_LLM_NUM_PREDICT > 默认。
+    显式实参传 None 表示"未指定"，交由环境变量/默认接管。
+    """
+    ctx_raw = num_ctx if num_ctx is not None else os.environ.get("XQ_LLM_NUM_CTX")
+    pred_raw = (num_predict if num_predict is not None
+                else os.environ.get("XQ_LLM_NUM_PREDICT"))
+    return {
+        "temperature": 0.1,
+        "num_ctx": _resolve_int_knob(ctx_raw, DEFAULT_NUM_CTX, "XQ_LLM_NUM_CTX"),
+        "num_predict": _resolve_int_knob(pred_raw, DEFAULT_NUM_PREDICT,
+                                         "XQ_LLM_NUM_PREDICT"),
+    }
 
 EVENT_TYPES = ["行情观点", "个股研判", "宏观政策", "基金理财", "交易策略", "广告推广", "闲聊杂谈"]
 SENTIMENTS = ["bullish", "bearish", "neutral"]
@@ -164,6 +204,11 @@ def ensure_table(con: sqlite3.Connection) -> None:
     if "content_type" not in cols:
         con.execute("ALTER TABLE xq_status_classified ADD COLUMN content_type TEXT")
         con.commit()
+    # v1.4 迁移：retry_count 列（degraded 重标通道计次，幂等）
+    if "retry_count" not in cols:
+        con.execute(
+            "ALTER TABLE xq_status_classified ADD COLUMN retry_count INTEGER DEFAULT 0")
+        con.commit()
 
 
 def extract_tickers(title: str, desc: str) -> list:
@@ -205,7 +250,7 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
         ],
         "stream": False,
         "think": False,        # 判例：qwen3.5 思考块吃满小 ctx 会把答案挤空（探针实证 0.7s vs 34.8s/失控分钟级）
-        "options": {"temperature": 0.1, "num_ctx": 2048, "num_predict": 256},
+        "options": build_llm_options(),
     }).encode("utf-8")
     req = urllib.request.Request(
         OLLAMA_URL, data=payload,
@@ -290,7 +335,7 @@ def recontent_run(limit: int) -> int:
                 {"role": "user", "content": body or "（无文字内容）"},
             ],
             "stream": False, "think": False,
-            "options": {"temperature": 0.1, "num_ctx": 2048, "num_predict": 256},
+            "options": build_llm_options(),
         }).encode("utf-8")
         req = urllib.request.Request(OLLAMA_URL, data=payload,
                                      headers={"Content-Type": "application/json"})
@@ -323,6 +368,64 @@ def recontent_run(limit: int) -> int:
         "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=1 AND content_type IS NULL").fetchone()[0]
     con.close()
     log("recontent end rc=%d ok=%d hard=%d left=%d" % (0 if hard == 0 else 0, ok, hard, n_left))
+    return 0
+
+
+def retry_degraded(limit: int) -> int:
+    """v1.4 DEGRADED 行重标通道：parse_ok=0（LLM 输出截断/不可解析）的行
+    既有 run() 的 NOT IN 幂等够不着（已落账过），此通道单独捞回重跑。
+
+    口径：parse_ok=0 AND COALESCE(retry_count,0)<3；复用 classify_one 单行
+    分类（不复制逻辑），INSERT OR REPLACE 原地翻新不新增行——成功的升级为
+    正常分类行（retry_count 归零），仍截断的保持 degraded 并累加
+    retry_count，封顶后不再入选。硬失败（模型/网络）不计次（属瞬态故障，
+    连续熔断由 consec 闸兜底），下一轮可再来。
+    """
+    con = sqlite3.connect(str(DB_PATH), timeout=30)
+    con.execute("PRAGMA busy_timeout=30000")
+    ensure_table(con)
+    rows = con.execute(
+        """SELECT c.status_id, c.retry_count, s.title, s.desc, s.category
+           FROM xq_status_classified c JOIN xq_status s ON s.status_id = c.status_id
+           WHERE c.parse_ok = 0 AND COALESCE(c.retry_count, 0) < ?
+           ORDER BY c.labeled_at LIMIT ?""",
+        (DEGRADED_MAX_RETRY, limit)).fetchall()
+    log("retry-degraded start candidates=%d limit=%d cap=%d"
+        % (len(rows), limit, DEGRADED_MAX_RETRY))
+    if not rows:
+        log("retry-degraded end rc=0 nothing-to-retry")
+        con.close()
+        return 0
+    upgraded = still = hard = consec = 0
+    for status_id, old_retry, title, desc, category in rows:
+        if not classify_one(con, (status_id, title, desc, category)):
+            hard += 1
+            consec += 1
+            log("RETRY-HARD-FAIL %s" % status_id)
+            if consec >= 8:
+                log("RETRY-ABORT %d consecutive hard-fails (model/network busy?)"
+                    % consec)
+                break
+            con.commit()
+            continue
+        consec = 0
+        cur = con.execute(
+            "SELECT parse_ok FROM xq_status_classified WHERE status_id=?",
+            (str(status_id),)).fetchone()
+        if cur and cur[0] == 1:
+            upgraded += 1   # 升级：classify_one 的 REPLACE 已把 retry_count 归零
+        else:
+            still += 1      # 仍截断：保持 degraded，累加计次
+            con.execute(
+                "UPDATE xq_status_classified SET retry_count=? WHERE status_id=?",
+                ((old_retry or 0) + 1, str(status_id)))
+        con.commit()
+    con.commit()
+    n_left = con.execute(
+        "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=0").fetchone()[0]
+    con.close()
+    log("retry-degraded end rc=0 upgraded=%d still_degraded=%d hard_fail=%d degraded_left=%d"
+        % (upgraded, still, hard, n_left))
     return 0
 
 
@@ -435,6 +538,9 @@ def main() -> int:
                     help="v1.1 按新正则重算已分类行的 tickers（不过 LLM）")
     ap.add_argument("--recontent", action="store_true",
                     help="v1.2 对已分类但 content_type 为空的行重跑 LLM 补内容形态")
+    ap.add_argument("--retry-degraded", action="store_true",
+                    help="v1.4 重跑 degraded（parse_ok=0）行：成功升级，仍截断累加 "
+                         "retry_count，>=3 次不再重试")
     a = ap.parse_args()
     if a.status:
         return show_status()
@@ -442,6 +548,8 @@ def main() -> int:
         return reticker()
     if a.recontent:
         return recontent_run(a.limit)
+    if a.retry_degraded:
+        return retry_degraded(a.limit)
     return run(a.limit)
 
 
