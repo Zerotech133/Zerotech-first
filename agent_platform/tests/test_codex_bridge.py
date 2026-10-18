@@ -244,3 +244,142 @@ def test_pilot_real_inbox_registers_into_default_registry():
     loaded, _ = load_registered(reg)
     assert loaded >= 1
     assert "codex_sma20_rsi14" in reg.list_ids()
+
+
+# ---- 军团-M3：子进程沙箱试跑 ----
+
+LOOP = '''# -*- coding: utf-8 -*-
+"""对抗样本：死循环（静态无懈可击，运行时永不停机）。"""
+from strategy_registry import StrategyAgent, Verdict
+
+class CodexLoopAgent(StrategyAgent):
+    """单类合规插件。"""
+    strategy_id = "codex_loop"
+    stance = "neutral"
+
+    def propose(self, context):
+        while True:
+            pass
+        return Verdict(strategy_id=self.strategy_id, symbol="X",
+                       recommendation="hold", confidence=0.0,
+                       stance="neutral")
+'''
+
+CRASH = GOOD.replace(
+    '        prev = fmean(closes[:-1])',
+    '        raise ZeroDivisionError("对抗样本：运行时崩")\n'
+    '        prev = fmean(closes[:-1])')
+
+NONVERDICT = GOOD.replace(
+    '        return Verdict(strategy_id=self.strategy_id, symbol=symbol,\n'
+    '                       recommendation=rec,',
+    '        return None  # 对抗样本：非 Verdict 返回\n'
+    '        return Verdict(strategy_id=self.strategy_id, symbol=symbol,\n'
+    '                       recommendation=rec,')
+
+BADSTANCE = GOOD.replace(
+    'recommendation=rec, confidence=0.5, stance="neutral",',
+    'recommendation=rec, confidence=0.5, stance="yolo",')
+
+
+def test_sandbox_trial_pilot_ok():
+    from codex_bridge import sandbox_trial
+    r = sandbox_trial(PILOT)
+    assert r["ok"] is True and r["killed"] is False and r["reason"] == ""
+    assert r["elapsed_ms"] > 0
+    v = r["verdict"]
+    assert v["strategy_id"] == "codex_sma20_rsi14"
+    assert v["recommendation"] in ("strong_buy", "buy", "hold",
+                                   "sell", "strong_sell")
+    assert 0.0 <= v["confidence"] <= 1.0 and v["stance"] in ("bull", "bear",
+                                                             "neutral")
+
+
+def test_loop_passes_static_gate_but_killed_by_sandbox():
+    """M3 核心判据②：静态过关的运行时对抗样本在沙箱门被击杀。"""
+    from codex_bridge import sandbox_trial
+    assert validate_source(LOOP) == []  # 静态门放行（无任何可静态命中的违规）
+    r = sandbox_trial(LOOP, timeout_s=3.0)
+    assert r["ok"] is False and r["killed"] is True
+    assert "超时" in r["reason"] and r["elapsed_ms"] >= 3000
+
+
+def test_sandbox_rejects_runtime_crash():
+    from codex_bridge import sandbox_trial
+    r = sandbox_trial(CRASH)
+    assert r["ok"] is False and r["killed"] is False
+    assert "ZeroDivisionError" in r["reason"]
+
+
+def test_sandbox_rejects_non_verdict_return():
+    from codex_bridge import sandbox_trial
+    r = sandbox_trial(NONVERDICT)
+    assert r["ok"] is False
+    assert "非 Verdict" in r["reason"]
+
+
+def test_sandbox_rejects_bad_stance():
+    from codex_bridge import sandbox_trial
+    r = sandbox_trial(BADSTANCE)
+    assert r["ok"] is False
+    assert "stance" in r["reason"]
+
+
+def test_host_side_verdict_dict_recheck():
+    """宿主侧出口再验：runner 输出与契约脱钩的第二道网。"""
+    from codex_bridge import _verdict_dict_issues
+    good = {"strategy_id": "codex_x", "symbol": "S", "recommendation":
+            "hold", "confidence": 0.5, "stance": "neutral"}
+    assert _verdict_dict_issues(good) == []
+    assert any("前缀" in i for i in _verdict_dict_issues(
+        {**good, "strategy_id": "evil_x"}))
+    assert any("五档" in i for i in _verdict_dict_issues(
+        {**good, "recommendation": "yolo"}))
+    assert any("越界" in i for i in _verdict_dict_issues(
+        {**good, "confidence": 1.5}))
+    assert any("非数值" in i for i in _verdict_dict_issues(
+        {**good, "confidence": "0.5; drop table"}))
+    assert any("三档" in i for i in _verdict_dict_issues(
+        {**good, "stance": "yolo"}))
+    assert any("symbol" in i for i in _verdict_dict_issues(
+        {**good, "symbol": ""}))
+
+
+def test_process_submission_sandbox_rejects_runtime_crash(tmp_path):
+    """M3 管线：试跑拒绝 → 拒档 stage=沙箱试跑 + inbox 移 rejects。"""
+    ok, reasons = process_submission(tmp_path, "s-crash", CRASH,
+                                     _fresh_registry())
+    assert ok is False and reasons and "ZeroDivisionError" in reasons[0]
+    rj = (tmp_path / "rejects" / "s-crash.md").read_text(encoding="utf-8")
+    assert "沙箱试跑" in rj and "ZeroDivisionError" in rj
+    assert not (tmp_path / "inbox" / "s-crash").exists()
+    assert not (tmp_path / "processed" / "s-crash").exists()
+
+
+def test_registration_row_records_sandbox_ms(tmp_path):
+    """M3 判据③：单次试跑耗时基线随注册事件入档。"""
+    data_root = tmp_path / "dataroot"
+    ok, _ = process_submission(tmp_path, "s-ms", GOOD, _fresh_registry(),
+                               data_root=data_root)
+    assert ok is True
+    import json as _json
+    rows = [ _json.loads(l) for l in
+             (data_root / "data" / "codex_bridge" / "registrations.jsonl")
+             .read_text(encoding="utf-8").splitlines() if l.strip() ]
+    assert len(rows) == 1 and rows[0]["submit_id"] == "s-ms"
+    assert isinstance(rows[0]["sandbox_ms"], int) and rows[0]["sandbox_ms"] > 0
+
+
+def test_load_registered_skips_sandbox_trial(tmp_path, monkeypatch):
+    """口径：processed/ 件已过门，幂等装载不起子进程（零额外延迟）。"""
+    reg = _fresh_registry()
+    process_submission(tmp_path, "s-nosb", GOOD, reg)
+    reg2 = _fresh_registry()
+
+    import codex_bridge
+    def _boom(*a, **k):
+        raise AssertionError("load_registered 不得触发沙箱试跑")
+    monkeypatch.setattr(codex_bridge, "sandbox_trial", _boom)
+    loaded, skipped = load_registered(reg2, bridge_dir=tmp_path)
+    assert loaded == 1 and skipped == 0
+    assert "codex_good" in reg2.list_ids()

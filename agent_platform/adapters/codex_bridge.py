@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""军团 Codex bridge（军团-M1：静态校验器 + 注册单向管道）。
+"""军团 Codex bridge（M1 静态校验器 + M2 试点注册 + M3 子进程沙箱试跑）。
 
 拍板（2026-10-18 老田）：①import 白名单制（黑名单追不上绕过手法）
 ②军团-M1/M2/M3 批准按序施工 ③首个试点策略 = SMA20+RSI14（codex_ 前缀）。
@@ -7,10 +7,15 @@
 红线（设计稿 §1 平移）：单向通道（R1）/ Codex 零凭据（R2）/ 零执行权
 （R3，策略只产建议）/ 插件只读 propose（R4）/ 注册权在 AP 侧（R5）。
 
-流水线（§3）：Codex 提交物 → 静态校验（AST，本模块）→ 白名单沙箱
-globals 内实例化 → StrategyRegistry.register（同键异值=漂移拒绝平移）。
-拒绝路径 fail-visible 落档 bridge_rejects/<submit_id>.md，禁止静默丢弃。
-子进程沙箱试跑属军团-M3（§2.3），本模块静态门是 M1 范围。
+流水线（§3）：Codex 提交物 → 静态校验（AST，M1）→ 子进程沙箱试跑
+（M3，§2.3）→ 白名单沙箱 globals 内实例化 → StrategyRegistry.register
+（同键异值=漂移拒绝平移）。拒绝路径 fail-visible 落档
+bridge_rejects/<submit_id>.md，禁止静默丢弃。
+
+M3 口径：静态过关后在一次性子进程内以合成数据试跑 propose——运行时炸/
+死循环/非法 Verdict 在注册前拦截；Windows 无 resource rlimit，死循环由
+墙钟超时击杀（语义覆盖 CPU 上限场景），真 rlimit/Job Object 留 Linux
+部署轮。试跑耗时基线随注册事件入档（registrations.jsonl.sandbox_ms）。
 
 本模块自身纪律：零网络、除 rejects/processed/registrations 落档外零写；
 exec 仅在校验通过后于受限 globals（白名单 builtins + 白名单 __import__）
@@ -18,20 +23,24 @@ exec 仅在校验通过后于受限 globals（白名单 builtins + 白名单 __i
 """
 import ast
 import json
+import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
 
 try:
     from strategy_registry import (
-        StrategyAgent, StrategyError, StrategyRegistry, Verdict)
+        RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError,
+        StrategyRegistry, Verdict)
 except ImportError:  # 跨目录直接调用时兜底定位 engine/
     _here = Path(__file__).resolve()
     sys.path.insert(0, str(_here.parent.parent / "engine"))
     from strategy_registry import (
-        StrategyAgent, StrategyError, StrategyRegistry, Verdict)
+        RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError,
+        StrategyRegistry, Verdict)
 
 # ---- 拍板①：import 白名单制（§2.2 建议 → 定稿） ----
 # 七件套纯计算库 + 宿主契约模块 strategy_registry（插件基类/Verdict 来源）。
@@ -207,6 +216,179 @@ def register_from_source(source, registry):
     return agent
 
 
+# ---- 军团-M3：子进程沙箱试跑（§2.3） ----
+
+# 试跑合成 context：40 点匀速缓跌，覆盖「样本充足/趋势明确」路径；
+# 插件应按自身口径产出合法 Verdict（含降级 hold）。
+SANDBOX_TRIAL_CONTEXT = {
+    "symbol": "TRIAL/USDT",
+    "closes": [100.0 - 0.5 * i for i in range(40)],
+}
+
+_RESULT_MARK = "__BRIDGE_RESULT__"
+
+# 独立子进程 runner：不 import codex_bridge，受限 globals 同表内嵌
+# （宿主静态门 + 本进程受限 globals = 两道独立防线跨进程生效）。
+# 协议：stdin 收 {"source", "context"} UTF-8 JSON；stdout 打
+# "<_RESULT_MARK>{...}" 单标记行；BaseException 一律转标记行 fail-visible。
+_SANDBOX_RUNNER = r'''
+# -*- coding: utf-8 -*-
+# 军团-M3 沙箱试跑 runner（独立子进程）。
+import builtins as _b
+import json
+import sys
+
+from strategy_registry import StrategyAgent, Verdict
+
+_ALLOW = frozenset({
+    "math", "statistics", "collections", "itertools", "functools",
+    "typing", "dataclasses", "strategy_registry",
+})
+_real_import = _b.__import__
+
+
+def _safe_import(name, *args, **kwargs):
+    if name.split(".")[0] not in _ALLOW:
+        raise ImportError("codex 插件仅允许白名单模块: %s" % name)
+    return _real_import(name, *args, **kwargs)
+
+
+_G = {n: getattr(_b, n) for n in (
+    "abs all any bool dict divmod enumerate filter float int len list "
+    "max min range reversed round set sorted str sum tuple zip "
+    "ValueError TypeError KeyError IndexError ZeroDivisionError "
+    "ArithmeticError Exception __build_class__").split()}
+_G["__builtins__"] = dict(_G)
+_G["__builtins__"]["__import__"] = _safe_import
+_G["__name__"] = "codex_plugin"
+
+
+def _emit(payload):
+    sys.stdout.write("__BRIDGE_RESULT__" +
+                     json.dumps(payload, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+
+
+def main():
+    payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
+    code = compile(payload["source"], "<codex_plugin>", "exec")
+    ns = dict(_G)
+    exec(code, ns)
+    classes = [v for v in ns.values()
+               if isinstance(v, type) and issubclass(v, StrategyAgent)
+               and v is not StrategyAgent]
+    if len(classes) != 1:
+        _emit({"ok": False,
+               "error": "实例化后 StrategyAgent 子类数=%d（应恰为 1）"
+                        % len(classes)})
+        return 2
+    verdict = classes[0]().propose(payload["context"])
+    if not isinstance(verdict, Verdict):
+        _emit({"ok": False,
+               "error": "propose 返回 %r，非 Verdict"
+                        % type(verdict).__name__})
+        return 2
+    verdict.validate()
+    from dataclasses import asdict
+    _emit({"ok": True, "verdict": asdict(verdict)})
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except BaseException as e:  # noqa: BLE001  转标记行，宿主 fail-visible
+        _emit({"ok": False,
+               "error": "%s: %s" % (type(e).__name__, str(e)[:300])})
+        sys.exit(1)
+'''.strip()
+
+
+def _verdict_dict_issues(v):
+    """宿主侧出口再验（防御 runner 输出与契约脱钩的第二道网）。"""
+    issues = []
+    if not str(v.get("strategy_id", "")).startswith("codex_"):
+        issues.append("strategy_id=%r 非 codex_ 前缀" % v.get("strategy_id"))
+    if not v.get("symbol"):
+        issues.append("symbol 缺失")
+    if v.get("recommendation") not in RECOMMENDATIONS:
+        issues.append("recommendation=%r 不在五档" % v.get("recommendation"))
+    try:
+        if not (0.0 <= float(v.get("confidence")) <= 1.0):
+            issues.append("confidence=%r 越界 [0,1]" % v.get("confidence"))
+    except (TypeError, ValueError):
+        issues.append("confidence=%r 非数值" % v.get("confidence"))
+    if v.get("stance") not in STANCES:
+        issues.append("stance=%r 不在三档" % v.get("stance"))
+    return issues
+
+
+def sandbox_trial(source, context=None, timeout_s=10.0):
+    """M3：静态过关后在一次性子进程内受限试跑 propose。
+
+    - 子进程 runner 复刻宿主受限 globals（白名单 builtins + 白名单
+      __import__），静态门与运行时沙箱跨进程双防线。
+    - Windows 无 resource rlimit：死循环由墙钟超时击杀（kill+收割），
+      语义覆盖 CPU 上限场景；真 rlimit/Job Object 留 Linux 部署轮。
+    - fail-visible：超时/崩溃/无标记/非法 Verdict 一律 ok=False 且
+      reason 可读；不抛裸异常。
+    返回 {"ok", "reason", "elapsed_ms", "killed", "verdict"}。
+    """
+    ctx = dict(context) if context else dict(SANDBOX_TRIAL_CONTEXT)
+    payload = json.dumps({"source": source, "context": ctx},
+                         ensure_ascii=False)
+    engine_dir = str(Path(__file__).resolve().parent.parent / "engine")
+    env = dict(os.environ)
+    env["PYTHONPATH"] = (engine_dir + os.pathsep + env.get("PYTHONPATH", "")
+                         ).rstrip(os.pathsep)
+    t0 = time.perf_counter()
+    proc = subprocess.Popen(
+        [sys.executable, "-c", _SANDBOX_RUNNER],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, env=env)
+    try:
+        out, err = proc.communicate(payload.encode("utf-8"),
+                                    timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        return {"ok": False, "killed": True,
+                "reason": "试跑超时 %.0fs 被击杀（墙钟口径，Windows 无 "
+                          "rlimit，语义覆盖 CPU 上限）" % timeout_s,
+                "elapsed_ms": int((time.perf_counter() - t0) * 1000),
+                "verdict": None}
+    elapsed_ms = int((time.perf_counter() - t0) * 1000)
+    text = out.decode("utf-8", "replace")
+    line = next((l for l in text.splitlines()
+                 if l.startswith(_RESULT_MARK)), None)
+    if line is None:
+        tail = err.decode("utf-8", "replace").strip()[-300:]
+        return {"ok": False, "killed": False,
+                "reason": "子进程无结果标记（exit=%s）stderr 尾: %s"
+                          % (proc.returncode, tail or "<empty>"),
+                "elapsed_ms": elapsed_ms, "verdict": None}
+    try:
+        data = json.loads(line[len(_RESULT_MARK):])
+    except ValueError as e:
+        return {"ok": False, "killed": False,
+                "reason": "结果标记行 JSON 不可解析：%s" % e,
+                "elapsed_ms": elapsed_ms, "verdict": None}
+    if not data.get("ok"):
+        return {"ok": False, "killed": False,
+                "reason": "试跑失败：%s" % data.get("error", "<no error>"),
+                "elapsed_ms": elapsed_ms, "verdict": None}
+    v = data.get("verdict") or {}
+    bad = _verdict_dict_issues(v)
+    if bad:
+        return {"ok": False, "killed": False,
+                "reason": "试跑产出非法 Verdict：%s" % "; ".join(bad),
+                "elapsed_ms": elapsed_ms, "verdict": None}
+    return {"ok": True, "killed": False, "reason": "",
+            "elapsed_ms": elapsed_ms, "verdict": v}
+
+
 # ---- fail-visible 落档（§3.1） ----
 
 def write_reject(bridge_dir, submit_id, stage, reasons):
@@ -233,12 +415,15 @@ def default_bridge_dir():
 
 
 def process_submission(bridge_dir, submit_id, source, registry,
-                       data_root=None):
-    """单次提交全流程：inbox 落件 → 校验 → 注册 → 移 processed / 拒档。
+                       data_root=None, sandbox_timeout_s=10.0):
+    """单次提交全流程：inbox 落件 → 校验 → 沙箱试跑 → 注册 → 移档。
 
     data_root 显式时登记注册事件（data/codex_bridge/registrations.jsonl，
-    幂等键=submit_id）；无 data_root 只注册不落账（stderr 提示 dry-run），
-    对齐 M5 刀 2「无显式 root 拒写」纪律。
+    幂等键=submit_id，行含 sandbox_ms 试跑耗时基线）；无 data_root 只
+    注册不落账（stderr 提示 dry-run），对齐 M5 刀 2「无显式 root 拒写」
+    纪律。
+    军团-M3：静态门之后、注册之前跑子进程沙箱试跑——运行时炸/死循环/
+    非法 Verdict 在此拦截，拒绝落档 stage=沙箱试跑。
     返回 (ok, reasons)。
     """
     bdir = Path(bridge_dir)
@@ -253,13 +438,20 @@ def process_submission(bridge_dir, submit_id, source, registry,
         shutil.move(str(inbox), str(bdir / "rejects" / submit_id))
         return False, reasons
 
+    trial = sandbox_trial(source, timeout_s=sandbox_timeout_s)
+    if not trial["ok"]:
+        write_reject(bdir, submit_id, "沙箱试跑", [trial["reason"]])
+        shutil.move(str(inbox), str(bdir / "rejects" / submit_id))
+        return False, [trial["reason"]]
+
     agent = register_from_source(source, registry)
     shutil.move(str(inbox), str(bdir / "processed" / submit_id))
     if data_root:
         reg_dir = Path(data_root) / "data" / "codex_bridge"
         reg_dir.mkdir(parents=True, exist_ok=True)
         row = {"submit_id": submit_id, "strategy_id": agent.strategy_id,
-               "registered_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+               "registered_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+               "sandbox_ms": trial["elapsed_ms"]}
         with (reg_dir / "registrations.jsonl").open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
     else:
@@ -273,6 +465,8 @@ def load_registered(registry, bridge_dir=None):
 
     幂等：同 strategy_id 已注册 → 视为重复装载跳过（计数 skipped）。
     单插件失败不拖垮其余（对齐影子主链 fail-open 纪律）。
+    口径：不重复跑沙箱试跑——processed/ 件已过 M3 门，试跑是受理时
+    一次性动作；周一首跑影子 run 的装配不走子进程（零额外延迟）。
     返回 (loaded, skipped)。
     """
     bdir = Path(bridge_dir) if bridge_dir else default_bridge_dir()
