@@ -226,6 +226,56 @@ def test_cross_check_skips_without_log(tmp_path):
     assert gv.EXTRA == [], "日志不存在应 SKIP 而非 FAIL"
 
 
+def test_cross_check_skip_tasks_uses_reduced_base(tmp_path):
+    """★回归（gate3-countfix）：--skip-tasks 把任务三项压成一条 SKIP、不入
+    RESULTS（核心 4 项），巡检日志却仍是 7/7。比对基数必须扣掉被跳过的 3 项，
+    否则同一份账本被读成「7 vs 4 不一致」——工具自己造出假 FAIL 和退出码 1。"""
+    _reset()
+    gv.judge_ledger(_v0_rows(), "2026-10-18", is_monday=False)
+    gv.judge_perf([{"perf_key": "a", "run_id": "abcdef123456"}], 0)
+    gv.check("replay", gv.PASS)
+    assert len(gv.RESULTS) == 4, "任务三项跳过后的核心项数是 4"
+    log = tmp_path / "mc.log"
+    log.write_text("=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n",
+                   encoding="utf-8")
+    gv.cross_check(log, skipped=len(gv.TASK_NAMES))
+    assert not [n for n, v, _ in gv.EXTRA if v == gv.FAIL], \
+        "7/7 扣掉跳过的 3 项 = 4/4，应与本工具一致，不得假 FAIL"
+    detail = [d for n, v, d in gv.EXTRA if "交叉核对" in n][0]
+    assert "本工具=4/4" in detail and "比 4/4" in detail
+
+
+def test_cross_check_real_mismatch_still_fails_with_skipped_base(tmp_path):
+    """扣减只作用于基数，不掩盖真不一致：本工具 perf 重复键 → 真 FAIL（3/4），
+    巡检报 7/7 扣掉 3 项是 4/4 → 通过数对不上，仍必须判 FAIL。"""
+    _reset()
+    gv.judge_ledger(_v0_rows(), "2026-10-18", is_monday=False)
+    gv.judge_perf([{"perf_key": "a", "run_id": "abcdef123456"},
+                   {"perf_key": "a", "run_id": "abcdef123456"}], 0)
+    gv.check("replay", gv.PASS)
+    assert len([n for n, v, _ in gv.RESULTS if v == gv.FAIL]) == 1
+    log = tmp_path / "mc.log"
+    log.write_text("=" * 56 + "\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n",
+                   encoding="utf-8")
+    gv.cross_check(log, skipped=len(gv.TASK_NAMES))
+    assert [n for n, v, _ in gv.EXTRA if v == gv.FAIL], \
+        "本工具 3/4 vs 巡检扣减后 4/4，必须报不一致"
+
+
+def test_cross_check_checkpoint_fail_not_masked_by_skipped_base(tmp_path):
+    """反向也要锁：巡检自己判到 6/7（有一项真失败）而本工具 4/4，
+    扣掉跳过的 3 项后是 3/4 —— 仍然对不上，必须 FAIL，不能被「跳过」抹平。"""
+    _reset()
+    gv.judge_ledger(_v0_rows(), "2026-10-18", is_monday=False)
+    gv.judge_perf([{"perf_key": "a", "run_id": "abcdef123456"}], 0)
+    gv.check("replay", gv.PASS)
+    log = tmp_path / "mc.log"
+    log.write_text("=" * 56 + "\n结论: 6/7 PASS（FAIL: x）\nEXIT=1\n", encoding="utf-8")
+    gv.cross_check(log, skipped=len(gv.TASK_NAMES))
+    assert [n for n, v, _ in gv.EXTRA if v == gv.FAIL], \
+        "巡检侧少一项通过，不得因为扣减跳过项而被掩盖"
+
+
 # ------------------------------------------------------------ load_jsonl
 
 def test_load_jsonl_counts_bad_lines(tmp_path):
@@ -279,6 +329,24 @@ def _write_isolated_base(tmp_path, rows):
         json.dumps({"perf_key": "k1", "run_id": "abcdef123456"}) + "\n",
         encoding="utf-8")
     return base
+
+
+def _valid_links(tmp_path):
+    """命中 _row() 的 run_id，使 replay 判 PASS。"""
+    link = {"schema_version": "m4p1.v1", "link_id": "0123456789abcdef",
+            "chain": {"shadow": {"run_id": "abcdef123456",
+                                 "symbol": "600519",
+                                 "trade_date": MONDAY}},
+            "source": "test", "declared_at": ""}
+    p = tmp_path / "links.jsonl"
+    p.write_text(json.dumps(link, ensure_ascii=False) + "\n", encoding="utf-8")
+    return p
+
+
+def _mc_log(tmp_path, summary):
+    p = tmp_path / "mc.log"
+    p.write_text("=" * 56 + "\n" + summary, encoding="utf-8")
+    return p
 
 
 def test_cli_reports_four_core_items_when_tasks_skipped(tmp_path):
@@ -347,3 +415,30 @@ def test_cli_is_read_only(tmp_path):
     assert before == after, "复核工具不得写账本（改 mtime 也不行）"
     assert sorted(x.name for x in (base / "data" / "shadow").iterdir()) == \
         ["shadow_ledger.jsonl"], "不得新增任何文件"
+
+
+def test_cli_skip_tasks_cross_check_exit_zero(tmp_path):
+    """★回归（gate3-countfix）端到端：--skip-tasks + 巡检日志 7/7。
+    本工具核心 4 项（任务三项 SKIP 不入账），扣掉跳过的 3 项后是 4/4 对 4/4
+    → 交叉核对 PASS、退出码 0。修前这条是假 FAIL + 退出码 1。"""
+    base = _write_isolated_base(tmp_path, _v0_rows())
+    log = _mc_log(tmp_path, "结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n")
+    r = _run_cli("--base", str(base), "--date", "2026-10-18", "--skip-tasks",
+                 "--log", str(log), "--trace-links", str(_valid_links(tmp_path)))
+    assert "核心判据 4 项" in r.stdout, r.stdout
+    assert "[PASS+] 与巡检日志交叉核对" in r.stdout, r.stdout
+    assert "本工具=4/4" in r.stdout, r.stdout
+    assert "两份判据不一致" not in r.stdout, "不得再报假不一致"
+    assert r.returncode == 0, r.stdout
+
+
+def test_cli_skip_tasks_real_mismatch_exit_one(tmp_path):
+    """扣减不得掩盖真不一致：巡检 6/7 而本工具 4/4（扣减后 3/4）→
+    仍判交叉核对 FAIL、退出码 1。"""
+    base = _write_isolated_base(tmp_path, _v0_rows())
+    log = _mc_log(tmp_path, "结论: 6/7 PASS（FAIL: x）\nEXIT=1\n")
+    r = _run_cli("--base", str(base), "--date", "2026-10-18", "--skip-tasks",
+                 "--log", str(log), "--trace-links", str(_valid_links(tmp_path)))
+    assert "[FAIL+] 与巡检日志交叉核对" in r.stdout, r.stdout
+    assert "两份判据不一致" in r.stdout
+    assert r.returncode == 1, r.stdout

@@ -34,6 +34,10 @@
 三项字段检查从 SKIP 转为实检。本工具同样按此规则输出，并在汇总里
 显式标注当前处于哪一态，避免人拿着「7/7」去找「11/11」的差异。
 
+`--skip-tasks` 会让任务三项不入账（本工具 4/8 项，巡检仍是 7/11 项）。
+交叉核对因此不能拿裸项数硬比：必须从巡检基数里扣掉被跳过的项数再比，
+否则同一份账本会被读成「7 vs 4 不一致」的假 FAIL。
+
 ## 用法
 
     python tools/gate3_verdict.py                  # 默认按今天、真仓判定
@@ -247,11 +251,17 @@ def judge_tasks():
             check("任务 %s" % name, FAIL, "未注册或查询无返回")
 
 
-def cross_check(log_path):
+def cross_check(log_path, skipped=0):
     """与巡检日志交叉核对：两份判据必须同结论，否则一方坏了。
 
     本条是**元检查**（检查判定方自身），不是门 3 的七项判据之一，
     所以记入 EXTRA——计入核心项会让项数永远比巡检多 1，交叉核对就没法比。
+
+    `skipped`：本次有意跳过、因而没进 RESULTS 的核心项数（目前只有
+    `--skip-tasks` 的任务三项）。巡检那边照样会判这三项并计入 N/M，
+    所以比对基数必须从巡检数字里扣掉同样的项数——否则 7/7 对上 4/4，
+    明明是同一份账本却报假 FAIL。扣减只作用于「基数」：本工具自己
+    真实失败时 my_pass 会变小，仍然对不上、仍然判 FAIL。
     """
     p = Path(log_path)
     if not p.exists():
@@ -269,10 +279,16 @@ def cross_check(log_path):
     n_pass, n_total = int(m.group(1)), int(m.group(2))
     my_fail = [n for n, v, _ in RESULTS if v == FAIL]
     my_total, my_pass = len(RESULTS), len(RESULTS) - len(my_fail)
-    same = (n_total == my_total) and (n_pass == my_pass)
+    # 同口径基数：巡检总项数 / 通过项数减去本次跳过的项数。
+    # 跳过项在巡检侧按「通过」扣除（本机任务全健康时即如此）；巡检侧真有
+    # 失败时扣完会偏小，my_pass 对不上 → 仍报不一致，不会被悄悄抹平。
+    exp_total, exp_pass = n_total - skipped, n_pass - skipped
+    same = (exp_total == my_total) and (exp_pass == my_pass)
     check("与巡检日志交叉核对", PASS if same else FAIL,
-          "巡检=%d/%d（EXIT=%s） 本工具=%d/%d%s" % (
+          "巡检=%d/%d（EXIT=%s） 本工具=%d/%d%s%s" % (
               n_pass, n_total, e.group(1) if e else "?", my_pass, my_total,
+              "（扣除跳过 %d 项后比 %d/%d）" % (skipped, exp_pass, exp_total)
+              if skipped else "",
               "" if same else " ← 两份判据不一致，先查哪方坏了再判门"),
           extra=True)
 
@@ -339,10 +355,12 @@ def main(argv=None):
     judge_perf(perf, bad_perf)
     if args.skip_tasks:
         check("计划任务状态", SKIP, "--skip-tasks（隔离/异地环境）")
+        skipped_core = len(TASK_NAMES)
     else:
         judge_tasks()
+        skipped_core = 0
     if not args.no_cross_check:
-        cross_check(log_p)
+        cross_check(log_p, skipped=skipped_core)
 
     fails = [n for n, v, _ in RESULTS if v == FAIL]
     extra_fails = [n for n, v, _ in EXTRA if v == FAIL]
