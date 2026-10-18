@@ -48,7 +48,12 @@ def _cfg(**kw):
     return base
 
 
-def _row(found=True, last_run="2026-10-18 09:00:00", last_result=0):
+def _row(found=True, last_run=None, last_result=0):
+    # 默认 last_run 取真实墙钟：build_execution_health 内部用 time 墙钟判
+    # stale（cadence+grace=60min），硬编码日期会成时间炸弹（10-18 实证：
+    # 09:00 硬编码 11 点跑全量变 stale 误红）。classify 直测显式传 NOW。
+    if last_run is None:
+        last_run = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return {"found": found, "last_run": last_run, "last_result": last_result}
 
 

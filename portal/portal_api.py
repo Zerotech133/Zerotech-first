@@ -145,6 +145,8 @@ import api_dataops      # 数据运营指挥台 /api/dataops/overview（采集�
 # ==== M1-M4 导入结束 ====
 import api_execution    # R1 执行健康总线 /api/execution/health（联动层一期 2026-10-18）
 import api_tickets      # 工单只读投影 /api/org/tasks（驾驶舱一期 2026-10-18）
+import api_evolution    # 进化舱只读投影 /api/evolution/summary（驾驶舱二期 2026-10-18）
+import api_gate         # 周一门判只读投影 /api/gate/checkpoint（驾驶舱二期 2026-10-18）
 
 
 
@@ -2948,6 +2950,22 @@ color:#fff;font-size:13.5px;cursor:pointer}
         if path == '/api/org/tasks':
             # 工单只读投影（驾驶舱一期复盘舱数据面，2026-10-18）
             self._org_tasks(qs)
+            return
+        if path == '/api/evolution/summary':
+            # 进化舱只读投影（告警闭环率+影子统计+eval 占位，2026-10-18）
+            try:
+                self._json(api_evolution.load_evolution())
+            except Exception as e:  # fail-visible：恒 200 携错误体
+                self._json({"ok": False, "available": False,
+                            "errors": [repr(e)]})
+            return
+        if path == '/api/gate/checkpoint':
+            # 周一门判只读投影（驾驶舱二期复盘舱数据面，2026-10-18）
+            try:
+                self._json(api_gate.load_gate())
+            except Exception as e:  # fail-visible：恒 200 携错误体
+                self._json({"ok": False, "available": False,
+                            "errors": [repr(e)]})
             return
         if path in ('/api/platform/approvals', '/api/platform/replay',
                     '/api/platform/trace'):
