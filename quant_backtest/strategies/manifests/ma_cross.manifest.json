@@ -1,0 +1,35 @@
+{
+  "strategy_id": "ma_cross",
+  "version": "1.0.0",
+  "allowed_data": [
+    "bars.daily"
+  ],
+  "resource_budget": {
+    "timeout_s": 5.0,
+    "max_concurrency": 1,
+    "max_context_bytes": 262144
+  },
+  "allowed_modes": [
+    "BACKTEST",
+    "REPLAY",
+    "SHADOW"
+  ],
+  "permissions": [
+    "propose",
+    "read_context"
+  ],
+  "_provenance": {
+    "note": "S1 收编登记字段。agent_platform/engine/strategy_config.py 的 load_config 为严格模式（拒绝未声明字段），聚合进 strategy_config.json 时必须剥离本字段，剥离后其余 6 字段可直接过校验器。",
+    "source_file": "quant_backtest/strategies.py",
+    "source_symbol": "ma_cross / REGISTRY[\"ma_cross\"] / PARAM_DEFAULTS[\"ma_cross\"]",
+    "baseline": [
+      {
+        "file": "quant_backtest/runner.py",
+        "usage": "S3 对账基线：runner.py backtest 引擎（信号 shift(1) 次日开盘生效口径，仅做多），策略参数取 CFG[\"strategies\"][\"ma_cross\"]，缺省回落 PARAM_DEFAULTS {fast:5, slow:20}。"
+      }
+    ],
+    "drafted_by": "batch1-manifest",
+    "drafted_at": "2026-10-18",
+    "data_min_privilege_note": "仅日线收盘价序列（indicators.ma 只用 df[\"close\"]），OHLCV 中最小授权为日线 bars。"
+  }
+}

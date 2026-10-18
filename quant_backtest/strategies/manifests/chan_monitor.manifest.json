@@ -1,0 +1,39 @@
+{
+  "strategy_id": "chan_monitor",
+  "version": "1.0.0",
+  "allowed_data": [
+    "artifacts.chanlun_pool"
+  ],
+  "resource_budget": {
+    "timeout_s": 5.0,
+    "max_concurrency": 1,
+    "max_context_bytes": 524288
+  },
+  "allowed_modes": [
+    "BACKTEST",
+    "REPLAY",
+    "SHADOW"
+  ],
+  "permissions": [
+    "propose",
+    "read_context"
+  ],
+  "_provenance": {
+    "note": "S1 收编档案补全（既有在册策略，已过 S5，本次补 manifest 登记）。agent_platform/engine/strategy_config.py 的 load_config 为严格模式（拒绝未声明字段），聚合进 strategy_config.json 时必须剥离本字段，剥离后其余 6 字段可直接过校验器。",
+    "source_file": "quant_backtest/strategy_layer/adapters/chan_monitor.py",
+    "source_symbol": "ChanMonitorAdapter（strategy_id=\"chan_monitor\"，score(trade_date) -> List[Signal]）",
+    "baseline": [
+      {
+        "file": "quant_backtest/strategy_layer/strategy_registry.json",
+        "usage": "在册口径：enabled 含 chan_monitor，初始权重 0.5（与 kg_boost 对半）。"
+      },
+      {
+        "file": "quant_backtest/chanlun_rotation_v6c_result.json",
+        "usage": "上游信号源基线：adapter 只读 chanlun_scan.py 产出的信号池（data/chanlun_pool*.jsonl），不直接 import 缠论引擎；信号质量对账以缠论主策略线六代轮动 v6c 成绩为准。"
+      }
+    ],
+    "drafted_by": "batch1-manifest",
+    "drafted_at": "2026-10-18",
+    "data_min_privilege_note": "按 adapter 实际依赖最小授权：只读信号池 JSONL 产物（A/美/港三池），不申请原始 K 线；分位映射与共振加成均为池内字段（mbei/bei/bei2/vv/trend/reg）派生。"
+  }
+}

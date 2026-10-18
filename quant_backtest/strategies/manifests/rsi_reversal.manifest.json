@@ -1,0 +1,35 @@
+{
+  "strategy_id": "rsi_reversal",
+  "version": "1.0.0",
+  "allowed_data": [
+    "bars.daily"
+  ],
+  "resource_budget": {
+    "timeout_s": 5.0,
+    "max_concurrency": 1,
+    "max_context_bytes": 262144
+  },
+  "allowed_modes": [
+    "BACKTEST",
+    "REPLAY",
+    "SHADOW"
+  ],
+  "permissions": [
+    "propose",
+    "read_context"
+  ],
+  "_provenance": {
+    "note": "S1 收编登记字段。agent_platform/engine/strategy_config.py 的 load_config 为严格模式（拒绝未声明字段），聚合进 strategy_config.json 时必须剥离本字段，剥离后其余 6 字段可直接过校验器。",
+    "source_file": "quant_backtest/strategies.py",
+    "source_symbol": "rsi_reversal / REGISTRY[\"rsi_reversal\"] / PARAM_DEFAULTS[\"rsi_reversal\"]",
+    "baseline": [
+      {
+        "file": "quant_backtest/runner.py",
+        "usage": "S3 对账基线：runner.py backtest 引擎（信号 shift(1) 次日开盘生效口径，仅做多），参数取 CFG[\"strategies\"][\"rsi_reversal\"]，缺省回落 PARAM_DEFAULTS {period:14, oversold:30, overbought:70}。注意本体为事件帧语义（触发后 ffill 持有至反向事件），S2 包装时必须保留该语义，否则对账一致率不保。"
+      }
+    ],
+    "drafted_by": "batch1-manifest",
+    "drafted_at": "2026-10-18",
+    "data_min_privilege_note": "仅日线收盘价序列（indicators.rsi 只用 df[\"close\"]）。"
+  }
+}
