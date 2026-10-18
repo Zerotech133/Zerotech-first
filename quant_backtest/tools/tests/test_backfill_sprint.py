@@ -202,7 +202,9 @@ class TestSprintLoop(unittest.TestCase):
                                side_effect=lambda s: sleeps.append(s)):
             rc = BS.sprint(limit=2000, win=None, force=True)
         self.assertEqual(rc, BS.RC_YIELDED_OUT)
-        self.assertEqual(sleeps, [BS.YIELD_SLEEP_SEC] * 2)  # 第3次直接退出
+        # 让路 1 → 探测前观察窗 → 让路 2 → 观察窗（第 3 次让路直接退出）
+        self.assertEqual(sleeps, [BS.YIELD_SLEEP_SEC, BS.OBSERVE_SEC,
+                                  BS.YIELD_SLEEP_SEC, BS.OBSERVE_SEC])
         self.assertEqual(run_calls, [])           # run 一次都没被调（首片前就让路退出）
 
     def test_yield_then_resume_when_writer_quiets(self):
@@ -242,6 +244,76 @@ class TestSprintLoop(unittest.TestCase):
             rc = BS.sprint(limit=500, win=None, force=True)
         self.assertEqual(rc, BS.RC_OK)
         self.assertEqual(calls, [500])            # 让路一次后恢复并跑完
+
+    def test_writer_active_during_shard_yields(self):
+        # 每日循环走查判例（2026-10-18）：外部写者若在我们的分片期间写状态
+        # 日志，写会被吸收进「自己写完」的基线（片间隙探测窗口只有毫秒级）
+        # → 分片结束后必须有一个观察窗，mtime 变了就是外部写者活跃，让路。
+        # 场景：automation 从分片 1 中途开始持续写 → sprint 让路 3 次退出 4，
+        # run 只被调 1 次。
+        self.tmp.mkdir(exist_ok=True)
+        clock = {"t": 1000000.0}
+        state = {"last_write": clock["t"] - 3600.0,   # 启动前很久无写入
+                 "automation": False}
+
+        def mtime():
+            return state["last_write"]
+
+        def sleeper(sec):
+            clock["t"] += sec
+            if state["automation"]:
+                state["last_write"] = clock["t"]      # 写者活跃：每次等待期间都有写入
+
+        calls = []
+        def fake_run_shard(n):
+            calls.append(n)
+            state["automation"] = True
+            return 0
+
+        with mock.patch.object(BS.xq_classify, "run",
+                               side_effect=fake_run_shard), \
+             mock.patch.object(BS, "fetch_counts",
+                               side_effect=lambda: {"source": 99999,
+                                                    "classified": 1, "ok": 1,
+                                                    "degraded": 0,
+                                                    "pending": 99998}), \
+             mock.patch.object(BS, "status_log_mtime", side_effect=mtime), \
+             mock.patch.object(BS.time, "sleep", side_effect=sleeper):
+            rc = BS.sprint(limit=2000, win=None, force=True)
+        self.assertEqual(rc, BS.RC_YIELDED_OUT)
+        self.assertEqual(calls, [500])            # 只跑了 1 片就发现写者活跃
+
+    def test_writer_during_shard_then_quiet_proceeds(self):
+        # 对照判例：外部写者只在分片期间写了一次就安静 → 观察窗内 mtime 不再
+        # 变化 → 不误让路，继续下一分片。
+        self.tmp.mkdir(exist_ok=True)
+        clock = {"t": 1000000.0}
+        state = {"last_write": clock["t"] - 3600.0}
+
+        def mtime():
+            return state["last_write"]
+
+        def sleeper(sec):
+            clock["t"] += sec                     # 安静：等待期间无写入
+
+        calls = []
+
+        def fake_run(shard):
+            calls.append(shard)
+            state["last_write"] = clock["t"] + 1.0  # 外部写者分片期间写一次
+            return 0
+
+        with mock.patch.object(BS.xq_classify, "run", side_effect=fake_run), \
+             mock.patch.object(BS, "fetch_counts",
+                               side_effect=lambda: {"source": 99999,
+                                                    "classified": 1, "ok": 1,
+                                                    "degraded": 0,
+                                                    "pending": 99998}), \
+             mock.patch.object(BS, "status_log_mtime", side_effect=mtime), \
+             mock.patch.object(BS.time, "sleep", side_effect=sleeper):
+            rc = BS.sprint(limit=1000, win=None, force=True)
+        self.assertEqual(rc, BS.RC_OK)
+        self.assertEqual(calls, [500, 500])       # 两片全跑完，无让路
 
     def test_circuit_break_on_shard_failure(self):
         calls = []

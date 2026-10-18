@@ -14,6 +14,8 @@
 故不能简单按「mtime 60 秒内」判定（自己刚写完必然触发）。采用基线对比：
   - 首片前（本进程尚未写过）：日志 60 秒内有写入 → 视为外部写者活跃 → 让路；
   - 之后每片结束记录基线 mtime；下片前 mtime != 基线 → 外部有新写入 → 让路；
+    探测前先暂停 OBSERVE_SEC 秒拉宽窗口，否则我们分片期间的外部写入会被
+    基线吸收（探测窗只有毫秒级），持续并行的写者永远探测不到；
   - 让路 = 等 60s 后把基线对齐当前再试（写者停了就能续），连续 3 次让路退出。
 
 退出码：0 正常结束/无事可做；2 窗口外；3 锁冲突；4 连续让路退出；1 参数/异常。
@@ -50,6 +52,7 @@ SHARD_SIZE = 500            # 每片行数（对齐 xq_classify 每日轮判例�
 YIELD_SLEEP_SEC = 60        # 让路等待
 YIELD_MAX = 3               # 连续让路上限
 FRESH_WRITE_SEC = 60        # 启动时日志「新鲜写入」阈值
+OBSERVE_SEC = 5             # 片间隙观察窗：外部写者活跃探测（每日循环走查补丁）
 BUSY_TIMEOUT = 30
 
 RC_OK, RC_ERROR, RC_OUT_OF_WINDOW, RC_LOCKED, RC_YIELDED_OUT = 0, 1, 2, 3, 4
@@ -243,6 +246,15 @@ def sprint(limit: int, win: tuple | None, force: bool) -> int:
                 slog("lock lost (taken over or removed), abort")
                 return RC_LOCKED
             mtime = status_log_mtime()
+            if baseline is not None:
+                # 每日循环走查补丁（2026-10-18）：基线对比的探测窗口原本只有
+                # 毫秒级（基线采集→下一轮探测），外部写者在我们分片期间的
+                # 写入会被基线吸收，持续并行的 automation 将永远探测不到。
+                # 探测前暂停 OBSERVE_SEC 秒拉宽窗口：基线之后有新写入即外部
+                # 写者活跃（本进程在窗口内不写状态日志，不会自检出）；
+                # 让路 sleep 后的基线对齐同理不会再吞掉后续活跃写者。
+                time.sleep(OBSERVE_SEC)
+                mtime = status_log_mtime()
             if should_yield(mtime, baseline, now):
                 yielded += 1
                 slog("yield %d/%d: external writer active on status log"
