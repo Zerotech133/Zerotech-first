@@ -23,6 +23,11 @@ input[type=date]{background:#161b22;border:1px solid #30363d;border-radius:8px;c
 .bar span{display:block;height:100%}
 .legend{font-size:11.5px;color:#8b949e}
 .legend b{color:#c9d1d9;font-weight:600}
+.ctrow{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px}
+.ctrow .lb{flex:none;width:6.5em;text-align:right;color:#8b949e}
+.ctrow .tr{flex:1;height:14px;background:#21262d;border-radius:7px;overflow:hidden}
+.ctrow .tr span{display:block;height:100%}
+.ctrow .n{flex:none;min-width:2.2em;font-family:Consolas,monospace;color:#c9d1d9}
 table{width:100%;border-collapse:collapse;font-size:12.5px}
 th{color:#8b949e;text-align:left;font-weight:400;padding:5px 8px;border-bottom:1px solid #21262d}
 td{padding:6px 8px;border-bottom:1px solid #161b22}
@@ -86,6 +91,17 @@ function render(d){
    '<div class="empty">当日新帖为空（18:00 生产轮产出后才有战术数据；历史回填帖不在当日窗口）</div>')
   +(evk.length?'<div style="margin-top:10px" class="legend">事件分布：</div><div class="chips" style="margin-top:6px">'
     +evk.map(function(k){return '<span class="chip">'+esc(k)+' <b>'+ev[k]+'</b></span>'}).join('')+'</div>':'');
+
+ var ct=d.content_type||{};
+ var ctn={tech:'技术面分析',community:'社区探讨',news:'个股资讯',fundamental:'基本面逻辑',edu:'投教科普',ad:'广告活动'};
+ var ctc={tech:'#1f6feb',community:'#2f7df2',news:'#4493f8',fundamental:'#58a6ff',edu:'#79b8ff',ad:'#9ecbff'};
+ var ctk=Object.keys(ct).filter(function(k){return ct[k]>0}).sort(function(a,b){return ct[b]-ct[a]});
+ var ctot=0;ctk.forEach(function(k){ctot+=ct[k]});
+ var ctb='';
+ if(ctot)ctk.forEach(function(k){
+   var col=ctc[k]||'#484f58',nm=ctn[k]||(k==='(待补)'?'（待补）':k);
+   ctb+='<div class="ctrow"><span class="lb">'+esc(nm)+'</span><span class="tr"><span style="width:'+(100*ct[k]/ctot)+'%;background:'+col+'"></span></span><span class="n">'+ct[k]+'</span></div>'});
+ el('dist').innerHTML+=(ctot?'<div style="margin-top:14px" class="legend">内容形态分布（v1.3 六类 · 共 '+ctot+'）：</div>'+ctb:'');
 
  var an=d.anomaly_signals||[];
  el('anom').innerHTML=an.length?
