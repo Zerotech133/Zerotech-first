@@ -202,6 +202,50 @@ class WatchSourceAuthorityTests(unittest.TestCase):
         self.authority.floor = 4
         self.check([event(pool="B", event_id="owner-event")], "SOURCE_UNVERIFIED")
 
+    def test_resolver_outages_fail_closed_without_hiding_parser_errors(self) -> None:
+        def unavailable(*args: Any) -> Any:
+            raise RuntimeError("source store unavailable")
+
+        cases = (
+            ("strategy_membership", "A", "member-a"),
+            ("owner_input", "B", "owner-event"),
+            ("authorized_input_floor", "B", "owner-event"),
+            ("raw_response", "A", "member-a"),
+            ("raw_anchor", "A", "member-a"),
+            ("trading_session", "A", "member-a"),
+            ("provider_license", "A", "member-a"),
+            ("strategy_roster", "A", "member-a"),
+        )
+        for method, pool, event_id in cases:
+            with self.subTest(resolver=method):
+                authority = Authority()
+                setattr(authority, method, unavailable)
+                verdict = verify_watch_sources([event(pool=pool, event_id=event_id)],
+                                               evaluation_as_of=NOW, authority=authority)
+                self.assertEqual(verdict.status, "SOURCE_UNVERIFIED")
+                self.assertEqual(verdict.code, "AUTHORITY_UNAVAILABLE")
+                self.assertFalse(verdict.production_permitted)
+
+        # Bad original evidence is still reported as evidence, not a store outage.
+        content = raw_line(extra=raw_line().decode())
+        self.authority.raw = replace(self.authority.raw, content=content,
+                                      content_sha256=hashlib.sha256(content).hexdigest(),
+                                      content_length=len(content))
+        self.authority.anchor = (self.authority.raw.content_sha256,
+                                 self.authority.raw.content_length)
+        verdict = verify_watch_sources([event()], evaluation_as_of=NOW,
+                                       authority=self.authority)
+        self.assertEqual(verdict.code, "DUPLICATE_HQ_KEY")
+
+    def test_process_control_exceptions_are_not_swallowed(self) -> None:
+        def interrupted(*args: Any) -> Any:
+            raise KeyboardInterrupt()
+
+        self.authority.raw_anchor = interrupted
+        with self.assertRaises(KeyboardInterrupt):
+            verify_watch_sources([event()], evaluation_as_of=NOW,
+                                 authority=self.authority)
+
     def test_missing_authority_fails_closed(self) -> None:
         verdict = verify_watch_sources([event()], evaluation_as_of=NOW, authority=None)
         self.assertEqual(verdict.status, "SOURCE_UNVERIFIED")

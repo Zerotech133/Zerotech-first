@@ -166,12 +166,22 @@ def _time_window(start: datetime, end: datetime, at: datetime) -> bool:
     return _utc(start) and _utc(end) and start <= at <= end
 
 
+def _resolve(authority: WatchSourceAuthority, method: str, *args: Any) -> Any:
+    """Fail closed only across an external trust-root method/attribute boundary."""
+    try:
+        return getattr(authority, method)(*args)
+    except Exception as exc:
+        # Includes a missing method, store outage or a resolver's own validation error.
+        # Do not catch process-control exceptions or mask our parsing logic.
+        raise _SourceFailure("AUTHORITY_UNAVAILABLE") from exc
+
+
 def _check_member(event: Mapping[str, Any], authority: WatchSourceAuthority,
                   quote_at: datetime) -> None:
     membership = event["membership_event"]
     event_id = membership["event_id"]
     if event["pool"] == "A":
-        proof = authority.strategy_membership(event_id)
+        proof = _resolve(authority, "strategy_membership", event_id)
         _require(type(proof) is StrategyMembershipProof, "A_RECEIPT_MISSING")
         _require(proof.approved is True and proof.revoked is False
                  and (proof.market, proof.code, proof.strategy, proof.strategy_version,
@@ -182,7 +192,7 @@ def _check_member(event: Mapping[str, Any], authority: WatchSourceAuthority,
                  and proof.valid_from <= _claimed_time(membership["as_of"]),
                  "A_RECEIPT_INVALID")
     else:
-        proof = authority.owner_input(event_id)
+        proof = _resolve(authority, "owner_input", event_id)
         _require(type(proof) is OwnerInputProof, "B_AUTH_MISSING")
         _require((proof.market, proof.code, proof.owner, proof.watch_rule,
                   proof.watch_rule_version, proof.membership_event_id) ==
@@ -194,15 +204,15 @@ def _check_member(event: Mapping[str, Any], authority: WatchSourceAuthority,
                  and _time_window(proof.valid_from, proof.valid_until, quote_at)
                  and proof.valid_from <= _claimed_time(membership["as_of"]),
                  "B_AUTH_INVALID")
-        floor = authority.authorized_input_floor(proof.authorized_principal,
-                                                  proof.persisted_input_id)
+        floor = _resolve(authority, "authorized_input_floor",
+                         proof.authorized_principal, proof.persisted_input_id)
         _require(type(floor) is int and floor > 0 and proof.input_version >= floor,
                  "B_INPUT_ROLLBACK")
 
 
 def _check_raw(event: Mapping[str, Any], authority: WatchSourceAuthority,
                quote_at: datetime, evaluation_as_of: datetime) -> str:
-    raw = authority.raw_response(event["source_ref"])
+    raw = _resolve(authority, "raw_response", event["source_ref"])
     _require(type(raw) is RawHttpResponseProof and raw.source_ref == event["source_ref"],
              "RAW_MISSING")
     _require(type(raw.content) is bytes and len(raw.content) > 0
@@ -211,7 +221,7 @@ def _check_raw(event: Mapping[str, Any], authority: WatchSourceAuthority,
              and _SHA256.fullmatch(raw.content_sha256) is not None
              and hashlib.sha256(raw.content).hexdigest() == raw.content_sha256,
              "RAW_INTEGRITY")
-    anchor = authority.raw_anchor(event["source_ref"])
+    anchor = _resolve(authority, "raw_anchor", event["source_ref"])
     _require(type(anchor) is tuple and len(anchor) == 2
              and (raw.content_sha256, raw.content_length) == anchor, "RAW_ANCHOR")
     _require(_utc(raw.received_at) and quote_at <= raw.received_at <= evaluation_as_of,
@@ -260,7 +270,7 @@ def _check_raw(event: Mapping[str, Any], authority: WatchSourceAuthority,
 def _check_policies(event: Mapping[str, Any], authority: WatchSourceAuthority,
                     provider_id: str, quote_at: datetime) -> None:
     session_date = quote_at.astimezone(_MARKET_ZONE[event["market"]]).date()
-    session = authority.trading_session(event["market"], session_date)
+    session = _resolve(authority, "trading_session", event["market"], session_date)
     _require(type(session) is TradingSessionProof and session.market == event["market"]
              and type(session.session_date) is date
              and session.session_date == quote_at.astimezone(
@@ -269,7 +279,7 @@ def _check_policies(event: Mapping[str, Any], authority: WatchSourceAuthority,
              and type(session.calendar_version) is str and bool(session.calendar_version)
              and _time_window(session.opens_at, session.closes_at, quote_at),
              "CALENDAR_MISSING")
-    license_proof = authority.provider_license(provider_id, event["market"])
+    license_proof = _resolve(authority, "provider_license", provider_id, event["market"])
     _require(type(license_proof) is ProviderLicenseProof
              and license_proof.provider_id == provider_id
              and license_proof.market == event["market"]
@@ -308,7 +318,8 @@ def verify_watch_sources(events: Sequence[Mapping[str, Any]], *,
                 _require(strategy not in strategies, "DUPLICATE_STRATEGY")
                 strategies.add(strategy)
         for (market, code), strategies in present.items():
-            roster = authority.strategy_roster(market, code, evaluation_as_of)
+            roster = _resolve(authority, "strategy_roster", market, code,
+                              evaluation_as_of)
             _require(isinstance(roster, (list, tuple)) and bool(roster)
                      and all(type(item) is tuple and len(item) == 3
                              and all(type(part) is str and bool(part) for part in item)
