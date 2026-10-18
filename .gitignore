@@ -1,5 +1,7 @@
 # ===== 数据与运行产物（由 backups/ 定时备份体系覆盖，不进版本控制）=====
 backups/
+automation_runs/
+backup/
 dify/
 dify-backup/
 llamacpp_35b/
