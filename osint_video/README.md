@@ -3,6 +3,8 @@
 > 「老田的AI助手」子系统 ｜ 架构基线：`resdl_osint_architecture.md`（v1）+ `osint_v2_requirements_and_roadmap.md`（v2 增量）
 > 当前实现范围：**T01（基础设施 + 链接队列）+ T03（ASR/OCR 抽取管线）——PoC 阶段**
 > T02（采集服务 D）/ T04（Go 采集 B）/ T05（合规入库与向量化）尚未实现，见文末「路线图」。
+>
+> **采集层归属（2026-10-18 拍板）**：通用链接采集由 `C:\项目\res-downloader-py` 承担（本产线采集层组件，物理独立、纯 HTTP 集成）——规则 MITM 嗅探自主发现 + `POST /api/collect` 批量链接双入口，站点规则 378 条（金融全域+课程/论文/知识），文本页提炼标题/正文/摘要/关键词，媒体归桶，产出 `corpus/` 分桶 + `manifest.jsonl` 台账；台账可对接本目录 `osint_link_task` 状态机。T02 剩余范围收敛为元宝解析链/下载解密/Cookie 热更新。
 
 ---
 
@@ -229,6 +231,6 @@ data/work/{video_id}/
 |---|---|---|
 | T01 基础设施 + 链接队列 | ✅ 本 PoC | 队列 API / 状态机 / 重试 / 死信 / 审计日志 |
 | T03 抽取管线 | ✅ 本 PoC | ASR+OCR 双通道 + 对齐 + 质量报表 —— **Go/No-Go 决策依据** |
-| T02 采集服务 D | ⏳ | 元宝解析链 + 下载解密 + Cookie 热更新 + 令牌桶限速 |
+| T02 采集服务 D | ⏳ | 元宝解析链 + 下载解密 + Cookie 热更新 + 令牌桶限速（通用链接采集入口已由 `res-downloader-py` 承担，见头部归属声明） |
 | T06 监控探路（v2） | ⏳ | finder 门户 Cookie：账号 feed + 评论接口验证 |
 | T04 Go 采集 B / T05 合规入库 / T07-T10 | ⏳ | 见 v1/v2 路线图 |

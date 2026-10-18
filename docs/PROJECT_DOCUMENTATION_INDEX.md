@@ -29,7 +29,7 @@
 | `zerobound-kg/` | KG/数据大屏及数据同步相关组件 | `zerobound-kg/AGENTS.md`、`deliverables/zerobound-kg_数据库全景研究报告_20261017.md` |
 | `Hermes/` | 本地超级助手 WebUI/Agent/MCP 链路 | Hermes 内部 README 与配置说明 |
 | `news_collector/`、`jev-eval/` | 新闻、JEV 判断、推送与证据链 | `docs/ops/`、`jev-eval/docs/` |
-| `gzh/`、`osint_video/` | 内容创作与视频号 OSINT 产线 | 各目录 README 与最新审计 |
+| `gzh/`、`osint_video/` | 内容创作与视频号 OSINT 产线（**采集层：`C:\项目\res-downloader-py`**，规则嗅探+批量采集+知识提炼，2026-10-18 归属拍板） | 各目录 README 与最新审计 |
 | `ops/` | 健康检查、运维脚本 | `ops/health_check.py` |
 | `docs/` | 规范、计划、审计、运行手册、迁移材料 | 本文件及下文索引 |
 | `deliverables/` | 对外交付、专项复盘和验收附件 | `deliverables/page-audit/` |

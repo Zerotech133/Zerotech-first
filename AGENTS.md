@@ -80,7 +80,7 @@
 | `C:\项目\zerobound-kg-snapshots` | KG 施工快照归档（KGStockAnalysis 时代 2026-10-02~05 审计证据：S0-S5/W/C/G3 批次 snapshot+manifest+GateA 签收，159 文件 12.5MB，保留） | — | 2026-10-17 由 `知识图谱` 改名（原名名不副实；零引用实证后改名） |
 | `C:\项目\zhice-os-v2-windows-20260920` | 智策 OS v2 活部署（快照包无 git：5175 前端 + zhice-db 5446 + zhice-redis 6380 在跑） | — | **2026-10-17 拍板不动**：活系统+py312 editable 安装指向此路径+zhice.ps1 引用，改名断链风险>收益；目录名保留快照语义（含日期）以示其出身；引用此工程一律走现名或先立项改名（停服→改名→修引用→重装 editable→验证） |
 | `C:\项目\new_tdx64` | **第三方外部软件**（通达信终端 TdxW.exe 完整安装，自 D 盘迁入；非自研工程，atom 体系不适用） | — | **不动**（2026-10-17 拍板）：data_catalog.yaml 白名单活引用 + 通达信升级器/配置记忆安装路径；手动启动的行情终端，按需开关 |
-| `C:\项目\res-downloader-py` | 自研资源嗅探下载器（FastAPI/uvicorn，站点规则 196 条；atom 候选名 `atom-download-media`） | — | **活跃开发中·暂不改名**（2026-10-17 拍板）：8898/18899 服务在跑+当日多提交（并行会话不干预铁律）；主站集成走纯 HTTP（osint_video/resdl_adapter 零路径引用），改名不断主站。**改名执行清单（开发收尾后）**：停 8898/18899 → Rename → 改 config.json save_dir 自引用 → 重启验证 |
+| `C:\项目\res-downloader-py` | 自研资源嗅探下载器 + 知识采集提炼（FastAPI/uvicorn；**归属 OSINT 产线采集层**，见 `osint_video/README.md`） | — | **2026-10-18 拍板归属 osint_video 开源情报产线（采集层）**：物理路径不动（8898/18899 活服务+自启计划任务+config save_dir/corpus_dir 自引用），主站集成走纯 HTTP（`POST /api/collect` 批量链接、`GET /api/corpus` 语料台账，对接 osint_link_task 状态机=T02 范围之一）；站点规则 378 条（金融全域+课程/论文/知识）；知识提炼落 `corpus/` 分桶+manifest.jsonl。**改名执行清单（开发收尾后）不变**：停 8898/18899 → Rename → 改 config.json save_dir/corpus_dir 自引用 → 重启验证 |
 | `C:\项目\deliverables` | 平台级交付物集散地（投研报告/架构设计/原型/审计，跨工程产出，60 文件活跃） | — | 不动（通用语义名，活跃使用） |
 | `C:\项目\py312` | 全局 Python 3.12.10 运行时（智策 OS editable 安装所在） | — | **环境基础设施，禁改名禁移动** |
 
