@@ -295,7 +295,9 @@
   loadStrategies();
   setInterval(loadStrategies, 120000);
 
+  let latestAlertRequest = 0;
   async function loadAlerts() {
+    const requestId = ++latestAlertRequest;
     try {
       const ctl = new AbortController();
       setTimeout(() => ctl.abort(), 10000);
@@ -330,11 +332,13 @@
           "<span class='ad'>" + esc(a.sub || '') + "</span>" +
           "<span class='ago'>→</span></a>";
       }).join('') || "<div class='arow' style='cursor:default'><span class='dim' style='font-size:12px'>暂无预警数据（各产线快照未生成）</span></div>";
+      if (requestId !== latestAlertRequest) return;
       document.getElementById('al-ts').textContent = '快照 ' + (d.ts || '') + ' · 共 ' + items.length + ' 条';
       const ka = document.getElementById('k-alerts');
       if (ka) ka.textContent = items.length + ' 条';
       document.getElementById('al-list').innerHTML = alertRows;
     } catch (e) {
+      if (requestId !== latestAlertRequest) return;
       document.getElementById('al-ts').textContent = '预警数据不可用 · 快照未更新';
       const ka = document.getElementById('k-alerts');
       if (ka) ka.textContent = '—';

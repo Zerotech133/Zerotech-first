@@ -19,7 +19,9 @@ const page = fs.readFileSync(process.argv[1], 'utf8');
 const start = page.indexOf('  async function loadAlerts() {');
 const end = page.indexOf('  loadAlerts();', start);
 assert(start >= 0 && end > start, 'loadAlerts must exist in the real page');
-const script = new vm.Script(page.slice(start, end) + '\nloadAlerts();');
+const loaderSource = page.slice(page.lastIndexOf('  let latestAlertRequest', start), end);
+assert(loaderSource.startsWith('  let latestAlertRequest = 0;'), 'generation fence must exist');
+const script = new vm.Script(loaderSource + '\nloadAlerts');
 
 async function render(events) {
   const elements = Object.fromEntries(['al-ts', 'k-alerts', 'al-list'].map(id => [
@@ -44,10 +46,64 @@ async function render(events) {
     })[ch]),
   };
   const requestCount = events.length;
+  vm.createContext(context);
+  const loadAlerts = script.runInContext(context);
   for (let index = 0; index < requestCount; index += 1) {
-    await script.runInNewContext(context);
+    await loadAlerts();
   }
   return elements;
+}
+
+async function renderOutOfOrder(firstFails) {
+  const elements = Object.fromEntries(['al-ts', 'k-alerts', 'al-list'].map(id => [
+    id, { textContent: '初始', innerHTML: '初始' }
+  ]));
+  let resolveFirst;
+  const firstResponse = new Promise(resolve => { resolveFirst = resolve; });
+  let requests = 0;
+  const context = {
+    AbortController,
+    URL,
+    location: { origin: 'https://portal.example.test' },
+    setTimeout: () => 0,
+    fetch: async () => {
+      requests += 1;
+      if (requests === 1) return firstResponse;
+      if (requests === 2) {
+        return firstFails ? { ok: true, json: async () => ({
+          ts: '新快照', alerts: [{ name: '新预警', value: '2', href: '/watch' }]
+        }) } : { ok: false };
+      }
+      throw new Error('unexpected request');
+    },
+    document: { getElementById: id => elements[id] },
+    esc: value => String(value ?? '').replace(/[&<>"]/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'
+    })[ch]),
+  };
+  vm.createContext(context);
+  const loader = new vm.Script(loaderSource + '\nloadAlerts');
+  const loadAlerts = loader.runInContext(context);
+  const older = loadAlerts();
+  const newer = loadAlerts();
+  await newer;
+  const snapshotAfterNewer = Object.fromEntries(
+    Object.entries(elements).map(([key, element]) => [
+      key, { textContent: element.textContent, innerHTML: element.innerHTML }
+    ])
+  );
+  resolveFirst(firstFails ? { ok: false } : { ok: true, json: async () => ({
+    ts: '旧快照', alerts: [{ name: '旧预警', value: '1', href: '/watch' }]
+  }) });
+  await older;
+  assert.deepEqual(elements, snapshotAfterNewer, 'older request must never overwrite newer result');
+  if (firstFails) {
+    assert.match(elements['al-list'].innerHTML, /新预警/);
+    assert.equal(elements['k-alerts'].textContent, '1 条');
+  } else {
+    assert.match(elements['al-list'].innerHTML, /预警服务离线或响应异常/);
+    assert.equal(elements['k-alerts'].textContent, '—');
+  }
 }
 
 (async () => {
@@ -117,6 +173,8 @@ async function render(events) {
     assert.match(unavailable['al-list'].innerHTML, /预警服务离线或响应异常/);
     assert.doesNotMatch(unavailable['al-list'].innerHTML, /真实预警|暂无预警数据/);
   }
+  await renderOutOfOrder(false); // Old success after newer failure.
+  await renderOutOfOrder(true);  // Old failure after newer success.
   console.log(JSON.stringify(producedRows));
 })().catch(error => { console.error(error); process.exitCode = 1; });
 """
