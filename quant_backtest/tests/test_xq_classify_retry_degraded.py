@@ -289,6 +289,60 @@ def test_legal_enum_pass_through_untouched(env, monkeypatch, capsys, et, st):
     assert "ALIAS-FALLBACK" not in capsys.readouterr().err
 
 
+# ── ⑦ 真实探针样本回放（2026-10-18 degraded-rca 全量 16 行实证）──
+# 探针定性 A 类：answer 完整合法 JSON、done_reason=stop（82-90 字符），
+# 14:53 落账轮跑的是无别名的旧 HEAD（36a442a3），v1.4.1 提交（15:22/15:37）
+# 晚于落账从未生效。下列为探针原文逐字 fixture（非构造样本）。
+REAL_PROBE_ANSWERS = [
+    # 136684573 / 136226346 等 11 行：投教科普
+    ('{"event_type":"投教科普","content_type":"edu","sentiment":"neutral",'
+     '"confidence":0.95}', "闲聊杂谈", "edu", "neutral", 0.95),
+    # 136356182 等 4 行：个股资讯
+    ('{"event_type":"个股资讯","content_type":"news","sentiment":"neutral",'
+     '"confidence":0.95}', "个股研判", "news", "neutral", 0.95),
+    # 135857044：港股打新
+    ('{"event_type":"港股打新","content_type":"fundamental","sentiment":"neutral",'
+     '"confidence":0.95}', "交易策略", "news", "neutral", 0.95),
+]
+
+
+@pytest.mark.parametrize("answer,et,ct,st,conf", REAL_PROBE_ANSWERS)
+def test_real_probe_answer_replayed(env, monkeypatch, answer, et, ct, st, conf):
+    """真实探针样本回放：完整 JSON + 漂移词，经别名短路升级 parse_ok=1，
+    四字段（event_type/content_type/sentiment/confidence）逐项对账。"""
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1", retry_count=2)   # 真实存量：已临封顶的最后一次机会
+    patch_llm(monkeypatch, answer)
+    assert xc.retry_degraded(500) == 0
+    parse_ok, got_et, got_st, retry_count = fetch(db, "s1")
+    assert (parse_ok, got_et, got_st, retry_count) == (1, et, st, 0)
+    con = sqlite3.connect(db)
+    row = con.execute(
+        "SELECT content_type, confidence FROM xq_status_classified"
+        " WHERE status_id='s1'").fetchone()
+    con.close()
+    assert row == (ct, conf)
+
+
+def test_real_probe_confidence_out_of_range_still_upgraded(env, monkeypatch):
+    """探针同形态但 confidence 越界（>1）：confidence 落 None 不降级
+    parse_ok（与既有口径一致——confidence 非判级字段）。"""
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"投教科普","content_type":"edu",'
+           '"sentiment":"bullish","confidence":1.5}')
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    parse_ok, event_type, _, _ = fetch(db, "s1")
+    assert (parse_ok, event_type) == (1, "闲聊杂谈")
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT confidence FROM xq_status_classified"
+                       " WHERE status_id='s1'").fetchone()[0] is None
+    con.close()
+
+
 @pytest.mark.parametrize("ct", xc.CONTENT_TYPES)
 def test_legal_content_type_pass_through_untouched(env, monkeypatch, ct):
     """v1.4.1 回归锚（形态列零影响）：六个合法 content_type 原样落账，
