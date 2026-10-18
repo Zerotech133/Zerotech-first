@@ -144,6 +144,82 @@ class ScanBatch:
             raise ValueError("future evidence relative to batch")
 
 
+def _sha256_text(value: str, name: str) -> None:
+    if (not isinstance(value, str) or len(value) != 64 or
+            any(char not in "0123456789abcdef" for char in value)):
+        raise ValueError(f"{name} must be a lowercase SHA-256 hex digest")
+
+
+@dataclass(frozen=True)
+class ArtifactSeal:
+    """Runner-measured, sealed original bytes and their independently parsed rows.
+
+    identity must identify the immutable artifact in runner-controlled storage.
+    A freely constructed instance is NOT evidence of trusted storage or parsing.
+    """
+
+    sha256: str
+    size: int
+    row_count: int
+    identity: str
+
+    def __post_init__(self) -> None:
+        _sha256_text(self.sha256, "artifact sha256")
+        if not isinstance(self.size, int) or isinstance(self.size, bool) or self.size < 0:
+            raise ValueError("artifact size must be nonnegative")
+        if (not isinstance(self.row_count, int) or isinstance(self.row_count, bool)
+                or self.row_count < 0):
+            raise ValueError("artifact row_count must be nonnegative")
+        _text(self.identity, "artifact identity")
+
+
+def parse_artifact_hits(raw_bytes: bytes) -> tuple[Hit, ...]:
+    """Independently decode the strict JSON row format from the original bytes."""
+    if not isinstance(raw_bytes, bytes):
+        raise ValueError("sealed artifact must contain bytes")
+
+    def unique_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate artifact JSON key")
+            result[key] = value
+        return result
+
+    try:
+        rows = json.loads(raw_bytes.decode("utf-8"), object_pairs_hook=unique_pairs)
+        if not isinstance(rows, list):
+            raise ValueError("artifact must be a JSON array of hit rows")
+        hits: list[Hit] = []
+        for row in rows:
+            if not isinstance(row, dict) or set(row) != {"market", "code", "source", "reference",
+                                                       "observed_at", "parent_ids"}:
+                raise ValueError("artifact row fields do not match hit schema")
+            parents = row["parent_ids"]
+            if not isinstance(parents, list) or not all(isinstance(p, str) for p in parents):
+                raise ValueError("artifact parent IDs must be string array")
+            evidence = Evidence(row["source"], row["reference"],
+                                datetime.fromisoformat(row["observed_at"]), tuple(parents))
+            hits.append(Hit(SecurityId(row["market"], row["code"]), evidence))
+        if len({hit.security for hit in hits}) != len(hits):
+            raise ValueError("duplicate artifact security")
+        return tuple(hits)
+    except (UnicodeError, json.JSONDecodeError, TypeError, AttributeError, KeyError) as exc:
+        raise ValueError("invalid sealed artifact row encoding") from exc
+
+
+def measure_artifact(raw_bytes: bytes, parsed_hits: tuple[Hit, ...],
+                     identity: str) -> ArtifactSeal:
+    """Measure raw bytes, verifying independently parsed rows match their bytes.
+
+    This is not proof of runner-controlled storage or independence of the source.
+    """
+    if not isinstance(parsed_hits, tuple) or parse_artifact_hits(raw_bytes) != parsed_hits:
+        raise ValueError("parsed artifact hits differ from sealed raw bytes")
+    return ArtifactSeal(hashlib.sha256(raw_bytes).hexdigest(), len(raw_bytes),
+                        len(parsed_hits), identity)
+
+
 @dataclass(frozen=True)
 class RunnerObservation:
     """Independent runner's actual visited universe, hits and completion result.
@@ -158,6 +234,11 @@ class RunnerObservation:
     completed: bool
     visited: frozenset[SecurityId]
     selected: frozenset[SecurityId]
+    run_id: str
+    rule_sha256: str
+    calendar_identity: str
+    exit_code: int
+    artifact: ArtifactSeal
 
     def __post_init__(self) -> None:
         _text(self.batch_id, "batch_id")
@@ -165,8 +246,15 @@ class RunnerObservation:
             raise ValueError("runner trade_date must be a date")
         _utc(self.finished_at)
         if (not isinstance(self.visited, frozenset) or not isinstance(self.selected, frozenset)
-            or not all(isinstance(item, SecurityId) for item in self.visited | self.selected)):
+                or not all(isinstance(item, SecurityId) for item in self.visited | self.selected)):
             raise ValueError("runner observations must be frozen sets of security identities")
+        _text(self.run_id, "runner run_id")
+        _sha256_text(self.rule_sha256, "strategy rule hash")
+        _text(self.calendar_identity, "calendar identity")
+        if not isinstance(self.exit_code, int) or isinstance(self.exit_code, bool):
+            raise ValueError("runner exit_code must be an integer")
+        if not isinstance(self.artifact, ArtifactSeal):
+            raise ValueError("independently measured artifact seal required")
 
 
 @dataclass(frozen=True)
@@ -177,6 +265,10 @@ class CoverageApproval:
     trade_date: date
     scope: CoverageScope
     universe: frozenset[SecurityId]
+    identity: str
+    version: str
+    rule_sha256: str
+    calendar_identity: str
 
     def __post_init__(self) -> None:
         if (not isinstance(self.trade_date, date) or isinstance(self.trade_date, datetime)
@@ -184,6 +276,10 @@ class CoverageApproval:
             raise ValueError("invalid coverage approval")
         if not self.universe or not all(isinstance(item, SecurityId) for item in self.universe):
             raise ValueError("approved universe must contain qualified securities")
+        _text(self.identity, "approved universe identity")
+        _text(self.version, "approved universe version")
+        _sha256_text(self.rule_sha256, "approved strategy rule hash")
+        _text(self.calendar_identity, "approved calendar identity")
 
 
 def batch_fingerprint(batch: ScanBatch) -> str:
@@ -209,6 +305,13 @@ class CoverageReceipt:
     scope: CoverageScope
     covered: frozenset[SecurityId]
     approved_universe: frozenset[SecurityId]
+    artifact: ArtifactSeal
+    run_id: str
+    rule_sha256: str
+    calendar_identity: str
+    exit_code: int
+    approval_identity: str
+    approval_version: str
     signature: str
 
 
@@ -217,12 +320,18 @@ def _receipt_payload(receipt: CoverageReceipt) -> bytes:
                receipt.strategy.version, receipt.trade_date.isoformat(),
                receipt.finished_at.isoformat(), receipt.scope.value,
                sorted((item.market, item.code) for item in receipt.covered),
-               sorted((item.market, item.code) for item in receipt.approved_universe)]
+               sorted((item.market, item.code) for item in receipt.approved_universe),
+               receipt.artifact.sha256, receipt.artifact.size,
+               receipt.artifact.row_count, receipt.artifact.identity,
+               receipt.run_id, receipt.rule_sha256, receipt.calendar_identity,
+               receipt.exit_code, receipt.approval_identity, receipt.approval_version]
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
 def verify_runner_batch(batch: ScanBatch, observation: RunnerObservation,
-                        approval: CoverageApproval, signing_key: bytes) -> CoverageReceipt:
+                        approval: CoverageApproval, signing_key: bytes,
+                        raw_bytes: bytes | None = None,
+                        parsed_hits: tuple[Hit, ...] | None = None) -> CoverageReceipt:
     """Issue a receipt only after comparing external runner observations and approval.
 
     The signing key and these two inputs are runner-side capabilities. Passing
@@ -232,8 +341,17 @@ def verify_runner_batch(batch: ScanBatch, observation: RunnerObservation,
         raise ValueError("independent runner signing key must contain at least 32 bytes")
     if not isinstance(observation, RunnerObservation) or not isinstance(approval, CoverageApproval):
         raise ValueError("independent runner observation and approval required")
-    if batch.status is not BatchStatus.COMPLETE or not observation.completed:
-        raise ValueError("scan did not complete independently")
+    if batch.status is not BatchStatus.COMPLETE or not observation.completed or observation.exit_code != 0:
+        raise ValueError("scan did not complete independently with exit_code=0")
+    if raw_bytes is None or parsed_hits is None:
+        raise ValueError("sealed raw artifact bytes and independently parsed hits required")
+    if measure_artifact(raw_bytes, parsed_hits, observation.artifact.identity) != observation.artifact:
+        raise ValueError("runner artifact seal differs from raw bytes or parsed row_count")
+    if parsed_hits != batch.hits:
+        raise ValueError("independently parsed artifact hits differ from producer batch")
+    if (observation.rule_sha256 != approval.rule_sha256 or
+            observation.calendar_identity != approval.calendar_identity):
+        raise ValueError("runner rule hash or calendar differs from independent approval")
     if (batch.batch_id, batch.strategy, batch.trade_date) != (
             observation.batch_id, observation.strategy, observation.trade_date):
         raise ValueError("runner observation does not match producer batch")
@@ -254,23 +372,63 @@ def verify_runner_batch(batch: ScanBatch, observation: RunnerObservation,
         raise ValueError("producer hits differ from runner observed selections")
     unsigned = CoverageReceipt(batch_fingerprint(batch), batch.strategy, batch.trade_date,
                                observation.finished_at, batch.scope, observation.visited,
-                               approval.universe, "")
+                               approval.universe, observation.artifact, observation.run_id,
+                               observation.rule_sha256, observation.calendar_identity,
+                               observation.exit_code, approval.identity, approval.version, "")
     signature = hmac.new(signing_key, _receipt_payload(unsigned), hashlib.sha256).hexdigest()
     return CoverageReceipt(unsigned.batch_fingerprint, unsigned.strategy, unsigned.trade_date,
                            unsigned.finished_at, unsigned.scope, unsigned.covered,
-                           unsigned.approved_universe, signature)
+                           unsigned.approved_universe, unsigned.artifact, unsigned.run_id,
+                           unsigned.rule_sha256, unsigned.calendar_identity,
+                           unsigned.exit_code, unsigned.approval_identity,
+                           unsigned.approval_version, signature)
 
 
 def receipt_is_valid(batch: ScanBatch, receipt: CoverageReceipt | None,
-                     signing_key: bytes, as_of: datetime) -> bool:
+                     signing_key: bytes, as_of: datetime,
+                     raw_bytes: bytes | None = None,
+                     parsed_hits: tuple[Hit, ...] | None = None,
+                     observation: RunnerObservation | None = None,
+                     approval: CoverageApproval | None = None) -> bool:
     """Fail closed unless a matching authenticated receipt is visible at as_of."""
     _utc(as_of)
-    if receipt is None or not isinstance(receipt, CoverageReceipt) or not isinstance(signing_key, bytes):
+    if (receipt is None or not isinstance(receipt, CoverageReceipt) or
+            not isinstance(receipt.artifact, ArtifactSeal) or
+            not isinstance(signing_key, bytes) or not isinstance(observation, RunnerObservation) or
+            not isinstance(approval, CoverageApproval) or raw_bytes is None or parsed_hits is None):
+        return False
+    try:
+        measured = measure_artifact(raw_bytes, parsed_hits, observation.artifact.identity)
+    except (TypeError, ValueError, OverflowError):
+        return False
+    if (measured != receipt.artifact or measured != observation.artifact or
+            parsed_hits != batch.hits or observation.exit_code != 0 or not observation.completed or
+            (observation.batch_id, observation.strategy, observation.trade_date) !=
+            (batch.batch_id, batch.strategy, batch.trade_date) or
+            (approval.strategy, approval.trade_date, approval.scope) !=
+            (batch.strategy, batch.trade_date, batch.scope) or
+            observation.run_id != receipt.run_id or observation.rule_sha256 != receipt.rule_sha256 or
+            observation.rule_sha256 != approval.rule_sha256 or
+            observation.calendar_identity != receipt.calendar_identity or
+            observation.calendar_identity != approval.calendar_identity or
+            approval.identity != receipt.approval_identity or
+            approval.version != receipt.approval_version or
+            approval.universe != receipt.approved_universe or
+            observation.visited != receipt.covered or
+            observation.selected != frozenset(hit.security for hit in parsed_hits) or
+            observation.finished_at != receipt.finished_at or
+            not observation.visited or not observation.visited.issubset(approval.universe) or
+            (batch.scope is CoverageScope.FULL and observation.visited != approval.universe) or
+            not observation.selected.issubset(observation.visited)):
         return False
     if (batch.status is not BatchStatus.COMPLETE or batch.produced_at > as_of
             or batch.trade_date > as_of.date()):
         return False
-    if (len(signing_key) < 32 or receipt.batch_fingerprint != batch_fingerprint(batch) or
+    if (len(signing_key) < 32 or receipt.exit_code != 0 or
+            receipt.artifact.row_count != len(batch.hits) or
+            not receipt.run_id or not receipt.rule_sha256 or not receipt.calendar_identity or
+            not receipt.approval_identity or not receipt.approval_version or
+            receipt.batch_fingerprint != batch_fingerprint(batch) or
             receipt.strategy != batch.strategy or receipt.trade_date != batch.trade_date or
             receipt.scope is not batch.scope or receipt.finished_at < batch.produced_at or
             receipt.finished_at > as_of or not receipt.covered or
@@ -347,7 +505,11 @@ class PoolPolicy:
 
 def reduce_batch(state: PoolState, batch: ScanBatch, receipt: CoverageReceipt | None,
                  signing_key: bytes, as_of: datetime,
-                 policy: PoolPolicy = PoolPolicy()) -> PoolState:
+                 policy: PoolPolicy = PoolPolicy(), *,
+                 raw_bytes: bytes | None = None,
+                 parsed_hits: tuple[Hit, ...] | None = None,
+                 observation: RunnerObservation | None = None,
+                 approval: CoverageApproval | None = None) -> PoolState:
     """Apply only a verified, nonconflicting new trading-day coverage boundary."""
     _utc(as_of)
     def decided(kind: DecisionKind, reason: str, unverified: bool = False) -> PoolState:
@@ -362,12 +524,13 @@ def reduce_batch(state: PoolState, batch: ScanBatch, receipt: CoverageReceipt | 
     fingerprint = batch_fingerprint(batch)
     previous = next((entry for entry in state.accepted
                      if entry[0] == batch.strategy and entry[1] == batch.batch_id), None)
-    if previous is not None:
-        if previous[3] == fingerprint:
-            return state
+    if previous is not None and previous[3] != fingerprint:
         return decided(DecisionKind.CONFLICT, "batch id reused with different payload")
-    if not receipt_is_valid(batch, receipt, signing_key, as_of):
-        return decided(DecisionKind.UNVERIFIED, "missing or invalid independent receipt", True)
+    if not receipt_is_valid(batch, receipt, signing_key, as_of, raw_bytes,
+                            parsed_hits, observation, approval):
+        return decided(DecisionKind.UNVERIFIED, "missing or invalid sealed artifact/receipt", True)
+    if previous is not None:
+        return state
     markets = {item.market for item in receipt.covered}
     last = {(strategy, market): day for strategy, market, day in state.last_dates}
     for market in markets:

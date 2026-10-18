@@ -2,13 +2,15 @@
 
 from dataclasses import FrozenInstanceError, replace
 from datetime import date, datetime, timedelta, timezone
+import hashlib
+import json
 
 import pytest
 
 from quant_backtest.strategy_pool import (
-    BatchStatus, CoverageApproval, CoverageScope, DecisionKind, EventKind,
+    ArtifactSeal, BatchStatus, CoverageApproval, CoverageScope, DecisionKind, EventKind,
     Evidence, Hit, PoolPolicy, PoolState, RunnerObservation, ScanBatch,
-    SecurityId, StrategyId, project_security, receipt_is_valid, reduce_batch,
+    SecurityId, StrategyId, measure_artifact, project_security, receipt_is_valid, reduce_batch,
     set_manual_hold, verify_runner_batch,
 )
 
@@ -28,20 +30,54 @@ def make_batch(day=14, hits=(A,), strategy=STRATEGY, batch_id=None,
                      at, status, scope, tuple(Hit(item, evidence) for item in hits))
 
 
-def attest(batch, universe=frozenset({A}), visited=None, selected=None,
-           completed=True):
+def artifact_bytes(batch):
+    """Test-only deterministic raw artifact; not a production source parser."""
+    return json.dumps([{"market": hit.security.market, "code": hit.security.code,
+                        "source": hit.evidence.source,
+                        "reference": hit.evidence.reference,
+                        "observed_at": hit.evidence.observed_at.isoformat(),
+                        "parent_ids": list(hit.evidence.parent_ids)}
+                       for hit in batch.hits], separators=(",", ":")).encode("utf-8")
+
+
+def trusted_inputs(batch, universe=frozenset({A}), visited=None, selected=None,
+                   completed=True, raw=None, parsed=None, exit_code=0,
+                   rule_hash=None, calendar="CN-trading-v1", version="2026-10"):
+    raw = artifact_bytes(batch) if raw is None else raw
+    parsed = batch.hits if parsed is None else parsed
+    rule_hash = rule_hash or hashlib.sha256(b"test-runner-rule-v1").hexdigest()
+    seal = measure_artifact(raw, parsed, f"sealed/{batch.batch_id}")
     observation = RunnerObservation(batch.batch_id, batch.strategy, batch.trade_date,
                                     batch.produced_at + timedelta(minutes=1), completed,
                                     universe if visited is None else frozenset(visited),
                                     frozenset(hit.security for hit in batch.hits)
-                                    if selected is None else frozenset(selected))
-    approval = CoverageApproval(batch.strategy, batch.trade_date, batch.scope, universe)
-    return verify_runner_batch(batch, observation, approval, KEY)
+                                    if selected is None else frozenset(selected),
+                                    f"runner/{batch.batch_id}", rule_hash, calendar,
+                                    exit_code, seal)
+    approval = CoverageApproval(batch.strategy, batch.trade_date, batch.scope,
+                                universe, "runner-approved-universe", version,
+                                rule_hash, calendar)
+    return raw, parsed, observation, approval
 
 
-def apply(state, batch, receipt=None, policy=PoolPolicy()):
+def attest(batch, universe=frozenset({A}), visited=None, selected=None,
+           completed=True):
+    raw, parsed, observation, approval = trusted_inputs(
+        batch, universe, visited, selected, completed)
+    return verify_runner_batch(batch, observation, approval, KEY, raw, parsed)
+
+
+def apply(state, batch, receipt=None, policy=PoolPolicy(), raw=None, parsed=None,
+          observation=None, approval=None):
+    if receipt is not None and observation is None and approval is None:
+        expected_raw, expected_parsed, observation, approval = trusted_inputs(
+            batch, receipt.approved_universe, receipt.covered)
+        raw = expected_raw if raw is None else raw
+        parsed = expected_parsed if parsed is None else parsed
     return reduce_batch(state, batch, receipt, KEY,
-                        batch.produced_at + timedelta(hours=1), policy)
+                        batch.produced_at + timedelta(hours=1), policy,
+                        raw_bytes=raw, parsed_hits=parsed,
+                        observation=observation, approval=approval)
 
 
 def test_producer_complete_and_empty_are_unverified_without_independent_receipt():
@@ -51,6 +87,7 @@ def test_producer_complete_and_empty_are_unverified_without_independent_receipt(
     assert state.decisions[-1].kind is DecisionKind.UNVERIFIED
     assert apply(state, make_batch(day=15, hits=(), batch_id="other")).accepted == ()
     assert apply(PoolState(), make_batch()).decisions[-1].unverified_hits
+    assert apply(PoolState(), batch, attest(batch), raw=b"[] ").decisions[-1].kind is DecisionKind.UNVERIFIED
 
 
 def test_full_and_scope_require_independently_approved_visited_universe():
@@ -75,14 +112,17 @@ def test_full_and_scope_require_independently_approved_visited_universe():
 def test_authenticated_receipt_is_bound_to_payload_and_asof():
     batch = make_batch()
     receipt = attest(batch)
-    assert receipt_is_valid(batch, receipt, KEY, receipt.finished_at)
+    raw, parsed, observation, approval = trusted_inputs(batch)
+    assert receipt_is_valid(batch, receipt, KEY, receipt.finished_at,
+                            raw, parsed, observation, approval)
     assert not receipt_is_valid(batch, receipt, b"different-runner-key-which-is-long!",
-                                receipt.finished_at)
-    assert not receipt_is_valid(batch, receipt, KEY, batch.produced_at)
+                                receipt.finished_at, raw, parsed, observation, approval)
+    assert not receipt_is_valid(batch, receipt, KEY, batch.produced_at,
+                                raw, parsed, observation, approval)
     modified = replace(batch, hits=(Hit(A, Evidence("direct", "changed", BASE)),))
     assert apply(PoolState(), modified, receipt).decisions[-1].kind is DecisionKind.UNVERIFIED
     assert not receipt_is_valid(batch, replace(receipt, approved_universe=frozenset({A, B})),
-                                KEY, receipt.finished_at)
+                                KEY, receipt.finished_at, raw, parsed, observation, approval)
     with pytest.raises(FrozenInstanceError):
         receipt.signature = "changed"
 
@@ -151,6 +191,85 @@ def test_exit_reentry_episode_and_manual_hold_only_in_isolated_policy():
     assert state.members[0].episode == 2 and state.members[0].active
     assert [event.kind for event in state.events] == [
         EventKind.ENTER, EventKind.ABSENT, EventKind.EXIT, EventKind.REENTER]
+
+
+def test_raw_artifact_byte_replacement_never_reuses_old_receipt():
+    batch = make_batch()
+    raw, parsed, observation, approval = trusted_inputs(batch)
+    receipt = verify_runner_batch(batch, observation, approval, KEY, raw, parsed)
+    first = apply(PoolState(), batch, receipt, raw=raw, parsed=parsed,
+                  observation=observation, approval=approval)
+    assert first.decisions[-1].kind is DecisionKind.ACCEPTED
+    tampered = b"no item selected"  # Same DTO and old receipt, different final source bytes.
+    second = apply(PoolState(), batch, receipt, raw=tampered, parsed=parsed,
+                   observation=observation, approval=approval)
+    assert second.decisions[-1].kind is DecisionKind.UNVERIFIED
+    assert second.members == () and second.accepted == ()
+    # A previously accepted batch cannot silently short-circuit byte remeasurement.
+    replay = apply(first, batch, receipt, raw=tampered, parsed=parsed,
+                   observation=observation, approval=approval)
+    assert replay.decisions[-1].kind is DecisionKind.UNVERIFIED
+    empty = make_batch(day=15, hits=())
+    eraw, eparsed, eobs, eapproval = trusted_inputs(empty)
+    er = verify_runner_batch(empty, eobs, eapproval, KEY, eraw, eparsed)
+    frozen = apply(first, empty, er, raw=b"[ ]", parsed=eparsed,
+                   observation=eobs, approval=eapproval)
+    assert frozen.members[0].consecutive_absences == 0
+
+
+def test_seal_row_count_size_and_original_parse_mismatch_fail_closed():
+    batch = make_batch()
+    raw, parsed, observation, approval = trusted_inputs(batch)
+    for invalid in (replace(observation.artifact, size=observation.artifact.size + 1),
+                    replace(observation.artifact, row_count=0),
+                    replace(observation.artifact, sha256="0" * 64)):
+        with pytest.raises(ValueError, match="artifact seal"):
+            verify_runner_batch(batch, replace(observation, artifact=invalid),
+                                approval, KEY, raw, parsed)
+    with pytest.raises(ValueError, match="parsed artifact hits"):
+        verify_runner_batch(batch, observation, approval, KEY, raw, ())
+    with pytest.raises(ValueError, match="parsed artifact hits"):
+        measure_artifact(b"[]", parsed, observation.artifact.identity)
+    with pytest.raises(ValueError, match="duplicate artifact JSON key"):
+        measure_artifact(b'[{"market":"CN.SH","market":"CN.SZ"}]', (), "sealed/duplicate")
+    with pytest.raises(ValueError, match="artifact row fields"):
+        measure_artifact(b'[{"market":"CN.SH"}]', (), "sealed/incomplete")
+    receipt = verify_runner_batch(batch, observation, approval, KEY, raw, parsed)
+    assert not receipt_is_valid(batch, receipt, KEY, receipt.finished_at)
+    assert not receipt_is_valid(batch, receipt, KEY, receipt.finished_at,
+                                raw, (), observation, approval)
+    assert not receipt_is_valid(batch, replace(receipt, artifact=replace(
+        receipt.artifact, size=receipt.artifact.size + 1)), KEY,
+        receipt.finished_at, raw, parsed, observation, approval)
+    assert apply(PoolState(), batch, receipt, observation=observation,
+                 approval=approval).decisions[-1].kind is DecisionKind.UNVERIFIED
+
+
+def test_runner_exit_rule_calendar_and_universe_version_drift_fail_closed():
+    batch = make_batch()
+    raw, parsed, observation, approval = trusted_inputs(batch)
+    receipt = verify_runner_batch(batch, observation, approval, KEY, raw, parsed)
+    with pytest.raises(ValueError, match="exit_code=0"):
+        verify_runner_batch(batch, replace(observation, exit_code=1),
+                            approval, KEY, raw, parsed)
+    for changed in (replace(observation, rule_sha256="f" * 64),
+                    replace(observation, calendar_identity="other-calendar")):
+        with pytest.raises(ValueError, match="rule hash or calendar"):
+            verify_runner_batch(batch, changed, approval, KEY, raw, parsed)
+    for changed_observation, changed_approval in (
+        (replace(observation, exit_code=1), approval),
+        (replace(observation, run_id="other-run"), approval),
+        (replace(observation, rule_sha256="f" * 64), approval),
+        (replace(observation, calendar_identity="other-calendar"), approval),
+        (observation, replace(approval, version="new-version")),
+        (observation, replace(approval, identity="other-universe"))):
+        assert not receipt_is_valid(batch, receipt, KEY, receipt.finished_at,
+                                    raw, parsed, changed_observation, changed_approval)
+    assert not receipt_is_valid(batch, receipt, KEY, receipt.finished_at,
+                                raw, parsed, observation, None)
+    assert apply(PoolState(), batch, receipt, observation=observation,
+                 approval=replace(approval, version="new-version"), raw=raw,
+                 parsed=parsed).decisions[-1].kind is DecisionKind.UNVERIFIED
 
 
 def test_future_and_invalid_time_and_batch_id_conflicts_fail_closed():
