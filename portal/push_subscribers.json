@@ -1,0 +1,6 @@
+{
+  "_note": "K-ORG-197 轨道C 订阅配置。客户分群名单与订阅维度待老田拍板（W34 三重门：名单拍板/模板过会/灰度逐个确认），拍板前 groups 保持空，一切发送止步 DRYRUN 预览。groups 条目 schema：{\"<group_id>\": {\"name\": 显示名, \"markets\": [\"cn\",\"hk\",\"us\",\"commodity\",\"crypto\",\"fx\"], \"tier\": \"daily|critical\", \"chat_id\": \"飞书 chat/open_id\", \"chat_id_type\": \"chat_id|open_id，缺省 chat_id\"}}。",
+  "version": 1,
+  "dryrun_default": true,
+  "groups": {}
+}
