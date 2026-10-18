@@ -94,8 +94,8 @@ a{color:var(--link)}
 
 <script>
 function el(id){return document.getElementById(id)}
-function esc(s){return String(s==null?'—':s).replace(/[&<>"]/g,function(c){
- return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function esc(s){return String(s==null?'—':s).replace(/[&<>"']/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function pct(v){return (v==null||isNaN(v))?'—':(100*v).toFixed(1)+'%'}
 function metric(k,v,cls){return '<div class="metric"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div></div>'}
 function stackBar(parts){ /* parts:[[n,colorVar],...] → 占比条 */

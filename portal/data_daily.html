@@ -84,8 +84,8 @@ a{color:var(--link)}
 
 <script>
 function el(id){return document.getElementById(id)}
-function esc(s){return String(s==null?'—':s).replace(/[&<>"]/g,function(c){
- return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function esc(s){return String(s==null?'—':s).replace(/[&<>"']/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function num(v,fmt,suf){return (v==null||isNaN(v))?'—':((fmt?fmt(v):v)+(suf||''))}
 function sgn(v,suf){ /* 中式着色：正=红(涨/多) 负=绿(跌/空)，判例 K-STOCK-359/363 */
  if(v==null||isNaN(v))return '<span class="dim">—</span>';

@@ -64,7 +64,7 @@ td a:hover{text-decoration:underline}
 <script>
 let VIEW='breaks', LASTTABLE='';
 const $=s=>document.querySelector(s);
-function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function pill(st){return `<span class="pill ${esc(st)}">${esc(st)}</span>`}
 function link(t){return `<a onclick="jump('${esc(t).replace(/'/g,"\\'")}')">${esc(t)}</a>`}
 function jump(t){VIEW='downstream';LASTTABLE=t;$('#tbl').value=t;setTab('downstream');load();}

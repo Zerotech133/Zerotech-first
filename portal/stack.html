@@ -160,8 +160,8 @@ function draw(d){
       +'<td class="mono" title="'+esc(x.err)+'">'+esc((x.err||'').slice(0,60))+'</td></tr>';
   }).join('');
 }
-function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
-  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 
 function load(){
   fetch('/api/jev-stack').then(function(r){return r.json()}).then(draw)

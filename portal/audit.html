@@ -97,7 +97,7 @@ function fmtClock() {
 }
 setInterval(fmtClock, 1000); fmtClock();
 
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
 function render(d) {
   // unverified 横幅（拍板核心：全体 unverified 如实呈现）

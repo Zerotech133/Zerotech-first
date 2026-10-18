@@ -147,8 +147,8 @@ var TASKDESC={
  'HermesWebUI-Guard':'Hermes(8787) 看门狗：宕则重启'};
 
 function el(id){return document.getElementById(id)}
-function esc(s){return String(s==null?'?':s).replace(/[&<>"]/g,function(c){
-return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function esc(s){return String(s==null?'?':s).replace(/[&<>"']/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 
 function renderHealth(d){
   el('hstate').textContent='更新 '+d.ts;
