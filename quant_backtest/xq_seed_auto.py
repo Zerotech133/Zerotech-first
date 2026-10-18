@@ -6,7 +6,8 @@
   2. 取当前 seed → 跑 xq_collect_1000.py --seed S --target 1000（独立输出文件）；
   3. 推进判据（满足其一即切下一个 seed）：
      a. 挖穿：seed_cursor.json 中该 seed 全部类目 exhausted=true；
-     b. 贫矿：该 seed 连续 3 轮净增 < 50（重叠区/无效号段，无挖掘价值）；
+     b. 贫矿：该 seed 连续 3 轮净增 < 50（仅 rc=0 正常轮计入，重叠区/无效号段）；
+     c. 被挡：rc=1（限流/封禁）不计贫矿不推进，连续 6 轮被挡才放弃该段；
   4. 全队列推进完 → done=true 永久停；
   5. 状态日志 ASCII（排障判例），45min 自愈锁防并发。
 
@@ -35,6 +36,7 @@ PY = r"C:\Program Files\Python311\python.exe"
 TARGET = 1000
 LOW_THRESHOLD = 50
 LOW_LIMIT = 3
+BLOCK_LIMIT = 6      # 连续被挡（rc=1 限流/封禁）轮数上限——放弃该段前的容忍窗口
 CATS = (102, 104, 105, 111)
 SEED_QUEUE = [20000, 30000, 45000, 75000, 105000, 130000,
               150000, 170000, 190000, 210000, 230000]
@@ -150,7 +152,20 @@ def main() -> int:
     if seed_exhausted(seed):
         advanced = True
         status("seed %d exhausted -> advance queue" % seed)
-    if added < LOW_THRESHOLD:
+    if rc == 1 and added < LOW_THRESHOLD:
+        # 采集器 ABORT（限流/封禁）≠ 贫矿：不计 low_streak、不推进——
+        # 否则 feed 域临时限流 3 轮就能把整个队列错误烧穿并误写 done（10-18 实证）。
+        # 连续 BLOCK_LIMIT 轮被挡才放弃该段（防死循环 + 给限流恢复留 ~3h 窗口）。
+        st["blocked_streak"] = st.get("blocked_streak", 0) + 1
+        if st["blocked_streak"] >= BLOCK_LIMIT and not advanced:
+            advanced = True
+            st["blocked_streak"] = 0
+            status("seed %d blocked %d rounds -> give up, advance (blocked NOT barren)"
+                   % (seed, BLOCK_LIMIT))
+        else:
+            status("seed %d blocked round (rc=1 added=%d) streak=%d, stay"
+                   % (seed, added, st["blocked_streak"]))
+    elif added < LOW_THRESHOLD:
         st["low_streak"] = st.get("low_streak", 0) + 1
         if st["low_streak"] >= LOW_LIMIT and not advanced:
             advanced = True
@@ -159,6 +174,7 @@ def main() -> int:
                    % (seed, LOW_LIMIT))
     else:
         st["low_streak"] = 0
+        st["blocked_streak"] = 0
     if advanced:
         st["queue_idx"] = idx + 1
         if st["queue_idx"] >= len(SEED_QUEUE):
