@@ -1,4 +1,4 @@
-"""Isolated fail-closed strategy-pool projection and real HTTP router tests."""
+"""Isolated deny-by-default strategy-pool projection and HTTP router tests."""
 
 from __future__ import annotations
 
