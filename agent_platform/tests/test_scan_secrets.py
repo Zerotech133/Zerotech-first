@@ -66,6 +66,28 @@ def test_each_pattern_hits(tmpdir_factory_, line, category):
     assert f"{f}:1 | {category}" in r.stdout  # 扫描器原样回显传入路径
 
 
+def test_task_word_suffix_sk_no_false_positive(tmpdir_factory_):
+    """跨词误报回归：Windows 计划任务名 "FooTask" + "-" + "sk" + "-SID"
+    的 sk- 紧跟连字符，不得被吸入（左边界 (?<![A-Za-z-]) 防护）。
+    样例以拼接构造，避免本测试源码自命中。"""
+    fp_line = "OneDrive Reporting Task" + "-" + "sk" + "-" + "S-1-5-21-0123456789"
+    f = make_file(tmpdir_factory_, "task_sid.txt", fp_line + "\n")
+    r = run_scan(["--paths", str(f)])
+    assert r.returncode == 0, r.stdout
+    assert "命中 0 处" in r.stdout
+    assert "SK_KEY" not in r.stdout
+
+
+def test_sk_key_sep_same_span_counted_once(tmpdir_factory_):
+    """纯字母数字 sk- 长值同时被 SK_KEY 与 SK_KEY_SEP 匹配同一 span，
+    只允许计 1 次（span 去重，先到先计）。"""
+    f = make_file(tmpdir_factory_, "dup.py", SK_VALUE + "\n")
+    r = run_scan(["--paths", str(f)])
+    assert "SK_KEY" in r.stdout
+    assert "SK_KEY_SEP" not in r.stdout
+    assert "命中 1 处" in r.stdout
+
+
 def test_clean_file_no_false_positive(tmpdir_factory_):
     f = make_file(
         tmpdir_factory_, "clean.py",

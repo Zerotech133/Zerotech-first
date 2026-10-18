@@ -28,8 +28,12 @@ MAX_FILE_BYTES = 1024 * 1024  # 超过 1MB 的文件跳过
 # 因此所有正则字面量中的元字符序列不会被自己的模式匹配。
 PATTERN_GROUP = [
     ("KEYWORD_ASSIGN", r"(?i)(api[_-]?key|secret|token|password|passwd|credential)\s*[=:]\s*[\"'][^\"']{8,}"),
-    ("SK_KEY", r"sk-[A-Za-z0-9]{16,}"),
-    ("SK_KEY_SEP", r"sk-[A-Za-z0-9][A-Za-z0-9._-]{15,}"),
+    # 左边界 (?<![A-Za-z-])：排除紧跟在字母或连字符之后的 sk-（如 Windows 计划
+    # 任务名 "FooTask-sk-S-1-5-..."、"...Task-sk-12800{GUID}" 的跨词误报）。
+    # 行首/引号/等号/空格等前置的真 key 不受影响；SK_KEY_SEP 目标形态 sk-xxx-yyy
+    # 的连字符在匹配体内部，同样不受影响。
+    ("SK_KEY", r"(?<![A-Za-z-])sk-[A-Za-z0-9]{16,}"),
+    ("SK_KEY_SEP", r"(?<![A-Za-z-])sk-[A-Za-z0-9][A-Za-z0-9._-]{15,}"),
     ("AWS_AKID", r"AKIA[0-9A-Z]{16}"),
     ("PRIVATE_KEY", r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     ("BEARER_TOKEN", r"(?i)bearer\s+[A-Za-z0-9._-]{20,}"),
@@ -73,8 +77,12 @@ def scan_file(path: str, patterns):
     text = data.decode("utf-8", errors="replace")
     hits = []
     for lineno, line in enumerate(text.splitlines(), start=1):
+        seen_spans = set()  # 同一 span 只计一次：SK_KEY 与 SK_KEY_SEP 会重叠命中同一形态
         for name, exp in patterns:
             for m in exp.finditer(line):
+                if (m.start(), m.end()) in seen_spans:
+                    continue
+                seen_spans.add((m.start(), m.end()))
                 hits.append((lineno, name, mask_fragment(m.group(0))))
     return hits, None
 
