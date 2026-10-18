@@ -182,7 +182,8 @@ class TestMain:
         code, pushed = self._run(monkeypatch, payload)
         assert code == 0 and pushed["n"] == 2
         assert "超期未跑" in pushed["texts"][0]
-        assert "自愈日志命中" in pushed["texts"][1]
+        # 断点7 收口 2026-10-18：fail_scan 措辞去「自愈 FAILED: 良性」专属化
+        assert "fail_scan 日志命中失败标记" in pushed["texts"][1]
 
     def test_taskstore_failure_not_blocking_push(self, tmp_state, tmp_store,
                                                  monkeypatch):
@@ -282,3 +283,149 @@ class TestMain:
             _payload([_entry(name="Shadow", status="never",
                              last_result=267011)]))
         assert code == 0 and pushed["n"] == 0
+
+
+# ----------------------------------------------------------------------
+# 断点7 收口（2026-10-18）：manifest fail_scan 契约 + 聚合路径（tmp 注入）
+# ----------------------------------------------------------------------
+class TestManifestFailScan:
+    """portal/execution_manifest.json fail_scan 统一口径契约。
+
+    判例（研究报告 L157）：断点7 = 分散日志统一入总线心跳——有明确成败
+    日志语义的任务必须配 fail_scan={log, pattern, window_hours}，纯触发型
+    任务不配。这里直读真实 manifest 做契约验证（解析容错：坏类型/缺键
+    一律 FAIL 而非静默通过）。
+    """
+
+    @staticmethod
+    def _load_manifest():
+        mp = Path(exwd._REPO) / "portal" / "execution_manifest.json"
+        return json.loads(mp.read_text(encoding="utf-8"))
+
+    #: 断点7 收口后应配 fail_scan 的任务全集（名称 → 期望 pattern）
+    EXPECTED_FAIL_SCAN = {
+        "AgentWatchdog": "FAILED:",
+        "AgentShadowDaily": "Traceback (most recent call last)",
+        "AgentMondayCheckpoint": "EXIT=1",
+        "AgentChiefPush": "SEND_FAIL",
+        "AgentShadowEvalWeekly": "影子评估结论：FAIL",
+        "AgentRetrospectBrief": '"exit": 1',
+    }
+
+    def test_manifest_loads_with_unique_names(self):
+        m = self._load_manifest()
+        names = [t["name"] for t in m["tasks"]]
+        assert len(names) == len(set(names)) >= 21
+
+    def test_fail_scan_coverage_matches_breakpoint7_scope(self):
+        """有成败日志语义的任务与 fail_scan 覆盖面一一对应（不多不少）。"""
+        m = self._load_manifest()
+        with_fs = {t["name"] for t in m["tasks"] if t.get("fail_scan")}
+        assert with_fs == set(self.EXPECTED_FAIL_SCAN)
+
+    def test_fail_scan_schema_tolerant(self):
+        """fail_scan 三键齐全且类型合法（log/pattern 非空串、window>0 数值）。"""
+        m = self._load_manifest()
+        for t in m["tasks"]:
+            fs = t.get("fail_scan")
+            if not fs:
+                continue
+            assert isinstance(fs.get("log"), str) and fs["log"], t["name"]
+            assert isinstance(fs.get("pattern"), str) and fs["pattern"], t["name"]
+            wh = fs.get("window_hours")
+            assert isinstance(wh, (int, float)) and wh > 0, t["name"]
+
+    def test_fail_scan_pattern_matches_semantics(self):
+        """pattern 与任务成败语义对齐（断点7 口径表固化）。"""
+        m = self._load_manifest()
+        got = {t["name"]: t["fail_scan"]["pattern"]
+               for t in m["tasks"] if t.get("fail_scan")}
+        for name, pattern in self.EXPECTED_FAIL_SCAN.items():
+            assert got.get(name) == pattern, name
+
+    def test_fail_scan_tasks_have_log_path(self):
+        """断点7 新配 fail_scan 的任务必须有 log_path（mtime 面同源留痕）；
+        AgentWatchdog 为 2026-10-18 前在档特例（只扫 aw-stack 绝对路径，
+        无 log_path），豁免。"""
+        m = self._load_manifest()
+        for t in m["tasks"]:
+            if t.get("fail_scan") and t["name"] != "AgentWatchdog":
+                assert t.get("log_path"), t["name"]
+
+    def test_window_hours_derived_from_cadence_grace(self):
+        """window_hours=(cadence+grace)/60 推导（±1h 容差），自愈类 24h 特例。"""
+        m = self._load_manifest()
+        for t in m["tasks"]:
+            fs = t.get("fail_scan")
+            if not fs or t["name"] == "AgentWatchdog":
+                continue  # 自愈日志单点沿用 2026-10-18 原值 24h
+            expect = (int(t["cadence_minutes"]) +
+                      int(t["grace_minutes"])) / 60.0
+            assert abs(float(fs["window_hours"]) - expect) <= 1.0, t["name"]
+
+
+class TestFailScanAggregationTmp:
+    """watchdog 聚合路径补齐：真实 _log_state 扫 tmp 注入日志 → 全链推送。"""
+
+    def _cfg(self, tmp_path, pattern):
+        log = tmp_path / "probe_fail.log"
+        log.write_text("line1 ok\n%s\nline3 ok\n" % pattern, encoding="utf-8")
+        return {"name": "ChiefProbe", "cadence_minutes": 1440,
+                "grace_minutes": 4320, "log_path": str(log),
+                "fail_scan": {"log": str(log), "pattern": pattern,
+                              "window_hours": 24}}
+
+    def test_log_state_hits_fresh_fail_pattern(self, tmp_path):
+        """api_execution._log_state：新鲜日志命中 pattern → fail_scan_hit。"""
+        log_mtime, hit = exwd.api_execution._log_state(
+            self._cfg(tmp_path, "SEND_FAIL"))
+        assert hit is True and log_mtime is not None
+
+    def test_log_state_stale_window_no_hit(self, tmp_path):
+        """window_hours 外（mtime 过期）不扫——陈旧失败不误报。"""
+        import os
+        cfg = self._cfg(tmp_path, "SEND_FAIL")
+        old = (exwd.api_execution.time.time() - 48 * 3600)
+        os.utime(cfg["fail_scan"]["log"], (old, old))
+        _, hit = exwd.api_execution._log_state(cfg)
+        assert hit is False
+
+    def test_log_state_clean_log_no_hit(self, tmp_path):
+        """日志只有成功标记 → 不命中（SEND_OK 与 SEND_FAIL 子串区分）。"""
+        log = tmp_path / "clean.log"
+        log.write_text("SEND_OK all good\npushed=1\n", encoding="utf-8")
+        cfg = {"name": "ChiefProbe", "cadence_minutes": 1440,
+               "grace_minutes": 4320, "log_path": str(log),
+               "fail_scan": {"log": str(log), "pattern": "SEND_FAIL",
+                             "window_hours": 24}}
+        _, hit = exwd.api_execution._log_state(cfg)
+        assert hit is False
+
+    def test_fail_scan_hit_end_to_end_alert(self, tmp_state, tmp_store,
+                                            monkeypatch, tmp_path):
+        """tmp 注入日志 → _log_state 命中 → 总线 ok+fail_scan_hit →
+        watchdog 推 FAIL_SCAN P0（断点7 聚合全链路）。"""
+        cfg = self._cfg(tmp_path, "SEND_FAIL")
+        log_mtime, hit = exwd.api_execution._log_state(cfg)
+        assert hit
+        entry = {"name": cfg["name"], "status": "ok", "last_result": 0,
+                 "result_ok": True, "log_mtime": log_mtime,
+                 "stale_min": None, "in_system": True,
+                 "fail_scan_hit": hit, "last_run": "2026-10-18 17:35:00",
+                 "expected_cadence": "每 1440 分钟"}
+        monkeypatch.setattr(
+            exwd.api_execution, "build_execution_health",
+            lambda force=False: {"ps_ok": True, "manifest_ok": True,
+                                 "tasks": [entry]})
+        texts = []
+        monkeypatch.setattr(exwd, "push_feishu",
+                            lambda text: texts.append(text) or True)
+        code = exwd.main([])
+        assert code == 0
+        lr = json.loads((tmp_state / "last_run.json").read_text(
+            encoding="utf-8"))
+        assert lr["alerted"][0]["error_code"] == "FAIL_SCAN"
+        assert lr["exit"] == 0
+        # 措辞 = 断点7 收口后的通用口径（非「自愈 FAILED: 良性」专属化）
+        assert texts and "fail_scan 日志命中失败标记" in texts[0]
+        assert "ChiefProbe" in texts[0]

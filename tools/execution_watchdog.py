@@ -162,11 +162,18 @@ def _anomalies(payload):
 
 
 def _fmt_alert(entry, ticket_note):
-    """P0 措辞模板（设计文档 T3）。"""
+    """P0 措辞模板（设计文档 T3）。
+
+    断点7 收口（2026-10-18）：fail_scan 从 AgentWatchdog 自愈日志单点泛化
+    为 manifest 通用口径（SEND_FAIL/EXIT=1/traceback/exit:1 等），告警措辞
+    同步去「自愈 FAILED: 良性」专属措辞，改为 rc 面良性 + 日志命中的通用
+    表述（具体命中的 pattern 见 manifest 该任务 fail_scan 条目）。
+    """
     kind = {"fail": "LastTaskResult=%s 非0" % entry.get("last_result"),
             "stale": "超期未跑 stale_min=%s" % entry.get("stale_min")}.get(
                 entry["status"],
-                "自愈日志命中 FAILED:（rc=%s 良性）" % entry.get("last_result"))
+                "fail_scan 日志命中失败标记（rc=%s rc 面良性，"
+                "见 manifest fail_scan 口径）" % entry.get("last_result"))
     lines = [
         "🚨 [P0] 执行失败必响：%s" % entry["name"],
         "- 异常类型：%s" % kind,

@@ -1,36 +1,59 @@
 {
   "version": 1,
   "updated": "2026-10-18",
-  "note": "R1 执行健康总线白名单（manifest 即白名单：只投影本清单任务，系统其余任务不在投影面）。cadence/grace 为 2026-10-18 Get-ScheduledTask 逐条实测回填值（核对表见 docs/runbooks 联动层一期验收演练）。宽限缺省=cadence*0.5；周末/登录触发类显式放宽。",
+  "note": "R1 执行健康总线白名单（manifest 即白名单：只投影本清单任务，系统其余任务不在投影面）。cadence/grace 为 2026-10-18 Get-ScheduledTask 逐条实测回填值（核对表见 docs/runbooks 联动层一期验收演练）。宽限缺省=cadence*0.5；周末/登录触发类显式放宽。断点7 收口（2026-10-18）：分散日志统一入总线心跳——有明确成败日志语义的任务一律配 fail_scan={log,pattern,window_hours}（window_hours=(cadence+grace)/60 推导），由 /api/execution/health 聚合为 fail_scan_hit 进 R3 必响。",
   "tasks": [
     {
       "name": "AgentShadowDaily",
       "cadence_minutes": 1440,
       "grace_minutes": 4320,
       "log_path": "agent_platform/data/shadow/last_run.log",
+      "fail_scan": {
+        "log": "agent_platform/data/shadow/last_run.log",
+        "pattern": "Traceback (most recent call last)",
+        "window_hours": 96
+      },
       "enabled": true,
-      "note": "影子链每日 17:10（工作日，DaysOfWeek=62 实测 Mon-Fri）；grace*3 周末放宽"
+      "note": "影子链每日 17:10（工作日，DaysOfWeek=62 实测 Mon-Fri）；grace*3 周末放宽；fail_scan 探链级崩溃 traceback（断点7 收口 2026-10-18）"
     },
     {
       "name": "AgentMondayCheckpoint",
       "cadence_minutes": 10080,
       "grace_minutes": 14400,
+      "log_path": "agent_platform/data/shadow/monday_checkpoint.log",
+      "fail_scan": {
+        "log": "agent_platform/data/shadow/monday_checkpoint.log",
+        "pattern": "EXIT=1",
+        "window_hours": 408
+      },
       "enabled": true,
-      "note": "每周一 17:25（MSFT_TaskWeeklyTrigger days=2 实测）"
+      "note": "每周一 17:25（MSFT_TaskWeeklyTrigger days=2 实测）；fail_scan 探观察点门 EXIT=1（断点7 收口 2026-10-18）"
     },
     {
       "name": "AgentChiefPush",
       "cadence_minutes": 1440,
       "grace_minutes": 4320,
+      "log_path": "agent_platform/data/shadow/chief_last_run.log",
+      "fail_scan": {
+        "log": "agent_platform/data/shadow/chief_last_run.log",
+        "pattern": "SEND_FAIL",
+        "window_hours": 96
+      },
       "enabled": true,
-      "note": "工作日 17:35（DaysOfWeek=62 实测）；grace*3 周末放宽"
+      "note": "工作日 17:35（DaysOfWeek=62 实测）；grace*3 周末放宽；fail_scan 探飞书推送 SEND_FAIL（断点7 收口 2026-10-18）"
     },
     {
       "name": "AgentShadowEvalWeekly",
       "cadence_minutes": 10080,
       "grace_minutes": 14400,
+      "log_path": "agent_platform/data/shadow/eval_last_run.log",
+      "fail_scan": {
+        "log": "agent_platform/data/shadow/eval_last_run.log",
+        "pattern": "影子评估结论：FAIL",
+        "window_hours": 408
+      },
       "enabled": true,
-      "note": "每周五 17:45（days=32 实测）"
+      "note": "每周五 17:45（days=32 实测）；fail_scan 探评估结论 FAIL（断点7 收口 2026-10-18）"
     },
     {
       "name": "AgentWatchdog",
@@ -161,8 +184,13 @@
       "cadence_minutes": 1440,
       "grace_minutes": 4320,
       "log_path": "automation_runs/retro_brief/last_run.json",
+      "fail_scan": {
+        "log": "automation_runs/retro_brief/last_run.json",
+        "pattern": "\"exit\": 1",
+        "window_hours": 96
+      },
       "enabled": true,
-      "note": "R5 复盘回流（2026-10-18 登记，每日 18:05）；简报 append-only 落 automation_runs/retro_brief/briefs/"
+      "note": "R5 复盘回流（2026-10-18 登记，每日 18:05）；简报 append-only 落 automation_runs/retro_brief/briefs/；fail_scan 探 last_run.json exit=1（断点7 收口 2026-10-18）"
     }
   ]
 }

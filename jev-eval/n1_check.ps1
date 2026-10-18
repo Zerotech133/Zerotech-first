@@ -1,4 +1,4 @@
-﻿# N1Check v1.9 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal; v1.6.1 K-STOCK-071 KEY_LOST 只查 pending 不算 sent 归档; v1.7 K-STOCK-076 neo4j 周备新鲜度; v1.9 联动层一期 R3 必响链失联可探)
+﻿# N1Check v2.0 - daily 07:30 morning verification (OPS-1001e H3; v1.2 OPS-1004 nightly trio; v1.3 OPS-1012 file-count baseline; v1.4 OPS-1013 script presence; v1.5 K-NEWS-001 jev backlog; v1.6 K-STOCK-061 regen self-heal; v1.6.1 K-STOCK-071 KEY_LOST 只查 pending 不算 sent 归档; v1.7 K-STOCK-076 neo4j 周备新鲜度; v1.9 联动层一期 R3 必响链失联可探; v2.0 断点7 收口——R3 分散日志统一入总线心跳，新增探针⑩⑪)
 # v1.8 2026-10-16 换机适配（单 C 盘 / 用户 t / 无注册表权威）：
 #   - mirror 根 D:\backups_mirror -> C:\backups_mirror
 #   - OneDrive C:\Users\Administrator -> C:\Users\t
@@ -23,6 +23,11 @@
 #      automation_runs\execution_watchdog\last_run.json mtime within 30min
 #      AND exit=0 + task "AI工作站执行失败巡检" RC benign
 #      (告警链自身失联必须可被 N1 探出——巡检器哑火不能静默)
+#  (10) AgentRetrospectBrief heartbeat (v2.0 / 断点7 收口 R5 复盘链失联可探):
+#      automation_runs\retro_brief\last_run.json — 今日 18:05 未到则跳过；
+#      已过 18:05 后 mtime>24h → FAIL（复盘链失联），exit!=0 → FAIL
+#  (11) HermesWebUI-Guard30 presence + port 8787 UP (v2.0 / 断点7 收口):
+#      30min 心跳用户态守护任务缺失 或 8787 端口 DOWN → FAIL
 # FAIL -> N1_CHECK_FAIL flag (alert forwarder pushes to Feishu) + report file.
 $ErrorActionPreference = 'Continue'
 $day = (Get-Date).ToString('yyyy-MM-dd')
@@ -271,7 +276,9 @@ if (-not (Test-Path $ExWdLog)) {
         Fail ('exwd: last_run.json STALE (' + [math]::Round($ageMin,0) + 'min > 30min) - 必响巡检器失联（任务禁用/主机休眠/脚本异常）')
     } else {
         try {
-            $exwd = Get-Content $ExWdLog -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json
+            # -Encoding UTF8 必带：文件由 Python json.dump 写（UTF-8 无 BOM），
+            # PS5.1 缺省按系统 ANSI(GBK) 解码，中文名乱码会破坏 JSON 解析
+            $exwd = Get-Content $ExWdLog -Raw -Encoding UTF8 -ErrorAction SilentlyContinue | ConvertFrom-Json
             if ($exwd.exit -ne 0) {
                 Fail ('exwd: last exit=' + $exwd.exit + ' at ' + $exwd.ran_at + ' - 巡检自身异常（总线轮询失败/推送失败），见 automation_runs\execution_watchdog\')
             } else {
@@ -287,6 +294,55 @@ if ($exwdTask) {
         Report ('[OK] exwd task RC=' + $eti.LastTaskResult + ' LastRun=' + $eti.LastRunTime)
     } else { Fail ('exwd task RC=' + $eti.LastTaskResult + ' LastRun=' + $eti.LastRunTime) }
 } else { Fail 'exwd task "AI工作站执行失败巡检" not found (必响链计划任务丢失)' }
+
+# --- 10. AgentRetrospectBrief heartbeat (v2.0 / 断点7 收口 · R5 复盘链失联可探) ---
+# retro_brief.py 每日 18:05 写 automation_runs\retro_brief\last_run.json
+# （manifest AgentRetrospectBrief 同款落点）。今日 18:05 未到 → 跳过（晨检
+# 07:30 常态，不误报）；已过 18:05 且 mtime>24h → 复盘链失联 FAIL；exit!=0
+# → 生成器自身异常 FAIL（fail-visible 判例同第(9)项）。
+$RetroLog = 'C:\aios\automation_runs\retro_brief\last_run.json'
+$retroCutoff = [datetime]($day + ' 18:05')
+if ((Get-Date) -lt $retroCutoff) {
+    Report '[SKIP] retro_brief: 今日 18:05 未到，心跳检查跳过 (v2.0 探针⑩)'
+} elseif (-not (Test-Path $RetroLog)) {
+    Fail ('retro: ' + $RetroLog + ' missing (已过 18:05 且无状态文件 - 复盘链从未跑过或脚本丢失)')
+} else {
+    $rAgeH = ((Get-Date) - (Get-Item $RetroLog).LastWriteTime).TotalHours
+    if ($rAgeH -gt 24) {
+        Fail ('retro: last_run.json STALE (' + [math]::Round($rAgeH,1) + 'h > 24h) - 复盘链失联（任务禁用/主机休眠/脚本异常）')
+    } else {
+        try {
+            # -Encoding UTF8 必带（同第(9)项判例：Python json.dump 写 UTF-8 无 BOM，
+            # PS5.1 缺省 GBK 解码中文破坏 JSON 解析）
+            $retro = Get-Content $RetroLog -Raw -Encoding UTF8 -ErrorAction SilentlyContinue | ConvertFrom-Json
+            if ($retro.exit -ne 0) {
+                Fail ('retro: last exit=' + $retro.exit + ' at ' + $retro.ran_at + ' - 复盘生成器自身异常，见 automation_runs\retro_brief\run.log')
+            } else {
+                Report ('[OK] retro_brief heartbeat fresh (' + [math]::Round($rAgeH,1) + 'h) exit=0 brief=' + $retro.brief_date)
+            }
+        } catch { Fail ('retro: last_run.json unparsable: ' + $_.Exception.Message) }
+    }
+}
+
+# --- 11. HermesWebUI-Guard30 presence + port 8787 UP (v2.0 / 断点7 收口) ---
+# 30min 心跳用户态守护（拉活 8787 Hermes WebUI）。任务缺失或端口 DOWN → FAIL。
+# 端口探测用 TcpClient 异步 3s 超时（Test-NetConnection 在 PS5.1 慢且带 DNS 副作用）。
+$g30 = Get-ScheduledTask -TaskName 'HermesWebUI-Guard30' -ErrorAction SilentlyContinue
+if (-not $g30) {
+    Fail 'guard30: task "HermesWebUI-Guard30" not found (8787 拉活守护任务丢失)'
+} else {
+    $g30i = $g30 | Get-ScheduledTaskInfo
+    Report ('[OK] guard30 task present State=' + $g30.State + ' LastRun=' + $g30i.LastRunTime + ' RC=' + $g30i.LastTaskResult)
+}
+$g30up = $false
+try {
+    $tcp = New-Object System.Net.Sockets.TcpClient
+    $iar = $tcp.BeginConnect('127.0.0.1', 8787, $null, $null)
+    if ($iar.AsyncWaitHandle.WaitOne(3000) -and $tcp.Connected) { $g30up = $true }
+    $tcp.Close()
+} catch { $g30up = $false }
+if ($g30up) { Report '[OK] 8787 port UP (Hermes WebUI reachable)' }
+else { Fail '8787 port DOWN (guard30 未拉活 WebUI - 查 HermesWebUI-Guard30 最近运行与 8787 进程)' }
 
 # --- summary ---
 if ($fail -eq 0) { $report += 'N1 ALL PASS' } else { $report += ('N1 FAILURES=' + $fail) }
