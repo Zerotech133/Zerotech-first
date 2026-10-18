@@ -252,17 +252,22 @@ def ic_series(sections: list, factor: str, min_obs: int = 3) -> list:
 
 
 def ic_summary(ics: list) -> dict:
-    """IC 均值 / ICIR（mean/std）。"""
-    if not ics:
-        return {"n": 0, "ic_mean": None, "icir": None}
+    """IC 均值 / ICIR；少于 5 个有效截面只展示探索值，不给推断指标。"""
+    n = len(ics)
+    if not n:
+        return {"n": 0, "ic_mean": None, "icir": None,
+                "evidence": "insufficient_sections", "exploratory_ic": None}
     vals = [x["ic"] for x in ics]
-    m = sum(vals) / len(vals)
-    if len(vals) < 2:
-        return {"n": len(vals), "ic_mean": round(m, 4), "icir": None}
-    var = sum((v - m) ** 2 for v in vals) / (len(vals) - 1)
+    m = sum(vals) / n
+    if n < 5:
+        return {"n": n, "ic_mean": None, "icir": None,
+                "evidence": "insufficient_sections",
+                "exploratory_ic": round(m, 4)}
+    var = sum((v - m) ** 2 for v in vals) / (n - 1)
     sd = math.sqrt(var)
-    return {"n": len(vals), "ic_mean": round(m, 4),
-            "icir": round(m / sd, 4) if sd > 0 else None}
+    return {"n": n, "ic_mean": round(m, 4),
+            "icir": round(m / sd, 4) if sd > 0 else None,
+            "evidence": "exploratory", "exploratory_ic": None}
 
 
 def quintile_table(sections: list, factor: str) -> list:

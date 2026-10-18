@@ -163,7 +163,9 @@ def test_spearman_and_ic():
     # 周截面 3 股 → 可算 1 个 IC
     assert len(ics) == 1 and ics[0]["n"] == 3
     s = ic_summary(ics)
-    assert s["n"] == 1 and s["ic_mean"] == ics[0]["ic"]
+    assert s["n"] == 1 and s["ic_mean"] is None
+    assert s["exploratory_ic"] == ics[0]["ic"]
+    assert s["evidence"] == "insufficient_sections"
     # min_obs 过滤：min_obs=4 时截面(3 股)被跳过
     assert ic_series(_weekly_sections(), "senti", min_obs=4) == []
     # 恒定收益 → 零方差 → 无 IC → summary n=0
@@ -174,6 +176,20 @@ def test_spearman_and_ic():
                                  {"sym": "C", "senti": 0, "mention": 1,
                                   "ret": 0.0}]}]
     assert ic_summary(ic_series(flat, "senti"))["n"] == 0
+
+
+def test_ic_summary_minimum_valid_sections():
+    one = [{"key": "w1", "ic": -0.2474, "n": 3}]
+    sparse = ic_summary(one)
+    assert sparse["n"] == 1
+    assert sparse["ic_mean"] is None and sparse["icir"] is None
+    assert sparse["exploratory_ic"] == -0.2474
+    assert sparse["evidence"] == "insufficient_sections"
+
+    enough = ic_summary([{"key": str(i), "ic": i / 10, "n": 5}
+                         for i in range(5)])
+    assert enough["n"] == 5 and enough["ic_mean"] == 0.2
+    assert enough["evidence"] == "exploratory"
 
 
 # ── 4) label_version 分层 ───────────────────────────────────
