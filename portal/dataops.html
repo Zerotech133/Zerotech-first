@@ -148,7 +148,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 const B={armed:'b-armed',running:'b-running',yielding:'b-yielding',blocked:'b-blocked',
 backoff:'b-backoff',done:'b-done',complete:'b-complete',ok:'b-ok',unknown:'b-unknown',disabled:'b-disabled'};
 const HB=h=>'<span class="badge '+(B[h]||'b-unknown')+'">'+h+'</span>';
-const esc=s=>String(s??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function renderIntake(di){
   const el = document.getElementById('intake');

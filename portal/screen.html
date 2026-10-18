@@ -795,7 +795,7 @@ function autoScrollSig() {
 function esc(s) {
   return String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 var NEWS_TIMER = null, NEWS_ROWS = [], NEWS_FILTER = NEWS_FILTER_INIT;
 var NEWS_MKTS = ["A股", "美股", "港股", "加密", "商品", "宏观", "其他"];
