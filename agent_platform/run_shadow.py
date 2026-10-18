@@ -337,6 +337,18 @@ def main():
                         from shadow_strategies import build_default_registry
                         from strategy_registry import record_verdicts
                         reg = build_default_registry()
+                        # 军团 Codex bridge 装配（2026-10-18 拍板 M2）：
+                        # processed/ 已注册插件并入影子 run，fail-open
+                        try:
+                            sys.path.insert(0, str(BASE / "adapters"))
+                            from codex_bridge import load_registered
+                            _n, _s = load_registered(reg)
+                            if _n or _s:
+                                print("[strategy] codex 桥接插件 +%d (skip %d)"
+                                      % (_n, _s))
+                        except Exception as _ce:  # noqa: BLE001
+                            print("[warn] codex 桥接装载跳过（首批三策略不受影响）：%s"
+                                  % str(_ce)[:120])
                         sctx = {"symbol": symbol,
                                 "closes": [float(b[2]) for b in bars
                                            if len(b) > 2 and b[2] is not None]}

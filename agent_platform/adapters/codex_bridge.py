@@ -1,0 +1,297 @@
+# -*- coding: utf-8 -*-
+"""军团 Codex bridge（军团-M1：静态校验器 + 注册单向管道）。
+
+拍板（2026-10-18 老田）：①import 白名单制（黑名单追不上绕过手法）
+②军团-M1/M2/M3 批准按序施工 ③首个试点策略 = SMA20+RSI14（codex_ 前缀）。
+
+红线（设计稿 §1 平移）：单向通道（R1）/ Codex 零凭据（R2）/ 零执行权
+（R3，策略只产建议）/ 插件只读 propose（R4）/ 注册权在 AP 侧（R5）。
+
+流水线（§3）：Codex 提交物 → 静态校验（AST，本模块）→ 白名单沙箱
+globals 内实例化 → StrategyRegistry.register（同键异值=漂移拒绝平移）。
+拒绝路径 fail-visible 落档 bridge_rejects/<submit_id>.md，禁止静默丢弃。
+子进程沙箱试跑属军团-M3（§2.3），本模块静态门是 M1 范围。
+
+本模块自身纪律：零网络、除 rejects/processed/registrations 落档外零写；
+exec 仅在校验通过后于受限 globals（白名单 builtins + 白名单 __import__）
+内进行——静态门与 exec 沙箱是两道独立防线。
+"""
+import ast
+import json
+import re
+import shutil
+import sys
+import time
+from pathlib import Path
+
+try:
+    from strategy_registry import (
+        StrategyAgent, StrategyError, StrategyRegistry, Verdict)
+except ImportError:  # 跨目录直接调用时兜底定位 engine/
+    _here = Path(__file__).resolve()
+    sys.path.insert(0, str(_here.parent.parent / "engine"))
+    from strategy_registry import (
+        StrategyAgent, StrategyError, StrategyRegistry, Verdict)
+
+# ---- 拍板①：import 白名单制（§2.2 建议 → 定稿） ----
+# 七件套纯计算库 + 宿主契约模块 strategy_registry（插件基类/Verdict 来源）。
+# 白名单外一律拒：黑名单永远追不上绕过手法（设计稿风险 §5.1）。
+IMPORT_ALLOWLIST = frozenset({
+    "math", "statistics", "collections", "itertools", "functools",
+    "typing", "dataclasses",
+    "strategy_registry",  # 宿主契约模块（StrategyAgent/Verdict）
+})
+
+# 危险字面调用（AST Call 扫 Name/Attribute）：命中即拒
+DENY_CALLS = frozenset({
+    "eval", "exec", "compile", "__import__", "open",
+    "globals", "locals", "vars", "getattr", "setattr", "delattr",
+    "system", "popen", "write_text", "write_bytes",  # attribute 尾名
+})
+
+# 凭据形态（R2）
+CRED_PATTERN = re.compile(
+    r"(?i)(api[_-]?key|secret|token|password|credential)\s*=")
+
+MAX_LINES = 300
+MAX_BYTES = 16 * 1024
+
+# exec 沙箱 builtins：纯计算常用集 + 受限 __import__（双保险，静态门之外）
+_SAFE_BUILTINS = {
+    "abs": abs, "all": all, "any": any, "bool": bool, "dict": dict,
+    "divmod": divmod, "enumerate": enumerate, "filter": filter,
+    "float": float, "int": int, "len": len, "list": list, "max": max,
+    "min": min, "range": range, "reversed": reversed, "round": round,
+    "set": set, "sorted": sorted, "str": str, "sum": sum, "tuple": tuple,
+    "zip": zip,
+    "ValueError": ValueError, "TypeError": TypeError, "KeyError": KeyError,
+    "IndexError": IndexError, "ZeroDivisionError": ZeroDivisionError,
+    "ArithmeticError": ArithmeticError, "Exception": Exception,
+    "__build_class__": __build_class__,  # class 语句依赖
+    "__name__": "codex_plugin",  # 缺省模块名（exec globals 会覆盖）
+}
+
+
+def _safe_import(name, *args, **kwargs):
+    """受限 __import__：仅放行白名单模块（exec 沙箱第二道防线）。"""
+    top = name.split(".")[0]
+    if top not in IMPORT_ALLOWLIST:
+        raise ImportError("codex 插件仅允许白名单模块: %s" % name)
+    return __builtins_import__(name, *args, **kwargs)
+
+
+__builtins_import__ = __import__
+
+
+def _exec_globals():
+    g = dict(_SAFE_BUILTINS)
+    g["__builtins__"] = dict(_SAFE_BUILTINS)
+    g["__builtins__"]["__import__"] = _safe_import
+    g["__name__"] = "codex_plugin"
+    return g
+
+
+# ---- M1 静态校验器 ----
+
+def validate_source(source, max_lines=MAX_LINES, max_bytes=MAX_BYTES):
+    """静态校验 Codex 提交物。返回拒绝原因列表（空=通过）。
+
+    只读（AST 解析不执行任何插件代码），零网络零写。
+    """
+    reasons = []
+    text_src = source if isinstance(source, str) else source.decode("utf-8", "replace")
+    nlines = text_src.count("\n") + 1
+    nbytes = len(text_src.encode("utf-8"))
+    if nlines > max_lines:
+        reasons.append("行数 %d 超上限 %d" % (nlines, max_lines))
+    if nbytes > max_bytes:
+        reasons.append("字节 %d 超上限 %d" % (nbytes, max_bytes))
+
+    tree = None
+    try:
+        tree = ast.parse(text_src)
+    except SyntaxError as e:
+        reasons.append("语法错误：%s（line %d）" % (e.msg, e.lineno or -1))
+
+    if tree is not None:
+        # 1) import 白名单
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    top = alias.name.split(".")[0]
+                    if top not in IMPORT_ALLOWLIST:
+                        reasons.append("import 白名单外模块：%s（line %d）"
+                                       % (alias.name, node.lineno))
+            elif isinstance(node, ast.ImportFrom):
+                top = (node.module or "").split(".")[0]
+                if top not in IMPORT_ALLOWLIST:
+                    reasons.append("from import 白名单外模块：%s（line %d）"
+                                   % (node.module, node.lineno))
+        # 2) 危险字面调用
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                fn = node.func
+                if isinstance(fn, ast.Name) and fn.id in DENY_CALLS:
+                    reasons.append("禁用调用 %s()（line %d）" % (fn.id, node.lineno))
+                elif (isinstance(fn, ast.Attribute)
+                      and fn.attr in DENY_CALLS):
+                    reasons.append("禁用方法 .%s()（line %d）"
+                                   % (fn.attr, node.lineno))
+        # 3) 接口签名：恰好一个 StrategyAgent 子类
+        subclasses = [n for n in tree.body
+                      if isinstance(n, ast.ClassDef)
+                      and any(getattr(b, "id", None) == "StrategyAgent"
+                              for b in n.bases)]
+        if len(subclasses) != 1:
+            reasons.append("文件必须恰好定义一个 StrategyAgent 子类，实得 %d"
+                           % len(subclasses))
+        else:
+            cls = subclasses[0]
+            methods = {n.name for n in cls.body
+                       if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+            assigns = {}
+            for n in cls.body:
+                val = None
+                if isinstance(n, ast.Assign) and len(n.targets) == 1 \
+                        and isinstance(n.targets[0], ast.Name):
+                    val = n.value
+                elif isinstance(n, ast.AnnAssign) \
+                        and isinstance(n.target, ast.Name) and n.value:
+                    val = n.value
+                if val is not None:
+                    tgt = (n.target if isinstance(n, ast.AnnAssign)
+                           else n.targets[0])
+                    assigns[tgt.id] = val
+            if "__init__" in methods:
+                reasons.append("禁止定义 __init__（插件须无状态，§2.2）")
+            if "propose" not in methods:
+                reasons.append("缺少 propose(self, context) 实现")
+            sid = assigns.get("strategy_id")
+            if not (isinstance(sid, ast.Constant)
+                    and isinstance(sid.value, str)
+                    and sid.value.startswith("codex_")):
+                reasons.append("strategy_id 必须为 codex_ 前缀字符串（审计来源隔离）")
+            st = assigns.get("stance")
+            if not (isinstance(st, ast.Constant)
+                    and st.value in ("bull", "bear", "neutral")):
+                reasons.append("stance 必须为 bull/bear/neutral 类属性")
+
+    # 4) 凭据形态（对全文，R2）
+    m = CRED_PATTERN.search(text_src)
+    if m:
+        reasons.append("命中凭据形态 %r（R2：Codex 零凭据）" % m.group(1))
+    return reasons
+
+
+def register_from_source(source, registry):
+    """校验通过后于受限 globals 内实例化并注册。返回插件实例。
+
+    漂移拒绝平移：同 strategy_id 二次注册 → StrategyRegistry 抛
+    StrategyError（不覆盖、不静默替换，§2.4）。
+    """
+    reasons = validate_source(source)
+    if reasons:
+        raise StrategyError("静态校验拒绝：%s" % "; ".join(reasons))
+    module = ast.parse(source)
+    code = compile(module, "<codex_plugin>", "exec")
+    namespace = _exec_globals()
+    exec(code, namespace)  # noqa: S102 —— 两道防线之后（白名单 AST + 受限 globals）
+    classes = [v for v in namespace.values()
+               if isinstance(v, type) and issubclass(v, StrategyAgent)
+               and v is not StrategyAgent]
+    if len(classes) != 1:
+        raise StrategyError("实例化后 StrategyAgent 子类数=%d（应恰为 1）"
+                            % len(classes))
+    agent = classes[0]()
+    registry.register(agent)
+    return agent
+
+
+# ---- fail-visible 落档（§3.1） ----
+
+def write_reject(bridge_dir, submit_id, stage, reasons):
+    """拒绝原因落档 rejects/<submit_id>.md。返回档案路径。"""
+    rj = Path(bridge_dir) / "rejects"
+    rj.mkdir(parents=True, exist_ok=True)
+    path = rj / ("%s.md" % submit_id)
+    lines = ["# bridge 拒绝档：%s" % submit_id,
+             "",
+             "- **阶段**：%s" % stage,
+             "- **时间**：%s" % time.strftime("%Y-%m-%d %H:%M:%S"),
+             "- **命中规则**：",
+             ""]
+    lines += ["%d. %s" % (i + 1, r) for i, r in enumerate(reasons)]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+# ---- 处理管线（§3） ----
+
+def default_bridge_dir():
+    """仓库内 bridge_inbox 根（DATA_ROOT 之外，§3.2）。"""
+    return Path(__file__).resolve().parent.parent / "bridge_inbox"
+
+
+def process_submission(bridge_dir, submit_id, source, registry,
+                       data_root=None):
+    """单次提交全流程：inbox 落件 → 校验 → 注册 → 移 processed / 拒档。
+
+    data_root 显式时登记注册事件（data/codex_bridge/registrations.jsonl，
+    幂等键=submit_id）；无 data_root 只注册不落账（stderr 提示 dry-run），
+    对齐 M5 刀 2「无显式 root 拒写」纪律。
+    返回 (ok, reasons)。
+    """
+    bdir = Path(bridge_dir)
+    inbox = bdir / "inbox" / submit_id
+    inbox.mkdir(parents=True, exist_ok=True)
+    src_path = inbox / ("strategy_%s.py" % submit_id)
+    src_path.write_text(source, encoding="utf-8")
+
+    reasons = validate_source(source)
+    if reasons:
+        write_reject(bdir, submit_id, "静态校验", reasons)
+        shutil.move(str(inbox), str(bdir / "rejects" / submit_id))
+        return False, reasons
+
+    agent = register_from_source(source, registry)
+    shutil.move(str(inbox), str(bdir / "processed" / submit_id))
+    if data_root:
+        reg_dir = Path(data_root) / "data" / "codex_bridge"
+        reg_dir.mkdir(parents=True, exist_ok=True)
+        row = {"submit_id": submit_id, "strategy_id": agent.strategy_id,
+               "registered_at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        with (reg_dir / "registrations.jsonl").open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    else:
+        print("[codex-bridge] dry-run：未提供 data_root，注册事件不落账",
+              file=sys.stderr)
+    return True, []
+
+
+def load_registered(registry, bridge_dir=None):
+    """把 processed/ 下已注册插件装载进 registry（fail-open）。
+
+    幂等：同 strategy_id 已注册 → 视为重复装载跳过（计数 skipped）。
+    单插件失败不拖垮其余（对齐影子主链 fail-open 纪律）。
+    返回 (loaded, skipped)。
+    """
+    bdir = Path(bridge_dir) if bridge_dir else default_bridge_dir()
+    processed = bdir / "processed"
+    if not processed.is_dir():
+        return 0, 0
+    loaded = skipped = 0
+    for src in sorted(processed.glob("*/strategy_*.py")):
+        try:
+            source = src.read_text(encoding="utf-8")
+            agent = register_from_source(source, registry)
+            loaded += 1
+        except StrategyError as e:
+            if "重复注册" in str(e):
+                skipped += 1
+            else:
+                print("[warn] codex 插件装载跳过 %s：%s"
+                      % (src.parent.name, str(e)[:120]), file=sys.stderr)
+        except Exception as e:  # noqa: BLE001  fail-open：坏件不拖垮装配
+            print("[warn] codex 插件装载跳过 %s：%s"
+                  % (src.parent.name, str(e)[:120]), file=sys.stderr)
+    return loaded, skipped
