@@ -1,0 +1,431 @@
+# -*- coding: utf-8 -*-
+"""T7 舆情因子第一版：雪球标注 → 可统计因子 → 分层收益统计（只读管道）。
+
+数据源（全程只读，绝不写任何表）：
+  data/xueqiu/xueqiu_info.db
+    xq_status(status_id, created_at ISO 字符串, ...)
+    xq_status_classified(status_id, event_type, sentiment,
+      confidence, prompt_version, norm_tickers, ...)
+  · norm_tickers 是 JSON 数组字符串，元素 {"raw","kind","canonical"}；
+    只取 kind=='stock_a' 且 canonical 形如 SH/SZ+6 位 的 canonical 作
+    股票键（stock_hk 路由不支持，本轮如实记为覆盖缺口）。
+  · created_at 是 ISO 字符串：判日期一律 substr(1,10)，禁 strftime
+    unixepoch（会得 1970）。
+  · 已知指数污染：norm 模型把沪深300/中证500/上证50 标成
+    SZ000300/SZ000905/SZ000016（kind=stock_a），显式黑名单剔除。
+
+因子（两因子分开，不合成）：
+  因子1 情绪分 senti(date, sym) = (bull - bear) / max(1, bull + bear)
+        （按当日提及该股的已分类帖计）
+  因子2 热度 mention(date, sym) = 当日提及该股的已分类帖数
+
+对齐：因子日 D → 该股 T+1 交易日收益 ret = close(T)/open(T) - 1
+     （次日 open→close 口径；T 取该股日线中 > D 的第一个交易日）。
+
+分层：每日截面样本稀薄（实测），默认合并为 ISO 周截面；截面内按
+因子值排 5 分位，统计 T+1 收益均值/中位数/单调性。IC 用逐截面
+Spearman(因子, ret)，报均值与 ICIR（mean/std）。
+
+label_version 纪律（判例：v1.2-re vs v1.3 广告口径漂移 5.8pp）：
+跨版本统计必须分层。主统计用最新版 prompt_version='v1.3'，其余版本
+（v1.2-re / v1.3-rule / v1.2）单独附表，同管道同口径。
+
+日线：xq_quote_router.fetch_daily(syms, days=N)（tushare 主源 +
+akshare 备援，两源全挂 fail-visible）；days 按最早帖日期自动推算。
+个别码全挂 → 记 errs 跳过该码，绝不静默。日线缓存落
+C:/aios/automation_runs/xq_t7_factor/daily_cache.json（rerun 免重拉）。
+"""
+import json
+import math
+import os
+import sqlite3
+import sys
+from collections import defaultdict
+from datetime import datetime, timedelta
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+DB_PATH = os.path.join(ROOT, "data", "xueqiu", "xueqiu_info.db")
+CACHE_DIR = r"C:\aios\automation_runs\xq_t7_factor"
+CACHE_PATH = os.path.join(CACHE_DIR, "daily_cache.json")
+
+MAIN_VERSION = "v1.3"
+
+# norm 模型指数污染（kind=stock_a 但实为指数），显式剔除
+INDEX_POLLUTION = {"SZ000300", "SZ000905", "SZ000016", "SZ000852",
+                   "SZ399001", "SZ399006", "SZ399300", "SZ399005"}
+
+
+# ── 数据加载（只读）──────────────────────────────────────────
+def parse_stock_keys(norm_tickers: str) -> list:
+    """norm_tickers JSON → canonical 股票键列表。
+
+    只取 kind=='stock_a' 且 canonical 形如 SH/SZ+6 位数字的键；
+    剔除指数污染（INDEX_POLLUTION）；解析失败返回空。
+    """
+    stocks = []
+    try:
+        for t in json.loads(norm_tickers or "[]"):
+            if t.get("kind") != "stock_a":
+                continue
+            c = str(t.get("canonical") or "").upper()
+            if len(c) == 8 and c[:2] in ("SH", "SZ") \
+                    and c[2:].isdigit() and c not in INDEX_POLLUTION:
+                stocks.append(c)
+    except (ValueError, TypeError):
+        return []
+    return sorted(set(stocks))
+
+
+def load_posts(db_path: str = DB_PATH) -> list:
+    """读 xq_status × xq_status_classified（只读连接），展平为帖记录。
+
+    返回 list[dict]：{status_id, date, sentiment, version, stocks}
+    stocks 为 canonical 股票键列表（stock_a 且 SH/SZ 前缀，剔除指数污染）。
+    """
+    con = sqlite3.connect("file:%s?mode=ro" % db_path.replace("\\", "/"),
+                          uri=True, timeout=30)
+    try:
+        cur = con.cursor()
+        rows = cur.execute(
+            "SELECT c.status_id, substr(s.created_at,1,10), c.sentiment,"
+            " c.prompt_version, c.norm_tickers"
+            " FROM xq_status_classified c"
+            " JOIN xq_status s ON s.status_id = c.status_id"
+        ).fetchall()
+    finally:
+        con.close()
+    posts = []
+    for sid, d, senti, ver, nt in rows:
+        if not d:
+            continue
+        posts.append({"status_id": sid, "date": d,
+                      "sentiment": (senti or "neutral").lower(),
+                      "version": ver or "?",
+                      "stocks": parse_stock_keys(nt)})
+    return posts
+
+
+def filter_version(posts: list, version: str) -> list:
+    """label_version 纪律：按 prompt_version 取子集。"""
+    return [p for p in posts if p["version"] == version]
+
+
+# ── 因子构造 ────────────────────────────────────────────────
+def daily_factors(posts: list) -> dict:
+    """每日截面因子：dict[(date, sym)] -> {'senti', 'mention', 'bull',
+    'bear', 'neutral'}。
+
+    senti = (bull - bear) / max(1, bull + bear)；mention = 帖数
+    （一帖提多股按多 (date,sym) 键各计 1，两因子同口径）。
+    """
+    agg = defaultdict(lambda: {"bullish": 0, "bearish": 0, "neutral": 0})
+    for p in posts:
+        for sym in p["stocks"]:
+            k = (p["date"], sym)
+            if p["sentiment"] in ("bullish", "bearish", "neutral"):
+                agg[k][p["sentiment"]] += 1
+    out = {}
+    for (d, sym), c in agg.items():
+        bull, bear = c["bullish"], c["bearish"]
+        out[(d, sym)] = {
+            "senti": (bull - bear) / max(1, bull + bear),
+            "mention": bull + bear + c["neutral"],
+            "bull": bull, "bear": bear, "neutral": c["neutral"],
+        }
+    return out
+
+
+# ── 收益对齐 ────────────────────────────────────────────────
+def next_day_return(daily_rows: list, post_date: str) -> float | None:
+    """post_date 之后的第一个交易日 T：ret = close(T)/open(T) - 1。
+
+    daily_rows 为 router fetch_daily 行（trade_date 'YYYYMMDD'）。
+    无次日数据（停牌/尾部）返回 None。
+    """
+    if not daily_rows:
+        return None
+    key = post_date.replace("-", "")
+    after = sorted(r["trade_date"] for r in daily_rows
+                   if r.get("trade_date") and r["trade_date"] > key)
+    if not after:
+        return None
+    nxt = next((r for r in daily_rows if r["trade_date"] == after[0]), None)
+    o, c = nxt.get("open"), nxt.get("close")
+    if not o or not c:
+        return None
+    return c / o - 1.0
+
+
+def week_key(date_str: str) -> str:
+    """ISO 周键（周一日期），样本不足日合并为周截面用。"""
+    d = datetime.strptime(date_str, "%Y-%m-%d")
+    monday = d - timedelta(days=d.weekday())
+    return monday.strftime("%Y-%m-%d")
+
+
+def build_sections(posts: list, daily_by_sym: dict,
+                   freq: str = "weekly") -> list:
+    """构造截面：[{key, obs:[{sym, senti, mention, ret}]}]。
+
+    freq='daily' 按 POST 日；'weekly' 按 ISO 周合并（同周同股多日
+    因子取算术平均、ret 对应各自 T+1 再取均值——周内稀薄样本合并）。
+    仅保留 ret 可得的 obs；截面 obs<1 丢弃。
+    """
+    factors = daily_factors(posts)
+    by_key = defaultdict(list)
+    for (d, sym), f in factors.items():
+        ret = next_day_return(daily_by_sym.get(sym), d)
+        if ret is None:
+            continue
+        k = d if freq == "daily" else week_key(d)
+        by_key[k].append({"sym": sym, "date": d, "ret": ret, **f})
+    sections = []
+    for k in sorted(by_key):
+        obs = by_key[k]
+        if freq == "weekly" and len(obs) > 1:
+            merged = defaultdict(list)
+            for o in obs:
+                merged[o["sym"]].append(o)
+            obs = []
+            for sym, lst in sorted(merged.items()):
+                obs.append({
+                    "sym": sym, "date": lst[0]["date"],
+                    "ret": sum(x["ret"] for x in lst) / len(lst),
+                    "senti": sum(x["senti"] for x in lst) / len(lst),
+                    "mention": sum(x["mention"] for x in lst) / len(lst),
+                    "n_days": len(lst),
+                })
+        sections.append({"key": k, "obs": obs})
+    return sections
+
+
+# ── 统计 ────────────────────────────────────────────────────
+def _ranks(vals: list) -> list:
+    """平均秩（并列取平均），spearman 基础件。"""
+    n = len(vals)
+    order = sorted(range(n), key=lambda i: vals[i])
+    ranks = [0.0] * n
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and vals[order[j + 1]] == vals[order[i]]:
+            j += 1
+        avg = (i + j) / 2.0 + 1.0
+        for k in range(i, j + 1):
+            ranks[order[k]] = avg
+        i = j + 1
+    return ranks
+
+
+def spearman(xs: list, ys: list) -> float | None:
+    """Spearman 秩相关（并列取平均秩）；n<3 或零方差返回 None。"""
+    n = len(xs)
+    if n < 3:
+        return None
+    rx, ry = _ranks(xs), _ranks(ys)
+    mx = sum(rx) / n
+    my = sum(ry) / n
+    sxy = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
+    sxx = sum((a - mx) ** 2 for a in rx)
+    syy = sum((b - my) ** 2 for b in ry)
+    if sxx <= 0 or syy <= 0:
+        return None
+    return sxy / math.sqrt(sxx * syy)
+
+
+def ic_series(sections: list, factor: str, min_obs: int = 3) -> list:
+    """逐截面 Spearman(因子, ret)；截面 obs < min_obs 跳过。"""
+    out = []
+    for sec in sections:
+        if len(sec["obs"]) < min_obs:
+            continue
+        ic = spearman([o[factor] for o in sec["obs"]],
+                      [o["ret"] for o in sec["obs"]])
+        if ic is not None:
+            out.append({"key": sec["key"], "ic": round(ic, 4),
+                        "n": len(sec["obs"])})
+    return out
+
+
+def ic_summary(ics: list) -> dict:
+    """IC 均值 / ICIR（mean/std）。"""
+    if not ics:
+        return {"n": 0, "ic_mean": None, "icir": None}
+    vals = [x["ic"] for x in ics]
+    m = sum(vals) / len(vals)
+    if len(vals) < 2:
+        return {"n": len(vals), "ic_mean": round(m, 4), "icir": None}
+    var = sum((v - m) ** 2 for v in vals) / (len(vals) - 1)
+    sd = math.sqrt(var)
+    return {"n": len(vals), "ic_mean": round(m, 4),
+            "icir": round(m / sd, 4) if sd > 0 else None}
+
+
+def quintile_table(sections: list, factor: str) -> list:
+    """截面内 5 分位 → 池化 T+1 收益均值/中位数/观测数。
+
+    截面内按因子升序排名，q = min(4, rank*5//n)（小截面自动摊入
+    低分位）。返回 5 行 [{quintile, n, mean_ret, median_ret}]。
+    """
+    buckets = defaultdict(list)
+    for sec in sections:
+        obs = sorted(sec["obs"], key=lambda o: (o[factor], o["sym"]))
+        n = len(obs)
+        for i, o in enumerate(obs):
+            q = min(4, i * 5 // max(1, n))
+            buckets[q].append(o["ret"])
+    rows = []
+    for q in range(5):
+        rets = sorted(buckets.get(q, []))
+        if not rets:
+            rows.append({"quintile": q + 1, "n": 0,
+                         "mean_ret": None, "median_ret": None})
+            continue
+        m = sum(rets) / len(rets)
+        mid = len(rets) // 2
+        med = rets[mid] if len(rets) % 2 else (rets[mid - 1] + rets[mid]) / 2
+        rows.append({"quintile": q + 1, "n": len(rets),
+                     "mean_ret": round(m, 5), "median_ret": round(med, 5)})
+    return rows
+
+
+def monotonicity(qtab: list) -> float | None:
+    """分位序 vs 收益均值的单调性（Spearman）；分位含空返回 None。"""
+    valid = [r for r in qtab if r["mean_ret"] is not None]
+    if len(valid) < 3:
+        return None
+    return spearman([r["quintile"] for r in valid],
+                    [r["mean_ret"] for r in valid])
+
+
+# ── 日线（router，含缓存与诚实失败）─────────────────────────
+def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
+    """fetch_daily(syms, days) 带 JSON 缓存；失败码进 errs 不静默。
+
+    缓存落 CACHE_PATH（mode+days 记录在案，参数漂移自动失效）。
+    """
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    cache = {}
+    if os.path.exists(CACHE_PATH):
+        try:
+            cache = json.load(open(CACHE_PATH, encoding="utf-8"))
+        except (ValueError, OSError):
+            cache = {}
+    meta = cache.get("_meta", {})
+    if meta.get("days") != days:
+        cache = {"_meta": {"days": days, "saved_at": datetime.now().isoformat()}}
+    daily, missing = cache.get("daily", {}), []
+    need = [s for s in syms if s not in daily]
+    errs: list = []
+    if need:
+        try:
+            from xq_quote_router import fetch_daily
+            got, note, errs = fetch_daily(need, days=days)
+            for s, rows in got.items():
+                daily[s] = rows
+            print("[factor] fetch_daily note=%s errs=%d" % (note, len(errs)))
+        except Exception as e:                    # noqa: BLE001
+            errs.append("fetch_daily crash: %s" % str(e)[:120])
+        missing = [s for s in need if s not in daily]
+        cache["daily"] = daily
+        cache["_missing"] = missing
+        cache["_errs"] = errs
+        try:
+            json.dump(cache, open(CACHE_PATH, "w", encoding="utf-8"))
+        except OSError:
+            pass
+    else:
+        errs = cache.get("_errs", [])
+        missing = cache.get("_missing", [])
+    return daily, list(errs) + ["%s 全源失败(跳过)" % s for s in missing
+                                if not any(s in e for e in errs)]
+
+
+# ── 主统计 ──────────────────────────────────────────────────
+def version_stats(posts, daily_by_sym, freq, min_obs):
+    """单版本全套统计（主统计与附表同管道同口径）。posts 须已过版本过滤。"""
+    sections = build_sections(posts, daily_by_sym, freq=freq)
+    res = {"n_posts": len(posts),
+           "n_sections": len(sections),
+           "n_obs": sum(len(s["obs"]) for s in sections),
+           "n_stocks": len({o["sym"] for s in sections for o in s["obs"]})}
+    for factor in ("senti", "mention"):
+        ics = ic_series(sections, factor, min_obs=min_obs)
+        qtab = quintile_table(sections, factor)
+        res[factor] = {
+            "ic": ic_summary(ics),
+            "ic_detail": ics,
+            "quintiles": qtab,
+            "monotonicity": monotonicity(qtab),
+        }
+    return res
+
+
+def run_analysis(posts: list, daily_by_sym: dict,
+                 freq: str = "weekly", min_obs: int = 3) -> dict:
+    """label_version 分层全套：主统计 v1.3，其余版本附表。"""
+    versions = sorted({p["version"] for p in posts})
+    out = {"freq": freq, "min_obs_per_section": min_obs, "versions": {}}
+    for v in versions:
+        vp = filter_version(posts, v)
+        n_stock_posts = sum(1 for p in vp if p["stocks"])
+        if not any(p["stocks"] for p in vp):
+            out["versions"][v] = {"n_posts": len(vp), "n_stock_posts": 0,
+                                  "note": "无 A 股标的帖，跳过"}
+            continue
+        st = version_stats(vp, daily_by_sym, freq, min_obs)
+        st["n_stock_posts"] = n_stock_posts
+        out["versions"][v] = st
+    out["main_version"] = MAIN_VERSION if MAIN_VERSION in out["versions"] \
+        and "senti" in out["versions"].get(MAIN_VERSION, {}) else None
+    return out
+
+
+def main():
+    posts = load_posts()
+    syms = sorted({s for p in posts for s in p["stocks"]})
+    if not syms:
+        print("无 A 股标的帖，退出")
+        return
+    min_d = min(p["date"] for p in posts if p["stocks"])
+    span_days = (datetime.now() - datetime.strptime(min_d, "%Y-%m-%d")).days
+    days = int(span_days / 1.7) + 40            # router 内部 start=now-(days*1.7+30)
+    print("[factor] posts=%d syms=%d earliest=%s days=%d"
+          % (len(posts), len(syms), min_d, days))
+    daily, errs = fetch_daily_cached(syms, days)
+    print("[factor] daily ok=%d fail=%d" % (len(daily), len(errs)))
+    for e in errs[:20]:
+        print("  err:", e)
+    result = run_analysis(posts, daily, freq="weekly", min_obs=3)
+    result["coverage"] = {
+        "total_classified_posts": len(posts),
+        "a_stock_universe": len(syms),
+        "daily_ok": len(daily),
+        "daily_fail": len(errs),
+        "earliest_post": min_d,
+        "window": "%s ~ %s" % (min_d, max(p["date"] for p in posts
+                                          if p["stocks"])),
+    }
+    result["daily_errs"] = errs
+    out_json = os.path.join(ROOT, "data", "xueqiu", "factor_v1_result.json")
+    json.dump(result, open(out_json, "w", encoding="utf-8"),
+              ensure_ascii=False, indent=1)
+    print("[factor] written", out_json)
+    mv = result["main_version"]
+    if mv:
+        st = result["versions"][mv]
+        print("main=%s freq=%s sections=%d obs=%d" %
+              (mv, result["freq"], st["n_sections"], st["n_obs"]))
+        for f in ("senti", "mention"):
+            print(" %s ic=%s icir=%s mono=%s" %
+                  (f, st[f]["ic"]["ic_mean"], st[f]["ic"]["icir"],
+                   st[f]["monotonicity"]))
+    return result
+
+
+if __name__ == "__main__":
+    main()
