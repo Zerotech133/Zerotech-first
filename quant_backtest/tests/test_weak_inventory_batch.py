@@ -27,7 +27,7 @@ def fixture(empty: bool = False):
                                  "weak_case_inventory", "scan", ("--inventory-only",),
                                  "daily", timedelta(days=1),
                                  NOW - timedelta(hours=1), NOW + timedelta(hours=1),
-                                 timedelta(minutes=5))
+                                 timedelta(minutes=5), NOW + timedelta(hours=1, minutes=5))
     spec = replace(spec, approved_spec_sha256=approved_spec_digest(spec))
     receipt = RunnerReceipt(SCHEMA, snapshot.root_ref, "run-1", spec.spec_hash,
                             SCOPE, spec.task, spec.action, spec.args, spec.period,
@@ -90,6 +90,7 @@ def test_approved_spec_pin_rejects_scope_period_and_age_changes():
                     replace(spec, period_start_at=NOW - timedelta(days=1)),
                     replace(spec, next_due_at=NOW + timedelta(days=10)),
                     replace(spec, grace=timedelta(days=10)),
+                    replace(spec, valid_until=NOW + timedelta(days=10)),
                     replace(spec, root_ref="other"),
                     replace(spec, scope="candidate_scan")):
         assert verdict(snapshot, changed, receipt).status == "INVALID"
@@ -125,12 +126,25 @@ def test_old_period_and_unapproved_time_window_fail_closed():
                    now=spec.next_due_at + spec.grace + timedelta(seconds=1)).error_code == "INVENTORY_RECEIPT_EXPIRED"
 
 
+def test_grace_cannot_extend_past_independently_approved_valid_until():
+    snapshot, spec, receipt = fixture()
+    cutoff = spec.next_due_at + timedelta(minutes=2)
+    # Even a freshly completed trusted receipt must not extend this batch.
+    early_cutoff = replace(spec, valid_until=cutoff)
+    early_cutoff = replace(early_cutoff,
+                           approved_spec_sha256=approved_spec_digest(early_cutoff))
+    assert verdict(snapshot, early_cutoff, receipt).error_code == "INVENTORY_SPEC_UNVERIFIED"
+    assert verdict(snapshot, spec, replace(receipt, next_due_at=cutoff)).error_code == "INVENTORY_RECEIPT_MISMATCH"
+
+
 def test_invalid_approved_period_fields_fail_closed_even_if_repinned():
     snapshot, spec, receipt = fixture()
     for altered in (
         replace(spec, period_start_at=NOW.replace(tzinfo=None)),
         replace(spec, next_due_at=NOW.replace(tzinfo=None)),
         replace(spec, next_due_at=spec.period_start_at),
+        replace(spec, valid_until=NOW.replace(tzinfo=None)),
+        replace(spec, valid_until=spec.next_due_at + spec.grace - timedelta(seconds=1)),
         replace(spec, grace=-timedelta(seconds=1)),
     ):
         repinned = replace(altered, approved_spec_sha256=approved_spec_digest(altered))

@@ -28,7 +28,7 @@ def signed_evidence(snapshot):
                                  SCOPE, "weak_case_inventory", "scan",
                                  ("--inventory-only",), "daily", timedelta(days=1),
                                  NOW - timedelta(hours=1), NOW + timedelta(hours=2),
-                                 timedelta(minutes=5))
+                                 timedelta(minutes=5), NOW + timedelta(hours=2, minutes=5))
     spec = replace(spec, approved_spec_sha256=approved_spec_digest(spec))
     receipt = RunnerReceipt(SCHEMA, spec.root_ref, "run-1", spec.spec_hash, SCOPE,
                             spec.task, spec.action, spec.args, spec.period,

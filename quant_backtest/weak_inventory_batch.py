@@ -54,6 +54,7 @@ class ApprovedInventorySpec:
     period_start_at: datetime
     next_due_at: datetime
     grace: timedelta
+    valid_until: datetime
     future_tolerance: timedelta = timedelta(0)
     approved_spec_sha256: str = ""
 
@@ -117,6 +118,7 @@ def approved_spec_digest(spec: ApprovedInventorySpec) -> str:
                    "period_start_at": spec.period_start_at.isoformat(),
                    "next_due_at": spec.next_due_at.isoformat(),
                    "grace_seconds": spec.grace.total_seconds(),
+                   "valid_until": spec.valid_until.isoformat(),
                    "future_tolerance_seconds": spec.future_tolerance.total_seconds()}
         return hashlib.sha256(canonical_json(payload)).hexdigest()
     except (TypeError, ValueError, AttributeError):
@@ -158,12 +160,14 @@ def validate_inventory_batch(
             or spec.approved_spec_sha256 != approved_spec_digest(spec)):
         return deny("INVENTORY_SPEC_UNVERIFIED")
     if (not _aware(spec.period_start_at) or not _aware(spec.next_due_at)
+            or not _aware(spec.valid_until)
             or not isinstance(spec.max_age, timedelta)
             or not isinstance(spec.future_tolerance, timedelta)
             or not isinstance(spec.grace, timedelta)
             or spec.max_age <= timedelta(0) or spec.future_tolerance < timedelta(0)
             or spec.grace < timedelta(0)
-            or spec.next_due_at <= spec.period_start_at):
+            or spec.next_due_at <= spec.period_start_at
+            or spec.next_due_at + spec.grace > spec.valid_until):
         return deny("INVENTORY_SPEC_UNVERIFIED")
     if snapshot.scope != spec.scope or snapshot.root_ref != spec.root_ref:
         return deny("INVENTORY_SCOPE_MISMATCH")
@@ -204,9 +208,11 @@ def validate_inventory_batch(
     completed = receipt.completed_at.astimezone(timezone.utc)
     period_start = spec.period_start_at.astimezone(timezone.utc)
     next_due = spec.next_due_at.astimezone(timezone.utc)
+    valid_until = spec.valid_until.astimezone(timezone.utc)
     if receipt.next_due_at.astimezone(timezone.utc) != next_due:
         return deny("INVENTORY_RECEIPT_MISMATCH")
     if (observed < period_start or observed > next_due + spec.grace
+            or observed > valid_until or completed > valid_until
             or completed < period_start or completed > next_due
             or completed > observed + spec.future_tolerance
             or observed > completed + spec.max_age):
