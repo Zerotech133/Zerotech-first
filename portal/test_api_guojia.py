@@ -166,13 +166,18 @@ class TestDrill:
         self._ledger(repo, [
             _row(1, verdict="hit", t1_pct=2.0, title="酿酒行业景气上行"),
             _row(2, verdict="miss", t1_pct=-0.5, title="白酒板块走弱"),
+            _row(3, verdict="hit", t1_pct=3.0, title="白酒动销旺盛",
+                 ents=["贵州茅台"]),   # K-ORG-194: ents 成分股实体反向命中
+            _row(4, verdict="miss", t1_pct=-0.8, title="电池排产回暖",
+                 ents=["宁德时代"]),   # 非成分股 → 不入
         ])
         payload, code = api_guojia.drill_data({"sector": "酿酒行业"})
         assert code == 200 and payload["mode"] == "sector"
         assert payload["sector"]["n_members"] == 2
         assert payload["members"][0] == {"code": "000858", "name": None}
-        assert payload["total"] == 1
-        assert payload["rows"][0]["title"] == "酿酒行业景气上行"
+        assert payload["total"] == 2
+        # |T+1| 降序：row3(3.0, ents命中) → row1(2.0, 标题命中)
+        assert [r["rowid"] for r in payload["rows"]] == [3, 1]
 
     def test_handler_thin_wrapper(self, repo, no_sec):
         from urllib.parse import parse_qs

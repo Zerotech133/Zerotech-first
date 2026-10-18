@@ -9,7 +9,8 @@ GET /api/guojia/data   零参数
 GET /api/guojia/drill  智能下钻（K-ORG-193）
     → 三模式纯文件聚合：A 排行（scope×verdict×day 过滤，|T+1 涨跌| 降序）
       B 个股（code=6位码或实体名 → 命中战绩 + 所属板块 + 历史对账行）
-      C 板块（sector=板块名 → 成分股 + 标题含板块名的对账新闻）。
+      C 板块（sector=板块名 → 成分股 + 标题含板块名或成分股实体的
+      对账新闻，K-ORG-194 召回增强）。
       数据源：verdicts.jsonl（账本富化行，含 title/ents）+ tdx parquet
       板块/个股词典（懒加载 1h 进程缓存）。公网快照不暴露本出口消费的
       逐条明细（embed 占位，用户拍板 2026-10-18）。
@@ -231,16 +232,22 @@ def _drill_stock(out, rows, code, scope, verdict, limit):
 
 
 def _drill_sector(out, rows, sector, scope, verdict, limit):
-    """模式 C 板块：成分股（码序前10）+ 标题含板块名的对账新闻。"""
+    """模式 C 板块：成分股（码序前10）+ 对账新闻（标题含板块名 或
+    ents 命中任一成分股实体名——K-ORG-194 召回增强）。"""
     maps = _sector_maps()
     sec = maps["sec2mem"].get(sector)
+    all_members = sorted((sec or {}).get("members") or [])
     members = [{"code": c, "name": maps["code2name"].get(c)}
-               for c in sorted((sec or {}).get("members") or [])[:10]]
+               for c in all_members[:10]]
     if scope or verdict:
         rows = [r for r in rows
                 if (not scope or r.get("scope") == scope)
                 and (not verdict or r.get("verdict") == verdict)]
-    news_rows = [r for r in rows if r.get("title") and sector in r["title"]]
+    member_names = {maps["code2name"].get(c) for c in all_members}
+    member_names.discard(None)
+    news_rows = [r for r in rows
+                 if (r.get("title") and sector in r["title"])
+                 or (set(r.get("ents") or []) & member_names)]
     total = len(news_rows)
     _sort_rank(news_rows)
     out.update({"mode": "sector",
