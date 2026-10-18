@@ -341,6 +341,7 @@ DOMAIN_NAV_GROUPS = {
             ("🛡 审计状态", "/audit", "audit"),)),
         ("⚙️ 系统运维", (
             ("🖥 个人 OS 入口", "/os-entry", "os-entry"),
+            ("🖥 指挥大屏", "/os-board", "os-board"),
             ("📚 学习成长", "/learn", "learn"),
             ("🛰 助理雷达", "/radar", "radar"),
             ("📊 方法库", "/methods", "methods"),
