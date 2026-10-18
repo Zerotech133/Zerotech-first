@@ -346,6 +346,7 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
     key = _jev_key()
     if not key or not title:
         return None
+    _t0 = time.time()   # K-ORG-176：meter 计量（借鉴 grok-jev-router 的 meter 字段）
     ts_proxy = os.environ.get("TS_PROXY", "http://127.0.0.1:7890")
     ts_proxies = {"https": ts_proxy, "http": ts_proxy}
     timeout = max(timeout, 25)   # 7890 首次建连偶发 >15s（K-STOCK-084 实测）
@@ -374,6 +375,10 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
              "scope": scope, "scope_cn": _SCOPE_CN.get(scope, ""),
              "companies": list(stocks or []),  # K-ORG-159：云侧公司绑定=输入标的
              "src": "cloud"}
+        # K-ORG-176：bias 概率全量落盘（借鉴 grok-jev-router signals 全量保留；
+        # 供 E4 分歧/拥挤度哨兵用分布熵 > 单一 conf）
+        d["bias_probs"] = {k: round(float(v), 3) for k, v in probs.items()
+                           if isinstance(v, (int, float))}
         d["impact"] = (ans.get("impact") or {}).get("choice", "low")
         try:
             d["event_type"] = (ans.get("event_type") or {}) \
@@ -383,6 +388,8 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
             log("jev_judge cloud schema FAIL %s" % str(e)[:100])
             return None
         d["impact_cn"] = _IMPACT_CN[d["impact"]]
+        d["meter"] = {"ms": int((time.time() - _t0) * 1000),
+                      "model": "jev-latest", "src": "cloud"}
         d["reason"] = jev_reason(title, _BIAS_CN[bias],
                                  _SCOPE_CN.get(scope, scope))
         return d
@@ -432,6 +439,8 @@ def jev_judge_one_local(title, stocks, timeout=60):
     """
     if not title:
         return None
+    _t0 = time.time()   # K-ORG-176：meter 计量（与云路径同契约）
+    _model = os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
     tag = ("（关联标的：%s）" % "/".join(stocks)) if stocks else ""
     base = (
         "财经快讯：%s%s\n判断该快讯对相关市场【资产价格】的短期影响方向，只输出 JSON："
@@ -491,6 +500,8 @@ def jev_judge_one_local(title, stocks, timeout=60):
          "event_type": j["event_type"], "event_cn": _EVENT_CN[j["event_type"]],
          "impact": j["impact"], "impact_cn": _IMPACT_CN[j["impact"]],
          "companies": j["companies"], "src": "local"}
+    d["meter"] = {"ms": int((time.time() - _t0) * 1000),
+                  "model": _model, "src": "local"}
     d["reason"] = jev_reason(title, d["bias_cn"], d["scope_cn"])
     return d
 
