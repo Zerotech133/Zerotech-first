@@ -303,7 +303,7 @@ function drillSector(sec){
    return '<span class="chip ent" onclick="drillStock(\''+String(m.code).replace(/'/g,'')+'\')">'+esc(m.name||m.code)+'</span>'}).join('');
   el('drill').innerHTML=back
    +'<div class="legend" style="margin-top:8px">板块 <b>'+esc(sx.name)+'</b>'+(sx.idx?'（'+esc(sx.idx)+'）':'')+(sx.rps50!=null?' · RPS50 '+esc(sx.rps50):'')
-   +' · 成分 <b>'+esc(sx.n_members||0)+'</b> 只 · 标题含板块名对账行 <b>'+d.total+'</b> 条</div>'
+   +' · 成分 <b>'+esc(sx.n_members||0)+'</b> 只 · 标题含板块名或成分股实体的对账行 <b>'+d.total+'</b> 条</div>'
    +(mem?'<div class="chips">成分股：'+mem+'</div>':'')
    +drillRows(d.rows||[]);
  }).catch(function(e){el('drill').innerHTML='<span class="chip" onclick="drillList()">← 返回排行</span><div class="err">'+esc(e)+'</div>'});
