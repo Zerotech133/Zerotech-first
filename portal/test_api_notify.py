@@ -21,10 +21,11 @@ TODAY = datetime.now().strftime("%Y-%m-%d")
 NOW_ISO = datetime.now().isoformat(timespec="seconds")
 NOW_STR = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# decision DB 列序（notification_decision._db 建表口径）
+# decision DB 列序（notification_decision._db 建表口径，K-ORG-203 起
+# 含 doc_url/doc_title 文档引用列）
 COLS = ("id", "category", "target_name", "target_id", "send_at", "reason",
         "content", "created_at", "status", "executed_at", "outcome",
-        "agent_source", "caller", "operator", "basis")
+        "agent_source", "caller", "operator", "basis", "doc_url", "doc_title")
 
 
 class FakeHandler(api_notify.Handler):
@@ -72,7 +73,9 @@ def full_fixtures(root):
         {"id": "d1", "category": "announcement", "target_name": "全员群",
          "send_at": NOW_ISO, "reason": "管理公告草案", "created_at": NOW_ISO,
          "status": "recorded", "agent_source": "human", "caller": "admin_ui",
-         "basis": "依据拍板会"},
+         "basis": "依据拍板会",
+         "doc_url": "https://example.feishu.cn/docx/AbC123",
+         "doc_title": "公告背景说明"},
         {"id": "d2", "category": "alert", "target_name": "值班群",
          "send_at": NOW_ISO, "reason": "预警", "created_at": NOW_ISO,
          "status": "sent", "agent_source": "hermes", "caller": "hermes_internal"},
@@ -139,6 +142,10 @@ def test_four_states_counts_and_evidence(root):
     review = next(i for i in p["items"] if i["state"] == "review")
     assert review["category"] == "announcement" and review["target"] == "全员群"
     assert review["evidence_lifecycle"] == "drilled"       # 非真实发送行
+    # K-ORG-203：决策行文档引用随行携带（未核实原样透出）；无引用行 doc 为空
+    assert review["doc"] == {"url": "https://example.feishu.cn/docx/AbC123",
+                             "title": "公告背景说明"}
+    assert next(i for i in p["items"] if i["id"] == "decision:d2")["doc"] == ""
     # 标需审批：登记表 decision_announcement 频道 autonomy=approval_required
     ch = next(c for c in p["channels"] if c["id"] == "decision_announcement")
     assert ch["autonomy"] == "approval_required" and not p["channels_errors"]
