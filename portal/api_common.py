@@ -295,7 +295,8 @@ DOMAIN_NAV_GROUPS = {
     ),
     "intel": (
         ("📡 情报流", (
-            ("🏠 情报工场", "/intel", "intel"),
+            ("🏠 情报工作台", "/intel", "intel"),
+            ("📰 新闻证据流", "/intel/stream", "intelstream"),
             ("🤖 AI 晨报", "/bt-brief", "brief"),
             ("⚖️ JEV 判断", "/bt-jev", "jev"),
             ("🩺 四件套观测", "/stack", "jevstack"))),
@@ -316,6 +317,8 @@ DOMAIN_NAV_GROUPS = {
             ("🏢 公司 360", "/kg/company", "kgcompany"),
             ("📚 图谱词条", "/kg/lexicon", "kglexicon"),
             ("📄 图谱文档", "/kg/doc", "kgdoc"))),
+        ("🧬 数据血缘", (
+            ("🧬 血缘总览", "/lineage.html", "lineage"),)),
         ("💼 情报变现", (
             ("🛰 推送中台", "/push/", "pushhub"),)),
     ),
@@ -363,7 +366,7 @@ PAGE_SECTION = {"fin": "quant", "sa": "quant", "pre": "quant", "bt": "quant",
                 "debate": "quant", "bridge": "quant", "fut": "quant",
                 "sellpoint": "quant", "paper": "quant",
                 "aim": "quant",
-                "intel": "intel",
+                "intel": "intel", "intelstream": "intel", "lineage": "intel",
                 "pushhub": "intel",
                 "jev": "intel", "brief": "intel", "kg": "intel",
                 "jevstack": "intel",
