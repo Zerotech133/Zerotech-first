@@ -62,7 +62,13 @@ def _load_onboarding(name):
     spec = importlib.util.spec_from_file_location(
         "strategy_layer.onboarding." + name, path)
     mod = importlib.util.module_from_spec(spec)
-    sys.modules.setdefault("strategy_layer.onboarding." + name, mod)
+    # 覆盖注册（先执行后覆盖亦可，但需在 exec 前占位以防环）：若此处用
+    # setdefault，当先前用例已按包路径 import 同名模块时，本副本不进
+    # sys.modules，形成 split-brain——monkeypatch 打在影子副本上，而
+    # 模块内部 `from strategy_layer.onboarding.classic_adapter import ...`
+    # 拿到的是 sys.modules 里的另一副本（实测令 replay_reconcile.main
+    # 的 _default_loader patch 失效、连真 DB 致 56 处假不一致）。
+    sys.modules["strategy_layer.onboarding." + name] = mod
     spec.loader.exec_module(mod)
     return mod
 
