@@ -7,7 +7,9 @@
   new <TID> <一句话描述>   建任务单+worktree+分支 task/<TID>
   list                     任务单总览（谁在干什么/分支/进度）
   port <服务名>            申请分配一个未注册端口（并提示写回 REGISTRY）
-  merge <TID>              过评审门（三守卫）后合并回 master 并清场
+  merge <TID> [--l2-ack --l2-reason "五要素"]
+                                    过评审门（三守卫 + L2 危险操作门）后合并回 master 并清场；
+                                    --l2-ack=人工确认豁免 L2 命中（K-STOCK-416，须带 --l2-reason）
   board [out.html]         生成看板 HTML（默认 docs/dev/devboard.html）
   drop <TID>               放弃任务（留原因，清 worktree）
 
@@ -382,7 +384,51 @@ def cmd_port(name):
     return 0
 
 
-def cmd_merge(tid):
+def _l2_exempt(tid, t, reason):
+    """K-STOCK-416：--l2-ack 豁免落痕——approvals.db 审批单 + 返回 approval_id。
+
+    五要素（命令全文+影响面+不可逆点+替代方案+回滚预案）由 --l2-reason
+    带入，缺reason视为不合规（仍留痕但 note 标注，供审计翻旧账）。
+    审批库异常 fail-open（WARN 不阻断）——人工已确认，note 侧仍留痕。
+    """
+    approver = os.environ.get("AGENT_NAME", "human")
+    try:
+        sys.path.insert(0, os.path.join(REPO, "agent_platform"))
+        from engine.approvals import ApprovalStore
+        from contracts.objects import Approval
+        store = ApprovalStore(os.path.join(
+            REPO, "agent_platform", "data", "approvals", "approvals.db"))
+        try:
+            head = _git("rev-parse", t["branch"])
+            ap = Approval(
+                target_type="devtask_l2_exemption",
+                target_id=tid,
+                from_status="review",
+                to_status="merged",
+                decision="approved",
+                decided_by=approver,
+                reason=reason or "(未填五要素——不合规豁免，审计应翻旧账)",
+                idempotency_key="devtask_l2:%s:%s" % (tid, head),
+                content_hash=head)
+            ap, replayed = store.record(ap)
+            return ap.approval_id, replayed
+        finally:
+            store.close()
+    except Exception as e:  # noqa: BLE001  审批库不可用不阻断人工已确认的合并
+        print("[WARN] 审批单写入失败（不阻断合并）：%s" % e)
+        return "(审批库异常:%s)" % e, False
+
+
+def cmd_merge(tid, *flags):
+    # K-STOCK-416：--l2-ack / --l2-reason 人工豁免通道（五要素审批协议）
+    ack = "--l2-ack" in flags
+    reason = ""
+    if "--l2-reason" in flags:
+        i = flags.index("--l2-reason")
+        if i + 1 >= len(flags):
+            raise SystemExit("--l2-reason 需要跟五要素说明文本"
+                             "（命令全文+影响面+不可逆点+替代方案+回滚预案）")
+        reason = flags[i + 1]
     tasks = _tasks()
     t = tasks.get(tid)
     if not t:
@@ -415,6 +461,36 @@ def cmd_merge(tid):
             _save(tasks)
             _emit("guard_fail", tid, "门 %s 未过：%s"
                   % (name, ((r.stdout or r.stderr).strip() or "")[:120]))
+            return 1
+    # K-STOCK-416：L2 宿主机级危险操作门（代码强制层，判例 K-STOCK-413）
+    r = subprocess.run([sys.executable,
+                        os.path.join(REPO, "tools", "_l2_guard.py"),
+                        t["branch"]],
+                       capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    if r.returncode == 0:
+        print("  %-8s %s" % ("L2危险", "✓"))
+    else:
+        detail = (r.stdout or r.stderr).strip()[:400]
+        print("  %-8s ✗ %s" % ("L2危险", detail))
+        if r.returncode == 2 and ack:
+            approval_id, replayed = _l2_exempt(tid, t, reason)
+            note = ("[K-STOCK-416 L2豁免] approval_id=%s decided_by=%s "
+                    "reason=%s%s"
+                    % (approval_id, os.environ.get("AGENT_NAME", "human"),
+                       reason or "(未填)", "（重放既有审批单）" if replayed else ""))
+            t["note"] = ((t.get("note", "") + "；" + note).strip("；")
+                         if t.get("note") else note)
+            print("  L2危险   ⚠ 人工豁免已留痕：%s" % approval_id)
+            _emit("approval_verdict", tid, note)
+        else:
+            if r.returncode != 2:
+                print("  （L2 守卫自身异常按拒绝处理——fail-visible，"
+                      "不静默放行；修完重跑）")
+            print("门未过，拒绝合并。")
+            t["status"] = "review"
+            _save(tasks)
+            _emit("guard_fail", tid, "L2 门未过（K-STOCK-416）：%s" % detail[:120])
             return 1
     _git("merge", "--no-ff", t["branch"], "-m",
          "merge task/%s: %s" % (tid, t["desc"]))

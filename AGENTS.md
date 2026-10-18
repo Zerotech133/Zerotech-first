@@ -66,6 +66,7 @@
 - **修复写盘 ≠ 生效（2026-10-16 P0 实锤）**：改常驻服务代码后必须杀旧进程换血——「缺则拉」型守护器（start_jev_stack.ps1 类）不认 mtime，旧进程会带旧码跑到天荒地老；验证=新进程出生时间 > 文件 mtime + 日志出现新分支特征行；
 - **S4U/Session0 进程只信端口判活（2026-10-16 双实证）**：CIM/Win32_Process 枚举漏列+CommandLine 全 null；找 PID 用 `Get-NetTCPConnection -LocalPort`，杀进程要 UAC taskkill（`Start-Process cmd -Verb RunAs`，降权 token Access denied）。
 - **8091 冷启动断链守卫（2026-10-17 K-ORG-155 临时红线）**：portal 并行改版期间 `portal_api.py` 顶层 import 链（api_misc/job_spec_registry/chanlun_data 等）可能中途断裂——**冷启动即整线下线**。`portal/start_portal_api.ps1` 已内置 import 冒烟预检：断链时**拒绝拉起并告警（exit 1）**，任何人不得绕过该预检直接裸启 8091；断链处置=按公告板登记意图恢复/落盘相应模块后再启。portal 改版收口后经用户确认解除本条。
+- **宿主机级危险操作一律 blocking 人工确认（2026-10-19 K-STOCK-416 立宪；判例 K-STOCK-413：agent 曾主动 shutdown 重启机器，当时机器上跑着 Ollama/portal/60+ 产线任务）**：重启/关机/注销宿主机（shutdown / Restart-Computer / logoff）、改系统级配置（系统代理/防火墙/服务启动类型/计划任务增删）、对生产服务器 `10.205.0.118` 的任何变更、上线发布——执行前必须取得人类明确批准（五要素：命令全文+影响面+不可逆点+替代方案与已尝试+回滚预案），**沉默≠同意、一次一议、禁止以「根治需要/紧急」自我降级**；批准记录落工单 note。L0/L1/L2 三级动作分类与审批协议细则见 `docs/plans/2026-10-19_Agent危险操作治理规范_K-STOCK-416.md`。
 
 ## 8. 工程命名与别名注册表（2026-10-17 立章）
 
