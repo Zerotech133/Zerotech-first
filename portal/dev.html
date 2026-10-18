@@ -168,6 +168,14 @@
   }
 
   function renderHealth(h) {
+    // R2 收口（2026-10-18）：health_check.py 退役停写，快照改弃用标记。
+    if (h.deprecated) {
+      document.getElementById('hb-ts').textContent = '体检已退役（' + (h.deprecated_at || '') + '）';
+      document.getElementById('hb-services').innerHTML =
+        '<div class="d" style="color:var(--muted)">体检快照已退役（陈旧第二本账收口）。<br>' +
+        '后继数据源：<span class="mono">' + (h.successor || '/api/execution/health') + '</span><br>执行面健康请看执行健康总线。</div>';
+      return;
+    }
     document.getElementById('hb-ts').textContent = '体检：' + (h.ts || '—');
     const ageH = (Date.now() - new Date(String(h.ts).replace('北京', '')).getTime()) / 36e5;
     if (ageH > STALE_H) document.getElementById('hb-ts').innerHTML += ' <span class="tag" style="color:var(--ylw-500);border-color:var(--ylw-500)">陈旧 ' + ageH.toFixed(0) + 'h</span>';

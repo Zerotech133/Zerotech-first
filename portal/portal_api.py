@@ -1818,7 +1818,21 @@ function _nlForce(){_wait('强制重算中…（绕过缓存，约 10-30s）');
             pass
         blocks = ["<h3 style='color:#8b949e;font-size:13px'>实时探活"
                   "（打开本页即测）</h3>" + rows]
-        if snap:
+        if snap.get("deprecated"):
+            # R2 收口（2026-10-18）：health_latest.json 已退役为弃用标记，
+            # 不再渲染冻结的陈旧快照，明示后继数据源（执行健康总线）。
+            blocks.append(
+                "<h3 style='color:#8b949e;font-size:13px;margin-top:18px'>"
+                "自检快照已退役（%s）</h3>"
+                "<div style='background:#161b22;border:1px solid #21262d;"
+                "border-radius:6px;padding:12px;font-size:13px;"
+                "line-height:2'>陈旧第二本账已收口（K-STOCK-349）。"
+                "计划任务执行面健康请读执行健康总线：<br>"
+                "<span style='color:#58a6ff'>%s</span></div>"
+                % (_html.escape(str(snap.get("deprecated_at", "—"))),
+                   _html.escape(str(snap.get("successor",
+                       "GET http://127.0.0.1:8091/api/execution/health")))))
+        elif snap:
             tk = snap.get("tasks") or {}
             dk = snap.get("docker") or {}
             d = snap.get("data") or {}
@@ -1844,8 +1858,8 @@ function _nlForce(){_wait('强制重算中…（绕过缓存，约 10-30s）');
                    "<br>".join(lines)))
         else:
             blocks.append("<div style='color:#8b949e;font-size:12px;"
-                          "margin-top:16px'>暂无自检快照（每晚 21:00 "
-                          "统一日报生成，或手动运行 ops/health_check.py）"
+                          "margin-top:16px'>暂无自检快照（快照链已退役，"
+                          "执行面健康读 GET /api/execution/health）"
                           "</div>")
         body = ("<!DOCTYPE html><html><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,"

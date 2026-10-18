@@ -551,11 +551,19 @@
       const r = await fetch('/data/health.json?ts=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
       if (r.ok) {
         const h = await r.json();
-        const iss = (h.issues || []).length;
-        set('t-d-todo', iss ? iss + ' 项' : '0 项');
-        set('t-d-st', iss ? '待办' : '全绿');
-        set('t-d-note', String(h.ts || '').slice(5, 10) + ' 体检');
-        set('t-d-dev', iss ? '' : '全绿');
+        // R2 收口（2026-10-18）：health 快照退役 → 明示指向，不冒充全绿
+        if (h.deprecated) {
+          set('t-d-todo', '已退役');
+          set('t-d-st', '—');
+          set('t-d-note', '体检退役→执行健康总线');
+          set('t-d-dev', '');
+        } else {
+          const iss = (h.issues || []).length;
+          set('t-d-todo', iss ? iss + ' 项' : '0 项');
+          set('t-d-st', iss ? '待办' : '全绿');
+          set('t-d-note', String(h.ts || '').slice(5, 10) + ' 体检');
+          set('t-d-dev', iss ? '' : '全绿');
+        }
       }
     } catch { set('t-d-note', '体检未生成'); }
     // 开发：容器矩阵运行数（overview，与创作共用但独立容错）

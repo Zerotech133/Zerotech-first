@@ -62,15 +62,24 @@ def bridge_summary():
     except Exception:
         log_exc("bridge_summary:freshness")   # P0-5
     # 体检快照：六服务灯 + bad 任务 + 弱案例统计（pending/open/closed）
+    # R2 收口（2026-10-18）：health_latest.json 已退役为弃用标记 JSON，
+    # 读到 deprecated:true 时显式透出退役标记（不再投影陈旧服务灯），
+    # 健康读侧唯一事实源 = 8091 GET /api/execution/health。
     try:
         with open(os.path.join(STATION, "ops", "health_latest.json"),
                   encoding="utf-8") as f:
             h = json.load(f)
-        out["services"] = h.get("services") or {}
-        out["docker"] = h.get("docker") or {}
-        out["tasks"] = h.get("tasks") or {}
-        out["weak"] = h.get("data") or {}
-        out["health_ts"] = h.get("ts") or ""
+        if h.get("deprecated"):
+            out["health_retired"] = True
+            out["health_successor"] = h.get("successor") or \
+                "GET http://127.0.0.1:8091/api/execution/health"
+            out["health_frozen_ts"] = h.get("frozen_ts") or ""
+        else:
+            out["services"] = h.get("services") or {}
+            out["docker"] = h.get("docker") or {}
+            out["tasks"] = h.get("tasks") or {}
+            out["weak"] = h.get("data") or {}
+            out["health_ts"] = h.get("ts") or ""
     except Exception:
         log_exc("bridge_summary:health_latest.json")   # P0-5
     # 六源采集状态（news_collector/status.json：last_ok + 每源 ok/new）

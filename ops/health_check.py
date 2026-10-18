@@ -1,11 +1,22 @@
 # -*- coding: utf-8 -*-
 """OS 系统自检：服务 / 容器 / 计划任务 / 数据链 四层健康检查。
 
+╔══════════════════════════════════════════════════════════════════╗
+║ ⚠️ 退役阀（R2 陈旧数据治理，联动层一期 2026-10-18）                ║
+║ 本脚本已退役：健康快照无调度者=陈旧第二本账（K-STOCK-349）。       ║
+║ 后继唯一事实源：GET http://127.0.0.1:8091/api/execution/health    ║
+║ （portal/api_execution.py 执行健康总线，manifest 白名单只读投影）。║
+║ 手工拉起默认拒绝（exit 2）；确需临时复活传 --force（结果不再落盘）。║
+╚══════════════════════════════════════════════════════════════════╝
+
 用法:
-    python health_check.py          # 人类可读报告（exit 0=全绿, 1=有异常）
+    python health_check.py            # 打印退役说明并 exit 2（防复活第二本账）
+    python health_check.py --force    # 旧四层检查照旧跑（不落盘，仅人工诊断）
+
+历史用法（--force 下仍有效）:
     python health_check.py --json   # 仅输出一行 JSON（供统一日报聚合）
 
-结果始终落盘 ops/health_latest.json（portal 可后续引用）。
+结果**不再**落盘 ops/health_latest.json（该文件已重写为弃用标记 JSON）。
 """
 import json
 import os
@@ -318,23 +329,24 @@ def run():
     result["data"] = check_data()
     result["issues"] = issues
 
-    with open(os.path.join(HERE, "health_latest.json"), "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=1)
+    # R2 退役（2026-10-18）：不再落盘 health_latest.json——该文件已重写为
+    # 弃用标记 JSON（deprecated:true + successor），任何写入都会把弃用标记
+    # 覆盖回陈旧快照，复活第二本账。portal/data/health.json 副本同步停发。
 
-    # D4（研发计划v3）：同步一份给门户「基建状态板」（portal/dev.html 经
-    # webroot 静态读取）。webroot=portal/ 整目录对外，health_latest.json
-    # 本体留 ops/ 不外泄；data/health.json 内容与本体一致（已核无敏感词）。
-    try:
-        pub = os.path.join(os.path.dirname(HERE), "portal", "data")
-        os.makedirs(pub, exist_ok=True)
-        with open(os.path.join(pub, "health.json"), "w", encoding="utf-8") as f:
-            json.dump(result, f, ensure_ascii=False, indent=1)
-    except Exception as e:
-        print("health.json 副本落盘失败(不影响本体): %s" % str(e)[:100])
     return result
 
 
 def main():
+    # R2 退役阀（联动层一期 2026-10-18）：防旧入口被手工拉起复活第二本账。
+    # 默认拒绝执行（exit 2，N1/人工可捕获）；--force 才放行旧四层检查，
+    # 且不再落盘 health_latest.json（已重写为弃用标记 JSON）。
+    if "--force" not in sys.argv:
+        print("== ops/health_check.py 已退役（R2 陈旧数据治理 2026-10-18）==")
+        print("   健康快照无调度者=陈旧第二本账（K-STOCK-349）。")
+        print("   后继唯一事实源: GET http://127.0.0.1:8091/api/execution/health")
+        print("   （portal/api_execution.py 执行健康总线）")
+        print("   确需临时复活请显式传 --force（结果不再落盘）。")
+        sys.exit(2)
     h = run()
     if "--json" in sys.argv:
         print(json.dumps(h, ensure_ascii=False))
