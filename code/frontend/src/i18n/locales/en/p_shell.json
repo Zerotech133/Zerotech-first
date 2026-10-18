@@ -1,0 +1,116 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "strategies": "Strategies",
+    "candidates": "Candidates",
+    "signals": "Plans & Signals",
+    "risk": "Risk & Execution",
+    "trading": "Trading",
+    "replay": "Replay",
+    "system": "System & Settings",
+    "status": {
+      "title": "Live Status",
+      "online": "Online",
+      "phase": "Market Phase",
+      "todos": "To-dos",
+      "items": "{{count}} items",
+      "scheduler": "Scheduler",
+      "refresh": "Refresh"
+    },
+    "candidateBadgeNote": "Candidates in the latest pool date",
+    "approvalBadgeNote": "PENDING approvals in this market"
+  },
+  "statusBar": {
+    "candidates": "Candidates {{count}}",
+    "pendingApprovals": "Pending {{count}}",
+    "today": "Today",
+    "refresh": "Refresh",
+    "quality": "Quality",
+    "candidateNote": "Candidates: latest pool date (funnel page uses cumulative history)",
+    "approvalNote": "Pending: PENDING approvals in this market (all-time records in System Status)",
+    "qualityNote": "Data quality score (— when coverage too low / market closed & not collected)"
+  },
+  "phase": {
+    "PRE_MARKET": "Pre-market",
+    "TRADING": "Trading",
+    "LUNCH_BREAK": "Lunch Break",
+    "POST_MARKET": "Post-market",
+    "CLOSED": "Closed"
+  },
+  "shell": {
+    "backToBigscreen": "Back to Command Center",
+    "syncing": "Syncing…",
+    "search": "Search",
+    "bigscreen": "Command Center",
+    "bigscreenShort": "Big Screen",
+    "schedulerRunning": "Running",
+    "profile": "Profile",
+    "billing": "Membership & Subscriptions",
+    "logout": "Log out"
+  },
+  "billing": {
+    "title": "Membership & Subscriptions",
+    "back": "Back",
+    "currentStatus": "Current Entitlements",
+    "tier": "Tier",
+    "member": "Paid Member",
+    "free": "Free User",
+    "validUntil": "Valid Until",
+    "membershipPlan": "Membership Plan",
+    "subscribePlan": "Built-in Strategy Subscriptions",
+    "perMonth": "/ month",
+    "months": "Months",
+    "buy": "Buy",
+    "subscribe": "Subscribe",
+    "renew": "Renew",
+    "noStrategies": "No built-in strategies available to subscribe",
+    "subscribedUntil": "Subscribed until {{date}}",
+    "permanent": "Permanent",
+    "checkout": "Checkout",
+    "amountDue": "Amount Due",
+    "payAddress": "Receiving Address (USDT-TRC20)",
+    "scanToPay": "Scan to pay (USDT-TRC20)",
+    "orderId": "Order ID",
+    "openGateway": "Open Payment Page",
+    "awaitingPayment": "Awaiting payment…",
+    "paidOk": "Payment received; entitlement granted",
+    "grantPending": "Payment received; granting entitlement…",
+    "grantGranted": "Entitlement granted",
+    "grantFailed": "Grant failed; the admin has been notified",
+    "pollHint": "This page refreshes automatically after payment (about every 4s). Please transfer the exact USDT amount over the TRC20 network."
+  },
+  "commandPalette": {
+    "placeholder": "Search pages, switch market, switch theme, look up symbols…",
+    "searching": "Searching symbols…",
+    "group": {
+      "nav": "Navigation",
+      "market": "Markets",
+      "theme": "Themes",
+      "symbol": "Symbols"
+    },
+    "bigscreen": "Command Center",
+    "bigscreenSub": "/ · Global",
+    "currentMarket": "Current market ({{market}})",
+    "switchToMarket": "Switch to {{market}}",
+    "switchToTheme": "Switch to {{label}}",
+    "currentTheme": "Current theme · {{desc}}",
+    "themeOption": "{{key}} · {{desc}}",
+    "themeSwitched": "Theme switched: {{label}}",
+    "footerSelect": "Select",
+    "footerOpen": "Open",
+    "footerClose": "Close",
+    "footerMarket": "Current market: ",
+    "emptyHint": "No matching pages, markets or themes; type at least 2 characters to search symbols",
+    "emptyQuery": "No results matching \"{{query}}\""
+  },
+  "pageHeader": {
+    "command": "Command"
+  },
+  "symbolLink": {
+    "title": "View {{code}}{{name}} quote"
+  },
+  "themeMenu": {
+    "theme": "Theme",
+    "switchTheme": "Switch theme"
+  }
+}

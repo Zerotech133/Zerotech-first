@@ -1,0 +1,445 @@
+{
+  "dailyReport": {
+    "title": "Morning / Evening Report",
+    "segMorning": "Morning",
+    "segEvening": "Evening",
+    "refresh": "Refresh",
+    "generate": "Generate today's report",
+    "generated": "Current report generated",
+    "morningLabel": "Morning · Pre-market",
+    "eveningLabel": "Evening · Post-market",
+    "srcHistory": "History",
+    "srcComputed": "Computed",
+    "srcLatest": "Latest",
+    "scoresTitle": "Per-strategy scorecard",
+    "scoreColStrategy": "Strategy",
+    "scoreColTrades": "Trades",
+    "scoreColTodayPnl": "Today's P&L",
+    "scoreColWinRate": "Win rate",
+    "narrativeTitle": "Narrative",
+    "noNarrative": "No narrative available",
+    "noFacts": "No fact data",
+    "historyTitle": "Report history",
+    "historyCount": "{{n}} reports",
+    "tagMorning": "AM",
+    "tagEvening": "PM",
+    "noHistory": "No report history",
+    "candidateAssets": "Candidates",
+    "tradePlans": "Trade plans",
+    "pending": "Pending approval",
+    "closedTrades": "Closed today",
+    "todayPnl": "Today's P&L",
+    "winRate": "Win rate",
+    "openedPositions": "New positions",
+    "marketRegime": "Market regime",
+    "mergedEquity": "Combined equity",
+    "positionCount": "Positions",
+    "benchmarkIndex": "Benchmark index",
+    "regime": {
+      "BULL": "Uptrend",
+      "BEAR": "Downtrend",
+      "SIDEWAYS": "Range-bound",
+      "VOLATILE": "High volatility",
+      "UNKNOWN": "Unknown"
+    }
+  },
+  "learningReport": {
+    "loading": "Loading…",
+    "title": "Learning Report",
+    "replayStats": "Replay stats",
+    "totalTrades": "Total trades: {{count}}",
+    "winLoss": "Win / Loss: {{wins}} / {{losses}}",
+    "winRate": "Win rate: {{pct}}%",
+    "totalPnl": "Total P&L: {{pnl}}",
+    "decayTitle": "Strategy decay",
+    "colStrategy": "Strategy",
+    "colOlderWin": "Earlier win rate",
+    "colRecentWin": "Recent win rate",
+    "colDecay": "Decay",
+    "colStatus": "Status",
+    "govTitle": "Governance suggestions",
+    "noSuggestions": "No suggestions",
+    "decayStatus": {
+      "DECAY": "Decaying",
+      "NORMAL": "Normal"
+    },
+    "action": {
+      "DEMOTE": "Demote",
+      "PROMOTE": "Promote",
+      "DISABLE": "Disable"
+    }
+  },
+  "marketOverview": {
+    "loading": "Loading…",
+    "title": "Market Overview",
+    "total": "Total: {{count}}",
+    "gainers": "Top gainers",
+    "losers": "Top losers",
+    "colCode": "Code",
+    "colName": "Name",
+    "colPrice": "Price",
+    "colChange": "Change"
+  },
+  "monitor": {
+    "loading": "Loading…",
+    "title": "Monitor Overview",
+    "autoRefresh": "Auto-refresh 30s",
+    "pillPositions": "Current positions",
+    "pillDecay": "Decaying strategies",
+    "pillAlerts": "Active alerts",
+    "healthy": "✅ System healthy — no decaying strategies, no active alerts"
+  },
+  "alerts": {
+    "title": "Alert Center",
+    "colLevel": "Level",
+    "colTitle": "Title",
+    "colMessage": "Message",
+    "colStatus": "Status",
+    "colAction": "Action",
+    "level": {
+      "INFO": "Info",
+      "WARNING": "Warning",
+      "ERROR": "Error",
+      "CRITICAL": "Critical"
+    },
+    "status": {
+      "OPEN": "Open",
+      "ACKED": "Acknowledged"
+    }
+  },
+  "knowledge": {
+    "title": "Knowledge Replay",
+    "searchPlaceholder": "Code / Strategy ID",
+    "search": "Search",
+    "colId": "ID",
+    "colSymbol": "Symbol",
+    "colPnl": "P&L",
+    "colExit": "Exit"
+  },
+  "dashboard": {
+    "title": "{{market}} Market Dashboard",
+    "simAccount": "Simulated",
+    "strategyTag": "Strategy {{id}}",
+    "allStrategies": "All strategies",
+    "briefTradeDate": "Trade date",
+    "candidates": "Candidates",
+    "pending": "Pending approval",
+    "todayPnl": "Today's P&L",
+    "totalEquity": "Total equity",
+    "kpiFloatPnl": "Unrealized P&L",
+    "kpiAvailable": "Available cash",
+    "kpiPosition": "Position",
+    "stockUnit": "symbols",
+    "singleStrategyAccount": "single-strategy account",
+    "multiStrategyAccount": "{{n}} strategy accounts",
+    "funnelTitle": "Trade loop",
+    "viewPipeline": "View decision flow",
+    "needAction": "Needs your action",
+    "emptyAttention": "Nothing pending",
+    "goApprove": "Approve",
+    "heldTitle": "Held positions",
+    "colSymbol": "Symbol",
+    "colQty": "Qty",
+    "colOpenPrice": "Open price",
+    "colStage": "Stage",
+    "phase": {
+      "PRE_MARKET": "Pre-market",
+      "TRADING": "Trading",
+      "LUNCH_BREAK": "Lunch break",
+      "POST_MARKET": "Post-market",
+      "CLOSED": "Closed"
+    },
+    "funnel": {
+      "candidate": "Candidate",
+      "plan": "Plan",
+      "approval_pending": "Pending",
+      "position": "Position",
+      "replay": "Replay"
+    },
+    "equityScopeNote": "Global paper-trading scope: merged across ALL strategy accounts of this market (incl. zero-position / legacy imports); distinct from personal funds accounts on the My Accounts page",
+    "funnelScopeNote": "Each stage counts instruments that EVER reached it (incl. closed ones); differs from the sidebar's latest-pool candidate count"
+  },
+  "settings": {
+    "title": "Settings",
+    "themeTitle": "Interface theme",
+    "themeHint": "Applies instantly site-wide and is remembered (localStorage)",
+    "themeSwitched": "Theme switched: {{name}}",
+    "modeSwitched": "Trade mode switched to 「{{mode}}」",
+    "rangeWarn": "「{{field}}」 must be between 0–100%",
+    "paramsSaved": "Risk parameters saved",
+    "currentModePrefix": "Current mode",
+    "resetHint": "Resets to default after restart",
+    "modeTitle": "Trade mode",
+    "recommended": "Recommended",
+    "modeWarning": "⚠️ Trade mode setting is saved but not yet wired into the execution engine (in development). Actual behavior currently follows per-trade manual approval on the Pending Approval page.",
+    "fullAutoWarning": "⚠️ The full-auto description is a planning goal only. The execution chain is not yet wired to this setting and will not actually bypass manual confirmation.",
+    "riskTitle": "Risk parameters",
+    "riskDevTitle": "Risk parameters feature in development",
+    "riskDevDesc": "The settings below can be saved but are not yet connected to stop-loss, circuit-breaker, or auto-execution logic. Saving will not affect actual trading behavior.",
+    "modes": {
+      "manual": {
+        "label": "Manual",
+        "desc": "Every trade action requires manual confirmation before execution"
+      },
+      "semi_auto": {
+        "label": "Semi-auto",
+        "desc": "Candidate generation and risk checks run automatically; order placement requires manual confirmation (recommended)"
+      },
+      "full_auto": {
+        "label": "Full-auto",
+        "desc": "Fully automated except circuit-breaker protection; at your own risk"
+      }
+    },
+    "modeTag": {
+      "manual": "Manual",
+      "semi_auto": "Semi-auto",
+      "full_auto": "Full-auto"
+    },
+    "riskFields": {
+      "max_single_position_pct": {
+        "label": "Max single-position",
+        "hint": "Max share of account equity for a single instrument"
+      },
+      "max_total_position_pct": {
+        "label": "Max total position",
+        "hint": "Max share of account equity across all positions"
+      },
+      "max_daily_loss_pct": {
+        "label": "Daily max-loss breaker",
+        "hint": "Circuit-breaker triggers when the day's loss reaches this share of initial capital"
+      },
+      "stop_loss_pct": {
+        "label": "Per-trade stop-loss",
+        "hint": "Stop-loss triggers when a single position's loss reaches this ratio"
+      }
+    }
+  },
+  "systemStatus": {
+    "title": "System Status",
+    "online": "Running",
+    "offline": "Offline",
+    "autoRefresh": "Auto-refresh 30s",
+    "loading": "Loading…",
+    "backendError": "Unable to connect to backend service",
+    "tasksMissing": "{{n}} missing",
+    "unitStock": "symbols",
+    "tab": {
+      "status": "Runtime status",
+      "quality": "Data quality",
+      "continuity": "Continuity",
+      "tasks": "Task status",
+      "audit": "Audit events"
+    },
+    "itemVersion": "Version",
+    "itemQuotes": "Market data",
+    "itemStrategies": "Strategies",
+    "itemStrategyVersions": "Strategy versions",
+    "itemApprovals": "Approval records (all-time)",
+    "itemPositions": "Positions",
+    "itemReplays": "Replay records",
+    "qualityCardTitle": "Data quality",
+    "qualityScore": "Quality score (0-100)",
+    "checkedInfo": "Checked {{checked}} / {{total}} · Anomalies {{issues}}",
+    "tradeDateLabel": "Trade date",
+    "checkedPrefix": "Checked",
+    "dayKUnit": "daily bars",
+    "totalPrefix": "Total instruments",
+    "totalUnit": "",
+    "scoreFormula": "Score formula: (checked − issues) / checked × 100; a single instrument may hit multiple issue types.",
+    "issue": {
+      "missing_close": {
+        "label": "No close",
+        "desc": "close is empty or ≤0 (suspected halt / bad data)"
+      },
+      "zero_volume": {
+        "label": "Zero volume",
+        "desc": "volume is empty or =0 (suspected halt)"
+      },
+      "abnormal_change": {
+        "label": "Abnormal change",
+        "desc": "|close/pre_close-1| exceeds threshold (suspected bad data, relaxed for CRYPTO)"
+      },
+      "stale": {
+        "label": "Stale data",
+        "desc": "Number of instruments with no daily bar on the trade date"
+      }
+    },
+    "gapSymbols": "Instruments with gaps",
+    "gapTotalDays": "Total missing days",
+    "windowPrefix": "Window",
+    "baseline": "Baseline: trade calendar is_open ({{market}})",
+    "backfillPrefix": "Backfill: CLI",
+    "backfillSuffix": "or post-market auto inspection",
+    "contColSymbol": "Symbol",
+    "contColMissingDays": "Missing days",
+    "contColFirst": "First gap",
+    "contColLast": "Last gap",
+    "contEmpty": "No gaps 🎉",
+    "contFooter": "A gap = a date the trade calendar is open but has no daily bar (excluding pre-IPO / post-delisting); long gaps are usually halts — confirmed as a halt if the source still returns no data after backfill.",
+    "taskColDate": "Trade date",
+    "taskColName": "Task",
+    "taskColPhase": "Phase",
+    "taskColDetail": "Detail",
+    "taskColStatus": "Status",
+    "statusCompleted": "Completed",
+    "statusCompletedInferred": "Completed (inferred)",
+    "statusMissing": "Missing",
+    "statusPending": "Pending",
+    "tracePlaceholder": "Enter trace_id to query the full event chain (candidate → plan → risk → order → fill)",
+    "querying": "Querying…",
+    "query": "Query",
+    "traceTitle": "Trace {{id}} · {{n}} events",
+    "noTraceEvents": "No matching events",
+    "auditColTime": "Time",
+    "auditColActor": "Actor",
+    "auditColAction": "Action",
+    "auditColTarget": "Target",
+    "auditColDetail": "Detail",
+    "actorSystem": "System",
+    "actorHuman": "Manual"
+  },
+  "replay": {
+    "title": "Replay",
+    "refresh": "Refresh",
+    "allStrategies": "All strategies",
+    "tabCases": "Today's cases",
+    "tabDecisions": "Decision replay",
+    "tabErrors": "Error stats",
+    "noAttribution": "No attribution data",
+    "colSymbol": "Symbol",
+    "colStrategy": "Strategy",
+    "colPnl": "P&L",
+    "colPnlPct": "P&L %",
+    "colExitReason": "Exit reason",
+    "colStatus": "Status",
+    "noStrategy": "(no strategy)",
+    "statTrades": "Replay trades",
+    "unitTrades": "trades",
+    "statTotalPnl": "Cumulative P&L",
+    "statWinRate": "Win rate",
+    "statWins": "Wins",
+    "statLosses": "Losses",
+    "emptyCases": "No replay records",
+    "reviewTypeAll": "All",
+    "reviewTypeSelection": "Selection quality",
+    "reviewTypeEntry": "Entry timing",
+    "reviewTypeMissed": "Missed review",
+    "latestReviewDay": "Latest review day {{date}} (best/worst flagged by that day's score)",
+    "summaryCardTitle": "{{type}} · {{count}} items",
+    "avgSuffix": "avg score",
+    "emptyReviewSummary": "No decision replay data",
+    "revColDate": "Date",
+    "revColType": "Type",
+    "revColSymbol": "Symbol",
+    "revColStrategy": "Strategy",
+    "revColScore": "Score",
+    "revColGrade": "Verdict",
+    "revColVerdict": "Comment",
+    "revColFlag": "Flag",
+    "flagBest": "Best",
+    "flagWorst": "Worst",
+    "emptyReviews": "No decision replay records",
+    "noDimData": "No attribution dimension data",
+    "unitTimes": "times",
+    "dimShareTitle": "Attribution dimension share ({{total}} attributions total)",
+    "dim": {
+      "SELECTION": "Selection",
+      "ENTRY": "Entry",
+      "EXIT": "Exit",
+      "MARKET": "Market",
+      "RISK": "Risk",
+      "BEHAVIOR": "Behavior"
+    },
+    "exit": {
+      "TAKE_PROFIT": "Take-profit",
+      "STOP_LOSS": "Stop-loss",
+      "MANUAL": "Manual"
+    },
+    "decisionType": {
+      "CANDIDATE": "Selection quality",
+      "ENTRY": "Entry timing",
+      "EXIT": "Exit timing",
+      "MISSED": "Missed review"
+    },
+    "grade": {
+      "GOOD": "Good",
+      "FAIR": "Fair",
+      "POOR": "Poor"
+    }
+  },
+  "candidatesGroup": {
+    "title": "Candidate Pool"
+  },
+  "overviewGroup": {
+    "title": "Overview",
+    "meta": "Dashboard · Live Quotes · K-line · Market Overview",
+    "tabDashboard": "Dashboard",
+    "tabQuotes": "Live Quotes",
+    "tabKline": "K-line",
+    "tabOverview": "Market Overview"
+  },
+  "replayGroup": {
+    "title": "Replay & Research",
+    "meta": "Replay · P&L Calendar · Knowledge · Learning Report · Daily Report",
+    "tabReplay": "Replay",
+    "tabCalendar": "P&L Calendar",
+    "tabKnowledge": "Knowledge",
+    "tabLearning": "Learning Report",
+    "tabReport": "Daily Report"
+  },
+  "riskGroup": {
+    "title": "Risk & Execution",
+    "meta": "Risk Center · Automation",
+    "tabRisk": "Risk Center",
+    "tabAutomation": "Automation"
+  },
+  "signalsGroup": {
+    "title": "Plans & Signals",
+    "meta": "Trade Plans · Approval Center · Closed-loop Pipeline",
+    "tabPlans": "Trade Plans",
+    "tabApprovals": "Approval Center",
+    "tabPipeline": "Closed-loop Pipeline"
+  },
+  "strategiesGroup": {
+    "title": "Strategy Management",
+    "detail": "Detail {{id}}",
+    "meta": "Catalog · Strategy Versions · Performance · AI Research · Backtest · Models & Experiments · Fundamentals · Market Regime",
+    "tabCatalog": "Strategy Catalog",
+    "tabMine": "My Strategies",
+    "tabRunning": "Running Instances",
+    "tabAccounts": "My Accounts",
+    "tabStrategies": "Strategy Versions",
+    "tabPerf": "Performance",
+    "tabAi": "AI Research",
+    "tabBacktest": "Backtest",
+    "tabModels": "Models & Experiments",
+    "tabFund": "Fundamentals",
+    "tabRegime": "Market Regime"
+  },
+  "systemGroup": {
+    "title": "System & Settings",
+    "meta": "System Status · Monitor · Alert Center · Automation · Governance Board · Multi-strategy Governance · Trade Calendar · Settings · Exports · User Management",
+    "tabSystem": "System Status",
+    "tabMonitor": "Monitor",
+    "tabAlerts": "Alert Center",
+    "tabAutomation": "Automation",
+    "tabGovernance": "Governance Board",
+    "tabMulti": "Multi-strategy Governance",
+    "tabCalendar": "Trade Calendar",
+    "tabSettings": "Settings",
+    "tabExports": "Exports",
+    "tabUsers": "User Management",
+    "noPermTitle": "No permission",
+    "noPermSub": "Only administrators can access User Management",
+    "viewerNoPermSub": "System operations pages are restricted to operational roles",
+    "tabPaymentGrants": "Payment Grants"
+  },
+  "tradingGroup": {
+    "title": "Trading",
+    "meta": "Positions · Accounts · Portfolio · Workflow",
+    "tabPositions": "Positions",
+    "tabAccounts": "Accounts",
+    "tabPortfolio": "Portfolio",
+    "tabWorkflow": "Workflow"
+  }
+}

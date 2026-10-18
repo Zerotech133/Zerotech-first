@@ -1,0 +1,31 @@
+/* zhice-OS V2 · 补充样式（主题变量与暗色基础见 themes/tokens.css）
+   旧亮色导航/布局规则已随暗色主题迁移移除（新 AppShell 见 Task 2） */
+
+* {
+  box-sizing: border-box;
+}
+
+/* Toast 入场动画（components/Toast.tsx 以 animation 名引用） */
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* 原生表格基础样式（多页在用，配色走主题变量） */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.table th {
+  color: var(--txt-dim);
+  font-size: 12px;
+}

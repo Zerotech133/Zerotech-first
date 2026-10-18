@@ -1,0 +1,13 @@
+{
+  "strategyName": {
+    "[V7] 缠论增强版": "Chan Enhanced (V7)",
+    "均值回归v1": "Mean Reversion v1",
+    "港股vibeRSI反转": "HK Vibe RSI Reversal",
+    "港股趋势动量v1": "HK Trend Momentum v1",
+    "缠论v1": "Chan Theory v1",
+    "美股vibe均线交叉": "US Vibe MA Crossover",
+    "美股趋势动量v1": "US Trend Momentum v1",
+    "虚拟币vibe均值回归5分钟": "Crypto Vibe Mean Reversion 5m",
+    "虚拟币趋势动量v1": "Crypto Trend Momentum v1"
+  }
+}

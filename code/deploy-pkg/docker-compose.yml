@@ -1,0 +1,93 @@
+# zhice-os-v2 部署版 compose（由 deploy.sh 使用）。
+# 相对生产版差异：nginx 镜像变量化(按选市场)；scheduler/api 传 SCHEDULER_MARKETS；
+# scheduler healthcheck 关闭(纯 job 进程无 HTTP 端点，继承 api 的 HTTP 检查会永远 unhealthy)。
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-zhice}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 必须设置}
+      POSTGRES_DB: ${DB_NAME:-zhice_os_v2}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-zhice}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  migrate:
+    image: zhice-api:prod
+    command: alembic upgrade head
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://${DB_USER:-zhice}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-zhice_os_v2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: zhice-api:prod
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://${DB_USER:-zhice}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-zhice_os_v2}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY 必须设置}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD 必须设置}
+      APP_ENV: ${APP_ENV:-production}
+      TZ: Asia/Shanghai
+      TUSHARE_TOKEN: ${TUSHARE_TOKEN:-}
+      SCHEDULER_MARKETS: ${SCHEDULER_MARKETS:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options: {max-size: "50m", max-file: "5"}
+
+  scheduler:
+    image: zhice-api:prod
+    command: python -m zhice_os_v2.scheduler
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://${DB_USER:-zhice}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-zhice_os_v2}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY}
+      APP_ENV: ${APP_ENV:-production}
+      TZ: Asia/Shanghai
+      TUSHARE_TOKEN: ${TUSHARE_TOKEN:-}
+      SCHEDULER_MARKETS: ${SCHEDULER_MARKETS:-}
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options: {max-size: "50m", max-file: "5"}
+
+  nginx:
+    image: ${NGINX_IMAGE:-zhice-nginx:prod}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:

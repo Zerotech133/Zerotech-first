@@ -1,0 +1,22 @@
+{
+  "lang": {
+    "zh": "中文",
+    "en": "English",
+    "label": "语言"
+  },
+  "action": {
+    "login": "登录",
+    "logout": "退出",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "loading": "加载中",
+    "retry": "重试"
+  },
+  "market": {
+    "CN": "A股",
+    "US": "美股",
+    "HK": "港股",
+    "CRYPTO": "加密货币"
+  }
+}

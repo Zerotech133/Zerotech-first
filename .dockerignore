@@ -1,0 +1,34 @@
+# 版本控制 / IDE
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Python 运行/缓存
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.egg-info
+build
+dist
+
+# 测试与开发产物（镜像不需要）
+tests
+.temp
+*.png
+*.log
+
+# 前端源码不进后端镜像，但 dist/ 供 nginx 镜像使用
+frontend
+!frontend/dist
+
+# 文档 / 评审材料
+docs
+*.docx
+*.md

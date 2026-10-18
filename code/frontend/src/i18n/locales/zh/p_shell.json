@@ -1,0 +1,116 @@
+{
+  "nav": {
+    "overview": "总览",
+    "strategies": "策略管理",
+    "candidates": "候选池",
+    "signals": "计划与信号",
+    "risk": "风控与执行",
+    "trading": "交易",
+    "replay": "复盘研究",
+    "system": "系统与设置",
+    "status": {
+      "title": "实时状态",
+      "online": "在线",
+      "phase": "市场阶段",
+      "todos": "待办事项",
+      "items": "{{count}} 项",
+      "scheduler": "调度器",
+      "refresh": "刷新"
+    },
+    "candidateBadgeNote": "最新池日候选标的数",
+    "approvalBadgeNote": "当前市场待授权（PENDING）数"
+  },
+  "statusBar": {
+    "candidates": "候选 {{count}}",
+    "pendingApprovals": "待授权 {{count}}",
+    "today": "今日",
+    "refresh": "刷新",
+    "quality": "质量",
+    "candidateNote": "候选：最新池日候选标的数（漏斗页为历史累计口径）",
+    "approvalNote": "待授权：当前市场 PENDING 授权数（全历史记录见 系统状态-运行状态）",
+    "qualityNote": "数据质量分（当日数据覆盖不足/休市未采集时显示 —，分数无意义）"
+  },
+  "phase": {
+    "PRE_MARKET": "盘前",
+    "TRADING": "盘中",
+    "LUNCH_BREAK": "午间休市",
+    "POST_MARKET": "盘后",
+    "CLOSED": "休市"
+  },
+  "shell": {
+    "backToBigscreen": "返回指挥大屏",
+    "syncing": "同步中…",
+    "search": "搜索",
+    "bigscreen": "指挥大屏",
+    "bigscreenShort": "大屏",
+    "schedulerRunning": "运行中",
+    "profile": "个人中心",
+    "billing": "会员与订阅",
+    "logout": "退出登录"
+  },
+  "billing": {
+    "title": "会员与订阅",
+    "back": "返回",
+    "currentStatus": "当前权益",
+    "tier": "会员等级",
+    "member": "付费会员",
+    "free": "免费用户",
+    "validUntil": "有效期至",
+    "membershipPlan": "会员套餐",
+    "subscribePlan": "内置策略订阅",
+    "perMonth": "/ 月",
+    "months": "月数",
+    "buy": "购买",
+    "subscribe": "订阅",
+    "renew": "续订",
+    "noStrategies": "暂无可订阅的内置策略",
+    "subscribedUntil": "已订阅至 {{date}}",
+    "permanent": "永久有效",
+    "checkout": "收银台",
+    "amountDue": "应付金额",
+    "payAddress": "收款地址（USDT-TRC20）",
+    "scanToPay": "扫码支付（USDT-TRC20）",
+    "orderId": "订单号",
+    "openGateway": "打开支付页面",
+    "awaitingPayment": "等待支付…",
+    "paidOk": "支付成功，权益已发放",
+    "grantPending": "支付成功，正在发放权益…",
+    "grantGranted": "权益已发放",
+    "grantFailed": "发放失败，已通知管理员处理",
+    "pollHint": "支付完成后本页会自动刷新状态（约每 4 秒）。请务必使用 TRC20 网络转账对应金额的 USDT。"
+  },
+  "commandPalette": {
+    "placeholder": "搜索页面、切换市场、切换主题、查询标的…",
+    "searching": "正在搜索标的…",
+    "group": {
+      "nav": "导航",
+      "market": "市场",
+      "theme": "主题",
+      "symbol": "标的"
+    },
+    "bigscreen": "指挥大屏",
+    "bigscreenSub": "/ · 全局",
+    "currentMarket": "当前市场（{{market}}）",
+    "switchToMarket": "切换到 {{market}}",
+    "switchToTheme": "切换到 {{label}}",
+    "currentTheme": "当前主题 · {{desc}}",
+    "themeOption": "{{key}} · {{desc}}",
+    "themeSwitched": "已切换主题：{{label}}",
+    "footerSelect": "选择",
+    "footerOpen": "打开",
+    "footerClose": "关闭",
+    "footerMarket": "当前市场：",
+    "emptyHint": "没有匹配的页面、市场或主题，输入至少 2 个字符可搜索标的",
+    "emptyQuery": "没有匹配「{{query}}」的结果"
+  },
+  "pageHeader": {
+    "command": "指挥台"
+  },
+  "symbolLink": {
+    "title": "查看 {{code}}{{name}} 行情"
+  },
+  "themeMenu": {
+    "theme": "主题",
+    "switchTheme": "切换主题"
+  }
+}

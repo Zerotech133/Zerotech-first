@@ -1,0 +1,46 @@
+# 双周期回踩共振·A股内置打法包
+# dual_tf_pullback 在一个可审计票据内聚合市场门、日线趋势、60m/当前周期回踩、
+# MACD 修复与量价确认；风险否决优先于评分。
+playbook_id: pullback_resonance_cn
+name: 双周期回踩共振·A股
+market: CN
+snapshot_hz: 60
+bar_freq: 15m
+
+# 标准化组件语义由 dual_tf_pullback 聚合执行，以下配置用于审计与回放。
+market_regime:
+  method: market_regime_permits_entry
+  risk_off_veto: true
+trend:
+  method: daily_ma20_ema60
+  higher_timeframe: 60m
+pullback:
+  method: ema20_retest
+  window: 20
+  max_distance: 0.06
+macd:
+  method: dif_dea_repair
+  fast: 12
+  slow: 26
+  signal: 9
+risk_method:
+  method: position_risk_guard
+  per_trade_risk_pct: 1.0
+  no_averaging_down: true
+
+methods:
+  - id: dual_tf_pullback
+    weight: 1.0
+    role: 市场门+日线趋势+60m/15m回踩+MACD修复+量价确认
+arbitration:
+  quorum_min_votes: 1
+  tie_margin: 0.18
+  regime_veto: true
+graduation:
+  tier: CN_DEFAULT
+  attribution: per_method
+entry_style_binding: true
+risk:
+  per_trade_risk_pct: 1.0
+  no_averaging_down: true
+  stop_loss_pct: 0.06

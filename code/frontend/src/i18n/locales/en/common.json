@@ -1,0 +1,22 @@
+{
+  "lang": {
+    "zh": "中文",
+    "en": "English",
+    "label": "Language"
+  },
+  "action": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loading": "Loading",
+    "retry": "Retry"
+  },
+  "market": {
+    "CN": "A-Share",
+    "US": "US",
+    "HK": "HK",
+    "CRYPTO": "Crypto"
+  }
+}

@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: zhice
+      POSTGRES_PASSWORD: zhice_pass
+      POSTGRES_DB: zhice_os_v2
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zhice"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  migrate:
+    build: .
+    command: alembic upgrade head
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://zhice:zhice_pass@postgres:5432/zhice_os_v2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: .
+    ports:
+      - "8002:8002"
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://zhice:zhice_pass@postgres:5432/zhice_os_v2
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  scheduler:
+    build: .
+    command: python -m zhice_os_v2.scheduler
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://zhice:zhice_pass@postgres:5432/zhice_os_v2
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  pgdata:

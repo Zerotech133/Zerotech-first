@@ -1,0 +1,118 @@
+{
+  "billing": {
+    "membership_required": "This action requires a paid membership. Please subscribe first.",
+    "invalid_product_type": "Invalid product type",
+    "invalid_months": "Months must be between 1 and 120",
+    "strategy_required": "A strategy is required to subscribe",
+    "strategy_not_found": "Strategy not found",
+    "not_builtin_strategy": "Only built-in platform strategies can be subscribed",
+    "invalid_amount": "Invalid order amount",
+    "gateway_error": "Payment gateway is temporarily unavailable, please retry later",
+    "order_not_found": "Order not found",
+    "bad_signature": "Payment callback signature verification failed",
+    "bad_payload": "Incomplete payment callback parameters",
+    "not_paid": "Order has not been paid",
+    "bad_amount": "Failed to parse payment amount",
+    "amount_short": "Underpaid; entitlement not granted",
+    "grant_review_required": "Order ownership is ambiguous; manual review required before retrying",
+    "grant_in_progress": "Grant is in progress; please try again shortly",
+    "not_reviewable": "This order does not require manual review"
+  },
+  "entitlements": {
+    "user_not_found": "Target user not found",
+    "user_inactive": "User is deactivated; cannot set entitlements",
+    "strategy_not_grantable": "Strategy is not grantable (must be a published public platform strategy in an enabled market)",
+    "version_conflict": "Entitlement was modified by another operation; please refresh and retry",
+    "idempotency_conflict": "The same idempotency key was used with a different request body",
+    "subscription_not_granted": "Subscription does not exist and cannot be revoked",
+    "membership_not_granted": "User has no revocable membership",
+    "invalid_reason": "Reason must be non-empty and at most 500 characters",
+    "invalid_idempotency_key": "Invalid idempotency key (length must be 8..128 printable ASCII)",
+    "invalid_expiry": "Invalid expiry (must be timezone-aware and in the future; permanent must omit expiry)",
+    "invalid_batch": "Invalid batch size (must be 1..100 strategies)",
+    "versions_mismatch": "versions does not match strategy_ids",
+    "reservation_balance_inconsistent": "Cash reservation mismatch while releasing on revoke; the operation was rolled back"
+  },
+  "auth": {
+    "invalid_credentials": "Invalid username or password",
+    "only_self_password": "You can only change your own password",
+    "username_empty": "Username cannot be empty",
+    "invalid_email": "Invalid email format",
+    "password_too_short": "Password must be 6 to 128 characters",
+    "username_taken": "Username is already taken",
+    "email_taken": "Email is already registered",
+    "invalid_chat_id": "chat_id must be numeric",
+    "telegram_not_bound": "Telegram not bound yet",
+    "old_password_required": "Current password is required",
+    "wrong_old_password": "Current password is incorrect",
+    "user_not_found": "User not found",
+    "last_admin_protected": "Cannot demote or deactivate the last administrator",
+    "token_stale_after_password_change": "Password changed; please sign in again",
+    "session_revoked": "Your session is no longer valid; please sign in again",
+    "auth_version_conflict": "This user was modified by someone else; refresh and retry"
+  },
+  "candidate": {
+    "pools_query_failed": "Failed to load candidate pools",
+    "pool_not_found": "Candidate pool not found",
+    "details_query_failed": "Failed to load candidate details"
+  },
+  "model": {
+    "invalid_task_type": "Invalid task_type value",
+    "already_registered": "Model already registered",
+    "not_found": "Model not found",
+    "version_exists": "Version already exists",
+    "version_not_found": "Version not found",
+    "version_already_active": "Version is already ACTIVE",
+    "no_active_version": "No ACTIVE version for this task type",
+    "experiment_not_found": "Experiment not found",
+    "experiment_already_closed": "Experiment already concluded"
+  },
+  "report": {
+    "invalid_report_type": "report_type must be either morning or evening",
+    "invalid_month": "month must be between 1 and 12",
+    "not_found": "Report not found"
+  },
+  "market": {
+    "invalid": "Invalid market code (must be CN/US/HK/CRYPTO)"
+  },
+  "strategy": {
+    "spec_invalid": "Invalid strategy spec",
+    "market_mismatch": "market does not match spec.market",
+    "not_found": "Strategy not found",
+    "name_taken": "A strategy with this name already exists",
+    "bound_by_instances": "Strategy is still bound to running instances; delete those instances first",
+    "has_payment_orders": "Strategy has payment order records (including granted); cannot delete"
+  },
+  "instance": {
+    "not_disabled": "Instance is still enabled; disable it before deleting",
+    "has_open_positions": "Instance has open positions; close them before deleting"
+  },
+  "account": {
+    "invalid_account_type": "Invalid account_type",
+    "invalid_capital": "Initial capital must be positive"
+  },
+  "telegram": {
+    "binding_disabled": "Telegram binding is not enabled by the administrator",
+    "manual_binding_disabled": "Please use the Telegram binding link instead",
+    "chat_conflict": "This Telegram is already bound to another account"
+  },
+  "notification": {
+    "binding_required": "No notification channel is bound yet; complete a binding first",
+    "channel_invalid": "Invalid notification channel",
+    "binding_recipient_conflict": "This notification account is already bound to another user"
+  },
+  "wxpusher": {
+    "binding_disabled": "WeChat push binding is not enabled by the administrator; contact the administrator",
+    "qrcode_failed": "Failed to generate the WeChat QR code; please retry later"
+  },
+  "settings": {
+    "risk_params_gt_zero": "Risk parameters must be greater than 0 (0 cannot disable a rule; adjust in Risk Center instead)"
+  },
+  "mirror": {
+    "subscription_required": "Please subscribe to this strategy before opening a paper account",
+    "not_observable_strategy": "This strategy does not support paper trading",
+    "invalid_capital": "Initial capital must be greater than 0",
+    "account_exists": "A paper account already exists for this strategy",
+    "account_not_found": "Paper account not found"
+  }
+}

@@ -1,0 +1,24 @@
+# 机构风格·事件驱动打法包（设计文档 org-style-playbook-v0.1.md 第二节原样落地）
+# event_window/trend_break/sentiment_regime 为预留 id：加载合法但 unavailable
+# （T07 实现插件后自动参与投票）；chan_structure 复用现有 chan（同为预留位声明）。
+playbook_id: org_style_cn
+name: 机构风格·事件驱动
+market: CN
+snapshot_hz: 60            # CN 盘中 1 分钟档（快照 10s 时代价过高，事件驱动不需 5s）
+bar_freq: 15m              # 主决策周期 15m；趋势确认看 1d
+methods:                   # 方法插件（weight 初始值 = 源文档优先级直译）
+  - {id: event_window,  weight: 1.5, role: 催化倒计时（window_days 到期 → SELL 倾向）}
+  - {id: trend_break,   weight: 1.2, role: 20 日线/趋势线破位（收盘确认 → SELL）}
+  - {id: chan_structure,weight: 1.0, role: 缠论结构确认（背驰/三卖 → SELL）}
+  - {id: sentiment_regime, weight: 0.8, role: 情绪周期高位（涨停家数回落/炸板率抬升 → 减仓票）}
+arbitration:
+  quorum_min_votes: 2      # 事件仓允许双票即决（快）
+  tie_margin: 0.18         # 稍宽于默认（事件时效优先于精确）
+  regime_veto: true        # 情绪冰点期（sentiment risk_off）SELL 权重 ×1.5
+graduation:
+  tier: CN_DEFAULT         # n≥30；sentiment_regime 数据冷启动期 n≥6 降档
+  attribution: per_method  # 按 (method, playbook) 独立毕业
+entry_style_binding: true  # 建仓盖章 entry_style，止盈式跟随
+risk:
+  per_trade_risk_pct: 2.0  # 单笔风险敞口 ≤ 总资金 2%（非仓位市值）
+  no_averaging_down: true  # 禁摊平（逆向过滤器）

@@ -1,0 +1,199 @@
+/* 登录/注册页：科技感深色·左右分栏。
+   ⚠️ 登录页是未登录门面，用自包含 --a* 局部令牌，避免被主题系统(tokens.css)覆盖
+   全局 --cyan/--bg-0 等（曾致 --cyan=#E8E8E8 使 logo/按钮不可见）。 */
+
+.auth-wrap {
+  --ac: #35d0ba;
+  --ac2: #3aa0ff;
+  --abg0: #070b14;
+  --atext: #e6edf7;
+  --amuted: #8aa0c0;
+  --aline: rgba(90, 120, 170, 0.22);
+  --apanel: rgba(18, 26, 43, 0.78);
+  --apanel2: rgba(23, 33, 54, 0.6);
+  --aradius: 14px;
+
+  position: fixed;
+  inset: 0;
+  display: flex;
+  color: var(--atext);
+  background: radial-gradient(1200px 800px at 20% 10%, #0d1830 0%, var(--abg0) 60%);
+  overflow: hidden;
+}
+
+/* 网格 + 光晕（自绘，不依赖全局 .bg-grid/.bg-glow 以免主题差异） */
+.auth-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(90, 130, 190, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 130, 190, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+.auth-wrap::after {
+  content: '';
+  position: absolute;
+  top: -160px;
+  left: -120px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.4;
+  background: radial-gradient(circle, rgba(53, 208, 186, 0.5), transparent 62%);
+  pointer-events: none;
+}
+
+/* ── 左品牌区 ── */
+.auth-brand {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8vw;
+  position: relative;
+  z-index: 1;
+}
+.auth-brand-logo {
+  display: block;
+  width: 260px;
+  max-width: 100%;
+  height: auto;
+}
+.auth-brand-sub {
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--amuted);
+  letter-spacing: 1px;
+}
+.auth-brand-markets {
+  margin-top: 40px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.auth-chip {
+  padding: 6px 14px;
+  border: 1px solid var(--aline);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--amuted);
+  background: var(--apanel2);
+  backdrop-filter: blur(6px);
+}
+.auth-chip .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ac);
+  margin-right: 7px;
+  vertical-align: middle;
+  box-shadow: 0 0 8px var(--ac);
+}
+
+/* ── 右表单区 ── */
+.auth-panel {
+  flex: 0 0 460px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  z-index: 1;
+}
+.auth-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 34px 30px;
+  border: 1px solid var(--aline);
+  border-radius: var(--aradius);
+  background: var(--apanel);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.auth-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.auth-card-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--atext);
+}
+.auth-field {
+  margin-bottom: 14px;
+}
+.auth-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--amuted);
+  margin-bottom: 6px;
+}
+.auth-field input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 0 13px;
+  border: 1px solid var(--aline);
+  border-radius: 10px;
+  background: rgba(7, 11, 20, 0.6);
+  color: var(--atext);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.auth-field input::placeholder { color: rgba(138, 160, 192, 0.6); }
+.auth-field input:focus {
+  border-color: var(--ac);
+  box-shadow: 0 0 0 3px rgba(53, 208, 186, 0.15);
+}
+.auth-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(92deg, var(--ac), var(--ac2));
+  color: #04121a;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
+}
+.auth-btn:hover { filter: brightness(1.08); }
+.auth-btn:active { transform: translateY(1px); }
+.auth-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.auth-foot {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--amuted);
+}
+.auth-link {
+  color: var(--ac);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-link:hover { text-decoration: underline; }
+
+.auth-msg {
+  margin-top: 14px;
+  font-size: 13px;
+  min-height: 18px;
+}
+.auth-msg.err { color: #ff5c72; }
+.auth-msg.ok { color: #34d399; }
+
+/* 窄屏：隐藏品牌区，表单占满 */
+@media (max-width: 860px) {
+  .auth-brand { display: none; }
+  .auth-panel { flex: 1 1 auto; }
+}

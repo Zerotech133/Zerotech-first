@@ -1,0 +1,445 @@
+{
+  "dailyReport": {
+    "title": "晨报 / 晚报",
+    "segMorning": "晨报",
+    "segEvening": "晚报",
+    "refresh": "刷新",
+    "generate": "生成今日报告",
+    "generated": "已生成当期报告",
+    "morningLabel": "晨报 · 盘前",
+    "eveningLabel": "晚报 · 盘后",
+    "srcHistory": "历史",
+    "srcComputed": "现算",
+    "srcLatest": "最新",
+    "scoresTitle": "分策略成绩单",
+    "scoreColStrategy": "策略",
+    "scoreColTrades": "笔数",
+    "scoreColTodayPnl": "今日盈亏",
+    "scoreColWinRate": "胜率",
+    "narrativeTitle": "叙事",
+    "noNarrative": "暂无叙事内容",
+    "noFacts": "无事实数据",
+    "historyTitle": "历史报告",
+    "historyCount": "{{n}} 份",
+    "tagMorning": "晨",
+    "tagEvening": "晚",
+    "noHistory": "暂无历史报告",
+    "candidateAssets": "候选标的",
+    "tradePlans": "交易计划",
+    "pending": "待授权",
+    "closedTrades": "当日平仓",
+    "todayPnl": "当日盈亏",
+    "winRate": "胜率",
+    "openedPositions": "新建仓",
+    "marketRegime": "市场环境",
+    "mergedEquity": "合并总资产",
+    "positionCount": "持仓数",
+    "benchmarkIndex": "基准指数",
+    "regime": {
+      "BULL": "上涨趋势",
+      "BEAR": "下跌趋势",
+      "SIDEWAYS": "震荡整理",
+      "VOLATILE": "剧烈波动",
+      "UNKNOWN": "未知"
+    }
+  },
+  "learningReport": {
+    "loading": "加载中…",
+    "title": "学习报告",
+    "replayStats": "复盘统计",
+    "totalTrades": "总笔数：{{count}}",
+    "winLoss": "胜 / 负：{{wins}} / {{losses}}",
+    "winRate": "胜率：{{pct}}%",
+    "totalPnl": "总盈亏：{{pnl}}",
+    "decayTitle": "策略衰减",
+    "colStrategy": "策略",
+    "colOlderWin": "早期胜率",
+    "colRecentWin": "近期胜率",
+    "colDecay": "衰减",
+    "colStatus": "状态",
+    "govTitle": "治理建议",
+    "noSuggestions": "暂无建议",
+    "decayStatus": {
+      "DECAY": "衰减",
+      "NORMAL": "正常"
+    },
+    "action": {
+      "DEMOTE": "降级",
+      "PROMOTE": "升级",
+      "DISABLE": "禁用"
+    }
+  },
+  "marketOverview": {
+    "loading": "加载中…",
+    "title": "市场概览",
+    "total": "总数：{{count}}",
+    "gainers": "涨幅榜",
+    "losers": "跌幅榜",
+    "colCode": "代码",
+    "colName": "名称",
+    "colPrice": "现价",
+    "colChange": "涨跌幅"
+  },
+  "monitor": {
+    "loading": "加载中…",
+    "title": "监控总览",
+    "autoRefresh": "30s 自动刷新",
+    "pillPositions": "当前持仓",
+    "pillDecay": "衰减策略",
+    "pillAlerts": "活跃告警",
+    "healthy": "✅ 系统运行正常，无衰减策略，无活跃告警"
+  },
+  "alerts": {
+    "title": "告警中心",
+    "colLevel": "级别",
+    "colTitle": "标题",
+    "colMessage": "消息",
+    "colStatus": "状态",
+    "colAction": "操作",
+    "level": {
+      "INFO": "信息",
+      "WARNING": "警告",
+      "ERROR": "错误",
+      "CRITICAL": "严重"
+    },
+    "status": {
+      "OPEN": "未处理",
+      "ACKED": "已确认"
+    }
+  },
+  "knowledge": {
+    "title": "知识复盘",
+    "searchPlaceholder": "代码/策略ID",
+    "search": "搜索",
+    "colId": "ID",
+    "colSymbol": "标的",
+    "colPnl": "盈亏",
+    "colExit": "出场"
+  },
+  "dashboard": {
+    "title": "{{market}}市场工作台",
+    "simAccount": "模拟盘",
+    "strategyTag": "策略 {{id}}",
+    "allStrategies": "全部策略",
+    "briefTradeDate": "交易日",
+    "candidates": "候选",
+    "pending": "待授权",
+    "todayPnl": "今日盈亏",
+    "totalEquity": "总权益",
+    "kpiFloatPnl": "浮动盈亏",
+    "kpiAvailable": "可用资金",
+    "kpiPosition": "仓位",
+    "stockUnit": "只",
+    "singleStrategyAccount": "单策略账户",
+    "multiStrategyAccount": "{{n}} 个策略账户",
+    "funnelTitle": "交易闭环",
+    "viewPipeline": "查看决策流",
+    "needAction": "需要你动手",
+    "emptyAttention": "暂无待处理项",
+    "goApprove": "去授权",
+    "heldTitle": "持仓标的",
+    "colSymbol": "标的",
+    "colQty": "数量",
+    "colOpenPrice": "开仓价",
+    "colStage": "阶段",
+    "phase": {
+      "PRE_MARKET": "盘前",
+      "TRADING": "盘中",
+      "LUNCH_BREAK": "午间休市",
+      "POST_MARKET": "盘后",
+      "CLOSED": "休市"
+    },
+    "funnel": {
+      "candidate": "候选",
+      "plan": "计划",
+      "approval_pending": "待授权",
+      "position": "持仓",
+      "replay": "复盘"
+    },
+    "equityScopeNote": "全局模拟盘口径：该市场全部策略账户（含零仓/legacy 导入）合并计算，与「我的账户」页的个人资金账户是两套并存的账户体系",
+    "funnelScopeNote": "各阶段数字为历史累计到达该阶段的标的数（含已了结）；候选与侧栏「最新池日候选数」口径不同"
+  },
+  "settings": {
+    "title": "设置",
+    "themeTitle": "界面主题",
+    "themeHint": "全站即时生效并记忆（localStorage）",
+    "themeSwitched": "已切换主题：{{name}}",
+    "modeSwitched": "交易模式已切换为「{{mode}}」",
+    "rangeWarn": "「{{field}}」需在 0–100% 之间",
+    "paramsSaved": "风控参数已保存",
+    "currentModePrefix": "当前模式",
+    "resetHint": "重启后恢复默认",
+    "modeTitle": "交易模式",
+    "recommended": "推荐",
+    "modeWarning": "⚠️ 交易模式设置已保存，但尚未接入执行引擎（功能开发中），当前实际行为以「待授权」页面的人工逐笔授权为准。",
+    "fullAutoWarning": "⚠️ 全自动模式描述仅为规划目标，当前执行链尚未接入该设置，不会真正绕过人工确认。",
+    "riskTitle": "风控参数",
+    "riskDevTitle": "风险参数功能正在开发中",
+    "riskDevDesc": "以下设置已可保存，但尚未连接到止损、熔断或自动执行逻辑，保存后不会影响实际交易行为。",
+    "modes": {
+      "manual": {
+        "label": "手动模式",
+        "desc": "所有交易动作均需人工确认后执行"
+      },
+      "semi_auto": {
+        "label": "半自动",
+        "desc": "候选生成与风控校验自动执行，下单需人工确认（推荐）"
+      },
+      "full_auto": {
+        "label": "全自动",
+        "desc": "除熔断保护外全自动执行，风险自负"
+      }
+    },
+    "modeTag": {
+      "manual": "手动",
+      "semi_auto": "半自动",
+      "full_auto": "全自动"
+    },
+    "riskFields": {
+      "max_single_position_pct": {
+        "label": "单标的仓位上限",
+        "hint": "单一标的占账户权益的最大比例"
+      },
+      "max_total_position_pct": {
+        "label": "组合总仓位上限",
+        "hint": "全部持仓占账户权益的最大比例"
+      },
+      "max_daily_loss_pct": {
+        "label": "单日最大亏损熔断",
+        "hint": "当日亏损达初始资金该比例触发熔断"
+      },
+      "stop_loss_pct": {
+        "label": "单笔止损线",
+        "hint": "单笔持仓亏损达该比例触发止损"
+      }
+    }
+  },
+  "systemStatus": {
+    "title": "系统状态",
+    "online": "运行中",
+    "offline": "离线",
+    "autoRefresh": "30s 自动刷新",
+    "loading": "加载中…",
+    "backendError": "无法连接后端服务",
+    "tasksMissing": "{{n}} 缺失",
+    "unitStock": "只",
+    "tab": {
+      "status": "运行状态",
+      "quality": "数据质量",
+      "continuity": "连续性",
+      "tasks": "任务状态",
+      "audit": "审计事件"
+    },
+    "itemVersion": "版本",
+    "itemQuotes": "行情数据",
+    "itemStrategies": "策略",
+    "itemStrategyVersions": "策略版本",
+    "itemApprovals": "授权记录（累计）",
+    "itemPositions": "持仓",
+    "itemReplays": "复盘记录",
+    "qualityCardTitle": "数据质量",
+    "qualityScore": "质量得分（0-100）",
+    "checkedInfo": "检查 {{checked}} / {{total}} 只 · 异常 {{issues}}",
+    "tradeDateLabel": "交易日",
+    "checkedPrefix": "已检查",
+    "dayKUnit": "只日K",
+    "totalPrefix": "标的总数",
+    "totalUnit": "只",
+    "scoreFormula": "得分口径：(已检查 − 问题数) / 已检查 × 100；单只标的可能命中多类问题。",
+    "issue": {
+      "missing_close": {
+        "label": "无收盘价",
+        "desc": "close 为空或 ≤0（疑似停牌/坏数据）"
+      },
+      "zero_volume": {
+        "label": "零成交量",
+        "desc": "volume 为空或 =0（疑似停牌）"
+      },
+      "abnormal_change": {
+        "label": "涨跌幅异常",
+        "desc": "|close/pre_close-1| 超阈值（疑似坏数据，CRYPTO 放宽）"
+      },
+      "stale": {
+        "label": "数据陈旧",
+        "desc": "该交易日无日K的 instrument 数"
+      }
+    },
+    "gapSymbols": "有缺口标的数",
+    "gapTotalDays": "缺口总天数",
+    "windowPrefix": "窗口",
+    "baseline": "基准：交易日历 is_open（{{market}}）",
+    "backfillPrefix": "回填：CLI",
+    "backfillSuffix": "或盘后自动巡检",
+    "contColSymbol": "标的",
+    "contColMissingDays": "缺口天数",
+    "contColFirst": "首个缺口",
+    "contColLast": "最后缺口",
+    "contEmpty": "无缺口 🎉",
+    "contFooter": "缺口=交易日历开市但无日K的日期（已排除上市前/退市后）；长缺口多为停牌，回填后源仍无数据即确认停牌。",
+    "taskColDate": "交易日",
+    "taskColName": "任务名",
+    "taskColPhase": "阶段",
+    "taskColDetail": "说明",
+    "taskColStatus": "状态",
+    "statusCompleted": "已完成",
+    "statusCompletedInferred": "已完成（推断）",
+    "statusMissing": "缺失",
+    "statusPending": "待处理",
+    "tracePlaceholder": "输入 trace_id 查询全链事件（候选 → 计划 → 风控 → 订单 → 成交）",
+    "querying": "查询中…",
+    "query": "查询",
+    "traceTitle": "Trace {{id}} · {{n}} 条事件",
+    "noTraceEvents": "无匹配事件",
+    "auditColTime": "时间",
+    "auditColActor": "角色",
+    "auditColAction": "动作",
+    "auditColTarget": "标的",
+    "auditColDetail": "详情",
+    "actorSystem": "系统",
+    "actorHuman": "人工"
+  },
+  "replay": {
+    "title": "复盘",
+    "refresh": "刷新",
+    "allStrategies": "全部策略",
+    "tabCases": "当日案例",
+    "tabDecisions": "决策复盘",
+    "tabErrors": "错误统计",
+    "noAttribution": "暂无归因数据",
+    "colSymbol": "标的",
+    "colStrategy": "策略",
+    "colPnl": "盈亏",
+    "colPnlPct": "盈亏%",
+    "colExitReason": "出场原因",
+    "colStatus": "状态",
+    "noStrategy": "(无策略)",
+    "statTrades": "复盘笔数",
+    "unitTrades": "笔",
+    "statTotalPnl": "累计盈亏",
+    "statWinRate": "胜率",
+    "statWins": "盈利",
+    "statLosses": "亏损",
+    "emptyCases": "暂无复盘记录",
+    "reviewTypeAll": "全部",
+    "reviewTypeSelection": "选股质量",
+    "reviewTypeEntry": "建仓时机",
+    "reviewTypeMissed": "错过复盘",
+    "latestReviewDay": "最新复盘日 {{date}}（最佳/最差按当日得分标注）",
+    "summaryCardTitle": "{{type}} · {{count}} 条",
+    "avgSuffix": "均分",
+    "emptyReviewSummary": "暂无决策复盘数据",
+    "revColDate": "日期",
+    "revColType": "类型",
+    "revColSymbol": "标的",
+    "revColStrategy": "策略",
+    "revColScore": "得分",
+    "revColGrade": "结论",
+    "revColVerdict": "评语",
+    "revColFlag": "标注",
+    "flagBest": "最佳",
+    "flagWorst": "最差",
+    "emptyReviews": "暂无决策复盘记录",
+    "noDimData": "暂无归因维度数据",
+    "unitTimes": "次",
+    "dimShareTitle": "归因维度占比（共 {{total}} 次归因）",
+    "dim": {
+      "SELECTION": "选股",
+      "ENTRY": "入场",
+      "EXIT": "出场",
+      "MARKET": "市场",
+      "RISK": "风控",
+      "BEHAVIOR": "行为"
+    },
+    "exit": {
+      "TAKE_PROFIT": "止盈",
+      "STOP_LOSS": "止损",
+      "MANUAL": "手动"
+    },
+    "decisionType": {
+      "CANDIDATE": "选股质量",
+      "ENTRY": "建仓时机",
+      "EXIT": "出场时机",
+      "MISSED": "错过复盘"
+    },
+    "grade": {
+      "GOOD": "优",
+      "FAIR": "中",
+      "POOR": "差"
+    }
+  },
+  "candidatesGroup": {
+    "title": "候选池"
+  },
+  "overviewGroup": {
+    "title": "总览",
+    "meta": "工作台 · 实时行情 · K线 · 市场概览",
+    "tabDashboard": "工作台",
+    "tabQuotes": "实时行情",
+    "tabKline": "K线",
+    "tabOverview": "市场概览"
+  },
+  "replayGroup": {
+    "title": "复盘研究",
+    "meta": "复盘 · 盈亏日历 · 知识库 · 学习报告 · 日报",
+    "tabReplay": "复盘",
+    "tabCalendar": "盈亏日历",
+    "tabKnowledge": "知识库",
+    "tabLearning": "学习报告",
+    "tabReport": "日报"
+  },
+  "riskGroup": {
+    "title": "风控与执行",
+    "meta": "风控中心 · 自动化",
+    "tabRisk": "风控中心",
+    "tabAutomation": "自动化"
+  },
+  "signalsGroup": {
+    "title": "计划与信号",
+    "meta": "交易计划 · 授权中心 · 闭环流水线",
+    "tabPlans": "交易计划",
+    "tabApprovals": "授权中心",
+    "tabPipeline": "闭环流水线"
+  },
+  "strategiesGroup": {
+    "title": "策略管理",
+    "detail": "详情 {{id}}",
+    "meta": "策略广场 · 策略版本 · 策略绩效 · AI研究 · 回测 · 模型与实验 · 基本面 · 市场状态",
+    "tabCatalog": "策略广场",
+    "tabMine": "我的策略",
+    "tabRunning": "运行实例",
+    "tabAccounts": "我的账户",
+    "tabStrategies": "策略版本",
+    "tabPerf": "策略绩效",
+    "tabAi": "AI 研究",
+    "tabBacktest": "回测",
+    "tabModels": "模型与实验",
+    "tabFund": "基本面",
+    "tabRegime": "市场状态"
+  },
+  "systemGroup": {
+    "title": "系统与设置",
+    "meta": "系统状态 · 监控 · 告警中心 · 自动化 · 治理看板 · 多策略治理 · 交易日历 · 设置 · 导出 · 用户管理",
+    "tabSystem": "系统状态",
+    "tabMonitor": "监控",
+    "tabAlerts": "告警中心",
+    "tabAutomation": "自动化",
+    "tabGovernance": "治理看板",
+    "tabMulti": "多策略治理",
+    "tabCalendar": "交易日历",
+    "tabSettings": "设置",
+    "tabExports": "导出",
+    "tabUsers": "用户管理",
+    "noPermTitle": "无权限",
+    "noPermSub": "仅管理员可访问用户管理",
+    "viewerNoPermSub": "系统运维页面仅限运营角色访问",
+    "tabPaymentGrants": "支付发放"
+  },
+  "tradingGroup": {
+    "title": "交易",
+    "meta": "持仓 · 账户 · 组合总览 · 工作流",
+    "tabPositions": "持仓",
+    "tabAccounts": "账户",
+    "tabPortfolio": "组合总览",
+    "tabWorkflow": "工作流"
+  }
+}

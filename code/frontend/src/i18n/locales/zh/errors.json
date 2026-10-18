@@ -1,0 +1,118 @@
+{
+  "billing": {
+    "membership_required": "该操作需要付费会员，请先开通会员",
+    "invalid_product_type": "非法的商品类型",
+    "invalid_months": "购买月数需在 1 到 120 之间",
+    "strategy_required": "订阅需指定策略",
+    "strategy_not_found": "策略不存在",
+    "not_builtin_strategy": "只能订阅平台内置策略",
+    "invalid_amount": "订单金额非法",
+    "gateway_error": "支付网关暂不可用，请稍后重试",
+    "order_not_found": "订单不存在",
+    "bad_signature": "支付回调签名校验失败",
+    "bad_payload": "支付回调参数不完整",
+    "not_paid": "订单尚未支付",
+    "bad_amount": "支付金额解析失败",
+    "amount_short": "实付金额不足，未发放权益",
+    "grant_review_required": "该订单归属存疑，需人工复核后处理，不能直接重试",
+    "grant_in_progress": "发放正在进行中，请稍后再试",
+    "not_reviewable": "该订单无需人工复核"
+  },
+  "entitlements": {
+    "user_not_found": "目标用户不存在",
+    "user_inactive": "用户已停用，无法设置权益",
+    "strategy_not_grantable": "该策略不可授权（须为已发布的平台公共策略且市场已启用）",
+    "version_conflict": "权益已被其他操作修改，请刷新后重试",
+    "idempotency_conflict": "相同幂等键对应了不同的请求内容",
+    "subscription_not_granted": "该订阅不存在，无法撤销",
+    "membership_not_granted": "该用户没有可撤销的会员",
+    "invalid_reason": "操作原因不能为空且不超过 500 字",
+    "invalid_idempotency_key": "幂等键非法（长度须 8~128 且为可打印 ASCII）",
+    "invalid_expiry": "到期时间非法（须带时区且晚于当前；永久不得带到期时间）",
+    "invalid_batch": "批量策略数量非法（须为 1~100 个）",
+    "versions_mismatch": "versions 与 strategy_ids 不一致",
+    "reservation_balance_inconsistent": "撤权释放预留时资金账实不符，操作已回滚"
+  },
+  "auth": {
+    "invalid_credentials": "用户名或密码错误",
+    "only_self_password": "只能修改自己的密码",
+    "username_empty": "用户名不能为空",
+    "invalid_email": "邮箱格式不正确",
+    "password_too_short": "密码长度必须为 6 到 128 位",
+    "username_taken": "用户名已被注册",
+    "email_taken": "邮箱已被注册",
+    "invalid_chat_id": "chat_id 必须为数字",
+    "telegram_not_bound": "尚未绑定 Telegram",
+    "old_password_required": "请输入当前密码",
+    "wrong_old_password": "当前密码错误",
+    "user_not_found": "用户不存在",
+    "last_admin_protected": "不能降级或停用最后一个管理员",
+    "token_stale_after_password_change": "密码已修改，请重新登录",
+    "session_revoked": "登录状态已失效，请重新登录",
+    "auth_version_conflict": "该用户状态已被他人修改，请刷新后重试"
+  },
+  "candidate": {
+    "pools_query_failed": "候选池查询失败",
+    "pool_not_found": "候选池不存在",
+    "details_query_failed": "候选明细查询失败"
+  },
+  "model": {
+    "invalid_task_type": "task_type 取值非法",
+    "already_registered": "模型已注册",
+    "not_found": "模型不存在",
+    "version_exists": "版本已存在",
+    "version_not_found": "版本不存在",
+    "version_already_active": "版本已是 ACTIVE",
+    "no_active_version": "该任务类型无 ACTIVE 版本",
+    "experiment_not_found": "实验不存在",
+    "experiment_already_closed": "实验已结题"
+  },
+  "report": {
+    "invalid_report_type": "report_type 必须为 morning 或 evening",
+    "invalid_month": "month 必须在 1 到 12 之间",
+    "not_found": "报告不存在"
+  },
+  "market": {
+    "invalid": "市场代码非法（须为 CN/US/HK/CRYPTO）"
+  },
+  "strategy": {
+    "spec_invalid": "策略 spec 校验失败",
+    "market_mismatch": "market 与 spec.market 不一致",
+    "not_found": "策略不存在",
+    "name_taken": "同名策略已存在，请换个名称",
+    "bound_by_instances": "该策略仍被运行实例绑定，请先删除对应实例",
+    "has_payment_orders": "该策略存在支付订单记录（含已发放），不能删除"
+  },
+  "instance": {
+    "not_disabled": "实例仍在启用中，请先停用再删除",
+    "has_open_positions": "实例名下有未平仓持仓，平仓后方可删除"
+  },
+  "account": {
+    "invalid_account_type": "account_type 取值非法",
+    "invalid_capital": "初始资金必须大于 0"
+  },
+  "telegram": {
+    "binding_disabled": "管理员未开启 Telegram 绑定，请联系管理员开启",
+    "manual_binding_disabled": "请使用 Telegram 绑定链接完成绑定",
+    "chat_conflict": "该 Telegram 已被其他账号绑定"
+  },
+  "notification": {
+    "binding_required": "尚未绑定通知渠道，请先完成绑定",
+    "channel_invalid": "通知渠道非法",
+    "binding_recipient_conflict": "该通知账号已被其他用户绑定"
+  },
+  "wxpusher": {
+    "binding_disabled": "管理员未开启微信推送绑定，请联系管理员开启",
+    "qrcode_failed": "微信二维码生成失败，请稍后重试"
+  },
+  "settings": {
+    "risk_params_gt_zero": "风控参数必须大于 0（0 无法关闭规则，如需停用请在风控中心调整）"
+  },
+  "mirror": {
+    "subscription_required": "请先订阅该策略再开模拟盘",
+    "not_observable_strategy": "该策略不支持开模拟盘",
+    "invalid_capital": "初始本金必须大于 0",
+    "account_exists": "该策略已开过模拟盘",
+    "account_not_found": "模拟盘账户不存在"
+  }
+}

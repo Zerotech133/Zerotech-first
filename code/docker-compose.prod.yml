@@ -1,0 +1,177 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-zhice}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 必须设置}
+      POSTGRES_DB: ${DB_NAME:-zhice_os_v2}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-zhice}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  migrate:
+    image: zhice-api:prod
+    command: alembic upgrade head
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://${DB_USER:-zhice}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-zhice_os_v2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: zhice-api:prod
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://${DB_USER:-zhice}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-zhice_os_v2}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY 必须设置}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD 必须设置}
+      APP_ENV: ${APP_ENV:-prod}
+      MULTI_USER_EXECUTION_MODE: ${MULTI_USER_EXECUTION_MODE:-legacy}
+      TZ: Asia/Shanghai
+      TUSHARE_TOKEN: ${TUSHARE_TOKEN:-}
+      FINNHUB_TOKEN: ${FINNHUB_TOKEN:-}
+      DATACENTER_BASE_URL: ${DATACENTER_BASE_URL:-http://datacenter.xundaotech.cn:24123}
+      DATACENTER_API_KEY: ${DATACENTER_API_KEY:-}
+      DATACENTER_TIMEOUT_MS: ${DATACENTER_TIMEOUT_MS:-10000}
+      DATACENTER_RETRY_MAX: ${DATACENTER_RETRY_MAX:-3}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_PROXY: ${TELEGRAM_PROXY:-}
+      TELEGRAM_NOTIFICATION_MODE: ${TELEGRAM_NOTIFICATION_MODE:-broadcast}
+      TELEGRAM_BINDING_ENABLED: ${TELEGRAM_BINDING_ENABLED:-false}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+      TELEGRAM_WEBHOOK_PUBLIC_URL: ${TELEGRAM_WEBHOOK_PUBLIC_URL:-}
+      # WxPusher 应用通知渠道（path key ≥32 随机字符，真实值只进 .env.prod，勿提交）
+      WXPUSHER_APP_TOKEN: ${WXPUSHER_APP_TOKEN:-}
+      WXPUSHER_APP_ID: ${WXPUSHER_APP_ID:-0}
+      WXPUSHER_APP_KEY: ${WXPUSHER_APP_KEY:-}
+      WXPUSHER_WEBHOOK_PATH_KEY: ${WXPUSHER_WEBHOOK_PATH_KEY:-}
+      WXPUSHER_BINDING_ENABLED: ${WXPUSHER_BINDING_ENABLED:-false}
+      WXPUSHER_DELIVERY_ENABLED: ${WXPUSHER_DELIVERY_ENABLED:-false}
+      WXPUSHER_CHALLENGE_TTL_SECONDS: ${WXPUSHER_CHALLENGE_TTL_SECONDS:-600}
+      WXPUSHER_TIMEOUT_SECONDS: ${WXPUSHER_TIMEOUT_SECONDS:-8}
+      # 运维告警：企业微信群机器人 webhook（Task 12 起只承载运维白名单告警）
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      BEPUSDT_BASE_URL: ${BEPUSDT_BASE_URL:-}
+      BEPUSDT_API_TOKEN: ${BEPUSDT_API_TOKEN:-}
+      BEPUSDT_NOTIFY_BASE_URL: ${BEPUSDT_NOTIFY_BASE_URL:-}
+      BEPUSDT_REDIRECT_URL: ${BEPUSDT_REDIRECT_URL:-}
+      BEPUSDT_TRADE_TYPE: ${BEPUSDT_TRADE_TYPE:-usdt.trc20}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  scheduler:
+    image: zhice-api:prod
+    command: python -m zhice_os_v2.scheduler
+    environment:
+      PERSISTENCE_BACKEND: sql
+      DB_MAIN_URL: postgresql://${DB_USER:-zhice}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-zhice_os_v2}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY 必须设置}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD 必须设置}
+      APP_ENV: ${APP_ENV:-prod}
+      MULTI_USER_EXECUTION_MODE: ${MULTI_USER_EXECUTION_MODE:-legacy}
+      SCHEDULER_MARKETS: ${SCHEDULER_MARKETS:-}
+      V1_DB_HOST: ${V1_DB_HOST:-localhost}
+      V1_DB_USER: ${V1_DB_USER:-zhice}
+      V1_DB_PASSWORD: ${V1_DB_PASSWORD:-}
+      V2_DB_HOST: postgres
+      V2_DB_NAME: ${DB_NAME:-zhice_os_v2}
+      V2_DB_USER: ${DB_USER:-zhice}
+      V2_DB_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Shanghai
+      TUSHARE_TOKEN: ${TUSHARE_TOKEN:-}
+      FINNHUB_TOKEN: ${FINNHUB_TOKEN:-}
+      DATACENTER_BASE_URL: ${DATACENTER_BASE_URL:-http://datacenter.xundaotech.cn:24123}
+      DATACENTER_API_KEY: ${DATACENTER_API_KEY:-}
+      DATACENTER_TIMEOUT_MS: ${DATACENTER_TIMEOUT_MS:-10000}
+      DATACENTER_RETRY_MAX: ${DATACENTER_RETRY_MAX:-3}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_PROXY: ${TELEGRAM_PROXY:-}
+      TELEGRAM_NOTIFICATION_MODE: ${TELEGRAM_NOTIFICATION_MODE:-broadcast}
+      TELEGRAM_BINDING_ENABLED: ${TELEGRAM_BINDING_ENABLED:-false}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:-}
+      TELEGRAM_WEBHOOK_PUBLIC_URL: ${TELEGRAM_WEBHOOK_PUBLIC_URL:-}
+      # WxPusher 应用通知渠道（与 api 服务同一组透传；path key ≥32 随机字符，勿提交真实值）
+      WXPUSHER_APP_TOKEN: ${WXPUSHER_APP_TOKEN:-}
+      WXPUSHER_APP_ID: ${WXPUSHER_APP_ID:-0}
+      WXPUSHER_APP_KEY: ${WXPUSHER_APP_KEY:-}
+      WXPUSHER_WEBHOOK_PATH_KEY: ${WXPUSHER_WEBHOOK_PATH_KEY:-}
+      WXPUSHER_BINDING_ENABLED: ${WXPUSHER_BINDING_ENABLED:-false}
+      WXPUSHER_DELIVERY_ENABLED: ${WXPUSHER_DELIVERY_ENABLED:-false}
+      WXPUSHER_CHALLENGE_TTL_SECONDS: ${WXPUSHER_CHALLENGE_TTL_SECONDS:-600}
+      WXPUSHER_TIMEOUT_SECONDS: ${WXPUSHER_TIMEOUT_SECONDS:-8}
+      # 运维告警：企业微信群机器人 webhook（Task 12 起只承载运维白名单告警）
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      BEPUSDT_BASE_URL: ${BEPUSDT_BASE_URL:-}
+      BEPUSDT_API_TOKEN: ${BEPUSDT_API_TOKEN:-}
+      BEPUSDT_NOTIFY_BASE_URL: ${BEPUSDT_NOTIFY_BASE_URL:-}
+      BEPUSDT_REDIRECT_URL: ${BEPUSDT_REDIRECT_URL:-}
+      BEPUSDT_TRADE_TYPE: ${BEPUSDT_TRADE_TYPE:-usdt.trc20}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  nginx:
+    image: zhice-nginx:prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # BEpusdt USDT-TRC20 收款网关（github.com/v03413/BEpusdt）。app 内网直连
+  # http://bepusdt:8080；admin 面板经 8197 暴露供配置收款钱包/汇率。
+  bepusdt:
+    image: v03413/bepusdt:latest
+    command: start
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./bepusdt-data:/var/lib/bepusdt
+    # admin 面板仅绑本机回环——公网不可达，运维经 SSH 隧道访问
+    # （ssh -L 8197:localhost:8197 root@host 后浏览 http://localhost:8197）。
+    # app 走容器网络 http://bepusdt:8080，不依赖此映射。
+    ports:
+      - "127.0.0.1:8197:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

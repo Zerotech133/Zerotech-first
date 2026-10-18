@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Frontend
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Env
+.env
+.env.local
+.env.*.local
+.env.prod
+
+# 生产证书（mkcert 生成，不入库）
+nginx/certs/*.pem
+
+# Runtime
+var/
+logs/
+data/
+*.log
+
+# Debug artifacts
+.playwright-mcp/
+.superpowers/
+*.tsbuildinfo
+
+# 临时/评审产物（截图、评审 docx、临时目录）
+.temp/
+
+# Git worktrees
+.worktrees/
+/*.png
+/*.docx
+coverage.xml
+
+# pytest-cov 快照(误提交清理)
+.coverage-report*.json
+
+# CodeGraph 本地索引（每机自建，不入库）
+.codegraph/
