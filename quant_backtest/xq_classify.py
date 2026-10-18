@@ -57,9 +57,23 @@ SYSTEM_PROMPT = (
 )
 
 # 标的提取（纯规则）：A股 6 位数字（含前缀提示词）、港股 5 位、ETF/基金名常见词
-RE_A = re.compile(r"(?:SZ|SH|sh|sz)?[Â€]*(?:\b)([0-9]{6})(?![0-9])")
-RE_HK = re.compile(r"(?:\b)([0-9]{5})(?![0-9])\.?HK|(?:港股)?([0-9]{5})(?![0-9])")
-RE_FUND = re.compile(r"([0-9]{6})(?:\.OF| 基金)|((?:沪深300|中证500|中证1000|创业板|科创50|纳斯达克|标普500|恒生科技|红利|白酒|医药|半导体|新能源|军工|黄金|债券|货币)[^，。；,\s]{0,8}(?:ETF|基金|指数)?)")
+# v1.1（2026-10-18）：RE_FUND 词干分支后缀改必选、删贪婪中间段——原版把
+# 「红利指数基金的四大投」「债券B<br/>1、」等文本碎片整段吞进 tickers（R3 校准取数预演发现）；
+# extract_tickers 增加噪音清洗兜底（<br/> 残片/中文虚词/年月形数字）。
+RE_A = re.compile(r"(?:SZ|SH|sh|sz)?(?:\b)([0-9]{6})(?![0-9])")
+RE_HK = re.compile(r"(?:\b)([0-9]{5})(?![0-9])\.?HK|(?:港股|HK:)?(?<![0-9])([0-9]{5})(?![0-9])")
+RE_FUND = re.compile(r"([0-9]{6})(?:\.OF| 基金)|((?:沪深300|中证500|中证1000|创业板|科创50|纳斯达克|标普500|恒生科技|红利|白酒|医药|半导体|新能源|军工|黄金|债券|货币)(?:ETF|基金|指数|LOF|联接))")
+_RE_NOISE = re.compile(r"[<>]|br/|[的了这那哦吧呀]")
+_TICKER_VERSION = "v1.1"
+
+
+def _clean_ticker(code: str) -> bool:
+    """噪音清洗：合法 = 非空、<=10 字符、无 HTML 残片/中文虚词、6 位纯数字排除年月形（20 开头非 A 股代码段）。"""
+    if not code or len(code) > 10 or _RE_NOISE.search(code):
+        return False
+    if code.isdigit() and len(code) == 6 and code.startswith("20"):
+        return False
+    return True
 
 
 def log(msg: str) -> None:
@@ -96,11 +110,15 @@ def extract_tickers(title: str, desc: str) -> list:
     out = []
     for m in RE_A.findall(text):
         code = m if isinstance(m, str) else m[0]
-        if code not in out:
+        if code not in out and _clean_ticker(code):
+            out.append(code)
+    for m in RE_HK.findall(text):  # v1.1 补：原版定义了 RE_HK 但从未调用（港股提取失效缺陷）
+        code = m[0] if m[0] else m[1]
+        if code and code not in out and len(out) < 8 and _clean_ticker(code):
             out.append(code)
     for m in RE_FUND.findall(text):
         code = m[0] if m[0] else m[1]
-        if code and code not in out and len(out) < 8:
+        if code and code not in out and len(out) < 8 and _clean_ticker(code):
             out.append(code)
     return out[:8]
 
@@ -235,13 +253,48 @@ def show_status() -> int:
     return 0
 
 
+def reticker() -> int:
+    """v1.1 一次性重算：对已分类行按新正则重提取 tickers（不走 LLM，秒级）。
+
+    tickers 是纯规则派生列，修复正则后历史行原地重算即可对齐新逻辑；
+    只更新 xq_status_classified.tickers（派生表自身），原表零改动哲学不受影响。
+    """
+    con = sqlite3.connect(str(DB_PATH), timeout=30)
+    con.execute("PRAGMA busy_timeout=30000")
+    ensure_table(con)
+    rows = con.execute(
+        "SELECT status_id, (SELECT s.title FROM xq_status s WHERE s.status_id=c.status_id),"
+        " (SELECT s.desc FROM xq_status s WHERE s.status_id=c.status_id), tickers"
+        " FROM xq_status_classified c").fetchall()
+    changed = kept = 0
+    for status_id, title, desc, old in rows:
+        new = json.dumps(extract_tickers(title, desc), ensure_ascii=False)
+        if new != (old or "[]"):
+            con.execute("UPDATE xq_status_classified SET tickers=? WHERE status_id=?",
+                        (new, status_id))
+            changed += 1
+        else:
+            kept += 1
+    con.commit()
+    n_t = con.execute(
+        "SELECT COUNT(*) FROM xq_status_classified WHERE tickers != '[]'").fetchone()[0]
+    log("reticker done total=%d changed=%d kept=%d now_with_ticker=%d version=%s"
+        % (len(rows), changed, kept, n_t, _TICKER_VERSION))
+    con.close()
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="雪球舆情分类管道 v1")
     ap.add_argument("--limit", type=int, default=500)
     ap.add_argument("--status", action="store_true")
+    ap.add_argument("--reticker", action="store_true",
+                    help="v1.1 按新正则重算已分类行的 tickers（不过 LLM）")
     a = ap.parse_args()
     if a.status:
         return show_status()
+    if a.reticker:
+        return reticker()
     return run(a.limit)
 
 
