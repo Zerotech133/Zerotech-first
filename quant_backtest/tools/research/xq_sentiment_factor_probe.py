@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
-"""雪球舆情因子有效性预演探针 v0.1（只读·链路验证）。
+"""雪球舆情因子有效性预演探针 v0.2（只读·content_type 分层增强版）。
 
 背景（2026-10-18 R3 事件风险校准预演）：
-- 时间轴对齐核查发现：雪球存量 14212 条为历史深挖数据（2017-02~2023-11），
+- 时间轴对齐核查发现：雪球存量为历史深挖数据（2017-02~2023-11），
   RiskGuard R3 拦截账（ledger.jsonl）集中在 2026-09~10 → 「R3 拦截×舆情」
   历史关联两侧零重叠不可行；改道做姊妹研究——舆情因子历史有效性，
   为未来 R3 引入舆情信号提供权重校准依据。
-- 价格口径：ts_daily 为月末截面采样（47 片，2023-07 起）不支撑 fwd5/fwd20；
-  ts_monthly 全历史月线（40.7 万行/6019 只，2020-01~2026-09）可用 →
+- 价格口径：ts_monthly 全历史月线（40.7 万行/6019 只，2020-01~2026-09）可用 →
   因子语义定为 **fwd_next_m = 帖子次月收益（下月末 close / 当月末 close - 1）**，
   无前视（发帖时间真实，收益从下月起算）。
 
-样本现状：分类回填 385/14212，其中 v1.1 修复后带纯 6 位 A 股代码的帖子
-  有限——本版仅验证链路，n 小无统计意义；追平后重跑即全量研究。
+v0.2 变更（分类管道 v1.3 上线后）：
+- 样本口径：parse_ok=1 AND content_type NOT IN ('ad','edu')（干净信号，
+  ad 行已由 v1.3 规则短路归位，edu 为教学贴非标的观点）；
+  content_type 为 NULL 的 v1.1 存量行保留，单独记为 untyped 层。
+- content_type 分层因子：tech / fundamental / news（及 community / untyped）
+  各层独立统计 bullish 帖 vs bearish 帖的次月收益差（bull - bear）。
+- 分月稳定性：按帖子月份分桶看 bull-bear 收益差的符号一致性。
+- 漏斗计数完整保留（ad/edu 排除、no_ticker、bad_date、no_map、
+  no_code/no_bar/no_next 等跳过原因）。
 
 口径细节：
 - ticker→ts_code：纯 6 位数字，6 开头→.SH，0/3 开头→.SZ，其余跳过（v1.2 白名单待做）
@@ -33,6 +39,11 @@ from collections import defaultdict
 
 DB = "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xueqiu_info.db"
 MONTHLY_GLOB = "C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_monthly/part_*.parquet"
+
+# 干净信号口径：排除广告与教学贴；NULL（v1.1 存量）保留为 untyped 层
+EXCLUDE_TYPES = ("ad", "edu")
+LAYERS = ("fundamental", "news", "community", "tech", "untyped")
+MIN_N = 10  # 层样本低于此数标注「样本不足」
 
 
 def load_monthly():
@@ -86,22 +97,46 @@ def to_ts_code(t: str):
     return None
 
 
+def mean(v):
+    return sum(v) / len(v) if v else float("nan")
+
+
+def median(v):
+    v2 = sorted(v)
+    return v2[len(v2) // 2] if v2 else float("nan")
+
+
+def layer_of(ctype):
+    """content_type → 分层名；NULL → untyped（v1.1 存量）。"""
+    if ctype is None or ctype == "":
+        return "untyped"
+    return str(ctype)
+
+
 def main():
     con = sqlite3.connect("file:%s?mode=ro" % DB.replace("\\", "/"), uri=True)
     rows = con.execute(
-        """SELECT c.tickers, c.sentiment, c.event_type, s.created_at
+        """SELECT c.tickers, c.sentiment, c.content_type, s.created_at
            FROM xq_status_classified c JOIN xq_status s USING (status_id)
-           WHERE c.parse_ok=1 AND c.tickers IS NOT NULL AND c.tickers != '[]'"""
+           WHERE c.parse_ok=1"""
     ).fetchall()
     con.close()
 
     monthly, n_mrows = load_monthly()
-    print("带 ticker 帖 %d 条 × 月线 %d 行 %d 只" % (len(rows), n_mrows, len(monthly)))
+    print("parse_ok=1 帖 %d 条 × 月线 %d 行 %d 只" % (len(rows), n_mrows, len(monthly)))
 
-    skip = defaultdict(int)
-    samples = []  # (ts_code, ym, sentiment, event_type, fwd)
-    no_map_posts = 0  # 漏斗：无任何可映射个股代码的帖子数（基金词/指数词为主）
-    for tickers, senti, etype, created in rows:
+    # ---------- 漏斗 ----------
+    skip = defaultdict(int)   # 帖级跳过原因
+    tick_skip = defaultdict(int)  # ticker 级跳过原因（一帖多票可能多次计数）
+    samples = []  # (ts_code, ym, sentiment, layer, fwd)
+    for tickers, senti, ctype, created in rows:
+        layer = layer_of(ctype)
+        if layer in EXCLUDE_TYPES:
+            skip[layer] += 1
+            continue
+        if not tickers or tickers == "[]":
+            skip["no_ticker"] += 1
+            continue
         ym = ym_of(created)
         if not ym:
             skip["bad_date"] += 1
@@ -110,39 +145,105 @@ def main():
         for t in json.loads(tickers):
             code = to_ts_code(t)
             if not code:
+                tick_skip["bad_fmt"] += 1
                 continue
             fwd, why = fwd_next_m(monthly, code, ym)
             if why:
-                skip[why] += 1
+                tick_skip[why] += 1
                 continue
-            mapped = (code, ym, senti, etype, fwd)
+            mapped = (code, ym, senti, layer, fwd)
             break  # 每帖取首个可对齐标的
         if mapped:
             samples.append(mapped)
         else:
-            no_map_posts += 1
+            skip["no_map"] += 1  # 无任何可映射且可对齐的个股
 
-    print("可算样本 %d 条（无映射帖 %d），跳过 %s"
-          % (len(samples), no_map_posts, dict(skip) or "{}"))
+    print("可算样本 %d 条；帖级跳过 %s" % (len(samples), dict(skip) or "{}"))
+    print("（ticker 级跳过 %s）" % (dict(tick_skip) or "{}"))
     if not samples:
         print("（样本为零=链路两端均空，属预演预期——追平后重跑）")
         return
 
+    # ---------- 总体情绪 → 次月收益 ----------
     by_senti = defaultdict(list)
     for _, _, senti, _, fwd in samples:
         by_senti[senti].append(fwd)
-    print("\n== 舆情情绪 → 次月收益%（链路验证口径·n 小勿拍板）==")
+    print("\n== 总体：舆情情绪 → 次月收益%（n 小勿拍板）==")
     for s in ("bullish", "neutral", "bearish"):
         v = by_senti.get(s, [])
         if v:
-            v2 = sorted(v)
             win = sum(1 for x in v if x > 0) / len(v) * 100
             print("%-8s n=%-4d mean=%+.2f median=%+.2f win=%.0f%%"
-                  % (s, len(v), sum(v) / len(v), v2[len(v2) // 2], win))
-    missing_bear = ("bearish" in by_senti) is False
-    if missing_bear:
+                  % (s, len(v), mean(v), median(v), win))
+    if "bearish" not in by_senti:
         print("（bearish 组暂空——样本不足）")
 
+    # ---------- content_type 分层因子 ----------
+    by_layer = defaultdict(lambda: defaultdict(list))
+    for _, _, senti, layer, fwd in samples:
+        by_layer[layer][senti].append(fwd)
+    print("\n== content_type 分层：bullish 均值 − bearish 均值 = bull-bear 差 % ==")
+    print("%-12s %5s %6s %6s %9s %9s %9s %s"
+          % ("layer", "n", "n_bull", "n_bear", "bull%", "bear%", "diff", "备注"))
+    for layer in LAYERS:
+        d = by_layer.get(layer)
+        if not d:
+            continue
+        nb = d.get("bullish", [])
+        nr = d.get("bearish", [])
+        n = sum(len(v) for v in d.values())
+        if n < MIN_N or not nb or not nr:
+            print("%-12s %5d %6d %6d %9s %9s %9s %s"
+                  % (layer, n, len(nb), len(nr), "-", "-", "-",
+                     "样本不足（缺 bull/bear 一侧或 n<%d）" % MIN_N))
+            continue
+        diff = mean(nb) - mean(nr)
+        print("%-12s %5d %6d %6d %9.2f %9.2f %+9.2f %s"
+              % (layer, n, len(nb), len(nr), mean(nb), mean(nr), diff,
+                 "样本不足" if n < MIN_N else ""))
+
+    # ---------- 分月稳定性（bull-bear 差符号一致性） ----------
+    def monthly_diff(samples_sub):
+        """按帖子月份分桶 → {ym: (n_bull, n_bear, diff)}，仅保留两侧均有样本的月。"""
+        buckets = defaultdict(lambda: defaultdict(list))
+        for _, ym, senti, _, fwd in samples_sub:
+            buckets[ym][senti].append(fwd)
+        out = {}
+        for ym in sorted(buckets):
+            nb = buckets[ym].get("bullish", [])
+            nr = buckets[ym].get("bearish", [])
+            if nb and nr:
+                out[ym] = (len(nb), len(nr), mean(nb) - mean(nr))
+        return out
+
+    print("\n== 分月稳定性：bull-bear 收益差（总体，仅两侧均有样本的月份）==")
+    md = monthly_diff(samples)
+    pos = neg = 0
+    for ym, (nb, nr, diff) in md.items():
+        sign = "+" if diff > 0 else ("-" if diff < 0 else "0")
+        pos += diff > 0
+        neg += diff < 0
+        print("  %d: n_bull=%d n_bear=%d diff=%+.2f  [%s]" % (ym, nb, nr, diff, sign))
+    if md:
+        print("  符号一致性：正 %d 月 / 负 %d 月（共 %d 月）"
+              % (pos, neg, len(md)))
+    else:
+        print("  （无同时含 bull 与 bear 样本的月份）")
+
+    for layer in ("fundamental", "news"):  # 仅对任务关注且样本尚可的层做分月
+        d = by_layer.get(layer) or {}
+        if sum(len(v) for v in d.values()) < MIN_N:
+            continue
+        md_l = monthly_diff([(c, ym, s, l, f) for c, ym, s, l, f in samples if l == layer])
+        if not md_l:
+            print("  layer=%s：无两侧均有样本的月份（样本不足）" % layer)
+            continue
+        lp = sum(1 for _, _, x in md_l.values() if x > 0)
+        ln = sum(1 for _, _, x in md_l.values() if x < 0)
+        print("  layer=%s：正 %d 月 / 负 %d 月（共 %d 月）"
+              % (layer, lp, ln, len(md_l)))
+
+    # ---------- 按月分布 ----------
     by_ym = defaultdict(list)
     for _, ym, _, _, fwd in samples:
         by_ym[ym].append(fwd)

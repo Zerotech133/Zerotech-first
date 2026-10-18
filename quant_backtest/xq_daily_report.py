@@ -32,6 +32,11 @@ SIG_EVENT = ("个股研判", "交易策略", "行情观点")   # 高置信信号
 BEARISH_MIN = 3          # 异动信号：bearish 绝对数阈值
 BEARISH_SHARE = 0.6      # 异动信号：bearish 占比阈值（样本 >= BEARISH_MIN）
 CONF_FLOOR = 0.8         # 高置信信号阈值
+# 多空词频停用词表（单字 + 双字，v1.3 实拍），含任一单字停用词的 n-gram 一并过滤
+STOP_1CHAR = set("的了吗呢吧啊在是我有和不人就都也很这那为上下中一个大到要说去你会好")
+STOP_WORDS = STOP_1CHAR | {"它们", "更多", "还能", "可以", "没有", "这个",
+                           "那个", "自己", "不是", "什么", "如何", "怎么"}
+RE_HAN = re.compile(r"[\u4e00-\u9fff]+")   # 中文片段（词切分仅在此内做）
 
 
 def load_rows(con: sqlite3.Connection, day: str):
@@ -63,6 +68,19 @@ def split_tickers(raw: str):
     return codes, themes
 
 
+def title_words(title: str):
+    """中文标题 2-3 字词切分 + 停用词过滤（用于多空词频对比）"""
+    out = []
+    for seg in RE_HAN.findall(title or ""):
+        for n in (2, 3):
+            for i in range(len(seg) - n + 1):
+                g = seg[i:i + n]
+                if g in STOP_WORDS or any(ch in STOP_1CHAR for ch in g):
+                    continue
+                out.append(g)
+    return out
+
+
 def summarize(rows):
     """对窗口行做全维度汇总（未分类行 event_type=None 自动进 pending 桶）"""
     ev, senti, codes, themes = Counter(), Counter(), Counter(), Counter()
@@ -71,6 +89,7 @@ def summarize(rows):
     sig_rows = []          # (conf, code, senti, event, title)
     ticker_senti = defaultdict(Counter)   # code -> Counter(senti)
     lineages = Counter()
+    words = {"bearish": Counter(), "bullish": Counter()}   # 多空标题词频（排除 ad/edu）
     for sid, _cat, _ft, title, _desc, _tg, et, sn, tk, conf, pok, model, pv, ct in rows:
         if et is None:
             pending += 1
@@ -81,6 +100,9 @@ def summarize(rows):
         ev[et] += 1
         lineages["%s|%s" % (model, pv)] += 1
         ctype[ct or "(待补)"] += 1
+        if sn in words and ct not in ("ad", "edu"):
+            for w in title_words(title):
+                words[sn][w] += 1
         if sn:
             senti[sn] += 1
         c, th = split_tickers(tk or "")
@@ -95,7 +117,8 @@ def summarize(rows):
     sig_rows.sort(reverse=True)
     return dict(ev=ev, senti=senti, codes=codes, themes=themes, pending=pending,
                 parse_bad=parse_bad, sig=sig_rows[:12],
-                ticker_senti=ticker_senti, lineages=lineages, ctype=ctype)
+                ticker_senti=ticker_senti, lineages=lineages, ctype=ctype,
+                bear_words=words["bearish"], bull_words=words["bullish"])
 
 
 def anomaly_signals(summ, con, day):
@@ -168,6 +191,15 @@ def render(day, tac, ing, summ_t, anomalies) -> str:
             L.append("- %s：%d（%.0f%%）" % (CTN.get(k, k), v, 100.0 * v / ctot))
     else:
         L.append("（空）")
+    L.append("")
+    L.append("## 三-C、多空词频对比（排除广告/科普）")
+    L.append("")
+    for label, key in (("bearish", "bear_words"), ("bullish", "bull_words")):
+        top = summ_t[key].most_common(8)
+        if top:
+            L.append("- %s top8：%s" % (label, "、".join("%s×%d" % (w, c) for w, c in top)))
+        else:
+            L.append("- %s top8：（空）" % label)
     L.append("")
     L.append("## 四、热门标的（当日新帖 · 个股代码）")
     L.append("")
@@ -248,6 +280,7 @@ def main() -> int:
             "classified_today": len(tac) - summ["pending"],
             "event_type": dict(summ["ev"]),
             "sentiment": dict(summ["senti"]),
+            "content_type": dict(summ["ctype"]),  # v1.3 六类内容形态分布（门户条形消费）
             "top_codes": dict(summ["codes"].most_common(10)),
             "top_themes": dict(summ["themes"].most_common(6)),
             "anomaly_signals": [{"code": c, "n": n, "bearish": b, "baseline6d": x}
