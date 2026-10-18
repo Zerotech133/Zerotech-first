@@ -3,13 +3,15 @@
 
 tmp_path 构造假任务 XML / 假日志（不读真系统），覆盖：
   1. 全 PASS：三任务 XML 合规 + 三日志含成功标记 + daemon 可连 → 退出码 0；
-  2. 缺日志 UNKNOWN：chief_last_run.log 不存在 → 首跑前中性，不拉 FAIL；
+  2. 缺日志 WARN：chief_last_run.log 不存在 → 首跑前显式预期（带复查指引），
+     不拉 FAIL，证据含「→」处置指引；
   3. 日志无成功标记 FAIL：chief 无 SEND_OK / shadow 零 done / checkpoint 末行
      非 EXIT=0 → 退出码 2；
-  4. 任务 XML 缺失 UNKNOWN：读不到不武断 FAIL，证据行含实际探测路径；
-  5. 退出码矩阵 aggregate()：全 UNKNOWN→1 / 有 FAIL→2 / 有 PASS 无 FAIL→0；
+  4. 任务 XML 缺失 WARN：读不到不武断 FAIL，证据行含实际探测路径 + 处置指引；
+  5. 退出码矩阵 aggregate()：全 WARN→1 / 有 FAIL→2 / 有 PASS 无 FAIL→0；
   6. XML 解析：锚点缺失 FAIL / 触发时间漂移 FAIL / 无周一 FAIL / 禁用 FAIL /
-     坏 XML UNKNOWN；--print-config 可打印。
+     坏 XML WARN；--print-config 可打印；
+  7. WARN 收口判例：任何 WARN 证据必含「→」处置指引（不再产出含糊 UNKNOWN）。
 """
 import shutil
 import sys
@@ -125,7 +127,7 @@ class TestAllPass(TriggerChainBase):
 
 
 class TestLastRunLogs(TriggerChainBase):
-    def test_missing_chief_log_is_unknown_not_fail(self):
+    def test_missing_chief_log_is_warn_with_guidance_not_fail(self):
         logs = {
             "last_run.log": "shadow day 2026-10-16 done: {'done': 5}\n",
             "monday_checkpoint.log": "EXIT=0 日志=x\n",
@@ -135,10 +137,25 @@ class TestLastRunLogs(TriggerChainBase):
                              connect_fn=self.ok_connect, process_probe=lambda: None,
                              aw_stack_log=self.root / "no.log")
         b = rep["items"][1]
-        self.assertEqual(b["status"], "UNKNOWN")
+        self.assertEqual(b["status"], "WARN")
         self.assertIn("chief_last_run.log 不存在", b["evidence"])
-        self.assertIn("首跑前中性", b["evidence"])
-        self.assertEqual(rep["exit_code"], 0)  # 有 PASS 无 FAIL
+        self.assertIn("首跑 17:35 前缺失属预期", b["evidence"])
+        self.assertIn("→", b["evidence"])  # 处置指引
+        self.assertIn("17:35 首跑后复查", b["evidence"])
+        self.assertEqual(rep["exit_code"], 0)  # 有 PASS 无 FAIL，WARN 不阻塞放行
+
+    def test_missing_shadow_log_warn_carries_first_run_time(self):
+        logs = {
+            "last_run.log": None,
+            "monday_checkpoint.log": "EXIT=0 日志=x\n",
+            "chief_last_run.log": "SEND_OK\n",
+        }
+        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
+                             connect_fn=self.ok_connect, process_probe=lambda: None,
+                             aw_stack_log=self.root / "no.log")
+        b = rep["items"][1]
+        self.assertEqual(b["status"], "WARN")
+        self.assertIn("首跑 17:10 前缺失属预期", b["evidence"])
 
     def test_chief_log_without_send_ok_is_fail(self):
         logs = {
@@ -192,17 +209,19 @@ class TestLastRunLogs(TriggerChainBase):
 
 
 class TestTaskRegistration(TriggerChainBase):
-    def test_missing_task_xml_is_unknown_with_probed_name(self):
+    def test_missing_task_xml_is_warn_with_probed_name_and_guidance(self):
         bodies = dict(TASK_BODIES)
         del bodies["AgentChiefPush"]
         rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(bodies),
                              connect_fn=self.ok_connect, process_probe=lambda: None,
                              aw_stack_log=self.root / "no.log")
         a = rep["items"][0]
-        self.assertEqual(a["status"], "UNKNOWN")
+        self.assertEqual(a["status"], "WARN")
         self.assertIn("AgentChiefPush", a["evidence"])
         self.assertIn("Tasks", a["evidence"])  # 输出实际探测过的路径
-        self.assertEqual(rep["exit_code"], 0)  # UNKNOWN 不拉 FAIL
+        self.assertIn("→", a["evidence"])  # 处置指引
+        self.assertIn("异常矩阵 #4", a["evidence"])
+        self.assertEqual(rep["exit_code"], 0)  # WARN 不拉 FAIL
 
     def test_anchor_mismatch_is_fail(self):
         bodies = {"AgentShadowDaily": make_task_xml(arguments="-Mode eval"),  # 锚点错
@@ -245,14 +264,15 @@ class TestTaskRegistration(TriggerChainBase):
         self.assertEqual(rep["items"][0]["status"], "FAIL")
         self.assertIn("禁用", rep["items"][0]["evidence"])
 
-    def test_malformed_xml_is_unknown(self):
+    def test_malformed_xml_is_warn_with_guidance(self):
         tdir = self.make_tasks_dir()
         (tdir / "AgentShadowDaily").write_text("<not-xml", encoding="utf-16")
         rep = ctc.run_checks(self.make_repo(), tasks_dir=tdir,
                              connect_fn=self.ok_connect, process_probe=lambda: None,
                              aw_stack_log=self.root / "no.log")
-        self.assertEqual(rep["items"][0]["status"], "UNKNOWN")
+        self.assertEqual(rep["items"][0]["status"], "WARN")
         self.assertIn("XML 解析失败", rep["items"][0]["evidence"])
+        self.assertIn("→", rep["items"][0]["evidence"])
 
 
 class TestDaemon(TriggerChainBase):
@@ -265,14 +285,15 @@ class TestDaemon(TriggerChainBase):
         self.assertEqual(rep["items"][2]["status"], "FAIL")
         self.assertIn("无监听", rep["items"][2]["evidence"])
 
-    def test_ollama_other_error_is_unknown(self):
+    def test_ollama_other_error_is_warn_with_guidance(self):
         def boom(host, port):
             raise OSError("sandbox denied")
         rep = ctc.run_checks(self.make_repo(), tasks_dir=self.make_tasks_dir(),
                              connect_fn=boom, process_probe=lambda: None,
                              aw_stack_log=self.root / "no.log")
-        self.assertEqual(rep["items"][2]["status"], "UNKNOWN")
+        self.assertEqual(rep["items"][2]["status"], "WARN")
         self.assertIn("探测异常", rep["items"][2]["evidence"])
+        self.assertIn("curl", rep["items"][2]["evidence"])  # 手动复核指引
 
     def test_watchdog_stack_log_trace_visible(self):
         aw = self.root / "aw-stack.log"
@@ -300,16 +321,14 @@ class TestDataRoot(TriggerChainBase):
 
 class TestExitMatrix(TriggerChainBase):
     def test_aggregate_matrix(self):
-        self.assertEqual(ctc.aggregate(["UNKNOWN"] * 4), 1)
-        self.assertEqual(ctc.aggregate(["PASS", "UNKNOWN"]), 0)
-        self.assertEqual(ctc.aggregate(["PASS", "FAIL"]), 2)
+        self.assertEqual(ctc.aggregate(["WARN"] * 4), 1)
+        self.assertEqual(ctc.aggregate(["PASS", "WARN"]), 0)
+        self.assertEqual(ctc.aggregate(["WARN", "FAIL"]), 2)
         self.assertEqual(ctc.aggregate([]), 1)
 
-    def test_all_unknown_run_exit_one(self):
-        # 任务全缺 + 日志全缺 + Ollama 探测异常 + 数据根可读（真 PASS 不在矩阵内，
-        # 用不存在的 repo 让 d 也 FAIL 之外的场景不可达——此处验 d=PASS 时全 UNKNOWN
-        # 的 b/a/c 与 1 值聚合口径：aggregate 输入排除 d）
-        statuses = ["UNKNOWN", "UNKNOWN", "UNKNOWN"]
+    def test_all_warn_run_exit_one(self):
+        # 全 WARN（探测面不可达）与原全 UNKNOWN 同口径：无正向 PASS 证据 → 1
+        statuses = ["WARN", "WARN", "WARN"]
         self.assertEqual(ctc.aggregate(statuses), 1)
 
     def test_fail_run_exit_two(self):
@@ -342,7 +361,7 @@ class TestCli(TriggerChainBase):
         buf = io.StringIO()
         with redirect_stdout(buf):
             code = ctc.main(["--repo-root", str(rep_root)])
-        # 未注入任务目录 → 走真系统路径（沙箱读不到）→ a UNKNOWN；日志面全绿 → 0
+        # 未注入任务目录 → 走真系统路径（沙箱读不到）→ a WARN；日志面全绿 → 0
         self.assertEqual(code, 0)
         out = buf.getvalue()
         self.assertIn("周一外部触发链前置自检", out)
@@ -357,9 +376,39 @@ class TestRealSystemReadOnly(TriggerChainBase):
         rep = ctc.run_checks(real_root)
         self.assertEqual(len(rep["items"]), 4)
         for it in rep["items"]:
-            self.assertIn(it["status"], ("PASS", "FAIL", "UNKNOWN"))
+            self.assertIn(it["status"], ("PASS", "FAIL", "WARN"))
             self.assertTrue(it["evidence"])
         self.assertIn(rep["exit_code"], (0, 1, 2))
+
+
+class TestWarnClosure(TriggerChainBase):
+    """WARN 收口判例（2026-10-18）：输出不再出现含糊 UNKNOWN，WARN 必带指引。"""
+
+    def test_no_vague_unknown_in_statuses_and_report(self):
+        import io
+        from contextlib import redirect_stdout
+        # 混合场景：任务 XML 缺失 + chief 日志缺失 → a/b 双 WARN
+        bodies = dict(TASK_BODIES)
+        del bodies["AgentChiefPush"]
+        logs = {
+            "last_run.log": "shadow day 2026-10-16 done: {'done': 5}\n",
+            "monday_checkpoint.log": "EXIT=0 日志=x\n",
+            "chief_last_run.log": None,
+        }
+        rep = ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(bodies),
+                             connect_fn=self.ok_connect, process_probe=lambda: None,
+                             aw_stack_log=self.root / "no.log")
+        self.assertEqual(rep["warn"], 2)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            ctc._print_report(rep)
+        out = buf.getvalue()
+        self.assertNotIn("UNKNOWN", out)  # 报告面不再出现 UNKNOWN 字样
+        # 每条 WARN 证据必含「→」处置指引
+        for it in rep["items"]:
+            if it["status"] == "WARN":
+                self.assertIn("→", it["evidence"])
+        self.assertEqual(rep["exit_code"], 0)  # 有 PASS 无 FAIL → 可放行
 
 
 if __name__ == "__main__":

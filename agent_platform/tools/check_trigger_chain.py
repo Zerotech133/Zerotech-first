@@ -25,31 +25,42 @@ AgentMondayCheckpoint → 17:35 AgentChiefPush。tools/check_observation_point.p
     monday_checkpoint.log 末行含 EXIT=0（追加式日志，只看末行防旧 run 假绿）
     chief_last_run.log    须含 SEND_OK——只有「日报已生成」而无 SEND_OK =
                           推送失败（门3检查 7.2 判例）
-  日志缺失 = UNKNOWN 中性：AgentShadowDaily / AgentChiefPush LastTaskResult=
-  267011 从未跑过，首跑（周一 17:10/17:35）前缺失属预期形态。
+  日志缺失 = WARN 显式预期：AgentShadowDaily / AgentChiefPush LastTaskResult=
+  267011 从未跑过，首跑（周一 17:10/17:35）前缺失属**确定预期形态**（2026-10-18
+  实跑判例：这曾是整项 UNKNOWN 的唯一来源——检测器明知中性却仍标 UNKNOWN，
+  属检测器状态建模不足，已收口为显式 WARN + 复查指引，不再产出含糊 UNKNOWN）。
 - daemon 留痕取证：start_agent_platform.ps1（zhice-os-v2 仓 deploy/）产出的
   watch-daemon/ack-serve **无 pid 文件**，留痕 = Win32_Process CommandLine
   匹配 'agent_platform\\.cli (watch-daemon|ack-serve)'（start_agent_platform.ps1:27-30）
   + 拉起日志 code/logs/aw-stack.log。本链真正的硬依赖是 Ollama LLM 服务
   （run_shadow.py:341 OllamaLLM；门3检查项 7）：socket 探 11434 端口，
-  无监听 = FAIL，其他异常 = UNKNOWN。watch-daemon 留痕只作证据行不翻转状态
+  无监听 = FAIL，其他异常 = WARN（带手动复核指引）。watch-daemon 留痕只作证据行不翻转状态
   （AgentWatchdog 已知损坏待管理员修复，M6 判例 7.4，非本链阻塞项）。
 - 幂等根：run_shadow 真仓数据根 = <agent_platform>/data（run_shadow.py:64），
   存在且可读 = PASS；缺失 = FAIL（17:10 无处落账）。
 
-## 检查项（每项 PASS/FAIL/UNKNOWN + 一行证据）
+## 检查项（每项 PASS/FAIL/WARN + 一行证据；WARN 必带「→」处置指引）
 
   a) 任务注册面：三个任务 XML 直读解析触发时间/命令行锚点/周一触发/Enabled；
-     读不到文件 = UNKNOWN（不武断 FAIL——可能任务名不同，输出实际探测过的名字）
-  b) 上次运行结果：三个日志按各自成功标记判读（见上）
-  c) daemon 存活：Ollama 11434 socket 探测（决定性）+ watch-daemon 留痕（信息性）
-  d) 幂等根就绪：真仓 data/ 存在且可读（只读检查，不 mkdir）
+     读不到文件 = WARN（不武断 FAIL——可能任务名不同，输出实际探测过的名字
+     + 处置指引）
+  b) 上次运行结果：三个日志按各自成功标记判读（见上）；日志缺失在首跑前 =
+     WARN 显式预期（带复查时点指引）
+  c) daemon 存活：Ollama 11434 socket 探测（决定性）+ watch-daemon 留痕（信息性）；
+     探测异常（非拒绝连接）= WARN + 手动复核指引
+  d) 幂等根就绪：真仓 data/ 存在且可读（只读检查，不 mkdir）；不可读 = WARN
 
-## 退出码
+## 状态与退出码
+
+  PASS = 有正向证据；FAIL = 反向证据（先查清）；WARN = 显式中性/预期形态，
+  每条 WARN 证据必含「→」指向的处置动作，不再出现含糊 UNKNOWN
+  （2026-10-18 收口判例：原 UNKNOWN 全部定性——chief 首跑前日志缺失为
+  确定预期 → WARN；XML 读不到/解析失败、Ollama 探测异常、数据根不可读
+  为探测面受限 → WARN + 人工复核指引）。
 
   2 = 存在 FAIL（开跑前先查清）
-  0 = 无 FAIL 且有 PASS（可放行）
-  1 = 全 UNKNOWN（中性——探测面全不可达，非失败）
+  0 = 无 FAIL 且有 PASS（可放行；WARN 不阻塞放行）
+  1 = 无 FAIL 且无 PASS（全 WARN——探测面不可达，人工核对 --print-config）
 
 ## 红线
 
@@ -109,7 +120,7 @@ PROCESS_PROBE_CMD = (
 PROCESS_PROBE_TIMEOUT_S = 15.0
 DAEMON_PROCESS_PATTERNS = ("agent_platform.cli watch-daemon", "agent_platform.cli ack-serve")
 
-UNKNOWN, PASS, FAIL = "UNKNOWN", "PASS", "FAIL"
+WARN, PASS, FAIL = "WARN", "PASS", "FAIL"
 
 _DAY_CN = {"Monday": "一", "Tuesday": "二", "Wednesday": "三",
            "Thursday": "四", "Friday": "五", "Saturday": "六", "Sunday": "日"}
@@ -134,7 +145,7 @@ def _clip(text: str, n: int = 100) -> str:
 
 
 def aggregate(statuses) -> int:
-    """汇总退出码：FAIL>0→2；有 PASS 无 FAIL→0；全 UNKNOWN→1。"""
+    """汇总退出码：FAIL>0→2；有 PASS 无 FAIL→0；全 WARN（无正向证据）→1。"""
     if FAIL in statuses:
         return 2
     if PASS in statuses:
@@ -153,7 +164,7 @@ def _local_tag(tag: str) -> str:
 def parse_task_xml(text: str) -> dict:
     """解析任务 XML，提取触发时间/天/命令行/Enabled（命名空间无关）。
 
-    解析失败抛 ValueError（调用方转 UNKNOWN）。
+    解析失败抛 ValueError（调用方转 WARN）。
     """
     root = ET.fromstring(text)
     info = {"startboundary": None, "hhmm": None, "days": [],
@@ -180,14 +191,19 @@ def _check_one_task(tasks_dir: Path, spec: dict) -> Tuple[str, str]:
     path = tasks_dir / spec["name"]
     text = _read_text_safe(path, encoding="utf-16")
     if text is None:
-        # 不武断 FAIL：任务名可能不同，输出实际探测过的名字
-        return UNKNOWN, "%s：读不到任务 XML（已探测 %s）" % (spec["name"], path)
+        # 不武断 FAIL：任务名可能不同，输出实际探测过的名字 + 处置指引
+        return WARN, ("%s：读不到任务 XML（已探测 %s）→ 核对任务名"
+                      "（--print-config 列期望名）；确未注册→SOP 异常矩阵 #4，"
+                      "重注册须老田拍板" % (spec["name"], path))
     try:
         info = parse_task_xml(text)
     except Exception as exc:  # noqa: BLE001
-        return UNKNOWN, "%s：XML 解析失败（%s）：%s" % (spec["name"], str(exc)[:60], path)
+        return WARN, ("%s：XML 解析失败（%s）→ 人工核对 %s"
+                      "（任务计划程序 GUI 或 Get-ScheduledTask，异常矩阵 #4）"
+                      % (spec["name"], str(exc)[:60], path))
     if not info["hhmm"] or not info["command"]:
-        return UNKNOWN, "%s：XML 可读但缺触发时间或 Command（形态未知）" % spec["name"]
+        return WARN, ("%s：XML 可读但缺触发时间或 Command（形态未知）"
+                      "→ 人工核对任务实际形态（SOP 异常矩阵 #4）" % spec["name"])
     cmdline = info["command"] + " " + info["arguments"]
     missing = [a for a in spec["anchors"] if a not in cmdline]
     if missing:
@@ -213,7 +229,7 @@ def check_a_tasks(tasks_dir: Optional[Path] = None) -> Tuple[str, str]:
         return FAIL, detail
     if all(st == PASS for st in statuses):
         return PASS, detail
-    return UNKNOWN, detail
+    return WARN, detail
 
 
 # ---------------------------------------------------------------------------
@@ -264,8 +280,11 @@ def check_b_last_runs(repo_root: Path) -> Tuple[str, str]:
         path = log_dir / log_name
         text = _read_text_safe(path, encoding="utf-8")
         if text is None:
-            results.append((UNKNOWN, "%s：%s 不存在（267011 从未跑过，首跑前中性）"
-                            % (spec["name"], path)))
+            # 首跑（周 17:10/17:35 调度）前缺失是确定预期形态，显式 WARN + 复查指引
+            results.append((WARN, "%s：%s 不存在（LastTaskResult=267011 从未跑过，"
+                                  "首跑 %s 前缺失属预期）→ 周一 %s 首跑后复查该日志，"
+                                  "届时缺失/无标记→SOP 异常矩阵对应项"
+                                  % (spec["name"], path, spec["hhmm"], spec["hhmm"])))
             continue
         st, ev = _LOG_JUDGES[log_name](text)
         results.append((st, "%s[%s] %s" % (spec["name"], st, ev)))
@@ -275,7 +294,7 @@ def check_b_last_runs(repo_root: Path) -> Tuple[str, str]:
         return FAIL, detail
     if all(st == PASS for st in statuses):
         return PASS, detail
-    return UNKNOWN, detail
+    return WARN, detail
 
 
 # ---------------------------------------------------------------------------
@@ -331,8 +350,10 @@ def check_c_daemon(connect_fn=None, process_probe=None,
         status, ev = FAIL, ("Ollama %s:%d 无监听（拒绝连接）——17:10 run_shadow 必挂，"
                             "先拉起 Ollama 服务" % (OLLAMA_HOST, OLLAMA_PORT))
     except Exception as exc:  # noqa: BLE001
-        status, ev = UNKNOWN, "Ollama %s:%d 探测异常（%s）" % (
-            OLLAMA_HOST, OLLAMA_PORT, str(exc)[:80])
+        status, ev = WARN, ("Ollama %s:%d 探测异常（%s，非拒绝连接——拒绝=明确 FAIL）"
+                            "→ 手动复核 curl -s --max-time 3 "
+                            "http://127.0.0.1:11434/api/ps，17:10 前必须确认可连"
+                            "（SOP 异常矩阵 #3）" % (OLLAMA_HOST, OLLAMA_PORT, str(exc)[:80]))
     trace = _watchdog_trace(process_probe,
                             Path(aw_stack_log) if aw_stack_log else AW_STACK_LOG)
     return status, "%s；%s" % (ev, trace)
@@ -349,7 +370,9 @@ def check_d_data_root(repo_root: Path) -> Tuple[str, str]:
     try:
         entries = os.listdir(data)
     except Exception as exc:  # noqa: BLE001
-        return UNKNOWN, "数据根不可读（%s）：%s" % (data, str(exc)[:80])
+        return WARN, ("数据根不可读（%s：%s）→ 检查目录权限/被占用；不排除则 "
+                      "17:10 run 无处落账（run_shadow.py:64），报 lead 定夺"
+                      % (data, str(exc)[:80]))
     parts = ["数据根可读（%d 项）" % len(entries)]
     shadow = data / "shadow"
     if shadow.is_dir():
@@ -389,7 +412,7 @@ def run_checks(repo_root, tasks_dir=None, connect_fn=None,
     statuses = [it["status"] for it in items]
     return {"root": str(root), "items": items,
             "pass": sum(1 for s in statuses if s == PASS),
-            "unknown": sum(1 for s in statuses if s == UNKNOWN),
+            "warn": sum(1 for s in statuses if s == WARN),
             "fail": sum(1 for s in statuses if s == FAIL),
             "exit_code": aggregate(statuses)}
 
@@ -416,9 +439,9 @@ def _print_report(rep: dict) -> None:
     print("=" * 62)
     for it in rep["items"]:
         print("  [%s] %s —— %s" % (it["status"], it["name"], it["evidence"]))
-    print("汇总: PASS %d / UNKNOWN %d / FAIL %d" % (rep["pass"], rep["unknown"], rep["fail"]))
-    verdict = {0: "无 FAIL 且有 PASS——链路就绪，可放行（退出码 0）",
-               1: "全 UNKNOWN——中性：探测面不可达，人工核对 --print-config（退出码 1）",
+    print("汇总: PASS %d / WARN %d / FAIL %d" % (rep["pass"], rep["warn"], rep["fail"]))
+    verdict = {0: "无 FAIL 且有 PASS——链路就绪，可放行（WARN 项按其指引到点复查；退出码 0）",
+               1: "全 WARN 无正向 PASS——探测面不可达，人工核对 --print-config（退出码 1）",
                2: "存在 FAIL——17:10 前先查清（退出码 2）"}[rep["exit_code"]]
     print("结论: %s" % verdict)
 
