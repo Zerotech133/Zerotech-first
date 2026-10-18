@@ -91,9 +91,11 @@ def _valid_target(target):
         return False
     identifier = target.get("id")
     prefix = "ou_" if target["type"] == "open_id" else "oc_"
+    name = target.get("name")
     return (isinstance(identifier, str) and identifier.startswith(prefix) and
             bool(identifier[len(prefix):].strip()) and
-            isinstance(target.get("name"), str) and bool(target["name"].strip()))
+            isinstance(name, str) and bool(name.strip()) and
+            not name.startswith("_"))
 
 
 def _resolve_targets(sub, receivers):
@@ -177,12 +179,16 @@ def _push_card(card, targets):
     return results
 
 
-def _delivery_ok(results):
-    """全部目标各自卡片或同 ID 文本回执 True 才推进订阅去重状态。"""
-    names = [k for k in results if not k.startswith("_")]
-    return bool(names) and all(results[name] is True or
-                               results.get("_textfb_" + name) is True
-                               for name in names)
+def _delivery_ok(results, targets):
+    """以原始显式目标集核验全部回执，绝不从结果键名推断收件人。"""
+    if (not isinstance(results, dict) or not isinstance(targets, list) or
+            not targets or not all(_valid_target(t) for t in targets) or
+            len({t["name"] for t in targets}) != len(targets) or
+            len({(t["type"], t["id"]) for t in targets}) != len(targets)):
+        return False
+    return all(results.get(t["name"]) is True or
+               results.get("_textfb_" + t["name"]) is True
+               for t in targets)
 
 
 def _strip_md_card(card):
@@ -615,7 +621,7 @@ def run_scan(mode, only_sub=None, force=False):
                 pass
             continue
         tres = _push_card(card, targets)
-        ok = _delivery_ok(tres)
+        ok = _delivery_ok(tres, targets)
         out[sid] = ("ok" if ok else "fail", tres)
         # 统一发送流水（商业化计费依据；fail-safe，不影响主链路）
         try:

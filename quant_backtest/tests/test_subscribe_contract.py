@@ -180,6 +180,10 @@ def test_targets_fail_closed_and_fallback_keeps_identity(tmp_path, monkeypatch):
     assert subscribe._resolve_targets({"receivers": ["别名1", "别名2"]}, {
         "别名1": {"type": "chat_id", "id": "oc_same"},
         "别名2": {"type": "chat_id", "id": "oc_same"}}) == []
+    for reserved in ("_failure", "_textfb_ok", "_carderr_ok", "_err",
+                     "_texterr_ok"):
+        assert subscribe._resolve_targets({"receivers": [reserved]}, {
+            reserved: {"type": "chat_id", "id": "oc_unique"}}) == []
     targets = subscribe._resolve_targets({"receivers": ["群", "人"]}, {
         "群": {"type": "chat_id", "id": "oc_test"},
         "人": {"type": "open_id", "id": "ou_test"}})
@@ -203,11 +207,39 @@ def test_targets_fail_closed_and_fallback_keeps_identity(tmp_path, monkeypatch):
                     ("ou_test", "open_id", "interactive"),
                     ("ou_test", "open_id", "text")]
     assert result["_textfb_群"] is True
-    assert not subscribe._delivery_ok(result)  # 人失败，不得把整体标记已推并丢掉重试
-    assert subscribe._delivery_ok({"群": False, "_textfb_群": True})
-    assert not subscribe._delivery_ok({"人": "SEND_FAIL", "_err": "fail"})
+    assert not subscribe._delivery_ok(result, targets)  # 人失败，不得把整体标记已推并丢掉重试
+    assert subscribe._delivery_ok({"群": False, "_textfb_群": True}, targets[:1])
+    assert not subscribe._delivery_ok({"人": "SEND_FAIL", "_err": "fail"}, targets[1:])
     assert subscribe._push_card(card, [{"name": "无 ID", "id": None,
                                        "type": "open_id"}]) == {"_err": "invalid_targets"}
+
+
+def test_reserved_receiver_names_cannot_hide_delivery_failure(tmp_path, monkeypatch):
+    """恶意下划线名字与内部回执前缀撞键时整组拒绝，且状态不推进。"""
+    monkeypatch.setattr(subscribe, "NEWS_DIR", str(tmp_path))
+    state_path = tmp_path / "state.json"
+    monkeypatch.setattr(subscribe, "STATE_PATH", str(state_path))
+    monkeypatch.setattr(subscribe, "load_subs", lambda: [{
+        "id": "s1", "kind": "quote_move", "receivers": ["_failure", "good"],
+        "when": ["intraday"]}])
+    monkeypatch.setattr(subscribe, "load_receivers", lambda: {
+        "_failure": {"type": "open_id", "id": "ou_bad"},
+        "good": {"type": "open_id", "id": "ou_good"}})
+    monkeypatch.setattr(subscribe, "_BUILDERS", {"quote_move": lambda sub, mode: (
+        sub.update({"_fp_new": "fresh"}) or ("标题", "副标题", ["正文"], "blue"))})
+    monkeypatch.setattr(subscribe, "_portal_link", lambda *args: "")
+    monkeypatch.setattr(subscribe, "_build_card", lambda *args, **kwargs: {})
+    sent = []
+    monkeypatch.setattr(subscribe, "_push_card", lambda *args: sent.append(args) or {
+        "_failure": False, "_textfb__failure": False, "good": True})
+    assert subscribe.run_scan("intraday")["s1"] == ("invalid_targets", {})
+    assert sent == []
+    assert "s1" not in json.loads(state_path.read_text(encoding="utf-8"))
+    # 防御纵深：即使旧形式的结果被传入，也必须按显式目标核验。
+    assert not subscribe._delivery_ok({"_failure": False, "_textfb__failure": False,
+                                       "good": True}, [
+        {"name": "_failure", "type": "open_id", "id": "ou_bad"},
+        {"name": "good", "type": "open_id", "id": "ou_good"}])
 
 
 def test_scan_only_records_true_fallback_ack(tmp_path, monkeypatch):
