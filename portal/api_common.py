@@ -300,7 +300,8 @@ DOMAIN_NAV_GROUPS = {
             ("⚖️ JEV 判断", "/bt-jev", "jev"),
             ("🩺 四件套观测", "/stack", "jevstack"))),
         ("🧪 雪球舆情", (
-            ("📰 情报日报", "/xq_intel.html", "xqintel"),)),
+            ("📰 情报日报", "/xq_intel.html", "xqintel"),
+            ("📊 数据日报", "/data_daily.html", "dailydata"),)),
         ("🕸 知识图谱", (
             ("🎯 知识画布", "/kg/canvasv2", "kgcanvas"),
             ("🗺 作战地图", "/kg/battle", "kgbattle"),

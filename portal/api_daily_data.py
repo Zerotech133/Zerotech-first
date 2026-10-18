@@ -1,0 +1,234 @@
+# -*- coding: utf-8 -*-
+"""数据日报聚合出口 mixin（K-ORG-183 M1，2026-10-18）。
+
+GET /api/daily/data   零参数
+    → 多维数据日报机读投影，五节各独立 fail-visible（一节坏不拖垮整卡）：
+      dist   当日 JEV 判定分布：bias 计数 / conf 三桶(对齐 K-ORG-157)/
+             scope / event_type / bias_probs 均值(K-ORG-176 新字段首次出口) /
+             近 7 日逐日趋势（news.db mode=ro 直连，沿 api_dataops 先例）
+      bt     情绪×次日实证投影（news_collector/data/sentiment_bt_result.json）
+      impact 冲击力分层投影（news_collector/data/jev_impact.json）
+      drift  判定漂移哨兵（PG v2_alert title LIKE 'JEV判定漂移%'；
+             沿 feishu_control 懒加载 jev_common 先例，DB 不可达降级 error 键）
+      health 管道体检：四产物 mtime / 内嵌 generated_at / 时效小时数
+
+只读纪律（沿 api_capability 判例）：mode=ro / fail-visible（产物缺失返回
+exists=false 合法观测态而非 500，坏 JSON 带 error 不吞）；参数白名单空集，
+带任何参数走 400（api_perf 判例）。
+路径锚：REPO 默认 C:/aios（宪法注册表 ASCII 别名 junction），env AIOS_ROOT
+可覆盖（仅测试用）；门户不 import quant_backtest（依赖链隔离判例）——
+JSON 文件是唯一契约，生成器换实现不影响出口。
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sqlite3
+import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+REPO = Path(os.environ.get("AIOS_ROOT", "C:/aios"))
+NEWS_DB = REPO / "news_collector" / "news.db"
+BT_JSON = REPO / "news_collector" / "data" / "sentiment_bt_result.json"
+IMPACT_JSON = REPO / "news_collector" / "data" / "jev_impact.json"
+XQ_LATEST = Path("C:/aios/automation_runs/xq_report/latest.json")
+
+CST = timezone(timedelta(hours=8))
+DRIFT_TITLE_LIKE = "JEV判定漂移%"
+
+# 懒加载 jev_common（feishu_control 判例）：DB 断连不拖垮整卡
+_jev = None
+
+
+def _db():
+    global _jev
+    if _jev is None:
+        jev_dir = str(REPO / "jev-eval")
+        if jev_dir not in __import__("sys").path:
+            __import__("sys").path.insert(0, jev_dir)
+        import jev_common  # noqa: WPS433
+        _jev = jev_common
+    return _jev
+
+
+def _read_json(p: Path):
+    """产物 JSON 只读 → (dict|None, error|None)。缺失是合法空态。"""
+    if not p.exists():
+        return None, None
+    try:
+        return json.loads(p.read_text(encoding="utf-8")), None
+    except Exception as e:  # noqa: BLE001
+        return None, "bad json: %r" % e
+
+
+def dist_section() -> dict:
+    """当日 JEV 判定分布 + 近 7 日趋势（news.db RO，fail-visible）。"""
+    out = {"exists": False, "db": str(NEWS_DB)}
+    if not NEWS_DB.exists():
+        out["error"] = "news.db 不存在（首次采集前为合法空态）"
+        return out
+    today = datetime.now(CST).strftime("%Y-%m-%d")
+    week_ago = (datetime.now(CST) - timedelta(days=6)).strftime("%Y-%m-%d")
+    try:
+        con = sqlite3.connect("file:%s?mode=ro" % NEWS_DB, uri=True)
+        rows = con.execute(
+            "SELECT created_at, jev FROM news "
+            "WHERE created_at >= ? AND jev IS NOT NULL AND jev != ''",
+            (week_ago + " 00:00",)).fetchall()
+        con.close()
+    except Exception as e:  # noqa: BLE001
+        out["error"] = "query failed: %r" % e
+        return out
+    bias = {"bull": 0, "bear": 0, "neutral": 0}
+    conf = {"low": 0, "mid": 0, "high": 0}
+    scope = {}
+    event = {}
+    trend = {}   # day -> Counter(bias)
+    bp = {"bull": 0.0, "bear": 0.0, "neutral": 0.0}
+    bp_n = 0
+    bad = 0
+    for created_at, raw in rows:
+        try:
+            j = json.loads(raw)
+        except Exception:  # noqa: BLE001  坏行计数不中断（容错口径同 sentiment_backtest）
+            bad += 1
+            continue
+        day = str(created_at or "")[:10]
+        b = j.get("bias")
+        if b in bias:
+            trend.setdefault(day, {"bull": 0, "bear": 0, "neutral": 0})
+            trend[day][b] += 1
+            if day == today:
+                bias[b] += 1
+                c = j.get("conf")
+                if isinstance(c, (int, float)):
+                    k = "high" if c >= 0.9 else ("mid" if c >= 0.7 else "low")
+                    conf[k] += 1
+                sc = (j.get("scope") or "").strip()
+                if sc:
+                    scope[sc] = scope.get(sc, 0) + 1
+                ev = (j.get("event_type") or "").strip()
+                if ev:
+                    event[ev] = event.get(ev, 0) + 1
+                probs = j.get("bias_probs")
+                if isinstance(probs, dict):
+                    vals = {k: probs.get(k) for k in bp}
+                    if all(isinstance(v, (int, float)) for v in vals.values()):
+                        bp_n += 1
+                        for k, v in vals.items():
+                            bp[k] += float(v)
+    trend7 = []
+    for i in range(6, -1, -1):
+        d = (datetime.now(CST) - timedelta(days=i)).strftime("%Y-%m-%d")
+        c = trend.get(d, {"bull": 0, "bear": 0, "neutral": 0})
+        trend7.append({"day": d, **c, "total": sum(c.values())})
+    out.update({
+        "exists": True, "day": today,
+        "total": sum(bias.values()), "bias": bias, "conf_buckets": conf,
+        "scope": scope, "event_type": event, "bad_jev_rows": bad,
+        "bias_probs_avg": ({k: round(v / bp_n, 4) for k, v in bp.items()}
+                           if bp_n else None),
+        "bias_probs_n": bp_n,
+        "trend7": trend7,
+    })
+    return out
+
+
+def bt_section() -> dict:
+    """情绪×次日实证投影（sentiment_bt_result.json，StockCorrBacktest 产出）。"""
+    data, err = _read_json(BT_JSON)
+    out = {"exists": data is not None, "source": BT_JSON.name}
+    if err:
+        out["error"] = err
+        return out
+    if data is None:
+        out["hint"] = "由 sentiment_backtest.py 每日计划任务产出"
+        return out
+    for k in ("generated_at", "news_day_range", "n", "n_dedup_total",
+              "n_dropped_no_price", "groups", "corr_score_pct1",
+              "n_high_conf", "corr_score_pct1_high_conf", "conf_tiers",
+              "conf_monotone", "scope_dist", "scope_groups"):
+        if k in data:
+            out[k] = data[k]
+    return out
+
+
+def impact_section() -> dict:
+    """冲击力分层投影（jev_impact.json，E3 CAR 回测产出）。"""
+    data, err = _read_json(IMPACT_JSON)
+    out = {"exists": data is not None, "source": IMPACT_JSON.name}
+    if err:
+        out["error"] = err
+        return out
+    if data is None:
+        out["hint"] = "由 jev_impact.py 随回测产出（K-ORG-173）"
+        return out
+    for k in ("generated_at", "n", "impact_dist", "groups", "applied", "hint"):
+        if k in data:
+            out[k] = data[k]
+    return out
+
+
+def drift_section() -> dict:
+    """判定漂移哨兵（PG v2_alert，jev_drift 每日 07:10 幂等告警）。"""
+    out = {"exists": False}
+    try:
+        db = _db()
+        rows = db.db_rows(
+            "SELECT alert_id, title, coalesce(message,''), status, created_at "
+            "FROM v2_alert WHERE title LIKE %s ORDER BY id DESC LIMIT 20",
+            (DRIFT_TITLE_LIKE,))
+        open_n = db.db_rows(
+            "SELECT count(*) FROM v2_alert WHERE status='OPEN' "
+            "AND title LIKE %s", (DRIFT_TITLE_LIKE,))[0][0]
+        out.update({
+            "exists": True, "open_count": int(open_n),
+            "alerts": [{"alert_id": r[0], "title": r[1], "message": r[2],
+                        "status": r[3], "created_at": str(r[4] or "")}
+                       for r in rows],
+        })
+    except Exception as e:  # noqa: BLE001  DB 不可达降级（feishu_control 同款）
+        out["error"] = "v2_alert 不可达: %s" % str(e)[:80]
+    return out
+
+
+def health_section() -> dict:
+    """管道体检：四产物 mtime + 内嵌 generated_at + 时效。"""
+    items = []
+    for name, p, key in (
+            ("sentiment_bt_result", BT_JSON, "generated_at"),
+            ("jev_impact", IMPACT_JSON, "generated_at"),
+            ("xq_intel_latest", XQ_LATEST, "generated_at"),
+            ("news.db", NEWS_DB, None)):
+        item = {"name": name, "path": str(p), "exists": p.exists()}
+        if p.exists():
+            item["mtime"] = datetime.fromtimestamp(
+                p.stat().st_mtime, CST).strftime("%Y-%m-%d %H:%M:%S")
+            item["age_hours"] = round(
+                (time.time() - p.stat().st_mtime) / 3600.0, 1)
+            if key:
+                data, _ = _read_json(p)
+                if isinstance(data, dict) and data.get(key):
+                    item["generated_at"] = data[key]
+        items.append(item)
+    return {"items": items, "checked_at": datetime.now(CST).isoformat()}
+
+
+class Handler:
+    def _daily_data(self, qs):
+        # 零参数出口：参数白名单空集，带任何参数走 400（api_perf 判例）
+        if self._norm_qs(qs):
+            self._json({"error": "本出口不接受任何参数"}, 400)
+            return
+        self._json({
+            "endpoint": "/api/daily/data",
+            "generated_at": datetime.now(CST).isoformat(timespec="seconds"),
+            "dist": dist_section(),
+            "bt": bt_section(),
+            "impact": impact_section(),
+            "drift": drift_section(),
+            "health": health_section(),
+        })
