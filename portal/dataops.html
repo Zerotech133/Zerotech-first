@@ -76,6 +76,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 .dot-backoff{fill:var(--warn)} .dot-disabled{fill:#6e7681} .dot-ok2{fill:var(--ok)}
 .dot-degraded{fill:var(--warn)}
 .b-degraded{background:#2a2410;color:var(--warn)}
+.b-unavailable{background:#2a1512;color:#ffa198}
 .dot-stale{fill:var(--bad)}
 .b-stale{background:#2a1512;color:#ffa198}
 </style>
@@ -119,6 +120,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 <th>库</th><th>表</th><th class="num-r">存量行数</th><th class="num-r">今日入库</th><th>说明</th>
 </tr></thead><tbody></tbody></table>
 <div class="sub" id="poolmeta" style="margin-top:8px"></div>
+<div class="pipe" id="sources" style="margin-top:12px"></div>
 
 <h2>⑤ 定时拔取任务总表 —— <span id="tstat" class="muted" style="font-size:13px"></span></h2>
 <div id="taskgroups"></div>
@@ -242,6 +244,25 @@ function render(d){
   document.getElementById('poolmeta').innerHTML=
     'Parquet 池：'+(d.parquet||[]).map(x=>esc(x.dir)+'（'+x.shards+' 片）').join(' · ')+
     ' ｜ 库文件 mtime 为该库最近写入时刻';
+
+  const fm=v=>v==null?'—':String(v).toLocaleString();
+  const rng=r=>(r&&r[0]!=null&&r[1]!=null)?(r[0]+' ~ '+r[1]):'—';
+  document.getElementById('sources').innerHTML=
+    '<b>一源一档 · 数据源登记</b> <span class="muted" style="font-size:12px">载体 / 水位 / 计数分列，单源故障降级不拖垮全景</span><br>'+
+    (d.sources||[]).map(x=>
+      '<div style="margin-top:6px"><b>'+esc(x.name)+'</b> '+
+      '<span class="badge '+(x.status==='ok'?'b-ok':'b-unavailable')+'">'+esc(x.status)+'</span> '+
+      '<span class="muted" style="font-size:12px">'+esc(x.carrier||'')+'</span>'+
+      '<div class="muted" style="font-size:12.5px;margin-top:2px">'+
+      'created_at 水位 <b style="color:var(--fg)">'+rng(x.created_at_range)+'</b> · '+
+      'fetched_at 水位 <b style="color:var(--fg)">'+rng(x.fetched_at_range)+'</b> · '+
+      'raw <b style="color:var(--fg)">'+fm(x.raw_total)+'</b> · '+
+      '已打标 <b style="color:var(--fg)">'+fm(x.classified_total)+'</b>（'+(x.classified_pct==null?'—':(x.classified_pct*100).toFixed(1)+'%')+'）· '+
+      '2024+ 帖 <b style="color:var(--fg)">'+fm(x.posts_2024plus)+'</b> · '+
+      '入图水位 '+(x.graph_watermark==null?'<span class="muted">—</span>':'<b style="color:var(--fg)">'+esc(x.graph_watermark)+'</b>')+
+      (x.graph_note?'<span class="muted">（'+esc(x.graph_note)+'）</span>':'')+
+      '</div>'+(x.error?'<div style="color:var(--bad);font-size:12px">探测失败：'+esc(x.error)+'</div>':'')+'</div>'
+    ).join('');
 
   const tg=d.task_groups||{groups:[]};
   document.getElementById('tstat').textContent='共 '+(tg.total??'?')+' 个计划任务 · 在岗 '+(tg.armed_total??'?');

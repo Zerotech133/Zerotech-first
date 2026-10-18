@@ -290,6 +290,56 @@ def summarize(results, elapsed, retried):
     return failed_n == 0
 
 
+# ------------------------------------------------- E. 雪球源一档（T11，pytest 直调模块）
+# 线上 8091 跑的是旧进程，新增字段不进 HTTP 断言；本组用例直接 import api_dataops
+# 调组装函数验证（生产进程下次重启自然带上 sources 字段）。
+import importlib
+import os as _os
+import sys as _sys
+
+_PORTAL_DIR = _os.path.dirname(_os.path.abspath(__file__))
+if _PORTAL_DIR not in _sys.path:
+    _sys.path.insert(0, _PORTAL_DIR)
+
+REQUIRED_XQ_FIELDS = ("key", "name", "carrier", "status", "created_at_range",
+                      "fetched_at_range", "raw_total", "classified_total",
+                      "classified_pct", "posts_2024plus", "graph_watermark")
+
+
+def _api_dataops():
+    return importlib.import_module("api_dataops")
+
+
+def test_xq_source_card_present():
+    ov = _api_dataops().overview()
+    cards = [s for s in ov.get("sources", []) if s.get("key") == "xueqiu"]
+    assert cards, "overview.sources 缺少雪球源条目（一源一档未登记）: %r" % (ov.get("sources"),)
+
+
+def test_xq_source_card_fields():
+    ov = _api_dataops().overview()
+    card = next(s for s in ov["sources"] if s["key"] == "xueqiu")
+    missing = [f for f in REQUIRED_XQ_FIELDS if f not in card]
+    assert not missing, "雪球卡片缺字段: %s" % missing
+    if card["status"] == "ok":
+        assert card["name"] == "雪球舆情帖池"
+        assert isinstance(card["raw_total"], int) and card["raw_total"] > 20000
+        lo, hi = card["created_at_range"]
+        assert lo and hi and lo <= hi
+        assert 0 <= card["classified_pct"] <= 1
+        assert card["classified_total"] <= card["raw_total"]
+
+
+def test_xq_source_card_degrades_when_db_missing(tmp_path, monkeypatch):
+    api = _api_dataops()
+    monkeypatch.setattr(api, "DATA", str(tmp_path))  # 指向空目录 → 库缺失
+    errors = []
+    card = api._xq_source_card(errors)
+    assert card["status"] == "unavailable", "DB 缺失必须降级 unavailable"
+    assert card["raw_total"] is None and card["created_at_range"] is None
+    assert errors, "fail-visible：降级必须留痕 errors，不许静默吞"
+
+
 def main():
     results, elapsed = run_all()
     retried = False

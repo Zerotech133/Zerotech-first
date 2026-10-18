@@ -134,6 +134,47 @@ def _guba_last_output():
     """（已废弃 mtime 版——被「写旧帖」骗，改用 _daily_intake 的 ts 回溯）"""
     return None
 
+
+def _xq_source_card(errors):
+    """一源一档：雪球舆情帖池（数据平台总案 §一源一档 / T11，2026-10-19）。
+
+    水位全部 substr 判年月日（created_at 为 ISO 字符串，禁 strftime unixepoch）；
+    DB ro 连接 + busy_timeout=30s，连接失败降级 status=unavailable 绝不 500
+    （dataops overview 是聚合接口，单源故障不能拖垮全景）。
+    """
+    card = {"key": "xueqiu", "name": "雪球舆情帖池",
+            "carrier": "SQLite data/xueqiu/xueqiu_info.db", "status": "ok",
+            "created_at_range": None, "fetched_at_range": None,
+            "raw_total": None, "classified_total": None, "classified_pct": None,
+            "posts_2024plus": None,
+            "graph_watermark": None,
+            "graph_note": "图谱侧未登记雪球帖水位（graph_check 水位仅覆盖 news/guba），暂为 null"}
+    try:
+        con = _ro(os.path.join(DATA, "xueqiu", "xueqiu_info.db"))
+        con.execute("PRAGMA busy_timeout=30000")
+        card["created_at_range"] = list(con.execute(
+            "SELECT MIN(substr(created_at,1,10)), MAX(substr(created_at,1,10)) FROM xq_status").fetchone())
+        card["fetched_at_range"] = list(con.execute(
+            "SELECT MIN(substr(fetched_at,1,10)), MAX(substr(fetched_at,1,10)) FROM xq_status").fetchone())
+        card["raw_total"] = con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0]
+        card["classified_total"] = con.execute(
+            "SELECT COUNT(*) FROM xq_status_classified").fetchone()[0]
+        card["classified_pct"] = round(card["classified_total"] / card["raw_total"], 4) \
+            if card["raw_total"] else None
+        card["posts_2024plus"] = con.execute(
+            "SELECT COUNT(*) FROM xq_status WHERE substr(created_at,1,4)>='2024'").fetchone()[0]
+        con.close()
+    except Exception as e:
+        card["status"] = "unavailable"
+        card["error"] = str(e)[:80]
+        errors.append("xq_source_card: %s" % str(e)[:60])
+    return card
+
+
+def _source_cards(errors):
+    """一源一档登记表：每个数据源一张卡（新源在此 append 一行即接入）。"""
+    return [_xq_source_card(errors)]
+
 PARQUET_DIRS = ["tdx/ts_daily", "tdx/ts_monthly", "tdx/ts_weekly", "tdx/ts_index_daily"]
 
 # ── 定时任务职能分组（2026-10-18 全量清点，系统噪音 AMD/WPS/OneDrive 不入册）──
@@ -367,6 +408,8 @@ def overview():
     # 全量定时任务分组 + 行情仓 catalog 聚合
     task_groups = _task_groups(errors)
     catalog = _catalog_summary(errors)
+    # 一源一档登记（单源故障降级 unavailable，不拖垮聚合全景）
+    sources = _source_cards(errors)
     # 采集源
     collectors = []
     active = 0
@@ -439,6 +482,7 @@ def overview():
                     "xq_total": xq_total, "xq_classified": xq_done,
                     "active_collectors": active, "alerts": alerts},
         "collectors": collectors, "pools": pools, "parquet": parquet,
+        "sources": sources,
         "pipelines": pipes, "task_groups": task_groups, "catalog": catalog,
         "daily_intake": daily,
         "governance": {"model_dist": model_dist, "content_dist": content_dist,
