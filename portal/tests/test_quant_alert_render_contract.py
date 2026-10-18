@@ -19,9 +19,15 @@ const page = fs.readFileSync(process.argv[1], 'utf8');
 const start = page.indexOf('  async function loadAlerts() {');
 const end = page.indexOf('  loadAlerts();', start);
 assert(start >= 0 && end > start, 'loadAlerts must exist in the real page');
+const helperStart = page.indexOf('  function safePortalHref(value) {');
+const strategyStart = page.indexOf('  async function loadStrategies() {');
+const strategyEnd = page.indexOf('  loadStrategies();', strategyStart);
+assert(helperStart >= 0 && strategyStart > helperStart && strategyEnd > strategyStart);
+const sharedHelper = page.slice(helperStart, page.indexOf('  const ST_CN', helperStart));
+const strategiesSource = page.slice(strategyStart, strategyEnd);
 const loaderSource = page.slice(page.lastIndexOf('  let latestAlertRequest', start), end);
 assert(loaderSource.startsWith('  let latestAlertRequest = 0;'), 'generation fence must exist');
-const script = new vm.Script(loaderSource + '\nloadAlerts');
+const script = new vm.Script(sharedHelper + loaderSource + '\nloadAlerts');
 
 async function render(events) {
   const elements = Object.fromEntries(['al-ts', 'k-alerts', 'al-list'].map(id => [
@@ -54,6 +60,30 @@ async function render(events) {
   return elements;
 }
 
+async function renderStrategies(items) {
+  const elements = Object.fromEntries(['strat-grid', 'k-strat', 'k-strat-sub', 'k-weak'].map(id => [
+    id, { textContent: '初始', innerHTML: '初始' }
+  ]));
+  const context = {
+    AbortController,
+    URL,
+    location: { origin: 'https://portal.example.test' },
+    setTimeout: () => 0,
+    fetch: async url => {
+      assert.equal(url, '/api/strategies');
+      return { ok: true, json: async () => ({ strategies: items }) };
+    },
+    document: { getElementById: id => elements[id] },
+    esc: value => String(value ?? '').replace(/[&<>"]/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'
+    })[ch]),
+    ST_CN: { live: '实盘', shadow: '影子', tool: '支撑', paused: '暂停' },
+  };
+  vm.createContext(context);
+  await new vm.Script(sharedHelper + strategiesSource + '\nloadStrategies()').runInContext(context);
+  return elements;
+}
+
 async function renderOutOfOrder(firstFails) {
   const elements = Object.fromEntries(['al-ts', 'k-alerts', 'al-list'].map(id => [
     id, { textContent: '初始', innerHTML: '初始' }
@@ -82,7 +112,7 @@ async function renderOutOfOrder(firstFails) {
     })[ch]),
   };
   vm.createContext(context);
-  const loader = new vm.Script(loaderSource + '\nloadAlerts');
+  const loader = new vm.Script(sharedHelper + loaderSource + '\nloadAlerts');
   const loadAlerts = loader.runInContext(context);
   const older = loadAlerts();
   const newer = loadAlerts();
@@ -175,6 +205,36 @@ async function renderOutOfOrder(firstFails) {
   }
   await renderOutOfOrder(false); // Old success after newer failure.
   await renderOutOfOrder(true);  // Old failure after newer success.
+
+  const strategy = { id: 'one', status: 'live', name: '站内策略', href: '/strategies/one' };
+  const strategyNormal = await renderStrategies([strategy]);
+  assert.equal(strategyNormal['k-strat'].textContent, '1 条');
+  assert.match(strategyNormal['strat-grid'].innerHTML, /href="\/strategies\/one"/);
+  producedRows.push({ html: strategyNormal['strat-grid'].innerHTML, expectedHref: '/strategies/one', expectedClass: 'scard' });
+  for (const hostileHref of [
+    "/watch' onclick='alert(1)", '/watch" onclick="alert(1)',
+    'javascript:alert(1)', 'data:text/html,attack', '//attacker.example',
+    '/watch%27%20onclick%3Dalert(1)', '/watch%22onclick=attack',
+    '/watch%0d', 'https://attacker.example/watch'
+  ]) {
+    const hostile = await renderStrategies([{ ...strategy, href: hostileHref }]);
+    assert.match(hostile['strat-grid'].innerHTML, /href="#"/);
+    assert.doesNotMatch(hostile['strat-grid'].innerHTML, /onclick|javascript:|attacker\.example/);
+    producedRows.push({ html: hostile['strat-grid'].innerHTML, expectedHref: '#', expectedClass: 'scard' });
+  }
+  const hostileStatus = await renderStrategies([{ ...strategy, status: '<img src=x onerror=alert(1)>' }]);
+  assert.doesNotMatch(hostileStatus['strat-grid'].innerHTML, /<img|onerror=/);
+  assert.match(hostileStatus['strat-grid'].innerHTML, /sdot paused/);
+  const hostileExt = await renderStrategies([{ ...strategy, href: '', ext: "javascript:alert(1)" }]);
+  assert.match(hostileExt['strat-grid'].innerHTML, /href="#"/);
+  assert.doesNotMatch(hostileExt['strat-grid'].innerHTML, /target="_blank"|javascript:/);
+  producedRows.push({ html: hostileExt['strat-grid'].innerHTML, expectedHref: '#', expectedClass: 'scard' });
+  const strategySameOrigin = await renderStrategies([{ ...strategy, href: 'https://portal.example.test/watch?id=1&pool=main' }]);
+  assert.match(strategySameOrigin['strat-grid'].innerHTML, /href="\/watch\?id=1&amp;pool=main"/);
+  producedRows.push({ html: strategySameOrigin['strat-grid'].innerHTML, expectedHref: '/watch?id=1&pool=main', expectedClass: 'scard' });
+  const extLink = await renderStrategies([{ ...strategy, href: '', ext: '/strategies' }]);
+  assert.match(extLink['strat-grid'].innerHTML, /href="\/strategies" target="_blank" rel="noopener"/);
+  producedRows.push({ html: extLink['strat-grid'].innerHTML, expectedHref: '/strategies', expectedClass: 'scard', expectedExternal: true });
   console.log(JSON.stringify(producedRows));
 })().catch(error => { console.error(error); process.exitCode = 1; });
 """
@@ -210,6 +270,10 @@ def test_quant_alert_loader_offline() -> None:
     for rendered in json.loads(result.stdout):
         parser = _AlertLinkParser()
         parser.feed(rendered["html"])
-        assert parser.anchors == [
-            [("class", "arow"), ("href", rendered["expectedHref"])]
+        expected = [
+            ("class", rendered.get("expectedClass", "arow")),
+            ("href", rendered["expectedHref"]),
         ]
+        if rendered.get("expectedExternal"):
+            expected.extend([("target", "_blank"), ("rel", "noopener")])
+        assert parser.anchors == [expected]
