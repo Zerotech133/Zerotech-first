@@ -122,18 +122,20 @@ def _parse_day(ts, created_at):
 
 
 def _load_samples():
-    """news.db → 去重前原始 A 股判定列表 [{code, day, bias, conf, scope}]。
+    """news.db → 去重前原始 A 股判定列表 [{code, day, bias, conf, scope, source}]。
 
-    K-ORG-156：追加捕获 scope（scope 分布统计用；一码一日去重口径不变）。"""
+    K-ORG-156：追加捕获 scope（scope 分布统计用；一码一日去重口径不变）。
+    K-ORG-167（E7）：追加捕获 source（来源异质衰减实证用；一码一日去重
+    取最高置信那条的 source 一并归档）。"""
     if not os.path.exists(DB):
         return []
     wnames = _watch_names()
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
-    cur.execute("SELECT ts, created_at, title, stocks, jev FROM news "
+    cur.execute("SELECT ts, created_at, title, stocks, source, jev FROM news "
                 "WHERE jev IS NOT NULL AND jev != ''")
     raw = []
-    for ts, created_at, title, stocks, jev in cur.fetchall():
+    for ts, created_at, title, stocks, source, jev in cur.fetchall():
         day = _parse_day(ts, created_at)
         if not day:
             continue
@@ -167,7 +169,8 @@ def _load_samples():
                     codes.add(m.group(1) + suf)
         for c in codes:
             raw.append({"code": c, "day": day, "bias": bias,
-                        "conf": float(conf), "scope": scope})
+                        "conf": float(conf), "scope": scope,
+                        "source": str(source or "")})
     conn.close()
     # 一码一日取最高置信（同置信 bear 优先，保守口径）
     rank = {"bear": 0, "bull": 1, "neutral": 2}

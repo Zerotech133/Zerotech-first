@@ -171,9 +171,17 @@ _BIAS_CN = {"bull": "利多", "bear": "利空", "neutral": "中性"}
 _SCOPE_CN = {"cn": "A股", "hk": "港股", "us": "美股", "commodity": "商品",
              "crypto": "加密", "macro": "宏观"}
 # K-ORG-157：低置信阈值与时效衰减（实证支撑 K-ORG-156——0.5-0.7 段
-# 方向命中仅 32-43%，0.7+ 才稳定在 41-54%；净倾向按半衰期 6h 衰减加权）
+# 方向命中仅 32-43%，0.7+ 才稳定在 41-54%；净倾向按时衰衰减加权，
+# 原对称半衰期 6h（λ=ln2/6≈0.1155/h，w=exp(-λ·Δt小时)）。
+# K-ORG-167（E1）：不对称衰减——jev_decay.py 市场相对口径实证（n_dir=324，
+# 2026-10-17T20:02）去市况污染后：利空高置信超额方向命中 T+1=55.0%、
+# T+3 升至 60.7% 保持不衰（persist3=1.104，拟合半衰期触及 24h 上限钳制）；
+# 利多各窗口≈50% 无超额边际（persist3=0.951）。故利空半衰期 24h（实证），
+# 利多 12h 为去噪启发式（非拟合值，实证仅显示无边际、取快降权去噪）。
+# 来源异质（E7）当前仅 announcement 达样本阈值且无超额边际，不下发
+# （来源级零变化，随积累复评；sbt._load_samples 已保留 source 捕获）。
 _JEV_LOW_CONF = 0.7
-_JEV_LAMBDA_H = 0.1155   # ln2/6，w=exp(-λ·Δt小时)
+_JEV_HL_H = {"bull": 12.0, "bear": 24.0}   # bias → 半衰期（小时），w=2^(-Δt/HL)
 
 # K-ORG-159（M1）：事件类型枚举 + 公司绑定（借鉴 FEED/DocFEE/FNSPID——
 # 金融事件抽取、(公司,事件) 是舆情分布监控的最强载体）。云/本地判定
@@ -503,8 +511,9 @@ def jev_summary(db, hours=24):
     """近 N 小时已判断新闻的 JEV 分布文本（无数据返回空）。
 
     K-ORG-157：低置信（conf<70%）单列计数、不参与净倾向；净倾向仅计入
-    高置信方向判定（bull +1/bear -1），并按时效衰减加权 w=exp(-λ·Δt小时)
-    （半衰期 6h）——实证 0.5-0.7 段命中仅 32-43%，0.7+ 才稳定。
+    高置信方向判定（bull +1/bear -1），并按时效衰减加权 w=2^(-Δt/HL)
+    K-ORG-167（E1）：半衰期按方向不对称——利空 24h（实证 T+3 超额命中
+    升至 60.7% 不衰）、利多 12h（去噪启发式，实证各窗口≈50% 无边际）。
     """
     since = (now_cst() - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M")
     try:
@@ -517,7 +526,7 @@ def jev_summary(db, hours=24):
     bias_cnt, scope_cnt, event_cnt = {}, {}, {}
     low_conf, hi_dir, net = 0, 0, 0.0
     now = now_cst()
-    for j, created_at in rows:
+    for j, _ca in rows:
         try:
             d = json.loads(j)
         except Exception:
@@ -542,7 +551,8 @@ def jev_summary(db, hours=24):
                         "%Y-%m-%d %H:%M")).total_seconds() / 3600.0)
                 except Exception:
                     pass  # 豁免（C2批2）：时间坏值按 0h（权重 1）计
-                net += math.exp(-_JEV_LAMBDA_H * age_h) \
+                net += math.exp(-math.log(2) * age_h
+                                / _JEV_HL_H.get(d.get("bias"), 6.0)) \
                     * (1.0 if d.get("bias") == "bull" else -1.0)
                 hi_dir += 1
     if not bias_cnt:
