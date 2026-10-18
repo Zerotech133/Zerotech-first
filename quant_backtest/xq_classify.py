@@ -25,6 +25,9 @@
   python xq_classify.py --reticker         # 提取器升级后重算存量 tickers（秒级）
   python xq_classify.py --recontent --limit 1200   # v1.3 语义存量补标
   python xq_classify.py --retry-degraded   # v1.4 degraded 行重标（LLM 截断行捞回，retry_count<3 封顶）
+  python xq_classify.py --worker-id w1 --segment A --limit 500   # v1.7 多实例并行（日志分片+奇偶分片）
+  python xq_classify.py --order desc --limit 500           # v1.7 status_id 降序吃远端历史存量
+  python xq_classify.py --order engagement --limit 500     # v1.7 view_count 降序高互动优先打标
 """
 from __future__ import annotations
 
@@ -44,6 +47,14 @@ HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "data" / "xueqiu" / "xueqiu_info.db"
 LOG_DIR = Path(r"C:\aios\automation_runs") / "xq_classify"   # 定时任务产物统一根（2026-10-18 老田拍板）
 STATUS_LOG = LOG_DIR / "xq_classify_status.log"
+
+# v1.7 multi-instance parallel (2026-10-18): --worker-id shards the status log
+# per instance (Ollama par=2, two classify workers run side by side). Empty
+# worker id keeps the historical single-file behavior exactly. Path is resolved
+# at call time (delayed-eval precedent) so tests / long-running processes see
+# the current worker id, not an import-time snapshot.
+_WORKER_ID = ""
+_WORKER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 MODEL = "qwen3.5:9b"
 PROMPT_VERSION = "v1.3"    # v1.3：+ad/edu 出口、tech 定义收紧（实效检验揪出广告污染 98 条，老田拍板 2026-10-18）
@@ -211,12 +222,30 @@ def _clean_ticker(code: str) -> bool:
     return True
 
 
+def set_worker_id(worker_id: str) -> None:
+    """Set the sharded-log worker id (empty string = historical behavior)."""
+    global _WORKER_ID
+    _WORKER_ID = (worker_id or "").strip()
+
+
+def _status_log_path() -> Path:
+    """Resolve the status log path at call time.
+
+    Non-empty worker id -> xq_classify_status_<worker-id>.log in the same
+    LOG_DIR (per-instance shard, no interleaved writes between workers);
+    empty worker id -> the historical STATUS_LOG constant verbatim.
+    """
+    if _WORKER_ID:
+        return LOG_DIR / ("xq_classify_status_%s.log" % _WORKER_ID)
+    return STATUS_LOG
+
+
 def log(msg: str) -> None:
     """ASCII 安全状态日志（计划任务/自动化排障判例）。"""
     LOG_DIR.mkdir(exist_ok=True)
     line = "%s | %s" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg)
     try:
-        with STATUS_LOG.open("a", encoding="utf-8") as f:
+        with _status_log_path().open("a", encoding="utf-8") as f:
             f.write(line + "\n")
     except Exception:
         pass
@@ -508,20 +537,70 @@ def retry_degraded(limit: int) -> int:
     return 0
 
 
-def run(limit: int) -> int:
+def build_pending_query(order: str = "asc", segment: str = "") -> str:
+    """Build the pending-fetch SQL (single '?' placeholder for LIMIT).
+
+    v1.7 multi-instance parallel knobs, default behavior unchanged:
+      - order="asc"       -> the historical SQL verbatim (created_at DESC,
+                             newest first) -- the default, zero drift;
+      - order="desc"      -> status_id DESC (older backlog first);
+      - order="engagement"-> view_count DESC via JOIN (high-engagement rows
+                             labeled first; NULL view_count sorts last on
+                             DESC in SQLite, so bare rows are not stranded);
+      - segment="A"|"B"   -> even/odd status_id tail filter so two workers
+                             split the pending queue without overlap
+                             (CAST on status_id only; created_at stays an
+                             ISO text column and is never CASTed per the
+                             project iron rule).
+
+    Pure string builder, no DB access -- unit-testable in isolation.
+    """
+    if order == "engagement":
+        sql = (
+            "SELECT s.status_id, s.title, s.desc, s.category\n"
+            "FROM xq_status s\n"
+            "LEFT JOIN xq_status_classified c ON c.status_id = s.status_id\n"
+            "WHERE c.status_id IS NULL\n"
+            "  AND NOT ((s.title IS NULL OR s.title='')\n"
+            "           AND (s.desc IS NULL OR s.desc=''))"
+        )
+    else:
+        sql = (
+            "SELECT s.status_id, s.title, s.desc, s.category\n"
+            "FROM xq_status s\n"
+            "WHERE s.status_id NOT IN\n"
+            "      (SELECT status_id FROM xq_status_classified)\n"
+            "  AND NOT ((s.title IS NULL OR s.title='')\n"
+            "           AND (s.desc IS NULL OR s.desc=''))"
+        )
+    if segment == "A":
+        sql += "\n  AND (CAST(s.status_id AS INTEGER) % 2) = 0"
+    elif segment == "B":
+        sql += "\n  AND (CAST(s.status_id AS INTEGER) % 2) = 1"
+    if order == "desc":
+        sql += "\nORDER BY s.status_id DESC"
+    elif order == "engagement":
+        sql += "\nORDER BY s.view_count DESC"
+    else:
+        sql += "\nORDER BY s.created_at DESC"
+    sql += "\nLIMIT ?"
+    return sql
+
+
+def run(limit: int, order: str = "asc", segment: str = "") -> int:
+    """Consume one round of pending rows (v1.7: + order/segment knobs).
+
+    Default order="asc" / segment="" reproduces the historical behavior
+    exactly (same SQL shape, same log line types); non-default values only
+    add one extra "round params" log line for parallel-run observability.
+    """
     con = sqlite3.connect(str(DB_PATH), timeout=30)
     con.execute("PRAGMA busy_timeout=30000")
     ensure_table(con)
-    rows = con.execute(
-        """SELECT s.status_id, s.title, s.desc, s.category
-           FROM xq_status s
-           WHERE s.status_id NOT IN
-                 (SELECT status_id FROM xq_status_classified)
-             AND NOT ((s.title IS NULL OR s.title='')
-                      AND (s.desc IS NULL OR s.desc=''))
-           ORDER BY s.created_at DESC LIMIT ?""",
-        (limit,)).fetchall()
+    rows = con.execute(build_pending_query(order, segment), (limit,)).fetchall()
     log("round start pending_sampled=%d limit=%d" % (len(rows), limit))
+    if order != "asc" or segment:
+        log("round params order=%s segment=%s" % (order, segment or "-"))
     if not rows:
         log("round end rc=0 all-caught-up total=%d"
             % con.execute("SELECT COUNT(*) FROM xq_status").fetchone()[0])
@@ -618,7 +697,8 @@ def reticker() -> int:
     return 0
 
 
-def main() -> int:
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Argparse builder (v1.7: extracted for testability; defaults unchanged)."""
     ap = argparse.ArgumentParser(description="雪球舆情分类管道 v1")
     ap.add_argument("--limit", type=int, default=500)
     ap.add_argument("--status", action="store_true")
@@ -629,7 +709,28 @@ def main() -> int:
     ap.add_argument("--retry-degraded", action="store_true",
                     help="v1.4 重跑 degraded（parse_ok=0）行：成功升级，仍截断累加 "
                          "retry_count，>=3 次不再重试")
+    # v1.7 multi-instance parallel knobs (all default = historical behavior)
+    ap.add_argument("--worker-id", default="", dest="worker_id", metavar="ID",
+                    help="v1.7 多实例并行：非空时状态日志写分片文件 "
+                         "xq_classify_status_<ID>.log（同目录）；空 = 完全现状")
+    ap.add_argument("--order", default="asc",
+                    choices=("asc", "desc", "engagement"),
+                    help="v1.7 取数顺序：asc=现状（created_at 降序新帖优先）；"
+                         "desc=status_id 降序吃远端历史；engagement=view_count "
+                         "降序高互动优先")
+    ap.add_argument("--segment", default="", choices=("A", "B"),
+                    help="v1.7 奇偶分片：A=status_id 偶数尾，B=奇数尾；"
+                         "双实例各吃一半互不重叠；缺省 = 不分片")
+    return ap
+
+
+def main() -> int:
+    ap = build_arg_parser()
     a = ap.parse_args()
+    if a.worker_id:
+        if not _WORKER_ID_RE.match(a.worker_id.strip()):
+            ap.error("--worker-id allows [A-Za-z0-9._-] only, max 64 chars")
+        set_worker_id(a.worker_id)
     if a.status:
         return show_status()
     if a.reticker:
@@ -638,7 +739,7 @@ def main() -> int:
         return recontent_run(a.limit)
     if a.retry_degraded:
         return retry_degraded(a.limit)
-    return run(a.limit)
+    return run(a.limit, order=a.order, segment=a.segment)
 
 
 if __name__ == "__main__":
