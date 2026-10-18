@@ -342,15 +342,23 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     # 直接穿出循环，round/retry 轮无收行死亡）——DB 故障与硬失败同语义：
     # 计 hard 不杀轮，stderr 留诊断，下一轮幂等重跑。
     try:
+        # v1.4.3 刀 A：INSERT OR REPLACE 未列出的列按 DEFAULT 清零（删旧插新
+        # 语义）——显式带旧 retry_count 进 REPLACE，防封顶计数被偷清。
+        # 归零语义由 retry_degraded 的 upgraded 分支显式执行（docstring 承诺），
+        # classify_one 单体只负责「不改别人的计次」。
+        old_retry = con.execute(
+            "SELECT retry_count FROM xq_status_classified WHERE status_id=?",
+            (str(status_id),)).fetchone()
         con.execute(
             """INSERT OR REPLACE INTO xq_status_classified
                (status_id, event_type, sentiment, tickers, confidence,
-                parse_ok, model, prompt_version, labeled_at, content_type)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                parse_ok, model, prompt_version, labeled_at, content_type, retry_count)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
             (str(status_id), event_type, sentiment,
              json.dumps(extract_tickers(title, desc), ensure_ascii=False),
              confidence, parse_ok, MODEL, PROMPT_VERSION,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), content_type))
+             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), content_type,
+             (old_retry[0] or 0) if old_retry else 0))
     except Exception as e:
         sys.stderr.write("[xq_classify] DB-FAIL %s: %s: %s\n"
                          % (status_id, type(e).__name__, str(e)[:120]))
@@ -423,8 +431,12 @@ def recontent_run(limit: int) -> int:
     n_left = con.execute(
         "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=1 AND content_type IS NULL").fetchone()[0]
     con.close()
-    log("recontent end rc=%d ok=%d hard=%d left=%d" % (0 if hard == 0 else 0, ok, hard, n_left))
-    return 0
+    # v1.2.1 刀 B：手动通道硬失败全量可见——hard>0 报 1，与「recontent 是
+    # 有人盯着跑的补标」语义对齐（run() 的 consec>=8 属长跑自动通道让路，
+    # 口径不同不对齐；2026-10-18 主会话裁决）。
+    rc = 1 if hard > 0 else 0
+    log("recontent end rc=%d ok=%d hard=%d left=%d" % (rc, ok, hard, n_left))
+    return rc
 
 
 def retry_degraded(limit: int) -> int:
@@ -473,7 +485,10 @@ def retry_degraded(limit: int) -> int:
                 "SELECT parse_ok FROM xq_status_classified WHERE status_id=?",
                 (str(status_id),)).fetchone()
             if cur and cur[0] == 1:
-                upgraded += 1   # 升级：classify_one 的 REPLACE 已把 retry_count 归零
+                upgraded += 1   # 升级：显式归零（v1.4.3 刀 A 后 REPLACE 不再隐式清零）
+                con.execute(
+                    "UPDATE xq_status_classified SET retry_count=0 WHERE status_id=?",
+                    (str(status_id),))
             else:
                 still += 1      # 仍截断：保持 degraded，累加计次
                 con.execute(
