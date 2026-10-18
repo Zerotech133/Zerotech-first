@@ -32,10 +32,10 @@ SIG_EVENT = ("个股研判", "交易策略", "行情观点")   # 高置信信号
 BEARISH_MIN = 3          # 异动信号：bearish 绝对数阈值
 BEARISH_SHARE = 0.6      # 异动信号：bearish 占比阈值（样本 >= BEARISH_MIN）
 CONF_FLOOR = 0.8         # 高置信信号阈值
-# 多空词频停用词表（单字 + 双字，v1.3 实拍），含任一单字停用词的 n-gram 一并过滤
-STOP_1CHAR = set("的了吗呢吧啊在是我有和不人就都也很这那为上下中一个大到要说去你会好")
-STOP_WORDS = STOP_1CHAR | {"它们", "更多", "还能", "可以", "没有", "这个",
-                           "那个", "自己", "不是", "什么", "如何", "怎么"}
+# 多空标题 n-gram 停用词表：仅过滤完整的双字词，不按单字过滤，
+# 避免误删「上涨」「下跌」「大涨」「中报」「看好」等行情词。
+STOP_WORDS = {"它们", "更多", "还能", "可以", "没有", "这个",
+              "那个", "自己", "不是", "什么", "如何", "怎么"}
 RE_HAN = re.compile(r"[\u4e00-\u9fff]+")   # 中文片段（词切分仅在此内做）
 
 
@@ -69,15 +69,14 @@ def split_tickers(raw: str):
 
 
 def title_words(title: str):
-    """中文标题 2-3 字词切分 + 停用词过滤（用于多空词频对比）"""
-    out = []
-    for seg in RE_HAN.findall(title or ""):
-        for n in (2, 3):
-            for i in range(len(seg) - n + 1):
-                g = seg[i:i + n]
-                if g in STOP_WORDS or any(ch in STOP_1CHAR for ch in g):
-                    continue
-                out.append(g)
+    """中文标题分词；过滤停用词/单字/纯数字标点，并返回帖内去重词集合。"""
+    import jieba
+    out = set()
+    for word in jieba.lcut(str(title or "")):
+        word = word.strip()
+        if (len(word) >= 2 and word not in STOP_WORDS
+                and not re.fullmatch(r"[\dA-Za-z%.:：,，！!？?]+", word)):
+            out.add(word)
     return out
 
 
@@ -272,9 +271,18 @@ def main() -> int:
         anomalies = anomaly_signals(summ, con, day)
         md = render(day, tac, ing, summ, anomalies)
 
+        # 血缘透明化：动态读 xq_classify 既有常量（提取器版本由 hk-ticker 工位维护，
+        # 勿硬编码；import 失败兜底 unknown，不影响报告主产出）
+        try:
+            from xq_classify import _TICKER_VERSION, MODEL as _CLS_MODEL, PROMPT_VERSION as _CLS_PROMPT
+        except Exception:
+            _TICKER_VERSION = _CLS_MODEL = _CLS_PROMPT = "unknown"
+
         payload = {
             "date": day,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "extractor_version": _TICKER_VERSION,
+            "pipeline": {"llm_model": _CLS_MODEL, "prompt_version": _CLS_PROMPT},
             "ingested_today": len(ing),
             "posts_today": len(tac),
             "classified_today": len(tac) - summ["pending"],

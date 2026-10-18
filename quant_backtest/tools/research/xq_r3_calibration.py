@@ -7,31 +7,42 @@ RiskGuard R3（事件风险规则）历史拦截账本：C:/项目/zerobound-kg/
 雪球实时舆情：XueqiuCrawl 每日 18:00 首跑（2026-10-18 今晚），帖子入 xueqiu_info.db/xq_status，
 打标入 xq_status_classified（ticker 提取 v1.1 修复、六类 content_type）。
 
-历史对齐不可行（雪球存量全是 2017-2023），本管道只做**未来一致性核对**：
-实时舆情积累 2-4 周后，核对「R3 拦截的标的/时点 vs 舆情是否提前异动（bearish 突增）」。
+历史对齐不可行（雪球存量全是 2012-2023），本管道提供两种模式：
 
-⚠ 依赖：今晚 18:00 首跑后的实时数据积累。现在实跑预期覆盖率 0%（空态），
-2-4 周后重跑即全量研究。空态/数据不足一律显式输出（fail-visible），不静默。
+1) 实时模式（默认）：**未来一致性核对**——实时舆情积累 2-4 周后，核对
+   「R3 拦截的标的/时点 vs 舆情是否提前异动（bearish 突增）」。
+   ⚠ 依赖今晚 18:00 首跑后的实时数据积累。空态/数据不足一律显式输出（fail-visible）。
+
+2) 历史回测模式（--backtest）：用库内历史回填帖（xq_status 存量）做第一版历史校准。
+   拦截日（2026-09/10）与历史帖（2012-2023）无法事件级对齐，采用**历年同窗回放**：
+   对每个拦截 (ticker, 月-日)，在历史各年同月同日锚定虚拟拦截日，跑同一套
+   compare_around_block/verdict_of 判定。属季节同窗近似，非事件对齐（输出中显式声明）。
+   舆情源与实时管道同口径（xq_status_classified）；另附 raw xq_status 名称匹配覆盖探针
+   （stock_names.json 历史证券名/别名，仅取 ≥3 字专名），用于判断 classified 回补价值。
 
 用法
 ----
-    python tools/research/xq_r3_calibration.py                      # 全量核对
+    python tools/research/xq_r3_calibration.py                      # 实时全量核对
     python tools/research/xq_r3_calibration.py --lookback-days 28   # 限定舆情回看窗口
     python tools/research/xq_r3_calibration.py --high-conf 0.7      # 高置信 bearish 阈值
+    python tools/research/xq_r3_calibration.py --backtest           # 历史同窗回放回测
 
-只读纪律：ledger.jsonl 与 xueqiu_info.db 全部只读；标准库 only。
+只读纪律：ledger.jsonl、xueqiu_info.db、stock_names.json 全部只读；标准库 only。
 """
 
 import argparse
 import collections
 import json
 import os
+import re
 import sqlite3
 import sys
 from datetime import date, timedelta
 
 DEFAULT_LEDGER = "C:/项目/zerobound-kg/riskguard_ledger/ledger.jsonl"
 DEFAULT_DB = "C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xueqiu_info.db"
+DEFAULT_NAMES = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "stock_names.json")
 
 PRE_DAYS = 3   # 拦截日前 3 天（不含拦截日）
 POST_DAYS = 1  # 拦截日后 1 天（含拦截日当天）
@@ -216,6 +227,183 @@ def verdict_of(cmp_result):
     return "consistent" if spike else "missed"
 
 
+# ---------------------------------------------------------------- 历史回测（--backtest）
+
+def build_name_matcher(tickers, names_path):
+    """从 stock_names.json 构建拦截标的的名称匹配集。
+
+    收集 code2name 当前名 + name2code/alias_of 历史名/别名，剥离 ST/*ST/G/S 前缀与
+    退/(退) 装饰，仅保留 ≥3 字专名（压制「同德」「信通」这类撞名噪音）。
+    返回 {code6: [name, ...]}；匹配语义为「名称是帖子文本的子串」。
+    """
+    with open(names_path, encoding="utf-8") as f:
+        d = json.load(f)
+    c2n = d.get("code2name", {})
+    by_full = collections.defaultdict(set)
+    for nm, cd in list(d.get("name2code", {}).items()) + list(d.get("alias_of", {}).items()):
+        by_full[cd].add(nm)
+
+    def suffix6(code):
+        suf = "SZ" if code[:2] in ("00", "30") else "SH"
+        return code + "." + suf
+
+    names_by_code = {}
+    for code in sorted(tickers):
+        cands = set()
+        cur = c2n.get(suffix6(code), "")
+        if cur:
+            cands.add(cur)
+        cands |= by_full.get(suffix6(code), set())
+        cleaned = set()
+        for nm in cands:
+            core = re.sub(r"^\*?ST|^G(?=[^A-Z])|^S(?=[^TZ])", "", nm.replace("*", ""))
+            core = re.sub(r"\(退\)$", "", core).rstrip("退")
+            if len(core) >= 3 and "ST" not in core:
+                cleaned.add(core)
+        names_by_code[code] = sorted(cleaned)
+    return names_by_code
+
+
+def raw_name_coverage(con, tickers, names_by_code):
+    """raw xq_status 名称匹配覆盖探针（未打标帖无法给 bearish，只做覆盖统计）。
+
+    返回 {ticker: {"posts": 总帖数, "years": {year: n}}}；对全库 17,338 帖做子串匹配。
+    """
+    pat = {t: names for t, names in names_by_code.items() if names}
+    hits = {t: {"posts": 0, "years": collections.Counter()} for t in tickers}
+    for created_at, title, desc in con.execute(
+            "SELECT created_at, title, desc FROM xq_status"):
+        text = (title or "") + " " + (desc or "")
+        if not text:
+            continue
+        year = (created_at or "")[:4]
+        for t, names in pat.items():
+            if any(nm in text for nm in names):
+                hits[t]["posts"] += 1
+                hits[t]["years"][year] += 1
+    return hits
+
+
+def classified_year_range(con):
+    """classified 数据的 (min_year, max_year)；表空/缺表返回 (None, None)。"""
+    row = con.execute(
+        "SELECT MIN(substr(s.created_at,1,4)), MAX(substr(s.created_at,1,4)) "
+        "FROM xq_status_classified c JOIN xq_status s ON s.status_id=c.status_id "
+        "WHERE c.parse_ok=1").fetchone()
+    if not row or not row[0]:
+        return None, None
+    return int(row[0]), int(row[1])
+
+
+def backtest_replay(sentiment, events, year_lo, year_hi):
+    """历年同窗回放：对每个拦截 (ticker, 月-日) 在历史各年同月同日锚定虚拟拦截日。
+
+    每年回放的舆情序列只取该年数据（回放窗不跨年，保持年纯性；2/29 锚点回落 2/28）。
+    返回 case 列表 [(ticker, 拦截日, 回放年, cmp结果, 判定)]。
+    """
+    cases = []
+    for t in sorted(events):
+        daily_all = sentiment.get(t, {})
+        for day_s in sorted(events[t]):
+            bd = date.fromisoformat(day_s)
+            for y in range(year_lo, year_hi + 1):
+                try:
+                    anchor = date(y, bd.month, bd.day)
+                except ValueError:  # 2/29
+                    anchor = date(y, 2, 28)
+                daily_y = {d: a for d, a in daily_all.items() if d.year == y}
+                cmp_res = compare_around_block(daily_y, anchor)
+                cases.append((t, day_s, y, cmp_res, verdict_of(cmp_res)))
+    return cases
+
+
+def run_backtest(args, events, con):
+    """--backtest 模式主体。返回退出码。"""
+    print("\n[2b] 历史回测模式：历年同窗回放（季节同窗近似，非事件对齐）")
+    print("    拦截日 %s ~ %s，历史锚定按「同月同日」逐年回放，判定口径与实时管道一致。" % (
+        min(min(v) for v in events.values()), max(max(v) for v in events.values())))
+
+    # classified 主口径舆情（全量历史区间）
+    y_lo, y_hi = classified_year_range(con)
+    if y_lo is None:
+        print("    [空态] classified 无可回放数据，历史回测终止（fail-visible）。")
+        return 1
+    print("    classified 回放年范围: %d ~ %d" % (y_lo, y_hi))
+    sentiment = load_sentiment_daily(con, date(y_lo, 1, 1))
+    r3_tickers = sorted(events)
+    covered_cls = [t for t in r3_tickers if t in sentiment]
+    print("    classified 对拦截标的覆盖: %d/%d" % (len(covered_cls), len(r3_tickers)))
+
+    # raw 覆盖探针（信息性，不参与判定）
+    try:
+        names_by_code = build_name_matcher(r3_tickers, args.names)
+    except (OSError, json.JSONDecodeError) as e:
+        print("    [警告] stock_names.json 不可用（%s），跳过 raw 覆盖探针。" % e)
+        names_by_code = {}
+    raw_hits = raw_name_coverage(con, r3_tickers, names_by_code) if names_by_code else {}
+    raw_covered = [t for t in r3_tickers if raw_hits.get(t, {}).get("posts")]
+    raw_total = sum(raw_hits[t]["posts"] for t in raw_covered)
+    print("    raw 名称匹配覆盖探针: %d/%d 标的、共 %d 帖（未打标，无法给 bearish 判定）" % (
+        len(raw_covered), len(r3_tickers), raw_total))
+    for t in raw_covered:
+        print("        %s 命中名=%s 帖=%d 年分布=%s" % (
+            t, "/".join(names_by_code[t][:4]), raw_hits[t]["posts"],
+            dict(sorted(raw_hits[t]["years"].items()))))
+
+    # 回放明细
+    cases = backtest_replay(sentiment, events, y_lo, y_hi)
+    verdict_counts = collections.Counter()
+    by_ticker = collections.defaultdict(collections.Counter)
+    print("\n[3b] 历年同窗回放明细（仅列有数据或判定非 not_yet 的行）")
+    print("    %-9s %-10s %4s %6s %4s %4s %6s | %-10s" % (
+        "ticker", "拦截日", "回放年", "前占比", "后帖", "后bear", "后占比", "判定"))
+    print("    " + "-" * 72)
+    n_shown = 0
+    for t, day_s, y, cmp_res, v in cases:
+        verdict_counts[v] += 1
+        by_ticker[t][v] += 1
+        if cmp_res["pre"]["posts"] or cmp_res["post"]["posts"]:
+            n_shown += 1
+            print("    %-9s %-10s %4d %6s %4d %4d %6s | %-10s" % (
+                t, day_s, y, fmt_pct(cmp_res["pre_bearish_rate"]),
+                cmp_res["post"]["posts"], cmp_res["post"]["bearish"],
+                fmt_pct(cmp_res["post_bearish_rate"]), v))
+    if n_shown == 0:
+        print("    （无任何回放窗命中数据——全部 not_yet）")
+    print("    " + "-" * 72)
+
+    # 汇总
+    total_cases = len(cases)
+    print("\n[4b] 三裁决分布（共 %d 个 标的×拦截日×回放年 组合）" % total_cases)
+    for k in ("consistent", "missed", "not_yet"):
+        n = verdict_counts.get(k, 0)
+        print("    %-10s %3d  (%s)" % (k, n, fmt_pct(n / total_cases) if total_cases else "-"))
+    print("\n    分标的汇总（consistent/missed/not_yet）:")
+    for t in r3_tickers:
+        c = by_ticker.get(t, collections.Counter())
+        print("        %-9s %d/%d/%d" % (
+            t, c.get("consistent", 0), c.get("missed", 0), c.get("not_yet", 0)))
+
+    # 结论段（fail-visible）
+    print("\n[5b] 历史回测结论")
+    if not covered_cls:
+        print("    [不可判定] classified 对 %d 个拦截标的零覆盖——历史 backtest 无法给出" % len(r3_tickers))
+        print("    consistent/missed 结论。raw 库存在 %d 帖名称命中（%d/%d 标的）但全部未打标。" % (
+            raw_total, len(raw_covered), len(r3_tickers)))
+        print("    可行动作：① 对 xq_status 存量 17,338 帖回补 classified（xq_classify 管道）后重跑 --backtest；"
+              "② 或等待实时舆情积累后走实时模式。")
+    elif verdict_counts.get("not_yet", 0) == total_cases:
+        print("    [空态] 全部回放组合 not_yet——拦截标的在历史同窗内无舆情数据。")
+    else:
+        nc = verdict_counts.get("consistent", 0)
+        nm_ = verdict_counts.get("missed", 0)
+        print("    历史同窗回放：consistent=%d missed=%d not_yet=%d。" % (
+            nc, nm_, verdict_counts.get("not_yet", 0)))
+        print("    注意：季节同窗近似≠事件对齐，consistent 仅代表「历史同期 bearish 突增模式存在」，"
+              "不构成 R3 规则精度的直接证据。")
+    return 0
+
+
 # ---------------------------------------------------------------- 汇总输出
 
 def fmt_pct(x):
@@ -228,14 +416,19 @@ def main():
     ap.add_argument("--ledger", default=DEFAULT_LEDGER)
     ap.add_argument("--db", default=DEFAULT_DB)
     ap.add_argument("--lookback-days", type=int, default=28,
-                    help="舆情回看窗口（相对今天），覆盖拦截日前后对比即可")
+                    help="舆情回看窗口（相对今天），覆盖拦截日前后对比即可（backtest 模式忽略）")
     ap.add_argument("--high-conf", type=float, default=0.7,
                     help="高置信 bearish 的 confidence 阈值")
+    ap.add_argument("--backtest", action="store_true",
+                    help="历史回测模式：对拦截记录按历年同窗（同月同日）回放")
+    ap.add_argument("--names", default=DEFAULT_NAMES,
+                    help="stock_names.json 路径（backtest raw 覆盖探针用）")
     args = ap.parse_args()
     HIGH_CONF = args.high_conf
 
     print("=" * 72)
-    print("R3 拦截 vs 雪球实时舆情 一致性核对（管道 v0：预置框架）")
+    print("R3 拦截 vs 雪球舆情 一致性核对（%s）" % (
+        "历史回测：历年同窗回放" if args.backtest else "实时管道 v0：预置框架"))
     print("=" * 72)
 
     # 1) R3 拦截事件
@@ -254,6 +447,10 @@ def main():
 
     # 2) 舆情库状态
     con, exists = open_xq_db_readonly(args.db)
+    if args.backtest:
+        rc = run_backtest(args, events, con)
+        con.close()
+        return rc
     today = date.today()
     since = today - timedelta(days=args.lookback_days)
     print("\n[2] 雪球舆情库  %s" % args.db)

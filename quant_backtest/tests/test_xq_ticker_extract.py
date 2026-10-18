@@ -15,8 +15,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from xq_classify import extract_tickers, _TICKER_VERSION
 
 
-def test_version_is_v12():
-    assert _TICKER_VERSION == "v1.2"
+def test_version_is_v13():
+    # v1.3：港股裸 5 位三通道判定（唯一被迫动的既有用例——版本断言必须跟随升级）
+    assert _TICKER_VERSION == "v1.3"
 
 
 # ── ① 中文紧贴挖掘（v1.1 漏提病根） ──────────────────────────
@@ -78,3 +79,51 @@ def test_fund_word_kept():
 
 def test_html_noise_rejected():
     assert extract_tickers("债券B<br/>1、没有标的", "") == []
+
+
+# ── ④ 港股裸 5 位三通道判定（v1.3，144250900 实证驱动） ──────
+
+def test_amount_form_5digit_rejected():
+    # 金额形 5 位 + 语境词也救不了点位/金额后缀硬排除（144250900 实证形态）
+    assert extract_tickers("港股行情热议，赚了 18000 元落袋", "") == []
+    assert extract_tickers("港股账户亏了 20000 块", "") == []
+
+def test_hk_suffix_direct_hit():
+    # .HK 后缀直接命中（无港股语境词也不受共现限制——.HK 本身即语境）
+    assert extract_tickers("00700.HK 创历史新高", "") == ["00700"]
+
+def test_hk_prefix_direct_hit():
+    # 「港股」紧邻前缀直接命中
+    assert extract_tickers("港股02331 中报超预期", "") == ["02331"]
+    assert extract_tickers("HK:00700 回购注销", "") == ["00700"]
+
+def test_chinese_adjacent_hk_name():
+    # 中文紧贴名形（无语境词）：「讯」字紧贴 00700，前置字非虚词 → 收
+    assert extract_tickers("美团03690 订单强劲", "") == ["03690"]
+
+def test_xueqiu_cashtag_direct_hit():
+    # 雪球 cashtag 形态 $腾讯控股(00700)$：代码被 ( / $ 紧邻包裹，直击不受共现限制
+    # （回归锚 171914290/150923887：v1.3 首版 bare 通道误杀此主力形态）
+    text = '<a href="https://xueqiu.com/S/00700">$腾讯控股(00700)$</a> 发布财报'
+    assert extract_tickers(text, "") == ["00700"]
+    assert extract_tickers("最近两个月，$阅文集团(00772)$经历高层换血", "") == ["00772"]
+
+def test_contextless_bare_5digit_rejected():
+    # 孤立裸 5 位、无港股语境、非紧贴名 → 拒
+    assert extract_tickers("中签 20000 股，运气爆棚", "") == []
+    assert extract_tickers("活动编号 10676 已登记", "") == []
+
+def test_context_cooccurrence_hit():
+    # 语境共现放行：孤立裸 5 位 + 港股语境词在整条文本中出现
+    assert extract_tickers("港股这边，指数站上 20000 关口", "") == ["20000"]
+
+def test_hk_contextless_verb_adjacent_rejected():
+    # 动词+数字紧贴（「赚了18000」）不算中文紧贴名，且无语境 → 拒
+    assert extract_tickers("赚了18000，请客吃饭", "") == []
+
+def test_hk_index_points_and_range_rejected():
+    # 144250900 回归锚：恒指点位（点后缀）+ 数字区间（连字符双界）全出局，
+    # 即便文中满是港股/恒指/港股通语境词
+    text = ("$恒生指数(HKHSI)$ 1、港股现在有多低估？底部恒指10676点，"
+            "涨到现在23200点，如今在18000-20000之间。")
+    assert extract_tickers(text, "") == []
