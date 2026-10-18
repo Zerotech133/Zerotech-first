@@ -19,11 +19,12 @@
         （按当日提及该股的已分类帖计）
   因子2 热度 mention(date, sym) = 当日提及该股的已分类帖数
 
-对齐：因子日 D → 该股 T+1 交易日收益 ret = close(T)/open(T) - 1
-     （次日 open→close 口径；T 取该股日线中 > D 的第一个交易日）。
+对齐：日频因子日 D → 该股 D 后首个交易日 open→close 收益；
+     周频因子汇总至周日 → 该股周日后首个交易日 open→close 收益。
 
 分层：每日截面样本稀薄（实测），默认合并为 ISO 周截面；截面内按
-因子值排 5 分位，统计 T+1 收益均值/中位数/单调性。IC 用逐截面
+因子值排 5 分位（至少 5 股且因子无同分；同分截面跳过），统计前向
+收益均值/中位数/单调性。IC 用逐截面
 Spearman(因子, ret)，报均值与 ICIR（mean/std）。
 
 label_version 纪律（判例：v1.2-re vs v1.3 广告口径漂移 5.8pp）：
@@ -140,18 +141,19 @@ def daily_factors(posts: list) -> dict:
 
 
 # ── 收益对齐 ────────────────────────────────────────────────
-def next_day_return(daily_rows: list, post_date: str) -> float | None:
-    """post_date 之后的第一个交易日 T：ret = close(T)/open(T) - 1。
+def next_day_return(daily_rows: list, post_date: str,
+                    max_date: str | None = None) -> float | None:
+    """post_date 后首个该股交易日的 open→close 收益。
 
-    daily_rows 为 router fetch_daily 行（trade_date 'YYYYMMDD'）。
-    无次日数据（停牌/尾部）返回 None。
+    daily_rows 的 trade_date 为 YYYYMMDD；max_date 限制首个交易日的
+    最晚日期，防止停牌后跨越研究窗口；无可用行情则返回 None。
     """
     if not daily_rows:
         return None
     key = post_date.replace("-", "")
     after = sorted(r["trade_date"] for r in daily_rows
                    if r.get("trade_date") and r["trade_date"] > key)
-    if not after:
+    if not after or (max_date and after[0] > max_date.replace("-", "")):
         return None
     nxt = next((r for r in daily_rows if r["trade_date"] == after[0]), None)
     o, c = nxt.get("open"), nxt.get("close")
@@ -168,38 +170,55 @@ def week_key(date_str: str) -> str:
 
 
 def build_sections(posts: list, daily_by_sym: dict,
-                   freq: str = "weekly") -> list:
+                   freq: str = "weekly", diagnostics: dict | None = None) -> list:
     """构造截面：[{key, obs:[{sym, senti, mention, ret}]}]。
 
-    freq='daily' 按 POST 日；'weekly' 按 ISO 周合并（同周同股多日
-    因子取算术平均、ret 对应各自 T+1 再取均值——周内稀薄样本合并）。
-    仅保留 ret 可得的 obs；截面 obs<1 丢弃。
+    freq='daily' 按 POST 日对齐后续首个交易日；'weekly' 按 ISO 周合并，
+    同周同股情绪取日均、热度取帖数合计，收益限下周该股首交易日。
+    仅保留 ret 可得的 obs；截面 obs<1 丢弃。可选 diagnostics 记录拒绝原因。
     """
     factors = daily_factors(posts)
     by_key = defaultdict(list)
     for (d, sym), f in factors.items():
-        ret = next_day_return(daily_by_sym.get(sym), d)
-        if ret is None:
-            continue
         k = d if freq == "daily" else week_key(d)
-        by_key[k].append({"sym": sym, "date": d, "ret": ret, **f})
+        by_key[k].append({"sym": sym, "date": d, **f})
     sections = []
     for k in sorted(by_key):
         obs = by_key[k]
-        if freq == "weekly" and len(obs) > 1:
+        if freq == "weekly":
             merged = defaultdict(list)
             for o in obs:
                 merged[o["sym"]].append(o)
             obs = []
+            cutoff_date = datetime.strptime(k, "%Y-%m-%d") + timedelta(days=6)
+            cutoff = cutoff_date.strftime("%Y-%m-%d")
+            end_date = (cutoff_date + timedelta(days=7)).strftime("%Y-%m-%d")
             for sym, lst in sorted(merged.items()):
+                ret = next_day_return(daily_by_sym.get(sym), cutoff,
+                                      max_date=end_date)
+                if ret is None:
+                    if diagnostics is not None:
+                        after = [r["trade_date"] for r in
+                                 (daily_by_sym.get(sym) or [])
+                                 if r.get("trade_date") and
+                                 r["trade_date"] > cutoff.replace("-", "")]
+                        reason = ("skipped_delayed" if after and
+                                  min(after) > end_date.replace("-", "")
+                                  else "skipped_no_return")
+                        diagnostics[reason] = diagnostics.get(reason, 0) + 1
+                    continue
                 obs.append({
-                    "sym": sym, "date": lst[0]["date"],
-                    "ret": sum(x["ret"] for x in lst) / len(lst),
+                    "sym": sym, "date": cutoff, "ret": ret,
                     "senti": sum(x["senti"] for x in lst) / len(lst),
-                    "mention": sum(x["mention"] for x in lst) / len(lst),
+                    "mention": sum(x["mention"] for x in lst),
                     "n_days": len(lst),
                 })
-        sections.append({"key": k, "obs": obs})
+        else:
+            obs = [{**o, "ret": ret} for o in obs
+                   if (ret := next_day_return(daily_by_sym.get(o["sym"]),
+                                              o["date"])) is not None]
+        if obs:
+            sections.append({"key": k, "obs": obs})
     return sections
 
 
@@ -271,18 +290,20 @@ def ic_summary(ics: list) -> dict:
 
 
 def quintile_table(sections: list, factor: str) -> list:
-    """截面内 5 分位 → 池化 T+1 收益均值/中位数/观测数。
+    """截面内 5 分位 → 池化前向收益均值/中位数/观测数。
 
-    截面内按因子升序排名，q = min(4, rank*5//n)（小截面自动摊入
-    低分位）。返回 5 行 [{quintile, n, mean_ret, median_ret}]。
+    少于 5 股或存在因子同分则整截面跳过，以免按股票代码人为破同分。
+    返回 5 行统计。
     """
     buckets = defaultdict(list)
     for sec in sections:
-        obs = sorted(sec["obs"], key=lambda o: (o[factor], o["sym"]))
-        n = len(obs)
-        for i, o in enumerate(obs):
-            q = min(4, i * 5 // max(1, n))
-            buckets[q].append(o["ret"])
+        obs = sec["obs"]
+        values = sorted({o[factor] for o in obs})
+        if len(obs) < 5 or len(values) != len(obs):
+            continue
+        group = {v: i * 5 // len(obs) for i, v in enumerate(values)}
+        for o in obs:
+            buckets[group[o[factor]]].append(o["ret"])
     rows = []
     for q in range(5):
         rets = sorted(buckets.get(q, []))
@@ -296,6 +317,20 @@ def quintile_table(sections: list, factor: str) -> list:
         rows.append({"quintile": q + 1, "n": len(rets),
                      "mean_ret": round(m, 5), "median_ret": round(med, 5)})
     return rows
+
+
+def quintile_coverage(sections: list, factor: str) -> dict:
+    """按原因统计五分位可用截面及被跳过截面。"""
+    counts = {"eligible": 0, "skipped_small": 0, "skipped_ties": 0}
+    for sec in sections:
+        obs = sec["obs"]
+        if len(obs) < 5:
+            counts["skipped_small"] += 1
+        elif len({o[factor] for o in obs}) != len(obs):
+            counts["skipped_ties"] += 1
+        else:
+            counts["eligible"] += 1
+    return counts
 
 
 def monotonicity(qtab: list) -> float | None:
@@ -353,8 +388,10 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
 # ── 主统计 ──────────────────────────────────────────────────
 def version_stats(posts, daily_by_sym, freq, min_obs):
     """单版本全套统计（主统计与附表同管道同口径）。posts 须已过版本过滤。"""
-    sections = build_sections(posts, daily_by_sym, freq=freq)
-    res = {"n_posts": len(posts),
+    alignment = {}
+    sections = build_sections(posts, daily_by_sym, freq=freq,
+                              diagnostics=alignment)
+    res = {"n_posts": len(posts), "alignment": alignment,
            "n_sections": len(sections),
            "n_obs": sum(len(s["obs"]) for s in sections),
            "n_stocks": len({o["sym"] for s in sections for o in s["obs"]})}
@@ -365,6 +402,7 @@ def version_stats(posts, daily_by_sym, freq, min_obs):
             "ic": ic_summary(ics),
             "ic_detail": ics,
             "quintiles": qtab,
+            "quintile_coverage": quintile_coverage(sections, factor),
             "monotonicity": monotonicity(qtab),
         }
     return res
@@ -374,7 +412,12 @@ def run_analysis(posts: list, daily_by_sym: dict,
                  freq: str = "weekly", min_obs: int = 3) -> dict:
     """label_version 分层全套：主统计 v1.3，其余版本附表。"""
     versions = sorted({p["version"] for p in posts})
-    out = {"freq": freq, "min_obs_per_section": min_obs, "versions": {}}
+    out = {"freq": freq, "min_obs_per_section": min_obs,
+           "forward_return": ("ISO周周日后下一周首个该股交易日 open→close；"
+                              "非整周收益" if freq == "weekly" else
+                              "帖日后首个该股交易日 open→close"),
+           "weekly_max_delay_days": 7 if freq == "weekly" else None,
+           "versions": {}}
     for v in versions:
         vp = filter_version(posts, v)
         n_stock_posts = sum(1 for p in vp if p["stocks"])

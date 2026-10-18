@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 from xq_factor_v1 import (  # noqa: E402
     INDEX_POLLUTION, build_sections, daily_factors, filter_version,
     ic_series, ic_summary, monotonicity, next_day_return, parse_stock_keys,
-    quintile_table, run_analysis, spearman,
+    quintile_coverage, quintile_table, run_analysis, spearman,
 )
 
 
@@ -53,7 +53,7 @@ def mock_posts():
 
 
 def mock_daily():
-    """3 股日线：10-06~10-09 连续 4 个交易日，open/close 构造确定性收益。
+    """3 股日线：同周日线及次周 10-12，open/close 构造确定性收益。
 
     10-05(周一,帖子日,非提供日) → T+1=10-06。次日 open→close：
       SZ000001 10-06: open 10 → close 11  → +10%
@@ -69,10 +69,13 @@ def mock_daily():
     return {
         "SZ000001": [row("SZ000001", "2026-10-06", 10, 11),
                      row("SZ000001", "2026-10-07", 11, 10.45),
-                     row("SZ000001", "2026-10-08", 10.45, 11.495)],
-        "SH600519": [row("SH600519", "2026-10-06", 100, 99)],
+                     row("SZ000001", "2026-10-08", 10.45, 11.495),
+                     row("SZ000001", "2026-10-12", 12, 12.6)],
+        "SH600519": [row("SH600519", "2026-10-06", 100, 99),
+                     row("SH600519", "2026-10-12", 100, 98)],
         "SZ000651": [row("SZ000651", "2026-10-06", 50, 50),
-                     row("SZ000651", "2026-10-07", 50, 52.5)],
+                     row("SZ000651", "2026-10-07", 50, 52.5),
+                     row("SZ000651", "2026-10-12", 50, 51)],
     }
 
 
@@ -100,9 +103,9 @@ def test_next_day_return():
     d = mock_daily()
     r = next_day_return(d["SZ000001"], "2026-10-05")
     assert abs(r - (11 / 10 - 1)) < 1e-9      # T+1 open→close
-    # 周末日/未来日无次日 → None
-    assert next_day_return(d["SZ000001"], "2026-10-08") is None
-    assert next_day_return(d["SH600519"], "2026-10-06") is None
+    # 跳过周末对齐到下周首个交易日；无行情则返回 None
+    assert abs(next_day_return(d["SZ000001"], "2026-10-11") - .05) < 1e-9
+    assert next_day_return(d["SZ000001"], "2026-10-12") is None
     assert next_day_return([], "2026-10-05") is None
 
 
@@ -119,10 +122,33 @@ def test_build_sections_weekly():
     syms = {o["sym"] for o in secs[0]["obs"]}
     assert syms == {"SZ000001", "SH600519", "SZ000651"}
     o1 = next(o for o in secs[0]["obs"] if o["sym"] == "SZ000001")
-    # SZ000001 3 日合并：senti 均值 = (1/3 + 0(中性单帖) + 1.0(旧版帖))/3
+    # 同周多日因子仍聚合，收益只取周日后首个交易日，不混入周内收益
     assert abs(o1["senti"] - (1 / 3 + 0.0 + 1.0) / 3) < 1e-9
-    # ret 均值 = (+10% + -5% + +10%)/3
-    assert abs(o1["ret"] - (0.10 - 0.05 + 0.10) / 3) < 1e-9
+    assert abs(o1["ret"] - 0.05) < 1e-9
+    assert o1["date"] == "2026-10-11"
+    assert o1["mention"] == 5  # 同周帖数相加：3+1+1，非日均数
+    # 只有周内行情时，不得把已发生的周内收益回填为周因子的前向收益
+    intraweek_only = {sym: [r for r in rows if r["trade_date"] < "20261012"]
+                      for sym, rows in mock_daily().items()}
+    assert build_sections(mock_posts(), intraweek_only, freq="weekly") == []
+    assert build_sections(mock_posts(), intraweek_only, freq="daily")
+
+
+def test_weekly_return_delay_gate():
+    daily = mock_daily()
+    daily["SZ000001"] = [r for r in daily["SZ000001"]
+                          if r["trade_date"] != "20261012"]
+    daily["SZ000001"].append({"trade_date": "20261019", "open": 10,
+                              "close": 12})
+    diagnostics = {}
+    sections = build_sections(mock_posts(), daily, freq="weekly",
+                              diagnostics=diagnostics)
+    assert "SZ000001" not in {o["sym"] for o in sections[0]["obs"]}
+    assert diagnostics == {"skipped_delayed": 1}
+    out = run_analysis(mock_posts(), daily)
+    assert out["versions"]["v1.3"]["alignment"]["skipped_delayed"] == 1
+    assert out["weekly_max_delay_days"] == 7
+    assert "非整周收益" in out["forward_return"]
 
 
 def test_quintile_and_monotonicity():
@@ -141,11 +167,23 @@ def test_quintile_and_monotonicity():
     # mention 反向：q5 应最差
     qtab_m = quintile_table(secs, "mention")
     assert qtab_m[0]["mean_ret"] > qtab_m[4]["mean_ret"]
-    # 空截面不炸：obs<5 摊入低分位
+    # 小于五股、少于五种因子值的截面不强行拆成五分位
     tiny = [{"key": "t", "obs": [{"sym": "A", "senti": 0.5, "mention": 1,
                                   "ret": 0.01}]}]
-    qt = quintile_table(tiny, "senti")
-    assert qt[0]["n"] == 1 and qt[1]["n"] == 0
+    assert all(r["n"] == 0 for r in quintile_table(tiny, "senti"))
+    ties = [{"key": "ties", "obs": [
+        {"sym": "S%d" % i, "senti": i // 2, "ret": 0.01 * i}
+        for i in range(6)]}]
+    assert all(r["n"] == 0 for r in quintile_table(ties, "senti"))
+    # 即使十股恰有五个离散值，只要有同分就整截面拒绝
+    ties[0]["obs"] = [{"sym": "S%d" % i, "senti": i // 2, "ret": .01 * i}
+                      for i in range(10)]
+    assert all(r["n"] == 0 for r in quintile_table(ties, "senti"))
+    coverage = quintile_coverage(secs + tiny + ties, "senti")
+    assert coverage == {"eligible": 10, "skipped_small": 1,
+                        "skipped_ties": 1}
+    assert run_analysis(mock_posts(), mock_daily())["versions"]["v1.3"][
+        "mention"]["quintile_coverage"]["skipped_small"] == 1
 
 
 # ── 3) IC ───────────────────────────────────────────────────
