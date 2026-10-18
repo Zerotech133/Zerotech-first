@@ -1,0 +1,88 @@
+{
+  "strategies": [
+    {
+      "strategy_id": "ma_cross",
+      "version": "1.0.0",
+      "allowed_data": [
+        "bars.daily"
+      ],
+      "resource_budget": {
+        "timeout_s": 5.0,
+        "max_concurrency": 1,
+        "max_context_bytes": 262144
+      },
+      "allowed_modes": [
+        "BACKTEST",
+        "REPLAY",
+        "SHADOW"
+      ],
+      "permissions": [
+        "propose",
+        "read_context"
+      ]
+    },
+    {
+      "strategy_id": "rsi_reversal",
+      "version": "1.0.0",
+      "allowed_data": [
+        "bars.daily"
+      ],
+      "resource_budget": {
+        "timeout_s": 5.0,
+        "max_concurrency": 1,
+        "max_context_bytes": 524288
+      },
+      "allowed_modes": [
+        "BACKTEST",
+        "REPLAY",
+        "SHADOW"
+      ],
+      "permissions": [
+        "propose",
+        "read_context"
+      ]
+    },
+    {
+      "strategy_id": "boll_breakout",
+      "version": "1.0.0",
+      "allowed_data": [
+        "bars.daily"
+      ],
+      "resource_budget": {
+        "timeout_s": 5.0,
+        "max_concurrency": 1,
+        "max_context_bytes": 524288
+      },
+      "allowed_modes": [
+        "BACKTEST",
+        "REPLAY",
+        "SHADOW"
+      ],
+      "permissions": [
+        "propose",
+        "read_context"
+      ]
+    },
+    {
+      "strategy_id": "trend_follow",
+      "version": "1.0.0",
+      "allowed_data": [
+        "bars.daily"
+      ],
+      "resource_budget": {
+        "timeout_s": 5.0,
+        "max_concurrency": 1,
+        "max_context_bytes": 262144
+      },
+      "allowed_modes": [
+        "BACKTEST",
+        "REPLAY",
+        "SHADOW"
+      ],
+      "permissions": [
+        "propose",
+        "read_context"
+      ]
+    }
+  ]
+}
