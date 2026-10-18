@@ -140,7 +140,51 @@ def anomaly_signals(summ, con, day):
     return out
 
 
-def render(day, tac, ing, summ_t, anomalies) -> str:
+def word_tempo(con, day, today_words=None, topn=8):
+    """词频温度计：当日多空词 vs 前 6 日基线的突增检测。
+
+    today_words 可传 summarize() 已算好的 {"bearish": Counter, "bullish": Counter}
+    以复用避免二次扫描；不传则由窗口查询现算（仅单测/独立调用场景）。
+    返回 [(sentiment, word, today_n, base_avg, ratio)]：
+      基线 = 前 6 日（day-6 ~ day-1，不含当日）合并词频的日均；
+      ratio = today_n / max(base_avg, 0.5)（平滑，新词 base_avg=0 时 ratio 极大属预期）；
+    只保留 today_n>=2 且 ratio>=2 的「新词/升温词」，按 ratio 降序，每边最多 topn 条。
+    """
+    base_lo = (datetime.strptime(day, "%Y-%m-%d") - timedelta(days=6)).strftime("%Y-%m-%d")
+    q_sel = ("SELECT c.sentiment, s.title FROM xq_status s JOIN xq_status_classified c"
+             "   ON s.status_id = c.status_id"
+             " WHERE c.parse_ok=1 AND c.sentiment IN ('bearish','bullish')"
+             "   AND (c.content_type IS NULL OR c.content_type NOT IN ('ad','edu'))")
+    # 基线窗口：day-6 00:00 ~ day 00:00（左闭右开，不含当日）
+    q_base = q_sel + "   AND s.created_at >= ? AND s.created_at < ?"
+    # 当日窗口：day 00:00 ~ day 23:59（独立条件，勿叠加基线右边界）
+    q_today = q_sel + "   AND s.created_at BETWEEN ? AND ?"
+    base = {"bearish": Counter(), "bullish": Counter()}
+    for sn, title in con.execute(q_base, (base_lo + " 00:00:00", day + " 00:00:00")):
+        for w in title_words(title):
+            base[sn][w] += 1
+    if today_words is None:
+        today_words = {"bearish": Counter(), "bullish": Counter()}
+        for sn, title in con.execute(q_today, (day + " 00:00:00", day + " 23:59:59")):
+            for w in title_words(title):
+                today_words[sn][w] += 1
+    out = []
+    for sn in ("bearish", "bullish"):
+        rows = []
+        for w, n in today_words[sn].items():
+            if n < 2:
+                continue
+            b = base[sn][w] / 6.0
+            ratio = n / max(b, 0.5)
+            if ratio < 2:
+                continue
+            rows.append((sn, w, n, b, ratio))
+        rows.sort(key=lambda r: (-r[4], r[1]))
+        out.extend(rows[:topn])
+    return out
+
+
+def render(day, tac, ing, summ_t, anomalies, tempo=None) -> str:
     n_tac, n_ing = len(tac), len(ing)
     cls_t = n_tac - summ_t["pending"]
     L = []
@@ -199,6 +243,14 @@ def render(day, tac, ing, summ_t, anomalies) -> str:
             L.append("- %s top8：%s" % (label, "、".join("%s×%d" % (w, c) for w, c in top)))
         else:
             L.append("- %s top8：（空）" % label)
+    tempo_rows = tempo or []
+    for label in ("bearish", "bullish"):
+        rows = [r for r in tempo_rows if r[0] == label]
+        if rows:
+            L.append("- %s 升温：%s" % (label, "、".join(
+                "%s×%d(基线%g/ratio%g)" % (w, n, b, rt) for _sn, w, n, b, rt in rows)))
+        else:
+            L.append("- %s 升温：（无突增）" % label)
     L.append("")
     L.append("## 四、热门标的（当日新帖 · 个股代码）")
     L.append("")
@@ -269,7 +321,9 @@ def main() -> int:
         tac, ing = load_rows(con, day)
         summ = summarize(tac)
         anomalies = anomaly_signals(summ, con, day)
-        md = render(day, tac, ing, summ, anomalies)
+        tempo = word_tempo(con, day, today_words={"bearish": summ["bear_words"],
+                                                  "bullish": summ["bull_words"]})
+        md = render(day, tac, ing, summ, anomalies, tempo)
 
         # 血缘透明化：动态读 xq_classify 既有常量（提取器版本由 hk-ticker 工位维护，
         # 勿硬编码；import 失败兜底 unknown，不影响报告主产出）
@@ -293,10 +347,14 @@ def main() -> int:
             "top_themes": dict(summ["themes"].most_common(6)),
             "anomaly_signals": [{"code": c, "n": n, "bearish": b, "baseline6d": x}
                                 for c, n, b, x in anomalies],
+            "word_tempo": {"bearish": [], "bullish": []},  # 先占位，下方按情绪边填充
             "high_confidence": [{"confidence": cf, "code": c, "sentiment": s,
                                  "event_type": e, "title": t}
                                 for cf, c, s, e, t in summ["sig"]],
         }
+        for sn, w, n, b, rt in tempo:
+            payload["word_tempo"][sn].append(
+                {"word": w, "today": n, "base_avg": round(b, 2), "ratio": round(rt, 2)})
         stem = "xq_intel_%s" % day.replace("-", "")
         dp = os.path.join(OUT_ROOT, "daily", stem + ".md")
         jp = os.path.join(OUT_ROOT, "daily", stem + ".json")
