@@ -38,7 +38,7 @@ def load_rows(con: sqlite3.Connection, day: str):
     """拉当日窗口联表行：tactical=created_at 口径，ingest=fetched_at 口径"""
     q = ("SELECT s.status_id, s.created_at, s.fetched_at, s.title, s.desc, s.category,"
          "       c.event_type, c.sentiment, c.tickers, c.confidence, c.parse_ok,"
-         "       c.model, c.prompt_version"
+         "       c.model, c.prompt_version, c.content_type"
          "  FROM xq_status s LEFT JOIN xq_status_classified c"
          "    ON s.status_id = c.status_id")
     lo, hi = day + " 00:00:00", day + " 23:59:59"
@@ -66,11 +66,12 @@ def split_tickers(raw: str):
 def summarize(rows):
     """对窗口行做全维度汇总（未分类行 event_type=None 自动进 pending 桶）"""
     ev, senti, codes, themes = Counter(), Counter(), Counter(), Counter()
+    ctype = Counter()      # v1.2 内容形态（tech/community/news/fundamental）
     pending, parse_bad = 0, 0
     sig_rows = []          # (conf, code, senti, event, title)
     ticker_senti = defaultdict(Counter)   # code -> Counter(senti)
     lineages = Counter()
-    for sid, _cat, _ft, title, _desc, _tg, et, sn, tk, conf, pok, model, pv in rows:
+    for sid, _cat, _ft, title, _desc, _tg, et, sn, tk, conf, pok, model, pv, ct in rows:
         if et is None:
             pending += 1
             continue
@@ -79,6 +80,7 @@ def summarize(rows):
             continue
         ev[et] += 1
         lineages["%s|%s" % (model, pv)] += 1
+        ctype[ct or "(待补)"] += 1
         if sn:
             senti[sn] += 1
         c, th = split_tickers(tk or "")
@@ -93,7 +95,7 @@ def summarize(rows):
     sig_rows.sort(reverse=True)
     return dict(ev=ev, senti=senti, codes=codes, themes=themes, pending=pending,
                 parse_bad=parse_bad, sig=sig_rows[:12],
-                ticker_senti=ticker_senti, lineages=lineages)
+                ticker_senti=ticker_senti, lineages=lineages, ctype=ctype)
 
 
 def anomaly_signals(summ, con, day):
@@ -153,6 +155,17 @@ def render(day, tac, ing, summ_t, anomalies) -> str:
         for k in ("bullish", "neutral", "bearish"):
             v = summ_t["senti"].get(k, 0)
             L.append("- %s：%d（%.0f%%）" % (k, v, 100.0 * v / tot))
+    else:
+        L.append("（空）")
+    L.append("")
+    L.append("## 三-B、内容形态分布（当日新帖 · v1.2 分类维度）")
+    L.append("")
+    CTN = {"tech": "技术面分析", "community": "社区探讨", "news": "个股资讯",
+           "fundamental": "基本面逻辑", "(待补)": "（待补标）"}
+    if summ_t["ctype"]:
+        ctot = sum(summ_t["ctype"].values())
+        for k, v in summ_t["ctype"].most_common():
+            L.append("- %s：%d（%.0f%%）" % (CTN.get(k, k), v, 100.0 * v / ctot))
     else:
         L.append("（空）")
     L.append("")

@@ -41,18 +41,29 @@ LOG_DIR = Path(r"C:\aios\automation_runs") / "xq_classify"   # 定时任务产�
 STATUS_LOG = LOG_DIR / "xq_classify_status.log"
 
 MODEL = "qwen3.5:9b"
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v1.2"    # v1.2：+content_type 内容形态四分类（老田 2026-10-18：技术面/社区探讨/个股资讯/基本面）
 OLLAMA_URL = "http://127.0.0.1:11434/api/chat"
 TIMEOUT_SEC = 60           # think:false 后单条 ~1s；60s 纯兜底
 BODY_CHARS = 300           # 正文截断（短文本分类足够）
 
 EVENT_TYPES = ["行情观点", "个股研判", "宏观政策", "基金理财", "交易策略", "广告推广", "闲聊杂谈"]
 SENTIMENTS = ["bullish", "bearish", "neutral"]
+CONTENT_TYPES = ["tech", "community", "news", "fundamental"]
+
+CONTENT_TYPE_DESC = {
+    "tech": "技术面分析（讲K线/均线/形态/指标/缠论/量价/点位/图形/买卖点）",
+    "community": "社区探讨（散户交流/情绪表达/争论吐槽/求点评/打卡跟风，无论据链）",
+    "news": "个股资讯（事实性转述：公告/业绩/订单/政策/新闻，少主观判断）",
+    "fundamental": "基本面逻辑（业绩/行业/估值/商业模式/竞争格局论证）",
+}
 
 SYSTEM_PROMPT = (
     "你是金融舆情分类器。只输出一行 JSON，不要任何其他文字："
-    '{"event_type":"<七选一>","sentiment":"<三选一>","confidence":<0到1小数>}。'
+    '{"event_type":"<七选一>","content_type":"<四选一>",'
+    '"sentiment":"<三选一>","confidence":<0到1小数>}。'
     "event_type 只能取：" + "、".join(EVENT_TYPES) + "。"
+    "content_type 只能取（内容形态，与 event_type 正交）：" +
+    "；".join("%s=%s" % (k, v) for k, v in CONTENT_TYPE_DESC.items()) + "。"
     "sentiment 只能取：" + "、".join(SENTIMENTS) + "（对 A股/港股大盘或个股的态度）。"
 )
 
@@ -103,6 +114,11 @@ def ensure_table(con: sqlite3.Connection) -> None:
            )"""
     )
     con.commit()
+    # v1.2 迁移：content_type 列（已存在则跳过；automation 旧进程并发写兼容）
+    cols = [r[1] for r in con.execute("PRAGMA table_info(xq_status_classified)")]
+    if "content_type" not in cols:
+        con.execute("ALTER TABLE xq_status_classified ADD COLUMN content_type TEXT")
+        con.commit()
 
 
 def extract_tickers(title: str, desc: str) -> list:
@@ -152,13 +168,15 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
         return False
 
     parse_ok = 0
-    event_type = sentiment = None
+    event_type = sentiment = content_type = None
     confidence = None
     try:
         m = re.search(r"\{.*\}", answer, re.S)
         obj = json.loads(m.group(0)) if m else {}
         if obj.get("event_type") in EVENT_TYPES:
             event_type = obj["event_type"]
+        if obj.get("content_type") in CONTENT_TYPES:   # v1.2 内容形态（缺失不降级 parse_ok，可 --recontent 补）
+            content_type = obj["content_type"]
         if obj.get("sentiment") in SENTIMENTS:
             sentiment = obj["sentiment"]
         conf = obj.get("confidence")
@@ -173,16 +191,81 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     con.execute(
         """INSERT OR REPLACE INTO xq_status_classified
            (status_id, event_type, sentiment, tickers, confidence,
-            parse_ok, model, prompt_version, labeled_at)
-           VALUES (?,?,?,?,?,?,?,?,?)""",
+            parse_ok, model, prompt_version, labeled_at, content_type)
+           VALUES (?,?,?,?,?,?,?,?,?,?)""",
         (str(status_id), event_type, sentiment,
          json.dumps(extract_tickers(title, desc), ensure_ascii=False),
          confidence, parse_ok, MODEL, PROMPT_VERSION,
-         datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+         datetime.now().strftime("%Y-%m-%d %H:%M:%S"), content_type))
     if parse_ok:
-        log("OK %s cat=%s %s | %s conf=%s %.1fs"
-            % (status_id, category, event_type, sentiment, confidence, dt))
+        log("OK %s cat=%s %s/%s | %s conf=%s %.1fs"
+            % (status_id, category, event_type, content_type or "-", sentiment, confidence, dt))
     return True
+
+
+def recontent_run(limit: int) -> int:
+    """v1.2 存量补标：对已分类但 content_type 为空的行重跑 LLM 只补内容形态列。
+
+    判例：lineage 诚实——prompt_version 标 'v1.2-re'（event_type 系 v1 判定，
+    content_type 系 v1.2 补判），两段 lineage 不混淆。
+    """
+    con = sqlite3.connect(str(DB_PATH), timeout=30)
+    con.execute("PRAGMA busy_timeout=30000")
+    ensure_table(con)
+    rows = con.execute(
+        """SELECT c.status_id, s.title, s.desc
+           FROM xq_status_classified c JOIN xq_status s ON s.status_id = c.status_id
+           WHERE c.parse_ok = 1 AND c.content_type IS NULL LIMIT ?""",
+        (limit,)).fetchall()
+    log("recontent start n=%d" % len(rows))
+    if not rows:
+        log("recontent end rc=0 nothing-to-backfill")
+        con.close()
+        return 0
+    ok = hard = consec = 0
+    for status_id, title, desc in rows:
+        body = ((title or "") + "\n" + (desc or "")).strip()[:BODY_CHARS + 60]
+        payload = json.dumps({
+            "model": MODEL,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": body or "（无文字内容）"},
+            ],
+            "stream": False, "think": False,
+            "options": {"temperature": 0.1, "num_ctx": 2048, "num_predict": 256},
+        }).encode("utf-8")
+        req = urllib.request.Request(OLLAMA_URL, data=payload,
+                                     headers={"Content-Type": "application/json"})
+        try:
+            resp = urllib.request.urlopen(req, timeout=TIMEOUT_SEC)
+            answer = json.loads(resp.read())["message"]["content"].strip()
+            answer = re.sub(r"<think>.*?</think>", "", answer, flags=re.S).strip()
+        except Exception as e:
+            hard += 1
+            consec += 1
+            log("RE-HARD-FAIL %s: %s" % (status_id, str(e)[:120]))
+            if consec >= 8:
+                log("RE-ABORT consecutive-fail=%d" % consec)
+                break
+            continue
+        consec = 0
+        try:
+            m = re.search(r"\{.*\}", answer, re.S)
+            obj = json.loads(m.group(0)) if m else {}
+            ct = obj.get("content_type") if obj.get("content_type") in CONTENT_TYPES else None
+        except Exception:
+            ct = None
+        con.execute(
+            "UPDATE xq_status_classified SET content_type=?, prompt_version=?, labeled_at=? WHERE status_id=?",
+            (ct, "v1.2-re", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), str(status_id)))
+        ok += 1
+        con.commit()
+    con.commit()
+    n_left = con.execute(
+        "SELECT COUNT(*) FROM xq_status_classified WHERE parse_ok=1 AND content_type IS NULL").fetchone()[0]
+    con.close()
+    log("recontent end rc=%d ok=%d hard=%d left=%d" % (0 if hard == 0 else 0, ok, hard, n_left))
+    return 0
 
 
 def run(limit: int) -> int:
@@ -290,11 +373,15 @@ def main() -> int:
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--reticker", action="store_true",
                     help="v1.1 按新正则重算已分类行的 tickers（不过 LLM）")
+    ap.add_argument("--recontent", action="store_true",
+                    help="v1.2 对已分类但 content_type 为空的行重跑 LLM 补内容形态")
     a = ap.parse_args()
     if a.status:
         return show_status()
     if a.reticker:
         return reticker()
+    if a.recontent:
+        return recontent_run(a.limit)
     return run(a.limit)
 
 
