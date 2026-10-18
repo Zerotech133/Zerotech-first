@@ -301,12 +301,16 @@ def overview():
                     xq_done = t.get("rows", 0)
     # 打标模型版本分布（治理/自进化观测）
     model_dist = {}
+    content_dist = {}
     try:
         con = _ro(os.path.join(DATA, "xueqiu", "xueqiu_info.db"))
         cols = [c[1] for c in con.execute("PRAGMA table_info(xq_status_classified)")]
         if "model" in cols:
             model_dist = {str(r[0]): r[1] for r in con.execute(
                 "SELECT COALESCE(model,'?'), COUNT(*) FROM xq_status_classified GROUP BY 1")}
+        if "content_type" in cols:   # v1.2 内容形态分布（第一分类维度：tech/community/news/fundamental）
+            content_dist = {str(r[0]): r[1] for r in con.execute(
+                "SELECT COALESCE(content_type,'(待补)'), COUNT(*) FROM xq_status_classified GROUP BY 1 ORDER BY 2 DESC")}
         con.close()
     except Exception as e:
         errors.append("model_dist: %s" % str(e)[:60])
@@ -391,7 +395,7 @@ def overview():
         "collectors": collectors, "pools": pools, "parquet": parquet,
         "pipelines": pipes, "task_groups": task_groups, "catalog": catalog,
         "daily_intake": daily,
-        "governance": {"model_dist": model_dist,
+        "governance": {"model_dist": model_dist, "content_dist": content_dist,
                        "hint": "打标 lineage 字段 model/prompt_version 支持版本换代 A/B；"
                                "Hermes/调度系统直接 GET 本接口（fail-visible JSON）即得全局数据地图"},
         "errors": errors,

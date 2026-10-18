@@ -266,9 +266,19 @@ function render(d){
 
   const g=d.governance||{};
   const md=Object.entries(g.model_dist||{});
+  const CTN={tech:'技术面分析',community:'社区探讨',news:'个股资讯',fundamental:'基本面逻辑','(待补)':'(待补)'};
+  const cd=Object.entries(g.content_dist||{});
+  const cdMax=Math.max(1,...cd.map(x=>x[1]));
   document.getElementById('gov').innerHTML=
-    '<b>打标模型版本分布</b>（lineage：model / prompt_version 支持换代 A/B，升级不重写原表）<br>'+
-    (md.length?md.map(x=>esc(x[0])+'：<b>'+x[1]+'</b> 条').join(' · '):'<span class="muted">暂无打标数据</span>')+
+    '<b>内容形态分类（v1.2 第一分类维度）</b>——技术面股评 / 社区探讨 / 个股资讯 / 基本面逻辑，与事件类型、情绪正交<br>'+
+    (cd.length?cd.map(x=>'<div style="display:flex;align-items:center;gap:8px;margin:4px 0">'+
+      '<span style="width:90px;font-size:12px">'+esc(CTN[x[0]]||x[0])+'</span>'+
+      '<div class="bar" style="flex:1;height:12px"><div style="width:'+(x[1]/cdMax*100).toFixed(0)+'%"></div></div>'+
+      '<span class="muted" style="font-size:12px;min-width:56px;text-align:right">'+x[1].toLocaleString()+'</span></div>').join('')
+      :'<span class="muted">暂无打标数据</span>')+
+    '<hr style="border:none;border-top:1px solid var(--bd);margin:10px 0">'+
+    '<b>打标模型版本分布</b>（lineage：model / prompt_version 支持换代 A/B，升级不重写原表）'+
+    (md.length?' · '+md.map(x=>esc(x[0])+'：<b>'+x[1]+'</b> 条').join(' · '):'<span class="muted">暂无</span>')+
     '<br><span class="muted">'+esc(g.hint||'')+'</span>';
 }
 
