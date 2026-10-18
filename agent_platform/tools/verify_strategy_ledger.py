@@ -19,19 +19,20 @@
   ② run_id 双向可查：判决行 run_id 必须命中影子账本 m5.v1 行索引
      （反向：影子 m5.v1 run_id 未被任何判决引用只提示不计 FAIL——
      影子 run 可合法不产出判决，bars 缺失时 strategy 域 fail-open 跳过）。
-  ③ 证据覆盖：按 evidence_collect._collect_strategy 同 schema 重放
-     （source="strategy.runs"，payload.idempotency_key=verdict_key），
-     证据 idempotency_key 集合必须覆盖账本全部 verdict_key——
-     空/缺 verdict_key 的行在证据侧坍缩成空键，即覆盖缺口。
+  ③ 证据覆盖：从证据仓实体（evidence.db，source="strategy.runs"）提取
+     idempotency_key 集合，必须覆盖账本全部 verdict_key——
+     空/缺 verdict_key 的行在证据侧坍缩成空键，即覆盖缺口；
+     账本 run 的 verdict_key 无对应证据实体 → FAIL（证据侧漂移可见）。
 
 ## 独立性边界（刻意为之，对齐 gate3_verdict 判例）
 
 唯一复用的生产实现是 `engine.strategy_registry.verdict_key`——幂等键
 算法必须同源，重写一份 sha1 截断反而引入口径分歧风险；该 import 只读
-不写。证据行构建不复用 _collect_strategy：其 root 语义是仓库根
+不写。证据侧不复用 _collect_strategy：其 root 语义是仓库根
 （root/"agent_platform"/data/...），与本工具的 data-root（=agent_platform/data，
-对齐 run_shadow DATA_ROOT / strategy_registry._ledger_path）不同层，
-且判据只需键集合不签 statement，重放 schema 是更小的耦合面。
+对齐 run_shadow DATA_ROOT / strategy_registry._ledger_path）不同层；
+且判据只需键集合不签 statement，直接从证据仓实体（evidence.db，
+mode=ro 只读直连）提取 payload.idempotency_key 是更小的耦合面。
 
 ## 用法与退出码
 
@@ -47,9 +48,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 _AGENT_PLATFORM = Path(__file__).resolve().parents[1]
 if str(_AGENT_PLATFORM) not in sys.path:
@@ -59,7 +61,9 @@ from engine.strategy_registry import verdict_key  # noqa: E402  只读复用（�
 
 STRATEGY_LEDGER_REL = ("strategy", "strategy_runs.jsonl")
 SHADOW_LEDGER_REL = ("shadow", "shadow_ledger.jsonl")
+EVIDENCE_DB_REL = ("evidence", "evidence.db")
 M5_SCHEMA = "m5.v1"
+STRATEGY_EVIDENCE_SOURCE = "strategy.runs"
 # 对账项①必填字段（缺任一即无法重算幂等键 → fail-visible）
 KEY_FIELDS = ("strategy_id", "symbol", "trade_date")
 
@@ -102,6 +106,42 @@ def _load_shadow_index(root: Path) -> Tuple[Dict[str, dict], bool]:
         if rid and rid not in index:
             index[rid] = row
     return index, True
+
+
+def _load_evidence_keys(root: Path) -> Tuple[Optional[Set[str]], bool]:
+    """证据仓实体侧 strategy.runs 键集合：payload.idempotency_key。
+
+    真实读取证据仓（evidence.db，SQLite，mode=ro 只读直连——
+    对齐 _collect_artifact 判例，不做任何写副作用），从 source=
+    "strategy.runs" 的证据行提取 payload.idempotency_key。
+    返回 (键集合 or None, db 是否存在)：db 缺失或不可读（表缺失/
+    查询失败）返回 None，由对账项③ fail-visible 判 FAIL。
+    """
+    db = root / EVIDENCE_DB_REL[0] / EVIDENCE_DB_REL[1]
+    if not db.exists():
+        return None, False
+    try:
+        con = sqlite3.connect("file:%s?mode=ro" % db.as_posix(), uri=True)
+    except sqlite3.Error:
+        return None, True
+    try:
+        raw = con.execute(
+            "SELECT payload FROM evidence WHERE source=?",
+            (STRATEGY_EVIDENCE_SOURCE,)).fetchall()
+    except sqlite3.Error:
+        return None, True
+    finally:
+        con.close()
+    keys: Set[str] = set()
+    for (payload,) in raw:
+        try:
+            p = json.loads(payload or "{}")
+        except json.JSONDecodeError:
+            continue  # 坏 payload 行不伪造键——对应判决自然落覆盖缺口
+        k = str(p.get("idempotency_key", ""))
+        if k:
+            keys.add(k)
+    return keys, True
 
 
 # ---------------------------------------------------------------- 对账项
@@ -152,23 +192,34 @@ def check_run_id_link(rows: List[dict], shadow_index: Dict[str, dict],
     return not diffs, diffs, notes
 
 
-def check_evidence_coverage(rows: List[dict]) -> Tuple[bool, List[str]]:
-    """对账项③：证据 idempotency_key 集合覆盖全部 verdict_key。
+def check_evidence_coverage(rows: List[dict], ev_keys: Optional[Set[str]],
+                            ev_db_exists: bool) -> Tuple[bool, List[str]]:
+    """对账项③：证据仓实体键集合覆盖全部 verdict_key。
 
-    口径逐条抄自 adapters/evidence_collect.py _collect_strategy（283-310 行）：
-    每好行 → payload.idempotency_key = r.get("verdict_key", "")。
-    覆盖判据：每行 verdict_key 非空且在证据键集合中——键为空/缺失的行
-    在证据侧坍缩成 ""，即覆盖缺口（无法在证据仓定位该判决）。
+    键集合来自证据仓实体（_load_evidence_keys：evidence.db，
+    source="strategy.runs"，payload.idempotency_key），与账本侧
+    异源——与被查 verdict_key 不再同源，覆盖判定真实。
+    判据：每行 verdict_key 非空且命中证据实体键集合——键为空/缺失
+    的行在证据侧坍缩成 ""，即覆盖缺口；非空但证据仓无对应实体
+    （未收编/被删/漂移）同样 FAIL（原设计意图：无证据不视为覆盖）。
     """
     diffs: List[str] = []
-    ev_keys = {str(r.get("verdict_key", "")) for r in rows}
+    if not ev_db_exists:
+        diffs.append("证据仓不存在（%s），%d 条判决行无证据实体可对账"
+                     % ("/".join(EVIDENCE_DB_REL), len(rows)))
+        return False, diffs
+    if ev_keys is None:
+        diffs.append("证据仓存在但 strategy.runs 证据键集不可提取"
+                     "（表缺失/查询失败）——fail-visible 先查清")
+        return False, diffs
     for i, row in enumerate(rows, 1):
         k = str(row.get("verdict_key", ""))
         if not k:
             diffs.append("第 %d 行 verdict_key 空/缺失——证据行 idempotency_key "
                          "将坍缩为空串，覆盖缺口" % i)
-        elif k not in ev_keys:  # 结构恒真（同源集合），保留作口径自证断言
-            diffs.append("第 %d 行 verdict_key=%s 未被证据键集合覆盖" % (i, k))
+        elif k not in ev_keys:
+            diffs.append("第 %d 行 verdict_key=%s 未被证据仓 strategy.runs "
+                         "实体覆盖（无对应证据行）" % (i, k))
     return not diffs, diffs
 
 
@@ -185,6 +236,10 @@ def verify(data_root) -> dict:
 
     neutral = not rows  # 空账本（文件缺失或零好行）= 中性非通过
     shadow_index, shadow_exists = _load_shadow_index(root)
+    if neutral:
+        ev_keys, ev_db_exists = None, True
+    else:
+        ev_keys, ev_db_exists = _load_evidence_keys(root)
 
     ok1, d1 = (True, []) if neutral else check_key_integrity(rows, bad_lines)
     if neutral:
@@ -195,7 +250,7 @@ def verify(data_root) -> dict:
                          "仍建议查清）" % bad_lines)
     else:
         ok2, d2, notes = check_run_id_link(rows, shadow_index, shadow_exists)
-        ok3, d3 = check_evidence_coverage(rows)
+        ok3, d3 = check_evidence_coverage(rows, ev_keys, ev_db_exists)
 
     return {
         "root": str(root),
@@ -203,6 +258,7 @@ def verify(data_root) -> dict:
         "rows": len(rows),
         "bad_lines": bad_lines,
         "verdict_keys": len({str(r.get("verdict_key", "")) for r in rows} - {""}),
+        "evidence_keys": len(ev_keys) if ev_keys is not None else None,
         "checks": [
             {"item": "①verdict_key 重算一致", "ok": ok1, "diffs": d1},
             {"item": "②run_id 双向可查", "ok": ok2, "diffs": d2},
@@ -224,8 +280,9 @@ def _print_report(rep: dict) -> None:
             print("  [提示] %s" % n)
         print("结论: 空账本中性（退出码 0）")
         return
-    print("  判决行 %d（坏行 %d）/ 去重 verdict_key %d" % (
-        rep["rows"], rep["bad_lines"], rep["verdict_keys"]))
+    print("  判决行 %d（坏行 %d）/ 去重 verdict_key %d / 证据仓键 %s" % (
+        rep["rows"], rep["bad_lines"], rep["verdict_keys"],
+        "不可读" if rep["evidence_keys"] is None else rep["evidence_keys"]))
     for c in rep["checks"]:
         print("  [%s] %s" % ("PASS" if c["ok"] else "FAIL", c["item"]))
         for d in c["diffs"]:

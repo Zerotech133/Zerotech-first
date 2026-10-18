@@ -23,6 +23,8 @@ sys.path.insert(0, str(AP))
 sys.path.insert(0, str(AP / "tools"))
 
 import check_observation_point as cop  # noqa: E402
+from contracts import Evidence  # noqa: E402
+from engine.evidence import EvidenceStore  # noqa: E402
 from engine.strategy_registry import verdict_key  # noqa: E402
 
 DAY = "2026-10-19"
@@ -71,6 +73,22 @@ class CheckObservationPointBase(unittest.TestCase):
             "[observe] strategy_runs：1 行 / 带 run_id 1 行——观察项\n"
             "[observe] codex_registrations：1 行 / strategy_id: "
             "codex_sma20_rsi14——观察项\n", encoding="utf-8")
+        # 判据 e 全绿还需证据仓有对应 strategy.runs 实体——对账项③
+        # 修复后真实读取 evidence.db（同源恒真缺陷 B2），缺实体即 FAIL
+        row = _verdict_row("codex_sma20_rsi14", "600519", RUN_A)
+        store = EvidenceStore(self.root / "evidence" / "evidence.db")
+        try:
+            store.record(Evidence(
+                source="strategy.runs",
+                source_ref="strategy:%s" % row["verdict_key"],
+                statement="strategy=codex_sma20_rsi14 symbol=600519 rec=buy "
+                          "stance=bull run_id=%s" % RUN_A,
+                payload={"domain": "strategy",
+                         "kind": "strategy_verdict_fingerprint",
+                         "idempotency_key": row["verdict_key"],
+                         "trade_date": DAY}))
+        finally:
+            store.close()
 
     def _run_cli(self, *argv):
         out = io.StringIO()
@@ -93,16 +111,25 @@ class TestAllGreen(CheckObservationPointBase):
         self.assertIn("PASS] e_verdict_key_reconcile", out)
 
     def test_readonly_no_write(self):
-        """纯只读自证：巡检前后字节快照一致（含 mtime 不新增文件）。"""
+        """纯只读自证：巡检前后字节快照一致（含 mtime 不新增文件）。
+
+        豁免 evidence.db-shm/-wal：mode=ro 打开 WAL 库时 SQLite 惰性
+        创建的读路径侧文件（engine/evidence.py 只读投影判例同款，
+        真仓常驻存在）；evidence.db 本体字节仍须零变化。
+        """
         self._make_green()
+        skip = ("evidence.db-shm", "evidence.db-wal")
         before = sorted(
             (str(p.relative_to(self.root)), p.stat().st_size, p.stat().st_mtime_ns)
-            for p in self.root.rglob("*") if p.is_file())
+            for p in self.root.rglob("*") if p.is_file() and p.name not in skip)
+        db_before = (self.root / "evidence" / "evidence.db").read_bytes()
         cop.run_checks(self.root)
         after = sorted(
             (str(p.relative_to(self.root)), p.stat().st_size, p.stat().st_mtime_ns)
-            for p in self.root.rglob("*") if p.is_file())
+            for p in self.root.rglob("*") if p.is_file() and p.name not in skip)
         self.assertEqual(before, after)
+        self.assertEqual((self.root / "evidence" / "evidence.db").read_bytes(),
+                         db_before)
 
 
 class TestMissingLogs(CheckObservationPointBase):
