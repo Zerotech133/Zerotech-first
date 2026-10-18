@@ -41,7 +41,9 @@
     python tools/gate3_verdict.py --no-cross-check # 不读巡检日志
     python tools/gate3_verdict.py --base <dir> --trace-links <file>  # 指向隔离副本
 
-退出码：0=全过（或全部 PENDING 中性）／1=存在 FAIL／2=无法判定（数据缺失）
+退出码：0=全过（或全部 PENDING 中性）／1=存在 FAIL（数据缺失、账本为空、
+查询异常一律判 FAIL——第二意见不允许「无法判定」中性放行；本工具只有
+0/1 两个退出码，不存在退出码 2）
 
 红线：**零副作用**。不写账本、不写日志、不改计划任务、不推外部通道。
 """

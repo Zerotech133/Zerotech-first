@@ -269,19 +269,24 @@ def _run_cli(*args):
         capture_output=True, text=True, encoding="utf-8", timeout=120)
 
 
+def _write_isolated_base(tmp_path, rows):
+    base = tmp_path / "ap"
+    (base / "data" / "shadow").mkdir(parents=True)
+    (base / "data" / "shadow" / "shadow_ledger.jsonl").write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n",
+        encoding="utf-8")
+    (base / "data" / "perf_ledger.jsonl").write_text(
+        json.dumps({"perf_key": "k1", "run_id": "abcdef123456"}) + "\n",
+        encoding="utf-8")
+    return base
+
+
 def test_cli_reports_four_core_items_when_tasks_skipped(tmp_path):
     """隔离目录 + --skip-tasks + --no-cross-check：
     首跑(1) + replay(1) + perf(2) = 4 项（任务三项 SKIP 不入账）。
     这里刻意断言「4」而不是「7」——正是为了锁死「SKIP 不计数」这条口径，
     它决定了交叉核对能不能与巡检的 SUMMARY 行对上。"""
-    base = tmp_path / "ap"
-    (base / "data" / "shadow").mkdir(parents=True)
-    (base / "data" / "shadow" / "shadow_ledger.jsonl").write_text(
-        "\n".join(json.dumps(r, ensure_ascii=False) for r in _v0_rows()) + "\n",
-        encoding="utf-8")
-    (base / "data" / "perf_ledger.jsonl").write_text(
-        json.dumps({"perf_key": "k1", "run_id": "abcdef123456"}) + "\n",
-        encoding="utf-8")
+    base = _write_isolated_base(tmp_path, _v0_rows())
     links = tmp_path / "links.jsonl"
     links.write_text("", encoding="utf-8")
     r = _run_cli("--base", str(base), "--date", "2026-10-18",
@@ -290,6 +295,37 @@ def test_cli_reports_four_core_items_when_tasks_skipped(tmp_path):
     assert "退出码" in r.stdout
     # 空 trace_links 下 replay 必然 NOT_FOUND → 这条必须判 FAIL，不允许放过
     assert "replay_trace 锚点回放" in r.stdout and "FAIL" in r.stdout
+    # 退出码契约（U 路对齐后锁死）：存在 FAIL → 1
+    assert r.returncode == 1, r.stdout
+
+
+def test_cli_exit_zero_when_all_pass(tmp_path):
+    """全过（含 replay 命中）→ 退出码 0。合法 trace link 构造自
+    trace_link.py 的 SEG_REQUIRED['shadow'] 锚点字段，命中 run_id 即 verdict=OK。"""
+    base = _write_isolated_base(tmp_path, _basket())
+    link = {"schema_version": "m4p1.v1", "link_id": "0123456789abcdef",
+            "chain": {"shadow": {"run_id": "abcdef123456",
+                                 "symbol": "600519",
+                                 "trade_date": MONDAY}},
+            "source": "test", "declared_at": ""}
+    links = tmp_path / "links.jsonl"
+    links.write_text(json.dumps(link, ensure_ascii=False) + "\n", encoding="utf-8")
+    r = _run_cli("--base", str(base), "--date", MONDAY,
+                 "--skip-tasks", "--no-cross-check", "--trace-links", str(links))
+    assert "退出码 0" in r.stdout, r.stdout
+    assert r.returncode == 0, r.stdout
+
+
+def test_cli_missing_data_is_exit_one_not_two(tmp_path):
+    """★退出码契约锁死：数据缺失（账本不存在）判 FAIL → 1，绝不是 2。
+    第二意见工具不允许「无法判定」中性放行——旧 docstring 宣称的
+    「2=无法判定」无代码路径，2026-10-18 U 路裁决改 docstring 对齐代码。"""
+    base = tmp_path / "ap"
+    (base / "data" / "shadow").mkdir(parents=True)  # 只建目录，不落账本
+    r = _run_cli("--base", str(base), "--date", "2026-10-18",
+                 "--skip-tasks", "--no-cross-check", "--trace-links", "")
+    assert r.returncode == 1, r.stdout
+    assert "退出码 1" in r.stdout, r.stdout
 
 
 def test_cli_is_read_only(tmp_path):
