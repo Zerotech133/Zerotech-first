@@ -99,7 +99,7 @@
 <div class="toast" id="toast"></div>
 <script>
 let DATA=null, SUBS=new Set();
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* 2026-10-19 审计修复（396dc7d2 后续普查）：内联事件处理器上下文
    onclick="openTrader('...')" —— t.id 来自 /api/trader_roster API 数据，裸插单引号 JS 串：
    值含 ' → JS 串 breakout；值含 " → HTML 属性 breakout。双上下文双重转义

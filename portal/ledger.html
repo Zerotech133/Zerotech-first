@@ -48,7 +48,7 @@ tr.click:hover{background:var(--card2,#202735)}
 </div>
 <script>
 let LED=null,cur='open';
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pc=(v,d=2)=>{const x=(v*100).toFixed(d);return `<span class="${v>=0?'up':'dn'}">${x>=0?'+':''}${x}%</span>`};
 const fmt=(v,d=2)=>v==null?'—':(+v).toFixed(d);
 function spark(ms){ /* marks → SVG 折线（pnl%） */

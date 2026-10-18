@@ -140,7 +140,7 @@ input[type=search]{flex:1;min-width:120px}
 <div class="toast" id="toast"></div>
 
 <script>
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTs=s=>String(s??'').replace('T',' ').slice(0,16);
 const $=id=>document.getElementById(id);
 const KINDS=[["run","执行"],["push","推送"],["analysis","分析"],["archive","归档"],["tune","调优"]];

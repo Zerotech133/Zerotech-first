@@ -182,7 +182,7 @@
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtPct=(v,d=2)=>(v>=0?'+':'')+v.toFixed(d)+'%';
 const pnlCls=v=>v>=0?'up':'dn';
 const pnlColor=v=>v>=0?'var(--color-up)':'var(--color-dn)';
