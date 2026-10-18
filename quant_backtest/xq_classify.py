@@ -43,6 +43,11 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 
+if __package__:
+    from .tools.xq_ticker_normalize import normalize_tickers
+else:
+    from tools.xq_ticker_normalize import normalize_tickers
+
 HERE = Path(__file__).resolve().parent
 DB_PATH = HERE / "data" / "xueqiu" / "xueqiu_info.db"
 LOG_DIR = Path(r"C:\aios\automation_runs") / "xq_classify"   # 定时任务产物统一根（2026-10-18 老田拍板）
@@ -279,6 +284,9 @@ def ensure_table(con: sqlite3.Connection) -> None:
         con.execute(
             "ALTER TABLE xq_status_classified ADD COLUMN retry_count INTEGER DEFAULT 0")
         con.commit()
+    if "norm_tickers" not in cols:
+        con.execute("ALTER TABLE xq_status_classified ADD COLUMN norm_tickers TEXT")
+        con.commit()
 
 
 def extract_tickers(title: str, desc: str) -> list:
@@ -380,16 +388,19 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
         old_retry = con.execute(
             "SELECT retry_count FROM xq_status_classified WHERE status_id=?",
             (str(status_id),)).fetchone()
+        tickers = json.dumps(extract_tickers(title, desc), ensure_ascii=False)
+        norm_tickers = json.dumps(normalize_tickers(tickers), ensure_ascii=False,
+                                  separators=(",", ":"))
         con.execute(
             """INSERT OR REPLACE INTO xq_status_classified
                (status_id, event_type, sentiment, tickers, confidence,
-                parse_ok, model, prompt_version, labeled_at, content_type, retry_count)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-            (str(status_id), event_type, sentiment,
-             json.dumps(extract_tickers(title, desc), ensure_ascii=False),
+                parse_ok, model, prompt_version, labeled_at, content_type,
+                retry_count, norm_tickers)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (str(status_id), event_type, sentiment, tickers,
              confidence, parse_ok, MODEL, PROMPT_VERSION,
              datetime.now().strftime("%Y-%m-%d %H:%M:%S"), content_type,
-             (old_retry[0] or 0) if old_retry else 0))
+             (old_retry[0] or 0) if old_retry else 0, norm_tickers))
     except Exception as e:
         sys.stderr.write("[xq_classify] DB-FAIL %s: %s: %s\n"
                          % (status_id, type(e).__name__, str(e)[:120]))

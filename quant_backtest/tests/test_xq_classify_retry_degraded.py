@@ -181,6 +181,57 @@ def test_migration_idempotent(env):
     con.close()
     assert "retry_count" in cols
     assert "content_type" in cols
+    assert "norm_tickers" in cols
+
+
+def test_new_classification_normalizes_in_same_replace(env, monkeypatch):
+    seed_status(xc.DB_PATH, "s1", title="贵州茅台600519")
+    patch_llm(monkeypatch, GOOD)
+    con = sqlite3.connect(xc.DB_PATH)
+    xc.ensure_table(con)
+    assert xc.classify_one(con, ("s1", "贵州茅台600519", "正文内容", "stock"))
+    row = con.execute(
+        "SELECT tickers, norm_tickers, parse_ok FROM xq_status_classified"
+        " WHERE status_id='s1'").fetchone()
+    assert json.loads(row[1]) == xc.normalize_tickers(row[0])
+    assert json.loads(row[1]) == [{"raw": "600519", "kind": "stock_a",
+                                   "canonical": "SH600519"}]
+    assert row[2] == 1
+    assert con.execute("SELECT COUNT(*) FROM xq_status_classified").fetchone()[0] == 1
+    con.rollback()
+    assert con.execute("SELECT COUNT(*) FROM xq_status_classified").fetchone()[0] == 0
+    con.close()
+
+
+def test_new_classification_empty_tickers_are_empty_array(env, monkeypatch):
+    seed_status(xc.DB_PATH, "s1", title="没有标的词")
+    patch_llm(monkeypatch, GOOD)
+    con = sqlite3.connect(xc.DB_PATH)
+    xc.ensure_table(con)
+    assert xc.classify_one(con, ("s1", "没有标的词", "正文内容", "stock"))
+    row = con.execute(
+        "SELECT tickers, norm_tickers FROM xq_status_classified"
+        " WHERE status_id='s1'").fetchone()
+    assert row == ("[]", "[]")
+    con.close()
+
+
+def test_retry_replace_refreshes_norm_without_losing_retry_count(env, monkeypatch):
+    seed_status(xc.DB_PATH, "s1", title="贵州茅台600519")
+    seed_degraded(xc.DB_PATH, "s1", retry_count=2)
+    con = sqlite3.connect(xc.DB_PATH)
+    con.execute("UPDATE xq_status_classified SET norm_tickers=? WHERE status_id='s1'",
+                ('[{"raw":"stale"}]',))
+    con.commit()
+    patch_llm(monkeypatch, BAD)
+    assert xc.classify_one(con, ("s1", "贵州茅台600519", "正文内容", "stock"))
+    row = con.execute(
+        "SELECT tickers, norm_tickers, retry_count, parse_ok"
+        " FROM xq_status_classified WHERE status_id='s1'").fetchone()
+    assert json.loads(row[1]) == xc.normalize_tickers(row[0])
+    assert row[1] != '[{"raw":"stale"}]'
+    assert row[2:] == (2, 0)
+    con.close()
 
 
 def test_retry_degraded_twice_fresh_db_no_crash(env, monkeypatch):

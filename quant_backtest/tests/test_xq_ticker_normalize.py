@@ -28,6 +28,7 @@ for _p in (str(REPO_ROOT), str(TOOLS_DIR)):
 
 import xq_ticker_normalize as xtn  # noqa: E402
 import xq_norm_migrate as xnm      # noqa: E402
+import xq_classify as xc           # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -262,3 +263,51 @@ def test_kind_dist_sql_runs(tmp_db):
     assert dist["index"] == 1 and dist["fund"] == 1
     # unknown 只来自 s5 畸形 JSON 兜底；s6 tickers=None → 空，不产生词条
     assert dist["unknown"] == 1
+
+
+def test_classify_ensures_norm_column_on_legacy_table(tmp_db):
+    """旧表迁移只加一次 norm_tickers，不改已有数据。"""
+    conn, rows = tmp_db
+    xc.ensure_table(conn)
+    xc.ensure_table(conn)
+    cols = [row[1] for row in conn.execute("PRAGMA table_info(xq_status_classified)")]
+    assert cols.count("norm_tickers") == 1
+    assert conn.execute(
+        "SELECT status_id, tickers FROM xq_status_classified ORDER BY status_id"
+    ).fetchall() == sorted(rows)
+
+
+def test_classify_writes_normalized_tickers_with_retry(tmp_path, monkeypatch):
+    """新写与重标在同一行保留原始词形、归一化词形及重试计数。"""
+    conn = sqlite3.connect(tmp_path / "classify.db")
+    xc.ensure_table(conn)
+
+    class FakeResponse:
+        def read(self):
+            return json.dumps({"message": {"content": json.dumps({
+                "event_type": "个股研判", "sentiment": "bullish",
+                "content_type": "community", "confidence": 0.9,
+            }, ensure_ascii=False)}}).encode("utf-8")
+
+    monkeypatch.setattr(xc.urllib.request, "urlopen", lambda *args, **kwargs: FakeResponse())
+    monkeypatch.setattr(xc, "log", lambda *args, **kwargs: None)
+    row = ("s1", "看600519与沪深300指数", "债券基金", "stock")
+    try:
+        assert xc.classify_one(conn, row) is True
+        first = conn.execute(
+            "SELECT tickers, norm_tickers FROM xq_status_classified WHERE status_id='s1'"
+        ).fetchone()
+        assert json.loads(first[1]) == xtn.normalize_tickers(first[0])
+        assert json.loads(first[0])
+        conn.execute("UPDATE xq_status_classified SET retry_count=2 WHERE status_id='s1'")
+        conn.commit()
+        assert xc.classify_one(conn, row) is True
+        raw, norm, retry = conn.execute(
+            "SELECT tickers, norm_tickers, retry_count FROM xq_status_classified "
+            "WHERE status_id='s1'"
+        ).fetchone()
+        assert json.loads(norm) == xtn.normalize_tickers(raw)
+        assert retry == 2
+        assert conn.execute("SELECT COUNT(*) FROM xq_status_classified").fetchone()[0] == 1
+    finally:
+        conn.close()
