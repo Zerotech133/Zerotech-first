@@ -2,14 +2,15 @@
 """自选股实时行情快照 — 交易时段每 5 分钟
 
   新浪免费行情（与 AI 报告同一接口，单次批量拉取）
-  → quotes 表留痕（PRIMARY KEY(code,ts) 天然去重，非交易时段重复跑不产生垃圾行）
-  → quotes_status.json 供门户
-  → 急涨急跌异动推送（阈值/冷却可配，冷却内同票同方向不重复打扰）
+  → 仅有可解析原生行情时刻的 quotes 表留痕（PRIMARY KEY(code,ts)）
+  → quotes_status.json 供门户（本机观测时刻不能冒充行情事件时刻）
+  → 未接可信交易日历和 v2 消费契约前，异动仅展示，不直接推送
   → 自动清理 quote_keep_days 天前历史
 
 用法: python quote_snapshot.py [--dry]   (--dry 入库但不发飞书)
 """
 import json
+import math
 import os
 import re
 import sqlite3
@@ -66,9 +67,10 @@ def normalize_code(code):
 
 def _f(v):
     try:
-        return float(v)
+        parsed = float(v)
+        return parsed if math.isfinite(parsed) else None
     except (TypeError, ValueError):
-        return None  # 豁免（C2批2）：解析兜底，调用方按缺失值处理
+        return None  # 缺失或非有限行情数字不得成为有效信号
 
 
 def _pct(price, prev, limit=25.0):
@@ -78,18 +80,65 @@ def _pct(price, prev, limit=25.0):
     return p if abs(p) <= limit else None  # 合理性校验，异常值剔除
 
 
+def _source_time(date_field: str, time_field: str):
+    """只接受新浪 A 股原生完整日时；不使用本机观测时间补洞。"""
+    if not isinstance(date_field, str) or not isinstance(time_field, str):
+        return None
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_field.strip()):
+        return None
+    if not re.fullmatch(r"\d{2}:\d{2}:\d{2}", time_field.strip()):
+        return None
+    try:
+        return datetime.strptime(date_field.strip() + " " + time_field.strip(),
+                                 "%Y-%m-%d %H:%M:%S").replace(tzinfo=CST)
+    except ValueError:
+        return None
+
+
+def _eligibility(rec: dict, observed: datetime) -> dict:
+    """v2 事件时间资格：未经可信交易日历/时段及消费者核验不得投递。"""
+    code = rec.get("code")
+    if not isinstance(code, str) or not re.fullmatch(r"(?:sh|sz|bj)\d{6}", code):
+        return {"eligible": False, "reason": "unsupported_market_or_code"}
+    if rec.get("pct") is None:
+        return {"eligible": False, "reason": "halted_or_missing_change"}
+    event = rec.get("market_as_of")
+    if not isinstance(event, str):
+        return {"eligible": False, "reason": "missing_native_event_time"}
+    try:
+        source = datetime.fromisoformat(event)
+    except ValueError:
+        return {"eligible": False, "reason": "invalid_native_event_time"}
+    if source.utcoffset() != CST.utcoffset(None):
+        return {"eligible": False, "reason": "invalid_native_event_timezone"}
+    if observed.tzinfo is None:
+        return {"eligible": False, "reason": "invalid_observation_time"}
+    age = observed - source
+    if age < timedelta(0):
+        return {"eligible": False, "reason": "future_native_event_time"}
+    if age > timedelta(minutes=15):
+        return {"eligible": False, "reason": "stale_native_event_time"}
+    # 周末明确不可交易；工作日和盘中也必须由可信日历/时段提供方验证。
+    if source.weekday() >= 5:
+        return {"eligible": False, "reason": "non_trading_weekend"}
+    return {"eligible": False, "reason": "trading_calendar_and_session_unverified"}
+
+
 def parse_one(code, f):
     """按代码前缀解析新浪行情，返回 dict 或 None。"""
     if len(f) < 9:
         return None
-    rec = {"code": code, "name": code, "ts": "", "price": None, "pct": None,
+    rec = {"code": code, "name": code, "ts": None, "price": None, "pct": None,
            "open": None, "high": None, "low": None, "vol": None, "amount": None,
            "dec": 2}
     if code.startswith(("sh", "sz", "bj")):
+        if not re.fullmatch(r"(?:sh|sz|bj)\d{6}", code) or len(f) < 10:
+            return None
         rec.update(name=f[0], open=_f(f[1]), high=_f(f[4]), low=_f(f[5]),
                    vol=_f(f[8]), amount=_f(f[9]))
         prev, cur = _f(f[2]), _f(f[3])
-        rec["ts"] = "%s %s" % (f[30], f[31]) if len(f) > 31 else ""
+        event = _source_time(f[30], f[31]) if len(f) > 31 else None
+        rec["ts"] = event.strftime("%Y-%m-%d %H:%M:%S") if event else None
         if cur and cur > 0:
             rec["price"], rec["pct"] = cur, _pct(cur, prev)
         elif prev:  # 停牌：以昨收计价、无涨跌幅
@@ -117,8 +166,9 @@ def fetch_quotes(codes):
     for line in r.text.strip().splitlines():
         if '="' not in line:
             continue
-        c = line.split("hq_str_", 1)[-1].split("=", 1)[0].strip()
-        raw[c] = line.split('="', 1)[-1].rstrip('";').split(",")
+        match = re.fullmatch(r'\s*var\s+hq_str_([a-z0-9_]+)="([^"]*)";?\s*', line)
+        if match and match.group(1) in codes:
+            raw[match.group(1)] = match.group(2).split(",")
     out = []
     for c in codes:
         if c in raw:
@@ -180,14 +230,24 @@ def main():
         "code TEXT, name TEXT, ts TEXT, price REAL, pct REAL, "
         "open REAL, high REAL, low REAL, vol REAL, amount REAL, created_at TEXT, "
         "PRIMARY KEY(code, ts))")
-    stamp = now_cst().strftime("%Y-%m-%d %H:%M:%S")
+    observed = now_cst()
+    stamp = observed.strftime("%Y-%m-%d %H:%M:%S")
     for q in quotes:
-        db.execute(
-            "INSERT OR IGNORE INTO quotes(code,name,ts,price,pct,open,high,low,vol,amount,created_at) "
-            "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-            (q["code"], q["name"], q["ts"] or stamp, q["price"], q["pct"],
-             q["open"], q["high"], q["low"], q["vol"], q["amount"], stamp))
-    cutoff = (now_cst() - timedelta(days=keep_days)).strftime("%Y-%m-%d %H:%M:%S")
+        # 原生 ts 可供历史去重；没有原生 ts 不写 SQLite，避免每轮洗出伪事件。
+        # 老版消费者只检查旧 ts/updated，故在 v2 消费升级前一律不发布旧 ts。
+        native_ts = q.get("ts")
+        native_event = (_source_time(native_ts[:10], native_ts[11:])
+                        if isinstance(native_ts, str) else None)
+        q["market_as_of"] = native_event.isoformat(timespec="seconds") if native_event else None
+        q["eligibility"] = _eligibility(q, observed)
+        if (native_event and re.fullmatch(r"(?:sh|sz|bj)\d{6}", q["code"])
+                and timedelta(0) <= observed - native_event <= timedelta(minutes=15)):
+            db.execute(
+                "INSERT OR IGNORE INTO quotes(code,name,ts,price,pct,open,high,low,vol,amount,created_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (q["code"], q["name"], native_ts, q["price"], q["pct"],
+                 q["open"], q["high"], q["low"], q["vol"], q["amount"], stamp))
+    cutoff = (observed - timedelta(days=keep_days)).strftime("%Y-%m-%d %H:%M:%S")
     db.execute("DELETE FROM quotes WHERE ts < ?", (cutoff,))
     db.commit()
 
@@ -202,7 +262,7 @@ def main():
     if threshold > 0:
         for q in quotes:
             p = q["pct"]
-            if p is None or abs(p) < threshold:
+            if not q["eligibility"]["eligible"] or p is None or abs(p) < threshold:
                 continue
             direction = "up" if p > 0 else "down"
             last = state.get(q["code"], {}).get(direction)
@@ -230,10 +290,15 @@ def main():
     db.close()
 
     atomic_json(STATUS_PATH, {
-        "ok": ok, "updated": stamp[:16], "alert_threshold": threshold,
+        "ok": ok, "updated": stamp[:16], "observed_at": observed.isoformat(timespec="seconds"),
+        "event_time_contract_version": 2, "alert_threshold": threshold,
         "count": len(quotes), "alerts_last_run": pushed,
         "items": [{"code": q["code"], "name": q["name"], "price": q["price"],
-                   "pct": q["pct"], "dec": q["dec"], "ts": (q["ts"] or stamp)[:16]}
+                   "pct": q["pct"], "dec": q["dec"],
+                   "ts": None,  # v1 消费者仅凭旧 ts 就可投递，升级前不能暴露可用旧信号
+                   "market_as_of": q["market_as_of"],
+                   "observed_at": observed.isoformat(timespec="seconds"),
+                   "eligibility": q["eligibility"]}
                   for q in quotes],
     })
     log("snapshot ok=%s n=%d alerts=%d" % (ok, len(quotes), len(alerts)))
