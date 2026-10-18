@@ -112,6 +112,8 @@ OLLAMA_PORT = 11434
 OLLAMA_TIMEOUT_S = 2.0
 
 # daemon：watch-daemon/ack-serve 留痕（start_agent_platform.ps1，zhice-os-v2 仓）
+# 机器绑定路径：换机后此探测静默失效，但不影响状态判定（仅信息性留痕，
+# 见 _watchdog_trace）；--print-config 可核对实际取值。
 AW_STACK_LOG = Path(r"C:\项目\zhice-os-v2-windows-20260920\code\logs\aw-stack.log")
 PROCESS_PROBE_CMD = (
     "powershell", "-NoProfile", "-Command",
@@ -463,4 +465,6 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     sys.exit(main())

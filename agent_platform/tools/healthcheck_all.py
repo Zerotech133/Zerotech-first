@@ -17,7 +17,7 @@ verify_strategy_ledger / list_rejects / scan_secrets），现场要跑多条命�
 
 ## 每工具退出码 → 结论映射（取证自源码 docstring）
 
-  check_trigger_chain      0=PASS；1=全 UNKNOWN 中性；2=存在 FAIL
+  check_trigger_chain      0=PASS；1=全 WARN（原 UNKNOWN 已收口为 WARN）；2=存在 FAIL
   check_observation_point  0=PASS；1=全 PENDING 中性；2=存在 FAIL
   verify_strategy_ledger   0=PASS（含空账本中性）；1=存在 FAIL；2=参数缺失→FAIL
   list_rejects             恒 0=中性浏览（无拒档也是中性）；其他码→FAIL

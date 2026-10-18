@@ -19,7 +19,8 @@ stage=限频/静态校验/沙箱试跑），归档路径按日组织：
     python tools/list_rejects.py --stats                # 按 stage 汇总计数
     python tools/list_rejects.py --rejects-root <dir>   # 显式覆盖归档根
 
-默认自动定位 agent_platform/data/codex_bridge/rejects；兼容旧版扁平
+默认自动定位 agent_platform/bridge_inbox/rejects（d42a4483 起常量已改，
+本文案同步；实际落点见 DEFAULT_REJECTS_ROOT）；兼容旧版扁平
 布局（rejects 根下直接是 <submit_id>.md / <submit_id>/，无日期层）。
 
 ## 退出码
@@ -153,7 +154,8 @@ def main(argv=None) -> int:
     )
     parser.add_argument(
         "--rejects-root", default=None,
-        help="rejects 归档根目录；缺省自动定位 data/codex_bridge/rejects",
+        help="rejects 归档根目录；缺省自动定位 bridge_inbox/rejects"
+             "（d42a4483 起常量已改，本文案同步）",
     )
     parser.add_argument(
         "--show", default=None, metavar="SUBMIT_ID",

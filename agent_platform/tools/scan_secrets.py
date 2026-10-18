@@ -23,6 +23,7 @@ import subprocess
 import sys
 
 MAX_FILE_BYTES = 1024 * 1024  # 超过 1MB 的文件跳过
+GIT_STATUS_TIMEOUT_S = 30  # git status 挂起保护（锁文件/网络盘），对齐同类工具做法
 
 # 各模式：类别名 -> 正则。注意：本文件源码自身必须零命中（见自扫描测试），
 # 因此所有正则字面量中的元字符序列不会被自己的模式匹配。
@@ -111,11 +112,20 @@ def git_status_files(repo_root: str):
     """从 git status --porcelain 取 untracked+modified 文件清单（相对仓根）。
 
     跳过已删除（D）条目；rename/copy 取新路径并吞掉紧跟的旧路径字段。
+    失败（非 0 退出 / 超时）一律返回 None，由调用方按「git status 执行失败」
+    走退出码 2——不放宽为「空清单」静默通过。
     """
-    proc = subprocess.run(
-        ["git", "-C", repo_root, "status", "--porcelain", "-z", "--untracked-files=all"],
-        capture_output=True,
-    )
+    try:
+        proc = subprocess.run(
+            ["git", "-C", repo_root, "status", "--porcelain", "-z",
+             "--untracked-files=all"],
+            capture_output=True, timeout=GIT_STATUS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        # git 挂起（锁文件/网络盘）时不再无限等：与 returncode!=0 同路径失败
+        print("[错误] git status 超时（%ds），无法取得扫描清单。"
+              % GIT_STATUS_TIMEOUT_S, file=sys.stderr)
+        return None
     if proc.returncode != 0:
         return None
     entries = proc.stdout.split(b"\0")
