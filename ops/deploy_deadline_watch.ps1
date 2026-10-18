@@ -60,6 +60,12 @@ function Assert-PsSyntax([string]$Path) {
 
 function Copy-RepoFile([string]$Src, [string]$Dst) {
     if (-not (Test-Path -LiteralPath $Src)) { throw "源文件缺失: $Src" }
+    # C:\aios 为主仓 junction：src 与 dst 同一实体文件时跳过拷贝（部署即主树）
+    $srcFull = (Resolve-Path -LiteralPath $Src).Path
+    if ((Test-Path -LiteralPath $Dst) -and ((Resolve-Path -LiteralPath $Dst).Path -ieq $srcFull)) {
+        Write-Host "[skip] 同仓同文件（junction 部署即主树）: $Dst"
+        return
+    }
     $dir = Split-Path -Parent $Dst
     if (-not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Force -Path $dir | Out-Null
