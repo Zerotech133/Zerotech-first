@@ -84,25 +84,47 @@ class Claim:
     attempt_id: str
     route: str
     expires_at: str
+    trace_id: str
+
+
+@dataclass(frozen=True)
+class NonAcceptanceProof:
+    """Trusted provider/hub evidence that this exact attempt was not forwarded."""
+
+    event_key: str
+    target_key: str
+    attempt_id: str
+    route: str
+    trace_id: str
+    reason: str
+    observed_at: datetime
 
 
 class DeliveryLedger:
     """SQLite journal with one connection and atomic transaction per operation.
 
-    ``receipt_verifier`` is an external trust boundary. It must verify a receipt
-    with the actual provider; leaving it unset fails closed for SENT. This class
-    never sends or fetches receipts and cannot promise exactly-once provider
-    delivery after an ambiguous network failure.
+    ``receipt_verifier`` and ``non_acceptance_verifier`` are externally injected
+    trust boundaries. The first must verify actual provider acceptance and the
+    second must verify affirmative non-forwarding/non-acceptance evidence.
+    Neither callback may infer its answer from boolean send return, a string
+    prefix, local trace id, or HTTP status. Missing or throwing verifiers fail
+    closed to UNKNOWN. This class never sends or fetches evidence; a callback
+    returning True for fabricated evidence is NOT independent verification.
+    This isolated ledger is not production-ready: authorization, daily caps,
+    retries/backoff and underlying provider message_id must be supplied upstream.
+    Ambiguous network failures cannot provide exactly-once provider delivery.
     """
 
     def __init__(self, path: str | Path, *,
                  clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-                 receipt_verifier: Optional[Callable[[ProviderReceipt], bool]] = None) -> None:
+                 receipt_verifier: Optional[Callable[[ProviderReceipt], bool]] = None,
+                 non_acceptance_verifier: Optional[Callable[[NonAcceptanceProof], bool]] = None) -> None:
         self.path = str(path)
         if self.path == ":memory:":
             raise ValueError("use an on-disk SQLite path for restart safety")
         self.clock = clock
         self.receipt_verifier = receipt_verifier
+        self.non_acceptance_verifier = non_acceptance_verifier
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
             version = db.execute("PRAGMA user_version").fetchone()[0]
@@ -205,6 +227,7 @@ class DeliveryLedger:
         claimed_at = self._now()
         expires_at = _utc(datetime.fromisoformat(claimed_at) + lease)
         attempt = uuid.uuid4().hex
+        trace = uuid.uuid4().hex
         states = ("READY", "FAILED") if retry_failed else ("READY",)
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -215,71 +238,75 @@ class DeliveryLedger:
             markers = ",".join("?" for _ in states)
             changed = db.execute(f"""UPDATE delivery_targets
                 SET state='CLAIMED', attempt_id=?, route=?, receipt_id=NULL,
-                    trace_id=NULL, claimed_at=?, expires_at=?, updated_at=?
+                    trace_id=?, claimed_at=?, expires_at=?, updated_at=?
                 WHERE event_key=? AND target_key=? AND state IN ({markers})""",
-                (attempt, route, claimed_at, expires_at, claimed_at, event, target, *states))
+                (attempt, route, trace, claimed_at, expires_at, claimed_at, event, target, *states))
             if changed.rowcount != 1:
                 return None
             db.execute("""INSERT INTO delivery_attempts
-                (attempt_id,event_key,target_key,route,claimed_at,expires_at,outcome)
-                VALUES (?,?,?,?,?,?,'CLAIMED')""",
-                (attempt, event, target, route, claimed_at, expires_at))
+                (attempt_id,event_key,target_key,route,claimed_at,expires_at,outcome,trace_id)
+                VALUES (?,?,?,?,?,?,'CLAIMED',?)""",
+                (attempt, event, target, route, claimed_at, expires_at, trace))
             db.commit()
-        return Claim(event, target, attempt, route, expires_at)
+        return Claim(event, target, attempt, route, expires_at, trace)
 
     def finish(self, claim: Claim, *, outcome: str,
                receipt: Optional[ProviderReceipt] = None,
-               trace_id: Optional[str] = None) -> bool:
-        """Finalize a claim with FAILED/UNKNOWN or verified SENT.
+               non_acceptance: Optional[NonAcceptanceProof] = None) -> bool:
+        """Finalize one attempt, conservatively treating unverified evidence as UNKNOWN.
 
-        If a claimed send reports success without independently verified provider
-        evidence, it is UNKNOWN. FAILED is only for a *definitive* non-delivery;
-        exception, timeout, or uncertain return must use UNKNOWN. The return
-        value means that this call changed state, NOT that delivery succeeded.
+        FAILED requires a trusted proof of definite non-acceptance and cannot be
+        based on an exception or timeout. SENT requires independently verified
+        provider acceptance. The return value denotes a state change, not delivery.
         """
         if not isinstance(claim, Claim):
             raise TypeError("claim must be a Claim")
         if outcome not in ("SENT", "FAILED", "UNKNOWN"):
             raise ValueError("unsupported delivery outcome")
-        if trace_id is not None:
-            _text(trace_id, "trace_id")
-        valid_receipt = False
-        if outcome == "SENT" and isinstance(receipt, ProviderReceipt):
-            matches = (receipt.event_key == claim.event_key
-                       and receipt.target_key == claim.target_key
-                       and receipt.attempt_id == claim.attempt_id
-                       and receipt.route == claim.route
-                       and isinstance(receipt.receipt_id, str)
-                       and bool(receipt.receipt_id.strip())
-                       and isinstance(receipt.trace_id, str)
-                       and bool(receipt.trace_id.strip()))
-            if matches:
-                _utc(receipt.observed_at)
-                valid_receipt = (self.receipt_verifier is not None
-                                 and self.receipt_verifier(receipt) is True)
-        actual = "SENT" if valid_receipt else ("UNKNOWN" if outcome == "SENT" else outcome)
         now = self._now()
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            row = db.execute("""SELECT state,expires_at FROM delivery_targets
+            row = db.execute("""SELECT state,expires_at,trace_id,route FROM delivery_targets
                 WHERE event_key=? AND target_key=? AND attempt_id=?""",
                 (claim.event_key, claim.target_key, claim.attempt_id)).fetchone()
-            if row is None or row["state"] != "CLAIMED":
+            if (row is None or row["state"] != "CLAIMED"
+                    or row["route"] != claim.route or row["trace_id"] != claim.trace_id):
                 return False
-            if now >= row["expires_at"]:
-                actual = "UNKNOWN"
-            receipt_id = receipt.receipt_id if actual == "SENT" and receipt is not None else None
-            final_trace = receipt.trace_id if actual == "SENT" and receipt is not None else trace_id
+            identity = (claim.event_key, claim.target_key, claim.attempt_id,
+                        claim.route, claim.trace_id)
+            actual = "UNKNOWN"
+            if now < row["expires_at"] and outcome == "SENT" and isinstance(receipt, ProviderReceipt):
+                evidence = (receipt.event_key, receipt.target_key, receipt.attempt_id,
+                            receipt.route, receipt.trace_id)
+                if evidence == identity and isinstance(receipt.receipt_id, str) and receipt.receipt_id.strip():
+                    try:
+                        actual = "SENT" if (self.receipt_verifier is not None
+                                            and _utc(receipt.observed_at)
+                                            and self.receipt_verifier(receipt) is True) else "UNKNOWN"
+                    except Exception:
+                        actual = "UNKNOWN"
+            elif (now < row["expires_at"] and outcome == "FAILED"
+                  and isinstance(non_acceptance, NonAcceptanceProof)):
+                evidence = (non_acceptance.event_key, non_acceptance.target_key,
+                            non_acceptance.attempt_id, non_acceptance.route,
+                            non_acceptance.trace_id)
+                if evidence == identity and isinstance(non_acceptance.reason, str) and non_acceptance.reason.strip():
+                    try:
+                        actual = "FAILED" if (self.non_acceptance_verifier is not None
+                                              and _utc(non_acceptance.observed_at)
+                                              and self.non_acceptance_verifier(non_acceptance) is True) else "UNKNOWN"
+                    except Exception:
+                        actual = "UNKNOWN"
+            receipt_id = receipt.receipt_id if actual == "SENT" and isinstance(receipt, ProviderReceipt) else None
             changed = db.execute("""UPDATE delivery_targets
-                SET state=?, receipt_id=?, trace_id=?, updated_at=?
+                SET state=?, receipt_id=?, updated_at=?
                 WHERE event_key=? AND target_key=? AND attempt_id=? AND state='CLAIMED'""",
-                (actual, receipt_id, final_trace, now,
-                 claim.event_key, claim.target_key, claim.attempt_id))
+                (actual, receipt_id, now, claim.event_key, claim.target_key, claim.attempt_id))
             if changed.rowcount != 1:
                 return False
-            db.execute("""UPDATE delivery_attempts SET outcome=?, completed_at=?,
-                receipt_id=?, trace_id=? WHERE attempt_id=? AND outcome='CLAIMED'""",
-                (actual, now, receipt_id, final_trace, claim.attempt_id))
+            db.execute("""UPDATE delivery_attempts SET outcome=?, completed_at=?, receipt_id=?
+                WHERE attempt_id=? AND trace_id=? AND outcome='CLAIMED'""",
+                (actual, now, receipt_id, claim.attempt_id, claim.trace_id))
             db.commit()
             return True
 

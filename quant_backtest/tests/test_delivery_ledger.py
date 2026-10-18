@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from quant_backtest.delivery_ledger import (  # noqa: E402
-    Claim, DeliveryLedger, ProviderReceipt, event_key, target_key,
+    Claim, DeliveryLedger, NonAcceptanceProof, ProviderReceipt, event_key, target_key,
 )
 
 
@@ -33,8 +33,14 @@ class FakeClock:
 def provider_receipt(claim: Claim, observed_at: datetime) -> ProviderReceipt:
     """Create a synthetic independent-provider evidence envelope."""
     return ProviderReceipt(claim.event_key, claim.target_key, claim.attempt_id,
-                           claim.route, "provider-message-001", "provider-trace-001",
+                           claim.route, "provider-message-001", claim.trace_id,
                            observed_at)
+
+
+def non_acceptance_proof(claim: Claim, observed_at: datetime) -> NonAcceptanceProof:
+    """Create a test-only synthetic provider definitive-rejection envelope."""
+    return NonAcceptanceProof(claim.event_key, claim.target_key, claim.attempt_id,
+                              claim.route, claim.trace_id, "provider-rejected", observed_at)
 
 
 class DeliveryLedgerTests(unittest.TestCase):
@@ -45,8 +51,10 @@ class DeliveryLedgerTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / "ledger.sqlite3"
         self.clock = FakeClock()
-        self.ledger = DeliveryLedger(self.path, clock=self.clock,
-                                     receipt_verifier=lambda receipt: receipt.receipt_id.startswith("provider-"))
+        self.ledger = DeliveryLedger(
+            self.path, clock=self.clock,
+            receipt_verifier=lambda receipt: receipt.receipt_id == "provider-message-001",
+            non_acceptance_verifier=lambda proof: proof.reason == "provider-rejected")
         self.event, self.target = self.ledger.register(
             "subscription-17", "quote-alert", "live", "sha256:content-a",
             "quote:2026-10-18T10:00:00Z", "feishu_open_id", "ou_123")
@@ -81,7 +89,8 @@ class DeliveryLedgerTests(unittest.TestCase):
         self.assertIsNotNone(claim_b)
         self.assertTrue(self.ledger.finish(claim_a, outcome="SENT",
                                            receipt=provider_receipt(claim_a, self.clock())))
-        self.assertTrue(self.ledger.finish(claim_b, outcome="FAILED", trace_id="reject-b"))
+        self.assertTrue(self.ledger.finish(claim_b, outcome="FAILED",
+                                           non_acceptance=non_acceptance_proof(claim_b, self.clock())))
         self.assertIsNone(self.ledger.claim(self.event, self.target, "feishu/open_id", retry_failed=True))
         self.assertIsNone(self.ledger.claim(self.event, target_b, "feishu/open_id"))
         retry = self.ledger.claim(self.event, target_b, "feishu/open_id", retry_failed=True)
@@ -106,7 +115,7 @@ class DeliveryLedgerTests(unittest.TestCase):
         fake = self.ledger.register("s", "k", "m", "fingerprint", "source:time", "id", "b")
         fake_claim = self.ledger.claim(*fake, "r")
         wrong = ProviderReceipt(fake_claim.event_key, fake_claim.target_key, "different", "r",
-                                "provider-id", "provider-trace", self.clock())
+                                "provider-id", fake_claim.trace_id, self.clock())
         self.assertTrue(self.ledger.finish(fake_claim, outcome="SENT", receipt=wrong))
         self.assertEqual("UNKNOWN", self.ledger.get(*fake)["state"])
 
@@ -126,7 +135,8 @@ class DeliveryLedgerTests(unittest.TestCase):
     def test_late_completion_without_expiry_call_is_also_unknown(self) -> None:
         claim = self.ledger.claim(self.event, self.target, "r", lease=timedelta(seconds=1))
         self.clock.advance(seconds=2)
-        self.assertTrue(self.ledger.finish(claim, outcome="FAILED"))
+        self.assertTrue(self.ledger.finish(claim, outcome="FAILED",
+                                           non_acceptance=non_acceptance_proof(claim, self.clock())))
         self.assertEqual("UNKNOWN", self.ledger.get(self.event, self.target)["state"])
 
     def test_cancel_blocks_future_claim_and_tracks_inflight_uncertainty(self) -> None:
@@ -165,9 +175,35 @@ class DeliveryLedgerTests(unittest.TestCase):
         self.assertEqual(1, sum(claim is not None for claim in results))
         self.assertEqual(1, len(self.ledger.attempts(self.event, self.target)))
 
+    def test_failed_without_verified_non_acceptance_becomes_unknown(self) -> None:
+        claim = self.ledger.claim(self.event, self.target, "r")
+        self.assertTrue(self.ledger.finish(claim, outcome="FAILED"))
+        self.assertEqual("UNKNOWN", self.ledger.get(self.event, self.target)["state"])
+        self.assertIsNone(self.ledger.claim(self.event, self.target, "r", retry_failed=True))
+
+    def test_forged_trace_and_verifier_exception_fail_closed(self) -> None:
+        claim = self.ledger.claim(self.event, self.target, "r")
+        self.assertEqual(claim.trace_id, self.ledger.attempts(self.event, self.target)[0]["trace_id"])
+        forged = Claim(claim.event_key, claim.target_key, claim.attempt_id,
+                       claim.route, claim.expires_at, "not-the-durable-trace")
+        self.assertFalse(self.ledger.finish(forged, outcome="SENT",
+                                            receipt=provider_receipt(forged, self.clock())))
+        forged_receipt = ProviderReceipt(claim.event_key, claim.target_key, claim.attempt_id,
+                                         claim.route, "provider-message-001", "wrong-trace", self.clock())
+        self.assertTrue(self.ledger.finish(claim, outcome="SENT", receipt=forged_receipt))
+        self.assertEqual("UNKNOWN", self.ledger.get(self.event, self.target)["state"])
+        other = DeliveryLedger(Path(self.temp.name) / "throwing.sqlite3", clock=self.clock,
+                               receipt_verifier=lambda receipt: 1 / 0)
+        event, target = other.register("s", "k", "m", "f", "a", "type", "id")
+        attempt = other.claim(event, target, "r")
+        self.assertTrue(other.finish(attempt, outcome="SENT",
+                                     receipt=provider_receipt(attempt, self.clock())))
+        self.assertEqual("UNKNOWN", other.get(event, target)["state"])
+
     def test_wrong_attempt_and_invalid_clock_are_rejected(self) -> None:
         claim = self.ledger.claim(self.event, self.target, "r")
-        wrong = Claim(claim.event_key, claim.target_key, "wrong", claim.route, claim.expires_at)
+        wrong = Claim(claim.event_key, claim.target_key, "wrong", claim.route,
+                      claim.expires_at, claim.trace_id)
         self.assertFalse(self.ledger.finish(wrong, outcome="FAILED"))
         self.assertEqual("CLAIMED", self.ledger.get(self.event, self.target)["state"])
         with self.assertRaises(ValueError):
