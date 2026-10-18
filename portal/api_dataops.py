@@ -85,6 +85,28 @@ def _daily_intake(errors, days=14):
             con.close()
         except Exception as e:
             errors.append("intake %s: %s" % (label, str(e)[:50]))
+    # 股吧 jsonl 池（ts 字符串 'YYYY-MM-DD HH:MM:SS'；mtime 判据会被"写旧帖"骗——
+    # GubaCrawl 判例：昨日非空文件 mtime 新鲜、内容 ts 全是旧帖，产出新鲜度必须看内容时间戳）
+    try:
+        gcnt = {}
+        for fp in glob.glob(os.path.join(DATA, "guba", "*.jsonl")):
+            try:
+                if os.path.getsize(fp) == 0:
+                    continue
+                with open(fp, encoding="utf-8", errors="replace") as fh:
+                    for line in fh:
+                        try:
+                            ts = json.loads(line).get("ts")
+                            if isinstance(ts, str) and ts >= dates[0]:
+                                gcnt[ts[:10]] = gcnt.get(ts[:10], 0) + 1
+                        except Exception:
+                            pass
+            except OSError:
+                pass
+        if gcnt:
+            per_source["股吧帖"] = gcnt
+    except Exception as e:
+        errors.append("intake 股吧: %s" % str(e)[:50])
     series = []
     for d in dates:
         row = {"date": d, "total": 0}
@@ -94,11 +116,23 @@ def _daily_intake(errors, days=14):
             row["total"] += n
         series.append(row)
     last7 = [r["total"] for r in series[-7:]]
+    # 第二标准强化：各源最近实际产出日（armed 只是配置位，产出新鲜度才是真相——
+    # GubaCrawl 判例：任务 rc=0 每天跑，接口零返回断产 3 个月无人知）
+    last_by_source = {}
+    for label in per_source:
+        nonzero = [d for d in dates if per_source[label].get(d)]
+        last_by_source[label] = nonzero[-1] if nonzero else None
     return {"days": days, "series": series, "sources": list(per_source.keys()),
             "today": series[-1]["total"] if series else 0,
             "yesterday": series[-2]["total"] if len(series) > 1 else 0,
             "avg7": round(sum(last7) / max(1, len(last7)), 1),
-            "sum14": sum(r["total"] for r in series)}
+            "sum14": sum(r["total"] for r in series),
+            "last_by_source": last_by_source}
+
+
+def _guba_last_output():
+    """（已废弃 mtime 版——被「写旧帖」骗，改用 _daily_intake 的 ts 回溯）"""
+    return None
 
 PARQUET_DIRS = ["tdx/ts_daily", "tdx/ts_monthly", "tdx/ts_weekly", "tdx/ts_index_daily"]
 
@@ -325,6 +359,11 @@ def overview():
     pipes = _pipeline_states(errors)
     # 每日采拿量（第一标准数据底座）
     daily = _daily_intake(errors)
+    # 产出新鲜度映射（第二标准）：last_by_source 反查采集源 key
+    lbs = daily.get("last_by_source", {})
+    xq_last = lbs.get("雪球帖")
+    LAST_OUT_BY_KEY = {"XueqiuSync": xq_last, "XueqiuCrawl": xq_last,
+                       "GubaCrawl": lbs.get("股吧帖")}
     # 全量定时任务分组 + 行情仓 catalog 聚合
     task_groups = _task_groups(errors)
     catalog = _catalog_summary(errors)
@@ -339,6 +378,13 @@ def overview():
             c["at"] = t.get("at", "")
             if t.get("enabled"):
                 active += 1
+            # 第二标准强化：armed 但最近产出落后 ≥1 天 → stale（隐蔽断产现形）
+            last = LAST_OUT_BY_KEY.get(key)
+            if last and c["health"] == "armed":
+                yesterday = time.strftime("%Y-%m-%d", time.localtime(time.time() - 86400))
+                if last < yesterday:
+                    c["health"] = "stale"
+                    c["detail"] = "产出停在 %s（任务在跑但数据源零返回，判例：接口拉黑/变更）" % last
         elif src == "seed":
             s = pipes.get("seed", {})
             if s.get("done"):

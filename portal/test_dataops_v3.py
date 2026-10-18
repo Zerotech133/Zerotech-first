@@ -26,6 +26,7 @@ HEALTH_ENUM = {
     "ok", "down", "running", "yielding", "blocked",
     "backoff", "done", "complete", "unknown", "disabled",
     "degraded",  # A06 收口：部分在岗（"N/M 在岗" 下沉 detail）
+    "stale",     # 第二标准强化：armed 但产出落后 ≥1 天（GubaCrawl 判例）
 }
 STATIC_URLS = [
     "/dataops.html", "/home.html", "/xq_intel.html", "/picks.html",
