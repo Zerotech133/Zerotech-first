@@ -35,6 +35,11 @@ register_routes() 以装饰器方式包装 Handler 的 do_GET/do_POST，
                                     quantapi 8001 TCP / ollama 11434 TCP），
                                     自身 8791 直接 ok 不自探测；恒 200，
                                     健康态由 checks 逐项表达（首页三态灯）
+  GET  /api/sixring             → 六环状态徽标聚合（入池/盯盘/待授权/
+                                    风控/成交/复盘），每环独立 available
+  GET  /api/regime              → 策源中心当日大盘状况快照（regime 三态
+                                    + 指数/广度/两市成交额）；缺源或快照
+                                    陈旧 → available=false + stale，不假绿
 
 数据库访问：psycopg2（XMAP_PG_* env/.env.local，主机 5442）优先，
 docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一律 10s。
@@ -1046,6 +1051,81 @@ def sixring_payload() -> dict:
             "rings": rings}
 
 
+# ── 端点 N：GET /api/regime 策源中心当日大盘状况（只读零副作用）──────
+# 数据源 = 策源快照 data/regime_center/snapshot_<trade_date>.json（由
+# regime_center.py 产出，run_daily 尾部挂接）。纪律：缺源/过期标灰不假绿
+# —— 无快照或快照陈旧 → available=false + stale 标记，绝不编造 regime。
+# 策源中心只判定与记录，不拦截任何信号（影子期零否决权）。
+REGIME_DIR = os.path.join(QUANT_BT, "data", "regime_center")
+REGIME_STALE_DAYS = 5   # 快照交易日距今超过 N 个自然日 → 标 stale
+
+
+def regime_payload() -> dict:
+    """GET /api/regime：策源中心最新大盘状况快照，恒 200 可用 JSON。"""
+    t0 = time.perf_counter()
+    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+    snap, err = None, None
+    try:
+        import regime_center
+        snap = regime_center.latest_snapshot(out_dir=REGIME_DIR)
+    except Exception as exc:  # noqa: BLE001 — 缺源降级标灰，不放大为 5xx
+        err = (str(exc).strip() or exc.__class__.__name__)[:200]
+
+    ms = int((time.perf_counter() - t0) * 1000)
+    if not snap:
+        return {"ok": True, "ts": ts,
+                "regime": {"available": False, "value": None,
+                           "detail": "无策源快照（先跑 regime_center.py）",
+                           "source": "data/regime_center",
+                           "stale": True, "err": err, "elapsed_ms": ms},
+                "snapshot": None}
+
+    last = str(snap.get("trade_date") or "")
+    index = snap.get("index") or {}
+    breadth = snap.get("breadth") or {}
+    try:
+        gap = (time.mktime(time.strptime(time.strftime("%Y%m%d"), "%Y%m%d"))
+               - time.mktime(time.strptime(last, "%Y%m%d"))) / 86400.0
+    except (ValueError, TypeError):
+        gap = 999.0
+    stale = (not last) or gap > REGIME_STALE_DAYS
+    value = {
+        "trade_date": last or None,
+        "regime": snap.get("regime"),
+        "gates": snap.get("gates") or {},
+        "risk_off_reasons": snap.get("risk_off_reasons") or [],
+        "close": index.get("close"),
+        "chg_pct": index.get("chg_pct"),
+        "ma60": index.get("ma60"),
+        "macd_dif": index.get("macd_dif"),
+        "up_ratio": breadth.get("up_ratio"),
+        "amount_total_yi": breadth.get("amount_total_yi"),
+    }
+    detail_bits = ["%s" % (snap.get("regime") or "unknown")]
+    if index.get("close") is not None:
+        detail_bits.append("上证 %.2f" % index["close"])
+    if index.get("chg_pct") is not None:
+        detail_bits.append("%+.2f%%" % index["chg_pct"])
+    if breadth.get("up_ratio") is not None:
+        detail_bits.append("广度 %.1f%%" % (breadth["up_ratio"] * 100))
+    if breadth.get("amount_total_yi") is not None:
+        detail_bits.append("两市 %.0f 亿" % breadth["amount_total_yi"])
+    if stale:
+        detail_bits.append("快照陈旧 %s" % (last or "无"))
+    return {"ok": True, "ts": ts,
+            "regime": {"available": bool(
+                           (snap.get("data_quality") or {}).get("available"))
+                       and not stale,
+                       "value": value,
+                       "detail": " · ".join(detail_bits) + " · %dms" % ms,
+                       "source": "data/regime_center/snapshot_%s.json" % last,
+                       "stale": stale,
+                       "gaps": (snap.get("data_quality") or {}).get("gaps")
+                               or [],
+                       "elapsed_ms": ms},
+            "snapshot": snap}
+
+
 # ── 静态页：GET /pipeline /manage（每次现读，改页面即生效）─────────────
 def _static_page(filename: str) -> bytes:
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
@@ -1162,6 +1242,20 @@ def register_routes(server_or_app: Any) -> Any:
                                              "%Y-%m-%dT%H:%M:%S"),
                                          "rings": {},
                                          "error": str(exc)[:200]}, 200)
+        if u.path == "/api/regime":
+            # 策源中心大盘状况：payload 自兜底不抛，此处兜底仍回 200
+            # （聚合器故障不放大为 5xx，前端大盘条整体置灰即可）
+            try:
+                return _send_json(self, regime_payload())
+            except Exception as exc:  # noqa: BLE001
+                return _send_json(self, {"ok": True,
+                                         "ts": time.strftime(
+                                             "%Y-%m-%dT%H:%M:%S"),
+                                         "regime": {"available": False,
+                                                    "value": None,
+                                                    "detail": "缺源",
+                                                    "err": str(exc)[:200]},
+                                         "snapshot": None}, 200)
         if orig_get is not None:
             return orig_get(self)
         return _send_json(self, {"ok": False, "error": "未知路由"}, 404)
