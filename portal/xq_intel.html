@@ -239,6 +239,9 @@ const DEMO = {
               "公告解读":164,"行业研究":132,"问董秘":88},
   content_type:{fundamental:812, news:704, community:533, edu:96, ad:70},
   top_codes:{"00700":87,"600519":64,"300750":58,"601127":51,"002594":47,"688981":39,"09988":35},
+  /* 概念榜（top_concepts=[{code,kind,count}]）：指数/基金/unknown kind 标记上榜，与个股榜统一热度刻度 */
+  top_concepts:[{code:"510300",kind:"fund",count:28},{code:"000300",kind:"index",count:19},
+                {code:"513100",kind:"fund",count:12},{code:"200001",kind:"unknown",count:6}],
   top_themes:{"固态电池":96,"苹果产业链":81,"算力租赁":73,"创新药":61,
               "低空经济":44,"港股红利":37},
   word_tempo:{
@@ -379,11 +382,11 @@ function render(d,mode){
   const cmaxAll=Math.max(1,...cl.map(k=>tc[k]),...cc.map(x=>x.count||0));
   const KIND_TXT={fund:"基金",index:"指数",unknown:"待归类"};
   const conceptRows=cc.slice(0,4).map(x=>
-    "<tr><td><b style='color:var(--muted)'>"+esc(x.code)+"</b> "+
-    "<span style='font-size:10px;color:var(--muted)'>["+esc(KIND_TXT[x.kind]||esc(x.kind||""))+"]</span></td>"+
+    "<tr><td><b style='color:var(--sub)'>"+esc(x.code)+"</b> "+
+    "<span style='font-size:10px;color:var(--dim)'>["+esc(KIND_TXT[x.kind]||esc(x.kind||""))+"]</span></td>"+
     "<td>"+fmt(x.count||0)+"</td>"+
-    '<td><span class="heat"><i style="width:'+((x.count||0)/cmaxAll*100)+'%;background:var(--muted)"></i></span></td></tr>').join("");
-  $("codes-body").innerHTML=(cl.slice(0,8).map(k=>
+    '<td><span class="heat"><i style="width:'+((x.count||0)/cmaxAll*100)+'%;background:var(--dim)"></i></span></td></tr>').join("");
+  $("codes-body").innerHTML=(cl.map(k=>
     "<tr><td><b style='cursor:pointer;color:var(--blue)' onclick=\"drill('"+esc(k)+"')\">"+esc(k)+"</b></td>"+
     "<td>"+fmt(tc[k])+"</td>"+
     '<td><span class="heat"><i style="width:'+(tc[k]/cmaxAll*100)+'%"></i></span></td></tr>').join("")
