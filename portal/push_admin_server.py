@@ -536,7 +536,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         p = urllib.parse.urlparse(self.path).path
-        if p in ("/api/decisions/preview", "/api/decisions/record", "/api/decisions/execute"):
+        if p in ("/api/decisions/preview", "/api/decisions/record",
+                 "/api/decisions/approve", "/api/decisions/execute"):
             import notification_decision as nd
             caller = nd.caller_for_key(self.headers.get("X-Decision-Key"))
             if not caller:
@@ -555,7 +556,9 @@ class Handler(BaseHTTPRequestHandler):
             if p == "/api/decisions/record":
                 return self._json(nd.record(req, caller=caller))
             if caller != "admin_ui":
-                return self._json({"ok": False, "error": "执行需人工管理凭证"}, 403)
+                return self._json({"ok": False, "error": "审批或执行需人工管理凭证"}, 403)
+            if p == "/api/decisions/approve":
+                return self._json(nd.approve(req, caller=caller))
             return self._json(nd.execute(req.get("id"), api_send))
         if p == "/api/send":
             if not send_authorized(self.headers.get("X-Push-Hub-Key")):

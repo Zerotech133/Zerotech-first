@@ -80,6 +80,11 @@ def _db():
         if column not in {r[1] for r in db.execute("PRAGMA table_info(decisions)")}:
             default = "legacy_unknown" if column in ("agent_source", "caller") else ""
             db.execute("ALTER TABLE decisions ADD COLUMN %s TEXT NOT NULL DEFAULT '%s'" % (column, default))
+    db.execute("""CREATE TABLE IF NOT EXISTS announcement_approvals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, decision_id TEXT NOT NULL,
+        content TEXT NOT NULL, target_name TEXT NOT NULL, target_id TEXT NOT NULL,
+        send_at TEXT NOT NULL, operator TEXT NOT NULL, approved_at TEXT NOT NULL,
+        caller TEXT NOT NULL)""")
     return db
 
 
@@ -177,12 +182,50 @@ def record(req, caller=None):
     return {"ok": True, "decision": _public(row)}
 
 
+def approve(req, caller=None):
+    if caller != "admin_ui":
+        return {"ok": False, "error": "审批需独立人工管理凭证"}
+    operator = req.get("operator")
+    if not isinstance(operator, str) or not operator.strip() or len(operator) > 100:
+        return {"ok": False, "error": "审批操作者必填且不超过 100 字"}
+    with _lock, _db() as db:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT * FROM decisions WHERE id=?", (req.get("id"),)).fetchone()
+        if row is None or row["category"] != "announcement" or row["status"] != "recorded":
+            return {"ok": False, "error": "待审批公告决策不存在或不可审批"}
+        fields = ("content", "target_name", "target_id", "send_at")
+        if any(req.get(k) != row[k] for k in fields):
+            return {"ok": False, "error": "审批内容、目标或发送时间与已登记决策不一致"}
+        target = _target(row["target_name"])
+        if not target or target["id"] != row["target_id"]:
+            return {"ok": False, "error": "群目标已变更或失效，请重新决策"}
+        db.execute("""INSERT INTO announcement_approvals
+            (decision_id,content,target_name,target_id,send_at,operator,approved_at,caller)
+            VALUES (?,?,?,?,?,?,?,?)""", (row["id"], row["content"], row["target_name"],
+            row["target_id"], row["send_at"], operator.strip(),
+            datetime.now(timezone.utc).isoformat(), caller))
+    return {"ok": True, "decision": _public(row)}
+
+
+def _approval_valid(row, approval):
+    return bool(approval and approval["caller"] == "admin_ui" and approval["operator"]
+                and all(approval[k] == row[k] for k in ("content", "target_name", "target_id", "send_at")))
+
+
 def recent():
     with _lock, _db() as db:
         rows = db.execute("SELECT * FROM decisions ORDER BY created_at DESC LIMIT 30").fetchall()
+        decisions = []
+        for row in rows:
+            item = _public(row)
+            if row["category"] == "announcement":
+                approval = db.execute("""SELECT * FROM announcement_approvals
+                    WHERE decision_id=? ORDER BY id DESC LIMIT 1""", (row["id"],)).fetchone()
+                item["approval_state"] = "credential_approved" if _approval_valid(row, approval) else "pending"
+            decisions.append(item)
     return {"ok": True, "categories": [{"id": k, "name": v[0]} for k, v in CATEGORIES.items()],
             "targets": [{"name": t["name"]} for t in targets()],
-            "decisions": [_public(row) for row in rows],
+            "decisions": decisions,
             "execution_enabled": os.environ.get("PUSH_DECISION_EXECUTE") == "1"}
 
 
@@ -196,6 +239,11 @@ def execute(decision_id, sender):
             return {"ok": False, "error": "决策不存在"}
         if row["status"] != "recorded":
             return {"ok": False, "error": "已执行或已占位，不可重复发送", "decision": _public(row)}
+        if row["category"] == "announcement":
+            approval = db.execute("""SELECT * FROM announcement_approvals
+                WHERE decision_id=? ORDER BY id DESC LIMIT 1""", (decision_id,)).fetchone()
+            if not _approval_valid(row, approval):
+                return {"ok": False, "error": "公告未经有效人工审批，不执行"}
         target = _target(row["target_name"])
         if not target or target["id"] != row["target_id"]:
             return {"ok": False, "error": "群目标已变更或失效，请重新决策"}
