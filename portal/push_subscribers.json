@@ -1,6 +1,14 @@
 {
-  "_note": "K-ORG-197 轨道C 订阅配置。客户分群名单与订阅维度待老田拍板（W34 三重门：名单拍板/模板过会/灰度逐个确认），拍板前 groups 保持空，一切发送止步 DRYRUN 预览。groups 条目 schema：{\"<group_id>\": {\"name\": 显示名, \"markets\": [\"cn\",\"hk\",\"us\",\"commodity\",\"crypto\",\"fx\"], \"tier\": \"daily|critical\", \"chat_id\": \"飞书 chat/open_id\", \"chat_id_type\": \"chat_id|open_id，缺省 chat_id\"}}。",
+  "_note": "K-ORG-197 轨道C 订阅配置。首批灰度群 laotian_self=老田本人（2026-10-19 拍板「按这个方案来」首群铺垫，复用既有红卡通道目标，预演口径）；真实客户分群仍待拍板（W34 三重门），dryrun_default=true 时一切发送止步 DRYRUN 预览、live 双门禁（env MATRIX_SEND_LIVE=1 + chat_id 非空）。groups 条目 schema：{\"<group_id>\": {\"name\": 显示名, \"markets\": [\"cn\",\"hk\",\"us\",\"commodity\",\"crypto\",\"fx\"], \"tier\": \"daily|critical\", \"chat_id\": \"飞书 chat/open_id\", \"chat_id_type\": \"chat_id|open_id，缺省 chat_id\"}}。",
   "version": 1,
   "dryrun_default": true,
-  "groups": {}
+  "groups": {
+    "laotian_self": {
+      "name": "老田（灰度预演）",
+      "markets": ["cn", "hk", "us", "commodity", "crypto", "fx"],
+      "tier": "daily",
+      "chat_id": "ou_50a95455c7dffec1090ade400886d0d4",
+      "chat_id_type": "open_id"
+    }
+  }
 }
