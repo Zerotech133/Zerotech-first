@@ -18,6 +18,7 @@
   2 report    今日日报 JSON：daily/xq_intel_YYYYMMDD.json 存在性 + 15 键
               齐备性（复用 tools/verify_daily_report.py 校验逻辑，非复制）
   3 alert     verify_alert.log 今日状态：不存在=UNKNOWN 偏 PASS；
+              mtime<当日 19:00=UNKNOWN（历史残留，防假红）；
               含 FAIL 行=FAIL 并摘录（alert 为覆盖式落盘，带时间戳）
   4 shadow    19:10 R3/日批产物：C:/aios/zerobound-kg/riskguard_ledger/
               ledger.jsonl 当日新行/新码计数（跨仓只读，拿不到=UNKNOWN）
@@ -158,27 +159,54 @@ def collect_report(day):
                      "收集异常: %r" % e, ev)
 
 
+def alert_is_fresh(mtime_ts: float, day: str) -> bool:
+    """verify_alert.log 新鲜度：mtime >= 当日 19:00 视为今晚 19:05 验收产物。
+
+    防"残留 FAIL → 假红"：tools/verify_daily_report.py 仅在验收失败时
+    覆盖式落盘本文件，验收成功不写文件、mtime 不变——故当晚验收即使
+    成功，mtime 仍停留在残留时刻（如 14:07 人工冒烟）。阈值取 19:00
+    （19:05 生产验收前的保守下界）；report 项用 18:50 是因为日报 19:00
+    跑，两项验收时点不同、阈值语义不同，不可混用。
+    """
+    threshold = datetime.strptime(day + " 19:00:00", "%Y-%m-%d %H:%M:%S")
+    return datetime.fromtimestamp(mtime_ts) >= threshold
+
+
 def collect_alert(day):
-    """③ verify_alert.log 今日状态。不存在=UNKNOWN 偏 PASS；含 FAIL=FAIL 摘录。"""
+    """③ verify_alert.log 今日状态（含新鲜度判定）。
+
+    判定序：文件不存在=UNKNOWN 偏 PASS → mtime<当日 19:00=UNKNOWN
+    （FAIL 行为 19:05 生产验收前的历史残留，非今晚验收结论，不判 FAIL
+    防假红）→ mtime>=当日 19:00 且含 FAIL 行=FAIL 摘录 → 无 FAIL 行=PASS。
+    """
     ev = [VERIFY_ALERT_LOG]
     try:
         if not os.path.exists(VERIFY_ALERT_LOG):
             return _item("alert", "验收告警 verify_alert.log", STATUS_UNKNOWN,
                          "文件不存在=验收从未失败（偏 PASS 说明；19:05 验收正常"
                          "通过时不落告警文件）", ev)
-        mtime = datetime.fromtimestamp(os.path.getmtime(VERIFY_ALERT_LOG))
+        mt_ts = os.path.getmtime(VERIFY_ALERT_LOG)
+        mtime = datetime.fromtimestamp(mt_ts)
         with open(VERIFY_ALERT_LOG, "r", encoding="ascii",
                   errors="replace") as f:
             content = f.read()
         fail_lines = [ln for ln in content.splitlines() if "FAIL" in ln]
         excerpt = content.strip()[:600]
+        if not alert_is_fresh(mt_ts, day):
+            return _item("alert", "验收告警 verify_alert.log", STATUS_UNKNOWN,
+                         "文件存在（mtime=%s）但为当日 19:00 前旧产物：FAIL 行为 "
+                         "19:05 生产验收前的历史残留（冒烟/上一轮），19:05 验收"
+                         "成功时本工具不落盘故 mtime 不更新——非今晚验收结论，"
+                         "不判 FAIL 防假红：\n%s"
+                         % (mtime.strftime("%Y-%m-%d %H:%M:%S"), excerpt), ev)
         if fail_lines:
             return _item("alert", "验收告警 verify_alert.log", STATUS_FAIL,
-                         "文件存在（mtime=%s）且含 FAIL 行（alert 为覆盖式落盘，"
-                         "注意区分时间戳是否属于今晚 19:05 官方验收）：\n%s"
+                         "文件存在（mtime=%s，>=当日 19:00 新鲜）且含 FAIL 行"
+                         "（alert 为覆盖式落盘）：\n%s"
                          % (mtime.strftime("%Y-%m-%d %H:%M:%S"), excerpt), ev)
-        return _item("alert", "验收告警 verify_alert.log", STATUS_UNKNOWN,
-                     "文件存在（mtime=%s）但无 FAIL 行（偏 PASS）：%s"
+        return _item("alert", "验收告警 verify_alert.log", STATUS_PASS,
+                     "文件存在（mtime=%s，>=当日 19:00 新鲜）且无 FAIL 行"
+                     "（偏 PASS）：%s"
                      % (mtime.strftime("%Y-%m-%d %H:%M:%S"),
                         content.strip()[:300] or "(空)"), ev)
     except Exception as e:
