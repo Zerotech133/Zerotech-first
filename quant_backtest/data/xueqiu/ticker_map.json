@@ -1,0 +1,71 @@
+{
+ "version": "v1.0",
+ "updated": "2026-10-19",
+ "purpose": "雪球线标的词形分类规则 + canonical 映射契约（P0-1）。工具端 tools/xq_ticker_normalize.py 以本文件为唯一数据源加载执行；门户 top_codes 榜单按 kind 分栏消费（拍板方案：kind 标记不排除、门户分栏）。",
+
+ "kind_vocab": {
+  "stock_hk": "港股 5 位码。canonical=裸 5 位码（雪球行情接口原生口径，如 01810/00700）。",
+  "stock_a": "A股 6 位码。canonical=交易所前缀+代码（SH/SZ/BJ，雪球行情接口口径，如 SH600519/SZ000838）。",
+  "index": "中文指数词形。canonical=直接对接 xq_index_map 的 lookup_index()（如 000300.SH）；别名表未收录的指数词 canonical=null（保留 kind 供分栏，不冒造代码）。",
+  "fund": "基金词形：类目词（债券基金/货币基金）、ETF/LOF/联接名称词、场内基金 6 位码（50/51/52/56/58=沪，15/16=深）。场内有码词形 canonical=交易所前缀+代码；类目词与未收录名称词 canonical=null。",
+  "unknown": "无法归类的词形（金额形数字、碎片词等）。canonical 恒为 null。"
+ },
+
+ "rules": [
+  "归一前处理：NFKC（全角→半角）+ 去首尾空白；大小写保留原文，匹配时对 ASCII 后缀不区分大小写",
+  "判定顺序：空词跳过 → 纯数字 → 指数词形 → 基金词形 → unknown",
+  "纯数字 5 位 → stock_hk，canonical=原码",
+  "纯数字 6 位 → 按 code_segments 白名单路由（先命中先得）；段外 6 位码（编号/年月/订单号形）→ unknown",
+  "其他位数纯数字（金额/点位形）→ unknown",
+  "词尾为「指数」或命中 xq_index_map 别名表（含 strip「指数」后再查一次）→ index，canonical=lookup_index()；未收录 canonical=null",
+  "词尾为 基金/ETF/LOF/联接（ASCII 后缀不区分大小写）→ fund，canonical 查 fund_name_codes（未收录 null）",
+  "其余词形 → unknown"
+ ],
+
+ "code_segments": {
+  "SH": {
+   "stock_a": ["600", "601", "603", "605", "688", "689"],
+   "fund": ["50", "51", "52", "56", "58"]
+  },
+  "SZ": {
+   "stock_a": ["000", "001", "002", "003", "300", "301", "302"],
+   "fund": ["15", "16"]
+  },
+  "BJ": {
+   "stock_a": ["430", "920", "83", "87"],
+   "fund": []
+  }
+ },
+
+ "index_source": {
+  "module": "xq_index_map",
+  "location": "quant_backtest 仓库根（xq_index_map.py）",
+  "entries": 17,
+  "canonical_style": "交易所后缀式（000300.SH / HSI.HK），与股票类的雪球前缀式（SH600519）并存，属两套既有口径的对接而非新造",
+  "note": "xq_index_map 归一含 NFKC+去空白+小写，本工具词形先自行 NFKC+strip 后再委托查询"
+ },
+
+ "fund_name_codes": {
+  "沪深300ETF": "510300.SH",
+  "中证500ETF": "510500.SH",
+  "创业板ETF": "159915.SZ",
+  "红利ETF": "510880.SH",
+  "黄金ETF": "518880.SH",
+  "半导体ETF": "512480.SH",
+  "医药ETF": "512010.SH",
+  "货币ETF": "511990.SH",
+  "债券ETF": "511010.SH",
+  "军工ETF": "512660.SH",
+  "标普500ETF": "513500.SH"
+ },
+
+ "fund_suffixes": ["基金", "ETF", "LOF", "联接"],
+ "index_suffixes": ["指数"],
+
+ "notes": [
+  "fund_name_codes 只收存量数据实证出现过、且对应市场公认规模最大主流 ETF 的词形（2026-10-19 由 xq_status_classified.tickers 全量去重核对）；「红利联接」为场外联接基金无统一场内代码，canonical=null。",
+  "ETF 名称→代码存在同名多标的歧义（各家基金公司同名产品），此处取规模最大主流者，上线门户前建议再核一次；存疑时置 null 不影响分栏。",
+  "canonical 风格分三套：stock_hk 裸 5 位、stock_a/fund(场内) SH/SZ/BJ 前缀式（均为雪球行情接口原生口径）、index 沿用 xq_index_map 后缀式——均为对接既有口径，不新造。",
+  "迁移落库：xq_status_classified.norm_tickers（TEXT，JSON 数组字符串，元素 {raw,kind,canonical}）；只增不改原则下的 ADD COLUMN，原行数据零修改。"
+ ]
+}
