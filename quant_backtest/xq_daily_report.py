@@ -24,6 +24,8 @@ import time
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta
 
+import jieba
+
 DB_RO = r"file:C:/项目/老田的AI助手/quant_backtest/data/xueqiu/xueqiu_info.db?mode=ro"
 OUT_ROOT = r"C:/aios/automation_runs/xq_report"
 RE_CODE = re.compile(r"^\d{6}$")   # A股/ETF 场内代码
@@ -32,11 +34,11 @@ SIG_EVENT = ("个股研判", "交易策略", "行情观点")   # 高置信信号
 BEARISH_MIN = 3          # 异动信号：bearish 绝对数阈值
 BEARISH_SHARE = 0.6      # 异动信号：bearish 占比阈值（样本 >= BEARISH_MIN）
 CONF_FLOOR = 0.8         # 高置信信号阈值
-# 多空标题 n-gram 停用词表：仅过滤完整的双字词，不按单字过滤，
-# 避免误删「上涨」「下跌」「大涨」「中报」「看好」等行情词。
+# 多空标题分词停用词表：只过滤完整停用词，不按单字过滤。
 STOP_WORDS = {"它们", "更多", "还能", "可以", "没有", "这个",
-              "那个", "自己", "不是", "什么", "如何", "怎么"}
-RE_HAN = re.compile(r"[\u4e00-\u9fff]+")   # 中文片段（词切分仅在此内做）
+              "那个", "自己", "不是", "什么", "如何", "怎么",
+              "觉得", "认为", "感觉", "表示", "出现", "目前", "当前",
+              "现在", "已经", "可能", "相关", "情况", "方面"}
 
 
 def load_rows(con: sqlite3.Connection, day: str):
@@ -68,9 +70,38 @@ def split_tickers(raw: str):
     return codes, themes
 
 
+_NORM_FN = None
+_NORM_TRIED = False
+
+
+def _norm_kind(code: str):
+    """单 code → kind（stock_hk/stock_a/index/fund/unknown）。
+
+    懒加载 tools/xq_ticker_normalize（kind 语义唯一权威）；加载失败返回 None
+    = 回退现状行为（榜单不分流），不影响报告主产出。
+    """
+    global _NORM_FN, _NORM_TRIED
+    if not _NORM_TRIED:
+        _NORM_TRIED = True
+        try:
+            _tools = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools")
+            if _tools not in sys.path:
+                sys.path.insert(0, _tools)
+            from xq_ticker_normalize import normalize_tickers as _f
+            _NORM_FN = _f
+        except Exception:
+            _NORM_FN = None
+    if _NORM_FN is None:
+        return None
+    try:
+        items = _NORM_FN(json.dumps([str(code)]))
+        return items[0].get("kind") if items else None
+    except Exception:
+        return None
+
+
 def title_words(title: str):
     """中文标题分词；过滤停用词/单字/纯数字标点，并返回帖内去重词集合。"""
-    import jieba
     out = set()
     for word in jieba.lcut(str(title or "")):
         word = word.strip()
@@ -83,12 +114,13 @@ def title_words(title: str):
 def summarize(rows):
     """对窗口行做全维度汇总（未分类行 event_type=None 自动进 pending 桶）"""
     ev, senti, codes, themes = Counter(), Counter(), Counter(), Counter()
+    concepts = Counter()   # (code, kind) → n；kind∈(index,fund,unknown) 的概念榜（fund=kind 标记上榜，2026-10-19 拍板）
     ctype = Counter()      # v1.2 内容形态（tech/community/news/fundamental）
     pending, parse_bad = 0, 0
     sig_rows = []          # (conf, code, senti, event, title)
-    ticker_senti = defaultdict(Counter)   # code -> Counter(senti)
+    ticker_senti = defaultdict(Counter)   # code -> Counter(senti)（仅个股，概念词不进信号面）
     lineages = Counter()
-    words = {"bearish": Counter(), "bullish": Counter()}   # 多空标题词频（排除 ad/edu）
+    words = {"bearish": Counter(), "bullish": Counter()}   # 多空标题词帖子覆盖数（排除 ad/edu）
     for sid, _cat, _ft, title, _desc, _tg, et, sn, tk, conf, pok, model, pv, ct in rows:
         if et is None:
             pending += 1
@@ -106,9 +138,19 @@ def summarize(rows):
             senti[sn] += 1
         c, th = split_tickers(tk or "")
         for x in c:
-            codes[x] += 1
-            if sn:
-                ticker_senti[x][sn] += 1
+            k = _norm_kind(x)
+            if k is None:
+                # normalize 不可用 → 回退现状（全部进个股榜，行为与 v1.6 一致）
+                codes[x] += 1
+                if sn:
+                    ticker_senti[x][sn] += 1
+            elif k in ("stock_hk", "stock_a"):
+                codes[x] += 1
+                if sn:
+                    ticker_senti[x][sn] += 1
+            else:
+                # index/fund/unknown → 概念榜（kind 标记，隔离于个股榜与信号面）
+                concepts[(x, k or "unknown")] += 1
         for x in th:
             themes[x] += 1
         if sn and c and et in SIG_EVENT and (conf or 0) >= CONF_FLOOR:
@@ -117,6 +159,7 @@ def summarize(rows):
     return dict(ev=ev, senti=senti, codes=codes, themes=themes, pending=pending,
                 parse_bad=parse_bad, sig=sig_rows[:12],
                 ticker_senti=ticker_senti, lineages=lineages, ctype=ctype,
+                concepts=concepts,
                 bear_words=words["bearish"], bull_words=words["bullish"])
 
 
@@ -141,7 +184,7 @@ def anomaly_signals(summ, con, day):
 
 
 def word_tempo(con, day, today_words=None, topn=8):
-    """词频温度计：当日多空词 vs 前 6 日基线的突增检测。
+    """词覆盖温度计：当日多空标题词 vs 前 6 日基线的突增检测。
 
     today_words 可传 summarize() 已算好的 {"bearish": Counter, "bullish": Counter}
     以复用避免二次扫描；不传则由窗口查询现算（仅单测/独立调用场景）。
@@ -235,7 +278,9 @@ def render(day, tac, ing, summ_t, anomalies, tempo=None) -> str:
     else:
         L.append("（空）")
     L.append("")
-    L.append("## 三-C、多空词频对比（排除广告/科普）")
+    L.append("## 三-C、多空标题词帖子覆盖数（排除广告/科普）")
+    L.append("")
+    L.append("> 统计口径：×N 表示提及该词的帖子数；每篇帖子内同一词只计 1 次。")
     L.append("")
     for label, key in (("bearish", "bear_words"), ("bullish", "bull_words")):
         top = summ_t[key].most_common(8)
@@ -247,10 +292,10 @@ def render(day, tac, ing, summ_t, anomalies, tempo=None) -> str:
     for label in ("bearish", "bullish"):
         rows = [r for r in tempo_rows if r[0] == label]
         if rows:
-            L.append("- %s 升温：%s" % (label, "、".join(
+            L.append("- %s 升温词（帖子数）：%s" % (label, "、".join(
                 "%s×%d(基线%g/ratio%g)" % (w, n, b, rt) for _sn, w, n, b, rt in rows)))
         else:
-            L.append("- %s 升温：（无突增）" % label)
+            L.append("- %s 升温词（帖子数）：（无突增）" % label)
     L.append("")
     L.append("## 四、热门标的（当日新帖 · 个股代码）")
     L.append("")
@@ -344,6 +389,9 @@ def main() -> int:
             "sentiment": dict(summ["senti"]),
             "content_type": dict(summ["ctype"]),  # v1.3 六类内容形态分布（门户条形消费）
             "top_codes": dict(summ["codes"].most_common(10)),
+            # v1.7 概念榜（fund=kind 标记上榜拍板落地）：指数/基金/unknown 隔离于个股榜
+            "top_concepts": [{"code": c, "kind": k, "count": n}
+                             for (c, k), n in summ["concepts"].most_common(8)],
             "top_themes": dict(summ["themes"].most_common(6)),
             "anomaly_signals": [{"code": c, "n": n, "bearish": b, "baseline6d": x}
                                 for c, n, b, x in anomalies],
