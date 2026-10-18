@@ -47,7 +47,7 @@ def build_review_card(decision):
         {"tag": "hr"},
         {"tag": "button", "type": "primary",
          "text": {"tag": "plain_text",
-                  "content": "确认执行（仍受 execute 开关门控）"},
+                  "content": "确认（审批留痕）"},
          "behaviors": [{"type": "callback",
                         "value": {"action_id": "decision_approve",
                                   "req_id": did}}]},

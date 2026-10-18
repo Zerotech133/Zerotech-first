@@ -223,7 +223,7 @@ def test_build_review_card_buttons_and_truncation(iso):
     assert {"action_id": "decision_approve", "req_id": "dec-1"} in values
     assert {"action_id": "decision_reject", "req_id": "dec-1"} in values
     texts = [b["text"]["content"] for b in btns]
-    assert any("确认执行" in t and "execute 开关门控" in t for t in texts)
+    assert any(t == "确认（审批留痕）" for t in texts)
     assert any(t == "驳回" for t in texts)
     md = [e["content"] for e in card["body"]["elements"]
           if e.get("tag") == "markdown"]
