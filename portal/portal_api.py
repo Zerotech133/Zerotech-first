@@ -2946,6 +2946,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # K-ORG-191 郭嘉预判对账司出口（summary 快照投影，零参数 2026-10-18）
             self._guojia_data(qs)
             return
+        if path == '/api/guojia/drill':
+            # K-ORG-193 郭嘉智能下钻（排行/个股/板块三模式，账本+parquet 纯文件只读）
+            self._guojia_drill(qs)
+            return
         if path == '/api/dataops/overview':
             # 数据运营指挥台（采集动线+数据池+管道调度聚合，只读）
             self._dataops(qs)
