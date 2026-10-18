@@ -390,12 +390,20 @@ NODES = [
     # 管道层
     {"id": "pipe:classify",  "layer": "管道", "name": "舆情打标",        "x": 180, "y": 410},
     {"id": "pipe:report",    "layer": "管道", "name": "情报日报 19:00",  "x": 400, "y": 410},
-    # 消费层
-    {"id": "page:home",      "layer": "消费", "name": "总览首页",        "x": 90,  "y": 520},
-    {"id": "page:xq_intel",  "layer": "消费", "name": "情报日报页",      "x": 290, "y": 520},
-    {"id": "page:picks",     "layer": "消费", "name": "今日选股",        "x": 500, "y": 520},
-    {"id": "page:dataops",   "layer": "消费", "name": "数据指挥台",      "x": 700, "y": 520},
-    {"id": "ledger:riskguard", "layer": "消费", "name": "RiskGuard 账本", "x": 900, "y": 520},
+    # 消费层（两行：上排情报/审批线，下排绩效/账本线）
+    {"id": "page:xq_intel",  "layer": "消费", "name": "情报日报页",      "x": 90,  "y": 530},
+    {"id": "page:home",      "layer": "消费", "name": "总览首页",        "x": 250, "y": 530},
+    {"id": "page:picks",     "layer": "消费", "name": "今日选股",        "x": 430, "y": 530},
+    {"id": "page:approval",  "layer": "消费", "name": "审批注册表",      "x": 590, "y": 530},
+    {"id": "page:capability","layer": "消费", "name": "能力看板",        "x": 750, "y": 530},
+    {"id": "page:audit",     "layer": "消费", "name": "审计线状态",      "x": 910, "y": 530},
+    {"id": "ledger:shadow",  "layer": "消费", "name": "影子策略账本",    "x": 1060, "y": 530},
+    {"id": "ledger:riskguard", "layer": "消费", "name": "RiskGuard 账本", "x": 90,  "y": 660},
+    {"id": "page:os",        "layer": "消费", "name": "个人 OS 大屏",    "x": 260, "y": 660},
+    {"id": "page:perf",      "layer": "消费", "name": "投研绩效看板",    "x": 430, "y": 660},
+    {"id": "ledger:perf",    "layer": "消费", "name": "绩效账本",        "x": 600, "y": 660},
+    {"id": "page:dataops",   "layer": "消费", "name": "数据指挥台",      "x": 770, "y": 660},
+    {"id": "ledger:trace",   "layer": "消费", "name": "血缘链接账本",    "x": 1150, "y": 660},
 ]
 
 # (from, to, rel, dashed)
@@ -418,9 +426,28 @@ EDGES = [
     ("page:xq_intel", "page:home", "首页情报卡", False),
     ("page:picks", "page:home", "首页交易卡", False),
     ("page:xq_intel", "ledger:riskguard", "R3 校准(未来)", True),
+    # agent 运营页 + 平台账本入图（2026-10-18 扩容）
+    ("tg:其他", "page:approval", "审批登记", True),
+    ("tg:其他", "page:capability", "能力盘点", True),
+    ("tg:其他", "page:audit", "审计汇聚", True),
+    ("tg:其他", "ledger:shadow", "影子日巡写入", True),
+    ("tg:其他", "ledger:trace", "血缘登记", True),
+    ("ledger:perf", "page:perf", "绩效渲染", False),
+    ("page:home", "page:os", "复用首页 API", False),
 ]
 
 _SVC_PORTS = {"svc:portal_api": 8091, "svc:nginx": 8080, "svc:hermes": 8787, "svc:ollama": 11434}
+
+# agent_platform 三账本（消费层 ledger 节点：健康探测与实体下钻共用）
+AP_DATA = os.path.join(os.path.dirname(QB), "agent_platform", "data")
+_LEDGERS = {
+    "ledger:shadow": (os.path.join(AP_DATA, "shadow", "shadow_ledger.jsonl"),
+                      "影子策略账本：AgentShadowDaily 日巡写入，影子线与官方线对比评审留痕"),
+    "ledger:trace":  (os.path.join(AP_DATA, "trace", "trace_links.jsonl"),
+                      "血缘链接：agent 任务产出的血缘登记，供 lineage 追溯与审计核对"),
+    "ledger:perf":   (os.path.join(AP_DATA, "perf_ledger.jsonl"),
+                      "绩效账本：投研建议复盘打分记录，perf.html 投研绩效看板数据源"),
+}
 
 
 def _port_alive(port, timeout=1.0):
@@ -447,7 +474,11 @@ def _node_health(ov):
     by_key = {c["key"]: c for c in ov.get("collectors", [])}
     for nid in ("XueqiuSync", "XueqiuCrawl", "GubaCrawl"):
         c = by_key.get(nid, {})
-        h["src:" + nid] = (c.get("health", "unknown"), c.get("detail") or c.get("at") or "")
+        # A06 归一化：health 只出受控枚举；'armed'（已布防待触发）语义归 ok，比率信息留 detail
+        raw = c.get("health", "unknown")
+        hh = {"armed": "ok", "disabled": "down"}.get(raw, raw if raw in ("ok", "down", "unknown") else "unknown")
+        dd = c.get("detail") or c.get("at") or ""
+        h["src:" + nid] = (hh, ("已布防 " + dd) if raw == "armed" and dd else dd)
     pipes = ov.get("pipelines", {})
     seed = pipes.get("seed", {})
     if seed.get("done"):
@@ -472,11 +503,24 @@ def _node_health(ov):
     h["pool:parquet"] = ("ok", "%s 个分片目录" % len(ov.get("parquet", [])))
     for nid, gname in (("tg:行情/数据同步", "行情/数据同步"), ("tg:策略扫描", "策略扫描")):
         g = _task_group_health(ov, gname)
-        h[nid] = ("%s/%s 在岗" % (g["armed"], g["count"]) if g else "unknown", "")
+        if g:
+            # A06 归一化：全部在岗 ok / 部分缺失 degraded / 全下线 down；"N/M 在岗" 下沉 detail
+            gh = "ok" if g["armed"] == g["count"] else ("degraded" if g["armed"] > 0 else "down")
+            h[nid] = (gh, "%d/%d 在岗" % (g["armed"], g["count"]))
+        else:
+            h[nid] = ("unknown", "")
     total = ov.get("task_groups", {})
-    h["tg:其他"] = ("%s/%s 在岗" % ((total.get("armed_total") or 0), total.get("total") or 0), "8 组聚合")
-    for nid in ("page:home", "page:xq_intel", "page:picks", "page:dataops"):
+    ta, tt = (total.get("armed_total") or 0), (total.get("total") or 0)
+    h["tg:其他"] = ("ok" if ta == tt else ("degraded" if ta > 0 else "down"), "%d/%d 在岗 · 8 组聚合" % (ta, tt))
+    for nid in ("page:home", "page:xq_intel", "page:picks", "page:dataops",
+                "page:approval", "page:capability", "page:perf", "page:audit", "page:os"):
         h[nid] = ("ok", "静态面 8080")
+    for nid, (path, _note) in _LEDGERS.items():
+        try:
+            h[nid] = ("ok", "%d KB" % (os.path.getsize(path) // 1024)) if os.path.exists(path) \
+                else ("down", "账本缺失")
+        except Exception as e:
+            h[nid] = ("unknown", str(e)[:40])
     rg = os.path.join(os.path.dirname(QB), "zerobound-kg", "riskguard_ledger", "ledger.jsonl")
     h["ledger:riskguard"] = ("ok", "%d KB" % (os.path.getsize(rg) // 1024)) if os.path.exists(rg) else ("down", "账本缺失")
     return h
@@ -576,11 +620,31 @@ def entity(nid, errors):
             out["links"] = [{"label": "GET /api/dataops/overview", "url": "/api/dataops/overview?view=summary"}]
     elif nid.startswith("page:"):
         url = {"page:home": "/home.html", "page:xq_intel": "/xq_intel.html",
-               "page:picks": "/picks.html", "page:dataops": "/dataops.html"}.get(nid, "/")
+               "page:picks": "/picks.html", "page:dataops": "/dataops.html",
+               "page:approval": "/approvals.html", "page:capability": "/capability.html",
+               "page:perf": "/perf.html", "page:audit": "/audit.html",
+               "page:os": "/os.html"}.get(nid, "/")
         out["links"] = [{"label": "打开页面", "url": url}]
         if nid == "page:xq_intel":
             rp = pipes.get("report", {})
             out["metrics"] = [{"k": "今日 posts", "v": rp.get("posts_today")}]
+        elif nid == "page:perf":
+            try:
+                out["metrics"] = [{"k": "绩效账本行数",
+                                   "v": sum(1 for _ in open(_LEDGERS["ledger:perf"][0], encoding="utf-8"))}]
+            except Exception as e:
+                errors.append("page:perf: %s" % str(e)[:60])
+    elif nid in _LEDGERS:
+        path, note = _LEDGERS[nid]
+        try:
+            n_lines = sum(1 for _ in open(path, encoding="utf-8")) if os.path.exists(path) else 0
+            st = os.stat(path)
+            out["metrics"] = [{"k": "行数", "v": n_lines},
+                              {"k": "文件体积", "v": "%d KB" % (st.st_size // 1024)},
+                              {"k": "mtime", "v": time.strftime("%m-%d %H:%M", time.localtime(st.st_mtime))}]
+        except Exception as e:
+            errors.append("%s: %s" % (nid, str(e)[:60]))
+        out["logs"] = [note]
     elif nid == "ledger:riskguard":
         rg = os.path.join(os.path.dirname(QB), "zerobound-kg", "riskguard_ledger", "ledger.jsonl")
         n_lines = sum(1 for _ in open(rg, encoding="utf-8")) if os.path.exists(rg) else 0

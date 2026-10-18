@@ -74,6 +74,8 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 .dot-ok{fill:var(--ok)} .dot-down{fill:var(--bad)} .dot-running{fill:var(--acc)} .dot-yielding{fill:var(--warn)}
 .dot-blocked{fill:#f85149} .dot-unknown{fill:#6e7681} .dot-complete{fill:var(--ok)} .dot-done{fill:var(--purple)}
 .dot-backoff{fill:var(--warn)} .dot-disabled{fill:#6e7681} .dot-ok2{fill:var(--ok)}
+.dot-degraded{fill:var(--warn)}
+.b-degraded{background:#2a2410;color:var(--warn)}
 </style>
 </head>
 <body>
@@ -86,7 +88,7 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 </div>
 
 <div id="tab-map">
-  <div id="mapwrap"><svg id="mapsvg" viewBox="0 0 1220 620" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div id="mapwrap"><svg id="mapsvg" viewBox="0 0 1220 760" xmlns="http://www.w3.org/2000/svg"></svg></div>
   <div class="maplegend">实线=数据流 · 虚线=未来/聚合关系 · 节点右上圆点=实时健康（绿=正常 蓝=运行 黄=让路 红=受阻 灰=未知）·
     点击节点 → 右侧下钻（指标/上下游/入口/日志），上下游可继续点击递归下钻 · 深链：<code>/dataops.html?entity=pipe:classify</code></div>
   <div class="cards" id="mapcards" style="margin-top:14px"></div>
@@ -266,11 +268,11 @@ async function loadMap(){
 
 function renderMap(m){
   const svg = document.getElementById('mapsvg');
-  const LANE_Y = {'服务':[28,102],'采集':[140,155],'数据池':[305,100],'管道':[415,90],'消费':[515,100]};
+  const LANE_Y = {'服务':[28,100],'采集':[140,155],'数据池':[295,100],'管道':[405,90],'消费':[505,245]};
   let s = '<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">'+
           '<path d="M0,0 L7,3 L0,6 Z" fill="#4a5460"/></marker></defs>';
   m.layers.forEach((ly,i)=>{
-    const y = 28 + [0,112,267,377,477][i], hgt=[100,155,100,90,100][i];
+    const y = 28 + [0,112,267,377,477][i], hgt=[100,155,100,90,245][i];
     s += '<rect class="lane" x="12" y="'+y+'" width="1196" height="'+hgt+'" rx="10"/>'+
          '<text class="lane-t" x="26" y="'+(y+20)+'">'+esc(ly)+'</text>';
   });
