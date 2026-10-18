@@ -17,11 +17,21 @@
 - action 映射：买点 → buy，卖点 → sell（缠论信号本身就是择时结论，
   不产生 hold/watch）；
 - confidence：基数 0.6，mbei/bei/bei2/vv 每个共振 +0.1，封顶 0.9；
+- 毒层降档（Δ4，2026-10-19 确认门① A 方案拍板）：买点中
+  3买∧bei=False 或 2买∧trend=range 判毒层（口径同 picks 链
+  ``_chanlun_toxic``），score 封顶 ``TOXIC_SCORE_CAP``、action 不变
+  （buy 仍 buy——池内低分沉底，语义同 picks 链「T1 共振不计票、
+  票仍走 T2 单策略通道」），rationale 追加毒层标记供后验分层；
+  ``TOXIC_DOWNGRADE=False`` 一键回退。卖点不判毒；
 - rationale：``缠论{type}·{trend或reg}：{备注}（信号日 {dt}，价 {price}）``；
   未知 type 跳过（防御）。
 
-选日规则：取信号池中 dt <= trade_date 的最大 dt 当日全部信号（即
-「最近一份已完结信号」），Signal.trade_date 用入参 trade_date。
+选日规则（D3 并轨口径，2026-10-19 确认门①拍板）：分市场各取
+detect_date <= trade_date 中最大 detect_date 当日全部信号（即「最新
+扫描批次」，与 build_todays_picks.load_chanlun 一致）。原 dt 口径
+只取最近一份已完结信号，缠论买卖点稀疏下 A 股实际停在旧批次
+（2026-10-08，信号量仅 picks 链 3%）。保留 QA-20261017 的分市场
+分组修正（美股 detect_date 较新时不遮蔽 A 股）。
 
 降级语义：池文件缺失 / 全部行损坏 / 无匹配信号 → 打印日志返回 []，
 绝不 raise 到调用方。
@@ -57,6 +67,14 @@ _TYPE_ACTION: Dict[str, str] = {
 
 # 参与共振加成的影子标注字段
 _RESONANCE_FIELDS = ("mbei", "bei", "bei2", "vv")
+
+# 毒层降档（Δ4，确认门① A 方案）：毒层买点 score 封顶值。
+# 低于正常买点分位基表下限（3买=75），保证毒层票在融合池内低分沉底
+# 但不移出（action 仍 buy，语义同 picks 链 T2 单策略通道）。
+TOXIC_SCORE_CAP = 60.0
+# 毒层降档总开关（False = 一键回退到不过滤行为，对齐 picks 链
+# TOXIC_EXCLUDE 模式）。
+TOXIC_DOWNGRADE = True
 
 
 class ChanMonitorAdapter:
@@ -144,20 +162,23 @@ class ChanMonitorAdapter:
     @staticmethod
     def _pick_rows(rows: List[Dict[str, Any]],
                    trade_date: str) -> List[Dict[str, Any]]:
-        """分市场各取 dt <= trade_date 中最大 dt 的全部信号行。
+        """分市场各取 detect_date <= trade_date 中最大 detect_date 的全部信号行。
 
-        QA-20261017 修正：原实现取全池全局最大 dt，多市场池下美股日期
-        较新会遮蔽 A 股（A股信号日常性缺席）。现按市场分组独立选日：
+        D3 并轨口径（2026-10-19 确认门①拍板，替代原 dt 口径）：选日
+        基准由 dt（信号日）改 detect_date（扫描批次日），与
+        build_todays_picks.load_chanlun 的「最新扫描批次」对齐——dt 口径
+        只取最近一份已完结信号，买卖点稀疏下会停在旧批次（A 股实证仅
+        picks 链 3% 量）。保留 QA-20261017 的分市场分组修正：
         - 市场 = code 后缀（.SZ/.SH/.BJ 归 A 股组 CN；其余各归各组）；
         - 每组独立取组内最大 dt ≤ trade_date 的全部行，结果合并；
         - 某组无 dt ≤ trade_date 的行则该组返回空（不影响其他组）；
-        - 行缺 dt / dt 非 YYYY-MM-DD 格式 / 缺 code 的一律忽略。
+        - 行缺 detect_date / 非 YYYY-MM-DD 格式 / 缺 code 的一律忽略。
         """
-        def dt_key(row: Dict[str, Any]) -> str:
-            dt = row.get("dt")
-            if not isinstance(dt, str) or len(dt) != 10 or dt[4] != "-":
+        def det_key(row: Dict[str, Any]) -> str:
+            d = row.get("detect_date")
+            if not isinstance(d, str) or len(d) != 10 or d[4] != "-":
                 return ""
-            return dt.replace("-", "")
+            return d.replace("-", "")
 
         def market_of(row: Dict[str, Any]) -> str:
             code = row.get("code")
@@ -169,7 +190,7 @@ class ChanMonitorAdapter:
         cutoff = trade_date
         best_by_mkt: Dict[str, str] = {}
         for r in rows:
-            k = dt_key(r)
+            k = det_key(r)
             if not k or k > cutoff:
                 continue
             mkt = market_of(r)
@@ -180,8 +201,22 @@ class ChanMonitorAdapter:
         out: List[Dict[str, Any]] = []
         for mkt, best in best_by_mkt.items():
             out.extend(r for r in rows
-                       if dt_key(r) == best and market_of(r) == mkt)
+                       if det_key(r) == best and market_of(r) == mkt)
         return out
+
+    @staticmethod
+    def _toxic_reason(sig_type: str, row: Dict[str, Any]) -> str:
+        """毒层买点判定（口径同 picks 链 _chanlun_toxic）；非毒层返回 ""。
+
+        毒层 = 3买∧bei=False（盘整背驰明确不成立）或 2买∧trend=range。
+        bei=None（不可判）/ trend 缺失不判毒（保守方向，与 picks 链
+        P4 fail-closed 哲学一致）。卖点不判毒。
+        """
+        if sig_type == "3买" and row.get("bei") is False:
+            return "3买∧bei=False"
+        if sig_type == "2买" and row.get("trend") == "range":
+            return "2买∧trend=range"
+        return ""
 
     def _convert(self, row: Dict[str, Any],
                  trade_date: str) -> Optional[Signal]:
@@ -204,6 +239,14 @@ class ChanMonitorAdapter:
         tone_part = f"·{tone}" if tone else ""
         rationale = (f"缠论{sig_type}{tone_part}：信号日 {row.get('dt')}，"
                      f"价 {row.get('price')}")
+
+        # 毒层降档（Δ4，确认门① A 方案）：score 封顶、action 不变
+        # （buy 仍 buy，池内低分沉底，语义同 picks 链「T1 共振不计票、
+        # 票仍走 T2」）；rationale 追加原因标记供后验分层。
+        toxic_reason = self._toxic_reason(sig_type, row)
+        if toxic_reason and TOXIC_DOWNGRADE:
+            score = min(score, TOXIC_SCORE_CAP)
+            rationale += f"（毒层降档：{toxic_reason}）"
 
         return Signal(
             symbol=code.strip(),

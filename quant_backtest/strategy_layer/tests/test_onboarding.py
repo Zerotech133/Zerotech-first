@@ -164,7 +164,8 @@ class TestClassicAdapter:
         pool = tmp_path / "pool.jsonl"
         pool.write_text(json.dumps({
             "market": "CN", "code": "000338.SZ", "type": "2买",
-            "dt": "2026-04-01", "price": 15.8}, ensure_ascii=False),
+            "dt": "2026-04-01", "detect_date": "2026-04-01",
+            "price": 15.8}, ensure_ascii=False),
             encoding="utf-8")
         ref = ChanMonitorAdapter(pool_globs=[str(pool)]).score("20260402")[0]
         mine = _adapter("ma_cross", loader).score("20260401")
