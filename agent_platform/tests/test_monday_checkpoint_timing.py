@@ -24,6 +24,28 @@ import monday_checkpoint as mc  # noqa: E402
 DAY = "2026-10-19"
 
 
+class _SinkTime:
+    """只提供 sleep 的假 time —— **只替换 monday_checkpoint 模块内的 time 引用**。
+
+    为什么不能用 `monkeypatch.setattr(mc.time, "sleep", ...)`：`mc.time` 就是
+    全局 time 模块本身，那样会把 time.sleep 全局改掉。本仓 test_run_shadow_guard
+    故意留下常驻僵尸线程 `_DeadloopAgent.propose = while True: sleep(0.05)`
+    （daemon，存活到进程退出，其 docstring 已论证这是超时语义所需），该线程的
+    sleep 一旦变空转就会向本用例的 sleeps 列表灌入千万级调用——实测 98,030,663
+    次，`assert len(sleeps) == 3` 假红，且空转抢 GIL 让整个 pytest 跑到 SIGTERM。
+    替换 mc.time（模块属性）则真 time 不受影响，僵尸线程照常 sleep。
+
+    monday_checkpoint 内 time 的唯一用法是 time.sleep(WAIT_SECONDS)（:327），
+    故只实现 sleep 即可。
+    """
+
+    def __init__(self, sink):
+        self._sink = sink
+
+    def sleep(self, seconds):
+        self._sink.append(seconds)
+
+
 def _rows(n_done, day=DAY, n_failed=0):
     rows = [{"date": day, "symbol": "60051%d" % i, "status": "done"} for i in range(n_done)]
     rows += [{"date": day, "symbol": "F%03d" % i, "status": "failed"} for i in range(n_failed)]
@@ -178,7 +200,7 @@ def test_main_does_not_sleep_when_batch_landed_with_failure(tmp_path, monkeypatc
     monkeypatch.setattr(mc, "LOG", tmp_path / "cp.log")
     monkeypatch.setattr(mc, "_LOG_HANDLE", None)
     monkeypatch.setattr(mc, "date", _Monday)
-    monkeypatch.setattr(mc.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr(mc, "time", _SinkTime(sleeps))
 
     mc.main()
     mc._close_log()
@@ -215,7 +237,7 @@ def test_main_waits_then_stops_at_ceiling(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(mc, "_LOG_HANDLE", None)
     monkeypatch.setattr(mc, "date", _Monday)
     monkeypatch.setattr(mc, "MAX_WAIT_ROUNDS", 3)
-    monkeypatch.setattr(mc.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr(mc, "time", _SinkTime(sleeps))
 
     mc.main()
     mc._close_log()
