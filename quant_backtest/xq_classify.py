@@ -22,6 +22,8 @@
   python xq_classify.py --limit 500        # 增量一轮（每日 18:30 调度用）
   python xq_classify.py --limit 12         # 小批量实弹验证
   python xq_classify.py --status           # 只读看进度
+  python xq_classify.py --reticker         # 提取器升级后重算存量 tickers（秒级）
+  python xq_classify.py --recontent --limit 1200   # v1.3 语义存量补标
 """
 from __future__ import annotations
 
@@ -73,19 +75,36 @@ SYSTEM_PROMPT = (
 # v1.1（2026-10-18）：RE_FUND 词干分支后缀改必选、删贪婪中间段——原版把
 # 「红利指数基金的四大投」「债券B<br/>1、」等文本碎片整段吞进 tickers（R3 校准取数预演发现）；
 # extract_tickers 增加噪音清洗兜底（<br/> 残片/中文虚词/年月形数字）。
-RE_A = re.compile(r"(?:SZ|SH|sh|sz)?(?:\b)([0-9]{6})(?![0-9])")
+# v1.2（2026-10-18，老田拍板「A 股代码提取升级」）：
+#   ① 修 \b 病根——Python re 的 \b 按 \w 定边界，中文与数字同为 \w，
+#      「贵州茅台600519」中「台|6」之间无边界 → 中文紧贴的代码全量漏提；
+#      左界改 (?<![0-9.%])（中文/字母紧贴放行，小数/百分比防误截）。
+#   ② 6 位码段白名单（232020 等 23 开头噪音段 52 行实证污染）——只收
+#      合法交易所段：沪深主板/科创板/创业板/北交所/场内基金 ETF LOF；
+#      20 开头年月形、23 开头编号形自动出局（白名单替代黑名单）。
+#   ③ 右界 (?![元块])：金额语义（「150000 元」）不收。
+RE_A = re.compile(r"(?<![0-9.%])([0-9]{6})(?![0-9])(?!\s*[元块])")
 RE_HK = re.compile(r"(?:\b)([0-9]{5})(?![0-9])\.?HK|(?:港股|HK:)?(?<![0-9])([0-9]{5})(?![0-9])")
 RE_FUND = re.compile(r"([0-9]{6})(?:\.OF| 基金)|((?:沪深300|中证500|中证1000|创业板|科创50|纳斯达克|标普500|恒生科技|红利|白酒|医药|半导体|新能源|军工|黄金|债券|货币)(?:ETF|基金|指数|LOF|联接))")
 _RE_NOISE = re.compile(r"[<>]|br/|[的了这那哦吧呀]")
-_TICKER_VERSION = "v1.1"
-
+# 6 位代码段白名单（v1.2）：命中任一前缀才算场内证券，其余 6 位数字（编号/
+# 年月/订单号）一律出局。港股东 5 位不走此表（港股 00-99 段全合法）。
+_CODE_SEGS = (
+    "600", "601", "603", "605", "688", "689",   # 沪：主板 + 科创板
+    "000", "001", "002", "003",                 # 深：主板 + 原中小板
+    "300", "301", "302",                        # 创业板
+    "430", "920", "83", "87",                   # 北交所 / 新三板
+    "50", "51", "52", "56", "58", "15", "16",   # 场内基金：ETF / LOF
+)
+_TICKER_VERSION = "v1.2"
 
 def _clean_ticker(code: str) -> bool:
-    """噪音清洗：合法 = 非空、<=10 字符、无 HTML 残片/中文虚词、6 位纯数字排除年月形（20 开头非 A 股代码段）。"""
+    """噪音清洗（v1.2 白名单制）：6 位纯数字必须命中 _CODE_SEGS 合法段；
+    其余（5 位港股、基金词）保留 HTML 残片/中文虚词清洗。"""
     if not code or len(code) > 10 or _RE_NOISE.search(code):
         return False
-    if code.isdigit() and len(code) == 6 and code.startswith("20"):
-        return False
+    if code.isdigit() and len(code) == 6:
+        return code.startswith(_CODE_SEGS)
     return True
 
 
@@ -343,10 +362,12 @@ def show_status() -> int:
 
 
 def reticker() -> int:
-    """v1.1 一次性重算：对已分类行按新正则重提取 tickers（不走 LLM，秒级）。
+    """一次性重算：对已分类行按新正则重提取 tickers（不走 LLM，秒级）。
 
     tickers 是纯规则派生列，修复正则后历史行原地重算即可对齐新逻辑；
     只更新 xq_status_classified.tickers（派生表自身），原表零改动哲学不受影响。
+    v1.2（2026-10-18）：段白名单 + 中文紧贴左界修复后重算，
+    total=2012 changed=144 kept=1868 now_with_ticker=619，232020 污染 52→0。
     """
     con = sqlite3.connect(str(DB_PATH), timeout=30)
     con.execute("PRAGMA busy_timeout=30000")
