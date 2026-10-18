@@ -507,13 +507,14 @@ def jev_judge_batch(items):
     return out
 
 
-def jev_summary(db, hours=24):
-    """近 N 小时已判断新闻的 JEV 分布文本（无数据返回空）。
+def _jev_stats(db, hours=24):
+    """近 N 小时已判断新闻的 JEV 分布统计 → (text, net, hi_dir)。
 
     K-ORG-157：低置信（conf<70%）单列计数、不参与净倾向；净倾向仅计入
     高置信方向判定（bull +1/bear -1），并按时效衰减加权 w=2^(-Δt/HL)
     K-ORG-167（E1）：半衰期按方向不对称——利空 24h（实证 T+3 超额命中
     升至 60.7% 不衰）、利多 12h（去噪启发式，实证各窗口≈50% 无边际）。
+    K-ORG-168（E2）：net/hi_dir 供共振观察段（情绪×行情行为交叉）使用。
     """
     since = (now_cst() - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M")
     try:
@@ -556,7 +557,7 @@ def jev_summary(db, hours=24):
                     * (1.0 if d.get("bias") == "bull" else -1.0)
                 hi_dir += 1
     if not bias_cnt:
-        return ""
+        return "", 0.0, 0
     total = sum(bias_cnt.values())
     parts = ["%d 条已判：利多 %d / 利空 %d / 中性 %d" % (
         total, bias_cnt.get("bull", 0), bias_cnt.get("bear", 0),
@@ -577,7 +578,68 @@ def jev_summary(db, hours=24):
         top = sorted(event_cnt.items(), key=lambda kv: -kv[1])[:3]
         parts.append("事件:%s" % " ".join(
             "%s%d" % (_EVENT_CN.get(k, k), v) for k, v in top))
-    return " · ".join(parts)
+    return " · ".join(parts), net, hi_dir
+
+
+def jev_summary(db, hours=24):
+    """兼容包装：仅返回 JEV 分布文本（外部契约不变）。"""
+    text, _net, _hi = _jev_stats(db, hours)
+    return text
+
+
+# K-ORG-168（E2）：情绪×行情共振观察（借鉴 AI-CROWD/FinSPF 文本×价格
+# z-score 交叉验证 + 经典量价行为判据：利多+上行=确认、利多+冲高回落=
+# 分歧告警）。阈值由 jev_resonance.py 实证表校准后置位（数据驱动：
+# 实证未达标档位不下发，与 E1/E7 同纪律）。
+# 实证（2026-10-18T04:08，n=324 市场相对口径）：放量组命中率 45.9%
+# 低于全体 53.1%（-7.2pp，放量为反向信号非确认）；冲高回落组 49.3%
+# （-3.8pp 未达 5pp 阈值）；低开高走组 59.2%（+6.1pp 达阈值但样本小
+# n=71 且与预设假设逻辑相反，谨慎未下发）。三档均不启用，留待样本
+# 积累后重跑 jev_resonance.py 复评。
+_JEV_RESONANCE_ON = False   # 实证 applied 达标后置位（当前未达标）
+_RESO_RNG_PCT = 0.8        # 振幅%阈值（快照 high/low vs low）
+_RESO_SHADOW = 0.5         # 上影/下影占振幅阈值（冲高回落/低开高走）
+_RESO_MOVE = 0.4           # A股方向移动阈值%（涨跌幅绝对值）
+
+
+def judge_resonance(net, hi_dir, markets):
+    """E2：JEV 净倾向 × A股行情行为交叉 → 共振/分歧观察文本（空串=无信号）。
+
+    net>0 利多主导 / net<0 利空主导；A 股行为取指数快照（上证优先）：
+    冲高回落 = 振幅≥阈值且上影占比≥阈值（盘中冲高后回落）；
+    低开高走 = 振幅≥阈值且下影占比≥阈值（收在高位）。
+    """
+    if not hi_dir or net == 0.0:
+        return ""
+    a = [m for m in markets
+         if m.get("grp") == "A股" and m.get("pct") is not None]
+    if not a:
+        return ""
+    avg = sum(m["pct"] for m in a) / len(a)
+    main = next((m for m in a if m.get("name") == "sh000001"), a[0])
+    hi, lo, price = main.get("high"), main.get("low"), main.get("price")
+    up_shadow = dn_shadow = None
+    if hi is not None and lo is not None and price is not None and hi > lo > 0:
+        rng = (hi - lo) / lo * 100
+        if rng >= _RESO_RNG_PCT:
+            up_shadow = (hi - price) / (hi - lo)
+            dn_shadow = (price - lo) / (hi - lo)
+    if net > 0:
+        if up_shadow is not None and up_shadow >= _RESO_SHADOW:
+            return "分歧警示：JEV 利多主导 × A股冲高回落（上影%.0f%%）" % (
+                up_shadow * 100)
+        if avg >= _RESO_MOVE:
+            return "共振确认：JEV 利多主导 × A股上行"
+        if avg <= -_RESO_MOVE:
+            return "背离观察：JEV 利多主导 × A股走弱"
+    else:
+        if dn_shadow is not None and dn_shadow >= _RESO_SHADOW:
+            return "分歧警示：JEV 利空主导 × A股低开高走（收高位）"
+        if avg <= -_RESO_MOVE:
+            return "共振确认：JEV 利空主导 × A股下行"
+        if avg >= _RESO_MOVE:
+            return "背离观察：JEV 利空主导 × A股走强"
+    return ""
 
 
 def _bias_of(j):
@@ -658,7 +720,10 @@ def fetch_markets(extra_codes=()):
         rec = {"grp": grp, "name": code, "price": None, "pct": None, "dec": 2}
         try:
             if code.startswith(("sh", "sz", "bj")):
-                rec.update(name=f[0], price=_f(f[3]), pct=_pct(_f(f[3]), _f(f[2])))
+                # K-ORG-168（E2）：追加当日 high/low 快照（f[4]/f[5]），
+                # 供共振观察段做冲高回落/低开高走的日内行为判定。
+                rec.update(name=f[0], price=_f(f[3]), pct=_pct(_f(f[3]), _f(f[2])),
+                           high=_f(f[4]), low=_f(f[5]))
             elif code.startswith("rt_hk"):
                 rec.update(name=f[1], price=_f(f[6]), pct=_f(f[8]), dec=3)
             elif code.startswith("gb_"):
@@ -988,7 +1053,13 @@ def run(mode, dry):
     news_items = fetch_news(db, window, limit)
     news_text = format_news(news_items) if news_items else "（时间窗内暂无新闻）"
     stock_text = format_stock_block(news_items, watchlist)
-    jev_text = jev_summary(db, 24)
+    jev_text, _jev_net, _jev_hi = _jev_stats(db, 24)
+    jev_reso = ""
+    if _JEV_RESONANCE_ON and _jev_hi:
+        try:
+            jev_reso = judge_resonance(_jev_net, _jev_hi, markets)
+        except Exception as e:
+            log("resonance FAIL %s" % str(e)[:80])  # C2批2：共振段失败不阻断
     log("%s start markets=%d news=%d stocks_hits=%d model=%s" % (
         mode, len(markets), len(news_items),
         sum(1 for n in news_items if n.get("stocks")), model))
@@ -1011,6 +1082,8 @@ def run(mode, dry):
         msg_parts += ["", "▍行业板块热力", sector_text]
     if jev_text:
         msg_parts += ["", "▍JEV 新闻判断（近24h）", jev_text]
+        if jev_reso:
+            msg_parts += ["", "▍共振观察", jev_reso]
     msg_parts += ["", brief, "",
                   "—— 本地 %s 客观归纳 · 仅信息参考，不构成投资建议 · 信息采集域" % model]
     msg = "\n".join(msg_parts)
@@ -1025,6 +1098,8 @@ def run(mode, dry):
                 md_blocks.append("### ▍行业板块热力\n" + sector_text)
             if jev_text:
                 md_blocks.append("### ▍JEV 新闻判断（近24h）\n" + jev_text)
+            if jev_reso:
+                md_blocks.append("### ▍共振观察\n" + jev_reso)
             md_blocks.append(brief)
             doc = cfg.get("doc_url", "")
             btns = []
