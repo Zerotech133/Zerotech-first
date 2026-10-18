@@ -20,7 +20,9 @@
   3 alert     verify_alert.log 今日状态：不存在=UNKNOWN 偏 PASS；
               mtime<当日 19:00=UNKNOWN（历史残留，防假红）；
               含 FAIL 行=FAIL 并摘录（alert 为覆盖式落盘，带时间戳）
-  4 shadow    19:10 R3/日批产物：C:/aios/zerobound-kg/riskguard_ledger/
+  4 shadow    19:10 日批产物（RiskGuardShadowDaily R1/R2 幂等批+R4 持仓批；
+              R3 已归周六 06:40 周批 RiskGuardR3Weekly，此处措辞 2026-10-18
+              ring-identity 考证勘误）：C:/aios/zerobound-kg/riskguard_ledger/
               ledger.jsonl 当日新行/新码计数（跨仓只读，拿不到=UNKNOWN）
   5 classify  分类追平轮进度：xq_status_classified 总数与今日 labeled_at 增量
 """
