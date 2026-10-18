@@ -91,6 +91,16 @@ class TriggerChainBase(unittest.TestCase):
         for name, text in (logs if logs is not None else defaults).items():
             if text is not None:
                 (log_dir / name).write_text(text, encoding="utf-8")
+        # e_code_importable 判据夹具（2026-10-18 补）：该判据会编译三个脚本并对
+        # run_shadow.py 做真导入。非真实仓下必须提供合法桩件，否则判据恒 FAIL、
+        # 把「夹具缺件」误报成「代码坏了」——这正是假绿的镜像面（假红），同样有害。
+        # 桩件取最小合法 Python：空模块可导入、语法必过，e 判据在夹具面 PASS。
+        for stub in ("run_shadow.py", "monday_checkpoint.py", "a0_chief.py"):
+            stub_path = self.root / stub
+            if not stub_path.exists():
+                stub_path.write_text(
+                    "# test stub —— e_code_importable 夹具占位（空模块可导入）\n",
+                    encoding="utf-8")
         return self.root
 
     @staticmethod
@@ -110,7 +120,7 @@ class TestAllPass(TriggerChainBase):
         self.assertEqual(rep["exit_code"], 0)
         self.assertEqual(rep["fail"], 0)
         self.assertEqual([it["status"] for it in rep["items"]],
-                         ["PASS", "PASS", "PASS", "PASS"])
+                         ["PASS", "PASS", "PASS", "PASS", "PASS"])  # e_code_importable 见夹具桩件
         a = rep["items"][0]["evidence"]
         self.assertIn("AgentShadowDaily 17:10", a)
         self.assertIn("AgentMondayCheckpoint 17:25 周一", a)
@@ -374,7 +384,9 @@ class TestRealSystemReadOnly(TriggerChainBase):
     def test_real_repo_run_is_read_only_and_visible(self):
         real_root = AP
         rep = ctc.run_checks(real_root)
-        self.assertEqual(len(rep["items"]), 4)
+        # 5 条：a_task_registration / b_last_run_results / c_daemon_alive /
+        # d_data_root_ready / e_code_importable（2026-10-18 新增代码可导入性）
+        self.assertEqual(len(rep["items"]), 5)
         for it in rep["items"]:
             self.assertIn(it["status"], ("PASS", "FAIL", "WARN"))
             self.assertTrue(it["evidence"])

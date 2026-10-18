@@ -388,6 +388,76 @@ def check_d_data_root(repo_root: Path) -> Tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
+# e 代码可导入性（T-30min 补判据，2026-10-18）
+# ---------------------------------------------------------------------------
+#: 只做语法编译的目标（顶层无 __main__ 守卫风险，不做真导入）
+CODE_COMPILE_ONLY = ("monday_checkpoint.py", "a0_chief.py")
+#: 做真导入的目标 —— 已实证顶层有 `if __name__ == "__main__"` 守卫
+#: （run_shadow.py:451），导入零副作用、不写账本、不触发 LLM。
+CODE_IMPORT_PROBE = ("run_shadow.py", "import run_shadow")
+#: 导入子进程超时（秒）：需加载 pandas/numpy，留足余量
+CODE_IMPORT_TIMEOUT_S = 60
+
+
+def check_e_code_importable(repo_root: Path) -> Tuple[str, str]:
+    """E 代码可导入性 —— 明天真正要跑的脚本是否还能被拉起。
+
+    存在理由（2026-10-18 T-21h 补）：a~d 四条判据覆盖「任务注册 / 历史结果 /
+    进程存活 / 数据根」，对**代码本身被改坏**全盲。首跑前夜 run_shadow.py 恰有
+    在途重构（超时包裹收敛到 engine/strategy_runtime），若导入链断，17:10 首跑
+    直接 ImportError，且当日无补救窗口（下次触发要等周二）。
+    故补语法编译 + 顶层导入两段，把「代码坏了」前移到 16:40 暴露。
+
+    口径：语法失败=FAIL（必挂）；导入失败=FAIL（必挂）；均为 fail-visible，
+    不降级为 WARN —— 这类问题到 17:10 就是硬失败，没有「到点复查」的余地。
+    """
+    root = Path(repo_root).resolve()  # 必须 resolve：下面 subprocess 传 cwd=str(root)，
+                                      # 若 root 为相对路径，子进程会把它与 cwd 二次拼接
+                                      # （agent_platform/agent_platform/x.py）导致假 FAIL。
+    py = sys.executable
+    parts = []
+    fails = []
+
+    # 1) 语法编译（三件）
+    for name in (CODE_IMPORT_PROBE[0],) + CODE_COMPILE_ONLY:
+        src = root / name
+        if not src.is_file():
+            fails.append("%s 缺失（首跑必挂）" % name)
+            continue
+        proc = subprocess.run(
+            [py, "-X", "utf8", "-m", "py_compile", str(src)],
+            capture_output=True, timeout=CODE_IMPORT_TIMEOUT_S, cwd=str(root))
+        if proc.returncode != 0:
+            fails.append("%s 语法编译失败：%s" % (
+                name, proc.stderr.decode("utf-8", errors="replace")[-160:].strip()))
+        else:
+            parts.append("%s 语法通过" % name)
+
+    # 2) 真导入（run_shadow，零副作用）
+    name, stmt = CODE_IMPORT_PROBE
+    if not fails:
+        try:
+            proc = subprocess.run(
+                [py, "-X", "utf8", "-c", stmt],
+                capture_output=True, timeout=CODE_IMPORT_TIMEOUT_S, cwd=str(root))
+            if proc.returncode != 0:
+                fails.append("%s 顶层导入失败（17:10 首跑直接 ImportError）：%s" % (
+                    name,
+                    proc.stderr.decode("utf-8", errors="replace")[-300:].strip()))
+            else:
+                parts.append("%s 顶层导入通过（__main__ 守卫下零副作用）" % name)
+        except subprocess.TimeoutExpired:
+            fails.append("%s 顶层导入超时 %ds（疑模块级阻塞）" %
+                         (name, CODE_IMPORT_TIMEOUT_S))
+        except Exception as exc:  # noqa: BLE001  fail-visible
+            fails.append("%s 导入探测自身异常：%r" % (name, exc))
+
+    if fails:
+        return FAIL, "；".join(fails) + " → 17:10 前必须修好，否则影子首跑当日空跑"
+    return PASS, "；".join(parts)
+
+
+# ---------------------------------------------------------------------------
 # 汇总
 # ---------------------------------------------------------------------------
 
@@ -396,6 +466,7 @@ CHECKS = (
     ("b_last_run_results", check_b_last_runs),
     ("c_daemon_alive", lambda root: check_c_daemon()),
     ("d_data_root_ready", check_d_data_root),
+    ("e_code_importable", check_e_code_importable),
 )
 
 
