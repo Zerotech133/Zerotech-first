@@ -50,4 +50,8 @@ class Handler:
     def _xq_intel(self, qs):
         args = self._norm_qs(qs)
         date_str = (args.get("date") or [""])[0].strip()
+        if date_str and not _DATE_RE.match(date_str):
+            # fail-visible：参数白名单外走 400（api_perf 判例），不静默降级成空投影
+            self._json({"error": "date 须为 YYYY-MM-DD"}, 400)
+            return
         self._json(read_xq_intel(date_str))
