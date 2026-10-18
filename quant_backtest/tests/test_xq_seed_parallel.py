@@ -74,9 +74,7 @@ def test_load_state_defaults(tmp_path):
 
 
 def test_main_done_short_circuits(tmp_path, monkeypatch):
-    p = P.paths_for("A")
     monkeypatch.setattr(P, "BASE_DIR", str(tmp_path))
-    monkeypatch.setattr(P, "STATUS_LOG", str(tmp_path / "status.log"))  # 防 status() 泄漏写生产日志（10-18 疑案2 判例：模块常量 import 时已按真实路径求值）
     p = P.paths_for("A")
     (tmp_path / "seed_auto_state_A.json").write_text(
         json.dumps({"done": True}), encoding="utf-8")
@@ -95,7 +93,6 @@ def test_main_done_short_circuits(tmp_path, monkeypatch):
 
 def test_main_runs_collect_with_cursor_file(tmp_path, monkeypatch):
     monkeypatch.setattr(P, "BASE_DIR", str(tmp_path))
-    monkeypatch.setattr(P, "STATUS_LOG", str(tmp_path / "status.log"))  # 同上，防泄漏
     captured = {}
 
     def fake_call(cmd, **k):

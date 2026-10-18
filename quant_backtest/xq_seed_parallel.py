@@ -32,7 +32,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RUNS_ROOT = r"C:\aios\automation_runs"
 BASE_DIR = os.path.join(RUNS_ROOT, "xq_backfill")
 LOCK_STALE_SEC = 45 * 60
-STATUS_LOG = os.path.join(BASE_DIR, "xq_seed_status.log")
 PY = r"C:\Program Files\Python311\python.exe"
 TARGET = 1000
 LOW_THRESHOLD = 50
@@ -61,7 +60,11 @@ def status(instance: str, msg: str) -> None:
     line = "%s [%s] %s" % (datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
                            instance, msg)
     print(line, flush=True)
-    with open(STATUS_LOG, "a", encoding="ascii", errors="replace") as f:
+    # v1.0.1 延迟求值（10-18 疑案2 判例）：模块级常量在 import 时按真实
+    # BASE_DIR 求值，测试 monkeypatch BASE_DIR 后仍写生产日志（[A] 泄漏）。
+    # 改为调用时拼接——patch BASE_DIR 即整体隔离，旧版测试也无法再污染。
+    log_path = os.path.join(BASE_DIR, "xq_seed_status.log")
+    with open(log_path, "a", encoding="ascii", errors="replace") as f:
         f.write(line + "\n")
 
 
