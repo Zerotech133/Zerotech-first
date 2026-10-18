@@ -476,9 +476,9 @@ def main():
         for it in shown:
             tag = ("【%s】" % "/".join(it["stocks"])) if it.get("stocks") else ""
             j = judges.get(it["id"])
-            mark = (" [JEV:%s%02d%%·%s]" % (
+            mark = (" [JEV:%s%02d%%·%s·冲击%s]" % (
                 j["bias_cn"], round(j["conf"] * 100),
-                j["scope_cn"])) if j else ""
+                j["scope_cn"], j.get("impact_cn", "未知"))) if j else ""
             lines.append("· %s%s %s%s" % (
                 tag, it["ts"][-5:] or "----", it["title"][:60], mark))
         if len(hits) > cap:
