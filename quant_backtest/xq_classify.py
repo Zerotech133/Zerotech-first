@@ -92,6 +92,20 @@ EVENT_TYPES = ["行情观点", "个股研判", "宏观政策", "基金理财", "
 SENTIMENTS = ["bullish", "bearish", "neutral"]
 CONTENT_TYPES = ["tech", "community", "news", "fundamental", "edu", "ad"]
 
+# v1.4.1 实证别名映射（degraded 病根修复，2026-10-18）：
+# qwen3.5:9b 对教学科普/资讯转述/打新类帖倾向输出「内容描述词」而非七选一
+# 枚举词——探针实证 136684573 answer 完整合法 JSON、done_reason=stop，
+# 病根是 event_type 白名单拒绝而非截断（日志 answer[:80] 恰好显示在
+# confidence 处纯系 JSON 长度巧合）；temperature=0.1 下重试输出恒定，
+# retry_count 封顶也救不回（team-lead 大 ctx/predict 实证 upgraded=0）。
+# parse 侧确定性短路（同「广告推广→ad」判例），别名自带形态信息，覆盖
+# content_type；未收录的漂移标签仍走 degraded（宁可降级不乱归类）。
+EVENT_TYPE_ALIASES = {
+    "投教科普": ("闲聊杂谈", "edu"),   # 教学科普帖 → 杂谈 + edu 形态保真
+    "个股资讯": ("个股研判", "news"),  # 事实性转述 → 个股维度 + news 形态
+    "港股打新": ("交易策略", "news"),  # 打新认购 → 操作策略 + news 形态
+}
+
 CONTENT_TYPE_DESC = {
     "tech": "技术面分析（只收K线/均线/形态/指标/缠论/量价/点位/图形/买卖点的技术性讨论；投教科普不在此类）",
     "community": "社区探讨（散户交流/情绪表达/争论吐槽/求点评/打卡跟风，无论据链）",
@@ -272,10 +286,18 @@ def classify_one(con: sqlite3.Connection, row: tuple) -> bool:
     try:
         m = re.search(r"\{.*\}", answer, re.S)
         obj = json.loads(m.group(0)) if m else {}
-        if obj.get("event_type") in EVENT_TYPES:
-            event_type = obj["event_type"]
         if obj.get("content_type") in CONTENT_TYPES:   # v1.2 内容形态（缺失不降级 parse_ok，可 --recontent 补）
             content_type = obj["content_type"]
+        if obj.get("event_type") in EVENT_TYPES:
+            event_type = obj["event_type"]
+        elif obj.get("event_type") in EVENT_TYPE_ALIASES:
+            # v1.4.1 别名短路：漂移描述词 → 合法枚举 + 形态派生（实证驱动；
+            # 放在 content_type 解析之后——别名形态语义强制覆盖模型值）
+            event_type, content_type = EVENT_TYPE_ALIASES[obj["event_type"]]
+            # v1.4.1 兜底留痕（fail-visible 判例）：别名命中写 stderr 一条，
+            # 供审计命中率/发现新漂移标签；不进 STATUS_LOG（避免自动化日志噪音）
+            sys.stderr.write("[xq_classify] ALIAS-FALLBACK %s: event_type=%r -> %r/%r\n"
+                             % (status_id, obj["event_type"], event_type, content_type))
         if obj.get("sentiment") in SENTIMENTS:
             sentiment = obj["sentiment"]
         conf = obj.get("confidence")

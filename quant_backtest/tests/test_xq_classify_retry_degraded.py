@@ -197,3 +197,111 @@ def test_empty_body_source_skipped_in_join(env, monkeypatch):
     patch_llm(monkeypatch, GOOD)
     assert xc.retry_degraded(500) == 0
     assert fetch(db, "orphan")[0] == 0   # 未被动过
+
+
+# ── ⑥ v1.4.1 别名短路（degraded 真病灶：event_type 漂移描述词） ──
+# 探针实证：answer 完整合法、done_reason=stop，病根是白名单拒绝非截断。
+
+def test_alias_edu_maps_to_chat(env, monkeypatch):
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"投教科普","content_type":"edu",'
+           '"sentiment":"neutral","confidence":0.95}')
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    parse_ok, event_type, sentiment, _ = fetch(db, "s1")
+    assert (parse_ok, event_type, sentiment) == (1, "闲聊杂谈", "neutral")
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT content_type FROM xq_status_classified"
+                       " WHERE status_id='s1'").fetchone()[0] == "edu"
+    con.close()
+
+
+def test_alias_news_maps_to_research(env, monkeypatch):
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"个股资讯","content_type":"news",'
+           '"sentiment":"neutral","confidence":0.9}')
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    assert fetch(db, "s1")[:3] == (1, "个股研判", "neutral")
+
+
+def test_alias_hk_ipo_maps_to_strategy(env, monkeypatch):
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"港股打新","content_type":"fundamental",'
+           '"sentiment":"neutral","confidence":0.9}')
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    assert fetch(db, "s1")[:3] == (1, "交易策略", "neutral")
+    # 别名派生覆盖模型的 content_type（别名自带更准形态信息）
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT content_type FROM xq_status_classified"
+                       " WHERE status_id='s1'").fetchone()[0] == "news"
+    con.close()
+
+
+def test_alias_hit_writes_stderr(env, monkeypatch, capsys):
+    """v1.4.1 兜底记录：别名命中时 stderr 必须留痕（fail-visible 判例），
+    便于事后审计映射命中率与发现新的漂移标签。"""
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"投教科普","content_type":"edu",'
+           '"sentiment":"neutral","confidence":0.9}')
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    err = capsys.readouterr().err
+    assert "ALIAS-FALLBACK" in err
+    assert "投教科普" in err
+
+
+def test_unknown_event_type_still_degraded(env, monkeypatch):
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"火星文标签","content_type":"edu",'
+           '"sentiment":"neutral","confidence":0.9}')
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    # 未收录漂移标签：宁可降级不乱归类（event_type=None，其余字段按既有
+    # 行为落账、retry_count 计次）
+    assert fetch(db, "s1") == (0, None, "neutral", 1)
+
+
+@pytest.mark.parametrize("et", xc.EVENT_TYPES)
+@pytest.mark.parametrize("st", xc.SENTIMENTS)
+def test_legal_enum_pass_through_untouched(env, monkeypatch, capsys, et, st):
+    """v1.4.1 回归锚（合法值零影响）：全部 7×3 合法 event_type/sentiment
+    组合直通白名单，不经别名短路、值原样落账——追平轮进行中的安全前提。"""
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"%s","content_type":"tech",'
+           '"sentiment":"%s","confidence":0.9}' % (et, st))
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    assert fetch(db, "s1")[:3] == (1, et, st)
+    assert "ALIAS-FALLBACK" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("ct", xc.CONTENT_TYPES)
+def test_legal_content_type_pass_through_untouched(env, monkeypatch, ct):
+    """v1.4.1 回归锚（形态列零影响）：六个合法 content_type 原样落账，
+    不被别名派生覆盖（合法 event_type 时不触发短路）。"""
+    db = xc.DB_PATH
+    seed_status(db, "s1")
+    seed_degraded(db, "s1")
+    ans = ('{"event_type":"行情观点","content_type":"%s",'
+           '"sentiment":"neutral","confidence":0.9}' % ct)
+    patch_llm(monkeypatch, ans)
+    xc.retry_degraded(500)
+    assert fetch(db, "s1")[:3] == (1, "行情观点", "neutral")
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT content_type FROM xq_status_classified"
+                       " WHERE status_id='s1'").fetchone()[0] == ct
+    con.close()
