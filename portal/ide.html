@@ -1181,5 +1181,6 @@ fetch("/agent_ide_bundle.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   if(lastDbg && B.agents[lastDbg]) dbgSelect(lastDbg);   // 恢复上次调试目标+会话
 }).catch(e=>{ document.getElementById("side").innerHTML = '<div class="dep">bundle 加载失败：'+e+'</div>'; });
 </script>
+<script src="/static/dataops_link.js" data-entity="tg:其他" defer></script>
 </body>
 </html>

@@ -230,5 +230,6 @@ fetch("/projects_registry.json", {cache:"no-store"}).then(r=>r.json()).then(d=>{
   .catch(e=>{ document.getElementById("grid").innerHTML =
     '<div class="card" style="cursor:default">注册表加载失败：'+e+'</div>'; });
 </script>
+<script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>
 </body>
 </html>
