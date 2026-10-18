@@ -1,0 +1,39 @@
+{
+  "strategy_id": "vol_target",
+  "version": "1.0.0",
+  "allowed_data": [
+    "bars.daily"
+  ],
+  "resource_budget": {
+    "timeout_s": 5.0,
+    "max_concurrency": 1,
+    "max_context_bytes": 262144
+  },
+  "allowed_modes": [
+    "BACKTEST",
+    "REPLAY",
+    "SHADOW"
+  ],
+  "permissions": [
+    "propose",
+    "read_context"
+  ],
+  "_provenance": {
+    "note": "S1 收编登记字段（RC-3 第二批）。agent_platform/engine/strategy_config.py 的 load_config 为严格模式（拒绝未声明字段），聚合进 strategy_config.json 时必须剥离本字段，剥离后其余 6 字段可直接过校验器。仓位/风控型策略（非选股）：propose 产出为仓位缩放系数 scale=clip(target_vol/rv20, floor, cap)，Verdict 语义映射留 S2 契约定标（6 字段 manifest 模型无需扩展即可表达本清单）。",
+    "source_file": "quant_backtest/backtest.py（_vol_scale / load_vol_target_config / run(vol_target=...)）+ quant_backtest/voltarget_ab.py（A/B 采集位）",
+    "source_symbol": "_vol_scale（scale=clip(0.15/rv20, 0.25, 1.0)，target_vol=0.15/lookback=20/floor=0.25/cap=1.0）",
+    "baseline": [
+      {
+        "file": "quant_backtest/test_voltarget.py",
+        "usage": "S3 对账基线（主）：合成数据判例（①enabled=False 与 backtest.py.bak_20261014_vt 字节级等价；②高波缩仓/低波触 cap；③无未来函数——scale(t) 只由截至 t 的 lookback 窗决定；④floor/cap 边界；⑤pnl 按缩放仓位折算）。"
+      },
+      {
+        "file": "quant_backtest/_voltarget_ab_result_20261014.json",
+        "usage": "S3 对账基线（辅）：A/B 对照采集结果（A=vol_target 缩放 / B=等权，预注册判据 20261015 冻结 sha 防篡改，评估期 60 交易日对齐 G3 影子窗）。"
+      }
+    ],
+    "drafted_by": "batch2-manifest",
+    "drafted_at": "2026-10-18",
+    "data_min_privilege_note": "仓位缩放核只用单标的日线收盘序列（rv20=20 日已实现波动率），最小授权 bars.daily。voltarget_ab.py 状态机另读 qd_breadth_series.json/breadth_cross_events.jsonl（翻相闩锁），属 A/B 评估基础设施非策略本体，不申请（若收编采集位需补登 artifacts.breadth_series / artifacts.breadth_cross_events）。"
+  }
+}

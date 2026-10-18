@@ -1,0 +1,41 @@
+{
+  "strategy_id": "qpzm",
+  "version": "1.0.0",
+  "allowed_data": [
+    "bars.daily",
+    "artifacts.rps_daily_batches",
+    "config.watchlist"
+  ],
+  "resource_budget": {
+    "timeout_s": 10.0,
+    "max_concurrency": 1,
+    "max_context_bytes": 1048576
+  },
+  "allowed_modes": [
+    "BACKTEST",
+    "REPLAY",
+    "SHADOW"
+  ],
+  "permissions": [
+    "propose",
+    "read_context"
+  ],
+  "_provenance": {
+    "note": "S1 收编登记字段（RC-3 第二批）。agent_platform/engine/strategy_config.py 的 load_config 为严格模式（拒绝未声明字段），聚合进 strategy_config.json 时必须剥离本字段，剥离后其余 6 字段可直接过校验器。",
+    "source_file": "quant_backtest/qpzm_backtest.py + quant_backtest/qpzm_daily_batch.py",
+    "source_symbol": "load_wide / cross_rps / env_gate / tech_score / combine_score（PERIODS=(50,120,250), RPS_W_CUR, TH_CUR 买入/观察阈值, MIN_BARS_ELIG=55, HOLDS=(5,10,20), COST=0.0015）",
+    "baseline": [
+      {
+        "file": "quant_backtest/qpzm_backtest.py",
+        "usage": "S3 对账基线（主）：全量参数网格锚——历史所有信号聚合验证打分体系参数稳定性；test_qpzm_backtest.py 合成数据判例（RPS 百分位/缺周期降权/NaN 不参与排名/闸门一票否决边界/收益口径）逐条对照产线公式。"
+      },
+      {
+        "file": "quant_backtest/reports/rps_batch_backtest.json + quant_backtest/reports/rps_daily_batches.jsonl",
+        "usage": "S3 对账基线（辅）：K238 批次回测（T 收盘信号→T+1 开盘买入→持有 N 日收盘卖出，基准=同日全体可交易等权，K254 后复权+一字板剔除；live/replay 双口径，live 行永不覆盖）。"
+      }
+    ],
+    "drafted_by": "batch2-manifest",
+    "drafted_at": "2026-10-18",
+    "data_min_privilege_note": "bars.daily=A 股全市场 wide 价矩阵（trade_date/open/high/close/pre_close，K254 own-bar pre_close 链后复权因子，RPS/闸门/tech 全部由 close 截面派生）；artifacts.rps_daily_batches=日批归档（W3-4 分位注入的滚动 60 日 live 历史基准 + 批次回测输入，live/replay 双口径）；config.watchlist=news_config.json 自选池（backfill 复算限定 CN 池票）。"
+  }
+}
