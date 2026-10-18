@@ -14,10 +14,11 @@ from typing import Any, Dict, Mapping, Optional
 _DESCRIPTOR_KEYS = (
     "source_ref", "source_version", "source_kind", "market", "timezone",
     "timeframe", "store_config_ref", "intent_batch_ref", "provider_policy_ref",
-    "registered_at", "expires_at",
+    "calendar_ref", "calendar_version", "registered_at", "expires_at",
 )
 _SECRET_WORDS = ("password", "secret", "token", "key", "dsn", "connection")
 _REF_PATTERN = re.compile(r"(?:runtime|registry):[A-Za-z0-9_-]{1,64}(?::[A-Za-z0-9_-]{1,64})*")
+_CALENDAR_VERSION_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,8 @@ class JobSpecDescriptor:
     provider_policy_ref: str
     registered_at: str
     expires_at: Optional[str] = None
+    calendar_ref: Optional[str] = None
+    calendar_version: Optional[str] = None
     availability: str = "available"
     error: Optional[str] = None
 
@@ -102,7 +105,10 @@ class JobSpecRegistry:
             if raw is None:
                 return
             raw["availability"] = "source_unavailable"
-            raw["error"] = "SOURCE_UNAVAILABLE"
+            requested = str(error or "SOURCE_UNAVAILABLE")
+            raw["error"] = requested if requested in {
+                "SOURCE_UNAVAILABLE", "CALENDAR_UNAVAILABLE", "CALENDAR_MISMATCH"
+            } else "SOURCE_UNAVAILABLE"
             self._save()
 
     def mark_available(self, source_ref: str) -> None:
@@ -153,8 +159,17 @@ class JobSpecRegistry:
     def _validate(raw: Mapping[str, Any]) -> None:
         for key in _DESCRIPTOR_KEYS:
             if key not in raw or raw[key] in (None, ""):
-                if key != "expires_at":
+                if key not in ("expires_at", "calendar_ref", "calendar_version"):
                     raise ValueError(f"INVALID_DESCRIPTOR: missing field {key}")
+        calendar_ref = raw.get("calendar_ref")
+        calendar_version = raw.get("calendar_version")
+        if (calendar_ref is None) != (calendar_version is None):
+            raise ValueError("INVALID_DESCRIPTOR: calendar_ref/calendar_version must be provided together")
+        if calendar_ref is not None:
+            if not _REF_PATTERN.fullmatch(str(calendar_ref)):
+                raise ValueError("REF_NOT_OPAQUE: invalid calendar_ref")
+            if not _CALENDAR_VERSION_PATTERN.fullmatch(str(calendar_version)):
+                raise ValueError("INVALID_DESCRIPTOR: invalid calendar_version")
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(raw.get("source_ref", ""))):
             raise ValueError("INVALID_DESCRIPTOR: invalid source_ref")
         for key in ("store_config_ref", "intent_batch_ref", "provider_policy_ref"):

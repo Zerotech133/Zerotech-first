@@ -69,24 +69,56 @@ class CalendarIdentity:
 
 
 @dataclass(frozen=True)
-class CalendarSession:
-    session_date: date
+class SessionSegment:
+    """One contiguous, observable market interval in UTC."""
+
     open_at: datetime
     close_at: datetime
 
     def __post_init__(self) -> None:
-        if not isinstance(self.session_date, date) or isinstance(self.session_date, datetime):
-            raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "session_date must be a date")
         for field in ("open_at", "close_at"):
             value = getattr(self, field)
             if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
                 raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", f"{field} must be timezone-aware")
             object.__setattr__(self, field, value.astimezone(timezone.utc))
         if self.open_at >= self.close_at:
-            raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "session bounds are reversed")
-        if self.open_at.astimezone(timezone.utc).date() > self.close_at.astimezone(timezone.utc).date():
-            # Overnight sessions are not part of the P0 regular-session contract.
+            raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "session segment bounds are reversed")
+        if self.open_at.date() > self.close_at.date():
             raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "overnight sessions are unsupported in P0")
+
+
+@dataclass(frozen=True)
+class CalendarSession:
+    session_date: date
+    open_at: Optional[datetime] = None
+    close_at: Optional[datetime] = None
+    segments: Tuple[SessionSegment, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.session_date, date) or isinstance(self.session_date, datetime):
+            raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "session_date must be a date")
+        # Preserve the legacy three-argument constructor as one segment while
+        # allowing segment-only construction for split sessions.
+        if self.segments:
+            normalized = tuple(self.segments)
+            if self.open_at is not None or self.close_at is not None:
+                if self.open_at is None or self.close_at is None:
+                    raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "open_at and close_at must be paired")
+        else:
+            if self.open_at is None or self.close_at is None:
+                raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "session bounds are required")
+            normalized = (SessionSegment(self.open_at, self.close_at),)
+        if not all(isinstance(item, SessionSegment) for item in normalized):
+            raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "segments must contain SessionSegment")
+        ordered = tuple(sorted(normalized, key=lambda item: item.open_at))
+        for previous, current in zip(ordered, ordered[1:]):
+            if current.open_at < previous.close_at:
+                raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "session segments overlap")
+        if ordered[0].open_at.date() > ordered[-1].close_at.date():
+            raise CalendarContractError("CALENDAR_UNAVAILABLE", "INVALID", "overnight sessions are unsupported in P0")
+        object.__setattr__(self, "segments", ordered)
+        object.__setattr__(self, "open_at", ordered[0].open_at)
+        object.__setattr__(self, "close_at", ordered[-1].close_at)
 
 
 class CalendarProvider(Protocol):
@@ -193,7 +225,15 @@ class FrozenCalendarProvider:
         if not self._days[day]:
             return False
         bounds = self._sessions[day]
-        return bounds.open_at <= instant < bounds.close_at
+        return any(segment.open_at <= instant < segment.close_at for segment in bounds.segments)
+
+    def session_segments(self, session_date: date, *, as_of: Optional[datetime] = None) -> Tuple[SessionSegment, ...]:
+        """Return immutable contiguous segments for one open session."""
+        self._check_as_of(as_of)
+        day = self._check_date(session_date)
+        if not self._days[day]:
+            raise CalendarContractError("CALENDAR_UNAVAILABLE", "COVERAGE_MISSING", "date is closed")
+        return self._sessions[day].segments
 
     def next_open_session(self, session_date: date, *, inclusive: bool = False,
                           as_of: Optional[datetime] = None) -> date:
@@ -213,10 +253,11 @@ class FrozenCalendarProvider:
         self._check_date(local_day)
         for candidate in self._session_dates:
             bounds = self._sessions[candidate]
-            if bounds.open_at >= instant:
-                return bounds.open_at
-            if bounds.open_at <= instant < bounds.close_at:
-                return bounds.open_at
+            for segment in bounds.segments:
+                if segment.open_at >= instant:
+                    return segment.open_at
+                if segment.open_at <= instant < segment.close_at:
+                    return segment.open_at
         raise CalendarContractError("CALENDAR_UNAVAILABLE", "COVERAGE_MISSING", "no next open session in coverage")
 
 
