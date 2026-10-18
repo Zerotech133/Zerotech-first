@@ -2,7 +2,7 @@
 
 - **日期**：2026-10-18
 - **作者**：dev-bridge-doc（老田个人 AI 组 C 路文档代理）
-- **状态**：**拍板三件已落地（2026-10-18 老田令执行）**——①§2.2 白名单制定稿（七件套纯计算库 + 宿主契约模块 strategy_registry）②军团-M1/M2/M3 批准按序施工（M1/M2 本日完成，M3 沙箱化待施工）③首个试点策略 = SMA20+RSI14（`codex_sma20_rsi14`，已受理入 processed/ 并注册落账）。施工产物：`adapters/codex_bridge.py`（M1 校验器+受理管线+fail-open 装载）、`bridge_inbox/`（inbox/processed/rejects 三区纪律）、`run_shadow.py` 挂载点 fail-open 接线、`tests/test_codex_bridge.py` 25 例（恶意样本集固化为回归测试）；全仓 629 绿。§2/§3/§5 中与实现冲突处以实现为准（校验器进程内 AST 门为 M1 形态，子进程沙箱留 M3）。
+- **状态**：**拍板三件已落地 + M3 收官（2026-10-18 老田令执行）**——①§2.2 白名单制定稿（七件套纯计算库 + 宿主契约模块 strategy_registry）②军团-M1/M2/M3 批准按序施工（**M1/M2/M3 本日全部完成**：M3=sandbox_trial 子进程墙钟超时试跑，Windows 无 rlimit 口径已注明，真 rlimit/Job Object 留 Linux 部署轮）③首个试点策略 = SMA20+RSI14（`codex_sma20_rsi14`，已受理入 processed/ 并注册落账）。施工产物：`adapters/codex_bridge.py`（M1 校验器 + M3 试跑门 + 受理管线 + fail-open 装载）、`bridge_inbox/`（inbox/processed/rejects 三区纪律）、`run_shadow.py` 挂载点 fail-open 接线、`tests/test_codex_bridge.py` 34 例（恶意样本集固化为回归测试）；全仓 638 绿。§2/§3/§5 中与实现冲突处以实现为准。
 - **编号纪律**：本文里程碑一律用 **军团-M\*** 前缀（军团-M1/M2/M3），与 AP-M\*（AP 第十一域等）严格区分；对齐 M5 门 4 文档「军团方案 M0-M5 与 AP M0-M6 撞号，此后文档一律加前缀」的纪律。
 - **决策依据**：`docs/audit/2026-10-18_M5门4签字收口与军团三拍板落地.md`（总纲 v1.0 有保留批准 + 仓库路线 = agent_platform 扩展）、`agent_platform/engine/strategy_registry.py`（StrategyAgent/Verdict/StrategyRegistry 契约）、`agent_platform/engine/shadow_strategies.py`（首批插件范式）。
 
