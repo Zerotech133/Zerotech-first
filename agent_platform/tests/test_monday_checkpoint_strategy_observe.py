@@ -79,24 +79,25 @@ class StrategyRunsObserveTests(_Capture):
         self.assertIn("周一 17:10 首跑后应存在", self.out)
         self.assertIn("不计入退出码", self.out)
 
-    def test_present_reports_row_and_m5_counts(self):
+    def test_present_reports_row_and_runid_counts(self):
+        """计数口径=带 run_id 行（判决行实际链接字段；schema 计数已弃用）。"""
         p = self.tmpdir / "strategy_runs.jsonl"
         _write_jsonl(p, [
-            {"strategy_id": "s1", "schema_version": "m5.v1"},
-            {"strategy_id": "s2", "schema_version": "m5.v1"},
-            {"strategy_id": "s3", "schema_version": "v0"},
+            {"strategy_id": "s1", "run_id": "a1b2c3d4e5f6"},
+            {"strategy_id": "s2", "run_id": "b2c3d4e5f6a1"},
+            {"strategy_id": "s3"},
         ])
         mc._strategy_runs_observe(p)
-        self.assertIn("strategy_runs：3 行 / m5.v1 2 行", self.out)
+        self.assertIn("strategy_runs：3 行 / 带 run_id 2 行", self.out)
 
     def test_bad_line_counted_and_skipped(self):
         p = self.tmpdir / "strategy_runs.jsonl"
-        _write_jsonl(p, [{"strategy_id": "s1", "schema_version": "m5.v1"}])
+        _write_jsonl(p, [{"strategy_id": "s1", "run_id": "a1b2c3d4e5f6"}])
         with p.open("a", encoding="utf-8") as f:
             f.write('{"strategy_id": "broken",\n')  # 半行
         mc._strategy_runs_observe(p)
         self.assertIn("有 1 行损坏", self.out), "坏行必须显式计数（fail-visible）"
-        self.assertIn("strategy_runs：1 行 / m5.v1 1 行", self.out)
+        self.assertIn("strategy_runs：1 行 / 带 run_id 1 行", self.out)
 
     def test_unreadable_path_fails_visible_not_raises(self):
         d = self.tmpdir / "not_a_file"
@@ -194,7 +195,7 @@ class MainIntegrationTests(_Capture):
             mc.LOG = self.tmpdir / "cp.log"
             mc._LOG_HANDLE = None
             sp = self.tmpdir / "strategy_runs.jsonl"
-            _write_jsonl(sp, [{"schema_version": "m5.v1"}])
+            _write_jsonl(sp, [{"run_id": "a1b2c3d4e5f6"}])
             mc.STRATEGY_RUNS = sp
             mc.CODEX_REGS = self.tmpdir / "missing_regs.jsonl"
             mc.date = _Tuesday
@@ -205,7 +206,7 @@ class MainIntegrationTests(_Capture):
              mc.STRATEGY_RUNS, mc.CODEX_REGS, mc.date) = saved
 
         out = self.out
-        self.assertIn("[observe] strategy_runs：1 行 / m5.v1 1 行", out)
+        self.assertIn("[observe] strategy_runs：1 行 / 带 run_id 1 行", out)
         self.assertIn("[observe] codex_registrations：文件不存在（PENDING 中性）", out)
         n_gate_lines = sum(
             1 for ln in out.splitlines()

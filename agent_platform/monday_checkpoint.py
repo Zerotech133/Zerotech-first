@@ -215,7 +215,10 @@ def _strategy_runs_observe(path=None):
     """观察：strategy 账本是否已首落账（周一 17:10 影子首跑，先于 17:25 巡检）。
 
     文件缺失=PENDING 中性（首跑未到，不拉低退出码）；存在=报告总行数与
-    schema_version=m5.v1 行数（首跑行契约的域外旁证）。
+    带 run_id 行数（判决行实际带的影子链接字段，对账锚点）。
+    注：判决行本身无 schema_version 键（record_verdicts 不写该键，
+    schema 契约在影子账本侧），故不做 schema 计数——2026-10-18 预演
+    实证恒 0 会误导现场判读。
     """
     p = Path(path) if path is not None else STRATEGY_RUNS
     try:
@@ -224,9 +227,9 @@ def _strategy_runs_observe(path=None):
                   "周一 17:10 首跑后应存在）——观察项，不计入退出码")
             return
         rows = load_jsonl(p)  # 坏行在 load_jsonl 内已打印计数并跳过
-        m5 = sum(1 for r in rows if r.get("schema_version") == "m5.v1")
-        print("[observe] strategy_runs：%d 行 / m5.v1 %d 行"
-              "——观察项，不计入退出码" % (len(rows), m5))
+        anchored = sum(1 for r in rows if r.get("run_id"))
+        print("[observe] strategy_runs：%d 行 / 带 run_id %d 行"
+              "——观察项，不计入退出码" % (len(rows), anchored))
     except Exception as exc:  # noqa: BLE001  观察项不阻断巡检，但异常必须可见
         print("[observe] strategy_runs：不可读（%s）——观察项，不计入退出码"
               % str(exc)[:100])
