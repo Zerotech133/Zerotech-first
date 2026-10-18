@@ -3079,6 +3079,14 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._json(data)
         elif path == "/health":
             self._json({"ok": True, "ts": time.strftime("%Y-%m-%d %H:%M:%S")})
+        elif path == "/api/watch-tower/strategy-pool/membership":
+            # Independent read-only projection; no trusted production source is
+            # configured, and offline receipts must not become live membership.
+            from strategy_pool_projection import ProjectionQueryError, project_membership
+            try:
+                self._json(project_membership(qs))
+            except ProjectionQueryError as exc:
+                self._json({"error": "invalid_strategy_pool_query", "message": str(exc)}, 400)
         elif path in ("/api/watch-tower/snapshot", "/api/watchtower/overview"):
             # Watch Tower snapshot v1; compatibility alias remains read-only.
             # replay_at is deliberately parsed here so malformed user input is
