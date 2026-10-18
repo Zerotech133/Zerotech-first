@@ -4,8 +4,17 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Tuple
 
-from bar_dto import Bar, BarQuery
-from bar_sources import SourceReadError
+# G1 包内收敛（RC-0 S1）：包路径 quant_backtest.bar_store 走包内相对导入；
+# 顶层加载（execution_engine 顶层链 / portal / 既有测试经 sys.path 注入）走顶层导入，
+# 行为与包内化之前完全一致。
+# 兼容守卫为过渡态：S2（execution_engine.py 包内化 + 顶层自举壳）落地后，
+# 顶层加载链消失，届时删除 else 分支，仅保留相对导入。
+if __package__:
+    from .bar_dto import Bar, BarQuery
+    from .bar_sources import SourceReadError
+else:
+    from bar_dto import Bar, BarQuery
+    from bar_sources import SourceReadError
 
 
 class BarStore:
