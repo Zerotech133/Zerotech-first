@@ -16,8 +16,12 @@ TOOLS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                      "tools")
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
+_ROOT = os.path.dirname(TOOLS)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 import xq_timeline_watch as xtw  # noqa: E402
+import xq_classify  # noqa: E402  # fixture extractor_version 动态取，升版免疫
 
 DAY = "2026-10-18"
 
@@ -30,7 +34,7 @@ def _make_payload() -> dict:
     """最小合法 15 键 payload（过 verify_daily_report.check_payload 语义）。"""
     return {
         "date": DAY, "generated_at": DAY + " 19:01:00",
-        "extractor_version": "v1.3",
+        "extractor_version": xq_classify._TICKER_VERSION,
         "pipeline": {"llm_model": "qwen3.5:9b", "prompt_version": "v1.3"},
         "ingested_today": 3, "posts_today": 0,
         "classified_today": 0,
