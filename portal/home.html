@@ -66,6 +66,7 @@ footer{margin-top:34px;color:#484f58;font-size:11px;text-align:center}
 <div class="flow" id="flow"></div>
 <div class="groups">
   <div class="gbox"><div class="gt">📡 情报 <small>Jev 管理系统 · 评估与投递</small></div>
+    <a href="/xq_intel.html">📰 雪球情报日报<span class="d">舆情异动信号 + 高置信观点（每日 19:00 生成）</span></a>
     <a href="/bt-jev">⚖️ JEV 判断<span class="d">Jev 中文财经场景评估主页面：对告警/信号判紧急度与方向</span></a>
     <a href="/stack">🩺 四件套观测<span class="d">闸门/复核/双刀桥/卡片四服务健康：业务指标+换血时间轴+死信队列</span></a>
     <a href="/mission">🛰 任务控制<span class="d">Hermes Agent 任务编排与技能总览：追踪各情报任务在做什么</span></a>
@@ -99,6 +100,20 @@ footer{margin-top:34px;color:#484f58;font-size:11px;text-align:center}
 </section>
 
 <section>
+<h2>B2 · 今日业务 <span class="badge" id="bstate"></span></h2>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+  <div class="card" onclick="location.href='/xq_intel.html'" title="点击进入雪球情报日报">
+    <div class="top"><span class="name">📡 今日情报</span><span class="port">/xq_intel.html</span></div>
+    <div class="meta" id="bizIntel">加载中…</div>
+  </div>
+  <div class="card" onclick="location.href='/picks.html'" title="点击进入今日选股">
+    <div class="top"><span class="name">🎯 今日交易</span><span class="port">/picks.html</span></div>
+    <div class="meta" id="bizTrade">加载中…</div>
+  </div>
+</div>
+</section>
+
+<section>
 <h2>C · 当日摘要 <span class="badge loading" id="dstate">加载中…</span></h2>
 <div id="digest"><span class="loading">正在聚合（首次可能 10-20s）…</span></div>
 </section>
@@ -108,7 +123,7 @@ footer{margin-top:34px;color:#484f58;font-size:11px;text-align:center}
 
 <script>
 var FLOW=[['🤖 晨报','/bt-brief'],['🌅 盘前','/premarket'],['🚦 信号','/bt-signals'],
-['📺 大屏','/screen'],['🌇 盘后','/afterhours'],['🧾 模拟仓','/paper'],
+['📺 大屏','/screen'],['🌇 盘后','/afterhours'],['📰 日报','/xq_intel.html'],['🧾 模拟仓','/paper'],
 ['🏛 门面','/hall'],['🗂 门户','/portal']];
 document.getElementById('flow').innerHTML=FLOW.map(function(f){
 return '<a class="pill" href="'+f[1]+'">'+f[0]+'</a>'}).join('');
@@ -180,7 +195,21 @@ function loadDigest(){
   fetch('/api/overview').then(function(r){return r.json()}).then(renderDigest)
     .catch(function(){el('digest').innerHTML='<span class="loading">/api/overview 不可达</span>'});
 }
-loadHealth();loadDigest();
+function loadBiz(){
+  fetch('/api/xq/intel').then(function(r){return r.json()}).then(function(d){
+    if(d.report_exists===false){el('bizIntel').innerHTML='日报未生成（每日 19:00 自动出稿）——点击进入日报页';return}
+    var an=(d.anomaly_signals||[]).length, sg=(d.high_confidence||[]).length;
+    el('bizIntel').innerHTML='异动信号 <b style="color:'+(an?'#f85149':'#3fb950')+'">'+an+'</b>'
+      +' · 高置信观点 '+sg+' · 雪球新帖 '+(d.posts_today||0)+' / 入库 '+(d.ingested_today||0);
+    el('bstate').textContent='已更新';
+  }).catch(function(){el('bizIntel').textContent='/api/xq/intel 不可达'});
+  fetch('data/todays_picks.json').then(function(r){return r.json()}).then(function(j){
+    var arr=Array.isArray(j)?j:(j.picks||j.items||[]);
+    el('bizTrade').innerHTML='选股候选 <b style="color:#3fb950">'+arr.length+'</b> 条 · 详情见今日选股页';
+    el('bstate').textContent='已更新';
+  }).catch(function(){el('bizTrade').textContent='选股数据暂不可达'});
+}
+loadHealth();loadDigest();loadBiz();
 setInterval(loadHealth,30000);
 setInterval(loadDigest,120000);
 </script>

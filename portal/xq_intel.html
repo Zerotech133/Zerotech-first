@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📡 雪球情报日报 · 零界工作站</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:"Microsoft YaHei",Arial,sans-serif;margin:0;padding:0 0 40px}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 20px 0}
+h1{font-size:20px;margin:14px 0 4px;color:#e6edf3}
+h1 .sub{font-size:12px;color:#8b949e;font-weight:400;margin-left:10px}
+h2{font-size:14px;color:#8b949e;margin:26px 0 10px;letter-spacing:.5px}
+input[type=date]{background:#161b22;border:1px solid #30363d;border-radius:8px;color:#c9d1d9;padding:5px 10px;font-size:12.5px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.metric{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:12px 14px}
+.metric .k{font-size:11.5px;color:#8b949e}
+.metric .v{font-size:22px;font-weight:600;color:#e6edf3;margin-top:4px;font-family:Consolas,monospace}
+.metric .v.warn{color:#d29922}.metric .v.bad{color:#f85149}.metric .v.good{color:#3fb950}
+.panel{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:13px 16px;margin-bottom:12px}
+.bar{display:flex;height:16px;border-radius:8px;overflow:hidden;margin:8px 0 4px;background:#21262d}
+.bar span{display:block;height:100%}
+.legend{font-size:11.5px;color:#8b949e}
+.legend b{color:#c9d1d9;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{color:#8b949e;text-align:left;font-weight:400;padding:5px 8px;border-bottom:1px solid #21262d}
+td{padding:6px 8px;border-bottom:1px solid #161b22}
+td.num{font-family:Consolas,monospace}
+.bear{color:#f85149;font-weight:600}.bull{color:#3fb950}.neut{color:#8b949e}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#21262d;border:1px solid #30363d;border-radius:999px;padding:3px 11px;font-size:12px;color:#c9d1d9}
+.chip b{color:#58a6ff;font-weight:600;font-family:Consolas,monospace}
+.empty{color:#8b949e;font-size:12.5px;padding:8px 0}
+footer{margin-top:30px;color:#484f58;font-size:11px;text-align:center}
+.err{color:#f85149;font-size:12.5px}
+</style>
+<script src="/static/nav.js?v=20261018-p2a"></script>
+</head>
+<body>
+<div class="wrap">
+<h1>📡 雪球情报日报 <span class="sub">舆情打标 · 异动信号 · 高置信观点 · 源 /api/xq/intel</span></h1>
+<div style="margin:10px 0 4px"><input type="date" id="d" onchange="load()"></div>
+
+<section><h2>一 · 总览</h2><div class="metrics" id="metrics"><span class="empty">加载中…</span></div></section>
+
+<section><h2>二 · 情绪与事件分布（当日新帖）</h2><div class="panel" id="dist"><span class="empty">加载中…</span></div></section>
+
+<section><h2>三 · 异动信号（bearish 突增 · 对比前 6 日基线）</h2><div class="panel" id="anom"><span class="empty">加载中…</span></div></section>
+
+<section><h2>四 · 高置信信号（confidence ≥ 0.8 · 个股/策略/行情 · 带代码）</h2><div class="panel" id="sig"><span class="empty">加载中…</span></div></section>
+
+<section><h2>五 · 热门标的</h2><div class="panel" id="hot"><span class="empty">加载中…</span></div></section>
+
+<section><h2>六 · 管道体检</h2><div class="panel" id="health"><span class="empty">加载中…</span></div></section>
+
+<footer>雪球情报日报 P2a · 2026-10-18 · 生成器 xq_daily_report.py（每日 19:00）· 出口 api_xq_intel.py</footer>
+</div>
+
+<script>
+function el(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'?':s).replace(/[&<>"]/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+function metric(k,v,cls){return '<div class="metric"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div></div>'}
+
+function render(d){
+ if(d.report_exists===false){el('metrics').innerHTML='<span class="empty">该日无日报 —— 日报由 xq_daily_report.py 每日 19:00 生成；历史日期可手动补跑 <code>--date</code>。</span>';
+  ['dist','anom','sig','hot','health'].forEach(function(i){el(i).innerHTML='<span class="empty">（无数据）</span>'});return}
+ if(d.error){el('metrics').innerHTML='<span class="err">数据损坏：'+esc(d.error)+'</span>';return}
+ var cov=d.posts_today?Math.round(100*d.classified_today/d.posts_today):null;
+ el('metrics').innerHTML=
+   metric('当日新帖（战术情报）',d.posts_today||0,(d.posts_today?'':'neut'))
+  +metric('当日采集入库（管道）',d.ingested_today||0)
+  +metric('打标覆盖率',cov===null?'—':cov+'%',cov!==null&&cov<50?'warn':'good')
+  +metric('异动信号',(d.anomaly_signals||[]).length,(d.anomaly_signals||[]).length?'bad':'good')
+  +metric('高置信观点',(d.high_confidence||[]).length);
+
+ var s=d.sentiment||{},tot=(s.bullish||0)+(s.neutral||0)+(s.bearish||0);
+ var ev=d.event_type||{},evk=Object.keys(ev).sort(function(a,b){return ev[b]-ev[a]});
+ var bar='';
+ if(tot){[['bullish','#3fb950','#3fb950'],['neutral','#8b949e','#8b949e'],['bearish','#f85149','#f85149']].forEach(function(x){
+   var n=s[x[0]]||0;if(n)bar+='<span style="width:'+(100*n/tot)+'%;background:'+x[1]+'"></span>'})}
+ el('dist').innerHTML=(tot?
+   '<div class="bar">'+bar+'</div><div class="legend">bullish <b>'+(s.bullish||0)+'</b> · neutral <b>'+(s.neutral||0)+'</b> · bearish <b>'+(s.bearish||0)+'</b>（共 '+tot+'）</div>':
+   '<div class="empty">当日新帖为空（18:00 生产轮产出后才有战术数据；历史回填帖不在当日窗口）</div>')
+  +(evk.length?'<div style="margin-top:10px" class="legend">事件分布：</div><div class="chips" style="margin-top:6px">'
+    +evk.map(function(k){return '<span class="chip">'+esc(k)+' <b>'+ev[k]+'</b></span>'}).join('')+'</div>':'');
+
+ var an=d.anomaly_signals||[];
+ el('anom').innerHTML=an.length?
+   '<table><tr><th>代码</th><th>当日样本</th><th>bearish</th><th>前 6 日基线</th><th>强度</th></tr>'
+   +an.map(function(r){var st=r.baseline6d?(r.bearish-r.baseline6d):r.bearish;
+     return '<tr><td class="num"><b>'+esc(r.code)+'</b></td><td class="num">'+r.n+'</td><td class="num bear">'+r.bearish+'</td><td class="num">'+r.baseline6d+'</td><td>'+(st>0?'+'+st:st)+'</td></tr>'}).join('')+'</table>'
+   :'<div class="empty">（无——当日无达标标的）</div>';
+
+ var sg=d.high_confidence||[];
+ el('sig').innerHTML=sg.length?
+   '<table><tr><th>conf</th><th>代码</th><th>情绪</th><th>事件</th><th>标题</th></tr>'
+   +sg.map(function(r){return '<tr><td class="num">'+Number(r.confidence).toFixed(2)+'</td><td class="num"><b>'+esc(r.code)+'</b></td><td class="'+(r.sentiment==='bullish'?'bull':r.sentiment==='bearish'?'bear':'neut')+'">'+esc(r.sentiment)+'</td><td>'+esc(r.event_type)+'</td><td>'+esc(r.title)+'</td></tr>'}).join('')+'</table>'
+   :'<div class="empty">（无）</div>';
+
+ var tc=d.top_codes||{},tt=d.top_themes||{};
+ el('hot').innerHTML='<div class="legend">个股/ETF/港股代码：</div><div class="chips" style="margin:6px 0 10px">'
+   +(Object.keys(tc).length?Object.keys(tc).sort(function(a,b){return tc[b]-tc[a]}).map(function(k){return '<span class="chip"><b>'+esc(k)+'</b> ×'+tc[k]+'</span>'}).join(''):'<span class="empty">（无）</span>')
+   +'</div><div class="legend">主题词（基金/指数）：</div><div class="chips" style="margin-top:6px">'
+   +(Object.keys(tt).length?Object.keys(tt).sort(function(a,b){return tt[b]-tt[a]}).map(function(k){return '<span class="chip">'+esc(k)+' <b>'+tt[k]+'</b></span>'}).join(''):'<span class="empty">（无）</span>')+'</div>';
+
+ el('health').innerHTML='库内已打标 vs 总量、模型 lineage 等体检明细见机读版：<a href="/api/xq/intel?date='+(d.date||'')+'" style="color:#58a6ff">/api/xq/intel?date='+(d.date||'')+'</a>'
+   +'<div class="legend" style="margin-top:6px">生成时间 '+(d.generated_at||'—')+' · 双口径说明：战术情报=created_at 当日新帖；管道健康=fetched_at 当日采集入库（含播种/回填）</div>';
+}
+
+function load(){
+ var v=el('d').value;
+ fetch('/api/xq/intel'+(v?'?date='+v:'')).then(function(r){return r.json()}).then(function(d){
+   el('d').value=d.date||v;render(d);
+ }).catch(function(){el('metrics').innerHTML='<span class="err">/api/xq/intel 不可达</span>'});
+}
+el('d').value=new Date().toLocaleDateString('sv-SE');
+load();
+</script>
+</body>
+</html>
