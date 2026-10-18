@@ -268,7 +268,7 @@ function render(d){
 
   const g=d.governance||{};
   const md=Object.entries(g.model_dist||{});
-  const CTN={tech:'技术面分析',community:'社区探讨',news:'个股资讯',fundamental:'基本面逻辑','(待补)':'(待补)'};
+  const CTN={tech:'技术面分析',community:'社区探讨',news:'个股资讯',fundamental:'基本面逻辑',edu:'投教科普',ad:'广告活动','(待补)':'(待补)'};
   const cd=Object.entries(g.content_dist||{});
   const cdMax=Math.max(1,...cd.map(x=>x[1]));
   document.getElementById('gov').innerHTML=
