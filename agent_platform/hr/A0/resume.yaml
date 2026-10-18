@@ -16,5 +16,5 @@ experience:
     kpi: 存量补办（K-ORG-117 一批；工作经历详见 agent__A0__decision.jsonl）
 skills: ['组织调度', '任务仲裁', '汇报聚合', '记忆治理', '风险亮牌']
 self_statement: （存量补办初稿——由 backfill 于 2026-10-16 生成，待人审补充）
-cn_name: 诸葛亮
-cn_origin: 参谋长总揽调度=卧龙运筹帷幄，出师表式汇报
+cn_name: 田丰
+cn_origin: 参谋长总揽调度=田丰刚直多谋，主公腹心谋主（10-18 修正：原误登诸葛亮，与 org.json 主事实源冲突；诸葛亮=AI1）
