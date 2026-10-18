@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>学习成长 · 个人 OS 板块页 · 零界</title>
+<style>
+/* ============ 设计基线：对齐 os_entry / quant_home_v3（2026-10-19） ============
+   定位：学习成长板块页（OS 入口层第九板块，/learn）。
+   铁律：固定单屏分区、页面级禁下拉长图；状态灯三态不假绿；
+        学习产物必须可回指原始证据；对标只纳留痕结论。 */
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#11161d;
+  --border:#2a3140; --txt:#e6edf3; --sub:#8b949e; --dim:#57606a;
+  --accent:#e3b341; --blue:#58a6ff; --teal:#39d2c0; --purple:#bc8cff;
+  --up:#f8514f; --down:#3fb950; /* 中国约定：涨红跌绿 */
+  --radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--txt);
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  font-size:14px; overflow:hidden;
+  background-image:radial-gradient(1200px 500px at 70% -10%, rgba(188,140,255,.06), transparent),
+                   radial-gradient(900px 400px at 10% 110%, rgba(227,179,65,.05), transparent);
+}
+.wrap{min-width:1180px;max-width:1440px;height:calc(100vh - 48px);margin:0 auto;padding:10px 22px 12px;display:flex;flex-direction:column}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ============ 顶栏 ============ */
+.topbar{display:flex;align-items:center;gap:16px;padding:6px 4px 10px;border-bottom:1px solid var(--border);flex-wrap:nowrap}
+.brand{font-size:20px;font-weight:700;letter-spacing:1px;white-space:nowrap}
+.brand .os{color:var(--purple)}
+.brand small{color:var(--sub);font-weight:400;font-size:12px;margin-left:10px;letter-spacing:0}
+.backlink{font-size:12px;color:var(--blue);white-space:nowrap;border:1px solid var(--border);border-radius:7px;padding:4px 11px;background:var(--panel)}
+.backlink:hover{border-color:var(--blue);text-decoration:none}
+.sysdots{display:flex;gap:13px;margin-left:auto;flex-wrap:nowrap;align-items:center}
+.sysdot{display:flex;align-items:center;gap:6px;color:var(--sub);font-size:12px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)}
+.dot.ok{background:var(--down);box-shadow:0 0 6px var(--down)}
+.dot.warn{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.dot.unk{background:#8a7d4d;box-shadow:0 0 5px rgba(138,125,77,.55)}
+.datechip{color:var(--dim);font-size:12px;white-space:nowrap;font-family:Consolas,monospace}
+
+/* ============ 学习铁律条 ============ */
+.rulebar{background:#1d2230;border:1px solid #33405c;border-radius:var(--radius);padding:9px 15px;margin-top:12px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:#aac1dc}
+.rulebar b{color:var(--purple);font-size:12.5px;letter-spacing:.05em;white-space:nowrap}
+.rulebar .r{white-space:nowrap}
+.rulebar .r:before{content:"▪ ";color:var(--purple)}
+
+/* ============ 分区 ============ */
+.sect{display:flex;align-items:baseline;gap:10px;margin:15px 0 9px;flex-wrap:wrap}
+.sect h2{font-size:15px;font-weight:600;letter-spacing:.05em}
+.sect small{color:var(--dim);font-size:11px;font-weight:400}
+
+/* ============ 学习域卡 ============ */
+.domains{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.dm{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px 11px;display:flex;flex-direction:column;transition:border-color .15s}
+.dm:hover{border-color:var(--purple)}
+.dm .dh{display:flex;align-items:center;gap:9px}
+.dicon{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:none;background:#2b2440}
+.dm h3{font-size:14px;font-weight:600;flex:1}
+.dm .en{color:var(--dim);font-size:9.5px;font-family:Consolas,monospace;white-space:nowrap}
+.dm p{color:var(--sub);font-size:11.5px;line-height:1.6;margin:8px 0 8px}
+.dm .st{display:flex;gap:4px 6px;flex-wrap:wrap;margin-top:auto}
+.dm .st i{font-style:normal;font-size:10px;background:#1c2b36;border:1px solid #2e4454;color:#a9cbd8;border-radius:5px;padding:2px 7px;white-space:nowrap}
+.dm .entries{margin-top:9px;padding-top:8px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:4px}
+.dm .entries a{font-size:11.5px}
+.dm .entries .plan{color:var(--dim);font-size:11px}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:5px;white-space:nowrap;font-weight:400;flex:none}
+.b-live{background:#1f3524;color:#9fd8a8}
+.b-run{background:#3f2d20;color:#f0c78a}
+.b-plan{background:#2b3645;color:#aac1dc}
+.b-wait{background:#33273d;color:#c9a8e8}
+
+/* ============ 下半区：学习计划 + 联动 ============ */
+.split{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;align-items:start;flex:1;min-height:0}
+.mini{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:12px 15px}
+.mini h4{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--txt)}
+.mini h4 span{color:var(--dim);font-weight:400;font-size:11px;margin-left:8px}
+.tl{position:relative;padding-left:22px}
+.tl:before{content:"";position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:#2c3d47}
+.tl-item{position:relative;padding:6px 0 8px}
+.tl-item:before{content:"";position:absolute;left:-20px;top:12px;width:9px;height:9px;border-radius:50%;background:var(--purple);border:2px solid var(--bg)}
+.tl-item.w:before{background:var(--accent)}
+.tl-item .t{font:700 11.5px Consolas,monospace;color:var(--purple);margin-right:8px}
+.tl-item.w .t{color:var(--accent)}
+.tl-item b{font-size:12.5px}
+.tl-item p{margin:2px 0 0;color:var(--sub);font-size:11px;line-height:1.6}
+.mini ul{list-style:none}
+.mini li{font-size:11.5px;color:var(--sub);line-height:1.65;padding:5px 0 5px 16px;position:relative;border-bottom:1px dashed #21262e}
+.mini li:last-child{border-bottom:none}
+.mini li:before{content:"▸";position:absolute;left:0;color:var(--purple)}
+.mini li b{color:var(--txt);font-weight:600}
+.demo-flag{border:1px dashed var(--accent);color:var(--accent);border-radius:6px;padding:3px 9px;font-size:11px;white-space:nowrap}
+.foot{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:14px;color:var(--dim);font-size:11px;flex-wrap:wrap}
+</style>
+<style>/* 门户落位适配：nav.js 统一顶栏注入后让出高度，单屏铁律不变 */
+.wrap{height:calc(100vh - 48px)}</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 顶栏 ============ -->
+  <div class="topbar">
+    <div class="brand"><span class="os">📚 学习成长</span><small>个人 OS · 板块页 /learn</small></div>
+    <a class="backlink" href="/os-entry">← 返回 OS 总览</a>
+    <div class="sysdots">
+      <span class="sysdot"><span class="dot" id="p-8091"></span>门户 api</span>
+      <span class="sysdot"><span class="dot" id="p-8787"></span>Hermes</span>
+      <span class="sysdot"><span class="dot" id="p-11434"></span>Ollama</span>
+      <span class="datechip" id="datechip"></span>
+      <span class="demo-flag">板块页 · 学习产物均为既有实证文件</span>
+    </div>
+  </div>
+
+  <!-- ============ 学习铁律 ============ -->
+  <div class="rulebar">
+    <b>📐 学习铁律（老田拍板口径）</b>
+    <span class="r">学习产物必须可回指原始证据（同数据铁律）</span>
+    <span class="r">学习材料禁混入生产仓</span>
+    <span class="r">对标只纳留痕结论</span>
+    <span class="r">对外统一口号，不多线 slogan</span>
+    <span class="r">方法库候选须与量化板块联动验证后才进策略层</span>
+  </div>
+
+  <!-- ============ 五大学习域 ============ -->
+  <div class="sect"><h2>🧭 学习域全貌</h2><small>每卡一个学习域；入口均为既有实证文件（非规划占位）</small></div>
+  <div class="domains">
+
+    <div class="dm">
+      <div class="dh"><span class="dicon">🌀</span><h3>缠论学习环</h3><span class="en">CHANLUN</span></div>
+      <span class="badge b-live" style="margin-top:6px">L1-L4 运行报告已出</span>
+      <p>缠论分型/笔/线段/中枢学习环运行报告，含结构判定与走势分解训练记录，可回指原始 K 线证据。</p>
+      <div class="st"><i>学习环 L1-L4</i><i>结构判定留痕</i></div>
+      <div class="entries">
+        <a href="/chanlun-learn-report/chanlun-learn-report.html">▸ 学习环运行报告（L1-L4）</a>
+        <span class="plan">缠论当日结构图（生产旁路）→ /chanlun-png（8091）</span>
+      </div>
+    </div>
+
+    <div class="dm">
+      <div class="dh"><span class="dicon">📐</span><h3>CZSC 接入评估</h3><span class="en">CZSC-EVAL</span></div>
+      <span class="badge b-run" style="margin-top:6px">Phase1 已评估</span>
+      <p>CZSC（缠中说禅技术工具库）接入零界的 P0 评估与 Phase1 计划/报告——方法库选型的实证依据。</p>
+      <div class="st"><i>P0 评估 K-ORG-198</i><i>Phase1 计划+报告</i></div>
+      <div class="entries">
+        <a href="/czsc-eval/czsc-p0-eval.html">▸ P0 评估报告</a>
+        <a href="/czsc-eval/czsc-phase1-plan.html">▸ Phase1 计划</a>
+        <a href="/czsc-eval/czsc-phase1-report.html">▸ Phase1 报告</a>
+      </div>
+    </div>
+
+    <div class="dm">
+      <div class="dh"><span class="dicon">🛰</span><h3>开源助理雷达</h3><span class="en">ASSISTANT-RADAR</span></div>
+      <span class="badge b-wait" style="margin-top:6px">四对标跟踪中</span>
+      <p>Hermes · OpenClaw · CowAgent · Khoj 四款高星开源个人 AI 助理的架构对标与整合判据，服务集成超级助理目标。</p>
+      <div class="st"><i>Hermes 已整合</i><i>OpenClaw 网关</i><i>CowAgent 记忆</i><i>Khoj 检索</i></div>
+      <div class="entries">
+        <span class="plan">对标结论沉淀于 docs/（雷达专页未建 → 规划位）</span>
+      </div>
+    </div>
+
+    <div class="dm">
+      <div class="dh"><span class="dicon">📊</span><h3>量化方法库</h3><span class="en">QUANT-METHODS</span></div>
+      <span class="badge b-run" style="margin-top:6px">与量化板块联动</span>
+      <p>XGBoost+LightGBM（40+ 特征/PCA）、BacktestEngine+T0Engine 方法资产；候选方法经联动验证后才进策略层。</p>
+      <div class="st"><i>XGB+LightGBM</i><i>PCA 降维</i><i>回测引擎</i></div>
+      <div class="entries">
+        <a href="/quant">▸ 量化板块首页（策略候选入口）</a>
+        <span class="plan">方法库专页未建 → 规划位（随 S5 下钻链）</span>
+      </div>
+    </div>
+
+    <div class="dm">
+      <div class="dh"><span class="dicon">🏛</span><h3>联合实验室材料</h3><span class="en">BIT-LAB</span></div>
+      <span class="badge b-plan" style="margin-top:6px">政府协调线</span>
+      <p>与北理工共建边缘计算算力联合实验室的请示/汇报材料（对外口径剔除军方背景），属政府协调线不在门户外发。</p>
+      <div class="st"><i>边缘计算算力</i><i>政府协调材料</i></div>
+      <div class="entries">
+        <span class="plan">材料存 docs/ 政府线目录（涉协调口径，不做公网入口）</span>
+      </div>
+    </div>
+
+    <div class="dm">
+      <div class="dh"><span class="dicon">🤖</span><h3>本地 Ollama 工作流</h3><span class="en">OLLAMA-WF</span></div>
+      <span class="badge b-run" style="margin-top:6px">tuned 运行中</span>
+      <p>nomic-embed-text / qwen2.5:7b / qwen3.5:9b/4b / bge-m3 本地模型工作流：蒸馏语料、嵌入检索、影子对照三用途。</p>
+      <div class="st"><i>ctx 65536</i><i>par=2 待拍板</i><i>keep 30m</i></div>
+      <div class="entries">
+        <span class="plan">模型管理 → /model_admin（蒸馏板联动）</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ 下半区 ============ -->
+  <div class="split" style="margin-top:14px">
+    <div class="mini">
+      <h4>🗓 学习计划与待办 <span>随学习环滚动更新</span></h4>
+      <div class="tl">
+        <div class="tl-item"><span class="t">L1-L4</span><b>缠论学习环报告</b><p>已出运行报告；下一环：走势类型多义性专题（回指原始证据）</p></div>
+        <div class="tl-item w"><span class="t">P1</span><b>CZSC Phase2 评估</b><p>Phase1 报告结论复盘后启动；与量化板块策略候选联动验证</p></div>
+        <div class="tl-item w"><span class="t">雷达</span><b>开源助理四对标季检</b><p>Hermes 已整合；OpenClaw/CowAgent/Khoj 各出一条留痕结论才纳入</p></div>
+        <div class="tl-item"><span class="t">方法库</span><b>量化方法资产归档</b><p>XGB+LightGBM/PCA 特征工程笔记 → 可回指实验批次</p></div>
+        <div class="tl-item w"><span class="t">实验室</span><b>北理工联合实验室请示</b><p>随涪陵 OPC 政府协调线推进；口径：产业落地、剔军方背景</p></div>
+      </div>
+    </div>
+    <div class="mini">
+      <h4>🔗 与其它板块联动 <span>学习不是孤岛</span></h4>
+      <ul>
+        <li><b>量化板块</b>：方法库候选 → 策略层验证 → 回测证据回写学习环（闭环）</li>
+        <li><b>蒸馏板块</b>：学习环语料 → 蒸馏样本；小模型上线前必须影子对照</li>
+        <li><b>军团·情报部</b>：对标留痕结论 → 情报部候选（只有建议权）</li>
+        <li><b>Hermes</b>：本地 Ollama 工作流为 Hermes 记忆/检索底座</li>
+        <li><b>情报板块</b>：缠论结构判定可作 jev 情绪标注的互证维度之一</li>
+      </ul>
+      <div style="margin-top:9px;font-size:11px;color:var(--dim);line-height:1.7">
+        口径说明：本页所有「规划位」均为诚实标注——页面/专页未建即标未建，不用占位链接假装可达（三态纪律同状态灯）。
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>🧭 定位 <b>OS 入口层第九板块 · 学习成长</b></span><span>│</span>
+    <span>2026-10-19 · v1 板块页</span><span>│</span>
+    <span>产物证据：chanlun-learn-report/ · czsc-eval/（已入 webroot）</span>
+  </div>
+</div>
+
+<script src="/static/nav.js"></script>
+<script>
+(function(){
+  /* 顶栏三态灯：8091/8787 走同源 /api/health 拿真实状态；11434 跨域 → unk 不假绿 */
+  var HEALTH_MAP = { 'p-8091':'portal api', 'p-8787':'hermes' };
+  function probe(id, svc){
+    var el = document.getElementById(id); if(!el) return;
+    fetch('/api/health', { cache:'no-store' }).then(function(r){ return r.json(); }).then(function(d){
+      var s = null; (d.services||[]).forEach(function(x){ if(x.name===svc) s = x; });
+      if (s && s.ok) { el.className = 'dot ok'; el.title = svc + ' OK · ' + s.ms + 'ms（同源 /api/health）'; }
+      else if (s) { el.className = 'dot warn'; el.title = svc + ' 在线但状态异常'; }
+      else { el.className = 'dot unk'; el.title = 'health 未覆盖 → 未探测态'; }
+    }).catch(function(){ el.className = 'dot unk'; el.title = '/api/health 不可达 → 未探测态'; });
+  }
+  probe('p-8091','portal api'); probe('p-8787','hermes');
+  (function(){ var el = document.getElementById('p-11434');
+    el.className = 'dot unk'; el.title = '跨域直连不可达 → 未探测态（S4 后转实）'; })();
+  var d = new Date();
+  document.getElementById('datechip').textContent =
+    d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+})();
+</script>
+</body>
+</html>

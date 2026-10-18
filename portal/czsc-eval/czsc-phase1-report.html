@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CZSC Phase 1 无偏复跑报告 · K-ORG-200</title>
+<style>
+  :root{ --bg:#0d1117; --bg2:#161b22; --ink:#e6edf3; --muted:#8b949e;
+    --rule:#30363d; --accent:#58a6ff; --accent2:#e3b341; --pos:#3fb950; --neg:#f85149; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg); color:var(--ink); font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;}
+  .mono{font-family:"Cascadia Code",Consolas,monospace;}
+  mark.key{background:none; color:var(--accent); font-weight:600;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px 96px;}
+  header.masthead{padding:56px 0 28px; border-bottom:1px solid var(--rule); margin-bottom:36px;}
+  header.masthead .kicker{color:var(--accent); font-size:13px; letter-spacing:.18em; text-transform:uppercase; font-weight:600; margin-bottom:14px;}
+  header.masthead h1{font-size:34px; line-height:1.25; font-weight:700;}
+  header.masthead .sub{color:var(--muted); margin-top:14px; font-size:16px; max-width:820px;}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:22px;}
+  .chip{border:1px solid var(--rule); background:var(--bg2); border-radius:999px; padding:4px 14px; font-size:13px; color:var(--muted);}
+  .chip b{color:var(--ink); font-weight:600;}
+  nav.toc{display:flex; flex-wrap:wrap; gap:8px; margin-top:24px;}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:13.5px; border:1px solid var(--rule); border-radius:8px; padding:6px 13px; background:var(--bg2);}
+  nav.toc a:hover{color:var(--accent); border-color:var(--accent);}
+  section{margin-top:52px;}
+  h2{font-size:24px; font-weight:700; padding-bottom:12px; margin-bottom:20px; border-bottom:2px solid var(--rule); display:flex; align-items:baseline; gap:14px;}
+  h2 .no{color:var(--accent); font-family:"Cascadia Code",Consolas,monospace; font-size:19px;}
+  h3{font-size:17.5px; font-weight:600; margin:26px 0 12px;}
+  h3::before{content:"▍"; color:var(--accent); margin-right:6px;}
+  p{margin:10px 0;} p.dim{color:var(--muted); font-size:14.5px;}
+  ul.plain{margin:8px 0 8px 22px;} ul.plain li{margin:6px 0;}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:14px;}
+  th{text-align:left; color:var(--muted); font-weight:600; font-size:12.5px; padding:8px 10px; border-bottom:1px solid var(--rule); white-space:nowrap;}
+  td{padding:8px 10px; border-bottom:1px solid var(--rule); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  td.num{font-family:"Cascadia Code",Consolas,monospace; white-space:nowrap;}
+  .pos{color:var(--pos);} .neg{color:var(--neg);} .warnC{color:var(--accent2);}
+  .badge{display:inline-block; font-size:12px; font-weight:700; border-radius:6px; padding:1px 10px; white-space:nowrap;}
+  .badge.pass{background:rgba(63,185,80,.13); color:var(--pos); border:1px solid rgba(63,185,80,.4);}
+  .badge.fail{background:rgba(248,81,73,.13); color:var(--neg); border:1px solid rgba(248,81,73,.4);}
+  .callout{border-left:4px solid var(--accent); background:var(--bg2); border-radius:0 12px 12px 0; padding:15px 20px; margin:16px 0;}
+  .callout.gold{border-left-color:var(--accent2);}
+  .callout .t{font-weight:700; margin-bottom:6px;}
+  code{background:var(--bg2); border:1px solid var(--rule); border-radius:5px; padding:1px 6px; font-family:"Cascadia Code",Consolas,monospace; font-size:13.5px;}
+  details{margin:14px 0;}
+  summary{cursor:pointer; color:var(--accent); font-size:14.5px;}
+  .tickerlist{columns:4; font-size:12px; color:var(--muted); font-family:"Cascadia Code",Consolas,monospace; line-height:1.9; margin-top:10px;}
+  footer{border-top:1px solid var(--rule); margin-top:56px; padding-top:26px;}
+  footer .sources h2{border:none; font-size:19px; margin-bottom:10px;}
+  footer .sources ol{padding-left:1.3rem; font-size:14px; color:var(--muted);}
+  footer .sources li{margin-bottom:8px;}
+  footer .sources a{color:var(--accent); text-decoration:none; word-break:break-all;}
+  .fineprint{color:var(--muted); font-size:13px; line-height:1.8; margin-top:20px;}
+  @media (max-width:860px){ header.masthead h1{font-size:26px;} .tickerlist{columns:2;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">K-ORG-200 · P1-1 无偏复跑 · G1 闸门判定 · 预注册判据</div>
+  <h1>CZSC Phase 1 无偏样本复跑报告</h1>
+  <div class="sub">seed=42 无偏抽 100 票（候选 5359，排除 P0 十票与窗口&lt;400 根），4 个原生信号全批跑：100/100 成功、0 错误、<mark class="key">4179 个状态翻转事件</mark>、特征截面 4081 条。G1 判定按计划文档 §1 预注册判据执行——信号侧未过，<mark class="key">特征侧以 slope/zz_rel 双强特征放行</mark>。</div>
+  <div class="meta-row">
+    <span class="chip">执行日期 <b>2026-10-19</b></span>
+    <span class="chip">样本 <b>100 票 · 5359 选 100 · seed=42</b></span>
+    <span class="chip">G1 判定 <b style="color:var(--pos)">PASS（特征侧通道）</b></span>
+    <span class="chip">后续 <b>K-ORG-201 开发（旁路管道）</b></span>
+  </div>
+  <nav class="toc">
+    <a href="#s1">① P1-3 定案</a><a href="#s2">② 信号侧结果</a><a href="#s3">③ 特征侧 RankIC</a>
+    <a href="#s4">④ G1 判定</a><a href="#s5">⑤ 判读</a><a href="#s6">⑥ K-ORG-201 施工要点</a>
+  </nav>
+</header>
+
+<div class="callout gold">
+  <div class="t">一句话结论</div>
+  <p style="font-size:15px">CZSC 原生信号在无偏宇宙<b>没有直接超额边缘</b>（4 信号 win10 差 -2.6 ~ +2.2pp，全未过 +5pp 门槛），但 BI 衍生特征给出两个<b>双半窗稳定的负向截面因子</b>：笔斜率 slope（RankIC <b>-0.39</b>）与中枢相对位置 zz_rel（<b>-0.25</b>）——<mark class="key">笔越陡、价越贴中枢上沿，T+10 越差</mark>。G1 走特征侧通道放行，P1-2 旁路管道按计划开工（K-ORG-201），观察重点锁定这两个环境质量因子。</p>
+</div>
+
+<section id="s1">
+  <h2><span class="no">01</span>P1-3 定案：一买 V221126 注册名</h2>
+  <p>官方清单 <code>czsc._native.list_all_signals()</code>（246 信号）实锤：审计文档所写 <code>一买辅助V221126</code> 为误名，正确注册名 <code>cxt_first_buy_V221126</code>，参数模板 <code>{freq}_D{di}B_BUY1V221126</code>。判定为<mark class="key">换名可用</mark>，完整信号串 <code>日线_D1B_BUY1V221126_一买_任意_任意_0</code> 已解析验证并进入本轮批跑（465 事件出数）。注册表已落 <code>signal_registry.json</code>。</p>
+</section>
+
+<section id="s2">
+  <h2><span class="no">02</span>信号侧结果（T+10 win vs 同票基准 48.6%，n=4081）</h2>
+  <table>
+    <thead><tr><th>信号</th><th>事件 n</th><th>win5</th><th>win10</th><th>win20</th><th>avg10%</th><th>p10(T10)%</th><th>win10 差</th><th>门槛 +5pp</th></tr></thead>
+    <tbody>
+      <tr><td>三买辅助 V230228</td><td class="num">983</td><td class="num">48.4</td><td class="num">46.0</td><td class="num">46.4</td><td class="num">-0.04</td><td class="num neg">-10.28</td><td class="num neg">-2.6</td><td><span class="badge fail">未过</span></td></tr>
+      <tr><td>表里向上 V230101</td><td class="num">1736</td><td class="num">49.7</td><td class="num">50.8</td><td class="num">52.8</td><td class="num pos">+0.87</td><td class="num neg">-9.30</td><td class="num pos">+2.2</td><td><span class="badge fail">未过</span></td></tr>
+      <tr><td>涨跌停 V230331</td><td class="num">995</td><td class="num">44.8</td><td class="num">48.2</td><td class="num">50.1</td><td class="num pos">+0.52</td><td class="num neg">-9.79</td><td class="num neg">-0.4</td><td><span class="badge fail">未过</span></td></tr>
+      <tr><td>一买 BUY1V221126</td><td class="num">465</td><td class="num">47.2</td><td class="num">46.7</td><td class="num">49.6</td><td class="num neg">-0.21</td><td class="num neg">-10.29</td><td class="num neg">-1.9</td><td><span class="badge fail">未过</span></td></tr>
+      <tr style="background:rgba(88,166,255,.05)"><td><b>同票基准（全部事件池）</b></td><td class="num">4081</td><td class="num">—</td><td class="num">48.6</td><td class="num">—</td><td class="num">—</td><td class="num neg">—</td><td class="num">—</td><td><span class="badge">参照</span></td></tr>
+    </tbody>
+  </table>
+  <p class="dim">预注册口径：正向边缘（signal win − 基准 win ≥ +5pp）才放行；负向边缘不作放行依据，但作为旁证观察素材记录。全批 100/100 成功、0 错误，无断点续跑触发。</p>
+</section>
+
+<section id="s3">
+  <h2><span class="no">03</span>特征侧 RankIC（事件日截面 vs T+10 前向收益，n=4081）</h2>
+  <table>
+    <thead><tr><th>BI 衍生特征</th><th>n</th><th>RankIC ρ</th><th>前半窗 ρ₁</th><th>后半窗 ρ₂</th><th>|ρ|≥0.05</th><th>双半窗同向</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr style="background:rgba(63,185,80,.06)"><td><b>slope（笔斜率）</b></td><td class="num">4081</td><td class="num neg"><b>-0.3904</b></td><td class="num neg">-0.3136</td><td class="num neg">-0.4560</td><td><span class="badge pass">是</span></td><td><span class="badge pass">是</span></td><td><span class="badge pass">达标</span></td></tr>
+      <tr style="background:rgba(63,185,80,.06)"><td><b>zz_rel（中枢相对位置）</b></td><td class="num">4081</td><td class="num neg"><b>-0.2495</b></td><td class="num neg">-0.2642</td><td class="num neg">-0.2375</td><td><span class="badge pass">是</span></td><td><span class="badge pass">是</span></td><td><span class="badge pass">达标</span></td></tr>
+      <tr><td>rsq（笔拟合优度）</td><td class="num">4081</td><td class="num">+0.0013</td><td class="num">-0.0130</td><td class="num">+0.0285</td><td>否</td><td>否</td><td><span class="badge fail">未达</span></td></tr>
+      <tr><td>angle（笔角度）</td><td class="num">4081</td><td class="num">-0.0227</td><td class="num">+0.0055</td><td class="num neg">-0.0354</td><td>否</td><td>否</td><td><span class="badge fail">未达</span></td></tr>
+      <tr><td>power（笔力度）</td><td class="num">4081</td><td class="num">-0.0072</td><td class="num">+0.0027</td><td class="num neg">-0.0034</td><td>否</td><td>否</td><td><span class="badge fail">未达</span></td></tr>
+      <tr><td>accel（笔加速度）</td><td class="num">4081</td><td class="num">-0.0050</td><td class="num">+0.0012</td><td class="num neg">-0.0161</td><td>否</td><td>否</td><td><span class="badge fail">未达</span></td></tr>
+    </tbody>
+  </table>
+  <p class="dim">预注册门槛：≥2 个特征 |ρ|≥0.05 且前/后半窗方向一致 → 实测 2/6 达标，特征侧放行。ρ₁/ρ₂ 分界为事件日期中位数。注：angle 与 slope 共线性高（同为斜率类），二者的分化本身提示 slope 的单调线性形态信息强于角度截断。</p>
+</section>
+
+<section id="s4">
+  <h2><span class="no">04</span>G1 闸门判定（预注册判据 vs 实测）</h2>
+  <table>
+    <thead><tr><th>通道</th><th>预注册判据（计划文档 §1，跑数前固化）</th><th>实测</th><th>结论</th></tr></thead>
+    <tbody>
+      <tr><td>信号侧</td><td>≥1 个信号 win 与同票基准差 ≥ +5pp（事件 n≥100）</td><td>4 信号 diff ∈ [-2.6, +2.2]，最高 +2.2pp</td><td><span class="badge fail">未通过</span></td></tr>
+      <tr><td>特征侧</td><td>≥2 个 BI 特征 RankIC |ρ|≥0.05 且双半窗同向</td><td>slope -0.39（同向）、zz_rel -0.25（同向），n=4081≥100</td><td><span class="badge pass">通过</span></td></tr>
+      <tr><td><b>G1 综合</b></td><td>任一通道满足即放行 P1-2 全量开发</td><td>特征侧单独放行</td><td><span class="badge pass"><b>PASS</b></span></td></tr>
+    </tbody>
+  </table>
+  <p class="dim">判定纪律：判据在 P1-1 跑数前写入计划文档并公告，本报告判定数字与过程全部留痕，未回改门槛；负向 IC 不因「方向意外」被追认为新判据。</p>
+</section>
+
+<section id="s5">
+  <h2><span class="no">05</span>判读：负向 IC 的含义与 E-01 互证</h2>
+  <ul class="plain">
+    <li><b>slope -0.39 = 日线动量反转</b>：最近一笔越陡（拉升越急），T+10 越差——与 A 股日线短期反转效应一致，量级（-0.39）在事件截面里属强判别力。</li>
+    <li><b>zz_rel -0.25 = 中枢上沿阻力</b>：收盘价越贴近中枢上方（gg），T+10 越差——直接呼应 E-01 修复报告中「<mark class="key">用中枢位置替代涨跌幅判环境质量</mark>」的建议，且该因子在 P0 偏置样本未测、属无偏样本首次实证。</li>
+    <li><b>信号侧无边缘 ≠ 无价值</b>：表里向上 +2.2pp 是四信号中最接近门槛者，方向为正；作为「旁证哨兵」的分歧素材仍可进影子旁路（记录，不判读）。</li>
+    <li><b>与我方学习环的关系</b>：slope/zz_rel 未来进 L3 归因维度，目标是解释 E-01 左尾人群的「环境质量」缺口（regime=low 之外，笔陡 + 中枢上沿可能是左尾的共同画像），而非独立选股信号。</li>
+  </ul>
+</section>
+
+<section id="s6">
+  <h2><span class="no">06</span>K-ORG-201 施工要点（P1-2 旁路管道，G1 已放行）</h2>
+  <ul class="plain">
+    <li><b>架构</b>：旁路（D1 拍板）——<code>czsc_shadow.py</code> 在主仓，czsc 调用走独立 venv 子进程，主仓零新依赖；影子文件 <code>data/chanlun_learn/czsc_ledger.jsonl</code>（append-only）。</li>
+    <li><b>调度</b>：CzscShadowDaily 每日 19:55（ChanlunLearnDaily 19:40 之后），读当日 L1 影子名单，mtime 校验过旧则告警跳过。</li>
+    <li><b>采集特征</b>：全 6 特征落盘（power/slope/rsq/angle/accel/zz_rel）+ 4 信号事件标记；观察重点 slope / zz_rel。</li>
+    <li><b>消费</b>：T+N 前向收益 join（复用 verify 口径）→ 周滚动 RankIC 读数进周记旁证段（D3 拍板：进）；永不进 verdict / L3 判读 / L4 出口（单测守卫断言，学习环铁律原文适用）。</li>
+    <li><b>守卫</b>：append-only 幂等（同日重跑零新增）、venv 缺失降级跳过+告警、schema 校验、不触碰生产三账本断言；评审门 + 三守卫全绿合并。</li>
+  </ul>
+</section>
+
+<footer>
+  <div class="sources">
+    <h2>上游与数据产物</h2>
+    <ol>
+      <li id="cite-1"><span class="src-title">Phase 1 执行计划（预注册判据 §1）</span> <a href="file:///c:/项目/czsc-eval/czsc-phase1-plan.html">file:///c:/项目/czsc-eval/czsc-phase1-plan.html</a></li>
+      <li id="cite-2"><span class="src-title">K-ORG-198 P0 报告（B 路线与偏置样本发现）</span> <a href="file:///c:/项目/czsc-eval/czsc-p0-eval.html">file:///c:/项目/czsc-eval/czsc-p0-eval.html</a></li>
+      <li id="cite-3"><span class="src-title">沙箱产物：signal_registry.json / unbiased_100.json（抽样名单）/ batch_results.jsonl / unbiased_summary.json（C:\Temp\czsc_eval）</span></li>
+      <li id="cite-4"><span class="src-title">E-01 修复闭环（zz_rel 因子的建议出处）</span> <a href="file:///c:/项目/e01-remediation/e01-remediation.html">E-01 修复建议报告</a></li>
+    </ol>
+  </div>
+  <details>
+    <summary>附录：无偏 100 票抽样名单（seed=42，点击展开）</summary>
+    <div class="tickerlist">000100_SZ  000678_SZ  000695_SZ  000728_SZ  000758_SZ  000761_SZ  000912_SZ  000937_SZ  001283_SZ  002033_SZ  002060_SZ  002077_SZ  002142_SZ  002152_SZ  002211_SZ  002261_SZ  002269_SZ  002296_SZ  002333_SZ  002345_SZ  002347_SZ  002423_SZ  002547_SZ  002674_SZ  002824_SZ  002861_SZ  002887_SZ  002893_SZ  002963_SZ  300107_SZ  300165_SZ  300258_SZ  300271_SZ  300311_SZ  300343_SZ  300351_SZ  300358_SZ  300386_SZ  300425_SZ  300436_SZ  300465_SZ  300467_SZ  300569_SZ  300570_SZ  300737_SZ  300762_SZ  300769_SZ  300787_SZ  300831_SZ  300854_SZ  300855_SZ  300856_SZ  300953_SZ  300986_SZ  301186_SZ  301193_SZ  301285_SZ  301439_SZ  301522_SZ  301589_SZ  600099_SH  600133_SH  600165_SH  600196_SH  600256_SH  600350_SH  600359_SH  600363_SH  600365_SH  600598_SH  600779_SH  600803_SH  600812_SH  601288_SH  601595_SH  601827_SH  601908_SH  603508_SH  603960_SH  603989_SH  605222_SH  605258_SH  688011_SH  688059_SH  688098_SH  688156_SH  688251_SH  688363_SH  688375_SH  688535_SH  688558_SH  688609_SH  688719_SH  920171_BJ  920371_BJ  920395_BJ  920508_BJ  920522_BJ  920802_BJ  920856_BJ</div>
+  </details>
+  <p class="fineprint">影子铁律全程合规 · 生产数据根零写入 · czsc==1.0.2 仅存独立 venv · G1 判据预注册未回改 · K-ORG-200 调研工单，验收物齐备。</p>
+</footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CZSC 接入 Phase 1 执行计划 · 承 K-ORG-198</title>
+<style>
+  :root{ --bg:#0d1117; --bg2:#161b22; --ink:#e6edf3; --muted:#8b949e;
+    --rule:#30363d; --accent:#58a6ff; --accent2:#e3b341; --pos:#3fb950; --neg:#f85149; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg); color:var(--ink); font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:16px; line-height:1.7; -webkit-font-smoothing:antialiased;}
+  .mono{font-family:"Cascadia Code",Consolas,monospace;}
+  mark.key{background:none; color:var(--accent); font-weight:600;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px 96px;}
+  header.masthead{padding:56px 0 28px; border-bottom:1px solid var(--rule); margin-bottom:36px;}
+  header.masthead .kicker{color:var(--accent2); font-size:13px; letter-spacing:.18em; text-transform:uppercase; font-weight:600; margin-bottom:14px;}
+  header.masthead h1{font-size:34px; line-height:1.25; font-weight:700;}
+  header.masthead .sub{color:var(--muted); margin-top:14px; font-size:16px; max-width:820px;}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:22px;}
+  .chip{border:1px solid var(--rule); background:var(--bg2); border-radius:999px; padding:4px 14px; font-size:13px; color:var(--muted);}
+  .chip b{color:var(--ink); font-weight:600;}
+  nav.toc{display:flex; flex-wrap:wrap; gap:8px; margin-top:24px;}
+  nav.toc a{color:var(--muted); text-decoration:none; font-size:13.5px; border:1px solid var(--rule); border-radius:8px; padding:6px 13px; background:var(--bg2);}
+  nav.toc a:hover{color:var(--accent); border-color:var(--accent);}
+  section{margin-top:52px;}
+  h2{font-size:24px; font-weight:700; padding-bottom:12px; margin-bottom:20px; border-bottom:2px solid var(--rule); display:flex; align-items:baseline; gap:14px;}
+  h2 .no{color:var(--accent); font-family:"Cascadia Code",Consolas,monospace; font-size:19px;}
+  h3{font-size:17.5px; font-weight:600; margin:26px 0 12px;}
+  h3::before{content:"▍"; color:var(--accent); margin-right:6px;}
+  p{margin:10px 0;} p.dim{color:var(--muted); font-size:14.5px;}
+  ul.plain{margin:8px 0 8px 22px;} ul.plain li{margin:6px 0;}
+  ol.plain{margin:8px 0 8px 26px;} ol.plain li{margin:6px 0;}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:14px;}
+  th{text-align:left; color:var(--muted); font-weight:600; font-size:12.5px; padding:8px 10px; border-bottom:1px solid var(--rule); white-space:nowrap;}
+  td{padding:8px 10px; border-bottom:1px solid var(--rule); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  td.num{font-family:"Cascadia Code",Consolas,monospace; white-space:nowrap;}
+  .pos{color:var(--pos);} .neg{color:var(--neg);} .warnC{color:var(--accent2);}
+  .badge{display:inline-block; font-size:12px; font-weight:700; border-radius:6px; padding:1px 10px; white-space:nowrap;}
+  .badge.go{background:rgba(63,185,80,.13); color:var(--pos); border:1px solid rgba(63,185,80,.4);}
+  .badge.gate{background:rgba(227,179,65,.12); color:var(--accent2); border:1px solid rgba(227,179,65,.35);}
+  .badge.hold{background:rgba(139,148,158,.12); color:var(--muted); border:1px solid var(--rule);}
+  .callout{border-left:4px solid var(--accent); background:var(--bg2); border-radius:0 12px 12px 0; padding:15px 20px; margin:16px 0;}
+  .callout.gold{border-left-color:var(--accent2);}
+  .callout.red{border-left-color:var(--neg);}
+  .callout .t{font-weight:700; margin-bottom:6px;}
+  code{background:var(--bg2); border:1px solid var(--rule); border-radius:5px; padding:1px 6px; font-family:"Cascadia Code",Consolas,monospace; font-size:13.5px;}
+  .rec{background:var(--bg2); border:1px solid var(--rule); border-radius:12px; padding:16px 20px; margin:13px 0;}
+  .rec .head{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:7px;}
+  .rec .head .id{font-family:"Cascadia Code",Consolas,monospace; color:var(--accent); font-weight:700;}
+  .rec .head .tt{font-weight:700;}
+  .rec .fld{font-size:14.5px; margin:5px 0;}
+  .rec .fld b{color:var(--muted); font-weight:600; margin-right:6px;}
+  footer{border-top:1px solid var(--rule); margin-top:56px; padding-top:26px;}
+  footer .sources h2{border:none; font-size:19px; margin-bottom:10px;}
+  footer .sources ol{padding-left:1.3rem; font-size:14px; color:var(--muted);}
+  footer .sources li{margin-bottom:8px;}
+  footer .sources a{color:var(--accent); text-decoration:none; word-break:break-all;}
+  .fineprint{color:var(--muted); font-size:13px; line-height:1.8; margin-top:20px;}
+  @media (max-width:860px){ header.masthead h1{font-size:26px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">执行计划 · 待拍板 · 承 K-ORG-198 P0 结论（B 路线：特征供应商 + 旁证哨兵）</div>
+  <h1>CZSC 接入 Phase 1 详细执行计划</h1>
+  <div class="sub">三阶段推进：<mark class="key">P1-3 信号盘点</mark>（补全第四信号）→ <mark class="key">P1-1 无偏样本复跑</mark>（预注册判据防数据挖掘）→ <mark class="key">P1-2 影子旁路特征管道</mark>（零侵入生产账本，独立 venv 依赖隔离）。全程影子铁律：不进 verdict、不产生交易指令、生产数据根零写入。</div>
+  <div class="meta-row">
+    <span class="chip">计划生成 <b>2026-10-19</b></span>
+    <span class="chip">上游 <b>K-ORG-198 P0（B 路线采纳）</b></span>
+    <span class="chip">拟开工单 <b>K-ORG-199（调研）/ K-ORG-200（开发）</b></span>
+    <span class="chip">状态 <b style="color:var(--pos)">D1-D4 已拍板 · <a href="file:///c:/项目/czsc-eval/czsc-phase1-report.html" style="color:var(--pos)">已执行，G1 特征侧放行</a></b></span>
+  </div>
+  <nav class="toc">
+    <a href="#s1">① 总览与顺序</a><a href="#s2">② P1-3 信号盘点</a><a href="#s3">③ P1-1 无偏复跑</a>
+    <a href="#s4">④ P1-2 影子旁路</a><a href="#s5">⑤ 红线与守卫</a><a href="#s6">⑥ 风险与拍板点</a>
+  </nav>
+</header>
+
+<section id="s1">
+  <h2><span class="no">01</span>总览与执行顺序</h2>
+  <table>
+    <thead><tr><th>阶段</th><th>性质</th><th>载体</th><th>前置</th><th>验收物</th><th>闸门</th></tr></thead>
+    <tbody>
+      <tr><td class="num"><b>P1-3</b> 信号注册名盘点</td><td>调研（只读）</td><td>并入 K-ORG-199</td><td>无</td><td>第四信号可用性结论（可用/换名/弃用三态）</td><td><span class="badge go">直接执行</span></td></tr>
+      <tr><td class="num"><b>P1-1</b> 无偏样本复跑</td><td>调研（只读）</td><td>并入 K-ORG-199</td><td>P1-3（第四信号参与复跑）</td><td>无偏对照表 + 特征预测力初证 + 闸门 G1 判定</td><td><span class="badge gate">G1 闸门</span></td></tr>
+      <tr><td class="num"><b>P1-2</b> 影子旁路特征管道</td><td>开发（代码变更）</td><td>K-ORG-200（独立工单）</td><td>G1 通过；D1 拍板旁路设计</td><td>czsc_shadow.py + 单测 + 调度挂接 + 首跑验证</td><td><span class="badge gate">G2 闸门</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout gold">
+    <div class="t">预注册判据（G1 闸门，先立规矩后看数据，防数据挖掘）</div>
+    <p style="font-size:15px">P1-1 跑完之前锁定以下通过条件，满足<b>任一</b>则 G1 放行 P1-2 全量开发；全不满足则 P1-2 降级为「仅观察旁路」（只落影子文件、不进 L3 归因维度）：</p>
+    <ul class="plain" style="font-size:15px">
+      <li><b>信号侧</b>：≥1 个 CZSC 原生信号在无偏样本 T+10 的 win 与同票基准差 ≥5 个百分点（事件 n≥100）；</li>
+      <li><b>特征侧</b>：≥2 个 BI 衍生特征（power/slope/rsq/angle/acceleration/zz_rel）与 T+10 前向收益的 RankIC |ρ|≥0.05，且方向在前/后半窗一致。</li>
+    </ul>
+  </div>
+</section>
+
+<section id="s2">
+  <h2><span class="no">02</span>P1-3 · 信号注册名盘点（0.5 阶段，随 K-ORG-199 先行）</h2>
+  <ol class="plain">
+    <li><b>盘点途径</b>：① <code>czsc.parse_signal_doc</code> 遍历内置信号文档清单；② 直接解包 wheel 内 Rust crate 的信号注册表（<code>czsc.*.__doc__</code> / <code>docs/examples/05_signals.py</code> 同款姿势）；③ 全量 <code>get_signals_config</code> 探测「一买」候选命名（如 <code>cxt_first_buy_V221126</code>、<code>一买V221126</code>、<code>cxt_bi_turn_V221126</code> 等变体）。</li>
+    <li><b>输出三态</b>：<span class="pos">可用</span>（给出可直接用的信号串）/ <span class="warnC">换名</span>（给出正确注册名与等价串）/ <span class="neg">弃用</span>（1.0.2 未注册该信号，记录出处防止后续误引）。</li>
+    <li><b>顺带产出</b>：信号串 → 注册名映射表落 <code>C:\Temp\czsc_eval\signal_registry.json</code>，供 P1-1 与后续 Phase 直接复用。</li>
+  </ol>
+</section>
+
+<section id="s3">
+  <h2><span class="no">03</span>P1-1 · 无偏样本复跑（K-ORG-199 主体验收物）</h2>
+  <h3>抽样框（固定 seed 可复现）</h3>
+  <ul class="plain">
+    <li>总体：本地 5600 票 parquet 全集；<b>随机 100 票</b>，<code>random.Random(42).sample</code>，抽样名单落 <code>unbiased_100.json</code> 归档；</li>
+    <li>排除项：P0 十票（605388/603188/605266/000159/600748/603639/601727/688695/300753/000001，偏置源）；窗口 &lt; 400 根的票（保证 sdt 预热 120 + T+20 对账余量）；</li>
+    <li>不足 100 时按序补抽（同 seed 序），最终名单写入报告附录。</li>
+  </ul>
+  <h3>跑批内容（每票）</h3>
+  <ol class="plain">
+    <li>结构层：<code>CZSC(bars, max_bi_num=500)</code>，落笔/中枢计数与 BI 衍生特征（power/slope/rsq/angle/acceleration + zz_rel=中枢相对位置）；</li>
+    <li>信号层：3+1 个原生信号（含 P1-3 结论），<code>generate_czsc_signals(df=True)</code>，状态翻转首日为事件；</li>
+    <li>对账层：T+5/10/20 前向收益（pct_chg 复权链，与学习环同口径）；</li>
+    <li>特征侧：事件日截面特征 vs T+10 收益的 RankIC（整体 + 前/后半窗分漂）；信号侧：各信号 win/avg/p10 与同票基准（同票全部 CZSC 事件池 + 我方 L2 同票若有）。</li>
+  </ol>
+  <h3>产出与判定</h3>
+  <ul class="plain">
+    <li>对照报告（HTML，沿用 P0 风格）：抽样名单、3+1 信号统计、特征 RankIC 表、G1 判定结论；</li>
+    <li>数据产物：<code>unbiased_events.csv</code> / <code>unbiased_feats.csv</code>（沙箱内，报告引用）；</li>
+    <li>G1 判定按 §1 预注册判据执行，<b>判定过程与数字全部写入报告，不允许跑完再改门槛</b>。</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <h2><span class="no">04</span>P1-2 · 影子旁路特征管道（K-ORG-200，开发变更）</h2>
+  <div class="callout">
+    <div class="t">架构决策：旁路（选项 B），不内嵌 L1</div>
+    <p style="font-size:15px">生产 <code>ledger.jsonl</code> 是 append-only 契约（K-ORG-195 S2 曾因行指纹变化一次性重记 8 行）。旁路设计<b>零侵入</b>：独立脚本、独立 venv、独立影子文件，主仓代码只读产物。若选内嵌（选项 A）需改 L1 采集函数并引入 czsc 硬依赖 + 主环境 pandas 升级风险，P0 已证没必要。</p>
+  </div>
+  <table>
+    <thead><tr><th>件</th><th>落点</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td class="num">① czsc_shadow.py</td><td>主仓 <code>quant_backtest/czsc_shadow.py</code></td><td>读 L1 当日影子信号名单（同票集）→ 独立 venv 子进程跑 CZSC 特征 → 写 <code>data/chanlun_learn/czsc_ledger.jsonl</code>（append-only，schema：code/dt/trade_date/czsc_feats{power,slope,rsq,angle,accel,zz_rel,bi_dir,zs_pos}/ver/engine_meta）；主进程不 import czsc</td></tr>
+      <tr><td class="num">② 包装与部署</td><td><code>czsc_shadow_task.ps1</code> + <code>deploy_czsc_shadow.ps1</code></td><td>照 JevDriftDaily / GuojiaDaily 幂等部署先例；计划任务 <b>CzscShadowDaily 每日 19:55</b>（排在 ChanlunLearnDaily 19:40 之后，消费其当日产出）</td></tr>
+      <tr><td class="num">③ 对账消费</td><td>观察增强（L3 之外）</td><td>影子文件 T+N 后 join 前向收益（复用 verify 口径），G1 特征 RankIC 周滚动读数进<b>周记旁证段</b>（S3 式人工增量，默认 D3=否决进 L3）</td></tr>
+      <tr><td class="num">④ 单测</td><td><code>tests/test_czsc_shadow.py</code></td><td>schema 校验 / append-only 幂等（同日重跑零新增）/ venv 缺失降级跳过并告警 / 特征计算手算对账（用固定 fixture bars）/ 不触碰生产 ledger·verify·attribution 的守卫断言</td></tr>
+    </tbody>
+  </table>
+  <p class="dim">合并纪律：K-ORG-200 走评审门，三守卫全绿；若 G1 判定为「仅观察」，czsc_ledger.jsonl 永不进 L3 归因与任何 verdict 输入。</p>
+</section>
+
+<section id="s5">
+  <h2><span class="no">05</span>红线与守卫（全程）</h2>
+  <table>
+    <thead><tr><th>红线</th><th>落实方式</th></tr></thead>
+    <tbody>
+      <tr><td>影子铁律：不产生交易指令</td><td>CZSC 特征只落影子文件与观察读数；任何 verdict / L4 出口不读 czsc_ledger.jsonl（单测守卫断言）</td></tr>
+      <tr><td>生产数据根只读（调研阶段）</td><td>P1-3 / P1-1 全程沙箱，ashare parquet 只读；P1-2 仅新增自有影子文件</td></tr>
+      <tr><td>依赖隔离</td><td>czsc==1.0.2 锁版本只装在独立 venv；主仓零新依赖；子进程调用失败→降级跳过+告警，不阻塞主链</td></tr>
+      <tr><td>小样本纪律</td><td>n&lt;30 不输出结论（学习环铁律延伸）；G1 特征 RankIC 要求 n≥100 事件</td></tr>
+      <tr><td>权重改动限制</td><td>CZSC 任何读数若未来影响权重，须影子对照 ≥20 交易日后人工拍板（学习环铁律原文适用）</td></tr>
+      <tr><td>变更管理</td><td>一单一事：K-ORG-199（调研）/ K-ORG-200（开发）分立；评审门 + 台账闭环 + 公告板通报（P1-2 上线前结构性通报）</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="s6">
+  <h2><span class="no">06</span>风险清单与拍板点</h2>
+  <h3>风险与缓解</h3>
+  <table>
+    <thead><tr><th>风险</th><th>影响</th><th>缓解</th></tr></thead>
+    <tbody>
+      <tr><td>100 票无偏样本事件数不足（无偏宇宙三买事件率可能远低于偏置票）</td><td>G1 信号侧判据难达标</td><td>判据以特征侧 RankIC 为主要通道；样本量可经 D2 拍板扩到 200；两判据互为冗余</td></tr>
+      <tr><td>本地 parquet 窗口不齐（个别票 300 根）</td><td>对账余量不足</td><td>抽样时窗口 &lt;400 根直接排除，已在 §3 抽样框固化</td></tr>
+      <tr><td>czsc 1.0.2 与 pandas 3.0.6 组合在长跑批中的稳定性未知</td><td>P1-1 批跑中断</td><td>逐票落盘（每票 append 产物），断点续跑；单票异常不中断全批，失败清单进报告</td></tr>
+      <tr><td>CzscShadowDaily 与 ChanlunLearnDaily 时序竞争</td><td>影子文件拿到旧名单</td><td>19:55 排序 + 显式读当日 L1 产物 mtime 校验，过旧则告警跳过</td></tr>
+    </tbody>
+  </table>
+  <h3>拍板点（执行前需确认）</h3>
+  <table>
+    <thead><tr><th>#</th><th>决策</th><th>建议</th></tr></thead>
+    <tbody>
+      <tr><td class="num">D1</td><td>P1-2 架构：旁路（B）vs 内嵌 L1（A）</td><td class="pos">旁路（零侵入 + 依赖隔离，P0 已证够用）</td></tr>
+      <tr><td class="num">D2</td><td>无偏样本量：100 vs 200 票</td><td>先 100（跑批可控），事件不足再扩 200——判据预注册允许一次扩样</td></tr>
+      <tr><td class="num">D3</td><td>P1-2 读数是否进周记旁证段（S3 式）</td><td class="pos">进（纯观察段，G1 闸门兜底不进 L3）</td></tr>
+      <tr><td class="num">D4</td><td>G1 全不通过时的处置</td><td>P1-2 降级为仅观察旁路（或暂停），不强行推进</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <div class="t">执行就绪条件</div>
+    <p style="font-size:15px">D1-D4 拍板后即可开工：先登记 K-ORG-199（P1-3 + P1-1，纯调研沙箱），G1 判定后按结论登记 K-ORG-200（P1-2，评审门变更）。本计划文档本身零生产变更，不触发三守卫。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="sources">
+    <h2>上游与依据</h2>
+    <ol>
+      <li id="cite-1"><span class="src-title">K-ORG-198 · CZSC 接入评估 P0 报告（B 路线结论与 Phase 1 建议原文）</span> <a href="file:///c:/项目/czsc-eval/czsc-p0-eval.html">file:///c:/项目/czsc-eval/czsc-p0-eval.html</a></li>
+      <li id="cite-2"><span class="src-title">《CZSC 审计与接入评估》研习全文（czsc==1.0.2 坑位与影子灰度先例）</span> <a href="file:///C:/Users/t/Downloads/czsc_doc_full.txt">file:///C:/Users/t/Downloads/czsc_doc_full.txt</a></li>
+      <li id="cite-3"><span class="src-title">学习环铁律与影子机制先例：docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md · K-ORG-190/195 施工记录</span></li>
+    </ol>
+  </div>
+  <p class="fineprint">计划状态：待拍板 D1-D4 · 预注册判据已在 §1 固化，跑数后不得回改 · 全程影子铁律与生产数据根保护适用。</p>
+</footer>
+
+</div>
+</body>
+</html>

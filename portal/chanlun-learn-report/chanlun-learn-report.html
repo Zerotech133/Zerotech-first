@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>缠论学习环运行报告 · L1-L4</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --ink:#e6edf3; --muted:#8b949e;
+    --rule:#30363d; --accent:#58a6ff; --accent2:#e3b341;
+    --pos:#3fb950; --neg:#f85149;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:16px; line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"Cascadia Code",Consolas,"Courier New",monospace;}
+  mark.key{background:none; color:var(--accent); font-weight:600;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px 96px;}
+
+  /* ── header ── */
+  header.masthead{padding:64px 0 32px; border-bottom:1px solid var(--rule); margin-bottom:40px;}
+  header.masthead .kicker{
+    color:var(--accent); font-size:13px; letter-spacing:.18em; text-transform:uppercase;
+    font-weight:600; margin-bottom:14px;
+  }
+  header.masthead h1{font-size:40px; line-height:1.25; font-weight:700; letter-spacing:.01em;}
+  header.masthead .sub{color:var(--muted); margin-top:14px; font-size:16px; max-width:760px;}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;}
+  .meta-row .chip{
+    border:1px solid var(--rule); background:var(--bg2); border-radius:999px;
+    padding:4px 14px; font-size:13px; color:var(--muted);
+  }
+  .meta-row .chip b{color:var(--ink); font-weight:600;}
+
+  /* ── toc ── */
+  nav.toc{display:flex; flex-wrap:wrap; gap:8px; margin:28px 0 8px;}
+  nav.toc a{
+    color:var(--muted); text-decoration:none; font-size:13.5px;
+    border:1px solid var(--rule); border-radius:8px; padding:6px 13px; background:var(--bg2);
+    transition:color .15s, border-color .15s;
+  }
+  nav.toc a:hover{color:var(--accent); border-color:var(--accent);}
+
+  /* ── sections ── */
+  section{margin-top:56px;}
+  h2{
+    font-size:26px; font-weight:700; padding-bottom:12px; margin-bottom:22px;
+    border-bottom:2px solid var(--rule); display:flex; align-items:baseline; gap:14px;
+  }
+  h2 .no{color:var(--accent); font-family:"Cascadia Code",Consolas,monospace; font-size:20px;}
+  h3{font-size:18.5px; font-weight:600; margin:30px 0 12px; color:var(--ink);}
+  h3::before{content:"▍"; color:var(--accent); margin-right:6px;}
+  p{margin:10px 0; color:var(--ink);}
+  p.dim{color:var(--muted); font-size:14.5px;}
+  ul.plain{margin:8px 0 8px 22px;}
+  ul.plain li{margin:6px 0;}
+
+  /* ── metric band ── */
+  .band{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:26px 0 6px;}
+  .band .cell{
+    background:var(--bg2); border:1px solid var(--rule); border-radius:12px; padding:18px 18px 14px;
+  }
+  .band .cell .v{
+    font-family:"Cascadia Code",Consolas,monospace; font-size:30px; font-weight:700; line-height:1.1;
+  }
+  .band .cell .v small{font-size:14px; font-weight:400; color:var(--muted); margin-left:4px;}
+  .band .cell .k{color:var(--muted); font-size:13px; margin-top:8px;}
+  .band .cell.pos .v{color:var(--pos);}
+  .band .cell.acc .v{color:var(--accent);}
+  .band .cell.warn .v{color:var(--accent2);}
+
+  /* ── charts ── */
+  figure.chart{
+    background:var(--bg2); border:1px solid var(--rule); border-radius:12px;
+    padding:18px 14px 10px; margin:22px 0;
+  }
+  figure.chart .chartbox{width:100%; height:340px;}
+  figure.chart figcaption{
+    color:var(--muted); font-size:13.5px; padding:8px 8px 6px; border-top:1px dashed var(--rule);
+  }
+  figure.chart figcaption b{color:var(--ink); font-weight:600;}
+
+  /* ── tables ── */
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;}
+  th{
+    text-align:left; color:var(--muted); font-weight:600; font-size:13px;
+    padding:9px 12px; border-bottom:1px solid var(--rule); white-space:nowrap;
+  }
+  td{padding:9px 12px; border-bottom:1px solid var(--rule); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  td.num{font-family:"Cascadia Code",Consolas,monospace; white-space:nowrap;}
+  .pos{color:var(--pos);} .neg{color:var(--neg);} .warnC{color:var(--accent2);}
+
+  /* ── callouts / anomaly cards ── */
+  .callout{
+    border-left:4px solid var(--accent2); background:var(--bg2);
+    border-radius:0 12px 12px 0; padding:16px 20px; margin:18px 0;
+  }
+  .callout.blue{border-left-color:var(--accent);}
+  .callout .t{font-weight:700; margin-bottom:6px;}
+  .anom{
+    background:var(--bg2); border:1px solid var(--rule); border-radius:12px;
+    padding:18px 20px; margin:14px 0;
+  }
+  .anom .head{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;}
+  .anom .head .id{font-family:"Cascadia Code",Consolas,monospace; color:var(--accent); font-weight:700;}
+  .anom .head .tt{font-weight:700;}
+  .lv{
+    font-size:12px; font-weight:700; border-radius:6px; padding:2px 9px; letter-spacing:.05em;
+  }
+  .lv.p1{background:rgba(248,81,73,.15); color:var(--neg); border:1px solid rgba(248,81,73,.4);}
+  .lv.p2{background:rgba(227,179,65,.12); color:var(--accent2); border:1px solid rgba(227,179,65,.35);}
+  .anom .fld{font-size:14.5px; margin:5px 0; color:var(--ink);}
+  .anom .fld b{color:var(--muted); font-weight:600; margin-right:6px;}
+
+  /* ── thesis cards ── */
+  .thesis2{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0;}
+  .tcard{background:var(--bg2); border:1px solid var(--rule); border-radius:12px; padding:16px 18px;}
+  .tcard .tag{font-size:12px; color:var(--neg); border:1px solid rgba(248,81,73,.4); border-radius:6px; padding:1px 8px; font-weight:600;}
+  .tcard .dt{color:var(--muted); font-size:12.5px; margin-top:6px; font-family:"Cascadia Code",Consolas,monospace;}
+  .tcard p{font-size:14.5px; margin-top:8px;}
+
+  /* ── footer ── */
+  footer{border-top:1px solid var(--rule); margin-top:64px; padding-top:28px;}
+  footer .sources h2{border:none; font-size:20px; margin-bottom:10px; padding:0;}
+  footer .sources ol{padding-left:1.3rem; font-size:14px; color:var(--muted);}
+  footer .sources li{margin-bottom:8px; overflow-wrap:break-word;}
+  footer .sources .src-title{color:var(--ink);}
+  footer .sources a{color:var(--accent); text-decoration:none; word-break:break-all;}
+  footer .sources a:hover{text-decoration:underline;}
+  .fineprint{color:var(--muted); font-size:13px; line-height:1.8; margin-top:22px;}
+  .fineprint b{color:var(--ink);}
+
+  sup a{color:var(--accent); text-decoration:none; font-size:.75em; font-weight:600;}
+  sup a:hover{text-decoration:underline;}
+
+  @media (max-width:860px){
+    .band{grid-template-columns:repeat(2,1fr);}
+    .thesis2{grid-template-columns:1fr;}
+    header.masthead h1{font-size:30px;}
+    figure.chart .chartbox{height:280px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="kicker">K-ORG-185 设计 · K-ORG-190 施工 · K-ORG-192 调度</div>
+  <h1>缠论学习环运行报告</h1>
+  <div class="sub">缠论专属学习环 L1 观察 → L2 对账 → L3 归因 → L4 修正四阶段闭环的首次全景运行读数。
+  席位：缠论分析师 ST1（量化交易部·策略部）——<mark class="key">只判读、不执行</mark>，全链影子铁律。</div>
+  <div class="meta-row">
+    <span class="chip">报告生成 <b>2026-10-18</b></span>
+    <span class="chip">数据窗口 <b>2025-10-13 → 2026-10-12</b></span>
+    <span class="chip">信号发现 <b>2025-10-13 → 2026-10-09</b></span>
+    <span class="chip">P0 链路 <b>10-18 19:04 exit=0</b></span>
+  </div>
+  <nav class="toc">
+    <a href="#s1">① L1 观察</a><a href="#s2">② L2 对账</a><a href="#s3">③ L3 归因</a>
+    <a href="#s4">④ L4 修正</a><a href="#s5">⑤ 调度运维</a><a href="#s6">⑥ 异常亮牌</a><a href="#s7">⑦ 铁律合规</a>
+  </nav>
+</header>
+
+<!-- ═══════════ 概览带 ═══════════ -->
+<div class="band">
+  <div class="cell acc"><div class="v">207<small>条</small></div><div class="k">L1 影子信号（72 只标的）</div></div>
+  <div class="cell acc"><div class="v">619<small>+2 pending</small></div><div class="k">L2 对账完成（T+5/10/20）</div></div>
+  <div class="cell acc"><div class="v">181<small>个</small></div><div class="k">L3 归因 cell（T+10 口径）</div></div>
+  <div class="cell pos"><div class="v">5<small>个</small></div><div class="k">升置信候选（零降置信）</div></div>
+  <div class="cell pos"><div class="v">0<small>份</small></div><div class="k">自动权重草案（铁律合规）</div></div>
+  <div class="cell"><div class="v">2<small>条</small></div><div class="k">ST1 thesis（同型连败）</div></div>
+  <div class="cell"><div class="v">31<small>s</small></div><div class="k">P0 全链耗时（exit=0）</div></div>
+  <div class="cell warn"><div class="v">34<small>条</small></div><div class="k">L1 首放重放 findings（诊断）</div></div>
+</div>
+
+<p class="dim" style="margin-top:18px">结论速览：学习环已在真实行情上完成一个完整窗口的四阶段闭环——<mark class="key">207 条影子信号全部落账、619 条后验全部对账、181 个结构 cell 全部归因</mark>；T+10 主口径下 5 个结构 cell 触发升置信候选（win 超全域基线 +10pp）、零降置信候选；因 5 个候选均无可学习权重位，自动草案为 0，全部留人工判读。影子铁律全程未破。</p>
+
+<!-- ═══════════ §1 L1 ═══════════ -->
+<section id="s1">
+  <h2><span class="no">01</span>L1 观察层 · 影子信号落账</h2>
+
+  <p>L1 逐日重放 daily_ledger 的 seen-ever 信号流，经灰度 enrich + 结构指纹 + regime 标注后写入 <span class="mono">ledger.jsonl</span> 与 ST1 observation 记忆层。窗口内共落账 <mark class="key">207 条影子信号</mark>，覆盖 <b>72 只标的</b>，级别全部为笔级别（bi；段级别为远期扩展位）。</p>
+
+  <figure class="chart">
+    <div id="chartType" class="chartbox"></div>
+    <figcaption><b>图 1 · 影子信号类型分布（n=207）</b>——3卖 最多（52 条，25.1%），3买 最少（21 条，10.1%）；买侧合计 101 条、卖侧 106 条，买卖两翼基本均衡。</figcaption>
+  </figure>
+
+  <figure class="chart">
+    <div id="chartMonthly" class="chartbox"></div>
+    <figcaption><b>图 2 · 月度信号趋势</b>——2025 年 10–12 月为高发期（合计 81 条，39.1%），2026 年 3 月最低谷（5 条）；月均约 16 条，窗口末月（2026-10，仅含 1–9 日）20 条为次峰。</figcaption>
+  </figure>
+
+  <h3>结构指纹分布</h3>
+  <p class="dim">每条信号携带五维结构指纹与灰度置信三分解，构成 L3 归因的维度空间：</p>
+  <table>
+    <thead><tr><th>维度</th><th>取值分布（n=207）</th><th>读数要点</th></tr></thead>
+    <tbody>
+      <tr><td>regime（池指数 MA20/MA60）</td><td class="num">high 123 · low 73 · mid 11</td><td>高位环境信号占 59.4%</td></tr>
+      <tr><td>conf 档（low&lt;0.55 / mid&lt;0.65 / high≥0.65）</td><td class="num">low 144 · high 50 · mid 13</td><td>低置信占 69.6%，灰度打分整体保守</td></tr>
+      <tr><td>conf 离散值域</td><td class="num">0.500×126 · 0.650×50 · 0.425×18 · 0.552×13</td><td>实际仅 4 个离散值，全部来自规则叠加路径</td></tr>
+      <tr><td>conf 三部件</td><td class="num">背驰 63 · 多枢 31 · <span class="warnC">共振 0</span></td><td>vv 共振部件全期未触发（见亮牌 E-05）</td></tr>
+      <tr><td>npv 枢纽数二值化</td><td class="num">le2 176 · 3p 31</td><td>多枢衰减参数位（npv=3p）覆盖 15.0% 信号</td></tr>
+      <tr><td>amp 波段形态</td><td class="num">con 123 · exp 67 · flat 17</td><td>收敛形态占 59.4%</td></tr>
+      <tr><td>bis6 笔序列</td><td class="num">DUDUDU 96 · UDUDUD 93 · UDUDU 10 · DUDUD 8</td><td>完整六笔序列占 91.3%</td></tr>
+      <tr><td>pv 量价位</td><td class="num">below 92 · above 83 · in 6 · na 26</td><td>量价在/离枢纽上方 40.1%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>记忆层对账</h3>
+  <p>ST1 observation 记忆层现存 <span class="mono">211</span> 条，账本 <span class="mono">207</span> 条：账本 → 记忆方向<b>零缺失</b>（207/207 全覆盖）；反向多出的 4 条为收敛期前的残留写入（append-only 不回撤，指纹判重保证幂等不重写），sig_id 见亮牌 E-04。读写两侧以账本 JSON 为权威源。</p>
+
+  <h3>首放重放诊断（findings）</h3>
+  <p>以空账本全量首放重放采集引擎对齐诊断，共 <span class="mono">34</span> 条：<b>27 条「重放多出大类」</b>（引擎现役状态比账本历史流多算的信号，buy 16 起 / sell 11 起，按「以账本 JSON 为准丢弃」处理）与 <b>7 条「重放未 fresh」</b>（fallback 取最近未记账同类）。关键证据：空账本重放产物与生产账本 <span class="mono">MD5 = 9D7BFCC4…48AF5</span> <mark class="key">逐字节一致（207 行）</mark>——findings 仅为对齐过程诊断，<b>不改变任何落账产物</b>。fallback 事件清单：</p>
+  <table>
+    <thead><tr><th>#</th><th>记账日</th><th>标的</th><th>机制</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="num">2025-10-16</td><td class="num">600748.SH</td><td rowspan="7">fallback 取最近未记账同类<br>（事件位固化，回放稳定复现）</td></tr>
+      <tr><td class="num">2</td><td class="num">2025-10-16</td><td class="num">600801.SH</td></tr>
+      <tr><td class="num">3</td><td class="num">2025-10-16</td><td class="num">920433.BJ</td></tr>
+      <tr><td class="num">4</td><td class="num">2025-10-20</td><td class="num">002656.SZ</td></tr>
+      <tr><td class="num">5</td><td class="num">2025-10-21</td><td class="num">600801.SH</td></tr>
+      <tr><td class="num">6</td><td class="num">2025-10-28</td><td class="num">300422.SZ</td></tr>
+      <tr><td class="num">7</td><td class="num">2025-10-31</td><td class="num">600019.SH</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════ §2 L2 ═══════════ -->
+<section id="s2">
+  <h2><span class="no">02</span>L2 对账层 · T+N 后验</h2>
+
+  <p>L2 对每条 L1 信号按 T+5 / T+10 / T+20 三档补后验（hfq 收盘→收盘，<mark class="key">卖点反向 ×-1 口径</mark>），完成 <span class="mono">619</span> 条对账（T+5 207 / T+10 207 / T+20 205），另 2 条 pending 为窗口末 T+20 未满顺延（预期行为，见 E-06）。以下 win 定义为方向调整后 ret_pct&gt;0 占比，p10 为 10% 分位。</p>
+
+  <table>
+    <thead><tr><th>Horizon</th><th>n</th><th>win</th><th>avg</th><th>p10</th><th>worst</th><th>best</th></tr></thead>
+    <tbody>
+      <tr><td>T+5</td><td class="num">207</td><td class="num pos">94.2%</td><td class="num pos">+4.79%</td><td class="num">+0.56%</td><td class="num">-1.67%</td><td class="num">+27.07%</td></tr>
+      <tr><td><b>T+10（主口径）</b></td><td class="num">207</td><td class="num pos">85.5%</td><td class="num pos">+5.55%</td><td class="num neg">-1.08%</td><td class="num">-7.16%</td><td class="num">+54.06%</td></tr>
+      <tr><td>T+20</td><td class="num">205</td><td class="num pos">74.1%</td><td class="num pos">+5.54%</td><td class="num neg">-5.57%</td><td class="num neg">-34.30%</td><td class="num">+45.11%</td></tr>
+    </tbody>
+  </table>
+
+  <figure class="chart">
+    <div id="chartDir" class="chartbox"></div>
+    <figcaption><b>图 3 · 买/卖方向胜率对比</b>——三档 horizon 买侧均高于卖侧：T+10 买 90.1% vs 卖 81.1%；差距随周期拉长而扩大（T+20 买 77.0% vs 卖 71.4%），卖向判读的长周期置信衰减更快。</figcaption>
+  </figure>
+
+  <figure class="chart">
+    <div id="chartTypeWin" class="chartbox"></div>
+    <figcaption><b>图 4 · 分类型 T+10 胜率（附样本量）</b>——1买 100%（n=36）与 1卖 96.2%（n=26）最强；3买 66.7%（n=21）最弱且样本不足 30，按铁律只观察（见亮牌 E-02）。</figcaption>
+  </figure>
+
+  <figure class="chart">
+    <div id="chartHist" class="chartbox"></div>
+    <figcaption><b>图 5 · T+10 收益分布直方图（n=207）</b>——主峰位于 +5%~+10% 区间（58 条）；左尾 -10% 以下为 0，-10%~-5% 仅 3 条，全域 T+10 p10 = -1.08%，左尾风险整体受控。</figcaption>
+  </figure>
+
+  <h3>读数要点</h3>
+  <ul class="plain">
+    <li><b>周期衰减规律清晰</b>：win 从 T+5 的 94.2% 单调降至 T+20 的 74.1%，avg 稳定在 +4.8%~+5.6% 区间——短周期「命中率」高、长周期「均值」不掉但左尾打开（T+20 p10 -5.57%、worst -34.3%）。</li>
+    <li><b>买强卖弱、长周期放大</b>：卖侧 T+20 worst 达 -34.3%（3卖 深亏贡献，见 E-01）。</li>
+    <li><b>类型分化显著</b>：1买/1卖（走势转折首点）优于 2买/2卖，3买/3卖（中枢突破追认）最弱——与缠论「三类买点风险收益比递减」的理论直觉一致。</li>
+  </ul>
+</section>
+
+<!-- ═══════════ §3 L3 ═══════════ -->
+<section id="s3">
+  <h2><span class="no">03</span>L3 归因层 · 结构维度矩阵</h2>
+
+  <p>L3 按类型 × regime × conf 档 × 结构指纹维度矩阵聚合，共 <span class="mono">543</span> 行（三档 horizon 各出行），对应 <span class="mono">181</span> 个唯一 cell（T+10 口径）。判读采用显式阈值：<b>n&lt;30 只观察</b>；n≥30 且 win 超全域基线 +10pp → 升置信候选；n≥30 且 avg&lt;0 且 p10≤-10% → 降置信候选。</p>
+
+  <figure class="chart">
+    <div id="chartVerdict" class="chartbox"></div>
+    <figcaption><b>图 6 · T+10 主口径 verdict 分布（181 cells）</b>——153 个 cell（84.5%）因 n&lt;30 进入只观察区，23 个正常，5 个升置信候选，0 个降置信候选。</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th>判读规则命中</th><th>行数（三档合计 543）</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>n&lt;30 只观察</td><td class="num">459</td><td>小样本保护，不输出任何结论</td></tr>
+      <tr><td>无阈值命中（n≥30 且未触发）</td><td class="num">74</td><td>正常判读，留档对照</td></tr>
+      <tr><td>win≥基线+10pp（升置信候选）</td><td class="num">10</td><td>全部为升置信；T+10 口径下对应 5 个 cell</td></tr>
+      <tr><td>avg&lt;0 且 p10≤-10%（降置信候选）</td><td class="num pos">0</td><td>全期无结构失效硬结论</td></tr>
+    </tbody>
+  </table>
+
+  <h3>升置信候选清单（T+10 主口径，全域基线 win 85.5%）</h3>
+  <table>
+    <thead><tr><th>Cell</th><th>n</th><th>win</th><th>p10</th><th>Δ vs 基线</th><th>触发规则</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">conf_band=high</td><td class="num">50</td><td class="num pos">96.0%</td><td class="num">+0.48%</td><td class="num pos">+10.5pp</td><td>win≥基线+10pp</td></tr>
+      <tr><td class="mono">type=2买|npv=le2</td><td class="num">38</td><td class="num pos">97.4%</td><td class="num">+0.62%</td><td class="num pos">+11.9pp</td><td>win≥基线+10pp</td></tr>
+      <tr><td class="mono">type=1买</td><td class="num">36</td><td class="num pos">100.0%</td><td class="num">+1.44%</td><td class="num pos">+14.5pp</td><td>win≥基线+10pp</td></tr>
+      <tr><td class="mono">type=1买|bis6=UDUDUD</td><td class="num">36</td><td class="num pos">100.0%</td><td class="num">+1.44%</td><td class="num pos">+14.5pp</td><td>win≥基线+10pp</td></tr>
+      <tr><td class="mono">type=1买|amp=con</td><td class="num">34</td><td class="num pos">100.0%</td><td class="num">+1.44%</td><td class="num pos">+14.5pp</td><td>win≥基线+10pp</td></tr>
+    </tbody>
+  </table>
+  <p class="dim">注：三个 type=1买 系 cell 的样本高度重叠（均为 1买 的子集视角），n=36/36/34 实为同一批信号的不同切面，不可叠加解读。候选 ≠ 草案 ≠ 采纳——进入 L4 出口 A 还需通过可学习参数位映射门槛。</p>
+</section>
+
+<!-- ═══════════ §4 L4 ═══════════ -->
+<section id="s4">
+  <h2><span class="no">04</span>L4 修正层 · 草案与理论输出</h2>
+
+  <div class="callout blue">
+    <div class="t">自动草案 0 份 —— 三重门槛收敛的正常结果</div>
+    <p style="font-size:14.5px">出口 A 出草案需同时满足：n≥30 阈值触发 + 存在可学习权重位映射 + 影子期设置。当前参数位映射仅一条（<span class="mono">npv=3p → multi_hub_decay</span>，现值 0.85，区间 0.70~1.00），而 5 个候选均不含该 cell（<span class="mono">type=2买|npv=le2</span> 属 le2 侧，无参数位）——全部按「无对应可学习权重位，留人工判读」处理。<mark class="key">draft ≠ adopt</mark>，学习环不提供任何直改生产参数的函数。</p>
+  </div>
+
+  <h3>人工判读清单（5 cells）</h3>
+  <table>
+    <thead><tr><th>Cell</th><th>verdict</th><th>n</th><th>处置建议</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">conf_band=high</td><td class="pos">升置信候选</td><td class="num">50</td><td rowspan="5">无参数位，留人工判读；进入周记跟踪，影子对照 ≥20 个交易日后人工拍板是否值得为其开辟新参数位</td></tr>
+      <tr><td class="mono">type=1买</td><td class="pos">升置信候选</td><td class="num">36</td></tr>
+      <tr><td class="mono">type=1买|amp=con</td><td class="pos">升置信候选</td><td class="num">34</td></tr>
+      <tr><td class="mono">type=1买|bis6=UDUDUD</td><td class="pos">升置信候选</td><td class="num">36</td></tr>
+      <tr><td class="mono">type=2买|npv=le2</td><td class="pos">升置信候选</td><td class="num">38</td></tr>
+    </tbody>
+  </table>
+
+  <h3>ST1 thesis（署名理论笔记，2 条）</h3>
+  <div class="thesis2">
+    <div class="tcard">
+      <span class="tag">streak_loss · 3买 ×3</span>
+      <div class="dt">declared 2025-09-19T17:10</div>
+      <p>同型连败：3买 连续 3 笔 T+10 后验为负（末笔 603188.SH -3.1%）——该类型在本阶段市场状态下判读可信度下降（影子观察）。</p>
+    </div>
+    <div class="tcard">
+      <span class="tag">streak_loss · 3卖 ×4</span>
+      <div class="dt">declared 2026-09-01T17:10</div>
+      <p>同型连败：3卖 连续 4 笔 T+10 后验为负（末笔 603326.SH -3.6%）——该类型在本阶段市场状态下判读可信度下降（影子观察）。</p>
+    </div>
+  </div>
+  <p class="dim">口径注：thesis 的 declared_at 锚定连败末笔信号的 T+10 对账日（市场时间），而非账本发现日——3买 thesis 的 2025-09-19 早于账本窗口起点，系末笔（dt=2025-09-05，found_day=2025-11-06 补发现）的对账时点，自洽（见 E-07）。</p>
+
+  <h3>周记</h3>
+  <p><span class="mono">weekly.md</span> 已于 10-18 落盘（2026-10-18 周）：本周（10-11 起）新记账 0 条（信号发现止于 10-09），5 个升置信候选进入周记「归因候选」节跟踪，下周关注左尾与候选 cell 影子对照。</p>
+</section>
+
+<!-- ═══════════ §5 调度运维 ═══════════ -->
+<section id="s5">
+  <h2><span class="no">05</span>调度与运维</h2>
+
+  <table>
+    <thead><tr><th>项</th><th>读数</th></tr></thead>
+    <tbody>
+      <tr><td>计划任务</td><td class="mono">ChanlunLearnDaily · 每日 19:40 · 状态 Ready</td></tr>
+      <tr><td>P0 全链验证</td><td>10-18 19:04:21 → 19:04:52，<span class="pos">exit=0，耗时 31s</span>（L1 重放幂等：recorded=0 / replayed=207）</td></tr>
+      <tr><td>链路顺序</td><td class="mono">l1 → l2 → l3 → l4(drafts+thesis)，weekly 单独子命令</td></tr>
+      <tr><td>重放确定性</td><td>空账本首放产物 MD5 = 生产账本 MD5 = <span class="mono">9D7BFCC4…48AF5</span>（207 行逐字节一致）</td></tr>
+      <tr><td>数据依赖</td><td>hfq parquet（data/ashare）+ daily_ledger JSON + MemoryStore RBAC（ST1 memory_grants）</td></tr>
+      <tr><td>环境注记</td><td>本机 5432 无 PostgreSQL 不影响本链路（学习环只依赖 jsonl/parquet，不依赖 PG）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>运行态产物清单（不入 git）</h3>
+  <table>
+    <thead><tr><th>文件</th><th>体积</th><th>规模</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">ledger.jsonl</td><td class="num">85 KB</td><td class="num">207 行</td><td>L1 影子信号账本（sig_id 幂等）</td></tr>
+      <tr><td class="mono">verify.jsonl</td><td class="num">135 KB</td><td class="num">619 行</td><td>L2 后验账本（perf_key 范式）</td></tr>
+      <tr><td class="mono">attribution.jsonl</td><td class="num">341 KB</td><td class="num">543 行</td><td>L3 归因矩阵（181 cells × 三档）</td></tr>
+      <tr><td class="mono">weekly.md</td><td class="num">739 B</td><td class="num">1 份</td><td>L4B 周记（人工判读跟踪）</td></tr>
+      <tr><td class="mono">drafts/</td><td class="num">空</td><td class="num">0 份</td><td>L4A 权重草案（本轮无触发）</td></tr>
+      <tr><td class="mono">task.log</td><td class="num">924 B</td><td class="num">1 次 P0</td><td>调度链路日志</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════ §6 异常亮牌 ═══════════ -->
+<section id="s6">
+  <h2><span class="no">06</span>异常亮牌清单</h2>
+  <p class="dim">按缺陷定级规范标注 [P1]/[P2]。本轮无 [P0] 级问题；无阻断性缺陷，全部异常均不影响落账产物与生产参数。</p>
+
+  <div class="anom">
+    <div class="head"><span class="id">E-01</span><span class="lv p1">[P1]</span><span class="tt">T+20 长周期左尾显著，卖侧尤甚</span></div>
+    <div class="fld"><b>现象</b>T+20 worst -34.3%（全期最深单笔）、p10 -5.57%、win 74.1%；卖侧 T+20 win 71.4%、p10 -7.06%。</div>
+    <div class="fld"><b>定性</b>风险观察项。长周期持有口径左尾由卖向追认类信号主导（<b>深挖修正</b>：频次上 3卖 最多 11/25，深度上 2卖 最毒 p10 -13.26）；按 T+10 主口径全域 p10 仅 -1.08%，无任何 cell 触发降置信阈值（p10≤-10%）。</div>
+    <div class="fld"><b>处置</b>左尾跟踪进周记；无生产动作。若后续 T+10 口径出现 cell 级触发，将自动进入 L4 出口 A/B 流程。修复建议见 <a href="file:///c:/项目/e01-remediation/e01-remediation.html" style="color:var(--accent)">E-01 修复建议报告</a>（根因四层分析、早警评估与 S1-S4 分级建议）。</div>
+  </div>
+
+  <div class="anom">
+    <div class="head"><span class="id">E-02</span><span class="lv p2">[P2]</span><span class="tt">3买 类型走弱信号（T+10 win 66.7%）</span></div>
+    <div class="fld"><b>现象</b>3买 T+10 win 66.7%（六类最低）、avg +2.22%；9 月已产生 3 连败 thesis（E-07 佐证口径）。</div>
+    <div class="fld"><b>定性</b>方向性预警但样本 n=21&lt;30，按小样本铁律<b>不输出结论、只观察</b>。</div>
+    <div class="fld"><b>处置</b>持续跟踪样本累积；n≥30 且满足阈值时自动进入归因候选流程。</div>
+  </div>
+
+  <div class="anom">
+    <div class="head"><span class="id">E-03</span><span class="lv p2">[P2]</span><span class="tt">L1 首放重放 findings 34 条（诊断性）</span></div>
+    <div class="fld"><b>现象</b>空账本首放重放产生 27 条「重放多出大类（以账本 JSON 为准丢弃）」+ 7 条「重放未 fresh（fallback 取最近未记账同类）」。</div>
+    <div class="fld"><b>定性</b>引擎现役状态与账本历史流的错位诊断。<b>产物零影响</b>——空账本重放产物与生产账本 MD5 逐字节一致；生产幂等重放 recorded=0。</div>
+    <div class="fld"><b>处置</b>留档观察；fallback 事件位固化机制保证回放稳定复现，无需修复。</div>
+  </div>
+
+  <div class="anom">
+    <div class="head"><span class="id">E-04</span><span class="lv p2">[P2]</span><span class="tt">记忆层 observation 残留 4 条（211 vs 207）</span></div>
+    <div class="fld"><b>现象</b>ST1 observation 211 条，账本 207 条；多出 4 个 sig_id（<span class="mono">01f3d361… / 03f54e62… / 25b100e4… / 5b441382…</span>）。</div>
+    <div class="fld"><b>定性</b>收敛期前的残留写入；append-only 存储不回撤历史，指纹判重保证不重复写入。账本→记忆方向零缺失。</div>
+    <div class="fld"><b>处置</b>读侧一律以账本 JSON 为权威源；残留无需清理（不影响任何判读路径）。</div>
+  </div>
+
+  <div class="anom">
+    <div class="head"><span class="id">E-05</span><span class="lv p2">[P2]</span><span class="tt">vv 共振部件全期 0 触发</span></div>
+    <div class="fld"><b>现象</b>207 条信号的 conf 三部件中 vv=true 为 0 条；conf 上限实际由背驰（63 条）与多枢（31 条）路径贡献。</div>
+    <div class="fld"><b>定性</b>引擎行为观察项：共振加成通路全期未参与打分，灰度 conf 的离散值域因此少一档。</div>
+    <div class="fld"><b>处置</b>建议后续核查 vv 判定条件的数据通路是否过严；不影响本轮判读有效性。</div>
+  </div>
+
+  <div class="anom">
+    <div class="head"><span class="id">E-06</span><span class="lv p2">[P2]</span><span class="tt">L2 pending 2 条（预期行为）</span></div>
+    <div class="fld"><b>现象</b>619 条已对账之外有 2 条 pending：窗口末（2026-10-09 后发现信号附近）T+20 到期日未满。</div>
+    <div class="fld"><b>定性</b>非异常：对账窗口的自然顺延，次跑自动补齐（T+5/T+10 口径均已对齐 207 条）。</div>
+    <div class="fld"><b>处置</b>无需动作，随每日调度自然收敛。</div>
+  </div>
+
+  <div class="anom">
+    <div class="head"><span class="id">E-07</span><span class="lv p2">[P2]</span><span class="tt">thesis declared_at 早于账本窗口起点（口径说明）</span></div>
+    <div class="fld"><b>现象</b>3买 thesis declared_at = 2025-09-19，早于账本窗口起点 2025-10-13。</div>
+    <div class="fld"><b>定性</b>口径自洽：thesis 时点锚定连败末笔的 T+10 对账日（末笔 dt=2025-09-05，其 found_day=2025-11-06 为补发现），反映「证据在市场时间上何时成立」而非「何时被补发现」。</div>
+    <div class="fld"><b>处置</b>无需动作；已在本报告 §4 加注口径说明。</div>
+  </div>
+</section>
+
+<!-- ═══════════ §7 铁律合规 ═══════════ -->
+<section id="s7">
+  <h2><span class="no">07</span>影子铁律合规声明</h2>
+  <table>
+    <thead><tr><th>铁律</th><th>本轮读数</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>全链只读行情、只写记忆与草案，不产生交易指令</td><td>L1-L4 无任何交易指令输出路径；无直改生产参数函数</td><td class="pos">合规</td></tr>
+      <tr><td>draft ≠ adopt，采纳永远人工凭据</td><td>自动草案 0 份，drafts/ 空；候选全部留人工判读</td><td class="pos">合规</td></tr>
+      <tr><td>小样本不凭据（n&lt;30 只观察）</td><td>153/181 cells（84.5%）n&lt;30 进入只观察区；3买（n=21）未出结论</td><td class="pos">合规</td></tr>
+      <tr><td>权重改动需影子对照 ≥20 交易日（28 自然日）后人工拍板</td><td>SHADOW_NATURAL_DAYS=28 生效中；本轮无权重改动</td><td class="pos">合规</td></tr>
+      <tr><td>单次调幅 ≤±0.05</td><td>DRAFT_MAX_STEP=0.05 生效中（本轮无草案，未触发）</td><td class="pos">合规</td></tr>
+      <tr><td>记忆层 RBAC（ST1 grants）</td><td>MemoryStore enforce=True；越权/缺失降级 finding 不拖账</td><td class="pos">合规</td></tr>
+    </tbody>
+  </table>
+  <div class="callout">
+    <div class="t">下一步观察点</div>
+    <p style="font-size:14.5px">① 5 个升置信候选 cell 的影子对照与左尾跟踪（周记承载）；② 3买 样本量向 n≥30 累积后的复判；③ vv 共振部件数据通路核查；④ 2 条 L2 pending 随次跑自动补齐。全部动作均为观察性质，<mark class="key">无任何生产参数变更</mark>。</p>
+  </div>
+</section>
+
+<footer>
+  <div class="sources">
+    <h2>数据来源</h2>
+    <ol>
+      <li id="cite-1"><span class="src-title">运行态账本 quant_backtest/data/chanlun_learn/：</span><a href="file:///c:/项目/老田的AI助手/quant_backtest/data/chanlun_learn/ledger.jsonl">ledger.jsonl</a>（207 行）· <a href="file:///c:/项目/老田的AI助手/quant_backtest/data/chanlun_learn/verify.jsonl">verify.jsonl</a>（619 行）· <a href="file:///c:/项目/老田的AI助手/quant_backtest/data/chanlun_learn/attribution.jsonl">attribution.jsonl</a>（543 行）· <a href="file:///c:/项目/老田的AI助手/quant_backtest/data/chanlun_learn/weekly.md">weekly.md</a> · <a href="file:///c:/项目/老田的AI助手/quant_backtest/data/chanlun_learn/task.log">task.log</a></li>
+      <li id="cite-2"><span class="src-title">记忆层 agent_platform/data/memory/：</span><a href="file:///c:/项目/老田的AI助手/agent_platform/data/memory/agent__ST1__observation.jsonl">agent__ST1__observation.jsonl</a>（211 条）· <a href="file:///c:/项目/老田的AI助手/agent_platform/data/memory/agent__ST1__thesis.jsonl">agent__ST1__thesis.jsonl</a>（2 条）</li>
+      <li id="cite-3"><span class="src-title">引擎与口径定义：</span><a href="file:///c:/项目/老田的AI助手/quant_backtest/chanlun_learn.py">chanlun_learn.py</a>（K-ORG-190，docstring 含全部施工裁量口径）</li>
+      <li id="cite-4"><span class="src-title">设计定稿：</span><a href="file:///c:/项目/老田的AI助手/docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md">docs/plans/2026-10-18_缠论专属学习环设计_K-ORG-185.md</a>（K-ORG-187/188 修订）</li>
+    </ol>
+  </div>
+  <div class="fineprint">
+    <b>口径附注</b>：entry_px = 信号锚点日（dt）当日 hfq 收盘；卖点后验反向 ×-1；win = 方向调整后 ret_pct&gt;0 占比；p10 = 收益分布 10% 分位；conf 档 low&lt;0.55 / mid&lt;0.65 / high≥0.65 / na；npv 二值化 le2（≤2 枢）/ 3p（≥3 枢）；sig_id = sha1(code|type|dt)[:16]；归因/草案主口径 T+10（T+5 太噪、T+20 样本摊薄）。本报告全部读数取自 2026-10-18 19:04 P0 链路后的落盘产物，均为影子观察数据，不构成任何交易依据。
+  </div>
+</footer>
+
+</div>
+<script src="./_shared/js/echarts.min.js"></script>
+<script src="./assets/charts.js"></script>
+</body>
+</html>
