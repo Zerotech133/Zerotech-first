@@ -211,7 +211,7 @@
 <script>
 let DATA=null, FILTER_T="", FILTER_M="", FILTER_S="", Q="", LIMIT=120, SORT="tier", VERDICTS=null;
 const $=s=>document.querySelector(s);
-const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 /* K-STOCK-306：/kg/stock/ 图谱路由只在本地 8734 活；公网静态快照站（workbuddy.host
    托管）无此路由——且 URL 以 .SH 结尾会被腾讯云 WAF 判为 shell 脚本文件请求拦 403。
    故公网侧股票代码链接降级为行内下钻（不 stopPropagation，冒泡到 .lrow 委托触发
@@ -343,7 +343,8 @@ function renderVitals(){
     `<span>T2 高价值 <b>${c.T2_high_value}</b></span>`+
     (c.crowd_alert!=null?`<span style="color:#ff5252">⚠ 拥挤警报 <b>${c.crowd_alert}</b></span>`:"")+
     `<span>T3 单策略 <b>${c.T3_single}</b></span>`+
-    (ro.new_in!=null?`<span>池子轮动(vs ${esc((ro.vs||"").replace(/^todays_|\.json$/g,""))}：<b style="color:#26a69a">＋${ro.new_in} 新进</b> / <b style="color:#ef5350">－${ro.dropped} 退出</b> / 留存 <b>${ro.retained}</b></span>`:"")+
+    /* A股口径（老田 10-18 拍板）：红=涨、绿=跌；轮动进出同规则——新进=红、退出=绿 */
+    (ro.new_in!=null?`<span>池子轮动(vs ${esc((ro.vs||"").replace(/^todays_|\.json$/g,""))}：<b style="color:#e05555">＋${ro.new_in} 新进</b> / <b style="color:#2aa877">－${ro.dropped} 退出</b> / 留存 <b>${ro.retained}</b></span>`:"")+
     `<span>生成 <b>${DATA.generated_at}</b></span>`;
   const VERD=VERDICTS&&VERDICTS.summary||null;
   const cards=["strong","weak","chanlun","qpzm","ninedim","cross","linkage"].map(k=>{

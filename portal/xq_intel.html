@@ -275,7 +275,7 @@ const CT_COLORS={fundamental:"#58a6ff",news:"#4493f8",community:"#2f7df2",
 const SENT={bullish:{n:"看多",c:"#f8514f"},bearish:{n:"看空",c:"#3fb950"},neutral:{n:"中性",c:"#8b949e"}};
 const $=id=>document.getElementById(id);
 const fmt=n=>Number(n||0).toLocaleString("en-US");
-const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 let curDate="";            /* 当前选中日期（""=latest） */
 let demoMode=false;        /* 演示模式开关 */
