@@ -188,7 +188,8 @@
 </div>
 
 <script>
-  const fmt = n => (n ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
+  const fmt = n => Number(n ?? 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const $ = id => document.getElementById(id);
   setInterval(() => {
     const d = new Date();
@@ -227,7 +228,7 @@
     const dist = Object.entries(markets).filter(([, m]) => m.opened)
       .map(([k, m]) => ({ name: m.name, value: Math.round(m.total), itemStyle: { color: mcolor[k] } }));
     ch('ch-dist').setOption({
-      tooltip: { trigger: 'item', formatter: '{b}<br/>¥{c}（{d}%）' },
+      tooltip: { trigger: 'item', formatter: p => esc(p.name) + '<br/>¥' + fmt(p.value) + '（' + fmt(p.percent) + '%）' },
       legend: { bottom: 0, textStyle: { color: AXC, fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
       series: [{ type: 'pie', radius: ['52%', '74%'], center: ['50%', '44%'],
         label: { color: '#dbe7ff', fontSize: 12, formatter: '{b}\n{d}%' },
@@ -306,7 +307,7 @@
     // ⑥ 账户明细行
     $('acct-rows').innerHTML = acts.map(x => {
       const r = x.ret_pct || 0, cls = r > 0.005 ? 'up' : (r < -0.005 ? 'dn' : '');
-      return '<div class="arow"><span class="an">' + x.id + '</span>'
+      return '<div class="arow"><span class="an">' + esc(x.id) + '</span>'
         + '<span>总 <b>¥' + fmt(x.total) + '</b></span>'
         + '<span>仓位 <b>' + ((x.pos_pct || 0) * 100).toFixed(1) + '%</b></span>'
         + '<span>收益 <b class="' + cls + '">' + (r >= 0 ? '+' : '') + r.toFixed(2) + '%</b></span></div>';
@@ -322,8 +323,8 @@
       ['🔍', '判决复核', '累计 ' + fmt(a.judge_total) + ' 件', '今日 ' + fmt(a.judge_today), ''],
       ['💻', 'AI 研发', '今日提交 ' + fmt(cd.commits_today) + ' 笔', cd.last_commit || '', '']];
     $('ag-rows').innerHTML = ag.map(([i, n, ds, r]) =>
-      '<div class="agrow"><span class="ico">' + i + '</span><span><div class="n">' + n + '</div><div class="d">' + ds + '</div></span>'
-      + '<span class="r dim">' + r + '</span></div>').join('');
+      '<div class="agrow"><span class="ico">' + i + '</span><span><div class="n">' + n + '</div><div class="d">' + esc(ds) + '</div></span>'
+      + '<span class="r dim">' + esc(r) + '</span></div>').join('');
 
     // ⑨ 商务 · 出行（biz.json：未来 7 天出行/会议 + 下次提醒 + 纪要在库）
     const bz = d.biz || {};
@@ -366,7 +367,7 @@
       '💻 AI 敲码提交 <b>' + fmt(cd.commits_today) + '</b> 笔',
       '📈 双刀全池扫描 <b>' + fmt(q.scanned) + '</b> 只 · 星池 <b>' + fmt(q.star_pool_n) + '</b>',
       '💰 模拟资产总值 <b>¥' + fmt(totalAll) + '</b>（五市场）',
-      '🚗 商务：近 7 天出行/会议 <b>' + fmt((bz.near || []).length) + '</b> 项' + (bz.remind_next ? ' · 下次提醒 <b>' + bz.remind_next + '</b>' : ''),
+      '🚗 商务：近 7 天出行/会议 <b>' + fmt((bz.near || []).length) + '</b> 项' + (bz.remind_next ? ' · 下次提醒 <b>' + esc(bz.remind_next) + '</b>' : ''),
       '📚 在研文稿 <b>' + fmt(bz.notes_total) + '</b> 篇 · 草稿 <b>' + fmt(o.gzh || 0) + '</b>',
       '✅ 待办亮牌 <b>' + fmt(todoN) + '</b> 项'];
     $('ticker-move').innerHTML = items.map(s => '<span>' + s + '</span>').join('') + items.map(s => '<span>' + s + '</span>').join('');
