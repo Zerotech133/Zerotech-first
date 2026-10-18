@@ -126,7 +126,8 @@ def _load_samples():
 
     K-ORG-156：追加捕获 scope（scope 分布统计用；一码一日去重口径不变）。
     K-ORG-167（E7）：追加捕获 source（来源异质衰减实证用；一码一日去重
-    取最高置信那条的 source 一并归档）。"""
+    取最高置信那条的 source 一并归档）。
+    K-ORG-173（承接 K-ORG-169）：追加 impact，供 CAR 分层实证。"""
     if not os.path.exists(DB):
         return []
     wnames = _watch_names()
@@ -146,6 +147,9 @@ def _load_samples():
         bias = j.get("bias")
         conf = j.get("conf")
         scope = j.get("scope") or ""
+        impact = str(j.get("impact") or "low").strip().lower()
+        if impact not in ("low", "medium", "high"):
+            impact = "low"
         if bias not in SCORE or not isinstance(conf, (int, float)):
             continue
         codes = set()
@@ -170,7 +174,7 @@ def _load_samples():
         for c in codes:
             raw.append({"code": c, "day": day, "bias": bias,
                         "conf": float(conf), "scope": scope,
-                        "source": str(source or "")})
+                        "impact": impact, "source": str(source or "")})
     conn.close()
     # 一码一日取最高置信（同置信 bear 优先，保守口径）
     rank = {"bear": 0, "bull": 1, "neutral": 2}

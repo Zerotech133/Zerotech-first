@@ -164,6 +164,16 @@ JEV_NEWS_QUESTIONS = {
             "other": "其他",
         },
     },
+    # K-ORG-173（承接 K-ORG-169）：事件冲击力，供 CAR 实证分层。
+    "impact": {
+        "type": "choice",
+        "instructions": "这条快讯对相关资产价格的预期冲击强度（选最主要的一个）。",
+        "criteria": {
+            "low": "低：信息有限、影响短暂或已被市场充分预期",
+            "medium": "中：可能影响下一交易日，但幅度和持续性有限",
+            "high": "高：重大政策、业绩突变、信用/供给冲击等可能引发显著重定价",
+        },
+    },
     # 坑: JEV TypeSafe 仅支持 choice 问题，text 类型 → 400 Invalid request
     #     （已实测）。判断依据由 jev_reason() 用本地 Ollama 单独生成。
 }
@@ -195,6 +205,8 @@ _EVENT_CN = {"earnings": "业绩", "policy": "政策", "rate": "利率",
              "price": "价格", "ma": "并购", "equity": "股权",
              "credit": "债务", "risk": "风险", "tech": "技术",
              "macro": "宏观", "geo": "地缘", "other": "其他"}
+_IMPACTS = ("low", "medium", "high")
+_IMPACT_CN = {"low": "低", "medium": "中", "high": "高"}
 
 
 def _validate_jev(d):
@@ -202,7 +214,8 @@ def _validate_jev(d):
     结构化校验哲学）。
 
     校验项：bias 枚举 / conf∈[0,1] / event_type 枚举（缺省 other）/
-    companies A股代码格式（6 位数字，滤非法）。不可修复项（bias 非法、
+    impact 枚举（缺省 low）/ companies A股代码格式（6 位数字，滤非法）。
+    不可修复项（bias 非法、
     conf 非数字）抛 ValueError → 判定侧走重发/降级链（C2批2：链路不断
     只退化）。可修复项（event_type 缺省/companies 清洗）就地修正返回。
     """
@@ -217,6 +230,10 @@ def _validate_jev(d):
     if str(et).strip().lower() not in _EVENT_TYPES:
         et = "other"  # 可修复：缺省/非法类别降级 other，不阻断判定
     d["event_type"] = et
+    impact = str(d.get("impact") or "low").strip().lower()
+    if impact not in _IMPACTS:
+        impact = "low"
+    d["impact"] = impact
     companies = []
     for c in (d.get("companies") or []) if isinstance(d.get("companies"), list) else []:
         if re.match(r"^\d{6}$", str(c)):
@@ -357,6 +374,7 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
              "scope": scope, "scope_cn": _SCOPE_CN.get(scope, ""),
              "companies": list(stocks or []),  # K-ORG-159：云侧公司绑定=输入标的
              "src": "cloud"}
+        d["impact"] = (ans.get("impact") or {}).get("choice", "low")
         try:
             d["event_type"] = (ans.get("event_type") or {}) \
                 .get("choice", "other")
@@ -364,6 +382,7 @@ def _jev_judge_one_cloud(title, stocks, timeout=15):
         except ValueError as e:
             log("jev_judge cloud schema FAIL %s" % str(e)[:100])
             return None
+        d["impact_cn"] = _IMPACT_CN[d["impact"]]
         d["reason"] = jev_reason(title, _BIAS_CN[bias],
                                  _SCOPE_CN.get(scope, scope))
         return d
@@ -417,10 +436,12 @@ def jev_judge_one_local(title, stocks, timeout=60):
     base = (
         "财经快讯：%s%s\n判断该快讯对相关市场【资产价格】的短期影响方向，只输出 JSON："
         '{"bias":"bull|bear|neutral","conf":0.0到1.0,'
-        '"event_type":"<事件类别枚举>","companies":["相关A股代码"]}，不要输出其他内容。'
+        '"event_type":"<事件类别枚举>","impact":"low|medium|high",'
+        '"companies":["相关A股代码"]}，不要输出其他内容。'
         "event_type 枚举：earnings业绩/policy政策/rate利率/trade贸易/supply供给/"
         "demand需求/price价格/ma并购/equity股权/credit债务/risk风险/tech技术/"
-        "macro宏观/geo地缘/other其他。companies 只填明确关联的A股代码（6位数字），"
+        "macro宏观/geo地缘/other其他。impact：low低/medium中/high高。"
+        "companies 只填明确关联的A股代码（6位数字），"
         "无则空数组。"
         "口径：只看对资产价格的直接影响——外交会晤、一般性产业与技术进展、常规信息披露、"
         "国债/政策性金融债发行供给等属 neutral；明确的需求扩张、超预期业绩、降息等利好才判 bull；"
@@ -468,6 +489,7 @@ def jev_judge_one_local(title, stocks, timeout=60):
          "conf": j["conf"], "scope": scope,
          "scope_cn": _SCOPE_CN.get(scope, scope or ""),
          "event_type": j["event_type"], "event_cn": _EVENT_CN[j["event_type"]],
+         "impact": j["impact"], "impact_cn": _IMPACT_CN[j["impact"]],
          "companies": j["companies"], "src": "local"}
     d["reason"] = jev_reason(title, d["bias_cn"], d["scope_cn"])
     return d
