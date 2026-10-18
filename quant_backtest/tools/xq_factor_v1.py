@@ -36,6 +36,8 @@ akshare 备援，两源全挂 fail-visible）；days 按最早帖日期自动推
 个别码全挂 → 记 errs 跳过该码，绝不静默。日线缓存落
 C:/aios/automation_runs/xq_t7_factor/daily_cache.json（rerun 免重拉）。
 """
+import argparse
+import hashlib
 import json
 import math
 import os
@@ -54,6 +56,7 @@ CACHE_DIR = r"C:\aios\automation_runs\xq_t7_factor"
 CACHE_PATH = os.path.join(CACHE_DIR, "daily_cache.json")
 
 MAIN_VERSION = "v1.3"
+OFFLINE_ALGORITHM_VERSION = "t7-weekly-v2-offline"
 
 # norm 模型指数污染（kind=stock_a 但实为指数），显式剔除
 INDEX_POLLUTION = {"SZ000300", "SZ000905", "SZ000016", "SZ000852",
@@ -170,7 +173,8 @@ def week_key(date_str: str) -> str:
 
 
 def build_sections(posts: list, daily_by_sym: dict,
-                   freq: str = "weekly", diagnostics: dict | None = None) -> list:
+                   freq: str = "weekly", diagnostics: dict | None = None,
+                   valid_week_pairs: set | None = None) -> list:
     """构造截面：[{key, obs:[{sym, senti, mention, ret}]}]。
 
     freq='daily' 按 POST 日对齐后续首个交易日；'weekly' 按 ISO 周合并，
@@ -194,6 +198,8 @@ def build_sections(posts: list, daily_by_sym: dict,
             cutoff = cutoff_date.strftime("%Y-%m-%d")
             end_date = (cutoff_date + timedelta(days=7)).strftime("%Y-%m-%d")
             for sym, lst in sorted(merged.items()):
+                if valid_week_pairs is not None and (k, sym) not in valid_week_pairs:
+                    continue
                 ret = next_day_return(daily_by_sym.get(sym), cutoff,
                                       max_date=end_date)
                 if ret is None:
@@ -386,11 +392,12 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
 
 
 # ── 主统计 ──────────────────────────────────────────────────
-def version_stats(posts, daily_by_sym, freq, min_obs):
+def version_stats(posts, daily_by_sym, freq, min_obs, valid_week_pairs=None):
     """单版本全套统计（主统计与附表同管道同口径）。posts 须已过版本过滤。"""
     alignment = {}
     sections = build_sections(posts, daily_by_sym, freq=freq,
-                              diagnostics=alignment)
+                              diagnostics=alignment,
+                              valid_week_pairs=valid_week_pairs)
     res = {"n_posts": len(posts), "alignment": alignment,
            "n_sections": len(sections),
            "n_obs": sum(len(s["obs"]) for s in sections),
@@ -409,7 +416,8 @@ def version_stats(posts, daily_by_sym, freq, min_obs):
 
 
 def run_analysis(posts: list, daily_by_sym: dict,
-                 freq: str = "weekly", min_obs: int = 3) -> dict:
+                 freq: str = "weekly", min_obs: int = 3,
+                 valid_week_pairs: dict | None = None) -> dict:
     """label_version 分层全套：主统计 v1.3，其余版本附表。"""
     versions = sorted({p["version"] for p in posts})
     out = {"freq": freq, "min_obs_per_section": min_obs,
@@ -425,12 +433,134 @@ def run_analysis(posts: list, daily_by_sym: dict,
             out["versions"][v] = {"n_posts": len(vp), "n_stock_posts": 0,
                                   "note": "无 A 股标的帖，跳过"}
             continue
-        st = version_stats(vp, daily_by_sym, freq, min_obs)
+        st = version_stats(vp, daily_by_sym, freq, min_obs,
+                           None if valid_week_pairs is None else
+                           valid_week_pairs.get(v, set()))
         st["n_stock_posts"] = n_stock_posts
         out["versions"][v] = st
     out["main_version"] = MAIN_VERSION if MAIN_VERSION in out["versions"] \
         and "senti" in out["versions"].get(MAIN_VERSION, {}) else None
     return out
+
+
+def offline_audit(posts: list, cache: dict, db_path: str,
+                  cache_path: str) -> dict:
+    """只用已载入的真库帖子和本地缓存，缺口显式化，不计算有效性结论。"""
+    daily = cache["daily"]
+    symbols = sorted({sym for post in posts for sym in post["stocks"]})
+    gaps = {name: [] for name in ("missing_symbol", "cache_start_after_cutoff",
+                                  "late_with_prior_rows", "no_next_week_row")}
+    matched = defaultdict(int)
+    valid_week_pairs = defaultdict(set)
+    pairs = {(p["version"], week_key(p["date"]), sym)
+             for p in posts for sym in p["stocks"]}
+    for version, week, sym in sorted(pairs):
+        cutoff = datetime.strptime(week, "%Y-%m-%d") + timedelta(days=6)
+        cutoff_key = cutoff.strftime("%Y%m%d")
+        last_key = (cutoff + timedelta(days=7)).strftime("%Y%m%d")
+        rows = daily.get(sym)
+        record = {"version": version, "week": week, "symbol": sym}
+        if not rows:
+            gaps["missing_symbol"].append(record)
+            continue
+        dated = sorted(r["trade_date"] for r in rows if r.get("trade_date"))
+        if not dated or dated[0] > cutoff_key:
+            record["cache_first"] = dated[0] if dated else None
+            gaps["cache_start_after_cutoff"].append(record)
+            continue
+        future = [d for d in dated if d > cutoff_key]
+        if not future:
+            record["cache_last"] = dated[-1]
+            gaps["no_next_week_row"].append(record)
+        elif future[0] > last_key:
+            record["next_cached_trade_date"] = future[0]
+            gaps["late_with_prior_rows"].append(record)
+        elif next_day_return(rows, cutoff.strftime("%Y-%m-%d"),
+                             max_date=(cutoff + timedelta(days=7)).strftime("%Y-%m-%d")) is None:
+            gaps["no_next_week_row"].append(record)
+        else:
+            matched[version] += 1
+            valid_week_pairs[version].add((week, sym))
+    result = run_analysis(posts, daily, freq="weekly", min_obs=3,
+                          valid_week_pairs=valid_week_pairs)
+    gap_counts = {name: len(records) for name, records in gaps.items()}
+    result["audit_status"] = "incomplete_cache" if any(gap_counts.values()) else "complete_cache"
+    result["audit_decision"] = "INCONCLUSIVE"
+    result["coverage"] = "partial" if any(gap_counts.values()) else "complete"
+    result["effectiveness_conclusion"] = None
+    result["eligible_for_effectiveness_conclusion"] = False
+    for stats in result["versions"].values():
+        for factor in ("senti", "mention"):
+            if factor in stats:
+                stats[factor]["ic"]["ic_mean"] = None
+                stats[factor]["ic"]["icir"] = None
+                stats[factor]["ic"]["exploratory_ic"] = None
+                stats[factor]["ic"]["evidence"] = "audit_only_incomplete_cache"
+                stats[factor]["ic_detail"] = []
+                stats[factor]["quintiles"] = []
+                stats[factor]["monotonicity"] = None
+    result["risk_notes"] = ["离线仅保留覆盖审计与漏斗，不输出因子数值或有效性结论",
+                            "行情缓存左截断独立于停牌，缺原始早期日线视为不完整",
+                            "2024年及以后历史 norm_tickers NULL 是独立归一化存量缺口，后续写入修复不代表已回填",
+                            "created_at 时区语义未核准；行情缺行无法仅凭缓存判停牌"]
+    result["source"] = {"database": os.path.abspath(db_path),
+                        "cache": os.path.abspath(cache_path),
+                        "cache_saved_at": cache.get("_meta", {}).get("saved_at"),
+                        "cache_days_hint_not_coverage": cache.get("_meta", {}).get("days")}
+    result["algorithm_version"] = OFFLINE_ALGORITHM_VERSION
+    result["generated_at"] = datetime.now().astimezone().isoformat()
+    result["funnel"] = {"classified_posts": len(posts),
+                        "a_stock_posts": sum(bool(p["stocks"]) for p in posts),
+                        "forward_return_observations": sum(
+                            v.get("n_obs", 0) for v in result["versions"].values()),
+                        "valid_ic_sections": {v: {f: stats[f]["ic"]["n"]
+                                                  for f in ("senti", "mention")}
+                                              for v, stats in result["versions"].items()
+                                              if "senti" in stats},
+                        "candidate_symbols": len(symbols),
+                        "cached_candidate_symbols": len(set(symbols) & set(daily))}
+    result["cache_gaps"] = {"count_unit": "(version, ISO_week, symbol) 去重候选对",
+                            "counts": gap_counts, "details": gaps,
+                            "unique_missing_symbols": sorted({r["symbol"] for r in gaps["missing_symbol"]}),
+                            "matched_week_symbol_pairs": dict(matched),
+                            "candidate_week_symbol_pairs": len(pairs)}
+    result["cache_symbol_ranges"] = {
+        sym: {"first": min(dates), "last": max(dates)}
+        for sym in symbols if (dates := [r["trade_date"] for r in daily.get(sym, [])
+                                      if r.get("trade_date")])}
+    for v, stats in result["versions"].items():
+        if "senti" in stats:
+            stats["funnel"] = {"classified_posts": stats["n_posts"],
+                               "a_stock_posts": stats["n_stock_posts"],
+                               "forward_return_observations": stats["n_obs"],
+                               "valid_ic_sections": {f: stats[f]["ic"]["n"]
+                                                     for f in ("senti", "mention")},
+                               "matched_week_symbol_pairs": matched[v]}
+    return result
+
+
+def offline_main(db_path: str = DB_PATH, cache_path: str = CACHE_PATH,
+                 output_dir: str = CACHE_DIR) -> str:
+    """纯离线：只读真库及已有 JSON 缓存，产出独立审计 JSON。"""
+    posts = load_posts(db_path)
+    with open(cache_path, "rb") as source:
+        content = source.read()
+    cache = json.loads(content)
+    if not isinstance(cache.get("daily"), dict):
+        raise ValueError("离线缓存缺少 daily 映射，拒绝推断")
+    result = offline_audit(posts, cache, db_path, cache_path)
+    result["source"]["cache_sha256"] = hashlib.sha256(content).hexdigest()
+    result["source"]["database_mtime"] = datetime.fromtimestamp(
+        os.path.getmtime(db_path)).astimezone().isoformat()
+    result["source"]["cache_mtime"] = datetime.fromtimestamp(
+        os.path.getmtime(cache_path)).astimezone().isoformat()
+    stamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S%f%z")
+    filename = "factor_%s_%s.json" % (OFFLINE_ALGORITHM_VERSION, stamp)
+    os.makedirs(output_dir, exist_ok=True)
+    output = os.path.join(output_dir, filename)
+    with open(output, "x", encoding="utf-8") as target:
+        json.dump(result, target, ensure_ascii=False, indent=1)
+    return output
 
 
 def main():
@@ -476,4 +606,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="T7 舆情因子统计")
+    parser.add_argument("--offline", action="store_true", help="只读数据库与已存在的日线缓存")
+    args = parser.parse_args()
+    if args.offline:
+        print("[factor] offline audit written", offline_main())
+    else:
+        main()
