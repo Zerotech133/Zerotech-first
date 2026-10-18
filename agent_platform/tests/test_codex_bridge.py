@@ -6,6 +6,7 @@
 """
 import shutil
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -191,7 +192,9 @@ def test_process_submission_reject_moves_to_rejects(tmp_path):
     bad = GOOD.replace("from statistics import fmean", "import os")
     ok, reasons = process_submission(tmp_path, "s-bad", bad, reg)
     assert not ok and reasons
-    assert (tmp_path / "rejects" / "s-bad.md").exists()
+    # rejects 按日归档（§5 风险 6）：md 档落日期子目录
+    assert (tmp_path / "rejects" / time.strftime("%Y%m%d")
+            / "s-bad.md").exists()
     assert not (tmp_path / "inbox" / "s-bad").exists()
     assert reg.list_ids() == []
 
@@ -350,7 +353,8 @@ def test_process_submission_sandbox_rejects_runtime_crash(tmp_path):
     ok, reasons = process_submission(tmp_path, "s-crash", CRASH,
                                      _fresh_registry())
     assert ok is False and reasons and "ZeroDivisionError" in reasons[0]
-    rj = (tmp_path / "rejects" / "s-crash.md").read_text(encoding="utf-8")
+    rj = (tmp_path / "rejects" / time.strftime("%Y%m%d")
+          / "s-crash.md").read_text(encoding="utf-8")
     assert "沙箱试跑" in rj and "ZeroDivisionError" in rj
     assert not (tmp_path / "inbox" / "s-crash").exists()
     assert not (tmp_path / "processed" / "s-crash").exists()
@@ -383,3 +387,82 @@ def test_load_registered_skips_sandbox_trial(tmp_path, monkeypatch):
     loaded, skipped = load_registered(reg2, bridge_dir=tmp_path)
     assert loaded == 1 and skipped == 0
     assert "codex_good" in reg2.list_ids()
+
+
+# ---- 提交纪律：按日限频 + rejects 按日归档（设计稿 §5 风险 6） ----
+
+def _variant(sid):
+    """不同 strategy_id 的合规提交物（多提交受理测试防漂移冲突）。"""
+    return GOOD.replace("codex_good", sid)
+
+
+def test_daily_limit_rejects_and_archives(tmp_path):
+    """限频触发：拒绝受理 + fail-visible 落档 stage=限频，inbox 不动。"""
+    data_root = tmp_path / "dataroot"
+    ok, _ = process_submission(tmp_path, "s-1", GOOD, _fresh_registry(),
+                               data_root=data_root, daily_limit=1)
+    assert ok is True
+    today = time.strftime("%Y%m%d")
+    ok2, reasons2 = process_submission(tmp_path, "s-2", _variant("codex_two"),
+                                       _fresh_registry(),
+                                       data_root=data_root, daily_limit=1)
+    assert ok2 is False and any("限频" in r for r in reasons2)
+    md = tmp_path / "rejects" / today / "s-2.md"
+    assert md.exists() and "限频" in md.read_text(encoding="utf-8")
+    assert not (tmp_path / "inbox" / "s-2").exists()  # inbox 不动
+    assert not (tmp_path / "processed" / "s-2").exists()
+    assert "codex_two" not in _fresh_registry().list_ids()  # 未注册
+
+
+def test_daily_limit_boundary_exact_nth_accepted(tmp_path):
+    """临界值：恰好第 N 个仍受理，第 N+1 个被拒。"""
+    data_root = tmp_path / "dataroot"
+    for i in (1, 2):
+        ok, _ = process_submission(tmp_path, "s-b%d" % i,
+                                   _variant("codex_b%d" % i),
+                                   _fresh_registry(), data_root=data_root,
+                                   daily_limit=2)
+        assert ok is True
+    ok3, reasons3 = process_submission(tmp_path, "s-b3",
+                                       _variant("codex_b3"),
+                                       _fresh_registry(),
+                                       data_root=data_root, daily_limit=2)
+    assert ok3 is False and any("限频" in r for r in reasons3)
+
+
+def test_default_no_daily_limit_unlimited(tmp_path):
+    """默认 daily_limit=None=不限频，向后兼容（现有调用方零变化）。"""
+    for i in (1, 2, 3):
+        ok, _ = process_submission(tmp_path, "s-u%d" % i,
+                                   _variant("codex_u%d" % i),
+                                   _fresh_registry())
+        assert ok is True
+        assert (tmp_path / "processed" / ("s-u%d" % i)).exists()
+
+
+def test_reject_moves_into_dated_archive(tmp_path):
+    """rejects 按日归档：md 档与 inbox 移档均落日期子目录。"""
+    bad = GOOD.replace("from statistics import fmean", "import os")
+    ok, _ = process_submission(tmp_path, "s-date", bad, _fresh_registry())
+    assert not ok
+    today = time.strftime("%Y%m%d")
+    assert (tmp_path / "rejects" / today / "s-date").exists()  # inbox 移入
+    assert (tmp_path / "rejects" / today / "s-date.md").exists()
+
+
+def test_daily_limit_counts_rejects_plus_registrations(tmp_path):
+    """限频计数同日累计：registrations + rejects 合计口径。"""
+    data_root = tmp_path / "dataroot"
+    reg = _fresh_registry()
+    bad = GOOD.replace("from statistics import fmean", "import os")
+    ok, _ = process_submission(tmp_path, "s-r1", bad, reg,
+                               data_root=data_root, daily_limit=2)
+    assert ok is False  # reject 计 1
+    ok2, _ = process_submission(tmp_path, "s-r2", _variant("codex_r2"), reg,
+                                data_root=data_root, daily_limit=2)
+    assert ok2 is True  # registration 计 1，合计 2
+    ok3, reasons3 = process_submission(tmp_path, "s-r3",
+                                       _variant("codex_r3"),
+                                       _fresh_registry(),
+                                       data_root=data_root, daily_limit=2)
+    assert ok3 is False and any("限频" in r for r in reasons3)  # 合计 2 ≥ 2

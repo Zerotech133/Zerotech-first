@@ -10,7 +10,9 @@
 流水线（§3）：Codex 提交物 → 静态校验（AST，M1）→ 子进程沙箱试跑
 （M3，§2.3）→ 白名单沙箱 globals 内实例化 → StrategyRegistry.register
 （同键异值=漂移拒绝平移）。拒绝路径 fail-visible 落档
-bridge_rejects/<submit_id>.md，禁止静默丢弃。
+rejects/<YYYYMMDD>/<submit_id>.md（按日归档，§5 风险 6），
+禁止静默丢弃。受理侧另设 submit_id 工单化按日限频（daily_limit，
+registrations+rejects 同日合计口径），默认不限频向后兼容。
 
 M3 口径：静态过关后在一次性子进程内以合成数据试跑 propose——运行时炸/
 死循环/非法 Verdict 在注册前拦截；Windows 无 resource rlimit，死循环由
@@ -389,11 +391,18 @@ def sandbox_trial(source, context=None, timeout_s=10.0):
             "elapsed_ms": elapsed_ms, "verdict": v}
 
 
-# ---- fail-visible 落档（§3.1） ----
+# ---- fail-visible 落档（§3.1，rejects 按日归档 §5 风险 6） ----
+
+def _today():
+    """本地日期口径（限频计数与 rejects 归档共用）。"""
+    return time.strftime("%Y%m%d")
+
 
 def write_reject(bridge_dir, submit_id, stage, reasons):
-    """拒绝原因落档 rejects/<submit_id>.md。返回档案路径。"""
-    rj = Path(bridge_dir) / "rejects"
+    """拒绝原因落档 rejects/<YYYYMMDD>/<submit_id>.md（按日归档）。
+    返回档案路径。
+    """
+    rj = Path(bridge_dir) / "rejects" / _today()
     rj.mkdir(parents=True, exist_ok=True)
     path = rj / ("%s.md" % submit_id)
     lines = ["# bridge 拒绝档：%s" % submit_id,
@@ -414,8 +423,36 @@ def default_bridge_dir():
     return Path(__file__).resolve().parent.parent / "bridge_inbox"
 
 
+def _daily_usage(bridge_dir, data_root):
+    """当日已受理数（限频口径）：registrations.jsonl 当日条目数 +
+    rejects 当日落档数（md 档计数，一提交一档）。本地日期。
+    """
+    used = 0
+    rej_dir = Path(bridge_dir) / "rejects" / _today()
+    if rej_dir.is_dir():
+        used += sum(1 for _ in rej_dir.glob("*.md"))
+    if data_root:
+        ledger = (Path(data_root) / "data" / "codex_bridge"
+                  / "registrations.jsonl")
+        if ledger.exists():
+            today_iso = time.strftime("%Y-%m-%d")
+            with ledger.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        continue  # 坏行不计（fail-visible 留待审计）
+                    if str(row.get("registered_at", "")).startswith(today_iso):
+                        used += 1
+    return used
+
+
 def process_submission(bridge_dir, submit_id, source, registry,
-                       data_root=None, sandbox_timeout_s=10.0):
+                       data_root=None, sandbox_timeout_s=10.0,
+                       daily_limit=None):
     """单次提交全流程：inbox 落件 → 校验 → 沙箱试跑 → 注册 → 移档。
 
     data_root 显式时登记注册事件（data/codex_bridge/registrations.jsonl，
@@ -424,9 +461,21 @@ def process_submission(bridge_dir, submit_id, source, registry,
     纪律。
     军团-M3：静态门之后、注册之前跑子进程沙箱试跑——运行时炸/死循环/
     非法 Verdict 在此拦截，拒绝落档 stage=沙箱试跑。
+    daily_limit（§5 风险 6 工单化限频）：显式传入时按日限频——当日
+    registrations+rejects 合计已达上限则拒绝受理（stage=限频，
+    fail-visible 落档，inbox 不动）；默认 None=不限频，向后兼容。
     返回 (ok, reasons)。
     """
     bdir = Path(bridge_dir)
+    if daily_limit is not None:
+        used = _daily_usage(bdir, data_root)
+        if used >= daily_limit:
+            reasons = ["当日受理已达上限 %d（registrations+rejects 合计 "
+                       "已用 %d，本地日期 %s），限频拒绝受理"
+                       % (daily_limit, used, _today())]
+            write_reject(bdir, submit_id, "限频", reasons)
+            return False, reasons
+
     inbox = bdir / "inbox" / submit_id
     inbox.mkdir(parents=True, exist_ok=True)
     src_path = inbox / ("strategy_%s.py" % submit_id)
@@ -435,13 +484,15 @@ def process_submission(bridge_dir, submit_id, source, registry,
     reasons = validate_source(source)
     if reasons:
         write_reject(bdir, submit_id, "静态校验", reasons)
-        shutil.move(str(inbox), str(bdir / "rejects" / submit_id))
+        shutil.move(str(inbox),
+                    str(bdir / "rejects" / _today() / submit_id))
         return False, reasons
 
     trial = sandbox_trial(source, timeout_s=sandbox_timeout_s)
     if not trial["ok"]:
         write_reject(bdir, submit_id, "沙箱试跑", [trial["reason"]])
-        shutil.move(str(inbox), str(bdir / "rejects" / submit_id))
+        shutil.move(str(inbox),
+                    str(bdir / "rejects" / _today() / submit_id))
         return False, [trial["reason"]]
 
     agent = register_from_source(source, registry)
