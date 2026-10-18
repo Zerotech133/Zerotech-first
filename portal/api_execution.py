@@ -19,6 +19,7 @@ Windows 编码判例（§8.4）：
     fail_scan 匹配同样逐行 replace 后再 regex。
 """
 
+import copy
 import json
 import subprocess
 import threading
@@ -328,7 +329,7 @@ def build_execution_health(force=False):
     with _LOCK:
         if not force and _CACHE["data"] is not None \
                 and (time.monotonic() - _CACHE["ts"]) < CACHE_TTL:
-            return dict(_CACHE["data"])
+            return copy.deepcopy(_CACHE["data"])
 
         tasks_cfg, manifest_ok, manifest_err = load_manifest()
         names = [c["name"] for c in tasks_cfg]
@@ -368,7 +369,10 @@ def build_execution_health(force=False):
         }
         _CACHE["ts"] = time.monotonic()
         _CACHE["data"] = payload
-        return dict(payload)
+        # 返回深拷贝：调用方（R3 watchdog 的演练注入 _apply_injections）会
+        # 原地改 tasks 条目——dict() 浅拷贝与缓存共享嵌套对象，会污染缓存。
+        # （2026-10-18 审查收口：浅拷贝缓存污染隐患）
+        return copy.deepcopy(payload)
 
 
 # ── 8091 Handler mixin ────────────────────────────────────────────────────

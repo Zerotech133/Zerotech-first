@@ -182,11 +182,19 @@ def _fmt_alert(entry, ticket_note):
 # ── 演练注入（T5 三哑火演练用，不碰真任务） ───────────────────────────────
 
 def _apply_injections(payload, inject):
-    """--inject 任务名 rc：当次把该任务 last_result/status 覆写为注入值。"""
+    """--inject 任务名 rc：当次把该任务 last_result/status 覆写为注入值。
+
+    同步修正派生字段（审查收口 2026-10-18）：result_ok 随 rc 重算，
+    fail_scan_hit 归零——否则注入良性 rc 后 status=ok 但残留的
+    fail_scan_hit 仍会把该条目送进 _anomalies（FAIL_SCAN 误报），
+    演练通道与真实哑火混流。
+    """
     for name, rc in inject.items():
         for e in payload.get("tasks", []):
             if e["name"] == name:
                 e["last_result"] = rc
+                e["result_ok"] = rc in api_execution.BENIGN_RC
+                e["fail_scan_hit"] = False
                 e["status"] = "fail" if rc not in api_execution.BENIGN_RC \
                     else "ok"
 

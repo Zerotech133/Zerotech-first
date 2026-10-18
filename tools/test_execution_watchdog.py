@@ -259,6 +259,22 @@ class TestMain:
             argv=["--inject", "DrillProbe", "0"])
         assert code == 0 and pushed["n"] == 0
 
+    def test_inject_benign_clears_fail_scan_hit(self, tmp_state, tmp_store,
+                                                monkeypatch):
+        """审查收口 2026-10-18：注入良性 rc 后 fail_scan_hit 必须清零、
+        result_ok 随 rc 重算——否则 status=ok 但残留 fail_scan_hit 仍会被
+        _anomalies 当 FAIL_SCAN 误报（演练通道与真实哑火混流）。"""
+        payload = _payload([_entry(name="DrillProbe", status="ok",
+                                   last_result=0, fail_scan_hit=True)])
+        code, pushed = self._run(
+            monkeypatch, payload,
+            argv=["--inject", "DrillProbe", "0"])
+        assert code == 0 and pushed["n"] == 0
+        entry = payload["tasks"][0]
+        assert entry["fail_scan_hit"] is False
+        assert entry["result_ok"] is True
+        assert entry["status"] == "ok"
+
     def test_never_never_alerts(self, tmp_state, tmp_store, monkeypatch):
         """never（尚未首跑，影子链常态）不是异常，不推送。"""
         code, pushed = self._run(

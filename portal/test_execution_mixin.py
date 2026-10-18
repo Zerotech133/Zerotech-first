@@ -322,6 +322,26 @@ class TestBuildHealth:
         api_execution.build_execution_health()
         assert called["n"] == 2
 
+    def test_return_deepcopy_no_cache_pollution(self, tmp_manifest,
+                                                monkeypatch):
+        """审查收口 2026-10-18：返回值必须与缓存深隔离。
+
+        R3 watchdog 的 _apply_injections 会原地改返回载荷的 tasks 条目；
+        若返回与缓存共享嵌套对象（历史版 dict() 浅拷贝），注入会污染
+        30s TTL 内的下一次缓存命中。回归：改返回值后缓存命中不受影响。
+        """
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        monkeypatch.setattr(
+            api_execution, "poll_tasks",
+            lambda names, force=False: ({names[0]: _row()}, True, None, 3))
+        first = api_execution.build_execution_health()
+        first["tasks"][0]["status"] = "fail"       # 模拟演练注入改写
+        first["summary"]["fail"] = 99
+        second = api_execution.build_execution_health()  # TTL 内走缓存
+        assert second["tasks"][0]["status"] == "ok"
+        assert second["summary"]["fail"] == 0
+
     def test_concurrent_no_race(self, tmp_manifest, monkeypatch):
         """并发 Lock 无竞态：PS 只跑一次，全部拿到一致载荷。"""
         tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
