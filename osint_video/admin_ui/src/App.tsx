@@ -9,7 +9,7 @@ type PageKey = 'overview' | 'links' | 'creators' | 'knowledge' | 'timeline' | 's
 
 const navigation: Array<{ key: PageKey; label: string; icon: string }> = [
   { key: 'overview', label: '总览', icon: '▦' },
-  { key: 'links', label: '链接收件箱', icon: '↳' },
+  { key: 'links', label: '统一采集', icon: '↳' },
   { key: 'creators', label: '博主与兴趣', icon: '◎' },
   { key: 'knowledge', label: '知识单元', icon: '◇' },
   { key: 'timeline', label: '时间线', icon: '≋' },
@@ -66,7 +66,7 @@ function AppShell(): JSX.Element {
         <header className="topbar"><div className="breadcrumbs"><span>管理平台</span><b>/</b><strong>{pageLabel}</strong></div><div className="top-actions"><label className="search"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索链接、知识、博主..." /></label><span className="utc">数据时间 UTC {new Date(asOf).toLocaleTimeString('zh-CN', { hour12: false })}</span><button className="refresh-button" onClick={() => void refresh()} aria-label="刷新">↻</button></div></header>
         <section className="health-strip"><span className="health-caption">系统状态</span>{(['api', 'pg', 'qdrant', 'worker'] as const).map((key) => <span className="health-item" key={key}><i className={`health-dot ${health[key]}`} />{key.toUpperCase()} <b>{statusText(health[key])}</b></span>)}<span className="health-time">上次刷新 {lastRefresh.toLocaleTimeString('zh-CN', { hour12: false })}</span></section>
         <div className="content-wrap"><div className="page-heading"><div><div className="eyebrow">PIPELINE CONTROL ROOM</div><h1>{pageLabel}</h1><p>以 PostgreSQL 为事实源的知识资源处理管线</p></div><div className="heading-meta"><span className="live-indicator"><i />短轮询已启用</span><span className="asof">AS OF {new Date(asOf).toLocaleString('zh-CN', { hour12: false })}</span></div></div>
-          {activePage === 'overview' ? <Dashboard cards={cards} alerts={dashboard.data?.alerts ?? []} isLoading={dashboard.isLoading} /> : activePage === 'knowledge' ? <KnowledgePage search={query} /> : <OperationsPage page={activePage} label={pageLabel} search={query} />}
+          {activePage === 'overview' ? <Dashboard cards={cards} alerts={dashboard.data?.alerts ?? []} isLoading={dashboard.isLoading} /> : activePage === 'knowledge' ? <KnowledgePage search={query} /> : activePage === 'links' ? <IngestPage search={query} /> : <OperationsPage page={activePage} label={pageLabel} search={query} />}
         </div>
       </main>
     </div>
@@ -142,6 +142,68 @@ const demoRows: Record<PageKey, Array<{ title: string; meta: string; state: stri
     { title: 'Qdrant / KG 派生索引', meta: 'PG 事实已保留，等待重试', state: '降级', tone: 'warn' },
   ],
 };
+
+function IngestPage({ search }: { search: string }): JSX.Element {
+  const [linkText, setLinkText] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [fileBusy, setFileBusy] = useState(false);
+  const [linkFeedback, setLinkFeedback] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [fileFeedback, setFileFeedback] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const tasks = useQuery({ queryKey: ['ingest-tasks'], queryFn: () => apiClient.listIngestTasks(), refetchInterval: 15_000, retry: false });
+  const rawUrls = linkText.split(/[\s,，]+/).map((url) => url.trim()).filter(Boolean);
+  const urls = [...new Set(rawUrls)];
+  const visibleTasks = (tasks.data?.items ?? []).filter((task) => !search || `${task.source_name} ${task.source_type} ${task.state} ${task.task_id}`.toLowerCase().includes(search.toLowerCase()));
+  const submitLinks = async (event: React.FormEvent): Promise<void> => {
+    event.preventDefault();
+    if (!urls.length) { setLinkFeedback({ type: 'error', text: '请输入至少一个链接。' }); return; }
+    if (urls.some((url) => { try { return !['http:', 'https:'].includes(new URL(url).protocol); } catch { return true; } })) {
+      setLinkFeedback({ type: 'error', text: '请检查链接格式，仅支持完整的 http 或 https 链接。' }); return;
+    }
+    setLinkBusy(true);
+    setLinkFeedback(null);
+    try {
+      const result = await apiClient.ingestLinks(urls);
+      setLinkFeedback({ type: 'success', text: `已接收 ${result.accepted} 条链接${result.duplicated ? `，跳过 ${result.duplicated} 条重复链接` : ''}。` });
+      setLinkText('');
+      void tasks.refetch();
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    } catch (error) {
+      setLinkFeedback({ type: 'error', text: error instanceof Error ? error.message : '提交失败，请稍后重试。' });
+    } finally { setLinkBusy(false); }
+  };
+  const submitFiles = async (event: React.FormEvent): Promise<void> => {
+    event.preventDefault();
+    if (!files.length) { setFileFeedback({ type: 'error', text: '请先选择文件。' }); return; }
+    setFileBusy(true);
+    setFileFeedback(null);
+    try {
+      const result = await apiClient.ingestFiles(files);
+      setFileFeedback({ type: 'success', text: `已接收 ${result.accepted} 个文件${result.duplicated ? `，跳过 ${result.duplicated} 个重复文件` : ''}。` });
+      setFiles([]);
+      const input = document.getElementById('ingest-files') as HTMLInputElement | null;
+      if (input) input.value = '';
+      void tasks.refetch();
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    } catch (error) {
+      setFileFeedback({ type: 'error', text: error instanceof Error ? error.message : '上传失败，请稍后重试。' });
+    } finally { setFileBusy(false); }
+  };
+  return <div className="ingest-page">
+    <div className="ingest-forms">
+      <section className="panel ingest-panel"><div className="panel-heading"><div><h2>链接采集</h2><span>微博链接及其他公开内容链接 · 支持批量投递</span></div><span className="panel-kicker">01 / URL</span></div>
+        <form onSubmit={(event) => void submitLinks(event)} className="ingest-form"><label htmlFor="ingest-urls">粘贴链接</label><textarea id="ingest-urls" value={linkText} onChange={(event) => { setLinkText(event.target.value); setLinkFeedback(null); }} placeholder={'https://weibo.com/...\nhttps://...'} rows={6} disabled={linkBusy} /><p className="ingest-hint">每行一个，也可用空格或逗号分隔；重复链接自动合并。</p><div className="ingest-form-foot"><span>{urls.length} 条待投递</span><button type="submit" className="ingest-submit" disabled={linkBusy}>{linkBusy ? '投递中…' : '投递链接 →'}</button></div>{linkFeedback && <p role="status" className={`ingest-feedback ${linkFeedback.type}`}>{linkFeedback.text}</p>}</form>
+      </section>
+      <section className="panel ingest-panel"><div className="panel-heading"><div><h2>文件采集</h2><span>视频 / 文本 / PDF / 图片 · 单个或批量上传</span></div><span className="panel-kicker">02 / FILE</span></div>
+        <form onSubmit={(event) => void submitFiles(event)} className="ingest-form"><label htmlFor="ingest-files">选择本地文件</label><input id="ingest-files" type="file" multiple accept="video/*,image/*,.txt,.md,.pdf" disabled={fileBusy} onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); setFileFeedback(null); }} /><p className="ingest-hint">可一次选择多个文件；支持常见视频、图片、TXT、Markdown 与 PDF。</p><div className="ingest-selection" aria-live="polite">{files.length ? <><strong>已选择 {files.length} 个文件</strong><ul>{files.map((file, index) => <li key={`${file.name}-${index}`} title={file.name}>{file.name}</li>)}</ul></> : <span>尚未选择文件</span>}</div><div className="ingest-form-foot"><span>{files.length} 个待上传</span><button type="submit" className="ingest-submit" disabled={fileBusy}>{fileBusy ? '上传中…' : '上传并采集 →'}</button></div>{fileFeedback && <p role="status" className={`ingest-feedback ${fileFeedback.type}`}>{fileFeedback.text}</p>}</form>
+      </section>
+    </div>
+    <section className="panel ingest-tasks"><div className="panel-heading"><div><h2>采集任务</h2><span>每 15 秒同步一次最新状态</span></div><button type="button" onClick={() => void tasks.refetch()} disabled={tasks.isFetching} aria-label="刷新采集任务">{tasks.isFetching ? '同步中…' : '刷新 ↻'}</button></div>
+      {tasks.isError && <div className="inline-notice" role="alert">无法读取采集任务，请确认服务可用后重试。</div>}
+      {visibleTasks.length ? <div className="ingest-task-list">{visibleTasks.map((task) => <div className="ingest-task" key={task.task_id}><span className="ingest-task-icon" aria-hidden="true">{task.source_type === 'link' ? '↳' : '◇'}</span><div className="ingest-task-info"><strong title={task.source_name}>{task.source_name || task.task_id}</strong><small>{task.source_type} · {task.created_at ? new Date(task.created_at).toLocaleString('zh-CN') : '时间未知'}</small>{task.error && <span className="ingest-task-error">{task.error}</span>}</div><span className={`status-pill ${['failed', 'dead'].includes(task.state) ? 'warn' : ['done', 'completed'].includes(task.state) ? 'ok' : 'info'}`}>{task.state}</span></div>)}</div> : <div className="empty-state"><span className="empty-icon">↳</span><strong>{tasks.isLoading ? '正在读取任务…' : search ? '没有匹配的任务' : '暂无采集任务'}</strong><p>{tasks.isError ? '任务接口暂不可用' : '投递链接或上传文件后，可在此跟踪进度'}</p></div>}
+    </section>
+  </div>;
+}
 
 function OperationsPage({ page, label, search }: { page: PageKey; label: string; search: string }): JSX.Element {
   const [showLinkDialog, setShowLinkDialog] = useState(false);

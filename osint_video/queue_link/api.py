@@ -49,8 +49,11 @@ app = FastAPI(
 # 知识与博主运营路由保持独立模块，统一挂载到管理 API。
 from knowledge.api import router as knowledge_router  # noqa: E402
 from integration.hermes_api import router as hermes_router  # noqa: E402
+from queue_link.import_api import router as import_router, ingest_router  # noqa: E402
 app.include_router(knowledge_router)
 app.include_router(hermes_router)
+app.include_router(import_router)
+app.include_router(ingest_router)
 
 
 # ---------------------------------------------------------------------------

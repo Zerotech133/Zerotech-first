@@ -28,6 +28,20 @@ CREATE TABLE IF NOT EXISTS osint_link_task (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- 独立导入任务：不可混入仅支持 sph 的链接 worker 队列。
+CREATE TABLE IF NOT EXISTS osint_import_task (
+    id BIGSERIAL PRIMARY KEY,
+    source_type TEXT NOT NULL CHECK (source_type IN ('link', 'text', 'pdf', 'image', 'video')),
+    source_name TEXT NOT NULL,
+    source_url TEXT,
+    status TEXT NOT NULL CHECK (status IN ('processing', 'pending_processing', 'completed', 'failed')),
+    file_path TEXT,
+    sha256 TEXT,
+    content_text TEXT,
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 CREATE UNIQUE INDEX IF NOT EXISTS uk_link_url_hash ON osint_link_task(url_hash);
 CREATE INDEX IF NOT EXISTS idx_link_status ON osint_link_task(status, priority, next_retry_at);
 

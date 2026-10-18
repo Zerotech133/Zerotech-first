@@ -26,7 +26,7 @@ from config.settings import get_settings  # noqa: E402
 
 #: 库中关注的表清单（打印确认用，与 schema.sql 对齐）
 _TABLES = [
-    "osint_link_task", "osint_retry_idempotency", "osint_credential", "osint_target", "osint_comment", "osint_video",
+    "osint_link_task", "osint_import_task", "osint_retry_idempotency", "osint_credential", "osint_target", "osint_comment", "osint_video",
     "osint_knowledge_unit", "osint_blogger_history", "osint_strategy_evidence",
     "osint_processing_run", "osint_knowledge_resource", "osint_media_asset", "osint_index_task",
 ]

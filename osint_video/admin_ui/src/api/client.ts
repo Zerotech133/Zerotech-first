@@ -13,6 +13,8 @@ import type {
   LinkSubmitRequest,
   LinkSubmitResponse,
   LinkTask,
+  IngestTask,
+  IngestSubmitResponse,
 } from '../types';
 
 /** Error returned by the management API. */
@@ -37,7 +39,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: {
         Accept: 'application/json',
-        'Content-Type': 'application/json',
+        ...(init?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...(init?.headers ?? {}),
       },
     });
@@ -81,6 +83,17 @@ export const apiClient = {
   },
   submitLinks(payload: LinkSubmitRequest): Promise<LinkSubmitResponse> {
     return request<LinkSubmitResponse>('/links', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  ingestLinks(urls: string[]): Promise<IngestSubmitResponse> {
+    return request<IngestSubmitResponse>('/ingest/links', { method: 'POST', body: JSON.stringify({ urls }) });
+  },
+  ingestFiles(files: File[]): Promise<IngestSubmitResponse> {
+    const body = new FormData();
+    files.forEach((file) => body.append('files', file));
+    return request<IngestSubmitResponse>('/ingest/files', { method: 'POST', body });
+  },
+  listIngestTasks(): Promise<CursorPage<IngestTask>> {
+    return request<CursorPage<IngestTask>>('/ingest/tasks');
   },
   retryLink(taskId: string, reason: string, idempotencyKey: string): Promise<LinkTask> {
     return request<LinkTask>(`/links/${encodeURIComponent(taskId)}/retry`, {

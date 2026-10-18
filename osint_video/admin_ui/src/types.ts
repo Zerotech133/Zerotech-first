@@ -115,6 +115,22 @@ export interface LinkSubmitResponse {
   tasks: LinkTask[];
 }
 
+export interface IngestTask {
+  task_id: string;
+  source_type: string;
+  source_name: string;
+  state: string;
+  created_at: string;
+  updated_at?: string | null;
+  error?: string | null;
+}
+
+export interface IngestSubmitResponse {
+  accepted: number;
+  duplicated?: number;
+  tasks?: IngestTask[];
+}
+
 export type KnowledgeUnitStatus = 'candidate' | 'unreviewed' | 'reviewed' | 'published' | 'superseded' | 'unknown';
 export type EvidenceChannel = 'asr' | 'ocr' | 'subtitle' | 'manual' | string;
 export type EvidenceStatus = 'valid' | 'expired' | 'superseded' | 'draft' | 'unknown';
