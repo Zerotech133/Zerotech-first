@@ -201,6 +201,55 @@ def _tasks_schema_observe():
         print("          · %s" % item)
 
 
+# ------------------------------------------------------------------
+# B 路追加观察项（2026-10-18）：strategy 域首跑可见性（M6 观察季）。
+# 铁律：只增不改——门 3 的判据与输出格式冻结，本段永不 append 进
+# RESULTS / 永不影响退出码（判例：验收口径中途漂移=观察线作废）。
+# 两个观察项均只读（exists/read_text），坏行经 load_jsonl 跳过并显式
+# 计数告警（fail-visible），异常打印不吞不静默、不阻断巡检。
+STRATEGY_RUNS = BASE / "data" / "strategy" / "strategy_runs.jsonl"
+CODEX_REGS = BASE / "data" / "codex_bridge" / "registrations.jsonl"
+
+
+def _strategy_runs_observe(path=None):
+    """观察：strategy 账本是否已首落账（周一 17:10 影子首跑，先于 17:25 巡检）。
+
+    文件缺失=PENDING 中性（首跑未到，不拉低退出码）；存在=报告总行数与
+    schema_version=m5.v1 行数（首跑行契约的域外旁证）。
+    """
+    p = Path(path) if path is not None else STRATEGY_RUNS
+    try:
+        if not p.exists():
+            print("[observe] strategy_runs：文件不存在（PENDING 中性——"
+                  "周一 17:10 首跑后应存在）——观察项，不计入退出码")
+            return
+        rows = load_jsonl(p)  # 坏行在 load_jsonl 内已打印计数并跳过
+        m5 = sum(1 for r in rows if r.get("schema_version") == "m5.v1")
+        print("[observe] strategy_runs：%d 行 / m5.v1 %d 行"
+              "——观察项，不计入退出码" % (len(rows), m5))
+    except Exception as exc:  # noqa: BLE001  观察项不阻断巡检，但异常必须可见
+        print("[observe] strategy_runs：不可读（%s）——观察项，不计入退出码"
+              % str(exc)[:100])
+
+
+def _codex_regs_observe(path=None):
+    """观察：codex_bridge 受理账本可见性（M2 每次受理落 1 行）。"""
+    p = Path(path) if path is not None else CODEX_REGS
+    try:
+        if not p.exists():
+            print("[observe] codex_registrations：文件不存在（PENDING 中性）"
+                  "——观察项，不计入退出码")
+            return
+        rows = load_jsonl(p)
+        sids = [str(r.get("strategy_id")) for r in rows if r.get("strategy_id")]
+        print("[observe] codex_registrations：%d 行 / strategy_id: %s"
+              "——观察项，不计入退出码"
+              % (len(rows), ", ".join(sids) if sids else "（无 strategy_id 字段）"))
+    except Exception as exc:  # noqa: BLE001
+        print("[observe] codex_registrations：不可读（%s）——观察项，不计入退出码"
+              % str(exc)[:100])
+
+
 def check(name, ok, detail=""):
     RESULTS.append((name, bool(ok), detail))
     print("[%s] %s%s" % ("PASS" if ok else "FAIL", name,
@@ -379,6 +428,10 @@ def main():
 
     # ---- 附加观察（不计入 7 项门/不影响退出码；M6 观察季）----
     _tasks_schema_observe()
+
+    # ---- 追加观察（B 路 2026-10-18：strategy 域首跑可见性；不计入退出码）----
+    _strategy_runs_observe()
+    _codex_regs_observe()
 
     # ---- 汇总 ----
     fails = [n for n, ok, _ in RESULTS if not ok]
