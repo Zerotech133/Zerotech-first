@@ -53,6 +53,18 @@ async function render(events) {
   assert.match(normal['al-ts'].textContent, /快照 2026-10-19 10:00 · 共 1 条/);
   assert.equal(normal['k-alerts'].textContent, '1 条');
   assert.match(normal['al-list'].innerHTML, /真实预警/);
+  assert.match(normal['al-list'].innerHTML, /href='\/watch'/);
+
+  for (const hostileHref of [
+    "/watch' onclick='alert(1)", 'javascript:alert(1)',
+    '//attacker.example', '/watch%27%20onclick%3Dalert(1)', '/watch\\evil'
+  ]) {
+    const hostile = await render([{ data: { ts: '不可信链接', alerts: [{ ...row, href: hostileHref }] } }]);
+    assert.match(hostile['al-list'].innerHTML, /href='#'/);
+    assert.doesNotMatch(hostile['al-list'].innerHTML, /onclick|javascript:|attacker\.example/);
+  }
+  const safeQuery = await render([{ data: { ts: '站内下钻', alerts: [{ ...row, href: '/watch?id=1&pool=main' }] } }]);
+  assert.match(safeQuery['al-list'].innerHTML, /href='\/watch\?id=1&amp;pool=main'/);
 
   const empty = await render([{ data: { ts: '空快照', alerts: [] } }]);
   assert.match(empty['al-ts'].textContent, /共 0 条/);
