@@ -26,6 +26,9 @@ class MondayCheckpointLogTests(unittest.TestCase):
         self._old_err = sys.stderr
         self._old_log = MC.LOG
         self._old_handle = MC._LOG_HANDLE
+        # 快照-恢复：check() 会向模块全局 RESULTS 追加条目，必须还原，
+        # 否则污染后跑的测试文件（单跑绿、全量红的判例根因）。
+        self._old_results = list(MC.RESULTS)
         self.tmpdir = Path(tempfile.mkdtemp(prefix="m5log_"))
         self.log = self.tmpdir / "cp.log"
 
@@ -33,6 +36,8 @@ class MondayCheckpointLogTests(unittest.TestCase):
         MC._close_log()
         MC.LOG = self._old_log
         MC._LOG_HANDLE = self._old_handle
+        del MC.RESULTS[:]
+        MC.RESULTS.extend(self._old_results)
         sys.stdout = self._old_out
         sys.stderr = self._old_err
 

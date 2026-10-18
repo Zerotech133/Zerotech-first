@@ -41,8 +41,9 @@ class _Capture(unittest.TestCase):
         self._old_results = list(mc.RESULTS)
         self._buf = io.StringIO()
         sys.stdout = self._buf
-        # 快照后清空：先跑的测试（如 log 文件的 check("样例检查")）会向全局
-        # RESULTS 塞条目且不清理——不清空则全量/单跑顺序不同导致计数漂移。
+        # 快照后清空：泄漏源（log 文件 check("样例检查") 塞 RESULTS 不清理）
+        # 已由该文件的 setUp/tearDown 快照-恢复修复；此处置保留为双保险——
+        # 即便再有未知来源的全局污染，本文件判据计数也不漂移。
         del mc.RESULTS[:]
 
     def tearDown(self):
