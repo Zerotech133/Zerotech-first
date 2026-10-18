@@ -861,18 +861,24 @@ def dispatch(req):
                "sources": clean}
         atomic_write_json(SCHEDULE_PATH, out)
         applied, errs = [], []
-        if req.get("apply_tasks"):
+        apply = bool(req.get("apply_tasks"))
+        if apply:
             for row in clean:
                 if not row["task"] or not row["time"]:
                     continue
-                ok2, err2 = ps_set_task_time(row["task"], row["time"])
+                try:
+                    ok2, err2 = ps_set_task_time(row["task"], row["time"])
+                except (OSError, subprocess.TimeoutExpired) as e:
+                    ok2, err2 = False, str(e)
                 (applied if ok2 else errs).append(
                     "%s->%s" % (row["task"], row["time"]) if ok2
                     else "%s: %s" % (row["task"], err2))
-        log("[sched] 保存调度矩阵（%d 源%s）" % (
-            len(clean), "，联动任务 %d 项" % len(applied) if applied else ""))
-        return {"ok": True, "applied_tasks": applied, "task_errors": errs,
-                "schedule": out}
+        log("[sched] 保存调度矩阵（%d 源，联动成功 %d 项，失败 %d 项）" % (
+            len(clean), len(applied), len(errs)))
+        return {"ok": not errs, "saved": True, "applied": apply and not errs,
+                "partial_failure": bool(errs),
+                **({"error": "配置已保存，但 %d 项计划任务联动失败" % len(errs)} if errs else {}),
+                "applied_tasks": applied, "task_errors": errs, "schedule": out}
 
     if act == "set_biz":
         biz = load_biz()
@@ -1135,7 +1141,7 @@ input[type=time]{width:90px}
 const $=id=>document.getElementById(id);
 function msg(t,bad){const m=$('msg');m.textContent=t;m.style.display='block';m.style.color=bad?'var(--red)':'var(--green)';setTimeout(()=>m.style.display='none',5000)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-async function act(body){try{const r=await fetch('api/act',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.ok)msg(d.error||'失败',true);return d}catch(e){msg('请求失败：'+e,true);return{ok:false}}}
+async function act(body){try{const r=await fetch('api/act',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!d.ok&&body.action!=='save_schedule')msg(d.error||'失败',true);return d}catch(e){const error='请求失败：'+e;if(body.action!=='save_schedule')msg(error,true);return{ok:false,error}}}
 const OK=['金融新闻日报','AI工作站统一日报','AI工作站预警推送晨','AI工作站预警推送'];
 function inSilent(s){const a=String(s.silent_start||'').trim(),b=String(s.silent_end||'').trim();if(!a||!b)return false;const c=new Date().toTimeString().slice(0,5);return a<=b?(a<=c&&c<b):(c>=a||c<b)}
 function fbars(o,cls){const ks=Object.keys(o||{}),m=Math.max(1,...ks.map(k=>o[k]));
@@ -1322,11 +1328,11 @@ async function saveSched(apply){const srcs=[...document.querySelectorAll('#sched
  const g=f=>tr.querySelector('[data-f='+f+']');const o={id:g('time').dataset.si};
  o.time=g('time').value;o.exempt=g('exempt').checked;o.enabled=g('enabled').checked;return o});
 const d=await act({action:'save_schedule',silent_start:$('sc_ss').value,silent_end:$('sc_se').value,sources:srcs,apply_tasks:apply});
-if(!d.ok)return msg('保存失败：'+(d.error||''),true);
+if(!d.saved)return msg('保存失败：'+(d.error||'未知错误'),true);
 let m='调度已保存（闸门即时热加载）';
 if(apply&&d.applied_tasks&&d.applied_tasks.length)m+='；计划任务已联动：'+d.applied_tasks.join('、');
-if(apply&&d.task_errors&&d.task_errors.length)m+='；联动失败：'+d.task_errors.join('；');
-msg(m);refresh();}
+if(d.partial_failure)m+='；联动失败：'+(d.task_errors||[]).join('；');
+msg(m,!d.ok);refresh();}
 async function addRecv(){const d=await act({action:'add_receiver',receiver:{name:$('r_name').value.trim(),id:$('r_id').value.trim(),type:$('r_type').value,note:$('r_note').value.trim()}});
  if(d.ok){msg('接收人已添加（可在订阅里勾选）');['r_name','r_id','r_note'].forEach(i=>$(i).value='');refresh()}}
 function editRecv(sid){const v=prompt('输入接收人名称，逗号分隔（可多选）。留空=缺省（个人+家人群）：\\n可选：'+(window._recvNames||''),'');if(v===null)return;act({action:'set_sub_receivers',id:sid,receivers:v.split(',').map(s=>s.trim()).filter(Boolean)}).then(refresh);}
