@@ -232,7 +232,9 @@ volumes:
 
 ## 7. 开放问题
 
+> **2026-10-18 晚销项注记（lead 回填）**：第 2、3 项已由老田拍板（追认清单第 6 项，回填 commit c55e3f42；定价表已入库 digital-legion 6bc3774）——第 2 项 = **选项①静态估算表**（paperclip/pricing.py 四档：st1-chan-analysis 25 分 / zhuge-query 300 分 / tianfeng-heartbeat 名义 1 分 / sim-exec 预留）；第 3 项 = **老田本人 token 人工行使**。第 1、4 项仍开放（第 4 项即 W5 对表外部条件）。
+
 1. 预算主体与 Kanban/执行仓的命名是否共用一套 wo 编号（待与 JJ 路对表）。
-2. `est_cost_cents` 的定价口径（LLM token 计价表）M0 用静态估算还是留 0，需老板拍板。
-3. approve 权限在 M0 是否先由老板本人 token 人工行使，还是先挂军师府。
+2. ~~`est_cost_cents` 的定价口径~~ **已销项（6A=①静态估算表，2026-10-18 拍板）**。
+3. ~~approve 权限在 M0 是否先由老板本人 token 人工行使~~ **已销项（6B=①老田本人 token，2026-10-18 拍板）**。
 4. OpenClaw 网关最终形态（详见双 profile 设计稿「待对表」项）可能影响 Paperclip 与执行链的对接点。
