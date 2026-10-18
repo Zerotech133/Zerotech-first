@@ -945,7 +945,8 @@ a.dcard:hover{text-decoration:none}
     ALERT_STAT.p0 = ALERTS.filter(function(a){ return a[0] === 'p0'; }).length;
     ALERT_STAT.p1 = ALERTS.filter(function(a){ return a[0] === 'p1'; }).length;
     $('alertgrid').innerHTML = ALERTS.map(function(a){
-      return '<div class="alert"><span class="lv ' + a[0] + '">' + (a[0] === 'p0' ? 'P0' : 'P1') + '</span>' +
+      var lv = a[0] === 'p0' ? 'p0' : 'p1'; /* class 白名单：非 p0 一律归 p1（统计口径同） */
+      return '<div class="alert"><span class="lv ' + lv + '">' + (lv === 'p0' ? 'P0' : 'P1') + '</span>' +
         '<span class="tx"><b>' + esc(a[1]) + ' · ' + esc(a[2]) + '</b>' + esc(a[3]) + '<br><span class="act">▸ ' + esc(a[4]) + '</span></span></div>';
     }).join('');
     $('az-count').textContent = 'P0×' + ALERT_STAT.p0 + ' · P1×' + ALERT_STAT.p1 + ' · 共 ' + ALERTS.length + ' 项';
@@ -1004,21 +1005,32 @@ a.dcard:hover{text-decoration:none}
   };
   function probeSameOrigin(id, path, name){
     var el = document.getElementById(id); if (!el) return;
-    fetch(path, { cache:'no-store' }).then(function(r){
+    /* 超时中断（2026-10-19 审计修复）：原无 AbortController，上游挂起时 pending 永不 settle；
+       8791 今日两次宕机实证——上游拒连时 nginx 快速 502，但慢死场景必须自保 */
+    var ctl = new AbortController();
+    var timer = setTimeout(function(){ ctl.abort(); }, 2500);
+    fetch(path, { signal: ctl.signal, cache:'no-store' }).then(function(r){
       if (!r.ok) throw new Error('http ' + r.status);
       return r.json().catch(function(){ return { ok:true }; }); /* 11434 /api/tags 无 ok 字段，200 即在产 */
     }).then(function(d){
+      clearTimeout(timer);
       if (d && d.ok === false) throw new Error('svc not ok');
       el.className = 'dot ok'; el.title = name + ' OK（同源 ' + path + '）';
     }).catch(function(){
+      clearTimeout(timer);
       el.className = 'dot unk'; el.title = '同源探测不可达 → 未探测态（不假绿）';
     });
   }
-  var HEALTH_CACHE = null;
+  /* HEALTH_CACHE 短 TTL + 失败不粘（2026-10-19 审计修复）：
+     原版 Promise 永久复用且失败(null)也缓存——服务状态变化（8791 今日宕了又起）
+     在页面生命周期内灯不刷新；/api/health 短暂抖动后恢复也永远 unk。 */
+  var HEALTH_CACHE = null, HEALTH_TS = 0, HEALTH_TTL = 15000;
   function fetchHealth(){
-    if (HEALTH_CACHE) return HEALTH_CACHE;
+    var now = Date.now();
+    if (HEALTH_CACHE && now - HEALTH_TS < HEALTH_TTL) return HEALTH_CACHE;
+    HEALTH_TS = now;
     HEALTH_CACHE = fetch('/api/health', { cache: 'no-store' }).then(function(r){ return r.json(); })
-      .catch(function(){ return null; });
+      .catch(function(){ HEALTH_CACHE = null; HEALTH_TS = 0; return null; });
     return HEALTH_CACHE;
   }
   function probeViaHealth(id, svcName){
@@ -1040,15 +1052,35 @@ a.dcard:hover{text-decoration:none}
    {id:'p-11434',url:'http://127.0.0.1:11434/api/tags'},{id:'p-zeroq',url:null}].forEach(function(p){ probeAny(p.id, p.url); });
 
   /* ================= 板块全貌渲染 ================= */
-  function esc(s){ return String(s == null ? '' : s); }
+  /* esc：真 HTML 转义（2026-10-19 审计修复：原为恒等函数 String(s)，全部插值点实际裸奔——
+     当前配置是页面内静态数据未酿险，但函数名撒谎会让后人放心接入动态数据，必须根治） */
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  /* class/style 上下文白名单（2026-10-19 审计修复）：esc 管不了 class 与 style——
+     class 注入=冒名样式；style 注入=CSS 逃逸（引号闭合在 HTML 属性里会被实体解码，
+     必须值级校验而非转义）。badge/tl/lv 用类名白名单，color 用 rgba() 格式校验。 */
+  var BADGE_CLS = { 'b-live':1, 'b-run':1, 'b-plan':1, 'b-wait':1 };
+  function badgeCls(c){ return BADGE_CLS[c] ? c : 'b-run'; }
+  var TL_CLS = { '':'tl-item', 'w':'tl-item w', 'r':'tl-item r' };
+  function tlCls(c){ return TL_CLS[c] || 'tl-item'; }
+  var COLOR_RE = /^rgba?\([0-9.,\s%]+\)$/;
+  function safeColor(c){ return COLOR_RE.test(String(c || '')) ? c : '#8b949e'; }
+  /* 下钻目标可点判定：/ 开头且非协议相对 URL（//evil.com 也以 / 开头，须排除）；
+     其余（zeroq 远程 / 127.0.0.1:8791 / javascript: 等）返回 null → 展示卡不装链接 */
+  function drillTarget(d){
+    return (d && d[1] && d[1].charAt(0) === '/' && d[1].charAt(1) !== '/') ? d[1] : null;
+  }
   function renderBoard(id){
     var b = BOARDS[id];
     if (!b) { location.hash = '#/overview'; return; }
     $('b-drill').innerHTML = '<b>个人 OS</b><span class="sep">›</span><span style="color:var(--blue)">' + esc(b.name) +
       '</span><span class="sep">›</span><span class="cur">板块全貌</span><span class="sep">›</span>子项目 / 域 / 策略 / 标的（出口卡 = 真实路由，可点直达）';
     $('b-head').innerHTML =
-      '<div class="row1"><span class="bicon" style="background:' + b.color + '">' + b.icon + '</span>' +
-      '<div><h2>' + esc(b.name) + ' <span class="badge ' + b.badge[1] + '" style="margin-left:8px;vertical-align:4px">' + b.badge[0] + '</span></h2>' +
+      '<div class="row1"><span class="bicon" style="background:' + safeColor(b.color) + '">' + esc(b.icon) + '</span>' +
+      '<div><h2>' + esc(b.name) + ' <span class="badge ' + badgeCls(b.badge[1]) + '" style="margin-left:8px;vertical-align:4px">' + b.badge[0] + '</span></h2>' +
       '<span class="en">' + esc(b.en) + ' · 目标路由 ' + esc(b.route) + '</span></div>' +
       '<button class="back" id="b-back">← 返回 OS 总览（Esc）</button></div>' +
       '<p class="pos">' + esc(b.pos) + '</p>' +
@@ -1071,10 +1103,13 @@ a.dcard:hover{text-decoration:none}
 
     $('b-drills').innerHTML = b.drills.map(function(d){
       /* S5 收口：/ 开头的目标路由均为已实测可达的真实路由 → 渲染为真链接；
-         非 / 目标（zeroq 远程 / agent_platform / 127.0.0.1:8791 等）保持展示卡，诚实不装链接 */
+         非 / 目标（zeroq 远程 / agent_platform / 127.0.0.1:8791 等）保持展示卡，诚实不装链接。
+         协议相对 URL 防护（2026-10-19 审计加固）：//evil.com 也以 / 开头，
+         必须同时排除第二字符也是 / 的情况（javascript: 等非 / 开头本就走展示卡）。 */
+      var link = drillTarget(d);
       var rt = esc(d[1]);
-      if (d[1] && d[1].charAt(0) === '/') {
-        return '<a class="dcard" href="' + rt + '" title="下钻目标（真实路由，已实测可达）"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + rt + ' ↗</span></a>';
+      if (link) {
+        return '<a class="dcard" href="' + esc(link) + '" title="下钻目标（真实路由，已实测可达）"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + rt + ' ↗</span></a>';
       }
       return '<div class="dcard" title="下钻目标（非门户路由 · 演示标注）"><b>' + esc(d[0]) + '</b><span>' + esc(d[2]) + '</span><span class="rt">' + rt + '</span></div>';
     }).join('');
@@ -1089,7 +1124,7 @@ a.dcard:hover{text-decoration:none}
     }
 
     $('b-tl').innerHTML = b.timeline.map(function(t){
-      return '<div class="tl-item ' + t[0] + '"><span class="t">' + esc(t[1]) + '</span><b>' + esc(t[2]) + '</b></div>';
+      return '<div class="' + tlCls(t[0]) + '"><span class="t">' + esc(t[1]) + '</span><b>' + esc(t[2]) + '</b></div>';
     }).join('');
 
     if (b.issues.length) {
@@ -1108,9 +1143,16 @@ a.dcard:hover{text-decoration:none}
   }
 
   /* ================= 路由（hash：可分享；Esc 返回） ================= */
+  /* 原型污染防护（2026-10-19 审计修复）：BOARDS[h] 直接查找时，
+     h='constructor'/'toString'/'valueOf' 等会命中 Object.prototype 上的函数（truthy），
+     进 renderBoard 后 b.subs.map 抛 TypeError 把页面卡死在半渲染态。
+     必须用 hasOwnProperty 校验自有属性。 */
+  function boardOf(h){
+    return (h && Object.prototype.hasOwnProperty.call(BOARDS, h)) ? BOARDS[h] : null;
+  }
   function route(){
     var h = (location.hash || '').replace(/^#\/?/, '');
-    if (h && h !== 'overview' && BOARDS[h]) {
+    if (h && h !== 'overview' && boardOf(h)) {
       showTab('overview'); // 先隐藏 tabbar 逻辑由下面覆盖
       Object.keys(panels).forEach(function(k){ $(panels[k]).classList.remove('active'); });
       $('tabbar').classList.add('hidden');
