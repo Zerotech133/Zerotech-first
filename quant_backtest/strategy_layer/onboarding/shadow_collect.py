@@ -50,6 +50,15 @@ BUCKETS = ("0-25", "25-50", "50-75", "75-100")  # score 四分桶
 N_MIN = 30                                     # 转正门槛样本量（K55 口径）
 SIG_T = 2.0                                    # |t|≥2 近似 5% 显著
 
+# 事件帧口径（2026-10-18 拍板定案）：影子档只记 buy/sell 事件帧，
+# hold（含 fail-closed 中性 Verdict 映射出的 hold）不入统计样本。
+# 依据：①与产线 adapter 信号口径同源（S3 基线即仓位变化日）；
+# ②影子统计评估的是「信号的前向收益预测力」，hold 无信号语义；
+# ③S4 彩排实测：逐日 hold 落档使 0-25 桶被空仓主导（154/250），
+#   Pearson 九成样本来自 hold 行（s4_rehearsal_classic_20261018 发现③）。
+# hold 计数保留在 collect_once 返回值（可观测性），报告分母层呈现。
+EVENT_ACTIONS = ("buy", "sell")
+
 # 影子档落档目录（本工位名下唯一写点）
 SHADOW_DIR = os.path.join(_QB_ROOT, "data", "shadow_onboarding")
 
@@ -64,10 +73,15 @@ def shadow_path(strategy_id: str) -> str:
 # ---------------------------------------------------------------------- #
 def collect_once(adapter: ClassicStrategyAdapter, trade_date: str,
                  out_path: Optional[str] = None) -> dict:
-    """跑 adapter.score(trade_date) 并幂等落档。返回 {recorded, replayed}。
+    """跑 adapter.score(trade_date) 并幂等落档。返回 {recorded, replayed, ...}。
 
     行格式：ts / strategy_id / symbol / action / score / confidence /
     trade_date / mode（固定 "SHADOW" 标注影子产出，与产线信号隔离）。
+
+    事件帧口径（拍板定案）：仅 action ∈ EVENT_ACTIONS（buy/sell）落档；
+    hold 与中性/失败信号跳过并计入返回值 skipped_non_event（不入统计
+    样本，仅作可观测性计数）。Agent propose 的 hold Verdict（含
+    fail-closed 中性）经垫片转 Signal 后同样在此收口过滤。
     """
     out_path = out_path or shadow_path(adapter.strategy_id)
     td8 = str(trade_date).replace("-", "")
@@ -77,10 +91,13 @@ def collect_once(adapter: ClassicStrategyAdapter, trade_date: str,
     except Exception as exc:  # adapter 约定不 raise，双保险
         print("[shadow_collect] adapter.score 失败，本轮采集 0 条: %s" % exc)
         signals = []
-    recorded = replayed = 0
+    recorded = replayed = skipped_non_event = 0
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "a", encoding="utf-8") as f:
         for sig in signals:
+            if str(getattr(sig, "action", "")).lower() not in EVENT_ACTIONS:
+                skipped_non_event += 1
+                continue
             key = "%s|%s|%s" % (adapter.strategy_id, sig.symbol, td8)
             if key in seen:
                 replayed += 1
@@ -99,7 +116,8 @@ def collect_once(adapter: ClassicStrategyAdapter, trade_date: str,
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             seen.add(key)
             recorded += 1
-    return {"recorded": recorded, "replayed": replayed, "path": out_path}
+    return {"recorded": recorded, "replayed": replayed,
+            "skipped_non_event": skipped_non_event, "path": out_path}
 
 
 def _load_keys(path: str) -> set:
@@ -289,9 +307,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     symbols = [s.strip() for s in a.symbol.split(",") if s.strip()]
     adapter = ClassicStrategyAdapter(a.strategy, symbols, market=a.market)
     res = collect_once(adapter, a.date, out_path=a.out)
-    print("[SHADOW] %s %s recorded=%d replayed=%d -> %s"
+    print("[SHADOW] %s %s recorded=%d replayed=%d skipped_non_event=%d -> %s"
           % (a.strategy, a.date, res["recorded"], res["replayed"],
-             res["path"]))
+             res["skipped_non_event"], res["path"]))
     return 0
 
 

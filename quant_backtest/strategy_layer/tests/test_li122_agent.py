@@ -527,3 +527,23 @@ def test_bars_input_not_mutated(chanlun_ready):
     snapshot = json.dumps(bars, sort_keys=True, ensure_ascii=False)
     AGENT().propose(_ctx_driver(UPPER_A, bars))
     assert json.dumps(bars, sort_keys=True, ensure_ascii=False) == snapshot
+
+
+# ---------------------------------------------------------------------- #
+# S4 影子调度 as_of 口径（2026-10-18 拍板定案锁定）
+# ---------------------------------------------------------------------- #
+def test_shadow_asof_policy_locked():
+    """S4 影子调度定案：自足模式 as_of=T+1 盘前（前交易日收盘全序列）。
+
+    右沿判例：chanlun 笔终点确认需要信号 dt 之后的 K 线，S3 对账实测
+    as_of=信号 dt 时 122/122 现算不出该信号（s3_reconcile_li122_20261018）。
+    影子调度禁止 as_of=信号 dt 当日现算；驱动模式注入上级信号不做
+    （需另建 30m 信号生产者，违背 S2「现算同源、零信号池」定案）。
+    """
+    assert AGENT.shadow_asof_policy == "T+1_prev_close"
+    # 类属性注释必须携带定案依据（防后人不知所以然直接改掉）；
+    # 直接读源文件（测试 loader 无 source，inspect.getsource 不可用）
+    with open(os.path.join(_AGENTS_DIR, "li122_agent.py"),
+              "r", encoding="utf-8") as f:
+        src = f.read()
+    assert "右沿" in src and "T+1_prev_close" in src and "122/122" in src

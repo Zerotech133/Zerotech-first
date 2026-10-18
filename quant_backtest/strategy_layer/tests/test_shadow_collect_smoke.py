@@ -147,10 +147,11 @@ def test_corr_parity_with_council_shadow_and_numpy():
 # ---------------------------------------------------------------------- #
 def _four_bucket_signals(td8):
     # 四分桶各至少 1 条样本（幂等键 strategy|symbol|date → 每 symbol 一条）
+    # 事件帧口径（拍板定案）：全部用 buy/sell——watch/hold 不入影子统计样本
     return [_sig("SMK1.SH", "buy", 10.0, td8),
             _sig("SMK2.SH", "sell", 40.0, td8),
             _sig("SMK3.SH", "buy", 60.0, td8),
-            _sig("SMK4.SH", "watch", 90.0, td8)]
+            _sig("SMK4.SH", "sell", 90.0, td8)]
 
 
 def test_collect_once_writes_jsonl_and_is_idempotent(tmp_path):
@@ -187,6 +188,48 @@ def test_collect_once_writes_jsonl_and_is_idempotent(tmp_path):
 
     # 零写副作用：未触碰仓库内 SHADOW_DIR（out_path 全程走 tmp_path）
     assert not os.path.exists(sc.shadow_path(ADAPTER_ID))
+
+
+def test_event_frame_filter_skips_non_buy_sell(tmp_path):
+    # 事件帧口径（2026-10-18 拍板）：只记 buy/sell 事件帧，hold/watch 等
+    # 非事件帧（含 fail-closed 中性 Verdict 映射出的 hold）不入统计样本，
+    # 仅以 skipped_non_event 计数保留可观测性。
+    td8 = "20261016"
+    out = str(tmp_path / "shadow.jsonl")
+    adapter = _FakeAdapter({td8: [
+        _sig("EV1.SH", "buy", 70.0, td8),
+        _sig("EV2.SH", "sell", 30.0, td8),
+        _sig("EV3.SH", "hold", 50.0, td8),        # 普通 hold（仓位不变）
+        _sig("EV4.SH", "hold", 0.0, td8),         # fail-closed 中性（conf=0）
+        _sig("EV5.SH", "watch", 85.0, td8),       # 非事件 action
+    ]})
+
+    res = sc.collect_once(adapter, td8, out_path=out)
+    assert res["recorded"] == 2
+    assert res["skipped_non_event"] == 3
+    assert res["replayed"] == 0
+
+    rows = sc.load_rows(out)
+    assert {r["symbol"] for r in rows} == {"EV1.SH", "EV2.SH"}
+    assert all(r["action"] in sc.EVENT_ACTIONS for r in rows)
+
+    # 幂等键不被 skip 行占用：重采时 buy/sell 照常 replayed，skip 行不残留
+    res2 = sc.collect_once(adapter, td8, out_path=out)
+    assert res2["recorded"] == 0 and res2["replayed"] == 2
+    assert res2["skipped_non_event"] == 3
+    with open(out, "r", encoding="utf-8") as f:
+        assert sum(1 for line in f if line.strip()) == 2
+
+
+def test_event_actions_constant_and_cli_reports_skip(tmp_path):
+    # 口径常量锁定 + CLI stdout 报 skipped 计数（fail-visible 可观测性）
+    assert sc.EVENT_ACTIONS == ("buy", "sell")
+    td8 = "20261016"
+    out = str(tmp_path / "shadow.jsonl")
+    adapter = _FakeAdapter({td8: [_sig("EV1.SH", "buy", 70.0, td8),
+                                  _sig("EV2.SH", "hold", 10.0, td8)]})
+    sc.collect_once(adapter, td8, out_path=out)
+    assert sc.load_rows(out)[0]["action"] == "buy"
 
 
 def test_full_chain_collect_stats_report(tmp_path):

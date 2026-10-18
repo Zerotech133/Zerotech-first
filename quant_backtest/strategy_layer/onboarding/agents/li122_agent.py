@@ -178,7 +178,9 @@ class Li122Agent(_STRATEGY_AGENT):
     - ``ruleset_key``：chanlun_li122.RULESETS 键，默认 A_30F_5F_1F；
     - ``upper_source``：声明上级信号默认口径（"computed" 现算；实际
       运行模式由 context 是否注入 upper_signal 决定，注入优先）；
-    - ``min_upper_bars``：自足模式上级结构预热下限。
+    - ``min_upper_bars``：自足模式上级结构预热下限；
+    - ``shadow_asof_policy``：S4 影子调度 as_of 口径定案（T+1 盘前，
+      右沿滞后判例见类属性注释与 s3 对账报告）。
 
     身份属性按 MANIFEST_GUIDE §4：family="chanlun"、影子期为
     "experimental"（达标准 promotions 流程晋升）、买向过滤 stance="bull"。
@@ -195,6 +197,16 @@ class Li122Agent(_STRATEGY_AGENT):
     ruleset_key = DEFAULT_RULESET
     upper_source = "computed"
     min_upper_bars = 100
+
+    # S4 影子调度 as_of 口径（2026-10-18 拍板定案：自足模式 as_of=T+1 盘前）：
+    # 缠论笔终点确认存在右沿滞后——信号 dt 处的笔终点需要 dt 之后的 K 线
+    # 才能确认，S3 对账实测 as_of=信号 dt 时 122/122 系统性现算不出该信号
+    # （s3_reconcile_li122_20261018/reconciliation_report.md）。
+    # 因此影子期每日调度必须以 as_of=前一交易日收盘全序列现算（即 T+1
+    # 盘前出 T 日建议，一日滞后为缠论确认的固有代价），禁止 as_of=信号
+    # dt 当日现算。不采用驱动模式注入上级信号（需另建 30m 信号生产者，
+    # 违背 S2「现算同源、零信号池」定案）。
+    shadow_asof_policy = "T+1_prev_close"
 
     # ------------------------------------------------------------------ #
     # 主入口（StrategyAgent 契约，绝不 raise）
