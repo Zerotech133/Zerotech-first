@@ -79,6 +79,8 @@ MAIN_HORIZON = 10           # 归因/草案主口径（施工裁量，见 docstr
 N_MIN = 30                  # 小样本不凭据（设计 §2 红线 4）
 P10_FLOOR = -10.0           # 降置信候选：p10 ≤ -10%
 WIN_EDGE_PP = 10.0          # 升置信候选：win 超全域基线 +10pp
+TAIL_FLAG_N_MIN = 20        # E-01 S2 左尾观察标注 n 门槛（<N_MIN：先可见后凭据）
+TAIL_RET_FLOOR = -10.0      # E-01 S1 左尾哨兵：T+20 深亏案例门槛
 DRAFT_MAX_STEP = 0.05       # 单次调幅上限（设计 §2 红线 4）
 SHADOW_NATURAL_DAYS = 28    # 影子期 ≥20 交易日 ≈ 28 自然日（设计 §3 L4A）
 CONF_BANDS = ((0.65, "high"), (0.55, "mid"), (0.0, "low"))   # 降序取首命中
@@ -627,6 +629,8 @@ def l3_run(learn_dir=LEARN_DIR, as_of=None, horizons=HORIZONS,
       n≥30 且 win≥基线+10pp    → verdict="升置信候选"
       其余                     → verdict="正常"
     verdict 行必带 evidence（基线/差值/三档分布/样本 sig_id 引用）与 n。
+    观察标注（E-01 S2，只读不判读）：horizon=20 且 p10≤-10 且 n≥20 →
+    tail_flag="左尾观察"（不进 verdict 阈值体系、不触发 L4 出口 A/B）。
     """
     findings = findings if findings is not None else []
     as_of = as_of or datetime.now().strftime("%Y%m%d")
@@ -682,6 +686,9 @@ def l3_run(learn_dir=LEARN_DIR, as_of=None, horizons=HORIZONS,
                    "horizon": h, "n": st["n"], "win": st["win"],
                    "avg": st["avg"], "p10": st["p10"],
                    "verdict": verdict, "evidence": ev}
+            if h == 20 and st["p10"] <= P10_FLOOR and \
+               st["n"] >= TAIL_FLAG_N_MIN:
+                row["tail_flag"] = "左尾观察"   # E-01 S2：只读标注，不参与判读
             if _sha1_json(row) in known:
                 continue                        # 同统计指纹重放零副作用
             known.add(_sha1_json(row))
@@ -881,6 +888,13 @@ def l4_thesis(learn_dir=LEARN_DIR, ms=None, findings=None):
 def l4_weekly(learn_dir=LEARN_DIR, out=None, as_of=None):
     """周记《缠论结构观察》聚合（署名产出；stdout 或 --out 文件）。"""
     as_of = as_of or datetime.now()
+    if isinstance(as_of, str):                     # CLI --as-of 字符串锚点
+        for fmt in ("%Y-%m-%d", "%Y%m%d"):
+            try:
+                as_of = datetime.strptime(as_of, fmt)
+                break
+            except ValueError:
+                continue
     week_ago = (as_of - timedelta(days=7)).strftime("%Y%m%d")
     ledger = [r for r in _read_jsonl(ledger_path(learn_dir))
               if str(r.get("found_day", "")) >= week_ago]
@@ -910,6 +924,28 @@ def l4_weekly(learn_dir=LEARN_DIR, out=None, as_of=None):
             lines.append("- [%s] %s（n=%s，win=%s%%，p10=%s%%）" % (
                 row["verdict"], row["cell"], row["n"],
                 row["win"], row["p10"]))
+    # ── E-01 S1：T+20 左尾哨兵（只读 verify.jsonl，观察增强不判读） ──
+    v20 = [v for v in _read_jsonl(verify_path(learn_dir))
+           if v.get("horizon") == 20 and v.get("ret_pct") is not None]
+    deep = sorted((v for v in v20
+                   if v["ret_pct"] <= TAIL_RET_FLOOR
+                   and str(v.get("verify_dt", "")) >= week_ago),
+                  key=lambda x: x["ret_pct"])
+    lines += ["", "## T+20 左尾哨兵（E-01 观察增强）",
+              "- 本周新对账 ret≤%.0f%% 案例：%d 条" % (
+                  TAIL_RET_FLOOR, len(deep))]
+    for v in deep:
+        r10 = v10.get(v.get("sig_id"))
+        lines.append("  - %s %s ret20=%+.2f%% ret10=%s" % (
+            v.get("code"), v.get("type"), v["ret_pct"],
+            "n/a" if not r10 else "%+.2f%%" % r10["ret_pct"]))
+    lines.append("- 卖向 T+20 滚动读数（全量窗口）：")
+    for t in SELL_TYPES:
+        st_t = _tail_stats([v["ret_pct"] for v in v20
+                            if v.get("type") == t])
+        if st_t:
+            lines.append("  - %s：n=%d，win=%s%%，avg=%s%%，p10=%s%%" % (
+                t, st_t["n"], st_t["win"], st_t["avg"], st_t["p10"]))
     lines += ["", "## 下周关注", "- 候选 cell 的影子对照与左尾跟踪"
               "（草案 adopt 永远人工凭据）", ""]
     text = "\n".join(lines)
