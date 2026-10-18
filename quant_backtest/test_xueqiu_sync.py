@@ -189,7 +189,10 @@ class TestKlineDedup(_TmpEnv):
         bad = {"error_code": 400016, "error_description": "token 失效",
                "data": None}
         fake = _fake_ball({"kline": lambda *a, **k: bad})
-        with mock.patch.dict(sys.modules, {"pysnowball": fake}):
+        # T4 契约同步：替代源兜底 mock 为亦挂（本用例只验雪球域 failed 语义）
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=({}, "", ["alt down"])):
             mf = X.XqManifest(X.MANIFEST)
             n = S.sync_kline(["SH600519"], mf=mf)
         self.assertEqual(n, 0)
@@ -350,6 +353,7 @@ class TestRcSemantics(_TmpEnv):
         bad = {"error_code": 400016, "error_description": "token 失效",
                "data": None}
         fake = _fake_ball({"kline": lambda *a, **k: bad})
+        # T4 契约同步：替代源兜底 mock 为亦挂（本用例只验 rc=1 旧契约）
         with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
                 mock.patch.object(X, "load_token",
                                   return_value="t" * 40), \
@@ -357,6 +361,8 @@ class TestRcSemantics(_TmpEnv):
                                   return_value=self._PROBE_OK), \
                 mock.patch.object(X, "token_probe",
                                   return_value=self._TP_VALID), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=({}, "", ["alt down"])), \
                 mock.patch.object(X, "jitter_sleep", lambda *a: None):
             rc = S.main(["--batch", "kline", "--codes", "SH600519"])
         self.assertEqual(rc, 1)
@@ -553,7 +559,10 @@ class TestIpBlockedSync(_TmpEnv):
             raise RuntimeError("Seek IP Blacklisted (IP = 1.2.3.4)")
 
         fake = _fake_ball({"kline": _kline_403})
+        # T4 契约同步：替代源兜底 mock 为亦挂（本用例只验 403 熔断停轮）
         with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=({}, "", ["alt down"])), \
                 mock.patch.object(X, "jitter_sleep", lambda *a: None):
             mf = X.XqManifest(X.MANIFEST)
             n = S.sync_kline(["SH600519", "SZ000338", "SH600036"], mf=mf)
@@ -563,6 +572,34 @@ class TestIpBlockedSync(_TmpEnv):
         self.assertEqual(ent["status"], "ip_blocked")
         self.assertTrue((mf.health() or {}).get("ip_blocked_until"))
         self.assertTrue(mf.save())              # manifest 可落盘
+
+    def test_sync_kline_alt_source_rescue(self):
+        """T4（2026-10-19）：雪球侧全挂（403）+ 替代源供数 → 落片成功。
+
+        熔断只停雪球域轮次，不拦替代源接管——status=partial（雪球败
+        + 替代源成）、note 带替代源兜底说明（接管事实 manifest 可见）。
+        """
+        os.environ["XUEQIUTOKEN"] = "t" * 40
+        fake = _fake_ball({"kline": lambda *a, **k: (_ for _ in ()).throw(
+            RuntimeError("Seek IP Blacklisted (IP = 1.2.3.4)"))})
+        alt_rows = [{"symbol": "SH600519", "ts_code": "600519.SH",
+                     "timestamp": "2026-10-16 00:00:00", "volume": 100,
+                     "open": 10.0, "high": 11.0, "low": 9.9,
+                     "close": 10.5, "chg": 0.5, "percent": 5.0,
+                     "turnoverrate": None, "amount": 1.0e6,
+                     "trade_date": "20261016"}]
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=({"SH600519": alt_rows},
+                                         "tushare_qfq×1", [])), \
+                mock.patch.object(X, "jitter_sleep", lambda *a: None):
+            mf = X.XqManifest(X.MANIFEST)
+            n = S.sync_kline(["SH600519"], mf=mf)
+        self.assertEqual(n, 1)                  # 替代源 1 行落片
+        ent = mf.get("xq_kline_d")
+        self.assertEqual(ent["status"], "partial")
+        self.assertIn("替代源兜底", ent["note"])   # 接管事实落账可见
+        self.assertTrue(ent["done"])            # 数据不断供 → done=True
 
     def test_quote_snap_403_trip(self):
         """quotec 批 403 → status=ip_blocked + trip。"""

@@ -424,15 +424,17 @@ def takeover_quote(symbols: list[str]) -> int:
     syms = [s for s in (X.norm_symbol(s) for s in symbols) if s]
     blocked = X.ip_blocked_active(c.mf)
     if blocked:
-        print("[ALERT][ip_blocked] 冷却中 %s，takeover 跳过" % blocked)
-        c.mf.mark("xq_quote_snap", done=False, rows=0,
-                  status="ip_blocked", note="cooldown %s" % blocked)
-        c.mf.save()
-        return 0
+        # T4：冷却期不再整体跳过——雪球域停轮，替代源照样接管供数
+        # （原语义 mark ip_blocked 即 return；数据不断供优先，直爬
+        #   循环以下方置空 range 跳过，替代源失败仍落 ip_blocked 语义）
+        print("[ALERT][ip_blocked] 冷却中 %s，雪球域跳过 → 替代源接管"
+              % blocked)
     rows: list[dict] = []
+    alt_note = "L3 takeover 兜底片"   # T4：替代源兜底成功时改写来源说明
     url = BASE + "/v5/stock/realtime/quotec.json"
     tripped = False
-    for i in range(0, len(syms), X.QUOTEC_BATCH):
+    for i in ([] if blocked else
+              list(range(0, len(syms), X.QUOTEC_BATCH))):
         batch = syms[i:i + X.QUOTEC_BATCH]
         try:
             data = X.xq_get(c.sess, url, params={"symbol": ",".join(batch)})
@@ -466,12 +468,32 @@ def takeover_quote(symbols: list[str]) -> int:
         if i + X.QUOTEC_BATCH < len(syms):
             X.jitter_sleep()
     if not rows:
-        c.mf.mark("xq_quote_snap", done=False, rows=0,
-                  status="ip_blocked" if tripped else "failed",
-                  note=("takeover 403 熔断停轮" if tripped
-                        else "takeover 直爬全批失败"))
-        c.mf.save()
-        return 0
+        # T4（2026-10-19）：雪球侧零供数（直爬全批失败 **或 403 熔断**）
+        # → 替代源第二层兜底（tushare 主源 → akshare 备援；路由器自带
+        #   no_proxy_env 纪律，行口径与 quotec 兜底片逐列对齐，消费端
+        #   无感切换）。熔断语义只停雪球域轮次，不拦替代源供数——
+        #   数据不断供优先（ip_blocked 冷却期照常出片）。
+        try:
+            from xq_quote_router import fetch_snapshot
+            alt_rows, alt_src, alt_errs = fetch_snapshot(syms)
+        except Exception as e:                    # noqa: BLE001
+            alt_rows, alt_src, alt_errs = [], "", [
+                "router crash: %s" % str(e)[:80]]
+        if alt_rows:
+            rows = alt_rows
+            alt_note = "替代源(%s)兜底片" % alt_src
+            print("[takeover_quote] 替代源 %s 供数 %d 行（errs=%d）"
+                  % (alt_src, len(alt_rows), len(alt_errs)))
+        else:
+            c.mf.mark("xq_quote_snap", done=False, rows=0,
+                      status="ip_blocked" if (tripped or blocked)
+                      else "failed",
+                      note=("takeover 403 熔断停轮；替代源亦挂: %s"
+                            % "; ".join(alt_errs[:3])) if tripped
+                      else "takeover 直爬全批失败；替代源亦挂: %s"
+                           % "; ".join(alt_errs[:3]))
+            c.mf.save()
+            return 0
     d = os.path.join(X.OUT_DIR, "xq_quote_snap")
     os.makedirs(d, exist_ok=True)
     ymd = datetime.now().strftime("%Y%m%d")
@@ -480,7 +502,7 @@ def takeover_quote(symbols: list[str]) -> int:
     X.atomic_parquet(df, os.path.join(d, "d_%s.parquet" % ymd))
     c.mf.mark("xq_quote_snap", done=True, rows=len(df),
               file="d_%s.parquet" % ymd, status="ok",
-              note="L3 takeover 兜底片")
+              note=alt_note)
     c.mf.save()
     print("[takeover_quote] %d 行落兜底片 d_%s.parquet" % (len(df), ymd))
     return len(df)

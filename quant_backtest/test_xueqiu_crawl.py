@@ -350,15 +350,47 @@ class TestFailSemantics(_TmpEnv):
         self.assertEqual(rc, 1)
 
     def test_main_takeover_fail_rc1(self):
-        """takeover 直爬全败（0 行落片）→ rc=1（不再伪成功 rc=0）。"""
+        """takeover 全链路皆败（直爬 0 行 + 替代源亦挂）→ rc=1（不再伪成功）。
+
+        T4 契约同步（2026-10-19）：路由器上线后「直爬败」不再直接 rc=1，
+        需替代源兜底亦挂才 fail——故本用例 mock fetch_snapshot 亦挂；
+        替代源接管成功路径另见 test_main_takeover_alt_source_rescue。
+        """
         c = self._crawler([_Resp(429)] * (X.MAX_RETRY + 2))
         with mock.patch.object(X, "backoff_sleep", lambda *a: None), \
+                mock.patch("xq_quote_router.fetch_snapshot",
+                           return_value=([], "", ["alt down"])), \
                 mock.patch.object(C, "XqCrawler", lambda: c):
             rc = C.main(["--mode", "takeover", "--symbols", "SH600519"])
         self.assertEqual(rc, 1)
         mf = X.XqManifest(X.MANIFEST)
         mf.load()
         self.assertEqual(mf.get("xq_quote_snap")["status"], "failed")
+
+    def test_main_takeover_alt_source_rescue(self):
+        """T4（2026-10-19）：直爬全败 + 替代源供数 → rc=0 落片。
+
+        替代源接管成功 → manifest ok + note 报来源（消费端无感切换）。
+        """
+        c = self._crawler([_Resp(429)] * (X.MAX_RETRY + 2))
+        alt_rows = [{"symbol": "SH600519", "ts_code": "600519.SH",
+                     "current": 1500.0, "percent": 1.2, "chg": 18.0,
+                     "volume": 100, "amount": 1.5e8, "pe": None,
+                     "pb": None, "market_capital": None,
+                     "float_market_capital": None,
+                     "trade_date": "20261019",
+                     "timestamp": "2026-10-19 15:00:03"}]
+        with mock.patch.object(X, "backoff_sleep", lambda *a: None), \
+                mock.patch("xq_quote_router.fetch_snapshot",
+                           return_value=(alt_rows, "tushare", [])), \
+                mock.patch.object(C, "XqCrawler", lambda: c):
+            rc = C.main(["--mode", "takeover", "--symbols", "SH600519"])
+        self.assertEqual(rc, 0)
+        mf = X.XqManifest(X.MANIFEST)
+        mf.load()
+        ent = mf.get("xq_quote_snap")
+        self.assertEqual(ent["status"], "ok")
+        self.assertIn("替代源(tushare)", ent["note"])
 
     def test_main_comments_all_fail_rc1(self):
         """全部码评论请求失败 → rc=1；manifest xq_comment=failed。"""

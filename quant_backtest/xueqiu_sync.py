@@ -302,6 +302,7 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
         return 0
     total, ok_codes, fail_codes, empty_codes = 0, [], [], []
     tripped = False
+    alt_note = ""          # T4：替代源兜底接管说明（manifest note 可见）
     for i, sym in enumerate(syms, 1):
         # BUG-3 修复（QA Round-1）：BJ 等无 ts_code 映射的符号不落库
         # （否则 _code_path 生成空名 ".parquet"）；归入 fail_codes 可见
@@ -344,6 +345,36 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
             print("  kline %s 失败：%s" % (sym, str(e)[:70]))
         if i < len(syms):
             X.jitter_sleep()
+    if not ok_codes:
+        # T4（2026-10-19）：雪球侧零成功（403 拉黑/接口挂/全码失败）
+        # → 替代源日线兜底（tushare 主源 → akshare 备援，逐码落片，
+        #   行口径与 _norm_kline 逐列对齐；token 缺失 skip 分支不在此列，
+        #   该分支属配置缺失语义，保持 skip_no_token 不混路由）
+        try:
+            from xq_quote_router import fetch_daily
+            by_sym, rnote, rerrs = fetch_daily(syms, days=284)
+        except Exception as e:                    # noqa: BLE001
+            by_sym, rnote, rerrs = {}, "", [
+                "router crash: %s" % str(e)[:80]]
+        for sym, krows in by_sym.items():
+            ts_code = X.to_ts_code(sym)
+            if not ts_code or not krows:
+                continue
+            path = _code_path("xq_kline_d", ts_code)
+            old = (pd.read_parquet(path) if os.path.exists(path)
+                   else pd.DataFrame())
+            merged = _merge_kline(old, krows)
+            if merged.empty:
+                continue
+            X.atomic_parquet(merged, path)
+            total += len(merged)
+            ok_codes.append(sym)
+        if ok_codes:
+            alt_note = ("替代源兜底(%s): %d/%d码成功"
+                        % (rnote, len(ok_codes), len(syms)))
+            print("  xq_kline_d: %s" % alt_note)
+        else:
+            print("  xq_kline_d: 替代源亦挂: %s" % "; ".join(rerrs[:3]))
     bad = fail_codes + empty_codes
     # 状态分级（设计 §7.7 如实记录）：全败=failed，部分败=partial；
     # 熔断=ip_blocked（P0-1：与 failed 区分，冷却自愈语义）
@@ -352,6 +383,8 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
               else "failed" if not ok_codes and bad
               else "ok" if not bad else "partial")
     note_parts = []
+    if alt_note:
+        note_parts.append(alt_note)
     if fail_codes:
         note_parts.append("%d codes skipped: %s"
                           % (len(fail_codes), ",".join(fail_codes[:8])))
