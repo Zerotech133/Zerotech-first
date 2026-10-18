@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -67,6 +68,9 @@ LEDGER = DATA_ROOT / "shadow" / "shadow_ledger.jsonl"
 # WATCH 新档 -0.5：L4 存疑观察＝弱负证据，低于 HOLD、高于 SELL，不再与 HOLD 同分
 REC_SCORE = {"STRONG_BUY": 2.0, "BUY": 1.0, "HOLD": 0.0, "WATCH": -0.5,
              "SELL": -1.0, "STRONG_SELL": -2.0}
+# 运行期单策略产出超时（§5.2 过渡缓解）：M3 受理沙箱挡不住运行期死循环数据，
+# 17:10 首跑挂死风险兜底——超时/异常单策略 fail-open 跳过，其余照常落账
+PROPOSE_TIMEOUT_S = 10.0
 # failed 即时告警（K-STOCK-013）：复用已验证推送链；P0 语义=不等 17:35 日报
 PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
 # ★判例对齐：p0_alert_state 不立并列常量（读侧 95 行走 _data_root() 运行时反推，
@@ -170,6 +174,69 @@ def parse_decision(text):
     except json.JSONDecodeError:
         return None
     return None
+
+
+def _propose_with_timeout(registry, strategy_id, context, timeout_s=None):
+    """单策略产出超时包裹（设计稿风险表 §5.2 过渡缓解：运行期防拖死）。
+
+    背景：M3 受理沙箱（codex_bridge.sandbox_trial）只在插件受理时挡了一轮；
+    运行期若某插件 propose 在特定数据上死循环（受理试跑数据有限挡不住），
+    进程内调用会拖死整个影子 run——周一 17:10 首跑即挂。此处对每次
+    registry.run(...) 加超时，超时/异常均 fail-open 跳过该策略（stderr 一行
+    诊断），不拖垮其余策略、不中断影子主链。
+
+    口径与理由（docstring 即裁决）：
+    - Python 线程无法强杀：超时后 worker 线程继续后台跑（GIL 下 CPU 死循环
+      杀不掉），随进程生命周期回收（daemon 线程，进程退出即终止）——僵尸
+      线程可接受：受理时 M3 已挡一轮，运行期长尾用「跳过」兜底即可，不值得
+      为强杀引入子进程隔离的复杂度。
+    - 不用 ThreadPoolExecutor：其 worker 线程 3.9+ 为非 daemon 且解释器
+      退出时会 join 全部 worker——死循环插件会把整个进程挂在 exit 上，
+      与「防拖死」目标自相矛盾。故用裸 daemon Thread + 结果盒语义。
+    - registry.run 抛异常（含 StrategyError）：对齐本文件 done 分支既有
+      fail-open 风格（strategy 域降级不碰影子主链），按单策略粒度
+      fail-open + stderr 诊断返回 None；调用方（_collect_verdicts）计数。
+    - timeout_s 缺省读模块级 PROPOSE_TIMEOUT_S（None 哨兵而非默认参数绑定，
+      保证 monkeypatch 常量对无参调用生效）。
+    """
+    if timeout_s is None:
+        timeout_s = PROPOSE_TIMEOUT_S
+    box = {}
+
+    def _work():
+        try:
+            box["verdict"] = registry.run(strategy_id, context)
+        except BaseException as e:  # noqa: BLE001  单策略异常 fail-open，见 docstring
+            box["error"] = e
+
+    t = threading.Thread(target=_work, name="shadow-propose-%s" % strategy_id,
+                         daemon=True)
+    t.start()
+    t.join(timeout_s)
+    if t.is_alive():
+        print("[strategy] %s propose 超时（>%.1fs），fail-open 跳过"
+              % (strategy_id, timeout_s), file=sys.stderr)
+        return None
+    if "error" in box:
+        print("[strategy] %s propose 异常 fail-open 跳过：%s"
+              % (strategy_id, str(box["error"])[:120]), file=sys.stderr)
+        return None
+    return box.get("verdict")
+
+
+def _collect_verdicts(registry, context, timeout_s=None):
+    """done 分支逐策略产出：超时/异常的策略跳过并计数，其余照常入 vs 列表。"""
+    vs, skipped = [], 0
+    for sid in registry.list_ids():
+        v = _propose_with_timeout(registry, sid, context, timeout_s=timeout_s)
+        if v is None:
+            skipped += 1
+        else:
+            vs.append(v)
+    if skipped:
+        print("[warn] strategy 域跳过 %d 个策略（超时/异常 fail-open，影子主链不受影响）"
+              % skipped)
+    return vs
 
 
 def build_ledger_row(today, symbol, name, run_id, price_at_decision, dec,
@@ -352,7 +419,9 @@ def main():
                         sctx = {"symbol": symbol,
                                 "closes": [float(b[2]) for b in bars
                                            if len(b) > 2 and b[2] is not None]}
-                        vs = [reg.run(sid, sctx) for sid in reg.list_ids()]
+                        # §5.2 过渡缓解：逐策略超时包裹（超时/异常 fail-open
+                        # 跳过该策略，不拖垮其余；落账 schema/verdict_key 不变）
+                        vs = _collect_verdicts(reg, sctx)
                         srep = record_verdicts(vs, root=DATA_ROOT,
                                                trade_date=today,
                                                run_id=result["run_id"])
