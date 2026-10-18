@@ -2928,6 +2928,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 近 14 日有产物日报日期导航（门户日期快捷 chips 消费，只读零参数）
             self._xq_intel_dates(qs)
             return
+        if path == '/api/xq/intel/ticker':
+            # 雪球情报标的下钻（近 N 日日报按 code 纯文件聚合，只读 2026-10-18）
+            self._xq_intel_ticker(qs)
+            return
         if path == '/api/dataops/overview':
             # 数据运营指挥台（采集动线+数据池+管道调度聚合，只读）
             self._dataops(qs)

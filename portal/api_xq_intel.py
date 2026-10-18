@@ -9,6 +9,11 @@ GET /api/xq/intel/dates
     → 近 N 日有产物日报日期导航（扫 daily/ 文件名，降序，最多 14 个）；
       供门户 xq_intel.html 日期快捷 chips 消费，只读零参数。
 
+GET /api/xq/intel/ticker?code=600519&days=7
+    → 标的下钻聚合：扫 daily/ 最近 days 天 xq_intel_*.json，按 code 聚合
+      高置信命中条目（按日期降序）、异动信号、情绪计数；纯文件聚合只读，
+      不查 SQLite、不 import quant_backtest（门户不进库契约）。
+
 只读纪律（沿 api_capability 判例）：mode=ro / no-store / fail-visible——
 报告未生成返回 report_exists=false 投影而非 500（观测面，首跑前为常态）；
 坏 JSON 返回 error 字段（不吞异常）；date 非法 400。
@@ -24,6 +29,8 @@ from pathlib import Path
 
 REPORT_ROOT = Path(r"C:/aios/automation_runs/xq_report")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_TICKER_CODE_RE = re.compile(r"^[0-9A-Za-z]{4,6}$")
+_TICKER_DAYS_RE = re.compile(r"^\d{1,2}$")
 
 
 def read_xq_intel(date_str: str = "") -> dict:
@@ -70,6 +77,67 @@ def list_xq_intel_dates(limit: int = 14) -> dict:
         return {"dates": [], "error": "scan failed: %r" % e}
 
 
+def read_xq_intel_ticker(code: str, days: int = 7) -> dict:
+    """按标的聚合最近 days 天日报（纯文件只读，fail-visible）。
+
+    扫 daily/ xq_intel_YYYYMMDD.json 文件名取最近 days 天（降序），
+    聚合该 code 的：high_confidence 命中条目（日期降序）、anomaly_signals 命中、
+    情绪计数（从 high_confidence 统计）。单日文件坏 JSON 记入 errors 不吞异常。
+    """
+    out = {"code": code, "days": days, "dates_found": 0,
+           "high_confidence": [], "anomaly": [],
+           "sentiment_count": {"bullish": 0, "neutral": 0, "bearish": 0}}
+    try:
+        d = REPORT_ROOT / "daily"
+        stems = []
+        if d.is_dir():
+            for p in d.iterdir():
+                m = re.fullmatch(r"xq_intel_(\d{8})\.json", p.name)
+                if m:
+                    stems.append(m.group(1))
+        stems.sort(reverse=True)
+        stems = stems[:days]
+        out["dates_found"] = len(stems)
+        errors = []
+        for s in stems:
+            date = "%s-%s-%s" % (s[:4], s[4:6], s[6:])
+            try:
+                data = json.loads((d / ("xq_intel_%s.json" % s)).read_text(encoding="utf-8"))
+            except Exception as e:  # noqa: BLE001
+                errors.append({"date": date, "error": repr(e)})
+                continue
+            if not isinstance(data, dict):
+                errors.append({"date": date, "error": "top-level json is not a dict"})
+                continue
+            for r in data.get("high_confidence") or []:
+                if isinstance(r, dict) and r.get("code") == code:
+                    out["high_confidence"].append({
+                        "date": date,
+                        "confidence": r.get("confidence"),
+                        "sentiment": r.get("sentiment"),
+                        "event_type": r.get("event_type"),
+                        "title": r.get("title"),
+                    })
+                    st = r.get("sentiment")
+                    if st in out["sentiment_count"]:
+                        out["sentiment_count"][st] += 1
+            for r in data.get("anomaly_signals") or []:
+                if isinstance(r, dict) and r.get("code") == code:
+                    out["anomaly"].append({
+                        "date": date,
+                        "n": r.get("n"),
+                        "bearish": r.get("bearish"),
+                        "baseline6d": r.get("baseline6d"),
+                    })
+        # 文件按日期降序扫描 → 命中天然日期降序，无需再排
+        if errors:
+            out["errors"] = errors
+        return out
+    except Exception as e:  # noqa: BLE001
+        out["error"] = "scan failed: %r" % e
+        return out
+
+
 class Handler:
     def _xq_intel(self, qs):
         args = self._norm_qs(qs)
@@ -86,3 +154,24 @@ class Handler:
             self._json({"error": "本出口不接受任何参数"}, 400)
             return
         self._json(list_xq_intel_dates())
+
+    def _xq_intel_ticker(self, qs):
+        # 标的下钻出口：code 必填（防注入白名单正则）、days 可选 1-30、其余参数 400
+        args = self._norm_qs(qs)
+        extra = [k for k in args if k not in ("code", "days")]
+        if extra:
+            self._json({"error": "非法参数: %s" % ",".join(sorted(extra))}, 400)
+            return
+        code = (args.get("code") or [""])[0].strip()
+        if not _TICKER_CODE_RE.match(code):
+            self._json({"error": "code 必填且须为 4-6 位数字/字母"}, 400)
+            return
+        days_s = (args.get("days") or [""])[0].strip()
+        if days_s:
+            if not _TICKER_DAYS_RE.match(days_s) or not 1 <= int(days_s) <= 30:
+                self._json({"error": "days 须为 1-30 整数"}, 400)
+                return
+            days = int(days_s)
+        else:
+            days = 7
+        self._json(read_xq_intel_ticker(code, days))

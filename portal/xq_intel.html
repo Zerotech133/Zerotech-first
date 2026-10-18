@@ -55,7 +55,7 @@ footer{margin-top:30px;color:#484f58;font-size:11px;text-align:center}
 
 <section><h2>四 · 高置信信号（confidence ≥ 0.8 · 个股/策略/行情 · 带代码）</h2><div class="panel" id="sig"><span class="empty">加载中…</span></div></section>
 
-<section><h2>五 · 热门标的</h2><div class="panel" id="hot"><span class="empty">加载中…</span></div></section>
+<section><h2>五 · 热门标的</h2><div class="panel" id="hot"><span class="empty">加载中…</span></div><div id="tickerCard"></div></section>
 
 <section><h2>六 · 管道体检</h2><div class="panel" id="health"><span class="empty">加载中…</span></div></section>
 
@@ -118,7 +118,7 @@ function render(d){
 
  var tc=d.top_codes||{},tt=d.top_themes||{};
  el('hot').innerHTML='<div class="legend">个股/ETF/港股代码：</div><div class="chips" style="margin:6px 0 10px">'
-   +(Object.keys(tc).length?Object.keys(tc).sort(function(a,b){return tc[b]-tc[a]}).map(function(k){return '<span class="chip"><b>'+esc(k)+'</b> ×'+tc[k]+'</span>'}).join(''):'<span class="empty">（无）</span>')
+   +(Object.keys(tc).length?Object.keys(tc).sort(function(a,b){return tc[b]-tc[a]}).map(function(k){return '<span class="chip" data-code="'+esc(k)+'" style="cursor:pointer"><b>'+esc(k)+'</b> ×'+tc[k]+'</span>'}).join(''):'<span class="empty">（无）</span>')
    +'</div><div class="legend">主题词（基金/指数）：</div><div class="chips" style="margin-top:6px">'
    +(Object.keys(tt).length?Object.keys(tt).sort(function(a,b){return tt[b]-tt[a]}).map(function(k){return '<span class="chip">'+esc(k)+' <b>'+tt[k]+'</b></span>'}).join(''):'<span class="empty">（无）</span>')+'</div>';
 
@@ -138,6 +138,43 @@ function load(){
  }).catch(function(){el('metrics').innerHTML='<span class="err">/api/xq/intel 不可达</span>'});
 }
 function pickDate(dt){el('d').value=dt;load()}
+
+/* —— 标的下钻（热门标的 chip 点击 → /api/xq/intel/ticker 聚合卡）—— */
+var tickerCur=null;
+function tickerRender(j){
+ if(!j||j.error)return '<span class="err">'+esc(j&&j.error||'空响应')+'</span>';
+ var hc=j.high_confidence||[],an=j.anomaly||[],sc=j.sentiment_count||{};
+ var h='<div class="legend">近 <b>'+esc(j.days)+'</b> 天 · 命中日报 <b>'+esc(j.dates_found)+'</b> 天 · 高置信 <b>'+hc.length+'</b> 条 · 异动 <b>'+an.length+'</b> 次 · 情绪 bullish <b>'+(sc.bullish||0)+'</b> / neutral <b>'+(sc.neutral||0)+'</b> / bearish <b>'+(sc.bearish||0)+'</b></div>';
+ if(!hc.length&&!an.length)return h+'<div class="empty">近 '+esc(j.days)+' 天日报无该标的高置信/异动记录</div>';
+ var cls={bullish:'bull',bearish:'bear',neutral:'neut'};
+ if(hc.length){
+  h+='<table><tr><th>日期</th><th>conf</th><th>情绪</th><th>事件</th><th>标题</th></tr>'
+   +hc.map(function(r){return '<tr><td class="num">'+esc(r.date)+'</td><td class="num">'+(r.confidence==null?'—':Number(r.confidence).toFixed(2))+'</td><td class="'+(cls[r.sentiment]||'neut')+'">'+esc(r.sentiment||'—')+'</td><td>'+esc(r.event_type||'—')+'</td><td>'+esc(r.title||'—')+'</td></tr>'}).join('')+'</table>';
+ }
+ if(an.length){
+  h+='<div class="legend" style="margin-top:8px">异动信号（bearish 突增 · 对比前 6 日基线）：</div><table><tr><th>日期</th><th>当日样本</th><th>bearish</th><th>前 6 日基线</th></tr>'
+   +an.map(function(r){return '<tr><td class="num">'+esc(r.date)+'</td><td class="num">'+esc(r.n)+'</td><td class="num bear">'+esc(r.bearish)+'</td><td class="num">'+esc(r.baseline6d)+'</td></tr>'}).join('')+'</table>';
+ }
+ return h;
+}
+function tickerToggle(code){
+ if(tickerCur===code){tickerCur=null;el('tickerCard').innerHTML='';return}
+ tickerCur=code;
+ el('tickerCard').innerHTML='<div class="panel"><span class="empty">加载 <b style="color:#58a6ff;font-family:Consolas,monospace">'+esc(code)+'</b> 近 7 天下钻中…</span></div>';
+ fetch('/api/xq/intel/ticker?code='+encodeURIComponent(code)+'&days=7').then(function(r){
+  return r.json().then(function(j){return {ok:r.ok,j:j}})
+ }).then(function(o){
+  if(tickerCur!==code)return;
+  el('tickerCard').innerHTML='<div class="panel"><div class="legend" style="margin-bottom:4px">标的舆情下钻 <b style="color:#58a6ff;font-family:Consolas,monospace">'+esc(o.j&&o.j.code||code)+'</b> · 源 /api/xq/intel/ticker</div>'+tickerRender(o.j)+'</div>';
+ }).catch(function(){
+  if(tickerCur!==code)return;
+  el('tickerCard').innerHTML='<div class="panel"><span class="err">/api/xq/intel/ticker 不可达（'+esc(code)+'）</span></div>';
+ });
+}
+el('hot').addEventListener('click',function(ev){
+ var t=ev.target&&ev.target.closest?ev.target.closest('[data-code]'):null;
+ if(t)tickerToggle(t.getAttribute('data-code'));
+});
 
 function loadDates(){
  fetch('/api/xq/intel/dates').then(function(r){return r.json()}).then(function(j){
