@@ -142,24 +142,37 @@ def read_lock_pid(path: Path) -> int:
 
 def acquire_lock(path: Path = LOCK_PATH, alive=None) -> bool:
     """O_EXCL 原子建锁 + pid 写入。锁被占：持锁进程活着 → False（让路）；
-    死进程陈锁 → 接管（删旧重建，重试仍失败视为竞争 → False）。
+    死进程陈锁 → 接管（删旧重建，重试仍失败视为竞争 → False）；
+    锁文件存在但 pid 字段不可读 → 不可判定残留，fail-closed 拒绝接管。
 
     alive 缺省调用时解析 is_pid_alive（模块级 mock 可替换，测试判例）。"""
+    pid = os.getpid()
+    if pid <= 0:
+        # fail-closed（2026-10-18 走查判例）：拿不到真 pid 宁可不启动，
+        # 绝不写哨兵假值——假 pid 会让活性校验形同虚设。
+        slog("lock refused: invalid pid %d, fail-closed" % pid)
+        return False
     if alive is None:
         alive = is_pid_alive
     for _attempt in range(2):
         try:
             RUN_DIR.mkdir(parents=True, exist_ok=True)
             fd = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            os.write(fd, str(os.getpid()).encode("ascii"))
+            os.write(fd, str(pid).encode("ascii"))
             os.close(fd)
             return True
         except FileExistsError:
-            pid = read_lock_pid(path)
-            if alive(pid):
-                slog("lock busy: pid=%d alive, yield" % pid)
+            holder = read_lock_pid(path)
+            if holder == -1:
+                # pid 字段缺失/不可解析（持有者写锁中途崩溃残留，或建锁-
+                # 写 pid 间隙的瞬时空读）：不可判定残留，不无条件抢——
+                # 放弃本轮（rc=3），下轮窗口自愈。
+                slog("stale lock: pid unreadable, undetermined, not taking over")
                 return False
-            slog("stale lock: pid=%d dead, take over" % pid)
+            if alive(holder):
+                slog("lock busy: pid=%d alive, yield" % holder)
+                return False
+            slog("stale lock: pid=%d dead, take over" % holder)
             try:
                 path.unlink()
             except OSError:

@@ -70,10 +70,21 @@ class TestLock(unittest.TestCase):
         import tempfile
         self.tmp = Path(tempfile.mkdtemp(prefix="bsprint_test_"))
         self.lock = self.tmp / "backfill_sprint.lock"
+        # 日志隔离（2026-10-18 走查判例）：slog 写模块全局 SPRINT_LOG，
+        # 不隔离会把测试夹具 pid（如 999999）泄进生产日志，造成
+        # 「stale-lock takeover (pid=999999)」假信号。
+        self._saved_log = BS.SPRINT_LOG
+        BS.SPRINT_LOG = self.tmp / "sprint.log"
+
+    def tearDown(self):
+        BS.SPRINT_LOG = self._saved_log
 
     def test_atomic_create_and_pid(self):
         self.assertTrue(BS.acquire_lock(self.lock))
         self.assertEqual(BS.read_lock_pid(self.lock), os.getpid())
+        # 锁文件字节级写真 pid，绝无哨兵假值
+        self.assertEqual(self.lock.read_text(encoding="ascii"),
+                         str(os.getpid()))
         self.assertTrue(BS.lock_is_ours(self.lock))
 
     def test_busy_alive_pid_yields(self):
@@ -89,6 +100,29 @@ class TestLock(unittest.TestCase):
         with mock.patch.object(BS, "is_pid_alive", return_value=False):
             self.assertTrue(BS.acquire_lock(self.lock))
         self.assertEqual(BS.read_lock_pid(self.lock), os.getpid())
+
+    def test_stale_takeover_logs_original_pid(self):
+        # 接管陈锁时日志必须记录被接管锁的 pid 原值（审计可追溯）
+        self.lock.write_text("999999")
+        logs = []
+        with mock.patch.object(BS, "is_pid_alive", return_value=False), \
+             mock.patch.object(BS, "slog", side_effect=logs.append):
+            self.assertTrue(BS.acquire_lock(self.lock))
+        self.assertTrue(any("pid=999999" in str(c) and "take over" in str(c)
+                            for c in logs), logs)
+        self.assertEqual(BS.read_lock_pid(self.lock), os.getpid())
+
+    def test_pid_field_missing_lock_not_taken_over(self):
+        # 不可判定残留（pid 字段缺失/不可解析）：fail-closed 拒绝接管，
+        # 原锁文件原样保留，绝不无条件抢。
+        for content in ("", "garbage"):
+            self.lock.write_text(content)
+            with mock.patch.object(BS, "is_pid_alive",
+                                   return_value=False), \
+                 mock.patch.object(BS, "slog"):
+                self.assertFalse(BS.acquire_lock(self.lock))
+            self.assertTrue(self.lock.exists())
+            self.assertEqual(self.lock.read_text(), content)
 
     def test_release(self):
         BS.acquire_lock(self.lock)
