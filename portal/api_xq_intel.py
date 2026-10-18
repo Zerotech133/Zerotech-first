@@ -5,6 +5,10 @@ GET /api/xq/intel?date=YYYY-MM-DD
     → 情报日报机读投影：读 automation_runs/xq_report/daily/xq_intel_YYYYMMDD.json；
       缺省 date → latest.json 固定名副本（19:00 automation 01f1a51c 产出）。
 
+GET /api/xq/intel/dates
+    → 近 N 日有产物日报日期导航（扫 daily/ 文件名，降序，最多 14 个）；
+      供门户 xq_intel.html 日期快捷 chips 消费，只读零参数。
+
 只读纪律（沿 api_capability 判例）：mode=ro / no-store / fail-visible——
 报告未生成返回 report_exists=false 投影而非 500（观测面，首跑前为常态）；
 坏 JSON 返回 error 字段（不吞异常）；date 非法 400。
@@ -46,6 +50,26 @@ def read_xq_intel(date_str: str = "") -> dict:
     return data
 
 
+def list_xq_intel_dates(limit: int = 14) -> dict:
+    """近 N 日有产物日报日期列表（扫 daily/ 文件名，降序，fail-visible 空列表）。
+
+    扫描目录属观测态：daily/ 缺失（首跑前）返回空 dates 而非报错；
+    扫描本身异常（权限等）则带 error 键 fail-visible，不吞异常。
+    """
+    try:
+        d = REPORT_ROOT / "daily"
+        dates = set()
+        if d.is_dir():
+            for p in d.iterdir():
+                m = re.fullmatch(r"xq_intel_(\d{8})\.json", p.name)
+                if m:
+                    s = m.group(1)
+                    dates.add("%s-%s-%s" % (s[:4], s[4:6], s[6:]))
+        return {"dates": sorted(dates, reverse=True)[:limit]}
+    except Exception as e:  # noqa: BLE001
+        return {"dates": [], "error": "scan failed: %r" % e}
+
+
 class Handler:
     def _xq_intel(self, qs):
         args = self._norm_qs(qs)
@@ -55,3 +79,10 @@ class Handler:
             self._json({"error": "date 须为 YYYY-MM-DD"}, 400)
             return
         self._json(read_xq_intel(date_str))
+
+    def _xq_intel_dates(self, qs):
+        # 零参数出口：参数白名单为空集，带任何参数走 400（api_perf 判例）
+        if self._norm_qs(qs):
+            self._json({"error": "本出口不接受任何参数"}, 400)
+            return
+        self._json(list_xq_intel_dates())

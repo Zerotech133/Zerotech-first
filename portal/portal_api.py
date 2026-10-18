@@ -2924,6 +2924,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 两线预案 M-RT3 雪球情报日报出口（automation_runs 只读投影）
             self._xq_intel(qs)
             return
+        if path == '/api/xq/intel/dates':
+            # 近 14 日有产物日报日期导航（门户日期快捷 chips 消费，只读零参数）
+            self._xq_intel_dates(qs)
+            return
         if path == '/api/dataops/overview':
             # 数据运营指挥台（采集动线+数据池+管道调度聚合，只读）
             self._dataops(qs)
