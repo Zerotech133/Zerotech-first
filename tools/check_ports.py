@@ -36,6 +36,8 @@ REGISTRY = {
     9102: "signal_review",
     9103: "QD桥(jev_qd_bridge)",
     9104: "飞书卡片回调(lark_card)",
+    9105: "agent_platform ack-serve",  # K-ORG-191 收编：2026-10-18 实证活监听（agent_platform.cli ack-serve）
+    8098: "模型管理台(api_model_admin.py)",  # K-ORG-191 收编：2026-10-18 实证活监听（并行线 model_admin）
     9899: "CowAgent console",
     11434: "Ollama",
     3307: "菜鸟MySQL(Docker)",
@@ -142,7 +144,10 @@ WHITELIST = ("system", "svchost", "clash", "todesk", "editor_sdk",
              # leishensdk_yyb=雷神加速器SDK；mqsvc=MSMQ 消息队列(系统服务)；
              # androwsstore/androwssvr=Androws 安卓引擎组件。
              "novaairouter", "model-router-plugin", "leishensdk_yyb",
-             "mqsvc", "androwsstore", "androwssvr")
+             "mqsvc", "androwsstore", "androwssvr",
+             # 2026-10-18 K-ORG-191：codex=Codex CLI 本地认证服务（用户桌面
+             # 第三方工具，1455），同 trae 先例入豁免，否则 strict 必挂。
+             "codex")
 # 2026-10-13 QA1-R2质检排查(K-ORG-029)：5283=SogouCloud.exe(搜狗输入法云)、
 # 8475=baidunetdiskhost.exe(百度网盘)——均为终端第三方软件，非平台栈，入豁免。
 # 2026-10-14 K-STOCK-394：17788=Trae CN.exe（IDE 自身，桌面第三方非平台栈），入豁免

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎯 郭嘉·预判对账司 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+/* K-ORG-191 郭嘉 · 配色一律读 tokens 语义层，禁自绘 hex（设计宪法 §2） */
+*{box-sizing:border-box}
+body{background:var(--bg-page);color:var(--text);font-family:var(--font-ui);margin:0;padding:0 0 40px}
+.wrap{max-width:var(--page-w);margin:0 auto;padding:18px 20px 0}
+h1{font-size:var(--fs-xl);margin:14px 0 4px;color:var(--text)}
+h1 .sub{font-size:var(--fs-xs);color:var(--text-dim);font-weight:400;margin-left:10px}
+h2{font-size:var(--fs-m);color:var(--text-dim);margin:26px 0 10px;letter-spacing:.5px;font-weight:600}
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.metric{background:var(--bg-raised);border:1px solid var(--border-weak);border-radius:var(--r-m);padding:12px 14px}
+.metric .k{font-size:var(--fs-xs);color:var(--text-dim)}
+.metric .v{font-size:20px;font-weight:600;color:var(--text);margin-top:4px;font-family:var(--font-mono)}
+.metric .v.warn{color:var(--color-warn)}.metric .v.bad{color:var(--color-err)}.metric .v.good{color:var(--color-ok)}
+.panel{background:var(--bg-surface);border:1px solid var(--border-weak);border-radius:var(--r-m);padding:13px 16px;margin-bottom:12px;overflow-x:auto}
+.bar{display:flex;height:16px;border-radius:var(--r-s);overflow:hidden;margin:8px 0 4px;background:var(--border-weak)}
+.bar span{display:block;height:100%}
+.legend{font-size:var(--fs-xs);color:var(--text-dim);margin-top:2px}
+.legend b{color:var(--text);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-s)}
+th{color:var(--text-dim);text-align:left;font-weight:400;padding:5px 8px;border-bottom:1px solid var(--border-weak);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--bg-raised);white-space:nowrap}
+td.num{font-family:var(--font-mono)}
+.up{color:var(--color-up);font-weight:600}.dn{color:var(--color-dn);font-weight:600}.dim{color:var(--text-dim)}
+.badge{display:inline-block;border-radius:var(--r-s);padding:2px 8px;font-size:var(--fs-xs);font-weight:600;border:1px solid var(--border)}
+.badge.ok{color:var(--color-ok);border-color:var(--color-ok)}
+.badge.warn{color:var(--color-warn);border-color:var(--color-warn)}
+.badge.err{color:var(--color-err);border-color:var(--color-err)}
+.empty{color:var(--text-dim);font-size:var(--fs-s);padding:8px 0}
+.err{color:var(--color-err);font-size:var(--fs-s)}
+.mkt{margin-bottom:6px}
+.mkt .hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;font-size:var(--fs-s)}
+.mkt .hd .nm{font-weight:600}
+.mkt .hd .rate{font-family:var(--font-mono);font-weight:600}
+.svgwrap{width:100%;min-width:520px;margin-top:6px}
+.svgwrap svg{width:100%;height:auto;display:block}
+.curves{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.curve{background:var(--bg-raised);border:1px solid var(--border-weak);border-radius:var(--r-s);padding:10px 12px}
+.curve .t{font-size:var(--fs-xs);color:var(--text-dim);display:flex;justify-content:space-between}
+/* K-ORG-184 同款移动端钳制：shortscreen 固顶节导航条防撑破 */
+#ss-bar{max-width:calc(100vw - 24px) !important;overflow-x:auto}
+@media (max-width:640px){
+  .wrap{padding:12px 12px 0}
+  h1{font-size:18px}h1 .sub{display:block;margin:4px 0 0}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .metric .v{font-size:17px}
+  .metric,.panel{padding:10px 11px}
+  th,td{padding:4px 6px}
+}
+footer{margin-top:30px;color:var(--text-dim);font-size:var(--fs-xs);text-align:center;opacity:.7}
+a{color:var(--link)}
+</style>
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+<h1>🎯 郭嘉·预判对账司 <span class="sub">军师祭酒 · 十胜十败 · 预判 vs 次日实际 · 六市场细分 · 源 /api/guojia/data</span></h1>
+
+<section><h2>〇 · 指标带</h2><div class="metrics" id="metrics"><span class="empty">加载中…</span></div></section>
+
+<section><h2>一 · 分市场战绩（六市场细分）</h2><div id="scoreboard"><span class="empty">加载中…</span></div></section>
+
+<section><h2>二 · 实线推演图（前期预判 → 次日实际，是否吻合）</h2>
+  <div id="lines"><span class="empty">加载中…</span></div></section>
+
+<section><h2>三 · 过往能力曲线（滚动命中率 · 调教之眼）</h2>
+  <div class="curves" id="curves"><span class="empty">加载中…</span></div></section>
+
+<section><h2>四 · 口径与待收编</h2><div class="panel" id="caliber"><span class="empty">加载中…</span></div></section>
+
+<section><h2>五 · 管道体检（行情源与跑批）</h2><div class="panel" id="pipeline"><span class="empty">加载中…</span></div></section>
+
+<footer>K-ORG-191 郭嘉预判对账司 · 2026-10-18 · 出口 /api/guojia/data（只读）· 跑批 guojia_reconcile.py · 情报板块 · 向 Hermes 汇报（K-ORG-180 收口后挂链）</footer>
+</div>
+
+<script>
+function el(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'—':s).replace(/[&<>"]/g,function(c){
+ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function pct(v){return (v==null||isNaN(v))?'—':(100*v).toFixed(1)+'%'}
+function metric(k,v,cls){return '<div class="metric"><div class="k">'+k+'</div><div class="v '+(cls||'')+'">'+v+'</div></div>'}
+function stackBar(parts){ /* parts:[[n,colorVar],...] → 占比条 */
+ var tot=0;parts.forEach(function(p){tot+=p[0]});
+ if(!tot)return '';
+ return '<div class="bar">'+parts.map(function(p){return p[0]?
+  '<span style="width:'+(100*p[0]/tot)+'%;background:'+p[1]+'"></span>':''}).join('')+'</div>'}
+var SCOPES=['cn','hk','us','commodity','crypto','fx'];
+var CN_BIAS={bull:'利多',bear:'利空',neutral:'中性'};
+var UP='var(--color-up)',DN='var(--color-dn)',OK='var(--color-ok)',
+    ERR='var(--color-err)',DIM='var(--text-dim)',LINK='var(--link)';
+var SCOPE_EMOJI={cn:'🇨🇳',hk:'🇭🇰',us:'🇺🇸',commodity:'🛢️',crypto:'₿',fx:'💱'};
+
+/* 实线推演图：每市场 SVG——顶行预判标记（▲利多红/▼利空绿/●flat灰），
+   底行 T+1 实际涨跌柱（涨红/跌绿，中式着色），竖实线=一次预判与其对账：
+   命中 var(--color-ok) / 未中 var(--color-err) / flat 灰。近 30 个对账日。 */
+function lineChart(m){
+ var days=(m.days||[]).slice(-30);
+ if(!days.length)return '<div class="empty">（暂无对账样本）</div>';
+ var W=600,H=150,x0=14,x1=590,n=days.length;
+ var X=function(i){return n>1?x0+i*(x1-x0)/(n-1):(x0+x1)/2};
+ var base=105,ampTop=34,ampH=26,markY=16;
+ var mx=0;days.forEach(function(d){if(d.t1_pct!=null)mx=Math.max(mx,Math.abs(d.t1_pct))});
+ var scale=mx>0?ampH/mx:1;
+ var s='';
+ /* 50% 语义线（预判→结果的分界）：底柱基线 */
+ s+='<line x1="'+x0+'" y1="'+base+'" x2="'+x1+'" y2="'+base+'" stroke="'+DIM+'" stroke-opacity=".4" stroke-width="1"/>';
+ days.forEach(function(d,i){
+  var x=X(i),c;
+  /* 竖实线：预判(y=markY+8) → 实际柱顶 */
+  var ly=base;
+  if(d.t1_pct!=null)ly=base-Math.max(2,Math.abs(d.t1_pct)*scale);
+  if(d.verdict==='hit')c=OK;else if(d.verdict==='miss')c=ERR;else c=DIM;
+  s+='<line x1="'+x+'" y1="'+(markY+8)+'" x2="'+x+'" y2="'+ly+'" stroke="'+c+'" stroke-width="1.6" stroke-opacity=".85">';
+  /* 顶行预判标记 */
+  if(d.dir==='bull')s+='<path d="M '+x+' '+(markY-6)+' l -5 9 l 10 0 Z" fill="'+UP+'"/>';
+  else if(d.dir==='bear')s+='<path d="M '+x+' '+(markY+3)+' l -5 -9 l 10 0 Z" fill="'+DN+'"/>';
+  else s+='<circle cx="'+x+'" cy="'+markY+'" r="3" fill="'+DIM+'"/>';
+  /* 底行实际涨跌柱（t1_pct 相对基线上红下绿） */
+  if(d.t1_pct!=null){
+   var h=Math.max(2,Math.abs(d.t1_pct)*scale);
+   s+='<rect x="'+(x-2.5)+'" y="'+(d.t1_pct>=0?base-h:base)+'" width="5" height="'+h+'" fill="'+(d.t1_pct>=0?UP:DN)+'" rx="1"/>';
+  }
+ });
+ /* X 轴日标（首/中/尾） */
+ [0,Math.floor((n-1)/2),n-1].forEach(function(i,ix,arr){
+  if(arr.indexOf(i)<ix&&i!==0)return;
+  s+='<text x="'+X(i)+'" y="'+(H-6)+'" font-size="9" fill="'+DIM+'" text-anchor="middle">'+esc(days[i].day.slice(5))+'</text>'});
+ return '<div class="svgwrap"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+s+'</svg></div>'
+  +'<div class="legend">图例：▲利多预判（红）· ▼利空预判（绿）· ●无方向 · 底柱=T+1 实际涨跌（涨红/跌绿）· '
+  +'<b style="color:var(--color-ok)">绿实线=吻合</b> / <b style="color:var(--color-err)">红实线=未吻合</b> · 展示近 '+n+' 个对账日</div>';
+}
+
+/* 过往能力曲线：滚动命中率折线（窗口 20 样本），50% 虚线基准 */
+function curveSvg(m){
+ var r=m.rolling||[];
+ if(r.length<2)return '<div class="empty">（样本 &lt;'+(r.length?r.length:0)+' 点·未满窗口）</div>';
+ var W=600,H=120,x0=8,x1=592,yTop=10,yBot=104;
+ var X=function(i){return x0+i*(x1-x0)/(r.length-1)};
+ var Y=function(v){return yBot-(yBot-yTop)*v};
+ var pts=r.map(function(p,i){return X(i)+','+Y(p.rate)}).join(' ');
+ var s='<line x1="'+x0+'" y1="'+Y(.5)+'" x2="'+x1+'" y2="'+Y(.5)+'" stroke="'+DIM+'" stroke-dasharray="4 3" stroke-opacity=".6"/>';
+ s+='<text x="'+x1+'" y="'+(Y(.5)-3)+'" font-size="9" fill="'+DIM+'" text-anchor="end">50%</text>';
+ s+='<polyline points="'+pts+'" fill="none" stroke="'+LINK+'" stroke-width="1.8"/>';
+ var last=r[r.length-1];
+ s+='<circle cx="'+X(r.length-1)+'" cy="'+Y(last.rate)+'" r="3.5" fill="'+(last.rate>=.5?OK:ERR)+'"/>';
+ [0,r.length-1].forEach(function(i){
+  s+='<text x="'+X(i)+'" y="'+(H-4)+'" font-size="9" fill="'+DIM+'" text-anchor="'+(i?'end':'start')+'">'+esc(r[i].day.slice(5))+'</text>'});
+ return '<div class="svgwrap" style="min-width:0"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+s+'</svg></div>';
+}
+
+function render(d){
+ if(d.error){el('metrics').innerHTML='<span class="err">'+esc(d.error)+'</span>';return}
+ var g=d.guojia||{};
+ if(!g.exists){
+  el('metrics').innerHTML='<span class="empty">'+esc(g.error||g.hint||'郭嘉账本未生成——先跑 python news_collector/guojia_reconcile.py')+'</span>';
+  ['scoreboard','lines','curves','caliber','pipeline'].forEach(function(id){
+   el(id).innerHTML='<span class="empty">（等首次跑批）</span>'});
+  return;
+ }
+ var o=g.overall||{},mks=g.markets||{},pl=g.pipeline||{},cnt=pl.counts||{},src=pl.sources||{};
+ /* ── 〇 指标带 ── */
+ var rate=o.hit_rate;
+ var srcOk=SCOPES.filter(function(s){return src[s]&&src[s].ok}).length;
+ el('metrics').innerHTML=
+  metric('已对账方向信号',o.n_reconciled||0)
+ +metric('整体命中率',pct(rate),rate==null?'dim':(rate>=.55?'good':(rate<.45?'bad':'')))
+ +metric('覆盖市场',SCOPES.length+' 类','')
+ +metric('行情源健康',srcOk+'/6',srcOk===6?'good':'warn')
+ +metric('待补 T+1（pending）',cnt.pending==null?'—':cnt.pending,cnt.pending>0?'warn':'good')
+ +metric('账本对账窗口',esc(g.window_days||'—')+' 天','')
+ +metric('样本首日',esc(o.first_day||'—'),'')
+ +metric('最近对账日',esc(o.last_day||'—'),(function(){
+   if(!o.last_day)return 'dim';
+   var age=(Date.now()-new Date(o.last_day+'T00:00:00+08:00'))/864e5;
+   return age<=3?'good':(age<=6?'warn':'bad')})());
+ /* ── 一 分市场战绩 ── */
+ var sb='';
+ SCOPES.forEach(function(sc){
+  var m=mks[sc];if(!m)return;
+  sb+='<div class="panel mkt"><div class="hd">'
+   +'<span class="nm">'+(SCOPE_EMOJI[sc]||'')+' '+esc(m.name)+'</span>'
+   +'<span class="dim">基准 '+esc(m.benchmark)+'（'+esc(m.code)+'）</span>'
+   +'<span>方向样本 <b class="num">'+(m.hit+m.miss)+'</b></span>'
+   +'<span>命中率 <b class="rate" style="color:'+(m.hit_rate==null?'var(--text-dim)':(m.hit_rate>=.55?'var(--color-ok)':(m.hit_rate<.45?'var(--color-err)':'var(--text)')))+'">'+pct(m.hit_rate)+'</b></span>'
+   +'<span class="dim">中性 '+m.neutral+' · 无K线 '+m.no_bar+' · 基准最新 '+esc(m.last_bar||'—')+'</span></div>'
+   +stackBar([[m.hit,OK],[m.miss,ERR]])
+   +'<div class="legend">命中 <b>'+m.hit+'</b> · 未中 <b>'+m.miss+'</b>（绿=预判与次日实际同向，红=反向）</div></div>';
+ });
+ el('scoreboard').innerHTML=sb||'<span class="empty">（无市场数据）</span>';
+ /* ── 二 实线推演图 ── */
+ el('lines').innerHTML=SCOPES.map(function(sc){
+  var m=mks[sc];if(!m)return '';
+  return '<div class="panel mkt"><div class="hd"><span class="nm">'+(SCOPE_EMOJI[sc]||'')+' '+esc(m.name)+'</span>'
+   +'<span class="dim">命中率 '+pct(m.hit_rate)+' · 样本 '+(m.hit+m.miss)+'</span></div>'+lineChart(m)+'</div>';
+ }).join('')||'<div class="panel"><span class="empty">（无对账日）</span></div>';
+ /* ── 三 过往能力曲线 ── */
+ el('curves').innerHTML=SCOPES.map(function(sc){
+  var m=mks[sc];if(!m)return '';
+  var r=m.rolling||[],last=r.length?r[r.length-1]:null;
+  return '<div class="curve"><div class="t"><span>'+(SCOPE_EMOJI[sc]||'')+' '+esc(m.name)+'</span>'
+   +'<span>最新 <b>'+pct(last&&last.rate)+'</b>（n='+esc(last&&last.n)+'）</span></div>'+curveSvg(m)+'</div>';
+ }).join('')||'<span class="empty">（样本不足）</span>';
+ /* ── 四 口径与待收编 ── */
+ el('caliber').innerHTML=
+  '<div class="legend"><b>对账口径（v1）</b>：信号日 T=created_at 的 CST 日历日；T+1=该市场基准 K 线中日期严格大于 T 的下一根；'
+  +'bias=bull 且 T+1 涨 &gt;0 / bias=bear 且 T+1 跌 &lt;0 → 命中；neutral 记 skip 不入分母；T+1 未出记 pending 次轮自动补；超 40 日无 K 线记 no_bar。</div>'
+ +'<div class="legend" style="margin-top:8px"><b>待收编观测</b>：空 scope 待归属 <b>'+esc(cnt.empty_scope||0)+'</b> 条 · macro 不对账 '+esc(cnt.macro||0)+' 条 · 坏 jev 行 '+esc(cnt.bad_jev||0)+' · 总 jev 行 '+esc(cnt.total_jev||0)+'（窗口 '+esc(g.window_days)+' 天）</div>'
+ +'<div class="legend" style="margin-top:8px"><b>已知局限</b>：commodity 单基准（COMEX 黄金）对原油/金属类信号有偏；美/港股跨时区信号按 CST 日历日近似；'
+  +'fx 为本轮枚举扩容新市场，自扩容日起积累信号。均留待后续按 event 细分再调教。</div>'
+ +(pl.verdict_lines!=null?'<div class="legend" style="margin-top:8px">信号级账本 verdicts.jsonl <b>'+esc(pl.verdict_lines)+'</b> 行 · 跑批于 '+esc(pl.ran_at||'—')+'</div>':'');
+ /* ── 五 管道体检 ── */
+ el('pipeline').innerHTML='<table><tr><th>市场</th><th>基准</th><th>状态</th><th>K线根数</th><th>最新K线</th><th>错误</th></tr>'
+  +SCOPES.map(function(sc){var x=src[sc]||{};
+   var bm=(g.markets[sc]||{});
+   return '<tr><td>'+(SCOPE_EMOJI[sc]||'')+' '+esc(bm.name||sc)+'</td><td class="dim">'+esc(bm.benchmark||'—')+'</td>'
+    +'<td>'+(x.ok?'<span class="badge ok">OK</span>':'<span class="badge err">FAIL</span>')+'</td>'
+    +'<td class="num">'+esc(x.bars==null?'—':x.bars)+'</td>'
+    +'<td class="num dim">'+esc(x.last_bar||'—')+'</td>'
+    +'<td class="err">'+esc(x.error||'')+'</td></tr>'}).join('')+'</table>'
+  +'<div class="legend" style="margin-top:8px">跑批 '+esc(pl.ran_at||'—')+' · 待补 T+1 '+esc(cnt.pending||0)+' 条（下一轮自动补账）· 行情源：新浪/腾讯/gate 免费公开接口</div>';
+}
+
+if (window.__EMBED__) { /* 公网快照模式：构建器注入聚合 JSON，不发 fetch */
+  render(window.__EMBED__);
+} else {
+  fetch('/api/guojia/data').then(function(r){return r.json()}).then(render)
+   .catch(function(e){el('metrics').innerHTML='<span class="err">/api/guojia/data 不可达：'+esc(e)+'</span>'});
+}
+</script>
+</body>
+</html>

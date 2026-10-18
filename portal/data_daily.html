@@ -98,7 +98,7 @@ function stackBar(parts){ /* parts:[[n,colorVar],...] → 占比条 */
  return '<div class="bar">'+parts.map(function(p){return p[0]?
   '<span style="width:'+(100*p[0]/tot)+'%;background:'+p[1]+'"></span>':''}).join('')+'</div>'}
 var CN_BIAS={bull:'利多',bear:'利空',neutral:'中性'};
-var CN_SCOPE={cn:'A股',hk:'港股',us:'美股',commodity:'商品',crypto:'加密',macro:'宏观'};
+var CN_SCOPE={cn:'A股',hk:'港股',us:'美股',commodity:'商品',crypto:'加密',fx:'外汇',macro:'宏观'};
 var CN_IMPACT={low:'low 轻微',medium:'medium 中等',high:'high 强'};
 function chipMap(m,cn){var ks=Object.keys(m).sort(function(a,b){return m[b]-m[a]});
  return ks.length?'<div class="chips">'+ks.map(function(k){
