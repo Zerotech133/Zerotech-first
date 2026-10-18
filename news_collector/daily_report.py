@@ -38,34 +38,29 @@ def _green(v, fmt="%+.2f%%"):
 
 
 def _sentiment_block():
-    """舆论风向块：jev 24h 聚合 + 高置信信号摘要（口径同新闻日报 v2 / K-STOCK-348）。
+    """舆论风向块（瘦身版 K-ORG-186 M2）：只出一行风向。
 
-    信号筛选：conf ≥ HI_CONF 且 bias∈(bull,bear)；scope（涉及标的/板块）
-    非空优先，按 conf 降序，同题前 20 字去重。
+    高置信信号明细自本版移出——留在晨报与数据日报 H5
+    （PORTAL_BASE/data_daily.html 公网快照），卡面只留一行结论。
     """
     import sqlite3
-    HI_CONF, TOP = 0.80, 5  # K-STOCK-351 拍板：5 条 / 0.80
     try:
         db = sqlite3.connect(os.path.join(HERE, "news.db"))
         since = (datetime.now(CST) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M")
         rows = db.execute(
-            "SELECT title, jev FROM news WHERE jev IS NOT NULL AND jev != '' "
+            "SELECT jev FROM news WHERE jev IS NOT NULL AND jev != '' "
             "AND created_at >= ?", (since,)).fetchall()
         db.close()
     except Exception:
         return None
     cnt = {"bull": 0, "bear": 0, "neutral": 0}
-    parsed = []
-    for title, jev in rows:
+    for (jev,) in rows:
         try:
             j = json.loads(jev)
         except ValueError:
             continue
-        b = j.get("bias")
-        if b not in cnt:
-            continue
-        cnt[b] += 1
-        parsed.append((title, j))
+        if j.get("bias") in cnt:
+            cnt[j.get("bias")] += 1
     total = sum(cnt.values())
     if not total:
         return None
@@ -77,41 +72,63 @@ def _sentiment_block():
         tone, color = "整体偏冷", "green"
     else:
         tone, color = "多空均衡", "grey"
-    lines = ["🧭 **舆论风向：<font color='%s'>%s</font>**"
-             "（偏多 %.0f%% / 偏空 %.0f%% · AI 判定 %d 条）"
-             % (color, tone, pb * 100, ps * 100, total)]
-    sigs = [p for p in parsed
-            if p[1].get("conf", 0) >= HI_CONF and p[1].get("bias") in ("bull", "bear")]
-    sigs.sort(key=lambda p: (bool(p[1].get("scope")), p[1].get("conf", 0)), reverse=True)
-    seen, picked = set(), []
-    for title, j in sigs:
-        k = title[:20]
-        if k in seen:
-            continue
-        seen.add(k)
-        icon = "🐂" if j["bias"] == "bull" else "🐻"
-        scope = (j.get("scope_cn") or j.get("scope") or "").strip()
-        tag = "【%s】" % scope[:8] if scope else ""
-        # 标题可能带正文（采集器【标题】正文拼入）：取首行；若以【标题】开头则取括号内真标题
-        t = title.split("\n")[0]
-        if t.startswith("【"):
-            end = t.find("】")
-            if 0 < end <= 40:
-                t = t[1:end]
-        picked.append("%s %s%s（%.2f）" % (icon, tag, t[:36], j.get("conf", 0)))
-        if len(picked) >= TOP:
-            break
-    if picked:
-        lines.append("高置信信号（conf≥%.2f）：%s" % (HI_CONF, "；".join(picked)))
+    return ("🧭 **舆论风向：<font color='%s'>%s</font>**"
+            "（偏多 %.0f%% / 偏空 %.0f%% · AI 判定 %d 条）"
+            % (color, tone, pb * 100, ps * 100, total))
+
+
+def _data_line():
+    """数据实证块（K-ORG-186 M2 新增）：回测 corr 一行 + impact 复评状态一行。
+
+    数据源 sentiment_bt_result.json / jev_impact.json（计划任务产出，缺则整块跳过）。"""
+    bt = _j(os.path.join(HERE, "data", "sentiment_bt_result.json")) or {}
+    if not bt.get("n"):
+        return None
+    lines = ["📊 **数据实证**（多维数据日报）",
+             "情绪×次日回测 n=%s · corr=%s · 高置信 n=%s corr=%s · 单调=%s" % (
+                 bt.get("n"), bt.get("corr_score_pct1"),
+                 bt.get("n_high_conf"), bt.get("corr_score_pct1_high_conf"),
+                 {True: "是", False: "否"}.get(bt.get("conf_monotone"), "样本不足"))]
+    im = _j(os.path.join(HERE, "data", "jev_impact.json")) or {}
+    if im.get("n") is not None:
+        applied = im.get("applied") or {}
+        hot = [k for k in ("medium", "high") if applied.get(k)]
+        lines.append("impact 分层 n=%s · %s" % (
+            im.get("n"),
+            "复评已触发(%s)" % "/".join(hot) if hot else "复评门槛观察中(E3)"))
     return "\n".join(lines)
 
 
+def _sentinel_line():
+    """哨兵块（K-ORG-186 M2 新增）：漂移 OPEN 告警一行。
+
+    懒加载 jev-eval/jev_common 读 PG v2_alert（feishu_control 判例）；
+    DB 不可达/无告警均静默跳过本块（C2批2 吞错落盘）。"""
+    try:
+        jev_dir = os.path.join(STATION, "jev-eval")
+        if jev_dir not in sys.path:
+            sys.path.insert(0, jev_dir)
+        import jev_common
+        rows = jev_common.db_rows(
+            "SELECT title FROM v2_alert WHERE status='OPEN' "
+            "AND title LIKE %s LIMIT 2", ("JEV判定漂移%",))
+        if not rows:
+            return None
+        return "⚠️ **哨兵**：漂移告警 OPEN —— %s" % "；".join(str(r[0]) for r in rows)
+    except Exception as e:
+        print("sentinel read err %s" % str(e)[:80])  # C2批2 吞错落盘
+        return None
+
+
 def build_blocks(today):
-    """返回 md_blocks（四块：风向/采集/板块/量化，缺啥跳啥）。"""
+    """返回 md_blocks（瘦身版 K-ORG-186：风向/数据实证/采集/板块/量化/哨兵）。"""
     blocks = []
     sl = _sentiment_block()
     if sl:
         blocks.append(sl)
+    dl = _data_line()
+    if dl:
+        blocks.append(dl)
 
     # ── 📰 信息采集（只报数：24h/累计/源在线） ────────────────
     st = _j(os.path.join(HERE, "status.json")) or {}
@@ -159,6 +176,9 @@ def build_blocks(today):
             best.get("name") or best.get("symbol"), _green(best["pnl"] * 100),
             worst.get("name") or worst.get("symbol"), _green(worst["pnl"] * 100)))
     blocks.append("\n".join(lines))
+    sn = _sentinel_line()
+    if sn:
+        blocks.append(sn)
     return blocks
 
 
@@ -184,7 +204,10 @@ def main():
     try:
         sys.path.insert(0, os.path.join(STATION, "portal"))
         from feishu_card_v2 import PORTAL_BASE, PORTAL_KEY
-        buttons = [("💼 交易台账", "%s/ledger.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
+        # K-ORG-186 M2 按钮改版：「📊 数据日报」升 primary（公网快照链
+        # picks_public/data_daily.html）；台账按钮移除——K-STOCK-411
+        # ledger.html 已停发，现网该按钮本就是死链
+        buttons = [("📊 数据日报", "%s/data_daily.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
                     "primary"),
                    ("📈 选股看板", "%s/picks.html?key=%s" % (PORTAL_BASE, PORTAL_KEY),
                     "default")]
@@ -200,6 +223,20 @@ def main():
         return
     # K163 三目标推送：首目标（个人）card_build 完整通道，家人群/量化群 OpenAPI
     # 直连——复用 alert_push.push_card_multi 判例，勿在此重写发送逻辑
+    # K-ORG-186 M2：推送前刷新公网数据日报快照（deploy 侧整目录重发布后生效；
+    # 失败不阻断日报主链，C2批2 吞错落盘）
+    try:
+        import subprocess
+        r = subprocess.run(
+            [sys.executable,
+             os.path.join(STATION, "portal", "build_daily_data_public.py")],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=90)
+        print("daily_data_public refresh exit=%s %s"
+              % (r.returncode,
+                 ((r.stdout or "") + (r.stderr or "")).strip()[-120:]))
+    except Exception as e:
+        print("daily_data_public refresh err %s" % str(e)[:100])  # C2批2
     from alert_push import push_card_multi, _targets
     res = push_card_multi(card, targets=_targets(cfg), kind="daily:report")
     print("DAILY_REPORT pushed %s" % res)

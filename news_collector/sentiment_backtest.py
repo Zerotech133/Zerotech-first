@@ -450,8 +450,42 @@ def run():
     print("=" * 62)
 
     _write_json(RESULT, result)
+    _append_history(result)
     print("saved -> %s" % RESULT)
     return result
+
+
+HIST = os.path.join(HERE, "data", "history", "sbt_daily.jsonl")
+
+
+def _append_history(res):
+    """K-ORG-186 M2：逐日快照归档（corr/n 趋势序列供数，数据日报 M3 起势图消费）。
+
+    append-only jsonl（data/history/ 随 data/ 同源 .gitignore）；同日重跑会有
+    多行，下游按 ts 取每日末条。只归档聚合口径（n/corr/分组 n 与 T+1 均值），
+    不带 rows 明细；失败不阻断回测主链。"""
+    try:
+        os.makedirs(os.path.dirname(HIST), exist_ok=True)
+        g = res.get("groups") or {}
+        row = {
+            "ts": res.get("generated_at"),
+            "day_range": res.get("news_day_range"),
+            "n": res.get("n"),
+            "corr1": res.get("corr_score_pct1"),
+            "n_high_conf": res.get("n_high_conf"),
+            "corr1_high_conf": res.get("corr_score_pct1_high_conf"),
+            "conf_monotone": res.get("conf_monotone"),
+            "bull_n": (g.get("bull") or {}).get("n"),
+            "bear_n": (g.get("bear") or {}).get("n"),
+            "neutral_n": (g.get("neutral") or {}).get("n"),
+            "bull_pct1": (g.get("bull") or {}).get("pct1_avg"),
+            "bear_pct1": (g.get("bear") or {}).get("pct1_avg"),
+        }
+        with open(HIST, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        print("history -> %s" % HIST)
+    except OSError as e:
+        print("HISTORY append err %s" % str(e)[:100])  # C2批2 吞错落盘（归档失败不阻断回测主链）
 
 
 def _sgn(v, suf="%"):
