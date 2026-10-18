@@ -40,12 +40,59 @@ tr:last-child td{border-bottom:none}
 @media(max-width:900px){.grid2{grid-template-columns:1fr}}
 .foot{margin-top:24px;color:var(--dim);font-size:12px}
 code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#79c0ff}
+/* v3 指挥操作系统：tab + 拓扑 + 抽屉 */
+.tabs{display:flex;gap:8px;margin:14px 0 4px}
+.tabs button{background:var(--panel);border:1px solid var(--bd);color:var(--fg);padding:7px 18px;
+  border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
+.tabs button.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+#mapwrap{background:var(--panel);border:1px solid var(--bd);border-radius:8px;padding:10px;overflow-x:auto}
+#mapsvg{display:block;min-width:1180px}
+.lane{fill:#10151d;stroke:#21262d;rx:10}
+.lane-t{fill:#57606a;font-size:12px;font-weight:700;letter-spacing:2px}
+.nd{fill:var(--panel2);stroke:var(--bd);stroke-width:1.5;cursor:pointer;transition:stroke .15s}
+.nd:hover{stroke:var(--acc)}
+.nd.sel{stroke:#1f6feb;stroke-width:2.5}
+.ndt{fill:var(--fg);font-size:12.5px;text-anchor:middle;pointer-events:none}
+.nds{fill:var(--dim);font-size:10.5px;text-anchor:middle;pointer-events:none}
+.dots{cursor:pointer}
+.edge{stroke:#30363d;stroke-width:1.4;fill:none}
+.edge.on{stroke:#1f6feb;stroke-width:2.2}
+#drawer{position:fixed;top:0;right:-420px;width:400px;max-width:94vw;height:100vh;overflow:auto;
+  background:var(--panel);border-left:1px solid var(--bd);box-shadow:-12px 0 32px rgba(0,0,0,.45);
+  transition:right .22s;padding:18px;z-index:60}
+#drawer.open{right:0}
+#drawer h3{margin:0 0 2px;font-size:17px}
+#drawer .did{color:var(--dim);font-size:12px;margin-bottom:10px}
+#drawer table{margin:8px 0}
+.relrow{cursor:pointer;color:var(--acc);padding:3px 6px;border-radius:5px;display:flex;justify-content:space-between;font-size:13px}
+.relrow:hover{background:var(--panel2)}
+.dlink{display:inline-block;margin:3px 6px 3px 0;padding:4px 12px;border:1px solid var(--bd);border-radius:6px;
+  color:var(--acc);text-decoration:none;font-size:13px}
+.dlink:hover{background:var(--panel2)}
+#dclose{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer}
+.maplegend{color:var(--dim);font-size:12px;margin:8px 4px}
+.dot-ok{fill:var(--ok)} .dot-down{fill:var(--bad)} .dot-running{fill:var(--acc)} .dot-yielding{fill:var(--warn)}
+.dot-blocked{fill:#f85149} .dot-unknown{fill:#6e7681} .dot-complete{fill:var(--ok)} .dot-done{fill:var(--purple)}
+.dot-backoff{fill:var(--warn)} .dot-disabled{fill:#6e7681} .dot-ok2{fill:var(--ok)}
 </style>
 </head>
 <body>
 <h1>🎛 数据运营指挥台 <small>采集动线 · 数据池 · 管道调度</small></h1>
 <div class="sub">Hermes 与调度系统消费入口：<code>GET /api/dataops/overview</code>（全量）· <code>?view=summary</code>（轻量）· 只读 · 60s 自动刷新 <span id="gen"></span></div>
 
+<div class="tabs">
+  <button id="tb-map" class="on" onclick="switchTab('map')">🗺 全局拓扑（一笔看明白 · 点节点下钻）</button>
+  <button id="tb-list" onclick="switchTab('list')">📋 总览明细表</button>
+</div>
+
+<div id="tab-map">
+  <div id="mapwrap"><svg id="mapsvg" viewBox="0 0 1220 620" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="maplegend">实线=数据流 · 虚线=未来/聚合关系 · 节点右上圆点=实时健康（绿=正常 蓝=运行 黄=让路 红=受阻 灰=未知）·
+    点击节点 → 右侧下钻（指标/上下游/入口/日志），上下游可继续点击递归下钻 · 深链：<code>/dataops.html?entity=pipe:classify</code></div>
+  <div class="cards" id="mapcards" style="margin-top:14px"></div>
+</div>
+
+<div id="tab-list" style="display:none">
 <div class="cards" id="cards"></div>
 
 <h2>① 采集动线 —— 什么时间拔、谁在拔、最近拔了多少</h2>
@@ -78,7 +125,16 @@ code{background:#0a0e14;padding:1px 6px;border-radius:4px;font-size:12px;color:#
 <div class="foot">
 血缘体检：<a href="/kg-lineage.html" style="color:var(--acc)">/api/kg/lineage 血缘视图</a> ·
 情报日报：<a href="/xq_intel.html" style="color:var(--acc)">xq_intel.html</a> ·
-本页只读聚合 automation_runs 状态 + 三库 ro 计数 + 计划任务 XML，零写操作
+本页只读聚合 automation_runs 状态 + 三库 ro 计数 + 计划任务 XML，零写操作 ·
+拓扑契约：<code>GET /api/dataops/map</code> + <code>GET /api/dataops/entity?id=</code>（Hermes/调度系统可编程消费）
+</div>
+</div><!-- /tab-list -->
+
+<div id="drawer">
+  <button id="dclose" onclick="closeDrawer()">✕</button>
+  <h3 id="dname"></h3>
+  <div class="did" id="did"></div>
+  <div id="dbody"></div>
 </div>
 
 <script>
@@ -186,6 +242,119 @@ async function load(){
   }
 }
 load(); setInterval(load,60000);
+
+/* ── v3 指挥操作系统：拓扑 + 下钻抽屉 ─────────────────────── */
+function switchTab(t){
+  document.getElementById('tb-map').classList.toggle('on', t==='map');
+  document.getElementById('tb-list').classList.toggle('on', t==='list');
+  document.getElementById('tab-map').style.display = t==='map'?'':'none';
+  document.getElementById('tab-list').style.display = t==='list'?'':'none';
+  if(t==='map' && !window.__mapLoaded){ loadMap(); }
+}
+const DOT=h=>'<circle class="dots dot-'+esc(h)+'" cx="52" cy="-16" r="5.5">';
+const DOTC=h=>'<circle class="dot-'+esc(h)+'" cx="52" cy="-16" r="5.5"/>';
+
+async function loadMap(){
+  window.__mapLoaded = true;
+  try{
+    const r = await fetch('/api/dataops/map',{cache:'no-store'});
+    renderMap(await r.json());
+  }catch(e){
+    document.getElementById('mapsvg').outerHTML = '<div class="alert">拓扑数据源不可达：'+esc(e.message)+'</div>';
+  }
+}
+
+function renderMap(m){
+  const svg = document.getElementById('mapsvg');
+  const LANE_Y = {'服务':[28,102],'采集':[140,155],'数据池':[305,100],'管道':[415,90],'消费':[515,100]};
+  let s = '<defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">'+
+          '<path d="M0,0 L7,3 L0,6 Z" fill="#4a5460"/></marker></defs>';
+  m.layers.forEach((ly,i)=>{
+    const y = 28 + [0,112,267,377,477][i], hgt=[100,155,100,90,100][i];
+    s += '<rect class="lane" x="12" y="'+y+'" width="1196" height="'+hgt+'" rx="10"/>'+
+         '<text class="lane-t" x="26" y="'+(y+20)+'">'+esc(ly)+'</text>';
+  });
+  const pos = {}; m.nodes.forEach(n=>{ pos[n.id]=[n.x,n.y]; });
+  m.edges.forEach(e=>{
+    const a=pos[e.from], b=pos[e.to]; if(!a||!b) return;
+    const cls = 'edge'+(e.dashed?' dash':'');
+    s += '<path id="eg-'+btoa(unescape(encodeURIComponent(e.from+'>'+e.to))).replace(/[+/=]/g,'')+
+         '" class="'+cls+'" d="M'+a[0]+','+(a[1]+24)+' L'+b[0]+','+(b[1]-26)+
+         '" marker-end="url(#arr)"'+(e.dashed?' stroke-dasharray="5,4"':'')+'/>';
+    const mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2;
+    s += '<text x="'+mx+'" y="'+my+'" fill="#6a737d" font-size="10" text-anchor="middle" pointer-events="none">'+esc(e.rel)+'</text>';
+  });
+  m.nodes.forEach(n=>{
+    s += '<g transform="translate('+n.x+','+n.y+')" onclick="openDrawer(\''+n.id+'\')" data-nid="'+esc(n.id)+'">'+
+         '<rect class="nd" x="-70" y="-22" width="140" height="46" rx="9" id="nd-'+btoa(unescape(encodeURIComponent(n.id))).replace(/[+/=]/g,'')+'"/>'+
+         DOT(n.health)+
+         '<text class="ndt" y="-2">'+esc(n.name)+'</text>'+
+         '<text class="nds" y="14">'+esc(n.health)+(n.detail?' · '+esc(String(n.detail).slice(0,16)):'')+'</text></g>';
+  });
+  svg.innerHTML = s;
+  window.__mapData = m;
+  const cards = document.getElementById('mapcards');
+  const sm = m.summary||{};
+  cards.innerHTML = [
+    ['数据池总存量', (sm.total_rows??0).toLocaleString(), 'blue'],
+    ['今日入库', (sm.ingested_today??0).toLocaleString(), 'green'],
+    ['节点数', m.nodes.length, 'blue'],
+    ['数据流边', m.edges.length, 'blue'],
+    ['待办告警', (sm.alerts||[]).length, (sm.alerts||[]).length?'warn':'green'],
+  ].map(c=>'<div class="card" style="cursor:pointer" onclick="switchTab(\'list\')"><div class="k">'+c[0]+'</div><div class="v '+c[2]+'">'+c[1]+'</div></div>').join('');
+  const want = new URLSearchParams(location.search).get('entity');
+  if(want && pos[want]) openDrawer(want);
+}
+
+function edgeId(a,b){ return 'eg-'+btoa(unescape(encodeURIComponent(a+'>'+b))).replace(/[+/=]/g,''); }
+
+async function openDrawer(nid){
+  switchTab('map');
+  const dr = document.getElementById('drawer');
+  dr.classList.add('open');
+  document.getElementById('dname').textContent = '加载中…';
+  document.querySelectorAll('.nd.sel').forEach(x=>x.classList.remove('sel'));
+  document.querySelectorAll('.edge.on').forEach(x=>x.classList.remove('on'));
+  const sel = document.querySelector('[data-nid="'+CSS.escape(nid)+'"] rect');
+  if(sel) sel.classList.add('sel');
+  try{
+    const r = await fetch('/api/dataops/entity?id='+encodeURIComponent(nid),{cache:'no-store'});
+    if(!r.ok){ const j = await r.json(); throw new Error(j.error||r.status); }
+    const d = await r.json();
+    document.getElementById('dname').textContent = d.name;
+    document.getElementById('did').textContent = d.id + ' · 层：' + d.type;
+    let html = '<div style="margin-bottom:8px">健康：<span class="badge b-'+esc(d.status.health)+'">'+esc(d.status.health)+
+               '</span> <span class="muted" style="font-size:12px">'+esc(d.status.detail||'')+' · '+esc(d.status.at)+'</span></div>';
+    if(d.metrics && d.metrics.length){
+      html += '<b style="font-size:13px">实时指标</b><table><tbody>'+
+        d.metrics.map(x=>'<tr><td>'+esc(x.k)+'</td><td class="num-r"><b>'+esc(x.v)+'</b></td></tr>').join('')+'</tbody></table>';
+    }
+    const rels = (dir, list)=>{
+      if(!list||!list.length) return '';
+      return '<b style="font-size:13px">'+(dir==='up'?'⬆ 上游（谁喂数给我）':'⬇ 下游（我喂谁）')+'</b>'+
+        list.map(x=>'<div class="relrow" onclick="openDrawer(\''+esc(x.id)+'\')"><span>'+esc(x.id)+'</span><span class="muted">'+esc(x.rel)+' ›</span></div>').join('');
+    };
+    html += rels('up', d.upstream) + rels('down', d.downstream);
+    if(d.links && d.links.length){
+      html += '<b style="font-size:13px">入口</b><br>' +
+        d.links.map(l=>'<a class="dlink" href="'+esc(l.url)+'">'+esc(l.label)+' →</a>').join('');
+    }
+    if(d.logs && d.logs.length){
+      html += '<b style="font-size:13px">最近日志</b><div class="log">'+esc(d.logs.join('\n'))+'</div>';
+    }
+    html += '<div class="muted" style="font-size:11px;margin-top:10px">实体契约：<code>'+esc(nid)+'</code> · 深链本抽屉：<code>/dataops.html?entity='+esc(nid)+'</code></div>';
+    document.getElementById('dbody').innerHTML = html;
+    (d.upstream||[]).concat(d.downstream||[]).forEach(x=>{
+      const el = document.getElementById(edgeId(x.id, nid)) || document.getElementById(edgeId(nid, x.id));
+      if(el) el.classList.add('on');
+    });
+  }catch(e){
+    document.getElementById('dname').textContent = '下钻失败';
+    document.getElementById('dbody').innerHTML = '<div class="alert">'+esc(e.message)+'</div>';
+  }
+}
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeDrawer(); });
 </script>
 </body>
 </html>

@@ -14,6 +14,7 @@ import glob
 import json
 import os
 import re
+import socket
 import sqlite3
 import time
 
@@ -355,6 +356,240 @@ def overview():
     return out
 
 
+# ─────────────────────────────────────────────────────────────
+# v3 指挥操作系统（2026-10-18 老田拍板：可串联 / 可下钻 / 一图看明白）
+# 契约：每个实体唯一 id（<层>:<名字>）。
+#   GET /api/dataops/map            → 全拓扑（nodes+edges，health 实时合并）
+#   GET /api/dataops/entity?id=xxx  → 单实体统一 schema：
+#       identity / status / metrics / upstream / downstream / links / logs
+# 消费方：dataops.html 拓扑图（点击抽屉下钻，?entity= 深链）、
+#         static/dataops_link.js 全站连接条（每页挂自身实体健康点）。
+# 新节点接入 = 在 NODES/EDGES/ENTITIES 各加一行，前端零改动。
+# ─────────────────────────────────────────────────────────────
+NODE_LAYERS = ["服务", "采集", "数据池", "管道", "消费"]
+
+NODES = [
+    # 服务层
+    {"id": "svc:portal_api", "layer": "服务", "name": "门户 API 8091", "x": 90,  "y": 60},
+    {"id": "svc:nginx",      "layer": "服务", "name": "Nginx 8080",    "x": 300, "y": 60},
+    {"id": "svc:hermes",     "layer": "服务", "name": "Hermes 8787",   "x": 620, "y": 60},
+    {"id": "svc:ollama",     "layer": "服务", "name": "Ollama 11434",  "x": 1010, "y": 60},
+    # 采集层（taskgroup 聚合节点，下钻展开明细）
+    {"id": "src:XueqiuSync",  "layer": "采集", "name": "雪球同步 17:40",  "x": 90,  "y": 170},
+    {"id": "src:XueqiuCrawl", "layer": "采集", "name": "雪球日采 18:00",  "x": 270, "y": 170},
+    {"id": "src:GubaCrawl",   "layer": "采集", "name": "股吧采集 17:50",  "x": 450, "y": 170},
+    {"id": "pipe:seed",       "layer": "采集", "name": "历史播种 30min",  "x": 630, "y": 170},
+    {"id": "tg:行情/数据同步", "layer": "采集", "name": "行情同步×15",     "x": 830, "y": 170},
+    {"id": "tg:策略扫描",      "layer": "采集", "name": "策略扫描×16",     "x": 1010, "y": 170},
+    {"id": "tg:其他",          "layer": "采集", "name": "其余 8 组×63",    "x": 1105, "y": 250},
+    # 数据池层
+    {"id": "pool:xueqiu",    "layer": "数据池", "name": "雪球库 3 表",    "x": 90,  "y": 300},
+    {"id": "pool:warehouse", "layer": "数据池", "name": "行情仓 233 表",  "x": 400, "y": 300},
+    {"id": "pool:quant",     "layer": "数据池", "name": "量化库 6 表",    "x": 650, "y": 300},
+    {"id": "pool:parquet",   "layer": "数据池", "name": "Parquet 行情",   "x": 870, "y": 300},
+    # 管道层
+    {"id": "pipe:classify",  "layer": "管道", "name": "舆情打标",        "x": 180, "y": 410},
+    {"id": "pipe:report",    "layer": "管道", "name": "情报日报 19:00",  "x": 400, "y": 410},
+    # 消费层
+    {"id": "page:home",      "layer": "消费", "name": "总览首页",        "x": 90,  "y": 520},
+    {"id": "page:xq_intel",  "layer": "消费", "name": "情报日报页",      "x": 290, "y": 520},
+    {"id": "page:picks",     "layer": "消费", "name": "今日选股",        "x": 500, "y": 520},
+    {"id": "page:dataops",   "layer": "消费", "name": "数据指挥台",      "x": 700, "y": 520},
+    {"id": "ledger:riskguard", "layer": "消费", "name": "RiskGuard 账本", "x": 900, "y": 520},
+]
+
+# (from, to, rel, dashed)
+EDGES = [
+    ("svc:nginx", "svc:portal_api", "反代", False),
+    ("svc:hermes", "svc:portal_api", "消费 overview", False),
+    ("svc:ollama", "pipe:classify", "算力依赖", False),
+    ("src:XueqiuSync", "pool:xueqiu", "入库", False),
+    ("src:XueqiuCrawl", "pool:xueqiu", "入库", False),
+    ("pipe:seed", "pool:xueqiu", "回填", False),
+    ("src:GubaCrawl", "pool:warehouse", "入库", False),
+    ("tg:行情/数据同步", "pool:warehouse", "入库", False),
+    ("tg:行情/数据同步", "pool:parquet", "行情分片", False),
+    ("tg:策略扫描", "pool:quant", "读写", False),
+    ("tg:其他", "pool:warehouse", "采集/加工", True),
+    ("pool:xueqiu", "pipe:classify", "未打标增量", False),
+    ("pipe:classify", "pipe:report", "喂数", False),
+    ("pipe:report", "page:xq_intel", "latest 渲染", False),
+    ("pool:quant", "page:picks", "选股产出", False),
+    ("page:xq_intel", "page:home", "首页情报卡", False),
+    ("page:picks", "page:home", "首页交易卡", False),
+    ("page:xq_intel", "ledger:riskguard", "R3 校准(未来)", True),
+]
+
+_SVC_PORTS = {"svc:portal_api": 8091, "svc:nginx": 8080, "svc:hermes": 8787, "svc:ollama": 11434}
+
+
+def _port_alive(port, timeout=1.0):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    try:
+        return s.connect_ex(("127.0.0.1", port)) == 0
+    finally:
+        s.close()
+
+
+def _task_group_health(ov, gname):
+    for g in (ov.get("task_groups", {}).get("groups") or []):
+        if g["group"] == gname:
+            return g
+    return None
+
+
+def _node_health(ov):
+    """合并实时健康：服务端口探测 + 采集/管道/池状态 → {id: (health, detail)}"""
+    h = {}
+    for nid, port in _SVC_PORTS.items():
+        h[nid] = ("ok", "端口 %d 在线" % port) if _port_alive(port) else ("down", "端口 %d 不可达" % port)
+    by_key = {c["key"]: c for c in ov.get("collectors", [])}
+    for nid in ("XueqiuSync", "XueqiuCrawl", "GubaCrawl"):
+        c = by_key.get(nid, {})
+        h["src:" + nid] = (c.get("health", "unknown"), c.get("detail") or c.get("at") or "")
+    pipes = ov.get("pipelines", {})
+    seed = pipes.get("seed", {})
+    if seed.get("done"):
+        h["pipe:seed"] = ("done", "队列完成")
+    elif (seed.get("blocked_streak") or 0) > 0:
+        h["pipe:seed"] = ("blocked", "限流让路 streak=%d" % seed["blocked_streak"])
+    else:
+        h["pipe:seed"] = ("running", "队列 %s/%s" % ((seed.get("queue_idx") or 0) + 1, seed.get("queue_len")))
+    cl = pipes.get("classify", {})
+    h["pipe:classify"] = ("complete" if cl.get("pending") == 0 else
+                          ("yielding" if "probe busy" in (cl.get("log_tail") or [""])[-1] else "running"),
+                          "pending=%s" % cl.get("pending"))
+    rp = pipes.get("report", {})
+    h["pipe:report"] = ("ok" if rp.get("posts_today") is not None else "unknown",
+                        "posts=%s" % rp.get("posts_today"))
+    for p in ov.get("pools", []):
+        nid = "pool:" + p["db"].split("/")[0].replace(".db", "") if "/" in p["db"] else "pool:" + p["db"]
+        h[nid] = ("ok" if not p.get("error") else "down",
+                  "%s MB · %s" % (p.get("size_mb"), p.get("mtime") or ""))
+    h["pool:warehouse"] = ("ok", "catalog v%s · %s 表" % (
+        ov.get("catalog", {}).get("version"), ov.get("catalog", {}).get("table_count")))
+    h["pool:parquet"] = ("ok", "%s 个分片目录" % len(ov.get("parquet", [])))
+    for nid, gname in (("tg:行情/数据同步", "行情/数据同步"), ("tg:策略扫描", "策略扫描")):
+        g = _task_group_health(ov, gname)
+        h[nid] = ("%s/%s 在岗" % (g["armed"], g["count"]) if g else "unknown", "")
+    total = ov.get("task_groups", {})
+    h["tg:其他"] = ("%s/%s 在岗" % ((total.get("armed_total") or 0), total.get("total") or 0), "8 组聚合")
+    for nid in ("page:home", "page:xq_intel", "page:picks", "page:dataops"):
+        h[nid] = ("ok", "静态面 8080")
+    rg = os.path.join(os.path.dirname(QB), "zerobound-kg", "riskguard_ledger", "ledger.jsonl")
+    h["ledger:riskguard"] = ("ok", "%d KB" % (os.path.getsize(rg) // 1024)) if os.path.exists(rg) else ("down", "账本缺失")
+    return h
+
+
+def datamap():
+    errors = []
+    ov = overview()
+    health = _node_health(ov)
+    nodes = []
+    for n in NODES:
+        h, detail = health.get(n["id"], ("unknown", ""))
+        nodes.append({"id": n["id"], "layer": n["layer"], "name": n["name"],
+                      "x": n["x"], "y": n["y"], "health": h, "detail": detail})
+    return {"generated_at": time.strftime("%Y-%m-%d %H:%M:%S"), "layers": NODE_LAYERS,
+            "nodes": nodes,
+            "edges": [{"from": f, "to": t, "rel": rel, "dashed": d} for f, t, rel, d in EDGES],
+            "summary": ov.get("summary", {}), "errors": errors}
+
+
+def _find_node(nid):
+    return next((n for n in NODES if n["id"] == nid), None)
+
+
+def _downstream(nid):
+    return [{"id": t, "rel": rel} for f, t, rel, _ in EDGES if f == nid]
+
+
+def _upstream(nid):
+    return [{"id": f, "rel": rel} for f, t, rel, _ in EDGES if t == nid]
+
+
+def entity(nid, errors):
+    """统一实体下钻 schema：identity/status/metrics/relations/links/logs。"""
+    node = _find_node(nid)
+    if not node:
+        return None
+    ov = overview()
+    health = _node_health(ov)
+    h, detail = health.get(nid, ("unknown", ""))
+    out = {"id": nid, "type": node["layer"], "name": node["name"],
+           "status": {"health": h, "detail": detail, "at": ov.get("generated_at")},
+           "upstream": _upstream(nid), "downstream": _downstream(nid),
+           "metrics": [], "links": [], "logs": [], "errors": errors}
+    pipes = ov.get("pipelines", {})
+    if nid.startswith("pool:"):
+        for p in ov.get("pools", []):
+            db_key = p["db"].split("/")[0].replace(".db", "") if "/" in p["db"] else p["db"].replace(".db", "")
+            if nid == "pool:" + db_key:
+                out["metrics"] = [{"k": t["name"], "v": "%s 行（今日 +%s）" % ((t.get("rows") or 0), t.get("today"))}
+                                  for t in p.get("tables", [])]
+                out["logs"] = ["库文件 mtime: %s" % p.get("mtime"), "体积: %s MB" % p.get("size_mb")]
+    elif nid == "pool:warehouse":
+        cat = ov.get("catalog", {})
+        out["metrics"] = [{"k": "登记表数", "v": cat.get("table_count")},
+                          {"k": "catalog 版本", "v": "v%s（更新 %s）" % (cat.get("version"), cat.get("updated"))}] + \
+                         [{"k": "source=%s" % k, "v": "%d 表" % v["count"]} for k, v in (cat.get("by_source") or {}).items()]
+    elif nid == "pool:parquet":
+        out["metrics"] = [{"k": x["dir"], "v": "%d 分片" % x["shards"]} for x in ov.get("parquet", [])]
+    elif nid == "pipe:classify":
+        cl = pipes.get("classify", {})
+        out["metrics"] = [{"k": "总帖", "v": cl.get("total")}, {"k": "已打标", "v": cl.get("done")},
+                          {"k": "pending", "v": cl.get("pending")}]
+        out["logs"] = cl.get("log_tail") or []
+        out["links"] = [{"label": "打开日报页（下游）", "url": "/xq_intel.html"}]
+    elif nid == "pipe:report":
+        rp = pipes.get("report", {})
+        out["metrics"] = [{"k": "今日 posts", "v": rp.get("posts_today")},
+                          {"k": "今日入库", "v": rp.get("ingested_today")}]
+        out["logs"] = rp.get("log_tail") or []
+        out["links"] = [{"label": "打开日报页", "url": "/xq_intel.html"},
+                        {"label": "打开指挥台", "url": "/dataops.html"}]
+    elif nid == "pipe:seed":
+        s = pipes.get("seed", {})
+        out["metrics"] = [{"k": "队列进度", "v": "%s/%s 段" % ((s.get("queue_idx") or 0) + 1, s.get("queue_len"))},
+                          {"k": "当前 seed", "v": s.get("current_seed")},
+                          {"k": "挖穿类目", "v": ("%s/4" % s.get("exhausted_cats")) if s.get("exhausted_cats") is not None else "—"},
+                          {"k": "最近轮 added", "v": (s.get("last") or {}).get("added")}]
+        out["logs"] = ["%s | seed=%s added=%s" % ((s.get("last") or {}).get("at"), (s.get("last") or {}).get("seed"), (s.get("last") or {}).get("added"))]
+    elif nid.startswith("src:") or nid.startswith("tg:"):
+        gname = nid[3:]
+        g = _task_group_health(ov, gname)
+        if g:
+            out["metrics"] = [{"k": t["name"], "v": "%s%s" % (t["health"], ("@" + t["at"]) if t.get("at") else "")}
+                              for t in g["tasks"]]
+            out["logs"] = ["组内 %s/%s 在岗" % (g["armed"], g["count"])]
+        else:
+            c = next((c for c in ov.get("collectors", []) if c["key"] == gname), {})
+            out["metrics"] = [{"k": "载体", "v": c.get("carrier")}, {"k": "节奏", "v": c.get("schedule")},
+                              {"k": "健康", "v": c.get("health")}]
+            out["logs"] = c.get("log_tail") or []
+    elif nid.startswith("svc:"):
+        out["metrics"] = [{"k": "端口", "v": _SVC_PORTS.get(nid)}, {"k": "状态", "v": h}]
+        if nid == "svc:hermes":
+            out["links"] = [{"label": "打开 Hermes WebUI", "url": "http://127.0.0.1:8787"}]
+        elif nid == "svc:portal_api":
+            out["links"] = [{"label": "GET /api/dataops/overview", "url": "/api/dataops/overview?view=summary"}]
+    elif nid.startswith("page:"):
+        url = {"page:home": "/home.html", "page:xq_intel": "/xq_intel.html",
+               "page:picks": "/picks.html", "page:dataops": "/dataops.html"}.get(nid, "/")
+        out["links"] = [{"label": "打开页面", "url": url}]
+        if nid == "page:xq_intel":
+            rp = pipes.get("report", {})
+            out["metrics"] = [{"k": "今日 posts", "v": rp.get("posts_today")}]
+    elif nid == "ledger:riskguard":
+        rg = os.path.join(os.path.dirname(QB), "zerobound-kg", "riskguard_ledger", "ledger.jsonl")
+        n_lines = sum(1 for _ in open(rg, encoding="utf-8")) if os.path.exists(rg) else 0
+        out["metrics"] = [{"k": "拦截事件", "v": n_lines},
+                          {"k": "R3 真实拦截", "v": "532（2026-09~10）"}]
+        out["logs"] = ["雪球舆情校准：待实时线积累 2-4 周后启动拦截-舆情一致性核对"]
+    return out
+
+
 class Handler:
     def _dataops(self, qs):
         args = self._norm_qs(qs)
@@ -363,5 +598,22 @@ class Handler:
         if view == "summary":  # 轻量视图：Hermes 快路径只需摘要
             keep = {k: data[k] for k in ("generated_at", "summary", "errors")}
             self._json(keep)
+            return
+        self._json(data)
+
+    def _dataops_map(self):
+        self._json(datamap())
+
+    def _dataops_entity(self, qs):
+        args = self._norm_qs(qs)
+        nid = (args.get("id") or [""])[0].strip()
+        if not nid:
+            self._json({"error": "缺少 id 参数，示例 ?id=pipe:classify"}, 400)
+            return
+        errors = []
+        data = entity(nid, errors)
+        if data is None:
+            known = " / ".join(n["id"] for n in NODES)
+            self._json({"error": "未知实体 %r" % nid, "known": known}, 404)
             return
         self._json(data)
