@@ -36,8 +36,12 @@ import argparse
 import sys
 from pathlib import Path
 
+# bridge 实际拒档落点 = _bridge_inbox_root()（adapters/codex_bridge.py:422-423）
+# = adapter 上两级 / bridge_inbox / rejects；write_reject 三处调用（:476/486/493）
+# 全部传它。默认根必须对齐该实现，否则不带 --rejects-root 时看不到真拒档
+# （2026-10-18 L 路工单作者指南取证发现的默认根错位，lead 修正）。
 DEFAULT_REJECTS_ROOT = (Path(__file__).resolve().parents[1]
-                        / "data" / "codex_bridge" / "rejects")
+                        / "bridge_inbox" / "rejects")
 REASON_MAX_CHARS = 60  # 摘要表拒绝原因截断长度
 STAGE_UNKNOWN = "未知"
 DATE_NEVER = "(扁平)"  # 旧版无日期层归档的日期列占位
