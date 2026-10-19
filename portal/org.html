@@ -232,6 +232,59 @@ function gradePolicyHtml(a){
 /* meta 下拉选项的 note 摘要（截断，防过长） */
 function metaBrief(s,n){s=String(s==null?"":s);return s.length>n?s.slice(0,n)+"…":s}
 
+/* 编辑区档位提示小字（K-ORG-190 续）：按所选模型（未选=保持原 llm）对照 grade_policy[grade].allow，
+   与详情区 gradePolicyHtml 同风格：✓相符绿 / ⚠不符红 / 灰=未接通或无策略，不臆造结论 */
+function editGradeHintHtml(a,effectiveModel){
+  if(!META||!META.grade_policy)return '<span style="color:var(--dim)">档位表未接通</span>';
+  var pol=META.grade_policy[a.grade];
+  if(!pol||!pol.allow||!pol.allow.length)return '<span style="color:var(--dim)">（'+esc(a.grade||"?")+' 无档位策略）</span>';
+  var ok=pol.allow.indexOf(effectiveModel)>=0;
+  return (ok?'<span style="color:var(--green)">✓ 档位相符</span>':'<span style="color:var(--red)">⚠ 档位不符</span>')
+    +'<span style="color:var(--dim)">（'+esc(a.grade||"?")+' 允许：'+esc(pol.allow.join("、"))+'）</span>';
+}
+/* 刷新编辑区档位提示：取 eModel 当前值（空=保持原 llm）计算有效性 */
+function refreshEditGradeHint(a){
+  var el=$("eGradeHint");if(!el)return;
+  var em=$("eModel")?String($("eModel").value||""):"";
+  el.innerHTML=editGradeHintHtml(a,em||a.llm);
+}
+/* 编辑区 eModel/eTool 同源化：复用 META 缓存重烘选项（eModel 仅 enabled:true 模型；eTool=skills.tools+skills.algos），
+   尽量保留已选值；META 未就绪/接口失败→保留静态选项 + console.warn 降级，不阻塞编辑 */
+function applyMetaToEdit(a){
+  if(!META){console.warn("org meta 降级(编辑区)");refreshEditGradeHint(a);return}
+  var models=META.models||{};
+  var ids=Object.keys(models).filter(function(k){return models[k]&&models[k].enabled===true});
+  var sel=$("eModel");
+  if(ids.length&&sel){
+    var cur=sel.value;  /* ""=保持不变 或静态选中值，重烘后尽量恢复 */
+    sel.innerHTML="";
+    var keep=document.createElement("option");
+    keep.value="";keep.textContent="（保持 "+(a.llm||"")+" 不变）";
+    sel.appendChild(keep);
+    ids.forEach(function(mid){
+      var m=models[mid]||{};
+      var o=document.createElement("option");
+      o.value=mid;
+      o.textContent=mid+"（"+(m.tier||"?")+(m.note?"·"+metaBrief(m.note,16):"")+"）";
+      sel.appendChild(o);
+    });
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===cur){sel.value=cur;break}}
+  }
+  var sk=META.skills||{};
+  var toolIds=(sk.tools||[]).concat(sk.algos||[]);
+  var st=$("eTool");
+  if(toolIds.length&&st){
+    var ct=st.value;
+    st.innerHTML="";
+    var k2=document.createElement("option");k2.value="";k2.textContent="（保持不变）";st.appendChild(k2);
+    toolIds.forEach(function(tid){
+      var o=document.createElement("option");o.value=tid;o.textContent=tid;st.appendChild(o);
+    });
+    for(var j=0;j<st.options.length;j++){if(st.options[j].value===ct){st.value=ct;break}}
+  }
+  refreshEditGradeHint(a);
+}
+
 function render(){
   var A=B.agents, D=B.departments, S=B.stats||{};
   $("stats").innerHTML="在编 <b>"+(S.agents||Object.keys(A).length)+"</b> 岗 · 部门 <b>"+(S.departments||D.length)+"</b> · "
@@ -317,6 +370,7 @@ function showDetail(id){
       +'<div><label>能力档</label><select id="eTool"><option value="">（保持不变）</option>'
       +'<option value="dev">研发全能</option><option value="audit">审查只读</option>'
       +'<option value="light">轻量只读</option></select></div></div>'
+      +'<div id="eGradeHint" style="font-size:11.5px;margin-top:4px"></div>'
       +'<div style="display:flex;gap:10px;align-items:center;margin-top:8px">'
       +'<button class="btn primary" id="eSave">保存属性/选配</button><span class="ok-msg" id="eMsg"></span></div>'
       +'<div style="font-size:13px;font-weight:600;margin:12px 0 4px">📚 布置学习任务（读知识库→按本岗职责提炼→沉淀专属空间）</div>'
@@ -324,6 +378,17 @@ function showDetail(id){
       +'<div style="flex:0 0 auto"><button class="btn" id="eLearn">布置学习</button></div></div>'
       +'<div class="err" id="lMsg"></div><div id="kList"></div></div>';
     $("eSave").addEventListener("click",function(){
+      /* 本地档位预检（K-ORG-190 续）：META 就绪时按 grade_policy[grade].allow 校验所选模型
+         （eModel 空=保持原 llm），不符则阻止提交提前拦；META 未就绪则直接提交，后端硬校验兜底不假拦 */
+      if(META&&META.grade_policy){
+        var pol=META.grade_policy[a.grade];
+        if(pol&&pol.allow&&pol.allow.length&&pol.allow.indexOf($("eModel").value||a.llm)<0){
+          $("eMsg").style.color="var(--red)";
+          $("eMsg").textContent="⚠ 档位不符："+(a.grade||"?")+" allow="+pol.allow.join("、")+"（后端也会硬校验，此处提前拦）";
+          return;
+        }
+      }
+      $("eMsg").style.color="";
       $("eMsg").textContent="保存中…";
       post("/api/agent/update",{agent_id:id,experience:$("eExp").value,
         specialties:$("eSpec").value,model:$("eModel").value,tool_preset:$("eTool").value},
@@ -338,6 +403,8 @@ function showDetail(id){
         loadKnowledge(id);
       });
     });
+    applyMetaToEdit(a);  /* META 已就绪→同源重烘 eModel/eTool+档位提示；未就绪→静态选项+console.warn 降级 */
+    $("eModel").addEventListener("change",function(){refreshEditGradeHint(a)});
     loadKnowledge(id);
   } else $("dtMore").innerHTML="";
   ui("mDetail",1);
