@@ -707,6 +707,8 @@ def api_send(req):
     rtype = req.get("receive_id_type") or "open_id"
     kind = (req.get("kind") or "").strip() or None
     critical = bool(req.get("critical"))
+    # K-ORG-204：push_targets 群列表透传给 Agent 侧路由参考
+    route_targets = req.get("route_targets") or []
     if not content or not rid:
         return {"ok": False, "error": "missing content/receive_id"}
 
@@ -748,7 +750,8 @@ def api_send(req):
         sys.path.insert(0, news_dir)
     from feishu_client import send_msg_tracked, verify_message
     ok, why, mid = send_msg_tracked(content, msg_type, rid, rtype, kind=kind,
-                                    via_hub=False, flow_record=False)
+                                    via_hub=False, flow_record=False,
+                                    route_targets=route_targets)
     # W38 送达证据分级：api_accepted ≠ receiver_verified ≠ dead_letter
     if ok and mid:
         try:

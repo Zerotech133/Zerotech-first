@@ -406,10 +406,13 @@ def execute(decision_id, sender):
         db.commit()
         result = None
         try:
+            # K-ORG-204：route_targets 透传给 Agent 侧路由参考
+            route_targets = [{"name": t["name"], "id": t["id"], "type": t["type"]}
+                             for t in targets()]
             result = sender({"content": json.dumps({"text": row["content"]}, ensure_ascii=False),
                              "msg_type": "text", "receive_id": row["target_id"],
                              "receive_id_type": "chat_id", "kind": CATEGORIES[row["category"]][1],
-                             "critical": False})
+                             "critical": False, "route_targets": route_targets})
             outcome = "sent" if result.get("ok") else "gate_or_send_failed"
         except Exception:
             outcome = "unknown_after_attempt"

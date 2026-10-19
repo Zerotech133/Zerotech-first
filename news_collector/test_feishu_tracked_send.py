@@ -49,41 +49,42 @@ def direct_env(monkeypatch):
     return monkeypatch
 
 
-# ---------- 直发链路 message_id ----------
+# ---------- K-ORG-204：via_hub=False 已改为 Agent webhook 推送 ----------
 
 def test_direct_send_msg_still_two_tuple(direct_env, monkeypatch):
+    """K-ORG-204：via_hub=False 推 Agent webhook，不再调 OpenAPI。"""
+    monkeypatch.setattr(client, "_agent_webhook",
+                        lambda: "https://agent.local/webhook")
     def urlopen(req, timeout=0):
-        assert req.full_url.startswith(client.OPEN + "/im/v1/messages?")
-        assert req.get_header("Authorization") == "Bearer tok-mock"
-        return _Resp({"code": 0, "msg": "ok",
-                      "data": {"message_id": "om_direct1"}})
+        assert req.full_url == "https://agent.local/webhook"
+        return _Resp({"ok": True, "why": "agent ok",
+                      "message_id": "om_agent1"})
     monkeypatch.setattr(client.urllib.request, "urlopen", urlopen)
-    ok, why = client.send_msg("s", "text", "ou_m", app_id="app",
-                              app_secret="sec", via_hub=False)
-    assert ok is True and "code=0" in why        # 二元组签名零感知
+    ok, why = client.send_msg("s", "text", "ou_m", via_hub=False)
+    assert ok is True and "agent ok" in why
 
 
 def test_direct_send_msg_tracked_three_tuple(direct_env, monkeypatch):
+    monkeypatch.setattr(client, "_agent_webhook",
+                        lambda: "https://agent.local/webhook")
     def urlopen(req, timeout=0):
-        return _Resp({"code": 0, "msg": "ok",
-                      "data": {"message_id": "om_direct1"}})
+        return _Resp({"ok": True, "message_id": "om_agent2"})
     monkeypatch.setattr(client.urllib.request, "urlopen", urlopen)
-    ok, why, mid = client.send_msg_tracked("s", "text", "ou_m", app_id="app",
-                                           app_secret="sec", via_hub=False)
-    assert ok is True and mid == "om_direct1"
+    ok, why, mid = client.send_msg_tracked("s", "text", "ou_m", via_hub=False)
+    assert ok is True and mid == "om_agent2"
 
 
 def test_direct_tracked_missing_message_id_is_none(direct_env, monkeypatch):
+    monkeypatch.setattr(client, "_agent_webhook",
+                        lambda: "https://agent.local/webhook")
     monkeypatch.setattr(client.urllib.request, "urlopen",
-                        lambda *a, **kw: _Resp({"code": 0, "msg": "ok"}))
-    ok, why, mid = client.send_msg_tracked("s", "text", "ou_m", app_id="app",
-                                           app_secret="sec", via_hub=False)
-    assert ok is True and mid is None            # 无 data.message_id → None
+                        lambda *a, **kw: _Resp({"ok": True}))
+    ok, why, mid = client.send_msg_tracked("s", "text", "ou_m", via_hub=False)
+    assert ok is True and mid is None            # Agent 无 message_id → None
+    # Agent webhook 拒绝
     monkeypatch.setattr(client.urllib.request, "urlopen",
-                        lambda *a, **kw: _Resp({"code": 99991672, "msg": "bad"}))
-    ok2, why2, mid2 = client.send_msg_tracked("s", "text", "ou_m",
-                                              app_id="app", app_secret="sec",
-                                              via_hub=False)
+                        lambda *a, **kw: _Resp({"ok": False, "error": "denied"}))
+    ok2, why2, mid2 = client.send_msg_tracked("s", "text", "ou_m", via_hub=False)
     assert ok2 is False and mid2 is None         # 失败不出 mid
 
 
