@@ -12,6 +12,8 @@
   - 去重键 token:action:alert_id，仅在 DB ack 成功后记录（ack 失败允许飞书重投再试）
   - 先 ack DB 再动卡片：DB 失败保留按钮，用户再点/飞书重投会重试
   - 卡片更新带 3 次指数退避重试；仍失败写 card_update_pending.jsonl，重启时冲刷
+
+B 通道在役（K-STOCK-395），禁增新功能；退役并轨待老田拍板（2026-10-19 派工单 FB-A）
 """
 from __future__ import annotations
 

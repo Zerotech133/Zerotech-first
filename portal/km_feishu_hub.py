@@ -12,7 +12,7 @@
 目标注册表复用 news_config.push_targets（单一事实源），km_config.extra_targets
 可追加（如新群），不改动既有推送配置。
 
-保活：并入计划任务「AI工作站CowAgent看门狗」（ops/keepalive_9899.py，8096 探针）。
+保活：并入计划任务「AI工作站CowAgent看门狗」（ops/keepalive_9899.py，8099 探针）。
 日志：work/km_hub.out（服务 stdout）/ work/km_stats.jsonl（统计流水）。
 """
 import argparse
