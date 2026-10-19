@@ -284,6 +284,46 @@ def test_migration_dry_run_read_only_file_and_missing_database(tmp_path):
     assert not Path(str(missing) + "-journal").exists()
 
 
+def test_verify_read_only_uri_does_not_create_missing_database(tmp_path):
+    """verify 遇到 URI 特殊字符的缺失路径，明确失败且不创建任何文件。"""
+    missing = tmp_path / "verify missing #%.db"
+    with pytest.raises(sqlite3.OperationalError, match="unable to open database file"):
+        xnm.verify(missing)
+    assert not missing.exists()
+    assert not any(Path(str(missing) + suffix).exists()
+                   for suffix in ("-journal", "-wal", "-shm"))
+
+
+def test_verify_sees_uncheckpointed_wal_and_preserves_main_file(tmp_path):
+    """只读 URI 不使用 immutable，能看见尚在 WAL 中的已提交分类记录。"""
+    db = tmp_path / "verify WAL #%.db"
+    writer = sqlite3.connect(db)
+    try:
+        writer.execute(
+            "CREATE TABLE xq_status_classified (status_id TEXT PRIMARY KEY, "
+            "norm_tickers TEXT)"
+        )
+        writer.commit()
+        assert writer.execute("PRAGMA journal_mode=WAL").fetchone()[0] == "wal"
+        main_before = db.read_bytes()
+        writer.execute(
+            "INSERT INTO xq_status_classified VALUES (?, ?)",
+            ("s1", json.dumps([{"raw": "01810", "kind": "stock_hk",
+                                 "canonical": "01810"}])),
+        )
+        writer.commit()
+        wal = Path(str(db) + "-wal")
+        assert wal.exists() and wal.stat().st_size > 0
+        assert db.read_bytes() == main_before
+        wal_before = wal.read_bytes()
+        assert xnm.verify(db) == [("stock_hk", 1)]
+        assert db.read_bytes() == main_before
+        assert wal.read_bytes() == wal_before
+        assert wal.stat().st_size > 0
+    finally:
+        writer.close()
+
+
 def test_migration_script_end_to_end(tmp_path):
     """xq_norm_migrate.migrate 全链：加列+回填；重复跑零副作用。"""
     db = tmp_path / "mig.db"

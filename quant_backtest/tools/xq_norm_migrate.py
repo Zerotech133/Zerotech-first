@@ -78,10 +78,12 @@ def migrate(db_path, batch_size: int = 200, dry_run: bool = False) -> dict:
 
 
 def verify(db_path) -> list:
-    """kind 分布一行 SQL 验证（门户分栏口径同源）。"""
-    conn = sqlite3.connect(str(db_path), timeout=30)
+    """以只读连接验证 kind 分布；缺失库直接失败而不创建。"""
+    db_uri = Path(db_path).resolve().as_uri() + "?mode=ro"
+    conn = sqlite3.connect(db_uri, uri=True, timeout=30)
     try:
         conn.execute("PRAGMA busy_timeout=30000")
+        conn.execute("PRAGMA query_only=ON")
         return conn.execute(xtn.KIND_DIST_SQL).fetchall()
     finally:
         conn.close()
