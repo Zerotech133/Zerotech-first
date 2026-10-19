@@ -308,7 +308,7 @@ class RouteOutbox:
         if outcome not in (ACCEPTED_VERIFIED, DEFINITELY_REJECTED, UNKNOWN):
             raise OutboxError("OUTCOME_INVALID")
         expired = now >= attempt.lease_until
-        stale = not (intent.created_at <= now < intent.valid_until)
+        stale = not (attempt.claim_at <= now < intent.valid_until)
         receipt = None
         if outcome in (ACCEPTED_VERIFIED, DEFINITELY_REJECTED) and not expired and not stale:
             if (type(external_message_id) is str and external_message_id

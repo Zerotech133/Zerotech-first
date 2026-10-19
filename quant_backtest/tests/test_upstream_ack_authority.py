@@ -174,6 +174,53 @@ def test_ack_before_original_report_and_in_future_rejected():
         s[6].ack_id, s[6].verification_source, s[6].acked_at, now=at(1)) is False
 
 
+def test_finish_before_claim_is_unknown_without_mutating_old_attempt():
+    s = scenario()
+    env, _, box, _, report, _, ack, first = s
+    second = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                       target_id=report.receiver.agent_id, claim_token="second",
+                       claim_at=at(6), lease_until=at(20))
+    finished = box.finish(second.attempt_id, outcome=ACCEPTED_VERIFIED,
+                          now=at(5) + timedelta(milliseconds=500),
+                          external_message_id=ack.ack_id,
+                          verification_source=ack.verification_source,
+                          observed_at=ack.acked_at)
+    assert finished.outcome == UNKNOWN and finished.receipt is None
+    assert box._attempts[first.attempt_id].outcome == UNKNOWN
+
+
+@pytest.mark.parametrize("now", [at(5) + timedelta(milliseconds=500), at(6)])
+def test_same_generation_finish_before_claim_fails_and_at_claim_succeeds(now):
+    env = envelope()
+    box = RouteOutbox()
+    box.plan(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+             target_id="sector-1", policy_version="agent-report-v1",
+             control_epoch=0, intent_id="same-generation", created_at=T,
+             valid_until=END)
+    attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                        target_id="sector-1", claim_token="first", claim_at=at(6),
+                        lease_until=at(20))
+    finished = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+                          now=now, external_message_id="ack-1",
+                          verification_source="test-only", observed_at=at(5))
+    assert finished.outcome == (UNKNOWN if now < at(6) else ACCEPTED_VERIFIED)
+    assert (finished.receipt is None) == (now < at(6))
+
+
+def test_cross_generation_finish_at_claim_preserves_old_ack_time():
+    s = scenario()
+    env, _, box, _, report, _, ack, _ = s
+    attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                        target_id=report.receiver.agent_id, claim_token="second",
+                        claim_at=at(6), lease_until=at(20))
+    finished = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+                          now=at(6), external_message_id=ack.ack_id,
+                          verification_source=ack.verification_source,
+                          observed_at=ack.acked_at)
+    assert finished.outcome == ACCEPTED_VERIFIED
+    assert finished.receipt.observed_at == at(2)
+
+
 def test_lease_expiration_and_authority_exception_become_unknown():
     s = scenario()
     assert confirm(s, now=at(20)).outcome == UNKNOWN
