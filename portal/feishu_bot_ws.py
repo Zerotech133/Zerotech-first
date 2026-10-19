@@ -404,7 +404,8 @@ def _norm_code(tok):
                                     }.get(c[:1], ".SZ")) if c.isdigit() and len(c) == 6 else c.upper()
 
 
-def handle_cmd(text, message_id, open_id=""):
+def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
+    # W43：chat_type 随消息透传——入向受理器仅受理 P2P 投喂，群聊不进
     text = (text or "").strip()
     low = text.lower()
     try:
@@ -520,10 +521,22 @@ def handle_cmd(text, message_id, open_id=""):
             f, cached = get_facts(code)
             reply_card(card_main(code, f, cached), message_id)
         else:
-            # K-STOCK-300：兜底文案指路——本 bot 只做指令下钻，自由问答
-            # 去找问答机器人（用户此前被「没听懂」误导以为联动坏了）。
-            send_text("未识别指令。我是下钻指令机器人，发「帮助」看指令表；"
-                      "自由问答请艾特或私聊「量化问答机器人」。", message_id)
+            # W43 入向受理器：P2P 兜底文本先过投喂环（身份闸/类型路由/
+            # 双回执走 8097 闸门）；不消费或受理器异常再走旧兜底文案，
+            # 存量指令（缠论/详情/调优/审批…）在上方分支不受影响。
+            consumed = False
+            try:
+                import inbound_gateway
+                r = inbound_gateway.handle_inbound(
+                    open_id, text, message_id, chat_type=chat_type)
+                consumed = bool(r.get("consumed"))
+            except Exception:  # noqa: BLE001
+                log("inbound err " + traceback.format_exc()[-300:])
+            if not consumed:
+                # K-STOCK-300：兜底文案指路——本 bot 只做指令下钻，自由问答
+                # 去找问答机器人（用户此前被「没听懂」误导以为联动坏了）。
+                send_text("未识别指令。我是下钻指令机器人，发「帮助」看指令表；"
+                          "自由问答请艾特或私聊「量化问答机器人」。", message_id)
     except Exception as e:  # noqa: BLE001
         log("cmd err: %s" % traceback.format_exc()[-300:])
         try:
@@ -737,7 +750,8 @@ def main():
             # 积累通道（此前日志不含发送者，白名单无从收集）。
             log("recv: %r (chat=%s, sender=%s)"
                 % (text[:40], msg.chat_type, sender_id or "-"))
-            threading.Thread(target=handle_cmd, args=(text, mid, sender_id),
+            threading.Thread(target=handle_cmd,
+                             args=(text, mid, sender_id, msg.chat_type),
                              daemon=True).start()
         except Exception:  # noqa: BLE001
             log("msg err " + traceback.format_exc()[-300:])
