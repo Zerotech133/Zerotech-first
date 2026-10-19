@@ -22,6 +22,7 @@ from quant_backtest.watch_dispatch.signal_pool import (
     SignalPool,
     SignalPoolDraft,
     SignalPoolError,
+    UTC_REQUIRED,
 )
 
 START = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)
@@ -132,6 +133,79 @@ def test_even_fixed_plausible_port_cannot_accept(provide_port: bool) -> None:
     assert fixed.calls == 0
     assert _snapshot(pool) == before
     assert pool.receipt(draft.signal_id) is None
+
+
+@pytest.mark.parametrize(
+    ("candidate_now", "expected_error"),
+    [
+        (None, CONTROLLED_AUTHORITY_UNAVAILABLE),
+        (START.replace(tzinfo=None), "NOW_INVALID"),
+        (START.replace(tzinfo=timezone(timedelta(hours=8))), UTC_REQUIRED),
+        (START - timedelta(microseconds=1), CONTROLLED_AUTHORITY_UNAVAILABLE),
+        (END, CONTROLLED_AUTHORITY_UNAVAILABLE),
+        (END + timedelta(microseconds=1), CONTROLLED_AUTHORITY_UNAVAILABLE),
+    ],
+    ids=("missing-now", "naive-now", "non-utc-now", "before-claim",
+         "at-lease-end", "after-lease-end"),
+)
+def test_controlled_time_inputs_cannot_prove_acceptance(
+        candidate_now: datetime | None, expected_error: str) -> None:
+    """Caller time cannot certify a finish, even within an existing lease."""
+    store, sender, draft, scope, receipt, fixed = _fixture()
+    pool = _claimed_pool(store, sender, draft, scope, fixed)
+    before = _snapshot(pool)
+    with pytest.raises(SignalPoolError, match=f"^{expected_error}$"):
+        pool.mark_accepted(draft.signal_id, receipt=receipt,
+                           binding_port=fixed, now=candidate_now)
+    assert fixed.calls == 0
+    assert _snapshot(pool) == before
+    assert pool.get(draft.signal_id) == before[0][draft.signal_id]
+    assert pool.receipt(draft.signal_id) is None
+    assert pool.acceptance_mode == CONTROLLED_PENDING_ROOT
+    assert pool.production_permitted is False
+    assert pool.notification_permitted is False
+    assert pool.trading_permitted is False
+
+
+@pytest.mark.parametrize("bad_receipt", [None, object(), "receipt"],
+                         ids=("missing", "opaque-object", "text"))
+def test_controlled_invalid_receipt_rejected_without_mutation(
+        bad_receipt: object) -> None:
+    """Malformed caller-owned receipts cannot bypass the pending root."""
+    store, sender, draft, scope, _, fixed = _fixture()
+    pool = _claimed_pool(store, sender, draft, scope, fixed)
+    before = _snapshot(pool)
+    with pytest.raises(SignalPoolError,
+                       match=f"^{CONTROLLED_AUTHORITY_UNAVAILABLE}$"):
+        pool.mark_accepted(draft.signal_id, receipt=bad_receipt,  # type: ignore[arg-type]
+                           now=START + timedelta(seconds=1))
+    assert fixed.calls == 0
+    assert _snapshot(pool) == before
+    assert pool.receipt(draft.signal_id) is None
+    assert pool.production_permitted is False
+    assert pool.notification_permitted is False
+    assert pool.trading_permitted is False
+
+
+def test_controlled_revoked_entry_cannot_be_resurrected() -> None:
+    """Revocation clears lease before attempted acceptance; neither is restored."""
+    store, sender, draft, scope, receipt, fixed = _fixture()
+    pool = _claimed_pool(store, sender, draft, scope, fixed)
+    revoked = pool.revoke(draft.signal_id, now=START + timedelta(seconds=1))
+    assert revoked.status == "REVOKED"
+    assert draft.signal_id not in pool._leases
+    before = _snapshot(pool)
+    with pytest.raises(SignalPoolError,
+                       match=f"^{CONTROLLED_AUTHORITY_UNAVAILABLE}$"):
+        pool.mark_accepted(draft.signal_id, receipt=receipt, binding_port=fixed,
+                           now=START + timedelta(seconds=2))
+    assert fixed.calls == 0
+    assert _snapshot(pool) == before
+    assert pool.receipt(draft.signal_id) is None
+    assert pool.acceptance_mode == CONTROLLED_PENDING_ROOT
+    assert pool.production_permitted is False
+    assert pool.notification_permitted is False
+    assert pool.trading_permitted is False
 
 
 def test_other_signal_and_scope_mismatch_do_not_mutate() -> None:
