@@ -304,14 +304,18 @@ class AgentUpstreamReporter:
                                target_type="AGENT", target_id=report.receiver.agent_id,
                                claim_token=claim_token, claim_at=claim_at,
                                lease_until=lease_until)
-        verified = self._ack_port.verify(ack, report, now)
-        intent = outbox.get_intent(
-            envelope, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
-            target_id=report.receiver.agent_id)
-        # Reusing a pre-generation ACK needs an independently proven live sector
-        # receipt bound to the outbox. This module has no such trusted port.
-        if (verified is not None and intent is not None
-                and verified.acked_at < intent.created_at):
+        try:
+            verified = self._ack_port.verify(ack, report, now)
+        except Exception:
+            verified = None
+        # Verification is a necessary report binding, not proof that a sector
+        # receipt remains active. The outbox checks live authority for a prior
+        # generation's ACK before accepting its original timestamp.
+        if (type(ack) is not AgentAck or type(verified) is not AgentAck
+                or verified != ack or verified.report_id != report.report_id
+                or verified.receiver_agent_id != report.receiver.agent_id
+                or verified.acked_at < report.created_at
+                or verified.acked_at > now):
             verified = None
         if verified is not None:
             finished = outbox.finish(

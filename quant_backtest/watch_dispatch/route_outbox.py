@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Dict, Tuple
+from typing import Dict, Protocol, Tuple
 
 from quant_backtest.watch_dispatch.canonical import digest, utc_text
 from quant_backtest.watch_dispatch.contracts import EvidenceEnvelope, RouteIntent
@@ -41,6 +41,14 @@ class ReportFingerprint:
     sender_agent_id: str
     receiver_agent_id: str
     created_at: datetime
+
+
+class ActiveAckPort(Protocol):
+    """Construction-bound authority for a live, exact upstream ACK."""
+
+    def active_ack(self, fingerprint: ReportFingerprint, ack_id: str,
+                   verification_source: str, acked_at: datetime, *,
+                   now: datetime) -> bool: ...
 
 
 @dataclass(frozen=True)
@@ -88,7 +96,8 @@ def _utc(value: object, field: str) -> None:
 class RouteOutbox:
     """Per-target offline intent ledger; identical replan is idempotent."""
 
-    def __init__(self) -> None:
+    def __init__(self, active_ack_port: ActiveAckPort | None = None) -> None:
+        self._active_ack_port = active_ack_port
         self._intents: Dict[str, RouteIntent] = {}
         self._generations: Dict[str, int] = {}
         self._intent_history: Dict[str, list[RouteIntent]] = {}
@@ -306,7 +315,32 @@ class RouteOutbox:
                     and type(verification_source) is str and verification_source
                     and observed_at is not None):
                 _utc(observed_at, "OBSERVED_AT")
-                if intent.created_at <= observed_at <= now:
+                current_window = intent.created_at <= observed_at <= now
+                if (not current_window and outcome == ACCEPTED_VERIFIED
+                        and self._generations.get(attempt.idempotency_key, 0) > 0):
+                    key = attempt.idempotency_key
+                    fingerprint = self._report_fingerprints.get(key)
+                    history = self._intent_history.get(key, [])
+                    identity = self._identities.get(key)
+                    generation = self._generations[key]
+                    if (intent.route == "QUANT_UPSTREAM_REPORT"
+                            and fingerprint is not None and identity is not None
+                            and len(history) == generation
+                            and key not in self._revoked
+                            and all(previous.control_epoch == intent.control_epoch
+                                    for previous in history)
+                            and intent.control_epoch == self._epochs.get(identity)
+                            and fingerprint.created_at == history[0].created_at
+                            == self._origin_created_at.get(key)
+                            and fingerprint.created_at <= observed_at <= now
+                            and self._active_ack_port is not None):
+                        try:
+                            current_window = (self._active_ack_port.active_ack(
+                                fingerprint, external_message_id,
+                                verification_source, observed_at, now=now) is True)
+                        except Exception:
+                            current_window = False
+                if current_window:
                     receipt = RouteReceipt(
                         route=intent.route, intent_id=intent.intent_id,
                         attempt_id=attempt_id,
