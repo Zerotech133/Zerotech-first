@@ -6,12 +6,14 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
+from quant_backtest.quant_sector.upstream_inbox import QuantUpstreamReport, UpstreamInbox
 from quant_backtest.watch_dispatch import RouteOutbox, freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import (
     AgentAck, AgentIdentity, AgentRejectionEvidence, AgentReportingError,
     AgentUpstreamReporter,
 )
-from quant_backtest.watch_dispatch.route_outbox import OutboxError
+from quant_backtest.watch_dispatch.route_outbox import OutboxError, ReportFingerprint
 
 T = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)
 H = "a" * 64
@@ -87,6 +89,19 @@ def ack(report, **changes):
     return AgentAck(**fields)
 
 
+def accepted_ack(inbox, report, *, at):
+    """Issue an ACK through the independent sector inbox, not caller fields."""
+    upstream = QuantUpstreamReport(
+        report_id=report.report_id, report_kind=report.report_kind,
+        event_id=report.event_id, evidence_hash=report.envelope_hash,
+        evidence_version=report.evidence_version,
+        sender_agent_id=report.sender.agent_id,
+        receiver_agent_id=report.receiver.agent_id, created_at=report.created_at)
+    issued = inbox.accept(upstream, now=at).ack
+    return AgentAck(issued.ack_id, issued.report_id, issued.receiver_agent_id,
+                    issued.acked_at, issued.verification_source)
+
+
 def test_report_requires_epoch_and_rejects_stale_epoch():
     env = sample()
     outbox = RouteOutbox()
@@ -116,7 +131,25 @@ class MemoryRejectionPort:
 
 def test_rejection_port_optional_and_verified_rejection_reopens_intent():
     env = sample()
-    outbox = RouteOutbox()
+
+    class BoundRejection:
+        def active_rejection(self, fingerprint, attempt, intent, identity,
+                             generation, rejection_ref, verification_source,
+                             observed_at, *, now):
+            expected = ReportFingerprint("r-rej", "ANOMALY", env.event_id,
+                                         env.evidence_version, env.envelope_hash,
+                                         "watch-agent-1", "quant-sector-agent-1", T)
+            return (fingerprint == expected and attempt.intent_id == intent.intent_id
+                    and intent.intent_id == "report-r-rej-g1"
+                    and intent.control_epoch == 0 and generation == 1
+                    and identity == RouteOutbox._identity(env)
+                    and rejection_ref == "revoke-1"
+                    and verification_source == "trusted-ledger"
+                    and attempt.claim_at <= observed_at <= now)
+
+    rejection_authority = BoundRejection()
+    assert not isinstance(rejection_authority, MemoryRejectionPort)
+    outbox = RouteOutbox(active_rejection_port=rejection_authority)
     rep = reporter()
     report = rep.report(env, outbox, report_kind="ANOMALY",
                         receiver_agent_id="quant-sector-agent-1", report_id="r-rej",
@@ -136,7 +169,7 @@ def test_rejection_port_optional_and_verified_rejection_reopens_intent():
         watch_agent(), MemoryDirectory(sector_agent()), MemoryAckPort(),
         MemoryRejectionPort(AgentRejectionEvidence(
             rejection_ref="revoke-1", verification_source="trusted-ledger",
-            observed_at=T + timedelta(seconds=6))))
+            observed_at=T + timedelta(seconds=7))))
     _, rejected = accepting.claim_and_confirm(
         env, outbox, retry, claim_token="rejected",
         claim_at=T + timedelta(seconds=7), lease_until=LATER - timedelta(minutes=5),
@@ -214,7 +247,8 @@ def test_revoked_report_cannot_retry_even_with_new_epoch():
 
 def test_retry_requires_existing_unknown_attempt():
     env = sample()
-    outbox = RouteOutbox()
+    inbox = UpstreamInbox()
+    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(inbox))
     rep = reporter()
     report = rep.report(env, outbox, report_kind="ANOMALY",
                         receiver_agent_id="quant-sector-agent-1", report_id="r-retry",
@@ -224,7 +258,8 @@ def test_retry_requires_existing_unknown_attempt():
                          now=T + timedelta(seconds=2))
     rep.claim_and_confirm(
         env, outbox, report, claim_token="good", claim_at=T + timedelta(seconds=1),
-        lease_until=LATER - timedelta(minutes=5), ack=ack(report),
+        lease_until=LATER - timedelta(minutes=5),
+        ack=accepted_ack(inbox, report, at=T + timedelta(seconds=30)),
         now=T + timedelta(seconds=40))
     with pytest.raises(AgentReportingError, match="RETRY_NOT_PERMITTED"):
         rep.retry_report(env, outbox, report, generation=1, control_epoch=0,
@@ -327,11 +362,13 @@ def test_self_report_rejected_before_any_intent_is_planned():
 ])
 def test_forged_report_rejected_before_claim_without_spending_attempt(tamper):
     envelope = sample()
-    outbox = RouteOutbox()
+    inbox = UpstreamInbox()
+    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(inbox))
     rep = reporter()
     original = rep.report(envelope, outbox, report_kind="ANOMALY",
                           receiver_agent_id="quant-sector-agent-1",
                           report_id="r-original", control_epoch=0, now=T)
+    good = accepted_ack(inbox, original, at=T + timedelta(seconds=30))
     forged = tamper(original)
     intent = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                                target_type="AGENT", target_id=original.receiver.agent_id)
@@ -349,7 +386,7 @@ def test_forged_report_rejected_before_claim_without_spending_attempt(tamper):
     _, finished = rep.claim_and_confirm(
         envelope, outbox, original, claim_token="real",
         claim_at=T + timedelta(seconds=2), lease_until=LATER - timedelta(minutes=5),
-        ack=ack(original), now=T + timedelta(seconds=40))
+        ack=good, now=T + timedelta(seconds=40))
     assert finished.outcome == "ACCEPTED_VERIFIED"
     assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
                                target_type="AGENT", target_id=original.receiver.agent_id)[0].attempt_no == 1
@@ -412,7 +449,8 @@ def test_direct_cross_generation_intent_id_drift_refused_before_claim():
 
 def test_valid_generation_one_uses_original_report_and_current_window():
     envelope = sample()
-    outbox = RouteOutbox()
+    inbox = UpstreamInbox()
+    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(inbox))
     rep = reporter()
     report = rep.report(envelope, outbox, report_kind="ANOMALY",
                         receiver_agent_id="quant-sector-agent-1",
@@ -437,11 +475,11 @@ def test_valid_generation_one_uses_original_report_and_current_window():
                              target_type="AGENT", target_id=report.receiver.agent_id) == current
     assert len(outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
                                    target_type="AGENT", target_id=report.receiver.agent_id)) == 1
+    good = accepted_ack(inbox, retry, at=T + timedelta(seconds=5))
     second, finished = rep.claim_and_confirm(
         envelope, outbox, retry, claim_token="second",
         claim_at=T + timedelta(seconds=4), lease_until=LATER - timedelta(minutes=5),
-        ack=ack(retry, acked_at=T + timedelta(seconds=5)),
-        now=T + timedelta(seconds=6))
+        ack=good, now=T + timedelta(seconds=6))
     assert second.intent_id == "report-r-valid-g1-g1"
     assert second.attempt_no == 2
     assert finished.outcome == "ACCEPTED_VERIFIED"
@@ -449,19 +487,20 @@ def test_valid_generation_one_uses_original_report_and_current_window():
 
 def test_ack_verified_before_finish_and_bindings_enforced():
     envelope = sample()
-    outbox = RouteOutbox()
+    inbox = UpstreamInbox()
+    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(inbox))
     rep = reporter()
     report = rep.report(envelope, outbox, report_kind="ANOMALY",
                         receiver_agent_id="quant-sector-agent-1",
                         report_id="r-1", control_epoch=0, now=T)
-    good = ack(report)
+    good = accepted_ack(inbox, report, at=T + timedelta(seconds=30))
     attempt, finished = rep.claim_and_confirm(
         envelope, outbox, report, claim_token="tok-1",
         claim_at=T + timedelta(seconds=1),
         lease_until=LATER - timedelta(minutes=5), ack=good,
         now=T + timedelta(seconds=40))
     assert finished is not None and finished.outcome == "ACCEPTED_VERIFIED"
-    assert finished.receipt.external_message_id == "ack-1"
+    assert finished.receipt.external_message_id == good.ack_id
     assert finished.receipt.observed_at == T + timedelta(seconds=30)
     hostile = ack(report, receiver_agent_id="other-agent")
     envelope2 = sample(event_id="ev2")

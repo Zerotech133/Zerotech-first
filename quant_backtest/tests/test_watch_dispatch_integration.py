@@ -10,6 +10,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
+from quant_backtest.quant_sector.upstream_inbox import QuantUpstreamReport, UpstreamInbox
+from quant_backtest.watch_dispatch.route_outbox import ReportFingerprint
 from quant_backtest.quant_sector import (
     AuthorizationScope, HumanAuthorization, PermissionGate, ResearchReview,
     RiskDecision,
@@ -45,18 +48,27 @@ def sample(**changes):
     return freeze_offline(**fields)
 
 
-def build_chain(envelope):
-    """Freeze, plan all three routes, confirm review, record authorization."""
+def build_chain(envelope, *, upstream_inbox=None):
+    """Freeze, plan the offline route, confirm review, record authorization."""
     store = EvidenceStore()
-    outbox = RouteOutbox()
+    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(upstream_inbox)
+                         if upstream_inbox is not None else None)
     gate = PermissionGate(acceptance_lookup=lambda ref: ref == "rcpt-1")
     ledger = ShadowLedger()
     store.freeze(envelope)
     for route, target_type, target_id in ROUTES:
+        fingerprint = (ReportFingerprint(
+            report_id="integration-r1", report_kind="ANOMALY",
+            event_id=envelope.event_id,
+            evidence_version=envelope.evidence_version,
+            envelope_hash=envelope.envelope_hash,
+            sender_agent_id="watch-agent-1", receiver_agent_id=target_id,
+            created_at=envelope.freeze_at) if upstream_inbox is not None else None)
         outbox.plan(envelope, route=route, target_type=target_type,
                     target_id=target_id, policy_version="p1", control_epoch=0,
                     intent_id=f"i-{route}", created_at=envelope.freeze_at,
-                    valid_until=envelope.valid_until - timedelta(minutes=1))
+                    valid_until=envelope.valid_until - timedelta(minutes=1),
+                    report_fingerprint=fingerprint)
     gate.submit_review(envelope, ResearchReview(
         review_id="rev-1", event_id=envelope.event_id,
         evidence_version=envelope.evidence_version,
@@ -106,15 +118,28 @@ class PassRisk:
 
 def test_full_offline_chain_end_to_end():
     envelope = sample()
-    store, outbox, gate, ledger = build_chain(envelope)
+    inbox = UpstreamInbox()
+    store, outbox, gate, ledger = build_chain(envelope, upstream_inbox=inbox)
+    accepted_at = envelope.freeze_at + timedelta(seconds=10)
+    report = QuantUpstreamReport(
+        report_id="integration-r1", report_kind="ANOMALY",
+        event_id=envelope.event_id, evidence_hash=envelope.envelope_hash,
+        evidence_version=envelope.evidence_version,
+        sender_agent_id="watch-agent-1", receiver_agent_id="quant-desk-1",
+        created_at=envelope.freeze_at)
     attempt = outbox.claim(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
                            target_id="quant-desk-1", claim_token="tok-1",
                            claim_at=envelope.freeze_at,
                            lease_until=envelope.valid_until - timedelta(minutes=5))
-    outbox.finish(attempt.attempt_id, outcome="ACCEPTED_VERIFIED",
-                  now=envelope.freeze_at + timedelta(seconds=30),
-                  external_message_id="msg-1", verification_source="provider:quant-desk",
-                  observed_at=envelope.freeze_at + timedelta(seconds=10))
+    issued = inbox.accept(report, now=accepted_at).ack
+    finished = outbox.finish(
+        attempt.attempt_id, outcome="ACCEPTED_VERIFIED",
+        now=envelope.freeze_at + timedelta(seconds=30),
+        external_message_id=issued.ack_id,
+        verification_source=issued.verification_source,
+        observed_at=issued.acked_at)
+    assert finished.receipt is not None
+    assert finished.receipt.external_message_id == issued.ack_id
     verdict = gate.consume(envelope, authorization_id="auth-1",
                            now=envelope.freeze_at + timedelta(minutes=1),
                            acceptance_ref="rcpt-1",
@@ -207,14 +232,16 @@ def test_upstream_report_receipt_states_stay_independent_per_envelope():
     second = outbox.claim(other, route="QUANT_UPSTREAM_REPORT", target_type="desk",
                           target_id="quant-desk-1", claim_token="tok-r",
                           claim_at=T, lease_until=T + timedelta(minutes=25))
-    outbox.finish(second.attempt_id, outcome="DEFINITELY_REJECTED",
-                  now=T + timedelta(seconds=30), external_message_id="rej-1",
-                  verification_source="provider:quant-desk",
-                  observed_at=T + timedelta(seconds=20))
+    rejected = outbox.finish(
+        second.attempt_id, outcome="DEFINITELY_REJECTED",
+        now=T + timedelta(seconds=30), external_message_id="rej-1",
+        verification_source="provider:quant-desk",
+        observed_at=T + timedelta(seconds=20))
+    assert rejected.outcome == "UNKNOWN" and rejected.receipt is None
     assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                              target_type="desk", target_id="quant-desk-1").status == "UNKNOWN"
     assert outbox.get_intent(other, route="QUANT_UPSTREAM_REPORT",
-                             target_type="desk", target_id="quant-desk-1").status == "READY_OFFLINE"
+                             target_type="desk", target_id="quant-desk-1").status == "UNKNOWN"
     assert len(outbox.get_attempts(other, route="QUANT_UPSTREAM_REPORT",
                                    target_type="desk", target_id="quant-desk-1")) == 1
     assert len(outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
