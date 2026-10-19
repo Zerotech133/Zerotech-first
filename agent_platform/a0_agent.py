@@ -32,7 +32,7 @@ from pathlib import Path
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE / "engine"))
 
-from llm import LLMError, OllamaLLM  # noqa: E402
+from llm import LLMError, NovaMaxLLM, OllamaLLM  # noqa: E402
 
 PERSONA = BASE / "prompts" / "a0_chief.md"
 COMPARE_PERSONA = BASE / "prompts" / "a0_compare.md"  # K-ORG-120 成对判读人设
@@ -102,9 +102,27 @@ def glm_chat(persona, user, model="glm/glm-5.3", timeout=240):
 
 
 def route_chat(persona, user, model):
-    """K-ORG-130：模型路由——glm/* 走智谱包年通道，其余走本地 Ollama（默认不变）。"""
+    """模型路由（K-ORG-130 → 10-18 分工定案）：binding 全前缀路由。
+
+    glm/*  → 智谱包年云端（参谋长层判读：田丰/诸葛亮席位）
+    nova/* → NovaMax 特种（视觉/结构化）
+    ollama/* 或裸模型名 → 本地 Ollama（数据治理/蒸馏/嵌入岗）"""
     if model.startswith("glm/"):
-        return glm_chat(persona, user, model=model)
+        try:
+            return glm_chat(persona, user, model=model)
+        except LLMError:
+            # 云端额度/网络不可用 → 自动降级本地 9b（10-18：包年 key 周限至 10-20 18:57）
+            text, st = OllamaLLM().chat(persona, user, model="qwen3.5:9b")
+            return text, ("degraded" if st == "normal" else st)
+    if model.startswith("nova/"):
+        try:
+            port = model.split("/")[1]
+            return NovaMaxLLM(port=port).chat(system=persona, user=user)
+        except LLMError:
+            text, st = OllamaLLM().chat(persona, user, model="qwen3.5:9b")
+            return text, ("degraded" if st == "normal" else st)
+    if model.startswith("ollama/"):
+        model = model.split("/", 1)[1]
     return OllamaLLM().chat(persona, user, model=model)
 
 MOCK_REVIEW = (
@@ -129,14 +147,17 @@ MOCK_COMPARE = {
 
 
 def chief_model():
-    """从 org.json 读 chief 的 llm_binding（缺省 ollama/qwen3.5:9b）。
-    审计修正（K-STOCK-021b）：兜底原为 35b，但 35b 已实测证伪（本机显存不足必超时，
-    K-ORG-008）——兜底必须指向已验证可用档。"""
+    """从 org.json 读 chief 的 llm_binding——**返回完整 binding 含前缀**。
+
+    10-18 修：旧实现 split("/")[-1] 会把 glm/glm-5.3 砍成 "glm-5.3"，
+    route_chat 认不出 glm/ 前缀就误落本地 Ollama（404 降级）——云端席位静默变残废。
+    现返回完整 binding，前缀路由交 route_chat。兜底 ollama/qwen3.5:9b（已验证可用档，
+    K-STOCK-021b）。"""
     try:
         org = json.loads(ORG.read_text(encoding="utf-8"))
-        return org.get("chief", {}).get("llm_binding", "ollama/qwen3.5:9b").split("/")[-1]
+        return org.get("chief", {}).get("llm_binding", "ollama/qwen3.5:9b")
     except Exception:  # noqa: BLE001
-        return "qwen3.5:9b"
+        return "ollama/qwen3.5:9b"
 
 
 # K-STOCK-120：点评质量四判据自检——黑名单操作建议词（含变体，如"建议买入"）

@@ -15,6 +15,7 @@ sys.path.insert(0, str(PLATFORM / "engine"))
 from strategy_registry import (  # noqa: E402
     RECOMMENDATIONS, STANCES, StrategyAgent, StrategyError,
     StrategyRegistry, Verdict)
+from strategy_config import RunAuthorization  # noqa: E402
 
 
 def _v(**kw):
@@ -142,3 +143,44 @@ def test_run_rejects_invalid_enum_from_plugin():
 def test_base_class_propose_unimplemented():
     with pytest.raises(NotImplementedError):
         StrategyAgent().propose({})
+
+
+def test_registry_binds_and_returns_authorization_snapshot():
+    class AuthorizedAgent(StrategyAgent):
+        strategy_id = "authorized"
+        version = "1.2.3"
+
+    authorization = RunAuthorization(
+        strategy_id="authorized",
+        version="1.2.3",
+        mode="SHADOW",
+        context_bytes=128,
+        resource_budget={
+            "timeout_s": 1.0,
+            "max_concurrency": 1,
+            "max_context_bytes": 1024,
+        },
+        allowed_modes=frozenset({"SHADOW"}),
+        permissions=frozenset({"propose", "read_context"}),
+        allowed_data=("bars",),
+    )
+    registry = StrategyRegistry()
+    registry.register(AuthorizedAgent())
+    bound = registry.bind_authorization(authorization)
+    assert bound.as_dict() == authorization.as_dict()
+    assert registry.authorization("authorized").mode == "SHADOW"
+
+
+def test_registry_rejects_unsafe_authorization_permissions():
+    with pytest.raises(ValueError, match="propose、read_context"):
+        RunAuthorization(
+            strategy_id="unsafe",
+            version="1.0.0",
+            mode="SHADOW",
+            context_bytes=1,
+            resource_budget={"timeout_s": 1, "max_concurrency": 1,
+                             "max_context_bytes": 10},
+            allowed_modes=frozenset({"SHADOW"}),
+            permissions=frozenset({"propose", "order"}),
+            allowed_data=("bars",),
+        )
