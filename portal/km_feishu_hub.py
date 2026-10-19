@@ -694,6 +694,20 @@ def main():
 
     os.makedirs(WORK, exist_ok=True)
     os.makedirs(SNAP_DIR, exist_ok=True)
+    # 崩溃取证：stdout/stderr 改行缓冲（此前块缓冲在进程异常死亡时丢失启动行与异常栈，
+    # km_hub.out 长期停留在旧内容即此因）；faulthandler 直写 fd，硬崩留痕 km_hub_fault.log。
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(line_buffering=True)
+        except Exception:
+            pass
+    try:
+        import faulthandler
+        faulthandler.enable(open(os.path.join(WORK, "km_hub_fault.log"), "ab"))
+    except Exception:
+        pass
+    print("[start] PID=%s %s port=%d" % (
+        os.getpid(), datetime.now().strftime("%m-%d %H:%M:%S"), args.port))
     if not os.path.exists(CONFIG_PATH):
         save_config(load_config())
     threading.Thread(target=scheduler_loop, daemon=True).start()
@@ -706,7 +720,11 @@ def main():
     cfg = load_config()
     print("[ok] 已注册库：%s（enabled=%s）" % (
         [l["name"] for l in cfg.get("libraries", [])], cfg.get("enabled", True)))
-    srv.serve_forever()
+    try:
+        srv.serve_forever()
+    finally:
+        print("[exit] PID=%s %s" % (
+            os.getpid(), datetime.now().strftime("%m-%d %H:%M:%S")))
     return 0
 
 
