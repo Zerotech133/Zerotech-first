@@ -23,7 +23,8 @@ from academy_research import load_topics, create_topic, advance_topic, summary a
 from legion_tri_party_meeting import (MeetingError, create_meeting, list_meetings,
                                       load_meeting, update_confirmation)
 from legion_meeting_room import (RoomError, create_room, load_room, list_rooms,
-                                 post_message, board_add_card, board_update_card)
+                                 post_message, board_add_card, board_update_card,
+                                 board_resolve_card)
 from api_legion_ops import build_roster, build_feed, build_tasks  # v3 H2 路由用
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
@@ -372,7 +373,13 @@ def room_board(payload: dict) -> dict:
                 status=payload.get("status"),
                 refs=payload.get("refs"),
             )}
-        return {"ok": False, "err": "op 必须是 add/update"}
+        if op == "resolve":
+            return {"ok": True, "room": board_resolve_card(
+                str(payload.get("room_id") or ""),
+                str(payload.get("card_id") or ""),
+                author=str(payload.get("author") or ""),
+            )}
+        return {"ok": False, "err": "op 必须是 add/update/resolve"}
     except RoomError as exc:
         return {"ok": False, "err": str(exc)}
 

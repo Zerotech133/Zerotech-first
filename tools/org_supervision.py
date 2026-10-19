@@ -30,7 +30,7 @@ def check_tasks():
     statuses = Counter(v.get("status", "?") for v in d.values())
     projects = Counter(
         (v.get("project") or "general") for v in d.values()
-        if v.get("status") not in ("done", "merged", "dropped", "cancelled")
+        if v.get("status") not in ("done", "merged", "dropped", "cancelled", "aborted")
     )
     reviewing = [k for k, v in d.items() if v.get("status") in ("in_review", "review")]
     return len(d), statuses, projects, reviewing
@@ -289,7 +289,7 @@ def main(push=True):
     total, statuses, projects, reviewing = check_tasks()
     lines.append("## 工单看板（总 %d）" % total)
     lines.append("- 状态: %s" % dict(statuses))
-    lines.append("- 在途项目线: %s" % dict(projects) or "-")
+    lines.append("- 在途项目线: %s" % (dict(projects) if projects else "-"))
     if reviewing:
         yellows.append(
             "工单卡在评审 %d 张: %s…（需核对：含历史存量可能已实际 merge 仅状态未流转，"

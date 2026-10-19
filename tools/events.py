@@ -43,6 +43,7 @@ KINDS = ("task_start", "commit", "blocked", "merge_done", "guard_fail",
         "dispatch", "accept", "review_verdict", "patrol_verdict",  # K-ORG-027b(OPS1)：+派单域四类
         "code_action", "code_observation",  # K-ORG-036e(F5)：+编码生产线动作/观察对（OpenHands 事件流范式）
         "approval_request", "approval_verdict",  # K-ORG-054(G4)：确定因素直批通道——Agent 请批/田丰判读（灰度期全部抄送老田）
+        "confirmation_verdict",  # 2026-10-19 议事厅判例：用户对会议材料的确认/退回——不是田丰直批，不得混入 approval_verdict 灰度统计
         "deviation_report")  # K-ORG-054(G3)：SEC2 方案级走形检查报告（对照方案条目→证据→判定→建议命令）
 
 

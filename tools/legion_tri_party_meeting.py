@@ -286,7 +286,9 @@ def _audit(kind: str, meeting: Mapping[str, Any], detail: str, *, enabled: bool)
         pass
     try:
         from events import emit
-        event_kind = "approval_verdict" if kind == "confirmation_updated" else "approval_request"
+        # 2026-10-19 判例：用户确认不是田丰直批（approval_verdict 是 K-ORG-054 直批灰度
+        # 统计口径），改用独立 confirmation_verdict，防止晨报直批计数被会议确认污染。
+        event_kind = "confirmation_verdict" if kind == "confirmation_updated" else "approval_request"
         emit(event_kind, task=meeting_id, agent="A0/AI1", detail=summary)
     except Exception:
         pass
