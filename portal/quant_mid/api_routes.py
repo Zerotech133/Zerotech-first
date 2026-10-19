@@ -84,6 +84,8 @@ def _routes() -> list:
         ("POST", "/api/quant/close/",        _h_close),
         # POST /api/quant/push                — 选股Agent 推池 (批量)
         ("POST", "/api/quant/push",          _h_push),
+        # POST /api/quant/feedback/{id}       — 双向 Agent Webhook: HERMES 反馈回流郭嘉
+        ("POST", "/api/quant/feedback/",     _h_feedback),
     ]
 
 
@@ -310,3 +312,30 @@ def _h_push(m, p, h, b) -> Tuple[int, dict]:
         return 200, {"ok": True, "id": rid}
     except TypeError as e:
         return 400, {"ok": False, "error": f"字段缺失: {e}"}
+
+
+def _h_feedback(m, p, h, b) -> Tuple[int, dict]:
+    """POST /api/quant/feedback/{id} —— 双向 Agent Webhook: HERMES 反馈回流郭嘉.
+
+    body: {"feedback_type": "approve|reject|calibrate|skip|other",
+           "feedback_note": "...", "feedback_score": 0.0~1.0}
+    语义: 飞书侧 HERMES / 用户 / 复盘系统 对某条 trade_pool 信号的评价/校准.
+    """
+    import re
+    m2 = re.match(r"^/api/quant/feedback/(\d+)$", p)
+    if not m2:
+        return 400, {"ok": False, "error": "POST /api/quant/feedback/{id}"}
+    row_id = int(m2.group(1))
+    body, err = _parse_body(h, b)
+    if err:
+        return 400, {"ok": False, "error": err}
+    ftype = str(body.get("feedback_type", ""))
+    fnote = str(body.get("feedback_note", ""))
+    fscore = body.get("feedback_score")
+    try:
+        tp.set_feedback(row_id, feedback_type=ftype,
+                        feedback_note=fnote, feedback_score=fscore)
+        return 200, {"ok": True, "id": row_id,
+                     "feedback_type": ftype, "feedback_at": "now"}
+    except ValueError as e:
+        return 404, {"ok": False, "error": str(e)}

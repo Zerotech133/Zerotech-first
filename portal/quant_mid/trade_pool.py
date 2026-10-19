@@ -257,6 +257,31 @@ def close_position(row_id: int, close_price: float,
         conn.commit()
 
 
+# ── 双向 Agent Webhook 反馈入口 (HERMES 回流郭嘉) ─────────
+def set_feedback(row_id: int, feedback_type: str = "",
+                 feedback_note: str = "", feedback_score: float = None) -> None:
+    """HERMES 侧对 trade_pool 信号的复盘反馈 → 写回 DB 供郭嘉校准.
+
+    feedback_type ∈ {approve, reject, calibrate, skip, other}
+    feedback_score ∈ [0.0, 1.0] 可选
+    """
+    sql = """
+        UPDATE trade_pool
+        SET feedback_type = %s, feedback_note = %s,
+            feedback_score = %s, feedback_at = NOW()
+        WHERE id = %s
+    """
+    with _get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(sql, (feedback_type or None, feedback_note or None,
+                          float(feedback_score) if feedback_score is not None else None,
+                          row_id))
+        if cur.rowcount == 0:
+            conn.rollback()
+            raise ValueError(f"row {row_id} not found")
+        conn.commit()
+
+
 # ── 健康检查 ──────────────────────────────────────────────
 def health_check() -> Dict[str, Any]:
     """供 Portal / 8097 进程探活用: DB 可达 + 表存在."""
