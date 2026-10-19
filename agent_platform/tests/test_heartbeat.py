@@ -113,7 +113,7 @@ class FileProbeTests(_RealRepoSafe):
             r = hb.FileProbe(p).probe()
             self.assertTrue(r["alive"])
             self.assertEqual(r["detail"], "engine up")
-            self.assertEqual(r["source"], "paper_engine")
+            self.assertEqual(r["source"], "paperclip_org_shell")
 
     def test_file_probe_uses_state_checked_at(self):
         with tempfile.TemporaryDirectory() as td:

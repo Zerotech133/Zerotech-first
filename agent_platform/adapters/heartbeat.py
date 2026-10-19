@@ -152,9 +152,11 @@ class FileProbe(HeartbeatProbe):
     文件形态：{"alive": bool, "detail": str?, "checked_at": "YYYY-MM-DDTHH:MM"?}
     缺 checked_at 时取采集时刻。不主动探测 Docker/网络（部署未发生）。"""
 
-    source = "paper_engine"
+    source = "paperclip_org_shell"
 
-    def __init__(self, state_file, source="paper_engine"):
+    def __init__(self, state_file, source="paperclip_org_shell"):
+        # 拍板③：source 二实体——paper_engine=交易引擎(军侧8790容器)，
+        # paperclip_org_shell=组织壳(本仓探针默认)；两实体不得混用同一 source。
         if not state_file:
             raise HeartbeatError("FileProbe 需要显式 state_file 路径")
         self.state_file = Path(state_file)
