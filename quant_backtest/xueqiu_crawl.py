@@ -510,7 +510,7 @@ def takeover_quote(symbols: list[str]) -> int:
             print("[takeover_quote] 替代源 %s 供数 %d 行（errs=%d）"
                   % (alt_src, len(safe_rows), len(alt_errs)))
         else:
-            c.mf.mark("xq_quote_snap", done=False, rows=0,
+            c.mf.mark("xq_quote_snap", done=False, rows=0, file="",
                       status="ip_blocked" if (tripped or blocked)
                       else "failed",
                       note=("takeover 403 熔断停轮；替代源亦挂: %s"
@@ -519,7 +519,9 @@ def takeover_quote(symbols: list[str]) -> int:
                             % "; ".join(alt_errs[:3])) if blocked
                       else "takeover 直爬全批失败；替代源亦挂: %s"
                            % "; ".join(alt_errs[:3]))
-            c.mf.save()
+            if not c.mf.save():
+                raise RuntimeError("takeover 全源失败且 manifest 保存失败；"
+                                   "磁盘旧快照状态未更新，不得视为本轮结果")
             return 0
     d = os.path.join(X.OUT_DIR, "xq_quote_snap")
     os.makedirs(d, exist_ok=True)
@@ -530,7 +532,9 @@ def takeover_quote(symbols: list[str]) -> int:
     c.mf.mark("xq_quote_snap", done=True, rows=len(df),
               file="d_%s.parquet" % ymd, status="ok",
               note=alt_note)
-    c.mf.save()
+    if not c.mf.save():
+        raise RuntimeError("takeover 快照片可能已落盘，但 manifest 未确认；"
+                           "不得视为本轮成功")
     print("[takeover_quote] %d 行落兜底片 d_%s.parquet" % (len(df), ymd))
     return len(df)
 

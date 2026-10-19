@@ -822,5 +822,159 @@ class TestTakeoverInvalidInputs(_TmpEnv):
         self.assertEqual(state.get("xq_quote_snap")["status"], "ok")
 
 
+class TestTakeoverManifestSave(_TmpEnv):
+    """快照接管落账失败不得用磁盘旧状态或未确认新片伪报成功。"""
+
+    def setUp(self):
+        super().setUp()
+        self._session_guard = mock.patch.object(
+            C.requests, "Session", side_effect=AssertionError("no session"))
+        self._socket_guard = mock.patch(
+            "socket.socket.connect", side_effect=AssertionError("no network"))
+        self._session_guard.start()
+        self._socket_guard.start()
+        self.addCleanup(self._session_guard.stop)
+        self.addCleanup(self._socket_guard.stop)
+
+    def _seed_crawler(self):
+        """预置旧成功快照与 health，返回不构造会话的伪采集器。"""
+        old = X.XqManifest()
+        old.mark_health("quotec_probe", "previous-health")
+        old.mark("xq_quote_snap", done=True, rows=3, status="ok",
+                 file="d_old.parquet", note="previous snapshot")
+        self.assertTrue(old.save())
+        crawler = mock.Mock()
+        crawler.mf = X.XqManifest()
+        crawler.mf.load()
+        return crawler, dict(old.get("xq_quote_snap")), dict(old.health())
+
+    def _disk_manifest(self):
+        """重新从隔离磁盘读取，不使用采集器内存的待提交状态。"""
+        saved = X.XqManifest()
+        saved.load()
+        return saved
+
+    def test_all_sources_failed_save_false_preserves_old_disk_state(self):
+        """雪球与替代源全败：save False 必须报旧盘状态未更新。"""
+        crawler, old_state, old_health = self._seed_crawler()
+        with mock.patch.object(C, "XqCrawler", return_value=crawler), \
+                mock.patch.object(X, "xq_get", return_value=None) as direct, \
+                mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+                    [], "", ["fallback down"])) as alternative, \
+                mock.patch.object(X, "atomic_parquet") as writer, \
+                mock.patch.object(X.XqManifest, "save", return_value=False), \
+                mock.patch("builtins.print") as output:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "全源失败且 manifest 保存失败.*磁盘旧快照状态未更新"):
+                C.takeover_quote(["SH600519"])
+            self.assertEqual(C.main(["--mode", "takeover", "--symbols",
+                                     "SH600519"]), 1)
+        self.assertEqual(direct.call_count, 2)
+        self.assertEqual(alternative.call_count, 2)
+        writer.assert_not_called()
+        self.assertTrue(any("manifest 保存失败" in str(call)
+                            for call in output.call_args_list))
+        saved = self._disk_manifest()
+        self.assertEqual(saved.get("xq_quote_snap"), old_state)
+        self.assertEqual(saved.health(), old_health)
+        self.assertEqual(crawler.mf.get("xq_quote_snap")["status"], "failed")
+        self.assertFalse(os.path.exists(os.path.join(X.OUT_DIR,
+                                                      "xq_quote_snap")))
+        self.assertFalse(os.path.exists(X.INFO_DB))
+
+    def test_all_sources_failed_save_true_clears_old_file(self):
+        """全源失败若保存成功，旧文件引用必须清空，health 不变。"""
+        crawler, _, old_health = self._seed_crawler()
+        with mock.patch.object(C, "XqCrawler", return_value=crawler), \
+                mock.patch.object(X, "xq_get", return_value=None) as direct, \
+                mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+                    [], "", ["fallback down"])) as alternative, \
+                mock.patch.object(X, "atomic_parquet") as writer:
+            self.assertEqual(C.takeover_quote(["SH600519"]), 0)
+        direct.assert_called_once()
+        alternative.assert_called_once_with(["SH600519"])
+        writer.assert_not_called()
+        saved = self._disk_manifest()
+        self.assertEqual(saved.health(), old_health)
+        state = saved.get("xq_quote_snap")
+        self.assertFalse(state["done"])
+        self.assertEqual(state["rows"], 0)
+        self.assertEqual(state["status"], "failed")
+        self.assertEqual(state["file"], "")
+        self.assertIn("fallback down", state["note"])
+        self.assertFalse(os.path.exists(X.INFO_DB))
+
+    def test_published_snapshot_save_false_reports_unconfirmed_file(self):
+        """先发布片再落账失败：文件不回滚，CLI rc1 且不声称零产物。"""
+        crawler, old_state, old_health = self._seed_crawler()
+        paths = []
+
+        def publish_stub(frame, path):
+            self.assertEqual(len(frame), 1)
+            with open(path, "wb") as snapshot:
+                snapshot.write(b"published snapshot stub")
+            paths.append(path)
+
+        with mock.patch.object(C, "XqCrawler", return_value=crawler), \
+                mock.patch.object(X, "xq_get", return_value=None) as direct, \
+                mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+                    [_snapshot_row("SH600519", "600519.SH")], "tushare", []
+                )) as alternative, \
+                mock.patch.object(X, "atomic_parquet", side_effect=publish_stub), \
+                mock.patch.object(X.XqManifest, "save", return_value=False), \
+                mock.patch("builtins.print") as output:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "快照片可能已落盘，但 manifest 未确认"):
+                C.takeover_quote(["SH600519"])
+            self.assertEqual(C.main(["--mode", "takeover", "--symbols",
+                                     "SH600519"]), 1)
+        self.assertEqual(direct.call_count, 2)
+        self.assertEqual(alternative.call_count, 2)
+        self.assertEqual(len(paths), 2)
+        self.assertEqual(paths[0], paths[1])
+        with open(paths[0], "rb") as snapshot:
+            self.assertEqual(snapshot.read(), b"published snapshot stub")
+        self.assertTrue(any("快照片可能已落盘，但 manifest 未确认" in str(call)
+                            for call in output.call_args_list))
+        saved = self._disk_manifest()
+        self.assertEqual(saved.get("xq_quote_snap"), old_state)
+        self.assertEqual(saved.health(), old_health)
+        self.assertEqual(crawler.mf.get("xq_quote_snap")["status"], "ok")
+        self.assertFalse(os.path.exists(X.INFO_DB))
+
+    def test_published_snapshot_save_true_confirms_manifest_and_cli(self):
+        """正常落片与保存仍以 rc0、磁盘新状态成功结束。"""
+        crawler, _, old_health = self._seed_crawler()
+        paths = []
+
+        def publish_stub(frame, path):
+            self.assertEqual(len(frame), 1)
+            with open(path, "wb") as snapshot:
+                snapshot.write(b"published snapshot stub")
+            paths.append(path)
+
+        with mock.patch.object(C, "XqCrawler", return_value=crawler), \
+                mock.patch.object(X, "xq_get", return_value=None) as direct, \
+                mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+                    [_snapshot_row("SH600519", "600519.SH")], "tushare", []
+                )) as alternative, \
+                mock.patch.object(X, "atomic_parquet", side_effect=publish_stub):
+            self.assertEqual(C.main(["--mode", "takeover", "--symbols",
+                                     "SH600519"]), 0)
+        direct.assert_called_once()
+        alternative.assert_called_once_with(["SH600519"])
+        self.assertEqual(len(paths), 1)
+        self.assertTrue(os.path.isfile(paths[0]))
+        saved = self._disk_manifest()
+        self.assertEqual(saved.health(), old_health)
+        state = saved.get("xq_quote_snap")
+        self.assertEqual(state["status"], "ok")
+        self.assertTrue(state["done"])
+        self.assertEqual(state["rows"], 1)
+        self.assertEqual(state["file"], os.path.basename(paths[0]))
+        self.assertIn("替代源(tushare)", state["note"])
+        self.assertFalse(os.path.exists(X.INFO_DB))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
