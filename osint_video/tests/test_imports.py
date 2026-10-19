@@ -37,12 +37,16 @@ ALL_MODULES = [
     "extraction.ocr_paddle",
     "extraction.pipeline",
     "knowledge.api",
+    "knowledge.authorized_browser",  # 2026-10-20 补登记：commit 0190195f 收编的授权浏览器知识件
     "knowledge.browser_fetcher",
     "knowledge.creator_ops",
     "knowledge.creator_workers",
     "knowledge.indexer",
     "knowledge.item_processor",
     "knowledge.repository",
+    "collectors.browser_mapper",  # 2026-10-20 补登记：commit 0190195f 收编的采集器模块，文件在盘
+    "collectors.browser_visible_poc",  # 2026-10-20 补登记：同上，浏览器可见性 PoC 采集器
+    "collectors.platform_adapter",  # 2026-10-20 补登记：同上，平台适配采集器
     "collectors.ports",
     "hermes_adapter.dto",
     "hermes_adapter.ports",
@@ -50,14 +54,20 @@ ALL_MODULES = [
     "integration.hermes_contract",
     "integration.hermes_api",
     "queue_link.api",
+    "queue_link.import_api",  # 2026-10-20 补登记：commit 67039626 统一采集工作台的导入 API
     "queue_link.models",
     "queue_link.repository",
+    "resdl_adapter.adapter",  # 2026-10-20 补登记：resdl 适配器包（文件在盘，期望集此前漏登记）
+    "resdl_adapter.completion",
+    "resdl_adapter.dto",
+    "resdl_adapter.security",
     "scripts.init_db",
     "scripts.launch_authorized_browser",
     "scripts.poc_manual_test",
     "store.models",
     "store.repository",
     "store.service",
+    "workers.composition",  # 2026-10-20 补登记：commit 0190195f 收编的合成 worker
     "workers.run",
     "test_feishu_gate",
 ]
