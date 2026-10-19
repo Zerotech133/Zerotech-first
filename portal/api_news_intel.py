@@ -5,7 +5,8 @@ GET /api/news/intel（零参数）→ 判读结论在前、原料流水在后的
   overview   总览区：近 48h jev 非空条目计数 {total_judged, bull, bear,
              neutral, high_impact}（impact_cn='高' 计高冲击）。
   verdicts   关键判读区：近 48h jev 非空条目按（impact 权重降序, conf 降序,
-             id 降序）排序 top 20，字段 ts/hm/title/source/stocks/jev；
+             id 降序）排序 top 20，字段 ts/hm/title/content/source/stocks/
+             jev；content 截 300 字（政策栏同口径，K-ORG-209 行卡展开用）；
              排序口径拍板依据：JEV 置信度右偏（真实库 conf>=0.9 占 34%）
              分辨率差，冲击为主、conf 只做次级（K-ORG-208）。
   flash      速报栏（原料流）：news.db 只读（sqlite mode=ro uri），近 48h
@@ -213,9 +214,10 @@ def read_verdicts():
         db = _connect_ro()
         try:
             # 判例过滤：jev IS NOT NULL AND jev!=''（api_backtest._bt_jev 同款）；
-            # ORDER BY id DESC 保证同分条目经稳定排序后仍保持 id 降序
+            # ORDER BY id DESC 保证同分条目经稳定排序后仍保持 id 降序；
+            # content 随行带出供前端行卡展开正文（K-ORG-209）
             rows = db.execute(
-                "SELECT id,ts,title,source,stocks,jev FROM news "
+                "SELECT id,ts,title,content,source,stocks,jev FROM news "
                 "WHERE ts>=? AND jev IS NOT NULL AND jev!='' "
                 "ORDER BY id DESC", (since,)).fetchall()
         finally:
@@ -223,8 +225,11 @@ def read_verdicts():
     except Exception as e:  # noqa: BLE001
         return overview, verdicts, "news.db 读取失败: %r" % e
     # 第一遍：解析 + 计数（遍历顺序即 id 降序，供下方稳定排序保序）
-    scored = []  # (impact_weight, conf, id, ts, title, source, stocks, jev)
-    for _id, ts, title, source, stocks, raw in rows:
+    # 投影元组：(impact_weight, conf, id, ts, title, content, source,
+    # stocks, jev)——content 截 300 字（政策栏 (content or "")[:300] 同款），
+    # 供前端行卡展开正文
+    scored = []
+    for _id, ts, title, content, source, stocks, raw in rows:
         jev = _parse_jev(raw)
         if jev is None:
             continue  # 坏 JSON / 非 dict：不进判读统计，不炸
@@ -235,15 +240,18 @@ def read_verdicts():
         if jev["impact_cn"] == "高":
             overview["high_impact"] += 1
         scored.append((IMPACT_WEIGHT.get(jev["impact_cn"], 0),
-                       jev["conf"] or 0, _id, ts, title, source,
+                       jev["conf"] or 0, _id, ts, title,
+                       (content or "")[:300], source,
                        _parse_stocks(stocks), jev))
     # 第二遍：impact 权重/conf 数值降序稳定排序（同分保持 id 降序）后取 top N
     scored.sort(key=lambda r: (-r[0], -r[1]))
     verdicts["total"] = len(scored)
-    for _w, _c, _id, ts, title, source, stocks, jev in scored[:VERDICT_LIMIT]:
+    for (_w, _c, _id, ts, title, content,
+         source, stocks, jev) in scored[:VERDICT_LIMIT]:
         verdicts["items"].append({
             "ts": ts, "hm": (ts or "")[-5:], "title": title,
-            "source": source, "stocks": stocks, "jev": jev})
+            "content": content, "source": source, "stocks": stocks,
+            "jev": jev})
     return overview, verdicts, None
 
 

@@ -6,7 +6,8 @@ api_xq_intel.REPORT_ROOT 一并 monkeypatch 指向 tmp（其模块常量锚在
 C:/aios 真数据目录，测试必须隔离不读真数据）；FakeHandler 注入 _json
 捕获 payload（_json 由 portal_api 主 Handler 提供，单测用 fake 等价替换）。
 K-ORG-208 新增：overview 多空计数 / verdicts 冲击优先排序 / jev 坏 JSON
-不炸 / 新响应结构 fail-visible 链路。
+不炸 / 新响应结构 fail-visible 链路。K-ORG-209 新增：判读条目带 content
+（截 300 字，政策栏同口径），无正文置空串。
 """
 import json
 import sqlite3
@@ -201,19 +202,22 @@ def test_config_override_and_builtin_fallback(root):
 
 # ── K-ORG-208 判读输出台用例 ─────────────────────────────────────────────
 
-def jrow(jid, hours, title, jev_obj, source="xd_news", stocks=None):
+def jrow(jid, hours, title, jev_obj, source="xd_news", stocks=None,
+         content=""):
     """判读区造数：jev_obj 为 dict 时序列化，字符串原样写入（造坏 JSON 用）。"""
     raw = jev_obj if isinstance(jev_obj, str) else json.dumps(
         jev_obj, ensure_ascii=False)
-    return {"id": jid, "ts": hm(hours), "title": title, "source": source,
-            "stocks": stocks, "jev": raw}
+    return {"id": jid, "ts": hm(hours), "title": title, "content": content,
+            "source": source, "stocks": stocks, "jev": raw}
 
 
 JEV_ROWS = [
-    # 甲：高冲击 + 低置信（0.5）——拍板口径下应压过乙（低冲击 + 高置信 0.95）
+    # 甲：高冲击 + 低置信（0.5）——拍板口径下应压过乙（低冲击 + 高置信 0.95）；
+    # content 400 字 → 判读条目截 300 字（K-ORG-209 与政策栏同口径）
     jrow("j:a", 1, "甲高冲击低置信",
          {"bias": "bull", "bias_cn": "利多", "conf": 0.5,
-          "impact_cn": "高", "scope_cn": "A股"}, stocks='["300001.SZ"]'),
+          "impact_cn": "高", "scope_cn": "A股"}, stocks='["300001.SZ"]',
+         content="甲" * 400),
     # 乙：低冲击 + 高置信（对照项）
     jrow("j:b", 2, "乙低冲击高置信",
          {"bias": "bear", "bias_cn": "利空", "conf": 0.95, "impact_cn": "低"}),
@@ -251,6 +255,12 @@ def test_overview_counts_and_verdict_impact_priority(root):
     assert second["stocks"] == ["300001.SZ"]
     assert second["jev"]["bias"] == "bull" and second["jev"]["conf"] == 0.5
     assert second["jev"]["scope_cn"] == "A股"
+    # K-ORG-209：判读条目带 content 供行卡展开；300 截断与政策栏同口径
+    assert all("content" in i for i in vd["items"])
+    assert second["content"] == "甲" * 300            # 400 字截到 300
+    # 无正文的条目 content 置空串（不缺键，前端灰字兜底）
+    no_body = [i for i in vd["items"] if i["title"] != "甲高冲击低置信"]
+    assert no_body and all(i["content"] == "" for i in no_body)
 
 
 def test_verdicts_and_flash_survive_bad_jev(root):
