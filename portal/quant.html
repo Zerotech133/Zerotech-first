@@ -20,6 +20,18 @@
   .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
   .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
 
+  /* ── v2① 置顶预警区（市场级/链路级分级） ── */
+  .rbanner { display: flex; align-items: baseline; gap: 12px; border-radius: 10px; padding: 10px 16px; margin-top: 16px; font-size: 13px; }
+  .rbanner .tag { font: 700 11px/1 Consolas, monospace; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+  .rbanner.market { background: rgba(224,86,86,.10); border: 1px solid rgba(224,86,86,.45); }
+  .rbanner.market .tag { background: var(--color-err); color: #fff; }
+  .rbanner.chain { background: rgba(210,153,34,.08); border: 1px solid rgba(210,153,34,.4); }
+  .rbanner.chain .tag { background: var(--color-warn); color: #201800; }
+  .rbanner.quiet { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-dim); font-size: 12px; padding: 8px 16px; }
+  .rbanner.quiet .tag { background: var(--color-ok); color: #04140d; }
+  .rbanner .why { color: var(--text-dim); font-size: 11.5px; }
+  .rbanner a { color: var(--link); text-decoration: none; margin-left: 8px; font-size: 12px; white-space: nowrap; }
+
   .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: var(--page-w); margin: 0 auto; }
   .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
   .pill:hover { border-color: var(--link); color: var(--text); }
@@ -36,6 +48,16 @@
   .kpi .vl { font-size: 19px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpi .sb { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpi a { text-decoration: none; color: inherit; }
+
+  /* ── v2③ 收编六环快照条 ── */
+  .sixstrip { display: flex; gap: 9px; flex-wrap: wrap; }
+  .schip { display: flex; align-items: center; gap: 7px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 7px 13px; font-size: 12px; min-width: 0; }
+  .schip .sd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .schip.ok .sd { background: var(--color-ok); box-shadow: 0 0 7px var(--color-ok); }
+  .schip.grey { opacity: .55; }
+  .schip.grey .sd { background: var(--text-dim); box-shadow: none; }
+  .schip .sn { color: var(--text-dim); flex-shrink: 0; }
+  .schip .sv { font-family: Consolas, monospace; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
 
   .strat-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); }
   .scard { position: relative; display: flex; flex-direction: column; gap: 5px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; text-decoration: none; color: var(--text); transition: border-color .2s ease, transform .2s ease; }
@@ -83,6 +105,11 @@
   .alerts .ad { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .alerts .ago { margin-left: auto; color: var(--text-dim); font-size: 12px; flex-shrink: 0; }
   .alerts .arow:hover .ago { color: var(--link); }
+  /* ── E8 预警分级徽标（market=红/eng=黄/strategy=灰，缺省 eng） ── */
+  .alerts .lv { font: 700 9.5px/1 Consolas, monospace; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+  .alerts .lv.market { background: rgba(224,86,86,.15); color: var(--color-err); border: 1px solid rgba(224,86,86,.45); }
+  .alerts .lv.eng { background: rgba(210,153,34,.12); color: var(--color-warn); border: 1px solid rgba(210,153,34,.35); }
+  .alerts .lv.strategy { background: var(--bg-raised); color: var(--text-dim); border: 1px solid var(--border); }
 
   .toc { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-surface); padding: 6px 18px; }
   .trow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 12px; padding: 9px 0; border-top: 1px solid var(--border-weak); font-size: 12.5px; }
@@ -130,6 +157,8 @@
   </nav>
 
   <main>
+    <div id="top-alerts"></div>
+
     <div class="sec" style="margin-top:16px">
       <div class="sec-head">
         <div class="sec-title">◤ 今日预警速览</div>
@@ -146,12 +175,22 @@
         <div class="sec-note" id="kpi-ts">加载中…</div>
       </div>
       <div class="kpi-strip">
-        <div class="kpi"><span class="lb">盘面倾向</span><span class="vl" id="k-verdict">—</span><span class="sb" id="k-verdict-sub">共振机会 — 只</span></div>
+        <div class="kpi"><span class="lb">盘面倾向 <span id="k-regime-src" style="letter-spacing:0"></span></span><span class="vl" id="k-verdict">—</span><span class="sb" id="k-verdict-sub">共振机会 — 只</span><span class="sb" id="k-gate" style="color:var(--text-dim)">市场闸 — · 加载中</span></div>
         <div class="kpi"><span class="lb">策略资产</span><a href="/strategies" style="text-decoration:none;color:inherit"><span class="vl num" id="k-strat">—</span><span class="sb" id="k-strat-sub">策略中心 →</span></a></div>
         <div class="kpi"><span class="lb">在案跟踪</span><a href="/bt-weak" style="text-decoration:none;color:inherit"><span class="vl num" id="k-weak">—</span><span class="sb">weak 产线 · 案例库 →</span></a></div>
         <div class="kpi"><span class="lb">今日情报</span><a href="/intel" style="text-decoration:none;color:inherit"><span class="vl num" id="k-news">—</span><span class="sb" id="k-news-sub">—</span></a></div>
         <div class="kpi"><span class="lb">今日预警</span><a href="/bt-signals" style="text-decoration:none;color:inherit"><span class="vl num" id="k-alerts">—</span><span class="sb">速览清单见下方 →</span></a></div>
         <div class="kpi"><span class="lb">模拟仓</span><a href="/paper" style="text-decoration:none;color:inherit"><span class="vl num" id="k-paper">—</span><span class="sb" id="k-paper-sub">四账本 →</span></a></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 收编六环快照</div>
+        <div class="sec-note" id="six-ts">六环 = 池/盯/授/风/交易/复盘 · 缺源标灰不假绿</div>
+      </div>
+      <div class="sixstrip" id="six-strip">
+        <div class="schip grey"><span class="sd"></span><span class="sn">六环</span><span class="sv">加载中…</span></div>
       </div>
     </div>
 
@@ -246,12 +285,14 @@
         <a class="tool" href="http://localhost:4100" target="_blank" rel="noopener" data-check="quant">📈 缠论量化 <span class="sub">NewQuant v2</span> <span class="dot unknown"></span></a>
         <a class="tool" href="http://localhost:5175" id="zhice-link" target="_blank" rel="noopener" data-check="zhice">🤖 智策 OS v2 <span class="sub">四市场</span> <span class="dot unknown"></span></a>
         <a class="tool" href="http://localhost:8888" target="_blank" rel="noopener" data-check="qd">🎯 QuantDinger <span class="sub">回测·执行</span> <span class="dot unknown"></span></a>
+        <a class="tool" id="dash-link" target="_blank" rel="noopener" data-check="dash">📊 量化仪表盘 <span class="sub">六环·策源·血缘</span> <span class="dot unknown"></span></a>
       </div>
     </div>
   </main>
 
 <script>
   document.getElementById('zhice-link').href = location.protocol + '//' + location.hostname + ':5175';
+  document.getElementById('dash-link').href = location.protocol + '//' + location.hostname + ':8791';
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   function tick() {
@@ -275,7 +316,136 @@
     }
   }
 
+  /* ── v2⑤ fetchFirst 降级链：同源预留位 → 直连 8791 → null ── */
+  const DASH = location.protocol + '//' + location.hostname + ':8791';
+  async function fetchFirst(paths, ms) {
+    for (const p of paths) {
+      try {
+        const ctl = new AbortController();
+        setTimeout(() => ctl.abort(), ms);
+        const r = await fetch(p, { signal: ctl.signal, cache: 'no-store' });
+        if (!r.ok) continue;
+        return { data: await r.json(), via: p };
+      } catch (e) { /* 下一个 */ }
+    }
+    return null;
+  }
+
+  /* ── v2① 置顶预警区：市场级 risk_off + 链路级断链 ── */
+  const REGIME_EMBED = { trade_date: '20261016', regime: 'risk_off',
+    risk_off_reasons: ['close_below_ma60_2d(streak=11)', 'ma60_slope_down', 'dif_and_dea_both_negative'],
+    close: 3716.28, up_ratio: 0.608 };
+  function renderTopAlerts(reg, health) {
+    const box = document.getElementById('top-alerts');
+    let h = '';
+    const s = (reg && reg.value) ? reg.value : null;
+    if (s && s.regime === 'risk_off') {
+      h += "<div class='rbanner market'><span class='tag'>🚨 市场级 · RISK OFF</span>" +
+        "<span>策源判定：禁止做多" +
+        "<div class='why'>§5.1 " + esc((s.risk_off_reasons || []).join(' · ')) + " · 上证 " + esc(s.close) + " · 广度 " + Math.round((s.up_ratio ?? 0) * 1000) / 10 + "% · " + esc(s.trade_date) + "</div></span>" +
+        "<a href='/fin'>策源详情 ▸</a></div>";
+    }
+    const items = health ? (health.services || health.checks || []) : [];
+    const down = items.filter(x => x && x.ok === false).map(x => x.name || '未知');
+    if (down.length) {
+      h += "<div class='rbanner chain'><span class='tag'>⚠ 数据断链</span>" +
+        "<span>" + esc(down.join('、')) + " 探针异常" +
+        "<div class='why'>断链期间下游徽标按缺源标灰，不假绿</div></span></div>";
+    }
+    if (!h) {
+      h = "<div class='rbanner quiet'><span class='tag'>置顶预警</span><span>无 · risk_off 未触发，探针全通</span></div>";
+    }
+    box.innerHTML = h;
+  }
+
+  /* ── v2② 盘面倾向格：regime 优先，brief 兜底 ── */
+  function renderRegime(payload, via) {
+    const v = document.getElementById('k-verdict');
+    const sub = document.getElementById('k-verdict-sub');
+    const src = document.getElementById('k-regime-src');
+    const reg = payload && payload.regime;
+    if (reg && reg.available && reg.value) {
+      const s = reg.value;
+      const CN = { risk_off: 'RISK OFF', risk_on: 'RISK ON', neutral: '中性' };
+      v.textContent = CN[s.regime] || s.regime;
+      v.style.color = s.regime === 'risk_off' ? 'var(--color-err)'
+        : (s.regime === 'risk_on' ? 'var(--color-ok)' : 'var(--color-warn)');
+      sub.textContent = (s.risk_off_reasons && s.risk_off_reasons[0] ? s.risk_off_reasons[0] + ' · ' : '') + '快照 ' + s.trade_date;
+      src.textContent = '· 策源 regime' + (via === '/api/regime' ? '' : '（直连）');
+    } else if (reg && !reg.available) {
+      v.textContent = '缺源';
+      v.style.color = 'var(--text-dim)';
+      sub.textContent = (reg.detail || '策源快照不可用') + ' · 不假绿';
+      src.textContent = '· 策源 regime';
+    }
+  }
+
+  async function loadRegime() {
+    const hit = await fetchFirst(['/api/regime', DASH + '/api/regime'], 2500);
+    if (hit && hit.data && hit.data.regime) {
+      renderRegime(hit.data, hit.via);
+      renderTopAlerts(hit.data.regime, null);
+      loadHealthThenAlerts(hit.data.regime);
+    } else {
+      /* 全失败：内嵌快照兜底，显著标注静态 */
+      renderRegime({ regime: { available: true, value: REGIME_EMBED } }, 'embed');
+      document.getElementById('k-regime-src').textContent = '· 静态兜底(10-16)';
+      renderTopAlerts({ value: REGIME_EMBED }, null);
+      loadHealthThenAlerts({ value: REGIME_EMBED, _static: true });
+    }
+  }
+  async function loadHealthThenAlerts(reg) {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 3000);
+      const r = await fetch('/api/health', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) renderTopAlerts(reg, await r.json());
+    } catch (e) { /* 保持现状 */ }
+  }
+
+  /* ── v2③ 收编六环快照条 ── */
+  const RING_CN = { pool: '池', watch: '盯', auth: '授', risk: '风', trade: '交易', review: '复盘' };
+  function renderSixring(payload, direct) {
+    const strip = document.getElementById('six-strip');
+    const rings = payload && payload.rings;
+    document.getElementById('six-ts').textContent = rings
+      ? ('六环快照 ' + (payload.ts || '') + (direct ? ' · 直连 8791' : ''))
+      : '六环缺源 → 标灰不假绿（8791 离线或 CORS 未重启）';
+    const keys = Object.keys(RING_CN);
+    strip.innerHTML = keys.map(k => {
+      const r = rings ? (rings[k] || {}) : null;
+      const ok = !!(r && r.available);
+      const txt = ok ? (r.detail || '正常') : (r && (r.detail || r.notes)) || '缺源';
+      return "<div class='schip " + (ok ? 'ok' : 'grey') + "' title='" + esc(txt) + "'>" +
+        "<span class='sd'></span><span class='sn'>" + RING_CN[k] + "环</span>" +
+        "<span class='sv'>" + esc(txt) + "</span></div>";
+    }).join('');
+  }
+  async function loadSixring() {
+    const hit = await fetchFirst(['/api/sixring', DASH + '/api/sixring'], 2500);
+    renderSixring(hit && hit.data, hit && hit.via !== '/api/sixring');
+  }
+
+  /* ── E7 市场闸展示：8791 /api/risk rules.R1.market_gate（无同源代理 → DASH 直连，失败标灰） ── */
+  async function loadGate() {
+    const el = document.getElementById('k-gate');
+    const hit = await fetchFirst([DASH + '/api/risk'], 2500);
+    const gate = hit && hit.data && hit.data.risk &&
+      (((hit.data.risk.rules || {}).R1 || {}).market_gate || hit.data.risk.market_gate);
+    if (gate && gate.action) {
+      const th = (typeof gate.reason === 'string' && /阈=([\d.]+)/.test(gate.reason)) ? ('<阈 ' + RegExp.$1 + ' ') : '';
+      el.textContent = '市场闸 ' + gate.action + '（健康分位 ' + gate.score + ' ' + th + '）';
+      el.style.color = gate.action === 'shadow_block' ? 'var(--color-err)' : 'var(--color-ok)';
+      el.title = gate.reason || '';
+    } else {
+      el.textContent = '市场闸 缺源 · 不假绿';
+      el.style.color = '';
+      el.title = '';
+    }
+  }
+
   const ST_CN = { live: '实盘', shadow: '影子', tool: '支撑', paused: '暂停' };
+  const LV_CN = { market: '市场', eng: '链路', strategy: '策略' };
   async function loadStrategies() {
     try {
       const ctl = new AbortController();
@@ -331,7 +501,9 @@
           dl = "<span class='delta " + (a.delta > 0 ? 'up' : 'dn') + "'>" +
                (a.delta > 0 ? '↗' : '↘') + Math.abs(a.delta) + "</span>";
         }
+        const lv = (a && Object.prototype.hasOwnProperty.call(LV_CN, a.level)) ? a.level : 'eng';
         return '<a class="arow" href="' + esc(safePortalHref(a.href)) + '">' +
+          "<span class='lv " + lv + "'>" + LV_CN[lv] + "</span>" +
           "<span class='an'>" + esc(a.name) + "</span>" +
           "<span class='av'>" + esc(a.value) + "</span>" + dl +
           "<span class='ad'>" + esc(a.sub || '') + "</span>" +
@@ -355,6 +527,7 @@
   setInterval(loadAlerts, 120000);
 
   async function loadBrief() {
+    /* brief 只在 regime 不可用时兜底倾向格（v2②/E4 双轨），情报两格照常刷新 */
     try {
       const ctl = new AbortController();
       setTimeout(() => ctl.abort(), 8000);
@@ -362,11 +535,17 @@
       if (!r.ok) return;
       const d = await r.json();
       document.getElementById('kpi-ts').textContent = '数据 ' + (d.ts || '');
-      const f = d.fin || {}, n = d.intel || {};
-      document.getElementById('k-verdict').textContent = String(f.verdict || '—').split('（')[0];
-      document.getElementById('k-verdict-sub').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只';
+      const n = d.intel || {};
       document.getElementById('k-news').textContent = (n.today ?? 0) + ' 条';
       document.getElementById('k-news-sub').textContent = '利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0);
+      const v = document.getElementById('k-verdict');
+      if (v.textContent === '—' || v.textContent === '缺源') {
+        const f = d.fin || {};
+        v.textContent = String(f.verdict || '—').split('（')[0];
+        v.style.color = '';
+        document.getElementById('k-verdict-sub').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只';
+        document.getElementById('k-regime-src').textContent = '· brief 兜底';
+      }
     } catch {}
   }
   loadBrief();
@@ -463,8 +642,8 @@
   loadOverview();
   setInterval(loadOverview, 30000);
 
-  // 工具坞探活
-  const CHECKS = { quant: '/probe/quant', zhice: '/probe/zhice', qd: '/probe/quantdinger' };
+  // 工具坞探活（v2④ 增 8791 量化仪表盘：/probe/dash nginx 代理）
+  const CHECKS = { quant: '/probe/quant', zhice: '/probe/zhice', qd: '/probe/quantdinger', dash: '/probe/dash' };
   function setProbe(key, ok) {
     const el = document.querySelector('.tool[data-check="' + key + '"] .dot');
     if (el) el.className = 'dot' + (ok ? '' : ' off');
@@ -480,6 +659,11 @@
   }
   Object.entries(CHECKS).forEach(([k, c]) => probe(k, c));
   setInterval(() => Object.entries(CHECKS).forEach(([k, c]) => probe(k, c)), 30000);
+
+  /* v2 新增取数启动 */
+  loadRegime(); setInterval(loadRegime, 120000);
+  loadSixring(); setInterval(loadSixring, 120000);
+  loadGate(); setInterval(loadGate, 120000);
 </script>
 <script src="/static/cainiao.js" defer></script>
 <script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>

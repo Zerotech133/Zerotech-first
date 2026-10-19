@@ -52,18 +52,38 @@ section('strategies.json schema');
   if (noSince.length) todo(`live 条目缺 since（362 定稿）待人工回填: ${noSince.join(',')}`);
 })();
 
-/* ── 2. quant.html 原设计不变量 ── */
+/* ── 2. quant.html 原设计不变量 + v2 增量转正不变量 ── */
 section('quant.html invariants');
 (function () {
   const p = path.join(PORTAL, 'quant.html');
   ok(fs.existsSync(p), 'quant.html 存在');
   if (!fs.existsSync(p)) return;
   const h = fs.readFileSync(p, 'utf-8');
+  // 原五条（不动）
   ok(h.includes('safePortalHref'), 'safePortalHref 同源安全策略在位');
   ok(!/no-cors/.test(h), '无 no-cors 假绿取数');
   ok(h.includes('var(--color-up)') && h.includes('var(--color-dn)'), '涨红跌绿配色约定在位');
   ok(h.includes('四层动线') && h.includes('驾驶层') && h.includes('投研竞技层'), '四层动线结构在位');
   ok(h.includes('/api/strategies') && h.includes('/api/alerts') && h.includes('/api/brief'), '五源取数在位');
+  // v2 转正追加：置顶预警区
+  ok(h.includes("RISK OFF") && h.includes('rbanner market'), 'risk_off 市场级横幅在位');
+  ok(h.includes('rbanner chain') && h.includes('数据断链'), '链路级断链横幅在位');
+  ok(h.includes('REGIME_EMBED') && h.includes('静态兜底(10-16)'), '内嵌快照兜底且显著标注静态(10-16)');
+  ok(h.includes('top-alerts'), '置顶预警区容器在位');
+  // v2 转正追加：regime-first 双轨倾向格
+  ok(h.includes('k-regime-src'), '倾向格来源标签元素在位');
+  ok(h.includes('策源 regime') && h.includes('brief 兜底'), '倾向格双来源标签在位（E4 双轨条款）');
+  // v2 转正追加：收编六环快照条
+  const RINGS = ['pool', 'watch', 'auth', 'risk', 'trade', 'review'];
+  ok(RINGS.every(r => h.includes(r + ':')), '六环键齐全（RING_CN 字面量）');
+  ok(h.includes('six-strip') && h.includes('schip'), '六环快照条 sec 在位');
+  // v2 转正追加：fetchFirst 降级链 + 工具坞 8791
+  ok(h.includes('fetchFirst') && h.includes('/api/regime') && h.includes('/api/sixring'), 'fetchFirst 降级链（同源→直连 8791→内嵌兜底）在位');
+  ok(h.includes('/probe/dash') && h.includes('dash-link'), '工具坞 8791 量化仪表盘（探活+链接）在位');
+  // E7 市场闸
+  ok(h.includes('k-gate') && h.includes('market_gate'), 'E7 市场闸展示在位');
+  // E8 预警分级徽标
+  ok(h.includes('LV_CN') && h.includes("class='lv ") && h.includes('.lv.market'), 'E8 预警分级徽标在位');
 })();
 
 /* ── 3. quant_v2_demo.html 最优化版不变量（E3/E4/E5 前端面） ── */
