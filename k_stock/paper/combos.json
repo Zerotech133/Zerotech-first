@@ -1,0 +1,41 @@
+{
+  "registry_schema_version": 1,
+  "combos": [
+    {
+      "combo_id": "combo_wenjian",
+      "name": "稳健组合（虚拟）",
+      "quad": {
+        "pick_source": {"id": "poc_run", "version": "v1"},
+        "persona": {
+          "id": "persona_conservative", "version": "v1",
+          "params": {
+            "risk_appetite": "conservative",
+            "conf_floor": 0.70,
+            "max_pos_pct": 0.15,
+            "max_total_pct": 0.60
+          }
+        },
+        "watch_style": {"id": "daily_close", "version": "v1"},
+        "trader": {"id": "trader_main", "version": "v1"}
+      }
+    },
+    {
+      "combo_id": "combo_jijin",
+      "name": "激进组合（虚拟）",
+      "quad": {
+        "pick_source": {"id": "poc_run", "version": "v1"},
+        "persona": {
+          "id": "persona_aggressive", "version": "v1",
+          "params": {
+            "risk_appetite": "aggressive",
+            "conf_floor": 0.50,
+            "max_pos_pct": 0.30,
+            "max_total_pct": 0.90
+          }
+        },
+        "watch_style": {"id": "daily_close", "version": "v1"},
+        "trader": {"id": "trader_main", "version": "v1"}
+      }
+    }
+  ]
+}

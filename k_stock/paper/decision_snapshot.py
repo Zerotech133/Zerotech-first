@@ -7,8 +7,11 @@ allow_stale/min_conf）+ 版本号（X-6 纪律）。settle 成交后按 run_ref
 orders 即可配对后验结果 → 形成「上下文-决策-结果」训练样本对。
 
 设计裁定：
-- combo_id 现阶段 = account_id（组合语义映射；四元组注册表批 2 上线后
-  替换为组合 id，字段预留不动表结构）；
+- combo_id：四元组注册表（E-1，WO-QT-20261020-003）上线后，带 combo_id
+  落单的组合=注册表组合 id；未带 combo_id 的旧路径仍= account_id（零变化）；
+- schema v2 加法演进：capture 新增可选 combo（四元组印记）→ 写入
+  context_json["combo"] 并替换 combo_id 列取值；不删列不改约束，旧快照
+  （v1，context 无 combo）读侧照常解析（by_ref 容忍缺失）；
 - 与落单同事务（exec_run commit 前写入）：快照失败 = 落单一并失败，
   fail-visible —— 禁「落了单没快照」的静默样本缺口（未落账≠假绿判例）；
 - 仅 orders 非空且非 dry_run 时产快照（灰态零决策无样本信息量，不产）；
@@ -21,7 +24,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-SNAPSHOT_SCHEMA_VERSION = 1
+SNAPSHOT_SCHEMA_VERSION = 2   # v2：+四元组印记（context_json["combo"]，加法演进）
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS decision_snapshots (
@@ -50,14 +53,21 @@ def ensure_table(con) -> None:
 
 def capture(con, *, run_path: Path | str, run_name: str, out: dict,
             account_id: str, strategy: str, versions: dict | None = None,
-            context: dict | None = None) -> dict:
-    """写入一份决策快照（调用方负责在其事务 commit 前调用）。返回快照行。"""
+            context: dict | None = None, combo: dict | None = None) -> dict:
+    """写入一份决策快照    (调用方负责在其事务 commit 前调用）。返回快照行。
+
+    combo：四元组印记（combo_registry.quad_stamp 产物，E-1）。给定时
+    combo_id 列=注册表组合 id、context_json["combo"]=印记；不给时维持
+    旧语义 combo_id=account_id（加法演进，调用方零改动兼容）。"""
     ensure_table(con)
+    ctx = dict(context or {})
+    if combo:
+        ctx["combo"] = combo
     snap = {
         "snapshot_id": uuid.uuid4().hex,
         "ts": datetime.now().isoformat(timespec="seconds"),
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
-        "combo_id": account_id,          # 批 2 四元组注册表上线后替换
+        "combo_id": (combo or {}).get("combo_id") or account_id,
         "account_id": account_id,
         "strategy": strategy,
         "run_ref": run_name,
@@ -66,7 +76,7 @@ def capture(con, *, run_path: Path | str, run_name: str, out: dict,
         "orders_json": json.dumps(out.get("orders", []), ensure_ascii=False),
         "skipped_json": json.dumps(out.get("skipped", []), ensure_ascii=False),
         "versions_json": json.dumps(versions or {}, ensure_ascii=False),
-        "context_json": json.dumps(context or {}, ensure_ascii=False),
+        "context_json": json.dumps(ctx, ensure_ascii=False),
     }
     con.execute(
         "INSERT INTO decision_snapshots(snapshot_id,ts,schema_version,combo_id,"

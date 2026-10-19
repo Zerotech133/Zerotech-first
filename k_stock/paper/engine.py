@@ -34,7 +34,7 @@ from pathlib import Path
 
 CONF_FULL = 0.75      # 满配置信度：conf>=0.75 → 目标仓位打满 max_pos_pct
 LOT = 100
-ENGINE_VERSION = "0.6.0-snapshot"   # X-6 版本化纪律：D-1 决策快照接入（K-PLAN-V1-0.1）
+ENGINE_VERSION = "0.7.0-combo-quad"   # X-6 版本化纪律：E-1 组合四元组注册表接入（WO-QT-20261020-003）
 EPS = 1e-9
 
 _DEFAULTS = dict(
@@ -515,7 +515,9 @@ class PaperEngine:
     def exec_run(self, run_path: Path | str, dry_run: bool = False,
                  strategy: str = "ai_team", account_id: str | None = None,
                  min_conf: float | None = None,
-                 allow_stale: bool = False) -> dict:
+                 allow_stale: bool = False,
+                 combo_id: str | None = None,
+                 registry_path: Path | str | None = None) -> dict:
         """读 poc_*.json（list，每股一项），按 D1 决策落 pending 单。幂等。
         同一 run 可落多个交易员子账本（ref 按 @账户 分段互不冲突）。
         min_conf：BUY 置信度门槛（交易员档案 conf_floor；SELL 不受限——该卖还得卖）。
@@ -532,99 +534,128 @@ class PaperEngine:
            全量重声明）。ref 按产物文件名做幂等，产物每日换名→幂等失效→周末
            堆叠多批同票单，周一 settle 双倍成交。撤销记录 reason 可追溯。
         2. 时间旅行守卫：plan_date ≤ 湖最新交易日 → 判陈旧产物，拒单
-           （否则 settle 按 first_bar_on_or_after 撮到过去开盘价=拿旧价成交）。"""
+           （否则 settle 按 first_bar_on_or_after 撮到过去开盘价=拿旧价成交）。
+
+        E-1 组合四元组（WO-QT-20261020-003）：combo_id 给定时按注册表解析
+        组合（选股源×投研 persona×盯盘风格×交易员），persona 的 conf_floor
+        缺省为 BUY 门槛（显式 min_conf 优先）、仓位/风控参数覆盖本次调用
+        （finally 恢复，不污染引擎实例）；注册表缺失/未注册/结构非法=落单
+        失败（closed on failure，禁静默降级到默认参数）。不给 combo_id →
+        全路径行为零变化。registry_path 可注入测试注册文件（松耦合验收口：
+        新增 persona/交易员/选股源仅需新增注册文件，既有代码 diff 为零）。"""
         aid = account_id or self.acct
-        run_path = Path(run_path)
-        payload = json.loads(run_path.read_text(encoding="utf-8"))
-        run_name = run_path.name
-        out = {"run": run_name, "account_id": aid, "orders": [], "skipped": [],
-               "dry_run": dry_run, "cancelled": 0}
-        # 守卫1：replan——撤销「其他批次」旧 pending（ref 不以本 run 名开头）。
-        # 本 run 重放（幂等路径）不误伤；旧批次被最新意图取代，防周末堆叠双倍成交。
-        if not dry_run:
-            cur = self.con.execute(
-                "UPDATE orders SET status='cancelled', "
-                "reason='superseded: 新批次 exec 全量重声明（防 pending 堆叠双倍成交）' "
-                "WHERE account_id=? AND strategy=? AND status='pending' "
-                "AND ref NOT LIKE ?",
-                (aid, strategy, run_name + "%"))
-            if cur.rowcount:
-                out["cancelled"] = cur.rowcount
-        last_td = self.market.trading_days()[-1]
-        for item in payload:
-            raw_stock = str(item.get("stock", ""))
-            stock = _norm_stock(raw_stock)
-            if not stock or item.get("error"):
-                out["skipped"].append({"stock": raw_stock, "why": item.get("error", "无 outputs")})
-                continue
-            d1 = (item.get("outputs") or {}).get("D1") or {}
-            action = str(d1.get("action", "")).upper()
-            conf = float(d1.get("confidence") or 0)
-            asof = item.get("asof") or _now()
-            ref = _ref_of(f"{run_name}#{stock}", aid)
-            dup = self.con.execute("SELECT id FROM orders WHERE ref=?", (ref,)).fetchone()
-            if dup:
-                out["skipped"].append({"stock": stock, "why": f"幂等跳过（{ref} 已落单）"})
-                continue
-            if action == "HOLD":
-                out["skipped"].append({"stock": stock, "why": f"HOLD（conf={conf}）"})
-                continue
-            if action == "BUY" and min_conf is not None and conf < min_conf:
-                out["skipped"].append({"stock": stock,
-                                       "why": f"conf {conf} < 交易员门槛 {min_conf}"})
-                continue
-            plan_date = self.market.next_trading_day(asof)
-            if plan_date is None:
-                out["skipped"].append({"stock": stock,
-                                       "why": f"行情湖无 {asof} 之后的交易日，无法定撮合日"})
-                continue
-            # 守卫2：时间旅行——决策日早于湖最新交易日（产物已隔收盘=陈旧）则拒单。
-            # 盘前决策当日开盘撮合（asof 日 == 湖最新）是合法语义，不拦。
-            # allow_stale=True（显式补跑授权）旁路本守卫，reason 带 [stale-replay]。
-            asof_day = asof[:10].replace("-", "")
-            stale_replay = asof_day < last_td
-            if stale_replay and not allow_stale:
-                out["skipped"].append({"stock": stock,
-                                       "why": f"陈旧产物：决策日 {asof_day} < 湖最新交易日 {last_td}，"
-                                              f"拒绝按过去开盘价成交（asof={asof[:16]}）"})
-                continue
-            reason_prefix = "[stale-replay] " if stale_replay else ""
-            if action == "BUY":
-                try:
-                    order = self._plan_buy(stock, conf, plan_date, ref, dry_run,
-                                           strategy=strategy, account_id=aid,
-                                           reason_prefix=reason_prefix)
-                except Reject as e:   # 单票行情缺失等：跳过该票，不炸整个 run
-                    out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
+        # E-1 四元组注册表解析（见 docstring）：解析与参数覆盖在任何落单动作前
+        # 完成，失败即抛（closed on failure）；覆盖值在 finally 恢复。
+        combo = None
+        saved_cfg: dict = {}
+        if combo_id is not None:
+            import combo_registry
+            reg = combo_registry.load_registry(
+                registry_path or combo_registry.default_registry_path())
+            combo = combo_registry.resolve(reg, combo_id)
+            saved_cfg = combo_registry.apply_engine_overrides(self.cfg, combo)
+            if min_conf is None:
+                min_conf = combo_registry.persona_conf_floor(combo)
+        try:
+            run_path = Path(run_path)
+            payload = json.loads(run_path.read_text(encoding="utf-8"))
+            run_name = run_path.name
+            out = {"run": run_name, "account_id": aid, "orders": [], "skipped": [],
+                   "dry_run": dry_run, "cancelled": 0}
+            # 守卫1：replan——撤销「其他批次」旧 pending（ref 不以本 run 名开头）。
+            # 本 run 重放（幂等路径）不误伤；旧批次被最新意图取代，防周末堆叠双倍成交。
+            if not dry_run:
+                cur = self.con.execute(
+                    "UPDATE orders SET status='cancelled', "
+                    "reason='superseded: 新批次 exec 全量重声明（防 pending 堆叠双倍成交）' "
+                    "WHERE account_id=? AND strategy=? AND status='pending' "
+                    "AND ref NOT LIKE ?",
+                    (aid, strategy, run_name + "%"))
+                if cur.rowcount:
+                    out["cancelled"] = cur.rowcount
+            last_td = self.market.trading_days()[-1]
+            for item in payload:
+                raw_stock = str(item.get("stock", ""))
+                stock = _norm_stock(raw_stock)
+                if not stock or item.get("error"):
+                    out["skipped"].append({"stock": raw_stock, "why": item.get("error", "无 outputs")})
                     continue
-            elif action == "SELL":
-                try:
-                    order = self._plan_sell(stock, conf, plan_date, ref, dry_run,
-                                            strategy=strategy, account_id=aid,
-                                            reason_prefix=reason_prefix)
-                except Reject as e:
-                    out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
+                d1 = (item.get("outputs") or {}).get("D1") or {}
+                action = str(d1.get("action", "")).upper()
+                conf = float(d1.get("confidence") or 0)
+                asof = item.get("asof") or _now()
+                ref = _ref_of(f"{run_name}#{stock}", aid)
+                dup = self.con.execute("SELECT id FROM orders WHERE ref=?", (ref,)).fetchone()
+                if dup:
+                    out["skipped"].append({"stock": stock, "why": f"幂等跳过（{ref} 已落单）"})
                     continue
-            else:
-                out["skipped"].append({"stock": stock, "why": f"未知动作 {action}"})
-                continue
-            out["orders"].append(order)
-        # D-1 决策快照（K-PLAN-V1-0.1）：有真实落单时，把决策全上下文与落单
-        # 同事务序列化——快照失败=落单一并失败（fail-visible，禁样本静默缺口）。
-        # settle 成交后按 run_ref 关联 orders 配对后验结果 → 训练样本对。
-        if out["orders"] and not dry_run:
-            import decision_snapshot
-            snap = decision_snapshot.capture(
-                self.con, run_path=run_path, run_name=run_name, out=out,
-                account_id=aid, strategy=strategy,
-                versions={"engine": ENGINE_VERSION,
-                          "snapshot_schema": decision_snapshot.SNAPSHOT_SCHEMA_VERSION},
-                context={"last_td": last_td, "allow_stale": allow_stale,
-                         "min_conf": min_conf, "cancelled": out["cancelled"],
-                         "market": type(self.market).__name__})
-            out["snapshot_id"] = snap["snapshot_id"]
-        self.con.commit()
-        return out
+                if action == "HOLD":
+                    out["skipped"].append({"stock": stock, "why": f"HOLD（conf={conf}）"})
+                    continue
+                if action == "BUY" and min_conf is not None and conf < min_conf:
+                    out["skipped"].append({"stock": stock,
+                                           "why": f"conf {conf} < 交易员门槛 {min_conf}"})
+                    continue
+                plan_date = self.market.next_trading_day(asof)
+                if plan_date is None:
+                    out["skipped"].append({"stock": stock,
+                                           "why": f"行情湖无 {asof} 之后的交易日，无法定撮合日"})
+                    continue
+                # 守卫2：时间旅行——决策日早于湖最新交易日（产物已隔收盘=陈旧）则拒单。
+                # 盘前决策当日开盘撮合（asof 日 == 湖最新）是合法语义，不拦。
+                # allow_stale=True（显式补跑授权）旁路本守卫，reason 带 [stale-replay]。
+                asof_day = asof[:10].replace("-", "")
+                stale_replay = asof_day < last_td
+                if stale_replay and not allow_stale:
+                    out["skipped"].append({"stock": stock,
+                                           "why": f"陈旧产物：决策日 {asof_day} < 湖最新交易日 {last_td}，"
+                                                  f"拒绝按过去开盘价成交（asof={asof[:16]}）"})
+                    continue
+                reason_prefix = "[stale-replay] " if stale_replay else ""
+                if action == "BUY":
+                    try:
+                        order = self._plan_buy(stock, conf, plan_date, ref, dry_run,
+                                               strategy=strategy, account_id=aid,
+                                               reason_prefix=reason_prefix)
+                    except Reject as e:   # 单票行情缺失等：跳过该票，不炸整个 run
+                        out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
+                        continue
+                elif action == "SELL":
+                    try:
+                        order = self._plan_sell(stock, conf, plan_date, ref, dry_run,
+                                                strategy=strategy, account_id=aid,
+                                                reason_prefix=reason_prefix)
+                    except Reject as e:
+                        out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
+                        continue
+                else:
+                    out["skipped"].append({"stock": stock, "why": f"未知动作 {action}"})
+                    continue
+                out["orders"].append(order)
+            # D-1 决策快照（K-PLAN-V1-0.1）：有真实落单时，把决策全上下文与落单
+            # 同事务序列化——快照失败=落单一并失败（fail-visible，禁样本静默缺口）。
+            # settle 成交后按 run_ref 关联 orders 配对后验结果 → 训练样本对。
+            # E-1：带 combo 落单时快照加四元组印记（combo_id 列=注册表组合 id，
+            # context_json["combo"]=印记；schema v2 加法演进）。
+            if out["orders"] and not dry_run:
+                import decision_snapshot
+                snap = decision_snapshot.capture(
+                    self.con, run_path=run_path, run_name=run_name, out=out,
+                    account_id=aid, strategy=strategy,
+                    versions={"engine": ENGINE_VERSION,
+                              "snapshot_schema": decision_snapshot.SNAPSHOT_SCHEMA_VERSION,
+                              **({"combo_registry": combo_registry.REGISTRY_SCHEMA_VERSION}
+                                 if combo else {})},
+                    context={"last_td": last_td, "allow_stale": allow_stale,
+                             "min_conf": min_conf, "cancelled": out["cancelled"],
+                             "market": type(self.market).__name__},
+                    combo=combo_registry.quad_stamp(combo) if combo else None)
+                out["snapshot_id"] = snap["snapshot_id"]
+            self.con.commit()
+            return out
+        finally:
+            if saved_cfg:
+                self.cfg.update(saved_cfg)
 
     def _plan_buy(self, stock: str, conf: float, plan_date: str, ref: str,
                   dry_run: bool, strategy: str = "ai_team",
