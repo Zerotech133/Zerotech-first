@@ -4239,6 +4239,198 @@ class Handler:  # Mixin 壳：经基座多继承并入
         anchor = (qs.get("id") or [""])[0]
         anchor_ok = anchor and any(a.get("id") == anchor for a in algos)
 
+        # ── P1 卡3：最近真实产出（统计面）────────────────────
+        # 六款商品逐个接真实数据源，只读既有缓存/账本，不造第二本
+        # 账；只展示数量/日期/状态等统计摘要，不展示任何明细信号/
+        # 个股名单（明细面口径待拍板，不越权）。缺数据 → 灰
+        # "暂无最近产出"，不假绿；日期缺失如实标"日期未知"。
+        def _live_row(ok, txt, src):
+            """统计面行：真投影（绿）或灰显（数据源不可达）。"""
+            if ok and txt:
+                return ("<div style='font-size:11.5px;margin-top:8px;"
+                        "color:#3fb950'>📡 最近真实产出（统计面）：%s"
+                        "</div>" % e(txt))
+            return ("<div style='font-size:11.5px;margin-top:8px;"
+                    "color:#8b949e'>📡 暂无最近产出（数据源：%s 不可达）"
+                    "</div>" % e(src))
+
+        def _live_quant_dual():
+            # 与 /portal 工作台同源读法：portal/qd_scan_cache.json
+            # （api_misc build_overview 同一文件），只取数量+时间戳。
+            src = os.path.join(ROOT, "qd_scan_cache.json")
+            try:
+                qd = _read_json(src) or {}
+                if not qd.get("ts"):
+                    return _live_row(False, "", "portal/qd_scan_cache.json")
+                txt = "%s · 扫描 %s 只 · 当前信号 %d · 近端信号 %d" % (
+                    str(qd.get("ts")),
+                    qd.get("scanned", "?"),
+                    len(qd.get("signals_now") or []),
+                    len(qd.get("signals_recent") or []))
+                return _live_row(True, txt, "portal/qd_scan_cache.json")
+            except Exception:
+                log_exc("algo_live:quant_dual")
+                return _live_row(False, "", "portal/qd_scan_cache.json")
+
+        def _live_chanlun():
+            # 缠论选股池：quant_backtest/data/chanlun_pool.jsonl
+            # （sixring pool 环同源），只取最近批次 date+count。
+            src = os.path.join(QBT_DIR, "data", "chanlun_pool.jsonl")
+            try:
+                last_d, n = "", 0
+                with open(src, encoding="utf-8") as f:
+                    for ln in f:
+                        ln = ln.strip()
+                        if not ln:
+                            continue
+                        try:
+                            r = json.loads(ln)
+                        except Exception:
+                            continue
+                        d = str(r.get("detect_date") or "")
+                        if not d:
+                            continue
+                        if d > last_d:
+                            last_d, n = d, 1
+                        elif d == last_d:
+                            n += 1
+                if not last_d:
+                    return _live_row(False, "",
+                                     "quant_backtest/data/chanlun_pool.jsonl")
+                txt = "最近批次 %s · 入池 %d 条" % (last_d, n)
+                return _live_row(True, txt,
+                                 "quant_backtest/data/chanlun_pool.jsonl")
+            except Exception:
+                log_exc("algo_live:chanlun")
+                return _live_row(False, "",
+                                 "quant_backtest/data/chanlun_pool.jsonl")
+
+        def _live_riskguard():
+            # RiskGuard 影子账本：portal/data/risk_feedback.jsonl
+            # （risk_feedback_ledger.py LEDGER_PATH 同源），统计
+            # 累计拦截数按 R1-R4 分档 + 最近日期。
+            src = os.path.join(ROOT, "data", "risk_feedback.jsonl")
+            try:
+                cnt = {"R1": 0, "R2": 0, "R3": 0, "R4": 0}
+                last_d = ""
+                with open(src, encoding="utf-8") as f:
+                    for ln in f:
+                        ln = ln.strip()
+                        if not ln:
+                            continue
+                        try:
+                            r = json.loads(ln)
+                        except Exception:
+                            continue
+                        if r.get("action") != "blocked":
+                            continue
+                        rule = str(r.get("rule") or "").split("-")[0]
+                        if rule in cnt:
+                            cnt[rule] += 1
+                        d = str(r.get("date") or "")
+                        if d > last_d:
+                            last_d = d
+                txt = ("累计拦截 %d（R1 %d · R2 %d · R3 %d · R4 %d）"
+                       "· 最近 %s" % (sum(cnt.values()), cnt["R1"],
+                                      cnt["R2"], cnt["R3"], cnt["R4"],
+                                      last_d or "日期未知"))
+                return _live_row(True, txt,
+                                 "portal/data/risk_feedback.jsonl")
+            except Exception:
+                log_exc("algo_live:riskguard")
+                return _live_row(False, "",
+                                 "portal/data/risk_feedback.jsonl")
+
+        def _live_jev():
+            # JEV 消息面情绪标注：news_collector/news.db news 表
+            # jev 列（api_common _pool_bear_news 同源读法），统计
+            # 近7天已研判条数 + 多/空/中性分布。
+            src = os.path.join(STATION, "news_collector", "news.db")
+            try:
+                import sqlite3 as _sq
+                from datetime import datetime as _dt, timedelta as _td
+                since = (_dt.now() - _td(days=7)).strftime("%Y-%m-%d %H:%M")
+                db = _sq.connect(src)
+                rows = db.execute(
+                    "SELECT jev FROM news WHERE jev IS NOT NULL "
+                    "AND created_at>=? LIMIT 20000", (since,)).fetchall()
+                latest = db.execute(
+                    "SELECT MAX(created_at) FROM news "
+                    "WHERE jev IS NOT NULL").fetchone()[0]
+                db.close()
+                if not rows:
+                    return _live_row(False, "", "news_collector/news.db")
+                nb = ns = nn = 0
+                for (jv,) in rows:
+                    try:
+                        b = (json.loads(jv) or {}).get("bias")
+                    except Exception:
+                        b = None
+                    if b == "bull":
+                        nb += 1
+                    elif b == "bear":
+                        ns += 1
+                    elif b == "neutral":
+                        nn += 1
+                txt = ("近7天研判 %d 条 · 多 %d / 空 %d / 中性 %d · 最近 %s"
+                       % (len(rows), nb, ns, nn, latest or "日期未知"))
+                return _live_row(True, txt, "news_collector/news.db")
+            except Exception:
+                log_exc("algo_live:jev")
+                return _live_row(False, "", "news_collector/news.db")
+
+        def _live_tdx():
+            # 回测引擎最近产出：quant_backtest/last_backtest.json
+            # （runner.py 落盘、get_backtest 同源消费），只取时间戳
+            # +策略/模式+标的数。BacktestEngine/T0Engine 具名产出
+            # 未实证到，取回测域最近真实落盘为准。
+            src = os.path.join(STATION, "quant_backtest",
+                               "last_backtest.json")
+            try:
+                bt = _read_json(src) or {}
+                if not bt.get("ts"):
+                    return _live_row(False, "",
+                                     "quant_backtest/last_backtest.json")
+                txt = "%s · 策略 %s · 模式 %s · 标的 %d" % (
+                    str(bt.get("ts")),
+                    bt.get("strategy") or "未知策略",
+                    bt.get("mode") or "未知模式",
+                    len(bt.get("results") or []))
+                return _live_row(True, txt,
+                                 "quant_backtest/last_backtest.json")
+            except Exception:
+                log_exc("algo_live:tdx")
+                return _live_row(False, "",
+                                 "quant_backtest/last_backtest.json")
+
+        def _live_score():
+            # Score 多因子最近一批排名：quant_backtest/reports/
+            # rps_latest.json（/fin 页同源消费），只取批次号+条数。
+            src = os.path.join(REPORTS_DIR, "rps_latest.json")
+            try:
+                rps = _read_json(src) or {}
+                if not rps.get("latest"):
+                    return _live_row(False,
+                                     "", "quant_backtest/reports/rps_latest.json")
+                txt = "批次 %s · 评分个股 %d 条 · 生成于 %s" % (
+                    rps.get("latest"), len(rps.get("res") or []),
+                    str(rps.get("ts") or "日期未知"))
+                return _live_row(True, txt,
+                                 "quant_backtest/reports/rps_latest.json")
+            except Exception:
+                log_exc("algo_live:score")
+                return _live_row(False,
+                                 "", "quant_backtest/reports/rps_latest.json")
+
+        _live = {
+            "quant_dual": _live_quant_dual(),
+            "chanlun_9dim": _live_chanlun(),
+            "riskguard": _live_riskguard(),
+            "jev_sentiment": _live_jev(),
+            "tdx_backtest": _live_tdx(),
+            "score_ranking": _live_score(),
+        }
+
         def _algo_card(a):
             sid = a.get("id", "")
             unlocked = self._license_state(sid)
@@ -4258,6 +4450,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
                 % e(f) for f in a.get("features", []))
             sub = a.get("subscription", {}) or {}
             sample_html = ""
+            live_html = _live.get(sid, "")
             if sm:
                 sample_html = (
                     "<details style='margin-top:10px'>"
@@ -4294,6 +4487,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
                     "</div>"
                     "%s"
                     "%s"
+                    "%s"
                     "<div style='font-size:12.5px;margin-top:10px'>%s</div>"
                     "</div>"
                     % (e(sid), badge[1], hl,
@@ -4301,7 +4495,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
                        e(a.get("name", "")), e(a.get("tier", "")),
                        badge[1], badge[1], badge[0],
                        e(a.get("tagline", "")), e(a.get("desc", "")),
-                       feats, sample_html, use_row, cta))
+                       feats, sample_html, live_html, use_row, cta))
         scroll_js = ""
         if anchor_ok:
             scroll_js = ("<script>var t=document.getElementById("
