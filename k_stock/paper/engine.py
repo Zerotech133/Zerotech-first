@@ -34,6 +34,7 @@ from pathlib import Path
 
 CONF_FULL = 0.75      # 满配置信度：conf>=0.75 → 目标仓位打满 max_pos_pct
 LOT = 100
+ENGINE_VERSION = "0.6.0-snapshot"   # X-6 版本化纪律：D-1 决策快照接入（K-PLAN-V1-0.1）
 EPS = 1e-9
 
 _DEFAULTS = dict(
@@ -608,6 +609,20 @@ class PaperEngine:
                 out["skipped"].append({"stock": stock, "why": f"未知动作 {action}"})
                 continue
             out["orders"].append(order)
+        # D-1 决策快照（K-PLAN-V1-0.1）：有真实落单时，把决策全上下文与落单
+        # 同事务序列化——快照失败=落单一并失败（fail-visible，禁样本静默缺口）。
+        # settle 成交后按 run_ref 关联 orders 配对后验结果 → 训练样本对。
+        if out["orders"] and not dry_run:
+            import decision_snapshot
+            snap = decision_snapshot.capture(
+                self.con, run_path=run_path, run_name=run_name, out=out,
+                account_id=aid, strategy=strategy,
+                versions={"engine": ENGINE_VERSION,
+                          "snapshot_schema": decision_snapshot.SNAPSHOT_SCHEMA_VERSION},
+                context={"last_td": last_td, "allow_stale": allow_stale,
+                         "min_conf": min_conf, "cancelled": out["cancelled"],
+                         "market": type(self.market).__name__})
+            out["snapshot_id"] = snap["snapshot_id"]
         self.con.commit()
         return out
 
