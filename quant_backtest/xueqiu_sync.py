@@ -278,8 +278,11 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
     断点=文件存在则合并去重续拉（同 timestamp 后写覆盖）；返回累计行数。
     count=-284 取近一年余量，增量合并天然幂等。
     """
+    from xq_quote_router import is_index_symbol
+
     mf = mf or X.XqManifest()
-    syms = [s for s in (X.norm_symbol(c) for c in codes) if s]
+    syms = [s for s in (X.norm_symbol(c) for c in codes)
+            if s and not is_index_symbol(s)]
     if len(syms) > max_symbols:
         print("  kline: %d 码超上限 %d，截断（设计 §4.4）"
               % (len(syms), max_symbols))
@@ -303,6 +306,7 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
     total, ok_codes, fail_codes, empty_codes = 0, [], [], []
     tripped = False
     alt_note = ""          # T4：替代源兜底接管说明（manifest note 可见）
+    router_errors: list[str] = []
     for i, sym in enumerate(syms, 1):
         # BUG-3 修复（QA Round-1）：BJ 等无 ts_code 映射的符号不落库
         # （否则 _code_path 生成空名 ".parquet"）；归入 fail_codes 可见
@@ -356,14 +360,26 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
         except Exception as e:                    # noqa: BLE001
             by_sym, rnote, rerrs = {}, "", [
                 "router crash: %s" % str(e)[:80]]
+        router_errors = [str(err)[:80] for err in rerrs[:3]]
+        requested = set(syms)
         for sym, krows in by_sym.items():
-            ts_code = X.to_ts_code(sym)
-            if not ts_code or not krows:
+            # 二次校验路由回包：请求外键、指数、串码行绝不可参与旧片合并。
+            if sym not in requested or is_index_symbol(sym):
                 continue
+            ts_code = X.to_ts_code(sym)
+            if not ts_code or not isinstance(krows, (list, tuple)):
+                continue
+            safe_rows = [row for row in krows if isinstance(row, dict)
+                         and row.get("symbol") == sym
+                         and not is_index_symbol(row.get("symbol"))
+                         and ("ts_code" not in row
+                              or row["ts_code"] == ts_code)]
+            if not safe_rows:
+                continue                    # 不拿旧片充作本轮成功
             path = _code_path("xq_kline_d", ts_code)
             old = (pd.read_parquet(path) if os.path.exists(path)
                    else pd.DataFrame())
-            merged = _merge_kline(old, krows)
+            merged = _merge_kline(old, safe_rows)
             if merged.empty:
                 continue
             X.atomic_parquet(merged, path)
@@ -374,7 +390,9 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
                         % (rnote, len(ok_codes), len(syms)))
             print("  xq_kline_d: %s" % alt_note)
         else:
-            print("  xq_kline_d: 替代源亦挂: %s" % "; ".join(rerrs[:3]))
+            if not router_errors:
+                router_errors.append("替代源无有效请求股票日线行")
+            print("  xq_kline_d: 替代源亦挂: %s" % "; ".join(router_errors))
     bad = fail_codes + empty_codes
     # 状态分级（设计 §7.7 如实记录）：全败=failed，部分败=partial；
     # 熔断=ip_blocked（P0-1：与 failed 区分，冷却自愈语义）
@@ -385,6 +403,8 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
     note_parts = []
     if alt_note:
         note_parts.append(alt_note)
+    if router_errors:
+        note_parts.append("替代源失败: %s" % "; ".join(router_errors))
     if fail_codes:
         note_parts.append("%d codes skipped: %s"
                           % (len(fail_codes), ",".join(fail_codes[:8])))

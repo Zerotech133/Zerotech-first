@@ -79,8 +79,21 @@ class _TmpEnv(unittest.TestCase):
         X.MANIFEST = os.path.join(X.OUT_DIR, "_manifest.json")
         X.INFO_DB = os.path.join(X.OUT_DIR, "xueqiu_info.db")
         os.environ.pop("XUEQIUTOKEN", None)
+        # 全套测试隔离 token 池、动态代理与替代源；单测均不得触网。
+        self._offline = [
+            mock.patch("xq_tokens.get_pool",
+                       return_value=types.SimpleNamespace(enabled=lambda: False)),
+            mock.patch("xq_proxy.apply_proxy_env", return_value=""),
+            mock.patch("xq_proxy.notify_blocked", return_value=None),
+            mock.patch("xq_quote_router.fetch_daily",
+                       return_value=({}, "", ["offline fallback"])),
+        ]
+        for patcher in self._offline:
+            patcher.start()
 
     def tearDown(self):
+        for patcher in reversed(self._offline):
+            patcher.stop()
         X.OUT_DIR, X.MANIFEST, X.INFO_DB = self._orig
         os.environ.pop("XUEQIUTOKEN", None)
 
@@ -220,6 +233,98 @@ class TestKlineDedup(_TmpEnv):
         kd = os.path.join(X.OUT_DIR, "xq_kline_d")
         if os.path.isdir(kd):
             self.assertNotIn(".parquet", os.listdir(kd))   # 无空名文件
+
+
+class TestKlineFallbackGuard(_TmpEnv):
+    """T4 落片端只消费请求股票的同码日线，错误进入 manifest。"""
+
+    def _run_fallback(self, codes: list[str], payload: tuple):
+        """雪球域离线失败并将 mock 路由回包交给同步端。"""
+        os.environ["XUEQIUTOKEN"] = "t" * 40
+        fake = _fake_ball({"kline": mock.Mock(
+            side_effect=RuntimeError("snow down"))})
+        mf = X.XqManifest(X.MANIFEST)
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=payload) as fetch, \
+                mock.patch.object(X, "jitter_sleep", return_value=None):
+            count = S.sync_kline(codes, mf=mf)
+        return count, mf.get("xq_kline_d"), fetch, fake.kline
+
+    def test_rejects_unrequested_and_index_keys_and_rows(self):
+        """即便上游给恶意键及混码行，落片端不写、不计成功。"""
+        rows = [
+            {"symbol": "SH600519", "timestamp": "2026-10-16 00:00:00",
+             "ts_code": "600519.SH", "close": 100},
+            {"symbol": "SH000001", "timestamp": "2026-10-16 00:00:00",
+             "ts_code": "000001.SH", "close": 10},
+            {"symbol": "SZ000338", "timestamp": "2026-10-16 00:00:00",
+             "ts_code": "000338.SZ", "close": 20},
+            {"symbol": "SZ000001", "timestamp": "2026-10-16 00:00:00",
+             "ts_code": "600519.SH", "close": 30},
+            "bad row",
+        ]
+        count, entry, fetch, kline = self._run_fallback(
+            ["SZ000001", "SH000001"],
+            ({"SH600519": rows, "SH000001": rows,
+              "SZ000001": rows}, "bad", ["router tainted"]))
+        self.assertEqual(count, 0)
+        self.assertFalse(entry["done"])
+        self.assertEqual(entry["status"], "failed")
+        self.assertIn("router tainted", entry["note"])
+        fetch.assert_called_once_with(["SZ000001"], days=284)
+        kline.assert_called_once_with("SZ000001", period="day", count=284)
+        self.assertFalse(os.path.exists(os.path.join(X.OUT_DIR, "xq_kline_d")))
+
+    def test_all_sources_fail_preserves_router_errors(self):
+        """雪球失败 + 替代源全败：错误摘要入账、done=False。"""
+        count, entry, _, _ = self._run_fallback(
+            ["SH600519"], ({}, "", ["tushare: timeout", "akshare: offline"]))
+        self.assertEqual(count, 0)
+        self.assertEqual(entry["status"], "failed")
+        self.assertFalse(entry["done"])
+        self.assertIn("tushare: timeout", entry["note"])
+        self.assertIn("akshare: offline", entry["note"])
+
+    def test_valid_sz000001_lands_only_safe_rows(self):
+        """SZ000001 是个股，不被 SH000001 指数锚误杀。"""
+        good = {"symbol": "SZ000001", "ts_code": "000001.SZ",
+                "timestamp": "2026-10-16 00:00:00", "trade_date": "20261016",
+                "open": 10.0, "high": 11.0, "low": 9.0, "close": 10.5,
+                "volume": 100, "amount": 1000}
+        bad = dict(good, ts_code="000001.SH", timestamp="2026-10-17 00:00:00")
+        count, entry, fetch, _ = self._run_fallback(
+            ["SZ000001", "SH000001"],
+            ({"SZ000001": [good, bad]}, "tushare_qfq×1", []))
+        self.assertEqual(count, 1)
+        self.assertTrue(entry["done"])
+        self.assertEqual(entry["status"], "partial")  # 雪球域失败仍可见
+        self.assertIn("替代源兜底", entry["note"])
+        fetch.assert_called_once_with(["SZ000001"], days=284)
+        path = os.path.join(X.OUT_DIR, "xq_kline_d", "000001.SZ.parquet")
+        self.assertEqual(pd.read_parquet(path).to_dict("records"), [good])
+        self.assertFalse(os.path.exists(os.path.join(
+            X.OUT_DIR, "xq_kline_d", "000001.SH.parquet")))
+
+    def test_invalid_rows_do_not_republish_old_file(self):
+        """只有污染行时，旧片仅保留在磁盘，不能伪装本轮成功。"""
+        path = os.path.join(X.OUT_DIR, "xq_kline_d", "000001.SZ.parquet")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        old = pd.DataFrame([{"symbol": "SZ000001",
+                             "timestamp": "2026-10-15 00:00:00",
+                             "ts_code": "000001.SZ", "close": 10.0}])
+        old.to_parquet(path)
+        with mock.patch.object(X, "atomic_parquet") as writer:
+            count, entry, _, _ = self._run_fallback(
+                ["SZ000001"], ({"SZ000001": [
+                    {"symbol": "SH000001", "ts_code": "000001.SH",
+                     "timestamp": "2026-10-16 00:00:00"}]}, "", []))
+        writer.assert_not_called()
+        self.assertEqual(count, 0)
+        self.assertFalse(entry["done"])
+        self.assertEqual(entry["status"], "failed")
+        self.assertEqual(pd.read_parquet(path).to_dict("records"),
+                         old.to_dict("records"))
 
 
 class TestManifestCheckpoint(_TmpEnv):
