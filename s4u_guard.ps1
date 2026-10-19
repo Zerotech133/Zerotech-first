@@ -8,6 +8,8 @@ $svc.Connect()
 
 $tasks = Get-ScheduledTask | Where-Object {
   $_.TaskName -ne 'AIOS-S4U-Guard' -and
+  $_.Principal.LogonType -ne 'ServiceAccount' -and
+  $_.Principal.UserId -notmatch '^(SYSTEM|NT AUTHORITY\\SYSTEM|S-1-5-18)$' -and
   (@($_.Actions) | Where-Object { ($_.Execute -match 'aios|ollama_watchdog') -or ($_.Arguments -match 'aios|ollama_watchdog') })
 }
 
