@@ -28,6 +28,9 @@
 .vrow .t{flex:1 1 220px;min-width:180px;color:var(--text)}
 .vrow .jtags,.vrow .chips{display:inline-flex;gap:4px;flex-wrap:wrap}
 .vrow .pc-chip{cursor:default;padding:1px 6px}
+/* 标的 chip 可点击 → /bt/stock 个股全景（行情/4策略信号/JEV下钻/AI展望） */
+.vrow a.pc-chip{color:var(--link);text-decoration:none;cursor:pointer}
+.vrow a.pc-chip:hover{text-decoration:underline}
 /* 文字徽标（不用 emoji 图标） */
 .tag{display:inline-block;border:1px solid var(--border);border-radius:var(--r-s);
      padding:0 6px;font-size:var(--fs-xs);white-space:nowrap;flex:none}
@@ -184,7 +187,8 @@ function renderVerdicts(vd) {
     var b = jev.bias;
     var dotCls = b === "bull" ? "up" : (b === "bear" ? "dn" : "nt");
     var chips = (it.stocks || []).map(function (s) {
-      return '<span class="pc-chip">' + esc(s) + '</span>';
+      return '<a class="pc-chip" href="/bt/stock?c=' + encodeURIComponent(s)
+        + '" title="查看个股全景">' + esc(s) + '</a>';
     }).join("");
     var d = document.createElement("div");
     d.innerHTML = '<div class="vrow">'
