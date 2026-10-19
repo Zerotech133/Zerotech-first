@@ -72,7 +72,8 @@ def env(tmp_path):
     finally:
         con.close()
     return {"cache_path": str(cache_path), "tdx_root": str(tdx_root),
-            "db_path": str(db_path), "report_dir": str(tmp_path / "reports")}
+            "db_path": str(db_path), "report_dir": str(tmp_path / "reports"),
+            "data_root": str(tmp_path / "nodata")}
 
 
 def write_cache(path, daily, meta=None, missing=None, errs=None):
@@ -284,7 +285,8 @@ def test_run_end_to_end_report_and_inconclusive(env, tmp_path):
     # SZ000001 有帖但无 .day 文件 → missing_file
     write_cache(env["cache_path"], {})
     report = B.run(cache_path=env["cache_path"], db_path=env["db_path"],
-                   tdx_root=env["tdx_root"], report_dir=env["report_dir"])
+                   tdx_root=env["tdx_root"], report_dir=env["report_dir"],
+                   data_root=env["data_root"])
     assert report["counts"]["missing"] == 2
     assert report["counts"]["backfilled"] == 1
     assert report["counts"]["missing_file"] == 1
@@ -323,7 +325,8 @@ def test_run_backfill_improves_coverage(env):
               make_records(30))
     write_cache(env["cache_path"], {})
     report = B.run(cache_path=env["cache_path"], db_path=env["db_path"],
-                   tdx_root=env["tdx_root"], report_dir=env["report_dir"])
+                   tdx_root=env["tdx_root"], report_dir=env["report_dir"],
+                   data_root=env["data_root"])
     b, a = report["audit_before"], report["audit_after"]
     assert a["cached_candidate_symbols"] > b["cached_candidate_symbols"]
     assert len(a["unique_missing_symbols"]) < \
@@ -337,7 +340,8 @@ def test_run_creates_backup_and_source_note(env):
               make_records(5))
     write_cache(env["cache_path"], {})
     report = B.run(cache_path=env["cache_path"], db_path=env["db_path"],
-                   tdx_root=env["tdx_root"], report_dir=env["report_dir"])
+                   tdx_root=env["tdx_root"], report_dir=env["report_dir"],
+                   data_root=env["data_root"])
     assert report["cache_updated"] is True
     bak = Path(report["backup_path"])
     assert bak.exists()
@@ -359,3 +363,161 @@ def test_offline_audit_pure_in_memory(env, monkeypatch):
                                   env["cache_path"])
     assert result["audit_decision"] == "INCONCLUSIVE"
     assert result["effectiveness_conclusion"] is None
+
+
+# ── 本地行情源只读普查 ───────────────────────────────────────
+
+def test_symbol_to_ts_code():
+    assert B.symbol_to_ts_code("SH600938") == "600938.SH"
+    assert B.symbol_to_ts_code("SZ000015") == "000015.SZ"
+    with pytest.raises(ValueError):
+        B.symbol_to_ts_code("BJ430047")
+
+
+class _FakeTable:
+    """模拟 pandas DataFrame 的最小接口（list(df[col]) 可用）。"""
+
+    def __init__(self, cols):
+        self._cols = cols
+        self.columns = list(cols.keys())
+
+    def __getitem__(self, name):
+        return list(self._cols[name])
+
+
+def test_census_per_date_parts_with_fake_reader(tmp_path):
+    """按日部件普查：窗口过滤、per-symbol 行数/首末日、adj_factor 同扫。"""
+    parts = tmp_path / "daily"
+    adj = tmp_path / "adj_factor"
+    parts.mkdir(parents=True)
+    adj.mkdir(parents=True)
+    for d in ("20180102", "20190605", "20231229", "20240102"):  # 最后一个出窗
+        for root in (parts, adj):
+            (root / ("d_%s.parquet" % d)).write_bytes(b"stub")
+    mapping = {
+        "20180102": {"600000.SH", "000015.SZ"},
+        "20190605": {"600000.SH", "000015.SZ", "601288.SH"},
+        "20231229": {"600000.SH"},
+        "20240102": {"600000.SH"},                  # 出窗，不计数
+    }
+
+    def reader(path, columns):                      # noqa: ANN001
+        td = os.path.basename(str(path))[2:10]
+        return _FakeTable({"ts_code": mapping[td]})
+
+    syms = ["SH600000", "SH601288", "SZ000015"]
+    r = B.census_per_date_parts(str(parts), syms,
+                                ("20180101", "20231231"),
+                                reader=reader, adj_dir=str(adj),
+                                note="测试口径说明")
+    assert r["parts_in_window"] == 3 and r["parts_total"] == 4
+    assert r["span_in_window"] == ["20180102", "20231229"]
+    assert r["covered_symbols"] == ["SH600000", "SH601288", "SZ000015"]
+    assert r["per_symbol"]["SH600000"] == {"rows": 3,
+                                           "first": "20180102",
+                                           "last": "20231229"}
+    assert r["per_symbol"]["SH601288"]["rows"] == 1
+    assert r["adj_factor"]["parts_in_window"] == 3
+    assert "adjustment_note" in r
+
+
+def test_census_per_date_parts_dir_missing(tmp_path):
+    r = B.census_per_date_parts(str(tmp_path / "nope"), ["SH600000"],
+                                ("20180101", "20231231"),
+                                reader=lambda p, c: _FakeTable({"ts_code": []}))
+    assert r["status"] == "dir_missing"
+
+
+def test_census_ashare_per_symbol(tmp_path):
+    """单票 parquet 普查：缺文件记 file=None，窗口外日期不计。"""
+    d = tmp_path / "ashare"
+    d.mkdir()
+    (d / "600000_SH.parquet").write_bytes(b"stub")
+    (d / "300104_SZ.parquet").write_bytes(b"stub")
+
+    def reader(path, columns):                      # noqa: ANN001
+        name = os.path.basename(str(path))
+        if name.startswith("600000"):
+            dates = ["20180102", "20191231", "20230103"]
+        else:                                       # 300104 全在窗外
+            dates = ["20240102", "20250601"]
+        return _FakeTable({"trade_date": dates})
+
+    r = B.census_ashare_per_symbol(str(d), ["SH600000", "SZ300104",
+                                            "SZ000015"],
+                                   ("20180101", "20231231"), reader=reader)
+    assert r["covered_symbols"] == ["SH600000"]
+    assert r["per_symbol"]["SH600000"]["rows_in_window"] == 3
+    assert r["per_symbol"]["SZ300104"]["rows_in_window"] == 0
+    assert r["per_symbol"]["SZ000015"]["file"] is None
+
+
+def test_local_source_census_engine_missing():
+    """引擎缺失 → fail-visible 跳过，不抛错、sources 为空。"""
+    r = B.local_source_census(["SH600000"], data_root="X:/nope",
+                              engine_probe=lambda: None)
+    assert r["engine"] is None
+    assert "普查跳过" in r["note"]
+    assert r["sources"] == {}
+
+
+def test_local_source_census_with_fake_reader(tmp_path):
+    """多源普查：单源目录缺失被隔离，union 覆盖正确汇总。"""
+    daily = tmp_path / "tushare" / "daily"
+    daily.mkdir(parents=True)
+    (daily / "d_20200106.parquet").write_bytes(b"stub")
+    (daily / "d_20200107.parquet").write_bytes(b"stub")
+
+    def reader(path, columns):                      # noqa: ANN001
+        return _FakeTable({"ts_code": ["600000.SH", "601288.SH"]})
+
+    r = B.local_source_census(["SH600000", "SH601288", "SZ000015"],
+                              data_root=str(tmp_path),
+                              reader=reader,
+                              engine_probe=lambda: "pandas-test")
+    assert r["engine"] == "pandas-test"
+    tw = r["sources"]["tushare_warehouse"]
+    assert tw["covered_count"] == 2
+    assert tw["covered_symbols"] == ["SH600000", "SH601288"]
+    # 其余源目录不存在 → dir_missing 被隔离，不拖垮
+    assert r["sources"]["ashare_per_symbol"]["status"] == "dir_missing"
+    assert r["sources"]["kg_ts_daily_snapshot"]["status"] == "dir_missing"
+    assert r["covered_union_count"] == 2
+    assert r["uncovered_union_symbols"] == ["SZ000015"]
+    assert "未并入缓存" in r["discipline"]
+
+
+def test_local_source_census_single_source_error_isolated(tmp_path):
+    """单源 reader 抛错 → 记 error，其余源继续（隔离不扩散）。"""
+    daily = tmp_path / "tushare" / "daily"
+    daily.mkdir(parents=True)
+    (daily / "d_20200106.parquet").write_bytes(b"stub")
+
+    def bad_reader(path, columns):                  # noqa: ANN001
+        raise OSError("boom")
+
+    r = B.local_source_census(["SH600000"], data_root=str(tmp_path),
+                              reader=bad_reader,
+                              engine_probe=lambda: "pandas-test")
+    assert r["sources"]["tushare_warehouse"]["status"] == "error"
+    assert r["covered_union_count"] == 0
+
+
+def test_run_includes_census_section(env):
+    """run() 报告必含 local_source_census 段（引擎无关，结构完整）。"""
+    write_cache(env["cache_path"], {})
+    report = B.run(cache_path=env["cache_path"], db_path=env["db_path"],
+                   tdx_root=env["tdx_root"], report_dir=env["report_dir"],
+                   data_root=env["data_root"])
+    c = report["local_source_census"]
+    assert c["window"] == ["20180101", "20231231"]
+    assert c["covered_union_count"] == 0
+    assert c["uncovered_union_symbols"] == sorted(report["missing_symbols"])
+    assert "未并入缓存" in c["discipline"]
+    if c["engine"] is not None:                     # 有引擎时逐源结构齐全
+        assert set(c["sources"]) == {"tushare_warehouse", "tushare_v2",
+                                     "ashare_per_symbol",
+                                     "kg_ts_daily_snapshot"}
+    else:                                           # 缺引擎 fail-visible
+        assert "普查跳过" in c["note"]
+        assert c["sources"] == {}

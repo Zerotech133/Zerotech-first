@@ -11,7 +11,10 @@
     临时文件 + os.replace 原子写回；
   - 合并后用 xq_factor_v1.offline_audit（内存调用）重跑覆盖审计，
     审计语义维持 INCONCLUSIVE，绝不输出因子有效性结论；
-  - 通达信 GUI 复权设置未知，补齐行仅诊断用（见 ADJUSTMENT_NOTE）。
+  - 通达信 GUI 复权设置未知，补齐行仅诊断用（见 ADJUSTMENT_NOTE）；
+  - 附加有界只读普查：扫描本地既有行情源（tushare 仓 daily/adj_factor、
+    tushare_v2、ashare 单票 parquet、tdx ts_daily 采样快照）在 2018-2023
+    窗口对缺失标的的覆盖与复权口径字段，只读统计、绝不并入缓存。
 
 .day 二进制格式（与 tools/xq_quote_alt_probe.parse_tdx_day、
 tools/xq_tdx_fetch.encode_day 完全一致，小端 32B）：
@@ -29,7 +32,6 @@ import argparse
 import json
 import os
 import shutil
-import sqlite3
 import struct
 import sys
 from datetime import datetime
@@ -49,6 +51,20 @@ DEFAULT_CACHE_PATH = r"C:\aios\automation_runs\xq_t7_factor\daily_cache.json"
 DEFAULT_REPORT_DIR = r"C:\aios\automation_runs\xq_t7_factor"
 DEFAULT_TDX_ROOT = r"C:\项目\new_tdx64\vipdoc"
 DEFAULT_DB_PATH = factor.DB_PATH
+DEFAULT_DATA_ROOT = str(TOOLS_DIR.parent / "data")   # quant_backtest/data/
+
+# 本地行情源只读普查窗口（team-lead 工单口径：A 股 2018-2023）
+CENSUS_WINDOW_DEFAULT = ("20180101", "20231231")
+
+# tushare 仓 daily 的复权口径说明（写入报告）
+TUSHARE_ADJ_NOTE = ("tushare daily 为不复权原始价（含 pre_close），"
+                    "adj_factor 同仓库按日部件存放；qfq 需另行派生，"
+                    "本普查未并入缓存")
+ASHARE_ADJ_NOTE = ("ashare 单票 parquet 无 adj_factor 字段（有 pre_close/"
+                   "pct_chg），复权口径未标注；且样本起始 2025 年，"
+                   "不覆盖 2018-2023 窗口")
+KG_TS_DAILY_NOTE = ("tdx ts_daily 为按日采样快照（非连续历史），口径同 "
+                    "tushare daily 不复权，另有 ts_adj_factor 部件")
 
 SOURCE_TAG = "tdx_lday_gui"
 ADJUSTMENT_NOTE = ("通达信 GUI 复权设置未知，可能与 tushare qfq 口径不一致，"
@@ -262,6 +278,201 @@ def merge_and_write(cache_path: str, additions: dict, stamp: str) -> dict:
             "added": added, "skipped_existing": skipped}
 
 
+# ── 本地行情源只读普查 ───────────────────────────────────────
+
+def symbol_to_ts_code(symbol: str) -> str:
+    """SH600938 → '600938.SH'（tushare ts_code 口径）。"""
+    s = str(symbol).strip().upper()
+    if (len(s) != 8 or s[:2] not in ("SH", "SZ") or not s[2:].isdigit()):
+        raise ValueError("非法符号 %r，应为 SH/SZ + 6 位数字" % symbol)
+    return s[2:] + "." + s[:2]
+
+
+def _pandas_read(path, columns):
+    """延迟导入 pandas 读 parquet（缺引擎 fail-visible，只读不动数据）。"""
+    import pandas as pd                          # noqa: 延迟导入
+    return pd.read_parquet(path, columns=columns)
+
+
+def _iter_date_parts(parts_dir, prefix="d_", suffix=".parquet", window=None):
+    """列出 parts_dir 内 prefix+8 位日期+suffix 的部件 [(td, path)]。"""
+    if not os.path.isdir(parts_dir):
+        return None                              # 目录不存在（区别于空）
+    out = []
+    for name in sorted(os.listdir(parts_dir)):
+        if not (name.startswith(prefix) and name.endswith(suffix)):
+            continue
+        td = name[len(prefix):-len(suffix)]
+        if len(td) != 8 or not td.isdigit():
+            continue
+        if window is None or (window[0] <= td <= window[1]):
+            out.append((td, os.path.join(parts_dir, name)))
+    return out
+
+
+def census_per_date_parts(parts_dir, symbols, window, reader=None,
+                          adj_dir=None, note=""):
+    """按日部件日线仓普查（只读）：统计窗口内缺失标的覆盖与日期范围。
+
+    reader(path, columns) 可注入（测试用）；adj_dir 同构扫描复权因子。
+    目录不存在 → {'status': 'dir_missing'}。
+    """
+    reader = reader or _pandas_read
+    rev = {symbol_to_ts_code(s): s for s in symbols}
+    parts = _iter_date_parts(parts_dir, window=window)
+    if parts is None:
+        return {"status": "dir_missing", "dir": os.path.abspath(parts_dir)}
+    per = {s: {"rows": 0, "first": None, "last": None} for s in symbols}
+    first_path = parts[0][1] if parts else None
+    columns = None
+    if first_path is not None:
+        columns = list(reader(first_path, None).columns)
+    for td, path in parts:
+        codes = {str(c) for c in list(reader(path, ["ts_code"])["ts_code"])}
+        for c in codes:
+            s = rev.get(c)
+            if s is not None:
+                per[s]["rows"] += 1
+                if per[s]["first"] is None:
+                    per[s]["first"] = td
+                per[s]["last"] = td
+    result = {
+        "dir": os.path.abspath(parts_dir),
+        "parts_total": len(_iter_date_parts(parts_dir)),
+        "parts_in_window": len(parts),
+        "span_in_window": [parts[0][0], parts[-1][0]] if parts else None,
+        "columns": columns,
+        "per_symbol": per,
+        "covered_symbols": sorted(s for s, v in per.items() if v["rows"]),
+    }
+    result["covered_count"] = len(result["covered_symbols"])
+    if adj_dir is not None:
+        adj_parts = _iter_date_parts(adj_dir, window=window)
+        if adj_parts is None:
+            result["adj_factor"] = {"status": "dir_missing"}
+        else:
+            adj_per = {s: {"rows": 0, "first": None, "last": None}
+                       for s in symbols}
+            for td, path in adj_parts:
+                codes = {str(c)
+                         for c in list(reader(path, ["ts_code"])["ts_code"])}
+                for c in codes:
+                    s = rev.get(c)
+                    if s is not None:
+                        adj_per[s]["rows"] += 1
+                        if adj_per[s]["first"] is None:
+                            adj_per[s]["first"] = td
+                        adj_per[s]["last"] = td
+            result["adj_factor"] = {
+                "dir": os.path.abspath(adj_dir),
+                "parts_in_window": len(adj_parts),
+                "per_symbol": adj_per,
+            }
+    if note:
+        result["adjustment_note"] = note
+    return result
+
+
+def census_ashare_per_symbol(ashare_dir, symbols, window, reader=None):
+    """ashare 单票 parquet 普查（文件名 <code>_<MKT>.parquet，只读）。"""
+    reader = reader or _pandas_read
+    if not os.path.isdir(ashare_dir):
+        return {"status": "dir_missing", "dir": os.path.abspath(ashare_dir)}
+    per = {}
+    files_total = sum(1 for n in os.listdir(ashare_dir)
+                      if n.endswith(".parquet"))
+    for s in symbols:
+        fp = os.path.join(ashare_dir, "%s_%s.parquet" % (s[2:], s[:2]))
+        if not os.path.exists(fp):
+            per[s] = {"file": None}
+            continue
+        dates = []
+        for d in list(reader(fp, ["trade_date"])["trade_date"]):
+            td = str(d)[:8]
+            if len(td) == 8 and td.isdigit() and window[0] <= td <= window[1]:
+                dates.append(td)
+        per[s] = {"file": os.path.abspath(fp),
+                  "rows_in_window": len(dates),
+                  "first": min(dates) if dates else None,
+                  "last": max(dates) if dates else None}
+    covered = sorted(s for s, v in per.items() if v.get("rows_in_window"))
+    return {"dir": os.path.abspath(ashare_dir), "files_total": files_total,
+            "per_symbol": per, "covered_symbols": covered,
+            "covered_count": len(covered)}
+
+
+def local_source_census(symbols, data_root=DEFAULT_DATA_ROOT,
+                        window=CENSUS_WINDOW_DEFAULT, reader=None,
+                        engine_probe=None):
+    """有界只读普查：本地既有行情源对缺失标的的覆盖与复权口径。
+
+    扫描 <data_root>/tushare/{daily,adj_factor}、tushare_v2/daily、
+    ashare/、tdx/ts_daily。单源失败不拖垮其余源（逐源 try/except）；
+    引擎缺失或目录缺失均 fail-visible 记入结果。只读统计，
+    绝不并入缓存、不写任何数据文件。
+    """
+    window = tuple(window)
+    out = {"window": list(window), "data_root": os.path.abspath(data_root),
+           "symbols_in_scope": sorted(symbols), "sources": {}}
+    if engine_probe is None:
+        def engine_probe():
+            try:
+                import pandas                    # noqa: 延迟导入
+                return "pandas-" + pandas.__version__
+            except ImportError:
+                return None
+    engine = engine_probe()
+    out["engine"] = engine
+    if engine is None:
+        # 结构统一：即便引擎缺失也保证覆盖键齐全（fail-visible 注明原因）
+        out["note"] = "pandas/pyarrow 引擎不可用，普查跳过（只读，不动数据）"
+        out["covered_union_symbols"] = []
+        out["covered_union_count"] = 0
+        out["uncovered_union_symbols"] = sorted(symbols)
+        out["discipline"] = ("只读普查：未并入缓存、未写任何数据文件；"
+                             "不构成因子有效性结论")
+        return out
+    src = out["sources"]
+    probes = (
+        ("tushare_warehouse",
+         lambda: census_per_date_parts(
+             os.path.join(data_root, "tushare", "daily"), symbols, window,
+             reader=reader, adj_dir=os.path.join(data_root, "tushare",
+                                                 "adj_factor"),
+             note=TUSHARE_ADJ_NOTE)),
+        ("tushare_v2",
+         lambda: census_per_date_parts(
+             os.path.join(data_root, "tushare_v2", "daily"), symbols,
+             window, reader=reader, adj_dir=os.path.join(data_root,
+                                                         "tushare_v2",
+                                                         "adj_factor"),
+             note=TUSHARE_ADJ_NOTE)),
+        ("ashare_per_symbol",
+         lambda: dict(census_ashare_per_symbol(
+             os.path.join(data_root, "ashare"), symbols, window,
+             reader=reader), adjustment_note=ASHARE_ADJ_NOTE)),
+        ("kg_ts_daily_snapshot",
+         lambda: census_per_date_parts(
+             os.path.join(data_root, "tdx", "ts_daily"), symbols, window,
+             reader=reader, note=KG_TS_DAILY_NOTE)),
+    )
+    covered_union = set()
+    for name, probe in probes:
+        try:
+            result = probe()
+        except Exception as e:                   # noqa: BLE001 单源失败隔离
+            result = {"status": "error", "error": str(e)[:200]}
+        src[name] = result
+        if isinstance(result, dict) and result.get("covered_symbols"):
+            covered_union.update(result["covered_symbols"])
+    out["covered_union_symbols"] = sorted(covered_union)
+    out["covered_union_count"] = len(covered_union)
+    out["uncovered_union_symbols"] = sorted(set(symbols) - covered_union)
+    out["discipline"] = ("只读普查：未并入缓存、未写任何数据文件；"
+                         "不构成因子有效性结论")
+    return out
+
+
 # ── 审计摘要与主流程 ─────────────────────────────────────────
 
 def audit_summary(audit: dict) -> dict:
@@ -289,11 +500,16 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         db_path: str = DEFAULT_DB_PATH,
         tdx_root: str = DEFAULT_TDX_ROOT,
         report_dir: str = DEFAULT_REPORT_DIR,
-        posts: list = None) -> dict:
-    """全流程：缺失发现 → 解析校验 → 备份合并 → 前后覆盖审计 → 报告。
+        posts: list = None,
+        data_root: str = DEFAULT_DATA_ROOT,
+        census_window: tuple = CENSUS_WINDOW_DEFAULT,
+        census_reader=None) -> dict:
+    """全流程：缺失发现 → 解析校验 → 备份合并 → 前后覆盖审计
+    → 本地源只读普查 → 报告。
 
     posts 可注入（测试用）；为 None 时只读加载真库。全程零网络：
     offline_audit 为内存调用（帖子已载入，db 仅用于回显绝对路径）。
+    普查为有界只读（census_reader 可注入供测试），单源失败不影响主流程。
     返回报告 dict（已落盘 report_dir/tdx_backfill_<时间戳>.json）。
     """
     if posts is None:
@@ -318,6 +534,14 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         after_content = original_content
     audit_after = factor.offline_audit(posts, json.loads(after_content),
                                        db_path, cache_path)
+
+    # 本地行情源只读普查（有界、单源隔离、绝不并入缓存）
+    try:
+        census = local_source_census(missing, data_root=data_root,
+                                     window=census_window,
+                                     reader=census_reader)
+    except Exception as e:                       # noqa: BLE001 普查失败不拖垮主流程
+        census = {"status": "error", "error": str(e)[:200]}
 
     counts = {
         "candidates": len({s for p in posts for s in p.get("stocks", [])}),
@@ -353,6 +577,7 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         "per_symbol": per_symbol,
         "audit_before": audit_summary(audit_before),
         "audit_after": audit_summary(audit_after),
+        "local_source_census": census,
     }
     os.makedirs(report_dir, exist_ok=True)
     report_path = os.path.join(
@@ -372,10 +597,13 @@ def main(argv=None) -> int:
     ap.add_argument("--db", default=DEFAULT_DB_PATH, help="雪球库（只读）")
     ap.add_argument("--tdx-root", default=DEFAULT_TDX_ROOT, help="vipdoc 根目录")
     ap.add_argument("--report-dir", default=DEFAULT_REPORT_DIR, help="报告目录")
+    ap.add_argument("--data-root", default=DEFAULT_DATA_ROOT,
+                    help="本地行情数据根（只读普查用）")
     args = ap.parse_args(argv)
     try:
         report = run(cache_path=args.cache, db_path=args.db,
-                     tdx_root=args.tdx_root, report_dir=args.report_dir)
+                     tdx_root=args.tdx_root, report_dir=args.report_dir,
+                     data_root=args.data_root)
     except (OSError, ValueError) as e:
         print("错误：%s" % e, file=sys.stderr)
         return 1
@@ -387,6 +615,11 @@ def main(argv=None) -> int:
           % (report["cache_updated"], report["backup_path"]))
     print("[tdx-backfill] 审计 decision=%s（前后均 INCONCLUSIVE，无有效性结论）"
           % report["audit_after"]["audit_decision"])
+    census = report.get("local_source_census") or {}
+    print("[tdx-backfill] 本地源普查：引擎=%s，窗口 %s，缺失标的覆盖 %d/%d"
+          % (census.get("engine"), census.get("window"),
+             census.get("covered_union_count", -1),
+             len(report.get("missing_symbols", []))))
     print("[tdx-backfill] 报告=%s" % report["report_path"])
     return 0
 
