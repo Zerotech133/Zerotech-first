@@ -141,6 +141,113 @@ class TestSnapLayout(_TmpEnv):
         self.assertEqual(mf.get("xq_quote_snap")["status"], "failed")
 
 
+class TestSnapManifestSave(_TmpEnv):
+    """快照清单写失败不可伪成功；所有入口均使用离线假对象。"""
+
+    def _old_manifest_bytes(self) -> bytes:
+        """先写旧账本作为未提交事务的字节级对照。"""
+        manifest = X.XqManifest(X.MANIFEST)
+        manifest.mark("xq_quote_snap", done=True, rows=7, status="ok",
+                      file="old.parquet")
+        self.assertTrue(manifest.save())
+        with open(X.MANIFEST, "rb") as stored:
+            return stored.read()
+
+    def _check_save_failure(self, batch: str, has_rows: bool) -> None:
+        """两个 CLI 模式 × 两个分支共用隔离探针。"""
+        old_bytes = self._old_manifest_bytes()
+        fake = _fake_ball({"quotec": lambda symbols: (
+            _quotec_j() if has_rows else
+            {"error_code": 0, "data": {"items": []}})})
+        published: list[str] = []
+
+        def publish(_frame: pd.DataFrame, path: str) -> None:
+            """模拟原子发布已成功：即使账本失败也不可宣称回滚。"""
+            with open(path, "wb") as output:
+                output.write(b"published-snapshot")
+            published.append(path)
+
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch.object(S, "init_ball", return_value={
+                    "token": "", "probe": {"ok": True}, "token_probe": {}}) \
+                as initialize, \
+                mock.patch.object(X, "load_token", return_value="") \
+                as load_token, \
+                mock.patch.object(X, "quotec_probe") as probe, \
+                mock.patch.object(X, "token_probe") as token_probe, \
+                mock.patch.object(X, "ip_blocked_active", return_value=""), \
+                mock.patch.object(X, "jitter_sleep", return_value=None), \
+                mock.patch("socket.socket.connect",
+                           side_effect=AssertionError("network forbidden")), \
+                mock.patch.object(X, "atomic_parquet", side_effect=publish) \
+                as parquet, \
+                mock.patch.object(X.XqManifest, "save", return_value=False) \
+                as save, \
+                mock.patch.object(S, "sync_kline") as kline, \
+                mock.patch.object(S, "sync_capital_flow") as flow, \
+                mock.patch.object(S, "sync_northbound") as north, \
+                mock.patch("builtins.print") as print_line:
+            rc = S.main(["--batch", batch, "--codes", "SH600519"])
+        self.assertEqual(rc, 1)
+        initialize.assert_called_once()
+        load_token.assert_not_called()
+        probe.assert_not_called()
+        token_probe.assert_not_called()
+        save.assert_called_once()
+        kline.assert_not_called()
+        flow.assert_not_called()
+        north.assert_not_called()
+        log = "\n".join(" ".join(str(part) for part in call.args)
+                        for call in print_line.call_args_list)
+        self.assertIn("[ALERT][manifest_save]", log)
+        self.assertIn("停止后续批次", log)
+        self.assertNotIn("[main] 完成", log)
+        with open(X.MANIFEST, "rb") as stored:
+            self.assertEqual(stored.read(), old_bytes)
+        if has_rows:
+            parquet.assert_called_once()
+            self.assertEqual(len(published), 1)
+            with open(published[0], "rb") as stored:
+                self.assertEqual(stored.read(), b"published-snapshot")
+            self.assertIn("可能已发布", log)
+            self.assertIn("不能宣称回滚", log)
+            self.assertNotIn("xq_quote_snap: 2 行", log)
+        else:
+            parquet.assert_not_called()
+            self.assertEqual(published, [])
+            self.assertIn("零新行，旧清单未更新", log)
+
+    def test_snap_zero_rows_save_false(self) -> None:
+        self._check_save_failure("snap", has_rows=False)
+
+    def test_snap_published_save_false(self) -> None:
+        self._check_save_failure("snap", has_rows=True)
+
+    def test_all_zero_rows_stops_following_batches(self) -> None:
+        self._check_save_failure("all", has_rows=False)
+
+    def test_all_published_stops_following_batches(self) -> None:
+        self._check_save_failure("all", has_rows=True)
+
+    def test_save_true_retains_success_contract(self) -> None:
+        """正常保存应回报行数并记 ok，非故障路径不改语义。"""
+        fake = _fake_ball({"quotec": lambda symbols: _quotec_j()})
+        old_bytes = self._old_manifest_bytes()
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch.object(X, "jitter_sleep", return_value=None), \
+                mock.patch("socket.socket.connect",
+                           side_effect=AssertionError("network forbidden")):
+            manifest = X.XqManifest(X.MANIFEST)
+            manifest.load()
+            count = S.sync_quote_snap(["SH600519"], "20261016", manifest)
+        self.assertEqual(count, 2)
+        self.assertEqual(manifest.get("xq_quote_snap")["status"], "ok")
+        with open(X.MANIFEST, "rb") as stored:
+            self.assertNotEqual(stored.read(), old_bytes)
+        self.assertTrue(os.path.isfile(os.path.join(
+            X.OUT_DIR, "xq_quote_snap", "d_20261016.parquet")))
+
+
 class TestKlineDedup(_TmpEnv):
     """test_kline_dedup：逐码 by_code 布局 + 增量合并去重（后写覆盖）。"""
 

@@ -42,6 +42,10 @@ sys.path.insert(0, HERE)
 import xueqiu_common as X
 
 
+class ManifestSaveError(RuntimeError):
+    """快照账本未确认；已发布的数据片不能视为回滚。"""
+
+
 # ── 目录与路径工具 ───────────────────────────────────────────
 def _tbl_dir(tbl: str) -> str:
     d = os.path.join(X.OUT_DIR, tbl)
@@ -231,7 +235,9 @@ def sync_quote_snap(codes: list[str], ymd: str,
                 status="ip_blocked" if tripped else "failed",
                 note=("quotec 403 熔断停轮" if tripped
                       else "quotec 全批失败/空"))
-        mf.save()
+        if not mf.save():
+            raise ManifestSaveError(
+                "xq_quote_snap 零新行，旧清单未更新（无数据片发布）")
         return 0
     df = pd.DataFrame(rows).drop_duplicates(
         subset=["symbol", "timestamp"]).sort_values("symbol").reset_index(
@@ -242,7 +248,10 @@ def sync_quote_snap(codes: list[str], ymd: str,
             file=os.path.basename(path),
             status="partial" if tripped else "ok",
             note="403 熔断部分批未采" if tripped else "")
-    mf.save()
+    if not mf.save():
+        raise ManifestSaveError(
+            "xq_quote_snap 账本未确认；数据片可能已发布，不能宣称回滚：%s"
+            % path)
     print("  xq_quote_snap: %d 行 → %s" % (len(df), os.path.basename(path)))
     return len(df)
 
@@ -932,6 +941,11 @@ def main(argv: list[str] | None = None) -> int:
             else:                            # forecast
                 r = sync_earningforecast(codes, mf)
             results[name] = r
+        except ManifestSaveError as e:
+            # 账本未确认不可按部分成功降级；停止后续批，避免 rc=0 误吞。
+            print("[ALERT][manifest_save] 批 %s 账本失败：%s → rc=1，停止后续批次"
+                  % (name, e))
+            return 1
         except Exception as e:               # 单批兜底：绝不让异常出 main
             results[name] = -1
             print("[main] 批 %s 异常：%s" % (name, str(e)[:100]))
