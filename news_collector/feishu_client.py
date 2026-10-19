@@ -192,10 +192,13 @@ def _hub_key():
 
 
 def _hub_send(content, msg_type, receive_id, receive_id_type,
-              kind=None, critical=False, timeout=8, route_targets=None):
+              kind=None, critical=False, timeout=8, route_targets=None,
+              domain=None):
     """→ (ok, why, message_id) 闸门结果；hub 不可达也返回失败，不直发。
     K-ORG-201 W38：hub 响应含 message_id（闸内直发回执）时透出，缺则 None。
-    K-ORG-204：route_targets 透传给 hub gate，hub 侧转发 Agent webhook。"""
+    K-ORG-204：route_targets 透传给 hub gate，hub 侧转发 Agent webhook。
+    FC-A（2026-10-20）：domain（owner/ops/customer）一级路由字段透传给 hub，
+    缺省 None 不发字段，存量调用零变化。"""
     try:
         body_obj = {"content": content, "msg_type": msg_type,
                     "receive_id": receive_id,
@@ -203,6 +206,8 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
                     "kind": kind, "critical": critical}
         if route_targets is not None:
             body_obj["route_targets"] = route_targets
+        if domain:
+            body_obj["domain"] = domain
         body = json.dumps(body_obj).encode("utf-8")
         key = _hub_key()
         if not key:
@@ -249,7 +254,7 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
 def send_msg_tracked(content, msg_type, receive_id=None,
                      receive_id_type="open_id", app_id=None, app_secret=None,
                      kind=None, critical=False, via_hub=True,
-                     flow_record=True, route_targets=None):
+                     flow_record=True, route_targets=None, domain=None):
     """W38 送达证据版发消息 → (ok, why, message_id or None)。参数同 send_msg。
 
     message_id 口径：经 hub=hub /api/send 响应顶层 message_id；
@@ -262,7 +267,8 @@ def send_msg_tracked(content, msg_type, receive_id=None,
     route_targets 为 push_targets 群列表透传给 Agent 侧路由参考。"""
     if via_hub:
         return _hub_send(content, msg_type, receive_id, receive_id_type,
-                         kind, critical, route_targets=route_targets)
+                         kind, critical, route_targets=route_targets,
+                         domain=domain)
     # K-ORG-204：via_hub=False 改为 Agent webhook
     return _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
                                kind, critical, route_targets=route_targets,
