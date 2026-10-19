@@ -79,7 +79,8 @@ def _rows_00700():
 
 
 def test_hk_market_contract(tmp_path, monkeypatch):
-    m = hm.HkMarket(export_dir=tmp_path)
+    # hk_dir 一并指 tmp：隔离真实 market_days.csv（判例：测试禁绑真实派生数据落点）
+    m = hm.HkMarket(export_dir=tmp_path, hk_dir=tmp_path / "hk_paper_empty")
     monkeypatch.setattr(m, "_read",
                         lambda code: _rows_00700() if hm.file_code(code) == "00700" else None)
     assert m.trading_days() == ["20261015", "20261016"]   # 回退路径：基准票 00700
