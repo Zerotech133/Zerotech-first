@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import msvcrt
 import os
 import sys
 import time
@@ -51,6 +52,9 @@ SUBS_JSON = REPO / "portal" / "push_subscribers.json"
 WORK_DIR = REPO / "portal" / "work"
 PREVIEW_JSON = WORK_DIR / "matrix_send_preview.json"
 LOG_JSON = WORK_DIR / "matrix_send_log.json"
+# 2026-10-19 审计修复（P1-3）：现役流水改 JSONL 追加（并发原子），
+# 旧 JSON 数组档冻结为只读历史，读侧合并兼容。
+LOG_JSONL = WORK_DIR / "matrix_send_log.jsonl"
 SECRETS_JSON = WORK_DIR / "push_secrets.json"
 HUB_URL = "http://127.0.0.1:8097/api/send"
 _KIND_PREFIX = "matrix"  # /api/send kind = matrix:<market>，流水归因用
@@ -179,18 +183,56 @@ def _atomic_json(path, data):
     os.replace(tmp, path)
 
 
-def _read_log(path) -> list:
+def _read_log() -> list:
+    """合并读流水：旧 JSON 数组档（只读历史）+ 现役 JSONL。
+
+    2026-10-19 审计修复（P1-3）：原实现整文件读-改-写且无锁，双市场
+    窗口进程并发发送时后写覆盖先写 → 日频控 sent_cnt 漏计、daily_cap
+    超发。现役流水改 JSONL 单行追加（append 原子），旧档冻结只读。
+    """
+    rows: list = []
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        data = json.loads(LOG_JSON.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            rows = [r for r in data if isinstance(r, dict)]
     except (OSError, ValueError):
-        return []
-    return data if isinstance(data, list) else []
+        pass
+    try:
+        with open(LOG_JSONL, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue  # 半行（进程中断）跳过不阻塞频控
+                if isinstance(r, dict):
+                    rows.append(r)
+    except OSError:
+        pass
+    return rows
 
 
-def _append_log(path, entry):
-    log = _read_log(path)
-    log.append(entry)
-    _atomic_json(path, log)
+def _append_log(entry):
+    """JSONL 单行追加，跨进程互斥（2026-10-19 审计 P1-3）。
+
+    Windows 上 "a"/"ab" 模式的 write 不保证跨句柄原子（实测两线程各
+    50 笔并发追加丢 5 笔：多句柄各自定位 EOF 后写入互相覆盖）。用
+    msvcrt.locking 锁 EOF 后 1 字节区做互斥——锁随句柄关闭自动释放，
+    进程崩溃无残留；等待上限约 10s（LK_LOCK 语义），超时抛错不静默。
+    """
+    data = (json.dumps(entry, ensure_ascii=False) + "\n").encode("utf-8")
+    with open(LOG_JSONL, "a+b") as f:
+        f.seek(0, 2)
+        pos = f.tell()
+        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+        try:
+            f.write(data)
+        finally:
+            # 解锁必须与加锁同区域：写后 EOF 已变，须回到锁定时刻的 pos
+            f.seek(pos)
+            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 # ---------- 发送通道 ----------
@@ -251,7 +293,7 @@ def send_cards(groups, payloads, live, now, poster=None, matrix=None) -> dict:
     # 日频控基线：log 当日已成功发送条数（DRYRUN 也预演，skip 记因不发送）
     sent_cnt: dict = {}
     if matrix is not None:
-        for e in _read_log(LOG_JSON):
+        for e in _read_log():
             if e.get("date") == today:
                 k = (e.get("market"), e.get("group"))
                 sent_cnt[k] = sent_cnt.get(k, 0) + 1
@@ -295,9 +337,9 @@ def send_cards(groups, payloads, live, now, poster=None, matrix=None) -> dict:
         resp = poster(HUB_URL, pl["request"], key)
         if isinstance(resp, dict) and resp.get("ok"):
             sent.append({"group": gid, "audit": pl["audit"]})
-            _append_log(LOG_JSON, {"date": today, "market": pl["market"],
-                                   "window": pl["window"], "group": gid,
-                                   "ts": now.strftime("%Y-%m-%d %H:%M:%S")})
+            _append_log({"date": today, "market": pl["market"],
+                         "window": pl["window"], "group": gid,
+                         "ts": now.strftime("%Y-%m-%d %H:%M:%S")})
         else:
             why = resp.get("why") or resp.get("error") if isinstance(resp, dict) else resp
             skipped.append({"group": gid, "reason": "发送失败: %s" % why})

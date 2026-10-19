@@ -88,6 +88,7 @@ def iso(tmp_path, monkeypatch):
     """路径注入：预览/流水/订阅全部指向 tmp_path，发送相关 env 清场。"""
     monkeypatch.setattr(ms, "PREVIEW_JSON", tmp_path / "preview.json")
     monkeypatch.setattr(ms, "LOG_JSON", tmp_path / "log.json")
+    monkeypatch.setattr(ms, "LOG_JSONL", tmp_path / "log.jsonl")
     monkeypatch.setattr(ms, "SUBS_JSON", tmp_path / "subs.json")
     monkeypatch.setattr(ms, "SECRETS_JSON", tmp_path / "push_secrets.json")
     monkeypatch.delenv("MATRIX_SEND_LIVE", raising=False)
@@ -113,6 +114,54 @@ def _write_cfg(iso):
     spath.write_text(json.dumps(_subs(), ensure_ascii=False),
                      encoding="utf-8")
     return mpath, spath
+
+
+# ---------- (a0) 流水 JSONL（2026-10-19 审计 P1-3 修复回归） ----------
+
+class TestSendLogJsonl:
+    def test_legacy_array_still_read(self, iso):
+        """旧 JSON 数组档（只读历史）+ 新 JSONL 合并返回。"""
+        iso.joinpath("log.json").write_text(
+            json.dumps([{"date": "2026-10-18", "market": "cn",
+                         "group": "A"}]), encoding="utf-8")
+        for i in range(3):
+            ms._append_log({"date": "2026-10-19", "market": "cn",
+                            "group": "A", "seq": i})
+        rows = ms._read_log()
+        assert len(rows) == 4
+        assert sum(1 for r in rows if r.get("date") == "2026-10-19") == 3
+
+    def test_append_is_jsonl_atomic(self, iso):
+        """追加写不重写整文件：旧档内容原样保留，新档逐行合法 JSON。"""
+        ms._append_log({"date": "2026-10-19", "market": "hk", "group": "X"})
+        ms._append_log({"date": "2026-10-19", "market": "us", "group": "Y"})
+        text = iso.joinpath("log.jsonl").read_text(encoding="utf-8")
+        lines = [l for l in text.splitlines() if l.strip()]
+        assert len(lines) == 2
+        assert [json.loads(l)["group"] for l in lines] == ["X", "Y"]
+        assert not iso.joinpath("log.json").exists()  # 旧档不被触碰
+
+    def test_torn_line_skipped_not_fatal(self, iso):
+        """半行（进程中断残留）跳过不阻塞频控读取。"""
+        ms._append_log({"date": "2026-10-19", "market": "cn", "group": "A"})
+        with open(ms.LOG_JSONL, "a", encoding="utf-8") as f:
+            f.write('{"date": "2026-10-19", "mark')  # 模拟中断半行
+        rows = ms._read_log()
+        assert len(rows) == 1
+
+    def test_concurrent_appends_no_loss(self, iso):
+        """并发追加零丢失（P1-3 核心回归）：模拟双市场窗口进程交错写。"""
+        import threading
+        def worker(tag, n):
+            for i in range(n):
+                ms._append_log({"date": "2026-10-19", "market": tag,
+                                "group": "G", "seq": i})
+        ts = [threading.Thread(target=worker, args=(m, 50))
+              for m in ("cn", "us")]
+        [t.start() for t in ts]
+        [t.join() for t in ts]
+        rows = ms._read_log()
+        assert len(rows) == 100  # 原实现并发覆盖会丢账
 
 
 # ---------- (a) 选群：市场 + tier 过滤 ----------
@@ -288,8 +337,8 @@ class TestLive:
         card = json.loads(body["content"])  # content = v3 卡片 JSON 串
         assert card["schema"] == "2.0"
         assert "晨报 · A股" in card["header"]["title"]["content"]
-        # 仅成功发送才追加流水
-        log = json.loads((iso / "log.json").read_text(encoding="utf-8"))
+        # 仅成功发送才追加流水（P1-3 后现役档为 log.jsonl）
+        log = ms._read_log()
         assert [e["group"] for e in log] == ["A", "B"]
         assert all(e["date"] == "2026-10-19" and e["market"] == "cn"
                    and e["window"] == "morning" for e in log)

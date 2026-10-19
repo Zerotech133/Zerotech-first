@@ -141,6 +141,34 @@ class TestRunCycle:
         assert "已恢复" in calls[0]["title"]
         assert not Path(dw.FLAG_PATH).exists()  # 旗标已清除
 
+    def test_out_of_band_keeps_flag_no_fake_recovery(self, tmp_path):
+        """P1-2 回归：锚持续缺数出判定带后，不得假恢复销账。
+
+        原 bug：出带项不在 report["pending"] → 误发绿卡+清旗标+attempts
+        归零。修复后：旗标与 attempts 保留、不发绿卡、exit=2。
+        """
+        calls = []
+        m = _make_matrix()
+        dw.run_cycle(matrix=m, repo=tmp_path, now=NOW,
+                     sender=_fake_sender(calls))
+        assert json.loads(
+            Path(dw.FLAG_PATH).read_text(encoding="utf-8"))[
+                "attempts"] == {"cn|morning": 1}
+        # 下一轮 now 已出宽限带（end 09:15+30min=09:45 之后）：锚仍未就绪
+        later = datetime(2026, 10, 19, 11, 0)
+        rc, rep = dw.run_cycle(matrix=m, repo=tmp_path, now=later,
+                               sender=_fake_sender(calls))
+        assert rc == 2  # 不冒充恢复
+        assert calls == []  # 无绿卡无红卡（出带项不在巡检面，不骚扰）
+        flag = json.loads(Path(dw.FLAG_PATH).read_text(encoding="utf-8"))
+        assert flag["pending"][0]["market"] == "cn"  # 旗标保留
+        assert flag["attempts"] == {"cn|morning": 1}  # 账本不归零
+        # 再下一日重新入带且仍未就绪：attempts 从保留值继续累计
+        next_day = datetime(2026, 10, 20, 8, 5)
+        rc, rep = dw.run_cycle(matrix=m, repo=tmp_path, now=next_day,
+                               sender=_fake_sender(calls))
+        assert rc == 2 and rep["pending"][0]["attempts"] == 2
+
     def test_ok_without_flag_no_card(self, tmp_path):
         calls = []
         _touch(tmp_path / ANCHOR_REL, datetime(2026, 10, 19, 7, 30))

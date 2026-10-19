@@ -77,7 +77,7 @@ def run_check(matrix, repo, now):
     anchor, status, detail, deadline}, ...]}。
     """
     d = now.date()
-    pending, checked, skipped = [], 0, 0
+    pending, evaluated, checked, skipped = [], [], 0, 0
     for mkt, cfg in matrix["markets"].items():
         for w in pm.resolve_windows(cfg, d):
             dl = _at(d, w["deadline"])
@@ -89,6 +89,10 @@ def run_check(matrix, repo, now):
                 skipped += 1  # 预研期未实核锚绝不产生假告警
                 continue
             checked += 1
+            # 2026-10-19 审计（P1-2）：记录本轮实际评估过的锚（含 ok），
+            # 供 run_cycle 区分「真恢复」与「仅出判定带」。
+            evaluated.append({"market": mkt, "window": w["name"],
+                              "anchor": w["anchor"], "status": st["status"]})
             if st["status"] != "ok":
                 pending.append({
                     "market": mkt,
@@ -99,7 +103,7 @@ def run_check(matrix, repo, now):
                     "deadline": w["deadline"],
                 })
     return {"now": now.strftime("%Y-%m-%d %H:%M:%S"), "checked": checked,
-            "skipped": skipped, "pending": pending}
+            "skipped": skipped, "evaluated": evaluated, "pending": pending}
 
 
 def _read_flag(path):
@@ -200,9 +204,33 @@ def run_cycle(matrix=None, repo=None, now=None, sender=None,
         return exit_code, report
 
     if old_pending:
-        # 本轮全部恢复且旧旗标有账：绿卡销账 + 清旗标
+        # 2026-10-19 审计修复（P1-2）：出判定带≠恢复。原实现锚持续缺数
+        # 超过宽限期出带后 report["pending"] 为空 → 误发绿卡「已恢复」+
+        # 清旗标+attempts 归零（假恢复播报、L3 升级链丢失）。现区分：
+        # 真恢复=本轮 evaluated 中 status=ok；出带=不在本轮评估面，
+        # 保留旗标与 attempts 不销账（日志留痕，下一窗口重新入带再计）。
+        evaluated = {("%s|%s" % (e["market"], e["window"])): e["status"]
+                     for e in report.get("evaluated", [])}
+        recovered = [it for it in old_pending
+                     if evaluated.get(_key(it)) == "ok"]
+        out_of_band = [it for it in old_pending if _key(it) not in evaluated]
+        if recovered and not dry_run:
+            sender("数据锚到点已恢复", "green", _green_md(recovered))
+        if out_of_band:
+            keep = {_key(it) for it in out_of_band}
+            if not dry_run:
+                _write_flag(flag_path, {
+                    "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "pending": out_of_band,
+                    "attempts": {k: v for k, v in attempts.items()
+                                 if k in keep},
+                })
+                log("[warn] %d 项已出判定带仍未就绪——旗标保留不销账"
+                    "（今日不再自动巡检，需人工补数）：%s"
+                    % (len(out_of_band), sorted(keep)))
+            exit_code = 2
+            return exit_code, report
         if not dry_run:
-            sender("数据锚到点已恢复", "green", _green_md(old_pending))
             if _clear_flag(flag_path):
                 log("[恢复] 清除 deadline_pending 旗标（%d 项）"
                     % len(old_pending))
