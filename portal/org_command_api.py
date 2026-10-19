@@ -27,7 +27,7 @@ import shutil
 import time
 
 __all__ = [
-    "api_org", "api_preview", "api_register", "api_project_preview",
+    "api_org", "api_meta", "api_preview", "api_register", "api_project_preview",
     "api_project_register", "api_agent_update", "api_agent_knowledge",
     "api_agent_learn", "STATION",
 ]
@@ -114,14 +114,28 @@ def _load_faces(station):
     return face
 
 
-def _all_agents_raw(org):
-    """产出 (dept_key, agent_dict)。口径：dept['agents'] 内联 + teams 条目
-    （字符串 → team_<k>.json；dict → 内联 team）。与 _org_page 读法同族。"""
+def _all_agents_raw(org, station=STATION):
+    """产出 (dept_key, agent_dict)。口径（2026-10-19 lead 验收修订，实测真实 org.json 形态）：
+    dept['agents'] = [ID 字符串]（如 ["T1","T2"]），详情在 dept['agent_profiles']=[dict]；
+    兼容 agents 内联 dict 与 teams 条目（字符串 → team_<k>.json；dict → 内联 team）。
+    判例：2026-10-19 上午版只认 dict，把 29 在编读成 1（A0）——字符串 id 必须回连
+    agent_profiles；查无 profile 的 id 也产出最小条目（诚实降级，前端灰显缺字段）。"""
     for dep in org.get("departments", []):
         dk = dep.get("dept", "")
-        for ag in dep.get("agents", []) or []:
-            if isinstance(ag, dict):
-                yield dk, ag
+        profiles = {p.get("agent_id"): p
+                    for p in (dep.get("agent_profiles") or [])
+                    if isinstance(p, dict)}
+        for a in dep.get("agents", []) or []:
+            if isinstance(a, dict):
+                yield dk, a
+            elif isinstance(a, str):
+                prof = profiles.get(a)
+                if prof:
+                    merged = dict(prof)
+                    merged.setdefault("agent_id", a)
+                    yield dk, merged
+                else:
+                    yield dk, {"agent_id": a}  # 有编制无详情 → 最小条目不假绿
         for t in dep.get("teams", []) or []:
             if isinstance(t, str):
                 tj = _read_json(_reg(station, "team_%s.json" % t)) or {}
@@ -139,7 +153,7 @@ def _existing_agent_ids(org, station):
     ch = org.get("chief", {})
     if ch.get("agent_id"):
         ids.add(ch["agent_id"])
-    for _, ag in _all_agents_raw(org):
+    for _, ag in _all_agents_raw(org, station):
         if ag.get("agent_id"):
             ids.add(ag["agent_id"])
     return ids
@@ -163,6 +177,56 @@ def _prompt_for(ag, station):
 
 
 # ---------------- bundle（/api/org 数据面） ----------------
+
+# ---- 心跳三态（K-ORG-190 指挥台心跳灯）----
+# 契约：agent.heartbeat{expect,probe,stale_after}；heartbeat_state ∈
+# green（probe 文件 mtime 距今 ≤ stale_after）/ stale（超期）/
+# no_ledger（文件缺失）/ None（未配置或配置非法，前端显示灰灯）。
+
+# 参谋长（chief A0）内置默认 heartbeat——2026-10-19 实机普查结论：
+#   ① 日志路径实机判例三处一致：shadow_automation.ps1:42 把 AgentChiefPush
+#      （每日 17:35 触发 a0_chief.py --push）输出重定向到
+#      agent_platform/data/shadow/chief_last_run.log；
+#      tools/check_trigger_chain.py:103（AgentChiefPush hhmm=17:35 log=chief_last_run.log）、
+#      observe_point_review.py:97-119（mtime>=17:30 主判 + SEND_OK/SEND_FAIL 辅判）。
+#   ② 当日实测该文件尚不存在（AgentChiefPush LastTaskResult=267011 从未跑过，
+#      周一 17:35 才首跑）——这正是心跳三态设计覆盖的形态：文件缺失 → no_ledger
+#      （诚实灰），首跑落盘后自动转绿，无需改代码。
+#   ③ 更新规律：每日 17:35 一轮 → stale_after 取 26h（容忍一次未跑不误报）。
+# 常量写在代码里（不改 org.json）；org.json 中若已配置 heartbeat 则以配置为准。
+CHIEF_DEFAULT_HEARTBEAT = {
+    "expect": "daily 17:35",
+    "probe": "agent_platform/data/shadow/chief_last_run.log",
+    "stale_after": "26h",
+}
+
+_STALE_AFTER_RE = re.compile(r"^(\d+)([hmd])$", re.IGNORECASE)
+_STALE_AFTER_UNITS = {"h": 3600, "m": 60, "d": 86400}
+
+
+def _stale_after_seconds(v):
+    """解析 stale_after："26h"/"90m"/"2d" → 秒；非法值 → None（按无配置处理，灰）。"""
+    m = _STALE_AFTER_RE.match(str(v or "").strip())
+    if not m:
+        return None
+    return int(m.group(1)) * _STALE_AFTER_UNITS[m.group(2).lower()]
+
+
+def _heartbeat_state(ag, station):
+    """按 agent 的 heartbeat 配置算三态；无配置/probe 缺失/stale_after 非法 → None。"""
+    hb = ag.get("heartbeat")
+    if not isinstance(hb, dict):
+        return None
+    probe = str(hb.get("probe") or "").strip()
+    limit = _stale_after_seconds(hb.get("stale_after"))
+    if not probe or limit is None:
+        return None
+    p = probe if os.path.isabs(probe) else os.path.join(station, probe)
+    if not os.path.exists(p):
+        return "no_ledger"
+    age = time.time() - os.path.getmtime(p)
+    return "green" if age <= limit else "stale"
+
 
 def _agent_public(ag, dept_key, faces, station):
     aid = ag.get("agent_id", "?")
@@ -190,6 +254,7 @@ def _agent_public(ag, dept_key, faces, station):
         "grants_write": mg.get("write", []) or [],
         "prompt": _prompt_for(ag, station),
         "heartbeat": ag.get("heartbeat"),
+        "heartbeat_state": _heartbeat_state(ag, station),
     }
 
 
@@ -197,30 +262,26 @@ def load_bundle(station=STATION):
     org = _load_org(station)
     faces = _load_faces(station)
     agents = {}
-    for dk, ag in _all_agents_raw(org):
+    by_dept = {}
+    for dk, ag in _all_agents_raw(org, station):
         aid = ag.get("agent_id")
-        if aid:
-            agents[aid] = _agent_public(ag, dk, faces, station)
+        if not aid:
+            continue
+        agents[aid] = _agent_public(ag, dk, faces, station)
+        by_dept.setdefault(dk, []).append(aid)
     ch = org.get("chief", {})
     if ch.get("agent_id"):
+        # chief 内置默认心跳（常量注入，不改 org.json）；org.json 已配置则为准
+        ch = dict(ch)
+        if not ch.get("heartbeat"):
+            ch["heartbeat"] = dict(CHIEF_DEFAULT_HEARTBEAT)
         agents[ch["agent_id"]] = _agent_public(ch, "chief", faces, station)
 
     departments = []
     for dep in org.get("departments", []):
-        ids = []
-        for ag in dep.get("agents", []) or []:
-            if isinstance(ag, dict) and ag.get("agent_id"):
-                ids.append(ag["agent_id"])
-        for t in dep.get("teams", []) or []:
-            team_agents = []
-            if isinstance(t, str):
-                tj = _read_json(_reg(station, "team_%s.json" % t)) or {}
-                team_agents = tj.get("agents", []) or []
-            elif isinstance(t, dict):
-                team_agents = t.get("agents", []) or []
-            for ag in team_agents:
-                if isinstance(ag, dict) and ag.get("agent_id"):
-                    ids.append(ag["agent_id"])
+        # ids 与 agents 字典同源（_all_agents_raw 单一口径，2026-10-19 修订）：
+        # dept.agents 字符串 id + agent_profiles / 内联 dict / team 引用统一收集
+        ids = list(by_dept.get(dep.get("dept", ""), []))
         departments.append({
             "id": dep.get("dept", ""),
             "name": dep.get("name", dep.get("dept", "")),
@@ -253,6 +314,33 @@ def api_org(station=STATION):
                 "knowledge_docs": []}
     except Exception as e:  # fail-visible：恒 200 携错误体（判例）
         return dict(_err("org bundle: %r" % (e,)))
+
+
+def api_meta(station=STATION):
+    """/api/org/meta —— 指挥台元数据面：模型档位表 + 档位策略 + 技能索引。
+    数据源 model_tiers.json / skill_registry.json（均只读，不落盘）。
+    契约（前端并行工位按此编码，降级容错）：
+      {ok, models:{模型id:{tier,enabled,note}}, grade_policy:{...原样},
+       skills:{tools:[id], algos:[id], automations:[id]}}
+    档位表/技能库缺失时降级为空表（ok 仍 true，前端自行容错）。"""
+    try:
+        tiers = _load_tiers(station)
+        models = {mid: {"tier": m.get("tier", ""),
+                        "enabled": m.get("enabled", True),
+                        "note": m.get("note", "")}
+                  for mid, m in (tiers.get("models", {}) or {}).items()}
+        kind_map = {"tool": "tools", "algo": "algos", "automation": "automations"}
+        skills = {"tools": [], "algos": [], "automations": []}
+        for s in _load_skills(station).get("skills", []):
+            bucket = kind_map.get(s.get("kind"))
+            if bucket and s.get("id"):
+                skills[bucket].append(s["id"])
+        return {"ok": True,
+                "models": models,
+                "grade_policy": tiers.get("grade_policy", {}),
+                "skills": skills}
+    except Exception as e:  # fail-visible：恒 200 携错误体（判例）
+        return _err("meta: %r" % (e,))
 
 
 # ---------------- 校验（拍板①②硬闸） ----------------
@@ -476,7 +564,7 @@ def api_agent_update(body, station=STATION):
         if aid == "A0":
             return _err("A0 走 org.json chief 段，图上编辑不含 A0（页面既有口径）")
         target = None
-        for _, ag in _all_agents_raw(org):
+        for _, ag in _all_agents_raw(org, station):
             if ag.get("agent_id") == aid:
                 target = ag
                 break

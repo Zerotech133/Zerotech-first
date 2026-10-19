@@ -4329,6 +4329,13 @@ color:#fff;font-size:13.5px;cursor:pointer}
             except Exception:
                 log_exc("org-command api_org")
                 self._json({"ok": False, "error": "org internal (see err log)"})
+        elif path == "/api/org/meta":
+            # K-ORG-190 指挥台元数据面（模型档位表+档位策略+技能索引，前端下拉/校验用）
+            try:
+                self._json(org_command_api.api_meta())
+            except Exception:
+                log_exc("org-command api_meta")
+                self._json({"ok": False, "error": "org meta internal (see err log)"})
         elif path == "/api/agent/knowledge":
             try:
                 from urllib.parse import parse_qs as _pqs_k

@@ -10,6 +10,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -246,6 +247,151 @@ class OrgCommandApiTest(unittest.TestCase):
         r = oca.api_agent_knowledge({"id": ["D1"]}, self.tmp)
         self.assertTrue(r["ok"])
         self.assertEqual(r["items"], [])
+
+    # ---- 真实 org.json 形态回归（2026-10-19 lead 验收修订） ----
+
+    def test_bundle_string_agents_with_profiles(self):
+        """真实形态：dept.agents=[ID 字符串] + dept.agent_profiles=[dict]——
+        判例：只认 dict 的旧版把 29 在编读成 1。"""
+        org = {
+            "org": "laotian_ai", "report_to": "human",
+            "chief": {"agent_id": "A0", "llm_binding": "glm/glm-5.3",
+                      "grade": "E3", "attributes": {}},
+            "departments": [
+                {"dept": "invest", "name": "量化交易部", "status": "active",
+                 "agents": ["T1", "T2", "GHOST"],
+                 "agent_profiles": [
+                     {"agent_id": "T1", "role_profile": "t1",
+                      "grade": "E2", "llm_binding": "glm/glm-5.3-flash",
+                      "tools": ["devtask"], "charter_detail": "判读",
+                      "attributes": {}},
+                     {"agent_id": "T2", "grade": "E1",
+                      "llm_binding": "glm/glm-5.3-flash", "attributes": {}},
+                 ],
+                 "teams": []},
+            ],
+        }
+        reg = os.path.join(self.tmp, "agent_platform", "registry")
+        with open(os.path.join(reg, "org.json"), "w", encoding="utf-8") as f:
+            json.dump(org, f, ensure_ascii=False)
+        b = oca.load_bundle(self.tmp)
+        # T1/T2 有 profile；GHOST 有编制无详情 → 最小条目也要在编（不假绿丢人）
+        self.assertEqual(b["stats"]["agents"], 4)  # A0 + T1 + T2 + GHOST
+        self.assertIn("T1", b["agents"])
+        self.assertEqual(b["agents"]["T1"]["charter"], "判读")
+        self.assertIn("GHOST", b["agents"])
+        self.assertEqual(b["agents"]["GHOST"]["llm"], "")
+        inv = [d for d in b["departments"] if d["id"] == "invest"][0]
+        self.assertEqual(inv["agents"], ["T1", "T2", "GHOST"])
+        # 注册去重口径也认字符串形态岗
+        r = oca.api_register({"kind": "agent", "agent_id": "T1", "dept": "invest",
+                              "grade": "E2", "model": "glm/glm-5.3-flash"},
+                             self.tmp)
+        self.assertFalse(r["ok"])
+        self.assertIn("已在编", r["error"])
+
+    # ---- /api/org/meta 元数据面 ----
+
+    def test_meta_shape_and_data(self):
+        j = oca.api_meta(self.tmp)
+        self.assertTrue(j["ok"])
+        # 模型档位表（tier/enabled/note 三字段契约）
+        self.assertEqual(j["models"]["glm/glm-5.3"],
+                         {"tier": "strong", "enabled": True, "note": ""})
+        self.assertFalse(j["models"]["claude/claude-sonnet"]["enabled"])
+        # 档位策略原样透传
+        self.assertEqual(j["grade_policy"]["E1"]["allow"], ["fast", "local"])
+        # 技能索引按 kind 分桶（引用不内嵌：只给 id）
+        self.assertEqual(j["skills"]["tools"], ["devtask"])
+        self.assertEqual(j["skills"]["algos"], ["quant_dual"])
+        self.assertEqual(j["skills"]["automations"], [])
+
+    def test_meta_missing_files_degrade(self):
+        """档位表/技能库缺失 → 降级空表（ok 仍 true，前端容错）。"""
+        tmp2 = tempfile.mkdtemp(prefix="org_api_meta_empty_")
+        try:
+            j = oca.api_meta(tmp2)
+            self.assertTrue(j["ok"])
+            self.assertEqual(j["models"], {})
+            self.assertEqual(j["skills"], {"tools": [], "algos": [], "automations": []})
+        finally:
+            shutil.rmtree(tmp2, ignore_errors=True)
+
+    # ---- 心跳三态（green / stale / no_ledger / None）----
+
+    def _hb_agent(self, probe_rel):
+        return {"heartbeat": {"expect": "daily 17:35",
+                              "probe": probe_rel, "stale_after": "26h"}}
+
+    def test_heartbeat_green(self):
+        # tmp station 里造 probe 文件：新 mtime → green
+        rel = "agent_platform/data/shadow/probe.log"
+        p = os.path.join(self.tmp, rel)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write("SEND_OK\n")
+        self.assertEqual(oca._heartbeat_state(self._hb_agent(rel), self.tmp), "green")
+
+    def test_heartbeat_stale(self):
+        # probe 文件 mtime 设 3 天前（os.utime）→ 超过 26h → stale
+        rel = "agent_platform/data/shadow/probe.log"
+        p = os.path.join(self.tmp, rel)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write("SEND_OK\n")
+        old = time.time() - 3 * 86400
+        os.utime(p, (old, old))
+        self.assertEqual(oca._heartbeat_state(self._hb_agent(rel), self.tmp), "stale")
+
+    def test_heartbeat_no_ledger(self):
+        # probe 文件缺失 → no_ledger（诚实灰，首跑前正常形态）
+        self.assertEqual(oca._heartbeat_state(
+            self._hb_agent("agent_platform/data/shadow/absent.log"), self.tmp),
+            "no_ledger")
+
+    def test_heartbeat_invalid_stale_after_grey(self):
+        # stale_after 非法（非法单位/负数/非时长串）→ 按无配置处理 → None
+        for bad in ("26 hours", "-5h", "soon", "", None, "1w"):
+            self.assertIsNone(oca._heartbeat_state(
+                {"heartbeat": {"probe": "x.log", "stale_after": bad}}, self.tmp),
+                "stale_after=%r 应判非法" % (bad,))
+        # 三种合法单位解析正确（26h/90m/2d）
+        self.assertEqual(oca._stale_after_seconds("26h"), 26 * 3600)
+        self.assertEqual(oca._stale_after_seconds("90m"), 90 * 60)
+        self.assertEqual(oca._stale_after_seconds("2d"), 2 * 86400)
+
+    def test_bundle_heartbeat_state_unconfigured_is_none(self):
+        # bundle 输出含 heartbeat_state；未配置者（D1）为 None
+        b = oca.api_org(self.tmp)["bundle"]
+        self.assertIn("heartbeat_state", b["agents"]["D1"])
+        self.assertIsNone(b["agents"]["D1"]["heartbeat_state"])
+
+    def test_bundle_chief_default_heartbeat_no_ledger_in_tmp(self):
+        # chief 内置默认心跳（常量注入，不改 org.json）：tmp 无日志 → no_ledger
+        b = oca.api_org(self.tmp)["bundle"]
+        a0 = b["agents"]["A0"]
+        self.assertEqual(a0["heartbeat"]["probe"],
+                         "agent_platform/data/shadow/chief_last_run.log")
+        self.assertEqual(a0["heartbeat"]["stale_after"], "26h")
+        self.assertEqual(a0["heartbeat_state"], "no_ledger")
+        # org.json 未被写入 heartbeat（常量只在 bundle 层注入）
+        self.assertIsNone(self._org()["chief"].get("heartbeat"))
+
+    def test_bundle_agent_heartbeat_configured_green(self):
+        # 部门岗配置 heartbeat + probe 文件新鲜 → bundle 中 green
+        rel = "agent_platform/data/shadow/probe.log"
+        p = os.path.join(self.tmp, rel)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write("ok\n")
+        org = self._org()
+        org["departments"][0]["agents"][0]["heartbeat"] = {
+            "probe": rel, "stale_after": "26h"}
+        with open(os.path.join(self.tmp, "agent_platform", "registry",
+                               "org.json"), "w", encoding="utf-8") as f:
+            json.dump(org, f, ensure_ascii=False)
+        b = oca.api_org(self.tmp)["bundle"]
+        self.assertEqual(b["agents"]["D1"]["heartbeat_state"], "green")
 
 
 if __name__ == "__main__":
