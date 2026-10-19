@@ -438,6 +438,81 @@ def test_fetch_daily_cached_days_meta_invalidates_cache(tmp_path, monkeypatch):
     assert json.loads(cache_path.read_text(encoding="utf-8"))["_meta"]["days"] == 6
 
 
+def test_next_day_return_rejects_nonfinite_price_ratio():
+    """绕过在线缓存闸门的非有限收益不能进入因子统计。"""
+    row = {"symbol": "SZ000001", "trade_date": "20261012",
+           "open": 1e-308, "close": 1e308}
+    assert next_day_return([row], "2026-10-11") is None
+    assert abs(next_day_return([{**row, "open": 10, "close": 11}],
+                               "2026-10-11") - 0.1) < 1e-12
+
+
+def test_fetch_daily_cached_rejects_overflow_from_cache_and_router(
+        tmp_path, monkeypatch):
+    """旧缓存含坏行整码失效；路由坏行不落盘，正常行仍可保留。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    valid = mock_daily()["SZ000001"][0]
+    overflowing = {**valid, "trade_date": "20261012",
+                   "open": 1e-308, "close": 1e308}
+    cache_path.write_text(json.dumps({
+        "_meta": {"days": 21},
+        "daily": {"SZ000001": [valid, overflowing]},
+    }), encoding="utf-8")
+    calls = []
+
+    def mocked_fetch(syms, days):
+        calls.append((syms, days))
+        return {"SZ000001": [overflowing, valid]}, "mock", []
+
+    mock_daily_router(monkeypatch, mocked_fetch)
+    daily, errs = factor.fetch_daily_cached(["SZ000001"], 21)
+    assert calls == [(["SZ000001"], 21)]
+    assert daily == {"SZ000001": [valid]}
+    assert any("SZ000001 cache: 开收盘价收益非有限值" in error
+               for error in errs)
+    assert any("SZ000001 router: 开收盘价收益非有限值" in error
+               for error in errs)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert saved["daily"] == daily
+    assert saved["_missing"] == []
+    assert saved["_errs"] == errs
+    factor.fetch_daily_cached(["SZ000001"], 21)
+    assert len(calls) == 1
+
+
+def test_fetch_daily_cached_overflow_all_failed_persists_diagnostics(
+        tmp_path, monkeypatch):
+    """旧片与补取均只有极端有限价格时，保持全失败缺码和错误同档。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    overflowing = {"symbol": "SZ000001", "trade_date": "20261012",
+                   "open": 1e-308, "close": 1e308}
+    cache_path.write_text(json.dumps({
+        "_meta": {"days": 21}, "daily": {"SZ000001": [overflowing]},
+    }), encoding="utf-8")
+    calls = []
+
+    def mocked_fetch(syms, days):
+        calls.append((syms, days))
+        return {"SZ000001": [overflowing]}, "mock", []
+
+    mock_daily_router(monkeypatch, mocked_fetch)
+    daily, errs = factor.fetch_daily_cached(["SZ000001"], 21)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert calls == [(["SZ000001"], 21)]
+    assert daily == saved["daily"] == {}
+    assert saved["_missing"] == ["SZ000001"]
+    assert saved["_errs"] == errs
+    assert any("SZ000001 cache: 开收盘价收益非有限值" in error
+               for error in errs)
+    assert any("SZ000001 router: 开收盘价收益非有限值" in error
+               for error in errs)
+    assert not any("SZ000001 全源失败(跳过)" in error for error in errs)
+
+
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-q"]))

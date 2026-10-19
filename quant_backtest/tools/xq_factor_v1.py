@@ -161,9 +161,13 @@ def next_day_return(daily_rows: list, post_date: str,
         return None
     nxt = next((r for r in daily_rows if r["trade_date"] == after[0]), None)
     o, c = nxt.get("open"), nxt.get("close")
-    if not o or not c:
+    if not _valid_daily_price(o) or not _valid_daily_price(c):
         return None
-    return c / o - 1.0
+    try:
+        daily_return = c / o - 1.0
+    except (OverflowError, ZeroDivisionError):
+        return None
+    return daily_return if math.isfinite(daily_return) else None
 
 
 def week_key(date_str: str) -> str:
@@ -433,9 +437,16 @@ def _safe_daily_rows(sym: str, rows: object, origin: str,
         except ValueError:
             errs.append("%s %s: 无效交易日期行已剔除" % (sym, origin))
             continue
-        prices = (row.get("open"), row.get("close"))
-        if any(not _valid_daily_price(price) for price in prices):
+        open_price, close_price = row.get("open"), row.get("close")
+        if not _valid_daily_price(open_price) or not _valid_daily_price(close_price):
             errs.append("%s %s: 无效开收盘价行已剔除" % (sym, origin))
+            continue
+        try:
+            finite_return = math.isfinite(close_price / open_price - 1.0)
+        except (OverflowError, ZeroDivisionError):
+            finite_return = False
+        if not finite_return:
+            errs.append("%s %s: 开收盘价收益非有限值行已剔除" % (sym, origin))
             continue
         safe_rows.append(row)
     if not safe_rows:
