@@ -126,7 +126,7 @@ def test_each_inspection_samples_once_and_old_adapter_does_not_refresh() -> None
         assert result.trading_permitted is False
 
 
-def test_revocation_after_consistent_query_fails_closed() -> None:
+def test_revocation_removes_offline_consistency() -> None:
     """Previously reported consistency is not immutable permission."""
     outbox, envelope, report, inbox, attempt_id = chain()
     clock = FakeClock(at(6))
