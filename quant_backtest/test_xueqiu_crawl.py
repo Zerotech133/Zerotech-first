@@ -687,7 +687,10 @@ def test_takeover_cooldown_polluted_alternative_keeps_ip_blocked(
     direct.assert_not_called()
     writer.assert_not_called()
     assert crawler.mf.get("xq_quote_snap")["status"] == "ip_blocked"
-    assert "fallback rejected" in crawler.mf.get("xq_quote_snap")["note"]
+    note = crawler.mf.get("xq_quote_snap")["note"]
+    assert "冷却期雪球域跳过" in note
+    assert "直爬全批失败" not in note
+    assert "fallback rejected" in note
 
 
 def test_takeover_trip_pollution_retains_circuit_breaker(tmp_path,

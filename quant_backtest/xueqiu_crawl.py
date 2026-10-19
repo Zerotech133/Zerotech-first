@@ -504,6 +504,8 @@ def takeover_quote(symbols: list[str]) -> int:
                       else "failed",
                       note=("takeover 403 熔断停轮；替代源亦挂: %s"
                             % "; ".join(alt_errs[:3])) if tripped
+                      else ("takeover 冷却期雪球域跳过；替代源亦挂: %s"
+                            % "; ".join(alt_errs[:3])) if blocked
                       else "takeover 直爬全批失败；替代源亦挂: %s"
                            % "; ".join(alt_errs[:3]))
             c.mf.save()
