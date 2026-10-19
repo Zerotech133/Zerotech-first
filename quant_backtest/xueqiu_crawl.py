@@ -430,7 +430,9 @@ def takeover_quote(symbols: list[str]) -> int:
         mf.load()  # 保留旧 health 与其他表状态，只更新本轮快照状态。
         mf.mark("xq_quote_snap", done=False, rows=0, file="",
                 status="failed", note="takeover 无有效请求股票（空输入、无效代码或纯指数）")
-        mf.save()
+        if not mf.save():
+            raise RuntimeError("无有效请求股票且 manifest 保存失败；"
+                               "盘上旧快照状态未更新，不得视为本轮成功")
         print("[takeover_quote] 无有效请求股票，本轮未构造采集器或落片")
         return 0
     c = XqCrawler()

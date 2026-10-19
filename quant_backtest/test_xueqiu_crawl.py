@@ -771,6 +771,36 @@ class TestTakeoverInvalidInputs(_TmpEnv):
                 network.assert_not_called()
                 alt.assert_not_called()
 
+    def test_manifest_save_failure_is_visible_directly_and_from_cli(self):
+        """持久化失败不可只返回零行，让盘上旧成功状态伪装本轮结果。"""
+        mf = X.XqManifest()
+        mf.mark("xq_quote_snap", done=True, rows=2, status="ok",
+                file="d_old.parquet")
+        self.assertTrue(mf.save())
+        old_state = dict(mf.get("xq_quote_snap"))
+        with mock.patch.object(X.XqManifest, "save", return_value=False), \
+                mock.patch.object(C, "XqCrawler") as constructor, \
+                mock.patch("socket.socket.connect") as network, \
+                mock.patch("xq_quote_router.fetch_snapshot") as alt, \
+                mock.patch.object(X, "atomic_parquet") as writer:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "无有效请求股票.*manifest 保存失败"):
+                C.takeover_quote(["SH000001"])
+            with mock.patch("builtins.print") as output:
+                self.assertEqual(C.main(["--mode", "takeover", "--symbols",
+                                         "SH000001"]), 1)
+            self.assertTrue(any("manifest 保存失败" in str(call)
+                                for call in output.call_args_list))
+            constructor.assert_not_called()
+            network.assert_not_called()
+            alt.assert_not_called()
+            writer.assert_not_called()
+        saved = X.XqManifest()
+        saved.load()
+        self.assertEqual(saved.get("xq_quote_snap"), old_state)
+        self.assertTrue(saved.get("xq_quote_snap")["done"])
+        self.assertEqual(saved.get("xq_quote_snap")["file"], "d_old.parquet")
+
     def test_mixed_input_reaches_crawler_and_alternative_with_valid_stock(self):
         crawler = mock.Mock()
         crawler.mf = X.XqManifest()
