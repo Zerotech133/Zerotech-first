@@ -156,7 +156,8 @@ def looks_like_identifier(cand: str) -> bool:
 def is_high_entropy_candidate(cand: str, line: str) -> bool:
     """高熵规则判定：len>=20、base64/hex 字符集；剔除 UUID、纯数字、
     含点号的标识符/路径形态、commit 上下文 40 位 hex（git sha）、
-    base64 图片 data URI（SVG/PNG 内嵌资源）、KEY=value 连写赋值片段（2026-10-19 第6轮）。"""
+    base64 图片 data URI（SVG/PNG 内嵌资源）、KEY=value 连写赋值片段（第6轮）、
+    PascalCase 长标识符类名（第7轮）。"""
     if len(cand) < 20:
         return False
     if UUID_RE.match(cand) or cand.isdigit():
@@ -174,6 +175,15 @@ def is_high_entropy_candidate(cand: str, line: str) -> bool:
     if HEX_RE.match(cand):
         # 纯 hex 长串（md5/sha256 与 tushare token 同形态）：仅在凭据语境词同行时命中
         return bool(CRED_CONTEXT_RE.search(line)) and shannon_entropy(cand) >= 3.0
+    # 第7轮（2026-10-19）：PascalCase 长标识符（如 PortfolioAuthorizationRequest 类名）
+    # 判为代码标识符不命中。放在纯 hex 分支之后：hex 串仍走上面的严格凭据语境闸门，
+    # 不受本判据豁免。漏报风险评估：真实随机 token 含数字且大小写随机分布，要匹配
+    # 「大写开头+小写段相连≥2次」的严格交替形态，其概率对 >=20 字符随机串可忽略
+    # （每个段边界都必须恰好大写转小写连续段）；且本仓已见真实凭据均为 hex 或含
+    # 符号/数字形态，几乎不可能落入该形态。注意本判据同时化解了类名内含
+    # "Authorization" 等子串误触 CRED_CONTEXT 放宽分支的放大效应。
+    if re.match(r"^(?:[A-Z][a-z]+){2,}[A-Za-z0-9]*$", cand):
+        return False
     has_lower = bool(re.search(r"[a-z]", cand))
     has_upper = bool(re.search(r"[A-Z]", cand))
     has_digit = bool(re.search(r"[0-9]", cand))

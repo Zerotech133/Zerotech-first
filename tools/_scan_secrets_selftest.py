@@ -48,6 +48,16 @@ w("call_site.py",
   "PWD = _load_pwd()\n"
   "token = _load_token()\n"
   "password = _password(\"加密私钥口令：\")\n")
+# 第7轮调优回归（2026-10-19）：PascalCase 长标识符不命中（含真实误报形态：
+# 类名内含 "Authorization" 子串会误触 CRED_CONTEXT 放宽分支，必须一并覆盖）
+w("pascal_case.py",
+  "class PortfolioAuthorizationRequest(BaseModel):\n"
+  "    ) -> PortfolioAuthorizationRequest:\n"
+  "        raise PortfolioAuthorizationError(\"request 必须是 PortfolioAuthorizationRequest\")\n"
+  "    \"PortfolioAuthorizationRequest\", \"PortfolioAuthorizationError\",\n")
+# 第7轮阳性对照：随机 32 位字母数字 token 仍必须命中（防漏报回退）
+tok32c = "".join(rng.choices(alpha, k=32))
+w("pascal_positive.py", "TUSHARE_TOKEN = '%s'\n" % tok32c)
 
 scanner = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scan_secrets.py")
 proc = subprocess.run([sys.executable, scanner, TD], capture_output=True, timeout=120)
@@ -92,6 +102,12 @@ for name, secret in [("tok32b", tok32b), ("pwd2", pwd2)]:
 # 红线：完整假密钥绝不出现在任何输出
 for name, secret in [("tok32", tok32), ("pwd", pwd), ("lit", lit), ("fake_tok", fake_tok)]:
     check("完整%s未回显" % name, secret not in out)
+# 第7轮调优回归断言
+check("第7轮:PascalCase类名文件无命中", "pascal_case.py" not in out)
+check("第7轮:随机32位token仍命中HIGH_ENTROPY(阳性对照)",
+      "pascal_positive.py:1:HIGH_ENTROPY" in out)
+check("第7轮:阳性对照token按前4后2脱敏", tok32c[:4] + "****" + tok32c[-2:] in out)
+check("第7轮:完整阳性token未回显", tok32c not in out)
 # 脱敏形态：前4后2存在
 check("tok32 已按前4后2脱敏", tok32[:4] + "****" + tok32[-2:] in out)
 check("pwd 已脱敏", pwd[:4] + "****" in out)
