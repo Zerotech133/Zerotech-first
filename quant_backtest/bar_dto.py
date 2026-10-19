@@ -39,6 +39,9 @@ class Bar:
     source_trace: Tuple[str, ...] = ()
     calendar_ref: Optional[str] = None
     calendar_version: Optional[str] = None
+    exchange: Optional[str] = None
+    asset_class: Optional[str] = None
+    quote_currency: Optional[str] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "dt", ensure_utc(self.dt, "dt"))
@@ -57,10 +60,16 @@ class Bar:
         object.__setattr__(self, "source_trace", tuple(str(item) for item in self.source_trace))
         if (self.calendar_ref is None) != (self.calendar_version is None):
             raise ValueError("calendar_ref and calendar_version must be provided together")
-        for name in ("calendar_ref", "calendar_version"):
+        for name in ("calendar_ref", "calendar_version", "exchange", "asset_class", "quote_currency"):
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise ValueError(f"{name} must be a non-empty string")
+        for name in ("exchange", "quote_currency"):
+            value = getattr(self, name)
+            if value is not None:
+                object.__setattr__(self, name, value.strip().upper())
+        if self.asset_class is not None:
+            object.__setattr__(self, "asset_class", self.asset_class.strip().lower())
 
 
 @dataclass(frozen=True)

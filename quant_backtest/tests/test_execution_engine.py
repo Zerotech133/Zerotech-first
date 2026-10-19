@@ -3,6 +3,7 @@ from dataclasses import replace
 from datetime import date, datetime, timezone
 import sys
 from pathlib import Path
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -67,25 +68,23 @@ def test_initial_positions_unknown_age_is_audited():
 def test_cross_market_same_symbol_isolated_instrument_positions():
     bars = [make_bar("000001.SZ", 30, 10, market="CN"), make_bar("000001.SZ", 31, 10, market="CN")]
     lot = InventoryLot("000001.SZ", "US", "NYSE", "equity", date(2026, 10, 15), date(2026, 10, 16), 100, "us-lot")
-    result = run_from_store(
-        BarStore(bars), [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt, market="CN", exchange="SZSE")],
-        ExecutionConfig(initial_lots=(lot,), initial_cash=2000, policy_ref="registry:market-cn"),
-        status_provider=lambda *args: "TRADING",
-    )
-    assert result.unfilled[0].reason == "INSUFFICIENT_POSITION"
-    assert result.instrument_positions[("US", "NYSE", "equity", "000001.SZ")] == 100
+    with pytest.raises(ValueError, match="VALUATION_PRICE_UNAVAILABLE.*US.*NYSE"):
+        run_from_store(
+            BarStore(bars), [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt, market="CN", exchange="SZSE")],
+            ExecutionConfig(initial_lots=(lot,), initial_cash=2000, policy_ref="registry:market-cn"),
+            status_provider=lambda *args: "TRADING",
+        )
 
 
 def test_t_plus_one_false_uses_complete_instrument_identity():
     bars = [make_bar("000001.SZ", 30, 10, market="CN"), make_bar("000001.SZ", 31, 10, market="CN")]
     us_lot = InventoryLot("000001.SZ", "US", "NYSE", "equity", date(2026, 10, 15), date(2026, 10, 16), 100, "us-lot")
-    result = run_from_store(
-        BarStore(bars), [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt, market="CN", exchange="SZSE")],
-        ExecutionConfig(initial_lots=(us_lot,), initial_cash=2000, t_plus_one=False, policy_ref="registry:market-cn"),
-        status_provider=lambda *args: "TRADING",
-    )
-    assert result.unfilled[0].reason == "INSUFFICIENT_POSITION"
-    assert result.instrument_positions[("US", "NYSE", "equity", "000001.SZ")] == 100
+    with pytest.raises(ValueError, match="VALUATION_PRICE_UNAVAILABLE.*US.*NYSE"):
+        run_from_store(
+            BarStore(bars), [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt, market="CN", exchange="SZSE")],
+            ExecutionConfig(initial_lots=(us_lot,), initial_cash=2000, t_plus_one=False, policy_ref="registry:market-cn"),
+            status_provider=lambda *args: "TRADING",
+        )
 
 
 def test_t_plus_one_uses_session_date_and_unfilled_rate():
@@ -111,11 +110,13 @@ def test_status_limit_and_unknown_reasons():
 
 
 def test_stop_order_gap_uses_ohlc_but_normal_buy_is_not_gap_blocked():
-    bars = [make_bar("000001.SZ", 30, 10), make_bar("000001.SZ", 31, 20, close_price=19)]
+    prior = make_bar("000001.SZ", 29, 30, close_price=30)
+    prior = replace(prior, session_date=date(2026, 10, 15))
+    bars = [prior, make_bar("000001.SZ", 30, 10), make_bar("000001.SZ", 31, 20, close_price=19)]
     store = BarStore(bars)
     ordinary = run_from_store(store, [OrderIntent("000001.SZ", "BUY", 100, bars[0].dt)], ExecutionConfig(initial_cash=5000, gap_stop_pct=.2, policy_ref="registry:market-cn"), status_provider=lambda *args: "TRADING")
     assert ordinary.fills
-    stop = run_from_store(store, [OrderIntent("000001.SZ", "SELL", 100, bars[0].dt, order_type="STOP", stop_price=21)], ExecutionConfig(initial_cash=5000, initial_positions={"000001.SZ": 100}, gap_stop_pct=.2, t_plus_one=False, policy_ref="registry:market-cn"), status_provider=lambda *args: "TRADING")
+    stop = run_from_store(store, [OrderIntent("000001.SZ", "SELL", 100, bars[1].dt, order_type="STOP", stop_price=21)], ExecutionConfig(initial_cash=5000, initial_positions={"000001.SZ": 100}, gap_stop_pct=.2, t_plus_one=False, policy_ref="registry:market-cn"), status_provider=lambda *args: "TRADING")
     assert stop.fills
     assert stop.fills[0].price == 20
 

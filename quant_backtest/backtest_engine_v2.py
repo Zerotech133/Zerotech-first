@@ -14,7 +14,7 @@ K-STOCK-285b · 回测框架 v2 正式版（配置驱动 · 执行时间轴 · �
 口径铁律：缠论信号/结算=hfq（263）；双刀信号=原始价（6-200 元实务门槛，hfq 全灭
 实证 10-13）而结算=hfq。信号与结算分离，两口径各安其位。
 """
-import sys, os, json, time, argparse
+import sys, os, json, time, argparse, tempfile
 from datetime import datetime, date, time as dt_time, timedelta, timezone
 from zoneinfo import ZoneInfo
 from market_policy import timezone_for
@@ -848,13 +848,20 @@ def _run_minute_store_job(params: dict, job_id: str, progress=None):
         if cfg is None:
             cfg = ExecutionConfig(
                 initial_cash=float(params.get("initial_cash", 0.0) or 0.0),
-                fee_bps=float(params.get("fee_bps", 0.0) or 0.0),
+                fee_bps=(0.0 if str(params.get("fee_mode", "PER_FILL")).upper() == "PER_ORDER" else float(params.get("fee_bps", 0.0) or 0.0)),
+                fee_mode=str(params.get("fee_mode", "PER_FILL")).upper(),
+                fee_calculator=params.get("fee_calculator"),
+                fee_provider=params.get("fee_provider"),
                 slippage_bps=float(params.get("slippage_bps", 0.0) or 0.0),
                 lot_size=int(params.get("lot_size", 1) or 1),
                 market=params.get("market"), timeframe=params.get("timeframe"),
                 t_plus_one=params.get("t_plus_one", False),
                 policy_ref=params.get("policy_ref"),
+                calendar_ref=params.get("calendar_ref"),
+                calendar_version=params.get("calendar_version"),
+                calendar_required=bool(params.get("calendar_required", False)),
                 market_rules_required=bool(params.get("market_rules_required", False)),
+                fill_model=params.get("fill_model"),
             )
         if not isinstance(cfg, ExecutionConfig):
             return None, "execution_config must be ExecutionConfig"
@@ -885,7 +892,24 @@ def _run_minute_store_job(params: dict, job_id: str, progress=None):
         }
         os.makedirs(MINUTE_OUT_DIR, exist_ok=True)
         out = os.path.join(MINUTE_OUT_DIR, f"minute_{job_id}.json")
-        json.dump(payload, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=str)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=MINUTE_OUT_DIR,
+                prefix=f".minute_{job_id}.", suffix=".tmp", delete=False,
+            ) as artifact_file:
+                temporary = artifact_file.name
+                json.dump(payload, artifact_file, ensure_ascii=False, indent=1, default=str)
+                artifact_file.flush()
+                os.fsync(artifact_file.fileno())
+            os.replace(temporary, out)
+            temporary = None
+        finally:
+            if temporary is not None:
+                try:
+                    os.unlink(temporary)
+                except FileNotFoundError:
+                    pass
         return payload, None
     except Exception as exc:
         return None, repr(exc)

@@ -57,13 +57,47 @@ class TestStepStatus(unittest.TestCase):
         s = cw._step_status(("ChanlunScan", 26), tasks)
         self.assertEqual(s["status"], "ok")
 
-    def test_resident_type_state_semantics(self):
-        running = _mk_task("KgDataDashboard", None, 0, state="Running")
-        self.assertEqual(cw._step_status(("KgDataDashboard", 0), running)
-                         ["status"], "ok")
+    def test_resident_type_http_probe_semantics(self):
+        """B4 修复后常驻型语义：HTTP 探活为主，任务态仅辅助注记。
+
+        回归病灶：dashboard 活着但计划任务态 Ready → 旧逻辑误报 DOWN。
+        """
         ready = _mk_task("KgDataDashboard", None, 0, state="Ready")
-        self.assertEqual(cw._step_status(("KgDataDashboard", 0), ready)
-                         ["status"], "fail")
+        with mock.patch.object(cw, "_http_alive",
+                               return_value=(True, "HTTP 200")):
+            s = cw._step_status(("KgDataDashboard", 0), ready)
+        self.assertEqual(s["status"], "ok")            # Ready+探活UP → ok
+        self.assertIn("HTTP探活 UP", s["detail"])
+        self.assertIn("Ready", s["detail"])            # 任务态辅助注记保留
+
+        with mock.patch.object(cw, "_http_alive",
+                               return_value=(False, "URLError: timeout")):
+            s2 = cw._step_status(("KgDataDashboard", 0), ready)
+        self.assertEqual(s2["status"], "fail")         # 探活异常 → fail
+        self.assertIn("URLError: timeout", s2["detail"])  # fail-visible
+
+        # 无探活端点的常驻任务降级沿用任务态判定
+        with mock.patch.dict(cw._RESIDENT_PROBES, {}, clear=True):
+            running = _mk_task("KgDataDashboard", None, 0, state="Running")
+            s3 = cw._step_status(("KgDataDashboard", 0), running)
+            self.assertEqual(s3["status"], "ok")
+            s4 = cw._step_status(("KgDataDashboard", 0), ready)
+            self.assertEqual(s4["status"], "fail")
+
+    def test_resident_probe_down_overrides_running_state(self):
+        """补盲区：探活为主——即使任务态 Running，探活 DOWN 也必须 fail。
+
+        防回归方向：端口挂了但计划任务恰在重试态（Running），
+        不允许任务态盖过探活结论造成假绿。
+        """
+        running = _mk_task("KgDataDashboard", None, 267009, state="Running")
+        with mock.patch.object(cw, "_http_alive",
+                               return_value=(False, "ConnectionRefusedError: "
+                                                    "[WinError 10061]")):
+            s = cw._step_status(("KgDataDashboard", 0), running)
+        self.assertEqual(s["status"], "fail")
+        self.assertIn("HTTP探活 DOWN", s["detail"])
+        self.assertIn("WinError 10061", s["detail"])   # 原因可见
 
     def test_unknown_task(self):
         s = cw._step_status(("NoSuchTask", 26), {})
@@ -93,7 +127,9 @@ class TestChainPayload(unittest.TestCase):
         tasks.update(_mk_task("OllamaWatchdog", now, 0))
         tasks.update(_mk_task("XueqiuTokenRefresh", now, 0))
         tasks.update(_mk_task("WeightUpdater", now, 0))
-        with mock.patch.object(cw, "_tasks_cached", return_value=tasks):
+        with mock.patch.object(cw, "_tasks_cached", return_value=tasks), \
+             mock.patch.object(cw, "_http_alive",
+                               return_value=(True, "HTTP 200")):
             payload, code = cw.chain_payload()
         self.assertEqual(code, 200)
         self.assertTrue(payload["ok"])
@@ -110,7 +146,9 @@ class TestChainPayload(unittest.TestCase):
                   "OllamaWatchdog", "XueqiuTokenRefresh", "WeightUpdater"):
             tasks.update(_mk_task(n, now, 0))
         tasks.update(_mk_task("KgDataDashboard", None, 0, state="Running"))
-        with mock.patch.object(cw, "_tasks_cached", return_value=tasks):
+        with mock.patch.object(cw, "_tasks_cached", return_value=tasks), \
+             mock.patch.object(cw, "_http_alive",
+                               return_value=(True, "HTTP 200")):
             payload, _ = cw.chain_payload()
         self.assertEqual(payload["overall"], "ok")
         for ch in payload["chains"].values():
@@ -171,7 +209,9 @@ class TestBattPendingDynamic(unittest.TestCase):
         tasks["StrategyDaily"]["bat"] = True
         tasks.update(_mk_task("HermesWebUI-Guard", None, 0, state="Queued"))
         tasks["HermesWebUI-Guard"]["bat"] = True
-        with mock.patch.object(cw, "_tasks_cached", return_value=tasks):
+        with mock.patch.object(cw, "_tasks_cached", return_value=tasks), \
+             mock.patch.object(cw, "_http_alive",
+                               return_value=(True, "HTTP 200")):
             payload, code = cw.chain_payload()
         self.assertEqual(code, 200)
         self.assertEqual(payload["batt_pending"],
@@ -181,6 +221,44 @@ class TestBattPendingDynamic(unittest.TestCase):
         """HermesWebUI-Guard（链外）必须进批查名单。"""
         names_src = open(cw.__file__, encoding="utf-8").read()
         self.assertIn('"HermesWebUI-Guard"', names_src)
+
+
+class TestHttpAlive(unittest.TestCase):
+    """B4：_http_alive 探活两态单测（mock HTTP，不发真实请求）。"""
+
+    def test_http_200_is_up(self):
+        resp = mock.MagicMock()
+        resp.getcode.return_value = 200
+        resp.__enter__ = mock.MagicMock(return_value=resp)
+        resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=resp):
+            alive, detail = cw._http_alive("http://127.0.0.1:8791/x")
+        self.assertTrue(alive)
+        self.assertIn("HTTP 200", detail)
+
+    def test_timeout_is_down_and_visible(self):
+        import urllib.error
+        with mock.patch("urllib.request.urlopen",
+                        side_effect=urllib.error.URLError("timed out")):
+            alive, detail = cw._http_alive("http://127.0.0.1:8791/x")
+        self.assertFalse(alive)
+        self.assertIn("timed out", detail)   # fail-visible：原因可见
+
+    def test_http_500_is_down(self):
+        import urllib.error
+        with mock.patch("urllib.request.urlopen",
+                        side_effect=urllib.error.HTTPError(
+                            "u", 500, "Internal", None, None)):
+            alive, detail = cw._http_alive("http://127.0.0.1:8791/x")
+        self.assertFalse(alive)
+        self.assertIn("500", detail)
+
+    def test_refused_is_down(self):
+        with mock.patch("urllib.request.urlopen",
+                        side_effect=ConnectionRefusedError()):
+            alive, detail = cw._http_alive("http://127.0.0.1:8791/x")
+        self.assertFalse(alive)
+        self.assertTrue(detail)              # 异常摘要非空
 
 
 if __name__ == "__main__":

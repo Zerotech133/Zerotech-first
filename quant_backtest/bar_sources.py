@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import math
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
+import stat
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 # G1 包内收敛（RC-0 S1）：包路径 quant_backtest.bar_sources 走包内相对导入；
@@ -92,8 +93,45 @@ def _bar(
 
 
 class LocalParquetBarSource:
-    """Read local stk_mins/idx_mins parquet without network or writes."""
+    """Read local parquet shards under a configured root without network or writes."""
+
+    @staticmethod
+    def _validate_table(table: str) -> None:
+        """Reject traversal and platform-specific absolute or device path syntax."""
+        if not isinstance(table, str) or not table or "\x00" in table:
+            raise SourceReadError(str(table), "invalid parquet table path")
+        windows_path = PureWindowsPath(table)
+        posix_path = PurePosixPath(table)
+        components = table.replace("\\", "/").split("/")
+        device_names = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)),
+                        *(f"LPT{i}" for i in range(1, 10))}
+        if (windows_path.anchor or posix_path.is_absolute() or
+                any(not part or part in {".", ".."} or ":" in part or
+                    part.rstrip(" .") != part or part.split(".", 1)[0].upper() in device_names
+                    for part in components)):
+            raise SourceReadError(table, "invalid parquet table path")
+
+    def _validate_path(self, path: Path) -> None:
+        """Check lexical containment and reject existing symlink/reparse components."""
+        try:
+            relative = path.relative_to(self.root)
+            current = self.root
+            for component in relative.parts:
+                current = current / component
+                try:
+                    details = current.lstat()
+                except FileNotFoundError:
+                    continue
+                reparse_attributes = getattr(details, "st_file_attributes", 0)
+                if (stat.S_ISLNK(details.st_mode) or
+                        reparse_attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)):
+                    raise SourceReadError(self.table, "parquet path contains symlink or reparse point")
+            path.resolve().relative_to(self.root)
+        except (ValueError, OSError, RuntimeError) as exc:
+            raise SourceReadError(self.table, "parquet path escapes root or cannot be checked") from exc
+
     def __init__(self, root: Path | str, table: str, market: str, source_version: str = "parquet-v1") -> None:
+        self._validate_table(table)
         self.root = Path(root).resolve(); self.table = table; self.market = market
         if self.root.name == "data":
             self.directory = self.root / ("tushare" if table in {"stk_mins", "idx_mins"} else "tdx") / table
@@ -101,11 +139,30 @@ class LocalParquetBarSource:
             self.directory = self.root / "data" / "tushare" / table
         else:
             self.directory = self.root / table
+        self._validate_path(self.directory)
         self.source_version = source_version
         self.last_metadata: Dict[str, Any] = {}
 
     def read(self, query: BarQuery, symbol: Optional[str] = None, timeframe: str = "1m") -> Tuple[Bar, ...]:
-        parts = sorted(self.directory.rglob("*.parquet"))
+        try:
+            self._validate_path(self.directory)
+            if not self.directory.exists():
+                raise SourceReadError(self.table, "no parquet source")
+            parts: List[Path] = []
+            pending = [self.directory]
+            while pending:
+                directory = pending.pop()
+                for entry in directory.iterdir():
+                    self._validate_path(entry)
+                    if entry.is_dir():
+                        pending.append(entry)
+                    elif entry.name.endswith(".parquet"):
+                        parts.append(entry)
+            parts.sort()
+        except SourceReadError:
+            raise
+        except (OSError, RuntimeError) as exc:
+            raise SourceReadError(self.table, "parquet source cannot be enumerated") from exc
         if not parts:
             raise SourceReadError(self.table, "no parquet source")
         try:

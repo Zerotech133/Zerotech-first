@@ -256,6 +256,7 @@ class ChanMonitorAdapter:
             rationale=rationale,
             strategy=self.strategy_id,
             trade_date=trade_date,
+            dt=row.get("dt") if isinstance(row.get("dt"), str) else None,
         )
 
 

@@ -9,10 +9,13 @@
 - rationale   人话依据，前端直接展示，必须非空（构造时校验）
 - strategy    来源策略 id（如 kg_boost / chan_monitor）
 - trade_date  交易日，YYYYMMDD 8 位数字（构造时校验）
+- dt          可选：源事件日 YYYY-MM-DD（同票预聚合排序键，方案 C
+              2026-10-19 拍板；缺省 None 时预聚合回退输入序）
 """
 import re
 
 from dataclasses import dataclass
+from typing import Optional
 
 # action 合法取值
 VALID_ACTIONS = ("buy", "sell", "hold", "watch")
@@ -36,6 +39,7 @@ class Signal:
     rationale: str     # 人话依据（前端直接展示，必须非空）
     strategy: str      # 来源策略 id（如 kg_boost）
     trade_date: str    # YYYYMMDD
+    dt: Optional[str] = None  # 可选源事件日 YYYY-MM-DD（预聚合排序键）
 
     def __post_init__(self) -> None:
         if not isinstance(self.symbol, str) or not self.symbol.strip():

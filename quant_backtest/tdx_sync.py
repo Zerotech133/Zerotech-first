@@ -411,9 +411,11 @@ def main():
     if not _core_lock_acquire():
         return                      # 已有实例在跑：静默退 0（SKIP 判例）
     try:
-        _run_sync(a, remote)
+        rc = _run_sync(a, remote)
     finally:
         _core_lock_release()
+    if rc:
+        raise SystemExit(rc)        # 有表失败：非零退出，交 wrapper 重试与告警链
 
 
 def _remote_tables_with_retry(tries=5, gap=30):
@@ -447,6 +449,7 @@ def _run_sync(a, remote):
     m = _load_manifest()
     # 先小表后大表（尽快见到产出；大表中断可续传）
     tables.sort(key=lambda t: remote.get(t, {}).get("rows", 0))
+    failed = []                     # 表级失败聚合（fail-closed：不再吞错后仍退 0）
     for tbl in tables:
         meta = remote.get(tbl)
         if not meta:
@@ -461,7 +464,12 @@ def _run_sync(a, remote):
                 sync_parquet_table(tbl, meta, m)
         except Exception as e:
             print("[%s] ERROR %s (进度已存，重跑续传)" % (tbl, e))
+            failed.append(tbl)
     print("ALL DONE. manifest=%s" % MANIFEST)
+    if failed:
+        print("[exit] %d table(s) FAILED: %s" % (len(failed), ", ".join(failed)))
+        return 1
+    return 0
 
 
 

@@ -27,7 +27,11 @@ class ParseTests(unittest.TestCase):
     def test_password_with_colon(self):
         # pass 含冒号：第一段后全归密码（四段格式约定）
         url = xp.parse_proxy_line("1.2.3.4:8080:u1:p:a")
-        self.assertEqual(url, "http://u1:p:a@1.2.3.4:8080")
+        self.assertEqual(url, "http://u1:p%3Aa@1.2.3.4:8080")
+
+    def test_credentials_are_url_encoded(self):
+        url = xp.parse_proxy_line("1.2.3.4:8080:u@ser:p#ss? /中")
+        self.assertEqual(url, "http://u%40ser:p%23ss%3F%20%2F%E4%B8%AD@1.2.3.4:8080")
 
     def test_two_segment(self):
         url = xp.parse_proxy_line("218.95.37.11:25152")

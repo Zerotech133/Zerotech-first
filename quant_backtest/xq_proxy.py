@@ -18,6 +18,7 @@ import json
 import os
 import time
 from dataclasses import dataclass, field
+from urllib.parse import quote
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(HERE, "config", "xq_proxies.json")
@@ -203,10 +204,12 @@ def parse_proxy_line(line: str) -> str:
     if len(parts) == 2:                     # ip:port（免认证）
         ip, port = parts
     elif len(parts) >= 4:                   # ip:port:user:pass
-        ip, port, user, pwd = parts[0], parts[1], parts[2], ":".join(parts[3:])
+        ip, port, user = parts[0], parts[1], parts[2]
+        pwd = ":".join(parts[3:])
         if not user or not re_match_ip_port(ip, port):
             return ""
-        return "http://%s:%s@%s:%s" % (user, pwd, ip, port)
+        return "http://%s:%s@%s:%s" % (
+            quote(user, safe=""), quote(pwd, safe=""), ip, port)
     else:
         return ""
     if not re_match_ip_port(ip, port):

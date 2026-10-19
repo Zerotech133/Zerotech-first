@@ -4,7 +4,8 @@
 ═══ 设计要点 ═══
 1. 链定义 CHAIN_DEFS：晨链 / 风控环 / 采集环 / 基础设施四条链，
    每环 (task_name, max_age_hours)；max_age_hours=0 表示常驻型
-   （按 State=Running 判健康）。
+   （HTTP 探活判健康为主，任务态仅辅助注记；无探活端点的常驻
+   任务降级按 State=Running 判）。
 2. 状态采集 _ps_query_tasks()：单次 PowerShell 批查全部相关任务
    （State/LastRunTime/LastTaskResult/NextRunTime），模块级 60s 缓存
    —— 8791 请求高频但调度状态变化低频。
@@ -66,7 +67,7 @@ CHAIN_DEFS = {
         "name": "基础设施",
         "sla": "8791 常驻；Ollama 看门狗 5 分钟；token 6h；权重周日",
         "steps": [
-            ("KgDataDashboard", 0),        # 常驻：State=Running 即健康
+            ("KgDataDashboard", 0),        # 常驻：HTTP探活为主（B4 修复）
             ("OllamaWatchdog", 1),
             ("XueqiuTokenRefresh", 8),
             ("WeightUpdater", 8 * 24),
@@ -95,6 +96,38 @@ _DT_RE = re.compile(r"(\d{4})[/-](\d{1,2})[/-](\d{1,2})[ T]"
                     r"(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?")
 _DASH_PORT = "http://127.0.0.1:8791"
 _PORTAL_API = "http://127.0.0.1:8091"   # 门户 API（/api/kg/lineage 血缘体检）
+
+# ── 常驻型 HTTP 探活（B4 修复）───────────────────────────────────────
+# 病灶：Windows 计划任务常态是 Ready（仅触发瞬间 Running），以
+# State=="Running" 判常驻进程健康 → dashboard 活着却三连误报 DOWN。
+# 修法：对服务本体发 HTTP GET，2xx=UP；任务态降为 detail 辅助注记。
+# 无端点条目的常驻任务降级沿用旧任务态判定（保持向后兼容）。
+_HTTP_PROBE_TIMEOUT = 4.0   # 探活超时秒数（watchdog 调用方容忍窗口内）
+
+_RESIDENT_PROBES = {
+    "KgDataDashboard": _DASH_PORT + "/api/overview",
+}
+
+
+def _http_alive(url: str, timeout: float = _HTTP_PROBE_TIMEOUT) -> tuple:
+    """GET url 探活 → (alive: bool, detail: str)。
+
+    HTTP 2xx → (True, "HTTP 200")；其余一律 (False, 原因)。
+    fail-visible：异常类型+摘要原样回传给调用方展示，绝不静默吞错。
+    """
+    from urllib.error import HTTPError, URLError   # 局部导入对齐既有风格
+    from urllib.request import urlopen
+    try:
+        with urlopen(url, timeout=timeout) as resp:
+            code = resp.getcode()
+        if 200 <= code < 300:
+            return True, "HTTP %d" % code
+        return False, "HTTP %d（非 2xx）" % code
+    except HTTPError as exc:
+        return False, "HTTPError %d: %s" % (exc.code, exc.reason)
+    except (URLError, OSError, ValueError) as exc:
+        # URLError 承载 DNS/拒绝连接/超时；OSError 兜底 socket 层异常
+        return False, "%s: %s" % (type(exc).__name__, str(exc)[:120])
 
 # 简报缓存目录（与交付文档同仓）
 BRIEF_DIR = r"C:\aios\zerobound-kg\deliverables\daily_brief"
@@ -175,7 +208,18 @@ def _step_status(step: tuple, tasks: dict) -> dict:
     if info is None:
         return {"task": name, "status": "unknown",
                 "detail": "任务不存在或查询失败"}
-    if max_age == 0:  # 常驻型
+    if max_age == 0:  # 常驻型：HTTP 探活为主，任务态仅辅助（B4 修复）
+        probe_url = _RESIDENT_PROBES.get(name)
+        if probe_url:
+            alive, probe_detail = _http_alive(probe_url)
+            return {"task": name, "status": "ok" if alive else "fail",
+                    "last_run": info["last_run"],
+                    "result": info["result"],
+                    "state": info["state"],
+                    "detail": ("HTTP探活 %s（%s）；任务态 %s"
+                               % ("UP" if alive else "DOWN",
+                                  probe_detail, info["state"]))}
+        # 降级路径：无探活端点的常驻任务沿用任务态判定
         ok = info["state"] == "Running"
         return {"task": name, "status": "ok" if ok else "fail",
                 "last_run": info["last_run"],

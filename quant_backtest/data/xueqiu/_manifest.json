@@ -2,12 +2,12 @@
  "health": {
   "quotec_probe": {
    "ok": false,
-   "latency_ms": 14352,
-   "ts": "2026-10-18T17:40:04",
+   "latency_ms": 14199,
+   "ts": "2026-10-19T17:40:04",
    "err": "b'403 Forbidden. Seek IP Blacklisted.'"
   },
   "token_present": true,
-  "token_name": "harvest-anon-1017",
+  "token_name": "tok-u-main",
   "token_pool": "3 entries"
  },
  "xq_status": {
@@ -15,42 +15,43 @@
   "rows": 50,
   "status": "ok",
   "note": "",
-  "last_run": "2026-10-18T18:00:12"
+  "last_run": "2026-10-19T18:00:15"
  },
  "xq_hot_post": {
   "done": false,
   "rows": 0,
   "status": "failed",
   "note": "hot 请求失败（重试到顶/风控/400016 token 失效）",
-  "last_run": "2026-10-18T18:00:15"
+  "last_run": "2026-10-19T18:00:46"
  },
  "xq_quote_snap": {
   "done": false,
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-18T17:40:19"
+  "last_run": "2026-10-19T17:40:18",
+  "file": "d_20261019.parquet"
  },
  "xq_kline_d": {
   "done": false,
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-18T17:40:19"
+  "last_run": "2026-10-19T17:40:18"
  },
  "xq_capital_flow": {
   "done": false,
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-18T17:40:19"
+  "last_run": "2026-10-19T17:40:18"
  },
  "xq_northbound": {
   "done": false,
   "rows": 0,
   "status": "degraded",
   "note": "quotec_probe fail: b'403 Forbidden. Seek IP Blacklisted.'",
-  "last_run": "2026-10-18T17:40:19"
+  "last_run": "2026-10-19T17:40:18"
  },
  "xq_comment": {
   "done": false,
@@ -71,7 +72,20 @@
    "source": {
     "type": "TEXT",
     "semantics": "发帖来源端标识（自由文本，非受控外键）。实证枚举（2026-10-19 全表 GROUP BY）：雪球/Android/iPhone/公告/关联博客/iPad/新闻/雪球访谈/分享按钮/持仓盈亏/自选股/雪盈证券。新值可能随客户端版本追加，消费方按未知值兜底，勿硬编码穷举断言。",
-    "enum_observed": ["雪球", "Android", "iPhone", "公告", "关联博客", "iPad", "新闻", "雪球访谈", "分享按钮", "持仓盈亏", "自选股", "雪盈证券"]
+    "enum_observed": [
+     "雪球",
+     "Android",
+     "iPhone",
+     "公告",
+     "关联博客",
+     "iPad",
+     "新闻",
+     "雪球访谈",
+     "分享按钮",
+     "持仓盈亏",
+     "自选股",
+     "雪盈证券"
+    ]
    },
    "created_at": {
     "type": "TEXT",

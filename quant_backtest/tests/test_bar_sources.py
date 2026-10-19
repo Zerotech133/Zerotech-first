@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import date, datetime, timezone
+import os
 import sys
 from pathlib import Path
 
@@ -23,6 +24,76 @@ def test_local_source_normalizes_and_preserves_zero_volume(tmp_path: Path):
     assert bars[0].session_date == date(2026, 10, 16)
     assert bars[0].closed is False and bars[0].quality == "availability_estimated"
     assert store.explain()["sources"] == ["stk_mins"]
+
+
+@pytest.mark.parametrize("table", [
+    "../outside", "nested/../outside", r"nested\..\outside", "/tmp/outside",
+    r"C:\outside", r"C:outside", r"\\server\share", r"\\?\C:\outside",
+    r"\\.\C:\outside", "//server/share", "CON", "folder/NUL.txt",
+])
+def test_local_source_rejects_escape_and_device_table_paths(tmp_path: Path, table: str):
+    with pytest.raises(SourceReadError, match="invalid parquet table path"):
+        LocalParquetBarSource(tmp_path, table, "SZ")
+
+
+def test_local_source_reads_nested_directory_within_root(tmp_path: Path):
+    directory = tmp_path / "nested" / "minutes"
+    directory.mkdir(parents=True)
+    pd.DataFrame([{"ts_code": "000001.SZ", "trade_time": "2026-10-16 09:30:00",
+                   "open": 1, "high": 2, "low": 1, "close": 1.5}]).to_parquet(
+                       directory / "part.parquet", index=False)
+    query = BarQuery(start=datetime(2026, 10, 16, 1, 29, tzinfo=timezone.utc),
+                     end=datetime(2026, 10, 16, 2, tzinfo=timezone.utc),
+                     as_of=datetime(2026, 10, 16, 2, tzinfo=timezone.utc))
+    assert len(LocalParquetBarSource(tmp_path, "nested/minutes", "SZ").read(query)) == 1
+
+
+@pytest.mark.parametrize("link_kind", ["table", "parent", "file"])
+def test_local_source_rejects_symlink_components(tmp_path: Path, link_kind: str):
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.mkdir()
+    pd.DataFrame([{"ts_code": "000001.SZ", "trade_time": "2026-10-16 09:30:00",
+                   "open": 1, "high": 2, "low": 1, "close": 1.5}]).to_parquet(
+                       outside / "part.parquet", index=False)
+    if link_kind == "table":
+        target = tmp_path / "minutes"
+        link_target = outside
+        source_table = "minutes"
+    elif link_kind == "parent":
+        target = tmp_path / "link"
+        link_target = outside
+        source_table = "link/minutes"
+        (outside / "minutes").mkdir()
+    else:
+        target = tmp_path / "minutes" / "part.parquet"
+        target.parent.mkdir()
+        link_target = outside / "part.parquet"
+        source_table = "minutes"
+    try:
+        target.symlink_to(link_target, target_is_directory=link_kind != "file")
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink creation unavailable: {exc}")
+    if not os.path.lexists(target):
+        pytest.skip("symlink creation did not persist in this filesystem")
+    with pytest.raises(SourceReadError, match="symlink or reparse"):
+        LocalParquetBarSource(tmp_path, source_table, "SZ").read(BarQuery())
+
+
+def test_local_source_rechecks_directory_after_construction(tmp_path: Path):
+    table = tmp_path / "minutes"
+    table.mkdir()
+    source = LocalParquetBarSource(tmp_path, "minutes", "SZ")
+    table.rmdir()
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.mkdir()
+    try:
+        table.symlink_to(outside, target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink creation unavailable: {exc}")
+    if not os.path.lexists(table):
+        pytest.skip("symlink creation did not persist in this filesystem")
+    with pytest.raises(SourceReadError, match="symlink or reparse"):
+        source.read(BarQuery())
 
 
 def test_pg_provider_uses_real_schema_and_closes_connection():
