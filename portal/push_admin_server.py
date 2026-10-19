@@ -741,12 +741,14 @@ def api_send(req):
     # K-ORG-204：push_targets 群列表透传给 Agent 侧路由参考
     route_targets = req.get("route_targets") or []
     if not content or not rid:
-        return {"ok": False, "error": "missing content/receive_id"}
+        return {"ok": False, "why": "missing content/receive_id",
+                "error": "missing content/receive_id"}
 
     # 闸 1：静默时段（K-PUSH-007：per-kind 豁免——预警/盘中类风险提示不可吞）
     if not critical and _in_silent_window(kind=kind):
         _flow_gate_deny(kind, rid, "silent window")
-        return {"ok": False, "error": "silent window"}
+        return {"ok": False, "why": "silent window",
+                "error": "silent window"}
 
     # 闸 2：套餐配额（internal 永不拦，承 push_flow.quota_check 判例）
     try:
@@ -770,7 +772,8 @@ def api_send(req):
             ok3, why3, bad = card_actions.check_card(card)
             if not ok3:
                 _flow_gate_deny(kind, rid, "unregistered-btn %s" % ",".join(bad)[:40])
-                return {"ok": False, "error": why3, "via": "hub"}
+                return {"ok": False, "why": why3, "error": why3,
+                        "via": "hub"}
         except Exception:
             pass  # 解析异常不拦发送（fail-safe）
 
@@ -807,7 +810,10 @@ def api_send(req):
             dead_letter.register(kind or "hub", "openapi", rid, why)
         except Exception:
             pass
-    resp = {"ok": bool(ok), "why": why, "via": "hub", "evidence": evidence}
+    # B1（2026-10-19）：返回键统一 why 主键；error 同值镜像一版过渡
+    # （防外部老客户端仍读 error——_hub_send/inbound_gateway 已改读 why）。
+    resp = {"ok": bool(ok), "why": why, "error": why, "via": "hub",
+            "evidence": evidence}
     if mid:
         resp["message_id"] = mid
     return resp

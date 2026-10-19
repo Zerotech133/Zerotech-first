@@ -113,16 +113,37 @@ HUB_SEND_URL = "http://127.0.0.1:8097/api/send"
 # 架构拍板：所有推送最终收口到飞书 Agent 端点，由 Agent 侧负责分发给客户群
 # （push_targets 群列表作为 route_targets 字段透传，不作直发目标）。
 # 配置：PUSH_AGENT_WEBHOOK env 优先，portal/work/push_secrets.json 兜底
-# （gitignore 不入库；60s 缓存降读盘频次）。当前先用占位 URL，等拿到真实地址后填入。
+# （gitignore 不入库；60s 缓存降读盘频次）。
+# DD-1 方案 B（2026-10-19 P0 修复）：占位 URL 从未接入真实地址，闸内直发
+# 全量打占位符成死信——端点解析改为「空/缺键/占位符=未配置」，未配置时
+# 由 _agent_webhook_send 按降级开关处置（默认 OpenAPI 直发 / 关闭则拒发），
+# 占位符只允许出现在下方比较语境，代码路径中不可达。
 AGENT_WEBHOOK_PLACEHOLDER = "https://agent-webhook.local/placeholder"
 AGENT_WEBHOOK_SECRETS_KEY = "push_agent_webhook"
+# DD-1 方案 B 降级开关：默认开（无端点 → OpenAPI 直发，why 带
+# openapi_fallback: 前缀）；显式 0/false/off/no 关闭 → 拒发+死信（B3）。
+AGENT_WEBHOOK_FALLBACK_ENV = "PUSH_AGENT_WEBHOOK_FALLBACK"
 _AGENT_WEBHOOK_CACHE = {"ts": 0.0, "url": ""}
 
 
+def agent_webhook_fallback_enabled():
+    """DD-1 方案 B 降级开关：无可用端点时是否降级 OpenAPI 直发。
+
+    默认开（不依赖外部输入、可逆；真实 webhook 到手后自然走 Agent 路径）；
+    env PUSH_AGENT_WEBHOOK_FALLBACK 显式设 0/false/off/no 关闭——关闭后
+    无端点即拒发并落死信（B3，reason 区别于网络失败，不静默）。"""
+    v = (os.environ.get(AGENT_WEBHOOK_FALLBACK_ENV) or "").strip().lower()
+    return v not in ("0", "false", "off", "no")
+
+
 def _agent_webhook():
-    """Agent webhook URL：env 优先，push_secrets.json 兜底（60s 缓存）。"""
+    """Agent webhook URL：env 优先，push_secrets.json 兜底（60s 缓存）。
+
+    DD-1 方案 B：空值/缺键/或等于占位符一律视为**未配置**→ 返回 ""，
+    绝不回落占位 URL（占位符只在本函数作比较，发送代码路径中不可达）。
+    未配置的处置（降级/拒发）见 _agent_webhook_send。"""
     v = (os.environ.get("PUSH_AGENT_WEBHOOK") or "").strip()
-    if v:
+    if v and v != AGENT_WEBHOOK_PLACEHOLDER:
         return v
     now = time.time()
     if now - _AGENT_WEBHOOK_CACHE["ts"] > 60.0:
@@ -135,7 +156,16 @@ def _agent_webhook():
         except (OSError, ValueError):
             _AGENT_WEBHOOK_CACHE["url"] = ""
         _AGENT_WEBHOOK_CACHE["ts"] = now
-    return _AGENT_WEBHOOK_CACHE["url"] or AGENT_WEBHOOK_PLACEHOLDER
+    cached = _AGENT_WEBHOOK_CACHE["url"]
+    if cached and cached != AGENT_WEBHOOK_PLACEHOLDER:
+        return cached
+    return ""
+
+
+def agent_webhook_endpoint():
+    """Agent webhook 端点公开解析（供 8097 闸门判定 via/拒发，DD-1 方案 B）。
+    → URL 或 ""（未配置：空/缺键/占位符）。"""
+    return _agent_webhook()
 
 # K-PUSH-012 供钥：PUSH_HUB_KEY env 优先，portal/work/push_secrets.json
 # 兜底（gitignore 不入库；60s 缓存降读盘频次）。各跑批计划任务宿主环境
@@ -186,7 +216,10 @@ def _hub_send(content, msg_type, receive_id, receive_id_type,
             mid = resp.get("message_id")
             return True, str(resp.get("why") or "hub ok"), (
                 str(mid) if mid else None)
-        return False, str(resp.get("error") or "hub deny"), None
+        # B1：闸门响应键名统一为 why（error 兜底一版——老闸门只回 error
+        # 时真因不应被 "hub deny" 吞掉）
+        return False, str(resp.get("why") or resp.get("error")
+                          or "hub deny"), None
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
             return False, "hub authorization denied", None
@@ -241,10 +274,21 @@ def _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
     """K-ORG-204：推飞书 Agent webhook（App Webhook / 事件订阅）。
     hub 闸内直发路径改道至此——不再直调 OpenAPI /im/v1/messages chat_id。
     route_targets=push_targets 群列表透传给 Agent 侧路由参考。
-    message_id 从 Agent 回执取，无则 None。"""
+    message_id 从 Agent 回执取，无则 None。
+
+    DD-1 方案 B（B2/B3）：端点未配置（空/缺键/占位符）→ 不发起任何网络
+    请求——降级开关开（缺省）走 _openapi_direct_send（OpenAPI 直发，why
+    带 openapi_fallback: 前缀）；开关关闭则拒发（why=no endpoint
+    configured，由上层 8097 落死信，不静默）。"""
     webhook = _agent_webhook()
     if not webhook:
-        return False, "agent webhook not configured", None
+        if agent_webhook_fallback_enabled():
+            return _openapi_direct_send(content, msg_type, receive_id,
+                                        receive_id_type, kind, flow_record)
+        return False, ("no endpoint configured: agent webhook unset (env "
+                       "PUSH_AGENT_WEBHOOK / push_secrets.json %s) and "
+                       "openapi fallback disabled"
+                       % AGENT_WEBHOOK_SECRETS_KEY), None
     payload = {
         "content": content,
         "msg_type": msg_type,
@@ -288,6 +332,59 @@ def _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
         if flow_record:
             _flow_record(False, webhook, kind=kind)
         return False, ("agent webhook err " + str(e))[:200], None
+
+
+def _openapi_content(content, msg_type):
+    """OpenAPI content 规范化：text 类非 JSON 文本包成 {"text": ...}；
+    已是 JSON（卡片/富文本/带 text 键）原样透传。"""
+    if msg_type == "text":
+        try:
+            v = json.loads(content)
+            if isinstance(v, dict) and "text" in v:
+                return content
+        except (ValueError, TypeError):
+            pass
+        return json.dumps({"text": str(content)}, ensure_ascii=False)
+    return content
+
+
+def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
+                         kind, flow_record):
+    """DD-1 方案 B 降级路径：Agent webhook 不可用 → OpenAPI 直发
+    （K-ORG-204 前的旧出口 POST /im/v1/messages，chat_id/open_id 直发）。
+    why 统一带 openapi_fallback: 前缀（证据链可 grep）；message_id 取
+    data.message_id，无则 None。"""
+    if not receive_id:
+        if flow_record:
+            _flow_record(False, "", kind=kind)
+        return False, "openapi_fallback: missing receive_id", None
+    tok = get_tat()
+    if not tok:
+        if flow_record:
+            _flow_record(False, receive_id, kind=kind)
+        return False, "openapi_fallback: no tenant token", None
+    body = json.dumps({
+        "receive_id": receive_id, "msg_type": msg_type,
+        "content": _openapi_content(content, msg_type)}).encode("utf-8")
+    rq = urllib.request.Request(
+        OPEN + "/im/v1/messages?receive_id_type=" +
+        urllib.parse.quote(receive_id_type or "open_id", safe=""),
+        data=body, headers={"Content-Type": "application/json",
+                            "Authorization": "Bearer " + tok})
+    try:
+        with urllib.request.urlopen(rq, timeout=15) as r:
+            resp = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        if flow_record:
+            _flow_record(False, receive_id, kind=kind)
+        return False, ("openapi_fallback: err " + str(e))[:200], None
+    ok = resp.get("code") == 0
+    mid = (resp.get("data") or {}).get("message_id") if ok else None
+    if flow_record:
+        _flow_record(ok, receive_id, kind=kind)
+    why = "openapi_fallback: " + (str(resp.get("msg"))[:120] if not ok
+                                  else "openapi direct ok")
+    return ok, why, (str(mid) if mid else None)
 
 
 def verify_message(message_id, app_id=None, app_secret=None):

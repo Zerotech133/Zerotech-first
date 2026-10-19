@@ -62,10 +62,15 @@ _LOG_LOCK = threading.Lock()
 _URL_RE = re.compile(
     r"https?://[^\s<>\"'`（）【】《》「」『』，。；：！？、]+", re.IGNORECASE)
 _CONFIRM_RE = re.compile(r"^(确认|同意|批准)(?:[\s:：]+(\S+))?\s*$")
+# B4（派工单 2026-10-19，P1-3）：裸 6 位数字=沪深 A 股代码形态（整条消息
+# 即代码，防误伤普通文本）——识别为个股查询意图，不再落 unclear 投喂兜底
+# （实证：用户发 "605100" 被兜底为 unclear）。
+_TICKER_RE = re.compile(r"^\d{6}$")
 _TITLE_RE = re.compile(r"<title[^>]*>(.*?)</title>", re.S | re.I)
 _UA = "Mozilla/5.0 (compatible; laotian-inbound-gateway/1.0; W43-feed)"
 
 ROUTE_LABELS = {"url": "链接投喂", "text": "文章投喂", "confirm": "确认语义",
+                "ticker": "个股代码（策略环 W44 预留）",
                 "unclear": "不确定"}
 STATUS_LABELS = {"routed": "已路由", "duplicate": "重复（已抑制）",
                  "clarified": "已回澄清卡", "failed": "失败（留痕）",
@@ -246,7 +251,8 @@ def extract_urls(text):
 
 
 def classify(text):
-    """→ (route, payload)。URL 优先；确认语义次之；≥30 字纯文本投喂；
+    """→ (route, payload)。URL 优先；确认语义次之；裸 6 位代码=个股查询
+    意图（B4，策略环 W44 预留，诚实留痕不造数）；≥30 字纯文本投喂；
     其余不确定（交澄清卡，不猜）。"""
     t = (text or "").strip()
     urls = extract_urls(t)
@@ -255,6 +261,8 @@ def classify(text):
     m = _CONFIRM_RE.match(t)
     if m:
         return "confirm", {"token": m.group(2) or ""}
+    if _TICKER_RE.match(t):
+        return "ticker", {"code": t}
     if len(t) >= TEXT_FEED_MIN:
         return "text", {"content": t}
     return "unclear", {}
@@ -552,7 +560,8 @@ def _route_confirm(ticket, payload, open_id):
         return {"status": "duplicate", "evidence": "duplicate_suppressed",
                 "decision_id": hit[0]["id"], "note": "该决策已确认过。"}
     return {"status": "failed", "evidence": "failed",
-            "decision_id": hit[0]["id"], "why": r.get("error")}
+            "decision_id": hit[0]["id"],
+            "why": r.get("why") or r.get("error")}  # B1：why 主键（error 兜底）
 
 
 # ── 双回执卡（走 8097 闸门） ──────────────────────────────────
@@ -638,6 +647,19 @@ def _clarify_card(ticket):
     return card
 
 
+def _ticker_card(ticket, code):
+    """B4：裸 6 位代码受理回执——识别成功即回执，W44 未接线如实声明
+    （不造数：不假装已出任何分析结果）。"""
+    from feishu_card_v2 import build_v3
+    md = ("已识别**个股代码 %s**——受理成功，工单已留痕。\n"
+          "**策略环（W44）尚未接线**：个股查询/缠论解读的量化侧消费通道在建，"
+          "本卡不代表已出任何分析结果。\n"
+          "接线后此类消息将直接进入策略环出查询回执。" % code)
+    card, _ = build_v3("interact", "个股代码受理 · %s" % ticket, "W43 投喂环",
+                       md=md, tags="#inbound #ticker #w44-pending")
+    return card
+
+
 # ── 主入口 ───────────────────────────────────────────────────
 def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
     """bot 兜底文本入口 → {consumed, ...}。
@@ -677,6 +699,19 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
             "receipt_ack": "-", "receipt_result": _rs(ok, why)})
         return {"consumed": True, "ticket": ticket, "route": route,
                 "status": "clarified", "detail": {}}
+
+    if route == "ticker":  # B4：识别成功即回执+留痕，W44 未接线如实声明
+        ok, why = _send_card(
+            _ticker_card(ticket, payload.get("code", "")), open_id)
+        _append_ledger(_tickets_path(), {
+            "ticket": ticket, "ts": _now_iso(), "open_id": open_id,
+            "msg_id": str(msg_id or "")[:64], "chat_type": chat_type,
+            "route": route, "status": "routed",
+            "evidence": "strategy_ring_w44_pending",
+            "duplicate_of": "", "detail": {"code": payload.get("code", "")},
+            "receipt_ack": "-", "receipt_result": _rs(ok, why)})
+        return {"consumed": True, "ticket": ticket, "route": route,
+                "status": "routed", "detail": {"code": payload.get("code", "")}}
 
     ok, why = _send_card(_ack_card(ticket, route, payload), open_id)
     receipt_ack = _rs(ok, why)
