@@ -60,6 +60,24 @@ RESULTS = []
 _LOG_HANDLE = None
 
 
+def _ran_today(last):
+    """2026-10-19 审计修复（K-ORG 审计 P1-1）：LastRunTime 日期容错解析。
+
+    PowerShell Get-ScheduledTaskInfo 的 LastRunTime 本机输出为斜杠格式
+    （如 "2026/10/17 23:27"），原实现 last.startswith(str(date.today()))
+    按纯 ISO 前缀比对恒 False → ran_today 恒 False → 门 4 对「当日已跑但
+    LastTaskResult 异常」的任务 fail-open 放行。现归一化后精确比对年月日。
+    """
+    day = last.strip().replace("T", " ").split(" ")[0].replace("/", "-") \
+        if last.strip() else ""
+    try:
+        y, m, d = (int(p) for p in day.split("-"))
+    except ValueError:
+        return False
+    today = date.today()
+    return (y, m, d) == (today.year, today.month, today.day)
+
+
 def _today_counts(rows, latest):
     """latest 日的 (done 行数, failed 行数)。
 
@@ -419,7 +437,7 @@ def main():
             if len(parts) != 4:
                 continue
             name, state, last, code = parts
-            ran_today = last.startswith(str(date.today()))
+            ran_today = _ran_today(last)
             check("任务 %s" % name,
                   state in ("Ready", "Running", "Queued") and
                   (code in ("0", "267009", "267011") or not ran_today),

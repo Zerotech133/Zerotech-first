@@ -18,9 +18,17 @@ OUT_FMT = r"C:\Temp\observe_point_review_%Y-%m-%d.log"
 
 SELFTEST = "--selftest" in sys.argv
 
-r = subprocess.run([PY, "-X", "utf8", EXECUTOR],
-                   capture_output=True, text=True, encoding="utf-8",
-                   timeout=600)
+# 2026-10-19 审计修复（P2-4）：执行器超时不得静默——构造 RED 结论照常落盘+公告板
+try:
+    r = subprocess.run([PY, "-X", "utf8", EXECUTOR],
+                       capture_output=True, text=True, encoding="utf-8",
+                       timeout=600)
+except subprocess.TimeoutExpired as exc:
+    r = subprocess.CompletedProcess(
+        args=exc.args, returncode=124,
+        stdout="结论: 复查执行器超时 600s（ObservePointReviewOnce 包装层判定）"
+               "→ 按 SOP 异常矩阵处理并通报\n",
+        stderr=str(exc)[:200])
 out = (r.stdout or "") + (("\n[stderr]\n" + r.stderr) if r.stderr else "")
 out_path = datetime.now().strftime(OUT_FMT)
 with open(out_path, "a", encoding="utf-8") as f:

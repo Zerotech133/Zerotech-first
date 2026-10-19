@@ -171,3 +171,14 @@ def test_main_pending_exit2(monkeypatch, tmp_path):
     _reset(monkeypatch, tmp_path, hour=10)
     _fake_gate3(monkeypatch, 1)
     assert opr.main() == 2
+
+
+def test_gate3_timeout_not_silent(monkeypatch, tmp_path):
+    """P2-4：gate3 超时显式落判定，不静默、不崩溃（17 点后=RED）。"""
+    _reset(monkeypatch, tmp_path)
+
+    def boom(*a, **k):
+        raise opr.subprocess.TimeoutExpired(cmd="gate3", timeout=300)
+    monkeypatch.setattr(opr.subprocess, "run", boom)
+    opr.judge_gate3()
+    assert _state("4)") == "RED"

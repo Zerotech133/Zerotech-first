@@ -120,11 +120,19 @@ def judge_chief():
 
 
 def judge_gate3():
-    """4) 门3状态：tools/gate3_verdict.py 只读重算（退出码 0=绿 1=红）。"""
-    r = subprocess.run(
-        [sys.executable, "-X", "utf8",
-         os.path.join(ROOT, "tools", "gate3_verdict.py")],
-        capture_output=True, text=True, encoding="utf-8", timeout=300)
+    """4) 门3状态：tools/gate3_verdict.py 只读重算（退出码 0=绿 1=红）。
+
+    2026-10-19 审计修复（P2-4）：gate3 超时不得静默——显式落 PENDING/RED。"""
+    try:
+        r = subprocess.run(
+            [sys.executable, "-X", "utf8",
+             os.path.join(ROOT, "tools", "gate3_verdict.py")],
+            capture_output=True, text=True, encoding="utf-8", timeout=300)
+    except subprocess.TimeoutExpired:
+        add("4) 门3状态（gate3_verdict）",
+            "PENDING" if _now().hour < 17 else "RED",
+            "gate3 超时 300s 无结论——17 点后属真异常，按 SOP 异常矩阵处理")
+        return
     tail = [l for l in (r.stdout or "").splitlines() if l.strip()][-3:]
     if r.returncode == 0:
         add("4) 门3状态（gate3_verdict）", "GREEN",
