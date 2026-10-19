@@ -151,6 +151,26 @@
   .reason .why { color: var(--text-dim); font-size: 12px; }
   .loading { color: var(--text-dim); font-size: 13px; padding: 20px 0; }
   .foot { margin-top: 26px; font-size: 11.5px; color: var(--text-dim); line-height: 1.7; border-top: 1px solid var(--border); padding-top: 14px; }
+  /* ── G8 Agent 视角：分歧徽标 / 按策略分列 / 证据链下钻 ── */
+  .divb { color: var(--color-warn); border-style: solid; border-color: var(--color-warn); font-weight: 700; cursor: help; }
+  .ghead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 12px 14px 8px; margin-top: 4px; border-bottom: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 700; }
+  .ghead .gnote { font-weight: 400; font-size: 11px; color: var(--text-dim); }
+  .ghead .ghint { margin-left: auto; font-weight: 400; font-size: 10.5px; color: var(--text-dim); }
+  .evchain { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  .evbox { border: 1px solid var(--border); border-radius: var(--r-m); padding: 10px 12px; background: var(--bg-raised); font-size: 12px; }
+  .evbox .evh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .evbox .evh .srcname { font-size: 12.5px; font-weight: 700; }
+  .evbox ul { list-style: none; margin-top: 7px; }
+  .evbox li { font-size: 11.5px; color: var(--text-dim); padding: 2px 0 2px 12px; position: relative; line-height: 1.55; }
+  .evbox li::before { content: "·"; position: absolute; left: 2px; color: var(--link); }
+  .evbox li .ek { color: var(--text); margin-right: 6px; }
+  .edir { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+  .edir.pos { background: rgba(224,85,85,.14); color: #e05555; }
+  .edir.neg { background: rgba(42,168,119,.14); color: #2aa877; }
+  .edir.neu { background: rgba(139,148,158,.12); color: var(--text-dim); }
+  .evpending { margin-top: 8px; font-size: 10.5px; color: var(--text-dim); border: 1px dashed var(--border); border-radius: 8px; padding: 6px 10px; line-height: 1.6; }
+  .evpending b { color: var(--color-warn); }
+  .evpending.top { grid-column: 1 / -1; margin-top: 0; }
   @media (max-width: 900px) {
     .lhead { display: none; }
     .lrow { grid-template-columns: 40px 56px 1fr 70px; }
@@ -190,6 +210,9 @@
     <button class="fbtn on" data-s="tier">层优先</button>
     <button class="fbtn" data-s="hit">命中数↓</button>
     <button class="fbtn" data-s="pct">涨跌幅↓</button>
+    <span class="fsep"></span>
+    <button class="fbtn on" data-v="flat">汇总视图</button>
+    <button class="fbtn" data-v="group">按策略分列</button>
     <span class="fsep"></span>
     <button class="fbtn"><input id="q" placeholder="搜索代码/名称"></button>
   </div>
@@ -327,6 +350,32 @@ function srcTag(s){
   return `<span class="tag ${cls}"${g?` title="${esc(g)}"`:""}>${esc(s.s)}·${esc(t)}${extra}</span>`;
 }
 
+/* ── G8 Agent 视角：策略间同票分歧 ──
+   方向判定（仅按现有 sources[].tag/s 字面，不引入外部数据）：
+   多=买点/领涨/共振/逆板块强势；空=卖点/回避/失速垫底；其余（观察/九维）=中性。
+   分歧=同票同时存在多向与空向源（含同策略内部冲突，如 chanlun 1买+2卖，数据实证存在）。
+   单源票/无冲突票自然无徽标——无分歧数据即安静降级，不造展示。 */
+function srcDir(s){
+  const t=(s.tag||s.s||"");
+  if(/卖|回避/.test(t))return "neg";
+  if(/买/.test(t))return "pos";
+  if(s.s==="strong")return "pos";
+  if(s.s==="weak")return "neg";
+  if(s.s==="cross")return "pos";
+  return "neu";
+}
+function divergeOf(row){
+  const srcs=row.sources||[];
+  const pos=srcs.filter(s=>srcDir(s)==="pos"), neg=srcs.filter(s=>srcDir(s)==="neg");
+  if(!pos.length||!neg.length)return null;
+  return {pos,neg};
+}
+function divBadge(row){
+  const d=divergeOf(row); if(!d)return "";
+  const tip=`多头源：${d.pos.map(s=>s.s+"·"+(s.tag||"")).join("、")} ｜ 空头源：${d.neg.map(s=>s.s+"·"+(s.tag||"")).join("、")}——同票多策略方向冲突（含同策略内部买卖点并存），动手前先看证据链明细`;
+  return `<span class="tag divb" title="${esc(tip)}">⚡ 分歧</span>`;
+}
+
 function renderVitals(){
   const c=DATA.counts, m=DATA.strategies, ro=c.rotation||{};
   $("#vitals").innerHTML =
@@ -361,7 +410,7 @@ function renderVitals(){
   document.querySelectorAll(".scard[data-s]").forEach(el=>
     el.addEventListener("click",()=>{
       const k=el.dataset.s;
-      FILTER_S=(FILTER_S===k?"":k); LIMIT=120; renderVitals(); renderList();
+      FILTER_S=(FILTER_S===k?"":k); LIMIT=120; renderVitals(); renderView();
     }));
   const tg=Object.entries(TIER_GLOSS).map(([k,v])=>`<div class="gitem"><b>${k} 层</b> — ${esc(v)}</div>`).join("");
   const gl=Object.entries(TAG_GLOSS).map(([k,v])=>{const i=k.indexOf("|");return `<div class="gitem"><b>${esc(k.slice(0,i))}·${esc(k.slice(i+1))}</b> — ${esc(v)}</div>`;}).join("");
@@ -430,11 +479,48 @@ function renderList(){
       <div class="sname">${esc(r.name)}<small>${esc(r.industry||"")}</small></div>
       ${fmtPx(r.close)}${fmtPct(r.pct_chg)}
       <div class="num dim">${r.n_hit}</div>
-      <div class="tags">${(r.sources||[]).slice(0,4).map(srcTag).join("")}${(r.sources||[]).length>4?`<span class="tag">+${r.sources.length-4}</span>`:""}</div>
+      <div class="tags">${divBadge(r)}${(r.sources||[]).slice(0,4).map(srcTag).join("")}${(r.sources||[]).length>4?`<span class="tag">+${r.sources.length-4}</span>`:""}</div>
     </div>`;}).join("");
   $("#more").style.display=rows.length>LIMIT?"block":"none";
   $("#more").textContent=`展开更多（剩余 ${rows.length-LIMIT}）↓`;
 }
+/* ── G8：按策略分列视图（多策略组合分列展示）──
+   每个策略一组：组头=策略名+命中数+note；组内=该策略命中的票（复用 .lrow 行结构与
+   点击下钻委托）。同一票被 N 个策略命中则出现在 N 个组——这就是「Agent 组合分列」：
+   每个策略视角各自的持仓候选一目了然。组内仅展示该策略自己的信号 tag。
+   排序沿用 matchRows（层→命中），筛选（层/市场/搜索/策略卡）全部生效。 */
+function groupRow(r,sk){
+  const mk=marketOf(r.code);
+  const s=(r.sources||[]).find(x=>x.s===sk);
+  return `<div class="lrow" data-code="${esc(r.code)}" data-i="g">
+    ${tierBadge(r.tier)}
+    <div class="mkt ${mk.cls}">${mk.chip}</div>
+    <div class="code">${KG_OK
+      ?`<a href="/kg/stock/${esc(r.code)}" target="_blank" onclick="event.stopPropagation()">${esc(mk.bare||r.code)}</a>`
+      :`<a href="javascript:void(0)" title="点击展开个股详情">${esc(mk.bare||r.code)}</a>`}</div>
+    <div class="sname">${esc(r.name)}<small>${esc(r.industry||"")}</small></div>
+    ${fmtPx(r.close)}${fmtPct(r.pct_chg)}
+    <div class="num dim">${r.n_hit}</div>
+    <div class="tags">${divBadge(r)}${s?srcTag(s):""}</div>
+  </div>`;
+}
+function renderGrouped(){
+  const rows=matchRows();
+  const groups=["strong","weak","chanlun","qpzm","ninedim","cross","linkage"].map(k=>{
+    const meta=(DATA.strategies||{})[k]||{};
+    return {k,meta,hits:rows.filter(r=>(r.sources||[]).some(s=>s.s===k))};
+  }).filter(g=>g.hits.length);
+  $("#list").innerHTML=groups.map(g=>
+    `<div class="ghead"><span>${esc(g.meta.label||g.k)}</span><span class="num dim">${g.hits.length}</span>`+
+    (g.meta.note?`<span class="gnote">${esc(g.meta.note)}</span>`:"")+
+    `<span class="ghint">同票可命中多个策略组 · 点击行看证据链</span></div>`+
+    g.hits.map(r=>groupRow(r,g.k)).join("")
+  ).join("")||'<div class="loading">当前筛选条件下无命中</div>';
+  $("#more").style.display="none";
+}
+/* 视图分发：flat=原汇总列表 / group=按策略分列（G8 新增，默认汇总不动原体验） */
+let VIEW="flat";
+function renderView(){ VIEW==="group"?renderGrouped():renderList(); }
 /* 事件委托：列表点击只绑一次（此前每轮 renderList 全量重绑 580 行监听器） */
 function bindListOnce(){
   $("#list").addEventListener("click",e=>{
@@ -445,18 +531,23 @@ function bindListOnce(){
 function bindFilters(){
   document.querySelectorAll(".fbtn[data-t]").forEach(b=>b.addEventListener("click",()=>{
     document.querySelectorAll(".fbtn[data-t]").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on"); FILTER_T=b.dataset.t; LIMIT=120; renderList();
+    b.classList.add("on"); FILTER_T=b.dataset.t; LIMIT=120; renderView();
   }));
   /* 排序切换（默认层→命中数→涨跌幅） */
   document.querySelectorAll(".fbtn[data-s]").forEach(b=>b.addEventListener("click",()=>{
     document.querySelectorAll(".fbtn[data-s]").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on"); SORT=b.dataset.s; LIMIT=120; renderList();
+    b.classList.add("on"); SORT=b.dataset.s; LIMIT=120; renderView();
+  }));
+  /* G8：视图切换（汇总 / 按策略分列） */
+  document.querySelectorAll(".fbtn[data-v]").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".fbtn[data-v]").forEach(x=>x.classList.toggle("on",x===b));
+    VIEW=b.dataset.v; renderView();
   }));
   /* 搜索防抖 200ms：580 行全量重排不再每键触发 */
   let _qt=null;
   $("#q").addEventListener("input",e=>{
     clearTimeout(_qt);
-    _qt=setTimeout(()=>{ Q=e.target.value.trim(); LIMIT=120; renderList(); },200);
+    _qt=setTimeout(()=>{ Q=e.target.value.trim(); LIMIT=120; renderView(); },200);
   });
   $("#more").addEventListener("click",()=>{ LIMIT+=200; renderList(); });
 }
@@ -552,6 +643,43 @@ async function pickDetail(code, el){
   /* 3) 策略命中明细（任何市场都有）*/
   html+=`<div class="dsec">策略命中明细 · ${(row.sources||[]).length} 项</div>
   <div class="srcgrid">${(row.sources||[]).map(srcCard).join("")||'<span class="dim">无来源记录</span>'}</div>`;
+  /* 3.2) 证据链 · 贡献明细（G8 Agent 视角下钻）
+     现有 sources[] 字段逐源列证据（真实数据，有多少列多少）；
+     证据引用 ID / 单源贡献权重字段管道尚未产出（数据待 B1 证据链工位），
+     跨策略贡献归因分解（数据待 B3 后验归因工位）——两处均预留 UI 灰位、
+     显式标注「数据待 B1/B3」，绝不填占位值。
+     注：现有信号后验（pick_verdicts.json per_code）非新增缺口，见下方「信号后验·可成交」。 */
+  const evItems=s=>{
+    const ev=[];
+    if(s.dt)ev.push(["信号日",s.dt]);
+    if(s.entry_px!=null)ev.push(["参考介入价",s.entry_px]);
+    if(s.score!=null)ev.push(["评分",s.score]);
+    if(s.block)ev.push(["板块",s.block]);
+    if(s.band)ev.push(["区间",s.band]);
+    if(s.ex250!=null)ev.push(["250日超额","+"+s.ex250+"pp"]);
+    if(s.ex!=null)ev.push(["当前超额",s.ex+"%"]);
+    if(s.rank_in!=null)ev.push(["板块内排名",s.rank_in]);
+    if(s.rps50!=null)ev.push(["RPS50 百分位",s.rps50]);
+    if(s.cov!=null)ev.push(["九维覆盖率",(s.cov*100).toFixed(0)+"%"]);
+    if(s.tbe===true)ev.push(["背驰确认","是"]);
+    return ev;
+  };
+  const DIR_CN={pos:["多","pos"],neg:["空","neg"],neu:["中","neu"]};
+  const evSrcs=row.sources||[];
+  html+=`<div class="dsec">证据链 · 贡献明细（Agent 视角）</div><div class="evchain">`+
+    evSrcs.map(s=>{
+      const dir=DIR_CN[srcDir(s)], ev=evItems(s);
+      return `<div class="evbox"><div class="evh">
+        <span class="srcname">${esc(SRC_LABEL[s.s]||s.s)}</span>
+        <span class="edir ${dir[1]}">${dir[0]}</span>
+        <span class="tag">${esc(s.tag||s.s)}</span></div>
+      ${ev.length?`<ul>${ev.map(([k,v])=>`<li><span class="ek">${esc(k)}</span><span class="num">${esc(v)}</span></li>`).join("")}</ul>`:'<div class="dim" style="margin-top:6px">该源暂无量化证据字段</div>'}
+      ${(s.reasons&&s.reasons.length)?`<ul>${s.reasons.map(r=>`<li><span class="ek">命中理由</span>${esc(r)}</li>`).join("")}</ul>`:""}
+      <div class="evpending">单源贡献权重 / 证据引用 ID：<b>数据待 B1</b>（证据链管道未产出，禁占位值）</div>
+      </div>`;
+    }).join("")+
+    (evSrcs.length?'<div class="evpending top">跨策略贡献归因（本票各源对入池判定的权重分解）：<b>数据待 B3</b>（后验归因管道未产出）；现有 T+1/3/5 信号后验见下方「信号后验·可成交」</div>':'<div class="evpending top">无来源记录，证据链无从展开；单源贡献权重 <b>数据待 B1</b>、跨策略归因 <b>数据待 B3</b></div>')+
+    `</div>`;
   /* 3.5) 信号后验卡：可成交口径（九审）——首买=信号后第2个交易日开盘
      （清单在信号+1 日 15:10 产出、+2 开盘才可操作），剔除高开买不进 */
   const vr=VERDICTS&&VERDICTS.per_code&&VERDICTS.per_code[code];
@@ -605,7 +733,7 @@ async function pickDetail(code, el){
   d.innerHTML=html;
 }
 
-function render(data){ DATA=data; renderVitals(); renderMkt(); bindFilters(); bindListOnce(); renderList(); }
+function render(data){ DATA=data; renderVitals(); renderMkt(); bindFilters(); bindListOnce(); renderView(); }
 
 async function boot(){
   if(new URLSearchParams(location.search).get("demo")==="1"){
@@ -617,7 +745,7 @@ async function boot(){
         linkage:{label:"板块联动",n:null,note:"个股级工具，无全市场扫描口径"}},
       stocks:[
         {code:"603995.SH",name:"甬金股份",industry:"特种钢",close:33.5,pct_chg:2.4,n_hit:4,tier:"T1",
-         sources:[{s:"strong",tag:"板块领涨",block:"特种钢",ex250:14.2,reasons:["250日超额 +14.2pp ≥ +10pp"]},{s:"chanlun",tag:"3买"},{s:"qpzm",tag:"观察池",score:85},{s:"cross",tag:"多策略共振"}]},
+         sources:[{s:"strong",tag:"板块领涨",block:"特种钢",ex250:14.2,reasons:["250日超额 +14.2pp ≥ +10pp"]},{s:"chanlun",tag:"3买"},{s:"chanlun",tag:"1卖"},{s:"qpzm",tag:"观察池",score:85},{s:"cross",tag:"多策略共振"}]},
         {code:"000002.SZ",name:"万科A",industry:"全国地产",close:4.26,pct_chg:4.41,n_hit:1,tier:"T2",
          sources:[{s:"ninedim",tag:"九维候选",rps50:93.5}]},
         {code:"300803.SZ",name:"指南针",industry:"软件服务",close:45.1,pct_chg:-3.2,n_hit:1,tier:"T3",
