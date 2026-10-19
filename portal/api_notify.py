@@ -168,6 +168,7 @@ def flow_items(errors: list) -> list:
     week_floor = (datetime.now() - timedelta(
         days=FLOW_BLOCK_WINDOW_DAYS - 1)).strftime("%Y-%m-%d")
     blocked, today_ok = [], {}
+    clusters: dict = {}   # (kind, target) -> [代表行号, 代表行, 簇大小]
     for i, r in enumerate(rows):
         day = str(r.get("date") or str(r.get("ts") or "")[:10] or "")
         if r.get("ok"):
@@ -193,23 +194,52 @@ def flow_items(errors: list) -> list:
         # 只有走到真实发送且失败的行才 = blocked（投递异常）。
         deny_at = kind.find("|deny:")
         is_gate = r.get("channel") == "hub-gate" or deny_at >= 0
+        if is_gate:
+            out.append(_item(
+                id="flow:%d" % i,
+                state="idle",
+                title="%s 闸门抑制（%s）" % (kind[:deny_at] or "hub",
+                                            kind[deny_at + 6:]),
+                kind=kind,
+                target=str(r.get("target") or ""),
+                created_at=str(r.get("ts") or r.get("date") or ""),
+                source="push_flow",
+                reason="发送被闸门策略内拦截（近 %d 天回看）：channel=%s——静默窗/"
+                       "配额/按钮注册校验等主动抑制，非投递异常"
+                       % (FLOW_BLOCK_WINDOW_DAYS, r.get("channel") or ""),
+                evidence_delivery="",
+            ))
+            continue
+        # 方案 A 投影折叠（2026-10-20 治理执行）：同 (kind, target) 失败簇
+        # 合并为簇代表条（取最新一行），cluster_size 记簇内条数。原始流水账
+        # 逐行永久保留，出队靠 FLOW_BLOCK_WINDOW_DAYS 天然 T+7 滚窗，投影
+        # 零写路径、完全可逆。
+        key = (kind, str(r.get("target") or ""))
+        prev = clusters.get(key)
+        if prev is None:
+            clusters[key] = [i, r, 1]
+        else:
+            ts = str(r.get("ts") or r.get("date") or "")
+            rep_ts = str(prev[1].get("ts") or prev[1].get("date") or "")
+            if _ts_epoch(ts) > _ts_epoch(rep_ts):
+                prev[0], prev[1] = i, r
+            prev[2] += 1
+    for (kind, target), (i, r, size) in clusters.items():
         out.append(_item(
             id="flow:%d" % i,
-            state="idle" if is_gate else "blocked",
-            title=("%s 闸门抑制（%s）" % (kind[:deny_at] or "hub", kind[deny_at + 6:])
-                   if is_gate else "%s 投递失败" % (kind or "未知类型")),
+            state="blocked",
+            title="%s 投递失败" % (kind or "未知类型"),
             kind=kind,
-            target=str(r.get("target") or ""),
+            target=target,
             created_at=str(r.get("ts") or r.get("date") or ""),
             source="push_flow",
-            reason=("发送被闸门策略内拦截（近 %d 天回看）：channel=%s——静默窗/"
-                    "配额/按钮注册校验等主动抑制，非投递异常"
-                    % (FLOW_BLOCK_WINDOW_DAYS, r.get("channel") or ""))
-                   if is_gate else
-                   "发送流水 ok=0（近 %d 天回看）：channel=%s tenant=%s"
-                   % (FLOW_BLOCK_WINDOW_DAYS,
-                      r.get("channel") or "", r.get("tenant") or ""),
-            evidence_delivery="dead_letter" if not is_gate else "",
+            reason="发送流水 ok=0（近 %d 天回看）：channel=%s tenant=%s；"
+                   "同 kind+target 失败簇共 %d 条，T+7 滚窗逐条自动出队，"
+                   "逐行明细见原始账 push_flow.jsonl"
+                   % (FLOW_BLOCK_WINDOW_DAYS, r.get("channel") or "",
+                      r.get("tenant") or "", size),
+            evidence_delivery="dead_letter",
+            cluster_size=size,
         ))
     groups = sorted(today_ok.items(), key=lambda kv: -_ts_epoch(kv[1]["ts"]))
     for (kind, target), g in groups[:FLOW_AUTO_CAP]:
@@ -351,6 +381,10 @@ def notify_queue_payload() -> dict:
     truncated = len(items) > MAX_ITEMS
     items = items[:MAX_ITEMS]
     ch = nc.load_channels()
+    flow_blocked = [it for it in flow if it["state"] == "blocked"]
+    raw_blocked = (sum(int(it.get("cluster_size") or 1) for it in flow_blocked)
+                   + sum(1 for it in decisions if it["state"] == "blocked")
+                   + sum(1 for it in deadlines if it["state"] == "blocked"))
     return {
         "ok": True,
         "endpoint": "/api/notify/queue",
@@ -362,6 +396,18 @@ def notify_queue_payload() -> dict:
         "meta": {
             "drills": drills,
             "truncated": truncated,
+            "blocked_archive": {
+                # 方案 A（T+7 过期归档，2026-10-20 治理执行）：push_flow
+                # ok=0 行按近 7 天回看自然滚窗，超窗自动出队；原始账永久
+                # 保留不删不改，投影零写路径。blocked 展示按同 kind+target
+                # 折叠为簇代表，raw_blocked 保存折叠前真实总量。
+                "rule": "T+7：push_flow ok=0 行近 %d 天回看，超窗自动出队；"
+                        "原始账永久保留，投影零写路径" % FLOW_BLOCK_WINDOW_DAYS,
+                "raw_blocked": raw_blocked,
+                "cluster_count": len(flow_blocked),
+                "clustered_source": "push_flow",
+                "cluster_key": "kind+target",
+            },
             "sources": {
                 "decision_db": len(decisions),
                 "push_flow": len(flow),
