@@ -10,13 +10,9 @@ from __future__ import annotations
 
 from typing import Mapping
 
-from quant_backtest.quant_sector.upstream_inbox import (
-    QuantUpstreamReport,
-    UpstreamAck,
-    UpstreamInbox,
-)
+from quant_backtest.quant_sector.upstream_inbox import QuantUpstreamReport, UpstreamAck
 from quant_backtest.watch_dispatch.agent_reporting import AgentAck, AgentReport
-from quant_backtest.watch_dispatch.contracts import EvidenceEnvelope
+from quant_backtest.watch_dispatch.contracts import EvidenceEnvelope, RouteIntent
 from quant_backtest.watch_dispatch.route_outbox import (
     ACCEPTED_VERIFIED,
     RouteOutbox,
@@ -62,41 +58,52 @@ def to_agent_ack(ack: UpstreamAck) -> AgentAck:
 
 
 class OutboxBindingAdapter(ReceiptBindingPort):
-    """Read-only attempt proof from the actual outbox, optionally cross-checking inbox.
+    """Read-only, exact attempt proof from the outbox ledger.
 
-    RouteOutbox currently has no public lookup by attempt_id: get_attempts
-    needs the target_id, which a pool receipt does not contain. Hence the
-    adapter reads existing private in-memory ledgers without mutating them.
-    A future public exact-attempt lookup can replace only this implementation.
+    RouteOutbox has no public lookup by attempt_id: get_attempts needs a
+    target_id, which the pool receipt does not contain. This temporary
+    composition-root adapter reads existing private ledgers without mutation;
+    replace these accesses when outbox gains a public exact-attempt lookup.
+    The outbox receipt is the only accepted proof, not an inbox report ID.
     """
 
-    def __init__(self, outbox: RouteOutbox, envelope: EvidenceEnvelope,
-                 inbox: UpstreamInbox | None = None) -> None:
+    def __init__(self, outbox: RouteOutbox, envelope: EvidenceEnvelope) -> None:
         self._outbox = outbox
         self._envelope = envelope
-        self._inbox = inbox
 
     def binding_for(self, attempt_id: str) -> AttemptBinding | None:
-        """Return a settled, receipted attempt's actual immutable identity."""
+        """Return a settled attempt belonging to this exact envelope."""
         attempt = self._outbox._attempts.get(attempt_id)
         if attempt is None or attempt.attempt_id != attempt_id:
             return None
-        intent = self._outbox._intents.get(attempt.idempotency_key)
+        key = attempt.idempotency_key
+        current = self._outbox._intents.get(key)
         receipt = attempt.receipt
-        if (intent is None or receipt is None
-                or intent.intent_id != attempt.intent_id
+        if (current is None or receipt is None
                 or attempt.outcome != ACCEPTED_VERIFIED
                 or receipt.attempt_id != attempt_id
-                or receipt.intent_id != intent.intent_id
+                or receipt.intent_id != attempt.intent_id
                 or receipt.route != attempt.route
-                or intent.route != attempt.route
-                or intent.envelope_hash != intent.payload_digest):
+                or not receipt.external_message_id
+                or not receipt.verification_source
+                or key in self._outbox._revoked):
             return None
-        # Envelope is construction context, not the source of the returned
-        # identity: returning the attempt's *actual* identity lets the pool
-        # reject cross-signal reuse as RECEIPT_IDENTITY_MISMATCH.
-        if (self._inbox is not None
-                and not self._inbox_receipt_matches(intent, receipt.external_message_id)):
+        # Only current or append-only historical intent is admissible; never
+        # infer an unknown attempt's identity from the injected envelope.
+        intent = next(
+            (known for known in (current, *self._outbox._intent_history.get(key, ()))
+             if known.intent_id == attempt.intent_id), None)
+        if (type(intent) is not RouteIntent
+                or self._outbox._key_for(
+                    self._envelope, intent.route, intent.target_type, intent.target_id) != key
+                or intent.route != attempt.route
+                or (intent.event_id, intent.envelope_hash,
+                    intent.evidence_version) != (
+                        self._envelope.event_id, self._envelope.envelope_hash,
+                        self._envelope.evidence_version)
+                or intent.tenant_scope != self._envelope.tenant_or_owner_id
+                or self._outbox._identities.get(key) != self._outbox._identity(self._envelope)
+                or intent.control_epoch < self._outbox.epoch_floor(self._envelope)):
             return None
         return AttemptBinding(
             attempt_id=attempt.attempt_id,
@@ -107,28 +114,3 @@ class OutboxBindingAdapter(ReceiptBindingPort):
             evidence_hash=intent.envelope_hash,
             evidence_version=intent.evidence_version,
         )
-
-    def _inbox_receipt_matches(self, intent: object, external_ref: str) -> bool:
-        """Independently confirm the ACK against an active inbox report."""
-        assert self._inbox is not None
-        for upstream_receipt in self._inbox.list_accepted():
-            if upstream_receipt.ack.ack_id != external_ref:
-                continue
-            if not self._inbox.is_active(upstream_receipt.receipt_id):
-                return False
-            report = self._inbox._reports.get(upstream_receipt.report_id)
-            if report is None:
-                return False
-            return (
-                report.envelope_hash == upstream_receipt.envelope_hash
-                and upstream_receipt.ack.report_id == report.report_id
-                and upstream_receipt.sender_agent_id == report.sender_agent_id
-                and report.event_id == intent.event_id
-                and report.evidence_hash == intent.envelope_hash
-                and report.evidence_version == intent.evidence_version
-                and report.receiver_agent_id == intent.target_id
-                and (intent.intent_id == f"report-{report.report_id}"
-                     or (intent.intent_id.startswith(f"report-{report.report_id}-g")
-                         and intent.intent_id[len(f"report-{report.report_id}-g"):].isdigit()))
-            )
-        return False

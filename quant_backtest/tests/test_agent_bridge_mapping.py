@@ -123,7 +123,7 @@ def test_changed_mapped_field_drifts_inbox_key_b11():
 
 def test_adapter_real_chain_and_no_mutation_b8():
     env, report, mapped, inbox, outbox, pool, pool_receipt = settled_chain()
-    adapter = OutboxBindingAdapter(outbox, env, inbox)
+    adapter = OutboxBindingAdapter(outbox, env)
     attempts_before = dict(outbox._attempts)
     entries_before = dict(pool._entries)
     binding = adapter.binding_for(pool_receipt.attempt_id)
@@ -141,7 +141,7 @@ def test_adapter_real_chain_and_no_mutation_b8():
 
 def test_adapter_unknown_attempt_and_no_mutation_b7():
     env, report, mapped, inbox, outbox, pool, pool_receipt = settled_chain()
-    adapter = OutboxBindingAdapter(outbox, env, inbox)
+    adapter = OutboxBindingAdapter(outbox, env)
     assert adapter.binding_for("forged") is None
     with pytest.raises(SignalPoolError, match="RECEIPT_ATTEMPT_UNKNOWN"):
         pool.mark_accepted("signal1", receipt=replace(pool_receipt, attempt_id="forged"),
@@ -152,7 +152,7 @@ def test_adapter_unknown_attempt_and_no_mutation_b7():
 
 def test_adapter_rejects_wrong_external_ref_and_route():
     env, report, mapped, inbox, outbox, pool, pool_receipt = settled_chain()
-    adapter = OutboxBindingAdapter(outbox, env, inbox)
+    adapter = OutboxBindingAdapter(outbox, env)
     for changed, code in (
         ({"external_ref": "forged"}, "RECEIPT_REF_MISMATCH"),
         ({"route": "FEISHU"}, "RECEIPT_ROUTE_MISMATCH"),
@@ -163,33 +163,32 @@ def test_adapter_rejects_wrong_external_ref_and_route():
     assert pool.get("signal1").status == STATUS_CLAIMED
 
 
-def test_adapter_revoked_inbox_rejected_without_mutation():
+def test_adapter_rejects_missing_private_attempt_and_intent_index():
     env, report, mapped, inbox, outbox, pool, pool_receipt = settled_chain()
-    upstream_receipt = inbox.receipt_for_report(report.report_id)
-    inbox.revoke(upstream_receipt.receipt_id, now=T + timedelta(seconds=5))
-    adapter = OutboxBindingAdapter(outbox, env, inbox)
+    adapter = OutboxBindingAdapter(outbox, env)
+    attempt = outbox._attempts.pop(pool_receipt.attempt_id)
     assert adapter.binding_for(pool_receipt.attempt_id) is None
-    with pytest.raises(SignalPoolError, match="RECEIPT_ATTEMPT_UNKNOWN"):
-        pool.mark_accepted("signal1", receipt=pool_receipt, binding_port=adapter)
-    assert pool.get("signal1").status == STATUS_CLAIMED
+    outbox._attempts[pool_receipt.attempt_id] = attempt
+    intent = outbox._intents.pop(attempt.idempotency_key)
+    assert adapter.binding_for(pool_receipt.attempt_id) is None
+    outbox._intents[attempt.idempotency_key] = intent
+    assert adapter.binding_for(pool_receipt.attempt_id) is not None
 
 
-def test_adapter_rejects_forged_outbox_external_ref_using_inbox():
-    env = envelope()
-    report = report_for(env)
-    inbox = UpstreamInbox()
-    inbox.accept(to_sector_report(report), now=T + timedelta(seconds=1))
-    outbox = RouteOutbox()
-    outbox.plan(env, route=ROUTE, target_type="AGENT", target_id=report.receiver.agent_id,
-                policy_version="agent-report-v1", control_epoch=0,
-                intent_id="report-report1", created_at=T, valid_until=END)
-    attempt = outbox.claim(env, route=ROUTE, target_type="AGENT",
-                           target_id=report.receiver.agent_id, claim_token="forged-token",
-                           claim_at=T + timedelta(seconds=2), lease_until=END)
-    outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
-                  external_message_id="forged-ack", verification_source="forged-source",
-                  observed_at=T + timedelta(seconds=3), now=T + timedelta(seconds=4))
-    assert OutboxBindingAdapter(outbox, env, inbox).binding_for(attempt.attempt_id) is None
+def test_adapter_rejects_mismatched_receipt_or_stale_outbox():
+    env, report, mapped, inbox, outbox, pool, pool_receipt = settled_chain()
+    adapter = OutboxBindingAdapter(outbox, env)
+    attempt = outbox._attempts[pool_receipt.attempt_id]
+    for bad_receipt in (
+        replace(attempt.receipt, attempt_id="unrelated"),
+        replace(attempt.receipt, external_message_id=""),
+        replace(attempt.receipt, verification_source=""),
+    ):
+        outbox._attempts[pool_receipt.attempt_id] = replace(attempt, receipt=bad_receipt)
+        assert adapter.binding_for(pool_receipt.attempt_id) is None
+    outbox._attempts[pool_receipt.attempt_id] = attempt
+    outbox.revoke_envelope(env, epoch=1, now=T + timedelta(seconds=5))
+    assert adapter.binding_for(pool_receipt.attempt_id) is None
 
 
 def test_adapter_cross_signal_real_receipt_still_rejected():
@@ -202,7 +201,7 @@ def test_adapter_cross_signal_real_receipt_still_rejected():
                                       other.envelope_hash, other.evidence_version),
                       producer=report.sender, store=store, now=T)
     other_pool.claim("signal-other", lease_until=END, now=T)
-    with pytest.raises(SignalPoolError, match="RECEIPT_IDENTITY_MISMATCH"):
+    with pytest.raises(SignalPoolError, match="RECEIPT_ATTEMPT_UNKNOWN"):
         other_pool.mark_accepted("signal-other", receipt=pool_receipt,
-                                 binding_port=OutboxBindingAdapter(outbox, other, inbox))
+                                 binding_port=OutboxBindingAdapter(outbox, other))
     assert other_pool.get("signal-other").status == STATUS_CLAIMED
