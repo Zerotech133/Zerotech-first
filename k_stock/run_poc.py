@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -24,6 +26,40 @@ from k_stock.kstock.orchestrator import Orchestrator, load_team
 
 TEAM = HERE / "config" / "team_poc.json"
 OUT_DIR = HERE / "data"
+GUARD_LOG = HERE / "data" / "guard_aborts.jsonl"   # 守卫中止结构化留痕（append jsonl）
+HEARTBEAT = HERE / "data" / "last_run.json"        # 跑批心跳（mtime 即判"今天跑没跑"）
+
+
+def _append_guard_log(record: dict) -> None:
+    """守卫中止落盘（K-STOCK-20261019-GUARDLOG）。
+    O_APPEND + 单次 os.write：小体积追加在单写者语义下即原子，多进程并发最多
+    交错行不会撕裂行（与 llm_cost jsonl 判例同风格）。
+    落盘失败静默降级——日志失败绝不改变主流程退出码（exit 3 语义保持不变）。"""
+    try:
+        GUARD_LOG.parent.mkdir(parents=True, exist_ok=True)
+        line = (json.dumps(record, ensure_ascii=False) + "\n").encode("utf-8")
+        fd = os.open(str(GUARD_LOG), os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
+    except Exception:
+        pass
+
+
+def _write_heartbeat(rc: int, elapsed_s: float, summary: dict) -> None:
+    """跑批心跳：正常完成/异常退出（含守卫 exit 3）均落 data/last_run.json，
+    「今天跑没跑」看文件 mtime 即判，零产物不再无法区分未触发/被拦截。
+    tmp+os.replace 原子换血，落盘失败静默。"""
+    try:
+        HEARTBEAT.parent.mkdir(parents=True, exist_ok=True)
+        rec = {"ts": datetime.now().isoformat(timespec="seconds"),
+               "rc": rc, "elapsed_s": round(elapsed_s, 1), "summary": summary}
+        tmp = HEARTBEAT.with_name(HEARTBEAT.name + ".tmp")
+        tmp.write_text(json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(str(tmp), str(HEARTBEAT))
+    except Exception:
+        pass
 
 
 def run_one(stock: str, context: str = "", mock: bool = False, auto: bool = False) -> dict:
@@ -76,7 +112,6 @@ def load_guard(threshold_s: float = 6.0, retries: int = 2, cooldown_s: float = 1
     10.8s→1/5（T1/N1 合法 JSON 前缀截断=生成流中途夭折）。S1 判据要有效数据，
     宁缺毋滥；空闲基线 ~2s，6s 有 3 倍余量。
     返回 (冷耗时, 最终热耗时)。守卫顺带完成预热，一举两得。"""
-    import time
     import urllib.request
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
@@ -103,6 +138,22 @@ def load_guard(threshold_s: float = 6.0, retries: int = 2, cooldown_s: float = 1
 
 
 def main():
+    t0 = time.time()
+    rc = 0
+    summary: dict = {}
+    try:
+        _run_targets(summary)
+    except SystemExit as e:                       # 守卫 exit 3 / argparse exit 2 均留心跳
+        rc = e.code if isinstance(e.code, int) else 1
+        raise
+    except BaseException:
+        rc = 1
+        raise
+    finally:
+        _write_heartbeat(rc, time.time() - t0, summary)
+
+
+def _run_targets(summary: dict) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("stock", nargs="?", help="如 600519.SH 贵州茅台（加引号）")
     ap.add_argument("--mock", action="store_true")
@@ -138,9 +189,24 @@ def main():
                 print(f"[guard] 热态超 6s（含重试）——系统负载挤压推理"
                       f"（标定：2s 全绿/8.8s 半崩/10.8s 仅 1 节点存活），中止。{culprit}"
                       f"建议换时段（清晨 07:05 自动化窗口）或关闭竞争推理服务后重试。", flush=True)
+                _append_guard_log({
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                    "phase": "probe_hot", "latency_s": round(t_warm, 2),
+                    "t_cold_s": round(t_cold, 2), "threshold_s": 6.0,
+                    "reason": "热态超6s（含冷却重试）中止", "culprit": culprit,
+                    "ollama_alive": True, "watchlist_size": len(targets),
+                })
+                summary.update({"stage": "guard", "phase": "probe_hot"})
                 sys.exit(3)
         except Exception as e:
             print(f"[guard] Ollama 不可达: {e}", flush=True)
+            _append_guard_log({
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                "phase": "probe_unreachable", "latency_s": None,
+                "reason": f"Ollama 不可达: {e}", "ollama_alive": False,
+                "watchlist_size": len(targets),
+            })
+            summary.update({"stage": "guard", "phase": "probe_unreachable"})
             sys.exit(3)
 
     OUT_DIR.mkdir(exist_ok=True)
@@ -158,6 +224,10 @@ def main():
             print(f"  -> FAIL: {r['error']}", flush=True)
         results.append(r)
 
+    ok = sum(1 for r in results if "error" not in r)
+    degraded = sum(1 for r in results if r.get("degraded"))
+    summary.update({"targets": len(targets), "ok": ok, "fail": len(results) - ok,
+                    "degraded": degraded, "mock": args.mock})
     out = Path(args.out) if args.out else OUT_DIR / f"poc_{datetime.now():%Y%m%d_%H%M%S}.json"
     out.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
     print("saved ->", out)
