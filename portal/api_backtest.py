@@ -2,7 +2,7 @@
 """P4 批 6：回测域 Mixin（backtest 页族/pulse/custom 批族）。
 Handler 壳经基座多继承并入（禁 import *）。
 """
-import datetime, glob, html, json, os, re, subprocess, sys, time
+import datetime, glob, hashlib, html, json, math, os, re, subprocess, sys, tempfile, time
 from api_common import (
     _read_json,
     log_exc,
@@ -5168,9 +5168,14 @@ _BT2_LOCK = _threading.Lock()
 # reference these opaque ids; arbitrary filesystem paths/connections are denied.
 _MINUTE_SOURCE_REGISTRY = {}
 _MINUTE_SOURCE_FACTORIES = {}
+# Fee calculators/providers and fill models remain process-local; descriptors only
+# carry opaque refs and immutable schedule identity metadata.
 # Calendar providers are trusted, process-local runtime objects.  Only their
 # opaque identity is persisted in JobSpec descriptors.
 _MINUTE_CALENDAR_FACTORIES = {}
+_MINUTE_FEE_FACTORIES = {}
+_MINUTE_FILL_MODELS = {}
+_MINUTE_MARKET_RULE_FACTORIES = {}
 _MINUTE_MARKET_POLICIES = {
     "CN": {"timezone": "Asia/Shanghai", "t_plus_one": True, "policy_ref": "registry:market-cn", "lot_size": 100},
     "US": {"timezone": "America/New_York", "t_plus_one": False, "policy_ref": "registry:market-us"},
@@ -5188,11 +5193,163 @@ def _calendar_error_code(exc):
     return "CALENDAR_UNAVAILABLE"
 
 
+def _minute_error_code(exc):
+    """Map worker failures to stable public codes without leaking exceptions."""
+    text = str(exc or "")
+    stable_codes = (
+        "FEE_CONFIG_UNSUPPORTED", "FEE_SCHEDULE_CHANGED", "FEE_SCHEDULE_UNAVAILABLE",
+        "CALENDAR_MISMATCH", "CALENDAR_UNAVAILABLE", "POLICY_MISMATCH",
+        "PARTIAL_FILL_UNSUPPORTED", "STATUS_UNKNOWN", "LIMIT_UNKNOWN", "SOURCE_UNAVAILABLE", "ARTIFACT_UNAVAILABLE",
+        "INVALID_TIF_CONFIG", "FEE_MODE_INVALID", "FEE_CONFIG_CONFLICT",
+    )
+    for code in stable_codes:
+        if code in text:
+            return code
+    if isinstance(exc, (ValueError, TypeError, OverflowError)):
+        return "INVALID_ARGUMENT"
+    return "EXECUTION_ERROR"
+
+
 def _descriptor_failure(descriptor):
     error = str(getattr(descriptor, "error", "") or "")
-    if error in {"CALENDAR_UNAVAILABLE", "CALENDAR_MISMATCH"}:
+    if error in {"CALENDAR_UNAVAILABLE", "CALENDAR_MISMATCH", "FEE_CONFIG_UNSUPPORTED", "FEE_SCHEDULE_UNAVAILABLE", "FEE_SCHEDULE_CHANGED"}:
         return error
     return "SOURCE_UNAVAILABLE"
+
+
+def _minute_transaction_policy(descriptor, spec=None, params=None):
+    """Return a JSON-safe canonical transaction policy projection.
+
+    Runtime callables remain in ``spec`` only; this projection is safe to persist
+    in job state/artifacts and is stable across start/worker/result layers.
+    """
+    runtime = spec if isinstance(spec, dict) else {}
+    request = params if isinstance(params, dict) else {}
+    return {
+        "fee_mode": str(getattr(descriptor, "fee_mode", request.get("fee_mode", "PER_FILL")) or "PER_FILL").upper(),
+        "fee_schedule_ref": getattr(descriptor, "fee_schedule_ref", None),
+        "fee_schedule_version": getattr(descriptor, "fee_schedule_version", None),
+        "fee_schedule_hash": getattr(descriptor, "fee_schedule_hash", None),
+        "fee_provider_ref": getattr(descriptor, "fee_provider_ref", None),
+        "fee_calculator_ref": getattr(descriptor, "fee_calculator_ref", None),
+        "time_in_force": str(getattr(descriptor, "time_in_force", request.get("time_in_force", "DAY")) or "DAY").upper(),
+        "max_attempts": getattr(descriptor, "max_attempts", request.get("max_attempts")),
+        "expire_at": getattr(descriptor, "expire_at", request.get("expire_at")),
+        "partial_fill_params": getattr(descriptor, "partial_fill_params", request.get("partial_fill_params")),
+        "market_rule_ref": getattr(descriptor, "market_rule_ref", request.get("market_rule_ref")),
+        "market_rule_version": getattr(descriptor, "market_rule_version", request.get("market_rule_version")),
+        "calendar_ref": getattr(descriptor, "calendar_ref", request.get("calendar_ref")),
+        "calendar_version": getattr(descriptor, "calendar_version", request.get("calendar_version")),
+        "calendar_required": bool(getattr(descriptor, "calendar_ref", None)),
+        "market_rules_required": runtime.get("market_rule_provider") is not None,
+    }
+
+
+def _validate_minute_order_policy(descriptor, spec):
+    """Validate the entire runtime batch against the persisted execution policy.
+
+    No intent or descriptor is rewritten. Partial-fill descriptors are unsupported
+    until a public, identity-bound fill-model registration contract exists.
+    """
+    from execution_engine import OrderIntent
+
+    tif = getattr(descriptor, "time_in_force", None)
+    attempts = getattr(descriptor, "max_attempts", None)
+    expiry = getattr(descriptor, "expire_at", None)
+    if tif not in ("DAY", "GTC"):
+        raise ValueError("INVALID_TIF_CONFIG: descriptor time_in_force")
+    if attempts is not None and (type(attempts) is not int or attempts <= 0):
+        raise ValueError("INVALID_TIF_CONFIG: max_attempts")
+
+    def utc_expiry(value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            try:
+                parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError("INVALID_TIF_CONFIG: expire_at") from exc
+        elif isinstance(value, datetime.datetime):
+            parsed = value
+        else:
+            raise ValueError("INVALID_TIF_CONFIG: expire_at")
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError("INVALID_TIF_CONFIG: expire_at must be timezone-aware")
+        return parsed.astimezone(datetime.timezone.utc)
+
+    descriptor_expiry = utc_expiry(expiry)
+    if tif == "DAY" and (attempts is not None or expiry is not None):
+        raise ValueError("INVALID_TIF_CONFIG: DAY cannot retry or expire")
+    if not isinstance(spec, dict):
+        raise ValueError("POLICY_MISMATCH: runtime source spec missing")
+    intents = spec.get("order_intents")
+    if not isinstance(intents, (tuple, list)) or not intents:
+        raise ValueError("POLICY_MISMATCH: order batch missing")
+    for intent in intents:
+        if not isinstance(intent, OrderIntent):
+            raise ValueError("POLICY_MISMATCH: batch contains non-OrderIntent")
+        intent_tif = intent.time_in_force
+        intent_attempts = intent.max_attempts
+        if intent_tif not in ("DAY", "GTC"):
+            raise ValueError("INVALID_TIF_CONFIG: intent time_in_force")
+        if intent_attempts is not None and (type(intent_attempts) is not int or intent_attempts <= 0):
+            raise ValueError("INVALID_TIF_CONFIG: intent max_attempts")
+        intent_expiry = utc_expiry(intent.expire_at)
+        if intent_tif == "DAY" and (intent_attempts is not None or intent.expire_at is not None):
+            raise ValueError("INVALID_TIF_CONFIG: DAY intent cannot retry or expire")
+        if (intent_tif != tif or intent_attempts != attempts or
+                intent_expiry != descriptor_expiry):
+            raise ValueError("POLICY_MISMATCH: runtime order policy differs")
+    if descriptor.partial_fill_params is not None:
+        raise ValueError("PARTIAL_FILL_UNSUPPORTED: no identity-bound fill model")
+
+
+def _minute_execution_config(params, descriptor, spec):
+    """Construct one complete execution config for every worker path."""
+    from execution_engine import ExecutionConfig
+    fee_mode = str(getattr(descriptor, "fee_mode", params.get("fee_mode", "PER_FILL")) or "PER_FILL").upper()
+    fee_provider = spec.get("fee_provider")
+    fee_calculator = spec.get("fee_calculator")
+    if fee_mode == "PER_ORDER" and fee_provider is None and fee_calculator is None:
+        raise ValueError("FEE_CONFIG_UNSUPPORTED")
+    return ExecutionConfig(
+        initial_cash=float(params.get("initial_cash", 0.0) or 0.0),
+        fee_bps=(0.0 if fee_mode == "PER_ORDER" else float(params.get("fee_bps", 0.0) or 0.0)),
+        slippage_bps=float(params.get("slippage_bps", 0.0) or 0.0),
+        lot_size=int(params.get("lot_size", 1) or 1),
+        market=params.get("market"), timeframe=params.get("timeframe"),
+        t_plus_one=params.get("t_plus_one", False),
+        policy_ref=params.get("policy_ref"),
+        fee_mode=fee_mode, fee_provider=fee_provider, fee_calculator=fee_calculator,
+        calendar_ref=getattr(descriptor, "calendar_ref", None),
+        calendar_version=getattr(descriptor, "calendar_version", None),
+        calendar_required=bool(getattr(descriptor, "calendar_ref", None)),
+        market_rules_required=spec.get("market_rule_provider") is not None,
+        fill_model=spec.get("fill_model"),
+    )
+
+
+def _minute_output_root():
+    """Resolve the engine-owned minute output directory at request time."""
+    try:
+        import backtest_engine_v2 as engine
+        return str(engine.MINUTE_OUT_DIR)
+    except Exception:
+        return os.path.join(STATION, "quant_backtest", "data", "minute_exec")
+
+
+def _safe_minute_artifact(path, job_id, root):
+    """Return an artifact only when its real path stays under the output root."""
+    expected = "minute_%s.json" % str(job_id)
+    root_real = os.path.realpath(str(root))
+    candidate = os.path.realpath(str(path or os.path.join(root_real, expected)))
+    try:
+        inside = os.path.commonpath([candidate, root_real]) == root_real
+    except ValueError:
+        inside = False
+    if not inside or os.path.basename(candidate) != expected:
+        return None
+    return candidate
 
 
 def _calendar_provider_for(source_ref, descriptor):
@@ -5250,14 +5407,18 @@ def _rehydrate_minute_source(source_ref):
             actual_timeframe = str(getattr(bars[0], "timeframe", "")).lower()
             if actual_market != str(descriptor.market).upper() or actual_timeframe != str(descriptor.timeframe).lower():
                 raise ValueError("SOURCE_UNAVAILABLE")
-        _MINUTE_SOURCE_REGISTRY[ref] = spec
+        _validate_minute_order_policy(descriptor, spec)
         if descriptor.calendar_ref:
             _validate_runtime_calendar(ref, descriptor, spec)
+        _MINUTE_SOURCE_REGISTRY[ref] = spec
         _JOB_SPEC_REGISTRY.mark_available(ref)
         return True, None
     except Exception as exc:
         log_exc(exc)
-        code = _calendar_error_code(exc) if descriptor.calendar_ref else "SOURCE_UNAVAILABLE"
+        _MINUTE_SOURCE_REGISTRY.pop(ref, None)
+        code = _minute_error_code(exc)
+        if code not in {"POLICY_MISMATCH", "INVALID_TIF_CONFIG", "PARTIAL_FILL_UNSUPPORTED"}:
+            code = _calendar_error_code(exc) if descriptor.calendar_ref else "SOURCE_UNAVAILABLE"
         _JOB_SPEC_REGISTRY.mark_unavailable(ref, code)
         return False, code
 
@@ -5284,6 +5445,13 @@ def register_minute_calendar_factory(source_ref, factory):
     try:
         spec = _MINUTE_SOURCE_REGISTRY.get(ref)
         if isinstance(spec, dict):
+            try:
+                _validate_minute_order_policy(descriptor, spec)
+            except (ValueError, TypeError) as exc:
+                code = _minute_error_code(exc)
+                _MINUTE_SOURCE_REGISTRY.pop(ref, None)
+                _JOB_SPEC_REGISTRY.mark_unavailable(ref, code)
+                return False, code
             _validate_runtime_calendar(ref, descriptor, spec)
             _JOB_SPEC_REGISTRY.mark_available(ref)
             return True, None
@@ -5309,7 +5477,14 @@ def register_minute_source(source_ref, bar_store, order_intents=(),
                            market="CN", timezone="Asia/Shanghai", timeframe="1m",
                            policy_ref=None, expires_at=None, calendar_ref=None,
                            calendar_version=None, calendar_provider=None,
-                           calendar_factory=None):
+                           calendar_factory=None, fee_mode="PER_FILL",
+                           fee_calculator=None, fee_provider=None,
+                           fee_provider_ref=None, fee_calculator_ref=None,
+                           fee_schedule_ref=None, fee_schedule_version=None,
+                           fee_schedule_hash=None, time_in_force="DAY",
+                           max_attempts=None, expire_at=None,
+                           partial_fill_params=None, market_rule_ref=None,
+                           market_rule_version=None):
     """Register a complete server-side minute job spec under an opaque id."""
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(source_ref or "")):
         raise ValueError("invalid source_ref")
@@ -5340,8 +5515,19 @@ def register_minute_source(source_ref, bar_store, order_intents=(),
         raise ValueError("CALENDAR_UNAVAILABLE: invalid calendar_ref")
     if calendar_version is not None and not _CALENDAR_VERSION_PATTERN.fullmatch(str(calendar_version)):
         raise ValueError("CALENDAR_UNAVAILABLE: invalid calendar_version")
+    fee_mode = str(fee_mode or "PER_FILL").upper()
+    if fee_mode not in {"PER_FILL", "PER_ORDER"}:
+        raise ValueError("FEE_MODE_INVALID")
+    if fee_mode == "PER_ORDER" and fee_calculator is None and fee_provider is None:
+        raise ValueError("FEE_CONFIG_UNSUPPORTED")
+    if fee_calculator is not None and fee_provider is not None:
+        raise ValueError("FEE_CONFIG_CONFLICT")
     if market_rule_provider is not None and not callable(getattr(market_rule_provider, "decide", None)):
         raise ValueError("INVALID_ARGUMENT: market_rule_provider must implement decide()")
+    if time_in_force not in {"DAY", "GTC"}:
+        raise ValueError("INVALID_TIF_CONFIG")
+    if time_in_force == "DAY" and (max_attempts is not None or expire_at is not None):
+        raise ValueError("INVALID_TIF_CONFIG")
     spec = {
         "bar_store": bar_store,
         "order_intents": intents,
@@ -5349,9 +5535,14 @@ def register_minute_source(source_ref, bar_store, order_intents=(),
         "limit_provider": limit_provider,
         "market_rule_provider": market_rule_provider,
         "calendar_provider": calendar_provider,
+        "fee_mode": fee_mode,
+        "fee_calculator": fee_calculator,
+        "fee_provider": fee_provider,
+        "fill_model": _MINUTE_FILL_MODELS.get(str(source_ref)),
+        "market_rule_ref": market_rule_ref,
+        "market_rule_version": market_rule_version,
     }
     ref = str(source_ref)
-    _MINUTE_SOURCE_REGISTRY[ref] = spec
     canonical_policy_ref = policy["policy_ref"]
     if policy_ref is not None and str(policy_ref) != canonical_policy_ref:
         raise ValueError("POLICY_MISMATCH")
@@ -5363,14 +5554,39 @@ def register_minute_source(source_ref, bar_store, order_intents=(),
         provider_policy_ref=str(policy_ref or policy["policy_ref"]),
         registered_at=utc_now_iso(), expires_at=expires_at,
         calendar_ref=str(calendar_ref) if calendar_ref is not None else None,
-        calendar_version=str(calendar_version) if calendar_version is not None else None)
+        calendar_version=str(calendar_version) if calendar_version is not None else None,
+        fee_mode=fee_mode,
+        fee_schedule_ref=str(fee_schedule_ref) if fee_schedule_ref is not None else None,
+        fee_schedule_version=str(fee_schedule_version) if fee_schedule_version is not None else None,
+        fee_schedule_hash=str(fee_schedule_hash) if fee_schedule_hash is not None else None,
+        fee_provider_ref=(str(fee_provider_ref) if fee_provider_ref is not None else None),
+        fee_calculator_ref=(str(fee_calculator_ref) if fee_calculator_ref is not None else None),
+        time_in_force=str(time_in_force).upper(), max_attempts=max_attempts,
+        expire_at=expire_at, partial_fill_params=partial_fill_params,
+        market_rule_ref=market_rule_ref, market_rule_version=market_rule_version)
+    _validate_minute_order_policy(descriptor, spec)
+    if calendar_factory is not None and not callable(calendar_factory):
+        raise ValueError("invalid calendar factory")
+    if calendar_ref is not None:
+        # Resolve only the provider/factory supplied with this registration.
+        # A previously registered factory for the same ref cannot authorize it.
+        if spec["calendar_provider"] is None:
+            if calendar_factory is None:
+                raise ValueError("CALENDAR_UNAVAILABLE: provider factory unavailable")
+            spec["calendar_provider"] = calendar_factory(descriptor)
+            if spec["calendar_provider"] is None:
+                raise ValueError("CALENDAR_UNAVAILABLE: provider unavailable")
+        _validate_runtime_calendar(ref, descriptor, spec)
+        # Calendar factory/store callbacks are untrusted to preserve this
+        # candidate batch; reject late mutation before persisting any identity.
+        _validate_minute_order_policy(descriptor, spec)
     _JOB_SPEC_REGISTRY.register(descriptor)
-    # The closure is process-local and never enters the persisted descriptor.
+    _MINUTE_SOURCE_REGISTRY[ref] = spec
+    # The closure and calendar factory remain process-local; no callback can
+    # mark a source available before all registration validations succeed.
     _MINUTE_SOURCE_FACTORIES[ref] = lambda _descriptor: dict(spec)
     if calendar_factory is not None:
-        register_minute_calendar_factory(ref, calendar_factory)
-    if calendar_ref is not None:
-        _validate_runtime_calendar(ref, descriptor, spec)
+        _MINUTE_CALENDAR_FACTORIES[ref] = calendar_factory
     return descriptor.as_dict()
 
 
@@ -5460,6 +5676,30 @@ def _bt2_write_state(jid, **kv):
     st.setdefault("id", jid)
     st.update(kv)
     st["ts"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if st.get("execution_mode") == "minute_store" or (isinstance(st.get("params"), dict) and
+                                                       st["params"].get("execution_mode") == "minute_store"):
+        # Minute readers may run concurrently with the worker. Never expose a
+        # partially written state, and never silently report a failed done write.
+        os.makedirs(_BT2_STATE_DIR, exist_ok=True)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=_BT2_STATE_DIR,
+                prefix=f".bt2_{jid}.", suffix=".tmp", delete=False,
+            ) as state_file:
+                temporary = state_file.name
+                json.dump(st, state_file, ensure_ascii=False)
+                state_file.flush()
+                os.fsync(state_file.fileno())
+            os.replace(temporary, _bt2_state_path(jid))
+            temporary = None
+        finally:
+            if temporary is not None:
+                try:
+                    os.unlink(temporary)
+                except FileNotFoundError:
+                    pass
+        return
     try:
         os.makedirs(_BT2_STATE_DIR, exist_ok=True)
         with open(_bt2_state_path(jid), "w", encoding="utf-8") as f:
@@ -5489,9 +5729,22 @@ def _bt2_start(rec):
         if not isinstance(spec, dict):
             ok, error = _rehydrate_minute_source(source_ref)
             spec = _MINUTE_SOURCE_REGISTRY.get(source_ref) if ok else None
+            if not ok and error in {"POLICY_MISMATCH", "INVALID_TIF_CONFIG", "PARTIAL_FILL_UNSUPPORTED"}:
+                return {"ok": False, "error": error, "error_code": error, "source_ref": source_ref,
+                        "source_availability": "source_unavailable", "source_error": error}
+        if isinstance(spec, dict):
+            try:
+                _validate_minute_order_policy(descriptor, spec)
+            except (ValueError, TypeError) as exc:
+                code = _minute_error_code(exc)
+                return {"ok": False, "error": code, "error_code": code, "source_ref": source_ref,
+                        "source_availability": "source_unavailable", "source_error": code}
         if not isinstance(spec, dict) or not spec.get("order_intents"):
-            _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, "SOURCE_UNAVAILABLE")
-            return {"ok": False, "error": "SOURCE_UNAVAILABLE", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
+            code = "FEE_CONFIG_UNSUPPORTED" if descriptor.fee_mode == "PER_ORDER" and not (spec or {}).get("fee_provider") and not (spec or {}).get("fee_calculator") else "SOURCE_UNAVAILABLE"
+            _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, code)
+            return {"ok": False, "error": code, "error_code": code, "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": code}
+        if descriptor.fee_mode == "PER_ORDER" and spec.get("fee_provider") is None and spec.get("fee_calculator") is None:
+            return {"ok": False, "error": "FEE_CONFIG_UNSUPPORTED", "error_code": "FEE_CONFIG_UNSUPPORTED", "source_ref": source_ref, "source_availability": "available", "source_error": "FEE_CONFIG_UNSUPPORTED"}
         if spec.get("status_provider") is None or spec.get("limit_provider") is None:
             _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, "SOURCE_UNAVAILABLE")
             return {"ok": False, "error": "SOURCE_UNAVAILABLE", "error_code": "SOURCE_UNAVAILABLE", "source_ref": source_ref, "source_availability": "source_unavailable", "source_error": "SOURCE_UNAVAILABLE"}
@@ -5514,6 +5767,17 @@ def _bt2_start(rec):
             return {"ok": False, "error": "SOURCE_UNAVAILABLE"}
         if str(rec.get("strategy") or "minute_store") not in ("minute_store", "chanlun"):
             return {"ok": False, "error": "minute_store strategy unsupported"}
+        # Descriptor is authoritative: client transaction fields may only repeat
+        # the registered policy, never override runtime callables or identities.
+        policy_projection = _minute_transaction_policy(descriptor, spec, rec)
+        for key, expected in policy_projection.items():
+            if key not in rec or rec.get(key) in (None, ""):
+                continue
+            actual = rec.get(key)
+            if key in {"fee_mode", "time_in_force"}:
+                actual = str(actual).upper()
+            if actual != expected:
+                return {"ok": False, "error": "POLICY_MISMATCH", "error_code": "POLICY_MISMATCH", "source_error": "POLICY_MISMATCH"}
     strategy = str(rec.get("strategy") or ("minute_store" if mode == "minute_store" else "chanlun")).strip()
     if mode == "minute_store" and strategy == "minute_store":
         pass
@@ -5624,6 +5888,17 @@ def _bt2_start(rec):
             "calendar_version": descriptor.calendar_version if descriptor is not None else None,
             "calendar_required": bool(descriptor is not None and descriptor.calendar_ref),
             "execution_query": None,
+            "transaction_policy": _minute_transaction_policy(descriptor, spec, rec) if descriptor is not None else {},
+            "fee_mode": descriptor.fee_mode if descriptor is not None else "PER_FILL",
+            "fee_schedule_ref": descriptor.fee_schedule_ref if descriptor is not None else None,
+            "fee_schedule_version": descriptor.fee_schedule_version if descriptor is not None else None,
+            "fee_schedule_hash": descriptor.fee_schedule_hash if descriptor is not None else None,
+            "time_in_force": descriptor.time_in_force if descriptor is not None else "DAY",
+            "max_attempts": descriptor.max_attempts if descriptor is not None else None,
+            "expire_at": descriptor.expire_at if descriptor is not None else None,
+            "partial_fill_params": descriptor.partial_fill_params if descriptor is not None else None,
+            "market_rule_ref": descriptor.market_rule_ref if descriptor is not None else None,
+            "market_rule_version": descriptor.market_rule_version if descriptor is not None else None,
         })
         try:
             qbt = os.path.join(STATION, "quant_backtest")
@@ -5643,13 +5918,48 @@ def _bt2_start(rec):
             message = str(exc)
             code = "TIME_INVALID" if "TIME" in message or "time" in message or "window" in message else "INVALID_ARGUMENT"
             return {"ok": False, "error": message, "error_code": code}
+        # A calendar/provider callback may have replaced the batch after the first gate.
+        try:
+            _validate_minute_order_policy(descriptor, spec)
+        except (ValueError, TypeError) as exc:
+            code = _minute_error_code(exc)
+            return {"ok": False, "error": code, "error_code": code, "source_ref": source_ref,
+                    "source_availability": "source_unavailable", "source_error": code}
     now = datetime.datetime.now()
     jid = now.strftime("%Y%m%d-%H%M%S") + "-" + os.urandom(2).hex()
-    _bt2_write_state(jid, status="queued", params=params,
-                     submitted_at=now.strftime("%Y-%m-%d %H:%M:%S"))
+    reserved = False
+    if mode == "minute_store":
+        # Reserve the generated ID before writing any artifact: a prior done
+        # state must never be reused even if the new state commit fails.
+        try:
+            os.makedirs(_BT2_STATE_DIR, exist_ok=True)
+            if os.path.lexists(os.path.join(_minute_output_root(), f"minute_{jid}.json")):
+                return {"ok": False, "error": "JOB_ID_COLLISION", "error_code": "JOB_ID_COLLISION"}
+            descriptor_fd = os.open(_bt2_state_path(jid), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.close(descriptor_fd)
+            reserved = True
+        except FileExistsError:
+            return {"ok": False, "error": "JOB_ID_COLLISION", "error_code": "JOB_ID_COLLISION"}
+        except OSError:
+            return _minute_artifact_unavailable()
+    try:
+        _bt2_write_state(jid, status="queued", params=params,
+                         execution_mode=mode,
+                         transaction_policy=params.get("transaction_policy", {}),
+                         error_code=None, source_error=None,
+                         submitted_at=now.strftime("%Y-%m-%d %H:%M:%S"))
+    except Exception:
+        if reserved:
+            try:
+                os.unlink(_bt2_state_path(jid))
+            except FileNotFoundError:
+                pass
+        return _minute_artifact_unavailable()
     t = _threading.Thread(target=_bt2_worker, args=(jid, params), daemon=True)
     t.start()
-    return {"ok": True, "job": {"id": jid, "status": "queued", "params": params}}
+    return {"ok": True, "transaction_policy": params.get("transaction_policy", {}),
+            "job": {"id": jid, "status": "queued", "params": params,
+                    "transaction_policy": params.get("transaction_policy", {})}}
 
 
 def _bt2_worker(jid, params):
@@ -5658,6 +5968,11 @@ def _bt2_worker(jid, params):
         _bt2_write_state(jid, status="dead", error="已有回测任务在跑，请稍后再试（一期单并发）")
         return
     try:
+        if params.get("execution_mode") == "minute_store":
+            previous = _read_json(_bt2_state_path(jid))
+            if isinstance(previous, dict) and previous.get("status") == "done":
+                # Direct worker invocation must not overwrite a completed job.
+                return
         _bt2_write_state(jid, status="running", stage="初始化", pct=1, note="引擎载入")
 
         def progress(stage, pct, note):
@@ -5682,15 +5997,42 @@ def _bt2_worker(jid, params):
                 return
             spec = _MINUTE_SOURCE_REGISTRY.get(source_ref)
             if not isinstance(spec, dict):
-                ok, _ = _rehydrate_minute_source(source_ref)
+                ok, recovery_error = _rehydrate_minute_source(source_ref)
                 spec = _MINUTE_SOURCE_REGISTRY.get(source_ref) if ok else None
+                if not ok and recovery_error in {"POLICY_MISMATCH", "INVALID_TIF_CONFIG", "PARTIAL_FILL_UNSUPPORTED"}:
+                    _bt2_write_state(jid, status="dead", error=recovery_error, error_code=recovery_error,
+                                     source_ref=source_ref, source_availability="source_unavailable",
+                                     source_error=recovery_error, fills=[],
+                                     cash=float(params.get("initial_cash", 0.0) or 0.0), positions={}, inventory_lots=[])
+                    return
             if not isinstance(spec, dict):
                 _bt2_write_state(jid, status="dead", error="SOURCE_UNAVAILABLE", error_code="SOURCE_UNAVAILABLE", source_ref=source_ref, source_availability="source_unavailable", source_error="SOURCE_UNAVAILABLE")
+                return
+            try:
+                _validate_minute_order_policy(descriptor, spec)
+            except (ValueError, TypeError) as exc:
+                code = _minute_error_code(exc)
+                _bt2_write_state(jid, status="dead", error=code, error_code=code,
+                                 source_ref=source_ref, source_availability="source_unavailable",
+                                 source_error=code, transaction_policy=_minute_transaction_policy(descriptor, spec, worker_params),
+                                 fills=[], cash=float(params.get("initial_cash", 0.0) or 0.0),
+                                 positions={}, inventory_lots=[])
                 return
             worker_params["bar_store"] = spec["bar_store"]
             worker_params["order_intents"] = spec["order_intents"]
             worker_params["status_provider"] = spec["status_provider"]
             worker_params["limit_provider"] = spec["limit_provider"]
+            worker_params["fee_mode"] = descriptor.fee_mode
+            worker_params["fee_schedule_ref"] = descriptor.fee_schedule_ref
+            worker_params["fee_schedule_version"] = descriptor.fee_schedule_version
+            worker_params["fee_schedule_hash"] = descriptor.fee_schedule_hash
+            worker_params["time_in_force"] = descriptor.time_in_force
+            worker_params["max_attempts"] = descriptor.max_attempts
+            worker_params["expire_at"] = descriptor.expire_at
+            worker_params["partial_fill_params"] = descriptor.partial_fill_params
+            worker_params["fee_provider"] = spec.get("fee_provider")
+            worker_params["fee_calculator"] = spec.get("fee_calculator")
+            worker_params["fill_model"] = spec.get("fill_model")
             # 统一市场规则路径：注册了 market_rule_provider 的 source 强制走
             # 规则判定（market_rules_required=True），不静默回退旧双 provider 分支。
             rule_provider = spec.get("market_rule_provider")
@@ -5705,60 +6047,69 @@ def _bt2_worker(jid, params):
                     worker_params["calendar_ref"] = descriptor.calendar_ref
                     worker_params["calendar_version"] = descriptor.calendar_version
                     worker_params["calendar_required"] = True
-                    from execution_engine import ExecutionConfig
-                    worker_params["execution_config"] = ExecutionConfig(
-                        initial_cash=float(worker_params.get("initial_cash", 0.0) or 0.0),
-                        fee_bps=float(worker_params.get("fee_bps", 0.0) or 0.0),
-                        slippage_bps=float(worker_params.get("slippage_bps", 0.0) or 0.0),
-                        lot_size=int(worker_params.get("lot_size", 1) or 1),
-                        market=worker_params.get("market"),
-                        timeframe=worker_params.get("timeframe"),
-                        t_plus_one=worker_params.get("t_plus_one", False),
-                        policy_ref=worker_params.get("policy_ref"),
-                        calendar_ref=descriptor.calendar_ref,
-                        calendar_version=descriptor.calendar_version,
-                        calendar_required=True,
-                        market_rules_required=rules_required,
-                    )
                 except Exception as exc:
                     code = _calendar_error_code(exc)
                     _JOB_SPEC_REGISTRY.mark_unavailable(source_ref, code)
                     _bt2_write_state(jid, status="dead", error=code, error_code=code,
                                      source_ref=source_ref, source_availability="source_unavailable",
-                                     source_error=code, calendar_ref=descriptor.calendar_ref,
-                                     calendar_version=descriptor.calendar_version)
+                                     source_error=code, transaction_policy=_minute_transaction_policy(descriptor, spec, worker_params),
+                                     fills=[], cash=float(params.get("initial_cash", 0.0) or 0.0), positions={}, inventory_lots=[])
                     return
-            elif rules_required:
-                from execution_engine import ExecutionConfig
-                worker_params["execution_config"] = ExecutionConfig(
-                    initial_cash=float(worker_params.get("initial_cash", 0.0) or 0.0),
-                    fee_bps=float(worker_params.get("fee_bps", 0.0) or 0.0),
-                    slippage_bps=float(worker_params.get("slippage_bps", 0.0) or 0.0),
-                    lot_size=int(worker_params.get("lot_size", 1) or 1),
-                    market=worker_params.get("market"),
-                    timeframe=worker_params.get("timeframe"),
-                    t_plus_one=worker_params.get("t_plus_one", False),
-                    policy_ref=worker_params.get("policy_ref"),
-                    market_rules_required=True,
-                )
+            try:
+                worker_params["execution_config"] = _minute_execution_config(worker_params, descriptor, spec)
+            except Exception as exc:
+                code = _minute_error_code(exc)
+                _bt2_write_state(jid, status="dead", error=code, error_code=code,
+                                 source_ref=source_ref, source_availability="available",
+                                 source_error=code, transaction_policy=_minute_transaction_policy(descriptor, spec, worker_params),
+                                 fills=[], cash=float(params.get("initial_cash", 0.0) or 0.0), positions={}, inventory_lots=[])
+                return
+
+        policy = worker_params.get("transaction_policy")
+        if policy is None and params.get("execution_mode") == "minute_store":
+            policy = _minute_transaction_policy(descriptor, spec, worker_params)
+        if policy is not None:
+            worker_params["transaction_policy"] = policy
         res, err = eng.run_job(worker_params, jid, progress=progress)
         if err:
-            _bt2_write_state(jid, status="dead", error=err[:800], error_code="EXECUTION_ERROR", source_ref=params.get("source_ref"), source_availability="available")
+            text = str(err)
+            stable = _minute_error_code(err)
+            _bt2_write_state(jid, status="dead", error=stable, error_code=stable, source_error=stable,
+                             source_ref=params.get("source_ref"), source_availability="available",
+                             transaction_policy=policy or {}, fills=[], cash=float(params.get("initial_cash", 0.0) or 0.0),
+                             positions={}, inventory_lots=[])
         else:
             if params.get("execution_mode") == "minute_store":
-                artifact = res.get("artifact")
-                if not artifact or not os.path.isfile(artifact):
-                    artifact = os.path.join(eng.MINUTE_OUT_DIR, "minute_%s.json" % jid)
-                artifact = os.path.abspath(artifact)
-                _bt2_write_state(
-                    jid,
-                    status="done",
-                    pct=100,
-                    stage="完成",
-                    schema=res.get("schema", "minute-exec-v1"),
-                    metrics=res.get("metrics", {}),
-                    result_file=artifact,
-                )
+                try:
+                    artifact = _safe_minute_artifact(res.get("artifact"), jid, eng.MINUTE_OUT_DIR)
+                    if artifact is None:
+                        raise ValueError("unsafe minute artifact path")
+                    persisted, artifact_bytes, artifact_sha256 = _read_minute_artifact(artifact, jid)
+                except (AttributeError, OSError, UnicodeError, ValueError, TypeError):
+                    _bt2_write_state(jid, status="dead", error="ARTIFACT_UNAVAILABLE", error_code="ARTIFACT_UNAVAILABLE",
+                                     source_error="ARTIFACT_UNAVAILABLE", transaction_policy=policy or {}, fills=[],
+                                     cash=float(params.get("initial_cash", 0.0) or 0.0), positions={}, inventory_lots=[])
+                    return
+                try:
+                    _bt2_write_state(
+                        jid,
+                        status="done",
+                        pct=100,
+                        stage="完成",
+                        schema=persisted["schema"],
+                        metrics=persisted["metrics"],
+                        transaction_policy=policy or {},
+                        error_code=None,
+                        source_error=None,
+                        result_file=artifact,
+                        artifact_bytes=artifact_bytes,
+                        artifact_sha256=artifact_sha256,
+                    )
+                except Exception:
+                    # A failed done commit is not a successful job. The previous
+                    # running state remains complete if even this retry fails.
+                    _bt2_write_state(jid, status="dead", error="ARTIFACT_UNAVAILABLE",
+                                     error_code="ARTIFACT_UNAVAILABLE", source_error="ARTIFACT_UNAVAILABLE")
             else:
                 _bt2_write_state(
                     jid,
@@ -5770,7 +6121,18 @@ def _bt2_worker(jid, params):
                 )
     except Exception as _e:
         log_exc(_e)
-        _bt2_write_state(jid, status="dead", error=repr(_e)[:800])
+        code = _minute_error_code(_e)
+        source_ref = params.get("source_ref") if isinstance(params, dict) else None
+        descriptor = _JOB_SPEC_REGISTRY.get(source_ref) if source_ref else None
+        policy = _minute_transaction_policy(descriptor, None, params) if descriptor is not None else (params.get("transaction_policy", {}) if isinstance(params, dict) else {})
+        try:
+            initial_cash = float(params.get("initial_cash", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            initial_cash = 0.0
+        _bt2_write_state(jid, status="dead", error=code, error_code=code, source_error=code,
+                         source_ref=source_ref, source_availability="available",
+                         transaction_policy=policy, fills=[], cash=initial_cash,
+                         positions={}, inventory_lots=[])
     finally:
         _BT2_LOCK.release()
 
@@ -5809,15 +6171,73 @@ def _bt2_status():
                 descriptor = _JOB_SPEC_REGISTRY.get(source_ref) if source_ref else None
                 if descriptor:
                     st["source_availability"] = descriptor.availability
-                    st["source_error"] = descriptor.error
+                    st["source_error"] = st.get("source_error") or descriptor.error
                     st["source_descriptor"] = descriptor.as_dict()
                     st["calendar_ref"] = descriptor.calendar_ref
                     st["calendar_version"] = descriptor.calendar_version
+                    st["transaction_policy"] = st.get("transaction_policy") or _minute_transaction_policy(descriptor)
+                    if st.get("error_code") is None and st.get("source_error"):
+                        st["error_code"] = st["source_error"]
                 elif params.get("execution_mode") == "minute_store":
                     st["source_availability"] = "source_unavailable"
                     st["source_error"] = "SOURCE_UNAVAILABLE"
                 out.append(st)
     return {"ok": True, "total": len(out), "jobs": out}
+
+
+_MINUTE_ARTIFACT_MAX_BYTES = 16 * 1024 * 1024
+
+
+def _read_minute_artifact(path, jid, expected_bytes=None, expected_sha256=None):
+    """Read one bounded minute result, optionally checking write-time state evidence."""
+    if expected_bytes is not None:
+        if (type(expected_bytes) is not int or not 0 < expected_bytes <= _MINUTE_ARTIFACT_MAX_BYTES
+                or not isinstance(expected_sha256, str)
+                or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None):
+            raise ValueError("untrusted minute artifact evidence")
+    with open(path, "rb") as artifact_file:
+        artifact_bytes = artifact_file.read(_MINUTE_ARTIFACT_MAX_BYTES + 1)
+    if not artifact_bytes or len(artifact_bytes) > _MINUTE_ARTIFACT_MAX_BYTES:
+        raise ValueError("minute artifact size out of bounds")
+    digest = hashlib.sha256(artifact_bytes).hexdigest()
+    if expected_bytes is not None and (len(artifact_bytes) != expected_bytes
+                                       or digest != expected_sha256):
+        raise ValueError("minute artifact differs from write-time evidence")
+    payload = json.loads(artifact_bytes)
+    if not _valid_minute_payload(payload, jid):
+        raise ValueError("invalid minute artifact payload")
+    return payload, len(artifact_bytes), digest
+
+
+def _minute_artifact_unavailable():
+    """Return the stable public failure for an invalid minute artifact."""
+    return {"ok": False, "error": "ARTIFACT_UNAVAILABLE",
+            "error_code": "ARTIFACT_UNAVAILABLE",
+            "source_error": "ARTIFACT_UNAVAILABLE"}
+
+
+def _valid_minute_payload(payload, jid):
+    """Check the engine's persisted minute result contract before projection."""
+    if not isinstance(payload, dict):
+        return False
+    if payload.get("schema") != "minute-exec-v1" or payload.get("job_id") != jid:
+        return False
+    for key in ("fills", "audits", "orders"):
+        if not isinstance(payload.get(key), list):
+            return False
+    for key in ("positions", "metrics", "source_metadata", "query_metadata"):
+        if not isinstance(payload.get(key), dict):
+            return False
+    for key in ("cash", "equity"):
+        value = payload.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return False
+        try:
+            if not math.isfinite(value):
+                return False
+        except (OverflowError, ValueError):
+            return False
+    return True
 
 
 def _bt2_result(jid):
@@ -5827,18 +6247,39 @@ def _bt2_result(jid):
     state = _read_json(_bt2_state_path(jid))
     if not isinstance(state, dict) or not state:
         return {"ok": False, "error": "job not found"}
-    mode = state.get("params", {}).get("execution_mode", "daily_legacy")
-    source_ref = state.get("source_ref") or state.get("params", {}).get("source_ref")
+    raw_params = state.get("params", {})
+    if not isinstance(raw_params, dict) and state.get("status") == "done":
+        return _minute_artifact_unavailable()
+    params = raw_params if isinstance(raw_params, dict) else {}
+    mode = params.get("execution_mode", "daily_legacy")
+    if state.get("status") == "done":
+        # The top-level mode is written when a job is queued and survives later
+        # params corruption. Older minute jobs also carry a minute schema/path.
+        # Never route an identifiable minute artifact through the daily reader.
+        result_file = state.get("result_file")
+        minute_identity = (
+            state.get("execution_mode") == "minute_store"
+            or state.get("schema") == "minute-exec-v1"
+            or (isinstance(result_file, str)
+                and os.path.basename(result_file) == "minute_%s.json" % jid)
+        )
+        if ((minute_identity and mode != "minute_store")
+                or (mode == "minute_store" and state.get("execution_mode") == "daily_legacy")):
+            return _minute_artifact_unavailable()
+    source_ref = state.get("source_ref") or params.get("source_ref")
     descriptor = _JOB_SPEC_REGISTRY.get(source_ref) if source_ref else None
     projected = {
         "source_ref": source_ref,
         "source_availability": descriptor.availability if descriptor else state.get("source_availability"),
-        "source_error": descriptor.error if descriptor else state.get("source_error"),
+        "source_error": state.get("source_error") or (descriptor.error if descriptor else None),
         "calendar_ref": descriptor.calendar_ref if descriptor else state.get("calendar_ref"),
         "calendar_version": descriptor.calendar_version if descriptor else state.get("calendar_version"),
         "source_descriptor": descriptor.as_dict() if descriptor else None,
         "error_code": state.get("error_code"),
+        "transaction_policy": state.get("transaction_policy") or (_minute_transaction_policy(descriptor) if descriptor else {}),
     }
+    if projected["error_code"] is None and projected["source_error"]:
+        projected["error_code"] = projected["source_error"]
     if state.get("status") != "done":
         if projected["source_availability"] == "source_unavailable" or state.get("error_code") == "SOURCE_UNAVAILABLE":
             projected["ok"] = False
@@ -5846,28 +6287,50 @@ def _bt2_result(jid):
             projected["error_code"] = "SOURCE_UNAVAILABLE"
             return projected
         return {**projected, "ok": False, "error": state.get("error", "job not completed")}
-    if isinstance(state, dict) and state.get("result_file"):
+    has_result_file = bool(isinstance(state, dict) and state.get("result_file"))
+    if has_result_file:
         candidate = str(state.get("result_file"))
-        if os.path.isfile(candidate):
+        if mode == "minute_store":
+            fp = _safe_minute_artifact(candidate, jid, _minute_output_root()) or ""
+        elif os.path.isfile(candidate):
             fp = candidate
         else:
             fp = ""
     else:
         fp = ""
+    if mode == "minute_store" and has_result_file and not fp:
+        return _minute_artifact_unavailable()
     if not fp:
         if mode == "minute_store":
-            fp = os.path.join(STATION, "quant_backtest", "data", "minute_exec", "minute_%s.json" % jid)
+            fp = os.path.join(_minute_output_root(), "minute_%s.json" % jid)
         else:
             fp = os.path.join(_BT2_DIR, "bt2_%s.json" % jid)
     if not os.path.exists(fp):
+        if mode == "minute_store":
+            return _minute_artifact_unavailable()
         return {"ok": False, "error": "result not found"}
     if mode == "minute_store":
-        expected_name = "minute_%s.json" % jid
-        if os.path.basename(os.path.abspath(fp)) != expected_name:
-            return {"ok": False, "error": "invalid minute artifact path"}
-    with open(fp, encoding="utf-8") as f:
-        payload = json.load(f)
+        safe_fp = _safe_minute_artifact(fp, jid, _minute_output_root())
+        if safe_fp is None:
+            return _minute_artifact_unavailable()
+        # Older done states without write-time evidence are intentionally rejected.
+        if (type(state.get("artifact_bytes")) is not int
+                or not 0 < state["artifact_bytes"] <= _MINUTE_ARTIFACT_MAX_BYTES
+                or not isinstance(state.get("artifact_sha256"), str)
+                or re.fullmatch(r"[0-9a-f]{64}", state["artifact_sha256"]) is None):
+            return _minute_artifact_unavailable()
+        try:
+            payload, _, artifact_sha256 = _read_minute_artifact(
+                safe_fp, jid, state["artifact_bytes"], state["artifact_sha256"])
+        except (OSError, UnicodeError, ValueError):
+            return _minute_artifact_unavailable()
+    else:
+        with open(fp, encoding="utf-8") as f:
+            payload = json.load(f)
     payload["ok"] = True
+    if mode == "minute_store":
+        # Digest of bytes read, not an independently trusted release signature.
+        payload["artifact_sha256"] = artifact_sha256
     payload.update({key: value for key, value in projected.items() if value is not None})
     if isinstance(state, dict):
         params = state.get("params") if isinstance(state.get("params"), dict) else {}
