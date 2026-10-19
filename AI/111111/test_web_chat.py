@@ -3,8 +3,13 @@ from __future__ import annotations
 import importlib
 import io
 import json
+import sqlite3
+import tempfile
 import threading
 import unittest
+from contextlib import closing
+from datetime import datetime, timedelta
+from pathlib import Path
 from http.client import HTTPConnection
 from unittest.mock import patch
 
@@ -63,6 +68,81 @@ class WebChatTests(unittest.TestCase):
         data = response.read()
         connection.close()
         return response, data
+
+    def test_news_endpoint_order_and_read_only(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'news.db'
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('CREATE TABLE news(source TEXT, ts TEXT, title TEXT, content TEXT, created_at TEXT, hit INTEGER)')
+                db.executemany('INSERT INTO news VALUES(?,?,?,?,?,?)', [
+                    ('a', '2026-10-17 08:00', '旧', '摘要', '2026-10-18 10:00', 1),
+                    ('b', '2026-10-18 09:00', '<img src=x onerror=alert(1)>最新', '<b>文本</b> &amp; 内容', '2026-10-18 09:01', 0),
+                    ('c', '无效', '回退入库', '内容', '2026-10-18 08:00', 0),
+                ])
+                db.commit()
+            with patch.object(web_chat, 'NEWS_DB_PATH', path):
+                response, data = self.request('GET', '/api/news/latest')
+                self.assertEqual(response.status, 200)
+                result = json.loads(data)
+                self.assertEqual([row['source'] for row in result['items']], ['a', 'b', 'c'])
+                self.assertEqual(result['items'][1]['title'], '最新')
+                self.assertEqual(result['items'][1]['content'], '文本 & 内容')
+                self.assertEqual(result['latest_at'], '2026-10-18T10:00+08:00')
+                self.assertEqual(result['updated_at'], result['latest_at'])
+                with closing(sqlite3.connect(path)) as db:
+                    self.assertEqual(db.execute('SELECT COUNT(*) FROM news').fetchone()[0], 3)
+                self.assertFalse((Path(temp) / 'news.db-journal').exists())
+                self.assertFalse((Path(temp) / 'news.db-wal').exists())
+
+    def test_future_publication_does_not_override_stale_ingestion(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'news.db'
+            now = datetime.now(web_chat.CST)
+            stored = now - timedelta(hours=49)
+            future = now + timedelta(days=1)
+            recent_event = now - timedelta(hours=1)
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('CREATE TABLE news(source TEXT, ts TEXT, title TEXT, content TEXT, created_at TEXT)')
+                db.executemany('INSERT INTO news VALUES(?,?,?,?,?)', [
+                    ('announcement', future.isoformat(), '预告标题', '', stored.isoformat()),
+                    ('report', recent_event.isoformat(), '已发布标题', '', (stored - timedelta(hours=1)).isoformat()),
+                ])
+                db.commit()
+            result = web_chat.latest_news(path)
+            self.assertEqual(result['status'], 'stale')
+            self.assertEqual(result['latest_at'], stored.isoformat(timespec='minutes'))
+            self.assertEqual(result['updated_at'], result['latest_at'])
+            self.assertEqual([item['source'] for item in result['items']], ['announcement', 'report'])
+            self.assertEqual(result['items'][0]['ts'], future.isoformat())
+            self.assertTrue(result['items'][0]['future_ts'])
+            self.assertFalse(result['items'][1]['future_ts'])
+            self.assertIn('48 小时', result['message'])
+            self.assertIn('预告/时间待核验', result['message'])
+
+    def test_news_empty_missing_and_unreadable(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'news.db'
+            self.assertEqual(web_chat.latest_news(path)['status'], 'missing')
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('CREATE TABLE news(source TEXT, ts TEXT, title TEXT, content TEXT, created_at TEXT)')
+            self.assertEqual(web_chat.latest_news(path)['status'], 'empty')
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('DROP TABLE news')
+            self.assertEqual(web_chat.latest_news(path)['status'], 'unavailable')
+
+    def test_news_limit_and_staleness(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'news.db'
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('CREATE TABLE news(source TEXT, ts TEXT, title TEXT, content TEXT, created_at TEXT)')
+                db.executemany('INSERT INTO news VALUES(?,?,?,?,?)',
+                               [('source', f'2020-01-{day:02d} 00:00', str(day), '', '2020-02-01 00:00')
+                                for day in range(1, 31)])
+                db.commit()
+            result = web_chat.latest_news(path)
+            self.assertEqual(result['status'], 'stale')
+            self.assertEqual(len(result['items']), web_chat.NEWS_LIMIT)
+            self.assertEqual(result['items'][0]['title'], '30')
 
     def test_page(self):
         response, data = self.request('GET', '/')
@@ -138,6 +218,17 @@ class WebChatTests(unittest.TestCase):
 
     def test_bad(self):
         response, _data = self.request('POST', '/api/chat', {'message': ''})
+        self.assertEqual(response.status, 400)
+
+    def test_oversized_request_is_400(self):
+        connection = HTTPConnection('127.0.0.1', self.port)
+        connection.request('POST', '/api/chat', b'{}', {
+            'Content-Type': 'application/json',
+            'Content-Length': str(web_chat.MAX_REQUEST_BYTES + 1),
+        })
+        response = connection.getresponse()
+        response.read()
+        connection.close()
         self.assertEqual(response.status, 400)
 
     @patch.object(web_chat, 'RAG_SERVICE', FakeRagService())

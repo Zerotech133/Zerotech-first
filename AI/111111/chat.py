@@ -1,17 +1,44 @@
 """命令行多轮对话。"""
-import json, os, sys
+import json, os, sys, tempfile
 from ollama_client import OllamaClient, OllamaError
 from model_routing import DEFAULT_CHAT_MODEL, ModelRoutingError, select_model
 DEFAULT_MODEL = DEFAULT_CHAT_MODEL
 HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.json")
+MAX_HISTORY_MESSAGES = 40
+MAX_MESSAGE_CHARS = 12000
+VALID_ROLES = {"user", "assistant"}
 HELP = "/model <名称> 切换模型\n/clear 清空历史\n/history 查看条数\n/help 显示帮助\n/exit 退出"
+def _clean_history(history):
+    if not isinstance(history, list):
+        return []
+    cleaned = []
+    for item in history:
+        if not isinstance(item, dict) or item.get("role") not in VALID_ROLES:
+            continue
+        content = item.get("content")
+        if not isinstance(content, str) or not content:
+            continue
+        cleaned.append({"role": item["role"], "content": content[:MAX_MESSAGE_CHARS]})
+    return cleaned[-MAX_HISTORY_MESSAGES:]
 def load_history():
     try:
-        with open(HISTORY_FILE, encoding="utf-8") as f: data = json.load(f)
-        return data if isinstance(data, list) else []
-    except (OSError, json.JSONDecodeError): return []
+        with open(HISTORY_FILE, encoding="utf-8") as f:
+            return _clean_history(json.load(f))
+    except (OSError, json.JSONDecodeError):
+        return []
 def save_history(history):
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f: json.dump(history, f, ensure_ascii=False, indent=2)
+    parent = os.path.dirname(os.path.abspath(HISTORY_FILE))
+    os.makedirs(parent, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=os.path.basename(HISTORY_FILE) + ".", suffix=".tmp", dir=parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(_clean_history(history), f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, HISTORY_FILE)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 def main():
     client, model, history = OllamaClient(), DEFAULT_MODEL, load_history()
     try: models = client.list_models()

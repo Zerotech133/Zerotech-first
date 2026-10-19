@@ -1,6 +1,7 @@
 """RAG-Web 只读适配层。"""
 from __future__ import annotations
 
+import hashlib
 import os
 import threading
 from pathlib import Path
@@ -68,7 +69,11 @@ class RagWebService:
             if path.is_file() and path.suffix.lower() in {".txt", ".md", ".markdown"}
         )
         key = tuple(
-            (path.relative_to(self.docs_dir).as_posix(), path.stat().st_mtime_ns, path.stat().st_size)
+            (
+                path.relative_to(self.docs_dir).as_posix(),
+                path.stat().st_size,
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+            )
             for path in files
         )
         return files, key

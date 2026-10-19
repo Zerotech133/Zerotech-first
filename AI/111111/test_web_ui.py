@@ -129,6 +129,67 @@ class WebUiTests(unittest.TestCase):
         self.assertIn('MAX_CONTEXT_CHARS', page)
         self.assertIn('historyMessages()', page)
 
+    def test_reminders_use_a9_protocol_and_due_notifications(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        for control in ('reminderForm', 'reminderTitle', 'reminderDueAt',
+                        'reminderSeverity', 'reminderRepeat', 'reminderList', 'reminderStatus'):
+            self.assertIn(f'id="{control}"', page)
+        self.assertIn('if(repeat)payload.repeat_minutes=Number(repeat)', page)
+        self.assertIn('postJSON("/api/reminders",payload)', page)
+        self.assertIn('postJSON("/api/reminders/ack",{id:item.id})', page)
+        self.assertIn('apiJSON("/api/reminders")', page)
+        self.assertIn('setInterval(loadReminders,30000)', page)
+        self.assertIn('item.status==="due"', page)
+        self.assertIn('Notification.permission!=="granted"', page)
+        self.assertIn('notifiedReminders.has(key)', page)
+        self.assertIn('item.cycle||0', page)
+        self.assertIn('暂无提醒', page)
+        self.assertIn('加载提醒失败', page)
+
+    def test_agents_show_evidence_and_manual_read_only_check(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        for control in ('agentList', 'agentStatus', 'checkAgents'):
+            self.assertIn(f'id="{control}"', page)
+        self.assertIn('apiJSON("/api/agents")', page)
+        self.assertIn('postJSON("/api/agents/check",{})', page)
+        self.assertIn('result.created.length', page)
+        self.assertIn('item.last_activity', page)
+        self.assertIn('item.evidence', page)
+        self.assertIn('item.error_count', page)
+        self.assertIn('暂无 Agent 活动记录', page)
+        self.assertIn('巡检失败', page)
+        self.assertNotIn('/api/agents/assign', page)
+
+    def test_supervision_uses_text_content_and_responsive_tokens(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertIn('title.textContent=String(item.title', page)
+        self.assertIn('evidence.textContent=value?', page)
+        self.assertIn('.supervision-grid { grid-template-columns: minmax(0, 1fr); }', page)
+        self.assertIn('var(--color-err)', page)
+
+    def test_daily_brief_is_read_only_safe_and_covers_fact_sections(self):
+        page = web_ui.render_chat_page(("qwen3.5:9b",))
+        self.assertLess(page.index('id="briefHeading"'), page.index('class="supervision-grid"'))
+        for control in ('refreshBrief', 'briefStatus', 'briefContent'):
+            self.assertIn(f'id="{control}"', page)
+        self.assertIn('loadBrief();loadReminders()', page)
+        self.assertIn('refreshBrief.onclick=loadBrief', page)
+        self.assertIn('apiJSON("/api/brief/daily")', page)
+        self.assertIn('briefValue(value)', page)
+        self.assertIn('"未接入"', page)
+        for field in ('data.day', 'data.generated_at', 'metrics?.yesterday', 'metrics?.current',
+                      'focus_tasks', 'task.task_id', 'task.execution_status', 'output.exists_nonempty',
+                      'acceptance.automatic', 'acceptance.business', 'evidence.activity',
+                      'event.ts', 'shadow?.usable', 'agent_activity', 'quality.issues',
+                      'recommendations_pending_approval'):
+            self.assertIn(field, page)
+        self.assertIn('item.textContent=line', page)
+        self.assertIn('briefContent.textContent=""', page)
+        self.assertIn('加载简报失败', page)
+        self.assertIn('暂无记录', page)
+        self.assertNotIn('briefContent.innerHTML', page)
+        self.assertNotIn('postJSON("/api/brief', page)
+        self.assertNotIn('setInterval(loadBrief', page)
 
     def test_rag_source_cards_expose_details_and_citation_copy(self):
         page = web_ui.render_chat_page(("qwen3.5:9b",))
