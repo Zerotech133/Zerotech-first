@@ -41,6 +41,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import sqlite3
 import sys
 from collections import defaultdict
@@ -172,29 +173,70 @@ def week_key(date_str: str) -> str:
     return monday.strftime("%Y-%m-%d")
 
 
+# 周期切分锚点（周一）：双周块以 2018-01-01 为固定锚，保证可复现
+PERIOD_ANCHOR = datetime(2018, 1, 1)
+
+
+def period_key(date_str: str, freq: str) -> str:
+    """按 freq 返回截面键：daily=当日；weekly=ISO 周一；
+    biweekly=自 PERIOD_ANCHOR 起第 n 个 14 天块的周一；
+    monthly=当月 1 号。"""
+    if freq == "daily":
+        return date_str
+    d = datetime.strptime(date_str, "%Y-%m-%d")
+    if freq == "weekly":
+        return week_key(date_str)
+    if freq == "biweekly":
+        block = (d - PERIOD_ANCHOR).days // 14
+        return (PERIOD_ANCHOR + timedelta(days=14 * block)).strftime("%Y-%m-%d")
+    if freq == "monthly":
+        return d.strftime("%Y-%m-01")
+    raise ValueError("不支持的 freq=%s（仅 daily/weekly/biweekly/monthly）" % freq)
+
+
+def period_cutoff(key: str, freq: str) -> str:
+    """截面键 → 截面截止日（周五/块末周日/月末；周内逻辑与 week_key 相同）。
+
+    weekly=周一+6；biweekly=块起点+13；monthly=当月最后一天。
+    """
+    d = datetime.strptime(key, "%Y-%m-%d")
+    if freq == "weekly":
+        days = 6
+    elif freq == "biweekly":
+        days = 13
+    elif freq == "monthly":
+        nxt = (d.replace(day=28) + timedelta(days=4)).replace(day=1)
+        d = nxt - timedelta(days=1)
+        days = 0
+    else:
+        raise ValueError("不支持的 freq=%s" % freq)
+    return (d + timedelta(days=days)).strftime("%Y-%m-%d")
+
+
 def build_sections(posts: list, daily_by_sym: dict,
                    freq: str = "weekly", diagnostics: dict | None = None,
                    valid_week_pairs: set | None = None) -> list:
     """构造截面：[{key, obs:[{sym, senti, mention, ret}]}]。
 
-    freq='daily' 按 POST 日对齐后续首个交易日；'weekly' 按 ISO 周合并，
-    同周同股情绪取日均、热度取帖数合计，收益限下周该股首交易日。
+    freq='daily' 按 POST 日对齐后续首个交易日；'weekly'/'biweekly'/
+    'monthly' 按 period_key 合并，同截面同股情绪取日均、热度取帖数
+    合计，收益限截面截止日后一周内该股首交易日。
     仅保留 ret 可得的 obs；截面 obs<1 丢弃。可选 diagnostics 记录拒绝原因。
     """
     factors = daily_factors(posts)
     by_key = defaultdict(list)
     for (d, sym), f in factors.items():
-        k = d if freq == "daily" else week_key(d)
+        k = d if freq == "daily" else period_key(d, freq)
         by_key[k].append({"sym": sym, "date": d, **f})
     sections = []
     for k in sorted(by_key):
         obs = by_key[k]
-        if freq == "weekly":
+        if freq != "daily":
             merged = defaultdict(list)
             for o in obs:
                 merged[o["sym"]].append(o)
             obs = []
-            cutoff_date = datetime.strptime(k, "%Y-%m-%d") + timedelta(days=6)
+            cutoff_date = datetime.strptime(period_cutoff(k, freq), "%Y-%m-%d")
             cutoff = cutoff_date.strftime("%Y-%m-%d")
             end_date = (cutoff_date + timedelta(days=7)).strftime("%Y-%m-%d")
             for sym, lst in sorted(merged.items()):
@@ -423,8 +465,11 @@ def run_analysis(posts: list, daily_by_sym: dict,
     out = {"freq": freq, "min_obs_per_section": min_obs,
            "forward_return": ("ISO周周日后下一周首个该股交易日 open→close；"
                               "非整周收益" if freq == "weekly" else
+                              "截面截止日后一周内首个该股交易日 open→close；"
+                              "非整期收益" if freq != "daily" else
                               "帖日后首个该股交易日 open→close"),
            "weekly_max_delay_days": 7 if freq == "weekly" else None,
+           "period_max_delay_days": 7 if freq != "daily" else None,
            "versions": {}}
     for v in versions:
         vp = filter_version(posts, v)
@@ -443,13 +488,86 @@ def run_analysis(posts: list, daily_by_sym: dict,
     return out
 
 
+def _audit_daily_cache(daily: dict, symbols: list) -> tuple[dict, dict]:
+    """验证候选股缓存日线；任一坏行隔离整只股票，避免收益静默取错行。"""
+    counts = {name: 0 for name in ("invalid_daily_rows", "invalid_row",
+                                   "invalid_trade_date", "invalid_open",
+                                   "invalid_close", "duplicate_trade_date")}
+    details: list[dict] = []
+    affected: set[str] = set()
+    safe_daily: dict = {}
+    for sym in symbols:
+        if sym not in daily:
+            continue
+        rows = daily[sym]
+        if not isinstance(rows, list):
+            counts["invalid_daily_rows"] += 1
+            counts["invalid_row"] += 1
+            details.append({"symbol": sym, "reason": "invalid_row"})
+            affected.add(sym)
+            continue
+        seen_dates: set[str] = set()
+        for index, row in enumerate(rows):
+            if not isinstance(row, dict):
+                reasons = ["invalid_row"]
+            else:
+                reasons = []
+                date = row.get("trade_date")
+                if not isinstance(date, str) or re.fullmatch(r"[0-9]{8}", date) is None:
+                    reasons.append("invalid_trade_date")
+                else:
+                    try:
+                        datetime.strptime(date, "%Y%m%d")
+                    except ValueError:
+                        reasons.append("invalid_trade_date")
+                    if date in seen_dates:
+                        counts["duplicate_trade_date"] += 1
+                        details.append({"symbol": sym, "reason": "duplicate_trade_date",
+                                        "row_index": index, "trade_date": date})
+                        affected.add(sym)
+                    seen_dates.add(date)
+                for field in ("open", "close"):
+                    price = row.get(field)
+                    if isinstance(price, bool) or not isinstance(price, (int, float)):
+                        reasons.append("invalid_" + field)
+                        continue
+                    try:
+                        valid_price = math.isfinite(price) and price > 0
+                    except (OverflowError, ValueError):
+                        valid_price = False
+                    if not valid_price:
+                        reasons.append("invalid_" + field)
+                if "invalid_open" not in reasons and "invalid_close" not in reasons:
+                    try:
+                        finite_return = math.isfinite(row["close"] / row["open"] - 1.0)
+                    except (OverflowError, ZeroDivisionError):
+                        finite_return = False
+                    if not finite_return:
+                        reasons.append("invalid_close")
+            if reasons:
+                counts["invalid_daily_rows"] += 1
+                affected.add(sym)
+                for reason in reasons:
+                    counts[reason] += 1
+                    details.append({"symbol": sym, "reason": reason,
+                                    "row_index": index})
+        if sym not in affected:
+            safe_daily[sym] = rows
+    return safe_daily, {"counts": counts, "details": details,
+                        "affected_symbols": sorted(affected)}
+
+
 def offline_audit(posts: list, cache: dict, db_path: str,
                   cache_path: str) -> dict:
     """只用已载入的真库帖子和本地缓存，缺口显式化，不计算有效性结论。"""
     daily = cache["daily"]
     symbols = sorted({sym for post in posts for sym in post["stocks"]})
+    safe_daily, cache_quality = _audit_daily_cache(daily, symbols)
+    invalid_symbols = set(cache_quality["affected_symbols"])
     gaps = {name: [] for name in ("missing_symbol", "cache_start_after_cutoff",
                                   "late_with_prior_rows", "no_next_week_row")}
+    if invalid_symbols:
+        gaps["invalid_cache_rows"] = []
     matched = defaultdict(int)
     valid_week_pairs = defaultdict(set)
     pairs = {(p["version"], week_key(p["date"]), sym)
@@ -458,8 +576,11 @@ def offline_audit(posts: list, cache: dict, db_path: str,
         cutoff = datetime.strptime(week, "%Y-%m-%d") + timedelta(days=6)
         cutoff_key = cutoff.strftime("%Y%m%d")
         last_key = (cutoff + timedelta(days=7)).strftime("%Y%m%d")
-        rows = daily.get(sym)
+        rows = safe_daily.get(sym)
         record = {"version": version, "week": week, "symbol": sym}
+        if sym in invalid_symbols:
+            gaps["invalid_cache_rows"].append(record)
+            continue
         if not rows:
             gaps["missing_symbol"].append(record)
             continue
@@ -481,12 +602,15 @@ def offline_audit(posts: list, cache: dict, db_path: str,
         else:
             matched[version] += 1
             valid_week_pairs[version].add((week, sym))
-    result = run_analysis(posts, daily, freq="weekly", min_obs=3,
+    result = run_analysis(posts, safe_daily, freq="weekly", min_obs=3,
                           valid_week_pairs=valid_week_pairs)
     gap_counts = {name: len(records) for name, records in gaps.items()}
-    result["audit_status"] = "incomplete_cache" if any(gap_counts.values()) else "complete_cache"
+    result["cache_quality"] = cache_quality
+    result["audit_status"] = ("incomplete_cache" if any(gap_counts.values())
+                              or invalid_symbols else "complete_cache")
     result["audit_decision"] = "INCONCLUSIVE"
-    result["coverage"] = "partial" if any(gap_counts.values()) else "complete"
+    result["coverage"] = ("partial" if any(gap_counts.values()) or invalid_symbols
+                          else "complete")
     result["effectiveness_conclusion"] = None
     result["eligible_for_effectiveness_conclusion"] = False
     for stats in result["versions"].values():
@@ -507,7 +631,9 @@ def offline_audit(posts: list, cache: dict, db_path: str,
     result["risk_notes"] = ["离线仅保留覆盖审计与漏斗，不输出因子数值或有效性结论",
                             "行情缓存左截断独立于停牌，缺原始早期日线视为不完整",
                             "2024年及以后历史 norm_tickers NULL 是独立归一化存量缺口，后续写入修复不代表已回填",
-                            "created_at 时区语义未核准；行情缺行无法仅凭缓存判停牌"]
+                            "created_at 时区语义未核准；行情缺行无法仅凭缓存判停牌",
+                            "日线缓存以公历日期校验格式，不代表 PIT 交易日历已经核准；朴素日期对齐仍有风险",
+                            "无效或重复日线按整只标的隔离，不纳入缓存匹配或收益诊断"]
     result["source"] = {"database": os.path.abspath(db_path),
                         "cache": os.path.abspath(cache_path),
                         "cache_saved_at": cache.get("_meta", {}).get("saved_at"),
@@ -520,6 +646,7 @@ def offline_audit(posts: list, cache: dict, db_path: str,
         "valid_ic_sections": "兼容字段；INCONCLUSIVE，仅当前缓存子集可计算截面数量",
         "cache_subset_computable_sections": "当前缓存可计算的截面数量，仅覆盖诊断，不代表因子有效性",
         "matched_week_symbol_pairs": "有缓存前史且次周收益可用的去重周股对，不等于完整股票池",
+        "cached_candidate_symbols": "仅候选股票键出现在缓存映射中的数量，不代表行数据质量合格或前向收益可用",
         "normalization_backlog": "2024年及以后旧标注归一化NULL未回填，与行情缓存缺口独立"}
     result["generated_at"] = datetime.now().astimezone().isoformat()
     result["funnel"] = {"classified_posts": len(posts),
@@ -546,7 +673,7 @@ def offline_audit(posts: list, cache: dict, db_path: str,
                             "candidate_week_symbol_pairs": len(pairs)}
     result["cache_symbol_ranges"] = {
         sym: {"first": min(dates), "last": max(dates)}
-        for sym in symbols if (dates := [r["trade_date"] for r in daily.get(sym, [])
+        for sym in symbols if (dates := [r["trade_date"] for r in safe_daily.get(sym, [])
                                       if r.get("trade_date")])}
     for v, stats in result["versions"].items():
         if "senti" in stats:
@@ -630,11 +757,66 @@ def main():
     return result
 
 
+def t3_retest():
+    """T3 追平复测（只读）：现库 + 现日线缓存，绝不联网重拉、不覆盖 v1 结果。
+
+    对 weekly（追平后基线）/biweekly/monthly 三种粒度各跑同管道同口径，
+    输出 data/xueqiu/factor_v1_result_t3.json（_t3 后缀，v1 结果不动）。
+    """
+    posts = load_posts()
+    if not os.path.exists(CACHE_PATH):
+        print("[t3] 缓存缺失 %s，拒绝联网重拉，退出" % CACHE_PATH)
+        return None
+    cache = json.load(open(CACHE_PATH, encoding="utf-8"))
+    daily = cache.get("daily") or {}
+    if not daily:
+        print("[t3] 缓存无 daily 映射，退出")
+        return None
+    cache_first = min(min(r["trade_date"] for r in rows if r.get("trade_date"))
+                      for rows in daily.values() if rows)
+    cache_last = max(max(r["trade_date"] for r in rows if r.get("trade_date"))
+                     for rows in daily.values() if rows)
+    syms = sorted({s for p in posts for s in p["stocks"]})
+    result = {"retest": "T3追平复测（追平样本后同管道同缓存同口径）",
+              "min_obs_per_section": 3,
+              "cache": {"symbols": len(daily), "first": cache_first,
+                        "last": cache_last,
+                        "note": "沿用 T7 v1 快照缓存，与 v1 完全同口径可比"},
+              "generated_at": datetime.now().astimezone().isoformat(),
+              "freqs": {}}
+    for freq in ("weekly", "biweekly", "monthly"):
+        r = run_analysis(posts, daily, freq=freq, min_obs=3)
+        result["freqs"][freq] = r
+        mv = r.get("main_version")
+        st = r["versions"].get(mv, {}) if mv else {}
+        if st:
+            print("[t3] %s: sections=%d obs=%d senti_n=%s mention_n=%s" % (
+                freq, st["n_sections"], st["n_obs"],
+                st["senti"]["ic"]["n"], st["mention"]["ic"]["n"]))
+    result["coverage"] = {
+        "total_classified_posts": len(posts),
+        "a_stock_posts_v13": sum(1 for p in posts
+                                 if p["version"] == "v1.3" and p["stocks"]),
+        "a_stock_universe": len(syms),
+        "window": "%s ~ %s" % (min(p["date"] for p in posts if p["stocks"]),
+                               max(p["date"] for p in posts if p["stocks"])),
+    }
+    out_json = os.path.join(ROOT, "data", "xueqiu", "factor_v1_result_t3.json")
+    json.dump(result, open(out_json, "w", encoding="utf-8"),
+              ensure_ascii=False, indent=1)
+    print("[t3] written", out_json)
+    return result
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="T7 舆情因子统计")
     parser.add_argument("--offline", action="store_true", help="只读数据库与已存在的日线缓存")
+    parser.add_argument("--t3-retest", action="store_true",
+                        help="T3 追平复测：weekly/biweekly/monthly 三粒度，只读现库现缓存")
     args = parser.parse_args()
-    if args.offline:
+    if args.t3_retest:
+        t3_retest()
+    elif args.offline:
         print("[factor] offline audit written", offline_main())
     else:
         main()
