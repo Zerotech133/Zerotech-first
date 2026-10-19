@@ -173,6 +173,91 @@ class TestKlineDedup(_TmpEnv):
         self.assertFalse(os.path.exists(os.path.join(
             X.OUT_DIR, "xq_kline_d", "600519.SH.parquet")))
 
+    def test_empty_snowball_keeps_old_file_and_falls_back(self):
+        """雪球空行不得把旧片伪计成功；替代源失败时旧片原样保留。"""
+        os.environ["XUEQIUTOKEN"] = "offline-test-token"
+        path = os.path.join(X.OUT_DIR, "xq_kline_d", "600519.SH.parquet")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        old = pd.DataFrame([{"symbol": "SH600519", "ts_code": "600519.SH",
+                             "timestamp": "2026-10-15 00:00:00", "close": 10.0}])
+        old.to_parquet(path)
+        with open(path, "rb") as stored:
+            unchanged = stored.read()
+        fake = _fake_ball({"kline": lambda *a, **k: {
+            "error_code": 0, "data": {"column": ["timestamp"], "item": []}}})
+        mf = X.XqManifest(X.MANIFEST)
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=({}, "", ["offline fallback"])) \
+                as fetch, \
+                mock.patch.object(S, "_code_path") as code_path, \
+                mock.patch.object(S, "_merge_kline") as merge, \
+                mock.patch.object(X, "atomic_parquet") as write:
+            n = S.sync_kline(["SH600519"], mf=mf)
+        self.assertEqual(n, 0)
+        ent = mf.get("xq_kline_d")
+        self.assertEqual(ent["status"], "failed")
+        self.assertFalse(ent["done"])
+        self.assertIn("codes empty", ent["note"])
+        self.assertIn("offline fallback", ent["note"])
+        fetch.assert_called_once_with(["SH600519"], days=284)
+        code_path.assert_not_called()
+        merge.assert_not_called()
+        write.assert_not_called()
+        with open(path, "rb") as stored:
+            self.assertEqual(stored.read(), unchanged)
+
+    def test_empty_snowball_then_valid_fallback_merges_old_file(self):
+        """雪球空返回不重写旧片，替代源有新行才合并并发布。"""
+        os.environ["XUEQIUTOKEN"] = "offline-test-token"
+        path = os.path.join(X.OUT_DIR, "xq_kline_d", "600519.SH.parquet")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        old = {"symbol": "SH600519", "ts_code": "600519.SH",
+               "timestamp": "2026-10-15 00:00:00", "close": 10.0}
+        pd.DataFrame([old]).to_parquet(path)
+        new = {"symbol": "SH600519", "ts_code": "600519.SH",
+               "timestamp": "2026-10-16 00:00:00", "close": 11.0}
+        fake = _fake_ball({"kline": lambda *a, **k: {
+            "error_code": 0, "data": {"column": ["timestamp"], "item": []}}})
+        mf = X.XqManifest(X.MANIFEST)
+        real_write = X.atomic_parquet
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=({"SH600519": [new]},
+                                         "tushare_qfq×1", [])) as fetch, \
+                mock.patch.object(X, "atomic_parquet",
+                                  wraps=real_write) as write:
+            n = S.sync_kline(["SH600519"], mf=mf)
+        self.assertEqual(n, 2)
+        ent = mf.get("xq_kline_d")
+        self.assertTrue(ent["done"])
+        self.assertEqual(ent["status"], "partial")
+        self.assertIn("替代源兜底", ent["note"])
+        self.assertIn("codes empty", ent["note"])
+        fetch.assert_called_once_with(["SH600519"], days=284)
+        write.assert_called_once()
+        self.assertEqual(pd.read_parquet(path).to_dict("records"), [old, new])
+
+    def test_empty_snowball_without_token_skips_fallback(self):
+        """缺 token 时依旧 skip_no_token，旧片不读写且不调用替代源。"""
+        path = os.path.join(X.OUT_DIR, "xq_kline_d", "600519.SH.parquet")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        old = pd.DataFrame([{"symbol": "SH600519", "ts_code": "600519.SH",
+                             "timestamp": "2026-10-15 00:00:00", "close": 10.0}])
+        old.to_parquet(path)
+        with open(path, "rb") as stored:
+            unchanged = stored.read()
+        with mock.patch("xq_quote_router.fetch_daily") as fetch, \
+                mock.patch.object(X, "atomic_parquet") as write:
+            mf = X.XqManifest(X.MANIFEST)
+            n = S.sync_kline(["SH600519"], mf=mf)
+        self.assertEqual(n, 0)
+        self.assertEqual(mf.get("xq_kline_d")["status"], "skip_no_token")
+        fetch.assert_not_called()
+        write.assert_not_called()
+        with open(path, "rb") as stored:
+            self.assertEqual(stored.read(), unchanged)
+
     def test_kline_count_positive(self):
         """BUG-1 修复自证：ball.kline 收到 count=284（正数）。
 

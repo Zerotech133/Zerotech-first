@@ -330,13 +330,17 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
             # （"count=-{}"），count 传正数 284 才拼出 count=-284
             j = ball.kline(sym, period="day", count=284)
             rows = _norm_kline(j, sym)
+            if not rows:
+                # 旧片存在也不能让本轮空回包伪装成功或触发重写。
+                empty_codes.append(sym)
+                print("  kline %s 空返回，不落片" % sym)
+                continue
             path = _code_path("xq_kline_d", ts_code)
             old = (pd.read_parquet(path) if os.path.exists(path)
                    else pd.DataFrame())
             merged = _merge_kline(old, rows)
             if merged.empty:
-                # BUG-2 修复（QA Round-1）：无旧片且无新行 → 不落空片
-                # （0 行空壳会造成伪成功+新鲜度幻觉）
+                # 非空新行却合并为空：仍不可写空片或误报成功。
                 empty_codes.append(sym)
                 print("  kline %s 空返回，不落片" % sym)
                 continue
