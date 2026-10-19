@@ -102,6 +102,34 @@ def _competitor_note() -> str:
         return ""
 
 
+def _glm_probe(timeout_s: int = 30) -> tuple[bool, str]:
+    """GLM 主链可达性探测（K-STOCK-20261019-GUARDDECOUPLE）。
+    判定口径与 llm.py LLMClient 主链一致：GLM_API_KEY/ZHIPU_API_KEY 在位
+    （llm.py 同名逻辑）+ coding 端点一次 max_tokens=8 最小 chat 往返；
+    KSTOCK_GLM_BASE/KSTOCK_GLM_MODEL 覆盖与 llm.py 默认值对齐。
+    返回 (可达, 说明)，不抛异常——探测失败折算为 (False, 原因)。"""
+    key = (os.environ.get("GLM_API_KEY") or os.environ.get("ZHIPU_API_KEY") or "").strip()
+    if not key:
+        return False, "GLM_API_KEY 未配置（与 llm.py 主链判定一致）"
+    try:
+        import urllib.request
+        op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        base = os.environ.get(
+            "KSTOCK_GLM_BASE", "https://open.bigmodel.cn/api/coding/paas/v4").rstrip("/")
+        model = os.environ.get("KSTOCK_GLM_MODEL", "glm-5.3-flash")
+        body = json.dumps({"model": model, "stream": False, "max_tokens": 8,
+                           "messages": [{"role": "user", "content": "回复两个字：正常"}]}).encode("utf-8")
+        req = urllib.request.Request(
+            base + "/chat/completions", data=body,
+            headers={"Content-Type": "application/json",
+                     "Authorization": "Bearer " + key}, method="POST")
+        d = json.loads(op.open(req, timeout=timeout_s).read())
+        _ = d["choices"][0]["message"]["content"]
+        return True, f"{model} ok"
+    except Exception as e:
+        return False, str(e)[:200]
+
+
 def load_guard(threshold_s: float = 6.0, retries: int = 2, cooldown_s: float = 180.0) -> tuple[float, float]:
     """两段式负载守卫（2026-10-08 修正）：
     第 1 探针 = 冷启动预热（Ollama keep_alive 默认 5m 过期即卸载模型，重载 70s+，不计判定）；
@@ -180,34 +208,73 @@ def _run_targets(summary: dict) -> None:
         ap.error("需要 stock / --batch / --watchlist 之一")
 
     if not args.mock and not args.no_guard:
+        # K-STOCK-20261019-GUARDDECOUPLE：守卫与主链解耦。主链为 GLM 官方 API
+        # （k_stock/kstock/llm.py），Ollama 仅是 fallback——默认路径下 Ollama 侧
+        # 信号（不可达/热态超阈）降级为 WARN 放行，仅 GLM 主链不可达才中止；
+        # 显式 KSTOCK_FORCE_OLLAMA=1 恢复硬守卫（Ollama 不可达/超阈即 exit 3），
+        # 用于未来主链切回 Ollama 的场景。
+        force_ollama = os.environ.get("KSTOCK_FORCE_OLLAMA", "") == "1"
         try:
             t_cold, t_warm = load_guard()
             print(f"[guard] 冷启动 {t_cold:.1f}s（预热，不计判定）| 热态推理 {t_warm:.1f}s"
                   f"（含冷却重探，最多 2 次×180s）", flush=True)
             if t_warm > 6.0:
                 culprit = _competitor_note()
-                print(f"[guard] 热态超 6s（含重试）——系统负载挤压推理"
-                      f"（标定：2s 全绿/8.8s 半崩/10.8s 仅 1 节点存活），中止。{culprit}"
-                      f"建议换时段（清晨 07:05 自动化窗口）或关闭竞争推理服务后重试。", flush=True)
+                if force_ollama:
+                    print(f"[guard] 热态超 6s（含重试）——系统负载挤压推理"
+                          f"（标定：2s 全绿/8.8s 半崩/10.8s 仅 1 节点存活），中止。{culprit}"
+                          f"建议换时段（清晨 07:05 自动化窗口）或关闭竞争推理服务后重试。", flush=True)
+                    _append_guard_log({
+                        "ts": datetime.now().isoformat(timespec="seconds"),
+                        "phase": "probe_hot", "latency_s": round(t_warm, 2),
+                        "t_cold_s": round(t_cold, 2), "threshold_s": 6.0,
+                        "reason": "热态超6s（含冷却重试）中止", "culprit": culprit,
+                        "ollama_alive": True, "watchlist_size": len(targets),
+                    })
+                    summary.update({"stage": "guard", "phase": "probe_hot"})
+                    sys.exit(3)
+                print(f"[guard][WARN] Ollama 热态超 6s（含重试）。{culprit}"
+                      f"主链为 GLM——降级放行，不中止"
+                      f"（KSTOCK_FORCE_OLLAMA=1 可恢复硬守卫）。", flush=True)
                 _append_guard_log({
                     "ts": datetime.now().isoformat(timespec="seconds"),
-                    "phase": "probe_hot", "latency_s": round(t_warm, 2),
+                    "phase": "probe_hot_degraded", "latency_s": round(t_warm, 2),
                     "t_cold_s": round(t_cold, 2), "threshold_s": 6.0,
-                    "reason": "热态超6s（含冷却重试）中止", "culprit": culprit,
+                    "reason": "ollama_hot_over_threshold_degraded", "culprit": culprit,
                     "ollama_alive": True, "watchlist_size": len(targets),
                 })
-                summary.update({"stage": "guard", "phase": "probe_hot"})
-                sys.exit(3)
         except Exception as e:
-            print(f"[guard] Ollama 不可达: {e}", flush=True)
+            if force_ollama:
+                print(f"[guard] Ollama 不可达: {e}", flush=True)
+                _append_guard_log({
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                    "phase": "probe_unreachable", "latency_s": None,
+                    "reason": f"Ollama 不可达: {e}", "ollama_alive": False,
+                    "watchlist_size": len(targets),
+                })
+                summary.update({"stage": "guard", "phase": "probe_unreachable"})
+                sys.exit(3)
+            # 默认路径降级：Ollama 缺席不再中止整批，先验 GLM 主链再放行
+            print(f"[guard][WARN] Ollama 不可达（{e}）——主链为 GLM，验证主链后放行…", flush=True)
+            glm_ok, glm_note = _glm_probe()
             _append_guard_log({
                 "ts": datetime.now().isoformat(timespec="seconds"),
-                "phase": "probe_unreachable", "latency_s": None,
-                "reason": f"Ollama 不可达: {e}", "ollama_alive": False,
+                "phase": "probe_unreachable_degraded", "latency_s": None,
+                "reason": "ollama_unreachable_degraded", "detail": str(e)[:200],
+                "ollama_alive": False, "glm_ok": glm_ok, "glm_note": glm_note,
                 "watchlist_size": len(targets),
             })
-            summary.update({"stage": "guard", "phase": "probe_unreachable"})
-            sys.exit(3)
+            if not glm_ok:
+                print(f"[guard] GLM 主链亦不可达（{glm_note}）——中止整批"
+                      f"（S1 宁缺毋滥，防全链 LLMUnavailable 级联）。", flush=True)
+                _append_guard_log({
+                    "ts": datetime.now().isoformat(timespec="seconds"),
+                    "phase": "glm_unreachable", "latency_s": None,
+                    "reason": f"GLM 主链不可达: {glm_note}", "watchlist_size": len(targets),
+                })
+                summary.update({"stage": "guard", "phase": "glm_unreachable"})
+                sys.exit(3)
+            print(f"[guard] GLM 主链可达（{glm_note}）——放行，继续 GLM 主链。", flush=True)
 
     OUT_DIR.mkdir(exist_ok=True)
     results = []
