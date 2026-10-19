@@ -24,6 +24,7 @@ import argparse
 import glob
 import json
 import os
+import socket
 import sqlite3
 import time
 
@@ -39,6 +40,9 @@ MANIFEST = os.path.join(OUT, "_manifest.json")
 PAGE = 5000                      # API 单次上限
 FLUSH_PAGES = 40                 # 每 40 页（20 万行）落一个 parquet 分片
 RETRY = 3                        # 单页失败重试
+RETRY_DELAYS = (2, 8)            # 重试间隔秒（T-I4：2s/8s 退避，覆盖 DNS
+                                 # 抖动窗口——10-17 实证 1.5s/3s 太短，
+                                 # rookie DNS 故障窗口内 3 次重试全灭）
 SLEEP = 0.15                     # 请求间隔（保护远端）
 SQLITE_TABLES = {"stock_notice", "stock_news", "stock_report"}
 # ts_rt_min 4752 万行单独开关，默认跳过
@@ -46,8 +50,22 @@ SKIP_DEFAULT = {"ts_rt_min", "tdx_sector_min"}  # K53: ts_moneyflow 移出（don
 
 SESS = requests.Session()
 
+DNS_HOST = "rookie.xtcloud-tech.com"   # 10-17 实证该域名 DNS 间歇故障
+
+
+def _dns_probe():
+    """显式 getaddrinfo 复核（T-I4）：把'本机解析失败'与'远端不可达'
+    分开留痕——错误码随页级错误进 err.log，才能判断该钉 hosts 还是
+    该等远端。返回 None=解析已恢复，否则 ERR_DNS_RESOLVE 串。"""
+    try:
+        socket.getaddrinfo(DNS_HOST, None)
+        return None
+    except socket.gaierror as e:
+        return "ERR_DNS_RESOLVE %s errno=%s %s" % (DNS_HOST, e.errno, e)
+
 
 def _get(path, params=None, timeout=60):
+    err = None
     for i in range(RETRY):
         try:
             r = SESS.get(BASE + path, params=params or {}, timeout=timeout)
@@ -58,10 +76,20 @@ def _get(path, params=None, timeout=60):
             # "Expecting value" 无法区分 502/超时页/空响应）。
             err = "HTTP %s body=%r" % (r.status_code, r.content[:120])
         except requests.RequestException as e:
-            err = "%s: %s" % (type(e).__name__, str(e)[:150])
+            msg = "%s: %s" % (type(e).__name__, str(e)[:150])
+            # T-I4：DNS 类失败显式复核留痕（10-17 NameResolutionError
+            # 全表连败，日志只见异常名，不知本机解析当时是否恢复）。
+            ename = type(e).__name__
+            if ("NameResolution" in ename or "NameResolution" in str(e)
+                    or "getaddrinfo failed" in str(e)):
+                probe = _dns_probe()
+                msg = "ERR_DNS %s | probe=%s" % (
+                    msg, probe or "resolve-ok-now(瞬时抖动)")
+            err = msg
         except ValueError as e:
             err = "non-JSON response: %s" % str(e)[:80]
-        time.sleep(1.5 * (i + 1))
+        if i < RETRY - 1:
+            time.sleep(RETRY_DELAYS[min(i, len(RETRY_DELAYS) - 1)])
     raise RuntimeError("GET %s failed: %s" % (path, err))
 
 
@@ -340,13 +368,41 @@ CORE_LOCK = os.path.join(os.environ.get("TEMP", r"C:\Temp"),
 _CORE_LOCK_MAX_AGE_S = 2 * 3600      # 2h 视为陈锁（任务上限 2h）
 
 
+def _pid_alive(pid):
+    """Windows 安全的进程存活探测（判例：ollama_lock._alive——勿用
+    os.kill(pid,0)，Windows 下会真杀进程）。查询失败按死进程处理
+    （宁可重抢，代价只是一轮并行；同 ollama_lock 口径）。"""
+    if pid <= 0:
+        return False
+    try:
+        import ctypes
+        k32 = ctypes.windll.kernel32
+        h = k32.OpenProcess(0x1000, False, int(pid))
+        if not h:
+            return False
+        try:
+            code = ctypes.c_ulong()
+            k32.GetExitCodeProcess(h, ctypes.byref(code))
+            return code.value == 259        # STILL_ACTIVE
+        finally:
+            k32.CloseHandle(h)
+    except Exception:
+        return False
+
+
 def _core_lock_acquire():
     """进程级互斥锁：防多链路并发直跑本脚本（K-STOCK-391 实证冲突：
     ps1 锁只护 v2 启动器，外部直跑绕锁抢写同一 out.log）。
 
     返回 True=拿到锁；False=已有活跃实例（打印 SKIP、调用方应静默退 0
     ——与 start_tdx_sync.ps1 v2 的 SKIP-already-running 判例一致，
-    不触发失败告警链）。陈锁（age>=2h）强夺。"""
+    不触发失败告警链）。
+
+    陈锁自愈（T-I4）：锁残留 age>=2h **且**锁内 pid 无存活佐证才清理，
+    清理留痕 LOCK-CLEAR（对齐 ps1 v2 措辞）；pid 仍存活则 SKIP——
+    ts_rt_min 全量 3-4h 超阈值，仅凭 age 强夺会误杀长任务（T-Q3
+    实证 10-18 起三次会话无 exit 行锁残留，正是本函数要自愈的场景）。
+    旧版锁无 pid 行/损坏时回退纯 age 判定保底。"""
     import time as _t
     while True:
         try:
@@ -360,11 +416,28 @@ def _core_lock_acquire():
                 age = _t.time() - os.path.getmtime(CORE_LOCK)
             except OSError:
                 continue                    # 锁刚好被释放，重试
-            if age < _CORE_LOCK_MAX_AGE_S:
+            # 读锁内 pid（本锁写入格式 "pid epoch"；读不到=None 回退 age）
+            try:
+                with open(CORE_LOCK, encoding="ascii") as handle:
+                    pid = int(handle.readline().split()[0])
+            except Exception:
+                pid = 0
+            if pid > 0 and _pid_alive(pid):
                 print("[lock] SKIP: another tdx_sync running "
-                      "(lock age %ds < %ds)" % (age, _CORE_LOCK_MAX_AGE_S))
+                      "(pid %d alive, lock age %ds)" % (pid, age))
                 return False
-            print("[lock] steal stale lock (age %ds)" % age)
+            if pid > 0 and age < _CORE_LOCK_MAX_AGE_S:
+                # pid 已死但年龄未超阈值：同为死锁残留，即刻回收
+                # （对齐 ps1 v2 判例 LOCK-CLEAR dead pid，不等满 2h）
+                print("[lock] LOCK-CLEAR dead pid=%d (age %ds)"
+                      % (pid, age))
+            elif pid <= 0 and age < _CORE_LOCK_MAX_AGE_S:
+                print("[lock] SKIP: another tdx_sync running "
+                      "(lock age %ds < %ds, no pid line)" % (age, _CORE_LOCK_MAX_AGE_S))
+                return False
+            else:
+                print("[lock] LOCK-CLEAR stale lock age=%ds "
+                      "(pid=%d not alive)" % (age, pid))
             try:
                 os.remove(CORE_LOCK)
             except OSError:
