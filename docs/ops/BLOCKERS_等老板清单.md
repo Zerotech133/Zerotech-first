@@ -63,3 +63,10 @@
   - **A（推荐）**：写死规则入 N1Check——端口 8091 归属进程为唯一主，其余一律报障等人工，不自动杀；
   - B：CPU 时间判主自动清理（有误杀风险）；
   - C：双实例即告警不处置。
+
+## B-07 策略注册表 live 条目缺 since（⏳ 等老板回填日期）
+
+- **实况**：portal/strategies.json 6 个 live 条目（ninedim/weak/linkage/cross/qpzm/strong）全部缺 `since` 字段，违反 362 定稿「上架必带 since（YYYY-MM-DD），为 60 交易日考核起算」。契约回归 test_dashboard_contracts.cjs 已设 WARN 档（不阻塞、不沉默），回填后升硬断言。
+- **阻塞影响**：60 交易日转正考核无法起算；shadow_to_live 晋升材料（315 五臂表）缺时间锚。
+- **需要老板**：各条目实际上架日期（或授权按首次信号入档日期回填）；回填后 pipeline 字段（E5）与记分卡考核链即可接上。
+- **发现渠道**：E9 契约回归（2026-10-19 E 批开工日）。
