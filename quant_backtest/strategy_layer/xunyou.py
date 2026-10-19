@@ -9,8 +9,9 @@ r"""策略研究 Agent「荀攸」（公达）盘后作业运行器（2026-10-19
 本运行器职责（v1，M0 门②③未过，全部产出为研究产物）：
   1. 复用 SignalAggregator.run(trade_date)（与 run_daily.py 同一融合链，
      含方案 C 同票预聚合与 PG 权威替换写库）；
-  2. 从融合结果裁决股票池：action=buy 按 score 降序；**不发明分档阈值**
-     （T1/T2 等分级待拍板，池中不做分级）；
+  2. 从融合结果裁决股票池：action=buy 按 score 降序；分档按 2026-10-19
+     老田拍板落地（T1=告警档 / T2=人工关注档 / 分歧票人工复核，
+     详见 deliverables/荀攸T1T2分档阈值研究_拍板备忘_20261019.md）；
   3. 池与汇报信原子落盘 reports/xunyou_pool_{date}.json /
      reports/xunyou_report_{date}.md；汇报信即"给上级的信"，不对外直发；
   4. 全程标注 RESEARCH_ONLY_NOT_PRODUCTION + BLOCK_CUTOVER。
@@ -40,18 +41,75 @@ REPORT_DIR = os.path.join(_QUANT_BT, "reports")
 VERDICT = "BLOCK_CUTOVER"
 SCOPE = "RESEARCH_ONLY_NOT_PRODUCTION"
 
+# ── T1/T2 分档常量（2026-10-19 老田三项拍板，勿擅自调整）─────────────
+# 依据：deliverables/荀攸T1T2分档阈值研究_拍板备忘_20261019.md（WS-R1 方案一
+# 「天然断层双断点」+ 分位封顶旋钮）。用途定义：T1/T2 = 告警档——T1 触发
+# 盯盘/提醒（告警量是硬约束，故设排名封顶），T2 供人工关注；
+# divergence=true 一律人工复核、不进任何档。
+# T1 触发提醒的接线（量化交易部门上行链）另行设计，本模块只落分档数据。
+T1_SCORE_MIN = 99.0  # T1 下沿：score > 99.0（开区间）；99.0→99.17 微断层 = kg_boost/chan_monitor 两套量纲分界
+T1_RANK_CAP = 20     # T1 当日排名封顶：按 score 降序 1 起计，排名 ≤ 20 才入 T1（防告警量爆炸）
+T2_SCORE_MIN = 95.0  # T2 下沿：95 ≤ score ≤ 99.0（95→97 断层收下沿；上沿与 T1 下沿衔接）
+
+
+def assign_tiers(rows: list) -> list:
+    """为 buy 候选标注 tier（纯函数：返回带 tier 的新 dict 列表，不改入参）。
+
+    规则（拍板备忘方案一 + 封顶旋钮，常量见模块头注释）：
+      T1 = score > T1_SCORE_MIN 且当日排名 ≤ T1_RANK_CAP
+           （排名按 score 降序、1 起计；分歧票先旁路，不占排名额度）；
+      T2 = T2_SCORE_MIN ≤ score ≤ T1_SCORE_MIN；
+      其余 tier=""（不入档）；
+      divergence=true 强制 tier="" 且 review_required=True（人工复核，
+      不进任何档）。
+    """
+    def _score(row):
+        try:
+            return float(row.get("score", 0.0))
+        except (TypeError, ValueError):
+            return float("-inf")
+
+    def _divergent(row):
+        v = row.get("divergence")
+        return v is True or v == "true"
+
+    eligible = sorted(
+        ((i, _score(r)) for i, r in enumerate(rows) if not _divergent(r)),
+        key=lambda t: (-t[1], t[0]))
+    t1_idx = {i for rank, (i, sc) in enumerate(eligible, 1)
+              if rank <= T1_RANK_CAP and sc > T1_SCORE_MIN}
+    out = []
+    for i, row in enumerate(rows):
+        item = dict(row)
+        sc = _score(row)
+        if _divergent(row):
+            item["tier"] = ""
+            item["review_required"] = True  # 分歧票：一律人工复核，不进任何档
+        elif i in t1_idx:
+            item["tier"] = "T1"
+        elif T2_SCORE_MIN <= sc <= T1_SCORE_MIN:
+            item["tier"] = "T2"
+        else:
+            item["tier"] = ""  # 不入档（含 score>99.0 但超排名封顶的票）
+        out.append(item)
+    return out
+
 
 def build_pool(trade_date: str, combined: list, divergences: list) -> dict:
-    """融合结果 → 荀攸股票池（研究产物，buy 按 score 降序，不分档）。"""
+    """融合结果 → 荀攸股票池（buy 按 score 降序，并按拍板口径标注 tier）。"""
     buys = sorted(
         (row for row in combined if row.get("action") == "buy"),
         key=lambda r: (-float(r.get("score", 0.0)),
                        str(r.get("symbol", ""))))
+    tiered = assign_tiers(buys)
     superseded_total = sum(
         len(c.get("superseded", ()))
         for row in combined
         for c in (row.get("contributions") or {}).values()
         if isinstance(c, dict))
+    t1 = [r for r in tiered if r["tier"] == "T1"]
+    t2 = [r for r in tiered if r["tier"] == "T2"]
+    review = [r for r in tiered if r.get("review_required")]
     return {
         "agent": AGENT_NAME,
         "trade_date": trade_date,
@@ -62,16 +120,24 @@ def build_pool(trade_date: str, combined: list, divergences: list) -> dict:
             {"symbol": r["symbol"], "action": r["action"],
              "score": r["score"], "confidence": r["confidence"],
              "divergence": r["divergence"], "rationale": r["rationale"],
-             "contributions": r["contributions"]}
-            for r in buys],
+             "contributions": r["contributions"],
+             "tier": r["tier"],
+             **({"review_required": True} if r.get("review_required") else {})}
+            for r in tiered],
         "stats": {
             "combined_total": len(combined),
             "buy_total": len(buys),
             "divergence_total": len(divergences),
             "superseded_total": superseded_total,
+            "tier1_total": len(t1),
+            "tier2_total": len(t2),
+            "review_total": len(review),
         },
         "notes": [
-            "分档阈值（T1/T2 等）未拍板，池内不做分级",
+            "分档按 2026-10-19 老田拍板落地：T1=score>99.0 且当日排名≤20"
+            "（告警档，触发盯盘/提醒）；T2=95≤score≤99.0（人工关注档）；"
+            "divergence=true 一律人工复核、不进任何档"
+            "（依据 deliverables/荀攸T1T2分档阈值研究_拍板备忘_20261019.md）",
             "确认门②③未过：不切线上 picks、不改权重、不触交易",
         ],
     }
@@ -94,11 +160,33 @@ def write_upstream_report(trade_date: str, pool: dict,
         "- 启用策略：%s" % ", ".join(enabled) if enabled else "- 启用策略：无",
         "",
         "## 股票池摘要",
-        "- 融合 %d 条；buy 候选 **%d** 只（按 score 降序，未分级）"
+        "- 融合 %d 条；buy 候选 **%d** 只（按 score 降序，已按拍板口径分档）"
         % (pool["stats"]["combined_total"], pool["stats"]["buy_total"]),
         "- 分歧标的 %d；同票预聚合覆盖明细 %d 条（可回放）"
         % (pool["stats"]["divergence_total"],
            pool["stats"]["superseded_total"]),
+        "",
+    ]
+    tiered_rows = pool.get("pool") or []
+    t1_rows = [r for r in tiered_rows if r.get("tier") == "T1"]
+    t2_rows = [r for r in tiered_rows if r.get("tier") == "T2"]
+    review_rows = [r for r in tiered_rows
+                   if r.get("review_required")
+                   or r.get("divergence") is True
+                   or r.get("divergence") == "true"]
+    lines += [
+        "## 分层陈述（2026-10-19 拍板口径）",
+        "- T1（告警档：score>99.0 且当日排名≤20）**%d** 条：%s"
+        % (len(t1_rows),
+           "、".join(str(r.get("symbol")) for r in t1_rows) or "（无）"),
+        "- T2（人工关注档：95≤score≤99.0）**%d** 条：%s"
+        % (len(t2_rows),
+           "、".join(str(r.get("symbol")) for r in t2_rows) or "（无）"),
+        "- 人工复核（分歧票 divergence=true，不进任何档）**%d** 只：%s"
+        % (len(review_rows),
+           "、".join(str(r.get("symbol")) for r in review_rows) or "（无）"),
+        "- T1 触发提醒的接线走量化交易部门上行链（另行设计）；本信只呈"
+        "分档数据，不直连飞书",
         "",
     ]
     for i, row in enumerate(pool["pool"][:10], 1):
@@ -244,6 +332,9 @@ def read_posterior(out_path: str | None = None) -> dict:
     summary = doc.get("summary") if isinstance(doc, dict) else None
     if not isinstance(summary, dict):
         return {"status": "DEGRADED", "reason": "统计输出缺 summary 块"}
+    for key in ("windows", "by_strategy", "by_weight_group", "by_shadow"):
+        if key in summary and not isinstance(summary[key], dict):
+            return {"status": "DEGRADED", "reason": "统计输出 summary.%s 类型错误" % key}
     return {"status": "OK", "out_path": path,
             "asof": summary.get("asof", ""),
             "windows": summary.get("windows", {}),

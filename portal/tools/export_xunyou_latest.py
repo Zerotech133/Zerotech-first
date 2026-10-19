@@ -10,6 +10,8 @@
   agent / trade_date / generated_at / scope / cutover_verdict
   pool_count / divergence_count
   top：按 score 降序前 10，每项 symbol/score/confidence/divergence/rationale
+       /tier（2026-10-19 拍板分档："T1"/"T2"/""；旧池文件无 tier 字段时
+       兼容为空串，不崩）
        （rationale 截断至 RATIONALE_MAX 字符，超长以 … 收尾）
   source_file：导出所用源文件名（运维溯源用）
 
@@ -75,6 +77,8 @@ def build_payload(src_path, data):
             "score": item.get("score"),
             "confidence": item.get("confidence"),
             "divergence": is_divergent(item),
+            # tier 透传（2026-10-19 拍板分档）：旧池文件无 tier 字段 → 空串
+            "tier": item.get("tier", "") if isinstance(item.get("tier", ""), str) else "",
             "rationale": truncate(item.get("rationale")),
         })
     div_count = sum(1 for it in pool if isinstance(it, dict) and is_divergent(it))
