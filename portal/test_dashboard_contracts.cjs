@@ -160,6 +160,45 @@ section('wall.json schema (存在才断言)');
   }
 })();
 
+/* ── 3b-2. 观点墙新鲜度契约（G2，2026-10-19：wall 与 todays_picks 须同一 scan 批次代际） ──
+ * 两产物刷新时刻可脱节（今日实证：15:40 todays_picks 已更新而 wall 停昨日）→ 静默滞后。
+ * 断言：wall.generated_at >= todays_picks.generated_at（允许相等）；
+ * 落后 → todo() 记 WARN 台账（待重跑 wall_adapter），不挂红不假绿。
+ * 时区注意：wall 是 ISO 带时区，todays_picks 是空格分隔 naive（按东八区解析），各自处理禁混比。
+ */
+function parseGenAt(s) {
+  if (typeof s !== 'string' || s.length === 0) return null;
+  let m = s.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/);
+  if (m) { const t = Date.parse(s); return isNaN(t) ? null : t; }
+  m = s.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/);
+  if (m) { const t = Date.parse(m[1] + 'T' + m[2] + '+08:00'); return isNaN(t) ? null : t; }
+  return null;
+}
+function checkWallFreshness(wall, picks, tag) {
+  if (!wall || !picks) { todo(tag + '观点墙新鲜度比对缺源（wall.json / todays_picks.json 未取到）——灰态不猜值'); return; }
+  const w = parseGenAt(wall.generated_at), t = parseGenAt(picks.generated_at);
+  if (w === null || t === null) {
+    todo(tag + '观点墙新鲜度缺 generated_at 或格式不可解析（wall=' + JSON.stringify(wall.generated_at) + ' picks=' + JSON.stringify(picks.generated_at) + '）');
+    return;
+  }
+  const lagMin = Math.round((t - w) / 60000);
+  if (w < t) todo(tag + `观点墙滞后于 todays_picks ${lagMin} 分钟——待重跑 wall_adapter`);
+  else ok(w >= t, tag + '观点墙与 todays_picks 同一 scan 批次代际（wall.generated_at >= todays_picks.generated_at，lag=' + lagMin + ' 分钟）');
+}
+section('wall.json freshness (与 todays_picks 同批次代际)');
+(function () {
+  const wp = path.join(PORTAL, 'data', 'wall.json');
+  const tp = path.join(PORTAL, 'data', 'todays_picks.json');
+  if (!fs.existsSync(wp) || !fs.existsSync(tp)) {
+    todo('新鲜度比对缺源：wall.json=' + fs.existsSync(wp) + ' todays_picks.json=' + fs.existsSync(tp) + '——灰态不猜值');
+    return;
+  }
+  let wall = null, picks = null;
+  try { wall = JSON.parse(fs.readFileSync(wp, 'utf-8')); } catch (e) { ok(false, 'wall.json 解析失败（新鲜度比对跳过）: ' + e.message); }
+  try { picks = JSON.parse(fs.readFileSync(tp, 'utf-8')); } catch (e) { ok(false, 'todays_picks.json 解析失败（新鲜度比对跳过）: ' + e.message); }
+  checkWallFreshness(wall, picks, '离线 ');
+})();
+
 /* ── 3c. quant_drill.html 下钻驾驶舱不变量（2026-10-19 老田批：不做长图，单屏三栏下钻） ── */
 section('quant_drill.html invariants');
 {
@@ -237,6 +276,9 @@ async function live() {
     ok(!!s0 && typeof s0.code === 'string' && typeof s0.sources[0].s === 'string',
        'todays_picks: stocks[].sources[].s 板块标识形状（L2→L3 契约）');
   }
+  // G2 live：观点墙新鲜度代际比对（复用上面已取的 tp，同离线 3b-2 判例）
+  const wallLive = await j(B8080 + '/data/wall.json', 8000);
+  checkWallFreshness(wallLive, tp, 'live ');
   // F7 live：/api/admission（F2 工位端点，未落地前 WARN 台账 pending，不挂红不假绿）
   const adm = await j(B8791 + '/api/admission', 5000);
   if (!adm) {
