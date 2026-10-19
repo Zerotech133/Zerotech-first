@@ -302,6 +302,51 @@ class OrgCommandApiTest(unittest.TestCase):
         self.assertEqual(row["model"], "qwen3.5:9b")
         self.assertIn("ts", row)
 
+    def test_learn_success_writes_audit_row(self):
+        """成功 learn → org_audit.jsonl 产生 kind="learn" 审计行，files 指向知识 jsonl
+        （写回安全链判例平移：知识沉淀是写操作，与 register/update 同判例）。"""
+        url, stop, _ = start_stub_llm()
+        try:
+            r = oca.api_agent_learn({"agent_id": "D1", "doc": "投研文档正文",
+                                     "caller": "unittest@k190"},
+                                    self.tmp, llm_base_url=url)
+        finally:
+            stop()
+        self.assertTrue(r["ok"], r)
+        ap = os.path.join(self.tmp, "agent_platform", "registry", "org_audit.jsonl")
+        self.assertTrue(os.path.exists(ap))
+        with open(ap, encoding="utf-8") as f:
+            rows = [json.loads(x) for x in f if x.strip()]
+        learn_rows = [x for x in rows if x.get("kind") == "learn"]
+        self.assertEqual(len(learn_rows), 1)
+        row = learn_rows[0]
+        self.assertEqual(row["agent_id"], "D1")
+        # 期望路径用 os.path.join 构造（relpath 分隔符随平台：win 为 \）
+        self.assertEqual(
+            row["files"],
+            [os.path.join("agent_platform", "registry", "knowledge", "D1.jsonl")])
+        self.assertEqual(row["model"], "qwen3.5:9b")
+        self.assertEqual(row["digest_len"], r["digest_len"])
+        self.assertEqual(row["caller"], "unittest@k190")
+        self.assertIn("ts", row)
+
+    def test_learn_failure_no_audit_row(self):
+        """LLM 提炼失败 → 笔记与审计都不落盘（诚实：未发生的事不记账）。"""
+        url, stop, _ = start_stub_llm(status_code=500, payload={"error": "boom"})
+        try:
+            r = oca.api_agent_learn({"agent_id": "D1", "doc": "x"},
+                                    self.tmp, llm_base_url=url)
+        finally:
+            stop()
+        self.assertFalse(r["ok"])
+        ap = os.path.join(self.tmp, "agent_platform", "registry", "org_audit.jsonl")
+        if os.path.exists(ap):
+            with open(ap, encoding="utf-8") as f:
+                rows = [json.loads(x) for x in f if x.strip()]
+            self.assertEqual([x for x in rows if x.get("kind") == "learn"], [])
+        else:
+            self.assertTrue(True)  # audit 文件不存在同样合规（未发生写操作）
+
     def test_learn_llm_call_contract(self):
         """调 LLM 的请求契约：model=qwen3.5:9b、stream:false、prompt=中文前缀+doc。"""
         url, stop, handler = start_stub_llm()

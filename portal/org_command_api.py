@@ -649,6 +649,11 @@ def api_agent_learn(body, station=STATION, llm_base_url=None):
     诚实降级链（不假绿）：连接失败/超时/非 200/响应缺 response 字段 → ok:false 且
     **绝不落盘**（把原文当 digest 落盘就是假蒸馏）。测试显式传 llm_base_url，
     本函数默认地址仅作生产缺省，不进测试（测试隔离判例）。
+
+    审计判例平移（K-ORG-190 写回安全链，org-be2 遗留项 2）：知识沉淀是写操作，
+    与 register/update 同判例——**成功落盘笔记后**追加审计行
+    {ts, kind:"learn", agent_id, files, model, digest_len, caller} 到 org_audit.jsonl
+    （/api/org audit_tail 自动带出）；失败路径不写审计（诚实：未发生的事不记账）。
     """
     try:
         p = body or {}
@@ -663,9 +668,16 @@ def api_agent_learn(body, station=STATION, llm_base_url=None):
             digest, model = _llm_distill(_llm_base_url(llm_base_url), doc)
         except Exception as e:  # 诚实降级：任何 LLM 失败都可见，笔记不落盘
             return _err("学习环 LLM 提炼失败：%r；笔记未落盘" % (e,))
-        _append_jsonl(_knowledge_path(station, aid), {
+        kpath = _knowledge_path(station, aid)
+        _append_jsonl(kpath, {
             "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
             "doc": doc, "digest": digest, "model": model})
+        # 审计行（写回安全链判例平移）：笔记成功落盘才记账，失败路径不写
+        row = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "learn",
+               "agent_id": aid, "files": [os.path.relpath(kpath, station)],
+               "model": model, "digest_len": len(digest),
+               "caller": (p.get("caller") or "").strip()}
+        _append_jsonl(_reg(station, "org_audit.jsonl"), row)
         return {"ok": True, "digest_len": len(digest), "model": model}
     except Exception as e:  # fail-visible：恒 200 携错误体（判例）
         return _err("learn: %r" % (e,))
