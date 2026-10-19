@@ -6,11 +6,13 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
+from quant_backtest.quant_sector.upstream_inbox import QuantUpstreamReport, UpstreamInbox
 from quant_backtest.watch_dispatch import EvidenceEnvelope, RouteIntent, freeze_offline
 from quant_backtest.watch_dispatch.evidence_store import EvidenceConflict, EvidenceStore
 from quant_backtest.watch_dispatch.route_outbox import (
     ACCEPTED_VERIFIED, CLAIMED, CANCELLED, DEFINITELY_REJECTED, OutboxError,
-    READY_OFFLINE, RouteOutbox, UNKNOWN,
+    READY_OFFLINE, ReportFingerprint, RouteOutbox, UNKNOWN,
 )
 
 T = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)
@@ -52,6 +54,25 @@ def claim(outbox, envelope, *, route="QUANT_UPSTREAM_REPORT", target_id="desk1",
         envelope, route=route, target_type="desk", target_id=target_id,
         claim_token=token, claim_at=claim_at or envelope.freeze_at,
         lease_until=lease_until or envelope.valid_until - timedelta(minutes=5))
+
+
+def trusted_ack_setup(envelope, *, target_id="desk1", report_id="report-1",
+                      accepted_at=None):
+    """Issue a real offline sector receipt through the independent inbox."""
+    inbox = UpstreamInbox()
+    fingerprint = ReportFingerprint(report_id, "ANOMALY", envelope.event_id,
+                                    envelope.evidence_version, envelope.envelope_hash,
+                                    "watch-1", target_id, envelope.freeze_at)
+    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(inbox))
+    upstream = QuantUpstreamReport(
+        report_id=fingerprint.report_id, report_kind=fingerprint.report_kind,
+        event_id=fingerprint.event_id, evidence_hash=fingerprint.envelope_hash,
+        evidence_version=fingerprint.evidence_version,
+        sender_agent_id=fingerprint.sender_agent_id,
+        receiver_agent_id=fingerprint.receiver_agent_id,
+        created_at=fingerprint.created_at)
+    receipt = inbox.accept(upstream, now=accepted_at or envelope.freeze_at)
+    return outbox, fingerprint, receipt.ack
 
 
 def test_store_freeze_idempotent_and_conflict_closed():
@@ -102,15 +123,17 @@ def test_outbox_plan_idempotent_conflict_and_time_bounds():
 
 
 def test_claim_finish_accepted_and_terminal():
-    outbox = RouteOutbox()
     envelope = sample()
-    plan(outbox, envelope)
+    outbox, fingerprint, ack = trusted_ack_setup(
+        envelope, accepted_at=T + timedelta(seconds=10))
+    plan(outbox, envelope, report_fingerprint=fingerprint)
     attempt = claim(outbox, envelope)
     assert attempt.attempt_no == 1 and attempt.outcome == CLAIMED
     finished = outbox.finish(
         attempt.attempt_id, outcome=ACCEPTED_VERIFIED, now=T + timedelta(seconds=30),
-        external_message_id="msg-1", verification_source="provider:feishu",
-        observed_at=T + timedelta(seconds=10))
+        external_message_id=ack.ack_id,
+        verification_source=ack.verification_source,
+        observed_at=ack.acked_at)
     assert finished.outcome == ACCEPTED_VERIFIED
     assert finished.receipt is not None and finished.receipt.observed_at == T + timedelta(seconds=10)
     assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
@@ -158,9 +181,24 @@ def test_lease_expiry_and_stale_finish_forced_unknown():
 
 
 def test_rejection_allows_bounded_retry_then_exhausted():
-    outbox = RouteOutbox()
     envelope = sample()
-    plan(outbox, envelope)
+    fingerprint = ReportFingerprint("report-1", "ANOMALY", envelope.event_id,
+                                    envelope.evidence_version, envelope.envelope_hash,
+                                    "watch-1", "desk1", T)
+
+    class BoundRejection:
+        def active_rejection(self, report, attempt, intent, identity, generation,
+                             rejection_ref, verification_source, observed_at, *, now):
+            return (report == fingerprint and attempt.intent_id == intent.intent_id
+                    and attempt.route == intent.route == "QUANT_UPSTREAM_REPORT"
+                    and identity == RouteOutbox._identity(envelope)
+                    and generation == 0 and intent.control_epoch == 0
+                    and rejection_ref == f"rej-{attempt.attempt_no}"
+                    and verification_source == "provider"
+                    and attempt.claim_at <= observed_at <= now)
+
+    outbox = RouteOutbox(active_rejection_port=BoundRejection())
+    plan(outbox, envelope, report_fingerprint=fingerprint)
     for no in (1, 2, 3):
         attempt = claim(outbox, envelope, token=f"tok-{no}")
         assert attempt.attempt_no == no
@@ -201,16 +239,19 @@ def test_cancel_and_revoke_fail_closed():
 
 
 def test_per_envelope_attempt_audit_trail_isolated():
-    outbox = RouteOutbox()
     envelope = sample()
     other = sample(event_id="ev2")
-    plan(outbox, envelope, target_id="quant-desk-1", intent_id="i-1")
+    outbox, fingerprint, ack = trusted_ack_setup(
+        envelope, target_id="quant-desk-1", report_id="report-isolated",
+        accepted_at=T + timedelta(seconds=2))
+    plan(outbox, envelope, target_id="quant-desk-1", intent_id="i-1",
+         report_fingerprint=fingerprint)
     plan(outbox, other, target_id="quant-desk-1", intent_id="i-2")
     attempt = claim(outbox, envelope, target_id="quant-desk-1",
                     claim_at=T + timedelta(seconds=1))
     outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
-                  now=T + timedelta(seconds=2), external_message_id="m1",
-                  verification_source="provider", observed_at=T + timedelta(seconds=2))
+                  now=T + timedelta(seconds=2), external_message_id=ack.ack_id,
+                  verification_source=ack.verification_source, observed_at=ack.acked_at)
     assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                              target_type="desk", target_id="quant-desk-1").status == ACCEPTED_VERIFIED
     assert outbox.get_intent(other, route="QUANT_UPSTREAM_REPORT",
@@ -434,26 +475,34 @@ def test_supersede_attempt_budget_shared_across_three_generations():
     (-1, False), (0, True), (2, True), (6, True), (7, False),
 ])
 def test_double_anchor_receipt_window(observed_delta, accepted):
-    outbox = RouteOutbox()
     env = sample()
-    plan(outbox, env)
+    # A future accepted time cannot be inserted into the inbox before it occurs;
+    # finish still checks that a caller's timestamp exactly matches its receipt.
+    upstream_at = T + max(0, observed_delta) * ONE_SECOND
+    outbox, fingerprint, ack = trusted_ack_setup(
+        env, report_id=f"report-window-{observed_delta}",
+        accepted_at=upstream_at)
+    plan(outbox, env, report_fingerprint=fingerprint)
     attempt = claim(outbox, env, claim_at=T + 3 * ONE_SECOND)
     finished = outbox.finish(
         attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
-        now=T + 6 * ONE_SECOND, external_message_id="message-1",
-        verification_source="port", observed_at=T + observed_delta * ONE_SECOND)
+        now=T + 6 * ONE_SECOND, external_message_id=ack.ack_id,
+        verification_source=ack.verification_source,
+        observed_at=T + observed_delta * ONE_SECOND)
     assert (finished.outcome == ACCEPTED_VERIFIED) is accepted
     assert (finished.receipt is not None) is accepted
 
 
 def test_closed_intent_cannot_be_superseded():
-    outbox = RouteOutbox()
     env = sample()
-    plan(outbox, env)
+    outbox, fingerprint, ack = trusted_ack_setup(env)
+    plan(outbox, env, report_fingerprint=fingerprint)
     attempt = claim(outbox, env)
-    outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
-                  now=T + ONE_SECOND, external_message_id="ack",
-                  verification_source="port", observed_at=T)
+    finished = outbox.finish(
+        attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+        now=T + ONE_SECOND, external_message_id=ack.ack_id,
+        verification_source=ack.verification_source, observed_at=ack.acked_at)
+    assert finished.outcome == ACCEPTED_VERIFIED
     with pytest.raises(OutboxError, match="INTENT_CONFLICT"):
         plan(outbox, env, intent_id="intent-g1", generation=1)
 

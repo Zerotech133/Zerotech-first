@@ -51,6 +51,20 @@ class ActiveAckPort(Protocol):
                    now: datetime) -> bool: ...
 
 
+class ActiveRejectionPort(Protocol):
+    """Offline independent authority for an exact active upstream rejection.
+
+    In production the authority check and outbox update require one durable
+    owner transaction. This callback alone does not provide that guarantee.
+    """
+
+    def active_rejection(self, fingerprint: ReportFingerprint,
+                         attempt: RouteAttempt, intent: RouteIntent,
+                         identity: Tuple[str, ...], generation: int,
+                         rejection_ref: str, verification_source: str,
+                         observed_at: datetime, *, now: datetime) -> bool: ...
+
+
 @dataclass(frozen=True)
 class RouteReceipt:
     route: str
@@ -96,8 +110,10 @@ def _utc(value: object, field: str) -> None:
 class RouteOutbox:
     """Per-target offline intent ledger; identical replan is idempotent."""
 
-    def __init__(self, active_ack_port: ActiveAckPort | None = None) -> None:
+    def __init__(self, active_ack_port: ActiveAckPort | None = None,
+                 active_rejection_port: ActiveRejectionPort | None = None) -> None:
         self._active_ack_port = active_ack_port
+        self._active_rejection_port = active_rejection_port
         self._intents: Dict[str, RouteIntent] = {}
         self._generations: Dict[str, int] = {}
         self._intent_history: Dict[str, list[RouteIntent]] = {}
@@ -314,9 +330,17 @@ class RouteOutbox:
             if (type(external_message_id) is str and external_message_id
                     and type(verification_source) is str and verification_source
                     and observed_at is not None):
-                _utc(observed_at, "OBSERVED_AT")
-                current_window = intent.created_at <= observed_at <= now
-                if outcome == ACCEPTED_VERIFIED and intent.route == "QUANT_UPSTREAM_REPORT":
+                if (outcome == DEFINITELY_REJECTED
+                        and intent.route == "QUANT_UPSTREAM_REPORT"):
+                    try:
+                        _utc(observed_at, "OBSERVED_AT")
+                        current_window = intent.created_at <= observed_at <= now
+                    except (TypeError, ValueError):
+                        current_window = False
+                else:
+                    _utc(observed_at, "OBSERVED_AT")
+                    current_window = intent.created_at <= observed_at <= now
+                if intent.route == "QUANT_UPSTREAM_REPORT":
                     key = attempt.idempotency_key
                     fingerprint = self._report_fingerprints.get(key)
                     history = self._intent_history.get(key, [])
@@ -332,24 +356,45 @@ class RouteOutbox:
                              len(history) == generation
                              and fingerprint.created_at == history[0].created_at)
                     )
-                    within_report_window = fingerprint is not None and (
-                        fingerprint.created_at <= observed_at <= now)
+                    within_report_window = (fingerprint is not None
+                                            and (outcome == ACCEPTED_VERIFIED
+                                                 or current_window)
+                                            and fingerprint.created_at <= observed_at <= now)
                     trusted_context = (
                         identity is not None and key not in self._revoked
-                        and self._active_ack_port is not None
                         and all(previous.control_epoch == intent.control_epoch
                                 for previous in history)
                         and intent.control_epoch == self._epochs.get(identity)
                     )
+                    if outcome == DEFINITELY_REJECTED:
+                        trusted_context = (trusted_context
+                                           and self._intent_ids.get(intent.intent_id) == key
+                                           and attempt.idempotency_key == key
+                                           and attempt.route == intent.route
+                                           and attempt.attempt_no == self._attempt_nos.get(key)
+                                           and identity not in self._revoked_identities)
+                    if outcome == ACCEPTED_VERIFIED:
+                        authority = self._active_ack_port
+                        permitted_window = current_window or generation > 0
+                    else:
+                        authority = self._active_rejection_port
+                        permitted_window = (current_window
+                                            and attempt.claim_at <= observed_at)
                     if (original_matches and within_report_window and trusted_context
-                            and (current_window or generation > 0)):
+                            and authority is not None and permitted_window):
                         try:
-                            current_window = (self._active_ack_port.active_ack(
-                                fingerprint, external_message_id,
-                                verification_source, observed_at, now=now) is True)
+                            if outcome == ACCEPTED_VERIFIED:
+                                current_window = (authority.active_ack(
+                                    fingerprint, external_message_id,
+                                    verification_source, observed_at, now=now) is True)
+                            else:
+                                current_window = (authority.active_rejection(
+                                    fingerprint, attempt, intent, identity, generation,
+                                    external_message_id, verification_source,
+                                    observed_at, now=now) is True)
                         except Exception:
                             current_window = False
-                        # The authority callback may revoke this claim or advance its epoch.
+                        # Authority callbacks can revoke or mutate the active claim.
                         current_attempt = self._attempts.get(attempt_id)
                         current_intent = self._intents.get(key)
                         if (current_attempt is not attempt
@@ -359,13 +404,14 @@ class RouteOutbox:
                                 or self._epochs.get(identity) != intent.control_epoch
                                 or self._generations.get(key, 0) != generation
                                 or self._report_fingerprints.get(key) != fingerprint):
-                            # A callback may already have revoked and settled the attempt.
-                            # Never replace that ledger entry with the stale claim.
                             if current_attempt is not attempt:
                                 if current_attempt is None:
                                     raise OutboxError("ATTEMPT_NOT_CURRENT")
+                                if (outcome == DEFINITELY_REJECTED
+                                        and (current_attempt.outcome != UNKNOWN
+                                             or current_attempt.receipt is not None)):
+                                    raise OutboxError("ATTEMPT_NOT_CURRENT")
                                 return current_attempt
-                            # A rebound or revoked intent is no longer ours to settle.
                             if (current_intent is not intent or key in self._revoked
                                     or self._generations.get(key, 0) != generation):
                                 raise OutboxError("ATTEMPT_NOT_CURRENT")
