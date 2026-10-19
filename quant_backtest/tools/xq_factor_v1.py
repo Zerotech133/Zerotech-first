@@ -813,7 +813,16 @@ if __name__ == "__main__":
     parser.add_argument("--offline", action="store_true", help="只读数据库与已存在的日线缓存")
     parser.add_argument("--t3-retest", action="store_true",
                         help="T3 追平复测：weekly/biweekly/monthly 三粒度，只读现库现缓存")
+    parser.add_argument("--cache", default=None,
+                        help="覆盖日线缓存路径（如 daily_cache_full.json 回填合并缓存；"
+                             "t9 回填工具产物，绝不指向不存在的文件）")
     args = parser.parse_args()
+    if args.cache:
+        if not os.path.exists(args.cache):
+            print("[factor] --cache 文件不存在: %s，拒绝（防止误用空缓存）" % args.cache)
+            sys.exit(2)
+        CACHE_PATH = args.cache
+        print("[factor] 缓存路径覆盖 -> %s" % CACHE_PATH)
     if args.t3_retest:
         t3_retest()
     elif args.offline:
