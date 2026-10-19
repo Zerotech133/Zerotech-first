@@ -16,6 +16,7 @@ import os
 import re
 import sys
 import tempfile
+import types
 from unittest import mock
 
 import pytest
@@ -30,6 +31,26 @@ import alert_fail_wrap as _wrap  # noqa: E402  E1 口径单一事实源
 
 TS_LINE_RE = (r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2} \| task=\S+ "
               r"\| channel=\S+ \| result=(OK|FAIL) \| reason=.+$")
+
+
+# 假 psycopg2（本 venv 无真包）：仅供 _persist_psycopg2 顶部
+# `import psycopg2.extras` 通过；真实连接/执行入口一律 assert 拒止
+# （本测试链只走 _pg_connect mock 断连，禁连真实 PG 5442）。
+def _fake_pg_connect(*args, **kwargs):
+    raise AssertionError("假 psycopg2 不得连接（测试禁连真实 PG）")
+
+
+def _fake_pg_execute_values(*args, **kwargs):
+    raise AssertionError("假 psycopg2 不得执行 SQL（测试禁连真实 PG）")
+
+
+_fake_pg_extras = types.ModuleType("psycopg2.extras")
+_fake_pg_extras.execute_values = _fake_pg_execute_values
+_fake_pg = types.ModuleType("psycopg2")
+_fake_pg.extras = _fake_pg_extras
+_fake_pg.connect = _fake_pg_connect
+_fake_pg.Error = Exception
+_FAKE_PSYCOPG2 = {"psycopg2": _fake_pg, "psycopg2.extras": _fake_pg_extras}
 
 
 class _StubAdapter:
@@ -55,12 +76,23 @@ def sandbox(tmp_path):
 
 
 def _inject_pg_down():
-    """写库全链失败注入：psycopg2 连接断 + docker exec 兜底不可用。"""
+    """写库全链失败注入：psycopg2 连接断 + docker exec 兜底不可用。
+
+    本 venv 无 psycopg2：_persist_psycopg2 函数体首行
+    `import psycopg2.extras`（延迟 import）先于 _pg_connect() 调用，
+    缺模块时错误链首级退化为 "No module named 'psycopg2'"，_pg_connect
+    的 mock 断连语义根本不会触发。生产环境装有 psycopg2，线上走的
+    正是 _pg_connect 断连路径。故注入期以 sys.modules 补位假
+    psycopg2（extras 桩）让 import 通过，把失败形态还原为与线上
+    逐字一致的 "mock PG 断连 5442"——断言不变，只是还原被测路径；
+    假模块的真实连接/执行入口一律 assert 拒止（禁连真实 PG）。
+    """
     return [
         mock.patch.object(aggregator, "_pg_connect",
                           side_effect=ConnectionError("mock PG 断连 5442")),
         mock.patch.object(aggregator.subprocess, "run",
                           side_effect=RuntimeError("docker 不可用 (mock)")),
+        mock.patch.dict(sys.modules, _FAKE_PSYCOPG2),
     ]
 
 
@@ -93,7 +125,7 @@ class TestPgDownAlertChain:
     def test_pg_down_sent_flow(self, sandbox):
         """全链断连 + 发送成功：内存结果照常返回、pending→.sent、log=OK。"""
         patches = _inject_pg_down()
-        with patches[0], patches[1], \
+        with patches[0], patches[1], patches[2], \
              mock.patch.object(alert_bridge, "_send_feishu",
                                return_value=(True, "SEND_OK")) as send_fn:
             result = _run_agg()
@@ -123,7 +155,7 @@ class TestPgDownAlertChain:
     def test_send_fail_pending_kept(self, sandbox):
         """发送失败：pending 原地保留（kept），log 记 FAIL，不流转。"""
         patches = _inject_pg_down()
-        with patches[0], patches[1], \
+        with patches[0], patches[1], patches[2], \
              mock.patch.object(alert_bridge, "_send_feishu",
                                return_value=(False, "SEND_FAIL network")):
             result = _run_agg()
@@ -154,7 +186,7 @@ class TestNoBackfire:
     def test_alert_bridge_broken_no_raise(self, sandbox):
         """alert_bridge 自身抛错 → 聚合照常返回结果、不外抛。"""
         patches = _inject_pg_down()
-        with patches[0], patches[1], \
+        with patches[0], patches[1], patches[2], \
              mock.patch.object(alert_bridge, "alert_persist_failure",
                                side_effect=RuntimeError("bridge boom")):
             result = _run_agg()  # 不应抛异常

@@ -25,6 +25,8 @@ import importlib.util
 import json
 import os
 import sys
+from datetime import datetime as _dt_cls
+from unittest import mock
 
 import pytest
 
@@ -38,6 +40,22 @@ if _QB_ROOT not in sys.path:
 SYMBOL = "TEST.SH"
 TD8 = "20261016"                       # T 日（相对 T+1 盘前采集而言的"前一交易日"）
 AS_OF = "2026-10-16 15:00"             # T 日收盘编码（dt 字典序口径）
+
+
+class _FrozenDateTime(_dt_cls):
+    """冻结时钟：now() 恒定为 T 日（20261016）收盘后（"T+1 盘前采集"
+    时点）。datamart._expected_trade_day 以 now() 定"最近已收盘交易日"，
+    真实时钟越过 T 日 17:00 后 CALENDAR 末位（20261019）会被误判为
+    当日已收盘，默认 as_of 随之漂移——冻结后与运行时刻彻底解耦。"""
+
+    @classmethod
+    def now(cls, tz=None):
+        return cls(2026, 10, 16, 18, 0, 0)
+
+
+def _frozen_now():
+    """冻结 datetime.now 的 patch 上下文（仅包住时间敏感调用）。"""
+    return mock.patch("datetime.datetime", _FrozenDateTime)
 
 
 def _load_module(name, path):
@@ -269,20 +287,22 @@ def test_collect_requires_trade_date():
 # ③ as_of 截断语义（前一交易日收盘，dt 字典序）
 # ---------------------------------------------------------------------- #
 def test_resolve_as_of_default_prev_close():
-    """默认=最近已收盘交易日收盘编码 "T 15:00"。"""
-    as_of = li122_shadow.resolve_as_of(None, CALENDAR)
+    """默认=最近已收盘交易日收盘编码 "T 15:00"（时钟冻结，与运行时刻无关）。"""
+    with _frozen_now():
+        as_of = li122_shadow.resolve_as_of(None, CALENDAR)
     assert as_of == "2026-10-16 15:00"
 
 
 def test_resolve_as_of_rejects_same_day_and_holiday():
-    """禁止 as_of=当日/未收盘；非交易日 fail-visible。"""
-    with pytest.raises(ValueError, match="当日"):
-        li122_shadow.resolve_as_of("20261019", CALENDAR)  # 未来交易日（≥当日）
-    with pytest.raises(ValueError, match="非交易日"):
-        li122_shadow.resolve_as_of("20261010", CALENDAR)  # 不在日历
-    assert li122_shadow.resolve_as_of("20261015", CALENDAR) == "2026-10-15 15:00"
-    # 短横线日期形态等价
-    assert li122_shadow.resolve_as_of("2026-10-15", CALENDAR) == "2026-10-15 15:00"
+    """禁止 as_of=当日/未收盘；非交易日 fail-visible（时钟冻结）。"""
+    with _frozen_now():
+        with pytest.raises(ValueError, match="当日"):
+            li122_shadow.resolve_as_of("20261019", CALENDAR)  # 未来交易日（≥当日）
+        with pytest.raises(ValueError, match="非交易日"):
+            li122_shadow.resolve_as_of("20261010", CALENDAR)  # 不在日历
+        assert li122_shadow.resolve_as_of("20261015", CALENDAR) == "2026-10-15 15:00"
+        # 短横线日期形态等价
+        assert li122_shadow.resolve_as_of("2026-10-15", CALENDAR) == "2026-10-15 15:00"
 
 
 def test_build_context_truncates_to_as_of():
