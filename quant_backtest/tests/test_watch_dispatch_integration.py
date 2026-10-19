@@ -1,7 +1,8 @@
 """G1+G2 end-to-end offline integration tests over frozen modules only.
 
-Links evidence store, three-route outbox, dual-gate, shadow ledger and
-projections without modifying any of them. Still no send and no dispatch.
+Links evidence store, single-upstream reporting outbox, dual-gate, shadow
+ledger and projections without modifying any of them. Watch reports upward to
+the quant trading department only; no send and no dispatch happens here.
 """
 from __future__ import annotations
 
