@@ -466,3 +466,39 @@ def test_daily_limit_counts_rejects_plus_registrations(tmp_path):
                                        _fresh_registry(),
                                        data_root=data_root, daily_limit=2)
     assert ok3 is False and any("限频" in r for r in reasons3)  # 合计 2 ≥ 2
+
+
+# ---- 旧单文件形态兼容读（aba47e39 前 rejects/<submit_id>.md 顶层散档） ----
+
+def test_daily_limit_legacy_flat_reject_counted(tmp_path):
+    """旧形态兼容读：顶层 rejects/<submit_id>.md（mtime=今日）计入
+    当日限频口径，同日新旧形态无缝衔接。"""
+    data_root = tmp_path / "dataroot"
+    legacy = tmp_path / "rejects" / "legacy-sub.md"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text("# 旧形态拒绝档（aba47e39 前落法）\n", encoding="utf-8")
+    ok, reasons = process_submission(tmp_path, "s-legacy",
+                                     _variant("codex_legacy"),
+                                     _fresh_registry(),
+                                     data_root=data_root, daily_limit=1)
+    assert ok is False and any("限频" in r for r in reasons)
+    md = tmp_path / "rejects" / time.strftime("%Y%m%d") / "s-legacy.md"
+    assert md.exists() and "限频" in md.read_text(encoding="utf-8")
+    assert not (tmp_path / "inbox" / "s-legacy").exists()  # inbox 不动
+    assert not (tmp_path / "processed" / "s-legacy").exists()
+
+
+def test_daily_limit_legacy_flat_stale_not_counted(tmp_path):
+    """旧形态跨日失效：mtime 非今日的顶层旧档不永久占用限频额度。"""
+    import os as _os
+    data_root = tmp_path / "dataroot"
+    legacy = tmp_path / "rejects" / "stale-sub.md"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text("# 昨日旧档\n", encoding="utf-8")
+    stale = time.time() - 86400 * 2
+    _os.utime(str(legacy), (stale, stale))
+    ok, _ = process_submission(tmp_path, "s-stale", _variant("codex_stale"),
+                               _fresh_registry(), data_root=data_root,
+                               daily_limit=1)
+    assert ok is True  # 跨日旧档不计入，额度正常
+    assert (tmp_path / "processed" / "s-stale").exists()

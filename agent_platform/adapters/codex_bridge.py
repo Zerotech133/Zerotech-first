@@ -426,11 +426,21 @@ def default_bridge_dir():
 def _daily_usage(bridge_dir, data_root):
     """当日已受理数（限频口径）：registrations.jsonl 当日条目数 +
     rejects 当日落档数（md 档计数，一提交一档）。本地日期。
+
+    旧单文件形态兼容读：aba47e39 之前 write_reject 落
+    rejects/<submit_id>.md 顶层散档（无日期子目录）。按 mtime 属于
+    本地当日才计入限频口径——同日新旧形态无缝衔接，跨日旧档自动
+    失效不永久占用额度。
     """
     used = 0
-    rej_dir = Path(bridge_dir) / "rejects" / _today()
+    rej_root = Path(bridge_dir) / "rejects"
+    rej_dir = rej_root / _today()
     if rej_dir.is_dir():
         used += sum(1 for _ in rej_dir.glob("*.md"))
+    legacy_today = time.mktime(time.strptime(_today(), "%Y%m%d"))
+    if rej_root.is_dir():
+        used += sum(1 for p in rej_root.glob("*.md")
+                    if p.stat().st_mtime >= legacy_today)
     if data_root:
         ledger = (Path(data_root) / "data" / "codex_bridge"
                   / "registrations.jsonl")
