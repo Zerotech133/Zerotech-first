@@ -350,6 +350,55 @@ def test_callback_epoch_drift_after_real_ack_is_stored_unknown(generation: str) 
     assert not box.trading_permitted
 
 
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="current_gap: inbox ACK revocation during active_ack is not atomic with outbox.finish",
+)
+@pytest.mark.parametrize("generation", ["same", "cross"])
+def test_inbox_revoke_during_real_ack_must_not_publish_verified_receipt(
+        generation: str) -> None:
+    """A revoked inbox receipt must not settle as verified in either generation."""
+    revoked_receipt_ids: list[str] = []
+
+    def revoke_after_verified(box: RouteOutbox, env: EvidenceEnvelope) -> None:
+        port = box._active_ack_port
+        if not isinstance(port, MutatingActiveAckPort):
+            raise RuntimeError("REAL_ACK_PORT_MISSING")
+        inbox = port.authority._inbox
+        report_id = "same-generation-report" if generation == "same" else "up-1"
+        receipt = inbox.receipt_for_report(report_id)
+        if receipt is None:
+            raise RuntimeError("UPSTREAM_RECEIPT_MISSING")
+        inbox.revoke(receipt.receipt_id, now=at(8))
+        revoked_receipt_ids.append(receipt.receipt_id)
+
+    if generation == "same":
+        env, inbox, box, ack, attempt = same_generation_scenario(revoke_after_verified)
+    else:
+        env, inbox, box, _, report, _, ack, _ = scenario(
+            after_verified=revoke_after_verified)
+        attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                            target_id=report.receiver.agent_id, claim_token="second",
+                            claim_at=at(6), lease_until=at(20))
+    port = box._active_ack_port
+    assert isinstance(port, MutatingActiveAckPort)
+    result = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+                        now=at(8), external_message_id=ack.ack_id,
+                        verification_source=ack.verification_source,
+                        observed_at=ack.acked_at)
+    if port.verified_calls != 1 or len(revoked_receipt_ids) != 1:
+        raise RuntimeError("REAL_ACK_CALLBACK_NOT_COMPLETED")
+    if not inbox.is_revoked(ack.report_id) or inbox.is_active(revoked_receipt_ids[0]):
+        raise RuntimeError("INBOX_REVOCATION_NOT_COMMITTED")
+    if box.production_permitted or box.notification_permitted or box.trading_permitted:
+        raise RuntimeError("OUTBOX_PERMISSION_UNEXPECTED")
+    assert result.outcome == UNKNOWN and result.receipt is None, (
+        f"revoked upstream receipt settled as {result.outcome}, "
+        f"outbox_receipt={result.receipt is not None}")
+    assert box._attempts[attempt.attempt_id] == result
+
+
 def test_cross_generation_finish_at_claim_preserves_old_ack_time():
     s = scenario()
     env, _, box, _, report, _, ack, _ = s
