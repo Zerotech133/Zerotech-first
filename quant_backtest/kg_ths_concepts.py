@@ -21,7 +21,7 @@ import random
 import re
 import sys
 
-sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 from tdx_read import read_all  # noqa: E402
 
 # 非主题板块名剔除规则（宽基样本/交易机制/风格筛选/涨跌榜单）

@@ -6,7 +6,7 @@ import sys
 import time
 import urllib.request as rq
 
-sys.path.insert(0, r"E:\老田的AI助手\jev-eval")
+sys.path.insert(0, r"C:\项目\老田的AI助手\jev-eval")
 import backup_alert as BA
 
 url, secret = BA.load_webhook()

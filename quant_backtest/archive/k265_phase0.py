@@ -12,10 +12,10 @@ import time
 import pandas as pd
 import requests
 
-sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 from kg_link import OLLAMA, name_dictionary  # noqa: E402
 
-OUT = r"e:\老田的AI助手\quant_backtest\data\semantica\k265_phase0_shadow.jsonl"
+OUT = r"C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_phase0_shadow.jsonl"
 CAP = 200          # 今晚 LLM 抽取上限
 CONC = 2           # 预留
 MODEL = "qwen3.5:9b"   # 实测：9b 6.5s 含加载/JSON 干净；35b 22GB 纯 CPU 64s 不可用；4b 返回空
@@ -107,7 +107,7 @@ def resolve(name, dictionary):
 
 
 def main():
-    df = pd.read_parquet(r"e:\老田的AI助手\quant_backtest\data\semantica\notice_llm.parquet")
+    df = pd.read_parquet(r"C:\项目\老田的AI助手\quant_backtest\data\semantica\notice_llm.parquet")
     df = df.dropna(subset=["text"])
     cand = df[df["text"].astype(str).str.contains(PATS, na=False)].copy()
     cand = cand.drop_duplicates(subset=["text"])

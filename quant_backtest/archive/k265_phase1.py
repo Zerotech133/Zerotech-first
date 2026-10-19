@@ -12,10 +12,10 @@ from itertools import combinations
 
 import requests
 
-sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 from kg_client import KgClient  # noqa: E402
 
-OUT = r"e:\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
+OUT = r"C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
 MODEL = "qwen3.5:9b"
 OLLAMA = "http://127.0.0.1:11434/api/chat"
 BATCH = 300         # 今晚首批 LLM 判定对数

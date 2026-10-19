@@ -13,7 +13,7 @@ K-STOCK-263 · v4 = v3(hfq修正) + seen-ever 信号去重（窗口滑移伪信�
 import sys, os, json, time
 import pandas as pd
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")
 OUT = os.path.join(BASE, "quant_backtest", "chanlun_rotation_v4_result.json")

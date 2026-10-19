@@ -27,7 +27,7 @@ from pathlib import Path
 import requests
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent  # E:\老田的AI助手
+ROOT = HERE.parent.parent  # C:\项目\老田的AI助手
 DEFAULT_US_DIR = ROOT / "quant_backtest" / "data" / "us"
 CAL_SYMBOL = "SPY"  # 日历基准（宽基 ETF，流动性最好、不会退市）
 

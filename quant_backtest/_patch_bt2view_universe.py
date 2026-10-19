@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-289: bt2_view.html 加样本域下拉（全市场默认）+ meta 显示入池/交易统计"""
 
-p = r"E:/老田的AI助手/portal/bt2_view.html"
+p = r"C:/项目/老田的AI助手/portal/bt2_view.html"
 s = open(p, encoding="utf-8").read()
 
 # ① 表单加样本域下拉（放在缠论买点等级之后）

@@ -15,7 +15,7 @@ import fitz  # PyMuPDF
 import requests
 from pypdf import PdfReader
 
-ROOT = r"e:\老田的AI助手\quant_backtest\data\k266_m1"
+ROOT = r"C:\项目\老田的AI助手\quant_backtest\data\k266_m1"
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
       "Referer": "https://data.eastmoney.com/"}  # dfcfw 直链需 Referer，否则返回 HTML 报错页
 

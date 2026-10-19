@@ -15,7 +15,7 @@ import json, os, sys, glob, argparse, time
 import pandas as pd
 from collections import Counter
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 OUT_DIR = os.path.join(BASE, "quant_backtest")
 

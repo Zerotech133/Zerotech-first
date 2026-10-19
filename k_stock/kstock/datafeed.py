@@ -16,7 +16,7 @@ from pathlib import Path
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent  # E:\老田的AI助手
+ROOT = HERE.parent.parent  # C:\项目\老田的AI助手
 ASHARE_DIR = ROOT / "quant_backtest" / "data" / "ashare"
 NEWS_DB = ROOT / "news_collector" / "news.db"
 

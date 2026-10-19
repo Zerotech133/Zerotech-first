@@ -142,7 +142,7 @@ def _facts_chanlun(portal, code):
     # K247：带出日线中枢 state（供买点定位器做门禁：构建中的中枢无三买）
     try:
         import sys as _s
-        _qb = r"e:\老田的AI助手\quant_backtest"
+        _qb = r"C:\项目\老田的AI助手\quant_backtest"
         if _qb not in _s.path:
             _s.path.insert(0, _qb)
         import chanlun_card as _cc
@@ -354,7 +354,7 @@ def _facts_no_buy_reasons(code, facts):
     card = None
     try:
         import sys as _s
-        qb = r"e:\老田的AI助手\quant_backtest"
+        qb = r"C:\项目\老田的AI助手\quant_backtest"
         if qb not in _s.path:
             _s.path.insert(0, qb)
         import importlib as _il
@@ -922,7 +922,7 @@ def build_card(facts, md):
     img_key = None
     try:
         import sys as _s2
-        _qb2 = r"e:\老田的AI助手\quant_backtest"
+        _qb2 = r"C:\项目\老田的AI助手\quant_backtest"
         if _qb2 not in _s2.path:
             _s2.path.insert(0, _qb2)
         import report_card_img as _RCI
@@ -942,7 +942,7 @@ def build_card(facts, md):
     _sub_btn = None
     try:
         import sys as _s3
-        _qb3 = r"e:\老田的AI助手\quant_backtest"
+        _qb3 = r"C:\项目\老田的AI助手\quant_backtest"
         if _qb3 not in _s3.path:
             _s3.path.insert(0, _qb3)
         import subscribe_action as _SA

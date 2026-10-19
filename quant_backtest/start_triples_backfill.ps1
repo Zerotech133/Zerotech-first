@@ -1,5 +1,5 @@
 ﻿# K223 TriplesOutcomeBackfill wrapper (daily 15:35) - alert coverage
-# backfill. Bare task ran on the Chinese path directly (E:\老田的AI助手);
+# backfill. Bare task ran on the Chinese path directly (C:\项目\老田的AI助手);
 # wrapper unifies on the C:\aios junction like every other task.
 # Idempotent backfill: re-runs are no-ops for already-filled dates.
 $log = 'C:\Temp\triples_backfill_task.log'

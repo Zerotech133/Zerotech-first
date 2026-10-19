@@ -1,4 +1,4 @@
-# ai-portal 反代容器启动脚本（挂载源钉死 E:\老田的AI助手\portal）
+# ai-portal 反代容器启动脚本（挂载源钉死 C:\项目\老田的AI助手\portal）
 # 用法：powershell -ExecutionPolicy Bypass -File start_portal_nginx.ps1
 # 行为：等引擎就绪 -> 幂等重建容器 -> nginx -t 自检 -> 打印状态与 resolver 核对
 $ErrorActionPreference = "Stop"

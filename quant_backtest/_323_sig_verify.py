@@ -3,7 +3,7 @@
 import sys
 import time
 
-sys.path.insert(0, r"E:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 import backtest_engine_v2 as E
 
 msgs = []

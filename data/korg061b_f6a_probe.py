@@ -8,8 +8,8 @@ import json
 import sys
 import time
 
-sys.path.insert(0, r"E:\老田的AI助手\tools")
-LOG = open(r"E:\老田的AI助手\data\korg061b_f6a_probe.log", "a", encoding="utf-8")
+sys.path.insert(0, r"C:\项目\老田的AI助手\tools")
+LOG = open(r"C:\项目\老田的AI助手\data\korg061b_f6a_probe.log", "a", encoding="utf-8")
 
 
 def log(msg):
@@ -41,7 +41,7 @@ for aid, q in PROBES:
     time.sleep(2)
 
 # 人设一致性核对（注册表关键词出现即算一致）
-b = json.load(open(r"E:\老田的AI助手\agent_platform\registry\claude_agents.json",
+b = json.load(open(r"C:\项目\老田的AI助手\agent_platform\registry\claude_agents.json",
                    encoding="utf-8"))
 checks = {"DEV7": ["10年档", "E2+"], "QA2": ["QA1"]}
 log("=== 人设一致性 ===")

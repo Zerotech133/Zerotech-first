@@ -2,7 +2,7 @@
 """K-STOCK-285c: bt2_view.html 加缠论买点等级下拉（仅二买+三买默认·10-13 拍板）"""
 import io
 
-p = r"E:/老田的AI助手/portal/bt2_view.html"
+p = r"C:/项目/老田的AI助手/portal/bt2_view.html"
 s = open(p, encoding="utf-8").read()
 
 old1 = '<div class="fld"><label>持有上限(日·0不限)</label><input name="holding_max_days" type="number" value="0" min="0" max="60"></div>'

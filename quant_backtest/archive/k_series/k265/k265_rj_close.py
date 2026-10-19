@@ -3,11 +3,11 @@
 import json
 import sys
 from pathlib import Path
-sys.path.insert(0, r'e:\老田的AI助手\quant_backtest')
+sys.path.insert(0, r'C:\项目\老田的AI助手\quant_backtest')
 from k265_dir_audit import audit_pair
 from kg_client import KgClient
 
-SHADOW = Path(r'e:\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl')
+SHADOW = Path(r'C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl')
 
 rows = [json.loads(l) for l in open(SHADOW, encoding='utf-8') if l.strip()]
 pv2 = [r for r in rows if r.get('pv') == 2 and r.get('ext', {}).get('ok') is True]
@@ -55,7 +55,7 @@ todo_flag = [r for r in todo if id(r) in fl_keys]
 print(f'0.95带 = {len(band)}  已入图 = {len(done_rows)}  待入图 = {len(todo)}  (待入图含FLAG {len(todo_flag)})')
 print(f'待入图 rj 段 = {sum(1 for r in todo if r.get("rj")==1)}  非rj = {sum(1 for r in todo if r.get("rj")!=1)}')
 
-out = Path(r'e:\老田的AI助手\quant_backtest\data\semantica\k265_ingest_pending.txt')
+out = Path(r'C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_ingest_pending.txt')
 with open(out, 'w', encoding='utf-8') as f:
     for i, r in enumerate(todo, 1):
         e = r['ext']

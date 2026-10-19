@@ -2,7 +2,7 @@
 """
 agent_auto_commit.py — 各 Agent 代码定时强制入库（portal 统揽板块运维）
 ========================================================================
-用途：monorepo（E:/老田的AI助手）下多个 Agent（scanner/integration/dashboard/news 等）
+用途：monorepo（C:/项目/老田的AI助手）下多个 Agent（scanner/integration/dashboard/news 等）
 并行开发，本脚本由定时自动化周期调用，把工作区所有改动强制快照入库，
 保证任一 Agent 的成果不因后续操作丢失（"强制"= 不挑改动，add -A 全收，
 .gitignore 挡运行时产物）。
@@ -26,7 +26,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-REPO = Path(r"E:/老田的AI助手")
+REPO = Path(r"C:/项目/老田的AI助手")
 LOG_DIR = REPO / "portal" / "logs"
 STATUS_FILE = LOG_DIR / "agent_commit_status.json"
 LOG_FILE = LOG_DIR / "auto_commit.log"

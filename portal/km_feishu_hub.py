@@ -611,7 +611,7 @@ input,select{border:1px solid var(--line);background:var(--card);color:var(--ink
 <h2 style="margin-top:14px">添加库</h2>
 <div class="grid">
 <input id="f_name" placeholder="库名（如：缠论笔记）">
-<input id="f_path" placeholder="目录路径，如 E:\\老田的AI助手\\portal\\docs">
+<input id="f_path" placeholder="目录路径，如 C:\\项目\\老田的AI助手\\portal\\docs">
 <input id="f_times" placeholder="时间 HH:MM，逗号分隔">
 <input id="f_targets" placeholder="目标，逗号分隔（见下方目标表）">
 <input id="f_exts" placeholder="扩展名过滤，如 .md,.txt（空=全部）">

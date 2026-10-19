@@ -12,8 +12,8 @@
      weak_track_weekly.py --send）。如需自动出影子周报，建议在
      weak_track_weekly.py 主流程末尾以子进程追加（注记式、可随时删除）：
        subprocess.run([r"C:/Program Files/Python311/python.exe",
-                       r"E:/老田的AI助手/quant_backtest/shadow_weekly_report.py",
-                       "--json-only"], cwd=r"E:/老田的AI助手/quant_backtest")
+                       r"C:/项目/老田的AI助手/quant_backtest/shadow_weekly_report.py",
+                       "--json-only"], cwd=r"C:/项目/老田的AI助手/quant_backtest")
      本脚本只读外部数据、只写自己名下两个输出文件，重复执行幂等、零副作用。
 ===========================================================================
 
@@ -43,7 +43,7 @@ import sys
 from collections import Counter
 from datetime import date, datetime, timedelta
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 QT = os.path.join(BASE, "quant_backtest")
 PORTAL = os.path.join(BASE, "portal")
 JEV = os.path.join(BASE, "jev-eval")

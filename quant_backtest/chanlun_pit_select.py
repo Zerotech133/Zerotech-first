@@ -13,7 +13,7 @@
 import json, os, sys, glob, argparse, time
 import pandas as pd
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_FILE = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")
 OUT_DIR = os.path.join(BASE, "quant_backtest")

@@ -14,10 +14,10 @@ import time
 
 import pandas as pd
 
-sys.path.insert(0, r"E:\老田的AI助手\agent_platform\engine")
+sys.path.insert(0, r"C:\项目\老田的AI助手\agent_platform\engine")
 from quant_double_knife import quant_double_knife  # noqa: E402
 
-DIR = r"E:\老田的AI助手\quant_backtest\data\ashare"
+DIR = r"C:\项目\老田的AI助手\quant_backtest\data\ashare"
 T1, T2 = "20260929", "20260930"   # T2=回放样本日, T1=其前一交易日
 T3 = "20261008"                    # 后验日（也是第二回放样本日）
 OUT = {}
@@ -106,6 +106,6 @@ print("  含已知 10-08 双刀票:", "600593.SH" in s2 and "600887.SH" in s2)
 OUT["replay_t3"] = {"signals": s2}
 
 OUT["elapsed"] = round(time.time() - t0, 1)
-json.dump(OUT, open(r"E:\老田的AI助手\portal\qd_replay_verify.json", "w",
+json.dump(OUT, open(r"C:\项目\老田的AI助手\portal\qd_replay_verify.json", "w",
                     encoding="utf-8"), ensure_ascii=False, indent=1)
 print("\nVERIFY DONE %.0fs → portal/qd_replay_verify.json" % OUT["elapsed"])

@@ -2,7 +2,7 @@
 """CowAgent web console 幂等启动器（用户手动拉起用）。
 
 用法（用户终端/双击均可）：
-    python E:\\老田的AI助手\\ops\\start_cowagent_bg.py
+    python C:\\项目\\老田的AI助手\\ops\\start_cowagent_bg.py
 
 行为：
   - 9899 已监听 → 幂等退出（不重复起）

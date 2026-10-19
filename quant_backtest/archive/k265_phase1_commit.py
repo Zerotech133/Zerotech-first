@@ -12,10 +12,10 @@ import json
 import re
 import sys
 
-sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 from kg_client import KgClient  # noqa: E402
 
-SHADOW = r"e:\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
+SHADOW = r"C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
 
 # 人工品牌名单（图内 Company 字典之外的知名品牌/厂商）
 MANUAL_BRANDS = {

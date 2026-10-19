@@ -2,7 +2,7 @@
 """K-STOCK-283 · 原型展示页生成器：bt2_prototype.html（静态自包含·暗色·红涨绿跌）"""
 import json, os
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DL = os.path.join(BASE, "quant_backtest", "data", "daily_ledger")
 OUT = os.path.join(DL, "bt2_prototype.html")
 

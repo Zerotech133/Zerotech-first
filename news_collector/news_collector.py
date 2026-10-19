@@ -461,7 +461,7 @@ def push_message(text):
 
 
 # --- K266 桥接：新新闻批次落 txt → inbox/docs/pending（词云管线自动摄取） ---
-# K-STOCK-414：原硬编码 e:\老田的AI助手\...（旧机 E 盘），换机后 makedirs
+# K-STOCK-414：原硬编码 C:\项目\老田的AI助手\...（旧机 E 盘），换机后 makedirs
 # 每轮抛 FileNotFoundError → K266 词云桥接整体死亡且逐轮 FAIL。
 # 改为按本仓库根（HERE 上级）推导，仓库迁到哪跟到哪。
 K266_PENDING = os.path.join(os.path.dirname(HERE), "inbox", "docs", "pending")

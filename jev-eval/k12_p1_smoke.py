@@ -3,7 +3,7 @@
 import sys
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 import kg_portal as K
 
 print("== 1) 600519.SH 默认（最新报告期） ==")

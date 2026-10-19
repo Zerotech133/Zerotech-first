@@ -14,10 +14,10 @@ from itertools import combinations
 
 import requests
 
-sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 from kg_client import KgClient  # noqa: E402
 
-OUT = r"e:\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
+OUT = r"C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
 MODEL = "qwen3.5:9b"   # 实测：9b 1.5-3.7s/对；35b 22GB 纯 CPU 不可用；4b 返回空
 BATCH = 300         # 默认批量
 MIN_OV = 3          # 共同成分股下限

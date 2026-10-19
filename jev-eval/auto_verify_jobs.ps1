@@ -38,7 +38,7 @@ W("VERIFY NoticeBackfill: $(TaskInfo 'NoticeBackfill')")
 $bk = (Get-Date).Date.AddDays(1).AddHours(3)
 Wait-Until $bk "每日备份 03:00"
 W("VERIFY 每日备份: $(TaskInfo 'AI工作站每日备份')")
-$sd = Get-Item 'e:\老田的AI助手\jev-eval\backup_daily.ps1' -ErrorAction SilentlyContinue
+$sd = Get-Item 'C:\项目\老田的AI助手\jev-eval\backup_daily.ps1' -ErrorAction SilentlyContinue
 W("磁盘 backup_daily.ps1 : " + $(if($sd){"EXISTS len=$($sd.Length)"}else{"MISSING"}))
 
 W("=== 全部验收点已检查 ===")

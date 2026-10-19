@@ -13,7 +13,7 @@ import random
 import re
 import sys
 
-SHADOW = r"e:\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
+SHADOW = r"C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl"
 
 # 概念名 + (A|B) 角色标注 (全角/半角括号)
 P_TAG = re.compile(r"([^，。；、（）()·\s]{2,14})[（(]\s*(?:概念)?\s*([AB])\s*[)）]")

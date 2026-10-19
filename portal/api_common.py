@@ -220,7 +220,7 @@ _PORTAL_TOKEN_FILE = r"C:\Temp\portal_api_token"
 ROOT = os.path.dirname(os.path.abspath(__file__))      # ...\portal
 
 
-STATION = os.path.dirname(ROOT)                        # E:\老田的AI助手
+STATION = os.path.dirname(ROOT)                        # C:\项目\老田的AI助手
 
 
 # ── 板块驾驶舱数据 helpers ─────────────────────────────

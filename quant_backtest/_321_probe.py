@@ -3,7 +3,7 @@
 import json
 
 print("== manifest ==")
-m = json.load(open(r"E:/老田的AI助手/quant_backtest/data/tdx/_manifest.json", encoding="utf-8"))
+m = json.load(open(r"C:/项目/老田的AI助手/quant_backtest/data/tdx/_manifest.json", encoding="utf-8"))
 for t in ("ts_daily", "ts_adj_factor"):
     e = m.get(t) or {}
     if isinstance(e, dict):

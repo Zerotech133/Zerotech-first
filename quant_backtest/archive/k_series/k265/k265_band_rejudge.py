@@ -8,7 +8,7 @@ import json
 import sys
 import time
 
-sys.path.insert(0, r"e:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 import k265_phase1 as P
 from kg_client import KgClient
 

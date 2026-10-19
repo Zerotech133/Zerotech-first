@@ -86,14 +86,14 @@ def check_junction():
     """K267 治理（方案B加固 2026-10-08）：C:\aios 必须是指向工作站的 junction。
 
     C:\aios 为 NTFS junction（fsutil Tag 0xa0000003，约 2026-09-11 建），
-    指向 E:\老田的AI助手——C 盘全部脚本路径依赖它。E 盘换盘符/移盘/
+    指向 C:\项目\老田的AI助手——C 盘全部脚本路径依赖它。E 盘换盘符/移盘/
     junction 误删 → C 盘脚本批量静默瘫痪，巡检需分钟级发现。
     依据: docs/ops/2026-10-08_Jev双副本治理方案.md 方案B第2步。"""
     # K-STOCK-098 #4 修探针：原实现拿 realpath(C:/aios)（解析结果=
-    # E://老田的AI助手）与 STATION（=C://aios，本脚本目录推导）比较，
+    # C://项目//老田的AI助手）与 STATION（=C://aios，本脚本目录推导）比较，
     # junction 越健康越恒假。改为与既定目标比对 +「既是 reparse point
     # 又能解析到目标」双条件。
-    # K-STOCK-414：换机后 junction 目标已变（旧机 E:\老田的AI助手 →
+    # K-STOCK-414：换机后 junction 目标已变（旧机 C:\项目\老田的AI助手 →
     # 本机 C:\项目\老田的AI助手），期望值不再硬编码——junction 只要
     # 解析到「本仓库实际所在（STATION 的真实路径）」且 portal 在位即健康。
     expected = os.path.realpath(STATION).lower()

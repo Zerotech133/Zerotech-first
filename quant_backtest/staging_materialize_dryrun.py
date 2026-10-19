@@ -28,7 +28,7 @@
       --staging   staging 根目录（默认 data/tushare_staging）
       --verify-all  对全部 staged parquet 重算 sha256（默认每表抽 2 个）
 
-旧机路径映射：manifest 里 staged_path 是 E:\\老田的AI助手\\... 旧机绝对路径，
+旧机路径映射：manifest 里 staged_path 是 C:\\项目\\老田的AI助手\\... 旧机绝对路径，
 本机等价物为 c:\\aios\\...（junction C:\\aios -> C:\\项目\\老田的AI助手）。
 """
 from __future__ import annotations
@@ -41,7 +41,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-_LEGACY_PREFIX = "E:\\老田的AI助手"
+_LEGACY_PREFIX = "C:\\项目\\老田的AI助手"
 _LOCAL_PREFIX = "C:\\aios"
 
 

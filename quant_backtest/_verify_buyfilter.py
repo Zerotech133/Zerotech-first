@@ -5,7 +5,7 @@ import os
 import sys
 import time
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 QB = os.path.join(BASE, "quant_backtest")
 sys.path.insert(0, QB)
 import backtest_engine_v2 as eng

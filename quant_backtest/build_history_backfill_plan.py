@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def main() -> None:
-    root = Path(r"E:\老田的AI助手\quant_backtest\data\tushare\trade_cal")
+    root = Path(r"C:\项目\老田的AI助手\quant_backtest\data\tushare\trade_cal")
     frames = []
     for path in sorted(root.glob("*.parquet")):
         frame = pd.read_parquet(path, columns=["exchange", "cal_date", "is_open"])

@@ -3,8 +3,8 @@
 import json
 import pandas as pd
 
-PQ = r"E:\老田的AI助手\quant_backtest\data\semantica\notice_llm.parquet"
-EVT = r"E:\老田的AI助手\quant_backtest\data\semantica\events.jsonl"
+PQ = r"C:\项目\老田的AI助手\quant_backtest\data\semantica\notice_llm.parquet"
+EVT = r"C:\项目\老田的AI助手\quant_backtest\data\semantica\events.jsonl"
 
 df = pd.read_parquet(PQ)
 all_pq = set(df["id"])

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """K-STOCK-293：bt2_view.html 当日详情重构——持仓池/候选池两表 + 评分/名称/量比/背驰可见。"""
-P = r"E:/老田的AI助手/portal/bt2_view.html"
+P = r"C:/项目/老田的AI助手/portal/bt2_view.html"
 s = open(P, encoding="utf-8").read()
 
 old = '''function showDay(d){

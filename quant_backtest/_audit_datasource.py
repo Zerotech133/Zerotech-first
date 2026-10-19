@@ -13,7 +13,7 @@ import os, json, glob
 import pandas as pd
 import numpy as np
 
-BASE = r"E:/老田的AI助手/quant_backtest/data"
+BASE = r"C:/项目/老田的AI助手/quant_backtest/data"
 TODAY = "20261012"          # 数据应到的最后交易日（10-13 为周二盘前，数据只到 10-12）
 REPORT = {}
 

@@ -3,7 +3,7 @@
 import os, glob, json
 import pandas as pd
 
-BASE = r"E:/老田的AI助手/quant_backtest/data"
+BASE = r"C:/项目/老田的AI助手/quant_backtest/data"
 
 # 1) tdx/ts_adj_factor 21 个分区的日期并集连续性
 print("== 1) tdx 因子湖日期连续性 ==")
@@ -43,7 +43,7 @@ print("最近 5 个交易日:", list(op.cal_date.astype(str).tail(5)))
 
 # 3) 76 池股 ∩ 陈旧名单
 print("\n== 3) 池股新鲜度交叉核查 ==")
-pool = json.load(open(r"E:/老田的AI助手/k_stock/data/poc_adapter_chanlun_20261012.json", encoding="utf-8"))
+pool = json.load(open(r"C:/项目/老田的AI助手/k_stock/data/poc_adapter_chanlun_20261012.json", encoding="utf-8"))
 stocks = sorted({x["stock"] for x in pool})
 stale = {"603056_SH": "20260120", "002231_SZ": "20260129", "000688_SH": "20260330",
          "000001_SH": "20260401", "600355_SH": "20260403", "300391_SZ": "20260410",

@@ -36,7 +36,7 @@ for l in r.stdout.decode("gbk", errors="replace").splitlines()[1:]:
     if len(p) >= 2 and p[0] == "python.exe":
         cands.append(p[1])
 
-sys.path.insert(0, r"E:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 from _331_readcmdline import cmdline_of  # noqa: E402
 
 sync_pids = []

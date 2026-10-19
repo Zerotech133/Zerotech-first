@@ -293,7 +293,7 @@ def build_snapshot(index_path: Path, root: Path, evidence_path: Path, output_dir
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rebuild a read-only E-drive candidate source snapshot")
     parser.add_argument("--index", type=Path, required=True)
-    parser.add_argument("--root", type=Path, default=Path(r"E:\老田的AI助手"))
+    parser.add_argument("--root", type=Path, default=Path(r"C:\项目\老田的AI助手"))
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

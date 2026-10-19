@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent  # E:\老田的AI助手
+ROOT = HERE.parent.parent  # C:\项目\老田的AI助手
 DEFAULT_ASHARE_DIR = ROOT / "quant_backtest" / "data" / "ashare"
 
 # 日历基准票：选不会退市的宽基成分（平安银行），湖内 trade_date 序列即交易日历

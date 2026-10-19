@@ -1,4 +1,4 @@
-﻿# zhice-os-v2 启动/停止/守护脚本（集成到 E:\老田的AI助手）
+﻿# zhice-os-v2 启动/停止/守护脚本（集成到 C:\项目\老田的AI助手）
 # 用法:
 #   .\zhice.ps1 start    # 数据库容器 + API(8102) + 调度器 + 前端(5175) + Jev 四件套
 #   .\zhice.ps1 stop     # 全部停止（先优雅后强杀）
@@ -24,7 +24,7 @@ function Get-Procs {
   #   zhice_os_v2   uvicorn/scheduler 等组件的模块名（-m zhice_os_v2.*）
   #   zhice[-_]os[-_]v2  安装目录 E:\zhice-os-v2-*（vite/node 命令行内含该路径）
   #   zhice\.ps1    本脚本自身拉起的子进程
-  # 另保留 Jev 四件套脚本名（其路径 E:\老田的AI助手\jev-eval\ 不含 zhice）。
+  # 另保留 Jev 四件套脚本名（其路径 C:\项目\老田的AI助手\jev-eval\ 不含 zhice）。
   Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='node.exe'" |
     Where-Object { $_.CommandLine -match 'zhice[-_]os[-_]v2|zhice\.ps1|jev_gate|jev_qd_bridge|signal_review_gate|lark_card_handler' }
 }
