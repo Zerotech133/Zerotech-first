@@ -5,6 +5,8 @@ import os
 import sqlite3
 import sys
 
+import pytest
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "tools"))
 
@@ -118,6 +120,88 @@ def test_offline_gaps_count_by_version_week_symbol_not_posts(tmp_path):
         ("v1.3", "2026-10-05", stocks[2]),
         ("v1.2-re", "2026-10-05", stocks[2]),
         ("v1.3", "2026-10-12", stocks[2])}
+    assert result["audit_decision"] == "INCONCLUSIVE"
+
+
+@pytest.mark.parametrize(
+    "bad_rows, expected_reason",
+    [
+        ([{"trade_date": "2026101８", "open": 10, "close": 11}], "invalid_trade_date"),
+        ([{"trade_date": "20260230", "open": 10, "close": 11}], "invalid_trade_date"),
+        ([{"trade_date": "20261012", "open": True, "close": 11}], "invalid_open"),
+        ([{"trade_date": "20261012", "open": 10, "close": float("inf")}], "invalid_close"),
+        ([{"trade_date": "20261012", "open": 10, "close": -1}], "invalid_close"),
+        ([{"trade_date": "20261012", "open": 10 ** 1000, "close": 11}], "invalid_open"),
+        ([{"trade_date": "20261012", "open": 1e-300, "close": 1e300}], "invalid_close"),
+    ],
+)
+def test_offline_invalid_candidate_cache_is_inconclusive(
+        tmp_path, bad_rows, expected_reason):
+    db, cache, stocks = _fixture(tmp_path)
+    data = json.loads(cache.read_text(encoding="utf-8"))
+    data["daily"][stocks[0]] = [
+        {"trade_date": "20261005", "open": 10, "close": 10}, *bad_rows]
+    result = factor.offline_audit(factor.load_posts(str(db)), data,
+                                  str(db), str(cache))
+    assert result["audit_status"] == "incomplete_cache"
+    assert result["coverage"] == "partial"
+    assert result["audit_decision"] == "INCONCLUSIVE"
+    assert result["eligible_for_effectiveness_conclusion"] is False
+    assert result["cache_quality"]["counts"][expected_reason] >= 1
+    assert result["cache_gaps"]["counts"]["invalid_cache_rows"] == 1
+    assert result["cache_gaps"]["matched_week_symbol_pairs"].get("v1.3", 0) == 1
+    assert result["funnel"]["forward_return_observations"] == 1
+    assert result["versions"]["v1.3"]["senti"]["ic"]["ic_mean"] is None
+
+
+@pytest.mark.parametrize("reverse_order", [False, True])
+def test_offline_duplicate_trade_date_cannot_select_first_return(tmp_path, reverse_order):
+    db, cache, stocks = _fixture(tmp_path)
+    data = json.loads(cache.read_text(encoding="utf-8"))
+    data["daily"][stocks[0]].append(
+        {"trade_date": "20261012", "open": 10, "close": 50})
+    if reverse_order:
+        data["daily"][stocks[0]].reverse()
+    result = factor.offline_audit(factor.load_posts(str(db)), data,
+                                  str(db), str(cache))
+    assert result["cache_quality"]["counts"]["duplicate_trade_date"] >= 1
+    assert result["cache_gaps"]["matched_week_symbol_pairs"].get("v1.3", 0) == 1
+    assert result["funnel"]["forward_return_observations"] == 1
+    assert result["audit_status"] == "incomplete_cache"
+    assert result["eligible_for_effectiveness_conclusion"] is False
+
+
+def test_offline_invalid_symbol_isolated_across_versions(tmp_path):
+    db, cache, stocks = _fixture(tmp_path)
+    connection = sqlite3.connect(db)
+    connection.execute("INSERT INTO xq_status VALUES (?, ?)",
+                       ("old_bad", "2026-10-05T13:00:00"))
+    connection.execute("INSERT INTO xq_status_classified VALUES (?, ?, ?, ?)",
+                       ("old_bad", "bullish", "v1.2-re", json.dumps([
+                           {"kind": "stock_a", "canonical": stocks[0]}])))
+    connection.commit()
+    connection.close()
+    data = json.loads(cache.read_text(encoding="utf-8"))
+    data["daily"][stocks[0]].append(
+        {"trade_date": "20261012", "open": 10, "close": 50})
+    result = factor.offline_audit(factor.load_posts(str(db)), data,
+                                  str(db), str(cache))
+    assert result["cache_gaps"]["counts"]["invalid_cache_rows"] == 2
+    assert result["cache_gaps"]["matched_week_symbol_pairs"].get("v1.3", 0) == 1
+    assert result["cache_gaps"]["matched_week_symbol_pairs"].get("v1.2-re", 0) == 0
+    assert result["audit_decision"] == "INCONCLUSIVE"
+
+
+def test_offline_valid_cache_has_no_quality_issues(tmp_path):
+    db, cache, _ = _fixture(tmp_path)
+    data = json.loads(cache.read_text(encoding="utf-8"))
+    result = factor.offline_audit(factor.load_posts(str(db)), data,
+                                  str(db), str(cache))
+    assert result["cache_quality"]["counts"] == {
+        "invalid_daily_rows": 0, "invalid_row": 0,
+        "invalid_trade_date": 0, "invalid_open": 0,
+        "invalid_close": 0, "duplicate_trade_date": 0}
+    assert result["cache_gaps"]["matched_week_symbol_pairs"] == {"v1.3": 2}
     assert result["audit_decision"] == "INCONCLUSIVE"
 
 
