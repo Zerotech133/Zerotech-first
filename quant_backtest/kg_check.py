@@ -118,6 +118,17 @@ def run():
                       % t).data()[0]["d"]
             cov[t] = {"max": d, "cn": INTRADAY_NOTE.get(t, t)}
 
+        # ⑥a-2 雪球帖提及边水位（跨仓工单 2026-10-19，雪球帖入图接线）：
+        #    IntelItem-[:MENTIONS]->Security，data_source 前缀 xueqiu；
+        #    key 含 xueqiu 供 portal _xq_graph_watermark 自动现形。
+        #    存量回填+每日增量混合节奏，回填日拉到的边 validStart 会
+        #    是历史发帖日，lag 比照 HAS_STRUCTURE 放宽（≠每日节奏）。
+        d = s.run(
+            "MATCH (n:IntelItem)-[r:MENTIONS]->() "
+            "WHERE n.data_source STARTS WITH 'xueqiu' "
+            "RETURN max(r.validStart) AS d").data()[0]["d"]
+        cov["XQ_STATUS_MENTIONS"] = {"max": d, "cn": "雪球帖提及"}
+
         # ⑥b 滞后告警（OPS-0930b：HAS_STRUCTURE 断 13 天而检查器
         #    始终 ok=True 的教训——coverage 日期必须升级为失败条件）。
         #    分档：每日链高频边 >4 交易日即断流；HAS_STRUCTURE 信号
@@ -126,7 +137,9 @@ def run():
         #    K268 补遗（2026-10-08）：lag 按交易日度量（trade_cal 口径，
         #    国庆 8 自然日仅涨 1-2 交易日不再误报；日历不可用退自然日，
         #    budget 数字不变，方向仅放宽）。
-        LAG_BUDGET = {"HAS_STRUCTURE": 14}
+        #    XQ_STATUS_MENTIONS（2026-10-19）：雪球帖回填/增量混合节奏，
+        #    同 HAS_STRUCTURE 档放宽到 14 交易日。
+        LAG_BUDGET = {"HAS_STRUCTURE": 14, "XQ_STATUS_MENTIONS": 14}
         lag_bad = []
         try:
             from kg_source_rating import trade_days_lag as _tdlag
