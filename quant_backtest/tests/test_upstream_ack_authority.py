@@ -360,6 +360,7 @@ def test_inbox_revoke_during_real_ack_must_not_publish_verified_receipt(
         generation: str) -> None:
     """A revoked inbox receipt must not settle as verified in either generation."""
     revoked_receipt_ids: list[str] = []
+    expected_receipt_ids: list[str] = []
 
     def revoke_after_verified(box: RouteOutbox, env: EvidenceEnvelope) -> None:
         port = box._active_ack_port
@@ -368,8 +369,15 @@ def test_inbox_revoke_during_real_ack_must_not_publish_verified_receipt(
         inbox = port.authority._inbox
         report_id = "same-generation-report" if generation == "same" else "up-1"
         receipt = inbox.receipt_for_report(report_id)
-        if receipt is None:
-            raise RuntimeError("UPSTREAM_RECEIPT_MISSING")
+        if receipt is None or [receipt.receipt_id] != expected_receipt_ids:
+            raise RuntimeError("UPSTREAM_RECEIPT_ID_CHANGED")
+        if (receipt.ack.ack_id != ack.ack_id
+                or receipt.ack.report_id != ack.report_id
+                or receipt.ack.receiver_agent_id != ack.receiver_agent_id
+                or receipt.ack.acked_at != ack.acked_at
+                or receipt.ack.verification_source != ack.verification_source
+                or not inbox.is_active(receipt.receipt_id)):
+            raise RuntimeError("REAL_ACK_RECEIPT_NOT_ACTIVE")
         inbox.revoke(receipt.receipt_id, now=at(8))
         revoked_receipt_ids.append(receipt.receipt_id)
 
@@ -381,22 +389,40 @@ def test_inbox_revoke_during_real_ack_must_not_publish_verified_receipt(
         attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
                             target_id=report.receiver.agent_id, claim_token="second",
                             claim_at=at(6), lease_until=at(20))
+    original_receipt = inbox.receipt_for_report(ack.report_id)
+    if (original_receipt is None
+            or original_receipt.ack.ack_id != ack.ack_id
+            or original_receipt.ack.report_id != ack.report_id
+            or original_receipt.ack.receiver_agent_id != ack.receiver_agent_id
+            or original_receipt.ack.acked_at != ack.acked_at
+            or original_receipt.ack.verification_source != ack.verification_source):
+        raise RuntimeError("UPSTREAM_RECEIPT_ACK_MISMATCH")
+    expected_receipt_ids.append(original_receipt.receipt_id)
     port = box._active_ack_port
-    assert isinstance(port, MutatingActiveAckPort)
+    if not isinstance(port, MutatingActiveAckPort):
+        raise RuntimeError("REAL_ACK_PORT_MISSING")
     result = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
                         now=at(8), external_message_id=ack.ack_id,
                         verification_source=ack.verification_source,
                         observed_at=ack.acked_at)
-    if port.verified_calls != 1 or len(revoked_receipt_ids) != 1:
-        raise RuntimeError("REAL_ACK_CALLBACK_NOT_COMPLETED")
-    if not inbox.is_revoked(ack.report_id) or inbox.is_active(revoked_receipt_ids[0]):
+    if port.verified_calls != 1 or revoked_receipt_ids != expected_receipt_ids:
+        raise RuntimeError("REAL_ACK_CALLBACK_RECEIPT_MISMATCH")
+    if (not inbox.is_revoked(ack.report_id)
+            or inbox.is_active(original_receipt.receipt_id)
+            or inbox.receipt_for_report(ack.report_id) != original_receipt):
         raise RuntimeError("INBOX_REVOCATION_NOT_COMMITTED")
     if box.production_permitted or box.notification_permitted or box.trading_permitted:
         raise RuntimeError("OUTBOX_PERMISSION_UNEXPECTED")
+    stored = box._attempts[attempt.attempt_id]
+    if stored != result:
+        raise RuntimeError("OUTBOX_SETTLEMENT_NOT_STORED")
+    if result.outcome == ACCEPTED_VERIFIED and result.receipt is None:
+        raise RuntimeError("OUTBOX_VERIFIED_WITHOUT_RECEIPT")
+    # Existing behavior demonstrably publishes a verified receipt for a revoked
+    # upstream ACK; the safety assertion remains strict-xfail until atomicity is fixed.
     assert result.outcome == UNKNOWN and result.receipt is None, (
-        f"revoked upstream receipt settled as {result.outcome}, "
-        f"outbox_receipt={result.receipt is not None}")
-    assert box._attempts[attempt.attempt_id] == result
+        f"revoked receipt_id={original_receipt.receipt_id} "
+        f"settled as {result.outcome}, outbox_receipt={result.receipt is not None}")
 
 
 def test_cross_generation_finish_at_claim_preserves_old_ack_time():
