@@ -1,0 +1,17 @@
+{
+  "_note": "K-ORG-190 拍板②（2026-10-19 老田确认）：模型档位表——E3=强模型、E1=flash/本地，沿 K-ORG-136 判例（包年 key 的 coding 端点只通 glm-5.3 / glm-5.3-flash）。注册新岗与改绑时硬校验 allow 档位；存量绑定不回刷（向后兼容）。降级链：云端不可用 → qwen3.5:9b 本地档（a0_agent.route_chat 前缀路由不动）。",
+  "registry": "laotian_model_tiers",
+  "version": "v1",
+  "models": {
+    "glm/glm-5.3": { "tier": "strong", "family": "glm", "scope": "cloud", "enabled": true, "note": "判读/裁决/汇报聚合（思考型，reasoning_content 不拼正文）" },
+    "glm/glm-5.3-flash": { "tier": "fast", "family": "glm", "scope": "cloud", "enabled": true, "note": "E1 轻量调度/抽取/分发（Lite 快档）" },
+    "qwen3.5:9b": { "tier": "local", "family": "qwen", "scope": "local", "enabled": true, "note": "本地降级档（云端不可用 fallback）；数据岗：治理/分配/流转/抓取/蒸馏" },
+    "claude/claude-sonnet": { "tier": "strong", "family": "claude", "scope": "cloud", "enabled": false, "note": "预留（需 key，未接通不参与校验白名单）" }
+  },
+  "grade_policy": {
+    "E3": { "label": "30年档 · 裁定", "allow": ["strong"], "default": "glm/glm-5.3" },
+    "E2": { "label": "20年档 · 独立表态", "allow": ["strong", "fast"], "default": "glm/glm-5.3" },
+    "E1": { "label": "10年档 · 执行", "allow": ["fast", "local"], "default": "glm/glm-5.3-flash" }
+  },
+  "degraded_fallback": "qwen3.5:9b"
+}

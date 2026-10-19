@@ -1,0 +1,19 @@
+{
+  "_note": "K-ORG-190 拍板①（2026-10-19 老田确认）：Skill=插件，Agent=编制——Agent 的 skills 数组只存 {id, kind, enabled} 引用，实体永不内嵌。本注册表是唯一技能真源；kind 五类：tool（内置工具）/ algo（算法商品，外键 portal/algo_market.json）/ automation（计划任务与 automation）/ prompt（人设包，按 role_profile 动态解析 agent_platform/prompts/*.md 与 registry/claude_agents.json，不在本文件枚举）/ external（外部 skill，预留）。加 Skill=在本文件加条目，不改 Agent 框架（K-ORG-019 判例平移）。",
+  "registry": "laotian_skills",
+  "version": "v1",
+  "kinds": ["tool", "algo", "automation", "external"],
+  "skills": [
+    { "id": "devtask", "kind": "tool", "title": "研发工单", "ref": "agent_platform/tools#devtask", "enabled": true },
+    { "id": "events", "kind": "tool", "title": "事件总线", "ref": "agent_platform/tools#events", "enabled": true },
+    { "id": "quant_dual", "kind": "algo", "title": "量子双刀 · 三阶段流水线", "ref": "portal/algo_market.json#quant_dual", "enabled": true },
+    { "id": "riskguard", "kind": "algo", "title": "RiskGuard 风控影子评估", "ref": "portal/algo_market.json#riskguard", "enabled": true },
+    { "id": "chanlun_9dim", "kind": "algo", "title": "缠论九维结构研判", "ref": "portal/algo_market.json#chanlun_9dim", "enabled": true },
+    { "id": "jev_sentiment", "kind": "algo", "title": "JEV 消息面情绪研判", "ref": "portal/algo_market.json#jev_sentiment", "enabled": true },
+    { "id": "tdx_backtest", "kind": "algo", "title": "TDX 回测引擎", "ref": "portal/algo_market.json#tdx_backtest", "enabled": true },
+    { "id": "score_ranking", "kind": "algo", "title": "Score 多因子评分排序", "ref": "portal/algo_market.json#score_ranking", "enabled": true },
+    { "id": "xq_data_review", "kind": "automation", "title": "雪球数据健康复盘（每日 07:40）", "ref": "automation#xq_data_review", "enabled": true },
+    { "id": "chief_push_1735", "kind": "automation", "title": "参谋长值班判读（每日 17:35）", "ref": "automation#AgentChiefPush", "enabled": true },
+    { "id": "premarket_receipt", "kind": "automation", "title": "盘前跑单回执", "ref": "automation#premarket_run_receipt", "enabled": true }
+  ]
+}

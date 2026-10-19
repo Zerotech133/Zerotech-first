@@ -149,6 +149,7 @@ import api_guojia       # K-ORG-191 /api/guojia/data 郭嘉预判对账司出口
 import api_execution    # R1 执行健康总线 /api/execution/health（联动层一期 2026-10-18）
 import api_tickets      # 工单只读投影 /api/org/tasks（驾驶舱一期 2026-10-18）
 import api_evolution    # 进化舱只读投影 /api/evolution/summary（驾驶舱二期 2026-10-18）
+import org_command_api  # K-ORG-190 Agent 指挥台后端（/api/org 等 8 端点，2026-10-19）
 import api_gate         # 周一门判只读投影 /api/gate/checkpoint（驾驶舱二期 2026-10-18）
 import api_brief        # 复盘简报只读投影 /api/brief/*（联动层二期 R5 2026-10-18）
 import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，2026-10-19）
@@ -2488,6 +2489,34 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 # K-STOCK-114e 独立安全审计 AI 对话（独立模型绑定 AUDIT_MODEL）
                 self._api_audit_chat(raw)
                 return
+            if path in ("/api/preview", "/api/register", "/api/project/preview",
+                        "/api/project/register", "/api/agent/update",
+                        "/api/agent/learn"):
+                # K-ORG-190 Agent 指挥台写回链（org.html 两段式：预览→落盘）
+                # 学习环 /api/agent/learn 属 P2（K-ORG-185 在途）——显式拒绝不假绿
+                try:
+                    body = json.loads(raw.decode("utf-8")) if raw else {}
+                except Exception:
+                    self._json({"ok": False, "error": "请求体不是合法 JSON"}, 400)
+                    return
+                try:
+                    if path == "/api/preview":
+                        out = org_command_api.api_preview(body)
+                    elif path == "/api/register":
+                        out = org_command_api.api_register(body)
+                    elif path == "/api/project/preview":
+                        out = org_command_api.api_project_preview(body)
+                    elif path == "/api/project/register":
+                        out = org_command_api.api_project_register(body)
+                    elif path == "/api/agent/update":
+                        out = org_command_api.api_agent_update(body)
+                    else:
+                        out = org_command_api.api_agent_learn(body)
+                except Exception:
+                    log_exc("org-command " + path)
+                    out = {"ok": False, "error": "org-command internal (see err log)"}
+                self._json(out, 200 if out.get("ok") else 400)
+                return
             if path == "/api/flow/rerun":
                 # F1 动作流中心：白名单产线任务重跑（body: {"task": "..."}）
                 try:
@@ -4293,6 +4322,21 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     pass
         elif path == "/org":
             self._org_page()
+        elif path == "/api/org":
+            # K-ORG-190 Agent 指挥台数据面（org.html bundle，此前 404 断粮已修）
+            try:
+                self._json(org_command_api.api_org())
+            except Exception:
+                log_exc("org-command api_org")
+                self._json({"ok": False, "error": "org internal (see err log)"})
+        elif path == "/api/agent/knowledge":
+            try:
+                from urllib.parse import parse_qs as _pqs_k
+                q = _pqs_k(qs, keep_blank_values=True)
+                self._json(org_command_api.api_agent_knowledge(q))
+            except Exception:
+                log_exc("org-command knowledge")
+                self._json({"ok": False, "error": "knowledge internal"})
         elif path == "/aim":
             # K-STOCK-033 AI 市场：聘请 AI 岗位货架（ai_market.json 存源）
             self._aim_page()
