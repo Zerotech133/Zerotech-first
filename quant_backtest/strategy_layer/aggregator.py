@@ -23,6 +23,8 @@ r"""L4 组合裁决层：SignalAggregator 多策略加权融合（多策略链�
     psql \copy 兜底）；写入失败只打印告警不中断，内存结果照常返回，
     并经 alert_bridge 走 E1 告警链留痕（G9：outbox pending 落痕 →
     send_feishu 发送 → alert_send.log 追加 → 成功 pending→.sent）
+  · 融合完成后经 evidence_intake.record_pool_intake 自动写证据链
+    pool_in 态（B1 证据链；closed on failure，失败只告警不阻断主链）
   · enabled 集为空 → 返回空 AggResult
 
 上游契约（adapter-dev 交付，本模块只 duck-type 消费，不做硬 import，
@@ -456,7 +458,17 @@ class SignalAggregator:
                   "内存结果照常返回（%d 行）: %s" % (len(combined), exc))
             _notify_persist_failure(trade_date, len(combined), exc)
 
-        return AggResult(combined=combined, divergences=divergences)
+        # 5) 证据链入池（B1：融合裁决产出后自动写证据链 pool_in 态；
+        #    closed on failure：观测层任何失败只告警，绝不阻断融合主链）
+        result = AggResult(combined=combined, divergences=divergences)
+        try:
+            from strategy_layer import evidence_intake
+            evidence_intake.record_pool_intake(trade_date, result)
+        except Exception as exc:  # noqa: BLE001 — 证据链写入不反噬主链
+            print("[evidence-intake][WARN] 证据链入池调用失败: %s"
+                  % str(exc)[:120])
+
+        return result
 
     def _fuse_symbol(self, trade_date: str, symbol: str,
                      entries: list,
