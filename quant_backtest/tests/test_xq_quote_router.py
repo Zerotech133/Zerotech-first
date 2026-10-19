@@ -110,10 +110,18 @@ def test_fetch_daily_mixed_sources():
                      "chg": 0, "percent": 0, "turnoverrate": None,
                      "amount": 1, "trade_date": "20261016"}], "qfq"
         raise RuntimeError("no map")
-    with mock.patch.object(R, "daily_tushare", side_effect=ts_side), \
+    ts_mod, pro = object(), object()
+    with mock.patch.object(R, "setup_tushare", return_value=(ts_mod, pro)) as setup, \
+         mock.patch.object(R, "daily_tushare", side_effect=ts_side) as daily_ts, \
          mock.patch.object(R, "daily_akshare",
-                           return_value=[{"symbol": "SZ000001"}]):
+                           return_value=[{"symbol": "SZ000001"}]) as daily_ak:
         by_sym, note, errs = R.fetch_daily(["SH600519", "SZ000001"])
+    setup.assert_called_once_with()
+    assert daily_ts.call_args_list == [
+        mock.call("SH600519", 300, ts_mod, pro),
+        mock.call("SZ000001", 300, ts_mod, pro),
+    ]
+    daily_ak.assert_called_once_with("SZ000001", 300)
     assert set(by_sym) == {"SH600519", "SZ000001"}
     assert "tushare_qfq×1" in note and "akshare_qfq×1" in note
 
