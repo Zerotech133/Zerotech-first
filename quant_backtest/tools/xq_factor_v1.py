@@ -830,6 +830,43 @@ def offline_audit(posts: list, cache: dict, db_path: str,
     return result
 
 
+def _publish_offline_result_json(result: dict, output_path: str) -> None:
+    """同目录完整写临时文件后，以硬链接无覆盖地发布离线报告。
+
+    同名冲突及不支持硬链接时直接显错；不能降级为替换或直接写目标。
+    """
+    temporary_path: str | None = None
+    published = False
+    try:
+        with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8",
+                dir=os.path.dirname(os.path.abspath(output_path)),
+                prefix=".factor_offline_", suffix=".tmp", delete=False) as target:
+            temporary_path = target.name
+            json.dump(result, target, ensure_ascii=False, indent=1)
+            target.flush()
+        os.link(temporary_path, output_path)
+        published = True
+    finally:
+        if temporary_path is not None:
+            primary_error = sys.exc_info()[1]
+            try:
+                os.unlink(temporary_path)
+            except OSError as cleanup_error:
+                message = "离线报告临时文件清理失败: %s: %s" % (
+                    temporary_path, cleanup_error)
+                if primary_error is not None:
+                    if hasattr(primary_error, "add_note"):
+                        primary_error.add_note(message)
+                    else:
+                        primary_error.args = (*primary_error.args, message)
+                elif published:
+                    raise OSError("离线报告目标已发布: %s；%s" % (
+                        output_path, message)) from cleanup_error
+                else:
+                    raise OSError(message) from cleanup_error
+
+
 def offline_main(db_path: str = DB_PATH, cache_path: str = CACHE_PATH,
                  output_dir: str = CACHE_DIR) -> str:
     """纯离线：只读真库及已有 JSON 缓存，产出独立审计 JSON。"""
@@ -849,8 +886,7 @@ def offline_main(db_path: str = DB_PATH, cache_path: str = CACHE_PATH,
     filename = "factor_%s_%s.json" % (OFFLINE_ALGORITHM_VERSION, stamp)
     os.makedirs(output_dir, exist_ok=True)
     output = os.path.join(output_dir, filename)
-    with open(output, "x", encoding="utf-8") as target:
-        json.dump(result, target, ensure_ascii=False, indent=1)
+    _publish_offline_result_json(result, output)
     return output
 
 

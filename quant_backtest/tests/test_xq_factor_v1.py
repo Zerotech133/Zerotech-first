@@ -7,11 +7,13 @@
   3) IC：ic_series / ic_summary 的 spearman 计算
   4) label_version 分层：filter_version / run_analysis 版本隔离
 """
+import hashlib
 import json
 import os
 import socket
 import sys
 import types
+from datetime import datetime
 
 import pytest
 
@@ -841,6 +843,165 @@ def test_factor_result_cleanup_failure_keeps_primary_error_and_path(
     assert len(leftovers) == 1 and leftovers[0].name.startswith(".factor_result_")
     assert str(leftovers[0]) in " ".join(getattr(caught.value, "__notes__", []))
     leftovers[0].unlink()
+
+
+@pytest.fixture
+def isolated_offline_report(isolated_factor_io, tmp_path, monkeypatch):
+    """仅用合成库/缓存和内存审计结果执行离线发布。"""
+    db_path = tmp_path / "synthetic.db"
+    cache_path = isolated_factor_io
+    db_path.write_bytes(b"synthetic database bytes")
+    cache_bytes = b'{"daily":{},"_meta":{"saved_at":"synthetic","days":3}}\n'
+    cache_path.write_bytes(cache_bytes)
+    posts = [{"date": "2026-10-05", "stocks": [], "version": "v1.3"}]
+    def load_synthetic_posts(path):
+        assert path == str(db_path)
+        return posts
+
+    monkeypatch.setattr(factor, "load_posts", load_synthetic_posts)
+
+    def audit(got_posts, cache, database, source):
+        assert got_posts is posts and cache["daily"] == {}
+        assert (database, source) == (str(db_path), str(cache_path))
+        return {"source": {"cache": source}, "message": "离线报告"}
+
+    monkeypatch.setattr(factor, "offline_audit", audit)
+
+    def clock(microsecond):
+        class FixedDatetime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime.fromisoformat(
+                    "2026-10-19T12:30:00+00:00").replace(microsecond=microsecond)
+
+        monkeypatch.setattr(factor, "datetime", FixedDatetime)
+        stamp = FixedDatetime.now().astimezone().strftime("%Y%m%dT%H%M%S%f%z")
+        return tmp_path / ("factor_%s_%s.json" % (factor.OFFLINE_ALGORITHM_VERSION,
+                                                  stamp))
+
+    output = clock(123456)
+    return db_path, cache_path, cache_bytes, output, clock
+
+
+def _assert_offline_inputs(db_path, cache_path, cache_bytes):
+    assert db_path.read_bytes() == b"synthetic database bytes"
+    assert cache_path.read_bytes() == cache_bytes
+
+
+def test_offline_report_atomic_unique_publish_and_metadata(
+        isolated_offline_report, tmp_path, monkeypatch):
+    db_path, cache_path, cache_bytes, output, _ = isolated_offline_report
+    real_link = os.link
+    linked = []
+
+    def audited_link(source, destination):
+        assert destination == str(output)
+        assert os.path.dirname(source) == str(tmp_path)
+        assert os.path.basename(source).startswith(".factor_offline_")
+        pending = json.loads(open(source, encoding="utf-8").read())
+        assert pending["message"] == "离线报告"
+        linked.append(source)
+        real_link(source, destination)
+
+    monkeypatch.setattr(factor.os, "link", audited_link)
+    returned = factor.offline_main(str(db_path), str(cache_path), str(tmp_path))
+    assert returned == str(output) and len(linked) == 1
+    saved = json.loads(output.read_bytes())
+    assert saved["source"]["cache_sha256"] == hashlib.sha256(cache_bytes).hexdigest()
+    assert saved["source"]["database_mtime"]
+    assert saved["source"]["cache_mtime"]
+    assert sorted(tmp_path.iterdir()) == sorted([db_path, cache_path, output])
+    _assert_offline_inputs(db_path, cache_path, cache_bytes)
+
+
+@pytest.mark.parametrize("failure", ["partial_write", "serialization", "link"])
+def test_offline_report_failure_never_leaves_formal_target_and_can_retry(
+        isolated_offline_report, tmp_path, monkeypatch, failure):
+    db_path, cache_path, cache_bytes, output, _ = isolated_offline_report
+    original_dump = factor.json.dump
+
+    def incomplete_dump(value, target, **kwargs):
+        target.write('{"incomplete":')
+        target.flush()
+        if failure == "serialization":
+            raise TypeError("模拟序列化失败")
+        raise OSError("模拟半写失败")
+
+    def denied_link(source, destination):
+        assert destination == str(output)
+        assert json.loads(open(source, encoding="utf-8").read())["message"] == "离线报告"
+        raise OSError("模拟硬链接不可用")
+
+    with monkeypatch.context() as patch:
+        if failure == "link":
+            patch.setattr(factor.os, "link", denied_link)
+        else:
+            patch.setattr(factor.json, "dump", incomplete_dump)
+        with pytest.raises(TypeError if failure == "serialization" else OSError,
+                           match="模拟"):
+            factor.offline_main(str(db_path), str(cache_path), str(tmp_path))
+    assert factor.json.dump is original_dump
+    assert not output.exists()
+    assert sorted(tmp_path.iterdir()) == sorted([db_path, cache_path])
+    _assert_offline_inputs(db_path, cache_path, cache_bytes)
+    assert factor.offline_main(str(db_path), str(cache_path), str(tmp_path)) == str(output)
+    assert json.loads(output.read_bytes())["message"] == "离线报告"
+    assert sorted(tmp_path.iterdir()) == sorted([db_path, cache_path, output])
+
+
+def test_offline_report_collision_preserves_bytes_and_retry_new_stamp(
+        isolated_offline_report, tmp_path):
+    db_path, cache_path, cache_bytes, output, clock = isolated_offline_report
+    original = b'{"historical":true}\n'
+    output.write_bytes(original)
+    with pytest.raises(FileExistsError):
+        factor.offline_main(str(db_path), str(cache_path), str(tmp_path))
+    assert output.read_bytes() == original
+    assert sorted(tmp_path.iterdir()) == sorted([db_path, cache_path, output])
+    _assert_offline_inputs(db_path, cache_path, cache_bytes)
+    retry_output = clock(123457)
+    assert factor.offline_main(str(db_path), str(cache_path), str(tmp_path)) == str(retry_output)
+    assert output.read_bytes() == original
+    assert json.loads(retry_output.read_bytes())["message"] == "离线报告"
+    assert sorted(tmp_path.iterdir()) == sorted([db_path, cache_path, output,
+                                                  retry_output])
+
+
+@pytest.mark.parametrize("link_success", [False, True])
+def test_offline_report_cleanup_failure_preserves_primary_or_reports_publication(
+        isolated_offline_report, tmp_path, monkeypatch, link_success):
+    db_path, cache_path, cache_bytes, output, _ = isolated_offline_report
+    real_link, real_unlink = os.link, os.unlink
+    leftovers = []
+
+    def link(source, destination):
+        if not link_success:
+            raise OSError("首次硬链接失败")
+        real_link(source, destination)
+
+    def unlink(path):
+        if os.path.basename(path).startswith(".factor_offline_"):
+            leftovers.append(path)
+            raise OSError("模拟清理失败")
+        real_unlink(path)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(factor.os, "link", link)
+        patch.setattr(factor.os, "unlink", unlink)
+        with pytest.raises(OSError, match=("目标已发布" if link_success
+                                           else "首次硬链接失败")) as caught:
+            factor.offline_main(str(db_path), str(cache_path), str(tmp_path))
+    assert len(leftovers) == 1 and os.path.exists(leftovers[0])
+    if link_success:
+        assert str(output) in str(caught.value)
+        assert json.loads(output.read_bytes())["message"] == "离线报告"
+    else:
+        assert not output.exists()
+        assert leftovers[0] in " ".join(getattr(caught.value, "__notes__", []))
+    assert leftovers[0] in (str(caught.value) +
+                            " ".join(getattr(caught.value, "__notes__", [])))
+    _assert_offline_inputs(db_path, cache_path, cache_bytes)
+    os.unlink(leftovers[0])
 
 
 if __name__ == "__main__":
