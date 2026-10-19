@@ -120,6 +120,7 @@
 <div class="deck">
   <div class="col" id="colSector">
     <div class="col-title">板块 · L1<span class="n" id="secN"></span></div>
+    <div id="committeeLine" class="greybox" style="display:none"></div>
     <div id="sectorList"><div class="greybox">板块数据加载中…</div></div>
   </div>
   <div class="col" id="colStock">
@@ -426,6 +427,9 @@ Promise.all([
   S.wall=rs[0]; S.picks=rs[1];
   if(!S.picks){ document.getElementById("stockList").innerHTML='<div class="greybox">todays_picks 缺源 · 灰态不猜值</div>'; }
   if(!S.wall){ document.getElementById("sectorList").innerHTML='<div class="greybox">wall.json 缺源 · 灰态不猜值</div>'; }
+  var cEl=document.getElementById("committeeLine");
+  var cl=S.wall&&typeof S.wall.committee_line==="string"?S.wall.committee_line.trim():"";
+  if(cl){ cEl.textContent="投研会 · "+cl; cEl.style.display="block"; }
   renderSectors(); renderStocks(); renderDetail(null); loadAdmission();
   var di=document.getElementById("dayinfo");
   if(S.picks&&S.picks.scan_run_date) di.textContent="数据日 "+S.picks.scan_run_date+(S.picks.trade_basis?" · "+S.picks.trade_basis:"");

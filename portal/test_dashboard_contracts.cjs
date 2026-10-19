@@ -153,6 +153,11 @@ section('wall.json schema (存在才断言)');
     }
   }
   if (d.committee_line !== undefined && d.committee_line !== null) ok(typeof d.committee_line === 'string', 'wall.json: committee_line 非空时为字符串');
+  // 投研会一行出处纪律：结论行非空 → 必带 committee_source（真实纪要引用，禁无出处合成）
+  if (d.committee_line && d.committee_line.length > 0) {
+    const cs = d.provenance && d.provenance.committee_source;
+    ok(cs && typeof cs.source === 'string' && cs.source.length > 0 && !!cs.meeting_at, 'wall.json: committee_line 非空必带 provenance.committee_source 出处');
+  }
 })();
 
 /* ── 3c. quant_drill.html 下钻驾驶舱不变量（2026-10-19 老田批：不做长图，单屏三栏下钻） ── */
@@ -180,6 +185,7 @@ section('quant_drill.html invariants');
     // 中国行情配色铁律：涨红跌绿
     ok(h.includes(".up { color: #e05656") && h.includes(".dn { color: #2ea36b"), '下钻页：涨红(#e05656)跌绿(#2ea36b) 中国惯例');
     // 过滤器四态
+    ok(h.includes('committeeLine') && h.includes('投研会 · '), '下钻页：L1 投研会一行渲染（committee_line 有则显示）在位');
     ok(h.includes('data-f="buy"') && h.includes('data-f="env"') && h.includes('data-f="T1"'), '下钻页：T1/买点/环境偏离过滤器在位');
     // US 灰位先行（v3 拍板）：美股 tab 接 paper_status 账本只读投影，影子账本标注+缺源灰态
     ok(h.includes("setMarket('US')") && h.includes('/api/paper_status') && h.includes('us.accounts'),

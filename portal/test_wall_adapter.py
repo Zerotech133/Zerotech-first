@@ -50,6 +50,7 @@ class WallAdapterTests(unittest.TestCase):
         self.root = self.temp.name
         self.picks_path = os.path.join(self.root, "todays_picks.json")
         self.verdicts_path = os.path.join(self.root, "pick_verdicts.json")
+        self.minutes_path = os.path.join(self.root, "minutes.json")
         self.out_path = os.path.join(self.root, "wall.json")
         self._write_json(self.picks_path, PICKS)
 
@@ -59,7 +60,8 @@ class WallAdapterTests(unittest.TestCase):
 
     def _run(self, extra=None):
         argv = ["--todays-picks", self.picks_path,
-                "--verdicts", self.verdicts_path, "--out", self.out_path]
+                "--verdicts", self.verdicts_path, "--out", self.out_path,
+                "--minutes", self.minutes_path]
         if extra:
             argv += extra
         wa.main(argv)
@@ -91,10 +93,57 @@ class WallAdapterTests(unittest.TestCase):
         self.assertEqual(wall["markets"],
                          {"A": "active", "HK": "planned",
                           "US": "planned", "CRYPTO": "planned"})
+        # minutes 缺失（可选源）→ 留空 + 记 missing，绝不编造
         self.assertEqual(wall["committee_line"], "")
+        self.assertIsNone(wall["provenance"]["committee_source"])
+        self.assertTrue(any("committee_line" in m
+                            for m in wall["provenance"]["missing"]))
         self.assertEqual(wall["provenance"]["todays_picks_path"],
                          os.path.abspath(self.picks_path))
         self.assertTrue(wall["provenance"]["missing"])
+
+    # ── 投研会一行：minutes.json 可选真源 ─────────────────────────
+
+    MINUTES = {"items": [
+        {"id": "min_old", "kind": "post_close",
+         "created_at": "2026-10-14T15:41:36", "title": "旧会",
+         "body": "**会议结论**：旧的。"},
+        {"id": "min_new", "kind": "pre_open",
+         "created_at": "2026-10-15T09:22:15", "title": "新会",
+         "body": "前文\n**会议结论**：维持 T1/T2 精选执行、T3 只看不动。\n后文"},
+    ]}
+
+    def test_committee_line_from_latest_minutes(self):
+        self._write_json(self.minutes_path, self.MINUTES)
+        wall = json.loads(self._run())
+        # 取 created_at 最新一条，结论行原文引用 + 日期/会议类型标注
+        self.assertEqual(wall["committee_line"],
+                         "10-15 盘前会｜维持 T1/T2 精选执行、T3 只看不动。")
+        src = wall["provenance"]["committee_source"]
+        self.assertTrue(src["source"].endswith("minutes.json"))
+        self.assertEqual(src["meeting_id"], "min_new")
+        self.assertEqual(src["kind"], "pre_open")
+        self.assertFalse(any("committee_line" in m
+                             for m in wall["provenance"]["missing"]))
+
+    def test_minutes_without_conclusion_line(self):
+        self._write_json(self.minutes_path, {"items": [
+            {"id": "m1", "kind": "pre_open", "created_at": "2026-10-15T09:00:00",
+             "title": "无结论段", "body": "只有正文没有结论行"}]})
+        wall = json.loads(self._run())
+        self.assertEqual(wall["committee_line"], "")
+        self.assertIsNone(wall["provenance"]["committee_source"])
+        self.assertTrue(any("会议结论" in m
+                            for m in wall["provenance"]["missing"]))
+
+    def test_bad_minutes_json_fails(self):
+        # minutes 存在但坏 JSON → fail-visible 非零退出（与 verdicts 同语义）
+        with open(self.minutes_path, "w", encoding="utf-8") as f:
+            f.write("{oops")
+        with self.assertRaises(SystemExit) as ctx:
+            self._run()
+        self.assertNotEqual(ctx.exception.code, 0)
+        self.assertFalse(os.path.exists(self.out_path))
 
     def test_strategists_mapped_from_todays_picks(self):
         wall = json.loads(self._run())
@@ -193,7 +242,10 @@ class RealWallSchemaTests(unittest.TestCase):
         self.assertEqual(self.wall["markets"],
                          {"A": "active", "HK": "planned",
                           "US": "planned", "CRYPTO": "planned"})
-        self.assertEqual(self.wall["committee_line"], "")
+        # 投研会一行：有真实纪要结论 → 非空且带出处（committee_source）
+        self.assertTrue(self.wall["committee_line"])
+        src = self.wall["provenance"]["committee_source"]
+        self.assertTrue(src and src["meeting_id"] and src["meeting_at"])
         self.assertRegex(self.wall["generated_at"],
                          r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$")
         self.assertRegex(self.wall["scan_run_date"], r"^\d{8}$")

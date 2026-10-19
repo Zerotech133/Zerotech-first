@@ -12,8 +12,9 @@
   "t1_gate":       todays_picks.t1_gate 原样对象
   "strategists": [{id,name,score,picks_count,top:[{ticker,name,score}],view}]
   "markets": {"A":active,"HK":planned,"US":planned,"CRYPTO":planned}
-  "committee_line": 投研会一行结论（review_minutes/analyst/trader 未编制 → 留空）
-  "provenance": {todays_picks_path, generated_from, missing}
+  "committee_line": 投研会一行结论（k_stock/paper/minutes.json 最新纪要「会议结论」行原文引用
+                    → "MM-DD 盘前会｜结论"；文件缺失/无结论行 → 留空并记 missing，绝不编造）
+  "provenance": {todays_picks_path, generated_from, missing, committee_source|null}
 }
 
 规则：
@@ -27,15 +28,18 @@
 import argparse
 import json
 import os
+import re
 import sys
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_TODAYS_PICKS = os.path.join(REPO_ROOT, "portal", "data", "todays_picks.json")
 DEFAULT_VERDICTS = os.path.join(REPO_ROOT, "portal", "data", "pick_verdicts.json")
+DEFAULT_MINUTES = os.path.join(REPO_ROOT, "k_stock", "paper", "minutes.json")
 DEFAULT_OUT = os.path.join(REPO_ROOT, "portal", "data", "wall.json")
 
 MARKETS = {"A": "active", "HK": "planned", "US": "planned", "CRYPTO": "planned"}
 TOP_N = 3          # 每位策略师展示的 top 标的条数
+KIND_LABEL = {"pre_open": "盘前会", "post_close": "收盘会"}
 # 墙契约顶层键（顺序即输出顺序）
 WALL_KEYS = ["generated_at", "scan_run_date", "trade_basis", "t1_gate",
              "strategists", "markets", "committee_line", "provenance"]
@@ -142,15 +146,57 @@ def build_strategists(picks, verdicts):
     return cards
 
 
-def build_wall(picks, verdicts, picks_path, verdicts_path):
+def extract_committee(minutes_path):
+    """投研会一行真源：k_stock/paper/minutes.json 最新纪要的「会议结论」行。
+
+    返回 (line, source_meta, missing_note)。引用原文绝不改写；
+    缺文件/无 items/无结论行 → (None, None, 说明) 继续跑；
+    文件存在但坏 JSON → SystemExit（与 verdicts 同语义，fail-visible）。
+    """
+    if not os.path.isfile(minutes_path or ""):
+        return None, None, ("committee_line: minutes.json 未找到"
+                            "（可选投研会纪要源）%s" % minutes_path)
+    try:
+        with open(minutes_path, "r", encoding="utf-8") as f:
+            d = json.load(f)
+    except (ValueError, OSError) as e:
+        sys.stderr.write("[wall_adapter] minutes.json 解析失败: %s\n" % e)
+        raise SystemExit(2)
+    items = d.get("items") if isinstance(d, dict) else None
+    if not items:
+        return None, None, "committee_line: minutes.json 无 items（纪要为空）"
+    latest = max(items, key=lambda m: str(m.get("created_at", "")))
+    body = str(latest.get("body", ""))
+    m = re.search(r"\*\*会议结论\*\*[：:](.+)", body)
+    if not m:
+        return None, None, ("committee_line: 最新纪要（%s）无「会议结论」行"
+                            % latest.get("created_at", "?"))
+    conclusion = m.group(1).strip()
+    created = str(latest.get("created_at", ""))
+    kind = str(latest.get("kind", ""))
+    label = KIND_LABEL.get(kind, kind or "投研会")
+    line = "%s %s｜%s" % (created[5:10].replace("-", "-"), label, conclusion)
+    meta = {"source": os.path.abspath(minutes_path),
+            "meeting_id": latest.get("id", ""),
+            "meeting_at": created,
+            "kind": kind,
+            "title": str(latest.get("title", ""))}
+    return line, meta, None
+
+
+def build_wall(picks, verdicts, picks_path, verdicts_path, minutes_path=None):
     missing = []
     # 策略师级 score：todays_picks/pick_verdicts 均无此口径 → null + 记缺失
     missing.append("strategist.score: 源文件无策略师级评分字段")
     missing.append("stock.score: 源文件无逐股评分字段")
     if not os.path.isfile(verdicts_path or ""):
         missing.append("pick_verdicts: 文件未找到（可选考核源）%s" % verdicts_path)
-    # 投研会一行：review_minutes/analyst_latest/trader_latest 尚未编制（K-STOCK-122 M5）
-    missing.append("committee_line: review_minutes/analyst_latest/trader_latest 未编制（K-STOCK-122 M5 挂账）")
+    # 投研会一行：最新纪要「会议结论」原文引用（可选源，缺失留空记 missing）
+    if minutes_path is None:
+        minutes_path = DEFAULT_MINUTES
+    committee_line, committee_src, cmiss = extract_committee(minutes_path)
+    if cmiss:
+        missing.append(cmiss)
     return {
         "generated_at": _iso8601_cn(picks["generated_at"]),
         "scan_run_date": str(picks["scan_run_date"]).replace("-", ""),
@@ -158,11 +204,12 @@ def build_wall(picks, verdicts, picks_path, verdicts_path):
         "t1_gate": picks["t1_gate"],
         "strategists": build_strategists(picks, verdicts),
         "markets": dict(MARKETS),
-        "committee_line": "",
+        "committee_line": committee_line or "",
         "provenance": {
             "todays_picks_path": os.path.abspath(picks_path),
-            "generated_from": [os.path.abspath(p) for p in (picks_path, verdicts_path)
-                               if p and os.path.isfile(p)],
+            "generated_from": [os.path.abspath(p) for p in (picks_path, verdicts_path,
+                               minutes_path) if p and os.path.isfile(p)],
+            "committee_source": committee_src,
             "missing": missing,
         },
     }
@@ -190,6 +237,8 @@ def main(argv=None):
     ap.add_argument("--todays-picks", default=DEFAULT_TODAYS_PICKS)
     ap.add_argument("--verdicts", default=DEFAULT_VERDICTS)
     ap.add_argument("--out", default=DEFAULT_OUT)
+    ap.add_argument("--minutes", default=DEFAULT_MINUTES,
+                    help="投研会纪要源（可选，默认 k_stock/paper/minutes.json）")
     ap.add_argument("--dry-run", action="store_true", help="只打印不落盘")
     args = ap.parse_args(argv)
 
@@ -197,7 +246,8 @@ def main(argv=None):
     verdicts = load_json(args.verdicts, required=False, label="pick_verdicts")
     if verdicts is not None and not isinstance(verdicts, dict):
         _fail("pick_verdicts 顶层不是对象：%s" % args.verdicts)
-    wall = build_wall(picks, verdicts, args.todays_picks, args.verdicts)
+    wall = build_wall(picks, verdicts, args.todays_picks, args.verdicts,
+                      args.minutes)
     text = json.dumps(wall, ensure_ascii=False, indent=2) + "\n"
     if args.dry_run:
         sys.stdout.write(text)
