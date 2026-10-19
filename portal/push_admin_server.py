@@ -397,7 +397,16 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def _json(self, obj, code=200):
-        body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        # K-QUANT-002: default 函数处理 psycopg2 Decimal / datetime (quant_mid DB 返回)
+        def _default(x):
+            import decimal as _d
+            import datetime as _dt
+            if isinstance(x, _d.Decimal):
+                return float(x) if x.is_finite() else str(x)
+            if isinstance(x, (_dt.datetime, _dt.date)):
+                return x.isoformat()
+            raise TypeError(f"Object of type {type(x).__name__} is not JSON serializable")
+        body = json.dumps(obj, ensure_ascii=False, default=_default).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
