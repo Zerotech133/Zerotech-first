@@ -83,6 +83,25 @@ def test_public_inbox_accepts_local_shape_valid_report_and_issues_local_ack() ->
     assert inbox.accept(report, now=_at(3)) == accepted
 
 
+def test_public_inbox_current_gap_accepts_report_created_after_acceptance() -> None:
+    """Record the current missing future-time gate, not a production guarantee."""
+    envelope = _envelope()
+    future_report = QuantUpstreamReport(
+        report_id="future-local-report", report_kind="ANOMALY",
+        event_id=envelope.event_id, evidence_hash=envelope.envelope_hash,
+        evidence_version=envelope.evidence_version,
+        sender_agent_id="watch1", receiver_agent_id="sector1",
+        created_at=_at(10))
+    inbox = UpstreamInbox()
+    receipt = inbox.accept(future_report, now=_at(2))
+    assert future_report.created_at > receipt.accepted_at
+    assert receipt.accepted_at == receipt.ack.acked_at == _at(2)
+    assert inbox.is_active(receipt.receipt_id)
+    assert inbox.receipt_for_report(future_report.report_id) == receipt
+    # This passing regression exposes an unsafe current behavior; external
+    # provenance and clock authority are still required before production use.
+
+
 @pytest.mark.parametrize("use_local_inbox_ack", [False, True])
 def test_same_generation_public_finish_needs_no_active_ack_port(
         use_local_inbox_ack: bool) -> None:
