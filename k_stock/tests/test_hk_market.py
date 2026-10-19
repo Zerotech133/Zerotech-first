@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """HkMarket 测试（HK 灰位期，镜像 test_us_market.py）：代码规范 / bar 契约 /
-09:30 HKT 时界 / HK 费率常量 / T+0 挂账 / LOT 与涨跌停运行时豁免。纯 stdlib 离线跑
-（refresh 的 pandas 路径以 fake 模块注入，不依赖真实 parquet）。"""
+全市场聚合日历 / 09:30 HKT 时界 / HK 费率常量 / T+0 挂账 / LOT 与涨跌停运行时豁免 /
+直读湖 _read 清洗。pandas 仅在 I/O 边界——逻辑层测试纯 stdlib（_read 注入），
+pandas 路径以 fake 模块注入离线测。"""
 import csv
-import json
 import sys
 from pathlib import Path
 
@@ -68,54 +68,162 @@ def test_hk_fee_sell_includes_stamp_tax(tmp_path):
     assert e._fee_buy(200_000.0) == 60.0
 
 
-# ---------------- HkMarket 六方法契约（CSV 缓存只读，同 UsMarket 测试法） ----------------
+# ---------------- HkMarket 六方法契约（_read 注入 rows，逻辑层纯 stdlib） ----------------
 
 
-def _write_csv(d: Path, code5: str, lines: list[str]) -> None:
-    d.mkdir(parents=True, exist_ok=True)
-    (d / f"{code5}.csv").write_text(
-        "date,open,high,low,close,volume,pre_close\n" + "\n".join(lines) + "\n",
-        encoding="utf-8")
+def _rows_00700():
+    return [{"trade_date": "20261015", "open": 410.0, "high": 420.0, "low": 405.0,
+             "close": 415.0, "pre_close": 408.0},
+            {"trade_date": "20261016", "open": 420.0, "high": 428.0, "low": 414.0,
+             "close": 417.8, "pre_close": 415.0}]
 
 
-def test_hk_market_contract(tmpdir):
-    d = Path(tmpdir)
-    _write_csv(d, "02800", ["2026-10-15,21.5,21.8,21.3,21.6,50000000,21.4",
-                            "2026-10-16,21.7,21.9,21.4,21.5,48000000,21.6"])
-    _write_csv(d, "00700", ["2026-10-15,410.0,420.0,405.0,415.0,18000000,408.0",
-                            "2026-10-16,420.0,428.0,414.0,417.8,19000000,415.0"])
-    m = hm.HkMarket(hk_dir=d)
-    assert m.trading_days() == ["20261015", "20261016"]
-    b = m.bar("00700.HK", "20261016")          # 引擎原码（.HK 后缀）直达
+def test_hk_market_contract(tmp_path, monkeypatch):
+    m = hm.HkMarket(export_dir=tmp_path)
+    monkeypatch.setattr(m, "_read",
+                        lambda code: _rows_00700() if hm.file_code(code) == "00700" else None)
+    assert m.trading_days() == ["20261015", "20261016"]   # 回退路径：基准票 00700
+    b = m.bar("00700.HK", "20261016")                     # 引擎原码（.HK 后缀）直达
     assert b == {"trade_date": "20261016", "open": 420.0, "high": 428.0,
                  "low": 414.0, "close": 417.8, "pre_close": 415.0}
-    assert m.bar("00700.HK", "20261017") is None   # 非交易日 None
-    assert m.bar("09988.HK", "20261016") is None   # 无缓存票 None
+    assert m.bar("00700.HK", "20261017") is None          # 非交易日 None
+    assert m.bar("09988.HK", "20261016") is None          # 无湖文件票 None
     assert m.last_bar("00700.HK")["trade_date"] == "20261016"
     assert m.last_bar_before("00700.HK", "20261015")["close"] == 415.0
     assert m.first_bar_on_or_after("00700.HK", "20261016")["trade_date"] == "20261016"
     assert m.first_bar_on_or_after("00700.HK", "20261010")["trade_date"] == "20261015"
 
 
-def test_hk_trading_days_missing_cal(tmpdir):
+def test_trading_days_market_days_csv_priority(tmp_path):
+    """H2 实证采纳：聚合日历 market_days.csv 优先（不依赖单票长历史）。"""
+    d = tmp_path / "hk_paper"
+    d.mkdir()
+    (d / hm.MARKET_DAYS_FILE).write_text(
+        "trade_date\n20261014\n20261015\n20261016\n", encoding="utf-8")
+    m = hm.HkMarket(export_dir=tmp_path, hk_dir=d)
+    assert m.trading_days() == ["20261014", "20261015", "20261016"]
+
+
+def test_trading_days_missing_everything(tmp_path):
+    m = hm.HkMarket(export_dir=tmp_path, hk_dir=tmp_path)
     with pytest.raises(FileNotFoundError):
-        hm.HkMarket(hk_dir=Path(tmpdir)).trading_days()
+        m.trading_days()
 
 
 # ---------------- next_trading_day：09:30 HKT 界（防偷价口径，同 US/A 股） ----------------
 
 
-def test_next_trading_day_hkt_boundary(tmpdir):
-    d = Path(tmpdir)
-    _write_csv(d, "02800", ["2026-10-15,21.5,21.8,21.3,21.6,50000000,21.4",
-                            "2026-10-16,21.7,21.9,21.4,21.5,48000000,21.6"])
-    m = hm.HkMarket(hk_dir=d)
+def test_next_trading_day_hkt_boundary(tmp_path):
+    d = tmp_path / "hk_paper"
+    d.mkdir()
+    (d / hm.MARKET_DAYS_FILE).write_text(
+        "trade_date\n20261015\n20261016\n", encoding="utf-8")
+    m = hm.HkMarket(export_dir=tmp_path, hk_dir=d)
     # 盘前（北京 08:00 = HKT 08:00 < 09:30）→ 当日开盘价尚未产生，可成交
     assert m.next_trading_day("2026-10-16T08:00:00") == "20261016"
-    # 盘中（10:00）→ 湖尾 1016 之后外推：1017 周六 → 1019 周一
+    # 盘中（10:00）→ 日历尾 1016 之后外推：1017 周六 → 1019 周一
     assert m.next_trading_day("2026-10-16T10:00:00") == "20261019"
     # 1015 盘后 → 严格后继 1016
     assert m.next_trading_day("2026-10-15T23:00:00") == "20261016"
+
+
+# ---------------- _read 直读湖清洗（pre_close NaN 补齐；pandas fake 注入离线测） ----------------
+
+
+class FakeSeries(list):
+    def fillna(self, other):
+        return FakeSeries(v if (v is not None and v == v) else o
+                          for v, o in zip(self, other))
+
+    def shift(self, n=1):
+        return FakeSeries([None] * n + list(self[: len(self) - n]) if n > 0 else list(self))
+
+    def astype(self, _t):
+        return FakeSeries(str(v) for v in self)
+
+
+class FakeDF:
+    def __init__(self, records):
+        self._records = [dict(r) for r in records]
+        self._cols = {k: FakeSeries(r[k] for r in self._records)
+                      for k in self._records[0]} if self._records else {}
+
+    def sort_values(self, _col):
+        return self
+
+    def __getitem__(self, col):
+        return self._cols[col]
+
+    def assign(self, **kw):
+        out = FakeDF(self._records)
+        for k, v in kw.items():
+            out._cols[k] = v
+        return out
+
+    def to_dict(self, _orient):
+        return [{k: list(col)[i] for k, col in self._cols.items()}
+                for i in range(len(next(iter(self._cols.values()))))]
+
+
+def test_read_fills_pre_close_from_prev_close(tmp_path, monkeypatch):
+    """湖 pre_close 实量 NaN：次行补前日 close、首行回填当日 open（bar 契约完整性）。"""
+    records = [
+        {"trade_date": 20261015, "open": 410.0, "high": 420.0, "low": 405.0,
+         "close": 415.0, "pre_close": None},
+        {"trade_date": 20261016, "open": 420.0, "high": 428.0, "low": 414.0,
+         "close": 417.8, "pre_close": None},
+    ]
+
+    class _FakePD:
+        @staticmethod
+        def read_parquet(_path):
+            return FakeDF(records)
+
+    monkeypatch.setitem(sys.modules, "pandas", _FakePD)
+    (tmp_path / "00700.parquet").write_bytes(b"fake")   # 仅需存在性
+    rows = hm.HkMarket(export_dir=tmp_path)._read("00700.HK")
+    assert rows[0]["pre_close"] == 410.0                # 首行 NaN → 当日 open
+    assert rows[1]["pre_close"] == 415.0                # 次行 → 前日 close
+    assert rows[0]["trade_date"] == "20261015"          # 统一 YYYYMMDD 字符串
+
+
+def test_read_missing_file_returns_none(tmp_path):
+    assert hm.HkMarket(export_dir=tmp_path)._read("00700.HK") is None
+
+
+# ---------------- refresh_calendar（全市场聚合日历；pandas fake 注入离线测） ----------------
+
+
+class _FakeCalPD:
+    """read_parquet(f, columns=['trade_date']) → {'trade_date': 可迭代日期}。"""
+
+    def __init__(self, by_code):
+        self._by = by_code
+
+    def read_parquet(self, path, columns=None):
+        code = Path(path).stem
+        if code not in self._by:
+            raise FileNotFoundError(path)
+        return {"trade_date": FakeSeries(self._by[code])}
+
+
+def test_refresh_calendar_union_sorted(tmp_path, monkeypatch):
+    fake = _FakeCalPD({"00700": [20261015, 20261016],
+                       "02800": [20260827, 20261016],   # 02800 短历史（H2 实证 36 根）
+                       "09988": [20261014, 20261016]})
+    monkeypatch.setitem(sys.modules, "pandas", fake)
+    export_dir = tmp_path / "hk"
+    export_dir.mkdir()
+    for code in fake._by:
+        (export_dir / f"{code}.parquet").write_bytes(b"fake")
+    p = hm.refresh_calendar(export_dir=export_dir, hk_dir=tmp_path / "hk_paper")
+    days = [r["trade_date"] for r in csv.DictReader(open(p, encoding="utf-8"))]
+    assert days == ["20260827", "20261014", "20261015", "20261016"]  # 并集升序去重
+
+
+def test_refresh_calendar_all_missing_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        hm.refresh_calendar(export_dir=tmp_path / "nope", hk_dir=tmp_path)
 
 
 # ---------------- T+0 挂账（P-3：照 US 先例不豁免，T+1 冻结保守无害） ----------------
@@ -133,7 +241,7 @@ def test_t0_freeze_kept_as_debt(tmp_path):
     assert r["fill_date"] == "20261016"        # 手动单 fill_date=湖内最后交易日
     assert e.available_qty("00700.HK") == 0    # T+1 冻结保持（未豁免=挂账行为）
     with pytest.raises(Exception):
-        e.sell("00700.HK", 500)                # 当日买不可卖（挂账口径下被冻结）
+        e.sell("00700.HK", 400)                # 当日买不可卖（挂账口径下被冻结）
 
 
 # ---------------- 运行时豁免（灰位期落地，进程内生效，不改 engine.py） ----------------
@@ -174,56 +282,6 @@ def test_no_waiver_lot_100_default(tmp_path):
     e = PaperEngine(tmp_path / "t.db", m, account="main")
     with pytest.raises(Exception):
         e.buy("600519.SH", 150, 1250.0)   # 150 非 100 倍数 → 拒（原语义保持）
-
-
-# ---------------- refresh（zhice-db 导出湖 → CSV，pandas 以 fake 注入离线测） ----------------
-
-
-class _FakeDF:
-    def __init__(self, rows):
-        self._rows = rows
-
-    def sort_values(self, _col):
-        return self
-
-    def iterrows(self):
-        return iter(enumerate(self._rows))
-
-
-def test_refresh_from_export_fills_pre_close(tmpdir, monkeypatch):
-    rows = [
-        {"ts_code": "00700", "trade_date": "20261015", "close": 415.0, "open": 410.0,
-         "high": 420.0, "low": 405.0, "volume": 1.8e7, "pre_close": None},
-        {"ts_code": "00700", "trade_date": "20261016", "close": 417.8, "open": 420.0,
-         "high": 428.0, "low": 414.0, "volume": 1.9e7, "pre_close": None},
-    ]
-
-    class _FakePD:
-        @staticmethod
-        def read_parquet(_path):
-            return _FakeDF(rows)
-
-        @staticmethod
-        def notna(v):
-            return v is not None and v == v
-
-    monkeypatch.setitem(sys.modules, "pandas", _FakePD)
-    export_dir = Path(tmpdir) / "export"
-    export_dir.mkdir()
-    (export_dir / "00700.parquet").write_bytes(b"fake")   # 仅需存在性
-    p = hm.refresh_from_export("00700.HK", hk_dir=Path(tmpdir) / "cache",
-                               export_dir=export_dir)
-    got = list(csv.DictReader(open(p, encoding="utf-8")))
-    assert len(got) == 2
-    assert got[0]["pre_close"] == "410.0"   # 首行 NaN → 回填当日 open
-    assert got[1]["pre_close"] == "415.0"   # 次行 → 前日 close（与 US 缓存同构）
-    assert got[0]["date"] == "2026-10-15"
-
-
-def test_refresh_missing_export_raises(tmpdir):
-    with pytest.raises(FileNotFoundError):
-        hm.refresh_from_export("00700.HK", hk_dir=Path(tmpdir) / "cache",
-                               export_dir=Path(tmpdir) / "nope")
 
 
 # ---------------- 账本通道灰态（同 US 先例：无账本不算错） ----------------

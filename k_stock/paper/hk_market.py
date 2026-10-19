@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
 """HK 行情源 + HK 影子账本跑批（镜像 US 先例 K-STOCK-044，HK 灰位期 · 影子账本纪律）。
 
-数据流（灰位期 P-1 倾向：主源 zhice-db 导出湖，本地到本地零联网）：
-  zhice-db v2_bar_daily market='HK'（经 quant_backtest/export_us_hk.py --market HK 导出）
-    → quant_backtest/data/hk/{code5}.parquet（ts_code=00700 5 位，2026-10 实存 3400+ 只）
-    → refresh() 本地转 CSV 缓存 quant_backtest/data/hk_paper/{code5}.csv
-      （列 date/open/high/low/close/volume/pre_close，date=YYYY-MM-DD，
-        pre_close=前日 close——湖内 pre_close 列实量 NaN，转换时补齐，与 US 缓存同构）
-  HkMarket（与 ParquetMarket/UsMarket 同鸭子契约：6 方法）只读缓存不在线拉——
-  引擎 settle/mark 与 US 同构离线跑，缓存更新走本模块 refresh CLI（automation 每日一次）。
-  兜底源 TDX ts_hk_daily（xtcloud 真源 2023-07 起）：灰位期未接，TODO 挂账——
-  chanlun_data.py:175-188 已有 HK TDX 兜底先例，实装期照抄即可。
+数据流（H2 实证定稿 2026-10-19：主源直读 zhice-db 导出湖，零转换零联网）：
+  zhice-db v2_bar_daily market='HK'（quant_backtest/export_us_hk.py --market HK 增量导出）
+    → quant_backtest/data/hk/{code5}.parquet（ts_code=00700 5 位，实证 3,408 只实存，
+      与 A 股 schema 同构，pre_close 列实量 NaN）
+    → HkMarket 直读（pandas 惰性仅在 I/O 边界，读入即转 list[dict]，
+      pre_close NaN 以前日 close 补齐、首行回填当日 open——六方法逻辑纯 stdlib，
+      与 UsMarket/ParquetMarket 同鸭子契约）
+  兜底源 TDX ts_hk_daily（xtcloud 真源）：H2 实证 2026-08 起逐日稠密、2023-08~2026-07
+  为快照式稀疏——灰位期未接，TODO 挂账（chanlun_data.py:175-188 已有兜底先例）。
+
+日历（H2 实证采纳：不依赖单票长历史）：
+  zhice-db HK 每标的历史普遍 2~4 个月（≥100 根仅 20 只，02800 仅 36 根、00700 107 根），
+  单票作日历基准不可靠 → trading_days() 优先读全市场聚合日历
+  quant_backtest/data/hk_paper/market_days.csv（refresh_calendar 聚合大盘票清单
+  trade_date 并集，实证 10 月逐日 3,078~3,190 只无缺口，最新 2026-10-16）；
+  聚合产物缺失时回退 CAL_SYMBOL="00700"（最稠密单票）。
 
 HK 口径四项（G3 拍板倾向落地，2026-10-19）：
   · T+0 不做冻结：照 US 挂账先例（P-3）——引擎 available_qty 的 T+1 冻结对 HK
@@ -24,18 +30,20 @@ HK 口径四项（G3 拍板倾向落地，2026-10-19）：
     注：引擎 _fee_buy 无印花税参数，买入侧印花税缺失 → 灰位期费用略低估，挂账
     TODO(引擎工单)：_fee_buy 增加 stamp_tax_buy 参数。
   · 涨跌停不做 ±10% 硬拦：HK 无涨跌停制度。apply_hk_engine_waivers() 同时包装
-    engine.limit_ratio（.HK/5 位数字码 → 1.0，照 gb_ 前缀 :189 豁免先例）。
+    engine.limit_ratio（.HK/1-5 位数字码 → 1.0，照 gb_ 前缀 :189 豁免先例）。
   · 代码规范：5 位数字 00700.HK 形态（与 A 股 6 位 600519.SH 区分）；引擎内
-    code 保留 00700.HK 原样（审计可溯，同 gb_AAPL 先例）；缓存文件名取 5 位数字。
+    code 保留 00700.HK 原样（审计可溯，同 gb_AAPL 先例）；湖文件名取 5 位数字。
     引擎 _norm_stock 对非 A 股形态原样放行（engine.py:174-177），零改动直通。
-  · 日历基准票（P-2 倾向）：2800.HK 盈富基金（类 SPY 定位，宽基 ETF 不退市）。
 
 跑批（镜像 cli.py _us_pass/cmd_settle/cmd_mark 的 US 段，独立进程不改 cli.py）：
-  python k_stock/paper/hk_market.py refresh 02800 00700    # 湖→CSV 缓存（日历票必刷）
-  python k_stock/paper/hk_market.py run [--dry-run]        # hk_% 账本 settle → mark
-  python k_stock/paper/hk_market.py status                 # 账户/持仓/盈亏（HKD 原币）
+  python k_stock/paper/hk_market.py calendar       # 聚合全市场交易日历（每日跑批先跑）
+  python k_stock/paper/hk_market.py init           # 开立 hk_qingping 账本（幂等）
+  python k_stock/paper/hk_market.py run [--dry-run]  # hk_% 账本 settle → mark
+  python k_stock/paper/hk_market.py status         # 账户/持仓/盈亏（HKD 原币）
+  湖数据更新走共享工具（勿在本模块重复造）：python quant_backtest/export_us_hk.py --market HK
 
 账本落点：共享 k_stock/data/paper.db 的 hk_% 账户行（与 us_qingping 同库多账户同构）；
+派生数据落点 quant_backtest/data/hk_paper/（仅聚合日历，本工位独占）；
 portal_status.hk_status / /api/paper_status hk 块本轮不做（8091 重启报批后接线即点亮），
 数据形态已按 us_status 读取口径落库（equity_marks/positions_snapshot 同构）。
 
@@ -57,9 +65,20 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent  # 仓库根
 DEFAULT_HK_EXPORT_DIR = ROOT / "quant_backtest" / "data" / "hk"        # zhice-db 导出湖（只读）
-DEFAULT_HK_DIR = ROOT / "quant_backtest" / "data" / "hk_paper"         # CSV 缓存（本模块独占落点）
+DEFAULT_HK_DIR = ROOT / "quant_backtest" / "data" / "hk_paper"         # 派生数据落点（日历，独占）
 DEFAULT_DB = HERE.parent / "data" / "paper.db"                          # 共享账本（hk_% 账户行独占）
-CAL_SYMBOL = "02800"  # 日历基准票：2800.HK 盈富基金（P-2 拍板倾向，类 SPY 语义）
+# 日历回退基准票：00700 腾讯（zhice-db HK 最稠密单票，H2 实证 107 根）；
+# 正常路径走 market_days.csv 全市场聚合日历（不依赖单票长历史）。
+CAL_SYMBOL = "00700"
+MARKET_DAYS_FILE = "market_days.csv"
+
+# 日历聚合清单（大盘高流动性票，H2 实证口径：并集近似全市场交易日；缺失文件忽略）。
+# 覆盖：腾讯/阿里/汇丰/友邦/中移动/美团/京东/小米/百度/盈富/港交所/平安/建行/工行/招行等。
+CAL_UNIVERSE = (
+    "00700", "09988", "00005", "01299", "00941", "03690", "09618", "01810",
+    "09888", "02800", "00388", "02318", "00939", "01398", "03968", "02822",
+    "03067", "00016", "00001", "00002", "00003", "00006", "02628", "00386",
+)
 
 # HK 现行证券印花税：双边 0.1%（2023-11-17 起生效下调，2026-10 复核仍为 0.1%）。
 # 依据：香港《印花税条例》(Cap. 117) 附表 8，2023 年《2023 年印花税（修订）（证券转让）条例》。
@@ -87,7 +106,7 @@ def normalize_hk_code(raw: str) -> str:
 
 
 def file_code(code: str) -> str:
-    """引擎码 00700.HK → 缓存/湖文件码 00700（5 位数字）。"""
+    """引擎码 00700.HK → 湖文件码 00700（5 位数字）。"""
     return str(code).split(".")[0].zfill(5)
 
 
@@ -118,80 +137,84 @@ def export_parquet_path(code: str, export_dir: Path | str | None = None) -> Path
     return Path(export_dir or DEFAULT_HK_EXPORT_DIR) / f"{file_code(code)}.parquet"
 
 
-def refresh_from_export(code: str, hk_dir: Path | str | None = None,
-                        export_dir: Path | str | None = None) -> Path:
-    """zhice-db 导出湖 parquet → CSV 缓存（本地转换，零联网）。
+def refresh_calendar(export_dir: Path | str | None = None,
+                     hk_dir: Path | str | None = None) -> Path:
+    """聚合大盘票清单 trade_date 并集 → 全市场交易日历 CSV（YYYYMMDD 升序，每行一日）。
 
-    pre_close 湖内实量 NaN → 以前日 close 补齐（与 US 缓存同构；首行以前日收盘
-    缺失时回填当日 open，保证非空——引擎 settle 无涨跌停拦截场景不消费该字段
-    做拦截，仅作 bar 契约完整性）。原子写（同 us_market.refresh 口径）。"""
-    src = export_parquet_path(code, export_dir)
-    if not src.exists():
-        raise FileNotFoundError(f"zhice-db 导出湖缺失: {src}"
+    H2 实证采纳：zhice-db HK 单票历史普遍 2~4 个月，02800 仅 36 根——单票日历
+    不可靠；全市场 distinct trade_date 10 月逐日 3,078~3,190 只无缺口，清单票
+    并集即近似全市场交易日（缺文件忽略、并集只增不减）。产物原子写。"""
+    d = Path(export_dir or DEFAULT_HK_EXPORT_DIR)
+    found = [c for c in CAL_UNIVERSE if (d / f"{c}.parquet").exists()]
+    if not found:
+        raise FileNotFoundError(f"日历聚合清单全空（湖缺失?）: {d}"
                                 f"（先跑 python quant_backtest/export_us_hk.py --market HK）")
     import pandas as pd  # 惰性：系统 Python311 环境（与 ParquetMarket 同口径）
-    df = pd.read_parquet(src).sort_values("trade_date")
-    rows = []
-    prev_close = ""
-    for _, r in df.iterrows():
-        close = float(r["close"])
-        pre = float(r["pre_close"]) if pd.notna(r["pre_close"]) else (
-            float(prev_close) if prev_close != "" else float(r["open"]))
-        d = str(r["trade_date"])
-        rows.append({"date": f"{d[:4]}-{d[4:6]}-{d[6:8]}",
-                     "open": float(r["open"]), "high": float(r["high"]),
-                     "low": float(r["low"]), "close": close,
-                     "volume": float(r["volume"]), "pre_close": pre})
-        prev_close = close
-    if not rows:
-        raise RuntimeError(f"导出湖 {src} 无有效行")
-    out = Path(hk_dir or DEFAULT_HK_DIR) / f"{file_code(code)}.csv"
+    days: set[str] = set()
+    for code5 in found:
+        days.update(str(x) for x in
+                    pd.read_parquet(d / f"{code5}.parquet", columns=["trade_date"])["trade_date"])
+    out = Path(hk_dir or DEFAULT_HK_DIR) / MARKET_DAYS_FILE
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".csv.tmp")
     with open(tmp, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["date", "open", "high", "low", "close", "volume", "pre_close"])
-        for row in rows:
-            w.writerow([row["date"], row["open"], row["high"], row["low"],
-                        row["close"], row["volume"], row["pre_close"]])
-    tmp.replace(out)  # 原子写（同 hires.json / us_market 口径）
+        w.writerow(["trade_date"])
+        for day in sorted(days):
+            w.writerow([day])
+    tmp.replace(out)  # 原子写（同 hires.json 口径）
     return out
 
 
 class HkMarket:
-    """HK 行情接口（与 ParquetMarket/UsMarket 同鸭子契约 6 方法），只读 CSV 缓存。
-    纯 stdlib，系统 Python311 环境非必需（与 UsMarket 同口径）。"""
+    """HK 行情接口（与 ParquetMarket/UsMarket 同鸭子契约 6 方法），直读 zhice-db 导出湖。
 
-    def __init__(self, hk_dir: Path | str | None = None, cal_symbol: str = CAL_SYMBOL):
+    pandas 惰性仅在 _read 的 I/O 边界（读入即转 list[dict]），六方法逻辑纯 stdlib；
+    缓存零——湖文件即真源（H2 实证：本地 3,408 只 parquet 实存，零转换零联网）。"""
+
+    def __init__(self, export_dir: Path | str | None = None,
+                 hk_dir: Path | str | None = None, cal_symbol: str = CAL_SYMBOL):
+        self.export_dir = Path(export_dir) if export_dir else DEFAULT_HK_EXPORT_DIR
         self.hk_dir = Path(hk_dir) if hk_dir else DEFAULT_HK_DIR
         self.cal_symbol = cal_symbol
         self._days: list[str] | None = None
 
     def _file(self, code: str) -> Path:
-        return self.hk_dir / f"{file_code(code)}.csv"
+        return self.export_dir / f"{file_code(code)}.parquet"
 
     def _read(self, code: str) -> list[dict] | None:
+        """湖 parquet → 行 dict 列表（trade_date 升序；pre_close NaN 以前日 close
+        补齐、首行回填当日 open）。文件缺失返回 None（引擎降级语义同 UsMarket）。"""
         f = self._file(code)
         if not f.exists():
             return None
-        with open(f, encoding="utf-8") as fh:
-            return list(csv.DictReader(fh))
+        import pandas as pd  # 惰性：系统 Python311 环境（与 ParquetMarket 同口径）
+        df = pd.read_parquet(f).sort_values("trade_date")
+        pc = df["pre_close"].fillna(df["close"].shift(1)).fillna(df["open"])
+        df = df.assign(trade_date=df["trade_date"].astype(str), pre_close=pc)
+        rows = df.to_dict("records")
+        return [{k: (str(r[k]) if k == "trade_date" else float(r[k]))
+                 for k in ("trade_date", "open", "high", "low", "close", "pre_close")}
+                for r in rows]
 
-    @staticmethod
-    def _bar_of(r: dict) -> dict:
-        return {"trade_date": str(r["date"]).replace("-", ""),
-                "open": float(r["open"]), "high": float(r["high"]),
-                "low": float(r["low"]), "close": float(r["close"]),
-                "pre_close": float(r["pre_close"]) if r["pre_close"] else float(r["close"])}
+    # ---- 引擎契约六方法（与 ParquetMarket 同形；rows 已按 trade_date 升序） ----
 
     def trading_days(self) -> list[str]:
-        """交易日历（YYYYMMDD 引擎口径），取自日历基准票 2800.HK 盈富基金。"""
+        """交易日历（YYYYMMDD 引擎口径）：优先全市场聚合日历 market_days.csv
+        （refresh_calendar 产物，H2 实证：不依赖单票长历史）；缺失回退 00700。"""
         if self._days is None:
+            f = self.hk_dir / MARKET_DAYS_FILE
+            if f.exists():
+                with open(f, encoding="utf-8") as fh:
+                    self._days = [str(r["trade_date"]) for r in csv.DictReader(fh)]
+                return self._days
             rows = self._read(self.cal_symbol)
             if not rows:
-                raise FileNotFoundError(f"日历基准票缺失: {self._file(self.cal_symbol)}"
-                                        f"（先跑 python paper/hk_market.py refresh 02800）")
-            self._days = [str(r["date"]).replace("-", "") for r in rows]
+                raise FileNotFoundError(
+                    f"日历缺失: {f} 且基准票缺失: {self._file(self.cal_symbol)}"
+                    f"（先跑 python quant_backtest/export_us_hk.py --market HK "
+                    f"+ python paper/hk_market.py calendar）")
+            self._days = [r["trade_date"] for r in rows]
         return self._days
 
     def bar(self, code: str, trade_date: str) -> dict | None:
@@ -201,36 +224,30 @@ class HkMarket:
             return None
         want = str(trade_date)
         for r in rows:
-            if str(r["date"]).replace("-", "") == want:
-                return self._bar_of(r)
+            if r["trade_date"] == want:
+                return dict(r)
         return None
 
     def last_bar(self, code: str) -> dict | None:
         rows = self._read(code)
-        if not rows:
-            return None
-        return self._bar_of(rows[-1])
+        return dict(rows[-1]) if rows else None
 
     def last_bar_before(self, code: str, trade_date: str) -> dict | None:
         """≤ 给定日的最后一根 bar（AsOfMarket 时点视角用）。"""
         rows = self._read(code)
         if not rows:
             return None
-        want = str(trade_date)
-        hit = [r for r in rows if str(r["date"]).replace("-", "") <= want]
-        if not hit:
-            return None
-        return self._bar_of(hit[-1])
+        hit = [r for r in rows if r["trade_date"] <= str(trade_date)]
+        return dict(hit[-1]) if hit else None
 
     def first_bar_on_or_after(self, code: str, trade_date: str) -> dict | None:
         """≥ 给定日的第一根 bar（settle 纠偏用：plan_date 无行情时顺延）。"""
         rows = self._read(code)
         if not rows:
             return None
-        want = str(trade_date)
         for r in rows:
-            if str(r["date"]).replace("-", "") >= want:
-                return self._bar_of(r)
+            if r["trade_date"] >= str(trade_date):
+                return dict(r)
         return None
 
     def next_trading_day(self, ts_iso: str) -> str | None:
@@ -264,7 +281,7 @@ def apply_hk_engine_waivers() -> None:
 
     · engine.LOT = 1：HK 每手股数各异，LOT=100 硬卡必错（P-4 灰位期放开）。
       本跑批进程只跑 hk_% 账本，不影响 main/us 账本进程。
-    · engine.limit_ratio 包装：.HK / 4-5 位数字码 → 1.0（HK 无涨跌停，
+    · engine.limit_ratio 包装：.HK / 1-5 位数字码 → 1.0（HK 无涨跌停，
       照 engine.py:189 gb_ 前缀豁免先例）；A 股/US 码转发原实现零影响。
     仅可对 k_stock/paper/engine.py 模块调用（import 同目录模块）。"""
     import engine as paper_engine  # noqa: PLC0415  同目录（HERE 已在 sys.path）
@@ -299,7 +316,7 @@ def hk_accounts(db_path: Path | str) -> list[str]:
 def hk_symbols_in_db(db_path: Path | str) -> list[str]:
     """paper.db 中 HK 敞口标的（pending 单 + 持仓，hk_% 账本，5 位码去重升序）。
 
-    settle 前按需 refresh 用：只刷有真实敞口的票 + 日历基准票，不盲目全量。"""
+    settle 前按需校验用：只查有真实敞口的票 + 日历，不盲目全量。"""
     import sqlite3
     db_path = Path(db_path)
     if not db_path.exists():
@@ -319,8 +336,9 @@ def hk_symbols_in_db(db_path: Path | str) -> list[str]:
 def hk_pass(db_path: Path | str | None = None, do_refresh: bool = True) -> dict | None:
     """HK 独立账本通道（镜像 cli.py _us_pass）：存在 hk_% 账本才跑。
 
-    settle 前自动 refresh（日历基准票 + 敞口票，湖→CSV 本地转换）；单票失败降级
-    记录不炸 settle。无 hk_% 账本返回 None（灰态）。"""
+    settle 前自动聚合日历 + 校验敞口票湖文件（单票缺失降级记录不炸 settle）；
+    湖数据更新本体走共享工具 export_us_hk.py --market HK（automation 接线时前置）。
+    无 hk_% 账本返回 None（灰态）。"""
     from engine import PaperEngine  # noqa: PLC0415  同目录
     db = Path(db_path) if db_path else DEFAULT_DB
     aids = hk_accounts(db)
@@ -329,16 +347,15 @@ def hk_pass(db_path: Path | str | None = None, do_refresh: bool = True) -> dict 
     refreshed, failed = [], []
     if do_refresh:
         try:
-            refresh_from_export(CAL_SYMBOL)
-            refreshed.append(CAL_SYMBOL)
-        except Exception as ex:  # noqa: BLE001  日历失败仍可 settle（湖内已有 bar 照常成交）
-            failed.append(f"{CAL_SYMBOL}: {ex}")
+            refresh_calendar()
+            refreshed.append(MARKET_DAYS_FILE)
+        except Exception as ex:  # noqa: BLE001  日历失败仍可 settle（回退基准票/湖内已有 bar）
+            failed.append(f"{MARKET_DAYS_FILE}: {ex}")
         for sym in hk_symbols_in_db(db):
-            try:
-                refresh_from_export(sym)
+            if export_parquet_path(sym).exists():
                 refreshed.append(sym)
-            except Exception as ex:  # noqa: BLE001
-                failed.append(f"{sym}: {ex}")
+            else:
+                failed.append(f"{sym}: 湖文件缺失（保持 pending 幂等等待，同 US 缓存缺失口径）")
     apply_hk_engine_waivers()
     return {"accounts": aids,
             "engines": [(aid, PaperEngine(db, HkMarket(), account=aid)) for aid in aids],
@@ -369,12 +386,10 @@ def _print_eq(e) -> None:
 
 def main(argv: list[str]) -> int:
     sys.path.insert(0, str(HERE))
-    if len(argv) >= 2 and argv[0] == "refresh":
-        for sym in argv[1:]:
-            p = refresh_from_export(normalize_hk_code(sym))
-            n = len(list(csv.DictReader(open(p, encoding="utf-8"))))
-            print(json.dumps({"ok": True, "symbol": file_code(sym),
-                              "rows": n, "path": str(p)}, ensure_ascii=False))
+    if argv and argv[0] == "calendar":
+        p = refresh_calendar()
+        n = len(list(csv.DictReader(open(p, encoding="utf-8"))))
+        print(json.dumps({"ok": True, "days": n, "path": str(p)}, ensure_ascii=False))
         return 0
     if argv and argv[0] == "init":
         """开立 HK 影子账本（hk_qingping，HKD 原币；幂等——已存在则原样返回）。"""
@@ -400,7 +415,7 @@ def main(argv: list[str]) -> int:
                 print(f"HK 账本 {aid} settle 失败（不阻塞主链）: {ex}")
                 continue
             print(f"HK 账本 {aid} 撮合: 成交 {len(r['filled'])} / 搁置 {len(r['rejected'])}"
-                  f"（refresh {len(hk['refreshed'])} 票"
+                  f"（refresh {len(hk['refreshed'])} 项"
                   f"{'，失败 ' + str(len(hk['refresh_fail'])) if hk['refresh_fail'] else ''}）")
             for f in r["filled"]:
                 print(f"  #{f.get('id', '-')} {f['stock']} {f['side']} {f['qty']} 股 "
