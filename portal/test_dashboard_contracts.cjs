@@ -94,6 +94,19 @@ section('quant.html invariants');
   ok(h.includes('k-gate') && h.includes('market_gate'), 'E7 市场闸展示在位');
   // E8 预警分级徽标
   ok(h.includes('LV_CN') && h.includes("class='lv ") && h.includes('.lv.market'), 'E8 预警分级徽标在位');
+  // F5 市场准入判定卡（2026-10-19，工位 cockpit-v3）
+  ok(h.includes('admission-card') && h.includes('/api/admission'), 'F5 准入判定卡容器 + /api/admission 取数在位');
+  ok(h.includes("fetchFirst(['/api/admission'") && h.includes('DASH + \'/api/admission\''), 'F5 admission 降级链（同源代理→直连 8791）在位');
+  ok(h.includes('ADMISSION_EMBED') && h.includes('静态兜底'), 'F5 内嵌静态兜底位与显著标注在位');
+  ok(h.includes('counter_evidence') && h.includes('adm-counter') && h.includes('反证'), 'F5 反证标注（黄字）在位');
+  ok(h.includes('不猜值'), 'F5 unknown/全败灰态不猜值在位');
+  ok(h.includes('VERDICT_CN') && h.includes("'关门'") && h.includes("'窄门'") && h.includes("'宽门'"), 'F5 L0 三态判定（关门/窄门/宽门）在位');
+  // F6 策略师观点墙 + 投研会一行 + 四市场 tab
+  ok(h.includes('/data/wall.json') && h.includes('strategists'), 'F6 观点墙 wall.json 取数 + strategists 渲染在位');
+  ok(h.includes('committee_line') && h.includes('wall-committee'), 'F6 投研会一行（有则显示无则隐藏）在位');
+  ok(h.includes('wall-tabs') && h.includes('mtab planned') && h.includes('接入中'), 'F6 四市场 tab（planned 灰位接入中）在位');
+  ok(h.includes("data-market=\"cn\"") && h.includes("data-market=\"hk\"") && h.includes("data-market=\"us\"") && h.includes("data-market=\"crypto\""), 'F6 四市场 tab 键齐全（A股 active，港股/美股/虚拟币 planned）');
+  ok(h.includes('暂无观点') && h.includes('.scard.grey'), 'F6 score/view 空灰标「暂无」逻辑在位');
 })();
 
 /* ── 3. quant_v2_demo.html 最优化版不变量（E3/E4/E5 前端面） ── */
@@ -117,6 +130,29 @@ section('quant_v2_demo.html invariants');
   // E4 细则：倾向格来源标签机制存在（策源优先，brief 兜底）
   ok(h.includes('策源 regime') && h.includes('brief 兜底'), '倾向格双来源标签在位');
   ok(!/mode:\s*['"]no-cors['"]/.test(h), '显式无 no-cors 模式');
+})();
+
+/* ── 3b. wall.json schema（F7，2026-10-19：T-B 生成静态文件，未落盘前不挂红） ── */
+section('wall.json schema (存在才断言)');
+(function () {
+  const p = path.join(PORTAL, 'data', 'wall.json');
+  if (!fs.existsSync(p)) {
+    todo('F7 portal/data/wall.json 未生成（T-B 观点墙适配器 pending）——前端灰态降级已就位，不挂红');
+    return;
+  }
+  let d = null;
+  try { d = JSON.parse(fs.readFileSync(p, 'utf-8')); }
+  catch (e) { ok(false, 'wall.json 是合法 JSON（解析失败: ' + e.message + '）'); return; }
+  ok(Array.isArray(d.strategists), 'wall.json: strategists 为数组');
+  if (Array.isArray(d.strategists)) {
+    for (const s of d.strategists) {
+      ok(s && typeof s.name === 'string' && s.name.length > 0, `wall.json: 策略师条目有 name`);
+      if (s.score !== undefined && s.score !== null) ok(typeof s.score === 'number', `wall.json: ${s.name} score 非空时为数值`);
+      if (s.view !== undefined && s.view !== null) ok(typeof s.view === 'string', `wall.json: ${s.name} view 非空时为字符串`);
+      if (s.picks_count !== undefined && s.picks_count !== null) ok(Number.isInteger(s.picks_count), `wall.json: ${s.name} picks_count 非空时为整数`);
+    }
+  }
+  if (d.committee_line !== undefined && d.committee_line !== null) ok(typeof d.committee_line === 'string', 'wall.json: committee_line 非空时为字符串');
 })();
 
 /* ── 4. 契约文档守卫 ── */
@@ -147,6 +183,17 @@ async function live() {
   ok(!!rg && !!rg.regime && typeof rg.regime.available === 'boolean' && 'stale' in rg.regime, 'regime: available+stale 形状');
   const sx = await j(B8791 + '/api/sixring', 5000);
   ok(!!sx && !!sx.rings && 'pool' in sx.rings && 'risk' in sx.rings, 'sixring: 六环键形状');
+  // F7 live：/api/admission（F2 工位端点，未落地前 WARN 台账 pending，不挂红不假绿）
+  const adm = await j(B8791 + '/api/admission', 5000);
+  if (!adm) {
+    todo('F7 live /api/admission 未可达（F2 端点 pending）——判定卡前端灰态降级已就位');
+  } else {
+    const a = adm.admission || adm;
+    ok(a.verdict !== undefined && ['closed', 'narrow', 'wide', 'unknown'].includes(a.verdict), 'admission: verdict 枚举形状');
+    ok(Array.isArray(a.reasons) && Array.isArray(a.counter_evidence), 'admission: reasons/counter_evidence 数组形状');
+    ok(!!a.inputs && ('regime' in a.inputs) && ('overall' in a.inputs) && ('prob' in a.inputs), 'admission: inputs{regime,overall,prob} 键形状');
+    ok(typeof a.computed_at === 'string' && a.computed_at.length > 0, 'admission: computed_at 形状');
+  }
 }
 
 (async () => {

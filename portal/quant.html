@@ -134,6 +134,25 @@
   .fitem .fm { font-size: 10.5px; color: var(--text-dim); line-height: 1.5; margin-top: 1px; }
   .fitem .fm .rt { color: var(--link); font-family: Consolas, monospace; }
 
+  /* ── F5 市场准入判定卡（L0 大字 + L1 明细） ── */
+  .admcard { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; }
+  .admcard.grey { opacity: .62; }
+  .adm-l0 { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .adm-verdict { font-size: 30px; font-weight: 800; letter-spacing: 4px; line-height: 1.1; }
+  .adm-reason { font-size: 12.5px; color: var(--text-dim); }
+  .adm-l1 { margin-top: 8px; font-size: 12px; font-family: Consolas, "Courier New", monospace; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .adm-sep { color: var(--text-dim); }
+  .adm-counter { margin-top: 8px; font-size: 12px; color: var(--color-warn); border-top: 1px dashed rgba(210,153,34,.35); padding-top: 7px; }
+
+  /* ── F6 策略师观点墙：四市场 tab + 投研会一行 ── */
+  .mtabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .mtab { border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-dim); border-radius: 999px; padding: 6px 15px; font-size: 12.5px; cursor: pointer; font-family: inherit; }
+  .mtab.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+  .mtab.planned { opacity: .5; }
+  .wall-line { font-size: 12.5px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; margin-bottom: 10px; }
+  .wall-note { font-size: 11.5px; color: var(--color-warn); margin-bottom: 8px; }
+  .scard.grey { opacity: .55; }
+
   @media (max-width: 960px) { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
@@ -160,6 +179,21 @@
 
   <main>
     <div id="top-alerts"></div>
+
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-head">
+        <div class="sec-title">◤ 市场准入判定</div>
+        <div class="sec-note" id="adm-ts">加载中…</div>
+      </div>
+      <div class="admcard" id="admission-card">
+        <div class="adm-l0">
+          <span class="adm-verdict" id="adm-verdict">—</span>
+          <span class="adm-reason" id="adm-reason">取数中…</span>
+        </div>
+        <div class="adm-l1" id="adm-l1"></div>
+        <div class="adm-counter" id="adm-counter" style="display:none"></div>
+      </div>
+    </div>
 
     <div class="sec" style="margin-top:16px">
       <div class="sec-head">
@@ -219,6 +253,24 @@
         <div class="schip grey" id="dk-judge"><span class="sd"></span><span class="sn">投研经理</span><span class="sv">加载中…</span></div>
         <div class="schip grey" id="dk-market"><span class="sd"></span><span class="sn">交易员市场</span><span class="sv">加载中…</span></div>
         <div class="schip grey" id="dk-us"><span class="sd"></span><span class="sn">美股账本</span><span class="sv">加载中…</span></div>
+      </div>
+    </div>
+
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-head">
+        <div class="sec-title">◤ 策略师观点墙</div>
+        <div class="sec-note" id="wall-ts">源 /data/wall.json · 缺源标灰不假绿</div>
+      </div>
+      <div class="mtabs" id="wall-tabs">
+        <button class="mtab on" data-market="cn" type="button">A股</button>
+        <button class="mtab planned" data-market="hk" type="button">港股 · 接入中</button>
+        <button class="mtab planned" data-market="us" type="button">美股 · 接入中</button>
+        <button class="mtab planned" data-market="crypto" type="button">虚拟币 · 接入中</button>
+      </div>
+      <div class="wall-note" id="wall-hint" style="display:none"></div>
+      <div class="wall-line" id="wall-committee" style="display:none"></div>
+      <div class="strat-grid" id="wall-grid">
+        <div class="scard" style="cursor:default"><div class="top"><span class="dim" style="font-size:12px">加载中…</span></div></div>
       </div>
     </div>
 
@@ -477,6 +529,61 @@
     }
   }
 
+  /* ── F5 市场准入判定卡：L0 大字（关门/窄门/宽门）+ L1 明细 ──
+     源 /api/admission（T-A 契约）：verdict/verdict_cn/reasons/counter_evidence/
+     inputs{regime,overall,prob,gates_passed,gates_total,shadow}/computed_at。
+     降级链镜像 /api/regime：同源代理 → 直连 8791 → 内嵌静态兜底（无真实快照则灰态，不猜值） */
+  const ADMISSION_EMBED = null; /* 静态兜底位：待 T-A 首次产出真实快照后回填；null=无兜底不编值 */
+  const VERDICT_CN = { closed: ['关门', 'var(--color-err)'], narrow: ['窄门', 'var(--color-warn)'], wide: ['宽门', 'var(--color-ok)'] };
+  function renderAdmission(d, via) {
+    const card = document.getElementById('admission-card');
+    const v = document.getElementById('adm-verdict');
+    const reason = document.getElementById('adm-reason');
+    const l1 = document.getElementById('adm-l1');
+    const counter = document.getElementById('adm-counter');
+    const ts = document.getElementById('adm-ts');
+    const dd = d && (d.admission || d);
+    const verdict = dd && dd.verdict;
+    if (!dd || !verdict || verdict === 'unknown' || !VERDICT_CN[verdict]) {
+      card.classList.add('grey');
+      v.textContent = '缺源';
+      v.style.color = '';
+      reason.textContent = (dd && dd.verdict === 'unknown') ? '判定 unknown · 不猜值' : '准入判定缺源 · 不假绿';
+      l1.innerHTML = '';
+      counter.style.display = 'none';
+      ts.textContent = 'admission ' + (via && via !== 'embed' && via !== '/api/admission' ? '直连 8791 ' : '') + '缺源标灰';
+      return;
+    }
+    card.classList.remove('grey');
+    const hit = VERDICT_CN[verdict];
+    v.textContent = hit[0];
+    v.style.color = hit[1];
+    const rs = Array.isArray(dd.reasons) ? dd.reasons.map(x => typeof x === 'string' ? x : [x.k, x.v].filter(Boolean).join(' ')).filter(Boolean) : [];
+    reason.textContent = (dd.one_liner || dd.verdict_cn || hit[0]) +
+      (rs.length ? ' · ' + rs.map(esc).join('；') : '');
+    const inp = dd.inputs || {};
+    const CN_REG = { risk_off: 'RISK OFF', risk_on: 'RISK ON', neutral: '中性' };
+    const bits = ['regime ' + (CN_REG[inp.regime] || inp.regime || '—')];
+    if (inp.gates_passed != null && inp.gates_total != null) bits.push('三门 ' + inp.gates_passed + '/' + inp.gates_total);
+    if (inp.overall != null) bits.push('overall ' + inp.overall);
+    if (inp.prob != null) bits.push('prob ' + inp.prob + '%');
+    if (inp.shadow) bits.push("<span style='color:var(--color-warn)'>影子闸 " + esc(String(inp.shadow)) + '</span>');
+    l1.innerHTML = bits.join('<span class="adm-sep"> · </span>');
+    const ce = Array.isArray(dd.counter_evidence) ? dd.counter_evidence.filter(Boolean) : [];
+    if (ce.length) {
+      counter.style.display = '';
+      counter.innerHTML = '⚠ 反证：' + ce.map(x => esc(typeof x === 'string' ? x : [x.k, x.v].filter(Boolean).join(' '))).join('；');
+    } else counter.style.display = 'none';
+    ts.textContent = 'admission ' + (dd.computed_at || '') +
+      (via === 'embed' ? ' · 静态兜底' : (via && via !== '/api/admission' ? ' · 直连 8791' : ''));
+  }
+  async function loadAdmission() {
+    const hit = await fetchFirst(['/api/admission', DASH + '/api/admission'], 2500);
+    if (hit && hit.data) { renderAdmission(hit.data, hit.via); return; }
+    if (ADMISSION_EMBED) { renderAdmission(ADMISSION_EMBED, 'embed'); return; }
+    renderAdmission(null, null); /* 全败：灰态缺源，不猜值 */
+  }
+
   const ST_CN = { live: '实盘', shadow: '影子', tool: '支撑', paused: '暂停' };
   const LV_CN = { market: '市场', eng: '链路', strategy: '策略' };
   async function loadStrategies() {
@@ -688,6 +795,73 @@
     }
   }
 
+  /* ── F6 策略师观点墙：/data/wall.json（T-B 生成静态文件）+ 投研会一行 + 四市场 tab ──
+     score=null 或 view 空 → 灰标「暂无」，绝不显示编造观点；缺源整块灰态不阻塞其他区块 */
+  let wallMarket = 'cn';
+  let wallData = null;
+  const WALL_MKT_CN = { cn: 'A股', hk: '港股', us: '美股', crypto: '虚拟币' };
+  function renderWall() {
+    const grid = document.getElementById('wall-grid');
+    const comEl = document.getElementById('wall-committee');
+    const ts = document.getElementById('wall-ts');
+    const list = wallData && Array.isArray(wallData.strategists) ? wallData.strategists : null;
+    /* 投研会一行：有则显示，无则整行隐藏 */
+    const cl = wallData && typeof wallData.committee_line === 'string' ? wallData.committee_line.trim() : '';
+    if (cl) { comEl.style.display = ''; comEl.textContent = '投研会一行：' + cl; }
+    else comEl.style.display = 'none';
+    if (!list) {
+      grid.innerHTML = "<div class='scard' style='cursor:default'><div class='top'><span class='dim' style='font-size:12px'>观点墙缺源（portal/data/wall.json 未生成）· 灰标不假绿</span></div></div>";
+      ts.textContent = '源 /data/wall.json · 缺源标灰';
+      return;
+    }
+    const mkt = list.filter(s => !s.market || s.market === wallMarket);
+    if (!mkt.length) {
+      grid.innerHTML = "<div class='scard' style='cursor:default'><div class='top'><span class='dim' style='font-size:12px'>" + (WALL_MKT_CN[wallMarket] || wallMarket) + "暂无策略师观点</span></div></div>";
+    } else {
+      grid.innerHTML = mkt.map(s => {
+        const hasView = (s.score != null) && !!(s.view && String(s.view).trim()); /* score=null 或 view 空 → 灰标，禁编造 */
+        const topArr = Array.isArray(s.top) ? s.top : (Array.isArray(s.top_ticker) ? s.top_ticker : []);
+        const top = topArr.length ? topArr.slice(0, 5).map(t => esc(t)).join(' · ') : '';
+        return "<div class='scard" + (hasView ? '' : ' grey') + "' style='cursor:default'>" +
+          "<div class='top'><span class='nm'>" + esc(s.name || '—') + "</span>" +
+          "<span class='bdg'>" + (hasView ? ('score ' + esc(s.score ?? '—')) : '暂无') + "</span></div>" +
+          "<div class='tg'>" + (hasView ? esc(s.view || '') : '暂无观点 · 灰标不假绿') + "</div>" +
+          (top ? "<div class='m1'>top: " + top + "</div>" : '') +
+          "<span class='go'>" + (s.picks_count != null ? (esc(s.picks_count) + ' picks') : '') + "</span></div>";
+      }).join('');
+    }
+    ts.textContent = '源 /data/wall.json' + (wallData.generated_at ? ' · ' + esc(wallData.generated_at) : '') +
+      ' · ' + (WALL_MKT_CN[wallMarket] || wallMarket) + ' ' + mkt.length + ' 位策略师';
+  }
+  async function loadWall() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch('/data/wall.json', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw 0;
+      wallData = await r.json();
+    } catch (e) { wallData = null; }
+    renderWall();
+  }
+  /* 四市场 tab：A股 active，planned 灰位点击只提示不报错 */
+  document.getElementById('wall-tabs').addEventListener('click', e => {
+    const b = e.target.closest('.mtab');
+    if (!b) return;
+    if (b.classList.contains('planned')) {
+      const hint = document.getElementById('wall-hint');
+      hint.style.display = '';
+      hint.textContent = '「' + b.textContent.replace(' · 接入中', '') + '」市场观点墙接入中，暂无数据';
+      clearTimeout(hint._t);
+      hint._t = setTimeout(() => { hint.style.display = 'none'; }, 2600);
+      return;
+    }
+    wallMarket = b.dataset.market || 'cn';
+    document.querySelectorAll('#wall-tabs .mtab').forEach(x => x.classList.toggle('on', x === b));
+    renderWall();
+  });
+  loadWall();
+  setInterval(loadWall, 120000);
+
   /* ── 数据丰富·聚合信号计数（8791 /api/signals，语义=策略信号笔数，≠情报条数） ── */
   async function loadSignals() {
     const el = document.getElementById('k-sig');
@@ -796,6 +970,7 @@
   loadRegime(); setInterval(loadRegime, 120000);
   loadSixring(); setInterval(loadSixring, 120000);
   loadGate(); setInterval(loadGate, 120000);
+  loadAdmission(); setInterval(loadAdmission, 120000);
 </script>
 <script src="/static/cainiao.js" defer></script>
 <script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>
