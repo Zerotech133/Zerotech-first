@@ -54,6 +54,16 @@ SUBSCRIBER_TIERS = ("daily", "critical")
 SUBSCRIBER_ID_TYPES = ("chat_id", "open_id")
 AUTONOMY_LEVELS = ("auto", "approval_required", "record_only")
 
+# ── P2 分域：domain 一级路由字段（松耦合设计稿 v0 原则 3） ────
+# 信封一级字段取值 owner（本人）/ ops（运维）/ customer（客户）；
+# 旧调用不带 domain= 缺省零变化。
+DOMAINS = ("owner", "ops", "customer")
+DOMAIN_LABELS = {"owner": "本人", "ops": "运维", "customer": "客户"}
+
+# 未订阅拦截 blocked kind 字面量（M3 收银台启用前只定义不消费，
+# enforce 另批；出向闸本期 customer 域 observe 记录不拦截）
+BLOCKED_KIND_SUBSCRIPTION_REQUIRED = "subscription_required"
+
 # decision DB status → 四态（recorded=已登记待确认/执行；attempted=占位后
 # 结果不明，按 blocked 诚实呈现，不猜成功）
 _DECISION_STATE = {
