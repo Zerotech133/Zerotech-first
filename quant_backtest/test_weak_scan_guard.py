@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """weak_scan 行情日期护栏单测（K-QUANT-20261019-WEAKGUARD · 不碰生产数据）。
 
-T1 expected_trade_day：交易日 15:35（收盘后）→ 期望=当日
-T2 expected_trade_day：交易日盘中（<15:00）→ 期望=前一交易日
-T3 expected_trade_day：日历快照未覆盖今天 → None（护栏降级）
+T1 expected_trade_day：交易日 15:35 → 期望=上一交易日（T-Q3 口径：
+   tdx_sync 17:30 入湖，15:35 当日数据必然未到）
+T2 expected_trade_day：周末（周六）→ 期望=上一交易日
+T3 expected_trade_day：now 早于全部日历日 → None（护栏降级）
 T4 expected_trade_day：日历目录空 → None
 T5 check_trade_day 滞后：last_day 2026-10-16 < 期望 20261019 → exit 3
    + stderr 带 [WEAKGUARD] 明确日志
@@ -49,14 +50,14 @@ def make_cal(tmp, days):
 # --- T1-T4 expected_trade_day ---
 tmp = tempfile.mkdtemp(prefix="weakguard_")
 cal = make_cal(tmp, ["20261015", "20261016", "20261019", "20261020"])
-check("T1 收盘后期望=当日",
+check("T1 交易日 15:35 期望=上一交易日",
       ws.expected_trade_day(now=datetime(2026, 10, 19, 15, 35),
-                            cal_dir=cal) == "20261019")
-check("T2 盘中期望=前一交易日",
-      ws.expected_trade_day(now=datetime(2026, 10, 19, 10, 0),
                             cal_dir=cal) == "20261016")
-check("T3 日历未覆盖今天→None",
-      ws.expected_trade_day(now=datetime(2027, 1, 4, 15, 35),
+check("T2 周末期望=上一交易日",
+      ws.expected_trade_day(now=datetime(2026, 10, 17, 10, 0),
+                            cal_dir=cal) == "20261016")
+check("T3 早于全部日历日→None",
+      ws.expected_trade_day(now=datetime(2026, 10, 14, 15, 35),
                             cal_dir=cal) is None)
 check("T4 空日历目录→None",
       ws.expected_trade_day(now=datetime(2026, 10, 19, 15, 35),

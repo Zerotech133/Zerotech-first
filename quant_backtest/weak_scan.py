@@ -44,12 +44,13 @@ CAL_DIR = os.path.join(HERE, "data", "tushare", "trade_cal")
 
 
 def expected_trade_day(now=None, cal_dir=None):
-    """护栏期望日：最近已收盘交易日（YYYYMMDD，SSE is_open=1）。
+    """护栏期望日：今日之前的最近交易日（YYYYMMDD，SSE is_open=1）。
 
-    今日为交易日且已过 15:00 收盘 → 期望=今日（weak_scan 15:35 档口
-    应能拿到当日行情；口径比 datamart._expected_trade_day 的 17:00
-    更紧——本脚本明确是收盘后跑批）。日历快照不可用或未覆盖今天 →
-    返回 None（调用方降级 WARN 不硬拒：护栏误杀比放行更伤产线节奏）。
+    口径依据 T-Q3 定因（2026-10-19）：日线入湖唯一链路 tdx_sync 每日
+    17:30 触发，weak_scan 15:35 档口当日行情必然未入湖 → 期望=上一
+    交易日（17:30 后补跑/周末跑同样成立：湖面日期 ≥ 期望即放行）。
+    日历快照不可用或无早于今天的交易日 → 返回 None（调用方降级 WARN
+    不硬拒：护栏误杀比放行更伤产线节奏）。
     """
     now = now or datetime.now()
     cal_dir = cal_dir or CAL_DIR
@@ -64,12 +65,8 @@ def expected_trade_day(now=None, cal_dir=None):
         days = sorted(set(d["cal_date"].astype(str)
                           .str.replace("-", "", regex=False).str[:8]))
         today = now.strftime("%Y%m%d")
-        if not days or days[-1] < today:
-            return None
-        closed = [x for x in days if x <= today]
-        if closed[-1] == today and now.hour < 15:
-            return closed[-2] if len(closed) > 1 else closed[-1]
-        return closed[-1]
+        prev = [x for x in days if x < today]
+        return prev[-1] if prev else None
     except Exception as e:
         sys.stderr.write(" ! trade_cal 读取失败，护栏降级: %s\n" % e)
         return None
