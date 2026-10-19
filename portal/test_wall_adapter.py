@@ -124,15 +124,29 @@ class WallAdapterTests(unittest.TestCase):
     def test_committee_line_from_latest_minutes(self):
         self._write_json(self.minutes_path, self.MINUTES)
         wall = json.loads(self._run())
-        # 取 created_at 最新一条，结论行原文引用 + 日期/会议类型标注
+        # 取 created_at 最新一条；展示层署名换算（三国 v1.2 §四）：盘前朝会主持=司马懿·仲达；
+        # 结论行原文引用不改写，真署名（title）留痕 provenance
         self.assertEqual(wall["committee_line"],
-                         "10-15 盘前会｜维持 T1/T2 精选执行、T3 只看不动。")
+                         "10-15 盘前朝会｜司马懿·仲达 主持｜维持 T1/T2 精选执行、T3 只看不动。")
         src = wall["provenance"]["committee_source"]
         self.assertTrue(src["source"].endswith("minutes.json"))
         self.assertEqual(src["meeting_id"], "min_new")
         self.assertEqual(src["kind"], "pre_open")
+        self.assertEqual(src["host"], "司马懿·仲达")
+        self.assertEqual(src["title"], "新会")
         self.assertFalse(any("committee_line" in m
                              for m in wall["provenance"]["missing"]))
+
+    def test_committee_unknown_kind_no_host(self):
+        # 未知会议类型 → 不猜主持（灰态不编造）：仅日期+类型+结论，host 为空
+        self._write_json(self.minutes_path, {"items": [
+            {"id": "m1", "kind": "weekly", "created_at": "2026-10-15T09:00:00",
+             "title": "周会", "body": "**会议结论**：周结论。"}]})
+        wall = json.loads(self._run())
+        self.assertEqual(wall["committee_line"], "10-15 weekly｜周结论。")
+        src = wall["provenance"]["committee_source"]
+        self.assertEqual(src["host"], "")
+        self.assertEqual(src["kind"], "weekly")
 
     def test_minutes_without_conclusion_line(self):
         self._write_json(self.minutes_path, {"items": [

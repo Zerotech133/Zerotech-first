@@ -25,7 +25,9 @@ G1 自有产物接入（K-STOCK-122 §八挂账，v3 方案 §五缺口 2）：
   "strategists": [{id,name,score,picks_count,top:[{ticker,name,score}],view}]
   "markets": {"A":active,"HK":planned,"US":planned,"CRYPTO":planned}
   "committee_line": 投研会一行结论（k_stock/paper/minutes.json 最新纪要「会议结论」行原文引用
-                    → "MM-DD 盘前会｜结论"；文件缺失/无结论行 → 留空并记 missing，绝不编造）
+                    → "MM-DD 盘前朝会｜司马懿·仲达 主持｜结论"；会议类型/主持为三国命名体系
+                    v1.2 展示层换算（§四 开会与复盘体系），未知 kind 不猜主持；结论原文与真署名
+                    （meta.title）绝不改写；文件缺失/无结论行 → 留空并记 missing，绝不编造）
   "provenance": {todays_picks_path, generated_from, missing, committee_source|null}
 }
 
@@ -56,7 +58,11 @@ DEFAULT_OUT = os.path.join(REPO_ROOT, "portal", "data", "wall.json")
 
 MARKETS = {"A": "active", "HK": "planned", "US": "planned", "CRYPTO": "planned"}
 TOP_N = 3          # 每位策略师展示的 top 标的条数
-KIND_LABEL = {"pre_open": "盘前会", "post_close": "收盘会"}
+# 会议类型标签 + 主持署名换算（三国命名体系 v1.2 §四，纯展示层，零业务语义）：
+# 盘前朝会/收盘夕会主持=司马懿·仲达（量化板块总Agent，组织朝会与复盘）；
+# 真源 portal/persona_registry.json（commander）+ 设计文档 v1.2；未知 kind → 空（不猜）。
+KIND_LABEL = {"pre_open": "盘前朝会", "post_close": "收盘夕会"}
+KIND_HOST = {"pre_open": "司马懿·仲达", "post_close": "司马懿·仲达"}
 # 墙契约顶层键（顺序即输出顺序）
 WALL_KEYS = ["generated_at", "scan_run_date", "trade_basis", "t1_gate",
              "strategists", "markets", "committee_line", "provenance"]
@@ -169,6 +175,8 @@ def extract_committee(minutes_path):
     返回 (line, source_meta, missing_note)。引用原文绝不改写；
     缺文件/无 items/无结论行 → (None, None, 说明) 继续跑；
     文件存在但坏 JSON → SystemExit（与 verdicts 同语义，fail-visible）。
+    展示层署名换算：会议类型/主持按 KIND_LABEL/KIND_HOST 映射三国名
+    （v1.2 §四），未知 kind 不猜主持；真署名原样留痕 meta.title。
     """
     if not os.path.isfile(minutes_path or ""):
         return None, None, ("committee_line: minutes.json 未找到"
@@ -192,11 +200,14 @@ def extract_committee(minutes_path):
     created = str(latest.get("created_at", ""))
     kind = str(latest.get("kind", ""))
     label = KIND_LABEL.get(kind, kind or "投研会")
-    line = "%s %s｜%s" % (created[5:10].replace("-", "-"), label, conclusion)
+    host = KIND_HOST.get(kind, "")
+    seg = ("%s 主持｜" % host) if host else ""
+    line = "%s %s｜%s%s" % (created[5:10], label, seg, conclusion)
     meta = {"source": os.path.abspath(minutes_path),
             "meeting_id": latest.get("id", ""),
             "meeting_at": created,
             "kind": kind,
+            "host": host,
             "title": str(latest.get("title", ""))}
     return line, meta, None
 
