@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>量化下钻 · 零界</title>
+<title>量化驾驶舱 · 零界</title>
 <link rel="stylesheet" href="/static/tokens.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -105,7 +105,7 @@
 
 <div class="topbar">
   <div class="logo">量</div>
-  <div class="brand"><h1>量化下钻驾驶舱</h1><small>SINGLE-SCREEN · DRILL-DOWN</small></div>
+  <div class="brand"><h1>量化驾驶舱</h1><small>SINGLE-SCREEN COCKPIT</small></div>
   <div class="admission unknown" id="adm"><span class="vd">— —</span><span class="sub">准入判定加载中…</span></div>
   <div class="dim num" id="dayinfo" style="font-size:11.5px"></div>
   <div class="mkt">
@@ -136,7 +136,7 @@
   </div>
   <div class="col" id="colDetail">
     <div class="col-title">结果与证据 · L3/L4</div>
-    <div id="detail"><div class="greybox">点选中间栏任意一只票<br><span style="font-size:11px">下钻信号结果 → 原始数据点</span></div></div>
+    <div id="detail"><div class="greybox">点选中间栏任意一只票<br><span style="font-size:11px">信号结果 → 原始数据点</span></div></div>
   </div>
 </div>
 
@@ -382,7 +382,7 @@ var US_STATE={loaded:false,data:null};
 function renderUSBoard(){
   var box=document.getElementById("stockList");
   document.getElementById("stkN").textContent="US 账本";
-  document.getElementById("detail").innerHTML='<div class="greybox">美股为账本级投影 · 无逐票下钻<br><span style="font-size:11px">账户数据见中栏，模拟仓≠真实成交</span></div>';
+  document.getElementById("detail").innerHTML='<div class="greybox">美股为账本级投影 · 无逐票明细<br><span style="font-size:11px">账户数据见中栏，模拟仓≠真实成交</span></div>';
   if(US_STATE.loaded){ paintUS(US_STATE.data); return; }
   box.innerHTML='<div class="greybox">美股账本加载中…</div>';
   fetch("/api/paper_status").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
