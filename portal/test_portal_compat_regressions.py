@@ -24,3 +24,9 @@ def test_portal_api_exports_sa_history_reader_for_fin_page_injection():
     portal_api = importlib.import_module("portal_api")
 
     assert callable(portal_api._sa_hist_read)
+
+
+def test_lineage_page_loads_deferred_unified_navigation():
+    html = (PORTAL_DIR / "lineage.html").read_text(encoding="utf-8")
+
+    assert '<script src="/static/nav.js" defer></script>' in html
