@@ -330,21 +330,109 @@ class TestBuildHealth:
         api_execution.build_execution_health(force=True)  # force 绕缓存
         assert called["n"] == 2
 
-    def test_cache_expiry_after_ttl(self, tmp_manifest, monkeypatch):
-        """TTL 过期后重新轮询。"""
+    def test_cache_expiry_swr_stale_then_refresh(self, tmp_manifest,
+                                                 monkeypatch):
+        """TTL 过期（SWR，T-P2）：前台立即返回旧值带 stale 标记不阻塞，
+        后台单飞异步刷新，刷新完成后恢复新鲜（无 stale 标记）。"""
         tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
             _cfg()]}), encoding="utf-8")
         called = {"n": 0}
 
         def _fake(names, force=False):
             called["n"] += 1
-            return {names[0]: _row()}, True, None, 3
+            return {names[0]: _row(last_result=267009 if called["n"] > 1
+                                   else 0)}, True, None, 3
 
         monkeypatch.setattr(api_execution, "poll_tasks", _fake)
         api_execution.build_execution_health()
-        api_execution._CACHE["ts"] -= 31  # 模拟时间流逝
-        api_execution.build_execution_health()
+        api_execution._CACHE["ts"] -= 31  # 模拟时间流逝（缓存过期）
+        d = api_execution.build_execution_health()
+        assert d["stale"] is True                      # 前台零阻塞返回旧值
+        assert d["cache_age_sec"] >= 31
+        assert d["tasks"][0]["last_result"] == 0       # 是旧值（第一轮数据）
+        # 后台单飞刷新异步完成（事件轮询等待，无固定 sleep）
+        deadline = time.monotonic() + 5.0
+        while called["n"] < 2 and time.monotonic() < deadline:
+            time.sleep(0.02)
         assert called["n"] == 2
+        # 缓存写入在 poll_tasks 返回之后，轮询等后台刷新落缓存再取（防竞态）
+        d2 = api_execution.build_execution_health()
+        deadline2 = time.monotonic() + 5.0
+        while "stale" in d2 and time.monotonic() < deadline2:
+            time.sleep(0.02)
+            d2 = api_execution.build_execution_health()
+        assert "stale" not in d2                       # 刷新后恢复新鲜
+        assert d2["tasks"][0]["last_result"] == 267009
+
+    def test_swr_background_refresh_single_flight(self, tmp_manifest,
+                                                  monkeypatch):
+        """SWR 单飞：并发多次过期命中只触发一次后台构建（省 PS 开销）。"""
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        called = {"n": 0}
+
+        def _slow(names, force=False):
+            called["n"] += 1
+            threading.Event().wait(0.15)
+            return {names[0]: _row()}, True, None, 3
+
+        monkeypatch.setattr(api_execution, "poll_tasks", _slow)
+        api_execution.build_execution_health()
+        api_execution._CACHE["ts"] -= 31
+        api_execution.build_execution_health()   # 触发后台刷新 #1
+        api_execution.build_execution_health()   # 单飞在跑 → 静默让位
+        api_execution.build_execution_health()
+        deadline = time.monotonic() + 5.0
+        while called["n"] < 1 + 1 and time.monotonic() < deadline:
+            time.sleep(0.02)
+        threading.Event().wait(0.05)             # 给让位线程留退出时间
+        assert called["n"] == 2, "并发过期命中应单飞成一次后台构建: %d" % called["n"]
+
+    def test_fresh_hit_has_no_stale_marker(self, tmp_manifest, monkeypatch):
+        """TTL 内温缓存命中不带 stale 标记（契约只对过期命中附加）。"""
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        monkeypatch.setattr(
+            api_execution, "poll_tasks",
+            lambda names, force=False: ({names[0]: _row()}, True, None, 3))
+        first = api_execution.build_execution_health()
+        assert "stale" not in first
+        second = api_execution.build_execution_health()
+        assert "stale" not in second
+
+    def test_swr_bg_failure_keeps_stale_serving(self, tmp_manifest,
+                                                monkeypatch, capsys):
+        """SWR fail-open：后台刷新失败吞掉记 stderr，旧缓存仍可服务。"""
+        tmp_manifest.write_text(json.dumps({"version": 1, "tasks": [
+            _cfg()]}), encoding="utf-8")
+        called = {"n": 0}
+
+        def _boom(names, force=False):
+            called["n"] += 1
+            if called["n"] == 1:      # 首轮成功建缓存（生产 poll_tasks 不抛）
+                return {names[0]: _row()}, True, None, 3
+            raise RuntimeError("swr exploded")
+
+        monkeypatch.setattr(api_execution, "poll_tasks", _boom)
+        api_execution.build_execution_health()   # 冷启同步轮询 n=1（成功）
+        assert api_execution._CACHE["data"] is not None
+        api_execution._CACHE["ts"] -= 31
+        d = api_execution.build_execution_health()   # 过期→返回旧值+触发后台
+        assert d["stale"] is True
+        # 轮询等后台刷新失败记 stderr（capsys 跨线程捕获 sys.stderr 全局替换）。
+        # 等待期间保持缓存过期重踢后台刷新：单飞闸若被上一用例的残留线程
+        # 短暂持有，kick 静默让位后需要下一次过期命中补位（幂等，无副作用）。
+        deadline = time.monotonic() + 5.0
+        err = ""
+        while time.monotonic() < deadline:
+            err += capsys.readouterr().err
+            if "swr exploded" in err:
+                break
+            api_execution._CACHE["ts"] -= 31
+            api_execution.build_execution_health()
+            time.sleep(0.02)
+        assert "swr exploded" in err, "后台异常未记 stderr: %r" % err
+        assert api_execution._CACHE["data"] is not None  # 失败不毁旧缓存
 
     def test_return_deepcopy_no_cache_pollution(self, tmp_manifest,
                                                 monkeypatch):
@@ -548,3 +636,82 @@ class TestWarmer:
         api_execution._WARMER_STOP.set()
         th.join(2.0)
         assert not th.is_alive()
+
+
+# ----------------------------------------------------------------------
+# _ps_query 批量查询（T-P2 治本：COM Schedule.Service 单连接）
+# ----------------------------------------------------------------------
+class TestPsQueryBatch:
+    """_ps_query 批量查询逻辑验证——mock subprocess.run，绝不真调
+    PowerShell（判例红线：测试不真跑 COM/计划任务查询，22 任务轮询
+    不进测试路径）。"""
+
+    def _patch_run(self, monkeypatch, stdout=b"", stderr=b"", returncode=0,
+                   cmd_spy=None):
+        class _Proc:
+            def __init__(self):
+                self.stdout = stdout
+                self.stderr = stderr
+                self.returncode = returncode
+
+        def _fake_run(cmd, **kw):
+            if cmd_spy is not None:
+                cmd_spy(cmd)
+            return _Proc()
+
+        monkeypatch.setattr(api_execution.subprocess, "run", _fake_run)
+
+    def test_command_is_single_process_batch(self, monkeypatch):
+        """PS 命令必须是单进程批量查询：COM 单连接，不再逐任务 CIM 往返。"""
+        out = json.dumps([
+            {"name": "A", "found": True, "last_run": "", "result": 0},
+            {"name": "B'x", "found": False, "last_run": "", "result": 0},
+        ]).encode("utf-8")
+        seen = {}
+        self._patch_run(monkeypatch, stdout=out,
+                        cmd_spy=lambda cmd: seen.update(cmd=cmd))
+        api_execution._ps_query(["A", "B'x"])
+        ps_cmd = seen["cmd"][4]  # [ps, -NoProfile, -NonInteractive, -Command, ps]
+        assert "Schedule.Service" in ps_cmd, "缺 COM 单连接入口"
+        assert "Get-ScheduledTask" not in ps_cmd, "仍残留逐任务 CIM 查询"
+        assert "'A'=$true" in ps_cmd and "'B''x'=$true" in ps_cmd, "单引号未转义"
+        assert seen["cmd"][0] == api_execution._PS and len(seen["cmd"]) == 5
+
+    def test_parse_found_and_missing(self, monkeypatch):
+        """found 行解析；missing 行 found=False 且 last_run=None（宁报勿瞒）。"""
+        out = json.dumps([
+            {"name": "A", "found": True,
+             "last_run": "2026-10-19 09:00:00", "result": 0},
+            {"name": "B", "found": False, "last_run": "", "result": 0},
+        ]).encode("utf-8")
+        self._patch_run(monkeypatch, stdout=out)
+        rows = api_execution._ps_query(["A", "B"])
+        assert rows["A"] == {"found": True,
+                             "last_run": "2026-10-19 09:00:00",
+                             "last_result": 0}
+        assert rows["B"]["found"] is False
+        assert rows["B"]["last_run"] is None
+
+    def test_parse_single_dict_row(self, monkeypatch):
+        """单任务时 ConvertTo-Json 输出对象而非数组 → 归一为单元素列表。"""
+        out = json.dumps({"name": "A", "found": True,
+                          "last_run": "2026-10-19 09:00:00",
+                          "result": 267009}).encode("utf-8")
+        self._patch_run(monkeypatch, stdout=out)
+        rows = api_execution._ps_query(["A"])
+        assert rows["A"]["last_result"] == 267009
+
+    def test_negative_int32_result_normalized(self, monkeypatch):
+        """COM LastTaskResult 是 int32：0xFFFFFFFF 以 -1 到达，须归一
+        4294967295（良性码表外必报 fail，不能因负值解析炸掉）。"""
+        out = json.dumps([{"name": "A", "found": True,
+                           "last_run": "", "result": -1}]).encode("utf-8")
+        self._patch_run(monkeypatch, stdout=out)
+        rows = api_execution._ps_query(["A"])
+        assert rows["A"]["last_result"] == 4294967295
+
+    def test_nonzero_exit_raises(self, monkeypatch):
+        """PS 非零退出 → RuntimeError（poll_tasks 统一转 ps_ok:false）。"""
+        self._patch_run(monkeypatch, stderr=b"boom", returncode=1)
+        with pytest.raises(RuntimeError):
+            api_execution._ps_query(["A"])
