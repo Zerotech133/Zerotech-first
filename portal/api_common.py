@@ -1293,7 +1293,9 @@ def _alert_source_health():
 def build_alerts():
     """量化域首页「今日预警速览」数据源：盘前/缠论/九维/weak/共振。
     全部读产线落盘快照（与各专项页同源同口径），单项失败即缺项不拖垮整体。
-    弱于板块口径=页面口径（排除 .closed_ 且末行可解析），非注册表口径。"""
+    弱于板块口径=页面口径（排除 .closed_ 且末行可解析），非注册表口径。
+    E8 分级：每条 alert 附 level ∈ {"market","eng","strategy"}（缺省 "eng"），
+    盘前倾向/大盘裁决类=market，策略引擎/信号类=eng，8001/quantapi 类=strategy。"""
     out = []
     # ① 盘前倾向（premarket_latest.json：verdict + 六度分值 + 溢价概率）
     pre = _read_json(os.path.join(REPORTS_DIR, "premarket_latest.json"))
@@ -1311,7 +1313,8 @@ def build_alerts():
                     "value": str(pre["verdict"]).split("（")[0],
                     "sub": "开盘溢价概率 %s%%" % pre.get("prob", "—"),
                     "href": "/premarket", "delta": None,
-                    "six": six, "overall": pre.get("overall")})
+                    "six": six, "overall": pre.get("overall"),
+                    "level": "market"})
     # ② 缠论预警池（chanlun_pool.jsonl：最新检出日 买/卖 计数 + 较前日差）
     try:
         rows = []
@@ -1342,7 +1345,8 @@ def build_alerts():
                         "sub": "检出日 %s" % last,
                         "href": "/bt-chanlun-pool",
                         "delta": (_nb(last) - _nb(days[-2]))
-                        if len(days) > 1 else None})
+                        if len(days) > 1 else None,
+                        "level": "eng"})
     except Exception:
         log_exc("build_alerts:chanlun_pool.jsonl")  # C2批1
     # ③ 九维警报池（nine_dim_scores.json：n_alert 阈值入池数）
@@ -1354,7 +1358,8 @@ def build_alerts():
                     "sub": "综合分 ≥%s 入池 · %s" % (
                         snap.get("alert_th", 75),
                         snap.get("trade_date", "—")),
-                    "href": "/bt-9dim", "delta": None})
+                    "href": "/bt-9dim", "delta": None,
+                    "level": "eng"})
     # ④ 弱于板块在案（weak_track_*.jsonl 排除结案流）
     try:
         n_act = sum(
@@ -1364,7 +1369,8 @@ def build_alerts():
             and _alerts_last_jsonl(fp) is not None)
         out.append({"name": "弱于板块在案", "value": "%d 案" % n_act,
                     "sub": "扫描→建案→跟踪→复评→结案",
-                    "href": "/bt-weak", "delta": None})
+                    "href": "/bt-weak", "delta": None,
+                    "level": "eng"})
     except Exception:
         log_exc("build_alerts:weak_track 在案统计")  # C2批1
     # ⑤ 共振做多（cross_poll.build_cross 内置 60s 缓存；口径=共振页 longs）
@@ -1381,7 +1387,8 @@ def build_alerts():
                      and s.get("n_long", 0) >= 2)
         out.append({"name": "共振做多", "value": "%d 只" % n_long,
                     "sub": "多策略信号共振 · 买入级",
-                    "href": "/bt-cross", "delta": None})
+                    "href": "/bt-cross", "delta": None,
+                    "level": "eng"})
     except Exception:
         log_exc("build_alerts:cross_poll 共振")  # C2批1
     # ⑥ 投委会（K61：最近跑批夜三会计数 + 影子转正进度，态势带卡；
@@ -1404,7 +1411,8 @@ def build_alerts():
                             cs["n_watch"], cs["n_rev"],
                             cs["shadow_n"], cs["shadow_need"],
                             warn, pend, sty_s),
-                        "href": "/council", "delta": None})
+                        "href": "/council", "delta": None,
+                        "level": "eng"})
     except Exception:
         log_exc("build_alerts:council_stats")  # C2批1
     return {"ts": time.strftime("%Y-%m-%d %H:%M"), "alerts": out,
