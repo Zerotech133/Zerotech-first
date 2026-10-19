@@ -55,8 +55,8 @@ TARGET_AUDIT_PATH = os.path.join(WORK, "target_audit.jsonl")
 # kind 匹配：精确相等，或 "前缀:*" 通配；task=TASK_MANAGEABLE 内计划任务名
 # （保存时联动改计划任务时间）；exempt=静默豁免（风险提示不可吞）。
 DEFAULT_SCHEDULE = {
-    "silent_start": "23:00",
-    "silent_end": "07:00",
+    "silent_start": "22:00",
+    "silent_end": "07:30",
     "note": "K-PUSH-007 调度全量：全局静默 + 源矩阵。闸门可执行=silent+exempt；"
             "time/freq/window/excess 为描述性配置（面板展示，任务时间经 task 联动计划任务）。",
     "sources": [
@@ -677,7 +677,7 @@ def load_schedule():
         s = json.loads(json.dumps(DEFAULT_SCHEDULE))  # 深拷贝防常量被污
         try:
             atomic_write_json(SCHEDULE_PATH, s)
-            log("[sched] schedule.json 缺失/损坏，已写缺省矩阵（静默 23:00-07:00，预警/盘中豁免）")
+            log("[sched] schedule.json 缺失/损坏，已写缺省矩阵（静默 22:00-07:30，预警/盘中豁免）")
         except Exception:
             pass  # 写盘失败不挡服务（下次读仍回落内存缺省）
     return s
@@ -711,7 +711,7 @@ def _in_silent_window(now=None, kind=""):
     cur = (now or datetime.now()).strftime("%H:%M")
     if a <= b:                      # 同日窗口，如 12:00-13:30
         return a <= cur < b
-    return cur >= a or cur < b      # 跨午夜窗口，如 23:00-07:00
+    return cur >= a or cur < b      # 跨午夜窗口，如 22:00-07:30
 
 
 def _flow_gate_deny(kind, target, why):
