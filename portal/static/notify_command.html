@@ -67,6 +67,7 @@ details[open].group>summary .caret{transform:rotate(180deg)}
 .badge.ev-receiver_verified{color:var(--color-ok);border-color:#1f4d2b;background:#12261e}
 .badge.ev-none{color:var(--text-dim)}
 .badge.ev-designed,.badge.ev-code_verified,.badge.ev-scheduled_first_run{color:var(--text-dim)}
+.badge.cluster{color:var(--color-warn);border-color:#6b5326;background:#2b230f}
 .reason{font-size:12px;color:var(--text-dim);line-height:1.7;margin:2px 0 4px;overflow-wrap:anywhere}
 .facts{display:flex;flex-wrap:wrap;gap:4px 14px;font:11px var(--font-mono);color:var(--text-dim)}
 .facts span b{color:var(--gray-6);font-weight:500}
@@ -207,6 +208,15 @@ function renderNotices(p){
  }
  const src=meta.sources||{};
  box.append(el('p','notice','账本条目来源：决策 DB '+text(src.decision_db||0)+' · 发送流水 '+text(src.push_flow||0)+' · deadline 旗标 '+text(src.deadline_flag||0)+' · 矩阵发送账 '+text(src.matrix_log||0)+'。'));
+ // v1.1 §11：blocked 治理对账行（meta.blocked_archive 缺失时整行不渲染）
+ const ba=meta.blocked_archive;
+ if(ba&&typeof ba==='object'){
+  const cc=typeof ba.cluster_count==='number'?String(ba.cluster_count):'—';
+  const rb=typeof ba.raw_blocked==='number'?String(ba.raw_blocked):'—';
+  const line=el('p','notice','blocked 折叠 '+cc+' 簇 · 原始 '+rb+' 条 · T+7 滚窗自动出队。');
+  if(text(ba.rule))line.title=String(ba.rule);
+  box.append(line);
+ }
 }
 
 function renderItem(p,x){
@@ -226,6 +236,10 @@ function renderItem(p,x){
  const confirm=el('span','badge '+(text(x.evidence_delivery)==='receiver_verified'?'ev-receiver_verified':'ev-none'));
  confirm.textContent=text(x.evidence_delivery)==='receiver_verified'?'已送达核实':'送达待核';
  badges.append(confirm);
+ // v1.1 §11：push_flow blocked 簇条目可选携带 cluster_size（簇内失败行数）；字段缺失或 ≤1 时不渲染
+ if(typeof x.cluster_size==='number'&&x.cluster_size>1){
+  const cb=el('span','badge cluster');cb.textContent=String(x.cluster_size)+' 条同因失败';badges.append(cb);
+ }
  card.append(badges);
  if(text(x.reason))card.append(el('p','reason',x.reason));
  const facts=el('div','facts');
