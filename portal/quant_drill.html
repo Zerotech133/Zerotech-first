@@ -109,10 +109,10 @@
   <div class="admission unknown" id="adm"><span class="vd">— —</span><span class="sub">准入判定加载中…</span></div>
   <div class="dim num" id="dayinfo" style="font-size:11.5px"></div>
   <div class="mkt">
-    <span class="mtab on">A股</span>
-    <span class="mtab planned" title="接入中">港股</span>
-    <span class="mtab planned" title="接入中">美股</span>
-    <span class="mtab planned" title="接入中">虚拟币</span>
+    <span class="mtab on" id="tabA" onclick="setMarket('A')">A股</span>
+    <span class="mtab" id="tabUS" onclick="setMarket('US')">美股</span>
+    <span class="mtab planned" title="接入中" onclick="mktPlanned('港股')">港股</span>
+    <span class="mtab planned" title="接入中" onclick="mktPlanned('虚拟币')">虚拟币</span>
     <a class="backlink" href="/quant-full">长版全览 →</a>
   </div>
 </div>
@@ -148,7 +148,7 @@
    L3 信号:   同上 stocks[].sources（每个 s = 一个板块的一条结果）
    L4 点:     /data/pick_details/<code>.json     chanlun/entry_signal/chips/sectors/vol_events/lhb/notices
    L0 准入:   /api/admission → 8791（fetchFirst 降级链，未落地灰态） */
-var S = { adm:null, wall:null, picks:null, cache:{}, sector:"all", stock:null, filter:"all" };
+var S = { adm:null, wall:null, picks:null, cache:{}, sector:"all", stock:null, filter:"all", market:"A", q:"" };
 var SECNAME = {}; /* id → 板块名 */
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
@@ -364,6 +364,58 @@ function paintPoints(d,s){
     h+='</div>';
   }
   if(!h) el.innerHTML='<div class="greybox">明细无可用证据组</div>'; else el.innerHTML=h;
+}
+
+/* ── 市场切换：A 股票列表 / 美股账本只读投影（v3 拍板「US 灰位先行」）── */
+function setMarket(m){
+  S.market=m;
+  document.getElementById("tabA").classList.toggle("on",m==="A");
+  document.getElementById("tabUS").classList.toggle("on",m==="US");
+  S.stock=null;
+  if(m==="A"){ document.getElementById("stkN").textContent=""; renderStocks(); renderDetail(null); }
+  else { renderUSBoard(); }
+}
+function mktPlanned(n){ alert(n+"市场接入中（v3 拍板灰位）· 敬请期待"); }
+
+/* 美股账本：/api/paper_status us 块只读投影，影子账本非真实成交，不造第二业务账 */
+var US_STATE={loaded:false,data:null};
+function renderUSBoard(){
+  var box=document.getElementById("stockList");
+  document.getElementById("stkN").textContent="US 账本";
+  document.getElementById("detail").innerHTML='<div class="greybox">美股为账本级投影 · 无逐票下钻<br><span style="font-size:11px">账户数据见中栏，模拟仓≠真实成交</span></div>';
+  if(US_STATE.loaded){ paintUS(US_STATE.data); return; }
+  box.innerHTML='<div class="greybox">美股账本加载中…</div>';
+  fetch("/api/paper_status").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
+    .then(function(d){ US_STATE.loaded=true; US_STATE.data=d; paintUS(d); });
+}
+function paintUS(d){
+  var box=document.getElementById("stockList");
+  var us=d&&d.us&&d.us.ok&&d.us.accounts&&d.us.accounts[0]?d.us.accounts[0]:null;
+  if(!us){ box.innerHTML='<div class="greybox">美股账本缺源（/api/paper_status us 不可用）· 灰态不猜值</div>'; return; }
+  var lt=us.latest||{};
+  var h='<div class="stockhead">'
+    +'<div class="big">'+esc(us.account_id||"—")+'<span class="code">USD · 影子账本 · 模拟成交非真实资金</span></div>'
+    +'<div class="pxl '+updn(lt.cum_pct)+'">累计 '+pct(lt.cum_pct)+'</div>'
+    +'<div class="why">数据日 '+(lt.date||"—")+' · verify_ok='+(lt.verify_ok===true?"true":"false")+' · 来源 /api/paper_status（只读投影，非第二业务账）</div></div>'
+    +'<div class="group-t">账户快照</div><div class="kv">'
+    +'<span class="k">总资产</span><span class="v">$'+f2(lt.total)+'</span>'
+    +'<span class="k">现金</span><span class="v">$'+f2(lt.cash)+'</span>'
+    +'<span class="k">持仓市值</span><span class="v">$'+f2(lt.market_value)+'</span>'
+    +'<span class="k">仓位</span><span class="v">'+(lt.pos_pct!=null?(lt.pos_pct*100).toFixed(2)+"%":"—")+'</span>'
+    +'<span class="k">挂单</span><span class="v">'+(lt.pending!=null?lt.pending:"—")+'</span></div>';
+  var cv=us.curve||[];
+  if(cv.length>1){
+    var pts=cv.slice(-14), w=200, ht=40;
+    var vals=pts.map(function(p){ return p.cum_pct||0; });
+    var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rng=(mx-mn)||1;
+    var poly=pts.map(function(p,i){
+      return (i*w/(pts.length-1)).toFixed(1)+","+(ht-2-((p.cum_pct-mn)/rng)*(ht-4)).toFixed(1);
+    }).join(" ");
+    h+='<div class="group-t">累计收益曲线（近 '+pts.length+' 点，'+esc(pts[0].date)+' ~ '+esc(pts[pts.length-1].date)+'）</div>'
+      +'<svg width="'+w+'" height="'+ht+'" style="display:block;margin-top:4px">'
+      +'<polyline fill="none" stroke="'+((vals[vals.length-1]||0)>=0?"#e05656":"#2ea36b")+'" stroke-width="1.5" points="'+poly+'"/></svg>';
+  }
+  box.innerHTML=h;
 }
 
 /* ── 启动 ── */

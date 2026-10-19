@@ -181,6 +181,12 @@ section('quant_drill.html invariants');
     ok(h.includes(".up { color: #e05656") && h.includes(".dn { color: #2ea36b"), '下钻页：涨红(#e05656)跌绿(#2ea36b) 中国惯例');
     // 过滤器四态
     ok(h.includes('data-f="buy"') && h.includes('data-f="env"') && h.includes('data-f="T1"'), '下钻页：T1/买点/环境偏离过滤器在位');
+    // US 灰位先行（v3 拍板）：美股 tab 接 paper_status 账本只读投影，影子账本标注+缺源灰态
+    ok(h.includes("setMarket('US')") && h.includes('/api/paper_status') && h.includes('us.accounts'),
+       '下钻页：US tab 账本只读投影接线（paper_status us 块）');
+    ok(h.includes('影子账本 · 模拟成交非真实资金') && h.includes('美股账本缺源'),
+       '下钻页：US 投影影子账本标注 + 缺源灰态不猜值');
+    ok(h.includes('美股市场接入中') === false && h.includes('mktPlanned'), '下钻页：HK/CRYPTO 保持灰位 planned 提示');
     // 导航真源管线：nav.js 已挂下钻入口
     const nav = path.join(PORTAL, 'static', 'nav.js');
     ok(fs.existsSync(nav) && fs.readFileSync(nav, 'utf8').includes('/quant-drill'), '导航真源：nav.js 含 /quant-drill 入口（export_nav 管线产物）');
