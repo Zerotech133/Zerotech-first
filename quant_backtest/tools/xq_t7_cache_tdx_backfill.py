@@ -35,7 +35,7 @@ import os
 import shutil
 import struct
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 TOOLS_DIR = Path(__file__).resolve().parent          # quant_backtest/tools/
@@ -717,9 +717,8 @@ def plan_anchored_prepend(symbols: list, cache: dict,
                      for c in list(reader(path, ["ts_code"])["ts_code"])}
             for c in codes & wanted:
                 first_seen.setdefault(c, td)
-        # 2) 逐股前扩
-        daily_cols = ("ts_code", "trade_date", "open", "high", "low",
-                      "close", "vol", "amount")
+        # 2) 逐股预检（缓存首行/锚定候选），收集前扩目标
+        targets = []                            # (s, ts, cf, cache_close, wf)
         for s in symbols:
             ts = symbol_to_ts_code(s)
             rows = (cache.get("daily") or {}).get(s) or []
@@ -744,7 +743,40 @@ def plan_anchored_prepend(symbols: list, cache: dict,
                                  "cache_first": cf,
                                  "warehouse_first": wf}
                 continue
-            # 3) 锚定日仓库行与 adj
+            targets.append((s, ts, cf, cache_close, wf))
+        # 3) 单遍收集前扩区间（全部目标共享部件读取，避免 O(股×部件)）
+        daily_cols = ("ts_code", "trade_date", "open", "high", "low",
+                      "close", "vol", "amount")
+        raw_by_ts = {ts: [] for _, ts, *_ in targets}
+        adj_by_ts = {ts: {} for _, ts, *_ in targets}
+        if targets:
+            span_lo = min(t[4] for t in targets)
+            span_hi = max((datetime.strptime(t[2], "%Y%m%d")
+                           - timedelta(days=1)).strftime("%Y%m%d")
+                          for t in targets)
+            adj_parts = dict(_iter_date_parts(adj_dir,
+                                              window=(span_lo, span_hi))
+                             or [])
+            for td, path in (_iter_date_parts(daily_dir,
+                                              window=(span_lo, span_hi))
+                             or []):
+                tbl = reader(path, list(daily_cols))
+                for raw in _extract_rows(tbl, wanted, daily_cols):
+                    raw_by_ts[str(raw["ts_code"]).strip()].append(raw)
+                ap = adj_parts.get(td)
+                if ap is None:
+                    continue
+                tbl = reader(ap, ["ts_code", "trade_date", "adj_factor"])
+                for raw in _extract_rows(tbl, wanted,
+                                         ("ts_code", "trade_date",
+                                          "adj_factor")):
+                    f = _num(raw.get("adj_factor"))
+                    if f is not None and f > 0:
+                        adj_by_ts[str(raw["ts_code"]).strip()][
+                            str(raw.get("trade_date"))[:8]] = f
+        # 4) 逐股锚定与建行
+        for s, ts, cf, cache_close, wf in targets:
+            # 锚定日仓库行与 adj
             anchor_day = os.path.join(daily_dir, "d_%s.parquet" % cf)
             if not os.path.exists(anchor_day):
                 per_symbol[s] = {"status": "anchor_missing",
@@ -781,30 +813,10 @@ def plan_anchored_prepend(symbols: list, cache: dict,
                                  "cache_first": cf,
                                  "basis_ratio": basis_ratio}
                 continue
-            # 4) 前扩区间原始行 + adj（[wf, cache_first) ）
-            from datetime import timedelta
-            prev_day = (datetime.strptime(cf, "%Y%m%d")
-                        - timedelta(days=1)).strftime("%Y%m%d")
-            span = _iter_date_parts(daily_dir, window=(wf, prev_day))
-            adj_by_date = dict(_iter_date_parts(adj_dir,
-                                                window=(wf, prev_day)) or [])
-            raw_rows = []
-            adj_map = {}
-            for td, path in (span or []):
-                tbl = reader(path, list(daily_cols))
-                for raw in _extract_rows(tbl, {ts}, daily_cols):
-                    r = dict(raw)
-                    r["_part_date"] = td
-                    raw_rows.append(r)
-                ap = adj_by_date.get(td)
-                if ap is not None:
-                    tbl = reader(ap, ["ts_code", "trade_date", "adj_factor"])
-                    for raw in _extract_rows(tbl, {ts},
-                                             ("ts_code", "trade_date",
-                                              "adj_factor")):
-                        f = _num(raw.get("adj_factor"))
-                        if f is not None and f > 0:
-                            adj_map[str(raw.get("trade_date"))[:8]] = f
+            # 前扩区间原始行 + adj（单遍收集结果，仅取 < cache_first）
+            raw_rows = [r for r in raw_by_ts.get(ts, [])
+                        if str(r.get("trade_date"))[:8] < cf]
+            adj_map = adj_by_ts.get(ts, {})
             if not raw_rows:
                 per_symbol[s] = {"status": "no_earlier_rows",
                                  "cache_first": cf,
