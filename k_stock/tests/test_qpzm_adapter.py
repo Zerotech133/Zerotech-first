@@ -236,6 +236,61 @@ def test_run_hk_gray_state_skip():
     print("PASS test_run_hk_gray_state_skip")
 
 
+def test_run_cn_us_gray_no_buys():
+    """--cnus 灰态：全回避产物 → note 正常态不 raise（4d 安静日不作失败，
+    同 4d 验收单「无买入」口径；force_trading 绕守卫，无买入不触引擎）。"""
+    import qpzm_adapter
+    rows = [{"code": "600593.SH", "market": "CN", "action": "回避（环境闸门）"},
+            {"code": "gb_pltr", "market": "US", "action": "观察"}]
+    with tempfile.TemporaryDirectory() as tmp:
+        cache = _write_res(rows, tmp)
+        res = qpzm_adapter.run_cn_us(dry_run=True, cache_path=Path(cache),
+                                     force_trading=True)
+        assert res["us"] is None and res["orders"] == []
+        assert "灰态正常" in res.get("note", "")
+    print("PASS test_run_cn_us_gray_no_buys")
+
+
+def test_run_cn_us_hk_rows_sidelined():
+    """--cnus 分工钉：HK 买入行不产 poc_qpzmhk 产物、结果无 hk 段（HK 落单
+    归属 4e --hk-only，4d 不得夹带）；CN 路正常 exec（引擎 stub 隔离真账本）。"""
+    import market
+    import engine
+    import qpzm_adapter
+    rows = [
+        {"code": "600593.SH", "market": "CN", "action": "买入", "score": 78},
+        {"code": "rt_hk00700", "market": "HK", "action": "买入", "score": 88},
+    ]
+    calls = {}
+
+    class _FakeEng:
+        def __init__(self, *a, **k):
+            pass
+
+        def exec_run(self, path, **k):
+            calls["cn"] = Path(path).name
+            return {"run": Path(path).name, "orders": [], "skipped": []}
+
+    orig = (market.ParquetMarket, engine.PaperEngine,
+            qpzm_adapter._run_us, qpzm_adapter.DATA_DIR)
+    try:
+        market.ParquetMarket = lambda: object()
+        engine.PaperEngine = _FakeEng
+        qpzm_adapter._run_us = lambda *a, **k: {"account_id": "stub"}
+        with tempfile.TemporaryDirectory() as tmp:
+            qpzm_adapter.DATA_DIR = Path(tmp)
+            cache = _write_res(rows, tmp)
+            res = qpzm_adapter.run_cn_us(dry_run=True, cache_path=Path(cache),
+                                         force_trading=True)
+            assert calls.get("cn", "").startswith("poc_qpzm_")   # CN 路正常
+            assert not list(Path(tmp).glob("poc_qpzmhk_*"))      # HK 不产文件
+            assert "hk" not in res                               # HK 段零触发
+    finally:
+        (market.ParquetMarket, engine.PaperEngine,
+         qpzm_adapter._run_us, qpzm_adapter.DATA_DIR) = orig
+    print("PASS test_run_cn_us_hk_rows_sidelined")
+
+
 if __name__ == "__main__":
     test_cn_buy_in_us_buy_skip_gate_blocked_out()
     test_no_buy_rows_raises()
@@ -249,5 +304,7 @@ if __name__ == "__main__":
     test_run_hk_only_no_cn_fabrication()
     test_run_hk_only_gray_no_buys()
     test_run_hk_gray_state_skip()
+    test_run_cn_us_gray_no_buys()
+    test_run_cn_us_hk_rows_sidelined()
     test_real_latest_fail_loud_or_convert()
-    print("12/12 PASS (+1 真实产物用例)")
+    print("14/14 PASS (+1 真实产物用例)")
