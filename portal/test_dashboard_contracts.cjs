@@ -73,6 +73,13 @@ section('quant.html invariants');
   // v2 转正追加：regime-first 双轨倾向格
   ok(h.includes('k-regime-src'), '倾向格来源标签元素在位');
   ok(h.includes('策源 regime') && h.includes('brief 兜底'), '倾向格双来源标签在位（E4 双轨条款）');
+  // 数据丰富（2026-10-19）：基建条四 chip + 聚合信号副行 + 三门计数 + 仓位 + 考核链
+  ok(['inf-cont', 'inf-backup', 'inf-task', 'inf-kg'].every(id => h.includes(id)), '基建条四 chip 在位');
+  ok(h.includes('renderInfra') && h.includes("state === 'Disabled'"), '基建渲染+计划任务异常检测在位');
+  ok(h.includes('k-sig') && h.includes('/api/signals'), '聚合信号副行（8791 计数语义）在位');
+  ok(h.includes("'三门 '") && h.includes("passed"), '倾向格三门通过数在位');
+  ok(h.includes('溢价概率') && h.includes('pos_pct'), 'brief 兜底溢价概率+模拟仓仓位在位');
+  ok(h.includes('60日考核链'), '策略考核链计数在位');
   // v2 转正追加：收编六环快照条
   const RINGS = ['pool', 'watch', 'auth', 'risk', 'trade', 'review'];
   ok(RINGS.every(r => h.includes(r + ':')), '六环键齐全（RING_CN 字面量）');

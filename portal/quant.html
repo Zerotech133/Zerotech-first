@@ -56,6 +56,8 @@
   .schip.ok .sd { background: var(--color-ok); box-shadow: 0 0 7px var(--color-ok); }
   .schip.grey { opacity: .55; }
   .schip.grey .sd { background: var(--text-dim); box-shadow: none; }
+  .schip.bad { opacity: 1; border-color: rgba(224,86,86,.45); }
+  .schip.bad .sd { background: var(--color-err); box-shadow: 0 0 7px var(--color-err); }
   .schip .sn { color: var(--text-dim); flex-shrink: 0; }
   .schip .sv { font-family: Consolas, monospace; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
 
@@ -179,7 +181,7 @@
         <div class="kpi"><span class="lb">策略资产</span><a href="/strategies" style="text-decoration:none;color:inherit"><span class="vl num" id="k-strat">—</span><span class="sb" id="k-strat-sub">策略中心 →</span></a></div>
         <div class="kpi"><span class="lb">在案跟踪</span><a href="/bt-weak" style="text-decoration:none;color:inherit"><span class="vl num" id="k-weak">—</span><span class="sb">weak 产线 · 案例库 →</span></a></div>
         <div class="kpi"><span class="lb">今日情报</span><a href="/intel" style="text-decoration:none;color:inherit"><span class="vl num" id="k-news">—</span><span class="sb" id="k-news-sub">—</span></a></div>
-        <div class="kpi"><span class="lb">今日预警</span><a href="/bt-signals" style="text-decoration:none;color:inherit"><span class="vl num" id="k-alerts">—</span><span class="sb">速览清单见下方 →</span></a></div>
+        <div class="kpi"><span class="lb">今日预警</span><a href="/bt-signals" style="text-decoration:none;color:inherit"><span class="vl num" id="k-alerts">—</span><span class="sb">速览清单见下方 →</span></a><span class="sb num" id="k-sig" style="display:none"></span></div>
         <div class="kpi"><span class="lb">模拟仓</span><a href="/paper" style="text-decoration:none;color:inherit"><span class="vl num" id="k-paper">—</span><span class="sb" id="k-paper-sub">四账本 →</span></a></div>
       </div>
     </div>
@@ -191,6 +193,19 @@
       </div>
       <div class="sixstrip" id="six-strip">
         <div class="schip grey"><span class="sd"></span><span class="sn">六环</span><span class="sv">加载中…</span></div>
+      </div>
+    </div>
+
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-head">
+        <div class="sec-title">◤ 基建与数据链</div>
+        <div class="sec-note">容器 / 备份 / 计划任务 / 图谱 · 缺源标灰不假绿</div>
+      </div>
+      <div class="sixstrip">
+        <div class="schip grey" id="inf-cont"><span class="sd"></span><span class="sn">容器</span><span class="sv">加载中…</span></div>
+        <div class="schip grey" id="inf-backup"><span class="sd"></span><span class="sn">备份</span><span class="sv">加载中…</span></div>
+        <div class="schip grey" id="inf-task"><span class="sd"></span><span class="sn">计划任务</span><span class="sv">加载中…</span></div>
+        <div class="schip grey" id="inf-kg"><span class="sd"></span><span class="sn">图谱</span><span class="sv">加载中…</span></div>
       </div>
     </div>
 
@@ -370,7 +385,10 @@
       v.textContent = CN[s.regime] || s.regime;
       v.style.color = s.regime === 'risk_off' ? 'var(--color-err)'
         : (s.regime === 'risk_on' ? 'var(--color-ok)' : 'var(--color-warn)');
-      sub.textContent = (s.risk_off_reasons && s.risk_off_reasons[0] ? s.risk_off_reasons[0] + ' · ' : '') + '快照 ' + s.trade_date;
+      const gates = s.gates || {};
+      const passed = ['ma60_above', 'slope_up', 'dif_positive'].filter(k => gates[k]).length;
+      sub.textContent = '三门 ' + passed + '/3 · ' +
+        (s.risk_off_reasons && s.risk_off_reasons[0] ? s.risk_off_reasons[0] + ' · ' : '') + '快照 ' + s.trade_date;
       src.textContent = '· 策源 regime' + (via === '/api/regime' ? '' : '（直连）');
     } else if (reg && !reg.available) {
       v.textContent = '缺源';
@@ -436,7 +454,9 @@
       const th = (typeof gate.reason === 'string' && /阈=([\d.]+)/.test(gate.reason)) ? ('<阈 ' + RegExp.$1 + ' ') : '';
       el.textContent = '市场闸 ' + gate.action + '（健康分位 ' + gate.score + ' ' + th + '）';
       el.style.color = gate.action === 'shadow_block' ? 'var(--color-err)' : 'var(--color-ok)';
-      el.title = gate.reason || '';
+      const rules = (hit.data.risk && hit.data.risk.rules) || {};
+      const blk = ['R1', 'R2', 'R3', 'R4'].map(k => k + '拦' + ((rules[k] || {}).block ?? '—')).join(' · ');
+      el.title = (gate.reason || '') + ' ｜ ' + blk;
     } else {
       el.textContent = '市场闸 缺源 · 不假绿';
       el.style.color = '';
@@ -469,8 +489,9 @@
       }).join('') || "<div class='scard' style='cursor:default'><span class='dim' style='font-size:12px'>注册表为空（portal/strategies.json）</span></div>";
       const nL = items.filter(s => s.status === 'live').length;
       const nS = items.filter(s => s.status === 'shadow').length;
+      const nC = items.filter(s => s.since).length;
       document.getElementById('k-strat').textContent = items.length + ' 条';
-      document.getElementById('k-strat-sub').textContent = '实盘 ' + nL + ' · 影子 ' + nS + ' · 策略中心 →';
+      document.getElementById('k-strat-sub').textContent = '实盘 ' + nL + ' · 影子 ' + nS + ' · 60日考核链 ' + nC + ' · 策略中心 →';
       const wk = items.find(s => s.id === 'weak');
       const wm = wk && wk.metrics && wk.metrics.find(m => m.k === '在案');
       if (wm) document.getElementById('k-weak').textContent = wm.v;
@@ -538,12 +559,19 @@
       const n = d.intel || {};
       document.getElementById('k-news').textContent = (n.today ?? 0) + ' 条';
       document.getElementById('k-news-sub').textContent = '利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0);
+      /* 基建条·图谱健康（契约 §6 brief.kg） */
+      const kg = d.kg || {};
+      const ek = document.getElementById('inf-kg');
+      if (kg.catalog_stale !== undefined) {
+        ek.querySelector('.sv').textContent = 'stale ' + (kg.stale ?? '—') + ' 天 · catalog ' + (kg.catalog_age_days ?? '—') + ' 天';
+        ek.className = 'schip' + (kg.catalog_stale ? ' bad' : ' ok');
+      }
       const v = document.getElementById('k-verdict');
       if (v.textContent === '—' || v.textContent === '缺源') {
         const f = d.fin || {};
         v.textContent = String(f.verdict || '—').split('（')[0];
         v.style.color = '';
-        document.getElementById('k-verdict-sub').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只';
+        document.getElementById('k-verdict-sub').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只 · 溢价概率 ' + (f.prob ?? '—') + '%';
         document.getElementById('k-regime-src').textContent = '· brief 兜底';
       }
     } catch {}
@@ -567,11 +595,55 @@
       const el = document.getElementById('k-paper');
       el.style.color = v > 0 ? 'var(--color-up)' : (v < 0 ? 'var(--color-dn)' : '');
       document.getElementById('k-paper-sub').textContent =
-        (v > 0 ? '+' : '') + v.toFixed(2) + '% · 待撮合 ' + (L.pending ?? 0) + ' 单 →';
+        (v > 0 ? '+' : '') + v.toFixed(2) + '% · 仓位 ' + Math.round((L.pos_pct ?? 0) * 1000) / 10 + '% · 待撮合 ' + (L.pending ?? 0) + ' 单 →';
     } catch {}
   }
   loadPaperKpi();
   setInterval(loadPaperKpi, 60000);
+
+  /* ── 数据丰富·基建条：容器/备份/计划任务（契约 §6 overview） ── */
+  function renderInfra(ov) {
+    const cs = ov.containers || {};
+    let run = 0, tot = 0;
+    Object.values(cs).forEach(c => { run += c.running || 0; tot += c.total || 0; });
+    const ec = document.getElementById('inf-cont');
+    if (tot) {
+      ec.querySelector('.sv').textContent = run + '/' + tot + ' 运行';
+      ec.className = 'schip' + (run < tot ? ' bad' : ' ok');
+      ec.title = Object.entries(cs).map(([k, c]) => k + ' ' + c.running + '/' + c.total).join(' ｜ ');
+    }
+    const bk = ov.backups || {};
+    const eb = document.getElementById('inf-backup');
+    if (bk.latest) {
+      eb.querySelector('.sv').textContent = '最新 ' + bk.latest + (bk.failed ? ' · 失败 ' + bk.failed : '');
+      eb.className = 'schip' + (bk.failed ? ' bad' : ' ok');
+    }
+    const ts = ov.tasks || [];
+    const bad = ts.filter(t => t.state === 'Disabled');
+    const et = document.getElementById('inf-task');
+    if (ts.length) {
+      et.querySelector('.sv').textContent = bad.length
+        ? ('异常 ' + bad.length + '（' + bad.map(t => t.name).join(',') + '）')
+        : (ts.length + ' 项全就绪');
+      et.className = 'schip' + (bad.length ? ' bad' : ' ok');
+    }
+  }
+
+  /* ── 数据丰富·聚合信号计数（8791 /api/signals，语义=策略信号笔数，≠情报条数） ── */
+  async function loadSignals() {
+    const el = document.getElementById('k-sig');
+    const hit = await fetchFirst([DASH + '/api/signals'], 4000);
+    const s = hit && hit.data;
+    if (s && typeof s.count === 'number') {
+      el.style.display = '';
+      el.textContent = '聚合信号 ' + s.count + ' 笔 · ' + (s.trade_date || '');
+    } else {
+      el.style.display = '';
+      el.textContent = '聚合信号 缺源 · 不假绿';
+    }
+  }
+  loadSignals();
+  setInterval(loadSignals, 120000);
 
   async function loadOverview() {
     try {
@@ -580,6 +652,7 @@
       const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
       if (!r.ok) return;
       const d = await r.json();
+      renderInfra(d);
 
       // 自选股实时行情
       const qt = d.quotes || {};
