@@ -10,6 +10,7 @@ import os
 import sys
 import unittest.mock as mock
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -144,3 +145,118 @@ def test_snapshot_tushare_excludes_index():
     assert any("指数锚" in e for e in errs)
     # mock 的 realtime_quote 返回 MagicMock→df.empty 为 MagicMock 属性
     # （非真值路径不进 rows），这里只验指数剔除与不抛异常
+
+
+def test_fetch_snapshot_rejects_only_indices_without_provider_calls():
+    with mock.patch.object(R, "snapshot_tushare") as ts, \
+         mock.patch.object(R, "snapshot_akshare") as ak:
+        rows, source, errs = R.fetch_snapshot(["SH000001", "SZ399001"])
+    assert (rows, source) == ([], "")
+    assert len(errs) == 2 and all("指数锚" in err for err in errs)
+    ts.assert_not_called()
+    ak.assert_not_called()
+
+
+def test_fetch_snapshot_mixed_sources_filter_indices_on_fallback():
+    stock = dict(_ROW)
+    bank = dict(_ROW, symbol="SZ000001", ts_code="000001.SZ")
+    with mock.patch.object(R, "snapshot_tushare", return_value=([], ["down"])) as ts, \
+         mock.patch.object(R, "snapshot_akshare", return_value=([bank], [])) as ak:
+        rows, source, errs = R.fetch_snapshot(
+            ["SH000001", "SZ399001", "SZ000001"])
+    assert rows == [bank] and source == "akshare"
+    assert any("SH000001" in err for err in errs)
+    assert any("SZ399001" in err for err in errs)
+    assert any("down" in err for err in errs)
+    ts.assert_called_once_with(["SZ000001"])
+    ak.assert_called_once_with(["SZ000001"])
+    with mock.patch.object(R, "snapshot_tushare", return_value=([stock], [])) as ts, \
+         mock.patch.object(R, "snapshot_akshare") as ak:
+        rows, source, errs = R.fetch_snapshot(["SH000001", "SH600519"])
+    assert rows == [stock] and source == "tushare"
+    assert any("指数锚" in err for err in errs)
+    ts.assert_called_once_with(["SH600519"])
+    ak.assert_not_called()
+
+
+def test_fetch_snapshot_mixed_indices_both_providers_fail_visible():
+    with mock.patch.object(R, "snapshot_tushare", return_value=([], ["t-down"])) as ts, \
+         mock.patch.object(R, "snapshot_akshare", return_value=([], ["a-down"])) as ak:
+        rows, source, errs = R.fetch_snapshot(["SZ399001", "SZ000001"])
+    assert rows == [] and source == ""
+    assert any("SZ399001" in err for err in errs)
+    assert any("t-down" in err for err in errs)
+    assert any("a-down" in err for err in errs)
+    ts.assert_called_once_with(["SZ000001"])
+    ak.assert_called_once_with(["SZ000001"])
+
+
+def test_snapshot_tushare_direct_only_indices_skips_setup():
+    with mock.patch.object(R, "setup_tushare") as setup:
+        rows, errs = R.snapshot_tushare(["SH000001", "SZ399001"])
+    assert rows == [] and any("指数锚" in err for err in errs)
+    setup.assert_not_called()
+
+
+def test_snapshot_akshare_direct_filters_indices_before_import():
+    with mock.patch.dict(sys.modules, {"akshare": None}), \
+         mock.patch.object(R.X, "to_ts_code") as code:
+        rows, errs = R.snapshot_akshare(["SH000001", "SZ399001"])
+    assert rows == [] and len(errs) == 2
+    assert all("指数锚" in err for err in errs)
+    code.assert_not_called()
+
+
+def test_snapshot_akshare_direct_mixed_filters_response():
+    class FakeFrame:
+        empty = False
+
+        def iterrows(self):
+            yield 0, {"代码": "000001", "最新价": 11.5}
+            yield 1, {"代码": "600519", "最新价": 1500.0}
+
+    ak = SimpleNamespace(stock_zh_a_spot_em=mock.Mock(return_value=FakeFrame()))
+    with mock.patch.dict(sys.modules, {"akshare": ak}):
+        rows, errs = R.snapshot_akshare(["SH000001", "SH600519"])
+    assert [row["symbol"] for row in rows] == ["SH600519"]
+    assert any("SH000001" in err for err in errs)
+    ak.stock_zh_a_spot_em.assert_called_once_with()
+
+
+def test_fetch_daily_rejects_only_indices_without_provider_calls():
+    with mock.patch.object(R, "setup_tushare") as setup, \
+         mock.patch.object(R, "daily_tushare") as ts, \
+         mock.patch.object(R, "daily_akshare") as ak:
+        by_sym, note, errs = R.fetch_daily(["SH000001", "SZ399001"])
+    assert by_sym == {} and note == ""
+    assert len(errs) == 2 and all("指数锚" in err for err in errs)
+    setup.assert_not_called()
+    ts.assert_not_called()
+    ak.assert_not_called()
+
+
+def test_fetch_daily_mixed_indices_and_failure_keep_stock_fallback():
+    with mock.patch.object(R, "setup_tushare", return_value=(object(), object())) as setup, \
+         mock.patch.object(R, "daily_tushare", side_effect=RuntimeError("down")) as ts, \
+         mock.patch.object(R, "daily_akshare",
+                           side_effect=lambda sym, days: [{"symbol": sym}]) as ak:
+        by_sym, note, errs = R.fetch_daily(
+            ["SH000001", "SZ399001", "SZ000001", "SH600519"])
+    assert set(by_sym) == {"SZ000001", "SH600519"}
+    assert note == "akshare_qfq×2"
+    assert sum("指数锚" in err for err in errs) == 2
+    assert sum("down" in err for err in errs) == 2
+    setup.assert_called_once_with()
+    assert [call.args[0] for call in ts.call_args_list] == ["SZ000001", "SH600519"]
+    assert [call.args[0] for call in ak.call_args_list] == ["SZ000001", "SH600519"]
+
+
+def test_daily_akshare_direct_rejects_index_before_import():
+    with mock.patch.dict(sys.modules, {"akshare": None}):
+        for index in ("SH000001", "SZ399001"):
+            try:
+                R.daily_akshare(index)
+            except RuntimeError as exc:
+                assert "指数锚" in str(exc)
+            else:
+                raise AssertionError("指数不得进入 akshare 日线备援")

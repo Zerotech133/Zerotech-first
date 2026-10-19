@@ -169,7 +169,6 @@ def snapshot_tushare(syms: list[str], ts_mod=None,
         amount=元、pe/pb/市值=None——tushare 新浪实时源不含估值）；
         errs 为未覆盖码/空批原因（partial 信号，不阻断已得行）。
     """
-    ts = ts_mod if ts_mod is not None else setup_tushare()[0]
     rows: list[dict] = []
     errs: list[str] = []
     pairs = {}                                    # ts_code → xq_symbol
@@ -181,7 +180,9 @@ def snapshot_tushare(syms: list[str], ts_mod=None,
         if tc:
             pairs[tc] = s
     if not pairs:
-        return [], ["无可转 ts_code 的符号"]
+        errs.append("无可转 ts_code 的符号")
+        return [], errs
+    ts = ts_mod if ts_mod is not None else setup_tushare()[0]
     with no_proxy_env():
         cs = list(pairs)
         for i in range(0, len(cs), batch):
@@ -235,22 +236,25 @@ def snapshot_akshare(syms: list[str]) -> tuple[list, list]:
     判例，改全表口径）。返回 (rows, errs)；rows 含 pe/pb/市值（东财
     有，补 tushare 新浪源的估值缺口）。
     """
+    errs = ["指数锚不入快照片: %s" % s for s in syms if is_index_symbol(s)]
+    allowed = [s for s in syms if not is_index_symbol(s)]
+    if not allowed:
+        return [], errs or ["无请求码"]
     try:
         import akshare
     except ImportError as e:
-        return [], ["akshare 未安装: %s" % e]
+        return [], errs + ["akshare 未安装: %s" % e]
     with no_proxy_env():
         try:
             df = akshare.stock_zh_a_spot_em()
         except Exception as e:                    # noqa: BLE001
-            return [], ["stock_zh_a_spot_em: %s" % str(e)[:80]]
+            return [], errs + ["stock_zh_a_spot_em: %s" % str(e)[:80]]
     if df is None or df.empty:
-        return [], ["stock_zh_a_spot_em 返回空"]
-    cols = list(df.columns)
-    want = {X.to_ts_code(s): s for s in syms if X.to_ts_code(s)}
+        return [], errs + ["stock_zh_a_spot_em 返回空"]
+    want = {X.to_ts_code(s): s for s in allowed if X.to_ts_code(s)}
     want_bare = {tc.split(".")[0]: tc for tc in want}
     now = datetime.now()
-    rows, errs = [], []
+    rows = []
     got = set()
     for _, r in df.iterrows():
         code = str(r.get("代码") or "")
@@ -288,16 +292,20 @@ def fetch_snapshot(syms: list[str]) -> tuple[list, str, list]:
         "akshare"}；两源全挂 rows=[]、source=""、errs 聚合两源原因
         （调用方 fail-visible，绝不静默空）。
     """
-    errs: list[str] = []
+    errs: list[str] = ["指数锚不入快照片: %s" % s for s in syms
+                       if is_index_symbol(s)]
+    allowed = [s for s in syms if not is_index_symbol(s)]
+    if not allowed:
+        return [], "", errs or ["无请求码"]
     try:
-        rows, e1 = snapshot_tushare(syms)
+        rows, e1 = snapshot_tushare(allowed)
         errs += ["tushare: %s" % x for x in e1]
         if rows:
             return rows, "tushare", errs
     except Exception as e:                        # noqa: BLE001
         errs.append("tushare crash: %s" % str(e)[:80])
     try:
-        rows, e2 = snapshot_akshare(syms)
+        rows, e2 = snapshot_akshare(allowed)
         errs += ["akshare: %s" % x for x in e2]
         if rows:
             return rows, "akshare", errs
@@ -370,6 +378,8 @@ def daily_akshare(sym: str, days: int = 300) -> list:
     volume=股、amount=元 直用（新浪口径）；chg/percent 由相邻收盘
     自算。失败 raise（调用方记 errs）。
     """
+    if is_index_symbol(sym):
+        raise RuntimeError("%s 指数锚不入日线管道" % sym)
     try:
         import akshare
     except ImportError as e:
@@ -422,6 +432,9 @@ def fetch_daily(syms: list[str], days: int = 300) -> tuple[dict, str, list]:
     ts_mod = pro = None
     inited = False
     for sym in syms:
+        if is_index_symbol(sym):
+            errs.append("%s 指数锚不入日线管道" % sym)
+            continue
         try:
             if not inited:
                 ts_mod, pro = setup_tushare()
