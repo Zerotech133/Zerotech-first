@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>量化下钻 · 零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); display: flex; flex-direction: column; }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+
+  /* ── 顶栏：L0 准入常驻 ── */
+  .topbar { flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--bg-surface); }
+  .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 16px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 14.5px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 9.5px; letter-spacing: 2.5px; display: block; }
+  .admission { display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-raised); }
+  .admission .vd { font: 800 17px/1 "Microsoft YaHei"; letter-spacing: 2px; }
+  .admission.closed { border-color: rgba(224,86,86,.55); background: rgba(224,86,86,.10); }
+  .admission.closed .vd { color: #e05656; }
+  .admission.narrow { border-color: rgba(210,153,34,.5); background: rgba(210,153,34,.08); }
+  .admission.narrow .vd { color: #d29922; }
+  .admission.wide { border-color: rgba(46,163,107,.5); background: rgba(46,163,107,.08); }
+  .admission.wide .vd { color: #2ea36b; }
+  .admission.unknown { opacity: .75; }
+  .admission.unknown .vd { color: var(--text-dim); }
+  .admission .sub { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+  .mkt { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+  .mtab { padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; color: var(--text-dim); background: var(--bg-surface); cursor: pointer; }
+  .mtab.on { color: var(--text); border-color: var(--link); background: var(--bg-raised); font-weight: 700; }
+  .mtab.planned { opacity: .45; }
+  .backlink { font-size: 12px; color: var(--link); text-decoration: none; white-space: nowrap; }
+
+  /* ── 三栏主区：单屏，栏内自滚 ── */
+  .deck { flex: 1; display: grid; grid-template-columns: 264px minmax(340px, 1fr) minmax(400px, 1.25fr); min-height: 0; }
+  .col { min-height: 0; overflow-y: auto; border-right: 1px solid var(--border); padding: 12px 14px 30px; }
+  .col:last-child { border-right: none; }
+  .col::-webkit-scrollbar { width: 8px; }
+  .col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .col-title { font-size: 11px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); margin-bottom: 10px; display: flex; align-items: baseline; justify-content: space-between; }
+  .col-title .n { font: 700 11px Consolas, monospace; color: var(--link); }
+
+  /* L1 板块卡 */
+  .seccard { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-surface); padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
+  .seccard:hover { border-color: var(--link); }
+  .seccard.on { border-color: var(--link); background: var(--bg-raised); }
+  .seccard .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .seccard .nm { font-size: 13px; font-weight: 700; }
+  .seccard .ct { font: 700 12px Consolas, monospace; color: var(--text-dim); }
+  .seccard .vw { font-size: 11px; color: var(--text-dim); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .seccard.grey { opacity: .55; }
+
+  /* L2 票列表 */
+  .filters { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .fchip { padding: 3px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 11px; color: var(--text-dim); cursor: pointer; background: var(--bg-surface); }
+  .fchip.on { color: var(--text); border-color: var(--link); font-weight: 700; }
+  .srow { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid transparent; border-bottom: 1px solid var(--border-weak, var(--border)); cursor: pointer; border-radius: 7px; }
+  .srow:hover { background: var(--bg-surface); }
+  .srow.on { border-color: var(--link); background: var(--bg-raised); }
+  .srow .cd { font: 600 12.5px Consolas, monospace; }
+  .srow .cd small { color: var(--text-dim); font-weight: 400; margin-left: 7px; font-family: "Segoe UI", "Microsoft YaHei"; font-size: 11.5px; }
+  .srow .px { font: 600 12.5px Consolas, monospace; text-align: right; min-width: 52px; }
+  .srow .tier { font: 700 10px Consolas, monospace; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--text-dim); }
+  .srow .tier.T1 { color: #d29922; border-color: rgba(210,153,34,.5); }
+  .srow .ns { font: 700 10.5px Consolas, monospace; color: var(--link); min-width: 22px; text-align: right; }
+  .up { color: #e05656; } .dn { color: #2ea36b; }
+  .envflag { font-size: 10px; color: #d29922; }
+
+  /* L3/L4 右栏 */
+  .crumb { display: flex; gap: 6px; align-items: baseline; font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .crumb a { cursor: pointer; text-decoration: none; }
+  .stockhead { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-surface); padding: 12px 14px; margin-bottom: 12px; }
+  .stockhead .big { font-size: 17px; font-weight: 800; }
+  .stockhead .big .code { font: 600 12.5px Consolas, monospace; color: var(--text-dim); margin-left: 8px; }
+  .stockhead .pxl { font: 700 15px Consolas, monospace; margin-top: 4px; }
+  .stockhead .why { font-size: 11px; color: #d29922; margin-top: 4px; }
+  .rescard { border: 1px solid var(--border); border-radius: 9px; background: var(--bg-surface); margin-bottom: 8px; overflow: hidden; }
+  .rescard .rh { display: flex; gap: 9px; align-items: baseline; padding: 9px 12px; cursor: pointer; }
+  .rescard .rh:hover { background: var(--bg-raised); }
+  .rescard .sec-id { font: 700 10px Consolas, monospace; padding: 2px 6px; border-radius: 4px; background: var(--bg-raised); color: var(--link); flex-shrink: 0; }
+  .rescard .tagv { font-weight: 700; font-size: 12.5px; }
+  .rescard .meta { font-size: 11px; color: var(--text-dim); margin-left: auto; white-space: nowrap; }
+  .rescard .body { border-top: 1px solid var(--border); padding: 10px 12px; background: var(--bg-page); display: none; }
+  .rescard.open .body { display: block; }
+  .kv { display: grid; grid-template-columns: 92px 1fr; gap: 4px 10px; font-size: 11.5px; }
+  .kv .k { color: var(--text-dim); }
+  .kv .v { font-family: Consolas, monospace; word-break: break-all; }
+  .group-t { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-dim); margin: 12px 0 6px; }
+  .group-t:first-child { margin-top: 0; }
+  .mini { font-size: 11px; color: var(--text-dim); line-height: 1.7; }
+  .mini b { color: var(--text); font-family: Consolas, monospace; font-weight: 600; }
+  .greybox { border: 1px dashed var(--border); border-radius: 9px; padding: 26px 16px; text-align: center; color: var(--text-dim); font-size: 12px; }
+  .pillrow { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .bpill { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--bg-raised); }
+  .bpill.hot { color: #e05656; border-color: rgba(224,86,86,.4); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">量</div>
+  <div class="brand"><h1>量化下钻驾驶舱</h1><small>SINGLE-SCREEN · DRILL-DOWN</small></div>
+  <div class="admission unknown" id="adm"><span class="vd">— —</span><span class="sub">准入判定加载中…</span></div>
+  <div class="dim num" id="dayinfo" style="font-size:11.5px"></div>
+  <div class="mkt">
+    <span class="mtab on">A股</span>
+    <span class="mtab planned" title="接入中">港股</span>
+    <span class="mtab planned" title="接入中">美股</span>
+    <span class="mtab planned" title="接入中">虚拟币</span>
+    <a class="backlink" href="/quant">长版全览 →</a>
+  </div>
+</div>
+
+<div class="deck">
+  <div class="col" id="colSector">
+    <div class="col-title">板块 · L1<span class="n" id="secN"></span></div>
+    <div id="sectorList"><div class="greybox">板块数据加载中…</div></div>
+  </div>
+  <div class="col" id="colStock">
+    <div class="col-title">个股 · L2<span class="n" id="stkN"></span></div>
+    <div class="filters" id="filters">
+      <span class="fchip on" data-f="all">全部</span>
+      <span class="fchip" data-f="T1">T1</span>
+      <span class="fchip" data-f="T2">T2</span>
+      <span class="fchip" data-f="buy">有买点</span>
+      <span class="fchip" data-f="env">环境偏离</span>
+    </div>
+    <div id="stockList"><div class="greybox">先在左侧选板块</div></div>
+  </div>
+  <div class="col" id="colDetail">
+    <div class="col-title">结果与证据 · L3/L4</div>
+    <div id="detail"><div class="greybox">点选中间栏任意一只票<br><span style="font-size:11px">下钻信号结果 → 原始数据点</span></div></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ═══ 数据契约（松耦合，只认文件与端点，不认实现）═══
+   L1 板块:   /data/wall.json                    strategists[{id,name,view,picks_count}]
+   L2 票:     /data/todays_picks.json            stocks[{code,name,close,pct_chg,tier,sources[{s,tag,dt,entry_px,tbe}]}]
+   L3 信号:   同上 stocks[].sources（每个 s = 一个板块的一条结果）
+   L4 点:     /data/pick_details/<code>.json     chanlun/entry_signal/chips/sectors/vol_events/lhb/notices
+   L0 准入:   /api/admission → 8791（fetchFirst 降级链，未落地灰态） */
+var S = { adm:null, wall:null, picks:null, cache:{}, sector:"all", stock:null, filter:"all" };
+var SECNAME = {}; /* id → 板块名 */
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function f2(v){ return (v==null||isNaN(v))?"—":Number(v).toFixed(2); }
+function pct(v){ if(v==null||isNaN(v)) return "—"; var n=Number(v); return (n>0?"+":"")+n.toFixed(2)+"%"; }
+function updn(v){ return (v==null||isNaN(v)||v===0)?"":(v>0?"up":"dn"); }
+
+/* ── 降级链取数：同源 → 直连 8791（CORS）→ null 灰态 ── */
+function fetchFirst(urls){ 
+  var i=0;
+  function try1(){
+    if(i>=urls.length) return Promise.resolve(null);
+    return fetch(urls[i++]).then(function(r){ if(!r.ok) throw 0; return r.json(); }).catch(try1);
+  }
+  return try1();
+}
+function loadAdmission(){
+  fetchFirst(["/api/admission","http://127.0.0.1:8791/api/admission"]).then(function(a){
+    var el=document.getElementById("adm");
+    var ad=a&&a.admission?a.admission:null;
+    if(!ad){ el.className="admission unknown"; el.innerHTML='<span class="vd">— —</span><span class="sub">准入缺源 · 灰态不猜值</span>'; return; }
+    var cls="admission "+(ad.verdict||"unknown");
+    var sub="";
+    if(ad.verdict==="unknown"){ sub="缺源: "+esc((ad.source_missing||[]).join(", ")||"未知"); }
+    else {
+      var it=ad.inputs||{};
+      sub="regime "+esc(it.regime)+" · 三门 "+esc(it.gates_passed)+"/"+esc(it.gates_total!=null?it.gates_total:3)
+        +" · overall "+esc(it.overall)+" · prob "+esc(it.prob)+"%"+(it.shadow_block?" · 影子闸":"");
+    }
+    el.className=cls;
+    el.innerHTML='<span class="vd">'+esc(ad.verdict_cn||"—")+'</span><span class="sub">'+sub+'</span>';
+    /* 反证标注提示条（有则黄字） */
+    if(ad.counter_evidence&&ad.counter_evidence.length){
+      var ce=ad.counter_evidence.map(function(x){ return typeof x==="string"?x:(x.k+"="+x.v); }).join("；");
+      el.title="反证: "+ce;
+    }
+  });
+}
+
+/* ── L1 板块 ── */
+function renderSectors(){
+  var st=S.picks&&S.picks.stocks?S.picks.stocks:[];
+  var cnt={}; st.forEach(function(s){ (s.sources||[]).forEach(function(x){ cnt[x.s]=(cnt[x.s]||0)+1; }); });
+  var wl=(S.wall&&S.wall.strategists)?S.wall.strategists:[];
+  wl.forEach(function(w){ SECNAME[w.id]=w.name||w.id; });
+  var h='<div class="seccard'+(S.sector==="all"?" on":"")+'" data-s="all">'
+    +'<div class="r1"><span class="nm">全部</span><span class="ct">'+st.length+' 票</span></div>'
+    +'<div class="vw">跨板块全量 · 默认入口</div></div>';
+  wl.forEach(function(w){
+    var n=cnt[w.id]||0;
+    var grey=(!w.view&&w.picks_count==null)?" grey":"";
+    h+='<div class="seccard'+(S.sector===w.id?" on":"")+grey+'" data-s="'+esc(w.id)+'" title="'+esc(w.view||"暂无观点")+'">'
+      +'<div class="r1"><span class="nm">'+esc(w.name||w.id)+'</span><span class="ct">'+n+' 票</span></div>'
+      +'<div class="vw">'+(w.view?esc(w.view):'<span style="opacity:.6">暂无观点</span>')+'</div></div>';
+  });
+  document.getElementById("sectorList").innerHTML=h;
+  document.getElementById("secN").textContent=wl.length+" 板块";
+  Array.prototype.forEach.call(document.querySelectorAll("#sectorList .seccard"),function(el){
+    el.onclick=function(){ S.sector=el.getAttribute("data-s"); S.stock=null; renderSectors(); renderStocks(); renderDetail(null); };
+  });
+}
+
+/* ── L2 票列表 ── */
+function secStocks(){
+  var st=S.picks&&S.picks.stocks?S.picks.stocks:[];
+  return st.filter(function(s){
+    if(S.sector!=="all"&&!(s.sources||[]).some(function(x){return x.s===S.sector;})) return false;
+    if(S.filter==="T1") return s.tier==="T1";
+    if(S.filter==="T2") return s.tier==="T2";
+    if(S.filter==="buy") return (s.sources||[]).some(function(x){ return x.tag&&x.tag.indexOf("买")>=0; });
+    if(S.filter==="env") return !!s.env_diff;
+    return true;
+  }).sort(function(a,b){ return (b.pct_chg||0)-(a.pct_chg||0); });
+}
+function renderStocks(){
+  var list=secStocks();
+  document.getElementById("stkN").textContent=list.length+" 票";
+  if(!list.length){ document.getElementById("stockList").innerHTML='<div class="greybox">该板块本批无票</div>'; return; }
+  var h="";
+  list.forEach(function(s){
+    var src=(s.sources||[]);
+    var tags=src.map(function(x){ return esc(x.tag||x.s); }).slice(0,3).join(" ");
+    h+='<div class="srow'+(S.stock===s.code?" on":"")+'" data-c="'+esc(s.code)+'">'
+      +'<span class="cd">'+esc(s.code)+'<small>'+esc(s.name||"")+'</small>'
+      +(s.env_diff?' <span class="envflag" title="'+esc(s.env_diff_why||"")+'">环境偏离</span>':"")+'</span>'
+      +'<span class="px '+updn(s.pct_chg)+'">'+f2(s.close)+' <span style="font-size:11px">'+pct(s.pct_chg)+'</span></span>'
+      +'<span class="tier '+esc(s.tier||"")+'">'+esc(s.tier||"—")+'</span>'
+      +'<span class="ns" title="'+tags+'">'+src.length+'</span></div>';
+  });
+  document.getElementById("stockList").innerHTML=h;
+  Array.prototype.forEach.call(document.querySelectorAll("#stockList .srow"),function(el){
+    el.onclick=function(){ selectStock(el.getAttribute("data-c")); };
+  });
+}
+Array.prototype.forEach.call(document.querySelectorAll("#filters .fchip"),function(el){
+  el.onclick=function(){
+    S.filter=el.getAttribute("data-f");
+    Array.prototype.forEach.call(document.querySelectorAll("#filters .fchip"),function(x){ x.classList.remove("on"); });
+    el.classList.add("on"); renderStocks();
+  };
+});
+
+/* ── L3 信号结果 + L4 原始点 ── */
+function selectStock(code){
+  S.stock=code;
+  Array.prototype.forEach.call(document.querySelectorAll("#stockList .srow"),function(el){
+    el.classList.toggle("on",el.getAttribute("data-c")===code);
+  });
+  var st=S.picks&&S.picks.stocks?S.picks.stocks:[];
+  var s=st.filter(function(x){ return x.code===code; })[0];
+  renderDetail(s);
+  if(S.cache[code]){ paintPoints(S.cache[code],s); return; }
+  fetch("/data/pick_details/"+encodeURIComponent(code)+".json")
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(d){ S.cache[code]=d; paintPoints(d,s); })
+    .catch(function(){ paintPoints(null,s); });
+}
+function renderDetail(s){
+  var box=document.getElementById("detail");
+  if(!s){ box.innerHTML='<div class="greybox">点选中间栏任意一只票</div>'; return; }
+  var secn=S.sector==="all"?"全部":(SECNAME[S.sector]||S.sector);
+  var h='<div class="crumb"><a onclick="backToSector()">‹ '+esc(secn)+'</a><span class="dim">›</span><b>'+esc(s.code)+'</b></div>'
+    +'<div class="stockhead"><div class="big">'+esc(s.name||"")+'<span class="code">'+esc(s.code)+'</span></div>'
+    +'<div class="pxl '+updn(s.pct_chg)+'">'+f2(s.close)+'  '+pct(s.pct_chg)
+    +'  <span class="tier '+esc(s.tier||"")+'" style="font-size:11px">'+esc(s.tier||"—")+'</span></div>'
+    +(s.env_diff?'<div class="why">环境偏离: '+esc(s.env_diff_why||"")+'</div>':"")
+    +'<div class="pillrow"><span class="bpill">数据日 '+(S.picks&&S.picks.scan_run_date?esc(S.picks.scan_run_date):"—")+'</span>'
+    +(s.q_first_buy?'<span class="bpill hot">首次买点</span>':"")+'</div></div>'
+    +'<div class="group-t">信号结果 · L3（点开看原始点）</div>'
+    +'<div id="resList"><div class="greybox">信号结果加载中…</div></div>'
+    +'<div id="pts"></div>';
+  box.innerHTML=h;
+  var rl=document.getElementById("resList");
+  if(!s.sources||!s.sources.length){ rl.innerHTML='<div class="greybox">本批无信号结果</div>'; return; }
+  var rh="";
+  s.sources.forEach(function(x,i){
+    rh+='<div class="rescard" data-i="'+i+'"><div class="rh">'
+      +'<span class="sec-id">'+esc(SECNAME[x.s]||x.s)+'</span>'
+      +'<span class="tagv">'+esc(x.tag||"—")+'</span>'
+      +'<span class="meta">'+esc(x.dt||"")+(x.entry_px!=null?" · 入 "+f2(x.entry_px):"")+(x.tbe?" · TBE":"")+'</span></div>'
+      +'<div class="body"><div class="mini">该结果的原始数据点在明细加载后展开于下方「证据点」。</div></div></div>';
+  });
+  rl.innerHTML=rh;
+  Array.prototype.forEach.call(rl.querySelectorAll(".rescard"),function(el){
+    el.querySelector(".rh").onclick=function(){ el.classList.toggle("open"); };
+  });
+}
+function backToSector(){ S.stock=null; renderStocks(); renderDetail(null); }
+
+/* L4: pick_details → 证据点分组 */
+function paintPoints(d,s){
+  var el=document.getElementById("pts");
+  if(!d){ el.innerHTML='<div class="greybox">明细缺源（pick_details 未生成该票）· 灰态不猜值</div>'; return; }
+  var h="";
+  var ch=d.chanlun;
+  if(ch){
+    h+='<div class="group-t">缠论结构点</div><div class="kv">'
+      +'<span class="k">结构依据</span><span class="v">'+esc(ch.basis||"—")+'</span>'
+      +'<span class="k">中枢状态</span><span class="v">'+esc(ch.pivot_state||"—")+'</span>'
+      +'<span class="k">日中枢</span><span class="v">'+f2(ch.dzg)+' ~ '+f2(ch.dzd)+'</span>'
+      +'<span class="k">30m中枢</span><span class="v">'+f2(ch.mzg)+' ~ '+f2(ch.mzd)+'</span>'
+      +'<span class="k">止损/目标</span><span class="v dn">'+f2(ch.stop)+'('+pct(ch.stop_pct)+') / <span class="up">'+f2(ch.tp1)+'('+pct(ch.tp1_pct)+') / '+f2(ch.tp2)+'('+pct(ch.tp2_pct)+')</span></span>'
+      +(ch.tpb?'<span class="k">走势推背</span><span class="v">'+esc(ch.tpb)+'</span>':"")+'</div>';
+  }
+  var es=d.entry_signal;
+  if(es){
+    h+='<div class="group-t">突破点</div><div class="kv">'
+      +'<span class="k">突破日</span><span class="v">'+esc(es.brk_date||"—")+' 收 '+f2(es.brk_close)+'（'+pct(es.brk_pct)+'）</span>'
+      +'<span class="k">突破量倍</span><span class="v">'+f2(es.brk_vol_mult)+'x</span>'
+      +'<span class="k">突破前</span><span class="v">'+esc(es.before_date||"—")+' 收 '+f2(es.before_close)+'</span>'
+      +'<span class="k">离峰</span><span class="v">'+esc(es.peak_date||"—")+' 峰 '+f2(es.peak_close)+'（'+pct(es.from_peak_pct)+'）</span>'
+      +'<span class="k">中枢</span><span class="v">'+f2(es.zg)+' ~ '+f2(es.zd)+' · '+esc(es.pivot_state||"")+'</span></div>';
+  }
+  var cp=d.chips;
+  if(cp){
+    h+='<div class="group-t">筹码</div><div class="kv">'
+      +'<span class="k">成本/获利盘</span><span class="v">'+f2(cp.avg)+' / <b>'+f2(cp.winner)+'%</b>（'+esc(cp.d||"")+'）</span></div>';
+  }
+  var secs=d.sectors;
+  if(secs&&secs.length){
+    h+='<div class="group-t">板块联动</div><div class="mini">';
+    secs.forEach(function(x){
+      h+='<div>'+esc(x.sector||"—")+'（'+esc(x.idx||"")+'）：<b class="'+updn(x.chg1)+'">'+pct(x.chg1)+'</b> 日 / <b class="'+updn(x.chg5)+'">'+pct(x.chg5)+'</b> 5日 · RPS50 <b>'+f2(x.rps50)+'</b></div>';
+    });
+    h+='</div>';
+  }
+  var ve=d.vol_events;
+  if(ve&&ve.length){
+    h+='<div class="group-t">量能事件</div><div class="mini">';
+    ve.forEach(function(x){ h+='<div>'+esc(x.date||"")+' <b>'+esc(x.tag||"")+'</b> '+f2(x.mult)+'x · '+pct(x.pct)+'</div>'; });
+    h+='</div>';
+  }
+  var lhb=d.lhb;
+  if(lhb&&lhb.length){
+    h+='<div class="group-t">龙虎榜</div><div class="mini">';
+    lhb.slice(0,5).forEach(function(x){ h+='<div>'+esc(x.date||"")+' <b class="'+updn(x.pct)+'">'+pct(x.pct)+'</b> 净买 <b>'+f2(x.net)+'</b>万 · '+esc(x.reason||"")+'</div>'; });
+    h+='</div>';
+  }
+  var no=d.notices;
+  if(no&&no.length){
+    h+='<div class="group-t">公告</div><div class="mini">';
+    no.slice(0,4).forEach(function(x){
+      h+='<div>'+esc(x.date||"")+' '+(x.url?'<a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.title||"")+'</a>':esc(x.title||""))+'</div>';
+    });
+    h+='</div>';
+  }
+  if(!h) el.innerHTML='<div class="greybox">明细无可用证据组</div>'; else el.innerHTML=h;
+}
+
+/* ── 启动 ── */
+Promise.all([
+  fetch("/data/wall.json").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }),
+  fetch("/data/todays_picks.json").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
+]).then(function(rs){
+  S.wall=rs[0]; S.picks=rs[1];
+  if(!S.picks){ document.getElementById("stockList").innerHTML='<div class="greybox">todays_picks 缺源 · 灰态不猜值</div>'; }
+  if(!S.wall){ document.getElementById("sectorList").innerHTML='<div class="greybox">wall.json 缺源 · 灰态不猜值</div>'; }
+  renderSectors(); renderStocks(); renderDetail(null); loadAdmission();
+  var di=document.getElementById("dayinfo");
+  if(S.picks&&S.picks.scan_run_date) di.textContent="数据日 "+S.picks.scan_run_date+(S.picks.trade_basis?" · "+S.picks.trade_basis:"");
+  setInterval(loadAdmission,120000);
+});
+</script>
+</body>
+</html>
