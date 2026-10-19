@@ -177,8 +177,125 @@ def card_picks(tier):
                             trade_basis=doc.get("trade_basis") or "")
 
 
+# ── 股票血缘关系（KG Neo4j 查询）───────────────────────────
+_SYS_PY = r"C:\Program Files\Python311\python.exe"
+_KG_QUERY = os.path.join(HERE, "kg_stock_query.py")
+
+
+def _kg_stock(code, days=90):
+    """subprocess 调系统 Python 跑 kg_portal.stock()，拿 JSON。
+    CowAgent venv 缺 pandas/neo4j，借道系统 Python。"""
+    import subprocess as _sp
+    try:
+        r = _sp.run([_SYS_PY, _KG_QUERY, code, str(days)],
+                    capture_output=True, timeout=20)
+        if r.returncode != 0:
+            return {"ok": False, "error": ("kg query exit=%d" % r.returncode)}
+        return json.loads(r.stdout.decode("utf-8", errors="replace"))
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def card_lineage(code, data):
+    """把 kg_portal.stock() 返回 dict 格式化为折叠卡 sections。"""
+    from feishu_card_v2 import build_drill_card
+    basic = data.get("basic") or {}
+    name = basic.get("name") or code
+    facts = {"code": code.split(".")[0], "name": name}
+
+    sections = []
+
+    # ① 本体概览
+    overview = (
+        f"**公司** {basic.get('company') or basic.get('name', '—')}\n"
+        f"**行业** {basic.get('industry') or '—'} ｜ **地区** {basic.get('area') or '—'}\n"
+        f"**上市日** {basic.get('list_date') or '—'}"
+    )
+    cov = data.get("candle_cov") or {}
+    if cov:
+        overview += f"\n**K线覆盖** {'✅' if cov.get('covered') else '❌'}（总 {cov.get('n_cov', '?')} 票）"
+    cyq = data.get("cyq") or {}
+    if cyq:
+        overview += (f"\n**筹码分布** 赢家比例 {cyq.get('winner_rate', '—')}%"
+                     f"｜成本跨度 {cyq.get('cost_span', '—')}")
+    sections.append(("🧬 本体概览", overview))
+
+    # ② K线相似（SIMILAR_K 边）
+    sim = data.get("similar") or []
+    if sim:
+        sim_lines = ["| 代码 | 名称 | 距离 | 相关系数 | 窗口 |", "|------|------|------|----------|------|"]
+        for s in sim:
+            sim_lines.append(
+                f"| {s.get('tc', '—')} | {s.get('nm', '—')} | "
+                f"{round(s.get('dist', 0), 3)} | {s.get('corr', '—')} | "
+                f"{s.get('ws', '—')}~{s.get('we', '—')} |")
+        sections.append(("🔗 K线相似 Top-5", "\n".join(sim_lines)))
+
+    # ③ 游资痕迹（HotMoney → Seat → TRADED_ON）
+    hm = data.get("hotmoney") or []
+    if hm:
+        hm_lines = ["| 游资 | 席位 | 净额 | 次数 | 最近 |", "|------|------|------|------|------|"]
+        for h in hm[:10]:
+            hm_lines.append(
+                f"| {h.get('hm', '—')} | | "
+                f"{h.get('net', 0):.0f} | {h.get('n', 0)} | {h.get('last', '—')} |")
+        sections.append(("💰 游资痕迹", "\n".join(hm_lines)))
+
+    # ④ 驱动事件（EVENT → DRIVE → MarketEvent 聚类）
+    drive = data.get("drive_groups") or []
+    if drive:
+        drv_lines = []
+        for g in drive[:8]:
+            tag = "📌" if g.get("baseline") else "🎯"
+            txt = (g.get("texts") or [])
+            drv_lines.append(
+                f"{tag} **{g.get('grp', '—')}** ×{g.get('n', 0)} "
+                f"（{g.get('last', '—')}）\n  "
+                + ("；".join(txt[:2]) if txt else "—"))
+        sections.append(("⚡ 驱动事件聚类", "\n\n".join(drv_lines)))
+
+    # ⑤ 机构持仓（Organization → HOLDS）
+    holders = data.get("holders") or []
+    if holders:
+        # 按 period 分组
+        by_period = {}
+        for h in holders:
+            p = h.get("period", "")
+            by_period.setdefault(p, []).append(h)
+        h_lines = []
+        for p in sorted(by_period.keys(), reverse=True)[:3]:
+            h_lines.append(f"**{p[:4]}-{p[4:6]} 期末**")
+            for h in sorted(by_period[p], key=lambda x: x.get("ratio", 0), reverse=True)[:5]:
+                h_lines.append(
+                    f"· {h.get('name', '—')[:20]} "
+                    f"**{h.get('ratio', 0):.2f}%** ｜ "
+                    f"持仓 {h.get('amt', 0):.0f}")
+        sections.append(("🏛 机构持仓", "\n".join(h_lines)))
+
+    # ⑥ 结构信号（HAS_STRUCTURE → MarketEvent.type=中枢/买卖点等）
+    structures = data.get("structures") or []
+    if structures:
+        st_lines = []
+        for s in structures[:10]:
+            st_lines.append(
+                f"· **{s.get('date', '—')}**  {s.get('type', '—')}  "
+                f"置信 {s.get('conf', '—')} ｜ 结构 {s.get('q_struct', '—')}  "
+                f"证据 {s.get('q_evid', '—')}  HM {s.get('q_hm', '—')}")
+        sections.append(("📐 结构信号（近90天）", "\n".join(st_lines)))
+
+    # 兜底
+    if not sections:
+        sections.append(("📋 数据说明", "未查到关联数据（Neo4j 可能暂无覆盖）"))
+
+    extras = f"（窗口 {data.get('window_days', 90)} 天）"
+    return build_drill_card(code, facts, sections, title_extra=f"血缘{extras}",
+                            trade_basis="KG Neo4j · 实时查询")
+
+
 HELP_MD = """**指令表**
 · `缠论 605100` — 多层折叠主卡（中枢/情报/决策链）
+· `血缘 605100` — KG 血缘关系卡（相似K线/游资/驱动/持仓/结构）
+· `关联 605100` — 血缘别名
 · `详情 605100 筹码` — 单维度：筹码/板块/公告/龙虎榜/量能/共振/决策链/缠论
 · `选股 T1` — 今日选股（T1/T2/全部）
 · `止盈 605100 8` — 持仓止盈线（涨 8% 触发，模拟盘次日开盘清仓）
@@ -510,6 +627,27 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                              "chanlun")
             f, cached = get_facts(code)
             reply_card(card_dim(code, f, dim), message_id)
+        elif low.startswith(("血缘", "关联", "关系")):
+            # KG 血缘关系：Neo4j 实时查询，非 facts 缓存
+            parts = text.split()
+            if len(parts) < 2:
+                send_text("用法：血缘 605100 [60/90/180]\n"
+                          "· 关联 605100（别名）", message_id)
+                return
+            code = _norm_code(parts[1])
+            days = 90
+            if len(parts) > 2:
+                try:
+                    days = int(parts[2])
+                except ValueError:
+                    pass
+            send_text(f"🧬 {code} KG 血缘查询中（{days} 天窗口）…", message_id)
+            data = _kg_stock(code, days=days)
+            if not data.get("ok"):
+                send_text("❌ 查询失败：%s" % data.get("error", "未知"),
+                          message_id)
+                return
+            reply_card(card_lineage(code, data), message_id)
         elif low.startswith("缠论"):
             parts = text.split()
             if len(parts) < 2:
@@ -717,7 +855,14 @@ def main():
     def on_msg(data: P2ImMessageReceiveV1):
         try:
             msg = data.event.message
+            # W43 排障插桩：非文本消息此前静默丢弃无日志，链路断无从分辨
+            # 「事件未达」还是「到达被滤」——先留痕全部入口帧。
+            log("msg frame: type=%s chat=%s sender=%s"
+                % (msg.message_type, msg.chat_type,
+                   (getattr(data.event.sender.sender_id, "open_id", "")
+                    or "-")[:12]))
             if msg.message_type != "text":
+                log("skip non-text: %s" % msg.message_type)
                 return
             mid = msg.message_id
             content = json.loads(msg.content or "{}")
