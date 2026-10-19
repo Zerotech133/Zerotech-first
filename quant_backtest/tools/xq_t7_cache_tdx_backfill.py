@@ -30,6 +30,7 @@ tools/xq_tdx_fetch.encode_day 完全一致，小端 32B）：
 """
 import argparse
 import json
+import math
 import os
 import shutil
 import struct
@@ -69,6 +70,20 @@ KG_TS_DAILY_NOTE = ("tdx ts_daily 为按日采样快照（非连续历史），�
 SOURCE_TAG = "tdx_lday_gui"
 ADJUSTMENT_NOTE = ("通达信 GUI 复权设置未知，可能与 tushare qfq 口径不一致，"
                    "仅诊断用")
+
+# tushare 仓 qfq 派生分支（口径工单：docs/2026-10-19_T7缓存tushare仓补齐口径工单.md）
+TW_SOURCE_TAG = "tushare_warehouse_qfq_derived"
+QFQ_FORMULA = ("qfq_price = price × row_adj_factor ÷ "
+               "symbol_latest_adj_factor（latest=窗口内该股最大交易日的 "
+               "adj_factor）")
+TW_ADJ_NOTE = ("qfq 由 tushare 仓不复权价 × adj_factor 派生（基准=窗口内"
+               "最新交易日），与存量 tushare qfq 口径可能存在基准差；"
+               "补齐子集偏向未退市标的，退市股为永久缺口，存在幸存者偏差，"
+               "仅诊断用")
+# 单位换算判例：600000.SH 20190529 仓内 vol=408609.7 手 / amount=455620.583
+# 千元 ↔ 存量缓存行 volume=40860970 股 / amount=455620583.0 元
+TW_VOL_HAND_TO_SHARE = 100
+TW_AMOUNT_KYUAN_TO_YUAN = 1000.0
 
 # 坏行统计聚合口径（与 _audit_daily_cache 的 counts 键一致）
 _BAD_ROW_KEYS = ("invalid_daily_rows", "invalid_row", "invalid_trade_date",
@@ -134,7 +149,7 @@ def validate_symbol_rows(rows: list) -> tuple:
     return ok, details, quality["counts"]
 
 
-def to_cache_rows(symbol: str, rows: list) -> list:
+def to_cache_rows(symbol: str, rows: list, source: str = SOURCE_TAG) -> list:
     """解析行 → 与既有缓存行同 schema 的行。
 
     可派生字段照填（ts_code/timestamp/chg/percent），不可派生字段
@@ -165,7 +180,7 @@ def to_cache_rows(symbol: str, rows: list) -> list:
             "turnoverrate": None,
             "amount": r["amount"],
             "trade_date": td,
-            "source": SOURCE_TAG,
+            "source": source,
         })
         prev_close = r["close"]
     return out
@@ -233,14 +248,17 @@ def backup_cache(cache_path: str, stamp: str) -> str:
     return bak
 
 
-def merge_and_write(cache_path: str, additions: dict, stamp: str) -> dict:
-    """备份 → 仅对缺失标的合并 → 更新 _meta.source → 原子写回。
+def merge_and_write(cache_path: str, additions_by_tag: dict, stamp: str) -> dict:
+    """备份 → 仅对缺失标的合并（多源标注）→ 原子写回。
 
-    additions 为空（或全部与已有条目撞键）则完全不动缓存文件。
+    additions_by_tag: {source_tag: {"note": str, "symbols": {sym: rows}}}。
+    全空（或全部与已有条目撞键）则完全不动缓存文件。
     绝不覆盖已有 daily 条目（双重防御：plan 已只含缺失标的）。
-    返回 {cache_updated, backup_path, added, skipped_existing}。
+    返回 {cache_updated, backup_path, added: {tag: {sym: n}},
+    skipped_existing}。
     """
-    if not additions:
+    has_any = any(v.get("symbols") for v in additions_by_tag.values())
+    if not has_any:
         return {"cache_updated": False, "backup_path": None,
                 "added": {}, "skipped_existing": []}
     with open(cache_path, "rb") as f:
@@ -250,25 +268,28 @@ def merge_and_write(cache_path: str, additions: dict, stamp: str) -> dict:
     daily = cache.setdefault("daily", {})
     added = {}
     skipped = []
-    for sym, rows in additions.items():
-        if sym in daily:                            # 防御：绝不覆盖已有条目
-            skipped.append(sym)
-            continue
-        daily[sym] = rows
-        added[sym] = len(rows)
-    if not added:
+    for tag, payload in additions_by_tag.items():
+        added[tag] = {}
+        for sym, rows in (payload.get("symbols") or {}).items():
+            if sym in daily:                        # 防御：绝不覆盖已有条目
+                skipped.append(sym)
+                continue
+            daily[sym] = rows
+            added[tag][sym] = len(rows)
+    if not any(added.values()):
         return {"cache_updated": False, "backup_path": None,
                 "added": {}, "skipped_existing": skipped}
     backup_path = backup_cache(cache_path, stamp)
     meta = cache.setdefault("_meta", {})
-    meta["source"] = {
-        "existing": old_source,
-        SOURCE_TAG: {
-            "added_symbols": added,
-            "backfilled_at": datetime.now().astimezone().isoformat(),
-            "adjustment_note": ADJUSTMENT_NOTE,
-        },
-    }
+    source = {"existing": old_source}
+    for tag, payload in additions_by_tag.items():
+        if added[tag]:
+            source[tag] = {
+                "added_symbols": added[tag],
+                "backfilled_at": datetime.now().astimezone().isoformat(),
+                "adjustment_note": payload.get("note", ""),
+            }
+    meta["source"] = source
     meta["saved_at"] = datetime.now().astimezone().isoformat()
     tmp = cache_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
@@ -473,6 +494,167 @@ def local_source_census(symbols, data_root=DEFAULT_DATA_ROOT,
     return out
 
 
+# ── tushare 仓 qfq 派生分支（口径工单 §1-§7）─────────────────
+
+def _num(x, default=None):
+    """宽松数值化：非有限值返回 default（NaN/None/字符串安全）。"""
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return default
+    return v if math.isfinite(v) else default
+
+
+def _scale(x, ratio):
+    """qfq 价换算：None 安全（None 原样透传，交给行校验剔除整股）。"""
+    v = _num(x)
+    return None if v is None else v * ratio
+
+
+def _extract_rows(tbl, wanted: set, columns: tuple) -> list:
+    """tbl（pandas DF 或测试 mock）→ 仅保留 wanted ts_code 的原始行。
+
+    零 pandas API 依赖（list(tbl[col]) + tbl.columns 即可），保证
+    fake reader 夹具与真 DataFrame 同一条代码路径。
+    """
+    names = list(tbl.columns)
+    cols = {c: list(tbl[c]) for c in columns if c in names}
+    if not cols:
+        return []
+    n = len(next(iter(cols.values())))
+    out = []
+    for i in range(n):
+        code = str(cols["ts_code"][i]).strip()
+        if code in wanted:
+            out.append({c: cols[c][i] for c in cols})
+    return out
+
+
+def collect_tushare_qfq(parts_dir, adj_dir, symbols: list, window: tuple,
+                        reader=None):
+    """单遍扫描窗口部件：daily 原始行 + adj_factor 按日期对齐。
+
+    返回 (daily, adj)：
+      daily = {sym: [原始行 dict（含 _part_date）]}（按部件日期序）
+      adj   = {sym: {trade_date: adj_factor}}
+    """
+    reader = reader or _pandas_read
+    rev = {symbol_to_ts_code(s): s for s in symbols}
+    wanted = set(rev)
+    daily_cols = ("ts_code", "trade_date", "open", "high", "low", "close",
+                  "vol", "amount")
+    daily = {s: [] for s in symbols}
+    adj = {s: {} for s in symbols}
+    parts = _iter_date_parts(parts_dir, window=window)
+    if parts is None:
+        raise ValueError("daily 部件目录不存在: %s" % parts_dir)
+    adj_by_date = dict(_iter_date_parts(adj_dir, window=window) or [])
+    for td, path in parts:
+        tbl = reader(path, list(daily_cols))
+        for raw in _extract_rows(tbl, wanted, daily_cols):
+            s = rev[str(raw["ts_code"]).strip()]
+            row = dict(raw)
+            row["_part_date"] = td
+            daily[s].append(row)
+        adj_path = adj_by_date.get(td)
+        if adj_path is None:
+            continue
+        tbl = reader(adj_path, ["ts_code", "trade_date", "adj_factor"])
+        for raw in _extract_rows(tbl, wanted,
+                                 ("ts_code", "trade_date", "adj_factor")):
+            s = rev[str(raw["ts_code"]).strip()]
+            td_key = str(raw.get("trade_date"))[:8]
+            f = _num(raw.get("adj_factor"))
+            if f is not None and f > 0:
+                adj[s][td_key] = f
+    return daily, adj
+
+
+def plan_tushare_backfill(symbols: list, data_root: str = DEFAULT_DATA_ROOT,
+                          window: tuple = CENSUS_WINDOW_DEFAULT,
+                          reader=None) -> tuple:
+    """tushare 仓 qfq 派生补齐计划（口径工单 §3-§6，只读）。
+
+    返回 (per_symbol, additions)：status ∈ backfilled / no_rows /
+    no_adj / unaligned_adj / invalid_rows / dir_missing / engine_missing /
+    error。仅通过整股校验的标的进入 additions。
+    """
+    per_symbol = {}
+    additions = {}
+    parts_dir = os.path.join(data_root, "tushare", "daily")
+    adj_dir = os.path.join(data_root, "tushare", "adj_factor")
+    if not os.path.isdir(parts_dir) or not os.path.isdir(adj_dir):
+        for s in symbols:
+            per_symbol[s] = {"status": "dir_missing",
+                             "dir": os.path.abspath(parts_dir)}
+        return per_symbol, additions
+    try:
+        daily, adj = collect_tushare_qfq(parts_dir, adj_dir, symbols,
+                                         window, reader=reader)
+    except ImportError:
+        for s in symbols:                       # 缺 pandas：fail-visible 跳过
+            per_symbol[s] = {"status": "engine_missing",
+                             "note": "pandas/pyarrow 不可用，tushare 分支跳过"}
+        return per_symbol, additions
+    except Exception as e:                      # noqa: BLE001 单源失败隔离
+        for s in symbols:
+            per_symbol[s] = {"status": "error", "error": str(e)[:200]}
+        return per_symbol, additions
+    for s in symbols:
+        raw_rows = daily.get(s, [])
+        if not raw_rows:
+            per_symbol[s] = {"status": "no_rows"}
+            continue
+        amap = adj.get(s, {})
+        if not amap:
+            per_symbol[s] = {"status": "no_adj", "n_rows": len(raw_rows)}
+            continue
+        latest_td = max(amap)
+        adj_latest = amap[latest_td]
+        qfq_rows = []
+        unaligned = 0
+        for r in sorted(raw_rows, key=lambda x: str(x.get("trade_date"))):
+            td = str(r.get("trade_date"))[:8]
+            f = amap.get(td)
+            if f is None or f <= 0 or adj_latest <= 0:
+                unaligned += 1                  # adj 对不齐 → 记坏
+                continue
+            ratio = f / adj_latest
+            qfq_rows.append({
+                "trade_date": td,
+                "open": _scale(r.get("open"), ratio),
+                "high": _scale(r.get("high"), ratio),
+                "low": _scale(r.get("low"), ratio),
+                "close": _scale(r.get("close"), ratio),
+                "volume": int(round((_num(r.get("vol"), 0) or 0.0)
+                                    * TW_VOL_HAND_TO_SHARE)),
+                "amount": ((_num(r.get("amount"), 0) or 0.0)
+                           * TW_AMOUNT_KYUAN_TO_YUAN),
+            })
+        if unaligned:
+            per_symbol[s] = {"status": "unaligned_adj",
+                             "n_rows": len(raw_rows),
+                             "unaligned_rows": unaligned,
+                             "note": "adj_factor 与 daily 逐日对不齐，"
+                                     "整股剔除（口径工单 §3/§5）"}
+            continue
+        ok, details, _counts = validate_symbol_rows(qfq_rows)
+        if not ok:
+            per_symbol[s] = {"status": "invalid_rows",
+                             "n_rows": len(qfq_rows),
+                             "bad_row_count": len(details),
+                             "bad_row_details": details[:_MAX_BAD_ROW_DETAILS]}
+            continue
+        additions[s] = to_cache_rows(s, qfq_rows, source=TW_SOURCE_TAG)
+        per_symbol[s] = {"status": "backfilled",
+                         "n_rows": len(qfq_rows),
+                         "first": qfq_rows[0]["trade_date"],
+                         "last": qfq_rows[-1]["trade_date"],
+                         "adj_latest": adj_latest,
+                         "adj_latest_date": latest_td}
+    return per_symbol, additions
+
+
 # ── 审计摘要与主流程 ─────────────────────────────────────────
 
 def audit_summary(audit: dict) -> dict:
@@ -503,14 +685,14 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         posts: list = None,
         data_root: str = DEFAULT_DATA_ROOT,
         census_window: tuple = CENSUS_WINDOW_DEFAULT,
-        census_reader=None) -> dict:
-    """全流程：缺失发现 → 解析校验 → 备份合并 → 前后覆盖审计
-    → 本地源只读普查 → 报告。
+        parquet_reader=None) -> dict:
+    """全流程：缺失发现 → 双源补齐计划（TDX .day + tushare 仓 qfq 派生）
+    → 备份合并（多源标注）→ 前后覆盖审计 → 本地源只读普查 → 报告。
 
     posts 可注入（测试用）；为 None 时只读加载真库。全程零网络：
     offline_audit 为内存调用（帖子已载入，db 仅用于回显绝对路径）。
-    普查为有界只读（census_reader 可注入供测试），单源失败不影响主流程。
-    返回报告 dict（已落盘 report_dir/tdx_backfill_<时间戳>.json）。
+    parquet_reader 可注入供测试（缺 pandas 时 tushare 分支与普查优雅跳过），
+    单源失败不影响主流程。返回报告 dict（已落盘）。
     """
     if posts is None:
         posts = load_posts_ro(db_path)
@@ -521,8 +703,31 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         raise ValueError("缓存缺少 daily 映射，拒绝推断: %s" % cache_path)
 
     stamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S%f%z")
-    missing, per_symbol, additions = plan_backfill(posts, cache, tdx_root)
-    merge_info = merge_and_write(cache_path, additions, stamp)
+    missing, per_symbol, additions_tdx = plan_backfill(posts, cache, tdx_root)
+
+    # tushare 仓 qfq 派生分支：仅处理 .day 未补到的剩余缺失标的
+    tw_symbols = [s for s in missing if s not in additions_tdx]
+    try:
+        per_symbol_tw, additions_tw = plan_tushare_backfill(
+            tw_symbols, data_root=data_root, window=census_window,
+            reader=parquet_reader)
+    except Exception as e:                       # noqa: BLE001 分支失败不拖垮
+        per_symbol_tw = {s: {"status": "error", "error": str(e)[:200]}
+                         for s in tw_symbols}
+        additions_tw = {}
+    per_symbol.update(per_symbol_tw)
+
+    additions_by_tag = {}
+    if additions_tdx:
+        additions_by_tag[SOURCE_TAG] = {"note": ADJUSTMENT_NOTE,
+                                        "symbols": additions_tdx}
+    if additions_tw:
+        additions_by_tag[TW_SOURCE_TAG] = {"note": TW_ADJ_NOTE,
+                                           "symbols": additions_tw}
+    merge_info = merge_and_write(cache_path, additions_by_tag, stamp)
+    merged_tdx = (merge_info["added"].get(SOURCE_TAG) or {})
+    merged_tw = (merge_info["added"].get(TW_SOURCE_TAG) or {})
+    merged_total = len(merged_tdx) + len(merged_tw)
 
     # 覆盖审计：前（原缓存）vs 后（合并后缓存），内存调用不发网络
     audit_before = factor.offline_audit(posts, json.loads(original_content),
@@ -539,14 +744,16 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
     try:
         census = local_source_census(missing, data_root=data_root,
                                      window=census_window,
-                                     reader=census_reader)
+                                     reader=parquet_reader)
     except Exception as e:                       # noqa: BLE001 普查失败不拖垮主流程
         census = {"status": "error", "error": str(e)[:200]}
 
     counts = {
         "candidates": len({s for p in posts for s in p.get("stocks", [])}),
         "missing": len(missing),
-        "backfilled": len(merge_info["added"]),
+        "backfilled": merged_total,
+        "backfilled_tdx": len(merged_tdx),
+        "backfilled_tushare": len(merged_tw),
         "missing_file": sum(1 for v in per_symbol.values()
                             if v["status"] == "missing_file"),
         "bad_file": sum(1 for v in per_symbol.values()
@@ -563,12 +770,19 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         "db_path": os.path.abspath(db_path),
         "tdx_root": str(tdx_root),
         "adjustment_note": ADJUSTMENT_NOTE,
+        "source_notes": {SOURCE_TAG: ADJUSTMENT_NOTE,
+                         TW_SOURCE_TAG: TW_ADJ_NOTE},
+        "qfq_formula": QFQ_FORMULA,
+        "census_window": list(census_window),
         "discipline": {
             "audit_decision": "INCONCLUSIVE",
             "effectiveness_conclusion": None,
-            "note": "TDX 补齐仅为覆盖诊断；即便补齐后审计仍维持 "
-                    "INCONCLUSIVE，不构成因子有效性证据",
+            "note": "补齐仅为覆盖诊断；补齐子集偏向未退市标的（退市股永久"
+                    "缺口，幸存者偏差）；即便补齐后审计仍维持 INCONCLUSIVE，"
+                    "不构成因子有效性证据",
         },
+        "sources_merged": [t for t in (SOURCE_TAG, TW_SOURCE_TAG)
+                           if merge_info["added"].get(t)],
         "backup_path": merge_info["backup_path"],
         "cache_updated": merge_info["cache_updated"],
         "skipped_existing": merge_info["skipped_existing"],
@@ -608,9 +822,12 @@ def main(argv=None) -> int:
         print("错误：%s" % e, file=sys.stderr)
         return 1
     c = report["counts"]
-    print("[tdx-backfill] 缺失 %d 只：补齐 %d，缺文件 %d，坏行整股剔除 %d，"
-          "坏文件 %d" % (c["missing"], c["backfilled"], c["missing_file"],
-                         c["invalid_rows"], c["bad_file"]))
+    print("[tdx-backfill] 缺失 %d 只：补齐 %d（tdx %d + tushare仓 %d），"
+          "缺文件 %d，坏行整股剔除 %d，坏文件 %d"
+          % (c["missing"], c["backfilled"], c["backfilled_tdx"],
+             c["backfilled_tushare"], c["missing_file"],
+             c["invalid_rows"], c["bad_file"]))
+    print("[tdx-backfill] 并入源=%s" % (report["sources_merged"] or "无"))
     print("[tdx-backfill] 缓存更新=%s 备份=%s"
           % (report["cache_updated"], report["backup_path"]))
     print("[tdx-backfill] 审计 decision=%s（前后均 INCONCLUSIVE，无有效性结论）"

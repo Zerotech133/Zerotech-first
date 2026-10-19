@@ -230,12 +230,15 @@ def test_merge_preserves_existing_and_backs_up(tmp_path):
     existing_rows = [{"trade_date": "20260901", "open": 7.93, "close": 7.89}]
     write_cache(cache_path, {"SH600000": existing_rows})
     before = Path(cache_path).read_bytes()
-    additions = {"SH600000": [{"trade_date": "20260902"}],   # 撞键→跳过
-                 "SZ000001": [{"trade_date": "20260902", "open": 1.0,
-                               "close": 1.1}]}
+    additions = {"tdx_lday_gui": {"note": B.ADJUSTMENT_NOTE,
+                                  "symbols": {
+                                      "SH600000": [{"trade_date": "20260902"}],
+                                      "SZ000001": [{"trade_date": "20260902",
+                                                    "open": 1.0,
+                                                    "close": 1.1}]}}}
     info = B.merge_and_write(cache_path, additions, "20261019T0000000800")
     assert info["cache_updated"] is True
-    assert info["added"] == {"SZ000001": 1}
+    assert info["added"] == {"tdx_lday_gui": {"SZ000001": 1}}
     assert info["skipped_existing"] == ["SH600000"]
     # 备份存在且为原始内容
     bak = Path(info["backup_path"])
@@ -244,13 +247,12 @@ def test_merge_preserves_existing_and_backs_up(tmp_path):
     # 已有条目逐字节不变
     after = read_json(cache_path)
     assert after["daily"]["SH600000"] == existing_rows
-    assert after["daily"]["SZ000001"] == additions["SZ000001"]
+    assert after["daily"]["SZ000001"] == additions["tdx_lday_gui"]["symbols"]["SZ000001"]
     assert after["_missing"] == [] and after["_errs"] == []
     # 口径标注
     src = after["_meta"]["source"]
     assert "tdx_lday_gui" in src
-    assert "tushare qfq" in src["tdx_lday_gui"]["adjustment_note"] \
-        or B.ADJUSTMENT_NOTE == src["tdx_lday_gui"]["adjustment_note"]
+    assert B.ADJUSTMENT_NOTE == src["tdx_lday_gui"]["adjustment_note"]
 
 
 def test_merge_empty_additions_touches_nothing(tmp_path):
@@ -268,8 +270,11 @@ def test_merge_empty_additions_touches_nothing(tmp_path):
 def test_merge_atomic_no_tmp_leftover(tmp_path):
     cache_path = str(tmp_path / "daily_cache.json")
     write_cache(cache_path, {})
-    B.merge_and_write(cache_path, {"SZ000001": [{"trade_date": "20260902",
-                                                 "open": 1.0, "close": 1.1}]},
+    B.merge_and_write(cache_path,
+                      {"tdx_lday_gui": {"note": "n",
+                                        "symbols": {"SZ000001": [
+                                            {"trade_date": "20260902",
+                                             "open": 1.0, "close": 1.1}]}}},
                       "20261019T0000000800")
     assert not Path(cache_path + ".tmp").exists()
     assert read_json(cache_path)["daily"]["SZ000001"]
@@ -289,10 +294,12 @@ def test_run_end_to_end_report_and_inconclusive(env, tmp_path):
                    data_root=env["data_root"])
     assert report["counts"]["missing"] == 2
     assert report["counts"]["backfilled"] == 1
-    assert report["counts"]["missing_file"] == 1
+    # SZ000001 无 .day 文件（missing_file），随后被 tw 分支复核覆盖为
+    # dir_missing/engine_missing（data_root 夹具为空）——状态取最后源
+    assert report["per_symbol"]["SZ000001"]["status"] in (
+        "missing_file", "dir_missing", "engine_missing")
     assert "SH600000" in report["missing_symbols"]
     assert "SZ000001" in report["missing_symbols"]
-    assert report["per_symbol"]["SZ000001"]["status"] == "missing_file"
     # 纪律：INCONCLUSIVE，无有效性结论
     for side in ("audit_before", "audit_after"):
         assert report[side]["audit_decision"] == "INCONCLUSIVE"
@@ -313,7 +320,8 @@ def test_run_missing_file_leaves_cache_untouched(env):
                                            "open": 10.0, "close": 10.5}]})
     before = Path(cache_path).read_bytes()
     report = B.run(cache_path=cache_path, db_path=env["db_path"],
-                   tdx_root=env["tdx_root"], report_dir=env["report_dir"])
+                   tdx_root=env["tdx_root"], report_dir=env["report_dir"],
+                   data_root=env["data_root"])
     assert report["cache_updated"] is False
     assert report["backup_path"] is None
     assert Path(cache_path).read_bytes() == before
@@ -521,3 +529,230 @@ def test_run_includes_census_section(env):
     else:                                           # 缺引擎 fail-visible
         assert "普查跳过" in c["note"]
         assert c["sources"] == {}
+
+
+# ── tushare 仓 qfq 派生分支 ──────────────────────────────────
+
+TW_DATES = ["20200106", "20200107", "20200108"]
+
+
+def make_tw_fixture(tmp_path, daily_map, adj_map, dates=TW_DATES):
+    """搭 tmp tushare 仓（stub 部件文件）+ 注入式 fake reader。
+
+    daily_map: {date: {ts_code: (open, high, low, close, vol手, amount千元)}}
+    adj_map:   {date: {ts_code: adj_factor}}
+    """
+    daily = tmp_path / "tushare" / "daily"
+    adj = tmp_path / "tushare" / "adj_factor"
+    daily.mkdir(parents=True)
+    adj.mkdir(parents=True)
+    for d in dates:
+        (daily / ("d_%s.parquet" % d)).write_bytes(b"stub")
+        (adj / ("d_%s.parquet" % d)).write_bytes(b"stub")
+
+    def reader(path, columns):                      # noqa: ANN001
+        p = str(path).replace("\\", "/")
+        d = os.path.basename(p)[2:10]
+        if "/adj_factor/" in p:
+            return _FakeTable({"ts_code": list(adj_map.get(d, {})),
+                               "trade_date": [d] * len(adj_map.get(d, {})),
+                               "adj_factor": list(adj_map.get(d, {}).values())})
+        rows = daily_map.get(d, {})
+        return _FakeTable({
+            "ts_code": list(rows),
+            "trade_date": [d] * len(rows),
+            "open": [v[0] for v in rows.values()],
+            "high": [v[1] for v in rows.values()],
+            "low": [v[2] for v in rows.values()],
+            "close": [v[3] for v in rows.values()],
+            "vol": [v[4] for v in rows.values()],
+            "amount": [v[5] for v in rows.values()],
+        })
+
+    return str(tmp_path), reader
+
+
+def test_plan_tushare_qfq_derivation_and_units(tmp_path):
+    """qfq 公式：price × row_adj ÷ latest_adj；vol 手→股、amount 千元→元。"""
+    daily_map = {
+        "20200106": {"600000.SH": (10.0, 10.4, 9.9, 11.0, 1000, 500)},
+        "20200107": {"600000.SH": (10.5, 10.8, 10.2, 11.5, 1200, 600)},
+        "20200108": {"600000.SH": (11.0, 11.2, 10.9, 11.1, 900, 450)},
+    }
+    adj_map = {"20200106": {"600000.SH": 2.0},
+               "20200107": {"600000.SH": 1.0},
+               "20200108": {"600000.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map)
+    per, additions = B.plan_tushare_backfill(["SH600000"], data_root=root,
+                                             reader=reader)
+    assert per["SH600000"]["status"] == "backfilled"
+    assert per["SH600000"]["adj_latest"] == 1.0
+    assert per["SH600000"]["adj_latest_date"] == "20200108"
+    rows = additions["SH600000"]
+    assert len(rows) == 3
+    r0, r1 = rows[0], rows[1]
+    # 20200106：adj=2.0/latest=1.0 → ×2
+    assert r0["open"] == pytest.approx(20.0)
+    assert r0["close"] == pytest.approx(22.0)
+    # 20200107：adj=latest → 不变
+    assert r1["close"] == pytest.approx(11.5)
+    # 单位换算（口径工单 §4 判例）
+    assert r0["volume"] == 1000 * 100              # 手 → 股
+    assert r0["amount"] == pytest.approx(500 * 1000.0)   # 千元 → 元
+    assert r0["source"] == "tushare_warehouse_qfq_derived"
+    assert r0["ts_code"] == "600000.SH"
+    assert r0["chg"] is None and r0["percent"] is None  # 首行无前收盘
+    # 行内 chg 基于 qfq 序列
+    assert rows[2]["close"] == pytest.approx(11.1)
+    assert rows[2]["chg"] == pytest.approx(round(11.1 - 11.5, 4))
+
+
+def test_plan_tushare_unaligned_adj_excludes_symbol(tmp_path):
+    """daily 有行但 adj 缺该日 → 整股剔除（unaligned_adj）。"""
+    daily_map = {"20200106": {"600000.SH": (10.0, 10.4, 9.9, 11.0, 100, 50)},
+                 "20200107": {"600000.SH": (10.5, 10.8, 10.2, 11.5, 100, 50)}}
+    adj_map = {"20200107": {"600000.SH": 1.0}}      # 20200106 缺 adj
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map)
+    per, additions = B.plan_tushare_backfill(["SH600000"], data_root=root,
+                                             reader=reader)
+    assert per["SH600000"]["status"] == "unaligned_adj"
+    assert per["SH600000"]["unaligned_rows"] == 1
+    assert additions == {}
+
+
+def test_plan_tushare_bad_row_excludes_symbol(tmp_path):
+    """坏价（close<=0）→ invalid_rows 整股剔除。"""
+    daily_map = {"20200106": {"000537.SZ": (10.0, 10.4, 9.9, 0.0, 100, 50)}}
+    adj_map = {"20200106": {"000537.SZ": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map)
+    per, additions = B.plan_tushare_backfill(["SZ000537"], data_root=root,
+                                             reader=reader)
+    assert per["SZ000537"]["status"] == "invalid_rows"
+    assert per["SZ000537"]["bad_row_count"] >= 1
+    assert additions == {}
+
+
+def test_plan_tushare_partial_history_recorded(tmp_path):
+    """部分史：仅窗口尾部有行 → 首末日如实记录（不插补）。"""
+    daily_map = {"20200107": {"601939.SH": (5.0, 5.1, 4.9, 5.05, 800, 300)},
+                 "20200108": {"601939.SH": (5.1, 5.2, 5.0, 5.15, 800, 300)}}
+    adj_map = {"20200107": {"601939.SH": 1.0},
+               "20200108": {"601939.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map)
+    per, additions = B.plan_tushare_backfill(["SH601939"], data_root=root,
+                                             reader=reader)
+    assert per["SH601939"]["status"] == "backfilled"
+    assert per["SH601939"]["first"] == "20200107"
+    assert per["SH601939"]["last"] == "20200108"
+    assert per["SH601939"]["n_rows"] == 2
+
+
+def test_plan_tushare_no_rows_and_no_adj(tmp_path):
+    daily_map = {"20200106": {"600000.SH": (10, 10, 10, 10, 1, 1)}}
+    adj_map = {"20200106": {"000537.SZ": 1.0}}       # 600000 无 adj
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map)
+    per, additions = B.plan_tushare_backfill(["SH600000", "SZ000537"],
+                                             data_root=root, reader=reader)
+    assert per["SH600000"]["status"] == "no_adj"
+    assert per["SZ000537"]["status"] == "no_rows"
+    assert additions == {}
+
+
+def test_plan_tushare_engine_missing_graceful(tmp_path):
+    """缺 pandas → 全部 engine_missing，fail-visible 不抛错。"""
+    def no_engine(path, columns):                   # noqa: ANN001
+        raise ImportError("No module named 'pandas'")
+    root, _ = make_tw_fixture(tmp_path, {}, {})
+    per, additions = B.plan_tushare_backfill(["SH600000"], data_root=root,
+                                             reader=no_engine)
+    assert per["SH600000"]["status"] == "engine_missing"
+    assert additions == {}
+
+
+def test_plan_tushare_dir_missing(tmp_path):
+    per, additions = B.plan_tushare_backfill(
+        ["SH600000"], data_root=str(tmp_path / "nodata"), reader=None)
+    assert per["SH600000"]["status"] == "dir_missing"
+    assert additions == {}
+
+
+def test_merge_multi_tag_meta(tmp_path):
+    """双源并入：_meta.source 同时记录 tdx 与 tushare 两 tag 及各自口径。"""
+    cache_path = str(tmp_path / "daily_cache.json")
+    write_cache(cache_path, {})
+    info = B.merge_and_write(cache_path, {
+        "tdx_lday_gui": {"note": "tdx 注",
+                         "symbols": {"SH600000": [{"trade_date": "20260901"}]}},
+        "tushare_warehouse_qfq_derived": {"note": "tw 注",
+                                          "symbols": {"SZ000537": [
+                                              {"trade_date": "20200106"}]}}},
+        "20261019T0000000800")
+    assert info["cache_updated"] is True
+    assert info["added"] == {"tdx_lday_gui": {"SH600000": 1},
+                             "tushare_warehouse_qfq_derived":
+                                 {"SZ000537": 1}}
+    src = read_json(cache_path)["_meta"]["source"]
+    assert src["tdx_lday_gui"]["adjustment_note"] == "tdx 注"
+    assert src["tushare_warehouse_qfq_derived"]["adjustment_note"] == "tw 注"
+    assert src["existing"] is None
+
+
+def test_run_tushare_end_to_end(env):
+    """端到端：tushare 仓补 1 只 → 缓存并入、meta 多源、覆盖审计上升、
+    INCONCLUSIVE 维持、报告 counts 分源统计。"""
+    root, reader = make_tw_fixture(Path(env["data_root"]).parent / "twdata",
+                                   {"20200106": {"600000.SH": (10.0, 10.4,
+                                                               9.9, 11.0,
+                                                               1000, 500)}},
+                                   {"20200106": {"600000.SH": 1.0}},
+                                   dates=["20200106"])
+    write_cache(env["cache_path"], {})
+    # env["data_root"] 是 "nodata"；真仓夹具放 tmp/twdata 并显式传入
+    report = B.run(cache_path=env["cache_path"], db_path=env["db_path"],
+                   tdx_root=env["tdx_root"], report_dir=env["report_dir"],
+                   data_root=root, parquet_reader=reader)
+    assert report["counts"]["backfilled"] == 1
+    assert report["counts"]["backfilled_tushare"] == 1
+    assert report["sources_merged"] == ["tushare_warehouse_qfq_derived"]
+    assert report["cache_updated"] is True
+    assert report["backup_path"] and Path(report["backup_path"]).exists()
+    cache = read_json(env["cache_path"])
+    assert "SH600000" in cache["daily"]
+    assert cache["daily"]["SH600000"][0]["source"] == \
+        "tushare_warehouse_qfq_derived"
+    src = cache["_meta"]["source"]
+    assert "tushare_warehouse_qfq_derived" in src
+    assert "幸存者偏差" in src["tushare_warehouse_qfq_derived"][
+        "adjustment_note"]
+    assert report["audit_after"]["cached_candidate_symbols"] > \
+        report["audit_before"]["cached_candidate_symbols"]
+    for side in ("audit_before", "audit_after"):
+        assert report[side]["audit_decision"] == "INCONCLUSIVE"
+        assert report[side]["effectiveness_conclusion"] is None
+    assert "幸存者偏差" in report["discipline"]["note"]
+
+
+def test_plan_tushare_real_parquet(tmp_path):
+    """真 parquet 夹具（需 pandas 解释器）：派生正确性与 adj 变更日。"""
+    pd = pytest.importorskip("pandas")
+    daily = tmp_path / "tushare" / "daily"
+    adj = tmp_path / "tushare" / "adj_factor"
+    daily.mkdir(parents=True)
+    adj.mkdir(parents=True)
+    for d, o, h, low, c in (("20200106", 10.0, 10.4, 9.9, 11.0),
+                            ("20200107", 10.5, 10.8, 10.2, 11.5)):
+        pd.DataFrame([{"ts_code": "600000.SH", "trade_date": d, "open": o,
+                       "high": h, "low": low, "close": c, "vol": 1000.0,
+                       "amount": 500.0}]).to_parquet(
+            daily / ("d_%s.parquet" % d))
+        f = 2.0 if d == "20200106" else 1.0
+        pd.DataFrame([{"ts_code": "600000.SH", "trade_date": d,
+                       "adj_factor": f}]).to_parquet(
+            adj / ("d_%s.parquet" % d))
+    per, additions = B.plan_tushare_backfill(["SH600000"],
+                                             data_root=str(tmp_path))
+    assert per["SH600000"]["status"] == "backfilled"
+    rows = additions["SH600000"]
+    assert rows[0]["open"] == pytest.approx(20.0)    # adj 2.0/1.0
+    assert rows[1]["open"] == pytest.approx(10.5)    # adj=latest
+    assert rows[0]["volume"] == 100000               # 手→股
