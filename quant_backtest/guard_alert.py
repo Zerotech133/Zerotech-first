@@ -25,6 +25,8 @@ import json
 import os
 import re
 import sys
+import time
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -33,6 +35,8 @@ sys.path.insert(0, HERE)
 STATE_PATH = os.path.join(HERE, "data", "guard_alert_state.json")
 LOG_PATH = os.path.join(HERE, "logs", "guard_alert.log")
 DEDUP_WINDOW_H = 12          # 同 key 去重窗口（小时）
+_LOCK_STALE_S = 75           # 锁文件超龄视为残留（持锁进程已消亡）强破
+_LOCK_TIMEOUT_S = 80         # 等锁上限（> runner.push_feishu 60s 子进程超时）
 
 
 def log(msg):
@@ -46,10 +50,74 @@ def log(msg):
         pass
 
 
+_last_fail_reason = ""   # 最近一次 _push 失败原因（SEND_FAIL 原因行/stderr
+                         # 摘要，≤120 字符），供 push fail 日志取证
+
+
 def _push(text):
-    """复用 runner.push_feishu 文本通道（与 alert_fail.py 同一发送底座）。"""
+    """复用 runner.push_feishu 文本通道（与 alert_fail.py 同一发送底座）。
+
+    A4 20261019：失败时把底座落下的原因（runner.LAST_PUSH_FAIL，
+    send_feishu 的 SEND_FAIL 原因行/stderr 摘要）取回 _last_fail_reason，
+    供 alert_once 的 fail 日志带出——推送失败不再只留 key 不留因。
+    """
+    global _last_fail_reason
+    _last_fail_reason = ""
     import runner
-    return bool(runner.push_feishu(text))
+    ok = bool(runner.push_feishu(text))
+    if not ok:
+        reason = (getattr(runner, "LAST_PUSH_FAIL", "") or "").strip()
+        _last_fail_reason = reason[:120] if reason \
+            else "push_feishu False（底座未落原因）"
+    return ok
+
+
+@contextmanager
+def _locked(path, timeout_s=_LOCK_TIMEOUT_S):
+    """状态文件互斥锁：O_EXCL 锁文件（Windows/POSIX 通用，纯标准库）。
+
+    A4 20261019（push fail 诊断 §五-5）：check-then-write 竞争窗口收敛——
+    并发进程对 guard_alert_state.json 的「判定+推送+写状态」串行化，
+    杜绝同 key 重复发送与旧快照全量覆写（丢 key）。
+    · 超时让步（告警可用性优先，宁重发不静默）：等锁超时 proceed 不持锁；
+    · 陈旧锁强破：锁文件 mtime 超 _LOCK_STALE_S 视为持锁进程已消亡残留。
+    yield 是否真正持锁。
+    """
+    lock_path = path + ".lock"
+    t0 = time.time()
+    fd = None
+    while fd is None:
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                if time.time() - os.path.getmtime(lock_path) > _LOCK_STALE_S:
+                    os.remove(lock_path)        # 陈旧锁强破
+                    continue
+            except OSError:
+                pass
+            if time.time() - t0 > timeout_s:
+                log("state lock timeout (proceed unlocked) %s"
+                    % os.path.basename(path))
+                break
+            time.sleep(0.05)
+    try:
+        yield fd is not None
+    finally:
+        if fd is not None:
+            try:
+                os.close(fd)
+                os.remove(lock_path)
+            except OSError:
+                pass
+
+
+def _fresh(ent, now, window_h):
+    """窗口内已发过（ent 非空且 ts 距 now 不足 window_h 小时）。"""
+    if not ent:
+        return False
+    prev = datetime.strptime(str(ent.get("ts"))[:19], "%Y-%m-%d %H:%M:%S")
+    return now - prev < timedelta(hours=window_h)
 
 
 def _load_state(path):
@@ -87,22 +155,29 @@ def alert_once(key, text, send=True, state_path=None, now=None,
     path = state_path or STATE_PATH
     try:
         state = _load_state(path)
-        ent = state.get(key)
-        if ent:
-            prev = datetime.strptime(str(ent.get("ts"))[:19],
-                                     "%Y-%m-%d %H:%M:%S")
-            if now - prev < timedelta(hours=window_h):
-                log("dedup skip key=%s (sent %s)" % (key[:24], ent.get("ts")))
-                return False, text
+        if _fresh(state.get(key), now, window_h):
+            log("dedup skip key=%s (sent %s)"
+                % (key[:24], state[key].get("ts")))
+            return False, text
         if not send:
             return False, text                  # dry：只拼装
-        ok = _push(text)
-        if ok:
-            state[key] = {"ts": now.strftime("%Y-%m-%d %H:%M:%S"),
-                          "key": key[:64]}
-            _save_state(path, state)
-        else:
-            log("push fail key=%s（不写状态，下轮重试）" % key[:24])
+        with _locked(path) as got:
+            if got:
+                # 锁内重读：等锁期间并发进程可能已发出同 key 告警
+                state = _load_state(path)
+                if _fresh(state.get(key), now, window_h):
+                    log("dedup skip key=%s (sent %s)"
+                        % (key[:24], state[key].get("ts")))
+                    return False, text
+            ok = _push(text)
+            if ok:
+                state[key] = {"ts": now.strftime("%Y-%m-%d %H:%M:%S"),
+                              "key": key[:64]}
+                _save_state(path, state)
+            else:
+                reason = (_last_fail_reason or "unknown").strip() or "unknown"
+                log("push fail key=%s reason=%s（不写状态，下轮重试）"
+                    % (key[:24], reason[:120]))
         return ok, text
     except Exception as e:
         log("alert_once error key=%s: %s" % (key[:24], str(e)[:120]))

@@ -45,8 +45,13 @@ def _atomic(path, obj):
     os.replace(tmp, path)
 
 
+LAST_PUSH_FAIL = ""  # 最近一次 push_feishu 失败原因（SEND_FAIL 行/stderr 摘要，
+                     # 供 guard_alert 告警日志取证；成功发送即清空）
+
+
 def push_feishu(text, card=False):
     """text 模式传文本；card 模式传卡片 JSON 字符串。"""
+    global LAST_PUSH_FAIL
     tmp = os.path.join(NEWS_DIR, "outbox",
                        "pending_bt_card.json" if card else "pending_bt.txt")
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
@@ -57,7 +62,15 @@ def push_feishu(text, card=False):
         args.append("interactive")
     r = subprocess.run(args, capture_output=True, text=True,
                        encoding="utf-8", timeout=60)
-    return (r.stdout or "").strip().startswith("SEND_OK")
+    out = (r.stdout or "").strip()
+    if out.startswith("SEND_OK"):
+        LAST_PUSH_FAIL = ""
+        return True
+    # A4 20261019：失败原因不再丢弃——SEND_FAIL 原因行/stderr 摘要落
+    # 模块变量（返回值仍为 bool，调用方零改动）。
+    LAST_PUSH_FAIL = (out or (r.stderr or "").strip()
+                      or "send_feishu no output")[:200]
+    return False
 
 
 def _trades_shown():
