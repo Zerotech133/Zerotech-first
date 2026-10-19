@@ -14,8 +14,8 @@ if _QB not in sys.path:
     sys.path.insert(0, _QB)
 
 from strategy_layer.combined_verdicts import (  # noqa: E402
-    after_days, blk, build, load_rows_file, normalize_rows,
-    shadow_tags_of, weight_band,
+    _psql_rows, after_days, blk, build, load_benchmark_mid, load_rows_file,
+    normalize_rows, read_shadow_view, shadow_tags_of, weight_band,
 )
 
 CAL = ["20261012", "20261013", "20261014", "20261015", "20261016",
@@ -231,3 +231,105 @@ def test_summary_caliber_self_desc(res):
     assert "只标不拦" in c["layering"]
     assert res["summary"]["asof"] == "20261015"
     assert res["summary"]["events"] == 7
+
+
+# ── psql 兜底读路径（mock 子进程，不连真实 PG） ─────────────────────────
+def test_psql_rows_parses_csv_and_bool(monkeypatch):
+    import subprocess as sp
+    csv_out = (
+        "trade_date,symbol,action,score,confidence,contributions,"
+        "divergence,rationale\r\n"
+        "20261012,000001.SZ,buy,70,0.8,\"{\"" + "\"kg: {}}\",t,x\r\n"
+        "20261012,000002.SZ,sell,30,0.6,{},f,y\r\n"
+    ).encode("utf-8")
+
+    class P:
+        returncode = 0
+        stdout = csv_out
+        stderr = b""
+
+    seen = {}
+
+    def fake_run(cmd, capture_output=True, timeout=None):
+        seen["cmd"] = cmd
+        return P()
+
+    monkeypatch.setattr(sp, "run", fake_run)
+    rows = _psql_rows("SELECT 1", ("docker", "exec", "pg", "psql"))
+    # COPY TO STDOUT 包裹命令形态
+    assert any("COPY (SELECT 1) TO STDOUT" in str(a) for a in seen["cmd"])
+    assert len(rows) == 2
+    assert rows[0]["symbol"] == "000001.SZ"
+    # psql 布尔文本 t/f → bool
+    assert rows[0]["divergence"] is True
+    assert rows[1]["divergence"] is False
+
+
+def test_psql_rows_nonzero_raises(monkeypatch):
+    import subprocess as sp
+
+    class P:
+        returncode = 1
+        stdout = b""
+        stderr = "connection refused".encode("utf-8")
+
+    monkeypatch.setattr(sp, "run", lambda *a, **k: P())
+    with pytest.raises(RuntimeError, match="psql 兜底读失败"):
+        _psql_rows("SELECT 1", ("docker", "exec", "pg", "psql"))
+
+
+# ── benchmark 超额对照（回收 picks 链 window_mid） ──────────────────────
+def test_load_benchmark_mid_recovers_table(tmp_path):
+    doc = {"per_code": {"000001.SZ": {"win": {
+        "1": {"r": 1.0, "base": -0.5, "exec": "20261013"},
+        "3": {"r": None, "base": None, "exec": "20261013"},
+        "5": None}}}}
+    p = tmp_path / "pv.json"
+    p.write_text(json.dumps(doc), encoding="utf-8")
+    assert load_benchmark_mid(str(p)) == {("20261013", 1): -0.5}
+    # 文件缺失/坏档 → 空表（显式跳过，不造数）
+    assert load_benchmark_mid(str(tmp_path / "no.json")) == {}
+
+
+def test_build_benchmark_excess_view():
+    bench = {("20261014", 1): 0.5}
+    rows = [r for r in _base_rows() if r["symbol"] == "000001.SZ"]
+    res = build(rows, CAL, _ret_fn, benchmark=bench)
+    w1 = res["per_code"]["000001.SZ"]["win"][1]
+    assert w1["base"] == 0.5
+    assert w1["ex"] == -1.5            # r=-1.0 - base=0.5
+    assert res["summary"]["excess"]["1"]["n"] == 1
+    assert res["summary"]["excess"]["1"]["avg"] == -1.5
+    # 对照表缺口：mid 缺失 → ex=None 不入超额桶（不造数）
+    assert res["summary"]["excess"]["3"]["n"] == 0
+    assert res["summary"]["excess_caliber"].startswith("超额=")
+
+
+def test_build_without_benchmark_shape_stable(res):
+    # 无对照表：excess 恒空块，win 无 base/ex 键（向后兼容）
+    assert res["summary"]["excess"]["1"]["n"] == 0
+    assert res["summary"]["excess"]["1"]["avg"] is None
+    assert "skip" in res["summary"]["excess_caliber"] or \
+        "不可得" in res["summary"]["excess_caliber"]
+    assert "base" not in res["per_code"]["000001.SZ"]["win"][1]
+
+
+# ── shadow 读侧视图（只读消费口） ──────────────────────────────────────
+def test_read_shadow_view(tmp_path, res):
+    p = tmp_path / "cv.json"
+    p.write_text(json.dumps(res, ensure_ascii=False), encoding="utf-8")
+    v = read_shadow_view(str(p))
+    assert v["asof"] == "20261015"
+    assert v["by_shadow"]["panic_buy"]["1"]["n"] == 2
+    assert v["by_shadow"]["env_diff"]["1"]["n"] == 3
+    assert v["shadow_codes"]["000003.SZ"] == {
+        "date": "20261015", "action": "buy", "shadow_tags": ["panic_buy"]}
+    # sell 事件的 env_diff 标注也被消费（只标不拦、标注可读）
+    assert v["shadow_codes"]["000002.SZ"]["shadow_tags"] == ["env_diff"]
+    # F 行同为 diff 日 buy 事件 → env_diff
+    assert v["shadow_codes"]["000006.SZ"]["shadow_tags"] == ["env_diff"]
+
+
+def test_read_shadow_view_missing_file(tmp_path):
+    with pytest.raises(OSError):
+        read_shadow_view(str(tmp_path / "no.json"))

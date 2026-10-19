@@ -16,11 +16,16 @@ r"""B3 后验引擎扩展：signals_combined（融合信号链）后验统计（
       · by_shadow：影子标注组（Δ5 P3：env_diff/panic_buy）——只标不拦：
         被标注事件照常进全部基础分层，影子层只是加法视图，不剔除样本、
         不改裁决
+      · excess：超额对照——回收 picks 链 pick_verdicts 的 window_mid
+        （全市场窗口中位）作 benchmark 表 {(exec_day, w): mid}，事件级
+        win 带 base/ex，summary 出 excess 分窗 blk；数据不可得显式跳过
 输出：portal/data/combined_verdicts.json（原子写 tmp+os.replace，
 K-STOCK-393 判例）。只读工具，默认不写任何 PG/生产数据。
 用法：
   python combined_verdicts.py [--date YYYYMMDD] [--rows-file f.json]
                               [--out o.json] [--limit N]
+                              [--bench-file f.json]
+                              [--view shadow] [--in o.json]
 """
 from __future__ import annotations
 
@@ -35,6 +40,7 @@ QB_ROOT = os.path.dirname(HERE)
 ROOT = os.path.dirname(QB_ROOT)
 PORTAL_DIR = os.path.join(ROOT, "portal")
 OUT_DEFAULT = os.path.join(PORTAL_DIR, "data", "combined_verdicts.json")
+PICK_VERDICTS_DEFAULT = os.path.join(PORTAL_DIR, "data", "pick_verdicts.json")
 
 WINDOWS = (1, 3, 5)
 EXEC_LAG = 2                      # 首次可操作日 = 信号日 + 2 交易日（九审口径）
@@ -212,8 +218,51 @@ def blk(vals):
             "med": s[len(s) // 2]}
 
 
+# ── 读侧视图（只读，供消费"只标不拦"的影子标注） ──────────────────────
+def read_shadow_view(path: str = OUT_DEFAULT) -> dict:
+    """shadow 视图读取口：从 combined_verdicts JSON 读影子标注（纯只读）。
+
+    返回 {"asof":…, "by_shadow": 分窗统计, "shadow_codes": {sym: {date,
+    action, shadow_tags}}}——dashboard/CLI 消费"只标不拦"标注的最小面。
+    """
+    doc = json.load(open(path, encoding="utf-8"))
+    summary = doc.get("summary") or {}
+    codes = {sym: {"date": rec.get("date"), "action": rec.get("action"),
+                   "shadow_tags": rec.get("shadow_tags") or []}
+             for sym, rec in (doc.get("per_code") or {}).items()
+             if rec.get("shadow_tags")}
+    return {"asof": summary.get("asof", ""),
+            "by_shadow": summary.get("by_shadow") or {},
+            "shadow_codes": codes}
+
+
+# ── benchmark 对照表（回收 picks 链 window_mid，不重算不造数） ─────────
+def load_benchmark_mid(path: str = PICK_VERDICTS_DEFAULT) -> dict:
+    """从 picks 链 pick_verdicts.json 回收全市场窗口中位对照表。
+
+    picks 链 per_code[*].win[w].base 即 window_mid（K-STOCK-077 判例，
+    同 (exec_d, d1) 横截面恒定）→ 回收为 {(exec_day, w): mid}，供
+    signals_combined 侧超额对照。文件缺失/无数据返回 {}（显式跳过，不造数）。
+    """
+    try:
+        doc = json.load(open(path, encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    table = {}
+    for rec in (doc.get("per_code") or {}).values():
+        for w, v in (rec.get("win") or {}).items():
+            if (isinstance(v, dict) and v.get("base") is not None
+                    and v.get("exec")):
+                try:
+                    table[(str(v["exec"]), int(w))] = float(v["base"])
+                except (TypeError, ValueError):
+                    continue
+    return table
+
+
 # ── 后验主流程 ─────────────────────────────────────────────────────────
-def build(rows, cal, return_fn, windows=WINDOWS, env=None) -> dict:
+def build(rows, cal, return_fn, windows=WINDOWS, env=None,
+          benchmark=None) -> dict:
     """signals_combined 后验计算（事件级四十审语义：同票跨档=独立事件）。
 
     Parameters
@@ -222,10 +271,13 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None) -> dict:
     cal : list[str]    交易日历（升序 YYYYMMDD）
     return_fn : f(symbol, exec_day, d1) -> float | "exdiv" | None
     env : dict | None  影子标注环境日历（shadow_tags_of 口径）
+    benchmark : dict | None  {(exec_day, w): mid} 全市场窗口中位对照表
+                （load_benchmark_mid 回收 picks 链 window_mid）；None=跳过
     """
     rows = normalize_rows(rows)
     per_code = {}
     win_buckets = {w: [] for w in windows}
+    ex_buckets = {w: [] for w in windows}   # 超额 r-base（benchmark 可得时）
     strat_buckets = {}   # sid -> {w: [r]}
     band_buckets = {}    # sid -> {band: [r]}
     shadow_buckets = {}  # tag -> {w: [r]}
@@ -261,9 +313,20 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None) -> dict:
                 wins[w] = {"r": None, "exec": exec_d, "void": "exdiv"}
                 continue
             r1 = None if r1 is None else round(float(r1), 2)
-            wins[w] = {"r": r1, "exec": exec_d}
+            entry = {"r": r1, "exec": exec_d}
+            if benchmark:
+                mid = benchmark.get((exec_d, w))
+                entry["base"] = mid
+                entry["ex"] = (round(r1 - mid, 2)
+                               if r1 is not None and mid is not None
+                               else None)
+            wins[w] = entry
             if r1 is not None and row["action"] == "buy":
                 win_buckets[w].append(r1)
+                if benchmark:
+                    mid = benchmark.get((exec_d, w))
+                    if mid is not None:
+                        ex_buckets[w].append(round(r1 - mid, 2))
                 for sid, c in contribs.items():
                     if not isinstance(c, dict):
                         continue
@@ -292,7 +355,12 @@ def build(rows, cal, return_fn, windows=WINDOWS, env=None) -> dict:
                         "by_weight_group=信号时点归一化权重分带×策略；"
                         "by_shadow=影子标注加法视图，只标不拦，n 勿跨桶加总",
         },
+        "excess_caliber": (
+            "超额=个股窗口收益-同窗口全市场开盘-收盘中位（复用 picks 链 "
+            "pick_verdicts window_mid，不重算不造数；基准不可得则空块）"
+            if benchmark else "benchmark 对照不可得（picks 链 window_mid 缺失），跳过"),
         "windows": {str(w): blk(win_buckets[w]) for w in windows},
+        "excess": {str(w): blk(ex_buckets[w]) for w in windows},
         "by_strategy": {s: {str(w): blk(b.get(w) or []) for w in windows}
                         for s, b in sorted(strat_buckets.items())},
         "by_weight_group": {s: {b: {str(w): blk(v.get(w) or [])
@@ -336,7 +404,7 @@ def load_calendar() -> list:
 
 
 def main() -> int:
-    date = limit = rows_file = out = None
+    date = limit = rows_file = out = bench_file = view = in_path = None
     argv = sys.argv[1:]
     for i, a in enumerate(argv):
         if a == "--date" and i + 1 < len(argv):
@@ -347,6 +415,21 @@ def main() -> int:
             out = argv[i + 1]
         elif a == "--limit" and i + 1 < len(argv):
             limit = int(argv[i + 1])
+        elif a == "--bench-file" and i + 1 < len(argv):
+            bench_file = argv[i + 1]
+        elif a == "--view" and i + 1 < len(argv):
+            view = argv[i + 1]
+        elif a == "--in" and i + 1 < len(argv):
+            in_path = argv[i + 1]
+    # 读侧视图：只读产出 JSON，不重算、不写任何东西
+    if view:
+        if view != "shadow":
+            print("[combined_verdicts] 未知视图 %r（当前支持: shadow）" % view)
+            return 2
+        v = read_shadow_view(in_path or out or OUT_DEFAULT)
+        print("[combined_verdicts] shadow 视图 asof=%s" % v["asof"])
+        print(json.dumps(v, ensure_ascii=False, indent=2))
+        return 0
     if rows_file:
         rows = load_rows_file(rows_file)
     else:
@@ -358,7 +441,15 @@ def main() -> int:
     if not cal:
         print("[combined_verdicts] 行情湖不可达（交易日历为空），跳过")
         return 1
-    res = build(rows, cal, default_return_fn())
+    bench = (load_benchmark_mid(bench_file) if bench_file
+             else load_benchmark_mid())
+    if bench:
+        print("[combined_verdicts] benchmark 对照 %d 组（回收 picks 链 "
+              "window_mid）" % len(bench))
+    else:
+        print("[combined_verdicts] benchmark 对照不可得"
+              "（picks 链 window_mid 数据缺失），超额对照显式跳过")
+    res = build(rows, cal, default_return_fn(), benchmark=bench)
     path = write_out(res, out)
     s = res["summary"]
     print("[combined_verdicts] 事件 %d | asof %s → %s"
