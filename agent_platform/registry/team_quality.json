@@ -56,7 +56,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "SEC1",
@@ -112,7 +124,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "QA2",
@@ -162,7 +186,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "SEC2",
@@ -173,8 +209,8 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "glm/glm-4.6",
-   "binding_note": "E3 顶配走包年 glm-4.6（K-ORG-050 通道）：方案级走形检查+渗透压测属深度推理任务，审查类单约 4~5 积分",
+   "llm_binding": "glm/glm-5.3",
+   "binding_note": "10-18 升档：glm-4.6 依赖的 anthropic 端点对包年 key 报 429/404（K-ORG-136 判例），coding 端点 glm-5.3 全通——E3 顶配走 glm-5.3（方案级走形检查+渗透压测深度推理，审查类单约 4~5 积分）",
    "tools": [
     "devtask",
     "events"
@@ -218,7 +254,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

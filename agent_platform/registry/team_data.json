@@ -59,7 +59,19 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

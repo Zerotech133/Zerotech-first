@@ -13,7 +13,8 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:4b",
+   "llm_binding": "ollama/qwen3.5:9b",
+   "binding_note": "10-18 修幽灵绑定：qwen3.5:4b 本地库未下载（10-08 起即 404 幽灵，降级三态兜底掩盖故障），改绑 9b；4b 落位下载后再评估回切",
    "tools": [
     "paper_bridge",
     "events"
@@ -53,7 +54,19 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "paper_bridge",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

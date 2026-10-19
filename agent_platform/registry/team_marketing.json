@@ -58,7 +58,14 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

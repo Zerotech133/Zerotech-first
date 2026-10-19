@@ -29,7 +29,19 @@
      "agent/DEV3/*",
      "dept/dev/observation"
     ]
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV4",
@@ -57,7 +69,19 @@
      "agent/DEV4/*",
      "dept/dev/observation"
     ]
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "QA1",
@@ -97,7 +121,19 @@
     "knowledge": [
      "AI工程实践知识库.md"
     ]
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

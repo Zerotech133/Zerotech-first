@@ -1,15 +1,254 @@
 {
-  "_note": "研究院岗位注册表（K-ORG-125）：研究院 Agent 的唯一职能部投影。",
-  "team": "academy",
-  "dept": "academy",
-  "description": "研究院：策略、数据智能、情报、商业化与组织方法论研究",
-  "agents": [
-    {"agent_id":"ACAD1","role_profile":"academy_director","analysis_type":"academy_intake","node_key":"acad1_core","parent_node_keys":[],"level":1,"is_parallel":true,"wait_all_complete":false,"llm_binding":"ollama/qwen3.5:9b","tools":["events"],"memory_grants":{"read":["domain/*","dept/*","agent/ACAD1/*"],"write":["agent/ACAD1/*","agent_platform/data/academy/**"]},"grade":"E3","grade_note":"研究院院长：审题立项与评审统筹","charter_detail":"研究院总负责人：审题、立项、组织评审、协调跨部门研究并向田丰汇报。"},
-    {"agent_id":"STRAT1","role_profile":"strategy_researcher","analysis_type":"strategy_research","node_key":"strat1_core","parent_node_keys":[],"level":1,"is_parallel":true,"wait_all_complete":false,"llm_binding":"ollama/qwen3.5:9b","tools":["events"],"memory_grants":{"read":["domain/*","dept/invest/*","agent/STRAT1/*"],"write":["agent/STRAT1/*","agent_platform/data/academy/**"]},"grade":"E2","grade_note":"策略研究：可证伪假设与 LCS-1 图形推演","charter_detail":"把市场问题转成可验证策略假设，维护策略研究台账并交由 BACK1 回测。"},
-    {"agent_id":"BACK1","role_profile":"backtest_researcher","analysis_type":"backtest_validation","node_key":"back1_core","parent_node_keys":[],"level":1,"is_parallel":true,"wait_all_complete":false,"llm_binding":"ollama/qwen3.5:9b","tools":["events"],"memory_grants":{"read":["domain/*","agent/BACK1/*","agent_platform/data/academy/**"],"write":["agent/BACK1/*","agent_platform/data/academy/**"]},"grade":"E2","grade_note":"回测研究：复现、样本外与成本压力测试","charter_detail":"按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据。"},
-    {"agent_id":"COMM1","role_profile":"commercialization_researcher","analysis_type":"commercialization_research","node_key":"comm1_core","parent_node_keys":[],"level":1,"is_parallel":true,"wait_all_complete":false,"llm_binding":"ollama/qwen3.5:9b","tools":["events"],"memory_grants":{"read":["domain/*","dept/product/*","agent/COMM1/*"],"write":["agent/COMM1/*","agent_platform/data/academy/**"]},"grade":"E2","grade_note":"商业化研究：客户、交付与策略市场","charter_detail":"研究算法商品、策略市场和对外服务，形成客户画像、交付边界与试点方案。"},
-    {"agent_id":"INTEL1","role_profile":"competitive_intelligence_researcher","analysis_type":"competitive_intelligence","node_key":"intel1_core","parent_node_keys":[],"level":1,"is_parallel":true,"wait_all_complete":false,"llm_binding":"ollama/qwen3.5:9b","tools":["events"],"memory_grants":{"read":["domain/*","agent/INTEL1/*"],"write":["agent/INTEL1/*","agent_platform/data/academy/**"]},"grade":"E2","grade_note":"竞争情报：行业、竞品与外部证据分级","charter_detail":"跟踪开源社区、同类产品和行业变化，为策略和商业化立项提供外部证据。"},
-    {"agent_id":"AI1","role_profile":"ai_methodology_researcher","analysis_type":"ai_methodology_research","node_key":"ai1_core","parent_node_keys":[],"level":1,"is_parallel":true,"wait_all_complete":false,"llm_binding":"ollama/qwen3.5:9b","tools":["events"],"memory_grants":{"read":["domain/*","dept/*","agent/AI1/*"],"write":["agent/AI1/*","agent_platform/data/academy/**"]},"grade":"E3","grade_note":"AI 方法论：Agent 能力、评测与知识反哺","charter_detail":"把成功研究提炼为标准、能力、评测和知识条目，推动 Prompt 与路由升级。"},
-    {"agent_id":"PROD1","role_profile":"product_manager","analysis_type":"strategy_productization","node_key":"prod1_core","parent_node_keys":[],"level":1,"is_parallel":true,"wait_all_complete":false,"llm_binding":"ollama/qwen3.5:9b","tools":["events"],"memory_grants":{"read":["domain/*","dept/product/*","agent/PROD1/*"],"write":["agent/PROD1/*","agent_platform/data/academy/**"]},"grade":"E2","grade_note":"策略产品化：验收、试点与交付","charter_detail":"将通过评审的策略或 AI 方法转成产品需求、验收指标和试点计划。"}
-  ]
+ "_note": "研究院岗位注册表（K-ORG-125）：研究院 Agent 的唯一职能部投影。",
+ "team": "academy",
+ "dept": "academy",
+ "description": "研究院：策略、数据智能、情报、商业化与组织方法论研究",
+ "agents": [
+  {
+   "agent_id": "ACAD1",
+   "role_profile": "academy_director",
+   "analysis_type": "academy_intake",
+   "node_key": "acad1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "glm/glm-5.3",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/*",
+     "agent/ACAD1/*"
+    ],
+    "write": [
+     "agent/ACAD1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E3",
+   "grade_note": "研究院院长：审题立项与评审统筹",
+   "charter_detail": "研究院总负责人：审题、立项、组织评审、协调跨部门研究并向田丰汇报。",
+   "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  },
+  {
+   "agent_id": "STRAT1",
+   "role_profile": "strategy_researcher",
+   "analysis_type": "strategy_research",
+   "node_key": "strat1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/invest/*",
+     "agent/STRAT1/*"
+    ],
+    "write": [
+     "agent/STRAT1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "策略研究：可证伪假设与 LCS-1 图形推演",
+   "charter_detail": "把市场问题转成可验证策略假设，维护策略研究台账并交由 BACK1 回测。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  },
+  {
+   "agent_id": "BACK1",
+   "role_profile": "backtest_researcher",
+   "analysis_type": "backtest_validation",
+   "node_key": "back1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "agent/BACK1/*",
+     "agent_platform/data/academy/**"
+    ],
+    "write": [
+     "agent/BACK1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "回测研究：复现、样本外与成本压力测试",
+   "charter_detail": "按冻结口径执行回测、样本外检验和成本压力测试，输出可追溯证据。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  },
+  {
+   "agent_id": "COMM1",
+   "role_profile": "commercialization_researcher",
+   "analysis_type": "commercialization_research",
+   "node_key": "comm1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/product/*",
+     "agent/COMM1/*"
+    ],
+    "write": [
+     "agent/COMM1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "商业化研究：客户、交付与策略市场",
+   "charter_detail": "研究算法商品、策略市场和对外服务，形成客户画像、交付边界与试点方案。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  },
+  {
+   "agent_id": "INTEL1",
+   "role_profile": "competitive_intelligence_researcher",
+   "analysis_type": "competitive_intelligence",
+   "node_key": "intel1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "agent/INTEL1/*"
+    ],
+    "write": [
+     "agent/INTEL1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "竞争情报：行业、竞品与外部证据分级",
+   "charter_detail": "跟踪开源社区、同类产品和行业变化，为策略和商业化立项提供外部证据。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  },
+  {
+   "agent_id": "AI1",
+   "role_profile": "ai_methodology_researcher",
+   "analysis_type": "ai_methodology_research",
+   "node_key": "ai1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "glm/glm-5.3",
+   "binding_note": "10-18 老田拍板：诸葛亮（AI1）上云端——E3 方法论研究岗要强模型（Agent 能力评测/知识反哺），glm-5.3 coding 端点 K-ORG-136 实测全通；旧绑 9b 判死",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/*",
+     "agent/AI1/*"
+    ],
+    "write": [
+     "agent/AI1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E3",
+   "grade_note": "AI 方法论：Agent 能力、评测与知识反哺",
+   "charter_detail": "把成功研究提炼为标准、能力、评测和知识条目，推动 Prompt 与路由升级。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  },
+  {
+   "agent_id": "PROD1",
+   "role_profile": "product_manager",
+   "analysis_type": "strategy_productization",
+   "node_key": "prod1_core",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "ollama/qwen3.5:9b",
+   "tools": [
+    "events"
+   ],
+   "memory_grants": {
+    "read": [
+     "domain/*",
+     "dept/product/*",
+     "agent/PROD1/*"
+    ],
+    "write": [
+     "agent/PROD1/*",
+     "agent_platform/data/academy/**"
+    ]
+   },
+   "grade": "E2",
+   "grade_note": "策略产品化：验收、试点与交付",
+   "charter_detail": "将通过评审的策略或 AI 方法转成产品需求、验收指标和试点计划。",
+   "skills": [
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
+  }
+ ]
 }

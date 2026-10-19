@@ -13,8 +13,8 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "glm/glm-4.5-flash",
-   "binding_note": "E1 轻量调度岗走 Lite 档（K-ORG-050 包年通道）；判读类一律上浮田丰，不占重模型",
+   "llm_binding": "glm/glm-5.3-flash",
+   "binding_note": "10-18 修幽灵档：glm-4.5-flash 为旧档位，K-ORG-136 判例实测包年 key 的 coding 端点只通 5.3/5.3-flash——E1 轻量调度岗取 glm-5.3-flash（Lite 快档）；判读类一律上浮田丰，不占重模型",
    "tools": [
     "devtask",
     "events"
@@ -55,7 +55,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

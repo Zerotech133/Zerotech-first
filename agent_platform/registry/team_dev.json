@@ -61,7 +61,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV2",
@@ -74,7 +86,7 @@
    "level": 2,
    "is_parallel": false,
    "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
+   "llm_binding": "ollama/qwen3.6:35b-a3b",
    "tools": [
     "ollama",
     "events"
@@ -122,7 +134,20 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+   "skills": [
+    {
+     "id": "ollama",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV3",
@@ -182,7 +207,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV4",
@@ -244,7 +281,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV5",
@@ -302,7 +351,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "ARCH1",
@@ -313,7 +374,7 @@
    "level": 1,
    "is_parallel": true,
    "wait_all_complete": false,
-   "llm_binding": "ollama/qwen3.5:9b",
+   "llm_binding": "glm/glm-5.3",
    "tools": [
     "devtask",
     "events"
@@ -361,7 +422,20 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "binding_note": "auto_assign 10-18：按分工定案自动适配（原 ollama/qwen3.5:9b）",
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "OPS1",
@@ -418,7 +492,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DOC1",
@@ -472,7 +558,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV6",
@@ -529,7 +627,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV7",
@@ -586,7 +696,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DEV8",
@@ -643,7 +765,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

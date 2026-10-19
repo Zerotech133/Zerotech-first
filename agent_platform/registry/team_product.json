@@ -58,7 +58,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DSGN1",
@@ -116,7 +128,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "DSGN2",
@@ -172,7 +196,19 @@
      ],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "devtask",
+     "kind": "tool",
+     "enabled": true
+    },
+    {
+     "id": "events",
+     "kind": "tool",
+     "enabled": true
+    }
+   ]
   }
  ]
 }
