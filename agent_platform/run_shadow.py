@@ -357,16 +357,33 @@ def _assert_not_real_root(data_root):
     return True
 
 
+def _redirect_run_log():
+    """计划任务无终端：输出自重定向落文件（长跑纪律，不依赖管道）。
+
+    K-OPS-20261019-SHADOWFIX：生产包装器 shadow_automation.ps1 run 分支外层
+    已 `cmd /c "... > last_run.log 2>&1"`，cmd 重定向句柄的共享模式拒绝二次
+    写打开 → 此处再 open 同一文件必 PermissionError（10-19 17:10 首跑 367 行
+    即崩根因，traceback 由外层 2>&1 落进日志）。被占用时沿用既有
+    stdout/stderr（本就已被外层重定向到同一文件），不再自抢，返回 None。
+    返回打开的文件对象（调用方持有至进程退出），非 tty 且未被占用时为非 None。
+    """
+    try:
+        return open(LEDGER.parent / "last_run.log", "a", encoding="utf-8")
+    except PermissionError:
+        print("[log] last_run.log 被外层重定向占用，沿用既有 stdout/stderr")
+        return None
+
+
 def main():
     data_root = _data_root()
     if not _assert_not_real_root(data_root):
         return 2
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     if not sys.stdout.isatty():
-        # 计划任务无终端：输出自重定向落文件（长跑纪律，不依赖管道）
-        log_f = open(LEDGER.parent / "last_run.log", "a", encoding="utf-8")
-        sys.stdout = log_f
-        sys.stderr = log_f
+        log_f = _redirect_run_log()
+        if log_f is not None:
+            sys.stdout = log_f
+            sys.stderr = log_f
         print("===== shadow run start %s =====" % datetime.now())
     if REHEARSAL:
         print("[rehearsal] 隔离模式 data_root=%s（真仓 data/ 零写入；飞书推送已禁）"
