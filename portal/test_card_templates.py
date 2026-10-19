@@ -19,11 +19,15 @@ import card_templates  # noqa: E402
 from card_templates import KIND_CARD_TEMPLATES, apply_card_template  # noqa: E402
 
 
-ALL_KINDS = {"alert", "ai_finance_daily", "announcement", "watch_strategy"}
+# FC-C（P2 2026-10-20）追加 subscription_guide：注册表快照同步扩充
+ALL_KINDS = {"alert", "ai_finance_daily", "announcement",
+             "watch_strategy", "subscription_guide"}
 _COLORS = {"alert": "red", "ai_finance_daily": "blue",
-           "announcement": "grey", "watch_strategy": "green"}
+           "announcement": "grey", "watch_strategy": "green",
+           "subscription_guide": "grey"}
 _TITLES = {"alert": "⚠ 预警", "ai_finance_daily": "📰 AI 金融日报",
-           "announcement": "📢 管理公告", "watch_strategy": "📈 盯盘策略"}
+           "announcement": "📢 管理公告", "watch_strategy": "📈 盯盘策略",
+           "subscription_guide": "🔒 订阅服务"}
 
 
 # 1. 注册 kind 包装出 header（逐种样式断言）
