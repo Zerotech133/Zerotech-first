@@ -1,6 +1,7 @@
 """Agent-to-agent upstream reporting tests. Watch reports only to its sector Agent."""
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -314,6 +315,136 @@ def test_self_report_rejected_before_any_intent_is_planned():
                              target_type="AGENT", target_id="watch-agent-1") is None
     assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
                                target_type="AGENT", target_id="watch-agent-1") == ()
+
+
+@pytest.mark.parametrize("tamper", [
+    lambda report: replace(report, report_id="forged"),
+    lambda report: replace(report, report_kind="HEALTH"),
+    lambda report: replace(report, created_at=T + timedelta(seconds=1)),
+    lambda report: replace(report, receiver=sector_agent(registry_ref="forged")),
+    lambda report: replace(report, receiver=sector_agent(agent_id="other-sector")),
+    lambda report: replace(report, sender=watch_agent(registry_ref="forged")),
+])
+def test_forged_report_rejected_before_claim_without_spending_attempt(tamper):
+    envelope = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    original = rep.report(envelope, outbox, report_kind="ANOMALY",
+                          receiver_agent_id="quant-sector-agent-1",
+                          report_id="r-original", control_epoch=0, now=T)
+    forged = tamper(original)
+    intent = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=original.receiver.agent_id)
+    with pytest.raises(AgentReportingError, match="REPORT_.*MISMATCH|AGENT_NOT_CURRENT"):
+        rep.claim_and_confirm(
+            envelope, outbox, forged, claim_token="forged",
+            claim_at=T + timedelta(seconds=2), lease_until=LATER - timedelta(minutes=5),
+            ack=ack(forged), now=T + timedelta(seconds=40))
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=original.receiver.agent_id) == intent
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=original.receiver.agent_id) == ()
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=forged.receiver.agent_id) == ()
+    _, finished = rep.claim_and_confirm(
+        envelope, outbox, original, claim_token="real",
+        claim_at=T + timedelta(seconds=2), lease_until=LATER - timedelta(minutes=5),
+        ack=ack(original), now=T + timedelta(seconds=40))
+    assert finished.outcome == "ACCEPTED_VERIFIED"
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=original.receiver.agent_id)[0].attempt_no == 1
+
+
+@pytest.mark.parametrize("identity_change", [
+    lambda report: replace(report, receiver=sector_agent(valid_until=T + timedelta(seconds=5))),
+    lambda report: replace(report, sender=watch_agent(valid_until=T + timedelta(seconds=5))),
+])
+def test_agent_registry_expiry_tamper_never_claims(identity_change):
+    envelope = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    original = rep.report(envelope, outbox, report_kind="ANOMALY",
+                          receiver_agent_id="quant-sector-agent-1",
+                          report_id="r-expiry", control_epoch=0, now=T)
+    with pytest.raises(AgentReportingError, match="REPORT_SENDER_MISMATCH|AGENT_NOT_CURRENT"):
+        rep.claim_and_confirm(
+            envelope, outbox, identity_change(original), claim_token="bad",
+            claim_at=T + timedelta(seconds=6), lease_until=LATER - timedelta(minutes=5),
+            ack=ack(original), now=T + timedelta(seconds=7))
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=original.receiver.agent_id) == ()
+
+
+def test_direct_cross_generation_intent_id_drift_refused_before_claim():
+    envelope = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    report = rep.report(envelope, outbox, report_kind="ANOMALY",
+                        receiver_agent_id="quant-sector-agent-1",
+                        report_id="r-generations", control_epoch=0, now=T)
+    _, unknown = rep.claim_and_confirm(
+        envelope, outbox, report, claim_token="first",
+        claim_at=T + timedelta(seconds=1), lease_until=LATER - timedelta(minutes=5),
+        ack=ack(report, report_id="not-matching"), now=T + timedelta(seconds=2))
+    assert unknown.outcome == "UNKNOWN"
+    key = outbox._key_for(envelope, "QUANT_UPSTREAM_REPORT", "AGENT",
+                          report.receiver.agent_id)
+    outbox.plan(
+        envelope, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+        target_id=report.receiver.agent_id, policy_version="agent-report-v1",
+        control_epoch=0, intent_id="report-unrelated-g1",
+        created_at=T + timedelta(seconds=3), valid_until=envelope.valid_until,
+        generation=1, report_fingerprint=outbox._report_fingerprints[key])
+    current = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                                target_type="AGENT", target_id=report.receiver.agent_id)
+    with pytest.raises(AgentReportingError, match="REPORT_IDENTITY_MISMATCH"):
+        rep.claim_and_confirm(
+            envelope, outbox, report, claim_token="drift",
+            claim_at=T + timedelta(seconds=4), lease_until=LATER - timedelta(minutes=5),
+            ack=ack(report, acked_at=T + timedelta(seconds=5)),
+            now=T + timedelta(seconds=6))
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=report.receiver.agent_id) == current
+    assert len(outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="AGENT", target_id=report.receiver.agent_id)) == 1
+    assert outbox._attempt_nos[key] == 1
+
+
+def test_valid_generation_one_uses_original_report_and_current_window():
+    envelope = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    report = rep.report(envelope, outbox, report_kind="ANOMALY",
+                        receiver_agent_id="quant-sector-agent-1",
+                        report_id="r-valid-g1", control_epoch=0, now=T)
+    rep.claim_and_confirm(
+        envelope, outbox, report, claim_token="first",
+        claim_at=T + timedelta(seconds=1), lease_until=LATER - timedelta(minutes=5),
+        ack=ack(report, report_id="not-matching"), now=T + timedelta(seconds=2))
+    retry = rep.retry_report(envelope, outbox, report, generation=1,
+                             control_epoch=0, now=T + timedelta(seconds=3))
+    assert retry is report
+    current = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                                target_type="AGENT", target_id=report.receiver.agent_id)
+    forged = replace(retry, report_id="different-generation")
+    with pytest.raises(AgentReportingError, match="REPORT_IDENTITY_MISMATCH"):
+        rep.claim_and_confirm(
+            envelope, outbox, forged, claim_token="forged-g1",
+            claim_at=T + timedelta(seconds=4), lease_until=LATER - timedelta(minutes=5),
+            ack=ack(forged, acked_at=T + timedelta(seconds=5)),
+            now=T + timedelta(seconds=6))
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=report.receiver.agent_id) == current
+    assert len(outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="AGENT", target_id=report.receiver.agent_id)) == 1
+    second, finished = rep.claim_and_confirm(
+        envelope, outbox, retry, claim_token="second",
+        claim_at=T + timedelta(seconds=4), lease_until=LATER - timedelta(minutes=5),
+        ack=ack(retry, acked_at=T + timedelta(seconds=5)),
+        now=T + timedelta(seconds=6))
+    assert second.intent_id == "report-r-valid-g1-g1"
+    assert second.attempt_no == 2
+    assert finished.outcome == "ACCEPTED_VERIFIED"
 
 
 def test_ack_verified_before_finish_and_bindings_enforced():

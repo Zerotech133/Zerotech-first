@@ -267,10 +267,39 @@ class AgentUpstreamReporter:
                           claim_at: datetime, lease_until: datetime,
                           ack: AgentAck, now: datetime) -> tuple[RouteAttempt, RouteAttempt | None]:
         """Claim the upstream intent, then finish only on a port-verified ack."""
-        if not report.binds(envelope):
+        if type(report) is not AgentReport or not report.binds(envelope):
             raise AgentReportingError("REPORT_IDENTITY_MISMATCH")
-        if report.sender.agent_id != self._sender.agent_id:
+        if report.sender != self._sender:
             raise AgentReportingError("REPORT_SENDER_MISMATCH")
+        key = outbox._key_for(
+            envelope, "QUANT_UPSTREAM_REPORT", "AGENT", report.receiver.agent_id)
+        fingerprint = ReportFingerprint(
+            report_id=report.report_id, report_kind=report.report_kind,
+            event_id=report.event_id, evidence_version=report.evidence_version,
+            envelope_hash=report.envelope_hash,
+            sender_agent_id=report.sender.agent_id,
+            receiver_agent_id=report.receiver.agent_id, created_at=report.created_at)
+        intent = outbox.get_intent(
+            envelope, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+            target_id=report.receiver.agent_id)
+        generation = outbox._generations.get(key)
+        expected_id = (f"report-{report.report_id}" if generation == 0 else
+                       f"report-{report.report_id}-g{generation}")
+        if (outbox._report_fingerprints.get(key) != fingerprint
+                or intent is None or type(generation) is not int
+                or generation < 0 or intent.intent_id != expected_id):
+            raise AgentReportingError("REPORT_IDENTITY_MISMATCH")
+        # The fingerprint records agent IDs, not their entire registry identities.
+        # Recheck both immutable identities and their validity before consuming a
+        # shared attempt, including the original report and current claim times.
+        receiver = self._directory.resolve(
+            report.receiver.agent_id, role="QUANT_SECTOR", now=now)
+        if (receiver != report.receiver or report.sender.role != "WATCH"
+                or report.receiver.role != "QUANT_SECTOR"
+                or any(not (identity.registered_at <= moment < identity.valid_until)
+                       for identity in (report.sender, report.receiver)
+                       for moment in (report.created_at, claim_at, now))):
+            raise AgentReportingError("AGENT_NOT_CURRENT")
         attempt = outbox.claim(envelope, route="QUANT_UPSTREAM_REPORT",
                                target_type="AGENT", target_id=report.receiver.agent_id,
                                claim_token=claim_token, claim_at=claim_at,
