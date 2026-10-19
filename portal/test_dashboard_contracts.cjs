@@ -155,6 +155,38 @@ section('wall.json schema (存在才断言)');
   if (d.committee_line !== undefined && d.committee_line !== null) ok(typeof d.committee_line === 'string', 'wall.json: committee_line 非空时为字符串');
 })();
 
+/* ── 3c. quant_drill.html 下钻驾驶舱不变量（2026-10-19 老田批：不做长图，单屏三栏下钻） ── */
+section('quant_drill.html invariants');
+{
+  const p = path.join(PORTAL, 'quant_drill.html');
+  if (!fs.existsSync(p)) { ok(false, 'quant_drill.html 存在'); }
+  else {
+    const h = fs.readFileSync(p, 'utf8');
+    // 单屏铁律：页面级禁滚动 + 三栏布局
+    ok(h.includes('html, body { height: 100%; overflow: hidden; }'), '下钻页：页面级 overflow hidden（不做下拉长图）');
+    ok(h.includes('grid-template-columns: 264px minmax(340px, 1fr) minmax(400px, 1.25fr)'), '下钻页：三栏 deck 布局在位');
+    // 四级下钻函数链
+    ok(h.includes('renderSectors') && h.includes('secStocks') && h.includes('selectStock') && h.includes('paintPoints'),
+       '下钻页：L1板块→L2票→L3结果→L4点 函数链齐全');
+    // L4 证据组（贴真实渲染串）
+    ok(h.includes('缠论结构点') && h.includes('突破点') && h.includes('板块联动') && h.includes('龙虎榜') && h.includes('公告'),
+       '下钻页：L4 证据五组（缠论/突破/联动/龙虎/公告）在位');
+    // 数据源契约：全同源静态 + pick_details 深路径
+    ok(h.includes('/data/wall.json') && h.includes('/data/todays_picks.json') && h.includes('/data/pick_details/'),
+       '下钻页：L1/L2/L4 三数据源全同源静态');
+    // 准入降级链与灰态纪律
+    ok(h.includes('"/api/admission","http://127.0.0.1:8791/api/admission"'), '下钻页：admission fetchFirst 降级链（同源→直连8791）');
+    ok(h.includes('灰态不猜值') && h.includes('明细缺源'), '下钻页：缺源灰态显式标注，不猜值不假绿');
+    // 中国行情配色铁律：涨红跌绿
+    ok(h.includes(".up { color: #e05656") && h.includes(".dn { color: #2ea36b"), '下钻页：涨红(#e05656)跌绿(#2ea36b) 中国惯例');
+    // 过滤器四态
+    ok(h.includes('data-f="buy"') && h.includes('data-f="env"') && h.includes('data-f="T1"'), '下钻页：T1/买点/环境偏离过滤器在位');
+    // 导航真源管线：nav.js 已挂下钻入口
+    const nav = path.join(PORTAL, 'static', 'nav.js');
+    ok(fs.existsSync(nav) && fs.readFileSync(nav, 'utf8').includes('/quant-drill'), '导航真源：nav.js 含 /quant-drill 入口（export_nav 管线产物）');
+  }
+}
+
 /* ── 4. 契约文档守卫 ── */
 section('contract doc guard');
 ok(fs.existsSync(path.join(QB_DOCS, 'dashboard_contracts.md')), 'docs/dashboard_contracts.md 存在');
@@ -183,6 +215,16 @@ async function live() {
   ok(!!rg && !!rg.regime && typeof rg.regime.available === 'boolean' && 'stale' in rg.regime, 'regime: available+stale 形状');
   const sx = await j(B8791 + '/api/sixring', 5000);
   ok(!!sx && !!sx.rings && 'pool' in sx.rings && 'risk' in sx.rings, 'sixring: 六环键形状');
+  // 下钻驾驶舱 L2 数据源实测：todays_picks 形状（stocks[].sources 逐源信号是 L2→L3 契约核心）
+  const tp = await j(B8080 + '/data/todays_picks.json', 8000);
+  if (!tp) {
+    todo('live /data/todays_picks.json 未可达——下钻页 L2 灰态降级已就位');
+  } else {
+    ok(Array.isArray(tp.stocks) && tp.stocks.length > 0, 'todays_picks: stocks 非空数组');
+    const s0 = tp.stocks.find(s => Array.isArray(s.sources) && s.sources.length > 0);
+    ok(!!s0 && typeof s0.code === 'string' && typeof s0.sources[0].s === 'string',
+       'todays_picks: stocks[].sources[].s 板块标识形状（L2→L3 契约）');
+  }
   // F7 live：/api/admission（F2 工位端点，未落地前 WARN 台账 pending，不挂红不假绿）
   const adm = await j(B8791 + '/api/admission', 5000);
   if (!adm) {
