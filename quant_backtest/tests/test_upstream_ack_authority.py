@@ -13,7 +13,7 @@ from quant_backtest.watch_dispatch.agent_reporting import (
     AgentAck, AgentIdentity, AgentUpstreamReporter,
 )
 from quant_backtest.watch_dispatch.route_outbox import (
-    ACCEPTED_VERIFIED, UNKNOWN, OutboxError,
+    ACCEPTED_VERIFIED, UNKNOWN, OutboxError, ReportFingerprint,
 )
 
 T = datetime(2026, 10, 19, 2, tzinfo=timezone.utc)
@@ -190,7 +190,7 @@ def test_finish_before_claim_is_unknown_without_mutating_old_attempt():
 
 
 @pytest.mark.parametrize("now", [at(5) + timedelta(milliseconds=500), at(6)])
-def test_same_generation_finish_before_claim_fails_and_at_claim_succeeds(now):
+def test_same_generation_finish_without_authority_is_unknown_even_at_claim(now):
     env = envelope()
     box = RouteOutbox()
     box.plan(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
@@ -203,8 +203,42 @@ def test_same_generation_finish_before_claim_fails_and_at_claim_succeeds(now):
     finished = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
                           now=now, external_message_id="ack-1",
                           verification_source="test-only", observed_at=at(5))
-    assert finished.outcome == (UNKNOWN if now < at(6) else ACCEPTED_VERIFIED)
-    assert (finished.receipt is None) == (now < at(6))
+    assert finished.outcome == UNKNOWN
+    assert finished.receipt is None
+
+
+def test_same_generation_live_ack_before_claim_accepts_at_claim():
+    # Both ledgers here are local/offline; this does not establish a production source.
+    env = envelope()
+    inbox = UpstreamInbox()
+    box = RouteOutbox(UpstreamAckAuthority(inbox))
+    fingerprint = ReportFingerprint(
+        report_id="same-generation-report", report_kind="ANOMALY",
+        event_id=env.event_id, evidence_version=env.evidence_version,
+        envelope_hash=env.envelope_hash, sender_agent_id="watch-1",
+        receiver_agent_id="sector-1", created_at=T)
+    box.plan(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+             target_id="sector-1", policy_version="agent-report-v1",
+             control_epoch=0, intent_id="same-generation", created_at=T,
+             valid_until=END, report_fingerprint=fingerprint)
+    report = QuantUpstreamReport(
+        report_id=fingerprint.report_id, report_kind=fingerprint.report_kind,
+        event_id=fingerprint.event_id, evidence_hash=fingerprint.envelope_hash,
+        evidence_version=fingerprint.evidence_version,
+        sender_agent_id=fingerprint.sender_agent_id,
+        receiver_agent_id=fingerprint.receiver_agent_id,
+        created_at=fingerprint.created_at)
+    ack = inbox.accept(report, now=at(5)).ack
+    attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                        target_id="sector-1", claim_token="first", claim_at=at(6),
+                        lease_until=at(20))
+    finished = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+                          now=at(6), external_message_id=ack.ack_id,
+                          verification_source=ack.verification_source,
+                          observed_at=ack.acked_at)
+    assert finished.outcome == ACCEPTED_VERIFIED
+    assert finished.receipt is not None
+    assert finished.receipt.observed_at == at(5)
 
 
 def test_cross_generation_finish_at_claim_preserves_old_ack_time():
