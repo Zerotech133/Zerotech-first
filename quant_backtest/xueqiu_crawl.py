@@ -422,9 +422,18 @@ def takeover_quote(symbols: list[str]) -> int:
     import pandas as pd
     from xq_quote_router import is_index_symbol
 
-    c = XqCrawler()
+    # 先筛有效股票，再构造会 warm 会话的 crawler；空请求不得触网或落片。
     syms = [s for s in (X.norm_symbol(s) for s in symbols)
-            if s and not is_index_symbol(s)]
+            if s and not is_index_symbol(s) and X.to_ts_code(s)]
+    if not syms:
+        mf = X.XqManifest()
+        mf.load()  # 保留旧 health 与其他表状态，只更新本轮快照状态。
+        mf.mark("xq_quote_snap", done=False, rows=0, file="",
+                status="failed", note="takeover 无有效请求股票（空输入、无效代码或纯指数）")
+        mf.save()
+        print("[takeover_quote] 无有效请求股票，本轮未构造采集器或落片")
+        return 0
+    c = XqCrawler()
     requested = set(syms)
     blocked = X.ip_blocked_active(c.mf)
     if blocked:

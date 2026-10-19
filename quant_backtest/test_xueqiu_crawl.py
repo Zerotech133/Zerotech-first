@@ -578,8 +578,10 @@ class TestCliCrashGuard(_TmpEnv):
 def _mock_takeover_crawler(tmp_path, monkeypatch):
     """隔离快照测试：不构造 Session，不 warm/token/网络，不写生产片。"""
     monkeypatch.setattr(X, "OUT_DIR", str(tmp_path))
+    monkeypatch.setattr(X, "MANIFEST", str(tmp_path / "_manifest.json"))
+    monkeypatch.setattr(X, "INFO_DB", str(tmp_path / "xueqiu_info.db"))
     crawler = mock.Mock()
-    crawler.mf = X.XqManifest(str(tmp_path / "_manifest.json"))
+    crawler.mf = X.XqManifest()
     monkeypatch.setattr(C, "XqCrawler", lambda: crawler)
     return crawler
 
@@ -713,6 +715,81 @@ def test_takeover_trip_pollution_retains_circuit_breaker(tmp_path,
     assert state["status"] == "ip_blocked"
     assert "alt down" in state["note"]
     assert crawler.mf.health()["ip_blocked_until"]
+
+
+class TestTakeoverInvalidInputs(_TmpEnv):
+    """无有效股票须在 warm/联网/备用源之前失败，并保留旧总账。"""
+
+    def test_empty_index_and_invalid_preserve_manifest_without_side_effects(self):
+        cases = ([], ["SH000001", "SZ399001"],
+                 ["unknown", "123", "BJ430047"])
+        for symbols in cases:
+            with self.subTest(symbols=symbols):
+                mf = X.XqManifest()
+                mf.mark_health("ip_blocked_until", "2099-01-01 00:00:00")
+                mf.mark("xq_hot_post", done=True, rows=7, status="ok",
+                        file="old_hot.parquet")
+                mf.mark("xq_quote_snap", done=True, rows=4, status="ok",
+                        file="d_20261018.parquet")
+                self.assertTrue(mf.save())
+                with mock.patch.object(C, "XqCrawler") as constructor, \
+                        mock.patch.object(C.requests, "Session") as session, \
+                        mock.patch("socket.socket.connect") as network, \
+                        mock.patch("xq_quote_router.fetch_snapshot") as alt, \
+                        mock.patch.object(X, "atomic_parquet") as writer:
+                    self.assertEqual(C.takeover_quote(symbols), 0)
+                constructor.assert_not_called()
+                session.assert_not_called()
+                network.assert_not_called()
+                alt.assert_not_called()
+                writer.assert_not_called()
+                self.assertFalse(os.path.exists(X.INFO_DB))
+                self.assertFalse(os.path.exists(
+                    os.path.join(X.OUT_DIR, "xq_quote_snap")))
+                saved = X.XqManifest()
+                saved.load()
+                self.assertEqual(saved.health(), mf.health())
+                self.assertEqual(saved.get("xq_hot_post"),
+                                 mf.get("xq_hot_post"))
+                state = saved.get("xq_quote_snap")
+                self.assertFalse(state["done"])
+                self.assertEqual(state["rows"], 0)
+                self.assertEqual(state["status"], "failed")
+                self.assertEqual(state["file"], "")
+                self.assertIn("无有效请求股票", state["note"])
+
+    def test_empty_cli_pool_and_index_cli_return_failure_without_network(self):
+        for argv in (["--mode", "takeover"],
+                     ["--mode", "takeover", "--symbols", "SH000001"]):
+            with self.subTest(argv=argv), \
+                    mock.patch.object(X, "pool_codes", return_value=[]), \
+                    mock.patch.object(C, "XqCrawler") as constructor, \
+                    mock.patch("socket.socket.connect") as network, \
+                    mock.patch("xq_quote_router.fetch_snapshot") as alt:
+                self.assertEqual(C.main(argv), 1)
+                constructor.assert_not_called()
+                network.assert_not_called()
+                alt.assert_not_called()
+
+    def test_mixed_input_reaches_crawler_and_alternative_with_valid_stock(self):
+        crawler = mock.Mock()
+        crawler.mf = X.XqManifest()
+        alt_row = _snapshot_row("SZ000001", "000001.SZ")
+        with mock.patch.object(C, "XqCrawler", return_value=crawler) as ctor, \
+                mock.patch.object(X, "xq_get", return_value=None) as direct, \
+                mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+                    [alt_row], "akshare", [])) as alt, \
+                mock.patch.object(X, "atomic_parquet") as writer:
+            self.assertEqual(C.takeover_quote(
+                ["SH000001", "bad", "000001.SZ", "BJ430047"]), 1)
+        ctor.assert_called_once_with()
+        self.assertEqual(direct.call_args.kwargs["params"]["symbol"],
+                         "SZ000001")
+        alt.assert_called_once_with(["SZ000001"])
+        writer.assert_called_once()
+        state = X.XqManifest()
+        state.load()
+        self.assertEqual(state.get("xq_quote_snap")["status"], "ok")
 
 
 if __name__ == "__main__":
