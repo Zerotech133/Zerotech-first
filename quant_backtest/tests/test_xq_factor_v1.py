@@ -381,6 +381,20 @@ def test_fetch_daily_cached_all_fail_and_invalid_rows_retry(tmp_path, monkeypatc
     assert errs == []
 
 
+def test_fetch_daily_cached_persists_synthesized_full_failure(tmp_path, monkeypatch):
+    """路由无结果且无错误时，补造错误须随缺码一同入档。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    mock_daily_router(monkeypatch, lambda syms, days: ({}, "mock", []))
+
+    daily, errs = factor.fetch_daily_cached(["SZ000001"], 20)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert daily == saved["daily"] == {}
+    assert saved["_missing"] == ["SZ000001"]
+    assert saved["_errs"] == errs == ["SZ000001 全源失败(跳过)"]
+
+
 def test_fetch_daily_cached_partial_router_failure_does_not_mislabel_success(
         tmp_path, monkeypatch):
     """一只备援成功、一只全源失败：错误保留但成功码非缺码。"""

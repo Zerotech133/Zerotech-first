@@ -503,6 +503,8 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
         except Exception as error:              # noqa: BLE001
             errs.append("fetch_daily crash: %s" % str(error)[:120])
     missing = [sym for sym in valid_requested if sym not in daily]
+    errs.extend("%s 全源失败(跳过)" % sym for sym in missing
+                if not any(sym in error for error in errs))
     cache["daily"] = daily
     cache["_missing"] = missing
     cache["_errs"] = errs
@@ -511,8 +513,7 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
             json.dump(cache, target)
     except OSError:
         pass
-    return daily, errs + ["%s 全源失败(跳过)" % sym for sym in missing
-                          if not any(sym in error for error in errs)]
+    return daily, errs
 
 
 # ── 主统计 ──────────────────────────────────────────────────
