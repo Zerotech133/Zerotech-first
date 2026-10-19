@@ -9,6 +9,7 @@
 """
 import json
 import os
+import socket
 import sys
 import types
 
@@ -599,6 +600,135 @@ def test_fetch_daily_cached_cleanup_failure_is_reported(tmp_path, monkeypatch):
     assert len(leftover) == 1 and leftover[0].name.startswith(".daily_cache_")
     assert str(leftover[0]) in errs[-1]
     leftover[0].unlink()
+
+
+@pytest.fixture
+def isolated_factor_io(tmp_path, monkeypatch):
+    """限定作者新用例只能接触临时目录和合成行情。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "ROOT", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("测试禁止访问真库、网络或凭据")
+
+    monkeypatch.setattr(factor.sqlite3, "connect", forbidden)
+    monkeypatch.setattr(socket.socket, "connect", forbidden)
+    monkeypatch.setattr(socket, "create_connection", forbidden)
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(
+        get=forbidden, post=forbidden, request=forbidden,
+        Session=types.SimpleNamespace(request=forbidden)))
+    for key in ("TUSHARE_TOKEN", "TUSHARE_API_TOKEN", "XQ_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    return cache_path
+
+
+def test_cached_daily_fallback_success_has_error_but_no_missing(
+        isolated_factor_io, monkeypatch):
+    """主源报错而备援成功：错误条数 1 不等于失败股票数 0。"""
+    cache_path = isolated_factor_io
+    router_errors = ["SZ000001 主源失败，备援成功"]
+
+    def fallback(syms, days):
+        assert syms == ["SZ000001"] and days == 22
+        return {"SZ000001": mock_daily()["SZ000001"]}, "backup", router_errors
+
+    mock_daily_router(monkeypatch, fallback)
+    daily, errs = factor.fetch_daily_cached(["SZ000001"], 22)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+
+    assert daily == saved["daily"] == {"SZ000001": mock_daily()["SZ000001"]}
+    assert saved["_missing"] == []
+    assert saved["_errs"] == errs == router_errors
+    assert len(errs) == 1 and len(saved["_missing"]) == 0
+
+
+def test_cached_daily_one_missing_symbol_can_have_multiple_errors(
+        isolated_factor_io, monkeypatch):
+    """一只缺码可对应多条错误，_missing 不可由 _errs 条数推断。"""
+    cache_path = isolated_factor_io
+    router_errors = ["SH600519 主源失败", "SH600519 备援失败"]
+
+    def mixed(syms, days):
+        assert syms == ["SZ000001", "SH600519"] and days == 22
+        return {"SZ000001": mock_daily()["SZ000001"]}, "partial", router_errors
+
+    mock_daily_router(monkeypatch, mixed)
+    daily, errs = factor.fetch_daily_cached(["SZ000001", "SH600519"], 22)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+
+    assert set(daily) == set(saved["daily"]) == {"SZ000001"}
+    assert saved["_missing"] == ["SH600519"]
+    assert saved["_errs"] == errs == router_errors
+    assert len(errs) == 2 and len(saved["_missing"]) == 1
+
+
+def test_cached_daily_replace_failure_does_not_claim_new_errors_persisted(
+        isolated_factor_io, monkeypatch):
+    """旧 JSON 原字节不变；未发布错误只存在返回值而非旧 _errs。"""
+    cache_path = isolated_factor_io
+    original = (b'{"_meta":{"days":22},"daily":{},'
+                b'"_missing":["SZ000001"],"_errs":["old error"]}\n')
+    cache_path.write_bytes(original)
+
+    def fallback(syms, days):
+        assert syms == ["SZ000001"] and days == 22
+        return {"SZ000001": mock_daily()["SZ000001"]}, "backup", [
+            "SZ000001 主源失败，备援成功"]
+
+    mock_daily_router(monkeypatch, fallback)
+
+    def failed_replace(source, target):
+        assert target == str(cache_path)
+        with open(source, encoding="utf-8") as pending:
+            unpublished = json.load(pending)
+        assert unpublished["_missing"] == []
+        assert unpublished["_errs"] == ["SZ000001 主源失败，备援成功"]
+        raise OSError("模拟原子替换失败")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(factor.os, "replace", failed_replace)
+        daily, errs = factor.fetch_daily_cached(["SZ000001"], 22)
+
+    assert set(daily) == {"SZ000001"}
+    assert errs == ["SZ000001 主源失败，备援成功",
+                    "缓存发布失败: 模拟原子替换失败"]
+    assert cache_path.read_bytes() == original
+    assert json.loads(cache_path.read_bytes())["_errs"] == ["old error"]
+    assert list(cache_path.parent.iterdir()) == [cache_path]
+
+
+def test_main_daily_fail_keeps_error_count_compatibility(
+        isolated_factor_io, monkeypatch, capsys):
+    """main 保留 daily_fail=错误条数，不将其改写为失败股票数。"""
+    root = isolated_factor_io.parent
+    (root / "data" / "xueqiu").mkdir(parents=True)
+    posts = [{"date": "2026-10-05", "stocks": ["SZ000001", "SH600519"]}]
+    daily = {"SZ000001": mock_daily()["SZ000001"]}
+    errs = ["SH600519 主源失败", "SH600519 备援失败"]
+    monkeypatch.setattr(factor, "load_posts", lambda: posts)
+
+    def mocked_daily(syms, days):
+        assert syms == ["SH600519", "SZ000001"] and isinstance(days, int)
+        return daily, errs
+
+    def mocked_analysis(got_posts, got_daily, freq, min_obs):
+        assert got_posts is posts and got_daily is daily
+        assert (freq, min_obs) == ("weekly", 3)
+        return {"main_version": None, "versions": {}}
+
+    monkeypatch.setattr(factor, "fetch_daily_cached", mocked_daily)
+    monkeypatch.setattr(factor, "run_analysis", mocked_analysis)
+    result = factor.main()
+    saved = json.loads((root / "data" / "xueqiu" / "factor_v1_result.json")
+                       .read_text(encoding="utf-8"))
+
+    assert result == saved
+    assert result["coverage"]["daily_ok"] == 1
+    assert result["coverage"]["daily_fail"] == 2
+    assert result["daily_errs"] == errs
+    assert "daily ok=1 fail=2" in capsys.readouterr().out
 
 
 if __name__ == "__main__":
