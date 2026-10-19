@@ -1,15 +1,46 @@
 # -*- coding: utf-8 -*-
-"""LLM 绑定层：Ollama 客户端 + Mock + 降级三态（K-STOCK-004）
+"""LLM 绑定层：Ollama 客户端 + MODEL_PROFILES 自动路由 + NovaMax 特种 + 降级三态
 
-模型分层（2026-10-08 /api/tags 实测，K-ORG-002 修正）：
-    A0 总管 = qwen3.5:35b / 部门成员 = qwen3.5:9b / 轻量路由 = qwen3.5:4b / 嵌入 = bge-m3(1024维)
-本地库中【无】qwen2.5:7b 与 nomic-embed-text，引用前一律先打 /api/tags 核实。
+模型分层（2026-10-18 自动路由改造，K-ORG-002 修正后重校）：
+    A0 总管 = qwen3.6:35b-a3b（灰度上岗）/ 部门成员 = qwen3.5:9b /
+    特种(视觉/结构化) = NovaMax 1234/1238 / 嵌入 = bge-m3(1024维)
+本地库现状（10-18）：qwen3.6:35b-a3b / qwen3.5:9b / qwen3:8b / qwen2.5:7b / bge-m3 /
+huihui(27.3B 无审查)。qwen3.5:4b 【未下载】——绑定引用前一律先打 /api/tags 核实。
+
+自动路由设计（老田拍板：分工前期配好，运行时不需手动调）：
+    binding 字符串 "ollama/<模型名>" 前缀由 interpreter 拆出模型名传入 chat()，
+    chat() 内按模型名查 MODEL_PROFILES 自动配 num_predict/timeout/temperature——
+    新模型上岗只需在本表加一行 profile，org.json 与业务代码零改动。
 
 降级三态（对齐菜鸟 degraded）：normal / degraded / failed——LLM 不可用时解释器走规则兜底，不中断全链路。
 """
 import json
 import time
 import urllib.request
+
+# ---- 模型自动路由表（10-18 调优：按模型名自动配置，调用方零感知）----
+# num_predict：35b 重岗（A0 判读/日报长文）需长输出；9b 判读位 400 够用（JSON/短评）
+# timeout：35b 冷加载+长生成实测 >300s，给 600s；9b 沿用 300s（live 首跑教训值）
+MODEL_PROFILES = {
+    "qwen3.6:35b-a3b": {"num_predict": 4000, "timeout": 600, "temperature": 0.4},
+    "qwen3.5:9b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
+    "qwen3.5:4b": {"num_predict": 400, "timeout": 240, "temperature": 0.4},  # T2 轻量层(10-18 补下载落位)
+    "qwen3:8b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
+    "qwen2.5:7b": {"num_predict": 400, "timeout": 300, "temperature": 0.4},
+}
+DEFAULT_PROFILE = {"num_predict": 400, "timeout": 300, "temperature": 0.4}
+
+
+def resolve_profile(model):
+    """按模型名取 profile：精确匹配 → 子串模糊（容错 tag 变体）→ 默认档"""
+    if not model:
+        return dict(DEFAULT_PROFILE)
+    if model in MODEL_PROFILES:
+        return dict(MODEL_PROFILES[model])
+    for key, prof in MODEL_PROFILES.items():
+        if key in model or model in key:
+            return dict(prof)
+    return dict(DEFAULT_PROFILE)
 
 
 class LLMError(Exception):
@@ -44,7 +75,34 @@ class OllamaLLM:
         self.last_meta = None  # 最近一次调用元信息（done_reason/eval_count），供排障
 
     def chat(self, system, user, model="qwen3.5:9b"):
-        """返回 (text, status)；重试耗尽抛 LLMError（由解释器转降级）"""
+        """返回 (text, status)；重试耗尽抛 LLMError（由解释器转降级）
+
+        10-18 自动路由：options 按 MODEL_PROFILES[model] 自动生成，
+        每次调用的超时也随 profile 分级（35b 600s / 9b 300s）。
+        10-18 全前缀分发（本类现为全 binding 兼容门面）：
+        "glm/…" 委托云端 GLMCloudLLM、"nova/…" 委托 NovaMaxLLM、
+        "ollama/…" 剥前缀——其余（含 huihui_ai/… 这类真名带斜杠的）原样走本地。
+        """
+        if model and "/" in model:
+            prefix, rest = model.split("/", 1)
+            if prefix == "glm":
+                try:
+                    return GLMCloudLLM(model=rest).chat(system, user)
+                except LLMError:
+                    # 云端额度/网络不可用 → 自动降级本地 9b（10-18：包年 key 周限至 10-20 18:57，
+                    # 期间 7+1 云端席位全部由本档兜底；10-20 后云端自动恢复优先）
+                    text, st = OllamaLLM().chat(system, user, model="qwen3.5:9b")
+                    return text, ("degraded" if st == "normal" else st)
+            if prefix == "nova":
+                try:
+                    port = rest.split("/", 1)[0]
+                    return NovaMaxLLM(port=port).chat(system, user)
+                except LLMError:
+                    text, st = OllamaLLM().chat(system, user, model="qwen3.5:9b")
+                    return text, ("degraded" if st == "normal" else st)
+            if prefix == "ollama":
+                model = rest
+        prof = resolve_profile(model)
         body = {
             "model": model,
             "messages": [
@@ -53,8 +111,12 @@ class OllamaLLM:
             ],
             "stream": False,
             "think": False,  # qwen3.5 思考模型：必须关思考（实测 400 token 全被 thinking 吃掉，content 为空）
-            "options": {"temperature": 0.4, "num_predict": 400},
+            "options": {
+                "temperature": prof["temperature"],
+                "num_predict": prof["num_predict"],
+            },
         }
+        per_call_timeout = prof["timeout"] or self.timeout
         last = None
         for _ in range(self.retries + 1):
             try:
@@ -64,7 +126,7 @@ class OllamaLLM:
                     data=json.dumps(body).encode("utf-8"),
                     headers={"Content-Type": "application/json"},
                 )
-                with op.open(req, timeout=self.timeout) as r:
+                with op.open(req, timeout=per_call_timeout) as r:
                     d = json.load(r)
                 # 保留生成元信息：旧实现只要 content，done_reason 被丢掉——
                 # 于是「被 num_predict 截断」与「模型没守格式」两种故障在证据上
@@ -102,3 +164,153 @@ class MockLLM:
             if key in (system or ""):
                 return text, "normal"
         return self.REPLIES["n1_sentiment"], "normal"
+
+
+class NovaMaxLLM:
+    """NovaMax 特种通道（llama.cpp，OpenAI 兼容 /v1/chat/completions）
+
+    10-18 供给方案：视觉岗 → 1234 (Qwen3.5-35B-A3B 视觉版)；
+    结构化/JSON 质检岗 → 1238 (Qwen3-30B-A3B-Instruct-2507)。
+    binding 约定："nova/1234/<模型名>" 或 "nova/1238/<模型名>"——
+    端口即路由，模型名透传给 llama-server（须与其实际加载的 GGUF 一致）。
+    由 NovaMax 面板(3001)+watchdog nova_patrol 保活，进程死亡自动拉起。
+    """
+
+    PORTS = {"1234": "unsloth_Qwen3.5-35B-A3B-GGUF",
+             "1238": "unsloth_Qwen3-30B-A3B-Instruct-2507-GGUF"}
+
+    def __init__(self, port=1238, timeout=600, retries=1):
+        if isinstance(port, str) and port.isdigit():
+            port = int(port)
+        self.port = port
+        self.timeout = timeout
+        self.retries = retries
+        self.model = self.PORTS.get(str(port))
+        self.last_meta = None
+
+    def chat(self, system, user, model=None):
+        model = model or self.model
+        body = {
+            "model": model or "default",
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "stream": False,
+            "temperature": 0.4,
+            "max_tokens": 4000,
+        }
+        last = None
+        for _ in range(self.retries + 1):
+            try:
+                op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                req = urllib.request.Request(
+                    "http://127.0.0.1:%d/v1/chat/completions" % self.port,
+                    data=json.dumps(body).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                )
+                with op.open(req, timeout=self.timeout) as r:
+                    d = json.load(r)
+                choice = d["choices"][0]
+                finish = choice.get("finish_reason")
+                self.last_meta = {"finish_reason": finish,
+                                  "usage": d.get("usage")}
+                # finish_reason=="length" 与 Ollama done_reason=="length" 同义：截断即降级
+                status = "degraded" if finish == "length" else "normal"
+                return choice["message"]["content"], status
+            except Exception as e:  # noqa: BLE001
+                last = e
+                time.sleep(1.5)
+        raise LLMError("novamax chat failed after retry: %s" % last)
+
+
+def make_llm(binding):
+    """按 binding 前缀路由到 provider（10-18 自动路由入口）
+
+    "ollama/<模型>" → OllamaLLM；"nova/<端口>" → NovaMaxLLM；
+    "glm/<模型>" → GLMCloudLLM（参谋长层云端判读，10-18 分工定案）；
+    其余 → OllamaLLM 兜底（会走降级三态，行为与旧版一致）。
+    """
+    prefix, _, _rest = (binding or "").partition("/")
+    if prefix == "nova":
+        port = _rest.split("/", 1)[0] if "/" in _rest else _rest
+        return NovaMaxLLM(port=port)
+    if prefix == "glm":
+        return GLMCloudLLM(model=binding.split("/", 1)[1])
+    return OllamaLLM()
+
+
+class GLMCloudLLM:
+    """智谱云端通道（参谋长层判读席位，K-ORG-130→136 判例直译）
+
+    coding 计划端点 /api/coding/paas/v4（OpenAI 兼容），模型 glm-5.3 思考型。
+    key 优先级与 a0_agent._glm_key 同口径：portal/audit_ai_config.json 的
+    zhipu_key > GLM_API_KEY 环境变量；key 缺失直接抛 LLMError，不静默降档——
+    席位模型是判读有效性的组成部分（K-ORG-136）。
+    返回 (text, status) 与 OllamaLLM 同构；engine 侧 status 二值（云端无截断
+    中间态，空回/失败一律抛错走降级三态）。
+    """
+
+    ENDPOINT = "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
+
+    def __init__(self, model="glm-5.3", timeout=240, retries=1):
+        self.model = model
+        self.timeout = timeout
+        self.retries = retries
+        self.last_meta = None
+
+    @staticmethod
+    def _key():
+        try:
+            from pathlib import Path
+            # engine/llm.py 的 parents[2] = 项目根（与 a0_agent 的 parent.parent 同点）
+            p = Path(__file__).resolve().parents[2] / "portal" / "audit_ai_config.json"
+            if p.exists():
+                zk = json.loads(p.read_text(encoding="utf-8")).get("zhipu_key", "")
+                if zk:
+                    return zk
+        except Exception:  # noqa: BLE001
+            pass
+        import os
+        return os.environ.get("GLM_API_KEY", "")
+
+    def chat(self, system, user, model=None):
+        key = self._key()
+        if not key:
+            raise LLMError("智谱 key 未配置（audit_ai_config.json zhipu_key / "
+                           "GLM_API_KEY 均空）——参谋长席位不静默降档")
+        body = {
+            "model": model or self.model,
+            "max_tokens": 16384,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "stream": False,
+        }
+        last = None
+        for _ in range(self.retries + 1):
+            try:
+                op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                req = urllib.request.Request(
+                    self.ENDPOINT,
+                    data=json.dumps(body).encode("utf-8"),
+                    headers={"Content-Type": "application/json",
+                             "Authorization": "Bearer " + key},
+                )
+                with op.open(req, timeout=self.timeout) as r:
+                    d = json.load(r)
+                msg = (d.get("choices") or [{}])[0].get("message") or {}
+                out = (msg.get("content") or "").strip()
+                self.last_meta = {"finish_reason": d.get("finish_reason"),
+                                  "usage": d.get("usage")}
+                if not out:
+                    raise LLMError("glm 空回（思考型吞 content? finish=%s）"
+                                   % d.get("finish_reason"))
+                return out, "normal"
+            except LLMError:
+                raise
+            except Exception as e:  # noqa: BLE001
+                last = e
+                time.sleep(1.5)
+        raise LLMError("glm 通道调用失败 after retry: %s" % last)

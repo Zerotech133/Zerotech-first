@@ -190,7 +190,11 @@ class Interpreter:
         return [(key, text, status)]
 
     def _chat(self, node, user):
-        model = node["llm_binding"].split("/", 1)[1] if "/" in node["llm_binding"] else node["llm_binding"]
+        # 10-18 全前缀路由：binding 原样下传（glm/→云端、nova/→特种、ollama/→本地），
+        # 由 OllamaLLM.chat 入口统一分发——旧实现此处先砍前缀，glm 绑定被误塞给
+        # 本地 Ollama 404，靠降级三态装死（SEC2/OPT1 云端席位一直未真正生效）。
+        # Mock 的 chat 忽略 model 参数，mock 路径不受影响。
+        model = node["llm_binding"]
         # 角色标识前缀：Mock 精确路由 + 真 LLM 无害（人设配置化的运行时锚点）
         system = "[%s]\n%s" % (node["role_profile"], self.team.prompt(node))
         return self.llm.chat(system, user, model)
