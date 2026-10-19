@@ -383,9 +383,11 @@ class TestFailSemantics(_TmpEnv):
         with mock.patch.object(X, "backoff_sleep", lambda *a: None), \
                 mock.patch("xq_quote_router.fetch_snapshot",
                            return_value=(alt_rows, "tushare", [])), \
+                mock.patch.object(X, "atomic_parquet") as writer, \
                 mock.patch.object(C, "XqCrawler", lambda: c):
             rc = C.main(["--mode", "takeover", "--symbols", "SH600519"])
         self.assertEqual(rc, 0)
+        writer.assert_called_once()
         mf = X.XqManifest(X.MANIFEST)
         mf.load()
         ent = mf.get("xq_quote_snap")
@@ -571,6 +573,143 @@ class TestCliCrashGuard(_TmpEnv):
                                side_effect=RuntimeError("boom")):
             rc = C.main(["--mode", "all", "--pages", "1"])
         self.assertEqual(rc, 1)
+
+
+def _mock_takeover_crawler(tmp_path, monkeypatch):
+    """隔离快照测试：不构造 Session，不 warm/token/网络，不写生产片。"""
+    monkeypatch.setattr(X, "OUT_DIR", str(tmp_path))
+    crawler = mock.Mock()
+    crawler.mf = X.XqManifest(str(tmp_path / "_manifest.json"))
+    monkeypatch.setattr(C, "XqCrawler", lambda: crawler)
+    return crawler
+
+
+def _snapshot_row(symbol, ts_code):
+    """构造路由器快照回包，便于验证 symbol 与 ts_code 双重一致。"""
+    return {"symbol": symbol, "ts_code": ts_code, "current": 10.0,
+            "timestamp": "2026-10-19 15:00:00", "trade_date": "20261019"}
+
+
+def test_takeover_direct_filters_unrequested_index_and_mismatched(
+        tmp_path, monkeypatch):
+    """直爬只能请求个股并落请求内匹配行；SZ000001 不误杀。"""
+    _mock_takeover_crawler(tmp_path, monkeypatch)
+    calls = []
+    captured = []
+
+    def fake_get(sess, url, params):
+        calls.append(params["symbol"])
+        return {"items": [
+            {"symbol": "SH000001", "timestamp": 1792441200000},
+            {"symbol": "SH600036", "timestamp": 1792441200000},
+            {"symbol": "SH600519", "ts_code": "000001.SZ",
+             "timestamp": 1792441200000},
+            {"symbol": "SZ000001", "timestamp": 1792441200000},
+            {"symbol": "SH600519", "timestamp": 1792441200000}]}
+
+    monkeypatch.setattr(X, "xq_get", fake_get)
+    monkeypatch.setattr(X, "atomic_parquet",
+                        lambda frame, path: captured.append((frame.copy(), path)))
+    with mock.patch("xq_quote_router.fetch_snapshot") as alt:
+        count = C.takeover_quote(["SH000001", "SH600519", "SZ000001"])
+    alt.assert_not_called()
+    assert calls == ["SH600519,SZ000001"]
+    assert count == 2
+    frame, path = captured[0]
+    assert set(frame["symbol"]) == {"SH600519", "SZ000001"}
+    assert dict(zip(frame["symbol"], frame["ts_code"])) == {
+        "SH600519": "600519.SH", "SZ000001": "000001.SZ"}
+    assert str(tmp_path) in path
+
+
+def test_takeover_alternative_filters_contaminated_rows(tmp_path, monkeypatch):
+    """直爬失败后，路由器混入指数/未请求/错配行均不可落片。"""
+    crawler = _mock_takeover_crawler(tmp_path, monkeypatch)
+    monkeypatch.setattr(X, "xq_get", lambda *args, **kwargs: None)
+    captured = []
+    monkeypatch.setattr(X, "atomic_parquet",
+                        lambda frame, path: captured.append(frame.copy()))
+    alt_rows = [_snapshot_row("SH000001", "000001.SH"),
+                _snapshot_row("SH600036", "600036.SH"),
+                _snapshot_row("SH600519", "000001.SZ"),
+                _snapshot_row("SZ000001", "000001.SZ")]
+    with mock.patch("xq_quote_router.fetch_snapshot",
+                    return_value=(alt_rows, "akshare", ["主源不可用"])) as alt:
+        count = C.takeover_quote(["SH000001", "SH600519", "SZ000001"])
+    alt.assert_called_once_with(["SH600519", "SZ000001"])
+    assert count == 1
+    assert list(captured[0]["symbol"]) == ["SZ000001"]
+    assert list(captured[0]["ts_code"]) == ["000001.SZ"]
+    assert "替代源(akshare)" in crawler.mf.get("xq_quote_snap")["note"]
+
+
+def test_takeover_all_polluted_preserves_failure_and_errors(tmp_path,
+                                                            monkeypatch):
+    """两源只有污染行视同全败，保留替代源错误且绝不写空片。"""
+    crawler = _mock_takeover_crawler(tmp_path, monkeypatch)
+    monkeypatch.setattr(X, "xq_get", lambda *args, **kwargs: {
+        "items": [{"symbol": "SH000001"}, {"symbol": "SH600036"}]})
+    writer = mock.Mock()
+    monkeypatch.setattr(X, "atomic_parquet", writer)
+    with mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+            [_snapshot_row("SH000001", "000001.SH"),
+             _snapshot_row("SH600036", "600036.SH"),
+             _snapshot_row("SH600519", "000001.SZ")],
+            "tushare", ["tushare down", "akshare down"])) as alt:
+        rc = C.main(["--mode", "takeover", "--symbols",
+                     "SH000001,SH600519"])
+    assert rc == 1
+    alt.assert_called_once_with(["SH600519"])
+    writer.assert_not_called()
+    assert not (tmp_path / "xq_quote_snap").exists()
+    state = crawler.mf.get("xq_quote_snap")
+    assert state["status"] == "failed" and state["rows"] == 0
+    assert "tushare down" in state["note"]
+    assert "akshare down" in state["note"]
+
+
+def test_takeover_cooldown_polluted_alternative_keeps_ip_blocked(
+        tmp_path, monkeypatch):
+    """冷却期不碰直爬；备用污染无片，仍以 ip_blocked 告警。"""
+    crawler = _mock_takeover_crawler(tmp_path, monkeypatch)
+    direct = mock.Mock(side_effect=AssertionError("cooldown must skip xq_get"))
+    writer = mock.Mock()
+    monkeypatch.setattr(X, "ip_blocked_active", lambda mf: "cooldown")
+    monkeypatch.setattr(X, "xq_get", direct)
+    monkeypatch.setattr(X, "atomic_parquet", writer)
+    with mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+            [_snapshot_row("SH000001", "000001.SH")], "akshare",
+            ["fallback rejected"])) as alt:
+        rc = C.main(["--mode", "takeover", "--symbols",
+                     "SH000001,SH600519"])
+    assert rc == 1
+    alt.assert_called_once_with(["SH600519"])
+    direct.assert_not_called()
+    writer.assert_not_called()
+    assert crawler.mf.get("xq_quote_snap")["status"] == "ip_blocked"
+    assert "fallback rejected" in crawler.mf.get("xq_quote_snap")["note"]
+
+
+def test_takeover_trip_pollution_retains_circuit_breaker(tmp_path,
+                                                         monkeypatch):
+    """直爬 403 熔断后仍调用备援；污染全部剔除且状态不降成 failed。"""
+    crawler = _mock_takeover_crawler(tmp_path, monkeypatch)
+    direct = mock.Mock(side_effect=X.XqIpBlocked("403 blocked"))
+    writer = mock.Mock()
+    monkeypatch.setattr(X, "xq_get", direct)
+    monkeypatch.setattr(X, "atomic_parquet", writer)
+    with mock.patch("xq_quote_router.fetch_snapshot", return_value=(
+            [_snapshot_row("SH000001", "000001.SH")], "akshare",
+            ["alt down"])) as alt:
+        count = C.takeover_quote(["SH600519", "SH600036"])
+    assert count == 0
+    assert direct.call_count == 1
+    alt.assert_called_once_with(["SH600519", "SH600036"])
+    writer.assert_not_called()
+    state = crawler.mf.get("xq_quote_snap")
+    assert state["status"] == "ip_blocked"
+    assert "alt down" in state["note"]
+    assert crawler.mf.health()["ip_blocked_until"]
 
 
 if __name__ == "__main__":

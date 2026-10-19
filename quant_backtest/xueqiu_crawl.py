@@ -420,8 +420,12 @@ def takeover_quote(symbols: list[str]) -> int:
     （消费端无感切换）。P0-1：入口冷却检查 + 403 trip 熔断停轮。
     """
     import pandas as pd
+    from xq_quote_router import is_index_symbol
+
     c = XqCrawler()
-    syms = [s for s in (X.norm_symbol(s) for s in symbols) if s]
+    syms = [s for s in (X.norm_symbol(s) for s in symbols)
+            if s and not is_index_symbol(s)]
+    requested = set(syms)
     blocked = X.ip_blocked_active(c.mf)
     if blocked:
         # T4：冷却期不再整体跳过——雪球域停轮，替代源照样接管供数
@@ -440,10 +444,15 @@ def takeover_quote(symbols: list[str]) -> int:
             data = X.xq_get(c.sess, url, params={"symbol": ",".join(batch)})
             items = (data or {}).get("items") or []
             for q in items:
-                sym = str(q.get("symbol") or "").upper()
+                if not isinstance(q, dict):
+                    continue
+                sym = str(q.get("symbol") or "").strip().upper()
                 ts_code = X.to_ts_code(sym)
-                if not ts_code:
-                    continue                 # 指数等无 ts_code：跳过（兜底片仅个股）
+                if (sym not in requested or is_index_symbol(sym)
+                        or not ts_code
+                        or (q.get("ts_code") is not None
+                            and q["ts_code"] != ts_code)):
+                    continue                 # 只收请求内个股，拒绝异码/指数回包
                 ts = X.ms_to_dt(q.get("timestamp"))
                 rows.append({
                     "symbol": sym, "ts_code": ts_code,
@@ -479,11 +488,16 @@ def takeover_quote(symbols: list[str]) -> int:
         except Exception as e:                    # noqa: BLE001
             alt_rows, alt_src, alt_errs = [], "", [
                 "router crash: %s" % str(e)[:80]]
-        if alt_rows:
-            rows = alt_rows
+        safe_rows = [row for row in alt_rows if isinstance(row, dict)
+                     and isinstance(row.get("symbol"), str)
+                     and row["symbol"] in requested
+                     and not is_index_symbol(row["symbol"])
+                     and row.get("ts_code") == X.to_ts_code(row["symbol"])]
+        if safe_rows:
+            rows = safe_rows
             alt_note = "替代源(%s)兜底片" % alt_src
             print("[takeover_quote] 替代源 %s 供数 %d 行（errs=%d）"
-                  % (alt_src, len(alt_rows), len(alt_errs)))
+                  % (alt_src, len(safe_rows), len(alt_errs)))
         else:
             c.mf.mark("xq_quote_snap", done=False, rows=0,
                       status="ip_blocked" if (tripped or blocked)
