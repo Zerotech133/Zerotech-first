@@ -99,7 +99,9 @@ class DynamicAttemptInspector:
                 now=checked_at)
             binding = adapter.binding_for(attempt_id)
             status: InspectionStatus = (
-                "CONSISTENT_OFFLINE" if type(binding) is AttemptBinding
+                "CONSISTENT_OFFLINE" if (
+                    type(binding) is AttemptBinding
+                    and binding.attempt_id == attempt_id)
                 else "UNAVAILABLE")
         except Exception:
             status = "UNAVAILABLE"

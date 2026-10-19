@@ -1,7 +1,7 @@
 """Offline adversarial tests for the diagnostic-only dynamic attempt inspector."""
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -18,7 +18,7 @@ from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity, AgentRe
 from quant_backtest.watch_dispatch.route_outbox import (
     ACCEPTED_VERIFIED, UNKNOWN, ReportFingerprint, RouteOutbox,
 )
-from quant_backtest.watch_dispatch.signal_pool import ReceiptBindingPort
+from quant_backtest.watch_dispatch.signal_pool import AttemptBinding, ReceiptBindingPort
 
 START = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)
 END = START + timedelta(hours=1)
@@ -171,6 +171,27 @@ def test_unknown_attempt_and_invalid_constructor_inputs_fail_closed() -> None:
     assert broken.inspect(attempt_id) == AttemptInspection(
         attempt_id, at(6), "UNAVAILABLE")
     assert clock.calls == 4
+
+
+def test_wrong_attempt_binding_is_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Even an exact binding type for another attempt cannot pass inspection."""
+    outbox, envelope, report, inbox, attempt_id = chain()
+    original = TrustedAcceptanceBindingAdapter.binding_for
+
+    def wrong_binding(adapter: TrustedAcceptanceBindingAdapter,
+                      requested_id: str) -> AttemptBinding | None:
+        """Substitute a foreign attempt identity without changing binding shape."""
+        binding = original(adapter, requested_id)
+        if binding is None:
+            return None
+        return replace(binding, attempt_id="different-attempt")
+
+    monkeypatch.setattr(TrustedAcceptanceBindingAdapter, "binding_for",
+                        wrong_binding)
+    inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
+                                        clock=FakeClock(at(6)))
+    assert inspector.inspect(attempt_id) == AttemptInspection(
+        attempt_id, at(6), "UNAVAILABLE")
 
 
 def test_future_report_accepted_too_early_is_unavailable() -> None:
