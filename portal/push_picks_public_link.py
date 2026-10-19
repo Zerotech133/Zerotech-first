@@ -22,12 +22,24 @@ def build_card():
     l0 = ("**今日选股看板已上线公网**，手机/电脑**无需 Tailscale、无需局域网**，"
           "任何设备点开即用（数据带访问码门禁）。\n\n"
           "**访问码：`%s`**（首次打开输一次，30 天免输）" % KEY)
+    # 快照口径从 todays_picks.json 实取（2026-10-18 修：原硬编码
+    # "2026-10-07/基准 2026-09-30" 已过期，推出去的卡片会误导收件人）
+    snap_run, snap_basis = "今日", "最新收盘"
+    try:
+        import json
+        with open(os.path.join(HERE, "data", "todays_picks.json"),
+                  encoding="utf-8") as f:
+            _d = json.load(f)
+        snap_run = str(_d.get("scan_run_date") or snap_run)
+        snap_basis = str(_d.get("trade_basis") or snap_basis)
+    except Exception:
+        pass  # 读不到不外溢，用默认口径
     usage = ("**入口一（推荐）**：点下方「带访问码直达」按钮，自动带码进入\n\n"
              "**入口二**：打开 %s ，输入访问码\n\n"
              "**网页里看什么**：市场徽标 + 分布条 → 点任意一行下钻 → "
              "盈亏比/收盘分位/决策链等大白话解读\n\n"
-             "数据快照：%s 强制扫描（基准 2026-09-30 收盘）"
-             % (BASE, "2026-10-07"))
+             "数据快照：%s 强制扫描（%s）"
+             % (BASE, snap_run, snap_basis))
     security = ("✅ 无访问码只看到 401 门禁页，数据不公开裸奔\n"
                 "✅ 服务端白名单：只暴露选股页 + 选股数据 JSON，其他文件不可达\n"
                 "✅ 公网域名走 HTTPS，口令传输加密\n"

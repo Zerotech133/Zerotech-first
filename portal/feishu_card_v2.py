@@ -25,7 +25,10 @@ from send_feishu import _load_app_creds, USER_ID  # noqa: E402
 # Tailscale 网，按钮必死；公网鉴权站（WorkBuddy 托管 picks_public 静态快照）
 # 2026-10-13 外部网络实测 /picks.html 全页可达。注意：/kg/stock/<code> 个股页
 # 被腾讯云 WAF 拦（403），不可用于卡片按钮。8734 仍是本机/在网设备唯一入口（K-STOCK-113）。
-PORTAL_BASE = "https://quant-picks-board.app.workbuddy.host"  # 公网鉴权站（访问码门禁）
+# 2026-10-18：项目 E 盘→C 盘搬迁后按目录重建了发布沙箱，域名换新
+# （老 quant-picks-board.app.workbuddy.host 为孤儿沙箱、数据陈旧且本账号
+# 无发布记录无法下线，已决策弃用；老域名勿再写入任何卡片/链接）。
+PORTAL_BASE = "https://quant-picks-board-74446.app.workbuddy.host"  # 公网鉴权站（访问码门禁）
 
 
 def _load_portal_key():

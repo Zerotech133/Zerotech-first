@@ -54,13 +54,18 @@ STATE_PATH = os.path.join(WORK, "publish_state.json")
 
 SYNC_SCRIPT = os.path.join(PORTAL, "sync_publish.py")
 
-ONLINE_BASE = "https://quant-picks-board.app.workbuddy.host/"
+# 2026-10-18：E 盘→C 盘搬迁后沙箱重建，域名换新（老域名为孤儿沙箱，
+# 数据陈旧、本账号无发布记录无法下线，已决策弃用）。watchdog/线上比对
+# 一律以新域名为准，否则每晚误报"线上滞后"。
+ONLINE_BASE = "https://quant-picks-board-74446.app.workbuddy.host/"
 KEY_CONFIG = os.path.join(os.path.dirname(PORTAL), "config", "picks.local.json")
 
 # 关键文件：存在性必须校验；hash 记入状态（键一律正斜杠，跨工具可读）
-KEY_FILES = ["picks.html", "static/tokens.css", "data/todays_picks.json"]
-# 线上比对文件（数据文件参与比对是 v1.1 关键修复，勿回退）
-ONLINE_FILES = ["picks.html", "data/todays_picks.json"]
+KEY_FILES = ["picks.html", "index.html", "static/tokens.css", "data/todays_picks.json", "data/pick_verdicts.json"]
+# 线上比对文件（数据文件参与比对是 v1.1 关键修复，勿回退；index.html 是根入口，
+# 2026-10-18 起参与比对——网关多 HTML 目录自动入口曾挑错页，入口漂移必须能发现；
+# pick_verdicts.json 是 picks.html 后验卡数据源，2026-10-19 起参与比对）
+ONLINE_FILES = ["picks.html", "index.html", "data/todays_picks.json", "data/pick_verdicts.json"]
 
 # 子进程强制 UTF-8 管道，不依赖宿主环境配置（审计 P2-1）
 CHILD_ENV = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")

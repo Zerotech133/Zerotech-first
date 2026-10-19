@@ -38,8 +38,15 @@ DST = os.path.join(PORTAL, "picks_public")
 
 SINGLE_FILES = [
     ("picks.html", "picks.html"),
+    # 根入口跳转页：网关多 HTML 目录自动入口会挑错页（2026-10-18 实证挑成
+    # data_daily.html），显式提供 index.html → picks.html 钉死看板入口
+    ("picks_index.html", "index.html"),
     (os.path.join("static", "tokens.css"), os.path.join("static", "tokens.css")),
     (os.path.join("data", "todays_picks.json"), os.path.join("data", "todays_picks.json")),
+    # 信号后验（build_pick_verdicts.py 产物）：picks.html fetch 它渲染策略卡
+    # 「后验T+1·可操作层」与详情「信号后验·可成交」；缺失时前端优雅降级隐藏，
+    # 但线上看板会缺整块功能，故必须随快照发布（2026-10-19 补入）
+    (os.path.join("data", "pick_verdicts.json"), os.path.join("data", "pick_verdicts.json")),
 ]
 # K-STOCK-411 止血判例（2026-10-15 线上取证）：CloudStudio Gateway 为静态
 # 直出、不执行 Python 进程——曾发布的 ledger/ledger.json/pick_details/
