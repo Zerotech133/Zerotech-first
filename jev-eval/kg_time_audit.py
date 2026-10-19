@@ -4,7 +4,7 @@
 ③时序潜力抽样：HOLDS 多报告期 / TRADED_ON 按日序列 / 共现边 s
 """
 import sys
-sys.path.insert(0, r"E:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 import kg_portal as KP
 
 

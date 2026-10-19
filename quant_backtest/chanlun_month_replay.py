@@ -10,7 +10,7 @@
 import json, os, sys, glob
 import pandas as pd
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 ADJ_DIR = os.path.join(BASE, "quant_backtest", "data", "tdx", "ts_adj_factor")
 POOL_FILE = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")

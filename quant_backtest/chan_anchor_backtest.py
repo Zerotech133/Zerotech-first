@@ -8,7 +8,7 @@ qpzm_backtest.py（独立跑台 + 网格 + 报告三件套）。
 做法：不新建回测引擎——复用产线 backtest_engine_v2.run_job，吃既有
 事件缓存 sig_events_market_v3_20231010_20261013.json（market_scan
 24 workers 362s 扫出，universe 5036 / 28111 事件 / 六类买卖点均衡）。
-BASE 自愈沿用 bt2_tune_compare 判例：引擎硬编码 E:/老田的AI助手，
+BASE 自愈沿用 bt2_tune_compare 判例：引擎硬编码 C:/项目/老田的AI助手，
 本机 E: 无盘（不自愈则静默加载 0 只股票假空跑）。
 
 窗口：20231010 → 20261013（约三年）。D0_MIN=20231010 为引擎数据诚实

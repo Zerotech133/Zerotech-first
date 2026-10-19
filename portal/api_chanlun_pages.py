@@ -2152,8 +2152,8 @@ function ckPush(i){
         小级别定量"。"""
         try:
             import sys as _s
-            if r'e:\老田的AI助手\quant_backtest' not in _s.path:
-                _s.path.insert(0, r'e:\老田的AI助手\quant_backtest')
+            if r'C:\项目\老田的AI助手\quant_backtest' not in _s.path:
+                _s.path.insert(0, r'C:\项目\老田的AI助手\quant_backtest')
             # 前缀归一：北交所 92 开头码强制 bj（load_kline 不认 sz920950）
             import re as _re6
             _m6 = _re6.fullmatch(r"(sh|sz|bj)(\d{6})", str(code or ""),
@@ -2232,8 +2232,8 @@ function ckPush(i){
         # 池内信号对照
         try:
             import sys as _sys
-            if r'e:\老田的AI助手\quant_backtest' not in _sys.path:
-                _sys.path.insert(0, r'e:\老田的AI助手\quant_backtest')
+            if r'C:\项目\老田的AI助手\quant_backtest' not in _sys.path:
+                _sys.path.insert(0, r'C:\项目\老田的AI助手\quant_backtest')
             import importlib as _il
             S = _il.import_module("chanlun_scan")
             pool = S._load_pool()
@@ -2374,8 +2374,8 @@ function ckPush(i){
             ts = ("%s.%s" % (m5.group(2), m5.group(1).upper())) if m5 \
                 else str(code or "")
             import sys as _sys
-            if r'e:\老田的AI助手\quant_backtest' not in _sys.path:
-                _sys.path.insert(0, r'e:\老田的AI助手\quant_backtest')
+            if r'C:\项目\老田的AI助手\quant_backtest' not in _sys.path:
+                _sys.path.insert(0, r'C:\项目\老田的AI助手\quant_backtest')
             import importlib as _il
             S = _il.import_module("chanlun_scan")
             row = None

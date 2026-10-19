@@ -2,7 +2,7 @@
 """K-PUSH-011 tune_bt 自动跑批：沙盒草案 → bt2 回测对比（baseline vs override）。
 
 设计要点：
-- BASE 自愈：引擎硬编码 E:/老田的AI助手 本机不存在（E: 无盘），import 时改指本仓；
+- BASE 自愈：引擎硬编码 C:/项目/老田的AI助手 本机不存在（E: 无盘），import 时改指本仓；
   本机引擎数据已实证完整（data/ashare 5601 文件/247MB + pool + ledger）。
 - 规则模板：intent 维度 → 具体参数覆盖（chanlun 用差量、risk/param 用绝对值），确定可复现。
 - 达标判据（两条件同时满足）：override 总收益 ≥ baseline×1.10 且 最大回撤 ≤ baseline×1.20；
@@ -25,7 +25,7 @@ _LOCK = threading.Lock()
 
 
 def _selfheal_base():
-    """BASE 硬编码 E:/老田的AI助手 → 本仓站根（E: 本机不存在，97 个历史 bt2 结果
+    """BASE 硬编码 C:/项目/老田的AI助手 → 本仓站根（E: 本机不存在，97 个历史 bt2 结果
     证明引擎曾在本仓路径跑通；数据完整性已实证）。"""
     if os.path.isdir(eng.BASE):
         return False

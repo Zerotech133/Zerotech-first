@@ -61,7 +61,7 @@ def parse_full_factors(sql_path: str | Path) -> dict[int, list[dict]]:
 
 
 if __name__ == "__main__":
-    factors = parse_full_factors(r"E:\老田的AI助手\菜鸟\thunder_model\thunder_model.sql")
+    factors = parse_full_factors(r"C:\项目\老田的AI助手\菜鸟\thunder_model\thunder_model.sql")
     total = sum(len(v) for v in factors.values())
     print(json.dumps({CATEGORIES.get(k, k): len(v) for k, v in sorted(factors.items())},
                      ensure_ascii=False, indent=2))

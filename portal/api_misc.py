@@ -2076,7 +2076,7 @@ transition:.3s;z-index:9}
         out = []
         # ① 今日交易计划审批单（pf_001/pf_002 全扫，163 口径）
         try:
-            _pdir = r"E:\老田的AI助手\k_stock\data\plan_review"
+            _pdir = r"C:\项目\老田的AI助手\k_stock\data\plan_review"
             _today = time.strftime("%Y%m%d")
             _files = sorted(glob.glob(os.path.join(_pdir, _today + "_pf_*.json")))
             for _fp in _files:
@@ -2098,7 +2098,7 @@ transition:.3s;z-index:9}
             pass
         # ② 模拟仓账本概要（组合/挂单/止损哨兵，实数口径=页面一致）
         try:
-            _ks = r"E:\老田的AI助手\k_stock"
+            _ks = r"C:\项目\老田的AI助手\k_stock"
             if _ks not in sys.path:
                 sys.path.insert(0, _ks)
             from paper.portal_status import status as _ps

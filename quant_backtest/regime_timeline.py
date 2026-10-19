@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, "E:/老田的AI助手/agent_platform/engine")
+sys.path.insert(0, "C:/项目/老田的AI助手/agent_platform/engine")
 from quant_double_knife import _compute_regime  # noqa: E402  产线同一份 regime 代码
 
 ASHARE = os.path.join(HERE, "data", "ashare")

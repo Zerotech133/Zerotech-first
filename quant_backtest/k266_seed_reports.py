@@ -7,7 +7,7 @@ import sys
 import time
 from curl_cffi import requests as creq
 
-PENDING = r"e:\老田的AI助手\inbox\docs\pending"
+PENDING = r"C:\项目\老田的AI助手\inbox\docs\pending"
 UA_TZ = {"headers": {"Referer": "https://data.eastmoney.com/report/"},
          "impersonate": "chrome131", "timeout": 30}
 

@@ -3,7 +3,7 @@
 import os, json, glob
 import pandas as pd
 
-BASE = r"E:/老田的AI助手/quant_backtest/data"
+BASE = r"C:/项目/老田的AI助手/quant_backtest/data"
 
 # 1) schema 疑点：抽 5 个文件比列集合（不比顺序）
 print("== 1) schema 列集合对比（忽略列序） ==")

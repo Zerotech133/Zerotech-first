@@ -2,7 +2,7 @@
 """K-STOCK-317 槽数×regime 联动对照汇总（mid=5 联动 vs 固定 t10/t5）。"""
 import json
 
-BASE = r"E:/老田的AI助手/quant_backtest/data/bt2/"
+BASE = r"C:/项目/老田的AI助手/quant_backtest/data/bt2/"
 rows = [
     ("三年窗·固定t10(315终选)", "bt2_311y3hst_final.json"),
     ("三年窗·固定t5(313)",      "bt2_3133yt5.json"),

@@ -114,7 +114,7 @@ def resume_annual_refresh(table, year, trading_days, output_dir, *, fetch, batch
 
 
 def main() -> None:
-    calendar_root = Path(r"E:\老田的AI助手\quant_backtest\data\tushare\trade_cal")
+    calendar_root = Path(r"C:\项目\老田的AI助手\quant_backtest\data\tushare\trade_cal")
     frames = []
     for path in sorted(calendar_root.glob("*.parquet")):
         frame = pd.read_parquet(path, columns=["exchange", "cal_date", "is_open"])

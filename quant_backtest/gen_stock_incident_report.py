@@ -62,7 +62,7 @@ a{color:#58a6ff;text-decoration:none}
 File "C:\\aios\\portal\\portal_api.py", line 8369, in _bt_stock_page
     "&lt;style&gt;.kpb{background:#161b22;border:1px solid #30363d;"
 ValueError: unsupported format character '/' (0x2f) at index 641</div>
-<div class="dim">注：C:\\aios 为指向 E:\\老田的AI助手 的 junction
+<div class="dim">注：C:\\aios 为指向 C:\\项目\\老田的AI助手 的 junction
 （SYSTEM-safe 路径），同一文件；客户端不掷 500 是因 BaseHTTPRequestHandler
 在 handler 内异常时直接断开连接。</div>
 

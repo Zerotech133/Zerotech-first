@@ -25,7 +25,7 @@ from dataclasses import dataclass, asdict
 # 区间随机仓位的确定性随机源（固定种子：同参数重跑结果可复现）
 _RNG = _random.Random(20261013)
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")
 LEDGER = os.path.join(BASE, "quant_backtest", "data", "daily_ledger", "ledger_20251013_20261012.json")

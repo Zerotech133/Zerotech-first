@@ -9,7 +9,7 @@
 import sys, os, json
 import pandas as pd
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))

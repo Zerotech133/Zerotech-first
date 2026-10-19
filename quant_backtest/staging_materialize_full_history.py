@@ -32,7 +32,7 @@ import shutil
 import sys
 from pathlib import Path
 
-_LEGACY_PREFIX = "E:\\老田的AI助手"
+_LEGACY_PREFIX = "C:\\项目\\老田的AI助手"
 _LOCAL_PREFIX = "C:\\aios"
 
 

@@ -17,7 +17,7 @@ import sys
 import time
 from collections import Counter
 
-BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else r"E:/老田的AI助手/quant_backtest"
+BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else r"C:/项目/老田的AI助手/quant_backtest"
 QBT = BASE
 DATA = os.path.join(QBT, "data", "ashare")
 NAMES_FP = os.path.join(QBT, "data", "stock_names.json")

@@ -4,12 +4,12 @@
 import json
 import sys
 from pathlib import Path
-sys.path.insert(0, r'e:\老田的AI助手\quant_backtest')
+sys.path.insert(0, r'C:\项目\老田的AI助手\quant_backtest')
 from kg_client import KgClient
 from k265_phase1_commit import build_brands, is_brand_concept
 
-SHADOW = Path(r'e:\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl')
-EXCL = Path(r'e:\老田的AI助手\quant_backtest\data\semantica\k265_rj_exclude.txt')
+SHADOW = Path(r'C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_phase1_shadow.jsonl')
+EXCL = Path(r'C:\项目\老田的AI助手\quant_backtest\data\semantica\k265_rj_exclude.txt')
 
 excl = set()
 for ln in open(EXCL, encoding='utf-8'):

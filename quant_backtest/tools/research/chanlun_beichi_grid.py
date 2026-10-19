@@ -30,7 +30,7 @@ from collections import defaultdict
 
 import pandas as pd
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 QT = os.path.join(BASE, "quant_backtest")
 DATA = os.path.join(QT, "data", "ashare")
 POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")

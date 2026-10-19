@@ -1745,7 +1745,7 @@ class Handler:
     def _paper_desk(self):
         """交易台动态块：AI / 双刀最近决策产物（纯标准库 glob+json 只读）。"""
         out = {}
-        d = r"E:\老田的AI助手\k_stock\data"
+        d = r"C:\项目\老田的AI助手\k_stock\data"
         try:
             qd = sorted(glob.glob(os.path.join(d, "poc_qd_*.json")))
             try:  # 与下单防重同口径：查账本（文件存在≠已执行）

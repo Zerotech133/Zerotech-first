@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 
-PROJECT = Path("E:/老田的AI助手/quant_backtest")
+PROJECT = Path("C:/项目/老田的AI助手/quant_backtest")
 sys.path.insert(0, str(PROJECT))
 SPEC = importlib.util.spec_from_file_location(
     "datamart_date_candidate", Path(__file__).with_name("datamart.py"))

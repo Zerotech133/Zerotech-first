@@ -5,10 +5,10 @@ import sys
 import pandas as pd
 import numpy as np
 
-sys.path.insert(0, r"E:\老田的AI助手")
+sys.path.insert(0, r"C:\项目\老田的AI助手")
 from agent_platform.engine.quant_double_knife import quant_double_knife
 
-snap = pd.read_parquet(r"E:\老田的AI助手\quant_backtest\data\tdx\dknife_snap\dknife_snap.parquet")
+snap = pd.read_parquet(r"C:\项目\老田的AI助手\quant_backtest\data\tdx\dknife_snap\dknife_snap.parquet")
 b = snap[snap.ts_code == "000001.SZ"].sort_values("trade_date")
 df = pd.DataFrame({"open": b.open.values, "high": b.high.values,
                    "low": b.low.values, "close": b.close.values, "amount": b.amount.values})

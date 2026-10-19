@@ -22,7 +22,7 @@ import urllib.request as rq
 from pathlib import Path
 
 BASE = "http://127.0.0.1:9899"
-_COW_CONFIG = Path(r"E:\老田的AI助手\CowAgent\config.json")
+_COW_CONFIG = Path(r"C:\项目\老田的AI助手\CowAgent\config.json")
 opener = rq.build_opener(rq.ProxyHandler({}))   # 直连绕系统代理
 
 

@@ -8,7 +8,7 @@ import urllib.request
 
 BASE = "http://127.0.0.1:8093"
 OP = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-LOG = open(r"E:\老田的AI助手\data\korg059_learn.log", "a", encoding="utf-8")
+LOG = open(r"C:\项目\老田的AI助手\data\korg059_learn.log", "a", encoding="utf-8")
 
 
 def log(msg):

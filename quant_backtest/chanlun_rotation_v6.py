@@ -24,7 +24,7 @@ K-STOCK-267b · v6b 学院方案对齐重构(部署修复)（量子双刀框架 
 import sys, os, json, time
 import pandas as pd
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_SRC = os.path.join(BASE, "k_stock", "data", "poc_adapter_chanlun_20261012.json")
 OUT = os.path.join(BASE, "quant_backtest", "chanlun_rotation_v6b_result.json")

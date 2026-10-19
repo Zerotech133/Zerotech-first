@@ -1737,8 +1737,8 @@ class Handler:  # Mixin 壳：经基座多继承并入
         # 四市场通用——结构引擎市场无关；数据不足不渲染）
         try:
             import sys as _s9
-            if r'e:\老田的AI助手\quant_backtest' not in _s9.path:
-                _s9.path.insert(0, r'e:\老田的AI助手\quant_backtest')
+            if r'C:\项目\老田的AI助手\quant_backtest' not in _s9.path:
+                _s9.path.insert(0, r'C:\项目\老田的AI助手\quant_backtest')
             import chanlun_market as _CM9
             _sv = _CM9.stock_view(code)
             _lv9 = _CM9.market_brief()
@@ -1756,7 +1756,7 @@ class Handler:  # Mixin 壳：经基座多继承并入
                 _pf9 = _pmap9.get(mkt_key)
                 if _pf9:
                     import re as _r9
-                    _pdir9 = (r"e:\老田的AI助手\quant_backtest\data")
+                    _pdir9 = (r"C:\项目\老田的AI助手\quant_backtest\data")
                     _prows9 = [json.loads(_l) for _l in open(
                         os.path.join(_pdir9, _pf9), encoding="utf-8")
                         if _l.strip()]

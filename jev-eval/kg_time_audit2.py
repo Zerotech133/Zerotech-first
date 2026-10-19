@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """KG 时序研究补充抽样：SERVES_AS 任职期 / HOLDS 报告期序列 / gnet 边 s 覆盖"""
 import sys
-sys.path.insert(0, r"E:\老田的AI助手\quant_backtest")
+sys.path.insert(0, r"C:\项目\老田的AI助手\quant_backtest")
 import kg_portal as KP
 
 print("== SERVES_AS 任职期样本（600519.SH） ==")

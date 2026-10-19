@@ -26,7 +26,7 @@ from datetime import datetime
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
-REPO = Path(r"E:/老田的AI助手")
+REPO = Path(r"C:/项目/老田的AI助手")
 LOG_FILE = REPO / "portal" / "logs" / "disk_cleanup.log"
 
 

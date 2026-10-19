@@ -66,7 +66,7 @@ def token() -> str:
     t = os.environ.get("TUSHARE_TOKEN", "")
     if t:
         return t
-    for c in (r"E:\老田的AI助手\config\tushare_token.txt", r"C:\Temp\tushare_token.txt"):
+    for c in (r"C:\项目\老田的AI助手\config\tushare_token.txt", r"C:\Temp\tushare_token.txt"):
         if os.path.exists(c):
             return open(c, encoding="utf-8").read().strip()
     raise SystemExit("★找不到 TUSHARE_TOKEN")

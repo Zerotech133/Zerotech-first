@@ -19,7 +19,7 @@ import paramiko
 HOST = '192.168.203.48'
 USER = 'root'
 REMOTE_DIR = '/home/xundao/TDX-Trading'
-LOCAL_ROOT = r'E:\老田的AI助手\菜鸟\TDX-Trading\TDX-Trading'
+LOCAL_ROOT = r'C:\项目\老田的AI助手\菜鸟\TDX-Trading\TDX-Trading'
 
 
 def _load_pwd():

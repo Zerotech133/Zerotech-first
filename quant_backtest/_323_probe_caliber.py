@@ -5,7 +5,7 @@ import glob
 import pandas as pd
 
 # 1) 单票单日全天时序：看 vol/amount 是否单调递增（累计口径）
-fs = sorted(glob.glob("E:/老田的AI助手/quant_backtest/data/tdx/ts_rt_min/*.parquet"))
+fs = sorted(glob.glob("C:/项目/老田的AI助手/quant_backtest/data/tdx/ts_rt_min/*.parquet"))
 found = None
 for fp in fs:
     d = pd.read_parquet(fp, columns=["ts_code", "time", "open", "high", "low", "close", "vol", "amount"])

@@ -6,7 +6,7 @@ import json, os, sys
 import pandas as pd
 from collections import Counter
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 sys.path.insert(0, os.path.join(BASE, "quant_backtest"))
 from chanlun_pit_select import pit_select, load_universe   # noqa: E402
 

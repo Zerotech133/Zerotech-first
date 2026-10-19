@@ -39,7 +39,7 @@ import subprocess
 import sys
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-REPO = r"E:\老田的AI助手"
+REPO = r"C:\项目\老田的AI助手"
 OUT = []
 RESULTS = []
 

@@ -2,8 +2,8 @@
 """K-STOCK-087 冒烟：/algo 页渲染 + 卡密激活闭环 + 主页统计口径。"""
 import io, json, os, sys, types
 
-sys.path.insert(0, r"E:/老田的AI助手/portal")
-os.chdir(r"E:/老田的AI助手/portal")
+sys.path.insert(0, r"C:/项目/老田的AI助手/portal")
+os.chdir(r"C:/项目/老田的AI助手/portal")
 import portal_api as pa
 
 h = object.__new__(pa.Handler) if hasattr(pa, "Handler") else None

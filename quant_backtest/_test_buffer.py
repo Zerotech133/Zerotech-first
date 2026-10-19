@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """三买失效离场 buffer 0 vs 0.03 直接对照（in-process，排除 CLI 链路疑云）"""
 import sys
-sys.path.insert(0, r"E:/老田的AI助手/quant_backtest")
+sys.path.insert(0, r"C:/项目/老田的AI助手/quant_backtest")
 import backtest_engine_v2 as eng
 
 eng._ensure_market_loaded()

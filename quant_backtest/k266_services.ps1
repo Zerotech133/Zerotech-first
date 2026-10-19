@@ -2,7 +2,7 @@
 # 职责：① 拉起 clip_watch 常驻（单实例检查） ② doc_ingest --once 幂等单扫
 #       ③ M3 结构化（幂等跳过已判 doc，产出 structure_shadow tags → /kg/doc 词云）
 $ErrorActionPreference = 'SilentlyContinue'
-# 2026-10-16 换机修复：E: 盘不存在 → C:\aios junction（原硬编码 E:\老田的AI助手）
+# 2026-10-16 换机修复：E: 盘不存在 → C:\aios junction（原硬编码 C:\项目\老田的AI助手）
 $root = 'C:\aios'
 $log = 'C:\Temp\k266_services.log'
 

@@ -22,8 +22,8 @@ import shutil
 import sys
 import time
 
-INBOX = r"e:\老田的AI助手\inbox\docs"
-REG = r"e:\老田的AI助手\quant_backtest\data\k266_docs"
+INBOX = r"C:\项目\老田的AI助手\inbox\docs"
+REG = r"C:\项目\老田的AI助手\quant_backtest\data\k266_docs"
 TEXTS = os.path.join(REG, "doc_texts.jsonl")
 REGFILE = os.path.join(REG, "registry.jsonl")
 IMG_EXT = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}

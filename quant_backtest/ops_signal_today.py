@@ -12,7 +12,7 @@ K-STOCK-281 · 每日运营信号账本（运营层·真实状态）
 import sys, os, json, glob, time
 import pandas as pd
 
-BASE = r"E:/老田的AI助手"
+BASE = r"C:/项目/老田的AI助手"
 DATA = os.path.join(BASE, "quant_backtest", "data", "ashare")
 POOL_DIR = os.path.join(BASE, "k_stock", "data")
 LEDGER_DIR = os.path.join(BASE, "quant_backtest", "data", "daily_ledger")

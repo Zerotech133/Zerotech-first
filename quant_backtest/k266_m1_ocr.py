@@ -10,7 +10,7 @@ import os
 import re
 import time
 
-ROOT = r"e:\老田的AI助手\quant_backtest\data\k266_m1"
+ROOT = r"C:\项目\老田的AI助手\quant_backtest\data\k266_m1"
 OUT = os.path.join(ROOT, "ocr_out")
 TABLE_PAGE = "ann_summary_p2.png"  # 考核表格页
 
