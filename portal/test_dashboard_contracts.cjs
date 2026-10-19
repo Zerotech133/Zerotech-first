@@ -50,6 +50,51 @@ section('strategies.json schema');
   // 禁编造）→ 台账 WARN 模式，回填完成后升回 ok() 硬断言。见 docs/ops/BLOCKERS 等老板清单。
   const noSince = d.strategies.filter(s => s.status === 'live' && !s.since).map(s => s.id);
   if (noSince.length) todo(`live 条目缺 since（362 定稿）待人工回填: ${noSince.join(',')}`);
+  // 三国人格化层（2026-10-19，P-A 工位）：persona 为可选字段，出现时必须有非空 name
+  for (const s of d.strategies) {
+    if (s.persona !== undefined) {
+      ok(s.persona && typeof s.persona.name === 'string' && s.persona.name.length > 0, `${s.id} persona.name 非空字符串`);
+    }
+  }
+})();
+
+/* ── 1b. persona_registry.json（三国命名体系入库，2026-10-19 P-A）──
+ * 纯人格化层：零业务语义变更。不变量：registry 存在且 strategies 键
+ * 覆盖 strategies.json 全部策略 id；strategies.json 的 persona 轻引用
+ * 与 registry 同名（防两处漂移）。
+ */
+section('persona_registry.json invariants');
+(function () {
+  const rp = path.join(PORTAL, 'persona_registry.json');
+  ok(fs.existsSync(rp), 'persona_registry.json 存在（三国命名体系入库）');
+  if (!fs.existsSync(rp)) return;
+  let reg = null;
+  try { reg = JSON.parse(fs.readFileSync(rp, 'utf-8')); }
+  catch (e) { ok(false, 'persona_registry.json 是合法 JSON（解析失败: ' + e.message + '）'); return; }
+  ok(reg._meta && reg._meta.schema === 'persona_registry.v1', '_meta.schema=persona_registry.v1');
+  ok(!!reg.commander && reg.commander.name === '司马懿' && reg.commander.reports_to === '军团·田丰', 'commander=司马懿·仲达，上行军团田丰');
+  ok(Array.isArray(reg.departments) && reg.departments.length === 6, 'departments 六部门');
+  for (const dep of (reg.departments || [])) {
+    ok(dep.name && dep.zi && dep.org && dep.reason, `部门 ${dep.id || '?'} name/zi/org/reason 齐全`);
+  }
+  const sp = path.join(PORTAL, 'strategies.json');
+  const d = JSON.parse(fs.readFileSync(sp, 'utf-8'));
+  const ids = d.strategies.map(s => s.id);
+  const regKeys = Object.keys(reg.strategies || {}).concat(Object.keys(reg.tools || {}));
+  const missing = ids.filter(i => !regKeys.includes(i));
+  ok(missing.length === 0, `registry.strategies+tools 键覆盖 strategies.json 全部 ${ids.length} 个 id（缺: ${missing.join(',') || '无'}）`);
+  ok(Object.keys(reg.tools || {}).length === 3 && ['backtest', 'zhice', 'quantdinger'].every(t => (reg.tools[t] || {}).name), 'tools 三军械（演武场/锦囊匣/听风鼎）在位');
+  // 轻引用一致性：strategies.json persona.name 与 registry 同源
+  for (const s of d.strategies) {
+    if (!s.persona) continue;
+    const src = (reg.tools || {})[s.id] || (reg.strategies || {})[s.id];
+    ok(!!src && src.name === s.persona.name, `${s.id} persona.name=${s.persona.name} 与 registry 同源`);
+  }
+  // 十策略属性卡齐全（照体系文档抄录的完整性）
+  const CARD = ['name', 'hao', 'title', 'years', 'intellect', 'acumen', 'traits'];
+  for (const [sid, card] of Object.entries(reg.strategies || {})) {
+    ok(CARD.every(k => card[k] !== undefined), `registry.strategies.${sid} 属性卡七字段齐全`);
+  }
 })();
 
 /* ── 2. quant.html 原设计不变量 + v2 增量转正不变量 ── */
