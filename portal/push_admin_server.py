@@ -514,7 +514,8 @@ class Handler(BaseHTTPRequestHandler):
                     "schedule": load_schedule(),
                     "in_silent_now": _in_silent_window(),
                     "tasks": tasks_snapshot()},
-                "shadow": _shadow_stats()})  # P3：FOCUS_CN 影子组毕业统计（300s 缓存）
+                "shadow": _shadow_stats(),  # P3：FOCUS_CN 影子组毕业统计（300s 缓存）
+                "dead_letters": _dead_letter_stats()})  # N6：24h 死信计数+degraded
         elif p == "/api/open/stats":
             # 开放 API（只读）——商业化接入点：X-API-Key 头或 ?key= 均可
             biz = load_biz()
@@ -724,6 +725,85 @@ def _flow_gate_deny(kind, target, why):
         pass
 
 
+# ── N6（派工单 2026-10-19 / P0-4）：死信计数观测 + 阈值告警 ─────────
+DEAD_ALERT_THRESHOLD = 20          # 近 24h 死信告警阈值（条）
+DEAD_ALERT_COOLDOWN_SEC = 6 * 3600  # 告警防抖窗口（防死信自递归）
+
+
+def _dead_letter_stats():
+    """/api/state 观测段：近 24h 死信计数 + degraded 判定。
+    count=-1（读取异常）→ count_24h=None、degraded=None 不猜数。"""
+    try:
+        sys.path.insert(0, HERE)
+        import dead_letter
+        n = dead_letter.count_since(24)
+    except Exception:
+        n = -1
+    if n < 0:
+        return {"count_24h": None, "threshold": DEAD_ALERT_THRESHOLD,
+                "degraded": None}
+    return {"count_24h": n, "threshold": DEAD_ALERT_THRESHOLD,
+            "degraded": n >= DEAD_ALERT_THRESHOLD}
+
+
+def _dead_letter_alert_if_needed():
+    """N6：死信超阈值 → critical 预警（豁免静默），6h 防抖。
+
+    防递归：告警自身失败落死信但冷却窗内不重发；发送走 daemon 线程
+    不阻塞调用链（api_send 主链 / /api/state 观测均非阻塞）。收件人取
+    push_targets「个人」，缺配置只留 state 不猜收件人。状态留痕
+    work/dead_letter_alert_state.json。任何异常吞掉不抛（fail-safe，
+    不影响发送主链路）。"""
+    try:
+        st = _dead_letter_stats()
+        if not st["degraded"]:
+            return
+        sp = os.path.join(WORK, "dead_letter_alert_state.json")
+        last = 0.0
+        try:
+            with open(sp, encoding="utf-8") as f:
+                last = float(json.load(f).get("last_alert_ts") or 0)
+        except Exception:
+            pass
+        import time as _t
+        if _t.time() - last < DEAD_ALERT_COOLDOWN_SEC:
+            return
+        rid = next((t.get("id") for t in news_targets()
+                    if t.get("name") == "个人" and t.get("id")), None)
+        if not rid:
+            log("[dead-alert] degraded=%s but no receiver, state only"
+                % st["count_24h"])
+            return
+        body = json.dumps({"text":
+                           "⚠️ 推送中台死信告警：近24h 死信 %d 条（阈值 %d）"
+                           "——受计量出口疑似不可达，请检查 8097 / agent "
+                           "webhook。详情 /api/state dead_letters 段。"
+                           % (st["count_24h"], DEAD_ALERT_THRESHOLD)},
+                          ensure_ascii=False)
+
+        def _send():
+            try:
+                news_dir = os.path.join(STATION, "news_collector")
+                if news_dir not in sys.path:
+                    sys.path.insert(0, news_dir)
+                from feishu_client import send_msg_tracked
+                send_msg_tracked(body, "text", rid, "open_id",
+                                 kind="dead_letter_alert", critical=True,
+                                 via_hub=True, flow_record=True)
+            except Exception:
+                pass  # fail-safe：告警失败不反噬主链，冷却窗后重试
+
+        threading.Thread(target=_send, daemon=True).start()
+        with open(sp, "w", encoding="utf-8") as f:
+            json.dump({"last_alert_ts": _t.time(),
+                       "count_at_alert": st["count_24h"],
+                       "threshold": DEAD_ALERT_THRESHOLD}, f,
+                      ensure_ascii=False)
+        log("[dead-alert] degraded fire: count_24h=%s" % st["count_24h"])
+    except Exception as _e:
+        log("[dead-alert] failed: %r" % _e)
+
+
 def api_send(req):
     """/api/send 统一入口：鉴权 → 静默（critical 豁免）→ 配额 → 直发 → 流水。
 
@@ -732,6 +812,7 @@ def api_send(req):
     （防绕过静默/配额/审计，语义反转已经老田授权收口拍板）。闸内转发
     必须 via_hub=False 防环。
     """
+    _dead_letter_alert_if_needed()  # N6：发送主链惰性巡检（缓存 60s，非阻塞）
     content = req.get("content")
     msg_type = req.get("msg_type") or "text"
     rid = req.get("receive_id")

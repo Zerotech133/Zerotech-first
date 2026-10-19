@@ -154,3 +154,39 @@ def test_long_text_still_feed():
     long_text = "这是一段超过三十个字的纯文本内容，用来测试文本投喂" \
                 "路由没有被 ticker 规则误伤，正常进入知识库收件箱。"
     assert inbound_gateway.classify(long_text)[0] == "text"
+
+
+# ── N6：dead_letter.count_since（P0-4 死信观测） ─────────────────
+
+def test_count_since_missing_file_returns_zero(monkeypatch, tmp_path):
+    import dead_letter
+    monkeypatch.setattr(dead_letter, "DEAD_PATH",
+                        str(tmp_path / "nope.jsonl"))
+    dead_letter._COUNT_CACHE.update({"ts": 0.0, "n": -1, "hours": 0})
+    assert dead_letter.count_since(24) == 0  # 缺文件=合法空态
+
+
+def test_count_since_counts_recent_rows_only(monkeypatch, tmp_path):
+    import dead_letter
+    from datetime import datetime, timedelta
+    recent = (datetime.now() - timedelta(hours=1)).isoformat(
+        timespec="seconds")
+    stale = (datetime.now() - timedelta(hours=30)).isoformat(
+        timespec="seconds")
+    p = tmp_path / "dl.jsonl"
+    p.write_text("\n".join([
+        json.dumps({"ts": recent, "dead_id": "a"}),
+        json.dumps({"ts": stale, "dead_id": "b"}),
+        "not-json-line",
+        json.dumps({"no_ts": True}),
+    ]) + "\n", encoding="utf-8")
+    monkeypatch.setattr(dead_letter, "DEAD_PATH", str(p))
+    dead_letter._COUNT_CACHE.update({"ts": 0.0, "n": -1, "hours": 0})
+    assert dead_letter.count_since(24) == 1  # 损坏/缺ts行跳过不计
+
+
+def test_count_since_error_returns_minus_one(monkeypatch, tmp_path):
+    import dead_letter
+    monkeypatch.setattr(dead_letter, "DEAD_PATH", str(tmp_path))  # 目录→OSError
+    dead_letter._COUNT_CACHE.update({"ts": 0.0, "n": -1, "hours": 0})
+    assert dead_letter.count_since(24) == -1  # 读取异常不猜数

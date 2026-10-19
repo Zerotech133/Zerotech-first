@@ -97,3 +97,43 @@ def list_dead_letters(limit=50):
             row["redeliveries"] = linked
     originals.reverse()
     return originals[:max(0, int(limit))]
+
+
+# ── N6（派工单 2026-10-19 / P0-4）：死信 24h 计数（只读，供观测面） ──
+_COUNT_CACHE = {"ts": 0.0, "n": -1, "hours": 0}
+
+
+def count_since(hours=24):
+    """近 N 小时死信条数（60s 缓存防大文件频读）。
+
+    按 ts 字段解析（缺 ts/损坏行跳过不计）；文件缺失=0（合法空态）；
+    读取异常=-1（观测面显示 unknown，不猜数、不假绿）。"""
+    import time as _t
+    now = _t.time()
+    if (now - _COUNT_CACHE["ts"] < 60.0
+            and _COUNT_CACHE["hours"] == hours):
+        return _COUNT_CACHE["n"]
+    n = -1
+    try:
+        if not os.path.exists(DEAD_PATH):
+            n = 0
+        else:
+            cutoff = datetime.fromtimestamp(now - hours * 3600)
+            cnt = 0
+            with open(DEAD_PATH, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        ts = datetime.fromisoformat(
+                            str(json.loads(line).get("ts") or "")[:19])
+                        if ts >= cutoff:
+                            cnt += 1
+                    except (ValueError, TypeError):
+                        continue
+            n = cnt  # 完整读完才落计数——读中断/异常保持 -1，不假绿
+    except OSError:
+        pass
+    _COUNT_CACHE.update({"ts": now, "n": n, "hours": hours})
+    return n
