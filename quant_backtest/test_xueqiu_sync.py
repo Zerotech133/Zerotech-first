@@ -286,6 +286,37 @@ class TestKlineFallbackGuard(_TmpEnv):
         self.assertIn("tushare: timeout", entry["note"])
         self.assertIn("akshare: offline", entry["note"])
 
+    def test_no_success_and_no_bad_codes_is_failed(self):
+        """兜底回包无有效行且无 bad codes 时仍判全败。"""
+        self.assertEqual(S._kline_status(False, False, False), "failed")
+        count, entry, _, _ = self._run_fallback(
+            ["SH600519"], ({"SH600519": [
+                {"symbol": "SZ000338"}]}, "",
+                           ["tushare: outage", "akshare: outage"]))
+        self.assertEqual(count, 0)
+        self.assertFalse(entry["done"])
+        self.assertEqual(entry["status"], "failed")
+        self.assertIn("tushare: outage", entry["note"])
+        self.assertIn("akshare: outage", entry["note"])
+        self.assertNotIn("替代源警告", entry["note"])
+
+    def test_ip_block_without_success_stays_ip_blocked(self):
+        """403 熔断且兜底全败时冷却态不被普通 failed 覆盖。"""
+        self.assertEqual(S._kline_status(True, False, False), "ip_blocked")
+
+    def test_success_with_router_errors_reports_warning(self):
+        """兜底成功时失败的其他来源仅是警告，不宣称兜底全败。"""
+        row = {"symbol": "SZ000001", "ts_code": "000001.SZ",
+               "timestamp": "2026-10-16 00:00:00", "close": 10.5}
+        count, entry, _, _ = self._run_fallback(
+            ["SZ000001"], ({"SZ000001": [row]}, "akshare_qfq×1",
+                           ["tushare: outage"]))
+        self.assertEqual(count, 1)
+        self.assertTrue(entry["done"])
+        self.assertIn("替代源兜底", entry["note"])
+        self.assertIn("替代源警告: tushare: outage", entry["note"])
+        self.assertNotIn("替代源失败", entry["note"])
+
     def test_valid_sz000001_lands_only_safe_rows(self):
         """SZ000001 是个股，不被 SH000001 指数锚误杀。"""
         good = {"symbol": "SZ000001", "ts_code": "000001.SZ",

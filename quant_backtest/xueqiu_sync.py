@@ -271,6 +271,15 @@ def _norm_snap(df: pd.DataFrame) -> list[dict]:
 
 
 # ── 日线批（token，逐码增量）─────────────────────────────────
+def _kline_status(tripped: bool, has_success: bool, has_bad: bool) -> str:
+    """判断日线批状态：零成功必败，403 全败独立标记熔断。"""
+    if tripped:
+        return "partial" if has_success else "ip_blocked"
+    if not has_success:
+        return "failed"
+    return "partial" if has_bad else "ok"
+
+
 def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
                mf: X.XqManifest | None = None) -> int:
     """kline(period=day, 前复权 type=before 固定) 增量→xq_kline_d/<ts_code>.parquet。
@@ -396,15 +405,14 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
     bad = fail_codes + empty_codes
     # 状态分级（设计 §7.7 如实记录）：全败=failed，部分败=partial；
     # 熔断=ip_blocked（P0-1：与 failed 区分，冷却自愈语义）
-    status = ("ip_blocked" if tripped and not ok_codes
-              else "partial" if tripped
-              else "failed" if not ok_codes and bad
-              else "ok" if not bad else "partial")
+    status = _kline_status(tripped, bool(ok_codes), bool(bad))
     note_parts = []
     if alt_note:
         note_parts.append(alt_note)
     if router_errors:
-        note_parts.append("替代源失败: %s" % "; ".join(router_errors))
+        note_parts.append("替代源警告: %s" % "; ".join(router_errors)
+                          if ok_codes else
+                          "替代源失败: %s" % "; ".join(router_errors))
     if fail_codes:
         note_parts.append("%d codes skipped: %s"
                           % (len(fail_codes), ",".join(fail_codes[:8])))
