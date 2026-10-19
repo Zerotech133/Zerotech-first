@@ -33,6 +33,7 @@ COLLECTORS = [
     ("xq_classify",           "舆情分类追平", "automation", "每 1 小时 probe", "xq_status_classified",      "classify"),
     ("xq_classify_daily",     "分类日轮",     "automation", "每日 18:30",      "xq_status_classified 增量", "classify"),
     ("xq_report",             "情报日报",     "automation", "每日 19:00",      "automation_runs/xq_report", "report"),
+    ("xq_user_timeline_batch", "用户时间线批次探针", "automation", "手动/夜间窗口", "automation_runs/xq_probe_headed/batch", "batch"),
     ("AgentShadowDaily",      "影子日巡",     "计划任务",   "每日 17:10",      "agent_platform",            "schtasks"),
     ("AgentMondayCheckpoint", "周一检查点",   "计划任务",   "周一 17:25",      "agent_platform",            "schtasks"),
     ("AgentChiefPush",        "酋长推送",     "计划任务",   "每日 17:35",      "agent_platform",            "schtasks"),
@@ -68,6 +69,14 @@ INTAKE_SOURCES = [
     (os.path.join(DATA, "tdx",     "tdx_info.db"),   "stock_news",   "_fetched_at",  "个股新闻"),
     (os.path.join(DATA, "tdx",     "tdx_info.db"),   "stock_report", "_fetched_at",  "研报"),
 ]
+
+# ── T11 缺口补齐（2026-10-19）：覆盖维度 / graph 接线 / 行情缓存与采集批次入档 ──
+# 最新离线审计产物 glob（每个 ~40KB，含 funnel.cached_candidate_symbols 覆盖数）；
+# 禁止整载同目录 119MB 的 daily_cache.json——缓存池只读文件头 4KB 解析 _meta。
+XQ_AUDIT_GLOB = os.path.join(RUNS, "xq_t7_factor", "factor_t7-weekly-v2-offline_*.json")
+QUOTE_CACHE_PATH = os.path.normpath(os.path.join(RUNS, "xq_t7_factor", "daily_cache.json"))
+GRAPH_CHECK_LATEST = os.path.normpath(os.path.join(QB, "data", "graph_check", "latest.json"))
+XQ_BATCH_DIR = os.path.normpath(os.path.join(RUNS, "xq_probe_headed", "batch"))
 
 
 def _daily_intake(errors, days=14):
@@ -135,20 +144,98 @@ def _guba_last_output():
     return None
 
 
-def _xq_source_card(errors):
+def _xq_audit_coverage(errors, audit_glob=None):
+    """最新离线审计产物 → 雪球覆盖维度（cached_symbols / cached_as_of）。
+
+    只 glob 审计 JSON（每个 ~40KB）取文件名字典序最新一个；覆盖数取
+    funnel.cached_candidate_symbols，时间戳取 generated_at。审计文件缺失或
+    损坏 → 字段 null + note 注明，绝不抛错（不拖垮 overview 聚合）。
+    """
+    g = audit_glob or XQ_AUDIT_GLOB
+    try:
+        files = sorted(glob.glob(g))   # 文件名含时间戳，字典序即时间序
+        if not files:
+            return {"cached_symbols": None, "cached_as_of": None, "file": None,
+                    "note": "离线审计产物缺失（%s）" % os.path.basename(os.path.dirname(g))}
+        fp = files[-1]
+        with open(fp, encoding="utf-8") as fh:
+            audit = json.load(fh)
+        n = (audit.get("funnel") or {}).get("cached_candidate_symbols")
+        ts = audit.get("generated_at")
+        return {"cached_symbols": int(n) if isinstance(n, (int, float)) else None,
+                "cached_as_of": str(ts) if ts else None,
+                "file": os.path.basename(fp), "note": None}
+    except Exception as e:
+        errors.append("xq_audit_coverage: %s" % str(e)[:60])
+        return {"cached_symbols": None, "cached_as_of": None, "file": None,
+                "note": "审计产物损坏：%s" % str(e)[:50]}
+
+
+def _xq_graph_watermark(errors, path=None):
+    """graph_check/latest.json coverage 段 → 雪球相关关系水位（T11 接线）。
+
+    图谱侧当前只登记 news/guba 水位，无雪球帖关系 → watermark null，
+    note 注明「已接线，图谱侧尚未登记雪球帖水位（跨仓工单另立）」；
+    后续跨仓工单在 coverage 登记任何 key 含 xq/xueqiu 的关系即自动现形。
+    文件缺失/损坏/ok:false 一律容错，不抛错。
+    """
+    p = path or GRAPH_CHECK_LATEST
+    try:
+        with open(p, encoding="utf-8") as fh:
+            latest = json.load(fh)
+        cov = latest.get("coverage") or {}
+        hits = {k: v.get("max") for k, v in cov.items()
+                if "xq" in str(k).lower() or "xueqiu" in str(k).lower()}
+        if hits:
+            wm = "; ".join("%s@%s" % (k, v) for k, v in sorted(hits.items()))
+            return {"watermark": wm, "checked_at": latest.get("ts"),
+                    "note": "已接线，取自 graph_check/latest.json coverage 段"}
+        return {"watermark": None, "checked_at": latest.get("ts"),
+                "note": "已接线，图谱侧尚未登记雪球帖水位（跨仓工单另立）"}
+    except Exception as e:
+        errors.append("graph_watermark: %s" % str(e)[:60])
+        return {"watermark": None, "checked_at": None,
+                "note": "graph_check/latest.json 缺失或损坏，水位未接线（%s）" % str(e)[:40]}
+
+
+def _read_cache_meta(path, head_bytes=4096):
+    """只读文件头 N 字节解析 daily_cache.json 的 _meta（禁 json.load 整载 119MB）。
+
+    raw_decode 从 '"_meta"' 值对象起点在头内截断解析；_meta 放不进头部即抛
+    ValueError 由调用方降级。
+    """
+    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+        head = fh.read(head_bytes)
+    i = head.find('"_meta"')
+    if i < 0:
+        raise ValueError("文件头 %d 字节内未见 _meta" % head_bytes)
+    obj, _end = json.JSONDecoder().raw_decode(head, head.find("{", i))
+    if not isinstance(obj, dict):
+        raise ValueError("_meta 解析结果非 dict")
+    return obj
+
+
+def _xq_source_card(errors, coverage=None, graph=None):
     """一源一档：雪球舆情帖池（数据平台总案 §一源一档 / T11，2026-10-19）。
 
     水位全部 substr 判年月日（created_at 为 ISO 字符串，禁 strftime unixepoch）；
     DB ro 连接 + busy_timeout=30s，连接失败降级 status=unavailable 绝不 500
     （dataops overview 是聚合接口，单源故障不能拖垮全景）。
+    T11 补齐：覆盖维度（cached_symbols/cached_as_of，来自离线审计产物）+
+    graph_watermark 接线（graph_check/latest.json coverage 段）。
     """
+    cov = coverage if coverage is not None else _xq_audit_coverage(errors)
+    gw = graph if graph is not None else _xq_graph_watermark(errors)
     card = {"key": "xueqiu", "name": "雪球舆情帖池",
             "carrier": "SQLite data/xueqiu/xueqiu_info.db", "status": "ok",
             "created_at_range": None, "fetched_at_range": None,
             "raw_total": None, "classified_total": None, "classified_pct": None,
             "posts_2024plus": None,
-            "graph_watermark": None,
-            "graph_note": "图谱侧未登记雪球帖水位（graph_check 水位仅覆盖 news/guba），暂为 null"}
+            "cached_symbols": cov.get("cached_symbols"),
+            "cached_as_of": cov.get("cached_as_of"),
+            "coverage_note": cov.get("note"),
+            "graph_watermark": gw.get("watermark"),
+            "graph_note": gw.get("note")}
     try:
         con = _ro(os.path.join(DATA, "xueqiu", "xueqiu_info.db"))
         con.execute("PRAGMA busy_timeout=30000")
@@ -171,9 +258,44 @@ def _xq_source_card(errors):
     return card
 
 
+def _xq_quote_cache_card(errors, coverage=None):
+    """一源一档：行情缓存池（T7 离线日线 daily_cache.json，119MB 级，T11 入档）。
+
+    只读文件头 4KB 解析 _meta（days/saved_at），覆盖数复用离线审计产物；
+    文件缺失/头部损坏降级 status=unavailable，绝不整载、绝不抛错。
+    """
+    cov = coverage if coverage is not None else _xq_audit_coverage(errors)
+    card = {"key": "xq_quote_cache", "name": "行情缓存池（T7 离线日线）",
+            "carrier": "JSON " + QUOTE_CACHE_PATH, "status": "ok",
+            "path": QUOTE_CACHE_PATH, "size_mb": None, "mtime": None,
+            "saved_at": None, "days": None,
+            "cached_symbols": cov.get("cached_symbols"),
+            "cached_as_of": cov.get("cached_as_of"),
+            "note": None}
+    try:
+        st = os.stat(QUOTE_CACHE_PATH)
+        card["size_mb"] = st.st_size // 1048576
+        card["mtime"] = time.strftime("%m-%d %H:%M", time.localtime(st.st_mtime))
+        meta = _read_cache_meta(QUOTE_CACHE_PATH)
+        card["days"] = meta.get("days")
+        card["saved_at"] = meta.get("saved_at")
+    except Exception as e:
+        card["status"] = "unavailable"
+        card["note"] = str(e)[:80]
+        errors.append("xq_quote_cache: %s" % str(e)[:60])
+    return card
+
+
 def _source_cards(errors):
-    """一源一档登记表：每个数据源一张卡（新源在此 append 一行即接入）。"""
-    return [_xq_source_card(errors)]
+    """一源一档登记表：每个数据源一张卡（新源在此 append 一行即接入）。
+
+    T11 扩展：雪球帖池 + 行情缓存池两张卡；离线审计覆盖数与 graph 水位
+    各探测一次共享给两卡，避免重复 IO。
+    """
+    coverage = _xq_audit_coverage(errors)
+    graph = _xq_graph_watermark(errors)
+    return [_xq_source_card(errors, coverage, graph),
+            _xq_quote_cache_card(errors, coverage)]
 
 PARQUET_DIRS = ["tdx/ts_daily", "tdx/ts_monthly", "tdx/ts_weekly", "tdx/ts_index_daily"]
 
@@ -460,6 +582,23 @@ def overview():
             if r.get("posts_today") is not None:
                 active += 1
             c["detail"] = "今日 posts=%s ingested=%s" % (r.get("posts_today"), r.get("ingested_today"))
+        elif src == "batch":
+            # 采集批次探针（T11 入档）：列最新 batch_result_*.json 文件名与 mtime，
+            # 目录缺失降级 unknown（手动探针不计入在岗 active 计数）
+            try:
+                bfiles = sorted(glob.glob(os.path.join(XQ_BATCH_DIR, "batch_result_*.json")))
+                if bfiles:
+                    fp = bfiles[-1]
+                    mt = time.strftime("%m-%d %H:%M", time.localtime(os.path.getmtime(fp)))
+                    c["health"] = "ok"
+                    c["detail"] = "最新批次 %s（%s）· 目录 %s" % (
+                        os.path.basename(fp), mt, XQ_BATCH_DIR)
+                else:
+                    c["health"] = "unknown"
+                    c["detail"] = "批次目录缺失或无 batch_result_*.json：%s" % XQ_BATCH_DIR
+            except Exception as e:
+                c["health"] = "unknown"
+                c["detail"] = "批次目录探测失败：%s" % str(e)[:60]
         c["log_tail"] = pipes.get("report", {}).get("log_tail") if src == "report" else \
             (pipes.get("classify", {}).get("log_tail") if src == "classify" else
              ["%s | %s" % ((pipes.get("seed", {}).get("last", {}) or {}).get("at", ""),

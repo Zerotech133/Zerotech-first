@@ -340,6 +340,132 @@ def test_xq_source_card_degrades_when_db_missing(tmp_path, monkeypatch):
     assert errors, "fail-visible：降级必须留痕 errors，不许静默吞"
 
 
+# ------------------------------------- T11 缺口补齐（覆盖维度/graph 接线/缓存与批次）
+# 直调模块验证：生产 8091 进程是旧代码，新字段等下次自然重启才进 HTTP 面。
+import glob as _glob
+
+
+def _audit_snapshot():
+    """读最新审计文件的标准答案（测试同源校验用，只 glob 小 JSON）。"""
+    files = sorted(_glob.glob(_api_dataops().XQ_AUDIT_GLOB))
+    if not files:
+        return None, None
+    with open(files[-1], encoding="utf-8") as fh:
+        a = json.load(fh)
+    return (a.get("funnel") or {}).get("cached_candidate_symbols"), a.get("generated_at")
+
+
+def test_xq_card_coverage_fields():
+    """覆盖维度新字段存在且取值与最新离线审计产物一致。"""
+    api = _api_dataops()
+    ov = api.overview()
+    card = next(s for s in ov["sources"] if s["key"] == "xueqiu")
+    for f in ("cached_symbols", "cached_as_of"):
+        assert f in card, "雪球卡缺覆盖维度字段 %s" % f
+    n_audit, ts_audit = _audit_snapshot()
+    if n_audit is None:
+        assert card["cached_symbols"] is None, "无审计产物时覆盖数必须 null"
+    else:
+        assert card["cached_symbols"] == int(n_audit), \
+            "覆盖数 %r 与审计 %r 不一致" % (card["cached_symbols"], n_audit)
+        assert isinstance(card["cached_as_of"], str) and card["cached_as_of"][:4] == "2026"
+        assert card["cached_as_of"] == ts_audit
+
+
+def test_xq_card_graph_wiring():
+    """graph 接线：watermark 或 note 均必须非空，不得回到未接线旧文案。"""
+    ov = _api_dataops().overview()
+    card = next(s for s in ov["sources"] if s["key"] == "xueqiu")
+    assert card["graph_watermark"] is None or isinstance(card["graph_watermark"], str)
+    assert card["graph_note"], "graph_note 必须非空"
+    assert "仅覆盖 news/guba" not in card["graph_note"], "不得残留未接线旧文案"
+    if card["graph_watermark"] is None:
+        assert "已接线" in card["graph_note"], "无水位时 note 必须注明已接线"
+
+
+def test_xq_audit_missing_degrades_to_null(tmp_path, monkeypatch):
+    """审计产物缺失 → 覆盖字段 null + note 注明，绝不抛错。"""
+    api = _api_dataops()
+    monkeypatch.setattr(api, "XQ_AUDIT_GLOB", str(tmp_path / "none_*.json"))
+    errors = []
+    cov = api._xq_audit_coverage(errors)
+    assert cov["cached_symbols"] is None and cov["cached_as_of"] is None
+    assert cov["note"], "缺失必须留 note"
+    errors2 = []
+    card = api._xq_source_card(errors2, cov, None)
+    assert card["cached_symbols"] is None and card["cached_as_of"] is None
+    assert card["coverage_note"], "卡片侧也必须可见缺失原因"
+
+
+def test_graph_latest_missing_tolerant(tmp_path, monkeypatch):
+    """graph_check/latest.json 缺失 → watermark null + 容错 note，绝不抛错。"""
+    api = _api_dataops()
+    monkeypatch.setattr(api, "GRAPH_CHECK_LATEST", str(tmp_path / "nope.json"))
+    errors = []
+    gw = api._xq_graph_watermark(errors)
+    assert gw["watermark"] is None
+    assert gw["note"], "缺失必须留容错 note"
+    assert errors, "fail-visible：探测失败留痕 errors"
+    # 雪球卡整体也不得被拖垮（status 与 DB 无关部分照常返回）
+    card = api._xq_source_card([], None, gw)
+    assert card["graph_watermark"] is None and card["graph_note"] == gw["note"]
+
+
+def test_quote_cache_meta_header_parse():
+    """行情缓存池 _meta 头解析正确性（只读头 4KB，days/saved_at 必须取到）。"""
+    api = _api_dataops()
+    meta = api._read_cache_meta(api.QUOTE_CACHE_PATH)
+    assert isinstance(meta.get("days"), int) and meta["days"] > 0
+    assert isinstance(meta.get("saved_at"), str) and meta["saved_at"][:4] == "2026"
+    card = api._xq_quote_cache_card([])
+    assert card["status"] == "ok", "缓存文件在位时不得降级: %r" % card.get("note")
+    assert card["days"] == meta["days"]
+    assert card["saved_at"] == meta["saved_at"]
+    assert isinstance(card["size_mb"], int) and card["size_mb"] >= 100, \
+        "daily_cache.json 为百 MB 级，size_mb=%r 异常" % card["size_mb"]
+    assert card["path"] == api.QUOTE_CACHE_PATH
+    ov = api.overview()
+    qc = next(s for s in ov["sources"] if s["key"] == "xq_quote_cache")
+    assert qc["status"] == "ok" and qc["days"] == meta["days"]
+
+
+def test_quote_cache_missing_degrades(tmp_path, monkeypatch):
+    """缓存文件缺失 → status unavailable + note，绝不抛错、绝不整载。"""
+    api = _api_dataops()
+    monkeypatch.setattr(api, "QUOTE_CACHE_PATH", str(tmp_path / "nope.json"))
+    errors = []
+    card = api._xq_quote_cache_card(errors)
+    assert card["status"] == "unavailable"
+    assert card["note"] and errors, "fail-visible：降级必须留痕"
+    assert card["size_mb"] is None and card["days"] is None
+
+
+def test_batch_collector_row_registered():
+    """采集批次行：COLLECTORS 登记且 overview 出卡，目录在位时 detail 列出最新批次文件。"""
+    api = _api_dataops()
+    assert any(k == "xq_user_timeline_batch" for k, *_ in api.COLLECTORS), \
+        "COLLECTORS 未登记 xq_user_timeline_batch"
+    ov = api.overview()
+    row = next(c for c in ov["collectors"] if c["key"] == "xq_user_timeline_batch")
+    assert row["health"] in {"ok", "down", "running", "yielding", "blocked",
+                             "backoff", "done", "complete", "unknown", "disabled",
+                             "degraded", "stale"}
+    if row["health"] == "ok":
+        assert "batch_result_" in row["detail"], "在岗时 detail 必须列出最新批次文件: %r" % row["detail"]
+    else:
+        assert row["detail"], "降级必须带 detail 说明"
+
+
+def test_batch_collector_dir_missing_degrades(tmp_path, monkeypatch):
+    """批次目录缺失 → health unknown 降级，绝不抛错。"""
+    api = _api_dataops()
+    monkeypatch.setattr(api, "XQ_BATCH_DIR", str(tmp_path / "nope_batch"))
+    ov = api.overview()
+    row = next(c for c in ov["collectors"] if c["key"] == "xq_user_timeline_batch")
+    assert row["health"] == "unknown"
+    assert "缺失" in row["detail"] or "失败" in row["detail"]
+
+
 def main():
     results, elapsed = run_all()
     retried = False
