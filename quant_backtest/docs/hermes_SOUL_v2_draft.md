@@ -1,7 +1,9 @@
 # Hermes SOUL v2 草稿——治理问答纪律节（2026-10-19 05:30）
 
-> 用途：合并进 Hermes 现行 SOUL.md 的追加节。原 SOUL.md 未在本工作区找到
-> （Hermes agent 数据目录待老田指认），本稿为自足全文，等审后合并。
+> **状态（2026-10-19 05:49）：已合并**。合并目标=`C:/Users/t/.hermes/SOUL.md`
+> （WebUI 运行时主 SOUL，Nous 原生紧凑风格，精炼后追加为末节）；
+> 合并前备份=`C:/Users/t/.hermes/SOUL.md.bak-20261019`。
+> `profiles/tianfeng/SOUL.md`（军师府 profile 特化）未动。本稿保留全文存档。
 > 依据：v2 计划 T6「SOUL.md v2：治理问答纪律 + 预算 + kill switch（只读红线不变）」。
 
 ---
