@@ -44,6 +44,7 @@ import os
 import re
 import sqlite3
 import sys
+import tempfile
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -459,7 +460,6 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
 
     缓存落 CACHE_PATH；days 漂移失效。旧缓存和新回包使用同一行级闸门。
     """
-    os.makedirs(CACHE_DIR, exist_ok=True)
     cache: dict = {}
     if os.path.exists(CACHE_PATH):
         try:
@@ -518,12 +518,28 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
                 if not any(sym in error for error in errs))
     cache["daily"] = daily
     cache["_missing"] = missing
-    cache["_errs"] = errs
+    cache["_errs"] = errs.copy()
+    temporary_path: str | None = None
     try:
-        with open(CACHE_PATH, "w", encoding="utf-8") as target:
+        # 临时文件与目标同目录，完整关闭后再替换，避免截断旧缓存。
+        os.makedirs(os.path.dirname(os.path.abspath(CACHE_PATH)), exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", dir=os.path.dirname(os.path.abspath(CACHE_PATH)),
+                prefix=".daily_cache_", suffix=".tmp", delete=False) as target:
+            temporary_path = target.name
             json.dump(cache, target)
-    except OSError:
-        pass
+            target.flush()
+        os.replace(temporary_path, CACHE_PATH)
+        temporary_path = None
+    except (OSError, ValueError, TypeError) as error:
+        errs.append("缓存发布失败: %s" % str(error)[:120])
+    finally:
+        if temporary_path is not None:
+            try:
+                os.unlink(temporary_path)
+            except OSError as cleanup_error:
+                errs.append("缓存临时文件清理失败: %s: %s" %
+                            (temporary_path, str(cleanup_error)[:120]))
     return daily, errs
 
 

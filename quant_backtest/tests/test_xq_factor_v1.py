@@ -12,6 +12,8 @@ import os
 import sys
 import types
 
+import pytest
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 if ROOT not in sys.path:
@@ -513,6 +515,91 @@ def test_fetch_daily_cached_overflow_all_failed_persists_diagnostics(
     assert not any("SZ000001 全源失败(跳过)" in error for error in errs)
 
 
+@pytest.mark.parametrize("failure", ["replace", "partial_write", "directory"])
+@pytest.mark.parametrize("old_exists", [True, False])
+def test_fetch_daily_cached_atomic_publish_failure_and_retry(
+        tmp_path, monkeypatch, failure, old_exists):
+    """发布失败不损旧字节或造目标，返回内存结果且下轮可补发。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    original_bytes = (b'{"_meta":{"days":22},"daily":{},"_errs":'
+                      b'["historical"],"_missing":["SZ000001"]}\n')
+    if old_exists:
+        cache_path.write_bytes(original_bytes)
+    calls = []
+
+    def mocked_fetch(syms, days):
+        calls.append((syms, days))
+        return {"SZ000001": mock_daily()["SZ000001"]}, "mock", [
+            "SZ000001 主源失败，备援成功"]
+
+    mock_daily_router(monkeypatch, mocked_fetch)
+    with monkeypatch.context() as patch:
+        if failure == "replace":
+            def failed_replace(source, target):
+                assert os.path.dirname(source) == str(tmp_path)
+                assert target == str(cache_path)
+                with open(source, encoding="utf-8") as temporary:
+                    assert json.load(temporary)["_missing"] == []
+                raise OSError("模拟替换失败")
+
+            patch.setattr(factor.os, "replace", failed_replace)
+        elif failure == "partial_write":
+            def failed_dump(cache, target):
+                target.write('{"daily":')
+                target.flush()
+                raise OSError("模拟半写失败")
+
+            patch.setattr(factor.json, "dump", failed_dump)
+        else:
+            def failed_makedirs(path, exist_ok):
+                assert path == str(tmp_path) and exist_ok
+                raise OSError("模拟建目录失败")
+
+            patch.setattr(factor.os, "makedirs", failed_makedirs)
+        daily, errs = factor.fetch_daily_cached(["SZ000001"], 22)
+    assert daily == {"SZ000001": mock_daily()["SZ000001"]}
+    assert errs[0] == "SZ000001 主源失败，备援成功"
+    assert len([error for error in errs if error.startswith("缓存发布失败:")]) == 1
+    assert (cache_path.read_bytes() == original_bytes if old_exists
+            else not cache_path.exists())
+    assert sorted(tmp_path.iterdir()) == ([cache_path] if old_exists else [])
+
+    # 未发布的内存结果不算缓存命中，下轮需要重新向路由获取。
+    retried_daily, retried_errs = factor.fetch_daily_cached(["SZ000001"], 22)
+    assert calls == [(["SZ000001"], 22), (["SZ000001"], 22)]
+    assert retried_daily == daily
+    assert retried_errs == ["SZ000001 主源失败，备援成功"]
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert saved["daily"] == retried_daily
+    assert saved["_missing"] == []
+    assert saved["_errs"] == retried_errs
+    assert sorted(tmp_path.iterdir()) == [cache_path]
+
+
+def test_fetch_daily_cached_cleanup_failure_is_reported(tmp_path, monkeypatch):
+    """无法删除临时文件时显式报告，而不把发布失败伪装为成功。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    mock_daily_router(monkeypatch, lambda syms, days: ({}, "mock", []))
+    with monkeypatch.context() as patch:
+        patch.setattr(factor.os, "replace", lambda source, target: (
+            (_ for _ in ()).throw(OSError("模拟替换失败"))))
+        patch.setattr(factor.os, "unlink", lambda path: (
+            (_ for _ in ()).throw(OSError("模拟清理失败"))))
+        daily, errs = factor.fetch_daily_cached(["SZ000001"], 23)
+    assert daily == {}
+    assert not cache_path.exists()
+    assert any(error.startswith("缓存发布失败:") for error in errs)
+    assert any(error.startswith("缓存临时文件清理失败:") for error in errs)
+    # 清理失败的残留限于本次唯一临时文件，不会被误认作目标缓存。
+    leftover = list(tmp_path.iterdir())
+    assert len(leftover) == 1 and leftover[0].name.startswith(".daily_cache_")
+    assert str(leftover[0]) in errs[-1]
+    leftover[0].unlink()
+
+
 if __name__ == "__main__":
-    import pytest
     sys.exit(pytest.main([__file__, "-q"]))
