@@ -338,8 +338,35 @@
  "digest_sections": {
   "wallstreetcn": "🌍 全球财经",
   "sina": "🇨🇳 市场要闻",
-  "eastmoney": "⚡ 7x24 快讯"
+  "eastmoney": "⚡ 7x24 快讯",
+  "govpolicy": "🏛 国务院政策",
+  "chinanews": "📰 中新社"
  },
+ "policy_keywords": [
+  "国务院",
+  "国常会",
+  "央行",
+  "中国人民银行",
+  "证监会",
+  "金融监管总局",
+  "发改委",
+  "财政部",
+  "工信部",
+  "商务部",
+  "政治局",
+  "人行",
+  "部委",
+  "条例",
+  "管理办法",
+  "指导意见",
+  "工作要点",
+  "白皮书"
+ ],
+ "policy_authority_sources": [
+  "govpolicy",
+  "chinanews"
+ ],
+ "intel_page_url": "http://127.0.0.1:8734/news_intel.html",
  "quote_alert_pct": 3.0,
  "quote_alert_cooldown_min": 30,
  "quote_keep_days": 30,

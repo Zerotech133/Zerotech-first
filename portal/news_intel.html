@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>新闻情报台</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/page_common.css">
+<script src="/static/nav.js" defer></script>
+<style>
+/* K-ORG-207 新闻情报台：变量全走 tokens.css 语义层（禁硬编码 hex），
+   容器/页头/面板/徽标复用 page_common.css，本页只管三栏布局与条目行。 */
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+@media (max-width:899px){.cols{grid-template-columns:1fr}}
+.colhd{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.colhd h2{margin:0;font-size:var(--fs-m);color:var(--text);font-weight:600}
+.colhd .cnt{font-size:var(--fs-xs);color:var(--text-dim);font-family:var(--font-mono)}
+.colhd .cnt b{color:var(--link)}
+.colhint{font-size:var(--fs-xs);color:var(--text-dim);margin:0 0 6px}
+/* 条目行：时间 mono + 来源 + 标题（点击展开摘要）+ 徽标 */
+.nrow{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;
+      padding:6px 0;border-bottom:1px solid var(--bg-raised);font-size:var(--fs-s)}
+.nrow .hm{font-family:var(--font-mono);color:var(--text-dim);font-size:var(--fs-xs);white-space:nowrap}
+.nrow .src{color:var(--text-dim);font-size:var(--fs-xs);white-space:nowrap}
+.nrow .t{flex:1 1 160px;min-width:140px;cursor:pointer}
+.nrow .t:hover{color:var(--link)}
+.ncnt{font-size:var(--fs-xs);color:var(--text-dim);padding:4px 0 8px 2px;
+      border-bottom:1px solid var(--bg-raised);word-break:break-all}
+/* 文字徽标（不用 emoji 图标） */
+.tag{display:inline-block;border:1px solid var(--border);border-radius:var(--r-s);
+     padding:0 6px;font-size:var(--fs-xs);white-space:nowrap;flex:none}
+.tag.hit{color:var(--color-up);border-color:var(--color-up)}
+.tag.auth{color:var(--color-ok);border-color:var(--color-ok)}
+.tag.gen{color:var(--text-dim);border-color:var(--border)}
+.tag.up{color:var(--color-up);border-color:var(--color-up)}
+.tag.dn{color:var(--color-dn);border-color:var(--color-dn)}
+.tag.nt{color:var(--text-dim);border-color:var(--border)}
+/* 顶部工具行与 fail-visible 黄条 */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 10px;font-size:var(--fs-xs);color:var(--text-dim)}
+.errbar{border:1px solid var(--color-warn);color:var(--color-warn);
+        border-radius:var(--r-m);padding:8px 12px;font-size:var(--fs-s);margin-bottom:10px}
+/* 舆情栏摘要块 */
+.meta{font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:6px}
+.themes{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>新闻情报台<span class="sub">金融新闻统一视图 · 速报 / 政策 / 舆情 三分栏</span></h1>
+  <div class="toolbar">
+    <button id="btn-refresh" class="pc-chip ent">手动刷新</button>
+    <span>60s 自动轮询</span>
+    <span id="gen-at"></span>
+  </div>
+  <div id="errbar" class="errbar" hidden></div>
+  <div class="cols">
+    <section class="panel">
+      <div class="colhd"><h2>速报</h2><span class="cnt" id="cnt-flash">0 条</span></div>
+      <p class="colhint">关键词/自选股命中并推送的条目 · 红标=自选股命中</p>
+      <div id="list-flash"></div>
+    </section>
+    <section class="panel">
+      <div class="colhd"><h2>政策</h2><span class="cnt" id="cnt-policy">0 条</span></div>
+      <p class="colhint">政策关键词读时分类 · 绿标=权威源白名单</p>
+      <div id="list-policy"></div>
+    </section>
+    <section class="panel">
+      <div class="colhd"><h2>舆情</h2><span class="cnt" id="cnt-senti">-</span></div>
+      <p class="colhint">雪球情报日报摘要（每日 19:00 产出）</p>
+      <div id="list-senti"></div>
+    </section>
+  </div>
+  <footer>K-ORG-207 新闻情报台 · 数据只读聚合 /api/news/intel（速报=采集库 48h · 政策=关键词读时分类 · 舆情=xq 情报日报）· 信息采集域</footer>
+</div>
+<script>
+"use strict";
+var SRC_NAME = {
+  sina: "新浪财经", eastmoney: "东方财富", wallstreetcn: "华尔街见闻",
+  announcement: "A股公告", survey: "机构调研", report: "研报",
+  world: "海外RSS", govpolicy: "中国政府网", chinanews: "中国新闻网"
+};
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c];
+  });
+}
+function srcName(id) { return SRC_NAME[id] || id || "-"; }
+
+/* 速报/政策条目行：点击标题展开 content 摘要（同栏互斥展开） */
+function newsRow(item, badgeHtml) {
+  var d = document.createElement("div");
+  d.innerHTML = '<div class="nrow">'
+    + '<span class="hm">' + esc(item.hm || "-") + '</span>'
+    + '<span class="src">' + esc(srcName(item.source)) + '</span>'
+    + '<span class="t">' + esc(item.title || "") + '</span>'
+    + badgeHtml + '</div>'
+    + '<div class="ncnt" hidden>' + esc(item.content || "（无正文摘要）") + '</div>';
+  var title = d.querySelector(".t"), body = d.querySelector(".ncnt");
+  title.addEventListener("click", function () {
+    var col = this.closest(".panel").querySelectorAll(".ncnt");
+    var open = !body.hidden;
+    col.forEach(function (x) { x.hidden = true; });
+    body.hidden = open;
+  });
+  return d;
+}
+
+function renderFlash(flash) {
+  var box = document.getElementById("list-flash");
+  box.innerHTML = "";
+  var items = flash.items || [];
+  document.getElementById("cnt-flash").innerHTML =
+    "<b>" + items.length + "</b>/" + (flash.total || 0) + " 条";
+  if (!items.length) { box.innerHTML = '<div class="empty">今日暂无</div>'; return; }
+  items.forEach(function (it) {
+    box.appendChild(newsRow(it,
+      it.hit ? ' <span class="tag hit">自选股</span>' : ""));
+  });
+}
+
+function renderPolicy(policy) {
+  var box = document.getElementById("list-policy");
+  box.innerHTML = "";
+  var items = policy.items || [];
+  document.getElementById("cnt-policy").innerHTML =
+    "<b>" + items.length + "</b>/" + (policy.total || 0) +
+    " 条 · 权威 " + (policy.authority_count || 0);
+  if (!items.length) { box.innerHTML = '<div class="empty">今日暂无</div>'; return; }
+  items.forEach(function (it) {
+    box.appendChild(newsRow(it, it.authority
+      ? ' <span class="tag auth">权威源</span>'
+      : ' <span class="tag gen">一般源</span>'));
+  });
+}
+
+function sentiBadge(s) {
+  if (s === "bullish") return ' <span class="tag up">偏多</span>';
+  if (s === "bearish") return ' <span class="tag dn">偏空</span>';
+  if (s) return ' <span class="tag nt">中性</span>';
+  return "";
+}
+
+function renderSentiment(st) {
+  var box = document.getElementById("list-senti");
+  var cnt = document.getElementById("cnt-senti");
+  box.innerHTML = "";
+  if (!st.report_exists) {
+    cnt.textContent = "未产出";
+    box.innerHTML = '<div class="empty">今日暂无</div>'
+      + '<div class="meta">' + esc(st.hint || "") + '</div>';
+    return;
+  }
+  var senti = st.sentiment || {};
+  var nBull = senti.bullish || 0, nBear = senti.bearish || 0,
+      nNeu = senti.neutral || 0;
+  cnt.innerHTML = "<b>" + (st.classified_today || 0) + "</b> 条分类";
+  var html = '<div class="meta">日报 ' + esc(st.date || "-")
+    + ' · 摄取 ' + esc(st.ingested_today || 0)
+    + ' · 情绪 偏多 ' + nBull + ' / 偏空 ' + nBear + ' / 中性 ' + nNeu + '</div>';
+  var themes = (st.top_themes || []);
+  if (themes.length) {
+    html += '<div class="themes">' + themes.map(function (kv) {
+      return '<span class="tag nt">' + esc(kv[0]) + " ×" + esc(kv[1]) + "</span>";
+    }).join("") + "</div>";
+  }
+  var hc = st.high_confidence || [];
+  if (hc.length) {
+    html += '<div class="meta">高置信命中</div>';
+    hc.forEach(function (r) {
+      html += '<div class="nrow"><span class="hm">' + esc(r.code || "-")
+        + '</span><span class="t" style="cursor:default">' + esc(r.title || "")
+        + "</span>" + sentiBadge(r.sentiment) + "</div>";
+    });
+  }
+  var anom = st.anomaly || [];
+  if (anom.length) {
+    html += '<div class="meta" style="margin-top:8px">异动信号</div>';
+    anom.forEach(function (r) {
+      html += '<div class="nrow"><span class="hm">' + esc(r.code || "-")
+        + '</span><span class="t" style="cursor:default">发言 ' + esc(r.n || 0)
+        + " · 偏空 " + esc(r.bearish || 0)
+        + "（基线 " + esc(r.baseline6d != null ? r.baseline6d : "-") + "）</span></div>";
+    });
+  }
+  if (!hc.length && !anom.length && !themes.length) {
+    html += '<div class="empty">今日暂无</div>';
+  }
+  box.innerHTML = html;
+}
+
+function renderErrors(errors) {
+  var bar = document.getElementById("errbar");
+  var keys = Object.keys(errors || {}).filter(function (k) { return errors[k]; });
+  if (!keys.length) { bar.hidden = true; bar.innerHTML = ""; return; }
+  bar.hidden = false;
+  bar.innerHTML = "数据源异常（fail-visible，非空数据仍可信）：" + keys.map(function (k) {
+    return "<b>" + esc(k) + "</b> " + esc(errors[k]);
+  }).join("；");
+}
+
+function load() {
+  fetch("/api/news/intel").then(function (r) { return r.json(); }).then(function (d) {
+    renderFlash(d.flash || {});
+    renderPolicy(d.policy || {});
+    renderSentiment(d.sentiment || {});
+    renderErrors(d.errors || {});
+    document.getElementById("gen-at").textContent =
+      "生成于 " + (d.generated_at || "-");
+  }).catch(function (e) {
+    renderErrors({fetch: "聚合出口不可达: " + e});
+  });
+}
+document.getElementById("btn-refresh").addEventListener("click", load);
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
