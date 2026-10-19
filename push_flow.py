@@ -29,12 +29,14 @@ _EVIDENCE_DELIVERY = ("api_accepted", "receiver_verified", "dead_letter")
 
 
 def record(kind, channel, target, count=1, ok=True, tenant="default",
-           evidence=None):
+           evidence=None, domain=None):
     """追加一行流水。任何异常吞掉（计费依据丢失可容忍，推送中断不可容忍）。
 
     W38：evidence 非 None 时行内多写 "evidence" 键（值须在
     EVIDENCE_DELIVERY 内，非法值醒目写 "dead_letter"）；None 时行结构与
-    历史完全一致（向后兼容）。"""
+    历史完全一致（向后兼容）。
+    P2：domain 非 None 时行内多写 "domain" 键（owner/ops/customer 分域
+    一级路由字段）；缺省 None 不写键，旧调用零变化。"""
     try:
         from datetime import datetime
         row = {"ts": datetime.now().isoformat(timespec="seconds"),
@@ -44,6 +46,8 @@ def record(kind, channel, target, count=1, ok=True, tenant="default",
         if evidence is not None:
             ev = str(evidence).strip()
             row["evidence"] = ev if ev in _EVIDENCE_DELIVERY else "dead_letter"
+        if domain is not None:
+            row["domain"] = str(domain)[:20]
         data = (json.dumps(row, ensure_ascii=False) + "\n").encode("utf-8")
         with _lock:
             # 跨进程原子追加：O_APPEND + 单次 os.write 整行（本文件被 4 个独立
