@@ -38,6 +38,62 @@ import linkage  # noqa: E402
 # 下游 portal/build_todays_picks 按此路径消费 weak_scan_*.csv，勿改。
 REP = os.path.abspath(os.path.join(HERE, "..", "reports"))
 
+# 行情日期护栏（K-QUANT-20261019-WEAKGUARD）日历基准：本地 TuShare
+# trade_cal 只读快照（判例 build_history_backfill_plan.py 同源目录）。
+CAL_DIR = os.path.join(HERE, "data", "tushare", "trade_cal")
+
+
+def expected_trade_day(now=None, cal_dir=None):
+    """护栏期望日：最近已收盘交易日（YYYYMMDD，SSE is_open=1）。
+
+    今日为交易日且已过 15:00 收盘 → 期望=今日（weak_scan 15:35 档口
+    应能拿到当日行情；口径比 datamart._expected_trade_day 的 17:00
+    更紧——本脚本明确是收盘后跑批）。日历快照不可用或未覆盖今天 →
+    返回 None（调用方降级 WARN 不硬拒：护栏误杀比放行更伤产线节奏）。
+    """
+    now = now or datetime.now()
+    cal_dir = cal_dir or CAL_DIR
+    try:
+        parts = sorted(glob.glob(os.path.join(cal_dir, "*.parquet")))
+        if not parts:
+            return None
+        df = pd.concat([pd.read_parquet(
+            p, columns=["exchange", "cal_date", "is_open"])
+            for p in parts])
+        d = df[(df["exchange"] == "SSE") & (df["is_open"].astype(int) == 1)]
+        days = sorted(set(d["cal_date"].astype(str)
+                          .str.replace("-", "", regex=False).str[:8]))
+        today = now.strftime("%Y%m%d")
+        if not days or days[-1] < today:
+            return None
+        closed = [x for x in days if x <= today]
+        if closed[-1] == today and now.hour < 15:
+            return closed[-2] if len(closed) > 1 else closed[-1]
+        return closed[-1]
+    except Exception as e:
+        sys.stderr.write(" ! trade_cal 读取失败，护栏降级: %s\n" % e)
+        return None
+
+
+def check_trade_day(last_day, exp=None, now=None):
+    """快照落盘/推送前行情日期校验。滞后 → 写明确日志并返回退出码 3
+    （拒绝出快照，不动数据；判例 K-STOCK 守卫 exit 3 中止）；日历缺失
+    → 降级 WARN 放行；正常 → 返回 None。"""
+    last_ymd = str(last_day).replace("-", "")
+    exp = exp if exp is not None else expected_trade_day(now=now)
+    if exp is None:
+        sys.stderr.write(" ! trade_cal 快照不可用/未覆盖今日——行情日期护栏"
+                         "降级 WARN（last_day=%s），请检查 data/tushare/"
+                         "trade_cal 同步\n" % last_day)
+        return None
+    if last_ymd < exp:
+        sys.stderr.write(
+            " ! [WEAKGUARD] 行情日期滞后：ts_daily 最新 %s < 预期交易日 %s"
+            "（数据湖滞后）——拒绝出快照/推送（数据未动）。请先补增量同步"
+            "（tushare_sync）后重跑 weak_scan。\n" % (last_day, exp))
+        return 3
+    return None
+
 
 def stock_universe(sb):
     """在市 A 股白名单：剔 ST/退/北交所/B股，返回 df[industry]."""
@@ -186,6 +242,11 @@ def main():
     if st is None:
         return 1
     print("个股数据日 %s，有效票 %d" % (last_day, len(st)))
+    # 行情日期护栏（K-QUANT-20261019-WEAKGUARD）：滞后者不出快照不推送
+    # （exit 3，start_weak_scan.ps1 ≥1 即技术告警），拒绝不动数据。
+    _g = check_trade_day(last_day)
+    if _g is not None:
+        return _g
 
     sb = tdxr.read_all("ts_stock_basic")
     uni = stock_universe(sb)
