@@ -80,12 +80,17 @@ def _ts_epoch(s) -> float:
 
 
 def _item(**kw) -> dict:
+    # P2 分域：domain 徽章字段（owner/ops/customer）——kw 显式传入且非空
+    # 才渲染到 item；缺省不出现在键集合里（旧 payload 结构零变化）
+    dom = str(kw.pop("domain", "") or "")
     base = {"id": "", "state": "auto", "state_label": "", "title": "",
             "kind": "", "target": "", "created_at": "", "send_at": "",
             "source": "", "reason": "", "evidence_lifecycle": "",
             "evidence_delivery": "", "agent_source": "", "caller": "",
             "outcome": "", "basis": "", "category": "", "doc": ""}
     base.update(kw)
+    if dom:
+        base["domain"] = dom
     base["state_label"] = nc.QUEUE_STATE_LABELS.get(base["state"],
                                                     base["state"])
     return base
@@ -174,7 +179,8 @@ def flow_items(errors: list) -> list:
         if r.get("ok"):
             if day == today:
                 key = (str(r.get("kind") or ""), str(r.get("target") or ""))
-                g = today_ok.setdefault(key, {"n": 0, "count": 0, "ts": ""})
+                g = today_ok.setdefault(
+                    key, {"n": 0, "count": 0, "ts": "", "domains": set()})
                 g["n"] += 1
                 try:
                     g["count"] += int(r.get("count") or 1)
@@ -183,6 +189,9 @@ def flow_items(errors: list) -> list:
                 ts = str(r.get("ts") or "")
                 if ts > g["ts"]:
                     g["ts"] = ts
+                dom = str(r.get("domain") or "")
+                if dom:
+                    g["domains"].add(dom)
         elif (not day) or day >= week_floor:
             # 近 7 天失败行全量上墙；日期不可解析也保守纳入（宁可多报）
             blocked.append((i, r))
@@ -208,6 +217,7 @@ def flow_items(errors: list) -> list:
                        "配额/按钮注册校验等主动抑制，非投递异常"
                        % (FLOW_BLOCK_WINDOW_DAYS, r.get("channel") or ""),
                 evidence_delivery="",
+                domain=str(r.get("domain") or ""),
             ))
             continue
         # 方案 A 投影折叠（2026-10-20 治理执行）：同 (kind, target) 失败簇
@@ -239,11 +249,13 @@ def flow_items(errors: list) -> list:
                    % (FLOW_BLOCK_WINDOW_DAYS, r.get("channel") or "",
                       r.get("tenant") or "", size),
             evidence_delivery="dead_letter",
+            domain=str(r.get("domain") or ""),
             cluster_size=size,
         ))
     groups = sorted(today_ok.items(), key=lambda kv: -_ts_epoch(kv[1]["ts"]))
     for (kind, target), g in groups[:FLOW_AUTO_CAP]:
         label = "底座埋点 · %s" % kind if kind.startswith("auto:") else kind
+        doms = g.get("domains") or set()
         out.append(_item(
             id="flowauto:%s|%s" % (kind, target),
             state="auto",
@@ -255,6 +267,7 @@ def flow_items(errors: list) -> list:
             reason="今日已发送 %d 次（count 合计 %d）" % (g["n"], g["count"]),
             evidence_lifecycle="live_sent",
             evidence_delivery="api_accepted",
+            domain=",".join(sorted(doms)) if doms else "",
         ))
     if len(groups) > FLOW_AUTO_CAP:
         rest = groups[FLOW_AUTO_CAP:]
