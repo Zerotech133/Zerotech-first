@@ -51,6 +51,8 @@ class WallAdapterTests(unittest.TestCase):
         self.picks_path = os.path.join(self.root, "todays_picks.json")
         self.verdicts_path = os.path.join(self.root, "pick_verdicts.json")
         self.minutes_path = os.path.join(self.root, "minutes.json")
+        self.linkage_path = os.path.join(self.root, "linkage_shadow.jsonl")
+        self.jev_path = os.path.join(self.root, "triples.jsonl")
         self.out_path = os.path.join(self.root, "wall.json")
         self._write_json(self.picks_path, PICKS)
 
@@ -58,10 +60,16 @@ class WallAdapterTests(unittest.TestCase):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
 
+    def _write_jsonl(self, path, rows):
+        with open(path, "w", encoding="utf-8") as f:
+            for r in rows:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
     def _run(self, extra=None):
         argv = ["--todays-picks", self.picks_path,
                 "--verdicts", self.verdicts_path, "--out", self.out_path,
-                "--minutes", self.minutes_path]
+                "--minutes", self.minutes_path,
+                "--linkage", self.linkage_path, "--jev", self.jev_path]
         if extra:
             argv += extra
         wa.main(argv)
@@ -174,9 +182,135 @@ class WallAdapterTests(unittest.TestCase):
         strong = next(c for c in wall["strategists"] if c["id"] == "strong")
         self.assertIn("考核 1日 hit 50.0% avg 1.2%", strong["view"])
 
+    # ── G1 自有产物：linkage 影子源三态（有/无/坏） ────────────────
+
+    LINKAGE_ROWS = [
+        {"ref_date": "2026-10-13", "signal_name": "抗跌", "code": "600001.SH"},
+        {"ref_date": "2026-10-13", "signal_name": "抗跌", "code": "600002.SH"},
+        {"ref_date": "2026-10-13", "signal_name": "滞涨(弱于板块)",
+         "code": "301216.SZ"},
+    ]
+
+    def test_linkage_missing_records_missing(self):
+        # 无产物：继续跑，记 missing，既有 linkage 卡不动
+        wall = json.loads(self._run())
+        self.assertTrue(any("linkage view" in m
+                            for m in wall["provenance"]["missing"]))
+        linkage = next(c for c in wall["strategists"] if c["id"] == "linkage")
+        self.assertEqual(linkage["picks_count"], 0)
+
+    def test_linkage_view_merged_into_existing_card(self):
+        # 有产物：既有 linkage 卡（n=0）view 补实数，合并不重复建卡
+        self._write_jsonl(self.linkage_path, self.LINKAGE_ROWS)
+        wall = json.loads(self._run())
+        ids = [c["id"] for c in wall["strategists"]]
+        self.assertEqual(ids.count("linkage"), 1)
+        linkage = next(c for c in wall["strategists"] if c["id"] == "linkage")
+        # picks_count 不动（个股级工具不产名单）
+        self.assertEqual(linkage["picks_count"], 0)
+        # 最近信号日 + 五信号命中计数（计数降序→名称升序，全确定性）
+        self.assertIn("最近信号日 2026-10-13：五信号命中 3 条", linkage["view"])
+        self.assertIn("抗跌 2", linkage["view"])
+        self.assertIn("滞涨(弱于板块) 1", linkage["view"])
+        self.assertIn("观察池口径", linkage["view"])
+        self.assertFalse(any("linkage view" in m
+                             for m in wall["provenance"]["missing"]))
+
+    def test_linkage_empty_file_records_missing(self):
+        # 空产物（零字节/无记录）→ 与缺文件同语义：记 missing 继续跑
+        open(self.linkage_path, "w", encoding="utf-8").close()
+        wall = json.loads(self._run())
+        self.assertTrue(any("linkage view" in m
+                            for m in wall["provenance"]["missing"]))
+
+    def test_linkage_bad_jsonl_fails(self):
+        # 坏产物：fail-visible 非零退出，禁静默吞
+        with open(self.linkage_path, "w", encoding="utf-8") as f:
+            f.write("{oops\n")
+        with self.assertRaises(SystemExit) as ctx:
+            self._run()
+        self.assertNotEqual(ctx.exception.code, 0)
+        self.assertFalse(os.path.exists(self.out_path))
+
+    def test_linkage_non_object_line_fails(self):
+        with open(self.linkage_path, "w", encoding="utf-8") as f:
+            f.write("[1,2]\n")
+        with self.assertRaises(SystemExit) as ctx:
+            self._run()
+        self.assertNotEqual(ctx.exception.code, 0)
+
+    # ── G1 自有产物：jev 复核门三态（有/无/坏） ───────────────────
+
+    JEV_ROWS = [
+        {"pool_date": "2026-10-15", "status": "reviewed", "decision": "PASS"},
+        {"pool_date": "2026-10-15", "status": "reviewed", "decision": "FOCUS"},
+        {"pool_date": "2026-10-15", "status": "reviewed", "decision": "REJECT"},
+        {"pool_date": "2026-10-16", "status": "pending", "decision": None},
+    ]
+
+    def test_jev_missing_records_missing(self):
+        # 无产物：继续跑，记 missing，strategists 无 jev 卡
+        wall = json.loads(self._run())
+        self.assertTrue(any("jev 卡" in m
+                            for m in wall["provenance"]["missing"]))
+        self.assertFalse(any(c["id"] == "jev" for c in wall["strategists"]))
+
+    def test_jev_card_appended_with_review_stats(self):
+        # 有产物：追加 jev 新卡（STRATEGIST_KEYS 同构），top 留空不冒充选股
+        self._write_jsonl(self.jev_path, self.JEV_ROWS)
+        wall = json.loads(self._run())
+        jev = next(c for c in wall["strategists"] if c["id"] == "jev")
+        self.assertEqual(list(jev.keys()), wa.STRATEGIST_KEYS)
+        self.assertEqual(jev["top"], [])
+        self.assertIsNone(jev["score"])
+        self.assertEqual(jev["picks_count"], 3)      # 最近复核日 3 只
+        # 最近复核通过率 + 日期 + 否决数（通过=非 REJECT）
+        self.assertIn("最近复核 10-15：复核 3 只，门通过 2 只（通过率 66.7%）",
+                      jev["view"])
+        self.assertIn("否决 1 只", jev["view"])
+        # 其后候选池存在但未复核 → 如实标注
+        self.assertIn("2026-10-16 起候选未复核", jev["view"])
+        self.assertIn("影子·只标注不拦截", jev["view"])
+        self.assertFalse(any("jev 卡" in m
+                             for m in wall["provenance"]["missing"]))
+
+    def test_jev_no_reviewed_records(self):
+        # 全是未复核 → 无 jev 卡，记 missing 继续跑，绝不编造
+        self._write_jsonl(self.jev_path, [
+            {"pool_date": "2026-10-16", "status": "pending",
+             "decision": None}])
+        wall = json.loads(self._run())
+        self.assertFalse(any(c["id"] == "jev" for c in wall["strategists"]))
+        self.assertTrue(any("无已复核记录" in m
+                            for m in wall["provenance"]["missing"]))
+
+    def test_jev_bad_jsonl_fails(self):
+        # 坏产物：fail-visible 非零退出
+        with open(self.jev_path, "w", encoding="utf-8") as f:
+            f.write("{oops\n")
+        with self.assertRaises(SystemExit) as ctx:
+            self._run()
+        self.assertNotEqual(ctx.exception.code, 0)
+        self.assertFalse(os.path.exists(self.out_path))
+
+    def test_jev_empty_file_records_missing(self):
+        open(self.jev_path, "w", encoding="utf-8").close()
+        wall = json.loads(self._run())
+        self.assertTrue(any("jev 卡" in m
+                            for m in wall["provenance"]["missing"]))
+        self.assertFalse(any(c["id"] == "jev" for c in wall["strategists"]))
+
     # ── 幂等 ──────────────────────────────────────────────────────
 
     def test_idempotent_same_input_same_bytes(self):
+        first = self._run()
+        second = self._run()
+        self.assertEqual(first, second)
+
+    def test_idempotent_with_linkage_jev_same_bytes(self):
+        # 带自有产物跑两次：接卡后输出仍字节一致
+        self._write_jsonl(self.linkage_path, self.LINKAGE_ROWS)
+        self._write_jsonl(self.jev_path, self.JEV_ROWS)
         first = self._run()
         second = self._run()
         self.assertEqual(first, second)
@@ -252,6 +386,25 @@ class RealWallSchemaTests(unittest.TestCase):
         self.assertTrue(self.wall["provenance"]["todays_picks_path"])
         self.assertTrue(self.wall["provenance"]["generated_from"])
         self.assertTrue(self.wall["provenance"]["missing"])
+
+    def test_real_wall_linkage_jev_cards(self):
+        # G1 自有产物接卡：id 不重复；linkage 卡 view 有实数；jev 卡同构
+        ids = [c["id"] for c in self.wall["strategists"]]
+        self.assertEqual(len(ids), len(set(ids)))
+        linkage = next((c for c in self.wall["strategists"]
+                        if c["id"] == "linkage"), None)
+        if linkage is not None:
+            # 真实 linkage_shadow.jsonl 存在 → view 已补实数（最近信号日口径）
+            self.assertTrue(linkage["view"])
+            self.assertIn("最近信号日", linkage["view"])
+            self.assertEqual(linkage["picks_count"], 0)
+        jev = next((c for c in self.wall["strategists"]
+                    if c["id"] == "jev"), None)
+        if jev is not None:
+            self.assertEqual(list(jev.keys()), wa.STRATEGIST_KEYS)
+            self.assertEqual(jev["top"], [])
+            self.assertIsNone(jev["score"])
+            self.assertIn("最近复核", jev["view"])
 
 
 if __name__ == "__main__":
