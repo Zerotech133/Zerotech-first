@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 """T7 纯离线审计：模拟真库与缓存，不调用行情网络。"""
+import argparse
+import ast
+import builtins
+import hashlib
 import json
 import os
+from pathlib import Path
 import sqlite3
 import sys
 
@@ -38,6 +43,78 @@ def _fixture(tmp_path):
     cache.write_text(json.dumps({"_meta": {"days": 9999, "saved_at": "sample"},
                                  "daily": daily}), encoding="utf-8")
     return db, cache, stocks
+
+
+def test_offline_cli_cache_override_reads_selected_source(tmp_path, monkeypatch):
+    """Execute only the isolated CLI branch, never the module's real defaults."""
+    db, cache_b, _ = _fixture(tmp_path)
+    cache_a = tmp_path / "default_cache.json"
+    cache_a.write_text('{"daily": {}, "_meta": {"days": 1}}', encoding="utf-8")
+    cache_a_bytes = cache_a.read_bytes()
+    cache_b_data = json.loads(cache_b.read_text(encoding="utf-8"))
+    cache_b_data["_meta"]["days"] = 42
+    cache_b.write_text(json.dumps(cache_b_data), encoding="utf-8")
+    selected_bytes = cache_b.read_bytes()
+
+    # The function's bound default still refers to the real cache. Guard both
+    # that path and the synthetic CLI default against accidental reads.
+    bound_default = factor.offline_main.__defaults__[1]
+    forbidden = {os.path.normcase(os.path.abspath(os.fspath(path)))
+                 for path in (bound_default, cache_a)}
+    original_open = builtins.open
+
+    def isolated_open(file, *args, **kwargs):
+        if isinstance(file, (str, bytes, os.PathLike)):
+            path = os.path.normcase(os.path.abspath(os.fsdecode(file)))
+            if path in forbidden:
+                raise AssertionError("offline CLI opened the default cache")
+        return original_open(file, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", isolated_open)
+    monkeypatch.setattr(
+        factor, "fetch_daily_cached",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("offline CLI must not fetch daily prices")))
+    calls = []
+
+    def isolated_offline_main(*args, **kwargs):
+        calls.append((args, kwargs.copy()))
+        return factor.offline_main(
+            db_path=str(db), output_dir=str(tmp_path), **kwargs)
+
+    # Compile only the existing __main__ statement rather than runpy.run_path:
+    # the full script would bind real DB/output defaults before isolation.
+    source = Path(factor.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=factor.__file__)
+    cli = next(node for node in tree.body
+               if isinstance(node, ast.If)
+               and isinstance(node.test, ast.Compare)
+               and isinstance(node.test.left, ast.Name)
+               and node.test.left.id == "__name__"
+               and len(node.test.comparators) == 1
+               and isinstance(node.test.comparators[0], ast.Constant)
+               and node.test.comparators[0].value == "__main__")
+    cli_code = compile(ast.fix_missing_locations(ast.Module(
+        body=[cli], type_ignores=[])), factor.__file__, "exec")
+    monkeypatch.setattr(sys, "argv", [factor.__file__, "--offline", "--cache", str(cache_b)])
+    namespace = {"__name__": "__main__", "argparse": argparse,
+                 "os": os, "sys": sys, "CACHE_PATH": str(cache_a),
+                 "offline_main": isolated_offline_main,
+                 "main": lambda: pytest.fail("online branch called"),
+                 "t3_retest": lambda: pytest.fail("retest branch called")}
+    exec(cli_code, namespace)
+
+    assert calls == [((), {"cache_path": str(cache_b)})]
+    assert namespace["CACHE_PATH"] == str(cache_b)
+    reports = list(tmp_path.glob("factor_t7-weekly-v2-offline_*.json"))
+    assert len(reports) == 1
+    report = json.loads(reports[0].read_text(encoding="utf-8"))
+    assert report["source"]["database"] == os.path.abspath(db)
+    assert report["source"]["cache"] == os.path.abspath(cache_b)
+    assert report["source"]["cache_sha256"] == hashlib.sha256(selected_bytes).hexdigest()
+    assert report["source"]["cache_days_hint_not_coverage"] == 42
+    assert cache_a.read_bytes() == cache_a_bytes
+    assert cache_b.read_bytes() == selected_bytes
 
 
 def test_offline_missing_cache_does_not_fetch_or_touch_legacy(tmp_path, monkeypatch):

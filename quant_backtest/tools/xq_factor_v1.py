@@ -999,6 +999,6 @@ if __name__ == "__main__":
     if args.t3_retest:
         t3_retest()
     elif args.offline:
-        print("[factor] offline audit written", offline_main())
+        print("[factor] offline audit written", offline_main(cache_path=CACHE_PATH))
     else:
         main()
