@@ -33,7 +33,7 @@ def sample(**changes):
     return freeze_offline(**fields)
 
 
-def plan(outbox, envelope, *, route="EXCHANGE_OBSERVE", target_id="desk1",
+def plan(outbox, envelope, *, route="QUANT_UPSTREAM_REPORT", target_id="desk1",
          intent_id="intent1", created_at=None, valid_until=None, **changes):
     return outbox.plan(
         envelope, route=route, target_type="desk", target_id=target_id,
@@ -44,7 +44,7 @@ def plan(outbox, envelope, *, route="EXCHANGE_OBSERVE", target_id="desk1",
         **changes)
 
 
-def claim(outbox, envelope, *, route="EXCHANGE_OBSERVE", target_id="desk1",
+def claim(outbox, envelope, *, route="QUANT_UPSTREAM_REPORT", target_id="desk1",
           token="tok1", claim_at=None, lease_until=None):
     return outbox.claim(
         envelope, route=route, target_type="desk", target_id=target_id,
@@ -111,7 +111,7 @@ def test_claim_finish_accepted_and_terminal():
         observed_at=T + timedelta(seconds=10))
     assert finished.outcome == ACCEPTED_VERIFIED
     assert finished.receipt is not None and finished.receipt.observed_at == T + timedelta(seconds=10)
-    assert outbox.get_intent(envelope, route="EXCHANGE_OBSERVE",
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                              target_type="desk", target_id="desk1").status == ACCEPTED_VERIFIED
     with pytest.raises(OutboxError, match="INTENT_NOT_CLAIMABLE"):
         claim(outbox, envelope)
@@ -137,7 +137,7 @@ def test_receipt_outside_claim_window_forces_unknown(bad_receipt):
     kwargs.update(bad_receipt)
     finished = outbox.finish(attempt.attempt_id, **kwargs)
     assert finished.outcome == UNKNOWN and finished.receipt is None
-    assert outbox.get_intent(envelope, route="EXCHANGE_OBSERVE",
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                              target_type="desk", target_id="desk1").status == UNKNOWN
     with pytest.raises(OutboxError, match="INTENT_NOT_CLAIMABLE"):
         claim(outbox, envelope)
@@ -167,7 +167,7 @@ def test_rejection_allows_bounded_retry_then_exhausted():
             now=T + timedelta(seconds=no * 10), external_message_id=f"rej-{no}",
             verification_source="provider", observed_at=T + timedelta(seconds=no * 5))
         assert finished.outcome == DEFINITELY_REJECTED
-        status = outbox.get_intent(envelope, route="EXCHANGE_OBSERVE",
+        status = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                                    target_type="desk", target_id="desk1").status
         assert status == (READY_OFFLINE if no < 3 else READY_OFFLINE)
     with pytest.raises(OutboxError, match="ATTEMPTS_EXHAUSTED"):
@@ -177,49 +177,46 @@ def test_rejection_allows_bounded_retry_then_exhausted():
 def test_cancel_and_revoke_fail_closed():
     outbox = RouteOutbox()
     envelope = sample()
-    plan(outbox, envelope, route="FEISHU_INFO", target_id="feishu-u1")
-    assert outbox.cancel(envelope, route="FEISHU_INFO", target_type="desk",
-                         target_id="feishu-u1", now=T) is True
-    assert outbox.get_intent(envelope, route="FEISHU_INFO", target_type="desk",
-                             target_id="feishu-u1").status == CANCELLED
-    plan(outbox, envelope, route="RESEARCH_PENDING", target_id="analyst1",
-         intent_id="intent-r")
-    attempt = claim(outbox, envelope, route="RESEARCH_PENDING", target_id="analyst1",
-                    token="tok-r")
+    plan(outbox, envelope, target_id="quant-desk-1", intent_id="intent-a")
+    assert outbox.cancel(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                         target_id="quant-desk-1", now=T) is True
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                             target_id="quant-desk-1").status == CANCELLED
+    plan(outbox, envelope, target_id="quant-desk-2", intent_id="intent-r")
+    attempt = claim(outbox, envelope, target_id="quant-desk-2", token="tok-r")
     outbox.revoke_envelope(envelope, epoch=1, now=T + timedelta(seconds=5))
-    revoked = outbox.get_intent(envelope, route="RESEARCH_PENDING",
-                                target_type="desk", target_id="analyst1")
+    revoked = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                                target_type="desk", target_id="quant-desk-2")
     assert revoked.status == UNKNOWN
     with pytest.raises(OutboxError, match="ATTEMPT_NOT_CURRENT"):
         outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
                       now=T + timedelta(seconds=6), external_message_id="m",
                       verification_source="s", observed_at=T + timedelta(seconds=6))
     with pytest.raises(OutboxError, match="EPOCH_STALE"):
-        plan(outbox, envelope, route="EXCHANGE_OBSERVE", target_id="desk1")
+        plan(outbox, envelope, target_id="quant-desk-3")
     with pytest.raises(OutboxError, match="EPOCH_NOT_ADVANCED"):
         outbox.revoke_envelope(envelope, epoch=1, now=T + timedelta(seconds=7))
 
 
-def test_three_routes_independent_and_attempt_audit_trail():
+def test_per_envelope_attempt_audit_trail_isolated():
     outbox = RouteOutbox()
     envelope = sample()
-    for name, target in (("FEISHU_INFO", "u1"), ("RESEARCH_PENDING", "a1"),
-                         ("EXCHANGE_OBSERVE", "desk1")):
-        plan(outbox, envelope, route=name, target_id=target, intent_id=f"i-{name}")
-    attempt = claim(outbox, envelope, route="FEISHU_INFO", target_id="u1",
+    other = sample(event_id="ev2")
+    plan(outbox, envelope, target_id="quant-desk-1", intent_id="i-1")
+    plan(outbox, other, target_id="quant-desk-1", intent_id="i-2")
+    attempt = claim(outbox, envelope, target_id="quant-desk-1",
                     claim_at=T + timedelta(seconds=1))
     outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
                   now=T + timedelta(seconds=2), external_message_id="m1",
                   verification_source="provider", observed_at=T + timedelta(seconds=2))
-    for name, target, expected in (("FEISHU_INFO", "u1", ACCEPTED_VERIFIED),
-                                   ("RESEARCH_PENDING", "a1", READY_OFFLINE),
-                                   ("EXCHANGE_OBSERVE", "desk1", READY_OFFLINE)):
-        assert outbox.get_intent(envelope, route=name, target_type="desk",
-                                 target_id=target).status == expected
-    assert len(outbox.get_attempts(envelope, route="EXCHANGE_OBSERVE",
-                                   target_type="desk", target_id="desk1")) == 0
-    assert len(outbox.get_attempts(envelope, route="FEISHU_INFO",
-                                   target_type="desk", target_id="u1")) == 1
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="desk", target_id="quant-desk-1").status == ACCEPTED_VERIFIED
+    assert outbox.get_intent(other, route="QUANT_UPSTREAM_REPORT",
+                             target_type="desk", target_id="quant-desk-1").status == READY_OFFLINE
+    assert len(outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="desk", target_id="quant-desk-1")) == 1
+    assert len(outbox.get_attempts(other, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="desk", target_id="quant-desk-1")) == 0
 
 
 def test_claim_windows_and_token_reuse_fail_closed():

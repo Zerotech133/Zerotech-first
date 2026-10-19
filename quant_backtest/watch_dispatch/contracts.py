@@ -13,7 +13,7 @@ _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _MARKET = re.compile(r"[A-Z][A-Z0-9_]{0,15}\Z")
 _CODE = re.compile(r"[A-Za-z0-9][A-Za-z0-9.:-]{0,31}\Z")
 _NUMBER = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?\Z")
-_ROUTES = frozenset(("FEISHU_INFO", "RESEARCH_PENDING", "EXCHANGE_OBSERVE"))
+_ROUTES = frozenset(("QUANT_UPSTREAM_REPORT",))
 
 
 def _match(value: object, pattern: re.Pattern[str], field: str) -> None:
@@ -170,6 +170,14 @@ def freeze_offline(**values: object) -> EvidenceEnvelope:
 
 @dataclass(frozen=True)
 class RouteIntent:
+    """Single-upstream reporting intent: watch reports ONLY to its parent layer.
+
+    Monitoring (watch) is a sub-module of quant trading. Anomalies and problems
+    are reported upward to the quant trading department, which owns any fan-out
+    to Feishu, research, or the trading desk. Watch never delivers to those
+    channels directly; only QUANT_UPSTREAM_REPORT is a valid route here.
+    """
+
     intent_id: str
     event_id: str
     evidence_version: int

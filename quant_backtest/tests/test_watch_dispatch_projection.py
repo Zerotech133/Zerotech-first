@@ -52,21 +52,20 @@ def test_evidence_projection_reflects_store_state():
 def test_outbox_projection_read_only_and_unplanned_rows():
     envelope = sample()
     outbox = RouteOutbox()
-    routes = (("FEISHU_INFO", "desk", "u1"),
-              ("RESEARCH_PENDING", "desk", "a1"),
-              ("EXCHANGE_OBSERVE", "desk", "desk1"))
+    routes = (("QUANT_UPSTREAM_REPORT", "desk", "quant-desk-1"),
+              ("QUANT_UPSTREAM_REPORT", "desk", "quant-desk-2"))
     rows = outbox_projection(envelope, outbox, routes)
     assert all(row["status"] == "UNPLANNED" for row in rows)
     assert all(row["executable"] is False for row in rows)
-    outbox.plan(envelope, route="EXCHANGE_OBSERVE", target_type="desk",
-                target_id="desk1", policy_version="p1", control_epoch=0,
+    outbox.plan(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                target_id="quant-desk-1", policy_version="p1", control_epoch=0,
                 intent_id="i-1", created_at=T, valid_until=T + timedelta(minutes=10))
     rows = outbox_projection(envelope, outbox, routes)
-    by_route = {row["route"]: row for row in rows}
-    assert by_route["EXCHANGE_OBSERVE"]["status"] == "READY_OFFLINE"
-    assert by_route["FEISHU_INFO"]["status"] == "UNPLANNED"
-    assert outbox.get_attempts(envelope, route="EXCHANGE_OBSERVE",
-                               target_type="desk", target_id="desk1") == ()
+    by_target = {row["target_id"]: row for row in rows}
+    assert by_target["quant-desk-1"]["status"] == "READY_OFFLINE"
+    assert by_target["quant-desk-2"]["status"] == "UNPLANNED"
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="desk", target_id="quant-desk-1") == ()
 
 
 def test_shadow_projection_time_split_and_never_executable():
@@ -103,7 +102,7 @@ def test_gate_projection_is_constants_only():
 def test_render_html_static_escaped_and_script_free():
     envelope = sample()
     outbox = RouteOutbox()
-    routes = (("FEISHU_INFO", "desk", "u1"),)
+    routes = (("QUANT_UPSTREAM_REPORT", "desk", "u1"),)
     rows = outbox_projection(envelope, outbox, routes)
     hostile = dict(rows[0], target_id="u<script>alert(1)</script>")
     shadow_rows = shadow_projection(envelope, ShadowLedger(), T)

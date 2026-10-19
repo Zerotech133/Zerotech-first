@@ -1,8 +1,10 @@
-"""Offline three-route observation outbox. No send, no trade, no persistence root.
+"""Offline single-upstream reporting outbox. No send, no trade, no persistence root.
 
-Every route keeps an independent intent, attempt and receipt timeline. Unknown
-outcomes are terminal here: only an independently verified definite rejection
-returns an intent to READY_OFFLINE for a bounded controlled retry.
+Watch reports anomalies upward to the quant trading department only; the parent
+layer owns any fan-out to Feishu, research or the trading desk. Each report
+keeps an independent intent, attempt and receipt timeline. Unknown outcomes are
+terminal here: only an independently verified definite rejection returns an
+intent to READY_OFFLINE for a bounded controlled retry.
 """
 from __future__ import annotations
 

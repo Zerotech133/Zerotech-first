@@ -33,7 +33,7 @@ def sample(**changes):
 def route(envelope, **changes):
     fields = dict(intent_id="intent1", event_id=envelope.event_id,
                   evidence_version=envelope.evidence_version,
-                  envelope_hash=envelope.envelope_hash, route="EXCHANGE_OBSERVE",
+                  envelope_hash=envelope.envelope_hash, route="QUANT_UPSTREAM_REPORT",
                   target_type="desk", target_id="desk1", tenant_scope="owner1",
                   payload_digest=H, policy_version="p1", control_epoch=0,
                   created_at=T, valid_until=T + timedelta(minutes=5))
@@ -86,17 +86,21 @@ def test_digest_tampering_and_chain_binding():
         second.validate(previous=replace(first, raw_digest="b" * 64))
 
 
-def test_three_routes_have_independent_target_keys_and_never_execute():
+def test_single_upstream_route_keys_differ_by_target_and_never_execute():
     envelope = sample()
     keys = set()
-    for name in ("FEISHU_INFO", "RESEARCH_PENDING", "EXCHANGE_OBSERVE"):
-        r = route(envelope, route=name)
+    for target in ("quant-desk-1", "quant-desk-2"):
+        r = route(envelope, target_id=target)
         keys.add(r.idempotency_key(envelope))
-    assert len(keys) == 3
+    assert len(keys) == 2
     assert route(envelope).idempotency_key(envelope) != route(envelope, target_id="desk2").idempotency_key(envelope)
+    for bad_route in ("FEISHU_INFO", "RESEARCH_PENDING", "EXCHANGE_OBSERVE",
+                      "SIM_DISPATCH", "DIRECT_FEISHU"):
+        with pytest.raises(ValueError):
+            route(envelope, route=bad_route).validate(envelope)
     for change in ({"executable": True}, {"observation_only": False},
                    {"no_order_permission": False}, {"status": "SENT"},
-                   {"tenant_scope": "other"}, {"route": "SIM_DISPATCH"},
+                   {"tenant_scope": "other"},
                    {"control_epoch": True}, {"created_at": T - timedelta(seconds=1)}):
         with pytest.raises(ValueError):
             route(envelope, **change).validate(envelope)

@@ -20,9 +20,7 @@ from quant_backtest.watch_dispatch.projections import (
 
 T = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)
 H = "a" * 64
-ROUTES = (("FEISHU_INFO", "desk", "u1"),
-          ("RESEARCH_PENDING", "desk", "a1"),
-          ("EXCHANGE_OBSERVE", "desk", "desk1"))
+ROUTES = (("QUANT_UPSTREAM_REPORT", "desk", "quant-desk-1"),)
 
 
 def sample(**changes):
@@ -104,13 +102,13 @@ class PassRisk:
 def test_full_offline_chain_end_to_end():
     envelope = sample()
     store, outbox, gate, ledger = build_chain(envelope)
-    attempt = outbox.claim(envelope, route="FEISHU_INFO", target_type="desk",
-                           target_id="u1", claim_token="tok-1",
+    attempt = outbox.claim(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                           target_id="quant-desk-1", claim_token="tok-1",
                            claim_at=envelope.freeze_at,
                            lease_until=envelope.valid_until - timedelta(minutes=5))
     outbox.finish(attempt.attempt_id, outcome="ACCEPTED_VERIFIED",
                   now=envelope.freeze_at + timedelta(seconds=30),
-                  external_message_id="msg-1", verification_source="provider:feishu",
+                  external_message_id="msg-1", verification_source="provider:quant-desk",
                   observed_at=envelope.freeze_at + timedelta(seconds=10))
     verdict = gate.consume(envelope, authorization_id="auth-1",
                            now=envelope.freeze_at + timedelta(minutes=1),
@@ -124,10 +122,8 @@ def test_full_offline_chain_end_to_end():
         reviewed_at=envelope.freeze_at + timedelta(minutes=2),
         posterior_refs=("post:1",), hindsight_note="held"))
     rows = outbox_projection(envelope, outbox, ROUTES)
-    by_route = {row["route"]: row for row in rows}
-    assert by_route["FEISHU_INFO"]["status"] == "ACCEPTED_VERIFIED"
-    assert by_route["RESEARCH_PENDING"]["status"] == "READY_OFFLINE"
-    assert by_route["EXCHANGE_OBSERVE"]["status"] == "READY_OFFLINE"
+    assert rows[0]["route"] == "QUANT_UPSTREAM_REPORT"
+    assert rows[0]["status"] == "ACCEPTED_VERIFIED"
     assert shadow_projection(envelope, ledger,
                              envelope.freeze_at + timedelta(minutes=1))[0][
         "visible_review_ids"] == ()
@@ -140,8 +136,8 @@ def test_expired_evidence_closes_every_domain():
     store, outbox, gate, ledger = build_chain(envelope)
     expired = envelope.valid_until
     with pytest.raises(ValueError):
-        outbox.claim(envelope, route="FEISHU_INFO", target_type="desk",
-                     target_id="u1", claim_token="tok-x", claim_at=expired,
+        outbox.claim(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                     target_id="quant-desk-1", claim_token="tok-x", claim_at=expired,
                      lease_until=expired + timedelta(minutes=1))
     with pytest.raises(ValueError):
         ledger.append_decision(envelope, ShadowDecision(
@@ -160,14 +156,14 @@ def test_gate_revocation_does_not_touch_outbox_accounts():
     envelope = sample()
     store, outbox, gate, ledger = build_chain(envelope)
     gate.revoke_envelope(envelope, epoch=1, now=envelope.freeze_at + timedelta(seconds=1))
-    before = outbox.get_intent(envelope, route="FEISHU_INFO", target_type="desk",
-                               target_id="u1")
+    before = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                               target_id="quant-desk-1")
     verdict = gate.consume(envelope, authorization_id="auth-1",
                            now=envelope.freeze_at + timedelta(minutes=1),
                            authority_port=PassAuthority(gate._authorizations["auth-1"]),
                            risk_port=PassRisk(envelope))
-    after = outbox.get_intent(envelope, route="FEISHU_INFO", target_type="desk",
-                              target_id="u1")
+    after = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                              target_id="quant-desk-1")
     assert verdict.status == "BLOCKED" and verdict.code == "IDENTITY_BLOCKED"
     assert before == after and after.status == "READY_OFFLINE"
 
@@ -185,25 +181,32 @@ def test_wrong_identity_envelope_isolated_across_domains():
     assert verdict.status == "BLOCKED" and verdict.code == "AUTH_IDENTITY_MISMATCH"
 
 
-def test_three_route_receipts_stay_independent_end_to_end():
+def test_upstream_report_receipt_states_stay_independent_per_envelope():
     envelope = sample()
+    other = sample(event_id="ev2")
     store, outbox, gate, ledger = build_chain(envelope)
-    first = outbox.claim(envelope, route="EXCHANGE_OBSERVE", target_type="desk",
-                         target_id="desk1", claim_token="tok-e",
+    store.freeze(other)
+    outbox.plan(other, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                target_id="quant-desk-1", policy_version="p1", control_epoch=0,
+                intent_id="i-other", created_at=T, valid_until=T + timedelta(minutes=29))
+    first = outbox.claim(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                         target_id="quant-desk-1", claim_token="tok-e",
                          claim_at=envelope.freeze_at,
                          lease_until=envelope.valid_until - timedelta(minutes=5))
     outbox.finish(first.attempt_id, outcome="UNKNOWN",
                   now=envelope.freeze_at + timedelta(minutes=6))
-    second = outbox.claim(envelope, route="RESEARCH_PENDING", target_type="desk",
-                          target_id="a1", claim_token="tok-r",
-                          claim_at=envelope.freeze_at,
-                          lease_until=envelope.valid_until - timedelta(minutes=5))
+    second = outbox.claim(other, route="QUANT_UPSTREAM_REPORT", target_type="desk",
+                          target_id="quant-desk-1", claim_token="tok-r",
+                          claim_at=T, lease_until=T + timedelta(minutes=25))
     outbox.finish(second.attempt_id, outcome="DEFINITELY_REJECTED",
-                  now=envelope.freeze_at + timedelta(seconds=30),
-                  external_message_id="rej-1", verification_source="provider:research",
-                  observed_at=envelope.freeze_at + timedelta(seconds=20))
-    rows = {row["route"]: row for row in outbox_projection(envelope, outbox, ROUTES)}
-    assert rows["EXCHANGE_OBSERVE"]["status"] == "UNKNOWN"
-    assert rows["RESEARCH_PENDING"]["status"] == "READY_OFFLINE"
-    assert rows["RESEARCH_PENDING"]["attempt_count"] == 1
-    assert rows["FEISHU_INFO"]["status"] == "READY_OFFLINE"
+                  now=T + timedelta(seconds=30), external_message_id="rej-1",
+                  verification_source="provider:quant-desk",
+                  observed_at=T + timedelta(seconds=20))
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="desk", target_id="quant-desk-1").status == "UNKNOWN"
+    assert outbox.get_intent(other, route="QUANT_UPSTREAM_REPORT",
+                             target_type="desk", target_id="quant-desk-1").status == "READY_OFFLINE"
+    assert len(outbox.get_attempts(other, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="desk", target_id="quant-desk-1")) == 1
+    assert len(outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="desk", target_id="quant-desk-1")) == 1
