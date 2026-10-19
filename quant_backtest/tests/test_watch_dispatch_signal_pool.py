@@ -302,6 +302,65 @@ def test_claim_rejects_past_or_unknown_targets():
     assert pool.get("sig-1").status == STATUS_OPEN
 
 
+# ---------------------------------------------------------------------------
+# Non-zero-offset aware datetimes: every entry point must raise
+# SignalPoolError (a ValueError subclass), never a bare ValueError leaking
+# from canonical.utc_text.
+# ---------------------------------------------------------------------------
+OFFSET_TZ = timezone(timedelta(hours=8))
+
+
+def _assert_utc_required(excinfo):
+    assert isinstance(excinfo.value, SignalPoolError)
+    assert isinstance(excinfo.value, ValueError)
+    assert "UTC_REQUIRED" in str(excinfo.value)
+
+
+def test_nonzero_offset_now_rejected_at_append():
+    env = envelope_v1()
+    pool, store = fresh_pool(env)
+    with pytest.raises(SignalPoolError) as excinfo:
+        pool.append(draft("sig-1", env), producer=watch_agent(),
+                    store=store, now=T.astimezone(OFFSET_TZ))
+    _assert_utc_required(excinfo)
+    assert pool.get("sig-1") is None
+
+
+def test_nonzero_offset_now_rejected_at_claim():
+    env = envelope_v1()
+    pool, store = fresh_pool(env)
+    pool.append(draft("sig-1", env), producer=watch_agent(), store=store, now=T)
+    with pytest.raises(SignalPoolError) as excinfo:
+        pool.claim("sig-1", lease_until=LATER, now=T.astimezone(OFFSET_TZ))
+    _assert_utc_required(excinfo)
+    with pytest.raises(SignalPoolError) as lease_excinfo:
+        pool.claim("sig-1", lease_until=LATER.astimezone(OFFSET_TZ), now=T)
+    _assert_utc_required(lease_excinfo)
+    assert pool.get("sig-1").status == STATUS_OPEN
+
+
+def test_nonzero_offset_now_rejected_at_list_open():
+    env = envelope_v1()
+    pool, store = fresh_pool(env)
+    pool.append(draft("sig-1", env), producer=watch_agent(), store=store, now=T)
+    with pytest.raises(SignalPoolError) as excinfo:
+        pool.list_open(T.astimezone(OFFSET_TZ))
+    _assert_utc_required(excinfo)
+    assert len(pool.list_open(T)) == 1
+
+
+def test_nonzero_offset_now_rejected_at_revoke():
+    env = envelope_v1()
+    pool, store = fresh_pool(env)
+    pool.append(draft("sig-1", env), producer=watch_agent(), store=store, now=T)
+    with pytest.raises(SignalPoolError) as excinfo:
+        pool.revoke("sig-1", now=T.astimezone(OFFSET_TZ))
+    _assert_utc_required(excinfo)
+    assert pool.get("sig-1").status == STATUS_OPEN
+    # State untouched: a proper UTC revoke still succeeds afterwards.
+    assert pool.revoke("sig-1", now=T).epoch == 1
+
+
 def test_append_rejects_mismatched_store_instance():
     pool, store = fresh_pool(envelope_v1())
     other = store_with(envelope_v1())

@@ -35,6 +35,18 @@ and has no revocation primitive, so a frozen envelope identity found in the
 store is by construction un-revoked; the read-only lookup
 ``_find_frozen`` is the single place to extend should the store ever grow a
 revocation concept.
+
+Behavior clarifications (recorded for product review):
+- Cross-producer dedupe: the same event_id with a different evidence_hash
+  from a different producer yields fully independent entries — dedupe and
+  conflict verdicts are judged strictly inside each producer's own domain,
+  and cross-producer entries are never merged or overwritten. This
+  behavior is frozen by adversarial tests and awaits a product ruling
+  before any cross-producer merge semantics may be introduced.
+- Upstream non-acceptance outcomes: after an upstream result of UNKNOWN or
+  DEFINITELY_REJECTED, an entry returns to OPEN through lazy expired-lease
+  recycling on the next read or claim (see ``_recycle``); there is no
+  explicit release API by design.
 """
 from __future__ import annotations
 
@@ -87,6 +99,7 @@ CLAIM_STATE_INVALID = "CLAIM_STATE_INVALID"
 ACCEPT_STATE_INVALID = "ACCEPT_STATE_INVALID"
 RECEIPT_INVALID = "RECEIPT_INVALID"
 RECEIPT_OUTCOME_INVALID = "RECEIPT_OUTCOME_INVALID"
+UTC_REQUIRED = "UTC_REQUIRED"
 REVOKE_FINAL = "REVOKE_FINAL"
 EPOCH_INVALID = "EPOCH_INVALID"
 SIGNAL_UNKNOWN = "SIGNAL_UNKNOWN"
@@ -106,10 +119,19 @@ def _label(value: object, field: str) -> None:
 
 
 def _require_utc(value: object, field: str) -> None:
-    """Reject naive or non-UTC datetimes (agent_reporting._utc discipline)."""
+    """Reject non-datetime, naive, and non-zero-offset (non-UTC) values.
+
+    ``canonical.utc_text`` raises a bare ``ValueError("UTC_REQUIRED")`` for
+    a non-zero UTC offset; this wrapper converts every such rejection into
+    ``SignalPoolError`` so no entry path can leak a foreign error type.
+    ``canonical.py`` is a frozen module and is never modified here.
+    """
     if type(value) is not datetime or value.tzinfo is None or value.utcoffset() is None:
         raise SignalPoolError(field + "_INVALID")
-    utc_text(value)  # type: ignore[arg-type]
+    try:
+        utc_text(value)  # type: ignore[arg-type]
+    except ValueError as exc:  # bare ValueError("UTC_REQUIRED") from canonical
+        raise SignalPoolError(UTC_REQUIRED) from exc
 
 
 def _sha_hex(value: object, field: str) -> None:
