@@ -19,7 +19,6 @@ import os
 import re
 import subprocess
 import sys
-import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -34,6 +33,7 @@ from llm import OllamaLLM  # noqa: E402
 from memory import MemoryStore  # noqa: E402
 from tools import make_context, quote_snapshot, kline_daily  # noqa: E402
 from regime_roster import dk_snapshot, enrich_row, bars_to_df  # noqa: E402  M4-P3 双刀阵容
+from strategy_runtime import run_strategy as _rt_run_strategy  # noqa: E402  拍板01 唯一口径
 
 BASKET = ["600519", "000858", "601318", "300750", "600036"]  # 茅台/五粮液/平安/宁德/招行
 
@@ -69,8 +69,22 @@ LEDGER = DATA_ROOT / "shadow" / "shadow_ledger.jsonl"
 REC_SCORE = {"STRONG_BUY": 2.0, "BUY": 1.0, "HOLD": 0.0, "WATCH": -0.5,
              "SELL": -1.0, "STRONG_SELL": -2.0}
 # 运行期单策略产出超时（§5.2 过渡缓解）：M3 受理沙箱挡不住运行期死循环数据，
-# 17:10 首跑挂死风险兜底——超时/异常单策略 fail-open 跳过，其余照常落账
-PROPOSE_TIMEOUT_S = 10.0
+# 17:10 首跑挂死风险兜底——超时/异常单策略 fail-open 跳过，其余照常落账。
+# 时长三通道（任务 #112）：传参 timeout_s > 环境变量 SHADOW_PROPOSE_TIMEOUT_S
+# （导入期解析一次；未设/非法/非正值回退默认，>0 合法浮点才生效）> 默认 10.0。
+def _env_propose_timeout(default):
+    """SHADOW_PROPOSE_TIMEOUT_S → float；未设/坏值回退 default。"""
+    raw = os.environ.get("SHADOW_PROPOSE_TIMEOUT_S")
+    if not raw:
+        return default
+    try:
+        v = float(raw)
+    except ValueError:
+        return default
+    return v if v > 0 else default
+
+
+PROPOSE_TIMEOUT_S = _env_propose_timeout(10.0)
 # failed 即时告警（K-STOCK-013）：复用已验证推送链；P0 语义=不等 17:35 日报
 PUSH_SCRIPT = BASE.parent / "news_collector" / "send_feishu.py"
 # ★判例对齐：p0_alert_state 不立并列常量（读侧 95 行走 _data_root() 运行时反推，
@@ -179,63 +193,87 @@ def parse_decision(text):
 def _propose_with_timeout(registry, strategy_id, context, timeout_s=None):
     """单策略产出超时包裹（设计稿风险表 §5.2 过渡缓解：运行期防拖死）。
 
-    背景：M3 受理沙箱（codex_bridge.sandbox_trial）只在插件受理时挡了一轮；
-    运行期若某插件 propose 在特定数据上死循环（受理试跑数据有限挡不住），
-    进程内调用会拖死整个影子 run——周一 17:10 首跑即挂。此处对每次
-    registry.run(...) 加超时，超时/异常均 fail-open 跳过该策略（stderr 一行
-    诊断），不拖垮其余策略、不中断影子主链。
+    唯一口径（拍板 01，2026-10-18）：超时包裹机制已收敛到
+    engine/strategy_runtime.run_strategy（裸 daemon Thread + 结果盒，
+    禁 ThreadPoolExecutor——其 worker 3.9+ 非 daemon，解释器退出会
+    join 全部 worker，死循环策略会把进程挂在 exit 上，与「防拖死」
+    目标自相矛盾）。本函数收缩为对该隔离门的薄封装，仅做影子域
+    语义转换：
 
-    口径与理由（docstring 即裁决）：
-    - Python 线程无法强杀：超时后 worker 线程继续后台跑（GIL 下 CPU 死循环
-      杀不掉），随进程生命周期回收（daemon 线程，进程退出即终止）——僵尸
-      线程可接受：受理时 M3 已挡一轮，运行期长尾用「跳过」兜底即可，不值得
-      为强杀引入子进程隔离的复杂度。
-    - 不用 ThreadPoolExecutor：其 worker 线程 3.9+ 为非 daemon 且解释器
-      退出时会 join 全部 worker——死循环插件会把整个进程挂在 exit 上，
-      与「防拖死」目标自相矛盾。故用裸 daemon Thread + 结果盒语义。
-    - registry.run 抛异常（含 StrategyError）：对齐本文件 done 分支既有
-      fail-open 风格（strategy 域降级不碰影子主链），按单策略粒度
-      fail-open + stderr 诊断返回 None；调用方（_collect_verdicts）计数。
-    - timeout_s 缺省读模块级 PROPOSE_TIMEOUT_S（None 哨兵而非默认参数绑定，
-      保证 monkeypatch 常量对无参调用生效）。
+    - fail-visible → fail-open：隔离门返回 timeout/error/rejected 的
+      result dict，此处转 stderr 一行诊断 + None（跳过该策略、不中断
+      影子主链，对齐本文件 done 分支既有风格）；调用方 _collect_verdicts
+      据此计数。
+    - registry.run 抛异常（含 StrategyError）：隔离门结果盒已捕获转
+      error 分支，fail-open 行为不变。
+    - timeout_s 缺省读模块级 PROPOSE_TIMEOUT_S（None 哨兵而非默认参数
+      绑定，保证 monkeypatch 常量对无参调用生效）。
+    - Python 线程无法强杀：超时后 worker 继续后台跑，随进程退出回收
+      （daemon）；受理时 M3 已挡一轮，运行期长尾用「跳过」兜底。
     """
     if timeout_s is None:
         timeout_s = PROPOSE_TIMEOUT_S
-    box = {}
-
-    def _work():
-        try:
-            box["verdict"] = registry.run(strategy_id, context)
-        except BaseException as e:  # noqa: BLE001  单策略异常 fail-open，见 docstring
-            box["error"] = e
-
-    t = threading.Thread(target=_work, name="shadow-propose-%s" % strategy_id,
-                         daemon=True)
-    t.start()
-    t.join(timeout_s)
-    if t.is_alive():
+    r = _rt_run_strategy(registry, strategy_id, context, timeout_s=timeout_s)
+    status = r["status"]
+    if status == "success":
+        return r.get("verdict")
+    if status == "timeout":
         print("[strategy] %s propose 超时（>%.1fs），fail-open 跳过"
               % (strategy_id, timeout_s), file=sys.stderr)
-        return None
-    if "error" in box:
+    else:  # error / rejected：隔离门 error 字段含 strategy_id 前缀诊断
         print("[strategy] %s propose 异常 fail-open 跳过：%s"
-              % (strategy_id, str(box["error"])[:120]), file=sys.stderr)
-        return None
-    return box.get("verdict")
+              % (strategy_id, str(r.get("error"))[:120]), file=sys.stderr)
+    return None
+
+
+def _skip_record(strategy_id, result):
+    """隔离门非 success 结果 → 落账 skip 记录（任务 #112：SKIPPED_* + reason）。
+
+    reason 取隔离门 error 字段（含 strategy_id 前缀诊断，超时形如
+    「strategy_id=x 执行超时（N.NNNs；后台线程无法强杀）」），截 200 字符。"""
+    status = result.get("status")
+    if status == "timeout":
+        st = "SKIPPED_TIMEOUT"
+    else:  # error / rejected
+        st = "SKIPPED_ERROR"
+    return {"strategy_id": strategy_id, "status": st,
+            "reason": str(result.get("error") or status)[:200]}
+
+
+def _collect_verdicts_with_skips(registry, context, timeout_s=None):
+    """done 分支逐策略产出（任务 #112 扩展）：返回 (vs, skips)。
+
+    - vs：成功策略的 Verdict 列表（与 _collect_verdicts 口径一致）；
+    - skips：被跳过策略的落账记录，元素形如
+      {"strategy_id", "status": "SKIPPED_TIMEOUT"|"SKIPPED_ERROR", "reason"}，
+      由调用方挂到影子账本行 strategy_skipped 字段；
+    - 主链继续：单策略超时/异常只产生一条 skip 记录，绝不中断循环。
+    timeout_s 缺省读模块级 PROPOSE_TIMEOUT_S（None 哨兵，调用期解析）。"""
+    if timeout_s is None:
+        timeout_s = PROPOSE_TIMEOUT_S
+    vs, skips = [], []
+    for sid in registry.list_ids():
+        r = _rt_run_strategy(registry, sid, context, timeout_s=timeout_s)
+        if r["status"] == "success":
+            vs.append(r.get("verdict"))
+            continue
+        skips.append(_skip_record(sid, r))
+        if r["status"] == "timeout":
+            print("[strategy] %s propose 超时（>%.1fs），fail-open 跳过"
+                  % (sid, timeout_s), file=sys.stderr)
+        else:  # error / rejected：隔离门 error 字段含 strategy_id 前缀诊断
+            print("[strategy] %s propose 异常 fail-open 跳过：%s"
+                  % (sid, str(r.get("error"))[:120]), file=sys.stderr)
+    if skips:
+        print("[warn] strategy 域跳过 %d 个策略（超时/异常 fail-open，影子主链不受影响）"
+              % len(skips))
+    return vs, skips
 
 
 def _collect_verdicts(registry, context, timeout_s=None):
-    """done 分支逐策略产出：超时/异常的策略跳过并计数，其余照常入 vs 列表。"""
-    vs, skipped = [], 0
-    for sid in registry.list_ids():
-        v = _propose_with_timeout(registry, sid, context, timeout_s=timeout_s)
-        if v is None:
-            skipped += 1
-        else:
-            vs.append(v)
-    if skipped:
-        print("[warn] strategy 域跳过 %d 个策略（超时/异常 fail-open，影子主链不受影响）"
-              % skipped)
+    """done 分支逐策略产出：超时/异常的策略跳过并计数，其余照常入 vs 列表。
+    （兼容入口：等价 _collect_verdicts_with_skips(...)[0]，签名/返回不变。）"""
+    vs, _skips = _collect_verdicts_with_skips(registry, context, timeout_s=timeout_s)
     return vs
 
 
@@ -421,13 +459,17 @@ def main():
                                            if len(b) > 2 and b[2] is not None]}
                         # §5.2 过渡缓解：逐策略超时包裹（超时/异常 fail-open
                         # 跳过该策略，不拖垮其余；落账 schema/verdict_key 不变）
-                        vs = _collect_verdicts(reg, sctx)
+                        vs, skipped_recs = _collect_verdicts_with_skips(reg, sctx)
                         srep = record_verdicts(vs, root=DATA_ROOT,
                                                trade_date=today,
                                                run_id=result["run_id"])
                         print("[strategy] %s 产出 %d 条 recorded=%d replayed=%d"
                               % (symbol, len(vs), srep["recorded"],
                                  srep["replayed"]))
+                        # 任务 #112：超时/异常跳过的策略落账进影子行（带 reason）；
+                        # 无 skip 时不加键（m5.v1 超集兼容，附加可选字段）
+                        if skipped_recs:
+                            row["strategy_skipped"] = skipped_recs
                     except Exception as _se:  # noqa: BLE001
                         print("[warn] strategy 域降级（影子主链不受影响）：%s"
                               % str(_se)[:120])

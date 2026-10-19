@@ -13,6 +13,7 @@ Codex bridge / Hermes gateway 后续走 adapters/ 对接，不重造幂等账本
 - 红线继承：策略只产建议（Verdict），execution_allowed 恒 False——
   下单归 K-STOCK execution 线，本域不持有任何凭据。
 """
+from copy import deepcopy
 from dataclasses import dataclass, field
 import hashlib
 import json
@@ -21,6 +22,10 @@ from pathlib import Path
 
 RECOMMENDATIONS = ("strong_buy", "buy", "hold", "sell", "strong_sell")
 STANCES = ("bull", "bear", "neutral")
+LIFECYCLE_STATES = ("experimental", "active", "deprecated", "retired")
+DEFAULT_STRATEGY_VERSION = "1.0.0"
+DEFAULT_STRATEGY_FAMILY = "legacy"
+DEFAULT_LIFECYCLE_STATE = "active"
 CONFIDENCE_MIN, CONFIDENCE_MAX = 0.0, 1.0
 
 
@@ -65,6 +70,10 @@ class StrategyAgent:
     """
 
     strategy_id = ""             # 全局唯一，注册时校验
+    version = DEFAULT_STRATEGY_VERSION
+    family = DEFAULT_STRATEGY_FAMILY
+    capability_manifest = ()
+    lifecycle_state = DEFAULT_LIFECYCLE_STATE
     stance = "neutral"
 
     def propose(self, context):
@@ -76,17 +85,48 @@ class StrategyRegistry:
 
     def __init__(self):
         self._strategies = {}
+        self._authorizations = {}
+
+    @staticmethod
+    def _validate_manifest(agent, sid):
+        version = getattr(agent, "version", DEFAULT_STRATEGY_VERSION)
+        family = getattr(agent, "family", DEFAULT_STRATEGY_FAMILY)
+        capabilities = getattr(agent, "capability_manifest", ())
+        lifecycle_state = getattr(agent, "lifecycle_state", DEFAULT_LIFECYCLE_STATE)
+        if not isinstance(version, str) or not version.strip():
+            raise StrategyError("%s version 缺失或非法" % sid)
+        if not isinstance(family, str) or not family.strip():
+            raise StrategyError("%s family 缺失或非法" % sid)
+        if not isinstance(capabilities, (tuple, list, set, frozenset)):
+            raise StrategyError("%s capability_manifest 必须为字符串序列" % sid)
+        if any(not isinstance(capability, str) or not capability.strip()
+               for capability in capabilities):
+            raise StrategyError("%s capability_manifest 含非法能力项" % sid)
+        if lifecycle_state not in LIFECYCLE_STATES:
+            raise StrategyError("%s lifecycle_state=%s 不在 %s"
+                                % (sid, lifecycle_state, LIFECYCLE_STATES))
+
+    @staticmethod
+    def _manifest(agent):
+        return {
+            "strategy_id": agent.strategy_id,
+            "version": agent.version,
+            "family": agent.family,
+            "capability_manifest": list(agent.capability_manifest),
+            "lifecycle_state": agent.lifecycle_state,
+        }
 
     def register(self, agent):
         if not isinstance(agent, StrategyAgent):
             raise StrategyError("仅接受 StrategyAgent 子类实例：%r" % type(agent))
         sid = getattr(agent, "strategy_id", "")
-        if not sid:
-            raise StrategyError("strategy_id 缺失，拒绝注册")
+        if not isinstance(sid, str) or not sid.strip():
+            raise StrategyError("strategy_id 缺失或非法，拒绝注册")
         if sid in self._strategies:
             raise StrategyError("strategy_id=%s 重复注册（同键异值=漂移拒绝）" % sid)
         if agent.stance not in STANCES:
             raise StrategyError("%s stance=%s 不在 %s" % (sid, agent.stance, STANCES))
+        self._validate_manifest(agent, sid)
         self._strategies[sid] = agent
         return sid
 
@@ -95,11 +135,54 @@ class StrategyRegistry:
             raise StrategyError("strategy_id=%s 未注册" % sid)
         return self._strategies[sid]
 
+    def bind_authorization(self, authorization):
+        """绑定显式运行授权快照，拒绝未注册策略或身份漂移。"""
+        try:
+            from strategy_config import RunAuthorization
+        except ImportError:  # pragma: no cover - 包方式导入时使用
+            from .strategy_config import RunAuthorization
+        if not isinstance(authorization, RunAuthorization):
+            raise StrategyError("authorization 必须是 RunAuthorization")
+        sid = authorization.strategy_id
+        agent = self.get(sid)
+        if getattr(agent, "version", None) != authorization.version:
+            raise StrategyError(
+                "strategy_id=%s version 不匹配：注册=%s 授权=%s"
+                % (sid, getattr(agent, "version", None), authorization.version)
+            )
+        self._authorizations[sid] = authorization
+        return self.authorization(sid)
+
+    def authorization(self, sid):
+        """返回已绑定授权的不可变快照。"""
+        if sid not in self._authorizations:
+            raise StrategyError("strategy_id=%s 未绑定运行授权" % sid)
+        return self._authorizations[sid]
+
+    def list_authorizations(self):
+        return [self.authorization(sid) for sid in sorted(self._authorizations)]
+
     def list_ids(self, stance=None):
         ids = sorted(self._strategies)
         if stance is None:
             return ids
         return [s for s in ids if self._strategies[s].stance == stance]
+
+    def metadata(self, sid):
+        """返回单策略元数据快照，不暴露可变的插件字段。"""
+        if sid not in self._strategies:
+            raise StrategyError("strategy_id=%s 未注册" % sid)
+        return deepcopy(self._manifest(self._strategies[sid]))
+
+    def list_manifests(self, lifecycle_state=None):
+        """按 strategy_id 排序返回元数据快照，可按生命周期过滤。"""
+        if lifecycle_state is not None and lifecycle_state not in LIFECYCLE_STATES:
+            raise StrategyError("lifecycle_state=%s 不在 %s"
+                                % (lifecycle_state, LIFECYCLE_STATES))
+        manifests = [self.metadata(sid) for sid in sorted(self._strategies)]
+        if lifecycle_state is None:
+            return manifests
+        return [m for m in manifests if m["lifecycle_state"] == lifecycle_state]
 
     def run(self, sid, context):
         """执行单策略并强制产出校验（白名单在出口统一把守，旁路判例）。"""
