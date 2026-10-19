@@ -154,6 +154,7 @@ def sync_parquet_table(tbl, meta, m, missing_keys=None):
     st = m.setdefault(tbl, {"offset": 0, "part": 0, "rows": 0, "done": False})
     buf = []
     start_time = time.time()
+    rows_before_run = st["rows"]    # A3 闸门基线：st["rows"] 为跨会话累计值，本次实拉=差值
 
     def flush():
         if not buf:
@@ -185,7 +186,13 @@ def sync_parquet_table(tbl, meta, m, missing_keys=None):
         rows = d.get("rows", [])
         cols = d.get("columns", [])
         if not rows:
-            break
+            # A3 加固：空页重探一次（沿用既有退避参数），区分对端真空与瞬时空页
+            time.sleep(RETRY_DELAYS[0])
+            d2 = _get("/api/data/table/" + tbl, p)
+            rows = d2.get("rows", [])
+            cols = d2.get("columns", cols)
+            if not rows:
+                break
         if latest:
             # 增量去重：丢掉本地已有的最新日（重叠窗口内）
             di = cols.index(date_col) if date_col in cols else None
@@ -207,6 +214,29 @@ def sync_parquet_table(tbl, meta, m, missing_keys=None):
     # 增量模式下 offset 语义还原（下次重跑仍从头翻页，靠 start_date 过滤）
     if latest:
         st["offset"] = 0
+    # A3 治本闸门（20261020 老田批 A 组，方向1）：空页/截断不得无条件等同完成——
+    # closed on failure：可疑完成态不盖 done，raise 进表级 failed 聚合 → 非零退出，
+    # 进度已随翻页存 manifest，重跑续传。
+    pulled_this_run = st["rows"] - rows_before_run
+    if latest is None:
+        # 全量模式三查（total 为远端广告行数；total<=0 时远端元数据异常，跳过比对）
+        if total > 0 and pulled_this_run <= 0:
+            raise RuntimeError(
+                "[%s] 假完成拦截：全量模式实拉 0 行但远端广告 rows=%s（HTTP 200 零行软失败，不盖 done）"
+                % (tbl, total))
+        n_parts_now = len(glob.glob(os.path.join(OUT, tbl, "part_*.parquet")))
+        if total > 0 and pulled_this_run > 0 and n_parts_now == 0:
+            raise RuntimeError(
+                "[%s] 假完成拦截：实拉 %d 行但零分片落盘（不盖 done）"
+                % (tbl, pulled_this_run))
+        if total > 0 and abs(pulled_this_run - total) > max(total * 0.01, 1000):
+            raise RuntimeError(
+                "[%s] 完整性闸门：实拉 %d 行 vs 远端广告 %s 行，差异超 1%%（不盖 done，重跑续传）"
+                % (tbl, pulled_this_run, total))
+    else:
+        # 增量模式：total 是全表行数，与 start_date 过滤后的结果集不可比，
+        # 广告行数比对仅在全量模式执行；增量零新行=正常完成，不设闸不误杀。
+        pass
     st["done"] = True
     _save_manifest(m)
     n_parts = len(glob.glob(os.path.join(OUT, tbl, "part_*.parquet")))
@@ -522,7 +552,7 @@ def _run_sync(a, remote):
     m = _load_manifest()
     # 先小表后大表（尽快见到产出；大表中断可续传）
     tables.sort(key=lambda t: remote.get(t, {}).get("rows", 0))
-    failed = []                     # 表级失败聚合（fail-closed：不再吞错后仍退 0）
+    failed = []                     # 表级失败聚合（closed on failure：不再吞错后仍退 0）
     for tbl in tables:
         meta = remote.get(tbl)
         if not meta:

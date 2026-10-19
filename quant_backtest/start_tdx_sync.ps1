@@ -3,6 +3,11 @@
 #     + append-mode out/err logs with session separator (ref K-STOCK-382b/389)
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONUTF8 = '1'
+# 20261020: unbuffered python stdout/stderr so gate-failure lines land in out.log in time
+# (K-STOCK fake-done gate observability). Also covers alert_fail_wrap.py below.
+$env:PYTHONUNBUFFERED = '1'
+# KNOWN-ISSUE (挂账未改): out.log mixed-encoding garble when python emits non-UTF8 bytes
+# under -X utf8; fix deferred, do not change log redirection here.
 # 20261016换机：新机无本地代理(7890)，且数据源 rookie.xtcloud-tech.com 为国内
 # 自有服务器直连可达（实测 HTTP 200），故不再注入代理环境变量。
 $env:NO_PROXY = '*'
