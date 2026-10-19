@@ -864,6 +864,13 @@ def api_send(req):
     if news_dir not in sys.path:
         sys.path.insert(0, news_dir)
     from feishu_client import send_msg_tracked, verify_message
+    # FB-L（2026-10-20）：卡片模板差异化（总纲 P1）——按 kind 包装卡片，
+    # 未注册 kind / 任何异常一律原样透传（closed on failure，不阻断主发送）
+    try:
+        from card_templates import apply_card_template
+        content, msg_type = apply_card_template(kind, content, msg_type)
+    except Exception:
+        pass  # 模板层异常不拦发送（fail-safe）
     ok, why, mid = send_msg_tracked(content, msg_type, rid, rtype, kind=kind,
                                     via_hub=False, flow_record=False,
                                     route_targets=route_targets)
