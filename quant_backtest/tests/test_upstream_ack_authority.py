@@ -3,17 +3,21 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from typing import Callable
 
 import pytest
 
 from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
-from quant_backtest.quant_sector.upstream_inbox import QuantUpstreamReport, UpstreamInbox
+from quant_backtest.quant_sector.upstream_inbox import (
+    QuantUpstreamReport, UpstreamAck, UpstreamInbox,
+)
 from quant_backtest.watch_dispatch import RouteOutbox, freeze_offline
+from quant_backtest.watch_dispatch.contracts import EvidenceEnvelope
 from quant_backtest.watch_dispatch.agent_reporting import (
     AgentAck, AgentIdentity, AgentUpstreamReporter,
 )
 from quant_backtest.watch_dispatch.route_outbox import (
-    ACCEPTED_VERIFIED, UNKNOWN, OutboxError, ReportFingerprint,
+    ACCEPTED_VERIFIED, UNKNOWN, OutboxError, ReportFingerprint, RouteAttempt,
 )
 
 T = datetime(2026, 10, 19, 2, tzinfo=timezone.utc)
@@ -65,10 +69,37 @@ class RaisingAuthority:
         raise RuntimeError("upstream unavailable")
 
 
-def scenario(authority=True):
+class MutatingActiveAckPort:
+    """Exercise ledger changes after the genuine inbox ACK passes verification."""
+
+    def __init__(self, authority: UpstreamAckAuthority,
+                 after_verified: Callable[[], None]) -> None:
+        self.authority = authority
+        self.after_verified = after_verified
+        self.verified_calls = 0
+
+    def active_ack(self, fingerprint: ReportFingerprint, ack_id: str,
+                   verification_source: str, acked_at: datetime, *,
+                   now: datetime) -> bool:
+        if self.authority.active_ack(fingerprint, ack_id, verification_source,
+                                     acked_at, now=now) is not True:
+            return False
+        self.verified_calls += 1
+        self.after_verified()
+        return True
+
+
+def scenario(authority: bool = True,
+             after_verified: Callable[[RouteOutbox, EvidenceEnvelope], None] | None = None):
     env = envelope()
     inbox = UpstreamInbox()
-    box = RouteOutbox(UpstreamAckAuthority(inbox) if authority else None)
+    if after_verified is None:
+        port = UpstreamAckAuthority(inbox) if authority else None
+    else:
+        # The port is bound at construction, not replaced after the claim.
+        port = MutatingActiveAckPort(
+            UpstreamAckAuthority(inbox), lambda: after_verified(box, env))
+    box = RouteOutbox(port)
     sender = AgentIdentity("watch-1", "WATCH", "registry:watch", T - timedelta(days=1), END)
     receiver = AgentIdentity("sector-1", "QUANT_SECTOR", "registry:sector", T - timedelta(days=1), END)
     reporter = AgentUpstreamReporter(sender, Directory(receiver), AckPort())
@@ -207,11 +238,18 @@ def test_same_generation_finish_without_authority_is_unknown_even_at_claim(now):
     assert finished.receipt is None
 
 
-def test_same_generation_live_ack_before_claim_accepts_at_claim():
-    # Both ledgers here are local/offline; this does not establish a production source.
+def same_generation_scenario(
+        after_verified: Callable[[RouteOutbox, EvidenceEnvelope], None] | None = None
+) -> tuple[EvidenceEnvelope, UpstreamInbox, RouteOutbox, UpstreamAck, RouteAttempt]:
+    """Build a first-generation intent with its original fingerprint and live ACK."""
     env = envelope()
     inbox = UpstreamInbox()
-    box = RouteOutbox(UpstreamAckAuthority(inbox))
+    if after_verified is None:
+        port = UpstreamAckAuthority(inbox)
+    else:
+        port = MutatingActiveAckPort(
+            UpstreamAckAuthority(inbox), lambda: after_verified(box, env))
+    box = RouteOutbox(port)
     fingerprint = ReportFingerprint(
         report_id="same-generation-report", report_kind="ANOMALY",
         event_id=env.event_id, evidence_version=env.evidence_version,
@@ -232,6 +270,12 @@ def test_same_generation_live_ack_before_claim_accepts_at_claim():
     attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
                         target_id="sector-1", claim_token="first", claim_at=at(6),
                         lease_until=at(20))
+    return env, inbox, box, ack, attempt
+
+
+def test_same_generation_live_ack_before_claim_accepts_at_claim():
+    # Both ledgers here are local/offline; this does not establish a production source.
+    _, _, box, ack, attempt = same_generation_scenario()
     finished = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
                           now=at(6), external_message_id=ack.ack_id,
                           verification_source=ack.verification_source,
@@ -239,6 +283,71 @@ def test_same_generation_live_ack_before_claim_accepts_at_claim():
     assert finished.outcome == ACCEPTED_VERIFIED
     assert finished.receipt is not None
     assert finished.receipt.observed_at == at(5)
+
+
+@pytest.mark.parametrize("generation", ["same", "cross"])
+def test_callback_revoke_after_real_ack_preserves_revocation(generation: str) -> None:
+    """A true ACK must not overwrite a revoke executed within its own callback."""
+    mutation: Callable[[RouteOutbox, EvidenceEnvelope], None] = (
+        lambda box, env: box.revoke_envelope(
+            env, epoch=box.epoch_floor(env) + 1, now=at(8)))
+    if generation == "same":
+        env, _, box, ack, attempt = same_generation_scenario(mutation)
+    else:
+        env, _, box, _, report, _, ack, _ = scenario(after_verified=mutation)
+        attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                            target_id=report.receiver.agent_id, claim_token="second",
+                            claim_at=at(6), lease_until=at(20))
+    initial_epoch = box.epoch_floor(env)
+    port = box._active_ack_port
+    assert isinstance(port, MutatingActiveAckPort)
+    result = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+                        now=at(8), external_message_id=ack.ack_id,
+                        verification_source=ack.verification_source,
+                        observed_at=ack.acked_at)
+    stored = box._attempts[attempt.attempt_id]
+    intent = box.get_intent(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                            target_id="sector-1")
+    assert port.verified_calls == 1
+    assert result == stored and stored.outcome == UNKNOWN and stored.receipt is None
+    assert intent is not None and intent.status == UNKNOWN
+    assert box.epoch_floor(env) == initial_epoch + 1
+    assert attempt.idempotency_key in box._revoked
+    assert box._identity(env) in box._revoked_identities
+    assert not box.production_permitted and not box.notification_permitted
+    assert not box.trading_permitted
+
+
+@pytest.mark.parametrize("generation", ["same", "cross"])
+def test_callback_epoch_drift_after_real_ack_is_stored_unknown(generation: str) -> None:
+    """Epoch drift without a revoke still settles both ledgers as UNKNOWN."""
+    def advance_epoch(box: RouteOutbox, env: EvidenceEnvelope) -> None:
+        box._epochs[box._identity(env)] = box.epoch_floor(env) + 1
+
+    if generation == "same":
+        env, _, box, ack, attempt = same_generation_scenario(advance_epoch)
+    else:
+        env, _, box, _, report, _, ack, _ = scenario(after_verified=advance_epoch)
+        attempt = box.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                            target_id=report.receiver.agent_id, claim_token="second",
+                            claim_at=at(6), lease_until=at(20))
+    initial_epoch = box.epoch_floor(env)
+    port = box._active_ack_port
+    assert isinstance(port, MutatingActiveAckPort)
+    result = box.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+                        now=at(8), external_message_id=ack.ack_id,
+                        verification_source=ack.verification_source,
+                        observed_at=ack.acked_at)
+    stored = box._attempts[attempt.attempt_id]
+    intent = box.get_intent(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                            target_id="sector-1")
+    assert port.verified_calls == 1
+    assert result == stored and stored.outcome == UNKNOWN and stored.receipt is None
+    assert intent is not None and intent.status == UNKNOWN
+    assert box.epoch_floor(env) == initial_epoch + 1
+    assert attempt.idempotency_key not in box._revoked
+    assert not box.production_permitted and not box.notification_permitted
+    assert not box.trading_permitted
 
 
 def test_cross_generation_finish_at_claim_preserves_old_ack_time():
