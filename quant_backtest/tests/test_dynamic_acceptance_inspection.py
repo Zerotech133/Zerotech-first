@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, replace
 from datetime import datetime, timedelta, timezone
+from typing import Callable
 
 import pytest
 
@@ -30,6 +31,27 @@ def at(seconds: int) -> datetime:
     return START + timedelta(seconds=seconds)
 
 
+class MutatingActiveAckPort:
+    """Revoke the inbox receipt only after the genuine ACK check succeeds."""
+
+    def __init__(self, authority: UpstreamAckAuthority,
+                 after_verified: Callable[[], None]) -> None:
+        self.authority = authority
+        self.after_verified = after_verified
+        self.verified_calls = 0
+
+    def active_ack(self, fingerprint: ReportFingerprint, ack_id: str,
+                   verification_source: str, acked_at: datetime, *,
+                   now: datetime) -> bool:
+        """Preserve the real authority's decision before invoking the mutation."""
+        if self.authority.active_ack(fingerprint, ack_id, verification_source,
+                                     acked_at, now=now) is not True:
+            return False
+        self.verified_calls += 1
+        self.after_verified()
+        return True
+
+
 class FakeClock:
     """Mutable local simulation clock; not a trusted time root."""
 
@@ -47,7 +69,9 @@ class FakeClock:
 
 def chain(*, report_time: datetime = START, accept_time: datetime | None = None,
           observed_time: datetime | None = None, active_port: bool = True,
-          first_unknown: bool = False, accept_report: bool = True):
+          first_unknown: bool = False, accept_report: bool = True,
+          defer_finish: bool = False,
+          after_verified: Callable[[UpstreamInbox, AgentReport], None] | None = None):
     """Build offline ledgers, binding the live local ACK port by default."""
     envelope = freeze_offline(
         schema_version=1, event_id="event-dynamic", evidence_version=1,
@@ -70,8 +94,11 @@ def chain(*, report_time: datetime = START, accept_time: datetime | None = None,
                          envelope.evidence_version, envelope.envelope_hash,
                          sender, receiver, report_time)
     inbox = UpstreamInbox()
-    outbox = RouteOutbox(active_ack_port=UpstreamAckAuthority(inbox)
-                         if active_port else None)
+    authority = UpstreamAckAuthority(inbox)
+    port = (MutatingActiveAckPort(
+        authority, lambda: after_verified(inbox, report))
+        if after_verified is not None else authority)
+    outbox = RouteOutbox(active_ack_port=port if active_port else None)
     fingerprint = ReportFingerprint(
         report.report_id, report.report_kind, report.event_id,
         report.evidence_version, report.envelope_hash, sender.agent_id,
@@ -90,6 +117,8 @@ def chain(*, report_time: datetime = START, accept_time: datetime | None = None,
                                now=accept_time if accept_time is not None else at(3))
     else:
         receipt = None
+    if defer_finish:
+        return outbox, envelope, report, inbox, attempt.attempt_id
     if first_unknown or receipt is None:
         settled = outbox.finish(attempt.attempt_id, outcome=UNKNOWN,
                                 now=report_time + timedelta(seconds=5))
@@ -146,6 +175,142 @@ def test_each_inspection_samples_once_and_old_adapter_does_not_refresh() -> None
         assert result.production_permitted is False
         assert result.notification_permitted is False
         assert result.trading_permitted is False
+
+
+@pytest.mark.parametrize("generation", ["same", "cross"])
+def test_inspector_denies_verified_outbox_after_ack_callback_inbox_revoke(
+        generation: str) -> None:
+    """Diagnose the existing cross-ledger gap without rewriting either ledger."""
+    expected_receipt_id: list[str] = []
+    revoked_receipt_ids: list[str] = []
+    callback_epochs: list[tuple[int, int]] = []
+
+    def revoke_after_verified(inbox: UpstreamInbox, report: AgentReport) -> None:
+        """Revoke the original receipt only after a real active_ack returns true."""
+        receipt = inbox.receipt_for_report(report.report_id)
+        assert receipt is not None
+        assert expected_receipt_id == [receipt.receipt_id]
+        assert inbox.is_active(receipt.receipt_id)
+        prior_epoch = inbox.ledger_epoch
+        inbox.revoke(receipt.receipt_id, now=at(8))
+        callback_epochs.append((prior_epoch, inbox.ledger_epoch))
+        revoked_receipt_ids.append(receipt.receipt_id)
+
+    outbox, envelope, report, inbox, attempt_id = chain(
+        first_unknown=generation == "cross",
+        defer_finish=generation == "same",
+        after_verified=revoke_after_verified)
+    receipt = inbox.receipt_for_report(report.report_id)
+    assert receipt is not None
+    expected_receipt_id.append(receipt.receipt_id)
+    original_ack = receipt.ack
+    first_attempt_id = attempt_id
+    first_attempt = outbox._attempts[first_attempt_id]
+    if generation == "cross":
+        key = outbox._key_for(envelope, ROUTE, "AGENT",
+                              report.receiver.agent_id)
+        assert outbox._attempts[attempt_id].outcome == UNKNOWN
+        outbox.plan(envelope, route=ROUTE, target_type="AGENT",
+                    target_id=report.receiver.agent_id,
+                    policy_version="agent-report-v1", control_epoch=0,
+                    intent_id="report-report1-g1", generation=1,
+                    created_at=at(6), valid_until=END,
+                    report_fingerprint=outbox._report_fingerprints[key])
+        attempt_id = outbox.claim(
+            envelope, route=ROUTE, target_type="AGENT",
+            target_id=report.receiver.agent_id, claim_token="retry",
+            claim_at=at(7), lease_until=END).attempt_id
+        assert original_ack.acked_at < outbox._attempts[attempt_id].claim_at
+    port = outbox._active_ack_port
+    assert isinstance(port, MutatingActiveAckPort)
+    settled = outbox.finish(
+        attempt_id, outcome=ACCEPTED_VERIFIED,
+        external_message_id=receipt.ack.ack_id,
+        verification_source=receipt.ack.verification_source,
+        observed_at=receipt.ack.acked_at, now=at(8))
+    assert port.verified_calls == 1
+    assert revoked_receipt_ids == expected_receipt_id
+    assert callback_epochs == [(0, 1)]
+    assert receipt.ack is original_ack
+    assert inbox.is_revoked(report.report_id)
+    assert not inbox.is_active(receipt.receipt_id)
+    assert inbox.receipt_for_report(report.report_id) is receipt
+    assert settled == outbox._attempts[attempt_id]
+    assert settled.outcome == ACCEPTED_VERIFIED
+    assert settled.receipt is not None
+    if generation == "cross":
+        assert outbox._attempts[first_attempt_id] is first_attempt
+        assert first_attempt.outcome == UNKNOWN and first_attempt.receipt is None
+
+    before_attempt = outbox._attempts[attempt_id]
+    before_intent = outbox.get_intent(
+        envelope, route=ROUTE, target_type="AGENT",
+        target_id=report.receiver.agent_id)
+    before_epoch = inbox.ledger_epoch
+    before_receipts = inbox.list_accepted()
+    inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
+                                        clock=FakeClock(at(9)))
+    assert_inspection_unavailable(inspector, attempt_id, at(9))
+    assert ReceiptBindingPort not in type(inspector).__mro__
+    assert not hasattr(inspector, "binding_for")
+    assert outbox._attempts[attempt_id] is before_attempt
+    assert outbox.get_intent(envelope, route=ROUTE, target_type="AGENT",
+                             target_id=report.receiver.agent_id) is before_intent
+    assert inbox.ledger_epoch == before_epoch
+    assert inbox.list_accepted() == before_receipts
+    assert inbox.receipt_for_report(report.report_id) is receipt
+    assert receipt.ack is original_ack
+    if generation == "cross":
+        assert outbox._attempts[first_attempt_id] is first_attempt
+
+
+@pytest.mark.parametrize("generation", ["same", "cross"])
+def test_inspector_accepts_live_ack_without_callback_revoke(
+        generation: str) -> None:
+    """An unchanged genuine ACK remains diagnostically consistent offline."""
+    outbox, envelope, report, inbox, first_attempt_id = chain(
+        first_unknown=generation == "cross", defer_finish=generation == "same")
+    original_receipt = inbox.receipt_for_report(report.report_id)
+    assert original_receipt is not None
+    first_attempt = outbox._attempts[first_attempt_id]
+    attempt_id = first_attempt_id
+    if generation == "cross":
+        key = outbox._key_for(envelope, ROUTE, "AGENT",
+                              report.receiver.agent_id)
+        assert first_attempt.outcome == UNKNOWN and first_attempt.receipt is None
+        outbox.plan(envelope, route=ROUTE, target_type="AGENT",
+                    target_id=report.receiver.agent_id,
+                    policy_version="agent-report-v1", control_epoch=0,
+                    intent_id="report-report1-g1", generation=1,
+                    created_at=at(6), valid_until=END,
+                    report_fingerprint=outbox._report_fingerprints[key])
+        attempt_id = outbox.claim(
+            envelope, route=ROUTE, target_type="AGENT",
+            target_id=report.receiver.agent_id, claim_token="retry",
+            claim_at=at(7), lease_until=END).attempt_id
+        assert original_receipt.ack.acked_at < outbox._attempts[attempt_id].claim_at
+    settled = outbox.finish(
+        attempt_id, outcome=ACCEPTED_VERIFIED,
+        external_message_id=original_receipt.ack.ack_id,
+        verification_source=original_receipt.ack.verification_source,
+        observed_at=original_receipt.ack.acked_at, now=at(8))
+    assert settled.outcome == ACCEPTED_VERIFIED and settled.receipt is not None
+    assert inbox.is_active(original_receipt.receipt_id)
+    assert inbox.ledger_epoch == 0
+    inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
+                                        clock=FakeClock(at(9)))
+    assert inspector.inspect(attempt_id) == AttemptInspection(
+        attempt_id, at(9), "CONSISTENT_OFFLINE")
+    assert not hasattr(inspector, "binding_for")
+    for subject in (inspector, inspector.inspect(attempt_id)):
+        assert subject.production_permitted is False
+        assert subject.notification_permitted is False
+        assert subject.trading_permitted is False
+    assert outbox._attempts[attempt_id] is settled
+    assert inbox.receipt_for_report(report.report_id) is original_receipt
+    assert inbox.ledger_epoch == 0
+    if generation == "cross":
+        assert outbox._attempts[first_attempt_id] is first_attempt
 
 
 def test_revocation_removes_offline_consistency() -> None:
