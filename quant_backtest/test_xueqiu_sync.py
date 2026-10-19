@@ -248,6 +248,187 @@ class TestSnapManifestSave(_TmpEnv):
             X.OUT_DIR, "xq_quote_snap", "d_20261016.parquet")))
 
 
+class TestFlowManifestSave(_TmpEnv):
+    """资金流零行/发布后账本失败必须显错，隔离网络与生产落库。"""
+
+    def _old_manifest_bytes(self) -> bytes:
+        """建立旧账本，供保存失败后的字节级比对。"""
+        mf = X.XqManifest(X.MANIFEST)
+        mf.mark("xq_capital_flow", done=True, rows=7, status="ok",
+                file="old.parquet")
+        self.assertTrue(mf.save())
+        with open(X.MANIFEST, "rb") as stored:
+            return stored.read()
+
+    @staticmethod
+    def _response(case: str) -> dict:
+        """返回失败、空行或单行的离线雪球响应。"""
+        if case == "failed":
+            return {"error_code": 400016, "error_description": "offline token",
+                    "data": None}
+        if case == "empty":
+            return {"error_code": 0, "data": {"items": []}}
+        return {"error_code": 0, "data": {"items": [
+            {"timestamp": MS_DAY1, "main_net_inflow": 2.4e7,
+             "main_net_inflow_rate": 8.1, "retail_net_inflow": -5e6}]}}
+
+    def test_zero_failed_and_empty_save_false(self) -> None:
+        """业务全败/真空分别标记，均不落新片且不能确认旧清单。"""
+        for case in ("failed", "empty"):
+            with self.subTest(case=case):
+                old_bytes = self._old_manifest_bytes()
+                os.environ["XUEQIUTOKEN"] = "offline-test-token"
+                fake = _fake_ball({"capital_flow": lambda _sym:
+                                   self._response(case)})
+                mf = X.XqManifest(X.MANIFEST)
+                mf.load()
+                with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                        mock.patch.object(X, "jitter_sleep", return_value=None), \
+                        mock.patch("socket.socket.connect", side_effect=
+                                   AssertionError("network forbidden")), \
+                        mock.patch.object(X, "atomic_parquet") as parquet, \
+                        mock.patch.object(X.XqManifest, "save",
+                                          return_value=False) as save:
+                    with self.assertRaises(S.ManifestSaveError) as caught:
+                        S.sync_capital_flow(["SH600519"], "20261016", mf)
+                self.assertEqual(mf.get("xq_capital_flow")["status"], case)
+                self.assertFalse(mf.get("xq_capital_flow")["done"])
+                self.assertIn("零新行，无新数据片", str(caught.exception))
+                self.assertIn("旧清单未确认", str(caught.exception))
+                save.assert_called_once()
+                parquet.assert_not_called()
+                with open(X.MANIFEST, "rb") as stored:
+                    self.assertEqual(stored.read(), old_bytes)
+                self.assertFalse(os.path.exists(os.path.join(
+                    X.OUT_DIR, "xq_capital_flow")))
+
+    def test_published_save_false(self) -> None:
+        """模拟原子片已经发布：保存失败不得宣称回滚或成功。"""
+        old_bytes = self._old_manifest_bytes()
+        os.environ["XUEQIUTOKEN"] = "offline-test-token"
+        fake = _fake_ball({"capital_flow": lambda _sym:
+                           self._response("published")})
+        published: list[str] = []
+
+        def publish(_frame: pd.DataFrame, path: str) -> None:
+            with open(path, "wb") as output:
+                output.write(b"published-flow")
+            published.append(path)
+
+        mf = X.XqManifest(X.MANIFEST)
+        mf.load()
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("socket.socket.connect", side_effect=
+                           AssertionError("network forbidden")), \
+                mock.patch.object(X, "atomic_parquet",
+                                  side_effect=publish) as parquet, \
+                mock.patch.object(X.XqManifest, "save",
+                                  return_value=False) as save, \
+                mock.patch("builtins.print") as print_line:
+            with self.assertRaises(S.ManifestSaveError) as caught:
+                S.sync_capital_flow(["SH600519"], "20261016", mf)
+        self.assertEqual(mf.get("xq_capital_flow")["status"], "ok")
+        self.assertEqual(mf.get("xq_capital_flow")["rows"], 1)
+        self.assertIn("账本未确认", str(caught.exception))
+        self.assertIn("可能已发布", str(caught.exception))
+        self.assertIn("不能宣称回滚", str(caught.exception))
+        self.assertNotIn("xq_capital_flow: 1 行", "\n".join(
+            str(call) for call in print_line.call_args_list))
+        parquet.assert_called_once()
+        save.assert_called_once()
+        self.assertEqual(len(published), 1)
+        with open(published[0], "rb") as stored:
+            self.assertEqual(stored.read(), b"published-flow")
+        with open(X.MANIFEST, "rb") as stored:
+            self.assertEqual(stored.read(), old_bytes)
+
+    def test_cli_flow_and_all_save_false_stop(self) -> None:
+        """flow/all 均 rc1，all 不能在资金流账本失败后执行 north。"""
+        for batch in ("flow", "all"):
+            for case in ("failed", "empty", "published"):
+                with self.subTest(batch=batch, case=case):
+                    old_bytes = self._old_manifest_bytes()
+                    os.environ["XUEQIUTOKEN"] = "offline-test-token"
+                    fake = _fake_ball({"capital_flow": lambda _sym:
+                                       self._response(case)})
+                    with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                            mock.patch.object(S, "init_ball", return_value={
+                                "token": "offline-test-token",
+                                "probe": {"ok": True}, "token_probe": {}}) \
+                            as initialize, \
+                            mock.patch.object(X, "load_token") as load_token, \
+                            mock.patch.object(X, "quotec_probe") as probe, \
+                            mock.patch.object(X, "token_probe") as token_probe, \
+                            mock.patch.object(X, "ip_blocked_active",
+                                              return_value=""), \
+                            mock.patch.object(X, "jitter_sleep",
+                                              return_value=None), \
+                            mock.patch("socket.socket.connect", side_effect=
+                                       AssertionError("network forbidden")), \
+                            mock.patch.object(X, "atomic_parquet") as parquet, \
+                            mock.patch.object(X.XqManifest, "save",
+                                              return_value=False) as save, \
+                            mock.patch.object(S, "sync_quote_snap",
+                                              return_value=1) as snap, \
+                            mock.patch.object(S, "sync_kline",
+                                              return_value=1) as kline, \
+                            mock.patch.object(S, "sync_northbound") as north, \
+                            mock.patch("builtins.print") as print_line:
+                        rc = S.main(["--batch", batch, "--codes", "SH600519"])
+                    self.assertEqual(rc, 1)
+                    initialize.assert_called_once()
+                    load_token.assert_not_called()
+                    probe.assert_not_called()
+                    token_probe.assert_not_called()
+                    save.assert_called_once()
+                    north.assert_not_called()
+                    if batch == "all":
+                        snap.assert_called_once()
+                        kline.assert_called_once()
+                    else:
+                        snap.assert_not_called()
+                        kline.assert_not_called()
+                    if case == "published":
+                        parquet.assert_called_once()
+                    else:
+                        parquet.assert_not_called()
+                    log = "\n".join(str(call) for call in
+                                    print_line.call_args_list)
+                    self.assertIn("[ALERT][manifest_save]", log)
+                    self.assertIn("停止后续批次", log)
+                    self.assertNotIn("[main] 完成", log)
+                    with open(X.MANIFEST, "rb") as stored:
+                        self.assertEqual(stored.read(), old_bytes)
+
+    def test_save_true_keeps_success_and_empty_contract(self) -> None:
+        """正常保存仍按原约定返回行数与 empty/ok 状态。"""
+        os.environ["XUEQIUTOKEN"] = "offline-test-token"
+        mf = X.XqManifest(X.MANIFEST)
+        fake = _fake_ball({"capital_flow": lambda _sym:
+                           self._response("empty")})
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("socket.socket.connect", side_effect=
+                           AssertionError("network forbidden")):
+            self.assertEqual(S.sync_capital_flow(
+                ["SH600519"], "20261016", mf), 0)
+        self.assertEqual(mf.get("xq_capital_flow")["status"], "empty")
+        fake = _fake_ball({"capital_flow": lambda _sym:
+                           self._response("published")})
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("socket.socket.connect", side_effect=
+                           AssertionError("network forbidden")):
+            self.assertEqual(S.sync_capital_flow(
+                ["SH600519"], "20261016", mf), 1)
+        path = os.path.join(X.OUT_DIR, "xq_capital_flow",
+                            "d_20261016.parquet")
+        self.assertTrue(os.path.isfile(path))
+        self.assertEqual(pd.read_parquet(path).loc[0, "main_net_inflow"], 2.4e7)
+        stored = X.XqManifest(X.MANIFEST)
+        stored.load()
+        self.assertEqual(stored.get("xq_capital_flow")["status"], "ok")
+        self.assertEqual(stored.get("xq_capital_flow")["rows"], 1)
+
+
 class TestKlineManifestSave(_TmpEnv):
     """日线 skip/结账 save=False 不可伪成功，测试仅使用离线假对象。"""
 

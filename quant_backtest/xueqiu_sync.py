@@ -661,7 +661,9 @@ def sync_capital_flow(codes: list[str], ymd: str,
         else:
             mf.mark("xq_capital_flow", done=False, rows=0, status="empty",
                     note="全批空返回（接口变更或无数据）")
-        mf.save()
+        if not mf.save():
+            raise ManifestSaveError(
+                "xq_capital_flow 零新行，无新数据片；旧清单未确认")
         return 0
     df = pd.DataFrame(rows).drop_duplicates(
         subset=["symbol", "timestamp"]).sort_values("symbol").reset_index(
@@ -672,7 +674,10 @@ def sync_capital_flow(codes: list[str], ymd: str,
             file=os.path.basename(path),
             status="partial" if tripped else "ok",
             note="403 熔断部分码未采" if tripped else "")
-    mf.save()
+    if not mf.save():
+        raise ManifestSaveError(
+            "xq_capital_flow 账本未确认；数据片可能已发布，不能宣称回滚：%s"
+            % path)
     print("  xq_capital_flow: %d 行" % len(df))
     return len(df)
 
