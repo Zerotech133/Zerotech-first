@@ -18,6 +18,8 @@
   .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 16px; font-weight: 800; color: #fff; }
   .brand h1 { font-size: 14.5px; font-weight: 700; }
   .brand small { color: var(--text-dim); font-size: 9.5px; letter-spacing: 2.5px; display: block; }
+  /* 人格化显示层：总 Agent 徽标（低调角标，不抢判定卡） */
+  .supill { flex-shrink: 0; font-size: 10px; letter-spacing: 1.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--bg-raised); }
   .admission { display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-raised); }
   .admission .vd { font: 800 17px/1 "Microsoft YaHei"; letter-spacing: 2px; }
   .admission.closed { border-color: rgba(224,86,86,.55); background: rgba(224,86,86,.10); }
@@ -50,6 +52,7 @@
   .seccard.on { border-color: var(--link); background: var(--bg-raised); }
   .seccard .r1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .seccard .nm { font-size: 13px; font-weight: 700; }
+  .seccard .nmsub { font-size: 10px; color: var(--text-dim); font-weight: 400; margin-left: 6px; }
   .seccard .ct { font: 700 12px Consolas, monospace; color: var(--text-dim); }
   .seccard .vw { font-size: 11px; color: var(--text-dim); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .seccard.grey { opacity: .55; }
@@ -106,6 +109,7 @@
 <div class="topbar">
   <div class="logo">量</div>
   <div class="brand"><h1>量化驾驶舱</h1><small>SINGLE-SCREEN COCKPIT</small></div>
+  <span class="supill" title="量化板块总 Agent · 司马懿·仲达（v1.2 任命，纯显示层）">督办·司马懿仲达</span>
   <div class="admission unknown" id="adm"><span class="vd">— —</span><span class="sub">准入判定加载中…</span></div>
   <div class="dim num" id="dayinfo" style="font-size:11.5px"></div>
   <div class="mkt">
@@ -151,6 +155,21 @@
    L0 准入:   /api/admission → 8791（fetchFirst 降级链，未落地灰态） */
 var S = { adm:null, wall:null, picks:null, cache:{}, sector:"all", stock:null, filter:"all", market:"A", q:"" };
 var SECNAME = {}; /* id → 板块名 */
+
+/* ── 人格化显示层（纯名称映射，零业务语义）：/persona_registry.json 同源静态（P-A 产出）。
+   fetch 失败/文件未落盘 → PERSONA 为空 → L1 卡保持现名不变（灰态不猜值，禁编造）── */
+var PERSONA = {};
+function personaOf(id){ return Object.prototype.hasOwnProperty.call(PERSONA,id)?PERSONA[id]:null; }
+function buildPersona(d){
+  var m={};
+  if(d&&d.strategies&&typeof d.strategies==="object"){
+    Object.keys(d.strategies).forEach(function(id){
+      var p=d.strategies[id]||{};
+      if(p&&(p.hao||p.name)) m[id]={ name:p.name||"", hao:p.hao||"" };
+    });
+  }
+  return m;
+}
 
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function f2(v){ return (v==null||isNaN(v))?"—":Number(v).toFixed(2); }
@@ -208,8 +227,13 @@ function renderSectors(){
   wl.forEach(function(w){
     var n=cnt[w.id]||0;
     var grey=(!w.view&&w.picks_count==null)?" grey":"";
-    h+='<div class="seccard'+(S.sector===w.id?" on":"")+grey+'" data-s="'+esc(w.id)+'" title="'+esc(w.view||"暂无观点")+'">'
-      +'<div class="r1"><span class="nm">'+esc(w.name||w.id)+'</span><span class="ct">'+n+' 票</span></div>'
+    /* 三国名显示层：registry 命中→主位 hao/name，现名降为小字灰副标并挂 title；未命中/缺源→保持现名 */
+    var p=personaOf(w.id);
+    var nm=p?((p.hao||p.name)||w.name||w.id):(w.name||w.id);
+    var sub=(p&&w.name&&w.name!==nm)?'<span class="nmsub">'+esc(w.name)+'</span>':"";
+    var ttl=(p?("原名 "+(w.name||w.id)+" · "):"")+(w.view||"暂无观点");
+    h+='<div class="seccard'+(S.sector===w.id?" on":"")+grey+'" data-s="'+esc(w.id)+'" title="'+esc(ttl)+'">'
+      +'<div class="r1"><span class="nm">'+esc(nm)+sub+'</span><span class="ct">'+n+' 票</span></div>'
       +'<div class="vw">'+(w.view?esc(w.view):'<span style="opacity:.6">暂无观点</span>')+'</div></div>';
   });
   document.getElementById("sectorList").innerHTML=h;
@@ -422,9 +446,11 @@ function paintUS(d){
 /* ── 启动 ── */
 Promise.all([
   fetch("/data/wall.json").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }),
-  fetch("/data/todays_picks.json").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
+  fetch("/data/todays_picks.json").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }),
+  /* 人格化注册表：同源静态，失败→null（buildPersona 容忍，显示层回退现名） */
+  fetch("/persona_registry.json").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
 ]).then(function(rs){
-  S.wall=rs[0]; S.picks=rs[1];
+  S.wall=rs[0]; S.picks=rs[1]; PERSONA=buildPersona(rs[2]);
   if(!S.picks){ document.getElementById("stockList").innerHTML='<div class="greybox">todays_picks 缺源 · 灰态不猜值</div>'; }
   if(!S.wall){ document.getElementById("sectorList").innerHTML='<div class="greybox">wall.json 缺源 · 灰态不猜值</div>'; }
   var cEl=document.getElementById("committeeLine");

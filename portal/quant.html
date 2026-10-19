@@ -18,6 +18,9 @@
   .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
   .brand h1 { font-size: 17px; font-weight: 700; }
   .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  /* 人格化显示层：总 Agent 徽标（低调角标）+ 观点墙三国名副标 */
+  .supill { flex-shrink: 0; font-size: 10px; letter-spacing: 1.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--bg-raised); }
+  .porig { font-size: 10px; color: var(--text-dim); font-weight: 400; white-space: nowrap; }
   .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
 
   /* ── v2① 置顶预警区（市场级/链路级分级） ── */
@@ -164,6 +167,7 @@
     <div class="brand">
       <div class="logo">T</div>
       <div><h1>量化股票</h1><small>QUANT DOMAIN</small></div>
+      <span class="supill" title="量化板块总 Agent · 司马懿·仲达（v1.2 任命，纯显示层）">督办·司马懿仲达</span>
     </div>
     <div class="clock" id="clock">--:--:--</div>
   </header>
@@ -800,6 +804,21 @@
   let wallMarket = 'cn';
   let wallData = null;
   const WALL_MKT_CN = { cn: 'A股', hk: '港股', us: '美股', crypto: '虚拟币' };
+  /* ── 人格化显示层（纯名称映射，零业务语义）：/persona_registry.json 同源静态（P-A 产出）。
+     fetch 失败/文件未落盘 → personaMap=null → 观点墙保持现名不变（灰态不猜值，禁编造）── */
+  let personaMap = null;
+  (async function loadPersona() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch('/persona_registry.json', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) {
+        const d = await r.json();
+        if (d && d.strategies && typeof d.strategies === 'object') personaMap = d.strategies;
+      }
+    } catch (e) { personaMap = null; }
+    if (personaMap) renderWall(); /* persona 后到：仅刷新显示层名称 */
+  })();
   function renderWall() {
     const grid = document.getElementById('wall-grid');
     const comEl = document.getElementById('wall-committee');
@@ -822,8 +841,14 @@
         const hasView = (s.score != null) && !!(s.view && String(s.view).trim()); /* score=null 或 view 空 → 灰标，禁编造 */
         const topArr = Array.isArray(s.top) ? s.top : (Array.isArray(s.top_ticker) ? s.top_ticker : []);
         const top = topArr.length ? topArr.slice(0, 5).map(t => esc(t)).join(' · ') : '';
-        return "<div class='scard" + (hasView ? '' : ' grey') + "' style='cursor:default'>" +
-          "<div class='top'><span class='nm'>" + esc(s.name || '—') + "</span>" +
+        /* 三国名显示层：registry 命中→主位 hao/name，现名降为小字灰副标并挂 title；未命中/缺源→保持现名 */
+        const p = (personaMap && personaMap[s.id] && (personaMap[s.id].hao || personaMap[s.id].name)) ? personaMap[s.id] : null;
+        const nm = p ? (p.hao || p.name) : (s.name || '—');
+        const orig = (p && s.name && s.name !== nm) ? s.name : '';
+        return "<div class='scard" + (hasView ? '' : ' grey') + "' style='cursor:default'" +
+          (orig ? " title='原名 " + esc(orig) + "'" : '') + ">" +
+          "<div class='top'><span class='nm'>" + esc(nm) + "</span>" +
+          (orig ? "<span class='porig'>原名·" + esc(orig) + "</span>" : '') +
           "<span class='bdg'>" + (hasView ? ('score ' + esc(s.score ?? '—')) : '暂无') + "</span></div>" +
           "<div class='tg'>" + (hasView ? esc(s.view || '') : '暂无观点 · 灰标不假绿') + "</div>" +
           (top ? "<div class='m1'>top: " + top + "</div>" : '') +
