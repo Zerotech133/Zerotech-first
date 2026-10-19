@@ -25,8 +25,10 @@ def _argv(monkeypatch, *rest):
 
 
 def test_hot_abort_writes_jsonl_and_keeps_exit3(tmp_path, monkeypatch):
-    """热态超阈：exit 3 不变 + probe_hot 结构化留痕 + 心跳 rc=3。"""
+    """热态超阈：exit 3 不变 + probe_hot 结构化留痕 + 心跳 rc=3。
+    （K-STOCK-20261019-GUARDDECOUPLE 后硬守卫需显式 KSTOCK_FORCE_OLLAMA=1。）"""
     _isolate(tmp_path, monkeypatch)
+    monkeypatch.setenv("KSTOCK_FORCE_OLLAMA", "1")
     _argv(monkeypatch, "600519.SH 测试")
     monkeypatch.setattr(run_poc, "load_guard", lambda: (5.0, 9.2))
     monkeypatch.setattr(run_poc, "_competitor_note", lambda: "")
@@ -45,8 +47,10 @@ def test_hot_abort_writes_jsonl_and_keeps_exit3(tmp_path, monkeypatch):
 
 
 def test_unreachable_writes_probe_unreachable(tmp_path, monkeypatch):
-    """Ollama 不可达：exit 3 不变 + probe_unreachable 留痕（ollama_alive=False）。"""
+    """Ollama 不可达：exit 3 不变 + probe_unreachable 留痕（ollama_alive=False）。
+    （K-STOCK-20261019-GUARDDECOUPLE 后硬守卫需显式 KSTOCK_FORCE_OLLAMA=1。）"""
     _isolate(tmp_path, monkeypatch)
+    monkeypatch.setenv("KSTOCK_FORCE_OLLAMA", "1")
     _argv(monkeypatch, "600519.SH 测试")
     def _boom():
         raise ConnectionError("connection refused")
@@ -68,6 +72,7 @@ def test_log_failure_degrades_silently(tmp_path, monkeypatch):
     blocker.write_text("x", encoding="utf-8")     # 文件占位 → mkdir(parents) 必炸
     monkeypatch.setattr(run_poc, "GUARD_LOG", blocker / "sub" / "guard_aborts.jsonl")
     monkeypatch.setattr(run_poc, "HEARTBEAT", blocker / "sub" / "last_run.json")
+    monkeypatch.setenv("KSTOCK_FORCE_OLLAMA", "1")  # 维持 exit 3 原意，避免降级放行真跑主链
     _argv(monkeypatch, "600519.SH 测试")
     monkeypatch.setattr(run_poc, "load_guard", lambda: (5.0, 9.2))
     monkeypatch.setattr(run_poc, "_competitor_note", lambda: "")
