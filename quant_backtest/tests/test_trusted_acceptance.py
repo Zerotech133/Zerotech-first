@@ -7,7 +7,7 @@ import pytest
 from quant_backtest.agent_bridge.mapping import to_sector_report
 from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
 from quant_backtest.agent_bridge.trusted_acceptance import TrustedAcceptanceBindingAdapter
-from quant_backtest.quant_sector.upstream_inbox import UpstreamInbox
+from quant_backtest.quant_sector.upstream_inbox import UpstreamInbox, UpstreamInboxError
 from quant_backtest.watch_dispatch import freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity, AgentReport
 from quant_backtest.watch_dispatch.evidence_store import EvidenceStore
@@ -48,7 +48,8 @@ def _chain(*, accept: bool = True, fingerprint: bool = True,
     report = AgentReport("report1", "ANOMALY", envelope.event_id,
                          envelope.evidence_version, envelope.envelope_hash,
                          sender, receiver, START)
-    outbox = RouteOutbox()
+    inbox = UpstreamInbox()
+    outbox = RouteOutbox(UpstreamAckAuthority(inbox))
     report_fingerprint = ReportFingerprint(
         report.report_id, report.report_kind, report.event_id,
         report.evidence_version, report.envelope_hash, sender.agent_id,
@@ -62,7 +63,6 @@ def _chain(*, accept: bool = True, fingerprint: bool = True,
                            target_id=receiver.agent_id, claim_token="token",
                            claim_at=START + timedelta(seconds=1),
                            lease_until=END)
-    inbox = UpstreamInbox()
     if inbox_epoch:
         # A separate accepted report's revocation advances the inbox epoch.
         prior = replace(to_sector_report(report), report_id="earlier")
@@ -84,7 +84,9 @@ def _chain(*, accept: bool = True, fingerprint: bool = True,
             external_message_id=ack_id, verification_source=source,
             observed_at=START + timedelta(seconds=observed_seconds),
             now=START + timedelta(seconds=5))
-        assert settled.outcome == ACCEPTED_VERIFIED
+        assert settled.outcome == (ACCEPTED_VERIFIED if accept and fingerprint
+                                   and accepted_seconds == observed_seconds else "UNKNOWN")
+        assert (settled.receipt is not None) == (settled.outcome == ACCEPTED_VERIFIED)
     store = EvidenceStore()
     store.freeze(envelope)
     pool = SignalPool(store)
@@ -95,6 +97,8 @@ def _chain(*, accept: bool = True, fingerprint: bool = True,
     acceptance = AcceptanceReceipt(ROUTE, attempt.attempt_id, ack_id)
     adapter = TrustedAcceptanceBindingAdapter(
         outbox, envelope, report, inbox, now=START + timedelta(seconds=5))
+    if accept and fingerprint and not first_unknown and accepted_seconds == observed_seconds:
+        assert adapter.binding_for(attempt.attempt_id) is not None
     return envelope, report, outbox, inbox, pool, acceptance, adapter
 
 
@@ -122,8 +126,30 @@ def test_authoritative_live_acceptance_is_read_only_and_offline() -> None:
                               binding_port=adapter).status == "ACCEPTED"
 
 
-def test_outbox_self_filled_verified_without_inbox_must_reject() -> None:
-    _reject(_chain(accept=False))
+@pytest.mark.parametrize("changes", (
+    {"accept": False},
+    {"fingerprint": False},
+    {"accepted_seconds": 4, "observed_seconds": 3},
+))
+def test_unproven_ack_never_settles_verified(changes: dict[str, object]) -> None:
+    chain = _chain(**changes)
+    _, _, outbox, _, pool, acceptance, adapter = chain
+    attempt = outbox._attempts[acceptance.attempt_id]
+    assert attempt.outcome == "UNKNOWN"
+    assert attempt.receipt is None
+    assert adapter.binding_for(acceptance.attempt_id) is None
+    assert pool.get("signal1").status == "CLAIMED"
+
+
+def test_outbox_verified_receipt_without_inbox_must_reject() -> None:
+    chain = _chain()
+    _, report, _, inbox, _, _, _ = chain
+    receipt = inbox.receipt_for_report(report.report_id)
+    # The outbox still holds the previously VERIFIED ACK, but the independently
+    # owned inbox can no longer produce a receipt for the exact report.
+    del inbox._by_report[report.report_id]
+    assert inbox.get(receipt.receipt_id) is receipt
+    _reject(chain)
 
 
 def test_revoked_trusted_receipt_must_reject() -> None:
@@ -188,7 +214,11 @@ def test_wrong_report_id_and_identity_must_reject() -> None:
 
 
 def test_missing_report_fingerprint_must_reject() -> None:
-    _reject(_chain(fingerprint=False))
+    chain = _chain()
+    envelope, report, outbox, _, _, _, _ = chain
+    key = outbox._key_for(envelope, ROUTE, "AGENT", report.receiver.agent_id)
+    del outbox._report_fingerprints[key]
+    _reject(chain)
 
 
 def test_independent_outbox_and_inbox_epochs_do_not_reject_live_receipt() -> None:
@@ -233,7 +263,7 @@ def test_cross_generation_live_old_ack_precedes_new_claim_and_is_accepted() -> N
     key = outbox._key_for(envelope, ROUTE, "AGENT", report.receiver.agent_id)
     # The original attempt is genuinely UNKNOWN; an independently accepted
     # older ACK is proved live again on the next generation's finish.
-    outbox._active_ack_port = UpstreamAckAuthority(inbox)
+    assert outbox._active_ack_port is not None
     outbox.plan(envelope, route=ROUTE, target_type="AGENT",
                 target_id=report.receiver.agent_id, policy_version="agent-report-v1",
                 control_epoch=0, intent_id="report-report1-g1", generation=1,
@@ -259,6 +289,17 @@ def test_cross_generation_live_old_ack_precedes_new_claim_and_is_accepted() -> N
                               binding_port=adapter).status == "ACCEPTED"
 
 
+def test_future_report_cannot_create_receipt_or_ack() -> None:
+    chain = _chain()
+    _, report, _, _, _, _, _ = chain
+    early_inbox = UpstreamInbox()
+    with pytest.raises(UpstreamInboxError, match="REPORT_CREATED_AT_FUTURE"):
+        early_inbox.accept(to_sector_report(report), now=START - timedelta(seconds=1))
+    assert early_inbox.receipt_for_report(report.report_id) is None
+    assert early_inbox.list_accepted() == ()
+    assert early_inbox.ledger_epoch == 0
+
+
 def test_time_order_and_agent_lifetime_must_reject() -> None:
     chain = _chain()
     _, report, _, inbox, _, _, _ = chain
@@ -266,7 +307,13 @@ def test_time_order_and_agent_lifetime_must_reject() -> None:
     inbox._receipts[receipt.receipt_id] = replace(
         receipt, accepted_at=START - timedelta(seconds=1))
     _reject(chain)
-    _reject(_chain(accepted_seconds=4, observed_seconds=3))
+    chain = _chain()
+    _, report, _, inbox, _, _, _ = chain
+    receipt = inbox.receipt_for_report(report.report_id)
+    inbox._receipts[receipt.receipt_id] = replace(
+        receipt, accepted_at=START + timedelta(seconds=4),
+        ack=replace(receipt.ack, acked_at=START + timedelta(seconds=4)))
+    _reject(chain)
     chain = _chain()
     envelope, report, outbox, inbox, pool, acceptance, _ = chain
     bad = replace(report, receiver=replace(report.receiver,
