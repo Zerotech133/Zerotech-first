@@ -52,15 +52,18 @@ def log_line(f, msg):
 
 
 def find_tdx_sync_procs():
-    """返回正在运行的 tdx_sync.py 进程的 PID 列表（不含本脚本派生的 worker 自身由调用方排除）。"""
+    """返回正在运行的 tdx_sync.py 进程的 PID 列表；枚举失败返回 None（未知，不得视为无实例）。"""
     try:
         out = subprocess.run(
             ["powershell", "-NoProfile", "-Command",
              "Get-CimInstance Win32_Process -Filter \"Name like 'python%'\" "
              "| ForEach-Object { \"$($_.ProcessId)|$($_.CommandLine)\" }"],
-            capture_output=True, text=True, timeout=60).stdout or ""
+            capture_output=True, text=True, errors="replace", timeout=60).stdout or ""
     except Exception as exc:
-        print("[a3-heal][WARN] 进程枚举失败: %s" % str(exc)[:120])
+        print("[a3-heal][WARN] 进程枚举失败（按未知处理，不视为无实例）: %s" % str(exc)[:120])
+        return None
+    if out.strip() == "" :
+        # 枚举成功但无 python 进程：明确为空
         return []
     pids = []
     for line in out.splitlines():
@@ -96,12 +99,18 @@ def wait_for_other_sync(max_wait_mins, f):
     deadline = time.time() + max_wait_mins * 60
     while time.time() < deadline:
         pids = find_tdx_sync_procs()
+        if pids is None:
+            # 枚举失败=状态未知：closed on failure，继续等待重探，不视为无实例
+            log_line(f, "[a3-heal] 进程枚举失败（状态未知），等 120s 重探（剩 %.0f 分钟）"
+                     % ((deadline - time.time()) / 60))
+            time.sleep(120)
+            continue
         if not pids:
             return True
         log_line(f, "[a3-heal] 有 tdx_sync 实例在跑 PID=%s，等 120s（剩 %.0f 分钟）"
                  % (pids, (deadline - time.time()) / 60))
         time.sleep(120)
-    return not find_tdx_sync_procs()
+    return False
 
 
 def backup_manifest(f):
@@ -259,18 +268,31 @@ def main(argv):
         return 0
     if not args.detach:
         # 派生 detached worker 后立即返回（铁律：长跑不占会话）
+        # 注意：仅 DETACHED_PROCESS 不足以逃出沙箱 Job 对象（KILL_ON_JOB_CLOSE 会在
+        # 启动方会话结束时静默收割整棵进程树，2026-10-20 晨两批同此死法），
+        # 必须叠加 CREATE_BREAKAWAY_FROM_JOB；Job 不允许 breakaway 时回退重试。
         flags = 0
         if hasattr(subprocess, "DETACHED_PROCESS"):
             flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        breakaway = flags | getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0)
         os.makedirs(LOGS, exist_ok=True)
         with open(log_path, "a", encoding="utf-8", errors="replace") as lf:
             lf.write("[%s] [a3-heal] launcher 派生 detached worker（%d 张）\n" % (now_s(), len(tables)))
-        subprocess.Popen(
-            [sys.executable, "-X", "utf8", os.path.abspath(__file__),
-             "--tables", ",".join(tables), "--log", log_path, "--detach"],
-            cwd=QUANT_DIR, creationflags=flags, stdin=subprocess.DEVNULL,
+        popen_kwargs = dict(
+            cwd=QUANT_DIR, stdin=subprocess.DEVNULL,
             stdout=open(log_path, "a", encoding="utf-8", errors="replace"),
             stderr=subprocess.STDOUT, close_fds=True)
+        try:
+            subprocess.Popen(
+                [sys.executable, "-X", "utf8", os.path.abspath(__file__),
+                 "--tables", ",".join(tables), "--log", log_path, "--detach"],
+                creationflags=breakaway, **popen_kwargs)
+        except OSError:
+            # 当前 Job 禁止 breakaway：回退普通 detached（由调用方存活核验兜底）
+            subprocess.Popen(
+                [sys.executable, "-X", "utf8", os.path.abspath(__file__),
+                 "--tables", ",".join(tables), "--log", log_path, "--detach"],
+                creationflags=flags, **popen_kwargs)
         print("worker 已派生，日志:", log_path)
         return 0
     return worker(tables, log_path)
