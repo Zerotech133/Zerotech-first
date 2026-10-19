@@ -273,6 +273,59 @@ def test_fetch_daily_mixed_indices_and_failure_keep_stock_fallback():
     assert [call.args[0] for call in ak.call_args_list] == ["SZ000001", "SH600519"]
 
 
+def test_fetch_daily_filters_primary_rows_before_success():
+    good = {"symbol": "SZ000001", "close": 10}
+    polluted = [{"symbol": "SH000001"}, {"symbol": "SZ399001"},
+                {"symbol": "SH600519"}]
+    with mock.patch.object(R, "setup_tushare", return_value=(object(), object())), \
+         mock.patch.object(R, "daily_tushare",
+                           return_value=(polluted + [good], "qfq")), \
+         mock.patch.object(R, "daily_akshare") as ak:
+        by_sym, note, errs = R.fetch_daily(["SZ000001"])
+    assert by_sym == {"SZ000001": [good]}
+    assert note == "tushare_qfq×1"
+    assert any("tushare" in err and "已剔除" in err for err in errs)
+    ak.assert_not_called()
+
+
+def test_fetch_daily_primary_all_polluted_falls_back_to_filtered_stock():
+    good = {"symbol": "SZ000001", "close": 10}
+    polluted = [{"symbol": "SH000001"}, {"symbol": "SZ399001"},
+                {"symbol": "SH600519"}]
+    with mock.patch.object(R, "setup_tushare", return_value=(object(), object())), \
+         mock.patch.object(R, "daily_tushare", return_value=(polluted, "qfq")), \
+         mock.patch.object(R, "daily_akshare", return_value=polluted + [good]) as ak:
+        by_sym, note, errs = R.fetch_daily(["SZ000001"])
+    assert by_sym == {"SZ000001": [good]}
+    assert note == "akshare_qfq×1"
+    assert any("tushare" in err and "无有效" in err for err in errs)
+    assert any("akshare" in err and "已剔除" in err for err in errs)
+    ak.assert_called_once_with("SZ000001", 300)
+
+
+def test_fetch_daily_both_sources_all_polluted_fail_visible():
+    polluted = [{"symbol": "SH000001"}, {"symbol": "SZ399001"},
+                {"symbol": "SH600519"}]
+    with mock.patch.object(R, "setup_tushare", return_value=(object(), object())), \
+         mock.patch.object(R, "daily_tushare", return_value=(polluted, "raw")), \
+         mock.patch.object(R, "daily_akshare", return_value=polluted):
+        by_sym, note, errs = R.fetch_daily(["SZ000001"])
+    assert by_sym == {} and note == ""
+    assert sum("已剔除" in err for err in errs) == 2
+    assert sum("无有效" in err for err in errs) == 2
+
+
+def test_fetch_daily_empty_primary_and_clean_fallback():
+    good = {"symbol": "SZ000001"}
+    with mock.patch.object(R, "setup_tushare", return_value=(object(), object())), \
+         mock.patch.object(R, "daily_tushare", return_value=([], "qfq")), \
+         mock.patch.object(R, "daily_akshare", return_value=[good]):
+        by_sym, note, errs = R.fetch_daily(["SZ000001"])
+    assert by_sym == {"SZ000001": [good]}
+    assert note == "akshare_qfq×1"
+    assert any("tushare" in err and "无有效" in err for err in errs)
+
+
 def test_daily_akshare_direct_rejects_index_before_import():
     with mock.patch.dict(sys.modules, {"akshare": None}):
         for index in ("SH000001", "SZ399001"):

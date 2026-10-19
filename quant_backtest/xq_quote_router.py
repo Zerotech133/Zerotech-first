@@ -425,6 +425,19 @@ def daily_akshare(sym: str, days: int = 300) -> list:
     return rows
 
 
+def _filter_daily_rows(sym: str, rows: list, source: str,
+                       errs: list[str]) -> list:
+    """只保留请求股票的日线行；污染或全空均留可诊断错误。"""
+    safe_rows = [row for row in rows if isinstance(row, dict)
+                 and row.get("symbol") == sym
+                 and not is_index_symbol(row.get("symbol"))]
+    if len(safe_rows) != len(rows):
+        errs.append("%s %s: 返回非请求股票或指数锚行已剔除" % (sym, source))
+    if not safe_rows:
+        raise RuntimeError("无有效请求股票日线行")
+    return safe_rows
+
+
 def fetch_daily(syms: list[str], days: int = 300) -> tuple[dict, str, list]:
     """日线路由：逐码 tushare → akshare，返回逐码行集与来源摘要。
 
@@ -448,13 +461,16 @@ def fetch_daily(syms: list[str], days: int = 300) -> tuple[dict, str, list]:
                 ts_mod, pro = setup_tushare()
                 inited = True
             rows, adj = daily_tushare(sym, days, ts_mod, pro)
-            by_sym[sym] = rows
+            safe_rows = _filter_daily_rows(sym, rows, "tushare", errs)
+            by_sym[sym] = safe_rows
             srcs.append("tushare_%s" % adj)
             continue
         except Exception as e:                    # noqa: BLE001
             errs.append("%s tushare: %s" % (sym, str(e)[:60]))
         try:
-            by_sym[sym] = daily_akshare(sym, days)
+            rows = daily_akshare(sym, days)
+            safe_rows = _filter_daily_rows(sym, rows, "akshare", errs)
+            by_sym[sym] = safe_rows
             srcs.append("akshare_qfq")
         except Exception as e:                    # noqa: BLE001
             errs.append("%s akshare: %s" % (sym, str(e)[:60]))
