@@ -282,7 +282,9 @@ ALIASES = {
                     "merge_mode": "fallback",
                     "note": "研报：tdx 优先，tushare 补深度"},
     "news":        {"resolves": ["stock_news"],
-                    "note": "JEV news.db 独立通道，读层 v1 未路由"},
+                    "note": "JEV 已接线情报总线（event_graph 经 "
+                            "/api/intel/bus since_id 水位读，2026-10-19）；"
+                            "premarket 报告聚合仍直读（created_at 窗口口径，待切）"},
     "index_daily": {"resolves": ["ts_index_daily"],
                     "note": "指数日线（xtcloud）"},
     "moneyflow":   {"resolves": ["ts_moneyflow"],

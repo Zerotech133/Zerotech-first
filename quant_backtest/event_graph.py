@@ -17,7 +17,8 @@
   （对齐行序的 512 维向量矩阵）+ event_state.json（水位，原子写）
 
 水位增量（参考 jev_feed/jev_feed.py）：
-  notice 按日期水位回退 1 天重叠拉取；news.db 按 rowid 水位续读；
+  notice 按日期水位回退 1 天重叠拉取；news.db 经情报总线 since_id 水位
+  模式续读（rowid 游标，进程内 bus_query，读层 v1 补链 2026-10-19）；
   事件 id 幂等去重（AN 公告号跨源去重：jev 判定行优先于规则行）。
 
 用法：
@@ -31,7 +32,6 @@ import hashlib
 import json
 import os
 import re
-import sqlite3
 import sys
 import tempfile
 import time
@@ -42,7 +42,6 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-NEWS_DIR = os.path.abspath(os.path.join(HERE, "..", "news_collector"))
 
 import datamart as dm                          # noqa: E402
 # semantica_mvp 惰性导入（embed/topk 仅在建图/语义检索时需要）——
@@ -198,53 +197,61 @@ def _event_text(ev):
 def _seed_newsdb(wm_rowid):
     """news.db 已判定行 → 事件行。返回 (new_events, new_wm_rowid)。
 
+    读点收拢至情报总线（2026-10-19，读层 v1 未路由缺口补链）：
+    bus_query(domain=jev, since_id=水位) 进程内调用——不走 HTTP 零端口
+    依赖，SQL 级「jev IS NOT NULL AND jev!='' AND rowid>? ORDER BY rowid」
+    与原直读 1:1；bus 的 max_rowid 游标含坏 jev 行（原直读「坏行也推
+    水位」判例语义），分页 limit=100 循环至 count<limit 终点。
+    bus 读失败 → RuntimeError fail-visible（原 sqlite 异常同型，水位不推）。
+
     含 announcement 源（id=ann:AN...，从标题 [code name] 提取个股）；
     无 stocks 的市场级事件也入库（kind=news，不挂股边，供语义检索）。
     """
-    db = os.path.join(NEWS_DIR, "news.db")
-    con = sqlite3.connect(db)
-    con.row_factory = sqlite3.Row
-    try:
-        rows = con.execute(
-            "SELECT rowid AS rid, id, source, ts, title, stocks, jev "
-            "FROM news WHERE jev IS NOT NULL AND jev != '' AND rowid > ? "
-            "ORDER BY rowid", (wm_rowid,)).fetchall()
-    finally:
-        con.close()
-    out, max_rid = [], wm_rowid
-    for r in rows:
-        max_rid = max(max_rid, r["rid"])
-        try:
-            j = json.loads(r["jev"])
-        except Exception:
-            continue
-        title = (r["title"] or "").strip()
-        if not title:
-            continue
-        ts = _norm_ts(r["ts"])
-        if not ts:
-            continue
-        stocks = []
-        try:
-            stocks = json.loads(r["stocks"] or "[]")
-        except Exception:
-            stocks = []
-        # 只保留合法 ts_code（news.db stocks 列混有 Meta 等非代码字符串）
-        stocks = [c for c in stocks
-                  if isinstance(c, str) and re.match(r"^\d{6}\.(SH|SZ|BJ)$", c)]
-        if not stocks:
-            # announcement 源：标题形如 '[301716 鸿富诚] 鸿富诚:...'
-            m = re.match(r"\[(\d{6})\s", title)
-            c6 = _code6(m.group(1)) if m else None
-            if c6:
-                stocks = [c6]
-        out.append(dict(
-            id=str(r["id"]), kind="news", ts=ts, text=title[:TEXT_MAX],
-            source=str(r["source"] or ""), stocks=stocks,
-            bias=j.get("bias"), conf=j.get("conf"),
-            reason=j.get("reason") or "", tag="jev",
-        ))
-    return out, max_rid
+    root = os.path.abspath(os.path.join(HERE, ".."))
+    os.environ.setdefault("AIOS_ROOT", root)  # 与 NEWS_DIR 同根，部署态可覆盖
+    if root not in sys.path:
+        sys.path.insert(0, os.path.join(root, "portal"))
+    import api_intel_bus as bus  # 惰性：轻调用方不背 portal 依赖
+
+    out, wm = [], int(wm_rowid)
+    while True:
+        env, status = bus.bus_query({"domain": "jev", "since_id": str(wm),
+                                     "limit": "100"})
+        if status != 200 or not env.get("ok"):
+            raise RuntimeError("intel bus jev 水位读失败: %r"
+                               % (env.get("errors"),))
+        for it in env["items"]:
+            j = it.get("jev")
+            if not isinstance(j, dict):     # 坏行（bus 已计 bad_rows），
+                continue                    # 水位由 max_rowid 兜住不滞留
+            title = (it.get("title") or "").strip()
+            if not title:
+                continue
+            ts = _norm_ts(it.get("ts"))
+            if not ts:
+                continue
+            # bus stocks=原始解析 list（str 化），此处沿用原 ts_code 过滤
+            stocks = [c for c in (it.get("stocks") or [])
+                      if isinstance(c, str)
+                      and re.match(r"^\d{6}\.(SH|SZ|BJ)$", c)]
+            if not stocks:
+                # announcement 源：标题形如 '[301716 鸿富诚] 鸿富诚:...'
+                m = re.match(r"\[(\d{6})\s", title)
+                c6 = _code6(m.group(1)) if m else None
+                if c6:
+                    stocks = [c6]
+            out.append(dict(
+                id=str(it["id"]), kind="news", ts=ts, text=title[:TEXT_MAX],
+                source=str(it.get("source") or ""), stocks=stocks,
+                bias=j.get("bias"), conf=j.get("conf"),
+                reason=j.get("reason") or "", tag="jev",
+            ))
+        errs = env.get("errors") or {}
+        if errs.get("max_rowid") is not None:
+            wm = max(wm, int(errs["max_rowid"]))
+        if (env.get("count") or 0) < 100:   # 末页（count=本页扫过行数）
+            break
+    return out, wm
 
 
 def _seed_notice(wm_date, notice_days):

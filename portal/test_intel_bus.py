@@ -5,6 +5,7 @@
 对账段（__main__ 显式触发）：总线 domain=jev/news vs 直读 news.db 基线
 （event_graph 读法同口径：jev IS NOT NULL AND jev!=''）逐条比对
 （id/ts/bias/conf），真库只读——这是「读层 v1 未路由」补链的验收证据。
+含 since_id 水位模式（量化读点 rowid 游标）单测 T7-T9。
 """
 import json
 import os
@@ -39,7 +40,7 @@ db.execute("CREATE TABLE news (id TEXT PRIMARY KEY, source TEXT, ts TEXT, "
 rows = [
     ("n1", "sina", SINCE_TS, SINCE_TS, "标题甲",
      "内容", json.dumps(["600000.SH"]), json.dumps(
-         {"bias": "bull", "conf": 0.9, "impact_cn": "高"})),
+         {"bias": "bull", "conf": 0.9, "impact_cn": "高", "reason": "r1"})),
     ("n2", "sina", SINCE_TS, SINCE_TS, "标题乙",
      "内容", json.dumps(["000001.SZ", "600000.SH"]), "not-json"),  # 坏 jev
     ("n3", "east", SINCE_TS, SINCE_TS, "标题丙",
@@ -133,7 +134,46 @@ assert st == 503 and not body["ok"] and "缺失" in body["errors"]["events"]
 os.environ["INTEL_BUS_EVENTS_PATH"] = os.path.join(FIX, "events.jsonl")
 _ok("events 缺源 503 fail-visible")
 
-print("UNIT PASS（情报总线 6 组单测）")
+# ── T7 since_id 参数门 ────────────────────────────────────────
+for bad in ({"domain": "news", "since_id": "abc"},
+            {"domain": "news", "since_id": "-1"},
+            {"domain": "news", "since_id": "1.5"},
+            {"domain": "events", "since_id": "1"},
+            {"domain": "evidence", "since_id": "1"}):
+    body, st = bus.bus_query(bad)
+    assert st == 400 and not body["ok"], (bad, st)
+_ok("since_id 非法值/越界域 五路 400")
+
+# ── T8 since_id 水位模式（jev 域 rowid 游标分页）───────────────
+body, st = bus.bus_query({"domain": "jev", "since_id": "0", "limit": "2"})
+assert st == 200 and body["ok"]
+# rowid 1..5：n1(1) n2(2,坏) n4(4) n5(5) 为判定行；本页扫 n1,n2
+assert [i["id"] for i in body["items"]] == ["n1"]
+assert body["count"] == 2 and body["errors"]["bad_rows"] == 1
+assert body["errors"]["max_rowid"] == 2
+assert body["items"][0]["rid"] == 1
+assert body["items"][0]["jev"]["reason"] == "r1"   # 完整 dict 非投影
+body, st = bus.bus_query({"domain": "jev", "since_id": "2", "limit": "2"})
+assert [i["id"] for i in body["items"]] == ["n4", "n5"]      # 窗口外 n4 也在
+assert body["errors"]["max_rowid"] == 5 and body["count"] == 2
+body, st = bus.bus_query({"domain": "jev", "since_id": "5", "limit": "2"})
+assert st == 200 and body["items"] == [] and body["count"] == 0
+assert "max_rowid" not in body["errors"]
+body, st = bus.bus_query({"domain": "jev", "since_id": "0", "limit": "100"})
+assert [i["id"] for i in body["items"]] == ["n1", "n4", "n5"]  # 升序全集
+assert body["count"] == 4 and body["errors"]["bad_rows"] == 1
+_ok("since_id 水位分页/坏行推水位/天数窗口弃用/终点判空")
+
+# ── T9 since_id news 域（无 jev 过滤，坏 jev→None 在列）────────
+body, st = bus.bus_query({"domain": "news", "since_id": "0", "limit": "100"})
+assert [i["id"] for i in body["items"]] == ["n1", "n2", "n3", "n4", "n5"]
+assert body["count"] == 5 and body["errors"]["max_rowid"] == 5
+by_id = {i["id"]: i for i in body["items"]}
+assert by_id["n2"]["jev"] is None and by_id["n3"]["jev"] is None
+assert by_id["n5"]["rid"] == 5
+_ok("since_id news 域全行游标 + 坏 jev 不炸")
+
+print("UNIT PASS（情报总线 9 组单测）")
 
 # ── 影子对账（真库只读）────────────────────────────────────────
 if __name__ == "__main__":

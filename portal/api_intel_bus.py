@@ -9,12 +9,20 @@
 （build_catalog 明注「JEV news.db 独立通道，读层 v1 未路由」）由此接线。
 
 GET /api/intel/bus?domain=<news|jev|evidence|events>[&code=][&days=][&limit=]
+                            [&since_id=]
   统一信封 {"ok","schema_ver","endpoint","domain","params","items","count",
             "source","errors"}；count=过滤后总数（不受 limit 截断）。
   news     原料流：news.db ro，窗口内 id 倒序，stocks 精确代码过滤，
            坏 jev → None 不炸（api_news_intel._parse_jev 判例复用）
   jev      判定流：news.db ro，jev 非空且可解析 dict 才入选（量化对账基线
            = event_graph 的「jev IS NOT NULL AND jev!=''」读法）
+  since_id 水位模式（仅 news/jev，量化读点机器消费）：忽略 days/ts 窗口，
+           改 SQL 级「rowid > since_id ORDER BY rowid ASC LIMIT limit」
+           分页游标。items 各带 rid（news.rowid）且 jev=完整解析 dict
+           （非前端投影，机器消费需 reason 等全键）；count=本页扫过行数
+           （预过滤），errors.max_rowid=本页扫过末行 rid（含坏 jev 行，
+           与 event_graph 原直读「坏行也推水位」语义 1:1）。分页终点：
+           count < limit；消费方水位 = max_rowid 逐页推进，零丢行零滞留。
   evidence 证据—标的流：委托 api_intel_evidence.load_evidence_targets
            （精确 ts_code 匹配口径不漂移），状态码透传 fail-visible
   events   事件流：quant_backtest/data/semantica/events.jsonl 只读投影
@@ -59,8 +67,8 @@ def _int_param(params, name, default, maximum):
 
 
 def validate_params(params):
-    """白名单校验 → (domain, code, days, limit)；违规 ValueError。"""
-    unknown = set(params) - {"domain", "code", "days", "limit"}
+    """白名单校验 → (domain, code, days, limit, since_id)；违规 ValueError。"""
+    unknown = set(params) - {"domain", "code", "days", "limit", "since_id"}
     if unknown:
         raise ValueError("unknown parameter: %s" % sorted(unknown)[0])
     domain = params.get("domain")
@@ -71,7 +79,15 @@ def validate_params(params):
         raise ValueError("code must be an A-share symbol like 600000.SH")
     days = _int_param(params, "days", 7, 30)
     limit = _int_param(params, "limit", 50, 100)
-    return domain, code, days, limit
+    since_id = params.get("since_id")
+    if since_id is not None:
+        if domain not in ("news", "jev"):
+            raise ValueError("since_id only supported for news/jev domains")
+        raw = str(since_id)
+        if not re.fullmatch(r"\d{1,12}", raw, re.ASCII):
+            raise ValueError("since_id must be a non-negative integer")
+        since_id = int(raw)
+    return domain, code, days, limit, since_id
 
 
 def _envelope(domain, params, items, count, source, errors=None, ok=True):
@@ -90,8 +106,15 @@ def _window(days):
     return since, datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
-def _domain_news(code, days, limit, jev_only):
-    """news/jev 两域同源查询（一次 ro 连接；python 侧 stocks 精确过滤）。"""
+def _domain_news(code, days, limit, jev_only, since_id=None):
+    """news/jev 两域同源查询（一次 ro 连接；python 侧 stocks 精确过滤）。
+
+    since_id 水位模式：忽略 days/ts 窗口，SQL 级 rowid>since_id 升序分页，
+    items 带 rid + jev 完整 dict，errors.max_rowid=本页扫过末行 rid
+    （含坏 jev 行——event_graph 原直读「坏行也推水位」判例语义）。
+    """
+    if since_id is not None:
+        return _domain_news_since(code, limit, jev_only, since_id)
     items, count, bad_rows = [], 0, 0
     since, until = _window(days)
     uri = "file:" + _db_path().resolve().as_posix() + "?mode=ro"
@@ -129,6 +152,56 @@ def _domain_news(code, days, limit, jev_only):
         domain, {"code": code, "days": days, "limit": limit}, items, count,
         "news.db@news_collector (sqlite mode=ro)",
         {"bad_rows": bad_rows} if bad_rows else {}), 200
+
+
+def _domain_news_since(code, limit, jev_only, since_id):
+    """水位模式实现：rowid 游标分页（机器消费，jev=完整 dict + rid）。"""
+    domain = "jev" if jev_only else "news"
+    uri = "file:" + _db_path().resolve().as_posix() + "?mode=ro"
+    sql = ("SELECT rowid AS rid, id, source, ts, created_at, title, "
+           "content, stocks, jev FROM news WHERE rowid > ?")
+    if jev_only:  # 已判定行口径（event_graph 直读基线同款 SQL 过滤）
+        sql += " AND jev IS NOT NULL AND jev != ''"
+    sql += " ORDER BY rowid ASC LIMIT ?"
+    try:
+        db = sqlite3.connect(uri, uri=True)
+        try:
+            rows = db.execute(sql, (since_id, limit)).fetchall()
+        finally:
+            db.close()
+    except (sqlite3.Error, OSError) as e:
+        return _envelope(domain, {"code": code, "since_id": since_id,
+                                  "limit": limit}, [], 0, "",
+                         {"db": "news.db 读取失败: %r" % e}, ok=False), 503
+    items, scanned, bad_rows = [], len(rows), 0
+    for rid, nid, source, ts, ingested, title, content, stocks, raw_jev in rows:
+        code_list = api_news_intel._parse_stocks(stocks)
+        if code and code not in code_list:
+            continue
+        if raw_jev:
+            try:
+                jev = json.loads(raw_jev)
+                if not isinstance(jev, dict):
+                    jev = None
+            except ValueError:
+                jev = None
+        else:
+            jev = None
+        if jev_only and jev is None:
+            bad_rows += 1  # 有值但坏（SQL 已滤空值）；水位由 max_rowid 兜住
+            continue
+        items.append({"id": nid, "rid": rid, "ts": ts,
+                      "ingested_at": ingested, "title": title or "",
+                      "content": content or "", "source": source,
+                      "stocks": code_list, "jev": jev})
+    errors = {}
+    if bad_rows:
+        errors["bad_rows"] = bad_rows
+    if scanned:
+        errors["max_rowid"] = rows[-1][0]  # 本页扫过末行 rid（坏行含在内）
+    return _envelope(domain, {"code": code, "since_id": since_id,
+                              "limit": limit}, items, scanned,
+                     "news.db@news_collector (sqlite mode=ro)", errors), 200
 
 
 def _domain_evidence(code, days, limit):
@@ -189,12 +262,13 @@ def bus_query(params):
     """总线主入口：params 已是 str→str dict（Handler 解析 qs 后传入）。
     返回 (envelope, http_status)；参数违规 400，源失败 503，上游透传。"""
     try:
-        domain, code, days, limit = validate_params(params)
+        domain, code, days, limit, since_id = validate_params(params)
     except ValueError as e:
         return _envelope(str(params.get("domain") or ""), params, [], 0, "",
                          {"invalid_query": str(e)}, ok=False), 400
     if domain in ("news", "jev"):
-        return _domain_news(code, days, limit, jev_only=(domain == "jev"))
+        return _domain_news(code, days, limit, jev_only=(domain == "jev"),
+                            since_id=since_id)
     if domain == "evidence":
         return _domain_evidence(code, days, limit)
     return _domain_events(code, days, limit)
