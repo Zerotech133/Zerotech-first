@@ -312,7 +312,9 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
     if not os.environ.get("XUEQIUTOKEN", ""):
         mf.mark("xq_kline_d", done=False, rows=0, status="skip_no_token",
                 note="XQ_A_TOKEN 缺失，降级 skip")
-        mf.save()
+        if not mf.save():
+            raise ManifestSaveError(
+                "xq_kline_d 缺 token，无新数据片；清单未确认 skip_no_token")
         print("  xq_kline_d: skip_no_token")
         return 0
     try:
@@ -434,7 +436,9 @@ def sync_kline(codes: list[str], max_symbols: int = X.MAX_SYMBOLS,
                           % (len(empty_codes), ",".join(empty_codes[:8])))
     mf.mark("xq_kline_d", done=bool(ok_codes), rows=total,
             status=status, note="; ".join(note_parts))
-    mf.save()
+    if not mf.save():
+        raise ManifestSaveError(
+            "xq_kline_d 账本未确认；数据片可能已发布，不能宣称回滚")
     print("  xq_kline_d: %d/%d 码成功，累计 %d 行"
           % (len(ok_codes), len(syms), total))
     return total

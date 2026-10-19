@@ -248,6 +248,252 @@ class TestSnapManifestSave(_TmpEnv):
             X.OUT_DIR, "xq_quote_snap", "d_20261016.parquet")))
 
 
+class TestKlineManifestSave(_TmpEnv):
+    """日线 skip/结账 save=False 不可伪成功，测试仅使用离线假对象。"""
+
+    def _old_manifest_bytes(self) -> bytes:
+        """保留旧账本字节，验证失败后没有宣称更新。"""
+        mf = X.XqManifest(X.MANIFEST)
+        mf.mark("xq_kline_d", done=True, rows=9, status="ok")
+        self.assertTrue(mf.save())
+        with open(X.MANIFEST, "rb") as stored:
+            return stored.read()
+
+    def _exercise_failure(self, source: str) -> None:
+        """对照缺 token、雪球发布、备援发布及双源全败。"""
+        old_bytes = self._old_manifest_bytes()
+        token = source != "skip"
+        if token:
+            os.environ["XUEQIUTOKEN"] = "offline-test-token"
+        fallback = source == "fallback"
+        failure = source in ("fallback", "failed")
+        fake = _fake_ball({"kline": mock.Mock(
+            side_effect=RuntimeError("snow offline") if failure else None,
+            return_value=_kline_j())})
+        row = {"symbol": "SH600519", "ts_code": "600519.SH",
+               "timestamp": "2026-10-16 00:00:00", "close": 10.0}
+        routed = ({"SH600519": [row]}, "offline_alt", []) if fallback else (
+            {}, "", ["offline fallback"])
+        published: list[str] = []
+
+        def publish(_frame: pd.DataFrame, path: str) -> None:
+            """模拟数据片原子发布成功，不能在结账失败时宣称回滚。"""
+            with open(path, "wb") as output:
+                output.write(b"published-kline")
+            published.append(path)
+
+        mf = X.XqManifest(X.MANIFEST)
+        mf.load()
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily",
+                           return_value=routed) as fetch, \
+                mock.patch.object(X, "atomic_parquet",
+                                  side_effect=publish) as parquet, \
+                mock.patch.object(X, "jitter_sleep", return_value=None), \
+                mock.patch("socket.socket.connect",
+                           side_effect=AssertionError("network forbidden")), \
+                mock.patch.object(X.XqManifest, "save", return_value=False) \
+                as save, \
+                mock.patch("builtins.print") as print_line:
+            with self.assertRaises(S.ManifestSaveError) as caught:
+                S.sync_kline(["SH600519"], mf=mf)
+        self.assertEqual(save.call_count, 1)
+        self.assertEqual(mf.get("xq_kline_d")["status"],
+                         "skip_no_token" if not token else
+                         "failed" if source == "failed" else
+                         "partial" if fallback else "ok")
+        with open(X.MANIFEST, "rb") as stored:
+            self.assertEqual(stored.read(), old_bytes)
+        log = "\n".join(" ".join(str(part) for part in call.args)
+                        for call in print_line.call_args_list)
+        self.assertNotIn("码成功，累计", log)
+        if not token:
+            self.assertIn("清单未确认", str(caught.exception))
+            fake.kline.assert_not_called()
+            fetch.assert_not_called()
+            parquet.assert_not_called()
+        elif source == "failed":
+            self.assertIn("账本未确认", str(caught.exception))
+            self.assertIn("可能已发布", str(caught.exception))
+            fetch.assert_called_once()
+            parquet.assert_not_called()
+        else:
+            self.assertIn("可能已发布", str(caught.exception))
+            self.assertIn("不能宣称回滚", str(caught.exception))
+            self.assertEqual(len(published), 1)
+            parquet.assert_called_once()
+            with open(published[0], "rb") as stored:
+                self.assertEqual(stored.read(), b"published-kline")
+            if fallback:
+                fetch.assert_called_once_with(["SH600519"], days=284)
+            else:
+                fetch.assert_not_called()
+
+    def test_skip_save_false(self) -> None:
+        self._exercise_failure("skip")
+
+    def test_snowball_published_save_false(self) -> None:
+        self._exercise_failure("snowball")
+
+    def test_fallback_published_save_false(self) -> None:
+        self._exercise_failure("fallback")
+
+    def test_all_sources_failed_save_false(self) -> None:
+        self._exercise_failure("failed")
+
+    def test_cli_kline_and_all_stop_on_save_false(self) -> None:
+        """显式代码、离线初始化；单批及 all 均 rc1，all 不进入后续批。"""
+        for batch in ("kline", "all"):
+            with self.subTest(batch=batch):
+                os.environ["XUEQIUTOKEN"] = "offline-test-token"
+                fake = _fake_ball({"quotec": lambda _symbols: _quotec_j(),
+                                   "kline": lambda *args, **kwargs: _kline_j()})
+                saved_status: list[str] = []
+                original_save = X.XqManifest.save
+
+                def save(manifest: X.XqManifest) -> bool:
+                    """all 先保存 snap，再仅使 kline 落账失败。"""
+                    if manifest.get("xq_kline_d"):
+                        saved_status.append("kline-failed")
+                        return False
+                    saved_status.append("snap-saved")
+                    return original_save(manifest)
+
+                with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                        mock.patch.object(S, "init_ball", return_value={
+                            "token": "offline-test-token",
+                            "probe": {"ok": True}, "token_probe": {}}) \
+                        as initialize, \
+                        mock.patch.object(X, "load_token", return_value="") \
+                        as load_token, \
+                        mock.patch.object(X, "ip_blocked_active",
+                                          return_value=""), \
+                        mock.patch.object(X, "jitter_sleep",
+                                          return_value=None), \
+                        mock.patch("xq_quote_router.fetch_daily") as fetch, \
+                        mock.patch("socket.socket.connect",
+                                   side_effect=AssertionError("network forbidden")), \
+                        mock.patch.object(X.XqManifest, "save", save), \
+                        mock.patch.object(S, "sync_capital_flow") as flow, \
+                        mock.patch.object(S, "sync_northbound") as north, \
+                        mock.patch("builtins.print") as print_line:
+                    rc = S.main(["--batch", batch, "--codes", "SH600519"])
+                self.assertEqual(rc, 1)
+                initialize.assert_called_once()
+                load_token.assert_not_called()
+                fetch.assert_not_called()
+                flow.assert_not_called()
+                north.assert_not_called()
+                self.assertEqual(saved_status, (["snap-saved"] if batch == "all"
+                                               else []) + ["kline-failed"])
+                log = "\n".join(" ".join(str(part) for part in call.args)
+                                for call in print_line.call_args_list)
+                self.assertIn("[ALERT][manifest_save]", log)
+                self.assertIn("停止后续批次", log)
+                self.assertNotIn("[main] 完成", log)
+                path = os.path.join(X.OUT_DIR, "xq_kline_d",
+                                    "600519.SH.parquet")
+                self.assertTrue(os.path.isfile(path))
+                on_disk = X.XqManifest(X.MANIFEST)
+                on_disk.load()
+                self.assertFalse(on_disk.get("xq_kline_d"))
+                if batch == "all":
+                    self.assertEqual(on_disk.get("xq_quote_snap")["status"],
+                                     "ok")
+                os.environ.pop("XUEQIUTOKEN", None)
+                # 下一轮独立试验不可沿用上一轮发布的文件或账本。
+                if batch == "kline":
+                    os.remove(path)
+
+    def test_cli_missing_token_save_false_stops_batches(self) -> None:
+        """缺 token 的未确认 skip 不得作为正常降级返回 rc0。"""
+        fake = _fake_ball({"quotec": lambda _symbols: _quotec_j(),
+                           "kline": mock.Mock(side_effect=AssertionError(
+                               "kline must not run without token"))})
+        for batch in ("kline", "all"):
+            with self.subTest(batch=batch):
+                prior = X.XqManifest(X.MANIFEST)
+                prior.mark("xq_kline_d", done=True, rows=9, status="ok")
+                self.assertTrue(prior.save())
+                with open(X.MANIFEST, "rb") as stored:
+                    old_bytes = stored.read()
+                real_save = X.XqManifest.save
+
+                def save(manifest: X.XqManifest) -> bool:
+                    """允许 all 快照正常保存，仅阻断 kline skip 落账。"""
+                    if (manifest.get("xq_kline_d") or {}).get("status") == \
+                            "skip_no_token":
+                        return False
+                    return real_save(manifest)
+
+                with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                        mock.patch.object(S, "init_ball", return_value={
+                            "token": "", "probe": {"ok": True},
+                            "token_probe": {}}) as initialize, \
+                        mock.patch.object(X, "load_token", return_value="") \
+                        as load_token, \
+                        mock.patch.object(X, "ip_blocked_active",
+                                          return_value=""), \
+                        mock.patch.object(X, "jitter_sleep",
+                                          return_value=None), \
+                        mock.patch("xq_quote_router.fetch_daily") as fetch, \
+                        mock.patch("socket.socket.connect",
+                                   side_effect=AssertionError("network forbidden")), \
+                        mock.patch.object(X.XqManifest, "save", save), \
+                        mock.patch.object(S, "sync_capital_flow") as flow, \
+                        mock.patch.object(S, "sync_northbound") as north, \
+                        mock.patch("builtins.print") as print_line:
+                    rc = S.main(["--batch", batch, "--codes", "SH600519"])
+                self.assertEqual(rc, 1)
+                initialize.assert_called_once()
+                load_token.assert_not_called()
+                fake.kline.assert_not_called()
+                fetch.assert_not_called()
+                flow.assert_not_called()
+                north.assert_not_called()
+                log = "\n".join(" ".join(str(part) for part in call.args)
+                                for call in print_line.call_args_list)
+                self.assertIn("[ALERT][manifest_save]", log)
+                self.assertIn("清单未确认 skip_no_token", log)
+                self.assertNotIn("[main] 完成", log)
+                self.assertFalse(os.path.exists(os.path.join(
+                    X.OUT_DIR, "xq_kline_d", "600519.SH.parquet")))
+                with open(X.MANIFEST, "rb") as stored:
+                    if batch == "kline":
+                        self.assertEqual(stored.read(), old_bytes)
+                    else:
+                        self.assertNotEqual(stored.read(), old_bytes)
+
+    def test_save_true_preserves_skip_and_success(self) -> None:
+        """正常落账继续保持缺 token 返回零及雪球/备援累计行数。"""
+        mf = X.XqManifest(X.MANIFEST)
+        with mock.patch("socket.socket.connect",
+                        side_effect=AssertionError("network forbidden")), \
+                mock.patch("xq_quote_router.fetch_daily") as fetch:
+            self.assertEqual(S.sync_kline(["SH600519"], mf=mf), 0)
+            self.assertEqual(mf.get("xq_kline_d")["status"], "skip_no_token")
+            fetch.assert_not_called()
+        os.environ["XUEQIUTOKEN"] = "offline-test-token"
+        fake = _fake_ball({"kline": lambda *args, **kwargs: _kline_j()})
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("socket.socket.connect",
+                           side_effect=AssertionError("network forbidden")):
+            self.assertEqual(S.sync_kline(["SH600519"], mf=mf), 2)
+        self.assertEqual(mf.get("xq_kline_d")["status"], "ok")
+        row = {"symbol": "SH600519", "ts_code": "600519.SH",
+               "timestamp": "2026-10-17 00:00:00", "close": 11.0}
+        fake = _fake_ball({"kline": mock.Mock(
+            side_effect=RuntimeError("offline snow"))})
+        with mock.patch.dict(sys.modules, {"pysnowball": fake}), \
+                mock.patch("xq_quote_router.fetch_daily", return_value=(
+                    {"SH600519": [row]}, "offline_alt", [])), \
+                mock.patch("socket.socket.connect",
+                           side_effect=AssertionError("network forbidden")):
+            self.assertEqual(S.sync_kline(["SH600519"], mf=mf), 3)
+        self.assertEqual(mf.get("xq_kline_d")["status"], "partial")
+        self.assertEqual(mf.get("xq_kline_d")["rows"], 3)
+
+
 class TestKlineDedup(_TmpEnv):
     """test_kline_dedup：逐码 by_code 布局 + 增量合并去重（后写覆盖）。"""
 
