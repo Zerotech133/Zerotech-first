@@ -34,10 +34,14 @@ class TrustedAcceptanceBindingAdapter(ReceiptBindingPort):
     """Read-only exact-attempt binding against an injected authoritative inbox.
 
     Neither an ACCEPTED_VERIFIED outbox status nor a caller-supplied ACK alone
-    proves sector acceptance. Both independent ledgers and their epochs,
+    proves sector acceptance. Each ledger's own revocation and epoch rules,
     identities, contents and observed timestamps must agree at lookup time.
+    Outbox control epochs and inbox ledger epochs are unrelated counters.
     Private outbox indexes are read only because no public exact-attempt API
-    exists. No timestamps are generated or substituted here.
+    exists. No timestamps are generated or substituted here. RouteReceipt has
+    no finish timestamp: these checks cannot independently prove that the
+    original finish call occurred inside its lease, only reject contradictory
+    observed evidence; production authorization requires a stronger record.
     """
 
     def __init__(self, outbox: RouteOutbox, envelope: EvidenceEnvelope,
@@ -150,8 +154,6 @@ class TrustedAcceptanceBindingAdapter(ReceiptBindingPort):
         if (receipt.report_id != report.report_id
                 or receipt.envelope_hash != mapped.envelope_hash
                 or receipt.sender_agent_id != report.sender.agent_id
-                or receipt.ledger_epoch != self._inbox.ledger_epoch
-                or intent.control_epoch != receipt.ledger_epoch
                 or ack.report_id != report.report_id
                 or ack.receiver_agent_id != report.receiver.agent_id
                 or ack.ack_id != binding.external_message_id
@@ -163,6 +165,7 @@ class TrustedAcceptanceBindingAdapter(ReceiptBindingPort):
                 <= intent.created_at <= attempt.claim_at < attempt.lease_until
                 and report.created_at <= receipt.accepted_at <= ack.acked_at
                 == route_receipt.observed_at <= self._now
+                and route_receipt.observed_at < attempt.lease_until
                 and report.created_at < envelope.valid_until
                 and ack.acked_at < envelope.valid_until
                 and report.sender.registered_at <= report.created_at

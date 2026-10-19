@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from quant_backtest.agent_bridge.mapping import to_sector_report
+from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
 from quant_backtest.agent_bridge.trusted_acceptance import TrustedAcceptanceBindingAdapter
 from quant_backtest.quant_sector.upstream_inbox import UpstreamInbox
 from quant_backtest.watch_dispatch import freeze_offline
@@ -24,7 +25,8 @@ ROUTE = "QUANT_UPSTREAM_REPORT"
 
 def _chain(*, accept: bool = True, fingerprint: bool = True,
            control_epoch: int = 0, inbox_epoch: int = 0,
-           accepted_seconds: int = 3, observed_seconds: int = 3):
+           accepted_seconds: int = 3, observed_seconds: int = 3,
+           first_unknown: bool = False):
     """Build distinct in-memory outbox and authoritative inbox ledgers."""
     envelope = freeze_offline(
         schema_version=1, evidence_version=1, previous_version_hash=None,
@@ -72,12 +74,17 @@ def _chain(*, accept: bool = True, fingerprint: bool = True,
     upstream = inbox.receipt_for_report(report.report_id)
     ack_id = upstream.ack.ack_id if upstream else "self-filled-ack"
     source = upstream.ack.verification_source if upstream else "self-filled-source"
-    settled = outbox.finish(
-        attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
-        external_message_id=ack_id, verification_source=source,
-        observed_at=START + timedelta(seconds=observed_seconds),
-        now=START + timedelta(seconds=5))
-    assert settled.outcome == ACCEPTED_VERIFIED
+    if first_unknown:
+        settled = outbox.finish(attempt.attempt_id, outcome="UNKNOWN",
+                                now=START + timedelta(seconds=5))
+        assert settled.outcome == "UNKNOWN"
+    else:
+        settled = outbox.finish(
+            attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+            external_message_id=ack_id, verification_source=source,
+            observed_at=START + timedelta(seconds=observed_seconds),
+            now=START + timedelta(seconds=5))
+        assert settled.outcome == ACCEPTED_VERIFIED
     store = EvidenceStore()
     store.freeze(envelope)
     pool = SignalPool(store)
@@ -184,15 +191,72 @@ def test_missing_report_fingerprint_must_reject() -> None:
     _reject(_chain(fingerprint=False))
 
 
-def test_mismatched_epoch_and_stale_inbox_epoch_must_reject() -> None:
-    _reject(_chain(control_epoch=1))
-    _reject(_chain(inbox_epoch=1))
+def test_independent_outbox_and_inbox_epochs_do_not_reject_live_receipt() -> None:
+    for chain in (_chain(control_epoch=7), _chain(inbox_epoch=1)):
+        _, _, _, inbox, pool, acceptance, adapter = chain
+        authoritative = inbox.receipt_for_report(chain[1].report_id)
+        assert inbox.is_active(authoritative.receipt_id)
+        assert adapter.binding_for(acceptance.attempt_id) is not None
+        assert pool.mark_accepted("signal1", receipt=acceptance,
+                                  binding_port=adapter).status == "ACCEPTED"
     chain = _chain()
-    _, _, _, inbox, _, _, _ = chain
+    _, _, _, inbox, pool, acceptance, adapter = chain
     earlier = replace(to_sector_report(chain[1]), report_id="earlier")
     old = inbox.accept(earlier, now=START + timedelta(seconds=6))
     inbox.revoke(old.receipt_id, now=START + timedelta(seconds=7))
+    assert inbox.ledger_epoch == 1
+    assert inbox.is_active(inbox.receipt_for_report(chain[1].report_id).receipt_id)
+    assert pool.mark_accepted("signal1", receipt=acceptance,
+                              binding_port=adapter).status == "ACCEPTED"
+
+
+def test_outbox_own_epoch_staleness_must_reject() -> None:
+    chain = _chain()
+    envelope, _, outbox, _, _, acceptance, _ = chain
+    outbox._epochs[outbox._identity(envelope)] = 1
     _reject(chain)
+
+
+def test_observation_at_or_past_attempt_lease_must_reject() -> None:
+    for seconds in (3, 2):
+        chain = _chain()
+        _, _, outbox, _, _, acceptance, _ = chain
+        attempt = outbox._attempts[acceptance.attempt_id]
+        outbox._attempts[acceptance.attempt_id] = replace(
+            attempt, lease_until=START + timedelta(seconds=seconds))
+        _reject(chain)
+
+
+def test_cross_generation_live_old_ack_precedes_new_claim_and_is_accepted() -> None:
+    chain = _chain(first_unknown=True)
+    envelope, report, outbox, inbox, pool, _, _ = chain
+    key = outbox._key_for(envelope, ROUTE, "AGENT", report.receiver.agent_id)
+    # The original attempt is genuinely UNKNOWN; an independently accepted
+    # older ACK is proved live again on the next generation's finish.
+    outbox._active_ack_port = UpstreamAckAuthority(inbox)
+    outbox.plan(envelope, route=ROUTE, target_type="AGENT",
+                target_id=report.receiver.agent_id, policy_version="agent-report-v1",
+                control_epoch=0, intent_id="report-report1-g1", generation=1,
+                created_at=START + timedelta(seconds=6), valid_until=END,
+                report_fingerprint=outbox._report_fingerprints[key])
+    new_attempt = outbox.claim(
+        envelope, route=ROUTE, target_type="AGENT",
+        target_id=report.receiver.agent_id, claim_token="retry",
+        claim_at=START + timedelta(seconds=7), lease_until=END)
+    ack = inbox.receipt_for_report(report.report_id).ack
+    settled = outbox.finish(
+        new_attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+        external_message_id=ack.ack_id,
+        verification_source=ack.verification_source,
+        observed_at=ack.acked_at, now=START + timedelta(seconds=8))
+    assert settled.outcome == ACCEPTED_VERIFIED
+    assert settled.receipt.observed_at < new_attempt.claim_at
+    adapter = TrustedAcceptanceBindingAdapter(
+        outbox, envelope, report, inbox, now=START + timedelta(seconds=9))
+    acceptance = AcceptanceReceipt(ROUTE, new_attempt.attempt_id, ack.ack_id)
+    assert adapter.binding_for(new_attempt.attempt_id) is not None
+    assert pool.mark_accepted("signal1", receipt=acceptance,
+                              binding_port=adapter).status == "ACCEPTED"
 
 
 def test_time_order_and_agent_lifetime_must_reject() -> None:
