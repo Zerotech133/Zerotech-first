@@ -154,6 +154,7 @@ import api_gate         # 周一门判只读投影 /api/gate/checkpoint（驾驶
 import api_brief        # 复盘简报只读投影 /api/brief/*（联动层二期 R5 2026-10-18）
 import api_notify       # K-ORG-201 通知指挥四态队列 mixin（只读，2026-10-19）
 import api_news_intel   # K-ORG-207 新闻情报台三栏聚合出口（速报/政策/舆情，只读 2026-10-19）
+import api_intel_bus    # 情报总线唯一出口 mixin（六域→总线→量化/飞书双路径 2026-10-19）
 
 
 
@@ -565,7 +566,7 @@ if _os.environ.get("PORTAL_NO_WARMUP") != "1":
 
 
 
-class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, http.server.BaseHTTPRequestHandler):
+class Handler(api_data.Handler, api_chanlun_pages.Handler, api_backtest.Handler, api_kg.Handler, api_bridge.Handler, api_portfolio.Handler, api_screen.Handler, api_misc.Handler, api_flow.Handler, api_lineage.Handler, api_intel_evidence.Handler, api_intel_bus.Handler, api_unified.Handler, api_replay.Handler, api_approvals.Handler, api_capability.Handler, api_perf.Handler, api_xq_intel.Handler, api_dataops.Handler, api_daily_data.Handler, api_guojia.Handler, api_execution.Handler, api_tickets.Handler, api_notify.Handler, api_news_intel.Handler, http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # K82 访问日志：一行式留痕（判断「用户是否看过页面」的唯一取证
         # 通道）；独立文件，不与 stderr 错误日志混写；失败不阻断请求。
@@ -2978,6 +2979,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
         qs = raw.split("?", 1)[1] if "?" in raw else ""
         if path == '/api/intel/evidence-targets':
             self._intel_evidence_targets(qs)
+            return
+        if path == '/api/intel/bus':
+            # 情报总线唯一出口（六域→总线→量化/飞书双路径，只读 2026-10-19）
+            self._intel_bus(qs)
             return
         if path == '/api/notify/queue':
             # K-ORG-201 通知指挥四态队列（三本账只读聚合，零写入 2026-10-19）
