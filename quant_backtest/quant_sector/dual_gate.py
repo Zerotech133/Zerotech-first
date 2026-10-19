@@ -230,7 +230,9 @@ class PermissionGate:
 
         The lookup receives the acceptance reference (e.g. the quant-sector
         UpstreamInbox receipt_id) and must answer whether that acceptance is
-        still active; revoked or unknown references must yield False.
+        still active; revoked or unknown references must yield False. Lookup
+        exceptions propagate to the caller; the gate never opens when the
+        lookup raises; consumers must handle the error path.
         """
         self._acceptance_lookup = acceptance_lookup
         self._reviews: Dict[str, ResearchReview] = {}

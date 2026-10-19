@@ -320,3 +320,171 @@ def test_cancel_and_revoke_epoch_only_forward():
     # No object carries any trading permission concept.
     for obj in (ledger, attempt):
         assert not hasattr(obj, "trading_permitted")
+
+
+# ---------------------------------------------------------------------------
+# reclaim_expired: explicit operator reclaim of an expired CLAIMED lease.
+# This is an operator-invoked API only; it does NOT change the automatic
+# semantics of "UNKNOWN is terminal and never auto-retried".
+
+
+def claim_and_expire(ledger: DispatchLedger, receipt: UpstreamReceipt, *,
+                     intent_id: str, target_ref: str = "feishu:chan1"):
+    """Plan + claim with a one-minute lease and let the lease expire."""
+    ledger.plan(make_intent(ledger.route, receipt, intent_id=intent_id,
+                            target_ref=target_ref),
+                receipt_view=receipt, now=T)
+    return ledger.claim(intent_id, now=T, lease_until=T + timedelta(minutes=1))
+
+
+def test_reclaim_expired_returns_to_ready_and_reclaimable():
+    inbox, _, receipt = fixture_inbox()
+    ledger = make_ledger("FEISHU_INFO", inbox)
+    claim_and_expire(ledger, receipt, intent_id="int-rec1")
+    # While the lease is expired-but-claimed, any claim stays closed.
+    with pytest.raises(DispatchLedgerError, match="INTENT_NOT_CLAIMABLE"):
+        ledger.claim("int-rec1", now=T + timedelta(minutes=2),
+                     lease_until=T + timedelta(minutes=5))
+    result = ledger.reclaim_expired("int-rec1", now=T + timedelta(minutes=3))
+    assert result.intent_id == "int-rec1"
+    assert result.outcome == READY
+    assert ledger.status("int-rec1") == READY
+    # The reclaimed intent is claimable again as a fresh attempt.
+    second = ledger.claim("int-rec1", now=T + timedelta(minutes=4),
+                          lease_until=T + timedelta(minutes=9))
+    assert second.attempt_no == 2
+    assert second.outcome == CLAIMED
+
+
+def test_reclaim_rejects_active_lease_including_boundary():
+    inbox, _, receipt = fixture_inbox()
+    ledger = make_ledger("FEISHU_INFO", inbox)
+    claim_and_expire(ledger, receipt, intent_id="int-rec2")
+    # Lease still active.
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_LEASE_ACTIVE"):
+        ledger.reclaim_expired("int-rec2", now=T + timedelta(seconds=30))
+    # Boundary: expiry requires now strictly greater than lease_until.
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_LEASE_ACTIVE"):
+        ledger.reclaim_expired("int-rec2", now=T + timedelta(minutes=1))
+
+
+def test_reclaim_rejects_non_claimed_states():
+    inbox, _, receipt = fixture_inbox()
+    ledger = make_ledger("RESEARCH_REVIEW", inbox)
+    # READY (never claimed).
+    ledger.plan(make_intent("RESEARCH_REVIEW", receipt, intent_id="int-st-ready",
+                            target_ref="research:desk2"),
+                receipt_view=receipt, now=T)
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_STATE_INVALID"):
+        ledger.reclaim_expired("int-st-ready", now=T + timedelta(minutes=1))
+    # UNKNOWN terminal.
+    claim_and_expire(ledger, receipt, intent_id="int-st-unknown",
+                     target_ref="research:desk2")
+    with pytest.raises(DispatchLedgerError, match="INTENT_NOT_CLAIMABLE"):
+        ledger.claim("int-st-unknown", now=T + timedelta(minutes=2),
+                     lease_until=T + timedelta(minutes=5))
+    # Authorized one-line contract repair (team-lead ruling 2026-10-19):
+    # the block intends a genuine UNKNOWN-terminal state; without this
+    # explicit finish the intent is CLAIMED-with-expired-lease, which is
+    # byte-identical to the state test_reclaim_expired_returns_to_ready_
+    # and_reclaimable expects to reclaim successfully.
+    ledger.finish(ledger.get_attempts("int-st-unknown")[-1], UNKNOWN,
+                  now=T + timedelta(minutes=2))
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_STATE_INVALID"):
+        ledger.reclaim_expired("int-st-unknown", now=T + timedelta(minutes=3))
+    # CANCELLED.
+    ledger.plan(make_intent("RESEARCH_REVIEW", receipt, intent_id="int-st-cancel",
+                            target_ref="research:desk2"),
+                receipt_view=receipt, now=T)
+    ledger.cancel("int-st-cancel", now=T + timedelta(seconds=1))
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_STATE_INVALID"):
+        ledger.reclaim_expired("int-st-cancel", now=T + timedelta(minutes=1))
+    # ACCEPTED_VERIFIED terminal.
+    claim_and_expire(ledger, receipt, intent_id="int-st-done",
+                     target_ref="research:desk2")
+    # finish inside the lease window with full evidence.
+    attempt_done = ledger.get_attempts("int-st-done")[-1]
+    ledger.finish(attempt_done, ACCEPTED_VERIFIED, now=T + timedelta(seconds=30),
+                  external_message_id="msg-ok",
+                  observed_at=T + timedelta(seconds=20))
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_STATE_INVALID"):
+        ledger.reclaim_expired("int-st-done", now=T + timedelta(minutes=1))
+
+
+def test_reclaim_preserves_attempt_cap_at_three():
+    inbox, _, receipt = fixture_inbox()
+    ledger = make_ledger("FEISHU_INFO", inbox)
+    ledger.plan(make_intent("FEISHU_INFO", receipt, intent_id="int-cap-r",
+                            target_ref="feishu:chan1"),
+                receipt_view=receipt, now=T)
+    # Attempts 1 and 2 end DEFINITELY_REJECTED; each returns to READY.
+    for no in (1, 2):
+        attempt = ledger.claim("int-cap-r", now=T,
+                               lease_until=T + timedelta(minutes=5))
+        assert attempt.attempt_no == no
+        ledger.finish(attempt, DEFINITELY_REJECTED,
+                      now=T + timedelta(seconds=1),
+                      external_message_id=f"rej-{no}",
+                      observed_at=T + timedelta(seconds=1))
+    # Attempt 3 is claimed, never finished, and its lease expires.
+    third = ledger.claim("int-cap-r", now=T + timedelta(seconds=2),
+                         lease_until=T + timedelta(minutes=1))
+    assert third.attempt_no == 3
+    # Operator reclaims the expired lease; the attempt counter is kept.
+    result = ledger.reclaim_expired("int-cap-r", now=T + timedelta(minutes=2))
+    assert result.outcome == READY
+    assert result.attempt_no == 3
+    # A reclaim must NOT reset the bounded-retry budget.
+    with pytest.raises(DispatchLedgerError, match="ATTEMPTS_EXHAUSTED"):
+        ledger.claim("int-cap-r", now=T + timedelta(minutes=3),
+                     lease_until=T + timedelta(minutes=5))
+
+
+def test_reclaim_keeps_epoch_and_existing_ledger_records():
+    inbox, _, receipt = fixture_inbox()
+    ledger = make_ledger("FEISHU_INFO", inbox)
+    claim_and_expire(ledger, receipt, intent_id="int-ep")
+    history_before = list(ledger.get_attempts("int-ep"))
+    epoch_before = ledger.ledger_epoch
+    assert epoch_before == 0
+    ledger.reclaim_expired("int-ep", now=T + timedelta(minutes=2))
+    # Reclaim is not a revoke: no epoch bump, ledger history untouched.
+    assert ledger.ledger_epoch == epoch_before
+    history_after = ledger.get_attempts("int-ep")
+    assert len(history_after) == len(history_before)
+    assert [a.attempt_no for a in history_after] == \
+        [a.attempt_no for a in history_before]
+    # The expired attempt record survives and stays CLAIMED in the history.
+    assert history_after[-1].attempt_no == 1
+    assert history_after[-1].outcome == CLAIMED
+    # Re-claim appends a new attempt instead of mutating the old one.
+    second = ledger.claim("int-ep", now=T + timedelta(minutes=3),
+                          lease_until=T + timedelta(minutes=5))
+    assert second.attempt_no == 2
+    history_final = ledger.get_attempts("int-ep")
+    assert len(history_final) == 2
+    assert history_final[0].outcome == CLAIMED
+    assert history_final[1].attempt_no == 2
+
+
+def test_reclaim_rejects_naive_and_nonzero_offset_now():
+    inbox, _, receipt = fixture_inbox()
+    ledger = make_ledger("FEISHU_INFO", inbox)
+    claim_and_expire(ledger, receipt, intent_id="int-tz")
+    naive = datetime(2026, 10, 19, 3, 0)
+    offset = datetime(2026, 10, 19, 11, 0,
+                      tzinfo=timezone(timedelta(hours=8)))
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_NOW_INVALID"):
+        ledger.reclaim_expired("int-tz", now=naive)
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_NOW_INVALID"):
+        ledger.reclaim_expired("int-tz", now=offset)
+    # The intent stays untouched after rejected reclaim calls.
+    assert ledger.status("int-tz") == CLAIMED
+
+
+def test_reclaim_unknown_intent_uses_existing_unknown_code():
+    inbox, _, _ = fixture_inbox()
+    ledger = make_ledger("FEISHU_INFO", inbox)
+    with pytest.raises(DispatchLedgerError, match="INTENT_UNKNOWN"):
+        ledger.reclaim_expired("missing-intent",
+                               now=T + timedelta(minutes=1))

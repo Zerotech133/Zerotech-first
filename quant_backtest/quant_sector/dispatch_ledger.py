@@ -258,6 +258,31 @@ class DispatchLedger:
             return True
         return False
 
+    def reclaim_expired(self, intent_id: str, *, now: datetime) -> DispatchAttempt:
+        """Explicit operator reclaim of one expired CLAIMED lease.
+
+        Operator-invoked API only: it returns a CLAIMED intent whose lease
+        has fully elapsed (now strictly greater than lease_until) to READY
+        so a bounded fresh attempt can be taken. This is deliberately NOT
+        an automatic path - it never changes the standing semantics that
+        UNKNOWN is terminal and never auto-retried, never touches intents
+        in any other state, never resets the 3-attempt budget, never bumps
+        the control epoch and never rewrites the attempt history (the
+        expired attempt record survives as CLAIMED; re-claims append).
+        """
+        _utc(now, "RECLAIM_NOW")
+        if intent_id not in self._intents:
+            raise DispatchLedgerError("INTENT_UNKNOWN")
+        if self._statuses.get(intent_id) != CLAIMED:
+            raise DispatchLedgerError("RECLAIM_STATE_INVALID")
+        current = self._current.get(intent_id)
+        if current is None or current.outcome != CLAIMED:
+            raise DispatchLedgerError("RECLAIM_STATE_INVALID")
+        if not (now > current.lease_until):
+            raise DispatchLedgerError("RECLAIM_LEASE_ACTIVE")
+        self._statuses[intent_id] = READY
+        return replace(current, outcome=READY)
+
     def revoke(self, intent_id: str, *, now: datetime,
                epoch: Optional[int] = None) -> int:
         """Advance the control epoch; rollback is rejected fail-closed.
