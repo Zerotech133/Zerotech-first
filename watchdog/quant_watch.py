@@ -73,27 +73,35 @@ def _hub_call(path: str, method: str = "GET",
 _recent_price_cache: dict = {}   # code → (ts, price), 10s 缓存避免高频请求
 
 def _get_price(code: str) -> Optional[float]:
-    """拉单股实时价. code='600000.SH'. 返回 None 表示拉不到."""
+    """拉单股实时价. code='600000.SH'. 返回 None 表示拉不到.
+
+    数据源: 新浪实时行情原始接口 (东财 akshare stock_bid_ask_em 被公司防火墙挡).
+    新浪代码格式: 600000.SH → sh600000, 000001.SZ → sz000001
+    """
+    import urllib.request as _req
     global _recent_price_cache
     now = time.time()
     if code in _recent_price_cache and (now - _recent_price_cache[code][0]) < 10:
         return _recent_price_cache[code][1]
 
-    # akshare 代码转换: 600000.SH → 600000
-    pure_code = code.split(".")[0]
     try:
-        import akshare as ak
-        df = ak.stock_bid_ask_em(symbol=pure_code)
-        # stock_bid_ask_em 返回 DataFrame, column '最新' 或 'price'
-        if df is not None and len(df) > 0:
-            col = next((c for c in df.columns
-                        if "最新" in str(c) or "price" in str(c).lower()), df.columns[0])
-            price = float(df.iloc[0][col])
-            if price > 0:
-                _recent_price_cache[code] = (now, price)
-                return price
+        pure, market = code.split(".")
+        prefix = "sh" if market.upper() == "SH" else "sz"
+        url = f"https://hq.sinajs.cn/list={prefix}{pure}"
+        req = _req.Request(url, headers={"Referer": "https://finance.sina.com.cn",
+                                           "User-Agent": "Mozilla/5.0"})
+        with _req.urlopen(req, timeout=8) as resp:
+            raw = resp.read().decode("gbk", errors="replace")
+            # format: var hq_str_sz000001="平安银行,12.45,...,11.67,..."
+            inside = raw.split('"')[1] if '"' in raw else ""
+            parts = inside.split(",")
+            if len(parts) > 3:
+                price = float(parts[3])  # index 3 = 当前价
+                if price > 0:
+                    _recent_price_cache[code] = (now, price)
+                    return price
     except Exception as e:
-        log.debug("akshare price fail %s: %s", code, e)
+        log.debug("sina price fail %s: %s", code, e)
     return None
 
 
