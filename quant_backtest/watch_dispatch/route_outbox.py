@@ -362,18 +362,16 @@ class RouteOutbox:
                             # A callback may already have revoked and settled the attempt.
                             # Never replace that ledger entry with the stale claim.
                             if current_attempt is not attempt:
-                                if (current_attempt is not None
-                                        and current_attempt.outcome == UNKNOWN
-                                        and current_attempt.receipt is None):
-                                    return current_attempt
-                                return replace(attempt, outcome=UNKNOWN, receipt=None)
+                                if current_attempt is None:
+                                    raise OutboxError("ATTEMPT_NOT_CURRENT")
+                                return current_attempt
+                            # A rebound or revoked intent is no longer ours to settle.
+                            if (current_intent is not intent or key in self._revoked
+                                    or self._generations.get(key, 0) != generation):
+                                raise OutboxError("ATTEMPT_NOT_CURRENT")
                             updated = replace(attempt, outcome=UNKNOWN, receipt=None)
-                            # Only settle our own still-current generation. Do not write
-                            # into a revoked or rebound intent's ledger from this claim.
-                            if (current_intent is intent and key not in self._revoked
-                                    and self._generations.get(key, 0) == generation):
-                                self._attempts[attempt_id] = updated
-                                self._intents[key] = replace(intent, status=UNKNOWN)
+                            self._attempts[attempt_id] = updated
+                            self._intents[key] = replace(intent, status=UNKNOWN)
                             return updated
                     else:
                         current_window = False
