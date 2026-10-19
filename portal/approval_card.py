@@ -29,14 +29,21 @@ def build_review_card(decision):
     if len(content) > 200:
         content = content[:200] + "…"
     tid = str(d.get("target_id") or "")
-    md = "\n".join([
+    # K-ORG-203：决策附带的飞书文档引用原样展示（未核实标记随行；仅展示，
+    # 不并入发送正文——文档引用不外发）
+    lines = [
         "**公告内容**　%s" % (content or "（空）"),
         "**目标**　%s%s" % (d.get("target_name") or "?",
                             ("（%s）" % tid) if tid else ""),
         "**拟发送时间**　%s" % (d.get("send_at") or "?"),
         "**理由**　%s" % (d.get("reason") or "未提供"),
         "**依据**　%s" % (d.get("basis") or "未提供"),
-    ])
+    ]
+    if d.get("doc_url"):
+        doc_title = str(d.get("doc_title") or "未命名文档")
+        lines.append("**参考文档（未核实）**　[%s](%s)" % (
+            doc_title.replace("[", "（").replace("]", "）"), d["doc_url"]))
+    md = "\n".join(lines)
     els = [
         {"tag": "markdown", "content": "**管理公告 · 待老田确认**"},
         {"tag": "hr"},

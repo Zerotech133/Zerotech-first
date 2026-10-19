@@ -522,3 +522,52 @@ def test_hub_critical_defaults_false(monkeypatch):
     monkeypatch.setattr(admin, "_in_silent_window", lambda **kw: True)
     monkeypatch.setattr(admin, "_flow_gate_deny", lambda *a: None)
     assert admin.api_send({"content": "x", "receive_id": "oc_mock", "kind": "decision:alert"})["error"] == "silent window"
+
+
+# ---------- K-ORG-203：决策文档引用（原型「文档引用」视图遗留#1） ----------
+
+DOC_URL = "https://lf3-example.feishu.cn/docx/AbCd1234?para=1"
+
+
+def test_doc_reference_recorded_and_idempotent(isolated):
+    ok = {**isolated, "doc_url": DOC_URL, "doc_title": "决策依据文档"}
+    assert nd.preview(ok)["ok"]
+    r = nd.record(ok, caller="admin_ui")
+    assert r["ok"]
+    assert r["decision"]["doc_url"] == DOC_URL
+    assert r["decision"]["doc_title"] == "决策依据文档"
+    assert nd.record({**ok}, caller="admin_ui")["duplicate"]      # 同引用幂等
+    assert not nd.record({**ok, "doc_title": "另一份"},
+                         caller="admin_ui")["ok"]                 # 改引用即不同决策
+    plain = {**isolated, "id": str(uuid.uuid4())}                 # 未提供 → 兼容旧口径
+    assert nd.record(plain, caller="admin_ui")["ok"]
+    row = next(d for d in nd.recent()["decisions"] if d["id"] == plain["id"])
+    assert row["doc_url"] == "" and row["doc_title"] == ""
+
+
+def test_doc_reference_normalizes_host(isolated):
+    up = {**isolated, "id": str(uuid.uuid4()),
+          "doc_url": "https://Example.Feishu.CN/docx/Xy9Z", "doc_title": "大写域"}
+    r = nd.record(up, caller="admin_ui")
+    assert r["ok"] and r["decision"]["doc_url"] == "https://example.feishu.cn/docx/Xy9Z"
+
+
+@pytest.mark.parametrize("raw", [
+    "http://example.feishu.cn/docx/x",        # 非 https
+    "https://evil.com/docx/x",                # 域名白名单外
+    "https://feishu.cn.evil.com/docx/x",      # 后缀拼接域
+    "https://example.feishu.cn/page/123",     # 路径不在 /docx|/docs|/wiki
+    "https://example.feishu.cn/docx/",        # 空文档 id
+    "not a url",
+])
+def test_doc_reference_rejects_non_feishu_links(isolated, raw):
+    assert not nd.preview({**isolated, "doc_url": raw,
+                           "doc_title": "t"})["ok"]
+
+
+def test_doc_reference_requires_title(isolated):
+    assert not nd.preview({**isolated, "doc_url": DOC_URL})["ok"]            # 缺标题
+    assert not nd.preview({**isolated, "doc_url": DOC_URL, "doc_title": " "})["ok"]
+    assert not nd.preview({**isolated, "doc_title": "只有标题"})["ok"]        # 缺 URL
+    assert not nd.preview({**isolated, "doc_url": DOC_URL,
+                           "doc_title": "长" * 201})["ok"]                   # 超长

@@ -84,7 +84,7 @@ def _item(**kw) -> dict:
             "kind": "", "target": "", "created_at": "", "send_at": "",
             "source": "", "reason": "", "evidence_lifecycle": "",
             "evidence_delivery": "", "agent_source": "", "caller": "",
-            "outcome": "", "basis": "", "category": ""}
+            "outcome": "", "basis": "", "category": "", "doc": ""}
     base.update(kw)
     base["state_label"] = nc.QUEUE_STATE_LABELS.get(base["state"],
                                                     base["state"])
@@ -103,7 +103,8 @@ def decision_items(errors: list) -> list:
         con = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
         rows = con.execute(
             "SELECT id, category, target_name, send_at, reason, created_at,"
-            " status, outcome, agent_source, caller, basis FROM decisions"
+            " status, outcome, agent_source, caller, basis, doc_url, doc_title"
+            " FROM decisions"
         ).fetchall()
         con.close()
     except Exception as e:  # noqa: BLE001  锁不可达/坏库 fail-visible 不抛
@@ -112,6 +113,9 @@ def decision_items(errors: list) -> list:
     for r in rows:
         status = str(r[6] or "")
         cat = str(r[1] or "")
+        doc_url = str(r[11] or "")
+        # K-ORG-203：文档引用随行携带（只存 URL+标题，未核实原样透出）
+        doc = {"url": doc_url, "title": str(r[12] or "")} if doc_url else ""
         out.append(_item(
             id="decision:%s" % r[0],
             state=nc.map_decision_state(status),
@@ -131,6 +135,7 @@ def decision_items(errors: list) -> list:
             outcome=str(r[7] or ""),
             basis=str(r[10] or ""),
             category=cat,
+            doc=doc,
         ))
     return out
 

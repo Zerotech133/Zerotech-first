@@ -231,6 +231,28 @@ def test_build_review_card_buttons_and_truncation(iso):
     assert "…" in body and body.count("长") <= 201  # 截断 200 字
 
 
+def test_build_review_card_doc_reference():
+    # K-ORG-203：决策附带文档引用 → 卡片「参考文档（未核实）」行
+    card = approval_card.build_review_card({
+        "id": "dec-2", "content": "带引用公告", "target_name": "测试群",
+        "target_id": "oc_mock", "send_at": "2026-10-19T08:00:00+08:00",
+        "reason": "维护", "basis": "计划",
+        "doc_url": "https://example.feishu.cn/docx/AbC123",
+        "doc_title": "公告[背景]说明"})
+    md = [e["content"] for e in card["body"]["elements"]
+          if e.get("tag") == "markdown"]
+    body = next(m for m in md if "参考文档" in m)
+    assert "参考文档（未核实）" in body
+    assert "公告（背景）说明" in body          # 标题内 [] 转全角防 markdown 断链
+    assert "https://example.feishu.cn/docx/AbC123" in body
+    plain = approval_card.build_review_card({          # 无引用 → 不出现参考文档行
+        "id": "dec-3", "content": "x", "target_name": "测试群",
+        "target_id": "oc_mock", "send_at": "2026-10-19T08:00:00+08:00",
+        "reason": "r", "basis": "b"})
+    assert not any("参考文档" in e["content"]
+                   for e in plain["body"]["elements"] if e.get("tag") == "markdown")
+
+
 def test_dispatch_routes_decision_actions(iso, monkeypatch):
     seen = []
 

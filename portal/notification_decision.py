@@ -3,6 +3,7 @@
 import hmac
 import json
 import os
+import re
 import sqlite3
 import sys
 import threading
@@ -57,6 +58,44 @@ CATEGORIES = {
     "watch_strategy": ("盯盘策略", "decision:watch_strategy"),
     "announcement": ("管理公告", "decision:announcement"),
 }
+
+# K-ORG-203（追认遗留#1，原型「文档引用」视图）：决策可选附带飞书文档链接。
+# 红线（原型声明）：只存 URL+标题，不抓正文、不视为已核实证据、不随消息外发。
+_DOC_HOST_RE = re.compile(
+    r"^(?:[a-z0-9-]+\.)*(?:feishu\.cn|larksuite\.com|larkoffice\.com|doubao\.com)$",
+    re.IGNORECASE)
+_DOC_PATH_RE = re.compile(r"^/(?:docx|docs|wiki)/[^/]+")
+DOC_TITLE_MAX = 200
+DOC_URL_MAX = 500
+
+
+def _doc_ref_from(req):
+    """校验并归一化决策文档引用（口径=原型 docForm submit：https + 飞书
+    文档/知识库域名 + /docx|/docs|/wiki/ 路径）。
+    返回 (ok, url, title, error)；两者都未提供 → (True, '', '', '') 兼容旧口径。"""
+    raw = req.get("doc_url")
+    title = req.get("doc_title")
+    if raw is None and title is None:
+        return True, "", "", ""
+    if not isinstance(raw, str) or not raw.strip():
+        return False, "", "", "文档链接提供时必须为非空字符串"
+    if not isinstance(title, str) or not title.strip() or len(title.strip()) > DOC_TITLE_MAX:
+        return False, "", "", "文档引用标题必填且不超过 200 字"
+    try:
+        parts = urllib.parse.urlsplit(raw.strip())
+    except ValueError:
+        return False, "", "", "文档链接无效"
+    if parts.scheme != "https" or not parts.hostname \
+            or not _DOC_HOST_RE.match(parts.hostname) \
+            or not _DOC_PATH_RE.match(parts.path or ""):
+        return False, "", "", "仅接受 HTTPS 飞书文档/知识库链接（/docx/、/docs/、/wiki/）"
+    url = urllib.parse.urlunsplit((parts.scheme, parts.netloc.lower(),
+                                   parts.path, parts.query, parts.fragment))
+    if len(url) > DOC_URL_MAX:
+        return False, "", "", "文档链接过长（上限 500 字符）"
+    return True, url, title.strip(), ""
+
+
 _lock = threading.RLock()
 
 
@@ -88,7 +127,7 @@ def _db():
         caller TEXT NOT NULL DEFAULT 'legacy_unknown', operator TEXT NOT NULL DEFAULT '',
         basis TEXT NOT NULL DEFAULT '')""")
     for column in ("agent_source", "caller", "operator", "basis",
-                   "evidence", "message_id"):
+                   "evidence", "message_id", "doc_url", "doc_title"):
         if column not in {r[1] for r in db.execute("PRAGMA table_info(decisions)")}:
             default = "legacy_unknown" if column in ("agent_source", "caller") else ""
             db.execute("ALTER TABLE decisions ADD COLUMN %s TEXT NOT NULL DEFAULT '%s'" % (column, default))
@@ -182,7 +221,8 @@ def update_send_evidence(decision_id, message_id, evidence):
 
 def _public(row):
     return {k: row[k] for k in ("id", "category", "send_at", "created_at", "status",
-                                "executed_at", "outcome", "agent_source", "caller")}
+                                "executed_at", "outcome", "agent_source", "caller",
+                                "doc_url", "doc_title")}
 
 
 def preview(req, caller=None):
@@ -206,6 +246,9 @@ def preview(req, caller=None):
         return {"ok": False, "error": "决策操作者必填且不超过 100 字"}
     if not isinstance(req.get("basis"), str) or not req["basis"].strip() or len(req["basis"]) > 500:
         return {"ok": False, "error": "选择依据必填且不超过 500 字"}
+    doc_ok, doc_url, doc_title, doc_err = _doc_ref_from(req)
+    if not doc_ok:
+        return {"ok": False, "error": doc_err}
     try:
         when = datetime.fromisoformat(req.get("send_at", ""))
         if when.tzinfo is None or when.utcoffset() is None:
@@ -214,6 +257,7 @@ def preview(req, caller=None):
         return {"ok": False, "error": "send_at 必须是带时区的 ISO 时间"}
     return {"ok": True, "category": category, "category_name": CATEGORIES[category][0],
             "target_name": target_name, "send_at": when.isoformat(), "reason": reason.strip(),
+            "doc_url": doc_url, "doc_title": doc_title,
             "execution": "仅显式调用执行 API；不从 schedule.json 自动触发"}
 
 
@@ -260,16 +304,18 @@ def record(req, caller=None):
                 "target_id": target["id"], "send_at": checked["send_at"],
                 "reason": checked["reason"], "content": req["content"],
                 "agent_source": req["agent_source"], "operator": req["operator"].strip(),
-                "basis": req["basis"].strip(), "caller": caller}.items())
+                "basis": req["basis"].strip(), "caller": caller,
+                "doc_url": checked["doc_url"], "doc_title": checked["doc_title"]}.items())
             return {"ok": same, "duplicate": True, "decision": _public(row) if same else None,
                     **({"error": "id 已对应不同决策"} if not same else {})}
         db.execute("""INSERT INTO decisions
             (id,category,target_name,target_id,send_at,reason,content,created_at,status,
-             agent_source,caller,operator,basis)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""", (decision_id, checked["category"], target["name"],
+             agent_source,caller,operator,basis,doc_url,doc_title)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (decision_id, checked["category"], target["name"],
             target["id"], checked["send_at"], checked["reason"], req["content"],
             datetime.now(timezone.utc).isoformat(), "recorded", req["agent_source"], caller,
-            req["operator"].strip(), req["basis"].strip()))
+            req["operator"].strip(), req["basis"].strip(),
+            checked["doc_url"], checked["doc_title"]))
         row = db.execute("SELECT * FROM decisions WHERE id=?", (decision_id,)).fetchone()
     return {"ok": True, "decision": _public(row)}
 

@@ -84,7 +84,7 @@ function renderQueue(){const items=(data&&data.items||[]).filter(x=>filter==='al
   document.getElementById('queue').innerHTML=items.map(x=>{
     const evLife=x.evidence_lifecycle?`生命周期 ${safe((data.legend.evidence_lifecycle||{})[x.evidence_lifecycle]||x.evidence_lifecycle)}`:'生命周期 —（无独立档位，不硬贴标签）';
     const evDlv=x.evidence_delivery?`送达 ${safe((data.legend.evidence_delivery||{})[x.evidence_delivery]||x.evidence_delivery)}`:'送达 —（暂无凭证）';
-    return `<article class="item"><div class="item-head"><span class="chip ${stateCls(x.state)}">${safe(x.state_label||x.state)}</span><span class="item-title">${safe(x.title)}</span><span class="chip">${safe(x.kind||x.source)}</span></div><p class="item-desc">${safe(x.reason||'')}</p><div class="item-foot"><span>目标 ${safe(x.target||'—')} · 创建 ${ts(x.created_at)}${x.send_at?' · 计划 '+ts(x.send_at):''} · 来源 ${safe(x.source)}</span><div class="actions"><button class="action" data-detail="${safe(x.id)}" type="button">依据</button></div></div></article>`}).join('')||'<div class="empty">这一类没有待处理通知。</div>';}
+    return `<article class="item"><div class="item-head"><span class="chip ${stateCls(x.state)}">${safe(x.state_label||x.state)}</span><span class="item-title">${safe(x.title)}</span><span class="chip">${safe(x.kind||x.source)}</span>${x.doc&&x.doc.url?`<a class="chip" style="color:var(--blue);border-color:#3d5a80" href="${safe(x.doc.url)}" target="_blank" rel="noopener noreferrer" title="飞书文档引用（未核实，访问取决于飞书权限）">引用：${safe(x.doc.title||'未命名文档')}（未核实）</a>`:''}</div><p class="item-desc">${safe(x.reason||'')}</p><div class="item-foot"><span>目标 ${safe(x.target||'—')} · 创建 ${ts(x.created_at)}${x.send_at?' · 计划 '+ts(x.send_at):''} · 来源 ${safe(x.source)}</span><div class="actions"><button class="action" data-detail="${safe(x.id)}" type="button">依据</button></div></div></article>`}).join('')||'<div class="empty">这一类没有待处理通知。</div>';}
 function render(){if(!data)return;
   const s=data.states||{};
   document.getElementById('mReview').textContent=s.review!=null?s.review:'-';
@@ -113,6 +113,7 @@ function openModal(x){const lg=(data&&data.legend)||{};
     `<div><b>受众</b>　${safe(x.target||'—')}</div>`+
     `<div><b>路径</b>　账本 source=${safe(x.source||'—')} · kind=${safe(x.kind||'—')}${x.category?` · category=${safe(x.category)}`:''}</div>`+
     `<div><b>why</b>　${safe(x.reason||'—')}${x.basis?`<br>依据 basis：${safe(x.basis)}`:''}</div>`+
+    `<div><b>飞书文档引用</b>　${x.doc&&x.doc.url?`<a href="${safe(x.doc.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--blue)">${safe(x.doc.title||x.doc.url)}</a>（未核实：链接不代表已核实文档内容或访问权限，不作为已核实证据）`:'—'}</div>`+
     `<div><b>证据级别</b>　生命周期：${evLife}<br>送达：${evDlv}</div>`+
     `<div><b>时间</b>　创建 ${ts(x.created_at)}${x.send_at?` · 计划发送 ${ts(x.send_at)}`:''}</div>`+
     `<div class="legend">只读弹窗：不产生审批、发送或重试；四态与证据分级口径见页底 legend。</div>`;
