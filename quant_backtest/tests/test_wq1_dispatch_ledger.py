@@ -488,3 +488,27 @@ def test_reclaim_unknown_intent_uses_existing_unknown_code():
     with pytest.raises(DispatchLedgerError, match="INTENT_UNKNOWN"):
         ledger.reclaim_expired("missing-intent",
                                now=T + timedelta(minutes=1))
+
+
+def test_reclaim_rejects_revoked_intent():
+    """Defense-in-depth: reclaim_expired never resurrects a revoked intent.
+
+    Real path: plan -> claim -> revoke (CLAIMED forced to terminal UNKNOWN)
+    -> reclaim_expired must be rejected with RECLAIM_STATE_INVALID. Today
+    this path is already covered by the UNKNOWN-terminal branch; this test
+    pins the "revoked intents stay rejected" semantics so a future state
+    machine evolution cannot let reclaim revive a revoked intent.
+    """
+    inbox, _, receipt = fixture_inbox()
+    ledger = make_ledger("FEISHU_INFO", inbox)
+    claim_and_expire(ledger, receipt, intent_id="int-rec-revoked")
+    assert ledger.status("int-rec-revoked") == CLAIMED
+    # Revoke the claimed intent: forced to terminal UNKNOWN, epoch advances.
+    epoch = ledger.revoke("int-rec-revoked", now=T + timedelta(minutes=2))
+    assert epoch == 1 and ledger.ledger_epoch == 1
+    assert ledger.status("int-rec-revoked") == UNKNOWN
+    with pytest.raises(DispatchLedgerError, match="RECLAIM_STATE_INVALID"):
+        ledger.reclaim_expired("int-rec-revoked",
+                               now=T + timedelta(minutes=3))
+    # The rejection leaves the revoked intent untouched in its terminal state.
+    assert ledger.status("int-rec-revoked") == UNKNOWN

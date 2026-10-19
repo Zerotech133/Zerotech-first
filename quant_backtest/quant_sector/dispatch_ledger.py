@@ -273,6 +273,9 @@ class DispatchLedger:
         _utc(now, "RECLAIM_NOW")
         if intent_id not in self._intents:
             raise DispatchLedgerError("INTENT_UNKNOWN")
+        # Defense-in-depth alignment with claim's revoked check (claim, L180): never resurrect a revoked intent.
+        if intent_id in self._revoked:
+            raise DispatchLedgerError("RECLAIM_STATE_INVALID")
         if self._statuses.get(intent_id) != CLAIMED:
             raise DispatchLedgerError("RECLAIM_STATE_INVALID")
         current = self._current.get(intent_id)
