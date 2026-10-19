@@ -298,19 +298,20 @@ def history(day: str) -> dict:
         con.close()
 
 
-def us_status() -> dict:
-    """US 独立账本聚合投影（K-STOCK-045e G3）：us_% 账本各一份迷你 status。
+def _market_status(currency: str, prefix: str) -> dict:
+    """分市场独立账本聚合投影（us_status/hk_status 共用体，行为与原 us_status 等价）。
 
-    USD 原币口径，不与 main 混算（币种隔离是 044 设计前提）；无 us_% 账本时
-    ok=True 且 accounts=[]（前端隐藏区块，不算错误）。"""
+    <prefix>_<...> 账本各一份迷你 status；<CURRENCY> 原币口径，不与 main 混算
+    （币种隔离是 044 设计前提）；无账本时 ok=True 且 accounts=[]（前端隐藏
+    区块，不算错误）。"""
     con = _connect()
     if con is None:
         return {"ok": False, "error": f"paper.db 不存在: {DB}"}
     try:
         aids = [r["account_id"] for r in con.execute(
-            "SELECT DISTINCT account_id FROM account WHERE account_id LIKE 'us_%' "
+            f"SELECT DISTINCT account_id FROM account WHERE account_id LIKE '{prefix}%' "
             "ORDER BY account_id")]
-        out = {"ok": True, "currency": "USD", "accounts": []}
+        out = {"ok": True, "currency": currency, "accounts": []}
         for aid in aids:
             marks = con.execute(
                 "SELECT date,total,cash,market_value,pos_pct,pending,verify_ok "
@@ -364,6 +365,19 @@ def us_status() -> dict:
         return out
     finally:
         con.close()
+
+
+def us_status() -> dict:
+    """US 独立账本聚合投影（K-STOCK-045e G3）：us_% 账本各一份迷你 status。"""
+    return _market_status("USD", "us_")
+
+
+def hk_status() -> dict:
+    """HK 独立账本聚合投影（H 批 hk_qingping 灰位）：hk_% 账本，HKD 原币口径。
+
+    与 us_status 同构（_market_status 共用体）；无 hk_% 账本时 ok=True 且
+    accounts=[]（前端灰态，不算错误）。"""
+    return _market_status("HKD", "hk_")
 
 
 if __name__ == "__main__":

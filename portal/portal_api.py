@@ -3247,6 +3247,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
                     data["us"] = _us()
                 except Exception as _e2:
                     data["us"] = {"ok": False, "error": repr(_e2)}
+                try:  # H 批：HK 独立账本投影（HKD 原币灰位；失败降级不拖主投影）
+                    from paper.portal_status import hk_status as _hk
+                    data["hk"] = _hk()
+                except Exception as _e2b:
+                    data["hk"] = {"ok": False, "error": repr(_e2b)}
                 try:  # 077q：选票通道（pick_bridge）投影（10-16 实弹；失败降级）
                     from paper.portal_status import pick_status as _pick
                     data["pick"] = _pick()
