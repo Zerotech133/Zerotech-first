@@ -475,8 +475,10 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
         if sym not in valid_requested:
             errs.append("%s cache: 非请求股票/指数锚键已剔除" % sym)
             continue
+        errors_before = len(errs)
         safe_rows = _safe_daily_rows(sym, rows, "cache", errs)
-        if safe_rows:
+        # 旧快照含坏行意味着缓存不完整，整码失效并从路由补取。
+        if safe_rows and len(errs) == errors_before:
             daily[sym] = safe_rows
     need = [sym for sym in valid_requested if sym not in daily]
     if need:

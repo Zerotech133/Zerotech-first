@@ -289,7 +289,8 @@ def test_fetch_daily_cached_revalidates_old_cache_and_fetches_gap(tmp_path, monk
                           "open": 10, "close": 12}],
             "SZ000300": [{"symbol": "SZ000300", "trade_date": "20261012",
                           "open": 10, "close": 12}],
-            "SZ000001": [{"symbol": "SH000001", "trade_date": "20261012",
+            "SZ000001": [mock_daily()["SZ000001"][0],
+                         {"symbol": "SH000001", "trade_date": "20261012",
                           "open": 10, "close": 12}],
             "SH600519": [],
         },
@@ -378,6 +379,28 @@ def test_fetch_daily_cached_all_fail_and_invalid_rows_retry(tmp_path, monkeypatc
     daily, errs = factor.fetch_daily_cached(["SZ000001"], 20)
     assert daily == {"SZ000001": mock_daily()["SZ000001"]}
     assert errs == []
+
+
+def test_fetch_daily_cached_partial_router_failure_does_not_mislabel_success(
+        tmp_path, monkeypatch):
+    """一只备援成功、一只全源失败：错误保留但成功码非缺码。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+
+    def mocked_fetch(syms, days):
+        assert syms == ["SZ000001", "SH600519"]
+        return {"SZ000001": mock_daily()["SZ000001"]}, "akshare×1", [
+            "SZ000001 tushare 主源失败", "SH600519 两源失败"]
+
+    mock_daily_router(monkeypatch, mocked_fetch)
+    daily, errs = factor.fetch_daily_cached(["SZ000001", "SH600519"], 10)
+    assert set(daily) == {"SZ000001"}
+    assert any("SZ000001 tushare 主源失败" in error for error in errs)
+    assert any("SH600519 两源失败" in error for error in errs)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert saved["_missing"] == ["SH600519"]
+    assert "SZ000001" not in saved["_missing"]
 
 
 def test_fetch_daily_cached_days_meta_invalidates_cache(tmp_path, monkeypatch):
