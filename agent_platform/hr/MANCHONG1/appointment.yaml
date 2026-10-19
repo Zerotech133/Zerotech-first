@@ -1,0 +1,33 @@
+{
+  "agent_id": "MANCHONG1",
+  "dept": "intel",
+  "title": "情报中枢·雪球情报线主理",
+  "rank": "E2",
+  "rank_note": "底座已就绪（四端点实测 200+缺陷修复入库），对齐 HERMES_UI E2 判例",
+  "kind": "runtime",
+  "persona": {"name": "满宠", "courtesy_name": "伯宁", "dept": "军情司"},
+  "identity": {
+    "upstream_route": "INTEL_UPSTREAM_REPORT",
+    "report_kinds": ["DAILY_BRIEF", "ANOMALY", "HEALTH"],
+    "registry_ref": "agent_platform/registry/team_intel.json#/agents[agent_id=MANCHONG1]",
+    "registered_at": "2026-10-19T10:13:12+00:00",
+    "valid_until": "2027-04-17T10:13:12+00:00",
+    "valid_until_note": "180 天到期续注（与 WA1/QS1 包 §3-2 同源悬案，续注负责人待拍板）"
+  },
+  "tools_allowed": {
+    "read": ["127.0.0.1:8791 四端点(GET 只读)", "MCP stock_data_mcp 四工具", "雪球真库只读连接"],
+    "write": ["agent/MANCHONG1/*", "agent_platform/intel_inbox/inbox/**", "deliverables/**"],
+    "execute": ["manchong_daily_brief"],
+    "danger": "deny"
+  },
+  "write_note": "简报留痕+outbox 投递；禁写任何表",
+  "constraints_note": "只读监督——禁写库/禁触发治理进程启停/禁改分类器配置；不直连飞书/投研/交易所；口令「治理静默」立即止损",
+  "supervisor": "INTEL0",
+  "endpoint": "127.0.0.1:8787(WebUI)/8791(数据仪表盘)",
+  "onboarded": "2026-10-19",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian",
+    "human_note": "老田 2026-10-19 拍板 K-ORG-191 C1 独立条目（HERMES_UI 门面条目不动，K-ORG-112 只转调边界不变）；dept 订正 intel（工具建议 data 因 DEPT_CHARTERS 无 intel 部，K-ORG-165 同款）"
+  }
+}

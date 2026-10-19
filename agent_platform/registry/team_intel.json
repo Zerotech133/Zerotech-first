@@ -1,0 +1,74 @@
+{
+ "_note": "K-ORG-191：军情司上行受理席 INTEL0（A1，新设）+ 满宠 MANCHONG1（C1，独立人格条目），org.json intel 部 lead=INTEL0；HERMES_UI 门面条目不动。注册只给身份，不实现硬校验适配器；情报 inbox 的哈希幂等语义保持不变。",
+ "team": "intel",
+ "dept": "intel",
+ "description": "军情司：情报线单一上行受理入口 INTEL_UPSTREAM_REPORT；只受理不裁决",
+ "agents": [
+  {
+   "agent_id": "INTEL0",
+   "name": "军情司上行受理席",
+   "kind": "intel_sector_upstream_receiver",
+   "role_profile": "intel_sector_receiver",
+   "analysis_type": "intel_upstream_receipt",
+   "node_key": "intel0_receiver",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "glm/glm-5.3-flash",
+   "grade": "E1",
+   "identity": {
+    "agent_role": "INTEL_SECTOR",
+    "registry_ref": "agent_platform/registry/team_intel.json#/agents[agent_id=INTEL0]",
+    "registered_at": "2026-10-19T10:13:12+00:00",
+    "valid_until": "2027-04-17T10:13:12+00:00",
+    "accepted_routes": ["INTEL_UPSTREAM_REPORT"],
+    "ack_semantics": "受理回执=agent 级 ACK；受理不等于授权，不等于研判确认"
+   },
+   "tools": ["intel_inbox_ack"],
+   "memory_grants": {
+    "read": ["agent_platform/intel_inbox/**"],
+    "write": ["agent/INTEL0/*"]
+   },
+   "skills": [{"id": "intel_inbox_ack", "kind": "tool", "enabled": true}],
+   "constraints": {
+    "execute": [],
+    "danger": "deny",
+    "note": "只受理不裁决：受理后分发/研判归情报板块与参谋长线；上行单一入口，无对飞书/投研/交易所的任何直连"
+   }
+  },
+  {
+   "agent_id": "MANCHONG1",
+   "name": "满宠",
+   "kind": "runtime",
+   "role_profile": "intel_data_hub",
+   "analysis_type": "intel_daily_brief",
+   "node_key": "manchong1_hub",
+   "parent_node_keys": [],
+   "level": 1,
+   "is_parallel": true,
+   "wait_all_complete": false,
+   "llm_binding": "runtime/hermes",
+   "grade": "E2",
+   "persona": {"name": "满宠", "courtesy_name": "伯宁", "dept": "军情司"},
+   "identity": {
+    "upstream_route": "INTEL_UPSTREAM_REPORT",
+    "report_kinds": ["DAILY_BRIEF", "ANOMALY", "HEALTH"],
+    "registry_ref": "agent_platform/registry/team_intel.json#/agents[agent_id=MANCHONG1]",
+    "registered_at": "2026-10-19T10:13:12+00:00",
+    "valid_until": "2027-04-17T10:13:12+00:00"
+   },
+   "tools": ["manchong_daily_brief"],
+   "memory_grants": {
+    "read": ["agent/MANCHONG1/*"],
+    "write": ["agent/MANCHONG1/*"]
+   },
+   "skills": [{"id": "manchong_daily_brief", "kind": "tool", "enabled": true}],
+   "constraints": {
+    "execute": [],
+    "danger": "deny",
+    "note": "只读监督——禁写库/禁触发治理进程启停/禁改分类器配置；不直连飞书/投研/交易所；口令「治理静默」立即止损"
+   }
+  }
+ ]
+}

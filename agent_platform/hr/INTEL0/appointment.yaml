@@ -1,0 +1,32 @@
+{
+  "agent_id": "INTEL0",
+  "dept": "intel",
+  "title": "军情司上行受理席",
+  "rank": "E1",
+  "rank_note": "K-ORG-117 §三：新岗默认 E1 起步，影子期产出后凭数据升档（工具定级 E2 系 0 留痕计分偏置，按包建议稿订正）",
+  "identity": {
+    "agent_role": "INTEL_SECTOR",
+    "registry_ref": "agent_platform/registry/team_intel.json#/agents[agent_id=INTEL0]",
+    "registered_at": "2026-10-19T10:13:12+00:00",
+    "valid_until": "2027-04-17T10:13:12+00:00",
+    "valid_until_note": "180 天到期续注（与 WA1/QS1 包 §3-2 同源悬案，续注负责人待拍板）",
+    "accepted_routes": ["INTEL_UPSTREAM_REPORT"],
+    "ack_semantics": "受理回执=agent 级 ACK；受理不等于授权，不等于研判确认"
+  },
+  "tools_allowed": {
+    "read": ["agent_platform/intel_inbox/**"],
+    "write": ["agent/INTEL0/*"],
+    "execute": ["intel_inbox"],
+    "danger": "deny"
+  },
+  "execute_note": "仅受理侧脚本 intel_inbox.py；零网络",
+  "constraints_note": "只受理不裁决：受理后分发/研判归情报板块与参谋长线；上行单一入口，无对飞书/投研/交易所的任何直连",
+  "supervisor": "A0",
+  "endpoint": "无（文件收件箱语义，inbox/ 即接入点）",
+  "onboarded": "2026-10-19",
+  "approvals": {
+    "chief": "A0",
+    "human": "laotian",
+    "human_note": "老田 2026-10-19 拍板 K-ORG-191 四席合并一窗（A1 新建 INTEL0）；dept 订正 intel（工具建议 dev 因 DEPT_CHARTERS 无 intel 部，K-ORG-165 同款）"
+  }
+}

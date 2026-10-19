@@ -52,14 +52,16 @@
     "N1",
     "F1",
     "D1",
-    "ST1"
+    "ST1",
+    "WA1",
+    "QS1"
    ],
    "teams": [
     "alpha",
     "strategy"
    ],
    "source": "菜鸟 ai_team_role 独立（K-STOCK-004，2026-10-08 老田拍板） | K-ORG-189 量化交易部扩编：产品规划v1已立「量化交易部（现投研部扩编）」判例，本部即其现役实体——name 归一「量化交易部」（dept=invest 键不动零迁移）+ teams 加 strategy + 缠论分析师 ST1 注册（承接 TR1 charter 预留，影子铁律只读）",
-   "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）",
+   "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；QS1 负责签收 WA1 的 QUANT_UPSTREAM_REPORT 并出具 agent 级 ACK（K-ORG-191）",
    "cn_title": "谋略府",
    "agent_profiles": [
     {
@@ -130,6 +132,48 @@
        "execute": [],
        "danger": "deny"
       }
+     }
+    },
+    {
+     "agent_id": "WA1",
+     "role_profile": "watch_monitor",
+     "kind": "watch_upstream_reporter",
+     "persona": {"name": "许褚", "courtesy_name": "仲康", "dept": "盯盘营"},
+     "identity": {
+      "agent_role": "WATCH",
+      "registry_ref": "registry:org:invest:WA1",
+      "registered_at": "2026-10-19T10:13:12+00:00",
+      "valid_until": "2027-04-17T10:13:12+00:00",
+      "upstream_route": "QUANT_UPSTREAM_REPORT",
+      "report_kinds": ["ANOMALY", "HEALTH"]
+     },
+     "grade": "E1",
+     "skills": [{"id": "watch_upstream_report", "kind": "tool", "enabled": true}],
+     "constraints": {
+      "execute": [],
+      "danger": "deny",
+      "note": "盯盘只观察/预警；所有上行仅走 QUANT_UPSTREAM_REPORT 单一上行路；不直连飞书/投研/交易所；三类动作权限恒 False"
+     }
+    },
+    {
+     "agent_id": "QS1",
+     "role_profile": "quant_sector_receiver",
+     "kind": "quant_sector_upstream_receiver",
+     "persona": {"name": "司马懿", "courtesy_name": "仲达", "dept": "量化板块总署"},
+     "identity": {
+      "agent_role": "QUANT_SECTOR",
+      "registry_ref": "registry:org:invest:QS1",
+      "registered_at": "2026-10-19T10:13:12+00:00",
+      "valid_until": "2027-04-17T10:13:12+00:00",
+      "accepted_routes": ["QUANT_UPSTREAM_REPORT"],
+      "ack_semantics": "受理回执=agent 级 ACK（AgentAck），受理不等于授权，不等于研判确认"
+     },
+     "grade": "E1",
+     "skills": [{"id": "upstream_inbox_ack", "kind": "tool", "enabled": true}],
+     "constraints": {
+      "execute": [],
+      "danger": "deny",
+      "note": "受理后由量化交易层决定三路分发（飞书信息/投研研判/交易所观察）；W-Q1 建设中，本席位先挂名待模块落地"
      }
     }
    ]
@@ -1624,17 +1668,20 @@
   {
    "dept": "intel",
    "name": "情报部",
-   "lead": "A0A",
+   "lead": "INTEL0",
    "status": "active",
    "charter": "情报三线归口：舆情线（雪球社媒 14212 帖库）、通讯线（TDX 新闻/公告/研报三表 59 万行）、内务线（平台巡检告警四任务）；只采集只报实况不决策，情报裁决走 intel 域审批（Agent 建议权+人工裁决权）；K-ORG-165 收编",
    "agents": [
     "XQ1",
     "TDX1",
-    "BEACON1"
+    "BEACON1",
+    "INTEL0",
+    "MANCHONG1"
    ],
    "teams": [],
-   "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian",
-   "cn_title": "军情司"
+   "source": "K-ORG-165 一批收编（2026-10-18）：雪球采集链/TDX三表线/平台巡检链三化身；kind=runtime，代码进程零改动；老田会话拍板「取名注册登记，归属情报」，appointment 终审 human=laotian | K-ORG-191 军情司受理席：INTEL0 新设（解除 A0A 三职兼任之一）+ 满宠入册（人格层，kind=runtime，HERMES_UI 门面条目不动），上行路由 INTEL_UPSTREAM_REPORT 单一入口",
+   "cn_title": "军情司",
+   "lead_duty": "部门监督：每日汇总成员进度报 A0；成员工单超期 24h 内催办（K-ORG-122）；INTEL0 负责签收满宠的 INTEL_UPSTREAM_REPORT 并出具受理回执——只受理不裁决"
   },
   {
    "dept": "chief_line",
