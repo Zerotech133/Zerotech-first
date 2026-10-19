@@ -93,10 +93,11 @@ footer.legend .lg-row b{color:var(--gray-6);font-weight:600}
 <body>
 <main class="main">
 <header>
-<div class="eyebrow">NOTIFY COMMAND · READ-ONLY PROJECTION</div>
+<div class="eyebrow">NOTIFY COMMAND · DENG ZHI HUB</div>
 <h1>📨 通知指挥</h1>
-<p class="lead">通知四态队列的只读投影：数据同源取自 <b>/api/notify/queue</b>（决策 DB、发送流水、deadline 旗标、矩阵发送账四本在役账本的聚合）。本页不审批、不重发、不触发任何发送。</p>
+<p class="lead">邓芝（飞书通讯中枢）统辖 · 通知四态队列的只读投影：数据同源取自 <b>/api/notify/queue</b>（决策 DB、发送流水、deadline 旗标、矩阵发送账四本在役账本的聚合）。本页不审批、不重发、不触发任何发送。</p>
 <p class="readonly-banner"><b>只读投影 · 审批与重发请往飞书</b>——本页没有任何写操作；「API 受理」不等于「已读」，无接收端核实证据的状态一律显示「待核」。</p>
+<div class="notice" id="dd5-note"><b>DD-5 决策账入口（预留）</b>——决策账（notification_decisions.sqlite3）的条目以 <b>decision:</b> 前缀进入本队列，可在下方分组中按前缀识别；决策账 OS 入口（DD-5）本期未上，为预留入口位。本区块为只读说明：零写操作、零新决策权。</div>
 <div class="meta-row">
 <span id="m-generated">聚合时点：读取中…</span><span class="dot">·</span>
 <span id="m-endpoint">endpoint: /api/notify/queue</span><span class="dot">·</span>
