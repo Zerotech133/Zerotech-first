@@ -12,12 +12,18 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from quant_backtest.agent_bridge.trusted_acceptance import TrustedAcceptanceBindingAdapter
-from quant_backtest.quant_sector.upstream_inbox import QuantUpstreamReport, UpstreamInbox
+from quant_backtest.quant_sector.upstream_inbox import (
+    QuantUpstreamReport,
+    UpstreamInbox,
+    UpstreamInboxError,
+)
 from quant_backtest.watch_dispatch import freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity, AgentReport
 from quant_backtest.watch_dispatch.evidence_store import EvidenceStore
 from quant_backtest.watch_dispatch.route_outbox import (
     ACCEPTED_VERIFIED,
+    UNKNOWN,
+    OutboxError,
     ReportFingerprint,
     RouteOutbox,
 )
@@ -83,8 +89,8 @@ def test_public_inbox_accepts_local_shape_valid_report_and_issues_local_ack() ->
     assert inbox.accept(report, now=_at(3)) == accepted
 
 
-def test_public_inbox_current_gap_accepts_report_created_after_acceptance() -> None:
-    """Record the current missing future-time gate, not a production guarantee."""
+def test_public_inbox_rejects_report_created_after_acceptance() -> None:
+    """Future reports must not mutate the ledger; later local intake may pass."""
     envelope = _envelope()
     future_report = QuantUpstreamReport(
         report_id="future-local-report", report_kind="ANOMALY",
@@ -93,19 +99,22 @@ def test_public_inbox_current_gap_accepts_report_created_after_acceptance() -> N
         sender_agent_id="watch1", receiver_agent_id="sector1",
         created_at=_at(10))
     inbox = UpstreamInbox()
-    receipt = inbox.accept(future_report, now=_at(2))
-    assert future_report.created_at > receipt.accepted_at
-    assert receipt.accepted_at == receipt.ack.acked_at == _at(2)
+    with pytest.raises(UpstreamInboxError, match="^REPORT_CREATED_AT_FUTURE$"):
+        inbox.accept(future_report, now=_at(2))
+    assert inbox.receipt_for_report(future_report.report_id) is None
+    assert inbox.list_accepted() == ()
+    assert inbox.ledger_epoch == 0
+    receipt = inbox.accept(future_report, now=_at(10))
+    assert receipt.accepted_at == receipt.ack.acked_at == _at(10)
     assert inbox.is_active(receipt.receipt_id)
     assert inbox.receipt_for_report(future_report.report_id) == receipt
-    # This passing regression exposes an unsafe current behavior; external
-    # provenance and clock authority are still required before production use.
+    # Time-valid locally accepted reports still lack source authentication.
 
 
 @pytest.mark.parametrize("use_local_inbox_ack", [False, True])
-def test_same_generation_public_finish_needs_no_active_ack_port(
+def test_same_generation_public_finish_requires_active_ack_port(
         use_local_inbox_ack: bool) -> None:
-    """A caller-supplied ACK can settle an offline outbox without a live port."""
+    """Neither self-filled nor local ACK proves an active upstream acceptance."""
     envelope = _envelope()
     report = _manual_inbox_report(envelope)
     inbox = UpstreamInbox()
@@ -132,11 +141,10 @@ def test_same_generation_public_finish_needs_no_active_ack_port(
         attempt.attempt_id, outcome=ACCEPTED_VERIFIED, now=_at(3),
         external_message_id=ack_id, verification_source=source,
         observed_at=observed_at)
-    assert settled.outcome == ACCEPTED_VERIFIED
-    assert settled.receipt is not None
-    assert settled.receipt.external_message_id == ack_id
-    assert settled.receipt.verification_source == source
-    assert settled.receipt.observed_at == observed_at
+    assert settled.outcome == UNKNOWN
+    assert settled.receipt is None
+    assert outbox.get_attempts(
+        envelope, route=ROUTE, target_type="AGENT", target_id="sector1") == (settled,)
     assert outbox.production_permitted is False
     assert outbox.notification_permitted is False
     assert outbox.trading_permitted is False
@@ -178,10 +186,11 @@ def test_controlled_pool_refuses_even_plausible_local_ack_and_fixed_binding() ->
         external_message_id=local_ack.ack_id,
         verification_source=local_ack.verification_source,
         observed_at=local_ack.acked_at)
-    assert settled.outcome == ACCEPTED_VERIFIED
+    assert settled.outcome == UNKNOWN
+    assert settled.receipt is None
     fixed = TrustedAcceptanceBindingAdapter(
         outbox, envelope, agent_report, inbox, now=_at(4))
-    assert fixed.binding_for(attempt.attempt_id) is not None
+    assert fixed.binding_for(attempt.attempt_id) is None
     draft = SignalPoolDraft(
         "signal1", "ANOMALY", envelope.event_id,
         envelope.envelope_hash, envelope.evidence_version)
@@ -203,3 +212,61 @@ def test_controlled_pool_refuses_even_plausible_local_ack_and_fixed_binding() ->
         assert component.production_permitted is False
         assert component.notification_permitted is False
         assert component.trading_permitted is False
+
+
+def test_inbox_idempotent_replay_rejects_clock_rollback_without_mutation() -> None:
+    """A prior ACK must not be returned before its original acceptance time."""
+    report = _manual_inbox_report(_envelope())
+    inbox = UpstreamInbox()
+    receipt = inbox.accept(report, now=_at(10))
+    with pytest.raises(UpstreamInboxError, match="^RECEIPT_ACCEPTED_AT_FUTURE$"):
+        inbox.accept(report, now=_at(2))
+    assert inbox.list_accepted() == (receipt,)
+    assert inbox.ledger_epoch == 0
+    assert inbox.receipt_for_report(report.report_id) is receipt
+    assert inbox.accept(report, now=_at(10)) is receipt
+
+
+@pytest.mark.parametrize("missing_fingerprint", [False, True])
+def test_public_finish_without_fingerprint_or_with_failing_port_is_unknown(
+        missing_fingerprint: bool) -> None:
+    """Absent report identity or a failed authority call cannot mint a receipt."""
+    class FailingAckPort:
+        """A simulated unavailable authority, not an upstream verifier."""
+
+        def active_ack(self, fingerprint: ReportFingerprint, ack_id: str,
+                       verification_source: str, acked_at: datetime, *,
+                       now: datetime) -> bool:
+            raise RuntimeError("authority unavailable")
+
+    envelope = _envelope()
+    report = _manual_inbox_report(envelope)
+    fingerprint = ReportFingerprint(
+        report_id=report.report_id, report_kind=report.report_kind,
+        event_id=report.event_id, evidence_version=report.evidence_version,
+        envelope_hash=report.evidence_hash, sender_agent_id=report.sender_agent_id,
+        receiver_agent_id=report.receiver_agent_id, created_at=report.created_at)
+    outbox = RouteOutbox(active_ack_port=FailingAckPort())
+    outbox.plan(
+        envelope, route=ROUTE, target_type="AGENT", target_id="sector1",
+        policy_version="agent-report-v1", control_epoch=0,
+        intent_id="failing-port-intent", created_at=START, valid_until=END,
+        report_fingerprint=None if missing_fingerprint else fingerprint)
+    attempt = outbox.claim(
+        envelope, route=ROUTE, target_type="AGENT", target_id="sector1",
+        claim_token="failing-port-claim", claim_at=_at(1), lease_until=_at(20))
+    settled = outbox.finish(
+        attempt.attempt_id, outcome=ACCEPTED_VERIFIED, now=_at(3),
+        external_message_id="caller-ack", verification_source="caller-source",
+        observed_at=_at(2))
+    assert settled.outcome == UNKNOWN
+    assert settled.receipt is None
+    assert outbox.get_attempts(
+        envelope, route=ROUTE, target_type="AGENT", target_id="sector1") == (settled,)
+    assert outbox.production_permitted is False
+    assert outbox.notification_permitted is False
+    assert outbox.trading_permitted is False
+    with pytest.raises(OutboxError, match="^ATTEMPT_UNKNOWN$"):
+        outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED, now=_at(4),
+                      external_message_id="caller-ack",
+                      verification_source="caller-source", observed_at=_at(2))
