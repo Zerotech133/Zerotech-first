@@ -391,46 +391,126 @@ def monotonicity(qtab: list) -> float | None:
 
 
 # ── 日线（router，含缓存与诚实失败）─────────────────────────
-def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
-    """fetch_daily(syms, days) 带 JSON 缓存；失败码进 errs 不静默。
+def _stock_daily_symbol(sym: object) -> bool:
+    """只接收沪深股票代码；指数锚与已知归一化指数污染均拒绝。"""
+    if not isinstance(sym, str) or re.fullmatch(r"(?:SH|SZ)[0-9]{6}", sym) is None:
+        return False
+    if sym in INDEX_POLLUTION:
+        return False
+    return not ((sym.startswith("SH") and sym[2:5] in ("000", "880", "899"))
+                or (sym.startswith("SZ") and sym[2:5] == "399"))
 
-    缓存落 CACHE_PATH（mode+days 记录在案，参数漂移自动失效）。
+
+def _valid_daily_price(price: object) -> bool:
+    """有限且为正的数值，防止异常超大整数导致校验崩溃。"""
+    if isinstance(price, bool) or not isinstance(price, (int, float)):
+        return False
+    try:
+        return math.isfinite(price) and price > 0
+    except (OverflowError, ValueError):
+        return False
+
+
+def _safe_daily_rows(sym: str, rows: object, origin: str,
+                     errs: list) -> list:
+    """验证每行身份与最低可计算字段，拒绝异常行且不缓存空结果。"""
+    if not isinstance(rows, list):
+        errs.append("%s %s: 日线 rows 非列表，已剔除" % (sym, origin))
+        return []
+    expected_ts = "%s.%s" % (sym[2:], sym[:2])
+    safe_rows = []
+    for row in rows:
+        if not isinstance(row, dict) or row.get("symbol") != sym or (
+                "ts_code" in row and row["ts_code"] != expected_ts):
+            errs.append("%s %s: 返回非请求股票/ts_code 或异常行已剔除" % (sym, origin))
+            continue
+        date = row.get("trade_date")
+        if not isinstance(date, str) or re.fullmatch(r"[0-9]{8}", date) is None:
+            errs.append("%s %s: 无效交易日期行已剔除" % (sym, origin))
+            continue
+        try:
+            datetime.strptime(date, "%Y%m%d")
+        except ValueError:
+            errs.append("%s %s: 无效交易日期行已剔除" % (sym, origin))
+            continue
+        prices = (row.get("open"), row.get("close"))
+        if any(not _valid_daily_price(price) for price in prices):
+            errs.append("%s %s: 无效开收盘价行已剔除" % (sym, origin))
+            continue
+        safe_rows.append(row)
+    if not safe_rows:
+        errs.append("%s %s: 无有效请求股票日线行" % (sym, origin))
+    return safe_rows
+
+
+def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
+    """fetch_daily(syms, days) 带 JSON 缓存；逐码校验且失败显式可见。
+
+    缓存落 CACHE_PATH；days 漂移失效。旧缓存和新回包使用同一行级闸门。
     """
     os.makedirs(CACHE_DIR, exist_ok=True)
-    cache = {}
+    cache: dict = {}
     if os.path.exists(CACHE_PATH):
         try:
-            cache = json.load(open(CACHE_PATH, encoding="utf-8"))
+            with open(CACHE_PATH, encoding="utf-8") as source:
+                cache = json.load(source)
         except (ValueError, OSError):
             cache = {}
-    meta = cache.get("_meta", {})
-    if meta.get("days") != days:
+    if not isinstance(cache, dict):
+        cache = {}
+    meta = cache.get("_meta")
+    if not isinstance(meta, dict) or meta.get("days") != days:
         cache = {"_meta": {"days": days, "saved_at": datetime.now().isoformat()}}
-    daily, missing = cache.get("daily", {}), []
-    need = [s for s in syms if s not in daily]
     errs: list = []
+    requested = list(dict.fromkeys(syms))
+    valid_requested = [sym for sym in requested if _stock_daily_symbol(sym)]
+    for sym in requested:
+        if not _stock_daily_symbol(sym):
+            errs.append("%s 非沪深股票或指数锚，跳过" % sym)
+    cached = cache.get("daily")
+    if not isinstance(cached, dict):
+        cached = {}
+    daily: dict = {}
+    for sym, rows in cached.items():
+        if sym not in valid_requested:
+            errs.append("%s cache: 非请求股票/指数锚键已剔除" % sym)
+            continue
+        safe_rows = _safe_daily_rows(sym, rows, "cache", errs)
+        if safe_rows:
+            daily[sym] = safe_rows
+    need = [sym for sym in valid_requested if sym not in daily]
     if need:
         try:
             from xq_quote_router import fetch_daily
-            got, note, errs = fetch_daily(need, days=days)
-            for s, rows in got.items():
-                daily[s] = rows
+            got, note, router_errs = fetch_daily(need, days=days)
+            if isinstance(router_errs, list):
+                errs.extend(str(error) for error in router_errs)
+            else:
+                errs.append("fetch_daily: 异常错误列表")
+            if not isinstance(got, dict):
+                errs.append("fetch_daily: 异常日线映射")
+            else:
+                for sym, rows in got.items():
+                    if sym not in need:
+                        errs.append("%s router: 非请求股票/指数锚键已剔除" % sym)
+                        continue
+                    safe_rows = _safe_daily_rows(sym, rows, "router", errs)
+                    if safe_rows:
+                        daily[sym] = safe_rows
             print("[factor] fetch_daily note=%s errs=%d" % (note, len(errs)))
-        except Exception as e:                    # noqa: BLE001
-            errs.append("fetch_daily crash: %s" % str(e)[:120])
-        missing = [s for s in need if s not in daily]
-        cache["daily"] = daily
-        cache["_missing"] = missing
-        cache["_errs"] = errs
-        try:
-            json.dump(cache, open(CACHE_PATH, "w", encoding="utf-8"))
-        except OSError:
-            pass
-    else:
-        errs = cache.get("_errs", [])
-        missing = cache.get("_missing", [])
-    return daily, list(errs) + ["%s 全源失败(跳过)" % s for s in missing
-                                if not any(s in e for e in errs)]
+        except Exception as error:              # noqa: BLE001
+            errs.append("fetch_daily crash: %s" % str(error)[:120])
+    missing = [sym for sym in valid_requested if sym not in daily]
+    cache["daily"] = daily
+    cache["_missing"] = missing
+    cache["_errs"] = errs
+    try:
+        with open(CACHE_PATH, "w", encoding="utf-8") as target:
+            json.dump(cache, target)
+    except OSError:
+        pass
+    return daily, errs + ["%s 全源失败(跳过)" % sym for sym in missing
+                          if not any(sym in error for error in errs)]
 
 
 # ── 主统计 ──────────────────────────────────────────────────

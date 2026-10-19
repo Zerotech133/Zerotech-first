@@ -10,12 +10,15 @@
 import json
 import os
 import sys
+import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
+
+import xq_factor_v1 as factor  # noqa: E402
 
 from xq_factor_v1 import (  # noqa: E402
     INDEX_POLLUTION, build_sections, daily_factors, filter_version,
@@ -266,6 +269,136 @@ def test_index_pollution_excluded():
     f = daily_factors(P)
     assert set(k[1] for k in f) == {"SZ000001"}
     assert "SZ000300" in INDEX_POLLUTION and "SZ000905" in INDEX_POLLUTION
+
+
+def mock_daily_router(monkeypatch, fetch_daily):
+    """拦截延迟导入的路由模块，避免导入真实行情与凭据依赖。"""
+    monkeypatch.setitem(sys.modules, "xq_quote_router",
+                        types.SimpleNamespace(fetch_daily=fetch_daily))
+
+
+def test_fetch_daily_cached_revalidates_old_cache_and_fetches_gap(tmp_path, monkeypatch):
+    """历史脏键、错误身份行和空列表不能造成缓存命中。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    cache_path.write_text(json.dumps({
+        "_meta": {"days": 10, "saved_at": "historical"},
+        "daily": {
+            "SH000001": [{"symbol": "SH000001", "trade_date": "20261012",
+                          "open": 10, "close": 12}],
+            "SZ000300": [{"symbol": "SZ000300", "trade_date": "20261012",
+                          "open": 10, "close": 12}],
+            "SZ000001": [{"symbol": "SH000001", "trade_date": "20261012",
+                          "open": 10, "close": 12}],
+            "SH600519": [],
+        },
+    }), encoding="utf-8")
+    calls = []
+
+    def mocked_fetch(syms, days):
+        calls.append((syms, days))
+        return {"SZ000001": mock_daily()["SZ000001"],
+                "SH600519": mock_daily()["SH600519"]}, "mock", []
+
+    mock_daily_router(monkeypatch, mocked_fetch)
+    daily, errs = factor.fetch_daily_cached(
+        ["SZ000001", "SH600519", "SH000001", "SZ000300"], 10)
+    assert calls == [(["SZ000001", "SH600519"], 10)]
+    assert set(daily) == {"SZ000001", "SH600519"}
+    assert daily["SZ000001"] == mock_daily()["SZ000001"]
+    assert any("SH000001" in error for error in errs)
+    assert any("SZ000300" in error for error in errs)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert saved["daily"] == daily
+    assert saved["_meta"]["saved_at"] == "historical"
+    factor.fetch_daily_cached(["SZ000001", "SH600519"], 10)
+    assert len(calls) == 1
+
+
+def test_fetch_daily_cached_filters_provider_keys_rows_and_ts_code(
+        tmp_path, monkeypatch):
+    """恶意回包只能留下与所请求股票同身份的有效日线行。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    valid = mock_daily()["SZ000001"][0]
+
+    def mocked_fetch(syms, days):
+        assert syms == ["SZ000001", "SH600519"] and days == 15
+        return {
+            "SH000001": [valid],
+            "SZ000300": [valid],
+            "SZ000001": [
+                {**valid, "symbol": "SH000001"},
+                {**valid, "ts_code": "000001.SH"},
+                {**valid, "ts_code": "000001.SZ"},
+                {"symbol": "SZ000001", "trade_date": "bad",
+                 "open": 10, "close": 11},
+            ],
+            "SH600519": [{"symbol": "SZ000001", "trade_date": "20261012",
+                          "open": 10, "close": 11}],
+        }, "mock", []
+
+    mock_daily_router(monkeypatch, mocked_fetch)
+    daily, errs = factor.fetch_daily_cached(["SZ000001", "SH600519"], 15)
+    assert daily == {"SZ000001": [{**valid, "ts_code": "000001.SZ"}]}
+    assert any("SH600519" in error for error in errs)
+    assert any("SH000001" in error for error in errs)
+    assert any("SZ000300" in error for error in errs)
+    saved = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert saved["daily"] == daily
+    assert saved["_missing"] == ["SH600519"]
+
+
+def test_fetch_daily_cached_all_fail_and_invalid_rows_retry(tmp_path, monkeypatch):
+    """全失败和旧缓存异常 rows 都明确缺码并可在下一轮重试。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    cache_path.write_text(json.dumps({"_meta": {"days": 20},
+                                      "daily": {"SZ000001": {"bad": "rows"}}}),
+                          encoding="utf-8")
+    calls = []
+
+    def all_failed(syms, days):
+        calls.append((syms, days))
+        return {"SZ000001": [{"symbol": "SH000001"}]}, "", [
+            "SZ000001 上游失败"]
+
+    mock_daily_router(monkeypatch, all_failed)
+    daily, errs = factor.fetch_daily_cached(["SZ000001"], 20)
+    assert daily == {} and calls == [(["SZ000001"], 20)]
+    assert any("SZ000001" in error for error in errs)
+    assert json.loads(cache_path.read_text(encoding="utf-8"))["_missing"] == [
+        "SZ000001"]
+    assert json.loads(cache_path.read_text(encoding="utf-8"))["daily"] == {}
+    mock_daily_router(monkeypatch, lambda syms, days: (
+        {"SZ000001": mock_daily()["SZ000001"]}, "mock", []))
+    daily, errs = factor.fetch_daily_cached(["SZ000001"], 20)
+    assert daily == {"SZ000001": mock_daily()["SZ000001"]}
+    assert errs == []
+
+
+def test_fetch_daily_cached_days_meta_invalidates_cache(tmp_path, monkeypatch):
+    """days 漂移后旧缓存不可复用，且正常股票 SZ000001 可补取。"""
+    cache_path = tmp_path / "daily_cache.json"
+    monkeypatch.setattr(factor, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(factor, "CACHE_PATH", str(cache_path))
+    cache_path.write_text(json.dumps({"_meta": {"days": 5},
+                                      "daily": {"SZ000001": mock_daily()["SZ000001"]}}),
+                          encoding="utf-8")
+    calls = []
+
+    def mocked_fetch(syms, days):
+        calls.append((syms, days))
+        return {"SZ000001": mock_daily()["SZ000001"]}, "mock", []
+
+    mock_daily_router(monkeypatch, mocked_fetch)
+    daily, errs = factor.fetch_daily_cached(["SZ000001"], 6)
+    assert daily == {"SZ000001": mock_daily()["SZ000001"]}
+    assert errs == [] and calls == [(["SZ000001"], 6)]
+    assert json.loads(cache_path.read_text(encoding="utf-8"))["_meta"]["days"] == 6
 
 
 if __name__ == "__main__":
