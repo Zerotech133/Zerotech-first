@@ -58,6 +58,8 @@
   .filters { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .fchip { padding: 3px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 11px; color: var(--text-dim); cursor: pointer; background: var(--bg-surface); }
   .fchip.on { color: var(--text); border-color: var(--link); font-weight: 700; }
+  .qbox { padding: 3px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 11.5px; color: var(--text); background: var(--bg-surface); outline: none; width: 128px; }
+  .qbox:focus { border-color: var(--link); }
   .srow { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: baseline; padding: 7px 10px; border: 1px solid transparent; border-bottom: 1px solid var(--border-weak, var(--border)); cursor: pointer; border-radius: 7px; }
   .srow:hover { background: var(--bg-surface); }
   .srow.on { border-color: var(--link); background: var(--bg-raised); }
@@ -98,7 +100,7 @@
   .bpill { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); background: var(--bg-raised); }
   .bpill.hot { color: #e05656; border-color: rgba(224,86,86,.4); }
 </style>
-</head>
+<script src="/static/nav.js" defer></script></head>
 <body>
 
 <div class="topbar">
@@ -111,7 +113,7 @@
     <span class="mtab planned" title="接入中">港股</span>
     <span class="mtab planned" title="接入中">美股</span>
     <span class="mtab planned" title="接入中">虚拟币</span>
-    <a class="backlink" href="/quant">长版全览 →</a>
+    <a class="backlink" href="/quant-full">长版全览 →</a>
   </div>
 </div>
 
@@ -123,6 +125,7 @@
   <div class="col" id="colStock">
     <div class="col-title">个股 · L2<span class="n" id="stkN"></span></div>
     <div class="filters" id="filters">
+      <input id="q" class="qbox" placeholder="搜代码/名称…" oninput="S.q=this.value.trim().toLowerCase();renderStocks()">
       <span class="fchip on" data-f="all">全部</span>
       <span class="fchip" data-f="T1">T1</span>
       <span class="fchip" data-f="T2">T2</span>
@@ -191,6 +194,13 @@ function renderSectors(){
   var cnt={}; st.forEach(function(s){ (s.sources||[]).forEach(function(x){ cnt[x.s]=(cnt[x.s]||0)+1; }); });
   var wl=(S.wall&&S.wall.strategists)?S.wall.strategists:[];
   wl.forEach(function(w){ SECNAME[w.id]=w.name||w.id; });
+  /* 板块排序：票数降序，同数按有无观点（有观点在前），票数 0 沉底 */
+  wl=wl.slice().sort(function(a,b){
+    var na=cnt[a.id]||0, nb=cnt[b.id]||0;
+    if((na>0)!==(nb>0)) return nb>0?1:-1;
+    if(na!==nb) return nb-na;
+    return ((b.view?1:0)-(a.view?1:0));
+  });
   var h='<div class="seccard'+(S.sector==="all"?" on":"")+'" data-s="all">'
     +'<div class="r1"><span class="nm">全部</span><span class="ct">'+st.length+' 票</span></div>'
     +'<div class="vw">跨板块全量 · 默认入口</div></div>';
@@ -213,6 +223,7 @@ function secStocks(){
   var st=S.picks&&S.picks.stocks?S.picks.stocks:[];
   return st.filter(function(s){
     if(S.sector!=="all"&&!(s.sources||[]).some(function(x){return x.s===S.sector;})) return false;
+    if(S.q&&String(s.code).toLowerCase().indexOf(S.q)<0&&String(s.name||"").toLowerCase().indexOf(S.q)<0) return false;
     if(S.filter==="T1") return s.tier==="T1";
     if(S.filter==="T2") return s.tier==="T2";
     if(S.filter==="buy") return (s.sources||[]).some(function(x){ return x.tag&&x.tag.indexOf("买")>=0; });
