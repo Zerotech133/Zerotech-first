@@ -731,5 +731,117 @@ def test_main_daily_fail_keeps_error_count_compatibility(
     assert "daily ok=1 fail=2" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("entry", ["main", "t3_retest"])
+@pytest.mark.parametrize("old_exists", [True, False])
+@pytest.mark.parametrize("failure", ["replace", "partial_write", "serialization", "open"])
+def test_factor_result_atomic_publish_failure_and_retry(
+        isolated_factor_io, monkeypatch, capsys, entry, old_exists, failure):
+    """两个报告入口在失败后保留旧字节/无目标，并可无残片重试。"""
+    root = isolated_factor_io.parent
+    output_dir = root / "data" / "xueqiu"
+    output_dir.mkdir(parents=True)
+    name = "factor_v1_result.json" if entry == "main" else "factor_v1_result_t3.json"
+    output = output_dir / name
+    original = b'{"historical":true}\n'
+    if old_exists:
+        output.write_bytes(original)
+    posts = [{"date": "2026-10-05", "stocks": ["SZ000001"],
+              "version": "v1.3"}]
+    daily = {"SZ000001": mock_daily()["SZ000001"]}
+    monkeypatch.setattr(factor, "load_posts", lambda: posts)
+    monkeypatch.setattr(factor, "run_analysis", lambda *args, **kwargs: {
+        "main_version": None, "versions": {}, "message": "中文报告"})
+    if entry == "main":
+        monkeypatch.setattr(factor, "fetch_daily_cached", lambda syms, days: (
+            daily, ["上游失败但备援成功"]))
+    else:
+        isolated_factor_io.write_text(json.dumps({"daily": daily}), encoding="utf-8")
+
+    real_dump = factor.json.dump
+    real_temporary_file = factor.tempfile.NamedTemporaryFile
+    real_replace = factor.os.replace
+    expected_error = {
+        "replace": OSError, "partial_write": OSError,
+        "serialization": TypeError, "open": OSError}[failure]
+
+    def rejected_replace(source, target):
+        assert os.path.dirname(source) == str(output_dir)
+        assert target == str(output)
+        with open(source, encoding="utf-8") as pending:
+            unpublished = json.load(pending)
+        message = (unpublished["message"] if entry == "main" else
+                   unpublished["freqs"]["weekly"]["message"])
+        assert message == "中文报告"
+        raise OSError("模拟替换失败")
+
+    def incomplete_dump(data, target, **kwargs):
+        target.write('{"incomplete":')
+        target.flush()
+        if failure == "serialization":
+            raise TypeError("模拟序列化失败")
+        raise OSError("模拟半写失败")
+
+    def rejected_open(*args, **kwargs):
+        assert kwargs["dir"] == str(output_dir)
+        raise OSError("模拟临时文件创建失败")
+
+    with monkeypatch.context() as patch:
+        if failure == "replace":
+            patch.setattr(factor.os, "replace", rejected_replace)
+        elif failure in ("partial_write", "serialization"):
+            patch.setattr(factor.json, "dump", incomplete_dump)
+        else:
+            patch.setattr(factor.tempfile, "NamedTemporaryFile", rejected_open)
+        with pytest.raises(expected_error, match="模拟"):
+            getattr(factor, entry)()
+    assert not any("written" in line for line in capsys.readouterr().out.splitlines())
+    assert output.read_bytes() == original if old_exists else not output.exists()
+    assert sorted(output_dir.iterdir()) == ([output] if old_exists else [])
+
+    # 恢复写入/替换后运行同一入口，验证结果及旧文件可更新。
+    assert factor.json.dump is real_dump
+    assert factor.tempfile.NamedTemporaryFile is real_temporary_file
+    assert factor.os.replace is real_replace
+    result = getattr(factor, entry)()
+    saved = json.loads(output.read_text(encoding="utf-8"))
+    assert saved == result
+    if entry == "main":
+        assert result["coverage"]["daily_fail"] == 1
+        assert result["daily_errs"] == ["上游失败但备援成功"]
+    else:
+        assert set(result["freqs"]) == {"weekly", "biweekly", "monthly"}
+    assert "written" in capsys.readouterr().out
+    assert sorted(output_dir.iterdir()) == [output]
+
+
+@pytest.mark.parametrize("entry", ["main", "t3_retest"])
+def test_factor_result_cleanup_failure_keeps_primary_error_and_path(
+        isolated_factor_io, monkeypatch, entry):
+    """清理失败必须保留首次替换失败，并附上可找回的临时路径。"""
+    root = isolated_factor_io.parent
+    output_dir = root / "data" / "xueqiu"
+    output_dir.mkdir(parents=True)
+    monkeypatch.setattr(factor, "load_posts", lambda: [
+        {"date": "2026-10-05", "stocks": ["SZ000001"], "version": "v1.3"}])
+    monkeypatch.setattr(factor, "run_analysis", lambda *args, **kwargs: {
+        "main_version": None, "versions": {}})
+    if entry == "main":
+        monkeypatch.setattr(factor, "fetch_daily_cached", lambda syms, days: ({}, []))
+    else:
+        isolated_factor_io.write_text(json.dumps({"daily": mock_daily()}),
+                                      encoding="utf-8")
+    with monkeypatch.context() as patch:
+        patch.setattr(factor.os, "replace", lambda source, target: (
+            (_ for _ in ()).throw(OSError("首次替换失败"))))
+        patch.setattr(factor.os, "unlink", lambda path: (
+            (_ for _ in ()).throw(OSError("清理也失败"))))
+        with pytest.raises(OSError, match="首次替换失败") as caught:
+            getattr(factor, entry)()
+    leftovers = list(output_dir.iterdir())
+    assert len(leftovers) == 1 and leftovers[0].name.startswith(".factor_result_")
+    assert str(leftovers[0]) in " ".join(getattr(caught.value, "__notes__", []))
+    leftovers[0].unlink()
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))

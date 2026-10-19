@@ -543,6 +543,35 @@ def fetch_daily_cached(syms: list, days: int) -> tuple[dict, list]:
     return daily, errs
 
 
+def _publish_result_json(result: dict, output_path: str) -> None:
+    """同目录写入完整 UTF-8 JSON 后原子替换目标；失败保留旧结果。"""
+    temporary_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8",
+                dir=os.path.dirname(os.path.abspath(output_path)),
+                prefix=".factor_result_", suffix=".tmp", delete=False) as target:
+            temporary_path = target.name
+            json.dump(result, target, ensure_ascii=False, indent=1)
+            target.flush()
+        os.replace(temporary_path, output_path)
+        temporary_path = None
+    finally:
+        if temporary_path is not None:
+            primary_error = sys.exc_info()[1]
+            try:
+                os.unlink(temporary_path)
+            except OSError as cleanup_error:
+                message = "因子报告临时文件清理失败: %s: %s" % (
+                    temporary_path, cleanup_error)
+                if primary_error is None:
+                    raise OSError(message) from cleanup_error
+                if hasattr(primary_error, "add_note"):
+                    primary_error.add_note(message)
+                else:
+                    primary_error.args = (*primary_error.args, message)
+
+
 # ── 主统计 ──────────────────────────────────────────────────
 def version_stats(posts, daily_by_sym, freq, min_obs, valid_week_pairs=None):
     """单版本全套统计（主统计与附表同管道同口径）。posts 须已过版本过滤。"""
@@ -852,8 +881,7 @@ def main():
     }
     result["daily_errs"] = errs
     out_json = os.path.join(ROOT, "data", "xueqiu", "factor_v1_result.json")
-    json.dump(result, open(out_json, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    _publish_result_json(result, out_json)
     print("[factor] written", out_json)
     mv = result["main_version"]
     if mv:
@@ -912,8 +940,7 @@ def t3_retest():
                                max(p["date"] for p in posts if p["stocks"])),
     }
     out_json = os.path.join(ROOT, "data", "xueqiu", "factor_v1_result_t3.json")
-    json.dump(result, open(out_json, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    _publish_result_json(result, out_json)
     print("[t3] written", out_json)
     return result
 
