@@ -62,7 +62,8 @@ class AgentIdentity:
             raise AgentReportingError("AGENT_TIME_ORDER_INVALID")
 
     def current(self, now: datetime) -> bool:
-        return self.valid_until > now
+        """Return whether the registration is active at the given instant."""
+        return self.registered_at <= now < self.valid_until
 
 
 @dataclass(frozen=True)
@@ -192,7 +193,7 @@ class AgentUpstreamReporter:
             raise AgentReportingError("REPORT_KIND_INVALID")
         _label(receiver_agent_id, "RECEIVER_AGENT_ID")
         _label(report_id, "REPORT_ID")
-        if now >= self._sender.valid_until:
+        if not self._sender.current(now):
             raise AgentReportingError("SENDER_NOT_CURRENT")
         receiver = self._directory.resolve(receiver_agent_id, role="QUANT_SECTOR", now=now)
         if receiver is None:
@@ -247,7 +248,7 @@ class AgentUpstreamReporter:
                 or outbox._report_fingerprints.get(key) != fingerprint):
             raise AgentReportingError("RETRY_NOT_PERMITTED")
         _utc(now, "REPORT_NOW")
-        if now >= self._sender.valid_until:
+        if not self._sender.current(now):
             raise AgentReportingError("SENDER_NOT_CURRENT")
         receiver = self._directory.resolve(
             prior.receiver.agent_id, role="QUANT_SECTOR", now=now)

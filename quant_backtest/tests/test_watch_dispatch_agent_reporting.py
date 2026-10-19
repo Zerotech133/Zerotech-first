@@ -338,6 +338,74 @@ def test_sender_must_be_watch_and_current():
             receiver_agent_id="quant-sector-agent-1", report_id="r-4", control_epoch=0, now=T)
 
 
+@pytest.mark.parametrize("unregistered_role,error_code", [
+    ("sender", "SENDER_NOT_CURRENT"),
+    ("receiver", "AGENT_NOT_CURRENT"),
+])
+def test_report_rejects_registration_before_planning(unregistered_role, error_code):
+    envelope = sample()
+    outbox = RouteOutbox()
+    sender = (watch_agent(registered_at=T + timedelta(seconds=1))
+              if unregistered_role == "sender" else watch_agent())
+    receiver = (sector_agent(registered_at=T + timedelta(seconds=1))
+                if unregistered_role == "receiver" else sector_agent())
+    rep = AgentUpstreamReporter(sender, MemoryDirectory(receiver), MemoryAckPort())
+    assert not (sender if unregistered_role == "sender" else receiver).current(T)
+    with pytest.raises(AgentReportingError, match=f"^{error_code}$"):
+        rep.report(envelope, outbox, report_kind="ANOMALY",
+                   receiver_agent_id=receiver.agent_id, report_id="r-premature",
+                   control_epoch=0, now=T)
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=receiver.agent_id) is None
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=receiver.agent_id) == ()
+    report = rep.report(envelope, outbox, report_kind="ANOMALY",
+                        receiver_agent_id=receiver.agent_id, report_id="r-registered",
+                        control_epoch=0, now=T + timedelta(seconds=1))
+    assert report.created_at == T + timedelta(seconds=1)
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=receiver.agent_id) is not None
+
+
+@pytest.mark.parametrize("unregistered_role,error_code", [
+    ("sender", "SENDER_NOT_CURRENT"),
+    ("receiver", "AGENT_NOT_CURRENT"),
+])
+def test_retry_rejects_before_registration_without_new_generation(unregistered_role, error_code):
+    envelope = sample()
+    outbox = RouteOutbox()
+    registered_at = T + timedelta(seconds=1)
+    sender = (watch_agent(registered_at=registered_at)
+              if unregistered_role == "sender" else watch_agent())
+    receiver = (sector_agent(registered_at=registered_at)
+                if unregistered_role == "receiver" else sector_agent())
+    rep = AgentUpstreamReporter(sender, MemoryDirectory(receiver), MemoryAckPort())
+    report = rep.report(envelope, outbox, report_kind="ANOMALY",
+                        receiver_agent_id=receiver.agent_id, report_id="r-retry-registration",
+                        control_epoch=0, now=registered_at)
+    rep.claim_and_confirm(
+        envelope, outbox, report, claim_token="first",
+        claim_at=T + timedelta(seconds=2), lease_until=LATER - timedelta(minutes=5),
+        ack=ack(report, report_id="not-matching"), now=T + timedelta(seconds=3))
+    intent = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=receiver.agent_id)
+    attempts = outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="AGENT", target_id=receiver.agent_id)
+    key = outbox._key_for(envelope, "QUANT_UPSTREAM_REPORT", "AGENT",
+                          receiver.agent_id)
+    assert outbox._generations[key] == 0
+    with pytest.raises(AgentReportingError, match=f"^{error_code}$"):
+        rep.retry_report(envelope, outbox, report, generation=1, control_epoch=0,
+                         now=T)
+    assert report.created_at == registered_at
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=receiver.agent_id) == intent
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=receiver.agent_id) == attempts
+    assert len(attempts) == 1
+    assert outbox._generations[key] == 0
+
+
 def test_self_report_rejected_before_any_intent_is_planned():
     envelope = sample()
     outbox = RouteOutbox()

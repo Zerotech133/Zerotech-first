@@ -446,10 +446,14 @@ def test_old_live_ack_before_new_generation_claim_remains_consistent() -> None:
     assert settled.outcome == ACCEPTED_VERIFIED
     assert settled.receipt is not None
     assert settled.receipt.observed_at < retry.claim_at
+    clock = FakeClock(at(4))
     inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
-                                        clock=FakeClock(at(9)))
+                                        clock=clock)
+    assert_inspection_unavailable(inspector, retry.attempt_id, at(4))
+    clock.value = at(9)
     result = inspector.inspect(retry.attempt_id)
     assert result == AttemptInspection(retry.attempt_id, at(9), "CONSISTENT_OFFLINE")
+    assert clock.calls == 2
     assert result.production_permitted is False
     assert result.notification_permitted is False
     assert result.trading_permitted is False

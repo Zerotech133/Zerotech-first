@@ -162,7 +162,8 @@ class TrustedAcceptanceBindingAdapter(ReceiptBindingPort):
                 or ack.acked_at != route_receipt.observed_at):
             return None
         if not (envelope.freeze_at <= report.created_at == fingerprint.created_at
-                <= intent.created_at <= attempt.claim_at < attempt.lease_until
+                <= intent.created_at <= attempt.claim_at <= self._now
+                and attempt.claim_at < attempt.lease_until
                 and report.created_at <= receipt.accepted_at <= ack.acked_at
                 == route_receipt.observed_at <= self._now
                 and route_receipt.observed_at < attempt.lease_until

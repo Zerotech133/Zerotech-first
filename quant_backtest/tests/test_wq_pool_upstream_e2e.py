@@ -20,6 +20,7 @@ from quant_backtest.quant_sector import (
     ResearchReview, RiskDecision, UpstreamInbox,
 )
 from quant_backtest.agent_bridge.mapping import OutboxBindingAdapter
+from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
 from quant_backtest.quant_sector.upstream_inbox import UpstreamInboxError
 from quant_backtest.watch_dispatch import EvidenceStore, RouteOutbox, freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import (
@@ -147,13 +148,15 @@ def pool_draft(signal_id: str, env) -> SignalPoolDraft:
                            evidence_version=env.evidence_version)
 
 
-def harness(*envs, producer: AgentIdentity | None = None) -> SimpleNamespace:
+def harness(*envs, producer: AgentIdentity | None = None,
+            bind_ack_authority: bool = True) -> SimpleNamespace:
     store = EvidenceStore()
     for env in envs:
         store.freeze(env)
     pool = SignalPool(store)
-    outbox = RouteOutbox()
     inbox = UpstreamInbox()
+    outbox = RouteOutbox(
+        active_ack_port=UpstreamAckAuthority(inbox) if bind_ack_authority else None)
     producer = producer or watch_agent()
     reporter = AgentUpstreamReporter(producer, MemoryDirectory(sector_agent()),
                                      BindingAckPort())
@@ -193,7 +196,7 @@ def confirm_up(h: SimpleNamespace, env, report, ack, *,
 
 def run_accepted_chain(h: SimpleNamespace, env, *, signal_id: str = "sig-1",
                        report_id: str = "rpt-1") -> SimpleNamespace:
-    """Drive the whole happy-path loop and bind the pool receipt."""
+    """Drive offline ledgers; pool receipt is legacy caller-injected, untrusted."""
     pool_append(h, env, signal_id)
     claim_pool(h, signal_id)
     report, sector_report = report_up(h, env, report_id=report_id)
@@ -284,15 +287,21 @@ def wire_gate(h: SimpleNamespace, env) -> PermissionGate:
 
 
 # ---------------------------------------------------------------------------
-# 1. full-chain happy path: three ledgers each end in their settled state
+# 1. Offline ledger alignment only; no production acceptance authorization
 # ---------------------------------------------------------------------------
 def test_full_chain_happy_path_three_ledgers_align():
     env = envelope()
     h = harness(env)
     r = run_accepted_chain(h, env)
 
-    # Pool ledger: CLAIMED closed into ACCEPTED with a bound receipt.
+    # Caller-injected legacy pool projection is NOT a trusted acceptance root.
+    assert h.pool.acceptance_mode == "LEGACY_UNTRUSTED"
+    assert h.pool.production_permitted is False
+    assert h.pool.notification_permitted is False
+    assert h.pool.trading_permitted is False
     assert r.entry.status == STATUS_ACCEPTED
+    assert r.entry.notification_permitted is False
+    assert r.entry.trading_permitted is False
     assert h.pool.get("sig-1").status == STATUS_ACCEPTED
     pool_receipt = h.pool.receipt("sig-1")
     assert pool_receipt.route == ROUTE
@@ -360,8 +369,8 @@ def test_mismatched_ack_lands_unknown_and_pool_stays_claimed():
     assert h.pool.receipt("sig-1") is None
 
 
-def test_expired_pool_lease_recycles_but_old_ack_cannot_settle_new_generation():
-    """After UNKNOWN a new generation claims, but rejects pre-generation ACKs."""
+def test_expired_pool_lease_recycles_and_live_original_ack_can_settle_retry():
+    """An active original-report ACK can settle a retry, not authorize the pool."""
     env = envelope()
     h = harness(env)
     pool_append(h, env, "sig-1")
@@ -391,15 +400,18 @@ def test_expired_pool_lease_recycles_but_old_ack_cannot_settle_new_generation():
     assert outbox_intent(h.outbox, env).intent_id == "report-rpt-1-g1"
     assert h.inbox.accept(to_sector_report(next_report),
                           now=recycle_at + ONE) is receipt
-    # The original ack is older than this generation's creation; G4's lower
-    # anchor must not be bypassed by reusing an old sector receipt.
+    # The original report ACK predates the retry intent, but remains active in
+    # the authoritative inbox. Only this original-report retry may reuse it.
     attempt, finished = confirm_up(h, env, next_report, to_agent_ack(receipt.ack),
                                    claim_token="tok-2", claim_at=recycle_at,
                                    lease_until=recycle_at + timedelta(minutes=10),
                                    now=recycle_at + ONE)
     assert attempt.attempt_no == 2
-    assert finished.outcome == UNKNOWN
+    assert finished.outcome == ACCEPTED_VERIFIED
+    assert finished.receipt.external_message_id == receipt.ack.ack_id
     assert h.pool.get("sig-1").status == STATUS_CLAIMED
+    assert h.pool.receipt("sig-1") is None
+    assert h.pool.production_permitted is False
 
 
 def test_revoked_sector_ack_cannot_settle_new_generation():
@@ -460,14 +472,14 @@ def test_unknown_signal_does_not_poison_pipeline_for_next_signal():
 
 
 def test_verified_ack_before_outbox_claim_is_accepted():
-    """An independently verified ack can precede watch bookkeeping claim."""
+    """An active inbox ACK after intent creation can precede outbox claim."""
     env = envelope()
     h = harness(env)
     pool_append(h, env, "sig-1")
     claim_pool(h, "sig-1")
-    report, sector_report = report_up(h, env, now=T0 + ONE)
-    # Sector accepts BEFORE the watch side claims the outbox intent.
-    receipt = h.inbox.accept(sector_report, now=T0 + 2 * ONE)
+    report, sector_report = report_up(h, env, now=T0 + 2 * ONE)
+    # Sector accepts AFTER report/intent creation, BEFORE outbox claim.
+    receipt = h.inbox.accept(sector_report, now=CLAIM_AT - ONE / 2)
     agent_ack = to_agent_ack(receipt.ack)
     # The ack itself is fully verified by the independent port...
     assert BindingAckPort().verify(agent_ack, report, CONFIRM_AT) is agent_ack
@@ -478,6 +490,37 @@ def test_verified_ack_before_outbox_claim_is_accepted():
     assert finished.receipt.external_message_id == receipt.ack.ack_id
     assert outbox_intent(h.outbox, env).status == ACCEPTED_VERIFIED
     assert h.pool.get("sig-1", now=CONFIRM_AT).status == STATUS_CLAIMED
+
+
+def test_revoked_active_ack_degrades_to_unknown_before_outbox_finish():
+    """A valid historical ACK cannot settle after inbox revocation."""
+    env = envelope()
+    h = harness(env)
+    report, sector_report = report_up(h, env)
+    receipt = h.inbox.accept(sector_report, now=ACCEPT_AT)
+    h.inbox.revoke(receipt.receipt_id, now=ACCEPT_AT + ONE / 2)
+    assert h.inbox.is_active(receipt.receipt_id) is False
+    assert BindingAckPort().verify(to_agent_ack(receipt.ack), report,
+                                   CONFIRM_AT) is not None
+    _, finished = confirm_up(h, env, report, to_agent_ack(receipt.ack))
+    assert finished.outcome == UNKNOWN
+    assert finished.receipt is None
+    assert outbox_intent(h.outbox, env).status == UNKNOWN
+
+
+def test_unbound_ack_authority_degrades_valid_ack_to_unknown():
+    """Matching fields cannot replace constructor-bound inbox authority."""
+    env = envelope()
+    h = harness(env, bind_ack_authority=False)
+    report, sector_report = report_up(h, env)
+    receipt = h.inbox.accept(sector_report, now=ACCEPT_AT)
+    assert h.inbox.is_active(receipt.receipt_id)
+    assert BindingAckPort().verify(to_agent_ack(receipt.ack), report,
+                                   CONFIRM_AT) is not None
+    _, finished = confirm_up(h, env, report, to_agent_ack(receipt.ack))
+    assert finished.outcome == UNKNOWN
+    assert finished.receipt is None
+    assert outbox_intent(h.outbox, env).status == UNKNOWN
 
 
 def test_future_verified_ack_still_degrades_to_unknown():
