@@ -17,7 +17,8 @@
 
 设计纪律:
     - closed on failure：单表失败不污染其他表；manifest 每张表改前快照可回滚
-    - 幂等：重跑安全（done 的表自动跳过）
+    - 幂等：重跑安全（仅跳过本驱动此前已愈合成功并记入状态文件的表；
+      manifest 的 done/rows 记账值本身可能是假账，不得作为跳过依据）
     - 本脚本自身不接触表数据内容，只动 manifest 条目与分片目录位置
 """
 import argparse
@@ -35,6 +36,7 @@ MANIFEST = os.path.join(DATA_TDX, "_manifest.json")
 LOGS = os.path.join(QUANT_DIR, "logs")
 TRASH_ROOT = r"C:\Users\t\.workbuddy\trash_restore"
 PY = r"C:\Program Files\Python311\python.exe"
+STATE_PATH = os.path.join(LOGS, "a3_heal_state.json")
 
 
 def now_s():
@@ -162,6 +164,38 @@ def read_manifest_rows(table):
         return None, None
 
 
+def load_healed_state():
+    """本驱动此前愈合成功的表集合（manifest 记账可能是假账，不能替代此状态）。"""
+    try:
+        with open(STATE_PATH, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        return set(data.get("healed", []))
+    except Exception:
+        return set()
+
+
+def record_healed(table, rows, done):
+    try:
+        os.makedirs(LOGS, exist_ok=True)
+        try:
+            with open(STATE_PATH, "r", encoding="utf-8") as fh:
+                data = json.load(fh)
+            if not isinstance(data, dict):
+                data = {}
+        except Exception:
+            data = {}
+        healed = set(data.get("healed", []))
+        healed.add(table)
+        data["healed"] = sorted(healed)
+        data["last_%s" % table] = {"rows": rows, "done": done, "ts": now_s()}
+        tmp = STATE_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(data, fh, ensure_ascii=False, indent=2)
+        os.replace(tmp, STATE_PATH)
+    except Exception as exc:
+        log_line(None, "[a3-heal][WARN] 愈合状态记录失败（不影响本次批次）: %s" % str(exc)[:120])
+
+
 def worker(tables, log_path):
     os.makedirs(LOGS, exist_ok=True)
     with open(log_path, "a", encoding="utf-8", errors="replace") as f:
@@ -175,11 +209,13 @@ def worker(tables, log_path):
                 log_line(f, "[a3-heal][WARN] 等待其他 tdx_sync 实例超时，本次退出（不硬抢）")
                 return 3
             backup_manifest(f)
+            healed = load_healed_state()
             results = []
             for i, table in enumerate(tables, 1):
-                rows, done = read_manifest_rows(table)
-                if done and (rows or 0) > 0:
-                    log_line(f, "[a3-heal] (%d/%d) %s 已完成 rows=%s，跳过" % (i, len(tables), table, rows))
+                if table in healed:
+                    rows, done = read_manifest_rows(table)
+                    log_line(f, "[a3-heal] (%d/%d) %s 本驱动此前已愈合（状态文件在案，manifest rows=%s done=%s），跳过"
+                             % (i, len(tables), table, rows, done))
                     results.append((table, "SKIP", rows, done))
                     continue
                 log_line(f, "[a3-heal] (%d/%d) %s 开始重拉" % (i, len(tables), table))
@@ -191,6 +227,9 @@ def worker(tables, log_path):
                     "OK-PARTIAL" if rc == 0 else "FAIL(rc=%s)" % rc)
                 log_line(f, "[a3-heal] (%d/%d) %s -> %s rows=%s done=%s"
                          % (i, len(tables), table, verdict, rows2, done2))
+                if rc == 0 and done2:
+                    record_healed(table, rows2, done2)
+                    healed = load_healed_state()
                 results.append((table, verdict, rows2, done2))
             log_line(f, "==== A3 愈合批结束 ====")
             for t, v, r, d in results:
