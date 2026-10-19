@@ -136,3 +136,31 @@
 | /api/health ×2 | 实时 | 横幅断链条 |
 | /api/brief · alerts · strategies | 当日 | 格灰+「快照未更新」 |
 | /api/paper_status | 交易日盘后 | 模拟仓格保留最后值+as_of |
+| /api/admission | 输入源各自 SLA（§1/§6/§4） | verdict=unknown+source_missing，禁 fail-open |
+
+## 9. 市场准入（admission）—— 今天能不能进的唯一权威
+
+**GET 8791 `/api/admission`** · owner=quant_backtest/admission.py（纯函数引擎）+ strategy_layer/dashboard_api.py（输入采集端点） · SLA=输入源各自 SLA：regime 快照≤3 交易日（§1）、premarket 当日（§6 alerts 同源）、risk 闸 ts≤7 日（§4）
+```json
+{ "ok": true, "ts": "…", "admission": {
+  "verdict": "closed|narrow|wide|unknown", "verdict_cn": "关门|窄门|宽门|未知",
+  "reasons": ["regime=risk_off（策源三态一票否决）", "…"],
+  "counter_evidence": ["广度 up_ratio=60.8% 偏多（结构性机会仍在，…）", "…"],
+  "inputs": { "regime": "risk_off", "overall": -2, "prob": 44,
+    "gates_passed": 0, "shadow_block": true, "hard_block": false },
+  "thresholds": { "wide_prob_min": 55, "wide_overall_min_gt": 0,
+    "wide_gates_min": 2, "narrow_prob_lt": 50, "narrow_overall_lt": 0,
+    "counter_prob_margin": 5 },
+  "missing": [], "sources": { "regime_snapshot": "ok", "premarket": "ok",
+    "risk_gate": "ok" }, "source_missing": [],
+  "trade_date": "20261016", "computed_at": "2026-10-19T10:00:00+08:00",
+  "elapsed_ms": 0 } }
+```
+- **判定矩阵（定稿阈值，常量在 admission.THRESHOLDS，禁散落魔数）**：
+  closed=regime=risk_off 或 风控硬拦（一票否决，优先于 unknown）；
+  narrow=neutral 且（overall<0 或 prob<50 或 影子闸拦截），risk_on 但宽门条件不全亦兜底窄门；
+  wide=risk_on 且 三门≥2 且 overall>0 且 prob≥55。
+- **口径分立条款**：本端点 verdict 是**资格口径**（今天能不能做多）；§6 `/api/brief` 的 `fin.verdict` 是**执行口径**（怎么执行）。两者分立禁互改，前端同屏各带来源标签，倾向判定以本端点为先。
+- **缺源行为（禁 fail-open）**：输入缺源 → `sources.*=missing` + `source_missing` 列数据源名，绝不编造值；非否决性缺源 → verdict=unknown（前端降灰，不假绿）；关门否决性判据（risk_off/硬拦）有值则一票否决优先。
+- **反证条款**：矛盾信号（如 risk_off 但广度偏多、宽门 prob 逼近下限）必须显式列入 `counter_evidence`，判定与反证并列同屏，不掩盖分歧。
+- `computed_at` 为 ISO 8601 带时区；`trade_date` 为输入快照的交易日（如实回显，可能早于今日）。

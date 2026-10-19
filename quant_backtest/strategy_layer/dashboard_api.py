@@ -40,6 +40,10 @@ register_routes() 以装饰器方式包装 Handler 的 do_GET/do_POST，
   GET  /api/regime              → 策源中心当日大盘状况快照（regime 三态
                                     + 指数/广度/两市成交额）；缺源或快照
                                     陈旧 → available=false + stale，不假绿
+  GET  /api/admission           → 市场准入判定（关门/窄门/宽门三判据融合，
+                                    引擎=quant_backtest/admission.py 纯函数；
+                                    缺源 → verdict=unknown + source_missing，
+                                    禁 fail-open；契约 §9）
 
 数据库访问：psycopg2（XMAP_PG_* env/.env.local，主机 5442）优先，
 docker exec quant-pg psql（容器内 5432）兜底；子进程/连接超时一律 10s。
@@ -1129,6 +1133,149 @@ def regime_payload() -> dict:
             "snapshot": snap}
 
 
+# ── 端点 N：GET /api/admission 市场准入判定（只读零副作用）───────────
+# 量化大屏 v3 L0「今天能不能进」。判定引擎 = quant_backtest/admission.py
+# 纯函数（零 IO），本端点只做输入采集与回显。三判据源：
+#   ① regime 快照 data/regime_center/snapshot_*.json（regime + 三门 gates）
+#   ② 盘前倾向 reports/premarket_latest.json（overall / prob）
+#   ③ 风控市场级闸 risk_bridge（action=shadow_block|block|pass）
+# 纪律：缺源标 source_missing 不编造；非否决性缺源 → verdict=unknown
+# （禁 fail-open 假绿）；关门一票否决优先。资格口径与 8091 /api/brief
+# fin.verdict 的执行口径分立（契约 §9/§6），禁互改。
+ADMISSION_PREMARKET_PATH = os.path.join(QUANT_BT, "reports",
+                                        "premarket_latest.json")
+
+
+def _admission_premarket_inputs() -> dict:
+    """读 premarket_latest.json → {"overall","prob"}；缺文件/缺字段为 None。"""
+    try:
+        with open(ADMISSION_PREMARKET_PATH, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return {"overall": None, "prob": None}
+    if not isinstance(data, dict):
+        return {"overall": None, "prob": None}
+    return {"overall": data.get("overall"), "prob": data.get("prob")}
+
+
+def _admission_risk_gate_inputs() -> dict:
+    """risk_bridge 市场级闸 → {"shadow_block","hard_block","score","reason"}。
+
+    不可达/无 action → 双 None（source_missing，不猜 pass，防 fail-open）。
+    """
+    try:
+        from strategy_layer.risk_bridge import risk_context
+        ctx = risk_context()
+    except Exception:  # noqa: BLE001 — 风控桥缺源降级标灰
+        return {"shadow_block": None, "hard_block": None,
+                "score": None, "reason": None}
+    if not ctx.get("available"):
+        return {"shadow_block": None, "hard_block": None,
+                "score": None, "reason": None}
+    mg = ctx.get("market_gate") or {}
+    if not mg:
+        rules = ctx.get("rules") or {}
+        mg = (rules.get("R1") or {}).get("market_gate") or {}
+    action = str(mg.get("action") or "")
+    if not action:
+        return {"shadow_block": None, "hard_block": None,
+                "score": None, "reason": None}
+    return {"shadow_block": action == "shadow_block",
+            "hard_block": action == "block",
+            "score": mg.get("score"), "reason": mg.get("reason")}
+
+
+def _admission_latest_snapshot() -> Any:
+    """读 REGIME_DIR 最新 regime 快照（与 regime_center.latest_snapshot
+    同语义：snapshot_*.json 文件名序取末个）。直读文件不 import
+    regime_center——快照只是 JSON，判定链路不应引入 pandas 重依赖。"""
+    import glob
+    files = sorted(glob.glob(os.path.join(REGIME_DIR, "snapshot_*.json")))
+    if not files:
+        return None
+    try:
+        with open(files[-1], encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return None
+
+
+def _admission_regime_inputs() -> dict:
+    """regime 快照 → regime 值 / 三门通过数 / 广度（反证用）/ 快照标记。"""
+    out = {"regime": None, "gates_passed": None, "up_ratio": None,
+           "trade_date": None, "snapshot": False}
+    try:
+        snap = _admission_latest_snapshot()
+    except Exception:  # noqa: BLE001 — 缺快照降级，不放大为 5xx
+        return out
+    if not isinstance(snap, dict):
+        return out
+    out["snapshot"] = True
+    out["trade_date"] = snap.get("trade_date")
+    if snap.get("regime") in ("risk_off", "risk_on", "neutral"):
+        out["regime"] = snap.get("regime")
+    gates = snap.get("gates")
+    if isinstance(gates, dict) and gates:
+        try:
+            out["gates_passed"] = sum(1 for v in gates.values() if v)
+        except TypeError:
+            out["gates_passed"] = None
+    breadth = snap.get("breadth") or {}
+    if isinstance(breadth, dict):
+        out["up_ratio"] = breadth.get("up_ratio")
+    return out
+
+
+def admission_payload() -> dict:
+    """GET /api/admission：三判据采集 → admission.evaluate_admission 纯判定。
+
+    恒 200 可用 JSON（采集失败降级 verdict=unknown + source_missing，
+    绝不 5xx、绝不 fail-open）。反证：广度偏多等矛盾信号显式同屏。
+    """
+    import admission as admission_engine
+    t0 = time.perf_counter()
+    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+    reg = _admission_regime_inputs()
+    pre = _admission_premarket_inputs()
+    gate = _admission_risk_gate_inputs()
+
+    result = admission_engine.evaluate_admission(
+        regime=reg["regime"], overall=pre["overall"], prob=pre["prob"],
+        gates_passed=reg["gates_passed"],
+        shadow_block=gate["shadow_block"], hard_block=gate["hard_block"])
+
+    # 缺源清单（输入名 → 数据源名；引擎 missing 为权威，不重复发明判定）
+    _SRC = {"regime": "regime_snapshot", "overall": "premarket",
+            "prob": "premarket", "gates_passed": "regime_snapshot",
+            "hard_block": "risk_gate"}
+    source_missing = sorted({_SRC[m] for m in result.get("missing", [])})
+    sources = {
+        "regime_snapshot": ("ok" if reg["regime"] is not None else "missing"),
+        "premarket": ("ok" if pre["overall"] is not None
+                      and pre["prob"] is not None else "missing"),
+        "risk_gate": ("ok" if gate["hard_block"] is not None
+                      or gate["shadow_block"] is not None else "missing"),
+    }
+
+    # 反证同屏：快照广度偏多 vs 收缩判定 → 显式列出，不掩盖分歧
+    counter = list(result.get("counter_evidence") or [])
+    up_ratio = reg.get("up_ratio")
+    if (up_ratio is not None and result["verdict"] in ("closed", "narrow")
+            and up_ratio >= 0.5):
+        counter.append("广度 up_ratio=%.1f%% 偏多（结构性机会仍在，"
+                       "趋势门收缩口径优先，分歧显式并列）" % (up_ratio * 100))
+
+    ms = int((time.perf_counter() - t0) * 1000)
+    admission = dict(result)
+    admission["counter_evidence"] = counter
+    admission["sources"] = sources
+    admission["source_missing"] = source_missing
+    admission["trade_date"] = reg.get("trade_date")
+    admission["elapsed_ms"] = ms
+    return {"ok": True, "ts": ts, "admission": admission}
+
+
 # ── 静态页：GET /pipeline /manage（每次现读，改页面即生效）─────────────
 def _static_page(filename: str) -> bytes:
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
@@ -1259,6 +1406,21 @@ def register_routes(server_or_app: Any) -> Any:
                                                     "detail": "缺源",
                                                     "err": str(exc)[:200]},
                                          "snapshot": None}, 200)
+        if u.path == "/api/admission":
+            # 市场准入判定：payload 自兜底不抛（缺源→unknown，不放大 5xx）
+            try:
+                return _send_json(self, admission_payload())
+            except Exception as exc:  # noqa: BLE001
+                return _send_json(self, {"ok": True,
+                                         "ts": time.strftime(
+                                             "%Y-%m-%dT%H:%M:%S"),
+                                         "admission": {"verdict": "unknown",
+                                                       "verdict_cn": "未知",
+                                                       "reasons": ["端点聚合异常"],
+                                                       "source_missing": [
+                                                           "aggregator"],
+                                                       "err": str(exc)[:200]}},
+                                         200)
         if orig_get is not None:
             return orig_get(self)
         return _send_json(self, {"ok": False, "error": "未知路由"}, 404)
@@ -1331,4 +1493,4 @@ def register_routes(server_or_app: Any) -> Any:
 __all__ = ["register_routes", "strategies_payload", "signals_payload",
            "register_feedback", "VERDICTS", "adjust_strategy",
            "create_proposal", "proposals_payload", "confirm_proposal",
-           "health_payload", "sixring_payload"]
+           "health_payload", "sixring_payload", "admission_payload"]
