@@ -22,6 +22,9 @@ from legion_pulse import heartbeat, recent
 from academy_research import load_topics, create_topic, advance_topic, summary as academy_summary
 from legion_tri_party_meeting import (MeetingError, create_meeting, list_meetings,
                                       load_meeting, update_confirmation)
+from legion_meeting_room import (RoomError, create_room, load_room, list_rooms,
+                                 post_message, board_add_card, board_update_card)
+from api_legion_ops import build_roster, build_feed, build_tasks  # v3 H2 路由用
 
 ORG = ROOT / "agent_platform" / "registry" / "org.json"
 HR = ROOT / "agent_platform" / "hr"
@@ -36,6 +39,33 @@ def _load_token():
         return value
     except OSError:
         return os.environ.get("PORTAL_API_TOKEN", "").strip()
+
+
+# 信任的门户页面来源（仅用于回显 CORS 头；8080 页面直连 8096 的降级路径）
+CORS_ALLOWED_ORIGINS = ("http://localhost:8080", "http://127.0.0.1:8080")
+
+# 本机可信域：环回 + docker bridge 网关。ai-portal nginx 在 bridge 网络，
+# 本机来源经 8080 反代时 nginx 所见 remote_addr 被 SNAT 成 172.17.0.1；
+# 局域网客户端经 DNAT 保留真实源 IP，不可能呈现为网关 IP，故判定安全。
+# 若 docker 网络变更（网关非 172.17.0.1），此处须同步（实测校准）。
+LOCAL_IPS = ("127.0.0.1", "::1", "::ffff:127.0.0.1", "172.17.0.1")
+
+
+def authz_ip_allowed(client_ip: str) -> bool:
+    """纯函数：来源 IP 是否属本机可信域（可测试的最小鉴权判据）。"""
+    return (client_ip or "").strip() in LOCAL_IPS
+
+
+def confirmation_provenance_note(note: str, client_ip: str, via_proxy: bool, token_matched: bool) -> str:
+    """纯函数：把确认署名的来源属性并入 note 落账。
+    confirmed_by 是前端自报署名，不是可信身份认证；此处如实记录来源链。"""
+    base = str(note or "").strip()
+    tag = "[署名来源:自报|IP:%s|经反代:%s|鉴权:%s]" % (
+        client_ip or "unknown",
+        "是" if via_proxy else "否",
+        "token" if token_matched else "本机可信域",
+    )
+    return (base + " " + tag).strip()[:500]
 
 
 def _tasks_raw() -> dict:
@@ -270,17 +300,81 @@ def tri_party_meeting_detail(meeting_id: str) -> dict:
         return {"ok": False, "err": str(exc)}
 
 
-def tri_party_meeting_confirm(payload: dict) -> dict:
+def tri_party_meeting_confirm(payload: dict, *, client_ip: str = "",
+                              via_proxy: bool = False, token_matched: bool = False) -> dict:
+    by = str(payload.get("confirmed_by") or "").strip()
+    if not by:
+        return {"ok": False, "err": "confirmed_by 必填（操作者自报署名，将随来源属性落账）"}
+    note = confirmation_provenance_note(str(payload.get("note") or ""), client_ip, via_proxy, token_matched)
     try:
         result = update_confirmation(
             str(payload.get("meeting_id") or ""),
             str(payload.get("status") or ""),
-            str(payload.get("confirmed_by") or ""),
-            note=str(payload.get("note") or ""),
+            by,
+            note=note,
         )
     except MeetingError as exc:
         return {"ok": False, "err": str(exc)}
     return {"ok": True, "meeting": result}
+
+
+def _room_detail(room_id: str) -> dict:
+    try:
+        return {"ok": True, "room": load_room(room_id)}
+    except RoomError as exc:
+        return {"ok": False, "err": str(exc)}
+
+
+def room_create(payload: dict) -> dict:
+    try:
+        return {"ok": True, "room": create_room(
+            str(payload.get("subject") or ""),
+            str(payload.get("goal") or ""),
+            created_by=str(payload.get("created_by") or ""),
+            room_id=payload.get("room_id"),
+        )}
+    except RoomError as exc:
+        return {"ok": False, "err": str(exc)}
+
+
+def room_post(payload: dict, *, client_ip: str = "", via_proxy: bool = False) -> dict:
+    try:
+        return {"ok": True, "room": post_message(
+            str(payload.get("room_id") or ""),
+            str(payload.get("author") or ""),
+            str(payload.get("kind") or ""),
+            str(payload.get("text") or ""),
+            refs=payload.get("refs"),
+            provenance="model" if payload.get("provenance") == "model" else "manual",
+            rec_ip=client_ip, rec_via_proxy=via_proxy,
+        )}
+    except RoomError as exc:
+        return {"ok": False, "err": str(exc)}
+
+
+def room_board(payload: dict) -> dict:
+    op = str(payload.get("op") or "add")
+    try:
+        if op == "add":
+            return {"ok": True, "room": board_add_card(
+                str(payload.get("room_id") or ""),
+                str(payload.get("kind") or ""),
+                str(payload.get("text") or ""),
+                author=str(payload.get("author") or ""),
+                refs=payload.get("refs"),
+            )}
+        if op == "update":
+            return {"ok": True, "room": board_update_card(
+                str(payload.get("room_id") or ""),
+                str(payload.get("card_id") or ""),
+                author=str(payload.get("author") or ""),
+                text=payload.get("text"),
+                status=payload.get("status"),
+                refs=payload.get("refs"),
+            )}
+        return {"ok": False, "err": "op 必须是 add/update"}
+    except RoomError as exc:
+        return {"ok": False, "err": str(exc)}
 
 
 def review_task(tid: str) -> dict:
@@ -315,19 +409,50 @@ def review_task(tid: str) -> dict:
 
 
 class H(BaseHTTPRequestHandler):
-    def _authorized_mutation(self):
+    def _via_proxy(self):
+        """是否经本门户 nginx 反代：nginx 统一注入 X-Portal-Proxy: 1（客户端不可伪造）。"""
+        return (self.headers.get("X-Portal-Proxy") or "").strip() == "1"
+
+    def _client_ip(self):
+        """采信规则（对齐 api_common P0-1b 模型）：仅当请求确经本门户 nginx 反代时
+        才采信 X-Real-IP（nginx 覆写为真实 remote_addr）；直连只认 TCP 对端地址，
+        不采信客户端自报头。修复 P0：原实现无条件信任 X-Real-IP，可自报 127.0.0.1 越权。"""
+        if self._via_proxy():
+            return (self.headers.get("X-Real-IP") or self.client_address[0] or "").strip()
+        return (self.client_address[0] or "").strip()
+
+    def _token_ok(self):
         token = _load_token()
-        source_ip = (self.headers.get("X-Real-IP") or self.client_address[0] or "").strip()
-        is_local = source_ip in ("127.0.0.1", "::1")
         if not token:
-            return is_local
+            return False
         got = (self.headers.get("X-Portal-Token") or "").strip()
-        return is_local or (bool(got) and hmac.compare_digest(got, token))
+        return bool(got) and hmac.compare_digest(got, token)
+
+    def _authorized_mutation(self):
+        """写鉴权：本机直连（127.0.0.1/::1）放行——本机等价于能读 token 文件；
+        其余来源必须持匹配 token。"""
+        return authz_ip_allowed(self._client_ip()) or self._token_ok()
+
+    def _authorized_private_read(self):
+        """私人数据（三方会议记录）读鉴权：规则同写鉴权。
+        修复 P0：会议列表/详情此前无任何鉴权即可读。"""
+        return self._authorized_mutation()
+
+    def _cors_origin(self):
+        """修复 P0：Access-Control-Allow-Origin 不再通配 *。
+        仅显式回显门户白名单来源（legion.html 经 /legion-api/ 同源调用本不需要 CORS；
+        直连 8096 的降级路径来自 8080 页面）。其余来源不下发 CORS 头。"""
+        origin = (self.headers.get("Origin") or "").strip()
+        if origin in CORS_ALLOWED_ORIGINS:
+            return origin
+        return None
 
     def _send(self, obj, code=200):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        cors = self._cors_origin()
+        if cors:
+            self.send_header("Access-Control-Allow-Origin", cors)
         self.end_headers()
         self.wfile.write(json.dumps(obj, ensure_ascii=False).encode("utf-8"))
 
@@ -382,7 +507,30 @@ class H(BaseHTTPRequestHandler):
         elif self.path == "/api/legion/tri-party/confirm":
             try:
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
-                self._send(tri_party_meeting_confirm(body))
+                self._send(tri_party_meeting_confirm(
+                    body,
+                    client_ip=self._client_ip(),
+                    via_proxy=self._via_proxy(),
+                    token_matched=self._token_ok(),
+                ))
+            except Exception as e:
+                self._send({"ok": False, "err": str(e)}, 400)
+        elif self.path == "/api/legion/room/create":
+            try:
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
+                self._send(room_create(body))
+            except Exception as e:
+                self._send({"ok": False, "err": str(e)}, 400)
+        elif self.path == "/api/legion/room/post":
+            try:
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
+                self._send(room_post(body, client_ip=self._client_ip(), via_proxy=self._via_proxy()))
+            except Exception as e:
+                self._send({"ok": False, "err": str(e)}, 400)
+        elif self.path == "/api/legion/room/board":
+            try:
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])).decode("utf-8"))
+                self._send(room_board(body))
             except Exception as e:
                 self._send({"ok": False, "err": str(e)}, 400)
         else:
@@ -392,73 +540,91 @@ class H(BaseHTTPRequestHandler):
         pass
 
 
+class H2(H):
+    """v3 主服务类：页面 + ops/agent/review/reviews/dispatch/tri-party 同 8096。
+    定义于模块级以便测试可在临时端口拉起同一套真实路由。"""
+
+    def do_GET(self):
+        u = urllib.parse.urlparse(self.path)
+        q = urllib.parse.parse_qs(u.query)
+        if u.path in ("/", "/legion.html"):
+            try:
+                html = (ROOT / "portal" / "legion.html").read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(html)
+            except Exception as e:
+                self._send({"err": str(e)}, 500)
+            return
+        if u.path == "/api/legion/reviews/today":
+            base = ROOT / "agent_platform" / "data" / "daily_review"
+            day_dir = None
+            for d in sorted(base.glob("2*"), reverse=True):
+                if (d / "_summary.json").exists():
+                    day_dir = d
+                    break
+            reviews = {}
+            if day_dir:
+                for f in day_dir.glob("*.md"):
+                    aid = f.stem
+                    q1 = q2 = q3 = "—"
+                    for ln in f.read_text(encoding="utf-8").splitlines():
+                        if "①" in ln:
+                            q1 = ln.split("：", 1)[-1].strip()
+                        elif "②" in ln:
+                            q2 = ln.split("：", 1)[-1].strip()
+                        elif "③" in ln:
+                            q3 = ln.split("：", 1)[-1].strip()
+                    reviews[aid] = {"agent_id": aid, "q1": q1, "q2": q2, "q3": q3, "has_task": "✅" in q1}
+            self._send({"day": day_dir.name if day_dir else None, "reviews": reviews})
+            return
+        if u.path == "/api/legion/academy/topics":
+            self._send(academy_summary())
+            return
+        if u.path == "/api/legion/ops":
+            roster = build_roster()
+            org = json.loads((ROOT / "agent_platform" / "registry" / "org.json").read_text(encoding="utf-8"))
+            academy = next((d for d in org.get("departments", []) if d.get("dept") == "academy"), None)
+            self._send({"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+                        "roster": roster, "feed": build_feed()[-40:],
+                        "tasks": build_tasks(),
+                        "academy": academy or {},
+                        "academy_language": (academy or {}).get("research_language", {}),
+                        "academy_directions": (academy or {}).get("directions", [])})
+        elif u.path == "/api/legion/agent":
+            self._send(agent_detail((q.get("id") or ["?"])[0]))
+        elif u.path == "/api/legion/schedules":
+            self._send(schedules_op({"op": "list"}))
+        elif u.path == "/api/legion/review":
+            self._send(review_task((q.get("tid") or [""])[0]))
+        elif u.path == "/api/legion/tri-party/meetings":
+            if not self._authorized_private_read():
+                self._send({"ok": False, "err": "read unauthorized"}, 403)
+                return
+            self._send({"ok": True, "meetings": list_meetings()})
+        elif u.path == "/api/legion/tri-party/meeting":
+            if not self._authorized_private_read():
+                self._send({"ok": False, "err": "read unauthorized"}, 403)
+                return
+            self._send(tri_party_meeting_detail((q.get("meeting_id") or [""])[0]))
+        elif u.path == "/api/legion/room/list":
+            if not self._authorized_private_read():
+                self._send({"ok": False, "err": "read unauthorized"}, 403)
+                return
+            self._send({"ok": True, "rooms": list_rooms()})
+        elif u.path == "/api/legion/room":
+            if not self._authorized_private_read():
+                self._send({"ok": False, "err": "read unauthorized"}, 403)
+                return
+            self._send(_room_detail((q.get("room_id") or [""])[0]))
+        else:
+            self._send({"err": "not found"}, 404)
+
+
 if __name__ == "__main__":
     # v3 主入口：页面 + ops/agent/review/reviews/dispatch 五端点同 8096
-    from api_legion_ops import build_roster, build_feed, build_tasks
-
-    class H2(H):
-        def do_GET(self):
-            u = urllib.parse.urlparse(self.path)
-            q = urllib.parse.parse_qs(u.query)
-            if u.path in ("/", "/legion.html"):
-                try:
-                    html = (ROOT / "portal" / "legion.html").read_bytes()
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.send_header("Cache-Control", "no-cache")
-                    self.end_headers()
-                    self.wfile.write(html)
-                except Exception as e:
-                    self._send({"err": str(e)}, 500)
-                return
-            if u.path == "/api/legion/reviews/today":
-                base = ROOT / "agent_platform" / "data" / "daily_review"
-                day_dir = None
-                for d in sorted(base.glob("2*"), reverse=True):
-                    if (d / "_summary.json").exists():
-                        day_dir = d
-                        break
-                reviews = {}
-                if day_dir:
-                    for f in day_dir.glob("*.md"):
-                        aid = f.stem
-                        q1 = q2 = q3 = "—"
-                        for ln in f.read_text(encoding="utf-8").splitlines():
-                            if "①" in ln:
-                                q1 = ln.split("：", 1)[-1].strip()
-                            elif "②" in ln:
-                                q2 = ln.split("：", 1)[-1].strip()
-                            elif "③" in ln:
-                                q3 = ln.split("：", 1)[-1].strip()
-                        reviews[aid] = {"agent_id": aid, "q1": q1, "q2": q2, "q3": q3, "has_task": "✅" in q1}
-                self._send({"day": day_dir.name if day_dir else None, "reviews": reviews})
-                return
-            if u.path == "/api/legion/academy/topics":
-                self._send(academy_summary())
-                return
-            if u.path == "/api/legion/ops":
-                roster = build_roster()
-                org = json.loads((ROOT / "agent_platform" / "registry" / "org.json").read_text(encoding="utf-8"))
-                academy = next((d for d in org.get("departments", []) if d.get("dept") == "academy"), None)
-                self._send({"ts": time.strftime("%Y-%m-%d %H:%M:%S"),
-                            "roster": roster, "feed": build_feed()[-40:],
-                            "tasks": build_tasks(),
-                            "academy": academy or {},
-                            "academy_language": (academy or {}).get("research_language", {}),
-                            "academy_directions": (academy or {}).get("directions", [])})
-            elif u.path == "/api/legion/agent":
-                self._send(agent_detail((q.get("id") or ["?"])[0]))
-            elif u.path == "/api/legion/schedules":
-                self._send(schedules_op({"op": "list"}))
-            elif u.path == "/api/legion/review":
-                self._send(review_task((q.get("tid") or [""])[0]))
-            elif u.path == "/api/legion/tri-party/meetings":
-                self._send({"ok": True, "meetings": list_meetings()})
-            elif u.path == "/api/legion/tri-party/meeting":
-                self._send(tri_party_meeting_detail((q.get("meeting_id") or [""])[0]))
-            else:
-                self._send({"err": "not found"}, 404)
-
-    srv = ThreadingHTTPServer(("127.0.0.1", 8096), H2)
     print("legion ops api v3 :8096 (page/ops/agent/review/reviews/dispatch)")
+    srv = ThreadingHTTPServer(("127.0.0.1", 8096), H2)
     srv.serve_forever()

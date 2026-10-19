@@ -58,6 +58,7 @@
     <div class="panel"><h2>实时活动流（近 6h）</h2><div class="feed" id="feed">—</div></div>
     <div class="panel" style="margin-top:14px"><h2>🤝 今日复盘速览（三问）</h2><div class="feed" id="review-drawer" style="max-height:140px">—</div></div>
     <div class="panel" style="margin-top:14px"><h2>⚖️ 三方会议（A0 田丰 · AI1 诸葛亮）</h2><div class="feed" id="tri-party-meetings" style="max-height:260px">加载中…</div></div>
+    <div class="panel" style="margin-top:14px"><h2>🏛 议事厅（多轮会议 · 白板）</h2><div style="margin:4px 0 8px"><button onclick="createRoomDialog()" style="background:var(--blue);color:#fff;border:0;border-radius:6px;padding:6px 12px;cursor:pointer">＋ 新建议题</button><span style="color:var(--dim);font-size:11px;margin-left:8px">席位：老田 USER · 田丰 A0 · 诸葛亮 AI1（发言为人工代录属性，非模型自动写入；白板 decision 卡不等于审批）</span></div><div class="feed" id="room-list" style="max-height:220px">加载中…</div></div>
     <div class="panel" style="margin-top:14px"><h2>🎓 研究院课题台账</h2><div class="feed" id="academy-topics" style="max-height:180px">加载中…</div></div>
     <div class="panel" style="margin-top:14px"><h2>工单泳道</h2>
       <div class="lanes">
@@ -118,6 +119,9 @@ async function tick(){
       }
       document.getElementById("wall").innerHTML = h;
       loadReviews();
+      loadTriPartyMeetings();
+      loadAcademyTopics();
+      loadRooms();
       return;
     }
     document.getElementById("wall").innerHTML = r.members.map(m =>
@@ -125,6 +129,7 @@ async function tick(){
     loadReviews();
     loadTriPartyMeetings();
     loadAcademyTopics();
+    loadRooms();
     document.getElementById("feed").innerHTML = d.feed.length
       ? d.feed.slice().reverse().map(f => `<div class="row"><span class="ts">${(f.ts||"").slice(11)}</span><span class="who">${f.caller||"?"}</span><span class="what">${f.action} · ${(f.detail||"").slice(0,60)}</span></div>`).join("")
       : "<div style='color:var(--dim)'>近 6h 无军团活动</div>";
@@ -200,19 +205,40 @@ function escHtml(value){
 async function loadTriPartyMeetings(){
   const box = document.getElementById("tri-party-meetings");
   if (!box) return;
+  const url = `${API2}/api/legion/tri-party/meetings`;
   try{
-    const d = await (await fetch(`${API2}/api/legion/tri-party/meetings`)).json();
+    let res = await fetch(url, {cache:"no-store", headers: authHeaders()});
+    if (res.status === 403 && await promptLegionToken()) {
+      res = await fetch(url, {cache:"no-store", headers: authHeaders()});
+    }
+    const d = await res.json();
+    if (!d.ok && res.status === 403) { box.textContent = "会议记录需要访问凭据（LAN 需门户 token）"; return; }
     const rows = d.meetings || [];
     box.innerHTML = rows.map(r => `<div class="row" style="cursor:pointer" onclick="openTriPartyMeeting('${escHtml(r.meeting_id)}')"><span class="who" style="width:155px">${escHtml(r.meeting_id)}</span><span class="what"><b>${escHtml(r.subject||"未命名会议")}</b>｜${escHtml(r.status)}｜确认 ${escHtml(r.confirmation&&r.confirmation.status||"pending")}｜分歧 ${escHtml(r.disagreement_count||0)}</span></div>`).join("") || "<div style='color:var(--dim)'>暂无三方会议</div>";
   }catch(e){ box.textContent = "三方会议数据不可达"; }
+}
+function authHeaders(extra){
+  const h = Object.assign({}, extra || {});
+  const t = sessionStorage.getItem("legionToken");
+  if (t) h["X-Portal-Token"] = t;
+  return h;
+}
+function promptLegionToken(){
+  const t = (prompt("LAN 访问会议记录需要门户 token（PORTAL_API_TOKEN 或 C:/Temp/portal_api_token 内容）。仅存本页会话。", "") || "").trim();
+  if (t) sessionStorage.setItem("legionToken", t);
+  return !!t;
 }
 async function openTriPartyMeeting(meetingId){
   const m = document.getElementById("modal");
   m.style.display="flex";
   document.getElementById("modal-body").innerHTML = "会议加载中…";
   try{
-    const d = await (await fetch(`${API2}/api/legion/tri-party/meeting?meeting_id=${encodeURIComponent(meetingId)}`)).json();
-    if(!d.ok){ document.getElementById("modal-body").textContent = d.err; return; }
+    let res = await fetch(`${API2}/api/legion/tri-party/meeting?meeting_id=${encodeURIComponent(meetingId)}`, {headers: authHeaders(), cache:"no-store"});
+    if (res.status === 403 && await promptLegionToken()) {
+      res = await fetch(`${API2}/api/legion/tri-party/meeting?meeting_id=${encodeURIComponent(meetingId)}`, {headers: authHeaders(), cache:"no-store"});
+    }
+    const d = await res.json();
+    if (!d.ok){ document.getElementById("modal-body").textContent = res.status === 403 ? "会议详情需要访问凭据（LAN 需门户 token）" : d.err; return; }
     const x = d.meeting;
     const view = aid => {
       const v = x.views[aid] || {};
@@ -224,15 +250,114 @@ async function openTriPartyMeeting(meetingId){
   }catch(e){ document.getElementById("modal-body").textContent = "会议加载失败: "+e.message; }
 }
 async function confirmTriParty(meetingId, status){
-  const note = status === "confirmed" ? "用户确认会议材料" : "用户要求补证";
+  const by = (prompt("请输入确认人署名（将作为自报署名与来源属性一起落账，非可信身份认证）", "老田") || "").trim();
+  if (!by) return;
+  const note = status === "confirmed" ? (by + " 确认会议材料") : (by + " 要求补证");
   try{
-    const r = await (await fetch(`${API2}/api/legion/tri-party/confirm`, {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({meeting_id:meetingId,status,confirmed_by:"用户",note})})).json();
+    const r = await (await fetch(`${API2}/api/legion/tri-party/confirm`, {method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({meeting_id:meetingId,status,confirmed_by:by,note})})).json();
     if(!r.ok){ alert("确认失败: "+r.err); return; }
     closeModal(); loadTriPartyMeetings();
   }catch(e){ alert("确认失败: "+e.message); }
 }
-async function loadAcademyTopics(){
+const ROOM_AUTHORS = [["USER","老田"],["A0","田丰"],["AI1","诸葛亮"]];
+function roomAuthorSelect(id){
+  return `<select id="${id}" style="background:#0d1524;color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:4px">${ROOM_AUTHORS.map(a=>`<option value="${a[0]}">${a[1]}</option>`).join("")}</select>`;
+}
+async function loadRooms(){
+  const box = document.getElementById("room-list");
+  if (!box) return;
   try{
+    let res = await fetch(`${API2}/api/legion/room/list`, {cache:"no-store", headers: authHeaders()});
+    if (res.status === 403 && await promptLegionToken()) {
+      res = await fetch(`${API2}/api/legion/room/list`, {cache:"no-store", headers: authHeaders()});
+    }
+    const d = await res.json();
+    if (!d.ok && res.status === 403) { box.textContent = "议事厅需要访问凭据（LAN 需门户 token）"; return; }
+    const rows = d.rooms || [];
+    box.innerHTML = rows.map(r => `<div class="row" style="cursor:pointer" onclick="openRoom('${escHtml(r.room_id)}')"><span class="who" style="width:150px">${escHtml(r.room_id)}</span><span class="what"><b>${escHtml(r.subject)}</b>｜发言 ${r.message_count}｜白板 v${r.board_version}｜${escHtml(r.status)}｜${escHtml((r.updated_at||"").slice(0,16))}</span></div>`).join("") || "<div style='color:var(--dim)'>暂无议题房间</div>";
+  }catch(e){ box.textContent = "议事厅数据不可达"; }
+}
+function createRoomDialog(){
+  const subject = (prompt("议题主题", "") || "").trim();
+  if (!subject) return;
+  const goal = (prompt("议题目标（可留空）", "") || "").trim();
+  fetch(`${API2}/api/legion/room/create`, {method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify({subject,goal,created_by:"USER"})})
+    .then(r=>r.json()).then(d=>{
+      if(!d.ok){ alert("建房失败: "+d.err); return; }
+      loadRooms(); openRoom(d.room.room_id);
+    }).catch(e=>alert("建房失败: "+e.message));
+}
+async function openRoom(roomId){
+  const m = document.getElementById("modal");
+  m.style.display = "flex";
+  document.getElementById("modal-body").innerHTML = "议事房间加载中…";
+  try{
+    let res = await fetch(`${API2}/api/legion/room?room_id=${encodeURIComponent(roomId)}`, {headers: authHeaders(), cache:"no-store"});
+    if (res.status === 403 && await promptLegionToken()) {
+      res = await fetch(`${API2}/api/legion/room?room_id=${encodeURIComponent(roomId)}`, {headers: authHeaders(), cache:"no-store"});
+    }
+    const d = await res.json();
+    if(!d.ok){ document.getElementById("modal-body").textContent = res.status === 403 ? "议事房间需要访问凭据（LAN 需门户 token）" : d.err; return; }
+    renderRoom(d.room);
+  }catch(e){ document.getElementById("modal-body").textContent = "议事房间加载失败: "+e.message; }
+}
+function renderRoom(x){
+  const KINDS = ["proposal","question","decision","note"];
+  const KIND_CN = {proposal:"主张",question:"质询",decision:"结论",note:"补充"};
+  const msgs = (x.messages||[]).map(m => `<div class="row"><span class="ts">${escHtml((m.at||"").slice(11,16))}</span><span class="who" style="width:70px">${escHtml(m.author_name)}·${escHtml(m.author)}</span><span class="what">[${escHtml(KIND_CN[m.kind]||m.kind)}${m.provenance==="model"?"·模型":(m.provenance==="manual"?"·代录":"")}] ${escHtml(m.text)}${(m.refs||[]).length?` <span style="color:var(--dim)">↳ ${escHtml(m.refs.join("；"))}</span>`:""}</span></div>`).join("") || "<div style='color:var(--dim)'>暂无发言</div>";
+  const ST = ["open","agreed","disputed","resolved","done"];
+  const cards = (x.board||[]).map(c => `<div class="tk"><b>${escHtml(c.kind)}</b> · <span style="color:var(--dim)">${escHtml(c.author)} · ${escHtml((c.created_at||"").slice(0,16))}</span><br>${escHtml(c.text)}<br><span style="color:var(--dim)">状态</span> <select onchange="roomCardStatus('${escHtml(x.room_id)}','${escHtml(c.card_id)}',this.value)" style="background:#0d1524;color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:2px">${ST.map(s=>`<option value="${s}" ${s===c.status?"selected":""}>${s}</option>`).join("")}</select></div>`).join("") || "<div class='tk'>白板暂无卡片</div>";
+  document.getElementById("modal-body").innerHTML = `
+    <h2 style="font-size:16px;margin-bottom:4px">🏛 ${escHtml(x.subject)}</h2>
+    <div style="color:var(--dim);font-size:12px;margin-bottom:8px">${escHtml(x.goal||"（无目标）")}｜白板 v${x.board_version}｜${escHtml(x.status)}｜发言均为人工代录属性，白板卡不等于审批</div>
+    <h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">发言（${(x.messages||[]).length}）</h3>
+    <div style="max-height:200px;overflow:auto">${msgs}</div>
+    <div style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${roomAuthorSelect("room-msg-author")}
+      <select id="room-msg-kind" style="background:#0d1524;color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:4px">${KINDS.map(k=>`<option value="${k}">${KIND_CN[k]}</option>`).join("")}</select>
+      <input id="room-msg-text" placeholder="发言内容" style="flex:1;min-width:180px;background:#0d1524;color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:4px 8px">
+      <button onclick="roomPost('${escHtml(x.room_id)}')" style="background:var(--blue);color:#fff;border:0;border-radius:6px;padding:5px 12px;cursor:pointer">发言</button>
+    </div>
+    <h3 style="font-size:13px;color:var(--dim);margin:8px 0 4px">白板（${(x.board||[]).length} 卡 · v${x.board_version}）</h3>
+    <div style="max-height:200px;overflow:auto">${cards}</div>
+    <div style="margin:8px 0 4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <select id="room-card-kind" style="background:#0d1524;color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:4px">${["goal","claim","evidence","risk","disagreement","option","decision","todo"].map(k=>`<option value="${k}">${k}</option>`).join("")}</select>
+      <input id="room-card-text" placeholder="卡片内容" style="flex:1;min-width:180px;background:#0d1524;color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:4px 8px">
+      ${roomAuthorSelect("room-card-author")}
+      <button onclick="roomCardAdd('${escHtml(x.room_id)}')" style="background:var(--yellow);border:0;border-radius:6px;padding:5px 12px;cursor:pointer">加卡</button>
+    </div>`;
+}
+async function roomPost(roomId){
+  const text = (document.getElementById("room-msg-text").value || "").trim();
+  if (!text) return;
+  const payload = {room_id:roomId, author:document.getElementById("room-msg-author").value,
+                   kind:document.getElementById("room-msg-kind").value, text, provenance:"manual"};
+  try{
+    const r = await (await fetch(`${API2}/api/legion/room/post`, {method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify(payload)})).json();
+    if(!r.ok){ alert("发言失败: "+r.err); return; }
+    renderRoom(r.room); loadRooms();
+  }catch(e){ alert("发言失败: "+e.message); }
+}
+async function roomCardAdd(roomId){
+  const text = (document.getElementById("room-card-text").value || "").trim();
+  if (!text) return;
+  const payload = {room_id:roomId, op:"add", kind:document.getElementById("room-card-kind").value,
+                   text, author:document.getElementById("room-card-author").value};
+  try{
+    const r = await (await fetch(`${API2}/api/legion/room/board`, {method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify(payload)})).json();
+    if(!r.ok){ alert("加卡失败: "+r.err); return; }
+    renderRoom(r.room); loadRooms();
+  }catch(e){ alert("加卡失败: "+e.message); }
+}
+async function roomCardStatus(roomId, cardId, status){
+  const payload = {room_id:roomId, op:"update", card_id:cardId, status, author:"USER"};
+  try{
+    const r = await (await fetch(`${API2}/api/legion/room/board`, {method:"POST",headers:authHeaders({"Content-Type":"application/json"}),body:JSON.stringify(payload)})).json();
+    if(!r.ok){ alert("更新失败: "+r.err); return; }
+    renderRoom(r.room); loadRooms();
+  }catch(e){ alert("更新失败: "+e.message); }
+}
+async function loadAcademyTopics(){  try{
     const d = await (await fetch(`${API2}/api/legion/academy/topics`)).json();
     const box = document.getElementById("academy-topics");
     if (!box) return;
