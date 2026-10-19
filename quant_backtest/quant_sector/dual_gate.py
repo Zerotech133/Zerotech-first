@@ -226,7 +226,7 @@ class PermissionGate:
     """Per-envelope identity state machine; every consume re-verifies both gates."""
 
     def __init__(self, acceptance_lookup: Callable[[str], bool] | None = None) -> None:
-        """Optional upstream-acceptance lookup; None keeps consume fail-closed.
+        """Optional upstream-acceptance lookup; None keeps consume closed on failure.
 
         The lookup receives the acceptance reference (e.g. the quant-sector
         UpstreamInbox receipt_id) and must answer whether that acceptance is
@@ -326,7 +326,7 @@ class PermissionGate:
         identity = self._identity(envelope)
         if identity in self._blocked:
             return _blocked("IDENTITY_BLOCKED")
-        # Upstream-acceptance precondition: fail-closed before both gates.
+        # Upstream-acceptance precondition: closed on failure before both gates.
         # Never reported upstream, not yet accepted, or acceptance revoked:
         # in every such case the event identity must not be consumed.
         if (self._acceptance_lookup is None
