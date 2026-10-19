@@ -17,8 +17,8 @@
 
 ## 二、取证方法
 
-1. **OM 部署编排**：`zerobound-kg/deploy/openmetadata/docker-compose.yml` —— ingestion 服务为 Airflow 调度器（`AIRFLOW__CORE__EXECUTOR: LocalExecutor`），元数据库 `AIRFLOW_DB: airflow_db`（用户 `airflow_user`），与 OM 共用 `openmetadata_mysql` 实例（MYSQL_ROOT_PASSWORD: password）。
-2. **实例直查**（只读）：`docker exec openmetadata_mysql mysql -uroot -ppassword`：
+1. **OM 部署编排**：`zerobound-kg/deploy/openmetadata/docker-compose.yml` —— ingestion 服务为 Airflow 调度器（`AIRFLOW__CORE__EXECUTOR: LocalExecutor`），元数据库 `AIRFLOW_DB: airflow_db`（用户 `airflow_user`），与 OM 共用 `openmetadata_mysql` 实例（MYSQL_ROOT_PASSWORD: <REDACTED:MySQL root口令>）。
+2. **实例直查**（只读）：`docker exec openmetadata_mysql mysql -uroot -p<REDACTED:MySQL root口令>`：
    - `SHOW DATABASES` → 确认 `airflow_db` 存在
    - `SHOW TABLES IN airflow_db` → 70 张 Airflow 2.x 内部表
    - `openmetadata_db.table_entity` JSON 前缀扫描 → 引擎前缀表归属
