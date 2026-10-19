@@ -13,9 +13,16 @@ r"""L4 组合裁决层：SignalAggregator 多策略加权融合（多策略链�
                     贡献策略数；单策略贡献时系数=1，不折损）
       - contributions = {strategy_id: {score, weight, action}}
       - divergence   = 同 symbol 同时出现 buy 与 sell 对立信号 → True
+  · 同票预聚合（方案 C，2026-10-19 老田拍板，裁决语义变更）：同 symbol
+    内同 strategy_id 多条信号，按源事件日 dt 最新保留一条（dt 缺失者
+    视为最旧；被覆盖条目明细记入 contributions[sid].superseded 供回放）。
+    跨策略多条不受影响（由下方加权融合裁决）。同策略 buy+sell 并存时
+    旧方向被新事件覆盖，不再计入 divergence 对立检测。
   · 分歧标的（combined 行 + 明细）进 divergences 清单，combined 照常保留
   · 融合结果写 PG strategy.signals_combined（psycopg2 优先，docker exec
-    psql \copy 兜底）；写入失败只打印告警不中断，内存结果照常返回
+    psql \copy 兜底）；写入失败只打印告警不中断，内存结果照常返回，
+    并经 alert_bridge 走 E1 告警链留痕（G9：outbox pending 落痕 →
+    send_feishu 发送 → alert_send.log 追加 → 成功 pending→.sent）
   · enabled 集为空 → 返回空 AggResult
 
 上游契约（adapter-dev 交付，本模块只 duck-type 消费，不做硬 import，
@@ -47,6 +54,9 @@ OPPOSITE_ACTION = {"buy": "sell", "sell": "buy"}          # 对立方向判定
 DEFAULT_WEIGHT = 1.0                                       # 权重缺失兜底
 PSQL_TIMEOUT = 10                                          # docker exec 秒数上限
 CONNECT_TIMEOUT = 10                                       # psycopg2 秒数上限
+
+# 同票预聚合（方案 C）：dt 缺失时的排序占位（视为最旧，凡有 dt 者优先）
+_DT_NONE_SENTINEL = "0000-00-00"
 
 COMBINED_TABLE = "strategy.signals_combined"
 STAGING_TABLE = "strategy._stg_combined"  # \copy 兜底的中转暂存表
@@ -108,6 +118,52 @@ def _sig_get(sig: Any, key: str, default: Any = None) -> Any:
     if isinstance(sig, dict):
         return sig.get(key, default)
     return getattr(sig, key, default)
+
+
+def _superseded_of(entry: tuple) -> dict:
+    """被覆盖条目 → 回放明细（rationale 截断 80 字符控体积）。"""
+    _, _, sig, dt_key = entry
+    rationale = str(_sig_get(sig, "rationale", "") or "").strip()
+    return {
+        "action": str(_sig_get(sig, "action", "") or ""),
+        "score": float(_sig_get(sig, "score", 0.0) or 0.0),
+        "dt": None if dt_key == _DT_NONE_SENTINEL else dt_key,
+        "rationale": rationale[:80],
+    }
+
+
+def preaggregate_symbol(entries: list) -> tuple:
+    """同票预聚合（方案 C，2026-10-19 老田拍板，裁决语义变更）。
+
+    同 symbol 内同 strategy_id 多条信号按源事件日 dt 最新保留一条；
+    跨策略多条不在此处理（由加权融合裁决）。dt 缺失视为最旧（凡携带
+    dt 的新事件优先）；同 dt 保留输入序后到者。被覆盖条目（含中间
+    覆盖链）逐条记入 superseded 明细供回放。
+
+    Returns
+    -------
+    (kept_entries, superseded)
+        kept_entries: 过滤后的 [(sid, weight, sig)]，每 sid 至多一条；
+        superseded: {sid: [{"action","score","dt","rationale"}, ...]}。
+    """
+    kept: list = []           # (sid, w, sig, dt_key)
+    index_of: dict = {}       # sid -> kept 索引
+    superseded: dict = {}
+    for sid, w, sig in entries:
+        dt = _sig_get(sig, "dt")
+        dt_key = dt if isinstance(dt, str) and dt else _DT_NONE_SENTINEL
+        if sid in index_of:
+            idx = index_of[sid]
+            if dt_key >= kept[idx][3]:
+                superseded.setdefault(sid, []).append(_superseded_of(kept[idx]))
+                kept[idx] = (sid, w, sig, dt_key)
+            else:
+                superseded.setdefault(sid, []).append(
+                    _superseded_of((sid, w, sig, dt_key)))
+        else:
+            index_of[sid] = len(kept)
+            kept.append((sid, w, sig, dt_key))
+    return [(s, w, g) for s, w, g, _ in kept], superseded
 
 
 def _registry_weights(registry: Any) -> dict:
@@ -236,6 +292,19 @@ def persist_combined(rows: list) -> bool:
     raise RuntimeError("signals_combined 写库失败（全链）: " + " | ".join(errs))
 
 
+def _notify_persist_failure(trade_date: str, rows_count: int, error) -> None:
+    """G9：写库失败 → E1 告警链（strategy_layer.alert_bridge）。
+
+    延迟 import：告警链不可用（如 news_collector 缺失）只降级为打印，
+    绝不反噬聚合主流程。不做任何聚合判定，只消费失败事实。
+    """
+    try:
+        from strategy_layer import alert_bridge  # noqa: 延迟 import
+        alert_bridge.alert_persist_failure(trade_date, rows_count, error)
+    except Exception as exc:  # noqa: BLE001 — 告警观测层不能反噬
+        print("[aggregator][WARN] E1 告警链调用失败: %s" % str(exc)[:120])
+
+
 # ── 主类 ──────────────────────────────────────────────────────────────
 class SignalAggregator:
     """多策略信号加权融合裁决器（L4）。
@@ -356,37 +425,48 @@ class SignalAggregator:
                 continue
             by_symbol.setdefault(symbol, []).append((sid, weight, sig))
 
-        # 3) 逐 symbol 融合
+        # 3) 逐 symbol 融合（先同票预聚合——方案 C 拍板语义）
         combined: list = []
         divergences: list = []
         for symbol in sorted(by_symbol):
-            row = self._fuse_symbol(trade_date, symbol,
-                                    by_symbol[symbol])
+            kept_entries, superseded = preaggregate_symbol(
+                by_symbol[symbol])
+            row = self._fuse_symbol(trade_date, symbol, kept_entries,
+                                    superseded=superseded)
             combined.append(row)
             if row["divergence"]:
                 divergences.append({
                     "symbol": symbol,
                     "trade_date": trade_date,
                     "actions": {sid: _sig_get(sig, "action", "")
-                                for sid, _, sig in by_symbol[symbol]},
+                                for sid, _, sig in kept_entries},
                     "combined_action": row["action"],
                     "combined_score": row["score"],
                 })
 
-        # 4) 落库（失败只告警不中断）
+        # 4) 落库（失败只告警不中断；G9：失败事实同步走 E1 告警链留痕）
         try:
             if not persist_combined(combined):
                 print("[aggregator][WARN] signals_combined 写库返回失败，"
                       "内存结果照常返回（%d 行）" % len(combined))
+                _notify_persist_failure(trade_date, len(combined),
+                                        "persist_combined 返回 False")
         except Exception as exc:  # noqa: BLE001 — 写库失败不中断
             print("[aggregator][WARN] signals_combined 写库异常，"
                   "内存结果照常返回（%d 行）: %s" % (len(combined), exc))
+            _notify_persist_failure(trade_date, len(combined), exc)
 
         return AggResult(combined=combined, divergences=divergences)
 
     def _fuse_symbol(self, trade_date: str, symbol: str,
-                     entries: list) -> dict:
-        """单 symbol 融合：加权分 / 权重多数决 action / 置信度 / contributions。"""
+                     entries: list,
+                     superseded: Optional[dict] = None) -> dict:
+        """单 symbol 融合：加权分 / 权重多数决 action / 置信度 / contributions。
+
+        superseded（可选，方案 C）：{sid: [被覆盖明细]} 由同票预聚合传入，
+        非空时写入 contributions[sid]["superseded"] 供落库回放；
+        缺省 None 时行为与旧签名完全兼容（探针直调不受影响）。
+        """
         total_w = sum(w for _, w, _ in entries)
         if total_w <= 0:
             # 全部权重非正时退化为等权（防御，正常权重恒 >0）
@@ -423,6 +503,10 @@ class SignalAggregator:
                   "action": str(_sig_get(sig, "action", "") or "")}
             for sid, w, sig in entries
         }
+        if superseded:
+            for sid, items in superseded.items():
+                if sid in contributions and items:
+                    contributions[sid]["superseded"] = items
         rationale = "；".join(
             "[%s] %s" % (sid, str(_sig_get(sig, "rationale", "") or "").strip())
             for sid, _, sig in entries if str(_sig_get(sig, "rationale", "") or "").strip()
