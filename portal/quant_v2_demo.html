@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>量化股票 · 零界 · v2 Demo</title>
+<!--
+  quant_v2_demo（2026-10-19 最优化版 · Demo 先行待拍板，生产页=quant.html 不动）
+  增量五处（其余与 quant.html 逐行同源）：
+  ① 顶部置顶预警区：市场级 risk_off 红横幅（策源 regime）+ 链路级断链琥珀横幅（/api/health）
+  ② 盘面倾向格升级：regime 三态优先（§5.1 判据可溯源），/api/brief verdict 兜底
+  ③ 收编六环快照条：/api/sixring 六 chip，可用亮/缺源灰
+  ④ 工具坞补 8791 量化仪表盘（探活 /probe/dash）
+  ⑤ regime/sixring 取数降级链：同源预留 → 直连 8791（待 CORS 重启）→ 内嵌快照显著标注
+-->
+<link rel="stylesheet" href="/static/tokens.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg-page); color: var(--text); min-height: 100vh; }
+  .num { font-family: Consolas, "Courier New", monospace; }
+  .dim { color: var(--text-dim); }
+  a { color: var(--link); }
+  main { max-width: var(--page-w); margin: 0 auto; padding: 0 26px 56px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: var(--page-w); margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
+  .brand h1 { font-size: 17px; font-weight: 700; }
+  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
+  .demo-flag { font: 600 10px/1 Consolas, monospace; color: var(--color-warn); border: 1px dashed var(--color-warn); border-radius: 6px; padding: 4px 8px; }
+
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: var(--page-w); margin: 0 auto; }
+  .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
+  .pill:hover { border-color: var(--link); color: var(--text); }
+  .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
+
+  .sec { margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .sec-title { font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: var(--text-dim); }
+  .sec-note { font-size: 11px; color: var(--text-dim); font-family: Consolas, monospace; }
+
+  /* ── v2① 置顶预警区（市场级/链路级分级） ── */
+  .rbanner { display: flex; align-items: baseline; gap: 12px; border-radius: 10px; padding: 10px 16px; margin-top: 16px; font-size: 13px; }
+  .rbanner .tag { font: 700 11px/1 Consolas, monospace; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; }
+  .rbanner.market { background: rgba(224,86,86,.10); border: 1px solid rgba(224,86,86,.45); }
+  .rbanner.market .tag { background: var(--color-err); color: #fff; }
+  .rbanner.chain { background: rgba(210,153,34,.08); border: 1px solid rgba(210,153,34,.4); }
+  .rbanner.chain .tag { background: var(--color-warn); color: #201800; }
+  .rbanner.quiet { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-dim); font-size: 12px; padding: 8px 16px; }
+  .rbanner.quiet .tag { background: var(--color-ok); color: #04140d; }
+  .rbanner .why { color: var(--text-dim); font-size: 11.5px; }
+  .rbanner a { color: var(--link); text-decoration: none; margin-left: 8px; font-size: 12px; white-space: nowrap; }
+
+  .kpi-strip { display: grid; gap: 1px; grid-template-columns: repeat(3, 1fr); background: var(--border-weak); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .kpi { background: var(--bg-surface); padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .kpi .lb { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
+  .kpi .vl { font-size: 19px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .sb { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi a { text-decoration: none; color: inherit; }
+
+  /* ── v2③ 收编六环快照条 ── */
+  .sixstrip { display: flex; gap: 9px; flex-wrap: wrap; }
+  .schip { display: flex; align-items: center; gap: 7px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 7px 13px; font-size: 12px; min-width: 0; }
+  .schip .sd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .schip.ok .sd { background: var(--color-ok); box-shadow: 0 0 7px var(--color-ok); }
+  .schip.grey { opacity: .55; }
+  .schip.grey .sd { background: var(--text-dim); box-shadow: none; }
+  .schip .sn { color: var(--text-dim); flex-shrink: 0; }
+  .schip .sv { font-family: Consolas, monospace; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+
+  .strat-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); }
+  .scard { position: relative; display: flex; flex-direction: column; gap: 5px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; text-decoration: none; color: var(--text); transition: border-color .2s ease, transform .2s ease; }
+  .scard:hover { border-color: var(--link); transform: translateY(-2px); }
+  .scard .top { display: flex; align-items: center; gap: 7px; }
+  .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sdot.live   { background: var(--color-ok);  box-shadow: 0 0 8px var(--color-ok); }
+  .sdot.shadow { background: var(--color-warn); box-shadow: 0 0 8px var(--color-warn); animation: pulse 2.2s ease-in-out infinite; }
+  .sdot.tool   { background: var(--link); }
+  .sdot.paused { background: var(--text-dim); }
+  .scard .nm { font-size: 13.5px; font-weight: 700; }
+  .scard .bdg { font-size: 10px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); margin-left: auto; flex-shrink: 0; }
+  .scard .tg { font-size: 11px; color: var(--text-dim); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; }
+  .scard .m1 { font-size: 11px; color: var(--link); font-family: Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scard .go { position: absolute; right: 12px; bottom: 11px; font-size: 11px; color: var(--text-dim); }
+  .scard:hover .go { color: var(--link); }
+
+  .dock { display: flex; flex-wrap: wrap; gap: 9px; }
+  .tool { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px; font-size: 12.5px; color: var(--text); text-decoration: none; transition: border-color .2s ease; }
+  .tool:hover { border-color: var(--link); }
+  .tool .sub { color: var(--text-dim); font-size: 10.5px; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-ok); box-shadow: 0 0 8px var(--color-ok); animation: pulse 2s ease-in-out infinite; flex-shrink: 0; }
+  .dot.off { background: var(--color-err); box-shadow: 0 0 8px var(--color-err); animation: none; }
+  .dot.unknown { background: var(--color-warn); box-shadow: 0 0 8px var(--color-warn); }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  .panel-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+  .panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 10px; padding: 15px 17px; min-height: 110px; }
+  .panel-head { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .badge { font-size: 11px; padding: 2px 10px; border-radius: 999px; font-family: Consolas, monospace; }
+  .badge.ok  { background: var(--color-dn-bg); color: var(--color-ok); border: 1px solid #1f4d2b; }
+  .badge.bad { background: var(--color-up-bg); color: var(--color-err); border: 1px solid #5a2326; }
+  .badge.warn{ background: rgba(210,153,34,.12); color: var(--color-warn); border: 1px solid rgba(210,153,34,.3); }
+
+  .alerts { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-surface); overflow: hidden; }
+  .alerts .arow { display: flex; align-items: baseline; gap: 14px; padding: 11px 18px; border-top: 1px solid var(--border-weak); text-decoration: none; color: var(--text); transition: background .15s ease; }
+  .alerts .arow:first-child { border-top: none; }
+  .alerts .arow:hover { background: var(--bg-raised); }
+  .alerts .an { width: 128px; flex-shrink: 0; font-size: 13px; font-weight: 600; }
+  .alerts .av { font-size: 17px; font-weight: 700; font-family: Consolas, "Courier New", monospace; white-space: nowrap; }
+  .alerts .delta { font-size: 11.5px; font-family: Consolas, monospace; flex-shrink: 0; }
+  .alerts .delta.up { color: var(--color-up); }
+  .alerts .delta.dn { color: var(--color-dn); }
+  .alerts .ad { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .alerts .ago { margin-left: auto; color: var(--text-dim); font-size: 12px; flex-shrink: 0; }
+  .alerts .arow:hover .ago { color: var(--link); }
+
+  /* K-STOCK-054 页面目录：按数据流分五层，每链接带数据语义说明 */
+  .flowgrid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .fcard { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; }
+  .fcard .fh { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .fcard .fh b { font-size: 13px; }
+  .fcard .fh small { color: var(--text-dim); font-size: 10.5px; font-family: Consolas, monospace; }
+  .fcard .fdesc { font-size: 11px; color: var(--text-dim); line-height: 1.55; margin-bottom: 9px; }
+  .fitem { display: block; padding: 6px 0; border-top: 1px solid var(--border-weak); text-decoration: none; color: var(--text); }
+  .fitem:first-of-type { border-top: none; }
+  .fitem:hover .fn { color: var(--link); }
+  .fitem .fn { font-size: 12.5px; font-weight: 600; }
+  .fitem .fm { font-size: 10.5px; color: var(--text-dim); line-height: 1.5; margin-top: 1px; }
+  .fitem .fm .rt { color: var(--link); font-family: Consolas, monospace; }
+
+  @media (max-width: 960px) { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { header { padding: 16px 20px 8px; } .topnav { padding: 8px 20px 0; } main { padding: 0 14px 40px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+<script src="/static/nav.js" defer></script>
+<script src="/static/shortscreen.js" defer></script></head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">T</div>
+      <div><h1>量化股票</h1><small>QUANT DOMAIN</small></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="demo-flag">v2 DEMO · 拍板后怼 quant.html</span>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </header>
+
+  <nav class="topnav">
+    <a class="pill" href="/">🏠 首页</a>
+    <span class="pill on">📈 量化股票</span>
+    <a class="pill" href="/intel">🕵 情报</a>
+    <a class="pill" href="/creator">🎬 创作</a>
+    <a class="pill" href="/dev">💻 开发</a>
+    <a class="pill" href="/ops">⚙ 系统</a>
+  </nav>
+
+  <main>
+    <div id="top-alerts"></div>
+
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-head">
+        <div class="sec-title">◤ 今日预警速览</div>
+        <div class="sec-note" id="al-ts">加载中…</div>
+      </div>
+      <div class="alerts" id="al-list">
+        <div class="arow" style="cursor:default"><span class="dim" style="font-size:12px">加载中…</span></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 量化驾驶舱</div>
+        <div class="sec-note" id="kpi-ts">加载中…</div>
+      </div>
+      <div class="kpi-strip">
+        <div class="kpi"><span class="lb">盘面倾向 <span id="k-regime-src" style="letter-spacing:0"></span></span><span class="vl" id="k-verdict">—</span><span class="sb" id="k-verdict-sub">共振机会 — 只</span></div>
+        <div class="kpi"><span class="lb">策略资产</span><a href="/strategies" style="text-decoration:none;color:inherit"><span class="vl num" id="k-strat">—</span><span class="sb" id="k-strat-sub">策略中心 →</span></a></div>
+        <div class="kpi"><span class="lb">在案跟踪</span><a href="/bt-weak" style="text-decoration:none;color:inherit"><span class="vl num" id="k-weak">—</span><span class="sb">weak 产线 · 案例库 →</span></a></div>
+        <div class="kpi"><span class="lb">今日情报</span><a href="/intel" style="text-decoration:none;color:inherit"><span class="vl num" id="k-news">—</span><span class="sb" id="k-news-sub">—</span></a></div>
+        <div class="kpi"><span class="lb">今日预警</span><a href="/bt-signals" style="text-decoration:none;color:inherit"><span class="vl num" id="k-alerts">—</span><span class="sb">速览清单见下方 →</span></a></div>
+        <div class="kpi"><span class="lb">模拟仓</span><a href="/paper" style="text-decoration:none;color:inherit"><span class="vl num" id="k-paper">—</span><span class="sb" id="k-paper-sub">四账本 →</span></a></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 收编六环快照</div>
+        <div class="sec-note" id="six-ts">六环 = 池/盯/授/风/交易/复盘 · 缺源标灰不假绿</div>
+      </div>
+      <div class="sixstrip" id="six-strip">
+        <div class="schip grey"><span class="sd"></span><span class="sn">六环</span><span class="sv">加载中…</span></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head">
+        <div class="sec-title">◤ 策略资产组合</div>
+        <a class="sec-note" href="/strategies" style="text-decoration:none">记分卡全景 →</a>
+      </div>
+      <div class="strat-grid" id="strat-grid">
+        <div class="scard" style="cursor:default"><div class="top"><span class="dim" style="font-size:12px">加载中…</span></div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 页面目录 · 四层动线</div><div class="sec-note">驾驶 → 选股研究 → 信号账本 → 投研竞技 · K-STOCK-110 落地（109 拍板 IA）</div></div>
+      <div class="flowgrid">
+        <div class="fcard">
+          <div class="fh"><b>🚦 ① 驾驶层</b><small>每天必看 · 盘前 → 盘中 → 盘后</small></div>
+          <div class="fdesc">每天按时间动线看的页面：晨报开盘前核对，盘中大屏盯信号，收盘后全景复盘。</div>
+          <a class="fitem" href="/screen"><div class="fn">数据大屏</div><div class="fm">策略选股 · 四市场 · 账本成绩 —— 盘中主视窗 <span class="rt">30s</span></div></a>
+          <a class="fitem" href="/bt-brief"><div class="fn">AI 晨报</div><div class="fm">隔夜要闻＋今日计划的机器综述 <span class="rt">每日晨</span></div></a>
+          <a class="fitem" href="/premarket"><div class="fn">盘前作战</div><div class="fm">07:05 主闭环四段汇报核对 · 产物齐全性 <span class="rt">每日 07:05</span></div></a>
+          <a class="fitem" href="/afterhours"><div class="fn">盘后收盘全景</div><div class="fm">收盘全景 / 赚钱效应 / 预判对照 <span class="rt">盘后快照</span></div></a>
+          <a class="fitem" href="/fin"><div class="fn">金融导航</div><div class="fm">行情＋账本＋信号聚合驾驶舱 · 总入口</div></a>
+          <a class="fitem" href="/sa"><div class="fn">个股分析</div><div class="fm">单票全维度事实下钻（共振/缠论/筹码/公告）</div></a>
+          <a class="fitem" href="/nl"><div class="fn">查数</div><div class="fm">自然语言问数 · 不用记表名</div></a>
+        </div>
+        <div class="fcard">
+          <div class="fh"><b>🔍 ② 选股研究层</b><small>找票 · /bt 扫描 / /qd 决策 双中心</small></div>
+          <div class="fdesc">跨产线全市场视图：扫描研究（/bt 多产线）与双刀决策（/qd）各司其职，反面教材也在本层。</div>
+          <a class="fitem" href="/bt"><div class="fn">选股中心 · 多产线扫描</div><div class="fm">四市场自选池共振（A股/美股/港股/加密）</div></a>
+          <a class="fitem" href="/qd"><div class="fn">量子双刀 · 决策工作台</div><div class="fm">双刀扫描→筛选→信号决策链（K-STOCK-023）</div></a>
+          <a class="fitem" href="/bt-qpzm"><div class="fn">青萍之末</div><div class="fm">RPS 强度共振选股（res 名单）<span class="rt">14:40</span></div></a>
+          <a class="fitem" href="/bt-chanlun"><div class="fn">缠论</div><div class="fm">日线结构信号（三买/中枢离开）93 只池</div></a>
+          <a class="fitem" href="/bt-chanlun-pool"><div class="fn">缠论预警池</div><div class="fm">结构未走完的候选——等触发，不追</div></a>
+          <a class="fitem" href="/bt-cross"><div class="fn">共振</div><div class="fm">多策略同命中交集（n_hit≥2 才入选）</div></a>
+          <a class="fitem" href="/bt-9dim"><div class="fn">九维评分</div><div class="fm">218 只量化打分（影子期，不进决策）</div></a>
+          <a class="fitem" href="/bt-linkage"><div class="fn">三线联动</div><div class="fm">板块联动口径：价/量/消息三线共振</div></a>
+          <a class="fitem" href="/strong"><div class="fn">板块强弱对照</div><div class="fm">weak 找弱势立案 · strong 找领涨确认</div></a>
+          <a class="fitem" href="/bt-sectors"><div class="fn">板块热力</div><div class="fm">全市场板块强弱与轮动热力图</div></a>
+          <a class="fitem" href="/bt-weak"><div class="fn">弱于板块案例</div><div class="fm">反面教材产线：建案→归因→结案 <span class="rt">15:30 监测</span></div></a>
+        </div>
+        <div class="fcard">
+          <div class="fh"><b>⚙ ③ 信号与账本层</b><small>执行 · 信号 → 挂单 → 持仓 → 复盘</small></div>
+          <div class="fdesc">信号落单后的全链路。四账本 = main / taishan / us_qingping / chaser；质量看记分卡。</div>
+          <a class="fitem" href="/strategies"><div class="fn">策略中心（记分卡）</div><div class="fm">全部策略注册表＋战绩指标 · 信号源头总览</div></a>
+          <a class="fitem" href="/bt-signals"><div class="fn">明日信号</div><div class="fm">引擎次日撮合计划（pending 挂单来源）</div></a>
+          <a class="fitem" href="/paper"><div class="fn">模拟仓账本</div><div class="fm">四账本净值/仓位/挂单/verify 快照 <span class="rt">每日 mark</span></div></a>
+          <a class="fitem" href="/bt-positions"><div class="fn">持仓跟踪</div><div class="fm">在仓标的＋止损距离（引擎口径）</div></a>
+          <a class="fitem" href="/sellpoint"><div class="fn">卖点研判</div><div class="fm">离场信号研究（止损/止盈位阶）</div></a>
+          <a class="fitem" href="/bt-report"><div class="fn">回测报告</div><div class="fm">策略历史战绩汇总（收益/夏普/回撤）</div></a>
+          <a class="fitem" href="/bt-opt"><div class="fn">寻优榜单</div><div class="fm">参数寻优结果排行</div></a>
+          <a class="fitem" href="/bt-data-health"><div class="fn">数据仓健康</div><div class="fm">行情湖/新闻库新鲜度与完整性体检</div></a>
+        </div>
+        <div class="fcard">
+          <div class="fh"><b>🧪 ④ 投研竞技层</b><small>练兵 · 影子留痕 / 锦标赛 / 辩论</small></div>
+          <div class="fdesc">多 Agent 对练与对外快照——从选股执行中剥离，专门做研究实验。</div>
+          <a class="fitem" href="/council"><div class="fn">投委会</div><div class="fm">多 Agent 影子决议留痕</div></a>
+          <a class="fitem" href="/sim"><div class="fn">操盘锦标赛</div><div class="fm">六本账对练 · 含 K73 预演账</div></a>
+          <a class="fitem" href="/debate"><div class="fn">辩论室</div><div class="fm">模拟辩论 · 多空对立论证</div></a>
+          <a class="fitem" href="/fut"><div class="fn">期货量化</div><div class="fm">期货域策略与行情（K-STOCK-057）</div></a>
+          <a class="fitem" href="/deliverables"><div class="fn">对外快照档案</div><div class="fm">16:40 公网快照 · 对外交付</div></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 行情与回测</div><div class="sec-note" id="bt-ts">数据 30s 刷新</div></div>
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="panel-head">⭐ 自选行情 <span class="badge ok" id="qt-badge">—</span></div>
+          <div id="qt-list" style="display:flex;flex-direction:column;gap:8px"><div class="dim">加载中…</div></div>
+          <div class="dim" id="qt-note" style="font-size:11px;margin-top:10px;font-family:Consolas,monospace"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">📈 量化回测 <span class="badge ok" id="bt-badge">—</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 10px;margin-bottom:8px;font-size:11px">
+            <a href="/bt-report"  style="color:var(--link);text-decoration:none">📄 报告</a>
+            <a href="/bt-signals" style="color:var(--link);text-decoration:none">🚦 信号</a>
+            <a href="/bt-positions" style="color:var(--link);text-decoration:none">💼 持仓</a>
+            <a href="/bt-opt"     style="color:var(--link);text-decoration:none">📊 榜单</a>
+            <a href="/bt-sectors" style="color:var(--link);text-decoration:none">🔥 板块</a>
+          </div>
+          <div id="bt-body" style="font-size:13px;line-height:1.7"><div class="dim">加载中…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-head"><div class="sec-title">◤ 量化工具坞 · 外部系统</div><div class="sec-note">独立部署 · 30s 探活</div></div>
+      <div class="dock">
+        <a class="tool" href="http://localhost:4100" target="_blank" rel="noopener" data-check="quant">📈 缠论量化 <span class="sub">NewQuant v2</span> <span class="dot unknown"></span></a>
+        <a class="tool" href="http://localhost:5175" id="zhice-link" target="_blank" rel="noopener" data-check="zhice">🤖 智策 OS v2 <span class="sub">四市场</span> <span class="dot unknown"></span></a>
+        <a class="tool" href="http://localhost:8888" target="_blank" rel="noopener" data-check="qd">🎯 QuantDinger <span class="sub">回测·执行</span> <span class="dot unknown"></span></a>
+        <a class="tool" id="dash-link" target="_blank" rel="noopener" data-check="dash">📊 量化仪表盘 <span class="sub">六环·策源·血缘</span> <span class="dot unknown"></span></a>
+      </div>
+    </div>
+  </main>
+
+<script>
+  document.getElementById('zhice-link').href = location.protocol + '//' + location.hostname + ':5175';
+  document.getElementById('dash-link').href = location.protocol + '//' + location.hostname + ':8791';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function tick() {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+
+  function safePortalHref(value) {
+    // Strategy cards and alert rows share the same-origin URL policy.
+    if (typeof value !== 'string' ||
+        !(/^\/(?!\/)[A-Za-z0-9/_?=&#.%~-]*$/.test(value) ||
+          /^https?:\/\/[A-Za-z0-9.:/_?=&#.%~-]+$/.test(value)) ||
+        /%(?:0[0-9a-f]|1[0-9a-f]|20|22|27|2f|2e|3f|5c|7f)/i.test(value)) return '#';
+    try {
+      const url = new URL(value, location.origin);
+      if (url.origin !== location.origin) return '#';
+      const path = url.pathname + url.search + url.hash;
+      return /^\/(?!\/)[A-Za-z0-9/_?=&#.%~-]*$/.test(path) ? path : '#';
+    } catch (e) {
+      return '#';
+    }
+  }
+
+  /* ── v2⑤ fetchFirst 降级链：同源预留位 → 直连 8791 → null ── */
+  const DASH = location.protocol + '//' + location.hostname + ':8791';
+  async function fetchFirst(paths, ms) {
+    for (const p of paths) {
+      try {
+        const ctl = new AbortController();
+        setTimeout(() => ctl.abort(), ms);
+        const r = await fetch(p, { signal: ctl.signal, cache: 'no-store' });
+        if (!r.ok) continue;
+        return { data: await r.json(), via: p };
+      } catch (e) { /* 下一个 */ }
+    }
+    return null;
+  }
+
+  /* ── v2① 置顶预警区：市场级 risk_off + 链路级断链 ── */
+  const REGIME_EMBED = { trade_date: '20261016', regime: 'risk_off',
+    risk_off_reasons: ['close_below_ma60_2d(streak=11)', 'ma60_slope_down', 'dif_and_dea_both_negative'],
+    close: 3716.28, up_ratio: 0.608 };
+  function renderTopAlerts(reg, health) {
+    const box = document.getElementById('top-alerts');
+    let h = '';
+    const s = (reg && reg.value) ? reg.value : null;
+    if (s && s.regime === 'risk_off') {
+      h += "<div class='rbanner market'><span class='tag'>🚨 市场级 · RISK OFF</span>" +
+        "<span>策源判定：禁止做多" +
+        "<div class='why'>§5.1 " + esc((s.risk_off_reasons || []).join(' · ')) + " · 上证 " + esc(s.close) + " · 广度 " + Math.round((s.up_ratio ?? 0) * 1000) / 10 + "% · " + esc(s.trade_date) + "</div></span>" +
+        "<a href='/fin'>策源详情 ▸</a></div>";
+    }
+    const items = health ? (health.services || health.checks || []) : [];
+    const down = items.filter(x => x && x.ok === false).map(x => x.name || '未知');
+    if (down.length) {
+      h += "<div class='rbanner chain'><span class='tag'>⚠ 数据断链</span>" +
+        "<span>" + esc(down.join('、')) + " 探针异常" +
+        "<div class='why'>断链期间下游徽标按缺源标灰，不假绿</div></span></div>";
+    }
+    if (!h) {
+      h = "<div class='rbanner quiet'><span class='tag'>置顶预警</span><span>无 · risk_off 未触发，探针全通</span></div>";
+    }
+    box.innerHTML = h;
+  }
+
+  /* ── v2② 盘面倾向格：regime 优先，brief 兜底 ── */
+  function renderRegime(payload, via) {
+    const v = document.getElementById('k-verdict');
+    const sub = document.getElementById('k-verdict-sub');
+    const src = document.getElementById('k-regime-src');
+    const reg = payload && payload.regime;
+    if (reg && reg.available && reg.value) {
+      const s = reg.value;
+      const CN = { risk_off: 'RISK OFF', risk_on: 'RISK ON', neutral: '中性' };
+      v.textContent = CN[s.regime] || s.regime;
+      v.style.color = s.regime === 'risk_off' ? 'var(--color-err)'
+        : (s.regime === 'risk_on' ? 'var(--color-ok)' : 'var(--color-warn)');
+      sub.textContent = (s.risk_off_reasons && s.risk_off_reasons[0] ? s.risk_off_reasons[0] + ' · ' : '') + '快照 ' + s.trade_date;
+      src.textContent = '· 策源 regime' + (via === '/api/regime' ? '' : '（直连）');
+    } else if (reg && !reg.available) {
+      v.textContent = '缺源';
+      v.style.color = 'var(--text-dim)';
+      sub.textContent = (reg.detail || '策源快照不可用') + ' · 不假绿';
+      src.textContent = '· 策源 regime';
+    }
+  }
+
+  async function loadRegime() {
+    const hit = await fetchFirst(['/api/regime', DASH + '/api/regime'], 2500);
+    if (hit && hit.data && hit.data.regime) {
+      renderRegime(hit.data, hit.via);
+      renderTopAlerts(hit.data.regime, null);
+      loadHealthThenAlerts(hit.data.regime);
+    } else {
+      /* 全失败：内嵌快照兜底，显著标注静态 */
+      renderRegime({ regime: { available: true, value: REGIME_EMBED } }, 'embed');
+      document.getElementById('k-regime-src').textContent = '· 静态兜底(10-16)';
+      renderTopAlerts({ value: REGIME_EMBED }, null);
+      loadHealthThenAlerts({ value: REGIME_EMBED, _static: true });
+    }
+  }
+  async function loadHealthThenAlerts(reg) {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 3000);
+      const r = await fetch('/api/health', { signal: ctl.signal, cache: 'no-store' });
+      if (r.ok) renderTopAlerts(reg, await r.json());
+    } catch (e) { /* 保持现状 */ }
+  }
+
+  /* ── v2③ 收编六环快照条 ── */
+  const RING_CN = { pool: '池', watch: '盯', auth: '授', risk: '风', trade: '交易', review: '复盘' };
+  function renderSixring(payload, direct) {
+    const strip = document.getElementById('six-strip');
+    const rings = payload && payload.rings;
+    document.getElementById('six-ts').textContent = rings
+      ? ('六环快照 ' + (payload.ts || '') + (direct ? ' · 直连 8791' : ''))
+      : '六环缺源 → 标灰不假绿（8791 离线或 CORS 未重启）';
+    const keys = Object.keys(RING_CN);
+    strip.innerHTML = keys.map(k => {
+      const r = rings ? (rings[k] || {}) : null;
+      const ok = !!(r && r.available);
+      const txt = ok ? (r.detail || '正常') : (r && (r.detail || r.notes)) || '缺源';
+      return "<div class='schip " + (ok ? 'ok' : 'grey') + "' title='" + esc(txt) + "'>" +
+        "<span class='sd'></span><span class='sn'>" + RING_CN[k] + "环</span>" +
+        "<span class='sv'>" + esc(txt) + "</span></div>";
+    }).join('');
+  }
+  async function loadSixring() {
+    const hit = await fetchFirst(['/api/sixring', DASH + '/api/sixring'], 2500);
+    renderSixring(hit && hit.data, hit && hit.via !== '/api/sixring');
+  }
+
+  const ST_CN = { live: '实盘', shadow: '影子', tool: '支撑', paused: '暂停' };
+  async function loadStrategies() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/strategies', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw 0;
+      const d = await r.json();
+      const items = d.strategies || [];
+      document.getElementById('strat-grid').innerHTML = items.map(s => {
+        const href = safePortalHref(s.href || s.ext || '/strategies');
+        const ext = s.ext && !s.href && href !== '#' ? ' target="_blank" rel="noopener"' : '';
+        const m1 = (s.metrics && s.metrics[0]) ? (s.metrics[0].k + ' ' + s.metrics[0].v) : '';
+        const status = Object.prototype.hasOwnProperty.call(ST_CN, s.status) ? s.status : 'paused';
+        return '<a class="scard" href="' + esc(href) + '"' + ext + '>' +
+          "<div class='top'><span class='sdot " + status + "'></span>" +
+          "<span class='nm'>" + esc(s.name) + "</span>" +
+          "<span class='bdg'>" + esc(s.badge || '') + "·" + ST_CN[status] + "</span></div>" +
+          "<div class='tg'>" + esc(s.tagline || '') + "</div>" +
+          (m1 ? "<div class='m1'>" + esc(m1) + "</div>" : '') +
+          "<span class='go'>→</span></a>";
+      }).join('') || "<div class='scard' style='cursor:default'><span class='dim' style='font-size:12px'>注册表为空（portal/strategies.json）</span></div>";
+      const nL = items.filter(s => s.status === 'live').length;
+      const nS = items.filter(s => s.status === 'shadow').length;
+      document.getElementById('k-strat').textContent = items.length + ' 条';
+      document.getElementById('k-strat-sub').textContent = '实盘 ' + nL + ' · 影子 ' + nS + ' · 策略中心 →';
+      const wk = items.find(s => s.id === 'weak');
+      const wm = wk && wk.metrics && wk.metrics.find(m => m.k === '在案');
+      if (wm) document.getElementById('k-weak').textContent = wm.v;
+    } catch (e) {
+      document.getElementById('strat-grid').innerHTML =
+        "<div class='scard' style='cursor:default'><span class='dim' style='font-size:12px'>策略中心服务离线</span></div>";
+    }
+  }
+  loadStrategies();
+  setInterval(loadStrategies, 120000);
+
+  let latestAlertRequest = 0;
+  async function loadAlerts() {
+    const requestId = ++latestAlertRequest;
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 10000);
+      const r = await fetch('/api/alerts', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) throw new Error('预警接口不可用');
+      const d = await r.json();
+      if (!Array.isArray(d?.alerts)) throw new Error('预警响应格式错误');
+      const items = d.alerts;
+      const alertRows = items.map(a => {
+        let dl = '';
+        if (!a || typeof a !== 'object' || Array.isArray(a)) throw new Error('预警行格式错误');
+        if (typeof a.delta === 'number' && Number.isFinite(a.delta) &&
+            Math.abs(a.delta) <= 1000000 && a.delta !== 0) {
+          dl = "<span class='delta " + (a.delta > 0 ? 'up' : 'dn') + "'>" +
+               (a.delta > 0 ? '↗' : '↘') + Math.abs(a.delta) + "</span>";
+        }
+        return '<a class="arow" href="' + esc(safePortalHref(a.href)) + '">' +
+          "<span class='an'>" + esc(a.name) + "</span>" +
+          "<span class='av'>" + esc(a.value) + "</span>" + dl +
+          "<span class='ad'>" + esc(a.sub || '') + "</span>" +
+          "<span class='ago'>→</span></a>";
+      }).join('') || "<div class='arow' style='cursor:default'><span class='dim' style='font-size:12px'>暂无预警数据（各产线快照未生成）</span></div>";
+      if (requestId !== latestAlertRequest) return;
+      document.getElementById('al-ts').textContent = '快照 ' + (d.ts || '') + ' · 共 ' + items.length + ' 条';
+      const ka = document.getElementById('k-alerts');
+      if (ka) ka.textContent = items.length + ' 条';
+      document.getElementById('al-list').innerHTML = alertRows;
+    } catch (e) {
+      if (requestId !== latestAlertRequest) return;
+      document.getElementById('al-ts').textContent = '预警数据不可用 · 快照未更新';
+      const ka = document.getElementById('k-alerts');
+      if (ka) ka.textContent = '—';
+      document.getElementById('al-list').innerHTML =
+        "<div class='arow' style='cursor:default'><span class='dim' style='font-size:12px'>预警服务离线或响应异常，请稍后重试</span></div>";
+    }
+  }
+  loadAlerts();
+  setInterval(loadAlerts, 120000);
+
+  async function loadBrief() {
+    /* brief 只在 regime 不可用时兜底倾向格（v2②），情报两格照常刷新 */
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/brief', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      document.getElementById('kpi-ts').textContent = '数据 ' + (d.ts || '');
+      const n = d.intel || {};
+      document.getElementById('k-news').textContent = (n.today ?? 0) + ' 条';
+      document.getElementById('k-news-sub').textContent = '利多 ' + (n.bull ?? 0) + ' · 利空 ' + (n.bear ?? 0);
+      const v = document.getElementById('k-verdict');
+      if (v.textContent === '—' || v.textContent === '缺源') {
+        const f = d.fin || {};
+        v.textContent = String(f.verdict || '—').split('（')[0];
+        v.style.color = '';
+        document.getElementById('k-verdict-sub').textContent = '共振机会 ' + (f.buy ?? 0) + ' 只';
+        document.getElementById('k-regime-src').textContent = '· brief 兜底';
+      }
+    } catch {}
+  }
+  loadBrief();
+  setInterval(loadBrief, 60000);
+
+  // ── 模拟仓 KPI（K-STOCK-112 驾驶舱补全，涨红跌绿）──
+  async function loadPaperKpi() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch('/api/paper_status', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d.ok || !d.latest) return;
+      const L = d.latest;
+      document.getElementById('k-paper').textContent =
+        '¥' + (Math.round(L.total / 1000) / 10).toFixed(1) + ' 万';
+      const v = L.cum_pct ?? 0;
+      const el = document.getElementById('k-paper');
+      el.style.color = v > 0 ? 'var(--color-up)' : (v < 0 ? 'var(--color-dn)' : '');
+      document.getElementById('k-paper-sub').textContent =
+        (v > 0 ? '+' : '') + v.toFixed(2) + '% · 待撮合 ' + (L.pending ?? 0) + ' 单 →';
+    } catch {}
+  }
+  loadPaperKpi();
+  setInterval(loadPaperKpi, 60000);
+
+  async function loadOverview() {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 45000);
+      const r = await fetch('/api/overview', { signal: ctl.signal, cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+
+      // 自选股实时行情
+      const qt = d.quotes || {};
+      const qb = document.getElementById('qt-badge');
+      qb.textContent = qt.ok === true ? '盘中 5min' : (qt.ok === false ? '源异常 ✗' : '—');
+      qb.className = 'badge ' + (qt.ok === true ? 'ok' : (qt.ok === false ? 'bad' : 'warn'));
+      const ql = document.getElementById('qt-list');
+      const items = qt.items || [];
+      ql.innerHTML = items.map(q => {
+        const up = (q.pct ?? 0) > 0, flat = q.pct == null || q.pct === 0;
+        const col = flat ? 'var(--text-dim)' : (up ? 'var(--color-up)' : 'var(--color-dn)');
+        const pctTxt = q.pct == null ? '停牌' : ((up ? '▲' : (q.pct < 0 ? '▼' : ' ')) + ' ' + Math.abs(q.pct).toFixed(2) + '%');
+        const price = q.price == null ? '—' : Number(q.price).toFixed(q.dec ?? 2);
+        return '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px">' +
+          '<span>' + esc(q.name) + ' <span class="dim" style="font-size:10.5px;font-family:Consolas,monospace">' + esc(q.code) + '</span></span>' +
+          '<span style="font-family:Consolas,monospace"><b>' + price + '</b> ' +
+          '<span style="color:' + col + ';font-size:12px">' + pctTxt + '</span></span></div>';
+      }).join('') || '<div class="dim">watchlist 为空（在 news_config.json 配置）</div>';
+      document.getElementById('qt-note').textContent =
+        items.length ? ('更新 ' + esc(qt.updated || '') + ' · 异动阈值 ±' + esc(qt.alert_threshold ?? '—') + '%') : '';
+
+      // 量化回测
+      const bt = d.backtest;
+      const btBody = document.getElementById('bt-body');
+      const btBadge = document.getElementById('bt-badge');
+      if (!bt) {
+        btBody.innerHTML = '<div class="dim">暂无回测结果（运行 runner.py 触发）</div>';
+        btBadge.textContent = '待运行'; btBadge.className = 'badge warn';
+      } else if (bt.mode === 'scan') {
+        btBadge.textContent = '扫描 · ' + (bt.results ? bt.results.length : 0) + ' 只';
+        btBadge.className = 'badge ok';
+        btBody.innerHTML = '<div class="dim" style="font-size:11px">' + esc(bt.ts || '') +
+          ' · 策略 ' + esc(bt.strategy || '') + ' · 市场 ' + esc(bt.market || '') + '</div>' +
+          (bt.results || []).map((r, i) => {
+            const up = (r.total_return ?? 0) >= 0;
+            const col = up ? 'var(--color-up)' : 'var(--color-dn)';
+            return '<div style="display:flex;justify-content:space-between;font-size:12px">' +
+              '<span>' + (i + 1) + '. ' + (r.market ? '<span class="dim" style="font-size:10px">[' + esc(r.market) + ']</span> ' : '') + esc(r.name || r.symbol) + '</span>' +
+              '<span style="font-family:Consolas,monospace">夏普' + (r.sharpe ?? 0).toFixed(2) +
+              ' <span style="color:' + col + '">' + ((r.total_return ?? 0) * 100).toFixed(1) + '%</span></span></div>';
+          }).join('');
+      } else {
+        btBadge.textContent = esc(bt.strategy || '') + ' · ' + esc((bt.symbol || '').split('.')[0]);
+        btBadge.className = 'badge ok';
+        const ret = (bt.total_return ?? 0) * 100;
+        const col = ret >= 0 ? 'var(--color-up)' : 'var(--color-dn)';
+        btBody.innerHTML =
+          '<div class="dim" style="font-size:11px">' + esc(bt.ts || '') + ' · ' + esc(bt.window || '') + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;margin-top:4px">' +
+          '<span>总收益 <b style="color:' + col + '">' + ret.toFixed(2) + '%</b></span>' +
+          '<span>年化 ' + ((bt.cagr ?? 0) * 100).toFixed(2) + '%</span>' +
+          '<span>夏普 ' + (bt.sharpe ?? 0).toFixed(2) + '</span>' +
+          '<span>最大回撤 ' + ((bt.max_drawdown ?? 0) * 100).toFixed(2) + '%</span>' +
+          '<span>胜率 ' + ((bt.win_rate ?? 0) * 100).toFixed(1) + '%</span>' +
+          '<span>交易 ' + (bt.trades ?? 0) + ' 次</span></div>' +
+          '<div class="dim" style="font-size:11px;margin-top:4px">基准(持有) ' + ((bt.benchmark_return ?? 0) * 100).toFixed(2) + '%</div>';
+      }
+    } catch {}
+  }
+  loadOverview();
+  setInterval(loadOverview, 30000);
+
+  // 工具坞探活（v2④ 增 8791 量化仪表盘：/probe/dash nginx 代理）
+  const CHECKS = { quant: '/probe/quant', zhice: '/probe/zhice', qd: '/probe/quantdinger', dash: '/probe/dash' };
+  function setProbe(key, ok) {
+    const el = document.querySelector('.tool[data-check="' + key + '"] .dot');
+    if (el) el.className = 'dot' + (ok ? '' : ' off');
+  }
+  async function probe(key, url) {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+      clearTimeout(t);
+      setProbe(key, r.status !== 502 && r.status !== 504);
+    } catch { setProbe(key, false); }
+  }
+  Object.entries(CHECKS).forEach(([k, c]) => probe(k, c));
+  setInterval(() => Object.entries(CHECKS).forEach(([k, c]) => probe(k, c)), 30000);
+
+  /* v2 新增取数启动 */
+  loadRegime(); setInterval(loadRegime, 120000);
+  loadSixring(); setInterval(loadSixring, 120000);
+</script>
+<script src="/static/cainiao.js" defer></script>
+<script src="/static/dataops_link.js" data-entity="tg:策略扫描" defer></script>
+</body>
+</html>

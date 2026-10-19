@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>老田的个人 OS · 议事厅房间只读预览 · G2 联调</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#111923;--line:#303c4b;--text:#e6edf3;--muted:#a9b7c5;--gold:#edc76a;--blue:#74b8ff;--teal:#64d8cb;--red:#f4a9a3}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:13px/1.5 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;overflow:hidden}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+h1,h2,h3,p,ul{margin:0}
+.app{height:100vh;height:100dvh;max-width:1560px;margin:auto;padding:10px 16px;display:grid;grid-template-rows:46px 30px minmax(0,1fr) 22px;gap:8px}
+.top{display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);min-width:0}
+.brand{font-size:18px;font-weight:700;white-space:nowrap}.brand span{color:var(--gold)}
+.sub{font-size:11px;letter-spacing:.08em;color:var(--muted);margin-right:auto}
+.badge{border:1px solid #826c3c;background:#30291c;border-radius:6px;color:#f8da8c;padding:3px 8px;font-size:11px;white-space:nowrap}
+.state{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);min-width:0}
+.state b{color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.state[data-kind="err"] b{color:var(--red)}
+.state[data-kind="auth"] b{color:var(--gold)}
+.state button{border:1px solid var(--line);background:var(--panel2);border-radius:6px;padding:2px 10px;font-size:11px}
+.work{display:grid;grid-template-columns:minmax(250px,.9fr) minmax(0,2.6fr);gap:8px;min-height:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.card>header{display:flex;align-items:baseline;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.card>header h2{font-size:13px}.card>header small{color:var(--muted);font-size:10px;margin-left:auto}
+.scroll{overflow-y:auto;min-height:0;padding:8px 10px;scrollbar-width:thin}
+.rooms{display:flex;flex-direction:column;gap:6px}
+.room{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.room:hover,.room.sel{border-color:var(--blue)}
+.room b{display:block;font-size:12px;line-height:1.4;word-break:break-all}
+.room .meta{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:5px;font-size:10px;color:var(--muted);font-family:Consolas,monospace}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:5px;padding:0 6px;font-size:10px;color:var(--muted);white-space:nowrap}
+.tag.s-active,.tag.s-agreed,.tag.s-resolved,.tag.s-done{color:var(--teal);border-color:#2c5a55}
+.tag.s-archived,.tag.s-open,.tag.s-disputed{color:var(--muted)}
+.tag.k-model{color:var(--gold);border-color:#826c3c;background:#30291c}
+.tag.k-manual{color:var(--blue);border-color:#2b4c6e}
+.section{margin-bottom:14px}
+.section h3{font-size:12px;color:var(--gold);margin-bottom:5px}
+.section>p{font-size:12px;white-space:pre-wrap;word-break:break-word}
+.msg{display:flex;gap:8px;padding:7px 2px;border-bottom:1px dashed #263041}
+.avatar{flex:0 0 26px;height:26px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--gold)}
+.msg .body{min-width:0;flex:1}
+.msg .who{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.msg .who b{color:var(--text);font-size:12px}
+.msg .text{margin-top:3px;font-size:12px;white-space:pre-wrap;word-break:break-word}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.bcard{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.bcard .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px;font-size:10px;color:var(--muted)}
+.bcard .text{font-size:12px;white-space:pre-wrap;word-break:break-word}
+.hist{padding:0;list-style:none;font:11px/1.8 Consolas,monospace;color:var(--muted)}
+.hist li{border-bottom:1px dashed #263041;padding:2px 0;word-break:break-all}
+.empty{padding:14px 6px;text-align:center;color:var(--muted);font-size:12px}
+.detail-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);min-height:38px}
+.detail-head h2{font-size:14px;word-break:break-all}
+.detail-head .rid{font:10px Consolas,monospace;color:var(--muted)}
+.foot{display:flex;gap:14px;align-items:center;font-size:10px;color:var(--muted)}
+.foot .ro{color:var(--red)}
+@media(max-width:900px){.work{grid-template-columns:minmax(0,1fr)}.rooms-card{max-height:210px;flex:none}}
+</style></head><body>
+<div class="app">
+  <header class="top">
+    <h1 class="brand">老田的个人 <span>OS</span></h1>
+    <span class="sub">OS ROOM · LEGION MEETING · 现网数据联调</span>
+    <span class="badge">只读联调预览·G2</span>
+  </header>
+  <div class="state" id="state" data-kind="idle" role="status" aria-live="polite">
+    <span>数据源：</span><b id="state-text">正在连接现网议事厅（经 nginx 同源 /legion-api）…</b>
+    <button type="button" id="btn-token" hidden>输入门户 token</button>
+  </div>
+  <main class="work">
+    <section class="card rooms-card" aria-label="议题房间列表">
+      <header><h2>议题房间</h2><small id="rooms-count"></small></header>
+      <div class="scroll"><div class="rooms" id="rooms"></div></div>
+    </section>
+    <section class="card" aria-label="房间详情">
+      <div class="detail-head" id="detail-head"><span class="empty" style="padding:0">左侧选择房间后展示详情</span></div>
+      <div class="scroll" id="detail-body"><p class="empty">未加载房间 · 只读，不发起任何写操作</p></div>
+    </section>
+  </main>
+  <footer class="foot">
+    <span class="ro">只读</span>
+    <span>房间数据为私人研讨记录 · 仅展示白板版本历史（board_history 最近 10 条）· 不写不派工不交易</span>
+  </footer>
+</div>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const LIST_URL = '/legion-api/api/legion/room/list';
+const ROOM_URL = '/legion-api/api/legion/room?room_id=';
+const TOKEN_KEY = 'os_room_preview_portal_token';
+const AUTH_MSG = '需要访问凭据（LAN 需门户 token）';
+const NET_MSG = '议事厅数据不可达';
+const EMPTY_MSG = '暂无议题房间';
+const escHtml = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let rooms = [], active = -1;
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = String(text);
+  return n;
+}
+function fmt(v) { return v === undefined || v === null || v === '' ? '-' : String(v); }
+function setState(kind, text) {
+  $('state').dataset.kind = kind;
+  $('state-text').textContent = text;
+  $('btn-token').hidden = kind !== 'auth';
+}
+function getToken() { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch (_) { return ''; } }
+function saveToken(t) { try { sessionStorage.setItem(TOKEN_KEY, t); } catch (_) {} }
+// 门户 token 仅存本页 sessionStorage；用户取消时返回空串，不重试。
+function promptLegionToken() {
+  let v = null;
+  try { v = window.prompt('请输入门户 token（将以 X-Portal-Token 头发送，仅存本页 sessionStorage）：'); } catch (_) { return ''; }
+  const t = String(v || '').trim();
+  if (t) saveToken(t);
+  return t;
+}
+async function fetchJSON(url) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers['X-Portal-Token'] = token;
+  let res;
+  try { res = await fetch(url, { headers }); }
+  catch (_) { return { net: true }; }
+  if (res.status === 403) return { auth: true };
+  if (!res.ok) return { bad: true };
+  let data;
+  try { data = await res.json(); } catch (_) { return { bad: true }; }
+  return { data };
+}
+// 403 → 提示并 promptLegionToken（存 sessionStorage）→ 带 X-Portal-Token 头重试一次；仍 403/取消则如实降级。
+async function fetchWithAuth(url, onAuth) {
+  let r = await fetchJSON(url);
+  if (r.auth) {
+    if (onAuth) onAuth();
+    const t = promptLegionToken();
+    if (t) r = await fetchJSON(url);
+  }
+  return r;
+}
+function kindOf(r) {
+  if (r.net) return { kind: 'net', msg: NET_MSG };
+  if (r.auth) return { kind: 'auth', msg: AUTH_MSG };
+  if (r.bad) return { kind: 'err', msg: '接口响应异常（非 2xx）' };
+  const d = r.data;
+  if (!d || typeof d !== 'object') return { kind: 'err', msg: '响应不是 JSON 对象' };
+  if (d.ok === false) {
+    const e = String(d.err || '');
+    if (/unauthor|forbidden|token/i.test(e)) return { kind: 'auth', msg: AUTH_MSG };
+    return { kind: 'err', msg: '接口错误：' + (e || '未知') };
+  }
+  if (d.ok !== true) return { kind: 'err', msg: '响应缺少 ok 字段' };
+  return { kind: 'ok', data: d };
+}
+function showFail(detailBody, k) {
+  setState(k.kind === 'auth' ? 'auth' : 'err', k.msg);
+  detailBody.replaceChildren();
+  detailBody.append(el('p', 'empty', k.msg));
+}
+// 房间列表：全部 textContent 渲染，不拼接 HTML。
+function renderRooms() {
+  const box = $('rooms');
+  box.replaceChildren();
+  $('rooms-count').textContent = rooms.length ? rooms.length + ' 间' : '';
+  if (!rooms.length) { box.append(el('p', 'empty', EMPTY_MSG)); return; }
+  rooms.forEach((r, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'room' + (i === active ? ' sel' : '');
+    b.append(el('b', '', r.subject || '(无标题)'));
+    const meta = el('span', 'meta');
+    meta.append(el('span', 'tag s-' + String(r.status || '').replace(/[^a-z-]/g, ''), fmt(r.status)));
+    meta.append(el('span', '', '消息 ' + fmt(r.message_count)));
+    meta.append(el('span', '', '白板 v' + fmt(r.board_version)));
+    meta.append(el('span', '', '更新 ' + fmt(r.updated_at)));
+    b.append(meta);
+    b.addEventListener('click', () => selectRoom(i));
+    box.append(b);
+  });
+}
+// 详情头：静态骨架 + 模板字符串，所有插值经 escHtml。
+function renderHead(d) {
+  const head = $('detail-head');
+  head.replaceChildren();
+  head.innerHTML = `<h2>${escHtml(d.subject || '(无标题)')}</h2>` +
+    `<span class="tag s-${escHtml(fmt(d.status))}">${escHtml(fmt(d.status))}</span>` +
+    `<span class="rid">${escHtml(fmt(d.room_id))} · 更新于 ${escHtml(fmt(d.updated_at))}</span>`;
+}
+function renderDetail(d) {
+  renderHead(d);
+  const body = $('detail-body');
+  body.replaceChildren();
+  // 议题目标
+  const goal = el('section', 'section');
+  goal.append(el('h3', '', '议题目标'));
+  goal.append(el('p', '', d.goal || '(未填写目标)'));
+  body.append(goal);
+  // 逐轮消息流：author_name / kind / provenance（代录·模型）标记
+  const msec = el('section', 'section');
+  const msgs = Array.isArray(d.messages) ? d.messages : [];
+  msec.append(el('h3', '', '逐轮消息（' + msgs.length + ' 条）'));
+  msgs.forEach(m => {
+    const row = el('div', 'msg');
+    row.append(el('span', 'avatar', String(m.author_name || m.author || '?').slice(0, 1)));
+    const bd = el('div', 'body');
+    const who = el('div', 'who');
+    who.append(el('b', '', m.author_name || m.author || '?'));
+    who.append(el('span', 'tag', fmt(m.kind)));
+    who.append(el('span', 'tag k-' + (m.provenance === 'model' ? 'model' : 'manual'), m.provenance === 'model' ? '模型' : '代录'));
+    if (m.at) who.append(el('time', '', m.at));
+    bd.append(who);
+    bd.append(el('p', 'text', m.text || ''));
+    row.append(bd);
+    msec.append(row);
+  });
+  if (!msgs.length) msec.append(el('p', 'empty', '暂无消息'));
+  body.append(msec);
+  // 白板卡列表：kind / status
+  const bsec = el('section', 'section');
+  const cards = Array.isArray(d.board) ? d.board : [];
+  bsec.append(el('h3', '', '白板卡（' + cards.length + ' 张）· 当前 v' + fmt(d.board_version)));
+  const grid = el('div', 'cards');
+  cards.forEach(c => {
+    const card = el('div', 'bcard');
+    const r1 = el('div', 'row');
+    r1.append(el('span', 'tag', fmt(c.kind)));
+    r1.append(el('span', 'tag s-' + String(c.status || '').replace(/[^a-z-]/g, ''), fmt(c.status)));
+    if (c.card_id) r1.append(el('span', '', c.card_id));
+    card.append(r1);
+    card.append(el('p', 'text', c.text || ''));
+    card.append(el('p', 'row', String(c.author || '') + (c.updated_at ? ' · ' + c.updated_at : '')));
+    grid.append(card);
+  });
+  if (!cards.length) grid.append(el('p', 'empty', '白板暂无卡片'));
+  bsec.append(grid);
+  body.append(bsec);
+  // board_history 最近 10 条版本记录（除此之外不展示任何历史）
+  const hsec = el('section', 'section');
+  const hist = Array.isArray(d.board_history) ? d.board_history.slice(-10) : [];
+  const total = Array.isArray(d.board_history) ? d.board_history.length : 0;
+  hsec.append(el('h3', '', '白板版本记录（最近 ' + hist.length + ' 条 / 共 ' + total + ' 条）'));
+  const ul = el('ul', 'hist');
+  hist.slice().reverse().forEach(h => {
+    ul.append(el('li', '', [
+      'v' + fmt(h.version),
+      fmt(h.at),
+      fmt(h.action),
+      fmt(h.card_id),
+      h.by ? 'by ' + h.by : '',
+      fmt(h.detail)
+    ].filter(Boolean).join(' · ')));
+  });
+  if (!hist.length) ul.append(el('li', '', '暂无版本记录'));
+  hsec.append(ul);
+  body.append(hsec);
+}
+async function selectRoom(i) {
+  active = i;
+  renderRooms();
+  const summary = rooms[i];
+  setState('load', '加载房间详情…');
+  const res = await fetchWithAuth(ROOM_URL + encodeURIComponent(summary.room_id), () => setState('auth', AUTH_MSG));
+  const k = kindOf(res);
+  if (k.kind !== 'ok') { showFail($('detail-body'), k); renderHead(summary); return; }
+  const room = k.data.room;
+  if (!room || typeof room !== 'object') {
+    setState('err', '房间数据格式异常');
+    $('detail-body').replaceChildren();
+    $('detail-body').append(el('p', 'empty', '房间数据格式异常'));
+    return;
+  }
+  renderDetail(room);
+  setState('ok', '已加载：' + (room.subject || summary.room_id));
+}
+async function loadRooms() {
+  rooms = []; active = -1;
+  renderRooms();
+  $('detail-head').replaceChildren();
+  $('detail-head').append(el('span', 'empty', '左侧选择房间后展示详情'));
+  $('detail-body').replaceChildren();
+  $('detail-body').append(el('p', 'empty', '未加载房间 · 只读，不发起任何写操作'));
+  setState('load', '正在拉取房间列表…');
+  const res = await fetchWithAuth(LIST_URL, () => setState('auth', AUTH_MSG));
+  const k = kindOf(res);
+  if (k.kind !== 'ok') { showFail($('detail-body'), k); return; }
+  const list = k.data.rooms;
+  if (!Array.isArray(list)) { setState('err', '房间列表格式异常'); return; }
+  rooms = list;
+  setState(rooms.length ? 'ok' : 'idle', rooms.length ? '现网房间 ' + rooms.length + ' 间 · 点击左侧查看只读详情' : EMPTY_MSG);
+  renderRooms();
+}
+$('btn-token').addEventListener('click', () => { if (promptLegionToken()) loadRooms(); });
+function tick() { try { $('state').dataset.clock = new Date().toISOString(); } catch (_) {} }
+tick(); setInterval(tick, 30000);
+loadRooms();
+})();
+</script>
+</body></html>
