@@ -25,6 +25,9 @@
                             标识未传递」，2026-10-09 真端点实证）；默认 1
                             （管理租户；菜鸟库另有 162=股票量化，须与
                             发 token 的租户一致）
+  CAINIAO_LOCAL_TRUSTED     本机可信域来源清单（P1 判定源修复 2026-10-19）：
+                            逗号分隔单 IP 或 CIDR 段，默认仅回环；反代链
+                            以 X-Real-IP 对该清单判定（详见下方注释块）
 
 安全注意：token 只在内存比对/缓存，绝不写日志、绝不落盘；
 缓存 TTL 60s，进程重启即清空。
@@ -49,6 +52,7 @@ portal_api.py 接线点（等凭据到位后，仅此一处，注释形式示例
 """
 import base64
 import hmac
+import ipaddress
 import json
 import os
 import sys
@@ -67,6 +71,49 @@ CACHE_TTL = 60.0  # 校验结果进程内缓存秒数（不落盘）
 
 # 本机可信域（与 portal_api.py P0-1b 的 _is_local_req 判定口径一致）
 _LOOPBACK = ("127.0.0.1", "::1")
+
+
+# ===== P1 判定源修复（2026-10-19 老田批准，K-ORG-190 §7.2）=====
+# 缺口：8091 绑回环、nginx 同机反代入站连接的 client_address 恒为回环，
+# 原判定「remote_addr in 回环 → local_trusted 放行」对反代链恒真——
+# X-Real-IP 局域网判定（portal_api.py _is_local_req）被架构性架空，
+# 经反代的无 token 写请求实际能过闸门。
+# 修复：受信来源判定不再依赖 client_address 回环兜底——
+#   直连（无 X-Portal-Proxy 反代标记）→ 维持原 client_address 判定
+#   （本机直连 8091 场景行为不变，老田日常零改造）；
+#   反代链（X-Portal-Proxy 存在，nginx server 级覆写注入、客户端不可
+#   伪造，见 portal/nginx.conf:26-27）→ 只认 X-Real-IP（缺头即不信任，
+#   closed on failure），且须落受信来源清单。
+# 受信来源清单配置化（环境变量，逐次读取便于测试/热改）：
+#   CAINIAO_LOCAL_TRUSTED  逗号分隔的单 IP 或 CIDR 段（ipaddress 标准库
+#                          解析，非法项忽略）；默认仅回环。若日后确需
+#                          直信某内网网段（CIDR 写法入清单），设此
+#                          环境变量即可，无需改代码。
+
+
+def _trusted_sources() -> list:
+    """本机可信域显式来源清单；默认仅回环。"""
+    raw = (os.environ.get("CAINIAO_LOCAL_TRUSTED") or "").strip()
+    if not raw:
+        return list(_LOOPBACK)
+    return [p.strip() for p in raw.split(",") if p.strip()]
+
+
+def _ip_trusted(ip: str, sources: list) -> bool:
+    """ip 是否落受信来源清单（单 IP 精确匹配或 CIDR 段包含）。
+
+    解析失败（畸形 IP / 非法 CIDR 项）一律不信任——closed on failure。"""
+    try:
+        addr = ipaddress.ip_address((ip or "").strip())
+    except ValueError:
+        return False
+    for s in sources:
+        try:
+            if addr in ipaddress.ip_network(s, strict=False):
+                return True
+        except ValueError:
+            continue  # 清单里的非法项忽略，不影响其余判定
+    return False
 
 
 @dataclass(frozen=True)
@@ -220,7 +267,8 @@ def verify_request(headers, remote_addr, portal_token: str = "") -> VerifyResult
     优先级：
       1. X-Portal-Token 与 portal_token 常量比对命中 → 机器通道放行
          （Agent/自动化脚本非人，不登录，原语义不动）
-      2. remote_addr 为本机回环 → 本机可信域放行（产线保底）
+      2. 本机可信域放行（产线保底；P1 判定源修复后的显式来源判定，
+         见下方 _trusted_sources/_ip_trusted 注释块）
       3. Authorization: Bearer <token> → verify_bearer 远程校验
       4. 其余 → 拒绝（调用方落到原有 X-Portal-Token 常量比对逻辑）
     headers 为 dict 或 http.client.HTTPMessage 等 .get() 对象均可。
@@ -234,7 +282,14 @@ def verify_request(headers, remote_addr, portal_token: str = "") -> VerifyResult
     got = _h("X-Portal-Token")
     if portal_token and got and hmac.compare_digest(got, portal_token):
         return VerifyResult(True, reason="machine_channel")
-    if (remote_addr or "").strip() in _LOOPBACK:
+    # 2. 本机可信域（P1 判定源修复 2026-10-19）：反代链下 client_address
+    #    恒回环（8091 绑回环），不得作信任源；真实来源只认 X-Real-IP。
+    #    直连 8091（无反代标记）维持 client_address 判定，行为不变。
+    if _h("X-Portal-Proxy"):
+        real_ip = _h("X-Real-IP")   # 反代链：缺 X-Real-IP 即不信任（closed on failure）
+    else:
+        real_ip = (remote_addr or "").strip()   # 直连：维持原判定源
+    if _ip_trusted(real_ip, _trusted_sources()):
         return VerifyResult(True, reason="local_trusted")
     auth = _h("Authorization")
     if auth.lower().startswith("bearer "):

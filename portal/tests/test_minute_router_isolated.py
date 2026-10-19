@@ -173,13 +173,18 @@ def test_real_minute_router_start_worker_result_and_cold_restart(
                    "strategy": "minute_store", "d0": "20261016", "d1": "20261016",
                    "as_of": bars[1].dt.isoformat(), "initial_cash": 2000}
 
-        # A loopback socket remains trusted by cainiao_auth even when proxy
-        # headers claim a remote address. This test must not claim to verify
-        # remote 403 authentication through a loopback-only fixture.
+        # Direct loopback requests (no proxy headers) remain trusted by
+        # cainiao_auth. Since the P1 trust-source fix (2026-10-19), proxy
+        # headers with a non-loopback X-Real-IP are no longer trusted even
+        # from a loopback fixture, so the spoofed-proxy 403 IS verifiable
+        # here (previously the loopback client_address masked it).
         status, proxied = _request(
+            port, "POST", "/api/bt2_run", {**request, "source_ref": "missing"})
+        assert status == 200 and proxied["error_code"] == "SOURCE_UNAVAILABLE"
+        status, spoofed = _request(
             port, "POST", "/api/bt2_run", {**request, "source_ref": "missing"},
             {"X-Portal-Proxy": "1", "X-Real-IP": "192.0.2.1"})
-        assert status == 200 and proxied["error_code"] == "SOURCE_UNAVAILABLE"
+        assert status == 403 and "forbidden" in (spoofed.get("error") or "")
         status, malformed = _request(port, "POST", "/api/bt2_run", b"{broken")
         assert status == 400 and malformed == {"ok": False, "error": "bad json"}
         status, unavailable = _request(

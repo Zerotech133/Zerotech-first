@@ -242,6 +242,10 @@ _MUTATION_POSTS = frozenset((
     "/api/onboard",       # K-STOCK-159 S-e 迎宾向导四问落账（建组合+雇佣链）
     "/api/ctl/alert",     # K-ORG-113 Hermes alerts 连接器写面（ack/ignore/ack_all）
     "/api/flow/rerun",    # F1 动作流中心：白名单只读产线任务重跑（schtasks /Run）
+    "/api/register",     # K-ORG-190 指挥台写回：新建 Agent（org.json+prompts+审计）
+    "/api/project/register",  # K-ORG-190 项目线立案（pending_a0_confirm 暂存+审计）
+    "/api/agent/update",      # K-ORG-190 Agent 属性/模型编辑（改 org.json+审计）
+    "/api/agent/learn",       # K-ORG-190 学习环（LLM 提炼→knowledge jsonl+审计）
 ))
 
 # C1a（研发计划 v2）：GET 形式但触发后台动作/子进程的端点——比照变更类
