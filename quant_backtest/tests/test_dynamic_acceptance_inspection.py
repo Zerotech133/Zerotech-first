@@ -12,7 +12,7 @@ from quant_backtest.agent_bridge.dynamic_acceptance_inspection import (
 from quant_backtest.agent_bridge.mapping import to_sector_report
 from quant_backtest.agent_bridge.trusted_acceptance import TrustedAcceptanceBindingAdapter
 from quant_backtest.agent_bridge.upstream_ack_authority import UpstreamAckAuthority
-from quant_backtest.quant_sector.upstream_inbox import UpstreamInbox
+from quant_backtest.quant_sector.upstream_inbox import UpstreamInbox, UpstreamInboxError
 from quant_backtest.watch_dispatch import freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity, AgentReport
 from quant_backtest.watch_dispatch.route_outbox import (
@@ -46,9 +46,9 @@ class FakeClock:
 
 
 def chain(*, report_time: datetime = START, accept_time: datetime | None = None,
-          observed_time: datetime | None = None, active_port: bool = False,
-          first_unknown: bool = False):
-    """Build independent offline outbox and sector-inbox ledgers."""
+          observed_time: datetime | None = None, active_port: bool = True,
+          first_unknown: bool = False, accept_report: bool = True):
+    """Build offline ledgers, binding the live local ACK port by default."""
     envelope = freeze_offline(
         schema_version=1, event_id="event-dynamic", evidence_version=1,
         previous_version_hash=None, pool="B", tenant_or_owner_id="owner1",
@@ -85,19 +85,42 @@ def chain(*, report_time: datetime = START, accept_time: datetime | None = None,
                            target_id=receiver.agent_id, claim_token="token",
                            claim_at=report_time + timedelta(seconds=1),
                            lease_until=END)
-    receipt = inbox.accept(to_sector_report(report),
-                           now=accept_time if accept_time is not None else at(3))
-    if first_unknown:
-        outbox.finish(attempt.attempt_id, outcome=UNKNOWN,
-                      now=report_time + timedelta(seconds=5))
+    if accept_report:
+        receipt = inbox.accept(to_sector_report(report),
+                               now=accept_time if accept_time is not None else at(3))
     else:
-        outbox.finish(attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
-                      external_message_id=receipt.ack.ack_id,
-                      verification_source=receipt.ack.verification_source,
-                      observed_at=observed_time if observed_time is not None
-                      else receipt.ack.acked_at,
-                      now=report_time + timedelta(seconds=5))
+        receipt = None
+    if first_unknown or receipt is None:
+        settled = outbox.finish(attempt.attempt_id, outcome=UNKNOWN,
+                                now=report_time + timedelta(seconds=5))
+        assert settled.outcome == UNKNOWN and settled.receipt is None
+    else:
+        settled = outbox.finish(
+            attempt.attempt_id, outcome=ACCEPTED_VERIFIED,
+            external_message_id=receipt.ack.ack_id,
+            verification_source=receipt.ack.verification_source,
+            observed_at=observed_time if observed_time is not None
+            else receipt.ack.acked_at,
+            now=report_time + timedelta(seconds=5))
+        if active_port:
+            assert settled.outcome == ACCEPTED_VERIFIED
+            assert settled.receipt is not None
+        else:
+            assert settled.outcome == UNKNOWN and settled.receipt is None
     return outbox, envelope, report, inbox, attempt.attempt_id
+
+
+def assert_inspection_unavailable(inspector: DynamicAttemptInspector,
+                                  attempt_id: str, checked_at: datetime | None) -> None:
+    """Require an exact unavailable result with every permission denied."""
+    result = inspector.inspect(attempt_id)
+    assert result == AttemptInspection(attempt_id, checked_at, "UNAVAILABLE")
+    assert result.production_permitted is False
+    assert result.notification_permitted is False
+    assert result.trading_permitted is False
+    assert inspector.production_permitted is False
+    assert inspector.notification_permitted is False
+    assert inspector.trading_permitted is False
 
 
 def test_each_inspection_samples_once_and_old_adapter_does_not_refresh() -> None:
@@ -109,8 +132,7 @@ def test_each_inspection_samples_once_and_old_adapter_does_not_refresh() -> None
     old_adapter = TrustedAcceptanceBindingAdapter(
         outbox, envelope, report, inbox, now=at(2))
     assert old_adapter.binding_for(attempt_id) is None
-    first = inspector.inspect(attempt_id)
-    assert first == AttemptInspection(attempt_id, at(2), "UNAVAILABLE")
+    assert_inspection_unavailable(inspector, attempt_id, at(2))
     clock.value = at(6)
     second = inspector.inspect(attempt_id)
     assert second == AttemptInspection(attempt_id, at(6), "CONSISTENT_OFFLINE")
@@ -132,12 +154,16 @@ def test_revocation_removes_offline_consistency() -> None:
     clock = FakeClock(at(6))
     inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
                                         clock=clock)
-    assert inspector.inspect(attempt_id).status == "CONSISTENT_OFFLINE"
+    consistent = inspector.inspect(attempt_id)
+    assert consistent == AttemptInspection(attempt_id, at(6), "CONSISTENT_OFFLINE")
+    assert consistent.production_permitted is False
+    assert consistent.notification_permitted is False
+    assert consistent.trading_permitted is False
     receipt = inbox.receipt_for_report(report.report_id)
+    assert receipt is not None
     inbox.revoke(receipt.receipt_id, now=at(7))
     clock.value = at(8)
-    assert inspector.inspect(attempt_id) == AttemptInspection(
-        attempt_id, at(8), "UNAVAILABLE")
+    assert_inspection_unavailable(inspector, attempt_id, at(8))
     assert clock.calls == 2
 
 
@@ -152,8 +178,7 @@ def test_bad_clock_is_unavailable_without_time(invalid: object) -> None:
     clock = FakeClock(invalid)
     inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
                                         clock=clock)
-    assert inspector.inspect(attempt_id) == AttemptInspection(
-        attempt_id, None, "UNAVAILABLE")
+    assert_inspection_unavailable(inspector, attempt_id, None)
     assert clock.calls == 1
 
 
@@ -164,12 +189,10 @@ def test_unknown_attempt_and_invalid_constructor_inputs_fail_closed() -> None:
     inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
                                         clock=clock)
     for unknown in ("missing", "", None):
-        assert inspector.inspect(unknown) == AttemptInspection(
-            unknown, at(6), "UNAVAILABLE")
+        assert_inspection_unavailable(inspector, unknown, at(6))
     broken = DynamicAttemptInspector(None, envelope, report, inbox,
                                      clock=clock)
-    assert broken.inspect(attempt_id) == AttemptInspection(
-        attempt_id, at(6), "UNAVAILABLE")
+    assert_inspection_unavailable(broken, attempt_id, at(6))
     assert clock.calls == 4
 
 
@@ -190,18 +213,47 @@ def test_wrong_attempt_binding_is_unavailable(monkeypatch: pytest.MonkeyPatch) -
                         wrong_binding)
     inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
                                         clock=FakeClock(at(6)))
-    assert inspector.inspect(attempt_id) == AttemptInspection(
-        attempt_id, at(6), "UNAVAILABLE")
+    assert_inspection_unavailable(inspector, attempt_id, at(6))
 
 
 def test_future_report_accepted_too_early_is_unavailable() -> None:
-    """Inbox acceptance alone does not establish report creation chronology."""
+    """A future-dated report cannot create an inbox receipt or permission."""
     outbox, envelope, report, inbox, attempt_id = chain(
-        report_time=at(3), accept_time=at(1), observed_time=at(1))
+        report_time=at(3), accept_report=False)
+    with pytest.raises(UpstreamInboxError, match="^REPORT_CREATED_AT_FUTURE$"):
+        inbox.accept(to_sector_report(report), now=at(1))
+    assert inbox.receipt_for_report(report.report_id) is None
+    assert inbox.list_accepted() == ()
+    assert inbox.ledger_epoch == 0
     inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
                                         clock=FakeClock(at(9)))
-    assert inspector.inspect(attempt_id) == AttemptInspection(
-        attempt_id, at(9), "UNAVAILABLE")
+    assert_inspection_unavailable(inspector, attempt_id, at(9))
+
+
+def test_idempotent_accept_rejects_time_rollback_before_returning_ack() -> None:
+    """An existing receipt cannot bypass the report-created-at time gate."""
+    outbox, envelope, report, inbox, attempt_id = chain(report_time=at(3))
+    original = inbox.receipt_for_report(report.report_id)
+    assert original is not None
+    with pytest.raises(UpstreamInboxError, match="^REPORT_CREATED_AT_FUTURE$"):
+        inbox.accept(to_sector_report(report), now=at(2))
+    assert inbox.receipt_for_report(report.report_id) is original
+    assert inbox.list_accepted() == (original,)
+    assert inbox.ledger_epoch == 0
+    inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
+                                        clock=FakeClock(at(2)))
+    assert_inspection_unavailable(inspector, attempt_id, at(2))
+
+
+def test_missing_active_ack_port_cannot_settle_verified() -> None:
+    """Matching ACK fields cannot replace a construction-bound authority."""
+    outbox, envelope, report, inbox, attempt_id = chain(active_port=False)
+    assert inbox.receipt_for_report(report.report_id) is not None
+    attempt = outbox._attempts[attempt_id]
+    assert attempt.outcome == UNKNOWN and attempt.receipt is None
+    inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
+                                        clock=FakeClock(at(9)))
+    assert_inspection_unavailable(inspector, attempt_id, at(9))
 
 
 def test_old_live_ack_before_new_generation_claim_remains_consistent() -> None:
@@ -226,8 +278,13 @@ def test_old_live_ack_before_new_generation_claim_remains_consistent() -> None:
         external_message_id=ack.ack_id,
         verification_source=ack.verification_source,
         observed_at=ack.acked_at, now=at(8))
+    assert settled.outcome == ACCEPTED_VERIFIED
     assert settled.receipt is not None
     assert settled.receipt.observed_at < retry.claim_at
     inspector = DynamicAttemptInspector(outbox, envelope, report, inbox,
                                         clock=FakeClock(at(9)))
-    assert inspector.inspect(retry.attempt_id).status == "CONSISTENT_OFFLINE"
+    result = inspector.inspect(retry.attempt_id)
+    assert result == AttemptInspection(retry.attempt_id, at(9), "CONSISTENT_OFFLINE")
+    assert result.production_permitted is False
+    assert result.notification_permitted is False
+    assert result.trading_permitted is False
