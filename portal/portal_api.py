@@ -3921,6 +3921,12 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # api_common.py intel 域导航「📨 通知指挥」落地页，零参数只读 GET）
             self._html_file(os.path.join(ROOT, "static",
                                           "notify_command.html"))
+        elif path == "/ops-board":
+            # K-ORG-202 运维对账只读投影页（FB-M 2026-10-20 飞书中台 P1：
+            # 死信 / blocked 折叠对账 / 四账本来源计数 / 子源缺口 / 服务在役表，
+            # 零参数只读 GET，零写操作）
+            self._html_file(os.path.join(ROOT, "static",
+                                          "ops_board.html"))
         elif path == "/intel/stream":
             self._intel_page()
         elif path == "/gzh":

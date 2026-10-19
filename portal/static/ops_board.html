@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>运维对账 · 只读投影｜零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 78% -25%,var(--bg-surface),transparent 48%),var(--bg-page);color:var(--text);font:14px/1.6 var(--font-ui)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+a{color:var(--link)}
+.main{max-width:var(--page-w);margin:auto;padding:22px clamp(14px,3vw,28px) 48px}
+.eyebrow{font:700 11px var(--font-mono);letter-spacing:.18em;color:var(--color-ok);margin:6px 0 8px}
+h1{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.02em;line-height:1.25;margin:0 0 8px}
+.lead{margin:0;color:var(--text-dim);font-size:13px;line-height:1.8;max-width:760px}
+.readonly-banner{margin:14px 0 0;border:1px solid var(--border);border-left:3px solid var(--color-warn);background:var(--bg-raised);border-radius:var(--r-s);padding:10px 14px;font-size:12.5px;color:var(--text-dim)}
+.readonly-banner b{color:var(--color-warn);font-weight:600}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:14px 0 4px;font:12px var(--font-mono);color:var(--text-dim)}
+.meta-row .dot{color:var(--border)}
+#refresh{border:1px solid var(--border);background:var(--bg-raised);border-radius:var(--r-pill);padding:5px 14px;font-size:12px}
+#refresh:hover{border-color:var(--link);color:var(--link)}
+h2.sec{font-size:15px;margin:26px 0 10px;letter-spacing:-.01em}
+h2.sec small{font:400 11.5px var(--font-mono);color:var(--text-dim);margin-left:8px}
+.grid{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+.card{flex:1 1 240px;min-width:220px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:12px 14px}
+.card small{display:block;font-size:11px;color:var(--text-dim);margin-bottom:6px}
+.card b{font:700 22px var(--font-mono)}
+.card .st{font-size:11px;color:var(--text-dim)}
+.card.err b{color:var(--color-err)}
+.card.warn b{color:var(--color-warn)}
+.card.ok b{color:var(--color-ok)}
+.svc{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);margin:0 0 10px;overflow:hidden;font-size:13px}
+.svc .row{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:10px 14px;border-top:1px solid var(--border)}
+.svc .row:first-child{border-top:0}
+.svc .row b{min-width:150px}
+.svc .row .port{font:600 11.5px var(--font-mono);color:var(--link)}
+.svc .row .note{font-size:12px;color:var(--text-dim)}
+.notice{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);padding:10px 14px;font-size:12.5px;color:var(--text-dim);margin:0 0 12px;line-height:1.7}
+.notice.warn{border-color:#6b5326;background:#2b230f;color:#e3c98c}
+.notice b{color:var(--text)}
+.empty-state{border:1px dashed var(--border);border-radius:var(--r-m);padding:12px 14px;color:var(--text-dim);font-size:12.5px;line-height:1.8;margin:0 0 12px}
+.degraded{border:1px solid #6e2f2c;border-left:3px solid var(--color-err);background:#2d1614;border-radius:var(--r-m);padding:14px 16px;margin:16px 0}
+.degraded h2{font-size:15px;color:var(--color-err);margin:0 0 6px}
+.degraded p{font-size:12.5px;color:#e8b4b1;margin:0 0 10px;line-height:1.75;overflow-wrap:anywhere}
+.degraded button{border:1px solid #6e2f2c;background:#2d1614;color:#f1c1bc;border-radius:var(--r-pill);padding:6px 16px;font-size:12px}
+.degraded button:hover{border-color:var(--color-err)}
+footer.legend{margin-top:22px;border-top:1px solid var(--border);padding-top:14px;font-size:11.5px;color:var(--text-dim);line-height:1.9}
+footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
+@media(max-width:640px){
+ .main{padding-top:14px}
+ .card{flex:1 1 44%}
+}
+</style>
+</head>
+<body>
+<main class="main">
+<header>
+<div class="eyebrow">OPS RECONCILIATION · READ-ONLY PROJECTION</div>
+<h1>📋 运维对账</h1>
+<p class="lead">运维对账面只读投影：blocked 折叠对账、死信计数、四账本来源计数、子源缺口、服务在役标注。数据源：<b>/api/notify/queue</b>（8091 聚合）与 <b>/api/state</b>（8097 观测段，经 nginx 只读反代）。本页不审批、不重发、不清理死信、不触发任何发送。</p>
+<p class="readonly-banner"><b>只读投影 · 邓芝统辖 · 运维对账</b>——本页没有任何写操作；所有计数均为读取时点快照，非实时健康探测。</p>
+<div class="meta-row">
+<span id="m-generated">读取中…</span><span class="dot">·</span>
+<span id="m-endpoint">endpoint: /api/notify/queue + /api/state</span><span class="dot">·</span>
+<button type="button" id="refresh">↻ 刷新</button>
+</div>
+</header>
+
+<div id="degraded" class="degraded" hidden>
+<h2>⚠ 数据拉取失败 · 已降级</h2>
+<p id="degraded-why">无法读取 /api/notify/queue。以下各卡为空态展示，不代表「无异常」；请核对服务状态后重试。</p>
+<button type="button" id="retry">重试</button>
+</div>
+
+<h2 class="sec">服务在役表<small>静态标注 · 在役状态以各自健康端点为准，本页不探测</small></h2>
+<div class="svc">
+<div class="row"><b>推送闸门（8097）</b><span class="port">:8097</span><span class="note">推送中台发送闸门；观测面板 /push/（需管理授权）。健康端点 /api/health。</span></div>
+<div class="row"><b>中台 API（8091）</b><span class="port">:8091</span><span class="note">portal_api 主服务，/api/notify/queue 聚合来源。健康端点 /api/health。</span></div>
+<div class="row"><b>Legion（8096）</b><span class="port">:8096</span><span class="note">军团服务。健康状态以其实际端点为准。</span></div>
+<div class="row"><b>KM（8099）</b><span class="port">:8099</span><span class="note">KM 服务。健康状态以其实际端点为准。</span></div>
+<div class="row"><b>邓芝驻地（8787）</b><span class="port">:8787</span><span class="note">飞书通讯中枢（原 HERMES）WebUI 驻地。健康状态以其实际端点为准。</span></div>
+</div>
+
+<h2 class="sec">blocked 折叠对账<small>meta.blocked_archive</small></h2>
+<div id="blocked-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明。</div></div>
+
+<h2 class="sec">死信（N6）<small>/api/state → dead_letters</small></h2>
+<div id="dead-letter-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明。</div></div>
+
+<h2 class="sec">子源缺口<small>errors</small></h2>
+<div id="errors-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明。</div></div>
+
+<h2 class="sec">四账本来源计数<small>meta.sources</small></h2>
+<div id="sources-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明。</div></div>
+
+<h2 class="sec">四态计数<small>states</small></h2>
+<div id="states-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明。</div></div>
+
+<footer class="legend">
+<h3>图例与边界</h3>
+<div>· 本页只读投影，零写操作；审批、重发、死信清理请往飞书或 /push/ 观测面板（管理授权）办理。</div>
+<div>· 服务在役表为静态标注，不探测、不假绿；在役状态以各服务健康端点为准。</div>
+<div>· /api/state 段需管理授权（X-Push-Admin-Key）；本页不持密钥，未授权或读取失败时死信卡降级为说明文案，不显示静态兜底数据。</div>
+<div>· 聚合时点（generated_at）不等于任何子源的健康时点；空态不等于「没有异常」。</div>
+</footer>
+</main>
+
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const text=v=>(v===null||v===undefined||v==='')?'':String(v);
+const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined&&txt!==null)n.textContent=txt;return n;};
+const SRC_LABELS={decision_db:'决策 DB',push_flow:'发送流水',deadline_flag:'deadline 旗标',matrix_log:'矩阵发送账'};
+const STATE_LABELS={review:'待老田确认（review）',blocked:'异常/阻断（blocked）',auto:'自动决策（auto）',idle:'不打扰（idle）'};
+
+async function fetchJson(url){
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
+ try{
+  const r=await fetch(url,{method:'GET',cache:'no-store',signal:ctl.signal,credentials:'same-origin'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  if(!d||typeof d!=='object'||d.ok===false)throw new Error('来源报错或结构不符');
+  return d;
+ }finally{clearTimeout(timer);}
+}
+
+function cardBox(sel,cls,title,val,note){
+ const box=$(sel);box.replaceChildren();
+ const c=el('div','card '+(cls||''));
+ c.append(el('small',null,title),el('b',null,val),el('span','st',note||''));
+ box.append(c);
+}
+
+function emptyCard(sel,msg){
+ const box=$(sel);box.replaceChildren();
+ box.append(el('div','empty-state',msg));
+}
+
+function renderBlocked(ba){
+ if(!ba||typeof ba!=='object'){emptyCard('blocked-card','来源未提供 meta.blocked_archive 对账段——不显示兜底数字，不等于「无 blocked」。');return;}
+ const cc=typeof ba.cluster_count==='number'?String(ba.cluster_count):'—';
+ const rb=typeof ba.raw_blocked==='number'?String(ba.raw_blocked):'—';
+ const box=$('blocked-card');box.replaceChildren();
+ const c=el('div','card warn');
+ c.append(el('small',null,'blocked 折叠对账'),
+  el('b',null,cc+' 簇 · '+rb+' 条'),
+  el('span','st',text(ba.rule)||'T+7 滚窗自动出队；原始条数 = 折叠簇展开后的计数。'));
+ box.append(c);
+}
+
+function renderDeadLetter(dl,err){
+ if(err){
+  emptyCard('dead-letter-card','/api/state 读取失败（'+err+'）——常见于未授权（8097 侧需管理授权密钥，本页只读不持密钥）。死信计数请往 /push/ 观测面板核对；本卡不显示兜底数字，不代表「无死信」。');
+  return;
+ }
+ if(!dl||typeof dl!=='object'){emptyCard('dead-letter-card','来源未提供 dead_letters 段——不显示兜底数字，不等于「无死信」。');return;}
+ const n=dl.count_24h;
+ if(typeof n!=='number'||n<0){emptyCard('dead-letter-card','dead_letters.count_24h 未提供（读取异常时不猜数）——不代表「无死信」。');return;}
+ const deg=dl.degraded;
+ cardBox('dead-letter-card',deg?'err':'ok','近 24h 死信',String(n),
+  '阈值 '+text(dl.threshold)+'；degraded='+(deg===undefined||deg===null?'未判定':String(deg))+'。补达与清理请往 /push/ 办理。');
+}
+
+function renderErrors(errs){
+ const box=$('errors-card');box.replaceChildren();
+ if(!Array.isArray(errs)||!errs.length){
+  box.append(el('div','empty-state','来源未报子源缺口（errors 为空或缺失）。注意：聚合成功 ≠ 所有子源健康，此行仅反映本次聚合时点来源自报的缺口。'));
+  return;
+ }
+ const c=el('div','card err');
+ c.append(el('small',null,'子源缺口 '+errs.length+' 项'));
+ c.append(el('b',null,String(errs.length)));
+ c.append(el('span','st',errs.join('；')));
+ box.append(c);
+}
+
+function renderSources(src){
+ if(!src||typeof src!=='object'){emptyCard('sources-card','来源未提供 meta.sources 账本计数——不显示兜底数字，不代表「账本为空」。');return;}
+ const box=$('sources-card');box.replaceChildren();
+ for(const k of Object.keys(SRC_LABELS)){
+  const v=src[k];
+  const c=el('div','card');
+  c.append(el('small',null,SRC_LABELS[k]+'（'+k+'）'),
+   el('b',null,typeof v==='number'?String(v):'—'),
+   el('span','st',typeof v==='number'?'条':'来源未提供'));
+  box.append(c);
+ }
+}
+
+function renderStates(st){
+ if(!st||typeof st!=='object'){emptyCard('states-card','来源未提供 states 四态计数——不显示兜底数字。');return;}
+ const box=$('states-card');box.replaceChildren();
+ for(const k of Object.keys(STATE_LABELS)){
+  const v=st[k];
+  const c=el('div','card');
+  c.append(el('small',null,STATE_LABELS[k]),
+   el('b',null,typeof v==='number'?String(v):'—'),
+   el('span','st',typeof v==='number'?'条':'来源未提供'));
+  box.append(c);
+ }
+}
+
+async function load(){
+ $('degraded').hidden=true;
+ $('m-generated').textContent='读取中…';
+ let q=null,qErr=null,s=null,sErr=null;
+ const r1=await fetchJson('/api/notify/queue').then(d=>{q=d;}).catch(e=>{qErr=e&&e.message?e.message:'未知错误';});
+ const r2=await fetchJson('/api/state').then(d=>{s=d;}).catch(e=>{sErr=e&&e.message?e.message:'未知错误';});
+ if(qErr){
+  $('degraded-why').textContent='无法读取 /api/notify/queue（'+qErr+'）。本页不显示静态兜底数据；不可把「读取失败」当成「无异常」，请核对服务后重试。';
+  $('degraded').hidden=false;
+  $('m-generated').textContent='读取失败';
+ }else{
+  $('m-generated').textContent='聚合时点：'+text(q.generated_at||'未提供')+'（非各子源生产时点）';
+ }
+ const meta=(q&&q.meta)||{};
+ renderBlocked(meta.blocked_archive);
+ renderDeadLetter(s?s.dead_letters:null,sErr);
+ renderErrors(q?q.errors:null);
+ renderSources(meta.sources);
+ renderStates(q?q.states:null);
+ if(!qErr){/* 主源在役但 state 降级时，errors 卡照常展示，死信卡已单卡说明 */}
+}
+
+$('refresh').addEventListener('click',load);
+$('retry').addEventListener('click',load);
+load();
+setInterval(load,60000);
+})();
+</script>
+</body>
+</html>
