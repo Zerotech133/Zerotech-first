@@ -64,8 +64,12 @@ def main():
                    push_targets.target_id("个人") or "")  # 老田 bot 域 open_id
     try:
         with open(LOG, "ab") as fo:
+            # D2（N11 启动链 utf8）：-X utf8 令子进程 stdout/stderr 以
+            # UTF-8 写出（api_common.py:427 alertpush 判例同款），修复
+            # 启动链中文日志乱码；stdout=fo 为二进制追加，字节流即
+            # UTF-8，_fail() 写入亦显式 utf-8/replace，全链编码一致。
             subprocess.Popen(
-                [PY, "-u", BOT], stdin=subprocess.DEVNULL, stdout=fo,
+                [PY, "-X", "utf8", "-u", BOT], stdin=subprocess.DEVNULL, stdout=fo,
                 stderr=subprocess.STDOUT, env=env,
                 creationflags=(subprocess.DETACHED_PROCESS
                                | subprocess.CREATE_NEW_PROCESS_GROUP))

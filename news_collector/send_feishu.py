@@ -28,7 +28,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import push_targets  # noqa: E402  K-STOCK-403：收件人单一事实源
 
 USER_ID = push_targets.target_id("个人") or ""  # bot 应用域 open_id（apps[0] 视角）
-USER_ID_LARK = "ou_5c9c4f3c015cbdb3475a44e49a9c1866"  # user 应用域 open_id（另一身份维度，不属收件人表）
+# D4（N8-2）user 应用域 open_id 参数化：env FEISHU_USER_ID_LARK 优先，
+# push_targets「个人(user域)」条目次之（等价机制——条目待老田确认后
+# 落入 news_config.json，该文件非本工位独占路径，本期不动），缺省回退
+# 历史值；下方 122 行 bot/user 双跳逻辑不动。
+USER_ID_LARK = (os.environ.get("FEISHU_USER_ID_LARK")
+                or next((t.get("id") for t in push_targets.targets()
+                         if t.get("name") == "个人(user域)"), None)
+                or "ou_5c9c4f3c015cbdb3475a44e49a9c1866")  # user 应用域 open_id（另一身份维度，不属收件人表）
 
 
 def find_lark_cli():

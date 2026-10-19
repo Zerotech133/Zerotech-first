@@ -178,7 +178,9 @@ def card_picks(tier):
 
 
 # ── 股票血缘关系（KG Neo4j 查询）───────────────────────────
-_SYS_PY = r"C:\Program Files\Python311\python.exe"
+# D3（N8-1）_SYS_PY 参数化：env KG_SYS_PY 优先，缺省回退系统
+# Python311（_kg_stock：CowAgent venv 缺 pandas/neo4j，借道系统 Python）
+_SYS_PY = os.environ.get("KG_SYS_PY") or r"C:\Program Files\Python311\python.exe"
 _KG_QUERY = os.path.join(HERE, "kg_stock_query.py")
 
 
