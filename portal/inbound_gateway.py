@@ -660,6 +660,88 @@ def _ticker_card(ticket, code):
     return card
 
 
+# ── P2 订阅闸（FC-C · 2026-10-20） ───────────────────────────
+# 模式开关：observe=只留痕不拦截（P2 默认，零误伤）；enforce=拦截未订阅
+# 并回引导卡。M3（收银台上线）后切 enforce 需另批（派工单 2026-10-20 FC-C）。
+SUBSCRIPTION_GATE_MODE = "observe"
+
+
+def _load_is_entitled():
+    """按 FC-B 契约加载 subscription_store.is_entitled；失败返回 None。"""
+    try:
+        from subscription_store import is_entitled  # noqa: 延迟导入
+        return is_entitled
+    except Exception:
+        return None
+
+
+def subscription_gate(open_id, kind):
+    """入向订阅闸 → (allowed, reason)（意图识别后、业务执行前调用）。
+
+    - owner 白名单（is_allowed）→ (True, "owner_exempt")，不咨询账本、不留痕；
+    - is_entitled 契约调用：(open_id, kind) -> (bool, reason)；
+      import 失败或调用异常 → 降级放行 (True, "store_unavailable_fail_open")；
+    - 判定未订阅：observe → (True, "observe:<reason>") 只留痕不拦截；
+      enforce → (False, reason) 拦截。
+    每次真实咨询（非 owner 豁免）由 _gate_record 落一条诚实留痕。"""
+    if is_allowed(open_id):
+        return True, "owner_exempt"
+    checker = _load_is_entitled()
+    if checker is None:
+        allowed, reason = True, "store_unavailable_fail_open"
+    else:
+        try:
+            ok, rsn = checker(str(open_id), kind)
+        except Exception as exc:
+            log("is_entitled 异常，降级放行 sender=%s：%r" % (_mask(open_id), exc))
+            allowed, reason = True, "store_unavailable_fail_open"
+        else:
+            if ok:
+                allowed, reason = True, str(rsn or "entitled")
+            elif SUBSCRIPTION_GATE_MODE == "enforce":
+                allowed, reason = False, str(rsn or "not_entitled")
+            else:
+                allowed, reason = True, "observe:%s" % (rsn or "not_entitled")
+    _gate_record(open_id, kind, allowed, reason)
+    return allowed, reason
+
+
+def _gate_record(open_id, kind, allowed, reason):
+    """闸咨询诚实留痕（owner 豁免不记）：沿用 tickets ledger 机制，
+    ticket="-" 与身份闸拒绝行同式。留痕失败不阻断主流程（closed on failure）。"""
+    try:
+        _append_ledger(_tickets_path(), {
+            "ticket": "-", "ts": _now_iso(), "open_id": str(open_id or ""),
+            "msg_id": "", "chat_type": "-",
+            "route": "subscription_gate",
+            "status": ("blocked" if not allowed else
+                       ("observe_pass"
+                        if str(reason).startswith("observe:") else "allowed")),
+            "evidence": str(reason), "duplicate_of": "",
+            "detail": {"kind": kind, "mode": SUBSCRIPTION_GATE_MODE},
+            "receipt_ack": "-", "receipt_result": "-"})
+    except Exception:
+        pass
+
+
+def _subscription_guide_card():
+    """订阅引导卡（灰卡 🔒 订阅服务）：M3 前无收银台，不放购买链接。"""
+    try:
+        from card_templates import apply_card_template
+        card, _mt = apply_card_template(
+            "subscription_guide", {"text": "订阅引导"}, "interactive")
+        if isinstance(card, dict) and card.get("elements"):
+            return card
+    except Exception:
+        pass  # closed on failure：模板不可用降级内联灰卡，拦截语义不丢
+    return {"config": {"wide_screen_mode": True},
+            "header": {"template": "grey",
+                       "title": {"tag": "plain_text",
+                                 "content": "🔒 订阅服务"}},
+            "elements": [{"tag": "div", "text": {"tag": "lark_md", "content":
+                          "当前账号未开通订阅，盯盘/预警能力暂不可用，请联系开通。"}}]}
+
+
 # ── 主入口 ───────────────────────────────────────────────────
 def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
     """bot 兜底文本入口 → {consumed, ...}。
@@ -688,6 +770,16 @@ def handle_inbound(open_id, text, msg_id, chat_type="p2p"):
     route, payload = classify(text)
     ticket = new_ticket()
     log("受理 %s route=%s sender=%s" % (ticket, route, _mask(open_id)))
+
+    if route != "unclear":  # P2 订阅闸：意图识别后、业务执行前（observe 默认零误伤）
+        allowed, gate_reason = subscription_gate(open_id, route)
+        if not allowed:  # enforce 拦截：回引导卡，业务不执行（留痕已由闸落一条）
+            ok, why = _send_card(_subscription_guide_card(), open_id)
+            log("订阅闸拦截 %s route=%s reason=%s" % (
+                ticket, route, gate_reason))
+            return {"consumed": True, "ticket": ticket, "route": route,
+                    "status": "blocked_subscription", "gate": gate_reason,
+                    "receipt": _rs(ok, why)}
 
     if route == "unclear":
         ok, why = _send_card(_clarify_card(ticket), open_id)
