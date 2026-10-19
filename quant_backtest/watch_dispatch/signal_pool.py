@@ -53,7 +53,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any
+from typing import Any, Protocol
 
 from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity
 from quant_backtest.watch_dispatch.canonical import utc_text
@@ -62,6 +62,8 @@ from quant_backtest.watch_dispatch.evidence_store import EvidenceStore
 __all__ = [
     "ACCEPTED_VERIFIED_OUTCOME",
     "AcceptanceReceipt",
+    "AttemptBinding",
+    "ReceiptBindingPort",
     "SignalPool",
     "SignalPoolDraft",
     "SignalPoolEntry",
@@ -99,6 +101,12 @@ CLAIM_STATE_INVALID = "CLAIM_STATE_INVALID"
 ACCEPT_STATE_INVALID = "ACCEPT_STATE_INVALID"
 RECEIPT_INVALID = "RECEIPT_INVALID"
 RECEIPT_OUTCOME_INVALID = "RECEIPT_OUTCOME_INVALID"
+RECEIPT_VERIFIER_REQUIRED = "RECEIPT_VERIFIER_REQUIRED"
+RECEIPT_ATTEMPT_UNKNOWN = "RECEIPT_ATTEMPT_UNKNOWN"
+RECEIPT_OUTCOME_MISMATCH = "RECEIPT_OUTCOME_MISMATCH"
+RECEIPT_REF_MISMATCH = "RECEIPT_REF_MISMATCH"
+RECEIPT_ROUTE_MISMATCH = "RECEIPT_ROUTE_MISMATCH"
+RECEIPT_IDENTITY_MISMATCH = "RECEIPT_IDENTITY_MISMATCH"
 UTC_REQUIRED = "UTC_REQUIRED"
 REVOKE_FINAL = "REVOKE_FINAL"
 EPOCH_INVALID = "EPOCH_INVALID"
@@ -201,6 +209,26 @@ class AcceptanceReceipt:
         _label(self.external_ref, "RECEIPT_EXTERNAL_REF")
         if self.outcome != ACCEPTED_VERIFIED_OUTCOME or type(self.outcome) is not str:
             raise SignalPoolError(RECEIPT_OUTCOME_INVALID)
+
+
+@dataclass(frozen=True)
+class AttemptBinding:
+    """Read-only outbox attempt evidence and its frozen-envelope identity."""
+
+    attempt_id: str
+    external_message_id: str
+    outcome: str
+    route: str
+    event_id: str
+    evidence_hash: str
+    evidence_version: int
+
+
+class ReceiptBindingPort(Protocol):
+    """Look up a settled attempt without mutating either outbox or pool."""
+
+    def binding_for(self, attempt_id: str) -> AttemptBinding | None:
+        """Return the attempt's receipt binding, or None when unavailable."""
 
 
 @dataclass(frozen=True)
@@ -364,9 +392,11 @@ class SignalPool:
     # ------------------------------------------------------------------
     # acceptance
     # ------------------------------------------------------------------
-    def mark_accepted(self, signal_id: str, *,
-                      receipt: AcceptanceReceipt) -> SignalPoolEntry:
-        """Close the loop CLAIMED -> ACCEPTED with an upstream receipt."""
+    def mark_accepted(self, signal_id: str, *, receipt: AcceptanceReceipt,
+                      binding_port: ReceiptBindingPort) -> SignalPoolEntry:
+        """Accept only a settled attempt bound to this signal's exact evidence."""
+        if binding_port is None or not callable(getattr(binding_port, "binding_for", None)):
+            raise SignalPoolError(RECEIPT_VERIFIER_REQUIRED)
         if type(receipt) is not AcceptanceReceipt:
             raise SignalPoolError(RECEIPT_INVALID)
         entry = self._entries.get(signal_id)
@@ -374,6 +404,21 @@ class SignalPool:
             raise SignalPoolError(SIGNAL_UNKNOWN)
         if entry.status != STATUS_CLAIMED:
             raise SignalPoolError(ACCEPT_STATE_INVALID)
+        try:
+            binding = binding_port.binding_for(receipt.attempt_id)
+        except Exception as exc:
+            raise SignalPoolError(RECEIPT_ATTEMPT_UNKNOWN) from exc
+        if type(binding) is not AttemptBinding or binding.attempt_id != receipt.attempt_id:
+            raise SignalPoolError(RECEIPT_ATTEMPT_UNKNOWN)
+        if binding.outcome != ACCEPTED_VERIFIED_OUTCOME:
+            raise SignalPoolError(RECEIPT_OUTCOME_MISMATCH)
+        if binding.external_message_id != receipt.external_ref:
+            raise SignalPoolError(RECEIPT_REF_MISMATCH)
+        if binding.route != receipt.route or binding.route != "QUANT_UPSTREAM_REPORT":
+            raise SignalPoolError(RECEIPT_ROUTE_MISMATCH)
+        if (binding.event_id, binding.evidence_hash, binding.evidence_version) != (
+                entry.event_id, entry.evidence_hash, entry.evidence_version):
+            raise SignalPoolError(RECEIPT_IDENTITY_MISMATCH)
         accepted = _transition(entry, replace(entry, status=STATUS_ACCEPTED))
         self._entries[signal_id] = accepted
         self._leases.pop(signal_id, None)

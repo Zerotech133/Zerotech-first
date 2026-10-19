@@ -8,6 +8,7 @@ execution semantics anywhere.
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -15,7 +16,7 @@ import pytest
 from quant_backtest.watch_dispatch import EvidenceStore, freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import AgentIdentity
 from quant_backtest.watch_dispatch.signal_pool import (
-    ACCEPTED_VERIFIED_OUTCOME, AcceptanceReceipt, SignalPool, SignalPoolDraft,
+    ACCEPTED_VERIFIED_OUTCOME, AcceptanceReceipt, AttemptBinding, SignalPool, SignalPoolDraft,
     SignalPoolEntry, SignalPoolError, STATUS_ACCEPTED, STATUS_CLAIMED,
     STATUS_OPEN, STATUS_REVOKED,
 )
@@ -82,6 +83,25 @@ def receipt(attempt_id: str = "att-1", **changes) -> AcceptanceReceipt:
                   external_ref="ack-1", outcome=ACCEPTED_VERIFIED_OUTCOME)
     fields.update(changes)
     return AcceptanceReceipt(**fields)
+
+
+class StubBindingPort:
+    """Explicit test-only settled-attempt proof for state-machine cases."""
+
+    def __init__(self, env, accepted_receipt=None, binding=None):
+        accepted_receipt = accepted_receipt or receipt()
+        self.binding = binding if binding is not None else AttemptBinding(
+            attempt_id=accepted_receipt.attempt_id,
+            external_message_id=accepted_receipt.external_ref,
+            outcome=ACCEPTED_VERIFIED_OUTCOME,
+            route=accepted_receipt.route,
+            event_id=env.event_id,
+            evidence_hash=env.envelope_hash,
+            evidence_version=env.evidence_version,
+        )
+
+    def binding_for(self, attempt_id: str) -> AttemptBinding | None:
+        return self.binding if self.binding.attempt_id == attempt_id else None
 
 
 def fresh_pool(env) -> tuple[SignalPool, EvidenceStore]:
@@ -226,7 +246,7 @@ def test_mark_accepted_closes_claimed_loop():
     pool, store = fresh_pool(env)
     pool.append(draft("sig-1", env), producer=watch_agent(), store=store, now=T)
     pool.claim("sig-1", lease_until=LATER, now=T)
-    accepted = pool.mark_accepted("sig-1", receipt=receipt())
+    accepted = pool.mark_accepted("sig-1", receipt=receipt(), binding_port=StubBindingPort(env))
     assert accepted.status == STATUS_ACCEPTED
     assert accepted.epoch == 0
     assert pool.receipt("sig-1") == receipt()
@@ -241,8 +261,86 @@ def test_mark_accepted_rejects_wrong_receipt_outcome():
     pool.append(draft("sig-1", env), producer=watch_agent(), store=store, now=T)
     pool.claim("sig-1", lease_until=LATER, now=T)
     with pytest.raises(SignalPoolError, match="RECEIPT_OUTCOME_INVALID"):
-        pool.mark_accepted("sig-1", receipt=receipt(outcome="UNKNOWN"))
+        pool.mark_accepted("sig-1", receipt=receipt(outcome="UNKNOWN"),
+                           binding_port=StubBindingPort(env))
     assert pool.get("sig-1").status == STATUS_CLAIMED
+
+
+def _claimed_pool(env=None):
+    env = env or envelope_v1()
+    pool, store = fresh_pool(env)
+    pool.append(draft("sig-1", env), producer=watch_agent(), store=store, now=T)
+    pool.claim("sig-1", lease_until=LATER, now=T)
+    return pool, env
+
+
+def _assert_claim_unchanged(pool):
+    assert pool.get("sig-1").status == STATUS_CLAIMED
+    assert pool.receipt("sig-1") is None
+    assert pool._leases["sig-1"] == LATER
+
+
+def test_binding_port_is_mandatory_b1():
+    pool, env = _claimed_pool()
+    with pytest.raises(TypeError):
+        pool.mark_accepted("sig-1", receipt=receipt())
+    with pytest.raises(SignalPoolError, match="RECEIPT_VERIFIER_REQUIRED"):
+        pool.mark_accepted("sig-1", receipt=receipt(), binding_port=None)
+    _assert_claim_unchanged(pool)
+
+
+def test_binding_missing_attempt_b2():
+    pool, env = _claimed_pool()
+    port = StubBindingPort(env, binding=replace(StubBindingPort(env).binding,
+                                                attempt_id="another"))
+    with pytest.raises(SignalPoolError, match="RECEIPT_ATTEMPT_UNKNOWN"):
+        pool.mark_accepted("sig-1", receipt=receipt(), binding_port=port)
+    _assert_claim_unchanged(pool)
+
+
+@pytest.mark.parametrize("field,value,error", [
+    ("external_message_id", "wrong-ref", "RECEIPT_REF_MISMATCH"),
+    ("outcome", "UNKNOWN", "RECEIPT_OUTCOME_MISMATCH"),
+    ("route", "FEISHU", "RECEIPT_ROUTE_MISMATCH"),
+    ("event_id", "other-event", "RECEIPT_IDENTITY_MISMATCH"),
+    ("evidence_hash", "b" * 64, "RECEIPT_IDENTITY_MISMATCH"),
+    ("evidence_version", 2, "RECEIPT_IDENTITY_MISMATCH"),
+])
+def test_binding_field_mismatch_fails_closed_b3_to_b6(field, value, error):
+    pool, env = _claimed_pool()
+    port = StubBindingPort(env, binding=replace(StubBindingPort(env).binding,
+                                                **{field: value}))
+    with pytest.raises(SignalPoolError, match=error):
+        pool.mark_accepted("sig-1", receipt=receipt(), binding_port=port)
+    _assert_claim_unchanged(pool)
+
+
+def test_cross_signal_real_attempt_cannot_be_reused_b5():
+    first, env = _claimed_pool()
+    second, other = _claimed_pool(envelope_v1("ev-other"))
+    true_binding = StubBindingPort(env)
+    assert first.mark_accepted("sig-1", receipt=receipt(),
+                               binding_port=true_binding).status == STATUS_ACCEPTED
+    with pytest.raises(SignalPoolError, match="RECEIPT_IDENTITY_MISMATCH"):
+        second.mark_accepted("sig-1", receipt=receipt(), binding_port=true_binding)
+    _assert_claim_unchanged(second)
+
+
+def test_port_exception_fails_closed_and_expired_lease_recycles_b9():
+    pool, env = _claimed_pool()
+
+    class BrokenPort:
+        def binding_for(self, attempt_id: str):
+            raise RuntimeError("down")
+
+    with pytest.raises(SignalPoolError, match="RECEIPT_ATTEMPT_UNKNOWN"):
+        pool.mark_accepted("sig-1", receipt=receipt(), binding_port=BrokenPort())
+    _assert_claim_unchanged(pool)
+    assert pool.get("sig-1", now=LATER + timedelta(seconds=1)).status == STATUS_OPEN
+    pool.claim("sig-1", lease_until=LATER + timedelta(minutes=10),
+               now=LATER + timedelta(seconds=2))
+    assert pool.mark_accepted("sig-1", receipt=receipt(),
+                              binding_port=StubBindingPort(env)).status == STATUS_ACCEPTED
 
 
 def test_mark_accepted_on_open_is_rejected():
@@ -250,7 +348,7 @@ def test_mark_accepted_on_open_is_rejected():
     pool, store = fresh_pool(env)
     pool.append(draft("sig-1", env), producer=watch_agent(), store=store, now=T)
     with pytest.raises(SignalPoolError, match="ACCEPT_STATE_INVALID"):
-        pool.mark_accepted("sig-1", receipt=receipt())
+        pool.mark_accepted("sig-1", receipt=receipt(), binding_port=StubBindingPort(env))
     assert pool.get("sig-1").status == STATUS_OPEN
 
 
@@ -261,7 +359,7 @@ def test_mark_accepted_on_revoked_is_rejected():
     pool.claim("sig-1", lease_until=LATER, now=T)
     pool.revoke("sig-1", now=T + timedelta(seconds=1))
     with pytest.raises(SignalPoolError, match="ACCEPT_STATE_INVALID"):
-        pool.mark_accepted("sig-1", receipt=receipt())
+        pool.mark_accepted("sig-1", receipt=receipt(), binding_port=StubBindingPort(env))
 
 
 def test_revoke_blocks_every_further_transition():
@@ -274,7 +372,7 @@ def test_revoke_blocks_every_further_transition():
     with pytest.raises(SignalPoolError, match="CLAIM_STATE_INVALID"):
         pool.claim("sig-1", lease_until=LATER, now=T + timedelta(seconds=2))
     with pytest.raises(SignalPoolError, match="ACCEPT_STATE_INVALID"):
-        pool.mark_accepted("sig-1", receipt=receipt())
+        pool.mark_accepted("sig-1", receipt=receipt(), binding_port=StubBindingPort(env))
     assert pool.get("sig-1", now=T + timedelta(seconds=2)).status == STATUS_REVOKED
     assert pool.list_open(T + timedelta(seconds=2)) == ()
 
@@ -380,7 +478,8 @@ def test_n1_and_n_gt1_producers_share_identical_api_semantics():
     solo.append(draft("sig-a", env), producer=solo_producer, store=store, now=T)
     solo.append(draft("sig-a", env), producer=solo_producer, store=store, now=T)
     solo.claim("sig-a", lease_until=LATER, now=T)
-    solo_accepted = solo.mark_accepted("sig-a", receipt=receipt(attempt_id="att-a"))
+    solo_accepted = solo.mark_accepted("sig-a", receipt=receipt(attempt_id="att-a"),
+                                       binding_port=StubBindingPort(env, receipt(attempt_id="att-a")))
     assert solo_accepted.status == STATUS_ACCEPTED
     assert solo_accepted.epoch == 0
     assert solo_accepted.co_signed is None
@@ -405,6 +504,7 @@ def test_n1_and_n_gt1_producers_share_identical_api_semantics():
     assert len(duo.list_open(T)) == 2
     # Same lifecycle reachable for either entry, identical to the N=1 flow.
     duo.claim("sig-b2", lease_until=LATER, now=T)
-    duo_accepted = duo.mark_accepted("sig-b2", receipt=receipt(attempt_id="att-b"))
+    duo_accepted = duo.mark_accepted("sig-b2", receipt=receipt(attempt_id="att-b"),
+                                     binding_port=StubBindingPort(env, receipt(attempt_id="att-b")))
     assert duo_accepted.status == STATUS_ACCEPTED
     assert duo_accepted.epoch == 0
