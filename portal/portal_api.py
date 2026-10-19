@@ -3916,6 +3916,11 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._strategies_page()
         elif path == "/intel":
             self._html_file(os.path.join(ROOT, "intel_workbench.html"))
+        elif path == "/notify-command":
+            # K-ORG-201 通知指挥只读投影页（FB-C 2026-10-19 个人 OS 入口三件套：
+            # api_common.py intel 域导航「📨 通知指挥」落地页，零参数只读 GET）
+            self._html_file(os.path.join(ROOT, "static",
+                                          "notify_command.html"))
         elif path == "/intel/stream":
             self._intel_page()
         elif path == "/gzh":

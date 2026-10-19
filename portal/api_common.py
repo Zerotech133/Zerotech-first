@@ -322,7 +322,8 @@ DOMAIN_NAV_GROUPS = {
         ("🧬 数据血缘", (
             ("🧬 血缘总览", "/lineage.html", "lineage"),)),
         ("💼 情报变现", (
-            ("🛰 推送中台", "/push/", "pushhub"),)),
+            ("🛰 推送中台", "/push/", "pushhub"),
+            ("📨 通知指挥", "/notify-command", "notifycmd"),)),
     ),
     "creator": ((None, (
         ("🎬 创作专项", "/creator", "creator"),

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>通知指挥 · 只读投影｜零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 78% -25%,var(--bg-surface),transparent 48%),var(--bg-page);color:var(--text);font:14px/1.6 var(--font-ui)}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+a{color:var(--link)}
+.main{max-width:var(--page-w);margin:auto;padding:22px clamp(14px,3vw,28px) 48px}
+.eyebrow{font:700 11px var(--font-mono);letter-spacing:.18em;color:var(--color-ok);margin:6px 0 8px}
+h1{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.02em;line-height:1.25;margin:0 0 8px}
+.lead{margin:0;color:var(--text-dim);font-size:13px;line-height:1.8;max-width:760px}
+.readonly-banner{margin:14px 0 0;border:1px solid var(--border);border-left:3px solid var(--color-warn);background:var(--bg-raised);border-radius:var(--r-s);padding:10px 14px;font-size:12.5px;color:var(--text-dim)}
+.readonly-banner b{color:var(--color-warn);font-weight:600}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:14px 0 4px;font:12px var(--font-mono);color:var(--text-dim)}
+.meta-row .dot{color:var(--border)}
+#refresh{border:1px solid var(--border);background:var(--bg-raised);border-radius:var(--r-pill);padding:5px 14px;font-size:12px}
+#refresh:hover{border-color:var(--link);color:var(--link)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 12px}
+.chip{flex:1 1 150px;min-width:140px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:10px 12px}
+.chip small{display:block;font-size:11px;color:var(--text-dim);margin-bottom:4px}
+.chip b{font:700 20px var(--font-mono)}
+.chip .st{font-size:11px;color:var(--text-dim)}
+.chip.review{border-top:2px solid var(--color-warn)}
+.chip.blocked{border-top:2px solid var(--color-err)}
+.chip.auto{border-top:2px solid var(--color-ok)}
+.chip.idle{border-top:2px solid var(--text-dim)}
+.chip.review b{color:var(--color-warn)}.chip.blocked b{color:var(--color-err)}
+.chip.auto b{color:var(--color-ok)}.chip.idle b{color:var(--text-dim)}
+.notice{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);padding:10px 14px;font-size:12.5px;color:var(--text-dim);margin:0 0 12px;line-height:1.7}
+.notice.warn{border-color:#6b5326;background:#2b230f;color:#e3c98c}
+.notice b{color:var(--text)}
+details.group{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);margin:0 0 10px;overflow:hidden}
+details.group>summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:11px 14px;background:var(--bg-raised);font-size:13.5px;font-weight:600}
+details.group>summary::-webkit-details-marker{display:none}
+details.group>summary .count{font:700 12px var(--font-mono);color:var(--text-dim);margin-left:auto}
+details.group>summary .caret{font-size:10px;color:var(--text-dim)}
+details[open].group>summary .caret{transform:rotate(180deg)}
+.g-review>summary{border-left:3px solid var(--color-warn)}
+.g-blocked>summary{border-left:3px solid var(--color-err)}
+.g-auto>summary{border-left:3px solid var(--color-ok)}
+.g-idle>summary{border-left:3px solid var(--text-dim)}
+.g-body{max-height:min(52vh,430px);overflow:auto;scrollbar-width:thin;padding:4px 12px 10px}
+.item{border-top:1px solid var(--border);padding:11px 2px 12px}
+.item:first-child{border-top:0}
+.item-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.item-head strong{font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.badge{font:600 10.5px/1 var(--font-mono);letter-spacing:.04em;border:1px solid var(--border);border-radius:var(--r-pill);padding:4px 9px;color:var(--text-dim);white-space:nowrap}
+.badge.st-review{color:var(--color-warn);border-color:#6b5326;background:#2b230f}
+.badge.st-blocked{color:var(--color-err);border-color:#6e2f2c;background:#2d1614}
+.badge.st-auto{color:var(--color-ok);border-color:#1f4d2b;background:#12261e}
+.badge.st-idle{color:var(--text-dim)}
+.badge.ev-live_sent{color:var(--color-ok);border-color:#1f4d2b;background:#12261e}
+.badge.ev-drilled{color:var(--color-warn);border-color:#6b5326;background:#2b230f}
+.badge.ev-dead_letter{color:var(--color-err);border-color:#6e2f2c;background:#2d1614}
+.badge.ev-api_accepted{color:var(--link);border-color:#2c4a75;background:#12203a}
+.badge.ev-receiver_verified{color:var(--color-ok);border-color:#1f4d2b;background:#12261e}
+.badge.ev-none{color:var(--text-dim)}
+.badge.ev-designed,.badge.ev-code_verified,.badge.ev-scheduled_first_run{color:var(--text-dim)}
+.reason{font-size:12px;color:var(--text-dim);line-height:1.7;margin:2px 0 4px;overflow-wrap:anywhere}
+.facts{display:flex;flex-wrap:wrap;gap:4px 14px;font:11px var(--font-mono);color:var(--text-dim)}
+.facts span b{color:var(--gray-6);font-weight:500}
+.facts a{font-size:11px}
+.empty-state{padding:16px 4px;color:var(--text-dim);font-size:12.5px;line-height:1.8}
+.degraded{border:1px solid #6e2f2c;border-left:3px solid var(--color-err);background:#2d1614;border-radius:var(--r-m);padding:14px 16px;margin:16px 0}
+.degraded h2{font-size:15px;color:var(--color-err);margin:0 0 6px}
+.degraded p{font-size:12.5px;color:#e8b4b1;margin:0 0 10px;line-height:1.75;overflow-wrap:anywhere}
+.degraded button{border:1px solid #6e2f2c;background:#2d1614;color:#f1c1bc;border-radius:var(--r-pill);padding:6px 16px;font-size:12px}
+.degraded button:hover{border-color:var(--color-err)}
+footer.legend{margin-top:22px;border-top:1px solid var(--border);padding-top:14px;font-size:11.5px;color:var(--text-dim);line-height:1.9}
+footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
+footer.legend .lg-row{margin-bottom:10px;overflow-wrap:anywhere}
+footer.legend .lg-row b{color:var(--gray-6);font-weight:600}
+@media(max-width:640px){
+ .main{padding-top:14px}
+ .chip{flex:1 1 44%}
+ .g-body{max-height:60vh}
+ .facts{gap:2px 10px}
+}
+</style>
+</head>
+<body>
+<main class="main">
+<header>
+<div class="eyebrow">NOTIFY COMMAND · READ-ONLY PROJECTION</div>
+<h1>📨 通知指挥</h1>
+<p class="lead">通知四态队列的只读投影：数据同源取自 <b>/api/notify/queue</b>（决策 DB、发送流水、deadline 旗标、矩阵发送账四本在役账本的聚合）。本页不审批、不重发、不触发任何发送。</p>
+<p class="readonly-banner"><b>只读投影 · 审批与重发请往飞书</b>——本页没有任何写操作；「API 受理」不等于「已读」，无接收端核实证据的状态一律显示「待核」。</p>
+<div class="meta-row">
+<span id="m-generated">聚合时点：读取中…</span><span class="dot">·</span>
+<span id="m-endpoint">endpoint: /api/notify/queue</span><span class="dot">·</span>
+<button type="button" id="refresh">↻ 刷新</button>
+</div>
+</header>
+
+<div id="degraded" class="degraded" hidden>
+<h2>⚠ 数据拉取失败 · 已降级</h2>
+<p id="degraded-why">无法读取 /api/notify/queue。以下为空态展示，不代表「无通知事项」；请核对服务状态后重试。</p>
+<button type="button" id="retry">重试</button>
+</div>
+
+<section id="states" class="chips" aria-label="四态计数"></section>
+<div id="notices"></div>
+<div id="groups"></div>
+
+<footer class="legend" id="legend"></footer>
+</main>
+
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const text=v=>(v===null||v===undefined||v==='')?'':String(v);
+const esc=v=>text(v);
+const STATE_ORDER=['review','blocked','auto','idle'];
+const STATE_FALLBACK={
+ review:'待老田确认',blocked:'异常/阻断（投递失败或身份不匹配）',
+ auto:'自动决策（授权策略内已执行）',idle:'不打扰（无新事实，仅留记录）'};
+const EVL_FALLBACK={
+ designed:'设计（未落码）',code_verified:'代码验证（单测通过，未真实发送）',
+ drilled:'演练（DRYRUN/人工试发路径验证）',
+ live_sent:'真实发送（人工触发，已送达）',
+ scheduled_first_run:'自然定时首跑（计划任务自动触发过）'};
+const EVD_FALLBACK={
+ api_accepted:'API 受理（发送 rc=0，不等于接收端可读）',
+ receiver_verified:'接收端核实（message_id 反查确认消息存在）',
+ dead_letter:'死信（投递失败，待补达，不冒充原发送成功）'};
+const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined&&txt!==null)n.textContent=txt;return n;};
+
+async function load(){
+ $('degraded').hidden=true;
+ $('m-generated').textContent='聚合时点：读取中…';
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
+ try{
+  const r=await fetch('/api/notify/queue',{method:'GET',cache:'no-store',signal:ctl.signal,credentials:'same-origin'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  if(!d||typeof d!=='object'||d.ok===false)throw new Error('来源报错或结构不符');
+  if(!Array.isArray(d.items))throw new Error('来源缺 items 数组');
+  render(d);
+ }catch(e){
+  $('degraded-why').textContent='无法读取 /api/notify/queue（'+(e&&e.message?e.message:'未知错误')+'）。本页不显示静态兜底数据；不可把「读取失败」当成「无通知事项」，请核对服务后重试。';
+  $('degraded').hidden=false;
+  $('m-generated').textContent='聚合时点：读取失败';
+  $('states').replaceChildren();
+  $('notices').replaceChildren();
+  $('groups').replaceChildren();
+  $('legend').replaceChildren();
+ }finally{clearTimeout(timer);}
+}
+
+function stateLabel(p,s){
+ const lg=(p.legend&&p.legend.queue_states)||{};
+ return lg[s]||STATE_FALLBACK[s]||s;
+}
+function deliveryBadge(v){
+ if(!v)return ['ev-none','暂无凭证'];
+ const lg=(window.__legend&&window.__legend.evidence_delivery)||{};
+ if(v==='receiver_verified')return ['ev-receiver_verified',lg[v]||EVD_FALLBACK[v]||v];
+ if(v==='api_accepted')return ['ev-api_accepted',lg[v]||EVD_FALLBACK[v]||v];
+ if(v==='dead_letter')return ['ev-dead_letter',lg[v]||EVD_FALLBACK[v]||v];
+ return ['ev-none',lg[v]||EVD_FALLBACK[v]||v];
+}
+function lifecycleBadge(v){
+ if(!v)return null;
+ const lg=(window.__legend&&window.__legend.evidence_lifecycle)||{};
+ return ['ev-'+v,lg[v]||EVL_FALLBACK[v]||v];
+}
+
+function renderChips(p){
+ const box=$('states');box.replaceChildren();
+ const st=p.states||{};
+ for(const s of STATE_ORDER){
+  const c=el('div','chip '+s);
+  c.append(el('small',null,stateLabel(p,s).split('（')[0]),
+   el('b',null,String(st[s]===undefined?0:st[s])),
+   el('span','st',s+' · '+(st[s]===undefined?0:st[s])+' 条'));
+  box.append(c);
+ }
+}
+
+function renderNotices(p){
+ const box=$('notices');box.replaceChildren();
+ const meta=p.meta||{};
+ if(meta.drills>0){
+  box.append(el('p','notice warn','🧪 演练记录 '+meta.drills+' 条：来自 DRYRUN 预演账，演练不计入队列、不算真实发送。'));
+ }
+ if(meta.truncated){
+  box.append(el('p','notice warn','⚠ 队列总量超过单页上限（200 条），已按「review → blocked → auto → idle」优先截断；被截断条目不在此展示，不可据此判断全貌。'));
+ }
+ const errs=[].concat(Array.isArray(p.errors)?p.errors:[],
+  Array.isArray(p.channels_errors)?p.channels_errors:[]);
+ if(errs.length){
+  const n=el('p','notice warn');
+  n.append(el('b',null,'⚠ 子源缺口（聚合成功 ≠ 所有子源健康）：'));
+  n.append(document.createTextNode(errs.join('；')));
+  box.append(n);
+ }
+ const src=meta.sources||{};
+ box.append(el('p','notice','账本条目来源：决策 DB '+text(src.decision_db||0)+' · 发送流水 '+text(src.push_flow||0)+' · deadline 旗标 '+text(src.deadline_flag||0)+' · 矩阵发送账 '+text(src.matrix_log||0)+'。'));
+}
+
+function renderItem(p,x){
+ const card=el('div','item');
+ const head=el('div','item-head');
+ head.append(el('strong',null,text(x.title)||'（无标题事项）'));
+ const stBadge=el('span','badge st-'+esc(x.state));
+ stBadge.textContent=text(x.state_label)||stateLabel(p,x.state);
+ head.append(stBadge);
+ card.append(head);
+ const badges=el('div','badges');
+ const lb=lifecycleBadge(text(x.evidence_lifecycle));
+ if(lb){const b=el('span','badge '+lb[0]);b.textContent=lb[1];badges.append(b);}
+ const db=deliveryBadge(text(x.evidence_delivery));
+ const b2=el('span','badge '+db[0]);b2.textContent=db[1];badges.append(b2);
+ // 只读纪律：除接收端核实外，一切完成表述均为「待核」
+ const confirm=el('span','badge '+(text(x.evidence_delivery)==='receiver_verified'?'ev-receiver_verified':'ev-none'));
+ confirm.textContent=text(x.evidence_delivery)==='receiver_verified'?'已送达核实':'送达待核';
+ badges.append(confirm);
+ card.append(badges);
+ if(text(x.reason))card.append(el('p','reason',x.reason));
+ const facts=el('div','facts');
+ const add=(k,v)=>{if(text(v)){const s=el('span');s.append(el('b',null,k+': '));s.append(document.createTextNode(text(v)));facts.append(s);}};
+ add('来源',x.source);add('类型',x.kind);add('目标',x.target);
+ add('创建',x.created_at);add('发送时点',x.send_at);
+ add('结果',x.outcome);add('调用方',x.caller);add('依据',x.basis);
+ if(facts.childNodes.length)card.append(facts);
+ const doc=x.doc&&typeof x.doc==='object'?x.doc:null;
+ if(doc&&text(doc.url)){
+  const wrap=el('p','facts');const a=el('a',null,'📄 '+(text(doc.title)||doc.url));
+  a.href=doc.url;a.target='_blank';a.rel='noopener noreferrer';wrap.append(a);card.append(wrap);
+ }
+ return card;
+}
+
+function renderGroups(p){
+ const box=$('groups');box.replaceChildren();
+ const items=(p.items||[]).filter(x=>x&&typeof x==='object');
+ for(const s of STATE_ORDER){
+  const list=items.filter(x=>x.state===s);
+  const d=el('details','group g-'+s);
+  if(s==='review'||s==='blocked')d.open=true;
+  const sum=el('summary');
+  sum.append(el('span','caret','▾'),el('span',null,stateLabel(p,s)),
+   el('span','count',list.length+' 条'));
+  d.append(sum);
+  const body=el('div','g-body');
+  if(!list.length){
+   body.append(el('p','empty-state','本态暂无记录。空态不等于「没有该状态的事项」——只代表四本账本此刻没有可展示条目。'));
+  }else{
+   for(const x of list)body.append(renderItem(p,x));
+  }
+  d.append(body);
+  box.append(d);
+ }
+}
+
+function renderLegend(p){
+ const f=$('legend');f.replaceChildren();
+ window.__legend=p.legend||{};
+ const lg=p.legend||{};
+ f.append(el('h3',null,'图例与边界'));
+ const q=el('div','lg-row');
+ q.append(el('b',null,'四态：'));
+ for(const s of STATE_ORDER){
+  const b=el('span','badge st-'+s);b.textContent=s+' = '+(lg.queue_states&&lg.queue_states[s]||STATE_FALLBACK[s]);q.append(b);q.append(document.createTextNode(' '));
+ }
+ f.append(q);
+ const e1=el('div','lg-row');e1.append(el('b',null,'生命周期证据：'));
+ for(const k in (lg.evidence_lifecycle||{})){
+  const b=el('span','badge ev-'+k);b.textContent=k+' = '+lg.evidence_lifecycle[k];e1.append(b);e1.append(document.createTextNode(' '));
+ }
+ f.append(e1);
+ const e2=el('div','lg-row');e2.append(el('b',null,'送达证据：'));
+ const eds=lg.evidence_delivery||EVD_FALLBACK;
+ for(const k in eds){
+  const b=el('span','badge ev-'+k);b.textContent=k+' = '+eds[k];e2.append(b);e2.append(document.createTextNode(' '));
+ }
+ e2.append(el('span','badge ev-none','（空）= 暂无凭证，不硬贴'));
+ f.append(e2);
+ if(text(lg.idle_note))f.append(el('div','lg-row','ℹ '+lg.idle_note));
+ const chs=Array.isArray(p.channels)?p.channels:[];
+ if(chs.length){
+  const c=el('div','lg-row');c.append(el('b',null,'频道登记（'+chs.length+'）：'));
+  c.append(document.createTextNode(chs.map(ch=>esc(ch.name||ch.id)+'（autonomy='+esc(ch.autonomy)+'）').join('；')));
+  f.append(c);
+ }
+ f.append(el('div','lg-row','纪律：本页只读投影，聚合时点（generated_at）不等于任何子源的健康时点；审批、重发与豁免请往飞书办理，本页不提供任何写操作。'));
+}
+
+function render(p){
+ $('m-generated').textContent='聚合时点：'+text(p.generated_at||'未提供')+'（非各子源生产时点）';
+ renderChips(p);renderNotices(p);renderGroups(p);renderLegend(p);
+}
+
+$('refresh').addEventListener('click',load);
+$('retry').addEventListener('click',load);
+load();
+setInterval(load,60000);
+})();
+</script>
+</body>
+</html>
