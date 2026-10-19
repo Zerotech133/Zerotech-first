@@ -47,21 +47,27 @@ def _set_wal(conn: sqlite3.Connection) -> str:
 
 
 def migrate(db_path, batch_size: int = 200, dry_run: bool = False) -> dict:
-    """执行幂等迁移，返回报告 dict（fail-visible：异常向上抛、退出码非 0）。"""
-    conn = sqlite3.connect(str(db_path), timeout=30)
+    """执行幂等迁移；预演仅以只读连接查询，不改变数据库持久状态。"""
+    if dry_run:
+        # as_uri() 对空格、问号、井号等路径字符转义；mode=ro 禁止新建缺失库。
+        db_uri = Path(db_path).resolve().as_uri() + "?mode=ro"
+        conn = sqlite3.connect(db_uri, uri=True, timeout=30)
+    else:
+        conn = sqlite3.connect(str(db_path), timeout=30)
     try:
         conn.execute("PRAGMA busy_timeout=30000")
-        wal = _set_wal(conn)
         if dry_run:
+            journal_mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
             rows = conn.execute(
                 "SELECT status_id, tickers FROM %s" % xtn._TABLE).fetchall()
             kinds = {}
             for _sid, tickers_raw in rows:
                 for it in xtn.normalize_tickers(tickers_raw):
                     kinds[it["kind"]] = kinds.get(it["kind"], 0) + 1
-            return {"db": str(db_path), "journal_mode": wal, "dry_run": True,
-                    "total": len(rows), "updated": 0, "skipped": 0,
-                    "kinds": kinds}
+            return {"db": str(db_path), "journal_mode": str(journal_mode),
+                    "dry_run": True, "total": len(rows), "updated": 0,
+                    "skipped": 0, "kinds": kinds}
+        wal = _set_wal(conn)
         added = xtn.ensure_norm_column(conn)
         report = xtn.backfill(conn, batch_size=batch_size)
         report.update({"db": str(db_path), "journal_mode": wal,

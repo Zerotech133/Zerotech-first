@@ -217,6 +217,73 @@ def test_backfill_rerun_zero_writes(tmp_db):
     assert before == after
 
 
+def test_migration_dry_run_is_read_only_and_preserves_delete_journal(tmp_path, monkeypatch):
+    """预演保持 delete 模式、文件字节、行与 sidecar 原样，且不走写入函数。"""
+    db = tmp_path / "dry run #1%.db"
+    with sqlite3.connect(db) as conn:
+        conn.execute(
+            "CREATE TABLE xq_status_classified (status_id TEXT PRIMARY KEY, "
+            "tickers TEXT)"
+        )
+        conn.executemany(
+            "INSERT INTO xq_status_classified VALUES (?, ?)",
+            [("s1", '["01810","沪深300指数"]'), ("s2", "[]")],
+        )
+        conn.commit()
+        assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+        before_rows = conn.execute(
+            "SELECT status_id, tickers FROM xq_status_classified ORDER BY status_id"
+        ).fetchall()
+    before_bytes = db.read_bytes()
+    sidecars = [Path(str(db) + suffix) for suffix in ("-journal", "-wal", "-shm")]
+    before_sidecars = {str(path): path.read_bytes() if path.exists() else None
+                       for path in sidecars}
+
+    def unexpected_write(*args, **kwargs):
+        raise AssertionError("dry-run must not invoke a migration write path")
+
+    monkeypatch.setattr(xnm, "_set_wal", unexpected_write)
+    monkeypatch.setattr(xtn, "ensure_norm_column", unexpected_write)
+    monkeypatch.setattr(xtn, "backfill", unexpected_write)
+    report = xnm.migrate(db, dry_run=True)
+    assert report == {
+        "db": str(db), "journal_mode": "delete", "dry_run": True,
+        "total": 2, "updated": 0, "skipped": 0,
+        "kinds": {"stock_hk": 1, "index": 1},
+    }
+    assert db.read_bytes() == before_bytes
+    assert {str(path): path.read_bytes() if path.exists() else None
+            for path in sidecars} == before_sidecars
+    with sqlite3.connect(db) as conn:
+        assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+        assert conn.execute(
+            "SELECT status_id, tickers FROM xq_status_classified ORDER BY status_id"
+        ).fetchall() == before_rows
+        assert [row[1] for row in conn.execute(
+            "PRAGMA table_info(xq_status_classified)"
+        )] == ["status_id", "tickers"]
+
+
+def test_migration_dry_run_read_only_file_and_missing_database(tmp_path):
+    """只读文件能安全预演；含 URI 特殊字符的缺失库明确失败且不新建。"""
+    db = tmp_path / "readonly #%.db"
+    with sqlite3.connect(db) as conn:
+        conn.execute("CREATE TABLE xq_status_classified (status_id TEXT, tickers TEXT)")
+        conn.execute("INSERT INTO xq_status_classified VALUES ('s1', '[\"00700\"]')")
+    original_mode = db.stat().st_mode
+    try:
+        db.chmod(0o444)
+        assert xnm.migrate(db, dry_run=True)["kinds"] == {"stock_hk": 1}
+        assert db.stat().st_mode & 0o222 == 0
+    finally:
+        db.chmod(original_mode)
+    missing = tmp_path / "missing #%.db"
+    with pytest.raises(sqlite3.OperationalError, match="unable to open database file"):
+        xnm.migrate(missing, dry_run=True)
+    assert not missing.exists()
+    assert not Path(str(missing) + "-journal").exists()
+
+
 def test_migration_script_end_to_end(tmp_path):
     """xq_norm_migrate.migrate 全链：加列+回填；重复跑零副作用。"""
     db = tmp_path / "mig.db"
