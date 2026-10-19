@@ -1281,6 +1281,36 @@ gap:14px;align-items:start}}
         else:
             hermes_up = _HERMES_UP_CACHE[1]
 
+        # K-ORG-190 / 软件工作台 P1：参谋长卡片真状态灯（三态不假绿）。
+        # 探针判例只 import 复用 org_command_api（不改其文件）：
+        #   probe=agent_platform/data/shadow/chief_last_run.log（每日 17:35
+        #   AgentChiefPush 落盘），mtime 距今 ≤26h 绿 / 超期黄 / 缺失灰。
+        # 三态判定单源自 org_command_api._heartbeat_state；本函数只补
+        # mtime 时间文本（green/stale 分支文件必存在，getmtime 安全）。
+        _chief_hb = dict(org_command_api.CHIEF_DEFAULT_HEARTBEAT)
+        try:
+            _chief_state = org_command_api._heartbeat_state(
+                {"heartbeat": _chief_hb}, STATION)
+        except Exception:
+            _chief_state = None  # 判定异常按灰态诚实降级，绝不假绿
+        _chief_probe = os.path.join(STATION, _chief_hb.get("probe", ""))
+        if _chief_state == "green":
+            _chief_light = (
+                "<span style='float:right;color:#3fb950;font-size:13px'>"
+                "● 昨日值班完成（%s）</span>" % e(time.strftime(
+                    "%H:%M", time.localtime(os.path.getmtime(_chief_probe)))))
+        elif _chief_state == "stale":
+            _chief_light = (
+                "<span style='float:right;color:#d29922;font-size:13px'>"
+                "● 值班日志过期（最近 %s）</span>" % e(time.strftime(
+                    "%Y-%m-%d %H:%M",
+                    time.localtime(os.path.getmtime(_chief_probe)))))
+        else:
+            # stale_after 非法/判定异常/文件缺失（no_ledger）→ 诚实灰
+            _chief_light = (
+                "<span style='float:right;color:#8b949e;font-size:13px'>"
+                "○ 值班日志未建立（17:35 首跑后自动点亮）</span>")
+
         def _card(href, border, icon, name, desc, stat, ext=False):
             tgt = " target='_blank'" if ext else ""
             return ("<a href='%s'%s style='display:block;border:1px "
@@ -1320,13 +1350,12 @@ gap:14px;align-items:start}}
             "border-radius:14px;background:#161b22;padding:20px 22px;"
             "text-decoration:none;color:#e6edf3'>"
             "<div style='font-size:20px;font-weight:700'>🧠 田丰 · 参谋长"
-            "<span style='float:right;color:#3fb950;font-size:13px'>"
-            "● 每日 17:35 值班</span></div><div class='dim' style='font-size:"
+            "%s</div><div class='dim' style='font-size:"
             "13px;margin:8px 0'>AI 组织架构顶点 · 影子日报点评 · 任务派单"
             " · 汇报直达你（human）</div><div style='font-size:14px'>"
             "<b>驾驶舱 /fin</b> · 汇报三通道：日报/P0 即时/P1 一小时</div>"
             "</a></div>"
-            % (st[1], st[0]))
+            % (st[1], st[0], _chief_light))
         # K-STOCK-181: 原 genexpr 形态 `sum(1 for _a in ... if self._license_state(...))`
         # 线上稳定 TypeError(missing algo_id) 而直调同函数 OK——genexpr 闭包自变量
         # 解析玄学，改显式循环（LOAD_FAST 直取 self），一并 try 兜底单条坏数据
@@ -1431,6 +1460,11 @@ gap:14px;align-items:start}}
                 + "<div class='dim' style='margin-top:20px'>门户即框架："
                 "新产线/新 AI 上架改对应注册表或本页卡片即可 · "
                 "8080 旧首页（QuantDinger SPA）保留互不影响</div>"
+                # K-ORG-190 数据口径小字（数据一条链纪律）：本页状态/清单
+                # 均为注册表只读投影，不另立第二本账
+                + "<div class='dim' style='margin-top:8px;font-size:11.5px'>"
+                "数据口径：参谋长状态=chief_last_run.log 水位 · "
+                "技能清单=skill_registry 同源投影（K-ORG-190）</div>"
                 "</body></html>")
         self._html(body)
 

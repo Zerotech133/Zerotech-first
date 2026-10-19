@@ -1761,6 +1761,39 @@ transition:.3s;z-index:9}
         amap = {a.get("id", ""): a
                 for a in algo_mkt.get("algos", []) if a.get("id")}
 
+        # K-ORG-190：货架技能行切 skill_registry 同源投影——
+        # agent_platform/registry/skill_registry.json 是唯一技能真源，
+        # 本页只读渲染（ai_market.json 本体不改，字段迁移 P2 另行）。
+        # 岗位技能引用清单 = algos id 数组（ai_market.json 的 skills
+        # 字段是面向人的描述字符串，非机器外键），经 {id→title/kind}
+        # 解析展示；id 查不到 → 灰字"未登记"（不假绿）。
+        skill_reg = _read_json(os.path.join(
+            STATION, "agent_platform", "registry",
+            "skill_registry.json")) or {}
+        smap = {s.get("id", ""): s
+                for s in skill_reg.get("skills", []) if s.get("id")}
+        _KIND_CN = {"tool": "工具", "algo": "算法", "automation": "自动化",
+                    "prompt": "人设", "external": "外部"}
+
+        def _skill_row(a):
+            ids = a.get("algos", []) or []
+            if not ids:
+                return ""  # 空清单 → 维持既有口径（不渲染技能行）
+            chips = []
+            for i in ids:
+                s = smap.get(i)
+                if s:
+                    chips.append("%s(%s)" % (
+                        e(s.get("title", i)),
+                        e(_KIND_CN.get(s.get("kind", ""),
+                                       s.get("kind", "?")))))
+                else:
+                    chips.append("<span style='color:#8b949e'>%s(未登记)"
+                                 "</span>" % e(i))
+            return ("<div class='dim' style='font-size:11.5px;"
+                    "margin-top:6px'>技能 %d 项：%s</div>"
+                    % (len(ids), "、".join(chips)))
+
         def _ai_card(a):
             badge = a.get("badge", "可聘")
             bc = a.get("badge_color", "#58a6ff")
@@ -1789,13 +1822,13 @@ transition:.3s;z-index:9}
                 "gap:6px;flex-wrap:wrap'>"
                 "<span class='dim'>📌 %s</span><span class='dim'>·</span>"
                 "<span class='dim'>🤝 %s</span></div>"
-                "%s"
+                "%s%s"
                 "<a class='tp' href='%s'>聘请 →</a></div>"
                 % (e(a.get("icon", "🤖")), e(a.get("name", "")), bc, bc,
                    e(badge), e(a.get("role", "")),
                    e(a.get("skills", "")), e(a.get("model", "")),
                    e(a.get("status", "")), e(a.get("hire", "")),
-                   algo_row, e(a.get("entry", "/"))))
+                   algo_row, _skill_row(a), e(a.get("entry", "/"))))
         secs = "".join(
             "<div class='sec'><h2>%s</h2>"
             "<div style='display:grid;grid-template-columns:repeat("
