@@ -5,11 +5,14 @@
 写落盘函数不得默认绑定真实目录——本模块 STATION 仅作缺省参数，测试显式传 tmp）。
 运行：python portal/test_org_command_api.py
 """
+import http.server
 import json
 import os
 import shutil
+import socket
 import sys
 import tempfile
+import threading
 import time
 import unittest
 
@@ -65,6 +68,46 @@ def make_station(tmp):
     with open(os.path.join(reg, "skill_registry.json"), "w", encoding="utf-8") as f:
         json.dump(skills, f, ensure_ascii=False)
     return tmp
+
+
+# ---- 学习环接 LLM（K-ORG-190 P2）：线程内 HTTP 桩，绝不连真实 11434 ----
+
+class _StubLLMHandler(http.server.BaseHTTPRequestHandler):
+    """Ollama /api/generate 桩：类属性 status_code / payload / seen 按用例注入。"""
+    status_code = 200
+    payload = {"response": "测试笔记"}
+    seen = []  # 每次请求捕获 {model, prompt, stream}，供断言调用契约
+
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        req = json.loads(self.rfile.read(length).decode("utf-8"))
+        type(self).seen.append(req)
+        body = json.dumps(self.payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(self.status_code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *a):  # 静音桩日志
+        pass
+
+
+def start_stub_llm(status_code=200, payload=None):
+    """线程内起一次性 LLM 桩（127.0.0.1 随机端口，测试隔离判例）。
+    返回 (base_url, shutdown_fn)；用完必须 shutdown 释放端口。"""
+    attrs = {"status_code": status_code,
+             "payload": payload or {"response": "测试笔记"},
+             "seen": []}
+    handler = type("StubHandler", (_StubLLMHandler,), attrs)
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+
+    def stop():
+        srv.shutdown()
+        srv.server_close()
+    return "http://127.0.0.1:%d" % srv.server_address[1], stop, handler
 
 
 class OrgCommandApiTest(unittest.TestCase):
@@ -236,12 +279,109 @@ class OrgCommandApiTest(unittest.TestCase):
         self.assertFalse(r["ok"])
         self.assertIn("chief", r["error"])
 
-    # ---- 学习环诚实降级 ----
+    # ---- 学习环接 LLM（K-ORG-190 P2 落地验收） ----
 
-    def test_learn_honest_refusal(self):
-        r = oca.api_agent_learn({"agent_id": "D1", "doc": "x"}, self.tmp)
+    def test_learn_success_writes_jsonl(self):
+        """桩 200 → 提炼成功、jsonl 落盘、digest_len 与契约字段正确。"""
+        url, stop, handler = start_stub_llm()
+        try:
+            r = oca.api_agent_learn({"agent_id": "D1", "doc": "投研文档正文"},
+                                    self.tmp, llm_base_url=url)
+        finally:
+            stop()
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["digest_len"], len("测试笔记"))  # 前端契约字段勿改名
+        self.assertEqual(r["model"], "qwen3.5:9b")
+        kp = os.path.join(self.tmp, "agent_platform", "registry",
+                          "knowledge", "D1.jsonl")
+        self.assertTrue(os.path.exists(kp))
+        with open(kp, encoding="utf-8") as f:
+            row = json.loads(f.readline())
+        self.assertEqual(row["digest"], "测试笔记")
+        self.assertEqual(row["doc"], "投研文档正文")
+        self.assertEqual(row["model"], "qwen3.5:9b")
+        self.assertIn("ts", row)
+
+    def test_learn_llm_call_contract(self):
+        """调 LLM 的请求契约：model=qwen3.5:9b、stream:false、prompt=中文前缀+doc。"""
+        url, stop, handler = start_stub_llm()
+        try:
+            r = oca.api_agent_learn({"agent_id": "D1", "doc": "某文档"},
+                                    self.tmp, llm_base_url=url)
+        finally:
+            stop()
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(len(handler.seen), 1)
+        req = handler.seen[0]
+        self.assertEqual(req["model"], "qwen3.5:9b")
+        self.assertIs(req["stream"], False)
+        self.assertTrue(req["prompt"].endswith("某文档"))
+        self.assertIn("投研知识蒸馏助手", req["prompt"])
+
+    def test_learn_doc_truncated_to_6000(self):
+        """超长 doc 截 6000 字防超长（prompt 不含截断后内容）。"""
+        url, stop, handler = start_stub_llm()
+        try:
+            r = oca.api_agent_learn({"agent_id": "D1", "doc": "字" * 7000},
+                                    self.tmp, llm_base_url=url)
+        finally:
+            stop()
+        self.assertTrue(r["ok"], r)
+        req = handler.seen[0]
+        self.assertEqual(len(req["prompt"]) - len(oca.LEARN_PROMPT_PREFIX), 6000)
+
+    def test_learn_llm_500_no_write(self):
+        """桩 500 → ok:false 且 knowledge 文件不存在（诚实降级，绝不假蒸馏落盘）。"""
+        url, stop, _ = start_stub_llm(status_code=500, payload={"error": "boom"})
+        try:
+            r = oca.api_agent_learn({"agent_id": "D1", "doc": "x"},
+                                    self.tmp, llm_base_url=url)
+        finally:
+            stop()
         self.assertFalse(r["ok"])
-        self.assertIn("P2", r["error"])
+        self.assertIn("学习环 LLM 提炼失败", r["error"])
+        self.assertIn("笔记未落盘", r["error"])
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tmp, "agent_platform", "registry", "knowledge", "D1.jsonl")))
+
+    def test_learn_llm_missing_response_field_no_write(self):
+        """桩 200 但响应缺 response 字段 → ok:false 且不落盘。"""
+        url, stop, _ = start_stub_llm(payload={"other": "没有 response 字段"})
+        try:
+            r = oca.api_agent_learn({"agent_id": "D1", "doc": "x"},
+                                    self.tmp, llm_base_url=url)
+        finally:
+            stop()
+        self.assertFalse(r["ok"])
+        self.assertIn("笔记未落盘", r["error"])
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tmp, "agent_platform", "registry", "knowledge", "D1.jsonl")))
+
+    def test_learn_llm_unreachable_no_write(self):
+        """桩直连拒绝（占位后立即关闭的端口）→ ok:false 且不落盘。"""
+        s = socket.socket()
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+        s.close()  # 端口已释放且无人监听 → 连接拒绝
+        r = oca.api_agent_learn({"agent_id": "D1", "doc": "x"}, self.tmp,
+                                llm_base_url="http://127.0.0.1:%d" % port)
+        self.assertFalse(r["ok"])
+        self.assertIn("笔记未落盘", r["error"])
+        self.assertFalse(os.path.exists(os.path.join(
+            self.tmp, "agent_platform", "registry", "knowledge", "D1.jsonl")))
+
+    def test_learn_empty_doc_rejected(self):
+        """doc 空/纯空白 → ok:false（连 LLM 都不该调）。"""
+        r = oca.api_agent_learn({"agent_id": "D1", "doc": "   "}, self.tmp,
+                                llm_base_url="http://127.0.0.1:1")
+        self.assertFalse(r["ok"])
+
+    def test_learn_agent_not_on_roster_rejected(self):
+        """agent 不在编 → ok:false（学习环只对在编岗位沉淀）。"""
+        r = oca.api_agent_learn({"agent_id": "GHOST", "doc": "x"}, self.tmp,
+                                llm_base_url="http://127.0.0.1:1")
+        self.assertFalse(r["ok"])
+        self.assertIn("不在编", r["error"])
 
     def test_knowledge_empty_ok(self):
         r = oca.api_agent_knowledge({"id": ["D1"]}, self.tmp)

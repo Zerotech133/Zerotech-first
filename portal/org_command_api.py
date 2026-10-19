@@ -17,14 +17,17 @@
 （agent_id/档位/技能引用/拓扑最小规则）→ 原子写 → 审计落盘。测试一律传 tmp 目录，
 **任何函数不得默认绑定真实 registry 路径**（write_snapshot 判例）。
 
-诚实边界：/api/agent/learn（在线学习·模型提炼）属 P2（K-ORG-185 学习环在途），本版显式
-返回 ok:false，不做无 LLM 的假蒸馏；心跳灯仅对配置了 heartbeat.probe 的岗位计算。
+诚实边界：/api/agent/learn（在线学习·模型提炼）接本地 LLM（K-ORG-190 P2 学习环落地，
+模型用本地降级档 qwen3.5:9b，判例 K-ORG-136）。诚实降级链：LLM 连接失败/超时/非 200/
+响应缺 response 一律返回 ok:false 且笔记不落盘——绝不把原文当 digest 假蒸馏（不假绿）。
+心跳灯仅对配置了 heartbeat.probe 的岗位计算。
 """
 import json
 import os
 import re
 import shutil
 import time
+import urllib.request
 
 __all__ = [
     "api_org", "api_meta", "api_preview", "api_register", "api_project_preview",
@@ -632,10 +635,71 @@ def api_agent_knowledge(query, station=STATION):
         return _err("knowledge: %r" % (e,))
 
 
-def api_agent_learn(body, station=STATION):
-    """拍板边界（诚实降级）：在线学习=模型提炼，属 P2（K-ORG-185 学习环在途）。
-    本版显式拒绝，不做无 LLM 的假蒸馏（不假绿判例）。"""
-    aid = ((body or {}).get("agent_id") or "").strip()
-    return {"ok": False,
-            "error": "学习环属 P2（K-ORG-185 缠论学习环在途）：在线学习（模型提炼沉淀）"
-                     "本版未开放，请先走知识库流程；接口契约已就绪，P2 接 LLM 后即启用"}
+def api_agent_learn(body, station=STATION, llm_base_url=None):
+    """在线学习（K-ORG-190 P2 学习环接 LLM）：doc → LLM 提炼 → digest 落知识 jsonl。
+
+    流程：doc 非空校验 → agent 在编校验（_existing_agent_ids）→ 调 LLM 提炼 →
+    _knowledge_path jsonl 追加 {ts, doc, digest, model} → 返回 {ok, digest_len, model}
+    （digest_len 为前端 /org 详情页"知识沉淀"契约字段，勿改名）。
+
+    LLM：Ollama /api/generate，model=qwen3.5:9b（本地降级档判例 K-ORG-136），
+    base_url 优先级 llm_base_url 参数 > 环境变量 OLLAMA_URL > 127.0.0.1:11434；
+    输入 doc 截 6000 字防超长，超时 60s，stream:false。
+
+    诚实降级链（不假绿）：连接失败/超时/非 200/响应缺 response 字段 → ok:false 且
+    **绝不落盘**（把原文当 digest 落盘就是假蒸馏）。测试显式传 llm_base_url，
+    本函数默认地址仅作生产缺省，不进测试（测试隔离判例）。
+    """
+    try:
+        p = body or {}
+        aid = (p.get("agent_id") or "").strip()
+        doc = str(p.get("doc") or "").strip()
+        if not doc:
+            return _err("doc 必填（学习环需要待提炼的文档正文）")
+        org = _load_org(station)
+        if aid not in _existing_agent_ids(org, station):
+            return _err("agent %r 不在编（学习环只对在编岗位沉淀）" % aid)
+        try:
+            digest, model = _llm_distill(_llm_base_url(llm_base_url), doc)
+        except Exception as e:  # 诚实降级：任何 LLM 失败都可见，笔记不落盘
+            return _err("学习环 LLM 提炼失败：%r；笔记未落盘" % (e,))
+        _append_jsonl(_knowledge_path(station, aid), {
+            "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "doc": doc, "digest": digest, "model": model})
+        return {"ok": True, "digest_len": len(digest), "model": model}
+    except Exception as e:  # fail-visible：恒 200 携错误体（判例）
+        return _err("learn: %r" % (e,))
+
+
+# ---- 学习环 LLM 提炼（常量收敛，K-ORG-136 判例档） ----
+
+LEARN_MODEL = "qwen3.5:9b"          # 本地降级档（K-ORG-136 判例）
+LEARN_DOC_MAX = 6000                # 输入 doc 截断上限（防超长）
+LEARN_TIMEOUT = 60                  # socket 超时（秒）
+LEARN_PROMPT_PREFIX = ("你是投研知识蒸馏助手。把下面的文档提炼成不超过 500 字的"
+                       "结构化笔记（要点+可复用结论），直接输出笔记正文：")
+
+
+def _llm_base_url(explicit):
+    """base_url 优先级：显式参数 > 环境变量 OLLAMA_URL > 本机 Ollama 缺省。"""
+    return (explicit or os.environ.get("OLLAMA_URL")
+            or "http://127.0.0.1:11434").rstrip("/")
+
+
+def _llm_distill(base_url, doc):
+    """调 Ollama /api/generate 提炼，返回 (digest, model)。
+    连接失败/超时/非 200/响应缺 response（含空 response）→ 抛异常交上层诚实降级。"""
+    payload = json.dumps({
+        "model": LEARN_MODEL,
+        "prompt": LEARN_PROMPT_PREFIX + doc[:LEARN_DOC_MAX],
+        "stream": False,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        base_url + "/api/generate", data=payload,
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=LEARN_TIMEOUT) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    digest = str(data.get("response") or "").strip()
+    if not digest:
+        raise ValueError("响应缺 response 字段或为空")
+    return digest, LEARN_MODEL
