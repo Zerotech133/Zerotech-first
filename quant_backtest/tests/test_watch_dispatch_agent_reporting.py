@@ -406,6 +406,66 @@ def test_retry_rejects_before_registration_without_new_generation(unregistered_r
     assert outbox._generations[key] == 0
 
 
+@pytest.mark.parametrize("expired_role,error_code", [
+    ("sender", "SENDER_NOT_CURRENT"),
+    ("receiver", "AGENT_NOT_CURRENT"),
+])
+def test_report_rejects_exact_expiry_without_planning(expired_role, error_code):
+    envelope = sample()
+    outbox = RouteOutbox()
+    expiry = T + timedelta(seconds=1)
+    sender = watch_agent(valid_until=expiry) if expired_role == "sender" else watch_agent()
+    receiver = (sector_agent(valid_until=expiry)
+                if expired_role == "receiver" else sector_agent())
+    rep = AgentUpstreamReporter(sender, MemoryDirectory(receiver), MemoryAckPort())
+    assert not (sender if expired_role == "sender" else receiver).current(expiry)
+    with pytest.raises(AgentReportingError, match=f"^{error_code}$"):
+        rep.report(envelope, outbox, report_kind="ANOMALY",
+                   receiver_agent_id=receiver.agent_id, report_id="r-expired",
+                   control_epoch=0, now=expiry)
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=receiver.agent_id) is None
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=receiver.agent_id) == ()
+
+
+@pytest.mark.parametrize("expired_role,error_code", [
+    ("sender", "SENDER_NOT_CURRENT"),
+    ("receiver", "AGENT_NOT_CURRENT"),
+])
+def test_retry_rejects_exact_expiry_without_new_generation(expired_role, error_code):
+    envelope = sample()
+    outbox = RouteOutbox()
+    expiry = T + timedelta(seconds=4)
+    sender = watch_agent(valid_until=expiry) if expired_role == "sender" else watch_agent()
+    receiver = (sector_agent(valid_until=expiry)
+                if expired_role == "receiver" else sector_agent())
+    rep = AgentUpstreamReporter(sender, MemoryDirectory(receiver), MemoryAckPort())
+    report = rep.report(envelope, outbox, report_kind="ANOMALY",
+                        receiver_agent_id=receiver.agent_id, report_id="r-retry-expiry",
+                        control_epoch=0, now=T)
+    rep.claim_and_confirm(
+        envelope, outbox, report, claim_token="first",
+        claim_at=T + timedelta(seconds=1), lease_until=expiry + timedelta(seconds=10),
+        ack=ack(report, report_id="not-matching"), now=T + timedelta(seconds=2))
+    intent = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=receiver.agent_id)
+    attempts = outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                                   target_type="AGENT", target_id=receiver.agent_id)
+    key = outbox._key_for(envelope, "QUANT_UPSTREAM_REPORT", "AGENT",
+                          receiver.agent_id)
+    assert len(attempts) == 1 and attempts[0].outcome == "UNKNOWN"
+    assert outbox._generations[key] == 0
+    with pytest.raises(AgentReportingError, match=f"^{error_code}$"):
+        rep.retry_report(envelope, outbox, report, generation=1, control_epoch=0,
+                         now=expiry)
+    assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id=receiver.agent_id) == intent
+    assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
+                               target_type="AGENT", target_id=receiver.agent_id) == attempts
+    assert outbox._generations[key] == 0
+
+
 def test_self_report_rejected_before_any_intent_is_planned():
     envelope = sample()
     outbox = RouteOutbox()
