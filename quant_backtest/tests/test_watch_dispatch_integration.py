@@ -49,7 +49,7 @@ def build_chain(envelope):
     """Freeze, plan all three routes, confirm review, record authorization."""
     store = EvidenceStore()
     outbox = RouteOutbox()
-    gate = PermissionGate()
+    gate = PermissionGate(acceptance_lookup=lambda ref: ref == "rcpt-1")
     ledger = ShadowLedger()
     store.freeze(envelope)
     for route, target_type, target_id in ROUTES:
@@ -117,6 +117,7 @@ def test_full_offline_chain_end_to_end():
                   observed_at=envelope.freeze_at + timedelta(seconds=10))
     verdict = gate.consume(envelope, authorization_id="auth-1",
                            now=envelope.freeze_at + timedelta(minutes=1),
+                           acceptance_ref="rcpt-1",
                            authority_port=PassAuthority(
                                gate._authorizations["auth-1"]),
                            risk_port=PassRisk(envelope))
@@ -152,6 +153,7 @@ def test_expired_evidence_closes_every_domain():
             hypothesis="h", planned_action="p", invalidation_condition="i",
             visible_evidence_refs=("raw:1",)))
     verdict = gate.consume(envelope, authorization_id="auth-1", now=expired,
+                           acceptance_ref="rcpt-1",
                            authority_port=PassAuthority(gate._authorizations["auth-1"]),
                            risk_port=PassRisk(envelope))
     assert verdict.status == "BLOCKED" and verdict.code == "EVIDENCE_NOT_CURRENT"
@@ -165,6 +167,7 @@ def test_gate_revocation_does_not_touch_outbox_accounts():
                                target_id="quant-desk-1")
     verdict = gate.consume(envelope, authorization_id="auth-1",
                            now=envelope.freeze_at + timedelta(minutes=1),
+                           acceptance_ref="rcpt-1",
                            authority_port=PassAuthority(gate._authorizations["auth-1"]),
                            risk_port=PassRisk(envelope))
     after = outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT", target_type="desk",
@@ -181,6 +184,7 @@ def test_wrong_identity_envelope_isolated_across_domains():
     assert outbox_projection(twin, outbox, ROUTES)[0]["status"] == "UNPLANNED"
     assert shadow_projection(twin, ledger, T) == ()
     verdict = gate.consume(twin, authorization_id="auth-1", now=T + timedelta(minutes=1),
+                           acceptance_ref="rcpt-1",
                            authority_port=PassAuthority(gate._authorizations["auth-1"]),
                            risk_port=PassRisk(twin))
     assert verdict.status == "BLOCKED" and verdict.code == "AUTH_IDENTITY_MISMATCH"

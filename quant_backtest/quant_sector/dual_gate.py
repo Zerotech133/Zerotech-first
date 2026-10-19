@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Protocol, Tuple
+from typing import Callable, Dict, Protocol, Tuple
 
 from quant_backtest.watch_dispatch.canonical import utc_text
 from quant_backtest.watch_dispatch.contracts import EvidenceEnvelope
@@ -225,7 +225,14 @@ def _blocked(code: str) -> DispatchVerdict:
 class PermissionGate:
     """Per-envelope identity state machine; every consume re-verifies both gates."""
 
-    def __init__(self) -> None:
+    def __init__(self, acceptance_lookup: Callable[[str], bool] | None = None) -> None:
+        """Optional upstream-acceptance lookup; None keeps consume fail-closed.
+
+        The lookup receives the acceptance reference (e.g. the quant-sector
+        UpstreamInbox receipt_id) and must answer whether that acceptance is
+        still active; revoked or unknown references must yield False.
+        """
+        self._acceptance_lookup = acceptance_lookup
         self._reviews: Dict[str, ResearchReview] = {}
         self._authorizations: Dict[str, HumanAuthorization] = {}
         self._epochs: Dict[Tuple[str, ...], int] = {}
@@ -302,8 +309,15 @@ class PermissionGate:
 
     def consume(self, envelope: EvidenceEnvelope, *, authorization_id: str,
                 now: datetime, authority_port: AuthorizationAuthority,
-                risk_port: RiskGuardPort) -> DispatchVerdict:
-        """Both gates are re-verified live; stale records never reopen a gate."""
+                risk_port: RiskGuardPort,
+                acceptance_ref: str | None = None) -> DispatchVerdict:
+        """Both gates are re-verified live; stale records never reopen a gate.
+
+        The upstream-acceptance precondition runs before both gates: only an
+        injected acceptance_lookup that resolves acceptance_ref to an active
+        acceptance lets evaluation proceed; no lookup, an unknown reference
+        or a revoked acceptance all yield BLOCKED/UPSTREAM_NOT_ACCEPTED.
+        """
         _utc(now, "CONSUME_NOW")
         try:
             envelope.validate(now=now)
@@ -312,6 +326,13 @@ class PermissionGate:
         identity = self._identity(envelope)
         if identity in self._blocked:
             return _blocked("IDENTITY_BLOCKED")
+        # Upstream-acceptance precondition: fail-closed before both gates.
+        # Never reported upstream, not yet accepted, or acceptance revoked:
+        # in every such case the event identity must not be consumed.
+        if (self._acceptance_lookup is None
+                or type(acceptance_ref) is not str
+                or not self._acceptance_lookup(acceptance_ref)):
+            return _blocked("UPSTREAM_NOT_ACCEPTED")
         authorization = authority_port.resolve_and_verify(authorization_id, envelope, now)
         if authorization is None:
             return _blocked("AUTH_UNVERIFIED")

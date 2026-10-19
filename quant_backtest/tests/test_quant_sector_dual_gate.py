@@ -6,8 +6,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from quant_backtest.quant_sector import (
-    AuthorizationScope, HumanAuthorization, PermissionGate, ResearchReview,
-    RiskDecision,
+    AuthorizationScope, HumanAuthorization, PermissionGate, QuantUpstreamReport,
+    ResearchReview, RiskDecision, UpstreamInbox,
 )
 from quant_backtest.quant_sector.dual_gate import GateError
 from quant_backtest.watch_dispatch import (
@@ -104,7 +104,7 @@ class MemoryRiskGuard:
 
 def gated_envelope():
     envelope = sample()
-    gate = PermissionGate()
+    gate = PermissionGate(acceptance_lookup=lambda ref: ref == "rcpt-1")
     assert gate.submit_review(envelope, review(envelope)) == "REVIEW_CONFIRMED"
     gate.record_authorization(envelope, authorization(envelope))
     return envelope, gate
@@ -113,6 +113,7 @@ def gated_envelope():
 def test_dual_gates_pass_and_verdict_cannot_dispatch():
     envelope, gate = gated_envelope()
     verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
                            authority_port=MemoryAuthority(authorization(envelope)),
                            risk_port=MemoryRiskGuard(risk(envelope)))
     assert verdict.status == "SIM_DISPATCH_ELIGIBLE"
@@ -126,10 +127,12 @@ def test_recheck_at_consume_blocks_revoked_or_denied():
     envelope, gate = gated_envelope()
     auth = authorization(envelope)
     verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
                            authority_port=DenyAuthority(auth),
                            risk_port=MemoryRiskGuard(risk(envelope)))
     assert verdict.status == "BLOCKED" and verdict.code == "AUTH_UNVERIFIED"
     verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
                            authority_port=MemoryAuthority(auth),
                            risk_port=MemoryRiskGuard(
                                risk(envelope, decision="DENY", as_of=T + M5)))
@@ -151,9 +154,10 @@ def test_record_authorization_fail_closed(mutate, code):
 
 def test_review_alone_never_grants_anything():
     envelope = sample()
-    gate = PermissionGate()
+    gate = PermissionGate(acceptance_lookup=lambda ref: ref == "rcpt-1")
     assert gate.submit_review(envelope, review(envelope)) == "REVIEW_CONFIRMED"
     verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
                            authority_port=DenyAuthority(authorization(envelope)),
                            risk_port=MemoryRiskGuard(risk(envelope)))
     assert verdict.status == "BLOCKED" and verdict.code == "AUTH_UNVERIFIED"
@@ -179,6 +183,7 @@ def test_rejected_review_blocks_identity():
     with pytest.raises(GateError, match="IDENTITY_BLOCKED"):
         gate.record_authorization(envelope, authorization(envelope))
     verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
                            authority_port=MemoryAuthority(authorization(envelope)),
                            risk_port=MemoryRiskGuard(risk(envelope)))
     assert verdict.status == "BLOCKED" and verdict.code == "IDENTITY_BLOCKED"
@@ -190,7 +195,7 @@ def test_identity_mismatch_and_stale_time_blocked():
     with pytest.raises(GateError, match="AUTH_IDENTITY_MISMATCH"):
         gate.record_authorization(twin, authorization(envelope))
     late = gate.consume(envelope, authorization_id="auth-1",
-                        now=envelope.valid_until,
+                        now=envelope.valid_until, acceptance_ref="rcpt-1",
                         authority_port=MemoryAuthority(authorization(envelope)),
                         risk_port=MemoryRiskGuard(risk(envelope)))
     assert late.status == "BLOCKED" and late.code == "EVIDENCE_NOT_CURRENT"
@@ -203,6 +208,7 @@ def test_epoch_monotonic_and_revoke_blocks():
         gate.record_authorization(
             envelope, authorization(envelope, epoch=1, auth_id="auth-2"))
     verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
                            authority_port=MemoryAuthority(authorization(envelope)),
                            risk_port=MemoryRiskGuard(risk(envelope)))
     assert verdict.status == "BLOCKED" and verdict.code == "IDENTITY_BLOCKED"
@@ -266,3 +272,128 @@ def test_shadow_ledger_isolated_from_other_envelopes_and_never_executes():
     assert not hasattr(decision, "fill_id")
     assert not hasattr(decision, "pnl")
     assert not hasattr(decision, "authorization_id")
+
+
+def test_consume_rejected_when_never_reported_upstream():
+    """Lookup injected but the reference is unknown to it: not accepted."""
+    envelope, gate = gated_envelope()
+    verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-unknown",
+                           authority_port=MemoryAuthority(authorization(envelope)),
+                           risk_port=MemoryRiskGuard(risk(envelope)))
+    assert verdict.status == "BLOCKED" and verdict.code == "UPSTREAM_NOT_ACCEPTED"
+
+
+def test_consume_rejected_without_injected_lookup():
+    """Fail-closed default: no lookup injected even if dual gates would pass."""
+    envelope = sample()
+    gate = PermissionGate()
+    gate.submit_review(envelope, review(envelope))
+    gate.record_authorization(envelope, authorization(envelope))
+    verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
+                           authority_port=MemoryAuthority(authorization(envelope)),
+                           risk_port=MemoryRiskGuard(risk(envelope)))
+    assert verdict.status == "BLOCKED" and verdict.code == "UPSTREAM_NOT_ACCEPTED"
+
+
+def test_consume_rejected_when_acceptance_ref_missing():
+    """Lookup injected but no reference supplied: fail-closed, not accepted."""
+    envelope, gate = gated_envelope()
+    verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           authority_port=MemoryAuthority(authorization(envelope)),
+                           risk_port=MemoryRiskGuard(risk(envelope)))
+    assert verdict.status == "BLOCKED" and verdict.code == "UPSTREAM_NOT_ACCEPTED"
+
+
+def test_consume_passes_when_accepted_and_dual_gates_pass():
+    """Accepted upstream + both gates live-verified: the only eligible path."""
+    envelope, gate = gated_envelope()
+    verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
+                           authority_port=MemoryAuthority(authorization(envelope)),
+                           risk_port=MemoryRiskGuard(risk(envelope)))
+    assert verdict.status == "SIM_DISPATCH_ELIGIBLE" and verdict.code == "GATES_PASS"
+    assert verdict.dispatch_permitted is False
+
+
+def test_consume_rejected_after_acceptance_revoked():
+    """Real inbox-backed lookup: revoking the receipt closes consume again."""
+    envelope, _ = gated_envelope()
+    inbox = UpstreamInbox()
+    report = QuantUpstreamReport(
+        report_id="rep-1", report_kind="ANOMALY", event_id=envelope.event_id,
+        evidence_hash=envelope.envelope_hash,
+        evidence_version=envelope.evidence_version,
+        sender_agent_id="watch-agent-1", receiver_agent_id="quant-desk-1",
+        created_at=envelope.freeze_at)
+    receipt = inbox.accept(report, now=envelope.freeze_at)
+    live = PermissionGate(acceptance_lookup=inbox.is_active)
+    ok = live.consume(envelope, authorization_id="auth-1", now=T + M5,
+                      acceptance_ref=receipt.receipt_id,
+                      authority_port=MemoryAuthority(authorization(envelope)),
+                      risk_port=MemoryRiskGuard(risk(envelope)))
+    assert ok.status == "SIM_DISPATCH_ELIGIBLE"
+    inbox.revoke(receipt.receipt_id,
+                 now=envelope.freeze_at + timedelta(seconds=1))
+    verdict = live.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref=receipt.receipt_id,
+                           authority_port=MemoryAuthority(authorization(envelope)),
+                           risk_port=MemoryRiskGuard(risk(envelope)))
+    assert verdict.status == "BLOCKED" and verdict.code == "UPSTREAM_NOT_ACCEPTED"
+
+
+def test_acceptance_precondition_runs_before_dual_gates():
+    """A gate that would PASS both gates still fails unaccepted; ports untouched."""
+    envelope, gate = gated_envelope()
+    calls: list[tuple] = []
+
+    class SpyAuthority(MemoryAuthority):
+        def resolve_and_verify(self, authorization_id, envelope, now):
+            calls.append(("authority", authorization_id))
+            return self.auth
+
+    class SpyRisk(MemoryRiskGuard):
+        def evaluate_independently(self, envelope, authorization, now):
+            calls.append(("risk", authorization.authorization_id))
+            return self.decision
+
+    verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-unknown",
+                           authority_port=SpyAuthority(authorization(envelope)),
+                           risk_port=SpyRisk(risk(envelope)))
+    assert verdict.status == "BLOCKED" and verdict.code == "UPSTREAM_NOT_ACCEPTED"
+    assert calls == []
+
+
+def test_upstream_not_accepted_verdict_is_fully_inert():
+    """Exact error code; verdict carries nothing and permits nothing."""
+    envelope, gate = gated_envelope()
+    verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-unknown",
+                           authority_port=MemoryAuthority(authorization(envelope)),
+                           risk_port=MemoryRiskGuard(risk(envelope)))
+    assert verdict.code == "UPSTREAM_NOT_ACCEPTED"
+    assert verdict.status == "BLOCKED"
+    assert verdict.authorization is None and verdict.risk is None
+    assert verdict.dispatch_permitted is False
+    assert verdict.trading_permitted is False
+    assert verdict.notification_permitted is False
+    assert verdict.production_permitted is False
+    assert gate.dispatch_permitted is False and gate.trading_permitted is False
+
+
+def test_epoch_and_blocking_invariants_survive_acceptance_precondition():
+    """Gate-local identity/epoch invariants keep precedence and semantics."""
+    envelope, gate = gated_envelope()
+    gate.revoke_envelope(envelope, epoch=1, now=T + M5)
+    verdict = gate.consume(envelope, authorization_id="auth-1", now=T + M5,
+                           acceptance_ref="rcpt-1",
+                           authority_port=MemoryAuthority(authorization(envelope)),
+                           risk_port=MemoryRiskGuard(risk(envelope)))
+    assert verdict.status == "BLOCKED" and verdict.code == "IDENTITY_BLOCKED"
+    with pytest.raises(GateError, match="IDENTITY_BLOCKED"):
+        gate.record_authorization(
+            envelope, authorization(envelope, epoch=1, auth_id="auth-2"))
+    with pytest.raises(GateError, match="EPOCH_NOT_ADVANCED"):
+        gate.revoke_envelope(envelope, epoch=1, now=T + M5)
