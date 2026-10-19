@@ -976,5 +976,150 @@ class TestTakeoverManifestSave(_TmpEnv):
         self.assertFalse(os.path.exists(X.INFO_DB))
 
 
+class TestCrawlManifestSave(_TmpEnv):
+    """非接管采集的四个落账出口：写失败必须显式传到 CLI。"""
+
+    def setUp(self):
+        super().setUp()
+        for target, attribute in ((X, "load_token"),
+                                  (X, "ensure_session_cookies")):
+            guard = mock.patch.object(
+                target, attribute, side_effect=AssertionError("no warm/token"))
+            guard.start()
+            self.addCleanup(guard.stop)
+        for target in ("requests.Session.get", "socket.socket.connect"):
+            guard = mock.patch(target, side_effect=AssertionError("no network"))
+            guard.start()
+            self.addCleanup(guard.stop)
+        sleeper = mock.patch.object(X, "jitter_sleep", return_value=None)
+        sleeper.start()
+        self.addCleanup(sleeper.stop)
+        self._seed_old_manifest()
+
+    def _seed_old_manifest(self):
+        """写入旧成功状态，随后只允许在隔离临时目录中更新。"""
+        mf = X.XqManifest()
+        mf.mark_health("probe", "old-health")
+        for table in ("xq_status", "xq_hot_post", "xq_comment"):
+            mf.mark(table, done=True, rows=9, status="ok", note="old")
+        self.assertTrue(mf.save())
+        with open(X.MANIFEST, "rb") as saved:
+            self.old_bytes = saved.read()
+
+    def _crawler(self, blocked=""):
+        """彻底替换构造器与所有 IO；save 只记录模拟 SQLite 次数。"""
+        crawler = mock.Mock()
+        crawler.mf = X.XqManifest()
+        crawler.mf.load()
+        crawler.fetch_timeline.return_value = [{"status_id": "new"}]
+        crawler.fetch_hot.return_value = [{"status_id": "hot"}]
+        crawler.fetch_comments.return_value = [{"comment_id": "new"}]
+        crawler.save.return_value = 1
+        constructor = mock.patch.object(C, "XqCrawler", return_value=crawler)
+        constructor.start()
+        self.addCleanup(constructor.stop)
+        cooler = mock.patch.object(X, "ip_blocked_active", return_value=blocked)
+        cooler.start()
+        self.addCleanup(cooler.stop)
+        return crawler
+
+    def _assert_old_disk(self):
+        """内存里的新标记不得冒充磁盘 manifest 成功状态。"""
+        with open(X.MANIFEST, "rb") as saved:
+            self.assertEqual(saved.read(), self.old_bytes)
+        self.assertFalse(os.path.exists(X.INFO_DB))
+
+    def test_all_cooldown_save_false_raises_and_cli_rc1(self):
+        crawler = self._crawler(blocked="2099-01-01")
+        with mock.patch.object(X.XqManifest, "save", return_value=False), \
+                mock.patch("builtins.print") as output:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "冷却期 manifest 保存失败.*冷却状态未确认"):
+                C.crawl_all()
+            self.assertEqual(C.main(["--mode", "all"]), 1)
+        crawler.fetch_timeline.assert_not_called()
+        crawler.fetch_hot.assert_not_called()
+        crawler.save.assert_not_called()
+        self.assertEqual(crawler.mf.get("xq_status")["status"], "ip_blocked")
+        self.assertEqual(crawler.mf.get("xq_hot_post")["status"], "ip_blocked")
+        self.assertTrue(any("冷却状态未确认" in str(call)
+                            for call in output.call_args_list))
+        self._assert_old_disk()
+
+    def test_symbols_cooldown_save_false_raises_and_cli_rc1(self):
+        crawler = self._crawler(blocked="2099-01-01")
+        with mock.patch.object(X.XqManifest, "save", return_value=False), \
+                mock.patch("builtins.print") as output:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "冷却期 manifest 保存失败.*冷却状态未确认"):
+                C.crawl_symbols(["SH600519"])
+            self.assertEqual(C.main(["--mode", "comments", "--symbols",
+                                     "SH600519"]), 1)
+        crawler.fetch_comments.assert_not_called()
+        crawler.save.assert_not_called()
+        self.assertEqual(crawler.mf.get("xq_comment")["status"], "ip_blocked")
+        self.assertTrue(any("冷却状态未确认" in str(call)
+                            for call in output.call_args_list))
+        self._assert_old_disk()
+
+    def test_all_sqlite_possible_save_false_raises_even_partial_failure(self):
+        crawler = self._crawler()
+        crawler.fetch_hot.return_value = None  # timeline 已模拟成功提交一行
+        with mock.patch.object(X.XqManifest, "save", return_value=False), \
+                mock.patch("builtins.print") as output:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "SQLite 行可能已提交，但 manifest 未确认"):
+                C.crawl_all()
+            self.assertEqual(C.main(["--mode", "all"]), 1)
+        self.assertEqual(crawler.save.call_count, 2)
+        self.assertEqual(crawler.mf.get("xq_status")["status"], "ok")
+        self.assertEqual(crawler.mf.get("xq_hot_post")["status"], "failed")
+        self.assertFalse(any("[crawl_all] {" in str(call)
+                             for call in output.call_args_list))
+        self._assert_old_disk()
+
+    def test_symbols_sqlite_possible_save_false_raises_even_partial_failure(self):
+        crawler = self._crawler()
+        crawler.fetch_comments.side_effect = [[{"comment_id": "new"}], None]
+        with mock.patch.object(X.XqManifest, "save", return_value=False), \
+                mock.patch("builtins.print") as output:
+            with self.assertRaisesRegex(RuntimeError,
+                                        "SQLite 行可能已提交，但 manifest 未确认"):
+                C.crawl_symbols(["SH600519", "SZ000338"])
+            crawler.fetch_comments.side_effect = [[{"comment_id": "new"}], None]
+            self.assertEqual(C.main(["--mode", "comments", "--symbols",
+                                     "SH600519,SZ000338"]), 1)
+        self.assertEqual(crawler.save.call_count, 2)
+        self.assertEqual(crawler.mf.get("xq_comment")["status"], "ok")
+        self.assertFalse(any("[crawl_symbols] {" in str(call)
+                             for call in output.call_args_list))
+        self._assert_old_disk()
+
+    def test_all_save_true_preserves_partial_failure_rc0(self):
+        crawler = self._crawler()
+        crawler.fetch_hot.return_value = None
+        self.assertEqual(C.main(["--mode", "all"]), 0)
+        saved = X.XqManifest()
+        saved.load()
+        self.assertEqual(saved.health()["probe"], "old-health")
+        self.assertEqual(saved.get("xq_status")["status"], "ok")
+        self.assertEqual(saved.get("xq_hot_post")["status"], "failed")
+        self.assertEqual(saved.get("xq_comment")["note"], "old")
+        self.assertFalse(os.path.exists(X.INFO_DB))
+
+    def test_symbols_save_true_preserves_partial_failure_rc0(self):
+        crawler = self._crawler()
+        crawler.fetch_comments.side_effect = [[{"comment_id": "new"}], None]
+        self.assertEqual(C.main(["--mode", "comments", "--symbols",
+                                 "SH600519,SZ000338"]), 0)
+        saved = X.XqManifest()
+        saved.load()
+        self.assertEqual(saved.health()["probe"], "old-health")
+        self.assertEqual(saved.get("xq_comment")["status"], "ok")
+        self.assertIn("SZ000338", saved.get("xq_comment")["note"])
+        self.assertEqual(saved.get("xq_status")["note"], "old")
+        self.assertFalse(os.path.exists(X.INFO_DB))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

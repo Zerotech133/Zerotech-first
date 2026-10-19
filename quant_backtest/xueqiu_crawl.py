@@ -290,7 +290,9 @@ def crawl_all(categories: tuple[int, ...] = (102,), hot: bool = True,
             c.mf.mark(tbl, done=False, rows=0, status="ip_blocked",
                       note="cooldown %s" % blocked)
             out["failed_tables"].append(tbl)
-        c.mf.save()
+        if not c.mf.save():
+            raise RuntimeError("crawl_all 冷却期 manifest 保存失败；"
+                               "冷却状态未确认，不得视为本轮账本落地")
         return out
     tripped = ""
     for cat in categories:
@@ -344,7 +346,9 @@ def crawl_all(categories: tuple[int, ...] = (102,), hot: bool = True,
                 c.mf.mark("xq_hot_post", done=False, rows=0,
                           status="failed", note=str(e)[:100])
                 print("[crawl_all] hot 失败：%s" % str(e)[:80])
-    c.mf.save()
+    if not c.mf.save():
+        raise RuntimeError("crawl_all SQLite 行可能已提交，但 manifest 未确认；"
+                           "不得视为本轮成功")
     print("[crawl_all] %s" % out)
     return out
 
@@ -370,7 +374,9 @@ def crawl_symbols(symbols: list[str], pages: int = 3,
               % (blocked, len(syms)))
         c.mf.mark("xq_comment", done=False, rows=0, status="ip_blocked",
                   note="cooldown %s" % blocked)
-        c.mf.save()
+        if not c.mf.save():
+            raise RuntimeError("crawl_symbols 冷却期 manifest 保存失败；"
+                               "冷却状态未确认，不得视为本轮账本落地")
         out["fail_codes"] = ["<cooldown>"]
         return out
     tripped = False
@@ -407,7 +413,9 @@ def crawl_symbols(symbols: list[str], pages: int = 3,
               note=("%d codes failed: %s"
                     % (len(fail_syms), ",".join(fail_syms[:8])))
               if fail_syms else "")
-    c.mf.save()
+    if not c.mf.save():
+        raise RuntimeError("crawl_symbols SQLite 行可能已提交，但 manifest 未确认；"
+                           "不得视为本轮成功")
     print("[crawl_symbols] %s" % out)
     return out
 
