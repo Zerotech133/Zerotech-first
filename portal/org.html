@@ -192,13 +192,45 @@ textarea{resize:vertical;min-height:56px}
 <div class="toast" id="toast"></div>
 <script>
 "use strict";
-var B=null, ORG=null, AUDIT=[], KDOCS=[];
+var B=null, ORG=null, AUDIT=[], KDOCS=[], META=null;  /* META=/api/org/meta 缓存（K-ORG-190） */
 var $=function(id){return document.getElementById(id)};
 function ui(id,on){$(id).classList.toggle("on",!!on)}
 function toast(msg){var t=$("toast");t.textContent=msg;t.style.display="block";setTimeout(function(){t.style.display="none"},3200)}
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function gd(g){return g==="E3"?"30年":g==="E2"?"20年":g==="E1"?"10年":(g||"?")}
 function gcls(g){return g==="E3"?"g3":g==="E2"?"g2":""}
+
+/* 心跳灯三态（K-ORG-190）：green=新鲜(绿) / stale=过期(黄) / no_ledger=无账本(灰)。
+   其余值（null/undefined/未知值）一律不显示——无配置无数据绝不假绿 */
+function hbHtml(a){
+  var st=a&&a.heartbeat_state;
+  if(st==="green")return '<span style="color:var(--green)">●新鲜</span>';
+  if(st==="stale")return '<span style="color:var(--gold)">●过期</span>';
+  if(st==="no_ledger")return '<span style="color:var(--dim)">●无账本</span>';
+  return "";
+}
+/* 工具/技能合并展示：a.tools → id(工具)；a.skills[{id,kind,enabled}] → id(工具|算法)，enabled=false 加"·关"后缀并置灰 */
+function toolSkillHtml(a){
+  var parts=(a.tools||[]).map(function(t){return esc(t)+"(工具)"});
+  (a.skills||[]).forEach(function(s){
+    if(!s||!s.id)return;
+    var label=esc(s.id)+"("+(s.kind==="algo"?"算法":"工具")+(s.enabled===false?"·关":"")+")";
+    parts.push(s.enabled===false?'<span style="color:var(--dim)">'+label+"</span>":label);
+  });
+  return parts.join("、");
+}
+/* 模型档位提示：按 /api/org/meta 的 grade_policy 校验该岗 grade 的 allow 档与当前 a.llm 是否相符。
+   meta 未接通/无该档策略时灰字标注，不臆造结论 */
+function gradePolicyHtml(a){
+  if(!META||!META.grade_policy)return '<span style="color:var(--dim)">档位表未接通</span>';
+  var pol=META.grade_policy[a.grade];
+  if(!pol||!pol.allow||!pol.allow.length)return '<span style="color:var(--dim)">（'+esc(a.grade||"?")+' 无档位策略）</span>';
+  var ok=pol.allow.indexOf(a.llm)>=0;
+  return (ok?'<span style="color:var(--green)">✓ 档位相符</span>':'<span style="color:var(--red)">⚠ 档位不符</span>')
+    +'<span style="color:var(--dim)">（'+esc(a.grade||"?")+' 允许：'+esc(pol.allow.join("、"))+'）</span>';
+}
+/* meta 下拉选项的 note 摘要（截断，防过长） */
+function metaBrief(s,n){s=String(s==null?"":s);return s.length>n?s.slice(0,n)+"…":s}
 
 function render(){
   var A=B.agents, D=B.departments, S=B.stats||{};
@@ -241,8 +273,10 @@ function deptCard(d,A){
     +'</div><div class="dbody">';
   (d.agents||[]).forEach(function(id){
     var a=A[id]||{};
+    var hb=hbHtml(a);  /* 心跳灯：仅 green/stale/no_ledger 三态显示，其余不显示 */
     h+='<div class="chip '+gcls(a.grade)+'" data-id="'+esc(id)+'"><span class="id">'+esc(id)+'</span>'
       +(a.name&&a.name!==id?'<span>'+esc(a.name)+'</span>':"")
+      +(hb?'<span style="font-size:10.5px">'+hb+'</span>':"")
       +'<span class="gd">'+gd(a.grade)+'</span></div>';
   });
   if(!(d.agents||[]).length)h+='<div style="color:var(--dim);font-size:11.5px;padding:2px">（空编）</div>';
@@ -260,7 +294,9 @@ function showDetail(id){
     +"<div class='k'>知识沉淀</div><div>"+esc((at.knowledge||[]).join("、")||"尚未学习知识库")
     +(a.memory&&a.memory.knowledge?"（已沉淀 <b>"+a.memory.knowledge.count+"</b> 条笔记）":"")+"</div>"
     +"<div class='k'>模型</div><div>"+esc(a.llm||"-")+"</div>"
-    +"<div class='k'>工具</div><div>"+esc((a.tools||[]).join("、"))+"</div>"
+    +"<div class='k'>模型档位</div><div>"+gradePolicyHtml(a)+"</div>"
+    +"<div class='k'>工具/技能</div><div>"+(toolSkillHtml(a)||"-")+"</div>"
+    +(hbHtml(a)?"<div class='k'>心跳</div><div>"+hbHtml(a)+"</div>":"")
     +"<div class='k'>项目</div><div>"+esc((a.projects||[]).join("、")||"-")+"</div>"
     +"<div class='k'>读权限</div><div>"+esc((a.grants_read||[]).join(" "))+"</div>"
     +"<div class='k'>写权限</div><div>"+esc((a.grants_write||[]).join(" "))+"</div>";
@@ -388,6 +424,41 @@ function load(){
     B=j.bundle;ORG=j.org;AUDIT=j.audit_tail||[];KDOCS=j.knowledge_docs||[];render();
   }).catch(function(e){$("stats").textContent="加载失败："+e});
 }
+/* /api/org/meta 拉取（K-ORG-190）：模型档位表 + 技能清单。
+   失败/未生效时 META 保持 null，fModel/fTool 保留页面静态选项，console.warn 降级，不阻塞表单 */
+function loadMeta(){
+  fetch("/api/org/meta?caller=laotian@org-chart").then(function(r){return r.json()}).then(function(j){
+    if(!j||!j.ok){console.warn("org meta 降级");return}
+    META=j;applyMetaToForm();
+  }).catch(function(){console.warn("org meta 降级")});
+}
+/* 用 meta 重烘 fModel（仅 enabled:true 的模型）与 fTool（skills.tools+skills.algos）；
+   尽量保留用户已选中的值；meta 缺失对应数据时不动静态选项 */
+function applyMetaToForm(){
+  if(!META)return;
+  var models=META.models||{};
+  var ids=Object.keys(models).filter(function(k){return models[k]&&models[k].enabled===true});
+  if(ids.length){
+    var sel=$("fModel"),cur=sel.value;sel.innerHTML="";
+    ids.forEach(function(mid){
+      var m=models[mid]||{};
+      var o=document.createElement("option");
+      o.value=mid;
+      o.textContent=mid+"（"+(m.tier||"?")+(m.note?"·"+metaBrief(m.note,16):"")+"）";
+      sel.appendChild(o);
+    });
+    for(var i=0;i<sel.options.length;i++){if(sel.options[i].value===cur){sel.value=cur;break}}
+  }
+  var sk=META.skills||{};
+  var toolIds=(sk.tools||[]).concat(sk.algos||[]);
+  if(toolIds.length){
+    var st=$("fTool"),ct=st.value;st.innerHTML="";
+    toolIds.forEach(function(tid){
+      var o=document.createElement("option");o.value=tid;o.textContent=tid;st.appendChild(o);
+    });
+    for(var j=0;j<st.options.length;j++){if(st.options[j].value===ct){st.value=ct;break}}
+  }
+}
 $("fDept").addEventListener("change",function(){
   $("fNewDept").style.display=this.value==="__new__"?"block":"none";
 });
@@ -424,6 +495,7 @@ $("projRow").addEventListener("click",function(e){
   var c=e.target.closest(".chip");if(c)showDetail(c.getAttribute("data-id"));
 });
 load();
+loadMeta();
 </script>
 <script src="/static/dataops_link.js" data-entity="tg:其他" defer></script>
 </body>
