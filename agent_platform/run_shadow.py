@@ -357,6 +357,55 @@ def _assert_not_real_root(data_root):
     return True
 
 
+# ---- 日志/账本追加打开：有界重试（2026-10-19 判例修复）--------------------
+# 周一 17:10 首跑实证：open(last_run.log, "a") 撞瞬时独占锁（嫌疑
+# watch-daemon/提权进程/杀毒软件毫秒级握持，锁定者不可追认）→
+# PermissionError [Errno 13] → 5 标的零落账（未落账≠假绿）。锁通常瞬时
+# 释放，故加有界重试+退避；无锁时首次即成功，行为与裸 open 零差异。
+#: 最大尝试次数（含首次）
+LOG_OPEN_MAX_ATTEMPTS = 5
+#: 逐次退避秒数（长度 = MAX_ATTEMPTS - 1；总等待 ≤7.5s，不拖 17:10 窗口）
+LOG_OPEN_BACKOFF_S = (0.5, 1.0, 2.0, 4.0)
+
+
+class _LogOpenError(OSError):
+    """日志/账本追加打开重试耗尽（fail-visible 诊断载体；OSError 子类）。
+
+    禁静默跳过：跳过=零落账假绿，正是 10-19 事故形态（裸 traceback、
+    无重试、无诊断）。本异常携带路径/尝试次数/末次 errno 供排障。
+    """
+
+
+def _open_log_append(path, max_attempts=None, backoff=None, sleep=None):
+    """有界重试打开追加写文件（last_run.log / shadow_ledger.jsonl 同类打开点）。
+
+    - 仅对 OSError 系重试（Windows 瞬时独占锁表现为 PermissionError
+      [Errno 13]，是 OSError 子类）；其余异常（如 ValueError）原样上抛，
+      重试无意义；
+    - 退避序列默认 0.5/1/2/4s 共 5 次；sleep 可注入（测试零等待）；
+    - 耗尽抛 _LogOpenError——调用方必须 fail-visible 退出，禁静默跳过；
+    - 无锁时首次即成功：与裸 open(path, "a", encoding="utf-8") 零差异。
+    """
+    attempts = LOG_OPEN_MAX_ATTEMPTS if max_attempts is None else int(max_attempts)
+    waits = LOG_OPEN_BACKOFF_S if backoff is None else tuple(backoff)
+    nap = time.sleep if sleep is None else sleep
+    last_err = None
+    for i in range(attempts):
+        try:
+            return open(path, "a", encoding="utf-8")
+        except OSError as e:
+            last_err = e
+            if i + 1 >= attempts:
+                break
+            delay = waits[i] if i < len(waits) else (waits[-1] if waits else 0.0)
+            print("[log] %s 打开被占（errno=%s），%.1fs 后重试 %d/%d"
+                  % (path, getattr(e, "errno", None), delay, i + 2, attempts),
+                  file=sys.stderr)
+            nap(delay)
+    raise _LogOpenError("%s 追加打开重试 %d 次仍失败（末次 %r）——疑似瞬时独占锁"
+                        "未释放，fail-visible 中止" % (path, attempts, last_err))
+
+
 def main():
     data_root = _data_root()
     if not _assert_not_real_root(data_root):
@@ -364,7 +413,19 @@ def main():
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     if not sys.stdout.isatty():
         # 计划任务无终端：输出自重定向落文件（长跑纪律，不依赖管道）
-        log_f = open(LEDGER.parent / "last_run.log", "a", encoding="utf-8")
+        log_path = LEDGER.parent / "last_run.log"
+        try:
+            log_f = _open_log_append(log_path)
+        except _LogOpenError as e:
+            # fail-visible（10-19 判据）：日志打开失败禁静默跳过——跳过=零落账
+            # 假绿。此时 sys.stderr 尚未被替换（仍是计划任务经 cmd /c 2>&1
+            # 捕获的真 stderr，落 last_run.log），诊断可见；退出码 3 经
+            # shadow_automation.ps1 透传计划任务历史。
+            print("[FATAL] 影子运行日志打开失败，本次中止（未落任何账，非假绿）：%s"
+                  "——处置：查 watch-daemon/提权进程/杀毒软件是否瞬时握持 %s；"
+                  "锁定释放后下一触发窗（工作日 17:10）自动重试"
+                  % (e, log_path), file=sys.stderr)
+            return 3
         sys.stdout = log_f
         sys.stderr = log_f
         print("===== shadow run start %s =====" % datetime.now())
@@ -480,8 +541,19 @@ def main():
                 if attempt == 1:
                     print("[retry] %s 首次失败，3s 后重试：%s" % (symbol, str(e)[:100]))
                     time.sleep(3)
-        with open(LEDGER, "a", encoding="utf-8") as f:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        try:
+            # 同类打开点（与 last_run.log 同目录同锁况）：账本 append 也走
+            # 有界重试；打开失败禁静默跳过该票——跳过=样本静默缺失（假绿）。
+            with _open_log_append(LEDGER) as f:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        except _LogOpenError as e:
+            # fail-visible：本票未落账、整轮中止。已入账票不受影响（逐票
+            # append+close）；双轨幂等该 attempt 不回写 completed，死信窗
+            # （1h）后下次触发可重跑本票，done 票按幂等跳过。
+            print("[FATAL] 影子账本打开失败，%s 未落账，本次运行中止：%s"
+                  "——已入账票保留；剩余标的由下一触发窗（工作日 17:10）自动补齐"
+                  % (symbol, e), file=sys.stderr)
+            return 3
         if attempt_id:  # 双轨回写：done→completed；failed→允许下次死信后重试
             hook.complete(attempt_id, ok=(row["status"] == "done"),
                           result_ref=str(row.get("run_id", "")),

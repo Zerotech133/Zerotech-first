@@ -22,7 +22,9 @@ AgentMondayCheckpoint → 17:35 AgentChiefPush。tools/check_observation_point.p
   （shadow_automation.ps1:24/42 重定向取证）：
     last_run.log          收尾行 `shadow day <日期> done: {...}`（run_shadow.py:455
                           无条件打印）；done 计数 ≥1 = PASS，跑过但全 failed = FAIL
-    monday_checkpoint.log 末行含 EXIT=0（追加式日志，只看末行防旧 run 假绿）
+    monday_checkpoint.log 末个 run 块含 EXIT=0（追加式日志按块判读防旧 run
+                          假绿；末块未收尾的 [wait] 残留/进行中 = WARN 不计
+                          FAIL，2026-10-19 误报修复见 _judge_checkpoint_log）
     chief_last_run.log    须含 SEND_OK——只有「日报已生成」而无 SEND_OK =
                           推送失败（门3检查 7.2 判例）
   日志缺失 = WARN 显式预期：AgentShadowDaily / AgentChiefPush LastTaskResult=
@@ -249,15 +251,121 @@ def _judge_shadow_log(text: str) -> Tuple[str, str]:
     return FAIL, "last_run.log 无 shadow day 收尾行（跑过但未正常收尾）"
 
 
+# ---------------------------------------------------------------------------
+# 检查 b 辅助：monday_checkpoint.log 块级判读（2026-10-19 误报修复）
+# ---------------------------------------------------------------------------
+#: 巡检 run 块头行前缀（与 monday_checkpoint.py main() 头打印同源；改任一侧
+#: 必须同步——块级判读靠它切分「一次运行一节」，判例：首跑写面地图 #8）
+_CHECKPOINT_RUN_HEAD = "M5 刀4 周一观察点护航巡检 "
+#: [wait] 行前缀：设计内 90s 等待循环的进度输出（SOP 手册：[wait] 行=在
+#: 推进属正常；17:25 巡检必撞上首跑未完成，最长等 180 分钟）
+_CHECKPOINT_WAIT_PREFIX = "[wait]"
+
+
+def _split_checkpoint_blocks(text: str) -> list:
+    """把 monday_checkpoint.log 切成 run 块（一次运行一节）。
+
+    每块以 `M5 刀4 周一观察点护航巡检 <ts>` 头行起始、下一头行前收尾；
+    返回 [{"head": <头行>, "lines": [体行...]}]。无头行（旧格式/手工
+    摘要）返回 []——调用方回退旧末行口径。
+    """
+    blocks = []
+    cur = None
+    for line in text.splitlines():
+        if line.startswith(_CHECKPOINT_RUN_HEAD):
+            if cur is not None:
+                blocks.append(cur)
+            cur = {"head": line.strip(), "lines": []}
+        elif cur is not None:
+            cur["lines"].append(line)
+    if cur is not None:
+        blocks.append(cur)
+    return blocks
+
+
+def _checkpoint_block_ts(head: str) -> str:
+    """块头行 → 运行时间戳（剥前缀，证据行用）。"""
+    return head[len(_CHECKPOINT_RUN_HEAD):].strip() or head
+
+
+def _checkpoint_block_verdict(block: dict):
+    """单块判读 → (status, evidence)；status=None = 未收尾（无结论/EXIT 行）。
+
+    收尾块以 EXIT 行为准（EXIT=0 → PASS；EXIT≠0 → 真实 FAIL）；EXIT 行
+    缺失但有结论行时以结论判（进程死于两行连续 print 之间的极端残迹，
+    结论行仍透露真实失败——fail-visible 不因残迹降级）。
+    """
+    concl = exit_line = None
+    for raw in block["lines"]:
+        s = raw.strip()
+        if s.startswith("结论:"):
+            concl = s
+        elif s.startswith("EXIT="):
+            exit_line = s
+    if exit_line is None and concl is None:
+        return None, ""
+    m = re.search(r"EXIT=(\d+)", exit_line or "")
+    failed = bool(m and m.group(1) != "0") or (m is None and "FAIL" in (concl or ""))
+    if concl and exit_line:
+        # 证据带结论明细（哪几门未过）——排障面不止「失败了」三个字
+        ev = "%s；%s" % (_clip(concl, 110), _clip(exit_line, 60))
+    else:
+        ev = _clip(exit_line or concl or "", 100)
+    return (FAIL if failed else PASS), ev
+
+
 def _judge_checkpoint_log(text: str) -> Tuple[str, str]:
-    """monday_checkpoint.log：追加式日志，只看末行防旧 run 假绿。"""
+    """monday_checkpoint.log：块级判读（2026-10-19 预期性误报修复）。
+
+    旧口径「只看末行有无 EXIT=0」把两类**非失败**形态误判 FAIL：
+      · 设计内 [wait] 等待循环进行中——17:25 巡检必撞上首跑未完成，每 90s
+        重试最长 180 分钟（SOP 手册：[wait] 行=在推进，属正常）；
+      · 预演/手跑被中断留下的 [wait] 残留块（无结论/EXIT 收尾行）。
+    二者同构（末块无收尾行），故按 run 块判：
+      · 末块已收尾 → 按其 EXIT/结论判：EXIT≠0 = 真实 checkpoint 失败
+        （FAIL，带结论明细，fail-visible）；
+      · 末块未收尾 → WARN（[wait] 残留/进行中不计 FAIL——预期性误报）；
+        但若最近完整块是未被更新完整块取代的真实失败，仍报 FAIL
+        （残留块不得掩盖未处置的失败）；
+      · 无 run 头（旧格式/手工摘要）→ 回退旧末行口径。
+    """
     lines = [l for l in text.splitlines() if l.strip()]
     if not lines:
         return FAIL, "monday_checkpoint.log 存在但为空"
-    last = lines[-1].strip()
-    if "EXIT=0" in last:
-        return PASS, "末行 %s" % _clip(last, 100)
-    return FAIL, "末行无 EXIT=0：%s" % _clip(last, 90)
+    blocks = _split_checkpoint_blocks(text)
+    if not blocks:
+        # 无 run 块头（历史格式/手工摘要）：维持旧末行口径
+        last = lines[-1].strip()
+        if "EXIT=0" in last:
+            return PASS, "末行 %s" % _clip(last, 100)
+        return FAIL, "末行无 EXIT=0：%s" % _clip(last, 90)
+    last_blk = blocks[-1]
+    st, ev = _checkpoint_block_verdict(last_blk)
+    if st is not None:
+        head = _checkpoint_block_ts(last_blk["head"])
+        if st == PASS:
+            return PASS, "末块 %s：%s" % (head, ev)
+        return FAIL, ("末块 %s：%s——真实 checkpoint 失败（观察点门未过），"
+                      "按结论明细处置" % (head, ev))
+    # 末块未收尾：[wait] 设计内等待/中断残留 → 不判 FAIL（预期性误报修复）
+    wait_n = sum(1 for l in last_blk["lines"]
+                 if l.strip().startswith(_CHECKPOINT_WAIT_PREFIX))
+    tail = ("末块 %s 未收尾（无结论/EXIT 行；[wait] 行 ×%d = 设计内 90s 等待循环"
+            "或预演/手跑中断残留，非真实失败）"
+            % (_checkpoint_block_ts(last_blk["head"]), wait_n))
+    for blk in reversed(blocks[:-1]):
+        pst, pev = _checkpoint_block_verdict(blk)
+        if pst is None:
+            continue  # 更早的未收尾块：跳过，找最近完整块
+        head = _checkpoint_block_ts(blk["head"])
+        if pst == FAIL:
+            return FAIL, ("%s；但最近完整块 %s 为真实失败且未被更新的完整块"
+                          "取代：%s" % (tail, head, pev))
+        return WARN, ("%s；最近完整块 %s：%s → 周一 17:25 首跑后复查末块结论行，"
+                      "届时末块无 EXIT=0（或 EXIT=1）→ SOP 异常矩阵 #2"
+                      % (tail, head, pev))
+    return WARN, ("%s；且无历史完整块可判读 → 周一 17:25 首跑后复查该日志，"
+                  "届时末块仍无 EXIT=0 → SOP 异常矩阵 #2" % tail)
 
 
 def _judge_chief_log(text: str) -> Tuple[str, str]:
@@ -500,7 +608,8 @@ def print_config() -> None:
             spec["name"], spec["hhmm"], " + ".join(spec["anchors"]), spec["log"]))
     print("日志目录 = <repo-root>/%s" % "/".join(SHADOW_LOG_DIR_REL))
     print("成功标记：last_run.log=shadow day 行 done≥1；"
-          "monday_checkpoint.log=末行 EXIT=0；chief_last_run.log=SEND_OK")
+          "monday_checkpoint.log=末个 run 块 EXIT=0（[wait] 残留/进行中块未收尾"
+          "=WARN 不计 FAIL）；chief_last_run.log=SEND_OK")
     print("Ollama = %s:%d（timeout %.0fs）" % (OLLAMA_HOST, OLLAMA_PORT, OLLAMA_TIMEOUT_S))
     print("watch-daemon 留痕 = %s" % AW_STACK_LOG)
     print("进程探测 = %s" % " ".join(PROCESS_PROBE_CMD))

@@ -11,7 +11,11 @@ tmp_path 构造假任务 XML / 假日志（不读真系统），覆盖：
   5. 退出码矩阵 aggregate()：全 WARN→1 / 有 FAIL→2 / 有 PASS 无 FAIL→0；
   6. XML 解析：锚点缺失 FAIL / 触发时间漂移 FAIL / 无周一 FAIL / 禁用 FAIL /
      坏 XML WARN；--print-config 可打印；
-  7. WARN 收口判例：任何 WARN 证据必含「→」处置指引（不再产出含糊 UNKNOWN）。
+  7. WARN 收口判例：任何 WARN 证据必含「→」处置指引（不再产出含糊 UNKNOWN）；
+  8. [wait] 残留不误报（2026-10-19 修复）：monday_checkpoint.log 块级判读——
+     预演/手跑中断残留与实时 [wait] 等待循环计 WARN 不计 FAIL，收尾块
+     EXIT≠0 仍 FAIL（fail-visible），残留块不掩盖未处置失败，无 run 头
+     旧格式回退旧末行口径。
 """
 import shutil
 import sys
@@ -392,6 +396,17 @@ class TestRealSystemReadOnly(TriggerChainBase):
             self.assertTrue(it["evidence"])
         self.assertIn(rep["exit_code"], (0, 1, 2))
 
+    def test_real_checkpoint_log_judge_is_read_only_and_visible(self):
+        """真仓 monday_checkpoint.log 块级判读只读、不断言具体状态：实况随
+        17:25 块收尾/未收尾在 WARN/FAIL 间演化（等满上限收尾 EXIT=1 是
+        真实失败），锁死「不抛+状态合法+证据非空」的 fail-visible 契约。"""
+        real_log = AP / "data" / "shadow" / "monday_checkpoint.log"
+        if not real_log.exists():
+            self.skipTest("真仓巡检日志不存在（周一 17:25 首跑前预期）")
+        st, ev = ctc._judge_checkpoint_log(real_log.read_text(encoding="utf-8"))
+        self.assertIn(st, ("PASS", "WARN", "FAIL"))
+        self.assertTrue(ev)
+
 
 class TestWarnClosure(TriggerChainBase):
     """WARN 收口判例（2026-10-18）：输出不再出现含糊 UNKNOWN，WARN 必带指引。"""
@@ -421,6 +436,114 @@ class TestWarnClosure(TriggerChainBase):
             if it["status"] == "WARN":
                 self.assertIn("→", it["evidence"])
         self.assertEqual(rep["exit_code"], 0)  # 有 PASS 无 FAIL → 可放行
+
+
+class TestCheckpointLogWaitResidual(TriggerChainBase):
+    """判据 b 修复（2026-10-19 预期性误报）：monday_checkpoint.log 块级判读。
+
+    事故复刻：17:25 AgentMondayCheckpoint 进入设计内 [wait] 90s 等待循环
+    （17:10 首跑零落账 → 未完成），旧「只看末行 EXIT=0」口径把 [wait] 行
+    误判 FAIL → 触发链预检假警报。新口径按 run 块判：末块未收尾（[wait]
+    残留/进行中）= WARN 不计 FAIL；末块收尾且 EXIT≠0 = 真实 FAIL
+    （fail-visible）；残留块不得掩盖未被子块取代的真实失败。
+    """
+
+    @staticmethod
+    def _blk(ts, body):
+        return ("=" * 56 + "\nM5 刀4 周一观察点护航巡检 %s\n" % ts + "=" * 56
+                + "\n" + body)
+
+    WAIT = "[wait] 首跑未完成（尚未落账，第 1/120 次重试前等 90s）\n"
+    OK_BODY = ("结论: 7/7 PASS——观察点门全过\n"
+               "EXIT=0 日志=C:\\aios\\agent_platform\\data\\shadow\\monday_checkpoint.log\n")
+    FAIL_BODY = ("结论: 4/7 PASS（FAIL: 影子首跑已发生（最新交易日 > 2026-10-14））\n"
+                 "EXIT=1 日志=x\n")
+
+    def _run_b(self, checkpoint_text):
+        """只让 monday_checkpoint.log 变化（其余两日志恒 PASS），返回 run_checks 报告。"""
+        logs = {
+            "last_run.log": "shadow day 2026-10-16 done: {'done': 5}\n",
+            "monday_checkpoint.log": checkpoint_text,
+            "chief_last_run.log": "SEND_OK\n",
+        }
+        return ctc.run_checks(self.make_repo(logs), tasks_dir=self.make_tasks_dir(),
+                              connect_fn=self.ok_connect, process_probe=lambda: None,
+                              aw_stack_log=self.root / "no.log")
+
+    def test_wait_residual_block_is_warn_not_fail(self):
+        """10-19 16:40 实况复刻：旧块 EXIT=0 + 末块 [wait] 残留（04:11 预演/
+        手跑中断，无收尾行）→ WARN 不计 FAIL；不告警、不阻塞放行（exit 0）。"""
+        rep = self._run_b(self._blk("2026-10-18 05:55:58", self.OK_BODY)
+                          + self._blk("2026-10-19 04:11:43", self.WAIT + self.WAIT))
+        b = rep["items"][1]
+        self.assertEqual(b["status"], "WARN")
+        self.assertIn("[wait] 行 ×2", b["evidence"])
+        self.assertIn("非真实失败", b["evidence"])
+        self.assertIn("→", b["evidence"])  # WARN 必带处置指引
+        self.assertEqual(rep["fail"], 0)
+        self.assertEqual(rep["exit_code"], 0)  # 有 PASS 无 FAIL → 可放行
+
+    def test_live_wait_loop_in_progress_is_warn_not_fail(self):
+        """实时等待循环（17:25 块 [wait] ×36 进行中、未收尾）→ WARN：
+        设计内形态（SOP 手册：[wait] 行=在推进属正常），不误报 FAIL。"""
+        rep = self._run_b(self._blk("2026-10-18 05:55:58", self.OK_BODY)
+                          + self._blk("2026-10-19 17:25:00", self.WAIT * 36))
+        b = rep["items"][1]
+        self.assertEqual(b["status"], "WARN")
+        self.assertIn("[wait] 行 ×36", b["evidence"])
+
+    def test_concluded_exit1_block_is_real_fail(self):
+        """末块收尾 EXIT=1（等满上限后观察点门未过）→ 真实 FAIL，带结论
+        明细；exit 2（触发链预检告警面照旧响）。"""
+        rep = self._run_b(self._blk("2026-10-18 05:55:58", self.OK_BODY)
+                          + self._blk("2026-10-19 17:25:00",
+                                      self.WAIT * 3 + self.FAIL_BODY))
+        b = rep["items"][1]
+        self.assertEqual(b["status"], "FAIL")
+        self.assertIn("真实 checkpoint 失败", b["evidence"])
+        self.assertIn("影子首跑已发生", b["evidence"])  # 结论明细在证据里
+        self.assertEqual(rep["exit_code"], 2)
+
+    def test_residual_block_does_not_mask_unresolved_fail(self):
+        """残留块不得掩盖未处置失败：最近完整块 EXIT=1 + 末块 [wait] 残留
+        → 仍 FAIL（fail-visible：失败未被更新的完整块取代）。"""
+        rep = self._run_b(self._blk("2026-10-19 17:25:00",
+                                    self.WAIT * 3 + self.FAIL_BODY)
+                          + self._blk("2026-10-19 18:00:00", self.WAIT + self.WAIT))
+        b = rep["items"][1]
+        self.assertEqual(b["status"], "FAIL")
+        self.assertIn("未被更新的完整块取代", b["evidence"])
+
+    def test_concluded_exit0_block_is_pass(self):
+        """末块收尾 EXIT=0（[wait] 后首跑落账、门全过）→ PASS。"""
+        rep = self._run_b(self._blk("2026-10-19 17:25:00",
+                                    self.WAIT * 3 + self.OK_BODY))
+        self.assertEqual(rep["items"][1]["status"], "PASS")
+
+    def test_empty_log_still_fail(self):
+        """空日志保持 FAIL（存在但无任何证据，fail-visible 不降级）。"""
+        rep = self._run_b("   \n\n")
+        b = rep["items"][1]
+        self.assertEqual(b["status"], "FAIL")
+        self.assertIn("为空", b["evidence"])
+
+    def test_header_only_block_is_warn_with_guidance(self):
+        """仅头行无体（拉起即被杀）且无历史完整块 → WARN + 复查指引
+        （无证据不判失败，也不冒充通过）。"""
+        rep = self._run_b(self._blk("2026-10-19 17:25:00", ""))
+        b = rep["items"][1]
+        self.assertEqual(b["status"], "WARN")
+        self.assertIn("无历史完整块", b["evidence"])
+        self.assertIn("→", b["evidence"])
+
+    def test_headerless_legacy_fallback_preserved(self):
+        """无 run 头（旧格式/手工摘要）→ 回退旧末行口径：末行 EXIT=0=PASS；
+        末行无 EXIT=0=FAIL（存量夹具行为不回归）。"""
+        ok = self._run_b("x\n结论: 7/7 PASS——观察点门全过\nEXIT=0 日志=x\n")
+        self.assertEqual(ok["items"][1]["status"], "PASS")
+        bad = self._run_b("EXIT=0 日志=x\n结论: 有 FAIL——先查清\n")
+        self.assertEqual(bad["items"][1]["status"], "FAIL")
+        self.assertIn("末行无 EXIT=0", bad["items"][1]["evidence"])
 
 
 if __name__ == "__main__":
