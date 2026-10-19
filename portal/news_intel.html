@@ -8,8 +8,37 @@
 <link rel="stylesheet" href="/static/page_common.css">
 <script src="/static/nav.js" defer></script>
 <style>
-/* K-ORG-207 新闻情报台：变量全走 tokens.css 语义层（禁硬编码 hex），
-   容器/页头/面板/徽标复用 page_common.css，本页只管三栏布局与条目行。 */
+/* K-ORG-208 新闻情报台（判读输出台）：变量全走 tokens.css 语义层（禁硬编码 hex），
+   容器/页头/面板/徽标/计数卡复用 page_common.css（.panel/.metrics/.metric/.pc-chip），
+   本页只管判读行卡与原料流折叠区。首屏=多空总览+关键判读，原料流水默认收起。 */
+/* 计数卡方向色 override（中式红涨绿跌，page_common .metric .v 只给了状态色） */
+.metric .v.up{color:var(--color-up)}
+.metric .v.dn{color:var(--color-dn)}
+/* 判读行卡：方向色点 + 时间 + 来源 + 标题 + JEV 徽标组 + 命中标标 chips */
+.vrow{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center;
+      padding:7px 10px;border:1px solid var(--border-weak);
+      border-radius:var(--r-s);background:var(--bg-raised);
+      margin-bottom:6px;font-size:var(--fs-s)}
+.vrow .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.vrow .dot.up{background:var(--color-up)}
+.vrow .dot.dn{background:var(--color-dn)}
+.vrow .dot.nt{background:var(--text-dim)}
+.vrow .hm{font-family:var(--font-mono);color:var(--text-dim);font-size:var(--fs-xs);white-space:nowrap}
+.vrow .src{color:var(--text-dim);font-size:var(--fs-xs);white-space:nowrap}
+.vrow .t{flex:1 1 220px;min-width:180px;color:var(--text)}
+.vrow .jtags,.vrow .chips{display:inline-flex;gap:4px;flex-wrap:wrap}
+.vrow .pc-chip{cursor:default;padding:1px 6px}
+/* 文字徽标（不用 emoji 图标） */
+.tag{display:inline-block;border:1px solid var(--border);border-radius:var(--r-s);
+     padding:0 6px;font-size:var(--fs-xs);white-space:nowrap;flex:none}
+.tag.hit{color:var(--color-up);border-color:var(--color-up)}
+.tag.auth{color:var(--color-ok);border-color:var(--color-ok)}
+.tag.gen{color:var(--text-dim);border-color:var(--border)}
+.tag.warn{color:var(--color-warn);border-color:var(--color-warn)}
+.tag.up{color:var(--color-up);border-color:var(--color-up)}
+.tag.dn{color:var(--color-dn);border-color:var(--color-dn)}
+.tag.nt{color:var(--text-dim);border-color:var(--border)}
+/* 三栏布局与条目行（原料流内部沿用 K-ORG-207 结构） */
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
 @media (max-width:899px){.cols{grid-template-columns:1fr}}
 .colhd{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
@@ -26,15 +55,6 @@
 .nrow .t:hover{color:var(--link)}
 .ncnt{font-size:var(--fs-xs);color:var(--text-dim);padding:4px 0 8px 2px;
       border-bottom:1px solid var(--bg-raised);word-break:break-all}
-/* 文字徽标（不用 emoji 图标） */
-.tag{display:inline-block;border:1px solid var(--border);border-radius:var(--r-s);
-     padding:0 6px;font-size:var(--fs-xs);white-space:nowrap;flex:none}
-.tag.hit{color:var(--color-up);border-color:var(--color-up)}
-.tag.auth{color:var(--color-ok);border-color:var(--color-ok)}
-.tag.gen{color:var(--text-dim);border-color:var(--border)}
-.tag.up{color:var(--color-up);border-color:var(--color-up)}
-.tag.dn{color:var(--color-dn);border-color:var(--color-dn)}
-.tag.nt{color:var(--text-dim);border-color:var(--border)}
 /* 顶部工具行与 fail-visible 黄条 */
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 10px;font-size:var(--fs-xs);color:var(--text-dim)}
 .errbar{border:1px solid var(--color-warn);color:var(--color-warn);
@@ -42,42 +62,76 @@
 /* 舆情栏摘要块 */
 .meta{font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:6px}
 .themes{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+/* 原料流折叠区：默认收起，summary 携三栏计数 */
+.rawflow{margin-top:12px}
+.rawflow summary{cursor:pointer;user-select:none;list-style:none;
+     display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;
+     font-size:var(--fs-m);font-weight:600;color:var(--text)}
+.rawflow summary::-webkit-details-marker{display:none}
+.rawflow summary::before{content:"▸";color:var(--text-dim)}
+.rawflow[open] summary::before{content:"▾"}
+.rawflow summary .sum-cnt{font-size:var(--fs-xs);font-weight:400;
+     color:var(--text-dim);font-family:var(--font-mono)}
+.rawflow summary .sum-cnt b{color:var(--link)}
+.rawflow .cols{margin-top:10px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>新闻情报台<span class="sub">金融新闻统一视图 · 速报 / 政策 / 舆情 三分栏</span></h1>
+  <h1>新闻情报台<span class="sub">JEV 判读输出 · 结论在前，原料在后</span></h1>
   <div class="toolbar">
     <button id="btn-refresh" class="pc-chip ent">手动刷新</button>
     <span>60s 自动轮询</span>
     <span id="gen-at"></span>
   </div>
   <div id="errbar" class="errbar" hidden></div>
-  <div class="cols">
-    <section class="panel">
-      <div class="colhd"><h2>速报</h2><span class="cnt" id="cnt-flash">0 条</span></div>
-      <p class="colhint">关键词/自选股命中并推送的条目 · 红标=自选股命中</p>
-      <div id="list-flash"></div>
-    </section>
-    <section class="panel">
-      <div class="colhd"><h2>政策</h2><span class="cnt" id="cnt-policy">0 条</span></div>
-      <p class="colhint">政策关键词读时分类 · 绿标=权威源白名单</p>
-      <div id="list-policy"></div>
-    </section>
-    <section class="panel">
-      <div class="colhd"><h2>舆情</h2><span class="cnt" id="cnt-senti">-</span></div>
-      <p class="colhint">雪球情报日报摘要（每日 19:00 产出）</p>
-      <div id="list-senti"></div>
-    </section>
-  </div>
-  <footer>K-ORG-207 新闻情报台 · 数据只读聚合 /api/news/intel（速报=采集库 48h · 政策=关键词读时分类 · 舆情=xq 情报日报）· 信息采集域</footer>
+  <!-- 首屏第一屏：多空分布总览（近 48h 已判读条目的方向/冲击计数） -->
+  <section class="panel">
+    <div class="colhd"><h2>多空分布总览</h2><span class="cnt" id="cnt-ov">近 48h · 已判 0 条</span></div>
+    <div class="metrics">
+      <div class="metric"><div class="k">利多</div><div class="v up" id="ov-bull">0</div></div>
+      <div class="metric"><div class="k">利空</div><div class="v dn" id="ov-bear">0</div></div>
+      <div class="metric"><div class="k">中性</div><div class="v" id="ov-neutral">0</div></div>
+      <div class="metric"><div class="k">已判读</div><div class="v" id="ov-total">0</div></div>
+      <div class="metric"><div class="k">高冲击</div><div class="v warn" id="ov-impact">0</div></div>
+    </div>
+  </section>
+  <!-- 首屏第二屏：今日关键判读（冲击 × 置信度排序 top 20） -->
+  <section class="panel">
+    <div class="colhd"><h2>今日关键判读</h2><span class="cnt" id="cnt-verdict">0 条</span></div>
+    <p class="colhint">冲击优先、置信度次级排序 · 高冲击置顶 · 红点=利多 / 绿点=利空 · 点击标题无展开，结论即摘要</p>
+    <div id="list-verdicts"></div>
+  </section>
+  <!-- 底部原料流：速报/政策/舆情三栏，默认收起（K-ORG-208 降级为原料） -->
+  <details class="panel rawflow">
+    <summary>原料流<span class="sum-cnt" id="sum-cnt">速报 0 · 政策 0 · 舆情 -</span><span class="sum-cnt">默认收起，点击展开</span></summary>
+    <div class="cols">
+      <section>
+        <div class="colhd"><h2>速报</h2><span class="cnt" id="cnt-flash">0 条</span></div>
+        <p class="colhint">关键词/自选股命中并推送的条目 · 红标=自选股命中</p>
+        <div id="list-flash"></div>
+      </section>
+      <section>
+        <div class="colhd"><h2>政策</h2><span class="cnt" id="cnt-policy">0 条</span></div>
+        <p class="colhint">政策关键词读时分类 · 绿标=权威源白名单</p>
+        <div id="list-policy"></div>
+      </section>
+      <section>
+        <div class="colhd"><h2>舆情</h2><span class="cnt" id="cnt-senti">-</span></div>
+        <p class="colhint">雪球情报日报摘要（每日 19:00 产出）</p>
+        <div id="list-senti"></div>
+      </section>
+    </div>
+  </details>
+  <footer>K-ORG-208 新闻情报台 · 判读输出台 /api/news/intel（总览+关键判读=JEV 结论 · 原料流=速报/政策/舆情）· 信息采集域</footer>
 </div>
 <script>
 "use strict";
 var SRC_NAME = {
   sina: "新浪财经", eastmoney: "东方财富", wallstreetcn: "华尔街见闻",
   announcement: "A股公告", survey: "机构调研", report: "研报",
-  world: "海外RSS", govpolicy: "中国政府网", chinanews: "中国新闻网"
+  world: "海外RSS", govpolicy: "中国政府网", chinanews: "中国新闻网",
+  xd_news: "消息快讯", xd_notice: "公告"
 };
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -85,6 +139,79 @@ function esc(s) {
   });
 }
 function srcName(id) { return SRC_NAME[id] || id || "-"; }
+
+/* ── 总览条：多空分布计数卡 ── */
+function renderOverview(ov) {
+  document.getElementById("ov-bull").textContent = ov.bull || 0;
+  document.getElementById("ov-bear").textContent = ov.bear || 0;
+  document.getElementById("ov-neutral").textContent = ov.neutral || 0;
+  document.getElementById("ov-total").textContent = ov.total_judged || 0;
+  document.getElementById("ov-impact").textContent = ov.high_impact || 0;
+  document.getElementById("cnt-ov").innerHTML =
+    "近 48h · 已判 <b>" + (ov.total_judged || 0) + "</b> 条";
+}
+
+/* ── 今日关键判读：方向色点 + 标题 + JEV 徽标组 + 命中标的 chips ── */
+function biasTag(jev) {
+  var b = jev.bias;
+  if (b === "bull") return '<span class="tag up">利多</span>';
+  if (b === "bear") return '<span class="tag dn">利空</span>';
+  return '<span class="tag nt">中性</span>';
+}
+function confTag(jev) {
+  var c = jev.conf;
+  var pct = (typeof c === "number" && isFinite(c))
+    ? Math.round(c * 100) + "%" : "-";
+  return '<span class="tag nt">置信 ' + pct + '</span>';
+}
+function impactTag(imp) {
+  if (!imp) return "";  /* impact_cn 缺失不渲染（真实库约三成缺失） */
+  return '<span class="tag ' + (imp === "高" ? "warn" : "nt")
+    + '">冲击 ' + esc(imp) + '</span>';
+}
+function renderVerdicts(vd) {
+  var box = document.getElementById("list-verdicts");
+  box.innerHTML = "";
+  var items = vd.items || [];
+  document.getElementById("cnt-verdict").innerHTML =
+    "<b>" + items.length + "</b>/" + (vd.total || 0) + " 条";
+  if (!items.length) {
+    box.innerHTML = '<div class="empty">近 48h 无已判读条目</div>';
+    return;
+  }
+  items.forEach(function (it) {
+    var jev = it.jev || {};
+    var b = jev.bias;
+    var dotCls = b === "bull" ? "up" : (b === "bear" ? "dn" : "nt");
+    var chips = (it.stocks || []).map(function (s) {
+      return '<span class="pc-chip">' + esc(s) + '</span>';
+    }).join("");
+    var d = document.createElement("div");
+    d.innerHTML = '<div class="vrow">'
+      + '<span class="dot ' + dotCls + '"></span>'
+      + '<span class="hm">' + esc(it.hm || "-") + '</span>'
+      + '<span class="src">' + esc(srcName(it.source)) + '</span>'
+      + '<span class="t">' + esc(it.title || "") + '</span>'
+      + '<span class="jtags">' + biasTag(jev) + confTag(jev)
+      + impactTag(jev.impact_cn)
+      + (jev.scope_cn ? '<span class="tag nt">' + esc(jev.scope_cn) + '</span>' : "")
+      + '</span>'
+      + (chips ? '<span class="chips">' + chips + '</span>' : "")
+      + '</div>';
+    box.appendChild(d.firstElementChild);
+  });
+}
+
+/* ── 原料流 summary 三栏计数 ── */
+function renderSummary(d) {
+  var fl = d.flash || {}, po = d.policy || {}, st = d.sentiment || {};
+  var senti = st.report_exists
+    ? ((st.classified_today || 0) + " 条分类") : "未产出";
+  document.getElementById("sum-cnt").innerHTML =
+    "速报 <b>" + (fl.items || []).length + "/" + (fl.total || 0)
+    + "</b> · 政策 <b>" + (po.items || []).length + "/" + (po.total || 0)
+    + "</b> · 舆情 " + esc(senti);
+}
 
 /* 速报/政策条目行：点击标题展开 content 摘要（同栏互斥展开） */
 function newsRow(item, badgeHtml) {
@@ -97,7 +224,7 @@ function newsRow(item, badgeHtml) {
     + '<div class="ncnt" hidden>' + esc(item.content || "（无正文摘要）") + '</div>';
   var title = d.querySelector(".t"), body = d.querySelector(".ncnt");
   title.addEventListener("click", function () {
-    var col = this.closest(".panel").querySelectorAll(".ncnt");
+    var col = this.closest("section").querySelectorAll(".ncnt");
     var open = !body.hidden;
     col.forEach(function (x) { x.hidden = true; });
     body.hidden = open;
@@ -200,9 +327,12 @@ function renderErrors(errors) {
 
 function load() {
   fetch("/api/news/intel").then(function (r) { return r.json(); }).then(function (d) {
+    renderOverview(d.overview || {});
+    renderVerdicts(d.verdicts || {});
     renderFlash(d.flash || {});
     renderPolicy(d.policy || {});
     renderSentiment(d.sentiment || {});
+    renderSummary(d);
     renderErrors(d.errors || {});
     document.getElementById("gen-at").textContent =
       "生成于 " + (d.generated_at || "-");

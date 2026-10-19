@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-"""K-ORG-207：api_news_intel 三栏聚合单测。
+"""K-ORG-207/208：api_news_intel 判读输出台聚合单测。
 
 monkeypatch env AIOS_ROOT 把 REPO 锚指向 tmp（沿 test_api_notify 判例）；
 api_xq_intel.REPORT_ROOT 一并 monkeypatch 指向 tmp（其模块常量锚在
 C:/aios 真数据目录，测试必须隔离不读真数据）；FakeHandler 注入 _json
 捕获 payload（_json 由 portal_api 主 Handler 提供，单测用 fake 等价替换）。
+K-ORG-208 新增：overview 多空计数 / verdicts 冲击优先排序 / jev 坏 JSON
+不炸 / 新响应结构 fail-visible 链路。
 """
 import json
 import sqlite3
@@ -47,16 +49,19 @@ def root(tmp_path, monkeypatch):
 
 
 def make_db(root, rows):
+    # 表结构与真库同构（news 表含 stocks/jev 列，K-ORG-208 判读区依赖）
     (root / "news_collector").mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(root / "news_collector" / "news.db")
     con.execute("CREATE TABLE news (id TEXT PRIMARY KEY, ts TEXT, title TEXT,"
                 " content TEXT, source TEXT, hit INTEGER DEFAULT 0,"
-                " pushed INTEGER DEFAULT 0)")
+                " pushed INTEGER DEFAULT 0, digested INTEGER DEFAULT 0,"
+                " created_at TEXT, stocks TEXT, jev TEXT)")
     con.executemany(
-        "INSERT INTO news (id,ts,title,content,source,hit,pushed)"
-        " VALUES(?,?,?,?,?,?,?)",
+        "INSERT INTO news (id,ts,title,content,source,hit,pushed,stocks,jev)"
+        " VALUES(?,?,?,?,?,?,?,?,?)",
         [(r["id"], r["ts"], r.get("title", ""), r.get("content", ""),
-          r.get("source", ""), r.get("hit", 0), r.get("pushed", 0))
+          r.get("source", ""), r.get("hit", 0), r.get("pushed", 0),
+          r.get("stocks"), r.get("jev"))
          for r in rows])
     con.commit()
     con.close()
@@ -115,16 +120,21 @@ def test_flash_structure_and_window(root):
     assert it["hit"] is False
     gov = next(i for i in fl["items"] if i["source"] == "govpolicy")
     assert gov["hit"] is True and gov["pushed"] is True
+    # BASE_ROWS 未带 jev → 速报条目 jev 投影为 null（不炸，K-ORG-208）
+    assert it["jev"] is None
 
 
 def test_fail_visible_when_db_missing(root):
-    # 不建 news.db：速报/政策两栏 fail-visible 记 errors，其余照常 200
+    # 不建 news.db：速报/政策/判读三路 fail-visible 记 errors，其余照常 200
     h = get()
     p = h.captured
     assert h.code == 200
     assert p["flash"]["items"] == [] and p["policy"]["items"] == []
     assert "flash" in p["errors"] and "policy" in p["errors"]
     assert "news.db" in p["errors"]["flash"]
+    # K-ORG-208 判读区与速报同源：overview/verdicts 两键同步进 errors 不假绿
+    assert "overview" in p["errors"] and "verdicts" in p["errors"]
+    assert p["overview"]["total_judged"] == 0 and p["verdicts"]["items"] == []
     # 舆情：报告未生成是合法空态，不记 error
     assert p["sentiment"]["report_exists"] is False
     assert "sentiment" not in p["errors"]
@@ -187,3 +197,95 @@ def test_config_override_and_builtin_fallback(root):
     p3 = get().captured
     assert p3["policy"]["total"] == 1
     assert p3["policy"]["items"][0]["authority"] is True   # sina 被配置抬为权威
+
+
+# ── K-ORG-208 判读输出台用例 ─────────────────────────────────────────────
+
+def jrow(jid, hours, title, jev_obj, source="xd_news", stocks=None):
+    """判读区造数：jev_obj 为 dict 时序列化，字符串原样写入（造坏 JSON 用）。"""
+    raw = jev_obj if isinstance(jev_obj, str) else json.dumps(
+        jev_obj, ensure_ascii=False)
+    return {"id": jid, "ts": hm(hours), "title": title, "source": source,
+            "stocks": stocks, "jev": raw}
+
+
+JEV_ROWS = [
+    # 甲：高冲击 + 低置信（0.5）——拍板口径下应压过乙（低冲击 + 高置信 0.95）
+    jrow("j:a", 1, "甲高冲击低置信",
+         {"bias": "bull", "bias_cn": "利多", "conf": 0.5,
+          "impact_cn": "高", "scope_cn": "A股"}, stocks='["300001.SZ"]'),
+    # 乙：低冲击 + 高置信（对照项）
+    jrow("j:b", 2, "乙低冲击高置信",
+         {"bias": "bear", "bias_cn": "利空", "conf": 0.95, "impact_cn": "低"}),
+    # 丙：高冲击 + 高置信 → 应排最前；无 bias_cn → 按 bias 兜底出中文
+    jrow("j:c", 3, "丙高冲击高置信",
+         {"bias": "bear", "conf": 0.9, "impact_cn": "高"}, source="xd_notice"),
+    # 丁：中冲击中性
+    jrow("j:d", 4, "丁中冲击中性",
+         {"bias": "neutral", "bias_cn": "中性", "conf": 0.7,
+          "impact_cn": "中"}),
+    # 窗外旧判读：有 jev 也不收（48h 窗口过滤）
+    jrow("j:old", 72, "窗外旧判读",
+         {"bias": "bull", "conf": 1.0, "impact_cn": "高"}, source="sina"),
+]
+
+
+def test_overview_counts_and_verdict_impact_priority(root):
+    make_db(root, JEV_ROWS)
+    p = get().captured
+    assert p["errors"] == {}
+    # 总览计数：窗外旧判读不计；方向分桶 + 高冲击计数
+    ov = p["overview"]
+    assert ov["total_judged"] == 4
+    assert ov["bull"] == 1 and ov["bear"] == 2 and ov["neutral"] == 1
+    assert ov["high_impact"] == 2
+    # 关键判读排序：impact 权重优先、conf 次级（高冲击低置信 > 低冲击高置信）
+    vd = p["verdicts"]
+    assert vd["total"] == 4 and len(vd["items"]) == 4
+    assert [i["title"][0] for i in vd["items"]] == ["丙", "甲", "丁", "乙"]
+    # 字段投影：hm 解析 / stocks JSON 数组解析 / bias_cn 兜底 / scope_cn 带出
+    top = vd["items"][0]
+    assert top["hm"] == top["ts"][-5:] and top["source"] == "xd_notice"
+    assert top["jev"]["bias_cn"] == "利空"          # bias 兜底出中文
+    second = vd["items"][1]
+    assert second["stocks"] == ["300001.SZ"]
+    assert second["jev"]["bias"] == "bull" and second["jev"]["conf"] == 0.5
+    assert second["jev"]["scope_cn"] == "A股"
+
+
+def test_verdicts_and_flash_survive_bad_jev(root):
+    rows = [
+        # 好判读：正常进 overview/verdicts
+        jrow("j:good", 1, "好判读一条",
+             {"bias": "bull", "bias_cn": "利多", "conf": 0.8,
+              "impact_cn": "高"}),
+        # 坏 JSON：flash 条目 jev 置 null，不进统计，整包不炸
+        jrow("j:bad", 2, "坏JSON一条", "{bad json", source="sina"),
+        # 空串 jev：判例过滤 jev!=''（api_backtest 同款），静默
+        jrow("j:empty", 3, "空jev一条", "", source="sina"),
+        # 非 dict JSON（数组）：投影置 null 不进统计
+        jrow("j:arr", 4, "数组jev一条", "[1,2]", source="sina"),
+        # conf 非法值：条目仍有效进统计，conf 置 None（不炸）
+        jrow("j:conf", 5, "conf非法一条",
+             {"bias": "bear", "conf": "abc", "impact_cn": "低"},
+             source="sina"),
+    ]
+    make_db(root, rows)
+    p = get().captured
+    assert p["errors"] == {}
+    # 只有 有效dict 判读计数：坏 JSON/空串/非 dict 三条被剔除
+    ov = p["overview"]
+    assert ov["total_judged"] == 2
+    assert ov["bull"] == 1 and ov["bear"] == 1 and ov["high_impact"] == 1
+    vd = p["verdicts"]
+    assert vd["total"] == 2
+    titles = [i["title"] for i in vd["items"]]
+    assert "好判读一条" in titles and "conf非法一条" in titles
+    bad_conf = next(i for i in vd["items"] if i["title"] == "conf非法一条")
+    assert bad_conf["jev"]["conf"] is None
+    # flash 逐条 jev 投影：好=dict，坏/空/非 dict=null（fail-visible 不适用单条）
+    by_title = {i["title"]: i["jev"] for i in p["flash"]["items"]}
+    assert by_title["好判读一条"]["bias"] == "bull"
+    assert by_title["坏JSON一条"] is None
+    assert by_title["空jev一条"] is None
+    assert by_title["数组jev一条"] is None
