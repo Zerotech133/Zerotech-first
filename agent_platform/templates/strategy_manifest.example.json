@@ -1,0 +1,9 @@
+{
+  "strategies": [
+    {
+      "module": "my_strategy_plugin",
+      "class": "MyStrategyAgent",
+      "strategy_id": "my_strategy_v1"
+    }
+  ]
+}

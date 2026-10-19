@@ -1,0 +1,27 @@
+{
+  "strategies": [
+    {
+      "strategy_id": "my_strategy_v1",
+      "version": "1.0.0",
+      "allowed_data": [
+        "bars",
+        "features"
+      ],
+      "resource_budget": {
+        "timeout_s": 2.0,
+        "max_concurrency": 1,
+        "max_context_bytes": 4096
+      },
+      "allowed_modes": [
+        "BACKTEST",
+        "REPLAY",
+        "SHADOW",
+        "SIM_MARKET"
+      ],
+      "permissions": [
+        "propose",
+        "read_context"
+      ]
+    }
+  ]
+}

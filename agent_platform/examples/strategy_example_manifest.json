@@ -1,0 +1,9 @@
+{
+  "strategies": [
+    {
+      "module": "strategy_example_momentum",
+      "class": "StrategyExampleMomentumAgent",
+      "strategy_id": "strategy_example_momentum_v1"
+    }
+  ]
+}
