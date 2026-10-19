@@ -4,31 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>雪球舆情情报台 · 零界工作站</title>
-<script src="/static/nav.js?v=20261018-p2a"></script>
+<link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/page_common.css">
 <script src="/static/nav.js" defer></script>
 <style>
 :root{
-  --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2a3140;
-  --txt:#e6edf3; --sub:#8b949e; --dim:#57606a;
-  --up:#f8514f; --down:#3fb950;            /* 涨红跌绿（中国行情惯例） */
-  --accent:#e3b341; --blue:#58a6ff; --purple:#bc8cff; --teal:#39d2c0;
-  --radius:14px;
+  /* K-ORG-207 风格统一：自定义变量全部映射 tokens.css 语义层，禁硬编码 hex。
+     --border/--text 不在此重定义——tokens 有同名同值定义，页内重写会自引用成环 */
+  --bg:var(--bg-page); --panel:var(--bg-raised); --panel2:var(--gray-3);
+  --txt:var(--text); --sub:var(--text-dim); --dim:var(--text-dim);
+  --up:var(--color-up); --down:var(--color-dn);   /* 涨红跌绿（中国行情惯例） */
+  --accent:var(--color-warn); --blue:var(--link); --purple:var(--pur-500); --teal:var(--blu-500);
+  --radius:var(--r-l);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:radial-gradient(1200px 600px at 80% -10%,#16233a 0%,var(--bg) 55%);
   color:var(--txt);font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
   min-height:100vh;padding:28px 32px 60px}
-.wrap{max-width:1280px;margin:0 auto}
+.wrap{max-width:1280px;margin:0 auto;padding:0}
 a{color:var(--blue);text-decoration:none}
 
-/* ── 头部 ── */
+/* ── 头部（K-ORG-207：h1+.sub 标准页头交由 page_common.css，本页只管布局） ── */
 header{display:flex;align-items:flex-end;justify-content:space-between;
   border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:14px}
-h1{font-size:26px;letter-spacing:1px;display:flex;align-items:center;gap:12px}
-h1 .logo{width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;
-  justify-content:center;background:linear-gradient(135deg,#f8514f,#e3b341);
-  font-weight:800;color:#0d1117;font-size:18px}
-.sub{color:var(--sub);font-size:13px;margin-top:6px}
 .badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .badge{font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid var(--border);
   background:var(--panel);color:var(--sub);cursor:default}
@@ -62,7 +60,7 @@ h1 .logo{width:34px;height:34px;border-radius:9px;display:inline-flex;align-item
 .grid{display:grid;gap:14px}
 .g-main{grid-template-columns:1.15fr .85fr}
 .g-low{grid-template-columns:1fr 1fr}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:0}
 .card h2{font-size:14px;color:var(--sub);font-weight:600;letter-spacing:.5px;
   margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
 .card h2 .hint{font-size:11px;color:var(--dim);font-weight:400}
@@ -94,7 +92,7 @@ h3.mid{font-size:12px;color:var(--sub);margin:16px 0 8px;letter-spacing:.5px}
 /* ── 个股表 ── */
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{color:var(--dim);text-align:left;font-weight:500;padding:6px 8px;border-bottom:1px solid var(--border)}
-td{padding:9px 8px;border-bottom:1px solid #212836;font-variant-numeric:tabular-nums}
+td{padding:9px 8px;border-bottom:1px solid #212836;font-variant-numeric:tabular-nums;white-space:normal}
 tr:last-child td{border-bottom:none}
 .heat{display:inline-block;width:64px;height:6px;border-radius:3px;vertical-align:middle;
   background:#212836;overflow:hidden}
@@ -149,10 +147,7 @@ tr:last-child td{border-bottom:none}
 <body>
 <div class="wrap">
   <header>
-    <div>
-      <h1><span class="logo">雪</span>雪球舆情情报台</h1>
-      <div class="sub">数据源 quant_backtest · 抓取 → 入库 → LLM 分类 → 日报 · 守望六环 · 涨红跌绿</div>
-    </div>
+    <h1>雪球舆情情报台 <span class="sub">数据源 quant_backtest · 抓取 → 入库 → LLM 分类 → 日报 · 守望六环 · 涨红跌绿</span></h1>
     <div class="badges">
       <span class="badge demo off" id="mode-badge" onclick="toggleDemo()" title="点击切换演示/实时模式">● 实时数据</span>
       <span class="badge">日期 <b id="b-date">—</b></span>
@@ -172,7 +167,7 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <div class="grid g-main" style="margin-bottom:14px">
-    <div class="card">
+    <div class="card panel">
       <h2>情绪分布 <span class="hint" id="hint-sent"></span></h2>
       <div class="donut-wrap">
         <div class="donut" id="donut"><div class="c"><b id="d-n">—</b><span>样本</span></div></div>
@@ -184,7 +179,7 @@ tr:last-child td{border-bottom:none}
       <div class="bars" id="ctype-bars"></div>
     </div>
 
-    <div class="card">
+    <div class="card panel">
       <h2>热度个股 Top<span id="topn"></span> <span class="hint">点击代码下钻近 7 日</span></h2>
       <table>
         <thead><tr><th>代码</th><th>提及</th><th>热度</th></tr></thead>
@@ -195,27 +190,27 @@ tr:last-child td{border-bottom:none}
   </div>
 
   <div class="grid g-main" style="margin-bottom:14px">
-    <div class="card">
+    <div class="card panel">
       <h2>升温词 <span class="hint">今日 vs 前 6 日基线 · n≥2 且 ratio≥2 触发</span></h2>
       <div class="tempo-cols">
         <div class="t-bull"><h3>▲ 看多升温</h3><div class="chips" id="tempo-bull"></div></div>
         <div class="t-bear"><h3>▼ 看空升温</h3><div class="chips" id="tempo-bear"></div></div>
       </div>
     </div>
-    <div class="card">
+    <div class="card panel">
       <h2>异动信号 <span class="hint">bearish 突增 · 对比前 6 日基线</span></h2>
       <div id="signals"></div>
     </div>
   </div>
 
   <div class="grid g-low">
-    <div class="card">
+    <div class="card panel">
       <h2>处理管线（六环 · 当日口径） <span class="hint" id="pipe-hint"></span></h2>
       <div class="pipe" id="pipe"></div>
       <div class="cover-bar"><i id="cover-fill" style="width:0%"></i></div>
       <div class="hint" id="cover-hint" style="font-size:11px;color:var(--dim)">分类覆盖率快照加载中…</div>
     </div>
-    <div class="card">
+    <div class="card panel">
       <h2>主题热度</h2>
       <div class="bars" id="theme-bars"></div>
     </div>

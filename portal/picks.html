@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>今日选股总览 · 零界</title>
 <link rel="stylesheet" href="/static/tokens.css">
+<link rel="stylesheet" href="/static/page_common.css">
 <link rel="icon" href="data:,">
 <!--
   今日选股聚合页（门户层 · 全策略强制扫描产物）
@@ -22,13 +23,10 @@
   .dim { color: var(--text-dim); }
   .num { font-family: Consolas, "Courier New", monospace; }
   main { max-width: var(--page-w); margin: 0 auto; padding: 0 26px 56px; }
-  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px 12px; max-width: var(--page-w); margin: 0 auto; }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--blu-600), var(--pur-500)); display: grid; place-items: center; font-size: 19px; font-weight: 800; color: #fff; }
-  .brand h1 { font-size: 17px; font-weight: 700; }
-  .brand small { color: var(--text-dim); font-size: 10.5px; letter-spacing: 3px; display: block; margin-top: 2px; }
+  /* K-ORG-207 页头标准化：brand/logo 装饰移除，h1+.sub 标准页头交由 page_common.css */
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 26px 12px; max-width: var(--page-w); margin: 0 auto; }
   .clock { font-family: Consolas, monospace; font-size: 14px; color: var(--link); }
-  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 48px 0; max-width: var(--page-w); margin: 0 auto; }
+  .topnav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 26px 0; max-width: var(--page-w); margin: 0 auto; }
   .pill { display: inline-block; padding: 7px 15px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-dim); text-decoration: none; font-size: 13px; background: var(--bg-surface); transition: border-color .2s ease, color .2s ease; }
   .pill:hover { border-color: var(--link); color: var(--text); }
   .pill.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
@@ -37,7 +35,7 @@
   .vitals b { color: var(--text); font-weight: 600; }
   /* ── 市场分布条 ── */
   .mdistro { margin-top: 10px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-m); padding: 12px 20px 14px; }
-  .mdistro .bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; border: 1px solid var(--border-weak); }
+  .mdistro .bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; border: 1px solid var(--border-weak); margin: 0; background: transparent; }
   .mdistro .bar .seg { transition: width .4s ease; }
   .mdistro .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 9px; font-size: 11.5px; color: var(--text-dim); }
   .mdistro .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
@@ -163,10 +161,7 @@
 <script src="/static/nav.js" defer></script></head>
 <body>
 <header>
-  <div class="brand">
-    <div class="logo">田</div>
-    <div><h1>今日选股总览</h1><small>QUANT PICKS · 全策略强制扫描</small></div>
-  </div>
+  <h1>今日选股总览 <span class="sub">QUANT PICKS · 全策略强制扫描</span></h1>
   <div class="clock num" id="clock"></div>
 </header>
 <nav class="topnav">

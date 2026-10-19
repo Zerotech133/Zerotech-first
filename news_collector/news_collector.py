@@ -281,10 +281,107 @@ def fetch_world(size):
     return out
 
 
+# ── K-ORG-207 政策权威源（2026-10-19 实测探测后注册，探测脚本放 %TEMP% 不入仓）──
+# 口径澄清：sources.yaml（zerobound-kg/ingestion/conf/）是 KG 采集域权威清单，
+# 新闻采集源权威 = 本文件 SOURCES + news_config.json，两者互不替代，本单不动 sources.yaml。
+# 探测结论（HTTP 200 且返回可解析 XML/JSON 才注册，timeout=5）：
+#   注册 2 源——govpolicy 中国政府网政策文件库 JSON API（国务院文件，最权威，
+#   实测 200 + 2026 当月文件）；chinanews 中国新闻网滚动+财经双 RSS（国家通讯社
+#   中新社口径，实测 200 XML 且带 RFC822 时间）。
+# 落选如实记录——gov.cn/rss/zhengce.xml 等旧 RSS 404（政策库 API 顶上）；
+# 新华网/人民网 RSS 返回 200 但无 pubDate 或整包停更（时间不可解析，注册即空转）；
+# 发改委 RSS 200 但 0 条；央行官网无 RSS（跳过）；财联社电报泛资讯不入权威白名单。
+GOV_POLICY_API = ("https://sousuo.www.gov.cn/search-gov/data"
+                  "?t=zhengcelibrary_gw&q=&timetype=timeqb&sort=score&sortType=1"
+                  "&searchfield=title&pcodeJiguan=&childtype=&subchildtype="
+                  "&tsbq=&pubtimeyear=&puborg=&pcodeYear=&pcodeNum=&filetype="
+                  "&page=1&n=20&inpro=&bmfl=&dup=&orpro=&type=zhengcelibrary")
+
+CN_FEEDS = [
+    ("scroll", "https://www.chinanews.com.cn/rss/scroll-news.xml"),
+    ("finance", "https://www.chinanews.com.cn/rss/finance.xml"),
+]
+
+
+def fetch_govpolicy(size):
+    """中国政府网政策文件库（国务院文件检索 API，ptime 毫秒 → 北京时间）。"""
+    j = http_json(GOV_POLICY_API, timeout=12)
+    out = []
+    for it in ((j.get("searchVO") or {}).get("listVO")) or []:
+        title = strip_html(it.get("title") or "")
+        if not title:
+            continue
+        ts = ""
+        if it.get("ptime"):
+            try:
+                ts = datetime.fromtimestamp(
+                    int(it["ptime"]) / 1000, CST).strftime("%Y-%m-%d %H:%M")
+            except Exception:
+                ts = ""  # 时间不可解析交由 insert_items 丢弃（不造采集时间）
+        org = (it.get("puborg") or "").strip()
+        out.append({"id": "govpol:%s" % (it.get("code") or it.get("id") or title[:40]),
+                    "ts": ts,
+                    "title": ("[%s] %s" % (org, title) if org else title)[:80],
+                    "content": (strip_html(it.get("summary") or "") or title)[:300]})
+        if len(out) >= size:
+            break
+    return out
+
+
+def fetch_chinanews(size):
+    """中国新闻网（中新社）滚动+财经双 RSS，guid 哈希入库去重。
+
+    feed 的 RFC822 pubDate 无时区后缀，按北京时间处理（中新社发布口径）；
+    单 feed 失败自动跳过，不拖垮整源。
+    """
+    import hashlib
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+    out, seen = [], set()
+    per = max(size // len(CN_FEEDS), 5) if size else 8
+    for tag, url in CN_FEEDS:
+        try:
+            r = requests.get(url, headers=UA, timeout=12)
+            r.raise_for_status()
+            root = ET.fromstring(r.content)
+            got = 0
+            for it in root.findall(".//item"):
+                title = (it.findtext("title") or "").strip()
+                if not title:
+                    continue
+                guid = (it.findtext("guid") or it.findtext("link") or title).strip()
+                if guid in seen:  # 滚动/财经两 feed 交叉条目去重
+                    continue
+                seen.add(guid)
+                ts = ""
+                pd = (it.findtext("pubDate") or "").strip()
+                if pd:
+                    try:
+                        dt = parsedate_to_datetime(pd)
+                        if dt.tzinfo is None:
+                            dt = dt.replace(tzinfo=CST)
+                        ts = dt.astimezone(CST).strftime("%Y-%m-%d %H:%M")
+                    except Exception:
+                        ts = ""
+                desc = strip_html(it.findtext("description") or "")
+                hid = hashlib.md5(guid.encode("utf-8")).hexdigest()[:16]
+                out.append({"id": "cns:%s:%s" % (tag, hid),
+                            "ts": ts, "title": title[:80], "content": desc[:300]})
+                got += 1
+                if got >= per:
+                    break
+        except Exception:
+            continue  # 单 feed 失败自动跳过（与 world 源同待遇）
+        if len(out) >= size:
+            break
+    return out
+
+
 SOURCES = {"sina": fetch_sina, "eastmoney": fetch_eastmoney,
            "wallstreetcn": fetch_wallstreetcn,
            "announcement": fetch_announcement, "survey": fetch_survey,
-           "report": fetch_report, "world": fetch_world}
+           "report": fetch_report, "world": fetch_world,
+           "govpolicy": fetch_govpolicy, "chinanews": fetch_chinanews}
 
 
 # ── 存储 ──────────────────────────────────────────────
@@ -423,6 +520,32 @@ def export_k266(db, cfg):
     return files
 
 
+def build_card_digest(shown, judges, total, intel_url):
+    """K-ORG-207 B3：速报卡片正文改 top3 摘要行（用户抱怨卡片塞 6 条长标记不营养）。
+
+    排序：自选股命中的条目优先（stable 排序，同组保持采集顺序）；
+    每条一行「[股票tags] HH:MM 标题(截40字) + JEV 短标」——JEV 只留
+    ↗利多/↘利空/→中性 + 冲击档位，百分比/范围长串去掉；
+    尾行指向新闻情报台页（完整命中/政策/舆情三分栏视图），
+    K43-c 判例：markdown 超链接，不做内网按钮。
+    纯文本回退分支与群同步仍用 lines 全量（push_max_per_run cap=6
+    语义不变，JEV 判定范围不受本函数影响）。
+    """
+    top3 = sorted(shown, key=lambda it: 0 if it.get("stocks") else 1)[:3]
+    lines = []
+    for it in top3:
+        tag = ("【%s】" % "/".join(it["stocks"])) if it.get("stocks") else ""
+        j = judges.get(it["id"])
+        mark = ""
+        if j:
+            arrow = {"bull": "↗利多", "bear": "↘利空"}.get(j["bias"], "→中性")
+            mark = " %s·冲击%s" % (arrow, j.get("impact_cn", "未知"))
+        lines.append("· %s%s %s%s" % (
+            tag, it["ts"][-5:] or "----", it["title"][:40], mark))
+    lines.append("完整 %d 条 · 政策 · 舆情 → [新闻情报台](%s)" % (total, intel_url))
+    return lines
+
+
 def main():
     dry = "--dry" in sys.argv
     cfg = json.load(open(CFG_PATH, encoding="utf-8"))
@@ -504,7 +627,16 @@ def main():
         try:
             from card_build import build_card, push_card
             doc = cfg.get("doc_url", "")
-            md = "\n".join(lines[1:-1])
+            # K-ORG-207 B3：卡片正文改 top3 摘要（stocks 优先 + JEV 短标截断），
+            # 完整命中/政策/舆情转新闻情报台页；JEV 批次汇总行与 AI 判断行
+            # 原样保留（从 lines 滤掉条目行取回），footer 由 build_card 提供；
+            # 纯文本回退（lines 全量 6 条）不动，群同步不受影响。
+            card_lines = build_card_digest(
+                shown, judges, len(hits),
+                cfg.get("intel_page_url", "http://127.0.0.1:8734/news_intel.html"))
+            md = "\n".join(card_lines + [
+                l for l in lines[1:-1]
+                if not l.startswith("· ") and not l.startswith("…")])
             # K43-c 判例：内网按钮/二维码手机不可达，一律不进卡；
             # 2.0 卡按钮正解 = markdown 超链接（K42-d 测试卡 F：v1 action 被 400 拒）
             links = []

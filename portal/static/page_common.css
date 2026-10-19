@@ -1,0 +1,78 @@
+/* ============================================================
+   每日产物页共享 chrome（K-ORG-207）
+   ------------------------------------------------------------
+   单一事实源 = tokens.css（/static/tokens.css）。本文件只消费其
+   语义变量，禁止硬编码 hex。
+   样式提炼自基准页 portal/data_guojia.html 内联 <style>
+   （data_daily.html 同构）。基准页按 tokens → 本文件 → 页内
+   <style> 顺序挂链后，页内样式仍优先生效，基准页视觉零变化。
+   命名约定：与基准页语义一致且无撞名的类用原名（.wrap/.panel/
+   .metric/...）；交互 chip 与各页自有 .chip 撞名且语义分叉，
+   改用 pc- 前缀（.pc-chip）避免污染，后续新页一律用 pc-chip。
+   ============================================================ */
+
+/* ── 基底 ── */
+*{box-sizing:border-box}
+body{background:var(--bg-page);color:var(--text);font-family:var(--font-ui);margin:0;padding:0 0 40px}
+a{color:var(--link)}
+
+/* ── 容器与页头（h1+.sub 标准形态）── */
+.wrap{max-width:var(--page-w);margin:0 auto;padding:18px 20px 0}
+h1{font-size:var(--fs-xl);margin:14px 0 4px;color:var(--text)}
+h1 .sub{font-size:var(--fs-xs);color:var(--text-dim);font-weight:400;margin-left:10px}
+h2{font-size:var(--fs-m);color:var(--text-dim);margin:26px 0 10px;letter-spacing:.5px;font-weight:600}
+
+/* ── 指标带 ── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.metric{background:var(--bg-raised);border:1px solid var(--border-weak);border-radius:var(--r-m);padding:12px 14px}
+.metric .k{font-size:var(--fs-xs);color:var(--text-dim)}
+.metric .v{font-size:20px;font-weight:600;color:var(--text);margin-top:4px;font-family:var(--font-mono)}
+.metric .v.warn{color:var(--color-warn)}.metric .v.bad{color:var(--color-err)}.metric .v.good{color:var(--color-ok)}
+
+/* ── 面板卡片 ── */
+.panel{background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-m);padding:13px 16px;margin-bottom:12px;overflow-x:auto}
+
+/* ── 占比条与图例 ── */
+.bar{display:flex;height:16px;border-radius:var(--r-s);overflow:hidden;margin:8px 0 4px;background:var(--border-weak)}
+.bar span{display:block;height:100%}
+.legend{font-size:var(--fs-xs);color:var(--text-dim);margin-top:2px}
+.legend b{color:var(--text);font-weight:600}
+
+/* ── 通用表格 ── */
+table{width:100%;border-collapse:collapse;font-size:var(--fs-s)}
+th{color:var(--text-dim);text-align:left;font-weight:400;padding:5px 8px;border-bottom:1px solid var(--border-weak);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--bg-raised);white-space:nowrap}
+td.num{font-family:var(--font-mono)}
+
+/* ── 涨跌与状态（涨跌=中式红涨绿跌；状态=国际惯例，互不混用）── */
+.up{color:var(--color-up);font-weight:600}.dn{color:var(--color-dn);font-weight:600}.dim{color:var(--text-dim)}
+.badge{display:inline-block;border-radius:var(--r-s);padding:2px 8px;font-size:var(--fs-xs);font-weight:600;border:1px solid var(--border)}
+.badge.ok{color:var(--color-ok);border-color:var(--color-ok)}
+.badge.warn{color:var(--color-warn);border-color:var(--color-warn)}
+.badge.err{color:var(--color-err);border-color:var(--color-err)}
+
+/* ── 交互 chip 徽标（pc- 前缀，见文件头命名约定）── */
+.pc-chip{display:inline-block;border:1px solid var(--border);border-radius:var(--r-s);padding:3px 10px;font-size:var(--fs-xs);cursor:pointer;background:var(--bg-raised);color:var(--text);user-select:none;white-space:nowrap}
+.pc-chip.on{border-color:var(--link);color:var(--link);font-weight:600}
+.pc-chip.ent:hover{border-color:var(--link)}
+.pc-chip b{color:var(--link);font-weight:600;font-family:var(--font-mono)}
+
+/* ── chip 行容器（取两基准页规则的安全交集）── */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+
+/* ── 空态与错误 ── */
+.empty{color:var(--text-dim);font-size:var(--fs-s);padding:8px 0}
+.err{color:var(--color-err);font-size:var(--fs-s)}
+
+/* ── 页脚时间戳 ── */
+footer{margin-top:30px;color:var(--text-dim);font-size:var(--fs-xs);text-align:center;opacity:.7}
+
+/* ── 移动端钳制（与基准页同款）── */
+@media (max-width:640px){
+  .wrap{padding:12px 12px 0}
+  h1{font-size:18px}h1 .sub{display:block;margin:4px 0 0}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .metric .v{font-size:17px}
+  .metric,.panel{padding:10px 11px}
+  th,td{padding:4px 6px}
+}
