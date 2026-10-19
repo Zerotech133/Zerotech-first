@@ -182,6 +182,39 @@ def test_hk_engine_code_variants():
     print("PASS test_hk_engine_code_variants")
 
 
+def test_run_hk_only_no_cn_fabrication():
+    """--hk-only 裁决钉：CN 买入存在也不写 poc_qpzm_ 文件、不报错（防夹带）；
+    HK 买入正常路由（hk exec 由灰态用例覆盖，此处只钉产物面）。"""
+    from qpzm_adapter import cache_to_run
+    rows = [
+        {"code": "600593.SH", "market": "CN", "action": "买入", "score": 78},
+        {"code": "rt_hk00700", "market": "HK", "action": "买入", "score": 88},
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        cn_path, us_path, hk_path = cache_to_run(_write_res(rows, tmp),
+                                                 out_dir=Path(tmp),
+                                                 split_hk=True, write_cn=False)
+        assert cn_path is None and us_path is None and hk_path is not None
+        assert not list(Path(tmp).glob("poc_qpzm_*"))
+        assert list(Path(tmp).glob("poc_qpzmhk_*"))
+    print("PASS test_run_hk_only_no_cn_fabrication")
+
+
+def test_run_hk_only_gray_no_buys():
+    """--hk-only 灰态：全回避产物 → run_hk_only 返回 note 正常态不 raise
+    （4e 安静日不作失败；force_trading 绕守卫，无 HK 买入不触引擎/账本）。"""
+    import qpzm_adapter
+    rows = [{"code": "600593.SH", "market": "CN", "action": "回避（环境闸门）"},
+            {"code": "rt_hk00700", "market": "HK", "action": "观察"}]
+    with tempfile.TemporaryDirectory() as tmp:
+        cache = _write_res(rows, tmp)
+        res = qpzm_adapter.run_hk_only(dry_run=True, cache_path=Path(cache),
+                                       force_trading=True)
+        assert res["hk"] is None and res["orders"] == []
+        assert "灰态正常" in res.get("note", "")
+    print("PASS test_run_hk_only_gray_no_buys")
+
+
 def test_run_hk_gray_state_skip():
     """_run_hk 灰态：无 hk_% 账本（hk_pass→None）→ ALL skipped 不炸、ok 语义。
     force_trading=True 绕交易日守卫（守卫语义由 trade_guard 既有测试覆盖）。"""
@@ -213,6 +246,8 @@ if __name__ == "__main__":
     test_split_hk_false_keeps_legacy()
     test_split_hk_all_hk_no_cn()
     test_hk_engine_code_variants()
+    test_run_hk_only_no_cn_fabrication()
+    test_run_hk_only_gray_no_buys()
     test_run_hk_gray_state_skip()
     test_real_latest_fail_loud_or_convert()
-    print("10/10 PASS (+1 真实产物用例)")
+    print("12/12 PASS (+1 真实产物用例)")

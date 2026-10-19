@@ -45,7 +45,8 @@ def _cache_path() -> Path:
 
 
 def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
-                 split_us: bool = False, split_hk: bool = False):
+                 split_us: bool = False, split_hk: bool = False,
+                 write_cn: bool = True):
     """青萍产物 → poc_* 兼容决策产物（strategy 语义在 exec_run 侧标注）。
 
     split_us=False（默认）：与历史行为一致——US 行进 skipped，返回 CN run 路径。
@@ -54,6 +55,8 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
       适配器内转引擎规范码 00700.HK——引擎 _norm_stock 不识 rt_ 前缀，原样落
       item["stock"] 湖查找必炸），返回三元组 (cn, us, hk)；split_hk=False 时
       HK 行进 skipped（历史行为零变化），返回形态与 split_us 口径一致。
+    write_cn=False：不写 CN run 文件（--hk-only 专用，防夹带产物；CN 买入行
+      静默不落盘不报错——落单归属另行拍板）。默认 True 历史零变化。
     """
     cache_path = Path(cache_path) if cache_path else _cache_path()
     out_dir = Path(out_dir) if out_dir else DATA_DIR
@@ -108,7 +111,7 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
     stamp = str(ts_raw).replace("-", "").replace(":", "").replace(" ", "_")
     out_dir.mkdir(parents=True, exist_ok=True)
     cn_path = us_path = hk_path = None
-    if items:
+    if items and write_cn:
         cn_path = out_dir / f"poc_qpzm_{stamp}.json"
         cn_path.write_text(json.dumps(items, ensure_ascii=False, indent=2),
                            encoding="utf-8")
@@ -116,7 +119,7 @@ def cache_to_run(cache_path: Path | None = None, out_dir: Path | None = None,
         # 兼容口径：split_hk=False 时 HK 行回退 skipped（历史行为），
         # 返回形态与 split_us 口径完全一致（单值 / 二元组）。
         if not split_us:
-            if cn_path is None:
+            if cn_path is None and write_cn:
                 raise ValueError("青萍产物无 CN 买入行（split_us=False 仅支持 CN）")
             return cn_path
         if us_items:
@@ -231,6 +234,32 @@ def _run_hk(hk_path: Path, dry_run: bool, force_trading: bool = False) -> dict:
     return {**res, "orders": r["orders"], "skipped": list(r["skipped"]) + extra}
 
 
+def run_hk_only(dry_run: bool = False, cache_path: Path | None = None,
+                force_trading: bool = False) -> dict:
+    """仅 HK 段（07:05 automation 4e 专用）：HK 产物落盘 + HK exec。
+
+    不触碰 CN/US 落单、CN run 文件也不写——当前 07:05 编排重构后无 4d
+    青萍段，CN/US 落单归属另行拍板，HK 段不得夹带启动（H-D2 实施裁决）。"""
+    try:
+        hk_path = cache_to_run(cache_path, split_hk=True, write_cn=False)[2]
+    except ValueError as e:
+        if "无买入行" in str(e):
+            # 全回避/空 res：HK 段灰态正常（同 4d 验收单「无买入」口径），
+            # 不作失败——4e 汇报灰态即可，exit 0。
+            return {"run": None, "orders": [], "skipped": [], "hk": None,
+                    "run_path": None,
+                    "note": "青萍产物无 HK 买入行（灰态正常）"}
+        raise
+    result = {"run": Path(hk_path).name if hk_path else None, "orders": [],
+              "skipped": [], "hk": None,
+              "run_path": str(hk_path) if hk_path else None}
+    if not hk_path:
+        result["note"] = "青萍产物无 HK 买入行（灰态正常）"
+        return result
+    result["hk"] = _run_hk(hk_path, dry_run, force_trading=force_trading)
+    return result
+
+
 def run(dry_run: bool = False, cache_path: Path | None = None,
         force_trading: bool = False) -> dict:
     """一条龙：青萍产物 → run 文件 → 三路 exec（CN 走 A 股湖 / US、HK 走独立账本）。"""
@@ -262,14 +291,19 @@ if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="青萍之末买入信号 → 模拟仓落单")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--hk-only", action="store_true",
+                    help="仅跑 HK 段（07:05 4e 专用；CN/US 落单不在此触发）")
     ap.add_argument("--cache", default=None, help="指定 rps_latest.json 路径")
     ap.add_argument("--force-trading", dest="force_trading", action="store_true",
                     help="跳过交易日守卫（调试用；automation 勿加）")
     ap.add_argument("--json", action="store_true", help="JSON 输出（供门户 API 子进程解析）")
     a = ap.parse_args()
     try:
-        res = run(dry_run=a.dry_run, cache_path=a.cache,
-                  force_trading=getattr(a, "force_trading", False))
+        res = (run_hk_only(dry_run=a.dry_run, cache_path=a.cache,
+                           force_trading=getattr(a, "force_trading", False))
+               if a.hk_only else
+               run(dry_run=a.dry_run, cache_path=a.cache,
+                   force_trading=getattr(a, "force_trading", False)))
         res["ok"] = True
     except Exception as e:  # 产物缺失/无买入等 → fail loud（JSON 化）
         if a.json:
