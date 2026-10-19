@@ -115,11 +115,104 @@ def test_split_us_all_us_no_cn():
     print("PASS test_split_us_all_us_no_cn")
 
 
+def test_split_hk_routes_hk_buys_with_code_convert():
+    """H-D2：split_hk=True 时 HK 买入行产独立 poc_qpzmhk_ 文件；watchlist 形态
+    rt_hk00700 适配器内转引擎规范码 00700.HK；CRYPTO 仍 skip；三元组返回。"""
+    rows = [
+        {"code": "600593.SH", "name": "大连圣亚", "market": "CN", "action": "买入", "score": 78},
+        {"code": "rt_hk00700", "name": "腾讯控股", "market": "HK", "action": "买入", "score": 88},
+        {"code": "rt_hk9988", "name": "阿里巴巴-W", "market": "HK", "action": "买入", "score": 85},
+        {"code": "btc_usd", "name": "BTC", "market": "CRYPTO", "action": "买入", "score": 70},
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        cn_path, us_path, hk_path = cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp),
+                                                 split_us=True, split_hk=True)
+        assert cn_path and us_path is None and hk_path
+        assert hk_path.name.startswith("poc_qpzmhk_")
+        hk_items = json.loads(hk_path.read_text(encoding="utf-8"))
+        assert len(hk_items) == 2
+        assert hk_items[0]["stock"] == "00700.HK"     # rt_hk00700 → 5 位规范码
+        assert hk_items[1]["stock"] == "09988.HK"     # 老式 4 位 zfill(5)
+        assert hk_items[0]["outputs"]["D1"]["confidence"] == QINGPING_CONF
+        assert hk_items[0]["_meta"]["name"] == "腾讯控股"
+    print("PASS test_split_hk_routes_hk_buys_with_code_convert")
+
+
+def test_split_hk_false_keeps_legacy():
+    """默认口径（split_hk=False）：HK 行回退 skipped、返回形态与历史完全一致
+    （split_us=False 单值 / split_us=True 二元组），不产 poc_qpzmhk_ 文件。"""
+    rows = [
+        {"code": "600593.SH", "market": "CN", "action": "买入", "score": 78},
+        {"code": "rt_hk00700", "market": "HK", "action": "买入", "score": 88},
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        out = cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp))
+        assert Path(out).exists() and not list(Path(tmp).glob("poc_qpzmhk_*"))
+        cn_path, us_path = cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp),
+                                        split_us=True)
+        assert cn_path and us_path is None
+        assert not list(Path(tmp).glob("poc_qpzmhk_*"))
+    print("PASS test_split_hk_false_keeps_legacy")
+
+
+def test_split_hk_all_hk_no_cn():
+    """全 HK 买入：split_hk=True 时 cn/us 均 None、hk 有效；split_hk=False 且
+    无 CN 买入仍 fail-loud（历史口径不变）。"""
+    rows = [{"code": "rt_hk00700", "name": "腾讯控股", "market": "HK",
+             "action": "买入", "score": 88}]
+    with tempfile.TemporaryDirectory() as tmp:
+        cn_path, us_path, hk_path = cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp),
+                                                 split_us=True, split_hk=True)
+        assert cn_path is None and us_path is None and hk_path is not None
+        try:
+            cache_to_run(_write_res(rows, tmp), out_dir=Path(tmp))
+            raise AssertionError("split_hk=False 且无 CN 买入应 raise")
+        except ValueError as e:
+            assert "无 CN 买入行" in str(e)
+    print("PASS test_split_hk_all_hk_no_cn")
+
+
+def test_hk_engine_code_variants():
+    """_hk_engine_code：rt_hk 前缀剥离 + 老票 1-4 位 zfill(5)，全部归一 .HK。"""
+    from qpzm_adapter import _hk_engine_code
+    assert _hk_engine_code("rt_hk00700") == "00700.HK"
+    assert _hk_engine_code("rt_hk9988") == "09988.HK"
+    assert _hk_engine_code("rt_hk1") == "00001.HK"     # 长和（老票 1 位）
+    assert _hk_engine_code("00700") == "00700.HK"      # 已剥前缀形态兜底
+    print("PASS test_hk_engine_code_variants")
+
+
+def test_run_hk_gray_state_skip():
+    """_run_hk 灰态：无 hk_% 账本（hk_pass→None）→ ALL skipped 不炸、ok 语义。
+    force_trading=True 绕交易日守卫（守卫语义由 trade_guard 既有测试覆盖）。"""
+    import qpzm_adapter
+    run_path = Path(tempfile.mkdtemp()) / "poc_qpzmhk_20261020_070505.json"
+    run_path.write_text(json.dumps([{"stock": "00700.HK"}], ensure_ascii=False),
+                        encoding="utf-8")
+    orig_hk_pass = None
+    sys.path.insert(0, str(HERE / ".." / "paper"))
+    import hk_market
+    orig_hk_pass = hk_market.hk_pass
+    try:
+        hk_market.hk_pass = lambda do_refresh=True: None
+        res = qpzm_adapter._run_hk(run_path, dry_run=True, force_trading=True)
+        assert res["skipped"] and res["skipped"][0]["stock"] == "ALL"
+        assert res["orders"] == []
+    finally:
+        hk_market.hk_pass = orig_hk_pass
+    print("PASS test_run_hk_gray_state_skip")
+
+
 if __name__ == "__main__":
     test_cn_buy_in_us_buy_skip_gate_blocked_out()
     test_no_buy_rows_raises()
     test_split_us_routes_us_buys()
     test_split_us_false_keeps_legacy()
     test_split_us_all_us_no_cn()
+    test_split_hk_routes_hk_buys_with_code_convert()
+    test_split_hk_false_keeps_legacy()
+    test_split_hk_all_hk_no_cn()
+    test_hk_engine_code_variants()
+    test_run_hk_gray_state_skip()
     test_real_latest_fail_loud_or_convert()
-    print("5/5 PASS (+1 真实产物用例)")
+    print("10/10 PASS (+1 真实产物用例)")

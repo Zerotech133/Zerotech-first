@@ -119,9 +119,11 @@ def stop_dist_for(account: str) -> float | None:
     return float(dist) if dist else None
 
 
-# K-STOCK-414：ai_team 通道排除面补全（qd/qpzm/qpzmus 通道产物 + pf 组合并集
-# + adapter 适配器产物——字典序 poc_pf_* 恒大于日期戳文件名，混入即喂错信号源）
-_NON_AI_PREFIXES = ("poc_qd_", "poc_qpzm_", "poc_qpzmus_", "poc_pf_", "poc_adapter_")
+# K-STOCK-414：ai_team 通道排除面补全（qd/qpzm/qpzmus/qpzmhk 通道产物
+# + pf 组合并集 + adapter 适配器产物——字典序 poc_pf_* 恒大于日期戳文件名，
+# 混入即喂错信号源；poc_qpzmhk_ 为 H-D2 HK 通道，同款排除）
+_NON_AI_PREFIXES = ("poc_qd_", "poc_qpzm_", "poc_qpzmus_", "poc_qpzmhk_",
+                    "poc_pf_", "poc_adapter_")
 
 
 def _newest_by_mtime(paths) -> Path:

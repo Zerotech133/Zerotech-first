@@ -47,11 +47,13 @@ def _engine(args) -> PaperEngine:
 
 
 def _newest_run() -> Path:
-    # 排除 poc_qd_（双刀）/ poc_qpzm_（青萍 CN）/ poc_qpzmus_（青萍 US，044 M2）：
+    # 排除 poc_qd_（双刀）/ poc_qpzm_（青萍 CN）/ poc_qpzmus_（青萍 US，044 M2）
+    # / poc_qpzmhk_（青萍 HK，H-D2）：
     # 否则 07:05 automation 的 exec --newest 会把他源信号当 AI 决策执行（策略串味）。
     # 口径与 trainee._newest_ai_run 对齐——AI 通道只吃 AI 产物。
     runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
-                  if not x.name.startswith(("poc_qd_", "poc_qpzm_", "poc_qpzmus_")))
+                  if not x.name.startswith(("poc_qd_", "poc_qpzm_", "poc_qpzmus_",
+                                            "poc_qpzmhk_")))
     if not runs:
         raise Reject("k_stock/data/ 下无 poc_*.json 决策产物（AI 通道）")
     return runs[-1]

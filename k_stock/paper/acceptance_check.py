@@ -27,6 +27,7 @@ from pathlib import Path
 DB = Path(__file__).resolve().parent.parent / "data" / "paper.db"
 CN_ACCOUNTS = ("main", "chaser")
 US_ACCOUNTS = ("us_qingping",)
+HK_ACCOUNTS = ("hk_qingping",)   # H-D2 P-6：HK 影子账本对账可见（灰位期无期望笔数判据）
 CN_EXPECT = 4   # CN filled 期望笔数
 US_EXPECT = 6   # US filled 期望笔数
 
@@ -138,7 +139,7 @@ def check_c4_snapshot(cur, day):
     ok = len(rows) > 0
     return ok, {"n_rows": len(rows),
                 "by_account": {a: sum(1 for r in rows if r["account_id"] == a)
-                               for a in CN_ACCOUNTS + US_ACCOUNTS}}
+                               for a in CN_ACCOUNTS + US_ACCOUNTS + HK_ACCOUNTS}}
 
 
 def check_c5_idempotent(cur, day):
