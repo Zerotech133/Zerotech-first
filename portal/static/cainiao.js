@@ -15,7 +15,8 @@
     '#ai-orb.drag{cursor:grabbing;}',
     '#ai-orb .orb-halo{position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--link,#58a6ff) 22%,transparent) 30%,transparent 72%);animation:orbBreathe 2.4s ease-in-out infinite;}',
     '#ai-orb .orb-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed color-mix(in srgb,var(--link,#58a6ff) 55%,transparent);animation:orbSpin 8s linear infinite;}',
-    '#ai-orb .orb-core{position:absolute;inset:9px;border-radius:50%;background:linear-gradient(135deg,var(--blu-600,#1f6feb),var(--pur-500,#bc8cff));display:grid;place-items:center;font-size:26px;box-shadow:0 4px 18px color-mix(in srgb,var(--link,#58a6ff) 35%,transparent);animation:orbFloat 3.2s ease-in-out infinite;}',
+    '#ai-orb .orb-core{position:absolute;inset:7px;border-radius:50%;background:#ded0af;overflow:hidden;box-shadow:0 4px 18px color-mix(in srgb,var(--link,#58a6ff) 35%,transparent);animation:orbFloat 3.2s ease-in-out infinite;}',
+    '#ai-orb .orb-core img,#cai-win .win-avatar img{width:100%;height:100%;display:block;object-fit:cover;object-position:center 24%;}',
     '#ai-orb:hover .orb-core{box-shadow:0 6px 28px color-mix(in srgb,var(--pur-500,#bc8cff) 60%,transparent);}',
     '#ai-orb .orb-dot{position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:var(--color-ok,#3fb950);box-shadow:0 0 8px var(--color-ok,#3fb950);animation:orbBreathe 1.6s ease-in-out infinite;}',
     '@keyframes orbBreathe{0%,100%{transform:scale(1);opacity:.85;}50%{transform:scale(1.12);opacity:1;}}',
@@ -25,7 +26,7 @@
     '#cai-win.open{display:block;animation:winPop .22s ease-out;}',
     '@keyframes winPop{from{opacity:0;transform:scale(.72) translateY(18px);}to{opacity:1;transform:none;}}',
     '#cai-win .win-head{display:flex;align-items:center;gap:9px;margin-bottom:6px;}',
-    '#cai-win .win-avatar{width:34px;height:34px;border-radius:50%;flex:none;background:linear-gradient(135deg,var(--blu-600,#1f6feb),var(--pur-500,#bc8cff));display:grid;place-items:center;font-size:18px;}',
+    '#cai-win .win-avatar{width:34px;height:34px;border-radius:50%;flex:none;background:#ded0af;overflow:hidden;}',
     '#cai-win .win-head b{font-size:14.5px;display:block;}',
     '#cai-win .win-head span{color:var(--text-dim,#8b949e);font-size:11px;}',
     '#cai-win .win-x{margin-left:auto;background:none;border:1px solid var(--border,#30363d);color:var(--text-dim,#8b949e);width:26px;height:26px;border-radius:50%;font-size:15px;cursor:pointer;line-height:1;}',
@@ -50,18 +51,19 @@
   styleEl.textContent = CSS;
   document.head.appendChild(styleEl);
 
+  var portrait = '/static/cainiao_avatar_zhuge.jpg';
   var HOST = document.createElement('div');
   HOST.id = 'cai-orb-host';
   HOST.innerHTML =
     '<div id="ai-orb" title="菜鸟 · 拖动换位置 / 点击召唤">' +
       '<div class="orb-halo"></div>' +
       '<div class="orb-ring"></div>' +
-      '<div class="orb-core">\u{1F423}</div>' +
+      '<div class="orb-core"><img src="' + portrait + '" alt="诸葛亮形象"></div>' +
       '<div class="orb-dot"></div>' +
     '</div>' +
     '<div id="cai-win">' +
       '<div class="win-head">' +
-        '<div class="win-avatar">\u{1F423}</div>' +
+        '<div class="win-avatar"><img src="' + portrait + '" alt=""></div>' +
         '<div><b>菜鸟</b><span>平行空间的自己 · 替你管公司 · 说「打开模拟仓」就带路</span></div>' +
         '<button class="win-x" title="收起（Esc）">\u00D7</button>' +
       '</div>' +
