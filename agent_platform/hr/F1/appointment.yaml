@@ -13,7 +13,7 @@
   "analysis_type": "fundamental",
   "llm_binding": "ollama/qwen3.5:9b",
   "tools": [
-    "stock_fundamentals"
+    "datamart_read"
   ],
   "memory_grants": {
     "read": [

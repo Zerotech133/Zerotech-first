@@ -18,9 +18,7 @@
    "debate_partner_key": "t2_market",
    "max_debate_rounds": 2,
    "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "tdx_kline"
-   ],
+   "tools": [],
    "memory_grants": {
     "read": [
      "domain/*",
@@ -57,7 +55,19 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "quant_dual",
+     "kind": "algo",
+     "enabled": true
+    },
+    {
+     "id": "tdx_backtest",
+     "kind": "algo",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "T2",
@@ -73,9 +83,7 @@
    "debate_partner_key": "t1_market",
    "max_debate_rounds": 2,
    "llm_binding": "ollama/qwen3.5:9b",
-   "tools": [
-    "tdx_kline"
-   ],
+   "tools": [],
    "memory_grants": {
     "read": [
      "domain/*",
@@ -112,7 +120,19 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "tdx_backtest",
+     "kind": "algo",
+     "enabled": true
+    },
+    {
+     "id": "riskguard",
+     "kind": "algo",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "N1",
@@ -128,7 +148,7 @@
    "max_debate_rounds": 0,
    "llm_binding": "ollama/qwen3.5:9b",
    "tools": [
-    "news_feed"
+    "events_for_stock"
    ],
    "memory_grants": {
     "read": [
@@ -166,7 +186,14 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "jev_sentiment",
+     "kind": "algo",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "F1",
@@ -182,7 +209,7 @@
    "max_debate_rounds": 0,
    "llm_binding": "ollama/qwen3.5:9b",
    "tools": [
-    "stock_fundamentals"
+    "datamart_read"
    ],
    "memory_grants": {
     "read": [
@@ -219,7 +246,14 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "score_ranking",
+     "kind": "algo",
+     "enabled": true
+    }
+   ]
   },
   {
    "agent_id": "D1",
@@ -279,7 +313,19 @@
      "execute": [],
      "danger": "deny"
     }
-   }
+   },
+   "skills": [
+    {
+     "id": "quant_dual",
+     "kind": "algo",
+     "enabled": true
+    },
+    {
+     "id": "riskguard",
+     "kind": "algo",
+     "enabled": true
+    }
+   ]
   }
  ]
 }

@@ -13,7 +13,7 @@
   "analysis_type": "news_event",
   "llm_binding": "ollama/qwen3.5:9b",
   "tools": [
-    "news_feed"
+    "events_for_stock"
   ],
   "memory_grants": {
     "read": [

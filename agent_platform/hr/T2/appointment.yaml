@@ -12,9 +12,7 @@
   },
   "analysis_type": "market_technical",
   "llm_binding": "ollama/qwen3.5:9b",
-  "tools": [
-    "tdx_kline"
-  ],
+  "tools": [],
   "memory_grants": {
     "read": [
       "domain/*",
