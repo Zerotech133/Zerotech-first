@@ -209,6 +209,19 @@
       </div>
     </div>
 
+    <div class="sec" style="margin-top:16px">
+      <div class="sec-head">
+        <div class="sec-title">◤ 投研交易所 <a href="/paper" style="color:var(--link);text-decoration:none;font-size:11px">账本全貌 →</a></div>
+        <div class="sec-note">分析师 · 投研经理 · 交易员市场 · 美股账本 · 源 /api/paper_status</div>
+      </div>
+      <div class="sixstrip">
+        <div class="schip grey" id="dk-strat"><span class="sd"></span><span class="sn">分析师</span><span class="sv">加载中…</span></div>
+        <div class="schip grey" id="dk-judge"><span class="sd"></span><span class="sn">投研经理</span><span class="sv">加载中…</span></div>
+        <div class="schip grey" id="dk-market"><span class="sd"></span><span class="sn">交易员市场</span><span class="sv">加载中…</span></div>
+        <div class="schip grey" id="dk-us"><span class="sd"></span><span class="sn">美股账本</span><span class="sv">加载中…</span></div>
+      </div>
+    </div>
+
     <div class="sec">
       <div class="sec-head">
         <div class="sec-title">◤ 策略资产组合</div>
@@ -596,10 +609,56 @@
       el.style.color = v > 0 ? 'var(--color-up)' : (v < 0 ? 'var(--color-dn)' : '');
       document.getElementById('k-paper-sub').textContent =
         (v > 0 ? '+' : '') + v.toFixed(2) + '% · 仓位 ' + Math.round((L.pos_pct ?? 0) * 1000) / 10 + '% · 待撮合 ' + (L.pending ?? 0) + ' 单 →';
+      renderDesk(d);
     } catch {}
   }
   loadPaperKpi();
   setInterval(loadPaperKpi, 60000);
+
+  /* ── 投研交易所面板：分析师/投研经理/交易员市场/美股账本 ──
+     数据全来自 /api/paper_status 同一响应（k_stock/paper 投研机构 + PaperEngine 撮合）；缺源标灰不假绿 */
+  function renderDesk(d) {
+    function chip(id, ok, txt, title) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.querySelector('.sv').textContent = txt;
+      el.className = 'schip ' + (ok ? 'ok' : 'grey');
+      if (title) el.title = title;
+    }
+    const st = d.strategist || {};
+    if (st.ok && Array.isArray(st.sources) && st.sources.length) {
+      const top = st.sources.slice().sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+      chip('dk-strat', true,
+        (top.name) + ' ' + (top.score ?? '—') + ' · ' + (top.suggestion || '').slice(0, 10) +
+        (st.mode === 'shadow' ? ' · 影子' : ''),
+        st.sources.map(s => s.name + ' ' + s.score + ' ' + s.suggestion).join(' ｜ ') +
+        '（' + (st.generated_at || '') + ' · ' + (st.days || '') + ' 日窗）');
+    } else { chip('dk-strat', false, '缺源 · 不假绿'); }
+    const jg = d.judge || {};
+    const rv = (jg.ok && Array.isArray(jg.reviews) && jg.reviews[0]) || null;
+    if (rv) {
+      const hi = (rv.findings || []).filter(f => f.severity === 'high').length;
+      chip('dk-judge', true,
+        (rv.date || '') + ' 复核 ' + (rv.score ?? '—') + ' 分 ' + (rv.grade || '') + (hi ? ' · 高危 ' + hi : ''),
+        (rv.findings || []).map(f => '[' + f.severity + '] ' + f.msg).join(' ｜ ') || '无发现');
+    } else { chip('dk-judge', false, '缺源 · 不假绿'); }
+    const mk = d.market || {};
+    if (mk.ok && mk.tiers) {
+      const keys = Object.keys(mk.tiers);
+      chip('dk-market', true,
+        keys.length + ' 档 · ' + keys.map(k => mk.tiers[k].label).join('/'),
+        keys.map(k => k + ' ' + mk.tiers[k].label + '（' + mk.tiers[k].llm_binding + ' · 日成本帽 ' + mk.tiers[k].daily_cost_cap + '）').join(' ｜ '));
+    } else { chip('dk-market', false, '缺源 · 不假绿'); }
+    const us = d.us || {};
+    const ua = (us.ok && us.accounts && us.accounts[0]) || null;
+    if (ua) {
+      const u = ua.latest || {};
+      const up = (u.cum_pct ?? 0);
+      chip('dk-us', true,
+        (ua.account_id || 'us') + ' ' + (up > 0 ? '+' : '') + (up ?? 0).toFixed(2) + '% · 仓位 ' + Math.round((u.pos_pct ?? 0) * 1000) / 10 + '%（' + (us.currency || 'USD') + '）',
+        '市值 ' + (u.market_value ?? '—') + ' · 现金 ' + (u.cash ?? '—') + ' · as_of ' + (u.date || us.as_of || ''));
+    } else { chip('dk-us', false, '缺源 · 不假绿'); }
+  }
 
   /* ── 数据丰富·基建条：容器/备份/计划任务（契约 §6 overview） ── */
   function renderInfra(ov) {

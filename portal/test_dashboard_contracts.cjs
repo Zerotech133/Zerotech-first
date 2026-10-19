@@ -80,6 +80,9 @@ section('quant.html invariants');
   ok(h.includes("'三门 '") && h.includes("passed"), '倾向格三门通过数在位');
   ok(h.includes('溢价概率') && h.includes('pos_pct'), 'brief 兜底溢价概率+模拟仓仓位在位');
   ok(h.includes('60日考核链'), '策略考核链计数在位');
+  // 投研交易所面板（k_stock/paper 机构 + PaperEngine 组合进板块）
+  ok(['dk-strat', 'dk-judge', 'dk-market', 'dk-us'].every(id => h.includes(id)), '投研交易所四 chip 在位');
+  ok(h.includes('renderDesk') && h.includes('us.accounts'), 'renderDesk+美股账本读取在位');
   // v2 转正追加：收编六环快照条
   const RINGS = ['pool', 'watch', 'auth', 'risk', 'trade', 'review'];
   ok(RINGS.every(r => h.includes(r + ':')), '六环键齐全（RING_CN 字面量）');
