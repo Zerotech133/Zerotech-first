@@ -16,14 +16,30 @@
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATION = os.path.dirname(HERE)
 ALERTS_URL = "http://127.0.0.1:8091/api/alerts"
 MORNING_KEEP = {"缠论信号", "九维警报池"}
+SOURCE_NAMES = {
+    "premarket": "盘前倾向", "chanlun": "缠论信号",
+    "nine_dim": "九维警报池", "weak": "弱于板块在案",
+    "cross": "共振做多", "council": "🏛 投委会",
+}
+MORNING_SOURCES = ("chanlun", "nine_dim")
+EOD_SOURCES = ("premarket", "chanlun", "nine_dim", "weak", "cross")
+CORE_SOURCES = ("premarket", "chanlun", "nine_dim")
+SOURCE_ERROR_REASONS = {
+    "missing", "invalid_schema", "future_anchor", "unproven_completion",
+    "invalid_anchor", "stale_anchor", "invalid_json", "upstream_blocked",
+    "upstream_degraded", "source_error",
+}
+SHANGHAI = timezone(timedelta(hours=8))
 IDX_CODES = [("sh000001", "上证"), ("sz399001", "深成"), ("sz399006", "创业板")]
 
 
@@ -189,7 +205,7 @@ def _strip_md(s):
              .replace("</font>", ""))
 
 
-def _save_last(ok, morning, res, targets_res):
+def _save_last(ok, morning, res, targets_res, status=None):
     """状态落盘（/intel 飞书卡数据源；E1 起原子写防半截 JSON）。"""
     try:
         fp = os.path.join(HERE, "outbox", "alert_push_last.json")
@@ -197,10 +213,131 @@ def _save_last(ok, morning, res, targets_res):
         atomic_write_json(fp, {"ts": time.strftime("%Y-%m-%d %H:%M"),
                                "mode": "morning" if morning else "eod",
                                "ok": bool(ok),
+                               "status": status or ("sent" if ok else "failed"),
                                "n": len(res.get("alerts") or []),
                                "targets": targets_res})
     except Exception as e:
         print("save_last err %s" % str(e)[:100])  # C2批2 吞错落盘（状态落盘失败 /intel 卡数据源将 stale）
+
+
+def _parse_source_time(value):
+    """Only explicit China-local source timestamps can establish current coverage."""
+    if (not isinstance(value, str) or not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?\+08:00", value)):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    if parsed.utcoffset() != timedelta(hours=8):
+        return None
+    return parsed.astimezone(SHANGHAI)
+
+
+def validated_alerts(res, morning=False, include_baseline=False):
+    """Return (safe alerts, unhealthy routes), or None for untrusted coverage.
+
+    A fresh HTTP response does not refresh an underlying source. In the absence
+    of a per-source scheduling contract, previous-day source data is not current.
+    """
+    if (not isinstance(res, dict) or not isinstance(res.get("alerts"), list)
+            or any(not isinstance(a, dict) for a in res["alerts"])):
+        return None
+    health = res.get("source_health")
+    if not isinstance(health, dict) or type(health.get("version")) is not int or health["version"] != 1:
+        return None
+    checked = _parse_source_time(health.get("checked_at"))
+    now = datetime.now(SHANGHAI)
+    if checked is None or not timedelta(0) <= now - checked <= timedelta(minutes=5):
+        return None
+    sources = health.get("sources")
+    if not isinstance(sources, dict) or set(sources) != set(SOURCE_NAMES):
+        return None
+    outdated = set()
+    for source in SOURCE_NAMES:
+        item = sources[source]
+        if not isinstance(item, dict) or item.get("status") not in ("ok", "empty", "error", "stale"):
+            return None
+        reason = item.get("reason")
+        if reason is not None and (not isinstance(reason, str)
+                                   or not re.fullmatch(r"[a-z][a-z0-9_]*", reason)):
+            return None
+        status = item["status"]
+        if (status in ("ok", "empty") and reason is not None) or (
+                status in ("error", "stale") and reason not in SOURCE_ERROR_REASONS):
+            return None
+        source_time = item.get("as_of")
+        parsed = _parse_source_time(source_time) if source_time is not None else None
+        if source_time is not None and parsed is None:
+            return None
+        if status in ("ok", "empty") and (
+                parsed is None or parsed.date() != now.date()
+                or parsed > checked + timedelta(minutes=5)):
+            # checked_at is observation time, never a substitute for as_of.
+            outdated.add(source)
+    scope = MORNING_SOURCES if morning else EOD_SOURCES
+    good = {source for source in scope
+            if sources[source]["status"] in ("ok", "empty") and source not in outdated}
+    # Weak/cross are UI summaries; without a direct core feed they cannot
+    # establish actionable partial coverage even if their status says ok.
+    if not good or (not morning and not good.intersection(CORE_SOURCES)):
+        return None
+    bad = tuple(source for source in scope if source not in good)
+    filtered = []
+    seen = set()
+    for alert in res["alerts"]:
+        name = alert.get("name")
+        if not isinstance(name, str) or name not in SOURCE_NAMES.values():
+            return None  # Unknown schema must not silently certify a normal empty day.
+        source = next(key for key, label in SOURCE_NAMES.items() if label == name)
+        if source == "council":
+            continue  # Optional council UI summary is not an actionable route.
+        if name in seen:
+            return None
+        seen.add(name)
+        if source not in good:
+            continue  # Unhealthy source may expose a stale, misleading zero card.
+        if sources[source]["status"] == "empty":
+            # A completed empty source cannot simultaneously report nonzero
+            # results. Reject the entire envelope rather than converting this
+            # contradiction into a misleading normal empty-day report.
+            value = alert.get("value")
+            empty_pattern = {
+                "nine_dim": r"\s*0\s*只\s*",
+                "weak": r"\s*0\s*案\s*",
+                "cross": r"\s*0\s*只\s*",
+                "chanlun": r"\s*买\s*0\s*·\s*卖\s*0\s*",
+            }.get(source)
+            if source == "premarket":
+                if not isinstance(value, str) or value.strip() not in (
+                        "", "—", "-", "暂无"):
+                    return None
+            elif (empty_pattern is None or not isinstance(value, str)
+                  or re.fullmatch(empty_pattern, value) is None):
+                return None
+            if include_baseline and source == "nine_dim":
+                filtered.append(alert)  # Trustworthy zero is a watch baseline.
+            continue  # Empty source UI zero cards are not actionable signals.
+        if source in ("weak", "cross", "nine_dim") and re.fullmatch(
+                r"\s*0\s*(只|案)\s*", str(alert.get("value", ""))):
+            if include_baseline and source == "nine_dim":
+                filtered.append(alert)
+            continue  # A zero-count summary is not a positive actionable signal.
+        if source == "chanlun" and re.fullmatch(
+                r"\s*买\s*0\s*·\s*卖\s*0\s*", str(alert.get("value", ""))):
+            continue
+        if source == "premarket" and str(alert.get("value", "")).strip() in (
+                "", "—", "-", "暂无", "未知"):
+            continue
+        if not isinstance(alert.get("value"), str):
+            return None
+        filtered.append(alert)
+    return {"alerts": filtered, "source_health": health}, bad
+
+
+def _valid_alerts(res):
+    """Compatibility boolean: validity requires independently dated source health."""
+    return validated_alerts(res) is not None
 
 
 def main():
@@ -210,8 +347,24 @@ def main():
     except Exception as e:
         print("portal unreachable (%s), fallback build_alerts"
               % str(e)[:100])
+        res = None
+    validated = validated_alerts(res, morning)
+    if validated is None:
         res = _fallback_alerts()
-    if not res or not res.get("alerts"):
+        validated = validated_alerts(res, morning)
+    if validated is None:
+        # 不把来源全故障表述为「今日暂无预警，数据链路正常」。
+        _save_last(False, morning, {"alerts": []}, {}, status="source_unavailable")
+        print("ALERT_PUSH_SOURCE_UNAVAILABLE mode=%s" %
+              ("morning" if morning else "eod"))
+        return 1
+    res, bad = validated
+    if bad and not res["alerts"]:
+        # A partially available empty response cannot prove a normal empty day.
+        _save_last(False, morning, res, {}, status="source_unavailable")
+        print("ALERT_PUSH_SOURCE_UNAVAILABLE partial=%s" % ",".join(bad))
+        return 1
+    if not res["alerts"]:
         # K-STOCK-098 #1 归因修复：晨扫/盘后「无预警数据」不是推送失败——
         # 原实现直接 return 1，计划任务记 rc=1 且无人知晓（静默失败假象）。
         # 改为发一张「今日暂无预警」信息卡（ok=True）；只有这张卡也发不
@@ -242,10 +395,10 @@ def main():
             except Exception as e:
                 print("text fallback err %s" % str(e)[:120])
         ok = any(tres.values())
-        _save_last(ok, morning, empty_res, tres)
-        print("ALERT_PUSH_%s mode=%s alerts=0 targets=%s" % (
-            "OK" if ok else "FAIL",
-            "morning" if morning else "eod",
+        _save_last(ok, morning, empty_res, tres, status="sent" if ok else "failed")
+        print("ALERT_PUSH_%s mode=%s status=%s alerts=0 targets=%s" % (
+            "OK" if ok else "FAIL", "morning" if morning else "eod",
+            "sent" if ok else "failed",
             json.dumps(tres, ensure_ascii=False)))
         return 0 if ok else 1
 
@@ -254,6 +407,10 @@ def main():
     targets = _targets(cfg)
     now = time.strftime("%Y-%m-%d %H:%M")
     blocks = build_blocks(res, morning, fetch_index())
+    coverage = ("覆盖不足：%s 源不可用；仅展示已验证源，不代表全量。" %
+                "、".join(SOURCE_NAMES[source] for source in bad)) if bad else ""
+    if coverage:
+        blocks.insert(0, "**⚠️ " + coverage + "**")
 
     # K42-c：不做内网接入——卡内不放下钻按钮/门户二维码（外网飞书点不开）
     if morning:
@@ -261,6 +418,8 @@ def main():
     else:
         title, sub = "⚠️ 预警日报 · 盘后", now + " · 大盘 + 五路预警全量"
 
+    if coverage:
+        sub += " · " + coverage
     card = card_build.build_card3(  # K-PUSH-008：全量报走 v3 红域预警
         "alert", title, sub, blocks,
         footer="AI工作站 · 飞书预警输出 · 不构成投资建议")
@@ -278,10 +437,10 @@ def main():
             print("text fallback err %s" % str(e)[:120])
 
     ok = any(tres.values())
-    _save_last(ok, morning, res, tres)
-    print("ALERT_PUSH_%s mode=%s alerts=%d targets=%s" % (
-        "OK" if ok else "FAIL",
-        "morning" if morning else "eod", len(res.get("alerts") or []),
+    _save_last(ok, morning, res, tres, status="sent" if ok else "failed")
+    print("ALERT_PUSH_%s mode=%s status=%s alerts=%d targets=%s" % (
+        "OK" if ok else "FAIL", "morning" if morning else "eod",
+        "sent" if ok else "failed", len(res.get("alerts") or []),
         json.dumps(tres, ensure_ascii=False)))
     return 0 if ok else 1
 

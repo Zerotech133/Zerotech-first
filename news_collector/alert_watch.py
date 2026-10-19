@@ -78,12 +78,27 @@ def _check(rule, prev, cur, prev_raw, cur_raw):
 
 
 def main():
+    import alert_push
     today = time.strftime("%Y-%m-%d")
     try:
         with urllib.request.urlopen(ALERTS_URL, timeout=90) as r:
             res = json.loads(r.read().decode("utf-8"))
     except Exception as e:
-        print("ALERT_WATCH_FAIL fetch %s" % str(e)[:100])
+        print("ALERT_WATCH_WARN portal fetch %s" % str(e)[:100])
+        res = None
+
+    validated = alert_push.validated_alerts(res, include_baseline=True)
+    if validated is None:
+        # The local import has its own source-health check; never trust a
+        # legacy fallback payload just because the HTTP request failed.
+        res = alert_push._fallback_alerts()
+        validated = alert_push.validated_alerts(res, include_baseline=True)
+    if validated is None:
+        print("ALERT_WATCH_SOURCE_UNAVAILABLE invalid source_health")
+        return 1
+    res, bad = validated
+    if bad and not res["alerts"]:
+        print("ALERT_WATCH_SOURCE_UNAVAILABLE partial coverage without alerts")
         return 1
 
     st = _load_state()
@@ -93,11 +108,13 @@ def main():
                          for k, v in (st.get("routes") or {}).items()}}
     routes = st.setdefault("routes", {})
     first_run = not routes
+    healthy_names = {alert_push.SOURCE_NAMES[source] for source in
+                     (alert_push.EOD_SOURCES) if source not in bad}
     hits = []
     for a in res.get("alerts") or []:
         nm = a.get("name", "")
         rule = RULES.get(nm)
-        if not rule:
+        if not rule or nm not in healthy_names:
             continue
         raw = str(a.get("value", ""))
         num = _parse_num(nm, raw)
@@ -110,7 +127,6 @@ def main():
                 # K-STOCK-414：暂不推进基线——推送成功才写（见下方），
                 # 否则失败轮次后 prev==cur 永不再触发，预警正文永久丢失
                 hits.append((nm, fired, a, num, raw))
-                prev["pushed"] = pushed + 1
                 routes[nm] = prev
                 continue
             # 达熔断也更新基线，避免次日放开后拿旧值狂补
@@ -119,29 +135,40 @@ def main():
 
     if hits and not first_run:
         import card_build
-        import alert_push
         targets = alert_push._targets(alert_push._cfg())
         # K42-c：不做内网接入——卡内不放下钻按钮/门户二维码（外网飞书点不开）
-        lines = ["**%s** %s" % (nm, fired) for nm, fired, _ in hits]
+        lines = ["**%s** %s" % (nm, fired) for nm, fired, _a, _num, _raw in hits]
+        if bad:
+            lines.insert(0, "**⚠️ 覆盖不足：%s 源不可用；仅展示已验证源，不代表全量。**" %
+                         "、".join(alert_push.SOURCE_NAMES[source] for source in bad))
         card = card_build.build_card3(  # K-PUSH-008：v3 红域预警
             "alert", "⚡ 即时预警",
             time.strftime("%Y-%m-%d %H:%M") + " · 关键变化触发",
             ["\n".join(lines)],
             footer="AI工作站 · 阈值监听（每 30 分钟比对）· 不构成投资建议")
-        tres = alert_push.push_card_multi(card, targets=targets)
+        try:
+            tres = alert_push.push_card_multi(card, targets=targets)
+        except Exception as exc:
+            print("ALERT_WATCH_WARN card delivery %s" % str(exc)[:100])
+            tres = {target["name"]: False for target in targets}
         ok = any(tres.values())
         if not ok:  # 文本兜底
-            tres = alert_push.push_text_multi(
-                "⚡ 即时预警 " + time.strftime("%m-%d %H:%M") + "\n"
-                + "\n".join(lines), targets)
-            ok = any(tres.values())
-        if ok:  # K-STOCK-414：成功才推进已触发路由基线（失败保旧基线下轮重比）
+            try:
+                tres = alert_push.push_text_multi(
+                    "⚡ 即时预警 " + time.strftime("%m-%d %H:%M") + "\n"
+                    + "\n".join(lines), targets)
+                ok = any(tres.values())
+            except Exception as exc:
+                print("ALERT_WATCH_WARN text delivery %s" % str(exc)[:100])
+        if ok:  # 投递成功才扣每日额度及推进基线；失败保旧值下一轮重试
             for nm2, _f, _a, num2, raw2 in hits:
                 p2 = routes.setdefault(nm2, {})
                 p2["num"], p2["raw"] = num2, raw2
+                p2["pushed"] = int(p2.get("pushed") or 0) + 1
         _save_state(st)
-        print("ALERT_WATCH_FIRED %d routes ok=%s %s" % (
-            len(hits), ok, json.dumps(tres, ensure_ascii=False)))
+        print("ALERT_WATCH_FIRED %d routes ok=%s status=%s %s" % (
+            len(hits), ok, "sent" if ok else "failed",
+            json.dumps(tres, ensure_ascii=False)))
         return 0 if ok else 1
 
     _save_state(st)

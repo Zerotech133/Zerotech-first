@@ -182,6 +182,21 @@ def build_blocks(today):
     return blocks
 
 
+def export_daily_suggestion(blocks):
+    """将调用方已取得的 build_blocks(today) 结果转为只读建议，不构造日报或发送。"""
+    return {
+        "source": "news_collector.daily_report",
+        "category": "ai_finance_daily",
+        "basis": list(blocks),
+        "suggested_time": "unknown",
+        "target": "unknown",
+        "provenance": {
+            "producer": "news_collector.daily_report.build_blocks",
+            "evidence": "caller_supplied_blocks",
+        },
+    }
+
+
 def main():
     push = "--push" in sys.argv
     today = datetime.now().strftime("%Y-%m-%d")
