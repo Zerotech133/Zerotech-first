@@ -283,6 +283,36 @@ section('quant_drill.html invariants');
   }
 }
 
+/* ── 3d. HK tab 预备态不变量（H-C 工位，2026-10-19）：两页 HK tab 从 planned 灰位升级预备态 ──
+ * 三态区分：已接入(on) / 预备中(prep) / 规划中(planned)。HK 投影与 US 同构：
+ * fetch /api/paper_status hk 块 → 取到渲染快照+曲线（HKD 影子账本标注），取不到灰态不造数不报错。
+ * 本轮 8091 未加载 hk_status → 灰态为唯一合法表现；接口就绪后零前端改动自动点亮。 */
+section('HK tab 预备态 invariants (H-C)');
+(function () {
+  const dp = path.join(PORTAL, 'quant_drill.html');
+  ok(fs.existsSync(dp), 'quant_drill.html 存在');
+  if (fs.existsSync(dp)) {
+    const dh = fs.readFileSync(dp, 'utf8');
+    ok(dh.includes("setMarket('HK')") && dh.includes('tabHK'), '下钻页：HK tab 预备态接线（tabHK + setMarket HK）');
+    ok(dh.includes('mtab prep'), '下钻页：预备中三态样式（prep，区别 on/planned）在位');
+    ok(dh.includes('renderHKBoard') && dh.includes('paintHK'), '下钻页：HK 账本投影函数链（镜像 US renderUSBoard/paintUS）');
+    ok(/d\.hk&&d\.hk\.ok&&d\.hk\.accounts/.test(dh), '下钻页：paper_status hk 块读取在位');
+    ok(dh.includes('HK 账本建设中 · 数据源已实证待接线'), '下钻页：HK 缺源灰态文案（不造数不报错）');
+    ok(dh.includes('HKD · 影子账本 · 模拟成交非真实资金'), '下钻页：HKD 影子账本标注在位');
+    ok(dh.includes("mktPlanned('虚拟币')"), '下钻页：CRYPTO 灰位 planned 提示保持不变');
+  }
+  const qp = path.join(PORTAL, 'quant.html');
+  ok(fs.existsSync(qp), 'quant.html 存在');
+  if (fs.existsSync(qp)) {
+    const qh = fs.readFileSync(qp, 'utf8');
+    ok(qh.includes('mtab prep') && qh.includes('.mtab.prep'), 'quant.html：预备中三态样式（prep，区别 on/planned）在位');
+    ok(qh.includes('data-market="hk"') && qh.includes('预备中'), 'quant.html：HK tab 预备中角标在位');
+    ok(qh.includes('renderHKProjection') && qh.includes('loadHKPaper'), 'quant.html：HK 投影渲染函数链在位');
+    ok(qh.includes('HK 账本建设中 · 数据源已实证待接线'), 'quant.html：HK 缺源灰态文案（不造数不报错）');
+    ok(qh.includes('mtab planned') && qh.includes('接入中'), 'quant.html：美股/虚拟币 planned 灰位保持不变');
+  }
+})();
+
 /* ── 4. 契约文档守卫 ── */
 section('contract doc guard');
 ok(fs.existsSync(path.join(QB_DOCS, 'dashboard_contracts.md')), 'docs/dashboard_contracts.md 存在');

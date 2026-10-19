@@ -152,6 +152,9 @@
   .mtab { border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-dim); border-radius: 999px; padding: 6px 15px; font-size: 12.5px; cursor: pointer; font-family: inherit; }
   .mtab.on { color: var(--text); border-color: var(--link); font-weight: 700; background: var(--bg-raised); }
   .mtab.planned { opacity: .5; }
+  /* 三态角标：A股「已接入」(on) / 港股「预备中」(prep, 虚线琥珀) / 美股·虚拟币「规划中」(planned 灰) */
+  .mtab.prep { border-style: dashed; color: var(--color-warn); border-color: rgba(210,153,34,.45); }
+  .mtab.prep.on { color: var(--text); border-color: var(--link); background: var(--bg-raised); font-weight: 700; border-style: solid; }
   .wall-line { font-size: 12.5px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; margin-bottom: 10px; }
   .wall-note { font-size: 11.5px; color: var(--color-warn); margin-bottom: 8px; }
   .scard.grey { opacity: .55; }
@@ -267,7 +270,7 @@
       </div>
       <div class="mtabs" id="wall-tabs">
         <button class="mtab on" data-market="cn" type="button">A股</button>
-        <button class="mtab planned" data-market="hk" type="button">港股 · 接入中</button>
+        <button class="mtab prep" data-market="hk" type="button" title="预备中 · 数据源已实证待接线，接口就绪自动点亮">港股 · 预备中</button>
         <button class="mtab planned" data-market="us" type="button">美股 · 接入中</button>
         <button class="mtab planned" data-market="crypto" type="button">虚拟币 · 接入中</button>
       </div>
@@ -868,7 +871,64 @@
     } catch (e) { wallData = null; }
     renderWall();
   }
-  /* 四市场 tab：A股 active，planned 灰位点击只提示不报错 */
+  /* ── 港股账本预备态（G3 报告倾向方案）：wall tab 点击 → /api/paper_status hk 块只读投影，
+     与 quant_drill 页 US 投影同构。本轮 8091 未加载 hk_status（hk 块不存在）→ 灰态
+     「HK 账本建设中 · 数据源已实证待接线」不造数不报错；未取到不落缓存，每次点击重试 →
+     8091 重启加载 hk_status 后零前端改动自动点亮。── */
+  let hkPaperData = null;
+  function hkBlock(d) {
+    return (d && d.hk && d.hk.ok && Array.isArray(d.hk.accounts) && d.hk.accounts[0]) ? d.hk.accounts[0] : null;
+  }
+  async function loadHKPaper() {
+    if (hkBlock(hkPaperData)) return hkPaperData; /* 已取到 hk 块才走缓存，缺源每次重试 */
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 5000);
+      const r = await fetch('/api/paper_status', { signal: ctl.signal, cache: 'no-store' });
+      hkPaperData = r.ok ? await r.json() : null;
+    } catch (e) { hkPaperData = null; }
+    return hkPaperData;
+  }
+  function renderHKProjection(host) {
+    const hk = hkBlock(hkPaperData);
+    if (!hk) {
+      host.innerHTML = "<div class='scard grey' style='cursor:default;grid-column:1/-1'>" +
+        "<div class='top'><span class='nm'>HK 账本建设中 · 数据源已实证待接线</span>" +
+        "<span class='bdg'>预备中</span></div>" +
+        "<div class='tg'>/api/paper_status hk 块本轮未上线 · 灰态不造数不报错，接口就绪自动点亮</div></div>";
+      return;
+    }
+    const lt = hk.latest || {};
+    const cur = (hkPaperData.hk && hkPaperData.hk.currency) || 'HKD';
+    const up = (lt.cum_pct ?? 0);
+    const col = up > 0 ? 'var(--color-up)' : (up < 0 ? 'var(--color-dn)' : 'var(--text-dim)');
+    let spark = '';
+    const cv = Array.isArray(hk.curve) ? hk.curve.slice(-14) : [];
+    if (cv.length > 1) {
+      const vals = cv.map(p => p.cum_pct || 0);
+      const mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), rng = (mx - mn) || 1;
+      const w = 200, ht = 40;
+      const poly = cv.map((p, i) =>
+        (i * w / (cv.length - 1)).toFixed(1) + ',' + (ht - 2 - ((p.cum_pct - mn) / rng) * (ht - 4)).toFixed(1)).join(' ');
+      spark = "<svg width='" + w + "' height='" + ht + "' style='display:block;margin-top:6px'>" +
+        "<polyline fill='none' stroke='" + ((vals[vals.length - 1] || 0) >= 0 ? 'var(--color-up)' : 'var(--color-dn)') +
+        "' stroke-width='1.5' points='" + poly + "'/></svg>";
+    }
+    host.innerHTML = "<div class='scard' style='cursor:default;grid-column:1/-1'>" +
+      "<div class='top'><span class='nm'>" + esc(hk.account_id || 'hk') + "</span>" +
+      "<span class='bdg'>" + esc(cur) + " · 影子账本 · 模拟成交非真实资金</span></div>" +
+      "<div class='tg'>账户快照（只读投影 · 源 /api/paper_status，非第二业务账）</div>" +
+      "<div style='font-size:12.5px;line-height:1.9;font-family:Consolas,monospace'>" +
+      "总资产 " + esc(lt.total ?? '—') + " · 现金 " + esc(lt.cash ?? '—') +
+      " · 持仓市值 " + esc(lt.market_value ?? '—') +
+      " · 仓位 " + (lt.pos_pct != null ? Math.round(lt.pos_pct * 1000) / 10 + '%' : '—') +
+      " · 挂单 " + esc(lt.pending ?? '—') + "</div>" +
+      "<div class='m1' style='color:" + col + "'>累计 " + (up > 0 ? '+' : '') + (up ?? 0).toFixed(2) +
+      "% · 数据日 " + esc(lt.date || '—') + " · verify_ok=" + (lt.verify_ok === true) + "</div>" +
+      spark + "</div>";
+  }
+
+  /* 四市场 tab：A股 active，HK 预备态投影，planned 灰位点击只提示不报错 */
   document.getElementById('wall-tabs').addEventListener('click', e => {
     const b = e.target.closest('.mtab');
     if (!b) return;
@@ -882,6 +942,15 @@
     }
     wallMarket = b.dataset.market || 'cn';
     document.querySelectorAll('#wall-tabs .mtab').forEach(x => x.classList.toggle('on', x === b));
+    if (b.classList.contains('prep') && wallMarket === 'hk') {
+      /* HK 预备态：账本级只读投影（本轮 hk 块未上线 → 灰态不造数） */
+      const grid = document.getElementById('wall-grid');
+      const ts = document.getElementById('wall-ts');
+      grid.innerHTML = "<div class='scard' style='cursor:default'><div class='top'><span class='dim' style='font-size:12px'>港股账本加载中…</span></div></div>";
+      ts.textContent = 'HK 账本预备态 · 源 /api/paper_status hk 块 · 只读投影';
+      loadHKPaper().then(() => renderHKProjection(grid));
+      return;
+    }
     renderWall();
   });
   loadWall();
