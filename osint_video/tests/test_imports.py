@@ -59,6 +59,7 @@ ALL_MODULES = [
     "store.repository",
     "store.service",
     "workers.run",
+    "test_feishu_gate",
 ]
 
 

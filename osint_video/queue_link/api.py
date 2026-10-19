@@ -331,6 +331,8 @@ def healthz() -> dict[str, Any]:
             "pg_ok": pg_health(),
             "fernet_ready": bool(settings.fernet_key),
             "feishu_enabled": notifier.enabled,
+            # I6 收口（设计稿 A-12）：hub 计量通道就绪情况，与 webhook 配置是两个事实
+            "feishu_hub_ready": notifier.hub_ready,
         }
     )
 
