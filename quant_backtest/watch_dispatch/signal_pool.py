@@ -23,10 +23,13 @@ Contract (per 2026-10-19 watch signal pool design, section 2):
 - Lease claiming: only OPEN entries can claim; a live lease blocks with
   CLAIM_HELD; expired leases are lazily recycled back to OPEN on any read
   or claim (no background task).
-- ``mark_accepted``: only a CLAIMED entry transitions to ACCEPTED and binds
-  an upstream acceptance receipt (outcome ACCEPTED_VERIFIED). The receipt is
-  a plain frozen dataclass of basic-type summary fields; nothing is imported
-  from ``route_outbox``.
+- Legacy ``mark_accepted``: only a CLAIMED entry transitions to ACCEPTED and
+  binds an upstream receipt (outcome ACCEPTED_VERIFIED), but the caller supplies
+  the binding port: this is LEGACY_UNTRUSTED, never production authority.
+  Controlled-scope pools are offline preparation only; they refuse every
+  acceptance until an independently owned dynamic trust root is available.
+  The receipt is a plain frozen dataclass of basic-type summary fields;
+  nothing is imported from ``route_outbox``.
 - All datetimes must be timezone-aware UTC; naive datetimes are rejected
   (same discipline as ``agent_reporting._utc``).
 
@@ -63,6 +66,7 @@ __all__ = [
     "ACCEPTED_VERIFIED_OUTCOME",
     "AcceptanceReceipt",
     "AttemptBinding",
+    "ControlledSignalScope",
     "ReceiptBindingPort",
     "SignalPool",
     "SignalPoolDraft",
@@ -115,6 +119,12 @@ SIGNAL_ID_TAKEN = "SIGNAL_ID_TAKEN"
 STORE_MISMATCH = "STORE_MISMATCH"
 STORE_INCOMPATIBLE = "STORE_INCOMPATIBLE"
 DRAFT_INVALID = "DRAFT_INVALID"
+CONTROLLED_SCOPE_INVALID = "CONTROLLED_SCOPE_INVALID"
+CONTROLLED_SCOPE_MISMATCH = "CONTROLLED_SCOPE_MISMATCH"
+CONTROLLED_BINDING_PORT_MISMATCH = "CONTROLLED_BINDING_PORT_MISMATCH"
+CONTROLLED_AUTHORITY_UNAVAILABLE = "CONTROLLED_AUTHORITY_UNAVAILABLE"
+LEGACY_UNTRUSTED = "LEGACY_UNTRUSTED"
+CONTROLLED_PENDING_ROOT = "CONTROLLED_PENDING_ROOT"
 
 
 class SignalPoolError(ValueError):
@@ -186,6 +196,31 @@ class SignalPoolDraft:
     def __post_init__(self) -> None:
         _label(self.signal_id, "SIGNAL_ID")
         if self.report_kind not in _KINDS or type(self.report_kind) is not str:
+            raise SignalPoolError("REPORT_KIND_INVALID")
+        _label(self.event_id, "EVENT_ID")
+        _sha_hex(self.evidence_hash, "EVIDENCE_HASH")
+        if type(self.evidence_version) is not int or self.evidence_version < 1:
+            raise SignalPoolError("EVIDENCE_VERSION_INVALID")
+
+
+@dataclass(frozen=True)
+class ControlledSignalScope:
+    """Exact, single-signal identity of an offline controlled pool.
+
+    This is a selector, not an independent source of authorization.
+    """
+
+    signal_id: str
+    producer_agent_id: str
+    report_kind: str
+    event_id: str
+    evidence_hash: str
+    evidence_version: int
+
+    def __post_init__(self) -> None:
+        _label(self.signal_id, "SIGNAL_ID")
+        _label(self.producer_agent_id, "PRODUCER_AGENT_ID")
+        if type(self.report_kind) is not str or self.report_kind not in _KINDS:
             raise SignalPoolError("REPORT_KIND_INVALID")
         _label(self.event_id, "EVENT_ID")
         _sha_hex(self.evidence_hash, "EVIDENCE_HASH")
@@ -294,11 +329,28 @@ class SignalPool:
     trade authority. Constructed with an injected ``EvidenceStore``; every
     append re-presents the store and must match the injected one."""
 
-    def __init__(self, store: EvidenceStore) -> None:
+    def __init__(self, store: EvidenceStore, *,
+                 controlled_scope: ControlledSignalScope | None = None,
+                 acceptance_binding: ReceiptBindingPort | None = None) -> None:
+        if (controlled_scope is None) != (acceptance_binding is None):
+            raise SignalPoolError(CONTROLLED_SCOPE_INVALID)
+        if controlled_scope is not None:
+            if (type(controlled_scope) is not ControlledSignalScope
+                    or not callable(getattr(acceptance_binding, "binding_for", None))):
+                raise SignalPoolError(CONTROLLED_SCOPE_INVALID)
         self._store = store
+        self._controlled_scope = controlled_scope
+        self._acceptance_binding = acceptance_binding
         self._entries: dict[str, SignalPoolEntry] = {}
         self._leases: dict[str, datetime] = {}
         self._receipts: dict[str, AcceptanceReceipt] = {}
+
+    @property
+    def acceptance_mode(self) -> str:
+        """Disclosure label, not an authorization or production permission."""
+        if self._controlled_scope is None:
+            return LEGACY_UNTRUSTED
+        return CONTROLLED_PENDING_ROOT
 
     @property
     def production_permitted(self) -> bool:
@@ -393,8 +445,35 @@ class SignalPool:
     # acceptance
     # ------------------------------------------------------------------
     def mark_accepted(self, signal_id: str, *, receipt: AcceptanceReceipt,
-                      binding_port: ReceiptBindingPort) -> SignalPoolEntry:
-        """Accept only a settled attempt bound to this signal's exact evidence."""
+                      binding_port: ReceiptBindingPort | None = None,
+                      now: datetime | None = None) -> SignalPoolEntry:
+        """Legacy acceptance or controlled preparation (always fails closed).
+
+        Legacy caller-injected bindings are untrusted. In controlled mode the
+        constructor fixes the sole binding port and exact signal identity; a
+        per-call replacement is refused without invoking it. Even a matching
+        port cannot establish a trusted finish time: the current adapter has
+        constructor-frozen _now, and RouteReceipt has no finished_at. A
+        caller-supplied ``now`` is likewise not an independent time authority.
+        No controlled ACCEPTED mutation is permitted by this offline slice.
+        """
+        if self._controlled_scope is not None:
+            if binding_port is not None and binding_port is not self._acceptance_binding:
+                raise SignalPoolError(CONTROLLED_BINDING_PORT_MISMATCH)
+            scope = self._controlled_scope
+            entry = self._entries.get(signal_id)
+            if (signal_id != scope.signal_id or entry is None
+                    or (entry.signal_id, entry.producer_agent_id, entry.report_kind,
+                        entry.event_id, entry.evidence_hash, entry.evidence_version)
+                    != (scope.signal_id, scope.producer_agent_id, scope.report_kind,
+                        scope.event_id, scope.evidence_hash, scope.evidence_version)):
+                raise SignalPoolError(CONTROLLED_SCOPE_MISMATCH)
+            if now is not None:
+                _require_utc(now, "NOW")
+            # No read from the fixed adapter is necessary: it cannot prove a
+            # dynamic, independently observed finish inside this pool's lease.
+            # Do not turn its plausible output into an acceptance authority.
+            raise SignalPoolError(CONTROLLED_AUTHORITY_UNAVAILABLE)
         if binding_port is None or not callable(getattr(binding_port, "binding_for", None)):
             raise SignalPoolError(RECEIPT_VERIFIER_REQUIRED)
         if type(receipt) is not AcceptanceReceipt:
