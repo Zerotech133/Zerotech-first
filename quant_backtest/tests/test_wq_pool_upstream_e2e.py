@@ -19,6 +19,7 @@ from quant_backtest.quant_sector import (
     AuthorizationScope, HumanAuthorization, PermissionGate, QuantUpstreamReport,
     ResearchReview, RiskDecision, UpstreamInbox,
 )
+from quant_backtest.agent_bridge.mapping import OutboxBindingAdapter
 from quant_backtest.quant_sector.upstream_inbox import UpstreamInboxError
 from quant_backtest.watch_dispatch import EvidenceStore, RouteOutbox, freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import (
@@ -176,7 +177,8 @@ def report_up(h: SimpleNamespace, env, *, report_id: str = "rpt-1",
               now: datetime = T0 + 2 * ONE):
     report = h.reporter.report(env, h.outbox, report_kind="ANOMALY",
                                receiver_agent_id=SECTOR_ID,
-                               report_id=report_id, now=now)
+                               report_id=report_id,
+                               control_epoch=h.outbox.epoch_floor(env), now=now)
     return report, to_sector_report(report)
 
 
@@ -200,7 +202,8 @@ def run_accepted_chain(h: SimpleNamespace, env, *, signal_id: str = "sig-1",
     entry = h.pool.mark_accepted(
         signal_id, receipt=AcceptanceReceipt(
             route=ROUTE, attempt_id=finished.attempt_id,
-            external_ref=receipt.ack.ack_id))
+            external_ref=receipt.ack.ack_id),
+        binding_port=OutboxBindingAdapter(h.outbox, env))
     return SimpleNamespace(report=report, sector_report=sector_report,
                            receipt=receipt, attempt=attempt,
                            finished=finished, entry=entry)
@@ -357,10 +360,8 @@ def test_mismatched_ack_lands_unknown_and_pool_stays_claimed():
     assert h.pool.receipt("sig-1") is None
 
 
-def test_expired_pool_lease_recycles_and_outbox_retry_is_wedged():
-    """After UNKNOWN the pool recycles and re-claims, but the outbox intent
-    stays UNKNOWN: claim_and_confirm raises INTENT_NOT_CLAIMABLE. This is a
-    recorded wiring gap (G1), asserted here as shipped behaviour."""
+def test_expired_pool_lease_recycles_but_old_ack_cannot_settle_new_generation():
+    """After UNKNOWN a new generation claims, but rejects pre-generation ACKs."""
     env = envelope()
     h = harness(env)
     pool_append(h, env, "sig-1")
@@ -381,15 +382,50 @@ def test_expired_pool_lease_recycles_and_outbox_retry_is_wedged():
                            lease_until=recycle_at + timedelta(minutes=10))
     assert reclaimed.status == STATUS_CLAIMED
 
-    # Retrying upstream through the same reporter wedges on the outbox intent.
-    with pytest.raises(OutboxError, match="INTENT_NOT_CLAIMABLE"):
-        confirm_up(h, env, report, to_agent_ack(receipt.ack),
-                   claim_token="tok-2", claim_at=recycle_at,
-                   lease_until=recycle_at + timedelta(minutes=10),
-                   now=recycle_at + ONE)
-    # The pool-side retry state survives; the inbox is still idempotent.
+    next_report = h.reporter.retry_report(
+        env, h.outbox, report, generation=1,
+        control_epoch=h.outbox.epoch_floor(env), now=recycle_at)
+    assert next_report is report
+    assert next_report.report_id == report.report_id
+    assert next_report.created_at == sector_report.created_at
+    assert outbox_intent(h.outbox, env).intent_id == "report-rpt-1-g1"
+    assert h.inbox.accept(to_sector_report(next_report),
+                          now=recycle_at + ONE) is receipt
+    # The original ack is older than this generation's creation; G4's lower
+    # anchor must not be bypassed by reusing an old sector receipt.
+    attempt, finished = confirm_up(h, env, next_report, to_agent_ack(receipt.ack),
+                                   claim_token="tok-2", claim_at=recycle_at,
+                                   lease_until=recycle_at + timedelta(minutes=10),
+                                   now=recycle_at + ONE)
+    assert attempt.attempt_no == 2
+    assert finished.outcome == UNKNOWN
     assert h.pool.get("sig-1").status == STATUS_CLAIMED
-    assert h.inbox.accept(sector_report, now=recycle_at + 2 * ONE) is receipt
+
+
+def test_revoked_sector_ack_cannot_settle_new_generation():
+    """A revoked sector receipt remains unusable even without outbox revocation."""
+    env = envelope()
+    h = harness(env)
+    report, sector_report = report_up(h, env)
+    receipt = h.inbox.accept(sector_report, now=ACCEPT_AT)
+    wrong_ack = AgentAck(ack_id="ack-stranger", report_id="rpt-other",
+                         receiver_agent_id=SECTOR_ID, acked_at=ACCEPT_AT,
+                         verification_source="upstream-inbox-v1")
+    confirm_up(h, env, report, wrong_ack)
+    retry = h.reporter.retry_report(
+        env, h.outbox, report, generation=1,
+        control_epoch=h.outbox.epoch_floor(env), now=T0 + timedelta(minutes=6))
+    h.inbox.revoke(receipt.receipt_id, now=T0 + timedelta(minutes=7))
+    assert h.inbox.is_active(receipt.receipt_id) is False
+    with pytest.raises(UpstreamInboxError, match="RECEIPT_REVOKED"):
+        h.inbox.accept(to_sector_report(retry), now=T0 + timedelta(minutes=8))
+    old_ack = to_agent_ack(receipt.ack)
+    _, finished = confirm_up(
+        h, env, retry, old_ack, claim_token="tok-2",
+        claim_at=T0 + timedelta(minutes=8),
+        lease_until=T0 + timedelta(minutes=12),
+        now=T0 + timedelta(minutes=8, seconds=1))
+    assert finished.outcome == UNKNOWN and finished.receipt is None
 
 
 def test_unknown_signal_does_not_poison_pipeline_for_next_signal():
@@ -423,11 +459,8 @@ def test_unknown_signal_does_not_poison_pipeline_for_next_signal():
     assert statuses["sig-1"] == STATUS_CLAIMED
 
 
-def test_verified_ack_before_outbox_claim_degrades_to_unknown():
-    """If the sector inbox accepted before the watch side claimed the outbox
-    intent, the verified ack's observed_at precedes claim_at and the outbox
-    degrades the outcome to UNKNOWN (recorded wiring gap G4, asserted as
-    shipped behaviour)."""
+def test_verified_ack_before_outbox_claim_is_accepted():
+    """An independently verified ack can precede watch bookkeeping claim."""
     env = envelope()
     h = harness(env)
     pool_append(h, env, "sig-1")
@@ -438,12 +471,27 @@ def test_verified_ack_before_outbox_claim_degrades_to_unknown():
     agent_ack = to_agent_ack(receipt.ack)
     # The ack itself is fully verified by the independent port...
     assert BindingAckPort().verify(agent_ack, report, CONFIRM_AT) is agent_ack
-    # ...yet the outbox time-ordering discards the receipt.
+    # The outbox preserves it because it postdates report creation.
     attempt, finished = confirm_up(h, env, report, agent_ack)
+    assert finished.outcome == ACCEPTED_VERIFIED
+    assert finished.receipt is not None
+    assert finished.receipt.external_message_id == receipt.ack.ack_id
+    assert outbox_intent(h.outbox, env).status == ACCEPTED_VERIFIED
+    assert h.pool.get("sig-1", now=CONFIRM_AT).status == STATUS_CLAIMED
+
+
+def test_future_verified_ack_still_degrades_to_unknown():
+    env = envelope()
+    h = harness(env)
+    report, sector_report = report_up(h, env)
+    receipt = h.inbox.accept(sector_report, now=ACCEPT_AT)
+    forged = AgentAck(ack_id=receipt.ack.ack_id, report_id=report.report_id,
+                      receiver_agent_id=SECTOR_ID,
+                      acked_at=CONFIRM_AT + ONE,
+                      verification_source=receipt.ack.verification_source)
+    _, finished = confirm_up(h, env, report, forged)
     assert finished.outcome == UNKNOWN
     assert finished.receipt is None
-    assert outbox_intent(h.outbox, env).status == UNKNOWN
-    assert h.pool.get("sig-1", now=CONFIRM_AT).status == STATUS_CLAIMED
 
 
 # ---------------------------------------------------------------------------

@@ -7,8 +7,10 @@ import pytest
 
 from quant_backtest.watch_dispatch import RouteOutbox, freeze_offline
 from quant_backtest.watch_dispatch.agent_reporting import (
-    AgentAck, AgentIdentity, AgentReportingError, AgentUpstreamReporter,
+    AgentAck, AgentIdentity, AgentRejectionEvidence, AgentReportingError,
+    AgentUpstreamReporter,
 )
+from quant_backtest.watch_dispatch.route_outbox import OutboxError
 
 T = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)
 H = "a" * 64
@@ -84,13 +86,157 @@ def ack(report, **changes):
     return AgentAck(**fields)
 
 
+def test_report_requires_epoch_and_rejects_stale_epoch():
+    env = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    kwargs = dict(report_kind="ANOMALY", receiver_agent_id="quant-sector-agent-1",
+                  report_id="r-epoch", now=T)
+    with pytest.raises(TypeError, match="control_epoch"):
+        rep.report(env, outbox, **kwargs)
+    outbox.revoke_envelope(env, epoch=2, now=T)
+    assert outbox.epoch_floor(env) == 2
+    with pytest.raises(OutboxError, match="EPOCH_STALE"):
+        rep.report(env, outbox, control_epoch=2, **kwargs)
+    assert outbox.get_intent(env, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id="quant-sector-agent-1") is None
+    report = rep.report(env, outbox, control_epoch=outbox.epoch_floor(env) + 1,
+                        **kwargs)
+    assert report.report_id == "r-epoch"
+
+
+class MemoryRejectionPort:
+    def __init__(self, evidence):
+        self.evidence = evidence
+
+    def verify_rejection(self, report, *, now):
+        return self.evidence
+
+
+def test_rejection_port_optional_and_verified_rejection_reopens_intent():
+    env = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    report = rep.report(env, outbox, report_kind="ANOMALY",
+                        receiver_agent_id="quant-sector-agent-1", report_id="r-rej",
+                        control_epoch=0, now=T)
+    invalid_ack = ack(report, report_id="other")
+    _, unknown = rep.claim_and_confirm(
+        env, outbox, report, claim_token="bad", claim_at=T + timedelta(seconds=1),
+        lease_until=LATER - timedelta(minutes=5), ack=invalid_ack,
+        now=T + timedelta(seconds=4))
+    assert unknown.outcome == "UNKNOWN"
+    with pytest.raises(AgentReportingError, match="RETRY_NOT_PERMITTED"):
+        rep.retry_report(env, outbox, report, generation=0, control_epoch=0,
+                         now=T + timedelta(seconds=5))
+    retry = rep.retry_report(env, outbox, report, generation=1, control_epoch=0,
+                             now=T + timedelta(seconds=5))
+    accepting = AgentUpstreamReporter(
+        watch_agent(), MemoryDirectory(sector_agent()), MemoryAckPort(),
+        MemoryRejectionPort(AgentRejectionEvidence(
+            rejection_ref="revoke-1", verification_source="trusted-ledger",
+            observed_at=T + timedelta(seconds=6))))
+    _, rejected = accepting.claim_and_confirm(
+        env, outbox, retry, claim_token="rejected",
+        claim_at=T + timedelta(seconds=7), lease_until=LATER - timedelta(minutes=5),
+        ack=invalid_ack, now=T + timedelta(seconds=8))
+    assert rejected.outcome == "DEFINITELY_REJECTED"
+    assert rejected.receipt.external_message_id == "revoke-1"
+    assert outbox.get_intent(env, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id="quant-sector-agent-1").status == "READY_OFFLINE"
+    attempt = outbox.claim(env, route="QUANT_UPSTREAM_REPORT", target_type="AGENT",
+                           target_id="quant-sector-agent-1", claim_token="third",
+                           claim_at=T + timedelta(seconds=9), lease_until=LATER - timedelta(minutes=5))
+    assert attempt.attempt_no == 3
+
+
+@pytest.mark.parametrize("evidence", [
+    AgentRejectionEvidence("", "trusted", T + timedelta(seconds=2)),
+    AgentRejectionEvidence("ref", "", T + timedelta(seconds=2)),
+    AgentRejectionEvidence("ref", "trusted", datetime(2026, 10, 19, 2, 0)),
+])
+def test_rejection_invalid_evidence_refused(evidence):
+    env = sample()
+    outbox = RouteOutbox()
+    rep = AgentUpstreamReporter(watch_agent(), MemoryDirectory(sector_agent()),
+                                MemoryAckPort(), MemoryRejectionPort(evidence))
+    report = rep.report(env, outbox, report_kind="ANOMALY",
+                        receiver_agent_id="quant-sector-agent-1", report_id="r-rej",
+                        control_epoch=0, now=T)
+    with pytest.raises(AgentReportingError, match="REJECTION_EVIDENCE_INVALID"):
+        rep.claim_and_confirm(
+            env, outbox, report, claim_token="bad", claim_at=T + timedelta(seconds=1),
+            lease_until=LATER - timedelta(minutes=5),
+            ack=ack(report, report_id="other"), now=T + timedelta(seconds=3))
+
+
+def test_retry_rejects_stale_prior_generation():
+    env = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    report = rep.report(env, outbox, report_kind="ANOMALY",
+                        receiver_agent_id="quant-sector-agent-1", report_id="r-stale",
+                        control_epoch=0, now=T)
+    rep.claim_and_confirm(
+        env, outbox, report, claim_token="bad", claim_at=T + timedelta(seconds=1),
+        lease_until=LATER - timedelta(minutes=5),
+        ack=ack(report, report_id="other"), now=T + timedelta(seconds=2))
+    second = rep.retry_report(env, outbox, report, generation=1,
+                              control_epoch=0, now=T + timedelta(seconds=3))
+    with pytest.raises(AgentReportingError, match="RETRY_NOT_PERMITTED"):
+        rep.retry_report(env, outbox, report, generation=2, control_epoch=0,
+                         now=T + timedelta(seconds=4))
+    assert second is report
+    assert second.created_at == T
+    assert outbox.get_intent(env, route="QUANT_UPSTREAM_REPORT",
+                             target_type="AGENT", target_id="quant-sector-agent-1").created_at == T + timedelta(seconds=3)
+
+
+def test_revoked_report_cannot_retry_even_with_new_epoch():
+    env = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    report = rep.report(env, outbox, report_kind="ANOMALY",
+                        receiver_agent_id="quant-sector-agent-1", report_id="r-revoked",
+                        control_epoch=0, now=T)
+    attempt, _ = rep.claim_and_confirm(
+        env, outbox, report, claim_token="bad", claim_at=T + timedelta(seconds=1),
+        lease_until=LATER - timedelta(minutes=5),
+        ack=ack(report, report_id="other"), now=T + timedelta(seconds=2))
+    assert outbox._attempts[attempt.attempt_id].outcome == "UNKNOWN"
+    outbox.revoke_envelope(env, epoch=1, now=T + timedelta(seconds=3))
+    with pytest.raises(AgentReportingError, match="RETRY_NOT_PERMITTED"):
+        rep.retry_report(env, outbox, report, generation=1, control_epoch=2,
+                         now=T + timedelta(seconds=4))
+    assert outbox.epoch_floor(env) == 1
+
+
+def test_retry_requires_existing_unknown_attempt():
+    env = sample()
+    outbox = RouteOutbox()
+    rep = reporter()
+    report = rep.report(env, outbox, report_kind="ANOMALY",
+                        receiver_agent_id="quant-sector-agent-1", report_id="r-retry",
+                        control_epoch=0, now=T)
+    with pytest.raises(AgentReportingError, match="RETRY_NOT_PERMITTED"):
+        rep.retry_report(env, outbox, report, generation=1, control_epoch=0,
+                         now=T + timedelta(seconds=2))
+    rep.claim_and_confirm(
+        env, outbox, report, claim_token="good", claim_at=T + timedelta(seconds=1),
+        lease_until=LATER - timedelta(minutes=5), ack=ack(report),
+        now=T + timedelta(seconds=40))
+    with pytest.raises(AgentReportingError, match="RETRY_NOT_PERMITTED"):
+        rep.retry_report(env, outbox, report, generation=1, control_epoch=0,
+                         now=T + timedelta(seconds=41))
+
+
 def test_report_resolves_sector_agent_and_binds_intent():
     outbox = RouteOutbox()
     envelope = sample()
     rep = reporter()
     report = rep.report(envelope, outbox, report_kind="ANOMALY",
                         receiver_agent_id="quant-sector-agent-1",
-                        report_id="r-1", now=T)
+                        report_id="r-1", control_epoch=0, now=T)
     assert report.report_kind == "ANOMALY"
     assert report.sender.agent_id == "watch-agent-1"
     assert report.receiver.agent_id == "quant-sector-agent-1"
@@ -110,16 +256,16 @@ def test_health_problem_also_reports_upward():
     envelope = sample()
     report = reporter().report(envelope, outbox, report_kind="HEALTH",
                                receiver_agent_id="quant-sector-agent-1",
-                               report_id="r-h", now=T)
+                               report_id="r-h", control_epoch=0, now=T)
     assert report.report_kind == "HEALTH"
     with pytest.raises(AgentReportingError, match="REPORT_KIND_INVALID"):
         reporter().report(envelope, RouteOutbox(), report_kind="DIRECT_FEISHU",
                           receiver_agent_id="quant-sector-agent-1",
-                          report_id="r-bad", now=T)
+                          report_id="r-bad", control_epoch=0, now=T)
     with pytest.raises(AgentReportingError, match="REPORT_KIND_INVALID"):
         reporter().report(envelope, RouteOutbox(), report_kind="TRADE_ORDER",
                           receiver_agent_id="quant-sector-agent-1",
-                          report_id="r-bad2", now=T)
+                          report_id="r-bad2", control_epoch=0, now=T)
 
 
 def test_unresolved_or_wrong_role_receiver_refused_before_planning():
@@ -128,17 +274,17 @@ def test_unresolved_or_wrong_role_receiver_refused_before_planning():
     with pytest.raises(AgentReportingError, match="AGENT_UNRESOLVED"):
         reporter(EmptyDirectory()).report(envelope, outbox, report_kind="ANOMALY",
                                           receiver_agent_id="quant-sector-agent-1",
-                                          report_id="r-1", now=T)
+                                          report_id="r-1", control_epoch=0, now=T)
     watch_only = MemoryDirectory(watch_agent())
     with pytest.raises(AgentReportingError, match="AGENT_UNRESOLVED"):
         reporter(watch_only).report(envelope, outbox, report_kind="ANOMALY",
                                     receiver_agent_id="watch-agent-1",
-                                    report_id="r-2", now=T)
+                                    report_id="r-2", control_epoch=0, now=T)
     stale_dir = MemoryDirectory(sector_agent(valid_until=T))
     with pytest.raises(AgentReportingError, match="AGENT_NOT_CURRENT"):
         reporter(stale_dir).report(envelope, outbox, report_kind="ANOMALY",
                                    receiver_agent_id="quant-sector-agent-1",
-                                   report_id="r-3", now=T)
+                                   report_id="r-3", control_epoch=0, now=T)
     assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                              target_type="AGENT",
                              target_id="quant-sector-agent-1") is None
@@ -153,7 +299,7 @@ def test_sender_must_be_watch_and_current():
         AgentUpstreamReporter(expired, MemoryDirectory(sector_agent()),
                               MemoryAckPort()).report(
             sample(), RouteOutbox(), report_kind="ANOMALY",
-            receiver_agent_id="quant-sector-agent-1", report_id="r-4", now=T)
+            receiver_agent_id="quant-sector-agent-1", report_id="r-4", control_epoch=0, now=T)
 
 
 def test_self_report_rejected_before_any_intent_is_planned():
@@ -163,7 +309,7 @@ def test_self_report_rejected_before_any_intent_is_planned():
     rep = reporter(self_dir)
     with pytest.raises(AgentReportingError, match="AGENT_SELF_REPORT_FORBIDDEN"):
         rep.report(envelope, outbox, report_kind="ANOMALY",
-                   receiver_agent_id="watch-agent-1", report_id="r-self", now=T)
+                   receiver_agent_id="watch-agent-1", report_id="r-self", control_epoch=0, now=T)
     assert outbox.get_intent(envelope, route="QUANT_UPSTREAM_REPORT",
                              target_type="AGENT", target_id="watch-agent-1") is None
     assert outbox.get_attempts(envelope, route="QUANT_UPSTREAM_REPORT",
@@ -176,7 +322,7 @@ def test_ack_verified_before_finish_and_bindings_enforced():
     rep = reporter()
     report = rep.report(envelope, outbox, report_kind="ANOMALY",
                         receiver_agent_id="quant-sector-agent-1",
-                        report_id="r-1", now=T)
+                        report_id="r-1", control_epoch=0, now=T)
     good = ack(report)
     attempt, finished = rep.claim_and_confirm(
         envelope, outbox, report, claim_token="tok-1",
@@ -190,7 +336,7 @@ def test_ack_verified_before_finish_and_bindings_enforced():
     envelope2 = sample(event_id="ev2")
     report2 = rep.report(envelope2, outbox, report_kind="ANOMALY",
                          receiver_agent_id="quant-sector-agent-1",
-                         report_id="r-2", now=T)
+                         report_id="r-2", control_epoch=0, now=T)
     attempt2, finished2 = rep.claim_and_confirm(
         envelope2, outbox, report2, claim_token="tok-2",
         claim_at=T + timedelta(seconds=1),

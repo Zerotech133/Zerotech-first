@@ -2,9 +2,10 @@
 
 Watch reports anomalies upward to the quant trading department only; the parent
 layer owns any fan-out to Feishu, research or the trading desk. Each report
-keeps an independent intent, attempt and receipt timeline. Unknown outcomes are
-terminal here: only an independently verified definite rejection returns an
-intent to READY_OFFLINE for a bounded controlled retry.
+keeps an independent intent, attempt and receipt timeline. Unknown attempts
+remain terminal; a new explicitly planned generation can supersede an unknown
+intent while sharing its bounded attempt budget. Only an independently verified
+definite rejection reopens the same generation.
 """
 from __future__ import annotations
 
@@ -26,6 +27,20 @@ _MAX_ATTEMPTS = 3
 
 class OutboxError(ValueError):
     """Fail-closed outbox violation."""
+
+
+@dataclass(frozen=True)
+class ReportFingerprint:
+    """Immutable identity of a sector report across intent generations."""
+
+    report_id: str
+    report_kind: str
+    event_id: str
+    evidence_version: int
+    envelope_hash: str
+    sender_agent_id: str
+    receiver_agent_id: str
+    created_at: datetime
 
 
 @dataclass(frozen=True)
@@ -75,12 +90,17 @@ class RouteOutbox:
 
     def __init__(self) -> None:
         self._intents: Dict[str, RouteIntent] = {}
+        self._generations: Dict[str, int] = {}
+        self._intent_history: Dict[str, list[RouteIntent]] = {}
+        self._origin_created_at: Dict[str, datetime] = {}
+        self._report_fingerprints: Dict[str, ReportFingerprint] = {}
         self._identities: Dict[str, Tuple[str, ...]] = {}
         self._intent_ids: Dict[str, str] = {}
         self._attempts: Dict[str, RouteAttempt] = {}
         self._attempt_nos: Dict[str, int] = {}
         self._epochs: Dict[Tuple[str, ...], int] = {}
         self._revoked: set[str] = set()
+        self._revoked_identities: set[Tuple[str, ...]] = set()
 
     @property
     def production_permitted(self) -> bool:
@@ -112,11 +132,18 @@ class RouteOutbox:
             valid_until=envelope.valid_until)
         return draft.idempotency_key(envelope)
 
+    def epoch_floor(self, envelope: EvidenceEnvelope) -> int:
+        """Return the current control-epoch lower bound for this identity."""
+        return self._epochs.get(self._identity(envelope), 0)
+
     def plan(self, envelope: EvidenceEnvelope, *, route: str, target_type: str,
              target_id: str, policy_version: str, control_epoch: int,
              intent_id: str, created_at: datetime,
-             valid_until: datetime) -> RouteIntent:
+             valid_until: datetime, generation: int = 0,
+             report_fingerprint: ReportFingerprint | None = None) -> RouteIntent:
         envelope.validate(now=created_at)
+        if type(generation) is not int or generation < 0:
+            raise OutboxError("RETRY_GENERATION_INVALID")
         _utc(created_at, "CREATED_AT")
         _utc(valid_until, "VALID_UNTIL")
         if not (envelope.freeze_at <= created_at < valid_until <= envelope.valid_until):
@@ -125,7 +152,7 @@ class RouteOutbox:
         floor = self._epochs.get(identity)
         if floor is not None and control_epoch < floor:
             raise OutboxError("EPOCH_STALE")
-        if identity in [self._identities.get(k) for k in self._revoked] and control_epoch <= (floor or 0):
+        if identity in self._revoked_identities and control_epoch <= (floor or 0):
             raise OutboxError("EPOCH_STALE")
         try:
             intent = RouteIntent(
@@ -146,14 +173,75 @@ class RouteOutbox:
         prior = self._intent_ids.get(intent.intent_id)
         if prior is not None and prior != key:
             raise OutboxError("INTENT_ID_CONFLICT")
+        if key in self._revoked:
+            raise OutboxError("RETRY_KEY_REVOKED")
+        if report_fingerprint is not None:
+            if (type(report_fingerprint) is not ReportFingerprint
+                    or route != "QUANT_UPSTREAM_REPORT"
+                    or report_fingerprint.event_id != envelope.event_id
+                    or report_fingerprint.evidence_version != envelope.evidence_version
+                    or report_fingerprint.envelope_hash != envelope.envelope_hash
+                    or report_fingerprint.receiver_agent_id != target_id
+                    or (generation == 0
+                        and report_fingerprint.created_at != created_at)
+                    or (generation > 0
+                        and report_fingerprint.created_at > created_at)
+                    or type(report_fingerprint.report_id) is not str
+                    or not report_fingerprint.report_id
+                    or len(report_fingerprint.report_id) > 128
+                    or type(report_fingerprint.report_kind) is not str
+                    or report_fingerprint.report_kind not in ("ANOMALY", "HEALTH")
+                    or type(report_fingerprint.sender_agent_id) is not str
+                    or not report_fingerprint.sender_agent_id
+                    or len(report_fingerprint.sender_agent_id) > 128):
+                raise OutboxError("REPORT_FINGERPRINT_MISMATCH")
+            _utc(report_fingerprint.created_at, "REPORT_CREATED_AT")
         existing = self._intents.get(key)
         if existing is not None:
-            if existing == intent:
+            current_generation = self._generations[key]
+            if existing == intent and generation == current_generation:
+                original = self._report_fingerprints.get(key)
+                if generation > 0 and original is None:
+                    raise OutboxError("REPORT_FINGERPRINT_REQUIRED")
+                if generation > 0 and report_fingerprint is None:
+                    raise OutboxError("REPORT_FINGERPRINT_REQUIRED")
+                if (report_fingerprint is not None
+                        and original != report_fingerprint):
+                    raise OutboxError("REPORT_FINGERPRINT_MISMATCH")
                 return existing
-            raise OutboxError("INTENT_CONFLICT")
+            if existing.status != UNKNOWN or generation == 0:
+                raise OutboxError("INTENT_CONFLICT")
+            if (self._attempt_nos.get(key, 0) == 0
+                    or not any(a.idempotency_key == key and a.outcome == UNKNOWN
+                               and a.intent_id == existing.intent_id
+                               for a in self._attempts.values())):
+                raise OutboxError("RETRY_NOT_PERMITTED")
+            if generation != current_generation + 1:
+                raise OutboxError("RETRY_GENERATION_INVALID")
+            if prior is not None:
+                raise OutboxError("INTENT_ID_REUSE")
+            first_intent = (self._intent_history[key][0]
+                            if self._intent_history[key] else existing)
+            if control_epoch != first_intent.control_epoch:
+                raise OutboxError("RETRY_EPOCH_CHANGED")
+            if created_at <= existing.created_at:
+                raise OutboxError("ROUTE_TIME_INVALID")
+            original = self._report_fingerprints.get(key)
+            if original is None or report_fingerprint is None:
+                raise OutboxError("REPORT_FINGERPRINT_REQUIRED")
+            if report_fingerprint != original:
+                raise OutboxError("REPORT_FINGERPRINT_MISMATCH")
+            self._intent_history[key].append(existing)
+        elif generation != 0:
+            raise OutboxError("RETRY_GENERATION_INVALID")
         if floor is None or control_epoch > floor:
             self._epochs[identity] = control_epoch
         self._intents[key] = intent
+        self._generations[key] = generation
+        self._intent_history.setdefault(key, [])
+        self._origin_created_at.setdefault(key, created_at)
+        if report_fingerprint is not None and generation == 0:
+            self._report_fingerprints[key] = report_fingerprint
         self._identities[key] = identity
         self._intent_ids[intent.intent_id] = key
         return intent
@@ -199,7 +287,11 @@ class RouteOutbox:
                observed_at: datetime | None = None) -> RouteAttempt:
         _utc(now, "FINISH_NOW")
         attempt = self._attempts.get(attempt_id)
-        if attempt is None or attempt.outcome != CLAIMED:
+        if attempt is None:
+            raise OutboxError("ATTEMPT_UNKNOWN")
+        if attempt.idempotency_key in self._revoked:
+            raise OutboxError("ATTEMPT_NOT_CURRENT")
+        if attempt.outcome != CLAIMED:
             raise OutboxError("ATTEMPT_UNKNOWN")
         intent = self._intents.get(attempt.idempotency_key)
         if intent is None or intent.status != CLAIMED or intent.intent_id != attempt.intent_id:
@@ -214,7 +306,7 @@ class RouteOutbox:
                     and type(verification_source) is str and verification_source
                     and observed_at is not None):
                 _utc(observed_at, "OBSERVED_AT")
-                if attempt.claim_at <= observed_at <= now:
+                if intent.created_at <= observed_at <= now:
                     receipt = RouteReceipt(
                         route=intent.route, intent_id=intent.intent_id,
                         attempt_id=attempt_id,
@@ -255,16 +347,28 @@ class RouteOutbox:
         current = self._epochs.get(identity)
         if current is not None and epoch <= current:
             raise OutboxError("EPOCH_NOT_ADVANCED")
-        self._epochs[identity] = epoch
-        for key, known in self._identities.items():
-            if known != identity or key in self._revoked:
+        affected = [(key, self._intents[key]) for key, known in self._identities.items()
+                    if known == identity and key not in self._revoked]
+        active: Dict[str, str] = {}
+        for key, intent in affected:
+            if intent.status != CLAIMED:
                 continue
+            matches = [attempt for attempt in self._attempts.values()
+                       if attempt.idempotency_key == key and attempt.outcome == CLAIMED]
+            if (len(matches) != 1 or matches[0].intent_id != intent.intent_id):
+                raise OutboxError("REVOKE_ATTEMPT_INCONSISTENT")
+            active[key] = matches[0].attempt_id
+        self._epochs[identity] = epoch
+        self._revoked_identities.add(identity)
+        for key, intent in affected:
             self._revoked.add(key)
-            intent = self._intents[key]
             if intent.status == READY_OFFLINE:
                 self._intents[key] = replace(intent, status=CANCELLED)
             elif intent.status == CLAIMED:
                 self._intents[key] = replace(intent, status=UNKNOWN)
+                attempt_id = active[key]
+                self._attempts[attempt_id] = replace(
+                    self._attempts[attempt_id], outcome=UNKNOWN, receipt=None)
         return epoch
 
     def get_intent(self, envelope: EvidenceEnvelope, *, route: str,
