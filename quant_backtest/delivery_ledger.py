@@ -35,6 +35,16 @@ def _utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat(timespec="microseconds")
 
 
+def _evidence_in_window(observed_at: datetime, claimed_at: str,
+                        finished_at: str, expires_at: str) -> bool:
+    """Require an aware observation during this claim, no later than finish."""
+    observed = _utc(observed_at)
+    start = _utc(datetime.fromisoformat(claimed_at))
+    finish = _utc(datetime.fromisoformat(finished_at))
+    end = _utc(datetime.fromisoformat(expires_at))
+    return start <= observed <= min(finish, end)
+
+
 def _text(value: str, field: str) -> str:
     if not isinstance(value, str) or not value or value != value.strip():
         raise ValueError(f"{field} must be nonempty, unpadded text")
@@ -394,7 +404,7 @@ class DeliveryLedger:
         now = self._now()
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            row = db.execute("""SELECT state,expires_at,trace_id,route FROM delivery_targets
+            row = db.execute("""SELECT state,claimed_at,expires_at,trace_id,route FROM delivery_targets
                 WHERE event_key=? AND target_key=? AND attempt_id=?""",
                 (claim.event_key, claim.target_key, claim.attempt_id)).fetchone()
             if (row is None or row["state"] != "CLAIMED"
@@ -409,7 +419,8 @@ class DeliveryLedger:
                 if evidence == identity and isinstance(receipt.receipt_id, str) and receipt.receipt_id.strip():
                     try:
                         actual = "SENT" if (self.receipt_verifier is not None
-                                            and _utc(receipt.observed_at)
+                                            and _evidence_in_window(receipt.observed_at, row["claimed_at"],
+                                                                    now, row["expires_at"])
                                             and self.receipt_verifier(receipt) is True) else "UNKNOWN"
                     except Exception:
                         actual = "UNKNOWN"
@@ -424,7 +435,8 @@ class DeliveryLedger:
                         and non_acceptance.reason.strip()):
                     try:
                         actual = "FAILED" if (self.non_acceptance_verifier is not None
-                                              and _utc(non_acceptance.observed_at)
+                                              and _evidence_in_window(non_acceptance.observed_at, row["claimed_at"],
+                                                                      now, row["expires_at"])
                                               and self.non_acceptance_verifier(non_acceptance) is True) else "UNKNOWN"
                     except Exception:
                         actual = "UNKNOWN"
