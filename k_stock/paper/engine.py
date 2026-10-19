@@ -34,7 +34,7 @@ from pathlib import Path
 
 CONF_FULL = 0.75      # 满配置信度：conf>=0.75 → 目标仓位打满 max_pos_pct
 LOT = 100
-ENGINE_VERSION = "0.7.0-combo-quad"   # X-6 版本化纪律：E-1 组合四元组注册表接入（WO-QT-20261020-003）
+ENGINE_VERSION = "0.8.0-pool-stamp"   # X-6 版本化纪律：2.1a 池快照印记入快照（WO-QT-20261020-004）
 EPS = 1e-9
 
 _DEFAULTS = dict(
@@ -517,7 +517,8 @@ class PaperEngine:
                  min_conf: float | None = None,
                  allow_stale: bool = False,
                  combo_id: str | None = None,
-                 registry_path: Path | str | None = None) -> dict:
+                 registry_path: Path | str | None = None,
+                 pool_stamp: dict | None = None) -> dict:
         """读 poc_*.json（list，每股一项），按 D1 决策落 pending 单。幂等。
         同一 run 可落多个交易员子账本（ref 按 @账户 分段互不冲突）。
         min_conf：BUY 置信度门槛（交易员档案 conf_floor；SELL 不受限——该卖还得卖）。
@@ -542,7 +543,12 @@ class PaperEngine:
         （finally 恢复，不污染引擎实例）；注册表缺失/未注册/结构非法=落单
         失败（closed on failure，禁静默降级到默认参数）。不给 combo_id →
         全路径行为零变化。registry_path 可注入测试注册文件（松耦合验收口：
-        新增 persona/交易员/选股源仅需新增注册文件，既有代码 diff 为零）。"""
+        新增 persona/交易员/选股源仅需新增注册文件，既有代码 diff 为零）。
+
+        2.1a 池快照印记（WO-QT-20261020-004）：pool_stamp 给定时随快照写入
+        context_json["pool"]（取票时池标识+版本+快照时间，供许褚取票范围
+        从契约+快照复现；缺 pool_id/pool_version 即抛错）。不给 → 行为零
+        变化；池→落单的真实调用方（许褚链）尚未接线，当前仅字段预留。"""
         aid = account_id or self.acct
         # E-1 四元组注册表解析（见 docstring）：解析与参数覆盖在任何落单动作前
         # 完成，失败即抛（closed on failure）；覆盖值在 finally 恢复。
@@ -649,7 +655,8 @@ class PaperEngine:
                     context={"last_td": last_td, "allow_stale": allow_stale,
                              "min_conf": min_conf, "cancelled": out["cancelled"],
                              "market": type(self.market).__name__},
-                    combo=combo_registry.quad_stamp(combo) if combo else None)
+                    combo=combo_registry.quad_stamp(combo) if combo else None,
+                    pool=pool_stamp)
                 out["snapshot_id"] = snap["snapshot_id"]
             self.con.commit()
             return out

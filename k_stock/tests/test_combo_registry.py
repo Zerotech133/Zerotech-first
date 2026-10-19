@@ -137,7 +137,7 @@ def test_combo_snapshot_carries_quad_stamp_and_versions(tmp_path):
     assert r["orders"] and r["snapshot_id"]
     snap = decision_snapshot.by_ref(e.con, "poc_quad.json", "acct_cns")
     # 加法演进：schema v2 + 快照 combo_id 列=注册表组合 id（替换 account_id 旧语义）
-    assert snap["schema_version"] == decision_snapshot.SNAPSHOT_SCHEMA_VERSION == 2
+    assert snap["schema_version"] == decision_snapshot.SNAPSHOT_SCHEMA_VERSION == 3
     assert snap["combo_id"] == CONSERVATIVE
     # 四元组印记：四元素 id@version + 注册表 schema 版本齐备
     combo = snap["context_json"]["combo"]
@@ -239,6 +239,84 @@ def test_default_registry_ships_two_valid_combos():
         assert 0 <= p["conf_floor"] <= 1
         assert 0 < p["max_pos_pct"] <= 1 and 0 < p["max_total_pct"] <= 1
         assert p["max_pos_pct"] <= p["max_total_pct"]
+
+
+# ---------- 2.1a：池快照印记入快照（v3 加法演进）+ 取票范围复现 ----------
+
+def _pool_stamp(**over) -> dict:
+    """P6 风格池快照印记（契约 §6 字段规范）。"""
+    stamp = {"pool_id": "pool_watch_g0", "pool_version": 3,
+             "snapshot_ts": "2026-10-20T09:30:00+08:00",
+             "source_manifest": "a" * 64,
+             "members": ["000002.SZ", "600519.SH"]}
+    stamp.update(over)
+    return stamp
+
+
+def test_pool_stamp_written_to_snapshot_v3(tmp_path):
+    """落单带 pool_stamp → 快照 v3、context_json["pool"] 原样印记（加法演进）。"""
+    e = _mk_engine(tmp_path)
+    r = e.exec_run(_buy_run(tmp_path), account_id="main",
+                   pool_stamp=_pool_stamp())
+    assert r["orders"]
+    snap = decision_snapshot.by_ref(e.con, "poc_quad.json")
+    assert snap["schema_version"] == decision_snapshot.SNAPSHOT_SCHEMA_VERSION == 3
+    pool = snap["context_json"]["pool"]
+    assert pool["pool_id"] == "pool_watch_g0"
+    assert pool["pool_version"] == 3
+    assert pool["snapshot_ts"] == "2026-10-20T09:30:00+08:00"
+    assert pool["members"] == ["000002.SZ", "600519.SH"]
+    assert snap["versions_json"]["engine"] == ENGINE_VERSION
+
+
+def test_pool_stamp_enables_scope_replay(tmp_path):
+    """验收（计划 2.1a）：给定池快照印记，能按契约 §4 v1 口径反演取票范围——
+    落单标的必须落在快照印记的冻结成员集内，池外票可被审计标出。"""
+    e = _mk_engine(tmp_path)
+    stamp = _pool_stamp()
+    r = e.exec_run(_buy_run(tmp_path), account_id="main", pool_stamp=stamp)
+    assert r["orders"]
+    # 反演入口：快照印记 → 契约 §4「取票范围 = current 池快照 members 全集」
+    pool = decision_snapshot.by_ref(e.con, "poc_quad.json")["context_json"]["pool"]
+    scope = set(pool["members"])
+    # 复现断言①：实际落单标的 ⊆ 冻结成员集（取票范围可复现）
+    placed = {o["stock"] for o in r["orders"]}
+    assert placed and placed <= scope
+    # 复现断言②：池外票不在取票范围内（契约审计可标出越池票）
+    assert "600000.SH" not in scope
+    # 复现断言③：印记足以定位池身份（pool_id + version 即契约反查键）
+    assert (pool["pool_id"], pool["pool_version"]) == ("pool_watch_g0", 3)
+
+
+def test_pool_stamp_closed_on_failure(tmp_path):
+    from combo_registry import ComboRegistryError  # noqa: F401  (同族语义对照)
+    from decision_snapshot import PoolStampError
+    e = _mk_engine(tmp_path)
+    # 缺 pool_id / pool_version：落单失败（closed on failure，禁无印记静默落池外票）
+    for bad in ({"pool_version": 1}, {"pool_id": "p1"}):
+        with pytest.raises(PoolStampError):
+            e.exec_run(_buy_run(tmp_path, f"poc_bad_{id(bad)}.json"),
+                       account_id="main", pool_stamp=bad)
+    # pool_version 类型非法（bool/负数/浮点）
+    for v in (True, -1, 1.5):
+        with pytest.raises(PoolStampError):
+            decision_snapshot.normalize_pool_stamp({"pool_id": "p", "pool_version": v})
+    # 文件型池（日期+generated_at 软版本）按契约 §6 用 pool_version=0 表达
+    r = e.exec_run(_buy_run(tmp_path, "poc_softver.json"), account_id="main",
+                   pool_stamp={"pool_id": "todays_picks", "pool_version": 0,
+                               "snapshot_ts": "2026-10-20 07:30:00"})
+    assert r["orders"]
+    assert decision_snapshot.by_ref(e.con, "poc_softver.json")["context_json"]["pool"]["pool_version"] == 0
+    assert e.cfg["max_pos_pct"] == 0.20   # 失败/成功路径均不污染引擎配置
+
+
+def test_no_pool_stamp_no_pool_field(tmp_path):
+    """不带 pool_stamp：context 无 pool 键（零变化，读侧容忍缺失）。"""
+    e = _mk_engine(tmp_path)
+    r = e.exec_run(_buy_run(tmp_path, "poc_nopool.json"), account_id="main")
+    assert r["orders"]
+    snap = decision_snapshot.by_ref(e.con, "poc_nopool.json")
+    assert "pool" not in snap["context_json"]
 
 
 if __name__ == "__main__":
