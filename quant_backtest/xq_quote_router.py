@@ -300,15 +300,23 @@ def fetch_snapshot(syms: list[str]) -> tuple[list, str, list]:
     try:
         rows, e1 = snapshot_tushare(allowed)
         errs += ["tushare: %s" % x for x in e1]
-        if rows:
-            return rows, "tushare", errs
+        safe_rows = [r for r in rows if r.get("symbol") in allowed
+                     and not is_index_symbol(r.get("symbol"))]
+        if len(safe_rows) != len(rows):
+            errs.append("tushare: 返回非请求股票或指数锚行已剔除")
+        if safe_rows:
+            return safe_rows, "tushare", errs
     except Exception as e:                        # noqa: BLE001
         errs.append("tushare crash: %s" % str(e)[:80])
     try:
         rows, e2 = snapshot_akshare(allowed)
         errs += ["akshare: %s" % x for x in e2]
-        if rows:
-            return rows, "akshare", errs
+        safe_rows = [r for r in rows if r.get("symbol") in allowed
+                     and not is_index_symbol(r.get("symbol"))]
+        if len(safe_rows) != len(rows):
+            errs.append("akshare: 返回非请求股票或指数锚行已剔除")
+        if safe_rows:
+            return safe_rows, "akshare", errs
     except Exception as e:                        # noqa: BLE001
         errs.append("akshare crash: %s" % str(e)[:80])
     return [], "", errs

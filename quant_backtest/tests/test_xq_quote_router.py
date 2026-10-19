@@ -191,6 +191,28 @@ def test_fetch_snapshot_mixed_indices_both_providers_fail_visible():
     ak.assert_called_once_with(["SZ000001"])
 
 
+def test_fetch_snapshot_rejects_provider_returned_index_and_tries_fallback():
+    index = dict(_ROW, symbol="SH000001", ts_code="000001.SH")
+    bank = dict(_ROW, symbol="SZ000001", ts_code="000001.SZ")
+    with mock.patch.object(R, "snapshot_tushare", return_value=([index], [])) as ts, \
+         mock.patch.object(R, "snapshot_akshare",
+                           return_value=([index, bank], [])) as ak:
+        rows, source, errs = R.fetch_snapshot(["SH000001", "SZ000001"])
+    assert rows == [bank] and source == "akshare"
+    assert sum("已剔除" in err for err in errs) == 2
+    ts.assert_called_once_with(["SZ000001"])
+    ak.assert_called_once_with(["SZ000001"])
+
+
+def test_fetch_snapshot_only_unrequested_rows_fail_visible():
+    index = dict(_ROW, symbol="SZ399001", ts_code="399001.SZ")
+    with mock.patch.object(R, "snapshot_tushare", return_value=([index], [])), \
+         mock.patch.object(R, "snapshot_akshare", return_value=([index], [])):
+        rows, source, errs = R.fetch_snapshot(["SZ000001"])
+    assert rows == [] and source == ""
+    assert len(errs) == 2 and all("已剔除" in err for err in errs)
+
+
 def test_snapshot_tushare_direct_only_indices_skips_setup():
     with mock.patch.object(R, "setup_tushare") as setup:
         rows, errs = R.snapshot_tushare(["SH000001", "SZ399001"])
