@@ -11,10 +11,12 @@ import html
 from typing import Dict, Iterable, Tuple
 
 from quant_backtest.quant_sector.dispatch_ledger import DispatchLedger
+from quant_backtest.quant_sector.dual_gate import PermissionGate
 from quant_backtest.quant_sector.upstream_inbox import (
     UpstreamInbox,
     utc_text,
 )
+from quant_backtest.watch_dispatch.contracts import EvidenceEnvelope
 
 CONNECTION_STATUS = "NOT_CONNECTED"
 
@@ -72,6 +74,19 @@ def dispatch_snapshot(ledger: DispatchLedger) -> Tuple[Dict[str, object], ...]:
             "connection": CONNECTION_STATUS,
         })
     return tuple(rows)
+
+
+def gate_projection(envelope: EvidenceEnvelope, gate: PermissionGate) -> Dict[str, object]:
+    """Constants-only summary; live dual-gate checks go through gate.consume()."""
+    envelope.validate()
+    return {
+        "dispatch_permitted": gate.dispatch_permitted,
+        "trading_permitted": gate.trading_permitted,
+        "notification_permitted": False,
+        "production_permitted": False,
+        "live_reverification": "gate.consume",
+        "connection": CONNECTION_STATUS,
+    }
 
 
 def render_readonly_html(*, title: str,

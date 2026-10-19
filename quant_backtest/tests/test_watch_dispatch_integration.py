@@ -10,13 +10,17 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from quant_backtest.quant_sector import (
+    AuthorizationScope, HumanAuthorization, PermissionGate, ResearchReview,
+    RiskDecision,
+)
 from quant_backtest.watch_dispatch import (
-    AuthorizationScope, EvidenceStore, HumanAuthorization, PermissionGate,
-    ResearchReview, RiskDecision, RouteOutbox, ShadowDecision, ShadowLedger,
+    EvidenceStore, RouteOutbox, ShadowDecision, ShadowLedger,
     ShadowReview, freeze_offline,
 )
+from quant_backtest.quant_sector.projections import gate_projection
 from quant_backtest.watch_dispatch.projections import (
-    evidence_projection, gate_projection, outbox_projection, shadow_projection,
+    evidence_projection, outbox_projection, shadow_projection,
 )
 
 T = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)

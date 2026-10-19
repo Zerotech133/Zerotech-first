@@ -5,11 +5,14 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from quant_backtest.watch_dispatch import (
+from quant_backtest.quant_sector import (
     AuthorizationScope, HumanAuthorization, PermissionGate, ResearchReview,
-    RiskDecision, ShadowDecision, ShadowLedger, ShadowReview, freeze_offline,
+    RiskDecision,
 )
-from quant_backtest.watch_dispatch.permission_gate import GateError
+from quant_backtest.quant_sector.dual_gate import GateError
+from quant_backtest.watch_dispatch import (
+    ShadowDecision, ShadowLedger, ShadowReview, freeze_offline,
+)
 
 T = datetime(2026, 10, 19, 2, 0, tzinfo=timezone.utc)
 H = "a" * 64

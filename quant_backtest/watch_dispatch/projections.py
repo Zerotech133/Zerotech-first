@@ -13,7 +13,6 @@ from typing import Dict, Iterable, Tuple
 from quant_backtest.watch_dispatch.canonical import utc_text
 from quant_backtest.watch_dispatch.contracts import EvidenceEnvelope
 from quant_backtest.watch_dispatch.evidence_store import EvidenceStore
-from quant_backtest.watch_dispatch.permission_gate import PermissionGate
 from quant_backtest.watch_dispatch.route_outbox import RouteOutbox
 from quant_backtest.watch_dispatch.shadow_ledger import ShadowLedger
 
@@ -99,23 +98,9 @@ def shadow_projection(envelope: EvidenceEnvelope, ledger: ShadowLedger,
     return tuple(rows)
 
 
-def gate_projection(envelope: EvidenceEnvelope, gate: PermissionGate) -> Dict[str, object]:
-    """Constants-only summary; live dual-gate checks go through gate.consume()."""
-    envelope.validate()
-    return {
-        "dispatch_permitted": gate.dispatch_permitted,
-        "trading_permitted": gate.trading_permitted,
-        "notification_permitted": False,
-        "production_permitted": False,
-        "live_reverification": "gate.consume",
-        "connection": CONNECTION_STATUS,
-    }
-
-
 def render_readonly_html(*, title: str, evidence: Dict[str, object],
                          outbox_rows: Tuple[Dict[str, object], ...],
-                         shadow_rows: Tuple[Dict[str, object], ...],
-                         gate: Dict[str, object]) -> str:
+                         shadow_rows: Tuple[Dict[str, object], ...]) -> str:
     """Static escaped HTML fragment; no script tags, no external calls."""
     if not title or not all(type(t) is str for t in (title,)):
         raise ProjectionError("TITLE_INVALID")
@@ -130,8 +115,6 @@ def render_readonly_html(*, title: str, evidence: Dict[str, object],
         return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
     evidence_items = "".join(
         f"<li><b>{esc(key)}</b>: {esc(value)}</li>" for key, value in evidence.items())
-    gate_items = "".join(
-        f"<li><b>{esc(key)}</b>: {esc(value)}</li>" for key, value in gate.items())
     return (
         f'<section data-connection="{CONNECTION_STATUS}">'
         f"<h2>{esc(title)}</h2>"
@@ -144,4 +127,4 @@ def render_readonly_html(*, title: str, evidence: Dict[str, object],
         "<h3>Shadow decisions (visible at as-of)</h3>" + table(
             ("shadow_id", "decision_at", "hypothesis", "reviews"), shadow_rows,
             ("shadow_id", "decision_at", "hypothesis", "visible_review_ids")) +
-        f"<h3>Gates</h3><ul>{gate_items}</ul></section>")
+        "</section>")

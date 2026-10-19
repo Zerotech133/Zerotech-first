@@ -5,13 +5,16 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from quant_backtest.watch_dispatch import (
+from quant_backtest.quant_sector import (
     AuthorizationScope, HumanAuthorization, PermissionGate, ResearchReview,
-    RiskDecision, RouteOutbox, ShadowDecision, ShadowLedger, ShadowReview,
-    freeze_offline,
+    RiskDecision,
 )
+from quant_backtest.watch_dispatch import (
+    RouteOutbox, ShadowDecision, ShadowLedger, ShadowReview, freeze_offline,
+)
+from quant_backtest.quant_sector.projections import gate_projection
 from quant_backtest.watch_dispatch.projections import (
-    CONNECTION_STATUS, ProjectionError, evidence_projection, gate_projection,
+    CONNECTION_STATUS, ProjectionError, evidence_projection,
     outbox_projection, render_readonly_html, shadow_projection,
 )
 
@@ -111,8 +114,7 @@ def test_render_html_static_escaped_and_script_free():
         evidence=evidence_projection(envelope,
                                      __import__("quant_backtest.watch_dispatch",
                                                 fromlist=["EvidenceStore"]).EvidenceStore()),
-        outbox_rows=(hostile,), shadow_rows=shadow_rows,
-        gate=gate_projection(envelope, PermissionGate()))
+        outbox_rows=(hostile,), shadow_rows=shadow_rows)
     assert "<script" not in page.lower()
     assert CONNECTION_STATUS in page
     assert "盯盘分发 &lt;只读&gt;" in page
