@@ -324,6 +324,86 @@ def test_verify_sees_uncheckpointed_wal_and_preserves_main_file(tmp_path):
         writer.close()
 
 
+def test_dry_run_sees_committed_uncheckpointed_wal_without_writes(tmp_path):
+    """预演必须读取 WAL 中已提交的新行，且不得触发 checkpoint。"""
+    db = tmp_path / "dry WAL #%.db"
+    writer = sqlite3.connect(db)
+    try:
+        writer.execute(
+            "CREATE TABLE xq_status_classified (status_id TEXT PRIMARY KEY, "
+            "tickers TEXT)"
+        )
+        writer.commit()
+        assert writer.execute("PRAGMA journal_mode=WAL").fetchone()[0] == "wal"
+        writer.execute(
+            "INSERT INTO xq_status_classified VALUES (?, ?)",
+            ("s1", '["01810","债券基金"]'),
+        )
+        writer.commit()
+        wal = Path(str(db) + "-wal")
+        assert wal.exists() and wal.stat().st_size > 0
+        main_before, wal_before = db.read_bytes(), wal.read_bytes()
+
+        report = xnm.migrate(db, dry_run=True)
+
+        assert report["journal_mode"] == "wal"
+        assert report["total"] == 1
+        assert report["kinds"] == {"stock_hk": 1, "fund": 1}
+        assert report["updated"] == 0
+        assert db.read_bytes() == main_before
+        assert wal.read_bytes() == wal_before
+    finally:
+        writer.close()
+
+
+def test_verify_preserves_delete_journal_database_and_sidecars(tmp_path):
+    """DELETE 模式验证只读；路径空格、井号、百分号检验 URI 转义。"""
+    db = tmp_path / "verify #%.db"
+    with sqlite3.connect(db) as conn:
+        conn.execute(
+            "CREATE TABLE xq_status_classified "
+            "(status_id TEXT PRIMARY KEY, norm_tickers TEXT)"
+        )
+        conn.execute(
+            "INSERT INTO xq_status_classified VALUES (?, ?)",
+            ("s1", json.dumps([{"kind": "stock_a"}]))
+        )
+        conn.commit()
+        assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+    sidecars = [Path(str(db) + suffix) for suffix in ("-journal", "-wal", "-shm")]
+    main_before = db.read_bytes()
+    sidecars_before = {str(path): path.read_bytes() if path.exists() else None
+                       for path in sidecars}
+
+    assert xnm.verify(db) == [("stock_a", 1)]
+
+    assert db.read_bytes() == main_before
+    assert {str(path): path.read_bytes() if path.exists() else None
+            for path in sidecars} == sidecars_before
+    with sqlite3.connect(db) as conn:
+        assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+
+
+def test_missing_schema_errors_leave_existing_database_untouched(tmp_path):
+    """读入口无法读取缺失表/列时应显式报错且不补建结构。"""
+    db = tmp_path / "schema #%.db"
+    with sqlite3.connect(db) as conn:
+        conn.execute("CREATE TABLE unrelated (id INTEGER)")
+        conn.commit()
+    before = db.read_bytes()
+
+    with pytest.raises(sqlite3.OperationalError, match="no such table"):
+        xnm.migrate(db, dry_run=True)
+    with pytest.raises(sqlite3.OperationalError, match="no such table"):
+        xnm.verify(db)
+
+    assert db.read_bytes() == before
+    with sqlite3.connect(db) as conn:
+        assert [row[0] for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        )] == ["unrelated"]
+
+
 def test_migration_script_end_to_end(tmp_path):
     """xq_norm_migrate.migrate 全链：加列+回填；重复跑零副作用。"""
     db = tmp_path / "mig.db"
