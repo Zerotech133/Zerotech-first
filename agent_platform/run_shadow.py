@@ -357,6 +357,62 @@ def _assert_not_real_root(data_root):
     return True
 
 
+# ---- 账本追加打开：有界重试（WS-MON 9d8b074c，合并裁决收窄）---------------
+# 10-19 17:10 首跑 open(last_run.log,"a") PermissionError [Errno 13] → 5 标的
+# 零落账。WS-MON 原判「瞬时独占锁」；K-OPS-20261019-SHADOWFIX（4ae913da）随后
+# 实证真根因=外层 shadow_automation.ps1 的 cmd 重定向句柄全进程期占用（结构性
+# ，重试必然徒劳）→ last_run.log 打开点维持 SHADOWFIX 降级语义（见
+# _redirect_run_log），本有界重试 helper 收窄用于 shadow_ledger.jsonl 打开点
+# （该文件无外层重定向占用问题；耗尽 fail-visible 禁静默跳过——跳过=样本
+# 静默缺失假绿）。
+#: 最大尝试次数（含首次）
+LOG_OPEN_MAX_ATTEMPTS = 5
+#: 逐次退避秒数（长度 = MAX_ATTEMPTS - 1；总等待 ≤7.5s，不拖 17:10 窗口）
+LOG_OPEN_BACKOFF_S = (0.5, 1.0, 2.0, 4.0)
+
+
+class _LogOpenError(OSError):
+    """账本追加打开重试耗尽（fail-visible 诊断载体；OSError 子类）。
+
+    禁静默跳过：跳过=零落账假绿，正是 10-19 事故形态（裸 traceback、
+    无重试、无诊断）。本异常携带路径/尝试次数/末次 errno 供排障。
+    """
+
+
+def _open_log_append(path, max_attempts=None, backoff=None, sleep=None):
+    """有界重试打开追加写文件（shadow_ledger.jsonl 打开点专用）。
+
+    - 仅对 OSError 系重试（Windows 瞬时独占锁表现为 PermissionError
+      [Errno 13]，是 OSError 子类）；其余异常（如 ValueError）原样上抛，
+      重试无意义；
+    - 退避序列默认 0.5/1/2/4s 共 5 次；sleep 可注入（测试零等待）；
+    - 耗尽抛 _LogOpenError——调用方必须 fail-visible 退出，禁静默跳过；
+    - 无锁时首次即成功：与裸 open(path, "a", encoding="utf-8") 零差异。
+
+    注意：last_run.log 打开点不走本 helper——该文件在非 tty 语境下必被
+    外层 cmd 重定向句柄结构性占用（SHADOWFIX 判例），重试徒劳，走
+    _redirect_run_log 降级沿用外层重定向。
+    """
+    attempts = LOG_OPEN_MAX_ATTEMPTS if max_attempts is None else int(max_attempts)
+    waits = LOG_OPEN_BACKOFF_S if backoff is None else tuple(backoff)
+    nap = time.sleep if sleep is None else sleep
+    last_err = None
+    for i in range(attempts):
+        try:
+            return open(path, "a", encoding="utf-8")
+        except OSError as e:
+            last_err = e
+            if i + 1 >= attempts:
+                break
+            delay = waits[i] if i < len(waits) else (waits[-1] if waits else 0.0)
+            print("[log] %s 打开被占（errno=%s），%.1fs 后重试 %d/%d"
+                  % (path, getattr(e, "errno", None), delay, i + 2, attempts),
+                  file=sys.stderr)
+            nap(delay)
+    raise _LogOpenError("%s 追加打开重试 %d 次仍失败（末次 %r）——疑似瞬时独占锁"
+                        "未释放，fail-visible 中止" % (path, attempts, last_err))
+
+
 def _redirect_run_log():
     """计划任务无终端：输出自重定向落文件（长跑纪律，不依赖管道）。
 
@@ -497,8 +553,19 @@ def main():
                 if attempt == 1:
                     print("[retry] %s 首次失败，3s 后重试：%s" % (symbol, str(e)[:100]))
                     time.sleep(3)
-        with open(LEDGER, "a", encoding="utf-8") as f:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        try:
+            # 同类打开点（与 last_run.log 同目录同锁况）：账本 append 也走
+            # 有界重试；打开失败禁静默跳过该票——跳过=样本静默缺失（假绿）。
+            with _open_log_append(LEDGER) as f:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        except _LogOpenError as e:
+            # fail-visible：本票未落账、整轮中止。已入账票不受影响（逐票
+            # append+close）；双轨幂等该 attempt 不回写 completed，死信窗
+            # （1h）后下次触发可重跑本票，done 票按幂等跳过。
+            print("[FATAL] 影子账本打开失败，%s 未落账，本次运行中止：%s"
+                  "——已入账票保留；剩余标的由下一触发窗（工作日 17:10）自动补齐"
+                  % (symbol, e), file=sys.stderr)
+            return 3
         if attempt_id:  # 双轨回写：done→completed；failed→允许下次死信后重试
             hook.complete(attempt_id, ok=(row["status"] == "done"),
                           result_ref=str(row.get("run_id", "")),

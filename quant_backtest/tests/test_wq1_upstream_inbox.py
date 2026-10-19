@@ -107,6 +107,30 @@ def test_revoke_epoch_only_moves_forward():
     assert inbox.ledger_epoch == 1
 
 
+def test_revoke_before_ack_rejected_without_changing_active_receipt():
+    inbox = UpstreamInbox()
+    accepted_at = T + timedelta(minutes=5)
+    receipt = inbox.accept(make_report(), now=accepted_at)
+    ack = receipt.ack
+
+    with pytest.raises(UpstreamInboxError, match="^REVOKE_TIME_INVALID$"):
+        inbox.revoke(receipt.receipt_id, now=T)
+
+    assert inbox.ledger_epoch == 0
+    assert inbox.get(receipt.receipt_id) is receipt
+    assert inbox.receipt_for_report(receipt.report_id) is receipt
+    assert receipt.ack is ack
+    assert inbox.is_active(receipt.receipt_id) is True
+    assert inbox.is_revoked(receipt.report_id) is False
+    assert inbox.accept(make_report(), now=accepted_at) is receipt
+
+    # Equal UTC instants are valid; failed attempts have not consumed an epoch.
+    assert inbox.revoke(receipt.receipt_id, now=ack.acked_at) == 1
+    assert inbox.ledger_epoch == 1
+    assert inbox.is_active(receipt.receipt_id) is False
+    assert inbox.is_revoked(receipt.report_id) is True
+
+
 def test_accept_after_revoke_fails_closed():
     inbox = UpstreamInbox()
     receipt = inbox.accept(make_report(), now=T)

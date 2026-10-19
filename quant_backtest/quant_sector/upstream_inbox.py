@@ -263,6 +263,8 @@ class UpstreamInbox:
             raise UpstreamInboxError("RECEIPT_UNKNOWN")
         if receipt.report_id in self._revoked:
             raise UpstreamInboxError("RECEIPT_ALREADY_REVOKED")
+        if now < receipt.ack.acked_at:
+            raise UpstreamInboxError("REVOKE_TIME_INVALID")
         self._epoch += 1
         self._revoked[receipt.report_id] = self._epoch
         return self._epoch
