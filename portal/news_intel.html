@@ -31,6 +31,11 @@
 /* 标的 chip 可点击 → /bt/stock 个股全景（行情/4策略信号/JEV下钻/AI展望） */
 .vrow a.pc-chip{color:var(--link);text-decoration:none;cursor:pointer}
 .vrow a.pc-chip:hover{text-decoration:underline}
+/* 判读行卡点击展开正文（K-ORG-209）：有正文行加 vopen 类（指针+悬停变色），
+   无正文行不加 vopen、不显示展开提示；展开区复用原料流 .ncnt 样式，
+   互斥作用域同原料流（closest("section")） */
+.vrow.vopen{cursor:pointer}
+.vrow.vopen:hover .t{color:var(--link)}
 /* 文字徽标（不用 emoji 图标） */
 .tag{display:inline-block;border:1px solid var(--border);border-radius:var(--r-s);
      padding:0 6px;font-size:var(--fs-xs);white-space:nowrap;flex:none}
@@ -102,7 +107,7 @@
   <!-- 首屏第二屏：今日关键判读（冲击 × 置信度排序 top 20） -->
   <section class="panel">
     <div class="colhd"><h2>今日关键判读</h2><span class="cnt" id="cnt-verdict">0 条</span></div>
-    <p class="colhint">冲击优先、置信度次级排序 · 高冲击置顶 · 红点=利多 / 绿点=利空 · 点击标题无展开，结论即摘要</p>
+    <p class="colhint">冲击优先、置信度次级排序 · 高冲击置顶 · 红点=利多 / 绿点=利空 · 点击行卡展开正文</p>
     <div id="list-verdicts"></div>
   </section>
   <!-- 底部原料流：速报/政策/舆情三栏，默认收起（K-ORG-208 降级为原料） -->
@@ -190,8 +195,9 @@ function renderVerdicts(vd) {
       return '<a class="pc-chip" href="/bt/stock?c=' + encodeURIComponent(s)
         + '" title="查看个股全景">' + esc(s) + '</a>';
     }).join("");
+    var body = it.content || "";
     var d = document.createElement("div");
-    d.innerHTML = '<div class="vrow">'
+    d.innerHTML = '<div class="vrow' + (body ? " vopen" : "") + '">'
       + '<span class="dot ' + dotCls + '"></span>'
       + '<span class="hm">' + esc(it.hm || "-") + '</span>'
       + '<span class="src">' + esc(srcName(it.source)) + '</span>'
@@ -201,8 +207,21 @@ function renderVerdicts(vd) {
       + (jev.scope_cn ? '<span class="tag nt">' + esc(jev.scope_cn) + '</span>' : "")
       + '</span>'
       + (chips ? '<span class="chips">' + chips + '</span>' : "")
-      + '</div>';
-    box.appendChild(d.firstElementChild);
+      + '</div>'
+      + '<div class="ncnt" hidden>' + (body ? esc(body) : "（无正文）") + '</div>';
+    var row = d.querySelector(".vrow"), bodyEl = d.querySelector(".ncnt");
+    /* 点击行卡展开正文（互斥作用域同原料流 closest("section")）；
+       标的 chip 是下钻链接，点击不触发展开 */
+    row.addEventListener("click", function (ev) {
+      if (ev.target.closest("a")) return;
+      var sec = this.closest("section");
+      var open = !bodyEl.hidden;
+      if (sec) sec.querySelectorAll(".ncnt").forEach(function (x) {
+        x.hidden = true;
+      });
+      bodyEl.hidden = open;
+    });
+    box.appendChild(d);
   });
 }
 
