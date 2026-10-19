@@ -501,21 +501,23 @@ def test_execute_legacy_send_at_compat(isolated, monkeypatch):
 
 
 def test_hub_internal_via_hub_false_can_send(monkeypatch):
+    """K-ORG-204：via_hub=False（hub 闸内直发）已改为 Agent webhook 推送，
+    不再调 OpenAPI /im/v1/messages。"""
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "news_collector"))
     import feishu_client as client
     monkeypatch.setattr(client, "_hub_send", lambda *a, **kw: pytest.fail("闸内直发不可递归调用 hub"))
-    monkeypatch.setattr(client, "get_tat", lambda *a, **kw: "mock-token")
     monkeypatch.setattr(client, "_flow_record", lambda *a, **kw: None)
+    monkeypatch.setattr(client, "_agent_webhook",
+                        lambda: "https://agent.local/webhook")
     class Response:
         def __enter__(self): return self
         def __exit__(self, *args): pass
-        def read(self): return b'{"code":0,"msg":"ok"}'
-    def direct(req, timeout):
-        assert req.full_url.startswith(client.OPEN + "/im/v1/messages?")
+        def read(self): return b'{"ok": true, "why": "agent ok", "message_id": "om_agent1"}'
+    def webhook_send(req, timeout):
+        assert req.full_url == "https://agent.local/webhook"
         return Response()
-    monkeypatch.setattr(client.urllib.request, "urlopen", direct)
-    assert client.send_msg("sample", "text", "oc_mock", app_id="mock-app",
-                           app_secret="mock-secret", via_hub=False)[0] is True
+    monkeypatch.setattr(client.urllib.request, "urlopen", webhook_send)
+    assert client.send_msg("sample", "text", "oc_mock", via_hub=False)[0] is True
 
 
 def test_hub_critical_defaults_false(monkeypatch):

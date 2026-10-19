@@ -164,6 +164,10 @@ def build_payload(group: dict, market: str, window: dict,
         "receive_id_type": group.get("chat_id_type") or "chat_id",
         "kind": "%s:%s" % (_KIND_PREFIX, market),
         "critical": critical,  # 中台侧 critical 豁免其静默窗（与本模块口径一致）
+        # K-ORG-204：push_targets 群列表透传给 Agent 侧路由参考
+        "route_targets": [{"name": group.get("name") or "",
+                           "id": group.get("chat_id") or "",
+                           "type": group.get("chat_id_type") or "chat_id"}],
     }
     return {"group_name": group.get("name") or "",
             "market": market, "window": window.get("name") or "",

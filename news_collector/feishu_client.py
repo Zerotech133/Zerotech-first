@@ -109,6 +109,34 @@ def _flow_record(ok, target, channel="openapi", kind=None):
 # 流水 kind）；hub 不可达/超时/拒绝 → (False, 原因)，绝不回落直发。
 HUB_SEND_URL = "http://127.0.0.1:8097/api/send"
 
+# K-ORG-204：飞书 Agent 中台出口（App Webhook / 事件订阅）
+# 架构拍板：所有推送最终收口到飞书 Agent 端点，由 Agent 侧负责分发给客户群
+# （push_targets 群列表作为 route_targets 字段透传，不作直发目标）。
+# 配置：PUSH_AGENT_WEBHOOK env 优先，portal/work/push_secrets.json 兜底
+# （gitignore 不入库；60s 缓存降读盘频次）。当前先用占位 URL，等拿到真实地址后填入。
+AGENT_WEBHOOK_PLACEHOLDER = "https://agent-webhook.local/placeholder"
+AGENT_WEBHOOK_SECRETS_KEY = "push_agent_webhook"
+_AGENT_WEBHOOK_CACHE = {"ts": 0.0, "url": ""}
+
+
+def _agent_webhook():
+    """Agent webhook URL：env 优先，push_secrets.json 兜底（60s 缓存）。"""
+    v = (os.environ.get("PUSH_AGENT_WEBHOOK") or "").strip()
+    if v:
+        return v
+    now = time.time()
+    if now - _AGENT_WEBHOOK_CACHE["ts"] > 60.0:
+        try:
+            kf = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                              "portal", "work", "push_secrets.json")
+            with open(kf, encoding="utf-8") as f:
+                _AGENT_WEBHOOK_CACHE["url"] = str(
+                    json.load(f).get(AGENT_WEBHOOK_SECRETS_KEY) or "").strip()
+        except (OSError, ValueError):
+            _AGENT_WEBHOOK_CACHE["url"] = ""
+        _AGENT_WEBHOOK_CACHE["ts"] = now
+    return _AGENT_WEBHOOK_CACHE["url"] or AGENT_WEBHOOK_PLACEHOLDER
+
 # K-PUSH-012 供钥：PUSH_HUB_KEY env 优先，portal/work/push_secrets.json
 # 兜底（gitignore 不入库；60s 缓存降读盘频次）。各跑批计划任务宿主环境
 # 通常无 PUSH_* 变量，文件兜底保证生产者能过 8097 鉴权闸（供钥链闭环）。
@@ -134,15 +162,18 @@ def _hub_key():
 
 
 def _hub_send(content, msg_type, receive_id, receive_id_type,
-              kind=None, critical=False, timeout=8):
+              kind=None, critical=False, timeout=8, route_targets=None):
     """→ (ok, why, message_id) 闸门结果；hub 不可达也返回失败，不直发。
-    K-ORG-201 W38：hub 响应含 message_id（闸内直发回执）时透出，缺则 None。"""
+    K-ORG-201 W38：hub 响应含 message_id（闸内直发回执）时透出，缺则 None。
+    K-ORG-204：route_targets 透传给 hub gate，hub 侧转发 Agent webhook。"""
     try:
-        body = json.dumps({"content": content, "msg_type": msg_type,
-                           "receive_id": receive_id,
-                           "receive_id_type": receive_id_type or "open_id",
-                           "kind": kind, "critical": critical}
-                          ).encode("utf-8")
+        body_obj = {"content": content, "msg_type": msg_type,
+                    "receive_id": receive_id,
+                    "receive_id_type": receive_id_type or "open_id",
+                    "kind": kind, "critical": critical}
+        if route_targets is not None:
+            body_obj["route_targets"] = route_targets
+        body = json.dumps(body_obj).encode("utf-8")
         key = _hub_key()
         if not key:
             return False, "hub authorization not configured", None
@@ -185,96 +216,78 @@ def send_msg(content, msg_type, receive_id=None, receive_id_type="open_id",
 def send_msg_tracked(content, msg_type, receive_id=None,
                      receive_id_type="open_id", app_id=None, app_secret=None,
                      kind=None, critical=False, via_hub=True,
-                     flow_record=True):
+                     flow_record=True, route_targets=None):
     """W38 送达证据版发消息 → (ok, why, message_id or None)。参数同 send_msg。
 
-    message_id 口径：直发=飞书 im/v1/messages 响应 data.message_id；
-    经 hub=hub /api/send 响应顶层 message_id（hub 侧闸内直发回执透传）。
+    message_id 口径：经 hub=hub /api/send 响应顶层 message_id；
+    Agent webhook=Agent 侧回执 message_id（无则 None）。
     flow_record=False 供 8097 闸内直发自管流水（evidence 证据账）时抑止
-    内部 K-PUSH-001 埋点，防同一发送双行双计。"""
+    内部 K-PUSH-001 埋点，防同一发送双行双计。
+
+    K-ORG-204：via_hub=False（hub 闸内直发）改为推 Agent webhook
+    （App Webhook / 事件订阅），废弃 OpenAPI 直发 chat_id 路径。
+    route_targets 为 push_targets 群列表透传给 Agent 侧路由参考。"""
     if via_hub:
         return _hub_send(content, msg_type, receive_id, receive_id_type,
-                         kind, critical)
-    if not app_id or not app_secret:
-        app_id, app_secret = load_app_creds()
-        if not app_id or not app_secret:
-            return False, "no app creds", None
-    if not receive_id:
-        return False, "no receive_id", None
-    tok = get_tat(app_id, app_secret)
-    if not tok:
-        return False, "no tenant token", None
-    body = json.dumps({"receive_id": receive_id, "msg_type": msg_type,
-                       "content": content}).encode("utf-8")
+                         kind, critical, route_targets=route_targets)
+    # K-ORG-204：via_hub=False 改为 Agent webhook
+    return _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
+                               kind, critical, route_targets=route_targets,
+                               flow_record=flow_record)
 
-    def _post(_tok):
-        rq = urllib.request.Request(
-            OPEN + "/im/v1/messages?receive_id_type=" + receive_id_type,
-            data=body, headers={"Content-Type": "application/json",
-                                "Authorization": "Bearer " + _tok})
-        with urllib.request.urlopen(rq, timeout=15) as r:
-            return json.loads(r.read().decode("utf-8"))
 
-    def _fr(ok):
-        if flow_record:
-            _flow_record(ok, receive_id, kind=kind)
-
-    def _mid_of(resp):
-        mid = (resp.get("data") or {}).get("message_id") \
-            if resp.get("code") == 0 else None
-        return str(mid) if mid else None
-
+def _agent_webhook_send(content, msg_type, receive_id, receive_id_type,
+                        kind, critical, route_targets, flow_record):
+    """K-ORG-204：推飞书 Agent webhook（App Webhook / 事件订阅）。
+    hub 闸内直发路径改道至此——不再直调 OpenAPI /im/v1/messages chat_id。
+    route_targets=push_targets 群列表透传给 Agent 侧路由参考。
+    message_id 从 Agent 回执取，无则 None。"""
+    webhook = _agent_webhook()
+    if not webhook:
+        return False, "agent webhook not configured", None
+    payload = {
+        "content": content,
+        "msg_type": msg_type,
+        "receive_id": webhook,   # K-ORG-204：receive_id 语义改为 Agent webhook URL
+        "route_targets": route_targets or [],
+        "kind": kind,
+        "critical": critical,
+    }
+    # 兼容旧调用：route_targets 为空但 receive_id 是 chat_id → 单群透传
+    if not route_targets and receive_id and str(receive_id).startswith("oc_"):
+        payload["route_targets"] = [{"name": "legacy", "id": receive_id,
+                                      "type": receive_id_type}]
     try:
-        resp = _post(tok)
-        # 2026-10-16 审计：token 失效类业务码 → 清缓存强制换新重发一次
-        # （进程内 TAT 最长 6600s，权限变更后原只能干等缓存过期）
-        if resp.get("code") in _TAT_INVALID_CODES:
-            with _TAT_LOCK:
-                _TAT_CACHE.pop((app_id, app_secret), None)
-            tok = get_tat(app_id, app_secret, use_cache=False)
-            if tok:
-                resp = _post(tok)
-        ok = resp.get("code") == 0
-        _fr(ok)  # K-PUSH-001 埋点
-        return ok, ("openapi code=%s %s" % (
-            resp.get("code"), str(resp.get("msg"))[:120])), _mid_of(resp)
+        body = json.dumps(payload).encode("utf-8")
+        rq = urllib.request.Request(
+            webhook, data=body,
+            headers={"Content-Type": "application/json",
+                     "X-Push-From": "hub-gate-agent-dispatch"})
+        with urllib.request.urlopen(rq, timeout=15) as r:
+            resp = json.loads(r.read().decode("utf-8"))
+        ok = bool(resp.get("ok")) or resp.get("code") == 0 or resp.get("status") in ("accepted", "queued", "received")
+        mid = None
+        if isinstance(resp, dict):
+            mid = (resp.get("message_id") or resp.get("mid")
+                   or (resp.get("data") or {}).get("message_id"))
+        mid = str(mid) if mid else None
+        if flow_record:
+            _flow_record(ok, webhook, kind=kind)
+        return ok, str(resp.get("why") or resp.get("msg")
+                        or resp.get("error") or "agent webhook ok"), mid
     except urllib.error.HTTPError as e:
-        # K-PUSH-004 判例：HTTP 4xx/5xx 须读响应体拿飞书原始 code/msg
-        # （hub 侧 400 只见"Bad Request"无从定位——08-17 卡片 400 排障实证）
         raw = ""
         try:
             raw = e.read().decode("utf-8", "replace")
         except Exception:
             pass
-        detail = raw[:250]
-        # K-ORG-199：HTTP 4xx 包裹的 TAT 失效码同样自愈——2026-10-19
-        # 试发排障实证：hub 进程持坏 TAT，飞书 400 包 99991663 走到本
-        # 分支原只读详情不刷新，只能干等 TTL（最长 6600s）自然过期。
-        # 与上方 200 分支同口径：清缓存强刷重发一次，不递归。
-        try:
-            ecode = json.loads(raw).get("code")
-        except Exception:
-            ecode = None
-        if ecode in _TAT_INVALID_CODES:
-            with _TAT_LOCK:
-                _TAT_CACHE.pop((app_id, app_secret), None)
-            tok2 = get_tat(app_id, app_secret, use_cache=False)
-            if tok2:
-                try:
-                    resp = _post(tok2)
-                    ok = resp.get("code") == 0
-                    _fr(ok)  # K-PUSH-001
-                    return ok, ("openapi code=%s %s" % (
-                        resp.get("code"), str(resp.get("msg"))[:120])), \
-                        _mid_of(resp)
-                except Exception as e2:
-                    _fr(False)
-                    return False, ("openapi err " + str(e2))[:150], None
-        _fr(False)  # K-PUSH-001 埋点
-        return False, ("openapi err %s %s" % (e, detail))[:400], None
+        if flow_record:
+            _flow_record(False, webhook, kind=kind)
+        return False, ("agent webhook HTTP %d %s" % (e.code, raw[:200]))[:300], None
     except Exception as e:
-        _fr(False)  # K-PUSH-001 埋点
-        return False, ("openapi err " + str(e))[:150], None
+        if flow_record:
+            _flow_record(False, webhook, kind=kind)
+        return False, ("agent webhook err " + str(e))[:200], None
 
 
 def verify_message(message_id, app_id=None, app_secret=None):
