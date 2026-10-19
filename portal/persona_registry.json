@@ -12,9 +12,18 @@
   "staff": {
     "org": "军团参谋本部",
     "seats": [
-      { "name": "田丰", "duty": "执行协调" },
-      { "name": "诸葛亮", "duty": "反向质询" },
-      { "name": "赵云", "duty": "军团总控" }
+      {
+        "name": "田丰",
+        "duty": "执行协调"
+      },
+      {
+        "name": "诸葛亮",
+        "duty": "反向质询"
+      },
+      {
+        "name": "赵云",
+        "duty": "军团总控"
+      }
     ],
     "note": "司马懿非参谋本部成员，受邀列席（可被邀请参会，非成员不决策）；上行单一通道：司马懿 → 军团田丰 → 主公"
   },
@@ -73,7 +82,7 @@
       "name": "程昱",
       "zi": "仲德",
       "org": "风控卫",
-      "reason": "执法严苛、eye 里不揉沙子——RiskGuard 四规则的化身",
+      "reason": "执法严苛、眼里不揉沙子——RiskGuard 四规则的化身",
       "duties": "市场质量/流动性冲击/事件风险/仓位集中度四规则校验"
     }
   ],
@@ -170,8 +179,17 @@
     }
   },
   "tools": {
-    "backtest": { "name": "演武场", "note": "回测量化中心" },
-    "zhice": { "name": "锦囊匣", "note": "智策 OS v2" },
-    "quantdinger": { "name": "听风鼎", "note": "QuantDinger" }
+    "backtest": {
+      "name": "演武场",
+      "note": "回测量化中心"
+    },
+    "zhice": {
+      "name": "锦囊匣",
+      "note": "智策 OS v2"
+    },
+    "quantdinger": {
+      "name": "听风鼎",
+      "note": "QuantDinger"
+    }
   }
 }
