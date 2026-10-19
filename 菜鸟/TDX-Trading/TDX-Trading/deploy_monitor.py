@@ -18,9 +18,25 @@ import paramiko
 
 HOST = '192.168.203.48'
 USER = 'root'
-PWD = 'Xty048+-*/.'
 REMOTE_DIR = '/home/xundao/TDX-Trading'
 LOCAL_ROOT = r'E:\老田的AI助手\菜鸟\TDX-Trading\TDX-Trading'
+
+
+def _load_pwd():
+    """SSH 口令不落代码：优先环境变量 TDX_DEPLOY_PWD，其次同目录 deploy_monitor.pwd（不入库）。"""
+    pwd = os.environ.get('TDX_DEPLOY_PWD')
+    if pwd:
+        return pwd
+    pwd_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deploy_monitor.pwd')
+    if os.path.exists(pwd_file):
+        with open(pwd_file, encoding='utf-8') as f:
+            pwd = f.read().strip()
+        if pwd:
+            return pwd
+    sys.exit('!! 缺 SSH 口令：设 TDX_DEPLOY_PWD 环境变量，或在本目录放置 deploy_monitor.pwd（该文件已被 .gitignore 忽略）')
+
+
+PWD = _load_pwd()
 
 # 需要部署的文件清单（相对 LOCAL_ROOT）
 DEPLOY_FILES = [

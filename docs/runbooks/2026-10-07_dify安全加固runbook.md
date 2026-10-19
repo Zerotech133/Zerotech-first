@@ -5,6 +5,7 @@
 **现状核验**：本 runbook 所有「现状」均读自 `dify/docker/.env` 与 `dify/docker/docker-compose.yaml` 实际内容（2026-10-07）
 **性质**：**只读文档**——本文不执行任何变更、不重启容器；由老田在维护窗口人工执行
 **预计耗时**：15 分钟 + 验证 10 分钟
+**脱敏声明（2026-10-19 防泄漏处置 K-ORG-190）**：本文历史版本曾含旧 DB 口令明文，现已全部替换为 `<OLD_PWD>` 占位符；实值以本地未入库的 `dify/docker/.env` 的 `DB_PASSWORD` 为唯一权威来源（dify/ 整目录不入库）。
 
 ---
 
@@ -12,7 +13,7 @@
 
 | 项 | 位置 | 现状 | 风险 |
 |---|------|------|------|
-| DB 口令 | `dify/docker/.env:77` `DB_PASSWORD=difyai123456` | 与 compose 内置缺省值等值（`docker-compose.yaml:439` 缺省 `${DB_PASSWORD:-difyai123456}` 同族默认），**等同厂商默认口令** | 局域网任何能触到 5432/容器者可直连 Dify 主库（含全部应用数据） |
+| DB 口令 | `dify/docker/.env:77` `DB_PASSWORD=<OLD_PWD>` | 与 compose 内置缺省值等值（`docker-compose.yaml:439` 缺省 `${DB_PASSWORD:-<OLD_PWD>}` 同族默认），**等同厂商默认口令** | 局域网任何能触到 5432/容器者可直连 Dify 主库（含全部应用数据） |
 | 初始化口令 | `dify/docker/.env:35` `INIT_PASSWORD=`（空） | 控制台初始化/入口无口令保护 | 容器重建后任何人可抢先初始化成为 Dify 管理员 |
 | nginx 端口映射 | `.env:300` `EXPOSE_NGINX_PORT=80`；`docker-compose.yaml:834-836` 映射 `${EXPOSE_NGINX_PORT:-80}:${NGINX_PORT:-80}`（+SSL 443，`NGINX_HTTPS_ENABLED=false`） | **0.0.0.0:80** 全网卡监听；443 同样 0.0.0.0 | 局域网任何人可直接访问 Dify |
 | 依赖方 | `portal/nginx.conf:237` `/probe/dify → http://host.docker.internal:80/` | 门户健康探测依赖宿主 80 端口 | **改端口/回环绑定会打断此探测**（见 §3.3） |
@@ -46,7 +47,7 @@ docker compose exec db_postgres psql -U postgres -d dify -c "ALTER ROLE postgres
 
 ```powershell
 # 编辑 dify/docker/.env 第 77 行
-#   DB_PASSWORD=difyai123456  →  DB_PASSWORD=<NEW_PWD>
+#   DB_PASSWORD=<OLD_PWD>  →  DB_PASSWORD=<NEW_PWD>
 notepad E:\老田的AI助手\dify\docker\.env
 
 cd E:\老田的AI助手\dify\docker
@@ -125,7 +126,7 @@ docker compose ps          # 全部 Up / healthy
 $env:PGPASSWORD='<NEW_PWD>'; docker compose exec db_postgres psql -U postgres -d dify -c "select count(*) from accounts;"
 
 # 3) 旧口令已失效（应认证失败）
-$env:PGPASSWORD='difyai123456'; docker compose exec db_postgres psql -U postgres -d dify -c "select 1;"
+$env:PGPASSWORD='<OLD_PWD>'; docker compose exec db_postgres psql -U postgres -d dify -c "select 1;"
 # 期望：password authentication failed
 
 # 4) Dify Web 仅本机可达
@@ -143,7 +144,7 @@ curl.exe -I http://192.168.0.3:8082        # 从局域网另一台机器执行�
 
 | 变更 | 回滚动作 |
 |---|---|
-| DB 口令 | `docker compose exec db_postgres psql -U postgres -d dify -c "ALTER ROLE postgres PASSWORD 'difyai123456';"` + `.env` 还原旧值 + `docker compose up -d` |
+| DB 口令 | `docker compose exec db_postgres psql -U postgres -d dify -c "ALTER ROLE postgres PASSWORD '<OLD_PWD>';"` + `.env` 还原旧值 + `docker compose up -d` |
 | INIT_PASSWORD | `.env:35` 还原为空 + `docker compose up -d` |
 | 端口映射 | 还原 `.env:300` 与 `docker-compose.yaml:834-836` 原文 + `docker compose up -d`（并按 §3.3 还原 probe） |
 

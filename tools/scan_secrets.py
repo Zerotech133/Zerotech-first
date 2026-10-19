@@ -156,11 +156,13 @@ def looks_like_identifier(cand: str) -> bool:
 def is_high_entropy_candidate(cand: str, line: str) -> bool:
     """高熵规则判定：len>=20、base64/hex 字符集；剔除 UUID、纯数字、
     含点号的标识符/路径形态、commit 上下文 40 位 hex（git sha）、
-    base64 图片 data URI（SVG/PNG 内嵌资源）。"""
+    base64 图片 data URI（SVG/PNG 内嵌资源）、KEY=value 连写赋值片段（2026-10-19 第6轮）。"""
     if len(cand) < 20:
         return False
     if UUID_RE.match(cand) or cand.isdigit():
         return False
+    if re.match(r"^[A-Z][A-Z0-9_]*=", cand):
+        return False  # KEY=value 连写（如 DATABASE_URL=postgresql）是赋值片段，非密钥
     if BASE64_DATA_URI_RE.search(line):
         return False  # 内嵌图片资源，非凭据
     if looks_like_identifier(cand):
@@ -266,6 +268,11 @@ def scan_file(path: str, include_vendor: bool = False):
                 if rule_name in ("TOKEN_ASSIGN", "PASSWORD_LITERAL"):
                     if cand.startswith("$") or cand.startswith("<"):
                         continue  # 环境变量引用 / XML 占位
+                    if cand.startswith("?"):
+                        continue  # compose ${VAR:?报错串} 插值残段（2026-10-19 第6轮）
+                    tail = line[m.end():].lstrip()[:1]
+                    if tail == "(":
+                        continue  # 候选后紧跟 "(" → 函数调用（如 password=_load_pwd()），非字面密钥（第6轮）
                     cand = cand.lstrip("-=:")  # 剥离 ':-' 等赋值连接符残留
                     if "." in cand and all(len(s) <= 12 for s in cand.split(".")):
                         continue  # 短段点分标识符（如 uuid.uuid4）

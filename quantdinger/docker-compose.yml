@@ -58,7 +58,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-quantdinger}
       POSTGRES_USER: ${POSTGRES_USER:-quantdinger}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-LaoTian#Pg2026!}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}
       PGDATA: ${POSTGRES_PGDATA:-/var/lib/postgresql/18/docker}
       TZ: ${TZ:-Asia/Shanghai}
     command:
@@ -138,7 +138,7 @@ services:
       - backend_data:/app/data
       - ./backend.env:/app/.env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:-LaoTian#Pg2026!}@postgres:5432/${POSTGRES_DB:-quantdinger}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}@postgres:5432/${POSTGRES_DB:-quantdinger}
       - DB_TYPE=postgresql
       - DB_POOL_MIN=1
       - DB_POOL_MAX=2
@@ -181,7 +181,7 @@ services:
       - PYTHON_API_PORT=5000
       - GIT_TAG=${GIT_TAG:-${BACKEND_TAG:-${IMAGE_TAG:-}}}
       - TZ=${TZ:-Asia/Shanghai}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:-LaoTian#Pg2026!}@postgres:5432/${POSTGRES_DB:-quantdinger}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}@postgres:5432/${POSTGRES_DB:-quantdinger}
       - DB_TYPE=postgresql
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -243,7 +243,7 @@ services:
       - QD_PROCESS_ROLE=trading
       - LOG_FORMAT=${LOG_FORMAT:-json}
       - STRATEGY_COMMANDS_ENABLED=false
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:-LaoTian#Pg2026!}@postgres:5432/${POSTGRES_DB:-quantdinger}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}@postgres:5432/${POSTGRES_DB:-quantdinger}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
@@ -283,7 +283,7 @@ services:
     environment:
       - QD_PROCESS_ROLE=scheduler
       - LOG_FORMAT=${LOG_FORMAT:-json}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:-LaoTian#Pg2026!}@postgres:5432/${POSTGRES_DB:-quantdinger}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}@postgres:5432/${POSTGRES_DB:-quantdinger}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
@@ -330,7 +330,7 @@ services:
       - CELERY_RESULT_DB=1
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:-LaoTian#Pg2026!}@postgres:5432/${POSTGRES_DB:-quantdinger}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}@postgres:5432/${POSTGRES_DB:-quantdinger}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DB_POOL_MIN=${WORKER_DB_POOL_MIN:-2}
@@ -373,7 +373,7 @@ services:
       - CELERY_RESULT_DB=1
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-}
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:-LaoTian#Pg2026!}@postgres:5432/${POSTGRES_DB:-quantdinger}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-quantdinger}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}@postgres:5432/${POSTGRES_DB:-quantdinger}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - DB_POOL_MIN=${WORKER_DB_POOL_MIN:-2}

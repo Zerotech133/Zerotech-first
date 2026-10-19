@@ -39,6 +39,15 @@ w("mixed_line.py", "dburl = %s  # PWD: %s\n" % (tok32b, pwd2))
 w("compose_like.yml", "conn: %s postgres://u:${POSTGRES_PASSWORD:-%s}@db\n" % (tok32b, pwd2))
 w("clean.txt", "hello world, nothing to see here. just plain text lines.\n")
 w("placeholder_cfg.py", "api_key = os.environ['API_KEY']\ntoken = ${TOKEN}\n")
+# 第6轮调优回归（2026-10-19）：三种新误报形态必须不命中
+w("interp_cfg.yml",
+  "POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in quantdinger/.env}\n"
+  "url: postgresql://${U:-q}:${P:?x}@db:5432/d\n"
+  "conn2: postgresql://${U:-q}:${POSTGRES_PASSWORD:-%s}@db\n" % pwd2)
+w("call_site.py",
+  "PWD = _load_pwd()\n"
+  "token = _load_token()\n"
+  "password = _password(\"加密私钥口令：\")\n")
 
 scanner = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scan_secrets.py")
 proc = subprocess.run([sys.executable, scanner, TD], capture_output=True, timeout=120)
@@ -64,6 +73,10 @@ check(".env.local 进入路径豁免清单", ".env.local" in out and "EXEMPT-PAT
 check("tests桩命中全部标记豁免", "tests/test_stub.py" in out and "EXEMPT-TEST" in out)
 check("clean.txt 无命中", "clean.txt" not in out)
 check("占位符文件无命中", "placeholder_cfg.py" not in out)
+# 第6轮调优回归断言
+check("第6轮:插值报错串行(:?行)不命中", "interp_cfg.yml:1" not in out and "interp_cfg.yml:2" not in out)
+check("第6轮:函数调用文件无命中", "call_site.py" not in out)
+check("第6轮:compose默认真实口令仍被提取", "interp_cfg.yml:3" in out and (pwd2[:4] + "****") in out)
 check("同行混合线:HIGH_ENTROPY 命中", "mixed_line.py:1:HIGH_ENTROPY" in out)
 check("同行混合线:PASSWORD_LITERAL 也命中", "mixed_line.py:1:PASSWORD_LITERAL" in out)
 check("同行混合线:密码预览已打码", (pwd2[:4] + "****") in out)
