@@ -406,6 +406,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = urllib.parse.urlparse(self.path).path
+        # K-QUANT-002: quant_mid 子路由分发 (8097 升级为量化交易中台)
+        if p.startswith("/api/quant/"):
+            try:
+                import sys as _sys, os as _os
+                _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+                from quant_mid import api_routes as _qr
+                code, body = _qr.handle("GET", p, dict(self.headers))
+                return self._json(body, code)
+            except Exception as _e:  # noqa: BLE001
+                return self._json({"ok": False, "error": str(_e)}, 500)
         if p == "/api/state" and not admin_authorized(self.headers.get("X-Push-Admin-Key")):
             return self._json({"ok": False, "error": "未授权"}, 403)
         if p in ("/api/decisions", "/api/decision-groups"):
@@ -545,6 +555,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         p = urllib.parse.urlparse(self.path).path
+        # K-QUANT-002: quant_mid 子路由分发 (8097 升级为量化交易中台)
+        if p.startswith("/api/quant/"):
+            try:
+                import sys as _sys, os as _os
+                _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+                from quant_mid import api_routes as _qr
+                _n = int(self.headers.get("Content-Length") or 0)
+                _body = self.rfile.read(_n) if 0 < _n <= (1 << 20) else b""
+                code, body = _qr.handle("POST", p, dict(self.headers), _body)
+                return self._json(body, code)
+            except Exception as _e:  # noqa: BLE001
+                return self._json({"ok": False, "error": str(_e)}, 500)
         if p in ("/api/decisions/preview", "/api/decisions/record",
                  "/api/decisions/approve", "/api/decisions/execute"):
             import notification_decision as nd
