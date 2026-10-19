@@ -821,6 +821,25 @@ def api_send(req):
     critical = bool(req.get("critical"))
     # K-ORG-204：push_targets 群列表透传给 Agent 侧路由参考
     route_targets = req.get("route_targets") or []
+    # FC-A（2026-10-20）：domain 一级路由字段（松耦合设计稿 v0 原则 3）——
+    # owner/ops/customer；缺省 None 完全兼容存量调用
+    domain = (req.get("domain") or "").strip() or None
+    if domain:
+        from notify_contracts import DOMAINS
+        if domain not in DOMAINS:
+            return {"ok": False,
+                    "why": "invalid domain: %s" % domain[:20],
+                    "error": "invalid domain"}
+        # FC-A：域路由表驱动（松耦合设计稿）；customer 域本期 observe 只留痕，
+        # enforce M3 收银台后另批
+        domain_route = {"owner": "allow", "ops": "allow", "customer": "observe"}
+        if domain_route.get(domain) == "observe":
+            try:
+                import push_flow
+                push_flow.record(kind or "hub", "domain-observe", rid, 1, True,
+                                 domain=domain)
+            except Exception:
+                pass  # 观察留痕失败不拦发送（fail-safe）
     if not content or not rid:
         return {"ok": False, "why": "missing content/receive_id",
                 "error": "missing content/receive_id"}
@@ -873,7 +892,7 @@ def api_send(req):
         pass  # 模板层异常不拦发送（fail-safe）
     ok, why, mid = send_msg_tracked(content, msg_type, rid, rtype, kind=kind,
                                     via_hub=False, flow_record=False,
-                                    route_targets=route_targets)
+                                    route_targets=route_targets, domain=domain)
     # W38 送达证据分级：api_accepted ≠ receiver_verified ≠ dead_letter
     if ok and mid:
         try:
