@@ -1349,7 +1349,7 @@ def day_events(date=None, n_days=5):
 # 只读详情不再扩散（Person 19 万/ServesAs 70 万边防爆炸）。
 CANVAS_LABELS = {
     "Security":      ("ts_code", "thing",  ("name", "ts_code", "industry")),
-    "Company":       ("name",    "org",    ("name", "industry")),
+    "Company":       ("com_id",  "org",    ("com_name", "com_id", "industry")),
     "HotMoney":      ("name",    "person", ("name",)),
     "Commentator":   ("name",    "person", ("name",)),
     "Seat":          ("name",    "person", ("name",)),
@@ -1365,15 +1365,18 @@ CANVAS_LABELS = {
     "MarketEvent":   ("evt_id",  "event",  ("type", "date", "price")),
     "Event":         ("id",      "event",  ("text", "ts")),
     "TradeDate":     ("date",    "event",  ("date",)),
+    # ── K-SPATIAL-01 新注册（2026-10-19）──────────────────
+    "TradeAction":   ("id",      "event",  ("trade_date", "side", "amount")),
+    "Location":      ("key",     "place",  ("province", "city", "kind")),
 }
-CANVAS_TERMINAL = {"MarketEvent", "Event", "TradeDate"}
+CANVAS_TERMINAL = {"MarketEvent", "Event", "TradeDate", "TradeAction"}  # K-SPATIAL-01 追加
 CANVAS_SEARCHABLE = ("Security", "Company", "HotMoney", "Commentator",
                      "Segment", "Theme", "Concept", "EXP_Community",
-                     "Industry", "Seat")
+                     "Industry", "Seat", "Location")   # K-SPATIAL-01 追加 Location
 # 搜索匹配字段（key 之外补 name 类字段——Security 键是代码，中文名必须可搜）
 CANVAS_SEARCH_FIELDS = {
     "Security":      ("ts_code", "name"),
-    "Company":       ("name",),
+    "Company":       ("com_name", "com_id"),
     "HotMoney":      ("name",),
     "Commentator":   ("name",),
     "Segment":       ("name", "chain"),
@@ -1382,6 +1385,9 @@ CANVAS_SEARCH_FIELDS = {
     "EXP_Community": ("name",),
     "Industry":      ("name",),
     "Seat":          ("name",),
+    # ── K-SPATIAL-01 ─────────────────────────────────────
+    "Location":      ("province", "city", "seat_name"),
+    "TradeAction":   ("trade_date",),   # TradeAction 不可直接搜索（节点太多，按日期属性兜一下）
 }
 
 
@@ -1408,10 +1414,12 @@ def canvas_search(q, limit=14):
                ", ".join("n.%s AS f%d" % (f, i)
                          for i, f in enumerate(fields))), q=q)
         for r in rows:
+            if r["k"] is None:
+                continue
             hits.append({
                 "id": "%s|%s" % (lbl, r["k"]), "label": lbl,
                 "category": cat,
-                "name": str(r["k"]),
+                "name": str(r.get("f0") or r["k"]),
                 "fields": {f: r.get("f%d" % i)
                            for i, f in enumerate(fields)},
             })
@@ -1419,8 +1427,11 @@ def canvas_search(q, limit=14):
     return {"ok": True, "hits": hits[:limit]}
 
 
-def canvas_expand(arg):
-    """1 跳扩散：arg="Label|key" → 中心属性 + 邻居（按关系类型均衡采样）。"""
+def canvas_expand(arg, scope=None):
+    """1 跳扩散：与图分析共用关系类型和有效时点筛选。"""
+    from kg_analytics import _json_value, _rel_filter, _scope_params
+    scope, params = _scope_params(scope)
+    where = " WHERE %s" % _rel_filter("r", scope) if scope else ""
     try:
         lbl, key = (arg or "").split("|", 1)
     except ValueError:
@@ -1428,21 +1439,24 @@ def canvas_expand(arg):
     if lbl not in CANVAS_LABELS:
         return {"ok": False, "error": "未知 label %s" % lbl}
     keyp, cat, fields = CANVAS_LABELS[lbl]
-    ctr = _q("MATCH (n:%s {%s:$k}) RETURN properties(n) AS p LIMIT 1"
+    ctr = _q("MATCH (n:%s) WHERE toString(n.%s) = $k "
+             "RETURN properties(n) AS p LIMIT 1"
              % (lbl, keyp), k=key)
     if not ctr:
         return {"ok": False, "error": "节点不存在 %s" % arg}
     cp = ctr[0]["p"] or {}
     center = {"id": arg, "label": lbl, "category": cat,
-              "name": str(cp.get(fields[0], key)),
-              "fields": {f: cp.get(f) for f in fields}}
+              "name": str(cp.get(fields[0]) or key),
+              "fields": {f: _json_value(cp.get(f)) for f in fields}}
     if lbl in CANVAS_TERMINAL:
         return {"ok": True, "center": center, "nodes": [], "edges": [],
-                "terminal": True}
+                "terminal": True, "scope": scope,
+                "coverage": {"nodes": 1, "edges": 0, "sampled": False}}
     tdist = _q(
-        "MATCH (n:%s {%s:$k})-[r]-(m) "
-        "RETURN type(r) AS t, count(*) AS c ORDER BY c DESC LIMIT 40"
-        % (lbl, keyp), k=key)
+        ("MATCH (n:%s) WHERE toString(n.%s) = $k "
+         "MATCH (n)-[r]-(m)%s "
+         "RETURN type(r) AS t, count(*) AS c ORDER BY c DESC LIMIT 40")
+        % (lbl, keyp, where), k=key, **params)
     # K240：语义关系优先于高频事件关系（否则 HAS_PATTERN/SIMILAR_K 等
     # 高频类型霸榜，SUPPLIES_TO/ASSESSED 等低频语义边永远进不了采样）
     PRIO = ("SUPPLIES_TO", "IN_GROUP", "OCCUPIES", "SERVES_AS",
@@ -1454,34 +1468,205 @@ def canvas_expand(arg):
         [x for x in tdist],
         key=lambda x: (prio.get(x["t"], 99), -x["c"]))[:8]
     nodes, edges, seen = {}, [], {arg}
+    sampled = len(tdist) == 40 or len(tdist) > 8
     for td in tlist:
         rel = td["t"]
+        # 关系类型不能参数化；仅将数据库统计返回的合法标识符插入查询。
+        if not isinstance(rel, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", rel):
+            sampled = True
+            continue
         rows = _q(
-            "MATCH (n:%s {%s:$k})-[r:%s]-(m) "
-            "RETURN labels(m)[0] AS ml, properties(m) AS p LIMIT 6"
-            % (lbl, keyp, rel), k=key)
+            ("MATCH (n:%s) WHERE toString(n.%s) = $k "
+             "MATCH (n)-[r:%s]-(m)%s "
+             "RETURN labels(m) AS ls, properties(m) AS p, "
+             "startNode(r) = n AS outbound, "
+             "properties(r) AS rp, elementId(r) AS rid LIMIT 6")
+            % (lbl, keyp, rel, where), k=key, **params)
+        sampled |= td["c"] > len(rows)
         for r in rows:
-            ml = r["ml"]
-            if ml not in CANVAS_LABELS:
+            ml = next((label for label in r["ls"]
+                       if label in CANVAS_LABELS), None)
+            if ml is None:
+                sampled = True
                 continue
             mk, mcat, mfields = CANVAS_LABELS[ml]
             p = r["p"] or {}
             mk = p.get(mk)
             if mk is None:
+                sampled = True
                 continue
             mid = "%s|%s" % (ml, mk)
-            if mid in seen:
-                continue
-            seen.add(mid)
-            nodes[mid] = {
+            if mid not in seen:
+                seen.add(mid)
+                nodes[mid] = {
                 "id": mid, "label": ml, "category": mcat,
                 "terminal": ml in CANVAS_TERMINAL,
-                "name": str(p.get(mfields[0], mk))[:24],
-                "fields": {f: p.get(f) for f in mfields},
-            }
-            edges.append({"s": arg, "t": mid, "type": rel})
+                "name": str(p.get(mfields[0]) or mk)[:24],
+                "fields": {f: _json_value(p.get(f)) for f in mfields},
+                }
+            rp = _json_value(r.get("rp") or {})
+            edges.append({"id": r.get("rid"),
+                          "s": arg if r["outbound"] else mid,
+                          "t": mid if r["outbound"] else arg,
+                          "type": rel, "source": rp.get("source"),
+                          "validStart": rp.get("validStart"),
+                          "validEnd": rp.get("validEnd"),
+                          "weight": rp.get("weight"),
+                          "properties": rp})
     return {"ok": True, "center": center,
-            "nodes": list(nodes.values()), "edges": edges}
+            "nodes": list(nodes.values()), "edges": edges, "scope": scope,
+            "coverage": {"nodes": len(nodes) + 1, "edges": len(edges),
+                         "sampled": sampled}}
+
+
+# ── 画布事件时间轴：仅真实关联、按事件发生日（含非交易日）查询 ──
+def canvas_timeline(arg, from_date=None, to_date=None, limit=None):
+    """事件与盘面事件按实际发生日排列；分日计数只覆盖返回的事件。"""
+    from kg_analytics import _json_value
+
+    if not isinstance(arg, str) or not re.fullmatch(
+            r"Security\|[0-9]{6}\.(?:SH|SZ|BJ)", arg):
+        raise ValueError("标的须为 Security|ts_code")
+    code = arg.split("|", 1)[1]
+    if limit is None:
+        limit = 100
+    elif not isinstance(limit, (str, int)) or not re.fullmatch(r"[0-9]+", str(limit)):
+        raise ValueError("limit 须为 1..200 的整数")
+    limit = int(limit)
+    if not 1 <= limit <= 200:
+        raise ValueError("limit 须为 1..200 的整数")
+
+    def parse_date(value):
+        if value is None:
+            return None
+        if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+            raise ValueError("日期须为 YYYY-MM-DD")
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            raise ValueError("无效日期 %s" % value)
+
+    start, end = parse_date(from_date), parse_date(to_date)
+    if end is None:
+        end = datetime.now().date()
+    if start is None:
+        start = end - timedelta(days=89)
+    if start > end or (end - start).days >= 366:
+        raise ValueError("日期范围须正序且不超过 366 天")
+    d0, d1 = start.strftime("%Y%m%d"), end.strftime("%Y%m%d")
+    head = _q("MATCH (s:Security {ts_code:$c}) RETURN properties(s) AS p LIMIT 1",
+              c=code)
+    if not head:
+        return {"ok": False, "error": "未找到标的 %s" % code}
+
+    # 三类事件各先取 limit+1，再合并截断；绝不借关系 validStart/交易日筛选。
+    event_rows = _q(
+        "MATCH (s:Security {ts_code:$c})-[r:INVOLVES]-(e:Event) "
+        "WHERE left(replace(toString(e.date), '-', ''), 8) >= $d0 "
+        "AND left(replace(toString(e.date), '-', ''), 8) <= $d1 "
+        "AND e.id IS NOT NULL "
+        "WITH s, e, collect(r) AS rels "
+        "ORDER BY left(replace(toString(e.date), '-', ''), 8) DESC, e.id DESC "
+        "LIMIT $fetch RETURN properties(e) AS p, "
+        "[r IN rels | {id:elementId(r), type:type(r), p:properties(r), "
+        "outbound:startNode(r) = s}] AS links",
+        c=code, d0=d0, d1=d1, fetch=limit + 1)
+    market_rows = _q(
+        "MATCH (s:Security {ts_code:$c})-[r:HAS_STRUCTURE|HAS_VOL_EVENT|"
+        "HAS_CANDLE|HAS_LIMIT|HAS_TOPGAP|HAS_PATTERN]-(m:MarketEvent) "
+        "WHERE left(replace(toString(m.date), '-', ''), 8) >= $d0 "
+        "AND left(replace(toString(m.date), '-', ''), 8) <= $d1 "
+        "AND m.evt_id IS NOT NULL "
+        "WITH s, m, collect(r) AS rels "
+        "ORDER BY left(replace(toString(m.date), '-', ''), 8) DESC, m.evt_id DESC "
+        "LIMIT $fetch RETURN properties(m) AS p, "
+        "[r IN rels | {id:elementId(r), type:type(r), p:properties(r), "
+        "outbound:startNode(r) = s}] AS links",
+        c=code, d0=d0, d1=d1, fetch=limit + 1)
+    # K-SPATIAL-01 新注册：TradeAction 原子事件（TARGETS 边 = TradeAction→Security）
+    trade_rows = _q(
+        "MATCH (s:Security {ts_code:$c})<-[r:TARGETS]-(ta:TradeAction) "
+        "WHERE ta.trade_date >= $d0 AND ta.trade_date <= $d1 "
+        "AND ta.id IS NOT NULL "
+        "WITH s, ta, collect(r) AS rels "
+        "ORDER BY ta.trade_date DESC, ta.id DESC "
+        "LIMIT $fetch RETURN properties(ta) AS p, "
+        "[r IN rels | {id:elementId(r), type:type(r), p:properties(r), "
+        "outbound:false}] AS links",
+        c=code, d0=d0, d1=d1, fetch=limit + 1)
+    entries = [("Event", r) for r in event_rows] + [
+        ("MarketEvent", r) for r in market_rows] + [
+        ("TradeAction", r) for r in trade_rows]
+    def extract_date(p):
+        """从节点属性中抽取日期（Event/MarketEvent 用 date='2023-08-03'，TradeAction 用 trade_date='20230803'）"""
+        raw = p.get("trade_date") or p.get("date") or ""
+        s = str(raw)
+        # trade_date → 补横杠
+        if re.fullmatch(r"\d{8}", s):
+            return s[:4] + "-" + s[4:6] + "-" + s[6:8]
+        # date → 截前 10 字符再去横杠重组（兼容 ISO 含时区）
+        s2 = s[:10].replace("-", "")
+        if re.fullmatch(r"\d{8}", s2):
+            return s2[:4] + "-" + s2[4:6] + "-" + s2[6:8]
+        raise ValueError("图内事件日期非法: %r" % s)
+
+    entries.sort(key=lambda x: (extract_date(x[1]["p"]),
+                                str(x[1]["p"].get("id") or
+                                    x[1]["p"].get("evt_id") or
+                                    x[1]["p"].get("trade_date"))), reverse=True)
+    has_more = len(entries) > limit
+    entries = entries[:limit]
+    sp = head[0]["p"]
+    center = {"id": arg, "label": "Security", "category": "thing",
+              "name": str(sp.get("name") or code),
+              "fields": {f: _json_value(sp.get(f)) for f in
+                         CANVAS_LABELS["Security"][2]}}
+    nodes, edges, events, by_day = [], [], [], {}
+    for label, row in entries:
+        p = row["p"]
+        key, category, fields = CANVAS_LABELS[label]
+        node_id = "%s|%s" % (label, p[key])
+        if label == "TradeAction":
+            # K-SPATIAL-01：TradeAction 标题 = 净买/净卖 + 日期 + 席位哈希
+            side_map = {0: "净买", 1: "净卖"}
+            side = side_map.get(p.get("side"), "?")
+            amt = p.get("amount")
+            amt_str = ""
+            if isinstance(amt, (int, float)):
+                amt_str = "%.1f亿" % (amt / 1e8) if amt >= 1e8 else "%.0f万" % (amt / 1e4)
+            title = "%s %s %s" % (side, p.get("trade_date", ""), amt_str)
+        else:
+            title = p.get("text") if label == "Event" else p.get("type")
+            title = str(title or p.get("kind") or p[key])
+        date = extract_date(p)
+        nodes.append({"id": node_id, "label": label, "category": category,
+                      "terminal": True, "name": title[:24],
+                      "fields": {f: _json_value(p.get(f)) for f in
+                                 dict.fromkeys((*fields, "date", "ts", "type",
+                                                "kind", "source", "text"))}})
+        events.append({"id": node_id, "date": date,
+                       "ts": _json_value(p.get("ts")), "title": title,
+                       "type": _json_value(p.get("type")),
+                       "kind": _json_value(p.get("kind")),
+                       "source": _json_value(p.get("source")),
+                       "text": _json_value(p.get("text"))})
+        day = events[-1]["date"]
+        by_day[day] = by_day.get(day, 0) + 1
+        for link in row["links"]:
+            rp = _json_value(link["p"] or {})
+            outbound = link["outbound"]
+            edges.append({"id": link["id"],
+                          "s": arg if outbound else node_id,
+                          "t": node_id if outbound else arg,
+                          "type": link["type"], "source": rp.get("source"),
+                          "validStart": rp.get("validStart"),
+                          "validEnd": rp.get("validEnd"),
+                          "weight": rp.get("weight"), "properties": rp})
+    return {"ok": True, "seed": center, "nodes": nodes, "edges": edges,
+            "events": events, "from": start.isoformat(), "to": end.isoformat(),
+            "coverage": {"returned": len(events), "has_more": has_more},
+            "days": [{"date": day, "count": by_day[day]}
+                     for day in sorted(by_day)]}
 
 
 # ── K231 画布编辑器：人工建实体/补属性/连边（写图 + 审计留痕） ─────
@@ -1651,9 +1836,11 @@ def canvas_ask(q):
         if not ex.get("ok"):
             continue
         c = ex["center"]
+        by_id = {n["id"]: n for n in ex["nodes"]}
         nb = [{"name": n["name"], "label": n["label"], "via": e["type"]}
-              for n, e in zip(ex["nodes"], ex["edges"])
-              if e["type"] not in NOISE_RELS][:8]
+              for e in ex["edges"]
+              for n in [by_id.get(e["t"] if e["s"] == d["id"] else e["s"])]
+              if n and e["type"] not in NOISE_RELS][:8]
         facts.append({"entity": c["name"], "label": c["label"],
                       "props": {k: v for k, v in (c.get("fields")
                                                   or {}).items() if v},
@@ -2113,7 +2300,11 @@ def battle_records():
 
 
 # ── 统一入口（门户路由调这里）─────────────────────────────
-def api(kind, arg=None, days=None, per=None):
+def api(kind, arg=None, days=None, per=None, scope=None):
+    if kind == "ctimeline":
+        # per 位承载 to；scope 仅承载已解析的 from/limit，输入错误交由 HTTP 400。
+        return canvas_timeline(arg, (scope or {}).get("from"), per,
+                               (scope or {}).get("limit"))
     try:
         if kind == "stats":
             return stats()
@@ -2166,7 +2357,7 @@ def api(kind, arg=None, days=None, per=None):
         if kind == "csearch":
             return canvas_search(arg or "")
         if kind == "cexpand":
-            return canvas_expand(arg or "")
+            return canvas_expand(arg or "", scope=scope)
         if kind == "chist":
             # arg = "Label|field"
             try:
@@ -2184,7 +2375,7 @@ def api(kind, arg=None, days=None, per=None):
             top = int(per) if per else None
             return kg_analytics.run(sub, parts[0] if parts else None,
                                     parts[1] if len(parts) > 1 else None,
-                                    hops=hops, top=top)
+                                    hops=hops, top=top, scope=scope)
         if kind == "guba":
             # K263 股吧舆论（词云+情绪+事件契合；数据需先 guba_crawl 采集）
             # K263 二期②：per 位复用为 word → 词反查帖子列表

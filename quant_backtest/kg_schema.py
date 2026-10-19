@@ -26,6 +26,9 @@ LBL_HOTMONEY = "HotMoney"          # 游资/资金主体（CL-1，含散户集�
 LBL_SEAT = "Seat"                  # 券商营业部席位（CL-1）
 LBL_MARKET_EVENT = "MarketEvent"   # 盘面博弈事件：缠论结构/量能事件（CL-1）
 LBL_CONCEPT = "Concept"            # 概念层（M4，人工词表，不依赖 Product 碎片层）
+# ── K-SPATIAL-01 时空关系打底（2026-10-19）───────────────────
+LBL_TRADE_ACTION = "TradeAction"   # 龙虎榜交易原子事件（ts_top_inst 原始行粒度，含 side 方向）
+LBL_LOCATION = "Location"          # 地理锚点（province/city/seat/virtual 四档，Seat→Location 时空映射）
 
 # ── 关系类型 ──────────────────────────────────────────────────
 REL_OF_COMPANY = "OF_COMPANY"       # Security -[OF_COMPANY]-> Company
@@ -67,6 +70,13 @@ LBL_COMMENTATOR = "Commentator"     # 信息源/分析主体（K201-D：四派�
 REL_ASSESSED = "ASSESSED"           # Commentator -[ASSESSED {verdict,stars,theme,date}]-> Security 派系评估（K201-D）
 REL_SUPPLIES = "SUPPLIES"           # Concept -[SUPPLIES {conf,reason,overlap,batch}]-> Concept 概念级供应链方向（K265-P1，source=concept_llm_v1 整体回滚键；src=上游卖方，品牌概念禁作 src）
 REL_DRIVES = "DRIVES"               # Concept -[DRIVES {conf,reason,overlap,batch}]-> Concept 需求带动（K265-P1，source=concept_llm_v1；qwen 判向+buyer 自检+人审抽样，conf≥0.95 入图）
+# ── K-SPATIAL-01 新边族 ───────────────────────────────────────
+REL_EXECUTED_BY = "EXECUTED_BY"     # TradeAction -[EXECUTED_BY]-> Seat
+REL_TARGETS = "TARGETS"             # TradeAction -[TARGETS]-> Security
+REL_OCCUPIED_BY = "OCCUPIED_BY"     # TradeAction -[OCCUPIED_BY]-> HotMoney（经 Seat→OCCUPIES 投影）
+REL_LOCATED_AT = "LOCATED_AT"       # TradeAction -[LOCATED_AT]-> Location
+REL_SEAT_LOCATED_AT = "SEAT_LOCATED_AT"  # Seat -[SEAT_LOCATED_AT {validStart}]-> Location
+REL_HAS_TRADED = "HAS_TRADED"       # TradeDate -[HAS_TRADED]-> TradeAction
 
 # ── K264 跨项目共图收录（2026-10-08）────────────────────────
 # 情报线边族（写入器在 C:\项目\zerobound-kg：kg_ann_history_link/kg_corroborate_edges/
@@ -125,6 +135,11 @@ CONSTRAINTS = [
     "FOR (n:Technique) REQUIRE n.name IS UNIQUE",
     "CREATE CONSTRAINT td_date IF NOT EXISTS "
     "FOR (n:TradeDate) REQUIRE n.date IS UNIQUE",
+    # ── K-SPATIAL-01 ───────────────────────────────────────────
+    "CREATE CONSTRAINT ta_id IF NOT EXISTS "
+    "FOR (n:TradeAction) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT loc_key IF NOT EXISTS "
+    "FOR (n:Location) REQUIRE n.key IS UNIQUE",
 ]
 
 INDEXES = [
