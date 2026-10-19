@@ -85,6 +85,15 @@ TW_ADJ_NOTE = ("qfq 由 tushare 仓不复权价 × adj_factor 派生（基准=�
 TW_VOL_HAND_TO_SHARE = 100
 TW_AMOUNT_KYUAN_TO_YUAN = 1000.0
 
+# 锚定定基前扩（口径工单 §10，第二轮）
+PREPEND_SOURCE_TAG = "tushare_warehouse_qfq_anchored_prepend"
+PREPEND_SCAN_FROM = "20170101"
+PREPEND_NOTE = ("锚定定基前扩：前扩行 = 仓库不复权价 × (当日 adj_factor ÷ "
+                "锚定日 adj_factor) × basis_ratio，basis_ratio = 缓存首行 "
+                "close ÷ 仓库锚定日不复权 close；仅追加 cache_first 之前的"
+                "行，既有行零改动；仅限分诊 repairable 标的；仅诊断用")
+PREPEND_SEAM_TOL = 0.005                        # 接缝容差（校验参考）
+
 # 坏行统计聚合口径（与 _audit_daily_cache 的 counts 键一致）
 _BAD_ROW_KEYS = ("invalid_daily_rows", "invalid_row", "invalid_trade_date",
                  "invalid_open", "invalid_close", "duplicate_trade_date")
@@ -251,9 +260,10 @@ def backup_cache(cache_path: str, stamp: str) -> str:
 def merge_and_write(cache_path: str, additions_by_tag: dict, stamp: str) -> dict:
     """备份 → 仅对缺失标的合并（多源标注）→ 原子写回。
 
-    additions_by_tag: {source_tag: {"note": str, "symbols": {sym: rows}}}。
-    全空（或全部与已有条目撞键）则完全不动缓存文件。
-    绝不覆盖已有 daily 条目（双重防御：plan 已只含缺失标的）。
+    additions_by_tag: {source_tag: {"note": str, "symbols": {sym: rows},
+    "mode": "replace"|"prepend"}}。mode=prepend 供锚定定基前扩（口径工单
+    §10）：与既有条目拼接（新行全部早于既有首行，重叠即放弃该股），
+    其余情形绝不覆盖已有 daily 条目（双重防御：plan 已只含缺失标的）。
     返回 {cache_updated, backup_path, added: {tag: {sym: n}},
     skipped_existing}。
     """
@@ -270,11 +280,23 @@ def merge_and_write(cache_path: str, additions_by_tag: dict, stamp: str) -> dict
     skipped = []
     for tag, payload in additions_by_tag.items():
         added[tag] = {}
+        mode = payload.get("mode", "replace")
         for sym, rows in (payload.get("symbols") or {}).items():
-            if sym in daily:                        # 防御：绝不覆盖已有条目
-                skipped.append(sym)
-                continue
-            daily[sym] = rows
+            if sym in daily:
+                if mode != "prepend":           # 防御：绝不覆盖已有条目
+                    skipped.append(sym)
+                    continue
+                existing = daily[sym]
+                # prepend 语义校验：新行必须全部早于既有首行
+                if existing and rows and (
+                        max(r["trade_date"] for r in rows)
+                        >= min(str(r.get("trade_date"))
+                               for r in existing)):
+                    skipped.append(sym)         # 重叠 → 放弃该股，不改既有
+                    continue
+                daily[sym] = list(rows) + list(existing)
+            else:
+                daily[sym] = rows
             added[tag][sym] = len(rows)
     if not any(added.values()):
         return {"cache_updated": False, "backup_path": None,
@@ -655,6 +677,203 @@ def plan_tushare_backfill(symbols: list, data_root: str = DEFAULT_DATA_ROOT,
     return per_symbol, additions
 
 
+def plan_anchored_prepend(symbols: list, cache: dict,
+                          data_root: str = DEFAULT_DATA_ROOT,
+                          scan_from: str = PREPEND_SCAN_FROM,
+                          reader=None) -> tuple:
+    """锚定定基前扩计划（口径工单 §10，只读）。
+
+    对每个 symbol（须已在 cache.daily 中有行）：
+      锚定日 = 既有缓存首行 trade_date；basis_ratio = 缓存首行 close ÷
+      仓库锚定日不复权 close；前扩行 = 不复权价 × (当日 adj ÷ 锚定日 adj)
+      × basis_ratio，且 trade_date < cache_first。
+    锚定日行/adj 缺失或比值非有限正数 → 整股跳过记报告；
+    adj 与 daily 逐日对不齐 → 整股剔除（同 §5）。
+    返回 (per_symbol, additions)，status ∈ backfilled / not_in_cache /
+    no_warehouse_rows / no_earlier_rows / anchor_missing /
+    anchor_adj_missing / anchor_invalid / unaligned_adj / invalid_rows /
+    dir_missing / engine_missing / error。
+    """
+    per_symbol = {}
+    additions = {}
+    if not symbols:
+        return per_symbol, additions
+    daily_dir = os.path.join(data_root, "tushare", "daily")
+    adj_dir = os.path.join(data_root, "tushare", "adj_factor")
+    if not os.path.isdir(daily_dir) or not os.path.isdir(adj_dir):
+        for s in symbols:
+            per_symbol[s] = {"status": "dir_missing",
+                             "dir": os.path.abspath(daily_dir)}
+        return per_symbol, additions
+    reader = reader or _pandas_read
+    try:
+        rev = {symbol_to_ts_code(s): s for s in symbols}
+        wanted = set(rev)
+        # 1) 单遍扫描：symbol → 仓库最早行日期
+        first_seen = {}
+        for td, path in _iter_date_parts(daily_dir,
+                                         window=(scan_from, "20261231")):
+            codes = {str(c)
+                     for c in list(reader(path, ["ts_code"])["ts_code"])}
+            for c in codes & wanted:
+                first_seen.setdefault(c, td)
+        # 2) 逐股前扩
+        daily_cols = ("ts_code", "trade_date", "open", "high", "low",
+                      "close", "vol", "amount")
+        for s in symbols:
+            ts = symbol_to_ts_code(s)
+            rows = (cache.get("daily") or {}).get(s) or []
+            if not rows:
+                per_symbol[s] = {"status": "not_in_cache"}
+                continue
+            first_row = min(rows, key=lambda r: str(r.get("trade_date")))
+            cf = str(first_row.get("trade_date"))
+            cache_close = _num(first_row.get("close"))
+            if cache_close is None or cache_close <= 0:
+                per_symbol[s] = {"status": "anchor_invalid",
+                                 "cache_first": cf,
+                                 "reason": "缓存首行 close 非有限正数"}
+                continue
+            wf = first_seen.get(ts)
+            if wf is None:
+                per_symbol[s] = {"status": "no_warehouse_rows",
+                                 "cache_first": cf}
+                continue
+            if wf >= cf:
+                per_symbol[s] = {"status": "no_earlier_rows",
+                                 "cache_first": cf,
+                                 "warehouse_first": wf}
+                continue
+            # 3) 锚定日仓库行与 adj
+            anchor_day = os.path.join(daily_dir, "d_%s.parquet" % cf)
+            if not os.path.exists(anchor_day):
+                per_symbol[s] = {"status": "anchor_missing",
+                                 "cache_first": cf}
+                continue
+            anchor_close = None
+            tbl = reader(anchor_day, ["ts_code", "close"])
+            for c, v in zip((str(x) for x in list(tbl["ts_code"])),
+                            list(tbl["close"])):
+                if c == ts:
+                    anchor_close = _num(v)
+                    break
+            anchor_adj = None
+            adj_day = os.path.join(adj_dir, "d_%s.parquet" % cf)
+            if os.path.exists(adj_day):
+                tbl = reader(adj_day, ["ts_code", "adj_factor"])
+                for c, v in zip((str(x) for x in list(tbl["ts_code"])),
+                                list(tbl["adj_factor"])):
+                    if c == ts:
+                        anchor_adj = _num(v)
+                        break
+            if anchor_close is None or anchor_close <= 0:
+                per_symbol[s] = {"status": "anchor_missing",
+                                 "cache_first": cf,
+                                 "reason": "锚定日仓库不复权 close 缺失或非正"}
+                continue
+            if anchor_adj is None or anchor_adj <= 0:
+                per_symbol[s] = {"status": "anchor_adj_missing",
+                                 "cache_first": cf}
+                continue
+            basis_ratio = cache_close / anchor_close
+            if not math.isfinite(basis_ratio) or basis_ratio <= 0:
+                per_symbol[s] = {"status": "anchor_invalid",
+                                 "cache_first": cf,
+                                 "basis_ratio": basis_ratio}
+                continue
+            # 4) 前扩区间原始行 + adj（[wf, cache_first) ）
+            from datetime import timedelta
+            prev_day = (datetime.strptime(cf, "%Y%m%d")
+                        - timedelta(days=1)).strftime("%Y%m%d")
+            span = _iter_date_parts(daily_dir, window=(wf, prev_day))
+            adj_by_date = dict(_iter_date_parts(adj_dir,
+                                                window=(wf, prev_day)) or [])
+            raw_rows = []
+            adj_map = {}
+            for td, path in (span or []):
+                tbl = reader(path, list(daily_cols))
+                for raw in _extract_rows(tbl, {ts}, daily_cols):
+                    r = dict(raw)
+                    r["_part_date"] = td
+                    raw_rows.append(r)
+                ap = adj_by_date.get(td)
+                if ap is not None:
+                    tbl = reader(ap, ["ts_code", "trade_date", "adj_factor"])
+                    for raw in _extract_rows(tbl, {ts},
+                                             ("ts_code", "trade_date",
+                                              "adj_factor")):
+                        f = _num(raw.get("adj_factor"))
+                        if f is not None and f > 0:
+                            adj_map[str(raw.get("trade_date"))[:8]] = f
+            if not raw_rows:
+                per_symbol[s] = {"status": "no_earlier_rows",
+                                 "cache_first": cf,
+                                 "warehouse_first": wf}
+                continue
+            qfq_rows = []
+            unaligned = 0
+            for r in sorted(raw_rows, key=lambda x: str(x.get("trade_date"))):
+                td = str(r.get("trade_date"))[:8]
+                f = adj_map.get(td)
+                if f is None or f <= 0:
+                    unaligned += 1
+                    continue
+                ratio = (f / anchor_adj) * basis_ratio
+                qfq_rows.append({
+                    "trade_date": td,
+                    "open": _scale(r.get("open"), ratio),
+                    "high": _scale(r.get("high"), ratio),
+                    "low": _scale(r.get("low"), ratio),
+                    "close": _scale(r.get("close"), ratio),
+                    "volume": int(round((_num(r.get("vol"), 0) or 0.0)
+                                        * TW_VOL_HAND_TO_SHARE)),
+                    "amount": ((_num(r.get("amount"), 0) or 0.0)
+                               * TW_AMOUNT_KYUAN_TO_YUAN),
+                })
+            if unaligned:
+                per_symbol[s] = {"status": "unaligned_adj",
+                                 "cache_first": cf,
+                                 "n_rows": len(raw_rows),
+                                 "unaligned_rows": unaligned}
+                continue
+            ok, details, _c = validate_symbol_rows(qfq_rows)
+            if not ok:
+                per_symbol[s] = {"status": "invalid_rows",
+                                 "cache_first": cf,
+                                 "n_rows": len(qfq_rows),
+                                 "bad_row_count": len(details),
+                                 "bad_row_details":
+                                     details[:_MAX_BAD_ROW_DETAILS]}
+                continue
+            additions[s] = to_cache_rows(s, qfq_rows,
+                                         source=PREPEND_SOURCE_TAG)
+            per_symbol[s] = {"status": "backfilled",
+                             "cache_first": cf,
+                             "basis_ratio": basis_ratio,
+                             "anchor_adj": anchor_adj,
+                             "n_rows": len(qfq_rows),
+                             "first": qfq_rows[0]["trade_date"],
+                             "last": qfq_rows[-1]["trade_date"]}
+    except ImportError:
+        for s in symbols:                       # 缺 pandas：fail-visible 跳过
+            per_symbol[s] = {"status": "engine_missing",
+                             "note": "pandas/pyarrow 不可用，前扩分支跳过"}
+    except Exception as e:                      # noqa: BLE001 单源失败隔离
+        for s in symbols:
+            if s not in per_symbol:
+                per_symbol[s] = {"status": "error", "error": str(e)[:200]}
+    return per_symbol, additions
+
+
+def load_repairable_symbols(triage_path: str) -> list:
+    """从分诊报告提取 class=repairable 的唯一 symbol（排序去重）。"""
+    with open(triage_path, "rb") as f:
+        triage = json.loads(f.read())
+    records = triage.get("pair_records") or []
+    out = {r["symbol"] for r in records if r.get("class") == "repairable"}
+    return sorted(x for x in out if x)
+
+
 # ── 审计摘要与主流程 ─────────────────────────────────────────
 
 def audit_summary(audit: dict) -> dict:
@@ -685,14 +904,17 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         posts: list = None,
         data_root: str = DEFAULT_DATA_ROOT,
         census_window: tuple = CENSUS_WINDOW_DEFAULT,
-        parquet_reader=None) -> dict:
+        parquet_reader=None,
+        prepend_symbols: list = None,
+        prepend_scan_from: str = PREPEND_SCAN_FROM) -> dict:
     """全流程：缺失发现 → 双源补齐计划（TDX .day + tushare 仓 qfq 派生）
-    → 备份合并（多源标注）→ 前后覆盖审计 → 本地源只读普查 → 报告。
+    → 锚定定基前扩（可选，口径工单 §10）→ 备份合并（多源标注）
+    → 既有行零改动校验 → 前后覆盖审计 → 本地源只读普查 → 报告。
 
-    posts 可注入（测试用）；为 None 时只读加载真库。全程零网络：
-    offline_audit 为内存调用（帖子已载入，db 仅用于回显绝对路径）。
-    parquet_reader 可注入供测试（缺 pandas 时 tushare 分支与普查优雅跳过），
-    单源失败不影响主流程。返回报告 dict（已落盘）。
+    prepend_symbols 非空时对既有缓存条目做锚定定基前扩（仅分诊
+    repairable 标的，见 plan_anchored_prepend）。posts 可注入（测试用）；
+    为 None 时只读加载真库。全程零网络：offline_audit 为内存调用。
+    parquet_reader 可注入供测试，单源失败不影响主流程。返回报告 dict。
     """
     if posts is None:
         posts = load_posts_ro(db_path)
@@ -717,6 +939,22 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         additions_tw = {}
     per_symbol.update(per_symbol_tw)
 
+    # 锚定定基前扩（口径工单 §10）：仅既有缓存条目（排除本轮 tdx/tw 新增）
+    additions_pre = {}
+    if prepend_symbols:
+        pre_syms = [s for s in prepend_symbols
+                    if s not in additions_tdx and s not in additions_tw
+                    and s in (cache.get("daily") or {})]
+        try:
+            per_symbol_pre, additions_pre = plan_anchored_prepend(
+                pre_syms, cache, data_root=data_root, scan_from=prepend_scan_from,
+                reader=parquet_reader)
+        except Exception as e:                   # noqa: BLE001 分支失败不拖垮
+            per_symbol_pre = {s: {"status": "error", "error": str(e)[:200]}
+                              for s in pre_syms}
+            additions_pre = {}
+        per_symbol.update(per_symbol_pre)
+
     additions_by_tag = {}
     if additions_tdx:
         additions_by_tag[SOURCE_TAG] = {"note": ADJUSTMENT_NOTE,
@@ -724,10 +962,40 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
     if additions_tw:
         additions_by_tag[TW_SOURCE_TAG] = {"note": TW_ADJ_NOTE,
                                            "symbols": additions_tw}
+    if additions_pre:
+        additions_by_tag[PREPEND_SOURCE_TAG] = {
+            "note": PREPEND_NOTE, "symbols": additions_pre,
+            "mode": "prepend"}
     merge_info = merge_and_write(cache_path, additions_by_tag, stamp)
     merged_tdx = (merge_info["added"].get(SOURCE_TAG) or {})
     merged_tw = (merge_info["added"].get(TW_SOURCE_TAG) or {})
+    merged_pre = (merge_info["added"].get(PREPEND_SOURCE_TAG) or {})
     merged_total = len(merged_tdx) + len(merged_tw)
+
+    # 既有行零改动强制校验（口径工单 §10.2）：非前扩键逐字节不变；
+    # 前扩键既有行必须原样保留为新序列的尾部
+    integrity = {"checked_keys": 0, "violations": []}
+    if merge_info["cache_updated"]:
+        with open(cache_path, "rb") as f:
+            new_cache = json.loads(f.read())
+        old_daily = cache.get("daily") or {}
+        new_daily = new_cache.get("daily") or {}
+        prepended_syms = set(merged_pre)
+        for k, old_rows in old_daily.items():
+            integrity["checked_keys"] += 1
+            new_rows = new_daily.get(k)
+            if new_rows is None:
+                integrity["violations"].append({"key": k, "reason": "missing"})
+                continue
+            if k in prepended_syms:
+                tail = new_rows[len(new_rows) - len(old_rows):]
+                if tail != old_rows:
+                    integrity["violations"].append(
+                        {"key": k, "reason": "existing_rows_modified"})
+            elif new_rows != old_rows:
+                integrity["violations"].append(
+                    {"key": k, "reason": "entry_modified"})
+    integrity["pass"] = not integrity["violations"]
 
     # 覆盖审计：前（原缓存）vs 后（合并后缓存），内存调用不发网络
     audit_before = factor.offline_audit(posts, json.loads(original_content),
@@ -754,6 +1022,8 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
         "backfilled": merged_total,
         "backfilled_tdx": len(merged_tdx),
         "backfilled_tushare": len(merged_tw),
+        "prepended_symbols": len(merged_pre),
+        "prepended_rows": sum(merged_pre.values()),
         "missing_file": sum(1 for v in per_symbol.values()
                             if v["status"] == "missing_file"),
         "bad_file": sum(1 for v in per_symbol.values()
@@ -781,8 +1051,10 @@ def run(cache_path: str = DEFAULT_CACHE_PATH,
                     "缺口，幸存者偏差）；即便补齐后审计仍维持 INCONCLUSIVE，"
                     "不构成因子有效性证据",
         },
-        "sources_merged": [t for t in (SOURCE_TAG, TW_SOURCE_TAG)
+        "sources_merged": [t for t in (SOURCE_TAG, TW_SOURCE_TAG,
+                                       PREPEND_SOURCE_TAG)
                            if merge_info["added"].get(t)],
+        "integrity_check": integrity,
         "backup_path": merge_info["backup_path"],
         "cache_updated": merge_info["cache_updated"],
         "skipped_existing": merge_info["skipped_existing"],
@@ -813,11 +1085,20 @@ def main(argv=None) -> int:
     ap.add_argument("--report-dir", default=DEFAULT_REPORT_DIR, help="报告目录")
     ap.add_argument("--data-root", default=DEFAULT_DATA_ROOT,
                     help="本地行情数据根（只读普查用）")
+    ap.add_argument("--prepend-triage", default=None,
+                    help="分诊报告 JSON：对其 class=repairable 唯一 symbol"
+                         "做锚定定基前扩（口径工单 §10）；缺省不前扩")
+    ap.add_argument("--prepend-scan-from", default=PREPEND_SCAN_FROM,
+                    help="前扩扫描起点（默认 20170101）")
     args = ap.parse_args(argv)
+    prepend_syms = None
+    if args.prepend_triage:
+        prepend_syms = load_repairable_symbols(args.prepend_triage)
     try:
         report = run(cache_path=args.cache, db_path=args.db,
                      tdx_root=args.tdx_root, report_dir=args.report_dir,
-                     data_root=args.data_root)
+                     data_root=args.data_root, prepend_symbols=prepend_syms,
+                     prepend_scan_from=args.prepend_scan_from)
     except (OSError, ValueError) as e:
         print("错误：%s" % e, file=sys.stderr)
         return 1
@@ -828,6 +1109,10 @@ def main(argv=None) -> int:
              c["backfilled_tushare"], c["missing_file"],
              c["invalid_rows"], c["bad_file"]))
     print("[tdx-backfill] 并入源=%s" % (report["sources_merged"] or "无"))
+    if c["prepended_symbols"]:
+        print("[tdx-backfill] 前扩 %d 只 / %d 行；既有行零改动校验=%s"
+              % (c["prepended_symbols"], c["prepended_rows"],
+                 "PASS" if report["integrity_check"]["pass"] else "FAIL"))
     print("[tdx-backfill] 缓存更新=%s 备份=%s"
           % (report["cache_updated"], report["backup_path"]))
     print("[tdx-backfill] 审计 decision=%s（前后均 INCONCLUSIVE，无有效性结论）"

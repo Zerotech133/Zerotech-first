@@ -756,3 +756,199 @@ def test_plan_tushare_real_parquet(tmp_path):
     assert rows[0]["open"] == pytest.approx(20.0)    # adj 2.0/1.0
     assert rows[1]["open"] == pytest.approx(10.5)    # adj=latest
     assert rows[0]["volume"] == 100000               # 手→股
+
+
+# ── 锚定定基前扩（口径工单 §10）──────────────────────────────
+
+def test_plan_anchored_prepend_formula(tmp_path):
+    """锚定公式：qfq = raw × (row_adj ÷ anchor_adj) × basis_ratio。"""
+    daily_map = {
+        "20200103": {"600000.SH": (9.0, 9.2, 8.8, 9.1, 800, 400)},
+        "20200106": {"600000.SH": (10.0, 10.4, 9.9, 11.0, 1000, 500)},
+        "20200107": {"600000.SH": (10.5, 10.8, 10.2, 11.5, 1200, 600)},
+    }
+    adj_map = {"20200103": {"600000.SH": 4.0},
+               "20200106": {"600000.SH": 2.0},
+               "20200107": {"600000.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map,
+                                   dates=["20200103", "20200106",
+                                          "20200107"])
+    # 缓存既有行：首行 20200107 close=23.0（官方 qfq 定基，系差 ×2）
+    cache = {"daily": {"SH600000": [{"trade_date": "20200107",
+                                     "open": 21.0, "close": 23.0}]}}
+    per, additions = B.plan_anchored_prepend(["SH600000"], cache,
+                                             data_root=root, reader=reader)
+    assert per["SH600000"]["status"] == "backfilled"
+    assert per["SH600000"]["basis_ratio"] == pytest.approx(23.0 / 11.5)
+    rows = additions["SH600000"]
+    assert [r["trade_date"] for r in rows] == ["20200103", "20200106"]
+    # 20200103：raw 9.1 × (4.0/1.0) × (23/11.5=2) = 72.8
+    assert rows[0]["close"] == pytest.approx(9.1 * 4.0 * 2.0)
+    # 20200106：raw 11.0 × (2.0/1.0) × 2 = 44.0
+    assert rows[1]["close"] == pytest.approx(11.0 * 2.0 * 2.0)
+    # 单位换算与溯源
+    assert rows[0]["volume"] == 80000
+    assert rows[0]["source"] == "tushare_warehouse_qfq_anchored_prepend"
+    assert rows[0]["chg"] is None                    # 前扩首行无前收盘
+
+
+def test_plan_anchored_prepend_seam_continuous(tmp_path):
+    """接缝连续：锚定日 adj 相同、raw 价相当时，前扩末行 close≈缓存首行。"""
+    daily_map = {
+        "20200106": {"600000.SH": (11.4, 11.6, 11.3, 11.5, 1000, 500)},
+        "20200107": {"600000.SH": (10.5, 10.8, 10.2, 11.5, 1200, 600)},
+    }
+    adj_map = {"20200106": {"600000.SH": 1.0},
+               "20200107": {"600000.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map)
+    cache = {"daily": {"SH600000": [{"trade_date": "20200107",
+                                     "open": 10.5, "close": 11.5}]}}
+    per, additions = B.plan_anchored_prepend(["SH600000"], cache,
+                                             data_root=root, reader=reader)
+    assert per["SH600000"]["status"] == "backfilled"
+    last = additions["SH600000"][-1]
+    assert last["close"] == pytest.approx(11.5)      # 与缓存首行无缝
+    assert last["trade_date"] == "20200106"
+    dev = abs(last["close"] / 11.5 - 1.0)
+    assert dev <= B.PREPEND_SEAM_TOL
+
+
+def test_plan_anchored_prepend_anchor_missing(tmp_path):
+    """锚定日仓库部件缺失 → anchor_missing，整股跳过。"""
+    daily_map = {"20200106": {"600000.SH": (10, 10, 10, 11, 100, 50)}}
+    adj_map = {"20200106": {"600000.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map,
+                                   dates=["20200106", "20200107"])
+    cache = {"daily": {"SH600000": [{"trade_date": "20200107",
+                                     "open": 10, "close": 11}]}}
+    per, additions = B.plan_anchored_prepend(["SH600000"], cache,
+                                             data_root=root, reader=reader)
+    # 20200107 部件缺失（锚定日），且 wf=20200106 < cf → anchor_missing
+    assert per["SH600000"]["status"] == "anchor_missing"
+    assert additions == {}
+
+
+def test_plan_anchored_prepend_invalid_basis(tmp_path):
+    """前扩行坏价（close<=0）→ invalid_rows 整股剔除（同 §5 闸门）。"""
+    daily_map = {"20200106": {"600000.SH": (10, 10, 10, 0.0, 100, 50)},
+                 "20200107": {"600000.SH": (10.5, 10.8, 10.2, 11.5, 100, 50)}}
+    adj_map = {"20200106": {"600000.SH": 1.0},
+               "20200107": {"600000.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map)
+    cache = {"daily": {"SH600000": [{"trade_date": "20200107",
+                                     "open": 10.5, "close": 11.5}]}}
+    per, additions = B.plan_anchored_prepend(["SH600000"], cache,
+                                             data_root=root, reader=reader)
+    assert per["SH600000"]["status"] == "invalid_rows"
+    assert per["SH600000"]["bad_row_count"] >= 1
+    assert additions == {}
+
+
+def test_plan_anchored_prepend_cache_anchor_invalid(tmp_path):
+    """缓存首行 close 非有限正数 → anchor_invalid，不并入。"""
+    daily_map = {"20200106": {"600000.SH": (10, 10, 10, 11, 100, 50)}}
+    adj_map = {"20200106": {"600000.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map,
+                                   dates=["20200106"])
+    cache = {"daily": {"SH600000": [{"trade_date": "20200107",
+                                     "open": 10, "close": None}]}}
+    per, additions = B.plan_anchored_prepend(["SH600000"], cache,
+                                             data_root=root, reader=reader)
+    assert per["SH600000"]["status"] == "anchor_invalid"
+    assert additions == {}
+
+
+def test_plan_anchored_prepend_not_in_cache_and_no_earlier(tmp_path):
+    """不在缓存 → not_in_cache；缓存有行但仓库无行 → no_warehouse_rows；
+    仓库起点≥缓存首行 → no_earlier_rows。"""
+    daily_map = {"20200107": {"600000.SH": (10.5, 10.8, 10.2, 11.5, 100, 50)}}
+    adj_map = {"20200107": {"600000.SH": 1.0}}
+    root, reader = make_tw_fixture(tmp_path, daily_map, adj_map,
+                                   dates=["20200107"])
+    cache = {"daily": {
+        "SH600000": [{"trade_date": "20200107", "open": 10.5, "close": 11.5}],
+        "SZ000537": [{"trade_date": "20200106", "open": 1, "close": 1.1}]}}
+    per, additions = B.plan_anchored_prepend(
+        ["SH600000", "SZ000537", "SZ000015"],
+        cache, data_root=root, reader=reader)
+    assert per["SZ000015"]["status"] == "not_in_cache"
+    assert per["SZ000537"]["status"] == "no_warehouse_rows"
+    assert per["SH600000"]["status"] == "no_earlier_rows"
+    assert additions == {}
+
+
+def test_merge_prepend_mode_preserves_existing(tmp_path):
+    """prepend 模式：新行拼在既有行之前、既有行逐字节不变；其他键不动；
+    重叠行防御性放弃。"""
+    cache_path = str(tmp_path / "daily_cache.json")
+    existing = [{"trade_date": "20200107", "open": 10.5, "close": 11.5}]
+    write_cache(cache_path, {"SH600000": existing,
+                             "SZ000537": [{"trade_date": "20200106",
+                                           "open": 1.0, "close": 1.1}]})
+    before = Path(cache_path).read_bytes()
+    info = B.merge_and_write(cache_path, {
+        "tushare_warehouse_qfq_anchored_prepend": {
+            "note": "pre", "mode": "prepend",
+            "symbols": {
+                "SH600000": [{"trade_date": "20200106", "open": 10.0,
+                              "close": 11.0}],
+                "SZ000537": [{"trade_date": "20200107",   # 重叠 → 放弃
+                              "open": 1.0, "close": 1.1}]}}},
+        "20261019T0000000800")
+    assert info["cache_updated"] is True
+    assert info["added"]["tushare_warehouse_qfq_anchored_prepend"] == \
+        {"SH600000": 1}
+    assert info["skipped_existing"] == ["SZ000537"]
+    new = read_json(cache_path)
+    assert new["daily"]["SH600000"] == (
+        [{"trade_date": "20200106", "open": 10.0, "close": 11.0}]
+        + existing)                                   # 既有行原样在尾部
+    assert new["daily"]["SZ000537"] == read_json(
+        cache_path)["daily"]["SZ000537"]
+    assert Path(cache_path).read_bytes() != before
+
+
+def test_load_repairable_symbols_from_triage(tmp_path):
+    triage = {"pair_records": [
+        {"symbol": "SH600028", "class": "repairable"},
+        {"symbol": "SH600028", "class": "repairable"},
+        {"symbol": "SH601658", "class": "unobtainable"},
+        {"symbol": "SZ000537", "class": "repairable"},
+    ]}
+    p = tmp_path / "triage.json"
+    p.write_text(json.dumps(triage), encoding="utf-8")
+    assert B.load_repairable_symbols(str(p)) == ["SH600028", "SZ000537"]
+
+
+def test_run_anchored_prepend_end_to_end(env):
+    """端到端前扩：既有行零改动、审计覆盖上升、INCONCLUSIVE 维持、
+    integrity_check PASS。"""
+    root, reader = make_tw_fixture(
+        Path(env["data_root"]).parent / "twdata2",
+        {"20200106": {"600000.SH": (11.4, 11.6, 11.3, 11.5, 1000, 500)},
+         "20200107": {"600000.SH": (10.5, 10.8, 10.2, 11.5, 1200, 600)}},
+        {"20200106": {"600000.SH": 1.0},
+         "20200107": {"600000.SH": 1.0}},
+        dates=["20200106", "20200107"])
+    write_cache(env["cache_path"], {
+        "SH600000": [{"trade_date": "20200107", "open": 10.5,
+                      "close": 11.5}]})
+    before = Path(env["cache_path"]).read_bytes()
+    report = B.run(cache_path=env["cache_path"], db_path=env["db_path"],
+                   tdx_root=env["tdx_root"], report_dir=env["report_dir"],
+                   data_root=root, parquet_reader=reader,
+                   prepend_symbols=["SH600000"])
+    assert report["counts"]["prepended_symbols"] == 1
+    assert report["counts"]["prepended_rows"] == 1
+    assert report["integrity_check"]["pass"] is True
+    assert "tushare_warehouse_qfq_anchored_prepend" in \
+        report["sources_merged"]
+    cache = read_json(env["cache_path"])
+    rows = cache["daily"]["SH600000"]
+    assert [r["trade_date"] for r in rows] == ["20200106", "20200107"]
+    assert rows[-1] == {"trade_date": "20200107", "open": 10.5,
+                        "close": 11.5}                # 既有行逐字节不变
+    assert report["audit_after"]["audit_decision"] == "INCONCLUSIVE"
+    assert report["audit_after"]["effectiveness_conclusion"] is None
+    assert report["audit_before"]["audit_decision"] == "INCONCLUSIVE"
+    assert Path(env["cache_path"]).read_bytes() != before
