@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>军团模型管理台 · 老田的AI助手</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#fff; --ink:#1c2330; --sub:#5b6472; --line:#e3e6ec;
+  --blue:#2563eb; --green:#059669; --red:#dc2626; --amber:#d97706;
+  --chip:#eef2ff; --mono:Consolas,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14181f; --card:#1d232d; --ink:#e8ecf2; --sub:#9aa4b2; --line:#2c3440;
+         --chip:#232c3d; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:14px/1.6 "Segoe UI","Microsoft YaHei",sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:20px}
+h1{font-size:20px;margin:0 0 2px} h1 small{font-size:12px;color:var(--sub);font-weight:normal}
+.sub{color:var(--sub);font-size:12px;margin-bottom:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;flex:1;min-width:240px}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--sub);font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.on{background:var(--green)} .off{background:var(--red)}
+.mono{font-family:var(--mono);font-size:12px}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;background:var(--chip);margin:1px 2px}
+table{width:100%;border-collapse:collapse;background:var(--card);
+      border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+th{background:var(--chip);font-size:12px;color:var(--sub);position:sticky;top:0}
+tr:last-child td{border-bottom:none}
+select,input[type=text]{background:var(--card);color:var(--ink);border:1px solid var(--line);
+     border-radius:6px;padding:4px 8px;font:inherit;font-size:12px}
+button{background:var(--blue);color:#fff;border:none;border-radius:6px;
+       padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
+button.ghost{background:transparent;color:var(--blue);border:1px solid var(--blue)}
+button.gray{background:var(--sub)}
+button:disabled{opacity:.5;cursor:not-allowed}
+#routeOut{background:var(--chip);border-radius:8px;padding:10px 12px;margin-top:10px;
+          font-family:var(--mono);font-size:12px;white-space:pre-wrap;display:none}
+.toast{position:fixed;right:20px;bottom:20px;background:var(--ink);color:var(--bg);
+       padding:10px 16px;border-radius:8px;font-size:13px;display:none;z-index:9}
+.filter{margin:0 0 10px}
+.changed{outline:2px solid var(--amber);outline-offset:-2px}
+.note{color:var(--sub);font-size:11px;max-width:320px;display:block;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.section{margin-bottom:24px}
+.sec-title{font-size:15px;font-weight:600;margin:0 0 10px}
+#planBox{max-height:300px;overflow:auto}
+</style>
+<script src="/static/nav.js" defer></script></head>
+<body>
+<div class="wrap">
+  <h1>军团模型管理台 <small>8097 · binding 主源 org.json</small></h1>
+  <div class="sub">参谋长层走云端 glm-5.3 · 本地模型专职数据治理/抓取/蒸馏/训练 · NovaMax 特种(视觉/结构化) · 10-18 分工定案</div>
+
+  <div class="row" id="healthRow">
+    <div class="card"><h3><span class="dot" id="d-local"></span>本地 Ollama 11434</h3><div id="localInfo" class="mono">…</div></div>
+    <div class="card"><h3><span class="dot" id="d-cloud"></span>云端智谱(包年)</h3><div id="cloudInfo" class="mono">…</div></div>
+    <div class="card"><h3><span class="dot" id="d-nova"></span>NovaMax 特种</h3><div id="novaInfo" class="mono">…</div></div>
+    <div class="card"><h3><span class="dot" id="d-logi"></span>军团后勤</h3><div id="logiInfo" class="mono">…</div></div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-title" style="margin:0">军团服务控制台 <span class="pill" id="svcCount"></span>
+        <small style="color:var(--sub);font-weight:normal;font-size:12px">— 全部 Agent 服务一页启停</small></div>
+      <button class="ghost" onclick="loadServices()">刷新状态</button>
+    </div>
+    <table id="svcTable">
+      <thead><tr><th>服务</th><th>分组</th><th>状态</th><th>详情</th><th>操作</th><th>守护说明</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section card" style="flex:none">
+    <h3>路由测试器 —— 输入一条任务，SmartRouter 实时决定该用哪个模型（可解释）</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <input type="text" id="taskIn" style="flex:1;min-width:320px" placeholder="例：对研发方案做走形检查并复盘 / 抓取今日行情清洗入库 / 识别这张截图 / 跑一轮蒸馏…">
+      <select id="gradeIn">
+        <option value="">岗位等级(自动)</option><option>E3</option><option>E2</option><option>E1</option>
+      </select>
+      <button onclick="doRoute()">路由决策</button>
+    </div>
+    <div id="routeOut"></div>
+  </div>
+
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec-title" style="margin:0">Agent 模型适配表 <span class="pill" id="agentCount"></span></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="kw" class="filter" placeholder="筛选 agent/岗位/部门…">
+        <button class="ghost" onclick="loadAutoAssign()">自动适配(预览)</button>
+        <button onclick="applyAutoAssign()">应用全部建议</button>
+      </div>
+    </div>
+    <table id="agentTable">
+      <thead><tr><th>ID</th><th>名称</th><th>岗位</th><th>级</th><th>当前绑定</th><th>改为</th><th>操作</th><th>说明</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section card" style="flex:none;display:none" id="planCard">
+    <h3>自动适配预览（<span id="planChanged"></span>）</h3>
+    <div id="planBox" class="mono"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const BINDINGS = [
+  "glm/glm-5.3","glm/glm-5.3-flash",
+  "ollama/qwen3.6:35b-a3b","ollama/qwen3.5:9b","ollama/qwen3:8b","ollama/qwen2.5:7b",
+  "ollama/bge-m3","ollama/huihui_ai/Qwen3.8-abliterated:latest",
+  "nova/1234","nova/1238","auto"
+];
+let AGENTS = [];
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  clearTimeout(t._h); t._h = setTimeout(()=>t.style.display='none', 2600);
+}
+async function jget(u){ const r = await fetch(u); return r.json(); }
+async function jpost(u, body){ 
+  const r = await fetch(u, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  return r.json(); 
+}
+
+function renderLogistics(g){
+  const set = (id, ok)=>{ const e=document.getElementById(id); e.className='dot '+(ok?'on':'off'); };
+  const s = g.sft||{};
+  const fresh = s.fresh_min !== null && s.fresh_min < 35;
+  const sftLine = s.rows !== null
+    ? `蒸馏 SFT: <b>${s.rows}</b> 条 · 最近写入 ${s.mtime} <span style="color:${fresh?'var(--ok,green)':'var(--red)'}">${fresh?'(活跃)':'(停滞≥35min!)'}</span>`
+    : '蒸馏 SFT: 未找到产出文件';
+  const c = g.glm||{};
+  const glmLine = `云端额度: <span style="color:${c.ok?'var(--ok,green)':'var(--red)'}">${c.ok?'可用':(c.note||'不可用')}</span>`;
+  const dk = g.disk||{};
+  const diskLine = `磁盘 C\\: 余 ${dk.free_gb}G (已用 ${dk.pct}%)`;
+  set('d-logi', fresh && (c.ok || (c.note||'').includes('额度重置')));
+  document.getElementById('logiInfo').innerHTML = [sftLine, glmLine, diskLine].join('<br>');
+}
+
+async function loadHealth(){
+  const d = await jget('/api/models');
+  jget('/api/logistics').then(renderLogistics).catch(()=>{});
+  const set = (id, ok)=>{ const e=document.getElementById(id); e.className='dot '+(ok?'on':'off'); };
+  set('d-local', d.local.ok);
+  document.getElementById('localInfo').innerHTML = d.local.ok
+    ? d.local.models.map(m=>`${m.name} <span style="color:var(--sub)">${m.size_gb}G</span>`).join('<br>')
+      + `<br>驻留: ${(d.loaded||[]).join(', ')||'无'}`
+    : '不可达: '+(d.local.err||'');
+  set('d-cloud', d.cloud.ok);
+  document.getElementById('cloudInfo').innerHTML =
+    `key: ${d.cloud.key_src||'未配置!'}<br>熔断: ${d.cloud.breaker}<br>` +
+    d.cloud.models.map(m=>`${m.id} <span style="color:var(--sub)">${m.note}</span>`).join('<br>');
+  const novaAll = d.nova.every(n=>n.alive), novaAny = d.nova.some(n=>n.alive);
+  set('d-nova', novaAny);
+  document.getElementById('novaInfo').innerHTML = d.nova.map(n=>
+    `${n.port} ${n.alive?'<span style="color:var(--green)">在线</span>':'<span style="color:var(--red)">离线</span>'} <span style="color:var(--sub)">${n.desc}</span>`).join('<br>');
+}
+
+async function loadAgents(){
+  const d = await jget('/api/agents');
+  AGENTS = d.agents;
+  document.getElementById('agentCount').textContent = AGENTS.length + ' 岗';
+  renderAgents();
+}
+
+function renderAgents(){
+  const kw = (document.getElementById('kw').value||'').toLowerCase();
+  const tb = document.querySelector('#agentTable tbody');
+  tb.innerHTML = '';
+  for (const a of AGENTS){
+    if (kw && !(a.agent_id+' '+(a.cn_name||'')+' '+(a.name||'')+' '+a.role_profile).toLowerCase().includes(kw)) continue;
+    const tr = document.createElement('tr');
+    tr.dataset.id = a.agent_id;
+    const opts = BINDINGS.map(b=>
+      `<option value="${b}" ${b===a.binding?'selected':''}>${b}</option>`).join('');
+    tr.innerHTML = `<td><b>${a.agent_id}</b></td><td>${a.cn_name||a.name||'—'}${a.dept_title?` <span style="color:var(--sub);font-size:11px">${a.dept_title}</span>`:''}</td>
+      <td>${a.role_profile||'—'}</td><td>${a.grade||'—'}</td>
+      <td class="mono">${a.binding||'<i style="color:var(--red)">未绑定</i>'}</td>
+      <td><select class="sel">${opts}</select></td>
+      <td><button class="ghost" onclick="saveBinding('${a.agent_id}', this)">保存</button></td>
+      <td><span class="note" title="${(a.note||'').replace(/"/g,'&quot;')}">${a.note||''}</span></td>`;
+    tr.querySelector('.sel').addEventListener('change', ()=>tr.classList.add('changed'));
+    tb.appendChild(tr);
+  }
+}
+
+async function saveBinding(aid, btn){
+  const sel = btn.closest('tr').querySelector('.sel').value;
+  btn.disabled = true;
+  const r = await jpost('/api/binding', {agent_id: aid, binding: sel,
+    note: `10-18 页面调档：由 ${AGENTS.find(x=>x.agent_id===aid)?.binding||'无'} 改为 ${sel}`});
+  btn.disabled = false;
+  if (r.ok){ toast(`${aid} → ${sel} 已写回(${r.touched.join(',')})`); loadAgents(); }
+  else toast('失败: '+(r.err||''));
+}
+
+async function doRoute(){
+  const task = document.getElementById('taskIn').value.trim();
+  if (!task) return toast('先输入任务描述');
+  const out = document.getElementById('routeOut');
+  out.style.display='block'; out.textContent='思考中…';
+  const r = await jpost('/api/route', {task, grade: document.getElementById('gradeIn').value||null});
+  out.textContent = `→ 决策: ${r.binding}\n  通道: ${r.provider}\n  理由: ${r.reason}`;
+}
+
+async function loadServices(){
+  const d = await jget('/api/services').catch(()=>null);
+  if (!d) return toast('服务状态加载失败');
+  const list = d.services||[];
+  document.getElementById('svcCount').textContent = list.length + ' 项 · ' +
+    list.filter(s=>s.status==='on').length + ' 在线';
+  const tb = document.querySelector('#svcTable tbody');
+  tb.innerHTML = '';
+  const dotCls = s => s==='on' ? 'on' : (s==='partial' ? '' : 'off');
+  const dotColor = s => s==='partial' ? 'background:var(--amber)' : '';
+  for (const s of list){
+    const tr = document.createElement('tr');
+    const ops = s.readonly
+      ? '<span style="color:var(--sub);font-size:11px">只读监护</span>'
+      : `<button class="ghost" onclick="svcAction('${s.id}','start',this)">启动</button>
+         <button class="gray" onclick="svcAction('${s.id}','stop',this)">停止</button>
+         <button class="ghost" onclick="svcAction('${s.id}','restart',this)">重启</button>`;
+    tr.innerHTML = `<td><b>${s.name}</b> <span class="mono" style="color:var(--sub);font-size:11px">${s.id}</span></td>
+      <td><span class="pill">${s.group}</span></td>
+      <td><span class="dot ${dotCls(s.status)}" style="${dotColor(s.status)}"></span>
+          ${s.status==='on'?'在线':(s.status==='partial'?'部分('+s.alive+'/'+s.total+')':'离线')}</td>
+      <td class="mono" style="max-width:280px;font-size:11px">${s.detail||'—'}<br>
+          <span style="color:var(--sub)">${s.desc}</span></td>
+      <td>${ops}</td>
+      <td style="color:var(--sub);font-size:11px;max-width:220px">${s.guard||''}</td>`;
+    tb.appendChild(tr);
+  }
+}
+
+async function svcAction(id, action, btn){
+  if (action==='stop' && !confirm('确定停止 '+id+'？守护类服务可能自动拉回。')) return;
+  if (action==='restart' && !confirm('确定重启 '+id+'？期间服务短暂中断。')) return;
+  btn.disabled = true;
+  const r = await jpost('/api/service', {id, action});
+  btn.disabled = false;
+  toast(r.ok ? (id+' '+action+': '+r.msg) : ('失败: '+(r.err||'')));
+  if (r.ok) setTimeout(loadServices, action==='start'?4000:1500);
+}
+
+let lastPlan = null;
+async function loadAutoAssign(){
+  const r = await jpost('/api/auto_assign', {apply:false});
+  lastPlan = r.plan;
+  document.getElementById('planCard').style.display='block';
+  document.getElementById('planChanged').textContent = r.changed + ' 席待调整';
+  document.getElementById('planBox').innerHTML = r.plan.filter(p=>p.changed)
+    .map(p=>`${p.agent_id}(${p.role})  ${p.old||'(空)'}  ⇒  ${p.new}`).join('\n') || '(全部已符合分工策略)';
+}
+async function applyAutoAssign(){
+  if (!confirm('按分工策略把全部建议绑定写回 org.json + team_*.json？（会先自动备份）')) return;
+  const r = await jpost('/api/auto_assign', {apply:true});
+  toast(`已应用 ${r.changed} 席调整`);
+  document.getElementById('planCard').style.display='none';
+  loadAgents();
+}
+
+document.getElementById('kw').addEventListener('input', renderAgents);
+document.getElementById('taskIn').addEventListener('keydown', e=>{ if(e.key==='Enter') doRoute(); });
+loadHealth(); loadAgents(); loadServices();
+setInterval(loadHealth, 30000);
+setInterval(loadServices, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+{
+  "_comment": "军团服务注册表 v1 (2026-10-18) — 8098 总控台按此清单渲染/启停。加服务只改本文件。probe: http=GET 该 URL 2xx 即在线; process=命令行正则匹配进程; start/stop 省略 = 只读监护(readonly)。stop 的 kill 按命令行正则精准匹配, 勿写宽泛词。",
+  "services": [
+    {
+      "id": "ollama",
+      "name": "Ollama 推理引擎",
+      "group": "模型层",
+      "desc": "tuned serve (Vulkan/64K ctx/q8_0 KV) — 看门狗守护",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:11434/api/version"}],
+      "readonly": true,
+      "guard": "挂掉由 ollama_watchdog 90s 内自动拉回 tuned 配置，不建议手动干预"
+    },
+    {
+      "id": "ollama_watchdog",
+      "name": "Ollama 看门狗",
+      "group": "模型层",
+      "desc": "每 60s 自检 11434, 挂了带 tuned env 重拉 serve",
+      "probe": [{"type": "process", "match": "ollama_watchdog\\.py"}],
+      "start": {"mode": "popen", "exe": "C:/Users/t/.workbuddy/binaries/python/envs/default/Scripts/python.exe",
+                "args": ["C:/Users/t/AppData/Local/Programs/Ollama/ollama_watchdog.py", "--loop"]},
+      "stop": {"mode": "kill", "match": "ollama_watchdog\\.py"}
+    },
+    {
+      "id": "nova_max",
+      "name": "NovaMax 特种双实例",
+      "group": "模型层",
+      "desc": "1234 视觉(Qwen3.5-35B) / 1238 结构化(Qwen3-30B) — 占内存 ~45G, 按需启停",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:1234/health"},
+                {"type": "http", "url": "http://127.0.0.1:1238/health"}],
+      "start": {"mode": "ps1", "file": "C:/aios/ops/novamax_start.ps1"},
+      "stop": {"mode": "ps1", "file": "C:/aios/ops/novamax_stop.ps1"},
+      "guard": "停用靠 nova_guard.off 开关, 启动脚本自动撤开关"
+    },
+    {
+      "id": "nova_guard",
+      "name": "NovaMax 守护",
+      "group": "模型层",
+      "desc": "60s 巡检 1234/1238, 连败 3 次经面板拉起(尊重 off 开关)",
+      "probe": [{"type": "process", "match": "nova_guard\\.py"}],
+      "start": {"mode": "popen", "exe": "C:/Users/t/.workbuddy/binaries/python/envs/default/Scripts/pythonw.exe",
+                "args": ["C:/Users/t/AppData/Local/Programs/Ollama/nova_guard.py"]},
+      "stop": {"mode": "kill", "match": "nova_guard\\.py"}
+    },
+    {
+      "id": "model_dashboard",
+      "name": "本地模型面板",
+      "group": "工具层",
+      "desc": "Ollama 模型库仪表盘",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:11440/"}],
+      "start": {"mode": "popen", "exe": "C:/Users/t/.workbuddy/binaries/python/versions/3.13.12/python.exe",
+                "args": ["C:/Users/t/AppData/Local/Programs/Ollama/model_dashboard.py"]},
+      "stop": {"mode": "kill", "match": "model_dashboard\\.py"}
+    },
+    {
+      "id": "model_admin",
+      "name": "本总控台",
+      "group": "工具层",
+      "desc": "8098 军团总控(模型/绑定/路由/服务)",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:8098/health"}],
+      "readonly": true,
+      "guard": "开机自启(Startup bat); 页面重启自己会失联, 不提供启停"
+    },
+    {
+      "id": "hermes",
+      "name": "Hermes 助理",
+      "group": "Agent 运行时",
+      "desc": "8787 个人 AI 助理 WebUI",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:8787/"}],
+      "readonly": true,
+      "guard": "计划任务 30min+登录 幂等复活, 手动 stop 会被拉回"
+    },
+    {
+      "id": "zhice",
+      "name": "zhice 全栈",
+      "group": "Agent 运行时",
+      "desc": "8102 zhice_os_v2 API(含 docker/vite/jev 组件树)",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:8102/"}],
+      "readonly": true,
+      "guard": "zhice_watchdog_impl 全栈自愈管护(勿动区), 只展示不操控"
+    },
+    {
+      "id": "console_bridge",
+      "name": "控制台桥",
+      "group": "工具层",
+      "desc": "8091 portal 控制台桥",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:8091/"}],
+      "readonly": true
+    },
+    {
+      "id": "legion_screen",
+      "name": "军团大屏",
+      "group": "工具层",
+      "desc": "8096 军团可视化大屏",
+      "probe": [{"type": "http", "url": "http://127.0.0.1:8096/"}],
+      "readonly": true
+    }
+  ]
+}
