@@ -316,30 +316,58 @@ class RouteOutbox:
                     and observed_at is not None):
                 _utc(observed_at, "OBSERVED_AT")
                 current_window = intent.created_at <= observed_at <= now
-                if (not current_window and outcome == ACCEPTED_VERIFIED
-                        and self._generations.get(attempt.idempotency_key, 0) > 0):
+                if outcome == ACCEPTED_VERIFIED and intent.route == "QUANT_UPSTREAM_REPORT":
                     key = attempt.idempotency_key
                     fingerprint = self._report_fingerprints.get(key)
                     history = self._intent_history.get(key, [])
                     identity = self._identities.get(key)
-                    generation = self._generations[key]
-                    if (intent.route == "QUANT_UPSTREAM_REPORT"
-                            and fingerprint is not None and identity is not None
-                            and len(history) == generation
-                            and key not in self._revoked
-                            and all(previous.control_epoch == intent.control_epoch
-                                    for previous in history)
-                            and intent.control_epoch == self._epochs.get(identity)
-                            and fingerprint.created_at == history[0].created_at
-                            == self._origin_created_at.get(key)
-                            and fingerprint.created_at <= observed_at <= now
-                            and self._active_ack_port is not None):
+                    generation = self._generations.get(key, 0)
+                    original_created_at = self._origin_created_at.get(key)
+                    original_matches = (
+                        fingerprint is not None
+                        and original_created_at == fingerprint.created_at
+                        and (len(history) == 0
+                             and fingerprint.created_at == intent.created_at
+                             if generation == 0 else
+                             len(history) == generation
+                             and fingerprint.created_at == history[0].created_at)
+                    )
+                    within_report_window = fingerprint is not None and (
+                        fingerprint.created_at <= observed_at <= now)
+                    trusted_context = (
+                        identity is not None and key not in self._revoked
+                        and self._active_ack_port is not None
+                        and all(previous.control_epoch == intent.control_epoch
+                                for previous in history)
+                        and intent.control_epoch == self._epochs.get(identity)
+                    )
+                    if (original_matches and within_report_window and trusted_context
+                            and (current_window or generation > 0)):
                         try:
                             current_window = (self._active_ack_port.active_ack(
                                 fingerprint, external_message_id,
                                 verification_source, observed_at, now=now) is True)
                         except Exception:
                             current_window = False
+                        # The authority callback may revoke this claim or advance its epoch.
+                        current_attempt = self._attempts.get(attempt_id)
+                        current_intent = self._intents.get(key)
+                        if (current_attempt is not attempt
+                                or current_intent is not intent
+                                or key in self._revoked
+                                or self._identities.get(key) != identity
+                                or self._epochs.get(identity) != intent.control_epoch
+                                or self._generations.get(key, 0) != generation
+                                or self._report_fingerprints.get(key) != fingerprint):
+                            updated = replace(attempt, outcome=UNKNOWN, receipt=None)
+                            # Do not overwrite a concurrent revocation or replacement.
+                            if current_attempt is attempt:
+                                self._attempts[attempt_id] = updated
+                            if current_intent is intent:
+                                self._intents[key] = replace(intent, status=UNKNOWN)
+                            return updated
+                    else:
+                        current_window = False
                 if current_window:
                     receipt = RouteReceipt(
                         route=intent.route, intent_id=intent.intent_id,
