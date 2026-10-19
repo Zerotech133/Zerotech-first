@@ -213,6 +213,9 @@ class UpstreamInbox:
         _utc(now, "ACCEPTED_AT")
         if type(report) is not QuantUpstreamReport:
             raise UpstreamInboxError("REPORT_INVALID")
+        _utc(report.created_at, "REPORT_CREATED_AT")
+        if report.created_at > now:
+            raise UpstreamInboxError("REPORT_CREATED_AT_FUTURE")
         report_id = report.report_id
         envelope_hash = report.envelope_hash
         if report_id in self._revoked:
@@ -220,9 +223,15 @@ class UpstreamInbox:
         prior_id = self._by_report.get(report_id)
         if prior_id is not None:
             prior = self._receipts[prior_id]
-            if prior.envelope_hash == envelope_hash:
-                return prior
-            raise UpstreamInboxError("RECEIPT_CONFLICT")
+            if prior.envelope_hash != envelope_hash:
+                raise UpstreamInboxError("RECEIPT_CONFLICT")
+            _utc(prior.accepted_at, "ACCEPTED_AT")
+            _utc(prior.ack.acked_at, "ACKED_AT")
+            if prior.accepted_at > now:
+                raise UpstreamInboxError("RECEIPT_ACCEPTED_AT_FUTURE")
+            if prior.ack.acked_at > now:
+                raise UpstreamInboxError("ACKED_AT_FUTURE")
+            return prior
         accepted_at = now
         receipt_id = digest(["upstream-receipt-v1", report_id, envelope_hash])
         ack_id = digest(["upstream-ack-v1", report_id, envelope_hash,
