@@ -725,3 +725,75 @@ def test_replay_prefilter_stop_hit(tmp_path):
     assert s["stop_hits"] == 1
     assert s["cum_pct"] < 0                           # 止损离场实亏
     assert s["verify_ok"] is True                     # 卖出后现金对账仍平
+
+
+# ---------- v0.5 allow_stale 补跑旁路（2026-10-20 判例）----------
+def test_exec_run_stale_guard_and_allow_stale_bypass(tmp_path):
+    """守卫2：asof 日早于湖最新交易日 → 拒单（陈旧产物）；allow_stale=True
+    （显式补跑授权，老田拍板通道）旁路落单且 reason 带 [stale-replay] 标注；
+    plan_date 按防偷价语义派生；settle 仍按 first_bar_on_or_after(plan_date)
+    撮合（保护不下沉）。默认 False 行为零变化。"""
+    # 湖最新=20261010，信号 asof=2026-10-09（隔收盘=陈旧）
+    bars = {"600519.SH": [
+        _bar("20261008", open_=1244.6, pre_close=1246.2, close=1247.0),
+        _bar("20261009", open_=1250.0, pre_close=1247.0, close=1252.0),
+        _bar("20261010", open_=1260.0, pre_close=1252.0, close=1258.0),
+    ]}
+    e = PaperEngine(tmp_path / "paper.db", FakeMarket(bars))
+    run = _write_run(tmp_path, "poc_stale.json", [
+        {"stock": "600519.SH", "asof": "2026-10-09T07:05:00",
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.75}}}])
+    # 默认：拒单（时间旅行守卫）
+    r0 = e.exec_run(run)
+    assert r0["orders"] == []
+    assert "陈旧产物" in r0["skipped"][0]["why"]
+    # allow_stale=True：旁路落单，reason 带 [stale-replay]，plan_date 防偷价派生
+    # （asof=美东盘前 07:05 → 当日 20261009 开盘价语义）
+    r1 = e.exec_run(run, allow_stale=True)
+    assert len(r1["orders"]) == 1 and r1["orders"][0]["status"] == "pending"
+    assert r1["orders"][0]["plan_date"] == "20261009"
+    assert "[stale-replay]" in r1["orders"][0]["reason"]
+    # 幂等：同 run 重放不重复落单
+    r2 = e.exec_run(run, allow_stale=True)
+    assert r2["orders"] == [] and "幂等跳过" in r2["skipped"][0]["why"]
+    # settle：plan_date=20261009 的 bar 在湖 → 按其开盘价成交（补跑闭环）
+    s = e.settle()
+    assert s["filled"][0]["price"] == 1250.0
+    assert s["filled"][0]["fill_date"] == "20261009"
+    assert e.verify()["ok"]
+
+
+# ---------- v0.5 allow_stale 补跑旁路（2026-10-20 判例）----------
+def test_exec_run_stale_guard_and_allow_stale_bypass(tmp_path):
+    """守卫2：asof 日早于湖最新交易日 → 拒单（陈旧产物）；allow_stale=True
+    （显式补跑授权，老田拍板通道）旁路落单且 reason 带 [stale-replay] 标注；
+    plan_date 按防偷价语义派生；settle 仍按 first_bar_on_or_after(plan_date)
+    撮合（保护不下沉）。默认 False 行为零变化。"""
+    # 湖最新=20261010，信号 asof=2026-10-09（隔收盘=陈旧）
+    bars = {"600519.SH": [
+        _bar("20261008", open_=1244.6, pre_close=1246.2, close=1247.0),
+        _bar("20261009", open_=1250.0, pre_close=1247.0, close=1252.0),
+        _bar("20261010", open_=1260.0, pre_close=1252.0, close=1258.0),
+    ]}
+    e = PaperEngine(tmp_path / "paper.db", FakeMarket(bars))
+    run = _write_run(tmp_path, "poc_stale.json", [
+        {"stock": "600519.SH", "asof": "2026-10-09T07:05:00",
+         "outputs": {"D1": {"action": "BUY", "confidence": 0.75}}}])
+    # 默认：拒单（时间旅行守卫）
+    r0 = e.exec_run(run)
+    assert r0["orders"] == []
+    assert "陈旧产物" in r0["skipped"][0]["why"]
+    # allow_stale=True：旁路落单，reason 带 [stale-replay]，plan_date 防偷价派生
+    # （asof=美东盘前 07:05 → 当日 20261009 开盘价语义）
+    r1 = e.exec_run(run, allow_stale=True)
+    assert len(r1["orders"]) == 1 and r1["orders"][0]["status"] == "pending"
+    assert r1["orders"][0]["plan_date"] == "20261009"
+    assert "[stale-replay]" in r1["orders"][0]["reason"]
+    # 幂等：同 run 重放不重复落单
+    r2 = e.exec_run(run, allow_stale=True)
+    assert r2["orders"] == [] and "幂等跳过" in r2["skipped"][0]["why"]
+    # settle：plan_date=20261009 的 bar 在湖 → 按其开盘价成交（补跑闭环）
+    s = e.settle()
+    assert s["filled"][0]["price"] == 1250.0
+    assert s["filled"][0]["fill_date"] == "20261009"
+    assert e.verify()["ok"]

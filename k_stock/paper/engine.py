@@ -513,10 +513,18 @@ class PaperEngine:
 
     def exec_run(self, run_path: Path | str, dry_run: bool = False,
                  strategy: str = "ai_team", account_id: str | None = None,
-                 min_conf: float | None = None) -> dict:
+                 min_conf: float | None = None,
+                 allow_stale: bool = False) -> dict:
         """读 poc_*.json（list，每股一项），按 D1 决策落 pending 单。幂等。
         同一 run 可落多个交易员子账本（ref 按 @账户 分段互不冲突）。
         min_conf：BUY 置信度门槛（交易员档案 conf_floor；SELL 不受限——该卖还得卖）。
+
+        allow_stale：显式旁路守卫2（陈旧产物拒单）——仅用于老田显式拍板的
+        历史信号补跑（2026-10-20 判例：4d 消费链停摆期漏落单的批次信号，
+        断档根因取证后授权按 plan_date 开盘价补撮合）。旁路落单 reason 带
+        [stale-replay] 标注可审计；settle 层 first_bar_on_or_after(plan_date)
+        仍保证不撮 plan_date 之前的 bar（旁路只放行 exec 层，价基准保护不下沉）。
+        默认 False 行为零变化。
 
         v0.4 两道守卫（077q，周末 pending 堆叠事故复盘）：
         1. replan 语义：落单前撤销同账户同策略的旧 pending（每次 exec=最新意图
@@ -571,23 +579,28 @@ class PaperEngine:
                 continue
             # 守卫2：时间旅行——决策日早于湖最新交易日（产物已隔收盘=陈旧）则拒单。
             # 盘前决策当日开盘撮合（asof 日 == 湖最新）是合法语义，不拦。
+            # allow_stale=True（显式补跑授权）旁路本守卫，reason 带 [stale-replay]。
             asof_day = asof[:10].replace("-", "")
-            if asof_day < last_td:
+            stale_replay = asof_day < last_td
+            if stale_replay and not allow_stale:
                 out["skipped"].append({"stock": stock,
                                        "why": f"陈旧产物：决策日 {asof_day} < 湖最新交易日 {last_td}，"
                                               f"拒绝按过去开盘价成交（asof={asof[:16]}）"})
                 continue
+            reason_prefix = "[stale-replay] " if stale_replay else ""
             if action == "BUY":
                 try:
                     order = self._plan_buy(stock, conf, plan_date, ref, dry_run,
-                                           strategy=strategy, account_id=aid)
+                                           strategy=strategy, account_id=aid,
+                                           reason_prefix=reason_prefix)
                 except Reject as e:   # 单票行情缺失等：跳过该票，不炸整个 run
                     out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
                     continue
             elif action == "SELL":
                 try:
                     order = self._plan_sell(stock, conf, plan_date, ref, dry_run,
-                                            strategy=strategy, account_id=aid)
+                                            strategy=strategy, account_id=aid,
+                                            reason_prefix=reason_prefix)
                 except Reject as e:
                     out["skipped"].append({"stock": stock, "why": f"落单失败跳过: {e}"})
                     continue
@@ -600,7 +613,8 @@ class PaperEngine:
 
     def _plan_buy(self, stock: str, conf: float, plan_date: str, ref: str,
                   dry_run: bool, strategy: str = "ai_team",
-                  account_id: str | None = None) -> dict:
+                  account_id: str | None = None,
+                  reason_prefix: str = "") -> dict:
         aid = account_id or self.acct
         eq = self.equity(aid)
         target_pct = self.cfg["max_pos_pct"] * min(1.0, conf / CONF_FULL)
@@ -630,7 +644,7 @@ class PaperEngine:
             return plan
         plan = {"stock": stock, "side": "BUY", "qty": qty, "plan_date": plan_date,
                 "status": "pending", "ref": ref,
-                "reason": f"D1 BUY conf={conf} → 目标仓位 {target_pct:.1%}（差 {delta_value:.0f}）",
+                "reason": f"{reason_prefix}D1 BUY conf={conf} → 目标仓位 {target_pct:.1%}（差 {delta_value:.0f}）",
                 "conf": conf}
         if not dry_run:
             cur = self.con.execute(
@@ -644,7 +658,8 @@ class PaperEngine:
 
     def _plan_sell(self, stock: str, conf: float, plan_date: str, ref: str,
                    dry_run: bool, strategy: str = "ai_team",
-                   account_id: str | None = None) -> dict:
+                   account_id: str | None = None,
+                   reason_prefix: str = "") -> dict:
         aid = account_id or self.acct
         qty = self.available_qty(stock, aid)
         if qty <= 0:
@@ -660,7 +675,7 @@ class PaperEngine:
             return plan
         plan = {"stock": stock, "side": "SELL", "qty": qty, "plan_date": plan_date,
                 "status": "pending", "ref": ref,
-                "reason": f"D1 SELL conf={conf} → 清仓 {qty} 股", "conf": conf}
+                "reason": f"{reason_prefix}D1 SELL conf={conf} → 清仓 {qty} 股", "conf": conf}
         if not dry_run:
             cur = self.con.execute(
                 "INSERT INTO orders(ts,source,ref,stock,side,qty,plan_date,price_base,"
