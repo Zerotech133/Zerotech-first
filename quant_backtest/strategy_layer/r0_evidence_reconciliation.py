@@ -117,7 +117,7 @@ def reconcile_evidence(trade_date: str, probe: dict | None = None,
             mark("source", "CALLER_ATTESTATION_CLAIM", total,
                  "仅收到调用方提供的验签结果，未在此处验签；不证明历史冻结或 READY")
         elif source_attestation.get("status") == "REJECTED":
-            return stop("source", "来源验签已明确失败（疑似伪造或换源），不得继续对账")
+            return stop("source", "来源验签已明确失败（伪造、换源或作用域不符），不得继续对账")
         elif source_attestation.get("status") != "UNVERIFIED":
             return stop("source", "来源核验状态不可信")
         elif source_attestation.get("business_date") not in (None, trade_date):
@@ -184,7 +184,7 @@ def reconcile_evidence(trade_date: str, probe: dict | None = None,
                         or type(entry.get("rationale")) is not str
                         or len(entry["rationale"]) > 80):
                     return stop("combined",
-                                "被覆盖条目字段不合法（空对象或伪造条目不得充数）")
+                                "被覆盖条目结构不合法（非四键/类型不符的条目不得充数）")
             superseded += len(superseded_items)
     if contributions != kept or contributions + superseded != signals:
         return stop("combined", "贡献/被覆盖条数与 Signal、kept 计数不一致")
@@ -206,8 +206,9 @@ def reconcile_evidence(trade_date: str, probe: dict | None = None,
     if (len(pool_symbols) != len(set(pool_symbols))
             or any(r.get("action") != "buy" for r in pool["pool"])
             or set(pool_symbols) != expected_buy or buys != len(expected_buy)
-            or stats.get("combined_total") != fused or stats.get("buy_total") != buys
-            or stats.get("superseded_total") != superseded):
+            or not _same(stats.get("combined_total"), fused)
+            or not _same(stats.get("buy_total"), buys)
+            or not _same(stats.get("superseded_total"), superseded)):
         return stop("pool", "股票池候选/统计与融合明细不一致")
     result["counts"]["pool"] = buys
     mark("pool", "IN_MEMORY_ONLY", buys, "buy 候选数，不代表真实池已发布")

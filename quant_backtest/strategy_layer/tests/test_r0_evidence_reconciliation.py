@@ -385,6 +385,83 @@ def test_real_historical_producer_feeds_reconciliation(tmp_path):
     assert reconcile_evidence(DAY, probe, attestation)["stages"]["source"]["status"] == "REJECTED"
 
 
+def test_source_attestation_rejected_branch_has_own_reason():
+    """P2-5 专用分支须自带可区分理由，避免与"状态不可信"兜底行为等价。"""
+    probe, att, brief, receipt = evidence()
+    att["status"] = "REJECTED"
+    result = reconcile_evidence(DAY, probe, att, brief, receipt)
+    assert result["stages"]["source"]["status"] == "REJECTED"
+    assert any("明确失败" in reason for reason in result["reasons"])
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda p: p["combined"][0].update(
+        {"contributions": {"": {"superseded": [_superseded()]}}}),
+    lambda p: p["combined"][0].update({"contributions": {"chan_monitor": ["x"]}}),
+    lambda p: p["combined"][0]["contributions"]["chan_monitor"].update(
+        {"superseded": [{"action": "buy", "score": 87.0, "dt": 5, "rationale": ""}]}),
+    lambda p: p["combined"][0]["contributions"]["chan_monitor"].update(
+        {"superseded": [{"action": "buy", "score": 87.0, "dt": ["2026-10-18"],
+                         "rationale": ""}]}),
+])
+def test_malformed_contribution_shapes_are_rejected(mutate):
+    probe, att, brief, receipt = evidence()
+    mutate(probe)
+    result = reconcile_evidence(DAY, probe, att, brief, receipt)
+    assert result["stages"]["combined"]["status"] == "REJECTED"
+    assert_blocked(result)
+
+
+@pytest.mark.parametrize("key,value", [
+    ("buy_total", True),
+    ("superseded_total", 1.0),
+    ("combined_total", 2.0),
+    ("combined_total", 3),
+])
+def test_pool_stats_must_match_strictly(key, value):
+    items = list(evidence())
+    items[0]["pool"]["stats"][key] = value
+    result = reconcile_evidence(DAY, *items)
+    assert result["stages"]["pool"]["status"] == "REJECTED"
+    assert_blocked(result)
+
+
+def test_brief_cannot_self_upgrade_source_verdict():
+    items = list(evidence())
+    items[2]["real_source_verdict"] = "READY"
+    assert reconcile_evidence(DAY, *items)["stages"]["brief"]["status"] == "REJECTED"
+
+
+def test_real_superseded_chain_feeds_reconciliation(tmp_path):
+    """真实同票多信号（kept<signals, superseded>0）须被四键校验接受而非误拒。"""
+    rows = [
+        {"market": "CN", "code": "002633.SZ", "type": "1买", "dt": "2026-10-16",
+         "detect_date": "2026-10-19", "price": 10.0, "mbei": None, "bei": None,
+         "bei2": None, "vv": True},
+        {"market": "CN", "code": "002633.SZ", "type": "1卖", "dt": "2026-10-18",
+         "detect_date": "2026-10-19", "price": 10.0, "mbei": None, "bei": None,
+         "bei2": None, "vv": True},
+    ]
+    source = tmp_path / "source.jsonl"
+    raw = "".join(json.dumps(row, ensure_ascii=False) + "\n"
+                  for row in rows).encode("utf-8")
+    source.write_bytes(raw)
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "business_date": DAY, "observed_date": "2026-10-20",
+        "source_path": str(source.resolve()),
+        "source_sha256": hashlib.sha256(raw).hexdigest(), "event_count": 2,
+    }), encoding="utf-8")
+    probe = inspect_batch(DAY, source, manifest)
+    assert probe["chain_status"] == "VERIFIED_IN_MEMORY"
+    assert probe["counts"]["signals"] == 2 and probe["counts"]["kept"] == 1
+    assert len(probe["combined"][0]["contributions"]["chan_monitor"]["superseded"]) == 1
+    result = reconcile_evidence(DAY, probe, brief=build_research_brief(probe))
+    assert result["stages"]["combined"]["status"] == "IN_MEMORY_ONLY"
+    assert result["counts"]["pool"] == 0
+    assert_blocked(result)
+
+
 @pytest.mark.parametrize("bad", ["20260230", "2026-10-19", None])
 def test_invalid_requested_day(bad):
     with pytest.raises(ValueError):
