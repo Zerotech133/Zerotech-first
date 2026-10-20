@@ -45,6 +45,15 @@ h2.sec small{font:400 11.5px var(--font-mono);color:var(--text-dim);margin-left:
 #sub-list th,#sub-list td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:left;overflow-wrap:anywhere}
 #sub-list th{font:600 11px var(--font-mono);color:var(--text-dim);white-space:nowrap}
 #sub-list .sum{font:11.5px var(--font-mono);color:var(--text-dim);margin:0 0 6px}
+.paging{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:10px 14px;margin:0 0 12px;font:11.5px var(--font-mono);color:var(--text-dim)}
+.paging b{color:var(--text);font-weight:600}
+.paging .state{color:var(--color-warn)}
+.paging .state.done{color:var(--color-ok)}
+.paging .state.stop{color:var(--color-err)}
+.paging button{border:1px solid var(--border);background:var(--bg-surface);border-radius:var(--r-pill);padding:5px 14px;font:12px var(--font-ui)}
+.paging button:hover:not(:disabled){border-color:var(--link);color:var(--link)}
+.paging button:disabled{opacity:.45;cursor:not-allowed}
+.paging .hint{flex:1 1 100%;color:var(--text-dim);line-height:1.7}
 .plans{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
 .plan{flex:1 1 260px;min-width:230px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:12px 14px}
 .plan small{display:block;font:600 11px var(--font-mono);color:var(--text-dim);margin-bottom:6px}
@@ -90,6 +99,12 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <h2 class="sec">订阅者总览<small>订阅者全集 · 逐个查询</small></h2>
 <div class="notice"><b>批量列表已上线</b>——/api/subscription/list 端点已上线（FE-B 2026-10-20），下方订阅者全集表直接读取（只读 GET）；凭 open_id 逐个查询（/api/subscription/status）继续保留。</div>
 <div id="sub-list"><div class="empty-state">读取中……读取失败时此处显示降级说明，不显示兜底数据。</div></div>
+<div id="sub-paging" class="paging" hidden>
+<span id="p-total">已显示 <b>0</b> 条</span>
+<span id="p-state" class="state">读取中…</span>
+<button type="button" id="load-more" disabled>加载更多</button>
+<span class="hint" id="p-hint">分页口径：首屏 ?limit=200&amp;offset=0；下一页起点只取服务端返回的 next_offset，页面不自行推算 offset。</span>
+</div>
 <div class="lookup">
 <label for="open-id-input">订阅者 open_id（飞书开放平台标识）：</label>
 <div class="row">
@@ -151,20 +166,45 @@ function emptyCard(sel,msg){
  box.append(el('div','empty-state',msg));
 }
 
-/* 分区一：订阅者全集表（GET /api/subscription/list，P2.6 FE-B） */
-function renderSubList(d){
+/* 分区一：订阅者全集表（GET /api/subscription/list，P2.6 FE-B）
+   分页（P3.10-lite WO-FS-131）：首屏 ?limit=200&offset=0；之后每页的起点
+   只认服务端回吐的 next_offset——页面绝不自己算 offset，也不把「没给
+   next_offset」当成「还有下一页」。三态：可能还有更多 / 已到末尾 /
+   无法继续翻页。 */
+const PAGE_SIZE=200;
+const subState={rows:[],next:null,busy:false,stopped:false};
+
+function setPaging(stateCls,stateTxt,hint){
+ const total=$('p-total');total.replaceChildren();
+ total.append(document.createTextNode('已显示 '));
+ total.append(el('b',null,String(subState.rows.length)));
+ total.append(document.createTextNode(' 条'));
+ const st=$('p-state');
+ st.className='state'+(stateCls?' '+stateCls:'');
+ st.textContent=stateTxt;
+ $('p-hint').textContent=hint||'';
+ $('sub-paging').hidden=false;
+}
+
+function lockMore(label){
+ const b=$('load-more');b.disabled=true;b.textContent=label||'没有更多';
+}
+function unlockMore(){
+ const b=$('load-more');b.disabled=false;b.textContent='加载更多';
+}
+
+function renderSubList(){
  const box=$('sub-list');box.replaceChildren();
- const rows=Array.isArray(d.subscribers)?d.subscribers:[];
- if(!rows.length){
+ if(!subState.rows.length){
   box.append(el('div','empty-state','暂无订阅者（账本为空）。空列表 ≠ 无商机——只代表本时点账本没有可展示行，本卡不冒充全景。'));
   return;
  }
- box.append(el('p','sum','订阅者 '+text(d.count)+' 行（ORDER BY open_id 稳定序，至多 200 行）。'));
+ box.append(el('p','sum','订阅者 '+subState.rows.length+' 行（ORDER BY open_id 稳定序，单页至多 '+PAGE_SIZE+' 行，按 next_offset 逐页追加）。'));
  const tb=el('table');
  const tr=el('tr');
  for(const h of ['open_id','显示名','档位','状态','到期','今日已用'])tr.append(el('th',null,h));
  tb.append(tr);
- for(const s of rows){
+ for(const s of subState.rows){
   if(!s||typeof s!=='object')continue;
   const r=el('tr');
   for(const v of [text(s.open_id),text(s.display_name)||'—',text(s.plan_id)||'—',text(s.status)||'—',text(s.end)||'—',text(s.used_today)]){
@@ -175,24 +215,86 @@ function renderSubList(d){
  box.append(tb);
 }
 
+function subFail(msg){
+ const box=$('sub-list');box.replaceChildren();
+ box.append(el('div','empty-state',msg));
+}
+
+function fetchPage(offset){
+ return fetchJson('/api/subscription/list?limit='+PAGE_SIZE+'&offset='+encodeURIComponent(String(offset)));
+}
+
+/* 落地一页：追加（不清空已取到的行），再由 has_more / next_offset 决定
+   三态与按钮。0 行 + has_more=true 是矛盾信号，显式报异常并停，不死循环。 */
+function applyPage(d,reqOffset){
+ const rows=Array.isArray(d.subscribers)?d.subscribers:[];
+ const more=(d.has_more===true);
+ const raw=(d&&d.next_offset!==null&&d.next_offset!==undefined&&d.next_offset!=='')?Number(d.next_offset):null;
+ const nxt=(raw!==null&&isFinite(raw))?raw:null;
+ for(const s of rows)subState.rows.push(s);
+ renderSubList();
+ if(!rows.length&&more){
+  subState.next=null;subState.stopped=true;
+  setPaging('stop','翻页口径异常','本页返回 0 行但仍声明 has_more=true——两者矛盾，已停止翻页：既不当成到底，也不猜下一段 offset。已取到的 '+subState.rows.length+' 行原样保留。');
+  lockMore('已停止');return;
+ }
+ if(!more){
+  subState.next=null;
+  setPaging('done','已到末尾','服务端 has_more=false：已取到全集末尾（不是截断）。');
+  lockMore('没有更多');return;
+ }
+ if(nxt===null||nxt<=reqOffset){
+  subState.next=null;subState.stopped=true;
+  setPaging('stop','无法继续翻页','无法继续翻页（服务端未给出 next_offset）——next_offset 为空、与上次相同或反退时一律置灰，不自行推算 offset。已取到的 '+subState.rows.length+' 行原样保留。');
+  lockMore('已置灰');return;
+ }
+ subState.next=nxt;
+ setPaging('','可能还有更多','下一页起点 next_offset='+nxt+'（服务端给的值，页面未自行计算）。');
+ unlockMore();
+}
+
 async function loadSubscribers(){
+ subState.rows=[];subState.next=null;subState.busy=false;subState.stopped=false;
+ $('sub-paging').hidden=true;lockMore();
  let d=null,err=null,errStatus=0;
- try{d=await fetchJson('/api/subscription/list?limit=200');}
+ try{d=await fetchPage(0);}
  catch(e){err=e&&e.message?e.message:'未知错误';errStatus=(e&&e.status)||0;}
  if(err||!d||typeof d!=='object'||d.ok===false||text(d.error)){
-  const box=$('sub-list');box.replaceChildren();
   if(errStatus===401){
    /* 401 必须与「账本不可用」严格区分：前者是键闸拦下，账本可能完全健康；
       且 401 ≠ 空账本。本页刻意不提供密钥输入框——把密钥留在浏览器
       存储里，等于用一个 XSS 面换一次便利，不值。 */
-   box.append(el('div','empty-state','鉴权已开启，但本页未携带 X-Portal-Key，因此读不到订阅账本。这不是账本故障，也不代表没有订阅者。请用内网工具带该请求头调用，或临时关闭 PORTAL_SUB_ADMIN_KEY 后再查看。'));
+   subFail('鉴权已开启，但本页未携带 X-Portal-Key，因此读不到订阅账本。这不是账本故障，也不代表没有订阅者。请用内网工具带该请求头调用，或临时关闭 PORTAL_SUB_ADMIN_KEY 后再查看。');
    return;
   }
   const why=err||('端点返回错误：'+text(d&&d.error)+'（closed on failure 原样透出，不猜数）');
-  box.append(el('div','empty-state','账本不可用（'+why+'）。本卡不显示兜底数据——账本不可用 ≠ 无订阅者，请核对服务后重试。'));
+  subFail('账本不可用（'+why+'）。本卡不显示兜底数据——账本不可用 ≠ 无订阅者，请核对服务后重试。');
   return;
  }
- renderSubList(d);
+ applyPage(d,0);
+}
+
+async function loadMore(){
+ if(subState.busy||subState.stopped||subState.next===null)return;
+ const reqOffset=subState.next;
+ subState.busy=true;
+ const btn=$('load-more');btn.disabled=true;btn.textContent='加载中…';
+ setPaging('','加载中…','正在取 offset='+reqOffset+' 的下一页（起点来自服务端 next_offset）。');
+ let d=null,err=null,errStatus=0;
+ try{d=await fetchPage(reqOffset);}
+ catch(e){err=e&&e.message?e.message:'未知错误';errStatus=(e&&e.status)||0;}
+ subState.busy=false;
+ if(err||!d||typeof d!=='object'||d.ok===false||text(d.error)){
+  if(errStatus===401){
+   subState.next=null;subState.stopped=true;
+   setPaging('stop','已停止','鉴权在翻页过程中失效——已取到的 '+subState.rows.length+' 行原样保留，不清空、不重试；请用带 X-Portal-Key 的内网工具调用后刷新本页。');
+   lockMore('已停止');return;
+  }
+  const why=err||('端点返回错误：'+text(d&&d.error)+'（closed on failure 原样透出，不猜数）');
+  setPaging('stop','已停止','追加失败（'+why+'）——已取到的 '+subState.rows.length+' 行原样保留，不猜数、不清空。');
+  lockMore('已停止');return;
+ }
+ applyPage(d,reqOffset);
 }
 
 /* 鉴权状态自述（GET /api/subscription/list?limit=1 的 auth_mode 字段）：
@@ -296,13 +398,21 @@ async function loadObserve(){
 
 function load(){
  loadAuthMode();
- loadSubscribers();
+ /* 60s 自动刷新在用户已翻页（累计行数超过单页）时不动列表，避免把追加
+    出来的行悄悄清掉；要重取首屏请按「↻ 刷新」（走 reload）。 */
+ if(subState.rows.length<=PAGE_SIZE)loadSubscribers();
  loadObserve();
 }
 
+function reload(){
+ subState.rows=[];subState.next=null;subState.stopped=false;subState.busy=false;
+ load();
+}
+
 $('lookup-btn').addEventListener('click',lookup);
-$('refresh').addEventListener('click',load);
-$('retry').addEventListener('click',load);
+$('load-more').addEventListener('click',loadMore);
+$('refresh').addEventListener('click',reload);
+$('retry').addEventListener('click',reload);
 load();
 setInterval(load,60000);
 })();

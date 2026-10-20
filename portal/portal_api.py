@@ -4053,6 +4053,20 @@ color:#fff;font-size:13.5px;cursor:pointer}
             #   {"ok": False, "error": "store_unavailable"}。
             # list_subscribers 自身 closed on failure（store 缺失/异常返回
             # 稳定错误结构，不抛），此处不吞错不造数。
+            #
+            # WO-FS-131（P3.10-lite · O-A 2026-10-20）分页接线：
+            # - ?offset= 可选（默认 0）。缺失 / 非数字 / 负数 / 浮点串一律归
+            #   0，不报 4xx：旧调用方只传 limit，补 offset 后不能因一个拼错的
+            #   参数把整页数据变成错误面；归 0 的最坏后果只是重复第一页，而
+            #   响应里的 offset 如实回吐生效值，调用方可自检。
+            # - 成功响应只追加 next_offset：has_more 为真时给出确定性下一页
+            #   起点（= 生效 offset + 本页行数），否则不给该键（缺键即「没有
+            #   下一页」，与 None 同义）。不给 None 是有意的——既有精确等值
+            #   契约测试断言「成功载荷 == store 原样 + auth_mode」，多一个恒
+            #   在的 None 键会把它变成纯噪音断言；缺键同样无法诱导调用方自
+            #   行推算 offset。
+            # - ok / count / subscribers / offset / has_more 一个不改，401 短
+            #   路仍在读账本之前。
             _want_adm = (os.environ.get("PORTAL_SUB_ADMIN_KEY") or "").strip()
             _auth_mode = "key" if _want_adm else "none"
             _got_adm = (self.headers.get("X-Portal-Key") or "").strip()
@@ -4065,16 +4079,28 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 self._json({"ok": False, "error": "unauthorized"}, 401)
             else:
                 from urllib.parse import parse_qs as _pq_subl
-                _raw = (_pq_subl(qs, keep_blank_values=True)
-                        .get("limit") or [""])[0].strip()
+                _q_subl = _pq_subl(qs, keep_blank_values=True)
+                _raw = (_q_subl.get("limit") or [""])[0].strip()
                 _limit = 50
                 if _raw:
                     try:
                         _limit = int(_raw)
                     except ValueError:
                         _limit = 50
+                # offset：缺失 / 非数字 / 负数 / 浮点串（"3.7"）一律归 0，
+                # 不抛不 4xx（见上方分页接线说明）。
+                _raw_off = (_q_subl.get("offset") or [""])[0].strip()
+                _offset = 0
+                if _raw_off:
+                    try:
+                        _offset = int(_raw_off)
+                    except ValueError:
+                        _offset = 0
+                    if _offset < 0:
+                        _offset = 0
                 import subscription_store as _sub_store
-                _res = _sub_store.list_subscribers(limit=_limit)
+                _res = _sub_store.list_subscribers(limit=_limit,
+                                                  offset=_offset)
                 if not isinstance(_res, dict) or _res.get("ok") is not True:
                     # closed on failure：上游错误文本/堆栈一律归并，不透出
                     self._json({"ok": False, "error": "store_unavailable",
@@ -4082,6 +4108,10 @@ color:#fff;font-size:13.5px;cursor:pointer}
                 else:
                     _view = dict(_res)
                     _view["auth_mode"] = _auth_mode
+                    if _view.get("has_more") is True:
+                        # 下一段起点由服务端定：生效 offset + 本页行数
+                        _view["next_offset"] = _offset + int(
+                            _view.get("count") or 0)
                     self._json(_view)
         elif path == "/my-subscription":
             # P2.5 客户订阅只读投影页（FD-A 2026-10-20）：订阅状态 / 当日
