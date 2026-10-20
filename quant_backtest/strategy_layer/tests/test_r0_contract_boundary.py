@@ -37,18 +37,24 @@ def _batch(tmp_path, rows):
 
 
 def test_real_cn_pool_schema_is_readable_but_not_a_single_frozen_day(tmp_path):
+    """活池文件只做契约观察，不钉死字节态（WO-QT-20261021-058 判例：
+    例行刷新合法变更 sha/行数/最新日，活文件断言必须动态化）。"""
     raw = REAL_POOL.read_bytes()
     rows = [json.loads(line) for line in raw.decode("utf-8").splitlines() if line.strip()]
-    assert hashlib.sha256(raw).hexdigest() == "f33e232254d9539616aa2483e736adf9ba39d3860476ae61a5ff8688b12e0feb"
-    assert len(rows) == 10551
-    latest = [row for row in rows if row["detect_date"] == "2026-10-19"]
-    assert len(latest) == 33
+    assert rows, "活池文件不得为空"
+    # 多日池本质：≥2 个 detect_date；"多日池不可伪装为单日冻结文件"契约保留
+    days = {row["detect_date"] for row in rows}
+    assert len(days) >= 2
     assert all({"code", "type", "dt", "detect_date", "price", "mbei", "bei", "bei2", "vv"} <= row.keys()
-               for row in latest)
-    # 源行的可选字段为真实 null/False，不可把完整多日池伪装为单日冻结文件。
-    assert any(row["mbei"] is None for row in latest)
-    assert any(row["vv"] is False for row in latest)
-    converted = ChanMonitorAdapter(pool_globs=[str(REAL_POOL)]).score(DAY)
+               for row in rows)
+    # 源行的可选字段为真实 null/False（全文件维度，不依赖最新日分布）
+    assert any(row["mbei"] is None for row in rows)
+    assert any(row["vv"] is False for row in rows)
+    latest_day = max(days)
+    latest = [row for row in rows if row["detect_date"] == latest_day]
+    assert latest
+    converted = ChanMonitorAdapter(pool_globs=[str(REAL_POOL)]).score(
+        latest_day.replace("-", ""))
     assert len(converted) == len(latest)
     assert hashlib.sha256(REAL_POOL.read_bytes()).hexdigest() == hashlib.sha256(raw).hexdigest()
     manifest = tmp_path / "manifest.json"

@@ -380,7 +380,11 @@ class SignalAggregator:
 
     # -- 聚合核心 -------------------------------------------------------
     def run(self, trade_date: str, adapters: Optional[list] = None) -> AggResult:
-        """并行收集各策略信号并融合；全程不抛异常（逐策略/写库均降级）。
+        """并行收集各策略信号并融合（逐策略/写库均降级）。
+
+        例外（fail-visible，WO-QT-20261020-055 方案甲）：Signal.dt 契约
+        违例（非 None 非字符串 dt）由 preaggregate_symbol 显式上抛
+        ValueError，不做降级吞掉——调用方按契约违例处理。
 
         Parameters
         ----------
