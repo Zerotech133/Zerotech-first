@@ -79,27 +79,102 @@ def run_one(stock: str, context: str = "", mock: bool = False, auto: bool = Fals
     return result
 
 
-def _competitor_note() -> str:
-    """中止归因：探测竞争推理服务（llama-server 等）是否满载（>1GB≈模型驻留推理态）。
-    背景：10-08 实锤第三方私起 llama-server（监听 54199，非 K259 的 8030 入口）
-    满载 8.22GB 时与 Ollama 互相踩踏，idle 时自动卸载回 263MB。"""
+# Ollama 服务链进程名（父链甄别用）：llama-server.exe 是 ollama.exe fork 的
+# llama.cpp 推理引擎子进程，与第三方私起 llama-server 同名同名姓。
+_OLLAMA_CHAIN_NAMES = {"ollama.exe", "ollama_app.exe", "ollama_llama_server.exe"}
+_CULPRIT_UNKNOWN = "负载来源未明，热态超阈，建议查 /api/ps 与消费方日志。"
+
+
+def _win_process_table(names: tuple[str, ...]) -> list[dict]:
+    """PowerShell Get-CimInstance 取进程表（风格贴 ops/launch_push_admin.py 判例）。
+    枚举失败（沙箱拦截/权限不足/超时）一律返回空表，绝不抛异常——守卫留痕是
+    旁路诊断，不允许影响主流程。单条结果 ConvertTo-Json 会退化为对象，需归一。"""
     try:
         import subprocess
-        out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"],
-                             capture_output=True).stdout.decode("gbk", errors="replace")
-        for line in out.splitlines():
-            if "llama-server" in line.lower():
-                parts = line.split('","')
-                if len(parts) >= 5:
-                    mem_kb = int(parts[4].replace(',', '').replace('"', '').replace(" K", "").strip())
-                    mem_gb = mem_kb / 1024 / 1024
-                    if mem_gb > 1.0:
-                        return (f"竞争者定位：llama-server.exe 满载 {mem_gb:.2f}GB（推理态，"
-                                f"与 Ollama 踩踏主因）——请确认归属后关闭或错峰。")
-                    return f"竞争者在册但 idle（{mem_gb * 1024:.0f}MB，已卸载）——负载另有来源。"
-        return ""
+        flt = " OR ".join(f"Name='{n}'" for n in names)
+        ps = (f"Get-CimInstance Win32_Process -Filter \"{flt}\" | "
+              "Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,"
+              "WorkingSetSize | ConvertTo-Json -Compress")
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                           capture_output=True, timeout=30)
+        data = json.loads(r.stdout.decode("utf-8", errors="replace") or "[]")
+        if isinstance(data, dict):
+            data = [data]
+        return [p for p in data if isinstance(p, dict)]
     except Exception:
-        return ""
+        return []
+
+
+def _is_ollama_path(exe: str) -> bool:
+    """可执行路径是否落在 Ollama 安装/模型目录（\\.ollama\\ 或 \\Ollama\\）。
+    只看 ExecutablePath，不看 CommandLine——第三方进程命令行可能引用 Ollama
+    模型 blob，路径不构成归属证据。"""
+    low = (exe or "").lower()
+    return "\\.ollama" in low or "\\ollama" in low
+
+
+def _classify_llama_procs(procs: list[dict]) -> str:
+    """竞争者甄别（纯函数，注入进程表便于单测；K-STOCK-20261020-CULPRITFIX）。
+    背景：07:18 守卫把 Ollama 亲儿子 llama-server（8.08GB 驻留）当竞争者留痕，
+    若按注记字面"关闭竞争者"会误杀 Ollama 本体——三态修正：
+    ① 明确竞争者（非 Ollama 链满载 llama-server）→ 保留原"关闭或错峰"文案；
+    ② Ollama 自身链占用（父链命中 ollama.exe，或路径在 Ollama 目录）→
+       "Ollama 推理引擎自身忙，建议查消费方而非关服务"；
+    ③ 无明确占用（无嫌疑进程/链不可判/Ollama 链已 idle）→ 未明文案。
+    守卫探针自身触发的推理归属无需单独判定：探针经 11434 由 ollama.exe 派发，
+    其引擎子进程父链必命中 ollama.exe，已被②覆盖。
+    权限降级纪律：父链解析失败/父进程不可见（已退出或 OpenProcess 拒绝）的
+    嫌疑进程跳过、不计竞争者（宁漏勿误杀），绝不 crash。"""
+    by_pid: dict = {}
+    suspects: list = []
+    for p in procs:
+        try:
+            by_pid[int(p.get("ProcessId"))] = p
+        except (TypeError, ValueError):
+            continue
+        if "llama-server" in str(p.get("Name") or "").lower():
+            suspects.append(p)
+    for s in suspects:
+        try:
+            mem_gb = int(s.get("WorkingSetSize") or 0) / 1024 ** 3
+        except (TypeError, ValueError):
+            mem_gb = 0.0
+        chain_is_ollama = False
+        cur = s
+        for _ in range(8):                        # 链深上限，防父环
+            try:
+                parent = by_pid.get(int(cur.get("ParentProcessId") or 0))
+            except (TypeError, ValueError):
+                break                             # 父 PID 不可读 → 停止上溯
+            if parent is None:
+                break                             # 父不在表内（已退出/不可见）
+            if str(parent.get("Name") or "").lower() in _OLLAMA_CHAIN_NAMES:
+                chain_is_ollama = True
+                break
+            cur = parent
+        exe = str(s.get("ExecutablePath") or "")
+        if chain_is_ollama or _is_ollama_path(exe):
+            if mem_gb > 1.0:                      # ② Ollama 自身链满载驻留
+                return (f"Ollama 自身链占用：llama-server.exe 满载 {mem_gb:.2f}GB"
+                        f"（Ollama 推理引擎子进程，模型驻留推理态）——Ollama 推理引擎"
+                        f"自身忙（可能被下游任务如 m3/分类轮占满），建议查消费方而非关服务。")
+            continue                              # Ollama 链但已卸载（idle）→ 非负载来源
+        if exe:                                   # 路径可读且非 Ollama 目录 → ① 明确竞争者
+            if mem_gb > 1.0:
+                return (f"竞争者定位：llama-server.exe 满载 {mem_gb:.2f}GB（推理态，"
+                        f"与 Ollama 踩踏主因）——请确认归属后关闭或错峰。")
+            return (f"竞争者在册但 idle（{mem_gb * 1024:.0f}MB，已卸载）——负载另有来源。")
+        # exe 不可读 + 父链不可判 → 跳过该进程（不计竞争者，防误杀）
+    return _CULPRIT_UNKNOWN                       # ③ 无明确占用
+
+
+def _competitor_note() -> str:
+    """中止归因：甄别竞争推理服务三态（详见 _classify_llama_procs）。
+    10-08 判例背景：第三方私起 llama-server（监听 54199，非 K259 的 8030 入口）
+    满载 8.22GB 时与 Ollama 互相踩踏，idle 时自动卸载回 263MB——该检测保留，
+    但 Ollama 服务链自身进程不再误判为竞争者。"""
+    return _classify_llama_procs(_win_process_table(
+        ("llama-server.exe", *sorted(_OLLAMA_CHAIN_NAMES))))
 
 
 def _glm_probe(timeout_s: int = 30) -> tuple[bool, str]:
