@@ -109,6 +109,15 @@ KIND_CARD_TEMPLATES["subscription_guide"] = functools.partial(
     _wrap_subscription_guide, "subscription_guide")
 
 
+# ── H-B 追加注册：KM 知识卡（蓝卡，P3-lite 波次 2026-10-20） ─────
+# 审计实测（portal/card_audit.py，docs/plans/2026-10-20_卡片模板覆盖审计）：
+# km_card 为 interactive 发送且语义明确（km_feishu_hub.py:252 经
+# feishu_card_v2.send_card）；发送侧透传 kind 后生效，未透传/未注册
+# kind 原样返回的既有语义不变（closed on failure 不破坏）。
+KIND_CARD_TEMPLATES["km_card"] = functools.partial(_wrap_built_in, "km_card")
+_BUILTIN_TEMPLATES["km_card"] = ("blue", "🗂 KM 知识卡")
+
+
 def apply_card_template(kind, content, msg_type):
     """发送前差异化钩子：按 kind 包装飞书 interactive 卡片。
 
