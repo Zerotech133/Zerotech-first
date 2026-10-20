@@ -12,6 +12,29 @@ sys.path.insert(0, str(HERE.parent.parent))   # 仓库根（k_stock 命名空间
 
 from k_stock import run_poc                   # noqa: E402
 
+_REAL_DATA = HERE.parent / "data"
+
+
+@pytest.fixture(autouse=True)
+def _no_real_data_writes():
+    """零写入守卫（WO-QT-20261020-028）：本文件任何测试不得触碰真实 k_stock/data/。
+    逐测试快照文件清单+mtime，跑后比对——新增/改动/删除任一即失败。
+    背景：test_log_failure_degrades_silently 曾漏 patch OUT_DIR，真实账本
+    非空时 skip 路径短路守卫中止并把整盘 json 写进真实 data/。"""
+    def _snap():
+        return {p.name: p.stat().st_mtime
+                for p in _REAL_DATA.iterdir()} if _REAL_DATA.exists() else {}
+    before = _snap()
+    yield
+    after = _snap()
+    created = sorted(set(after) - set(before))
+    deleted = sorted(set(before) - set(after))
+    changed = sorted(k for k in set(after) & set(before)
+                     if after[k] != before[k])
+    assert not created, f"测试向真实 data/ 写出新文件: {created}"
+    assert not deleted, f"测试删除了真实 data/ 既有文件: {deleted}"
+    assert not changed, f"测试改动了真实 data/ 既有文件 mtime: {changed}"
+
 
 def _isolate(tmp_path, monkeypatch):
     monkeypatch.setattr(run_poc, "GUARD_LOG", tmp_path / "guard_aborts.jsonl")
@@ -72,6 +95,11 @@ def test_log_failure_degrades_silently(tmp_path, monkeypatch):
     blocker.write_text("x", encoding="utf-8")     # 文件占位 → mkdir(parents) 必炸
     monkeypatch.setattr(run_poc, "GUARD_LOG", blocker / "sub" / "guard_aborts.jsonl")
     monkeypatch.setattr(run_poc, "HEARTBEAT", blocker / "sub" / "last_run.json")
+    # WO-QT-20261020-028：OUT_DIR 必须一并隔离——_results_log_path() 按调用时
+    # 全局 OUT_DIR 定位当日账本，漏 patch 会读到真实账本，done 非空时
+    # len(done) < len(targets) 为 False，守卫块整体短路致 DID NOT RAISE，
+    # 且 skip 路径会把整盘 poc_<ts>.json 写进真实 data/（污染事故实录）。
+    monkeypatch.setattr(run_poc, "OUT_DIR", tmp_path / "data")
     monkeypatch.setenv("KSTOCK_FORCE_OLLAMA", "1")  # 维持 exit 3 原意，避免降级放行真跑主链
     _argv(monkeypatch, "600519.SH 测试")
     monkeypatch.setattr(run_poc, "load_guard", lambda: (5.0, 9.2))
