@@ -16,7 +16,9 @@ orders 即可配对后验结果 → 形成「上下文-决策-结果」训练样
   WO-QT-20261020-005 §6）写 context_json["signal"]——信号 id/触发规则/
   触发时刻/时效/触发时证据，信号点进跟单链的证据可回放锚点。均不删列
   不改约束，旧快照（v1，context 无 combo/pool/signal）读侧照常解析
-  （by_ref 容忍缺失）；
+  （by_ref 容忍缺失）；v3 同口径再加 plan_version（预案版本指针印记，
+  WO-QT-20261020-006 §10）写 context_json["plan_version"]——快照引用
+  的必须是信号时刻已生效版本（禁回写时点强制，见 capture）。
 - 与落单同事务（exec_run commit 前写入）：快照失败 = 落单一并失败，
   fail-visible —— 禁「落了单没快照」的静默样本缺口（未落账≠假绿判例）；
 - 仅 orders 非空且非 dry_run 时产快照（灰态零决策无样本信息量，不产）；
@@ -42,6 +44,16 @@ class PoolStampError(ValueError):
 
 class SignalStampError(ValueError):
     """信号点消费印记非法（非 dict）。"""
+
+
+class PlanStampError(ValueError):
+    """预案版本指针印记非法（非 dict/缺必填键）。"""
+
+
+# 预案版本指针印记（WO-QT-20261020-006）必填键：缺一即抛错（closed on
+# failure）。effective_at 为该版本生效时点（须与 plan_versions 账一致，
+# 时点强制校验归 plan_meeting_ledger，见 capture）。
+PLAN_STAMP_REQUIRED = ("combo_id", "stock", "plan_version", "effective_at")
 
 
 def normalize_pool_stamp(pool) -> dict:
@@ -84,7 +96,8 @@ def ensure_table(con) -> None:
 def capture(con, *, run_path: Path | str, run_name: str, out: dict,
             account_id: str, strategy: str, versions: dict | None = None,
             context: dict | None = None, combo: dict | None = None,
-            pool: dict | None = None, signal: dict | None = None) -> dict:
+            pool: dict | None = None, signal: dict | None = None,
+            plan_version: dict | None = None) -> dict:
     """写入一份决策快照（调用方负责在其事务 commit 前调用）。返回快照行。
 
     combo：四元组印记（combo_registry.quad_stamp 产物，E-1）。给定时
@@ -95,8 +108,16 @@ def capture(con, *, run_path: Path | str, run_name: str, out: dict,
     缺 pool_id/pool_version 即抛错，closed on failure）。
     signal：信号点消费印记（WO-QT-20261020-005，写 context_json["signal"]；
     字段校验归消费侧 signal_consumer，本层只拒非 dict——closed on
-    failure）。"""
+    failure）。
+    plan_version：预案版本指针印记（WO-QT-20261020-006，写
+    context_json["plan_version"]；v3 加法演进，不给=零变化）。禁回写
+    强制（定纲：快照引用的必须是信号时刻版本）：① 结构校验——非 dict/
+    缺必填键（combo_id/stock/plan_version/effective_at）即抛
+    PlanStampError；② 时点强制——委托 plan_meeting_ledger.assert_plan_
+    effective 断言该版本生效时点 ≤ 快照时刻（用会后版本冒充信号时刻
+    版本在写入时即被拒并留痕，closed on failure；版本不在账同样拒）。"""
     ensure_table(con)
+    ts = datetime.now().isoformat(timespec="seconds")
     ctx = dict(context or {})
     if combo:
         ctx["combo"] = combo
@@ -106,9 +127,21 @@ def capture(con, *, run_path: Path | str, run_name: str, out: dict,
         if not isinstance(signal, dict):
             raise SignalStampError(f"signal_stamp 须为 dict: {type(signal).__name__}")
         ctx["signal"] = dict(signal)
+    if plan_version is not None:
+        if not isinstance(plan_version, dict):
+            raise PlanStampError(f"plan_stamp 须为 dict: {type(plan_version).__name__}")
+        for k in PLAN_STAMP_REQUIRED:
+            if k not in plan_version:
+                raise PlanStampError(f"plan_stamp 缺必填键 {k}（契约 WO-QT-20261020-006 §10）: {sorted(plan_version)}")
+        # 禁回写时点强制：plan 生效时点必须 ≤ 快照时刻（信号触发时已知道）
+        import plan_meeting_ledger
+        plan_meeting_ledger.assert_plan_effective(
+            con, plan_version["combo_id"], plan_version["stock"],
+            plan_version["plan_version"], at_time=ts, stage="capture")
+        ctx["plan_version"] = dict(plan_version)
     snap = {
         "snapshot_id": uuid.uuid4().hex,
-        "ts": datetime.now().isoformat(timespec="seconds"),
+        "ts": ts,
         "schema_version": SNAPSHOT_SCHEMA_VERSION,
         "combo_id": (combo or {}).get("combo_id") or account_id,
         "account_id": account_id,
