@@ -40,6 +40,8 @@ if ("$out" -match 'OK d') {
     } else {
         # 异步拉起（同 clip_watch 模式）：M3 补积压可达数十分钟，同步等待会阻塞
         # 本 tick 的后续环节并吞掉 12:06-12:46 全部调度窗（12-08 实测 46 分钟）
+        # 2026-10-20 错峰闸门（T-Q10, 老田拍板）：避开雪球分类 08/09/10 整点班窗
+        $env:K266_PEAK_SHIFT = '1'
         Start-Process -FilePath 'C://Program Files\Python311\python.exe' -ArgumentList '-X','utf8',"$root\quant_backtest\k266_m3_structure.py" `
             -WorkingDirectory "$root\quant_backtest" -WindowStyle Hidden `
             -RedirectStandardOutput 'C:\Temp\k266_m3.log' -RedirectStandardError 'C:\Temp\k266_m3_err.log'
