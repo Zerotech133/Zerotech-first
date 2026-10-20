@@ -37,9 +37,15 @@ def state_fp(tmp_path):
     return str(tmp_path / "guard_alert_state.json")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def log_fp(tmp_path, monkeypatch):
-    """日志重定向到 tmp，返回路径。"""
+    """日志重定向到 tmp，返回路径。
+
+    WO-QT-20261020-059：改 autouse 全用例生效——原仅显式接收 log_fp
+    的用例被隔离，runner 侧三例（test_guard_push_captures_runner_reason
+    等）与并发竞争两例（guard_race/guard_edge）漏网，跑测试即向生产
+    logs/guard_alert.log 写入（10-21 01:12/01:29 两轮实测复现：dedup
+    skip + state lock timeout 行混入生产取证面）。"""
     fp = str(tmp_path / "guard_alert.log")
     monkeypatch.setattr(ga, "LOG_PATH", fp)
     return fp

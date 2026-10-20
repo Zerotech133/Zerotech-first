@@ -23,6 +23,20 @@ def state_fp(tmp_path):
     return str(tmp_path / "guard_alert_state.json")
 
 
+@pytest.fixture(autouse=True)
+def log_fp(tmp_path, monkeypatch):
+    """WO-QT-20261020-059：隔离 ga.LOG_PATH→tmp_path。
+
+    本文件此前只 patch _push/state_path，测试日志直写生产
+    quant_backtest/logs/guard_alert.log（10-21 01:12 实测混入
+    dedup skip guard_race/guard_edge 测试行）——告警留痕的
+    生产取证面被测试污染。autouse 全用例生效，与
+    test_guard_alert_reason.log_fp 同款语义。"""
+    fp = str(tmp_path / "guard_alert.log")
+    monkeypatch.setattr(ga, "LOG_PATH", fp)
+    return fp
+
+
 @pytest.fixture
 def fake_push(monkeypatch):
     """打桩推送通道：记录调用，返回 True。"""
