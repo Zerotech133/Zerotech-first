@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>订阅运营 · 只读投影｜零界</title>
+<link rel="stylesheet" href="/static/tokens.css">
+<script src="/static/nav.js" defer></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 78% -25%,var(--bg-surface),transparent 48%),var(--bg-page);color:var(--text);font:14px/1.6 var(--font-ui)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+a{color:var(--link)}
+.main{max-width:var(--page-w);margin:auto;padding:22px clamp(14px,3vw,28px) 48px}
+.eyebrow{font:700 11px var(--font-mono);letter-spacing:.18em;color:var(--color-ok);margin:6px 0 8px}
+h1{font-size:clamp(24px,3.2vw,34px);letter-spacing:-.02em;line-height:1.25;margin:0 0 8px}
+.lead{margin:0;color:var(--text-dim);font-size:13px;line-height:1.8;max-width:760px}
+.readonly-banner{margin:14px 0 0;border:1px solid var(--border);border-left:3px solid var(--color-warn);background:var(--bg-raised);border-radius:var(--r-s);padding:10px 14px;font-size:12.5px;color:var(--text-dim)}
+.readonly-banner b{color:var(--color-warn);font-weight:600}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:14px 0 4px;font:12px var(--font-mono);color:var(--text-dim)}
+.meta-row .dot{color:var(--border)}
+#refresh{border:1px solid var(--border);background:var(--bg-raised);border-radius:var(--r-pill);padding:5px 14px;font-size:12px}
+#refresh:hover{border-color:var(--link);color:var(--link)}
+h2.sec{font-size:15px;margin:26px 0 10px;letter-spacing:-.01em}
+h2.sec small{font:400 11.5px var(--font-mono);color:var(--text-dim);margin-left:8px}
+.notice{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);padding:10px 14px;font-size:12.5px;color:var(--text-dim);margin:0 0 12px;line-height:1.7}
+.notice.warn{border-color:#6b5326;background:#2b230f;color:#e3c98c}
+.notice b{color:var(--text)}
+.empty-state{border:1px dashed var(--border);border-radius:var(--r-m);padding:12px 14px;color:var(--text-dim);font-size:12.5px;line-height:1.8;margin:0 0 12px}
+.lookup{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:12px 14px;margin:0 0 12px}
+.lookup label{display:block;font-size:11.5px;color:var(--text-dim);margin:0 0 6px}
+.lookup .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lookup input[type=text]{flex:1 1 260px;min-width:200px;border:1px solid var(--border);border-radius:var(--r-s);background:var(--bg-surface);padding:7px 10px;font:12.5px var(--font-mono)}
+.lookup button{border:1px solid var(--border);background:var(--bg-raised);border-radius:var(--r-pill);padding:6px 16px;font-size:12px}
+.lookup button:hover{border-color:var(--link);color:var(--link)}
+#sub-result .card{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);padding:12px 14px;font-size:12.5px;line-height:1.8;overflow-wrap:anywhere}
+#sub-result .kv b{color:var(--gray-6);font-weight:600}
+#sub-result .err{color:var(--color-err)}
+.plans{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
+.plan{flex:1 1 260px;min-width:230px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:12px 14px}
+.plan small{display:block;font:600 11px var(--font-mono);color:var(--text-dim);margin-bottom:6px}
+.plan b{font-size:15px;font-weight:600}
+.plan .price{display:block;font:700 16px var(--font-mono);color:var(--color-warn);margin:6px 0 2px}
+.plan .st{font-size:11.5px;color:var(--text-dim);line-height:1.7}
+.observe-item{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);padding:10px 14px;font-size:12.5px;margin:0 0 8px;line-height:1.7;overflow-wrap:anywhere}
+.observe-item .facts{font:11px var(--font-mono);color:var(--text-dim)}
+.degraded{border:1px solid #6e2f2c;border-left:3px solid var(--color-err);background:#2d1614;border-radius:var(--r-m);padding:14px 16px;margin:16px 0}
+.degraded h2{font-size:15px;color:var(--color-err);margin:0 0 6px}
+.degraded p{font-size:12.5px;color:#e8b4b1;margin:0 0 10px;line-height:1.75;overflow-wrap:anywhere}
+.degraded button{border:1px solid #6e2f2c;background:#2d1614;color:#f1c1bc;border-radius:var(--r-pill);padding:6px 16px;font-size:12px}
+.degraded button:hover{border-color:var(--color-err)}
+footer.legend{margin-top:22px;border-top:1px solid var(--border);padding-top:14px;font-size:11.5px;color:var(--text-dim);line-height:1.9}
+footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
+@media(max-width:640px){
+ .main{padding-top:14px}
+ .plan{flex:1 1 44%}
+}
+</style>
+</head>
+<body>
+<main class="main">
+<header>
+<div class="eyebrow">SUBSCRIPTION OPS · DENG ZHI HUB</div>
+<h1>📋 订阅运营</h1>
+<p class="lead">本人/商务域专用的订阅运营只读投影：订阅者逐个查询、customer 域 observe 留痕（商机信号）、档位静态标注。数据源：<b>/api/subscription/status</b>（FD-A 只读端点）与 <b>/api/notify/queue</b>（8091 聚合）。本页不定价、不开通、不退订、不触发任何发送。</p>
+<p class="readonly-banner"><b>只读投影 · 本人/商务域专用 · 邓芝统辖</b>——本页没有任何写操作；订阅开通与档位定价不在本页办理。</p>
+<div class="meta-row">
+<span id="m-generated">读取中…</span><span class="dot">·</span>
+<span id="m-endpoint">endpoint: /api/subscription/status + /api/notify/queue</span><span class="dot">·</span>
+<button type="button" id="refresh">↻ 刷新</button>
+</div>
+</header>
+
+<div id="degraded" class="degraded" hidden>
+<h2>⚠ 数据拉取失败 · 已降级</h2>
+<p id="degraded-why">无法读取 /api/notify/queue。以下各卡为空态展示，不代表「无留痕」；请核对服务状态后重试。</p>
+<button type="button" id="retry">重试</button>
+</div>
+
+<h2 class="sec">订阅者总览<small>逐个查询 · 无批量列表端点</small></h2>
+<div class="notice warn"><b>批量列表挂账</b>——本期无 /api/subscription/list 端点（挂账），仅支持凭 open_id 逐个查询；无法呈现订阅者全集，本卡不冒充全景。</div>
+<div class="lookup">
+<label for="open-id-input">订阅者 open_id（飞书开放平台标识）：</label>
+<div class="row">
+<input type="text" id="open-id-input" placeholder="ou_xxxxxxxx" autocomplete="off" spellcheck="false">
+<button type="button" id="lookup-btn">查询</button>
+</div>
+</div>
+<div id="sub-result"><div class="empty-state">尚未查询。输入 open_id 后逐个查询其订阅状态；查询失败时此处显示降级说明，不显示兜底数据。</div></div>
+
+<h2 class="sec">customer 域观察<small>/api/notify/queue · domain-observe 留痕 = 商机信号</small></h2>
+<div id="observe-card"><div class="empty-state">读取中……读取失败时本卡显示降级说明。</div></div>
+
+<h2 class="sec">档位标注<small>SEED_PLANS 静态投影 · 定价不在本页</small></h2>
+<div class="notice"><b>价格不编造</b>——basic_monthly 档价格为 placeholder，待老田定价；定价前不构成真实报价，本页原样标注「待定价」。订阅开通/变更请往既有流程办理。</div>
+<div class="plans">
+<div class="plan">
+<small>internal</small>
+<b>内部档（owner/ops）</b>
+<span class="price">待定价（内部档不对外）</span>
+<span class="st">周期：长期 · 当日额度：不限额（daily_quota=0 视为不限额） · 类型：不限</span>
+</div>
+<div class="plan">
+<small>basic_monthly</small>
+<b>基础月度档</b>
+<span class="price">待定价</span>
+<span class="st">周期：30 天 · 当日额度：日 20 条 · 类型：news.*（placeholder 待老田定价，不构成报价）</span>
+</div>
+</div>
+
+<footer class="legend">
+<h3>图例与边界</h3>
+<div>· 本页只读投影，零写操作；定价、开通、退订、额度调整不在本页办理。</div>
+<div>· 订阅者总览为逐个查询（/api/subscription/status），本期无批量列表端点（挂账 /api/subscription/list）；无列表 ≠ 无订阅者。</div>
+<div>· customer 域观察卡来自 /api/notify/queue 的 domain-observe 留痕与 subscription_required 相关 blocked 条目；留痕为商机信号，本页不自动转化、不回发。</div>
+<div>· 档位卡为 SEED_PLANS 静态投影；价格「待定价」为诚实标注，不编造数字。</div>
+<div>· 聚合时点（generated_at）不等于任何子源的健康时点；空态不等于「无留痕」。</div>
+</footer>
+</main>
+
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const text=v=>(v===null||v===undefined||v==='')?'':String(v);
+const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined&&txt!==null)n.textContent=txt;return n;};
+
+async function fetchJson(url){
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
+ try{
+  const r=await fetch(url,{method:'GET',cache:'no-store',signal:ctl.signal,credentials:'same-origin'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  if(!d||typeof d!=='object'||d.ok===false)throw new Error('来源报错或结构不符');
+  return d;
+ }finally{clearTimeout(timer);}
+}
+
+function emptyCard(sel,msg){
+ const box=$(sel);box.replaceChildren();
+ box.append(el('div','empty-state',msg));
+}
+
+/* 分区一：订阅者逐个查询（GET /api/subscription/status?open_id=…） */
+async function lookup(){
+ const oid=text($('open-id-input').value).trim();
+ const box=$('sub-result');box.replaceChildren();
+ if(!oid){
+  box.append(el('div','empty-state','请先输入 open_id 再查询——本页不猜身份、不批量拉取（本期无列表端点，挂账）。'));
+  return;
+ }
+ box.append(el('div','empty-state','查询中…（open_id: '+oid+'）'));
+ let d=null,err=null;
+ try{d=await fetchJson('/api/subscription/status?open_id='+encodeURIComponent(oid));}
+ catch(e){err=e&&e.message?e.message:'未知错误';}
+ box.replaceChildren();
+ if(err){
+  const c=el('div','card');
+  c.append(el('p','err','查询失败（'+err+'）。可能是端点未上或服务不可达——本卡不显示兜底数据，不代表该 open_id 无订阅。'));
+  box.append(c);
+  return;
+ }
+ if(d&&text(d.error)){
+  const c=el('div','card');
+  c.append(el('p','err','端点返回错误：'+d.error+'（closed on failure 原样透出，不猜数）。'));
+  box.append(c);
+  return;
+ }
+ const c=el('div','card');
+ const head=el('p','kv');head.append(el('b',null,'open_id: '));head.append(document.createTextNode(oid));c.append(head);
+ if(text(d.display_name)){const p=el('p','kv');p.append(el('b',null,'显示名: '));p.append(document.createTextNode(d.display_name));c.append(p);}
+ const subs=Array.isArray(d.subscriptions)?d.subscriptions:[];
+ const sline=el('p','kv');
+ sline.append(el('b',null,'订阅记录: '));
+ sline.append(document.createTextNode(subs.length?subs.length+' 条':'无在档订阅（reason: '+(text(d.reason)||'未提供')+'）'));
+ c.append(sline);
+ for(const s of subs){
+  if(!s||typeof s!=='object')continue;
+  c.append(el('p','kv','· '+(text(s.plan_id)||'?')+'  '+text(s.start)+' → '+text(s.end)+'  状态: '+text(s.status||'未提供')));
+ }
+ const used=d.today_used_by_prefix;
+ if(used&&typeof used==='object'&&Object.keys(used).length){
+  const parts=[];
+  for(const k of Object.keys(used))parts.push(k+'='+text(used[k]));
+  c.append(el('p','kv','当日用量（按前缀）: '+parts.join(' · ')));
+ }
+ box.append(c);
+}
+
+/* 分区二：customer 域观察（/api/notify/queue 过滤 domain-observe / subscription_required） */
+function renderObserve(q){
+ const box=$('observe-card');box.replaceChildren();
+ const items=Array.isArray(q&&q.items)?q.items:[];
+ const hits=items.filter(x=>x&&typeof x==='object'&&(
+  text(x.kind).indexOf('domain-observe')>=0||
+  (x.state==='blocked'&&text(x.reason).indexOf('subscription_required')>=0)||
+  (x.state==='blocked'&&text(x.basis).indexOf('subscription_required')>=0)));
+ if(!hits.length){
+  box.append(el('div','empty-state','尚无 customer 域留痕（本轮队列聚合中无 domain-observe 条目、亦无 subscription_required 相关 blocked 条目）。空态不等于「无商机」——只代表本时点四本账本没有可展示条目。'));
+  return;
+ }
+ const head=el('div','empty-state','customer 域留痕 '+hits.length+' 条（最新在前，至多展示 5 条；商机信号仅供观察，本页不自动转化）。');
+ box.append(head);
+ for(const x of hits.slice(0,5).reverse()){
+  const c=el('div','observe-item');
+  c.append(el('strong',null,text(x.title)||'（无标题留痕）'));
+  c.append(el('div','facts','kind: '+(text(x.kind)||'—')+' · domain: '+(text(x.domain)||'—')+' · state: '+(text(x.state)||'—')+' · 创建: '+(text(x.created_at)||'—')));
+  if(text(x.reason))c.append(el('div','facts','reason: '+x.reason));
+  box.append(c);
+ }
+}
+
+async function loadObserve(){
+ let q=null,err=null;
+ try{q=await fetchJson('/api/notify/queue');}
+ catch(e){err=e&&e.message?e.message:'未知错误';}
+ if(err){
+  $('degraded-why').textContent='无法读取 /api/notify/queue（'+err+'）。本页不显示静态兜底数据；不可把「读取失败」当成「无留痕」，请核对服务后重试。';
+  $('degraded').hidden=false;
+  $('m-generated').textContent='读取失败';
+  emptyCard('observe-card','/api/notify/queue 读取失败——本卡不显示兜底数字，不代表「无 customer 域留痕」。');
+  return;
+ }
+ $('degraded').hidden=true;
+ $('m-generated').textContent='聚合时点：'+text(q.generated_at||'未提供')+'（非各子源生产时点）';
+ renderObserve(q);
+}
+
+function load(){
+ loadObserve();
+}
+
+$('lookup-btn').addEventListener('click',lookup);
+$('refresh').addEventListener('click',load);
+$('retry').addEventListener('click',load);
+load();
+setInterval(load,60000);
+})();
+</script>
+</body>
+</html>
