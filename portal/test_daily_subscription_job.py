@@ -220,11 +220,18 @@ def test_05_already_sent_is_not_queued_again(env, capsys):
 # ---------------------------------------------------------------------------
 
 def test_06_commit_state_is_idempotent(env, capsys):
+    """commit-state + --mark-sent 才落标记；落了之后重跑幂等。
+
+    收编修订（P3.9-lite）：原用例断言 commit-state 自动落标记，与工位自陈
+    风险「标记为已发但实际没发、提醒被永久吞掉」冲突。现改为必须显式
+    --mark-sent，本用例覆盖「显式开启后的幂等」。
+    """
     db, state = env
     _schema(db)
     _subscribe(db, ALICE, PLAN, START, END_T3)
 
-    code, first = _run_json(capsys, "--commit-state", "--json", "--now", NOW)
+    code, first = _run_json(capsys, "--commit-state", "--mark-sent",
+                            "--json", "--now", NOW)
 
     assert code == 0
     assert first["mode"] == "commit-state"
@@ -232,17 +239,49 @@ def test_06_commit_state_is_idempotent(env, capsys):
     assert first["reminders"]["to_send"] == 1
     assert any(s.startswith("已写账本") for s in first["side_effects"])
     assert any(s.startswith("已写状态文件") for s in first["side_effects"])
+    # 标记了但没投递，必须留下可见警告，不得只在 side_effects 里含糊
+    assert any(w.startswith("marked_without_delivery") for w in first["warnings"])
     assert state.exists() is True
     on_disk = json.loads(state.read_text(encoding="utf-8"))
     assert len(on_disk["sent"]) == 1
 
-    code2, second = _run_json(capsys, "--commit-state", "--json", "--now", NOW)
+    code2, second = _run_json(capsys, "--commit-state", "--mark-sent",
+                              "--json", "--now", NOW)
 
     assert code2 == 0
     assert second["reminders"]["to_send"] == 0
     assert second["reminders"]["already_sent"] == 1
     assert second["items"] == []
     assert len(json.loads(state.read_text(encoding="utf-8"))["sent"]) == 1
+
+
+def test_06b_commit_state_without_mark_sent_never_marks(env, capsys):
+    """commit-state 不带 --mark-sent 时：写账本清扫，但绝不落已发标记。
+
+    背景：发送侧尚未接入，此时落标记等于把提醒永久吞掉（同日去重键已写，
+    次日 stage 变更前不会重发）。此例钉住「不为未发生的投递打标记」——
+    清账本可以，标记不行，且必须给出可见的跳过提示与警告。
+    """
+    db, state = env
+    _schema(db)
+    _subscribe(db, ALICE, PLAN, START, END_T3)
+
+    code, rep = _run_json(capsys, "--commit-state", "--json", "--now", NOW)
+
+    assert code == 0
+    assert any(s.startswith("已写账本") for s in rep["side_effects"])
+    assert not any(s.startswith("已写状态文件") for s in rep["side_effects"])
+    assert any(s.startswith("未写状态文件") for s in rep["side_effects"])
+    assert "mark_sent_skipped_no_sender" in rep["warnings"]
+    assert rep["reminders"]["to_send"] == 1, "只算不标记，待发清单必须仍在"
+    assert state.exists() is False, "状态文件不得被创建"
+
+    # 再跑一次仍算得到同一批：证明没被标记吞掉
+    code2, rep2 = _run_json(capsys, "--commit-state", "--json", "--now", NOW)
+    assert code2 == 0
+    assert rep2["reminders"]["to_send"] == 1
+    assert rep2["reminders"]["already_sent"] == 0
+    assert state.exists() is False
 
 
 # ---------------------------------------------------------------------------

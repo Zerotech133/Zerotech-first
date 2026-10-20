@@ -12,8 +12,12 @@
                        「本次会发」的清单 → 打印摘要。
                        不写账本、不写状态文件、不建库、不发送。
     --commit-state     ① 执行 expire_sweep（写账本，自然到期唯一出口）
-                       ② 对本次会发的项逐条 mark_sent（写状态文件）
-                       仍然不发送；副作用在 ``side_effects`` 里逐条明示。
+                       ② **默认不落已发标记**——因为发送侧尚未接入，此时标记
+                       等于把提醒永久吞掉（同日去重键已写，不会重发）。
+                       副作用在 ``side_effects`` 里逐条明示。
+    --mark-sent        **必须与 --commit-state 同用**：对本次会发的项逐条
+                       mark_sent。发送侧接入后的联调开关，单独使用无效。
+                       开它就等于承认「这些项已经投递过了」。
     --json             任何模式下都可用：结构化输出（items 内 open_id 已掩码）。
 
 安全纪律（收编时会 grep 校验，删改即违规）：
@@ -30,6 +34,9 @@
      （``renewal_state.mark_sent`` 自身同样拒写）。
   4. **勾稽不通过必须非 0**：账本有孤儿 / 漏单时若返回 0，日跑会把「账本不
      自洽」当成功——这正是本项目反复强调的 fail-open 隐患。
+  5. **不为未发生的投递打标记**（收编追加）：发送侧未接时 ``--commit-state``
+     默认不 mark，必须显式 ``--mark-sent`` 才落盘。这条是 N-B 工位自陈风险
+     「标记为已发但实际没发、提醒被永久吞掉」的处置，不是可选优化。
 
 判定口径说明：
 
@@ -174,14 +181,16 @@ def _empty_report(mode):
 # 主流程
 # ---------------------------------------------------------------------------
 
-def run(mode=MODE_DRY_RUN, now=None):
+def run(mode=MODE_DRY_RUN, now=None, mark_sent=False):
     """执行一次日跑编排，返回 ``(report, exit_code)``。
 
-    ``mode``：``dry-run``（默认，零写入）/ ``commit-state``（写账本清扫 +
-    已发标记，仍不发送）。``now``：naive datetime，None → 当前时刻（按
-    ``resolve_tz()`` 的时区口径）；主要用于回放与测试钉住时间。
+    ``mode``：``dry-run``（默认，零写入）/ ``commit-state``（写账本清扫，
+    默认不落已发标记）。``mark_sent``：仅在 ``commit-state`` 下生效，为 True
+    时才 ``mark_sent`` 落状态文件——发送侧未接入时打标记会把提醒永久吞掉，
+    故必须显式开启（对应 CLI ``--mark-sent``）。``now``：naive datetime，
+    None → 当前时刻（按 ``resolve_tz()`` 的时区口径）；用于回放与测试钉时间。
 
-    任何步骤失败都落 ``problems`` 并体现在退出码上，不吞异常。
+    任何步骤失败都落 ``problems`` 并体现在退出码上，closed on failure。
     """
     if _IMPORT_ERROR:
         raise JobError("import_failed", _IMPORT_ERROR)
@@ -279,25 +288,34 @@ def run(mode=MODE_DRY_RUN, now=None):
     report["reminders"]["already_sent"] = len(done)
     report["items"] = [_public_item(it) for it in todo]
 
-    # 7. commit-state：只落已发标记，仍然不发送
+    # 7. commit-state：落已发标记——发送侧未接时必须显式 mark_sent 才写
     if mode == MODE_COMMIT and todo:
-        marked = 0
-        for item in todo:
-            out = _state_mod.mark_sent(state, item, day,
-                                       path=report["state"]["path"])
-            if out.get("ok") and out.get("written"):
-                marked += 1
-                continue
-            # closed on failure：写不进去就停（原子写单写者，再试也是同一结果）
-            report["problems"].append({
-                "reason": "state_write_failed",
-                "detail": "%s（%s）" % (out.get("error") or "write_failed",
-                                       _reminder.mask_open_id(item.get("open_id"))),
-            })
-            break
-        if marked:
+        if not mark_sent:
             report["side_effects"].append(
-                "已写状态文件：mark_sent 落 %d 条" % marked)
+                "未写状态文件：本次 %d 条只算不标记（发送侧未接入，"
+                "标记会让这些提醒永不再发；联调请显式加 --mark-sent）"
+                % len(todo))
+            report["warnings"].append("mark_sent_skipped_no_sender")
+        else:
+            marked = 0
+            for item in todo:
+                out = _state_mod.mark_sent(state, item, day,
+                                           path=report["state"]["path"])
+                if out.get("ok") and out.get("written"):
+                    marked += 1
+                    continue
+                # closed on failure：写不进去就停（原子写单写者，再试也是同一结果）
+                report["problems"].append({
+                    "reason": "state_write_failed",
+                    "detail": "%s（%s）" % (out.get("error") or "write_failed",
+                                           _reminder.mask_open_id(item.get("open_id"))),
+                })
+                break
+            if marked:
+                report["side_effects"].append(
+                    "已写状态文件：mark_sent 落 %d 条（发送侧未接，"
+                    "这些项实际未投递且不会重发）" % marked)
+                report["warnings"].append("marked_without_delivery:%d" % marked)
 
     # 8. 勾稽（只读；不通过必须非 0）
     try:
@@ -340,7 +358,8 @@ def render_human(report):
     lines = ["订阅日跑编排（本工具不发送任何消息）"]
 
     if report.get("mode") == MODE_COMMIT:
-        lines.append("模式: commit-state（会写账本清扫 + 已发标记，仍不发送）")
+        lines.append("模式: commit-state（会写账本清扫；已发标记需 --mark-sent，"
+                     "本工具始终不发送）")
     else:
         lines.append("模式: dry-run（不写任何东西，仍不发送）")
 
@@ -437,9 +456,10 @@ def build_parser():
     """命令行定义。usage 里写死「本工具不发送任何消息」，--help 必见。"""
     parser = argparse.ArgumentParser(
         prog="daily_subscription_job",
-        usage=("%(prog)s [--dry-run | --commit-state] [--json] [--now TS]\n"
+        usage=("%(prog)s [--dry-run | --commit-state [--mark-sent]]"
+               " [--json] [--now TS]\n"
                "       本工具不发送任何消息：dry-run 不写盘；"
-               "commit-state 只写账本清扫与已发标记"),
+               "commit-state 只写账本清扫，加 --mark-sent 才落已发标记"),
         description="订阅日跑编排入口：算到期提醒 + 账本勾稽，默认 dry-run。",
         epilog="本工具不发送任何消息，也不建库、不接排程；"
                "库不存在时报 ledger_missing 并退出 1。",
@@ -450,8 +470,12 @@ def build_parser():
         help="默认。只读账本与状态文件，算出「本次会发」清单，不写任何东西")
     group.add_argument(
         "--commit-state", dest="mode", action="store_const", const=MODE_COMMIT,
-        help="额外写：expire_sweep 清扫账本 + 对本次会发的项 mark_sent 落状态"
-             "文件（仍不发送）")
+        help="额外写：expire_sweep 清扫账本（仍不发送；已发标记见 --mark-sent）")
+    parser.add_argument(
+        "--mark-sent", dest="mark_sent", action="store_true",
+        help="必须与 --commit-state 同用：对本次会发的项落已发标记。"
+             "发送侧未接入时开它等于把这些提醒标记为已投递且不再重发，"
+             "只在发送侧联调时使用")
     parser.add_argument(
         "--json", action="store_true",
         help="结构化输出（items 内 open_id 已掩码）")
@@ -475,7 +499,8 @@ def main(argv=None):
                      % (args.now,))
 
     try:
-        report, code = run(mode=args.mode, now=now)
+        report, code = run(mode=args.mode, now=now,
+                           mark_sent=bool(getattr(args, "mark_sent", False)))
     except JobError as exc:
         report = _empty_report(args.mode)
         report["problems"].append({"reason": exc.reason, "detail": exc.detail})

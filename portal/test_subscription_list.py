@@ -44,10 +44,15 @@ def db(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def test_01_empty_db(db):
-    """空库（已建表无行）→ ok=True/count=0/subscribers=[]，不冒充有数据。"""
+    """空库（已建表无行）→ ok=True/count=0/subscribers=[]，不冒充有数据。
+
+    P3.9-lite 契约演进（WO-FS-121）：新增分页字段 offset / has_more 为纯追加，
+    故此处精确等值同步扩两个键。空库 has_more 必须为 False——空不等于"还有"。
+    """
     ss._connect(create=True).close()
     r = ss.list_subscribers()
-    assert r == {"ok": True, "count": 0, "subscribers": []}
+    assert r == {"ok": True, "count": 0, "subscribers": [],
+                 "offset": 0, "has_more": False}
 
 
 def test_02_with_data_fields_and_stable_order(db):
@@ -143,8 +148,9 @@ def test_07_used_today_matches_is_entitled_pool(db):
 def test_08_signature_and_all_and_readonly(db):
     """签名逐字锚 + __all__ 追加 + 函数体纯只读（无 INSERT/UPDATE/CREATE）。"""
     src = _read(PORTAL / "subscription_store.py")
-    assert "def list_subscribers(limit=50, now=None):" in src, \
-        "契约签名必须逐字为 def list_subscribers(limit=50, now=None):"
+    assert "def list_subscribers(limit=50, now=None, offset=0):" in src, \
+        ("契约签名必须逐字为 def list_subscribers(limit=50, now=None, offset=0):"
+         "（P3.9-lite 追加 offset，位于末尾以保位置传参 list_subscribers(200) 语义不变）")
     assert '"list_subscribers"' in src
     import ast
     tree = ast.parse(src)
