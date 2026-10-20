@@ -21,8 +21,22 @@ if ($Mode -eq 'run') {
     # 真实跑过(LastTaskResult=0), eval_last_run.log 为纯 UTF-8 且中文正常;
     # 而 `1>` 形态在生产从未跑过(AgentShadowDaily LastTaskResult=267011 尚未运行)。
     # 注意: Arguments 不变(仍 -Mode run), 无需重注册计划任务, 触发时间面零影响。
-    $log = Join-Path $here 'data\shadow\last_run.log'
-    cmd /c "`"$py`" -X utf8 `"$here\run_shadow.py`" > `"$log`" 2>&1"
+    # 日志句柄自撞修复（2026-10-20；K-OPS-20261019-SHADOWFIX 根因收口，老田批准）:
+    # 原形态外层 `> data\shadow\last_run.log` 以**覆盖写**持有该文件的写句柄
+    # （共享模式仅 FILE_SHARE_READ，句柄全进程期不释放），而 run_shadow.py:427
+    # 启动后又要以**追加**方式 open 同一文件 → 共享冲突，Win32 状态码
+    # 32(ERROR_SHARING_VIOLATION)，Python 侧表现为 PermissionError [Errno 13]
+    # —— 即 10-19 17:10 首跑 5 标的零落账的全部根因。10-20 之所以"成功"只是
+    # Python 侧 catch 掉冲突并沿用既有 stdout/stderr（run_shadow.py:428-430），
+    # 冲突一天都没消失 —— 本改法是**消除冲突**，不是续命。
+    # 两条子改动必须同时生效（缺一即复发/双写）:
+    #   1) 外层重定向改指**另一个**文件 last_run_wrapper.log → last_run.log
+    #      转由 Python 侧单独持有，日志**单一写入者**（外层不再持其句柄）；
+    #   2) 新目标改用**追加**语义 >> → 每日不再截断，历史事故 traceback 不被
+    #      物理覆盖（现状 10-19 的 469 字节 traceback 已被 10-20 那次跑覆盖）。
+    # 退出码语义不变：仍 exit $LASTEXITCODE（计划任务结果码不得失真）。
+    $log = Join-Path $here 'data\shadow\last_run_wrapper.log'
+    cmd /c "`"$py`" -X utf8 `"$here\run_shadow.py`" >> `"$log`" 2>&1"
     exit $LASTEXITCODE
 }
 elseif ($Mode -eq 'eval') {
