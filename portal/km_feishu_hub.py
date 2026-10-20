@@ -251,7 +251,7 @@ def push_lib(lib, trigger):
                             # 误用单值接收时非空元组恒真→失败恒计成功（污染计费）
                             ok, _why = send_card(
                                 card, receive_id=t["id"],
-                                receive_id_type=t["type"])
+                                receive_id_type=t["type"], kind="km_card")
                         except Exception as e:  # noqa: BLE001
                             ok = False
                             print("km_card send fail %s: %r" % (tn, e),
