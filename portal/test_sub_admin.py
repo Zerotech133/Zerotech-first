@@ -7,7 +7,7 @@
 3. 降级诚实：degraded 降级区 + 只读声明 + 页头「本人/商务域专用 · 邓芝统辖」
 4. 价格不编造：页面无 ¥ 价格数字硬编码，档位文案含「待定价」
 5. observe 卡引用 /api/notify/queue（customer 域留痕数据源）
-6. 订阅者总览引用 /api/subscription/status，且诚实标注批量列表挂账
+6. 订阅者总览引用 /api/subscription/status（逐查保留）与 /api/subscription/list（P2.6 已上线）
 """
 import os
 import re
@@ -97,12 +97,16 @@ def test_sub_admin_html_observe_card_uses_queue_endpoint():
 
 
 def test_sub_admin_html_subscriber_overview():
-    """订阅者总览：引用 /api/subscription/status 逐个查询，诚实标注批量列表挂账。"""
+    """订阅者总览：批量列表 /api/subscription/list 已上线（P2.6 FE-B），
+    open_id 逐查入口保留；「无批量列表端点」过期挂账口径已移除。
+    （收编契约更新：FD-B 原断言"挂账存在"随 FE-B 上线批量端点失效，
+    演进为断言端点在役且过期口径清零。）"""
     html = _read(HTML)
     assert "/api/subscription/status" in html
-    # open_id 逐个查询入口
+    # open_id 逐个查询入口（保留）
     assert 'id="open-id-input"' in html
-    # 挂账诚实标注（本期无列表端点，不冒充全景）
-    assert "挂账" in html
+    # 批量列表端点已上线
     assert "/api/subscription/list" in html
     assert "批量" in html
+    # 过期挂账口径不得残留（页面曾诚实标注"本期无批量列表端点"）
+    assert "无批量列表端点" not in html
