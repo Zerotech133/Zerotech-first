@@ -153,6 +153,14 @@ def preaggregate_symbol(entries: list) -> tuple:
     superseded: dict = {}
     for sid, w, sig in entries:
         dt = _sig_get(sig, "dt")
+        # dt 契约（WO-QT-20261020-055，方案甲 2026-10-21 老田拍板）：
+        # 仅接受 YYYY-MM-DD 字符串或 None（缺失）；其他类型显式拒绝，
+        # 不做隐式转换/静默降档（fail-visible）。
+        if dt is not None and not isinstance(dt, str):
+            raise ValueError(
+                "Signal.dt 契约违例: dt 须为 YYYY-MM-DD 字符串或 None, "
+                "收到 %s(%r); 聚合入口显式拒绝, 请上游策略修正"
+                % (type(dt).__name__, dt))
         dt_key = dt if isinstance(dt, str) and dt else _DT_NONE_SENTINEL
         if sid in index_of:
             idx = index_of[sid]

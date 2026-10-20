@@ -188,17 +188,26 @@ class TestBoundaries:
         assert sup["s1"][0]["dt"] is None
 
 
-# ── 实现疑点（不改实现，最小复现待裁决）──────────────────────────────
-@pytest.mark.xfail(
-    reason="实现疑点 P1：非 str 的 dt（如 datetime.date）被静默按缺失"
-           "（_DT_NONE_SENTINEL）处理，会被更旧的 str dt 覆盖，与"
-           " docstring『按源事件日 dt 最新保留一条』语义可能不符，待裁决",
-    strict=False)
-def test_nonstr_dt_object_should_win_by_date_semantics():
-    """最小复现：date(2026-10-19) 事件日更新于 str '2026-10-18'，
-    按语义应保留 date 侧；实现把 date 判为缺失 → 判负。"""
+# ── dt 契约（WO-QT-20261020-055 方案甲，2026-10-21 老田拍板）─────────
+# 旧 xfail 疑点用例显式作废：方案甲裁决为入口对非字符串 dt 显式拒绝
+# （fail-visible，不隐式转换），date 对象的排序语义之争在契约层终结——
+# 该输入场景在聚合入口即被拒绝，原疑点场景不可能再发生。
+@pytest.mark.parametrize("bad_dt", [date(2026, 10, 19), 20261019, 19.5])
+def test_nonstr_dt_rejected_fail_visible(bad_dt):
+    """方案甲：非字符串 dt（非 None）必须 ValueError 显式拒绝，
+    绝不静默按缺失降档、绝不隐式转换（字面量断言承重）。"""
     older = Sig(action="sell", score=10.0, dt="2026-10-18")
-    newer = Sig(action="buy", score=90.0, dt=date(2026, 10, 19))
-    kept, sup = preaggregate_symbol([("s1", 1.0, older), ("s1", 1.0, newer)])
-    assert kept[0][2] is newer
-    assert len(sup.get("s1", [])) == 1
+    newer = Sig(action="buy", score=90.0, dt=bad_dt)
+    with pytest.raises(ValueError, match="YYYY-MM-DD") as exc_info:
+        preaggregate_symbol([("s1", 1.0, older), ("s1", 1.0, newer)])
+    assert "YYYY-MM-DD" in str(exc_info.value)
+    assert type(bad_dt).__name__ in str(exc_info.value)
+
+
+def test_nonstr_dt_rejection_does_not_mutate_kept_entries():
+    """拒绝发生在任何 kept/superseded 写入生效前（首条即违例也拒绝）。"""
+    bad = Sig(action="buy", score=90.0, dt=date(2026, 10, 19))
+    with pytest.raises(ValueError):
+        preaggregate_symbol([("s1", 1.0, bad)])
+    # 单条违例同样拒绝（入口校验不因"无比较对象"而放行）
+
