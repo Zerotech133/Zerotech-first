@@ -326,9 +326,14 @@ def test_collect_subscribers_flags_truncation():
     assert got["count"] == 200
     assert "may_be_truncated:200" in got["warnings"]
 
+    # _FakeStore 只吃 limit（老接口形态）→ 必然走单页路径并留下降级标记。
+    # P3.10-lite 契约演进：warnings 不再可能为空——降级本身必须可见。
     exact = _FakeStore(total=49)
     got2 = rr.collect_subscribers(store=exact, limit=50)
-    assert got2["count"] == 49 and got2["warnings"] == []
+    assert got2["count"] == 49
+    assert got2["mode"] == "single_page"
+    assert got2["warnings"] == ["offset_unsupported"]
+    assert got2["complete"] is True       # 未触顶 ⇒ 已到底
 
     edge = _FakeStore(total=50)
     got3 = rr.collect_subscribers(store=edge, limit=50)
@@ -380,9 +385,105 @@ def test_collect_then_plan_end_to_end():
     store.rows = [_row(),
                   _row(open_id="ou_bob0002", end="2026-11-17 10:00:00")]
     fetched = rr.collect_subscribers(store=store)
-    assert fetched["ok"] is True and fetched["warnings"] == []
+    assert fetched["ok"] is True
+    # 该假 store 只接受 limit ⇒ 单页路径 + 降级可见（P3.10-lite 契约演进）
+    assert fetched["warnings"] == ["offset_unsupported"]
+    assert fetched["complete"] is True
     report = plan_reminders(fetched, now=NOW)
     assert report["ok"] is True
     assert {it["stage"] for it in report["items"]} == {"t3", "t1"}
     assert report["count"] == 2
 
+
+
+# ── P3.10-lite O-B 追加：分页取数口径（第 201 人之后不再漏） ─────────────
+
+
+class _OffsetStore:
+    """支持 offset 的假 store：无 iter_all_subscribers，走路径 2。"""
+
+    def __init__(self, total=0, fail_from_page=None, exc=None):
+        self.rows = [_row(open_id="ou_pg%05d" % i) for i in range(total)]
+        self.fail_from_page = fail_from_page
+        self.exc = exc
+        self.pages_called = []
+
+    def list_subscribers(self, limit=50, now=None, offset=0):
+        page = offset // limit if limit else 0
+        self.pages_called.append((limit, offset))
+        if self.fail_from_page is not None and page >= self.fail_from_page:
+            raise self.exc or RuntimeError("page boom")
+        return {"ok": True,
+                "count": min(limit, max(0, len(self.rows) - offset)),
+                "subscribers": self.rows[offset:offset + limit]}
+
+
+class _IterStore:
+    """带 iter_all_subscribers 的假 store：走路径 1（与真实 store 同构）。"""
+
+    def __init__(self, total=0, truncated=False):
+        self.rows = [_row(open_id="ou_it%05d" % i) for i in range(total)]
+        self.truncated = truncated
+
+    def iter_all_subscribers(self, page_size=200, now=None, max_pages=50):
+        got = self.rows[:page_size * max_pages]
+        more = len(self.rows) > len(got)
+        trunc = self.truncated or more
+        return {"ok": True, "error": None, "count": len(got),
+                "subscribers": got, "page_size": page_size, "pages": 1,
+                "max_pages": max_pages, "truncated": trunc,
+                "complete": not trunc, "problems": []}
+
+
+def test_ob_1_offset_store_pages_through_250():
+    """路径 2：store 支持 offset 但无 iter → 逐页取全 250 人，降级可见。"""
+    store = _OffsetStore(total=250)
+    got = rr.collect_subscribers(store=store, limit=100)
+    assert got["ok"] is True and got["count"] == 250
+    assert got["pages"] == 3 and got["complete"] is True
+    assert got["truncated"] is False
+    assert "paged_via_list_subscribers" in got["warnings"]
+    assert got["page_size"] == 100
+
+
+def test_ob_2_max_pages_exhausted_reports_truncated():
+    """路径 2 截断：max_pages 用尽仍有更多 → truncated 进 warnings+problems，
+    complete 必须为 False——绝不假装取全。"""
+    store = _OffsetStore(total=250)
+    # 250 人 ÷ 1 行/页 = 250 页 > _MAX_PAGES(50) → 必然截断
+    got = rr.collect_subscribers(store=store, limit=1)
+    assert got["ok"] is True
+    assert got["truncated"] is True and got["complete"] is False
+    assert got["count"] == 50  # 恰好 _MAX_PAGES 页 × 1 行
+    assert got["count"] < 250
+    assert any(w.startswith("truncated_at_page:") for w in got["warnings"])
+    assert any(p.get("reason") == "truncated" for p in got["problems"])
+
+
+def test_ob_3_iter_store_complete_means_full():
+    """路径 1：iter 接口 complete=True 是唯一可声称取全的组合。"""
+    store = _IterStore(total=250)
+    got = rr.collect_subscribers(store=store, limit=200)
+    assert got["ok"] is True and got["count"] == 250
+    assert got["complete"] is True and got["truncated"] is False
+    assert got["mode"] == "iter"
+
+
+def test_ob_4_midpage_exception_is_fail_visible():
+    """分页中途异常 → ok=False + problems 带页码 + complete=False，
+    绝不把异常当成「没有更多」。"""
+    store = _OffsetStore(total=250, fail_from_page=2, exc=RuntimeError("boom"))
+    got = rr.collect_subscribers(store=store, limit=100)
+    assert got["ok"] is False and got["error"] == "store_exception"
+    assert got["complete"] is False and got["truncated"] is False
+    # page 0/1（offset 0/100）正常取回，page 2（第 3 页）抛异常 → 前 2 页保留
+    assert got["count"] == 200
+    assert any(p.get("page") == 3 for p in got["problems"])
+
+
+def test_ob_5_limit_means_page_size_not_total_cap():
+    """limit 语义变更钉住：limit=100 是单页大小，总数可超过 100。
+    旧行为会在 100 截断——此例防止口径被悄悄改回去。"""
+    store = _OffsetStore(total=250)
+    got = rr.collect_subscribers(store=store, limit=100)
+    assert got["count"] == 250 and got["page_size"] == 100

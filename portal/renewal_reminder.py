@@ -60,6 +60,7 @@
   ``renewal_state.py``（文件型，键含 day），同一天重跑不会重复提醒同批人。
 """
 
+import inspect
 from datetime import date, datetime, time
 
 from renewal_state import local_now, resolve_tz
@@ -75,9 +76,13 @@ __all__ = [
 
 _DAY_END = time(23, 59, 59)
 _TS_FMT = "%Y-%m-%d %H:%M:%S"
-# subscription_store.list_subscribers 自身把 limit 钳在 [1,200]，超过这个数
-# 再传也拿不到更多行——本模块据此判定「已到上限，仍可能截断」。
+# subscription_store.list_subscribers 自身把单页上限钳在 [1,200]，超过这个数
+# 再传也拿不到更多行——本模块据此确定**单页大小**的上界（P3.10-lite 起
+# 口径从「总数上限」改为「单页大小」）。
 _STORE_LIMIT_MAX = 200
+# 退化分页（store 只有 list_subscribers、没有 iter_all_subscribers）时的页数
+# 上限，与 subscription_store.iter_all_subscribers 的默认 max_pages 同口径。
+_MAX_PAGES = 50
 
 
 # ---------------------------------------------------------------------------
@@ -189,29 +194,67 @@ def mask_open_id(open_id):
     return s[:3] + "***" + s[-3:]
 
 
+def _accepts_offset(fn):
+    """探测 ``list_subscribers`` 是否接受 ``offset`` 关键字（无副作用）。
+
+    为什么要探：本模块允许注入假 store（测试替身 / 老接口实现），它们可能
+    只接受 ``limit``。直接传 ``offset`` 会 TypeError，而 TypeError 一旦被当成
+    「store 不可用」，就会把整批提醒变成空——正是本项目 fail-open 禁令要防的
+    形态。故先看签名再决定走分页还是退单页，且**降级本身要可见**。
+    """
+    if not callable(fn):
+        return False
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return False
+    if "offset" in params:
+        return True
+    # 有 **kwargs 的实现同样能吃 offset
+    return any(p.kind is inspect.Parameter.VAR_KEYWORD
+               for p in params.values())
+
+
 def collect_subscribers(store=None, limit=200, now=None):
-    """拉取订阅者全集，**对「可能截断」与「取数失败」都显式上报**。
+    """拉取订阅者全集（分页），对「取不全」与「取数失败」都显式上报。
+
+    **P3.10-lite（WO-FS-132）口径变更**：``limit`` 从「总数上限」改为
+    「单页大小」，全集靠分页取。旧实现单页 200 就停，第 201 个订阅者永远
+    收不到到期提醒——这是硬漏人，不是「可能截断」的提示问题。
 
     返回::
 
-        {"ok": bool, "error": None|"store_unavailable"|"store_exception"|
-                           "bad_payload",
-         "limit": 生效 limit, "count": 实际行数,
-         "subscribers": [...], "warnings": [...], "problems": [...]}
+        {"ok": bool,
+         "error": None|"store_unavailable"|"store_exception"|"bad_payload",
+         "limit": 生效单页大小, "count": 实际行数,
+         "subscribers": [...], "warnings": [...], "problems": [...],
+         "page_size": 同 limit（显式别名）, "pages": 已取页数,
+         "truncated": bool, "complete": bool,
+         "mode": "iter"|"offset_loop"|"single_page"}
 
-    口径：
-      - 默认 ``limit=200``（``list_subscribers`` 自身钳 [1,200]，传更大也只
-        到 200，故按 ``min(limit, 200)`` 生效并给 ``limit_clamped:*`` 警告）；
-      - **返回行数达到生效 limit ⇒ ``warnings`` 加 ``may_be_truncated:<limit>``**，
-        绝不假装拿全了——行数恰好等于上限时无法区分"刚好这么多"与"被截断"；
-      - store 返回 ``ok=False`` / 抛异常 / 形态不可识别 ⇒ ``ok=False`` + 错误码
-        + ``problems``，**不当成空列表**（fail-open 禁令）；调用方可直接把它
-        喂给 ``plan_reminders()``，后者同样会报 ``store_unavailable``；
-      - ``store`` 可注入（测试用假 store），默认 ``import subscription_store``。
+    取数分级（按 store 实际能力降级，**降级可见**）：
+
+    1. ``iter``：store 有 ``iter_all_subscribers`` → 直接取全集，
+       ``truncated/complete`` 原样透传（本项目真实 store 走这条）。
+    2. ``offset_loop``：只有 ``list_subscribers`` 但签名接受 ``offset`` →
+       本模块自行逐页推进，给 ``paged_via_list_subscribers`` 警告。
+    3. ``single_page``：``list_subscribers`` 不接受 ``offset``（老接口 /
+       测试替身）→ 只能单页取，给 ``offset_unsupported`` 警告；行数触顶
+       再加 ``may_be_truncated:<page>``。单页永远不能声称「取全」。
+
+    ``complete=True`` 是唯一能声称「全集已取到」的组合（且必须 ``ok=True``）。
+    ``truncated=True`` 意味着**有订阅者本轮未被扫描**，属实质问题，同时进
+    ``warnings`` 与 ``problems``，调用方必须让它影响退出码。
+
+    一致性：offset 分页不做快照，遍历期间若有写入可能重复或遗漏；批量任务
+    应在写入静默窗口内跑（如 ``expire_sweep`` 之后）。
+
+    ``store`` 可注入（测试用假 store），默认 ``import subscription_store``。
     """
     warnings = []
     problems = []
 
+    # ── 单页大小归一（与旧实现同口径；变的是语义，不是钳制）
     try:
         eff = int(limit)
     except (TypeError, ValueError):
@@ -227,46 +270,175 @@ def collect_subscribers(store=None, limit=200, now=None):
     if store is None:
         import subscription_store as store
 
+    def _degraded(err, detail):
+        """统一的降级返回：错误码 + problems，绝不当成空列表。"""
+        problems.append({"reason": err, "detail": str(detail)[:200]})
+        return {"ok": False, "error": err, "limit": eff, "page_size": eff,
+                "count": 0, "subscribers": [], "warnings": warnings,
+                "problems": problems, "pages": 0, "truncated": False,
+                "complete": False, "mode": "degraded"}
+
+    # ── 路径 1：iter_all_subscribers（本项目真实 store）
+    iter_fn = getattr(store, "iter_all_subscribers", None)
+    if callable(iter_fn):
+        kwargs = {"page_size": eff}
+        if now is not None:
+            kwargs["now"] = now
+        try:
+            got = iter_fn(**kwargs)
+        except Exception as exc:  # closed on failure：不抛，落 problems
+            return _degraded("store_exception", "%s: %s"
+                             % (type(exc).__name__, exc))
+        if not isinstance(got, dict):
+            return _degraded("bad_payload", "iter_all_subscribers 返回 %s"
+                             % type(got).__name__)
+        if got.get("ok") is not True:
+            err = str(got.get("error") or "store_unavailable")
+            problems.append({"reason": "store_unavailable", "detail": err[:200]})
+            for p in (got.get("problems") or []):
+                if isinstance(p, dict):
+                    problems.append(dict(p))
+            return {"ok": False, "error": err, "limit": eff, "page_size": eff,
+                    "count": 0, "subscribers": [], "warnings": warnings,
+                    "problems": problems, "pages": int(got.get("pages") or 0),
+                    "truncated": False, "complete": False, "mode": "iter"}
+        rows = got.get("subscribers")
+        if not isinstance(rows, (list, tuple)):
+            return _degraded("bad_payload", "subscribers 不是列表")
+        rows = list(rows)
+        pages = int(got.get("pages") or 0)
+        truncated = got.get("truncated") is True
+        if truncated:
+            warnings.append("truncated_at_page:%d" % pages)
+            problems.append({
+                "reason": "truncated",
+                "detail": "只取到 %d 页共 %d 行仍有更多，本轮有订阅者未被扫描"
+                          % (pages, len(rows)),
+            })
+        for p in (got.get("problems") or []):
+            if isinstance(p, dict):
+                problems.append(dict(p))
+        complete = bool(got.get("complete")) and not truncated
+        return {"ok": True, "error": None, "limit": eff, "page_size": eff,
+                "count": len(rows), "subscribers": rows, "warnings": warnings,
+                "problems": problems, "pages": pages, "truncated": truncated,
+                "complete": complete, "mode": "iter"}
+
+    list_fn = getattr(store, "list_subscribers", None)
+    if not callable(list_fn):
+        return _degraded("store_unavailable", "store 既无 iter_all_subscribers"
+                         " 也无 list_subscribers")
+
+    # ── 路径 2：list_subscribers 支持 offset → 自行逐页推进
+    if _accepts_offset(list_fn):
+        warnings.append("paged_via_list_subscribers")
+        rows = []
+        pages = 0
+        truncated = False
+        while pages < _MAX_PAGES:
+            kwargs = {"limit": eff, "offset": pages * eff}
+            if now is not None:
+                kwargs["now"] = now
+            try:
+                payload = list_fn(**kwargs)
+            except Exception as exc:  # closed on failure
+                problems.append({"reason": "store_exception",
+                                 "page": pages + 1,
+                                 "detail": "%s: %s"
+                                           % (type(exc).__name__, exc)})
+                return {"ok": False, "error": "store_exception", "limit": eff,
+                        "page_size": eff, "count": len(rows),
+                        "subscribers": rows, "warnings": warnings,
+                        "problems": problems, "pages": pages,
+                        "truncated": False, "complete": False,
+                        "mode": "offset_loop"}
+            if not isinstance(payload, dict):
+                problems.append({"reason": "bad_payload", "page": pages + 1,
+                                 "detail": "返回 %s" % type(payload).__name__})
+                return {"ok": False, "error": "bad_payload", "limit": eff,
+                        "page_size": eff, "count": len(rows),
+                        "subscribers": rows, "warnings": warnings,
+                        "problems": problems, "pages": pages,
+                        "truncated": False, "complete": False,
+                        "mode": "offset_loop"}
+            if payload.get("ok") is False:
+                err = str(payload.get("error") or "store_unavailable")
+                problems.append({"reason": "store_unavailable",
+                                 "page": pages + 1, "detail": err[:200]})
+                return {"ok": False, "error": err, "limit": eff,
+                        "page_size": eff, "count": len(rows),
+                        "subscribers": rows, "warnings": warnings,
+                        "problems": problems, "pages": pages,
+                        "truncated": False, "complete": False,
+                        "mode": "offset_loop"}
+            page_rows = payload.get("subscribers")
+            if not isinstance(page_rows, (list, tuple)):
+                problems.append({"reason": "bad_payload", "page": pages + 1,
+                                 "detail": "subscribers 不是列表"})
+                return {"ok": False, "error": "bad_payload", "limit": eff,
+                        "page_size": eff, "count": len(rows),
+                        "subscribers": rows, "warnings": warnings,
+                        "problems": problems, "pages": pages,
+                        "truncated": False, "complete": False,
+                        "mode": "offset_loop"}
+            page_rows = list(page_rows)
+            rows.extend(page_rows)
+            pages += 1
+            if len(page_rows) < eff:
+                break  # 未取满 = 已到底
+        else:
+            # max_pages 用尽仍未取满页 → 没取完，显式报告
+            truncated = True
+            warnings.append("truncated_at_page:%d" % pages)
+            problems.append({
+                "reason": "truncated",
+                "detail": "分页用尽 %d 页共 %d 行仍有更多，本轮有订阅者未被扫描"
+                          % (pages, len(rows)),
+            })
+        return {"ok": True, "error": None, "limit": eff, "page_size": eff,
+                "count": len(rows), "subscribers": rows, "warnings": warnings,
+                "problems": problems, "pages": pages, "truncated": truncated,
+                "complete": not truncated, "mode": "offset_loop"}
+
+    # ── 路径 3：老接口只吃 limit → 单页取，绝不假装取全
+    warnings.append("offset_unsupported")
     kwargs = {"limit": eff}
     if now is not None:
         kwargs["now"] = now
     try:
-        payload = store.list_subscribers(**kwargs)
+        payload = list_fn(**kwargs)
     except Exception as exc:  # closed on failure：不抛，返回带 problems 的降级结构
-        problems.append({"reason": "store_exception",
-                         "detail": str(exc)[:200]})
-        return {"ok": False, "error": "store_exception", "limit": eff,
-                "count": 0, "subscribers": [], "warnings": warnings,
-                "problems": problems}
+        return _degraded("store_exception", "%s: %s"
+                         % (type(exc).__name__, exc))
 
     if not isinstance(payload, dict):
-        problems.append({"reason": "bad_payload",
-                         "detail": "list_subscribers 返回 %s"
-                                   % type(payload).__name__})
-        return {"ok": False, "error": "bad_payload", "limit": eff,
-                "count": 0, "subscribers": [], "warnings": warnings,
-                "problems": problems}
+        return _degraded("bad_payload", "list_subscribers 返回 %s"
+                         % type(payload).__name__)
 
     if payload.get("ok") is False:
         err = str(payload.get("error") or "store_unavailable")
         problems.append({"reason": "store_unavailable", "detail": err[:200]})
-        return {"ok": False, "error": err, "limit": eff, "count": 0,
-                "subscribers": [], "warnings": warnings,
-                "problems": problems}
+        return {"ok": False, "error": err, "limit": eff, "page_size": eff,
+                "count": 0, "subscribers": [], "warnings": warnings,
+                "problems": problems, "pages": 1, "truncated": False,
+                "complete": False, "mode": "single_page"}
 
     rows = payload.get("subscribers")
     if not isinstance(rows, (list, tuple)):
-        problems.append({"reason": "bad_payload",
-                         "detail": "subscribers 不是列表"})
-        return {"ok": False, "error": "bad_payload", "limit": eff,
-                "count": 0, "subscribers": [], "warnings": warnings,
-                "problems": problems}
+        return _degraded("bad_payload", "subscribers 不是列表")
 
     rows = list(rows)
-    if len(rows) >= eff:
+    truncated = len(rows) >= eff
+    if truncated:
         warnings.append("may_be_truncated:%d" % eff)
-    return {"ok": True, "error": None, "limit": eff, "count": len(rows),
-            "subscribers": rows, "warnings": warnings, "problems": problems}
+        problems.append({
+            "reason": "truncated",
+            "detail": "单页取到 %d 行触顶，store 不支持分页，可能漏人" % eff,
+        })
+    return {"ok": True, "error": None, "limit": eff, "page_size": eff,
+            "count": len(rows), "subscribers": rows, "warnings": warnings,
+            "problems": problems, "pages": 1, "truncated": truncated,
+            "complete": not truncated, "mode": "single_page"}
 
 
 def plan_reminders(subscribers, now=None, lead_days=(3, 1)):

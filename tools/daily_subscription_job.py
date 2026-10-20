@@ -255,23 +255,40 @@ def run(mode=MODE_DRY_RUN, now=None, mark_sent=False):
             })
             return report, EXIT_ISSUES
 
-    # 4. 取数（可能截断必须可见）
+    # 4. 取数（可能截断必须可见；P3.10-lite 起 collect_subscribers 分页取全，
+    #    truncated=True 意味着 max_pages 用尽仍有订阅者未被扫描）
     collected = _reminder.collect_subscribers(
         store=_store, limit=DEFAULT_LIMIT, now=now_dt)
     report["collected"] = {
         "count": int(collected.get("count") or 0),
         "warnings": list(collected.get("warnings") or []),
         "problems": list(collected.get("problems") or []),
+        # P3.10-lite 追加键：分页元信息（只追加，不改既有键）
+        "pages": int(collected.get("pages") or 0),
+        "truncated": collected.get("truncated") is True,
+        "complete": collected.get("complete") is True,
     }
     report["warnings"].extend(report["collected"]["warnings"])
     report["problems"].extend(report["collected"]["problems"])
-    for warn in report["collected"]["warnings"]:
-        if str(warn).startswith("may_be_truncated"):
-            # 触顶即疑似漏人：作为阻断项，不降级成普通提示
-            report["problems"].append({
-                "reason": "subscribers_may_be_truncated",
-                "detail": "取数触顶（%s），订阅者可能超过上限而静默漏人" % warn,
-            })
+    # 布尔字段是权威判定；旧 may_be_truncated 警告字符串保留兼容（单页路径仍会产生）
+    if collected.get("truncated") is True:
+        # 触发即实锤漏人：作为阻断项，不降级成普通提示
+        report["problems"].append({
+            "reason": "subscribers_truncated",
+            "detail": "本轮只扫描了 %d 页共 %d 人，仍有订阅者未被覆盖，"
+                      "他们的到期提醒本轮不会发出" % (
+                          report["collected"]["pages"],
+                          report["collected"]["count"]),
+        })
+    else:
+        for warn in report["collected"]["warnings"]:
+            if str(warn).startswith("may_be_truncated"):
+                # 单页退化路径的疑似触顶：同样作为阻断项
+                report["problems"].append({
+                    "reason": "subscribers_may_be_truncated",
+                    "detail": "取数触顶（%s），订阅者可能超过上限而静默漏人"
+                              % warn,
+                })
 
     # 5. 算该提醒谁
     plan = _reminder.plan_reminders(

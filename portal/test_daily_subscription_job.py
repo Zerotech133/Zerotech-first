@@ -376,7 +376,9 @@ def test_10_json_shape_and_no_plain_open_id(env, capsys):
 
     assert code == 0
     assert REQUIRED_KEYS <= set(data)
-    assert set(data["collected"]) == {"count", "warnings", "problems"}
+    # P3.10-lite 契约演进：collected 追加分页元信息三键（pages/truncated/complete）
+    assert set(data["collected"]) == {
+        "count", "warnings", "problems", "pages", "truncated", "complete"}
     assert set(data["reminders"]) == {"total", "to_send", "already_sent", "skipped"}
     assert set(data["reconcile"]) == {"ok", "checked", "issues_count"}
     assert data["items"] and set(data["items"][0]) == {
@@ -419,3 +421,49 @@ def test_13_bad_now_is_argument_error(env, capsys):
     with pytest.raises(SystemExit) as excinfo:
         job.main(["--now", "not-a-timestamp"])
     assert excinfo.value.code == job.EXIT_FATAL == 2
+
+
+# ---------------------------------------------------------------------------
+# P3.10-lite O-B 追加：分页元信息与截断联动
+# ---------------------------------------------------------------------------
+
+def test_ob_6_json_collected_has_paging_keys(env, capsys):
+    """--json 的 collected 必须带 pages/truncated/complete 三键（只追加口径）。"""
+    db, state = env
+    _schema(db)
+    _subscribe(db, ALICE, PLAN, START, END_T3)
+
+    code, out = _run(capsys, "--dry-run", "--json", "--now", NOW)
+    data = json.loads(out)
+
+    assert code == 0
+    c = data["collected"]
+    assert isinstance(c["pages"], int) and c["pages"] >= 0
+    assert c["truncated"] is False and c["complete"] is True
+
+
+def test_ob_7_truncated_forces_exit_1(env, capsys, monkeypatch):
+    """截断必须影响退出码：truncated=True → problems 注入 + 退出 1。"""
+    db, state = env
+    _schema(db)
+    _subscribe(db, ALICE, PLAN, START, END_T3)
+
+    import daily_subscription_job as job
+    real = job._reminder.collect_subscribers
+
+    def fake_collect(**kw):
+        got = dict(real(**kw))
+        got["pages"] = 50
+        got["truncated"] = True
+        got["complete"] = False
+        return got
+
+    monkeypatch.setattr(job._reminder, "collect_subscribers", fake_collect)
+    code, out = _run(capsys, "--dry-run", "--json", "--now", NOW)
+    data = json.loads(out)
+
+    assert code == 1
+    assert data["collected"]["truncated"] is True
+    assert any(p["reason"] == "subscribers_truncated"
+               for p in data["problems"])
+    assert data["ok"] is False
