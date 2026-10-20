@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -211,6 +212,33 @@ def _time_fact(
     return {"created_at_ms": post.created_at_ms, "time_source": time_source}
 
 
+_TOKEN_EDGE_RE = re.compile(r"[A-Za-z0-9]")
+
+
+def _symbol_token_in(symbol: str, excerpt: str, original: str) -> bool:
+    """WO-061 A2 口径：完整 token 词边界判定（原文语境）。
+
+    excerpt 是原文的子串；symbol 在 excerpt 中的每次出现都映射回
+    original 的绝对位置，并要求命中位置前后任一侧不紧贴 ASCII 字母/
+    数字（SH600000 不得借 SH6000000 的子串位置产生证据）。中文等
+    非 ASCII 字符紧邻不算边界破坏。任一合规出现即存在；否则整体不
+    存在（closed on failure）。
+    """
+    start = original.find(excerpt)
+    while start >= 0:
+        j = excerpt.find(symbol)
+        while j >= 0:
+            left_pos = start + j
+            left = original[left_pos - 1] if left_pos > 0 else ""
+            right = original[left_pos + len(symbol):
+                             left_pos + len(symbol) + 1]
+            if not (_TOKEN_EDGE_RE.match(left)
+                    or _TOKEN_EDGE_RE.match(right)):
+                return True
+            j = excerpt.find(symbol, j + 1)
+        start = original.find(excerpt, start + 1)
+    return False
+
 def _mention_fact(
     relation: Any, post_id: str, original: dict[str, Any]
 ) -> dict[str, Any]:
@@ -235,11 +263,13 @@ def _mention_fact(
     excerpt = evidence.get("excerpt")
     if source_field not in ("text", "title", "description"):
         raise ValueError("evidence must identify an original content field")
-    if not isinstance(excerpt, str) or not excerpt.strip() or symbol not in excerpt:
+    if not isinstance(excerpt, str) or not excerpt.strip():
         raise ValueError("evidence excerpt must contain the exact symbol")
     field_text = original.get(source_field)
     if not isinstance(field_text, str) or excerpt not in field_text:
         raise ValueError("evidence excerpt must occur in original post content")
+    if not _symbol_token_in(symbol, excerpt, field_text):
+        raise ValueError("evidence excerpt must contain the exact symbol")
     start = field_text.find(excerpt)
     end = start + len(excerpt)
     if field_text[start:end] != excerpt:

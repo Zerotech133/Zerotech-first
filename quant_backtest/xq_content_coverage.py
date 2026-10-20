@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -69,10 +70,38 @@ def _verified_evidence(
         raise CoverageAttributionBlockedError("relation does not identify a content field")
     content = original.get(field)
     if (not isinstance(excerpt, str) or not excerpt.strip()
-            or symbol not in excerpt or not isinstance(content, str)
-            or excerpt not in content):
+            or not isinstance(content, str) or excerpt not in content):
+        raise CoverageAttributionBlockedError("relation is unsupported by same-batch original")
+    if not _symbol_token_in(symbol, excerpt, content):
         raise CoverageAttributionBlockedError("relation is unsupported by same-batch original")
 
+
+_TOKEN_EDGE_RE = re.compile(r"[A-Za-z0-9]")
+
+
+def _symbol_token_in(symbol: str, excerpt: str, original: str) -> bool:
+    """WO-061 A2 口径：完整 token 词边界判定（原文语境）。
+
+    excerpt 是原文的子串；symbol 在 excerpt 中的每次出现都映射回
+    original 的绝对位置，并要求命中位置前后任一侧不紧贴 ASCII 字母/
+    数字（SH600000 不得借 SH6000000 的子串位置产生证据）。中文等
+    非 ASCII 字符紧邻不算边界破坏。任一合规出现即存在；否则整体不
+    存在（closed on failure）。
+    """
+    start = original.find(excerpt)
+    while start >= 0:
+        j = excerpt.find(symbol)
+        while j >= 0:
+            left_pos = start + j
+            left = original[left_pos - 1] if left_pos > 0 else ""
+            right = original[left_pos + len(symbol):
+                             left_pos + len(symbol) + 1]
+            if not (_TOKEN_EDGE_RE.match(left)
+                    or _TOKEN_EDGE_RE.match(right)):
+                return True
+            j = excerpt.find(symbol, j + 1)
+        start = original.find(excerpt, start + 1)
+    return False
 
 def _receipt_post_ids(
     conn: sqlite3.Connection, symbol: str, lane: str,

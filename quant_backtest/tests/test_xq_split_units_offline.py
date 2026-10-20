@@ -319,3 +319,42 @@ class SplitUnitsOfflineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SymbolTokenBoundaryTests(unittest.TestCase):
+    """WO-061 A2 口径：证据摘录内的 symbol 必须是完整 token（不造数）。"""
+
+    @staticmethod
+    def post(post_id: str, text: str) -> xq_reverse_store.RawPostInput:
+        return xq_reverse_store.RawPostInput(
+            post_id=post_id,
+            original_url=f"https://xueqiu.com/test/{post_id}",
+            created_at_ms=1_600_000_000_000,
+            raw_json={"id": post_id, "text": text},
+        )
+
+    @staticmethod
+    def relation(post_id: str, symbol: str, excerpt: str
+                 ) -> xq_reverse_store.PostSymbolInput:
+        return xq_reverse_store.PostSymbolInput(
+            post_id=post_id,
+            symbol=symbol,
+            evidence_type="post_content",
+            evidence_json={"source_field": "text", "excerpt": excerpt},
+        )
+
+    def test_partial_token_occurrence_rejected(self) -> None:
+        """SH600000 不得借 SH6000000 的子串位置产生 mention 单元。"""
+        with self.assertRaises(ValueError):
+            xq_split_units.split_post(
+                self.post("pA2x", "SH6000000 走势分析长文"),
+                [self.relation("pA2x", "SH600000", "SH600000")])
+
+    def test_cashtag_and_cjk_adjacent_occurrence_split(self) -> None:
+        """标点邻接与中文紧邻的完整 token 保持有效。"""
+        units = xq_split_units.split_post(
+            self.post("pA2y", "买 $SH600000$ 的讨论 买SH600000的"),
+            [self.relation("pA2y", "SH600000", "$SH600000$")])
+        mentions = [u for u in units if u.unit_type == "mention"]
+        self.assertEqual(len(mentions), 1)
+        self.assertEqual(mentions[0].payload["symbol"], "SH600000")

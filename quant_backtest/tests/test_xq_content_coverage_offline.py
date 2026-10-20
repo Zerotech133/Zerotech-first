@@ -237,3 +237,57 @@ class ContentCoverageOfflineTests(unittest.TestCase):
             xq_content_coverage.read_content_coverage(self.conn, "", "new")
         with self.assertRaises(ValueError):
             xq_content_coverage.read_content_coverage(self.conn, "SH600000", "unknown")
+
+
+class SymbolTokenBoundaryTests(unittest.TestCase):
+    """WO-061 A2 口径：内容覆盖归属同样要求完整 token 证据。"""
+
+    def setUp(self) -> None:
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.execute("PRAGMA foreign_keys=ON")
+        xq_reverse_ledger.init_schema(self.conn)
+        self.conn.execute("BEGIN")
+        xq_reverse_store.init_schema(self.conn)
+        self.conn.commit()
+
+    def tearDown(self) -> None:
+        self.conn.close()
+
+    @staticmethod
+    def post(post_id: str, text: str) -> xq_reverse_store.RawPostInput:
+        return xq_reverse_store.RawPostInput(
+            post_id=post_id,
+            original_url=f"https://xueqiu.com/test/{post_id}",
+            created_at_ms=1_600_000_000_000,
+            raw_json={"id": post_id, "text": text},
+        )
+
+    @staticmethod
+    def relation(post_id: str, symbol: str, excerpt: str
+                 ) -> xq_reverse_store.PostSymbolInput:
+        return xq_reverse_store.PostSymbolInput(
+            post_id=post_id,
+            symbol=symbol,
+            evidence_type="post_content",
+            evidence_json={"source_field": "text", "excerpt": excerpt},
+        )
+
+    def test_partial_token_occurrence_rejected(self) -> None:
+        """SH600000 不得借 SH6000000 的子串位置取得内容归属。"""
+        with self.assertRaises(ValueError):
+            xq_reverse_ledger.commit_page(
+                self.conn, "SH600000", "new", "bA2x", "pg1",
+                [self.post("pA2x", "SH6000000 走势分析长文")],
+                [self.relation("pA2x", "SH600000", "SH600000")],
+                None, 0, 1000)
+
+    def test_cashtag_occurrence_accepted(self) -> None:
+        """标点邻接的完整 token 保持可归属。"""
+        xq_reverse_ledger.commit_page(
+            self.conn, "SH600000", "new", "bA2y", "pg1",
+            [self.post("pA2y", "buy $SH600000$ today")],
+            [self.relation("pA2y", "SH600000", "$SH600000$")],
+            None, 0, 1000)
+        view = xq_content_coverage.read_content_coverage(
+            self.conn, "SH600000", "new")
+        self.assertIsNotNone(view.earliest_created_at_ms)

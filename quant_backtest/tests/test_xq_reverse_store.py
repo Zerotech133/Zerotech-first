@@ -317,3 +317,31 @@ def test_identical_replay_advances_recency_but_keeps_first_version_row(tmp_path)
         assert len(versions) == 1
         assert json.loads(versions[0][0])["text"] == "stable $SH600000 body"
         assert versions[0][1] == 1000
+
+
+# ---- WO-061 A2 word-boundary pins ---------------------------------------
+
+
+def test_excerpt_rejects_partial_token_occurrence(tmp_path) -> None:
+    """A2 (WO-061): SH600000 must not produce evidence inside SH6000000."""
+    body = "discussion of SH6000000 long-run data"
+    with connect(tmp_path) as connection:
+        with pytest.raises(ValueError):
+            save_posts(connection, [post(body=body)],
+                       [relation("SH600000")], "batch-a2x", 1000)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM xq_reverse_post_symbol"
+        ).fetchone()[0] == 0
+
+
+def test_excerpt_accepts_cashtag_and_cjk_adjacent_occurrence(tmp_path) -> None:
+    """A2 (WO-061): punctuation-edged and CJK-adjacent tokens stay valid."""
+    body = "buy $SH600000$ today and 买SH600000的讨论"
+    with connect(tmp_path) as connection:
+        save_posts(connection, [post(body=body)],
+                   [relation("SH600000")], "batch-a2y", 1000)
+        n = connection.execute(
+            "SELECT COUNT(*) FROM xq_reverse_post_symbol "
+            "WHERE symbol = 'SH600000'"
+        ).fetchone()[0]
+    assert n == 1
