@@ -74,6 +74,39 @@ def open_tasks() -> dict:
         return {}
 
 
+def _task_hits(t: dict, members: list, lead: str) -> list:
+    """工单归属判定：desc 含 `[成员ID]` 标签，或 owner 精确等于成员ID/部长ID。
+
+    只做精确 ID 匹配——tasks.json 的 owner 有 162 条 unknown-agent 及多种
+    非成员取值，模糊匹配会把无关工单挂到部门名下。
+    """
+    desc = str(t.get("desc", ""))
+    owner = str(t.get("owner") or "")
+    # run() 已把 lead 并入 members，此处去重避免同一成员重复出行
+    pool = list(dict.fromkeys(list(members) + ([lead] if lead else [])))
+    return [m for m in pool
+            if ("[%s]" % m) in desc or (owner and owner == m)]
+
+
+# created 实测格式：'2026-10-18 16:53:47'（空格分隔，212 条）为主，
+# 另有 ISO 'T' 分隔、缺秒（20 条）与纯日期（45 条）。
+_TS_FMTS = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M", "%Y-%m-%d")
+
+
+def _parse_created(raw) -> float:
+    """解析 created 时间戳；无法解析返回 None（由调用方显式记录，不静默吞掉）。"""
+    s = str(raw or "").strip()
+    if not s:
+        return None
+    for f in _TS_FMTS:
+        try:
+            return time.mktime(time.strptime(s, f))
+        except ValueError:
+            continue
+    return None
+
+
 def academy_plan() -> list:
     """研究院固定研究链，统一研究语言并避免被当作普通职能部门。"""
     return [
@@ -114,26 +147,33 @@ def morning_meeting(dept_name: str, lead: str, members: list, reviews: dict,
             hit = True
             lines.append("- %s（%s）排程：%s [%s]" % (cn_name(s["agent"]), s["agent"], s.get("desc", "")[:40], s.get("cron", "")))
     for tid, t in tasks.items():
-        for m in members:
-            if "[%s]" % m in str(t.get("desc", "")):
-                lines.append("- %s（%s）在途工单：%s [%s]" % (cn_name(m), m, tid, str(t.get("desc", ""))[:40]))
-                hit = True
+        for m in _task_hits(t, members, lead):
+            lines.append("- %s（%s）在途工单：%s [%s]" % (cn_name(m), m, tid, str(t.get("desc", ""))[:40]))
+            hit = True
     if not hit:
         lines.append("- （无排程/在途单——部长现场派单或成员领单）")
     lines.append("")
     lines.append("## 三、阻塞求助（超期/依赖）")
     blocked = False
     now = time.time()
+    ts_bad = []
     for tid, t in tasks.items():
-        for m in members:
-            if "[%s]" % m in str(t.get("desc", "")) and t.get("status") == "doing":
-                try:
-                    ch = time.mktime(time.strptime(str(t.get("created", ""))[:19], "%Y-%m-%dT%H:%M:%S"))
-                    if now - ch > 72 * 3600:
-                        lines.append("- ⚠️ %s（%s）工单 %s 超 72h——部长 %s 介入" % (cn_name(m), m, tid, cn_name(lead)))
-                        blocked = True
-                except Exception:
-                    pass
+        if t.get("status") != "doing":
+            continue
+        for m in _task_hits(t, members, lead):
+            ch = _parse_created(t.get("created"))
+            if ch is None:
+                ts_bad.append((tid, str(t.get("created", ""))))
+                continue
+            if now - ch > 72 * 3600:
+                lines.append("- ⚠️ %s（%s）工单 %s 超 72h——部长 %s 介入" % (cn_name(m), m, tid, cn_name(lead)))
+                blocked = True
+    if ts_bad:
+        # 时间字段不可解析的工单不得无声消失：计数 + 逐条留痕，并计入阻塞待办。
+        lines.append("- ⚠️ 工单时间字段解析失败 %d 条（需部长 %s 核对 created）——%s"
+                     % (len(ts_bad), cn_name(lead),
+                        "；".join("%s（created=%r）" % (tid, raw) for tid, raw in ts_bad)))
+        blocked = True
     if not blocked:
         lines.append("- 无阻塞")
     lines.append("")
@@ -161,8 +201,12 @@ def run():
         dept = d.get("dept", "?")
         if dept.startswith("proj_"):  # 项目部并入职能部晨会
             continue
-        md = morning_meeting(d.get("name", dept), d.get("lead") or "—",
-                             [a for a in d.get("agents", [])], reviews, scheds, tasks, dept)
+        lead = d.get("lead") or "—"
+        members = list(dict.fromkeys([a for a in d.get("agents", [])]))
+        if d.get("lead"):  # lead 不在 agents 内时并入本次晨会成员集合（ops_runtime/chief_line）
+            members = list(dict.fromkeys([d.get("lead")] + members))
+        md = morning_meeting(d.get("name", dept), lead,
+                             members, reviews, scheds, tasks, dept)
         (MEET_DIR / ("%s_%s_晨会.md" % (day, dept))).write_text(md, encoding="utf-8")
         n += 1
     lead0 = org.get("chief", {}).get("agent_id", "A0")
