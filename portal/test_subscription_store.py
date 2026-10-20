@@ -286,3 +286,36 @@ def test_17_concurrent_readonly_threads(db):
         t.join()
     assert not errors
     assert results == [(True, "subscription_active")] * 8
+
+
+# ---------------------------------------------------------------------------
+# P3.9-lite N-A 追加：offset 默认值不改变旧调用方结果
+# ---------------------------------------------------------------------------
+
+def test_18_offset_default_keeps_legacy_result(db):
+    """offset 缺省 == offset=0：旧调用方（关键字 / 位置）结果逐字段不变。"""
+    for i in range(3):
+        ss.upsert_subscriber("ou_off%d" % i, "偏%d" % i)
+    _grant_here("ou_off0")
+    legacy = ss.list_subscribers(limit=2)
+    explicit = ss.list_subscribers(limit=2, offset=0)
+    assert legacy["ok"] is True and explicit["ok"] is True
+    assert legacy["subscribers"] == explicit["subscribers"]
+    assert legacy["count"] == explicit["count"] == 2
+    assert legacy["offset"] == explicit["offset"] == 0
+    assert legacy["has_more"] is True  # 2 行 == 生效 limit 2，宁松不紧
+    # 位置传参仍表示 limit（offset 在签名末尾，不抢位）
+    assert ss.list_subscribers(200)["count"] == ss.list_subscribers(
+        limit=200)["count"] == 3
+
+
+def test_19_offset_skips_prefix_without_touching_rows(db):
+    """offset 只跳过前缀行，行内字段与不跳时完全一致。"""
+    for i in range(4):
+        ss.upsert_subscriber("ou_pg%d" % i, "页%d" % i)
+    _grant_here("ou_pg2")
+    full = ss.list_subscribers(limit=4)["subscribers"]
+    tail = ss.list_subscribers(limit=2, offset=2)
+    assert tail["subscribers"] == full[2:4]
+    assert tail["count"] == 2 and tail["has_more"] is True
+    assert tail["subscribers"][0]["plan_id"] == "basic_monthly"

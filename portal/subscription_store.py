@@ -44,6 +44,7 @@ __all__ = [
     "entitlement_log",
     "get_subscriber_summary",
     "list_subscribers",
+    "iter_all_subscribers",
     "OWN_DOMAIN_OPEN_IDS",
     "SEED_PLANS",
     "ensure_schema",
@@ -417,17 +418,23 @@ def get_subscriber_summary(open_id, now=None):
 # FE-B（飞书中台 P2.6 · 2026-10-20）订阅者全集只读列表——只追加不改写
 # ---------------------------------------------------------------------------
 
-def list_subscribers(limit=50, now=None):
+def list_subscribers(limit=50, now=None, offset=0):
     """订阅者全集只读列表（P2.6 商务面 /api/subscription/list 数据出口）。
 
-    返回 dict（契约见派工单 FE-B 节）::
+    返回 dict（契约见派工单 FE-B 节 + P3.9-lite N-A 分页追加）::
 
         {"ok": True, "count": N,
          "subscribers": [{open_id, display_name, plan_id, status,
-                          start, end, daily_quota, used_today}, ...]}
+                          start, end, daily_quota, used_today}, ...],
+         "offset": 生效偏移, "has_more": bool}
 
     - ORDER BY open_id 稳定序；limit 钳制 [1,200]（非法输入按默认 50）；
       count 为返回的 subscribers 行数（与列表严格一致，不冒充总量）。
+    - offset 为跳过行数（SQL ``LIMIT ? OFFSET ?`` 参数化）；非法值（负数 /
+      非 int / 数字字符串）一律归一到 0，不抛异常。offset 放在签名末尾，
+      既有位置传参 ``list_subscribers(200)`` 仍表示 limit=200。
+    - ``has_more``：本次行数 == 生效 limit 即视为「可能还有」（无 total
+      计数，宁松不紧）。True 不代表确定还有，False 才表示已到底。
     - 每个订阅者一行：优先取 status=active 且覆盖 now 的订阅行，否则取
       end 最新一行（与 get_subscriber_summary 的 reason 口径一致）；
       无任何订阅行时 plan_id/status/start/end/daily_quota 为 None（诚实空）。
@@ -446,6 +453,8 @@ def list_subscribers(limit=50, now=None):
         except (TypeError, ValueError):
             _limit = 50
         _limit = max(1, min(200, _limit))
+        # 非法 offset（负数 / 非 int / 数字字符串）一律归一到 0，不抛异常
+        _offset = offset if isinstance(offset, int) and offset >= 0 else 0
 
         path = _db_path()
         if not path.exists():
@@ -454,7 +463,8 @@ def list_subscribers(limit=50, now=None):
         with _connect(create=False) as conn:
             who = conn.execute(
                 "SELECT open_id, display_name FROM subscriber"
-                " ORDER BY open_id"
+                " ORDER BY open_id LIMIT ? OFFSET ?",
+                (_limit, _offset),
             ).fetchall()
             sub_rows = conn.execute(
                 "SELECT subscription.subscriber_open_id, subscription.plan_id,"
@@ -494,9 +504,100 @@ def list_subscribers(limit=50, now=None):
             })
         subscribers = subscribers[:_limit]
         return {"ok": True, "count": len(subscribers),
-                "subscribers": subscribers}
+                "subscribers": subscribers,
+                "offset": _offset,
+                "has_more": len(subscribers) == _limit}
     except Exception:  # closed on failure：不抛，诚实报错
         return {"ok": False, "error": "store_unavailable"}
+
+
+def iter_all_subscribers(page_size=200, now=None, max_pages=50):
+    """逐页取订阅者全集（批量任务用，P3.9-lite N-A）——截断与异常都显式上报。
+
+    背景：``list_subscribers`` 单页上限 200，订阅者超过 200 时一次性取数必然
+    漏人；本函数用 offset 逐页推进，把「是否取完」变成可判定的返回值。
+
+    返回 dict::
+
+        {"ok": bool,
+         "error": None|"store_unavailable"|"store_exception"|"bad_payload",
+         "count": N, "subscribers": [...],
+         "page_size": 生效页大小, "pages": 已取页数, "max_pages": 生效上限,
+         "truncated": bool, "complete": bool, "problems": [...]}
+
+    - ``page_size`` 钳制 [1,200]（与 list_subscribers 同口径，非法按 200）；
+      ``max_pages`` 钳制 [1,1000]（非法按 50），防账本异常膨胀时跑飞。
+    - ``truncated``：``max_pages`` 用尽且最后一页仍取满 → True，显式报告
+      「没取完」并给出 ``pages``，绝不静默停下。
+    - ``complete``：仅当 ``ok=True`` 且 ``truncated=False`` 时为 True，
+      是唯一能声称「已到底」的组合。
+    - 某一页 store 返回 ok=False / 抛异常 / 形态不可识别 → 立即中止：已取
+      行原样保留，``ok=False`` + ``error`` 错误码 + ``problems`` 带页码，
+      **不当成「没有更多」**（fail-open 禁令）。此时 ``truncated`` 仍为
+      False，调用方必须看 ``ok``/``complete``，不能只看 ``truncated``。
+    - ``now`` 在遍历开始归一一次并固定传给每页，避免跨页 used_today 与选行
+      口径随时钟推进漂移。
+    - 一致性：offset 分页不做快照；遍历期间若有写入，可能重复或遗漏。
+      批量任务应在写入静默窗口内跑（如 expire_sweep 之后）。
+    - 只读取数，全部走 ``list_subscribers``（create=False，读路径不建库）；
+      closed on failure：任何异常都不抛，落到 ``error``/``problems``。
+    """
+    try:
+        _size = int(page_size)
+    except (TypeError, ValueError):
+        _size = 200
+    _size = max(1, min(200, _size))
+    try:
+        _cap = int(max_pages)
+    except (TypeError, ValueError):
+        _cap = 50
+    _cap = max(1, min(1000, _cap))
+    now_str = _norm_now(now)
+
+    rows = []
+    pages = 0
+    problems = []
+    error = None
+    reached_end = False
+    while pages < _cap:
+        try:
+            payload = list_subscribers(limit=_size, now=now_str,
+                                       offset=pages * _size)
+        except Exception as exc:  # closed on failure：不当成「没有更多」
+            error = "store_exception"
+            problems.append({"reason": "store_exception", "page": pages + 1,
+                             "detail": str(exc)[:200]})
+            break
+        if not isinstance(payload, dict):
+            error = "bad_payload"
+            problems.append({"reason": "bad_payload", "page": pages + 1,
+                             "detail": "list_subscribers 返回 %s"
+                                       % type(payload).__name__})
+            break
+        if payload.get("ok") is False:
+            error = str(payload.get("error") or "store_unavailable")
+            problems.append({"reason": "store_unavailable", "page": pages + 1,
+                             "detail": error[:200]})
+            break
+        page_rows = payload.get("subscribers")
+        if not isinstance(page_rows, (list, tuple)):
+            error = "bad_payload"
+            problems.append({"reason": "bad_payload", "page": pages + 1,
+                             "detail": "subscribers 不是列表"})
+            break
+        page_rows = list(page_rows)
+        rows.extend(page_rows)
+        pages += 1
+        if len(page_rows) < _size:  # 与 has_more 同口径：未取满即到底
+            reached_end = True
+            break
+
+    truncated = error is None and not reached_end
+    return {"ok": error is None, "error": error, "count": len(rows),
+            "subscribers": rows, "page_size": _size, "pages": pages,
+            "max_pages": _cap, "truncated": truncated,
+            "complete": error is None and not truncated,
+            "problems": problems}
 
 
 # ---------------------------------------------------------------------------
