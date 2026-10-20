@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """K-STOCK 无进展熔断闸（P2-D4）测试。
-monkeypatch 隔离 LEDGER/FUSE_FILE/LOCK，不碰真 data/；
-Popen/dereg_bootstrap 全 mock，不起任何子进程（规避沙箱连坐）。"""
+monkeypatch 隔离 DATA/_today/FUSE_FILE/LOCK，不碰真 data/；
+Popen/dereg_bootstrap 全 mock，不起任何子进程（规避沙箱连坐）。
+注：LEDGER/LOG 已改 _ledger_path()/_log_path() 动态日期（02922778），
+隔离改为 patch DATA 目录 + 固定 _today()。"""
 import json
 import sys
 from pathlib import Path
@@ -23,13 +25,13 @@ class _FakeProc:
 
 def _isolate(tmp_path, monkeypatch):
     (tmp_path / "data").mkdir(exist_ok=True)
-    monkeypatch.setattr(detach_run, "LEDGER",
-                        str(tmp_path / "data" / "poc_ledger.jsonl"))
+    monkeypatch.setattr(detach_run, "DATA", str(tmp_path / "data"))
+    monkeypatch.setattr(detach_run, "_today", lambda: "20261021")
     monkeypatch.setattr(detach_run, "FUSE_FILE",
                         str(tmp_path / "data" / "poc_run_fuse.json"))
     monkeypatch.setattr(detach_run, "LOCK",
                         str(tmp_path / "data" / "poc_run.lock"))
-    return Path(detach_run.LEDGER)
+    return Path(detach_run._ledger_path())
 
 
 def _drive(monkeypatch, ledger_delta=0, dereg_calls=None, popen_calls=None):
@@ -43,7 +45,7 @@ def _drive(monkeypatch, ledger_delta=0, dereg_calls=None, popen_calls=None):
     def fake_popen(cmd, **kw):
         popen_calls.append(cmd)
         if ledger_delta:
-            with open(detach_run.LEDGER, "a", encoding="utf-8") as f:
+            with open(detach_run._ledger_path(), "a", encoding="utf-8") as f:
                 for i in range(ledger_delta):
                     f.write(json.dumps({"ts": "t", "code": "%d.SH" % i,
                                         "mock": False}) + "\n")

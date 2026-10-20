@@ -56,7 +56,7 @@ def ledger_progress() -> int:
     与 ledger_complete 同口径——mock 行/坏行不算进展。"""
     try:
         n = 0
-        with open(LEDGER, "r", encoding="utf-8") as f:
+        with open(_ledger_path(), "r", encoding="utf-8") as f:
             for x in f:
                 x = x.strip()
                 if not x:
