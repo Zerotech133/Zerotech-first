@@ -59,8 +59,9 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <header>
 <div class="eyebrow">MY SUBSCRIPTION · READ-ONLY PROJECTION</div>
 <h1>🔐 我的订阅</h1>
-<p class="lead">客户订阅面只读投影：当前档位、有效期、当日额度使用、最近判定。数据源：<b>/api/subscription/status</b>（订阅账本只读摘要）。本页不购买、不续费、不退订、不触发任何发送。</p>
+<p class="lead">客户订阅面只读投影：当前档位、有效期、当日额度使用。数据源：<b>/api/subscription/status</b>（订阅账本只读摘要，字段已最小化——只回当前档位与本人当日额度，open_id 仅回掩码）。本页不购买、不续费、不退订、不触发任何发送。</p>
 <p class="readonly-banner"><b>我的订阅 · 邓芝统辖 · 只读投影</b>——本页没有任何写操作；所有数据均为读取时点快照，非实时闸门判定。</p>
+<div class="notice" style="margin-top:12px"><b>本页不展示金额信息，购买/续费请通过飞书联系。</b>账单明细待 M3 收银台上线后在本页接入。</div>
 <div class="oid-row">
 <label for="oid">open_id</label>
 <input type="text" id="oid" autocomplete="off" spellcheck="false" placeholder="飞书 open_id（如 ou_xxxxxxxx）">
@@ -76,7 +77,8 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <div id="guide" class="empty-state" style="margin:20px 0">
 <b>如何查询我的订阅？</b><br>
 在输入框填入你的飞书 open_id 后点「查询」，或直接用带 <code>?open_id=</code> 参数的链接打开本页。<br>
-飞书内打开将自动带上你的身份（M3 接 OAuth，本期可用 ?open_id= 查询）。
+飞书内打开将自动带上你的身份（M3 接 OAuth，本期可用 ?open_id= 查询）。<br>
+页面回显的身份一律为掩码（如 <code>ou_12345**</code>），不做明文展示；若服务端启用了访问 key，查询请求需带 <code>X-Portal-Key</code>（由运营配发）。
 </div>
 
 <div id="degraded" class="degraded" hidden>
@@ -96,8 +98,8 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 
 <footer class="legend">
 <h3>图例与边界</h3>
-<div>· 本页只读投影，零写操作；购买、续费、退订请往飞书或专属客服办理（M3 收银台上线后在本页接入）。</div>
-<div>· reason 为账本口径的诚实判定（subscription_active / subscription_expired / no_subscription），不含 owner 豁免与 fail-open 语义；实际放行以闸门时点为准。</div>
+<div>· 本页只读投影，零写操作；购买、续费、退订请通过飞书联系（M3 收银台上线后在本页接入）。</div>
+<div>· 字段最小化：/api/subscription/status 只回当前档位（plan_id / plan_name / start / end / status）与本人当日额度余量，open_id 仅回掩码（如 ou_abcd**），金额与账本内部判定细节不在响应内。</div>
 <div>· 额度余量为当日已放行计数（entitlement_log 投影），非实时闸门计数；「不限额」指档位未设 daily_quota。</div>
 <div>· 读取失败时本页降级为说明文案，不显示静态兜底数据；error 响应原样透出，不修饰。</div>
 </footer>
@@ -108,10 +110,6 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 const $=id=>document.getElementById(id);
 const text=v=>(v===null||v===undefined||v==='')?'':String(v);
 const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined&&txt!==null)n.textContent=txt;return n;};
-const REASON_LABELS={
- subscription_active:'订阅生效中（subscription_active）',
- subscription_expired:'订阅已到期（subscription_expired）',
- no_subscription:'暂无生效订阅（no_subscription）'};
 
 async function fetchJson(url){
  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
@@ -145,58 +143,43 @@ function fmtRange(s,e){
 
 function renderStatus(sum){
  const box=$('status-card');box.replaceChildren();
- const reason=sum.reason||'—';
- const cls=reason==='subscription_active'?'ok':(reason==='subscription_expired'?'warn':'err');
- const who=text(sum.display_name)||'（未登记昵称）';
- const subs=Array.isArray(sum.subscriptions)?sum.subscriptions:[];
- const activeRow=reason==='subscription_active'
-   ?subs.find(r=>r.status==='active')||null
-   :null;
- const latest=subs[0]||null;
- const planName=p=>text((sum.plan_name_by_id||{})[p])||text(p)||'—';
- if(activeRow){
-  cardBox('status-card','ok','当前档位',planName(activeRow.plan_id),
-   '有效期 '+fmtRange(activeRow.start,activeRow.end)+' · 状态 active · '+who);
- }else if(latest){
-  cardBox('status-card',cls,'当前档位',planName(latest.plan_id),
-   '有效期 '+fmtRange(latest.start,latest.end)+' · 状态 '+text(latest.status)+' · '+who);
- }else{
-  cardBox('status-card','err','当前档位','无订阅','账本中无该 open_id 的订阅行 · '+who);
+ // 字段最小化口径：只读 plan_id / plan_name / start / end / status 与掩码身份
+ const pid=text(sum.plan_id);
+ const st=text(sum.status);
+ const who='身份 '+text(sum.open_id||'**')+'（掩码，非明文）';
+ if(!pid){
+  cardBox('status-card','err','当前档位','无订阅','账本中无该身份在册的订阅 · '+who);
+  return;
  }
- // 最近判定（reason 诚实翻译）
- const g=el('div','card '+(cls||''));
- g.append(el('small',null,'最近判定'),el('b',null,REASON_LABELS[reason]||reason),
-  el('span','st','账本口径 · 摘要时点 '+text(sum.generated_at||'未提供')));
- box.append(g);
+ const cls=st==='active'?'ok':(st==='expired'?'warn':'err');
+ cardBox('status-card',cls,'当前档位',text(sum.plan_name)||pid,
+  '有效期 '+fmtRange(sum.start,sum.end)+' · 状态 '+(st||'—')+' · '+who);
 }
 
 function renderQuota(sum){
  const box=$('quota-card');box.replaceChildren();
- // 账本 today_used_by_prefix 按 kind 前缀计数，与 plan 无映射关系——
- // 单档位时合计对照该档额度；多档位时诚实分列，不做编造拆分。
- const used=sum.today_used_by_prefix||{};
- const quotas=sum.daily_quota_by_plan||{};
- const keys=Array.isArray(sum.subscriptions)?sum.subscriptions.map(r=>r.plan_id):[];
- const uniq=[...new Set(keys)];
- if(!uniq.length){
+ // 账本 today_used_by_prefix 按 kind 前缀计数；响应只带本人当前档位的
+ // daily_quota_by_plan 一项，故按单档位合计对照，不做编造拆分。
+ const pid=text(sum.plan_id);
+ if(!pid){
   box.append(el('div','empty-state','无订阅档位——无额度可展示。不代表「今日未使用」。'));
   return;
  }
+ const used=sum.today_used_by_prefix||{};
+ const quotas=sum.daily_quota_by_plan||{};
  const totalUsed=Object.entries(used).reduce((a,[,n])=>a+(typeof n==='number'?n:0),0);
  const usedTxt=Object.keys(used).length
    ?Object.entries(used).map(([k,n])=>k+'×'+n).join('，')
    :'今日账本无放行记录';
- for(const pid of uniq){
-  const q=quotas[pid];
-  const qTxt=(typeof q==='number'&&q>0)?(totalUsed+' / '+q):'不限额';
-  const over=(typeof q==='number'&&q>0&&totalUsed>=q);
-  const c=el('div','card '+(over?'err':'ok'));
-  c.append(el('small',null,(text((sum.plan_name_by_id||{})[pid])||pid)+' 当日额度'),
-   el('b',null,qTxt),
-   el('span','st',(over?'已达当日上限——超出部分将被闸门拦截':'计数为当日账本放行投影，非实时')
-     +' · 明细：'+usedTxt));
-  box.append(c);
- }
+ const q=quotas[pid];
+ const qTxt=(typeof q==='number'&&q>0)?(totalUsed+' / '+q):'不限额';
+ const over=(typeof q==='number'&&q>0&&totalUsed>=q);
+ const c=el('div','card '+(over?'err':'ok'));
+ c.append(el('small',null,(text(sum.plan_name)||pid)+' 当日额度'),
+  el('b',null,qTxt),
+  el('span','st',(over?'已达当日上限——超出部分将被闸门拦截':'计数为当日账本放行投影，非实时')
+    +' · 明细：'+usedTxt));
+ box.append(c);
 }
 
 async function load(){
@@ -223,7 +206,7 @@ async function load(){
   emptyCard('quota-card','读取失败。');
   return;
  }
- $('m-generated').textContent='摘要时点：'+text(sum.generated_at||'未提供')+'（非闸门实时判定）';
+ $('m-generated').textContent='读取完成 · 身份 '+text(sum.open_id||'**')+'（掩码 · 非闸门实时判定）';
  renderStatus(sum);
  renderQuota(sum);
 }

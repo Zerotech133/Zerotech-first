@@ -464,6 +464,79 @@ def _pf_valid(pid):
     return pid in _pf_ids_all()
 
 
+# ---------------------------------------------------------------------------
+# WO-FS-101（P3.7-lite · R1 客户面订阅端点加固）
+# /api/subscription/status 的三个纯函数：掩码 / 字段最小化 / 可选 key 闸。
+# 放模块级只为离线单测可直调；不依赖任何私有符号（掩码规则照
+# feishu_bot_ws 同口径在本模块内重写，不做跨模块 import）。
+# ---------------------------------------------------------------------------
+
+def mask_open_id(open_id):
+    """open_id 掩码纯函数：保留前 8 位 + "**"；过短 id 降级前 4/前 2 位；
+    空入参回 "**"（与 feishu_bot_ws.mask_open_id 同规则）。"""
+    s = str(open_id or "")
+    if len(s) > 8:
+        return s[:8] + "**"
+    if len(s) > 4:
+        return s[:4] + "**"
+    if s:
+        return s[:2] + "**"
+    return "**"
+
+
+#: 客户面响应白名单（字段最小化的唯一事实来源）
+SUB_STATUS_FIELDS = ("plan_id", "plan_name", "start", "end", "status")
+
+
+def _sub_status_view(summary):
+    """把 subscription_store 摘要压成客户面白名单视图（字段最小化）。
+
+    - 只回当前档位（优先覆盖中的 active 行，否则按 end 降序首行）的
+      plan_id/plan_name/start/end/status，以及本人当日额度余量
+      （today_used_by_prefix + 仅本人档位的 daily_quota_by_plan）。
+    - open_id 只回掩码，禁止明文；display_name、内部 reason、
+      plan 目录全表、生成时点、任何金额类字段一律不透出。
+    - 上游 error 归并为 {"error": "store_unavailable"}（异常细节不外泄）。
+    """
+    if not isinstance(summary, dict) or summary.get("error"):
+        return {"error": "store_unavailable"}
+    subs = [r for r in (summary.get("subscriptions") or [])
+            if isinstance(r, dict)]
+    cur = next((r for r in subs if r.get("status") == "active"), None)
+    if cur is None and subs:
+        cur = subs[0]
+    cur = cur or {}
+    pid = str(cur.get("plan_id") or "")
+    names = summary.get("plan_name_by_id") or {}
+    quotas = summary.get("daily_quota_by_plan") or {}
+    used = summary.get("today_used_by_prefix") or {}
+    view = {
+        "ok": True,
+        "open_id": mask_open_id(summary.get("open_id")),
+        "plan_id": pid,
+        "plan_name": str(names.get(pid) or "") if isinstance(names, dict) else "",
+        "start": str(cur.get("start") or ""),
+        "end": str(cur.get("end") or ""),
+        "status": str(cur.get("status") or ""),
+        "today_used_by_prefix": dict(used) if isinstance(used, dict) else {},
+        "daily_quota_by_plan": ({pid: quotas[pid]}
+                                if pid and isinstance(quotas, dict)
+                                and pid in quotas else {}),
+    }
+    return view
+
+
+def _sub_status_key_ok(got_key):
+    """可选 key 闸判定：PORTAL_SUB_STATUS_KEY 未配置/空串 → 不设闸（True，
+    行为与加固前一致，既有调用方零破坏）；配置后要求请求头 X-Portal-Key
+    常量相等（缺失/不等 → False → 401）。"""
+    want = (os.environ.get("PORTAL_SUB_STATUS_KEY") or "").strip()
+    if not want:
+        return True
+    got = (got_key or "").strip()
+    if not got:
+        return False
+    return hmac.compare_digest(got.encode("utf-8"), want.encode("utf-8"))
 
 
 import os as _os
@@ -3928,19 +4001,29 @@ color:#fff;font-size:13.5px;cursor:pointer}
             self._html_file(os.path.join(ROOT, "static",
                                           "ops_board.html"))
         elif path == "/api/subscription/status":
-            # P2.5 客户订阅面（FD-A 2026-10-20）：订阅账本只读摘要出口。
-            # ?open_id= 必填（缺失 400）；零写参数——本端点不接收任何写参数，
-            # 写操作仍只在 subscription_store 模块内（M3 收银台另批）。
+            # P2.5 客户订阅面（FD-A 2026-10-20）｜WO-FS-101（P3.7-lite R1
+            # 加固）：订阅账本只读摘要出口，响应先过白名单最小化再回吐。
+            # ?open_id= 必填（缺失 400）；可选 key 闸——环境变量
+            # PORTAL_SUB_STATUS_KEY 非空时要求请求头 X-Portal-Key 常量相等，
+            # 不等/缺失 401 {"error":"unauthorized"}；未配置时不设闸，行为与
+            # 加固前一致（既有调用方零破坏）。
+            # 零写参数——本端点不接收任何写参数，写操作仍只在
+            # subscription_store 模块内（M3 收银台另批）。
+            # open_id 只回掩码；金额类字段、内部 reason 一律不透出。
             # get_subscriber_summary 自身 closed on failure（异常返回
-            # {"error": ...} 不抛），此处不吞错不造数，原样透传。
+            # {"error": ...} 不抛），此处不造数，只做字段最小化。
             from urllib.parse import parse_qs as _pq_sub
-            _oid = (_pq_sub(qs, keep_blank_values=True)
-                    .get("open_id") or [""])[0].strip()
-            if not _oid:
-                self._json({"ok": False, "error": "missing open_id"}, 400)
+            if not _sub_status_key_ok(self.headers.get("X-Portal-Key")):
+                self._json({"ok": False, "error": "unauthorized"}, 401)
             else:
-                import subscription_store as _sub_store
-                self._json(_sub_store.get_subscriber_summary(_oid))
+                _oid = (_pq_sub(qs, keep_blank_values=True)
+                        .get("open_id") or [""])[0].strip()
+                if not _oid:
+                    self._json({"ok": False, "error": "missing open_id"}, 400)
+                else:
+                    import subscription_store as _sub_store
+                    self._json(_sub_status_view(
+                        _sub_store.get_subscriber_summary(_oid)))
         elif path == "/api/subscription/list":
             # P2.6 订阅批量列表（FE-B 2026-10-20）：订阅者全集只读出口。
             # ?limit= 可选（默认 50，钳制 [1,200]；非法值回落默认 50），
