@@ -15,8 +15,12 @@
     回填 → **该样本不可用**（不参与排序），样本不足成对则不出议题（不造数）；
   - branch_divergence：-008 compare_reviews 的分支决策偏差（plan_conflict /
     conf_floor 等放弃原因码、no_plan_reference 等 deviation.type）；
-  - riskguard_reserved：**本单只留接口不实现**（RiskGuard 校准 1.1 尚待老田
-    a-d 拍板，未接入时显式标 not_implemented_pending_1_1——不假装有数据）。
+  - riskguard_reserved：**已接线**（WO-QT-20261020-029）——委托 -023
+    riskguard_topics.mine_topics 实现提炼（误杀 = decision=blocked 且
+    posterior_return>0，按 (rule_id, rule_version) 归集，规则级判据 =
+    拦截组显著优于同规则放行组基线；213 历史口径经 provenance 门排除）。
+    喂入口：5 键契约校准账 / 显式注入 records / canonical 账本路径；
+    喂入缺失或违例 → 显式抛或显式降级态，不假装有数据。
 
 **不自动发起会议**：发起权归人/司马懿，属后续工单。本模块对 -006 只读（纯
 SELECT + mode=ro 连接），零写入路径——测试断言全链路不新增 meeting_records。
@@ -44,7 +48,9 @@ decision_snapshot（-004 快照表）、combo_review（-013 议题的组合侧�
 
 未接线说明（汇报口径）：
   - **发起会议**属后续工单（发起权归人/司马懿）——本模块不写 meeting_records；
-  - **RiskGuard 误杀专题提炼**待 1.1 校准拍板后实现（本单只留契约与入口）；
+  - **RiskGuard 误杀专题提炼已接线**（WO-029 委托 -023 riskguard_topics）；
+    校准账的自动喂入 / 定时跑批 / 议题入主账去重仍归后续工单（canonical 影子
+    账本端到端见 riskguard_topics.run_topic）；
   - **后验收益自动回填**（快照 run_ref → 结算后验）属后续工单，当前仅显式/
     人工喂入一条路径，喂入即录来源与单位，提炼器不猜收益；
   - **重复分歧的复现次数未在账内累积**（去重后不再写行），跨批次累计属后续工单。
@@ -59,6 +65,7 @@ from pathlib import Path
 
 import decision_snapshot
 import plan_meeting_ledger
+import riskguard_topics
 
 TOPIC_SCHEMA_VERSION = 1
 
@@ -79,8 +86,9 @@ DEVIATION_POSTERIOR_EXTREME = "posterior_extreme"
 # 议题状态：本模块只产出草案，发起权不归本模块
 STATUS_DRAFT = "draft"
 
-# RiskGuard 预留入口的显式状态（不假装有数据）
-RISKGUARD_NOT_IMPLEMENTED = "not_implemented_pending_1_1"
+# RiskGuard 预留入口的显式状态（WO-029 接线后：not_implemented 不复存在）
+# 校准账缺失的显式降级 reason_code（对齐 riskguard_topics 的命名风格）
+RISKGUARD_FEED_MISSING = "calibration_log_missing"
 
 # 分歧密度算式（WO-QT-20261020-024 新增；口径风格对齐 -014 divergence_formula）
 # 单位 = 条/会议，可 >1（与前两率的 0~1 比率不同量纲，勿混读）
@@ -604,50 +612,129 @@ def dissent_metrics(plan_db=None, info: dict | None = None) -> dict:
     }
 
 
-# ---------- 输入四：RiskGuard 误杀专题（预留，本单不实现） ----------
+# ---------- 输入四：RiskGuard 误杀专题（WO-029：委托 -023 riskguard_topics） ----------
 
-def riskguard_reserved_topics(records=None,
-                              calibration_log: Path | str | None = None) -> dict:
-    """RiskGuard 误杀议题入口：**本单不实现提炼逻辑**，显式标未实现。
-
-    RiskGuard 校准（WO 工单 1.1）尚待老田 a-d 拍板，误杀/放行数据源未接入——
-    此处**不假装有数据、不返回任何议题**。函数只负责：声明数据契约 + 回报
-    not_implemented_pending_1_1。
-
-    契约（1.1 拍板后按此喂入 risk_guard_calibration.jsonl）：
-      每行一条规则级记录，必填键 RISKGUARD_RECORD_REQUIRED：
-        ts            判定时刻（ISO）
-        rule_id       规则标识
-        rule_version  规则版本
-        decision      blocked / passed（误杀=blocked 且事后证明该放行）
-        posterior_return  该次判定的后验收益（用于区分「真误杀」与「正确拦截」）
-      实现时的提炼口径（1.1 拍板后确认）：误杀 = decision=blocked 且
-      posterior_return > 0，按 (rule_id, rule_version) 归集为议题。
-    """
-    seen = None
-    if records is not None:
-        if not isinstance(records, (list, tuple)):
-            raise TopicMinerError("riskguard_records_invalid",
-                                  f"records 须为 list/tuple 或 None: {type(records).__name__}")
-        seen = len(records)
+def _riskguard_input_contract(feed: Path) -> dict:
+    """RiskGuard 专题喂入契约声明（随输出携带，可审计）。"""
     return {
-        "status": RISKGUARD_NOT_IMPLEMENTED,
-        "implemented": False,
+        "calibration_log": str(feed),
+        "record_required_keys": list(RISKGUARD_RECORD_REQUIRED),
+        "false_kill_definition": "decision=blocked 且 posterior_return > 0",
+        "group_by": ["rule_id", "rule_version"],
+        "delegate_module": "riskguard_topics",
+        "delegate_entry": "mine_topics",
+    }
+
+
+def _riskguard_degraded(feed: Path, reason_code: str, message: str) -> dict:
+    """专题喂入失败 → 显式降级态（closed on failure，不吞成「无议题」假绿）。
+
+    status 即 reason_code（对齐 -023：calibration_log_missing /
+    calibration_log_corrupt / riskguard_records_invalid / ledger_missing /
+    ledger_corrupt），零议题但**明说原因**，不以空数组充数。"""
+    return {
+        "status": reason_code,
+        "implemented": True,
+        "degraded": True,
+        "reason_code": reason_code,
+        "error": message,
         "source_type": SRC_RISKGUARD_RESERVED,
         "topic_schema_version": TOPIC_SCHEMA_VERSION,
         "topics": [],
-        "input_contract": {
-            "calibration_log": str(Path(calibration_log) if calibration_log is not None
-                                    else RISKGUARD_CALIBRATION_LOG),
-            "record_required_keys": list(RISKGUARD_RECORD_REQUIRED),
-            "false_kill_definition": "decision=blocked 且 posterior_return > 0",
-            "group_by": ["rule_id", "rule_version"],
-        },
-        "input_seen": records is not None,
-        "input_count": seen,
-        "note": ("RiskGuard 校准（1.1）待老田 a-d 拍板，误杀数据源未接入——"
-                 "本单只留接口与契约，未实现提炼逻辑，不产出任何议题"),
+        "counts": {"records_total": 0, "records_used": 0, "records_excluded": 0,
+                   "groups": 0, "false_kill_hits": 0, "settled_records": 0},
+        "groups": [],
+        "conclusion": None,
+        "input_contract": _riskguard_input_contract(feed),
+        "feed_path": str(feed),
+        "input_seen": False,
+        "input_count": None,
+        "note": (f"RiskGuard 专题显式降级（closed on failure，不吞错）：{message}"
+                 "——无有效喂入即无判定，不以空议题充数；喂入到位后重跑即得真实结论"),
     }
+
+
+def _riskguard_call(fn):
+    """调 -023 模块：RiskGuardTopicError 统一包装为 TopicMinerError
+    （reason_code 原样透传，closed on failure 显式抛，不静默跳过）。"""
+    try:
+        return fn()
+    except riskguard_topics.RiskGuardTopicError as exc:
+        raise TopicMinerError(exc.reason_code, str(exc)) from exc
+
+
+def riskguard_reserved_topics(records=None,
+                              calibration_log: Path | str | None = None, *,
+                              ledger_path: Path | str | None = None,
+                              price_provider=None,
+                              min_settled: int | None = None,
+                              t_threshold: float | None = None) -> dict:
+    """RiskGuard 误杀议题入口：**委托 -023 riskguard_topics.mine_topics 实现**。
+
+    本函数不实现提炼逻辑，只做喂入解析 + 委托 + 状态透传。提炼口径全归
+    riskguard_topics：误杀 = decision=blocked 且 posterior_return>0，按
+    (rule_id, rule_version) 归集，规则级判据 = 拦截组显著优于同规则放行组
+    基线（Welch t ≥ 3，判据参数化）；213 历史口径经 provenance 门排除，
+    不参与计算（见其 historical_case_note）。
+
+    喂入（三选一，优先级从高到低；依赖注入，测试全部走 tmp 路径离线可跑）：
+      records         直接注入 5 键契约记录（键 RISKGUARD_RECORD_REQUIRED +
+                      provenance 来源标注）；
+      ledger_path     canonical 影子账本路径（run_topic 同款管线：build_records
+                      按日线结算后验 → mine_topics；price_provider 可注入假价格源）；
+      calibration_log 5 键契约校准账 jsonl（缺省 RISKGUARD_CALIBRATION_LOG，
+                      -016 契约 §六 约定的喂入口）。
+
+    诚实性纪律（与 -023 对齐）：
+      - 零误杀证据 → 0 条议题 + status 显式（no_rule_level_false_kill_evidence /
+        no_conclusive_evidence / no_records）+ 非空 conclusion——不以空数组充数；
+      - 校准账缺失/坏行、记录结构违例、账本缺失/坏行 → 显式抛 TopicMinerError
+        （reason_code 透传 -023），不吞成「无议题」假绿；
+      - mine_topics 主流程内嵌调用时把上述失败转为显式降级态（status=reason_code），
+        不让专题喂入问题炸掉整场提炼，但也绝不静默。
+
+    返回 dict：-023 mine_topics 输出（status / topics / groups / conclusion /
+    counts / criterion / excluded / historical_case_note ...）+ 本模块的
+    input_contract / feed_path / input_seen / input_count / note。topics 元素为
+    -023 议题草案结构（source_type=riskguard_reserved、status=draft、
+    meeting_initiated=False、deviation_type=riskguard_false_kill），与
+    most_profitable/most_lossful 议题并列呈现。
+    """
+    feed = Path(calibration_log) if calibration_log is not None \
+        else RISKGUARD_CALIBRATION_LOG
+    if records is not None:
+        if not isinstance(records, (list, tuple)):
+            raise TopicMinerError(
+                "riskguard_records_invalid",
+                f"records 须为 list/tuple 或 None: {type(records).__name__}")
+        recs = list(records)
+    elif ledger_path is not None:
+        recs = _riskguard_call(lambda: riskguard_topics.build_records(
+            ledger_path, price_provider=price_provider))
+    else:
+        if not feed.exists():
+            raise TopicMinerError(
+                RISKGUARD_FEED_MISSING,
+                f"RiskGuard 校准账不存在（closed on failure）: {feed}")
+        recs = _riskguard_call(lambda: riskguard_topics.read_calibration_log(feed))
+
+    crit = {}
+    if min_settled is not None:
+        crit["min_settled"] = min_settled
+    if t_threshold is not None:
+        crit["t_threshold"] = t_threshold
+    result = dict(_riskguard_call(
+        lambda: riskguard_topics.mine_topics(recs, **crit)))
+
+    result["source_type"] = SRC_RISKGUARD_RESERVED
+    result["topic_schema_version"] = TOPIC_SCHEMA_VERSION
+    result["input_contract"] = _riskguard_input_contract(feed)
+    result["feed_path"] = str(feed)
+    result["input_seen"] = True
+    result["input_count"] = len(recs)
+    result["note"] = ("已委托 riskguard_topics.mine_topics（-023 实现，只读零写入）："
+                      f"status={result['status']} 原样透传，议题结构与其输出一致")
+    return result
 
 
 # ---------- 主入口：mine_topics（提炼议题草案） ----------
@@ -665,12 +752,15 @@ def mine_topics(*, snapshot_db=None, posterior=None, reviews=None,
       persist      False=只提炼不入账（干跑，供 -009 汇报器预览）
 
     返回：{topics（本轮新提）, existing（去重命中）, suppressed（已讨论/待回填）,
-    dissent（三率）, riskguard（预留入口状态）, meeting_initiated（恒 False）}
+    dissent（三率）, riskguard（RiskGuard 误杀专题状态，委托 -023 透传）,
+    meeting_initiated（恒 False）}
 
     **不自动发起会议**：发起权归人/司马懿，属后续工单；本模块对 -006 零写入。
     不造数：后验未回填的样本不参与排序、不出议题（显式标 pending_backfill）。
     closed on failure：后验喂入非法 / 复盘结构非法 / 快照库损坏 / 会议账损坏
     → 显式抛 TopicMinerError（带 reason_code），不静默跳过。
+    RiskGuard 专题喂入失败（校准账缺失/坏行）→ 内嵌降级态显式携带于
+    riskguard 字段（status=reason_code），不炸整场提炼、也绝不静默。
     """
     post_map = _validate_posterior(posterior)
     review_items = _normalize_reviews(reviews)
@@ -721,6 +811,13 @@ def mine_topics(*, snapshot_db=None, posterior=None, reviews=None,
         by_fp[fp] = row
         topics.append(row)
 
+    # RiskGuard 误杀专题（委托 -023，默认读校准账；喂入失败 → 显式降级态内嵌）
+    try:
+        riskguard = riskguard_reserved_topics()
+    except TopicMinerError as exc:
+        riskguard = _riskguard_degraded(RISKGUARD_CALIBRATION_LOG,
+                                        exc.reason_code, str(exc))
+
     return {
         "topic_schema_version": TOPIC_SCHEMA_VERSION,
         "generated_at": _now(),
@@ -733,7 +830,7 @@ def mine_topics(*, snapshot_db=None, posterior=None, reviews=None,
             SRC_MOST_PROFITABLE: sum(1 for t in topics if t["source_type"] == SRC_MOST_PROFITABLE),
             SRC_MOST_LOSSFUL: sum(1 for t in topics if t["source_type"] == SRC_MOST_LOSSFUL),
             SRC_BRANCH_DIVERGENCE: sum(1 for t in topics if t["source_type"] == SRC_BRANCH_DIVERGENCE),
-            SRC_RISKGUARD_RESERVED: 0,
+            SRC_RISKGUARD_RESERVED: len(riskguard["topics"]),
         },
         "topics": topics,
         "existing": existing,
@@ -745,11 +842,12 @@ def mine_topics(*, snapshot_db=None, posterior=None, reviews=None,
         "discussed": {"available": disc_info.get("available"),
                       "reason": disc_info.get("reason"),
                       "refs_count": len(discussed_refs)},
-        "riskguard": riskguard_reserved_topics(),
+        "riskguard": riskguard,
         "meeting_initiated": False,
         "notes": [
             "议题来源：最赚/最亏样本对（-004 快照 + 后验收益）、分支决策偏差（-008 平行比较）",
-            "RiskGuard 误杀专题：not_implemented_pending_1_1（1.1 校准待老田 a-d 拍板）",
+            f"RiskGuard 误杀专题已接线（委托 riskguard_topics，-023 实现，只读零写入）："
+            f"status={riskguard['status']}",
             "本模块不自动发起会议（发起权归人/司马懿，属后续工单）",
             "后验未回填的样本不出议题（pending_backfill），不造数",
         ],

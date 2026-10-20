@@ -10,14 +10,19 @@
   4. 议题账 append-only：只追加不改写，逐行自校验 sha256，改写即抛；
   5. 两率：分歧保全率 / 分歧转化率并列，算式写进输出字段；分母 0 → null + note
      （不填 0 充数）；
-  6. RiskGuard 入口返回 not_implemented_pending_1_1 且不产出议题；
+  6. RiskGuard 误杀专题（WO-029 接线：委托 -023 riskguard_topics）：真实委托
+     调用发生、status 原样透传、零证据 → 显式 0 议题不充数、校准账缺失/坏行
+     显式抛、213 历史口径经 provenance 门排除不参与计算；
   7. closed on failure：坏输入显式抛（posterior/reviews/快照库/会议账损坏）。
 
-未接线路径照契约：发起会议（发起权归人/司马懿）、RiskGuard 提炼实现（待 1.1）、
-后验自动回填——本文件均不为它们留桩，只断言「零写入、显式未实现」。
+未接线路径照契约：发起会议（发起权归人/司马懿）、RiskGuard 校准账自动喂入/
+定时跑批/专题议题入主账去重、后验自动回填——本文件均不为它们留桩，只断言
+「零写入、显式状态」。
 
 隔离纪律：全部账/库/快照走 tmp 临时路径，仓内 data/ 与默认议题账零写入；
-测试断言 -006 meeting_records 行数不因提炼而增加（本模块对 -006 只读）。
+RiskGuard 校准账经 monkeypatch 指向 tmp（**禁读真实 zerobound-kg 账本**，
+单测离线可跑）；测试断言 -006 meeting_records 行数不因提炼而增加（本模块
+对 -006 只读）。
 """
 import json
 import sqlite3
@@ -32,6 +37,7 @@ sys.path.insert(0, str(HERE / "tests"))
 
 import decision_snapshot                                    # noqa: E402
 import plan_meeting_ledger as pml                           # noqa: E402
+import riskguard_topics as rgt                              # noqa: E402
 import topic_miner as tm                                    # noqa: E402
 
 COMBO = "combo_topic_a"
@@ -45,8 +51,13 @@ T_MEETING = "2026-10-20T15:00:00"
 # ---------- fixture 与构造 ----------
 
 @pytest.fixture()
-def env(tmp_path):
-    """隔离环境：快照库 / 会议账库 / 议题账全部 tmp 路径。"""
+def env(tmp_path, monkeypatch):
+    """隔离环境：快照库 / 会议账库 / 议题账全部 tmp 路径。
+
+    RiskGuard 校准账同步指向 tmp（默认不存在 → 显式降级态可断言；
+    绝不读真实 zerobound-kg 账本）。"""
+    monkeypatch.setattr(tm, "RISKGUARD_CALIBRATION_LOG",
+                        tmp_path / "risk_guard_calibration.jsonl")
     return {"tmp_path": tmp_path, "_seq": 0,
             "snapshot_db": tmp_path / "snap.db",
             "plan_db": tmp_path / "plan.db",
@@ -502,36 +513,182 @@ def test_divergence_density_counts_empty_dissent_meeting_in_denominator(env, pla
     assert d["preservation_rate"] == 0.5
 
 
-# ---------- 验收⑥：RiskGuard 预留入口 ----------
+# ---------- 验收⑥：RiskGuard 误杀专题（WO-029：委托 -023 riskguard_topics） ----------
 
-def test_riskguard_entry_not_implemented():
-    """RiskGuard 入口显式标 not_implemented_pending_1_1 且不产出议题。"""
-    out = tm.riskguard_reserved_topics()
-    assert out["status"] == tm.RISKGUARD_NOT_IMPLEMENTED
-    assert out["implemented"] is False
-    assert out["topics"] == []
+R_RISK = "R1-market-quality"
+V_RISK = "2026-09-30-user-approved"
+
+
+def _rg_rec(i, decision="blocked", posterior=-0.05, provenance="canonical_ledger",
+            rule_id=R_RISK, rule_version=V_RISK):
+    """5 键契约记录（+ provenance 来源标注）。"""
+    return {"ts": "2026-10-20T10:00:00", "rule_id": rule_id,
+            "rule_version": rule_version, "decision": decision,
+            "posterior_return": posterior, "provenance": provenance}
+
+
+def _rg_zero_evidence_records():
+    """零误杀证据：拦截组整体不优于放行组基线（双方均负收益）。"""
+    recs = [_rg_rec(i, "blocked", -0.05 - 0.001 * i) for i in range(40)]
+    recs += [_rg_rec(i, "passed", -0.02 - 0.001 * i) for i in range(40)]
+    return recs
+
+
+class _FakeProvider:
+    """假价格源：固定收益（离线替代 pandas/parquet 日线结算）。"""
+
+    def __init__(self, default=None):
+        self.default = default
+
+    def ret(self, security, d0):
+        return self.default
+
+
+def test_riskguard_delegates_zero_evidence_explicit_status():
+    """注入记录 → 真实委托：零误杀证据 → 0 条议题 + status 显式 + 结论非空
+    （不以空数组充数），判据字段证明走的是 -023 提炼。"""
+    recs = _rg_zero_evidence_records()
+    out = tm.riskguard_reserved_topics(records=recs)
+    assert out["status"] == rgt.STATUS_NO_EVIDENCE
+    assert out["implemented"] is True
+    assert out["topics"] == []                          # 显式 0 议题
+    assert out["conclusion"] and "无规则级误杀证据" in out["conclusion"]
+    assert out["counts"]["groups"] == 1
+    assert out["counts"]["records_used"] == 80
+    assert out["groups"][0]["false_kill_hits"] == 0
+    # 判据与口径来自 -023（真实委托的证据，不是本模块造的空壳）
+    assert out["criterion"]["t_threshold"] == rgt.DEFAULT_T_THRESHOLD
+    assert out["false_kill_definition"] == "decision=blocked 且 posterior_return > 0"
+    assert out["group_by"] == ["rule_id", "rule_version"]
+    assert "不可复现" in out["historical_case_note"]
+    # 契约形状保持：来源类型 / 喂入计数 / 委托声明
     assert out["source_type"] == tm.SRC_RISKGUARD_RESERVED
-    assert out["input_contract"]["record_required_keys"] == \
-        list(tm.RISKGUARD_RECORD_REQUIRED)
-    assert "1.1" in out["note"]
+    assert out["input_seen"] is True and out["input_count"] == 80
+    assert out["input_contract"]["delegate_module"] == "riskguard_topics"
 
 
-def test_riskguard_ignores_supplied_records():
-    """即便喂入记录也不产出议题（提炼逻辑本单不实现——不假装有数据）。"""
-    rec = {"ts": "2026-10-20T10:00:00", "rule_id": "rg-1", "rule_version": "v1",
-           "decision": "blocked", "posterior_return": 0.05}
-    out = tm.riskguard_reserved_topics(records=[rec])
-    assert out["status"] == tm.RISKGUARD_NOT_IMPLEMENTED
-    assert out["topics"] == []
-    assert out["input_seen"] is True and out["input_count"] == 1
+def test_riskguard_delegation_call_happens(monkeypatch):
+    """委托调用确实发生（且只发生一次、喂入原样转发到 -023）。"""
+    calls = []
+    real = rgt.mine_topics
+
+    def spy(records, **kw):
+        calls.append({"records": records, "kw": kw})
+        return real(records, **kw)
+
+    monkeypatch.setattr(rgt, "mine_topics", spy)
+    recs = _rg_zero_evidence_records()
+    out = tm.riskguard_reserved_topics(records=recs)
+    assert len(calls) == 1
+    assert calls[0]["records"] == recs
+    assert out["status"] == rgt.STATUS_NO_EVIDENCE
+
+
+def test_riskguard_miskill_topic_passthrough():
+    """规则级误杀证据成立 → 议题草案透传（与 most_profitable/most_lossful
+    并列的 draft 结构：status=draft、meeting_initiated=False）。"""
+    recs = [_rg_rec(i, "blocked", 0.10 + 0.001 * i) for i in range(60)]
+    recs += [_rg_rec(i, "passed", -0.05) for i in range(60)]
+    out = tm.riskguard_reserved_topics(records=recs)
+    assert out["status"] == rgt.STATUS_TOPICS_FOUND
+    assert len(out["topics"]) == 1
+    t = out["topics"][0]
+    assert t["source_type"] == tm.SRC_RISKGUARD_RESERVED
+    assert t["deviation_type"] == "riskguard_false_kill"
+    assert t["status"] == tm.STATUS_DRAFT
+    assert t["meeting_initiated"] is False              # 发起权不归本模块
+    assert t["evidence"]["welch_t"] >= rgt.DEFAULT_T_THRESHOLD
+
+
+def test_riskguard_213_provenance_excluded():
+    """213 历史口径（provenance 门）不参与计算：排除计数可见、不影响组统计。"""
+    recs = _rg_zero_evidence_records()
+    recs.append(_rg_rec(999, "blocked", posterior=0.9,
+                        provenance="historical_213_case"))
+    out = tm.riskguard_reserved_topics(records=recs)
+    assert out["excluded"]["by_provenance"].get("historical_213_case") == 1
+    assert out["counts"]["records_used"] == 80
+    assert out["counts"]["records_excluded"] == 1
+    g = out["groups"][0]
+    assert g["false_kill_hits"] == 0                    # 未被 213 记录污染
+    assert g["settled_blocked"] == 40
+
+
+def test_riskguard_missing_calibration_log_raises(env, monkeypatch):
+    """校准账缺失 → 显式抛（reason_code 对齐 -023），不吞成「无议题」假绿。"""
+    absent = env["tmp_path"] / "nope_calibration.jsonl"
+    with pytest.raises(tm.TopicMinerError, match="calibration_log_missing"):
+        tm.riskguard_reserved_topics(calibration_log=absent)
+    # 默认路径（已 monkeypatch 到 tmp 且不存在）同样显式抛
+    with pytest.raises(tm.TopicMinerError, match="calibration_log_missing"):
+        tm.riskguard_reserved_topics()
+
+
+def test_riskguard_corrupt_calibration_log_raises(env):
+    """校准账坏行 → 显式抛（closed on failure，不跳行、不静默丢数据）。"""
+    env["tmp_path"].joinpath("risk_guard_calibration.jsonl").write_text(
+        "{坏 json}\n", encoding="utf-8")
+    with pytest.raises(tm.TopicMinerError, match="calibration_log_corrupt"):
+        tm.riskguard_reserved_topics()
+
+
+def test_riskguard_feed_status_passthrough(env):
+    """tmp 假校准账（5 键契约 jsonl）→ 逐行读入后委托，status 透传。"""
+    feed = env["tmp_path"] / "risk_guard_calibration.jsonl"
+    feed.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False)
+                  for r in _rg_zero_evidence_records()) + "\n", encoding="utf-8")
+    out = tm.riskguard_reserved_topics()                # 缺省走校准账
+    assert out["status"] == rgt.STATUS_NO_EVIDENCE
+    assert out["input_count"] == 80
+    assert out["feed_path"] == str(feed)
+
+
+def test_riskguard_canonical_ledger_path_with_fake_provider(env):
+    """注入 canonical 账本路径 + 假价格源（run_topic 同款管线，离线可跑）。"""
+    led = env["tmp_path"] / "ledger.jsonl"
+    lines = [json.dumps({"ts": "2026-10-20 10:00:00", "security": f"A{i}.SZ",
+                         "rule_id": R_RISK, "action": "shadow_block",
+                         "ref_px": 12.3, "score": 1.0, "reason": "ok",
+                         "data_version": V_RISK, "mode": "shadow"},
+                        ensure_ascii=False) for i in range(40)]
+    lines += [json.dumps({"ts": "2026-10-20 10:00:00", "security": f"B{i}.SZ",
+                          "rule_id": R_RISK, "action": "pass",
+                          "ref_px": 12.3, "score": 1.0, "reason": "ok",
+                          "data_version": V_RISK, "mode": "shadow"},
+                         ensure_ascii=False) for i in range(40)]
+    led.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    before = led.read_bytes()
+    out = tm.riskguard_reserved_topics(
+        ledger_path=led, price_provider=_FakeProvider(default=-0.01))
+    assert led.read_bytes() == before                   # 只读，零写入
+    assert out["status"] == rgt.STATUS_NO_EVIDENCE
+    assert out["counts"]["records_used"] == 80
+    assert out["input_count"] == 80
 
 
 def test_riskguard_status_reported_in_mine(env):
-    """提炼结果恒带 RiskGuard 未实现状态（汇报口径不得静默省略）。"""
+    """提炼结果恒带 RiskGuard 专题状态（校准账缺失 → 显式降级态，不静默省略）。"""
     mined = tm.mine_topics(reviews=_reviews(), ledger_path=env["topics"])
-    assert mined["riskguard"]["status"] == tm.RISKGUARD_NOT_IMPLEMENTED
+    rg = mined["riskguard"]
+    assert rg["status"] == tm.RISKGUARD_FEED_MISSING    # calibration_log_missing
+    assert rg["degraded"] is True and rg["reason_code"] == tm.RISKGUARD_FEED_MISSING
+    assert rg["topics"] == [] and rg["implemented"] is True
+    assert rg["note"] and "显式降级" in rg["note"]
     assert mined["by_source_type"][tm.SRC_RISKGUARD_RESERVED] == 0
-    assert any("RiskGuard" in n for n in mined["notes"])
+    assert any("RiskGuard" in n and rg["status"] in n for n in mined["notes"])
+
+
+def test_mine_topics_riskguard_passthrough_with_feed(env):
+    """校准账到位 → mine_topics 内嵌专题随喂入真实变化（状态透传端到端）。"""
+    feed = env["tmp_path"] / "risk_guard_calibration.jsonl"
+    feed.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False)
+                  for r in _rg_zero_evidence_records()) + "\n", encoding="utf-8")
+    mined = tm.mine_topics(reviews=_reviews(), ledger_path=env["topics"])
+    assert mined["riskguard"]["status"] == rgt.STATUS_NO_EVIDENCE
+    assert not mined["riskguard"].get("degraded")       # 非降级态：真实喂入判定
+    assert mined["riskguard"]["counts"]["records_used"] == 80
 
 
 # ---------- 验收⑦：closed on failure（坏输入显式抛） ----------
@@ -583,9 +740,14 @@ def test_corrupt_meeting_ledger_raises(env, plan_db):
 
 
 def test_bad_riskguard_records_raises():
-    """RiskGuard 喂入非列表 → 显式抛（契约违例不留桩）。"""
+    """RiskGuard 喂入违例 → 显式抛（整结构非列表 / 单条缺契约键，均不留桩）。"""
     with pytest.raises(tm.TopicMinerError, match="riskguard_records_invalid"):
         tm.riskguard_reserved_topics(records={"not": "a list"})
+    # 单条记录缺 5 键契约必填键（-023 校验 → reason_code 透传）
+    with pytest.raises(tm.TopicMinerError, match="riskguard_records_invalid"):
+        tm.riskguard_reserved_topics(records=[
+            {"ts": "t", "rule_id": "rg-1", "rule_version": "v1",
+             "decision": "blocked"}])
 
 
 # ---------- 零变化与呈现 ----------
@@ -609,7 +771,9 @@ def test_markdown_rendering_covers_sections(env, plan_db):
     assert "分歧保全率" in md and "分歧转化率" in md
     # 024 新增：分歧密度必须与前两率并列出现在汇报面（不得只落 JSON 字段）
     assert "分歧密度" in md and tm.FORMULA_DIVERGENCE_DENSITY in md
-    assert tm.RISKGUARD_NOT_IMPLEMENTED in md
+    # WO-029：RiskGuard 专题状态进汇报面（校准账缺失 → 显式降级态可见）
+    assert tm.RISKGUARD_FEED_MISSING in md
+    assert "显式降级" in md
     assert "不写 meeting_records" in md
 
 
