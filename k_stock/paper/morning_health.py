@@ -66,6 +66,24 @@ H2/H4/H5 的时效阈值不再只由代码常量决定，而是先读台账声�
   台账缺失/坏 JSON → 回落代码默认阈值（更严），并单列 H0 黄 finding 说明台账
   故障，**绝不因台账坏了就把红吃掉**。台账里没登记的通道沿用默认，不静默放宽。
 
+G-01/G-02/CH-08 判据增强（WO-QT-20261020-030，全部无需审批的判据口径项）：
+
+G-01 零买入 vs 断供区分（021 根因表 CH-03 §4）：qd/qpzm 通道「闸门收紧零买入」
+是风控正确行为（safe=true 才产出），不是断线。台账 channels 条目新增**可选**
+``zero_buy`` 声明（``{declared:true, reason, evidence, approved_by}``），声明后
+该通道零产出/超期显示「业务零产出（闸门收紧，非断线）」判黄**不判红**，与
+「上游断供」（红）明确分开。未声明的通道沿用现状（超期照旧判红），缺省不放宽。
+
+G-02 补跑件口径（CH-04）：H2 evidence 增列产物 mtime；「业务日期旧但落盘新」
+（补跑件）与「真断线 N 天」可区分——业务日期判红但 mtime 在阈值内新落盘时，
+显式标「补跑件待口径确认」判黄不判红（业务日期口径的最终裁定待老田）。
+
+CH-08 内容级检测（假绿根治）：H5 日期判绿只证明「件在且新」，不证明「内容
+可用」——实测 xunyou_brief_20261020.json 日期当日但 sections 三段全 DEGRADED。
+故对最新产物 JSON 追加内容级扫描：任一 ``*.status=="DEGRADED"`` 或
+``cutover_verdict`` 以 ``BLOCK_`` 开头 → 判黄「形式在、内容降级」（证据引用
+具体字段），不得再假绿；正常内容仍绿。
+
 退出码：0=green、1=yellow、2=red、3=工具自身失败（bad input / 不可读）。
 
 严重度序：``red > yellow > green``，整体 ``status`` 取所有 finding 里最高级
@@ -457,6 +475,27 @@ def _verify_prefix_alignment() -> str | None:
     return None
 
 
+def _zero_buy_decl(entry: dict) -> dict | None:
+    """取台账 ``zero_buy`` 声明（G-01）。未声明或非 dict/无 declared → None。
+
+    zero_buy 语义：通道在途但上游零买入（闸门收紧是风控正确行为，safe=true 才
+    产出），不是断线。声明后零产出/超期判黄不判红；**未声明沿用现状判红**，
+    缺省不放宽。
+    """
+    zb = entry.get("zero_buy")
+    if isinstance(zb, dict) and zb.get("declared"):
+        return zb
+    return None
+
+
+def _zero_buy_evidence(zb: dict) -> str:
+    """把 zero_buy 声明拼成证据串（声明必须留痕：reason/evidence/拍板人）。"""
+    return "声明：%s；证据：%s%s" % (
+        zb.get("reason") or "未注明原因",
+        zb.get("evidence") or "未附证据",
+        ("；拍板人：%s" % zb["approved_by"]) if zb.get("approved_by") else "")
+
+
 def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
               ledger: dict | None = None,
               stale_days_explicit: bool = False) -> list[_F]:
@@ -501,11 +540,23 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
                           "如需恢复，从台账改 enabled=true 并补挂调度面"))
             continue
 
+        # G-01：台账 zero_buy 声明（可选）。未声明 → None，行为与旧版完全一致。
+        zb = _zero_buy_decl(entry)
         eff_stale = _ledger_stale_days(entry, stale_days,
                                        fallback_is_explicit=stale_days_explicit)
 
         newest = _newest_prefix_file(data_dir, prefix)
         if newest is None:
+            if zb:
+                # 闸门收紧零买入：上游 safe=false → adapter 契约性 raise 不落盘，
+                # 是风控正确行为不是断线。判黄不判红（G-01），与断供红明确分开。
+                out.append(_F(cid, "yellow", title,
+                              "业务零产出（闸门收紧，非断线）：通道 %s 无任何 %s*.json "
+                              "产物于 %s。台账 zero_buy 显式%s"
+                              % (ch, prefix, data_dir, _zero_buy_evidence(zb)),
+                              "闸门放开（safe=true）后通道自动恢复产出；挂载调度须另行走"
+                              "五要素审批，不在本判据范围"))
+                continue
             sev = "red"
             ev = "通道 %s 无任何 %s*.json 产物于 %s（缺=红）" % (ch, prefix, data_dir)
             if drift:
@@ -524,26 +575,60 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
             continue
         latest = m
         age = _days_between(_iso(latest), date)
+        # G-02：evidence 增列落盘 mtime——「业务日期旧但落盘新」是补跑件，
+        # 与「真断线 N 天」是两回事，证据里必须两个时间都可见才能区分。
+        mtime_date = None
+        mtime_txt = ""
+        mtime_age = None
+        try:
+            mtime_dt = datetime.fromtimestamp(newest.stat().st_mtime)
+            mtime_date = mtime_dt.strftime("%Y%m%d")
+            mtime_txt = mtime_dt.strftime("%Y-%m-%d %H:%M")
+            mtime_age = _days_between(_iso(mtime_date), date)
+        except OSError:
+            pass
+        mtime_note = ("；落盘 mtime %s" % mtime_txt) if mtime_txt else ""
         thr_note = ("台账 frequency=%s → 阈值 %d 天" % (
             entry.get("frequency"), eff_stale) if entry else "阈值 %d 天" % eff_stale)
         if age <= 0:
             out.append(_F(cid, "green", title,
-                          "最新件 %s（日期 %s，当日/更新；%s）"
-                          % (newest.name, latest, thr_note),
+                          "最新件 %s（日期 %s，当日/更新%s；%s）"
+                          % (newest.name, latest, mtime_note, thr_note),
                           "无需动作"))
         elif age <= eff_stale:
             out.append(_F(cid, "yellow", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（>0 即黄；%s）"
-                          % (newest.name, latest, date, age, thr_note),
+                          "最新件 %s（日期 %s），距 %s 已 %d 天（>0 即黄；%s%s）"
+                          % (newest.name, latest, date, age, thr_note, mtime_note),
                           "确认通道是否降频运行；若为已知降频请调台账: " + action))
+        elif mtime_date is not None and mtime_age is not None \
+                and mtime_age <= eff_stale:
+            # G-02 补跑件：业务日期旧但落盘新。不判红（业务日期口径终裁待老田），
+            # 显式标「补跑件待口径确认」黄态，两个时间都列进证据。
+            out.append(_F(cid, "yellow", title,
+                          "最新件 %s（业务日期 %s，距 %s 已 %d 天，本应判红），"
+                          "但落盘 mtime=%s（%d 天内新落盘）→ **补跑件待口径确认**："
+                          "业务日期与落盘时间是两个语义，补跑件不判红；%s"
+                          % (newest.name, latest, date, age, mtime_txt, mtime_age,
+                             thr_note),
+                          "补跑件业务日期口径（按业务日还是落盘日）终裁待老田；"
+                          "裁定后更新台账声明或命名规范"))
+        elif zb:
+            # 闸门收紧零买入（G-01）：超期但台账显式声明零买入是风控正确行为。
+            out.append(_F(cid, "yellow", title,
+                          "业务零产出（闸门收紧，非断线）：最新件 %s（业务日期 %s，"
+                          "距 %s 已 %d 天%s）。台账 zero_buy 显式%s"
+                          % (newest.name, latest, date, age, mtime_note,
+                             _zero_buy_evidence(zb)),
+                          "闸门放开（safe=true）后通道自动恢复产出；挂载调度须另行走"
+                          "五要素审批，不在本判据范围"))
         elif age <= 2 * eff_stale:
             out.append(_F(cid, "red", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（>2 倍阈值=红；%s）"
-                          % (newest.name, latest, date, age, thr_note), action))
+                          "最新件 %s（日期 %s），距 %s 已 %d 天（>2 倍阈值=红；%s%s）"
+                          % (newest.name, latest, date, age, thr_note, mtime_note), action))
         else:
             out.append(_F(cid, "red", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（通道停摆；%s）"
-                          % (newest.name, latest, date, age, thr_note), action))
+                          "最新件 %s（日期 %s），距 %s 已 %d 天（通道停摆；%s%s）"
+                          % (newest.name, latest, date, age, thr_note, mtime_note), action))
     return out
 
 
@@ -758,16 +843,62 @@ def _latest_date_in_json(path: Path) -> str | None:
     return None
 
 
-def _feed_latest_date(path: Path, pattern: str) -> tuple[str | None, str]:
-    """返回 ``(最新日期, 证据串)``。日期优先取JSON 内容，其次取文件名。
+def _content_degradation(path) -> str | None:
+    """内容级降级检测（CH-08 假绿根治，WO-QT-20261020-030）。
+
+    日期判绿只证明「件在且新」，不证明「内容可用」——实测 xunyou_brief_20261020.json
+    日期当日但 sections 三段全 DEGRADED（pool 档未产出 / evidence 打不开库 /
+    posterior combined_verdicts.json 不存在），H5 只看日期 → 假绿。
+
+    只读扫描最新产物 JSON：任一 ``*.status == "DEGRADED"``（并尽量引用同级
+    reason/detail）或 ``cutover_verdict`` 以 ``BLOCK_`` 开头 → 返回引用具体字段
+    的证据串；无命中返回 None（正常内容仍绿，不放宽）。
+    解析失败返回 None——日期判定已把不可解析兜成红，此处不重复报错。
+    """
+    try:
+        obj = json.loads(_read_text(Path(path), max_bytes=1 << 20))
+    except (ValueError, OSError):
+        return None
+    hits: list[str] = []
+
+    def walk(node, prefix: str, depth: int) -> None:
+        if len(hits) >= 8 or depth > 8:
+            return
+        if isinstance(node, dict):
+            for k, v in node.items():
+                kp = "%s.%s" % (prefix, k) if prefix else str(k)
+                if isinstance(v, str):
+                    vu = v.strip().upper()
+                    if k == "status" and vu == "DEGRADED":
+                        reason = node.get("reason") or node.get("detail") or ""
+                        hits.append("%s=DEGRADED%s" % (
+                            kp, ("（%s）" % reason) if reason else ""))
+                    elif k == "cutover_verdict" and vu.startswith("BLOCK_"):
+                        hits.append("%s=%s" % (kp, v.strip()))
+                elif isinstance(v, (dict, list)):
+                    walk(v, kp, depth + 1)
+        elif isinstance(node, list):
+            for i, v in enumerate(node[:32]):
+                walk(v, "%s[%d]" % (prefix, i), depth + 1)
+
+    walk(obj, "", 0)
+    if not hits:
+        return None
+    return "；".join(hits[:8])
+
+
+def _feed_latest_date(path: Path, pattern: str) -> tuple[str | None, str, Path | None]:
+    """返回 ``(最新日期, 证据串, 最新件路径)``。日期优先取JSON 内容，其次取文件名。
 
     取 JSON 内容为准、文件名兜底：内容里的 date 是业务日期（权威），
     文件名日期戳可能只是落盘批次（陈旧文件被重写时两者会打架）。
+    第三返回值是提供该日期的具体文件（glob 形态下才有意义），供 CH-08
+    内容级降级检测定位产物；非 glob 形态返回 path 本身。
     """
     if "*" in pattern:
         hits = sorted(p for p in path.parent.glob(path.name) if p.is_file())
         if not hits:
-            return None, "产物不存在: %s（glob %s 无匹配）" % (path.parent, pattern)
+            return None, "产物不存在: %s（glob %s 无匹配）" % (path.parent, pattern), None
         # 先按 JSON 内容判（权威），内容读不出的再按文件名（mtime, 名字）破平取新
         dated = []
         for p in hits:
@@ -781,10 +912,11 @@ def _feed_latest_date(path: Path, pattern: str) -> tuple[str | None, str]:
                 dated.append((d, p.name))
         if not dated:
             return None, "产物 %s 存在但无任何可识别日期（内容与文件名皆无）" % [
-                p.name for p in hits[:3]]
+                p.name for p in hits[:3]], None
         latest, name = max(dated, key=lambda t: (t[0], t[1]))
-        return latest, "最新件 %s（日期 %s，共 %d 个候选）" % (name, latest, len(hits))
-    return _latest_date_in_json(path), "产物 %s" % path.name
+        latest_path = path.parent / name
+        return latest, "最新件 %s（日期 %s，共 %d 个候选）" % (name, latest, len(hits)), latest_path
+    return _latest_date_in_json(path), "产物 %s" % path.name, path
 
 
 def _check_h5(paths: HealthPaths, date: str, feeds: dict,
@@ -823,7 +955,7 @@ def _check_h5(paths: HealthPaths, date: str, feeds: dict,
                           % p.parent, action))
             continue
         try:
-            latest, ev = _feed_latest_date(p, rel)
+            latest, ev, latest_path = _feed_latest_date(p, rel)
         except (ValueError, OSError) as e:
             out.append(_err(cid, title, e, "修复/登记产物格式: %s（解析失败≠正常）" % e))
             continue
@@ -833,9 +965,20 @@ def _check_h5(paths: HealthPaths, date: str, feeds: dict,
             continue
         age = _days_between(_iso(latest), date)
         if age <= eff_age:
-            out.append(_F(cid, "green", title,
-                          "%s，距 %s %d 天（阈值 %d）" % (ev, date, age, eff_age),
-                          "无需动作"))
+            # CH-08 内容级检测：日期绿只证明「件在且新」，不证明「内容可用」。
+            # 业务字段含 DEGRADED/BLOCK_* → 判黄「形式在、内容降级」，不得假绿。
+            deg = _content_degradation(latest_path) if latest_path else None
+            if deg:
+                out.append(_F(cid, "yellow", title,
+                              "%s，距 %s %d 天（阈值 %d）——但**形式在、内容降级**"
+                              "（不得假绿）：%s" % (ev, date, age, eff_age, deg),
+                              "内容降级说明上游产出链有缺口，按黄处置；恢复上游产出后"
+                              "本判据自动回绿"))
+            else:
+                out.append(_F(cid, "green", title,
+                              "%s，距 %s %d 天（阈值 %d；内容无降级标记）"
+                              % (ev, date, age, eff_age),
+                              "无需动作"))
         else:
             out.append(_F(cid, "red", title,
                           "%s，距 %s 已 %d 天（超阈值 %d 天）= 断线"
@@ -1040,7 +1183,13 @@ def render_markdown(result: dict) -> str:
         "「灰态无样本」。",
         "3. **无文件 ≠ 断线**：灰态段零落盘但有note 证据时判黄；"
         "无文件且无任何证据才判红。",
-        "4. 本工具只判不发，未接推送线路径（属 015 待授权单）。",
+        "4. **闸门收紧零买入 ≠ 断线**（G-01）：台账 zero_buy 显式声明的通道零产出"
+        "判黄「业务零产出（闸门收紧，非断线）」，不判红；未声明沿用现状判红。",
+        "5. **补跑件 ≠ 断线**（G-02）：业务日期旧但落盘新的件显式标"
+        "「补跑件待口径确认」判黄，业务日期口径终裁待老田。",
+        "6. **形式在、内容降级 ≠ 绿**（CH-08）：H5 对最新产物做内容级检测，"
+        "status=DEGRADED / cutover_verdict=BLOCK_* 判黄并引用具体字段。",
+        "7. 本工具只判不发，未接推送线路径（属 015 待授权单）。",
         "",
     ]
     return "\n".join(lines)

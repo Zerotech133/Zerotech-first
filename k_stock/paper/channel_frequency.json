@@ -12,6 +12,10 @@
     "  · 不是绿——通道确实没有新数据产出，停用≠健康（守住 fail-open 禁令）。",
     "pending_mount 表示**已实现但未挂载调度**（如 HK 通道 H-D2）：这不是停用，是接线缺口，",
     "  自检仍按红处理，直到真挂载面落地。刻意与 disabled 分开，避免把「没做」记成「不做」。",
+    "zero_buy（可选，WO-QT-20261020-030 新增，G-01）声明「通道在途但上游零买入」：闸门收紧",
+    "  零买入是风控正确行为（safe=true 才产出），不是断线。声明后自检对该通道零产出/超期",
+    "  显示「业务零产出（闸门收紧，非断线）」判黄不判红，与上游断供（红）明确分开。",
+    "  须带 reason/evidence/approved_by 留痕。未声明的通道沿用现状（超期照旧判红），缺省不放宽。",
     "未在本台账登记的通道/数据源，一律沿用 morning_health 代码内默认值（更严），不静默放宽。"
   ],
   "channels": {
@@ -27,7 +31,13 @@
       "enabled": true,
       "mount": "none",
       "owner": "青萍 CN 通道（quant_backtest/reports/rps_latest.json → qpzm_adapter）",
-      "note": "adapter 无调度面；且上游 rps_latest.json 38 行 res 全部 action=回避（环境闸门四市场 safe=false 全冷），0 买入行 → adapter 契约性 raise ValueError 不落盘。属上游数据事实 + 调度面缺失双因。见 CH-03。"
+      "note": "adapter 无调度面；且上游 rps_latest.json 38 行 res 全部 action=回避（环境闸门四市场 safe=false 全冷），0 买入行 → adapter 契约性 raise ValueError 不落盘。属上游数据事实 + 调度面缺失双因。见 CH-03。",
+      "zero_buy": {
+        "declared": true,
+        "reason": "环境闸门四市场 safe=false 全冷，0 买入行 → qpzm_adapter 契约性 raise ValueError 不落盘——闸门收紧是风控正确行为，零买入≠断线（G-01，WO-QT-20261020-030 承载）",
+        "evidence": "rps_latest.json(ts=2026-10-19 16:15) res 38 行 action 全=回避（环境闸门）；rps_daily_batches.jsonl 122 行（10-07~10-19）买入行统计全 0，非今日偶发",
+        "approved_by": "老田（WO-QT-20261020-021 根因表 CH-03 建议项，WO-QT-20261020-030 落地）"
+      }
     },
     "qpzm_us": {
       "frequency": "daily",
@@ -58,7 +68,7 @@
       "max_age_days": 2,
       "enabled": true,
       "owner": "雪球情报线（xunyou_brief / xunyou_pool）",
-      "note": "⚠️ 自检当前判**绿**，但内容三段全 DEGRADED（pool 池档未产出 / evidence 'unable to open database file' / posterior combined_verdicts.json 不存在），且 cutover_verdict=BLOCK_CUTOVER。H5 只看日期不看内容 → **假绿**。此为 019 判据缺口，超出本单授权（仅授权读台账），已作为发现项上报，建议另开单补内容健康判据。见 CH-08。"
+      "note": "⚠️ 021 取证时自检判**绿**但内容三段全 DEGRADED（pool 池档未产出 / evidence 'unable to open database file' / posterior combined_verdicts.json 不存在，cutover_verdict=BLOCK_CUTOVER）——H5 只看日期不看内容 → 假绿。该判据缺口已由 WO-QT-20261020-030 落地内容级检测根治：H5 对最新产物扫描 status=DEGRADED / cutover_verdict=BLOCK_*，命中判黄「形式在、内容降级」并引用具体字段，不再假绿。上游产出链修复（combined_verdicts.json 等）另行跟进。见 CH-08。"
     }
   },
   "artifacts": {
