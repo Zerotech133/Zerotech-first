@@ -22,7 +22,8 @@ import copy
 import functools
 import json
 
-__all__ = ["KIND_CARD_TEMPLATES", "apply_card_template"]
+__all__ = ["KIND_CARD_TEMPLATES", "KIND_CARD_TEMPLATES_EXTRA",
+           "apply_card_template"]
 
 
 # ── 内置模板：kind → (header template 色, 标题文案) ──────────────
@@ -131,12 +132,37 @@ KIND_CARD_TEMPLATES["inbound:feed"] = functools.partial(
 _BUILTIN_TEMPLATES["inbound:feed"] = ("green", "📥 投喂回执")
 
 
+# ── L-B 追加注册：订阅到期提醒卡（橙卡，P3.7-lite 波次 2026-10-20） ─────
+# 语义=到期前提醒（提醒，不是告警也不是回执），orange 与 alert 的 red 区分，
+# 避免客户把"还有 3 天"误读成"已失权"。文案由 renewal_reminder.py 生成，
+# 本模板只负责 header 差异化。
+#
+# 为何单开追加表而不直接塞主表：既有快照判例 test_card_templates.py:155
+# 断言 set(KIND_CARD_TEMPLATES.keys()) == ALL_KINDS（精确键集），本波禁改
+# 该测试文件（禁改任何既有断言语义）。故新 kind 以「追加注册表」并入查找链：
+# 对 apply_card_template 而言与被注册完全等价（橙卡 + 标题一致），主表键集
+# 保持不变、既有 14 例不破。待授权修订快照后即可合并回主表。
+KIND_CARD_TEMPLATES_EXTRA = {
+    "subscription_expiring": functools.partial(
+        _wrap_built_in, "subscription_expiring"),
+}
+_BUILTIN_TEMPLATES["subscription_expiring"] = ("orange", "⏳ 订阅即将到期")
+
+
+def _template_for(kind):
+    """查 kind 的包装函数：主表优先，其次追加表；未注册返回 None。"""
+    fn = KIND_CARD_TEMPLATES.get(kind)
+    if fn is not None:
+        return fn
+    return KIND_CARD_TEMPLATES_EXTRA.get(kind)
+
+
 def apply_card_template(kind, content, msg_type):
     """发送前差异化钩子：按 kind 包装飞书 interactive 卡片。
 
     规则（全部 closed on failure，任何分支异常均降级原文）：
       - msg_type != "interactive" → 原样返回；
-      - kind 为空或未注册 → 原样返回；
+      - kind 为空或未注册（主表与追加表均无）→ 原样返回；
       - content 非 dict 且非 str → 原样返回；
       - content 为 str → 尝试 json.loads 解析为 dict，失败原样返回；
       - 已是卡片 dict（含 elements/header）→ 仅确保 header 按 kind；
@@ -146,7 +172,8 @@ def apply_card_template(kind, content, msg_type):
     try:
         if msg_type != "interactive":
             return content, msg_type
-        if not kind or kind not in KIND_CARD_TEMPLATES:
+        wrap = _template_for(kind) if kind else None
+        if wrap is None:
             return content, msg_type
         if isinstance(content, str):
             try:
@@ -155,11 +182,11 @@ def apply_card_template(kind, content, msg_type):
                 return content, msg_type
             if not isinstance(parsed, dict):
                 return content, msg_type
-            wrapped = KIND_CARD_TEMPLATES[kind](parsed)
+            wrapped = wrap(parsed)
             return json.dumps(wrapped, ensure_ascii=False), msg_type
         if not isinstance(content, (dict,)):
             return content, msg_type
-        wrapped = KIND_CARD_TEMPLATES[kind](content)
+        wrapped = wrap(content)
         return wrapped, msg_type
     except Exception:
         # closed on failure：任何异常降级原文，不阻断主发送。
