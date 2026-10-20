@@ -647,9 +647,6 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                               "（天数默认 30）", message_id)
                     return
                 try:
-                    # days 解析先于查重：参数非法先报参数错（❌ days...），
-                    # 不被「已有订阅」提示遮蔽（K-B 边界序）。
-                    days = int(parts[3]) if len(parts) > 3 else 30
                     subscription_store.upsert_subscriber(parts[1])
                     # P3.6-lite（K-B）重复开通幂等（指令层查重）：已有生效
                     # 同档位（active 且覆盖当前时刻）则诚实回执、不重复插行
@@ -678,7 +675,8 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                                      dup["end"]), message_id)
                         return
                     r = subscription_store.grant_subscription(
-                        parts[1], parts[2], days)
+                        parts[1], parts[2],
+                        int(parts[3]) if len(parts) > 3 else 30)
                 except ValueError as e:
                     send_text("❌ %s" % e, message_id)
                     return

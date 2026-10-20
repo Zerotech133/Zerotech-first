@@ -65,7 +65,7 @@ def captured(monkeypatch):
                                 {"plan_id": "basic_monthly",
                                  "start": "2026-10-20 00:00:00",
                                  "end": "2026-11-19 00:00:00",
-                                 "status": "active"}],
+                                 "status": "expired"}],
                             "today_used_by_prefix": {"news": 3},
                             "daily_quota_by_plan": {"basic_monthly": 20},
                             "plan_name_by_id": {"basic_monthly": "基础月度档"},
