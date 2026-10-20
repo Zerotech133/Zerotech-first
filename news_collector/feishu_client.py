@@ -359,15 +359,18 @@ def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
     """DD-1 方案 B 降级路径：Agent webhook 不可用 → OpenAPI 直发
     （K-ORG-204 前的旧出口 POST /im/v1/messages，chat_id/open_id 直发）。
     why 统一带 openapi_fallback: 前缀（证据链可 grep）；message_id 取
-    data.message_id，无则 None。"""
+    data.message_id，无则 None。P2.6 FE-C：落账行 channel 标记为
+    "openapi-fallback"（最小可选标记，非降级路径行结构零变化），供
+    8097 /api/public/ops fallback_24h 只读占比统计识别。"""
     if not receive_id:
         if flow_record:
-            _flow_record(False, "", kind=kind)
+            _flow_record(False, "", kind=kind, channel="openapi-fallback")
         return False, "openapi_fallback: missing receive_id", None
     tok = get_tat()
     if not tok:
         if flow_record:
-            _flow_record(False, receive_id, kind=kind)
+            _flow_record(False, receive_id, kind=kind,
+                         channel="openapi-fallback")
         return False, "openapi_fallback: no tenant token", None
     body = json.dumps({
         "receive_id": receive_id, "msg_type": msg_type,
@@ -382,12 +385,13 @@ def _openapi_direct_send(content, msg_type, receive_id, receive_id_type,
             resp = json.loads(r.read().decode("utf-8"))
     except Exception as e:
         if flow_record:
-            _flow_record(False, receive_id, kind=kind)
+            _flow_record(False, receive_id, kind=kind,
+                         channel="openapi-fallback")
         return False, ("openapi_fallback: err " + str(e))[:200], None
     ok = resp.get("code") == 0
     mid = (resp.get("data") or {}).get("message_id") if ok else None
     if flow_record:
-        _flow_record(ok, receive_id, kind=kind)
+        _flow_record(ok, receive_id, kind=kind, channel="openapi-fallback")
     why = "openapi_fallback: " + (str(resp.get("msg"))[:120] if not ok
                                   else "openapi direct ok")
     return ok, why, (str(mid) if mid else None)
