@@ -1,19 +1,26 @@
 # -*- coding: utf-8 -*-
 """P2 分域（FC-A）：domain 一级路由字段单测。
 
-覆盖三块已落地改动：
+覆盖五块改动：
   1. push_flow.record() 可选 domain 参数——jsonl 行缺省不写 domain 键
      （旧调用零变化），domain 非 None 时写键；
   2. notify_contracts 分域常量（DOMAINS / DOMAIN_LABELS / blocked kind）；
   3. api_notify item domain 徽章——存在才渲染，缺省不出现
-     （flow_items 今日 ok 聚合 / 失败簇 / 闸门抑制三路径 + 旧行兼容）。
+     （flow_items 今日 ok 聚合 / 失败簇 / 闸门抑制三路径 + 旧行兼容）；
+  4. feishu_client 透传链——_hub_send body_obj["domain"]（缺省不发字段）、
+     send_msg_tracked 签名加参并向 hub 分支转发（urlopen 全桩，零真发）；
+  5. push_admin_server api_send——domain 校验（非法拒）、表驱动路由
+     （owner/ops 放行，customer observe 留痕不拦截）、缺省兼容
+     （feishu_client 与 push_flow.record 全桩，零真发零污染）。
 
-挂账占位（skip，见各用例 reason）：feishu_client.py 与 push_admin_server.py
-的读取在本会话被平台审批拦截，改动未落地；透传链与 DOMAIN_ROUTES 表驱动
-用例先以 skip 占位，落地后取消 skip 补跑（不造数不假绿）。
+锚点解封补齐（2026-10-20）：此前 feishu_client.py / push_admin_server.py
+读取被平台审批拦截以 skip 占位；主会话提供锚点原文后改动落地，本文件
+取消 skip 补全实现断言。
 """
+import io
 import json
 import sys
+import types
 from datetime import datetime
 from pathlib import Path
 
@@ -22,9 +29,12 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))  # 仓库根（push_flow.py 在根目录）
+sys.path.insert(0, str(HERE.parent / "news_collector"))  # feishu_client
 
 import api_notify
+import feishu_client as fc
 import notify_contracts as nc
+import push_admin_server as admin
 import push_flow
 
 TODAY = datetime.now().strftime("%Y-%m-%d")
@@ -179,17 +189,164 @@ def test_flow_items_blocked_row_domain(tmp_path, monkeypatch):
     assert blocked[0]["domain"] == "customer"
 
 
-# ---------- 4. 挂账占位（改动落地后取消 skip 补跑） ----------
+# ---------- 4. feishu_client 透传链（urlopen 全桩，零真发） ----------
 
-@pytest.mark.skip(reason="挂账：feishu_client.py 本会话读取被平台审批拦截，"
-                         "domain 透传改动未落地；落地后取消 skip 验证 "
-                         "_hub_send body_obj['domain'] 与 send_msg_tracked 签名")
-def test_feishu_client_domain_passthrough():
-    pass
+class _FakeResp(io.BytesIO):
+    """urlopen 返回体：BytesIO 原生支持 with 与 read。"""
 
 
-@pytest.mark.skip(reason="挂账：push_admin_server.py 本会话读取被平台审批拦截，"
-                         "DOMAIN_ROUTES/req domain/customer observe 未落地；"
-                         "落地后取消 skip 验证表驱动路由与 observe 留痕")
-def test_push_admin_domain_routes_and_observe():
-    pass
+def _fake_urlopen(capture, resp_body=None):
+    def _open(rq, timeout=None):
+        capture.append(rq)
+        body = resp_body or json.dumps(
+            {"code": 0, "msg": "ok", "data": {"message_id": "om_fake"}}
+        ).encode("utf-8")
+        return _FakeResp(body)
+    return _open
+
+
+def test_hub_send_domain_passthrough(tmp_path, monkeypatch):
+    """_hub_send(domain=...) → 请求 body_obj 写 domain 一级字段。"""
+    monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "f.jsonl"))
+    cap = []
+    monkeypatch.setattr("urllib.request.urlopen", _fake_urlopen(cap))
+    fc._hub_send("hi", "text", "ou_a", "open_id", domain="owner")
+    body = json.loads(cap[0].data.decode("utf-8"))
+    assert body["domain"] == "owner"
+    # 基础字段不受影响
+    assert body["content"] == "hi" and body["msg_type"] == "text"
+
+
+def test_hub_send_no_domain_no_field(tmp_path, monkeypatch):
+    """缺省不带 domain → body 无 domain 键（存量调用零变化）。"""
+    monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "f.jsonl"))
+    cap = []
+    monkeypatch.setattr("urllib.request.urlopen", _fake_urlopen(cap))
+    fc._hub_send("hi", "text", "ou_a", "open_id")
+    body = json.loads(cap[0].data.decode("utf-8"))
+    assert "domain" not in body
+
+
+def test_send_msg_tracked_forwards_domain_to_hub(monkeypatch):
+    """send_msg_tracked(domain=...) → via_hub 分支转发给 _hub_send。"""
+    cap = {}
+
+    def fake_hub(content, msg_type, receive_id, receive_id_type,
+                 kind=None, critical=False, timeout=8, route_targets=None,
+                 domain=None):
+        cap["domain"] = domain
+        return (True, "ok", "om_x")
+
+    monkeypatch.setattr(fc, "_hub_send", fake_hub)
+    fc.send_msg_tracked("hi", "text", "ou_a", "open_id",
+                        via_hub=True, domain="ops")
+    assert cap["domain"] == "ops"
+
+
+def test_send_msg_tracked_domain_default_none(monkeypatch):
+    """send_msg_tracked 缺省 → 转发 domain=None（兼容存量调用方）。"""
+    cap = {}
+
+    def fake_hub(content, msg_type, receive_id, receive_id_type,
+                 kind=None, critical=False, timeout=8, route_targets=None,
+                 domain=None):
+        cap["domain"] = domain
+        return (True, "ok", "om_x")
+
+    monkeypatch.setattr(fc, "_hub_send", fake_hub)
+    fc.send_msg_tracked("hi", "text", "ou_a", "open_id", via_hub=True)
+    assert cap["domain"] is None
+
+
+def test_send_msg_tracked_webhook_path_accepts_domain(tmp_path, monkeypatch):
+    """via_hub=False 走 _agent_webhook_send：签名接受 domain 不炸；
+    本期 webhook 路径不透传 domain（挂账语义锚定：body 无 domain 键）。"""
+    monkeypatch.setattr(push_flow, "FLOW_PATH", str(tmp_path / "f.jsonl"))
+    cap = []
+    monkeypatch.setattr("urllib.request.urlopen", _fake_urlopen(cap))
+    fc.send_msg_tracked("hi", "text", "ou_a", "open_id",
+                        via_hub=False, flow_record=False, domain="customer")
+    body = json.loads(cap[0].data.decode("utf-8"))
+    assert "domain" not in body
+
+
+# ---------- 5. push_admin_server api_send（feishu_client/record 全桩） ----------
+
+def _req(**extra):
+    base = {"content": "hello", "msg_type": "text",
+            "receive_id": "ou_test", "critical": True}
+    base.update(extra)
+    return base
+
+
+def _api_send_env(monkeypatch, sent, records):
+    """api_send 全桩：feishu_client 走 sys.modules 假模块（api_send 内
+    局部 from feishu_client import），静默窗恒假、配额 internal 永不拦、
+    push_flow.record 捕获 observe 留痕。"""
+    def fake_send(content, msg_type, receive_id=None,
+                  receive_id_type="open_id", **kw):
+        sent.append({"content": content, "msg_type": msg_type,
+                     "receive_id": receive_id, "kw": kw})
+        return (True, "ok", "om_t")
+
+    fake_fc = types.SimpleNamespace(send_msg_tracked=fake_send,
+                                    verify_message=lambda mid: True)
+    monkeypatch.setitem(sys.modules, "feishu_client", fake_fc)
+    monkeypatch.setattr(admin, "_in_silent_window",
+                        lambda now=None, kind="": False)
+    monkeypatch.setattr(push_flow, "quota_check",
+                        lambda: ("internal", 0, 0, False))
+    monkeypatch.setattr(push_flow, "record",
+                        lambda *a, **kw: records.append((a, kw)))
+
+
+def test_api_send_domain_invalid_rejected(monkeypatch):
+    """非法 domain → 拒绝且不触发送、不留痕。"""
+    sent, records = [], []
+    _api_send_env(monkeypatch, sent, records)
+    r = admin.api_send(_req(domain="hacker"))
+    assert r["ok"] is False
+    assert r["error"] == "invalid domain"
+    assert sent == [] and records == []
+
+
+def test_api_send_customer_observe_records_no_block(monkeypatch):
+    """customer 域 observe：留痕（channel=domain-observe）且放行不拦截，
+    domain 透传到 send_msg_tracked。"""
+    sent, records = [], []
+    _api_send_env(monkeypatch, sent, records)
+    r = admin.api_send(_req(domain="customer"))
+    assert r["ok"] is True
+    # observe 留痕恰一条（api_send 发送成功后另有统一流水 channel=openapi，
+    # 不计入）；channel=domain-observe、domain 透传、不拦发送
+    observes = [(a, kw) for a, kw in records if a[1] == "domain-observe"]
+    assert len(observes) == 1
+    a, kw = observes[0]
+    assert a[1] == "domain-observe"
+    assert a[2] == "ou_test"
+    assert kw.get("domain") == "customer"
+    assert len(sent) == 1
+    assert sent[0]["kw"].get("domain") == "customer"
+
+
+def test_api_send_owner_ops_allow_without_observe(monkeypatch):
+    """owner/ops 放行且无 observe 留痕（表驱动：仅 customer 为 observe）。"""
+    sent, records = [], []
+    _api_send_env(monkeypatch, sent, records)
+    assert admin.api_send(_req(domain="ops"))["ok"] is True
+    assert admin.api_send(_req(domain="owner"))["ok"] is True
+    # 非 customer 域不产生 observe 留痕（api_send 自身统一流水 openapi 除外）
+    assert [a for a, _kw in records if a[1] == "domain-observe"] == []
+    assert [s["kw"].get("domain") for s in sent] == ["ops", "owner"]
+
+
+def test_api_send_no_domain_legacy_compat(monkeypatch):
+    """旧调用不带 domain：放行、无 observe 留痕、透传 domain=None。"""
+    sent, records = [], []
+    _api_send_env(monkeypatch, sent, records)
+    r = admin.api_send(_req())
+    assert r["ok"] is True
+    # 无 observe 留痕（api_send 自身统一流水 openapi 除外）
+    assert [a for a, _kw in records if a[1] == "domain-observe"] == []
+    assert len(sent) == 1
+    assert sent[0]["kw"].get("domain") is None
