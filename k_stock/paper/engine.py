@@ -34,7 +34,7 @@ from pathlib import Path
 
 CONF_FULL = 0.75      # 满配置信度：conf>=0.75 → 目标仓位打满 max_pos_pct
 LOT = 100
-ENGINE_VERSION = "0.8.0-pool-stamp"   # X-6 版本化纪律：2.1a 池快照印记入快照（WO-QT-20261020-004）
+ENGINE_VERSION = "0.9.0-signal-follow"   # X-6 版本化纪律：2.3 信号点消费印记入快照（WO-QT-20261020-005）
 EPS = 1e-9
 
 _DEFAULTS = dict(
@@ -518,7 +518,8 @@ class PaperEngine:
                  allow_stale: bool = False,
                  combo_id: str | None = None,
                  registry_path: Path | str | None = None,
-                 pool_stamp: dict | None = None) -> dict:
+                 pool_stamp: dict | None = None,
+                 signal_stamp: dict | None = None) -> dict:
         """读 poc_*.json（list，每股一项），按 D1 决策落 pending 单。幂等。
         同一 run 可落多个交易员子账本（ref 按 @账户 分段互不冲突）。
         min_conf：BUY 置信度门槛（交易员档案 conf_floor；SELL 不受限——该卖还得卖）。
@@ -548,7 +549,15 @@ class PaperEngine:
         2.1a 池快照印记（WO-QT-20261020-004）：pool_stamp 给定时随快照写入
         context_json["pool"]（取票时池标识+版本+快照时间，供许褚取票范围
         从契约+快照复现；缺 pool_id/pool_version 即抛错）。不给 → 行为零
-        变化；池→落单的真实调用方（许褚链）尚未接线，当前仅字段预留。"""
+        变化；池→落单的真实调用方（许褚链）尚未接线，当前仅字段预留。
+
+        2.3 信号点消费印记（WO-QT-20261020-005）：signal_stamp 给定时随快照
+        写入 context_json["signal"]（信号 id/触发规则 id+版本/触发时刻/时效/
+        触发时证据——信号点进跟单链的证据可回放锚点；字段校验由消费侧
+        signal_consumer 按契约 closed on failure 完成，本层只做加法透传，
+        非 dict 即抛）。不给 → 行为零变化。真实信号源（许褚触发→信号池）
+        尚未接线，当前调用方为 signal_consumer 消费路径（工单口径：paper
+        消费侧最小实现）。"""
         aid = account_id or self.acct
         # E-1 四元组注册表解析（见 docstring）：解析与参数覆盖在任何落单动作前
         # 完成，失败即抛（closed on failure）；覆盖值在 finally 恢复。
@@ -656,7 +665,8 @@ class PaperEngine:
                              "min_conf": min_conf, "cancelled": out["cancelled"],
                              "market": type(self.market).__name__},
                     combo=combo_registry.quad_stamp(combo) if combo else None,
-                    pool=pool_stamp)
+                    pool=pool_stamp,
+                    signal=signal_stamp)
                 out["snapshot_id"] = snap["snapshot_id"]
             self.con.commit()
             return out

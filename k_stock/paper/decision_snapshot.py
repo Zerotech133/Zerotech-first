@@ -12,8 +12,11 @@ orders 即可配对后验结果 → 形成「上下文-决策-结果」训练样
 - schema v2/v3 加法演进：v2 加 combo（四元组印记，E-1）写 context_json
   ["combo"]；v3 加 pool（池快照印记，WO-QT-20261020-004 §6）写
   context_json["pool"]——取票时的池标识+版本+快照时间，供许褚运行时取票
-  范围从契约+快照复现（计划 2.1a）。均不删列不改约束，旧快照（v1，context
-  无 combo/pool）读侧照常解析（by_ref 容忍缺失）；
+  范围从契约+快照复现（计划 2.1a）；v3 同批加 signal（信号点消费印记，
+  WO-QT-20261020-005 §6）写 context_json["signal"]——信号 id/触发规则/
+  触发时刻/时效/触发时证据，信号点进跟单链的证据可回放锚点。均不删列
+  不改约束，旧快照（v1，context 无 combo/pool/signal）读侧照常解析
+  （by_ref 容忍缺失）；
 - 与落单同事务（exec_run commit 前写入）：快照失败 = 落单一并失败，
   fail-visible —— 禁「落了单没快照」的静默样本缺口（未落账≠假绿判例）；
 - 仅 orders 非空且非 dry_run 时产快照（灰态零决策无样本信息量，不产）；
@@ -35,6 +38,10 @@ POOL_STAMP_REQUIRED = ("pool_id", "pool_version")
 
 class PoolStampError(ValueError):
     """池快照印记非法（缺必填键/类型不符）。"""
+
+
+class SignalStampError(ValueError):
+    """信号点消费印记非法（非 dict）。"""
 
 
 def normalize_pool_stamp(pool) -> dict:
@@ -77,7 +84,7 @@ def ensure_table(con) -> None:
 def capture(con, *, run_path: Path | str, run_name: str, out: dict,
             account_id: str, strategy: str, versions: dict | None = None,
             context: dict | None = None, combo: dict | None = None,
-            pool: dict | None = None) -> dict:
+            pool: dict | None = None, signal: dict | None = None) -> dict:
     """写入一份决策快照（调用方负责在其事务 commit 前调用）。返回快照行。
 
     combo：四元组印记（combo_registry.quad_stamp 产物，E-1）。给定时
@@ -85,13 +92,20 @@ def capture(con, *, run_path: Path | str, run_name: str, out: dict,
     旧语义 combo_id=account_id（加法演进，调用方零改动兼容）。
     pool：池快照印记（normalize_pool_stamp 规范后写 context_json["pool"]，
     2.1a——取票时池标识+版本+快照时间，供许褚取票范围契约+快照复现；
-    缺 pool_id/pool_version 即抛错，closed on failure）。"""
+    缺 pool_id/pool_version 即抛错，closed on failure）。
+    signal：信号点消费印记（WO-QT-20261020-005，写 context_json["signal"]；
+    字段校验归消费侧 signal_consumer，本层只拒非 dict——closed on
+    failure）。"""
     ensure_table(con)
     ctx = dict(context or {})
     if combo:
         ctx["combo"] = combo
     if pool is not None:
         ctx["pool"] = normalize_pool_stamp(pool)
+    if signal is not None:
+        if not isinstance(signal, dict):
+            raise SignalStampError(f"signal_stamp 须为 dict: {type(signal).__name__}")
+        ctx["signal"] = dict(signal)
     snap = {
         "snapshot_id": uuid.uuid4().hex,
         "ts": datetime.now().isoformat(timespec="seconds"),
