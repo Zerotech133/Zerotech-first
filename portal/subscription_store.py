@@ -46,6 +46,7 @@ __all__ = [
     "list_subscribers",
     "OWN_DOMAIN_OPEN_IDS",
     "SEED_PLANS",
+    "ensure_schema",
 ]
 
 _MODULE_DIR = Path(__file__).resolve().parent
@@ -496,3 +497,80 @@ def list_subscribers(limit=50, now=None):
                 "subscribers": subscribers}
     except Exception:  # closed on failure：不抛，诚实报错
         return {"ok": False, "error": "store_unavailable"}
+
+
+# ---------------------------------------------------------------------------
+# P3.8-lite（WO-FS-113 · M-C）离线建库入口——只追加不改写既有函数
+# ---------------------------------------------------------------------------
+# 背景：读路径按设计不建库（见 is_entitled 第 2 步），故账本从未初始化时
+# 两个管理面只能降级。本函数给运维一个干净、幂等、可离线执行的建库入口，
+# 替代「在飞书手工执行一次开通指令触发建库」的旧补救办法（旧办法会写入
+# 一条假业务数据，且依赖在役 bot 可用）。
+# 刻意只做「确保」：不新增 DDL、不改表结构、不删任何行。
+
+def ensure_schema(now=None) -> dict:
+    """幂等确保账本目录与 5 表存在并写入种子档位。返回结构化结果。
+
+    返回 dict::
+
+        {"ok": bool, "db_path": str, "created": bool,
+         "tables": [已存在的表名（按 5 表口径排序）],
+         "seeded_plans": int,  # plan 表中与 SEED_PLANS 的 plan_id 重合条数
+         "problems": [str]}
+
+    - 复用既有 ``_connect(create=True)`` 路径（含 _DDL 与
+      _seed_plans_if_empty），**不另写一套 DDL**，避免表结构漂移。
+    - ``created``：调用前库文件不存在 → True；已存在 → False。
+      仅表示「本次是否新建了库文件」，不表示是否写入过任何行
+      （_connect 本身幂等，已存在的库只会补缺表/补种子）。
+    - ``problems`` 的 code：``missing_table:<表名>``（建表后仍缺）、
+      ``ensure_failed:<异常类型>: <异常信息>``（closed on failure）。
+    - closed on failure：任何异常都落 ``problems`` 且 ``ok=False``，不抛。
+    - ``now`` 仅为调用侧签名对齐保留：本函数不写任何时间戳列
+      （created_at 等由各自的写函数负责）。
+    """
+    path = _db_path()
+    created = not path.exists()
+    problems = []
+    tables = []
+    seeded = 0
+    # 5 表口径就地声明（不新增模块级常量，保持本次改动只有「追加一个函数」）
+    ledger_tables = (
+        "subscriber", "plan", "subscription", "entitlement_log", "payment_order",
+    )
+    seed_ids = [p["plan_id"] for p in SEED_PLANS]
+
+    try:
+        conn = _connect(create=True)
+        try:
+            present = {
+                row[0] for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            tables = [t for t in ledger_tables if t in present]
+            for t in ledger_tables:
+                if t not in present:
+                    problems.append("missing_table:%s" % t)
+            if "plan" in present:
+                got = {
+                    row[0] for row in conn.execute(
+                        "SELECT plan_id FROM plan").fetchall()
+                }
+                seeded = len([pid for pid in seed_ids if pid in got])
+        finally:
+            # closed on failure：连接必须关（with 连接的上下文只管事务，
+            # 不代关）；Windows 下未关的连接会锁住库文件。
+            conn.close()
+    except Exception as exc:  # closed on failure：落 problems，不抛
+        problems.append(
+            "ensure_failed:%s: %s" % (type(exc).__name__, exc))
+
+    return {
+        "ok": not problems,
+        "db_path": str(path),
+        "created": created,
+        "tables": tables,
+        "seeded_plans": seeded,
+        "problems": problems,
+    }
