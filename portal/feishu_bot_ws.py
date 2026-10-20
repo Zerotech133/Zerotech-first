@@ -19,6 +19,7 @@ import os
 import re
 import sys
 import threading
+import time
 import traceback
 from datetime import datetime
 
@@ -843,6 +844,17 @@ def _patch_ws_card_route():
     _wsc.Client._handle_data_frame = _fixed
 
 
+def next_backoff(delay, alive_secs):
+    """P2.7 重连退避纯函数（便于单测）。delay=上次退避秒数（首次传 0）；
+    连接稳定存活≥60s 后异常视为新断连周期，退避重置 1s；否则指数倍增
+    （0→1 起），上限 60s。"""
+    if alive_secs >= 60:
+        return 1.0
+    if delay <= 0:
+        return 1.0
+    return min(delay * 2.0, 60.0)
+
+
 def main():
     import lark_oapi as lark
     from lark_oapi.api.im.v1 import P2ImMessageReceiveV1
@@ -931,9 +943,37 @@ def main():
                .register_p2_card_action_trigger(on_card).build())
     cli = Client(app_id, app_secret, event_handler=handler,
                  log_level=lark.LogLevel.INFO)
-    _patch_ws_card_route()  # K-PUSH-005：CARD 帧路由（须在 start 前）
+    # K-PUSH-005：CARD 帧路由。P2.7 侦察结论：该 patch 是对 SDK 类
+    # （lark_oapi.ws.client.Client）的一次性属性赋值（不读旧值、不叠加
+    # 包装），重复调用幂等，且类级 patch 对环内重建的新 Client 实例
+    # 天然生效——故环外调用一次即可，语义等价于每次 start 前已 patch。
+    _patch_ws_card_route()
     log("bot ws starting (app=%s)" % app_id)
-    cli.start()
+    # P2.7 内部重连环：原 cli.start() 为单次阻塞调用，WS 断线=进程退出，
+    # 只能靠 watchdog 每 5min 整机拉起兜底（恢复延迟最长 5min）。本环把
+    # 恢复延迟降到秒级（指数退避：初始 1s 倍增上限 60s；存活≥60s 后异常
+    # 视为稳定连接的新断连周期，退避重置 1s）；watchdog 整机拉起仍是
+    # 兜底，保留不撤。closed on failure：断线原因落日志（traceback 尾
+    # ≤200 字符）。start() 正常返回（SDK 语义上不应发生）则按原行为退出。
+    delay = 0.0
+    reconnect_n = 0
+    while True:
+        started = time.time()
+        try:
+            cli.start()
+            log("bot ws exited cleanly")
+            return  # 按现行为退出进程，watchdog 兜底路径保留
+        except Exception:  # noqa: BLE001
+            alive_secs = time.time() - started
+            log("bot ws closed on failure (alive=%.0fs): %s"
+                % (alive_secs, traceback.format_exc()[-200:]))
+            delay = next_backoff(delay, alive_secs)
+            reconnect_n += 1
+            log("bot ws reconnect #%d in %.1fs" % (reconnect_n, delay))
+            time.sleep(delay)
+            # Client 重建在环内（app_id/app_secret/handler 复用环外对象）
+            cli = Client(app_id, app_secret, event_handler=handler,
+                         log_level=lark.LogLevel.INFO)
 
 
 if __name__ == "__main__":
