@@ -785,16 +785,22 @@ def _fallback_stats_24h():
     口径：news_collector/feishu_client.py _openapi_direct_send 降级分支
     落账行带 channel="openapi-fallback"（P2.6 FE-C 补的最小标记）；
     count=降级行 count 合计，total=近 24h 全部有效行 count 合计（占比
-    分母）。读 push_flow.jsonl 跨进程追加中：按行 json.loads，坏行跳过
+    分母）。
+    P2.7 G-B 纯发送口径：sent_total=近 24h ok=true 有效行 count 合计
+    （只数真实发送成功行）。total 与 sent_total 差异：total 含闸门
+    拒绝/失败行（ok=false，如 silent window、quota block、降级失败），
+    分母偏宽是 P2.6 既有语义保留不动；sent_total 为纯发送成功口径，
+    二者差值≈近 24h 被拒/失败量。单次读 jsonl 同轮算三值，不双读。
+    读 push_flow.jsonl 跨进程追加中：按行 json.loads，坏行跳过
     不中断；ts 为 ISO 秒级字符串，字典序比较即可圈 24h 窗；打开/读取
-    任一异常 → count/total 全 -1（诚实不猜数）。只返回计数，零
-    open_id/target/kind 明文（隐私红线）。"""
+    任一异常 → count/total/sent_total 全 -1（诚实不猜数）。只返回计数，
+    零 open_id/target/kind 明文（隐私红线）。"""
     try:
         sys.path.insert(0, STATION)
         import push_flow
         cutoff = (datetime.now() - timedelta(hours=24)).isoformat(
             timespec="seconds")
-        cnt = tot = 0
+        cnt = tot = sent = 0
         with open(push_flow.FLOW_PATH, encoding="utf-8",
                   errors="replace") as f:
             for line in f:
@@ -809,11 +815,13 @@ def _fallback_stats_24h():
                 except (TypeError, ValueError):
                     continue  # count 字段损坏视为坏行
                 tot += c
+                if r.get("ok") is True:  # 纯发送口径：仅 ok=true 行
+                    sent += c
                 if r.get("channel") == "openapi-fallback":
                     cnt += c
-        return {"count": cnt, "total": tot}
+        return {"count": cnt, "total": tot, "sent_total": sent}
     except Exception:
-        return {"count": -1, "total": -1}  # 读异常不猜数
+        return {"count": -1, "total": -1, "sent_total": -1}  # 读异常不猜数
 
 
 def _dead_letter_alert_if_needed(stats=None):
@@ -903,12 +911,25 @@ def api_send(req):
                     "why": "invalid domain: %s" % domain[:20],
                     "error": "invalid domain"}
         # FC-A：域路由表驱动（松耦合设计稿）；customer 域本期 observe 只留痕，
-        # enforce M3 收银台后另批
+        # enforce M3 收银台后另批。P2.7 G-B 预埋口径注释：enforce 切换后
+        # customer 域 critical 不豁免（老田建议口径，M3 另批确认）——届时
+        # critical 豁免仅对 owner/ops 域生效，customer 域静默窗一律拦截。
         domain_route = {"owner": "allow", "ops": "allow", "customer": "observe"}
         if domain_route.get(domain) == "observe":
             try:
                 import push_flow
-                push_flow.record(kind or "hub", "domain-observe", rid, 1, True,
+                # P2.7 G-B 静默窗预埋（零行为变更，纯留痕增强）：customer
+                # 域流入全局静默窗（读 load_schedule 同源 22:00-07:30）时
+                # observe 行 kind 加 "|silent-window" 后缀（_flow_gate_deny
+                # 同款 kind 管道语法；evidence 键有白名单不可用）。判定用
+                # _in_silent_window(kind="") 纯时间窗、不做 per-kind 豁免
+                # ——与上方 enforce 口径一致（customer 域 critical 不豁免）。
+                # observe 不拦截不发送，本标记暂无 enforce 消费方，M3
+                # 切换时按此后缀圈 customer 域静默窗流入量做决策依据。
+                obs_kind = kind or "hub"
+                if _in_silent_window(kind=""):
+                    obs_kind = "%s|silent-window" % obs_kind
+                push_flow.record(obs_kind, "domain-observe", rid, 1, True,
                                  domain=domain)
             except Exception:
                 pass  # 观察留痕失败不拦发送（fail-safe）
