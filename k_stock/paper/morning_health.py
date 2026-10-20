@@ -74,9 +74,12 @@ G-01 零买入 vs 断供区分（021 根因表 CH-03 §4）：qd/qpzm 通道「�
 该通道零产出/超期显示「业务零产出（闸门收紧，非断线）」判黄**不判红**，与
 「上游断供」（红）明确分开。未声明的通道沿用现状（超期照旧判红），缺省不放宽。
 
-G-02 补跑件口径（CH-04）：H2 evidence 增列产物 mtime；「业务日期旧但落盘新」
-（补跑件）与「真断线 N 天」可区分——业务日期判红但 mtime 在阈值内新落盘时，
-显式标「补跑件待口径确认」判黄不判红（业务日期口径的最终裁定待老田）。
+G-02 补跑件口径（CH-04，终裁已落）：H2 evidence 增列产物 mtime（**留痕用途
+不变，不再是判读基准**）。补跑件新鲜度判读基准 = **业务日期**（文件内记录的
+应覆盖交易日）——业务日期超期即照常判黄/红，落盘 mtime 新**不豁免**（防陈旧
+数据靠补跑「洗白」成新鲜）。文件名/文件内均无业务日期的件维持显式黄态
+（不可判定≠绿，不造数）。终裁来源：老田 2026-10-21 07:12 圈选「⑧A」批准
+（WO-QT-20261020-068），口径版本 CALIBER_VERSION = "v20261021-user-approved"。
 
 CH-08 内容级检测（假绿根治）：H5 日期判绿只证明「件在且新」，不证明「内容
 可用」——实测 xunyou_brief_20261020.json 日期当日但 sections 三段全 DEGRADED。
@@ -119,6 +122,14 @@ __all__ = [
 
 # 严重度序（index 越大越严重；整体 status 取max）
 SEVERITY_ORDER = ("green", "yellow", "red")
+
+# 口径版本（终裁登记，WO-QT-20261020-068）。
+# 补跑件新鲜度判读基准 = **业务日期**（文件内记录的应覆盖交易日），非落盘
+# mtime 实际产出时间。mtime 证据保留仅作留痕，不再参与判读——业务日期超期
+# 照常判黄/红，防陈旧数据靠补跑「洗白」成新鲜；无业务日期的件维持显式黄态
+# （insufficient/unknown，不造数）。
+# 终裁来源：老田 2026-10-21 07:12 圈选「⑧A」批准。
+CALIBER_VERSION = "v20261021-user-approved"
 
 # 通道频次台账（WO-QT-20261020-021）。**数据文件不是硬编码**——频次口径要能被
 # 显式声明、可被复核、可被老田改；改频次不该改代码。
@@ -575,16 +586,12 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
             continue
         latest = m
         age = _days_between(_iso(latest), date)
-        # G-02：evidence 增列落盘 mtime——「业务日期旧但落盘新」是补跑件，
-        # 与「真断线 N 天」是两回事，证据里必须两个时间都可见才能区分。
-        mtime_date = None
+        # G-02：evidence 增列落盘 mtime——留痕用途不变（终裁后仅留痕，不再是
+        # 判读基准：补跑件新鲜度按业务日期判，mtime 新不豁免）。
         mtime_txt = ""
-        mtime_age = None
         try:
             mtime_dt = datetime.fromtimestamp(newest.stat().st_mtime)
-            mtime_date = mtime_dt.strftime("%Y%m%d")
             mtime_txt = mtime_dt.strftime("%Y-%m-%d %H:%M")
-            mtime_age = _days_between(_iso(mtime_date), date)
         except OSError:
             pass
         mtime_note = ("；落盘 mtime %s" % mtime_txt) if mtime_txt else ""
@@ -600,18 +607,6 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
                           "最新件 %s（日期 %s），距 %s 已 %d 天（>0 即黄；%s%s）"
                           % (newest.name, latest, date, age, thr_note, mtime_note),
                           "确认通道是否降频运行；若为已知降频请调台账: " + action))
-        elif mtime_date is not None and mtime_age is not None \
-                and mtime_age <= eff_stale:
-            # G-02 补跑件：业务日期旧但落盘新。不判红（业务日期口径终裁待老田），
-            # 显式标「补跑件待口径确认」黄态，两个时间都列进证据。
-            out.append(_F(cid, "yellow", title,
-                          "最新件 %s（业务日期 %s，距 %s 已 %d 天，本应判红），"
-                          "但落盘 mtime=%s（%d 天内新落盘）→ **补跑件待口径确认**："
-                          "业务日期与落盘时间是两个语义，补跑件不判红；%s"
-                          % (newest.name, latest, date, age, mtime_txt, mtime_age,
-                             thr_note),
-                          "补跑件业务日期口径（按业务日还是落盘日）终裁待老田；"
-                          "裁定后更新台账声明或命名规范"))
         elif zb:
             # 闸门收紧零买入（G-01）：超期但台账显式声明零买入是风控正确行为。
             out.append(_F(cid, "yellow", title,
@@ -1185,8 +1180,10 @@ def render_markdown(result: dict) -> str:
         "无文件且无任何证据才判红。",
         "4. **闸门收紧零买入 ≠ 断线**（G-01）：台账 zero_buy 显式声明的通道零产出"
         "判黄「业务零产出（闸门收紧，非断线）」，不判红；未声明沿用现状判红。",
-        "5. **补跑件 ≠ 断线**（G-02）：业务日期旧但落盘新的件显式标"
-        "「补跑件待口径确认」判黄，业务日期口径终裁待老田。",
+        "5. **补跑件按业务日期判**（G-02 终裁 v20261021-user-approved）：补跑件"
+        "新鲜度判读基准=业务日期（文件内记录的应覆盖交易日），落盘 mtime 仅留痕"
+        "不豁免——业务日期超期照常判黄/红，防陈旧数据靠补跑「洗白」成新鲜"
+        "（老田 2026-10-21 07:12 圈选⑧A）。",
         "6. **形式在、内容降级 ≠ 绿**（CH-08）：H5 对最新产物做内容级检测，"
         "status=DEGRADED / cutover_verdict=BLOCK_* 判黄并引用具体字段。",
         "7. 本工具只判不发，未接推送线路径（属 015 待授权单）。",

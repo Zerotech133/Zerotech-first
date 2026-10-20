@@ -75,10 +75,12 @@ class _Base(unittest.TestCase):
         return f
 
     def _backdate(self, path, dt_str):
-        """把文件 mtime 回拨到指定时刻（G-02 口径：mtime 新落盘 = 补跑件。
+        """把文件 mtime 回拨到指定时刻（G-02 终裁 v20261021-user-approved：
+        补跑件按**业务日期**判，mtime 仅留痕不豁免——陈旧业务日期不因新落盘
+        洗白成黄/绿。
 
-        构造「真断线 N 天」场景必须连 mtime 一起回拨——write_text 的 mtime 是
-        现在，按 G-02 会被判成补跑件黄；断线用例的语义是业务与落盘都旧。
+        构造「真断线 N 天」场景仍连 mtime 一起回拨：断线用例的语义是业务与
+        落盘都旧，回拨让场景语义更纯粹（不回拨也判红，但混入新落盘噪声）。
         """
         ts = time.mktime(time.strptime(dt_str, "%Y-%m-%d %H:%M:%S"))
         os.utime(path, (ts, ts))
@@ -893,18 +895,20 @@ class TestG01ZeroBuyDeclaration(_Base):
 
 
 # ---------------------------------------------------------------------------
-# G-02 补跑件口径（WO-QT-20261020-030）
+# G-02 补跑件口径（终裁 v20261021-user-approved，WO-QT-20261020-068）
 # ---------------------------------------------------------------------------
 
 class TestG02ReplayArtifact(_Base):
-    """「业务日期旧但落盘新」= 补跑件：判黄显式标「补跑件待口径确认」，不判红；
-    业务日期与落盘都旧 = 真断线，照旧判红。"""
+    """补跑件新鲜度判读基准 = **业务日期**（终裁：老田 2026-10-21 07:12 圈选⑧A）：
+    业务日期超期即照常判黄/红，落盘 mtime 新**不豁免**（防陈旧数据靠补跑洗白
+    成新鲜）；mtime 证据保留仅留痕。业务与落盘都旧 = 真断线，照旧红；
+    业务日期当日 = 绿。"""
 
     def _set_mtime(self, path, ts=None):
         os.utime(path, (ts if ts is not None else time.time(),) * 2)
 
-    def test_replay_file_business_old_mtime_fresh_yellow_not_red(self):
-        """补跑件构造用例：业务日期 10-16（4 天前）+ mtime 当日 → 黄不判红。"""
+    def test_replay_file_business_old_mtime_fresh_still_red(self):
+        """防洗白核心用例：业务日期 10-16（4 天前）+ mtime 当日新落盘 → 仍判红。"""
         for ch, pfx in MH.CHANNEL_PREFIXES.items():
             f = self.w_poc(pfx, "20261016", "_161000")
             if ch == "qpzm_us":
@@ -913,15 +917,24 @@ class TestG02ReplayArtifact(_Base):
                 self._backdate(f, "2026-10-16 16:10:00")  # 其余=真断线，照旧红
         r = self.run_check()
         f = _f(r, "H2.qpzm_us")
-        self.assertEqual(f["severity"], "yellow")
-        self.assertIn("补跑件待口径确认", f["evidence"])
-        self.assertIn("业务日期 20261016", f["evidence"])
-        self.assertIn("mtime", f["evidence"])
-        # 其余通道没有新落盘 → 照旧红（对照，防判据泄漏）
+        self.assertEqual(f["severity"], "red")
+        self.assertIn("20261016", f["evidence"])
+        self.assertIn("mtime", f["evidence"])          # mtime 证据保留（留痕）
+        self.assertNotIn("待口径确认", f["evidence"])   # 豁免分支已随终裁移除
+        # 其余通道业务落盘都旧 → 照旧红（对照，防判据泄漏）
         self.assertEqual(_f(r, "H2.qd")["severity"], "red")
 
+    def test_fresh_business_date_green_even_if_mtime_fresh(self):
+        """业务日期当日 → 绿（新鲜业务日期判绿；mtime 留痕不改变判读）。"""
+        f = self.w_poc(MH.CHANNEL_PREFIXES["qd"], DATE, "_090000")
+        self._set_mtime(f)
+        r = self.run_check()
+        g = _f(r, "H2.qd")
+        self.assertEqual(g["severity"], "green")
+        self.assertIn("mtime", g["evidence"])
+
     def test_old_business_and_old_mtime_still_red(self):
-        """业务日期旧且落盘也旧 = 真断线 N 天 → 照旧红（补跑豁免不误伤）。"""
+        """业务日期旧且落盘也旧 = 真断线 N 天 → 照旧红。"""
         f = self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261016", "_161000")
         old = time.mktime(time.strptime("2026-10-16 16:10:00", "%Y-%m-%d %H:%M:%S"))
         self._set_mtime(f, old)
@@ -931,7 +944,7 @@ class TestG02ReplayArtifact(_Base):
         self.assertNotIn("补跑件", g["evidence"])
 
     def test_yellow_window_not_marked_as_replay(self):
-        """阈值内的普通黄（age<=eff_stale）不带补跑标记（口径只在红档生效）。"""
+        """阈值内的普通黄（age<=eff_stale）不带补跑豁免标记（豁免已随终裁移除）。"""
         f = self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261019", "_080000")
         self._set_mtime(f)
         r = self.run_check()
