@@ -21,7 +21,10 @@ AgentMondayCheckpoint → 17:35 AgentChiefPush。tools/check_observation_point.p
 - 上次运行结果：任务 XML **不含** LastTaskResult 字段，改查任务对应日志
   （shadow_automation.ps1:24/42 重定向取证）：
     last_run.log          收尾行 `shadow day <日期> done: {...}`（run_shadow.py:455
-                          无条件打印）；done 计数 ≥1 = PASS，跑过但全 failed = FAIL
+                         无条件打印）；done 计数 ≥1 = PASS，跑过但全 failed = FAIL；
+                         收尾行按**日期最大**者取（日志跨日累积，见 WO-TF-04），
+                         且所取日期早于今日（模块级 TODAY）时不得判 PASS——
+                         历史成功不得冒充今日通过（今日崩了=FAIL / 今日未跑=WARN）
     monday_checkpoint.log 末个 run 块含 EXIT=0（追加式日志按块判读防旧 run
                           假绿；末块未收尾的 [wait] 残留/进行中 = WARN 不计
                           FAIL，2026-10-19 误报修复见 _judge_checkpoint_log）
@@ -82,8 +85,15 @@ import socket
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from datetime import date
 from pathlib import Path
 from typing import List, Optional, Tuple
+
+#: 模块级日期注入点（2026-10-20，WO-TF-04）：判「今日」用此值，默认运行当天。
+#: 沿用仓内既有约定 agent_platform/observe_point_review.py:26 的同名 TODAY，
+#: 可被测试 rebind（monkeypatch.setattr(ctc, "TODAY", ...)）——既有夹具写死的
+#: `shadow day <日期>` 由此可与判据对齐，无需把断言语义改成非 PASS。
+TODAY = date.today().isoformat()
 
 # ---------------------------------------------------------------------------
 # 模块级常量（--print-config 打印，现场核对用）
@@ -241,14 +251,107 @@ def check_a_tasks(tasks_dir: Optional[Path] = None) -> Tuple[str, str]:
 # ---------------------------------------------------------------------------
 
 def _judge_shadow_log(text: str) -> Tuple[str, str]:
-    """last_run.log：收尾行 `shadow day <日期> done: {...}`，done 计数 ≥1 = PASS。"""
-    for line in reversed(text.splitlines()):
-        if line.startswith("shadow day "):
-            tail = line.split("done:", 1)[-1] if "done:" in line else ""
-            if re.search(r"'done':\s*[1-9]", tail):
-                return PASS, _clip(line.strip(), 110)
-            return FAIL, "上次影子跑零 done（%s）" % _clip(line.strip(), 90)
-    return FAIL, "last_run.log 无 shadow day 收尾行（跑过但未正常收尾）"
+    """last_run.log：收尾行 `shadow day <日期> done: {...}`，done 计数 ≥1 = PASS。
+
+    WO-TF-04（2026-10-20）：日志已由「每日覆盖」改为「跨日累积」（WO-TF-02 把
+    包装器外层重定向改指 last_run_wrapper.log，last_run.log 转由 Python 侧单独
+    持有），故「最后一条 shadow day 行」≠「最近一次跑的收尾行」——今日跑崩在
+    中途（今日无收尾行）而历史存在成功行时，旧口径会读到**历史**那条并判 PASS，
+    即假绿（改前每日覆盖时今日崩溃判 FAIL）。
+
+    口径（**按日期**取最近一次，而非按出现顺序取最后一条）：
+      1. 收尾行 = `shadow day <YYYY-MM-DD> done: {...}`；取**日期最大**的那条
+         （同一日期多条时取最后一条），done 计数 ≥1 = PASS，零 done = FAIL。
+      2. **日期门控（要求 2，防历史成功冒充今日通过）**：所取收尾行的日期**早于
+         今日**（模块级 TODAY）⇒ 不得判 PASS——历史成功行不能被读成今日通过。
+         文案须显式写出所依据那行的日期，使「今日未跑/今日崩了」看得见。
+      3. 门控的严重度按本文件既有语义分层（真失败=FAIL，预期形态=WARN 带「→」
+         处置指引）：日志里有**今日**的跑动头行 `===== shadow run start <ts> =====
+         （run_shadow.py:443 无条件打印）⇒ 今日跑已开始却没写收尾行 = 真失败
+         ⇒ FAIL；没有今日头行 ⇒ 今日尚未开跑（如 16:40 预检早于 17:10 跑批，
+         属「首跑前属预期形态」）⇒ WARN，不误报成失败。
+
+    **同日多次跑的补漏（2026-10-20 lead 独立复核发现，工位实现未覆盖）**：
+    上面的「日期最大」口径在**同一日跑了多次**时仍会假绿——日志形如
+    「早跑成功收尾行 + 晚跑崩溃（只有头行、无收尾行）」时，日期最大的收尾行
+    仍是早跑那条（done≥1）⇒ 判 PASS，而**当晚那次跑其实崩了**。
+    生产上同一日可多次跑（17:10 定时跑 + 手工补跑 + 演练跑），不是构造场景。
+
+    故在日期门控**之前**加一道「今日最后一次跑是否崩在中途」的**否决判定**：
+    取今日**最后一条跑动头行**（今日最后一次跑的起点），若该头行之后**没有**
+    今日收尾行 ⇒ 说明今日最后一次跑没写收尾行（崩在中途）⇒ FAIL。
+    这样「早成功 + 晚崩溃」判 FAIL，「早崩溃 + 晚成功」判 PASS，都以**今日最后
+    一次跑**的真实结果为准，与 observe_point_review.py:49-63 的块级判读口径一致
+    （那边也是按「今日 17: 块」判，块内无收尾行 = RED）。
+
+    **该否决判定只判「崩在中途」，不重新选择所依据的收尾行**（这是刻意的，
+    lead 变异测试实证）：若它同时把 chosen 改写为今日收尾行，就会**旁路**上面
+    第 1 步的「按日期取」语义——工单判据 4（多日累积 + 今日成功行不在最后一条
+    ⇒ 仍按日期取到今日那条并判 PASS）将永远为绿，「改按出现顺序取最后一条」
+    这一回退**不可检出**（变异实测：改坏仍 45 passed）。故两条职责严格分离：
+    第 1 步决定「所依据哪一行」，本步只做「是否崩在中途」的否决。
+    """
+    close_re = re.compile(r"^shadow day (\d{4}-\d{2}-\d{2}) done:")
+    start_re = re.compile(r"^===== shadow run start (\d{4}-\d{2}-\d{2}) ")
+
+    dated = []   # (date, idx, line)：全部带日期的收尾行
+    starts = []  # 跑动头行的 (date, idx)
+    for idx, line in enumerate(text.splitlines()):
+        m = close_re.match(line)
+        if m:
+            dated.append((m.group(1), idx, line))
+            continue
+        m = start_re.match(line)
+        if m:
+            starts.append((m.group(1), idx))
+
+    # 今日最后一次跑（今日最后一条跑动头行）的起点
+    today_starts = [i for d, i in starts if d == TODAY]
+    last_today_start = max(today_starts) if today_starts else None
+
+    # 1) 按**日期**取最近一次跑的收尾行（不是按出现顺序取最后一条出现）。
+    #    同一日期多条时取最后出现的那条——即该日**最后一次跑**的结果。
+    if dated:
+        chosen_date, chosen_idx, chosen_line = max(dated, key=lambda t: (t[0], t[1]))
+    else:
+        legacy = [l for l in text.splitlines() if l.startswith("shadow day ")]
+        if not legacy:
+            if last_today_start is not None:
+                return FAIL, ("last_run.log 无 shadow day 收尾行——今日 %s 的跑"
+                              "已开始却未收尾（跑崩在中途）" % TODAY)
+            return FAIL, "last_run.log 无 shadow day 收尾行（跑过但未正常收尾）"
+        chosen_date, chosen_idx, chosen_line = "", -1, legacy[-1]
+
+    # 2) 判据链（各段职责单一、互斥，不得互相旁路）：
+    #    2a) **今日最后一次跑崩在中途**（同日多次跑补漏，lead 独立复核发现，
+    #        工位实现未覆盖）：今日最后一条头行在所取收尾行**之后** ⇒ 今日最后
+    #        一次跑没写收尾行 ⇒ FAIL（今日更早那次成功的收尾行不得冒充今日
+    #        最后一次跑的结果）。
+    #        ⚠ 本段**只做否决、不改写所依据的行**——若在此改写 chosen，会旁路
+    #        第 1 步的「按日期取」语义，使工单判据 4（多日累积 + 今日成功行
+    #        不在最后一条 ⇒ 仍按日期取到今日那条并判 PASS）永远为绿，「退回
+    #        按出现顺序取最后一条」这一回退**不可检出**（变异实测：改坏仍全绿）。
+    #    2b) **日期门控**（工单要求 2）：所取日期早于今日 ⇒ 不得判 PASS
+    #        （历史成功不得冒充今日通过）；今日有头行 ⇒ 真失败 FAIL；今日无
+    #        头行 ⇒ 今日尚未开跑（如 16:40 预检早于 17:10 跑批，属预期形态）
+    #        ⇒ WARN 带「→」处置指引，不误报成失败。
+    if chosen_date == TODAY:
+        if last_today_start is not None and chosen_idx < last_today_start:
+            return FAIL, ("今日 %s 最后一次影子跑（头行之后）无收尾行——跑崩在中途"
+                          "（今日更早那次成功不得冒充今日最后一次跑的结果）" % TODAY)
+    elif chosen_date and chosen_date < TODAY:
+        if last_today_start is not None:
+            return FAIL, ("最近一次影子跑为 %s，但今日 %s 的跑已开始却无收尾行"
+                          "（历史成功不得冒充今日通过）" % (chosen_date, TODAY))
+        return WARN, ("最近一次影子跑为 %s，今日 %s 尚无跑动痕迹"
+                      "（今日未跑；历史成功不等于今日通过）→ 17:10 跑后复查该日志"
+                      % (chosen_date, TODAY))
+
+    # 3) 按 done 计数判（沿用既有语义）：done ≥1 = PASS，零 done = FAIL。
+    tail = chosen_line.split("done:", 1)[-1] if "done:" in chosen_line else ""
+    if re.search(r"'done':\s*[1-9]", tail):
+        return PASS, _clip(chosen_line.strip(), 110)
+    return FAIL, "上次影子跑零 done（%s）" % _clip(chosen_line.strip(), 90)
 
 
 # ---------------------------------------------------------------------------

@@ -8,7 +8,7 @@ tmp_path——真仓零读写。gate3 经 subprocess.run mock（不真跑）。
 import os
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import observe_point_review as opr  # noqa: E402
@@ -16,10 +16,25 @@ import observe_point_review as opr  # noqa: E402
 DAY = opr.TODAY
 
 
+def _ts(hour, minute, second=0, days_ago=0):
+    """按 **DAY（= opr.TODAY，模块级可 rebind 的今日）** 构造 datetime。
+
+    WO-TF-04 §三.6 修既存日历漂移失败：原夹具把 mtime 写死 2026-10-19，
+    而 judge_chief 判据是「mtime 的**日期**必须 == TODAY 且小时 ≥17」，
+    TODAY 取运行当天 ⇒ 跨日即恒红（既存 2 failed：test_chief_green_with_send_ok
+    / test_main_all_green_exit0）。改夹具为**相对 DAY 动态生成**，
+    **不放宽判据**（judge_chief 判据本身零改动）。
+
+    days_ago>0 用于构造「陈旧 mtime」场景（须严格早于 DAY）。
+    """
+    base = datetime.strptime(DAY, "%Y-%m-%d") - timedelta(days=days_ago)
+    return base.replace(hour=hour, minute=minute, second=second)
+
+
 def _reset(monkeypatch, tmp_path, hour=18):
     monkeypatch.setattr(opr, "SHADOW", str(tmp_path))
     monkeypatch.setattr(opr, "_now",
-                        lambda: datetime(2026, 10, 19, hour, 0, 0))
+                        lambda: _ts(hour, 0, 0))
     monkeypatch.setattr(opr, "TODAY", DAY)
     opr.results.clear()
 
@@ -104,7 +119,7 @@ def test_chief_green_with_send_ok(monkeypatch, tmp_path):
     _reset(monkeypatch, tmp_path)
     p = tmp_path / "chief_last_run.log"
     p.write_text("a0_chief push ...\n[alert] SEND_OK\n", encoding="utf-8")
-    t = datetime(2026, 10, 19, 17, 35, 10).timestamp()
+    t = _ts(17, 35, 10).timestamp()
     os.utime(p, (t, t))
     opr.judge_chief()
     assert _state("3)") == "GREEN"
@@ -114,7 +129,7 @@ def test_chief_red_send_fail(monkeypatch, tmp_path):
     _reset(monkeypatch, tmp_path)
     p = tmp_path / "chief_last_run.log"
     p.write_text("a0_chief push ...\n[alert] SEND_FAIL\n", encoding="utf-8")
-    t = datetime(2026, 10, 19, 17, 35, 10).timestamp()
+    t = _ts(17, 35, 10).timestamp()
     os.utime(p, (t, t))
     opr.judge_chief()
     assert _state("3)") == "RED"
@@ -130,7 +145,8 @@ def test_chief_red_stale_mtime(monkeypatch, tmp_path):
     _reset(monkeypatch, tmp_path)
     p = tmp_path / "chief_last_run.log"
     p.write_text("old run\nSEND_OK\n", encoding="utf-8")
-    t = datetime(2026, 10, 12, 17, 35, 0).timestamp()
+    # 陈旧 mtime：必须是**早于 DAY** 的日期（判据：mtime 日期 != TODAY ⇒ RED）
+    t = _ts(17, 35, 0, days_ago=8).timestamp()
     os.utime(p, (t, t))
     opr.judge_chief()
     assert _state("3)") == "RED"
@@ -155,7 +171,7 @@ def test_main_all_green_exit0(monkeypatch, tmp_path):
                                                     encoding="utf-8")
     p = tmp_path / "chief_last_run.log"
     p.write_text("SEND_OK\n", encoding="utf-8")
-    t = datetime(2026, 10, 19, 17, 35, 0).timestamp()
+    t = _ts(17, 35, 0).timestamp()
     os.utime(p, (t, t))
     _fake_gate3(monkeypatch, 0)
     assert opr.main() == 0

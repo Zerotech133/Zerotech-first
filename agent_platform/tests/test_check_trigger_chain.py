@@ -37,6 +37,13 @@ PS_ARGS_PUSH = r"-NoProfile -ExecutionPolicy Bypass -File C:\aios\agent_platform
 PY_CMD = r"C:\Program Files\Python311\python.exe"
 PY_ARGS = r"-X utf8 C:\aios\agent_platform\monday_checkpoint.py"
 
+#: 影子链收尾行的夹具日期（WO-TF-04）：判据 _judge_shadow_log 按**日期**取最近
+#: 一次收尾行，且所取日期早于 TODAY（模块级注入点）时不得判 PASS。既有夹具把
+#: `shadow day 2026-10-16` 写死，故把夹具日期抽成本常量，并在 setUp 里把
+#: ctc.TODAY 绑到同一日期——断言语义零改动（原口径下这些行即"最近一次收尾"，
+#: 仍 PASS），同时夹具日期与判据口径永远同步，不会随日历漂移。
+LOG_DAY = "2026-10-16"
+
 
 def make_task_xml(hhmm="17:10", days=("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"),
                   command=PS_CMD, arguments=PS_ARGS_RUN, enabled=True):
@@ -73,6 +80,12 @@ class TriggerChainBase(unittest.TestCase):
         self._tmp = tempfile.mkdtemp(prefix="ctc_test_")
         self.root = Path(self._tmp)
         self.addCleanup(shutil.rmtree, self._tmp, ignore_errors=True)
+        # WO-TF-04：把判据的模块级 TODAY 注入点绑到夹具日期（LOG_DAY）——
+        # 判据按日期取最近一次收尾行，夹具日期与判据口径须同源，故一并绑定。
+        # 用 monkeypatch 语义之外的显式绑定 + 还原，保证跨用例不串味。
+        self._orig_today = ctc.TODAY
+        ctc.TODAY = LOG_DAY
+        self.addCleanup(setattr, ctc, "TODAY", self._orig_today)
 
     def make_tasks_dir(self, bodies=None):
         tdir = self.root / "Tasks"
@@ -544,6 +557,133 @@ class TestCheckpointLogWaitResidual(TriggerChainBase):
         bad = self._run_b("EXIT=0 日志=x\n结论: 有 FAIL——先查清\n")
         self.assertEqual(bad["items"][1]["status"], "FAIL")
         self.assertIn("末行无 EXIT=0", bad["items"][1]["evidence"])
+
+
+class TestShadowLogDateGate(TriggerChainBase):
+    """影子日志判据的日期感知回归（WO-TF-04，2026-10-20）。
+
+    背景：WO-TF-02 把 ``last_run.log`` 由「每日覆盖」改为「跨日累积」后，
+    「最后一条 shadow day 行」≠「最近一次跑的收尾行」——历史成功行会冒充
+    今日通过（假绿）。本类把 WO-TF-04 工单 §三 的 5 条判据 + lead 独立复核
+    补出的 2 条同日多次跑场景，**固化为可回归断言**（原工位实现未新增任何
+    用例，判据无回归护栏 ⇒ 下次改动会静默回退假绿）。
+
+    夹具日期统一用 ``LOG_DAY``（= ``ctc.TODAY``，基类 setUp 已绑定），
+    今日/昨日用 ``DAY_TODAY`` / ``DAY_YEST`` 相对生成，日历漂移不敏感。
+    """
+
+    DAY_TODAY = LOG_DAY
+    DAY_YEST = "2026-10-15"
+
+    @staticmethod
+    def _start(day, hhmm="17:10:00"):
+        return "===== shadow run start %s %s =====\n" % (day, hhmm)
+
+    @staticmethod
+    def _close(day, done=5):
+        return "shadow day %s done: {'done': %d}\n" % (day, done)
+
+    def _judge(self, text):
+        return ctc._judge_shadow_log(text)
+
+    # ---------- 工单 §三 判据 1-5 ----------
+
+    def test_c1_today_crashed_with_history_success_is_not_pass(self):
+        """判据1：历史有成功行（D-1）+ 今日有头行但无收尾行 ⇒ 不得判 PASS
+        （改前会读到历史那条判 PASS = 假绿）。"""
+        text = (self._close(self.DAY_YEST)
+                + self._start(self.DAY_TODAY)
+                + "[strategy] xxx\n")
+        status, msg = self._judge(text)
+        self.assertNotEqual(status, ctc.PASS)
+        self.assertEqual(status, ctc.FAIL)
+        self.assertIn(self.DAY_YEST, msg)  # 文案须写出所依据那行的日期
+        self.assertIn(self.DAY_TODAY, msg)
+
+    def test_c2_today_success_is_pass_with_today_date(self):
+        """判据2：含今日收尾行 done≥1 ⇒ PASS 且说明含今日日期。"""
+        text = (self._close(self.DAY_YEST)
+                + self._start(self.DAY_TODAY)
+                + self._close(self.DAY_TODAY, done=3))
+        status, msg = self._judge(text)
+        self.assertEqual(status, ctc.PASS)
+        self.assertIn(self.DAY_TODAY, msg)
+
+    def test_c3_only_history_success_is_not_pass(self):
+        """判据3：仅历史成功（无今日行）⇒ 非 PASS 且文案含该历史日期。"""
+        status, msg = self._judge(self._close(self.DAY_YEST))
+        self.assertNotEqual(status, ctc.PASS)
+        self.assertIn(self.DAY_YEST, msg)
+        self.assertIn("→", msg)  # WARN 必带处置指引（本仓既有纪律）
+
+    def test_c4_multiday_today_success_in_middle_is_pass(self):
+        """判据4（本次修复核心）：多日累积，今日成功行**不在最后一条**
+        ⇒ 仍按**日期**取到今日那条并判 PASS（不能只取「最后一条」）。"""
+        text = (self._close("2026-10-13")
+                + self._start(self.DAY_TODAY)
+                + self._close(self.DAY_TODAY, done=3)
+                + self._close("2026-10-14"))  # 今日行之后还有别的日期行
+        status, msg = self._judge(text)
+        self.assertEqual(status, ctc.PASS)
+        self.assertIn(self.DAY_TODAY, msg)
+
+    def test_c5_today_zero_done_is_fail(self):
+        """判据5：今日跑过但 done=0 ⇒ 判非 PASS（沿用「零 done」语义）。"""
+        status, msg = self._judge(self._close(self.DAY_TODAY, done=0))
+        self.assertEqual(status, ctc.FAIL)
+        self.assertIn("零 done", msg)
+
+    # ---------- lead 独立复核补出的同日多次跑场景 ----------
+
+    def test_same_day_early_success_then_late_crash_is_fail(self):
+        """补充场景（lead 独立复核发现，工位实现未覆盖）：同一日跑两次——
+        早跑成功收尾、晚跑崩溃（只有头行无收尾行）⇒ 判 FAIL。
+        改前按「日期最大」取到早跑那条成功行 ⇒ 假绿。生产上同日可多次跑
+        （17:10 定时跑 + 手工补跑 + 演练跑），非构造场景。"""
+        text = (self._start(self.DAY_TODAY, "03:47:59")
+                + self._close(self.DAY_TODAY, done=5)
+                + self._start(self.DAY_TODAY, "17:10:00")
+                + "[strategy] xxx\n")
+        status, msg = self._judge(text)
+        self.assertEqual(status, ctc.FAIL)
+        self.assertIn(self.DAY_TODAY, msg)
+        self.assertIn("无收尾行", msg)
+
+    def test_same_day_early_crash_then_late_success_is_pass(self):
+        """补充场景反向：同日早跑崩溃、晚跑成功 ⇒ 判 PASS（取今日**最后
+        一次跑**的真实结果，不被早跑的崩溃拖累）。"""
+        text = (self._start(self.DAY_TODAY, "03:47:59")
+                + "[strategy] xxx\n"
+                + self._start(self.DAY_TODAY, "17:10:00")
+                + self._close(self.DAY_TODAY, done=5))
+        status, msg = self._judge(text)
+        self.assertEqual(status, ctc.PASS)
+        self.assertIn(self.DAY_TODAY, msg)
+
+    # ---------- 既有行为不回归 ----------
+
+    def test_no_close_line_at_all_is_fail(self):
+        """无任何收尾行（跑过但未正常收尾）⇒ FAIL（既有语义不回归）。"""
+        status, msg = self._judge(self._start(self.DAY_TODAY) + "[strategy] x\n")
+        self.assertEqual(status, ctc.FAIL)
+
+    def test_empty_log_is_fail(self):
+        """空日志 ⇒ FAIL（存在但无正向证据，fail-visible 不降级）。"""
+        status, _ = self._judge("")
+        self.assertEqual(status, ctc.FAIL)
+
+    def test_today_not_run_yet_is_warn_not_fail(self):
+        """今日尚未开跑（预检早于 17:10 跑批）⇒ WARN 不误报失败；
+        且不得判 PASS（历史成功 ≠ 今日通过）。"""
+        status, msg = self._judge(self._close(self.DAY_YEST))
+        self.assertEqual(status, ctc.WARN)
+        self.assertIn("→", msg)
+
+    def test_today_start_only_no_close_is_fail(self):
+        """今日有头行、无今日收尾行、且无历史行 ⇒ FAIL（真失败可见）。"""
+        status, msg = self._judge(self._start(self.DAY_TODAY) + "[strategy] x\n")
+        self.assertEqual(status, ctc.FAIL)
+        self.assertIn(self.DAY_TODAY, msg)
 
 
 if __name__ == "__main__":
