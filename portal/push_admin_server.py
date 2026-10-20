@@ -32,7 +32,7 @@ import threading
 import time
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -438,10 +438,15 @@ class Handler(BaseHTTPRequestHandler):
             # dead_letter.count_since（60s 缓存已有）；-1=读取异常，诚实
             # 上抛由页面降级，不猜数。
             import dead_letter
+            # P2.6 FE-C N6 主动巡检：ops_board 60s 自动刷新即天然探针
+            # （幂等：60s 缓存 + 6h 防抖 + daemon 非阻塞，判例同 api_send）
+            _dead_letter_alert_if_needed()
             return self._json({
                 "ok": True,
                 "generated_at": datetime.now().isoformat(timespec="seconds"),
                 "dead_letters_24h": dead_letter.count_since(24),
+                # P2.6 FE-C：降级占比观测（只读计数段，零 open_id/target/kind 明文）
+                "fallback_24h": _fallback_stats_24h(),
                 "services": [
                     {"port": 8097, "label": "推送闸门",
                      "note": "静态在役标注，非实时探测"},
@@ -769,6 +774,43 @@ def _dead_letter_stats():
             "degraded": n >= DEAD_ALERT_THRESHOLD}
 
 
+def _fallback_stats_24h():
+    """P2.6 FE-C fallback 占比观测：近 24h OpenAPI 降级直发占比（只读）。
+
+    口径：news_collector/feishu_client.py _openapi_direct_send 降级分支
+    落账行带 channel="openapi-fallback"（P2.6 FE-C 补的最小标记）；
+    count=降级行 count 合计，total=近 24h 全部有效行 count 合计（占比
+    分母）。读 push_flow.jsonl 跨进程追加中：按行 json.loads，坏行跳过
+    不中断；ts 为 ISO 秒级字符串，字典序比较即可圈 24h 窗；打开/读取
+    任一异常 → count/total 全 -1（诚实不猜数）。只返回计数，零
+    open_id/target/kind 明文（隐私红线）。"""
+    try:
+        sys.path.insert(0, STATION)
+        import push_flow
+        cutoff = (datetime.now() - timedelta(hours=24)).isoformat(
+            timespec="seconds")
+        cnt = tot = 0
+        with open(push_flow.FLOW_PATH, encoding="utf-8",
+                  errors="replace") as f:
+            for line in f:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue  # 坏行（半行交错等）跳过不中断
+                if not isinstance(r, dict) or str(r.get("ts") or "") < cutoff:
+                    continue  # 24h 窗外
+                try:
+                    c = int(r.get("count", 1))
+                except (TypeError, ValueError):
+                    continue  # count 字段损坏视为坏行
+                tot += c
+                if r.get("channel") == "openapi-fallback":
+                    cnt += c
+        return {"count": cnt, "total": tot}
+    except Exception:
+        return {"count": -1, "total": -1}  # 读异常不猜数
+
+
 def _dead_letter_alert_if_needed():
     """N6：死信超阈值 → critical 预警（豁免静默），6h 防抖。
 
@@ -831,9 +873,9 @@ def api_send(req):
     """/api/send 统一入口：鉴权 → 静默（critical 豁免）→ 配额 → 直发 → 流水。
 
     feishu_client.send_msg(via_hub=True) 全站自动过闸；K-PUSH-012 起闸门
-    为唯一通路：hub 不可达/鉴权失败时调用方 fail-closed 不回落直发
-    （防绕过静默/配额/审计，语义反转已经老田授权收口拍板）。闸内转发
-    必须 via_hub=False 防环。
+    为唯一通路：hub 不可达/鉴权失败时调用方按 closed on failure 语义
+    不回落直发（防绕过静默/配额/审计，语义反转已经老田授权收口拍板）。
+    闸内转发必须 via_hub=False 防环。
     """
     _dead_letter_alert_if_needed()  # N6：发送主链惰性巡检（缓存 60s，非阻塞）
     content = req.get("content")
