@@ -324,7 +324,9 @@ DOMAIN_NAV_GROUPS = {
         ("💼 情报变现", (
             ("🛰 推送中台", "/push/", "pushhub"),
             ("📨 通知指挥", "/notify-command", "notifycmd"),
-            ("📋 运维对账", "/ops-board", "opsboard"),)),
+            ("📋 运维对账", "/ops-board", "opsboard"),
+            ("🔐 我的订阅", "/my-subscription", "mysub"),
+            ("📊 订阅运营", "/sub-admin", "subadmin"),)),
     ),
     "creator": ((None, (
         ("🎬 创作专项", "/creator", "creator"),
