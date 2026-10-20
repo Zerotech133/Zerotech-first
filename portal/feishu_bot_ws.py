@@ -631,6 +631,10 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
             # tune_gate.is_admin（tune_admins.json 已配置非空=严格校验），
             # 不另建 sub_admins.json（单人部署复制第二份白名单无分离收益）。
             # 非管理员一律"无权限"拒绝，usage 提示在闸后，不透漏指令存在。
+            # P3.6-lite（K-B）回执通道验证：本族回执 message_id 恒有值
+            # （on_msg 唯一入口 mid=msg.message_id），send_text 带
+            # message_id 走 Reply API（im.v1.message.reply），不经 8097
+            # 推送中台闸/静默窗（那是 message_id 为空时 send_feishu 直发链路）。
             import tune_gate
             if not tune_gate.is_admin(open_id):
                 send_text("无权限。", message_id)
@@ -643,10 +647,38 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                               "（天数默认 30）", message_id)
                     return
                 try:
+                    # days 解析先于查重：参数非法先报参数错（❌ days...），
+                    # 不被「已有订阅」提示遮蔽（K-B 边界序）。
+                    days = int(parts[3]) if len(parts) > 3 else 30
                     subscription_store.upsert_subscriber(parts[1])
+                    # P3.6-lite（K-B）重复开通幂等（指令层查重）：已有生效
+                    # 同档位（active 且覆盖当前时刻）则诚实回执、不重复插行
+                    # ——重复指令多为误触/重试，直接叠插会悄悄叠加时长（最
+                    # 小惊讶原则）；换档/提前续期待撤销订阅能力落地后走显式
+                    # 链路。查重走 get_subscriber_summary 只读投影，零改
+                    # store 契约与 test_subscription_store 快照。
+                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    # 查重异常降级放行（closed on failure 判例：store 判定
+                    # 异常不阻塞开通，grant 自身校验兜底；亦兼容指令层
+                    # stub 测试环境无该方法的情形）。
+                    try:
+                        s = subscription_store.get_subscriber_summary(
+                            parts[1])
+                        dup = next((x for x in (s.get("subscriptions") or [])
+                                    if x.get("plan_id") == parts[2]
+                                    and x.get("status") == "active"
+                                    and str(x.get("start", "")) <= now_str
+                                    <= str(x.get("end", ""))), None)
+                    except Exception:  # noqa: BLE001
+                        dup = None
+                    if dup:
+                        send_text("ℹ️ %s 已有生效的 %s 档位订阅（至 %s），"
+                                  "未重复开通。"
+                                  % (mask_open_id(parts[1]), parts[2],
+                                     dup["end"]), message_id)
+                        return
                     r = subscription_store.grant_subscription(
-                        parts[1], parts[2],
-                        int(parts[3]) if len(parts) > 3 else 30)
+                        parts[1], parts[2], days)
                 except ValueError as e:
                     send_text("❌ %s" % e, message_id)
                     return
