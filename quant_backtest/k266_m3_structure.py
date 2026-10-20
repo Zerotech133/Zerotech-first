@@ -348,10 +348,64 @@ def parse_json_array(raw):
     return out
 
 
+# ── 错峰闸门 2（K-INTEL-20261020-PEAKSHIFT 备稿，默认关闭零风险）──
+# 依据（2026-10-20 晨，T-I6/T-I7）：雪球分类 round26 07:15 被 m3（PID 8200）等
+# 挤停，08/09/10 整点班全 probe busy skip——白天分类产能归零、pending 反弹 18,875。
+# K266_PEAK_SHIFT=1 时，m3 长跑避开雪球分类整点班窗口（08/09/10 整点 ± 缓冲，
+# 默认 20 分钟）：窗口内批判定前暂歇到窗口结束，留痕一行 JSON；睡眠分片间插
+# ollama_lock.heartbeat 防 20 分钟陈锁被抢（STALE_S=1200）。默认关闭直通。
+CLASSIFY_HOURS = (8, 9, 10)     # 雪球分类整点班时点（T-I6 实证 08/09/10 班）
+PEAK_SHIFT_BUFFER_M = 20        # 窗口缓冲分钟（env K266_PEAK_SHIFT_BUFFER_M 可覆盖）
+PEAK_SHIFT_CHUNK_S = 300        # 睡眠分片秒数（≤ STALE_S/4，保心跳裕量）
+
+
+def classify_shift_wait_end(now_t=None, buffer_m=None):
+    """雪球分类班窗口判定纯函数：在窗口内返回距窗口结束秒数，否则 None。
+    半开区间 [整点-缓冲, 整点+缓冲)，端点值 0 不返回（防尾窗空转一行）。"""
+    t = now_t or time.localtime()
+    buf = PEAK_SHIFT_BUFFER_M if buffer_m is None else buffer_m
+    minutes = t.tm_hour * 60 + t.tm_min + t.tm_sec / 60.0
+    for h in CLASSIFY_HOURS:
+        c = h * 60
+        if c - buf <= minutes < c + buf:
+            return (c + buf - minutes) * 60.0
+    return None
+
+
+def yield_to_classify_shifts(log=print, heartbeat=None, sleep=None,
+                             now=None, localtime=None):
+    """闸门 2（K266_PEAK_SHIFT=1 才启用，默认直通零变化）：落在分类班窗口
+    → 暂歇到窗口结束再继续批判定；每窗口留痕一行 JSON。心跳分片防陈锁。
+    依赖晚绑定解析：测试/长跑可注入 time 家族替身。"""
+    sleep = sleep or time.sleep
+    now = now or time.time
+    localtime = localtime or time.localtime
+    if os.environ.get("K266_PEAK_SHIFT") != "1":
+        return
+    try:
+        buf = int(os.environ.get("K266_PEAK_SHIFT_BUFFER_M") or PEAK_SHIFT_BUFFER_M)
+    except ValueError:
+        buf = PEAK_SHIFT_BUFFER_M
+    while True:
+        remain = classify_shift_wait_end(localtime(), buf)
+        if remain is None:
+            return
+        log(json.dumps({"gate": "k266_peak_shift", "event": "yield_window",
+                        "window_hours": list(CLASSIFY_HOURS), "buffer_m": buf,
+                        "remain_s": round(remain)}, ensure_ascii=False))
+        end = now() + remain
+        while now() < end:
+            sleep(min(PEAK_SHIFT_CHUNK_S, max(1.0, end - now())))
+            if heartbeat:
+                heartbeat()
+
+
 def main():
     limit = 10 ** 9
     if "--limit" in sys.argv:
         limit = int(sys.argv[sys.argv.index("--limit") + 1])
+    # 错峰闸门 2：启动即落分类班窗口则先暂歇（默认关闭直通；抢锁前让位免占坑）
+    yield_to_classify_shifts()
     # Ollama 错峰锁：与 news 域 JEV 回填互斥（wait_s 覆盖其 1800s deadline 上限；
     # 正常退出/异常走 atexit 释放，强杀靠锁模块 20 分钟陈旧回收）
     _root = os.path.dirname(BASE)
@@ -369,6 +423,7 @@ def main():
     def judge(did, name, rec, text):
         """判一篇（整文档或单条新闻）并落影子。"""
         nonlocal n_ok, n_err
+        yield_to_classify_shifts(log=print, heartbeat=ollama_lock.heartbeat)
         try:
             parsed = parse_json(ask_ollama(text))
             parsed["tags"] = norm_tags(parsed.get("tags", []))  # 源头归一，展示端兜底
@@ -398,6 +453,7 @@ def main():
         """合批判一组新闻（K266-W7）：一次 LLM 出 JSON 数组逐条落影子；
         组失败/模型漏项逐条回退单判（ERR 纪律与单判完全一致）。"""
         nonlocal n_ok, n_err
+        yield_to_classify_shifts(log=print, heartbeat=ollama_lock.heartbeat)
         try:
             batch_text = "\n".join("[%d] %s" % (i, it[3][:BATCH_ITEM_TRUNC])
                                    for i, it in enumerate(items, 1))

@@ -32,10 +32,12 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 import time
 import traceback
@@ -72,6 +74,120 @@ DEGRADED_MAX_RETRY = 3     # v1.4 degraded 重试封顶：≥3 次不再重试�
 # 未设置时取值与现状完全一致（默认行为零变化——追平轮进行中，红线）。
 DEFAULT_NUM_CTX = 2048
 DEFAULT_NUM_PREDICT = 256
+
+
+# ── v1.8 错峰闸门 1（K-INTEL-20261020-PEAKSHIFT 备稿，默认关闭零风险）──
+# 依据（2026-10-20 晨，T-I6/T-I7）：round26 07:15 被 k266_m3_structure.py 等
+# 3 个外部消费者挤停，08/09/10 整点班全 probe busy skip，白天分类产能归零。
+# 现网 probe 是 automation agent 的 echo 口径（不在仓内，A1 排查报告实锤），
+# 本闸门把它落进脚本：XQ_PEAK_SHIFT=1 时 round 前对 Ollama 做最小占用探测
+# （num_predict=1 ping），延迟超阈判 busy → 按让位时长轮询等待重试，busy 期间
+# 结构化一行 JSON 记 occupant（netstat 反查 11434 建连 PID+进程名）；等满让位
+# 时长仍 busy → 本轮让位跳过（等价历史 skip，调度下轮自愈）。
+# 默认值依据：无竞争基线 ~0.7s/条、K-STOCK 守卫 busy 阈 6s 同源对齐；让位
+# 1800s ≈ 半个整点班间隔——k266 m3 占用以小时计，等半班仍挤则整班所剩无几，
+# 让位比半速硬挤干净。开关默认关闭：env 缺省时 gate 直通，行为零变化。
+PEAK_SHIFT_FLAG = "XQ_PEAK_SHIFT"
+PEAK_SHIFT_THRESH_S = 6.0      # busy 阈（秒）：与 K-STOCK 守卫 6s 阈对齐
+PEAK_SHIFT_WAIT_S = 1800       # 单轮让位等待上限：半个整点班间隔
+PEAK_SHIFT_POLL_S = 60         # 等待期重探间隔
+PEAK_SHIFT_PROBE_TIMEOUT_S = 10  # 单次探测超时（A1 报告现网 probe 同口径）
+PEAK_SHIFT_PING_URL = "http://127.0.0.1:11434/api/generate"
+
+
+def _peak_shift_conf():
+    """延迟求值（_status_log_path 判例）：调用时读 env，测试与长跑进程即时生效。
+    非法值回落默认（_resolve_int_knob 同哲学，float 同款处理）。"""
+    on = os.environ.get(PEAK_SHIFT_FLAG) == "1"
+    thresh, wait_s, poll_s = PEAK_SHIFT_THRESH_S, PEAK_SHIFT_WAIT_S, PEAK_SHIFT_POLL_S
+    try:
+        thresh = float(os.environ.get("XQ_PEAK_SHIFT_THRESH_S") or thresh)
+        wait_s = int(os.environ.get("XQ_PEAK_SHIFT_WAIT_S") or wait_s)
+        poll_s = int(os.environ.get("XQ_PEAK_SHIFT_POLL_S") or poll_s)
+    except ValueError:
+        sys.stderr.write("[xq_classify] WARN invalid XQ_PEAK_SHIFT_* env, fallback defaults\n")
+    return on, thresh, wait_s, poll_s
+
+
+def ollama_probe_busy(thresh_s, timeout_s=PEAK_SHIFT_PROBE_TIMEOUT_S):
+    """单次占用探测：最小推理 ping（num_predict=1，think 关），延迟超阈判 busy。
+    禁代理开 opener（A1 报告判例：环境代理会污染 127.0.0.1 探测）。
+    返回 (busy, latency_s)；探测异常（超时/拒绝）按 busy 计——fail-safe 不硬挤。"""
+    payload = json.dumps({"model": MODEL, "prompt": "ping", "stream": False,
+                          "think": False,
+                          "options": {"num_ctx": 512, "num_predict": 1}}).encode("utf-8")
+    req = urllib.request.Request(PEAK_SHIFT_PING_URL, data=payload,
+                                 headers={"Content-Type": "application/json"})
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    t0 = time.time()
+    try:
+        opener.open(req, timeout=timeout_s).read()
+    except Exception:
+        return True, min(time.time() - t0, float(timeout_s))
+    latency = time.time() - t0
+    return latency > thresh_s, latency
+
+
+def ollama_occupants():
+    """11434 消费者定位：netstat -ano 反查 ESTABLISHED 且 Foreign=…:11434 的
+    PID（客户端侧；serve 自身 accept 侧 Local=11434 天然排除）→ tasklist 映射
+    进程名。解析失败返回 []（留痕空列表，不阻塞让位决策）。"""
+    pids = set()
+    try:
+        ns = subprocess.run(["netstat", "-ano", "-p", "TCP"], capture_output=True,
+                            text=True, errors="replace", timeout=15).stdout
+        for line in ns.splitlines():
+            parts = line.split()
+            # 列形：Proto Local Foreign State PID
+            if (len(parts) >= 5 and parts[0] == "TCP"
+                    and parts[2].endswith(":11434") and parts[3] == "ESTABLISHED"):
+                pids.add(parts[4])
+    except Exception:
+        return []
+    if not pids:
+        return []
+    try:
+        tl = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True,
+                            text=True, errors="replace", timeout=15).stdout
+        return ["%s pid=%s" % (row[0], row[1].strip())
+                for row in csv.reader(tl.splitlines())
+                if len(row) >= 2 and row[1].strip() in pids]
+    except Exception:
+        return []
+
+
+def peak_shift_gate(now=None, sleep=None,
+                    probe=None, occupants=None):
+    """闸门 1（XQ_PEAK_SHIFT=1 才启用，默认直通零变化）：round 前探测让位。
+    返回 True=放行开轮；False=让位超时本轮跳过。busy 期间每次重探留痕一行
+    JSON（occupant PID + 让位决策），格式贴 guard_aborts.jsonl 结构化判例。
+    依赖晚绑定解析（_status_log_path 判例）：测试/长跑可注入或 monkeypatch。"""
+    probe = probe or ollama_probe_busy
+    occupants = occupants or ollama_occupants
+    now = now or time.time
+    sleep = sleep or time.sleep
+    on, thresh, wait_s, poll_s = _peak_shift_conf()
+    if not on:
+        return True
+    deadline = now() + wait_s
+    attempt = 0
+    while True:
+        attempt += 1
+        busy, latency = probe(thresh)
+        if not busy:
+            log("peak-shift probe ok attempt=%d latency_s=%.1f threshold_s=%.1f"
+                % (attempt, latency, thresh))
+            return True
+        log(json.dumps({"gate": "xq_peak_shift", "event": "busy_yield",
+                        "attempt": attempt, "latency_s": round(latency, 1),
+                        "threshold_s": thresh, "occupant": occupants(),
+                        "wait_left_s": max(0, round(deadline - now()))},
+                       ensure_ascii=False))
+        if now() >= deadline:
+            log("peak-shift wait expired wait_s=%d -> skip round (next shift retries)"
+                % wait_s)
+            return False
+        sleep(min(poll_s, max(1, deadline - now())))
 
 
 def _resolve_int_knob(raw, default: int, name: str) -> int:
@@ -607,6 +723,8 @@ def run(limit: int, order: str = "asc", segment: str = "") -> int:
     exactly (same SQL shape, same log line types); non-default values only
     add one extra "round params" log line for parallel-run observability.
     """
+    if not peak_shift_gate():   # v1.8 错峰闸门 1：默认关闭时直通零变化
+        return 0
     con = sqlite3.connect(str(DB_PATH), timeout=30)
     con.execute("PRAGMA busy_timeout=30000")
     ensure_table(con)
