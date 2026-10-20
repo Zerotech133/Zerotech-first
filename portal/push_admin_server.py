@@ -438,13 +438,18 @@ class Handler(BaseHTTPRequestHandler):
             # dead_letter.count_since（60s 缓存已有）；-1=读取异常，诚实
             # 上抛由页面降级，不猜数。
             import dead_letter
+            n24 = dead_letter.count_since(24)
             # P2.6 FE-C N6 主动巡检：ops_board 60s 自动刷新即天然探针
-            # （幂等：60s 缓存 + 6h 防抖 + daemon 非阻塞，判例同 api_send）
-            _dead_letter_alert_if_needed()
+            # （复用上方 count_since 同一次读取传入，不双读死信账；
+            # 60s 缓存 + 6h 防抖 + daemon 非阻塞，判例同 api_send）
+            _dead_letter_alert_if_needed(stats={
+                "count_24h": n24, "threshold": DEAD_ALERT_THRESHOLD,
+                "degraded": None if n24 < 0
+                else n24 >= DEAD_ALERT_THRESHOLD})
             return self._json({
                 "ok": True,
                 "generated_at": datetime.now().isoformat(timespec="seconds"),
-                "dead_letters_24h": dead_letter.count_since(24),
+                "dead_letters_24h": n24,
                 # P2.6 FE-C：降级占比观测（只读计数段，零 open_id/target/kind 明文）
                 "fallback_24h": _fallback_stats_24h(),
                 "services": [
@@ -811,16 +816,18 @@ def _fallback_stats_24h():
         return {"count": -1, "total": -1}  # 读异常不猜数
 
 
-def _dead_letter_alert_if_needed():
+def _dead_letter_alert_if_needed(stats=None):
     """N6：死信超阈值 → critical 预警（豁免静默），6h 防抖。
 
+    stats 可选预算观测段（P2.6 FE-C：/api/public/ops 复用响应同一次
+    count_since 读取传入，避免同请求双读死信账）；缺省 None 时自算。
     防递归：告警自身失败落死信但冷却窗内不重发；发送走 daemon 线程
     不阻塞调用链（api_send 主链 / /api/state 观测均非阻塞）。收件人取
     push_targets「个人」，缺配置只留 state 不猜收件人。状态留痕
     work/dead_letter_alert_state.json。任何异常吞掉不抛（fail-safe，
     不影响发送主链路）。"""
     try:
-        st = _dead_letter_stats()
+        st = stats if stats is not None else _dead_letter_stats()
         if not st["degraded"]:
             return
         sp = os.path.join(WORK, "dead_letter_alert_state.json")
