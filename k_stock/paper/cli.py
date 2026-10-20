@@ -25,7 +25,7 @@ sys.path.insert(0, str(HERE))
 
 from engine import PaperEngine, Reject          # noqa: E402
 from market import ParquetMarket                # noqa: E402
-from trainee import stop_dist_for               # noqa: E402  P-5 止损档案化
+from trainee import stop_dist_for, _newest_ai_run   # noqa: E402  P-5 止损档案化
 
 DATA_DIR = HERE.parent / "data"
 DEFAULT_DB = DATA_DIR / "paper.db"
@@ -47,16 +47,17 @@ def _engine(args) -> PaperEngine:
 
 
 def _newest_run() -> Path:
-    # 排除 poc_qd_（双刀）/ poc_qpzm_（青萍 CN）/ poc_qpzmus_（青萍 US，044 M2）
-    # / poc_qpzmhk_（青萍 HK，H-D2）：
-    # 否则 07:05 automation 的 exec --newest 会把他源信号当 AI 决策执行（策略串味）。
-    # 口径与 trainee._newest_ai_run 对齐——AI 通道只吃 AI 产物。
-    runs = sorted(x for x in DATA_DIR.glob("poc_*.json")
-                  if not x.name.startswith(("poc_qd_", "poc_qpzm_", "poc_qpzmus_",
-                                            "poc_qpzmhk_")))
-    if not runs:
-        raise Reject("k_stock/data/ 下无 poc_*.json 决策产物（AI 通道）")
-    return runs[-1]
+    """最新 AI 决策产物——委托 trainee._newest_ai_run（单一口径源，不复刻第二份）。
+
+    WO-QT-20261020-049 勘误（实测陷阱，证据见 -046 取证）：原实现
+    sorted(glob)[按文件名字典序] 取尾——poc_pf_*/poc_adapter_* 前缀首字母
+    （'p'/'a'）恒大于日期戳开头（'2'），10-15 的旧产物 poc_pf_002_20261015
+    会压过 10-20 的新产物 poc_20261020_211855 被当"最新"，默认 exec 落到
+    全陈旧跳过；且原排除面缺 poc_pf_/poc_adapter_ 两族（K-STOCK-414）。
+    trainee 侧已由 WO-QT-20261020-017 修为 mtime_ns + 文件名确定性破平
+    （_newest_by_mtime），排除面同款补全——本侧直接对齐，勿再各自演化。
+    """
+    return _newest_ai_run()
 
 
 def _us_accounts(db: Path) -> list[str]:
