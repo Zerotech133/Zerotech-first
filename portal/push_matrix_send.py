@@ -227,7 +227,21 @@ def _append_log(entry):
     进程崩溃无残留；等待上限约 10s（LK_LOCK 语义），超时抛错不静默。
     """
     data = (json.dumps(entry, ensure_ascii=False) + "\n").encode("utf-8")
-    with open(LOG_JSONL, "a+b") as f:
+    # Windows 并发实测（2026-10-21 回归判例）：open("a+b") 本身偶发
+    # PermissionError(Errno 13)——与另一句柄的锁定/打开时序撞 sharing
+    # violation（同影子链 WO-TF-02 判例家族，此前该异常在线程内未捕获
+    # 直接丢整段账）。有界重试吸收瞬态：每次 50ms、上限 20 次（约 1s）；
+    # 重试耗尽仍失败则原样抛错——丢账显性化，不静默不吞。
+    f = None
+    for attempt in range(20):
+        try:
+            f = open(LOG_JSONL, "a+b")
+            break
+        except PermissionError:
+            if attempt == 19:
+                raise
+            time.sleep(0.05)
+    with f:
         f.seek(0, 2)
         pos = f.tell()
         msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)

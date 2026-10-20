@@ -141,7 +141,7 @@ def test_07_judge_quota_exhausted(db):
     _grant_here("ou_quota")
     now = datetime(2026, 10, 20, 9, 0, 0)
     for _ in range(20):  # basic_monthly 日 20 条
-        ss.entitlement_log("ou_quota", "news.brief", True, "subscription_active")
+        ss.entitlement_log("ou_quota", "news.brief", True, "subscription_active", now=now)
     ok, reason = ss.is_entitled("ou_quota", "news.brief", now=now)
     assert ok is False and reason == "daily_quota_exhausted"
 
@@ -240,7 +240,7 @@ def test_15_quota_prefix_isolation(db):
     _grant_here("ou_p1")
     now = datetime(2026, 10, 20, 9, 0, 0)
     for _ in range(20):
-        ss.entitlement_log("ou_p1", "news.brief", True, "subscription_active")
+        ss.entitlement_log("ou_p1", "news.brief", True, "subscription_active", now=now)
     ok, reason = ss.is_entitled("ou_p1", "news.brief", now=now)
     assert ok is False and reason == "daily_quota_exhausted"
     # 不同前缀不受影响

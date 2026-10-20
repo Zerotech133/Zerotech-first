@@ -325,9 +325,12 @@ def expire_sweep(now=None):
         return cur.rowcount
 
 
-def entitlement_log(open_id, kind, allowed, reason):
-    """落一行判定留痕（闸门只读判定 + 经本函数写日志）。返回 ts。"""
-    ts = _norm_now(None)
+def entitlement_log(open_id, kind, allowed, reason, now=None):
+    """落一行判定留痕（闸门只读判定 + 经本函数写日志）。返回 ts。
+    now=None 注入式可测（与 is_entitled 同约定）：测试传固定时刻，
+    否则 _norm_now(None) 取真实当前时间——缺省会随跨日漂移使日期敏感
+    用例假红（2026-10-21 跨日实测判例）。"""
+    ts = _norm_now(now)
     with _connect() as conn:
         conn.execute(
             "INSERT INTO entitlement_log(ts, open_id, kind, allowed, reason)"
