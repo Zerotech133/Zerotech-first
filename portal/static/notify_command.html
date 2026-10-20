@@ -310,6 +310,7 @@ function renderLegend(p){
   f.append(c);
  }
  f.append(el('div','lg-row','纪律：本页只读投影，聚合时点（generated_at）不等于任何子源的健康时点；审批、重发与豁免请往飞书办理，本页不提供任何写操作。'));
+ f.append(el('div','lg-row','死信计数源：/api/public/ops（无鉴权摘要，仅计数与静态标注，不含 open_id/target/kind 明文）。'));
 }
 
 function render(p){
