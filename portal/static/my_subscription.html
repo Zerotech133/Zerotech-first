@@ -46,6 +46,16 @@ h2.sec small{font:400 11.5px var(--font-mono);color:var(--text-dim);margin-left:
 .degraded p{font-size:12.5px;color:#e8b4b1;margin:0 0 10px;line-height:1.75;overflow-wrap:anywhere}
 .degraded button{border:1px solid #6e2f2c;background:#2d1614;color:#f1c1bc;border-radius:var(--r-pill);padding:6px 16px;font-size:12px;cursor:pointer}
 .degraded button:hover{border-color:var(--color-err)}
+.expiry{border:1px solid var(--border);border-left:3px solid var(--color-ok);background:var(--bg-raised);border-radius:var(--r-m);padding:12px 14px;margin:0 0 10px;line-height:1.75}
+.expiry .et{display:block;font:700 16px var(--font-mono);letter-spacing:-.01em}
+.expiry .ed{display:block;font-size:12.5px;color:var(--text-dim);margin-top:5px;overflow-wrap:anywhere}
+.expiry .ed.stop{color:var(--text)}
+.expiry.neutral{border-left-color:var(--color-ok)}
+.expiry.neutral .et{color:var(--color-ok)}
+.expiry.warn{border-left-color:var(--color-warn)}
+.expiry.warn .et{color:var(--color-warn)}
+.expiry.severe{border-left-color:var(--color-err)}
+.expiry.severe .et{color:var(--color-err)}
 footer.legend{margin-top:22px;border-top:1px solid var(--border);padding-top:14px;font-size:11.5px;color:var(--text-dim);line-height:1.9}
 footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 @media(max-width:640px){
@@ -83,12 +93,14 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 
 <div id="degraded" class="degraded" hidden>
 <h2>⚠ 数据拉取失败 · 已降级</h2>
-<p id="degraded-why">无法读取 /api/subscription/status。以下各卡为空态展示，不代表「无订阅」；请核对服务状态后重试。</p>
+<p id="degraded-why">无法读取订阅状态（/api/subscription/status）。以下各卡为空态展示，不代表「没有订阅」；请核对服务状态后重试。</p>
 <button type="button" id="retry">重试</button>
 </div>
 
 <h2 class="sec">订阅状态<small>当前档位与有效期</small></h2>
+<div id="expiry-bar" hidden></div>
 <div id="status-card"><div class="empty-state">填入 open_id 后点「查询」开始读取……读取失败时本卡显示降级说明。</div></div>
+<div class="notice" id="renew-guide"><b>续费方式：通过飞书联系管理员。</b>本页不提供在线支付入口，也不展示任何金额；请在到期前联系，避免能力中断。</div>
 
 <h2 class="sec">当日额度使用<small>today_used / daily_quota · 不限额显示「不限额」</small></h2>
 <div id="quota-card"><div class="empty-state">填入 open_id 后点「查询」开始读取……</div></div>
@@ -101,6 +113,7 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <div>· 本页只读投影，零写操作；购买、续费、退订请通过飞书联系（M3 收银台上线后在本页接入）。</div>
 <div>· 字段最小化：/api/subscription/status 只回当前档位（plan_id / plan_name / start / end / status）与本人当日额度余量，open_id 仅回掩码（如 ou_abcd**），金额与账本内部判定细节不在响应内。</div>
 <div>· 额度余量为当日已放行计数（entitlement_log 投影），非实时闸门计数；「不限额」指档位未设 daily_quota。</div>
+<div>· 剩余天数由本页按 start / end 在前端按日历日自算（纯日期按当日结束计，与到期提醒同口径），响应内不含任何派生的剩余天数字段——状态端点字段保持最小化。</div>
 <div>· 读取失败时本页降级为说明文案，不显示静态兜底数据；error 响应原样透出，不修饰。</div>
 </footer>
 </main>
@@ -141,6 +154,97 @@ function fmtRange(s,e){
  return text(s)+' ~ '+text(e);
 }
 
+/* ------------------------------------------------------------------
+ * 到期可视化：剩余天数一律在本页由 start / end 自算
+ * 状态端点字段已最小化（plan_id / start / end / status + 掩码身份），
+ * 故不读也不请求任何后端派生的剩余天数；解析不出来就明说，不猜。
+ * ------------------------------------------------------------------ */
+const DAY_MS=86400000;
+const YMD=/^(\d{4})-(\d{2})-(\d{2})$/;
+
+// 把任意时间值归一到「本地日历日的 0 点」，三种口径：
+//  1) 纯日期 "2026-11-19"：按年月日手工构造本地日期（不走 Date 对纯日期的
+//     UTC 解析，避免东八区看到的前一天）；并按「当日结束」计有效期
+//     ——与后端 renewal_reminder 的 23:59:59 口径一致，故纯日期口径下
+//     「今天到期」的剩余天数是 0，不是 -1。
+//  2) 带时刻 "2026-11-19T10:00:00"、带 Z 或 +08:00：先按绝对时刻解析，
+//     再取该时刻在本地时区的年月日重建 0 点，跨时区不串日；
+//     同时保留绝对时刻，用于判定「今日已过到期时点」。
+//  3) 非法值（"2026-02-30" 这类会被 Date 静默进位的、空值、非日期串）
+//     一律返回 null，由调用方显式报「无法解析到期日」。
+function calendarDay(raw){
+ const s=text(raw).trim();
+ if(!s)return null;
+ if(YMD.test(s)){
+  const p=s.split('-'),y=+p[0],m=+p[1],d=+p[2];
+  const probe=new Date(y,m-1,d);
+  if(probe.getFullYear()!==y||probe.getMonth()!==m-1||probe.getDate()!==d)return null;
+  return {day:probe,dateOnly:true,instant:new Date(y,m-1,d,23,59,59).getTime()};
+ }
+ let iso=s;
+ if(/[zZ]$/.test(iso))iso=iso.slice(0,-1)+'+00:00';
+ const abs=new Date(iso);
+ if(isNaN(abs.getTime()))return null;
+ return {day:new Date(abs.getFullYear(),abs.getMonth(),abs.getDate()),
+  dateOnly:false,instant:abs.getTime()};
+}
+
+// 日历日相差：两个「本地 0 点」相减后四舍五入到整数天。
+// 不做「毫秒差除以一天毫秒再截断」——那样今天 23:00 与昨天 23:00 都会算成 0 天；
+// 四舍五入还能吸收夏令时造成的 23 / 25 小时日，保证差异始终是整数日历日。
+function dayGap(endDay,todayDay){
+ return Math.round((endDay.getTime()-todayDay.getTime())/DAY_MS);
+}
+
+// 三档判定：剩余 >3 天 中性；1~3 天 警示；0 天或已过期 失效。
+// 已过期与「今天到期」分开写，未知状态原样透出（不映射成「正常」）。
+function expiryState(statusRaw,rawEnd,nowD){
+ const st=text(statusRaw).trim();
+ const now=nowD||new Date();
+ const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ const rec=calendarDay(rawEnd);
+ if(!rec){
+  return {tier:'severe',head:'无法解析到期日',
+   lines:['到期日字段无法解析为日期，本页不猜测剩余天数（既不显示 0 天，也不显示负数）。']};
+ }
+ const days=dayGap(rec.day,today);
+ const passed=rec.dateOnly?(days<0):(rec.instant<now.getTime());
+ const endLine='到期日 '+text(rawEnd);
+ if(st!=='active'&&st!=='expired'){
+  return {tier:'severe',head:'未知状态：'+(st||'（空值）'),
+   lines:[endLine+' · 按到期日计算剩余 '+days+' 天',
+    '「'+(st||'（空值）')+'」不在已知状态（active / expired）内：本页原样显示，不把它当作正常在用。']};
+ }
+ if(st==='expired'||passed){
+  const why=st==='expired'
+   ?'账本状态已置为 expired，订阅能力已停止。'
+   :'已过到期时点，状态仍为 active（自然到期清扫可能尚未执行），能力随时停止。';
+  return {tier:'severe',head:'已到期',lines:[endLine+' · '+why]};
+ }
+ if(days<=0){
+  return {tier:'severe',head:'今天到期',
+   lines:[endLine+' · 剩余 0 天（按当日结束计），今天之后即失效。']};
+ }
+ if(days<=3){
+  return {tier:'warn',head:'剩余 '+days+' 天 · 即将到期',
+   lines:[endLine+' · 只剩 '+days+' 天，请尽快通过飞书联系管理员续费。']};
+ }
+ return {tier:'neutral',head:'剩余 '+days+' 天',lines:[endLine+' · 有效期正常。']};
+}
+
+function renderExpiry(sum){
+ const box=$('expiry-bar');
+ box.replaceChildren();
+ const view=expiryState(sum.status,sum.end);
+ const wrap=el('div','expiry '+view.tier);
+ wrap.append(el('span','et',view.head));
+ view.lines.forEach(t=>wrap.append(el('span','ed',t)));
+ // 让客户知道到期会失去什么；但不写任何功能额度数字（额度口径未定）。
+ wrap.append(el('span','ed stop','到期后：盯盘推送、预警推送、新闻推送将停止。'));
+ box.append(wrap);
+ box.hidden=false;
+}
+
 function renderStatus(sum){
  const box=$('status-card');box.replaceChildren();
  // 字段最小化口径：只读 plan_id / plan_name / start / end / status 与掩码身份
@@ -151,9 +255,11 @@ function renderStatus(sum){
   cardBox('status-card','err','当前档位','无订阅','账本中无该身份在册的订阅 · '+who);
   return;
  }
- const cls=st==='active'?'ok':(st==='expired'?'warn':'err');
+ // 未知状态原样显示并打标，绝不落到「正常」那一栏
+ const known=(st==='active'||st==='expired');
+ const cls=known?(st==='active'?'ok':'warn'):'err';
  cardBox('status-card',cls,'当前档位',text(sum.plan_name)||pid,
-  '有效期 '+fmtRange(sum.start,sum.end)+' · 状态 '+(st||'—')+' · '+who);
+  '有效期 '+fmtRange(sum.start,sum.end)+' · 状态 '+(st||'—')+(known?'':' · 未知状态')+' · '+who);
 }
 
 function renderQuota(sum){
@@ -190,6 +296,8 @@ async function load(){
   $('m-generated').textContent='待查询';
   emptyCard('status-card','未提供 open_id——填入后点「查询」，或用 ?open_id= 参数打开本页。');
   emptyCard('quota-card','未提供 open_id。');
+  $('expiry-bar').hidden=true;
+  $('expiry-bar').replaceChildren();
   return;
  }
  $('guide').hidden=true;
@@ -199,15 +307,18 @@ async function load(){
  await fetchJson('/api/subscription/status?open_id='+encodeURIComponent(oid))
   .then(d=>{sum=d;}).catch(e=>{err=e&&e.message?e.message:'未知错误';});
  if(err){
-  $('degraded-why').textContent='无法读取 /api/subscription/status（'+err+'）。本页不显示静态兜底数据；请核对 open_id 与服务状态后重试。';
+  $('degraded-why').textContent='无法读取订阅状态（'+err+'）。读不到不等于没有订阅：本页不显示静态兜底数据，也不据此判定订阅有无；请核对 open_id 与服务状态后重试。';
   $('degraded').hidden=false;
   $('m-generated').textContent='读取失败';
   emptyCard('status-card','读取失败——以上降级区为唯一事实来源，本卡不显示兜底数据。');
   emptyCard('quota-card','读取失败。');
+  $('expiry-bar').hidden=true;
+  $('expiry-bar').replaceChildren();
   return;
  }
  $('m-generated').textContent='读取完成 · 身份 '+text(sum.open_id||'**')+'（掩码 · 非闸门实时判定）';
  renderStatus(sum);
+ if(text(sum.plan_id)){renderExpiry(sum);}else{$('expiry-bar').hidden=true;}
  renderQuota(sum);
 }
 
