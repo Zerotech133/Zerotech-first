@@ -64,9 +64,18 @@ def _write_heartbeat(rc: int, elapsed_s: float, summary: dict) -> None:
         pass
 
 
+_RUN_DATE: str | None = None   # 模块加载期初始化（先于函数定义，防 NameError）
+
+
 def _results_log_path() -> Path:
-    """当日逐只落盘账本路径（K-STOCK-20261020-INCREMENT）。"""
-    return OUT_DIR / f"poc_results_{datetime.now():%Y%m%d}.jsonl"
+    """当日逐只落盘账本路径（K-STOCK-20261020-INCREMENT）。
+    日期在首轮调用时固定（审计 20261020-A1）：跨午夜长批若每次调用重取
+    now()，账本路径会分裂成两个日期文件，resume 漏读昨夜已完成部分导致
+    重跑烧钱——跑批内口径恒定，次日新进程自然切新账本。"""
+    global _RUN_DATE
+    if _RUN_DATE is None:
+        _RUN_DATE = datetime.now().strftime("%Y%m%d")
+    return OUT_DIR / f"poc_results_{_RUN_DATE}.jsonl"
 
 
 def _append_result_log(record: dict) -> bool:
@@ -92,6 +101,8 @@ def _append_result_log(record: dict) -> bool:
 def _load_done_codes(path: Path) -> dict[str, dict]:
     """读当日逐只账本，返回 {code: 记录}（同 code 多行取最后一条，后写为准）。
     账本只记五节点跑完的（FAIL 不记），故「code 在账本」即「已有完整结果」。
+    审计 20261020-A12：mock 记录不算完整结果（冒烟不占坑）——跳过 mock 行，
+    真跑会覆盖重跑；detach_run ledger_complete 同口径（防御纵深）。
     坏行跳过、读失败视为无历史全量重跑——续跑判定宁放过不误跳。"""
     done: dict[str, dict] = {}
     try:
@@ -104,6 +115,8 @@ def _load_done_codes(path: Path) -> dict[str, dict]:
                     rec = json.loads(line)
                 except ValueError:
                     continue
+                if rec.get("mock"):
+                    continue                      # mock 冒烟记录不占坑
                 code = str(rec.get("code") or "").strip()
                 if code:
                     done[code] = rec
@@ -427,13 +440,20 @@ def _run_targets(summary: dict) -> None:
         print(f"[run] {stock} ...", flush=True)
         try:
             r = run_one(stock, mock=args.mock, auto=args.auto)
-            d1 = r["outputs"].get("D1", {})
+            # 审计 20261020-A8：D1 缺键不再吞掉整只成功结果——outputs 缺 D1 时
+            # 打空决策，五节点已跑完的正常记账本，续跑不重烧（与 eval_rank
+            # 防御式判例 (r.get("outputs") or {}).get("D1") or {} 对齐）。
+            d1 = (r.get("outputs") or {}).get("D1") or {}
             print(f"  -> D1: {d1.get('action')} conf={d1.get('confidence')} "
                   f"degraded={r['degraded'] or '无'}", flush=True)
             # 逐只落盘：五节点一跑完立即追加，被掐不清零；FAIL 不记（续跑重试）
             rec = dict(r)
             rec["ts"] = datetime.now().isoformat(timespec="seconds")
             rec["code"] = code
+            # 审计 20261020-A12：账本全记（含 mock，可追溯）；mock 占坑风险由
+            # 消费端过滤根治——_load_done_codes 跳过 mock 记录（不算"完整结果"），
+            # detach_run ledger_complete 只数非 mock 行。测试经 mock 驱动账本
+            # 机制，故不在此处不入账。
             _append_result_log(rec)
         except Exception as e:
             r = {"stock": stock, "error": str(e)[:300],

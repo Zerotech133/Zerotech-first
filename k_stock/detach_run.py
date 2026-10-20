@@ -42,10 +42,21 @@ def pid_alive(pid: int) -> bool:
 
 
 def ledger_complete() -> bool:
+    """当日账本齐 5/5 → 注销兜底任务。防御纵深（审计 20261020-A12 消费端）：
+    mock 记录（rec.mock 为真）不计入——万一上游过滤失效，这里兜底。"""
     try:
         with open(LEDGER, "r", encoding="utf-8") as f:
-            lines = [json.loads(x) for x in f if x.strip()]
-        return len(lines) >= WATCHLIST_N
+            recs = []
+            for x in f:
+                x = x.strip()
+                if not x:
+                    continue
+                try:
+                    recs.append(json.loads(x))
+                except ValueError:
+                    continue
+        real = [r for r in recs if not r.get("mock")]
+        return len(real) >= WATCHLIST_N
     except FileNotFoundError:
         return False
 
