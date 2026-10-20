@@ -325,7 +325,10 @@ def _run_targets(summary: dict) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("stock", nargs="?", help="如 600519.SH 贵州茅台（加引号）")
     ap.add_argument("--mock", action="store_true")
-    ap.add_argument("--auto", action="store_true", help="三路 context 自动接入（D0 正式）")
+    ap.add_argument("--auto", action=argparse.BooleanOptionalAction, default=True,
+                    help="三路 context 自动接入（D0 正式）；默认开启，--no-auto 显式关闭。"
+                         "审计 20261021-A13：07:05 automation prompt 曾漏写 --auto，"
+                         "照字面执行=五节点空 context 静默降级——改为默认开（T-O8 §1.4 兜底）")
     ap.add_argument("--batch", help="清单文件，每行 '代码 名称' 或纯代码")
     ap.add_argument("--watchlist", type=int, metavar="N",
                     help="自动取监控池成交额前 N 只（与 --auto 配套）")
