@@ -24,6 +24,9 @@
   票仍走 T2 单策略通道」），rationale 追加毒层标记供后验分层；
   ``TOXIC_DOWNGRADE=False`` 一键回退。卖点不判毒；
 - rationale：``缠论{type}·{trend或reg}：{备注}（信号日 {dt}，价 {price}）``；
+  可选共振字段（mbei/bei/bei2/vv）缺键追加 ``（{f}=缺字段…）``、
+  显式 False 追加 ``（{f}=False…）``，缺失可追溯解释（R0-S 契约），
+  不改评分/置信度；None（不可判）不标注；
   未知 type 跳过（防御）。
 
 选日规则（D3 并轨口径，2026-10-19 确认门①拍板）：分市场各取
@@ -247,6 +250,15 @@ class ChanMonitorAdapter:
         if toxic_reason and TOXIC_DOWNGRADE:
             score = min(score, TOXIC_SCORE_CAP)
             rationale += f"（毒层降档：{toxic_reason}）"
+
+        # 可选共振字段缺失/显式 False 的可追溯解释（R0-S 契约）：
+        # 仅追加 rationale 标注，不影响 score/confidence/毒层判定。
+        missing = [f for f in _RESONANCE_FIELDS if f not in row]
+        if missing:
+            rationale += "（" + "，".join(f"{f}=缺字段" for f in missing) + "）"
+        false_marked = [f for f in _RESONANCE_FIELDS if row.get(f) is False]
+        if false_marked:
+            rationale += "（" + "，".join(f"{f}=False" for f in false_marked) + "）"
 
         return Signal(
             symbol=code.strip(),

@@ -650,6 +650,52 @@ class TestRationale:
         assert "down" in s.rationale
 
 
+class TestOptionalFieldAnnotation:
+    """R0-S 契约（WO-QT-20261020-043 重建）：可选共振字段缺键/显式 False
+    在 rationale 留可追溯标注，None（不可判）不标注；评分置信度不变。"""
+
+    def test_missing_keys_are_annotated_individually(self, tmp_path):
+        row = _row()
+        del row["mbei"]
+        del row["bei2"]
+        pool = _write_pool(tmp_path, "pool.jsonl", [row])
+        s = _adapter([pool]).score("20261016")[0]
+        assert "mbei=缺字段" in s.rationale
+        assert "bei2=缺字段" in s.rationale
+        assert "（mbei=缺字段，bei2=缺字段）" in s.rationale, "缺键逐字段标注"
+        assert "bei=None" not in s.rationale and "，bei=缺字段" not in s.rationale, \
+            "present-None（不可判）不标注"
+
+    def test_explicit_false_is_annotated(self, tmp_path):
+        pool = _write_pool(tmp_path, "pool.jsonl", [_row(vv=False)])
+        s = _adapter([pool]).score("20261016")[0]
+        assert "vv=False" in s.rationale
+
+    def test_annotation_does_not_change_score_or_confidence(self, tmp_path):
+        row = _row()
+        del row["mbei"]
+        del row["bei2"]
+        pool = _write_pool(tmp_path, "pool.jsonl", [row])
+        s = _adapter([pool]).score("20261016")[0]
+        assert s.score == 85.0
+        assert s.confidence == 0.6
+
+    def test_full_row_has_no_annotation(self, tmp_path):
+        pool = _write_pool(tmp_path, "pool.jsonl", [_row()])
+        s = _adapter([pool]).score("20261016")[0]
+        assert "缺字段" not in s.rationale
+        assert "=False" not in s.rationale
+        assert "不可判" not in s.rationale, "None（不可判）不得以任何标签标注"
+
+    def test_sell_signal_is_annotated_too(self, tmp_path):
+        row = _row(sig_type="1卖")
+        del row["bei"]
+        pool = _write_pool(tmp_path, "pool.jsonl", [row])
+        s = _adapter([pool]).score("20261016")[0]
+        assert s.action == "sell"
+        assert "bei=缺字段" in s.rationale, "卖点同样标注（P2-B 缝隙钉住）"
+
+
 class TestDegradation:
     def test_missing_pool_returns_empty(self, tmp_path, capsys):
         adapter = _adapter([str(tmp_path / "not_exist.jsonl")])
