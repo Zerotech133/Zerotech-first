@@ -1,6 +1,7 @@
 {
   "agent_id": "R2",
-  "dept": "invest",
+  "dept": "risk",
+  "dept_note": "风控部·大都督府（org.json 事实源），K-ORG-170 入编 2026-10-18，原建档口径 invest 已订正",
   "title": "风控辩论·保守席",
   "rank": "E2",
   "team": "risk_council",
@@ -19,9 +20,10 @@
     "danger": "deny"
   },
   "mode": "shadow",
+  "mode_note": "影子期口径（K-STOCK 影子线）：org.json 无 mode 字段、入编 K-ORG-170 未改变影子状态；shadow→enforce 待 2026-10-20 满窗裁决拍板后另行变更",
   "onboarded": "2026-10-16",
   "approvals": {
     "chief": "A0",
-    "human": "PENDING"
+    "human": "laotian"
   }
 }

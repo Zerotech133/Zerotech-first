@@ -57,7 +57,7 @@
   "onboarded": "补办登记 2026-10-19",
   "approvals": {
     "chief": "A0",
-    "human": "PENDING"
+    "human": "laotian"
   },
   "backfill_note": "--backfill 于 2026-10-19 生成，事实源=registry/org.json#departments[invest].agents.agent_profiles + registry/team_quant_strategy.json；kind=staff 按 agent_profile 在册惯例；待终审字段见 backfill 输出清单"
 }
