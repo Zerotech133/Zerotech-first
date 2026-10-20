@@ -299,18 +299,22 @@ def _owner_domain_members():
     动态派生而非硬编码白名单：org.json 加人即刻生效，改代码零成本（工单 WO-TF-03
     验收判据 4）。
 
-    **不可判定时返回 None（不是空集）**——org.json 缺失 / 坏 JSON / 缺 ``departments``
-    键 / 派生池为空，一律视为「读不到权威域」而非「域内无人」。二者若混同，取值域的
-    读取侧临时故障会让**全量新建单被批量误打** ``[UNOWNED]`` 标签；且「缺departments」
-    只捞得到 chief、域规模=1，看着像读到了东西，实为部分可用，比完全读不出更危险。
-    调用方据此跳过打标签、只留痕（见 ``_owner_check`` 与 ``cmd_new``）。
+    **不可判定时返回 None（不是空集）**——判据是「**部门层贡献 0 个成员**」，而不是
+    「总池为空」。理由：``chief.agent_id`` 是 org.json 里的常量（不论部门是否有人都
+    恒在），故「池里只剩 chief」**恒等价于部门层一个人都没派出来**。这与「缺
+    ``departments`` 键」是**同一个观测特征**（只捞得到 chief、域规模=1，看着像读到
+    了东西，实为部分可用，比完全读不出更危险），必须同判不可判定，不能一个判非法
+    一个判不可判定——否则读取侧的临时故障/未建全的部门层会让**全量新建单被批量误打**
+    ``[UNOWNED]`` 标签。org.json 缺失 / 坏 JSON / 缺 ``departments`` / 部门层全空，
+    一律按「读不到权威域」处理。调用方据此跳过打标签、只留痕（见 ``_owner_check``
+    与 ``cmd_new``）。
     """
     try:
         org = json.load(open(ORG_JSON, encoding="utf-8"))
     except Exception:  # noqa: BLE001
         return None                      # 文件缺失或坏 JSON → 不可判定
     if not isinstance(org, dict) or "departments" not in org:
-        return None                      # 结构异常/无departments → 不可判定
+        return None                      # 结构异常/无 departments → 不可判定
     members = set()
 
     def _add(v):
@@ -323,8 +327,12 @@ def _owner_domain_members():
         for a in dept.get("agents") or []:
             _add(a)
         _add(dept.get("lead"))
+    if not members:
+        # 部门层零成员（含 departments=[]、各部 agents/lead 全空）→ 不可判定。
+        # 与「缺 departments 键」同判：二者观测特征一致（只剩 chief 常量）。
+        return None
     _add((org.get("chief") or {}).get("agent_id"))
-    return members or None               # 空池同样不可判定（见上文）
+    return members
 
 
 def _owner_check(owner):
