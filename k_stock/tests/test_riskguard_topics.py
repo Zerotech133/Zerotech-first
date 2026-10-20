@@ -242,9 +242,18 @@ def test_build_records_filters_and_dedups(tmp_path):
 
 
 def test_real_production_files_unchanged_by_topic_run():
-    """跑真实专题（生产账本 + 生产日线）后，生产件字节与 mtime 都不变。"""
+    """跑真实专题（生产账本 + 生产日线）后，生产件字节与 mtime 都不变。
+
+    环境依赖显式化：本用例走 run_topic 真实日线结算路径（惰性 import pandas
+    读 ts_daily parquet）。无 pandas / 无日线分片的环境"不可达"，显式 SKIP
+    （skip≠pass）；"真实生产文件零写入"覆盖在带 pandas + ts_daily 的环境
+    （py312）仍生效。不用假 provider 替代——会稀释"真实文件"语义。
+    """
     if not PROD_LEDGER.exists():
         pytest.skip("生产账本不在本机（只读断言跳过）")
+    pytest.importorskip("pandas", reason="日线源需 pandas，无 pandas 环境不可达")
+    if not list(rgt.default_daily_dir().glob("part_*.parquet")):
+        pytest.skip("ts_daily 无分片（日线源不在本机，只读断言跳过）")
     before = (PROD_LEDGER.stat().st_size, PROD_LEDGER.stat().st_mtime_ns)
     out = rgt.run_topic(ledger_path=PROD_LEDGER)
     assert out["implemented"] is True
