@@ -43,6 +43,7 @@ __all__ = [
     "expire_sweep",
     "entitlement_log",
     "get_subscriber_summary",
+    "list_subscribers",
     "OWN_DOMAIN_OPEN_IDS",
     "SEED_PLANS",
 ]
@@ -409,3 +410,89 @@ def get_subscriber_summary(open_id, now=None):
         }
     except Exception as exc:  # closed on failure：不抛，诚实报错
         return {"error": "store_unavailable: %s" % exc}
+
+
+# ---------------------------------------------------------------------------
+# FE-B（飞书中台 P2.6 · 2026-10-20）订阅者全集只读列表——只追加不改写
+# ---------------------------------------------------------------------------
+
+def list_subscribers(limit=50, now=None):
+    """订阅者全集只读列表（P2.6 商务面 /api/subscription/list 数据出口）。
+
+    返回 dict（契约见派工单 FE-B 节）::
+
+        {"ok": True, "count": N,
+         "subscribers": [{open_id, display_name, plan_id, status,
+                          start, end, daily_quota, used_today}, ...]}
+
+    - ORDER BY open_id 稳定序；limit 钳制 [1,200]（非法输入按默认 50）；
+      count 为返回的 subscribers 行数（与列表严格一致，不冒充总量）。
+    - 每个订阅者一行：优先取 status=active 且覆盖 now 的订阅行，否则取
+      end 最新一行（与 get_subscriber_summary 的 reason 口径一致）；
+      无任何订阅行时 plan_id/status/start/end/daily_quota 为 None（诚实空）。
+    - used_today：entitlement_log 当日 allowed=1 行按订阅者级合计
+      （口径与 is_entitled 额度计数一致——该计数即同日同前缀放行数，
+       订阅者级合计为其跨前缀求和）。
+    - 纯只读：连接 create=False，读路径不建库（同 is_entitled 判例），
+      不写任何表，不落 entitlement_log。
+    - closed on failure：store 文件缺失或任何异常 →
+      {"ok": False, "error": "store_unavailable"}（不抛，原样透传给
+      portal_api branch 即可，调用方无需自行兜底）。
+    """
+    try:
+        try:
+            _limit = int(limit)
+        except (TypeError, ValueError):
+            _limit = 50
+        _limit = max(1, min(200, _limit))
+
+        path = _db_path()
+        if not path.exists():
+            return {"ok": False, "error": "store_unavailable"}
+        now_str = _norm_now(now)
+        with _connect(create=False) as conn:
+            who = conn.execute(
+                "SELECT open_id, display_name FROM subscriber"
+                " ORDER BY open_id"
+            ).fetchall()
+            sub_rows = conn.execute(
+                "SELECT subscription.subscriber_open_id, subscription.plan_id,"
+                " subscription.status, subscription.start, subscription.end,"
+                " plan.daily_quota FROM subscription"
+                " LEFT JOIN plan ON plan.plan_id=subscription.plan_id"
+                " ORDER BY subscription.end DESC"
+            ).fetchall()
+            used_rows = conn.execute(
+                "SELECT open_id, COUNT(*) FROM entitlement_log"
+                " WHERE allowed=1 AND substr(ts,1,10)=? GROUP BY open_id",
+                (_today(now_str),),
+            ).fetchall()
+        by_open = {}
+        for r in sub_rows:
+            by_open.setdefault(r[0], []).append(r[1:])
+        used = {r[0]: r[1] for r in used_rows}
+        subscribers = []
+        for open_id, display_name in who:
+            recs = by_open.get(open_id) or []
+            pick = None
+            for r in recs:
+                if r[1] == STATUS_ACTIVE and r[2] <= now_str <= r[3]:
+                    pick = r
+                    break
+            if pick is None and recs:
+                pick = recs[0]  # end DESC 的最新一行
+            subscribers.append({
+                "open_id": open_id,
+                "display_name": display_name,
+                "plan_id": pick[0] if pick else None,
+                "status": pick[1] if pick else None,
+                "start": pick[2] if pick else None,
+                "end": pick[3] if pick else None,
+                "daily_quota": pick[4] if pick else None,
+                "used_today": used.get(open_id, 0),
+            })
+        subscribers = subscribers[:_limit]
+        return {"ok": True, "count": len(subscribers),
+                "subscribers": subscribers}
+    except Exception:  # closed on failure：不抛，诚实报错
+        return {"ok": False, "error": "store_unavailable"}
