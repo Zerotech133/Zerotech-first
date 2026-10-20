@@ -56,8 +56,15 @@
 显著性判据（简化口径，**当前用简化统计并显式注明**，见 `significance_note`）：
   - 均值差：**Welch t 检验**（不假设等方差），自由度用 Welch–Satterthwaite
     近似；p 值由 t 分布双尾近似给出；
+  - 胜率差：**两比例 z 检验**（二项检验正态近似，pooled 方差；048 增量）；
+  - **Wilcoxon 秩和检验**（非正态稳健，并列秩校正；048 增量，
+    `compare_baselines(..., method="wilcoxon")` 可选）；
+  - **多重比较校正**：批量对比 API `compare_baselines_batch` 提供
+    **Bonferroni / BH-FDR** 两法（048 落地，家族定义见该函数 docstring 与
+    契约文档）；两两对比家族=1，无需校正、维持原口径；
   - n < 门槛时**不跑检验**（先于检验短路），直接 insufficient_sample；
-  - p ≥ alpha → 结论「无显著差异」，**不吹功**。
+  - p ≥ alpha → 结论「无显著差异」，**不吹功**；批量场景校正后不显著 →
+    明写「多重比较校正后无显著差异」。
 
 只读复用（不改他方文件）：decision_snapshot（-004 快照账）、combo_review
 （-013 ROI/成本口径，成本口径唯一定义处仍是 -011/-013，本单只读不重写）、
@@ -70,8 +77,11 @@ topic_miner（-016 后验喂入口径：需带 unit，缺 unit 抛错）、combo
     本框架**自动生效**（同一口径，无需改代码）；
   - **≥2 周快照积累**属**时钟依赖**（非本单可解）：本单只交付口径与评估框架，
     阈值/显著性/回填口径已固化，积累到位后同一 API 直接出数；
-  - **多重比较校正**（跑多个分支/组合时的假阳性膨胀）未做——当前只做两两
-    对比，属简化口径，见 `significance_note`；批量扫描需另立口径。
+  - **多重比较校正**已由 WO-QT-20261020-048 落地于批量 API
+    `compare_baselines_batch`（Bonferroni / BH-FDR，家族定义裁定见契约文档）；
+    两两对比 `compare_baselines` 家族=1，无需校正、维持原口径——**批量扫描
+    请勿直接跑 N 次 `compare_baselines` 后逐个读显著性**（假阳性膨胀），一律
+    走批量 API。
 
 标准库依赖：`json / math / sqlite3 / datetime / pathlib`。**零网络出口**。
 """
@@ -108,6 +118,17 @@ DIM_COMBO = "combo"
 
 # 显著性默认显著性水平
 DEFAULT_ALPHA = 0.05
+
+# ---------- 批量对比 / 显著性增强（WO-QT-20261020-048） ----------
+BATCH_SCHEMA_VERSION = 1
+
+# 检验方法：均值差检验的选择（048 挂账④增量，缺省维持 018 的 Welch t）
+METHOD_WELCH_T = "welch_t"        # 均值差，正态假定下的参数检验（018 原口径）
+METHOD_WILCOXON = "wilcoxon"      # 秩和检验，非正态稳健（并列秩校正）
+
+# 多重比较校正方法（048 挂账③；两法语义差异见契约文档）
+CORRECTION_BONFERRONI = "bonferroni"   # 最保守：p_adj = min(1, p·k)，控 FWER
+CORRECTION_BH_FDR = "bh_fdr"           # Benjamini-Hochberg step-up，控 FDR
 
 # 指标算式（写进输出字段，可审计——对齐 -016 三率口径风格）
 FORMULA_SAMPLE_SIZE = "count(可用样本)  # 已回填后验的快照数"
@@ -308,6 +329,170 @@ def _welch_ttest(a: list[float], b: list[float]) -> dict:
     out.update({"t": _round(t), "df": _round(df),
                 "p_two_sided": _round(_t_sf_two_sided(t, df))})
     return out
+
+
+# ---------- 标准正态双尾 p 值（048 两比例 / Wilcoxon 正态近似共用） ----------
+
+def _norm_sf_two_sided(z: float) -> float:
+    """标准正态双尾 p 值：p = erfc(|z| / sqrt(2))。
+
+    `math.erfc` 直通 C 库，精度远高于自实现的 t 数值法（~1e-15 量级）；
+    精度验证见测试 `test_norm_sf_critical_values`（对 1.96/2.576 临界值表）。
+    """
+    return math.erfc(abs(z) / math.sqrt(2.0))
+
+
+# ---------- 挂账④：胜率差二项检验（两比例 z 检验，正态近似） ----------
+
+def _proportions_test(wins_a: int, n_a: int, wins_b: int, n_b: int) -> dict:
+    """两比例 z 检验（胜率差用；pooled 方差，双尾正态近似）。
+
+    H0: p_a == p_b（两侧胜率相同）。z = (p̂a − p̂b) / sqrt(p̂(1−p̂)(1/na+1/nb))，
+    p̂ 为合并胜率。正态近似可靠性经验规则 min(na,nb)·p̂ ≥ 5 且
+    min(na,nb)·(1−p̂) ≥ 5，不满足时照常出数但 note 显式标注（不静默）。
+
+    边界（对齐 _welch_ttest 判例）：
+      - 任一侧 n < 2 → 不跑（p=None + note，不以 0/1 充数）；
+      - 合并比例 0 或 1（方差 0）且胜率相等 → z=0, p=1；
+      - 合并比例 0 或 1 且胜率不等 → z=±inf, p=0（确定性差异，照实出数）。
+    """
+    out = {"test": "two_proportion_z",
+           "wins_a": wins_a, "n_a": n_a, "wins_b": wins_b, "n_b": n_b}
+    if n_a < 2 or n_b < 2:
+        out.update({"rate_a": None, "rate_b": None, "z": None,
+                    "p_two_sided": None,
+                    "note": "任一侧 n < 2 → 无法做两比例检验（不以 0/1 充数）"})
+        return out
+    pa, pb = wins_a / n_a, wins_b / n_b
+    diff = pa - pb
+    pool = (wins_a + wins_b) / (n_a + n_b)
+    out["rate_a"], out["rate_b"], out["diff"] = _round(pa), _round(pb), _round(diff)
+    se_sq = pool * (1.0 - pool) * (1.0 / n_a + 1.0 / n_b)
+    if se_sq <= 0.0:
+        if abs(diff) <= 1e-15:
+            out.update({"z": 0.0, "p_two_sided": 1.0,
+                        "note": "合并比例 0 或 1（方差 0）且两侧胜率相等 → 无差异（p=1）"})
+        else:
+            out.update({"z": math.copysign(math.inf, diff), "p_two_sided": 0.0,
+                        "note": "合并比例 0 或 1（方差 0）且胜率不等 → 确定性差异（p=0）"})
+        return out
+    z = diff / math.sqrt(se_sq)
+    notes = []
+    m = min(n_a, n_b)
+    if m * pool < 5 or m * (1.0 - pool) < 5:
+        notes.append("合并比例下最小期望计数 < 5 → 正态近似偏乐观"
+                     "（照常出数，判读时留心；样本量门槛通常已挡住此区间）")
+    out.update({"z": _round(z), "p_two_sided": _round(_norm_sf_two_sided(z))})
+    if notes:
+        out["note"] = "；".join(notes)
+    return out
+
+
+# ---------- 挂账④：Wilcoxon 秩和检验（Mann-Whitney U，非正态稳健） ----------
+
+def _wilcoxon_rank_sum(a: list[float], b: list[float]) -> dict:
+    """Wilcoxon 秩和检验（等价 Mann-Whitney U，双尾正态近似 + 并列秩校正）。
+
+    H0: 两样本来自同一分布（对位置平移敏感）。合并排序取平均秩处理并列，
+    U = min(Ua, Ub)，μ = na·nb/2，并列校正：
+        σ² = na·nb/12 · [(n+1) − Σ(t³−t)/(n(n−1))]（t = 各并列组大小）
+    z = (U − μ)/σ，p = 标准正态双尾。
+
+    为什么补它：Welch t 对离群值敏感（方差被离群撑大 → t 值被压扁 → 假阴性），
+    秩和只看相对大小、对离群稳健。正态数据下两者结论应一致（测试有对照用例），
+    偏态/离群数据下秩和更可信。小样本下正态近似偏乐观（并列少时最低 ~n=4），
+    样本量门槛通常已挡住；此处照常出数、note 不静默。
+
+    边界：任一侧 n < 2 → 不跑（p=None）；全部值并列（σ²=0）→ U=μ 恒成立
+    → p=1（分布无差异可言，如实写）。
+    """
+    na, nb = len(a), len(b)
+    out = {"test": "wilcoxon_rank_sum", "n_a": na, "n_b": nb}
+    if na < 2 or nb < 2:
+        out.update({"u": None, "z": None, "p_two_sided": None,
+                    "note": "任一侧 n < 2 → 秩分布无从谈起（不以 0/1 充数）"})
+        return out
+    n = na + nb
+    values = [float(x) for x in a] + [float(x) for x in b]
+    order = sorted(range(n), key=values.__getitem__)
+    ranks = [0.0] * n
+    tie_term = 0.0
+    tie_groups = 0
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and values[order[j + 1]] == values[order[i]]:
+            j += 1
+        avg_rank = (i + j + 2) / 2.0          # 1-based 位置 i+1..j+1 的平均秩
+        if j > i:
+            t = j - i + 1
+            tie_term += t ** 3 - t
+            tie_groups += 1
+        for k in range(i, j + 1):
+            ranks[order[k]] = avg_rank
+        i = j + 1
+    r_a = sum(ranks[:na])
+    u_a = r_a - na * (na + 1) / 2.0
+    u_b = na * nb - u_a
+    u = min(u_a, u_b)
+    mu = na * nb / 2.0
+    out.update({"u": _round(u), "rank_sum_a": _round(r_a),
+                "tie_groups": tie_groups})
+    sigma2 = (na * nb / 12.0) * ((n + 1) - tie_term / (n * (n - 1)))
+    if sigma2 <= 0.0:
+        # 全部值并入一个并列组 → U=μ 恒成立 → 无差异可言（p=1，不是造数：
+        # 两侧数据逐值相同，秩和检验确实测不出任何东西）
+        out.update({"z": 0.0, "p_two_sided": 1.0,
+                    "note": "全部样本值并列（两侧分布逐值相同）→ p=1"})
+        return out
+    z = (u - mu) / math.sqrt(sigma2)
+    out.update({"z": _round(z), "p_two_sided": _round(_norm_sf_two_sided(z)),
+                "note": None if tie_groups == 0
+                else f"存在 {tie_groups} 组并列值 → 并列秩校正已生效"})
+    return out
+
+
+# ---------- 挂账③：多重比较校正（Bonferroni / BH-FDR） ----------
+
+def bonferroni(p_values: list[float]) -> list[float | None]:
+    """Bonferroni 校正：p_adj = min(1, p·k)（k = 家族大小）。
+
+    控 **FWER**（族错误率）——最保守，批量扫描「绝不能误报哪个分支好」时用。
+    p_adj ≥ alpha → 该比较「校正后不显著」。输入须为 [0,1] 内数值（closed
+    on failure，None/越界/非数值一律抛错——校正器不猜脏数据的意图）。
+    """
+    k = len(p_values)
+    for p in p_values:
+        if not _is_number(p) or p < 0.0 or p > 1.0:
+            raise BaselineError("p_values_invalid",
+                                f"bonferroni 输入须为 [0,1] 内数值: {p!r}")
+    return [min(1.0, p * k) for p in p_values]
+
+
+def bh_fdr(p_values: list[float]) -> list[float | None]:
+    """Benjamini-Hochberg step-up 校正：控 **FDR**（错误发现率），比
+    Bonferroni 激进（校正后 p 更小、更易判显著），批量探索性扫描用。
+
+    算法（升序 step-up + 单调化）：
+      1. p 升序排，rank r=1..k；原始校正值 p·k/r；
+      2. 从最大 r 向最小传播单调性：p_adj(r) = min(p_adj(r+1), p·k/r)；
+      3. 封顶 1，并**映射回原顺序**输出（与输入一一对应）。
+    输入校验同 bonferroni（closed on failure）。
+    """
+    k = len(p_values)
+    for p in p_values:
+        if not _is_number(p) or p < 0.0 or p > 1.0:
+            raise BaselineError("p_values_invalid",
+                                f"bh_fdr 输入须为 [0,1] 内数值: {p!r}")
+    order = sorted(range(k), key=lambda i: p_values[i])
+    adj = [0.0] * k
+    prev = 1.0
+    for r in range(k, 0, -1):                 # r = k..1（升序位次，从大到小）
+        idx = order[r - 1]
+        val = min(p_values[idx] * k / r, prev, 1.0)
+        adj[idx] = val
+        prev = val
+    return adj
 
 
 # ---------- 数据接入：-004 决策快照（只读 mode=ro） ----------
@@ -861,14 +1046,19 @@ def attach_cost_view(baseline: dict, review: dict | None) -> dict:
 SIGNIFICANCE_NOTE = (
     "显著性判据当前为**简化口径**：均值差用 Welch t 检验（不假设等方差，"
     "自由度 Welch–Satterthwaite 近似），p 值为数值法 t 分布双尾近似（无 scipy）；"
-    "**未做多重比较校正**（批量扫描多分支时假阳性会膨胀）。批量对比需另立口径。"
+    "**两两对比未做多重比较校正**（家族=1 无需校正；批量扫描多分支时假阳性会"
+    "膨胀，须用 compare_baselines_batch——WO-QT-20261020-048 已补 Bonferroni 与 "
+    "BH-FDR 校正，批量场景显式标注校正后显著性）。048 增量口径：胜率差两比例 "
+    "z 检验（二项检验正态近似）与 Wilcoxon 秩和检验（并列秩校正）已随本模块 "
+    "提供，method 参数可选。"
 )
 
 
 def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
                       snapshot_db=None, posterior=None,
                       min_sample: int = MIN_SAMPLE,
-                      alpha: float = DEFAULT_ALPHA) -> dict:
+                      alpha: float = DEFAULT_ALPHA,
+                      method: str = METHOD_WELCH_T) -> dict:
     """两个 variant 的基线对比（差异显著性带样本量前提）。
 
     **禁吹功**纪律：
@@ -877,8 +1067,18 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
     - p ≥ alpha → 结论明确写「**无显著差异**」，不得因小样本波动宣称改进；
     - 单位不可比 → `unit_mismatch`，不出数（不混算）。
 
-    参数同 build_baseline，另加 alpha（显著性水平，缺省 0.05）。
+    参数同 build_baseline，另加 alpha（显著性水平，缺省 0.05）与
+    method（048 增量：`welch_t`=均值差 Welch t（缺省，018 原口径）/
+    `wilcoxon`=秩和检验，非正态稳健）。本函数为**两两对比**（家族=1），
+    不做多重比较校正——批量扫描请用 compare_baselines_batch。
     """
+    if method not in (METHOD_WELCH_T, METHOD_WILCOXON):
+        raise BaselineError(
+            "method_invalid",
+            f"method 只认 {METHOD_WELCH_T}/{METHOD_WILCOXON}: {method!r}")
+    if not (0.0 < alpha < 1.0):
+        raise BaselineError("alpha_invalid",
+                            f"alpha 须在 (0,1) 开区间内: {alpha!r}")
     ba = build_baseline(a, dimension=dimension, snapshot_db=snapshot_db,
                         posterior=posterior, min_sample=min_sample)
     bb = build_baseline(b, dimension=dimension, snapshot_db=snapshot_db,
@@ -897,6 +1097,8 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
         "verdict": None,
         "verdict_text": None,
         "test": None,
+        "win_rate_test": None,
+        "method": method,
         "deltas": None,
         "significance_note": SIGNIFICANCE_NOTE,
         "notes": [],
@@ -932,8 +1134,15 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
     # ---- 达门槛后才跑检验 ----
     va = _usable_values(ba)
     vb = _usable_values(bb)
-    test = _welch_ttest(va, vb)
+    # 048 增量：method 选检验（缺省 welch_t 维持 018 口径）；胜率差两比例
+    # 检验（挂账④）一并随出，作为**次级证据**（verdict 语义仍由均值差检验
+    # 驱动，向后兼容不动）。
+    test = (_welch_ttest(va, vb) if method == METHOD_WELCH_T
+            else _wilcoxon_rank_sum(va, vb))
     out["test"] = test
+    out["win_rate_test"] = _proportions_test(
+        sum(1 for v in va if v > 0), len(va),
+        sum(1 for v in vb if v > 0), len(vb))
     p = test.get("p_two_sided")
     ma, mb = ba["metrics"]["avg_return"], bb["metrics"]["avg_return"]
     if ma is not None and mb is not None:
@@ -990,6 +1199,314 @@ def _usable_values(baseline: dict) -> list[float]:
     样本一律不入）——直接消费，避免从均值反推（会丢样本级信息）。
     """
     return [float(s["value"]) for s in (baseline.get("sample_returns") or [])]
+
+
+# ---------- 批量对比 API：compare_baselines_batch（048 挂账③落地） ----------
+
+# 家族定义（**契约级裁定**，防口径含糊；随输出 family.definition 恒下发）：
+#   家族 = **同批次内「各候选分支 vs 同一基准」的两两比较集合**。
+#   · 批量扫描「哪个分支最好」的典型场景是 N 个候选各与基准比一次（而非候选
+#     两两互比 N(N-1)/2 次）——前者正是假阳性膨胀的来源，故按前者定族；
+#   · 家族大小 = 通过**全部前置门**（数据到位 + 样本达标 + 单位可比）、
+#     实际执行了检验的比较数 k。被前置门短路的比较**未跑检验、不产生假
+#     阳性**，不入族、不占校正名额（计入会把校正推得过度保守）；
+#   · 均值差检验与胜率差检验**各自成族**（各 k 个 p 值），分别校正、分别
+#     标注；两族均限于**本批次本次调用**，不跨批次合并。
+_FAMILY_DEFINITION = (
+    "家族 = 同批次内「各候选分支 vs 同一基准」的两两比较集合；家族大小 = "
+    "通过全部前置门（数据到位 + 样本达标 + 单位可比）并实际执行了检验的"
+    "比较数 k，被前置门短路的比较不跑检验、不入族、不占校正名额。"
+    "均值差检验与胜率差检验各自成族（各 k 个 p 值）分别校正，两族均限于"
+    "本批次本次调用、不跨批次合并。"
+)
+
+# 前置门短路后的批量 verdict 优先级（pending 是最底层数据问题，优先上报）
+_BATCH_BLOCK_PRIORITY = [STATUS_PENDING, STATUS_EMPTY, STATUS_INSUFFICIENT,
+                         "unit_mismatch"]
+
+
+def _validate_alpha(alpha, *, prefix: str = "alpha") -> None:
+    if not _is_number(alpha) or not (0.0 < alpha < 1.0):
+        raise BaselineError(f"{prefix}_invalid",
+                            f"alpha 须为 (0,1) 开区间内数值: {alpha!r}")
+
+
+def _batch_entry(candidate: str, base_status: str, cand_status: str) -> dict:
+    return {
+        "candidate": candidate,
+        "base_status": base_status,
+        "candidate_status": cand_status,
+        "verdict_raw": None,       # 与 compare_baselines verdict 同词汇族
+        "verdict_text": None,
+        "test": None,              # 均值差检验（method 选 welch_t/wilcoxon）
+        "win_rate_test": None,     # 胜率差两比例检验（048 挂账④）
+        "p_raw": None,             # 均值差检验 raw p（未校正）
+        "p_adjusted": None,        # 均值差检验校正后 p
+        "significant_raw": None,   # raw p < alpha（未校正，仅参考）
+        "significant_after_correction": None,
+        "deltas": None,
+    }
+
+
+def compare_baselines_batch(base: str, candidates: list[str], *,
+                            dimension: str = DIM_BRANCH, snapshot_db=None,
+                            posterior=None, min_sample: int = MIN_SAMPLE,
+                            alpha: float = DEFAULT_ALPHA,
+                            method: str = METHOD_WELCH_T,
+                            correction: str = CORRECTION_BONFERRONI) -> dict:
+    """批量对比：N 个候选分支 vs 同一基准，**带多重比较校正**（048 挂账③）。
+
+    为什么必须有它：批量扫描「哪个分支最好」时逐个跑两两对比并按 raw p 判
+    显著，假阳性率随比较数膨胀（20 个比较 @alpha=0.05 期望 1 个假阳性）。
+    本 API 先对全族 raw p 施加校正（Bonferroni 控 FWER / BH-FDR 控 FDR），
+    **只认校正后显著性**；raw p 显著但校正后不显著的比较显式标注
+    「不得据此宣称改进」（禁吹功口径在校正场景的延伸）。
+
+    前置门（**先于任何检验短路**，与 compare_baselines 同纪律）：
+      - 基准或候选任一侧 pending/empty/insufficient → 该比较短路、不跑检验；
+      - 单位不可比 → 该比较短路（unit_mismatch）；
+      - 被短路的比较不入校正家族（见 `_FAMILY_DEFINITION`）。
+
+    参数：base=基准 variant；candidates=候选 variant 列表（非空、无重复、
+    不含 base）；method 同 compare_baselines；correction =
+    `bonferroni`（缺省，控 FWER，最保守）/ `bh_fdr`（控 FDR，探索性扫描）。
+
+    返回（batch_schema_version=1）：
+      comparisons[]    每候选一条：verdict_raw（与 compare_baselines 同词汇
+                       族）+ p_raw/p_adjusted/significant_after_correction
+                       + test + win_rate_test（其内含 p_adjusted）；
+      family           家族定义与实测大小（definition/declared/tested/
+                       short_circuited/correction_scope）；
+      batch_verdict    `significant_after_correction` /
+                       `no_significant_after_correction` / 前置门阻塞态；
+      significance_note 恒随结果下发（SIGNIFICANCE_NOTE）。
+    """
+    if not _nonempty_str(base):
+        raise BaselineError("variant_invalid",
+                            f"base 须为非空字符串（combo@branch 或 combo_id）: {base!r}")
+    if not isinstance(candidates, (list, tuple)) or not candidates:
+        raise BaselineError("candidates_invalid",
+                            "candidates 须为非空列表（批量对比至少 1 个候选）")
+    if any(not _nonempty_str(c) for c in candidates):
+        raise BaselineError("candidates_invalid",
+                            f"候选 variant 须为非空字符串: {candidates!r}")
+    if len(set(candidates)) != len(candidates):
+        raise BaselineError("candidates_invalid",
+                            "候选 variant 重复 → 家族定义含糊（同一候选出现两次"
+                            "会让校正名额虚增），拒绝")
+    if base in candidates:
+        raise BaselineError("candidates_invalid",
+                            f"候选含 base 自身（vs 自己无差异可言，只占校正名额）: {base!r}")
+    if method not in (METHOD_WELCH_T, METHOD_WILCOXON):
+        raise BaselineError("method_invalid",
+                            f"method 只认 {METHOD_WELCH_T}/{METHOD_WILCOXON}: {method!r}")
+    if correction not in (CORRECTION_BONFERRONI, CORRECTION_BH_FDR):
+        raise BaselineError("correction_invalid",
+                            f"correction 只认 {CORRECTION_BONFERRONI}/"
+                            f"{CORRECTION_BH_FDR}: {correction!r}")
+    _validate_alpha(alpha)
+
+    b_base = build_baseline(base, dimension=dimension, snapshot_db=snapshot_db,
+                            posterior=posterior, min_sample=min_sample)
+    cand_baselines = {
+        c: build_baseline(c, dimension=dimension, snapshot_db=snapshot_db,
+                          posterior=posterior, min_sample=min_sample)
+        for c in candidates
+    }
+
+    adjust = bonferroni if correction == CORRECTION_BONFERRONI else bh_fdr
+    comparisons: list[dict] = []
+    mean_family: list[tuple[int, float]] = []   # (comparisons 下标, raw p)
+    wr_family: list[tuple[int, float]] = []
+
+    for c in candidates:
+        bc = cand_baselines[c]
+        entry = _batch_entry(c, b_base["status"], bc["status"])
+        blocking = [b_base["status"], bc["status"]]
+
+        # ---- 前置门（先于任何检验短路） ----
+        if STATUS_PENDING in blocking:
+            entry["verdict_raw"] = STATUS_PENDING
+            entry["verdict_text"] = ("pending_backfill：至少一侧无后验收益数据 → "
+                                     "不跑检验、不下结论（不以 0 充数）")
+            comparisons.append(entry)
+            continue
+        if STATUS_EMPTY in blocking:
+            entry["verdict_raw"] = STATUS_EMPTY
+            entry["verdict_text"] = "empty_sample：至少一侧无决策快照样本 → 不跑检验"
+            comparisons.append(entry)
+            continue
+        if STATUS_INSUFFICIENT in blocking:
+            entry["verdict_raw"] = STATUS_INSUFFICIENT
+            entry["verdict_text"] = (f"insufficient_sample：至少一侧可用样本 < "
+                                     f"{min_sample} → 不跑检验（低于门槛不出数）")
+            comparisons.append(entry)
+            continue
+        ua, ub = b_base["metrics"]["unit"], bc["metrics"]["unit"]
+        if ua != ub:
+            entry["verdict_raw"] = "unit_mismatch"
+            entry["verdict_text"] = (f"unit_mismatch：单位 {ua!r} vs {ub!r} 不可比 → "
+                                     "不出数（不混算）")
+            comparisons.append(entry)
+            continue
+
+        # ---- 达门槛后才跑检验（均值差 + 胜率差） ----
+        v_base = _usable_values(b_base)
+        v_cand = _usable_values(bc)
+        test = (_welch_ttest(v_base, v_cand) if method == METHOD_WELCH_T
+                else _wilcoxon_rank_sum(v_base, v_cand))
+        wr = _proportions_test(
+            sum(1 for v in v_base if v > 0), len(v_base),
+            sum(1 for v in v_cand if v > 0), len(v_cand))
+        entry["test"] = test
+        entry["win_rate_test"] = wr
+        p = test.get("p_two_sided")
+        entry["p_raw"] = p
+        ma, mc = b_base["metrics"]["avg_return"], bc["metrics"]["avg_return"]
+        entry["deltas"] = {
+            "avg_return_diff": (_round(ma - mc)
+                                if ma is not None and mc is not None else None),
+            "win_rate_diff": (_round((b_base["metrics"]["win_rate"] or 0.0)
+                                     - (bc["metrics"]["win_rate"] or 0.0))),
+        }
+        if p is None:
+            entry["verdict_raw"] = STATUS_INSUFFICIENT
+            entry["verdict_text"] = "检验本身无法出 p → 不下结论"
+            comparisons.append(entry)
+            continue
+        entry["significant_raw"] = p < alpha
+        if p < alpha:
+            entry["verdict_raw"] = "significant_difference"
+            entry["verdict_text"] = (
+                f"raw p={p} < alpha={alpha}（**未校正**——是否算数以校正后为准）")
+        else:
+            entry["verdict_raw"] = "no_significant_difference"
+            entry["verdict_text"] = f"raw p={p} ≥ alpha={alpha} → 无显著差异"
+        mean_family.append((len(comparisons), p))
+        wr_p = wr.get("p_two_sided")
+        if wr_p is not None:
+            wr_family.append((len(comparisons), wr_p))
+        comparisons.append(entry)
+
+    # ---- 多重比较校正（两族分别做；未跑检验的比较不占校正名额） ----
+    mean_adj = adjust([p for _, p in mean_family]) if mean_family else []
+    wr_adj = adjust([p for _, p in wr_family]) if wr_family else []
+    for (idx, _p), padj in zip(mean_family, mean_adj):
+        comparisons[idx]["p_adjusted"] = _round(padj)
+        comparisons[idx]["significant_after_correction"] = bool(padj < alpha)
+        if (comparisons[idx]["verdict_raw"] == "significant_difference"
+                and not comparisons[idx]["significant_after_correction"]):
+            comparisons[idx]["verdict_text"] += (
+                "；**多重比较校正后不显著**（raw 显著系批量扫描假阳性嫌疑）"
+                "→ 不得据此宣称改进")
+    for (idx, _p), padj in zip(wr_family, wr_adj):
+        comparisons[idx]["win_rate_test"]["p_adjusted"] = _round(padj)
+        comparisons[idx]["win_rate_test"]["significant_after_correction"] = \
+            bool(padj < alpha)
+
+    # ---- 批量 verdict（只认校正后显著性） ----
+    tested_idx = [i for i, c in enumerate(comparisons) if c["p_raw"] is not None]
+    if not tested_idx:
+        verdicts = [c["verdict_raw"] for c in comparisons]
+        batch_verdict = next((v for v in _BATCH_BLOCK_PRIORITY if v in verdicts),
+                             verdicts[0] if verdicts else STATUS_EMPTY)
+        batch_verdict_text = ("前置门全部短路 → 未跑任何检验、未做校正（不造数、"
+                              "不吹功）：先回填数据/积累样本/统一单位，再谈批量对比")
+    else:
+        sig = [comparisons[i]["candidate"] for i in tested_idx
+               if comparisons[i]["significant_after_correction"]]
+        sig_wr = [comparisons[i]["candidate"] for i in tested_idx
+                  if comparisons[i]["win_rate_test"]
+                  and comparisons[i]["win_rate_test"].get(
+                      "significant_after_correction")]
+        if sig:
+            batch_verdict = "significant_after_correction"
+            batch_verdict_text = (
+                f"多重比较校正后 {len(sig)}/{len(tested_idx)} 个比较显著"
+                f"（均值差族，{correction}，alpha={alpha}）：{', '.join(sig)}"
+                "——统计显著 ≠ 策略优劣定论，仍需结合样本量与回撤审阅")
+            if sig_wr:
+                batch_verdict_text += (f"；胜率差族校正后显著：{', '.join(sig_wr)}"
+                                       "（两族分开判读）")
+        else:
+            batch_verdict = "no_significant_after_correction"
+            batch_verdict_text = (
+                "**多重比较校正后无显著差异**（均值差族）——raw p 的显著在校正后"
+                f"不作数（{correction} 校正的作用正是压回批量扫描的假阳性），"
+                "不得据此宣称任一候选优于基准")
+            if sig_wr:
+                batch_verdict_text += (
+                    f"；注意：胜率差族校正后显著（{', '.join(sig_wr)}）——"
+                    "胜率高 ≠ 赚得多，仍不得据单一指标宣称改进")
+
+    return {
+        "batch_schema_version": BATCH_SCHEMA_VERSION,
+        "generated_at": _now(),
+        "dimension": dimension,
+        "alpha": alpha,
+        "min_sample": min_sample,
+        "method": method,
+        "correction": correction,
+        "base": {"variant": base, "status": b_base["status"],
+                 "n": b_base["metrics"]["n"], "unit": b_base["metrics"]["unit"],
+                 "metrics": b_base["metrics"]},
+        "candidates": [{"variant": c, "status": cand_baselines[c]["status"],
+                        "n": cand_baselines[c]["metrics"]["n"],
+                        "unit": cand_baselines[c]["metrics"]["unit"],
+                        "metrics": cand_baselines[c]["metrics"]}
+                       for c in candidates],
+        "comparisons": comparisons,
+        "family": {
+            "definition": _FAMILY_DEFINITION,
+            "declared": len(candidates),
+            "tested": len(tested_idx),
+            "short_circuited": len(comparisons) - len(tested_idx),
+            "correction_scope": ("均值差检验族与胜率差检验族各 k 个 p 值，"
+                                 f"分别以 {correction} 校正；两族均限于本批次"
+                                 "本次调用，不跨批次合并"),
+        },
+        "batch_verdict": batch_verdict,
+        "batch_verdict_text": batch_verdict_text,
+        "significance_note": SIGNIFICANCE_NOTE,
+        "notes": [
+            "禁吹功纪律：校正后不显著 → 不得宣称改进；raw 显著但校正后不显著同样不得宣称改进",
+            "前置门纪律：pending/empty/insufficient/unit_mismatch 一律先于检验短路，被短路的比较不跑检验",
+        ],
+    }
+
+
+def render_batch_comparison_markdown(batch: dict) -> str:
+    """批量对比 → Markdown（校正后显著性上墙，raw p 与校正后 p 并列呈现）。"""
+    f = batch["family"]
+    lines = [
+        f"# 批量基线对比 · {len(batch['candidates'])} 候选 vs {batch['base']['variant']}",
+        "",
+        f"- 维度：{batch['dimension']}｜alpha={batch['alpha']}"
+        f"｜方法={batch['method']}｜校正={batch['correction']}",
+        f"- 家族：{f['tested']} / {f['declared']} 个比较入族"
+        f"（前置门短路 {f['short_circuited']} 个）",
+        "",
+        "| 候选 | raw p | 校正后 p | raw 判定 | 校正后显著 |",
+        "|---|---|---|---|---|",
+    ]
+    for c in batch["comparisons"]:
+        sig = c["significant_after_correction"]
+        lines.append(
+            f"| {c['candidate']} | {_fmt(c['p_raw'])} | {_fmt(c['p_adjusted'])} "
+            f"| {c['verdict_raw']} | "
+            f"{'是' if sig else ('否' if sig is not None else '—')} |")
+    lines += [
+        "",
+        f"- **批量结论：{batch['batch_verdict']}**",
+        f"- {batch['batch_verdict_text'] or ''}",
+        f"- 家族定义：{f['definition']}",
+        f"- 校正作用域：{f['correction_scope']}",
+        "",
+        "> 禁吹功纪律：多重比较校正后不显著 → 不得宣称改进；raw p 显著但"
+        "校正后不显著，同样不得宣称改进。",
+        f"> {batch['significance_note']}",
+    ]
+    return "\n".join(lines)
 
 
 # ---------- Markdown 渲染 ----------
@@ -1091,8 +1608,18 @@ def render_comparison_markdown(comparison: dict) -> str:
                          f"{comparison[key]['metrics'].get('hit_rate_judged')}）")
     if comparison.get("test"):
         t = comparison["test"]
-        lines.append(f"- 检验：Welch t={_fmt(t.get('t'))}｜df={_fmt(t.get('df'))}"
-                     f"｜双尾 p={_fmt(t.get('p_two_sided'))}")
+        if t.get("test") == "wilcoxon_rank_sum":
+            lines.append(f"- 检验：Wilcoxon U={_fmt(t.get('u'))}"
+                         f"｜z={_fmt(t.get('z'))}｜双尾 p={_fmt(t.get('p_two_sided'))}")
+        else:
+            lines.append(f"- 检验：Welch t={_fmt(t.get('t'))}｜df={_fmt(t.get('df'))}"
+                         f"｜双尾 p={_fmt(t.get('p_two_sided'))}")
+    if comparison.get("win_rate_test"):
+        wrt = comparison["win_rate_test"]
+        lines.append(f"- 胜率差检验：两比例 z={_fmt(wrt.get('z'))}"
+                     f"（{_fmt(wrt.get('wins_a'))}/{wrt.get('n_a')} vs "
+                     f"{_fmt(wrt.get('wins_b'))}/{wrt.get('n_b')}）"
+                     f"｜双尾 p={_fmt(wrt.get('p_two_sided'))}")
     if comparison.get("deltas"):
         d = comparison["deltas"]
         lines.append(f"- 差值：平均收益 {_fmt(d.get('avg_return_diff'))}"

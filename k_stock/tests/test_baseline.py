@@ -1086,3 +1086,325 @@ def test_baseline_notes_declare_clock_dependency(env):
     joined = " ".join(b["notes"])
     assert "时钟依赖" in joined and "自动生效" in joined
     assert "pending_backfill" in joined and "insufficient_sample" in joined
+
+
+# ======================================================================
+# WO-QT-20261020-048：训练基线显著性增强（挂账③多重比较校正 + 挂账④统计口径升级）
+#   ① Bonferroni / BH-FDR 校正器（构造用例已知校正后结论）
+#   ② 胜率差两比例 z 检验（正态近似）与 Wilcoxon 秩和检验（并列秩校正）
+#     ——p 值精度对临界值表验证
+#   ③ compare_baselines_batch：家族定义 / 前置门先于检验 / 校正后显著性
+#   ④ 向后兼容：verdict/test 词汇族不回归，新增字段全部走增量
+# ======================================================================
+
+# ---------- 048①：校正器（挂账③） ----------
+
+def test_bonferroni_known_adjustment():
+    """Bonferroni：p_adj = min(1, p·k)，构造用例逐位核对（含封顶与空族）。"""
+    assert bl.bonferroni([0.01, 0.04, 0.03]) == [0.03, 0.12, 0.09]
+    assert bl.bonferroni([0.5, 0.7]) == [1.0, 1.0], "p·k > 1 → 封顶 1"
+    assert bl.bonferroni([]) == []
+    assert bl.bonferroni([0.0]) == [0.0]
+
+
+def test_bh_fdr_known_adjustment():
+    """BH-FDR step-up：经典 m=4 构造用例 + 单调性属性 + 封顶/空族。"""
+    # 升序 0.005,0.01,0.03,0.04 → raw adj 0.02,0.02,0.04,0.04 → 单调化后
+    # 0.005→0.02, 0.01→0.02, 0.03→0.04, 0.04→0.04（映射回原顺序）
+    assert bl.bh_fdr([0.01, 0.04, 0.03, 0.005]) == [0.02, 0.04, 0.04, 0.02]
+    # BH 单调性：p_i <= p_j ⇒ adj_i <= adj_j（浮点容差）
+    ps = [0.2, 0.01, 0.3, 0.04, 0.04]
+    adj = bl.bh_fdr(ps)
+    for i in range(len(ps)):
+        for j in range(len(ps)):
+            if ps[i] <= ps[j]:
+                assert adj[i] <= adj[j] + 1e-12
+    assert bl.bh_fdr([]) == []
+    assert bl.bh_fdr([0.0, 0.0]) == [0.0, 0.0]
+
+
+def test_correction_rejects_invalid_p_values():
+    """校正器输入校验（closed on failure）：None/越界/非数值/bool 一律抛错。"""
+    for bad in ([None], [-0.1], [1.5], ["0.1"], [True]):
+        with pytest.raises(bl.BaselineError, match="p_values_invalid"):
+            bl.bonferroni(bad)
+        with pytest.raises(bl.BaselineError, match="p_values_invalid"):
+            bl.bh_fdr(bad)
+
+
+# ---------- 048②：统计口径升级（挂账④）+ 精度验证 ----------
+
+def test_norm_sf_critical_values():
+    """正态双尾 p 值对临界值表：z=1.959964→0.05、z=2.575829→0.01（erfc 高精度）。"""
+    assert abs(bl._norm_sf_two_sided(1.959964) - 0.05) < 1e-6
+    assert abs(bl._norm_sf_two_sided(2.575829) - 0.01) < 1e-6
+    assert abs(bl._norm_sf_two_sided(1.0) - 0.3173105) < 1e-6
+    assert bl._norm_sf_two_sided(0.0) == 1.0
+
+
+def test_proportions_test_known_case():
+    """两比例 z 检验手工可核算例：n=50/50，25 vs 15 胜 → z=2.0412, p≈0.0412。
+
+    pooled=0.4，se=sqrt(0.4·0.6·(1/50+1/50))=sqrt(0.0096)，z=0.2/0.09798。
+    """
+    r = bl._proportions_test(25, 50, 15, 50)
+    assert abs(r["z"] - 2.0412) < 1e-3
+    assert abs(r["p_two_sided"] - 0.0412) < 1e-3
+    assert r["test"] == "two_proportion_z"
+
+
+def test_proportions_test_edges_and_small_expected_note():
+    """边界：全胜同率 p=1 / 全胜对全亏 p=0 / n<2 不跑 / 期望计数<5 显式 note。"""
+    assert bl._proportions_test(30, 30, 30, 30)["p_two_sided"] == 1.0
+    assert bl._proportions_test(30, 30, 0, 30)["p_two_sided"] == 0.0
+    # 勘误（048 收尾）：原写法 (1, 30, 1, 30) 是参数错位——那是 wins=1/n=30，
+    # 两侧 n≥2 会正常出数（p=1）；触 n<2 分支须有一侧 n=1。
+    assert bl._proportions_test(1, 1, 1, 30)["p_two_sided"] is None
+    r = bl._proportions_test(1, 2, 0, 2)
+    assert r["p_two_sided"] is not None and "正态近似" in (r.get("note") or "")
+
+
+def test_wilcoxon_rank_sum_exact_case():
+    """秩和检验无并列核算例：a=[1..4], b=[5..8] → U=0, z=−4/√3, p≈0.0209（正态表）。
+
+    R_a=10，U_a=10−10=0，μ=8，σ²=4·4·9/12=12（无并列校正项），
+    z=(0−8)/√12=−4/√3=−2.309401…，双尾 p（z=2.31）≈0.0209。
+    """
+    r = bl._wilcoxon_rank_sum([1, 2, 3, 4], [5, 6, 7, 8])
+    assert r["u"] == 0.0
+    # z 输出经 _round 留 6 位小数，1e-12 容差与之不对齐（实测偏差 7.7e-8）；
+    # μ/σ²/U 任一真错偏移都远大于 1e-6，容差放宽不断言承重力。
+    assert abs(r["z"] - (-4 / 3 ** 0.5)) < 1e-6
+    assert abs(r["p_two_sided"] - 0.0209) < 1e-3
+    assert r["tie_groups"] == 0
+
+
+def test_wilcoxon_tie_correction_changes_sigma():
+    """并列秩校正生效：a=[1,1,2,2], b=[2,2,3,3] → σ²=72/7（手算），z=−6/√(72/7)。
+
+    并列组 t=2,4,2 → Σ(t³−t)=72；σ²=(16/12)·(9−72/56)=(4/3)·(54/7)=72/7。
+    勘误（048 收尾）：原手算把 2 的秩记成 5、R_a 记 13——错。四个 2（a 两个
+    + b 两个）占秩 3..6 → 平均秩 4.5；两个 3 占秩 7..8 → 7.5。
+    R_a=1.5+1.5+4.5+4.5=12 → U_a=12−10=2，z=(2−8)/√(72/7)≈−1.8708。
+    """
+    r = bl._wilcoxon_rank_sum([1, 1, 2, 2], [2, 2, 3, 3])
+    assert r["tie_groups"] == 3
+    assert abs(r["z"] - (-6 / (72 / 7) ** 0.5)) < 1e-6
+    assert "并列" in r["note"]
+
+
+def test_wilcoxon_all_tied_and_too_few_samples():
+    """全部并列 → p=1（逐值相同，检验确实测不出东西，如实写）；n<2 不跑。"""
+    r = bl._wilcoxon_rank_sum([2.0] * 10, [2.0] * 10)
+    assert r["p_two_sided"] == 1.0
+    assert bl._wilcoxon_rank_sum([1.0], [2.0] * 10)["p_two_sided"] is None
+
+
+def test_wilcoxon_and_welch_agree_on_symmetric_data():
+    """正态形状（对称、无离群）数据：两法结论一致（都显著）——互补不冲突。"""
+    a = [0.10, 0.12, 0.08, 0.11, 0.09, 0.13, 0.07, 0.10, 0.12, 0.08]
+    b = [0.00, 0.02, -0.01, 0.01, 0.03, -0.02, 0.01, 0.00, 0.02, -0.01]
+    assert bl._welch_ttest(a, b)["p_two_sided"] < 0.05
+    assert bl._wilcoxon_rank_sum(a, b)["p_two_sided"] < 0.05
+
+
+def test_wilcoxon_robust_where_welch_blinded_by_outlier():
+    """偏态/离群对照：a=29 个 0 + 1 个 100，b=30 个 1。
+
+    Welch t：方差被离群撑爆（var_a≈333）→ t=0.7 → p≈0.49 不显著（假阴性）；
+    秩和：离群只占最大秩 → z=−7.11 → p≈1e-12 显著。秩和非正态稳健的落点。
+
+    勘误（048 收尾）：原版 b 用 30 个 0——与 a 的 29 个 0 构成 59 路并列，
+    并列把秩信息吃光，秩和正确地测不出差异（z=−1.0, p≈0.317 是并列校正下的
+    正确答案，不是"不稳健"）。改 b=30 个 1：差异只由秩承载，对照才成立。
+    """
+    a = [0.0] * 29 + [100.0]
+    b = [1.0] * 30
+    assert bl._welch_ttest(a, b)["p_two_sided"] >= 0.05
+    assert bl._wilcoxon_rank_sum(a, b)["p_two_sided"] < 0.001
+
+
+# ---------- 048③：compare_baselines 增量（method 参数 + 胜率差检验） ----------
+
+def test_compare_baselines_method_wilcoxon_and_win_rate_test(env):
+    """method='wilcoxon' 增量生效：test 换秩和、verdict 语义不动；胜率差检验随出。"""
+    a = _feed(env, branch=BR_FOLLOW, count=30, pattern=[0.10] * 20 + [-0.02] * 15)
+    b = _feed(env, branch=BR_AGG, count=30, pattern=[0.01] * 20 + [-0.02] * 15)
+    post = _merge(a, b)
+    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
+                             posterior=post, method="wilcoxon")
+    assert c["method"] == "wilcoxon"
+    assert c["test"]["test"] == "wilcoxon_rank_sum"
+    assert c["verdict"] == "significant_difference"      # verdict 词汇族不动
+    # 挂账④：胜率差两比例检验随出（次级证据，verdict 仍由均值差检验驱动）
+    assert c["win_rate_test"]["test"] == "two_proportion_z"
+    assert c["win_rate_test"]["p_two_sided"] is not None
+    # 缺省 welch_t 维持 018 原口径（回归护栏）
+    c2 = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
+                              posterior=post)
+    assert c2["test"]["test"] == "welch_t" and c2["method"] == "welch_t"
+    assert c2["win_rate_test"]["test"] == "two_proportion_z"
+
+
+def test_compare_baselines_method_and_alpha_validation():
+    """method/alpha 非法 → 抛错（先于任何 build/检验）。"""
+    with pytest.raises(bl.BaselineError, match="method 只认"):
+        bl.compare_baselines("x", "y", method="mann_kendall")
+    with pytest.raises(bl.BaselineError, match="alpha 须"):
+        bl.compare_baselines("x", "y", alpha=0.0)
+    with pytest.raises(bl.BaselineError, match="alpha 须"):
+        bl.compare_baselines("x", "y", alpha=1.0)
+
+
+# ---------- 048④：compare_baselines_batch（批量 + 校正） ----------
+
+BR_HOLD = f"{COMBO}@hold_fire"
+
+
+def test_batch_significant_after_correction_bonferroni(env):
+    """批量：确定性差异候选 p=0（Bonferroni×2 仍 0）→ 校正后显著；同分布候选 p=1 → 不显著。"""
+    base = _feed(env, branch=BR_FOLLOW, count=10, pattern=[0.01] * 10)
+    c1 = _feed(env, branch=BR_AGG, count=10, pattern=[0.10] * 10)
+    c2 = _feed(env, branch=BR_HOLD, count=10, pattern=[0.01] * 10)
+    b = bl.compare_baselines_batch(
+        BR_FOLLOW, [BR_AGG, BR_HOLD], snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, c1, c2), min_sample=10)
+    assert b["batch_schema_version"] == 1
+    assert b["family"]["tested"] == 2 and b["family"]["declared"] == 2
+    by = {c["candidate"]: c for c in b["comparisons"]}
+    agg = by[BR_AGG]
+    assert agg["p_raw"] == 0.0 and agg["p_adjusted"] == 0.0
+    assert agg["significant_after_correction"] is True
+    assert agg["verdict_raw"] == "significant_difference"
+    hold = by[BR_HOLD]
+    assert hold["p_raw"] == 1.0 and hold["p_adjusted"] == 1.0
+    assert hold["significant_after_correction"] is False
+    assert hold["verdict_raw"] == "no_significant_difference"
+    assert b["batch_verdict"] == "significant_after_correction"
+    assert b["significance_note"] == bl.SIGNIFICANCE_NOTE
+    # 家族定义随输出恒下发（契约级字段）
+    assert "vs 同一基准" in b["family"]["definition"]
+    # 勘误（048 收尾）：原断言找"分别校正"，实现文案为"分别以 bonferroni 校正"，
+    # 对齐语义关键词（两族分开校正的声明在"均值差检验族与胜率差检验族"）。
+    assert "均值差检验族" in b["family"]["correction_scope"]
+    assert "胜率差检验族" in b["family"]["correction_scope"]
+
+
+def test_batch_correction_reverts_raw_significant(env):
+    """校正翻案用例（核心验收）：5 候选 raw p≈0.011 全显著，Bonferroni ×5≈0.057
+    ≥ 0.05 → 校正后全部翻案，批量结论明写「多重比较校正后无显著差异」。
+
+    数值有界性（不靠脆弱的 p 精确值）：df=9 下 t=3.1875 的双尾 p 严格介于
+    0.01（t=3.250 对应）与 0.05 之间 → raw 必显著、5p 必 > 0.05。
+    胜率差族另算（base 8 胜 vs 候选 0 胜，p≈0.0003，×5 仍显著）→ 两族分开
+    判读在 verdict_text 显式提及。
+    """
+    base = _feed(env, branch=BR_FOLLOW, count=10,
+                 pattern=[0.05] * 8 + [-0.03] * 2)
+    posts, cands = [base], []
+    for i in range(5):
+        br = f"{COMBO}@scan{i}"
+        cands.append(br)
+        posts.append(_feed(env, branch=br, count=10, pattern=[0.0] * 10))
+    b = bl.compare_baselines_batch(
+        BR_FOLLOW, cands, snapshot_db=env["snapshot_db"],
+        posterior=_merge(*posts), min_sample=10)
+    assert b["family"]["tested"] == 5
+    for c in b["comparisons"]:
+        assert c["significant_raw"] is True, "raw p ∈ (0.01, 0.05) 必显著"
+        assert c["significant_after_correction"] is False, "×5 后必 > 0.05"
+        assert "不得据此宣称改进" in c["verdict_text"]
+    assert b["batch_verdict"] == "no_significant_after_correction"
+    assert "多重比较校正后无显著差异" in b["batch_verdict_text"]
+    # 胜率差族与均值差族分开校正：胜率差校正后仍显著 → verdict_text 显式提及
+    assert b["comparisons"][0]["win_rate_test"]["significant_after_correction"] is True
+    assert "胜率差族校正后显著" in b["batch_verdict_text"]
+
+
+def test_batch_bh_fdr_correction_option(env):
+    """correction='bh_fdr' 可选生效（控 FDR，探索性扫描口径）。"""
+    base = _feed(env, branch=BR_FOLLOW, count=10, pattern=[0.01] * 10)
+    c1 = _feed(env, branch=BR_AGG, count=10, pattern=[0.10] * 10)
+    b = bl.compare_baselines_batch(
+        BR_FOLLOW, [BR_AGG], snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, c1), min_sample=10,
+        correction=bl.CORRECTION_BH_FDR)
+    assert b["correction"] == "bh_fdr"
+    assert b["comparisons"][0]["p_adjusted"] == 0.0
+    assert b["batch_verdict"] == "significant_after_correction"
+
+
+def test_batch_gate_blocks_before_tests(env):
+    """前置门先于检验：insufficient/pending 候选不跑检验、不入家族
+    （test=None、p_raw=None）；全短路时批量 verdict 取最高优先阻塞态。"""
+    base = _feed(env, branch=BR_FOLLOW, count=10)
+    # 勘误（048 收尾）：原夹具漏 merge agg 的后验 → BR_AGG"有样本无后验"按
+    # contract 正确判 pending_backfill（PENDING 先于 INSUFFICIENT），预期
+    # insufficient 必须给足后验、只欠样本量 → 须并入 posterior。
+    agg = _feed(env, branch=BR_AGG, count=5, pattern=[0.05] * 5)  # n=5 < 10 → insufficient
+    _feed(env, branch=BR_HOLD, count=10)                      # 无后验 → pending
+    b = bl.compare_baselines_batch(
+        BR_FOLLOW, [BR_AGG, BR_HOLD], snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, agg), min_sample=10)
+    by = {c["candidate"]: c for c in b["comparisons"]}
+    assert by[BR_AGG]["verdict_raw"] == bl.STATUS_INSUFFICIENT
+    assert by[BR_AGG]["test"] is None and by[BR_AGG]["p_raw"] is None
+    assert by[BR_HOLD]["verdict_raw"] == bl.STATUS_PENDING
+    assert by[BR_HOLD]["test"] is None
+    assert b["family"]["tested"] == 0 and b["family"]["short_circuited"] == 2
+    assert b["batch_verdict"] == bl.STATUS_PENDING, "pending 为最底层数据问题，优先上报"
+    assert "未跑任何检验" in b["batch_verdict_text"]
+
+
+def test_batch_unit_mismatch_short_circuits(env):
+    """单位不可比候选短路（unit_mismatch），不占家族名额；其余候选照常入族。"""
+    base = _feed(env, branch=BR_FOLLOW, count=10, pattern=[0.05] * 10)
+    cny = _feed(env, branch=BR_AGG, count=10, pattern=[5.0] * 10, unit="CNY")
+    ok = _feed(env, branch=BR_HOLD, count=10, pattern=[0.01] * 10)
+    b = bl.compare_baselines_batch(
+        BR_FOLLOW, [BR_AGG, BR_HOLD], snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, cny, ok), min_sample=10)
+    by = {c["candidate"]: c for c in b["comparisons"]}
+    assert by[BR_AGG]["verdict_raw"] == "unit_mismatch"
+    assert by[BR_AGG]["p_raw"] is None
+    assert by[BR_HOLD]["p_raw"] is not None
+    assert b["family"]["tested"] == 1 and b["family"]["short_circuited"] == 1
+
+
+def test_batch_input_validation():
+    """批量入口校验（closed on failure）：空候选/重复/base 自身/非法 method/校正法。"""
+    with pytest.raises(bl.BaselineError, match="candidates 须为非空列表"):
+        bl.compare_baselines_batch("x", [])
+    with pytest.raises(bl.BaselineError, match="重复"):
+        bl.compare_baselines_batch("x", ["a", "a"])
+    with pytest.raises(bl.BaselineError, match="base 自身"):
+        bl.compare_baselines_batch("x", ["a", "x"])
+    with pytest.raises(bl.BaselineError, match="correction 只认"):
+        bl.compare_baselines_batch("x", ["a"], correction="holm")
+    with pytest.raises(bl.BaselineError, match="method 只认"):
+        bl.compare_baselines_batch("x", ["a"], method="ks")
+    with pytest.raises(bl.BaselineError, match="alpha 须"):
+        bl.compare_baselines_batch("x", ["a"], alpha=1.5)
+
+
+def test_batch_markdown_renders_correction_table(env):
+    """批量 Markdown：校正后显著性上墙、家族定义随渲染、禁吹功尾注。"""
+    base = _feed(env, branch=BR_FOLLOW, count=10, pattern=[0.01] * 10)
+    c1 = _feed(env, branch=BR_AGG, count=10, pattern=[0.10] * 10)
+    b = bl.compare_baselines_batch(
+        BR_FOLLOW, [BR_AGG], snapshot_db=env["snapshot_db"],
+        posterior=_merge(base, c1), min_sample=10)
+    md = bl.render_batch_comparison_markdown(b)
+    assert "| 候选 | raw p | 校正后 p | raw 判定 | 校正后显著 |" in md
+    assert "批量结论" in md and "家族定义" in md
+    assert "校正作用域" in md
+    assert "不得宣称改进" in md
+
+
+def test_significance_note_declares_batch_correction_landed():
+    """SIGNIFICANCE_NOTE 同步扩展（不削弱既有断言）：两两对比未校正的字样
+    保留（家族=1 无需校正），批量校正落地信息补进（诚实提示，不装完备）。"""
+    assert "简化口径" in bl.SIGNIFICANCE_NOTE
+    assert "未做多重比较校正" in bl.SIGNIFICANCE_NOTE, "018 既有断言不削弱"
+    assert "compare_baselines_batch" in bl.SIGNIFICANCE_NOTE
+    assert "Bonferroni" in bl.SIGNIFICANCE_NOTE and "BH-FDR" in bl.SIGNIFICANCE_NOTE
