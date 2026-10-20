@@ -20,6 +20,7 @@
 import datetime
 import json
 import os
+import sys
 import threading
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +41,8 @@ DEFAULT_ACTIONS = {
     "decision_approve": ("公告审批 · 确认", "通知指挥", "card",
                          "bot ws → dispatch → approval_card.handle_card_action"),
     "decision_reject":  ("公告审批 · 驳回", "通知指挥", "card", "同上"),
-    # 盯盘止盈 er 域（老链：feishu_bot_ws tag 前缀）
+    # 盯盘止盈 er 域（老链：feishu_bot_ws._handle_card tag 分支自行消费，
+    # value 无 action_id 不会触达 dispatch，记账备查）
     "er:list":   ("止盈 · 列表", "盯盘止盈", "card", "bot ws 老链"),
     "er:help":   ("止盈 · 帮助", "盯盘止盈", "card", "bot ws 老链"),
     "er:choice": ("止盈 · 档位选择", "盯盘止盈", "card", "bot ws 老链"),
@@ -48,7 +50,8 @@ DEFAULT_ACTIONS = {
     "er:clear":  ("止盈 · 清线", "盯盘止盈", "card", "bot ws 老链"),
     "er:clear2": ("止盈 · 清线确认", "盯盘止盈", "card", "bot ws 老链"),
     "er:noop":   ("止盈 · 空操作", "盯盘止盈", "card", "bot ws 老链"),
-    # 控制面板 ctl 域（老链：feishu_bot_ws → feishu_control）
+    # 控制面板 ctl 域（老链：feishu_bot_ws → feishu_control，tag 分支
+    # 自行消费，value 无 action_id 不会触达 dispatch，记账备查）
     "ctl:sub_toggle":     ("订阅启停", "控制面板", "card", "bot ws 老链"),
     "ctl:param":          ("参数档位", "控制面板", "card", "bot ws 老链"),
     "ctl:alert_ack":      ("预警确认", "控制面板", "card", "bot ws 老链"),
@@ -56,12 +59,18 @@ DEFAULT_ACTIONS = {
     "ctl:alert_ack_all":  ("预警全部确认", "控制面板", "card", "bot ws 老链"),
     "ctl:tasks":          ("任务面板", "控制面板", "card", "bot ws 老链"),
     "ctl:board":          ("看板打开", "控制面板", "card", "bot ws 老链"),
-    # 盯盘预警 jev（老链：lark-cli lark_card_handler，value {"action":"ack|ignore"}）
+    # 盯盘预警 jev（老链：lark-cli lark_card_handler 独立进程消费，
+    # value {"action":"ack|ignore"} 无 action_id 不会触达 dispatch）
     "jev_ack":    ("预警 · 已处理", "盯盘预警", "card", "lark-cli 老链"),
     "jev_ignore": ("预警 · 忽略", "盯盘预警", "card", "lark-cli 老链"),
-    # 订阅买点（老链：8091 api_misc HTTP，value {"act":"subscribe_buypoint"}）
-    "subscribe_buypoint":   ("订阅买点", "量化订阅", "card", "8091 HTTP 老链"),
-    "unsubscribe_buypoint": ("退订买点", "量化订阅", "card", "8091 HTTP 老链"),
+    # 订阅买点（P3.11-lite 已迁移：bot ws → dispatch → 真 handler；
+    # 8091 api_misc HTTP 链并行在役，两链同源 subscribe_from_card）
+    "subscribe_buypoint":   ("订阅买点", "量化订阅", "card",
+                             "bot ws → dispatch → subscribe_action.subscribe_from_card"
+                             "（8091 HTTP 链并行在役）"),
+    "unsubscribe_buypoint": ("退订买点", "量化订阅", "card",
+                             "bot ws → dispatch → subscribe_action.subscribe_from_card"
+                             "（8091 HTTP 链并行在役）"),
     # H5 动作（share/H5 页面）
     "subscribe_add": ("H5 · 订阅", "H5 精选页", "h5", "share 链路"),
     "picks_share":   ("H5 · 分享", "精选推送", "h5", "share_tokens"),
@@ -284,7 +293,8 @@ def check_card(card):
 # ── 统一分发（v3 新链，bot 调用）─────────────────────────────
 
 def dispatch(action_id, payload=None, who=""):
-    """统一分发入口。返回 (ok, msg)。目前接 tune_*；其余注册动作 P3 渐进迁移。"""
+    """统一分发入口。返回 (ok, msg)。已接 tune_* / decision_* / 买点订阅退订；
+    其余注册动作 P3 渐进迁移（未迁移者不再伪装成功）。"""
     payload = payload or {}
     info = lookup(action_id)
     if not info:
@@ -316,9 +326,44 @@ def dispatch(action_id, payload=None, who=""):
                       card=str(payload.get("req_id") or "")[:60],
                       result=("ok" if ok2 else str(msg2))[:80])
             return bool(ok2), msg2
-        # 已注册但尚未迁入统一分发（老链自行处理）
-        log_event(action_id, who=who, result="dispatch: 老链动作，无统一 handler")
-        return True, "已注册（%s），由老链处理" % info["handler"]
+        if action_id in ("subscribe_buypoint", "unsubscribe_buypoint"):
+            # P3.11-lite（WO-FS-141）：买点订阅/退订迁入真 handler。
+            # 口径差：注册表 act 是 unsubscribe_buypoint，而
+            # subscribe_from_card 退订分支只认 act in ("unsubscribe","unsub")
+            # （subscribe_action.py:121）——退订必须先归一 act，否则误执行成订阅。
+            val = dict(payload) if isinstance(payload, dict) else {}
+            if action_id == "unsubscribe_buypoint":
+                val["act"] = "unsubscribe"
+            qb = os.path.join(os.path.dirname(HERE), "quant_backtest")
+            if qb not in sys.path:
+                sys.path.insert(0, qb)
+            try:
+                import subscribe_action
+            except Exception as e:  # closed on failure：import 失败不伪装成功
+                log_event(action_id, who=who,
+                          card=str(val.get("code") or "")[:60],
+                          result="subscribe_action import 失败: %s" % e)
+                return False, "订阅模块不可用（%s），动作未执行" % e
+            try:
+                ok2, msg2, card2 = subscribe_action.subscribe_from_card(
+                    val, operator=who)
+            except Exception as e:  # closed on failure：handler 异常不伪装成功
+                log_event(action_id, who=who,
+                          card=str(val.get("code") or "")[:60],
+                          result="handler 异常: %s" % e)
+                return False, "订阅动作执行异常：%s" % e
+            # 第三返回值 card（更新卡）WS 链暂无更新卡通道，丢弃记账；
+            # 回执由 subscribe_from_card 内部确认卡承担（8091 链同源）。
+            log_event(action_id, who=who,
+                      card=str(val.get("code") or "")[:60],
+                      result=("ok" if ok2 else str(msg2))[:80])
+            return bool(ok2), msg2
+        # 已注册但尚未迁入统一分发的老链动作：不再返回 True 伪装成功
+        # （fail-open 缺陷，O-D 取证判例）。bot ws 只对带 action_id 的 value
+        # 调 dispatch（feishu_bot_ws._handle_card），er:/ctl:/jev 等 tag 域
+        # 动作由各自老链消费、不会触达本分支；此处 False + 明确文案兜底。
+        log_event(action_id, who=who, result="dispatch: 老链动作未迁移，无统一 handler")
+        return False, "老链动作未迁移，HTTP 链可达时由 8091 处理：%s" % action_id
     except Exception as e:
         log_event(action_id, who=who, result="dispatch 异常: %s" % e)
         return False, "分发异常：%s" % e
