@@ -127,8 +127,17 @@ _NON_AI_PREFIXES = ("poc_qd_", "poc_qpzm_", "poc_qpzmus_", "poc_qpzmhk_",
 
 
 def _newest_by_mtime(paths) -> Path:
-    """按文件 mtime 取最新（替代字典序：前缀字母恒大于日期戳的排序陷阱）。"""
-    return max(paths, key=lambda p: p.stat().st_mtime)
+    """按文件 mtime 取最新（替代字典序：前缀字母恒大于日期戳的排序陷阱）。
+
+    K-STOCK-414 补（WO-QT-20261020-017）：mtime 相等时必须有确定性破平——
+    glob 顺序是文件系统返回序（NTFS 非字典序），max() 遇并列返回**首个**，
+    于是「同刻落盘的多个 run」选中哪个纯看磁盘布局，实测 k_stock/tests 全量跑
+    间歇性把 ai_team 最新 run 选成较旧的 poc_20260101_a.json（单跑也偶发）。
+    破平键取文件名（日期戳升序 = 新旧顺序，且前缀已在 _NON_AI_PREFIXES /
+    调用方 prefix 过滤掉，不会回退到 414 要防的字典序陷阱）；mtime 用整数
+    纳秒比较，避开 float 秒的小数位精度损失。
+    """
+    return max(paths, key=lambda p: (p.stat().st_mtime_ns, p.name))
 
 
 def _newest_ai_run() -> Path:
