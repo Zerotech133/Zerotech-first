@@ -2,8 +2,8 @@
 """量子双刀全市场扫描器（研究预览版，K-STOCK-022）
 
 用法（须 venv 解释器，需 numpy/pandas）：
-    C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Scripts/python.exe \\
-        portal/qd_scanner.py [--top N]
+    <venv>/envs/default/Scripts/python.exe portal/qd_scanner.py [--top N]
+    （venv 解释器由调用方解析——portal_api.py 已改环境探测，勿写死用户目录）
 
 数据源：quant_backtest/data/ashare/*.parquet（tushare 口径，amount=千元——
 与引擎 strict 阈值 3e6（30 亿）直接吻合，无需换算）

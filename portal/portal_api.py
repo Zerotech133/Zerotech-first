@@ -165,6 +165,7 @@ import glob
 import hmac
 import http.server
 import json
+import getpass
 import os
 import re
 import shutil
@@ -4200,8 +4201,15 @@ color:#fff;font-size:13.5px;cursor:pointer}
             snap_qd = _read_json(cache_p) if os.path.exists(cache_p) else None
             if snap_qd is None:
                 # 首次：后台拉起扫描（venv 解释器；长跑纪律输出落文件）
-                VENV_PY = ("C:/Users/Administrator/.workbuddy/binaries/python/"
-                           "envs/default/Scripts/python.exe")
+                # WO-QT-20261020-064/CH-02：原硬编码 C:/Users/Administrator/...
+                # 在本机（C:/Users/t）必然 FileNotFoundError——页面手动刷新也炸。
+                # 修法：当前进程解释器优先（portal_api 本就跑在 venv 内），
+                # 回退按当前用户名探测，杜绝写死他人目录。
+                VENV_PY = (sys.executable if os.path.basename(
+                    os.path.dirname(os.path.dirname(sys.executable))
+                ).lower() == "envs" else
+                    "C:/Users/%s/.workbuddy/binaries/python/"
+                    "envs/default/Scripts/python.exe" % getpass.getuser())
                 SCAN_PY = os.path.join(ROOT, "qd_scanner.py")
                 if not os.path.exists(log_p) or time.time() - os.path.getmtime(log_p) > 1800:
                     with open(log_p, "ab") as lf:
