@@ -22,11 +22,25 @@ import time
 REPO = os.path.dirname(os.path.abspath(__file__))        # .../k_stock
 RUN_CWD = os.path.dirname(REPO)                           # 仓库根（-m k_stock 需要）
 DATA = os.path.join(REPO, "data")
-LEDGER = os.path.join(DATA, "poc_results_20261020.jsonl")
-LOG = os.path.join(DATA, "poc_resume_20261020.log")
 LOCK = os.path.join(DATA, "poc_run.lock")
 WATCHLIST_N = 5
 BOOTSTRAP_TASK = "ZeroQ-KStock-Resume-1020"
+
+
+def _today() -> str:
+    """当日 YYYYMMDD（审计 T-O8：原硬编码 20261020 会使次日起读错账本
+    误判"已完成"——按调用时日期动态取；调用点均为每次触发的新进程，
+    加载期日期即当日，无需缓存。）"""
+    from datetime import datetime
+    return datetime.now().strftime("%Y%m%d")
+
+
+def _ledger_path() -> str:
+    return os.path.join(DATA, f"poc_results_{_today()}.jsonl")
+
+
+def _log_path() -> str:
+    return os.path.join(DATA, f"poc_resume_{_today()}.log")
 
 
 def pid_alive(pid: int) -> bool:
@@ -45,7 +59,7 @@ def ledger_complete() -> bool:
     """当日账本齐 5/5 → 注销兜底任务。防御纵深（审计 20261020-A12 消费端）：
     mock 记录（rec.mock 为真）不计入——万一上游过滤失效，这里兜底。"""
     try:
-        with open(LEDGER, "r", encoding="utf-8") as f:
+        with open(_ledger_path(), "r", encoding="utf-8") as f:
             recs = []
             for x in f:
                 x = x.strip()
@@ -127,7 +141,7 @@ def main() -> int:
              | subprocess.CREATE_NEW_PROCESS_GROUP
              | subprocess.CREATE_BREAKAWAY_FROM_JOB)
     try:
-        with open(LOG, "ab") as lf:
+        with open(_log_path(), "ab") as lf:
             try:
                 proc = subprocess.Popen(cmd, stdout=lf, stderr=lf, cwd=RUN_CWD,
                                         creationflags=flags, close_fds=True)
