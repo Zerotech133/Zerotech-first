@@ -118,6 +118,19 @@ KIND_CARD_TEMPLATES["km_card"] = functools.partial(_wrap_built_in, "km_card")
 _BUILTIN_TEMPLATES["km_card"] = ("blue", "🗂 KM 知识卡")
 
 
+# ── J-B 追加注册：投喂回执卡（绿卡，P3.5-lite 波次 2026-10-20） ─────
+# 审计实测（docs/plans/2026-10-20_卡片模板覆盖审计）：inbound:feed 为
+# interactive 发送且语义明确（inbound_gateway.py:575-578 经
+# feishu_client.send_msg，kind 已透传、critical=True 豁免静默窗）。
+# 语义=回执确认，green 对齐 V3_DOMAINS 例行色；包装走 _wrap_built_in
+# 判例：已是卡片且有 header 保留原 header，无 header 按 kind 补，
+# 纯文本包整卡，elements 不注入任何链接文案。未注册/未透传 kind
+# 原样返回的既有语义不变（closed on failure 不破坏）。
+KIND_CARD_TEMPLATES["inbound:feed"] = functools.partial(
+    _wrap_built_in, "inbound:feed")
+_BUILTIN_TEMPLATES["inbound:feed"] = ("green", "📥 投喂回执")
+
+
 def apply_card_template(kind, content, msg_type):
     """发送前差异化钩子：按 kind 包装飞书 interactive 卡片。
 
