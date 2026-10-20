@@ -124,13 +124,16 @@ def build_drill_card(code, facts, sections, title_extra="",
         "body": {"elements": elements}}
 
 
-def send_card(card, receive_id=None, receive_id_type="open_id"):
-    """发送 interactive 卡片：K-STOCK-228 起委托 feishu_client 统一底座。"""
+def send_card(card, receive_id=None, receive_id_type="open_id", kind=None):
+    """发送 interactive 卡片：K-STOCK-228 起委托 feishu_client 统一底座。
+    P3.5-lite：可选 kind 透传（非 None 时传给 feishu_client.send_msg，
+    走 8097 hub 按 kind 套卡片模板；缺省 None 零变化，向后兼容）。
+    """
     if receive_id is None:
         receive_id = USER_ID
     from feishu_client import send_msg  # NEWS 已挂 path（K-STOCK-228 出口收敛）
     return send_msg(json.dumps(card, ensure_ascii=False), "interactive",
-                    receive_id, receive_id_type)
+                    receive_id, receive_id_type, kind=kind)
 
 
 # ── K-PUSH-004：卡片 v3 域色模板（统一构件规范）──────────────
