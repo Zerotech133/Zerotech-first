@@ -139,7 +139,7 @@ async function fetchJson(url){
  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
  try{
   const r=await fetch(url,{method:'GET',cache:'no-store',signal:ctl.signal,credentials:'same-origin'});
-  if(!r.ok)throw new Error('HTTP '+r.status);
+  if(!r.ok){const e=new Error('HTTP '+r.status);e.status=r.status;throw e;}
   const d=await r.json();
   if(!d||typeof d!=='object'||d.ok===false)throw new Error('来源报错或结构不符');
   return d;
@@ -176,11 +176,18 @@ function renderSubList(d){
 }
 
 async function loadSubscribers(){
- let d=null,err=null;
+ let d=null,err=null,errStatus=0;
  try{d=await fetchJson('/api/subscription/list?limit=200');}
- catch(e){err=e&&e.message?e.message:'未知错误';}
+ catch(e){err=e&&e.message?e.message:'未知错误';errStatus=(e&&e.status)||0;}
  if(err||!d||typeof d!=='object'||d.ok===false||text(d.error)){
   const box=$('sub-list');box.replaceChildren();
+  if(errStatus===401){
+   /* 401 必须与「账本不可用」严格区分：前者是键闸拦下，账本可能完全健康；
+      且 401 ≠ 空账本。本页刻意不提供密钥输入框——把密钥留在浏览器
+      存储里，等于用一个 XSS 面换一次便利，不值。 */
+   box.append(el('div','empty-state','鉴权已开启，但本页未携带 X-Portal-Key，因此读不到订阅账本。这不是账本故障，也不代表没有订阅者。请用内网工具带该请求头调用，或临时关闭 PORTAL_SUB_ADMIN_KEY 后再查看。'));
+   return;
+  }
   const why=err||('端点返回错误：'+text(d&&d.error)+'（closed on failure 原样透出，不猜数）');
   box.append(el('div','empty-state','账本不可用（'+why+'）。本卡不显示兜底数据——账本不可用 ≠ 无订阅者，请核对服务后重试。'));
   return;
@@ -189,15 +196,16 @@ async function loadSubscribers(){
 }
 
 /* 鉴权状态自述（GET /api/subscription/list?limit=1 的 auth_mode 字段）：
-   key → 已开启；none → 未开启（任何人可读）；取不到 → 未知。
-   未知时绝不默认显示「已开启」——不假装安全。 */
+   key → 已开启；none → 未开启（任何人可读）；401 → 已开启但本页无密钥；
+   取不到 → 未知。未知时绝不默认显示「已开启」——不假装安全。 */
 async function loadAuthMode(){
  const box=$('m-auth');
- let mode='';
+ let mode='',status=0;
  try{const d=await fetchJson('/api/subscription/list?limit=1');mode=text(d&&d.auth_mode);}
- catch(e){mode='';}
+ catch(e){mode='';status=(e&&e.status)||0;}
  if(mode==='key')box.textContent='已开启（key）';
  else if(mode==='none')box.textContent='未开启（任何人可读，仅限内网）';
+ else if(status===401)box.textContent='已开启（key）· 本页未携带密钥';
  else box.textContent='鉴权状态未知';
 }
 

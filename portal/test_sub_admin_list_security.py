@@ -308,3 +308,44 @@ def test_13_branch_static_gate_before_store():
     for banned in ("upsert_subscriber", "grant_subscription",
                    "expire_sweep", "entitlement_log"):
         assert banned not in block
+
+
+def test_15_page_distinguishes_401_from_ledger_down():
+    """收编追加（P3.8-lite）：401 必须与「账本不可用」严格区分。
+
+    背景：键闸开启后页面自己不带 key，若把 401 归进「账本不可用」分支，
+    运维会误判账本损坏、账本为空——这是典型的假故障。此例钉住三件事：
+    页面识别 401、401 分支文案明说「不是账本故障」、且该分支在通用
+    错误分支之前 return（否则后面那句误导文案仍会渲染）。
+    """
+    html = _read(PAGE)
+    assert "e.status=r.status" in html or "e.status = r.status" in html, \
+        "fetchJson 必须把 HTTP 状态挂到错误对象上，否则无法区分 401"
+    assert "errStatus===401" in html or "errStatus === 401" in html, \
+        "loadSubscribers 必须单独识别 401"
+    assert "这不是账本故障" in html, "401 分支必须明说不是账本故障"
+    assert "本页未携带 X-Portal-Key" in html, "必须说清拦截原因是缺请求头"
+    assert html.index("errStatus===401") < html.index("账本不可用（"), \
+        "401 分支必须先于通用错误分支，否则仍会渲染误导文案"
+
+
+def test_16_page_never_stores_key_in_browser():
+    """收编追加（P3.8-lite）：页面不得具备密钥存储或携带能力。
+
+    有意取舍：把 key 放进 localStorage / cookie / 输入框，等于用一个持久化
+    XSS 面换一次便利。要用 key 就走内网工具带请求头。
+
+    断言口径（勿写成「页面不得出现 X-Portal-Key 字样」——那是错的）：
+    页面允许在文案里说明「本页未携带 X-Portal-Key」以澄清 401 的原因，那是
+    解释而非能力。真正要禁的是能力：storage / cookie 写入 API、任何自定义
+    请求头发送（headers: 参数）、或以带引号字面量把 header 名当键使用。
+    """
+    html = _read(PAGE)
+    for banned in ("localStorage", "sessionStorage", "document.cookie"):
+        assert banned not in html, (
+            "页面出现 %s：密钥不得停留在浏览器侧，需老田重新拍板" % banned)
+    assert "headers:" not in html, \
+        "页面不得发送任何自定义请求头；一旦携带密钥即等于前端持有密钥"
+    for quoted in ("'X-Portal-Key'", '"X-Portal-Key"'):
+        assert quoted not in html, \
+            "header 名以引号字面量出现，说明被当作键实际使用，而非文案解释"
