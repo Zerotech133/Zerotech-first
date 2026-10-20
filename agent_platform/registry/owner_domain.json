@@ -1,6 +1,6 @@
 {
  "version": 1,
- "note": "合法 owner 取值域。members 由 org.json 动态派生，不在此硬编码。",
+ "note": "合法 owner 取值域。members 由 org.json 动态派生，不在此硬编码。external_tools.status 仅 `legal` 生效（大小写/空白不敏感）；`pending_ruling` = 未裁定，observed 代号一律不视为合法；其它写法静默失效（等同 pending_ruling，不报错不告警）。",
  "members_source": "agent_platform/registry/org.json",
  "external_tools": {"status": "pending_ruling", "observed": ["unknown-agent", "Codex", "Trae"]},
  "unowned_tag": "[UNOWNED]"
