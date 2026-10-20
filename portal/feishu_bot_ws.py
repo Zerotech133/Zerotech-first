@@ -5,6 +5,7 @@
   缠论 605100            → 多层折叠主卡（判定/中枢/情报/应对/附录）
   详情 605100 筹码        → 单维度视图卡
   选股 [T1|T2|全部]       → 今日选股清单卡（默认 T1）
+  开通/订阅查询/订阅巡查  → 订阅管理员指令（仅管理员，P3-lite H-A）
   帮助                    → 指令表
 卡片按钮（card.action.trigger）：er:* 持仓线位交互 / ctl:* 控制中枢（feishu_control）。
 dim:* 分支仅为旧 schema v1 卡兼容保留——schema 2.0 钻取卡无回调按钮（URL 走 behaviors）。
@@ -308,6 +309,10 @@ HELP_MD = """**指令表**
 · `控制` — 控制中枢卡：推送开关/参数档位/告警处置/工单看板
 · `调优 <想法>` — 模型调优反馈（K-PUSH-002 闭环入口，语音输入亦可）
 · `审批 <req_id> 通过|驳回 [原因]` — 调优请求审批（仅管理员）
+管理员指令（仅管理员）：
+· `开通 <open_id> <档位> [天数]` — 开通订阅（默认 30 天）
+· `订阅查询 <open_id>` — 订阅摘要查询
+· `订阅巡查` — 过期清扫 + 订阅者概要
 · `帮助` — 本表
 按钮下钻：主卡各折叠层展开 + 顶部按钮跳门户详情页。"""
 
@@ -524,6 +529,20 @@ def _norm_code(tok):
                                     }.get(c[:1], ".SZ")) if c.isdigit() and len(c) == 6 else c.upper()
 
 
+# ── 飞书中台 P3-lite（H-A）：订阅管理员指令族 ────────────────
+def mask_open_id(open_id):
+    """open_id 掩码纯函数（回执展示用，便于单测）：ou_abc12** 样式——
+    保留前 8 位 + "**"；过短 id 降级保留前 4/前 2 位；空入参回 "**"。"""
+    s = str(open_id or "")
+    if len(s) > 8:
+        return s[:8] + "**"
+    if len(s) > 4:
+        return s[:4] + "**"
+    if s:
+        return s[:2] + "**"
+    return "**"
+
+
 def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
     # W43：chat_type 随消息透传——入向受理器仅受理 P2P 投喂，群聊不进
     text = (text or "").strip()
@@ -606,6 +625,77 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                                      reason=" ".join(parts[3:]))
             send_text(("✅ " if r.get("ok") else "❌ ")
                       + (r.get("error") or ("已处理 " + parts[1])), message_id)
+        elif low.startswith(("开通", "订阅查询", "订阅巡查")):
+            # 飞书中台 P3-lite（H-A）：订阅管理员指令族——判例照「审批」族
+            # （前缀分发 + 管理员闸 + send_text 回执）。管理员闸复用
+            # tune_gate.is_admin（tune_admins.json 已配置非空=严格校验），
+            # 不另建 sub_admins.json（单人部署复制第二份白名单无分离收益）。
+            # 非管理员一律"无权限"拒绝，usage 提示在闸后，不透漏指令存在。
+            import tune_gate
+            if not tune_gate.is_admin(open_id):
+                send_text("无权限。", message_id)
+                return
+            parts = text.split()
+            import subscription_store
+            if low.startswith("开通"):
+                if len(parts) < 3:
+                    send_text("用法：开通 <open_id> <档位> [天数]"
+                              "（天数默认 30）", message_id)
+                    return
+                try:
+                    subscription_store.upsert_subscriber(parts[1])
+                    r = subscription_store.grant_subscription(
+                        parts[1], parts[2],
+                        int(parts[3]) if len(parts) > 3 else 30)
+                except ValueError as e:
+                    send_text("❌ %s" % e, message_id)
+                    return
+                send_text("✅ 已开通 %s 档位 %s，到期 %s"
+                          % (mask_open_id(parts[1]), parts[2], r["end"]),
+                          message_id)
+            elif low.startswith("订阅查询"):
+                if len(parts) < 2:
+                    send_text("用法：订阅查询 <open_id>", message_id)
+                    return
+                s = subscription_store.get_subscriber_summary(parts[1])
+                if s.get("error"):
+                    send_text("❌ 查询失败：%s" % s["error"], message_id)
+                    return
+                lines = ["**订阅摘要** %s（%s）"
+                         % (mask_open_id(parts[1]),
+                            s.get("display_name") or "未命名"),
+                         "状态：%s" % s.get("reason")]
+                subs = s.get("subscriptions") or []
+                for sub in subs:
+                    lines.append("· %s %s ~ %s（%s）"
+                                 % (sub.get("plan_id"), sub.get("start"),
+                                    sub.get("end"), sub.get("status")))
+                if not subs:
+                    lines.append("· 暂无订阅行")
+                send_text("\n".join(lines), message_id)
+            else:  # 订阅巡查
+                swept = subscription_store.expire_sweep()
+                lst = subscription_store.list_subscribers()
+                if not lst.get("ok"):
+                    send_text("❌ 巡查失败：%s（已清扫过期 %d 行）"
+                              % (lst.get("error"), swept), message_id)
+                    return
+                rows = lst.get("subscribers") or []
+                n_active = sum(1 for x in rows
+                               if x.get("status") == "active")
+                lines = ["**订阅巡查** 清扫过期 %d 行，订阅者 %d 人"
+                         "（生效 %d）" % (swept, lst.get("count", 0),
+                                          n_active)]
+                for x in rows[:10]:
+                    lines.append("· %s %s %s 至 %s"
+                                 % (mask_open_id(x.get("open_id")),
+                                    x.get("plan_id") or "无档位",
+                                    x.get("status") or "-",
+                                    (x.get("end") or "-")[:10]))
+                if lst.get("count", 0) > 10:
+                    lines.append("· …其余 %d 人见 8097 商务面"
+                                 % (lst["count"] - 10))
+                send_text("\n".join(lines), message_id)
         elif low.startswith("帮助") or low in ("help", "?", "？"):
             send_text(HELP_MD, message_id)
         elif low.startswith("选股"):
