@@ -1,0 +1,46 @@
+{
+  "_note": "WO-QT-20261020-022 收件人分域注册表（push_targets）。三域口径取自 docs/plans/2026-10-20_飞书中台商业化_收件人分域与订阅闸门立项方案.md §4。加载走 feishu_push.load_targets()，结构非法即显式抛（不静默降级）。",
+  "_rules": [
+    "本人域 owner：全量模板、免额度、critical 豁免静默窗、免订阅直通（立项方案 §4）。",
+    "运维域 ops：工单/告警类模板、免订阅直通（内部白名单）、频控有、critical 不豁免静默窗。",
+    "客户域 customer：模板白名单（最小集占位）、频控有、静默窗强制且 critical 不豁免、订阅闸门强制、股票类内容必带风险提示。",
+    "subscription_required=true 对客户域为**红线**：配 false 会被 load_targets 显式拒（防止绕闸）。",
+    "critical_exempt_silence=true 仅本人域可声明：非本人域声明豁免会被显式拒。",
+    "本单（022）**不实现商业化计费**：customer 域模板白名单是最小占位集，commercial_templates_status=not_implemented（订阅账本/收银台/续费提醒属 M2/M3）。"
+  ],
+  "commercial_templates_status": "not_implemented",
+  "commercial_templates_note": "客户模板最终由 plan 额度下发；本单无订阅账本，故白名单为保守最小集占位——客户域判定链路默认 provider 未接线，一律拒绝（fail-closed）。",
+  "schema_version": 1,
+  "targets": {
+    "owner": {
+      "target_id": "owner.laotian",
+      "name": "老田（本人域·司马懿汇报线）",
+      "templates": ["sima_report", "alert", "ticket"],
+      "daily_limit": null,
+      "critical_exempt_silence": true,
+      "subscription_required": false,
+      "requires_risk_notice": false,
+      "note": "本人域豁免静默窗（critical 豁免仅限本人域，立项方案 §7-5）；免额度。"
+    },
+    "ops": {
+      "target_id": "ops.oncall",
+      "name": "内部运维值班",
+      "templates": ["alert", "ticket"],
+      "daily_limit": 200,
+      "critical_exempt_silence": false,
+      "subscription_required": false,
+      "requires_risk_notice": false,
+      "note": "工单/告警类模板；内部白名单免订阅。critical 不豁免静默窗（豁免仅本人域）。"
+    },
+    "customer": {
+      "target_id": "customer.subscribers",
+      "name": "订阅用户（占位·未接计费）",
+      "templates": ["alert"],
+      "daily_limit": 20,
+      "critical_exempt_silence": false,
+      "subscription_required": true,
+      "requires_risk_notice": true,
+      "note": "占位目标：真实收件人粒度（每订阅者 open_id）待 M2 订阅账本接线后按 subscriber 展开；本单不落任何 open_id 明文。"
+    }
+  }
+}
