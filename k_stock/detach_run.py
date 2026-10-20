@@ -11,6 +11,11 @@
   1. 进程扫描守卫（run_poc 存活防双跑）+ 单实例锁兜底。
   2. 当日账本齐 (5/5) 时自动注销兜底任务并退出。
   3. breakaway Popen 幂等续跑 run_poc（--auto --watchlist 5）。
+  4. 无进展熔断闸（P2-D4）：账本「FAIL 不记」语义 + 5 分钟兜底 =
+     若某股持续 FAIL（如 GLM 持续空输出），6h 窗口内每轮零重试烧钱。
+     拉起前记录账本行数，run_poc 退出后比较；无进展计数 +1（持久化
+     data/poc_run_fuse.json），有进展清零；连续 3 次无进展 → 注销
+     兜底任务 + 写 aborted 记录，止损等人工介入。
 """
 import ctypes
 import json
@@ -23,8 +28,48 @@ REPO = os.path.dirname(os.path.abspath(__file__))        # .../k_stock
 RUN_CWD = os.path.dirname(REPO)                           # 仓库根（-m k_stock 需要）
 DATA = os.path.join(REPO, "data")
 LOCK = os.path.join(DATA, "poc_run.lock")
+FUSE_FILE = os.path.join(DATA, "poc_run_fuse.json")
 WATCHLIST_N = 5
 BOOTSTRAP_TASK = "ZeroQ-KStock-Resume-1020"
+FUSE_MAX_NO_PROGRESS = 3
+
+
+def _load_fuse() -> dict:
+    try:
+        with open(FUSE_FILE, "r", encoding="utf-8") as f:
+            state = json.load(f)
+        return state if isinstance(state, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_fuse(state: dict) -> None:
+    """原子写（tmp + os.replace）：防并发/中断留下半写坏 JSON。"""
+    tmp = FUSE_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False)
+    os.replace(tmp, FUSE_FILE)
+
+
+def ledger_progress() -> int:
+    """进度判据：真实（非 mock、可解析）账本行数。
+    与 ledger_complete 同口径——mock 行/坏行不算进展。"""
+    try:
+        n = 0
+        with open(LEDGER, "r", encoding="utf-8") as f:
+            for x in f:
+                x = x.strip()
+                if not x:
+                    continue
+                try:
+                    rec = json.loads(x)
+                except ValueError:
+                    continue
+                if not rec.get("mock"):
+                    n += 1
+        return n
+    except FileNotFoundError:
+        return 0
 
 
 def _today() -> str:
@@ -131,10 +176,16 @@ def main() -> int:
     if ledger_complete():
         dereg_bootstrap()
         return 0
+    state = _load_fuse()
+    if state.get("aborted"):
+        # 熔断已触发（兜底任务注销失败残留）：确保注销，不再拉起烧钱。
+        dereg_bootstrap()
+        return 0
     if run_poc_alive():
         return 0  # 已有实例在跑
     if not acquire_lock():
         return 0
+    before = ledger_progress()  # 本轮拉起前账本行数（熔断判基线）
     cmd = [sys.executable, "-X", "utf8", "-u", "-m", "k_stock.run_poc",
            "--auto", "--watchlist", str(WATCHLIST_N)]
     flags = (subprocess.DETACHED_PROCESS
@@ -158,6 +209,28 @@ def main() -> int:
             if proc.poll() is not None:
                 break
             time.sleep(15)
+        # 无进展熔断闸（P2-D4）：run_poc 退出后比账本行数。
+        state = _load_fuse()
+        now = time.strftime("%Y-%m-%dT%H:%M:%S")
+        if ledger_progress() > before:
+            state["no_progress"] = 0
+            state["last_ts"] = now
+            _save_fuse(state)
+        else:
+            state["no_progress"] = state.get("no_progress", 0) + 1
+            state["last_ts"] = now
+            if state["no_progress"] >= FUSE_MAX_NO_PROGRESS:
+                state["aborted"] = True
+                state["aborted_ts"] = now
+                _save_fuse(state)
+                dereg_bootstrap()
+                print("[WARN] K-STOCK fuse tripped: %d consecutive rounds "
+                      "with no ledger progress; bootstrap task '%s' "
+                      "deregistered, resume aborted." %
+                      (state["no_progress"], BOOTSTRAP_TASK),
+                      file=sys.stderr)
+            else:
+                _save_fuse(state)
     finally:
         try:
             os.remove(LOCK)
