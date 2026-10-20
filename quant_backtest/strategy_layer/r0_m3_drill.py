@@ -121,18 +121,17 @@ def issue_source_attestation(
     issuer_id: str = SOURCE_ISSUER_ID, issued_at: str | None = None,
 ) -> dict:
     """演练签发者对源字节签发来源凭证（与真实凭证契约同构）。"""
+    lines = source_bytes.decode("utf-8").split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
     claims = {
         "schema_version": 1,
         "issuer_id": issuer_id,
         "business_date": business_day,
         "source_sha256": hashlib.sha256(source_bytes).hexdigest(),
-        "event_count": None,
+        "event_count": len(lines),
         "issued_at": issued_at or drill_issued_at(business_day),
     }
-    lines = source_bytes.decode("utf-8").split("\n")
-    if lines and lines[-1] == "":
-        lines.pop()
-    claims["event_count"] = len(lines)
     payload = json.dumps(claims, sort_keys=True, separators=(",", ":"),
                          ensure_ascii=False, allow_nan=False).encode("utf-8")
     return {"claims": claims,
@@ -211,6 +210,9 @@ def run_full_drill(source_rows, work_dir, *, now: datetime | None = None,
         report["stopped_at"] = name
         segments[name] = {"status": status, "reason": reason}
         report["final"]["status"] = "FAILED"
+        # gate verdicts stay literal in failure reports (WO-054)
+        report["final"]["real_source_verdict"] = "BLOCKED_REAL_DATA"
+        report["final"]["cutover_verdict"] = "BLOCK_CUTOVER"
         return report
 
     try:

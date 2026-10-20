@@ -219,3 +219,95 @@ def test_drill_helpers_never_mutate_input_rows(tmp_path):
     _, raw = write_drill_source(rows, tmp_path, business_day=DAY)
     issue_source_attestation(issuer_private_key(), DAY, raw)
     assert rows == original
+
+
+
+# ---- WO-QT-20261020-054：046 评审 P2 防御性加固的反例 ----
+
+def test_final_guard_failure_resets_gate_verdicts_to_literals(monkeypatch, tmp_path):
+    """FINAL_GUARD_FAILED 路径：失败报告门位必须是字面量 BLOCKED，不得残留对账中间值。"""
+    from strategy_layer import r0_m3_drill as drill_mod
+    expected_stages = ("CALLER_ATTESTATION_CLAIM", "IN_MEMORY_ONLY",
+                       "IN_MEMORY_ONLY", "IN_MEMORY_ONLY",
+                       "IN_MEMORY_ONLY", "CALLER_RECEIPT_CLAIM")
+    tampered = {
+        "status": "NOT_VERIFIED",
+        "real_source_verdict": "TAMPERED_NOT_BLOCKED",
+        "cutover_verdict": "BLOCK_CUTOVER",
+        "stages": {name: {"status": status}
+                   for name, status in zip(STAGE_ORDER, expected_stages)},
+        "reasons": [], "counts": {},
+    }
+    monkeypatch.setattr(drill_mod, "reconcile_evidence",
+                        lambda *a, **k: tampered)
+    report = drill_mod.run_full_drill(
+        synthetic_drill_rows(DAY), tmp_path, now=NOW)
+    assert report["status"] == "FAILED"
+    assert report["stopped_at"] == "reconciliation"
+    assert report["segments"]["reconciliation"]["status"] == "FINAL_GUARD_FAILED"
+    assert report["final"]["real_source_verdict"] == "BLOCKED_REAL_DATA"
+    assert report["final"]["cutover_verdict"] == "BLOCK_CUTOVER"
+
+
+def test_unexpected_exception_keeps_gate_verdicts_blocked(monkeypatch, tmp_path):
+    """异常路径：结构化失败报告的双门位恒为字面量 BLOCKED（含 _blank_report 默认）。"""
+    from strategy_layer import r0_m3_drill as drill_mod
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("synthetic probe fault")
+
+    monkeypatch.setattr(drill_mod, "inspect_historical_pool", _boom)
+    report = drill_mod.run_full_drill(
+        synthetic_drill_rows(DAY), tmp_path, now=NOW)
+    assert report["status"] == "FAILED"
+    assert report["stopped_at"] == "probe"
+    assert report["segments"]["probe"]["status"] == "UNEXPECTED_EXCEPTION"
+    assert "RuntimeError" in report["segments"]["probe"]["reason"]
+    assert report["final"]["real_source_verdict"] == "BLOCKED_REAL_DATA"
+    assert report["final"]["cutover_verdict"] == "BLOCK_CUTOVER"
+
+
+
+# ---- WO-QT-20261020-054：046 评审 P2 防御性加固的反例 ----
+
+def test_final_guard_failure_resets_gate_verdicts_to_literals(monkeypatch, tmp_path):
+    """FINAL_GUARD_FAILED 路径：失败报告门位必须是字面量 BLOCKED，不得残留对账中间值。"""
+    from strategy_layer import r0_m3_drill as drill_mod
+    expected_stages = ("CALLER_ATTESTATION_CLAIM", "IN_MEMORY_ONLY",
+                       "IN_MEMORY_ONLY", "IN_MEMORY_ONLY",
+                       "IN_MEMORY_ONLY", "CALLER_RECEIPT_CLAIM")
+    tampered = {
+        "status": "NOT_VERIFIED",
+        "real_source_verdict": "TAMPERED_NOT_BLOCKED",
+        "cutover_verdict": "BLOCK_CUTOVER",
+        "stages": {name: {"status": status}
+                   for name, status in zip(STAGE_ORDER, expected_stages)},
+        "reasons": [], "counts": {},
+    }
+    monkeypatch.setattr(drill_mod, "reconcile_evidence",
+                        lambda *a, **k: tampered)
+    report = drill_mod.run_full_drill(
+        synthetic_drill_rows(DAY), tmp_path, now=NOW)
+    assert report["status"] == "FAILED"
+    assert report["stopped_at"] == "reconciliation"
+    assert report["segments"]["reconciliation"]["status"] == "FINAL_GUARD_FAILED"
+    assert report["final"]["real_source_verdict"] == "BLOCKED_REAL_DATA"
+    assert report["final"]["cutover_verdict"] == "BLOCK_CUTOVER"
+
+
+def test_unexpected_exception_keeps_gate_verdicts_blocked(monkeypatch, tmp_path):
+    """异常路径：结构化失败报告的双门位恒为字面量 BLOCKED（含 _blank_report 默认）。"""
+    from strategy_layer import r0_m3_drill as drill_mod
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("synthetic probe fault")
+
+    monkeypatch.setattr(drill_mod, "inspect_historical_pool", _boom)
+    report = drill_mod.run_full_drill(
+        synthetic_drill_rows(DAY), tmp_path, now=NOW)
+    assert report["status"] == "FAILED"
+    assert report["stopped_at"] == "probe"
+    assert report["segments"]["probe"]["status"] == "UNEXPECTED_EXCEPTION"
+    assert "RuntimeError" in report["segments"]["probe"]["reason"]
+    assert report["final"]["real_source_verdict"] == "BLOCKED_REAL_DATA"
+    assert report["final"]["cutover_verdict"] == "BLOCK_CUTOVER"
