@@ -86,7 +86,23 @@ def _install_stub_store():
     sys.modules["subscription_store"] = mod
 
 
-_install_stub_store()
+# 收编修补（2026-10-20 13:45）：原实现在**模块级**调用 _install_stub_store()，
+# 导致 pytest 收集期就把 sys.modules["subscription_store"] 换成只含
+# get_subscriber_summary 的桩且永不恢复 —— 单文件单跑绿，全量跑时后续任何
+# 依赖真模块（from subscription_store import STATUS_ACTIVE 等）的文件在
+# 收集期拿到桩即 AttributeError。改为 module 级 autouse fixture 内安装、
+# 退出时还原原模块；收集期不再有任何全局副作用。
+@pytest.fixture(scope="module", autouse=True)
+def _stub_store():
+    saved = sys.modules.get("subscription_store")
+    _install_stub_store()
+    try:
+        yield
+    finally:
+        if saved is not None:
+            sys.modules["subscription_store"] = saved
+        else:
+            sys.modules.pop("subscription_store", None)
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +110,7 @@ _install_stub_store()
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="module")
-def base_url(tmp_path_factory):
+def base_url(_stub_store, tmp_path_factory):
     portal_api._ACCESS_LOG = str(tmp_path_factory.mktemp("log") / "access.log")
     srv = http.server.HTTPServer(("127.0.0.1", 0), portal_api.Handler)
     th = threading.Thread(target=srv.serve_forever, daemon=True)

@@ -24,15 +24,15 @@ from card_templates import KIND_CARD_TEMPLATES, apply_card_template  # noqa: E40
 # J-B（P3.5-lite 2026-10-20）追加 inbound:feed：投喂回执卡（绿「📥 投喂回执」）
 ALL_KINDS = {"alert", "ai_finance_daily", "announcement",
              "watch_strategy", "subscription_guide", "km_card",
-             "inbound:feed"}
+             "inbound:feed", "subscription_expiring"}
 _COLORS = {"alert": "red", "ai_finance_daily": "blue",
            "announcement": "grey", "watch_strategy": "green",
            "subscription_guide": "grey", "km_card": "blue",
-           "inbound:feed": "green"}
+           "inbound:feed": "green", "subscription_expiring": "orange"}
 _TITLES = {"alert": "⚠ 预警", "ai_finance_daily": "📰 AI 金融日报",
            "announcement": "📢 管理公告", "watch_strategy": "📈 盯盘策略",
            "subscription_guide": "🔒 订阅服务", "km_card": "🗂 KM 知识卡",
-           "inbound:feed": "📥 投喂回执"}
+           "inbound:feed": "📥 投喂回执", "subscription_expiring": "⏳ 订阅即将到期"}
 
 
 # 1. 注册 kind 包装出 header（逐种样式断言）

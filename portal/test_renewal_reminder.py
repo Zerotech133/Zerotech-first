@@ -136,8 +136,9 @@ def test_mask_open_id_shape():
 # 8. subscription_expiring 已注册且色彩与标题正确
 
 def test_subscription_expiring_registered():
-    # 追加注册表（主表键集受 FC-C 快照判例锁定，见 card_templates 注释）
-    assert "subscription_expiring" in card_templates.KIND_CARD_TEMPLATES_EXTRA
+    # 收编口（2026-10-20 13:48）：已按 FC-C 快照同步扩充判例并入主表，
+    # 与其余全部 kind 同表存放，不再有独立追加表。
+    assert "subscription_expiring" in card_templates.KIND_CARD_TEMPLATES
     out, mt = apply_card_template("subscription_expiring",
                                   {"text": "还剩 3 天"}, "interactive")
     assert mt == "interactive"

@@ -22,8 +22,7 @@ import copy
 import functools
 import json
 
-__all__ = ["KIND_CARD_TEMPLATES", "KIND_CARD_TEMPLATES_EXTRA",
-           "apply_card_template"]
+__all__ = ["KIND_CARD_TEMPLATES", "apply_card_template"]
 
 
 # ── 内置模板：kind → (header template 色, 标题文案) ──────────────
@@ -132,29 +131,23 @@ KIND_CARD_TEMPLATES["inbound:feed"] = functools.partial(
 _BUILTIN_TEMPLATES["inbound:feed"] = ("green", "📥 投喂回执")
 
 
-# ── L-B 追加注册：订阅到期提醒卡（橙卡，P3.7-lite 波次 2026-10-20） ─────
+# ── 订阅到期提醒卡（橙卡，P3.7-lite L-B 2026-10-20） ─────────────────────
 # 语义=到期前提醒（提醒，不是告警也不是回执），orange 与 alert 的 red 区分，
 # 避免客户把"还有 3 天"误读成"已失权"。文案由 renewal_reminder.py 生成，
 # 本模板只负责 header 差异化。
 #
-# 为何单开追加表而不直接塞主表：既有快照判例 test_card_templates.py:155
-# 断言 set(KIND_CARD_TEMPLATES.keys()) == ALL_KINDS（精确键集），本波禁改
-# 该测试文件（禁改任何既有断言语义）。故新 kind 以「追加注册表」并入查找链：
-# 对 apply_card_template 而言与被注册完全等价（橙卡 + 标题一致），主表键集
-# 保持不变、既有 14 例不破。待授权修订快照后即可合并回主表。
-KIND_CARD_TEMPLATES_EXTRA = {
-    "subscription_expiring": functools.partial(
-        _wrap_built_in, "subscription_expiring"),
-}
+# 收编口（2026-10-20 13:48）：L-B 初版另开 KIND_CARD_TEMPLATES_EXTRA 追加表
+# 绕开冻结快照断言，导致主表与追加表两处并存。主会话按 FC-C 快照同步扩充
+# 判例（0596b37e）把该 kind 并入主表，并同步扩充 ALL_KINDS/_COLORS/_TITLES
+# —— 属恒等搬迁 + 快照追加，不改写任何既有断言语义。
+KIND_CARD_TEMPLATES["subscription_expiring"] = functools.partial(
+    _wrap_built_in, "subscription_expiring")
 _BUILTIN_TEMPLATES["subscription_expiring"] = ("orange", "⏳ 订阅即将到期")
 
 
 def _template_for(kind):
-    """查 kind 的包装函数：主表优先，其次追加表；未注册返回 None。"""
-    fn = KIND_CARD_TEMPLATES.get(kind)
-    if fn is not None:
-        return fn
-    return KIND_CARD_TEMPLATES_EXTRA.get(kind)
+    """查 kind 的包装函数：命中主表返回，未注册返回 None。"""
+    return KIND_CARD_TEMPLATES.get(kind)
 
 
 def apply_card_template(kind, content, msg_type):
