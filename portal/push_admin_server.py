@@ -432,6 +432,29 @@ class Handler(BaseHTTPRequestHandler):
             if not nd.authorized(self.headers.get("X-Decision-Key")):
                 return self._json({"ok": False, "error": "未授权"}, 403)
             return self._json(nd.recent() if p == "/api/decisions" else nd.group_info())
+        if p == "/api/public/ops":
+            # P2.5 FD-C（挂账清尾）：无密钥只读公开摘要——仅死信计数与
+            # 静态服务标注，绝不暴露 open_id/target/kind 明文。复用 N6
+            # dead_letter.count_since（60s 缓存已有）；-1=读取异常，诚实
+            # 上抛由页面降级，不猜数。
+            import dead_letter
+            return self._json({
+                "ok": True,
+                "generated_at": datetime.now().isoformat(timespec="seconds"),
+                "dead_letters_24h": dead_letter.count_since(24),
+                "services": [
+                    {"port": 8097, "label": "推送闸门",
+                     "note": "静态在役标注，非实时探测"},
+                    {"port": 8091, "label": "中台 API",
+                     "note": "静态在役标注，非实时探测"},
+                    {"port": 8096, "label": "Legion",
+                     "note": "静态在役标注，非实时探测"},
+                    {"port": 8099, "label": "KM",
+                     "note": "静态在役标注，非实时探测"},
+                    {"port": 8787, "label": "邓芝驻地",
+                     "note": "静态在役标注，非实时探测"}],
+                "note": "本端点无鉴权，只暴露计数与静态标注，不暴露任何 "
+                        "open_id/target/kind 明文"})
         if p == "/api/state":
             subs = load_subs()
             recvs = load_receivers()

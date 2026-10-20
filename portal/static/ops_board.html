@@ -153,6 +153,20 @@ function renderBlocked(ba){
  box.append(c);
 }
 
+function renderDeadLetterPublic(pub){
+ // P2.5 FD-C：优先无鉴权公开摘要 /push/api/public/ops（8097 直出，无密钥）。
+ if(!pub||typeof pub!=='object'){return false;}
+ const n=pub.dead_letters_24h;
+ if(typeof n!=='number'||n<0){
+  cardBox('dead-letter-card','warn','近 24h 死信','unknown',
+   '公开摘要读取异常（count=-1，不猜数）——不代表「无死信」；可回退 /api/state 核对。');
+  return true;
+ }
+ cardBox('dead-letter-card','ok','近 24h 死信',String(n),
+  '来源 /api/public/ops（无鉴权摘要，只含计数与静态标注）· 摘要时点 '+text(pub.generated_at||'未提供')+'。补达与清理请往 /push/ 办理。');
+ return true;
+}
+
 function renderDeadLetter(dl,err){
  if(err){
   emptyCard('dead-letter-card','/api/state 读取失败（'+err+'）——常见于未授权（8097 侧需管理授权密钥，本页只读不持密钥）。死信计数请往 /push/ 观测面板核对；本卡不显示兜底数字，不代表「无死信」。');
@@ -220,7 +234,13 @@ async function load(){
  }
  const meta=(q&&q.meta)||{};
  renderBlocked(meta.blocked_archive);
- renderDeadLetter(s?s.dead_letters:null,sErr);
+ let pub=null;
+ await fetchJson('/push/api/public/ops').then(d=>{pub=d;}).catch(()=>{pub=null;}); // 公开摘要优先，失败静默回退 /api/state
+ if(pub&&renderDeadLetterPublic(pub)){
+  // 公开摘要已渲染死信卡；跳过需密钥的 /api/state 死信段（不覆盖）
+ }else{
+  renderDeadLetter(s?s.dead_letters:null,sErr);
+ }
  renderErrors(q?q.errors:null);
  renderSources(meta.sources);
  renderStates(q?q.states:null);
