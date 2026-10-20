@@ -297,13 +297,20 @@ def _owner_domain_members():
     """合法 owner 成员池＝org.json 各部门 ``agents`` ∪ 各部门 ``lead`` ∪ ``chief.agent_id``。
 
     动态派生而非硬编码白名单：org.json 加人即刻生效，改代码零成本（工单 WO-TF-03
-    验收判据 4）。org.json 读不出时返回空集 —— 此时任何 owner 都判非法，只影响
-    降级打标签，建单照常落账。
+    验收判据 4）。
+
+    **不可判定时返回 None（不是空集）**——org.json 缺失 / 坏 JSON / 缺 ``departments``
+    键 / 派生池为空，一律视为「读不到权威域」而非「域内无人」。二者若混同，取值域的
+    读取侧临时故障会让**全量新建单被批量误打** ``[UNOWNED]`` 标签；且「缺departments」
+    只捞得到 chief、域规模=1，看着像读到了东西，实为部分可用，比完全读不出更危险。
+    调用方据此跳过打标签、只留痕（见 ``_owner_check`` 与 ``cmd_new``）。
     """
     try:
         org = json.load(open(ORG_JSON, encoding="utf-8"))
     except Exception:  # noqa: BLE001
-        return set()
+        return None                      # 文件缺失或坏 JSON → 不可判定
+    if not isinstance(org, dict) or "departments" not in org:
+        return None                      # 结构异常/无departments → 不可判定
     members = set()
 
     def _add(v):
@@ -311,25 +318,32 @@ def _owner_domain_members():
             members.add(v.strip().upper())
 
     for dept in org.get("departments") or []:
+        if not isinstance(dept, dict):
+            continue
         for a in dept.get("agents") or []:
             _add(a)
         _add(dept.get("lead"))
     _add((org.get("chief") or {}).get("agent_id"))
-    return members
+    return members or None               # 空池同样不可判定（见上文）
 
 
 def _owner_check(owner):
     """owner 落账取值域校验（WO-TF-03：老田裁定「先立取值域，再校验」）。
 
     合法域＝org.json 动态成员池 ∪ 已裁定合法的外部工具代号——``external_tools.status``
-    为 ``legal`` 时其 ``observed`` 才计入；当前是 ``pending_ruling``，一律不算合法
-    （老田裁定「先立取值域再校验」；外部代号是否合法属后续裁定，本单不预断）。
-    owner 为空或 ∉ 合法域 → 判非法，由调用方**降级打标签**（不拒写，老田裁定①）。
+    为 ``legal`` 时其 ``observed`` 才计入；只接受 ``legal``（工单用词），当前是
+    ``pending_ruling``，一律不算合法（外部代号是否合法属后续裁定，本单不预断）。
 
-    返回 ``(是否合法, 取值域登记表, 合法域规模)``。
+    返回 ``(owner_ok, 取值域登记表, 合法域规模)``，``owner_ok`` 三态：
+      * ``True``  —— 取值域可判定且owner 在域内：正常放行；
+      * ``False`` —— 取值域可判定且owner ∉ 域（含 owner 为空）：非法，调用方降级打标签；
+      * ``None``  —— **取值域不可判定**（org.json 缺失/坏 JSON/无 departments/空池）：
+        无法判定 ≠ 非法，调用方**不判非法、不打标签**，仅留痕 ``owner_domain_unavailable=1``。
     """
     domain = _load_owner_domain()
     members = _owner_domain_members()
+    if members is None:
+        return None, domain, 0            # 不可判定：不下非法结论
     ext = domain.get("external_tools") or {}
     if str(ext.get("status", "")).strip().lower() == "legal":
         for c in ext.get("observed") or []:
@@ -370,14 +384,20 @@ def cmd_new(tid, *desc):
     # WO-TF-03：owner 取值域校验。老田裁定①「非法 owner 降级不拒写」——非法时给
     # desc 追加 [UNOWNED] 标签（已有则不重复追加）并经既有 task_start 事件留痕；
     # 合法 owner 行为与现状完全一致（不加标签、不留痕、字段不变）。
+    # 取值域不可判定（owner_ok 为 None，org.json 缺失/坏/无 departments）时**不判非法、
+    # 不打标签**——读不到权威域不等于域内无人，误标会批量污染新建单，仅留痕计数。
     owner = os.environ.get("AGENT_NAME", "unknown-agent")
     owner_ok, domain, domain_size = _owner_check(owner)
-    if not owner_ok:
+    if owner_ok is False:
         tag = domain["unowned_tag"]
         if tag not in desc:
             desc = ("%s %s" % (desc, tag)).strip()
         print("[warn] owner=%s 不在合法取值域（域内 %d 员）——降级标注 %s，"
               "不拒单；责任部门待人工补登" % (owner, domain_size, tag),
+              file=sys.stderr)
+    elif owner_ok is None:
+        print("[warn] 取值域不可判定（org.json 缺失/坏 JSON/无 departments）——"
+              "不判非法、不打标签，仅留痕；owner=%s 原样落账" % owner,
               file=sys.stderr)
     tasks[tid] = {"desc": desc, "branch": branch, "worktree": wt,
                   "status": "doing", "created": time.strftime("%F %T"),
@@ -388,8 +408,11 @@ def cmd_new(tid, *desc):
           {"desc": desc, "branch": branch, "worktree": wt,
            "project": project})
     # 留痕走既有 task_start 事件（不新造 kind：events.KINDS 是白名单，未注册 kind
-    # 会被 emit 静默吞掉反而丢痕）。降级标记前置，保证 detail 截断后仍可检出。
-    if owner_ok:
+    # 会被 emit 静默吞掉反而丢痕）。标记前置，保证 detail 截断后仍可检出。
+    if owner_ok is None:
+        detail = ("owner_domain_unavailable=1 owner=%s · %s（owner=%s·project=%s）"
+                  % (owner, desc, owner, project))
+    elif owner_ok:
         detail = "%s（owner=%s·project=%s）" % (desc, owner, project)
     else:
         detail = ("owner_degraded=1 owner=%s domain_size=%d · %s（owner=%s·project=%s）"
