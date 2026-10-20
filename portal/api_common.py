@@ -652,13 +652,26 @@ def _portal_token():
     return tok
 
 
-def _load_cainiao_env():
+def _load_cainiao_env(path=r"C:\Temp\cainiao_oauth2.env"):
     """X1（2026-10-09）：加载菜鸟 OAuth2 本地凭据文件（KEY=VALUE 行）注入
     os.environ.setdefault——已有环境变量优先，文件不覆盖。文件放
     C:\\Temp（与 _PORTAL_TOKEN_FILE 同一安全口径：portal/ 目录整挂
     nginx web root，落盘即等于局域网可直接 GET 下载，凭据绝不能放这里）。
-    """
-    path = r"C:\Temp\cainiao_oauth2.env"
+
+    B5 白名单化（2026-10-21）：仅键名 strip 后以 "CAINIAO_" 前缀开头的
+    行允许 setdefault；其余键（如 PORTAL_SUB_ADMIN_KEY 等任意键）跳过
+    并计数，防止凭据文件被塞入无关键后经此文件静默开启闸门。取证出处：
+    docs/plans/2026-10-20_待核项只读取证_2026-10-20.md:144-161 实证现
+    文件仅含 3 个 CAINIAO_* 键 → 白名单化对生产零行为变化。
+
+    返回统计 dict（只含键名，任何情况下不含值）：
+    {"loaded": 注入键名列表, "skipped": 被跳过键名列表,
+     "missing": 文件是否缺失 bool}
+    文件缺失（OSError）时静默 no-op（closed on failure，与既有口径一致），
+    返回 missing=True。"""
+    loaded = []
+    skipped = []
+    missing = False
     try:
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
@@ -666,9 +679,18 @@ def _load_cainiao_env():
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 k, _, v = line.partition("=")
-                os.environ.setdefault(k.strip(), v.strip())
+                k = k.strip()
+                if not k.startswith("CAINIAO_"):
+                    skipped.append(k)  # 只记键名，绝不落值
+                    continue
+                if k not in os.environ:
+                    os.environ[k] = v.strip()
+                    loaded.append(k)
     except OSError:
-        pass  # 文件缺失 = 未配置菜鸟对接，cainiao_auth 走默认/degraded
+        # 文件缺失 = 未配置菜鸟对接，cainiao_auth 走默认/degraded；
+        # closed on failure：静默 no-op，不抛不记值。
+        missing = True
+    return {"loaded": loaded, "skipped": skipped, "missing": missing}
 
 
 def _log_rotate(fp):
