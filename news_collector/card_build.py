@@ -108,9 +108,11 @@ def _qr_key(portal_url):
         return None
 
 
-def push_card(card, qr_portal=None):
+def push_card(card, qr_portal=None, kind=None):
     """写 outbox/pending_card.json → send_feishu.py interactive 模式。
-    qr_portal 有值时自动附门户二维码（上传失败自动省略）。"""
+    qr_portal 有值时自动附门户二维码（上传失败自动省略）。
+    P3.6-lite K-A：kind 非 None 时给 send_feishu CLI 追加 --kind=X
+    （feishu_client.send_msg 统一发送流水账目语义）；None 时 argv 零变化。"""
     key = _qr_key(qr_portal) if qr_portal else None
     if key:
         # 坑1: 裸 img 在 body 下被飞书拒绝（200621），须包 column_set
@@ -136,8 +138,11 @@ def push_card(card, qr_portal=None):
     os.makedirs(os.path.dirname(tmp), exist_ok=True)
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(card, f, ensure_ascii=False)
+    argv = [sys.executable, os.path.join(HERE, "send_feishu.py"), tmp,
+            "interactive"]
+    if kind is not None:
+        argv.append("--kind=" + kind)
     r = subprocess.run(
-        [sys.executable, os.path.join(HERE, "send_feishu.py"), tmp,
-         "interactive"],
+        argv,
         capture_output=True, text=True, encoding="utf-8", timeout=60)
     return (r.stdout or "").strip().startswith("SEND_OK")
