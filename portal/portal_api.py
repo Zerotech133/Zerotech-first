@@ -3927,6 +3927,26 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # 零参数只读 GET，零写操作）
             self._html_file(os.path.join(ROOT, "static",
                                           "ops_board.html"))
+        elif path == "/api/subscription/status":
+            # P2.5 客户订阅面（FD-A 2026-10-20）：订阅账本只读摘要出口。
+            # ?open_id= 必填（缺失 400）；零写参数——本端点不接收任何写参数，
+            # 写操作仍只在 subscription_store 模块内（M3 收银台另批）。
+            # get_subscriber_summary 自身 closed on failure（异常返回
+            # {"error": ...} 不抛），此处不吞错不造数，原样透传。
+            from urllib.parse import parse_qs as _pq_sub
+            _oid = (_pq_sub(qs, keep_blank_values=True)
+                    .get("open_id") or [""])[0].strip()
+            if not _oid:
+                self._json({"ok": False, "error": "missing open_id"}, 400)
+            else:
+                import subscription_store as _sub_store
+                self._json(_sub_store.get_subscriber_summary(_oid))
+        elif path == "/my-subscription":
+            # P2.5 客户订阅只读投影页（FD-A 2026-10-20）：订阅状态 / 当日
+            # 额度余量 / 账单占位，照 notify-command/ops-board 判例，
+            # 零参数只读 GET，零写操作。
+            self._html_file(os.path.join(ROOT, "static",
+                                          "my_subscription.html"))
         elif path == "/intel/stream":
             self._intel_page()
         elif path == "/gzh":
