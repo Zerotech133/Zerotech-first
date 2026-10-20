@@ -13,9 +13,9 @@
      且**只打一次**（desc 预含标签时不得重复追加）
   3. 取值域动态生效（夹具 org.json 加成员/部长 → 立即合法，零代码改动）
   4. ``external_tools`` 仅 ``status == "legal"`` 才算合法（锁死静默失效点）
-  5. 取值域不可判定时不误标（org.json 缺失 / 坏 JSON / 无 departments →
-     ``_owner_check`` 返回 ``None`` 三态，不判非法、不打 ``[UNOWNED]``，
-     仅留痕 ``owner_domain_unavailable=1``）
+  5. 取值域不可判定时不误标（org.json 缺失 / 坏 JSON / 无 departments /
+     departments 为空 / 部门层零成员 → ``_owner_check`` 返回 ``None`` 三态，
+     不判非法、不打 ``[UNOWNED]``，仅留痕 ``owner_domain_unavailable=1``）
 
 纪律：
   * **只读生产数据** —— 真实 ``.worktrees/tasks.json`` 与真实
@@ -366,11 +366,21 @@ class TestDomainUnavailable:
         assert "[UNOWNED]" not in task["desc"]
         assert "owner_domain_unavailable=1" in detail
 
-    @pytest.mark.parametrize("scenario", ["missing", "bad_json", "no_departments"])
+    @pytest.mark.parametrize("scenario", ["missing", "bad_json", "no_departments",
+                                          "empty_departments", "dept_no_members",
+                                          "dept_no_members_no_chief"])
     def test_不可判定时owner_check返回None三态(self, tmp_root, monkeypatch,
                                      org_fixture, scenario):
         """``_owner_check`` 必须以 ``None`` 表达「不可判定」，
-        而不是 False（False 会被调用方当成非法 → 误标）。"""
+        而不是 False（False 会被调用方当成非法 → 误标）。
+
+        覆盖五类不可判定形态：文件缺失 / 坏 JSON / 缺 ``departments`` 键 /
+        ``departments`` 为空数组 / 部门层零成员（含、无 chief 两种）。
+
+        **关键不变量**：``chief.agent_id`` 是 org.json 里的常量，不部门是否有人
+        都恒在。故「池里只剩 chief」**恒等价于部门层一个人都没派出来** ——
+        与「缺 ``departments`` 键」是同一观测特征，必须同判不可判定。
+        """
         if scenario == "missing":
             monkeypatch.setattr(devtask, "ORG_JSON",
                                 str(tmp_root / "nope.json"))
@@ -378,14 +388,66 @@ class TestDomainUnavailable:
             bad = tmp_root / "bad.json"
             bad.write_text("{ not json", encoding="utf-8")
             monkeypatch.setattr(devtask, "ORG_JSON", str(bad))
-        else:
+        elif scenario == "no_departments":
             nodep = tmp_root / "nodep.json"
             nodep.write_text(json.dumps({"chief": {"agent_id": "A0"}}),
                              encoding="utf-8")
             monkeypatch.setattr(devtask, "ORG_JSON", str(nodep))
+        elif scenario == "empty_departments":
+            # 最简形态：departments=[] + chief 常量在 —— 改前会落 {'A0'}
+            # 并被判非法 → 全量误标；现应判不可判定。
+            empty = tmp_root / "empty_deps.json"
+            empty.write_text(json.dumps({"chief": {"agent_id": "A0"},
+                                         "departments": []}),
+                             encoding="utf-8")
+            monkeypatch.setattr(devtask, "ORG_JSON", str(empty))
+        elif scenario == "dept_no_members":
+            # 部门存在但 agents/lead 全空 + chief 在 —— 与上一条同观测特征
+            nomem = tmp_root / "no_members.json"
+            nomem.write_text(json.dumps(
+                {"chief": {"agent_id": "A0"},
+                 "departments": [{"dept": "d1", "lead": "", "agents": []}]}),
+                encoding="utf-8")
+            monkeypatch.setattr(devtask, "ORG_JSON", str(nomem))
+        else:
+            # 部门层零成员 + 连 chief 都没有
+            nomem2 = tmp_root / "no_members_no_chief.json"
+            nomem2.write_text(json.dumps(
+                {"departments": [{"dept": "d1", "lead": "", "agents": []}]}),
+                encoding="utf-8")
+            monkeypatch.setattr(devtask, "ORG_JSON", str(nomem2))
         owner_ok, _domain, size = devtask._owner_check("DEV1")
         assert owner_ok is None
         assert size == 0
+
+    @pytest.mark.parametrize("scenario", ["empty_departments", "dept_no_members"])
+    def test_部门层零成员时不误标(self, tmp_root, monkeypatch, ledger, events,
+                           agent_name, scenario):
+        """部门层零成员（``departments=[]`` 或各部 agents/lead 全空）→
+        **不判非法、不打标签**，仅留痕 ``owner_domain_unavailable=1``。
+
+        此前该形态会因「池里只剩 chief 常量」被判非法 → **全量新建单被批量误打**
+        ``[UNOWNED]``。它与「缺 departments 键」是同一观测特征，须同判不可判定。
+        """
+        if scenario == "empty_departments":
+            empty = tmp_root / "empty_deps.json"
+            empty.write_text(json.dumps({"chief": {"agent_id": "A0"},
+                                         "departments": []}),
+                             encoding="utf-8")
+            monkeypatch.setattr(devtask, "ORG_JSON", str(empty))
+        else:
+            nomem = tmp_root / "no_members.json"
+            nomem.write_text(json.dumps(
+                {"chief": {"agent_id": "A0"},
+                 "departments": [{"dept": "d1", "lead": "", "agents": []}]}),
+                encoding="utf-8")
+            monkeypatch.setattr(devtask, "ORG_JSON", str(nomem))
+        task, detail = _new(agent_name, ledger, events,
+                            "K-EMPTYDEPT", "部门层零成员单", "DEV1")
+        assert task["status"] == "doing"          # 不拒写
+        assert "[UNOWNED]" not in task["desc"]    # 不误标
+        assert "owner_domain_unavailable=1" in detail
+        assert "owner_degraded=1" not in detail   # 不是非法降级
 
     def test_域不可判定时建单仍不抛异常(self, tmp_root, monkeypatch, ledger,
                               events, agent_name):
