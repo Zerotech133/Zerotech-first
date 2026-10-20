@@ -21,7 +21,7 @@ orphan_open_id                       subscription 引用的 open_id 不在 subsc
 unknown_plan                         subscription.plan_id 不在 plan
 bad_range                            start > end
 stale_active                         status=active 但 end < now（待清扫）
-status_contradiction                 status=expired 但 end >= now（状态与时间矛盾）
+status_contradiction                 status=expired 但 end >= now（状态与时间矛盾；有 reason="revoked" 撤销留痕的 open_id 豁免，见口径说明 4）
 orphan_entitlement                   allowed=1 的 kind 不被任何 plan.kinds 覆盖
 paid_without_subscription            payment_order 已支付但该 open_id 无任何订阅行
 check_failed                         任一校验项自身执行异常（含库缺失、表缺失）
@@ -55,6 +55,14 @@ check_failed                         任一校验项自身执行异常（含库�
    「创建 → 待支付 → 已支付 → 已开通 / 已关闭 / 已退款」。
    故取 ``paid`` 与 ``已支付`` 两个等价写法（strip + lower 后比较），
    常量集中在 ``PAID_STATUSES``；状态机落地后如改用别的字面量，改这一处。
+
+4. status_contradiction 的撤销豁免（2026-10-21，方案 a 咬合）
+   ``revoke_subscription``（subscription_store）把生效行立即置 expired 而
+   ``end`` 不动——``status=expired 但 end >= now`` 在形态上与状态矛盾全等。
+   豁免判据：entitlement_log 存在该 open_id 的 ``allowed=0`` 且
+   ``reason="revoked"``（strip+lower 比较）。无留痕的提前 expired 行**仍然
+   报矛盾**——即撤销必须走显式函数，直接改库依旧会被勾稽逮住，豁免不会
+   变成改库后门。
 
 4. checked 的定义
    5 张表行数之和（subscriber + plan + subscription + entitlement_log +
@@ -187,11 +195,21 @@ def _check_status_contradiction(conn, now_str):
         " ORDER BY end",
         (STATUS_EXPIRED, now_str),
     ).fetchall()
+    # 口径 4（方案 a 撤销咬合，2026-10-21）：显式撤销（revoke_subscription）
+    # 会把生效行立即置 expired 且 end 仍在未来——形态上与 status_contradiction
+    # 全等。豁免判据=entitlement_log 存在该 open_id 的 allowed=0 且
+    # reason="revoked" 留痕。entitlement_log 无 plan_id 列，豁免只能做到
+    # open_id 级；产生"提前 expired"形态的唯一生产路径就是显式撤销
+    # （expire_sweep 只清 end<now），误豁免面可忽略，此处显式声明而非含糊。
+    revoked = {r[0] for r in conn.execute(
+        "SELECT DISTINCT open_id FROM entitlement_log"
+        " WHERE allowed=0 AND LOWER(TRIM(reason))='revoked'"
+    )}
     return [
         {"code": "status_contradiction",
          "detail": "status=expired 但 end >= now(%s)：open_id=%s plan_id=%s start=%s end=%s"
                    % ((now_str,) + tuple(row))}
-        for row in rows
+        for row in rows if row[0] not in revoked
     ]
 
 

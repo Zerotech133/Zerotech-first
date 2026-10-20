@@ -40,6 +40,7 @@ __all__ = [
     "is_entitled",
     "upsert_subscriber",
     "grant_subscription",
+    "revoke_subscription",
     "expire_sweep",
     "entitlement_log",
     "get_subscriber_summary",
@@ -323,6 +324,52 @@ def expire_sweep(now=None):
         )
         conn.commit()
         return cur.rowcount
+
+
+def revoke_subscription(open_id, plan_id, now=None):
+    """显式撤销（方案 a，2026-10-21 老田拍板）：该 open_id 名下 plan_id
+    的 status=生效行立即置 expired，并落一条 entitlement_log 留痕
+    （allowed=0、reason="revoked"）——撤销与自然到期在留痕上可区分，
+    纠纷时"这单是到期还是我们撤的"查得出来。
+
+    - now=None 注入式可测（与 is_entitled/entitlement_log 同约定）。
+    - 返回撤销行数；档位不存在或无生效行抛 ValueError（照
+      grant_subscription 判例，上层指令族转掩码回执）。
+    - 语义口径（设计稿 v0 §七默认建议，老田未否决）：当日已耗用额度
+      不回冲（已放行行不追回）；撤销行永久留档，重开=INSERT 新行。
+    - 勾稽咬合：expired 且 end>=now 的行由 reconcile 的
+      status_contradiction 按 reason="revoked" 留痕豁免（entitlement_log
+      无 plan_id 列，豁免按 open_id 级；产生"提前 expired"形态的唯一
+      生产路径就是本函数， expire_sweep 只清 end<now）。"""
+    ts = _norm_now(now)
+    with _connect() as conn:
+        plan = conn.execute(
+            "SELECT plan_id FROM plan WHERE plan_id=?", (plan_id,)
+        ).fetchone()
+        if not plan:
+            raise ValueError("plan 不存在: %s" % plan_id)
+        cur = conn.execute(
+            "SELECT COUNT(*) FROM subscription WHERE subscriber_open_id=?"
+            " AND plan_id=? AND status=?",
+            (open_id, plan_id, STATUS_ACTIVE),
+        )
+        if cur.fetchone()[0] == 0:
+            # 先查后改：无生效行不得留下半截留痕（失败=零写入）
+            raise ValueError("无生效订阅行: %s / %s" % (open_id, plan_id))
+        cur_upd = conn.execute(
+            "UPDATE subscription SET status=? WHERE subscriber_open_id=?"
+            " AND plan_id=? AND status=?",
+            (STATUS_EXPIRED, open_id, plan_id, STATUS_ACTIVE),
+        )
+        conn.execute(
+            "INSERT INTO entitlement_log(ts, open_id, kind, allowed, reason)"
+            " VALUES (?,?,?,?,?)",
+            (ts, open_id, "subscription.revoke", 0, "revoked"),
+        )
+        conn.commit()
+    # rowcount 必须取 UPDATE 本体的 cursor：若复用 COUNT(*) 的 cursor，
+    # SELECT 的 rowcount 是 -1，会把成功撤销报成 -1 行（变异承重判例）。
+    return cur_upd.rowcount
 
 
 def entitlement_log(open_id, kind, allowed, reason, now=None):
