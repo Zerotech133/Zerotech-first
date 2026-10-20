@@ -6,6 +6,8 @@
   python k_stock/run_poc.py --batch data/watchlist.txt   # 批量（每行 "代码 名称"）
 
 产出：data/poc_<日期>.json（五节点结构化输出+trace+degraded，lineage 可追溯）
+另逐只追加 data/poc_results_<日期>.jsonl（每只五节点一跑完即落盘，宿主中途被掐
+不清零；重启读该账本跳过已完成标的，--force 全量重跑。K-STOCK-20261020-INCREMENT）
 S1 判据挂钩：连续 5 个交易日无人干预跑通；picks 次日收益秩相关>0（对照脚本 S2 挂）。
 """
 from __future__ import annotations
@@ -60,6 +62,56 @@ def _write_heartbeat(rc: int, elapsed_s: float, summary: dict) -> None:
         os.replace(str(tmp), str(HEARTBEAT))
     except Exception:
         pass
+
+
+def _results_log_path() -> Path:
+    """当日逐只落盘账本路径（K-STOCK-20261020-INCREMENT）。"""
+    return OUT_DIR / f"poc_results_{datetime.now():%Y%m%d}.jsonl"
+
+
+def _append_result_log(record: dict) -> bool:
+    """逐只落盘（K-STOCK-20261020-INCREMENT）：每只标的五节点循环一完成即追加
+    当日 poc_results_<YYYYMMDD>.jsonl，宿主中途硬杀（T-O7 定因 90min 超时回收
+    进程树）已完成的不再清零。O_APPEND + 单次 os.write，与 _append_guard_log
+    同判例。失败 WARN 不中断主流程、不改变退出码语义。"""
+    try:
+        path = _results_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        line = (json.dumps(record, ensure_ascii=False) + "\n").encode("utf-8")
+        fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+        try:
+            os.write(fd, line)
+        finally:
+            os.close(fd)
+        return True
+    except Exception as e:
+        print(f"[WARN] 逐只落盘失败（主流程继续，不影响退出码）: {e}", flush=True)
+        return False
+
+
+def _load_done_codes(path: Path) -> dict[str, dict]:
+    """读当日逐只账本，返回 {code: 记录}（同 code 多行取最后一条，后写为准）。
+    账本只记五节点跑完的（FAIL 不记），故「code 在账本」即「已有完整结果」。
+    坏行跳过、读失败视为无历史全量重跑——续跑判定宁放过不误跳。"""
+    done: dict[str, dict] = {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                code = str(rec.get("code") or "").strip()
+                if code:
+                    done[code] = rec
+    except FileNotFoundError:
+        pass                                  # 当日首跑，无历史
+    except OSError as e:
+        print(f"[resume][WARN] 当日账本不可读（{e}），按无历史全量重跑", flush=True)
+    return done
 
 
 def run_one(stock: str, context: str = "", mock: bool = False, auto: bool = False) -> dict:
@@ -266,6 +318,8 @@ def _run_targets(summary: dict) -> None:
                     help="自动取监控池成交额前 N 只（与 --auto 配套）")
     ap.add_argument("--out", help="输出 json 路径（默认 data/poc_<时间戳>.json）")
     ap.add_argument("--no-guard", action="store_true", help="跳过负载守卫")
+    ap.add_argument("--force", action="store_true",
+                    help="忽略当日逐只账本已有结果，全量重跑（默认幂等续跑）")
     args = ap.parse_args()
 
     targets: list[str] = []
@@ -282,7 +336,16 @@ def _run_targets(summary: dict) -> None:
     else:
         ap.error("需要 stock / --batch / --watchlist 之一")
 
-    if not args.mock and not args.no_guard:
+    # 幂等续跑（K-STOCK-20261020-INCREMENT）：启动即读当日账本，已有完整结果的
+    # 标的跳过（--force 全量重跑）。全部已完成时连守卫探测也一并跳过——
+    # 两段式探测+冷却固定吃 ~13.5 分钟预算，纯续跑不碰 LLM 没必要付。
+    log_path = _results_log_path()
+    done = {} if args.force else _load_done_codes(log_path)
+    if done:
+        print(f"[resume] 当日账本 {log_path.name} 已有 {len(done)}/{len(targets)} 只"
+              f"完整结果，续跑只补缺（--force 全量重跑）", flush=True)
+
+    if not args.mock and not args.no_guard and len(done) < len(targets):
         # K-STOCK-20261019-GUARDDECOUPLE：守卫与主链解耦。主链为 GLM 官方 API
         # （k_stock/kstock/llm.py），Ollama 仅是 fallback——默认路径下 Ollama 侧
         # 信号（不可达/热态超阈）降级为 WARN 放行，仅 GLM 主链不可达才中止；
@@ -354,12 +417,24 @@ def _run_targets(summary: dict) -> None:
     OUT_DIR.mkdir(exist_ok=True)
     results = []
     for stock in targets:
+        code = stock.split()[0]
+        if code in done:
+            r = done[code]                    # 续跑：账本记录原样回填 results，
+            print(f"[skip] {code} 今日账本已有完整结果——跳过"
+                  f"（--force 可强制重跑）", flush=True)   # 整盘 json 仍含全部标的
+            results.append(r)
+            continue
         print(f"[run] {stock} ...", flush=True)
         try:
             r = run_one(stock, mock=args.mock, auto=args.auto)
             d1 = r["outputs"].get("D1", {})
             print(f"  -> D1: {d1.get('action')} conf={d1.get('confidence')} "
                   f"degraded={r['degraded'] or '无'}", flush=True)
+            # 逐只落盘：五节点一跑完立即追加，被掐不清零；FAIL 不记（续跑重试）
+            rec = dict(r)
+            rec["ts"] = datetime.now().isoformat(timespec="seconds")
+            rec["code"] = code
+            _append_result_log(rec)
         except Exception as e:
             r = {"stock": stock, "error": str(e)[:300],
                  "asof": datetime.now().isoformat(timespec="seconds")}
