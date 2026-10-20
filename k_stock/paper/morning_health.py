@@ -54,6 +54,17 @@ CLI::
     python morning_health.py --date 20261020            # 人读 Markdown
     python morning_health.py --date 20261020 --json     # 机器读契约 JSON
     python morning_health.py --date 20261020 --out r.md  # 落盘（默认只打印）
+    python morning_health.py --date 20261020 --ledger p.json  # 换台账（单测/演练）
+
+通道频次台账（WO-QT-20261020-021 接入，``channel_frequency.json``）：
+H2/H4/H5 的时效阈值不再只由代码常量决定，而是先读台账声明。三条硬规则——
+  1. **停用是显式声明**：只有台账写 ``enabled=false`` 才算停用，显示
+     「已停用（原因）」判黄；台账要求同时给 reason/evidence/approved_by。
+  2. **停用≠绿**：停用判黄不判绿——该通道确实没有新数据产出。
+  3. **pending_mount≠停用**：已实现但未挂载调度（如 HK）维持红，证据里点明
+     「接线缺口不是崩溃」，防重复救火；把它记成停用就是把「没做」说成「不做」。
+  台账缺失/坏 JSON → 回落代码默认阈值（更严），并单列 H0 黄 finding 说明台账
+  故障，**绝不因台账坏了就把红吃掉**。台账里没登记的通道沿用默认，不静默放宽。
 
 退出码：0=green、1=yellow、2=red、3=工具自身失败（bad input / 不可读）。
 
@@ -84,10 +95,22 @@ __all__ = [
     "CHANNELS",
     "HealthPaths",
     "normalize_date",
+    "load_frequency_ledger",
+    "FREQUENCY_LEDGER_PATH",
 ]
 
 # 严重度序（index 越大越严重；整体 status 取max）
 SEVERITY_ORDER = ("green", "yellow", "red")
+
+# 通道频次台账（WO-QT-20261020-021）。**数据文件不是硬编码**——频次口径要能被
+# 显式声明、可被复核、可被老田改；改频次不该改代码。
+# 台账缺失/坏 JSON → 一律回落到下面的代码默认值（fail-open：台账坏了不许静默放宽）。
+FREQUENCY_LEDGER_PATH = HERE / "channel_frequency.json"
+
+# 频次 → 默认时效阈值（天）。台账显式给了 max_age_days/stale_days 时以台账为准。
+# 周频给 7 天（月频给 31），让「按周产出的东西」不因日频阈值被判红——这是**口径
+# 修正不是掩盖**：红噪声本身就是要治的病。
+_FREQUENCY_STALE_DAYS = {"daily": 1, "trading_day": 2, "weekly": 7, "monthly": 31}
 
 # 通道 → poc 前缀。口径必须与trainee._NON_AI_PREFIXES 对齐，
 # 不硬编码完整列表字面量之外的东西；读取时以trainee 常量为准做校验。
@@ -173,6 +196,87 @@ def _read_text(path: Path, *, max_bytes: int = 4 * 1024 * 1024) -> str:
     """只读读文本；不存在/不可读抛 ``OSError`` 由上层落finding。"""
     with open(path, "r", encoding="utf-8", errors="replace") as f:
         return f.read(max_bytes)
+
+
+def load_frequency_ledger(path=None) -> dict:
+    """读通道频次台账。**读不到就回落到空 dict，绝不抛异常、绝不静默放宽。**
+
+    返回结构 ``{"channels": {...}, "feeds": {...}, "artifacts": {...},
+    "_source": str|None, "_error": str|None}``。
+
+    fail-open 要点：台账是「豁免凭据」，它坏了若静默按「无豁免」处理是安全的
+    （回到更严的默认阈值）；若台账坏了却被当成「全部正常」才是事故。故此处
+    **只记 ``_error`` 不抛**——调用方拿不到台账时按默认判，红不会被吃掉。
+    """
+    p = Path(path) if path else FREQUENCY_LEDGER_PATH
+    out = {"channels": {}, "feeds": {}, "artifacts": {},
+           "_source": str(p), "_error": None}
+    try:
+        raw = _read_text(p)
+    except OSError as e:
+        out["_error"] = "台账不可读: %s（回落默认阈值，不放宽）" % e
+        return out
+    try:
+        obj = json.loads(raw)
+    except ValueError as e:
+        out["_error"] = "台账坏 JSON: %s（回落默认阈值，不放宽）" % e
+        return out
+    if not isinstance(obj, dict):
+        out["_error"] = "台账根节点非对象（回落默认阈值，不放宽）"
+        return out
+    for section in ("channels", "feeds", "artifacts"):
+        sec = obj.get(section)
+        if isinstance(sec, dict):
+            out[section] = sec
+    return out
+
+
+def _ledger_entry(ledger: dict, section: str, key: str) -> dict:
+    """取台账条目；缺失/非 dict 一律返回 ``{}``（调用方按默认处理）。"""
+    sec = (ledger or {}).get(section) or {}
+    v = sec.get(key)
+    return v if isinstance(v, dict) else {}
+
+
+def _ledger_disabled(entry: dict) -> tuple[bool, str]:
+    """是否**显式停用**，返回 ``(是否停用, 停用说明)``。
+
+    只有 ``enabled is False``（显式布尔）才算停用。``pending_mount=True`` 的
+    条目**不算停用**——那是「已实现未接线」，仍按红处理。把两者混同等于把
+    「没做」记成「不做」，是掩盖不是修正。
+    """
+    if entry.get("enabled") is not False:
+        return False, ""
+    reason = str(entry.get("reason") or entry.get("note") or "未注明原因")
+    by = str(entry.get("approved_by") or "").strip()
+    return True, "已停用（显式声明）：%s%s" % (
+        reason, ("；停用拍板人：%s" % by) if by else "")
+
+
+def _ledger_stale_days(entry: dict, fallback: int, *,
+                       fallback_is_explicit: bool = False) -> int:
+    """台账声明的时效阈值；优先级从高到低：
+
+    1. 台账**显式数字**（``stale_days`` / ``max_age_days``）——最具体的声明，最高优先；
+    2. 调用方**显式传入**的阈值（``fallback_is_explicit=True``）——注入即覆盖，
+       不能被台账的 frequency 静默压掉（否则「调宽阈值看降级」这类用法会失灵）；
+    3. 台账 ``frequency`` 折算（weekly=7 / monthly=31……）——让周频数据源不被
+       日频阈值误判红；
+    4. ``fallback``（代码默认值，最严）。
+
+    第2 条与第 1 条的次序是本函数存在的关键：台账是「常态口径」，调用方显式
+    入参是「本次覆盖」，覆盖不该被常态悄悄吃掉。
+    """
+    for k in ("stale_days", "max_age_days"):
+        v = entry.get(k)
+        if isinstance(v, int) and not isinstance(v, bool) and v >= 0:
+            return v
+    if fallback_is_explicit:
+        return fallback
+    freq = str(entry.get("frequency") or "").strip().lower()
+    if freq in _FREQUENCY_STALE_DAYS:
+        return _FREQUENCY_STALE_DAYS[freq]
+    return fallback
 
 
 def _open_ro(path: Path) -> sqlite3.Connection:
@@ -353,10 +457,25 @@ def _verify_prefix_alignment() -> str | None:
     return None
 
 
-def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1) -> list[_F]:
-    """各通道最新 poc 产物日期。缺=红；>stale_days=黄；>2*stale_days=红。"""
+def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1,
+              ledger: dict | None = None,
+              stale_days_explicit: bool = False) -> list[_F]:
+    """各通道最新 poc 产物日期。缺=红；>stale_days=黄；>2*stale_days=红。
+
+    台账接入（WO-QT-20261020-021）：
+      · 台账标 ``enabled=false`` 的通道 → 显示「已停用（原因）」，severity=yellow。
+        **不是红**（有据可依的决策状态，不是断线事故）；**也不是绿**（该通道确实
+        没有新数据产出，停用≠健康，守住 fail-open 禁令）。
+      · 台账标周频/月频的通道 → 按其frequency 折算阈值判时效，不因日频阈值误报红。
+      · 台账里没有的通道 → 沿用传入默认 stale_days（不静默放宽）。
+      · 台账文件缺失/坏 JSON → load_frequency_ledger 返回空 sections，行为退化为
+        「默认阈值」，红不会被吃掉。
+      · 调用方**显式**传了 stale_days（如单测「调宽阈值看降级」）→ 以调用方为准，
+        台账不得静默压掉（见 _ledger_stale_days 的优先级说明）。
+    """
     data_dir = Path(paths.kstock_data)
     out: list[_F] = []
+    ledger = ledger or {}
     action = "跑对应通道刷新（如 qd_adapter / qpzm_adapter / hk_market / us_market），确认调度是否派发"
 
     if not data_dir.exists():
@@ -369,12 +488,31 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1) -> list[_F]:
         prefix = CHANNEL_PREFIXES[ch]
         cid = "H2.%s" % ch
         title = "H2 通道 %s 最新 run" % ch
+
+        entry = _ledger_entry(ledger, "channels", ch)
+        disabled, why = _ledger_disabled(entry)
+        if disabled:
+            # 显式停用：先落「已停用」，不去 glob 产物（无产物是停用的预期结果，
+            # 不是断线）。仍标 yellow 而非 green —— 见函数 docstring 的双重理由。
+            out.append(_F(cid, "yellow", title,
+                          "%s；停用是台账显式声明（frequency=%s），非断线事故。"
+                          "该通道当前无新产物属预期——停用≠健康，故不判绿"
+                          % (why, entry.get("frequency") or "未声明"),
+                          "如需恢复，从台账改 enabled=true 并补挂调度面"))
+            continue
+
+        eff_stale = _ledger_stale_days(entry, stale_days,
+                                       fallback_is_explicit=stale_days_explicit)
+
         newest = _newest_prefix_file(data_dir, prefix)
         if newest is None:
             sev = "red"
             ev = "通道 %s 无任何 %s*.json 产物于 %s（缺=红）" % (ch, prefix, data_dir)
             if drift:
                 ev += "；" + drift
+            if entry:
+                ev += "；台账声明 frequency=%s（期望频次非停用）" % (
+                    entry.get("frequency") or "未声明")
             out.append(_F(cid, sev, title, ev, action))
             continue
         m = _date_from_name(newest.name)
@@ -386,23 +524,26 @@ def _check_h2(paths: HealthPaths, date: str, stale_days: int = 1) -> list[_F]:
             continue
         latest = m
         age = _days_between(_iso(latest), date)
+        thr_note = ("台账 frequency=%s → 阈值 %d 天" % (
+            entry.get("frequency"), eff_stale) if entry else "阈值 %d 天" % eff_stale)
         if age <= 0:
             out.append(_F(cid, "green", title,
-                          "最新件 %s（日期 %s，当日/更新）" % (newest.name, latest),
+                          "最新件 %s（日期 %s，当日/更新；%s）"
+                          % (newest.name, latest, thr_note),
                           "无需动作"))
-        elif age <= stale_days:
+        elif age <= eff_stale:
             out.append(_F(cid, "yellow", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（>0 即黄）"
-                          % (newest.name, latest, date, age),
-                          "确认通道是否降频运行；若为已知降频请调阈值: " + action))
-        elif age <= 2 * stale_days:
+                          "最新件 %s（日期 %s），距 %s 已 %d 天（>0 即黄；%s）"
+                          % (newest.name, latest, date, age, thr_note),
+                          "确认通道是否降频运行；若为已知降频请调台账: " + action))
+        elif age <= 2 * eff_stale:
             out.append(_F(cid, "red", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（>2 倍阈值=红）"
-                          % (newest.name, latest, date, age), action))
+                          "最新件 %s（日期 %s），距 %s 已 %d 天（>2 倍阈值=红；%s）"
+                          % (newest.name, latest, date, age, thr_note), action))
         else:
             out.append(_F(cid, "red", title,
-                          "最新件 %s（日期 %s），距 %s 已 %d 天（通道停摆）"
-                          % (newest.name, latest, date, age), action))
+                          "最新件 %s（日期 %s），距 %s 已 %d 天（通道停摆；%s）"
+                          % (newest.name, latest, date, age, thr_note), action))
     return out
 
 
@@ -481,6 +622,10 @@ SEGMENTS = {
     "4e": ("poc_qpzmhk_", "poc_qpzmhk_*.json"),
 }
 
+# 段 → 台账 channels 里的通道名（台账按通道声明频次/停用，段只是通道的别名）。
+# 前缀一一对应，映射显式写出不靠推导。
+SEGMENT_CHANNEL = {"4d": "qpzm_us", "4e": "hk"}
+
 # 段 note 证据源（相对 repo_root）——灰态 stdout note 可能落在这里
 SEGMENT_NOTE_SOURCES = (
     "agent_platform/data/shadow/last_run.log",
@@ -520,15 +665,36 @@ def _segment_note_evidence(paths: HealthPaths, date: str, segment: str) -> str |
     return None
 
 
-def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None) -> list[_F]:
-    """4d/4e 段产物存在性，三档：文件 / 无文件但有note / 无文件且无证据。"""
+def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None,
+              ledger: dict | None = None) -> list[_F]:
+    """4d/4e 段产物存在性，三档：文件 / 无文件但有note / 无文件且无证据。
+
+    台账接入（WO-QT-20261020-021）：段号映射到 channels 里的通道名（4d→qpzm_us、
+    4e→hk）。台账标 enabled=false 的段显示「已停用（原因）」判黄；标
+    pending_mount 的段**维持红**（已实现未接线 ≠ 不做），并在证据里点明，
+    免得看板上「hk 红」被误读成「HK 段崩了」而重复救火。
+    """
     data_dir = Path(paths.kstock_data)
     notes = gray_notes or {}
+    ledger = ledger or {}
     out: list[_F] = []
     for seg, (prefix, pattern) in SEGMENTS.items():
         cid = "H4.%s" % seg
         title = "H4 段完整性 %s" % seg
         action = "跑该段链路（4d=US/青萍落单段，4e=HK 段）并确认调度派发"
+
+        entry = _ledger_entry(ledger, "channels", SEGMENT_CHANNEL.get(seg, ""))
+        disabled, why = _ledger_disabled(entry)
+        if disabled:
+            out.append(_F(cid, "yellow", title,
+                          "%s；停用是台账显式声明，零落盘属预期——停用≠健康，故不判绿"
+                          % why,
+                          "如需恢复，从台账改 enabled=true 并补挂调度面"))
+            continue
+        pending = ""
+        if entry.get("pending_mount"):
+            pending = ("；台账标 pending_mount（已实现但未挂载调度）→ 本红是**接线缺口**"
+                       "不是段崩溃，别重复救火")
 
         note = notes.get(seg) or _segment_note_evidence(paths, date, seg)
 
@@ -561,7 +727,7 @@ def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None) -> list[_F
                 if note:
                     ev += "；有 note 证据：「%s」→ 判黄（灰态零落盘）" % note
                 else:
-                    ev += "，且无任何 note 证据——静默失败嫌疑"
+                    ev += "，且无任何 note 证据——静默失败嫌疑" + pending
                 out.append(_F(cid, "yellow" if note else "red", title, ev, action))
             continue
 
@@ -569,7 +735,7 @@ def _check_h4(paths: HealthPaths, date: str, gray_notes: dict | None) -> list[_F
         out.append(_F(cid, "yellow" if note else "red", title,
                       "kstock_data 不存在: %s（无段产物）%s"
                       % (data_dir, ("；有 note 证据：「%s」" % note) if note
-                         else "，且无 note 证据"),
+                         else "，且无 note 证据" + pending),
                       action))
     return out
 
@@ -621,17 +787,36 @@ def _feed_latest_date(path: Path, pattern: str) -> tuple[str | None, str]:
     return _latest_date_in_json(path), "产物 %s" % path.name
 
 
-def _check_h5(paths: HealthPaths, date: str, feeds: dict) -> list[_F]:
+def _check_h5(paths: HealthPaths, date: str, feeds: dict,
+              ledger: dict | None = None) -> list[_F]:
     """已知断线源：产物缺失或日期超期 → 红。
 
     **断线必须显式**：产物不存在 = red（不是「没这项业务」= green）。
+
+    台账接入（WO-QT-20261020-021）：
+      · ``enabled=false`` → 「已停用（原因）」判黄（不是红；也不是绿）。
+      · 未给 max_age_days 时按 ``frequency`` 折算阈值（weekly=7 等），
+        让周频数据源不被日频阈值误判红。
+      · 台账缺项 → 沿用 feeds 里代码默认阈值，不静默放宽。
     """
     out: list[_F] = []
+    ledger = ledger or {}
     for name, (rel, max_age) in sorted(feeds.items()):
         cid = "H5.%s" % name
         title = "H5 数据源 %s" % name
         p = Path(paths.repo_root) / rel
         action = "恢复采集链路；断线不得静默，看板要显式挂红"
+
+        entry = _ledger_entry(ledger, "feeds", name)
+        disabled, why = _ledger_disabled(entry)
+        if disabled:
+            out.append(_F(cid, "yellow", title,
+                          "%s；停用是台账显式声明，产物不更新属预期——停用≠健康，故不判绿"
+                          % why,
+                          "如需恢复，从台账改 enabled=true 并补挂采集链路"))
+            continue
+        eff_age = _ledger_stale_days(entry, max_age)
+
         if not p.exists() and "*" not in rel and not p.parent.exists():
             out.append(_F(cid, "red", title,
                           "产物目录不存在: %s（缺=断线红，绝不按「没这项业务」当正常）"
@@ -647,14 +832,14 @@ def _check_h5(paths: HealthPaths, date: str, feeds: dict) -> list[_F]:
                           "%s；无可判定日期（不可判定≠正常，按红）" % ev, action))
             continue
         age = _days_between(_iso(latest), date)
-        if age <= max_age:
+        if age <= eff_age:
             out.append(_F(cid, "green", title,
-                          "%s，距 %s %d 天（阈值 %d）" % (ev, date, age, max_age),
+                          "%s，距 %s %d 天（阈值 %d）" % (ev, date, age, eff_age),
                           "无需动作"))
         else:
             out.append(_F(cid, "red", title,
                           "%s，距 %s 已 %d 天（超阈值 %d 天）= 断线"
-                          % (ev, date, age, max_age), action))
+                          % (ev, date, age, eff_age), action))
     return out
 
 
@@ -706,10 +891,15 @@ def _check_h6(paths: HealthPaths, date: str, artifacts: dict) -> list[_F]:
 # 汇总入口
 # ---------------------------------------------------------------------------
 
+_UNSET = object()
+
+
 def check_morning(date="20261020", *, paths: HealthPaths | None = None,
-                  stale_days: int = 1, feeds: dict | None = None,
+                  stale_days=_UNSET, feeds: dict | None = None,
                   artifacts: dict | None = None,
-                  gray_notes: dict | None = None) -> dict:
+                  gray_notes: dict | None = None,
+                  ledger: dict | None = None,
+                  ledger_path=None) -> dict:
     """晨批健康自检。返回 ``{date, status, findings[], summary{}}``。
 
     ``status`` 取全部 finding 里最高 severity（red > yellow > green）。
@@ -719,15 +909,24 @@ def check_morning(date="20261020", *, paths: HealthPaths | None = None,
     ----
     date:      ``YYYYMMDD`` / ``YYYY-MM-DD`` / ``datetime``，非法抛 ``ValueError``。
     paths:     路径注入（单测用 tmp 目录）。默认指向仓内真实只读路径。
-    stale_days: H2/H4 的黄态天数阈值（默认 1，红 = >2 倍）。
+    stale_days: H2/H4 黄态天数的**兜底**阈值（默认 1，红 = >2 倍）。台账按通道声明
+                了 frequency/stale_days 时以台账为准；**显式传入本参数则以传入值为准**
+                （台账不得静默压掉调用方的本次覆盖）。
     feeds:     H5 数据源 {name: (relpath, max_age_days)}，默认 ``DEFAULT_FEEDS``。
     artifacts: H6 产物 {name: glob}，默认 ``DEFAULT_ARTIFACTS``。
     gray_notes:段灰态说明 {seg: note}，注入即视为有账证据（供人工登记/单测）。
+    ledger:    频次台账 dict；缺省自动读 ``channel_frequency.json``。读不到/坏
+               JSON 一律退化为「默认阈值」（红不被吃掉）。
+    ledger_path:台账路径覆盖（单测注入 tmp 台账用）。
     """
     date = normalize_date(date)
     p = paths or HealthPaths()
     feeds = DEFAULT_FEEDS if feeds is None else feeds
     artifacts = DEFAULT_ARTIFACTS if artifacts is None else artifacts
+    if ledger is None:
+        ledger = load_frequency_ledger(ledger_path)
+    stale_explicit = stale_days is not _UNSET
+    eff_stale_default = 1 if stale_days is _UNSET else stale_days
 
     findings: list[_F] = []
     try:
@@ -736,7 +935,8 @@ def check_morning(date="20261020", *, paths: HealthPaths | None = None,
         findings.append(_err("H1", "H1 影子晨批心跳", e, "人工核查 last_run.log"))
 
     try:
-        findings.extend(_check_h2(p, date, stale_days))
+        findings.extend(_check_h2(p, date, eff_stale_default, ledger,
+                                  stale_days_explicit=stale_explicit))
     except Exception as e:                                # noqa: BLE001
         findings.append(_err("H2", "H2 各通道最新 run 时效", e, "人工核查通道产物"))
 
@@ -746,12 +946,12 @@ def check_morning(date="20261020", *, paths: HealthPaths | None = None,
         findings.append(_err("H3", "H3 D-1 决策快照", e, "人工核查 paper.db 快照"))
 
     try:
-        findings.extend(_check_h4(p, date, gray_notes))
+        findings.extend(_check_h4(p, date, gray_notes, ledger))
     except Exception as e:                                # noqa: BLE001
         findings.append(_err("H4", "H4 段完整性", e, "人工核查 4d/4e 段产物"))
 
     try:
-        findings.extend(_check_h5(p, date, feeds))
+        findings.extend(_check_h5(p, date, feeds, ledger))
     except Exception as e:                                # noqa: BLE001
         findings.append(_err("H5", "H5 数据断线", e, "人工核查数据源链路"))
 
@@ -759,6 +959,16 @@ def check_morning(date="20261020", *, paths: HealthPaths | None = None,
         findings.extend(_check_h6(p, date, artifacts))
     except Exception as e:                                # noqa: BLE001
         findings.append(_err("H6", "H6 产物新鲜度", e, "人工核查报告产物"))
+
+    # 台账自身状态单列一条 finding：台账坏了必须被看见（fail-visible），
+    # 但不因此把整体判红——红是给数据断线的，台账故障是另一类问题（判黄，
+    # 证据里写明「已回落默认阈值，未放宽」）。
+    if ledger.get("_error"):
+        findings.append(_F("H0", "yellow", "H0 通道频次台账",
+                           "%s；台账路径 %s。已回落代码默认阈值（更严），"
+                           "本次判据未因台账故障而放宽"
+                           % (ledger["_error"], ledger.get("_source")),
+                           "修台账文件；停用声明须带 reason+evidence+approved_by"))
 
     findings.sort(key=lambda f: (f.check_id,))
     status = _worst(f.severity for f in findings)
@@ -772,6 +982,12 @@ def check_morning(date="20261020", *, paths: HealthPaths | None = None,
             "yellow": counts["yellow"],
             "green": counts["green"],
             "check_errors": sum(1 for f in findings if f.check_error),
+        },
+        "ledger": {
+            "source": ledger.get("_source"),
+            "error": ledger.get("_error"),
+            "channels": sorted((ledger.get("channels") or {}).keys()),
+            "feeds": sorted((ledger.get("feeds") or {}).keys()),
         },
         "findings": [f.to_dict() for f in findings],
         "mode": "dryrun",
@@ -858,11 +1074,12 @@ def main(argv=None) -> int:
     ap.add_argument("--md", action="store_true", help="输出 Markdown")
     ap.add_argument("--out", help="写入指定路径（默认只打印）")
     ap.add_argument("--repo-root", help="仓根目录（默认自动定位）")
+    ap.add_argument("--ledger", help="通道频次台账路径（默认同目录 channel_frequency.json）")
     args = ap.parse_args(argv)
 
     try:
         paths = HealthPaths(repo_root=Path(args.repo_root)) if args.repo_root else None
-        result = check_morning(args.date, paths=paths)
+        result = check_morning(args.date, paths=paths, ledger_path=args.ledger)
     except ValueError as e:
         print("[morning_health] 参数非法: %s" % e, file=sys.stderr)
         return 3

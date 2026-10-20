@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "declared_at": "2026-10-20",
+  "declared_by": "WO-QT-20261020-021（数据断线根因取证）",
+  "declaration_note": [
+    "本台账是**显式声明**：把每个通道/数据源的期望产出频次写成数据文件，而不是散在代码常量里。",
+    "frequency 取值：daily（日频）/ weekly（周频）/ trading_day（交易日频）/ monthly（月频）。",
+    "disabled=true 表示**经决策停用**——这是显式声明，不是掩盖：每个停用条目必须同时给出",
+    "reason（为什么停）+ evidence（凭什么认定已停）+ approved_by（谁拍的）。",
+    "停用条目在自检里显示「已停用（原因）」且severity=yellow：",
+    "  · 不是红——有据可依的决策状态，不是断线事故；",
+    "  · 不是绿——通道确实没有新数据产出，停用≠健康（守住 fail-open 禁令）。",
+    "pending_mount 表示**已实现但未挂载调度**（如 HK 通道 H-D2）：这不是停用，是接线缺口，",
+    "  自检仍按红处理，直到真挂载面落地。刻意与 disabled 分开，避免把「没做」记成「不做」。",
+    "未在本台账登记的通道/数据源，一律沿用 morning_health 代码内默认值（更严），不静默放宽。"
+  ],
+  "channels": {
+    "qd": {
+      "frequency": "daily",
+      "enabled": true,
+      "mount": "none",
+      "owner": "量子双刀线（portal/qd_scanner.py → qd_adapter.cache_to_run）",
+      "note": "无任何调度面挂载 adapter；qd_scanner 仅由 portal 页面访问惰性触发，且该惰性路径的解释器写死 C:/Users/Administrator/.workbuddy（该用户目录不存在，实际为 C:/Users/t）→ 手动刷新也必炸。见 WO-QT-20261020-021 根因表 CH-01/CH-02。"
+    },
+    "qpzm": {
+      "frequency": "daily",
+      "enabled": true,
+      "mount": "none",
+      "owner": "青萍 CN 通道（quant_backtest/reports/rps_latest.json → qpzm_adapter）",
+      "note": "adapter 无调度面；且上游 rps_latest.json 38 行 res 全部 action=回避（环境闸门四市场 safe=false 全冷），0 买入行 → adapter 契约性 raise ValueError 不落盘。属上游数据事实 + 调度面缺失双因。见 CH-03。"
+    },
+    "qpzm_us": {
+      "frequency": "daily",
+      "enabled": true,
+      "mount": "none",
+      "owner": "青萍 US 独立账本通道（strategy=qingping_us，USD 原币）",
+      "note": "同 qpzm 上游根因。另叠加口径项：现件 poc_qpzmus_20261016_161000.json 的 mtime 是 2026-10-20 05:14（补跑件，_meta.replay_note=WO-20261020-001-R1 补跑，按 10-16 开盘价），但 H2 按文件名日期戳判龄→ 报「距今 4 天」。真断线天数与自检读数不一致，须在修复调度时一并对齐判据口径。见 CH-04。"
+    },
+    "hk": {
+      "frequency": "daily",
+      "enabled": true,
+      "pending_mount": true,
+      "mount": "none",
+      "owner": "青萍 HK 独立账本通道（H-D2 起，split_hk=True → hk_qingping，HKD 原币）",
+      "note": "**刻意不标 disabled**。事实链：(1) watchlist 20 只 HK 标的 added=2026-10-20（今日新增，note=H-D2 P-1 恒指蓝筹灰度放水 2 周观察）；(2) rps_latest.json(ts=2026-10-19 16:15)HK 行数=0，从未有 HK 买入行；(3) qpzm_adapter 需 split_hk=True，全仓无任何生产调用方传该参数；(4) cli._newest_run 显式排除 poc_qpzmhk_ 前缀（防策略串味，有意设计）。结论=已实现未接线，不是「决定不做」。标 disabled 会把「没做」记成「不做」= 掩盖，故标 pending_mount，自检维持红。见 CH-05。"
+    }
+  },
+  "feeds": {
+    "板块日线": {
+      "frequency": "trading_day",
+      "max_age_days": 2,
+      "enabled": true,
+      "owner": "quant_backtest/kg_sector_flow.py（start_kg_sync.ps1 步骤 sector_flow 已挂载）",
+      "note": "调度面在、脚本每日 exit=0，但业务日期停在 20261016。根因在**上游两跳**：① TdxSync 计划任务 rc=267014(SCHED_S_TASK_TERMINATED，超 PT2H 时限被杀)，其日志显示 rookie.xtcloud-tech.com:48088 DNS 解析失败 → ts_top_list 停在 20261016；② tushare 兜底源已采到 d_20261019.parquet（data/tushare/top_list/，10-19 23:31 落盘，TushareSync rc=0），但 kg_dt_gap.py 只读 tdx 分区不读 tushare 兜底 → 兜底没接进重算链。阈值维持 2 天不放宽（真断线，不豁免）。见 CH-06/CH-07。"
+    },
+    "雪球": {
+      "frequency": "daily",
+      "max_age_days": 2,
+      "enabled": true,
+      "owner": "雪球情报线（xunyou_brief / xunyou_pool）",
+      "note": "⚠️ 自检当前判**绿**，但内容三段全 DEGRADED（pool 池档未产出 / evidence 'unable to open database file' / posterior combined_verdicts.json 不存在），且 cutover_verdict=BLOCK_CUTOVER。H5 只看日期不看内容 → **假绿**。此为 019 判据缺口，超出本单授权（仅授权读台账），已作为发现项上报，建议另开单补内容健康判据。见 CH-08。"
+    }
+  },
+  "artifacts": {
+    "xunyou_brief": {
+      "frequency": "daily",
+      "enabled": true,
+      "note": "日频正常产出（20261020），内容健康问题见 feeds.雪球。"
+    },
+    "shadow_daily_report": {
+      "frequency": "daily",
+      "enabled": true,
+      "note": "日频，最新 20261019（距今 1 天）。影子链今日 03:47 跑通 5 只（600519/000858/601318/300750/600036），仅覆盖 A 股 CN，无 US/HK 段。"
+    }
+  }
+}

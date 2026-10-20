@@ -97,8 +97,12 @@ class _Base(unittest.TestCase):
         (self.shadow / ("%s_%s.md" % (name, date_iso))).write_text("x", encoding="utf-8")
 
     def run_check(self, **kw):
+        """跑自检。默认注入**空台账**——单测必须与真实 channel_frequency.json
+        解耦：否则老田往台账里加一条停用声明就会把这里的断言全掀翻（测试要的是
+        判据行为，不是当天台账内容）。台账自身行为由 TestChannelFrequencyLedger 覆盖。"""
         kw.setdefault("feeds", {})
         kw.setdefault("artifacts", {})
+        kw.setdefault("ledger", {})
         return MH.check_morning(DATE, paths=self.paths, **kw)
 
     # ---- 全绿场景脚手架 ----
@@ -584,6 +588,204 @@ class TestRendering(_Base):
         self.assertIn("晨批健康自检", txt)
         self.assertIn("全部判据绿", txt)
         self.assertNotIn("H1", txt)
+
+
+class TestChannelFrequencyLedger(_Base):
+    """通道频次台账（WO-QT-20261020-021）。
+
+    覆盖工单点名的三条：
+      1. 台账声明**停用**的通道 → 显示「已停用」而非红（且不判绿）；
+      2. 台账声明**周频**的通道 → 按周频判时效（不因日频阈值误报红）；
+      3. 台账**缺失** → 沿用默认（不静默放宽）。
+    外加防掩盖两条：pending_mount 维持红；坏 JSON 落 H0 黄且不放宽。
+    """
+
+    def w_ledger(self, obj):
+        p = self.tmp / "ledger.json"
+        p.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
+        return p
+
+    def w_raw_ledger(self, text):
+        p = self.tmp / "ledger.json"
+        p.write_text(text, encoding="utf-8")
+        return p
+
+    # ---- ① 停用 ----
+    def test_disabled_channel_shows_disabled_not_red(self):
+        """台账 enabled=false → 「已停用（原因）」判黄，且不是红。"""
+        for pfx in MH.CHANNEL_PREFIXES.values():
+            self.w_poc(pfx, DATE, "_080000")     # 产物其实在，但停用优先显示
+        led = self.w_ledger({"channels": {"qd": {
+            "frequency": "daily", "enabled": False,
+            "reason": "双刀线下线，2026-10-18 起并入 portal 手动面板",
+            "evidence": "portal/qd_scan_cache.json mtime 2026-10-14",
+            "approved_by": "老田 WO-QT-20261020-021"}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        f = _f(r, "H2.qd")
+        self.assertEqual(f["severity"], "yellow")
+        self.assertIn("已停用", f["evidence"])
+        self.assertIn("双刀线下线", f["evidence"])
+        self.assertIn("老田", f["evidence"])          # 停用留痕：谁拍的
+        # 未停用的通道不受影响
+        self.assertEqual(_f(r, "H2.qpzm")["severity"], "green")
+
+    def test_disabled_channel_with_no_artifact_still_yellow_not_red(self):
+        """停用通道连产物都没有 → 仍是「已停用」黄，不是红（无产物是停用预期）。"""
+        led = self.w_ledger({"channels": {"hk": {
+            "enabled": False, "reason": "HK 通道暂缓"}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        self.assertEqual(_f(r, "H2.hk")["severity"], "yellow")
+        self.assertEqual(_f(r, "H4.4e")["severity"], "yellow")   # 段随通道
+        self.assertIn("已停用", _f(r, "H4.4e")["evidence"])
+
+    def test_disabled_is_never_green(self):
+        """停用≠健康：绝不能判绿（守住 fail-open 禁令）。"""
+        for pfx in MH.CHANNEL_PREFIXES.values():
+            self.w_poc(pfx, DATE, "_080000")
+        led = self.w_ledger({"channels": {"qd": {"enabled": False, "reason": "x"}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        self.assertNotEqual(_f(r, "H2.qd")["severity"], "green")
+
+    # ---- ② 周频 ----
+    def test_weekly_channel_judged_by_weekly_cadence(self):
+        """周频通道：6 天前的产物按日频(1天)判红，按周频(7天)降为黄。
+
+        注意分档语义：只有 age<=0（当日）才判绿，阈值内一律黄。故周频修正的
+        可观测效果是 **红 → 黄**，不是红 → 绿——「在周频窗口内」不等于「今日新鲜」。
+        """
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261014", "_080000")   # 距今 6 天
+        base = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                                ledger={})
+        self.assertEqual(_f(base, "H2.qd")["severity"], "red")       # 无台账：日频→红
+
+        led = self.w_ledger({"channels": {"qd": {"frequency": "weekly"}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        f = _f(r, "H2.qd")
+        self.assertEqual(f["severity"], "yellow")
+        self.assertIn("weekly", f["evidence"])
+        self.assertIn("阈值 7 天", f["evidence"])
+
+    def test_weekly_channel_still_red_when_overdue(self):
+        """周频不是免死金牌：超一周（8 天）仍判红。"""
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261012", "_080000")   # 距今 8 天
+        led = self.w_ledger({"channels": {"qd": {"frequency": "weekly"}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        self.assertEqual(_f(r, "H2.qd")["severity"], "red")
+
+    def test_weekly_feed_uses_weekly_threshold(self):
+        """H5 同理：周频数据源按周频阈值判，不被日频阈值误报红。"""
+        self.w_feed("xq", "20261014")               # 距今 6 天
+        feeds = {"周报": (self.FEED_REL, 1)}         # 代码默认给 1 天
+        base = MH.check_morning(DATE, paths=self.paths, feeds=feeds,
+                                artifacts={}, ledger={})
+        self.assertEqual(_f(base, "H5.周报")["severity"], "red")
+
+        led = self.w_ledger({"feeds": {"周报": {"frequency": "weekly"}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds=feeds, artifacts={},
+                             ledger_path=led)
+        self.assertEqual(_f(r, "H5.周报")["severity"], "green")
+
+    # ---- ③ 台账缺失/坏 JSON → 沿用默认，不静默放宽 ----
+    def test_missing_ledger_falls_back_to_default(self):
+        """台账文件不存在 → 行为等同空台账（默认阈值），红不被吃掉。"""
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261011", "_080000")   # 距今 9 天
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=self.tmp / "nope.json")
+        self.assertEqual(_f(r, "H2.qd")["severity"], "red")
+        self.assertIsNotNone(r["ledger"]["error"])       # 台账故障必须被看见
+        h0 = _f(r, "H0")
+        self.assertEqual(h0["severity"], "yellow")
+        self.assertIn("不", h0["evidence"])              # 明写「未放宽」
+
+    def test_broken_ledger_json_falls_back_and_flags(self):
+        """坏 JSON → 回落默认 + H0 黄；不得抛异常、不得放宽。"""
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261011", "_080000")
+        led = self.w_raw_ledger("{ this is not json ")
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        self.assertEqual(_f(r, "H2.qd")["severity"], "red")
+        self.assertIn("坏 JSON", _f(r, "H0")["evidence"])
+
+    def test_ledger_non_dict_root_falls_back(self):
+        """台账根节点非对象 → 回落默认（不抛、不放宽）。"""
+        led = self.w_raw_ledger("[1,2,3]")
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        self.assertIn("非对象", _f(r, "H0")["evidence"])
+
+    # ---- 防掩盖：pending_mount ≠ 停用 ----
+    def test_pending_mount_stays_red(self):
+        """pending_mount（已实现未挂载）→ 维持红，且证据点明是接线缺口。"""
+        led = self.w_ledger({"channels": {"hk": {
+            "frequency": "daily", "enabled": True, "pending_mount": True}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        f = _f(r, "H2.hk")
+        self.assertEqual(f["severity"], "red")
+        self.assertNotIn("已停用", f["evidence"])
+        h4 = _f(r, "H4.4e")
+        self.assertEqual(h4["severity"], "red")
+        self.assertIn("pending_mount", h4["evidence"])
+
+    def test_enabled_true_without_frequency_keeps_default(self):
+        """enabled=true 但没声明频次 → 沿用默认阈值（不因登记就放宽）。
+
+        2 天前产物 + 默认阈值 1 天 → 落在 (1, 2] 区间 = 红，与无台账时同判。
+        """
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261018", "_080000")   # 距今 2 天
+        base = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                                ledger={})
+        led = self.w_ledger({"channels": {"qd": {"enabled": True}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        self.assertEqual(_f(r, "H2.qd")["severity"],
+                         _f(base, "H2.qd")["severity"])
+        self.assertEqual(_f(r, "H2.qd")["severity"], "red")
+
+    def test_explicit_stale_days_beats_frequency(self):
+        """台账显式 stale_days 优先于 frequency 折算。"""
+        self.w_poc(MH.CHANNEL_PREFIXES["qd"], "20261017", "_080000")   # 距今 3 天
+        led = self.w_ledger({"channels": {"qd": {
+            "frequency": "weekly", "stale_days": 1}}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led)
+        self.assertEqual(_f(r, "H2.qd")["severity"], "red")          # 3>2*1
+
+    def test_caller_explicit_stale_days_overrides_ledger_frequency(self):
+        """调用方显式传 stale_days → 以调用方为准（台账不得静默压掉本次覆盖）。"""
+        for pfx in MH.CHANNEL_PREFIXES.values():
+            self.w_poc(pfx, "20261018", "_080000")                     # 距今 2 天
+        led = self.w_ledger({"channels": {ch: {"frequency": "daily"}
+                                         for ch in MH.CHANNELS}})
+        r = MH.check_morning(DATE, paths=self.paths, feeds={}, artifacts={},
+                             ledger_path=led, stale_days=5)
+        for ch in MH.CHANNELS:
+            self.assertEqual(_f(r, "H2.%s" % ch)["severity"], "yellow", ch)
+
+    # ---- 仓内真实台账（须存在且口径自洽）----
+    def test_shipped_ledger_is_valid_and_self_consistent(self):
+        """仓内台账必须能加载、且停用条目都带 reason（停用要留痕）。"""
+        led = MH.load_frequency_ledger()
+        self.assertIsNone(led["_error"], led["_error"])
+        for sec in ("channels", "feeds", "artifacts"):
+            self.assertTrue(led[sec], "台账 %s 段为空" % sec)
+        for name, e in led["channels"].items():
+            if e.get("enabled") is False:
+                self.assertTrue(e.get("reason") or e.get("note"),
+                                "停用条目 %s 缺 reason/note（停用必须留痕）" % name)
+            self.assertTrue(e.get("frequency"), "通道 %s 未声明 frequency" % name)
+
+    def test_shipped_ledger_does_not_disable_hk(self):
+        """HK 是 pending_mount 不是停用——把它记成停用就是把「没做」说成「不做」。"""
+        led = MH.load_frequency_ledger()
+        hk = led["channels"]["hk"]
+        self.assertIsNot(hk.get("enabled"), False)
+        self.assertTrue(hk.get("pending_mount"))
 
 
 if __name__ == "__main__":
