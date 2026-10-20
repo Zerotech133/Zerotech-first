@@ -1,4 +1,9 @@
-"""WO-QT-20261020-036：调用方已给出的 R0 内存证据逐段对账；不签发、不接线。"""
+"""WO-QT-20261020-036：调用方已给出的 R0 内存证据逐段对账；不签发、不接线。
+
+注意：探针返回值里的 ``probe["brief"]`` 只是 ``NOT_VERIFIED`` 存根，
+与本函数的 ``brief`` 参数（``build_research_brief`` 的研究简报）同名但不同物，
+误传会按「简报来源/日期不一致」失败关闭。
+"""
 from __future__ import annotations
 
 from datetime import date
@@ -7,10 +12,17 @@ import re
 
 _STAGES = ("source", "signal", "combined", "pool", "brief", "receipt")
 _COUNTS = ("source_events", "matched_events", "signals", "kept", "combined", "pool")
+_BRIEF_COUNT_KEYS = (*_COUNTS, "brief", "receipt")
+_SUPERSEDED_KEYS = frozenset(("action", "score", "dt", "rationale"))
 
 
 def _number(value):
     return type(value) is int and value >= 0
+
+
+def _same(left, right):
+    """类型严格相等：禁止 True 冒充 1、3.0 冒充 3。"""
+    return type(left) is type(right) and left == right
 
 
 def _day(value):
@@ -104,7 +116,9 @@ def reconcile_evidence(trade_date: str, probe: dict | None = None,
                 return stop("source", "签名核验与同日源快照/事件数不一致；多日池不得冒充单日签名")
             mark("source", "CALLER_ATTESTATION_CLAIM", total,
                  "仅收到调用方提供的验签结果，未在此处验签；不证明历史冻结或 READY")
-        elif source_attestation.get("status") not in ("UNVERIFIED", "REJECTED"):
+        elif source_attestation.get("status") == "REJECTED":
+            return stop("source", "来源验签已明确失败（疑似伪造或换源），不得继续对账")
+        elif source_attestation.get("status") != "UNVERIFIED":
             return stop("source", "来源核验状态不可信")
         elif source_attestation.get("business_date") not in (None, trade_date):
             return stop("source", "未验证的来源核验结果业务日也不得错日")
@@ -153,11 +167,25 @@ def reconcile_evidence(trade_date: str, probe: dict | None = None,
         items = row.get("contributions")
         if type(items) is not dict or not items:
             return stop("combined", "融合行缺少贡献明细")
+        if any(type(key) is not str or not key for key in items):
+            return stop("combined", "贡献明细的策略标识不合法")
         contributions += len(items)
         for item in items.values():
-            if type(item) is not dict or type(item.get("superseded", [])) is not list:
+            if type(item) is not dict:
                 return stop("combined", "被覆盖信号明细格式错误")
-            superseded += len(item.get("superseded", []))
+            superseded_items = item.get("superseded", [])
+            if type(superseded_items) is not list:
+                return stop("combined", "被覆盖信号明细格式错误")
+            for entry in superseded_items:
+                if (type(entry) is not dict or set(entry) != _SUPERSEDED_KEYS
+                        or type(entry.get("action")) is not str or not entry["action"]
+                        or type(entry.get("score")) is not float
+                        or not (entry.get("dt") is None or type(entry.get("dt")) is str)
+                        or type(entry.get("rationale")) is not str
+                        or len(entry["rationale"]) > 80):
+                    return stop("combined",
+                                "被覆盖条目字段不合法（空对象或伪造条目不得充数）")
+            superseded += len(superseded_items)
     if contributions != kept or contributions + superseded != signals:
         return stop("combined", "贡献/被覆盖条数与 Signal、kept 计数不一致")
     result["counts"].update(kept=kept, combined=fused)
@@ -194,18 +222,20 @@ def reconcile_evidence(trade_date: str, probe: dict | None = None,
             or brief["source"].get("business_date") != trade_date
             or type(brief.get("counts")) is not dict):
         return stop("brief", "简报来源、日期或研究边界不一致")
-    if (any(brief["counts"].get(key) != result["counts"][key] for key in _COUNTS)
-            or brief["counts"].get("brief") is not None
-            or brief["counts"].get("receipt") is not None
+    brief_counts = brief["counts"]
+    if (any(key not in brief_counts for key in _BRIEF_COUNT_KEYS)
+            or any(not _same(brief_counts[key], result["counts"][key]) for key in _COUNTS)
+            or not _same(brief_counts["brief"], None)
+            or not _same(brief_counts["receipt"], None)
             or brief.get("chain_status") != "VERIFIED_IN_MEMORY"
             or brief.get("probe_status") not in (None, "UNVERIFIED")
             or brief.get("real_source_verdict") not in (None, "BLOCKED_REAL_DATA")
             or type(brief.get("pool_summary")) is not dict
             or type(brief.get("scheme_c")) is not dict
-            or brief["pool_summary"].get("buy_total") != buys
-            or brief["scheme_c"].get("contributions") != kept
-            or brief["scheme_c"].get("superseded") != superseded):
-        return stop("brief", "简报计数/方案 C/池摘要与探针不一致")
+            or not _same(brief["pool_summary"].get("buy_total"), buys)
+            or not _same(brief["scheme_c"].get("contributions"), kept)
+            or not _same(brief["scheme_c"].get("superseded"), superseded)):
+        return stop("brief", "简报计数/方案 C/池摘要与探针不一致（缺键或类型不符亦拒）")
     result["counts"]["brief"] = 1
     mark("brief", "IN_MEMORY_ONLY", 1, "生成内存简报不等于已被接收")
     if receipt_attestation is None:

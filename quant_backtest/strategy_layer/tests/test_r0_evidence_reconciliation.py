@@ -6,6 +6,7 @@ import json
 import pytest
 
 from strategy_layer.r0_evidence_reconciliation import reconcile_evidence
+from strategy_layer.r0_historical_pool_probe import inspect_historical_pool
 from strategy_layer.r0_readonly_e2e import inspect_batch
 from strategy_layer.r0_research_brief import build_research_brief
 
@@ -14,10 +15,14 @@ DAY = "20261019"
 HASH = "a" * 64
 
 
+def _superseded(action="buy", score=87.0, dt="2026-10-18", rationale="旧信号"):
+    return {"action": action, "score": score, "dt": dt, "rationale": rationale}
+
+
 def evidence():
     rows = [
         {"trade_date": DAY, "symbol": "002633.SZ", "action": "sell",
-         "contributions": {"chan_monitor": {"superseded": [{"action": "buy"}]}}},
+         "contributions": {"chan_monitor": {"superseded": [_superseded()]}}},
         {"trade_date": DAY, "symbol": "002634.SZ", "action": "buy",
          "contributions": {"chan_monitor": {}}},
     ]
@@ -56,7 +61,7 @@ def evidence():
 def assert_blocked(result):
     assert result["real_source_verdict"] == "BLOCKED_REAL_DATA"
     assert result["cutover_verdict"] == "BLOCK_CUTOVER"
-    assert result["status"] != "READY"
+    assert result["status"] in ("NOT_VERIFIED", "REJECTED")
 
 
 def test_full_in_memory_chain_with_local_verifications_no_ready():
@@ -272,6 +277,112 @@ def test_real_probe_and_brief_shape_with_synthetic_batch(tmp_path):
     assert result["stages"]["brief"]["status"] == "IN_MEMORY_ONLY"
     assert result["counts"]["pool"] == 1
     assert_blocked(result)
+
+
+@pytest.mark.parametrize("index,path,value,stage", [
+    (0, ("brief_status",), "VERIFIED", "source"),
+    (0, ("receipt_status",), "VERIFIED_RECEIPT_ONLY", "source"),
+    (1, ("source_sha256",), "b" * 64, "source"),
+    (1, ("identity_status",), "UNVERIFIED", "source"),
+    (1, ("event_count",), 4, "source"),
+    (1, ("status",), "REJECTED", "source"),
+    (2, ("counts", "brief"), 1, "brief"),
+    (2, ("counts", "receipt"), 1, "brief"),
+    (2, ("pool_summary", "buy_total"), 2, "brief"),
+    (2, ("probe_status",), "VERIFIED", "brief"),
+])
+def test_bound_evidence_fields_must_match(index, path, value, stage):
+    """验签摘要/身份/事件数、探针 brief|receipt 状态、简报边界均须逐项绑定。"""
+    items = list(evidence())
+    target = items[index]
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    result = reconcile_evidence(DAY, *items)
+    assert result["stages"][stage]["status"] == "REJECTED"
+    assert_blocked(result)
+
+
+@pytest.mark.parametrize("key", ["matched_events", "pool", "source_events"])
+def test_brief_missing_count_key_is_rejected(key):
+    items = list(evidence())
+    del items[2]["counts"][key]
+    result = reconcile_evidence(DAY, *items)
+    assert result["stages"]["brief"]["status"] == "REJECTED"
+    assert_blocked(result)
+
+
+@pytest.mark.parametrize("path,value", [
+    (("counts", "pool"), True),
+    (("counts", "source_events"), 3.0),
+    (("scheme_c", "contributions"), 2.0),
+    (("pool_summary", "buy_total"), True),
+])
+def test_brief_numeric_types_must_match_strictly(path, value):
+    """True/3.0 不得冒充 1/3（探针侧已是严格 int 口径）。"""
+    items = list(evidence())
+    target = items[2]
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = value
+    assert reconcile_evidence(DAY, *items)["stages"]["brief"]["status"] == "REJECTED"
+
+
+@pytest.mark.parametrize("superseded", [
+    [{}] * 9,
+    [{"action": "buy", "score": "87.0", "dt": None, "rationale": ""}],
+    [{"action": "buy", "score": 87.0, "dt": None}],
+    [{"action": "buy", "score": 87.0, "dt": None, "rationale": "", "extra": 1}],
+    [{"action": "", "score": 87.0, "dt": None, "rationale": ""}],
+    [{"action": "buy", "score": 87, "dt": None, "rationale": ""}],
+    [{"action": "buy", "score": 87.0, "dt": None, "rationale": "x" * 81}],
+    ["x"],
+])
+def test_fabricated_superseded_entries_cannot_inflate_counts(superseded):
+    """10 条源事件不能只由 1 行真实内容 + 空对象充数支撑。"""
+    probe, _, _, _ = evidence()
+    probe["counts"] = {"source_events": 10, "signals": 10, "kept": 1,
+                       "combined": 1, "pool": 1}
+    probe["combined"] = [{"trade_date": DAY, "symbol": "002634.SZ", "action": "buy",
+                          "contributions": {"chan_monitor": {"superseded": superseded}}}]
+    probe["pool"] = {"scope": "RESEARCH_ONLY_NOT_PRODUCTION",
+                     "cutover_verdict": "BLOCK_CUTOVER", "trade_date": DAY,
+                     "stats": {"combined_total": 1, "buy_total": 1,
+                               "superseded_total": len(superseded)},
+                     "pool": [{"symbol": "002634.SZ", "action": "buy"}]}
+    result = reconcile_evidence(DAY, probe)
+    assert result["stages"]["combined"]["status"] == "REJECTED"
+    assert_blocked(result)
+
+
+def test_real_historical_producer_feeds_reconciliation(tmp_path):
+    """真实 inspect_historical_pool 产出（含 matched_events）须可被对账消费。"""
+    rows = [
+        {"market": "CN", "code": "002633.SZ", "type": "2买", "dt": "2026-10-18",
+         "detect_date": "2026-10-19", "price": 10.0, "mbei": None, "bei": None,
+         "bei2": None, "vv": True},
+        {"market": "CN", "code": "002634.SZ", "type": "2买", "dt": "2026-10-18",
+         "detect_date": "2026-10-19", "price": 11.0, "mbei": None, "bei": None,
+         "bei2": None, "vv": True},
+        {"market": "CN", "code": "002635.SZ", "type": "2买", "dt": "2026-10-10",
+         "detect_date": "2026-10-15", "price": 12.0, "mbei": None, "bei": None,
+         "bei2": None, "vv": True},
+    ]
+    source = tmp_path / "pool.jsonl"
+    source.write_bytes("".join(json.dumps(row, ensure_ascii=False) + "\n"
+                               for row in rows).encode("utf-8"))
+    probe = inspect_historical_pool(DAY, source)
+    assert probe["chain_status"] == "VERIFIED_IN_MEMORY"
+    assert probe["counts"]["source_events"] == 3
+    assert probe["counts"]["matched_events"] == 2
+    result = reconcile_evidence(DAY, probe, brief=probe["brief"])
+    assert result["stages"]["source"]["count"] == 3
+    assert result["counts"]["matched_events"] == result["counts"]["signals"] == 2
+    assert result["stages"]["brief"]["status"] == "IN_MEMORY_ONLY"
+    assert_blocked(result)
+    # 同一签核参数：历史多日池整池 3 条不能冒充当日 2 条的单日签名
+    attestation = dict(evidence()[1], event_count=3)
+    assert reconcile_evidence(DAY, probe, attestation)["stages"]["source"]["status"] == "REJECTED"
 
 
 @pytest.mark.parametrize("bad", ["20260230", "2026-10-19", None])
