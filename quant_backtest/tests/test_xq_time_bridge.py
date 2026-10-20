@@ -65,6 +65,13 @@ class TestValidationContract:
         with pytest.raises(ValueError):
             ms_to_local_str(bad)
 
+    @pytest.mark.parametrize("huge", [10**14, 2**60])
+    def test_out_of_range_value_raises_value_error(self, huge):
+        """F4 (WO-057): values beyond the platform datetime range surface
+        as the documented ValueError, never a raw OSError/OverflowError."""
+        with pytest.raises(ValueError):
+            ms_to_local_str(huge)
+
 
 class TestNoReverseParsing:
     def test_module_source_has_no_str_to_ms_parsing(self):

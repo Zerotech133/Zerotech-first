@@ -330,6 +330,52 @@ class ProgressViewOfflineTests(unittest.TestCase):
         after = self._snapshot_counts()
         self.assertEqual(before, after)
 
+    # ------------------------------------------------------------------
+    # i. Missing queue schema: explicit None, never OperationalError
+    # ------------------------------------------------------------------
+
+    def test_build_progress_view_tolerates_missing_queue_table(self) -> None:
+        """A DB without the queue schema yields None queue_state, no error."""
+        with tempfile.TemporaryDirectory() as tmp_name:
+            conn = sqlite3.connect(
+                Path(tmp_name) / "no_queue.sqlite3", isolation_level=None)
+            try:
+                conn.execute("PRAGMA foreign_keys=ON")
+                # Mirror queue.init_schema's underlying setup minus the
+                # queue tables themselves: reverse ledger and store only.
+                ledger.init_schema(conn)
+                conn.execute("BEGIN IMMEDIATE")
+                store.init_schema(conn)
+                conn.commit()
+                names = [row[0] for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table' "
+                    "AND name = 'xq_offline_queue'").fetchall()]
+                self.assertEqual(names, [])
+                view = progress_view.build_progress_view(
+                    conn, SYMBOL, as_of_ms=AS_OF_MS)
+            finally:
+                conn.close()
+        self.assertEqual(set(view), set(VIEW_KEYS))
+        for lane in ("new", "history"):
+            self.assertIsNone(view["lanes"][lane]["queue_state"])
+        board = None
+        with tempfile.TemporaryDirectory() as tmp_name:
+            conn = sqlite3.connect(
+                Path(tmp_name) / "no_queue_board.sqlite3", isolation_level=None)
+            try:
+                conn.execute("PRAGMA foreign_keys=ON")
+                ledger.init_schema(conn)
+                conn.execute("BEGIN IMMEDIATE")
+                store.init_schema(conn)
+                conn.commit()
+                board = progress_view.build_board(
+                    conn, [SYMBOL, EMPTY_SYMBOL], as_of_ms=AS_OF_MS)
+            finally:
+                conn.close()
+        self.assertEqual(
+            [row["lanes"]["new"]["queue_state"] for row in board],
+            [None, None])
+
 
 if __name__ == "__main__":
     unittest.main()

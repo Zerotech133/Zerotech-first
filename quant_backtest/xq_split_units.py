@@ -291,10 +291,13 @@ def split_post(
     ever produced (event extraction not wired).
 
     Each ``unit_id`` is a truncated sha256 over source, raw_post_id, unit_type
-    and a per-type key (business key for post/author/time/content, type-local
-    sequence number for mention), so splitting the same input twice yields the
-    identical unit_id sequence. Invalid posts or relations raise ValueError or
-    TypeError (closed on failure) and nothing is fabricated.
+    and a per-type key (business key for post/author/time/content, and for
+    mention the type-local sequence number joined with the symbol and excerpt
+    fingerprint), so splitting the same input twice yields the identical
+    unit_id sequence. Changed mention evidence therefore never collides with
+    a prior mention unit_id of the same raw post. Invalid posts or relations
+    raise ValueError or TypeError (closed on failure) and nothing is
+    fabricated.
     """
     post_id, original = _post_payload(post)
     if isinstance(relations, (str, bytes)) or not isinstance(relations, Sequence):
@@ -331,12 +334,16 @@ def split_post(
         payload=_time_fact(post, original),
     ))
     for index, relation in enumerate(relations):
+        fact = _mention_fact(relation, post_id, original)
         units.append(Unit(
-            unit_id=_unit_id(SOURCE_XUEQIU, post_id, UNIT_TYPE_MENTION, str(index)),
+            unit_id=_unit_id(
+                SOURCE_XUEQIU, post_id, UNIT_TYPE_MENTION,
+                "%d\x1f%s\x1f%s" % (index, fact["symbol"], fact["excerpt"]),
+            ),
             unit_type=UNIT_TYPE_MENTION,
             source=SOURCE_XUEQIU,
             raw_post_id=post_id,
-            payload=_mention_fact(relation, post_id, original),
+            payload=fact,
         ))
     for field_name in CONTENT_FIELD_NAMES:
         fact = _content_fact(field_name, original)

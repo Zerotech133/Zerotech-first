@@ -226,3 +226,48 @@ def test_dangling_raw_post_id_tolerated_without_pragma(tmp_path) -> None:
     with connect(tmp_path, foreign_keys=False) as connection:
         stage_post(connection)
         assert persist(connection, [orphan]) == (1, 0)
+
+
+def changed_relation() -> PostSymbolInput:
+    """Same raw post, corrected evidence: excerpt text differs from pass one."""
+    return PostSymbolInput(
+        post_id="p123",
+        symbol="$SH600000",
+        evidence_type="post_content",
+        evidence_json={
+            "source_field": "text",
+            "excerpt": "$SH600000",
+        },
+    )
+
+
+def test_repersist_with_changed_relations_never_collides(tmp_path) -> None:
+    """Blind spot d (WO-057): the same post re-split with changed mention
+    evidence persists the corrected mention as a NEW unit_id; unchanged
+    non-mention units stay idempotent-ignored. No collision, no overwrite."""
+    with connect(tmp_path) as connection:
+        stage_post(connection)
+        first = xq_split_units.split_post(post(), [relation()])
+        assert persist(connection, first) == (5, 0)
+        before = unit_rows(connection)
+        second = xq_split_units.split_post(post(), [changed_relation()])
+        mention_first = [u for u in first if u.unit_type == "mention"]
+        mention_second = [u for u in second if u.unit_type == "mention"]
+        # F2 fingerprint: changed evidence -> different mention unit_id.
+        assert mention_second[0].unit_id != mention_first[0].unit_id
+        # Non-mention identity is untouched by evidence changes.
+        non_mention_first = sorted(
+            u.unit_id for u in first if u.unit_type != "mention")
+        non_mention_second = sorted(
+            u.unit_id for u in second if u.unit_type != "mention")
+        assert non_mention_first == non_mention_second
+        # Second pass inserts only the corrected mention; the other four
+        # units are ignored as duplicates (no collision, no rewrite).
+        assert persist(connection, second) == (1, 4)
+        after = unit_rows(connection)
+        assert len(after) == len(before) + 1
+        all_ids = [row[0] for row in after]
+        assert len(all_ids) == len(set(all_ids))
+        payloads = [row[4] for row in after]
+        corrected = [row[4] for row in after if row[0] == mention_second[0].unit_id]
+        assert len(corrected) == 1 and "$SH600000" in corrected[0]

@@ -111,8 +111,18 @@ def _queue_state(
 
     No task means the whole value is ``None``; a present task is reduced to
     exactly ``{state, page_key, claim_id, batch_id}``. Nothing is invented
-    when the queue is empty for this stock-lane.
+    when the queue is empty for this stock-lane. A database that has never
+    initialized the offline queue schema (no ``xq_offline_queue`` table)
+    also yields ``None`` instead of raising, so the missing surface follows
+    the same "missing data surfaces as explicit ``None``" contract as the
+    other lanes.
     """
+    table = conn.execute(
+        "SELECT name FROM sqlite_master"
+        " WHERE type = 'table' AND name = 'xq_offline_queue'"
+    ).fetchone()
+    if table is None:
+        return None
     for task in xq_offline_queue.tasks(conn):
         if task.symbol == symbol and task.lane == lane:
             return {
@@ -216,8 +226,9 @@ def build_progress_view(
     Raises:
         ValueError: The stock, evaluation instant, or sample size is
             invalid. Closed on failure.
-        sqlite3.Error: The required tables are absent or SQLite cannot
-            read.
+        sqlite3.Error: The required ledger or evidence tables are absent
+            or SQLite cannot read. A missing offline queue table is
+            tolerated and surfaces as an explicit ``None`` queue_state.
     """
     symbol = _required_symbol(symbol)
     as_of_ms = _required_as_of_ms(as_of_ms)
@@ -260,8 +271,9 @@ def build_board(
         ValueError: ``symbols`` is not a list, any entry is not a nonempty
             string, or ``as_of_ms``/``sample_limit`` is invalid. Closed on
             failure; no partial board.
-        sqlite3.Error: The required tables are absent or SQLite cannot
-            read.
+        sqlite3.Error: The required ledger or evidence tables are absent
+            or SQLite cannot read. A missing offline queue table is
+            tolerated and surfaces as an explicit ``None`` queue_state.
     """
     if not isinstance(symbols, list):
         raise ValueError("symbols must be a list of nonempty strings")

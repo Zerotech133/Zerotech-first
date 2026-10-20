@@ -29,7 +29,9 @@ def ms_to_local_str(value: int) -> str:
     second-granularity output format, matching the legacy chain.
 
     Raises:
-        ValueError: if ``value`` is not a non-negative ``int``.
+        ValueError: if ``value`` is not a non-negative ``int``, or if it
+            is too large for the platform datetime range (out of
+            representable range).
     """
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(
@@ -37,4 +39,9 @@ def ms_to_local_str(value: int) -> str:
         )
     if value < 0:
         raise ValueError(f"ms_to_local_str expects a non-negative int, got {value}")
-    return datetime.fromtimestamp(value / 1000).strftime(_FORMAT)
+    try:
+        return datetime.fromtimestamp(value / 1000).strftime(_FORMAT)
+    except (OSError, OverflowError) as error:
+        raise ValueError(
+            f"ms_to_local_str value out of representable range: {value}"
+        ) from error
