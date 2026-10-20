@@ -41,6 +41,10 @@ h2.sec small{font:400 11.5px var(--font-mono);color:var(--text-dim);margin-left:
 #sub-result .card{border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-surface);padding:12px 14px;font-size:12.5px;line-height:1.8;overflow-wrap:anywhere}
 #sub-result .kv b{color:var(--gray-6);font-weight:600}
 #sub-result .err{color:var(--color-err)}
+#sub-list table{width:100%;border-collapse:collapse;font-size:12px;margin:0 0 12px}
+#sub-list th,#sub-list td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:left;overflow-wrap:anywhere}
+#sub-list th{font:600 11px var(--font-mono);color:var(--text-dim);white-space:nowrap}
+#sub-list .sum{font:11.5px var(--font-mono);color:var(--text-dim);margin:0 0 6px}
 .plans{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 8px}
 .plan{flex:1 1 260px;min-width:230px;border:1px solid var(--border);border-radius:var(--r-m);background:var(--bg-raised);padding:12px 14px}
 .plan small{display:block;font:600 11px var(--font-mono);color:var(--text-dim);margin-bottom:6px}
@@ -82,8 +86,9 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <button type="button" id="retry">重试</button>
 </div>
 
-<h2 class="sec">订阅者总览<small>逐个查询 · 无批量列表端点</small></h2>
-<div class="notice warn"><b>批量列表挂账</b>——本期无 /api/subscription/list 端点（挂账），仅支持凭 open_id 逐个查询；无法呈现订阅者全集，本卡不冒充全景。</div>
+<h2 class="sec">订阅者总览<small>订阅者全集 · 逐个查询</small></h2>
+<div class="notice"><b>批量列表已上线</b>——/api/subscription/list 端点已上线（FE-B 2026-10-20），下方订阅者全集表直接读取（只读 GET）；凭 open_id 逐个查询（/api/subscription/status）继续保留。</div>
+<div id="sub-list"><div class="empty-state">读取中……读取失败时此处显示降级说明，不显示兜底数据。</div></div>
 <div class="lookup">
 <label for="open-id-input">订阅者 open_id（飞书开放平台标识）：</label>
 <div class="row">
@@ -116,7 +121,7 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <footer class="legend">
 <h3>图例与边界</h3>
 <div>· 本页只读投影，零写操作；定价、开通、退订、额度调整不在本页办理。</div>
-<div>· 订阅者总览为逐个查询（/api/subscription/status），本期无批量列表端点（挂账 /api/subscription/list）；无列表 ≠ 无订阅者。</div>
+<div>· 订阅者总览含订阅者全集表（/api/subscription/list）与逐个查询（/api/subscription/status），均只读 GET；ok=False 或空列表为诚实空态——账本不可用 ≠ 无订阅者，暂无订阅者 ≠ 无商机。</div>
 <div>· customer 域观察卡来自 /api/notify/queue 的 domain-observe 留痕与 subscription_required 相关 blocked 条目；留痕为商机信号，本页不自动转化、不回发。</div>
 <div>· 档位卡为 SEED_PLANS 静态投影；价格「待定价」为诚实标注，不编造数字。</div>
 <div>· 聚合时点（generated_at）不等于任何子源的健康时点；空态不等于「无留痕」。</div>
@@ -145,12 +150,49 @@ function emptyCard(sel,msg){
  box.append(el('div','empty-state',msg));
 }
 
-/* 分区一：订阅者逐个查询（GET /api/subscription/status?open_id=…） */
+/* 分区一：订阅者全集表（GET /api/subscription/list，P2.6 FE-B） */
+function renderSubList(d){
+ const box=$('sub-list');box.replaceChildren();
+ const rows=Array.isArray(d.subscribers)?d.subscribers:[];
+ if(!rows.length){
+  box.append(el('div','empty-state','暂无订阅者（账本为空）。空列表 ≠ 无商机——只代表本时点账本没有可展示行，本卡不冒充全景。'));
+  return;
+ }
+ box.append(el('p','sum','订阅者 '+text(d.count)+' 行（ORDER BY open_id 稳定序，至多 200 行）。'));
+ const tb=el('table');
+ const tr=el('tr');
+ for(const h of ['open_id','显示名','档位','状态','到期','今日已用'])tr.append(el('th',null,h));
+ tb.append(tr);
+ for(const s of rows){
+  if(!s||typeof s!=='object')continue;
+  const r=el('tr');
+  for(const v of [text(s.open_id),text(s.display_name)||'—',text(s.plan_id)||'—',text(s.status)||'—',text(s.end)||'—',text(s.used_today)]){
+   r.append(el('td',null,v));
+  }
+  tb.append(r);
+ }
+ box.append(tb);
+}
+
+async function loadSubscribers(){
+ let d=null,err=null;
+ try{d=await fetchJson('/api/subscription/list?limit=200');}
+ catch(e){err=e&&e.message?e.message:'未知错误';}
+ if(err||!d||typeof d!=='object'||d.ok===false||text(d.error)){
+  const box=$('sub-list');box.replaceChildren();
+  const why=err||('端点返回错误：'+text(d&&d.error)+'（closed on failure 原样透出，不猜数）');
+  box.append(el('div','empty-state','账本不可用（'+why+'）。本卡不显示兜底数据——账本不可用 ≠ 无订阅者，请核对服务后重试。'));
+  return;
+ }
+ renderSubList(d);
+}
+
+/* 分区二：订阅者逐个查询（GET /api/subscription/status?open_id=…） */
 async function lookup(){
  const oid=text($('open-id-input').value).trim();
  const box=$('sub-result');box.replaceChildren();
  if(!oid){
-  box.append(el('div','empty-state','请先输入 open_id 再查询——本页不猜身份、不批量拉取（本期无列表端点，挂账）。'));
+  box.append(el('div','empty-state','请先输入 open_id 再查询——本页不猜身份；订阅者全集见上方订阅者全集表。'));
   return;
  }
  box.append(el('div','empty-state','查询中…（open_id: '+oid+'）'));
@@ -191,7 +233,7 @@ async function lookup(){
  box.append(c);
 }
 
-/* 分区二：customer 域观察（/api/notify/queue 过滤 domain-observe / subscription_required） */
+/* 分区三：customer 域观察（/api/notify/queue 过滤 domain-observe / subscription_required） */
 function renderObserve(q){
  const box=$('observe-card');box.replaceChildren();
  const items=Array.isArray(q&&q.items)?q.items:[];
@@ -231,6 +273,7 @@ async function loadObserve(){
 }
 
 function load(){
+ loadSubscribers();
  loadObserve();
 }
 
