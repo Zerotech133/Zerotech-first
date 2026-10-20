@@ -26,6 +26,10 @@ print("T1 验签字节化 OK（合法UTF-8等价 / 非UTF-8失真修复）")
 import api_misc  # noqa: E402
 H = api_misc.Handler
 _called = []
+# 桩前先保存原引用：api_misc.subprocess 就是标准库 subprocess 模块本体，
+# 模块级替换 = 污染全进程（2026-10-20 判例：后续 test_subscription_smoke
+# 的子进程调用拿到无 stdout 的桩对象 → AttributeError）。文件末尾恢复。
+_orig_subprocess_run = api_misc.subprocess.run
 api_misc.subprocess.run = (lambda *a, **k:
                            _called.append(a) or types.SimpleNamespace(
                                returncode=0))
@@ -156,5 +160,8 @@ H._api_feishu_event(h, json.dumps(_body407).encode("utf-8"))
 assert resp and resp[0][1] == 200, resp
 
 del os.environ["FEISHU_ENCRYPT_KEY"]
+# 恢复被桩替换的 subprocess.run（脚本式测试无 teardown，就地恢复，
+# 防止后续测试文件继承假 run——fail-open 禁令的测试侧镜像）
+api_misc.subprocess.run = _orig_subprocess_run
 print("T5 防重放窗口 OK（新鲜200 / 过去403 / 未来403 / 非数字403 / 边界内200）")
 print("ALL PASS")
