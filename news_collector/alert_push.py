@@ -161,12 +161,13 @@ def push_card_multi(card, qr_portal=None, targets=None, kind="daily:alert"):
     targets = targets or [{"name": "个人", "type": "open_id", "id": None}]
     results = {}
     primary = targets[0]
-    results[primary["name"]] = card_build.push_card(card, qr_portal=qr_portal)
+    results[primary["name"]] = card_build.push_card(card, qr_portal=qr_portal,
+                                                    kind=kind)
     card_json = json.dumps(card, ensure_ascii=False)
     for t in targets[1:]:
         try:
             results[t["name"]] = send_content_to(
-                t["id"], t["type"], card_json, "interactive")
+                t["id"], t["type"], card_json, "interactive", kind=kind)
         except Exception:
             results[t["name"]] = False
     # 统一发送流水（商业化计费依据；fail-safe）
