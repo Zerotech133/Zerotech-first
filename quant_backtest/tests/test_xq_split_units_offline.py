@@ -1,9 +1,8 @@
 """Synthetic offline contracts for the minimal split-unit model.
 
-These tests are intentionally not executed while the repository's dynamic-test
-safety approval is outstanding. Every fixture is synthetic and constructed in
-memory; no network, no database writes, and no dynamic execution are required
-to understand or review them.
+Every fixture is synthetic and constructed in memory; no network and no
+database writes are involved. Dynamically executed as part of the WO-046
+scoped acceptance (11 passed, 2026-10-20) and merged with batch 73f7cc58.
 """
 
 from __future__ import annotations
@@ -301,6 +300,21 @@ class SplitUnitsOfflineTests(unittest.TestCase):
                 xq_split_units.split_post(self.post("p1", raw))
             self.assertEqual(str(error.exception),
                              "raw_json must be serializable as JSON")
+
+    def test_non_dict_raw_json_types_raise_typeerror(self) -> None:
+        """Types outside dict/str hit the TypeError guard, store-aligned."""
+        for raw in (None, 42, 1.5, complex(1, 2), True, [1, 2], {1, 2},
+                    ("tuple",), object()):
+            post_input = xq_reverse_store.RawPostInput(
+                post_id="p1",
+                original_url="https://xueqiu.com/test/p1",
+                created_at_ms=1_600_000_000_000,
+                raw_json=raw,
+            )
+            with self.assertRaises(TypeError) as error:
+                xq_split_units.split_post(post_input)
+            self.assertEqual(str(error.exception),
+                             "raw_json must be a JSON object or JSON string")
 
 
 if __name__ == "__main__":
