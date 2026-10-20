@@ -68,18 +68,22 @@ def test_full_trial_chain_blocked_and_disclosed(tmp_path, source_file):
     # 试运行披露逐字在报
     assert any("代为执行" in d for d in report["disclosures"])
     assert any("trial-grade" in d for d in report["disclosures"])
-    # 密钥分离落盘：私钥在 work/keys（0600），公钥在独立 pub 目录
-    assert (work / "keys" / "issuer_private.pem").is_file()
-    assert (work / "keys" / "receiver_private.pem").is_file()
+    # 一次性私钥生命周期终结（WO-061）：文件用后销毁 + 终报留痕
+    assert not (work / "keys" / "issuer_private.pem").exists()
+    assert not (work / "keys" / "receiver_private.pem").exists()
+    assert report["segments"]["key_hygiene"]["status"] == "DESTROYED"
+    assert set(report["segments"]["key_hygiene"]["files"]) == {
+        "issuer_private.pem", "receiver_private.pem"}
+    # 公钥仍落独立 pub 目录；私钥绝不外流
     assert (pub / "issuer_public.pem").is_file()
     assert (pub / "receiver_public.pem").is_file()
     assert not (pub / "issuer_private.pem").exists()
-    mode = os.stat(work / "keys" / "issuer_private.pem").st_mode & 0o777
-    # Windows 不支持 POSIX 权限位（实际 0o666）；POSIX 上必须 0600
-    if os.name == "posix":
-        assert mode == 0o600
-    else:
-        assert mode & 0o200  # 属主可写存在即可（Windows 掩码限制）
+    # 冻结证据落地：manifest 记录源文件 mtime（披露承诺的可核证据）
+    manifest = json.loads(
+        next(p for p in work.glob("*.json")
+             if json.loads(p.read_text(encoding="utf-8")).get("freeze_basis"))
+        .read_text(encoding="utf-8"))
+    assert isinstance(manifest.get("source_mtime_utc"), float)
     assert report["issuer_id"] == TRIAL_ISSUER_ID
     assert report["receiver_identity"] == TRIAL_RECEIVER_IDENTITY
     # 终报可落盘且字段一致
@@ -98,6 +102,10 @@ def test_empty_batch_no_match_is_legal_terminal(tmp_path):
                             pubkey_out_dir=tmp_path / "pub2", now=NOW)
     assert report["segments"]["probe"]["status"] == "NO_MATCH_UNVERIFIED"
     assert report["status"] == "BLOCKED_NOT_READY"
+    # WO-061：空批在对账层同样是合法终态——豁免后 NOT_VERIFIED，
+    # 不得被 reconcile REJECTED 后又被顶层洗白（终报门检钉住）
+    assert report["segments"]["reconciliation"]["status"] == "NOT_VERIFIED"
+    assert report["final"]["status"] == "NOT_VERIFIED"
     assert report["trial_outcome"]["matched_events"] is None  # 未匹配：不适用
     assert "零匹配" in report["trial_outcome"]["note"]
     assert _has_ready_value(report) is False

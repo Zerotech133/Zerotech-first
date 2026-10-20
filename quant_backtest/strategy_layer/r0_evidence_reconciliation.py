@@ -112,7 +112,11 @@ def reconcile_evidence(trade_date: str, probe: dict | None = None,
                     or not source.get("sha256")
                     or source_attestation.get("source_sha256") != source["sha256"]
                     or source_attestation.get("event_count") != total
-                    or historical and matched != total):
+                    or (historical and matched != total
+                        and not (matched is None and total == 0))):
+                # 空批豁免：matched=None 且 total=0 表示"整池零行+零检出"，
+                # 是合法空批终态（下游 POST_HOC_NO_MATCH 分支按未知计数
+                # 判 NOT_VERIFIED）；其余 historical 与凭证不一致仍拒绝。
                 return stop("source", "签名核验与同日源快照/事件数不一致；多日池不得冒充单日签名")
             mark("source", "CALLER_ATTESTATION_CLAIM", total,
                  "仅收到调用方提供的验签结果，未在此处验签；不证明历史冻结或 READY")

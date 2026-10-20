@@ -72,6 +72,8 @@ def _write_private_key(key: Ed25519PrivateKey, path: Path) -> None:
         os.write(fd, pem)
     finally:
         os.close(fd)
+    # 预存宽权限文件不会被 O_CREAT 的 mode 收紧，显式 chmod 兜底
+    os.chmod(path, 0o600)
 
 
 def _export_public_key(key: Ed25519PrivateKey, path: Path) -> None:
@@ -133,6 +135,7 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
     try:
         # 段 1：点时冻结（唯一读取源字节；冻结副本与 manifest 落 work_dir）
         source = Path(source_path)
+        source_mtime_utc = os.path.getmtime(source)
         raw = source.read_bytes()
         (work / _SOURCE_COPY).write_bytes(raw)
         lines = raw.decode("utf-8").split("\n")
@@ -142,6 +145,7 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
             "source_path": str(work / _SOURCE_COPY),
             "business_date": business_day,
             "observed_date": clock.date().isoformat(),
+            "source_mtime_utc": source_mtime_utc,
             "source_sha256": hashlib.sha256(raw).hexdigest(),
             "event_count": len(lines),
             "freeze_basis": "point_in_time_freeze_of_live_pool_file",
@@ -227,6 +231,12 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
         reconciliation = reconcile_evidence(
             business_day, probe=probe, source_attestation=source_result,
             brief=brief, receipt_attestation=receipt_result)
+        if reconciliation["status"] == "REJECTED":
+            fr = fail("reconciliation", "RECONCILIATION_REJECTED",
+                      "对账层判定 REJECTED，终报不得洗白为合法终态")
+            fr["segments"]["reconciliation"]["counts"] = dict(
+                reconciliation["counts"])
+            return fr
         report["segments"]["reconciliation"] = {
             "status": reconciliation["status"],
             "counts": dict(reconciliation["counts"])}
@@ -251,6 +261,22 @@ def run_real_trial(source_path: str | Path, work_dir: str | Path,
     except Exception as exc:  # 失败关闭：异常也结构化，不裸抛
         return fail("trial", "UNEXPECTED_EXCEPTION",
                     f"{type(exc).__name__}: {exc}")
+    finally:
+        # 一次性私钥生命周期终结（机制约束，非仅披露文案）：
+        # 无论成功/失败路径，链尾销毁私钥文件并在终报留痕。
+        destroyed = []
+        for kp in (work / "keys" / "issuer_private.pem",
+                   work / "keys" / "receiver_private.pem"):
+            try:
+                if kp.exists():
+                    kp.unlink()
+                    destroyed.append(kp.name)
+            except OSError:
+                pass  # 销毁失败留待人工清钥，不掩盖原终态
+        if destroyed:
+            report["segments"]["key_hygiene"] = {
+                "status": "DESTROYED", "files": destroyed,
+                "note": "一次性私钥用后销毁；用后不复用为机制约束"}
 
 
 def save_report(report: dict, work_dir: str | Path) -> Path:

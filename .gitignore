@@ -234,3 +234,7 @@ quant_backtest/tmp/
 # ===== CZSC 影子旁路 venv（K-ORG-202：第三方独立运行态，不进版本控制）=====
 # czsc==1.0.2 仅存此 venv，主仓零依赖；误收编将引入大体积二进制与闭源 wheel
 quant_backtest/.venv_czsc/
+
+# WO-QT-20261020-061: trial-grade private keys must never be tracked,
+# regardless of caller-chosen work_dir outside work/
+*_private.pem
