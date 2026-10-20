@@ -3941,6 +3941,25 @@ color:#fff;font-size:13.5px;cursor:pointer}
             else:
                 import subscription_store as _sub_store
                 self._json(_sub_store.get_subscriber_summary(_oid))
+        elif path == "/api/subscription/list":
+            # P2.6 订阅批量列表（FE-B 2026-10-20）：订阅者全集只读出口。
+            # ?limit= 可选（默认 50，钳制 [1,200]；非法值回落默认 50），
+            # 零写参数——本端点不接收任何写参数，写操作仍只在
+            # subscription_store 模块内（M3 收银台另批）。
+            # list_subscribers 自身 closed on failure（store 缺失/异常返回
+            # {"ok": False, "error": "store_unavailable"} 不抛），此处
+            # 不吞错不造数，原样透传。
+            from urllib.parse import parse_qs as _pq_subl
+            _raw = (_pq_subl(qs, keep_blank_values=True)
+                    .get("limit") or [""])[0].strip()
+            _limit = 50
+            if _raw:
+                try:
+                    _limit = int(_raw)
+                except ValueError:
+                    _limit = 50
+            import subscription_store as _sub_store
+            self._json(_sub_store.list_subscribers(limit=_limit))
         elif path == "/my-subscription":
             # P2.5 客户订阅只读投影页（FD-A 2026-10-20）：订阅状态 / 当日
             # 额度余量 / 账单占位，照 notify-command/ops-board 判例，
