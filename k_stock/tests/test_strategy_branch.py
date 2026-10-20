@@ -73,10 +73,14 @@ def _signal(**over) -> dict:
     return sig
 
 
-def _plan_con(tmp_path) -> sqlite3.Connection:
-    con = sqlite3.connect(tmp_path / "plan.db")
-    con.row_factory = sqlite3.Row
-    return con
+def _plan_con(engine) -> sqlite3.Connection:
+    """预案账连接（WO-QT-20261020-012 接线约束）。
+
+    接线约束：快照侧的禁回写校验查的是 **engine 所在的库**，因此预案账
+    必须与快照账同库同连接——否则跟随分支落单时快照写入会 plan_not_found
+    （fail-visible）。此前本测试用独立 plan.db，接线后契约澄清为同库同连接
+    （同库双连接会触发 sqlite 写锁等待，故直接复用 engine 的连接）。"""
+    return engine.con
 
 
 def _add_plan(con, plan_version="pv-20261008-001", action="BUY",
@@ -154,7 +158,7 @@ def test_same_signal_two_branches_parallel_isolated_ledgers(tmp_path):
     """跟随分支按信号时刻生效 plan 执行（引用 plan_version）、激进分支按
     persona 直接响应——两账本独立落单、ref 幂等键按 @账户 分段互不串账。"""
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)
+    con = _plan_con(e)
     plan_row = _add_plan(con)                       # BUY 预案，10-08 生效
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl",
                           rejection_log=tmp_path / "rejections.jsonl")
@@ -200,7 +204,7 @@ def test_plan_conflict_divergence_traced(tmp_path):
     """plan 持有（HOLD）、信号 SELL → 跟随分支放弃（plan_conflict 留痕）、
     激进分支按 persona 自行执行 SELL——分歧双留痕（回执账可对比）。"""
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)
+    con = _plan_con(e)
     _add_plan(con, action="HOLD")                   # 持有预案 vs 卖出信号
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl",
                           rejection_log=tmp_path / "rejections.jsonl")
@@ -228,7 +232,7 @@ def test_no_plan_effective_follow_abstains(tmp_path):
     """信号时刻无已生效预案 → 跟随分支放弃（no_plan_effective）不盲动；
     激进分支不依赖预案照常响应（conf 0.80 ≥ 0.50 门槛）。"""
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)                       # 空计划账
+    con = _plan_con(e)                       # 空计划账
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl",
                           rejection_log=tmp_path / "rejections.jsonl")
     r = runner.feed_signal(_signal(), COMBO, plan_con=con)
@@ -240,7 +244,7 @@ def test_no_plan_effective_follow_abstains(tmp_path):
 def test_aggressive_conf_floor_abstain_and_sell_exempt(tmp_path):
     """激进分支风险门：BUY conf < persona conf_floor → 放弃；SELL 不受限。"""
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)
+    con = _plan_con(e)
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl",
                           rejection_log=tmp_path / "rejections.jsonl")
     r1 = runner.feed_signal(_signal(confidence=0.40), COMBO, plan_con=con)
@@ -270,7 +274,7 @@ def test_full_chain_zero_real_outlet(tmp_path, monkeypatch):
     before_j = real_rejection.read_bytes() if real_rejection.exists() else None
 
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)
+    con = _plan_con(e)
     _add_plan(con)
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl",
                           rejection_log=tmp_path / "rejections.jsonl")
@@ -314,7 +318,7 @@ def test_register_third_branch_pluggable(tmp_path, clean_registry):
     assert registered_branch_ids() == [FOLLOW_RESEARCH, AGGRESSIVE_DIRECT, "hybrid"]
 
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)
+    con = _plan_con(e)
     _add_plan(con)
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl",
                           rejection_log=tmp_path / "rejections.jsonl")
@@ -342,7 +346,7 @@ def test_branch_internal_error_isolated_and_traced(tmp_path, clean_registry):
             raise BranchError("broken_internally", "演示性内部违例")
     register_branch(BrokenBranch)
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)
+    con = _plan_con(e)
     _add_plan(con)
     rj = tmp_path / "rejections.jsonl"
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl", rejection_log=rj)
@@ -375,7 +379,7 @@ def test_review_hooks_side_by_side(tmp_path):
     """compare_reviews 只读并行复盘：依据链结构不同可对比、偏差语义各异
     （跟随分支有 plan 依据，激进分支结构性无预案对照）。"""
     e = _mk_engine(tmp_path)
-    con = _plan_con(tmp_path)
+    con = _plan_con(e)
     _add_plan(con, action="HOLD")
     runner = BranchRunner(e, receipt_log=tmp_path / "receipts.jsonl",
                           rejection_log=tmp_path / "rejections.jsonl")

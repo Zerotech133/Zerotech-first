@@ -90,6 +90,18 @@ CREATE TABLE IF NOT EXISTS decision_snapshots (
 
 
 def ensure_table(con) -> None:
+    """建表（幂等）。
+
+    短路规则（WO-QT-20261020-012 缺陷修复）：表已存在时**不执行任何 DDL**
+    ——Python sqlite3 在 DDL 语句前会隐式提交当前未决事务，若在落单—快照
+    同事务窗口内建表，落单会被提前提交，破坏 D-1「快照失败=落单一并失败」
+    的 fail-visible 语义。表不存在时才建（首次建表发生在落单之前，无害）。
+    """
+    row = con.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        ("decision_snapshots",)).fetchone()
+    if row is not None:
+        return
     con.execute(_DDL)
 
 

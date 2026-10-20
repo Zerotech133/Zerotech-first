@@ -519,7 +519,8 @@ class PaperEngine:
                  combo_id: str | None = None,
                  registry_path: Path | str | None = None,
                  pool_stamp: dict | None = None,
-                 signal_stamp: dict | None = None) -> dict:
+                 signal_stamp: dict | None = None,
+                 plan_version: dict | None = None) -> dict:
         """读 poc_*.json（list，每股一项），按 D1 决策落 pending 单。幂等。
         同一 run 可落多个交易员子账本（ref 按 @账户 分段互不冲突）。
         min_conf：BUY 置信度门槛（交易员档案 conf_floor；SELL 不受限——该卖还得卖）。
@@ -589,6 +590,16 @@ class PaperEngine:
                 if cur.rowcount:
                     out["cancelled"] = cur.rowcount
             last_td = self.market.trading_days()[-1]
+            # 快照/预案账预建（必须在任何落单之前）：Python sqlite3 在 DDL 前会
+            # 隐式提交未决事务，若在落单—快照同事务窗口内建表，落单会被提前
+            # 提交，破坏 D-1「快照失败=落单一并失败」的 fail-visible 语义
+            # （WO-QT-20261020-012 缺陷修复）。
+            if not dry_run:
+                import decision_snapshot
+                decision_snapshot.ensure_table(self.con)
+                if plan_version is not None:
+                    import plan_meeting_ledger
+                    plan_meeting_ledger.ensure_table(self.con)
             for item in payload:
                 raw_stock = str(item.get("stock", ""))
                 stock = _norm_stock(raw_stock)
@@ -654,19 +665,26 @@ class PaperEngine:
             # context_json["combo"]=印记；schema v2 加法演进）。
             if out["orders"] and not dry_run:
                 import decision_snapshot
-                snap = decision_snapshot.capture(
-                    self.con, run_path=run_path, run_name=run_name, out=out,
-                    account_id=aid, strategy=strategy,
-                    versions={"engine": ENGINE_VERSION,
-                              "snapshot_schema": decision_snapshot.SNAPSHOT_SCHEMA_VERSION,
-                              **({"combo_registry": combo_registry.REGISTRY_SCHEMA_VERSION}
-                                 if combo else {})},
-                    context={"last_td": last_td, "allow_stale": allow_stale,
-                             "min_conf": min_conf, "cancelled": out["cancelled"],
-                             "market": type(self.market).__name__},
-                    combo=combo_registry.quad_stamp(combo) if combo else None,
-                    pool=pool_stamp,
-                    signal=signal_stamp)
+                try:
+                    snap = decision_snapshot.capture(
+                        self.con, run_path=run_path, run_name=run_name, out=out,
+                        account_id=aid, strategy=strategy,
+                        versions={"engine": ENGINE_VERSION,
+                                  "snapshot_schema": decision_snapshot.SNAPSHOT_SCHEMA_VERSION,
+                                  **({"combo_registry": combo_registry.REGISTRY_SCHEMA_VERSION}
+                                     if combo else {})},
+                        context={"last_td": last_td, "allow_stale": allow_stale,
+                                 "min_conf": min_conf, "cancelled": out["cancelled"],
+                                 "market": type(self.market).__name__},
+                        combo=combo_registry.quad_stamp(combo) if combo else None,
+                        pool=pool_stamp,
+                        signal=signal_stamp,
+                        plan_version=plan_version)
+                except Exception:
+                    # 快照失败=落单一并失败（fail-visible）：回滚未决事务，
+                    # 不留半截 pending 单（禁样本静默缺口 + 禁脏事务外溢）。
+                    self.con.rollback()
+                    raise
                 out["snapshot_id"] = snap["snapshot_id"]
             self.con.commit()
             return out

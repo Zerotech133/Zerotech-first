@@ -116,11 +116,17 @@ def check_permission(permission, who: str) -> dict:
 
 def make_decision(execute: bool, reason_code: str, reason: str, *,
                   action: str | None = None, plan_version: str | None = None,
-                  basis: list | None = None) -> dict:
-    """构造标准化决策输出（执行/放弃 + 理由 + 依据链）。"""
+                  basis: list | None = None,
+                  plan_effective_at: str | None = None) -> dict:
+    """构造标准化决策输出（执行/放弃 + 理由 + 依据链）。
+
+    plan_effective_at：跟随分支引用的预案生效时点（WO-QT-20261020-012
+    接线用——快照 plan 印记四键需 combo_id/stock/plan_version/effective_at；
+    缺该键则不向快照透传 plan 印记，决策本身不受影响）。"""
     return {"execute": bool(execute), "reason_code": reason_code,
             "reason": reason, "action": action,
-            "plan_version": plan_version, "basis": list(basis or [])}
+            "plan_version": plan_version, "basis": list(basis or []),
+            "plan_effective_at": plan_effective_at}
 
 
 def _validate_decision(decision, branch_id: str) -> dict:
@@ -260,7 +266,8 @@ class FollowResearchBranch(StrategyBranch):
         return make_decision(
             True, "plan_aligned",
             f"按信号时刻生效预案执行：plan_version={plan['plan_version']}",
-            action=signal["action"], plan_version=plan["plan_version"], basis=basis)
+            action=signal["action"], plan_version=plan["plan_version"], basis=basis,
+            plan_effective_at=plan["effective_at"])
 
     def _deviation(self, decision: dict, context: dict):
         if decision["reason_code"] == "plan_conflict":
@@ -420,12 +427,21 @@ class BranchRunner:
                     "receipt_status": None}
         _validate_decision(decision, branch_id)
         aid = f"{combo_id}@{branch_id}"
+        # 跟随分支引用的预案版本 → 快照 plan 印记（WO-QT-20261020-012 接线）：
+        # 四键 combo_id/stock/plan_version/effective_at 齐备才透传，缺任一
+        # 则不写 plan 印记（决策与落单不受影响，零变化优先）。
+        plan_stamp = None
+        if decision.get("plan_version") and decision.get("plan_effective_at"):
+            plan_stamp = {"combo_id": combo_id, "stock": sig["stock"],
+                          "plan_version": decision["plan_version"],
+                          "effective_at": decision["plan_effective_at"]}
         if decision["execute"]:
             try:
                 res = signal_consumer.consume_signal(
                     self.engine, record, combo_id,
                     registry_path=self.registry_path,
-                    account_id=aid, rejection_log=self.rejection_log, now=now)
+                    account_id=aid, rejection_log=self.rejection_log, now=now,
+                    plan_version=plan_stamp)
             except signal_consumer.SignalRejected as e:
                 # 落单守卫拒收（过期/门槛/combo 违例）：-005 已留痕，此处显式透传
                 self._record_action_receipt(

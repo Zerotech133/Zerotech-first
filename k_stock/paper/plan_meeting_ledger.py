@@ -126,7 +126,24 @@ BEGIN SELECT RAISE(ABORT, 'meeting_records is append-only (delete forbidden)'); 
 
 
 def ensure_table(con) -> None:
-    """建表+触发器（幂等）。触发器在数据库层拒绝 UPDATE/DELETE——append-only。"""
+    """建表+触发器（幂等）。
+
+    短路规则（WO-QT-20261020-012 缺陷修复）：两表与四触发器齐备时**不执行
+    任何 DDL**——Python sqlite3 在 DDL/executescript 前会隐式提交当前未决
+    事务；若在落单—快照同事务窗口内建表，落单会被提前提交，破坏 D-1
+    「快照失败=落单一并失败」的 fail-visible 语义。缺任一对象时才建。
+    """
+    need_tables = ("plan_versions", "meeting_records")
+    need_triggers = ("plan_versions_no_update", "plan_versions_no_delete",
+                     "meeting_records_no_update", "meeting_records_no_delete")
+    have_tables = {r[0] for r in con.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN (?,?)",
+        need_tables).fetchall()}
+    have_triggers = {r[0] for r in con.execute(
+        "SELECT name FROM sqlite_master WHERE type='trigger' AND name IN (?,?,?,?)",
+        need_triggers).fetchall()}
+    if have_tables.issuperset(need_tables) and have_triggers.issuperset(need_triggers):
+        return
     con.executescript(_DDL)
 
 

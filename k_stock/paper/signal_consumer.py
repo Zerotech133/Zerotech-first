@@ -184,7 +184,8 @@ def consume_signal(engine, record, combo_id: str,
                    registry_path: Path | str | None = None,
                    account_id: str | None = None,
                    rejection_log: Path | str | None = None,
-                   now: datetime | None = None) -> dict:
+                   now: datetime | None = None,
+                   plan_version: dict | None = None) -> dict:
     """消费一条信号点：在 combo 账本落单（带 combo_id+证据快照），或显式拒单。
 
     返回 {"status": "placed"|"no_order_placed", "out": <exec_run 产物>,
@@ -253,7 +254,8 @@ def consume_signal(engine, record, combo_id: str,
                           account_id=aid, combo_id=combo_id,
                           registry_path=registry_path,
                           pool_stamp=sig["pool_stamp"],
-                          signal_stamp=signal_stamp)
+                          signal_stamp=signal_stamp,
+                          plan_version=plan_version)
     if out.get("orders"):
         return {"status": "placed", "out": out, "run_path": run_path, "rejection": None}
     # ⑦ 未响应留痕（定纲：未交易样本保全——幂等重放/陈旧旁路未授权等）
