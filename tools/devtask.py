@@ -27,6 +27,9 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WT_DIR = os.path.join(REPO, ".worktrees")
 TASKS = os.path.join(WT_DIR, "tasks.json")
 PROJECTS = os.path.join(REPO, "agent_platform", "registry", "projects.json")
+ORG_JSON = os.path.join(REPO, "agent_platform", "registry", "org.json")
+OWNER_DOMAIN = os.path.join(REPO, "agent_platform", "registry",
+                            "owner_domain.json")
 
 
 CPT_DB = os.path.join(REPO, "agent_platform", "data", "checkpoints.db")
@@ -271,6 +274,71 @@ def _ears_lint(desc):
     return warns
 
 
+def _load_owner_domain():
+    """读合法 owner 取值域登记表（registry/owner_domain.json）。
+
+    缺文件/坏 JSON 一律降级为内置默认（标签 ``[UNOWNED]``，外部工具代号不视为合法）
+    ——登记表坏了只让降级打标签这条路退化，建单本身不受影响。
+    """
+    try:
+        d = json.load(open(OWNER_DOMAIN, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        d = {}
+    if not isinstance(d, dict):
+        d = {}
+    if not isinstance(d.get("external_tools"), dict):
+        d["external_tools"] = {}
+    if not isinstance(d.get("unowned_tag"), str) or not d["unowned_tag"]:
+        d["unowned_tag"] = "[UNOWNED]"
+    return d
+
+
+def _owner_domain_members():
+    """合法 owner 成员池＝org.json 各部门 ``agents`` ∪ 各部门 ``lead`` ∪ ``chief.agent_id``。
+
+    动态派生而非硬编码白名单：org.json 加人即刻生效，改代码零成本（工单 WO-TF-03
+    验收判据 4）。org.json 读不出时返回空集 —— 此时任何 owner 都判非法，只影响
+    降级打标签，建单照常落账。
+    """
+    try:
+        org = json.load(open(ORG_JSON, encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return set()
+    members = set()
+
+    def _add(v):
+        if isinstance(v, str) and v.strip():
+            members.add(v.strip().upper())
+
+    for dept in org.get("departments") or []:
+        for a in dept.get("agents") or []:
+            _add(a)
+        _add(dept.get("lead"))
+    _add((org.get("chief") or {}).get("agent_id"))
+    return members
+
+
+def _owner_check(owner):
+    """owner 落账取值域校验（WO-TF-03：老田裁定「先立取值域，再校验」）。
+
+    合法域＝org.json 动态成员池 ∪ 已裁定合法的外部工具代号——``external_tools.status``
+    为 ``legal`` 时其 ``observed`` 才计入；当前是 ``pending_ruling``，一律不算合法
+    （老田裁定「先立取值域再校验」；外部代号是否合法属后续裁定，本单不预断）。
+    owner 为空或 ∉ 合法域 → 判非法，由调用方**降级打标签**（不拒写，老田裁定①）。
+
+    返回 ``(是否合法, 取值域登记表, 合法域规模)``。
+    """
+    domain = _load_owner_domain()
+    members = _owner_domain_members()
+    ext = domain.get("external_tools") or {}
+    if str(ext.get("status", "")).strip().lower() == "legal":
+        for c in ext.get("observed") or []:
+            if isinstance(c, str) and c.strip():
+                members.add(c.strip().upper())
+    who = (owner or "").strip().upper()
+    return bool(who) and who in members, domain, len(members)
+
+
 def cmd_new(tid, *desc):
     # K-ORG-057：--project <pid> 可选参数；缺省归 general 线（显式提示，不拒收——
     # 保兼容；判据3的「拒收」落在「声明了但不存在的线」上）
@@ -299,16 +367,34 @@ def cmd_new(tid, *desc):
     branch = "task/" + tid
     wt = os.path.join(WT_DIR, tid)
     _git("worktree", "add", wt, "-b", branch)
+    # WO-TF-03：owner 取值域校验。老田裁定①「非法 owner 降级不拒写」——非法时给
+    # desc 追加 [UNOWNED] 标签（已有则不重复追加）并经既有 task_start 事件留痕；
+    # 合法 owner 行为与现状完全一致（不加标签、不留痕、字段不变）。
+    owner = os.environ.get("AGENT_NAME", "unknown-agent")
+    owner_ok, domain, domain_size = _owner_check(owner)
+    if not owner_ok:
+        tag = domain["unowned_tag"]
+        if tag not in desc:
+            desc = ("%s %s" % (desc, tag)).strip()
+        print("[warn] owner=%s 不在合法取值域（域内 %d 员）——降级标注 %s，"
+              "不拒单；责任部门待人工补登" % (owner, domain_size, tag),
+              file=sys.stderr)
     tasks[tid] = {"desc": desc, "branch": branch, "worktree": wt,
                   "status": "doing", "created": time.strftime("%F %T"),
                   "project": project,
-                  "owner": os.environ.get("AGENT_NAME", "unknown-agent")}
+                  "owner": owner}
     _save(tasks)
     _ckpt(tid, "kai", tasks[tid]["owner"],
           {"desc": desc, "branch": branch, "worktree": wt,
            "project": project})
-    _emit("task_start", tid, "%s（owner=%s·project=%s）"
-          % (desc, tasks[tid]["owner"], project))
+    # 留痕走既有 task_start 事件（不新造 kind：events.KINDS 是白名单，未注册 kind
+    # 会被 emit 静默吞掉反而丢痕）。降级标记前置，保证 detail 截断后仍可检出。
+    if owner_ok:
+        detail = "%s（owner=%s·project=%s）" % (desc, owner, project)
+    else:
+        detail = ("owner_degraded=1 owner=%s domain_size=%d · %s（owner=%s·project=%s）"
+                  % (owner, domain_size, desc, owner, project))
+    _emit("task_start", tid, detail)
     print("工单 %s 已开：%s（分支 %s）owner=%s project=%s"
           % (tid, desc, branch, tasks[tid]["owner"], project))
     print("→ Agent 请 cd %s 内干活，完工跑 devtask.py merge %s" % (wt, tid))

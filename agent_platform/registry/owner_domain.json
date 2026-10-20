@@ -1,0 +1,7 @@
+{
+ "version": 1,
+ "note": "合法 owner 取值域。members 由 org.json 动态派生，不在此硬编码。",
+ "members_source": "agent_platform/registry/org.json",
+ "external_tools": {"status": "pending_ruling", "observed": ["unknown-agent", "Codex", "Trae"]},
+ "unowned_tag": "[UNOWNED]"
+}
