@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """飞书文本消息发送器（复用 backup_alert.py 的已验证模式）
 
-用法: python send_feishu.py <消息文件路径> [interactive]
+用法: python send_feishu.py <消息文件路径> [interactive] [--kind=X]
 消息文件为 UTF-8 文本（避免命令行中文参数在各层 shell 的编码风险）；
 第二参数 interactive 时文件内容即卡片 JSON。
+--kind=X 可选，透传 feishu_client.send_msg（统一发送流水账目语义，
+如 daily:alert / daily:report）；省略时行为与旧两参调用完全一致。
 输出: SEND_OK / SEND_FAIL <原因>
 
 通道顺序（OPS-1001d 同款判例）：
@@ -72,21 +74,28 @@ def _load_app_creds():
     return None, None
 
 
-def _send_openapi(content, msg_type, receive_id=None, receive_id_type="open_id"):
+def _send_openapi(content, msg_type, receive_id=None, receive_id_type="open_id",
+                  kind=None):
     """OpenAPI 直连：K-STOCK-228 起内部委托 feishu_client（全仓唯一底座）。
 
     receive_id 缺省=USER_ID（OpenAPI 应用自身域 open_id，与凭证同应用）；
-    K42-b 起可传群 chat_id（receive_id_type=chat_id）等多目标。"""
+    K42-b 起可传群 chat_id（receive_id_type=chat_id）等多目标。
+    P3.6-lite K-A：kind 非 None 时透传 feishu_client.send_msg（统一发送
+    流水账目语义 daily:alert/daily:report）；None 时不传，旧调用零变化。"""
     if receive_id is None:
         receive_id = USER_ID
     from feishu_client import send_msg  # 同目录（K-STOCK-228 出口收敛）
-    return send_msg(content, msg_type, receive_id, receive_id_type)
+    if kind is None:
+        return send_msg(content, msg_type, receive_id, receive_id_type)
+    return send_msg(content, msg_type, receive_id, receive_id_type, kind=kind)
 
 
-def send_content_to(receive_id, receive_id_type, content, msg_type):
+def send_content_to(receive_id, receive_id_type, content, msg_type, kind=None):
     """多目标发送（群 chat_id 等）：仅 OpenAPI 直连，不走 lark-cli 回退
-    （回退通道身份域混乱，群发场景明确要求 app 机器人在群内）。"""
-    ok, why = _send_openapi(content, msg_type, receive_id, receive_id_type)
+    （回退通道身份域混乱，群发场景明确要求 app 机器人在群内）。
+    kind 透传 _send_openapi → feishu_client.send_msg（账目语义）。"""
+    ok, why = _send_openapi(content, msg_type, receive_id, receive_id_type,
+                            kind=kind)
     print("SEND_OK" if ok else "SEND_FAIL " + why)
     return ok
 
@@ -105,18 +114,21 @@ def _flow_record(ok, target):
         pass
 
 
-def send_text(text):
-    return send_content(json.dumps({"text": text}, ensure_ascii=False), "text")
+def send_text(text, kind=None):
+    return send_content(json.dumps({"text": text}, ensure_ascii=False),
+                        "text", kind=kind)
 
 
-def send_content(content, msg_type):
+def send_content(content, msg_type, kind=None):
     """msg_type: text / interactive（content 为消息 JSON 字符串）。
 
     通道 1 OpenAPI 直连（静态凭证，无人值守安全）；失败回退通道 2
     lark-cli：身份自适应（strict-mode 放开时 bot+bot域ID 优先；
     strict user 模式回退 user+user域ID——两应用域 open_id 不通用，
-    跨域发送报 99992361 open_id cross app）。"""
-    ok, why = _send_openapi(content, msg_type)
+    跨域发送报 99992361 open_id cross app）。
+    kind 仅透传 OpenAPI 通道（feishu_client.send_msg 账目语义），
+    lark-cli 回退通道无 kind 概念，不受影响。"""
+    ok, why = _send_openapi(content, msg_type, kind=kind)
     if ok:
         print("SEND_OK")
         return True
@@ -165,15 +177,24 @@ def send_content(content, msg_type):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    # P3.6-lite K-A：argv 追加可选 --kind=X（flag 形式，位置参已占用，
+    # 且旧一参/两参调用零变化）；非 --kind= 前缀参数按原位置参解析。
+    kind = None
+    pos = []
+    for a in sys.argv[1:]:
+        if a.startswith("--kind="):
+            kind = a.split("=", 1)[1] or None
+        else:
+            pos.append(a)
+    if not pos:
         print("SEND_FAIL no message file arg")
         sys.exit(2)
     from alert_io import sniff_read_text  # E1: BOM 嗅探（utf-16/utf-8-sig/utf-8）
-    msg = sniff_read_text(sys.argv[1]).strip()  # 兼容旧 BOM 防御语义
+    msg = sniff_read_text(pos[0]).strip()  # 兼容旧 BOM 防御语义
     if not msg:
         print("SEND_FAIL empty message")
         sys.exit(2)
-    if len(sys.argv) > 2 and sys.argv[2] == "interactive":
+    if len(pos) > 1 and pos[1] == "interactive":
         # 文件内容即卡片 JSON
-        sys.exit(0 if send_content(msg, "interactive") else 1)
-    sys.exit(0 if send_text(msg) else 1)
+        sys.exit(0 if send_content(msg, "interactive", kind=kind) else 1)
+    sys.exit(0 if send_text(msg, kind=kind) else 1)
