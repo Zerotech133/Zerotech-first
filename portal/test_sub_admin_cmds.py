@@ -247,7 +247,7 @@ def test_help_md_contains_admin_section():
 
 def test_src_new_branch_before_help_no_regression():
     """静态零回归：新分支插在"帮助"分支之前；存量分支原样在位。"""
-    i_open = _SRC.index('low.startswith(("开通", "订阅查询", "订阅巡查"))')
+    i_open = _SRC.index('low.startswith(("开通", "订阅查询", "订阅巡查", "撤销"))')
     i_help = _SRC.index('low.startswith("帮助")')
     assert i_open < i_help
     # 存量分支零回归

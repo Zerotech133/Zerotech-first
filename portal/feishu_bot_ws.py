@@ -313,6 +313,7 @@ HELP_MD = """**指令表**
 · `开通 <open_id> <档位> [天数]` — 开通订阅（默认 30 天）
 · `订阅查询 <open_id>` — 订阅摘要查询
 · `订阅巡查` — 过期清扫 + 订阅者概要
+· `撤销 <open_id> <档位>` — 显式撤销订阅（留痕 revoked，耗用不回冲）
 · `帮助` — 本表
 按钮下钻：主卡各折叠层展开 + 顶部按钮跳门户详情页。"""
 
@@ -625,7 +626,7 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                                      reason=" ".join(parts[3:]))
             send_text(("✅ " if r.get("ok") else "❌ ")
                       + (r.get("error") or ("已处理 " + parts[1])), message_id)
-        elif low.startswith(("开通", "订阅查询", "订阅巡查")):
+        elif low.startswith(("开通", "订阅查询", "订阅巡查", "撤销")):
             # 飞书中台 P3-lite（H-A）：订阅管理员指令族——判例照「审批」族
             # （前缀分发 + 管理员闸 + send_text 回执）。管理员闸复用
             # tune_gate.is_admin（tune_admins.json 已配置非空=严格校验），
@@ -703,6 +704,23 @@ def handle_cmd(text, message_id, open_id="", chat_type="p2p"):
                 if not subs:
                     lines.append("· 暂无订阅行")
                 send_text("\n".join(lines), message_id)
+            elif low.startswith("撤销"):
+                # 方案 a（2026-10-21 老田拍板）：显式撤销，store 留痕
+                # reason="revoked"；ValueError（无生效行/档位不存在）
+                # 照开通族转诚实回执，不臆造。
+                if len(parts) < 3:
+                    send_text("用法：撤销 <open_id> <档位>", message_id)
+                    return
+                try:
+                    n = subscription_store.revoke_subscription(
+                        parts[1], parts[2])
+                except ValueError as e:
+                    send_text("❌ %s" % e, message_id)
+                    return
+                send_text("✅ 已撤销 %s 的 %s 档位（%d 行，留痕 revoked；"
+                          "当日已耗用额度不回冲）"
+                          % (mask_open_id(parts[1]), parts[2], n),
+                          message_id)
             else:  # 订阅巡查
                 swept = subscription_store.expire_sweep()
                 lst = subscription_store.list_subscribers()
