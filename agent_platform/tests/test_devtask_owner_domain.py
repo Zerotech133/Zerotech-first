@@ -249,6 +249,30 @@ class TestDomainDynamic:
                             str(ROOT / "agent_platform" / "registry" / "org.json"))
         assert len(devtask._owner_domain_members()) == 55
 
+    def test_真实org域规模与成员合法性回归护栏(self, tmp_root, monkeypatch):
+        """**回归护栏**：真实 org.json 下域规模仍 55、真实成员 DEV1 仍合法。
+
+        防的是「为修边界而误伤正常路径」——判据 5 的三态化与「部门层零成员」
+        守卫都改过 ``_owner_domain_members`` 的返回语义（``set`` → ``None``），
+        若改动过头，正常建单会**全量被判非法 → 全量误打 ``[UNOWNED]``**。
+
+        本用例直接指向**真实** org.json（只读，不写），故能锁住真实组织图的
+        权威取值：规模 55、成员 DEV1 合法、域可判定（非 None）。
+
+        注：真实 org.json 里 chief=``A0`` **同时**是 ``chief_line`` 部门的
+        lead，故 ``A0`` 在域内**不能**用来证明 ``chief.agent_id`` 那条分支
+        生效（去掉它 A0 仍在）。故此处只断言规模与成员合法性，chief 分支的
+        有效性由 ``TestDomainUnavailable`` 的零成员场景覆盖。
+        """
+        monkeypatch.setattr(devtask, "ORG_JSON",
+                            str(ROOT / "agent_platform" / "registry" / "org.json"))
+        members = devtask._owner_domain_members()
+        assert members is not None, "真实 org.json 必须可判定（不得返回 None）"
+        assert len(members) == 55
+        owner_ok, _domain, size = devtask._owner_check("DEV1")
+        assert owner_ok is True
+        assert size == 55
+
 
 # ----------------------------------------------------------------------
 # 判据 4：external_tools 合法值判定（锁死静默失效点）
