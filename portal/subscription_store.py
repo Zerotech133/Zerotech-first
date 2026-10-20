@@ -42,6 +42,7 @@ __all__ = [
     "grant_subscription",
     "expire_sweep",
     "entitlement_log",
+    "get_subscriber_summary",
     "OWN_DOMAIN_OPEN_IDS",
     "SEED_PLANS",
 ]
@@ -332,3 +333,79 @@ def entitlement_log(open_id, kind, allowed, reason):
         )
         conn.commit()
     return ts
+
+
+# ---------------------------------------------------------------------------
+# FD-A（飞书中台 P2.5 · 2026-10-20）客户订阅面只读摘要——只追加不改写
+# ---------------------------------------------------------------------------
+
+def get_subscriber_summary(open_id, now=None):
+    """订阅者只读摘要（P2.5 客户订阅面 /api/subscription/status 数据出口）。
+
+    返回 dict（契约见派工单 FD-A 节）::
+
+        {open_id, display_name,
+         subscriptions: [{plan_id, start, end, status}]（按 end 降序）,
+         today_used_by_prefix: {kind 前缀: 当日放行计数},
+         daily_quota_by_plan:  {plan_id: daily_quota（None/<=0 视为不限额）},
+         plan_name_by_id:      {plan_id: 档位名},
+         reason, generated_at}
+
+    - reason 与 is_entitled 同口径的诚实判定（不含 owner 豁免与 fail-open
+      语义——本函数是纯账本投影，不承担闸门职责）：
+      subscription_active / subscription_expired / no_subscription。
+    - 纯只读：连接 create=False，不写任何表，不落 entitlement_log。
+    - closed on failure：store 文件缺失返回 {"error": "store_unavailable"}
+      （读路径不建库，同 is_entitled）；任何异常返回 {"error": ...} 不抛，
+      调用方（portal_api branch）原样透传即可，无需自行兜底。
+    """
+    try:
+        path = _db_path()
+        if not path.exists():
+            return {"error": "store_unavailable"}
+        now_str = _norm_now(now)
+        with _connect(create=False) as conn:
+            sub = conn.execute(
+                "SELECT display_name FROM subscriber WHERE open_id=?",
+                (open_id,),
+            ).fetchone()
+            subs = conn.execute(
+                "SELECT plan_id, start, end, status FROM subscription"
+                " WHERE subscriber_open_id=? ORDER BY end DESC",
+                (open_id,),
+            ).fetchall()
+            used_rows = conn.execute(
+                "SELECT kind FROM entitlement_log WHERE open_id=?"
+                " AND allowed=1 AND substr(ts,1,10)=?",
+                (open_id, _today(now_str)),
+            ).fetchall()
+            plans = conn.execute(
+                "SELECT plan_id, name, daily_quota FROM plan"
+            ).fetchall()
+        used = {}
+        for (k,) in used_rows:
+            p = _kind_prefix(k)
+            used[p] = used.get(p, 0) + 1
+        # reason 判定与 is_entitled 同口径（只看 status=active 的行）
+        active = [r for r in subs if r[3] == STATUS_ACTIVE]
+        if any(r[1] <= now_str <= r[2] for r in active):
+            reason = "subscription_active"
+        elif any(r[2] < now_str for r in active):
+            reason = "subscription_expired"
+        else:
+            reason = "no_subscription"  # 无行或订阅尚未开始（start>now）
+        return {
+            "open_id": open_id,
+            "display_name": sub[0] if sub else "",
+            "subscriptions": [
+                {"plan_id": r[0], "start": r[1], "end": r[2], "status": r[3]}
+                for r in subs
+            ],
+            "today_used_by_prefix": used,
+            "daily_quota_by_plan": {r[0]: r[2] for r in plans},
+            "plan_name_by_id": {r[0]: r[1] for r in plans},
+            "reason": reason,
+            "generated_at": now_str,
+        }
+    except Exception as exc:  # closed on failure：不抛，诚实报错
+        return {"error": "store_unavailable: %s" % exc}
