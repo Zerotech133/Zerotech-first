@@ -400,6 +400,108 @@ def test_rates_embedded_in_mine_output(env, plan_db):
     assert mined["dissent"]["conversion_formula"]
 
 
+# ---------- 验收⑤b：分歧密度（024 新增：每会议平均分歧条数） ----------
+
+def test_divergence_density_formula_and_value(env, plan_db):
+    """密度 = 分歧条数 / 会议总数，算式写进字段；条数跨会议累加后除场次。"""
+    _meeting(plan_db, "mtg-016-001",
+             dissent=[{"role": "role_invest_a", "stance": "维持", "reason": "r1"},
+                      {"role": "role_invest_b", "stance": "反对", "reason": "r2"}])
+    _meeting(plan_db, "mtg-016-002", topic_ref="sig-20261020-0169",
+             dissent=[{"role": "role_invest_a", "stance": "维持", "reason": "r3"}])
+    _meeting(plan_db, "mtg-016-003", topic_ref="sig-20261020-0170",
+             dissent=[{"role": "role_invest_b", "stance": "反对", "reason": "r4"},
+                      {"role": "role_invest_c", "stance": "保留", "reason": "r5"},
+                      {"role": "role_invest_a", "stance": "维持", "reason": "r6"}])
+    d = tm.dissent_metrics(env["plan_db"])
+    assert d["meetings_total"] == 3
+    assert d["dissent_items_total"] == 6          # 2+1+3 条
+    assert d["divergence_density"] == round(6 / 3, 6)
+    assert d["density_formula"] == "dissent_items_total / meetings_total"
+    assert d["density_formula"] == tm.FORMULA_DIVERGENCE_DENSITY
+
+
+def test_divergence_density_not_constant_where_rates_are(env, plan_db):
+    """密度**不恒定**——这是加它的全部理由。
+
+    两组数据保全率都=1.0（-006 强制非空 → 结构性恒定）、转化率也相同，但
+    「一场吵十条」vs「十场吵一条」的密度差 5 倍。构造数据证明密度咬得住
+    强度，而前两率咬不住（若密度也恒定，本指标无存在价值 → 变异即红）。
+
+    两组用**两个独立库**（-006 meeting_records 是 append-only，禁 DELETE，
+    不可在同一库上「清空重填」——那会绕过 append-only 纪律）。"""
+    # 组一：2 场 × 每场 5 条 = 10 条 → 密度 5.0
+    for i in range(2):
+        _meeting(plan_db, f"mtg-dense-{i}", topic_ref=f"sig-dense-{i}",
+                 dissent=[{"role": f"role_invest_{j}", "stance": f"维持{i}-{j}",
+                           "reason": f"r{i}-{j}"} for j in range(5)])
+    dense = tm.dissent_metrics(env["plan_db"])
+    assert dense["meetings_total"] == 2
+    assert dense["dissent_items_total"] == 10
+    assert dense["preservation_rate"] == 1.0 and dense["conversion_rate"] == 0.0
+    assert dense["divergence_density"] == 5.0        # 10 条 / 2 场
+
+    # 组二（对照，独立库）：10 场 × 每场 1 条 = 10 条 → 密度 1.0
+    other = sqlite3.connect(env["tmp_path"] / "plan_sparse.db")
+    try:
+        other.row_factory = sqlite3.Row
+        pml.ensure_table(other)
+        for i in range(10):
+            _meeting(other, f"mtg-sparse-{i}", topic_ref=f"sig-sparse-{i}",
+                     dissent=[{"role": "role_invest_a", "stance": f"维持{i}",
+                               "reason": f"s{i}"}])
+    finally:
+        other.close()
+    sparse = tm.dissent_metrics(env["tmp_path"] / "plan_sparse.db")
+    assert sparse["meetings_total"] == 10
+    assert sparse["dissent_items_total"] == 10
+    assert sparse["preservation_rate"] == 1.0 and sparse["conversion_rate"] == 0.0
+    assert sparse["divergence_density"] == 1.0        # 10 条 / 10 场
+    # 两组保全率/转化率完全相同，密度差 5 倍 → 密度是唯一能分辨的指标
+    assert dense["preservation_rate"] == sparse["preservation_rate"]
+    assert dense["conversion_rate"] == sparse["conversion_rate"]
+    assert dense["divergence_density"] != sparse["divergence_density"]
+
+
+def test_divergence_density_zero_denominator_null_not_zero(env, plan_db):
+    """分母 0 → 密度 null + note，**不填 0 充数**（0 会被读成「零分歧」）。"""
+    con = sqlite3.connect(env["plan_db"])
+    pml.ensure_table(con)
+    con.close()
+    d = tm.dissent_metrics(env["plan_db"])
+    assert d["meetings_total"] == 0
+    assert d["divergence_density"] is None
+    assert d["dissent_items_total"] == 0
+    assert d["note"] and "不以 0 充数" in d["note"]
+
+
+def test_divergence_density_null_when_not_wired():
+    """未接入 -006 → 密度 null（与前两率同纪律，不造数）。"""
+    d = tm.dissent_metrics(None)
+    assert d["status"] == "not_wired"
+    assert d["divergence_density"] is None
+    assert d["density_formula"] == tm.FORMULA_DIVERGENCE_DENSITY
+
+
+def test_divergence_density_counts_empty_dissent_meeting_in_denominator(env, plan_db):
+    """空 dissent 历史行：进分母、不进分子 → 密度被真实拉低（非隐藏）。"""
+    _meeting(plan_db, "mtg-016-001",
+             dissent=[{"role": "role_invest_a", "stance": "维持", "reason": "r1"},
+                      {"role": "role_invest_b", "stance": "反对", "reason": "r2"}])
+    plan_db.execute("INSERT INTO meeting_records(meeting_id,topic_type,topic_ref,"
+                    "topic_time,dissent_json,conclusion,revised_plan_version,"
+                    "effective_at,attendees_json,corrects_meeting_id,created_at) "
+                    "VALUES('mtg-016-legacy','signal','sig-legacy','2026-10-20T09:35:00',"
+                    "'[]','maintain',NULL,'2026-10-20T16:00:00','[\"role_a\"]',NULL,"
+                    "'2026-10-20T16:00:00')")
+    plan_db.commit()
+    d = tm.dissent_metrics(env["plan_db"])
+    assert d["meetings_total"] == 2
+    assert d["dissent_items_total"] == 2
+    assert d["divergence_density"] == 1.0        # 2 条 / 2 场（不是 2/1=2.0）
+    assert d["preservation_rate"] == 0.5
+
+
 # ---------- 验收⑥：RiskGuard 预留入口 ----------
 
 def test_riskguard_entry_not_implemented():
@@ -497,14 +599,16 @@ def test_dry_run_does_not_persist(env):
 
 
 def test_markdown_rendering_covers_sections(env, plan_db):
-    """Markdown：五段恒出现（清单/未接线/两率），不静默省略章节。"""
+    """Markdown：五段恒出现（清单/未接线/三率），不静默省略章节。"""
     mined = tm.mine_topics(reviews=_reviews(), plan_db=env["plan_db"],
                            ledger_path=env["topics"])
     md = tm.render_markdown(mined)
     assert "## 一、议题清单" in md
     assert "## 二、未接线与不造数" in md
-    assert "## 三、会议账两率" in md
+    assert "## 三、会议账三率" in md
     assert "分歧保全率" in md and "分歧转化率" in md
+    # 024 新增：分歧密度必须与前两率并列出现在汇报面（不得只落 JSON 字段）
+    assert "分歧密度" in md and tm.FORMULA_DIVERGENCE_DENSITY in md
     assert tm.RISKGUARD_NOT_IMPLEMENTED in md
     assert "不写 meeting_records" in md
 

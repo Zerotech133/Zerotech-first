@@ -19,12 +19,39 @@
 
 指标定义（六项，算式全部写进输出字段 `*_formula`）：
   - 样本量 n      = 可用样本数（已回填后验的快照数）
-  - 命中率        = 后验收益 > 0 的样本数 / n
+  - 命中率        = **方向与预案一致**的样本数 / 可判定方向样本数（详见下方
+                    「命中率 vs 胜率：拆口径」）
   - 平均收益      = 后验收益算术平均（同单位）
   - 最大回撤      = 净值曲线（按 ts 排序、单位收益率复合累乘）峰谷最大跌幅
-  - 胜率          = 后验收益 > 0 的样本数 / n（与命中率同口径，语义独立命名：
-                    命中率强调「信号判对否」，胜率强调「钱赚到了吗」）
+  - 胜率          = 后验收益 > 0 的样本数 / n（**赚到没**，只看钱）
   - 盈亏比        = 平均盈利 / |平均亏损|（无亏损样本 → None + note，不填 0）
+
+命中率 vs 胜率：拆口径（WO-QT-20261020-024，老田 2026-10-20 授权拆）
+--------------------------------------------------------------------------
+**改口径前**：两者同算式（都= `count(后验>0)/n`），只是名字不同。这让「命中
+率」既不像命中率也不像胜率——它衡量的其实是「赚钱比例」，被叫成命中率后读者
+会误以为它在回答「信号判对否」，实则不回答。本单**显式拆开**：
+
+  - **胜率 win_rate**（口径不变）= 后验收益 > 0 的样本数 / n。回答「**钱赚到
+    没**」。分母 = n（已回填后验的可用样本），与历史一致，未改语义。
+  - **命中率 hit_rate**（口径**已变更**）= 方向与预案一致的样本数 / **可判定
+    方向样本数**。回答「**方向判对否**」——快照实际决策方向（orders_json 的
+    action）是否与它引用的 plan_version 的 plan_json.action 相同。
+    分母 = **可判定方向样本数**（两侧方向都能取到的样本），**不是 n**：方向判定
+    不依赖后验回填，与收益样本集本就不同源。
+
+不造数纪律在拆分后**加码**（三条硬约束）：
+  1. **不得沿用胜率值**：命中率无可用依据时显式 `pending`（hit_rate=null +
+     hit_rate_status），绝不用 win_rate 顶替——两者量纲与分母都不同，沿用即造数；
+  2. **不得填 0**：0 会被读成「一条都没判对」，实为「判不了」；分母 0 或样本
+     不足 → null + note；
+  3. **不得静默改口径**：语义变更走 `METRIC_SEMANTICS_VERSION` + 输出里的
+     `metric_semantics` 变更记录（含裁决日期与依据），见下方常量。
+
+可判定方向的来源（只读，零新增写路径）：快照 `context_json["plan_version"]`
+指针（-006 写的预案版本印记）→ 同库 `plan_versions.plan_json.action`；
+快照 `orders_json[].action` = 实际决策方向。任一侧取不到 → 该样本**不可判定**，
+计入 `hit_rate_unjudged` 并从分母剔除（不按「判错」处理——那是冤枉数据）。
 
 显著性判据（简化口径，**当前用简化统计并显式注明**，见 `significance_note`）：
   - 均值差：**Welch t 检验**（不假设等方差），自由度用 Welch–Satterthwaite
@@ -56,8 +83,13 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-BASELINE_SCHEMA_VERSION = 1
-COMPARE_SCHEMA_VERSION = 1
+BASELINE_SCHEMA_VERSION = 2
+COMPARE_SCHEMA_VERSION = 2
+
+# 指标语义版本（WO-QT-20261020-024）。**独立于 schema_version**：schema 变的是
+# 结构，本常量变的是**同一个字段名的含义**。改它必须在输出里留变更记录
+# （`metric_semantics`），否则就是「静默改口径」——工单纪律明令禁止。
+METRIC_SEMANTICS_VERSION = 2
 
 # 样本量门槛：n < MIN_SAMPLE → 指标不出数（insufficient_sample），低于门槛
 # 不出结论。30 是本单定的口径值（呼应「快照积累」的现实量级），非统计magic
@@ -77,13 +109,52 @@ DIM_COMBO = "combo"
 # 显著性默认显著性水平
 DEFAULT_ALPHA = 0.05
 
-# 指标算式（写进输出字段，可审计——对齐 -016 两率口径风格）
+# 指标算式（写进输出字段，可审计——对齐 -016 三率口径风格）
 FORMULA_SAMPLE_SIZE = "count(可用样本)  # 已回填后验的快照数"
-FORMULA_HIT_RATE = "count(后验收益 > 0) / n"
+# 命中率 v2（024 拆口径）：方向与预案一致 / 可判定方向样本数
+FORMULA_HIT_RATE_V2 = ("count(实际决策方向 == 所引用 plan_version 的 plan_json.action) "
+                      "/ count(两侧方向均可判定的样本)")
+# 保留 v1 字面量供变更记录引用（不得删——删了变更记录就失去可核对的原点）
+FORMULA_HIT_RATE_V1 = "count(后验收益 > 0) / n"
+# 兼容别名：FORMULA_HIT_RATE 现指**当前生效**口径（v2）。历史代码/用例若引用该
+# 常量断言「算式串」，拿到的是当前口径——这正是我们要的（口径变则断言跟着变）。
+FORMULA_HIT_RATE = FORMULA_HIT_RATE_V2
 FORMULA_AVG_RETURN = "sum(后验收益) / n"
-FORMULA_WIN_RATE = "count(后验收益 > 0) / n"
+FORMULA_WIN_RATE = "count(后验收益 > 0) / n  # 赚到没（口径自 v1 未变）"
 FORMULA_PROFIT_LOSS_RATIO = "平均盈利 / abs(平均亏损)"
 FORMULA_MAX_DRAWDOWN = "max over t of (peak_t - equity_t) / peak_t  # 净值按 ts 复合累乘"
+
+# 变更记录（不得静默改口径：每条都写明谁裁的、什么时候、依据是什么）。
+# 读这个模块的人若发现 hit_rate 与历史对不上，先来这里看。
+METRIC_SEMANTICS_CHANGELOG = [
+    {
+        "semantics_version": 1,
+        "hit_rate": FORMULA_HIT_RATE_V1,
+        "win_rate": "count(后验收益 > 0) / n",
+        "note": "两者同算式、语义独立命名（018 原设计，工位纪律声明刻意如此）。",
+    },
+    {
+        "semantics_version": 2,
+        "hit_rate": FORMULA_HIT_RATE_V2,
+        "win_rate": FORMULA_WIN_RATE,
+        "ruled_by": "老田",
+        "ruled_at": "2026-10-20",
+        "ticket": "WO-QT-20261020-024",
+        "change": "命中率由「后验>0 比例」改为「方向与预案一致比例」；胜率口径**不变**。",
+        "rationale": ("两率同算式导致「命中率」名不副实：它衡量的是赚钱比例，"
+                      "却被读作信号方向判对否。拆开后胜率=赚到没、命中率=方向判对否，"
+                      "分母亦不同源（n vs 可判定方向样本数）。"),
+        "backward_compat": ("字段名与输出结构**未删改**（仍是 metrics.hit_rate / "
+                            "metrics.win_rate + *_formula），但 hit_rate 的**值与含义**"
+                            "已变；语义版本 +1 并随输出下发 metric_semantics，"
+                            "下游须按新口径读，不得与历史值直接比较。"),
+    },
+]
+
+# 命中率状态（可判定方向样本不足时**显式不可判定**，不沿用胜率值、不填 0）
+HIT_STATUS_COMPUTED = "computed"                 # 可判定样本达门槛 → 出数
+HIT_STATUS_PENDING = "pending_direction_evidence"  # 无可判定方向样本 → null
+HIT_STATUS_INSUFFICIENT = "insufficient_direction_sample"  # 不足门槛 → null
 
 
 class BaselineError(Exception):
@@ -271,7 +342,8 @@ def _read_snapshots(snapshot_db, *, account_id: str | None = None,
                 f"决策快照库无 decision_snapshots 表（closed on failure）: {p}——"
                 "今日零落单（D-1 快照零积累），口径已就位、等数据回填自动生效")
         sql = ("SELECT snapshot_id, ts, schema_version, combo_id, account_id, "
-               "strategy, run_ref, run_path FROM decision_snapshots")
+               "strategy, run_ref, run_path, orders_json, context_json "
+               "FROM decision_snapshots")
         params: list = []
         if account_id is not None:
             sql += " WHERE account_id=?"
@@ -281,12 +353,80 @@ def _read_snapshots(snapshot_db, *, account_id: str | None = None,
             params.append(combo_id)
         sql += " ORDER BY ts, snapshot_id"
         rows = con.execute(sql, params).fetchall()
+        # 预案方向（-006 plan_versions）一并只读捞出：命中率要拿快照引用的
+        # plan_version 去对 plan_json.action。**同库同连接**，不加连接、不新建表。
+        plan_actions = _read_plan_actions(con)
     except sqlite3.Error as e:
         raise BaselineError("snapshot_query_failed",
                             f"-004 快照表查询失败（closed on failure）: {p} ({e})") from e
     finally:
         con.close()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        d = dict(r)
+        # 把方向判定所需的两侧素材挂进样本（orders_json/context_json 是快照自己的
+        # 列，只读取出；解析失败的样本在 _judge_direction 里判为不可判定，不抛错——
+        # 方向不可判定是**数据事实**，不是契约违例，故与 closed-on-failure 分开）。
+        d["_orders"] = _safe_json_list(d.get("orders_json"))
+        d["_plan_stamp"] = _safe_plan_stamp(d.get("context_json"))
+        d["_plan_actions"] = plan_actions
+        out.append(d)
+    return out
+
+
+def _safe_json_list(raw) -> list:
+    """解析快照 orders_json；不可解析/非 list → 空 list（该样本方向不可判定）。"""
+    try:
+        obj = json.loads(raw) if isinstance(raw, str) and raw.strip() else raw
+    except (TypeError, ValueError):
+        return []
+    return obj if isinstance(obj, list) else []
+
+
+def _safe_plan_stamp(raw) -> dict:
+    """从 context_json 取 plan_version 印记（-006 写的指针）。取不到 → {}。"""
+    try:
+        obj = json.loads(raw) if isinstance(raw, str) and raw.strip() else raw
+    except (TypeError, ValueError):
+        return {}
+    if not isinstance(obj, dict):
+        return {}
+    stamp = obj.get("plan_version")
+    return stamp if isinstance(stamp, dict) else {}
+
+
+def _read_plan_actions(con) -> dict:
+    """只读捞 (combo_id, stock, plan_version) → plan_json.action。
+
+    键用三元组而非单 version 串：plan_version 的唯一性范围是 (combo_id, stock)，
+    只按 version 串匹配会在跨标的重名版本上错配（拿 A 股票的预案方向去判 B 股票
+    的方向 = 假判定，比不判更坏）。
+
+    表不存在/查询失败 → 返回 {}（**不抛**）：没有预案账就没有方向基准，此时
+    命中率整体判 pending，而不是把整个基线炸掉——预案账与快照库同库但可能
+    尚未建表，那是部署事实而非调用方错误。
+    """
+    try:
+        row = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND "
+                          "name='plan_versions'").fetchone()
+        if row is None:
+            return {}
+        rows = con.execute("SELECT combo_id, stock, plan_version, plan_json "
+                           "FROM plan_versions").fetchall()
+    except sqlite3.Error:
+        return {}
+    out = {}
+    for combo_id, stock, version, plan_json in rows:
+        try:
+            body = json.loads(plan_json) if isinstance(plan_json, str) else plan_json
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(body, dict):
+            continue
+        action = body.get("action")
+        if _nonempty_str(action):
+            out[(combo_id, stock, version)] = action.strip().upper()
+    return out
 
 
 # ---------- 数据接入：后验收益喂入 / 回填接口（复用 -016 口径） ----------
@@ -366,6 +506,118 @@ def backfill_posterior(posterior: dict | None, snapshot_id: str, *, unit: str,
     return {"snapshots": snaps}
 
 
+# ---------- 命中率 v2：方向与预案一致性判定（024 拆口径） ----------
+
+# 合法方向取值。**与 -008 strategy_branch.PLAN_ACTIONS 同集**（BUY/SELL/HOLD），
+# 不用 import 他方常量（他方不可用时会连带炸掉整个基线），但**在测试里与 -008
+# 逐值对齐校验**，防两处口径悄悄漂移。
+_HIT_ACTIONS = ("BUY", "SELL", "HOLD")
+
+# 「按住了不动」的方向记号：没有 BUY/SELL 订单 = 未改变持仓 = HOLD。
+# 与 -008 的 decide=False→abstain 同义（跟随分支在预案冲突时放弃也是一种
+# 方向判断结果，把它记成「无方向」会凭空制造不可判定率）。
+_HOLD = "HOLD"
+
+
+def _judge_direction(sample: dict) -> tuple[bool | None, str]:
+    """判定单样本「方向与预案是否一致」。
+
+    返回 ``(是否一致 | None, 依据串)``：
+      · ``True``  = 实际决策方向 == 所引用 plan_version 的 plan_json.action；
+      · ``False`` = 两侧方向都能取到但不相等（真判错，要计入分母、分子不加）；
+      · ``None``  = **不可判定**（任一侧取不到）——不是判错，故不进分母。
+
+    两侧来源：
+      · 预案方向 = 快照 ``context_json["plan_version"]`` 指针（-006 写的印记）
+        → ``plan_versions.plan_json.action``（-008 同口径读法）；
+      · 实际方向 = 快照 ``orders_json[].action``（引擎落的真实下单动作）。
+
+    为什么不可判定要单列（而非记 False）：快照无 plan_version 印记 = 该决策
+    **没有预案可比**（如激进直响分支本就不跟预案），记成「判错」是冤枉数据，
+    凭空压低命中率；当命中则是造假。唯一正解是剔出分母并留痕。
+    """
+    orders = sample.get("_orders") or []
+    stamp = sample.get("_plan_stamp") or {}
+    actions = sample.get("_plan_actions") or {}
+
+    key = (stamp.get("combo_id"), stamp.get("stock"), stamp.get("plan_version"))
+    if not all(_nonempty_str(k) for k in key):
+        return None, "快照无 plan_version 印记（该决策不跟预案可比）→ 不可判定"
+    plan_action = actions.get(key)
+    if not plan_action:
+        return None, ("plan_versions 缺 (%s, %s, %s) 或其 plan_json 无 action"
+                      " → 不可判定" % (key[0], key[1], key[2]))
+
+    decided = set()
+    for o in orders:
+        if isinstance(o, dict) and _nonempty_str(o.get("action")):
+            a = str(o["action"]).strip().upper()
+            if a in ("BUY", "SELL"):
+                decided.add(a)
+    if len(decided) > 1:
+        return None, "同一快照内出现多个方向 %s → 不可判定（拒绝瞎配对）" % sorted(decided)
+    # 没有 BUY/SELL 订单 = 未改变持仓 = HOLD（与 -008 abstain 同义）。
+    d = decided.pop() if decided else _HOLD
+    return (d == plan_action), ("实际 %s vs 预案 %s（plan_version=%s）"
+                                % (d, plan_action, key[2]))
+
+
+def _hit_rate_block(samples: list[dict], *, min_sample: int) -> dict:
+    """算命中率 v2（方向与预案一致）+ 其状态/依据，**绝不沿用胜率值**。
+
+    分母 = **可判定方向样本数**（与胜率分母 n 不同源：方向判定不依赖后验回填）。
+    可判定样本不足门槛 → null + insufficient；一个都判不出 → null + pending。
+    两种情况都**不填 0**（0 会被读成「一条都没判对」），更不用 win_rate 顶替。
+    """
+    judged, matched, reasons = 0, 0, []
+    for s in samples:
+        ok, why = _judge_direction(s)
+        if ok is None:
+            reasons.append(why)
+            continue
+        judged += 1
+        if ok:
+            matched += 1
+
+    if judged == 0:
+        return {
+            # 2026-10-20 主会话接管修复：原实现此处返回 0.0，与本函数自身
+            # 文档「两种情况都**不填 0**」及下方 pending 用例期望相矛盾——
+            # 0.0 会被读成「一条都没判对」，是造数。改为 None。
+            "hit_rate": None,
+            "hit_rate_status": HIT_STATUS_PENDING,
+            "hit_rate_judged": 0,
+            "hit_rate_matched": None,
+            "hit_rate_unjudged": len(samples),
+            "hit_rate_note": (
+                "无可判定的方向样本（快照缺 plan_version 印记或缺合法 orders 动作）"
+                "→ 命中率不可判定，**不沿用胜率值、不填 0**。判方向与判赚钱是"
+                "两件事：前者要预案印记 + 实际下单动作，后者要后验收益。"
+                + ("样例依据：%s" % reasons[0] if reasons else "")),
+        }
+    if judged < min_sample:
+        return {
+            "hit_rate": None,
+            "hit_rate_status": HIT_STATUS_INSUFFICIENT,
+            "hit_rate_judged": judged,
+            "hit_rate_matched": matched,
+            "hit_rate_unjudged": len(samples) - judged,
+            "hit_rate_note": (
+                f"可判定方向样本 {judged} < 门槛 {min_sample} → 命中率不出数"
+                "（insufficient_direction_sample），低于门槛不下结论"),
+        }
+    return {
+        "hit_rate": _round(matched / judged),
+        "hit_rate_status": HIT_STATUS_COMPUTED,
+        "hit_rate_judged": judged,
+        "hit_rate_matched": matched,
+        "hit_rate_unjudged": len(samples) - judged,
+        "hit_rate_note": (
+            None if not reasons else
+            "另有 %d 个样本方向不可判定（已剔出分母，未按判错处理）" % len(reasons)),
+    }
+
+
 # ---------- 指标计算 ----------
 
 def _unit_is_return_unit(unit: str) -> bool:
@@ -394,24 +646,33 @@ def compute_metrics(samples: list[dict], *, min_sample: int = MIN_SAMPLE) -> dic
         "min_sample": min_sample,
         "sample_size_formula": FORMULA_SAMPLE_SIZE,
         "hit_rate": None, "hit_rate_formula": FORMULA_HIT_RATE,
+        "hit_rate_status": None, "hit_rate_judged": None,
+        "hit_rate_matched": None, "hit_rate_unjudged": None,
+        "hit_rate_note": None,
         "avg_return": None, "avg_return_formula": FORMULA_AVG_RETURN,
         "max_drawdown": None, "max_drawdown_formula": FORMULA_MAX_DRAWDOWN,
         "win_rate": None, "win_rate_formula": FORMULA_WIN_RATE,
         "profit_loss_ratio": None, "profit_loss_ratio_formula": FORMULA_PROFIT_LOSS_RATIO,
         "wins": None, "losses": None, "breakeven": None,
         "unit": None, "note": None,
+        # 语义版本随每次输出下发：下游读到 hit_rate 就能知道它是哪套口径的
+        # 命中率（v1 与 v2 同名字段、值不可比——这是拆口径必须显式化的理由）。
+        "metric_semantics_version": METRIC_SEMANTICS_VERSION,
     }
     if n_total == 0:
         base.update({"status": STATUS_EMPTY,
+                     "hit_rate_status": HIT_STATUS_PENDING,
                      "note": "该维度无决策快照样本（D-1 零落单）→ 指标不出数（不造数）"})
         return base
     if n == 0:
         base.update({"status": STATUS_PENDING,
+                     "hit_rate_status": HIT_STATUS_PENDING,
                      "note": (f"{n_total} 个快照全部无后验收益回填 → "
                               "pending_backfill，指标不出数（不以 0 充数）")})
         return base
     if n < min_sample:
         base.update({"status": STATUS_INSUFFICIENT,
+                     "hit_rate_status": HIT_STATUS_INSUFFICIENT,
                      "note": (f"可用样本 n={n} < 门槛 {min_sample} → 指标不出数"
                               f"（insufficient_sample），低于门槛不下结论；"
                               f"待回填样本 {n_total - n} 个")})
@@ -446,7 +707,6 @@ def compute_metrics(samples: list[dict], *, min_sample: int = MIN_SAMPLE) -> dic
 
     base.update({
         "status": STATUS_COMPUTED,
-        "hit_rate": _round(len(wins) / n),
         "avg_return": _round(avg),
         "max_drawdown": _round(mdd),
         "win_rate": _round(len(wins) / n),
@@ -455,6 +715,9 @@ def compute_metrics(samples: list[dict], *, min_sample: int = MIN_SAMPLE) -> dic
         "unit": unit,
         "note": "；".join(note_parts) if note_parts else None,
     })
+    # 命中率 v2：**独立于胜率计算**（不同分母、不同数据源）。绝不在此处写
+    # `hit_rate = win_rate` ——那正是本次要拆掉的同算式问题。
+    base.update(_hit_rate_block(samples, min_sample=min_sample))
     return base
 
 
@@ -496,17 +759,25 @@ def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
     samples = []
     for s in snaps:
         sid = s["snapshot_id"]
+        # 方向判定素材（命中率 v2 用）随样本透传，与后验回填**互不影响**：
+        # 方向可判但后验未回填的样本，命中率能判、胜率判不了——这正是拆口径
+        # 的意义（两率不再被同一份数据绑死）。
+        dir_material = {"_orders": s.get("_orders"),
+                        "_plan_stamp": s.get("_plan_stamp"),
+                        "_plan_actions": s.get("_plan_actions")}
         p = post.get(sid)
         if p is None:
-            # 后验未回填 → 该样本不参与计算（不填 0），但留痕可回放引用
+            # 后验未回填 → 该样本不参与收益类指标（不填 0），但留痕可回放引用
             samples.append({"snapshot_id": sid, "ts": s.get("ts"),
                             "run_ref": s.get("run_ref"), "value": None,
                             "unit": None, "status": STATUS_PENDING,
-                            "note": "后验收益未回填 → 不参与指标（pending_backfill）"})
+                            **dir_material,
+                            "note": "后验收益未回填 → 不参与收益指标（pending_backfill）"})
             continue
         samples.append({"snapshot_id": sid, "ts": s.get("ts"),
                         "run_ref": s.get("run_ref"), "value": p["value"],
                         "unit": p["unit"], "status": "available",
+                        **dir_material,
                         "source": p.get("source")})
 
     metrics = compute_metrics(samples, min_sample=min_sample)
@@ -531,6 +802,14 @@ def build_baseline(variant: str, *, dimension: str = DIM_BRANCH,
                             "value": s["value"], "unit": s["unit"]}
                            for s in samples if s["value"] is not None],
         "unit_consistency": _unit_consistency(samples),
+        # 口径变更记录随每次输出下发：同名字段 hit_rate 在 v1/v2 下值不可比，
+        # 下游不拿到这段就无法判断手上这个数是新口径还是旧口径（=静默改口径）。
+        "metric_semantics": {
+            "version": METRIC_SEMANTICS_VERSION,
+            "hit_rate": FORMULA_HIT_RATE,
+            "win_rate": FORMULA_WIN_RATE,
+            "changelog": METRIC_SEMANTICS_CHANGELOG,
+        },
         "cost_view": None,
         "cost_view_note": ("成本/ROI 视图唯一定义处为 -013 combo_review（成本账为 "
                            "-011），本单只读不重写——本单元默认 None，由调用方"
@@ -662,8 +941,18 @@ def compare_baselines(a: str, b: str, *, dimension: str = DIM_BRANCH,
             "avg_return_diff": _round(ma - mb),
             "win_rate_diff": _round((ba["metrics"]["win_rate"] or 0.0)
                                     - (bb["metrics"]["win_rate"] or 0.0)),
-            "hit_rate_diff": _round((ba["metrics"]["hit_rate"] or 0.0)
-                                    - (bb["metrics"]["hit_rate"] or 0.0)),
+            # 命中率差值**不兜底 0**：任一侧不可判定（null）即整体 null。
+            # `(x or 0.0)` 会把「判不了」变成「差 0」，那是凭空造出一个
+            # 「两侧命中率相同」的结论——比不出数严重得多。
+            "hit_rate_diff": (_round(ba["metrics"]["hit_rate"]
+                                     - bb["metrics"]["hit_rate"])
+                              if (ba["metrics"]["hit_rate"] is not None
+                                  and bb["metrics"]["hit_rate"] is not None)
+                              else None),
+            "hit_rate_diff_note": (
+                None if (ba["metrics"]["hit_rate"] is not None
+                         and bb["metrics"]["hit_rate"] is not None)
+                else "至少一侧命中率不可判定（方向证据不足）→ 差值不出数，不兜底 0"),
             "max_drawdown_diff": (_round(ba["metrics"]["max_drawdown"]
                                          - bb["metrics"]["max_drawdown"])
                                   if (ba["metrics"]["max_drawdown"] is not None
@@ -729,15 +1018,23 @@ def render_markdown(baseline: dict) -> str:
         "",
         "| 指标 | 值 | 算式 |",
         "|---|---|---|",
-        f"| 命中率 | {_fmt(m['hit_rate'])} | `{m['hit_rate_formula']}` |",
+        f"| 命中率（方向判对否） | {_fmt(m['hit_rate'])} | `{m['hit_rate_formula']}` |",
         f"| 平均收益 | {_fmt(m['avg_return'])} | `{m['avg_return_formula']}` |",
         f"| 最大回撤 | {_fmt(m['max_drawdown'])} | `{m['max_drawdown_formula']}` |",
-        f"| 胜率 | {_fmt(m['win_rate'])} | `{m['win_rate_formula']}` |",
+        f"| 胜率（赚到没） | {_fmt(m['win_rate'])} | `{m['win_rate_formula']}` |",
         f"| 盈亏比 | {_fmt(m['profit_loss_ratio'])} | `{m['profit_loss_ratio_formula']}` |",
         "",
         f"- 胜负分布：胜 {m['wins']} / 负 {m['losses']} / 平 {m['breakeven']}"
         f"｜单位：{m['unit'] or '—'}",
     ]
+    # 命中率状态显式上墙：不可判定时必须让读者看见「这个数没出来」，
+    # 而不是把 — 误读成 0 或漏读。
+    if m.get("hit_rate_status"):
+        lines.append(f"- 命中率状态：**{m['hit_rate_status']}**"
+                     f"（可判定 {m.get('hit_rate_judged')} / 一致 {m.get('hit_rate_matched')}"
+                     f" / 不可判定 {m.get('hit_rate_unjudged')}）")
+    if m.get("hit_rate_note"):
+        lines.append(f"- 命中率说明：{m['hit_rate_note']}")
     if m.get("note"):
         lines.append(f"- 说明：{m['note']}")
     lines += ["", "## 二、成本/ROI 视图（-013 只读复用）", ""]
@@ -756,6 +1053,8 @@ def render_markdown(baseline: dict) -> str:
         "", "## 三、不造数与未接线", "",
         "- n < 门槛 → 指标不出数（insufficient_sample），低于门槛不下结论",
         "- 无后验 → pending_backfill，指标全 null（绝不返回 0% 胜率/0 收益）",
+        f"- 命中率口径 v{METRIC_SEMANTICS_VERSION}：{FORMULA_HIT_RATE}；"
+        "无方向证据 → 显式不可判定，**不沿用胜率值、不填 0**",
         "- ≥2 周快照积累属**时钟依赖**：口径已就位，数据回填后**自动生效**",
         f"- {SIGNIFICANCE_NOTE}",
     ]
@@ -774,16 +1073,22 @@ def render_comparison_markdown(comparison: dict) -> str:
         "",
         "| 指标 | a | b |",
         "|---|---|---|",
-        f"| 命中率 | {_fmt(a['metrics']['hit_rate'])} | {_fmt(b['metrics']['hit_rate'])} |",
+        f"| 命中率（方向判对否） | {_fmt(a['metrics']['hit_rate'])} | "
+        f"{_fmt(b['metrics']['hit_rate'])} |",
         f"| 平均收益 | {_fmt(a['metrics']['avg_return'])} | {_fmt(b['metrics']['avg_return'])} |",
         f"| 最大回撤 | {_fmt(a['metrics']['max_drawdown'])} | {_fmt(b['metrics']['max_drawdown'])} |",
-        f"| 胜率 | {_fmt(a['metrics']['win_rate'])} | {_fmt(b['metrics']['win_rate'])} |",
+        f"| 胜率（赚到没） | {_fmt(a['metrics']['win_rate'])} | {_fmt(b['metrics']['win_rate'])} |",
         f"| 盈亏比 | {_fmt(a['metrics']['profit_loss_ratio'])} | "
         f"{_fmt(b['metrics']['profit_loss_ratio'])} |",
         "",
         f"- **结论：{comparison['verdict']}**",
         f"- {comparison['verdict_text'] or ''}",
     ]
+    for side, key in (("a", "a"), ("b", "b")):
+        st = comparison[key]["metrics"].get("hit_rate_status")
+        if st:
+            lines.append(f"- {side} 侧命中率状态：{st}（可判定 "
+                         f"{comparison[key]['metrics'].get('hit_rate_judged')}）")
     if comparison.get("test"):
         t = comparison["test"]
         lines.append(f"- 检验：Welch t={_fmt(t.get('t'))}｜df={_fmt(t.get('df'))}"

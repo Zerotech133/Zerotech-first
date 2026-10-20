@@ -24,13 +24,18 @@ SELECT + mode=ro 连接），零写入路径——测试断言全链路不新增
 去重：同一议题（来源类型 + 标的 + 偏差类型指纹）在账内已存在 → 不重复提，
 返回 existing（不写行、不重开讨论）。
 
-两率口径（口径澄清落地，呼应 -014 divergence_formula 风格，算式写进输出字段）：
+三率口径（口径澄清落地，呼应 -014 divergence_formula 风格，算式写进输出字段）：
   - **分歧保全率** = 有会前分歧记录的会议数 / 会议总数。诚实提示：-006 写入时
     已强制 dissent 非空，故经正规写入口入账的会议该率恒为 1.0（结构性），该
     指标真正咬得住的是「-006 强制之前的历史行 / 外部写入行 / dissent_json 被
     写成空列表」——低于 1.0 即为保全破口，故仍照实计算并出 note；
   - **分歧转化率** = 结论为 revise/veto 的会议数 / 会议总数（分歧导致结论改动
-    的比例）。分母 0 → 两率均记 null + note，**不填 0 充数**。
+    的比例）；
+  - **分歧密度** = 分歧条数 / 会议总数（每会议平均分歧条数，WO-QT-20261020-024
+    新增）。前两率是 0~1 比率，密度是**条/会议**强度（可 >1）：一条分歧与十条
+    分歧在保全率/转化率下都只记「1 场」，只有密度能分辨二者——它是三率中唯一
+    **不恒定**的实质指标。
+  分母 0 → 三率均记 null + note，**不填 0 充数**。
 
 只读复用（不改他人工单领地）：plan_meeting_ledger（-006 会议账：会前分歧 /
 会后结论 / 已讨论议题）、strategy_branch（-008 compare_reviews 输出形态）、
@@ -76,6 +81,10 @@ STATUS_DRAFT = "draft"
 
 # RiskGuard 预留入口的显式状态（不假装有数据）
 RISKGUARD_NOT_IMPLEMENTED = "not_implemented_pending_1_1"
+
+# 分歧密度算式（WO-QT-20261020-024 新增；口径风格对齐 -014 divergence_formula）
+# 单位 = 条/会议，可 >1（与前两率的 0~1 比率不同量纲，勿混读）
+FORMULA_DIVERGENCE_DENSITY = "dissent_items_total / meetings_total"
 
 # RiskGuard 校准账（1.1）契约：规则级误杀/放行记录 + 后验收益的必填键
 RISKGUARD_CALIBRATION_LOG = (Path(__file__).resolve().parent.parent / "data" /
@@ -472,7 +481,7 @@ def _branch_topics(review_items: list[dict]) -> list[dict]:
     return topics
 
 
-# ---------- 输入三：-006 会议账（已讨论议题 + 两率） ----------
+# ---------- 输入三：-006 会议账（已讨论议题 + 三率） ----------
 
 def _discussed_refs(plan_db) -> tuple[set, dict]:
     """已讨论议题引用集（-006 meeting_records，只读）。
@@ -538,42 +547,54 @@ def _discussed_refs(plan_db) -> tuple[set, dict]:
 
 
 def dissent_metrics(plan_db=None, info: dict | None = None) -> dict:
-    """两率并列（口径澄清落地），算式写进输出字段。
+    """三率并列（口径澄清落地），算式写进输出字段。
 
     - 分歧保全率 preservation_rate = 有会前分歧记录的会议数 / 会议总数；
     - 分歧转化率 conversion_rate   = 结论 revise/veto 的会议数 / 会议总数；
-    - 分母 0 → 两率均 null + note（**不填 0 充数**）。
+    - **分歧密度 divergence_density = 分歧条数 / 会议总数**（每会议平均分歧条数，
+      WO-QT-20261020-024 新增）——前两率是**比率**（0~1，无量纲），密度是
+      **强度**（条/会议，可 >1）。分母 0 → 三者均 null + note（**不填 0 充数**）。
 
-    诚实提示：-006 写入时已强制 dissent 非空，经正规写入口入账的会议保全率
-    结构性恒为 1.0；该指标真正咬住的是「-006 强制之前的历史行 / 外部写入行 /
-    dissent_json 被写成空列表」，低于 1.0 即为分歧保全破口。"""
+    为什么加密度（前两率都不恒定不了）：-006 写入时已强制 dissent 非空，故经正规
+    写入口入账的会议保全率结构性恒为 1.0（是**破口检出器**，不是密度计）；转化率只
+    咬「结论是否被改」，一条分歧与十条分歧同样记 1 场。**密度不恒定**——它随每场
+    分歧条数变化，能分辨「一场吵十条」与「十场吵一条」，是这三者里唯一度量分歧
+    **强度**的实质指标（口径风格对齐 -014 divergence_formula：算式写进字段）。
+
+    诚实提示：保全率低于 1.0 即为分歧保全破口（-006 强制之前的历史行 / 外部写入行 /
+    dissent_json 被写成空列表）。"""
     if info is None:
         _, info = _discussed_refs(plan_db)
     if not info.get("available"):
         return {"status": "not_wired", "available": False, "reason": info.get("reason"),
                 "meetings_total": None, "meetings_with_dissent": None,
                 "preservation_rate": None, "conversion_rate": None,
+                "divergence_density": None,
                 "preservation_formula": "meetings_with_dissent / meetings_total",
                 "conversion_formula": "conclusions(revise+veto) / meetings_total",
-                "note": "-006 会议账未接入 → 两率不可计算（不以 0 充数）"}
+                "density_formula": FORMULA_DIVERGENCE_DENSITY,
+                "note": "-006 会议账未接入 → 三率均不可计算（不以 0 充数）"}
     total = int(info["meetings_total"])
     with_dissent = int(info["meetings_with_dissent"])
     changed = sum(v for k, v in info["conclusions"].items()
                   if k in ("revise", "veto"))
-    zero_note = ("会议场次为 0 → 两率均不可计算（不以 0 充数）" if total == 0 else None)
+    items = int(info["dissent_items_total"])
+    zero_note = ("会议场次为 0 → 三率均不可计算（不以 0 充数）" if total == 0 else None)
     return {
         "status": "available" if total else "empty",
         "available": True,
         "reason": None,
         "meetings_total": total,
         "meetings_with_dissent": with_dissent,
-        "dissent_items_total": int(info["dissent_items_total"]),
+        "dissent_items_total": items,
         "conclusions": dict(info["conclusions"]),
         "conclusion_changed_meetings": changed,
         "preservation_rate": round(with_dissent / total, 6) if total else None,
         "conversion_rate": round(changed / total, 6) if total else None,
+        "divergence_density": round(items / total, 6) if total else None,
         "preservation_formula": "meetings_with_dissent / meetings_total",
         "conversion_formula": "conclusions(revise+veto) / meetings_total",
+        "density_formula": FORMULA_DIVERGENCE_DENSITY,
         "note": zero_note,
         "preservation_tautology_note": (
             "-006 写入时强制 dissent 非空，故正规写入口入账的保全率结构性为 1.0；"
@@ -639,12 +660,12 @@ def mine_topics(*, snapshot_db=None, posterior=None, reviews=None,
       snapshot_db  -004 决策快照库路径（None=无快照输入）
       posterior    后验收益（显式/人工喂入；见 _validate_posterior 契约）
       reviews      -008 compare_reviews 输出（单条或列表；None=无分支输入）
-      plan_db      -006 计划与会议版本账路径（None=已讨论议题与两率不可得）
+      plan_db      -006 计划与会议版本账路径（None=已讨论议题与三率不可得）
       ledger_path  议题账路径（None=默认 data/meeting_topics.jsonl）
       persist      False=只提炼不入账（干跑，供 -009 汇报器预览）
 
     返回：{topics（本轮新提）, existing（去重命中）, suppressed（已讨论/待回填）,
-    dissent（两率）, riskguard（预留入口状态）, meeting_initiated（恒 False）}
+    dissent（三率）, riskguard（预留入口状态）, meeting_initiated（恒 False）}
 
     **不自动发起会议**：发起权归人/司马懿，属后续工单；本模块对 -006 零写入。
     不造数：后验未回填的样本不参与排序、不出议题（显式标 pending_backfill）。
@@ -772,11 +793,13 @@ def render_markdown(mined: dict) -> str:
     lines.append(f"- RiskGuard 误杀专题：{mined['riskguard']['status']}"
                  f"——{mined['riskguard']['note']}")
     lines.append("- 会议发起权归人/司马懿，本模块不写 meeting_records")
-    lines += ["", "## 三、会议账两率（-006）", "",
+    lines += ["", "## 三、会议账三率（-006）", "",
               f"- 分歧保全率：{_fmt(d.get('preservation_rate'))}"
               f"（口径 {d.get('preservation_formula')}）",
               f"- 分歧转化率：{_fmt(d.get('conversion_rate'))}"
-              f"（口径 {d.get('conversion_formula')}）"]
+              f"（口径 {d.get('conversion_formula')}）",
+              f"- 分歧密度：{_fmt(d.get('divergence_density'))}"
+              f"（口径 {d.get('density_formula')}，单位 条/会议，可 >1）"]
     if d.get("note"):
         lines.append(f"- 说明：{d['note']}")
     return "\n".join(lines)

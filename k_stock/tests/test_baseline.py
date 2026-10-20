@@ -59,9 +59,14 @@ def _add_snapshot(env, *, account_id=BR_FOLLOW, combo_id=COMBO,
     con = sqlite3.connect(env["snapshot_db"])
     try:
         decision_snapshot.ensure_table(con)
+        # orders 用 `is not None` 判缺省而非真值：`orders=[]`（明确表示「本快照
+        # 不下单」）必须原样落成空列表。早先用 `orders or [默认BUY]` 会把空列表
+        # 悄悄变成一笔 BUY——命中率判方向时那等于凭空给样本造了一次下单。
+        payload = ([{"order_id": "o1", "stock": stock, "action": "BUY"}]
+                   if orders is None else orders)
         snap = decision_snapshot.capture(
             con, run_path=run, run_name=run.name,
-            out={"orders": orders or [{"order_id": "o1", "stock": stock, "action": "BUY"}]},
+            out={"orders": payload},
             account_id=account_id, strategy="qingping",
             combo={"combo_id": combo_id},
             context=context if context is not None else
@@ -189,20 +194,28 @@ def test_pending_uses_same_vocabulary_as_013_016(env):
 # ---------- 验收③：指标算式 ----------
 
 def test_metrics_formulas_exact(env):
-    """六项指标算式逐位核对（35 样本：21 胜 +0.05、14 负 -0.03）。"""
+    """六项指标算式逐位核对（35 样本：21 胜 +0.05、14 负 -0.03）。
+
+    024 拆口径后：**胜率**仍是 21/35；**命中率**改为方向一致率——本用例造的
+    快照没有 plan_version 印记（`_add_snapshot` 默认只带 signal 印记），故方向
+    不可判定 → 命中率 null + pending（**不是 21/35**，也不填 0）。
+    口径各算各的、用例逐项断言，这正是拆开的效果。"""
     post = _feed(env, count=35)
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
     m = b["metrics"]
     assert m["status"] == bl.STATUS_COMPUTED
     assert m["n"] == 35
     assert m["wins"] == 21 and m["losses"] == 14 and m["breakeven"] == 0
-    assert m["hit_rate"] == round(21 / 35, 6)
+    # 胜率 = 赚到没（口径未变）
     assert m["win_rate"] == round(21 / 35, 6)
+    # 命中率 = 方向判对否（本样本无方向证据 → 不可判定）
+    assert m["hit_rate"] is None
+    assert m["hit_rate_status"] == bl.HIT_STATUS_PENDING
     assert m["avg_return"] == round((21 * 0.05 + 14 * -0.03) / 35, 6)
     # 盈亏比 = 平均盈利 / |平均亏损| = 0.05 / 0.03
     assert m["profit_loss_ratio"] == round(0.05 / 0.03, 6)
     assert m["max_drawdown_formula"] == bl.FORMULA_MAX_DRAWDOWN
-    assert m["hit_rate_formula"] == bl.FORMULA_HIT_RATE
+    assert m["hit_rate_formula"] == bl.FORMULA_HIT_RATE == bl.FORMULA_HIT_RATE_V2
     assert m["win_rate_formula"] == bl.FORMULA_WIN_RATE
     assert m["unit"] == "pct"
 
@@ -237,12 +250,16 @@ def test_max_drawdown_zero_when_all_gains(env):
 
 
 def test_zero_win_rate_is_valid_data(env):
-    """0 胜率为**有效数据**：胜率照实填 0.0（不是 None、不是 pending）。"""
+    """0 胜率为**有效数据**：胜率照实填 0.0（不是 None、不是 pending）。
+
+    024：命中率**不再跟着胜率走**——同一批全亏样本，胜率 0.0 是有效数据，
+    而命中率因无方向证据判「不可判定」（null）。二者分流正是拆口径的落点。"""
     post = _feed(env, count=30, pattern=[-0.02] * 20 + [-0.01] * 10)
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
     m = b["metrics"]
     assert m["status"] == bl.STATUS_COMPUTED
-    assert m["win_rate"] == 0.0 and m["hit_rate"] == 0.0
+    assert m["win_rate"] == 0.0
+    assert m["hit_rate"] is None and m["hit_rate_status"] == bl.HIT_STATUS_PENDING
     assert m["wins"] == 0 and m["losses"] == 30
     assert m["avg_return"] < 0
     assert m["profit_loss_ratio"] is None, "无盈利样本 → 盈亏比无分子（null）"
@@ -289,6 +306,388 @@ def test_mixed_units_flagged_inconsistent(env):
     assert b["unit_consistency"]["consistent"] is False
     assert "CNY" in b["unit_consistency"]["units"] and "pct" in b["unit_consistency"]["units"]
     assert "不可加总" in b["unit_consistency"]["note"]
+
+
+# ---------- 验收③b：命中率 vs 胜率 拆口径（WO-QT-20261020-024） ----------
+
+def _add_plan(env, *, combo_id=COMBO, stock="000002.SZ", plan_version,
+              plan_action, effective_at="2026-10-20T09:00:00"):
+    """往快照库（同库）写一条 -006 预案版本，供命中率取方向基准。"""
+    con = sqlite3.connect(env["snapshot_db"])
+    try:
+        import plan_meeting_ledger as pml
+        pml.ensure_table(con)
+        pml.add_plan_version(
+            con, combo_id=combo_id, stock=stock, plan_version=plan_version,
+            plan={"action": plan_action, "buy_point": "回踩 100.0"},
+            risk_profile="aggressive", effective_at=effective_at,
+            source="role_invest_a")
+        con.commit()
+    finally:
+        con.close()
+
+
+def _add_dir_snapshot(env, *, plan_version, plan_action, order_action,
+                      branch=BR_FOLLOW, stock="000002.SZ"):
+    """造一份**带 plan_version 印记**的快照（命中率可判定的最小单元）。
+
+    order_action=None 表示「不改变持仓」（无 BUY/SELL 订单 → 方向记 HOLD）。
+    印记须满足 -006 的时点强制：plan 生效时点 ≤ 快照时刻，故 effective_at 取
+    09:00（快照 capture 用当前时刻，恒晚于它）。
+    """
+    _add_plan(env, stock=stock, plan_version=plan_version,
+              plan_action=plan_action)
+    orders = ([{"order_id": "o1", "stock": stock, "action": order_action}]
+              if order_action else [])
+    return _add_snapshot(
+        env, account_id=branch, stock=stock, orders=orders,
+        context={"signal": {"signal_id": "sig-20261020-0181", "stock": stock},
+                 "plan_version": {"combo_id": COMBO, "stock": stock,
+                                  "plan_version": plan_version,
+                                  "effective_at": "2026-10-20T09:00:00"}})
+
+
+def _feed_directions(env, *, pairs, branch=BR_FOLLOW, pattern=None):
+    """按 [(plan_action, order_action), ...] 造样本并回填后验。
+
+    pattern 缺省：命中与否**故意与盈亏脱钩**——判对方向的那批给亏损收益，
+    判错方向的那批给盈利收益。这样若实现退化成「hit_rate = win_rate」，
+    用例会立刻红（两率必须算出不同的数）。
+
+    plan_version 前缀带分支名：-006 的唯一性范围是 (combo_id, stock, version)，
+    与分支无关，故同一版本号不能被两个分支复用（append-only 会拒）。
+    """
+    pattern = pattern or []
+    tag = branch.split("@")[-1]
+    post = None
+    for i, (plan_action, order_action) in enumerate(pairs):
+        snap = _add_dir_snapshot(env, plan_version=f"pv-{tag}-{i:03d}",
+                                 plan_action=plan_action,
+                                 order_action=order_action, branch=branch)
+        matched = (order_action or "HOLD") == plan_action
+        value = pattern[i] if i < len(pattern) else (-0.02 if matched else 0.08)
+        post = bl.backfill_posterior(post, snap["snapshot_id"], unit="pct",
+                                     value=value, source="settle:test")
+    return post
+
+
+def test_hit_rate_and_win_rate_computed_under_separate_definitions(env):
+    """**构造数据证明二者不再同值**（拆口径的核心验收）。
+
+    35 个样本，方向全部一致（plan 与实际都是 BUY）→ 命中率 = 1.0；
+    收益上 21 胜 14 负 → 胜率 = 21/35 ≈ 0.6。
+    两率算式不同、分母不同、数据源不同，故 **1.0 ≠ 0.6**。
+    若有人把 hit_rate 又改回 `count(后验>0)/n`，本用例立刻红。"""
+    pairs = [("BUY", "BUY")] * 35
+    post = _feed_directions(env, pairs=pairs,
+                            pattern=[0.05] * 21 + [-0.03] * 14)
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["status"] == bl.STATUS_COMPUTED
+    assert m["hit_rate"] == 1.0                     # 方向全一致
+    assert m["win_rate"] == round(21 / 35, 6)      # 21 胜 14 负
+    assert m["hit_rate"] != m["win_rate"], "两率必须不再同值"
+    assert m["hit_rate_status"] == bl.HIT_STATUS_COMPUTED
+    assert m["hit_rate_judged"] == 35 and m["hit_rate_matched"] == 35
+    assert m["hit_rate_unjudged"] == 0
+    # 两率算式串必须各自不同（否则「拆口径」只是改了个名字）
+    assert m["hit_rate_formula"] != m["win_rate_formula"]
+
+
+def test_hit_rate_counts_direction_mismatch_not_pnl(env):
+    """方向不一致但**赚到钱**的样本：算「方向判错」而非「命中」。
+
+    30 个样本：plan 全 BUY，其中 10 个实际 SELL（方向错），但**全部给正收益**
+    → 胜率 1.0（全赚），命中率 = 20/30 ≈ 0.667（只有 20 个方向对）。
+    这组数据专治「拿胜率冒充命中率」：两者方向完全相反。"""
+    pairs = [("BUY", "SELL")] * 10 + [("BUY", "BUY")] * 20
+    post = _feed_directions(env, pairs=pairs, pattern=[0.05] * 30)
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["win_rate"] == 1.0, "全正收益 → 胜率 1.0（赚到没）"
+    assert m["hit_rate"] == round(20 / 30, 6), "方向错 10 个 → 命中率 2/3"
+    assert m["hit_rate"] != m["win_rate"]
+    assert m["hit_rate_matched"] == 20 and m["hit_rate_judged"] == 30
+
+
+def test_hit_rate_direction_right_but_lost_money(env):
+    """方向判对但**亏钱**的样本：算「方向命中」而非「没命中」。
+
+    与上一用例互为镜像：30 个样本方向全一致（命中率 1.0），但收益全为负
+    （胜率 0.0）。若两率仍是同算式，本用例必红。"""
+    pairs = [("BUY", "BUY")] * 30
+    post = _feed_directions(env, pairs=pairs, pattern=[-0.02] * 30)
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["hit_rate"] == 1.0
+    assert m["win_rate"] == 0.0
+    assert m["hit_rate"] != m["win_rate"]
+
+
+def test_hit_rate_pending_when_no_plan_reference_not_zero_not_win_rate(env):
+    """**无方向依据 → 显式不可判定**：null + pending，绝不沿用胜率、绝不填 0。
+
+    这批快照全有后验（胜率能算 0.6），但没有 plan_version 印记（方向无从判）。
+    纪律要求：命中率**不得**取胜率值（0.6）、**不得**填 0（会被读成「一条都没
+    判对」）。若实现里写了 `hit_rate = win_rate` 或 `hit_rate = 0`，此用例红。"""
+    post = _feed(env, count=35)
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["win_rate"] == round(21 / 35, 6)
+    assert m["hit_rate"] is None, "无方向依据 → 必须 null"
+    assert m["hit_rate"] != 0, "不得填 0"
+    assert m["hit_rate"] != m["win_rate"], "不得沿用胜率值"
+    assert m["hit_rate_status"] == bl.HIT_STATUS_PENDING
+    assert m["hit_rate_judged"] == 0
+    assert m["hit_rate_unjudged"] == 35
+    assert "不沿用胜率值" in m["hit_rate_note"]
+
+
+def test_hit_rate_pending_when_plan_version_missing_from_ledger(env):
+    """快照带 plan_version 印记但 plan_versions 里查无此版本 → 不可判定。
+
+    不得拿「查不到」当「一致」（那是凭空给命中率加水），也不得当「不一致」。"""
+    for i in range(30):
+        # 只写快照印记，不写 plan_versions 行
+        _add_snapshot(
+            env, account_id=BR_FOLLOW, stock="000002.SZ",
+            orders=[{"order_id": "o1", "stock": "000002.SZ", "action": "BUY"}],
+            context={"signal": {"signal_id": "sig-20261020-0181",
+                                "stock": "000002.SZ"},
+                     "plan_version": {"combo_id": COMBO, "stock": "000002.SZ",
+                                      "plan_version": f"pv-ghost-{i:03d}",
+                                      "effective_at": "2026-10-20T09:00:00"}})
+    post = _posterior({sid: 0.05 for sid in _pending_ids(env, BR_FOLLOW)})
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["status"] == bl.STATUS_COMPUTED
+    assert m["win_rate"] == 1.0
+    assert m["hit_rate"] is None
+    assert m["hit_rate_status"] == bl.HIT_STATUS_PENDING
+
+
+def test_hit_rate_hold_direction_when_no_order(env):
+    """无 BUY/SELL 订单 = HOLD（与 -008 abstain 同义）：预案 HOLD 则算一致。
+
+    没有这条口径，「预案让你按住不动」会被算成「不可判定」，把跟随分支
+    正常的放弃决策整批剔出分母——那是冤枉数据。"""
+    pairs = [("HOLD", None)] * 30
+    post = _feed_directions(env, pairs=pairs, pattern=[0.01] * 30)
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["hit_rate_judged"] == 30
+    assert m["hit_rate"] == 1.0
+    # 反向：预案 BUY 但没下单（HOLD）→ 方向不一致
+    pairs2 = [("BUY", None)] * 30
+    env2 = {"tmp_path": env["tmp_path"], "_seq": 900,
+            "snapshot_db": env["tmp_path"] / "snap2.db"}
+    post2 = _feed_directions(env2, pairs=pairs2, pattern=[0.01] * 30)
+    m2 = bl.build_baseline(BR_FOLLOW, snapshot_db=env2["snapshot_db"],
+                           posterior=post2)["metrics"]
+    assert m2["hit_rate_judged"] == 30
+    assert m2["hit_rate"] == 0.0, "预案 BUY 却按住不动 → 方向不一致"
+
+
+def test_hit_rate_threshold_uses_judged_samples_not_n(env):
+    """命中率的门槛按**可判定样本数**判，不按 n。
+
+    30 个样本全部达收益门槛，但只有 10 个方向可判定 → 命中率判
+    insufficient（不出数）。分母不同源正是拆口径的必然结果。"""
+    for i in range(10):
+        _add_dir_snapshot(env, plan_version=f"pv-ok-{i:03d}",
+                          plan_action="BUY", order_action="BUY")
+    for i in range(20):
+        _add_snapshot(env, account_id=BR_FOLLOW, stock="000002.SZ",
+                      orders=[{"order_id": "o", "stock": "000002.SZ",
+                               "action": "BUY"}],
+                      context={"signal": {"signal_id": "sig-20261020-0181",
+                                          "stock": "000002.SZ"}})
+    post = _posterior({sid: 0.05 for sid in _pending_ids(env, BR_FOLLOW)})
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["n"] == 30, "收益侧样本量达门槛"
+    assert m["hit_rate_judged"] == 10, "方向侧只有 10 个可判定"
+    assert m["hit_rate"] is None, "可判定样本不足门槛 → 不出数"
+    assert m["hit_rate_status"] == bl.HIT_STATUS_INSUFFICIENT
+    assert "insufficient_direction_sample" in m["hit_rate_note"]
+    # 门槛可配：降到 10 即出数（口径不硬编码）
+    m2 = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                           posterior=post, min_sample=10)["metrics"]
+    assert m2["hit_rate"] == 1.0
+    assert m2["hit_rate_status"] == bl.HIT_STATUS_COMPUTED
+
+
+def test_hit_rate_unjudged_excluded_from_denominator_not_counted_wrong(env):
+    """不可判定样本**剔出分母**，不当判错（避免凭空压低命中率）。"""
+    pairs = [("BUY", "BUY")] * 30 + [("BUY", "SELL")] * 0
+    post = _feed_directions(env, pairs=pairs, pattern=[0.05] * 30)
+    for i in range(10):                      # 再补 10 个无印记快照（不可判定）
+        _add_snapshot(env, account_id=BR_FOLLOW, stock="000002.SZ",
+                      orders=[{"order_id": "o", "stock": "000002.SZ",
+                               "action": "BUY"}],
+                      context={"signal": {"signal_id": "sig-x", "stock": "000002.SZ"}})
+    post = _merge(post, _posterior(
+        {sid: 0.05 for sid in _pending_ids(env, BR_FOLLOW)
+         if sid not in post["snapshots"]}))
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["n_total"] == 40
+    assert m["hit_rate_judged"] == 30
+    assert m["hit_rate_unjudged"] == 10
+    assert m["hit_rate"] == 1.0, "30 个方向全对 → 命中率 1.0（10 个不可判定不计）"
+    assert "剔出分母" in m["hit_rate_note"]
+
+
+def test_hit_rate_matched_empty_orders_but_plan_hold_judged(env):
+    """边界：空 orders + 预案 HOLD → 可判定且一致（不被当成「无方向」）。"""
+    pairs = [("HOLD", None)] * 30
+    post = _feed_directions(env, pairs=pairs, pattern=[0.0] * 30)
+    m = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"],
+                          posterior=post)["metrics"]
+    assert m["hit_rate_status"] == bl.HIT_STATUS_COMPUTED
+    assert m["hit_rate"] == 1.0
+    # 收益侧：全 0 → 胜率 0.0（有效数据），与命中率 1.0 分流
+    assert m["win_rate"] == 0.0
+
+
+def test_hit_rate_actions_aligned_with_008_plan_actions():
+    """本模块方向词表与 -008 PLAN_ACTIONS 逐值对齐（防两处口径漂移）。
+
+    不对齐的后果很具体：-008 认 HOLD 而本模块不认，则「预案 HOLD」的样本会被
+    判成不可判定，命中率被系统性低估。故此项为承重断言，不是形式检查。"""
+    import strategy_branch as sb
+    assert tuple(bl._HIT_ACTIONS) == tuple(sb.PLAN_ACTIONS)
+
+
+def test_metric_semantics_change_record_is_versioned():
+    """口径变更**显式版本化**并留记录：不得静默改口径。
+
+    断言三件事：① 语义版本已升到 2；② changelog 里有 v1→v2 条目且写明
+    裁决人/裁决日期/工单号；③ v1 的旧算式仍可从 changelog 里查到（可核对
+    原点，否则「变更记录」只是一句空话）。"""
+    assert bl.METRIC_SEMANTICS_VERSION == 2
+    vs = [c for c in bl.METRIC_SEMANTICS_CHANGELOG
+          if c["semantics_version"] == bl.METRIC_SEMANTICS_VERSION]
+    assert len(vs) == 1
+    cur = vs[0]
+    assert cur["ruled_by"] == "老田"
+    assert cur["ruled_at"] == "2026-10-20"
+    assert cur["ticket"] == "WO-QT-20261020-024"
+    assert cur["hit_rate"] == bl.FORMULA_HIT_RATE_V2
+    assert cur["win_rate"] == bl.FORMULA_WIN_RATE
+    # v1 原点仍可核对，且**与 v2 不同**（若相同则变更记录是假的）
+    v1 = [c for c in bl.METRIC_SEMANTICS_CHANGELOG if c["semantics_version"] == 1]
+    assert len(v1) == 1
+    assert v1[0]["hit_rate"] == bl.FORMULA_HIT_RATE_V1
+    assert v1[0]["hit_rate"] != cur["hit_rate"]
+    assert bl.FORMULA_HIT_RATE_V1 == "count(后验收益 > 0) / n"
+
+
+def test_metric_semantics_ships_with_every_baseline(env):
+    """每次输出都下发语义版本与变更记录（下游据此判断是新口径还是旧口径）。"""
+    post = _feed(env, count=30)
+    b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
+    ms = b["metric_semantics"]
+    assert ms["version"] == bl.METRIC_SEMANTICS_VERSION
+    assert ms["hit_rate"] == bl.FORMULA_HIT_RATE_V2
+    assert ms["win_rate"] == bl.FORMULA_WIN_RATE
+    assert len(ms["changelog"]) >= 2
+    assert b["metrics"]["metric_semantics_version"] == bl.METRIC_SEMANTICS_VERSION
+
+
+def test_compare_hit_rate_diff_null_not_zero_when_unjudgeable(env):
+    """对比里命中率差值**不兜底 0**：任一侧不可判定 → 差值 null。
+
+    `(x or 0.0)` 会把「判不了」变成「差 0」，等于凭空断言「两侧命中率相同」
+    ——比不出数严重得多。故此处断言 null 且带说明。"""
+    a = _feed(env, branch=BR_FOLLOW, count=30)      # 无方向证据 → 命中率 null
+    b = _feed(env, branch=BR_AGG, count=30, pattern=[0.02] * 30)
+    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
+                             posterior=_merge(a, b))
+    assert c["deltas"]["hit_rate_diff"] is None
+    assert "不可判定" in c["deltas"]["hit_rate_diff_note"]
+
+
+def test_compare_hit_rate_diff_computed_when_both_judgeable(env):
+    """两侧方向都可判定 → 命中率差值照实出数（不因拆分而失效）。"""
+    a = _feed_directions(env, pairs=[("BUY", "BUY")] * 30, branch=BR_FOLLOW,
+                         pattern=[0.05] * 30)
+    b = _feed_directions(env, pairs=[("BUY", "SELL")] * 30, branch=BR_AGG,
+                         pattern=[0.05] * 30)
+    c = bl.compare_baselines(BR_FOLLOW, BR_AGG, snapshot_db=env["snapshot_db"],
+                             posterior=_merge(a, b))
+    assert c["deltas"]["hit_rate_diff"] == 1.0     # 1.0 - 0.0
+    assert c["deltas"]["hit_rate_diff_note"] is None
+
+
+def test_hit_rate_reads_snapshot_db_without_writing(env):
+    """命中率读 plan_versions 仍是**只读**：判方向不写库、不建表。
+
+    守卫意义：plan_versions 是 -006 的 append-only 账，本单只读它。若实现里
+    误调 ensure_table，会在只读连接上炸或（更糟）改动 -006 的账。"""
+    post = _feed_directions(env, pairs=[("BUY", "BUY")] * 30, pattern=[0.05] * 30)
+    db = env["snapshot_db"]
+    con = sqlite3.connect(db)
+    try:
+        before_tables = {r[0] for r in con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        before_rows = con.execute("SELECT COUNT(*) FROM plan_versions").fetchone()[0]
+        before_mtime = db.stat().st_mtime_ns
+    finally:
+        con.close()
+    bl.build_baseline(BR_FOLLOW, snapshot_db=db, posterior=post)
+    con = sqlite3.connect(db)
+    try:
+        after_tables = {r[0] for r in con.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'")}
+        after_rows = con.execute("SELECT COUNT(*) FROM plan_versions").fetchone()[0]
+    finally:
+        con.close()
+    assert before_tables == after_tables
+    assert before_rows == after_rows
+    assert db.stat().st_mtime_ns == before_mtime
+
+
+def test_hit_rate_missing_plan_table_yields_pending_not_crash(env):
+    """快照库无 plan_versions 表 → 命中率 pending，**不炸整个基线**。
+
+    预案账与快照库同库但可能尚未建表，那是部署事实而非调用方错误；此时方向
+    无基准，命中率显式不可判定，收益类指标照常出数。"""
+    post = _feed(env, count=30)
+    b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
+    m = b["metrics"]
+    assert m["status"] == bl.STATUS_COMPUTED
+    assert m["win_rate"] == round(21 / 30, 6)   # 收益侧照常出数（与方向侧无关）
+    assert m["hit_rate"] is None
+    assert m["hit_rate_status"] == bl.HIT_STATUS_PENDING
+
+
+def test_hit_rate_roi_view_unaffected_by_split(env):
+    """拆口径**不动 ROI/成本口径**：唯一定义处仍是 -011/-013（只读复用）。"""
+    post = _feed_directions(env, pairs=[("BUY", "BUY")] * 30, pattern=[0.05] * 30)
+    b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"], posterior=post)
+    assert b["cost_view"] is None
+    assert "-013" in b["cost_view_note"] and "-011" in b["cost_view_note"]
+    review = {"roi": {"status": "computed", "value": 12.5,
+                      "formula": "revenue - compute_cost", "unit": "CNY"},
+              "cost": {"cost_accumulated": 1.0, "budget": 100.0,
+                       "remaining": 99.0, "unit": "CNY"}}
+    out = bl.attach_cost_view(b, review)
+    assert out["cost_view"]["roi"]["value"] == 12.5
+    assert out["metrics"]["hit_rate"] == 1.0     # 命中率口径与 ROI 各自独立
+
+
+def test_topics_miner_does_not_consume_hit_rate(env):
+    """-016 议题提炼**不消费**本单命中率/胜率（口径互不串味）。
+
+    反向护栏：若将来有人让 topic_miner 读 baseline 的 hit_rate，本用例会
+    因 topic_miner 输出里出现不该有的依赖而红（此处以「口径名不同族」验证：
+    -016 用 preservation/conversion/density，不认 hit/win）。
+    """
+    import topic_miner as tm
+    d = tm.dissent_metrics(None)
+    assert not any(k.startswith(("hit_", "win_")) for k in d)
+    assert tm.FORMULA_DIVERGENCE_DENSITY == "dissent_items_total / meetings_total"
 
 
 # ---------- 验收④：分支归集（account_id=combo@branch） ----------
@@ -653,13 +1052,19 @@ def test_markdown_contains_six_metrics_and_three_sections(env):
 
 
 def test_markdown_shows_pending_not_zero(env):
-    """pending 态 Markdown 显示「—」而非 0（渲染层也不造数）。"""
+    """pending 态 Markdown 显示「—」而非 0（渲染层也不造数）。
+
+    024：两个「—」都要在——胜率（无后验）与命中率（无方向证据），且命中率
+    那一行必须带 pending 状态标签，读者才知道「—」是判不了而不是忘了算。"""
     _feed(env, count=30)
     b = bl.build_baseline(BR_FOLLOW, snapshot_db=env["snapshot_db"])
     md = bl.render_markdown(b)
     assert "pending_backfill" in md
-    assert "| 胜率 | — |" in md
-    assert "| 命中率 | 0 |" not in md
+    assert "| 胜率（赚到没） | — |" in md
+    assert "| 命中率（方向判对否） | — |" in md
+    assert "| 命中率（方向判对否） | 0 |" not in md
+    assert bl.HIT_STATUS_PENDING in md
+    assert "命中率状态" in md
 
 
 def test_comparison_markdown_states_verdict(env):
