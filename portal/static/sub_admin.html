@@ -72,7 +72,8 @@ footer.legend h3{font-size:12px;color:var(--text);margin:0 0 6px}
 <div class="eyebrow">SUBSCRIPTION OPS · DENG ZHI HUB</div>
 <h1>📋 订阅运营</h1>
 <p class="lead">本人/商务域专用的订阅运营只读投影：订阅者批量列表与逐个查询、customer 域 observe 留痕（商机信号）、档位静态标注。数据源：<b>/api/subscription/list</b>（批量全集）与 <b>/api/subscription/status</b>（逐查，FD-A 只读端点）及 <b>/api/notify/queue</b>（8091 聚合）。本页不定价、不开通、不退订、不触发任何发送。</p>
-<p class="readonly-banner"><b>只读投影 · 本人/商务域专用 · 邓芝统辖</b>——本页没有任何写操作；订阅开通与档位定价不在本页办理。</p>
+<p class="readonly-banner"><b>只读投影 · 本人/商务域专用 · 邓芝统辖</b>——本页没有任何写操作；订阅开通与档位定价不在本页办理。本页含 open_id 明文，属内部域页面，不得对外分享链接。</p>
+<div class="notice" id="auth-notice" role="status"><b>鉴权</b>：<span id="m-auth">检测中…</span>——本页含 open_id 明文，属内部域页面，不得对外分享链接。</div>
 <div class="meta-row">
 <span id="m-generated">读取中…</span><span class="dot">·</span>
 <span id="m-endpoint">endpoint: /api/subscription/status + /api/notify/queue</span><span class="dot">·</span>
@@ -187,6 +188,19 @@ async function loadSubscribers(){
  renderSubList(d);
 }
 
+/* 鉴权状态自述（GET /api/subscription/list?limit=1 的 auth_mode 字段）：
+   key → 已开启；none → 未开启（任何人可读）；取不到 → 未知。
+   未知时绝不默认显示「已开启」——不假装安全。 */
+async function loadAuthMode(){
+ const box=$('m-auth');
+ let mode='';
+ try{const d=await fetchJson('/api/subscription/list?limit=1');mode=text(d&&d.auth_mode);}
+ catch(e){mode='';}
+ if(mode==='key')box.textContent='已开启（key）';
+ else if(mode==='none')box.textContent='未开启（任何人可读，仅限内网）';
+ else box.textContent='鉴权状态未知';
+}
+
 /* 分区二：订阅者逐个查询（GET /api/subscription/status?open_id=…） */
 async function lookup(){
  const oid=text($('open-id-input').value).trim();
@@ -273,6 +287,7 @@ async function loadObserve(){
 }
 
 function load(){
+ loadAuthMode();
  loadSubscribers();
  loadObserve();
 }

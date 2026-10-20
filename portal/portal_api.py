@@ -4029,20 +4029,60 @@ color:#fff;font-size:13.5px;cursor:pointer}
             # ?limit= 可选（默认 50，钳制 [1,200]；非法值回落默认 50），
             # 零写参数——本端点不接收任何写参数，写操作仍只在
             # subscription_store 模块内（M3 收银台另批）。
+            #
+            # WO-FS-112（P3.8-lite · M-B 2026-10-20）鉴权加固（批量枚举面）：
+            # - 可选 key 闸，默认关：环境变量 PORTAL_SUB_ADMIN_KEY 非空时，
+            #   要求请求头 X-Portal-Key 与之常量相等（hmac.compare_digest，
+            #   不用 == 比较密钥）；缺失/不等 → 401 {"error":"unauthorized"}，
+            #   且在触碰订阅账本之前短路——响应体既无任何行数据，也不含期望
+            #   密钥的任何片段。未配置该变量时不开闸，本端点行为与加固前
+            #   完全一致（?limit= 语义、错误结构均不变），既有调用方零破坏。
+            #   请求头名与 /api/subscription/status 保持一致，便于前端统一传。
+            # - 鉴权状态自述（不可省）：响应顶层恒带 auth_mode，"key" 表示
+            #   闸已开、"none" 表示当前无鉴权运行（任何人可读）。未配置密钥
+            #   时也照实回 "none"，让「裸奔运行」在运维面一眼可见，不假装
+            #   已加固。该字段是追加，ok / count / subscribers 一概不动。
+            # - 不掩码 open_id（有意为之，非遗漏）：本端点服务
+            #   sub_admin.html 这一内部运维/商务面，功能上需要复制 open_id
+            #   去做逐个查询与开通，掩码会直接废掉该能力。故 list 走「内部
+            #   域端点」的防护策略——靠 key 闸与网络边界，而非字段遮蔽；
+            #   status 是客户自查端点，故做白名单最小化。两者防护策略不同是
+            #   有意的，不是遗漏。
+            # - 最小化收敛：store 若回传内部 reason / 异常明细（error 文本、
+            #   traceback 等），一律不透出，统一替换为稳定结构
+            #   {"ok": False, "error": "store_unavailable"}。
             # list_subscribers 自身 closed on failure（store 缺失/异常返回
-            # {"ok": False, "error": "store_unavailable"} 不抛），此处
-            # 不吞错不造数，原样透传。
-            from urllib.parse import parse_qs as _pq_subl
-            _raw = (_pq_subl(qs, keep_blank_values=True)
-                    .get("limit") or [""])[0].strip()
-            _limit = 50
-            if _raw:
-                try:
-                    _limit = int(_raw)
-                except ValueError:
-                    _limit = 50
-            import subscription_store as _sub_store
-            self._json(_sub_store.list_subscribers(limit=_limit))
+            # 稳定错误结构，不抛），此处不吞错不造数。
+            _want_adm = (os.environ.get("PORTAL_SUB_ADMIN_KEY") or "").strip()
+            _auth_mode = "key" if _want_adm else "none"
+            _got_adm = (self.headers.get("X-Portal-Key") or "").strip()
+            _auth_ok = True
+            if _want_adm:
+                _auth_ok = bool(_got_adm) and hmac.compare_digest(
+                    _got_adm.encode("utf-8"), _want_adm.encode("utf-8"))
+            if not _auth_ok:
+                # 短路：密钥未通过时不读账本，错误体与 status 端点同形
+                self._json({"ok": False, "error": "unauthorized"}, 401)
+            else:
+                from urllib.parse import parse_qs as _pq_subl
+                _raw = (_pq_subl(qs, keep_blank_values=True)
+                        .get("limit") or [""])[0].strip()
+                _limit = 50
+                if _raw:
+                    try:
+                        _limit = int(_raw)
+                    except ValueError:
+                        _limit = 50
+                import subscription_store as _sub_store
+                _res = _sub_store.list_subscribers(limit=_limit)
+                if not isinstance(_res, dict) or _res.get("ok") is not True:
+                    # closed on failure：上游错误文本/堆栈一律归并，不透出
+                    self._json({"ok": False, "error": "store_unavailable",
+                                "auth_mode": _auth_mode})
+                else:
+                    _view = dict(_res)
+                    _view["auth_mode"] = _auth_mode
+                    self._json(_view)
         elif path == "/my-subscription":
             # P2.5 客户订阅只读投影页（FD-A 2026-10-20）：订阅状态 / 当日
             # 额度余量 / 账单占位，照 notify-command/ops-board 判例，
