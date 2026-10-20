@@ -12,8 +12,13 @@ ApprovalGate 的设计接口）。
 import json
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    PublicFormat,
+)
 
-from roles.approval_gate import ApprovalGate
+from roles.approval_gate import ApprovalGate, PrincipalVerifier, signature_payload
 from roles.risk_guard import RiskGuard
 
 # 指向不可达回环端口；BaseAgent 构造需要该参数，但本组用例
@@ -21,11 +26,28 @@ from roles.risk_guard import RiskGuard
 DUMMY_KW = {"report_to": "principal", "bus_url": "http://127.0.0.1:1",
             "metrics_port": 59999}
 
+# 测试用密钥对（仅本进程内生成，不落盘、不代表任何真实身份）。
+TEST_KEY = Ed25519PrivateKey.generate()
+TEST_PUB = TEST_KEY.public_key().public_bytes(
+    encoding=Encoding.Raw, format=PublicFormat.Raw)
+
+
+def sign(item_id: str, fingerprint: str, action: str = "approve",
+         nonce: str = "n" * 32, ts: float | None = None) -> dict:
+    """按网关同款载荷签名，产出可提交的 signature 对象。"""
+    import time
+    signed_ts = time.time() if ts is None else ts
+    payload = signature_payload(item_id=item_id, fingerprint=fingerprint,
+                                action=action, ts=signed_ts, nonce=nonce)
+    return {"scheme": "ed25519-v1", "ts": signed_ts, "nonce": nonce,
+            "sig": TEST_KEY.sign(payload).hex()}
+
 
 @pytest.fixture(scope="module")
 def gate(tmp_path_factory):
     return ApprovalGate(
         ledger_path=tmp_path_factory.mktemp("gate") / "ledger.jsonl",
+        verifier=PrincipalVerifier(TEST_PUB),
         **DUMMY_KW)
 
 
@@ -57,13 +79,14 @@ def test_fingerprint_conflict_no_append(gate, tmp_path):
 
 
 def test_approve_appends_after_pending(gate, tmp_path):
-    """b) 指纹匹配时追加 approved 条目，且账本先有 pending。"""
+    """b) 指纹匹配 + 验签通过时追加 approved 条目，且账本先有 pending。"""
     use_ledger(gate, tmp_path)
     item = {"item_id": "i2", "action": "deploy", "version": "v1"}
     gate.submit(item)
     fp = ApprovalGate.fingerprint(item)
     proof = {"by": "tian", "note": "本人确认"}
-    res = gate.approve("i2", fp, proof)
+    res = gate.approve("i2", fp, proof,
+                       signature=sign("i2", fp, nonce="n" * 40))
     assert res["ok"] is True
     entries = read_lines(gate.ledger_path)
     assert len(entries) == 2
@@ -71,6 +94,9 @@ def test_approve_appends_after_pending(gate, tmp_path):
     assert entries[1]["status"] == "approved"
     assert entries[1]["fingerprint"] == fp
     assert entries[1]["principal_proof"] == proof  # 原样透传留痕
+    # 认证结论来自验签，不是 principal_proof
+    assert entries[1]["verified"] is True
+    assert entries[1]["verification"] == "ed25519-v1"
 
 
 def test_approve_missing_item_errors(gate, tmp_path):

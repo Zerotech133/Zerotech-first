@@ -124,3 +124,98 @@ def test_cross_process_mutual_exclusion(tmp_path):
         capture_output=True, text=True, timeout=30)
     assert probe2.returncode == 0, probe2.stderr
     assert probe2.stdout.strip() == "ACQUIRED"
+
+
+# ---------------- h/i/j. 锁句柄打开重试（WO-LEGION-S13-01） ----------------
+#
+# 背景：Windows 上多进程几乎同时首次创建同一锁文件时，CreateFile 偶发
+# ERROR_ACCESS_DENIED（CRT 映射为 EACCES），实测 pytest 下 4 进程 × 8 次
+# 并发 submit 失败率 ≈27%。产品侧改为有限次退避重试。以下三例分别承重
+# 「会重试」「耗尽仍抛而不降级」「重试面不扩大到别的 OSError」。
+
+
+def _patch_lock_open(monkeypatch, target, script):
+    """把 Path.open 换成按脚本失败的可数版本；返回调用计数。
+
+    script(n) -> 异常实例或 None（None 表示本次放行）。仅对 target 生效，
+    其余路径走真实 open，避免污染 tmp 目录下的其它 I/O。
+    """
+    real_open = Path.open
+    calls = {"n": 0}
+
+    def patched(self, *a, **kw):
+        if self == target:
+            calls["n"] += 1
+            exc = script(calls["n"])
+            if exc is not None:
+                raise exc
+        return real_open(self, *a, **kw)
+
+    monkeypatch.setattr(Path, "open", patched)
+    return calls
+
+
+def test_lock_handle_retries_on_transient_eacces(tmp_path, monkeypatch, caplog):
+    """h) 前 2 次 EACCES、第 3 次成功：能进入临界区，且重试次数留痕。
+
+    这条证明"瞬时竞争被吸收"——若把 _open_lock_handle 退回裸 open，
+    calls 会停在 1 且直接抛错，本用例按预期变红。
+    """
+    path = tmp_path / "lock.lock"
+    calls = _patch_lock_open(
+        monkeypatch, path,
+        lambda n: PermissionError(13, "Permission denied", str(path))
+        if n <= 2 else None)
+
+    with caplog.at_level(logging.WARNING, logger=base_agent.LOG.name):
+        with file_lock(path):
+            pass
+
+    assert calls["n"] == 3                      # 精确等于"失败两次后成功"
+    assert any("重试 2 次后成功" in rec.getMessage()
+               for rec in caplog.records), caplog.text
+    assert base_agent._HELD_LOCK_PATHS == {}
+
+
+def test_lock_handle_raises_when_eacces_persists(tmp_path, monkeypatch, caplog):
+    """i) EACCES 持续：用尽额度后抛原异常，绝不进临界区（不降级无锁）。
+
+    这条是正确性闸门——若耗尽后返回无锁句柄/降级放行，entered 会变 True，
+    本用例按预期变红。
+    """
+    path = tmp_path / "lock.lock"
+    calls = _patch_lock_open(
+        monkeypatch, path,
+        lambda n: PermissionError(13, "Permission denied", str(path)))
+
+    entered = False
+    with caplog.at_level(logging.ERROR, logger=base_agent.LOG.name):
+        with pytest.raises(PermissionError) as ei:
+            with file_lock(path):
+                entered = True
+
+    assert entered is False, "EACCES 耗尽后不得进入临界区（等于无锁放行）"
+    assert calls["n"] == base_agent.LOCK_OPEN_RETRIES
+    assert ei.value.errno == 13                  # 原异常原样上抛，不包装成 Unknown
+    assert base_agent._HELD_LOCK_PATHS == {}     # 失败路径也清登记，不留假持锁
+    assert any("不降级为无锁" in rec.getMessage()
+               for rec in caplog.records), caplog.text
+
+
+def test_lock_handle_does_not_retry_other_oserror(tmp_path, monkeypatch):
+    """j) 非 EACCES 的 OSError 立即上抛，只尝试 1 次。
+
+    这条防"重试面扩大"——若把 except 写成 OSError，真故障（如路径非法）
+    会被重试 5 次才报，故障定位被拖慢，本用例按预期变红。
+    """
+    path = tmp_path / "lock.lock"
+    calls = _patch_lock_open(
+        monkeypatch, path,
+        lambda n: FileNotFoundError(2, "No such file or directory", str(path)))
+
+    with pytest.raises(FileNotFoundError):
+        with file_lock(path):
+            pass
+
+    assert calls["n"] == 1
+    assert base_agent._HELD_LOCK_PATHS == {}

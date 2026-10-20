@@ -10,10 +10,12 @@ monkeypatch httpx.post 桥接到 bus.route，零真实网络）。
 不冒充真实事件。
 
 观察项（以源码实际为准断言，不改源码）：
-- grade_issue 复核会改写 issue["severity"]（tian_feng.py:148），
-  对「阻断声明缺佐证」的问题单二次分级时 declared 读到的是首次
-  改写后的 effective，declared 语义漂移——无幂等设计，见
-  test_repeated_grading_semantics。
+- ~~grade_issue 复核会改写 issue["severity"]，二次分级 declared 语义漂移~~
+  **已修正**（老田 2026-10-20 裁定幂等 + 覆盖前留快照）：声明值固化为
+  severity_declared，改写前落 grade_history；见 test_repeated_grading_semantics。
+- ~~escalate_issue 重复调用会重复投递~~ **已修正**：同问题同分级同出口只发
+  一次，见 test_repeated_escalation_deduplicated 与
+  tests/test_escalation_idempotency.py。
 """
 from __future__ import annotations
 
@@ -378,12 +380,13 @@ def test_escalate_unknown_issue_id_raises(tmp_path: Path) -> None:
 # ---------------- 7) 重复分级/升级幂等语义（按源码实际） ----------------
 
 def test_repeated_grading_semantics(tmp_path: Path) -> None:
-    """重复分级按源码实际断言：
+    """重复分级幂等（老田 2026-10-20 裁定「同 issue 同 severity 不重发 +
+    覆盖前留快照」落地后，原 declared 漂移观察项已修正）：
 
-    - 一般整改档：复核幂等，declared/effective 稳定不变；
-    - 阻断声明缺佐证档：首次复核降级并改写 issue["severity"]（tian_feng.py:148），
-      二次复核 declared 读到改写后的 escalation（declared 漂移）——
-      源码无幂等设计，如实断言现状（观察项，不改源码）。
+    - 一般整改档：复核幂等，declared/effective 稳定，不产生改写快照；
+    - 阻断声明缺佐证档：首次复核降级为升级请示，**覆盖前留快照**；
+      二次复核 declared 仍为原声明 blocking（不再漂移），effective 稳定，
+      不重复追加快照——重复调用结果稳定，即幂等。
     """
     tf = make_tianfeng()
     normal = tf.intake_issue({
@@ -395,6 +398,8 @@ def test_repeated_grading_semantics(tmp_path: Path) -> None:
     g2 = tf.grade_issue(normal["issue_id"])
     assert (g1["declared"], g1["effective"]) == (SEVERITY_NORMAL, SEVERITY_NORMAL)
     assert (g2["declared"], g2["effective"]) == (SEVERITY_NORMAL, SEVERITY_NORMAL)
+    assert g1["changed"] is False and g2["changed"] is False
+    assert tf._find_issue(normal["issue_id"])["grade_history"] == []
 
     unproven = tf.intake_issue({
         "source": "zhao_yun", "platform": "r_and_d",
@@ -404,11 +409,20 @@ def test_repeated_grading_semantics(tmp_path: Path) -> None:
     first = tf.grade_issue(unproven["issue_id"])
     assert (first["declared"], first["effective"]) == \
         (SEVERITY_BLOCKING, SEVERITY_ESCALATION)
+    assert first["changed"] is True
+    record = tf._find_issue(unproven["issue_id"])
+    assert record["severity_declared"] == SEVERITY_BLOCKING   # 声明值固化
+    assert len(record["grade_history"]) == 1                   # 覆盖前留快照
+    assert (record["grade_history"][0]["from"],
+            record["grade_history"][0]["to"]) == \
+        (SEVERITY_BLOCKING, SEVERITY_ESCALATION)
+
     second = tf.grade_issue(unproven["issue_id"])
-    # 源码现状：首次分级已把 issue["severity"] 改写为 escalation，
-    # 二次复核 declared=escalation（漂移），effective 仍为 escalation。
-    assert second["declared"] == SEVERITY_ESCALATION
+    # 修正后：二次复核 declared 仍回溯来源声明 blocking，不再漂移。
+    assert second["declared"] == SEVERITY_BLOCKING
     assert second["effective"] == SEVERITY_ESCALATION
+    assert second["changed"] is False
+    assert len(record["grade_history"]) == 1                   # 同值不重复快照
 
     # 重复登记同内容问题单：指纹去重幂等（既有语义，与分级无关但同属归口去重）。
     dup = tf.intake_issue({
@@ -421,8 +435,12 @@ def test_repeated_grading_semantics(tmp_path: Path) -> None:
     assert len(tf.issue_board) == 2  # 不新增台账
 
 
-def test_repeated_escalation_sends_again(tmp_path, monkeypatch) -> None:
-    """重复升级：源码无去重设计，重复调用会再次投递账本（如实断言现状）。"""
+def test_repeated_escalation_deduplicated(tmp_path, monkeypatch) -> None:
+    """重复升级去重：同问题同分级同出口只投递一次，第二次被幂等拦截。
+
+    拦截须满足：不落总线账本、sent 为 None、如实给出首次送达时刻；
+    问题单 escalations 只记一条，escalation_skips 记下被拦事实（分账）。
+    """
     bus = make_bus(tmp_path)
     register_tianfeng(bus)
     tf = make_tianfeng()
@@ -433,10 +451,19 @@ def test_repeated_escalation_sends_again(tmp_path, monkeypatch) -> None:
     second = tf.escalate_issue(issue["issue_id"])
 
     assert first["sent"]["ok"] is True
-    assert second["sent"]["ok"] is True
+    assert first["skipped"] is False
+    assert second["skipped"] is True and second["duplicate"] is True
+    assert second["sent"] is None                      # 未再投递
+    assert second["first_sent_ts"] == first["grade"]["ts"] or \
+        second["first_sent_ts"] is not None
     ledger = read_jsonl(tmp_path / "bus_ledger.jsonl")
-    assert len(ledger) == 2  # 现状：无幂等拦截，账本两条
-    assert all(rec["message_class"] == PRINCIPAL_CLASS_ESCALATION for rec in ledger)
+    assert len(ledger) == 1                            # 账本只一条
+    assert ledger[0]["message_class"] == PRINCIPAL_CLASS_ESCALATION
+
+    record = tf._find_issue(issue["issue_id"])
+    assert len(record["escalations"]) == 1
+    assert len(record["escalation_skips"]) == 1
+    assert record["escalation_skips"][0]["first_sent_ts"] is not None
 
 
 # ---------------- 8) 成功升级后 issue_board 状态一致性 ----------------
