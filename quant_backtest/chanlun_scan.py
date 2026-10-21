@@ -403,8 +403,25 @@ def _tradable(code, pct):
     return pct < th
 
 
+DEPTH_DEEP_BARS = 250      # 「深数据」分档线（WO-QT-20261021-099 实证）
+# 依据：A 股同股不同窗口对照（400 只 × 12 时点 = 4800 个对照点，88 个带信号），
+# 仅取最近 130 根 vs ≤500 根全窗，比较「新检出」信号集合：
+#   一致 61.4% / 短窗漏报 26.1% / **短窗虚报 12.5%**
+#   且虚报样本 11 例中 3卖 7、3买 4——**几乎全部集中在第三类买卖点**。
+# 缠论上说得通：3 类买卖点依赖中枢结构完整（中枢+离开段+回抽不破），
+# 130 根窗口构出的中枢易残缺 → 误判。故 250 根作分档线，浅数据标记而非拦截
+# （拦截属交易口径，须老田另批）。见 deliverables/2026-10-21_窗口深度对缠论信号影响实证_v1.md
+
+
+def _depth_tier(n):
+    """按可用 K 线根数分档：deep（≥250）/ shallow（<250）/ None（未知）。"""
+    if n is None:
+        return None
+    return "deep" if n >= DEPTH_DEEP_BARS else "shallow"
+
+
 def _make_row(code, name, sig, detect_date, lag, entry_px, reg, source,
-              trend=None, tradable=None):
+              trend=None, tradable=None, depth=None):
     return {"market": _CUR_MKT, "code": code, "name": (name or "")[:16],
             "period": "1d", "type": sig["type"], "dt": sig["dt"],
             "price": sig.get("price"), "detect_date": detect_date,
@@ -423,6 +440,8 @@ def _make_row(code, name, sig, detect_date, lag, entry_px, reg, source,
             "pv_fv": sig.get("pv_fv"), "conf": sig.get("conf"),
             "n_prior": sig.get("n_prior"),
             "gray_v": "v4",
+            # 数据深度分档（WO-099）：只标注不拦截；历史行无此字段 → None
+            "depth_bars": depth, "depth_tier": _depth_tier(depth),
             "source": source, "first_seen": _now_iso()}
 
 
@@ -744,7 +763,8 @@ def scan_all():
                 code, names.get(code, ""), sig, detect, None, epx,
                 _reg_at(sig["dt"], idx_bars), "scan", trend=t_state,
                 tradable=_tradable(code, ((bars[-1]["c"] / bars[-2]["c"] - 1) * 100
-                                          if len(bars) >= 2 and bars[-2]["c"] else None))))
+                                          if len(bars) >= 2 and bars[-2]["c"] else None)),
+                depth=len(bars)))
     if new_rows:
         try:                                # S 批：影子打分（不拦截不推送）
             from chanlun_mlf import score_rows
@@ -978,7 +998,8 @@ def _push_manual_impl(code, sig_type=None, sig_dt=None):
         new_rows.append(_make_row(
             code, name, sig, detect, None, epx,
             _reg_at(sig["dt"], idx_bars), "manual",
-            trend=t_state, tradable=_tradable(code, pct)))
+            trend=t_state, tradable=_tradable(code, pct),
+            depth=len(bars)))
     n_committed = _commit_new_rows(new_rows) if new_rows else 0
     if n_committed < len(new_rows):          # 并发窗口撞车兜底计数
         skipped.append({"type": "*", "dt": "*",
