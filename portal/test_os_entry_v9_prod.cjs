@@ -33,6 +33,17 @@ check('adapter 在 os_integrated_projection.js 之后',
 check('建议引擎未加载降级文案', html.includes('建议引擎未加载'));
 check('消费 OSZhugeAdapter.buildBrief', html.includes('OSZhugeAdapter.buildBrief'));
 
+// 2c. WO-OS-08 ResultEvidence 证据槽：契约脚本挂载 + 证据槽容器 + 显式空态
+check('引用 os_result_contract.js', /<script\s+src="\/static\/os_result_contract\.js"\s+defer><\/script>/.test(html));
+check('contract 在 os_zhuge_adapter.js 之后',
+  html.indexOf('/static/os_zhuge_adapter.js') !== -1 &&
+  html.indexOf('/static/os_result_contract.js') > html.indexOf('/static/os_zhuge_adapter.js'));
+check('证据槽容器 evidence-list', /id="evidence-list"/.test(html));
+check('证据槽空态文案', html.includes('证据槽暂无数据'));
+check('空态声明不伪造完成', html.includes('不伪造完成记录'));
+check('契约字段说明行', /事项ID/.test(html) && /业务日/.test(html) && /回执/.test(html));
+check('消费 OSResultContract.entry', html.includes('OSResultContract.entry'));
+
 // 3. 只读 GET 端点齐备
 for (const ep of ['/api/os', '/api/home', '/api/alerts', '/api/notify/queue', '/api/org/tasks', '/api/capability/board'])
   check('端点 ' + ep, html.includes("'" + ep + "'"));
@@ -55,4 +66,4 @@ else {
 }
 
 if (failures.length) { console.error('FAIL WO-OS-01 契约：' + failures.join('；')); process.exit(1); }
-console.log('PASS WO-OS-01 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本');
+console.log('PASS WO-OS-01/08 os_entry_v9_prod 契约：四视图/禁项/端点/文案/无障碍/脚本/ResultEvidence证据槽');
